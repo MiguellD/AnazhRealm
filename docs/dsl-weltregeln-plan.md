@@ -200,9 +200,19 @@ eine Abhängigkeitskette: A ist das Fundament, B macht es lebendig (Feld-Kopplun
 macht es selbst-wachsend (Nexus), D gibt dem Menschen die Feder, E macht es zur Welt-
 Identität (Bibliothek).
 
-### Phase A — Das `rule`-Primitiv + Registry + Welt-Tick (die Geste wird Gesetz)
+### Phase A — Das `rule`-Primitiv + Registry + Welt-Tick (die Geste wird Gesetz) — ✅ GEBAUT (V17.33)
 
 **Das kleinste kohärente Stück: ein `when`, das steht.**
+
+> **Status (V17.33, 01.06.2026):** vollständig gebaut + gemessen wie unten geplant.
+> `state.worldRules` (Registry) · der `rule`-Effekt-Op (`_registerWorldRule` mit Cap
+> 64 + Dedup + `_evictWorldRule`) · `_tickWorldRules` (Budget 4/Frame, `everySec`-Gate,
+> TTL-Compaction, Re-Entrancy via Längen-Erfassung) · `_worldRuleCtx`/`_worldRuleSeed`
+> (deterministische Regel-RNG aus `worldId+ruleId+fireIndex`) · `AnazhRealm.WORLD_RULES`
+> (frozen Config-Static). Verdrahtet im Loop nach `dslTick`. GEMESSEN:
+> `checkBandV1733WorldRules` (11 Invarianten grün — alle §6-A-Abnahmepunkte). Die vier
+> harten Probleme (Performance/Determinismus/Runaway/Re-Entrancy) sind an der Wurzel
+> gelöst (siehe CLAUDE.md-Gotcha „stehende Welt-Regel"). **Nächst: Phase B.**
 
 - **Daten:** `state.worldRules = []` — jede Regel `{id, cond, effect, everySec,
 lastFired, source, ttlSec?, born}`. (`cond`/`effect` sind DSL-AST-Knoten.)
@@ -235,9 +245,18 @@ everySec` UND `dslEvalCond(cond)` → `dslEval(effect, ruleCtx)`; `lastFired` se
   das Budget kappt die Effekte/Frame; Determinismus (zwei Läufe gleicher Seed gleich).
 - **Damit ist die Welt zum ersten Mal REGEL-getrieben, nicht nur gepoked.**
 
-### Phase B — Feld-Bedingungen + Feld-Effekte (Lesen und Schreiben werden DASSELBE)
+### Phase B — Feld-Bedingungen + Feld-Effekte (Lesen und Schreiben werden DASSELBE) — ✅ GEBAUT (V17.34)
 
 **Die Regeln greifen ans lebendige Feld — der geniale Twist wird Code.**
+
+> **Status (V17.34, 01.06.2026):** vollständig gebaut + gemessen wie unten geplant.
+> Bedingungen `field_above`/`field_below` (`_dslFieldAxisAt` liest `auraAt` — 4 frozen
+> Achsen + 6 räumliche emotion-Achsen) · Effekte `deposit_life`/`deposit_emotion`
+> (rufen `_depositLife`/`_depositEmotion`) · `_dslRulePos` (Default `at_player`).
+> GEMESSEN: `checkBandV1734FieldRules` (7 grün — inkl. der HEILUNGS-Regel, die den
+> Loop schließt: field_below lebendig → deposit_life → steigt → stoppt bei Sättigung).
+> Der V17.26-„trag-Leben-in-den-Mangel"-Gedanke ist jetzt als Regel ausdrückbar
+> (`field_below lebendig` → `deposit_life at_field_need`). **Nächst: Phase C.**
 
 - **Neue Bedingungen** (`dslConditions`): `field_above([axis, value, posNode?])` /
   `field_below(...)` — liest `auraAt(pos).<axis>` (lebendig/glut/magie/emotion-Achsen).
@@ -257,9 +276,23 @@ everySec` UND `dslEvalCond(cond)` → `dslEval(effect, ruleCtx)`; `lastFired` se
 ["deposit_life", ["at_player"]], {everySec:3}]` → an einem kargen Ort steigt
   lebendig über die Zeit; an einem üppigen feuert sie nicht (Bedingung false).
 
-### Phase C — Der Nexus EVOLVIERT Regeln (die Welt wächst ihre eigene Logik)
+### Phase C — Der Nexus EVOLVIERT Regeln (die Welt wächst ihre eigene Logik) — ✅ GEBAUT (V17.35)
 
 **Die bestehende Generator/Mutate/Fitness-Maschinerie auf Regeln anwenden.**
+
+> **Status (V17.35, 01.06.2026):** vollständig gebaut + gemessen. `dslComposeRule` +
+> `dslComposeRuleCondition` (Feld-LESE-Bedingungen, resonant) + `dslComposeRuleEffect`
+> (Feld-SCHREIB-Effekte `deposit_life`/`deposit_emotion`, nur reaktiv-sicherer Pool) ·
+> `generateEvolution` mit `composeRuleProb` (Regel statt Geste) · `_loopNexusUpdate`
+> trennt Regel-Evolutionen ab (Fitness in worldRules, nicht im Gesten-Finalizer) ·
+> **per-Regel-Fitness** `_worldRuleFitness` (Engagement+Kosten+Erfolg, attributierbar —
+> NICHT die globale Emotion-Trend, das wäre der Passagier-Trugschluss) · Lifecycle im
+> `_tickWorldRules`-TTL-Zweig (gut → erneuern, schlecht/inert → verfallen) · Heredity via
+> `_composeNexusRule` (mutierter Nachkomme eines Überlebenden, `dslMutate` robust).
+> GEMESSEN: `checkBandV1735NexusEvolvesRules` (11 grün). **EHRLICH:** die Fitness selektiert
+> für cheap+working+ENGAGED (relevant) Regeln; die tiefere „macht-die-Regel-glücklicher"-
+> Attribution ist eine spätere Vertiefung (braucht kontrollierte per-Regel-Attribution).
+> **Nächst: Phase D.**
 
 - **`dslComposeAtomic`** bekommt einen neuen gewichteten Eintrag: baue eine `rule`
   (komponiere cond aus `dslConditions` + die Feld-Bedingungen, effect aus dem
@@ -280,9 +313,24 @@ everySec` UND `dslEvalCond(cond)` → `dslEval(effect, ruleCtx)`; `lastFired` se
 - **Gemessen:** über N Nexus-Zyklen steigt die mittlere Regel-Fitness; eine FPS-
   schädliche Regel wird gepruned; eine emotion-hebende überlebt.
 
-### Phase D — Mensch → Regeln (der Schöpfer gibt der Welt Gesetze)
+### Phase D — Mensch → Regeln (der Schöpfer gibt der Welt Gesetze) — ✅ GEBAUT (V17.36)
 
 **Der Chat-Parser lernt die Regel-Form.**
+
+> **Status (V17.36, 01.06.2026):** vollständig gebaut + gemessen. `_chatTryRuleCommand`
+> matcht „wann immer/immer wenn/jedes mal wenn/sobald X (,|dann) Y" → `["rule", cond,
+> effect, {everySec:3}]` (Mensch-Regel, permanent). Synergie: der EFFEKT (Y) über
+> `_parseChatEffect` (reuse `chatDslPatterns`), die BEDINGUNG (X) über `_parseChatCondition`
+> (Sprache → Feld/Stimmung-Bedingung). Whitelist-Wand `RULE_FORBIDDEN_EFFECT_OPS` +
+> `_isRuleEffectAllowed` (der V17.33-Caveat: Mensch-Regel darf den frozen Worldgen nicht
+> anfassen). Sichtbarkeit: „zeige regeln" (via `describeProgram(rule)`) + „vergiss regeln".
+> GEMESSEN: `checkBandV1736HumanRules` (11 grün). **EHRLICH (D-2, Schöpfer-Klärung):** die
+> immer-sichtbare Anzeige der Gesetze ist KEIN Parallel-Panel, sondern eine „Gesetze"-
+> SEKTION in der BESTEHENDEN Fähigkeiten-UI (`renderAbilitiesList`/`#status-abilities`) —
+> dasselbe describeProgram-Row-Pattern, aber statt ▶ (Fähigkeit = invoke-once-Geste) ein
+> „vergiss"-✕ + ein aktiv/feuert-Indikator (Regel = stehendes Gesetz). Heilige Lektion:
+> eine Fläche für die DSL-Logik der Welt, zwei Naturen. Optionaler Browser-Audit-Schliff.
+> **Nächst: Phase E.**
 
 - **Neue `chatDslPatterns`:** „wann immer/immer wenn <Bedingung>, dann <Effekt>" →
   `["rule", cond, effect]`. Beispiele: „immer wenn es Nacht wird, spawne Glühwürmchen",
@@ -296,9 +344,18 @@ everySec` UND `dslEvalCond(cond)` → `dslEval(effect, ruleCtx)`; `lastFired` se
   Nexus-Regeln → ein Regel-Satz, zwei Autoren (der Co-Schöpfer-Kreis, Pfeiler 1).
   `source` unterscheidet sie (für Fitness/Persistenz/Broadcast).
 
-### Phase E — Persistenz + die Bibliothek wird WAHR (eine Welt IST ihr Regel-Satz)
+### Phase E — Persistenz + die Bibliothek wird WAHR (eine Welt IST ihr Regel-Satz) — ✅ GEBAUT (V17.38)
 
 **Der Regel-Satz wird Welt-Identität.**
+
+> **Status (V17.38, 01.06.2026):** vollständig gebaut + gemessen — DER BOGEN (A–E) IST
+> KOMPLETT. `buildStateSnapshot` serialisiert `state.worldRules` (nur definierende Felder) ·
+> `_loadStateRestoreWorldRules` stellt sie frisch her (born/fires/_sig neu, Dedup, Cap;
+> alter Save ohne worldRules → no-op) · `_fusionMergeWorldRules` vereinigt die Regel-Sätze
+> beim Fusionieren (Union + Dedup, in `fuseWorlds` verdrahtet). Der signaling-server relayt
+> den world-snapshot opak → worldRules reist peer-to-peer mit. GEMESSEN:
+> `checkBandV1738RulePersistence` (7 grün). **KÜR danach (Backlog): die KI/das LLM als
+> Regel-Schreiberin (§3.4); Spieler-Pflege als zweiter Feld-Schreibpfad.**
 
 - **Persistenz:** `state.worldRules` in `buildStateSnapshot` + `loadState` (mit festem
   Feld-Satz, V8.59-Disziplin) — ABER nur Mensch/persistente Regeln (Nexus-Experimente
@@ -358,12 +415,39 @@ evolviert. Der Mensch gibt Gesetze. Die Welt versteht + definiert sich selbst.
 
 ## 9. Reihenfolge + Abnahme (der konkrete nächste Schritt)
 
-1. **Phase A** (das `rule`-Primitiv + Registry + Tick) ist der nächste Schritt — das
-   kleinste Stück, das die Welt von „gepoked" zu „regel-getrieben" hebt. Abnahme: die
-   gemessenen Invarianten in §6-A (Regel feuert bei Bedingung, Budget kappt, TTL
-   entfernt, Determinismus).
-2. Dann B (Feld-Kopplung), C (Nexus evolviert), D (Mensch-Regeln), E (Bibliothek).
-3. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
+1. ~~**Phase A** (das `rule`-Primitiv + Registry + Tick)~~ — ✅ **GEBAUT (V17.33)**: die
+   Welt ist von „gepoked" zu „regel-getrieben" gehoben. Abnahme erfüllt: alle §6-A-
+   Invarianten grün (`checkBandV1733WorldRules`, 11 — Regel feuert bei Bedingung, Budget
+   kappt, TTL entfernt, Dedup, Cap+Eviction, Re-Entrancy, Determinismus).
+2. ~~**Phase B** (Feld-Kopplung)~~ — ✅ **GEBAUT (V17.34)**: Feld-Bedingungen
+   (`field_above`/`field_below`, liest `auraAt`) + Feld-Effekte (`deposit_life`/
+   `deposit_emotion`, schreibt die V17.27/.32-Overlays) → Lesen und Schreiben sind
+   DASSELBE Substrat. Abnahme erfüllt: `checkBandV1734FieldRules` (7 grün, inkl. der
+   Heilungs-Regel-Loop).
+3. ~~**Phase C** (der Nexus evolviert Regeln)~~ — ✅ **GEBAUT (V17.35)**: `dslComposeRule`
+   (würfelt Regeln aus Feld-LESE-Bedingungen + Feld-SCHREIB-Effekten, resonant),
+   `_composeNexusRule` (Nachkomme eines Überlebenden via `dslMutate`), per-Regel-Fitness
+   über das Lebens-Fenster (`ttlSec`, der Phase-A-Hook): gut → erneuern, schlecht/inert →
+   zerfallen. Abnahme erfüllt: `checkBandV1735NexusEvolvesRules` (11 grün).
+4. ~~**Phase D** (Mensch → Regeln)~~ — ✅ **GEBAUT (V17.36)**: `_chatTryRuleCommand`
+   („wann immer X, dann Y" → Mensch-Regel; der Effekt via reuse `_parseChatEffect`, die
+   Bedingung via `_parseChatCondition`), die Whitelist-Wand `_isRuleEffectAllowed` (der
+   MENSCH-Caveat), „zeige/vergiss regeln". Abnahme erfüllt: `checkBandV1736HumanRules`
+   (11 grün). **D-2 ✅ GEBAUT (V17.37):** die „Gesetze"-Sektion fusioniert in die BESTEHENDE
+   Fähigkeiten-UI (kein Parallel-Panel — Heilige Lektion; Fähigkeit=invoke-once mit ▶,
+   Regel=stehend mit ✕; beide Sektionen einklappbar; `checkBandV1737RulesUI` 7 grün).
+5. ~~**Phase E** (Persistenz + Bibliothek)~~ — ✅ **GEBAUT (V17.38)**: `worldRules` in
+   `buildStateSnapshot`/`_loadStateRestoreWorldRules` (Gesetze überleben Reload) +
+   `_fusionMergeWorldRules` in `fuseWorlds` (zwei Welten = die Union ihrer Gesetze).
+   Abnahme erfüllt: `checkBandV1738RulePersistence` (7 grün). **DER BOGEN A–E IST KOMPLETT.**
+6. ~~**KÜR — die KI (LLM) als Regel-Schreiberin**~~ — ✅ **GEBAUT (V17.40)**: der letzte
+   Pfeiler §3.4 „der KI-Schöpfer schreibt". Grok kennt jetzt die Regel-Grammatik
+   (`llmBuildSystemPrompt`) + schlägt stehende Gesetze vor; die Effekt-Whitelist wurde
+   UNIVERSELL (`_registerWorldRule` — jede Quelle gesichert); LLM-Regeln sind ephemer
+   (fitness-getestet + adoptierbar), in der Console als „Grok" gelabelt.
+   `checkBandV1740LlmRules` (6 grün). **DAMIT SCHREIBEN MENSCH · NEXUS · KI AM SELBEN
+   REGEL-SATZ — der ganze Bogen ist vollendet.** Offen (Backlog): Spieler-Pflege.
+7. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
 
 **Faustregel:** wenn eine Welt-Reaktion heute ein hand-codierter `trigger()`/`_tickX`
 ist (z. B. emotion→wetter), ist sie ein Kandidat, eine REGEL zu werden — das ist der

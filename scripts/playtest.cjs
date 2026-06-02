@@ -1443,6 +1443,1119 @@ async function checkBandV1732SpatialEmotion(ctx) {
     );
 }
 
+// V17.33 Phase A (DSL-Weltregeln-Bogen) — DAS rule-PRIMITIV: ein `when`, das
+// NICHT verfaellt. Statt die Bedingung→Effekt EINMAL auszufuehren, REGISTRIERT
+// `rule` sie als stehende Regel in state.worldRules; der Welt-Tick
+// (_tickWorldRules) prueft sie fortlaufend. Damit ist die Welt zum ersten Mal
+// REGEL-getrieben statt nur durch Gesten gepoked. Gemessen (§6-A): Verdrahtung,
+// Registrierung (kein Sofort-Effekt), Feuern bei Bedingung, everySec-Gate,
+// Bedingung-false, TTL-Entfernung, Frame-Budget, Dedup, Cap+Eviction,
+// Re-Entrancy (kein Same-Tick-Kaskade), deterministische Regel-RNG.
+async function checkBandV1733WorldRules(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        const now = () => performance.now() / 1000;
+
+        // --- Verdrahtung ---
+        out.cfgWired =
+            !!K.WORLD_RULES &&
+            K.WORLD_RULES.cap === 64 &&
+            K.WORLD_RULES.budgetPerFrame === 4 &&
+            typeof K.WORLD_RULES.minEverySec === "number";
+        out.registryArray = Array.isArray(r.state.worldRules);
+        out.ruleOp = typeof r.dslEffects.rule === "function";
+        out.tickDefined = typeof r._tickWorldRules === "function";
+        out.tickWired = /this\._tickWorldRules\(currentTime\)/.test(r.startEternalLoop.toString());
+
+        // Save world state we mutate
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+        const e = r.state.player.emotions;
+        const savedEmotions = Object.assign({}, e);
+
+        // --- (1) Registrierung statt Sofort-Effekt ---
+        r.state.worldRules.length = 0;
+        r.state.weather = "sunny";
+        for (const k of Object.keys(e)) e[k] = 0;
+        e.sorrow = 0.8;
+        const reg = r.dslRun(["rule", ["emotion_above", "sorrow", 0.5], ["weather", "rainy"], { everySec: 0.5 }], {
+            source: "human",
+        });
+        out.regOk = reg.ok === true;
+        out.registeredOne = r.state.worldRules.length === 1;
+        out.notFiredOnRegister = r.state.weather === "sunny"; // registriert, Effekt NICHT sofort
+
+        // --- (2) Feuern bei wahrer Bedingung ---
+        const t1 = now();
+        r._tickWorldRules(t1);
+        out.firesWhenTrue = r.state.weather === "rainy";
+
+        // --- (3) everySec-Gate: sofortiger Re-Tick feuert nicht erneut ---
+        r.state.weather = "sunny"; // wuerde wieder rainy, falls die Regel erneut feuerte
+        r._tickWorldRules(t1); // gleicher Zeitpunkt < everySec nach lastFired
+        out.everySecGate = r.state.weather === "sunny";
+
+        // --- (4) Bedingung false → feuert nicht ---
+        e.sorrow = 0.0;
+        r.state.worldRules[0].lastFired = -Infinity; // Gate oeffnen → NUR die Bedingung entscheidet
+        r._tickWorldRules(now());
+        out.skipsWhenFalse = r.state.weather === "sunny";
+
+        // --- (5) TTL entfernt die Regel ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { ttlSec: 1 }], { source: "nexus" });
+        out.ttlRegistered = r.state.worldRules.length === 1;
+        r.state.worldRules[0].born = now() - 5; // 5 s alt, ttl 1 s → abgelaufen
+        r._tickWorldRules(now());
+        out.ttlRemoves = r.state.worldRules.length === 0;
+
+        // --- (6) Budget kappt Effekte/Frame ---
+        r.state.worldRules.length = 0;
+        const N = K.WORLD_RULES.budgetPerFrame + 3; // mehr eligible als Budget
+        for (let i = 0; i < N; i++) {
+            // distinct cond (Dedup-frei) + immer true (rng < 1+ε); everySec klein
+            r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "rainy"], { everySec: 0.5 }], {
+                source: "nexus",
+            });
+        }
+        out.budgetRegistered = r.state.worldRules.length === N;
+        const tB = now();
+        r._tickWorldRules(tB);
+        const firedCount = r.state.worldRules.filter((x) => x.lastFired === tB).length;
+        out.budgetCaps = firedCount === K.WORLD_RULES.budgetPerFrame;
+        out.firedCount = firedCount;
+
+        // --- (7) Dedup: dieselbe Regel zweimal → ein Eintrag ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"]], { source: "human" });
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"]], { source: "human" });
+        out.dedup = r.state.worldRules.length === 1;
+
+        // --- (8) Cap + Eviction (Mensch ueberlebt die Nexus-Flut) ---
+        r.state.worldRules.length = 0;
+        // eine Mensch-Regel zuerst (aelteste — darf NICHT verdraengt werden)
+        r.dslRun(["rule", ["emotion_above", "joy", 0.99], ["weather", "rainy"], { everySec: 99 }], { source: "human" });
+        for (let i = 0; i < K.WORLD_RULES.cap + 5; i++) {
+            r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "sunny"], { everySec: 99 }], {
+                source: "nexus",
+            });
+        }
+        out.capHolds = r.state.worldRules.length <= K.WORLD_RULES.cap;
+        out.humanSurvives = r.state.worldRules.some((x) => x.source === "human");
+
+        // --- (9) Re-Entrancy: ein Regel-Effekt, der eine Regel registriert,
+        //         feuert die NEUE nicht im selben Tick ---
+        r.state.worldRules.length = 0;
+        r.state.weather = "sunny";
+        r.dslRun(
+            ["rule", ["random_chance", 1], ["rule", ["random_chance", 1], ["weather", "rainy"]], { everySec: 0.5 }],
+            {
+                source: "human",
+            }
+        );
+        const tR = now();
+        r._tickWorldRules(tR); // meta feuert → registriert child; child NICHT same-tick
+        out.reentrancyNoCascade = r.state.weather === "sunny";
+        out.childRegistered = r.state.worldRules.length === 2;
+        r.state.worldRules[1].lastFired = -Infinity; // naechster Frame: child darf feuern
+        r._tickWorldRules(now() + 1);
+        out.childFiresNextFrame = r.state.weather === "rainy";
+
+        // --- (10) deterministische Regel-RNG ---
+        const fake = { id: 4242, fires: 0, source: "human" };
+        const s0a = r._worldRuleSeed(fake, 0);
+        const s0b = r._worldRuleSeed(fake, 0);
+        const s1 = r._worldRuleSeed(fake, 1);
+        out.seedStable = s0a === s0b;
+        out.seedVariesPerFire = s0a !== s1;
+        out.rngDeterministic = r.dslCtx({ seed: s0a }).rng() === r.dslCtx({ seed: s0b }).rng();
+
+        // restore world state
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
+        return out;
+    });
+
+    check(
+        "V17.33 Welt-Regeln: WORLD_RULES-Konfig + Registry + rule-Op + Tick verdrahtet (im Loop)",
+        res.cfgWired && res.registryArray && res.ruleOp && res.tickDefined && res.tickWired
+    );
+    check(
+        "V17.33 Welt-Regeln: `rule` REGISTRIERT (statt den Effekt SOFORT auszufuehren)",
+        res.regOk && res.registeredOne && res.notFiredOnRegister
+    );
+    check("V17.33 Welt-Regeln: die Regel FEUERT, wenn die Bedingung wahr wird (sorrow>0.5 → rainy)", res.firesWhenTrue);
+    check("V17.33 Welt-Regeln: das everySec-Gate verhindert Per-Frame-Feuern", res.everySecGate);
+    check("V17.33 Welt-Regeln: bei falscher Bedingung feuert die Regel nicht", res.skipsWhenFalse);
+    check("V17.33 Welt-Regeln: ttlSec entfernt die abgelaufene Regel", res.ttlRegistered && res.ttlRemoves);
+    check(
+        "V17.33 Welt-Regeln: das Frame-Budget kappt die Effekte/Frame",
+        res.budgetRegistered && res.budgetCaps,
+        `fired=${res.firedCount} budget=4`
+    );
+    check("V17.33 Welt-Regeln: Dedup — dieselbe Regel zweimal bleibt EIN Eintrag", res.dedup);
+    check(
+        "V17.33 Welt-Regeln: Cap haelt (Runaway-Schutz), Mensch-Regel ueberlebt die Nexus-Flut",
+        res.capHolds && res.humanSurvives
+    );
+    check(
+        "V17.33 Welt-Regeln: Re-Entrancy — eine vom Effekt erzeugte Regel feuert nicht im selben Tick",
+        res.reentrancyNoCascade && res.childRegistered && res.childFiresNextFrame
+    );
+    check(
+        "V17.33 Welt-Regeln: deterministische Regel-RNG (stabil pro fireIndex, variiert ueber die Zeit)",
+        res.seedStable && res.seedVariesPerFire && res.rngDeterministic
+    );
+}
+
+// V17.34 Phase B (DSL-Weltregeln-Bogen) — die FELD-Kopplung: Regeln LESEN das
+// lebendige Feld (field_above/field_below ueber auraAt — die frozen Achsen +
+// die raeumliche emotion) und SCHREIBEN es (deposit_life/deposit_emotion → die
+// V17.27/.32-Overlays). Damit schliesst sich der Feld-Kreis INNERHALB der Sprache:
+// eine Regel schreibt, was eine andere liest — lesen+schreiben sind DASSELBE
+// Substrat (der wahre Norden, das-lebendige-feld.md §2). Der V17.26-„trag Leben in
+// den Mangel"-Gedanke wird als REGEL ausdrueckbar statt hardcodiert. Gemessen
+// (§6-B): Verdrahtung, field-read (frozen + emotion raeumlich), deposit-write→
+// read-back, Default at_player, die HEILUNGS-Regel (der Loop schliesst sich:
+// field_below lebendig → deposit_life → lebendig steigt → die Regel stoppt),
+// invalide Achse → no-op.
+async function checkBandV1734FieldRules(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const now = () => performance.now() / 1000;
+        const mkCtx = () => r.dslCtx({ source: "test" });
+
+        // --- Verdrahtung ---
+        out.condsWired =
+            typeof r.dslConditions.field_above === "function" && typeof r.dslConditions.field_below === "function";
+        out.effectsWired =
+            typeof r.dslEffects.deposit_life === "function" && typeof r.dslEffects.deposit_emotion === "function";
+
+        // Save world state
+        const savedLife = r.state.lifeField ? new Map(r.state.lifeField) : null;
+        const savedEmo = r.state.emotionField ? new Map(r.state.emotionField) : null;
+        const e = r.state.player.emotions;
+        const savedEmotions = Object.assign({}, e);
+        const savedRules = r.state.worldRules.slice();
+
+        // clean slates
+        if (r.state.lifeField) r.state.lifeField.clear();
+        if (r.state.emotionField) r.state.emotionField.clear();
+        for (const k of Object.keys(e)) e[k] = 0;
+        r.state.worldRules.length = 0;
+
+        // Scanne einen KARGEN Ort (niedrigste frozen lebendig) — so ist die
+        // Heilungs-Regel robust (sie kann nur an einem Ort < Schwelle feuern).
+        let A = { x: 40000, z: -30000 };
+        let lebMin = Infinity;
+        for (let i = 0; i < 16; i++) {
+            const x = 40000 + i * 2000;
+            const z = -30000 - i * 1700;
+            const leb = r.auraAt(x, z).lebendig;
+            if (leb < lebMin) {
+                lebMin = leb;
+                A = { x, z };
+            }
+        }
+        const B = { x: -99999, z: 88888 };
+        const posA = ["at", A.x, 0, A.z];
+        const posB = ["at", B.x, 0, B.z];
+
+        // --- (2) field_above/below liest die frozen lebendig-Achse ---
+        const lebA = r.auraAt(A.x, A.z).lebendig;
+        out.fieldRead =
+            r.dslEvalCond(["field_above", "lebendig", lebA - 0.01, posA], mkCtx()) === true &&
+            r.dslEvalCond(["field_above", "lebendig", lebA + 0.5, posA], mkCtx()) === false &&
+            r.dslEvalCond(["field_below", "lebendig", lebA + 0.01, posA], mkCtx()) === true;
+
+        // --- (4) deposit_life SCHREIBT → auraAt liest es zurueck ---
+        const leb0 = r.auraAt(A.x, A.z).lebendig;
+        r.dslEval(["deposit_life", posA], mkCtx());
+        out.depositLifeReadBack = r.auraAt(A.x, A.z).lebendig > leb0;
+
+        // --- (5) deposit_emotion SCHREIBT → field_above(emotion) liest es zurueck, RAEUMLICH ---
+        r.state.emotionField.clear();
+        r.dslEval(["deposit_emotion", "sorrow", 1.0, posB], mkCtx());
+        out.depositEmotionReadBack = r.dslEvalCond(["field_above", "sorrow", 0.05, posB], mkCtx()) === true;
+        out.depositEmotionSpatial = r.dslEvalCond(["field_above", "sorrow", 0.05, posA], mkCtx()) === false;
+        out.emoSorrowB = r.auraAt(B.x, B.z).emotion.sorrow;
+
+        // --- (6) Default-Position einer Feld-Op = at_player (nicht der Ursprung) ---
+        r.state.lifeField.clear();
+        const pm = r.state.playerMesh.position;
+        const lebPlayer0 = r.auraAt(pm.x, pm.z).lebendig;
+        r.dslEval(["deposit_life"], mkCtx()); // KEIN posNode → at_player
+        out.defaultAtPlayer = r.auraAt(pm.x, pm.z).lebendig > lebPlayer0;
+
+        // --- (7) DIE HEILUNGS-REGEL: der Feld-Loop schliesst sich ---
+        r.state.lifeField.clear();
+        r.state.worldRules.length = 0;
+        const lebSeed = r.auraAt(A.x, A.z).lebendig; // frozen (overlay geleert)
+        const T = Math.min(lebSeed + 0.3, 0.95); // erreichbar (overlay max 0.7), > lebSeed → field_below initial true
+        r.dslRun(["rule", ["field_below", "lebendig", T, posA], ["deposit_life", posA], { everySec: 0.5 }], {
+            source: "human",
+        });
+        const ruleObj = r.state.worldRules[0];
+        let rose = false;
+        let stopped = false;
+        let prevLeb = lebSeed;
+        for (let i = 0; i < 6; i++) {
+            ruleObj.lastFired = -Infinity; // Gate oeffnen → nur die Bedingung entscheidet
+            r._tickWorldRules(now());
+            const lebNow = r.auraAt(A.x, A.z).lebendig;
+            if (lebNow > prevLeb + 1e-6) rose = true;
+            if (lebNow >= T) {
+                ruleObj.lastFired = -Infinity; // ein weiterer Tick darf NICHT mehr heben (Bedingung jetzt false)
+                r._tickWorldRules(now());
+                stopped = Math.abs(r.auraAt(A.x, A.z).lebendig - lebNow) < 1e-3;
+                break;
+            }
+            prevLeb = lebNow;
+        }
+        out.healRose = rose;
+        out.healStopped = stopped;
+        out.healT = T;
+        out.healSeed = lebSeed;
+
+        // --- (8) invalide emotion-Achse → no-op, kein throw ---
+        r.state.emotionField.clear();
+        let threw = false;
+        try {
+            r.dslEval(["deposit_emotion", "bogus", 1.0, posA], mkCtx());
+        } catch {
+            threw = true;
+        }
+        out.invalidAxisNoop = !threw && r.state.emotionField.size === 0;
+
+        // restore
+        r.state.worldRules = savedRules;
+        if (r.state.lifeField) {
+            r.state.lifeField.clear();
+            if (savedLife) for (const [k, v] of savedLife) r.state.lifeField.set(k, v);
+        }
+        if (r.state.emotionField) {
+            r.state.emotionField.clear();
+            if (savedEmo) for (const [k, v] of savedEmo) r.state.emotionField.set(k, v);
+        }
+        for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
+        return out;
+    });
+
+    check(
+        "V17.34 Feld-Regeln: field_above/field_below + deposit_life/deposit_emotion verdrahtet",
+        res.condsWired && res.effectsWired
+    );
+    check("V17.34 Feld-Regeln: field_above/below LIEST die frozen lebendig-Achse korrekt", res.fieldRead);
+    check(
+        "V17.34 Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck (write→read im Feld)",
+        res.depositLifeReadBack
+    );
+    check(
+        "V17.34 Feld-Regeln: deposit_emotion → field_above(emotion) liest es zurueck, RAEUMLICH (A != B)",
+        res.depositEmotionReadBack && res.depositEmotionSpatial,
+        `sorrowB=${res.emoSorrowB}`
+    );
+    check("V17.34 Feld-Regeln: Default-Position einer Feld-Op ist at_player (nicht der Ursprung)", res.defaultAtPlayer);
+    check(
+        "V17.34 Feld-Regeln: die HEILUNGS-Regel schliesst den Loop (field_below lebendig → deposit_life → steigt → stoppt)",
+        res.healRose && res.healStopped,
+        `T=${res.healT} seed=${res.healSeed}`
+    );
+    check("V17.34 Feld-Regeln: invalide emotion-Achse → no-op (kein throw, kein Feld-Schreiben)", res.invalidAxisNoop);
+}
+
+// V17.35 Phase C (DSL-Weltregeln-Bogen) — der Nexus EVOLVIERT Regeln: die Welt
+// waechst + bewertet ihre eigene Logik. Der Nexus KOMPONIERT Regeln (aus Feld-
+// Bedingungen + Feld-Effekten, resonant zur Aura, ephemer per ttlSec) UND BEWERTET
+// sie ueber ein Lebens-Fenster (per-Regel-Fitness = Engagement + Kosten + Erfolg,
+// alles attributierbar — kein Passagier): gut bewaehrt → ERNEUERN, schlecht/inert →
+// VERFALLEN (Selektion); neue Regeln descend von Ueberlebenden (Heredity → Evolution).
+// "Regelkreise statt Hardcode": der V17.26-Heilungs-Gedanke ist jetzt ein evolvierter
+// Regelkreis. Gemessen (§6-C): Komposition (Struktur, Feld-Read/Write), der
+// generateEvolution-Hook (Misch aus Regel+Geste), Fitness, Erneuerung, Verfall
+// (inert + erroring), dslMutate haelt die Regel-Form, _composeNexusRule.
+async function checkBandV1735NexusEvolvesRules(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        const now = () => performance.now() / 1000;
+        const cfg = K.WORLD_RULES;
+        const rng = r.dslCtx({ seed: 777 }).rng; // deterministischer LCG fuer die Komposition
+
+        // --- Verdrahtung + Konstanten ---
+        out.cfgWired =
+            typeof cfg.composeRuleProb === "number" &&
+            typeof cfg.renewFitness === "number" &&
+            typeof cfg.costBudgetMs === "number" &&
+            typeof r.dslComposeRule === "function" &&
+            typeof r._worldRuleFitness === "function" &&
+            typeof r._composeNexusRule === "function";
+
+        // --- (A) dslComposeRule: gueltige Regel-Struktur ---
+        const prog = r.dslComposeRule(rng);
+        out.composeStruct =
+            Array.isArray(prog) &&
+            prog[0] === "rule" &&
+            Array.isArray(prog[1]) &&
+            Array.isArray(prog[2]) &&
+            prog[3] &&
+            prog[3].everySec >= cfg.ruleEverySecMin &&
+            prog[3].everySec <= cfg.ruleEverySecMax &&
+            prog[3].ttlSec >= cfg.ruleTtlMin &&
+            prog[3].ttlSec <= cfg.ruleTtlMax;
+
+        // --- (B) der Nexus SCHREIBT das Feld: deposit_life + deposit_emotion erscheinen ---
+        const effHeads = new Set();
+        const condHeads = new Set();
+        for (let i = 0; i < 80; i++) {
+            effHeads.add(r.dslComposeRuleEffect(rng, null)[0]);
+            condHeads.add(r.dslComposeRuleCondition(rng, null)[0]);
+        }
+        out.effWritesField = effHeads.has("deposit_life") && effHeads.has("deposit_emotion");
+        // --- (C) der Nexus LIEST das Feld: field_below/field_above erscheinen ---
+        out.condReadsField = condHeads.has("field_below") || condHeads.has("field_above");
+
+        // --- (D) generateEvolution: Misch aus Regeln + Gesten ---
+        const savedNextId = r.state.dsl.nextEntryId;
+        let ruleCount = 0;
+        const N = 80;
+        for (let i = 0; i < N; i++) {
+            const evo = r.generateEvolution();
+            if (Array.isArray(evo.program) && evo.program[0] === "rule") ruleCount++;
+        }
+        out.evoMix = ruleCount > 2 && ruleCount < N - 2; // Misch (prob ~0.35 → ~28)
+        out.ruleCount = ruleCount;
+        r.state.dsl.nextEntryId = savedNextId; // den Zaehler zuruecksetzen (kein Seiteneffekt)
+
+        // ===== Fitness/Lifecycle: kontrollierte Regeln auf sauberem Registry =====
+        const savedRules = r.state.worldRules.slice();
+        const savedEmo = r.state.emotionField ? new Map(r.state.emotionField) : null;
+        const e = r.state.player.emotions;
+        const savedEmotions = Object.assign({}, e);
+
+        // --- (E) Fitness: eine billige, feuernde Regel → hohe Fitness ---
+        r.state.worldRules.length = 0;
+        r.dslRun(
+            [
+                "rule",
+                ["random_chance", 1],
+                ["deposit_emotion", "joy", 0.1, ["at_player"]],
+                { everySec: 0.5, ttlSec: 1000 },
+            ],
+            {
+                source: "nexus",
+            }
+        );
+        const ruleE = r.state.worldRules[0];
+        for (let i = 0; i < 3; i++) {
+            ruleE.lastFired = -Infinity;
+            r._tickWorldRules(now());
+        }
+        out.fitnessFires = (ruleE.fires || 0) >= 1;
+        out.fitnessHigh = r._worldRuleFitness(ruleE) >= cfg.renewFitness;
+        out.fitnessVal = r._worldRuleFitness(ruleE);
+
+        // --- (F) Erneuerung: gut bewaehrte Regel ueberlebt das ttl-Ende ---
+        const idE = ruleE.id;
+        ruleE.born = now() - ruleE.ttlSec - 1; // ttl ueberschritten
+        r._tickWorldRules(now());
+        const stillThere = r.state.worldRules.find((x) => x.id === idE);
+        out.renewSurvives = !!stillThere && now() - stillThere.born < 5 && (stillThere.fires || 0) === 0; // erneuert: born frisch, Akkus zurueck
+
+        // --- (G) Verfall: eine inerte (nie feuernde) Regel verfaellt ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 0], ["deposit_life", ["at_player"]], { everySec: 0.5, ttlSec: 1000 }], {
+            source: "nexus",
+        });
+        const ruleG = r.state.worldRules[0];
+        const idG = ruleG.id;
+        ruleG.born = now() - ruleG.ttlSec - 1;
+        r._tickWorldRules(now());
+        out.inertExpires = !r.state.worldRules.find((x) => x.id === idG);
+
+        // --- (H) Verfall: eine fehlerhafte Regel (100% errors) verfaellt ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 0], ["weather", "sunny"], { everySec: 0.5, ttlSec: 1000 }], {
+            source: "nexus",
+        });
+        const ruleH = r.state.worldRules[0];
+        const idH = ruleH.id;
+        ruleH.fires = 5;
+        ruleH.errors = 5;
+        ruleH.costMsSum = 2;
+        ruleH.born = now() - ruleH.ttlSec - 1;
+        out.erroringFitness = r._worldRuleFitness(ruleH); // ~0.36 < renewFitness
+        r._tickWorldRules(now());
+        out.erroringExpires = !r.state.worldRules.find((x) => x.id === idH);
+
+        // --- (I) dslMutate haelt die Regel-Form (kein throw) ---
+        let mutOk = true;
+        try {
+            for (let i = 0; i < 8; i++) {
+                const m = r.dslMutate(
+                    ["rule", ["random_chance", 0.5], ["weather", "sunny"], { everySec: 2, ttlSec: 60 }],
+                    rng
+                );
+                if (!Array.isArray(m) || m[0] !== "rule") mutOk = false;
+            }
+        } catch {
+            mutOk = false;
+        }
+        out.mutateKeepsRule = mutOk;
+
+        // --- (J) _composeNexusRule liefert immer eine gueltige Regel ---
+        let composeOk = true;
+        for (let i = 0; i < 5; i++) {
+            const p = r._composeNexusRule(rng);
+            if (!Array.isArray(p) || p[0] !== "rule") composeOk = false;
+        }
+        out.composeNexusRule = composeOk;
+
+        // restore
+        r.state.worldRules = savedRules;
+        if (r.state.emotionField) {
+            r.state.emotionField.clear();
+            if (savedEmo) for (const [k, v] of savedEmo) r.state.emotionField.set(k, v);
+        }
+        for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
+        return out;
+    });
+
+    check(
+        "V17.35 Nexus-Regeln: Konfig + dslComposeRule + _worldRuleFitness + _composeNexusRule verdrahtet",
+        res.cfgWired
+    );
+    check(
+        "V17.35 Nexus-Regeln: dslComposeRule liefert eine gueltige Regel (cond+effect+everySec+ttl in Spanne)",
+        res.composeStruct
+    );
+    check(
+        "V17.35 Nexus-Regeln: der Nexus SCHREIBT das Feld (deposit_life + deposit_emotion komponiert)",
+        res.effWritesField
+    );
+    check("V17.35 Nexus-Regeln: der Nexus LIEST das Feld (field_below/field_above komponiert)", res.condReadsField);
+    check(
+        "V17.35 Nexus-Regeln: generateEvolution mischt Regeln + Gesten (der composeRuleProb-Hook)",
+        res.evoMix,
+        `rules=${res.ruleCount}/80`
+    );
+    check(
+        "V17.35 Nexus-Regeln: per-Regel-Fitness — eine billige, feuernde Regel ist hoch-fit",
+        res.fitnessFires && res.fitnessHigh,
+        `fit=${res.fitnessVal}`
+    );
+    check(
+        "V17.35 Nexus-Regeln: Erneuerung — eine bewaehrte Regel ueberlebt das ttl-Ende (Selektion+)",
+        res.renewSurvives
+    );
+    check("V17.35 Nexus-Regeln: Verfall — eine inerte (nie feuernde) Regel verfaellt am ttl-Ende", res.inertExpires);
+    check(
+        "V17.35 Nexus-Regeln: Verfall — eine fehlerhafte Regel (100% errors) verfaellt",
+        res.erroringExpires,
+        `fit=${res.erroringFitness}`
+    );
+    check(
+        "V17.35 Nexus-Regeln: dslMutate haelt die Regel-Form (Nachkomme bleibt eine Regel, kein throw)",
+        res.mutateKeepsRule
+    );
+    check(
+        "V17.35 Nexus-Regeln: _composeNexusRule liefert immer eine gueltige Regel (frisch oder Nachkomme)",
+        res.composeNexusRule
+    );
+}
+
+// V17.36 Phase D (DSL-Weltregeln-Bogen) — der SCHÖPFER gibt der Welt GESETZE: per
+// Chat „wann immer X, dann Y" → eine stehende Mensch-Regel. Synergie: der Effekt (Y)
+// wird über die BESTEHENDEN Chat-Patterns geparst (jeder Chat-Effekt wird Regel-fähig),
+// die Bedingung (X) über _parseChatCondition (liest Feld + Stimmung). Whitelist-Wand:
+// eine Mensch-Regel darf den frozen Worldgen NICHT anfassen (der V17.33-Caveat).
+// „zeige regeln" macht die Gesetze sichtbar, „vergiss regeln" widerruft sie. Gemessen
+// (§6-D): Parser (cond+effect), Whitelist, end-to-end Regel-Erstellung + Feuern,
+// describeProgram(rule), Liste, Vergessen, unsicherer Effekt abgelehnt, unbekannte cond.
+async function checkBandV1736HumanRules(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        const now = () => performance.now() / 1000;
+        const mkSink = () => {
+            const msgs = [];
+            return { input: { value: "x" }, append: (s) => msgs.push(String(s)), msgs };
+        };
+
+        // --- Verdrahtung ---
+        out.wired =
+            typeof r._chatTryRuleCommand === "function" &&
+            typeof r._chatTryRulesListCommand === "function" &&
+            typeof r._parseChatCondition === "function" &&
+            typeof r._parseChatEffect === "function" &&
+            typeof r._isRuleEffectAllowed === "function" &&
+            K.RULE_FORBIDDEN_EFFECT_OPS instanceof Set;
+
+        // --- (2) _parseChatCondition: Sprache → DSL-Bedingung ---
+        const cRain = r._parseChatCondition("es regnet");
+        const cSad = r._parseChatCondition("du bist traurig");
+        const cKarg = r._parseChatCondition("wenig Leben hier");
+        out.condParse =
+            JSON.stringify(cRain) === JSON.stringify(["weather_is", "rainy"]) &&
+            Array.isArray(cSad) &&
+            cSad[0] === "emotion_above" &&
+            cSad[1] === "sorrow" &&
+            Array.isArray(cKarg) &&
+            cKarg[0] === "field_below" &&
+            cKarg[1] === "lebendig" &&
+            r._parseChatCondition("völliger unsinn xyz") === null;
+
+        // --- (3) _parseChatEffect: reuse der Chat-Patterns ---
+        const eW = r._parseChatEffect("setze wetter sunny");
+        const eK = r._parseChatEffect("spawne kreaturen 3");
+        out.effParse =
+            JSON.stringify(eW) === JSON.stringify(["weather", "sunny"]) &&
+            Array.isArray(eK) &&
+            r._parseChatEffect("völliger unsinn xyz") === null;
+
+        // --- (4) _isRuleEffectAllowed: Whitelist-Wand ---
+        out.whitelist =
+            r._isRuleEffectAllowed(["weather", "sunny"]) === true &&
+            r._isRuleEffectAllowed(["deposit_life", ["at_player"]]) === true &&
+            r._isRuleEffectAllowed(["spawn_creature", ["at_player"], 1, "happy"]) === true &&
+            r._isRuleEffectAllowed(["terrain_steepness", 2]) === false &&
+            r._isRuleEffectAllowed(["voxel_carve", 0, 0, 0, 3]) === false &&
+            r._isRuleEffectAllowed(["spawn_village", ["at_player"]]) === false;
+
+        // Save world state
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+        const e = r.state.player.emotions;
+        const savedEmotions = Object.assign({}, e);
+
+        // --- (5) End-to-end: „wann immer X, dann Y" erstellt eine Mensch-Regel ---
+        r.state.worldRules.length = 0;
+        const s1 = mkSink();
+        const handled = r._chatTryRuleCommand("wann immer es regnet, dann setze wetter sunny", s1.input, s1.append);
+        const rule = r.state.worldRules.find((x) => x.source === "human" && x.cond && x.cond[0] === "weather_is");
+        out.ruleCreated =
+            handled === true &&
+            !!rule &&
+            JSON.stringify(rule.effect) === JSON.stringify(["weather", "sunny"]) &&
+            s1.msgs.some((m) => /Gesetz aufgestellt/.test(m));
+
+        // --- (6) die Mensch-Regel FEUERT (über den Welt-Tick) ---
+        r.state.weather = "rainy";
+        if (rule) rule.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        out.ruleFires = r.state.weather === "sunny";
+
+        // --- (7) describeProgram(rule) menschen-lesbar ---
+        const desc = r.describeProgram(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }]);
+        out.describeReadable = /wann immer/i.test(desc) && /Wetter/i.test(desc);
+        out.descSample = desc;
+
+        // --- (8) „zeige regeln" listet die Gesetze ---
+        const s2 = mkSink();
+        const listed = r._chatTryRulesListCommand("zeige regeln", s2.input, s2.append);
+        out.rulesListed = listed === true && s2.msgs.some((m) => /wann immer/i.test(m) && /von du/.test(m));
+
+        // --- (10) unsicherer Effekt (frozen Worldgen) wird abgelehnt — KEINE Regel ---
+        const beforeUnsafe = r.state.worldRules.length;
+        const s3 = mkSink();
+        const h3 = r._chatTryRuleCommand("wann immer es regnet, dann setze terrain steilheit 2", s3.input, s3.append);
+        out.unsafeRejected =
+            h3 === true &&
+            r.state.worldRules.length === beforeUnsafe &&
+            s3.msgs.some((m) => /keine stehende Welt-Regel/.test(m));
+
+        // --- (11) unbekannte Bedingung → sanftes Feedback, keine Regel ---
+        const s4 = mkSink();
+        const h4 = r._chatTryRuleCommand("wann immer blubb xyz, dann setze wetter sunny", s4.input, s4.append);
+        out.unknownCond = h4 === true && s4.msgs.some((m) => /verstehe die Bedingung/.test(m));
+
+        // --- (9) „vergiss regeln" widerruft die Mensch-Gesetze ---
+        const s5 = mkSink();
+        const forgot = r._chatTryRulesListCommand("vergiss regeln", s5.input, s5.append);
+        out.rulesForgotten = forgot === true && !r.state.worldRules.some((x) => x.source === "human");
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
+        return out;
+    });
+
+    check(
+        "V17.36 Mensch-Regeln: _chatTryRuleCommand/_parseChatCondition/_parseChatEffect/Whitelist verdrahtet",
+        res.wired
+    );
+    check(
+        "V17.36 Mensch-Regeln: _parseChatCondition übersetzt Sprache → DSL-Bedingung (Wetter/Stimmung/Feld)",
+        res.condParse
+    );
+    check(
+        "V17.36 Mensch-Regeln: _parseChatEffect reuse der bestehenden Chat-Patterns (jeder Effekt wird Regel-fähig)",
+        res.effParse
+    );
+    check("V17.36 Mensch-Regeln: Whitelist-Wand — reaktive Effekte erlaubt, frozen Worldgen abgelehnt", res.whitelist);
+    check(
+        'V17.36 Mensch-Regeln: „wann immer X, dann Y" erstellt eine Mensch-Regel (source=human, permanent)',
+        res.ruleCreated
+    );
+    check("V17.36 Mensch-Regeln: die Mensch-Regel FEUERT über den Welt-Tick (rainy → sunny)", res.ruleFires);
+    check("V17.36 Mensch-Regeln: describeProgram(rule) ist menschen-lesbar", res.describeReadable, res.descSample);
+    check('V17.36 Mensch-Regeln: „zeige regeln" listet die aktiven Gesetze (von wem)', res.rulesListed);
+    check(
+        "V17.36 Mensch-Regeln: ein unsicherer Effekt (frozen Worldgen) wird abgelehnt — KEINE Regel",
+        res.unsafeRejected
+    );
+    check("V17.36 Mensch-Regeln: eine unbekannte Bedingung → sanftes Feedback, keine Regel", res.unknownCond);
+    check('V17.36 Mensch-Regeln: „vergiss regeln" widerruft die Mensch-Gesetze', res.rulesForgotten);
+}
+
+// V17.37 D-2 — die Gesetze-Sektion in der BESTEHENDEN Faehigkeiten-UI (kein
+// Parallel-Panel, die Heilige Lektion): state.worldRules wird im selben Drawer
+// gelistet wie die Faehigkeiten (gleiches ability-row-Pattern via describeProgram),
+// aber eine Regel STEHT (kein ▶) → statt Run ein ✕ (vergiss, nur Mensch-Regeln) +
+// ein aktiv/ruht-Indikator; beide Sektionen sind einklappbar (wie die Einstellungen).
+// Gemessen: DOM-Host, renderWorldRulesList (Mensch-Regel mit ✕, Nexus-Regel ohne),
+// der ✕-Klick vergisst die Regel, der Empty-State, das Collapsible verdrahtet.
+async function checkBandV1737RulesUI(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const host = document.getElementById("status-worldrules");
+        out.domHost = !!host && r._statusRefs && r._statusRefs.worldrules === host;
+        out.renderWired = typeof r.renderWorldRulesList === "function";
+        out.collapsibleWired = typeof r._initCollapsibleDrawer === "function";
+
+        // Save state
+        const savedRules = r.state.worldRules.slice();
+        const forceRender = () => {
+            r._statusRefs.worldrulesSignature = ""; // Signature-Diff zuruecksetzen → echtes Re-Render
+            r.renderWorldRulesList();
+        };
+
+        // --- Empty-State ---
+        r.state.worldRules.length = 0;
+        forceRender();
+        out.emptyState = /Noch keine Gesetze/.test(host.textContent);
+
+        // --- Mensch-Regel: Row mit describeProgram + ✕ ---
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }], { source: "human" });
+        const humanRule = r.state.worldRules.find((x) => x.source === "human");
+        forceRender();
+        const humanBtn = host.querySelector("button[data-forget-rule]");
+        out.humanRow =
+            !!host.querySelector(".ability-row.source-human") &&
+            /wann immer/i.test(host.textContent) &&
+            !!humanBtn &&
+            humanBtn.getAttribute("data-forget-rule") === String(humanRule.id);
+
+        // --- Nexus-Regel: KEIN ✕ (sie verfaellt selbst), aber gelistet ---
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 3, ttlSec: 60 }], {
+            source: "nexus",
+        });
+        forceRender();
+        const nexusRow = host.querySelector(".ability-row.source-nexus");
+        out.nexusRow = !!nexusRow && !nexusRow.querySelector("button[data-forget-rule]");
+
+        // --- der ✕-Klick vergisst die Mensch-Regel (echte Event-Delegation) ---
+        const idBefore = humanRule.id;
+        const btn = host.querySelector(`button[data-forget-rule="${idBefore}"]`);
+        if (btn) btn.click();
+        out.forgetWorks = !r.state.worldRules.some((x) => x.id === idBefore);
+        // die Nexus-Regel bleibt (nur Mensch-Regeln tragen ✕)
+        out.nexusSurvives = r.state.worldRules.some((x) => x.source === "nexus");
+
+        // --- Collapsible: die Faehigkeiten-Drawer-Sektionen sind verdrahtet ---
+        const secs = document.querySelectorAll('.drawer[data-drawer="faehigkeiten"] section.section');
+        out.collapsibleHeaders =
+            secs.length >= 2 && Array.from(secs).every((s) => s.querySelector("h3.collapsible-header"));
+
+        // restore
+        r.state.worldRules = savedRules;
+        r._statusRefs.worldrulesSignature = "";
+        return out;
+    });
+
+    check(
+        "V17.37 Gesetze-UI: #status-worldrules existiert im Faehigkeiten-Drawer + ist als Status-Ref verdrahtet",
+        res.domHost
+    );
+    check(
+        "V17.37 Gesetze-UI: renderWorldRulesList + _initCollapsibleDrawer existieren",
+        res.renderWired && res.collapsibleWired
+    );
+    check("V17.37 Gesetze-UI: Empty-State zeigt den Hinweis", res.emptyState);
+    check(
+        "V17.37 Gesetze-UI: eine Mensch-Regel rendert als Row (describeProgram) mit ✕ (data-forget-rule)",
+        res.humanRow
+    );
+    check("V17.37 Gesetze-UI: eine Nexus-Regel ist gelistet, traegt aber KEIN ✕ (sie verfaellt selbst)", res.nexusRow);
+    check(
+        "V17.37 Gesetze-UI: der ✕-Klick vergisst die Mensch-Regel (Event-Delegation), Nexus bleibt",
+        res.forgetWorks && res.nexusSurvives
+    );
+    check(
+        "V17.37 Gesetze-UI: beide Sektionen (Faehigkeiten + Gesetze) sind einklappbar (collapsible-header)",
+        res.collapsibleHeaders
+    );
+}
+
+// V17.38 Phase E — Persistenz + Bibliothek: die stehenden Welt-Regeln ueberleben
+// einen Reload (buildStateSnapshot/loadState) UND der Regel-Satz zweier Welten wird
+// beim Fusionieren VEREINIGT (fuseWorlds) — eine Welt IST ihr Regel-Satz, die
+// Bibliothek von Alexandria im tiefen Sinn (Welt-LOGIK ist merge-bar). Gemessen:
+// Snapshot serialisiert (definierende Felder), Restore (frische Akkus, dedup, cap),
+// eine restaurierte Regel FEUERT, alter Save ohne worldRules → no-op, Merge unioniert.
+async function checkBandV1738RulePersistence(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const now = () => performance.now() / 1000;
+
+        out.wired =
+            typeof r._loadStateRestoreWorldRules === "function" && typeof r._fusionMergeWorldRules === "function";
+
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+
+        // --- (1) buildStateSnapshot serialisiert worldRules (definierende Felder) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }], { source: "human" });
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 3, ttlSec: 60 }], {
+            source: "nexus",
+        });
+        const snap = r.buildStateSnapshot();
+        out.snapSerializes =
+            Array.isArray(snap.worldRules) &&
+            snap.worldRules.length === 2 &&
+            JSON.stringify(snap.worldRules[0].cond) === JSON.stringify(["weather_is", "rainy"]) &&
+            snap.worldRules[0].source === "human" &&
+            snap.worldRules[1].source === "nexus" &&
+            // NUR definierende Felder, KEINE Laufzeit-Akkus
+            snap.worldRules[0].fires === undefined &&
+            snap.worldRules[0]._sig === undefined &&
+            snap.worldRules[0].born === undefined;
+
+        // --- (2) loadState-Restore: frische Akkus, korrekte Felder ---
+        r.state.worldRules.length = 0;
+        r._loadStateRestoreWorldRules(snap);
+        const rr = r.state.worldRules;
+        out.restoreWorks =
+            rr.length === 2 &&
+            JSON.stringify(rr[0].cond) === JSON.stringify(["weather_is", "rainy"]) &&
+            rr[0].source === "human" &&
+            rr[0].fires === 0 &&
+            typeof rr[0]._sig === "string" &&
+            now() - rr[0].born < 5 &&
+            rr[0].ttlSec == null && // Mensch-Regel: permanent
+            rr[1].ttlSec === 60; // Nexus-Regel: ttl erhalten
+
+        // --- (3) eine RESTAURIERTE Regel feuert (sie ist voll funktional) ---
+        // Isoliert auf die Mensch-Regel (rainy→sunny) — sonst überschriebe die
+        // mit-restaurierte Nexus-Regel (random_chance→rainy) das Ergebnis im Tick.
+        r.state.worldRules = [rr[0]];
+        r.state.weather = "rainy";
+        rr[0].lastFired = -Infinity;
+        r._tickWorldRules(now());
+        out.restoredFires = r.state.weather === "sunny";
+
+        // --- (4) Dedup beim Restore (zweimal dieselbe Regel → ein Eintrag) ---
+        const dupSnap = {
+            worldRules: [
+                {
+                    cond: ["weather_is", "rainy"],
+                    effect: ["weather", "sunny"],
+                    everySec: 3,
+                    source: "human",
+                    ttlSec: null,
+                },
+                {
+                    cond: ["weather_is", "rainy"],
+                    effect: ["weather", "sunny"],
+                    everySec: 3,
+                    source: "human",
+                    ttlSec: null,
+                },
+            ],
+        };
+        r._loadStateRestoreWorldRules(dupSnap);
+        out.restoreDedup = r.state.worldRules.length === 1;
+
+        // --- (5) alter Save ohne worldRules → no-op (state bleibt) ---
+        r.state.worldRules = [{ id: 999, cond: ["x"], effect: ["y"], source: "human" }];
+        r._loadStateRestoreWorldRules({}); // kein worldRules-Feld
+        out.oldSaveNoop = r.state.worldRules.length === 1 && r.state.worldRules[0].id === 999;
+
+        // --- (6) fuseWorlds: die Regel-Saetze werden VEREINIGT (Union + Dedup) ---
+        const ruleX = { cond: ["weather_is", "rainy"], effect: ["weather", "sunny"], everySec: 3, source: "human" };
+        const ruleY = {
+            cond: ["field_below", "lebendig", 0.3],
+            effect: ["deposit_life", ["at_player"]],
+            everySec: 3,
+            source: "human",
+        };
+        const saveA = { worldRules: [ruleX] };
+        const saveB = { worldRules: [ruleY, ruleX] }; // ruleX ist Duplikat
+        const merged = r._fusionMergeWorldRules(saveA, saveB);
+        out.mergeUnions =
+            merged.length === 2 && // X + Y, das doppelte X dedupt
+            merged.some((m) => JSON.stringify(m.cond) === JSON.stringify(["weather_is", "rainy"])) &&
+            merged.some((m) => JSON.stringify(m.cond) === JSON.stringify(["field_below", "lebendig", 0.3]));
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        return out;
+    });
+
+    check("V17.38 Persistenz: _loadStateRestoreWorldRules + _fusionMergeWorldRules verdrahtet", res.wired);
+    check(
+        "V17.38 Persistenz: buildStateSnapshot serialisiert worldRules (nur definierende Felder, keine Akkus)",
+        res.snapSerializes
+    );
+    check("V17.38 Persistenz: loadState-Restore stellt die Regeln her (frische Akkus, ttl erhalten)", res.restoreWorks);
+    check("V17.38 Persistenz: eine RESTAURIERTE Regel ist voll funktional (feuert rainy → sunny)", res.restoredFires);
+    check("V17.38 Persistenz: der Restore dedupt (zweimal dieselbe Regel → ein Eintrag)", res.restoreDedup);
+    check("V17.38 Persistenz: ein alter Save OHNE worldRules → no-op (state bleibt)", res.oldSaveNoop);
+    check(
+        "V17.38 Bibliothek: fuseWorlds VEREINIGT die Regel-Saetze (Union + Dedup — eine Welt IST ihr Regel-Satz)",
+        res.mergeUnions
+    );
+}
+
+// V17.39 — die Gesetze-UX als Spieler durchdacht: SEHEN ob ein Gesetz bleibt
+// (permanent) oder verfaellt (~Ns), eigene Gesetze PAUSIEREN/loeschen, eine gute
+// Nexus-Regel BEHALTEN (📌 adoptieren → permanent + eviction-geschuetzt). Modus-
+// bewusst: eine FREMDE Nexus-Regel verwerfen ist eine Schoepfer-Geste. Gemessen:
+// Persistenz-Label, Pause (Tick skippt), Pin-Klick adoptiert, Eviction schuetzt
+// Pinned, Modus-Gating des Nexus-✕, Sortierung (Favoriten oben), Persistenz.
+async function checkBandV1739RulesUX(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const now = () => performance.now() / 1000;
+        const host = document.getElementById("status-worldrules");
+        const forceRender = () => {
+            r._statusRefs.worldrulesSignature = "";
+            r.renderWorldRulesList();
+        };
+
+        out.wired = typeof r._worldRuleStatusLabel === "function";
+
+        // Save state
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+        const savedMode = r.state.worldMeta.gameMode;
+
+        // --- (A) Persistenz-Label: permanent / verfaellt / pausiert ---
+        const human = { ttlSec: null, born: now(), fires: 0 };
+        const nexus = { ttlSec: 60, born: now(), fires: 0 };
+        const paused = { ttlSec: null, born: now(), fires: 0, disabled: true };
+        out.labels =
+            r._worldRuleStatusLabel(human, now()) === "permanent" &&
+            /verf[äa]llt in ~\d+s/.test(r._worldRuleStatusLabel(nexus, now())) &&
+            r._worldRuleStatusLabel(paused, now()) === "pausiert";
+
+        // --- (B) Pause: ein pausiertes Gesetz feuert NICHT (Tick skippt) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 0.5 }], { source: "human" });
+        const ruleB = r.state.worldRules[0];
+        ruleB.disabled = true;
+        r.state.weather = "sunny";
+        ruleB.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        const pausedDidNotFire = r.state.weather === "sunny";
+        ruleB.disabled = false; // wieder aktiv → feuert
+        ruleB.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        out.pauseWorks = pausedDidNotFire && r.state.weather === "rainy";
+
+        // --- (C) 📌-Klick adoptiert eine Nexus-Regel (pinned + ttlSec=null → permanent) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
+            source: "nexus",
+        });
+        const ruleC = r.state.worldRules[0];
+        forceRender();
+        const pinBtn = host.querySelector(`button[data-pin-rule="${ruleC.id}"]`);
+        if (pinBtn) pinBtn.click();
+        out.pinAdopts = !!pinBtn && ruleC.pinned === true && ruleC.ttlSec == null;
+        out.pinPermLabel = r._worldRuleStatusLabel(ruleC, now()) === "permanent";
+
+        // --- (D) Eviction schuetzt eine angepinnte Regel ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1.5], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
+            source: "nexus",
+        });
+        const keep = r.state.worldRules[0];
+        keep.pinned = true;
+        const keepId = keep.id;
+        // das Registry mit ephemeren Nexus-Regeln ueber das Cap hinaus fluten
+        for (let i = 0; i < r.constructor.WORLD_RULES.cap + 5; i++) {
+            r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "rainy"], { everySec: 3, ttlSec: 60 }], {
+                source: "nexus",
+            });
+        }
+        out.pinnedSurvivesEviction =
+            r.state.worldRules.length <= r.constructor.WORLD_RULES.cap &&
+            r.state.worldRules.some((x) => x.id === keepId);
+
+        // --- (E) Modus-Gating: eine fremde Nexus-Regel traegt ✕ nur im Schoepfer-Modus ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
+            source: "nexus",
+        });
+        const ruleE = r.state.worldRules[0];
+        r.state.worldMeta.gameMode = "frieden";
+        forceRender();
+        const noXInPeace = !host.querySelector(`button[data-forget-rule="${ruleE.id}"]`);
+        r.state.worldMeta.gameMode = "schöpfer";
+        forceRender();
+        const xInCreator = !!host.querySelector(`button[data-forget-rule="${ruleE.id}"]`);
+        out.modeGating = noXInPeace && xInCreator;
+        r.state.worldMeta.gameMode = savedMode;
+
+        // --- (F) Sortierung: angepinnte (Favoriten) zuerst ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 3 }], { source: "human" }); // id kleiner
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3 }], { source: "human" }); // id groesser
+        r.state.worldRules[1].pinned = true; // die spaetere anpinnen
+        const pinnedId = r.state.worldRules[1].id;
+        forceRender();
+        const firstRow = host.querySelector(".ability-row");
+        const firstStar =
+            firstRow && firstRow.querySelector(".source") && /★/.test(firstRow.querySelector(".source").textContent);
+        out.sortPinnedFirst = !!firstStar; // die angepinnte (★) Regel rendert zuerst
+        void pinnedId;
+
+        // --- (G) Persistenz: pinned/disabled ueberleben Snapshot → Restore ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }], { source: "human" });
+        r.state.worldRules[0].pinned = true;
+        r.state.worldRules[0].disabled = true;
+        const snap = r.buildStateSnapshot();
+        const snapHasFlags = snap.worldRules[0].pinned === true && snap.worldRules[0].disabled === true;
+        r.state.worldRules.length = 0;
+        r._loadStateRestoreWorldRules(snap);
+        out.persistFlags =
+            snapHasFlags && r.state.worldRules[0].pinned === true && r.state.worldRules[0].disabled === true;
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        r.state.worldMeta.gameMode = savedMode;
+        r._statusRefs.worldrulesSignature = "";
+        return out;
+    });
+
+    check("V17.39 Gesetze-UX: _worldRuleStatusLabel verdrahtet", res.wired);
+    check("V17.39 Gesetze-UX: Persistenz-Label — permanent / verfaellt in ~Ns / pausiert", res.labels);
+    check("V17.39 Gesetze-UX: ein PAUSIERTES Gesetz feuert nicht; reaktiviert feuert es wieder", res.pauseWorks);
+    check(
+        "V17.39 Gesetze-UX: der 📌-Klick ADOPTIERT eine Nexus-Regel (pinned + permanent)",
+        res.pinAdopts && res.pinPermLabel
+    );
+    check(
+        "V17.39 Gesetze-UX: die Eviction schuetzt eine angepinnte Regel (ueberlebt die Nexus-Flut)",
+        res.pinnedSurvivesEviction
+    );
+    check("V17.39 Gesetze-UX: Modus-Gating — eine fremde Nexus-Regel traegt ✕ nur im Schoepfer-Modus", res.modeGating);
+    check("V17.39 Gesetze-UX: Sortierung — angepinnte Favoriten rendern zuerst", res.sortPinnedFirst);
+    check(
+        "V17.39 Gesetze-UX: pinned/disabled ueberleben Snapshot → Restore (die Schoepfer-Wahl bleibt)",
+        res.persistFlags
+    );
+}
+
+// V17.40 — die KI/das LLM als Regel-Schreiberin (der letzte Pfeiler §3.4): Mensch ·
+// Nexus · LLM schreiben am SELBEN Regel-Satz. Das LLM produzierte schon DSL-Programme
+// (dslRun source:"llm:grok") — jetzt kennt es die Regel-Grammatik (Prompt) + ist
+// abgesichert: die Effekt-Whitelist lebt jetzt an der EINEN Registrierungs-Stelle
+// (_registerWorldRule) → JEDE Quelle (auch LLM) darf nur die reaktive Welt berühren.
+// Eine LLM-Regel ist EPHEMER (fitness-getestet + adoptierbar) + im Gesetze-Console.
+async function checkBandV1740LlmRules(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const now = () => performance.now() / 1000;
+
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+
+        // --- (1) die UNIVERSELLE Whitelist (in _registerWorldRule): eine LLM-Regel
+        //         mit frozen-Worldgen-Effekt wird abgelehnt, ein reaktiver passiert ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["terrain_steepness", 2]], { source: "llm:grok" });
+        out.unsafeRejected = !r.state.worldRules.some((x) => x.source === "llm:grok");
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "llm:grok" });
+        const llmRule = r.state.worldRules.find((x) => x.source === "llm:grok");
+        out.safeRegistered = !!llmRule;
+
+        // --- (2) eine LLM-Regel ist EPHEMER per Default (fitness-getestet, adoptierbar) ---
+        out.llmEphemeral = !!llmRule && typeof llmRule.ttlSec === "number" && llmRule.ttlSec > 0;
+
+        // --- (3) die LLM-Regel ist voll funktional (feuert) ---
+        if (llmRule) {
+            r.state.worldRules = [llmRule];
+            r.state.weather = "rainy";
+            llmRule.lastFired = -Infinity;
+            r._tickWorldRules(now());
+        }
+        out.llmFires = r.state.weather === "sunny";
+
+        // --- (4) der LLM-Prompt KENNT die Regel-Grammatik (rule-Op + Feld-Bedingung) ---
+        const prompt = r.llmBuildSystemPrompt();
+        out.promptGrammar = /\["rule"/.test(prompt) && /field_below/.test(prompt) && /STEHENDES GESETZ/i.test(prompt);
+
+        // --- (5) die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"]], { source: "llm:grok" });
+        r._statusRefs.worldrulesSignature = "";
+        r.renderWorldRulesList();
+        const host = document.getElementById("status-worldrules");
+        const llmRow = host.querySelector(".ability-row.source-llm");
+        out.consoleLabel = !!llmRow && /Grok/.test(llmRow.querySelector(".source").textContent);
+
+        // --- (6) der LLM-Reply-Pfad trennt Regel-Programme ab (nicht der Gesten-Finalizer) ---
+        out.replySeparatesRules = /reply\.program\[0\] === "rule"/.test(r.maybeAnswerWithLlm.toString());
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        r._statusRefs.worldrulesSignature = "";
+        return out;
+    });
+
+    check(
+        "V17.40 KI-Regeln: die UNIVERSELLE Whitelist (in _registerWorldRule) — LLM-Regel mit frozen-Effekt abgelehnt, reaktiver passiert",
+        res.unsafeRejected && res.safeRegistered
+    );
+    check(
+        "V17.40 KI-Regeln: eine LLM-Regel ist EPHEMER per Default (fitness-getestet + adoptierbar)",
+        res.llmEphemeral
+    );
+    check("V17.40 KI-Regeln: die LLM-Regel ist voll funktional (feuert rainy → sunny)", res.llmFires);
+    check("V17.40 KI-Regeln: der LLM-Prompt kennt die Regel-Grammatik (rule-Op + Feld-Bedingung)", res.promptGrammar);
+    check('V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm)', res.consoleLabel);
+    check(
+        "V17.40 KI-Regeln: der LLM-Reply-Pfad trennt Regel-Programme ab (Fitness in worldRules)",
+        res.replySeparatesRules
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -20001,6 +21114,12 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             if (x < 0) return { lebendig: 0.95, dichte: 0.1, glut: 0.1, magieleitung: 0.1 };
             return { lebendig: 0.1, dichte: 0.95, glut: 0.1, magieleitung: 0.1 };
         };
+        // V17.35: das Phase-C-Overlay isolieren. _currentFaunaTarget liest auraAt =
+        // frozen-Mock + Leben-Overlay; der Nexus deponiert jetzt AKTIV Leben (deposit_
+        // life-Regeln) → ein Deposit nahe der kargen Testzelle würde den frozen-Mock
+        // verfälschen (targetKarg > 6). Wir testen die frozen→Fauna-Abbildung isoliert
+        // (V17.34-Konsumenten-Migration, wie die V17.31/.32-Bänder das emotionField clearen).
+        if (r.state.lifeField) r.state.lifeField.clear();
         r.state.playerMesh.position.x = -100;
         const targetLiv = r._currentFaunaTarget();
         r.state.playerMesh.position.x = 100;
@@ -33497,6 +34616,14 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1730EmotionFromBeing(ctx);
             await checkBandV1731EmotionDrivesWorld(ctx);
             await checkBandV1732SpatialEmotion(ctx);
+            await checkBandV1733WorldRules(ctx);
+            await checkBandV1734FieldRules(ctx);
+            await checkBandV1735NexusEvolvesRules(ctx);
+            await checkBandV1736HumanRules(ctx);
+            await checkBandV1737RulesUI(ctx);
+            await checkBandV1738RulePersistence(ctx);
+            await checkBandV1739RulesUX(ctx);
+            await checkBandV1740LlmRules(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

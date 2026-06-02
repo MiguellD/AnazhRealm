@@ -446,6 +446,10 @@ class AnazhRealm {
             dsl: {
                 pending: [],
                 nextEntryId: 1,
+                // V17.33 Phase A — eigener ID-Strom für stehende Welt-Regeln
+                // (Geschwister zu nextEntryId; jede Regel braucht eine stabile
+                // ID für die deterministische Regel-RNG, siehe _worldRuleSeed).
+                nextRuleId: 1,
                 abilities: [],
                 history: [],
                 historyCap: 500,
@@ -467,6 +471,15 @@ class AnazhRealm {
                 pendingOutcomes: [],
                 outcomeFinalizationDelay: 5.0,
             },
+            // V17.33 Phase A (DSL-Weltregeln-Bogen) — das stehende Regel-Registry.
+            // Jede Regel ist eine `Bedingung → Effekt`-Bindung, die NICHT verfällt:
+            // {id, cond, effect, everySec, lastFired, fires, source, ttlSec?, born}
+            // (cond/effect sind DSL-AST-Knoten). `_tickWorldRules` prüft sie
+            // fortlaufend. Damit wird die Welt zum ersten Mal REGEL-getrieben, nicht
+            // nur durch einmalige Gesten gepoked. Reaktive Schicht (nicht im frozen
+            // Worldgen) — Persistenz/Bibliothek ist Phase E. Siehe
+            // docs/dsl-weltregeln-plan.md.
+            worldRules: [],
             // Schicht 2 — Optionale LLM-Stimme. Vier Provider wählbar:
             //   anthropic  → Claude (kostet, klügste Antworten)
             //   google     → Gemini (großzügiges Free-Tier, Browser-CORS offen)
@@ -1338,8 +1351,59 @@ class AnazhRealm {
         return false;
     }
 
-    // Welle 6.H Phase 2E V3 — inverse Op-Whitelist-Validation für Kreatur-
-    // Vorschläge. Walks rekursiv, prüft jedes Op (head jedes Sub-Arrays)
+    // V17.36 Phase D — die Mensch-Regel-Effekt-Whitelist (der V17.33-Caveat, jetzt
+    // relevant: ein MENSCH kann per Chat eine stehende Regel aufstellen). Eine
+    // Welt-Regel governt NUR die reaktive Welt (Wetter/Leben/Emotion/Kreaturen) —
+    // sie darf NICHT den frozen Worldgen umpflügen (Determinismus/Multi-User-Seed)
+    // noch schwere Struktur-Spawns/Identitäts-Ops wiederholt feuern. Blocklist (wie
+    // NON_BROADCASTABLE_OPS): enthält der Effekt-AST IRGENDWO einen davon → abgelehnt.
+    // (Der Nexus ist schon by-construction sicher — sein Effekt-Pool kennt diese gar
+    // nicht; diese Wand ist für die MENSCH-Geste, die jeden Chat-Effekt parsen kann.)
+    static get RULE_FORBIDDEN_EFFECT_OPS() {
+        return new Set([
+            // frozen Worldgen / Terrain (würde die feste Welt umpflügen)
+            "terrain_steepness",
+            "terrain_base_height",
+            "modify_terrain",
+            "voxel_carve",
+            "voxel_fill",
+            // schwere Struktur-Spawns (zu teuer für eine wiederholt feuernde Regel)
+            "spawn_village",
+            "spawn_temple",
+            "spawn_waterfall",
+            "spawn_fractal",
+            "spawn_blueprint",
+            "spawn_island",
+            "spawn_ufo",
+            "spawn_tree",
+            "remove_architecture",
+            // Identität / Definitionen / Werkzeuge / Welt-Beziehung / Portale / Physik
+            "define_blueprint",
+            "define_material",
+            "define_ability",
+            "register_tool",
+            "set_tool_meta",
+            "player_soul",
+            "set_portal",
+            "set_mode",
+            "gravity",
+            "apply_op",
+            "apply_connection",
+        ]);
+    }
+
+    // Ein Mensch-Regel-Effekt ist erlaubt, wenn sein AST KEINEN verbotenen Op
+    // enthält (reuse _dslContainsAnyOp). Reaktive Effekte (weather/creatures_*/
+    // deposit_*/spawn_creature/say/skybox_color/time_of_day) passieren; der frozen
+    // Worldgen + schwere/Identitäts-Ops werden geblockt.
+    _isRuleEffectAllowed(node) {
+        return (
+            Array.isArray(node) &&
+            node.length > 0 &&
+            !this._dslContainsAnyOp(node, AnazhRealm.RULE_FORBIDDEN_EFFECT_OPS)
+        );
+    }
+
     // gegen CREATURE_PROPOSED_OPS. Liefert {ok, forbiddenOp?}.
     _isCreatureProposalAllowed(node) {
         if (!Array.isArray(node) || node.length === 0) return { ok: false, reason: "empty" };
@@ -1438,6 +1502,32 @@ class AnazhRealm {
         }
     }
 
+    // V17.34 Phase B — die Feld-DSL-Helfer (genutzt von den Feld-Bedingungen
+    // field_above/field_below + den Feld-Effekten deposit_life/deposit_emotion).
+    // Eine Feld-Op ohne Ort meint „wo der Spieler ist" → Default at_player (NICHT
+    // der Welt-Ursprung wie dslEvalPos bei leerem Node). Reuse dslEvalPos 1:1.
+    _dslRulePos(posNode, ctx) {
+        return Array.isArray(posNode) && posNode.length > 0
+            ? this.dslEvalPos(posNode, ctx)
+            : this.dslEvalPos(["at_player"], ctx);
+    }
+
+    // Liest EINE Feld-Achse an einer Position über auraAt (die living Lese-API):
+    // die vier frozen Achsen (lebendig/dichte/glut/magieleitung) ODER eine der
+    // sechs räumlichen emotion-Achsen (joy/awe/sorrow/hope/peace/chaos). So
+    // werden Lesen (field_above) und Schreiben (deposit_life/emotion) DASSELBE
+    // Substrat — der wahre Norden. Unbekannte Achse → null (Bedingung false).
+    _dslFieldAxisAt(axis, posNode, ctx) {
+        if (typeof axis !== "string" || typeof this.auraAt !== "function") return null;
+        const pos = this._dslRulePos(posNode, ctx);
+        const aura = this.auraAt(pos.x, pos.z);
+        if (axis === "lebendig" || axis === "dichte" || axis === "glut" || axis === "magieleitung") {
+            return aura[axis];
+        }
+        if (aura.emotion && typeof aura.emotion[axis] === "number") return aura.emotion[axis];
+        return null;
+    }
+
     dslClamp(v, lo, hi) {
         const n = Number(v);
         if (!Number.isFinite(n)) return lo;
@@ -1465,6 +1555,242 @@ class AnazhRealm {
         }
         const runAt = performance.now() / 1000 + Math.max(0, delaySeconds);
         this.state.dsl.pending.push({ runAt, program, ctx });
+    }
+
+    // ### Welt-Regeln (V17.33 Phase A — die Geste wird Gesetz) ###
+    // Eine stehende `Bedingung → Effekt`-Regel = ein `when`, das nicht verfällt.
+    // Der `rule`-Effekt registriert sie hier (statt sie einmal auszuführen);
+    // `_tickWorldRules` evaluiert sie fortlaufend. Mensch UND Nexus stellen
+    // Regeln über DENSELBEN DSL-Pfad auf. Siehe docs/dsl-weltregeln-plan.md §6-A.
+
+    // Registriert eine Regel in state.worldRules. Dedup (Quelle+cond+effect)
+    // → eine re-issued Mensch-/wiederholte Nexus-Regel bleibt EIN Eintrag
+    // (kein Runaway). Cap mit Verdrängung des ältesten NICHT-Mensch-Eintrags.
+    _registerWorldRule(condNode, effectNode, opts, ctx) {
+        if (
+            !Array.isArray(condNode) ||
+            condNode.length === 0 ||
+            !Array.isArray(effectNode) ||
+            effectNode.length === 0
+        ) {
+            ctx.log.push({ event: "invalid_rule", program_id: ctx.programId });
+            return null;
+        }
+        const rules = this.state.worldRules;
+        const cfg = AnazhRealm.WORLD_RULES;
+        const source = ctx.source || "unknown";
+        // V17.40 — die UNIVERSELLE Effekt-Whitelist an der EINEN Registrierungs-Stelle:
+        // JEDE Regel-Quelle (Mensch/Nexus/LLM/remote) darf nur die reaktive Welt
+        // berühren, nie den frozen Worldgen. Der Nexus ist by-construction sicher
+        // (sein Pool kennt die verbotenen Ops nicht → passt durch); die Mensch-Geste
+        // wird zusätzlich im Chat-Pfad mit reicherem Feedback geprüft; die LLM-Geste
+        // (die KI als Regel-Schreiberin) ist HIER gesichert. Defense-in-Depth.
+        if (!this._isRuleEffectAllowed(effectNode)) {
+            ctx.log.push({ event: "rule_effect_forbidden", program_id: ctx.programId });
+            return null;
+        }
+        const o = opts && typeof opts === "object" && !Array.isArray(opts) ? opts : {};
+        const everySec = this.dslClamp(o.everySec, cfg.minEverySec, 600) || cfg.defaultEverySec;
+        let ttlSec = Number.isFinite(Number(o.ttlSec)) && Number(o.ttlSec) > 0 ? Number(o.ttlSec) : null;
+        // V17.40 — eine LLM-vorgeschlagene Regel ist EPHEMER per Default (sie wird per
+        // Fitness getestet + ist vom Schöpfer adoptierbar, wie eine Nexus-Regel), NICHT
+        // ein permanentes Mensch-Gesetz. Gibt das LLM selbst ein ttlSec, gilt das.
+        if (ttlSec == null && source.startsWith("llm")) {
+            ttlSec = Math.round((cfg.ruleTtlMin + cfg.ruleTtlMax) / 2);
+        }
+        const now = performance.now() / 1000;
+        // Dedup: dieselbe Regel nicht doppelt — refresh (TTL-Fenster + Raten)
+        // statt push. Die Signatur ist billig (Registrierung ist selten, nie
+        // pro Frame).
+        const sig = source + "|" + JSON.stringify(condNode) + "|" + JSON.stringify(effectNode);
+        for (const r of rules) {
+            if (r._sig === sig) {
+                r.everySec = everySec;
+                r.ttlSec = ttlSec;
+                r.born = now;
+                return r;
+            }
+        }
+        // Cap (Runaway-Schutz): bei vollem Registry den ältesten verdrängbaren
+        // Eintrag entfernen. Bleibt es voll (alle Mensch + Notbremse griff
+        // nicht), die Registrierung ablehnen.
+        if (rules.length >= cfg.cap) {
+            this._evictWorldRule(rules);
+            if (rules.length >= cfg.cap) {
+                ctx.log.push({ event: "rule_cap_reached", program_id: ctx.programId });
+                return null;
+            }
+        }
+        const rule = {
+            id: this.state.dsl.nextRuleId++,
+            cond: condNode,
+            effect: effectNode,
+            everySec,
+            lastFired: -Infinity, // V8-Sentinel: noch nie gefeuert (nicht 0!)
+            fires: 0,
+            source,
+            ttlSec,
+            born: now,
+            _sig: sig,
+            // V17.35 Phase C — per-Regel-Fitness-Akkumulatoren (über das Lebens-
+            // Fenster gesammelt, am ttl-Ende ausgewertet → erneuern/verfallen):
+            // costMsSum = Σ Effekt-Wallzeit (Kosten), errors = Effekt-Exceptions,
+            // fires = Engagement (eine inerte Regel, die nie feuert, verfällt).
+            costMsSum: 0,
+            errors: 0,
+            fitness: 0,
+            // V17.39 — Schöpfer-Kontrolle: pinned (Favorit/adoptiert → permanent +
+            // eviction-geschützt), disabled (pausiert → feuert nicht).
+            pinned: false,
+            disabled: false,
+        };
+        rules.push(rule);
+        return rule;
+    }
+
+    // Verdrängt den ältesten NICHT-Mensch-Eintrag (Nexus-Experimente sind
+    // ephemer — sie verfallen ohnehin per Fitness in Phase C). Sind alle
+    // Mensch-Regeln, den ältesten überhaupt (Notbremse, hält das Cap hart).
+    _evictWorldRule(rules) {
+        let victim = -1;
+        let oldest = Infinity;
+        for (let i = 0; i < rules.length; i++) {
+            // Mensch-Gesetze + vom Schöpfer ANGEPINNTE (adoptierte) Regeln sind
+            // geschützt — nur ephemere Nexus-Experimente werden verdrängt.
+            if (rules[i].source === "human" || rules[i].pinned) continue;
+            if (rules[i].born < oldest) {
+                oldest = rules[i].born;
+                victim = i;
+            }
+        }
+        if (victim < 0) {
+            for (let i = 0; i < rules.length; i++) {
+                if (rules[i].born < oldest) {
+                    oldest = rules[i].born;
+                    victim = i;
+                }
+            }
+        }
+        if (victim >= 0) rules.splice(victim, 1);
+    }
+
+    // Der Welt-Tick: EINMAL pro Frame (im Loop nach dslTick). Prüft jede Regel,
+    // feuert sie, wenn `everySec` verstrichen + die Bedingung wahr ist — bis zu
+    // einem globalen Budget/Frame (Performance). TTL-abgelaufene werden entfernt.
+    _tickWorldRules(currentTime) {
+        const rules = this.state.worldRules;
+        if (!rules || rules.length === 0) return;
+        const cfg = AnazhRealm.WORLD_RULES;
+        // Re-Entrancy: nur die JETZT vorhandenen Regeln werden geprüft. Feuert
+        // ein Effekt eine NEUE Regel (rule-Op), landet sie am Array-Ende und
+        // wird FRÜHESTENS nächsten Frame geprüft — kein Same-Tick-Kaskade.
+        const n = rules.length;
+        let budget = cfg.budgetPerFrame;
+        let expired = false;
+        for (let i = 0; i < n; i++) {
+            const r = rules[i];
+            if (!r) continue;
+            // TTL-Ende: das Lebens-Fenster einer EPHEMEREN (Nexus-)Regel ist um.
+            // V17.35 Phase C — BEWERTEN statt blind entfernen: gut bewährt (Fitness
+            // ≥ renewFitness, hat gefeuert) → ERNEUERN (born=jetzt, Akkus zurück →
+            // nächstes Fenster); schlecht/inert → VERFALLEN. So lernt die Welt,
+            // welche Regeln sie behält. Mensch-Regeln (ttlSec=null) sind permanent
+            // → überspringen diesen Zweig (ihr Gesetz steht, keine Fitness-Prüfung).
+            if (r.ttlSec != null && currentTime - r.born >= r.ttlSec) {
+                r.fitness = this._worldRuleFitness(r);
+                if (r.fitness >= cfg.renewFitness && (r.fires || 0) > 0) {
+                    r.born = currentTime; // erneuern
+                    r.fires = 0;
+                    r.costMsSum = 0;
+                    r.errors = 0;
+                    // kein continue → die erneuerte Regel darf diesen Frame normal feuern
+                } else {
+                    rules[i] = null; // verfallen (Compaction unten, allokationsfrei im Normalfall)
+                    expired = true;
+                    continue;
+                }
+            }
+            if (r.disabled) continue; // V17.39 — pausiertes Gesetz feuert nicht (ttl/Eviction gelten weiter)
+            if (budget <= 0) continue; // Budget erschöpft → nächsten Frame
+            if (currentTime - r.lastFired < r.everySec) continue; // everySec-Gate
+            const ctx = this._worldRuleCtx(r);
+            let condTrue = false;
+            try {
+                condTrue = this.dslEvalCond(r.cond, ctx);
+            } catch {
+                condTrue = false;
+            }
+            if (!condTrue) continue;
+            budget--;
+            r.lastFired = currentTime;
+            r.fires = (r.fires || 0) + 1;
+            // V17.35 — die Effekt-Wallzeit ist das attributierbare Kosten-Signal der
+            // per-Regel-Fitness (ein FPS-Hog wird so gepruned, die 119 FPS bleiben heilig).
+            const t0 = performance.now();
+            try {
+                this.dslEval(r.effect, ctx);
+            } catch (err) {
+                r.errors = (r.errors || 0) + 1;
+                ctx.log.push({ event: "rule_effect_exception", message: err.message });
+            }
+            r.costMsSum = (r.costMsSum || 0) + (performance.now() - t0);
+        }
+        if (expired) {
+            const kept = [];
+            for (const r of rules) if (r) kept.push(r);
+            this.state.worldRules = kept;
+        }
+    }
+
+    // Ein eigener Ctx pro Regel-Lauf: deterministische Regel-RNG + reduziertes
+    // Budget (ein Regel-Effekt ist klein). Die Quelle wird zu `rule:<urspr.>`
+    // gestempelt (für Journal/Fitness in Phase C).
+    _worldRuleCtx(rule) {
+        return this.dslCtx({
+            seed: this._worldRuleSeed(rule, rule.fires || 0),
+            source: `rule:${rule.source || "unknown"}`,
+            budget: this._worldRuleBudget(),
+            programId: `rule_${rule.id}`,
+        });
+    }
+
+    _worldRuleBudget() {
+        return { spawnsLeft: 8, depthLeft: 6, maxRuntimeMs: 20, delayedSteps: 8, startedAt: performance.now() };
+    }
+
+    // Deterministische Regel-RNG (FNV-1a über worldId + ruleId + fireIndex):
+    // zwei Peers mit DEMSELBEN Regel-Satz sehen denselben N-ten Lauf (modulo
+    // Float, akzeptabel für die reaktive Schicht). Der fireIndex variiert pro
+    // Feuern → random_chance/random_position bleiben über die Zeit lebendig
+    // statt eingefroren, ohne den Cross-Peer-Determinismus zu brechen.
+    _worldRuleSeed(rule, fireIndex) {
+        const wid = (this.state.worldMeta && this.state.worldMeta.worldId) || this.state.worldId || "realm";
+        const s = `${wid}:rule:${rule.id}:${fireIndex || 0}`;
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619) >>> 0;
+        }
+        return h >>> 0 || 1;
+    }
+
+    // V17.35 Phase C — die per-Regel-Fitness über das Lebens-Fenster. EHRLICH +
+    // ATTRIBUTIERBAR (kein Passagier-Signal, V17.31-Lehre): drei Achsen, alle der
+    // Regel SELBST zuordenbar — Engagement (sie feuert überhaupt → relevant für die
+    // Welt; eine nie-feuernde inerte Regel = 0 → verfällt, macht Platz), Kosten
+    // (Effekt-Wallzeit billig → die FPS bleiben heilig) und Erfolg (keine
+    // Exceptions/Budget-Brüche). NICHT die globale Emotion-Trend (die ist nicht
+    // sauber EINER Regel unter 64 zuzuschreiben → das wäre der Passagier-Trugschluss;
+    // die tiefere „macht die Regel den Spieler glücklicher"-Attribution ist eine
+    // ehrliche spätere Vertiefung). Selektion: gut → erneuern, schlecht/inert → weg.
+    _worldRuleFitness(rule) {
+        const fires = rule.fires || 0;
+        if (fires === 0) return 0; // inert (Bedingung nie wahr) → verfallen, Platz schaffen
+        const cfg = AnazhRealm.WORLD_RULES;
+        const avgMs = (rule.costMsSum || 0) / fires;
+        const costScore = Math.max(0, Math.min(1, 1 - avgMs / cfg.costBudgetMs));
+        const successScore = Math.max(0, 1 - (rule.errors || 0) / fires);
+        return Number((0.4 * costScore + 0.6 * successScore).toFixed(3));
     }
 
     // ### Op-Tabellen ###
@@ -2347,6 +2673,28 @@ class AnazhRealm {
                 this.grokSpeak("dslSay");
             },
 
+            // V17.34 Phase B — die FELD-SCHREIB-Effekte: eine Regel (oder Geste)
+            // trägt Leben/Emotion ins lebendige Feld. `deposit_life([posNode?,
+            // amount?])` → _depositLife; `deposit_emotion([axis, amount, posNode?])`
+            // → _depositEmotion. Damit SCHREIBT eine Regel, was eine andere über
+            // field_above/field_below LIEST — der Feld-Kreis schließt sich INNERHALB
+            // der Sprache (lesen+schreiben = dasselbe Substrat, der wahre Norden).
+            // Sie schreiben NUR die reaktive Overlay-Schicht (V17.27/.32), nie den
+            // frozen Worldgen → deterministisch-/multi-user-sicher. Default at_player.
+            deposit_life: ([positionNode, amount], ctx) => {
+                const pos = this._dslRulePos(positionNode, ctx);
+                const amt =
+                    amount != null ? c(amount, 0, AnazhRealm.LIFE_FIELD.max) : AnazhRealm.LIFE_FIELD.pulseCenter;
+                this._depositLife(pos.x, pos.z, amt);
+            },
+            deposit_emotion: ([axis, amount, positionNode], ctx) => {
+                if (typeof axis !== "string" || !AnazhRealm.EMOTION_AXES.includes(axis)) return;
+                const amt = c(amount, 0, 1); // Tat-Intensität; _depositEmotion skaliert mit imprintScale
+                if (!(amt > 0)) return;
+                const pos = this._dslRulePos(positionNode, ctx);
+                this._depositEmotion(pos.x, pos.z, { [axis]: amt });
+            },
+
             // Control-Flow
             chain: (args, ctx) => {
                 for (const sub of args) this.dslEval(sub, ctx);
@@ -2387,6 +2735,15 @@ class AnazhRealm {
             when: ([condition, thenBranch, elseBranch], ctx) => {
                 if (this.dslEvalCond(condition, ctx)) this.dslEval(thenBranch, ctx);
                 else if (elseBranch) this.dslEval(elseBranch, ctx);
+            },
+            // V17.33 Phase A — DAS rule-PRIMITIV: ein `when`, das nicht verfällt.
+            // Statt die Bedingung→Effekt EINMAL auszuführen (wie `when`),
+            // REGISTRIERT `rule` sie als stehende Regel in state.worldRules; der
+            // Welt-Tick (_tickWorldRules) prüft sie fortlaufend. So wird „eine
+            // Regel aufstellen" selbst ein DSL-Akt — Mensch + Nexus governen die
+            // Welt über DENSELBEN Pfad. ["rule", cond, effect, {everySec?, ttlSec?}].
+            rule: ([condNode, effectNode, opts], ctx) => {
+                this._registerWorldRule(condNode, effectNode, opts, ctx);
             },
             parallel: (args, ctx) => {
                 for (const sub of args) this.dslEval(sub, ctx);
@@ -2489,6 +2846,22 @@ class AnazhRealm {
                 const e = ctx.state.player && ctx.state.player.emotions;
                 if (!e || typeof e[name] !== "number") return false;
                 return e[name] > Number(threshold);
+            },
+            // V17.34 Phase B — die FELD-Bedingungen: eine Regel LIEST das lebendige
+            // Feld an einem Ort (Default at_player). `field_above([axis, value,
+            // posNode?])` / `field_below(...)` über auraAt — die vier frozen Achsen
+            // (lebendig/dichte/glut/magieleitung) ODER eine räumliche emotion-Achse
+            // (joy/awe/sorrow/hope/peace/chaos; das emotionale Gedächtnis des Ortes,
+            // ANDERS als das globale emotion_above). Unbekannte Achse → false.
+            // Damit wird der V17.26-„trag Leben in den Mangel"-Gedanke als REGEL
+            // ausdrückbar (field_below lebendig → deposit_life), statt hardcodiert.
+            field_above: ([axis, value, posNode], ctx) => {
+                const v = this._dslFieldAxisAt(axis, posNode, ctx);
+                return v !== null && v > Number(value);
+            },
+            field_below: ([axis, value, posNode], ctx) => {
+                const v = this._dslFieldAxisAt(axis, posNode, ctx);
+                return v !== null && v < Number(value);
             },
             // Welle 4 Phase 2 — Compound-Tags als DSL-sichtbare Bedingung.
             // `compound_has_tag(blueprintName, tagName, threshold)`. Aktivierte
@@ -2811,6 +3184,92 @@ class AnazhRealm {
             { w: 1, build: () => ["time_passed", Number((5 + rng() * 30).toFixed(2))] },
         ];
         return this.dslWeightedPick(choices, rng);
+    }
+
+    // === V17.35 Phase C — der Nexus komponiert REGELN (nicht nur Gesten) ===
+    // Eine komponierte Regel LIEST das Feld (dslComposeRuleCondition) und SCHREIBT
+    // es (dslComposeRuleEffect) — der V17.26-„trag-Leben-in-den-Mangel"-Gedanke wird
+    // ein EVOLVIERTER Regelkreis statt Hardcode (der wahre Norden). Resonant: die
+    // lokale Aura biast Achse + Farbe. EPHEMER (ttlSec) → die Fitness erneuert oder
+    // verfällt sie (Selektion). Nur reaktiv-sichere Effekte (kein frozen Worldgen).
+    dslComposeRule(rng) {
+        const cfg = AnazhRealm.WORLD_RULES;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const aura = pm && typeof this.auraAt === "function" ? this.auraAt(pm.x, pm.z) : null;
+        const cond = this.dslComposeRuleCondition(rng, aura);
+        const effect = this.dslComposeRuleEffect(rng, aura);
+        const everySec = Number((cfg.ruleEverySecMin + rng() * (cfg.ruleEverySecMax - cfg.ruleEverySecMin)).toFixed(1));
+        const ttlSec = Math.round(cfg.ruleTtlMin + rng() * (cfg.ruleTtlMax - cfg.ruleTtlMin));
+        return ["rule", cond, effect, { everySec, ttlSec }];
+    }
+
+    // Die Bedingung einer Nexus-Regel — der Kern: Regeln LESEN das lebendige Feld
+    // (field_below/field_above), resonant zur lokalen Aura, plus Zustands-Bedingungen.
+    dslComposeRuleCondition(rng, aura) {
+        const emoAxis = ["sorrow", "joy", "awe", "hope"][Math.floor(rng() * 4)];
+        const strongField =
+            aura && aura.glut > 0.5 ? "glut" : aura && aura.magieleitung > 0.5 ? "magieleitung" : "lebendig";
+        const choices = [
+            // Feld-Mangel (der Heilungs-Auslöser, V17.26 als Regel): „wo Leben fehlt"
+            { w: 5, build: () => ["field_below", "lebendig", Number((0.2 + rng() * 0.3).toFixed(2))] },
+            // Feld-Fülle (resonant zur stärksten lokalen Achse)
+            { w: 3, build: () => ["field_above", strongField, Number((0.4 + rng() * 0.4).toFixed(2))] },
+            // räumliche Emotion am Ort (das Gedächtnis des Ortes)
+            { w: 2, build: () => ["field_above", emoAxis, Number((0.3 + rng() * 0.3).toFixed(2))] },
+            // Zustands-Bedingungen (reuse)
+            { w: 3, build: () => ["random_chance", Number((0.3 + rng() * 0.4).toFixed(2))] },
+            { w: 2, build: () => ["weather_is", rng() < 0.5 ? "rainy" : "sunny"] },
+        ];
+        return this.dslWeightedPick(choices, rng);
+    }
+
+    // Der Effekt einer Nexus-Regel — der Kern: Regeln SCHREIBEN das Feld
+    // (deposit_life/deposit_emotion, die V17.34-Effekte) + leichte reaktive Effekte.
+    // BEWUSST nur der reaktiv-sichere Satz (kein terrain_*/voxel_*/spawn_village…) →
+    // der Nexus pflügt die Welt nicht um (Determinismus + §8-Scope, by construction).
+    dslComposeRuleEffect(rng, aura) {
+        const posNeed = rng() < 0.6 ? ["at_field_need", Number((30 + rng() * 50).toFixed(1))] : ["at_player"];
+        const joyAxis = ["joy", "hope", "peace", "awe"][Math.floor(rng() * 4)];
+        const choices = [
+            // Feld-SCHREIB-Effekte (der Star: die Welt reguliert sich selbst per Regel)
+            { w: 6, build: () => ["deposit_life", posNeed] },
+            { w: 3, build: () => ["deposit_emotion", joyAxis, Number((0.3 + rng() * 0.5).toFixed(2)), ["at_player"]] },
+            // leichte reaktive Effekte (reuse, alle billig + reaktiv-sicher)
+            { w: 3, build: () => ["weather", rng() < 0.5 ? "sunny" : "rainy"] },
+            { w: 3, build: () => ["creatures_emotion", rng() < 0.6 ? "happy" : "sad"] },
+            { w: 2, build: () => ["creatures_color", this.dslComposeFieldColor(rng, aura)] },
+            {
+                w: 2,
+                build: () => [
+                    "spawn_creature",
+                    rng() < 0.5 ? ["at_field_need"] : ["at_player"],
+                    1 + Math.floor(rng() * 2),
+                    rng() < 0.6 ? "happy" : "sad",
+                ],
+            },
+        ];
+        return this.dslWeightedPick(choices, rng);
+    }
+
+    // Eine neue Nexus-Regel: mit mutateSurvivorProb ein MUTIERTER NACHKOMME eines
+    // bewährten Überlebenden (hohe Fitness, hat gefeuert) — so descend neue Regeln
+    // von erfolgreichen (Heredität → echte Evolution, nicht nur Selektion); sonst
+    // frisch komponiert. dslMutate ist robust: eine ungültig mutierte Regel feuert
+    // nie/harmlos → die Fitness pruned sie (kein Crash, eval ist try/catch-gewandet).
+    _composeNexusRule(rng) {
+        const cfg = AnazhRealm.WORLD_RULES;
+        const survivors = (this.state.worldRules || []).filter(
+            (r) => r.source === "nexus" && (r.fires || 0) > 0 && (r.fitness || 0) >= cfg.renewFitness
+        );
+        if (survivors.length > 0 && rng() < cfg.mutateSurvivorProb) {
+            const parent = survivors[Math.floor(rng() * survivors.length)];
+            const prog = ["rule", parent.cond, parent.effect, { everySec: parent.everySec, ttlSec: parent.ttlSec }];
+            const mutated = this.dslMutate(prog, rng);
+            // dslMutate hält den "rule"-Kopf (der Fallback ersetzt nur einen chain-Kopf)
+            // → ein Nachkomme bleibt eine Regel; sicherheitshalber prüfen.
+            return Array.isArray(mutated) && mutated[0] === "rule" ? mutated : prog;
+        }
+        return this.dslComposeRule(rng);
     }
 
     dslComposeColor(rng) {
@@ -3519,6 +3978,13 @@ class AnazhRealm {
             'Beispiele: ["weather","rainy"], ["chain",["weather","sunny"],["creatures_emotion","happy"]],',
             '["spawn_creature",["near_player",10],3,"happy"], ["skybox_color","#d4a3ff"].',
             `Erlaubte Effekt-Ops (Auszug): ${ops}.`,
+            "",
+            "Du kannst auch ein STEHENDES GESETZ vorschlagen — eine Regel, die sich SELBST wiederholt, wann immer eine Bedingung gilt (statt einer einmaligen Geste):",
+            '  ["rule", <Bedingung>, <Effekt>, {"everySec":3}]',
+            'Bedingungen LESEN die Welt: ["weather_is","rainy"], ["emotion_above","joy",0.5], ["field_below","lebendig",0.3] (wenig Leben am Ort), ["field_above","glut",0.5].',
+            'Effekte SCHREIBEN die reaktive Welt — u.a. ["deposit_life",["at_field_need"]] (trägt Leben dorthin, wo es fehlt), ["deposit_emotion","hope",0.5], ["weather","sunny"], ["creatures_emotion","happy"].',
+            'Beispiel-Gesetz: ["rule",["field_below","lebendig",0.3],["deposit_life",["at_field_need"]],{"everySec":3}] — heilt karge Regionen von selbst.',
+            "Ein Gesetz darf NUR die reaktive Welt berühren (Wetter, Leben, Stimmung, Kreaturen), NIE das feste Gelände (kein terrain/voxel/Bau). Schlage ein Gesetz nur vor, wenn eine DAUERHAFTE Welt-Reaktion gemeint ist; sonst eine einmalige Geste.",
             "Halte Programme klein (Tiefe ≤ 4). Wenn du dir unsicher bist, gib program: null und nur say.",
             "Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences, ohne Vorrede.",
         ].join("\n");
@@ -3866,7 +4332,14 @@ class AnazhRealm {
         }
         if (Array.isArray(reply.program) && reply.program.length > 0) {
             const result = this.dslRun(reply.program, { source: "llm:grok" });
-            if (result.ok) {
+            // V17.40 — die KI als Regel-Schreiberin: ein LLM-`rule`-Programm
+            // registriert eine stehende Regel (der `rule`-Op, ephemer per Default,
+            // whitelist-gesichert) in state.worldRules; ihre Fitness läuft über das
+            // Lebens-Fenster DORT, NICHT über den 5-s-Gesten-Finalizer (der die
+            // Registrierung messen würde) — wie bei der Nexus-Regel (V17.35).
+            if (result.ok && reply.program[0] === "rule") {
+                appendChatOutput("(Grok stellt ein Gesetz auf — sieh es in den Fähigkeiten unter Gesetze.)");
+            } else if (result.ok) {
                 appendChatOutput(`(Welt verändert: ${JSON.stringify(reply.program).slice(0, 140)})`);
                 // Wie ein Chat-Programm: in Pattern-Memory verknüpfen via
                 // recentKeywords (die enthalten den userText bereits).
@@ -7453,6 +7926,59 @@ class AnazhRealm {
         return null;
     }
 
+    // V17.36 Phase D — Mensch→Regeln: der Bedingungs-Parser. Natürliche Sprache
+    // (X in „wann immer X, dann Y") → eine DSL-Bedingung. Eine fokussierte Surface-
+    // Grammatik (die SPRACHE des Parsers, nicht das Verhalten der Welt — das Verhalten
+    // ist die stehende Regel). Unbekannt → null (der Regel-Pfad gibt dann sanftes
+    // Feedback). Liest das lebendige Feld (field_*) UND die Stimmung (emotion_above).
+    _parseChatCondition(text) {
+        const t = String(text || "")
+            .toLowerCase()
+            .trim();
+        if (!t) return null;
+        // Wetter
+        if (/\bregn|\bregen\b|regnet|rainy|nass/.test(t)) return ["weather_is", "rainy"];
+        if (/\bsonn|sunny|klar\b|heiter/.test(t)) return ["weather_is", "sunny"];
+        // Stimmung (globale Spieler-Emotion)
+        if (/traurig|trauer|sorrow|kummer|weinst/.test(t)) return ["emotion_above", "sorrow", 0.5];
+        if (/fröhlich|froehlich|glücklich|gluecklich|freude|\bjoy\b|froh\b/.test(t))
+            return ["emotion_above", "joy", 0.5];
+        if (/staun|ehrfurcht|\bawe\b|ehrfürchtig/.test(t)) return ["emotion_above", "awe", 0.5];
+        if (/hoffnung|hoffst|\bhope\b/.test(t)) return ["emotion_above", "hope", 0.5];
+        if (/frieden|friedlich|\bruhe\b|\bpeace\b|gelassen/.test(t)) return ["emotion_above", "peace", 0.5];
+        if (/\bchaos\b|\bwut\b|zorn|aufgewühlt|aufgewuehlt/.test(t)) return ["emotion_above", "chaos", 0.5];
+        // lebendiges Feld am Ort
+        if (/(wenig|kaum|kein).{0,12}(leben|lebendig)|\bkarg|\böde|\boede|\btot\b|verdorrt|wüst|wuest/.test(t))
+            return ["field_below", "lebendig", 0.3];
+        if (/(viel|voll).{0,12}(leben|lebendig)|üppig|ueppig|blüh|blueh|grünt|gruent|fruchtbar/.test(t))
+            return ["field_above", "lebendig", 0.6];
+        if (/\bglut\b|feuer|glüh|glueh|lava|vulkan/.test(t)) return ["field_above", "glut", 0.5];
+        if (/magie|magisch|zauber/.test(t)) return ["field_above", "magieleitung", 0.5];
+        // Welt-Zustand
+        if (/viele?\s+(kreatur|wesen|tier)/.test(t)) return ["creatures_count_above", 5];
+        if (/manchmal|zufäll|zufaell|ab und zu|gelegentlich/.test(t)) return ["random_chance", 0.3];
+        return null;
+    }
+
+    // Der Effekt-Parser: reuse die BESTEHENDEN Chat-Patterns (Synergie — jeder
+    // Chat-Effekt „setze wetter sunny" / „spawne kreaturen 3" wird Regel-fähig,
+    // ohne neue Effekt-Grammatik). Liefert das DSL-Programm oder null.
+    _parseChatEffect(text) {
+        const t = String(text || "").trim();
+        if (!t) return null;
+        for (const p of this.chatDslPatterns) {
+            const m = t.match(p.re);
+            if (!m) continue;
+            try {
+                const built = p.build(m);
+                if (built && Array.isArray(built.program)) return built.program;
+            } catch {
+                return null;
+            }
+        }
+        return null;
+    }
+
     // Levenshtein-basierte Vorschläge, wenn weder DSL- noch Legacy-Pfad griff.
     // Wir vergleichen den ersten Tokens-Bigram (z. B. "setze wetter") gegen
     // die Beispiel-Patterns. Distanz <= 4 gilt als „nahe genug".
@@ -8772,6 +9298,9 @@ class AnazhRealm {
             emotions: emotionRefs,
             abilities: document.getElementById("status-abilities"),
             abilitiesSignature: "",
+            // V17.37 D-2 — die Gesetze-Sektion (Welt-Regeln) in der Fähigkeiten-UI
+            worldrules: document.getElementById("status-worldrules"),
+            worldrulesSignature: "",
             lastTick: -Infinity,
         };
 
@@ -8784,6 +9313,42 @@ class AnazhRealm {
                 const name = target.getAttribute("data-run-ability");
                 if (name && this.state.abilities[name]) {
                     this.state.abilities[name]();
+                }
+            });
+        }
+        // V17.37 D-2 — Gesetze-Container: ✕ vergisst eine Mensch-Regel (per id).
+        // V17.39 — Gesetze-Steuerung (Event-Delegation): ✕ vergessen/verwerfen,
+        // ⏸/▶ pausieren/aktivieren, ★/📌 Favorit/behalten (eine ephemere Nexus-
+        // Regel wird damit adoptiert → permanent). Eigene/adoptierte Regeln immer
+        // löschbar; eine FREMDE (Nexus-)Regel verwerfen ist eine Schöpfer-Geste.
+        const worldrulesContainer = this._statusRefs.worldrules;
+        if (worldrulesContainer) {
+            worldrulesContainer.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const rules = this.state.worldRules || [];
+                const findRule = (attr) => {
+                    const idStr = target.getAttribute(attr);
+                    return idStr == null ? null : rules.find((x) => x.id === Number(idStr)) || null;
+                };
+                const forget = findRule("data-forget-rule");
+                if (forget) {
+                    const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+                    if (forget.source === "human" || forget.pinned || mode === "schöpfer") {
+                        this.state.worldRules = rules.filter((x) => x.id !== forget.id);
+                    }
+                    return;
+                }
+                const toggle = findRule("data-toggle-rule");
+                if (toggle) {
+                    toggle.disabled = !toggle.disabled;
+                    return;
+                }
+                const pin = findRule("data-pin-rule");
+                if (pin) {
+                    pin.pinned = !pin.pinned;
+                    // Adoptieren: eine ephemere Regel wird beim Anpinnen permanent.
+                    if (pin.pinned && pin.ttlSec != null) pin.ttlSec = null;
                 }
             });
         }
@@ -9224,6 +9789,7 @@ class AnazhRealm {
             r.emotions[axis].value.textContent = v.toFixed(2);
         }
         this.renderAbilitiesList();
+        this.renderWorldRulesList();
     }
 
     // Abilities-Liste re-rendern, aber nur wenn sich Name/Source-Set
@@ -9290,6 +9856,123 @@ class AnazhRealm {
                 desc.textContent = ability.description;
                 row.appendChild(desc);
             }
+            container.appendChild(row);
+        }
+    }
+
+    // V17.37 D-2 — die Gesetze-Sektion: listet state.worldRules in DERSELBEN
+    // Fähigkeiten-UI (kein Parallel-Panel — Heilige Lektion), gleiches Row-Pattern
+    // wie die Fähigkeiten, ABER: eine Regel wird nicht invoked (kein ▶), sie STEHT
+    // → statt ▶ ein ✕ (vergiss, nur für Mensch-Regeln; Nexus-Regeln verfallen per
+    // ttl) + ein „⚡ aktiv / ruht"-Indikator (hat sie schon gefeuert). describeProgram
+    // macht jede Regel menschen-lesbar. Signature-Diff hält den Re-Render billig.
+    // V17.39 — der Persistenz-Status einer Regel, menschen-lesbar (der Schöpfer
+    // sieht, ob ein Gesetz BLEIBT oder verfällt): „pausiert" / „permanent" (Mensch
+    // oder adoptiert, ttlSec==null) / „verfällt in ~Ns" (ephemere Nexus-Regel,
+    // 10-s-granular). Eigene Methode, damit die Signatur + das Label sie teilen.
+    _worldRuleStatusLabel(rule, now) {
+        if (rule.disabled) return "pausiert";
+        if (rule.ttlSec == null) return "permanent";
+        const rem = Math.max(0, Math.ceil((rule.ttlSec - (now - rule.born)) / 10) * 10);
+        return `verfällt in ~${rem}s`;
+    }
+
+    renderWorldRulesList() {
+        const r = this._statusRefs;
+        if (!r || !r.worldrules) return;
+        const now = performance.now() / 1000;
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        // Favoriten (angepinnt) zuerst, dann stabil nach id.
+        const rules = (this.state.worldRules || [])
+            .slice()
+            .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.id - b.id);
+        const signature =
+            rules.length +
+            ":" +
+            mode +
+            ":" +
+            rules
+                .map(
+                    (x) =>
+                        `${x.id}:${x.source || "?"}:${x.pinned ? "p" : "_"}:${x.disabled ? "x" : "_"}:${
+                            (x.fires || 0) > 0 ? "f" : "_"
+                        }:${this._worldRuleStatusLabel(x, now)}`
+                )
+                .join("|");
+        if (signature === r.worldrulesSignature) return;
+        r.worldrulesSignature = signature;
+        const container = r.worldrules;
+        container.innerHTML = "";
+        if (rules.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "ability-empty";
+            empty.textContent = 'Noch keine Gesetze. Sag z. B. „wann immer es regnet, dann setze wetter sunny".';
+            container.appendChild(empty);
+            return;
+        }
+        const mkBtn = (rule, label, attr, aria) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.textContent = label;
+            b.setAttribute(attr, String(rule.id));
+            b.setAttribute("aria-label", aria);
+            return b;
+        };
+        for (const rule of rules) {
+            const src =
+                rule.source === "human"
+                    ? "human"
+                    : rule.source === "nexus"
+                      ? "nexus"
+                      : rule.source && rule.source.startsWith("llm")
+                        ? "llm"
+                        : "unknown";
+            const permanent = rule.ttlSec == null; // Mensch-Regel ODER adoptierte Nexus-Regel
+            const row = document.createElement("div");
+            row.className = `ability-row source-${src}` + (rule.disabled ? " rule-disabled" : "");
+            const head = document.createElement("div");
+            head.className = "ability-head";
+            const name = document.createElement("span");
+            name.className = "name";
+            name.textContent = rule.disabled ? "pausiert" : (rule.fires || 0) > 0 ? "⚡ aktiv" : "ruht";
+            const source = document.createElement("span");
+            source.className = "source";
+            source.textContent =
+                (src === "human" ? "du" : src === "nexus" ? "Nexus" : src === "llm" ? "Grok" : rule.source) +
+                (rule.pinned ? " ★" : "");
+            const status = document.createElement("span");
+            status.className = "rule-status" + (permanent ? " perma" : "");
+            status.textContent = this._worldRuleStatusLabel(rule, now);
+            head.appendChild(name);
+            head.appendChild(source);
+            head.appendChild(status);
+            // Permanente Regeln (eigen/adoptiert): Favorit · Pause · Vergessen.
+            // Ephemere Nexus-Regel: „behalten" (adoptieren) + im Schöpfer-Modus
+            // „verwerfen" (die Welt gehorcht dem Schöpfer; sonst verfällt sie selbst).
+            if (permanent) {
+                head.appendChild(mkBtn(rule, rule.pinned ? "★" : "☆", "data-pin-rule", "Favorit"));
+                head.appendChild(
+                    mkBtn(
+                        rule,
+                        rule.disabled ? "▶" : "⏸",
+                        "data-toggle-rule",
+                        rule.disabled ? "Gesetz aktivieren" : "Gesetz pausieren"
+                    )
+                );
+                head.appendChild(mkBtn(rule, "✕", "data-forget-rule", "Gesetz vergessen"));
+            } else {
+                head.appendChild(mkBtn(rule, "📌", "data-pin-rule", "Gesetz behalten (wird permanent)"));
+                if (mode === "schöpfer") head.appendChild(mkBtn(rule, "✕", "data-forget-rule", "Gesetz verwerfen"));
+            }
+            row.appendChild(head);
+            const desc = document.createElement("div");
+            desc.className = "ability-desc";
+            try {
+                desc.textContent = this.describeProgram(["rule", rule.cond, rule.effect]);
+            } catch {
+                desc.textContent = "eine Welt-Regel";
+            }
+            row.appendChild(desc);
             container.appendChild(row);
         }
     }
@@ -14066,6 +14749,12 @@ class AnazhRealm {
         if (op === "when") {
             return `wenn ${this._describeDslCondition(args[0])}, dann ${this.describeProgram(args[1])}`;
         }
+        // V17.36 Phase D — eine stehende Welt-Regel menschen-lesbar.
+        if (op === "rule") {
+            const opts = args[2] && typeof args[2] === "object" && !Array.isArray(args[2]) ? args[2] : {};
+            const every = opts.everySec ? ` (alle ${opts.everySec} s)` : "";
+            return `wann immer ${this._describeDslCondition(args[0])}, dann ${this.describeProgram(args[1])}${every}`;
+        }
         if (op === "repeat") return `${args[0]}× ${this.describeProgram(args[1])}`;
         if (op === "delay") return `nach ${args[0]} s ${this.describeProgram(args[1])}`;
         if (op === "say") return `sagt „${args[0]}"`;
@@ -14101,6 +14790,11 @@ class AnazhRealm {
         if (op === "creatures_count_above") return `mehr als ${a[0]} Kreaturen da sind`;
         if (op === "compound_has_tag") return `„${a[0]}" das Tag ${a[1]} ≥ ${a[2]} hat`;
         if (op === "compound_has_spatial_tag") return `„${a[0]}" räumlich ${a[1]} ≥ ${a[2]} hat`;
+        // V17.34/.36 — die Feld-Bedingungen (Regeln lesen das lebendige Feld am Ort)
+        if (op === "field_above") return `${a[0]} am Ort hoch ist (>${a[1]})`;
+        if (op === "field_below") return `${a[0]} am Ort niedrig ist (<${a[1]})`;
+        if (op === "and") return a.map((c) => this._describeDslCondition(c)).join(" und ");
+        if (op === "or") return a.map((c) => this._describeDslCondition(c)).join(" oder ");
         if (op === "not") return `nicht (${this._describeDslCondition(a[0])})`;
         return `etwas (${op})`;
     }
@@ -14116,6 +14810,8 @@ class AnazhRealm {
             voxel_fill: (a) => `schüttet das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]} auf`,
             time_of_day: (a) => `verschiebt die Tageszeit auf ${a[0]}`,
             skybox_color: () => `färbt den Himmel`,
+            deposit_life: (a) => `trägt Leben ins Feld ${pos(a[0])}`,
+            deposit_emotion: (a) => `prägt „${a[0]}" ins Feld ${pos(a[2])}`,
             spawn_creature: (a) =>
                 `ruft ${a[1] || 1} ${a[2] ? a[2] + " " : ""}Kreatur${(a[1] || 1) !== 1 ? "en" : ""} herbei ${pos(a[0])}`,
             spawn_tree: (a) => `pflanzt ${a[1] || 1} Baum${(a[1] || 1) !== 1 ? "äume" : ""} ${pos(a[0])}`,
@@ -14347,7 +15043,13 @@ class AnazhRealm {
         // Komponiert ein zufälliges DSL-Programm. Dynamische Code-Generierung
         // ist seit Phase 5 vollständig entfernt — der einzige Pfad für neue
         // Effekte ist die DSL.
-        const program = this.dslCompose();
+        // V17.35 Phase C — mit composeRuleProb ist die Evolution eine stehende
+        // REGEL (statt einer einmaligen Geste): der Nexus governt die Welt jetzt
+        // auch mit Regelkreisen, nicht nur mit Pokes. Die Regel fließt durch
+        // denselben dslRun-Pfad → der `rule`-Op registriert sie in state.worldRules.
+        const rng = Math.random;
+        const program =
+            rng() < AnazhRealm.WORLD_RULES.composeRuleProb ? this._composeNexusRule(rng) : this.dslCompose();
         return {
             name: `evo_${this.state.dsl.nextEntryId++}`,
             program,
@@ -14400,6 +15102,11 @@ class AnazhRealm {
         if (this._chatTryVoxelDebugCommand(command)) return;
         // Portal-Route + DSL-Parse räumen chatInput selbst auf.
         if (this._chatTryPortalRoute(command, chatInput, appendChatOutput)) return;
+        // V17.36 Phase D — der Schöpfer gibt der Welt GESETZE: „wann immer X, dann Y"
+        // → eine stehende Regel; „zeige regeln" / „vergiss regeln" verwalten sie.
+        // VOR dem generischen DSL-Parse (eigene Grammatik + reicheres Feedback).
+        if (this._chatTryRuleCommand(command, chatInput, appendChatOutput)) return;
+        if (this._chatTryRulesListCommand(command, chatInput, appendChatOutput)) return;
         if (this._chatTryDslParse(command, chatInput, appendChatOutput)) return;
         // Legacy-Themen-Dispatch + Cleanup am Ende (Original-Fall-Through).
         this._chatDispatchLegacyCommand(command, parts, appendChatOutput);
@@ -14475,6 +15182,101 @@ class AnazhRealm {
         }
         chatInput.value = "";
         return true;
+    }
+
+    // V17.36 Phase D — „wann immer X, dann Y" → eine stehende Mensch-Regel. Der
+    // Effekt (Y) wird über die BESTEHENDEN Chat-Patterns geparst (Synergie), die
+    // Bedingung (X) über _parseChatCondition. Reicheres Feedback als der Pattern-
+    // Tabellen-Pfad (deshalb ein eigener Zweig). Die Regel läuft durch denselben
+    // dslRun(source:"human")-Pfad → der `rule`-Op registriert sie PERMANENT (kein
+    // ttl → Mensch-Gesetz, von Eviction + Fitness-Prune geschützt). Whitelist-Wand:
+    // der Effekt darf den frozen Worldgen nicht anfassen (_isRuleEffectAllowed).
+    _chatTryRuleCommand(command, chatInput, appendChatOutput) {
+        const m = command.match(
+            /^(?:wann\s+immer|immer\s+wenn|jedes\s*mal\s+wenn|sobald)\s+(.+?)(?:\s*,\s*(?:dann\s+|so\s+)?|\s+dann\s+)(.+?)\s*$/i
+        );
+        if (!m) return false;
+        const condText = m[1].trim();
+        const effText = m[2].trim();
+        const cond = this._parseChatCondition(condText);
+        if (!cond) {
+            appendChatOutput(
+                `Ich verstehe die Bedingung „${condText}" noch nicht. Versuch z. B. „es regnet", „du bist traurig", „wenig Leben hier".`
+            );
+            chatInput.value = "";
+            return true;
+        }
+        const effect = this._parseChatEffect(effText);
+        if (!effect) {
+            appendChatOutput(
+                `Ich verstehe die Reaktion „${effText}" noch nicht. Versuch z. B. „setze wetter sunny" oder „spawne kreaturen 3".`
+            );
+            chatInput.value = "";
+            return true;
+        }
+        if (!this._isRuleEffectAllowed(effect)) {
+            appendChatOutput(
+                `„${effText}" darf keine stehende Welt-Regel sein — eine Regel berührt nur die reaktive Welt (Wetter, Leben, Stimmung, Kreaturen), nicht das feste Gelände.`
+            );
+            chatInput.value = "";
+            return true;
+        }
+        const program = ["rule", cond, effect, { everySec: 3 }];
+        const result = this.dslRun(program, { source: "human" });
+        if (result.ok) {
+            appendChatOutput(`Gesetz aufgestellt — ${this.describeProgram(program)}.`);
+        } else {
+            appendChatOutput("Die Regel ließ sich nicht aufstellen (siehe Log).");
+        }
+        chatInput.value = "";
+        return true;
+    }
+
+    // V17.36 Phase D — die Welt-Gesetze sichtbar machen: „zeige regeln" listet die
+    // aktiven Welt-Regeln menschen-lesbar (via describeProgram); „vergiss regeln"
+    // widerruft die eigenen (Mensch-)Gesetze (Nexus-Regeln verfallen selbst per ttl).
+    _chatTryRulesListCommand(command, chatInput, appendChatOutput) {
+        const c = command.trim();
+        if (/^(?:zeige|welche|liste|welt[-\s]*)?\s*(?:welt[-\s]*)?(?:regeln|gesetze)\??\s*$/i.test(c)) {
+            const rules = this.state.worldRules || [];
+            if (rules.length === 0) {
+                appendChatOutput('Noch keine Welt-Regeln. Sag z. B. „wann immer es regnet, dann setze wetter sunny".');
+                chatInput.value = "";
+                return true;
+            }
+            appendChatOutput(`${rules.length} Welt-Regel${rules.length !== 1 ? "n" : ""}:`);
+            for (const r of rules) {
+                const who =
+                    r.source === "human"
+                        ? "du"
+                        : r.source === "nexus"
+                          ? "der Nexus"
+                          : r.source && r.source.startsWith("llm")
+                            ? "Grok"
+                            : r.source;
+                appendChatOutput(`• ${this.describeProgram(["rule", r.cond, r.effect])} (von ${who})`);
+            }
+            chatInput.value = "";
+            return true;
+        }
+        if (
+            /^(?:vergiss|lösche|loesche|entferne|widerrufe)\s+(?:alle\s+)?(?:meine\s+)?(?:welt[-\s]*)?(?:regeln|gesetze)\s*$/i.test(
+                c
+            )
+        ) {
+            const rules = this.state.worldRules || [];
+            const before = rules.length;
+            this.state.worldRules = rules.filter((r) => r.source !== "human");
+            const removed = before - this.state.worldRules.length;
+            appendChatOutput(
+                removed > 0
+                    ? `${removed} deiner Gesetz${removed !== 1 ? "e" : ""} vergessen.`
+                    : "Du hattest keine eigenen Gesetze."
+            );
+            chatInput.value = "";
+            return true;
+        }
+        return false;
     }
 
     // Ring 2 Phase 3 — DSL-First. Wenn der Befehl in DSL übersetzbar ist,
@@ -21474,6 +22276,22 @@ class AnazhRealm {
             worldMeta: { ...this.state.worldMeta },
             dslAbilities: this.state.dsl.abilities.slice(-200),
             dslHistory: this.state.dsl.history.slice(-this.state.dsl.historyCap),
+            // V17.38 Phase E — die stehenden Welt-Regeln persistieren: die Gesetze
+            // (Mensch + Nexus) überleben einen Reload. NUR die DEFINIERENDEN Felder
+            // (cond/effect/everySec/source/ttlSec) — die Laufzeit-Akkus (fires/born/
+            // _sig/costMsSum) werden beim Restore frisch gesetzt. So IST eine Welt
+            // ihr Regel-Satz (auch über das Welt-Bündel/den Merge).
+            worldRules: (this.state.worldRules || []).slice(0, AnazhRealm.WORLD_RULES.cap).map((r) => ({
+                cond: r.cond,
+                effect: r.effect,
+                everySec: r.everySec,
+                source: r.source,
+                ttlSec: r.ttlSec,
+                // V17.39 — die Schöpfer-Wahl reist mit: angepinnt (adoptiert/Favorit)
+                // + pausiert. Nur wenn gesetzt (saubere Snapshots).
+                ...(r.pinned ? { pinned: true } : {}),
+                ...(r.disabled ? { disabled: true } : {}),
+            })),
             // Schicht 1 — Pattern-Memory + Pfad-Buckets persistieren. Beides
             // ist Welt-Gedächtnis und überlebt Reloads bewusst.
             dslPatternMemory: this.state.dsl.patternMemory || {},
@@ -23445,6 +24263,7 @@ class AnazhRealm {
         this._loadStateRestoreArchitectures(state);
         this._loadStateRestoreHotbarAndInventory(state);
         this._loadStateRestoreEmotionsAndDsl(state);
+        this._loadStateRestoreWorldRules(state);
         this._loadStateRestoreMiscState(state);
         if (externalState) this._loadStatePersistExternalImport(externalState);
         this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
@@ -23760,6 +24579,56 @@ class AnazhRealm {
                     .slice(0, this.state.dsl.patternMemoryCapPerKey || 8);
             }
         }
+    }
+
+    // V17.38 Phase E — die persistierten Welt-Regeln wiederherstellen. Jede Regel
+    // wird FRISCH registriert (born=jetzt, fires=0, _sig neu berechnet) → die
+    // Laufzeit-Akkus sind sauber, das ttl-Fenster einer Nexus-Regel startet neu.
+    // Dedup über die Signatur (wie _registerWorldRule) + Cap. Mutiert
+    // `state.worldRules` feldweise (kein Wholesale-Replace des state) — robust über
+    // jeden Load (auch ein alter Save ohne `worldRules` → state bleibt das leere []).
+    _loadStateRestoreWorldRules(state) {
+        if (!Array.isArray(state.worldRules)) return;
+        const cfg = AnazhRealm.WORLD_RULES;
+        const now = performance.now() / 1000;
+        const restored = [];
+        for (const s of state.worldRules) {
+            if (
+                !s ||
+                !Array.isArray(s.cond) ||
+                s.cond.length === 0 ||
+                !Array.isArray(s.effect) ||
+                s.effect.length === 0
+            )
+                continue;
+            if (restored.length >= cfg.cap) break;
+            const source = typeof s.source === "string" ? s.source : "unknown";
+            const everySec = this.dslClamp(s.everySec, cfg.minEverySec, 600) || cfg.defaultEverySec;
+            const ttlSec = Number.isFinite(Number(s.ttlSec)) && Number(s.ttlSec) > 0 ? Number(s.ttlSec) : null;
+            const sig = source + "|" + JSON.stringify(s.cond) + "|" + JSON.stringify(s.effect);
+            if (restored.some((r) => r._sig === sig)) continue;
+            restored.push({
+                id: this.state.dsl.nextRuleId++,
+                cond: s.cond,
+                effect: s.effect,
+                everySec,
+                lastFired: -Infinity,
+                fires: 0,
+                source,
+                ttlSec,
+                born: now,
+                _sig: sig,
+                costMsSum: 0,
+                errors: 0,
+                fitness: 0,
+                // V17.39 — die Schöpfer-Wahl überlebt den Reload (Favorit/adoptiert
+                // + pausiert). Ein angepinntes Gesetz ist permanent (ttlSec oben
+                // wäre dann ohnehin null) + von der Eviction geschützt.
+                pinned: s.pinned === true,
+                disabled: s.disabled === true,
+            });
+        }
+        this.state.worldRules = restored;
     }
 
     // Pfad-Buckets (defensiver Merge — fremde Keys ignoriert), Welt-Journal
@@ -24556,6 +25425,7 @@ class AnazhRealm {
         const mergedHistory = this._fusionMergeDslHistory(saveA, saveB, strategy);
         const mergedPatternMemory = this._fusionMergePatternMemory(saveA, saveB);
         const mergedAbilities = this._fusionMergeAbilities(saveA, saveB);
+        const mergedWorldRules = this._fusionMergeWorldRules(saveA, saveB);
         const mergedPathBuckets = this._fusionMergePathBuckets(saveA, saveB);
         const fusedEntries = this._fusionBuildJournalEntries(saveA, saveB, idA, idB, identity, strategy);
 
@@ -24596,6 +25466,11 @@ class AnazhRealm {
             },
             dslAbilities: mergedAbilities,
             dslHistory: mergedHistory,
+            // V17.38 Phase E — die VEREINIGUNG der Regel-Sätze: eine fusionierte
+            // Welt IST die Union der Gesetze beider Eltern (Dedup über die Signatur).
+            // Das ist die Bibliothek von Alexandria im tiefen Sinn — zwei Regel-
+            // Sätze werden einer, weil sie dieselbe Sprache sprechen.
+            worldRules: mergedWorldRules,
             dslPatternMemory: mergedPatternMemory,
             playerPathBuckets: mergedPathBuckets,
             worldJournal: { entries: fusedEntries, seen: { genesis: true } },
@@ -24765,6 +25640,31 @@ class AnazhRealm {
             }
         }
         return mergedAbilities;
+    }
+
+    // V17.38 Phase E — die Regel-Sätze zweier Welten VEREINIGEN (Union + Dedup über
+    // die Signatur Quelle|cond|effect, wie _registerWorldRule). Eine fusionierte Welt
+    // IST die Vereinigung der Gesetze beider Eltern — die Bibliothek von Alexandria
+    // im tiefen Sinn (Welt-LOGIK ist merge-bar, weil sie dieselbe Sprache spricht).
+    // Nur die definierenden Felder (der Restore setzt die Laufzeit-Akkus frisch). Cap.
+    _fusionMergeWorldRules(saveA, saveB) {
+        const rulesA = Array.isArray(saveA.worldRules) ? saveA.worldRules : [];
+        const rulesB = Array.isArray(saveB.worldRules) ? saveB.worldRules : [];
+        const seen = new Set();
+        const merged = [];
+        const cap = AnazhRealm.WORLD_RULES.cap;
+        for (const list of [rulesA, rulesB]) {
+            for (const r of list) {
+                if (!r || !Array.isArray(r.cond) || !Array.isArray(r.effect)) continue;
+                const source = typeof r.source === "string" ? r.source : "unknown";
+                const sig = source + "|" + JSON.stringify(r.cond) + "|" + JSON.stringify(r.effect);
+                if (seen.has(sig)) continue;
+                seen.add(sig);
+                merged.push({ cond: r.cond, effect: r.effect, everySec: r.everySec, source, ttlSec: r.ttlSec });
+                if (merged.length >= cap) return merged;
+            }
+        }
+        return merged;
     }
 
     // Pfad-Buckets — Mittelung pro Achse (oder einseitiger Wert wenn nur eine
@@ -38341,12 +39241,20 @@ class AnazhRealm {
     // der Schöpfer faltet selbst, was er nicht braucht. Idempotent: ein
     // schon verdrahteter Header (.collapsible-header) wird übersprungen.
     _initCollapsibleSettings() {
+        // V17.37 D-2 — generisch: dasselbe Falt-Muster für die Einstellungen UND
+        // die Fähigkeiten-UI (deren zwei Sektionen Fähigkeiten + Gesetze einklappbar
+        // werden, wie der Schöpfer es wünschte — intuitive Untertabs).
+        this._initCollapsibleDrawer("einstellungen", "anazh.settings.collapsed");
+        this._initCollapsibleDrawer("faehigkeiten", "anazh.faehigkeiten.collapsed");
+    }
+
+    _initCollapsibleDrawer(drawerName, storageKey) {
         if (typeof document === "undefined") return;
-        const drawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
+        const drawer = document.querySelector(`.drawer[data-drawer="${drawerName}"]`);
         if (!drawer) return;
         let stored = {};
         try {
-            stored = JSON.parse(localStorage.getItem("anazh.settings.collapsed") || "{}") || {};
+            stored = JSON.parse(localStorage.getItem(storageKey) || "{}") || {};
         } catch {
             stored = {};
         }
@@ -38354,7 +39262,7 @@ class AnazhRealm {
         sections.forEach((sec, i) => {
             const header = sec.querySelector("h3");
             if (!header || header.classList.contains("collapsible-header")) return;
-            const key = sec.id || `settings-sec-${i}`;
+            const key = sec.id || `${drawerName}-sec-${i}`;
             header.classList.add("collapsible-header");
             header.setAttribute("role", "button");
             header.setAttribute("tabindex", "0");
@@ -38363,7 +39271,7 @@ class AnazhRealm {
                 sec.classList.toggle("collapsed");
                 stored[key] = sec.classList.contains("collapsed");
                 try {
-                    localStorage.setItem("anazh.settings.collapsed", JSON.stringify(stored));
+                    localStorage.setItem(storageKey, JSON.stringify(stored));
                 } catch {
                     /* quota / private mode → silent */
                 }
@@ -41409,6 +42317,12 @@ class AnazhRealm {
             // ### Nexus-DSL Scheduler (Ring 2) ###
             this.dslTick(currentTime);
 
+            // ### Welt-Regeln (V17.33 Phase A) ###
+            // Die stehenden Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet).
+            // Nach dslTick, damit eine soeben geplante Geste noch vor den Regeln
+            // läuft; die Welt ist hier zum ersten Mal regel-getrieben.
+            this._tickWorldRules(currentTime);
+
             // ### Player-Emotionen (Ring 3) ###
             this.updatePlayerEmotions(currentTime);
 
@@ -41559,6 +42473,16 @@ class AnazhRealm {
             const evolution = this.state.nexusEvolutionQueue.shift();
             if (Array.isArray(evolution.program)) {
                 const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
+                // V17.35 Phase C — eine REGEL-Evolution registriert (über den rule-Op)
+                // eine stehende Regel in state.worldRules; ihre Fitness läuft über das
+                // Lebens-Fenster DORT (_worldRuleFitness → erneuern/verfallen), NICHT
+                // über den 5-s-Gesten-Finalizer. Darum NICHT in pendingOutcomes/Gesten-
+                // History (das misst die Registrierung, nicht die Wirkung über Zeit).
+                if (evolution.program[0] === "rule") {
+                    this.log(`Nexus-Evolution (Regel) registriert: ${evolution.name}`, "INFO");
+                    this.grokSpeak("nexus");
+                    return;
+                }
                 // Schicht 1 — Initiale Fitness aus FPS allein. Endgültiger
                 // Wert kommt vom Finalizer 5 s später (Emotion + Activity).
                 const fpsDmg = Math.max(0, result.outcome.fpsBefore - result.outcome.fpsAfter);
@@ -42701,7 +43625,35 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.32.0";
+AnazhRealm.VERSION = "17.40.0";
+
+// V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
+// EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
+//   cap            — max stehende Regeln (Runaway-Schutz; Verdrängung in _evictWorldRule)
+//   budgetPerFrame — max Regel-EFFEKTE pro Frame (die 119 FPS bleiben heilig)
+//   defaultEverySec— Default-Feuer-Intervall einer Regel
+//   minEverySec    — Floor → verhindert Per-Frame-Feuern (Performance + Determinismus)
+// V17.35 Phase C — der Nexus EVOLVIERT Regeln: zusätzliche Stellschrauben für
+// Komposition (composeRuleProb/ruleEverySec*/ruleTtl*) + die per-Regel-Fitness
+// über ein Lebens-Fenster (costBudgetMs/renewFitness/mutateSurvivorProb). Eine
+// Nexus-Regel ist EPHEMER (ttlSec) — am Lebens-Ende bewertet: gut → erneuern,
+// schlecht/inert → verfallen. So lernt die Welt ihre eigene Logik (Selektion).
+AnazhRealm.WORLD_RULES = Object.freeze({
+    cap: 64,
+    budgetPerFrame: 4,
+    defaultEverySec: 2,
+    minEverySec: 0.5,
+    // Phase C — Komposition
+    composeRuleProb: 0.35, // Anteil der Nexus-Evolutionen, die eine REGEL sind (statt einer Geste)
+    ruleEverySecMin: 1, // komponierte Regeln feuern alle 1–5 s
+    ruleEverySecMax: 5,
+    ruleTtlMin: 30, // Lebens-Fenster einer Nexus-Regel (30–90 s; Fitness erneuert sie)
+    ruleTtlMax: 90,
+    mutateSurvivorProb: 0.4, // P(eine neue Nexus-Regel ist ein mutierter Nachkomme eines Überlebenden)
+    // Phase C — Fitness (per-Regel, attributierbar: Kosten + Erfolg + Engagement)
+    costBudgetMs: 4, // ein Regel-Effekt sollte < ~4 ms kosten (sonst Cost-Penalty)
+    renewFitness: 0.5, // ab dieser Fitness wird eine Nexus-Regel am ttl-Ende erneuert
+});
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
