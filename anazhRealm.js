@@ -408,6 +408,8 @@ class AnazhRealm {
                     // erzählt), emotionShift bei abrupten Achsen-Sprüngen.
                     journalEvent: { lastFired: -Infinity, cooldown: 90 },
                     emotionShift: { lastFired: -Infinity, cooldown: 60 },
+                    // W4 (V17.48) — die KI als Ko-Regulator: tröstet bei anhaltend trüber Stimmung.
+                    comfort: { lastFired: -Infinity, cooldown: 45 },
                 },
                 pool: {
                     firstSpawn: ["Hallo. Die Welt steht. Magst du dich umsehen?"],
@@ -434,11 +436,16 @@ class AnazhRealm {
                         "Etwas hat sich in mir eingeschrieben.",
                     ],
                     emotionShift: ["Du hast dich gerade verändert. Ich spüre es.", "Etwas in dir hat sich gewendet."],
+                    comfort: [
+                        "Ich bin hier. Was dich drückt, drückt auch mich — lass es uns tragen.",
+                        "Atme. Die Welt hält dich, und ich halte mit.",
+                        "Es darf schwer sein. Ich bleibe an deiner Seite, bis es leichter wird.",
+                    ],
                 },
                 // Hilfsfelder für die V2-Trigger
                 lastJournalSize: 0,
                 emotionsSnapshot: null,
-                poolIndex: { firstSpawn: 0, idle: 0, jumpBurst: 0, rainLong: 0, nexus: 0 },
+                poolIndex: { firstSpawn: 0, idle: 0, jumpBurst: 0, rainLong: 0, nexus: 0, comfort: 0 },
             },
             // Ring 2 – Nexus-DSL. Interpreter-State; siehe docs/nexus-dsl.md.
             // Pending sind geplante (delay'd) Sub-Programme, die in dslTick()
@@ -1162,6 +1169,9 @@ class AnazhRealm {
                 grok.emotionsSnapshot = { ...e, takenAt: currentTime };
             }
         }
+        // W4 (V17.48) — die KI KOMMENTIERT nicht nur (emotionShift oben), sie TENDET: bei
+        // anhaltend trüber Stimmung eine tröstende Geste (Ko-Regulation, Pfeiler 1/Symbiose).
+        this._aiTendPlayer();
     }
 
     // Versucht, einen Journal-Eintrag via LLM in einen narrativen Satz zu
@@ -8521,6 +8531,63 @@ class AnazhRealm {
         return Math.max(-1, Math.min(1, v));
     }
 
+    // W4 (V17.48) — die EMOTIONALE CONTAGION: die Emotion naher Kreaturen fließt zum
+    // Spieler (∝ Nähe × Bindung). RELAXATION zum Ziel (HEBEND, gebounded durch das Ziel
+    // ≤ 0.5 → kann NICHT runaway-en — die V17.44/V17.47-Feedback-Disziplin, ein drittes
+    // Mal). Lebt im Kreatur-Tick (updateCreatures), NICHT im Emotion-Tick → die Emotion-
+    // Kern-Ticks/Tests bleiben isoliert. Plus: die Bindung wächst, während eine FOLGENDE
+    // Kreatur nah ist (gemeinsame Zeit). Der Spieler→Kreatur-Rückweg ist „teils da" (der
+    // 0.7-hope-Trigger setzt die Kreaturen happy) — hier ist der NEUE Vorweg (Kreatur→Spieler).
+    _tickEmotionContagion(delta) {
+        if (!(delta > 0)) return;
+        const p = this.state.player;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm || !p || !p.emotions) return;
+        const cfg = AnazhRealm.EMOTION_CONTAGION;
+        const targets = AnazhRealm.CONTAGION_TARGET;
+        const creatures = this.state.creatures || [];
+        const r2 = cfg.radius * cfg.radius;
+        for (let i = 0; i < creatures.length; i++) {
+            const c = creatures[i];
+            if (!c || !c.position) continue;
+            const dx = c.position.x - pm.x;
+            const dz = c.position.z - pm.z;
+            const d2 = dx * dx + dz * dz;
+            if (d2 > r2) continue;
+            const proximity = 1 - Math.sqrt(d2) / cfg.radius; // 0 .. 1
+            // Bindung wächst, während eine FOLGENDE Kreatur nah ist (gemeinsame Zeit).
+            if (c.userData && c.userData.task && c.userData.task.name === "follow_player") {
+                c.userData.bond = Math.min(1, (c.userData.bond || 0) + cfg.bondGrowPerSec * proximity * delta);
+            }
+            const bond = (c.userData && c.userData.bond) || 0;
+            const emo = (this.state.creatureEmotions && this.state.creatureEmotions[i]) || "happy";
+            const target = targets[emo];
+            if (!target) continue;
+            const weight = cfg.rate * proximity * (cfg.bondFloor + (1 - cfg.bondFloor) * bond) * delta;
+            for (const axis of Object.keys(target)) {
+                const t = target[axis];
+                const cur = p.emotions[axis] || 0;
+                if (t > cur) p.emotions[axis] = Math.min(1, cur + weight * (t - cur)); // hebend, gebounded
+            }
+        }
+    }
+
+    // W4 (V17.48) — die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame
+    // STIMMUNG (W3) und PFLEGT sie — bei anhaltend trüber Stimmung eine tröstende Geste
+    // (Hoffnung + ein warmes Wort), nicht nur ein Kommentar. Self-limiting: der Hoffnungs-
+    // Schub hebt die Stimmungs-Valenz → über der Schwelle hört das Trösten auf (negative
+    // Rückkopplung → stabil). Die grokSpeak-Cooldown (45 s) gated die ganze Geste.
+    _aiTendPlayer() {
+        const p = this.state.player;
+        if (!p || !p.emotions) return;
+        if (this._moodValence() >= AnazhRealm.EMOTION_TEND.threshold) return; // nur bei anhaltend trüber Stimmung
+        if (!this.grokSpeak || !this.grokSpeak("comfort")) return; // cooldown-gegated; nur wenn die KI wirklich tröstet
+        const amt = AnazhRealm.EMOTION_TEND.amount;
+        p.emotions.hope = Math.min(1, (p.emotions.hope || 0) + amt); // der Trost hebt die Hoffnung
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (pm) this._depositEmotion(pm.x, pm.z, { hope: amt }); // der Ort erinnert die Geste
+    }
+
     // ### Ring 4 — anazhSymphony V1 ###
     // Web Audio API. Drei Schichten: ambient drone (zwei Oszillatoren leicht
     // verstimmt, langsam moduliert), wetter (gefiltertes Noise für Regen),
@@ -11858,6 +11925,10 @@ class AnazhRealm {
         // applyCreatureBoost gefüllt, via tickCreatureBoosts gesäubert.
         // KEINE Persistenz — Boosts sind „Geste lebt im Moment".
         group.userData.boosts = [];
+        // W4 (V17.48) — die BINDUNG (∈ [0,1]): wächst, während die Kreatur folgt + nah ist
+        // + bei der „folge mir"-Geste; gewichtet die Contagion + den Schmerz des Verlusts.
+        // Reaktiv, NICHT persistiert (wie der Task — die Beziehung wird gelebt, nicht gespeichert).
+        group.userData.bond = 0;
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
@@ -13259,6 +13330,14 @@ class AnazhRealm {
         // Spawn-Default/Test-Reset).
         if (!options.silent && taskName === "follow_player" && prevName !== "follow_player") {
             this._feelAction("bond", { creature });
+            // W4 (V17.48) — die „folge mir"-Geste vertieft die Bindung (ein Sprung; sie
+            // wächst dann weiter, während die Kreatur nah folgt — _tickEmotionContagion).
+            if (creature.userData) {
+                creature.userData.bond = Math.min(
+                    1,
+                    (creature.userData.bond || 0) + AnazhRealm.EMOTION_CONTAGION.bondFollowBump
+                );
+            }
         }
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
@@ -13979,6 +14058,9 @@ class AnazhRealm {
 
     updateCreatures(delta) {
         this.state.creatureAnimationTime += delta;
+        // W4 (V17.48) — die emotionale CONTAGION + das Wachsen der Bindung leben HIER
+        // (im Kreatur-Tick), nicht im Emotion-Tick → die Emotion-Kern-Ticks bleiben isoliert.
+        this._tickEmotionContagion(delta);
         const workerData = [];
         // V8.49 — Scratch-Vektoren EINMAL angelegt + pro Kreatur pro Frame
         // wiederverwendet, statt mehrere THREE.Vector3 je Kreatur zu allokieren
@@ -40731,11 +40813,16 @@ class AnazhRealm {
         const ageSec = bornAt > 0 ? (Date.now() - bornAt) / 1000 : null;
         // Tags BEVOR removeCreature läuft (danach ist die Kreatur weg)
         const tags = this.computeCreatureCompoundTags(creature);
-        // Sorrow-Effekt (clamped)
-        if (this.state.player && this.state.player.emotions) {
-            const e = this.state.player.emotions;
-            e.sorrow = Math.max(0, Math.min(1, (e.sorrow || 0) + 0.2));
-        }
+        // W4 (V17.48) — der Verlust ist ein EREIGNIS: die Trauer ∝ Bindung × Vitalität.
+        // Eine gebundene, lebendige Gefährtin zu verlieren schmerzt VIEL mehr als ein
+        // namenloses Wesen (vorher: flach +0.2 für jede Kreatur). Der `lebendig`-Tag der
+        // Kreatur färbt hier SORROW (NICHT joy wie die W2-Bau-Brücke — dieselbe Substanz,
+        // im Verlust-Kontext anders bewertet: die Appraisal-Wahrheit, OCC/§1.1). Darum ein
+        // expliziter Magnitude statt der Tag-Brücke (lebendig → mehr Schmerz, nicht Freude).
+        const bond = (creature.userData && creature.userData.bond) || 0;
+        const lebendig = Math.min(1, Math.max(0, (tags && tags.lebendig) || 0));
+        const griefMag = 0.3 + bond * 1.2 + lebendig * 0.4; // ungebunden ~klein, tief gebunden ~Trauer
+        this._feelAction("loss", { magnitude: griefMag });
         // Journal-Eintrag
         if (typeof this.journalAppend === "function") {
             this.journalAppend("loss", `${name} kehrt zur Erde zurück.`, {
@@ -44098,7 +44185,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.47.0";
+AnazhRealm.VERSION = "17.48.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -45055,6 +45142,7 @@ AnazhRealm.ACTION_TO_EMOTION = Object.freeze({
     resonance: { awe: 0.1 }, // resonante Architektur erlebt
     damage: { sorrow: 0.12, chaos: 0.1 }, // Schaden/Gefahr — Angst
     create: { joy: 0.1, hope: 0.1 }, // V17.46 — einen Bauplan ERSCHAFFEN (Werkstatt/Chat): der Stolz (× Komplexität)
+    loss: { sorrow: 0.15 }, // V17.48 — den Verlust einer Kreatur (× Magnitude ∝ Bindung × Vitalität)
 });
 
 // V17.46 — Der emotionale Kern W2: der HYLOMORPHISMUS der Emotionen (die Appraisal-
@@ -45185,6 +45273,36 @@ AnazhRealm.EMOTION_MOOD_TAU = 120;
 // REALEN δ — Math.abs(dsig) > deadzone — addiert → bei konstanter Situation KEINE Kongruenz
 // → kein spontaner Stimmungs-Runaway, die V17.44-Feedback-Lehre). Mild, browser-justierbar.
 AnazhRealm.EMOTION_MOOD_CONGRUENCE = 0.08;
+
+// === Der emotionale Kern W4 — das SOZIALE: Contagion + Bindung + Ko-Regulation ===
+// Gefühl ist SOZIAL (Hatfield/Bowlby/Gross): Emotionen FLIESSEN zwischen Wesen. Die
+// Emotion naher Kreaturen fließt zum Spieler (∝ Nähe × Bindung) — als RELAXATION zum
+// Ziel (HEBEND, gebounded durch das Ziel ≤ 0.5 → kann NICHT runaway-en, die V17.44-
+// Feedback-Disziplin; lebt im Kreatur-Tick, NICHT im Emotion-Tick → die Emotion-Kern-
+// Tests bleiben isoliert). Die Bindung (`creature.userData.bond` ∈ [0,1]) wächst, während
+// eine FOLGENDE Kreatur nah ist (gemeinsame Zeit) + bei der „folge mir"-Geste; sie
+// gewichtet die Contagion + den Schmerz des Verlusts. Browser-justierbar.
+AnazhRealm.EMOTION_CONTAGION = Object.freeze({
+    radius: 14, // m — die Reichweite des emotionalen Felds einer Kreatur
+    rate: 0.05, // pro Sekunde — die Stärke des Flusses (relaxation, gebounded)
+    bondFloor: 0.3, // auch eine ungebundene Kreatur färbt ein wenig (0.3 .. 1.0 mit bond)
+    bondGrowPerSec: 0.03, // bond wächst, während eine folgende Kreatur nah ist
+    bondFollowBump: 0.12, // bond-Sprung bei der „folge mir"-Geste (assignCreatureTask)
+});
+// Die binäre Kreatur-Emotion → ein Spieler-Emotions-ZIEL (hebend, gebounded; ≤ 0.5 →
+// die Contagion sättigt, sie kann den Spieler nicht über das Gefühl der Kreatur treiben).
+AnazhRealm.CONTAGION_TARGET = Object.freeze({
+    happy: { joy: 0.5, peace: 0.4 }, // ein freudiges Wesen hebt + beruhigt
+    sad: { sorrow: 0.5 }, // ein leidendes Wesen betrübt
+});
+// Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
+// TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur
+// ein Kommentar. Self-limiting: der Hoffnungs-Schub hebt die Stimmungs-Valenz → über der
+// Schwelle stoppt das Trösten (negative Rückkopplung → stabil, kein Runaway).
+AnazhRealm.EMOTION_TEND = Object.freeze({
+    threshold: -0.35, // moodValence darunter (anhaltend trüb) → die KI tröstet
+    amount: 0.12, // der Hoffnungs-Schub der tröstenden Geste
+});
 
 AnazhRealm.EMOTION_FIELD = Object.freeze({
     decayPerSec: 0.012, // Halbwertszeit ~58 s — Gefühle verblassen schneller als Leben

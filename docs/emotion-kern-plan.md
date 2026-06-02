@@ -253,7 +253,7 @@ das Journal). *Heilt die zeitliche Flachheit.*
 > sich „echt anfühlt" ist der Schöpfer-Browser. **Nächst: W4 (das Soziale + die KI als Ko-Regulator
 > — der freischaltet den vollen Appraisal-Vektor Agency/Norm, das in W2 bewusst Aufgeschobene).**
 
-**W4 — Das Soziale: Contagion + Bindung + die KI als KO-REGULATOR.** (a) **Contagion:** die
+**W4 — Das Soziale: Contagion + Bindung + die KI als KO-REGULATOR. ✅ GEBAUT (V17.48).** (a) **Contagion:** die
 Emotion naher Kreaturen fließt sanft in den Spieler (∝ Nähe × Bindung) + umgekehrt (der
 Spieler-Affekt färbt nahe Kreaturen — teils da, vereinheitlicht). (b) **Bindung:** eine
 `bond`-Stärke pro Kreatur (wächst mit gemeinsamer Zeit/Aufträgen); der Verlust einer
@@ -265,6 +265,34 @@ Teilen bei Freude). KONSUM: ein freudiges Wesen nah hebt joy (gemessen); eine ge
 Kreatur verlieren → sorrow ∝ bond; der Tend-Pfad feuert bei anhaltend niedriger Stimmung
 (die VERDRAHTUNG headless; das echte NLU = Schöpfer-Browser + API-Key, V17.40-Lehre).
 *Heilt Schatten 4 + den Beziehungs-Pfeiler (Symbiose).*
+
+> **GEBAUT (V17.48):** **(a) Contagion** — `_tickEmotionContagion(delta)` (im KREATUR-Tick
+> `updateCreatures`, NICHT im Emotion-Tick → die Emotion-Kern-Tests bleiben isoliert): die
+> binäre Kreatur-Emotion (`creatureEmotions[i]` happy/sad) → ein Spieler-Ziel (`CONTAGION_TARGET`:
+> happy→joy/peace, sad→sorrow), als RELAXATION zum Ziel (HEBEND, gebounded ≤ 0.5 → kann nicht
+> runaway-en, die V17.44/V17.47-Disziplin ein drittes Mal); ∝ Nähe × Bindung. Der Spieler→Kreatur-
+> Rückweg ist „teils da" (der 0.7-hope-Trigger setzt die Kreaturen happy) — hier der NEUE Vorweg.
+> **(b) Bindung** — `creature.userData.bond` ∈ [0,1] (reaktiv, nicht persistiert wie der Task);
+> wächst, während eine FOLGENDE Kreatur nah ist (gemeinsame Zeit) + bei der „folge mir"-Geste
+> (bondFollowBump); gewichtet die Contagion + den Verlust. **(b2) Bond-Loss** — `_creatureNaturalDeath`
+> feuert jetzt `_feelAction("loss", {magnitude})` mit `griefMag = 0.3 + bond·1.2 + lebendig·0.4`
+> (statt flach +0.2): der Verlust einer GEBUNDENEN, lebendigen Gefährtin schmerzt VIEL mehr.
+> **Der Appraisal-Punkt (OCC/§1.1): derselbe `lebendig`-Tag wird im VERLUST-Kontext zu SORROW,
+> nicht zu joy wie in der W2-Bau-Brücke** — dasselbe Ding, anders bewertet je nach Kontext (darum
+> ein expliziter Magnitude statt der Tag-Brücke). **(c) Ko-Regulation** — `_aiTendPlayer()` (aus
+> `grokTick`): liest die langsame STIMMUNG (`_moodValence` W3) und TENDET bei anhaltend trüber
+> Stimmung (< −0.35) eine tröstende Geste (Hoffnung + ein warmes Wort `comfort` + ein Emotion-
+> Abdruck am Ort) — die KI PFLEGT, nicht nur kommentiert; self-limiting (der Hoffnungs-Schub hebt
+> die Valenz → über der Schwelle stoppt der Trost → stabil). GEMESSEN (`checkBandV1748Social`, 13
+> grün: Contagion happy→joy+peace / sad→sorrow, gebounded ≤0.5, die Bindung gewichtet + WÄCHST
+> [folgen, nicht warten], der Verlust einer gebundenen Kreatur schmerzt MEHR, die KI tröstet bei
+> Trübsal + NICHT ohne). node-check/format/lint grün, „Alle Invarianten OK". **EHRLICH (Scope,
+> kein Passagier):** gebaut sind die sozialen FLÜSSE + die kontext-abhängige Verlust-Bewertung.
+> Der VOLLE Agency/Norm-Vektor (die DIFFERENZIERUNG Zorn vs. Furcht vs. Schuld) ist NICHT gebaut
+> — er braucht eine klare URSACHE (wer/was), die erst der KAMPF (W5) liefert; W4 hat dafür keinen
+> Konsumenten (der Verlust hier ist „Umstand → Trauer", ein Agency-Typ, undifferenziert). Das
+> echte NLU der KI = Schöpfer-Browser + API-Key (headless LLM-taub). **Nächst: W5 (Abenteuer +
+> KAMPF über die Brücke — hier bekommt der Agency/Norm-Vektor endlich seinen Konsumenten).**
 
 **W5 — Die volle Tat-Abdeckung über die Brücke: ABENTEUER + KAMPF.** Jetzt billig, weil
 die Brücke (W2) steht: **Abenteuer** = ein Neuheits-Appraisal (ein grob-gerastertes

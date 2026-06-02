@@ -3412,6 +3412,129 @@ async function checkBandV1747FastSlow(ctx) {
     check("V17.47 Fast/Slow: V17.30 heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle", res.triggerReachable);
 }
 
+// V17.48 — Der emotionale Kern W4: das SOZIALE — Contagion + Bindung + die KI als
+// KO-REGULATOR (docs/emotion-kern-plan.md). Gefühl ist sozial: die Emotion naher
+// Kreaturen fließt zum Spieler (∝ Nähe × Bindung, gebounded), die Bindung wächst mit
+// gemeinsamer Zeit, der Verlust einer gebundenen Kreatur schmerzt ∝ Bindung, und die KI
+// TENDET die Stimmung (sie pflegt, statt nur zu kommentieren). Diese Welle prüft KONSUM
+// (ein freudiges Wesen hebt joy; die Bindung gewichtet + wächst; der Verlust einer
+// gebundenen Kreatur schmerzt mehr; die KI tröstet), nicht blosse Existenz (V17.31).
+async function checkBandV1748Social(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const C = r.constructor.EMOTION_CONTAGION;
+        const A2E = r.constructor.ACTION_TO_EMOTION;
+        const AX = r.constructor.EMOTION_AXES;
+        const savedEmo = { ...p.emotions };
+        const savedMood = p.mood ? { ...p.mood } : null;
+        const savedCreatures = r.state.creatures;
+        const savedCreatureEmotions = r.state.creatureEmotions;
+        const pm = r.state.playerMesh.position;
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+        const setMood = (o) => {
+            if (!p.mood) p.mood = {};
+            for (const k of AX) p.mood[k] = o[k] || 0;
+        };
+        // eine kontrollierte Kreatur AM Spieler-Ort (proximity 1)
+        const fake = (bond, task) => ({ position: { x: pm.x, y: pm.y, z: pm.z }, userData: { bond, task: { name: task || "wait" } } });
+        const inject = (emo, bond, task) => {
+            r.state.creatures = [fake(bond, task)];
+            r.state.creatureEmotions = [emo];
+        };
+
+        // (1) Config + die loss-Tat
+        out.config = !!C && C.radius > 0 && !!r.constructor.CONTAGION_TARGET.happy && typeof A2E.loss === "object";
+
+        // (2) CONTAGION — ein freudiges Wesen nah HEBT joy + peace; ein leidendes betrübt
+        setEmo({});
+        inject("happy", 1);
+        r._tickEmotionContagion(1);
+        out.happyLifts = p.emotions.joy > 0 && p.emotions.peace > 0 && p.emotions.sorrow === 0;
+        setEmo({});
+        inject("sad", 1);
+        r._tickEmotionContagion(1);
+        out.sadGrieves = p.emotions.sorrow > 0 && p.emotions.joy === 0;
+
+        // (2b) gebounded: die Contagion treibt joy NICHT über das Ziel (0.5) hinaus (kein Runaway)
+        setEmo({ joy: 0.5 });
+        inject("happy", 1);
+        for (let i = 0; i < 200; i++) r._tickEmotionContagion(1);
+        out.contagionBounded = p.emotions.joy <= 0.51;
+
+        // (3) BINDUNG gewichtet die Contagion (eine gebundene Kreatur färbt mehr als eine fremde)
+        setEmo({});
+        inject("happy", 1);
+        r._tickEmotionContagion(1);
+        const joyBonded = p.emotions.joy;
+        setEmo({});
+        inject("happy", 0);
+        r._tickEmotionContagion(1);
+        const joyUnbonded = p.emotions.joy;
+        out.bondWeights = joyBonded > joyUnbonded + 0.005;
+
+        // (4) BINDUNG wächst, während eine FOLGENDE Kreatur nah ist (gemeinsame Zeit); WARTEN nicht
+        inject("happy", 0, "follow_player");
+        r._tickEmotionContagion(2);
+        out.bondGrows = r.state.creatures[0].userData.bond > 0;
+        inject("happy", 0, "wait");
+        r._tickEmotionContagion(2);
+        out.waitNoBond = r.state.creatures[0].userData.bond === 0;
+        out.followBumpWired = /bondFollowBump/.test(r.assignCreatureTask.toString());
+
+        // (5) BOND-LOSS — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (∝ Bindung × Vitalität)
+        const grief = (bond, leb) => 0.3 + bond * 1.2 + leb * 0.4; // die _creatureNaturalDeath-Formel
+        setEmo({});
+        r._feelAction("loss", { magnitude: grief(0, 0.5) });
+        const sUnbonded = p.emotions.sorrow;
+        setEmo({});
+        r._feelAction("loss", { magnitude: grief(1, 0.5) });
+        const sBonded = p.emotions.sorrow;
+        out.bondLossHurts = sBonded > sUnbonded + 0.05;
+        const cnd = r._creatureNaturalDeath.toString();
+        out.lossWired = /bond/.test(cnd) && /lebendig/.test(cnd) && /_feelAction\("loss"/.test(cnd);
+
+        // (6) KO-REGULATION — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Wort)
+        setEmo({});
+        setMood({ sorrow: 0.9 }); // moodValence stark negativ
+        r.state.grok.lastSpoke = -Infinity;
+        r.state.grok.triggers.comfort.lastFired = -Infinity;
+        r._aiTendPlayer();
+        out.tendComforts = p.emotions.hope > 0;
+        setEmo({});
+        setMood({}); // ausgeglichene Stimmung → KEIN Trost (kein Trost ohne Trübsal)
+        r.state.grok.lastSpoke = -Infinity;
+        r.state.grok.triggers.comfort.lastFired = -Infinity;
+        r._aiTendPlayer();
+        out.noTendWhenOk = p.emotions.hope === 0;
+        out.tendWired = /_aiTendPlayer/.test(r.grokTick.toString());
+
+        // restore
+        setEmo(savedEmo);
+        if (savedMood) setMood(savedMood);
+        r.state.creatures = savedCreatures;
+        r.state.creatureEmotions = savedCreatureEmotions;
+        return out;
+    });
+    check("V17.48 Soziales: EMOTION_CONTAGION-Config + CONTAGION_TARGET + die loss-Tat existieren", res.config);
+    check("V17.48 Soziales: KONSUM — ein freudiges Wesen nah HEBT joy + peace (Contagion)", res.happyLifts);
+    check("V17.48 Soziales: KONSUM — ein leidendes Wesen nah betrübt (sorrow)", res.sadGrieves);
+    check("V17.48 Soziales: gebounded — die Contagion sättigt am Ziel (≤0.5), kein Runaway (V17.44-Lehre)", res.contagionBounded);
+    check("V17.48 Soziales: KONSUM — die BINDUNG gewichtet die Contagion (gebunden färbt mehr als fremd)", res.bondWeights);
+    check("V17.48 Soziales: KONSUM — die Bindung WÄCHST, während eine folgende Kreatur nah ist", res.bondGrows);
+    check("V17.48 Soziales: eine WARTENDE Kreatur baut keine Bindung auf (nur gemeinsame Zeit zählt)", res.waitNoBond);
+    check('V17.48 Soziales: die „folge mir"-Geste vertieft die Bindung (assignCreatureTask wired)', res.followBumpWired);
+    check("V17.48 Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)", res.bondLossHurts);
+    check("V17.48 Soziales: der Verlust ist ein Ereignis ∝ Bindung × Vitalität (_creatureNaturalDeath wired)", res.lossWired);
+    check("V17.48 Soziales: KONSUM — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Trost)", res.tendComforts);
+    check("V17.48 Soziales: kein Trost ohne Trübsal — bei ausgeglichener Stimmung TENDET die KI nicht", res.noTendWhenOk);
+    check("V17.48 Soziales: die KI tendet aus dem grokTick (Ko-Regulator wired, nicht nur Kommentar)", res.tendWired);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -35505,6 +35628,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1745EmotionCore(ctx);
             await checkBandV1746EmotionSubstance(ctx);
             await checkBandV1747FastSlow(ctx);
+            await checkBandV1748Social(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
