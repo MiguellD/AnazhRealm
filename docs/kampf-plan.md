@@ -626,8 +626,15 @@ Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis,
   ohne Material ab, **KONSUM** frieden MIT Material baut + verbraucht, frieden-HUD zeigt Kosten); Test-Migration
   (V9.56-i): die alten „frieden baut frei"-Proben → „frieden zahlt", + der Ring-6-V2-Spawn-Test auf schöpfer
   (er prüft den Spawn, nicht die Kosten). *Fundament für S3–S6; headless bewiesen.*
-- **S3 — Gerät schmieden** (= §10-F2+F3): schmieden zieht Material + friert Präzision + registriert das
-  gehaltene Gerät; Präzision moduliert auch das Abbauen (die §4.3-Rekursion schließt). *Headless.*
+- **S3 — Gerät schmieden — ✅ GEBAUT (V17.61):** **F2** — `_implementProfileForBlueprint` multipliziert
+  minePower+cutPower mit `0.5+0.5·präzision` (`forgedPrecision`-Snapshot wenn geschmiedet, sonst live aus
+  den Parts; opChain-los = 1.0 → Faktor 1.0, kein Regress) → besseres Crafting hebt das Abbauen, die §4.3-
+  Rekursion schließt END-TO-END. **F3** — `forgeBlueprint(name)`: zieht Material durchs §11.2-Mach-Tor
+  (pfad/frieden zahlen, schöpfer frei) + friert die Präzision ein + rüstet das Gerät aus (equipHeld) + der
+  Affekt (`_feelAction("create")`); ein „⚒ Schmieden (in die Hand)"-Knopf in der Werkstatt. `checkBandV1761­
+  ForgeImplement` 6 grün (F2 fein>grob; F3 pfad ohne Material lehnt ab, **KONSUM** pfad mit Material baut +
+  verbraucht + rüstet aus, friert Präzision ein, schöpfer frei). *equipHeld bleibt der freie GEBRAUCH; das
+  Kosten-Tor sitzt im Schmiede-WERK. Das Feel/die Balance = Schöpfer-Browser.*
 - **S4 — Rüstung schmieden/weben**: dasselbe Muster — Rüstung machen kostet Material + friert Präzision;
   ausrüsten bleibt frei. *Headless.*
 - **S5 — Avatar: einen Körper formen** (§11.2): `applyPlayerSoulFromBlueprint` durchs Mach-Tor → gesammelte

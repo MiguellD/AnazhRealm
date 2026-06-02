@@ -27201,6 +27201,26 @@ class AnazhRealm {
         return this.equipHeld(name);
     }
 
+    // S3 (kampf-plan §11.7, §10-F3) — das Gerät SCHMIEDEN: der Werk-Akt, der den Bauplan (den freien Plan)
+    // zum realen Gerät macht — der Spiegel von „bauen" für gehaltene Geräte. Drei Schritte: (1) Material
+    // ziehen durch das §11.2-Mach-Tor (pfad+frieden zahlen, schöpfer frei; herkunfts-agnostisch — ein
+    // geteilter Bauplan kostet wie ein eigener); (2) die Präzision EINFRIEREN (`forgedPrecision`-Snapshot —
+    // die Schmiede-Qualität dieses Werks, die das Abbauen via F2 moduliert; Edit-stabil bis zum Neu-
+    // Schmieden); (3) das Gerät AUSRÜSTEN (equipHeld). Der Affekt liest die Tat (Stolz ∝ Substanz, W2-Brücke).
+    // (equipHeld bleibt der freie GEBRAUCH/die Use-Fläche; das Kosten-Tor sitzt hier im WERK-Akt.)
+    forgeBlueprint(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        const gate = this._makeCostGate(name);
+        if (!gate.ok) {
+            return { ok: false, reason: "not_enough_material", missing: gate.missing || {}, cost: gate.cost || {} };
+        }
+        bp.forgedPrecision = this._compoundAvgPrecisionFromParts(bp.parts);
+        const eq = this.equipHeld(name);
+        if (typeof this._feelAction === "function") this._feelAction("create", { blueprint: name });
+        return { ok: true, equipped: eq.equipped, free: !!gate.free, forgedPrecision: bp.forgedPrecision };
+    }
+
     // Rüstung ausrüsten. Akzeptiert null/leer für „abnehmen". Blueprint muss
     // mit role:"armor" markiert sein (via setBlueprintAsArmor). (Rüstung bleibt ein
     // eigener GETRAGENER Slot — sie ist nicht „in der Hand".)
@@ -35830,9 +35850,19 @@ class AnazhRealm {
         const pointedFrac = this._blueprintPointedFraction(bp);
         const sharpness = pointedFrac * (t.härte || 0);
         const bluntness = 1 - pointedFrac;
+        // S3 (kampf-plan §10-F2) — die PRÄZISION moduliert die Welt-Kraft: ein besser geschmiedetes Gerät
+        // bricht/schneidet kräftiger (die Konzept-§4.3-Rekursion schließt END-TO-END — besseres Crafting-
+        // Werkzeug → höhere Werkstück-Präzision → besseres Gerät → besseres Abbauen → womit du Besseres
+        // schmiedest). Eingefroren beim Schmieden (`forgedPrecision`, Snapshot), sonst live aus den Parts;
+        // ein opChain-loser („geborener") Bauplan = 1.0 → Faktor 1.0 (kein Regress für die Form-Profile).
+        const precision = Number.isFinite(bp.forgedPrecision)
+            ? bp.forgedPrecision
+            : this._compoundAvgPrecisionFromParts(bp.parts);
+        const precMul = 0.5 + 0.5 * precision;
         const minePower =
-            H.toolMineBase + bluntness * ((t.härte || 0) * H.mineFromHärte + (t.dichte || 0) * H.mineFromDichte);
-        const cutPower = H.toolCutBase + sharpness * H.cutFromSharp;
+            (H.toolMineBase + bluntness * ((t.härte || 0) * H.mineFromHärte + (t.dichte || 0) * H.mineFromDichte)) *
+            precMul;
+        const cutPower = (H.toolCutBase + sharpness * H.cutFromSharp) * precMul;
         return { minePower, cutPower };
     }
 
@@ -37938,6 +37968,32 @@ class AnazhRealm {
             });
             actions.appendChild(soulBtn);
         }
+        // S3 (kampf-plan §10-F3) — „Schmieden": den Bauplan zum gehaltenen Gerät machen (Material ziehen
+        // im pfad/frieden, Präzision einfrieren, ausrüsten). Der Werk-Akt, der Spiegel von „bauen".
+        const forgeBtn = document.createElement("button");
+        forgeBtn.type = "button";
+        forgeBtn.className = "workshop-forge";
+        forgeBtn.textContent = "⚒ Schmieden (in die Hand)";
+        forgeBtn.title =
+            "Dieses Gerät schmieden — zieht Material (pfad/frieden), friert die Präzision ein, rüstet es aus.";
+        forgeBtn.addEventListener("click", () => {
+            const res = this.forgeBlueprint(selected.name);
+            if (res.ok) {
+                this.log(
+                    `Geschmiedet: „${selected.label || selected.name}" (in der Hand${res.free ? ", frei" : ""}).`,
+                    "INFO"
+                );
+                this._renderWorkshopDOM();
+            } else if (res.reason === "not_enough_material") {
+                const missingStr = Object.entries(res.missing || {})
+                    .map(([m, n]) => `${n}× ${m}`)
+                    .join(", ");
+                this.log(`Schmieden fehlgeschlagen — fehlt: ${missingStr || "Material"}.`, "ERROR");
+            } else {
+                this.log(`Schmieden fehlgeschlagen (${res.reason || "unknown"}).`, "ERROR");
+            }
+        });
+        actions.appendChild(forgeBtn);
         // Klonen
         const cloneBtn = document.createElement("button");
         cloneBtn.type = "button";
@@ -44825,7 +44881,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.60.0";
+AnazhRealm.VERSION = "17.61.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

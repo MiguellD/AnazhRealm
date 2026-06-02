@@ -4755,6 +4755,112 @@ async function checkBandV1759CapabilityReadout(ctx) {
     );
 }
 
+// V17.61 S3 (kampf-plan §11.7, §10-F2+F3) — das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
+// (die §4.3-Rekursion schließt), F3 der Werk-Akt forgeBlueprint (Material ziehen + Präzision einfrieren +
+// ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz, V17.31).
+async function checkBandV1761ForgeImplement(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+        if (!p.equipped) p.equipped = {};
+        const savedHeld = p.equipped.held;
+
+        out.method = typeof r.forgeBlueprint === "function";
+
+        // F2 — die Präzision moduliert die Welt-Kraft: gleiche Form/Materie, aber ein hoch-präziser
+        // opChain ergibt ein stärkeres Gerät als ein grob-präziser (die Rekursion: besseres Crafting
+        // → besseres Abbauen).
+        blu.__f2_fine = {
+            name: "__f2_fine",
+            parts: [
+                {
+                    shape: "box",
+                    material: "stein",
+                    size: { x: 0.8, y: 0.8, z: 0.8 },
+                    position: { x: 0, y: 0, z: 0 },
+                    opChain: [{ cap: 0.95, op: "polish", tool: "x" }],
+                },
+            ],
+        };
+        blu.__f2_rough = {
+            name: "__f2_rough",
+            parts: [
+                {
+                    shape: "box",
+                    material: "stein",
+                    size: { x: 0.8, y: 0.8, z: 0.8 },
+                    position: { x: 0, y: 0, z: 0 },
+                    opChain: [{ cap: 0.4, op: "knap", tool: "x" }],
+                },
+            ],
+        };
+        const fineProf = r._implementProfileForBlueprint(blu.__f2_fine);
+        const roughProf = r._implementProfileForBlueprint(blu.__f2_rough);
+        out.precisionModulatesMine = fineProf.minePower > roughProf.minePower;
+
+        // F3 — das Schmieden ZIEHT Material (pfad), schlägt ohne fehl
+        blu.__forge_tool = {
+            name: "__forge_tool",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        p.equipped.held = null;
+        const forgeNoMat = r.forgeBlueprint("__forge_tool");
+        out.pfadForgeRejectsWithoutMaterial = forgeNoMat.ok === false && forgeNoMat.reason === "not_enough_material";
+        out.notEquippedAfterFail = p.equipped.held === null;
+
+        // F3 — mit Material: schmiedet + KONSUMIERT + rüstet aus + friert die Präzision ein
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        const steinBefore = p.inventory[0].count;
+        const forgeOk = r.forgeBlueprint("__forge_tool");
+        const steinAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadForgeSucceeds = forgeOk.ok === true;
+        out.pfadForgeConsumes = steinBefore > steinAfter;
+        out.forgeEquips = p.equipped.held === "__forge_tool";
+        out.forgeFreezesPrecision = Number.isFinite(blu.__forge_tool.forgedPrecision);
+
+        // F3 — schöpfer schmiedet frei (ohne Material)
+        r.setGameMode("schöpfer");
+        p.inventory = new Array(27).fill(null);
+        p.equipped.held = null;
+        const forgeFree = r.forgeBlueprint("__forge_tool");
+        out.schoepferForgesFree =
+            forgeFree.ok === true && forgeFree.free === true && p.equipped.held === "__forge_tool";
+
+        // cleanup
+        delete blu.__f2_fine;
+        delete blu.__f2_rough;
+        delete blu.__forge_tool;
+        p.equipped.held = savedHeld;
+        p.inventory = new Array(27).fill(null);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.61 S3: forgeBlueprint (der Werk-Akt) existiert", res.method);
+    check(
+        "V17.61 S3: F2 — die Praezision moduliert die Abbau-Kraft (fein > grob, gleiche Form/Materie; die Rekursion schliesst)",
+        res.precisionModulatesMine
+    );
+    check(
+        "V17.61 S3: F3 — schmieden in pfad OHNE Material → abgelehnt (not_enough_material) + nicht ausgeruestet",
+        res.pfadForgeRejectsWithoutMaterial && res.notEquippedAfterFail
+    );
+    check(
+        "V17.61 S3: F3 KONSUM — schmieden in pfad MIT Material → erfolg + verbraucht Material + ausgeruestet",
+        res.pfadForgeSucceeds && res.pfadForgeConsumes && res.forgeEquips
+    );
+    check("V17.61 S3: F3 — schmieden friert die Praezision ein (forgedPrecision gesetzt)", res.forgeFreezesPrecision);
+    check("V17.61 S3: F3 — schoepfer schmiedet frei (ohne Material) + ruestet aus", res.schoepferForgesFree);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -36923,6 +37029,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1755W2Profile(ctx);
             await checkBandV1758CreatureNature(ctx);
             await checkBandV1759CapabilityReadout(ctx);
+            await checkBandV1761ForgeImplement(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
