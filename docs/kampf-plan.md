@@ -5,8 +5,20 @@
 > die GEMESSENE Bestandsaufnahme (02.06.2026, Explore-Diagnose) + den Plan fest: Kampf
 > EMERGIERT aus dem bestehenden Hylomorphismus (Tags → Stats, EINE Pipeline für Spieler/
 > Kreatur/Waffe/Rüstung), KEIN Parallel-System. Verwandte Anker: `crafting-konzept.md`
-> (das Tag-Substrat), `emotion-kern-plan.md` §W5 (der fertige Kampf-AFFEKT-Hook, der hier
+> (das Tag-Substrat), `archiv/emotion-kern-plan.md` §W5 (der fertige Kampf-AFFEKT-Hook, der hier
 > seinen Konsumenten bekommt), `das-lebendige-feld.md` (der wahre Norden).
+
+---
+
+## STATUS (Stand V17.54) — lies §8/§9 zuerst
+
+**Der Kern-Kampf-Loop A–D + der W5-Affekt sind GEBAUT** (V17.51 Kombat-Stats · V17.52 Waffen-Rolle/
+Equip · V17.53 Kreatur-HP/Schaden/Tod/Loot · V17.54 LMB-Angriff + Zorn/Schuld-Affekt). §1–§7 unten
+sind der ursprüngliche Plan dieses Loops (Geschichte + die noch offene Phase E „Bedrohung/Furcht").
+**Die lebende Wahrheit des AKTIVEN Bogens ist §8/§9** — die Vertiefung aus dem Schöpfer-Dialog
+(02.06.): vom Rollen-Schloss zum Fähigkeits-Profil, das Instant-Abbauen als Wurzelfehler, die
+Ausdauer/Effizienz-Synergie. Wer den Bogen weiterbaut, liest §8/§9 ZUERST (sie überschreibt die
+Rollen-Kategorie-Sicht von §3.2/§4-B).
 
 ---
 
@@ -206,3 +218,75 @@ E ist die game-design-schwerste (Aggression-Balance) — evtl. eigene Welle. Jed
 nachher, KONSUM verifizieren, playtest-grün, ein Commit. Der Schöpfer-Browser ist die finale Wucht-/
 Spaß-/Balance-Wahrheit. **Damit bekommt der Emotion-Kern seinen letzten Konsumenten + die Welt eine
 Kampf-Schleife, die — wie alles hier — aus der Substanz emergiert.**
+
+---
+
+## 8. Die Vertiefung — vom Rollen-Schloss zum Fähigkeits-Profil (Schöpfer-Dialog 02.06.)
+
+Nach dem Kern-Loop (A–D) öffnete der Schöpfer drei tiefere Befunde, die den Bogen vom „Kampf" zur
+GANZEN Welt-Interaktion weiten. Sie lösen die Rollen-Kategorien (Waffe/Werkzeug) AUF und vereinen
+Kampf + Abbau in EINER emergenten Logik. **Diese Sicht überschreibt §3.2/§4-B (das Rollen-Schloss).**
+
+### 8.1 Es gibt keine festen Rollen — geformte Materie ERMÖGLICHT Handlungen
+Ein Ding ist nicht „Waffe" ODER „Werkzeug". Geformte Materie trägt ein **Fähigkeits-Profil** — eine
+emergente Tauglichkeit für JEDE Handlung (angreifen · schneiden · graben/abbauen · schützen), aus
+Form × Material, GENAU wie Stats/Affordanzen/Spawn/Resonanz/Gefühl. Eine scharfe harte Klinge:
+schneidet/sticht exzellent, gräbt Fels schlecht. Eine dichte stumpfe Masse: wuchtet/bricht Fels gut,
+schneidet schlecht. Die bloße Hand: pflückt Weiches, scheitert an Hartem. **Du benutzt alles für
+alles — die EFFIZIENZ ergibt sich aus dem Profil; das ZIEL + dein Klick wählen die Handlung (Kreatur
+→ schlagen, Fels → graben), das Profil bestimmt, wie gut.** „Schmieden fixiert eine Rolle" ist FALSCH:
+Schmieden formt die Materie → verschiebt das Profil; die „Rolle" der Werkstatt ist nur ein ABLESEN des
+dominanten Könnens, kein Schloss. → das manuelle „als Waffe" (V17.52) + der Rollen-Split LÖSEN SICH AUF
+in dieses Profil (das „daneben klicken + Boden abbauen" verschwindet: eine Klinge gräbt nur miserabel).
+
+### 8.2 Der Wurzelfehler: das Instant-Abbauen (GEMESSEN 02.06.)
+`harvestArchitecture`/`tryMouseBreak` sind heute **werkzeug-blind + instant + voller Ertrag** — egal ob
+Hand oder geschmiedete Spitzhacke. Solange Abbauen sofort + gratis ist, KANN „unterschiedliche Effizienz"
+nicht existieren (sofort ist sofort). **Abbauen muss Mühe kosten:** Fortschritt = die Grab-/Schneid-Kraft
+des gehaltenen Dings (emergent) gegen den **Widerstand** des Materials (emergent aus seinen Tags — härte/
+dichte = schwer, lebendig/weich = leicht). Bloße Hand an Fels → ~0 Fortschritt; geschmiedeter Pickel →
+schnell. Minecraft's Werkzeug-Gating, aber EMERGENT (kein Tier-Tag) → forge ein härteres Ding, bau
+Härteres ab = Freiheit. (Der Hylomorphismus, der an der Werkstatt-Tür endete, tritt in die Welt.)
+
+### 8.3 Die Effizienz als Dirigent — Ausdauer/Stamina webt ein (GEMESSEN bestehend)
+`staminaMax` ist schon emergent (`100 + (1−dichte)·60 + wärmeleitung·40`), aber die KOSTEN sind flach
+(abbauen `MOUSE_ACTION_STAMINA_COST` 5, schmieden `TOOL_OP_STAMINA_COST` 10) + modus-gated (nur `pfad`;
+frieden/schöpfer mühelos). Die Heilung: EINE Zahl — die `Tauglichkeit` (Profil des Dings vs Handlung +
+Material) — dirigiert VIER Kanäle: **(1) Tempo** (hoch → schnell), **(2) Stamina-Kosten INVERS** (richtiges
+Werkzeug billig pro Fortschritt; falsches verbrennt Ausdauer für fast nichts), **(3) Ertrag** (hoch →
+voller Drop, niedrig → wenig/keiner), **(4) Gefühl** (`_feelAction` liest schon jede Tat → effiziente
+Meisterung = Freude, vergebliches Mahlen = Frust). So KOMMUNIZIEREN die Systeme: ein substanz-abgeleitetes
+Signal, vier Leser, kein Sonderfall (das „eine Quelle, viele Leser"-Muster des Projekts).
+
+### 8.4 Die schnell/ausdauer-Achse aus `dichte` (Trägheit ↔ Fortschritt)
+- **leicht** (niedrig `dichte`): hohes Tempo, kleine Stamina-Schlucke, durchhaltend (Ausdauer), wenig Wucht.
+- **schwer** (hoch `dichte`): hohe Wucht/Rückschlag pro Schlag (Burst), langsam + große Stamina-Züge, erschöpft schnell.
+Trägheit kauft Kraft, Leichtigkeit kauft Durchhalten — du schmiedest deinen Stil + wählst je Material.
+(`dichte` treibt schon attackSpeed + knockback; Stamina-Kosten ∝ `dichte` schließt das Dreieck.)
+
+### 8.5 Wachstum + die Mana-Symmetrie (vision-treu, kein XP-Grind)
+AnazhRealm wächst NICHT über eine XP-Leiste (das wäre ein Label — die Heilige Lektion): (a) **bessere
+Materie** (forge — weniger Mühe, mehr Ertrag), (b) das **blühende Feld** (Boosts heben Stats/Ausdauer,
+wo die Welt gedeiht), (c) **Bindungen** (Kreaturen, die KI als Ko-Regulator). Optional eine leichte „der
+Körper erinnert sich"-Adaption (Ausdauer wächst sanft mit Gebrauch) — die einzige Wachstums-Schraube, die
+zum lebendigen Thema passt. **Die fehlende symmetrische Hälfte (dein „/mana"):** Stamina ist die körperliche
+Mühe; eine magische Energie aus `magieleitung` (Äther — Zauber/Aura/DSL kosten ihn, regen ∝ magieleitung)
+wäre ihr Spiegelbild (heute zahlt Magie nichts) — die zweite Achse, wenn die Magie-Seite genauso echt wird.
+
+---
+
+## 9. Der revidierte Pfad (an der Wurzel)
+
+- **W1 — der Wurzelfehler + die Effizienz als Dirigent:** Abbauen kostet Mühe; EINE Tauglichkeit treibt
+  Tempo + Stamina (variabel statt flat) + Ertrag + Gefühl zugleich. Lebt in `pfad` (frieden/schöpfer
+  mühelos — das bestehende Modus-Gate trägt es). *Der Schlüssel, der „unterschiedliche Effizienz" erst
+  möglich macht; webt Ausdauer sofort ein.*
+- **W2 — das volle Profil + alles-für-alles:** das Fähigkeits-Profil (angreifen/graben/schneiden/schützen)
+  aus Form × Material; LMB wählt die Handlung nach Ziel, das Profil bestimmt die Güte; die schnell/ausdauer-
+  Achse aus `dichte`; die Rollen-Kategorien + das manuelle Markieren werden zu einem Ablesen (kein Schloss).
+- **W3 — die natürliche, aura-reaktive Kreatur** (+ optional die „Körper-erinnert-sich"-Adaption, später
+  die Mana-Hälfte + die alte Phase E „Bedrohung/Furcht").
+
+**Disziplin (heilig):** tag-emergent, kein neues Modul, kein Parallelpfad; modus-gated; der Affekt von
+Anfang an (`_feelAction` liest die Mühe gratis mit); die Wucht/das Feel/die Balance = Schöpfer-Browser.
+Headless beweisbar sind die Tauglichkeit-Berechnung, die vier Kanäle, die Substanz-Differenzierung.
