@@ -239,12 +239,21 @@ Prune, die Spieler-Baseline trackt+laggt. node-check/format/lint grün, „Alle 
 das Erleben — der Konsum kommt Phase 2/3 (kein Passagier: der Test prüft die Mess-Korrektheit,
 nicht „existiert"). Das war „miss, bevor du selektierst".
 
-**Phase 2 (V17.43) — Lokal-attribuierte Regel-Fitness (die Regeln werden ECHT).**
-Snapshot-bei-Feuern (Ort + `baseline_P`) → verzögerte Messung (nächstes Fenster) →
-`reward` → EMA in `rule.value`; `_worldRuleFitness` umverdrahtet zu **viability + value-
-Bonus/Penalty** (`0.4·successScore + 0.6·valueScore`, `valueScore = 0.5 + 0.5·value` →
-neutral überlebt, Heiler steigt, Schädling fällt — §4c, KEIN value-dominant); `_evictWorldRule`
-+ `_composeNexusRule` werden wert-gewichtet. **KONSUM-Test (das Genie der Messung — was die
+**Phase 2 (V17.43) — Lokal-attribuierte Regel-Fitness (die Regeln werden ECHT). ✅ GEBAUT.**
+Snapshot-bei-Feuern (`_ruleRewardPos` = erster Positions-Knoten im Effekt-AST + `baseline_P`
+via `_observeFieldWohl`) → verzögerte Messung beim NÄCHSTEN Feuern (`_measureRuleReward`,
++ Flush am ttl-Ende) → `reward = wohlStruktur − baseline` → EMA in `rule.value` (β 0.3);
+`_worldRuleFitness` umverdrahtet zu **viability + value-Bonus/Penalty** (`0.6·valueScore +
+0.25·successScore + 0.15·costScore`, `valueScore = 0.5 + 0.5·value` → neutral 0.7 überlebt,
+Heiler 1.0, Schädling 0.4 < renewFitness — §4c, KEIN value-dominant); `_evictWorldRule` wirft
+den wert-niedrigsten, `_composeNexusRule` zieht Eltern wert-gewichtet. `value` überlebt
+Renewals, ist reaktiv (nicht im Snapshot). GEMESSEN (`checkBandV1743RuleFitness`, 8 grün):
+Fitness diskriminiert, Schädling verfällt + neutral überlebt, `_ruleRewardPos`, **END-TO-END
+eine deposit_life-Regel akkumuliert positiven Wert / Wetter ~0**, Eviction wert-niedrigst +
+Mensch/pinned geschützt, Elternschaft gewichtet, value nicht im Snapshot. node-check/format/
+lint grün, „Alle Invarianten OK" (3476, exit 0). EHRLICH: der Reward-Ort ist der erste
+Positions-Knoten (zwei Regeln am selben Ort teilen Credit — benannte Grenze §6.2); Reward-
+Hacking by-construction vermieden (misst lebendig, nicht selbst-gestempelte Emotion — §6.1). **KONSUM-Test (das Genie der Messung — was die
 alte Fitness NICHT konnte):** eine heilende Regel (`deposit_life at_field_need` in eine karge
 Region) akkumuliert positives `value` + wird erneuert + wird Mutations-Elter; eine SCHÄDIGENDE
 Regel (senkt lokal Leben) fällt unter `renewFitness` + verfällt + wird zuerst evingiert; eine

@@ -2808,6 +2808,134 @@ async function checkBandV1742Wohl(ctx) {
     );
 }
 
+// V17.43 — DIE LEBENDIGE WERTUNG, Phase 2: die lokal-attribuierte Regel-Fitness. Eine
+// Regel überlebt, weil der ORT, den sie berührt, AUFBLÜHT — reward = struktureller δ am
+// Effekt-Ort über die Baseline, EMA in rule.value; _worldRuleFitness wird viability-Floor
+// + value-Bonus/Penalty (valueScore zentriert bei 0.5 → neutral überlebt, KEINE Monokultur).
+// Gemessen wird KONSUM: die Fitness DISKRIMINIERT (Heiler/neutral/Schädling — was die alte
+// ≈0.99-Fitness NICHT konnte), eine heilende Regel akkumuliert positiven Wert, eine neutrale
+// ~0, die Eviction wirft den wert-niedrigsten (nicht den ältesten), Mensch/pinned geschützt.
+async function checkBandV1743RuleFitness(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+
+        // --- (1) die Fitness DISKRIMINIERT (Heiler > neutral > Schädling) ---
+        const mkF = (value) => ({ fires: 5, value, errors: 0, costMsSum: 0.1 });
+        const fHeal = r._worldRuleFitness(mkF(1));
+        const fNeutral = r._worldRuleFitness(mkF(0));
+        const fHarm = r._worldRuleFitness(mkF(-1));
+        out.fitnessDiscriminates =
+            fHeal > 0.9 && fNeutral > 0.6 && fNeutral < 0.8 && fHarm < 0.5 && fHeal > fNeutral && fNeutral > fHarm;
+        // renewFitness 0.5: Heiler+neutral überleben, Schädling verfällt
+        out.harmerDecays = fHarm < r.constructor.WORLD_RULES.renewFitness && fNeutral >= r.constructor.WORLD_RULES.renewFitness;
+
+        // --- (2) _ruleRewardPos: der Effekt-Ort (at) bzw. Spieler (positionslos) ---
+        const ctx0 = r._worldRuleCtx({ id: 0, source: "nexus", fires: 0 });
+        const pHeal = r._ruleRewardPos(["deposit_life", ["at", 333, 0, 444]], ctx0);
+        out.rewardPosFromEffect = Math.abs(pHeal.x - 333) < 1e-6 && Math.abs(pHeal.z - 444) < 1e-6;
+        const pm = r.state.playerMesh.position;
+        const pW = r._ruleRewardPos(["weather", "sunny"], ctx0);
+        out.rewardPosFallbackPlayer = Math.abs(pW.x - pm.x) < 1e-6 && Math.abs(pW.z - pm.z) < 1e-6;
+
+        // --- (3) END-TO-END: eine heilende Regel akkumuliert POSITIVEN Wert ---
+        const savedRules = r.state.worldRules.slice();
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        const savedWeather = r.state.weather;
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        // einen Spot mit Leben-Headroom finden (frozen lebendig < 0.6)
+        let sx = 2000,
+            sz = 2000;
+        for (let i = 0; i < 24; i++) {
+            const cx = 2000 + i * 41,
+                cz = 2000 + i * 59;
+            if (r._fieldWohlStruktur(r.auraAt(cx, cz, 0)) < 0.6) {
+                sx = cx;
+                sz = cz;
+                break;
+            }
+        }
+        r.state.worldRules = [];
+        r.dslRun(["rule", ["random_chance", 1], ["deposit_life", ["at", sx, 0, sz]], { everySec: 0.001, ttlSec: 9999 }], {
+            source: "nexus",
+        });
+        const heal = r.state.worldRules[0];
+        heal.lastFired = -Infinity;
+        r._tickWorldRules(1000); // Feuer 1: Baseline (niedrig) gesnapshottet, Leben deponiert
+        heal.lastFired = -Infinity;
+        r._tickWorldRules(1000.02); // Feuer 2: Reward gemessen (hoch − niedrig = +) → value > 0
+        out.healerPositiveValue = heal.value > 0.05;
+
+        // --- (3b) eine NEUTRALE Regel (Wetter, berührt lebendig nicht) → value ≈ 0 ---
+        r.state.worldRules = [];
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 0.001, ttlSec: 9999 }], {
+            source: "nexus",
+        });
+        const neutral = r.state.worldRules[0];
+        neutral.lastFired = -Infinity;
+        r._tickWorldRules(2000);
+        neutral.lastFired = -Infinity;
+        r._tickWorldRules(2000.02);
+        out.neutralZeroValue = Math.abs(neutral.value) < 0.05;
+
+        // --- (4) Eviction wirft den wert-NIEDRIGSTEN ephemeren (nicht den ältesten) ---
+        const rr = [
+            { id: 1, source: "nexus", value: 0.8, born: 1, pinned: false },
+            { id: 2, source: "nexus", value: -0.5, born: 2, pinned: false }, // niedrigster Wert
+            { id: 3, source: "nexus", value: 0.2, born: 3, pinned: false },
+        ];
+        r._evictWorldRule(rr);
+        out.evictsLowestValue = rr.length === 2 && !rr.some((x) => x.id === 2);
+        // Mensch/pinned geschützt, auch bei niedrigstem Wert
+        const rr2 = [
+            { id: 1, source: "human", value: -0.9, born: 1, pinned: false },
+            { id: 2, source: "nexus", value: 0.1, born: 2, pinned: false },
+        ];
+        r._evictWorldRule(rr2);
+        out.evictProtectsHuman = rr2.some((x) => x.id === 1) && !rr2.some((x) => x.id === 2);
+
+        // --- (5) Mutations-Elternschaft ist wert-gewichtet (verdrahtet) ---
+        out.parentWeighted = /0\.5 \+ 0\.5 \* \(r\.value/.test(r._composeNexusRule.toString());
+
+        // --- (6) value ist reaktiv (NICHT im Snapshot — wie die anderen Akkus) ---
+        r.state.worldRules = [];
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        const snap = r.buildStateSnapshot();
+        out.valueNotInSnapshot = Array.isArray(snap.worldRules) && snap.worldRules[0] && snap.worldRules[0].value === undefined;
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        r.state.weather = savedWeather;
+        return out;
+    });
+
+    check(
+        "V17.43 Wertung: _worldRuleFitness DISKRIMINIERT (Heiler > neutral > Schädling — die alte ≈0.99-Fitness konnte das nicht)",
+        res.fitnessDiscriminates
+    );
+    check("V17.43 Wertung: ein Schädling fällt unter renewFitness (verfällt), neutral überlebt (keine Monokultur)", res.harmerDecays);
+    check(
+        "V17.43 Wertung: _ruleRewardPos misst am Effekt-Ort (at) bzw. an der Spieler-Position (positionsloser Effekt)",
+        res.rewardPosFromEffect && res.rewardPosFallbackPlayer
+    );
+    check(
+        "V17.43 Wertung: END-TO-END — eine heilende Regel (deposit_life) akkumuliert POSITIVEN Wert (der Ort blüht auf)",
+        res.healerPositiveValue
+    );
+    check("V17.43 Wertung: eine neutrale Regel (Wetter, berührt lebendig nicht) akkumuliert ~0 Wert", res.neutralZeroValue);
+    check(
+        "V17.43 Wertung: Eviction wirft den wert-NIEDRIGSTEN ephemeren Eintrag (nicht den ältesten); Mensch/pinned geschützt",
+        res.evictsLowestValue && res.evictProtectsHuman
+    );
+    check("V17.43 Wertung: die Mutations-Elternschaft ist wert-gewichtet (gerichtete Evolution Richtung Heilung)", res.parentWeighted);
+    check("V17.43 Wertung: rule.value ist reaktiv — NICHT im Snapshot serialisiert (wie die anderen Akkus)", res.valueNotInSnapshot);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -34878,6 +35006,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1740LlmRules(ctx);
             await checkBandV1741RuleThread(ctx);
             await checkBandV1742Wohl(ctx);
+            await checkBandV1743RuleFitness(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
