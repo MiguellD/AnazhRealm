@@ -151,19 +151,39 @@ ist die Vereinheitlichung (Effizienz durch Einheit, §2 des wahren Nordens) UND 
 
 ## 4. Die WELLEN (jede Verdichtung, foundation-first, mit VERIFIZIERTEM Konsumenten)
 
-**W1 — Das dimensionale Substrat + die FUSION (die Geometrie).** `AnazhRealm.EMOTION_
-GEOMETRY` (frozen: jede Achse → `{valenz, erregung}`) + `_emotionState()` → der fusionierte
-READOUT: das DOMINANTE Gefühl + der Valenz/Erregung-Schwerpunkt + die INTENSITÄT (Abstand
-vom Neutralen). Plus eine SANFTE Kohärenz in `updatePlayerEmotions` (gegensätzliche Achsen
-dämpfen sich mild → der Zustand ist ein kohärenter Punkt, nicht 6 unabhängige Maxima) —
-ADDITIV + gentle, getestet dass die 0.7-Trigger erreichbar BLEIBEN (V17.30-Wächter).
-KONSUM: bittersüß (joy+sorrow hoch) → Valenz ~0 ABER Intensität hoch + ein dominantes
-Gefühl emergiert (die Fusion, messbar); der Readout speist Journal/UI/KI mit einem
+**W1 — Das dimensionale Substrat + die FUSION (die Geometrie). ✅ GEBAUT (V17.45).**
+`AnazhRealm.EMOTION_GEOMETRY` (frozen: jede Achse → `{valenz, erregung}`) + `_emotionState()`
+→ der fusionierte READOUT: das DOMINANTE Gefühl + der Valenz/Erregung-Schwerpunkt + die
+INTENSITÄT (Abstand vom Neutralen). Plus eine SANFTE Kohärenz in `updatePlayerEmotions`
+(gegensätzliche Achsen dämpfen sich mild → der Zustand ist ein kohärenter Punkt, nicht 6
+unabhängige Maxima) — ADDITIV + gentle, getestet dass die 0.7-Trigger erreichbar BLEIBEN
+(V17.30-Wächter). KONSUM: bittersüß (joy+sorrow hoch) → Valenz ~0 ABER Intensität hoch + ein
+dominantes Gefühl emergiert (die Fusion, messbar); der Readout speist Journal/UI/KI mit einem
 REICHEN Zustand statt 6 Zahlen. *Risiko niedrig (Geometrie ist Daten; Kohärenz gentle +
 getestet).* — **Das Substrat, auf dem L2/L3 stehen.**
 
+> **GEBAUT (V17.45):** `EMOTION_GEOMETRY` + `EMOTION_LABEL` (frozen, Russell-Werte: joy/hope/
+> peace +Valenz, sorrow/chaos −Valenz, awe ambivalent/höchste Erregung; peace↔chaos Erregungs-
+> Gegenpol) + `_emotionState()` (Schwerpunkt + INTENSITÄT). **Der Schlüssel-Konstruktions-Punkt
+> (in der adversarialen Selbstprüfung gefunden): die Intensität ist die 6-dim Vektor-Magnitude,
+> NICHT die des Schwerpunkts** — sonst läse bittersüß als „low-intensity neutral" (Schwerpunkt
+> ~0); mit der 6-dim-Magnitude hat bittersüß Valenz~0 ABER hohe Intensität → ein voller Zustand
+> (Label „Zwiespalt (Freude und Trauer)", `mix`). Die KOHÄRENZ in `updatePlayerEmotions` ist
+> geometrie-deriviert (negativer Dot → mild dämpfen), rein DISSIPATIV (kein Runaway) +
+> proportional zur Gegen-Achse → eine EINZELNE klare Emotion bleibt unberührt (0.7-Trigger heil).
+> **KONSUMENT (kein Passagier, V17.31): `llmBuildSystemPrompt` trägt jetzt die Spieler-Stimmung**
+> — vorher kannte die KI-Persona die Spieler-Emotion GAR NICHT (eine Symbiose-Lücke). GEMESSEN
+> (`checkBandV1745EmotionCore`, 13 grün: Geometrie + Vorzeichen, klares dominantes Gefühl,
+> bittersüß [Valenz~0, Intensität HOCH, Zwiespalt+mix], Ruhe, **KONSUM die KI kennt Freude/
+> Zwiespalt/Ruhe**, Kohärenz [Gegenpol dämpft, EINZELNE Emotion nicht]). Plus zwei seit V17.44
+> latente KONFOUNDER geheilt (gemessen, kein „Last-Flake": die Ring-3-Decay-Probe — der
+> Appraisal hob joy über die 10s-delta → auf reinen Decay isoliert; 6.G3.c — gesättigtes sorrow
+> clampt den +0.2-Stempel → auf den Intent isoliert). node-check/format/lint grün, „Alle
+> Invarianten OK". EHRLICH: W1 beweist die MECHANIK (Fusion + Kohärenz rechnen richtig + werden
+> konsumiert); ob es sich „echt anfühlt" ist der Schöpfer-Browser. **Nächst: W2 (der Keystone).**
+
 **W2 — Die Appraisal-Brücke + der Hylomorphismus (EVENT → Appraisal → Emotion). DER
-KEYSTONE.** `_appraise(event)` → Appraisal-Vektor (Valenz/Magnitude/Agency/Gewissheit/
+KEYSTONE. ✅ GEBAUT (V17.46).** `_appraise(event)` → Appraisal-Vektor (Valenz/Magnitude/Agency/Gewissheit/
 Neuheit/Norm), gespeist aus (a) dem Ereignis-Typ, (b) der SUBSTANZ (`TAG_TO_EMOTION` über
 `computeCompoundTags` — lebendig→+Valenz/Pflege, härte/scharf→+Erregung/Potenz, glut→
 +Erregung/Bedrohung, resoniert→+Neuheit/Wunder, dichte→+Magnitude/Solidität), (c) dem δ
@@ -179,7 +199,29 @@ Differenzierung auf den 6 Achsen. Die Dimensionen Agency/Norm werden berechnet, 
 noch LATENT (das SUBSTRAT für W4/W5 — Zorn/Furcht/Schuld brauchen die sozialen/Kampf-
 Konsumenten); W2 behauptet NICHT, sie schon zu konsumieren. *Heilt Schatten 1+5.*
 
-**W3 — Fast/Slow: EMOTION vs. STIMMUNG + pro-Achse-Decay + Stimmungs-Kongruenz.** Trenne
+> **GEBAUT (V17.46):** `AnazhRealm.TAG_TO_EMOTION` (frozen Resonanz-Tabelle über die 10
+> Compound-Tags, GENAU wie `FIELD_TO_EMOTION` — Regel über Tabelle: lebendig→peace/joy,
+> dichte→hope, brennbar→chaos/awe, magieleitung/resoniert→awe, …; sorrow erzeugt KEIN Tag) +
+> `_appraiseSubstance(tags, magnitude)` (die Emotion EMERGIERT aus `computeCompoundTags` ×
+> Magnitude) + `_substanceMagnitude(bp)` (∝ Part-Zahl, ~0.78–1.6, saturierend). **`_feelAction(type, opts)`
+> ist die BRÜCKE:** base (ACTION_TO_EMOTION × Magnitude) + Substanz-Appraisal; ohne `opts`
+> exakt V17.30 (kein Regress). Verdrahtet: confirmBuild `{blueprint}`, harvestArchitecture
+> `{blueprint}`, assignCreatureTask `{creature}`, spawn_creature `{creature, magnitude∝count}`,
+> + ein NEUER Akt `create` (define_blueprint-Op, NUR `ctx.source==="human"`) → Stolz ∝ Komplexität.
+> **GEMESSEN-KONSUM (`checkBandV1746EmotionSubstance`, 14 grün):** lebendig→peace / dichte→hope /
+> brennbar→chaos+awe, Achsen sauber getrennt, Magnitude linear + Tags>1 geklemmt, **END-TO-END
+> build(lebendiges Holz) > peace als build(toter Stein) + build(Stein) > hope** (die Substanz-
+> Differenzierung auf den 6 Achsen, der beweisbare Konsum), Magnitude end-to-end (Kathedrale >
+> Box), der create-Akt → Stolz+Magie-awe + Source-Gate (Nexus löst KEINEN Stolz aus),
+> confirmBuild übergibt die Substanz, KEIN Regress (build ohne opts = joy 0.1/hope 0.1), Fallback
+> (explore tag-los). node-check/format/lint grün, „Alle Invarianten OK". **EHRLICH (Scope, kein
+> Passagier):** gebaut ist die SUBSTANZ→Emotion-Brücke (Valenz via Tag-Resonanz + Magnitude via
+> Komplexität — die konsumierten Dimensionen); der VOLLE Appraisal-Vektor (Agency/Norm/Gewissheit
+> → Zorn/Furcht/Schuld differenziert) ist NICHT gebaut (er wäre ein Passagier ohne Konsument) —
+> er kommt in W4/W5, wenn das Soziale/der Kampf ihn konsumieren. Ob es sich „echt anfühlt" ist der
+> Schöpfer-Browser. **Nächst: W3 (Fast/Slow — Emotion vs. Stimmung, pro-Achse-Decay, Kongruenz).**
+
+**W3 — Fast/Slow: EMOTION vs. STIMMUNG + pro-Achse-Decay + Stimmungs-Kongruenz. ✅ GEBAUT (V17.47).** Trenne
 die schnelle Emotion (akuter Spike) von der langsamen Stimmung (`mood`, ein EMA-Vektor
 über Minuten — das Temperament). Pro-Achse-Decay (`EMOTION_DECAY[axis]` — Furcht/chaos
 schnell, sorrow/peace langsam, awe mittel) statt uniform 0.005. Stimmungs-kongruente
@@ -189,7 +231,29 @@ Furcht spiked + verfliegt schnell, Trauer bleibt; eine trübe Stimmung färbt da
 Erleben (gemessen); die Stimmung ist die „Person mit Geschichte" (speist den LLM-Prompt +
 das Journal). *Heilt die zeitliche Flachheit.*
 
-**W4 — Das Soziale: Contagion + Bindung + die KI als KO-REGULATOR.** (a) **Contagion:** die
+> **GEBAUT (V17.47):** **(1)** `EMOTION_DECAY` (frozen, per-Achse-MULTIPLIKATOR auf
+> `emotionDecayPerSec`: chaos 2.2 / awe 1.4 / joy 1.0 / hope 0.9 / peace 0.6 / sorrow 0.55 —
+> Furcht verfliegt ~4× schneller als Trauer; Multiplikator 1 = exakt der alte uniforme Decay,
+> der UI-Schieber bleibt der globale Tempo-Knopf). **(2)** `state.player.mood` (6-Achsen-EMA,
+> `moodTau` 120 s, im `updatePlayerEmotions`-Tick aktualisiert, liest die FINALE Emotion des
+> Ticks; reaktiv/nicht-persistiert, lazy-init für jeden Load-Pfad). **(3)** Stimmungs-Kongruenz
+> in der V17.44-Appraisal: `_moodValence()` (∈[−1,1] via EMOTION_GEOMETRY) tönt den δ — ABER
+> **NUR wenn ein REALER δ vorliegt (`|dsig| > deadzone`)** → bei konstanter Situation KEINE
+> Kongruenz → **kein spontaner Stimmungs-Runaway** (die teure V17.44-Lehre an der Wurzel
+> gewahrt: die Stimmung färbt die Interpretation eines EREIGNISSES, manufakturiert keines).
+> `EMOTION_MOOD_CONGRUENCE` 0.08. **KONSUMENT:** `_emotionState(vec)` generalisiert (mit `p.mood`
+> übergeben → der Stimmungs-Readout), `llmBuildSystemPrompt` trägt jetzt AKUT (Emotion) UND
+> GRUNDSTIMMUNG (mood) getrennt — die KI kennt die „Person mit Geschichte". **GEMESSEN
+> (`checkBandV1747FastSlow`, 9 grün):** Decay-Tabelle, **Furcht verfliegt schneller als Trauer**
+> (pro-Achse end-to-end), die mood lagt + KONVERGIERT (das Temperament wächst), **eine trübe
+> Stimmung dämpft die Freude eines guten Ereignisses** (Kongruenz), **KEIN Runaway** (trübe
+> Stimmung + konstante Situation → keine Emotion), die KI kennt Grundstimmung (Trauer) ≠ akut
+> (Freude), V17.30 heil (0.7 erreichbar). node-check/format/lint grün, „Alle Invarianten OK".
+> EHRLICH: die Mechanik (Fast/Slow + Kongruenz, feedback-frei) ist bewiesen; ob das Temperament
+> sich „echt anfühlt" ist der Schöpfer-Browser. **Nächst: W4 (das Soziale + die KI als Ko-Regulator
+> — der freischaltet den vollen Appraisal-Vektor Agency/Norm, das in W2 bewusst Aufgeschobene).**
+
+**W4 — Das Soziale: Contagion + Bindung + die KI als KO-REGULATOR. ✅ GEBAUT (V17.48).** (a) **Contagion:** die
 Emotion naher Kreaturen fließt sanft in den Spieler (∝ Nähe × Bindung) + umgekehrt (der
 Spieler-Affekt färbt nahe Kreaturen — teils da, vereinheitlicht). (b) **Bindung:** eine
 `bond`-Stärke pro Kreatur (wächst mit gemeinsamer Zeit/Aufträgen); der Verlust einer
@@ -202,7 +266,35 @@ Kreatur verlieren → sorrow ∝ bond; der Tend-Pfad feuert bei anhaltend niedri
 (die VERDRAHTUNG headless; das echte NLU = Schöpfer-Browser + API-Key, V17.40-Lehre).
 *Heilt Schatten 4 + den Beziehungs-Pfeiler (Symbiose).*
 
-**W5 — Die volle Tat-Abdeckung über die Brücke: ABENTEUER + KAMPF.** Jetzt billig, weil
+> **GEBAUT (V17.48):** **(a) Contagion** — `_tickEmotionContagion(delta)` (im KREATUR-Tick
+> `updateCreatures`, NICHT im Emotion-Tick → die Emotion-Kern-Tests bleiben isoliert): die
+> binäre Kreatur-Emotion (`creatureEmotions[i]` happy/sad) → ein Spieler-Ziel (`CONTAGION_TARGET`:
+> happy→joy/peace, sad→sorrow), als RELAXATION zum Ziel (HEBEND, gebounded ≤ 0.5 → kann nicht
+> runaway-en, die V17.44/V17.47-Disziplin ein drittes Mal); ∝ Nähe × Bindung. Der Spieler→Kreatur-
+> Rückweg ist „teils da" (der 0.7-hope-Trigger setzt die Kreaturen happy) — hier der NEUE Vorweg.
+> **(b) Bindung** — `creature.userData.bond` ∈ [0,1] (reaktiv, nicht persistiert wie der Task);
+> wächst, während eine FOLGENDE Kreatur nah ist (gemeinsame Zeit) + bei der „folge mir"-Geste
+> (bondFollowBump); gewichtet die Contagion + den Verlust. **(b2) Bond-Loss** — `_creatureNaturalDeath`
+> feuert jetzt `_feelAction("loss", {magnitude})` mit `griefMag = 0.3 + bond·1.2 + lebendig·0.4`
+> (statt flach +0.2): der Verlust einer GEBUNDENEN, lebendigen Gefährtin schmerzt VIEL mehr.
+> **Der Appraisal-Punkt (OCC/§1.1): derselbe `lebendig`-Tag wird im VERLUST-Kontext zu SORROW,
+> nicht zu joy wie in der W2-Bau-Brücke** — dasselbe Ding, anders bewertet je nach Kontext (darum
+> ein expliziter Magnitude statt der Tag-Brücke). **(c) Ko-Regulation** — `_aiTendPlayer()` (aus
+> `grokTick`): liest die langsame STIMMUNG (`_moodValence` W3) und TENDET bei anhaltend trüber
+> Stimmung (< −0.35) eine tröstende Geste (Hoffnung + ein warmes Wort `comfort` + ein Emotion-
+> Abdruck am Ort) — die KI PFLEGT, nicht nur kommentiert; self-limiting (der Hoffnungs-Schub hebt
+> die Valenz → über der Schwelle stoppt der Trost → stabil). GEMESSEN (`checkBandV1748Social`, 13
+> grün: Contagion happy→joy+peace / sad→sorrow, gebounded ≤0.5, die Bindung gewichtet + WÄCHST
+> [folgen, nicht warten], der Verlust einer gebundenen Kreatur schmerzt MEHR, die KI tröstet bei
+> Trübsal + NICHT ohne). node-check/format/lint grün, „Alle Invarianten OK". **EHRLICH (Scope,
+> kein Passagier):** gebaut sind die sozialen FLÜSSE + die kontext-abhängige Verlust-Bewertung.
+> Der VOLLE Agency/Norm-Vektor (die DIFFERENZIERUNG Zorn vs. Furcht vs. Schuld) ist NICHT gebaut
+> — er braucht eine klare URSACHE (wer/was), die erst der KAMPF (W5) liefert; W4 hat dafür keinen
+> Konsumenten (der Verlust hier ist „Umstand → Trauer", ein Agency-Typ, undifferenziert). Das
+> echte NLU der KI = Schöpfer-Browser + API-Key (headless LLM-taub). **Nächst: W5 (Abenteuer +
+> KAMPF über die Brücke — hier bekommt der Agency/Norm-Vektor endlich seinen Konsumenten).**
+
+**W5 — Die volle Tat-Abdeckung über die Brücke: ABENTEUER ✅ GEBAUT (V17.49) + KAMPF (wartet).** Jetzt billig, weil
 die Brücke (W2) steht: **Abenteuer** = ein Neuheits-Appraisal (ein grob-gerastertes
 `visitedRegions`-Set → echte Neuheit > Wiederkehr; Distanz vom Ursprung; Kühnheit = in
 karge/unwirtliche Aura) → awe + Mut (graduiert statt binär). **Kampf** (wenn die Mechanik
@@ -213,6 +305,34 @@ töten → Schuld (norm-negativ + self-agency → sorrow ∝ dessen lebendig). K
 Erkunden ≠ Pendeln (gemessen); Kampf-Affekt differenziert. *Heilt Schatten 2+3.* (Die
 neuen Achsen — Zorn/Furcht/Stolz/Schuld — kommen HIER als Achsen dazu, wenn die Welt
 Konsumenten hat [Kampf/Sozial]; bis dahin projizieren sie auf die 6.)
+
+> **GEBAUT (V17.49) — die ABENTEUER-Hälfte:** `_exploreMagnitude(pcx, pcz)` (in
+> `_setLastPlayerVoxelChunk`, dem explore-Hook): die Magnitude EMERGIERT aus (1) NEUHEIT
+> (`state.visitedRegions`, ein Set, reaktiv + bounded: erste Begegnung `noveltyNew` 0.7 >
+> Wiederkehr 0.05), (2) DISTANZ vom Ursprung (`min(1, dist/600)·0.4` — das epische Reisen),
+> (3) KÜHNHEIT (`(1−lebendig)·0.5 + glut·0.5` aus `auraAt` × 0.5 — in das Karge/Glühende wagen
+> = Mut, die Synergie mit dem Feld). `_feelAction("explore", {magnitude})` skaliert das base
+> awe/hope → graduiert statt binär. GEMESSEN (`checkBandV1749Adventure`, 8 grün: Neuheit [neu >
+> Wiederkehr], **HOLISTISCH kühnes Erkunden [neu+fern+karg] ≫ vertrautes Pendeln [Wiederkehr+
+> nah+üppig]**, Kühnheit liest das Feld [karg > üppig], Distanz wired, die explore-Tat skaliert
+> mit der Magnitude [awe graduiert], Hook wired, visitedRegions bounded). node-check/format/lint
+> grün, „Alle Invarianten OK".
+>
+> **EHRLICH (Scope, gemessen): der KAMPF-Affekt ist NICHT gebaut — weil die Kampf-MECHANIK NICHT
+> EXISTIERT** (gemessen: `damagePlayer` wird nur per DSL-Op gerufen; kein Spieler-Angriff, keine
+> feindlichen Kreaturen, kein Kill-Pfad). Einen Zorn/Furcht/Schuld-Affekt ohne Kampf-Konsumenten
+> zu bauen wäre der Passagier-Trugschluss (V17.31). Das SUBSTRAT ist fertig + wartet: die W1-
+> Geometrie projiziert jede neue Achse auf den Raum, die W2-Brücke (`_feelAction(type, opts)` +
+> `TAG_TO_EMOTION`) wertet jede Substanz (Waffen-härte/scharf → chaos/resolve), der W3-δ trägt
+> Triumph/Erleichterung, der V17.44-δ die Bedrohung. **Wenn die Kampf-Mechanik landet, wird der
+> Affekt von Anfang an eingewebt** (`_feelAction("attack", {weapon})` → Zorn ∝ härte; bedroht +
+> keine-Bewältigung → Furcht; besiegen → δ-Triumph; ein friedliches lebendig-Wesen töten → Schuld
+> ∝ dessen lebendig — derselbe Kontext-abhängige Appraisal wie der W4-Verlust). **Damit ist der
+> Emotion-Kern-Bogen (W1–W5) in seiner BAUBAREN Tiefe KOMPLETT** (dimensional · Substanz · Zeit ·
+> Sozial · Abenteuer); der Kampf-Affekt ist das EINE dokumentierte Future-Hook, das auf sein
+> Feature wartet. **Nächst (jenseits des Emotion-Kerns): die Wertungs-Phase 4 (die Klammer) —
+> jetzt ist `δ_spieler` REICH (differenziert, fusioniert, zeitlich, sozial) → die Welt kann
+> LERNEN, was den Spieler freut (Black & White, generalisiert).**
 
 ---
 

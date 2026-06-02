@@ -408,6 +408,8 @@ class AnazhRealm {
                     // erzählt), emotionShift bei abrupten Achsen-Sprüngen.
                     journalEvent: { lastFired: -Infinity, cooldown: 90 },
                     emotionShift: { lastFired: -Infinity, cooldown: 60 },
+                    // W4 (V17.48) — die KI als Ko-Regulator: tröstet bei anhaltend trüber Stimmung.
+                    comfort: { lastFired: -Infinity, cooldown: 45 },
                 },
                 pool: {
                     firstSpawn: ["Hallo. Die Welt steht. Magst du dich umsehen?"],
@@ -434,11 +436,16 @@ class AnazhRealm {
                         "Etwas hat sich in mir eingeschrieben.",
                     ],
                     emotionShift: ["Du hast dich gerade verändert. Ich spüre es.", "Etwas in dir hat sich gewendet."],
+                    comfort: [
+                        "Ich bin hier. Was dich drückt, drückt auch mich — lass es uns tragen.",
+                        "Atme. Die Welt hält dich, und ich halte mit.",
+                        "Es darf schwer sein. Ich bleibe an deiner Seite, bis es leichter wird.",
+                    ],
                 },
                 // Hilfsfelder für die V2-Trigger
                 lastJournalSize: 0,
                 emotionsSnapshot: null,
-                poolIndex: { firstSpawn: 0, idle: 0, jumpBurst: 0, rainLong: 0, nexus: 0 },
+                poolIndex: { firstSpawn: 0, idle: 0, jumpBurst: 0, rainLong: 0, nexus: 0, comfort: 0 },
             },
             // Ring 2 – Nexus-DSL. Interpreter-State; siehe docs/nexus-dsl.md.
             // Pending sind geplante (delay'd) Sub-Programme, die in dslTick()
@@ -738,6 +745,7 @@ class AnazhRealm {
                 walkPhase: 0,
                 animationLastTick: -Infinity,
                 emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
+                mood: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }, // W3 — die langsame Grundstimmung (EMA der Emotion, reaktiv)
                 emotionDecayPerSec: 0.005,
                 emotionLastTick: -Infinity,
                 // Ring 3 V2: alle sechs Achsen koppeln. Jede hat ihren eigenen
@@ -1161,6 +1169,9 @@ class AnazhRealm {
                 grok.emotionsSnapshot = { ...e, takenAt: currentTime };
             }
         }
+        // W4 (V17.48) — die KI KOMMENTIERT nicht nur (emotionShift oben), sie TENDET: bei
+        // anhaltend trüber Stimmung eine tröstende Geste (Ko-Regulation, Pfeiler 1/Symbiose).
+        this._aiTendPlayer();
     }
 
     // Versucht, einen Journal-Eintrag via LLM in einen narrativen Satz zu
@@ -1839,7 +1850,27 @@ class AnazhRealm {
     _measureRuleReward(rule, now) {
         if (!rule._vPending || !rule._vPos) return;
         const after = this._fieldWohlStruktur(this.auraAt(rule._vPos.x, rule._vPos.z, now));
-        const reward = Math.max(-1, Math.min(1, after - (rule._vBase || 0)));
+        let reward = after - (rule._vBase || 0); // V17.43 — der lokale strukturelle δ am Effekt-Ort
+        // V17.50 Phase 4 — DIE KLAMMER: feuerte die Regel NAH am Spieler UND fiel das mit
+        // einer positiven Erlebnis-Tendenz des Spielers zusammen (δ_spieler > 0, die
+        // SITUATIONS-Überraschung), bekommt sie Bonus-Credit ∝ Nähe → der Nexus evolviert
+        // Regeln, die das Erleben des Spielers heben (Black & White, generalisiert auf
+        // Welt-Logik). Anti-Gaming by construction: der δ_spieler ist die SITUATION (lebendig
+        // + HP, V17.44 feedback-frei), NICHT die gestempelte Emotion → eine deposit_emotion-
+        // Regel kann den Bonus NICHT faken (sie hebt die Situation nicht). rule.value (lokaler
+        // struktureller δ) und δ_spieler sind dasselbe Signal an zwei Orten — am Spieler fallen
+        // sie zusammen, und genau das selektiert die Klammer.
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const pd = (this.state.player && this.state.player.appraisalDelta) || 0;
+        if (pm && pd > 0) {
+            const radius = AnazhRealm.WERTUNG.phase4Radius;
+            const d2 = (rule._vPos.x - pm.x) ** 2 + (rule._vPos.z - pm.z) ** 2;
+            if (d2 < radius * radius) {
+                const proximity = 1 - Math.sqrt(d2) / radius;
+                reward += pd * proximity * AnazhRealm.WERTUNG.phase4Weight;
+            }
+        }
+        reward = Math.max(-1, Math.min(1, reward));
         rule.value = (rule.value || 0) + AnazhRealm.WERTUNG.ruleValueBeta * (reward - (rule.value || 0));
         rule._vPending = false;
     }
@@ -1999,6 +2030,7 @@ class AnazhRealm {
                 const ppos = ctx.state.playerMesh && ctx.state.playerMesh.position;
                 const onPlayer = !!(ppos && Math.hypot(pos.x - ppos.x, pos.z - ppos.z) < 2.0);
                 let spawned = 0;
+                let lastBorn = null;
                 for (let i = 0; i < n; i++) {
                     if (ctx.budget.spawnsLeft <= 0) {
                         ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
@@ -2015,6 +2047,7 @@ class AnazhRealm {
                     // _tickCreatureLifeTrickle). Die ambiente Fauna bekommt das Flag
                     // NICHT → sie bleibt die FOLGE des Feldes (kein Runaway).
                     if (born && born.userData) born.userData.tendsLife = true;
+                    if (born) lastBorn = born;
                     // V17.27 — eine Geburt TRÄGT Leben ins Feld (die Schreib-Seite):
                     // sie hebt lebendig an der Wiege → schließt den at_field_need-
                     // Loop (der Mangel sinkt, der Nexus zieht weiter) + die Region
@@ -2031,7 +2064,11 @@ class AnazhRealm {
                 // "human") → joy + peace (nähren, der Taten-Kanal). Der NEXUS, der
                 // autonom Leben trägt, hebt NICHT die Spieler-Emotion (es ist seine
                 // Tat, nicht meine).
-                if (spawned > 0 && ctx.source === "human") this._feelAction("create_life");
+                if (spawned > 0 && ctx.source === "human")
+                    this._feelAction("create_life", {
+                        creature: lastBorn,
+                        magnitude: Math.min(1.6, 0.7 + spawned * 0.2),
+                    });
             },
             // Welle 6.G Phase 1.5 — Hylomorphismus-Unification.
             // spawn_tree/spawn_island/spawn_ufo waren in V7.73 als Placeholder
@@ -2235,6 +2272,11 @@ class AnazhRealm {
                         name: result.name,
                         parts: valid.parts.length,
                     });
+                    // V17.46 — der schöpferische Akt: einen EIGENEN Bauplan erschaffen
+                    // (Werkstatt/Chat) feuert Stolz (joy + hope) ∝ Komplexität (Magnitude)
+                    // + gefärbt von der Substanz. NUR die Mensch-Geste (nicht Nexus/LLM/
+                    // remote — wie spawn_creature: es ist MEINE Schöpfung, die mich stolz macht).
+                    if (ctx && ctx.source === "human") this._feelAction("create", { blueprint: result.name });
                 }
             },
             // Welle 6.D Etappe 3b — Bauplan als Rüstung markieren + Equip-Ops.
@@ -4070,11 +4112,30 @@ class AnazhRealm {
         // werden kann.
         const companionName = (this.state.grok && this.state.grok.companionName) || "Grok";
         const playerName = (this.state.player && this.state.player.name) || "Schöpfer";
+        // Der emotionale Kern W1 — die KI KENNT jetzt die Stimmung des Spielers (der
+        // fusionierte Readout, kein Sechs-Zahlen-Dump). Bisher war die Spieler-Emotion
+        // der Persona UNSICHTBAR (eine echte Lücke der Symbiose, Pfeiler 1); jetzt liest
+        // sie den reichen Zustand (dominantes Gefühl / „Zwiespalt" bei bittersüß / „ruhig").
+        const es = this._emotionState();
+        const moodLine =
+            es.intensity < 0.2
+                ? `${playerName} ist gerade emotional ruhig.`
+                : `${playerName} fühlt gerade vor allem: ${es.label}.`;
+        // W3 (V17.47) — die KI kennt jetzt AUCH die langsame GRUNDSTIMMUNG (das Temperament
+        // über die Zeit), getrennt vom akuten Gefühl: ein Spieler kann gerade aufgewühlt
+        // sein, aber im Grunde friedlich (oder umgekehrt) — die „Person mit Geschichte".
+        const ms = this._emotionState(this.state.player && this.state.player.mood);
+        const moodBgLine =
+            ms.intensity < 0.2
+                ? `Die Grundstimmung von ${playerName} ist über die Zeit ausgeglichen.`
+                : `Die Grundstimmung von ${playerName} ist über die Zeit: ${ms.label}.`;
         return [
             `Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
             `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
             `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
             `Dein Spieler heißt ${playerName} und hält sich gern auf: ${tendency}.`,
+            moodLine,
+            moodBgLine,
             journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
             "",
             "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
@@ -8160,24 +8221,84 @@ class AnazhRealm {
         }
     }
 
-    // V17.30 — der TATEN-Kanal von Pfeiler 2: eine reale Spieler-Handlung
-    // (bauen, ernten, Leben spawnen, erkunden, sich verbünden, Schaden nehmen)
-    // leitet Emotion über ALLE Achsen ab — generisch aus AnazhRealm.ACTION_TO_
-    // EMOTION (die Tabelle IST die Regel, wie der Chat-Sentiment + der Feld-Read).
-    // EINE Quelle, viele Aufrufer (an jeder Handlungs-Stelle verdrahtet). So liest
-    // die Emotion endlich, was der Spieler TUT, nicht nur was er TIPPT.
-    _feelAction(type) {
-        const map = AnazhRealm.ACTION_TO_EMOTION[type];
+    // V17.30/V17.46 — der TATEN-Kanal von Pfeiler 2 + die APPRAISAL-BRÜCKE: eine reale
+    // Spieler-Handlung (bauen, ernten, Leben spawnen, erkunden, sich verbünden, Schaden,
+    // erschaffen) leitet Emotion über ALLE Achsen ab. Zwei Quellen verschmelzen:
+    //   (1) die TAT-Richtung — AnazhRealm.ACTION_TO_EMOTION (die Basis, der FALLBACK für
+    //       tag-lose Akte wie explore/damage; V17.30);
+    //   (2) die SUBSTANZ — V17.46: ist ein Compound beteiligt (ein Bauplan, eine Kreatur),
+    //       EMERGIERT die Gefühls-Färbung aus seinen TAGS (computeCompoundTags → TAG_TO_
+    //       EMOTION, der Hylomorphismus der Emotionen — Regel über Tabelle), skaliert mit
+    //       der Magnitude (∝ Komplexität: eine Kathedrale bewegt mehr als eine Box).
+    // So fühlt sich build-mit-lebendigem-Holz anders an als build-mit-totem-Stein. `opts`
+    // optional → ohne Substanz exakt V17.30-Verhalten (kein Regress). `opts.blueprint`
+    // (Name ODER Objekt), `opts.creature`, `opts.tags`, `opts.magnitude` (Override).
+    _feelAction(type, opts) {
         const e = this.state.player && this.state.player.emotions;
-        if (!map || !e) return;
-        for (const axis of Object.keys(map)) {
-            e[axis] = Math.min(1, (e[axis] || 0) + map[axis]);
+        if (!e) return;
+        const base = AnazhRealm.ACTION_TO_EMOTION[type];
+        // Substanz auflösen: Tags + Magnitude (∝ Komplexität).
+        let tags = null;
+        let magnitude = 1;
+        if (opts && typeof opts === "object") {
+            if (opts.tags) {
+                tags = opts.tags;
+            } else if (opts.blueprint) {
+                const bp =
+                    typeof opts.blueprint === "string"
+                        ? this.state.blueprints && this.state.blueprints[opts.blueprint]
+                        : opts.blueprint;
+                if (bp && Array.isArray(bp.parts)) {
+                    tags = this.computeCompoundTags(bp);
+                    magnitude = this._substanceMagnitude(bp);
+                }
+            } else if (opts.creature) {
+                tags = this.computeCreatureCompoundTags(opts.creature);
+            }
+            if (typeof opts.magnitude === "number" && opts.magnitude > 0) magnitude = opts.magnitude;
         }
-        // V17.32 — der Moment des Fühlens MARKIERT den Ort: die Emotion der Tat
-        // wird an der Spieler-Zelle deponiert (das räumliche Gedächtnis der Welt
-        // — ein Ort, an dem ich baute/litt/staunte, trägt diese Stimmung weiter).
+        // Beitrag = Tat-Basis (× Magnitude) + Substanz-Appraisal.
+        const contrib = {};
+        if (base) for (const axis of Object.keys(base)) contrib[axis] = (contrib[axis] || 0) + base[axis] * magnitude;
+        if (tags) {
+            const sub = this._appraiseSubstance(tags, magnitude);
+            for (const axis of Object.keys(sub)) contrib[axis] = (contrib[axis] || 0) + sub[axis];
+        }
+        if (Object.keys(contrib).length === 0) return;
+        for (const axis of Object.keys(contrib)) {
+            e[axis] = Math.min(1, (e[axis] || 0) + contrib[axis]);
+        }
+        // V17.32 — der Moment des Fühlens MARKIERT den Ort: die (jetzt substanz-gefärbte)
+        // Emotion der Tat wird an der Spieler-Zelle deponiert (das räumliche Gedächtnis
+        // der Welt — ein Ort, an dem ich eine Kathedrale baute, trägt diese Stimmung).
         const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (pm) this._depositEmotion(pm.x, pm.z, map);
+        if (pm) this._depositEmotion(pm.x, pm.z, contrib);
+    }
+
+    // V17.46 — der HYLOMORPHISMUS der Emotionen: die Gefühls-Antwort EMERGIERT aus den
+    // Tags der Substanz (× Magnitude), über die frozen Resonanz-Tabelle TAG_TO_EMOTION.
+    // Tags können >1 sein (Welt-Effekte) → für die Emotion auf [0,1] geklemmt (die Richtung
+    // pro Tag), die KOMPLEXITÄT trägt die Magnitude. Gibt einen {achse: delta}-Beitrag.
+    _appraiseSubstance(tags, magnitude = 1) {
+        const T2E = AnazhRealm.TAG_TO_EMOTION;
+        const contrib = {};
+        if (!tags) return contrib;
+        for (const tagKey of Object.keys(T2E)) {
+            const strength = Math.min(1, Math.max(0, tags[tagKey] || 0));
+            if (strength <= 0.02) continue;
+            const map = T2E[tagKey];
+            for (const emo of Object.keys(map)) {
+                contrib[emo] = (contrib[emo] || 0) + map[emo] * strength * magnitude;
+            }
+        }
+        return contrib;
+    }
+
+    // V17.46 — die Magnitude eines Compounds ∝ Komplexität (Part-Zahl): eine Box (~2-4
+    // Parts) bewegt weniger als eine Kathedrale (~30). Saturierend + gebounded (~0.78..1.6).
+    _substanceMagnitude(bp) {
+        const n = bp && Array.isArray(bp.parts) ? bp.parts.length : 1;
+        return 0.7 + Math.min(0.9, n * 0.04);
     }
 
     updatePlayerEmotions(currentTime) {
@@ -8185,10 +8306,19 @@ class AnazhRealm {
         const prev = p.emotionLastTick;
         const delta = prev > -Infinity ? Math.max(0, currentTime - prev) : 0;
         p.emotionLastTick = currentTime;
+        // W3 (V17.47) — die langsame STIMMUNG (mood) lazy initialisieren (reaktiv, nicht
+        // persistiert — wie die Overlays; robust über jeden Load-Pfad).
+        if (!p.mood) p.mood = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
 
         if (delta > 0) {
-            const dec = p.emotionDecayPerSec * delta;
+            // W3 (V17.47) — PRO-ACHSE-Decay statt uniform: verschiedene Gefühle
+            // verfliegen verschieden schnell (Furcht/chaos kurz, Trauer/peace lang —
+            // die affektive Chronometrie). EMOTION_DECAY ist ein MULTIPLIKATOR auf den
+            // globalen emotionDecayPerSec → der UI-Schieber bleibt der Tempo-Knopf,
+            // die Tabelle gibt die Differenzierung (Regel über Tabelle).
+            const dmul = AnazhRealm.EMOTION_DECAY;
             for (const k of Object.keys(p.emotions)) {
+                const dec = p.emotionDecayPerSec * (dmul[k] || 1) * delta;
                 p.emotions[k] = Math.max(0, p.emotions[k] - dec);
             }
         }
@@ -8239,8 +8369,21 @@ class AnazhRealm {
             if (typeof p.wohlBaseline !== "number") {
                 p.wohlBaseline = sit; // Cold-Start: die erste Situation IST die Erwartung (kein δ)
             } else {
-                const dsig = sit - p.wohlBaseline; // [−1, 1] — besser/schlechter als erwartet
+                let dsig = sit - p.wohlBaseline; // [−1, 1] — besser/schlechter als erwartet
+                // V17.50 Phase 4 — den ROHEN Situations-δ (VOR der Stimmungs-Tönung) als kurze
+                // EMA festhalten: die jüngste Erlebnis-Tendenz des Spielers, für die Wertungs-
+                // Klammer. Anti-Gaming: die SITUATION (lebendig+HP, ökologisch), NICHT die
+                // gestempelte/getönte Emotion → eine Regel kann den Bonus nicht faken.
+                const aD = 1 - Math.exp(-delta / AnazhRealm.WERTUNG.appraisalEmaTau);
+                p.appraisalDelta = (p.appraisalDelta || 0) + aD * (dsig - (p.appraisalDelta || 0));
                 const dead = AnazhRealm.WERTUNG.appraisalDeadzone;
+                // W3 (V17.47) — stimmungs-kongruente Bewertung: NUR wenn ein REALES
+                // Ereignis vorliegt (|dsig| > deadzone) tönt die langsame STIMMUNG die
+                // Interpretation (ein gutes Ereignis fühlt sich in trüber Stimmung kleiner
+                // an, in heller größer — der Mechanismus, der Stimmungen klebrig + real
+                // macht). Bei konstanter Situation (kein Ereignis) KEINE Kongruenz → kein
+                // spontaner Stimmungs-Runaway (die teure V17.44-Feedback-Lehre, gewahrt).
+                if (Math.abs(dsig) > dead) dsig += AnazhRealm.EMOTION_MOOD_CONGRUENCE * this._moodValence();
                 if (dsig > dead) {
                     const g = AnazhRealm.WERTUNG.appraisalGain * (dsig - dead) * delta;
                     p.emotions.joy = Math.min(1, (p.emotions.joy || 0) + g);
@@ -8280,6 +8423,53 @@ class AnazhRealm {
             }
         }
 
+        // === Der emotionale Kern W1 — die FUSION/Kohärenz ===
+        // Gegensätzliche Achsen (negativer Dot in EMOTION_GEOMETRY: joy↔sorrow,
+        // peace↔chaos, awe↔peace …) dämpfen sich MILD → der Zustand wird EIN
+        // kohärenter Punkt, kein inkohärentes „6 unabhängige Maxima" (joy=1 UND
+        // sorrow=1 zugleich = bedeutungslos). Rein DISSIPATIV (treibt nur Richtung
+        // Kohärenz, kann nicht runaway-en — die V17.44-Feedback-Disziplin) +
+        // proportional zur GEGEN-Achse → eine EINZELNE klare Emotion (Gegen-Achse
+        // ~0) wird NICHT gedämpft → die 0.7-Trigger bleiben erreichbar (V17.30-
+        // Wächter). ADDITIV (alle bestehenden Kanäle bleiben). Damps werden ZUERST
+        // aus dem aktuellen Snapshot berechnet, DANN angewandt → scan-reihenfolge-
+        // unabhängig (deterministisch). Die Dämpfung EMERGIERT aus der Geometrie,
+        // kein Paar-Hardcode (der Hylomorphismus der Emotionen, eine Ebene höher).
+        if (delta > 0) {
+            const geo = AnazhRealm.EMOTION_GEOMETRY;
+            const axes = AnazhRealm.EMOTION_AXES;
+            const cohRate = AnazhRealm.EMOTION_COHERENCE_RATE;
+            const damp = {};
+            for (const a of axes) {
+                const ga = geo[a];
+                let d = 0;
+                for (const b of axes) {
+                    if (b === a) continue;
+                    const gb = geo[b];
+                    const dot = ga.valenz * gb.valenz + ga.erregung * gb.erregung;
+                    if (dot < 0) d += -dot * (p.emotions[b] || 0); // nur gegensätzliche ziehen
+                }
+                damp[a] = d;
+            }
+            for (const a of axes) {
+                if (damp[a] > 0) {
+                    p.emotions[a] = Math.max(0, (p.emotions[a] || 0) - cohRate * damp[a] * delta);
+                }
+            }
+        }
+
+        // W3 (V17.47) — die langsame STIMMUNG: ein EMA-Vektor über Minuten (das
+        // Temperament, in das die schnelle Emotion zerfällt). VIEL langsamer als die
+        // Emotion (moodTau ~Minuten) → die Stimmung ist die „Person mit Geschichte", die
+        // die nächste Bewertung kongruent färbt (oben) + die die KI/das Journal liest.
+        // Liest die FINALE Emotion dieses Ticks (nach Decay + allen Kanälen + Kohärenz).
+        if (delta > 0) {
+            const aMood = 1 - Math.exp(-delta / AnazhRealm.EMOTION_MOOD_TAU);
+            for (const k of AnazhRealm.EMOTION_AXES) {
+                p.mood[k] = (p.mood[k] || 0) + aMood * ((p.emotions[k] || 0) - (p.mood[k] || 0));
+            }
+        }
+
         const trigger = (axis, program) => {
             if (p.emotions[axis] < p.emotionThreshold) return;
             const last = p.emotionLastApply[axis] ?? -Infinity;
@@ -8297,6 +8487,131 @@ class AnazhRealm {
         trigger("hope", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]);
         trigger("peace", ["creatures_speed_mul", 0.7]);
         trigger("chaos", ["creatures_speed_mul", 1.5]);
+    }
+
+    // === Der emotionale Kern W1 — der fusionierte READOUT (docs/emotion-kern-plan.md) ===
+    // Projiziert die sechs Achsen über die EMOTION_GEOMETRY auf den kontinuierlichen
+    // Affekt-Raum + liest die FUSION: das dominante Gefühl, der Valenz/Erregung-
+    // Schwerpunkt und die INTENSITÄT (Abstand vom Neutralen, 6-dim). Der Witz, den
+    // das additive Modell verfehlt: bei bittersüß (joy + sorrow beide hoch) hebt sich
+    // die VALENZ ~auf, aber die INTENSITÄT bleibt HOCH — ein voller, ambivalenter
+    // Zustand, kein neutraler. So fühlt die Welt einen reichen Zustand statt sechs
+    // Zahlen — das speist die KI (llmBuildSystemPrompt), das Journal, die UI.
+    _emotionState(vec) {
+        // vec optional → standardmäßig die akute Emotion; mit p.mood übergeben gibt es
+        // den Readout der langsamen STIMMUNG (W3). EINE Maschinerie, zwei Zeitskalen.
+        const e = vec || (this.state.player && this.state.player.emotions);
+        const geo = AnazhRealm.EMOTION_GEOMETRY;
+        const axes = AnazhRealm.EMOTION_AXES;
+        const LABEL = AnazhRealm.EMOTION_LABEL;
+        if (!e) return { dominant: null, valence: 0, arousal: 0, intensity: 0, label: "leer", mix: null };
+        let valence = 0;
+        let arousal = 0;
+        let sumSq = 0;
+        let top1 = null;
+        let top1v = 0;
+        let top2 = null;
+        let top2v = 0;
+        for (const axis of axes) {
+            const v = Math.max(0, e[axis] || 0);
+            const g = geo[axis] || { valenz: 0, erregung: 0 };
+            valence += v * g.valenz;
+            arousal += v * g.erregung;
+            sumSq += v * v;
+            if (v > top1v) {
+                top2 = top1;
+                top2v = top1v;
+                top1 = axis;
+                top1v = v;
+            } else if (v > top2v) {
+                top2 = axis;
+                top2v = v;
+            }
+        }
+        const intensity = Math.sqrt(sumSq); // Abstand vom Neutralen — bittersüß = HOCH trotz Valenz~0
+        let label;
+        let mix = null;
+        if (intensity < 0.2 || !top1) {
+            label = "ruhig"; // wenig Aktivierung → ein ruhiger Grund-Affekt
+        } else if (top2 && top2v > 0.25 && top2v > 0.5 * top1v && geo[top1].valenz * geo[top2].valenz < 0) {
+            // zwei vergleichbar starke Gefühle GEGENSÄTZLICHER Valenz koexistieren
+            // → ein voller, ambivalenter Zustand (bittersüß), kein neutraler.
+            mix = [top1, top2];
+            label = `Zwiespalt (${LABEL[top1]} und ${LABEL[top2]})`;
+        } else {
+            label = LABEL[top1]; // ein klares dominantes Gefühl
+        }
+        return { dominant: top1, valence, arousal, intensity, label, mix };
+    }
+
+    // W3 (V17.47) — die Valenz der langsamen STIMMUNG (∈ [−1, 1], via EMOTION_GEOMETRY).
+    // Speist die stimmungs-kongruente Bewertung: eine trübe Stimmung tönt die nächste
+    // Bewertung negativ, eine helle positiv. Skaliert mit der Stimmungs-STÄRKE (eine
+    // fainte Stimmung färbt wenig), geklemmt → bounded.
+    _moodValence() {
+        const mood = this.state.player && this.state.player.mood;
+        if (!mood) return 0;
+        const geo = AnazhRealm.EMOTION_GEOMETRY;
+        let v = 0;
+        for (const axis of AnazhRealm.EMOTION_AXES) v += (mood[axis] || 0) * geo[axis].valenz;
+        return Math.max(-1, Math.min(1, v));
+    }
+
+    // W4 (V17.48) — die EMOTIONALE CONTAGION: die Emotion naher Kreaturen fließt zum
+    // Spieler (∝ Nähe × Bindung). RELAXATION zum Ziel (HEBEND, gebounded durch das Ziel
+    // ≤ 0.5 → kann NICHT runaway-en — die V17.44/V17.47-Feedback-Disziplin, ein drittes
+    // Mal). Lebt im Kreatur-Tick (updateCreatures), NICHT im Emotion-Tick → die Emotion-
+    // Kern-Ticks/Tests bleiben isoliert. Plus: die Bindung wächst, während eine FOLGENDE
+    // Kreatur nah ist (gemeinsame Zeit). Der Spieler→Kreatur-Rückweg ist „teils da" (der
+    // 0.7-hope-Trigger setzt die Kreaturen happy) — hier ist der NEUE Vorweg (Kreatur→Spieler).
+    _tickEmotionContagion(delta) {
+        if (!(delta > 0)) return;
+        const p = this.state.player;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm || !p || !p.emotions) return;
+        const cfg = AnazhRealm.EMOTION_CONTAGION;
+        const targets = AnazhRealm.CONTAGION_TARGET;
+        const creatures = this.state.creatures || [];
+        const r2 = cfg.radius * cfg.radius;
+        for (let i = 0; i < creatures.length; i++) {
+            const c = creatures[i];
+            if (!c || !c.position) continue;
+            const dx = c.position.x - pm.x;
+            const dz = c.position.z - pm.z;
+            const d2 = dx * dx + dz * dz;
+            if (d2 > r2) continue;
+            const proximity = 1 - Math.sqrt(d2) / cfg.radius; // 0 .. 1
+            // Bindung wächst, während eine FOLGENDE Kreatur nah ist (gemeinsame Zeit).
+            if (c.userData && c.userData.task && c.userData.task.name === "follow_player") {
+                c.userData.bond = Math.min(1, (c.userData.bond || 0) + cfg.bondGrowPerSec * proximity * delta);
+            }
+            const bond = (c.userData && c.userData.bond) || 0;
+            const emo = (this.state.creatureEmotions && this.state.creatureEmotions[i]) || "happy";
+            const target = targets[emo];
+            if (!target) continue;
+            const weight = cfg.rate * proximity * (cfg.bondFloor + (1 - cfg.bondFloor) * bond) * delta;
+            for (const axis of Object.keys(target)) {
+                const t = target[axis];
+                const cur = p.emotions[axis] || 0;
+                if (t > cur) p.emotions[axis] = Math.min(1, cur + weight * (t - cur)); // hebend, gebounded
+            }
+        }
+    }
+
+    // W4 (V17.48) — die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame
+    // STIMMUNG (W3) und PFLEGT sie — bei anhaltend trüber Stimmung eine tröstende Geste
+    // (Hoffnung + ein warmes Wort), nicht nur ein Kommentar. Self-limiting: der Hoffnungs-
+    // Schub hebt die Stimmungs-Valenz → über der Schwelle hört das Trösten auf (negative
+    // Rückkopplung → stabil). Die grokSpeak-Cooldown (45 s) gated die ganze Geste.
+    _aiTendPlayer() {
+        const p = this.state.player;
+        if (!p || !p.emotions) return;
+        if (this._moodValence() >= AnazhRealm.EMOTION_TEND.threshold) return; // nur bei anhaltend trüber Stimmung
+        if (!this.grokSpeak || !this.grokSpeak("comfort")) return; // cooldown-gegated; nur wenn die KI wirklich tröstet
+        const amt = AnazhRealm.EMOTION_TEND.amount;
+        p.emotions.hope = Math.min(1, (p.emotions.hope || 0) + amt); // der Trost hebt die Hoffnung
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (pm) this._depositEmotion(pm.x, pm.z, { hope: amt }); // der Ort erinnert die Geste
     }
 
     // ### Ring 4 — anazhSymphony V1 ###
@@ -11636,6 +11951,10 @@ class AnazhRealm {
         // applyCreatureBoost gefüllt, via tickCreatureBoosts gesäubert.
         // KEINE Persistenz — Boosts sind „Geste lebt im Moment".
         group.userData.boosts = [];
+        // W4 (V17.48) — die BINDUNG (∈ [0,1]): wächst, während die Kreatur folgt + nah ist
+        // + bei der „folge mir"-Geste; gewichtet die Contagion + den Schmerz des Verlusts.
+        // Reaktiv, NICHT persistiert (wie der Task — die Beziehung wird gelebt, nicht gespeichert).
+        group.userData.bond = 0;
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
@@ -13036,7 +13355,15 @@ class AnazhRealm {
         // (Beziehung, Pfeiler 1). Nur die echte Spieler-Geste (nicht silent =
         // Spawn-Default/Test-Reset).
         if (!options.silent && taskName === "follow_player" && prevName !== "follow_player") {
-            this._feelAction("bond");
+            this._feelAction("bond", { creature });
+            // W4 (V17.48) — die „folge mir"-Geste vertieft die Bindung (ein Sprung; sie
+            // wächst dann weiter, während die Kreatur nah folgt — _tickEmotionContagion).
+            if (creature.userData) {
+                creature.userData.bond = Math.min(
+                    1,
+                    (creature.userData.bond || 0) + AnazhRealm.EMOTION_CONTAGION.bondFollowBump
+                );
+            }
         }
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
@@ -13757,6 +14084,9 @@ class AnazhRealm {
 
     updateCreatures(delta) {
         this.state.creatureAnimationTime += delta;
+        // W4 (V17.48) — die emotionale CONTAGION + das Wachsen der Bindung leben HIER
+        // (im Kreatur-Tick), nicht im Emotion-Tick → die Emotion-Kern-Ticks bleiben isoliert.
+        this._tickEmotionContagion(delta);
         const workerData = [];
         // V8.49 — Scratch-Vektoren EINMAL angelegt + pro Kreatur pro Frame
         // wiederverwendet, statt mehrere THREE.Vector3 je Kreatur zu allokieren
@@ -17718,18 +18048,52 @@ class AnazhRealm {
     // V9.92 — letzter Spieler-Chunk-Index, zwischengespeichert für die
     // Lazy-BVH-Distance-Decision in `_ensureVoxelChunkAt`. Update im
     // Streaming-Tick.
+    // W5 (V17.49) — das WAGNIS graduiert: die explore-Magnitude EMERGIERT aus Neuheit
+    // (erste Begegnung > Wiederkehr) + Distanz vom Ursprung + Kühnheit (in karge/glut-Aura
+    // wagen). Ein vertrautes, nahes, üppiges Pendeln bewegt wenig; ein neuer, ferner,
+    // karger Vorstoß viel. Die Kühnheit liest das Feld (auraAt) — die Synergie mit dem
+    // lebendigen Feld. `state.visitedRegions` ist reaktiv (nicht persistiert), bounded.
+    _exploreMagnitude(pcx, pcz) {
+        const cfg = AnazhRealm.EXPLORE;
+        if (!this.state.visitedRegions) this.state.visitedRegions = new Set();
+        const regions = this.state.visitedRegions;
+        const key = pcx + "," + pcz;
+        const novel = !regions.has(key);
+        regions.add(key);
+        if (regions.size > cfg.maxRegions) {
+            const it = regions.values(); // Set hält Insertion-Order → die ältesten zuerst
+            for (let i = 0; i < cfg.pruneRegions; i++) {
+                const next = it.next();
+                if (next.done) break;
+                regions.delete(next.value);
+            }
+        }
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const dist = pm ? Math.hypot(pm.x, pm.z) : 0;
+        const distTerm = Math.min(1, dist / cfg.distScale) * cfg.distWeight; // das epische Reisen
+        let boldTerm = 0;
+        if (pm) {
+            const aura = this.auraAt(pm.x, pm.z, performance.now() / 1000);
+            const bold = Math.max(0, Math.min(1, (1 - (aura.lebendig || 0)) * 0.5 + (aura.glut || 0) * 0.5));
+            boldTerm = bold * cfg.boldWeight; // Kühnheit: in das Karge/Glühende wagen
+        }
+        const noveltyTerm = novel ? cfg.noveltyNew : cfg.noveltyRevisit;
+        return Math.max(cfg.min, Math.min(cfg.max, cfg.base + noveltyTerm + distTerm + boldTerm));
+    }
+
     _setLastPlayerVoxelChunk(pcx, pcz) {
         if (!this.state) return;
-        // V17.30 — Erkundung: betritt der Spieler einen ANDEREN Chunk, hebt das
-        // awe + hope (Entdeckung, der Taten-Kanal von Pfeiler 2) — rate-limitiert
-        // (alle ~6 s ein Entdeckungs-Schlag, nicht jede 16-m-Grenze), damit awe
-        // nicht beim normalen Laufen sättigt.
+        // V17.30/V17.49 — Erkundung: betritt der Spieler einen ANDEREN Chunk, hebt das
+        // awe + hope (Entdeckung, der Taten-Kanal von Pfeiler 2) — rate-limitiert (alle
+        // ~6 s ein Entdeckungs-Schlag, nicht jede 16-m-Grenze). W5: GRADUIERT über die
+        // Magnitude (Neuheit + Distanz + Kühnheit) — ein neuer, ferner, karger Vorstoß
+        // staunt VIEL mehr als ein vertrautes Pendeln.
         const prev = this.state.lastPlayerVoxelChunk;
         if (prev && (prev.cx !== pcx || prev.cz !== pcz)) {
             const now = performance.now() / 1000;
             if (now - (this.state.lastExploreFelt ?? -Infinity) >= 6) {
                 this.state.lastExploreFelt = now;
-                this._feelAction("explore");
+                this._feelAction("explore", { magnitude: this._exploreMagnitude(pcx, pcz) });
             }
         }
         this.state.lastPlayerVoxelChunk = { cx: pcx, cz: pcz };
@@ -34727,8 +35091,9 @@ class AnazhRealm {
                 .join(", ");
             this.log(`Gebaut: ${bm.blueprintName} (verbraucht ${consumedStr}).`, "INFO");
         }
-        // V17.30 — erschaffen hebt joy + hope (der Taten-Kanal von Pfeiler 2).
-        this._feelAction("build");
+        // V17.30/V17.46 — erschaffen hebt joy + hope, GEFÄRBT von der Substanz des
+        // Gebauten (lebendiges Holz ≠ toter Stein) + skaliert mit der Komplexität.
+        this._feelAction("build", { blueprint: bm.blueprintName });
         return true;
     }
 
@@ -34920,7 +35285,7 @@ class AnazhRealm {
         if (!removed) return null;
         // V17.30 — der Spieler erntet (sammelt Fülle) → joy + hope. Nur der
         // Spieler fühlt; eine erntende Kreatur (harvester="creature:…") nicht.
-        if (harvester === "player") this._feelAction("harvest");
+        if (harvester === "player") this._feelAction("harvest", { blueprint: blueprintName });
         if (typeof this.journalAppend === "function" && totalParts > 0) {
             const matSummary = Object.entries(materials)
                 .map(([m, n]) => `${n}× ${m}`)
@@ -40508,11 +40873,16 @@ class AnazhRealm {
         const ageSec = bornAt > 0 ? (Date.now() - bornAt) / 1000 : null;
         // Tags BEVOR removeCreature läuft (danach ist die Kreatur weg)
         const tags = this.computeCreatureCompoundTags(creature);
-        // Sorrow-Effekt (clamped)
-        if (this.state.player && this.state.player.emotions) {
-            const e = this.state.player.emotions;
-            e.sorrow = Math.max(0, Math.min(1, (e.sorrow || 0) + 0.2));
-        }
+        // W4 (V17.48) — der Verlust ist ein EREIGNIS: die Trauer ∝ Bindung × Vitalität.
+        // Eine gebundene, lebendige Gefährtin zu verlieren schmerzt VIEL mehr als ein
+        // namenloses Wesen (vorher: flach +0.2 für jede Kreatur). Der `lebendig`-Tag der
+        // Kreatur färbt hier SORROW (NICHT joy wie die W2-Bau-Brücke — dieselbe Substanz,
+        // im Verlust-Kontext anders bewertet: die Appraisal-Wahrheit, OCC/§1.1). Darum ein
+        // expliziter Magnitude statt der Tag-Brücke (lebendig → mehr Schmerz, nicht Freude).
+        const bond = (creature.userData && creature.userData.bond) || 0;
+        const lebendig = Math.min(1, Math.max(0, (tags && tags.lebendig) || 0));
+        const griefMag = 0.3 + bond * 1.2 + lebendig * 0.4; // ungebunden ~klein, tief gebunden ~Trauer
+        this._feelAction("loss", { magnitude: griefMag });
         // Journal-Eintrag
         if (typeof this.journalAppend === "function") {
             this.journalAppend("loss", `${name} kehrt zur Erde zurück.`, {
@@ -43875,7 +44245,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.44.0";
+AnazhRealm.VERSION = "17.50.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -43936,6 +44306,13 @@ AnazhRealm.WERTUNG = Object.freeze({
     // Sekunde, sanft, ADDITIV zu V17.30/V17.21); deadzone = Totzone gegen Zappeln.
     appraisalGain: 0.4,
     appraisalDeadzone: 0.05,
+    // V17.50 Phase 4 — DIE KLAMMER: rule.value (lokaler struktureller δ) und δ_spieler
+    // (der ROHE Situations-δ, ökologisch) sind dasselbe Vorhersagefehler-Signal. Eine
+    // Regel, die NAH am Spieler feuert UND mit positivem δ_spieler zusammenfällt, bekommt
+    // Bonus-Credit → die Welt lernt spieler-zentrisch (sie blüht, WO der Spieler ist).
+    appraisalEmaTau: 8, // s — die kurze EMA des Spieler-δ (die jüngste Erlebnis-Tendenz)
+    phase4Radius: 40, // m — nur Regeln innerhalb dieses Radius vom Spieler bekommen den Bonus
+    phase4Weight: 0.5, // wie stark ein positiver δ_spieler den Regel-Reward hebt (× Nähe)
 });
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
@@ -44831,6 +45208,30 @@ AnazhRealm.ACTION_TO_EMOTION = Object.freeze({
     bond: { peace: 0.12, joy: 0.06 }, // eine Kreatur folgt — Beziehung
     resonance: { awe: 0.1 }, // resonante Architektur erlebt
     damage: { sorrow: 0.12, chaos: 0.1 }, // Schaden/Gefahr — Angst
+    create: { joy: 0.1, hope: 0.1 }, // V17.46 — einen Bauplan ERSCHAFFEN (Werkstatt/Chat): der Stolz (× Komplexität)
+    loss: { sorrow: 0.15 }, // V17.48 — den Verlust einer Kreatur (× Magnitude ∝ Bindung × Vitalität)
+});
+
+// V17.46 — Der emotionale Kern W2: der HYLOMORPHISMUS der Emotionen (die Appraisal-
+// Brücke, docs/emotion-kern-plan.md). Die Gefühls-Antwort auf eine Tat EMERGIERT aus
+// den TAGS der beteiligten Substanz (Material × Form via computeCompoundTags) — nicht
+// aus einem Lookup nach Tat-NAME. EINE Resonanz-Tabelle (Tag-Achse → Emotions-Beitrag),
+// GENAU wie FIELD_TO_EMOTION die Feld-Achsen abbildet — nur ist die Quelle hier der
+// Compound. So fühlt sich build-mit-lebendigem-Holz anders an als build-mit-totem-Stein,
+// eine Kathedrale anders als eine Box (× Magnitude ∝ Komplexität). Regel über Tabelle,
+// Logik über Hardcode: EINE Quelle (die Tags), viele emergente Gefühle. Browser-justierbar.
+// (sorrow erzeugt KEIN Tag — kein Material ist „traurig"; Trauer kommt aus Schaden/Verlust/δ.)
+AnazhRealm.TAG_TO_EMOTION = Object.freeze({
+    lebendig: { peace: 0.12, joy: 0.07 }, // Leben/Nähren — warm, ruhig, lebendig
+    dichte: { hope: 0.08, peace: 0.03 }, // Solidität, Dauer, Vollendung
+    härte: { chaos: 0.05, hope: 0.03 }, // Härte/Kraft — Potenz (auf chaos projiziert)
+    zähigkeit: { hope: 0.05 }, // Widerstandskraft, Ausdauer
+    wärmeleitung: { peace: 0.05 }, // Wärme, Behaglichkeit
+    stromleitung: { awe: 0.05, chaos: 0.03 }, // Energie, Strom
+    magieleitung: { awe: 0.1, hope: 0.05 }, // Magie, Wunder, Potenzial
+    transparent: { awe: 0.05, peace: 0.03 }, // ätherische Klarheit
+    brennbar: { chaos: 0.07, awe: 0.05 }, // Feuer, Gefahr-Thrill, Flüchtigkeit
+    resoniert: { awe: 0.1, hope: 0.04 }, // das Singen, Wunder
 });
 
 // V17.23 Sky-Harmonie — die maximale Blend-Stärke der DSL/Mood-Himmels-Tönung
@@ -44877,6 +45278,120 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
 // Die sechs Emotions-Achsen — die EINE Liste (Hylomorphismus-Stil), genutzt vom
 // räumlichen Emotions-Blend (auraAt) + den Reset-Pfaden.
 AnazhRealm.EMOTION_AXES = Object.freeze(["joy", "awe", "sorrow", "hope", "peace", "chaos"]);
+
+// === Der emotionale Kern W1 — das dimensionale Substrat (docs/emotion-kern-plan.md) ===
+// Unter den sechs diskreten Gefühlen liegt ein KONTINUIERLICHER Raum: jeder Affekt
+// ist ein PUNKT in Valenz × Erregung (Russell-Circumplex, Mehrabian-PAD). Diese
+// Geometrie macht aus „6 unabhängigen Schiebern" EINEN kohärenten Zustand:
+//   - der READOUT (`_emotionState`) liest den Valenz/Erregung-Schwerpunkt + die
+//     INTENSITÄT (Abstand vom Neutralen, 6-dim) → bittersüß (joy+sorrow) hat
+//     Valenz~0 ABER hohe Intensität (die FUSION, die das additive Modell verfehlt);
+//   - die KOHÄRENZ (in updatePlayerEmotions) lässt gegensätzliche Achsen (negativer
+//     Dot in DIESER Geometrie) sich mild dämpfen → der Zustand wird ein Punkt, kein
+//     inkohärentes „6 Maxima zugleich". Die Dämpfung EMERGIERT aus der Geometrie
+//     (kein Sonderfall-Paar-Hardcode) — der Hylomorphismus der Emotionen, eine Ebene
+//     höher. Werte aus dem Circumplex (joy/awe/hope/peace +Valenz, sorrow/chaos
+//     −Valenz; awe ambivalent → ~0, höchste Erregung/„Weite"). Browser-justierbar.
+AnazhRealm.EMOTION_GEOMETRY = Object.freeze({
+    joy: { valenz: 0.9, erregung: 0.5 }, // hohe Valenz, gehobene Erregung
+    awe: { valenz: 0.1, erregung: 0.9 }, // ambivalent (Furcht + Wunder), höchste Erregung/Weite
+    sorrow: { valenz: -0.9, erregung: -0.4 }, // tiefe Valenz, niedrige Erregung
+    hope: { valenz: 0.7, erregung: 0.2 }, // positiv, sanfte zukunfts-Erregung
+    peace: { valenz: 0.6, erregung: -0.7 }, // positiv, ruhig (niedrigste Erregung)
+    chaos: { valenz: -0.7, erregung: 0.7 }, // negativ, hohe Erregung (das Gegenteil von Frieden)
+});
+
+// Menschen-lesbare Namen der Achsen — der fusionierte Readout (`_emotionState`)
+// gibt sie an die KI/das Journal/die UI als REICHEN Zustand statt sechs Zahlen.
+AnazhRealm.EMOTION_LABEL = Object.freeze({
+    joy: "Freude",
+    awe: "Ehrfurcht",
+    sorrow: "Trauer",
+    hope: "Hoffnung",
+    peace: "Frieden",
+    chaos: "Aufruhr",
+});
+
+// Die GENTLE Rate der Kohärenz-Dämpfung (pro Sekunde × Gegen-Achsen-Aktivierung ×
+// |Dot|). Bewusst klein: eine EINZELNE klare Emotion (Gegen-Achse ~0) wird NICHT
+// gedämpft (die 0.7-Trigger bleiben erreichbar, V17.30); nur ein inkohärenter
+// Doppel-Maxima-Zustand (joy UND sorrow hoch) löst sich sanft auf. Browser-justierbar.
+AnazhRealm.EMOTION_COHERENCE_RATE = 0.04;
+
+// === Der emotionale Kern W3 — Fast/Slow: EMOTION vs. STIMMUNG (docs/emotion-kern-plan.md) ===
+// Gefühl hat eine ZEIT-Struktur (affektive Chronometrie, Frijda/Kuppens): die schnelle
+// EMOTION (akuter Spike, charakteristischer Decay) vs. die langsame STIMMUNG (das
+// Temperament, in das die Emotion zerfällt). EMOTION_DECAY ist der per-Achse-MULTIPLIKATOR
+// auf den globalen emotionDecayPerSec: Furcht/chaos verfliegt schnell (×2.2), Trauer/peace
+// bleibt (×0.55/0.6), awe/Wunder mittel-schnell (×1.4), joy/hope mittel. Browser-justierbar.
+// (Default-Verhalten: Multiplikator 1 ⇒ exakt der alte uniforme Decay; die Differenzierung
+// ist die Tabelle — Regel über Tabelle, der UI-Schieber bleibt der globale Tempo-Knopf.)
+AnazhRealm.EMOTION_DECAY = Object.freeze({
+    joy: 1.0, // mittel — Freude verklingt normal
+    awe: 1.4, // Wunder/Überraschung verfliegt etwas schneller
+    sorrow: 0.55, // Trauer BLEIBT (zerfällt langsam → ~1.8× länger)
+    hope: 0.9, // Hoffnung lingert leicht
+    peace: 0.6, // Zufriedenheit/Frieden hält an
+    chaos: 2.2, // Furcht/Unruhe verfliegt SCHNELL (akut, kurz)
+});
+// Die Zeitkonstante der STIMMUNG (s): die mood-EMA über ~2 Minuten = das Temperament.
+AnazhRealm.EMOTION_MOOD_TAU = 120;
+// Die Stärke der stimmungs-kongruenten Bewertung (× moodValence ∈ [−1,1], NUR auf einen
+// REALEN δ — Math.abs(dsig) > deadzone — addiert → bei konstanter Situation KEINE Kongruenz
+// → kein spontaner Stimmungs-Runaway, die V17.44-Feedback-Lehre). Mild, browser-justierbar.
+AnazhRealm.EMOTION_MOOD_CONGRUENCE = 0.08;
+
+// === Der emotionale Kern W4 — das SOZIALE: Contagion + Bindung + Ko-Regulation ===
+// Gefühl ist SOZIAL (Hatfield/Bowlby/Gross): Emotionen FLIESSEN zwischen Wesen. Die
+// Emotion naher Kreaturen fließt zum Spieler (∝ Nähe × Bindung) — als RELAXATION zum
+// Ziel (HEBEND, gebounded durch das Ziel ≤ 0.5 → kann NICHT runaway-en, die V17.44-
+// Feedback-Disziplin; lebt im Kreatur-Tick, NICHT im Emotion-Tick → die Emotion-Kern-
+// Tests bleiben isoliert). Die Bindung (`creature.userData.bond` ∈ [0,1]) wächst, während
+// eine FOLGENDE Kreatur nah ist (gemeinsame Zeit) + bei der „folge mir"-Geste; sie
+// gewichtet die Contagion + den Schmerz des Verlusts. Browser-justierbar.
+AnazhRealm.EMOTION_CONTAGION = Object.freeze({
+    radius: 14, // m — die Reichweite des emotionalen Felds einer Kreatur
+    rate: 0.05, // pro Sekunde — die Stärke des Flusses (relaxation, gebounded)
+    bondFloor: 0.3, // auch eine ungebundene Kreatur färbt ein wenig (0.3 .. 1.0 mit bond)
+    bondGrowPerSec: 0.03, // bond wächst, während eine folgende Kreatur nah ist
+    bondFollowBump: 0.12, // bond-Sprung bei der „folge mir"-Geste (assignCreatureTask)
+});
+// Die binäre Kreatur-Emotion → ein Spieler-Emotions-ZIEL (hebend, gebounded; ≤ 0.5 →
+// die Contagion sättigt, sie kann den Spieler nicht über das Gefühl der Kreatur treiben).
+AnazhRealm.CONTAGION_TARGET = Object.freeze({
+    happy: { joy: 0.5, peace: 0.4 }, // ein freudiges Wesen hebt + beruhigt
+    sad: { sorrow: 0.5 }, // ein leidendes Wesen betrübt
+});
+// Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
+// TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur
+// ein Kommentar. Self-limiting: der Hoffnungs-Schub hebt die Stimmungs-Valenz → über der
+// Schwelle stoppt das Trösten (negative Rückkopplung → stabil, kein Runaway).
+AnazhRealm.EMOTION_TEND = Object.freeze({
+    threshold: -0.35, // moodValence darunter (anhaltend trüb) → die KI tröstet
+    amount: 0.12, // der Hoffnungs-Schub der tröstenden Geste
+});
+
+// === Der emotionale Kern W5 — das ABENTEUER GRADUIERT (docs/emotion-kern-plan.md) ===
+// Bis hier feuerte `explore` flach (awe+hope) bei JEDEM Chunk-Wechsel. Jetzt wird das
+// WAGNIS gewichtet: die explore-Magnitude EMERGIERT aus (1) NEUHEIT (erste Begegnung mit
+// einer Region > Wiederkehr, via `state.visitedRegions`), (2) DISTANZ vom Ursprung (das
+// epische Reisen), (3) KÜHNHEIT (in eine karge/glut-Aura wagen → Mut). Synergie: die
+// Appraisal (V17.44) wertet das ZIEL (lebendig steigt), W5 den AKT des Wagens; die
+// Kühnheit liest das Feld (auraAt). Binär → graduiert (× `_substanceMagnitude`-Pfad).
+// (Der KAMPF-Affekt — Zorn/Furcht/Schuld differenziert — wartet bewusst auf eine echte
+// Kampf-Mechanik: die W1-Geometrie + die W2-Brücke sind das fertige Substrat dafür.)
+AnazhRealm.EXPLORE = Object.freeze({
+    base: 0.3, // der Grund-Beitrag jedes Chunk-Wechsels
+    noveltyNew: 0.7, // erste Begegnung mit einer Region → starkes Staunen
+    noveltyRevisit: 0.05, // Wiederkehr → kaum (du kennst den Ort)
+    distScale: 600, // m — die Distanz vom Ursprung, ab der das Reisen episch wird
+    distWeight: 0.4, // der Distanz-Beitrag (geklemmt auf 1× distWeight)
+    boldWeight: 0.5, // die Kühnheit (karge/glut-Aura) als Mut-Beitrag
+    min: 0.3,
+    max: 1.8, // ein neuer, ferner, karger Wagnis bewegt ~6× ein vertrautes Pendeln
+    maxRegions: 4000, // die visitedRegions-Map bounded halten
+    pruneRegions: 1000, // beim Überlauf die ältesten Regionen vergessen
+});
 
 AnazhRealm.EMOTION_FIELD = Object.freeze({
     decayPerSec: 0.012, // Halbwertszeit ~58 s — Gefühle verblassen schneller als Leben

@@ -282,7 +282,11 @@ EHRLICH: action-spezifische Gewöhnung (das 100. Haus) ist NICHT voll gelöst (d
 Nudge bleibt fix) — bewusst (Schöpfung darf belohnend bleiben); die SITUATIONS-Gewöhnung ist der
 echte Tretmühl-Effekt.
 
-**Phase 4 (V17.45, KÜR) — Der Kreis: die Welt lernt, was DICH glücklich macht.**
+**Phase 4 (KÜR — NACH dem Emotion-Kern, `docs/emotion-kern-plan.md`) — Der Kreis: die
+Welt lernt, was DICH glücklich macht. ✅ GEBAUT (V17.50).** (Re-sequenziert 02.06.: V17.45 wurde der
+Emotion-Kern W1 — das dimensionale Substrat + die Fusion; Phase 4 folgt, sobald der
+Emotion-Kern das `δ_spieler` REICH gemacht hat. Die Klammer ist nur so mächtig wie das
+Erleben, das sie selektiert — darum erst der Kern, dann die Klammer.)
 Die Klammer: `rule.value` und `δ_spieler` sind DASSELBE Vorhersagefehler-Signal an
 verschiedenen Orten. Eine Regel, die nahe dem Spieler feuert UND mit einem positiven
 `δ_spieler` zusammenfällt, bekommt Bonus-Credit → der Nexus **evolviert Regeln, die das
@@ -291,6 +295,29 @@ ist der Punkt, an dem es „besser als die Profis" wird: ein selbst-evolvierende
 Satz, selektiert durch die affektive Antwort des Spielers, alles aus EINER Gleichung.
 **Vorsichtig + ehrlich** (Reward-Hacking-Gefahr, §6); „fühlt es sich richtig an" ist der
 Schöpfer-Browser-Audit.
+
+> **GEBAUT (V17.50):** **(1)** der ROHE Situations-δ (vor der Stimmungs-Tönung) wird als kurze
+> EMA `state.player.appraisalDelta` festgehalten (`appraisalEmaTau` 8 s — die jüngste Erlebnis-
+> Tendenz), im bestehenden V17.44-Appraisal-Block. **(2)** in `_measureRuleReward` bekommt eine
+> Regel, deren Effekt-Ort INNERHALB `phase4Radius` (40 m) des Spielers liegt UND deren Messung mit
+> `appraisalDelta > 0` zusammenfällt, einen Bonus `+= appraisalDelta · Nähe · phase4Weight (0.5)`
+> auf den Reward (vor dem Klemmen + der value-EMA). So bekommt eine Regel, die nah am Spieler
+> blüht (lebendig@player steigt → δ_spieler>0), DOPPELTEN Credit (Phase 2 lokal + Phase 4 Spieler)
+> → der Nexus wird spieler-zentrisch (`_composeNexusRule` zieht wert-gewichtet, V17.43). **DIE
+> ANTI-GAMING-WURZEL (§6.1 by construction): der δ_spieler ist die SITUATION (lebendig + HP, V17.44
+> feedback-frei), NICHT die gestempelte/getönte Emotion** — eine `deposit_emotion`-Regel hebt die
+> Situation NICHT → `appraisalDelta` bleibt ~0 → KEIN Bonus → kein Reward-Hacking (gemessen: hohe
+> Stimmung + flache Situation → appraisalDelta ~0). **GEMESSEN (`checkBandV1750Klammer`, 7 grün):**
+> Config, **ANTI-GAMING-Wurzel** (appraisalDelta trackt die Situation [steigt mit Leben] + IGNORIERT
+> die Emotion [hohe Stimmung/flache Situation → ~0]), **KONSUM die Klammer** (nah + δ_spieler>0 → mehr
+> Wert), der Proximity-Gate (fern → kein Bonus), **ANTI-GAMING end-to-end** (nah aber δ≤0 → kein
+> Bonus, Phase 2 unverändert), wired. node-check/format/lint grün, „Alle Invarianten OK". **EHRLICH:
+> Phase 4 nutzt den ökologischen Situations-δ (anti-gaming), NICHT die reiche FELT-Valenz** (die wäre
+> über `deposit_emotion` fakebar — der Reward-Hacking-Trugschluss). Der reiche Emotion-Kern (W1–W5)
+> macht das ERLEBEN des Spielers reich (er FÜHLT die Heilung als Freude über die Feld-Drift), die
+> SELEKTION bleibt ökologisch — komplementär: der Spieler fühlt richly, die Welt lernt ökologisch,
+> beide dienen „die Welt blüht, wo du bist". Ob sich der gelernte Kreis „richtig anfühlt" ist der
+> Schöpfer-Browser. **Damit ist der WERTUNGS-BOGEN (Phase 1–4) KOMPLETT: lesen → schreiben → WERTEN.**
 
 ---
 

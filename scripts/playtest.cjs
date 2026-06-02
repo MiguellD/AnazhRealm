@@ -1276,12 +1276,14 @@ async function checkBandV1730EmotionFromBeing(ctx) {
         out.bondPeace = e.peace > 0;
         reset();
         // Hooks an jeder realen Handlungs-Stelle (Source-Proben)
-        out.hookBuild = /_feelAction\("build"\)/.test(r.confirmBuild.toString());
-        out.hookDamage = /_feelAction\("damage"\)/.test(r.damagePlayer.toString());
-        out.hookHarvest = /_feelAction\("harvest"\)/.test(r.harvestArchitecture.toString());
-        out.hookBond = /_feelAction\("bond"\)/.test(r.assignCreatureTask.toString());
-        out.hookExplore = /_feelAction\("explore"\)/.test(r._setLastPlayerVoxelChunk.toString());
-        out.hookLife = /_feelAction\("create_life"\)/.test(r.dslEffects.spawn_creature.toString());
+        // V17.46 — die Hooks tragen jetzt z.T. ein opts-Argument (die Substanz) → Prefix-
+        // Match statt exaktem ")" (V9.56-i: die strukturelle Probe wandert mit dem Code).
+        out.hookBuild = /_feelAction\("build"/.test(r.confirmBuild.toString());
+        out.hookDamage = /_feelAction\("damage"/.test(r.damagePlayer.toString());
+        out.hookHarvest = /_feelAction\("harvest"/.test(r.harvestArchitecture.toString());
+        out.hookBond = /_feelAction\("bond"/.test(r.assignCreatureTask.toString());
+        out.hookExplore = /_feelAction\("explore"/.test(r._setLastPlayerVoxelChunk.toString());
+        out.hookLife = /_feelAction\("create_life"/.test(r.dslEffects.spawn_creature.toString());
         // ZUSTAND-Kanal: niedrige HP driftet sorrow/chaos (updatePlayerEmotions, pfad)
         const upe = r.updatePlayerEmotions.toString();
         out.hpChannel = /hpMax/.test(upe) && /sorrow/.test(upe) && /chaos/.test(upe);
@@ -3047,6 +3049,691 @@ async function checkBandV1744Appraisal(ctx) {
         "V17.44 Appraisal: V17.30 bleibt heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle + feuert (δ ist ADDITIV)",
         res.triggerPreserved
     );
+}
+
+// V17.45 — Der emotionale Kern W1: das dimensionale Substrat + die FUSION
+// (docs/emotion-kern-plan.md). Unter den sechs diskreten Gefühlen liegt ein
+// kontinuierlicher Affekt-Raum (EMOTION_GEOMETRY: Valenz × Erregung, Russell). Der
+// fusionierte Readout (`_emotionState`) liest das dominante Gefühl + den Schwerpunkt
+// + die INTENSITÄT (6-dim Abstand vom Neutralen) — bittersüß hat Valenz~0 ABER hohe
+// Intensität (die Fusion, die das additive Modell VERFEHLT). Eine gentle Kohärenz
+// in updatePlayerEmotions lässt gegensätzliche Achsen sich mild dämpfen → der
+// Zustand wird ein kohärenter Punkt. Diese Welle prüft KONSUM (die KI kennt jetzt
+// die Stimmung — vorher eine Lücke), nicht blosse Existenz (V17.31-Lehre).
+async function checkBandV1745EmotionCore(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const GEO = r.constructor.EMOTION_GEOMETRY;
+        const axes = r.constructor.EMOTION_AXES;
+
+        // save
+        const savedEmo = { ...p.emotions };
+        const savedBase = p.wohlBaseline;
+        const savedTick = p.emotionLastTick;
+        const savedApply = { ...(p.emotionLastApply || {}) };
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        const savedEmoField = r.state.emotionField;
+        const savedHp = p.hp;
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+
+        // (1) Die Geometrie: alle 6 Achsen, prinzipielle Vorzeichen (Russell-Circumplex).
+        out.geoComplete =
+            !!GEO &&
+            axes.every((a) => GEO[a] && typeof GEO[a].valenz === "number" && typeof GEO[a].erregung === "number");
+        out.geoValenceSigns =
+            GEO.joy.valenz > 0 && GEO.hope.valenz > 0 && GEO.peace.valenz > 0 && GEO.sorrow.valenz < 0 && GEO.chaos.valenz < 0;
+        out.geoArousalOpposed = GEO.peace.erregung < 0 && GEO.chaos.erregung > 0; // peace↔chaos = Erregungs-Gegenpol
+
+        // (2) Der Readout — ein KLARES dominantes Gefühl.
+        setEmo({ joy: 0.8 });
+        const sClear = r._emotionState();
+        out.clearDominant =
+            sClear.dominant === "joy" && sClear.valence > 0.5 && sClear.intensity > 0.7 && sClear.label === "Freude";
+
+        // (3) Die FUSION — bittersüß: die VALENZ hebt sich auf, die INTENSITÄT bleibt HOCH.
+        setEmo({ joy: 0.7, sorrow: 0.7 });
+        const sMix = r._emotionState();
+        out.bittersweetValenceCancels = Math.abs(sMix.valence) < 0.1;
+        out.bittersweetIntensityHigh = sMix.intensity > 0.9; // das additive Modell verfehlt das
+        out.bittersweetLabel = typeof sMix.label === "string" && sMix.label.includes("Zwiespalt") && Array.isArray(sMix.mix);
+
+        // (4) Ruhe — wenig Aktivierung → ein ruhiger Grund-Affekt.
+        setEmo({});
+        const sCalm = r._emotionState();
+        out.calmReadout = sCalm.intensity < 0.2 && sCalm.label === "ruhig";
+
+        // (5) KONSUM (kein Passagier, V17.31): die KI KENNT die Stimmung des Spielers
+        // (llmBuildSystemPrompt — vorher trug der Persona-Prompt NULL Emotion).
+        setEmo({ joy: 0.8 });
+        out.promptClear = r.llmBuildSystemPrompt().includes("Freude");
+        setEmo({ joy: 0.7, sorrow: 0.7 });
+        out.promptMix = r.llmBuildSystemPrompt().includes("Zwiespalt");
+        setEmo({});
+        out.promptCalm = r.llmBuildSystemPrompt().includes("ruhig");
+
+        // (6) Die KOHÄRENZ — ein Gegenpol (sorrow) dämpft joy; eine EINZELNE klare
+        // Emotion wird NICHT gedämpft (der V17.30-Wächter: 0.7 bleibt erreichbar).
+        // Differential gegen die gleiche Welt-Position → gemeinsame Feld-Drift kürzt sich.
+        r.state.lifeField = new Map();
+        r.state.emotionField = new Map();
+        p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
+        const pm = r.state.playerMesh.position;
+        const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        const supApply = { joy: 9000, awe: 9000, sorrow: 9000, hope: 9000, peace: 9000, chaos: 9000 }; // Trigger unterdrücken
+        setEmo({ joy: 0.8, sorrow: 0.8 }); // joy + Gegenpol
+        p.wohlBaseline = sit; // δ=0 → kein Appraisal
+        p.emotionLastApply = { ...supApply };
+        p.emotionLastTick = 9000;
+        r.updatePlayerEmotions(9001);
+        const joyWithOpp = p.emotions.joy;
+        setEmo({ joy: 0.8 }); // joy allein
+        p.wohlBaseline = sit;
+        p.emotionLastApply = { ...supApply };
+        p.emotionLastTick = 9000;
+        r.updatePlayerEmotions(9001);
+        const joyAlone = p.emotions.joy;
+        out.coherenceDamps = joyAlone - joyWithOpp > 0.02; // der Gegenpol zieht joy herunter
+        out.singleNotDamped = joyAlone > 0.75; // eine klare Emotion bleibt (0.7-Trigger heil)
+
+        // restore
+        setEmo(savedEmo);
+        p.wohlBaseline = savedBase;
+        p.emotionLastTick = savedTick;
+        p.emotionLastApply = savedApply;
+        p.hp = savedHp;
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        r.state.emotionField = savedEmoField;
+        return out;
+    });
+
+    check("V17.45 Emotion-Kern: EMOTION_GEOMETRY vollständig (alle 6 Achsen, Valenz × Erregung)", res.geoComplete);
+    check("V17.45 Emotion-Kern: prinzipielle Valenz-Vorzeichen (joy/hope/peace +, sorrow/chaos −) — Russell", res.geoValenceSigns);
+    check("V17.45 Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol (die Geometrie trägt die Kohärenz)", res.geoArousalOpposed);
+    check("V17.45 Emotion-Kern: Readout — ein klares dominantes Gefühl (joy=0.8 → Freude, Valenz +)", res.clearDominant);
+    check("V17.45 Emotion-Kern: FUSION — bittersüß hebt die Valenz auf (~0)", res.bittersweetValenceCancels);
+    check(
+        "V17.45 Emotion-Kern: FUSION — bittersüß behält HOHE Intensität (das additive Modell verfehlt das)",
+        res.bittersweetIntensityHigh
+    );
+    check('V17.45 Emotion-Kern: FUSION — bittersüß labelt „Zwiespalt" + nennt die zwei Gefühle (mix)', res.bittersweetLabel);
+    check('V17.45 Emotion-Kern: Ruhe — wenig Aktivierung → „ruhig"', res.calmReadout);
+    check("V17.45 Emotion-Kern: KONSUM — die KI (llmBuildSystemPrompt) kennt ein klares Gefühl (Freude)", res.promptClear);
+    check("V17.45 Emotion-Kern: KONSUM — die KI kennt den Zwiespalt (bittersüß)", res.promptMix);
+    check("V17.45 Emotion-Kern: KONSUM — die KI kennt die Ruhe", res.promptCalm);
+    check("V17.45 Emotion-Kern: Kohärenz — ein Gegenpol (sorrow) dämpft joy (der Zustand wird kohärent)", res.coherenceDamps);
+    check("V17.45 Emotion-Kern: Kohärenz — eine EINZELNE klare Emotion wird NICHT gedämpft (0.7-Trigger heil)", res.singleNotDamped);
+}
+
+// V17.46 — Der emotionale Kern W2: die APPRAISAL-BRÜCKE + der Hylomorphismus
+// (docs/emotion-kern-plan.md, der Keystone). Die Gefühls-Antwort auf eine Tat
+// EMERGIERT aus den TAGS der beteiligten Substanz (computeCompoundTags → TAG_TO_
+// EMOTION × Magnitude), nicht aus einem Lookup nach Tat-NAME. Regel über Tabelle,
+// Logik über Hardcode. Diese Welle prüft KONSUM (build mit lebendigem Holz ≠ mit
+// totem Stein, auf den 6 Achsen sichtbar; der schöpferische Akt feuert Stolz ∝
+// Komplexität), nicht blosse Existenz (V17.31-Lehre). ACTION_TO_EMOTION bleibt als
+// FALLBACK für tag-lose Akte (explore/damage) → kein Regress.
+async function checkBandV1746EmotionSubstance(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const T2E = r.constructor.TAG_TO_EMOTION;
+        const A2E = r.constructor.ACTION_TO_EMOTION;
+        const savedEmo = { ...p.emotions };
+        const savedLife = r.state.lifeField;
+        const savedEmoField = r.state.emotionField;
+        r.state.lifeField = new Map();
+        r.state.emotionField = new Map(); // Deposits gehen in eine Wegwerf-Map (kein Leak)
+        const reset = () => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
+        };
+
+        // (1) die Resonanz-Tabelle + der schöpferische Akt
+        out.tableExists = !!T2E && typeof T2E.lebendig === "object" && typeof T2E.dichte === "object";
+        out.createAct = !!A2E && typeof A2E.create === "object";
+
+        // (2) _appraiseSubstance — die Substanz färbt das Gefühl
+        const sLeb = r._appraiseSubstance({ lebendig: 1 }, 1);
+        const sDic = r._appraiseSubstance({ dichte: 1 }, 1);
+        const sBrn = r._appraiseSubstance({ brennbar: 1 }, 1);
+        out.lebendigPeace = (sLeb.peace || 0) > (sLeb.hope || 0) && (sLeb.peace || 0) > 0; // lebendig → peace dominant
+        out.dichteHope = (sDic.hope || 0) > (sDic.peace || 0) && (sDic.hope || 0) > 0; // dichte → hope dominant
+        out.brennbarChaos = (sBrn.chaos || 0) > 0 && (sBrn.awe || 0) > 0; // brennbar → chaos + awe
+        out.noLebInDichte = !((sDic.joy || 0) > 0); // dichte erzeugt KEINE lebendig-joy (Achsen sauber getrennt)
+        const sLeb2 = r._appraiseSubstance({ lebendig: 1 }, 2);
+        out.magnitudeScales = Math.abs((sLeb2.peace || 0) - 2 * (sLeb.peace || 0)) < 1e-9; // linear in Magnitude
+        const sLeb3 = r._appraiseSubstance({ lebendig: 3 }, 1);
+        out.tagsClamped = Math.abs((sLeb3.peace || 0) - (sLeb.peace || 0)) < 1e-9; // Tag-Stärke >1 geklemmt
+
+        // (3) END-TO-END (der beweisbare Konsum): build(Holz/lebendig) ≠ build(Stein/dichte)
+        reset();
+        r._feelAction("build", { tags: { lebendig: 1 } });
+        const woodPeace = p.emotions.peace;
+        const woodHope = p.emotions.hope;
+        reset();
+        r._feelAction("build", { tags: { dichte: 1 } });
+        const stonePeace = p.emotions.peace;
+        const stoneHope = p.emotions.hope;
+        out.woodMorePeace = woodPeace > stonePeace + 0.02; // lebendiges Holz → mehr Frieden
+        out.stoneMoreHope = stoneHope > woodHope + 0.02; // toter Stein → mehr Hoffnung (Solidität)
+
+        // (4) Magnitude end-to-end: eine große Schöpfung (Kathedrale) bewegt mehr als eine Box
+        reset();
+        r._feelAction("build", { tags: { lebendig: 1 }, magnitude: 1.5 });
+        const big = p.emotions.joy + p.emotions.peace + p.emotions.hope;
+        reset();
+        r._feelAction("build", { tags: { lebendig: 1 }, magnitude: 0.7 });
+        const small = p.emotions.joy + p.emotions.peace + p.emotions.hope;
+        out.magnitudeEndToEnd = big > small + 0.05;
+
+        // (5) der schöpferische Akt (Werkstatt/Chat): Stolz + Substanz-Färbung + Source-Gate
+        reset();
+        r._feelAction("create", { tags: { magieleitung: 1 }, magnitude: 1.5 });
+        out.createPride = p.emotions.joy > 0 && p.emotions.hope > 0 && p.emotions.awe > 0; // Stolz (joy+hope) + Magie (awe)
+        const dbSrc = r.dslEffects.define_blueprint.toString();
+        out.createHooked = /_feelAction\("create"/.test(dbSrc) && /source === "human"/.test(dbSrc);
+        out.buildHooked = /_feelAction\("build", \{ blueprint/.test(r.confirmBuild.toString());
+
+        // (6) KEIN Regress: ohne Substanz exakt V17.30 (build → joy 0.1, hope 0.1; explore-Fallback)
+        reset();
+        r._feelAction("build");
+        out.noRegressBuild = Math.abs(p.emotions.joy - 0.1) < 1e-9 && Math.abs(p.emotions.hope - 0.1) < 1e-9;
+        reset();
+        r._feelAction("explore"); // tag-los → Fallback ACTION_TO_EMOTION
+        out.fallbackExplore = p.emotions.awe > 0;
+
+        // restore
+        for (const k of Object.keys(savedEmo)) p.emotions[k] = savedEmo[k];
+        r.state.lifeField = savedLife;
+        r.state.emotionField = savedEmoField;
+        return out;
+    });
+    check("V17.46 Substanz: TAG_TO_EMOTION-Resonanz + der create-Akt existieren", res.tableExists && res.createAct);
+    check("V17.46 Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt", res.lebendigPeace && res.dichteHope);
+    check("V17.46 Substanz: brennbar → chaos + awe (Gefahr-Thrill)", res.brennbarChaos);
+    check("V17.46 Substanz: die Achsen sind sauber getrennt (dichte erzeugt keine lebendig-joy)", res.noLebInDichte);
+    check("V17.46 Substanz: die Magnitude skaliert den Beitrag linear (Kathedrale > Box)", res.magnitudeScales);
+    check("V17.46 Substanz: Tag-Stärke >1 geklemmt (Richtung); die Komplexität trägt die Magnitude", res.tagsClamped);
+    check("V17.46 Substanz: KONSUM — build(lebendiges Holz) gibt mehr peace als build(toter Stein)", res.woodMorePeace);
+    check("V17.46 Substanz: KONSUM — build(Stein) gibt mehr hope als build(Holz) — verschiedene Substanz, verschiedenes Gefühl", res.stoneMoreHope);
+    check("V17.46 Substanz: KONSUM — Magnitude end-to-end (große Schöpfung bewegt mehr)", res.magnitudeEndToEnd);
+    check("V17.46 Substanz: der schöpferische Akt → Stolz (joy+hope) + Substanz-Färbung (Magie → awe)", res.createPride);
+    check("V17.46 Substanz: define_blueprint feuert create-Stolz NUR für den Menschen (Source-Gate)", res.createHooked);
+    check("V17.46 Substanz: confirmBuild übergibt die Substanz (blueprint) an _feelAction", res.buildHooked);
+    check("V17.46 Substanz: KEIN Regress — _feelAction('build') ohne Substanz = exakt V17.30 (joy 0.1, hope 0.1)", res.noRegressBuild);
+    check("V17.46 Substanz: Fallback — ein tag-loser Akt (explore) nutzt weiter ACTION_TO_EMOTION", res.fallbackExplore);
+}
+
+// V17.47 — Der emotionale Kern W3: Fast/Slow — EMOTION vs. STIMMUNG
+// (docs/emotion-kern-plan.md). Gefühl hat eine ZEIT-Struktur: die schnelle Emotion
+// (akuter Spike, PRO-ACHSE-Decay — Furcht/chaos kurz, Trauer/peace lang) vs. die
+// langsame STIMMUNG (`mood`, eine EMA über Minuten = das Temperament, in das die
+// Emotion zerfällt). Die Stimmung färbt die nächste Bewertung KONGRUENT (gebounded —
+// die V17.44-Feedback-Lehre) und ist die „Person mit Geschichte", die die KI liest.
+// Diese Welle prüft KONSUM (Furcht verfliegt schneller als Trauer; die Stimmung
+// konvergiert + färbt; die KI kennt sie), nicht blosse Existenz (V17.31-Lehre).
+async function checkBandV1747FastSlow(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const DECAY = r.constructor.EMOTION_DECAY;
+        const AX = r.constructor.EMOTION_AXES;
+        const savedEmo = { ...p.emotions };
+        const savedMood = p.mood ? { ...p.mood } : null;
+        const savedBase = p.wohlBaseline;
+        const savedTick = p.emotionLastTick;
+        const savedApply = { ...(p.emotionLastApply || {}) };
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        const savedEmoField = r.state.emotionField;
+        const savedHp = p.hp;
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+        const setMood = (o) => {
+            if (!p.mood) p.mood = {};
+            for (const k of AX) p.mood[k] = o[k] || 0;
+        };
+        const supApply = { joy: 9000, awe: 9000, sorrow: 9000, hope: 9000, peace: 9000, chaos: 9000 };
+        r.state.lifeField = new Map();
+        p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
+        const pm = r.state.playerMesh.position;
+        const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+
+        // (1) die Decay-Tabelle: Furcht/chaos schnell, Trauer/peace langsam
+        out.decayTable = !!DECAY && DECAY.chaos > DECAY.sorrow && DECAY.chaos > 1 && DECAY.sorrow < 1 && DECAY.peace < 1;
+
+        // (2) PRO-ACHSE-Decay end-to-end: chaos (Furcht) verfliegt SCHNELLER als sorrow (Trauer)
+        setEmo({ chaos: 0.8, sorrow: 0.8 });
+        setMood({});
+        p.wohlBaseline = sit; // δ=0 → kein Appraisal
+        p.emotionLastApply = { ...supApply };
+        p.emotionLastTick = 7000;
+        r.updatePlayerEmotions(7010); // 10s
+        out.fearFadesFasterThanGrief = p.emotions.chaos < p.emotions.sorrow - 0.03;
+        out.bothDecayed = p.emotions.chaos < 0.8 && p.emotions.sorrow < 0.8;
+
+        // (3) die STIMMUNG ist eine langsame EMA (das Temperament): lagt, holt dann auf
+        setEmo({ joy: 1 });
+        setMood({});
+        p.wohlBaseline = sit;
+        p.emotionLastApply = { ...supApply };
+        p.emotionLastTick = 7100;
+        r.updatePlayerEmotions(7110); // ein einzelner 10s-Tick: die mood lagt
+        const moodAfter1 = p.mood.joy;
+        out.moodLagsEmotion = moodAfter1 > 0 && moodAfter1 < 0.2;
+        let t = 7110;
+        for (let i = 0; i < 60; i++) {
+            p.emotions.joy = 1; // das Gefühl anhaltend hoch halten
+            t += 10;
+            r.updatePlayerEmotions(t);
+        }
+        out.moodConverges = p.mood.joy > 0.8 && p.mood.joy > moodAfter1 + 0.5;
+
+        // (4) STIMMUNGS-KONGRUENZ: eine trübe Stimmung dämpft die Freude eines guten Ereignisses
+        setEmo({});
+        setMood({});
+        p.emotionLastApply = { ...supApply };
+        p.wohlBaseline = sit - 0.1; // ein REALES gutes Ereignis (δ_base = +0.1)
+        p.emotionLastTick = 7800;
+        r.updatePlayerEmotions(7801);
+        const joyNeutralMood = p.emotions.joy;
+        setEmo({});
+        setMood({ sorrow: 0.9 }); // trübe Grundstimmung
+        p.emotionLastApply = { ...supApply };
+        p.wohlBaseline = sit - 0.1; // dasselbe gute Ereignis
+        p.emotionLastTick = 7800;
+        r.updatePlayerEmotions(7801);
+        const joySadMood = p.emotions.joy;
+        out.moodColorsAppraisal = joyNeutralMood > joySadMood + 0.005;
+
+        // (5) KEIN spontaner Runaway: eine trübe Stimmung bei KONSTANTER Situation (δ_base=0)
+        // erzeugt KEINE Emotion (die Kongruenz ist gegated → die V17.44-Feedback-Lehre)
+        setEmo({});
+        setMood({ sorrow: 0.9 });
+        p.emotionLastApply = { ...supApply };
+        p.wohlBaseline = sit; // δ_base = 0 (kein Ereignis)
+        p.emotionLastTick = 8000;
+        for (let i = 1; i <= 60; i++) r.updatePlayerEmotions(8000 + i);
+        out.noMoodRunaway = p.emotions.sorrow < 0.05;
+
+        // (6) KONSUM — die KI kennt die GRUNDSTIMMUNG (getrennt vom akuten Gefühl)
+        setEmo({ joy: 0.8 });
+        setMood({ sorrow: 0.8 });
+        const prompt = r.llmBuildSystemPrompt();
+        out.promptHasMood = /Grundstimmung/.test(prompt) && prompt.includes("Trauer");
+        out.promptHasAcute = prompt.includes("Freude");
+
+        // (7) V17.30 heil: anhaltendes Tun erreicht weiter 0.7
+        setEmo({});
+        p.emotionLastApply = {};
+        for (let i = 0; i < 10; i++) r._feelAction("build");
+        out.triggerReachable = p.emotions.joy >= 0.7;
+
+        // restore
+        setEmo(savedEmo);
+        if (savedMood) setMood(savedMood);
+        p.wohlBaseline = savedBase;
+        p.emotionLastTick = savedTick;
+        p.emotionLastApply = savedApply;
+        p.hp = savedHp;
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        r.state.emotionField = savedEmoField;
+        return out;
+    });
+    check("V17.47 Fast/Slow: EMOTION_DECAY-Tabelle (chaos/Furcht schnell, sorrow/peace langsam)", res.decayTable);
+    check("V17.47 Fast/Slow: KONSUM — Furcht (chaos) verfliegt SCHNELLER als Trauer (sorrow) [pro-Achse-Decay]", res.fearFadesFasterThanGrief);
+    check("V17.47 Fast/Slow: beide Achsen zerfallen (Decay wirkt)", res.bothDecayed);
+    check("V17.47 Fast/Slow: die STIMMUNG ist eine langsame EMA — sie lagt der Emotion (ein Tick → klein)", res.moodLagsEmotion);
+    check("V17.47 Fast/Slow: KONSUM — anhaltendes Gefühl → die Stimmung KONVERGIERT (das Temperament wächst)", res.moodConverges);
+    check(
+        "V17.47 Fast/Slow: KONSUM — eine trübe Stimmung färbt das Erleben (dämpft die Freude eines guten Ereignisses)",
+        res.moodColorsAppraisal
+    );
+    check(
+        "V17.47 Fast/Slow: KEIN Runaway — eine trübe Stimmung bei konstanter Situation manufakturiert KEINE Emotion (V17.44-Lehre)",
+        res.noMoodRunaway
+    );
+    check(
+        "V17.47 Fast/Slow: KONSUM — die KI kennt die GRUNDSTIMMUNG (Trauer), getrennt vom akuten Gefühl (Freude)",
+        res.promptHasMood && res.promptHasAcute
+    );
+    check("V17.47 Fast/Slow: V17.30 heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle", res.triggerReachable);
+}
+
+// V17.48 — Der emotionale Kern W4: das SOZIALE — Contagion + Bindung + die KI als
+// KO-REGULATOR (docs/emotion-kern-plan.md). Gefühl ist sozial: die Emotion naher
+// Kreaturen fließt zum Spieler (∝ Nähe × Bindung, gebounded), die Bindung wächst mit
+// gemeinsamer Zeit, der Verlust einer gebundenen Kreatur schmerzt ∝ Bindung, und die KI
+// TENDET die Stimmung (sie pflegt, statt nur zu kommentieren). Diese Welle prüft KONSUM
+// (ein freudiges Wesen hebt joy; die Bindung gewichtet + wächst; der Verlust einer
+// gebundenen Kreatur schmerzt mehr; die KI tröstet), nicht blosse Existenz (V17.31).
+async function checkBandV1748Social(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const C = r.constructor.EMOTION_CONTAGION;
+        const A2E = r.constructor.ACTION_TO_EMOTION;
+        const AX = r.constructor.EMOTION_AXES;
+        const savedEmo = { ...p.emotions };
+        const savedMood = p.mood ? { ...p.mood } : null;
+        const savedCreatures = r.state.creatures;
+        const savedCreatureEmotions = r.state.creatureEmotions;
+        const pm = r.state.playerMesh.position;
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+        const setMood = (o) => {
+            if (!p.mood) p.mood = {};
+            for (const k of AX) p.mood[k] = o[k] || 0;
+        };
+        // eine kontrollierte Kreatur AM Spieler-Ort (proximity 1)
+        const fake = (bond, task) => ({ position: { x: pm.x, y: pm.y, z: pm.z }, userData: { bond, task: { name: task || "wait" } } });
+        const inject = (emo, bond, task) => {
+            r.state.creatures = [fake(bond, task)];
+            r.state.creatureEmotions = [emo];
+        };
+
+        // (1) Config + die loss-Tat
+        out.config = !!C && C.radius > 0 && !!r.constructor.CONTAGION_TARGET.happy && typeof A2E.loss === "object";
+
+        // (2) CONTAGION — ein freudiges Wesen nah HEBT joy + peace; ein leidendes betrübt
+        setEmo({});
+        inject("happy", 1);
+        r._tickEmotionContagion(1);
+        out.happyLifts = p.emotions.joy > 0 && p.emotions.peace > 0 && p.emotions.sorrow === 0;
+        setEmo({});
+        inject("sad", 1);
+        r._tickEmotionContagion(1);
+        out.sadGrieves = p.emotions.sorrow > 0 && p.emotions.joy === 0;
+
+        // (2b) gebounded: die Contagion treibt joy NICHT über das Ziel (0.5) hinaus (kein Runaway)
+        setEmo({ joy: 0.5 });
+        inject("happy", 1);
+        for (let i = 0; i < 200; i++) r._tickEmotionContagion(1);
+        out.contagionBounded = p.emotions.joy <= 0.51;
+
+        // (3) BINDUNG gewichtet die Contagion (eine gebundene Kreatur färbt mehr als eine fremde)
+        setEmo({});
+        inject("happy", 1);
+        r._tickEmotionContagion(1);
+        const joyBonded = p.emotions.joy;
+        setEmo({});
+        inject("happy", 0);
+        r._tickEmotionContagion(1);
+        const joyUnbonded = p.emotions.joy;
+        out.bondWeights = joyBonded > joyUnbonded + 0.005;
+
+        // (4) BINDUNG wächst, während eine FOLGENDE Kreatur nah ist (gemeinsame Zeit); WARTEN nicht
+        inject("happy", 0, "follow_player");
+        r._tickEmotionContagion(2);
+        out.bondGrows = r.state.creatures[0].userData.bond > 0;
+        inject("happy", 0, "wait");
+        r._tickEmotionContagion(2);
+        out.waitNoBond = r.state.creatures[0].userData.bond === 0;
+        out.followBumpWired = /bondFollowBump/.test(r.assignCreatureTask.toString());
+
+        // (5) BOND-LOSS — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (∝ Bindung × Vitalität)
+        const grief = (bond, leb) => 0.3 + bond * 1.2 + leb * 0.4; // die _creatureNaturalDeath-Formel
+        setEmo({});
+        r._feelAction("loss", { magnitude: grief(0, 0.5) });
+        const sUnbonded = p.emotions.sorrow;
+        setEmo({});
+        r._feelAction("loss", { magnitude: grief(1, 0.5) });
+        const sBonded = p.emotions.sorrow;
+        out.bondLossHurts = sBonded > sUnbonded + 0.05;
+        const cnd = r._creatureNaturalDeath.toString();
+        out.lossWired = /bond/.test(cnd) && /lebendig/.test(cnd) && /_feelAction\("loss"/.test(cnd);
+
+        // (6) KO-REGULATION — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Wort)
+        setEmo({});
+        setMood({ sorrow: 0.9 }); // moodValence stark negativ
+        r.state.grok.lastSpoke = -Infinity;
+        r.state.grok.triggers.comfort.lastFired = -Infinity;
+        r._aiTendPlayer();
+        out.tendComforts = p.emotions.hope > 0;
+        setEmo({});
+        setMood({}); // ausgeglichene Stimmung → KEIN Trost (kein Trost ohne Trübsal)
+        r.state.grok.lastSpoke = -Infinity;
+        r.state.grok.triggers.comfort.lastFired = -Infinity;
+        r._aiTendPlayer();
+        out.noTendWhenOk = p.emotions.hope === 0;
+        out.tendWired = /_aiTendPlayer/.test(r.grokTick.toString());
+
+        // restore
+        setEmo(savedEmo);
+        if (savedMood) setMood(savedMood);
+        r.state.creatures = savedCreatures;
+        r.state.creatureEmotions = savedCreatureEmotions;
+        return out;
+    });
+    check("V17.48 Soziales: EMOTION_CONTAGION-Config + CONTAGION_TARGET + die loss-Tat existieren", res.config);
+    check("V17.48 Soziales: KONSUM — ein freudiges Wesen nah HEBT joy + peace (Contagion)", res.happyLifts);
+    check("V17.48 Soziales: KONSUM — ein leidendes Wesen nah betrübt (sorrow)", res.sadGrieves);
+    check("V17.48 Soziales: gebounded — die Contagion sättigt am Ziel (≤0.5), kein Runaway (V17.44-Lehre)", res.contagionBounded);
+    check("V17.48 Soziales: KONSUM — die BINDUNG gewichtet die Contagion (gebunden färbt mehr als fremd)", res.bondWeights);
+    check("V17.48 Soziales: KONSUM — die Bindung WÄCHST, während eine folgende Kreatur nah ist", res.bondGrows);
+    check("V17.48 Soziales: eine WARTENDE Kreatur baut keine Bindung auf (nur gemeinsame Zeit zählt)", res.waitNoBond);
+    check('V17.48 Soziales: die „folge mir"-Geste vertieft die Bindung (assignCreatureTask wired)', res.followBumpWired);
+    check("V17.48 Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)", res.bondLossHurts);
+    check("V17.48 Soziales: der Verlust ist ein Ereignis ∝ Bindung × Vitalität (_creatureNaturalDeath wired)", res.lossWired);
+    check("V17.48 Soziales: KONSUM — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Trost)", res.tendComforts);
+    check("V17.48 Soziales: kein Trost ohne Trübsal — bei ausgeglichener Stimmung TENDET die KI nicht", res.noTendWhenOk);
+    check("V17.48 Soziales: die KI tendet aus dem grokTick (Ko-Regulator wired, nicht nur Kommentar)", res.tendWired);
+}
+
+// V17.49 — Der emotionale Kern W5: das ABENTEUER GRADUIERT (docs/emotion-kern-plan.md).
+// Bis hier feuerte `explore` flach (awe+hope) bei JEDEM Chunk-Wechsel. Jetzt wird das
+// WAGNIS gewichtet: die Magnitude EMERGIERT aus Neuheit (visitedRegions) + Distanz vom
+// Ursprung + Kühnheit (in karge/glut-Aura wagen, liest auraAt). Diese Welle prüft KONSUM
+// (kühnes Erkunden ≫ Pendeln, auf awe sichtbar), nicht blosse Existenz (V17.31). (Der
+// KAMPF-Affekt wartet bewusst auf eine Kampf-Mechanik — die W1/W2-Substrate sind bereit.)
+async function checkBandV1749Adventure(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const E = r.constructor.EXPLORE;
+        const pm = r.state.playerMesh.position;
+        const savedEmo = { ...p.emotions };
+        const savedVisited = r.state.visitedRegions;
+        const savedLife = r.state.lifeField;
+        const savedPos = { x: pm.x, y: pm.y, z: pm.z };
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+        const fresh = () => {
+            r.state.visitedRegions = new Set();
+        };
+
+        // (1) Config
+        out.config = !!E && E.noveltyNew > E.noveltyRevisit && E.max > E.min;
+
+        // (2) NEUHEIT — gleiche Position/Aura → nur die Neuheit variiert (erste Begegnung > Wiederkehr)
+        fresh();
+        const magNew = r._exploreMagnitude(111, 111);
+        const magRevisit = r._exploreMagnitude(111, 111);
+        out.noveltyGrades = magNew > magRevisit + 0.3;
+
+        // (3) HOLISTISCH — kühnes Erkunden (neu + fern + karg) ≫ vertrautes Pendeln (Wiederkehr + nah + üppig)
+        fresh();
+        r.state.lifeField = new Map(); // karg
+        pm.x = 3000;
+        pm.z = 0; // fern
+        const magAdventure = r._exploreMagnitude(222, 222); // neu
+        r.state.visitedRegions = new Set(["333,333"]); // markiert → Wiederkehr
+        pm.x = savedPos.x;
+        pm.z = savedPos.z; // nah
+        r._depositLife(pm.x, pm.z, 1.0);
+        r._depositLife(pm.x, pm.z, 1.0); // üppig
+        const magCommute = r._exploreMagnitude(333, 333);
+        out.adventureGrades = magAdventure > magCommute + 0.5;
+        out.distWired = /distScale|hypot/.test(r._exploreMagnitude.toString());
+        r.state.lifeField = new Map();
+
+        // (4) KÜHNHEIT — in eine karge Aura wagen staunt mehr als in eine üppige (liest auraAt;
+        // gegated für bereits-üppige Spots, wo kein Boldness-Spielraum bleibt)
+        pm.x = savedPos.x;
+        pm.z = savedPos.z;
+        r.state.lifeField = new Map();
+        const lebFrozen = r.auraAt(pm.x, pm.z, 0).lebendig || 0;
+        r.state.visitedRegions = new Set(["444,444"]);
+        const magBarren = r._exploreMagnitude(444, 444);
+        r._depositLife(pm.x, pm.z, 1.0);
+        r._depositLife(pm.x, pm.z, 1.0);
+        r.state.visitedRegions = new Set(["444,444"]);
+        const magLush = r._exploreMagnitude(444, 444);
+        out.boldnessGrades = lebFrozen >= 0.85 ? magLush <= magBarren + 1e-6 : magBarren > magLush + 0.02;
+        r.state.lifeField = new Map();
+
+        // (5) KONSUM end-to-end: die explore-Tat SKALIERT mit der Magnitude (awe graduiert)
+        setEmo({});
+        r._feelAction("explore", { magnitude: 1.8 });
+        const aweBold = p.emotions.awe;
+        setEmo({});
+        r._feelAction("explore", { magnitude: 0.3 });
+        const aweTimid = p.emotions.awe;
+        out.exploreScales = aweBold > aweTimid + 0.02;
+        out.hookWired = /_exploreMagnitude/.test(r._setLastPlayerVoxelChunk.toString());
+
+        // (6) visitedRegions bounded (Prune beim Überlauf)
+        const big = new Set();
+        for (let i = 0; i < E.maxRegions + 5; i++) big.add("d" + i);
+        r.state.visitedRegions = big;
+        r._exploreMagnitude(99999, 99999);
+        out.bounded = r.state.visitedRegions.size <= E.maxRegions;
+
+        // restore
+        setEmo(savedEmo);
+        r.state.visitedRegions = savedVisited;
+        r.state.lifeField = savedLife;
+        pm.x = savedPos.x;
+        pm.y = savedPos.y;
+        pm.z = savedPos.z;
+        return out;
+    });
+    check("V17.49 Abenteuer: EXPLORE-Config (Neuheit > Wiederkehr, max > min)", res.config);
+    check("V17.49 Abenteuer: KONSUM — eine NEUE Region staunt mehr als eine Wiederkehr (Neuheit)", res.noveltyGrades);
+    check("V17.49 Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)", res.adventureGrades);
+    check("V17.49 Abenteuer: die Distanz vom Ursprung fließt ein (_exploreMagnitude wired)", res.distWired);
+    check("V17.49 Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)", res.boldnessGrades);
+    check("V17.49 Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)", res.exploreScales);
+    check("V17.49 Abenteuer: _setLastPlayerVoxelChunk nutzt _exploreMagnitude (hook wired)", res.hookWired);
+    check("V17.49 Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
+}
+
+// V17.50 — Die lebendige Wertung Phase 4: DIE KLAMMER — die Welt lernt, was den Spieler
+// freut (docs/lebendige-wertung-plan.md §5). `rule.value` (lokaler struktureller δ) und
+// `δ_spieler` (der rohe Situations-δ) sind DASSELBE Vorhersagefehler-Signal: eine Regel,
+// die NAH am Spieler feuert UND mit positivem δ_spieler zusammenfällt, bekommt Bonus-
+// Credit ∝ Nähe → spieler-zentrische Evolution. Diese Welle prüft KONSUM (der Bonus hebt
+// den Reward nah + positiv, der Proximity-Gate schließt ferne aus) UND das ANTI-GAMING
+// (der δ_spieler ist die SITUATION, NICHT die stempelbare Emotion → kein Reward-Hacking).
+async function checkBandV1750Klammer(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const W = r.constructor.WERTUNG;
+        const pm = r.state.playerMesh.position;
+        const savedEmo = { ...p.emotions };
+        const savedMood = p.mood ? { ...p.mood } : null;
+        const savedBase = p.wohlBaseline;
+        const savedDelta = p.appraisalDelta;
+        const savedTick = p.emotionLastTick;
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        const savedEmoField = r.state.emotionField;
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+
+        // (1) Config
+        out.config = !!W && W.phase4Radius > 0 && W.phase4Weight > 0 && W.appraisalEmaTau > 0;
+
+        // (2) ANTI-GAMING an der WURZEL: appraisalDelta trackt die SITUATION (lebendig+HP),
+        // NICHT die gestempelte Emotion → eine Regel kann den Bonus nicht über Emotion faken.
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        r.state.emotionField = new Map();
+        // (a) die Situation STEIGT (Leben deponiert, Erwartung niedriger) → appraisalDelta steigt
+        setEmo({});
+        p.appraisalDelta = 0;
+        r._depositLife(pm.x, pm.z, 1.0);
+        r._depositLife(pm.x, pm.z, 1.0);
+        const sitNow = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        p.wohlBaseline = sitNow - 0.3; // δ ≈ +0.3
+        p.emotionLastTick = 6000;
+        r.updatePlayerEmotions(6005);
+        out.deltaTracksSituationUp = p.appraisalDelta > 0.05;
+        // (b) die Situation ist FLACH, aber die Emotion HOCH → appraisalDelta bleibt ~0
+        setEmo({ joy: 1, hope: 1, peace: 1 });
+        p.appraisalDelta = 0;
+        const sitFlat = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        p.wohlBaseline = sitFlat; // δ = 0 (Situation unverändert)
+        p.emotionLastTick = 6100;
+        r.updatePlayerEmotions(6105);
+        out.deltaIgnoresEmotion = Math.abs(p.appraisalDelta) < 0.05;
+
+        // (3)+(4) DIE KLAMMER: der lokale Reward + der Spieler-Bonus (nah + positiv) vs der Gate (fern)
+        r.state.lifeField = new Map();
+        const measureRule = (vx, vz, vbase, pd) => {
+            p.appraisalDelta = pd;
+            const rule = { value: 0, _vPending: true, _vPos: { x: vx, z: vz }, _vBase: vbase };
+            r._measureRuleReward(rule, 0);
+            return rule.value;
+        };
+        const frozenNear = r._fieldWohlStruktur(r.auraAt(pm.x, pm.z, 0));
+        const vbaseNear = frozenNear - 0.4; // localReward_near = 0.4 (kontrolliert)
+        const vNearBonus = measureRule(pm.x, pm.z, vbaseNear, 0.5);
+        const vNearNoBonus = measureRule(pm.x, pm.z, vbaseNear, 0);
+        out.clampRewardsNearPositive = vNearBonus > vNearNoBonus + 0.03; // nah + δ_spieler>0 → mehr Wert
+        const fx = pm.x + 100;
+        const fz = pm.z;
+        const frozenFar = r._fieldWohlStruktur(r.auraAt(fx, fz, 0));
+        const vbaseFar = frozenFar - 0.4;
+        const vFarBonus = measureRule(fx, fz, vbaseFar, 0.5);
+        const vFarNoBonus = measureRule(fx, fz, vbaseFar, 0);
+        out.proximityGate = Math.abs(vFarBonus - vFarNoBonus) < 1e-9; // fern → der δ_spieler ändert NICHTS
+        // (5) ANTI-GAMING end-to-end: eine Regel NAH am Spieler, aber δ_spieler ≤ 0 (keine echte
+        // Situations-Verbesserung) → KEIN Bonus (Phase 2 unverändert), egal wie hoch die Emotion ist.
+        const vNearNeg = measureRule(pm.x, pm.z, vbaseNear, -0.5);
+        out.noGamingWhenNoSituation = Math.abs(vNearNeg - vNearNoBonus) < 1e-9;
+        out.wired = /appraisalDelta/.test(r._measureRuleReward.toString()) && /phase4Radius/.test(r._measureRuleReward.toString());
+
+        // restore
+        setEmo(savedEmo);
+        if (savedMood) for (const k of Object.keys(savedMood)) p.mood[k] = savedMood[k];
+        p.wohlBaseline = savedBase;
+        p.appraisalDelta = savedDelta;
+        p.emotionLastTick = savedTick;
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        r.state.emotionField = savedEmoField;
+        return out;
+    });
+    check("V17.50 Klammer: WERTUNG Phase-4-Config (phase4Radius/Weight/appraisalEmaTau)", res.config);
+    check("V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta trackt die SITUATION (steigt mit Leben)", res.deltaTracksSituationUp);
+    check("V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta IGNORIERT die Emotion (hohe Stimmung, flache Situation → ~0)", res.deltaIgnoresEmotion);
+    check("V17.50 Klammer: KONSUM — eine Regel NAH am Spieler + positiver δ_spieler bekommt MEHR Wert (die Klammer)", res.clampRewardsNearPositive);
+    check("V17.50 Klammer: der Proximity-Gate — eine FERNE Regel bekommt KEINEN Bonus (δ_spieler ändert nichts)", res.proximityGate);
+    check("V17.50 Klammer: ANTI-GAMING — eine nahe Regel ohne echte Situations-Verbesserung (δ≤0) bekommt KEINEN Bonus", res.noGamingWhenNoSituation);
+    check("V17.50 Klammer: _measureRuleReward nutzt appraisalDelta + phase4Radius (wired)", res.wired);
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -21323,6 +22010,12 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
         if (r.state.creatures.length > 0) {
             const beforeCount = r.state.creatures.length;
+            // V17.45-Härtung (KONFOUNDER, gemessen — kein „Last-Flake"): nach langem
+            // Warmup kann die Stimmung gesättigt sein (sorrow == 1.0) → der +0.2-
+            // Stempel von _creatureNaturalDeath clampt auf 1.0 → der strikte „>"-
+            // Vergleich (1.0 > 1.0) ist FALSCH. Den INTENT isolieren (Tod ADDIERT
+            // sorrow): sorrow auf einen bekannten sub-Sättigungs-Wert setzen.
+            if (r.state.player.emotions) r.state.player.emotions.sorrow = 0.1;
             const beforeSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) || 0;
             const beforeJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
             r._creatureNaturalDeath(r.state.creatures[0]);
@@ -32733,11 +33426,23 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.collectAweOk = out.aweAfterCollect >= 0.1 - 1e-9;
 
         // (b) Decay reduziert über simulierten Zeitfortschritt
+        // V17.45-Härtung (KONFOUNDER, gemessen — kein „Flake"): seit V17.44 HEBT der
+        // Appraisal-Kanal joy bei δ>0 (Situation über der Spieler-Baseline); über die
+        // 10s-delta dieses Tests überstimmt das den 0.05-Decay (warmup-abhängig, ob
+        // δ>0 → der Test flaket). Der INTENT ist NUR der Decay → ihn isolieren: das
+        // lifeField leeren (stabile Aura) + die Spieler-Baseline = aktuelle Situation
+        // → δ=0 → kein Appraisal-Hub, nur der Decay wirkt.
+        const savedLifeRing3 = r.state.lifeField;
+        r.state.lifeField = new Map();
+        const pmRing3 = r.state.playerMesh.position;
+        for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0; // nur joy → keine Kohärenz-Dämpfung
         r.state.player.emotions.joy = 0.5;
+        r.state.player.wohlBaseline = r._playerSituationWohl(r.auraAt(pmRing3.x, pmRing3.z, 110));
         r.state.player.emotionLastTick = 100;
         r.updatePlayerEmotions(110); // 10s vergangen
         out.joyAfterDecay = r.state.player.emotions.joy;
         out.decayLowered = out.joyAfterDecay < 0.5 && out.joyAfterDecay > 0;
+        r.state.lifeField = savedLifeRing3;
 
         // (c) Schwellen-Trigger: sorrow > 0.7 → state.weather = "rainy".
         // lastTick nahe an currentTime, damit der Decay-Schritt
@@ -35121,6 +35826,12 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1742Wohl(ctx);
             await checkBandV1743RuleFitness(ctx);
             await checkBandV1744Appraisal(ctx);
+            await checkBandV1745EmotionCore(ctx);
+            await checkBandV1746EmotionSubstance(ctx);
+            await checkBandV1747FastSlow(ctx);
+            await checkBandV1748Social(ctx);
+            await checkBandV1749Adventure(ctx);
+            await checkBandV1750Klammer(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
