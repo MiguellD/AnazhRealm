@@ -226,13 +226,18 @@ Wie der DSL-Bogen: kleine Wellen unter V17 (V17.42, .43, …), jede ein Commit +
 Test-Band + ein `handover.md`-Eintrag; bei Bogen-Abschluss + Schöpfer-Sign-off der
 MAJOR-Kandidat V18.
 
-**Phase 1 (V17.42) — Das Wohl-Maß + die gleitende Baseline (das Fundament der Wertung).**
-`_fieldWohlStruktur`/`_fieldWohlErlebt` + die Baseline-Map (reuse `_lifeField`-Muster) +
-der Spieler-Baseline-Skalar; lazy-EMA, im bestehenden Emotion-/Welt-Tick aktualisiert.
-**Noch KEIN Konsument** (reine Mess-Schicht). KONSUM-Test: die Baseline verfolgt eine
-anhaltende Änderung mit der RICHTIGEN Zeitkonstante (eine Stufe → exponentielle
-Annäherung, Halbwertszeit ≈ ln2·τ); `wohlStruktur` steigt mit `lebendig`, `wohlErlebt`
-mit Valenz (joy hebt, sorrow senkt). Das ist „miss, bevor du selektierst".
+**Phase 1 (V17.42) — Das Wohl-Maß + die gleitende Baseline (das Fundament der Wertung). ✅ GEBAUT.**
+`_fieldWohlStruktur`/`_fieldWohlErlebt` + die Baseline-Map (reuse `_lifeField`-Muster:
+`_observeFieldWohl`/`_fieldWohlBaselineAt`/`_pruneWohlBaseline`) + der Spieler-Baseline-
+Skalar (`player.wohlBaseline`); lazy-EMA (zeit-korrigiert `α=1−exp(−Δt/τ)`), im bestehenden
+`updatePlayerEmotions`-Tick aktualisiert; Config `AnazhRealm.WERTUNG`. **KEIN Konsument**
+(reine Mess-Schicht → null Verhaltens-Risiko). GEMESSEN (`checkBandV1742Wohl`, 6 grün): das
+Wohl-Maß (Struktur=lebendig, Erlebt=Valenz, awe neutral), Cold-Start = erste Beobachtung,
+stabiler Input → Baseline HÄLT, ein Sprung → Baseline TRACKT aber LAGGT (das EMA-Wesen),
+Prune, die Spieler-Baseline trackt+laggt. node-check/format/lint grün, „Alle Invarianten OK"
+(3468, exit 0). EHRLICH: verifiziert die GLEICHUNG (die EMA rechnet richtig + live), NICHT
+das Erleben — der Konsum kommt Phase 2/3 (kein Passagier: der Test prüft die Mess-Korrektheit,
+nicht „existiert"). Das war „miss, bevor du selektierst".
 
 **Phase 2 (V17.43) — Lokal-attribuierte Regel-Fitness (die Regeln werden ECHT).**
 Snapshot-bei-Feuern (Ort + `baseline_P`) → verzögerte Messung (nächstes Fenster) →

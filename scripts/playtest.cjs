@@ -2693,6 +2693,121 @@ async function checkBandV1741RuleThread(ctx) {
     );
 }
 
+// V17.42 — DIE LEBENDIGE WERTUNG, Phase 1: das Wohl-Maß + die gleitende Baseline (das
+// dritte Verb des Feldes — die Mess-Schicht, auf der Phase 2/3 die Regel-Fitness + die
+// Emotion echt machen). Gemessen wird KONSUM (V17.31-Lehre): die EMA verfolgt ihren
+// Input KORREKT + LIVE — Cold-Start = erste Beobachtung, stabiler Input → Baseline hält,
+// ein Sprung → die Baseline trackt aber LAGGT (das EMA-Wesen), die Spieler-Baseline
+// ebenso. Nicht „die Methode existiert", sondern „die Gleichung rechnet richtig".
+async function checkBandV1742Wohl(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const W = window.AnazhRealm ? window.AnazhRealm.WERTUNG : r.constructor.WERTUNG;
+
+        // --- (1) das Wohl-Maß: Struktur = lebendig; Erlebt = Valenz (Russell) ---
+        const a0 = r.auraAt(0, 0, 0);
+        out.wohlStruktur = Math.abs(r._fieldWohlStruktur(a0) - a0.lebendig) < 1e-9;
+        out.wohlErlebtValence =
+            r._fieldWohlErlebt({ emotion: { joy: 1 } }) > 0.2 && // positive Valenz
+            r._fieldWohlErlebt({ emotion: { sorrow: 1 } }) < -0.2 && // negative Valenz
+            Math.abs(r._fieldWohlErlebt({ emotion: { awe: 1 } })) < 1e-9; // awe ambivalent → 0
+
+        // --- (2) die Feld-Baseline: Cold-Start = erste Beobachtung ---
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        // eine Zelle mit Headroom (frozen lebendig < 0.7) finden
+        let sx = 1000,
+            sz = 1000,
+            struktur0 = 1;
+        for (let i = 0; i < 24; i++) {
+            const cx = 1000 + i * 37,
+                cz = 1000 + i * 53;
+            const s = r._fieldWohlStruktur(r.auraAt(cx, cz, 0));
+            if (s < 0.7) {
+                sx = cx;
+                sz = cz;
+                struktur0 = s;
+                break;
+            }
+        }
+        const b0 = r._observeFieldWohl(sx, sz, 0);
+        out.coldStart = Math.abs(b0 - struktur0) < 1e-6 && Math.abs(r._fieldWohlBaselineAt(sx, sz) - struktur0) < 1e-6;
+
+        // --- (3) stabiler Input → die Baseline HÄLT (kein Drift ohne Änderung) ---
+        r._observeFieldWohl(sx, sz, 1);
+        out.stableHolds = Math.abs(r._fieldWohlBaselineAt(sx, sz) - struktur0) < 1e-3;
+
+        // --- (4) ein Sprung (Leben deponiert) → die Baseline TRACKT, aber LAGGT (EMA) ---
+        r._depositLife(sx, sz, 0.6);
+        const strukturHigh = r._fieldWohlStruktur(r.auraAt(sx, sz, 1));
+        const pre = r._observeFieldWohl(sx, sz, 3); // Δt=2s ≪ fieldTau → kleiner Schritt
+        const bAfter = r._fieldWohlBaselineAt(sx, sz);
+        out.tracksAndLags =
+            strukturHigh > struktur0 + 0.05
+                ? // der Sprung war real: Baseline bewegte sich HOCH, lagt aber WEIT unter dem neuen Wert
+                  Math.abs(pre - struktur0) < 1e-3 && bAfter > struktur0 + 1e-4 && bAfter < strukturHigh - 0.05
+                : true; // kein Headroom an diesem Spot → vacuously ok (selten)
+
+        // --- (5) Prune: eine alte (lange nicht beobachtete) Zelle wird entfernt ---
+        r.state.wohlBaseline.set("9,9", { b: 0.5, t: 0 });
+        r._wohlPruneLast = -Infinity;
+        r._pruneWohlBaseline(W.pruneAgeSec + 10);
+        out.prunes = !r.state.wohlBaseline.has("9,9");
+
+        // --- (6) die Spieler-Baseline: Cold-Start (niedrig) → trackt nach oben, laggt ---
+        const savedEmo = { ...r.state.player.emotions };
+        const savedBase = r.state.player.wohlBaseline;
+        const savedTick = r.state.player.emotionLastTick;
+        const savedWeather = r.state.weather;
+        const savedEmoField = r.state.emotionField;
+        // den Emotion-Overlay clearen → aura.emotion == player.emotions (kein Warmup-
+        // Abdruck verfälscht den Cold-Start; V17.32-Overlay-Pollution isolieren, V9.56-i).
+        r.state.emotionField = new Map();
+        for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+        r.state.player.wohlBaseline = undefined;
+        r.state.player.emotionLastTick = 100;
+        r.updatePlayerEmotions(101); // delta=1, Cold-Start → baseline = wohlErlebt(≈0)
+        const blow = r.state.player.wohlBaseline;
+        r.state.player.emotions.joy = 1;
+        r.state.player.emotions.hope = 1;
+        r.state.player.emotions.peace = 1; // wohlErlebt ≈ 1.0
+        r.updatePlayerEmotions(111); // delta=10, α=1−exp(−10/30)≈0.28 → partieller Schritt
+        const brise = r.state.player.wohlBaseline;
+        out.playerColdStartLow = typeof blow === "number" && blow < 0.1;
+        out.playerTracksLags = brise > blow + 0.05 && brise < 0.9; // stieg Richtung 1.0, laggt darunter
+
+        // restore
+        r.state.player.emotions = savedEmo;
+        r.state.player.wohlBaseline = savedBase;
+        r.state.player.emotionLastTick = savedTick;
+        r.state.weather = savedWeather;
+        r.state.emotionField = savedEmoField;
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        return out;
+    });
+
+    check(
+        "V17.42 Wertung: das Wohl-Maß — Struktur = lebendig, Erlebt = Valenz (joy + / sorrow − / awe neutral)",
+        res.wohlStruktur && res.wohlErlebtValence
+    );
+    check("V17.42 Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)", res.coldStart);
+    check("V17.42 Wertung: stabiler Input → die Baseline HÄLT (EMA driftet nicht ohne Änderung)", res.stableHolds);
+    check(
+        "V17.42 Wertung: ein Sprung → die Baseline TRACKT, aber LAGGT weit darunter (das EMA-Wesen, zeit-korrigiert)",
+        res.tracksAndLags
+    );
+    check("V17.42 Wertung: die Baseline-Map wird gepruned (lange nicht beobachtete Zelle → weg, bounded)", res.prunes);
+    check(
+        "V17.42 Wertung: die Spieler-Baseline — Cold-Start niedrig, trackt nach oben + laggt (Gewöhnungs-Substrat für Phase 3)",
+        res.playerColdStartLow && res.playerTracksLags
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -34762,6 +34877,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1739RulesUX(ctx);
             await checkBandV1740LlmRules(ctx);
             await checkBandV1741RuleThread(ctx);
+            await checkBandV1742Wohl(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

@@ -8142,6 +8142,21 @@ class AnazhRealm {
                     }
                 }
             }
+            // V17.42 — DIE LEBENDIGE WERTUNG (Phase 1, reine Mess-Schicht): die gleitende
+            // Spieler-Baseline des ERLEBTEN Wohls (EMA, zeit-korrigiert). Phase 3 wird den
+            // Vorhersagefehler δ = wohlErlebt − baseline als Appraisal-Kanal konsumieren
+            // (Gewöhnung: das 100. Haus bewegt joy kaum); HIER wird sie nur GEMESSEN — KEIN
+            // Konsument → null Verhaltens-Änderung. Cold-Start: erste Beobachtung = Baseline.
+            // Plus: beobachte die Spieler-Zelle (füttert die Feld-Baseline-Map für Phase 2).
+            const wohlErlebt = this._fieldWohlErlebt(aura);
+            if (typeof p.wohlBaseline !== "number") {
+                p.wohlBaseline = wohlErlebt;
+            } else {
+                const aPl = 1 - Math.exp(-delta / AnazhRealm.WERTUNG.playerTau);
+                p.wohlBaseline += aPl * (wohlErlebt - p.wohlBaseline);
+            }
+            this._observeFieldWohl(pm.x, pm.z, currentTime);
+            this._pruneWohlBaseline(currentTime);
         }
 
         // === Der ZUSTAND-Kanal von Pfeiler 2 (V17.30) ===
@@ -33457,6 +33472,82 @@ class AnazhRealm {
         };
     }
 
+    // === V17.42 — DIE LEBENDIGE WERTUNG: das Wohl-Maß + die gleitende Baseline ===
+    // Das DRITTE Verb des Feldes (lesen → schreiben → WERTEN). Die Welt erinnert sich,
+    // wie ein Ort / der Spieler USUALLY ist (die Baseline = ein EMA-Tiefpass), und misst
+    // den Vorhersagefehler `δ = jetzt − Baseline` — die EINE bewährte Währung (RL-
+    // Advantage, Dopamin-RPE, Prospect-Theory). Phase 1 baut NUR die Mess-Schicht; die
+    // Konsumenten (Regel-Fitness Phase 2, Emotion-Appraisal Phase 3) kommen danach.
+    // docs/lebendige-wertung-plan.md §4.
+
+    // Das OBJEKTIVE, strukturelle Wohl eines Ortes = `lebendig` (die einzige SCHREIBBARE
+    // Struktur-Achse; die frozen Achsen dichte/glut/magie sind pro Ort konstant → von der
+    // Baseline absorbiert, tragen kein δ). Schwer zu faken (ökologisch: Leben muss
+    // leben+tenden, V17.29). Das Fitness-Maß für Regeln (Phase 2).
+    _fieldWohlStruktur(aura) {
+        return aura && typeof aura.lebendig === "number" ? aura.lebendig : 0;
+    }
+
+    // Das SUBJEKTIVE, erlebte Wohl = die VALENZ der lokalen Emotion (Russell-Circumplex:
+    // joy/peace/hope positiv, sorrow/chaos negativ, awe ambivalent → ausgelassen),
+    // normalisiert auf ~[−1, +1]. Das Appraisal-Maß für die Spieler-Emotion (Phase 3).
+    _fieldWohlErlebt(aura) {
+        const e = (aura && aura.emotion) || {};
+        const pos = ((e.joy || 0) + (e.peace || 0) + (e.hope || 0)) / 3;
+        const neg = ((e.sorrow || 0) + (e.chaos || 0)) / 2;
+        return pos - neg;
+    }
+
+    _wohlCellKey(x, z) {
+        const cs = AnazhRealm.WERTUNG.cell;
+        return Math.floor(x / cs) + "," + Math.floor(z / cs);
+    }
+
+    // Beobachte das Struktur-Wohl an (x,z) → aktualisiere die Zell-Baseline (lazy EMA, EIN
+    // Pol-IIR: `α = 1 − exp(−Δt/τ)`, zeit-korrigiert → tick-rate-unabhängig, V9.83-Lehre).
+    // Cold-Start: die erste Beobachtung IST die Baseline (anfangs keine Überraschung — eine
+    // neue Welt ist voller Staunen, dann normalisiert sie). Gibt die Baseline VOR der
+    // Beobachtung zurück (= die Erwartung, gegen die Phase 2 den Reward misst). now in s.
+    // Sparse Map wie das Leben-Overlay — KEIN per-Frame-Sweep. now in Sekunden.
+    _observeFieldWohl(x, z, now) {
+        if (!this.state.wohlBaseline) this.state.wohlBaseline = new Map();
+        const key = this._wohlCellKey(x, z);
+        const obs = this._fieldWohlStruktur(this.auraAt(x, z, now));
+        const cur = this.state.wohlBaseline.get(key);
+        if (!cur) {
+            this.state.wohlBaseline.set(key, { b: obs, t: now });
+            return obs;
+        }
+        const dt = Math.max(0, now - cur.t);
+        const alpha = 1 - Math.exp(-dt / AnazhRealm.WERTUNG.fieldTau);
+        const before = cur.b;
+        cur.b = before + alpha * (obs - before);
+        cur.t = now;
+        return before;
+    }
+
+    // Lies die aktuelle Zell-Baseline (ohne Beobachtung) — 0/neutral, wenn keine Zelle.
+    _fieldWohlBaselineAt(x, z) {
+        const wb = this.state.wohlBaseline;
+        if (!wb || wb.size === 0) return 0;
+        const e = wb.get(this._wohlCellKey(x, z));
+        return e ? e.b : 0;
+    }
+
+    // Prune ferner Baseline-Zellen (bounded halten, wie _pruneLifeField). Eine EMA-Baseline
+    // „zerfällt" nicht von selbst (sie hält die letzte Schätzung) → wir prunen nach ALTER
+    // (lange nicht beobachtet → die Region ist fern/irrelevant). Rate-limitiert.
+    _pruneWohlBaseline(now) {
+        const wb = this.state.wohlBaseline;
+        if (!wb || wb.size === 0) return;
+        if (now - (this._wohlPruneLast || -Infinity) < AnazhRealm.WERTUNG.pruneEverySec) return;
+        this._wohlPruneLast = now;
+        const maxAge = AnazhRealm.WERTUNG.pruneAgeSec;
+        for (const [k, e] of wb) {
+            if (now - e.t > maxAge) wb.delete(k);
+        }
+    }
+
     // === Das lebendige Feld — die SCHREIB-Seite (V17.27) ===
     // Das Overlay ist eine sparse Map: Schlüssel "cx,cz" = die 16-m-Zelle,
     // Wert { a, t } = Overlay-Menge + Zeitstempel (Sekunden). Der Decay läuft
@@ -43668,7 +43759,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.41.0";
+AnazhRealm.VERSION = "17.42.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -43701,6 +43792,25 @@ AnazhRealm.WORLD_RULES = Object.freeze({
     // der größte everySec (ruleEverySecMax 5) → ein aktiv feuerndes Gesetz pulst
     // kontinuierlich; verstummt es, fällt es nach dieser Frist auf „aktiv · N×".
     threadRecentSec: 6,
+});
+
+// V17.42 — DIE LEBENDIGE WERTUNG (das dritte Verb des Feldes: lesen → schreiben →
+// WERTEN). Die Stellschrauben der gleitenden Baseline + des Wohl-Maßes. Die EINE
+// bewährte Gleichung (EMA-Tiefpass + Differenz `δ = x − baseline`, auf die RL/Dopamin-
+// RPE/Prospect-Theory unabhängig kamen) braucht nur Zeitkonstanten — der GESAMTE neue
+// „Hardcode". Phase 1 (V17.42) baut NUR das Maß + die Baseline (Mess-Schicht); die
+// Konsumenten — Regel-Fitness (Phase 2) + Emotion-Appraisal (Phase 3) — kommen danach.
+// Reaktive Schicht (nicht persistiert, kein Worker-Mirror, V9.67). docs/lebendige-wertung-plan.md.
+//   cell        — Zell-Größe der Baseline-Map (= LIFE_FIELD.cell, 16 m)
+//   fieldTau    — Zeitkonstante der ORTS-Baseline (s); ~120 s → ein Ort re-normalisiert langsam
+//   playerTau   — Zeitkonstante der SPIELER-Baseline (s); ~30 s → Gewöhnung in einer Sitzung
+//   pruneEverySec / pruneAgeSec — die Baseline-Map bounded halten (lange nicht beobachtet → weg)
+AnazhRealm.WERTUNG = Object.freeze({
+    cell: 16,
+    fieldTau: 120,
+    playerTau: 30,
+    pruneEverySec: 5,
+    pruneAgeSec: 180,
 });
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
