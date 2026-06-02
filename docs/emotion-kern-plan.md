@@ -172,8 +172,12 @@ Geometrie). `_feelAction` wird ein dünner Wrapper, der ein Event baut + apprais
 bestehenden 6 Tat-Stellen wandern auf diesen Pfad (kein Regress: build mit Stein gibt
 weiter joy, ABER build mit lebendigem Holz gibt peace/joy, eine Kathedrale mehr als eine
 Box). `ACTION_TO_EMOTION` bleibt als FALLBACK für tag-lose Events. KONSUM: build(Holz) ≠
-build(Stein) ≠ harvest(Glut) — die Emotion EMERGIERT aus der Substanz (gemessen); die
-Werkstatt-Schöpfung (Bauplan speichern) feuert Stolz ∝ Komplexität. *Heilt Schatten 1+5.*
+build(Stein) ≠ harvest(Glut) — die Emotion EMERGIERT aus der Substanz (gemessen, auf den 6
+Achsen sichtbar); die Werkstatt-Schöpfung (Bauplan speichern) feuert Stolz ∝ Komplexität.
+**EHRLICH (kein Passagier, V17.31):** der BEWEISBARE W2-Konsument ist die SUBSTANZ-
+Differenzierung auf den 6 Achsen. Die Dimensionen Agency/Norm werden berechnet, aber sind
+noch LATENT (das SUBSTRAT für W4/W5 — Zorn/Furcht/Schuld brauchen die sozialen/Kampf-
+Konsumenten); W2 behauptet NICHT, sie schon zu konsumieren. *Heilt Schatten 1+5.*
 
 **W3 — Fast/Slow: EMOTION vs. STIMMUNG + pro-Achse-Decay + Stimmungs-Kongruenz.** Trenne
 die schnelle Emotion (akuter Spike) von der langsamen Stimmung (`mood`, ein EMA-Vektor
@@ -262,3 +266,61 @@ Jede Welle: miss-vorher/nachher, KONSUM verifizieren (nicht Existenz), Regressio
 richtig an". **Damit fühlt die Welt nicht 6 Zahlen, sondern ein differenziertes,
 fusionierendes, atmendes, soziales Gefühl — das den Spieler, seine Taten, seine Substanz,
 seine Kühnheit, seine Bindungen und seine Gespräche WIRKLICH liest.**
+
+---
+
+## 8. Abgleich — Vision · alte Lehren · bestehende Pfade (die Prüfung, dass es WIRKLICH genial + sicher ist)
+
+**Vision (`state-of-realm.md`):**
+
+- **Pfeiler 2 „Emotion treibt — formt Wetter, Kreaturen, Materie, Klang":** der Kern
+  vertieft die EINGABE → ein reiches, differenziertes Gefühl treibt die bestehenden
+  Konsumenten (0.7-Trigger, Welt-Tint, Wasser, die Phase-4-Klammer) STÄRKER. Dient dem
+  Pfeiler direkt.
+- **Die Achsen-Drift gelöst:** die Vision nennt „joy, awe, sorrow, hope, **longing,
+  melancholy**"; implementiert sind joy/awe/sorrow/hope/**peace/chaos**. Die DIMENSIONALE
+  Geometrie (W1) heilt das elegant — longing (+Valenz/−Erregung/Zukunft-Sehnen) und
+  melancholy (−Valenz/−Erregung/wehmütig) sind PUNKTE im selben Raum wie peace/chaos ODER
+  die Appraisal-Achsen (Zorn/Furcht/Stolz/Schuld). Die Geometrie macht den Achsen-Satz
+  FLEXIBEL: die Vision-Achsen + die Kampf-/Sozial-Achsen sind nur weitere Punkte, KEINE
+  neue Architektur. (Damit ist der Plan vision-treuER als der heutige fixe 6-Satz.)
+- **Pfeiler 1 „Symbiose" + Pfeiler 5 „Grok spricht":** W4 (die KI als Ko-Regulator)
+  erfüllt die im Vision-Doc NAMENTLICH-OFFENEN Fäden `interpretEmotionalSpeech` +
+  `dreamWithPlayer` (state-of-realm §3) — die KI liest das emotionale Sprechen + antwortet/
+  pflegt. Direkter Vision-Einlös, kein neuer Wildwuchs.
+
+**Alte Lehren (CLAUDE.md / handover Gotchas):**
+
+- **Heilige Lektion** (kein Re-Komplexifizieren; Stamm + Ringe): KEIN neues Modul —
+  Methoden + frozen Daten auf dem einen Stamm; die 6 Achsen + Kanäle bleiben. ✓
+- **„Verdichte, baue nie parallel" (V17.9):** die EINE Pipeline subsumiert die vier
+  heutigen Kanäle (Tat/Feld/Chat/Situation), statt einen fünften daneben zu stellen. ✓
+- **„Verify KONSUM, nicht Existenz" (V17.31):** jede Welle hat einen verifizierten
+  Konsumenten; W2 behauptet NUR die Substanz-Differenzierung (nicht den vollen Vektor) als
+  konsumiert — kein Passagier. ✓
+- **„Harmonie statt Revert" (V17.23):** die W1-Kohärenz ist eine nachgebende Dämpfung
+  (gentle, additiv), kein Überschreiben; getestet, dass die 0.7-Trigger erreichbar bleiben
+  (notfalls separat/später, falls sie je in Spannung geraten). ✓
+- **„Feedback-frei / Runaway-Disziplin" (V17.44 — die teuerste Lehre dieses Bogens):**
+  W3 (Stimmungs-Kongruenz) + W4 (Contagion) sind RÜCKKOPPLUNGEN → gebounded + getestet
+  (genau die Disziplin, die Phase 3 lehrte: die Situation/das Andere treibt, nicht das
+  eigene Gefühl sich selbst). ✓
+- **„Tabelle IST die Regel / Hylomorphismus":** EMOTION_GEOMETRY / APPRAISAL_TO_EMOTION /
+  TAG_TO_EMOTION sind DATEN-Tabellen wie FIELD_TO_EMOTION — browser-justierbar, kein
+  Sonderfall-Code. ✓
+- **„Keine halben Schritte" (V17.30):** der Plan geht an die WURZEL (die Appraisal-Brücke),
+  nicht ein Pflaster auf die flache Tabelle. ✓
+
+**Bestehende Pfade (der Code, gemessen):** `updatePlayerEmotions` (der EINE Emotion-Tick —
+die Pipeline lebt DARIN, kein zweiter Tick) · die 6 Achsen (der Readout, bleiben) ·
+`_feelAction` (wird der Event-Wrapper) · `computeCompoundTags` (das Tag-Substrat, DA) · das
+räumliche Overlay (V17.32, die Welt-Spur bleibt) · der 0.7-Trigger + die kontinuierlichen
+Kopplungen (V17.31, bleiben) · die V17.44-Baseline (wird zur Stimmung in W3) · Grok-
+`emotionShift` (wird zu W4 vertieft). **KEIN Pfad wird gebrochen; jeder wird verdichtet.**
+
+**Fazit:** genial NICHT durch einen Trick, sondern durch die treue Fusion von vier
+Disziplinen + die Vereinheitlichung der Kanäle; ROBUST durch die Feedback-Disziplin + die
+Regressions-Wächter + die reaktive Schicht; STRUKTURIERT foundation-first (W1→W5);
+SYNERGETISCH mit dem Wertungs-Bogen (ein reiches `δ_spieler` macht die Phase-4-Klammer erst
+mächtig). Vision-treu (löst sogar die Achsen-Drift + erfüllt named-offene Fäden), lehren-
+konform, pfad-kompatibel. Sauber.
