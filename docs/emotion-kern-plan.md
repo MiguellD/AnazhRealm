@@ -221,7 +221,7 @@ Konsumenten); W2 behauptet NICHT, sie schon zu konsumieren. *Heilt Schatten 1+5.
 > er kommt in W4/W5, wenn das Soziale/der Kampf ihn konsumieren. Ob es sich „echt anfühlt" ist der
 > Schöpfer-Browser. **Nächst: W3 (Fast/Slow — Emotion vs. Stimmung, pro-Achse-Decay, Kongruenz).**
 
-**W3 — Fast/Slow: EMOTION vs. STIMMUNG + pro-Achse-Decay + Stimmungs-Kongruenz.** Trenne
+**W3 — Fast/Slow: EMOTION vs. STIMMUNG + pro-Achse-Decay + Stimmungs-Kongruenz. ✅ GEBAUT (V17.47).** Trenne
 die schnelle Emotion (akuter Spike) von der langsamen Stimmung (`mood`, ein EMA-Vektor
 über Minuten — das Temperament). Pro-Achse-Decay (`EMOTION_DECAY[axis]` — Furcht/chaos
 schnell, sorrow/peace langsam, awe mittel) statt uniform 0.005. Stimmungs-kongruente
@@ -230,6 +230,28 @@ Event negativer) — GEBOUNDED (mild, kein Runaway; die V17.44-Feedback-Lehre). 
 Furcht spiked + verfliegt schnell, Trauer bleibt; eine trübe Stimmung färbt das nächste
 Erleben (gemessen); die Stimmung ist die „Person mit Geschichte" (speist den LLM-Prompt +
 das Journal). *Heilt die zeitliche Flachheit.*
+
+> **GEBAUT (V17.47):** **(1)** `EMOTION_DECAY` (frozen, per-Achse-MULTIPLIKATOR auf
+> `emotionDecayPerSec`: chaos 2.2 / awe 1.4 / joy 1.0 / hope 0.9 / peace 0.6 / sorrow 0.55 —
+> Furcht verfliegt ~4× schneller als Trauer; Multiplikator 1 = exakt der alte uniforme Decay,
+> der UI-Schieber bleibt der globale Tempo-Knopf). **(2)** `state.player.mood` (6-Achsen-EMA,
+> `moodTau` 120 s, im `updatePlayerEmotions`-Tick aktualisiert, liest die FINALE Emotion des
+> Ticks; reaktiv/nicht-persistiert, lazy-init für jeden Load-Pfad). **(3)** Stimmungs-Kongruenz
+> in der V17.44-Appraisal: `_moodValence()` (∈[−1,1] via EMOTION_GEOMETRY) tönt den δ — ABER
+> **NUR wenn ein REALER δ vorliegt (`|dsig| > deadzone`)** → bei konstanter Situation KEINE
+> Kongruenz → **kein spontaner Stimmungs-Runaway** (die teure V17.44-Lehre an der Wurzel
+> gewahrt: die Stimmung färbt die Interpretation eines EREIGNISSES, manufakturiert keines).
+> `EMOTION_MOOD_CONGRUENCE` 0.08. **KONSUMENT:** `_emotionState(vec)` generalisiert (mit `p.mood`
+> übergeben → der Stimmungs-Readout), `llmBuildSystemPrompt` trägt jetzt AKUT (Emotion) UND
+> GRUNDSTIMMUNG (mood) getrennt — die KI kennt die „Person mit Geschichte". **GEMESSEN
+> (`checkBandV1747FastSlow`, 9 grün):** Decay-Tabelle, **Furcht verfliegt schneller als Trauer**
+> (pro-Achse end-to-end), die mood lagt + KONVERGIERT (das Temperament wächst), **eine trübe
+> Stimmung dämpft die Freude eines guten Ereignisses** (Kongruenz), **KEIN Runaway** (trübe
+> Stimmung + konstante Situation → keine Emotion), die KI kennt Grundstimmung (Trauer) ≠ akut
+> (Freude), V17.30 heil (0.7 erreichbar). node-check/format/lint grün, „Alle Invarianten OK".
+> EHRLICH: die Mechanik (Fast/Slow + Kongruenz, feedback-frei) ist bewiesen; ob das Temperament
+> sich „echt anfühlt" ist der Schöpfer-Browser. **Nächst: W4 (das Soziale + die KI als Ko-Regulator
+> — der freischaltet den vollen Appraisal-Vektor Agency/Norm, das in W2 bewusst Aufgeschobene).**
 
 **W4 — Das Soziale: Contagion + Bindung + die KI als KO-REGULATOR.** (a) **Contagion:** die
 Emotion naher Kreaturen fließt sanft in den Spieler (∝ Nähe × Bindung) + umgekehrt (der

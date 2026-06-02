@@ -3272,6 +3272,146 @@ async function checkBandV1746EmotionSubstance(ctx) {
     check("V17.46 Substanz: Fallback — ein tag-loser Akt (explore) nutzt weiter ACTION_TO_EMOTION", res.fallbackExplore);
 }
 
+// V17.47 — Der emotionale Kern W3: Fast/Slow — EMOTION vs. STIMMUNG
+// (docs/emotion-kern-plan.md). Gefühl hat eine ZEIT-Struktur: die schnelle Emotion
+// (akuter Spike, PRO-ACHSE-Decay — Furcht/chaos kurz, Trauer/peace lang) vs. die
+// langsame STIMMUNG (`mood`, eine EMA über Minuten = das Temperament, in das die
+// Emotion zerfällt). Die Stimmung färbt die nächste Bewertung KONGRUENT (gebounded —
+// die V17.44-Feedback-Lehre) und ist die „Person mit Geschichte", die die KI liest.
+// Diese Welle prüft KONSUM (Furcht verfliegt schneller als Trauer; die Stimmung
+// konvergiert + färbt; die KI kennt sie), nicht blosse Existenz (V17.31-Lehre).
+async function checkBandV1747FastSlow(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const DECAY = r.constructor.EMOTION_DECAY;
+        const AX = r.constructor.EMOTION_AXES;
+        const savedEmo = { ...p.emotions };
+        const savedMood = p.mood ? { ...p.mood } : null;
+        const savedBase = p.wohlBaseline;
+        const savedTick = p.emotionLastTick;
+        const savedApply = { ...(p.emotionLastApply || {}) };
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        const savedEmoField = r.state.emotionField;
+        const savedHp = p.hp;
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+        const setMood = (o) => {
+            if (!p.mood) p.mood = {};
+            for (const k of AX) p.mood[k] = o[k] || 0;
+        };
+        const supApply = { joy: 9000, awe: 9000, sorrow: 9000, hope: 9000, peace: 9000, chaos: 9000 };
+        r.state.lifeField = new Map();
+        p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
+        const pm = r.state.playerMesh.position;
+        const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+
+        // (1) die Decay-Tabelle: Furcht/chaos schnell, Trauer/peace langsam
+        out.decayTable = !!DECAY && DECAY.chaos > DECAY.sorrow && DECAY.chaos > 1 && DECAY.sorrow < 1 && DECAY.peace < 1;
+
+        // (2) PRO-ACHSE-Decay end-to-end: chaos (Furcht) verfliegt SCHNELLER als sorrow (Trauer)
+        setEmo({ chaos: 0.8, sorrow: 0.8 });
+        setMood({});
+        p.wohlBaseline = sit; // δ=0 → kein Appraisal
+        p.emotionLastApply = { ...supApply };
+        p.emotionLastTick = 7000;
+        r.updatePlayerEmotions(7010); // 10s
+        out.fearFadesFasterThanGrief = p.emotions.chaos < p.emotions.sorrow - 0.03;
+        out.bothDecayed = p.emotions.chaos < 0.8 && p.emotions.sorrow < 0.8;
+
+        // (3) die STIMMUNG ist eine langsame EMA (das Temperament): lagt, holt dann auf
+        setEmo({ joy: 1 });
+        setMood({});
+        p.wohlBaseline = sit;
+        p.emotionLastApply = { ...supApply };
+        p.emotionLastTick = 7100;
+        r.updatePlayerEmotions(7110); // ein einzelner 10s-Tick: die mood lagt
+        const moodAfter1 = p.mood.joy;
+        out.moodLagsEmotion = moodAfter1 > 0 && moodAfter1 < 0.2;
+        let t = 7110;
+        for (let i = 0; i < 60; i++) {
+            p.emotions.joy = 1; // das Gefühl anhaltend hoch halten
+            t += 10;
+            r.updatePlayerEmotions(t);
+        }
+        out.moodConverges = p.mood.joy > 0.8 && p.mood.joy > moodAfter1 + 0.5;
+
+        // (4) STIMMUNGS-KONGRUENZ: eine trübe Stimmung dämpft die Freude eines guten Ereignisses
+        setEmo({});
+        setMood({});
+        p.emotionLastApply = { ...supApply };
+        p.wohlBaseline = sit - 0.1; // ein REALES gutes Ereignis (δ_base = +0.1)
+        p.emotionLastTick = 7800;
+        r.updatePlayerEmotions(7801);
+        const joyNeutralMood = p.emotions.joy;
+        setEmo({});
+        setMood({ sorrow: 0.9 }); // trübe Grundstimmung
+        p.emotionLastApply = { ...supApply };
+        p.wohlBaseline = sit - 0.1; // dasselbe gute Ereignis
+        p.emotionLastTick = 7800;
+        r.updatePlayerEmotions(7801);
+        const joySadMood = p.emotions.joy;
+        out.moodColorsAppraisal = joyNeutralMood > joySadMood + 0.005;
+
+        // (5) KEIN spontaner Runaway: eine trübe Stimmung bei KONSTANTER Situation (δ_base=0)
+        // erzeugt KEINE Emotion (die Kongruenz ist gegated → die V17.44-Feedback-Lehre)
+        setEmo({});
+        setMood({ sorrow: 0.9 });
+        p.emotionLastApply = { ...supApply };
+        p.wohlBaseline = sit; // δ_base = 0 (kein Ereignis)
+        p.emotionLastTick = 8000;
+        for (let i = 1; i <= 60; i++) r.updatePlayerEmotions(8000 + i);
+        out.noMoodRunaway = p.emotions.sorrow < 0.05;
+
+        // (6) KONSUM — die KI kennt die GRUNDSTIMMUNG (getrennt vom akuten Gefühl)
+        setEmo({ joy: 0.8 });
+        setMood({ sorrow: 0.8 });
+        const prompt = r.llmBuildSystemPrompt();
+        out.promptHasMood = /Grundstimmung/.test(prompt) && prompt.includes("Trauer");
+        out.promptHasAcute = prompt.includes("Freude");
+
+        // (7) V17.30 heil: anhaltendes Tun erreicht weiter 0.7
+        setEmo({});
+        p.emotionLastApply = {};
+        for (let i = 0; i < 10; i++) r._feelAction("build");
+        out.triggerReachable = p.emotions.joy >= 0.7;
+
+        // restore
+        setEmo(savedEmo);
+        if (savedMood) setMood(savedMood);
+        p.wohlBaseline = savedBase;
+        p.emotionLastTick = savedTick;
+        p.emotionLastApply = savedApply;
+        p.hp = savedHp;
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        r.state.emotionField = savedEmoField;
+        return out;
+    });
+    check("V17.47 Fast/Slow: EMOTION_DECAY-Tabelle (chaos/Furcht schnell, sorrow/peace langsam)", res.decayTable);
+    check("V17.47 Fast/Slow: KONSUM — Furcht (chaos) verfliegt SCHNELLER als Trauer (sorrow) [pro-Achse-Decay]", res.fearFadesFasterThanGrief);
+    check("V17.47 Fast/Slow: beide Achsen zerfallen (Decay wirkt)", res.bothDecayed);
+    check("V17.47 Fast/Slow: die STIMMUNG ist eine langsame EMA — sie lagt der Emotion (ein Tick → klein)", res.moodLagsEmotion);
+    check("V17.47 Fast/Slow: KONSUM — anhaltendes Gefühl → die Stimmung KONVERGIERT (das Temperament wächst)", res.moodConverges);
+    check(
+        "V17.47 Fast/Slow: KONSUM — eine trübe Stimmung färbt das Erleben (dämpft die Freude eines guten Ereignisses)",
+        res.moodColorsAppraisal
+    );
+    check(
+        "V17.47 Fast/Slow: KEIN Runaway — eine trübe Stimmung bei konstanter Situation manufakturiert KEINE Emotion (V17.44-Lehre)",
+        res.noMoodRunaway
+    );
+    check(
+        "V17.47 Fast/Slow: KONSUM — die KI kennt die GRUNDSTIMMUNG (Trauer), getrennt vom akuten Gefühl (Freude)",
+        res.promptHasMood && res.promptHasAcute
+    );
+    check("V17.47 Fast/Slow: V17.30 heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle", res.triggerReachable);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -35364,6 +35504,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1744Appraisal(ctx);
             await checkBandV1745EmotionCore(ctx);
             await checkBandV1746EmotionSubstance(ctx);
+            await checkBandV1747FastSlow(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

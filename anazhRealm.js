@@ -738,6 +738,7 @@ class AnazhRealm {
                 walkPhase: 0,
                 animationLastTick: -Infinity,
                 emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
+                mood: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }, // W3 — die langsame Grundstimmung (EMA der Emotion, reaktiv)
                 emotionDecayPerSec: 0.005,
                 emotionLastTick: -Infinity,
                 // Ring 3 V2: alle sechs Achsen koppeln. Jede hat ihren eigenen
@@ -4090,12 +4091,21 @@ class AnazhRealm {
             es.intensity < 0.2
                 ? `${playerName} ist gerade emotional ruhig.`
                 : `${playerName} fühlt gerade vor allem: ${es.label}.`;
+        // W3 (V17.47) — die KI kennt jetzt AUCH die langsame GRUNDSTIMMUNG (das Temperament
+        // über die Zeit), getrennt vom akuten Gefühl: ein Spieler kann gerade aufgewühlt
+        // sein, aber im Grunde friedlich (oder umgekehrt) — die „Person mit Geschichte".
+        const ms = this._emotionState(this.state.player && this.state.player.mood);
+        const moodBgLine =
+            ms.intensity < 0.2
+                ? `Die Grundstimmung von ${playerName} ist über die Zeit ausgeglichen.`
+                : `Die Grundstimmung von ${playerName} ist über die Zeit: ${ms.label}.`;
         return [
             `Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
             `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
             `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
             `Dein Spieler heißt ${playerName} und hält sich gern auf: ${tendency}.`,
             moodLine,
+            moodBgLine,
             journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
             "",
             "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
@@ -8266,10 +8276,19 @@ class AnazhRealm {
         const prev = p.emotionLastTick;
         const delta = prev > -Infinity ? Math.max(0, currentTime - prev) : 0;
         p.emotionLastTick = currentTime;
+        // W3 (V17.47) — die langsame STIMMUNG (mood) lazy initialisieren (reaktiv, nicht
+        // persistiert — wie die Overlays; robust über jeden Load-Pfad).
+        if (!p.mood) p.mood = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
 
         if (delta > 0) {
-            const dec = p.emotionDecayPerSec * delta;
+            // W3 (V17.47) — PRO-ACHSE-Decay statt uniform: verschiedene Gefühle
+            // verfliegen verschieden schnell (Furcht/chaos kurz, Trauer/peace lang —
+            // die affektive Chronometrie). EMOTION_DECAY ist ein MULTIPLIKATOR auf den
+            // globalen emotionDecayPerSec → der UI-Schieber bleibt der Tempo-Knopf,
+            // die Tabelle gibt die Differenzierung (Regel über Tabelle).
+            const dmul = AnazhRealm.EMOTION_DECAY;
             for (const k of Object.keys(p.emotions)) {
+                const dec = p.emotionDecayPerSec * (dmul[k] || 1) * delta;
                 p.emotions[k] = Math.max(0, p.emotions[k] - dec);
             }
         }
@@ -8320,8 +8339,15 @@ class AnazhRealm {
             if (typeof p.wohlBaseline !== "number") {
                 p.wohlBaseline = sit; // Cold-Start: die erste Situation IST die Erwartung (kein δ)
             } else {
-                const dsig = sit - p.wohlBaseline; // [−1, 1] — besser/schlechter als erwartet
+                let dsig = sit - p.wohlBaseline; // [−1, 1] — besser/schlechter als erwartet
                 const dead = AnazhRealm.WERTUNG.appraisalDeadzone;
+                // W3 (V17.47) — stimmungs-kongruente Bewertung: NUR wenn ein REALES
+                // Ereignis vorliegt (|dsig| > deadzone) tönt die langsame STIMMUNG die
+                // Interpretation (ein gutes Ereignis fühlt sich in trüber Stimmung kleiner
+                // an, in heller größer — der Mechanismus, der Stimmungen klebrig + real
+                // macht). Bei konstanter Situation (kein Ereignis) KEINE Kongruenz → kein
+                // spontaner Stimmungs-Runaway (die teure V17.44-Feedback-Lehre, gewahrt).
+                if (Math.abs(dsig) > dead) dsig += AnazhRealm.EMOTION_MOOD_CONGRUENCE * this._moodValence();
                 if (dsig > dead) {
                     const g = AnazhRealm.WERTUNG.appraisalGain * (dsig - dead) * delta;
                     p.emotions.joy = Math.min(1, (p.emotions.joy || 0) + g);
@@ -8396,6 +8422,18 @@ class AnazhRealm {
             }
         }
 
+        // W3 (V17.47) — die langsame STIMMUNG: ein EMA-Vektor über Minuten (das
+        // Temperament, in das die schnelle Emotion zerfällt). VIEL langsamer als die
+        // Emotion (moodTau ~Minuten) → die Stimmung ist die „Person mit Geschichte", die
+        // die nächste Bewertung kongruent färbt (oben) + die die KI/das Journal liest.
+        // Liest die FINALE Emotion dieses Ticks (nach Decay + allen Kanälen + Kohärenz).
+        if (delta > 0) {
+            const aMood = 1 - Math.exp(-delta / AnazhRealm.EMOTION_MOOD_TAU);
+            for (const k of AnazhRealm.EMOTION_AXES) {
+                p.mood[k] = (p.mood[k] || 0) + aMood * ((p.emotions[k] || 0) - (p.mood[k] || 0));
+            }
+        }
+
         const trigger = (axis, program) => {
             if (p.emotions[axis] < p.emotionThreshold) return;
             const last = p.emotionLastApply[axis] ?? -Infinity;
@@ -8423,8 +8461,10 @@ class AnazhRealm {
     // die VALENZ ~auf, aber die INTENSITÄT bleibt HOCH — ein voller, ambivalenter
     // Zustand, kein neutraler. So fühlt die Welt einen reichen Zustand statt sechs
     // Zahlen — das speist die KI (llmBuildSystemPrompt), das Journal, die UI.
-    _emotionState() {
-        const e = this.state.player && this.state.player.emotions;
+    _emotionState(vec) {
+        // vec optional → standardmäßig die akute Emotion; mit p.mood übergeben gibt es
+        // den Readout der langsamen STIMMUNG (W3). EINE Maschinerie, zwei Zeitskalen.
+        const e = vec || (this.state.player && this.state.player.emotions);
         const geo = AnazhRealm.EMOTION_GEOMETRY;
         const axes = AnazhRealm.EMOTION_AXES;
         const LABEL = AnazhRealm.EMOTION_LABEL;
@@ -8466,6 +8506,19 @@ class AnazhRealm {
             label = LABEL[top1]; // ein klares dominantes Gefühl
         }
         return { dominant: top1, valence, arousal, intensity, label, mix };
+    }
+
+    // W3 (V17.47) — die Valenz der langsamen STIMMUNG (∈ [−1, 1], via EMOTION_GEOMETRY).
+    // Speist die stimmungs-kongruente Bewertung: eine trübe Stimmung tönt die nächste
+    // Bewertung negativ, eine helle positiv. Skaliert mit der Stimmungs-STÄRKE (eine
+    // fainte Stimmung färbt wenig), geklemmt → bounded.
+    _moodValence() {
+        const mood = this.state.player && this.state.player.mood;
+        if (!mood) return 0;
+        const geo = AnazhRealm.EMOTION_GEOMETRY;
+        let v = 0;
+        for (const axis of AnazhRealm.EMOTION_AXES) v += (mood[axis] || 0) * geo[axis].valenz;
+        return Math.max(-1, Math.min(1, v));
     }
 
     // ### Ring 4 — anazhSymphony V1 ###
@@ -44045,7 +44098,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.46.0";
+AnazhRealm.VERSION = "17.47.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -45109,6 +45162,29 @@ AnazhRealm.EMOTION_LABEL = Object.freeze({
 // gedämpft (die 0.7-Trigger bleiben erreichbar, V17.30); nur ein inkohärenter
 // Doppel-Maxima-Zustand (joy UND sorrow hoch) löst sich sanft auf. Browser-justierbar.
 AnazhRealm.EMOTION_COHERENCE_RATE = 0.04;
+
+// === Der emotionale Kern W3 — Fast/Slow: EMOTION vs. STIMMUNG (docs/emotion-kern-plan.md) ===
+// Gefühl hat eine ZEIT-Struktur (affektive Chronometrie, Frijda/Kuppens): die schnelle
+// EMOTION (akuter Spike, charakteristischer Decay) vs. die langsame STIMMUNG (das
+// Temperament, in das die Emotion zerfällt). EMOTION_DECAY ist der per-Achse-MULTIPLIKATOR
+// auf den globalen emotionDecayPerSec: Furcht/chaos verfliegt schnell (×2.2), Trauer/peace
+// bleibt (×0.55/0.6), awe/Wunder mittel-schnell (×1.4), joy/hope mittel. Browser-justierbar.
+// (Default-Verhalten: Multiplikator 1 ⇒ exakt der alte uniforme Decay; die Differenzierung
+// ist die Tabelle — Regel über Tabelle, der UI-Schieber bleibt der globale Tempo-Knopf.)
+AnazhRealm.EMOTION_DECAY = Object.freeze({
+    joy: 1.0, // mittel — Freude verklingt normal
+    awe: 1.4, // Wunder/Überraschung verfliegt etwas schneller
+    sorrow: 0.55, // Trauer BLEIBT (zerfällt langsam → ~1.8× länger)
+    hope: 0.9, // Hoffnung lingert leicht
+    peace: 0.6, // Zufriedenheit/Frieden hält an
+    chaos: 2.2, // Furcht/Unruhe verfliegt SCHNELL (akut, kurz)
+});
+// Die Zeitkonstante der STIMMUNG (s): die mood-EMA über ~2 Minuten = das Temperament.
+AnazhRealm.EMOTION_MOOD_TAU = 120;
+// Die Stärke der stimmungs-kongruenten Bewertung (× moodValence ∈ [−1,1], NUR auf einen
+// REALEN δ — Math.abs(dsig) > deadzone — addiert → bei konstanter Situation KEINE Kongruenz
+// → kein spontaner Stimmungs-Runaway, die V17.44-Feedback-Lehre). Mild, browser-justierbar.
+AnazhRealm.EMOTION_MOOD_CONGRUENCE = 0.08;
 
 AnazhRealm.EMOTION_FIELD = Object.freeze({
     decayPerSec: 0.012, // Halbwertszeit ~58 s — Gefühle verblassen schneller als Leben
