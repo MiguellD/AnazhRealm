@@ -3736,6 +3736,67 @@ async function checkBandV1750Klammer(ctx) {
     check("V17.50 Klammer: _measureRuleReward nutzt appraisalDelta + phase4Radius (wired)", res.wired);
 }
 
+// V17.51 — Der Kampf-Bogen Phase A: die Kombat-Stats (kampf-plan.md §4-A).
+// Kampf ist KEIN neues System — er ist der Hylomorphismus, eine Ebene weiter:
+// knockback/attackSpeed/defense EMERGIEREN aus der Substanz (Tags → STAT_FROM_TAGS),
+// GENAU wie damage/speed/hpMax. Eine schwere dichte Keule schlägt langsam-wuchtig,
+// eine leichte harte Klinge schnell + scharf — das Profil WÄHLT man über die Materie,
+// nicht über einen Slider. Diese Welle prüft KONSUM (die Profile DIFFERENZIEREN aus der
+// Substanz, durch DIESELBE Pipeline für Spieler + Kreatur + sichtbar in der UI), nicht
+// blosse Existenz (V17.31). Der GAMEPLAY-Konsum (Impuls/Cooldown/Reduktion) folgt C/D.
+async function checkBandV1751CombatStats(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const S = r.constructor.STAT_FROM_TAGS;
+
+        // (1) Struktur: die drei Kombat-Stats existieren als Formeln in der EINEN Tabelle
+        out.formulasExist =
+            typeof S.knockback === "function" && typeof S.attackSpeed === "function" && typeof S.defense === "function";
+
+        // (2) Substanz-Differenzierung (der KERN — die Tabelle IST die Regel):
+        // schwere dichte Keule vs. leichte harte Klinge vs. weiches Wesen.
+        const keule = { dichte: 0.9, härte: 0.5 }; // schwer + dicht (Masse)
+        const klinge = { dichte: 0.3, härte: 0.9 }; // leicht + hart (scharf)
+        const weich = { dichte: 0.05, härte: 0.05 }; // weich (kein Schutz)
+        out.heavyMoreKnockback = S.knockback(keule) > S.knockback(klinge) + 1; // Masse stößt zurück
+        out.lightFasterAttack = S.attackSpeed(klinge) > S.attackSpeed(keule) + 0.1; // leicht = flink
+        out.hardMoreDamage = S.damage(klinge) > S.damage(keule); // härte schneidet (bestehendes damage)
+        out.denseMoreDefense = S.defense(keule) > S.defense(weich) + 3; // dichte/harte Rüstung blockt
+        out.softNoDefense = S.defense(weich) < 1; // base-los wie die elementaren Resists
+        out.attackSpeedPositive = S.attackSpeed(keule) > 0 && S.attackSpeed({ dichte: 1 }) > 0; // kein negativer Cooldown
+        out.magicFlink = S.attackSpeed({ dichte: 0.3, magieleitung: 1 }) > S.attackSpeed({ dichte: 0.3 }); // flink-Term
+
+        // (3) Spieler-Pipeline-KONSUM: die ECHTE computePlayerStats berechnet das Trio
+        const ps = r.computePlayerStats().stats;
+        out.playerComputes =
+            Number.isFinite(ps.knockback) && Number.isFinite(ps.attackSpeed) && Number.isFinite(ps.defense) && ps.attackSpeed > 0;
+
+        // (4) Kreatur-Pipeline-KONSUM (symmetrisch — DIESELBE Pipeline, kein Parallelpfad)
+        const pm = r.state.playerMesh.position;
+        const c = r.spawnCreatureAt(pm.x + 240, pm.y, pm.z + 240, "happy", "wesen");
+        const cs = r.computeCreatureStats(c).stats;
+        out.creatureComputes = Number.isFinite(cs.knockback) && Number.isFinite(cs.attackSpeed) && Number.isFinite(cs.defense);
+        r.removeCreature(c); // sauber aufräumen (kein Kreatur-Zahl-Leck)
+
+        // (5) die Sichtbarkeit — renderPlayerStatsUI trägt das Kombat-Profil (echter UI-Konsum)
+        const uiSrc = r.renderPlayerStatsUI.toString();
+        out.uiShowsCombat = /knockback/.test(uiSrc) && /attackSpeed/.test(uiSrc) && /defense/.test(uiSrc);
+
+        return out;
+    });
+    check("V17.51 Kampf A: die Kombat-Stats existieren als Formeln (knockback/attackSpeed/defense)", res.formulasExist);
+    check("V17.51 Kampf A: KONSUM — eine schwere dichte Keule hat MEHR Rückschlag als eine leichte Klinge (Masse)", res.heavyMoreKnockback);
+    check("V17.51 Kampf A: KONSUM — eine leichte Klinge schlägt SCHNELLER als eine schwere Keule (leicht = flink)", res.lightFasterAttack);
+    check("V17.51 Kampf A: KONSUM — eine harte Klinge macht MEHR Schaden als eine stumpfe Keule (härte schneidet)", res.hardMoreDamage);
+    check("V17.51 Kampf A: KONSUM — dichte/harte Substanz blockt MEHR (defense), ein weiches Wesen ~0 (base-los)", res.denseMoreDefense && res.softNoDefense);
+    check("V17.51 Kampf A: attackSpeed bleibt positiv (kein negativer Cooldown); magieleitung macht flink", res.attackSpeedPositive && res.magicFlink);
+    check("V17.51 Kampf A: KONSUM — die ECHTE Spieler-Pipeline (computePlayerStats) berechnet das Kampf-Trio", res.playerComputes);
+    check("V17.51 Kampf A: KONSUM — die Kreatur-Pipeline (computeCreatureStats) berechnet es symmetrisch (eine Pipeline)", res.creatureComputes);
+    check("V17.51 Kampf A: die Stats-UI macht das Kampf-Profil sichtbar (Rückschlag/Tempo/Verteidigung)", res.uiShowsCombat);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -11323,9 +11384,20 @@ async function checkBandWelle6DSoul(ctx) {
         out.computedStatsHasAll =
             computed &&
             computed.stats &&
-            ["hpMax", "damage", "speed", "jumpPower", "staminaMax", "precision", "magicResist", "heatResist"].every(
-                (k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k])
-            );
+            // V17.51 Kampf Phase A — das Kampf-Trio fließt durch DIESELBE Pipeline.
+            [
+                "hpMax",
+                "damage",
+                "speed",
+                "jumpPower",
+                "staminaMax",
+                "precision",
+                "magicResist",
+                "heatResist",
+                "knockback",
+                "attackSpeed",
+                "defense",
+            ].every((k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k]));
 
         // Diskriminations-Test: drei Seelen → drei verschiedene Stat-Profile
         const savedSoul = r.state.player.soul;
@@ -12578,8 +12650,11 @@ async function checkBandWelle6DSoul(ctx) {
     if (wave6dResults) {
         check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
         check(
-            "Welle 6.D: STAT_FROM_TAGS hat 8 Stats (hpMax + damage + speed + jumpPower + stamina + precision + 2× Resist)",
-            wave6dResults.statKeys === "damage,heatResist,hpMax,jumpPower,magicResist,precision,speed,staminaMax"
+            // V17.51 Kampf Phase A — STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
+            // attackSpeed, defense). Die feste Satz-Assertion wandert mit (V9.56-i).
+            "Welle 6.D: STAT_FROM_TAGS hat 11 Stats (8 Basis + Kampf-Trio knockback/attackSpeed/defense)",
+            wave6dResults.statKeys ===
+                "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,precision,speed,staminaMax"
         );
         check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
         check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
@@ -12610,7 +12685,7 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D: computePlayerStats liefert {tags, stats}",
             wave6dResults.computedHasTags && wave6dResults.computedHasStats
         );
-        check("Welle 6.D: computed.stats hat alle 8 Werte als finite Zahlen", wave6dResults.computedStatsHasAll);
+        check("Welle 6.D: computed.stats hat alle 11 Werte als finite Zahlen (8 Basis + Kampf-Trio, V17.51)", wave6dResults.computedStatsHasAll);
         // Vision-Diskrimination
         check(
             "Welle 6.D: Diskrimination — Phönix schneller als Drache (low dichte)",
@@ -12650,7 +12725,7 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D: #player-stats im DOM (Spieler-Drawer)", wave6dResults.statsContainerInDom);
         check("Welle 6.D: renderPlayerStatsUI läuft ohne Crash", wave6dResults.renderOk);
         if (wave6dResults.renderOk) {
-            check("Welle 6.D: 8 stat-row-Einträge im DOM", wave6dResults.statRowsCount === 8);
+            check("Welle 6.D: 11 stat-row-Einträge im DOM (8 Basis + Kampf-Trio Rückschlag/Tempo/Verteidigung, V17.51)", wave6dResults.statRowsCount === 11);
             check("Welle 6.D: stat-tags-Zeile (dominante Achsen) im DOM", wave6dResults.hasTagLine);
         }
     }
@@ -35832,6 +35907,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1748Social(ctx);
             await checkBandV1749Adventure(ctx);
             await checkBandV1750Klammer(ctx);
+            await checkBandV1751CombatStats(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

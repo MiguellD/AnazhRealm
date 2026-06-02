@@ -39963,9 +39963,12 @@ class AnazhRealm {
         }
         const lines = [
             `Schaden       ${(stats.damage || 0).toFixed(1)}`,
+            `Rückschlag    ${(stats.knockback || 0).toFixed(1)}`,
+            `Angriffstempo ${(stats.attackSpeed || 0).toFixed(2)}`,
             `Geschwindigk. ${(stats.speed || 0).toFixed(2)}`,
             `Sprungkraft   ${(stats.jumpPower || 0).toFixed(2)}`,
             `Präzision     ${(stats.precision || 0).toFixed(2)}`,
+            `Verteidigung  ${(stats.defense || 0).toFixed(1)}`,
             `Magie-Resist  ${(stats.magicResist || 0).toFixed(2)}`,
             `Hitze-Resist  ${(stats.heatResist || 0).toFixed(2)}`,
         ];
@@ -42118,10 +42121,13 @@ class AnazhRealm {
         const rows = [
             { key: "hpMax", label: "Lebenskraft", fmt: (v) => Math.round(v) },
             { key: "damage", label: "Schaden", fmt: (v) => v.toFixed(1) },
+            { key: "knockback", label: "Rückschlag", fmt: (v) => v.toFixed(1) },
+            { key: "attackSpeed", label: "Angriffstempo", fmt: (v) => v.toFixed(2) },
             { key: "speed", label: "Lauf-Geschwindigkeit", fmt: (v) => v.toFixed(2) },
             { key: "jumpPower", label: "Sprungkraft", fmt: (v) => v.toFixed(2) },
             { key: "staminaMax", label: "Ausdauer", fmt: (v) => Math.round(v) },
             { key: "precision", label: "Präzision", fmt: (v) => v.toFixed(2) },
+            { key: "defense", label: "Verteidigung", fmt: (v) => v.toFixed(1) },
             { key: "magicResist", label: "Magie-Resistenz", fmt: (v) => v.toFixed(2) },
             { key: "heatResist", label: "Hitze-Resistenz", fmt: (v) => v.toFixed(2) },
         ];
@@ -44245,7 +44251,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.50.0";
+AnazhRealm.VERSION = "17.51.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -44318,6 +44324,15 @@ AnazhRealm.WERTUNG = Object.freeze({
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
     damage: (t) => 5 + (t.härte || 0) * 15 + (t.dichte || 0) * 5,
+    // V17.51 Kampf-Bogen Phase A (kampf-plan.md §4-A) — die Kombat-Stats EMERGIEREN
+    // aus der Substanz, GENAU im bestehenden Muster (Base + Tag·Gewicht; die Tabelle
+    // IST die Regel). knockback ∝ dichte (Masse stößt zurück) + härte (schwach);
+    // attackSpeed ∝ (1−dichte) (leicht = schnell) + magieleitung (flink) → eine schwere
+    // dichte Keule schlägt langsam-wuchtig, eine leichte harte Klinge schnell. Der
+    // GAMEPLAY-Konsum (Knockback-Impuls + Angriffs-Cooldown) folgt in Phase C/D; hier
+    // wird das tag-emergente Profil definiert + sichtbar gemacht (renderPlayerStatsUI).
+    knockback: (t) => 1 + (t.dichte || 0) * 9 + (t.härte || 0) * 2,
+    attackSpeed: (t) => 0.8 + (1 - (t.dichte || 0)) * 0.7 + (t.magieleitung || 0) * 0.3,
     // Schöpfer-Feedback 13.05.2026 (Welle 6.D Polish): „Mensch extrem
     // langsam, evt. Basegeschwindigkeit für alle etwas höher". Base 4→6,
     // Multiplikator (1-dichte) 4→5, magieleitung 1→1.5. Mensch springt
@@ -44329,6 +44344,11 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     precision: (t) => 0.5 + (t.magieleitung || 0) * 0.3 + (t.zähigkeit || 0) * 0.2,
     magicResist: (t) => (t.magieleitung || 0) * 0.4 + (t.resoniert || 0) * 0.3,
     heatResist: (t) => (t.wärmeleitung || 0) * 0.5 - (t.brennbar || 0) * 0.3,
+    // V17.51 Kampf-Bogen Phase A — defense (PHYSISCH) ∝ dichte + härte (dichte, harte
+    // Rüstung blockt); ergänzt magicResist/heatResist (elementar) zum vollständigen
+    // Defense-Trio. Base-los wie die elementaren Resists (ein weiches Wesen blockt ~0).
+    // Konsum als flache Schadens-Reduktion (dealt = max(1, amount − defense)) in Phase C.
+    defense: (t) => (t.dichte || 0) * 8 + (t.härte || 0) * 6,
 });
 
 // Welle 6.D Etappe 3b — Aura-Hue-Map: jede der 10 MATERIAL_TAG_KEYS bekommt
