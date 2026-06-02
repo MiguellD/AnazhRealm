@@ -3804,20 +3804,22 @@ async function checkBandV1751CombatStats(ctx) {
 // „Waffen-Schaden"-Pfad. Diese Welle prüft KONSUM (eine ausgerüstete harte Waffe
 // HEBT das Kombat-Profil des Spielers; die Rolle persistiert durch serialize/
 // deserialize) + die Validierung + die UI-Trennung, nicht blosse Existenz (V17.31).
-async function checkBandV1752Weapon(ctx) {
+// V17.57 W2-B (kampf-plan §8.1) — der EINE „in der Hand"-Slot: Werkzeug + Waffe verschmolzen, kein
+// Rollen-Schloss. equipHeld nimmt JEDEN Bauplan (keine Markierung nötig); das gehaltene Gerät faltet
+// in die Kombat-Stats (Angriff-mit-jedem-Gerät) UND treibt das Abbauen (W1/W2) — eine Pipeline. KONSUM.
+async function checkBandV1757HeldSlot(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
-        const savedEquipped = p.equipped ? { ...p.equipped } : { tool: null, armor: null, weapon: null };
+        const savedHeld = p.equipped ? p.equipped.held : null;
 
-        // (0) der weapon-Slot + WEAPON_STAT_WEIGHT (0.4 > Rüstung 0.3 → die Waffe prägt stark)
-        out.slotExists = !!p.equipped && "weapon" in p.equipped;
-        out.weightExists = r.constructor.WEAPON_STAT_WEIGHT > r.constructor.ARMOR_STAT_WEIGHT;
+        // (0) der held-Slot + HELD_STAT_WEIGHT
+        out.slotExists = !!p.equipped && "held" in p.equipped;
+        out.weightExists = r.constructor.HELD_STAT_WEIGHT > 0;
 
-        // (1) eine harte Waffe konstruieren (material/shape-agnostisch: die HÄRTESTE
-        // verfügbare Form × Material; via _deserializeBlueprint → valide opChains/Präzision)
+        // (1) ein hartes Gerät konstruieren (härteste Form × Material)
         const FTA = r.constructor.FORM_TAG_ACTIVATION;
         let hardShape = "box";
         let maxAct = 0;
@@ -3837,80 +3839,79 @@ async function checkBandV1752Weapon(ctx) {
                 hardMat = m;
             }
         }
-        const wName = "_t1752_weapon";
+        const wName = "_t1757_impl";
         r.state.blueprints[wName] = r._deserializeBlueprint({
             name: wName,
-            label: "Testklinge",
+            label: "Testgerät",
             parts: [{ shape: hardShape, material: hardMat, position: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } }],
             connections: [],
         });
-        const wTags = r.computeCompoundTags(r.state.blueprints[wName]);
-        out.weaponHasHardness = (wTags.härte || 0) > 0; // die Substanz-Prämisse hält
+        out.implHasHardness = (r.computeCompoundTags(r.state.blueprints[wName]).härte || 0) > 0;
 
-        // (2) setBlueprintAsWeapon setzt role + roleManual
-        const setR = r.setBlueprintAsWeapon(wName);
-        out.setRoleOk = setR.ok && r.state.blueprints[wName].role === "weapon" && r.state.blueprints[wName].roleManual === true;
+        // (2) equipHeld nimmt JEDEN Bauplan — KEINE Markierung nötig (das Rollen-Schloss ist weg)
+        const eqR = r.equipHeld(wName);
+        out.equipNoRoleNeeded = eqR.ok && p.equipped.held === wName;
 
-        // (3) equipWeapon validiert: unbekannt + NICHT-Waffe (eine Rüstung) werden abgelehnt
-        out.rejectsUnknown = !r.equipWeapon("nonexistent_bp_xyz").ok;
-        const aName = "_t1752_armor";
-        r.state.blueprints[aName] = r._deserializeBlueprint({
-            name: aName,
-            label: "Testpanzer",
-            parts: [{ shape: hardShape, material: hardMat }],
-            connections: [],
-        });
-        r.setBlueprintAsArmor(aName);
-        const rejArmor = r.equipWeapon(aName);
-        out.rejectsNonWeapon = !rejArmor.ok && rejArmor.reason === "not_marked_as_weapon";
+        // (3) equipHeld lehnt ab: ein unbekannter Bauplan + ein builtIn-Crafting-Tool (kein Welt-Gerät)
+        out.rejectsUnknown = !r.equipHeld("nonexistent_bp_xyz").ok;
+        out.rejectsBuiltinTool = !r.equipHeld("hammer").ok; // hammer = builtIn-Crafting-Tool, kein Bauplan
+        r.equipHeld(wName); // (die fehlgeschlagenen Versuche ändern nichts; sicherheitshalber neu setzen)
 
-        // (4) KONSUM — die ausgerüstete harte Waffe HEBT das Kombat-Profil des Spielers
-        r.equipWeapon(null);
+        // (4) KONSUM — das gehaltene harte Gerät HEBT das Kombat-Profil (Angriff-mit-jedem-Gerät)
+        r.equipHeld(null);
         const base = r.computePlayerStats().stats;
-        const eqR = r.equipWeapon(wName);
-        out.equipOk = eqR.ok && p.equipped.weapon === wName;
+        r.equipHeld(wName);
         const armed = r.computePlayerStats().stats;
-        out.weaponRaisesDamage = armed.damage > base.damage + 0.01; // härte → mehr Schaden
-        out.weaponRaisesDefense = armed.defense > base.defense; // härte → mehr Verteidigung (das Trio fließt)
+        out.heldRaisesDamage = armed.damage > base.damage + 0.01; // härte → mehr Schaden
+        out.heldRaisesDefense = armed.defense > base.defense; // das Defense-Trio fließt mit
+
         // (5) abnehmen → zurück auf die Baseline (kein Rest-Effekt)
-        r.equipWeapon(null);
+        r.equipHeld(null);
         const bare = r.computePlayerStats().stats;
         out.unequipRestores = Math.abs(bare.damage - base.damage) < 1e-9;
 
-        // (6) Persistenz: die Waffen-Rolle reist durch serialize → deserialize (voll persistent)
-        const ser = r._serializeBlueprint(r.state.blueprints[wName]);
-        out.serializesRole = ser.role === "weapon" && ser.roleManual === true;
-        const de = r._deserializeBlueprint(ser);
-        out.deserializesRole = !!de && de.role === "weapon";
+        // (6) DASSELBE Gerät treibt das Abbauen (W1/W2) — _heldImplementBlueprint löst den held-Slot auf
+        r.equipHeld(wName);
+        out.heldDrivesHarvest = r._heldImplementBlueprint() === r.state.blueprints[wName];
 
-        // (7) UI: die Partition trennt Waffen + die Waffen-Reihe existiert
-        const part = r._equipPartitionEquipBlueprints();
-        out.partitionSeparates =
-            Array.isArray(part.weaponBlueprints) && part.weaponBlueprints.includes(wName) && !part.candidateBlueprints.includes(wName);
-        out.weaponRowExists = typeof r._equipAppendWeaponRow === "function";
+        // (7) Persistenz: der held-Slot reist im Snapshot
+        const snap = r.buildStateSnapshot();
+        out.snapHasHeld = snap.playerEquipped && snap.playerEquipped.held === wName;
+
+        // (8) UI: EINE „in der Hand"-Zeile (die getrennte Waffen-Zeile ist weg)
+        out.heldRowExists = typeof r._equipAppendHeldRow === "function";
+        out.noWeaponRow = typeof r._equipAppendWeaponRow !== "function";
 
         // cleanup
-        r.equipWeapon(null);
+        r.equipHeld(null);
         delete r.state.blueprints[wName];
-        delete r.state.blueprints[aName];
-        p.equipped.tool = savedEquipped.tool || null;
-        p.equipped.armor = savedEquipped.armor || null;
-        p.equipped.weapon = savedEquipped.weapon || null;
+        if (savedHeld) r.equipHeld(savedHeld);
         r.recomputePlayerStats();
         return out;
     });
-    check("V17.52 Kampf B: der weapon-Equip-Slot + WEAPON_STAT_WEIGHT (0.4 > Rüstung 0.3) existieren", res.slotExists && res.weightExists);
-    check("V17.52 Kampf B: die Test-Waffe trägt härte (die Substanz-Prämisse hält)", res.weaponHasHardness);
-    check("V17.52 Kampf B: setBlueprintAsWeapon setzt role:weapon + roleManual", res.setRoleOk);
-    check("V17.52 Kampf B: equipWeapon lehnt einen unbekannten Bauplan ab", res.rejectsUnknown);
-    check("V17.52 Kampf B: equipWeapon lehnt einen NICHT-Waffen-Bauplan ab (not_marked_as_weapon)", res.rejectsNonWeapon);
-    check("V17.52 Kampf B: equipWeapon setzt den weapon-Slot", res.equipOk);
-    check("V17.52 Kampf B: KONSUM — eine ausgerüstete harte Waffe HEBT den Schaden (Substanz → Profil, nicht Slider)", res.weaponRaisesDamage);
-    check("V17.52 Kampf B: KONSUM — die harte Waffe hebt auch die Verteidigung (das Defense-Trio fließt mit)", res.weaponRaisesDefense);
-    check("V17.52 Kampf B: Waffe abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
-    check("V17.52 Kampf B: Persistenz — die Waffen-Rolle reist durch _serializeBlueprint (role + roleManual)", res.serializesRole);
-    check("V17.52 Kampf B: Persistenz — _deserializeBlueprint stellt die Waffen-Rolle wieder her", res.deserializesRole);
-    check("V17.52 Kampf B: die UI trennt Waffen in der Partition + die Waffen-Reihe existiert", res.partitionSeparates && res.weaponRowExists);
+    check("V17.57 W2-B: der held-Equip-Slot + HELD_STAT_WEIGHT existieren", res.slotExists && res.weightExists);
+    check("V17.57 W2-B: das Test-Gerät trägt härte (die Substanz-Prämisse hält)", res.implHasHardness);
+    check(
+        "V17.57 W2-B: equipHeld nimmt JEDEN Bauplan — keine Markierung nötig (kein Rollen-Schloss)",
+        res.equipNoRoleNeeded
+    );
+    check("V17.57 W2-B: equipHeld lehnt einen unbekannten Bauplan ab", res.rejectsUnknown);
+    check("V17.57 W2-B: equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)", res.rejectsBuiltinTool);
+    check(
+        "V17.57 W2-B: KONSUM — ein gehaltenes hartes Gerät HEBT den Schaden (Angriff-mit-jedem-Gerät, Substanz→Profil)",
+        res.heldRaisesDamage
+    );
+    check("V17.57 W2-B: KONSUM — das harte Gerät hebt auch die Verteidigung (das Defense-Trio fließt)", res.heldRaisesDefense);
+    check("V17.57 W2-B: Gerät abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
+    check(
+        "V17.57 W2-B: DASSELBE Gerät treibt das Abbauen (_heldImplementBlueprint löst den held-Slot auf)",
+        res.heldDrivesHarvest
+    );
+    check("V17.57 W2-B: Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
+    check(
+        "V17.57 W2-B: die UI hat EINE in-der-Hand-Zeile (die getrennte Waffen-Zeile ist weg)",
+        res.heldRowExists && res.noWeaponRow
+    );
 }
 
 // V17.53 — Der Kampf-Bogen Phase C: Kreatur-HP + Schaden + Tod/Loot
@@ -4107,7 +4108,7 @@ async function checkBandV1755HarvestEffort(ctx) {
         const out = {};
         const p = r.state.player;
         const H = r.constructor.HARVEST;
-        const savedTool = p.equipped ? p.equipped.tool : null;
+        const savedTool = p.equipped ? p.equipped.held : null;
         const savedStam = p.stamina;
         const savedInv = p.inventory.slice();
         const savedMode = r.getGameMode();
@@ -4139,9 +4140,9 @@ async function checkBandV1755HarvestEffort(ctx) {
         ].every((m) => typeof r[m] === "function");
 
         // (2) minePower: die bloße Faust schwach, ein hartes Werkzeug stark (das gehaltene Ding zählt)
-        p.equipped.tool = null;
+        p.equipped.held = null;
         const handPower = r._heldMinePower();
-        p.equipped.tool = "stein_block";
+        p.equipped.held = "stein_block";
         const toolPower = r._heldMinePower();
         out.toolBeatsHand = toolPower > handPower && handPower > 0;
 
@@ -4150,9 +4151,9 @@ async function checkBandV1755HarvestEffort(ctx) {
         out.hardResists = hardRes.mineResist > H.resistBase;
 
         // (4) die Tauglichkeit DIFFERENZIERT die vier Kanäle (gutes Werkzeug vs Faust auf HARTEM)
-        p.equipped.tool = "stein_block";
+        p.equipped.held = "stein_block";
         const fitGood = r._harvestFitnessFromResist(hardRes);
-        p.equipped.tool = null;
+        p.equipped.held = null;
         const fitHand = r._harvestFitnessFromResist(hardRes);
         out.fitnessDifferentiates =
             fitGood.progress > fitHand.progress && // TEMPO
@@ -4165,12 +4166,12 @@ async function checkBandV1755HarvestEffort(ctx) {
         r.setGameMode("frieden");
         p.stamina = 1e6;
         clearInv();
-        p.equipped.tool = null;
+        p.equipped.held = null;
         const aHand = r.spawnArchitecture("stein_block", { x: p.x + 8, y: p.y, z: p.z });
         const handStrikes = strikeUntilGone(aHand, 200);
         const steinHand = steinCount();
         clearInv();
-        p.equipped.tool = "stein_block";
+        p.equipped.held = "stein_block";
         const aTool = r.spawnArchitecture("stein_block", { x: p.x + 12, y: p.y, z: p.z });
         const toolStrikes = strikeUntilGone(aTool, 200);
         const steinTool = steinCount();
@@ -4187,7 +4188,7 @@ async function checkBandV1755HarvestEffort(ctx) {
 
         // (8) KONSUM Stamina: ein Hieb in pfad zieht Stamina (∝ invers zur Effizienz)
         r.setGameMode("pfad");
-        p.equipped.tool = null;
+        p.equipped.held = null;
         p.stamina = 100;
         const aS = r.spawnArchitecture("stein_block", { x: p.x + 16, y: p.y, z: p.z });
         const stamBefore = p.stamina;
@@ -4197,7 +4198,7 @@ async function checkBandV1755HarvestEffort(ctx) {
 
         // cleanup
         for (const a of [aHand, aTool]) if (a && r.state.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
-        p.equipped.tool = savedTool;
+        p.equipped.held = savedTool;
         p.stamina = savedStam;
         p.breakHeld = false;
         clearInv();
@@ -4246,8 +4247,8 @@ async function checkBandV1755W2Profile(ctx) {
         const out = {};
         const p = r.state.player;
         const blu = r.state.blueprints;
-        const savedTool = p.equipped ? p.equipped.tool : null;
-        const savedWeapon = p.equipped ? p.equipped.weapon : null;
+        const savedTool = p.equipped ? p.equipped.held : null;
+        const savedWeapon = p.equipped ? p.equipped.held : null;
         if (!p.equipped) p.equipped = {};
         // Konstruierte Geräte aus DERSELBEN harten Materie (stein), nur die FORM unterscheidet:
         // eine spitze KLINGE (octahedron) vs ein stumpfer KLOTZ (box).
@@ -4262,25 +4263,25 @@ async function checkBandV1755W2Profile(ctx) {
         ].every((m) => typeof r[m] === "function");
 
         // (2) die FORM treibt das Profil — gleiche Materie, andere Form → Klinge schneidet, Klotz wuchtet
-        p.equipped.weapon = null;
-        p.equipped.tool = "__w2_blade";
+        p.equipped.held = null;
+        p.equipped.held = "__w2_blade";
         const bladeProf = r._implementProfile();
-        p.equipped.tool = "__w2_maul";
+        p.equipped.held = "__w2_maul";
         const maulProf = r._implementProfile();
         out.formDrivesProfile = bladeProf.cutPower > maulProf.cutPower && maulProf.minePower > bladeProf.minePower;
 
         // (3) die Faust ist beides schwach
-        p.equipped.tool = null;
+        p.equipped.held = null;
         const handProf = r._implementProfile();
         out.handWeakBoth = handProf.minePower < maulProf.minePower && handProf.cutPower < bladeProf.cutPower;
 
         // (4)+(5) das MATERIAL wählt den Kanal + das richtige Gerät gewinnt (synthetische Widerstände)
         const soft = { mineResist: 2.0, cutResist: 0.6 };
         const hard = { mineResist: 3.2, cutResist: 4.5 };
-        p.equipped.tool = "__w2_blade";
+        p.equipped.held = "__w2_blade";
         const bladeSoft = r._harvestFitnessFromResist(soft);
         const bladeHard = r._harvestFitnessFromResist(hard);
-        p.equipped.tool = "__w2_maul";
+        p.equipped.held = "__w2_maul";
         const maulSoft = r._harvestFitnessFromResist(soft);
         const maulHard = r._harvestFitnessFromResist(hard);
         out.bladeCutsSoft = bladeSoft.channel === "cut" && bladeSoft.fit > bladeHard.fit;
@@ -4288,31 +4289,31 @@ async function checkBandV1755W2Profile(ctx) {
         out.rightToolWins = bladeSoft.fit > maulSoft.fit && maulHard.fit > bladeHard.fit;
 
         // (6) ALLES-FÜR-ALLES: eine ausgerüstete WAFFE (kein tool) ist das gehaltene Gerät → man erntet mit ihr
-        p.equipped.tool = null;
-        p.equipped.weapon = "__w2_blade";
+        p.equipped.held = null;
+        p.equipped.held = "__w2_blade";
         out.weaponIsHeld = r._heldImplementBlueprint() === blu.__w2_blade;
         out.weaponHarvests = r._implementProfile().cutPower > handProf.cutPower;
 
         // (7) der W1-Bug behoben: ein echtes Werkzeug ist eine Instanz (sourceBlueprint), nicht direkt ein Bauplan
-        p.equipped.weapon = null;
+        p.equipped.held = null;
         const savedTools = r.state.tools;
         r.state.tools = Object.assign({}, savedTools || {}, { __w2_realtool: { sourceBlueprint: "__w2_maul" } });
-        p.equipped.tool = "__w2_realtool";
+        p.equipped.held = "__w2_realtool";
         out.toolInstanceResolves = r._heldImplementBlueprint() === blu.__w2_maul;
         r.state.tools = savedTools;
 
         // (8) END-TO-END am ECHTEN Bauwerk (stein_block = Fels): die Keule (Wucht) gewinnt KLAR über die
         // Klinge (Fels ist unschneidbar) — robuster Fit-Vergleich (keine Rundungs-Marge) + der Kanal ist mine.
-        p.equipped.tool = "__w2_maul";
+        p.equipped.held = "__w2_maul";
         const maulRock = r._harvestFitness({ type: "stein_block" });
-        p.equipped.tool = "__w2_blade";
+        p.equipped.held = "__w2_blade";
         const bladeRock = r._harvestFitness({ type: "stein_block" });
         out.maulBeatsBladeOnRock = maulRock.fit > bladeRock.fit && maulRock.channel === "mine";
         // + die Keule bricht das ECHTE Bauwerk tatsächlich (der ganze Pfad läuft end-to-end)
         const savedMode = r.getGameMode();
         r.setGameMode("frieden");
         p.stamina = 1e6;
-        p.equipped.tool = "__w2_maul";
+        p.equipped.held = "__w2_maul";
         const aRock = r.spawnArchitecture("stein_block", { x: p.x + 8, y: p.y, z: p.z });
         let rs = 0;
         while (aRock && r.state.architectures.indexOf(aRock) !== -1 && rs < 300) {
@@ -4325,8 +4326,8 @@ async function checkBandV1755W2Profile(ctx) {
         // cleanup
         delete blu.__w2_blade;
         delete blu.__w2_maul;
-        p.equipped.tool = savedTool;
-        p.equipped.weapon = savedWeapon;
+        p.equipped.held = savedTool;
+        p.equipped.held = savedWeapon;
         p.stamina = 1e6;
         r.setGameMode(savedMode);
         return out;
@@ -12123,7 +12124,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.soul = "human";
         r.state.player.boosts = [];
         r.state.player.deathWoundIntensity = 0;
-        r.state.player.equipped = { tool: null, armor: null };
+        r.state.player.equipped = { held: null, armor: null };
         r.recomputePlayerStats();
         // Höhere Base-Speed (Schöpfer-Wunsch): Mensch sollte ~8-9 sein
         const humanResult = r.computePlayerStats();
@@ -12329,7 +12330,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.hasEquipArmor = typeof r.equipArmor === "function";
         out.hasSetArmor = typeof r.setBlueprintAsArmor === "function";
         out.hasEquippedState =
-            r.state.player.equipped && "tool" in r.state.player.equipped && "armor" in r.state.player.equipped;
+            r.state.player.equipped && "held" in r.state.player.equipped && "armor" in r.state.player.equipped;
         out.hasAuraHueMap = C.AURA_TAG_HUE && typeof C.AURA_TAG_HUE === "object";
         out.auraHueMapHasAllTags = C.MATERIAL_TAG_KEYS.every((k) => k in C.AURA_TAG_HUE);
         // NON_BROADCASTABLE
@@ -12409,26 +12410,24 @@ async function checkBandWelle6DSoul(ctx) {
         r.dslRun(["unequip", "armor"], { source: "test" });
         out.dslUnequipWorks = r.state.player.equipped.armor === null;
 
-        // Werkzeug equippen
+        // V17.57 W2-B — ein builtIn-Crafting-Tool (hammer) ist KEIN Welt-Gerät → equipHeld lehnt es
+        // ab (kein Bauplan); ein eigener Bauplan IST haltbar (kein Rollen-Schloss) + faltet in die Stats.
         r.state.player.tools = r.state.player.tools || [];
         if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
-        const equipToolResult = r.equipTool("hammer");
-        out.equipBuiltinToolOk = equipToolResult.ok;
-        out.equippedToolIs = r.state.player.equipped.tool === "hammer";
-        // Built-in-Werkzeug hat KEINEN sourceBlueprint → trägt kein Tag-Bonus
-        // (das ist ok: nur Bauplan-Werkzeuge stacken Stats; Built-ins
-        // sind Präzisions-Modulatoren via opChain).
+        out.equipBuiltinToolOk = !r.equipHeld("hammer").ok; // builtIn-Tool → abgelehnt (kein Bauplan)
+        out.equippedToolIs = !r.state.player.equipped.held; // nichts gehalten nach der Ablehnung
         const toolStats = r.state.player.stats;
         out.builtinToolNoStatChange = Math.abs(toolStats.hpMax - baselineStats.hpMax) < 0.01;
 
-        // Save-Round-Trip
+        // Save-Round-Trip — ein eigener Bauplan als gehaltenes Gerät (kein Rollen-Schloss) reist mit.
         r.equipArmor("test_armor_eisen");
-        r.equipTool("hammer");
+        r.equipHeld("test_armor_eisen");
         const snap = r.buildStateSnapshot();
         out.snapHasEquipped =
             snap.playerEquipped &&
             snap.playerEquipped.armor === "test_armor_eisen" &&
-            snap.playerEquipped.tool === "hammer";
+            snap.playerEquipped.held === "test_armor_eisen";
+        r.equipHeld(null);
 
         // Aura-Visual (Schöpfer-Feedback: jetzt am Charakter, nicht Boden-Ring)
         r.tickPlayerAura();
@@ -12454,7 +12453,7 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
         check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
         check("Welle 6.D Etappe 3b: setBlueprintAsArmor-Methode existiert", wave6d3bResults.hasSetArmor);
-        check("Welle 6.D Etappe 3b: state.player.equipped = {tool, armor}", wave6d3bResults.hasEquippedState);
+        check("Welle 6.D Etappe 3b: state.player.equipped = {held, armor} (V17.57 W2-B)", wave6d3bResults.hasEquippedState);
         check("Welle 6.D Etappe 3b: AURA_TAG_HUE-Map existiert", wave6d3bResults.hasAuraHueMap);
         check(
             "Welle 6.D Etappe 3b: AURA_TAG_HUE-Map deckt alle 10 MATERIAL_TAG_KEYS ab",
@@ -12484,13 +12483,19 @@ async function checkBandWelle6DSoul(ctx) {
             wave6d3bResults.equippedArmorNull
         );
         check("Welle 6.D Etappe 3b: DSL-Op unequip(armor) entfernt Rüstung", wave6d3bResults.dslUnequipWorks);
-        check("Welle 6.D Etappe 3b: equipTool akzeptiert Built-in-Werkzeug", wave6d3bResults.equipBuiltinToolOk);
-        check("Welle 6.D Etappe 3b: state.player.equipped.tool ist gesetzt", wave6d3bResults.equippedToolIs);
         check(
-            "Welle 6.D Etappe 3b: Built-in-Werkzeug ohne sourceBlueprint → kein Stat-Beitrag (ok)",
+            "V17.57 W2-B: equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)",
+            wave6d3bResults.equipBuiltinToolOk
+        );
+        check("V17.57 W2-B: nach der Ablehnung ist nichts gehalten (equipped.held leer)", wave6d3bResults.equippedToolIs);
+        check(
+            "V17.57 W2-B: das abgelehnte builtIn-Tool ließ die Stats unberührt (ok)",
             wave6d3bResults.builtinToolNoStatChange
         );
-        check("Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped", wave6d3bResults.snapHasEquipped);
+        check(
+            "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped (held)",
+            wave6d3bResults.snapHasEquipped
+        );
         check(
             "Welle 6.D Etappe 3b (V2): Aura tintet Spieler-Sub-Meshes (statt Boden-Ring)",
             wave6d3bResults.auraSubMeshTinted
@@ -21680,10 +21685,10 @@ async function checkBandWelle6HCreatures(ctx) {
         // mehr). Wir rüsten ein hartes Werkzeug aus (stein als harte Substanz) + hieben bis zum
         // Bruch; der Ertrag fließt nur mit tauglichem Werkzeug (die bloße Faust gäbe ~nichts).
         r.state.player.equipped = r.state.player.equipped || {};
-        r.state.player.equipped.tool = "stein_block";
+        r.state.player.equipped.held = "stein_block";
         r.state.player.stamina = 1e6; // V17.55 — der Stamina-Gate soll diese Mess-Schleife nicht stören
         for (let s = 0; s < 40 && r.state.architectures.length >= archBeforeLmb; s++) r.tryMouseBreak();
-        r.state.player.equipped.tool = null;
+        r.state.player.equipped.held = null;
         out.lmbShrunkArch = r.state.architectures.length < archBeforeLmb;
         out.lmbFilledInventory = r.state.player.inventory.some(
             (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
@@ -36479,7 +36484,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1749Adventure(ctx);
             await checkBandV1750Klammer(ctx);
             await checkBandV1751CombatStats(ctx);
-            await checkBandV1752Weapon(ctx);
+            await checkBandV1757HeldSlot(ctx);
             await checkBandV1753CreatureCombat(ctx);
             await checkBandV1754PlayerAttack(ctx);
             await checkBandV1755HarvestEffort(ctx);

@@ -288,10 +288,14 @@ wäre ihr Spiegelbild (heute zahlt Magie nichts) — die zweite Achse, wenn die 
   Materie wird zur Klinge ODER Keule, die FORM entscheidet; der Widerstand zwei-kanalig (`{mineResist,
   cutResist}`, Fels unschneidbar), die Tauglichkeit nutzt `max(mine, cut)` → das Ziel-Material wählt den
   Kanal; das gehaltene Gerät = Werkzeug ODER Waffe (`_heldImplementBlueprint`, der W1-sourceBlueprint-Bug
-  behoben). `checkBandV1756W2Profile` 10 grün. **Offen → W2-B (der Equip-MODELL-Umbau, eigene Welle):** der
-  UI-Slot-Merge (eine „in der Hand"-Zeile) + die Rollen-ABLESUNG (das manuelle „als Waffe" auflösen) +
-  Angriff-mit-jedem-Gerät — ~30 Touch-Points + die Werkzeug-Instanz-vs-Waffe-Bauplan-Divergenz (riskant);
-  W2 lieferte die FUNKTIONALE Vereinigung ohne den Slot-Schnitt. Offen (Browser): das Feel + ein cut/mine-Indikator.
+  behoben). `checkBandV1756W2Profile` 10 grün.
+- **W2-B — das Rollen-Schloss aufgelöst — ✅ GEBAUT (V17.57):** EIN `equipped.held`-Slot (Werkzeug + Waffe
+  verschmolzen, `armor` bleibt getragen); `equipHeld` nimmt JEDEN Bauplan (kein Rollen-Check); EIN
+  `HELD_STAT_WEIGHT`-Fold → das gehaltene Gerät treibt Angriff (alles-für-alles) UND Abbauen (W1/W2); die
+  Rolle wird ABLESUNG (`_implementAffordanceLabel` „Klinge"/„Brecher", das manuelle Markieren fällt). Synergie:
+  `equipTool`/`equipWeapon`/DSL/Chat/Restore = Aliase auf `equipHeld` (die API bleibt heil, nur die Leser
+  wandern); die Crafting-Tools (`state.tools`) + der Kreatur-Equip (`{tool,armor}`) bleiben orthogonal.
+  `checkBandV1757HeldSlot` 11 grün. Offen (Browser): das Feel der einen Hand-Zeile + der Affordanz-Readout.
 - **W3 — die natürliche, aura-reaktive Kreatur** (+ optional die „Körper-erinnert-sich"-Adaption, später
   die Mana-Hälfte + die alte Phase E „Bedrohung/Furcht").
 
