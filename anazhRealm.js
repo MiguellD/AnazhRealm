@@ -35492,7 +35492,7 @@ class AnazhRealm {
     // Caller entscheidet wohin: Spieler-LMB → direkt addMaterialToInventory;
     // Kreatur-gather → erst in creature.userData.carrying, dann beim Bring-
     // Übergabe-Schritt ins Spieler-Inventar.
-    harvestArchitecture(entry, harvester = "player") {
+    harvestArchitecture(entry, harvester = "player", yieldMult = 1) {
         if (!entry) return null;
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         const materials = {};
@@ -35505,7 +35505,11 @@ class AnazhRealm {
                 const sy = Math.abs((part.size && part.size.y) || 1);
                 const sz = Math.abs((part.size && part.size.z) || 1);
                 const volume = sx * sy * sz;
-                const units = Math.max(1, Math.round(volume * k));
+                // V17.55 W1 — der ERTRAG skaliert mit der Tauglichkeit (yieldMult): das
+                // richtige Werkzeug → voll, das falsche → wenig/nichts (Floor in
+                // _harvestFitness). yieldMult=1 (Kreatur-gather/Welt-Tod) = volles altes
+                // Verhalten (min 1 Einheit/Part).
+                const units = Math.max(yieldMult >= 0.999 ? 1 : 0, Math.round(volume * k * yieldMult));
                 materials[part.material] = (materials[part.material] || 0) + units;
                 totalParts++;
             }
@@ -35515,7 +35519,15 @@ class AnazhRealm {
         if (!removed) return null;
         // V17.30 — der Spieler erntet (sammelt Fülle) → joy + hope. Nur der
         // Spieler fühlt; eine erntende Kreatur (harvester="creature:…") nicht.
-        if (harvester === "player") this._feelAction("harvest", { blueprint: blueprintName });
+        // V17.55 W1 — der GEFÜHL-Kanal: die Erntefreude skaliert mit dem Ertrag (eine
+        // reiche, effiziente Ernte beglückt mehr als ein mühsam abgeschabter Rest).
+        if (harvester === "player") {
+            const mag =
+                bp && Array.isArray(bp.parts) ? this._substanceMagnitude(bp) * (0.4 + 0.6 * yieldMult) : undefined;
+            const harvestOpts = { blueprint: blueprintName };
+            if (mag !== undefined) harvestOpts.magnitude = mag;
+            this._feelAction("harvest", harvestOpts);
+        }
         if (typeof this.journalAppend === "function" && totalParts > 0) {
             const matSummary = Object.entries(materials)
                 .map(([m, n]) => `${n}× ${m}`)
@@ -35737,12 +35749,107 @@ class AnazhRealm {
         return !!res.ok;
     }
 
-    tryMouseBreak() {
-        const gate = this._mouseActionStaminaGate();
-        if (!gate.ok) {
-            this.log(`Abbauen: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
-            return false;
+    // V17.55 W1 (kampf-plan §8.2) — die Grab-/Schneid-Kraft des GEHALTENEN Dings: das
+    // ausgerüstete Werkzeug bestimmt sie (seine härte/dichte über computeCompoundTags),
+    // die bloße Faust ist die schwache Baseline. Kein Parallelpfad — reuse der Tag-Pipeline.
+    _heldMinePower() {
+        const H = AnazhRealm.HARVEST;
+        const toolName = this.state.player && this.state.player.equipped && this.state.player.equipped.tool;
+        if (!toolName) return H.handMinePower;
+        const bp = this.state.blueprints && this.state.blueprints[toolName];
+        if (!bp) return H.handMinePower;
+        const t = this.computeCompoundTags(bp) || {};
+        return H.toolMineBase + (t.härte || 0) * H.mineFromHärte + (t.dichte || 0) * H.mineFromDichte;
+    }
+
+    // V17.55 W1 — der Widerstand eines Bauwerks gegen das Abbauen, emergent aus seinen
+    // Compound-Tags (hart/dicht widersteht, weich/lebendig gibt nach) — DIESELBE Tag-
+    // Sprache wie Stats/Spawn/Resonanz/Gefühl.
+    _architectureResistance(entry) {
+        const H = AnazhRealm.HARVEST;
+        const bp = entry && this.state.blueprints && this.state.blueprints[entry.type];
+        if (!bp) return H.resistBase;
+        const t = this.computeCompoundTags(bp) || {};
+        return H.resistBase + (t.härte || 0) * H.resistFromHärte + (t.dichte || 0) * H.resistFromDichte;
+    }
+
+    // V17.55 W1 (kampf-plan §8.3) — die EINE Tauglichkeit + die vier Kanäle: minePower vs
+    // resistance → ein Verhältnis, das Tempo (Fortschritt/Hieb), Stamina (invers), Ertrag
+    // (∝ Tauglichkeit mit Floor) ZUGLEICH treibt. So kommunizieren die Systeme über EIN
+    // substanz-abgeleitetes Signal (das „eine Quelle, viele Leser"-Muster des Projekts).
+    _harvestFitness(resistance) {
+        const H = AnazhRealm.HARVEST;
+        const minePower = this._heldMinePower();
+        const fit = minePower / Math.max(0.1, resistance);
+        const progress = Math.min(H.maxStrikeProgress, Math.max(H.minStrikeProgress, fit * H.strikeScale));
+        const stamina = Math.min(
+            H.maxStrikeStamina,
+            Math.max(H.minStrikeStamina, (H.strikeStaminaBase * resistance) / Math.max(0.1, minePower))
+        );
+        const yieldMult = Math.min(1, Math.max(0, (fit - H.yieldFloorRatio) / (1 - H.yieldFloorRatio)));
+        return { minePower, resistance, fit, progress, stamina, yieldMult };
+    }
+
+    // V17.55 W1 — ein Abbau-HIEB auf ein Bauwerk (kein Instant mehr). Der Fortschritt
+    // akkumuliert auf dem Eintrag (∝ Tauglichkeit/Hieb), jeder Hieb kostet Stamina (invers
+    // zur Effizienz, pfad); bei Vollendung fällt das Bauwerk + lootet (Ertrag ∝ Tauglichkeit,
+    // das Gefühl skaliert mit). Halten → _tickHarvest auto-hiebt. Gibt true, solange der Hieb
+    // zählt (Bauwerk steht ODER fiel), false bei Erschöpfung.
+    _strikeArchitecture(entry) {
+        if (!entry) return false;
+        const fit = this._harvestFitness(this._architectureResistance(entry));
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode === "pfad") {
+            const have = (this.state.player && this.state.player.stamina) || 0;
+            if (have < fit.stamina) {
+                this.log(`Abbauen: zu erschöpft (${Math.round(have)} Ausdauer).`, "INFO");
+                return false;
+            }
+            this.state.player.stamina = Math.max(0, have - fit.stamina);
         }
+        entry.harvestProgress = (entry.harvestProgress || 0) + fit.progress;
+        if (entry.harvestProgress < 1) return true; // der Hieb zählt — das Bauwerk steht noch
+        const archId = entry.id;
+        const harvest = this.harvestArchitecture(entry, "player", fit.yieldMult);
+        if (harvest && harvest.materials) {
+            const parts = [];
+            for (const [mat, n] of Object.entries(harvest.materials)) {
+                if (n > 0 && this.addMaterialToInventory(mat, n)) parts.push(`${n}× ${mat}`);
+            }
+            this.log(
+                `Abgebaut: ${harvest.blueprint} → ${parts.join(", ") || "(zu untauglich — kein Material)"}`,
+                "INFO"
+            );
+        }
+        if (
+            typeof archId === "string" &&
+            this.state.p2p &&
+            this.state.p2p.enabled &&
+            typeof this.p2pBroadcastDsl === "function"
+        ) {
+            this.p2pBroadcastDsl(["remove_architecture", archId]);
+        }
+        return true;
+    }
+
+    // V17.55 W1 — HALTEN-zum-Abbauen: solange die Abbau-Taste gehalten wird (+ Pointer-Lock,
+    // Inventar zu), wird in der strikeInterval-Kadenz auto-gehiebt → kontinuierliches Mahlen
+    // (frame-rate-unabhängig, Intervall-gegated; der erste Hieb kommt sofort beim mousedown).
+    _tickHarvest() {
+        const p = this.state.player;
+        if (!p || !p.breakHeld) return;
+        if (!this.state.isPointerLocked || this.state.inventoryOpen) {
+            p.breakHeld = false;
+            return;
+        }
+        const now = performance.now() / 1000;
+        const last = Number.isFinite(p.lastHarvestStrikeAt) ? p.lastHarvestStrikeAt : -Infinity;
+        if (now - last < (AnazhRealm.HARVEST.strikeIntervalSec || 0.2)) return;
+        p.lastHarvestStrikeAt = now;
+        this.tryMouseBreak();
+    }
+
+    tryMouseBreak() {
         // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite
         // UND näher als eine Architektur wird ANGEGRIFFEN statt abgebaut (sonst Architektur
         // → harvest, sonst → carve). So bleibt der Abbau-Pfad heil, der Kampf legt sich davor.
@@ -35755,46 +35862,34 @@ class AnazhRealm {
             const creatureDist = this.state.camera.position.distanceTo(creaturePick.point);
             const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
             if (creatureDist <= (AnazhRealm.COMBAT_REACH_M || 6) && creatureDist <= archDist) {
+                const gate = this._mouseActionStaminaGate();
+                if (!gate.ok) {
+                    this.log(`Angriff: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
+                    return false;
+                }
                 return this._playerAttackCreature(creaturePick.creature);
             }
         }
-        if (pick && pick.entry) {
-            this._consumeMouseStamina();
-            // Multi-User-Bau-Sync: die id VOR dem Abbau merken (harvest
-            // entfernt den Eintrag) — Mitspieler holen die Entfernung nach.
-            const archId = pick.entry.id;
-            // Welle 6.H P2B.5 — harvestArchitecture statt nur removeArchitecture.
-            // Die Materialien des Bauplans fließen ins Spieler-Inventar. Eine
-            // Sprache für Spieler-LMB + Kreatur-gather: beide ernten gleich.
-            const harvest = this.harvestArchitecture(pick.entry, "player");
-            if (harvest && harvest.materials) {
-                const parts = [];
-                for (const [mat, n] of Object.entries(harvest.materials)) {
-                    if (this.addMaterialToInventory(mat, n)) {
-                        parts.push(`${n}× ${mat}`);
-                    }
-                }
-                this.log(`Abgebaut: ${harvest.blueprint} → ${parts.join(", ") || "(kein Material)"}`, "INFO");
-            }
-            // Multi-User-Bau-Sync — Mitspieler entfernen ihre Kopie. Nur
-            // geteilte string-ids (spieler-gebaut); eine numerische Worldgen-
-            // id bleibt lokal (träfe bei einem Peer nichts oder das Falsche).
-            if (
-                typeof archId === "string" &&
-                this.state.p2p &&
-                this.state.p2p.enabled &&
-                typeof this.p2pBroadcastDsl === "function"
-            ) {
-                this.p2pBroadcastDsl(["remove_architecture", archId]);
-            }
-            return true;
-        }
+        // V17.55 W1 — Abbauen kostet jetzt MÜHE: ein Bauwerk wird per Hieb-Fortschritt
+        // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
+        // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
+        if (pick && pick.entry) return this._strikeArchitecture(pick.entry);
         const target = this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
             return false;
         }
-        this._consumeMouseStamina();
+        // V17.55 W1 — auch der Boden leistet Widerstand: die Stamina pro Grabe-Hieb skaliert
+        // invers zur Tauglichkeit (ein gutes Werkzeug gräbt billig, die bloße Faust teuer).
+        if ((typeof this.getGameMode === "function" ? this.getGameMode() : "frieden") === "pfad") {
+            const digFit = this._harvestFitness(AnazhRealm.HARVEST.terrainResist);
+            const have = (this.state.player && this.state.player.stamina) || 0;
+            if (have < digFit.stamina) {
+                this.log(`Graben: zu erschöpft (${Math.round(have)} Ausdauer).`, "INFO");
+                return false;
+            }
+            this.state.player.stamina = Math.max(0, have - digFit.stamina);
+        }
         // V9.36 Phase 5c.2.c.3.a: Voxel ist permanent (V9.35) — der Grabe-Hieb
         // schnitzt immer das 3D-Dichte-Feld (ein echtes Loch). Der ehemalige
         // V7.68-Heightfield-Mod-Fallback ist als toter Pfad entfernt. Der
@@ -43107,6 +43202,8 @@ class AnazhRealm {
         );
         document.addEventListener("pointerlockchange", () => {
             this.state.isPointerLocked = document.pointerLockElement === canvas;
+            // V17.55 W1 — verliert der Spieler den Lock (Esc/UI), stoppt das Mahlen.
+            if (!this.state.isPointerLocked && this.state.player) this.state.player.breakHeld = false;
             this.log(`Pointer-Lock: ${this.state.isPointerLocked ? "Aktiv" : "Inaktiv"}`, "INFO");
         });
         document.addEventListener("mousemove", (event) => {
@@ -43347,6 +43444,10 @@ class AnazhRealm {
             // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
             // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
             this._rescuePlayerFromVoid();
+
+            // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
+            // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
+            this._tickHarvest();
 
             // ### Spielerbewegung + Sprung ### (V9.44-f → _loopPlayerMovement)
             this._loopPlayerMovement(currentTime);
@@ -44333,11 +44434,24 @@ class AnazhRealm {
             const code = this._eventToBindingCode(event);
             const action = this._actionForBindingCode(code);
             if (action === "break") {
+                // V17.55 W1 — Halten startet das Mahlen: der erste Hieb sofort, dann auto
+                // (_tickHarvest) in der Kadenz, bis losgelassen wird.
+                if (this.state.player) {
+                    this.state.player.breakHeld = true;
+                    this.state.player.lastHarvestStrikeAt = performance.now() / 1000;
+                }
                 this.tryMouseBreak();
                 event.preventDefault();
             } else if (action === "place") {
                 this.tryMousePlace();
                 event.preventDefault();
+            }
+        });
+        // V17.55 W1 — Loslassen der Abbau-Taste stoppt das Mahlen (nur die break-Taste).
+        canvas.addEventListener("mouseup", (event) => {
+            if (!this.state.player) return;
+            if (this._actionForBindingCode(this._eventToBindingCode(event)) === "break") {
+                this.state.player.breakHeld = false;
             }
         });
     }
@@ -44581,7 +44695,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.54.0";
+AnazhRealm.VERSION = "17.55.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -44728,6 +44842,33 @@ AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
 // niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger
 // als Polier-Schritte sind. Modus-Gate (frieden+schöpfer: 0, pfad: 5).
 AnazhRealm.MOUSE_ACTION_STAMINA_COST = 5;
+
+// V17.55 W1 (kampf-plan.md §8/§9) — DER WURZELFEHLER GEHEILT: Abbauen kostet jetzt
+// substanz-gebundene MÜHE (mehrere Hiebe statt Instant), und EINE Tauglichkeit (die
+// Grab-Kraft des gehaltenen Dings vs der Widerstand des Materials) dirigiert VIER
+// Kanäle zugleich — TEMPO (Fortschritt/Hieb), STAMINA (invers zur Effizienz), ERTRAG
+// (∝ Tauglichkeit, mit Floor → das falsche Werkzeug gibt nichts), GEFÜHL (_feelAction
+// skaliert mit dem Ertrag). KEIN Slider — die SUBSTANZ entscheidet (eine geschmiedete
+// harte Spitzhacke knackt Fels, die bloße Faust mahlt sich müde für nichts). Alle Werte
+// browser-justierbar (das Feel/die Balance ist der Schöpfer-Browser).
+AnazhRealm.HARVEST = Object.freeze({
+    handMinePower: 0.6, // die bloße Faust — schwach (pflückt Weiches, scheitert an Hartem)
+    toolMineBase: 0.7, // ein Werkzeug-in-Hand hebt die Grab-Kraft über die Faust
+    mineFromHärte: 2.4, // ein hartes Werkzeug schneidet/bricht (die Klinge/Spitze)
+    mineFromDichte: 1.0, // eine dichte Masse wuchtet/bricht (der schwere Kopf)
+    resistBase: 0.7, // jedes Material leistet etwas Widerstand
+    resistFromHärte: 2.2, // hartes Material widersteht
+    resistFromDichte: 1.3, // dichtes Material widersteht
+    strikeScale: 0.55, // Fortschritt/Hieb = clamp(Tauglichkeit · strikeScale, min, max)
+    minStrikeProgress: 0.06, // selbst die Faust an Granit macht WINZIGEN Fortschritt (nie 0 = Hänger)
+    maxStrikeProgress: 1.0, // ein überlegenes Werkzeug ein-hiebt Weiches
+    strikeStaminaBase: 4, // Stamina/Hieb-Basis (pfad) × Widerstand/Tauglichkeit (INVERS zur Effizienz)
+    minStrikeStamina: 2,
+    maxStrikeStamina: 30, // ein falsches Werkzeug verbrennt Ausdauer für fast nichts
+    yieldFloorRatio: 0.35, // Tauglichkeit darunter → KEIN Ertrag (das falsche Werkzeug gibt nichts)
+    strikeIntervalSec: 0.2, // Halten → Auto-Hieb-Kadenz (5 Hiebe/s) → kontinuierliches Mahlen
+    terrainResist: 2.4, // der Boden-Widerstand (W1: konstant; später aus der lokalen Dichte)
+});
 
 // W7 Phase 2 — Welt-Snapshot über das Mesh. Ein Joiner/Guest holt die
 // Welt des Hosts in Stücken über den RTCDataChannel statt in einem WS-

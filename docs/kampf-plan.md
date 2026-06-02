@@ -277,10 +277,12 @@ wäre ihr Spiegelbild (heute zahlt Magie nichts) — die zweite Achse, wenn die 
 
 ## 9. Der revidierte Pfad (an der Wurzel)
 
-- **W1 — der Wurzelfehler + die Effizienz als Dirigent:** Abbauen kostet Mühe; EINE Tauglichkeit treibt
-  Tempo + Stamina (variabel statt flat) + Ertrag + Gefühl zugleich. Lebt in `pfad` (frieden/schöpfer
-  mühelos — das bestehende Modus-Gate trägt es). *Der Schlüssel, der „unterschiedliche Effizienz" erst
-  möglich macht; webt Ausdauer sofort ein.*
+- **W1 — der Wurzelfehler + die Effizienz als Dirigent — ✅ GEBAUT (V17.55):** Abbauen kostet Mühe;
+  EINE `_harvestFitness` (`_heldMinePower` des ausgerüsteten Werkzeugs vs `_architectureResistance`)
+  treibt Tempo (`entry.harvestProgress`/Hieb) + Stamina (variabel, invers) + Ertrag (`yieldMult`, Floor)
+  + Gefühl (`_feelAction`-Magnitude) zugleich; Halten-zum-Abbauen (`_tickHarvest` + `breakHeld`). Lebt in
+  `pfad` (frieden/schöpfer mühelos). `checkBandV1755HarvestEffort` 11 grün. *Der Schlüssel — die Mühe macht
+  „unterschiedliche Effizienz" erst fühlbar.* Offen (Schöpfer-Browser): das FEEL + ein Fortschritts-Balken.
 - **W2 — das volle Profil + alles-für-alles:** das Fähigkeits-Profil (angreifen/graben/schneiden/schützen)
   aus Form × Material; LMB wählt die Handlung nach Ziel, das Profil bestimmt die Güte; die schnell/ausdauer-
   Achse aus `dichte`; die Rollen-Kategorien + das manuelle Markieren werden zu einem Ablesen (kein Schloss).

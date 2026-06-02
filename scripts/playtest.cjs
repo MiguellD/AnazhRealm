@@ -4096,6 +4096,146 @@ async function checkBandV1754PlayerAttack(ctx) {
     check("V17.54 Kampf D: tryMouseBreak dispatcht zur Kreatur + die Schuld ist in _creatureCombatDeath wired", res.dispatchWired && res.guiltWired);
 }
 
+// V17.55 W1 (kampf-plan §8/§9) — der WURZELFEHLER geheilt: Abbauen kostet substanz-gebundene
+// MÜHE, und EINE Tauglichkeit (gehaltenes Ding vs Material) dirigiert vier Kanäle. KONSUM, nicht
+// Existenz (V17.31): die Tauglichkeit DIFFERENZIERT Tempo/Stamina/Ertrag; die Mühe ist real
+// (viele Hiebe, kein Instant); ein gutes Werkzeug bricht schneller + lootet, die Faust nicht.
+async function checkBandV1755HarvestEffort(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const H = r.constructor.HARVEST;
+        const savedTool = p.equipped ? p.equipped.tool : null;
+        const savedStam = p.stamina;
+        const savedInv = p.inventory.slice();
+        const savedMode = r.getGameMode();
+        if (!p.equipped) p.equipped = {};
+        const clearInv = () => {
+            for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null;
+        };
+        const steinCount = () =>
+            p.inventory.reduce(
+                (n, sl) => n + (sl && sl.kind === "material" && sl.material === "stein" ? sl.count || 0 : 0),
+                0
+            );
+        const strikeUntilGone = (a, cap) => {
+            let s = 0;
+            while (r.state.architectures.indexOf(a) !== -1 && s < cap) {
+                r._strikeArchitecture(a);
+                s++;
+            }
+            return s;
+        };
+
+        // (1) die Methoden existieren
+        out.methods = [
+            "_heldMinePower",
+            "_architectureResistance",
+            "_harvestFitness",
+            "_strikeArchitecture",
+            "_tickHarvest",
+        ].every((m) => typeof r[m] === "function");
+
+        // (2) minePower: die bloße Faust schwach, ein hartes Werkzeug stark (das gehaltene Ding zählt)
+        p.equipped.tool = null;
+        const handPower = r._heldMinePower();
+        p.equipped.tool = "stein_block";
+        const toolPower = r._heldMinePower();
+        out.toolBeatsHand = toolPower > handPower && handPower > 0;
+
+        // (3) Widerstand: ein hartes Bauwerk widersteht mehr als die Basis
+        const hardRes = r._architectureResistance({ type: "stein_block" });
+        out.hardResists = hardRes > H.resistBase;
+
+        // (4) die Tauglichkeit DIFFERENZIERT die vier Kanäle (gutes Werkzeug vs Faust auf HARTEM)
+        p.equipped.tool = "stein_block";
+        const fitGood = r._harvestFitness(hardRes);
+        p.equipped.tool = null;
+        const fitHand = r._harvestFitness(hardRes);
+        out.fitnessDifferentiates =
+            fitGood.progress > fitHand.progress && // TEMPO
+            fitGood.yieldMult > fitHand.yieldMult && // ERTRAG
+            fitGood.stamina < fitHand.stamina; // STAMINA (invers)
+        out.handYieldsNothingOnHard = fitHand.yieldMult <= 0.001;
+
+        // (5)+(6) KONSUM: Mühe (viele Hiebe) + gutes Werkzeug schneller + Ertrag skaliert.
+        // In frieden (keine Stamina-Störung) den Hieb-Kern _strikeArchitecture direkt treiben.
+        r.setGameMode("frieden");
+        p.stamina = 1e6;
+        clearInv();
+        p.equipped.tool = null;
+        const aHand = r.spawnArchitecture("stein_block", { x: p.x + 8, y: p.y, z: p.z });
+        const handStrikes = strikeUntilGone(aHand, 200);
+        const steinHand = steinCount();
+        clearInv();
+        p.equipped.tool = "stein_block";
+        const aTool = r.spawnArchitecture("stein_block", { x: p.x + 12, y: p.y, z: p.z });
+        const toolStrikes = strikeUntilGone(aTool, 200);
+        const steinTool = steinCount();
+        out.multiStrikeHand = handStrikes > 1; // die Faust: KEIN Instant
+        out.brokeEventually = r.state.architectures.indexOf(aHand) === -1 && r.state.architectures.indexOf(aTool) === -1;
+        out.toolFasterThanHand = toolStrikes >= 1 && toolStrikes < handStrikes;
+        out.yieldScalesWithFitness = steinTool > steinHand && steinTool > 0;
+
+        // (7) der Hold-Tick ist gegated (ohne breakHeld → nichts)
+        p.breakHeld = false;
+        const beforeTick = r.state.architectures.length;
+        r._tickHarvest();
+        out.tickGuarded = r.state.architectures.length === beforeTick;
+
+        // (8) KONSUM Stamina: ein Hieb in pfad zieht Stamina (∝ invers zur Effizienz)
+        r.setGameMode("pfad");
+        p.equipped.tool = null;
+        p.stamina = 100;
+        const aS = r.spawnArchitecture("stein_block", { x: p.x + 16, y: p.y, z: p.z });
+        const stamBefore = p.stamina;
+        r._strikeArchitecture(aS);
+        out.staminaDrains = p.stamina < stamBefore;
+        if (r.state.architectures.indexOf(aS) !== -1) r.removeArchitecture(aS);
+
+        // cleanup
+        for (const a of [aHand, aTool]) if (a && r.state.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
+        p.equipped.tool = savedTool;
+        p.stamina = savedStam;
+        p.breakHeld = false;
+        clearInv();
+        for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.55 W1: die Harvest-Methoden existieren (_heldMinePower/_architectureResistance/_harvestFitness/_strikeArchitecture/_tickHarvest)",
+        res.methods
+    );
+    check(
+        "V17.55 W1: minePower — ein hartes Werkzeug schlägt die bloße Faust (das gehaltene Ding bestimmt die Kraft)",
+        res.toolBeatsHand
+    );
+    check("V17.55 W1: ein hartes Bauwerk leistet Widerstand (> Basis)", res.hardResists);
+    check(
+        "V17.55 W1: KONSUM — die Tauglichkeit DIFFERENZIERT die vier Kanäle (gutes Werkzeug: mehr Tempo+Ertrag, weniger Stamina)",
+        res.fitnessDifferentiates
+    );
+    check(
+        "V17.55 W1: die bloße Faust an HARTEM gibt KEINEN Ertrag (das falsche Werkzeug gibt nichts)",
+        res.handYieldsNothingOnHard
+    );
+    check("V17.55 W1: KONSUM — Abbauen kostet MÜHE (die Faust braucht VIELE Hiebe, kein Instant)", res.multiStrikeHand);
+    check("V17.55 W1: ein Bauwerk fällt schließlich (der Fortschritt vollendet sich)", res.brokeEventually);
+    check(
+        "V17.55 W1: KONSUM — ein gutes Werkzeug bricht SCHNELLER (weniger Hiebe als die Faust)",
+        res.toolFasterThanHand
+    );
+    check(
+        "V17.55 W1: KONSUM — der ERTRAG skaliert mit der Tauglichkeit (Werkzeug füllt das Inventar, die Faust ~nicht)",
+        res.yieldScalesWithFitness
+    );
+    check("V17.55 W1: der Hold-Tick ist gegated (ohne breakHeld passiert nichts)", res.tickGuarded);
+    check("V17.55 W1: KONSUM — ein Hieb zieht Stamina (pfad, ∝ invers zur Effizienz)", res.staminaDrains);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -21411,7 +21551,14 @@ async function checkBandWelle6HCreatures(ctx) {
             r.state.camera.updateMatrixWorld(true);
         }
         const archBeforeLmb = r.state.architectures.length;
-        r.tryMouseBreak();
+        // V17.55 W1 — Abbauen kostet jetzt MÜHE + braucht ein taugliches Werkzeug (kein Instant
+        // mehr). Wir rüsten ein hartes Werkzeug aus (stein als harte Substanz) + hieben bis zum
+        // Bruch; der Ertrag fließt nur mit tauglichem Werkzeug (die bloße Faust gäbe ~nichts).
+        r.state.player.equipped = r.state.player.equipped || {};
+        r.state.player.equipped.tool = "stein_block";
+        r.state.player.stamina = 1e6; // V17.55 — der Stamina-Gate soll diese Mess-Schleife nicht stören
+        for (let s = 0; s < 40 && r.state.architectures.length >= archBeforeLmb; s++) r.tryMouseBreak();
+        r.state.player.equipped.tool = null;
         out.lmbShrunkArch = r.state.architectures.length < archBeforeLmb;
         out.lmbFilledInventory = r.state.player.inventory.some(
             (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
@@ -36210,6 +36357,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1752Weapon(ctx);
             await checkBandV1753CreatureCombat(ctx);
             await checkBandV1754PlayerAttack(ctx);
+            await checkBandV1755HarvestEffort(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
