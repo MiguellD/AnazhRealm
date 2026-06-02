@@ -419,3 +419,98 @@ logische/affektive Wahrheit ist headless nur in der Mechanik beweisbar, nicht im
 gefühlt (nicht gezählt), und am Ende lernt die Welt, was DICH freut. Profi der Profis:
 nicht durch einen cleveren Trick, sondern durch die EINE Gleichung, auf die alle Großen
 kamen — minimal, bewährt, auf dem einen Stamm.
+
+---
+
+## 10. Die emotionale TIEFE — der Hylomorphismus der Emotionen (graue Schatten + Folge-Bogen)
+
+**Schöpfer-Audit (02.06., nach Phase 3):** „sobald ich in der Werkstatt bin / Baupläne
+erstelle / weit in neue Richtungen laufe / (künftig) kämpfe / mit Kreaturen + der KI
+schreibe — wird das gemessen, WIE? Hylomorphismus der Emotionen, nicht nur der Baupläne?"
+Eine berechtigte, tiefe Frage über die **EINGABE-Seite** der Emotion (Phase 1–4 bauen die
+WERTUNGS-Mechanik; HIER geht es darum, ob die Emotion überhaupt erfasst, was der Spieler
+WIRKLICH tut). GEMESSEN aus dem Code, ehrlich:
+
+### Was die Emotion HEUTE erfasst
+
+- **6 Taten** via `ACTION_TO_EMOTION` (FLACHE Konstanten): `create_life` (spawn_creature
+  human) · `bond` (Kreatur folgt) · `explore` (Chunk-Wechsel) · `damage` (verletzt werden)
+  · `build` (confirmBuild) · `harvest` (ernten). + die Situations-Appraisal (V17.44,
+  lebendig@player + HP) + Chat (`collectPlayerEmotions`, 7 Stichwörter/Achse, Teilstring) +
+  Grok beobachtet Emotion-Shifts und KOMMENTIERT (`grokSpeak("emotionShift")`).
+
+### Die fünf grauen Schatten (gemessen, nicht geraten)
+
+1. **Die Tiefe der SCHÖPFUNG wird nicht gefühlt.** Einen Bauplan entwerfen/speichern
+   (`state.blueprints[x]=`) → KEINE Emotion. `confirmBuild` → flach `joy+0.1`, EGAL WAS
+   (eine Box vs. eine Kathedrale; toter Stein vs. lebendiges Holz). Der schöpferische Akt
+   + seine SUBSTANZ sind der Emotion unsichtbar.
+2. **Abenteuerlust ist BINÄR.** `explore` feuert bei JEDEM Chunk-Wechsel (flach awe,
+   rate-lim 6 s). Kühnheit, Distanz, echte Neuheit (nie-betreten), ins Ungewisse → nicht
+   graduiert. (V17.44 belohnt teilweise SCHÖNE Ziele [lebendig steigt], nicht KÜHNE.)
+3. **Der ganze KAMPF-Affekt fehlt.** Nur `damage` (verletzt werden) → sorrow/chaos.
+   Angreifen (Zorn), Fliehen (Furcht), Zurückschlagen (Trotz), Besiegen (Triumph/
+   Erleichterung), die moralische Last (ein friedliches `lebendig`-Wesen töten → Schuld?)
+   → absent. (Die Kampf-MECHANIK ist noch dünn → „wenn sie kommt, die Emotion von Anfang
+   an einweben", nicht nachträglich.)
+4. **Die KI VERSTEHT, regt aber nur AN — sie REGULIERT nicht.** Grok beobachtet Shifts +
+   kommentiert. ABER: (a) Chat→Spieler-Emotion ist Teilstring-Match (kein echtes Verstehen
+   — „ich bin NICHT traurig" triggert sorrow); (b) die KI TENDET die Emotion nicht (hebt
+   Trauer, teilt Freude, beruhigt Chaos via Geste) — sie spricht, sie pflegt nicht. Das
+   tiefste Beziehungs-Potenzial (Pfeiler 1, Symbiose) ist ungenutzt.
+5. **DER META-SCHATTEN: die Emotion ist eine TABELLE, kein HYLOMORPHISMUS.**
+   `ACTION_TO_EMOTION` ist eine feste per-Tat-Konstante. Aber der PROJEKT-KERN ist:
+   Stats/Affordanzen/Spawn-Affinität/Resonanz EMERGIEREN aus `computeCompoundTags`
+   (Form × Material). Die Emotion soll DASSELBE: die Gefühls-Antwort auf einen Akt
+   EMERGIERT aus den TAGS der Substanz — nicht aus einem Lookup nach Tat-NAME.
+
+### Der geniale Hebel: `TAG_TO_EMOTION` (eine Resonanz wie `FIELD_TO_EMOTION`)
+
+Die Emotion eines Akts = `f(Tags der Materialien/Formen/Werkzeuge) × Magnitude`. Eine
+frozen Resonanz-Tabelle (Tag-Achse → Emotion-Beitrag), GENAU wie `FIELD_TO_EMOTION` die
+Feld-Achsen auf Emotion abbildet — nur dass die Quelle hier die `computeCompoundTags` des
+beteiligten Compounds ist:
+
+- `lebendig` → peace/joy (nähren, Leben) · `härte`+`scharf` → resolve/chaos (Schneide,
+  Aggression) · `glut`/`brennbar` → awe/chaos (Gefahr-Thrill) · `resoniert` → awe (Wunder)
+  · `dichte` → ein Vollendungs-/Solidität-Gefühl (hope) · `magieleitung` → awe/hope.
+- **Magnitude ∝ Komplexität** (Part-Zahl / Tag-Intensität) → eine Kathedrale bewegt mehr
+  als eine Box; ein meisterliches Werkzeug mehr als ein Stock.
+- EINE Quelle (die Tags), viele emergente Gefühle. Das ist der Hylomorphismus der
+  Emotionen — die Projekt-Blaupause, EINE Ebene höher. Es SUBSUMIERT Schatten 1 + 3
+  (Bauen/Ernten/Kämpfen fühlt sich nach der SUBSTANZ an) und vertieft alle.
+
+### Der Folge-Bogen (die offenen Punkte als Wellen — Reihenfolge nach Hebel)
+
+- **W-E1 — Hylomorphismus der Emotionen (der höchste Hebel, subsumiert 1+3).**
+  `AnazhRealm.TAG_TO_EMOTION` (frozen) + `_feelActionFromTags(tags, magnitude)` → die
+  bestehenden `_feelAction`-Stellen (build/harvest/create_life) leiten ihre Emotion aus den
+  Compound-Tags des beteiligten Bauplans/Materials ab (× Magnitude), statt aus der flachen
+  Konstante. Die Werkstatt-Schöpfung (Bauplan speichern) feuert einen sanften Stolz/Vorfreude
+  ∝ Komplexität. `ACTION_TO_EMOTION` bleibt als FALLBACK (tag-lose Akte: bond/explore/damage).
+- **W-E2 — Abenteuer graduiert.** `explore` skaliert: echte Neuheit (ein `visitedRegions`-
+  Set, grob-gerastert) > Wiederkehr; Distanz vom Ursprung/Zuhause; Kühnheit (in karge/
+  unwirtliche Aura) → awe + ein Mut-Aspekt (hope). Binär → graduiert. (Synergie mit V17.44:
+  die Appraisal wertet das ZIEL [lebendig], W-E2 den AKT des Wagens.)
+- **W-E3 — Kampf-Affekt (wenn die Kampf-Mechanik landet).** Über `TAG_TO_EMOTION` von
+  Anfang an: Angreifen → chaos/resolve (∝ Waffen-härte/scharf); Fliehen → fear (sorrow/
+  chaos); Besiegen → ein Triumph/Erleichterungs-δ; ein friedliches Wesen töten → Schuld
+  (sorrow, ∝ dessen `lebendig`). Hylomorphisch: WAS + WOMIT du kämpfst färbt das Gefühl.
+- **W-E4 — Die KI als Ko-REGULATOR (Pfeiler 1).** (a) Chat-Verstehen vertiefen: wenn das
+  LLM aktiv ist, liest es die Emotion des Spieler-Textes (echtes NLU statt Stichwort) + gibt
+  einen sanften Emotion-Nudge zurück (statt blindem Teilstring); (b) Grok TENDET: bei
+  anhaltender Trauer eine tröstende Geste (`deposit_emotion hope` nahe dem Spieler), bei
+  Freude ein Teilen — die KI pflegt die Emotion, statt nur zu kommentieren. EHRLICH: das
+  echte NLU ist der Schöpfer-Browser + API-Key (headless LLM-taub, V17.40); die VERDRAHTUNG
+  (der Tend-Pfad, der Nudge-Hook) ist headless beweisbar.
+
+### Scope/Disziplin (Heilige Lektion)
+
+Reine VERDICHTUNG: `TAG_TO_EMOTION` ist eine DATEN-Tabelle wie `FIELD_TO_EMOTION`/
+`ACTION_TO_EMOTION`; `_feelActionFromTags` ist EIN Helfer; `computeCompoundTags` ist DA.
+Kein neues Modul, kein Parallelpfad. Die Resonanz-/Magnitude-Werte sind browser-justierbar.
+Reaktive Schicht, Determinismus wie gehabt. **W-E1 zuerst** (der Hylomorphismus-Kern), dann
+W-E2/W-E4; W-E3 wenn der Kampf kommt. Diese gehören NEBEN/VOR Phase 4 (die Klammer braucht
+ein REICHES `δ_spieler`, das aus dem vollen emotionalen Leben kommt — die Schatten zu heilen
+macht Phase 4 erst stark).
+
