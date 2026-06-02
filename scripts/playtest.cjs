@@ -2556,6 +2556,143 @@ async function checkBandV1740LlmRules(ctx) {
     );
 }
 
+// V17.41 — Der Gesetzes-Faden: die Regeln wirken nicht mehr unsichtbar. Zwei
+// Konsumenten der EINEN Spur (lastFired/fires, die das Feuern schon aufzeichnet):
+// (a) die Gesetze-Console geht LIVE — _worldRuleActivityLabel zeigt „⚡ feuert"
+// (im Moment des Wirkens) statt des alten sticky „⚡ aktiv"; (b) das erste Erwachen
+// einer EIGENEN (Mensch-)Regel wird eine Welt-Erinnerung („Dein Gesetz erwachte").
+// Gemessen wird KONSUM (V17.31-Lehre): der DOM-Span zeigt „feuert" nach echtem
+// Feuern, die Signatur ändert sich (Live-ness im Diff), das Journal bekommt die
+// Erinnerung (einmal, idempotent über die Signatur), eine Nexus-Regel NICHT.
+async function checkBandV1741RuleThread(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const now = () => performance.now() / 1000;
+
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+        const savedEntries = r.state.worldJournal.entries.slice();
+        const savedSeen = { ...r.state.worldJournal.seen };
+
+        // --- (1) der Aktivitäts-Faden ist LIVE (nicht sticky-binär „⚡ aktiv") ---
+        out.wired = typeof r._worldRuleActivityLabel === "function";
+        const tNow = now();
+        const mk = (over) => Object.assign({ fires: 0, lastFired: -Infinity, disabled: false }, over);
+        out.labelRuht = r._worldRuleActivityLabel(mk({}), tNow) === "ruht";
+        out.labelFeuert = r._worldRuleActivityLabel(mk({ fires: 1, lastFired: tNow }), tNow) === "⚡ feuert";
+        out.labelAktiv = r._worldRuleActivityLabel(mk({ fires: 3, lastFired: tNow - 999 }), tNow) === "⚡ aktiv · 3×";
+        out.labelPausiert =
+            r._worldRuleActivityLabel(mk({ fires: 2, lastFired: tNow, disabled: true }), tNow) === "pausiert";
+
+        // --- (2) DOM-KONSUM: nach echtem Feuern zeigt der Namen-Span „⚡ feuert" + pulst ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        const domRule = r.state.worldRules.find((x) => x.source === "human");
+        r.state.weather = "rainy";
+        domRule.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        r._statusRefs.worldrulesSignature = "__force__"; // != aktuelle Signatur → echtes Re-Render
+        r.renderWorldRulesList();
+        const host = document.getElementById("status-worldrules");
+        const nameSpan = host.querySelector(".ability-row.source-human .name");
+        out.domShowsFeuert =
+            !!nameSpan && /feuert/.test(nameSpan.textContent) && nameSpan.classList.contains("rule-firing");
+
+        // --- (3) der Live-Faden treibt das Re-Render: feuert ein Gesetz, ändert sich
+        //         die Signatur VON SELBST (kein manueller Reset → die 0.4-s-Render-
+        //         Schleife pickt es auf, der Puls ist sichtbar) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        const sigRule = r.state.worldRules.find((x) => x.source === "human");
+        r._statusRefs.worldrulesSignature = "";
+        r.renderWorldRulesList(); // rendert „ruht"
+        const sigRuht = r._statusRefs.worldrulesSignature;
+        r.state.weather = "rainy";
+        sigRule.lastFired = -Infinity;
+        r._tickWorldRules(now()); // feuert
+        r.renderWorldRulesList(); // KEIN manueller Reset — die Signatur muss sich geändert haben
+        const sigFeuert = r._statusRefs.worldrulesSignature;
+        out.signatureLive = sigRuht !== sigFeuert && /feuert/.test(sigFeuert) && /ruht/.test(sigRuht);
+
+        // --- (4) Journal-Erwachen: erstes Feuern einer MENSCH-Regel schreibt eine
+        //         Welt-Erinnerung („Dein Gesetz erwachte — ...") ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        const hRule = r.state.worldRules.find((x) => x.source === "human");
+        delete r.state.worldJournal.seen["ruleAwoke:" + hRule._sig]; // sicherstellen: noch nicht erwacht
+        const jBefore = r.state.worldJournal.entries.length;
+        r.state.worldRules = [hRule];
+        r.state.weather = "rainy";
+        hRule.lastFired = -Infinity;
+        r._tickWorldRules(now()); // fires===1 → Erwachen
+        const awoke = r.state.worldJournal.entries
+            .slice(jBefore)
+            .find((e) => e.type === "rule" && /erwachte/.test(e.text));
+        out.journalAwoke = !!awoke && r.state.weather === "sunny";
+
+        // --- (5) idempotent über die Signatur: dieselbe Regel NEU aufgestellt (frische
+        //         Akkus, fires zurück auf 0→1) + gefeuert schreibt KEINE zweite
+        //         Erinnerung (seen[ruleAwoke:sig] hält über die Regel-Instanz hinweg) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        const hRule2 = r.state.worldRules.find((x) => x.source === "human"); // gleiche Signatur
+        const jBefore2 = r.state.worldJournal.entries.length;
+        r.state.worldRules = [hRule2];
+        r.state.weather = "rainy";
+        hRule2.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        out.journalIdempotent = r.state.worldJournal.entries.length === jBefore2;
+
+        // --- (6) Gating: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung
+        //         (der Faden ist „weil DEIN Gesetz wirkte" — Nexus/LLM bleiben dem
+        //         Live-Console-Faden vorbehalten, kein Journal-Flut) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "sunny"], ["weather", "rainy"], { ttlSec: 60 }], { source: "nexus" });
+        const nRule = r.state.worldRules.find((x) => x.source === "nexus");
+        const jBeforeN = r.state.worldJournal.entries.length;
+        r.state.worldRules = [nRule];
+        r.state.weather = "sunny";
+        nRule.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        out.nexusNoJournal = r.state.worldJournal.entries.length === jBeforeN && r.state.weather === "rainy";
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        r.state.worldJournal.entries = savedEntries;
+        r.state.worldJournal.seen = savedSeen;
+        r._statusRefs.worldrulesSignature = "";
+        return out;
+    });
+
+    check(
+        "V17.41 Gesetzes-Faden: _worldRuleActivityLabel ist LIVE (ruht / ⚡ feuert / ⚡ aktiv · N× / pausiert)",
+        res.wired && res.labelRuht && res.labelFeuert && res.labelAktiv && res.labelPausiert
+    );
+    check(
+        'V17.41 Gesetzes-Faden: nach echtem Feuern zeigt der Console-Span „⚡ feuert" + pulst (.rule-firing) — DOM-Konsum',
+        res.domShowsFeuert
+    );
+    check(
+        "V17.41 Gesetzes-Faden: das Feuern ändert die Render-Signatur VON SELBST (Live-ness im Diff, kein manueller Reset)",
+        res.signatureLive
+    );
+    check(
+        'V17.41 Gesetzes-Faden: das erste Erwachen einer MENSCH-Regel wird eine Welt-Erinnerung („Dein Gesetz erwachte")',
+        res.journalAwoke
+    );
+    check(
+        "V17.41 Gesetzes-Faden: idempotent — dieselbe Regel neu aufgestellt + gefeuert schreibt KEINE zweite Erinnerung",
+        res.journalIdempotent
+    );
+    check(
+        'V17.41 Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung (der Faden ist DEIN Gesetz)',
+        res.nexusNoJournal
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -34624,6 +34761,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1738RulePersistence(ctx);
             await checkBandV1739RulesUX(ctx);
             await checkBandV1740LlmRules(ctx);
+            await checkBandV1741RuleThread(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

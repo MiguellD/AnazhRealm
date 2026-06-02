@@ -1734,6 +1734,11 @@ class AnazhRealm {
                 ctx.log.push({ event: "rule_effect_exception", message: err.message });
             }
             r.costMsSum = (r.costMsSum || 0) + (performance.now() - t0);
+            // V17.41 — der Gesetzes-Faden: das ERSTE Feuern einer EIGENEN
+            // (Mensch-)Regel wird eine Welt-Erinnerung — der Spieler bekommt den
+            // Faden „weil dein Gesetz wirkte". fires===1 = das Erwachen (Mensch-
+            // Regeln sind permanent → kein TTL-Renew, der Zähler kippt nie zurück).
+            if (r.fires === 1 && r.source === "human") this._journalRuleAwoke(r);
         }
         if (expired) {
             const kept = [];
@@ -1791,6 +1796,23 @@ class AnazhRealm {
         const costScore = Math.max(0, Math.min(1, 1 - avgMs / cfg.costBudgetMs));
         const successScore = Math.max(0, 1 - (rule.errors || 0) / fires);
         return Number((0.4 * costScore + 0.6 * successScore).toFixed(3));
+    }
+
+    // V17.41 — der Gesetzes-Faden, die narrative Hälfte: das erste Erwachen einer
+    // EIGENEN (Mensch-)Regel als Welt-Erinnerung. Idempotent über die Signatur
+    // (re-issued/reloaded → eine Erinnerung; `seen` reist im Snapshot mit). NUR
+    // Mensch-Regeln („DEIN Gesetz") — Nexus/LLM-Experimente bleiben dem Live-
+    // Console-Faden vorbehalten (sonst flutet die ephemere Regel-Evolution das
+    // persönliche Tagebuch + verdrängt die Genesis-Anker). Die EINE Wand:
+    // aufgerufen aus _tickWorldRules beim ersten Feuern.
+    _journalRuleAwoke(rule) {
+        let desc;
+        try {
+            desc = this.describeProgram(["rule", rule.cond, rule.effect]);
+        } catch {
+            desc = "ein Gesetz";
+        }
+        this.journalAppendOnce(`ruleAwoke:${rule._sig || rule.id}`, "rule", `Dein Gesetz erwachte — ${desc}.`);
     }
 
     // ### Op-Tabellen ###
@@ -9877,6 +9899,23 @@ class AnazhRealm {
         return `verfällt in ~${rem}s`;
     }
 
+    // V17.41 — der Gesetzes-Faden: der LIVE-Aktivitäts-Faden eines Gesetzes (löst
+    // das alte sticky-binäre „⚡ aktiv / ruht" ab — das wurde beim ersten Feuern
+    // „aktiv" und blieb es für immer, die Welt-WIRKUNG war unsichtbar). Jetzt
+    // SIEHT der Spieler, ob sein Gesetz GERADE wirkt: „⚡ feuert" (innerhalb
+    // threadRecentSec gefeuert — der Puls), sonst „⚡ aktiv · N×" (das Lebenswerk,
+    // wenn es ruht — der Zähler ist die Spur), „ruht" (noch nie), „pausiert". EINE
+    // Quelle für den Namen-Span UND die Render-Signatur (→ die Row pulst, wenn das
+    // Gesetz feuert; bounded: „feuert" ist stabil während des Feuerns [Frist >
+    // everySec], ein einziges Re-Render wenn es verstummt → „aktiv · N×").
+    _worldRuleActivityLabel(rule, now) {
+        if (rule.disabled) return "pausiert";
+        const fires = rule.fires || 0;
+        if (fires === 0) return "ruht";
+        if (now - rule.lastFired <= AnazhRealm.WORLD_RULES.threadRecentSec) return "⚡ feuert";
+        return `⚡ aktiv · ${fires}×`;
+    }
+
     renderWorldRulesList() {
         const r = this._statusRefs;
         if (!r || !r.worldrules) return;
@@ -9895,7 +9934,9 @@ class AnazhRealm {
                 .map(
                     (x) =>
                         `${x.id}:${x.source || "?"}:${x.pinned ? "p" : "_"}:${x.disabled ? "x" : "_"}:${
-                            (x.fires || 0) > 0 ? "f" : "_"
+                            // V17.41 — der LIVE-Aktivitäts-Faden in der Signatur → die
+                            // Row re-rendert, wenn ein Gesetz feuert/verstummt (der Puls).
+                            this._worldRuleActivityLabel(x, now)
                         }:${this._worldRuleStatusLabel(x, now)}`
                 )
                 .join("|");
@@ -9933,8 +9974,10 @@ class AnazhRealm {
             const head = document.createElement("div");
             head.className = "ability-head";
             const name = document.createElement("span");
-            name.className = "name";
-            name.textContent = rule.disabled ? "pausiert" : (rule.fires || 0) > 0 ? "⚡ aktiv" : "ruht";
+            const activity = this._worldRuleActivityLabel(rule, now);
+            // V17.41 — „⚡ feuert" pulst (CSS .rule-firing), der Spieler SIEHT die Wirkung.
+            name.className = "name" + (activity === "⚡ feuert" ? " rule-firing" : "");
+            name.textContent = activity;
             const source = document.createElement("span");
             source.className = "source";
             source.textContent =
@@ -43625,7 +43668,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.40.0";
+AnazhRealm.VERSION = "17.41.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -43653,6 +43696,11 @@ AnazhRealm.WORLD_RULES = Object.freeze({
     // Phase C — Fitness (per-Regel, attributierbar: Kosten + Erfolg + Engagement)
     costBudgetMs: 4, // ein Regel-Effekt sollte < ~4 ms kosten (sonst Cost-Penalty)
     renewFitness: 0.5, // ab dieser Fitness wird eine Nexus-Regel am ttl-Ende erneuert
+    // V17.41 — der Gesetzes-Faden: ein Gesetz, das innerhalb dieser Frist gefeuert
+    // hat, gilt als „feuert gerade" (der Live-Puls in der Gesetze-Console). > als
+    // der größte everySec (ruleEverySecMax 5) → ein aktiv feuerndes Gesetz pulst
+    // kontinuierlich; verstummt es, fällt es nach dieser Frist auf „aktiv · N×".
+    threadRecentSec: 6,
 });
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
