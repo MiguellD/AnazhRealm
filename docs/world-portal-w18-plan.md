@@ -26,6 +26,42 @@ Dieser Plan macht den „teils noch nicht"-Teil zur genialen, verdichtenden Lös
 
 ---
 
+## 1.5 Das Erlebnis — aus Spieler-Sicht ZUERST (nicht die Klempnerei)
+
+Dieser Plan ist KEINE Netz-Architektur mit einem Spieler-Anhang — er ist ein GEFÜHL, dem die
+Technik dient. Das Gefühl ist OASIS: **„ich bin überall noch ICH, mit meinen Leuten."** Drei
+Momente, an denen jede technische Entscheidung gemessen wird:
+
+- **Allein.** Ich stehe in MEINER stillen Welt. Ein Portal schimmert in der Wiese. Ich gehe
+  hindurch — Physik, Grafik, Mechanik wechseln, aber ich bin noch ich: mein Avatar, meine
+  Seele, mein Werkzeug. Ich treibe durch hallucinates Shader-Sturm. Esc — und ich bin daheim,
+  als wäre ich nie weg gewesen. *(Das fühlt sich heute schon so an — Stufe 0.)*
+- **Gemeinsam.** Ich bin mit drei Freunden in unserem Mesh-Raum. Ich gehe zum Portal; sie
+  bekommen „Anna öffnet ein Tor nach hallucinate — mitkommen?". Sie sagen ja. Wir treten
+  ZUSAMMEN hindurch — und **wir sehen einander** in hallucinate treiben, als unsere Avatare,
+  obwohl hallucinate nie wusste, was ein „Freund" ist. Wir deuten auf Dinge, lachen, gehen
+  zusammen wieder. *(DAS ist der W18-Zauber — Stufe 2, der Kern, §5.)*
+- **Leben.** Ich besuche nicht nur — ich BLEIBE. hallucinate wird vorübergehend mein Zuhause;
+  meine Freunde finden mich dort („Anna wohnt gerade in hallucinate"); ich kehre dorthin
+  zurück, nicht in die alte Heimat. *(Stufe 4, die Krone, §7.)*
+
+Jede Phase unten muss einen dieser Momente näher bringen. Tut sie das nicht, ist sie Klempnerei
+ohne Seele und gehört gestrichen.
+
+### Leitprinzip: NIE pro-Welt hardcoden (die Heilige Lektion, eine Ebene höher)
+
+hallucinate ist nur das HEUTIGE Beispiel — **kein Mechanismus dieses Plans darf eine einzelne
+Welt kennen.** Alles ist welt-AGNOSTISCH: das Ko-Präsenz-Protokoll trägt generische Posen (nicht
+hallucinate-Felder); die Tier-Erkennung liest das Manifest (W17 `serverMode`/`multiplayer`); der
+Avatar-Hook wird ENTWEDER von der Welt deklariert ODER vom KI-Übersetzer für eine BELIEBIGE
+three.js-Welt geschrieben (Introspektion, kein Sonderfall) ODER fällt auf den universellen Vorraum
+zurück. Derselbe Pfad trägt die nächsten 1000 Welten ohne Handarbeit (der Auto-Vendor-Geist, W15).
+**Ein `if (world === "hallucinate")` wäre die Sünde** — das verkleidete Parallel-System, eine
+Ebene über der Heiligen Lektion. Wenn ein Schritt nur für eine Welt funktioniert, ist er falsch
+gebaut.
+
+---
+
 ## 2. Was HEUTE steht (das Fundament — W12–W17)
 
 Der Fremd-Engine-Bogen ist im Kern gebaut. Die **fünf Schichten** (roadmap §3), jede additiv:
