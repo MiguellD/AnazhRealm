@@ -1850,7 +1850,27 @@ class AnazhRealm {
     _measureRuleReward(rule, now) {
         if (!rule._vPending || !rule._vPos) return;
         const after = this._fieldWohlStruktur(this.auraAt(rule._vPos.x, rule._vPos.z, now));
-        const reward = Math.max(-1, Math.min(1, after - (rule._vBase || 0)));
+        let reward = after - (rule._vBase || 0); // V17.43 — der lokale strukturelle δ am Effekt-Ort
+        // V17.50 Phase 4 — DIE KLAMMER: feuerte die Regel NAH am Spieler UND fiel das mit
+        // einer positiven Erlebnis-Tendenz des Spielers zusammen (δ_spieler > 0, die
+        // SITUATIONS-Überraschung), bekommt sie Bonus-Credit ∝ Nähe → der Nexus evolviert
+        // Regeln, die das Erleben des Spielers heben (Black & White, generalisiert auf
+        // Welt-Logik). Anti-Gaming by construction: der δ_spieler ist die SITUATION (lebendig
+        // + HP, V17.44 feedback-frei), NICHT die gestempelte Emotion → eine deposit_emotion-
+        // Regel kann den Bonus NICHT faken (sie hebt die Situation nicht). rule.value (lokaler
+        // struktureller δ) und δ_spieler sind dasselbe Signal an zwei Orten — am Spieler fallen
+        // sie zusammen, und genau das selektiert die Klammer.
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const pd = (this.state.player && this.state.player.appraisalDelta) || 0;
+        if (pm && pd > 0) {
+            const radius = AnazhRealm.WERTUNG.phase4Radius;
+            const d2 = (rule._vPos.x - pm.x) ** 2 + (rule._vPos.z - pm.z) ** 2;
+            if (d2 < radius * radius) {
+                const proximity = 1 - Math.sqrt(d2) / radius;
+                reward += pd * proximity * AnazhRealm.WERTUNG.phase4Weight;
+            }
+        }
+        reward = Math.max(-1, Math.min(1, reward));
         rule.value = (rule.value || 0) + AnazhRealm.WERTUNG.ruleValueBeta * (reward - (rule.value || 0));
         rule._vPending = false;
     }
@@ -8350,6 +8370,12 @@ class AnazhRealm {
                 p.wohlBaseline = sit; // Cold-Start: die erste Situation IST die Erwartung (kein δ)
             } else {
                 let dsig = sit - p.wohlBaseline; // [−1, 1] — besser/schlechter als erwartet
+                // V17.50 Phase 4 — den ROHEN Situations-δ (VOR der Stimmungs-Tönung) als kurze
+                // EMA festhalten: die jüngste Erlebnis-Tendenz des Spielers, für die Wertungs-
+                // Klammer. Anti-Gaming: die SITUATION (lebendig+HP, ökologisch), NICHT die
+                // gestempelte/getönte Emotion → eine Regel kann den Bonus nicht faken.
+                const aD = 1 - Math.exp(-delta / AnazhRealm.WERTUNG.appraisalEmaTau);
+                p.appraisalDelta = (p.appraisalDelta || 0) + aD * (dsig - (p.appraisalDelta || 0));
                 const dead = AnazhRealm.WERTUNG.appraisalDeadzone;
                 // W3 (V17.47) — stimmungs-kongruente Bewertung: NUR wenn ein REALES
                 // Ereignis vorliegt (|dsig| > deadzone) tönt die langsame STIMMUNG die
@@ -44219,7 +44245,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.49.0";
+AnazhRealm.VERSION = "17.50.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -44280,6 +44306,13 @@ AnazhRealm.WERTUNG = Object.freeze({
     // Sekunde, sanft, ADDITIV zu V17.30/V17.21); deadzone = Totzone gegen Zappeln.
     appraisalGain: 0.4,
     appraisalDeadzone: 0.05,
+    // V17.50 Phase 4 — DIE KLAMMER: rule.value (lokaler struktureller δ) und δ_spieler
+    // (der ROHE Situations-δ, ökologisch) sind dasselbe Vorhersagefehler-Signal. Eine
+    // Regel, die NAH am Spieler feuert UND mit positivem δ_spieler zusammenfällt, bekommt
+    // Bonus-Credit → die Welt lernt spieler-zentrisch (sie blüht, WO der Spieler ist).
+    appraisalEmaTau: 8, // s — die kurze EMA des Spieler-δ (die jüngste Erlebnis-Tendenz)
+    phase4Radius: 40, // m — nur Regeln innerhalb dieses Radius vom Spieler bekommen den Bonus
+    phase4Weight: 0.5, // wie stark ein positiver δ_spieler den Regel-Reward hebt (× Nähe)
 });
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({

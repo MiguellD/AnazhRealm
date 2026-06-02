@@ -3636,6 +3636,106 @@ async function checkBandV1749Adventure(ctx) {
     check("V17.49 Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
 }
 
+// V17.50 — Die lebendige Wertung Phase 4: DIE KLAMMER — die Welt lernt, was den Spieler
+// freut (docs/lebendige-wertung-plan.md §5). `rule.value` (lokaler struktureller δ) und
+// `δ_spieler` (der rohe Situations-δ) sind DASSELBE Vorhersagefehler-Signal: eine Regel,
+// die NAH am Spieler feuert UND mit positivem δ_spieler zusammenfällt, bekommt Bonus-
+// Credit ∝ Nähe → spieler-zentrische Evolution. Diese Welle prüft KONSUM (der Bonus hebt
+// den Reward nah + positiv, der Proximity-Gate schließt ferne aus) UND das ANTI-GAMING
+// (der δ_spieler ist die SITUATION, NICHT die stempelbare Emotion → kein Reward-Hacking).
+async function checkBandV1750Klammer(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const W = r.constructor.WERTUNG;
+        const pm = r.state.playerMesh.position;
+        const savedEmo = { ...p.emotions };
+        const savedMood = p.mood ? { ...p.mood } : null;
+        const savedBase = p.wohlBaseline;
+        const savedDelta = p.appraisalDelta;
+        const savedTick = p.emotionLastTick;
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        const savedEmoField = r.state.emotionField;
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+
+        // (1) Config
+        out.config = !!W && W.phase4Radius > 0 && W.phase4Weight > 0 && W.appraisalEmaTau > 0;
+
+        // (2) ANTI-GAMING an der WURZEL: appraisalDelta trackt die SITUATION (lebendig+HP),
+        // NICHT die gestempelte Emotion → eine Regel kann den Bonus nicht über Emotion faken.
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        r.state.emotionField = new Map();
+        // (a) die Situation STEIGT (Leben deponiert, Erwartung niedriger) → appraisalDelta steigt
+        setEmo({});
+        p.appraisalDelta = 0;
+        r._depositLife(pm.x, pm.z, 1.0);
+        r._depositLife(pm.x, pm.z, 1.0);
+        const sitNow = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        p.wohlBaseline = sitNow - 0.3; // δ ≈ +0.3
+        p.emotionLastTick = 6000;
+        r.updatePlayerEmotions(6005);
+        out.deltaTracksSituationUp = p.appraisalDelta > 0.05;
+        // (b) die Situation ist FLACH, aber die Emotion HOCH → appraisalDelta bleibt ~0
+        setEmo({ joy: 1, hope: 1, peace: 1 });
+        p.appraisalDelta = 0;
+        const sitFlat = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        p.wohlBaseline = sitFlat; // δ = 0 (Situation unverändert)
+        p.emotionLastTick = 6100;
+        r.updatePlayerEmotions(6105);
+        out.deltaIgnoresEmotion = Math.abs(p.appraisalDelta) < 0.05;
+
+        // (3)+(4) DIE KLAMMER: der lokale Reward + der Spieler-Bonus (nah + positiv) vs der Gate (fern)
+        r.state.lifeField = new Map();
+        const measureRule = (vx, vz, vbase, pd) => {
+            p.appraisalDelta = pd;
+            const rule = { value: 0, _vPending: true, _vPos: { x: vx, z: vz }, _vBase: vbase };
+            r._measureRuleReward(rule, 0);
+            return rule.value;
+        };
+        const frozenNear = r._fieldWohlStruktur(r.auraAt(pm.x, pm.z, 0));
+        const vbaseNear = frozenNear - 0.4; // localReward_near = 0.4 (kontrolliert)
+        const vNearBonus = measureRule(pm.x, pm.z, vbaseNear, 0.5);
+        const vNearNoBonus = measureRule(pm.x, pm.z, vbaseNear, 0);
+        out.clampRewardsNearPositive = vNearBonus > vNearNoBonus + 0.03; // nah + δ_spieler>0 → mehr Wert
+        const fx = pm.x + 100;
+        const fz = pm.z;
+        const frozenFar = r._fieldWohlStruktur(r.auraAt(fx, fz, 0));
+        const vbaseFar = frozenFar - 0.4;
+        const vFarBonus = measureRule(fx, fz, vbaseFar, 0.5);
+        const vFarNoBonus = measureRule(fx, fz, vbaseFar, 0);
+        out.proximityGate = Math.abs(vFarBonus - vFarNoBonus) < 1e-9; // fern → der δ_spieler ändert NICHTS
+        // (5) ANTI-GAMING end-to-end: eine Regel NAH am Spieler, aber δ_spieler ≤ 0 (keine echte
+        // Situations-Verbesserung) → KEIN Bonus (Phase 2 unverändert), egal wie hoch die Emotion ist.
+        const vNearNeg = measureRule(pm.x, pm.z, vbaseNear, -0.5);
+        out.noGamingWhenNoSituation = Math.abs(vNearNeg - vNearNoBonus) < 1e-9;
+        out.wired = /appraisalDelta/.test(r._measureRuleReward.toString()) && /phase4Radius/.test(r._measureRuleReward.toString());
+
+        // restore
+        setEmo(savedEmo);
+        if (savedMood) for (const k of Object.keys(savedMood)) p.mood[k] = savedMood[k];
+        p.wohlBaseline = savedBase;
+        p.appraisalDelta = savedDelta;
+        p.emotionLastTick = savedTick;
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        r.state.emotionField = savedEmoField;
+        return out;
+    });
+    check("V17.50 Klammer: WERTUNG Phase-4-Config (phase4Radius/Weight/appraisalEmaTau)", res.config);
+    check("V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta trackt die SITUATION (steigt mit Leben)", res.deltaTracksSituationUp);
+    check("V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta IGNORIERT die Emotion (hohe Stimmung, flache Situation → ~0)", res.deltaIgnoresEmotion);
+    check("V17.50 Klammer: KONSUM — eine Regel NAH am Spieler + positiver δ_spieler bekommt MEHR Wert (die Klammer)", res.clampRewardsNearPositive);
+    check("V17.50 Klammer: der Proximity-Gate — eine FERNE Regel bekommt KEINEN Bonus (δ_spieler ändert nichts)", res.proximityGate);
+    check("V17.50 Klammer: ANTI-GAMING — eine nahe Regel ohne echte Situations-Verbesserung (δ≤0) bekommt KEINEN Bonus", res.noGamingWhenNoSituation);
+    check("V17.50 Klammer: _measureRuleReward nutzt appraisalDelta + phase4Radius (wired)", res.wired);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -35731,6 +35831,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1747FastSlow(ctx);
             await checkBandV1748Social(ctx);
             await checkBandV1749Adventure(ctx);
+            await checkBandV1750Klammer(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
