@@ -424,6 +424,16 @@ kamen — minimal, bewährt, auf dem einen Stamm.
 
 ## 10. Die emotionale TIEFE — der Hylomorphismus der Emotionen (graue Schatten + Folge-Bogen)
 
+> **→ DIE FUNDAMENTALE HEILUNG dieser Schatten lebt jetzt in `docs/emotion-kern-plan.md`**
+> (02.06., der Schöpfer bat um „wirklich tief, wie funktionieren Emotionen, wie fusionieren
+> sie … ein fundamentaler Plan"). Dieser §10 ist die DIAGNOSE (die fünf gemessenen Schatten);
+> der `emotion-kern-plan` ist die ARCHITEKTUR an der Wurzel (EVENT → APPRAISAL → EMOTION,
+> gegründet auf Appraisal-Theorie + dimensionaler Fusion + Emotions-Dynamik + sozialer
+> Emotion, fusioniert mit dem Hylomorphismus + dem V17.44-δ). Die W-E1–W-E4 unten gehen
+> darin auf: W-E1 → W2 (die Appraisal-Brücke), W-E2/W-E3 → W5 (Abenteuer/Kampf über die
+> Brücke), W-E4 → W4 (das Soziale + die KI-Ko-Regulation). **Vor jeder Emotion-Arbeit den
+> `emotion-kern-plan` ZUERST lesen.**
+
 **Schöpfer-Audit (02.06., nach Phase 3):** „sobald ich in der Werkstatt bin / Baupläne
 erstelle / weit in neue Richtungen laufe / (künftig) kämpfe / mit Kreaturen + der KI
 schreibe — wird das gemessen, WIE? Hylomorphismus der Emotionen, nicht nur der Baupläne?"
