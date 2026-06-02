@@ -22852,6 +22852,10 @@ class AnazhRealm {
             out.role = "tool";
             out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
         }
+        // S3-B (kampf-plan §11.7) — die Schmiede-Qualität reist mit: ein geschmiedetes Gerät bleibt
+        // geschmiedet (forgedPrecision gesetzt) über den Reload → der Werk-Akt wird nicht beim Laden
+        // entwertet, der Gebrauch bleibt frei (sonst müsste man nach jedem Reload neu schmieden/zahlen).
+        if (Number.isFinite(bp.forgedPrecision)) out.forgedPrecision = bp.forgedPrecision;
         // V17.52 Kampf Phase B — die Waffen-Rolle reist mit (sonst verlöre eine
         // geschmiedete Waffe beim Reload ihre Rolle + die Equip-Bindung). Volle
         // Persistenz — bewusst sauberer als die heutige armor/consumable-Rolle,
@@ -22939,6 +22943,8 @@ class AnazhRealm {
             parts: migratedParts,
             connections: validConnections,
         };
+        // S3-B — geschmiedet bleibt geschmiedet (Gegenstück zu _serializeBlueprint).
+        if (Number.isFinite(data.forgedPrecision)) restored.forgedPrecision = data.forgedPrecision;
         // Welle 5 C — role + toolMeta beim Load wiederherstellen.
         if (
             data.role === "tool" &&
@@ -27219,6 +27225,22 @@ class AnazhRealm {
         const eq = this.equipHeld(name);
         if (typeof this._feelAction === "function") this._feelAction("create", { blueprint: name });
         return { ok: true, equipped: eq.equipped, free: !!gate.free, forgedPrecision: bp.forgedPrecision };
+    }
+
+    // S3-B (kampf-plan §11.7) — „in die Hand nehmen": der SPIELER-Pfad zum gehaltenen Gerät, der den
+    // Schmiede-Akt BEDEUTSAM macht (sonst wäre equipHeld gratis = der Werk-Akt sinnlos, strikt schlechter
+    // als gratis-equippen). Ein UNgeschmiedetes Gerät in pfad/frieden → erst SCHMIEDEN (Material zahlen +
+    // Präzision einfrieren, der Werk-Akt); ein bereits geschmiedetes (forgedPrecision gesetzt, reist im
+    // Snapshot) ODER schöpfer → frei ausrüsten (der GEBRAUCH). So: schmieden EINMAL, halten frei.
+    // (equipHeld bleibt das freie Low-Level-Primitiv für Restore/DSL/Chat/Aliase — die scripting-Schicht;
+    // deren volle Vereinheitlichung ist S7.)
+    wieldBlueprint(name) {
+        if (!name) return this.equipHeld(null);
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return this.equipHeld(name); // unbekannt → equipHeld liefert die saubere Ablehnung
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (Number.isFinite(bp.forgedPrecision) || mode === "schöpfer") return this.equipHeld(name);
+        return this.forgeBlueprint(name);
     }
 
     // Rüstung ausrüsten. Akzeptiert null/leer für „abnehmen". Blueprint muss
@@ -42198,8 +42220,24 @@ class AnazhRealm {
             sel.appendChild(opt);
         }
         sel.addEventListener("change", () => {
-            const result = this.equipHeld(sel.value || null);
-            if (!result.ok) this.log(`equipHeld fehlgeschlagen: ${result.reason}`, "ERROR");
+            // S3-B — der Spieler-Pfad geht durch wieldBlueprint: ein ungeschmiedetes Gerät wird hier
+            // GESCHMIEDET (zahlt im pfad/frieden), ein geschmiedetes frei in die Hand genommen.
+            const result = this.wieldBlueprint(sel.value || null);
+            if (!result.ok) {
+                if (result.reason === "not_enough_material") {
+                    const missingStr = Object.entries(result.missing || {})
+                        .map(([m, n]) => `${n}× ${m}`)
+                        .join(", ");
+                    this.log(`Schmieden nötig — fehlt: ${missingStr || "Material"} (⚒ in der Werkstatt).`, "ERROR");
+                } else {
+                    this.log(`In die Hand fehlgeschlagen: ${result.reason}`, "ERROR");
+                }
+            } else if (!result.free && result.forgedPrecision != null) {
+                this.log(
+                    `Geschmiedet + in der Hand: „${this.state.blueprints[sel.value]?.label || sel.value}".`,
+                    "INFO"
+                );
+            }
             this.renderPlayerEquipUI();
             if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
         });
@@ -44881,7 +44919,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.61.0";
+AnazhRealm.VERSION = "17.62.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

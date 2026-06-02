@@ -635,6 +635,17 @@ Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis,
   ForgeImplement` 6 grün (F2 fein>grob; F3 pfad ohne Material lehnt ab, **KONSUM** pfad mit Material baut +
   verbraucht + rüstet aus, friert Präzision ein, schöpfer frei). *equipHeld bleibt der freie GEBRAUCH; das
   Kosten-Tor sitzt im Schmiede-WERK. Das Feel/die Balance = Schöpfer-Browser.*
+- **S3-B — der Schmiede-Akt wird BEDEUTSAM — ✅ GEBAUT (V17.62):** Reflexions-Fund (Schöpfer 02.06.): der
+  Schmiede-Akt war UMGEHBAR — `equipHeld` gab ein Gerät gratis, mit derselben (live-)Präzision, die das
+  Schmieden einfriert → schmieden war STRIKT SCHLECHTER (zahlt nur Material) → kein Anreiz, die „Werk kostet"-
+  Synergie für das Gerät nicht erzwungen. Heilung: `wieldBlueprint(name)` (der Spieler-Equip-Pfad, der
+  Drawer-Dropdown routet darüber): ein UNgeschmiedetes Gerät in pfad/frieden → erst SCHMIEDEN (zahlt), ein
+  geschmiedetes (`forgedPrecision`, jetzt im Snapshot PERSISTIERT) ODER schöpfer → frei (GEBRAUCH). Schmieden
+  EINMAL, halten frei, überlebt Reload. `equipHeld` bleibt das freie Low-Level-Primitiv (Restore/DSL/Chat/
+  Aliase = die scripting-Schicht; deren volle Vereinheitlichung bleibt S7). `checkBandV1762ForgeMeaningful`
+  6 grün (Persistenz, wield-ungeschmiedet-ohne-Material lehnt ab, **KONSUM** wield-mit-Material schmiedet,
+  GEBRAUCH-frei für geschmiedete, schöpfer frei). *Damit hat S3 seinen Anreiz; S4–S6 replizieren ein WERK-
+  Muster, das tatsächlich BEISST.*
 - **S4 — Rüstung schmieden/weben**: dasselbe Muster — Rüstung machen kostet Material + friert Präzision;
   ausrüsten bleibt frei. *Headless.*
 - **S5 — Avatar: einen Körper formen** (§11.2): `applyPlayerSoulFromBlueprint` durchs Mach-Tor → gesammelte

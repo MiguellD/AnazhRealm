@@ -4861,6 +4861,108 @@ async function checkBandV1761ForgeImplement(ctx) {
     check("V17.61 S3: F3 — schoepfer schmiedet frei (ohne Material) + ruestet aus", res.schoepferForgesFree);
 }
 
+// V17.62 S3-B (kampf-plan §11.7) — der Schmiede-Akt wird BEDEUTSAM: der Spieler-Equip-Pfad (wieldBlueprint)
+// geht durch das Schmieden — ein ungeschmiedetes Geraet in pfad/frieden kostet (schmieden), ein
+// geschmiedetes (forgedPrecision, persistiert) ist frei in die Hand zu nehmen. Heilt den Gratis-Bypass.
+async function checkBandV1762ForgeMeaningful(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+        if (!p.equipped) p.equipped = {};
+        const savedHeld = p.equipped.held;
+
+        out.method = typeof r.wieldBlueprint === "function";
+
+        // (2) Persistenz: forgedPrecision überlebt serialize → deserialize (geschmiedet bleibt geschmiedet)
+        blu.__wield_persist = {
+            name: "__wield_persist",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+            forgedPrecision: 0.73,
+        };
+        const ser = r._serializeBlueprint(blu.__wield_persist);
+        const deser = r._deserializeBlueprint(ser);
+        out.forgedPrecisionPersists = !!deser && Math.abs((deser.forgedPrecision || 0) - 0.73) < 1e-6;
+
+        // (3) wield UNgeschmiedet in pfad OHNE Material → not_enough_material (nicht ausgerüstet)
+        blu.__wield_tool = {
+            name: "__wield_tool",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        p.equipped.held = null;
+        const wieldNoMat = r.wieldBlueprint("__wield_tool");
+        out.pfadWieldRejectsUnforged =
+            wieldNoMat.ok === false && wieldNoMat.reason === "not_enough_material" && p.equipped.held === null;
+
+        // (4) wield UNgeschmiedet in pfad MIT Material → SCHMIEDET (zahlt + rüstet aus + friert ein)
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        const steinBefore = p.inventory[0].count;
+        const wieldForges = r.wieldBlueprint("__wield_tool");
+        const steinAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadWieldForgesUnforged =
+            wieldForges.ok === true &&
+            steinBefore > steinAfter &&
+            p.equipped.held === "__wield_tool" &&
+            Number.isFinite(blu.__wield_tool.forgedPrecision);
+
+        // (5) wield GESCHMIEDET in pfad mit LEEREM Inventar → FREI (Gebrauch, kein Neu-Zahlen)
+        p.equipped.held = null;
+        p.inventory = new Array(27).fill(null);
+        const wieldForged = r.wieldBlueprint("__wield_tool");
+        out.pfadWieldForgedIsFree = wieldForged.ok === true && p.equipped.held === "__wield_tool";
+
+        // (6) wield UNgeschmiedet in schöpfer → FREI (Gott-Modus, kein Schmieden nötig)
+        delete blu.__wield_tool.forgedPrecision;
+        r.setGameMode("schöpfer");
+        p.equipped.held = null;
+        p.inventory = new Array(27).fill(null);
+        const wieldSchoepfer = r.wieldBlueprint("__wield_tool");
+        out.schoepferWieldsFree =
+            wieldSchoepfer.ok === true &&
+            p.equipped.held === "__wield_tool" &&
+            !Number.isFinite(blu.__wield_tool.forgedPrecision);
+
+        // cleanup
+        delete blu.__wield_persist;
+        delete blu.__wield_tool;
+        p.equipped.held = savedHeld;
+        p.inventory = new Array(27).fill(null);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.62 S3-B: wieldBlueprint (der bedeutsame Spieler-Pfad) existiert", res.method);
+    check(
+        "V17.62 S3-B: forgedPrecision persistiert (serialize → deserialize; geschmiedet bleibt geschmiedet)",
+        res.forgedPrecisionPersists
+    );
+    check(
+        "V17.62 S3-B: DER HEAL — ein UNgeschmiedetes Geraet in pfad OHNE Material in die Hand → abgelehnt (schmieden noetig, nicht gratis)",
+        res.pfadWieldRejectsUnforged
+    );
+    check(
+        "V17.62 S3-B: KONSUM — ein ungeschmiedetes in pfad MIT Material in die Hand → SCHMIEDET (zahlt + ruestet aus + friert ein)",
+        res.pfadWieldForgesUnforged
+    );
+    check(
+        "V17.62 S3-B: GEBRAUCH frei — ein GESCHMIEDETES Geraet in die Hand nehmen kostet NICHTS (leeres Inventar, trotzdem ok)",
+        res.pfadWieldForgedIsFree
+    );
+    check(
+        "V17.62 S3-B: schoepfer nimmt ungeschmiedet frei in die Hand (Gott-Modus, kein Schmieden)",
+        res.schoepferWieldsFree
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -37030,6 +37132,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1758CreatureNature(ctx);
             await checkBandV1759CapabilityReadout(ctx);
             await checkBandV1761ForgeImplement(ctx);
+            await checkBandV1762ForgeMeaningful(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
