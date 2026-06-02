@@ -2690,7 +2690,7 @@ async function checkBandV1741RuleThread(ctx) {
         res.journalIdempotent
     );
     check(
-        'V17.41 Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung (der Faden ist DEIN Gesetz)',
+        "V17.41 Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung (der Faden ist DEIN Gesetz)",
         res.nexusNoJournal
     );
 }
@@ -2773,7 +2773,10 @@ async function checkBandV1742Wohl(ctx) {
         "V17.42 Wertung: das Wohl-Maß — Struktur = lebendig, Erlebt = Valenz (joy + / sorrow − / awe neutral)",
         res.wohlStruktur && res.wohlErlebtValence
     );
-    check("V17.42 Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)", res.coldStart);
+    check(
+        "V17.42 Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)",
+        res.coldStart
+    );
     check("V17.42 Wertung: stabiler Input → die Baseline HÄLT (EMA driftet nicht ohne Änderung)", res.stableHolds);
     check(
         "V17.42 Wertung: ein Sprung → die Baseline TRACKT, aber LAGGT weit darunter (das EMA-Wesen, zeit-korrigiert)",
@@ -2803,7 +2806,8 @@ async function checkBandV1743RuleFitness(ctx) {
         out.fitnessDiscriminates =
             fHeal > 0.9 && fNeutral > 0.6 && fNeutral < 0.8 && fHarm < 0.5 && fHeal > fNeutral && fNeutral > fHarm;
         // renewFitness 0.5: Heiler+neutral überleben, Schädling verfällt
-        out.harmerDecays = fHarm < r.constructor.WORLD_RULES.renewFitness && fNeutral >= r.constructor.WORLD_RULES.renewFitness;
+        out.harmerDecays =
+            fHarm < r.constructor.WORLD_RULES.renewFitness && fNeutral >= r.constructor.WORLD_RULES.renewFitness;
 
         // --- (2) _ruleRewardPos: der Effekt-Ort (at) bzw. Spieler (positionslos) ---
         const ctx0 = r._worldRuleCtx({ id: 0, source: "nexus", fires: 0 });
@@ -2833,9 +2837,12 @@ async function checkBandV1743RuleFitness(ctx) {
             }
         }
         r.state.worldRules = [];
-        r.dslRun(["rule", ["random_chance", 1], ["deposit_life", ["at", sx, 0, sz]], { everySec: 0.001, ttlSec: 9999 }], {
-            source: "nexus",
-        });
+        r.dslRun(
+            ["rule", ["random_chance", 1], ["deposit_life", ["at", sx, 0, sz]], { everySec: 0.001, ttlSec: 9999 }],
+            {
+                source: "nexus",
+            }
+        );
         const heal = r.state.worldRules[0];
         heal.lastFired = -Infinity;
         r._tickWorldRules(1000); // Feuer 1: Baseline (niedrig) gesnapshottet, Leben deponiert
@@ -2878,7 +2885,8 @@ async function checkBandV1743RuleFitness(ctx) {
         r.state.worldRules = [];
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
         const snap = r.buildStateSnapshot();
-        out.valueNotInSnapshot = Array.isArray(snap.worldRules) && snap.worldRules[0] && snap.worldRules[0].value === undefined;
+        out.valueNotInSnapshot =
+            Array.isArray(snap.worldRules) && snap.worldRules[0] && snap.worldRules[0].value === undefined;
 
         // restore
         r.state.worldRules = savedRules;
@@ -2892,7 +2900,10 @@ async function checkBandV1743RuleFitness(ctx) {
         "V17.43 Wertung: _worldRuleFitness DISKRIMINIERT (Heiler > neutral > Schädling — die alte ≈0.99-Fitness konnte das nicht)",
         res.fitnessDiscriminates
     );
-    check("V17.43 Wertung: ein Schädling fällt unter renewFitness (verfällt), neutral überlebt (keine Monokultur)", res.harmerDecays);
+    check(
+        "V17.43 Wertung: ein Schädling fällt unter renewFitness (verfällt), neutral überlebt (keine Monokultur)",
+        res.harmerDecays
+    );
     check(
         "V17.43 Wertung: _ruleRewardPos misst am Effekt-Ort (at) bzw. an der Spieler-Position (positionsloser Effekt)",
         res.rewardPosFromEffect && res.rewardPosFallbackPlayer
@@ -2901,13 +2912,22 @@ async function checkBandV1743RuleFitness(ctx) {
         "V17.43 Wertung: END-TO-END — eine heilende Regel (deposit_life) akkumuliert POSITIVEN Wert (der Ort blüht auf)",
         res.healerPositiveValue
     );
-    check("V17.43 Wertung: eine neutrale Regel (Wetter, berührt lebendig nicht) akkumuliert ~0 Wert", res.neutralZeroValue);
+    check(
+        "V17.43 Wertung: eine neutrale Regel (Wetter, berührt lebendig nicht) akkumuliert ~0 Wert",
+        res.neutralZeroValue
+    );
     check(
         "V17.43 Wertung: Eviction wirft den wert-NIEDRIGSTEN ephemeren Eintrag (nicht den ältesten); Mensch/pinned geschützt",
         res.evictsLowestValue && res.evictProtectsHuman
     );
-    check("V17.43 Wertung: die Mutations-Elternschaft ist wert-gewichtet (gerichtete Evolution Richtung Heilung)", res.parentWeighted);
-    check("V17.43 Wertung: rule.value ist reaktiv — NICHT im Snapshot serialisiert (wie die anderen Akkus)", res.valueNotInSnapshot);
+    check(
+        "V17.43 Wertung: die Mutations-Elternschaft ist wert-gewichtet (gerichtete Evolution Richtung Heilung)",
+        res.parentWeighted
+    );
+    check(
+        "V17.43 Wertung: rule.value ist reaktiv — NICHT im Snapshot serialisiert (wie die anderen Akkus)",
+        res.valueNotInSnapshot
+    );
 }
 
 // V17.44 — DIE LEBENDIGE WERTUNG, Phase 3: die Emotion als APPRAISAL (Vorhersagefehler
@@ -3034,17 +3054,26 @@ async function checkBandV1744Appraisal(ctx) {
         "V17.44 Appraisal: _playerSituationWohl IGNORIERT die Stimmung (kein Feedback-Input — die Wurzel gegen Runaway)",
         res.situationIgnoresMood
     );
-    check("V17.44 Appraisal: die Situation STEIGT mit dem Leben der Welt (deposit_life → lebendig)", res.situationRisesWithLife);
+    check(
+        "V17.44 Appraisal: die Situation STEIGT mit dem Leben der Welt (deposit_life → lebendig)",
+        res.situationRisesWithLife
+    );
     check(
         "V17.44 Appraisal: die Spieler-Baseline trackt die SITUATION, nicht die Stimmung (Cold-Start = lebendig@player, nicht die ~1 Stimmung)",
         res.baselineTracksSituation
     );
-    check("V17.44 Appraisal: eine Situations-Verbesserung (Region blüht auf) gibt einen joy-Puls (Überraschung, δ>0)", res.surpriseRaisesJoy);
+    check(
+        "V17.44 Appraisal: eine Situations-Verbesserung (Region blüht auf) gibt einen joy-Puls (Überraschung, δ>0)",
+        res.surpriseRaisesJoy
+    );
     check(
         "V17.44 Appraisal: GEWÖHNUNG — konstante Situation → Baseline holt auf (δ→0) → kein weiterer joy-Zuwachs",
         res.habituatesBaselineConverges && res.habituatedNoMoreJoy
     );
-    check("V17.44 Appraisal: KEIN Runaway — eine konstante Situation pinnt joy nicht auf 1.0 (feedback-frei bewiesen)", res.noRunaway);
+    check(
+        "V17.44 Appraisal: KEIN Runaway — eine konstante Situation pinnt joy nicht auf 1.0 (feedback-frei bewiesen)",
+        res.noRunaway
+    );
     check(
         "V17.44 Appraisal: V17.30 bleibt heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle + feuert (δ ist ADDITIV)",
         res.triggerPreserved
@@ -3087,7 +3116,11 @@ async function checkBandV1745EmotionCore(ctx) {
             !!GEO &&
             axes.every((a) => GEO[a] && typeof GEO[a].valenz === "number" && typeof GEO[a].erregung === "number");
         out.geoValenceSigns =
-            GEO.joy.valenz > 0 && GEO.hope.valenz > 0 && GEO.peace.valenz > 0 && GEO.sorrow.valenz < 0 && GEO.chaos.valenz < 0;
+            GEO.joy.valenz > 0 &&
+            GEO.hope.valenz > 0 &&
+            GEO.peace.valenz > 0 &&
+            GEO.sorrow.valenz < 0 &&
+            GEO.chaos.valenz < 0;
         out.geoArousalOpposed = GEO.peace.erregung < 0 && GEO.chaos.erregung > 0; // peace↔chaos = Erregungs-Gegenpol
 
         // (2) Der Readout — ein KLARES dominantes Gefühl.
@@ -3101,7 +3134,8 @@ async function checkBandV1745EmotionCore(ctx) {
         const sMix = r._emotionState();
         out.bittersweetValenceCancels = Math.abs(sMix.valence) < 0.1;
         out.bittersweetIntensityHigh = sMix.intensity > 0.9; // das additive Modell verfehlt das
-        out.bittersweetLabel = typeof sMix.label === "string" && sMix.label.includes("Zwiespalt") && Array.isArray(sMix.mix);
+        out.bittersweetLabel =
+            typeof sMix.label === "string" && sMix.label.includes("Zwiespalt") && Array.isArray(sMix.mix);
 
         // (4) Ruhe — wenig Aktivierung → ein ruhiger Grund-Affekt.
         setEmo({});
@@ -3154,21 +3188,42 @@ async function checkBandV1745EmotionCore(ctx) {
     });
 
     check("V17.45 Emotion-Kern: EMOTION_GEOMETRY vollständig (alle 6 Achsen, Valenz × Erregung)", res.geoComplete);
-    check("V17.45 Emotion-Kern: prinzipielle Valenz-Vorzeichen (joy/hope/peace +, sorrow/chaos −) — Russell", res.geoValenceSigns);
-    check("V17.45 Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol (die Geometrie trägt die Kohärenz)", res.geoArousalOpposed);
-    check("V17.45 Emotion-Kern: Readout — ein klares dominantes Gefühl (joy=0.8 → Freude, Valenz +)", res.clearDominant);
+    check(
+        "V17.45 Emotion-Kern: prinzipielle Valenz-Vorzeichen (joy/hope/peace +, sorrow/chaos −) — Russell",
+        res.geoValenceSigns
+    );
+    check(
+        "V17.45 Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol (die Geometrie trägt die Kohärenz)",
+        res.geoArousalOpposed
+    );
+    check(
+        "V17.45 Emotion-Kern: Readout — ein klares dominantes Gefühl (joy=0.8 → Freude, Valenz +)",
+        res.clearDominant
+    );
     check("V17.45 Emotion-Kern: FUSION — bittersüß hebt die Valenz auf (~0)", res.bittersweetValenceCancels);
     check(
         "V17.45 Emotion-Kern: FUSION — bittersüß behält HOHE Intensität (das additive Modell verfehlt das)",
         res.bittersweetIntensityHigh
     );
-    check('V17.45 Emotion-Kern: FUSION — bittersüß labelt „Zwiespalt" + nennt die zwei Gefühle (mix)', res.bittersweetLabel);
+    check(
+        'V17.45 Emotion-Kern: FUSION — bittersüß labelt „Zwiespalt" + nennt die zwei Gefühle (mix)',
+        res.bittersweetLabel
+    );
     check('V17.45 Emotion-Kern: Ruhe — wenig Aktivierung → „ruhig"', res.calmReadout);
-    check("V17.45 Emotion-Kern: KONSUM — die KI (llmBuildSystemPrompt) kennt ein klares Gefühl (Freude)", res.promptClear);
+    check(
+        "V17.45 Emotion-Kern: KONSUM — die KI (llmBuildSystemPrompt) kennt ein klares Gefühl (Freude)",
+        res.promptClear
+    );
     check("V17.45 Emotion-Kern: KONSUM — die KI kennt den Zwiespalt (bittersüß)", res.promptMix);
     check("V17.45 Emotion-Kern: KONSUM — die KI kennt die Ruhe", res.promptCalm);
-    check("V17.45 Emotion-Kern: Kohärenz — ein Gegenpol (sorrow) dämpft joy (der Zustand wird kohärent)", res.coherenceDamps);
-    check("V17.45 Emotion-Kern: Kohärenz — eine EINZELNE klare Emotion wird NICHT gedämpft (0.7-Trigger heil)", res.singleNotDamped);
+    check(
+        "V17.45 Emotion-Kern: Kohärenz — ein Gegenpol (sorrow) dämpft joy (der Zustand wird kohärent)",
+        res.coherenceDamps
+    );
+    check(
+        "V17.45 Emotion-Kern: Kohärenz — eine EINZELNE klare Emotion wird NICHT gedämpft (0.7-Trigger heil)",
+        res.singleNotDamped
+    );
 }
 
 // V17.46 — Der emotionale Kern W2: die APPRAISAL-BRÜCKE + der Hylomorphismus
@@ -3257,19 +3312,34 @@ async function checkBandV1746EmotionSubstance(ctx) {
         return out;
     });
     check("V17.46 Substanz: TAG_TO_EMOTION-Resonanz + der create-Akt existieren", res.tableExists && res.createAct);
-    check("V17.46 Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt", res.lebendigPeace && res.dichteHope);
+    check(
+        "V17.46 Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt",
+        res.lebendigPeace && res.dichteHope
+    );
     check("V17.46 Substanz: brennbar → chaos + awe (Gefahr-Thrill)", res.brennbarChaos);
     check("V17.46 Substanz: die Achsen sind sauber getrennt (dichte erzeugt keine lebendig-joy)", res.noLebInDichte);
     check("V17.46 Substanz: die Magnitude skaliert den Beitrag linear (Kathedrale > Box)", res.magnitudeScales);
     check("V17.46 Substanz: Tag-Stärke >1 geklemmt (Richtung); die Komplexität trägt die Magnitude", res.tagsClamped);
     check("V17.46 Substanz: KONSUM — build(lebendiges Holz) gibt mehr peace als build(toter Stein)", res.woodMorePeace);
-    check("V17.46 Substanz: KONSUM — build(Stein) gibt mehr hope als build(Holz) — verschiedene Substanz, verschiedenes Gefühl", res.stoneMoreHope);
+    check(
+        "V17.46 Substanz: KONSUM — build(Stein) gibt mehr hope als build(Holz) — verschiedene Substanz, verschiedenes Gefühl",
+        res.stoneMoreHope
+    );
     check("V17.46 Substanz: KONSUM — Magnitude end-to-end (große Schöpfung bewegt mehr)", res.magnitudeEndToEnd);
-    check("V17.46 Substanz: der schöpferische Akt → Stolz (joy+hope) + Substanz-Färbung (Magie → awe)", res.createPride);
+    check(
+        "V17.46 Substanz: der schöpferische Akt → Stolz (joy+hope) + Substanz-Färbung (Magie → awe)",
+        res.createPride
+    );
     check("V17.46 Substanz: define_blueprint feuert create-Stolz NUR für den Menschen (Source-Gate)", res.createHooked);
     check("V17.46 Substanz: confirmBuild übergibt die Substanz (blueprint) an _feelAction", res.buildHooked);
-    check("V17.46 Substanz: KEIN Regress — _feelAction('build') ohne Substanz = exakt V17.30 (joy 0.1, hope 0.1)", res.noRegressBuild);
-    check("V17.46 Substanz: Fallback — ein tag-loser Akt (explore) nutzt weiter ACTION_TO_EMOTION", res.fallbackExplore);
+    check(
+        "V17.46 Substanz: KEIN Regress — _feelAction('build') ohne Substanz = exakt V17.30 (joy 0.1, hope 0.1)",
+        res.noRegressBuild
+    );
+    check(
+        "V17.46 Substanz: Fallback — ein tag-loser Akt (explore) nutzt weiter ACTION_TO_EMOTION",
+        res.fallbackExplore
+    );
 }
 
 // V17.47 — Der emotionale Kern W3: Fast/Slow — EMOTION vs. STIMMUNG
@@ -3311,7 +3381,8 @@ async function checkBandV1747FastSlow(ctx) {
         const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
 
         // (1) die Decay-Tabelle: Furcht/chaos schnell, Trauer/peace langsam
-        out.decayTable = !!DECAY && DECAY.chaos > DECAY.sorrow && DECAY.chaos > 1 && DECAY.sorrow < 1 && DECAY.peace < 1;
+        out.decayTable =
+            !!DECAY && DECAY.chaos > DECAY.sorrow && DECAY.chaos > 1 && DECAY.sorrow < 1 && DECAY.peace < 1;
 
         // (2) PRO-ACHSE-Decay end-to-end: chaos (Furcht) verfliegt SCHNELLER als sorrow (Trauer)
         setEmo({ chaos: 0.8, sorrow: 0.8 });
@@ -3393,10 +3464,19 @@ async function checkBandV1747FastSlow(ctx) {
         return out;
     });
     check("V17.47 Fast/Slow: EMOTION_DECAY-Tabelle (chaos/Furcht schnell, sorrow/peace langsam)", res.decayTable);
-    check("V17.47 Fast/Slow: KONSUM — Furcht (chaos) verfliegt SCHNELLER als Trauer (sorrow) [pro-Achse-Decay]", res.fearFadesFasterThanGrief);
+    check(
+        "V17.47 Fast/Slow: KONSUM — Furcht (chaos) verfliegt SCHNELLER als Trauer (sorrow) [pro-Achse-Decay]",
+        res.fearFadesFasterThanGrief
+    );
     check("V17.47 Fast/Slow: beide Achsen zerfallen (Decay wirkt)", res.bothDecayed);
-    check("V17.47 Fast/Slow: die STIMMUNG ist eine langsame EMA — sie lagt der Emotion (ein Tick → klein)", res.moodLagsEmotion);
-    check("V17.47 Fast/Slow: KONSUM — anhaltendes Gefühl → die Stimmung KONVERGIERT (das Temperament wächst)", res.moodConverges);
+    check(
+        "V17.47 Fast/Slow: die STIMMUNG ist eine langsame EMA — sie lagt der Emotion (ein Tick → klein)",
+        res.moodLagsEmotion
+    );
+    check(
+        "V17.47 Fast/Slow: KONSUM — anhaltendes Gefühl → die Stimmung KONVERGIERT (das Temperament wächst)",
+        res.moodConverges
+    );
     check(
         "V17.47 Fast/Slow: KONSUM — eine trübe Stimmung färbt das Erleben (dämpft die Freude eines guten Ereignisses)",
         res.moodColorsAppraisal
@@ -3409,7 +3489,10 @@ async function checkBandV1747FastSlow(ctx) {
         "V17.47 Fast/Slow: KONSUM — die KI kennt die GRUNDSTIMMUNG (Trauer), getrennt vom akuten Gefühl (Freude)",
         res.promptHasMood && res.promptHasAcute
     );
-    check("V17.47 Fast/Slow: V17.30 heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle", res.triggerReachable);
+    check(
+        "V17.47 Fast/Slow: V17.30 heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle",
+        res.triggerReachable
+    );
 }
 
 // V17.48 — Der emotionale Kern W4: das SOZIALE — Contagion + Bindung + die KI als
@@ -3441,7 +3524,10 @@ async function checkBandV1748Social(ctx) {
             for (const k of AX) p.mood[k] = o[k] || 0;
         };
         // eine kontrollierte Kreatur AM Spieler-Ort (proximity 1)
-        const fake = (bond, task) => ({ position: { x: pm.x, y: pm.y, z: pm.z }, userData: { bond, task: { name: task || "wait" } } });
+        const fake = (bond, task) => ({
+            position: { x: pm.x, y: pm.y, z: pm.z },
+            userData: { bond, task: { name: task || "wait" } },
+        });
         const inject = (emo, bond, task) => {
             r.state.creatures = [fake(bond, task)];
             r.state.creatureEmotions = [emo];
@@ -3523,15 +3609,33 @@ async function checkBandV1748Social(ctx) {
     check("V17.48 Soziales: EMOTION_CONTAGION-Config + CONTAGION_TARGET + die loss-Tat existieren", res.config);
     check("V17.48 Soziales: KONSUM — ein freudiges Wesen nah HEBT joy + peace (Contagion)", res.happyLifts);
     check("V17.48 Soziales: KONSUM — ein leidendes Wesen nah betrübt (sorrow)", res.sadGrieves);
-    check("V17.48 Soziales: gebounded — die Contagion sättigt am Ziel (≤0.5), kein Runaway (V17.44-Lehre)", res.contagionBounded);
-    check("V17.48 Soziales: KONSUM — die BINDUNG gewichtet die Contagion (gebunden färbt mehr als fremd)", res.bondWeights);
+    check(
+        "V17.48 Soziales: gebounded — die Contagion sättigt am Ziel (≤0.5), kein Runaway (V17.44-Lehre)",
+        res.contagionBounded
+    );
+    check(
+        "V17.48 Soziales: KONSUM — die BINDUNG gewichtet die Contagion (gebunden färbt mehr als fremd)",
+        res.bondWeights
+    );
     check("V17.48 Soziales: KONSUM — die Bindung WÄCHST, während eine folgende Kreatur nah ist", res.bondGrows);
     check("V17.48 Soziales: eine WARTENDE Kreatur baut keine Bindung auf (nur gemeinsame Zeit zählt)", res.waitNoBond);
-    check('V17.48 Soziales: die „folge mir"-Geste vertieft die Bindung (assignCreatureTask wired)', res.followBumpWired);
-    check("V17.48 Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)", res.bondLossHurts);
-    check("V17.48 Soziales: der Verlust ist ein Ereignis ∝ Bindung × Vitalität (_creatureNaturalDeath wired)", res.lossWired);
+    check(
+        'V17.48 Soziales: die „folge mir"-Geste vertieft die Bindung (assignCreatureTask wired)',
+        res.followBumpWired
+    );
+    check(
+        "V17.48 Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)",
+        res.bondLossHurts
+    );
+    check(
+        "V17.48 Soziales: der Verlust ist ein Ereignis ∝ Bindung × Vitalität (_creatureNaturalDeath wired)",
+        res.lossWired
+    );
     check("V17.48 Soziales: KONSUM — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Trost)", res.tendComforts);
-    check("V17.48 Soziales: kein Trost ohne Trübsal — bei ausgeglichener Stimmung TENDET die KI nicht", res.noTendWhenOk);
+    check(
+        "V17.48 Soziales: kein Trost ohne Trübsal — bei ausgeglichener Stimmung TENDET die KI nicht",
+        res.noTendWhenOk
+    );
     check("V17.48 Soziales: die KI tendet aus dem grokTick (Ko-Regulator wired, nicht nur Kommentar)", res.tendWired);
 }
 
@@ -3628,10 +3732,19 @@ async function checkBandV1749Adventure(ctx) {
     });
     check("V17.49 Abenteuer: EXPLORE-Config (Neuheit > Wiederkehr, max > min)", res.config);
     check("V17.49 Abenteuer: KONSUM — eine NEUE Region staunt mehr als eine Wiederkehr (Neuheit)", res.noveltyGrades);
-    check("V17.49 Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)", res.adventureGrades);
+    check(
+        "V17.49 Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)",
+        res.adventureGrades
+    );
     check("V17.49 Abenteuer: die Distanz vom Ursprung fließt ein (_exploreMagnitude wired)", res.distWired);
-    check("V17.49 Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)", res.boldnessGrades);
-    check("V17.49 Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)", res.exploreScales);
+    check(
+        "V17.49 Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)",
+        res.boldnessGrades
+    );
+    check(
+        "V17.49 Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)",
+        res.exploreScales
+    );
     check("V17.49 Abenteuer: _setLastPlayerVoxelChunk nutzt _exploreMagnitude (hook wired)", res.hookWired);
     check("V17.49 Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
 }
@@ -3714,7 +3827,9 @@ async function checkBandV1750Klammer(ctx) {
         // Situations-Verbesserung) → KEIN Bonus (Phase 2 unverändert), egal wie hoch die Emotion ist.
         const vNearNeg = measureRule(pm.x, pm.z, vbaseNear, -0.5);
         out.noGamingWhenNoSituation = Math.abs(vNearNeg - vNearNoBonus) < 1e-9;
-        out.wired = /appraisalDelta/.test(r._measureRuleReward.toString()) && /phase4Radius/.test(r._measureRuleReward.toString());
+        out.wired =
+            /appraisalDelta/.test(r._measureRuleReward.toString()) &&
+            /phase4Radius/.test(r._measureRuleReward.toString());
 
         // restore
         setEmo(savedEmo);
@@ -3728,11 +3843,26 @@ async function checkBandV1750Klammer(ctx) {
         return out;
     });
     check("V17.50 Klammer: WERTUNG Phase-4-Config (phase4Radius/Weight/appraisalEmaTau)", res.config);
-    check("V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta trackt die SITUATION (steigt mit Leben)", res.deltaTracksSituationUp);
-    check("V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta IGNORIERT die Emotion (hohe Stimmung, flache Situation → ~0)", res.deltaIgnoresEmotion);
-    check("V17.50 Klammer: KONSUM — eine Regel NAH am Spieler + positiver δ_spieler bekommt MEHR Wert (die Klammer)", res.clampRewardsNearPositive);
-    check("V17.50 Klammer: der Proximity-Gate — eine FERNE Regel bekommt KEINEN Bonus (δ_spieler ändert nichts)", res.proximityGate);
-    check("V17.50 Klammer: ANTI-GAMING — eine nahe Regel ohne echte Situations-Verbesserung (δ≤0) bekommt KEINEN Bonus", res.noGamingWhenNoSituation);
+    check(
+        "V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta trackt die SITUATION (steigt mit Leben)",
+        res.deltaTracksSituationUp
+    );
+    check(
+        "V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta IGNORIERT die Emotion (hohe Stimmung, flache Situation → ~0)",
+        res.deltaIgnoresEmotion
+    );
+    check(
+        "V17.50 Klammer: KONSUM — eine Regel NAH am Spieler + positiver δ_spieler bekommt MEHR Wert (die Klammer)",
+        res.clampRewardsNearPositive
+    );
+    check(
+        "V17.50 Klammer: der Proximity-Gate — eine FERNE Regel bekommt KEINEN Bonus (δ_spieler ändert nichts)",
+        res.proximityGate
+    );
+    check(
+        "V17.50 Klammer: ANTI-GAMING — eine nahe Regel ohne echte Situations-Verbesserung (δ≤0) bekommt KEINEN Bonus",
+        res.noGamingWhenNoSituation
+    );
     check("V17.50 Klammer: _measureRuleReward nutzt appraisalDelta + phase4Radius (wired)", res.wired);
 }
 
@@ -3771,13 +3901,17 @@ async function checkBandV1751CombatStats(ctx) {
         // (3) Spieler-Pipeline-KONSUM: die ECHTE computePlayerStats berechnet das Trio
         const ps = r.computePlayerStats().stats;
         out.playerComputes =
-            Number.isFinite(ps.knockback) && Number.isFinite(ps.attackSpeed) && Number.isFinite(ps.defense) && ps.attackSpeed > 0;
+            Number.isFinite(ps.knockback) &&
+            Number.isFinite(ps.attackSpeed) &&
+            Number.isFinite(ps.defense) &&
+            ps.attackSpeed > 0;
 
         // (4) Kreatur-Pipeline-KONSUM (symmetrisch — DIESELBE Pipeline, kein Parallelpfad)
         const pm = r.state.playerMesh.position;
         const c = r.spawnCreatureAt(pm.x + 240, pm.y, pm.z + 240, "happy", "wesen");
         const cs = r.computeCreatureStats(c).stats;
-        out.creatureComputes = Number.isFinite(cs.knockback) && Number.isFinite(cs.attackSpeed) && Number.isFinite(cs.defense);
+        out.creatureComputes =
+            Number.isFinite(cs.knockback) && Number.isFinite(cs.attackSpeed) && Number.isFinite(cs.defense);
         r.removeCreature(c); // sauber aufräumen (kein Kreatur-Zahl-Leck)
 
         // (5) die Sichtbarkeit — renderPlayerStatsUI trägt das Kombat-Profil (echter UI-Konsum)
@@ -3787,14 +3921,38 @@ async function checkBandV1751CombatStats(ctx) {
         return out;
     });
     check("V17.51 Kampf A: die Kombat-Stats existieren als Formeln (knockback/attackSpeed/defense)", res.formulasExist);
-    check("V17.51 Kampf A: KONSUM — eine schwere dichte Keule hat MEHR Rückschlag als eine leichte Klinge (Masse)", res.heavyMoreKnockback);
-    check("V17.51 Kampf A: KONSUM — eine leichte Klinge schlägt SCHNELLER als eine schwere Keule (leicht = flink)", res.lightFasterAttack);
-    check("V17.51 Kampf A: KONSUM — eine harte Klinge macht MEHR Schaden als eine stumpfe Keule (härte schneidet)", res.hardMoreDamage);
-    check("V17.51 Kampf A: KONSUM — dichte/harte Substanz blockt MEHR (defense), ein weiches Wesen ~0 (base-los)", res.denseMoreDefense && res.softNoDefense);
-    check("V17.51 Kampf A: attackSpeed bleibt positiv (kein negativer Cooldown); magieleitung macht flink", res.attackSpeedPositive && res.magicFlink);
-    check("V17.51 Kampf A: KONSUM — die ECHTE Spieler-Pipeline (computePlayerStats) berechnet das Kampf-Trio", res.playerComputes);
-    check("V17.51 Kampf A: KONSUM — die Kreatur-Pipeline (computeCreatureStats) berechnet es symmetrisch (eine Pipeline)", res.creatureComputes);
-    check("V17.51 Kampf A: die Stats-UI macht das Kampf-Profil sichtbar (Rückschlag/Tempo/Verteidigung)", res.uiShowsCombat);
+    check(
+        "V17.51 Kampf A: KONSUM — eine schwere dichte Keule hat MEHR Rückschlag als eine leichte Klinge (Masse)",
+        res.heavyMoreKnockback
+    );
+    check(
+        "V17.51 Kampf A: KONSUM — eine leichte Klinge schlägt SCHNELLER als eine schwere Keule (leicht = flink)",
+        res.lightFasterAttack
+    );
+    check(
+        "V17.51 Kampf A: KONSUM — eine harte Klinge macht MEHR Schaden als eine stumpfe Keule (härte schneidet)",
+        res.hardMoreDamage
+    );
+    check(
+        "V17.51 Kampf A: KONSUM — dichte/harte Substanz blockt MEHR (defense), ein weiches Wesen ~0 (base-los)",
+        res.denseMoreDefense && res.softNoDefense
+    );
+    check(
+        "V17.51 Kampf A: attackSpeed bleibt positiv (kein negativer Cooldown); magieleitung macht flink",
+        res.attackSpeedPositive && res.magicFlink
+    );
+    check(
+        "V17.51 Kampf A: KONSUM — die ECHTE Spieler-Pipeline (computePlayerStats) berechnet das Kampf-Trio",
+        res.playerComputes
+    );
+    check(
+        "V17.51 Kampf A: KONSUM — die Kreatur-Pipeline (computeCreatureStats) berechnet es symmetrisch (eine Pipeline)",
+        res.creatureComputes
+    );
+    check(
+        "V17.51 Kampf A: die Stats-UI macht das Kampf-Profil sichtbar (Rückschlag/Tempo/Verteidigung)",
+        res.uiShowsCombat
+    );
 }
 
 // V17.52 — Der Kampf-Bogen Phase B: die Waffen-Rolle + der Equip-Slot
@@ -3843,7 +4001,9 @@ async function checkBandV1757HeldSlot(ctx) {
         r.state.blueprints[wName] = r._deserializeBlueprint({
             name: wName,
             label: "Testgerät",
-            parts: [{ shape: hardShape, material: hardMat, position: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } }],
+            parts: [
+                { shape: hardShape, material: hardMat, position: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },
+            ],
             connections: [],
         });
         out.implHasHardness = (r.computeCompoundTags(r.state.blueprints[wName]).härte || 0) > 0;
@@ -3901,7 +4061,10 @@ async function checkBandV1757HeldSlot(ctx) {
         "V17.57 W2-B: KONSUM — ein gehaltenes hartes Gerät HEBT den Schaden (Angriff-mit-jedem-Gerät, Substanz→Profil)",
         res.heldRaisesDamage
     );
-    check("V17.57 W2-B: KONSUM — das harte Gerät hebt auch die Verteidigung (das Defense-Trio fließt)", res.heldRaisesDefense);
+    check(
+        "V17.57 W2-B: KONSUM — das harte Gerät hebt auch die Verteidigung (das Defense-Trio fließt)",
+        res.heldRaisesDefense
+    );
     check("V17.57 W2-B: Gerät abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
     check(
         "V17.57 W2-B: DASSELBE Gerät treibt das Abbauen (_heldImplementBlueprint löst den held-Slot auf)",
@@ -3929,7 +4092,8 @@ async function checkBandV1753CreatureCombat(ctx) {
         const out = {};
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
-        const matUnits = (inv) => inv.reduce((s, slot) => s + (slot && slot.kind === "material" ? slot.count || 0 : 0), 0);
+        const matUnits = (inv) =>
+            inv.reduce((s, slot) => s + (slot && slot.kind === "material" ? slot.count || 0 : 0), 0);
 
         // (0) Methoden + DSL-Op existieren
         out.methodsExist =
@@ -3940,14 +4104,20 @@ async function checkBandV1753CreatureCombat(ctx) {
         // (1) hp wird bei spawn auf hpMax initialisiert (DIESELBE Pipeline wie der Spieler)
         const c1 = r.spawnCreatureAt(pm.x + 260, pm.y, pm.z + 260, "happy", "wesen");
         const stats1 = r.computeCreatureStats(c1).stats;
-        out.hpInit = c1.userData.hp === c1.userData.hpMax && Math.abs(c1.userData.hp - stats1.hpMax) < 1e-6 && c1.userData.hp > 0;
+        out.hpInit =
+            c1.userData.hp === c1.userData.hpMax &&
+            Math.abs(c1.userData.hp - stats1.hpMax) < 1e-6 &&
+            c1.userData.hp > 0;
 
         // (2) KONSUM — damageCreature reduziert hp um max(1, amount − defense)
         const def1 = Math.max(0, stats1.defense || 0);
         const hpBefore = c1.userData.hp;
         const dmgR = r.damageCreature(c1, def1 + 10, { source: "world" });
         out.damageReduces =
-            dmgR.ok && !dmgR.killed && Math.abs(dmgR.dealt - 10) < 1e-6 && Math.abs(c1.userData.hp - (hpBefore - 10)) < 1e-6;
+            dmgR.ok &&
+            !dmgR.killed &&
+            Math.abs(dmgR.dealt - 10) < 1e-6 &&
+            Math.abs(c1.userData.hp - (hpBefore - 10)) < 1e-6;
         // (3) der Schadens-Floor — ein winziger Treffer macht mind. 1 (keine Unverwundbarkeit, kein 0-Schaden)
         out.damageFloor = r.damageCreature(c1, 0.1, { source: "world" }).dealt === 1;
 
@@ -3963,7 +4133,8 @@ async function checkBandV1753CreatureCombat(ctx) {
         for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null; // Platz für Loot garantieren
         const countBefore = r.state.creatures.length;
         const killR = r.damageCreature(c1, 99999, { source: "player" });
-        out.killRemoves = killR.killed && r.state.creatures.indexOf(c1) === -1 && r.state.creatures.length === countBefore - 1;
+        out.killRemoves =
+            killR.killed && r.state.creatures.indexOf(c1) === -1 && r.state.creatures.length === countBefore - 1;
         out.lootToInventory = matUnits(p.inventory) > 0;
 
         // (7) ein Welt-Tod gibt KEIN Loot (nur der Spieler erntet die Substanz)
@@ -3984,14 +4155,23 @@ async function checkBandV1753CreatureCombat(ctx) {
         for (let i = 0; i < invBefore.length; i++) p.inventory[i] = invBefore[i];
         return out;
     });
-    check("V17.53 Kampf C: damageCreature + _creatureLootMaterials + der damage_creature-DSL-Op existieren", res.methodsExist);
+    check(
+        "V17.53 Kampf C: damageCreature + _creatureLootMaterials + der damage_creature-DSL-Op existieren",
+        res.methodsExist
+    );
     check("V17.53 Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
     check("V17.53 Kampf C: KONSUM — damageCreature reduziert hp um max(1, amount − defense)", res.damageReduces);
-    check("V17.53 Kampf C: der Schadens-Floor — ein winziger Treffer macht mind. 1 Schaden (keine Unverwundbarkeit)", res.damageFloor);
+    check(
+        "V17.53 Kampf C: der Schadens-Floor — ein winziger Treffer macht mind. 1 Schaden (keine Unverwundbarkeit)",
+        res.damageFloor
+    );
     check("V17.53 Kampf C: ein Nicht-Kreatur-Ziel wird abgelehnt (not_creature)", res.rejectsNonCreature);
     check("V17.53 Kampf C: der Loot sind die Body-Materialien der Kreatur (nicht leer)", res.lootNonEmpty);
     check("V17.53 Kampf C: KONSUM — ein Spieler-Kill (hp≤0) entfernt die Kreatur aus state.creatures", res.killRemoves);
-    check("V17.53 Kampf C: KONSUM — der Loot eines Spieler-Kills fällt ins Inventar (Erlegen ≡ Ernten)", res.lootToInventory);
+    check(
+        "V17.53 Kampf C: KONSUM — der Loot eines Spieler-Kills fällt ins Inventar (Erlegen ≡ Ernten)",
+        res.lootToInventory
+    );
     check("V17.53 Kampf C: ein Welt-/DSL-Tod gibt KEIN Loot (nur der Spieler erntet)", res.noLootForWorldKill);
     check("V17.53 Kampf C: KONSUM — der damage_creature-DSL-Op schädigt eine Kreatur per Index", res.dslOpDamages);
 }
@@ -4087,14 +4267,29 @@ async function checkBandV1754PlayerAttack(ctx) {
         r.state.emotionField = savedEmoField;
         return out;
     });
-    check("V17.54 Kampf D: _pickCreatureAtCrosshair + _playerAttackCreature + die attack-Emotion + COMBAT_REACH existieren", res.exists);
+    check(
+        "V17.54 Kampf D: _pickCreatureAtCrosshair + _playerAttackCreature + die attack-Emotion + COMBAT_REACH existieren",
+        res.exists
+    );
     check("V17.54 Kampf D: KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Angriff)", res.attackDamages);
     check("V17.54 Kampf D: der Angriff feuert den Zorn-Affekt (chaos — die Kampf-Intensität)", res.attackFeelsChaos);
-    check("V17.54 Kampf D: attackSpeed-Cooldown — ein sofortiger zweiter Schlag prallt ab (kein Schaden)", res.cooldownGates);
-    check("V17.54 Kampf D: KONSUM — die SCHULD ist lebendig-gegated (Spieler-Kill eines lebendig-Wesens → sorrow)", res.guiltGatedByLiving);
-    check("V17.54 Kampf D: ein Material-Wesen (lebendig≈0) zu töten löst KEINE Schuld aus (Kontext-Appraisal)", res.noGuiltForMaterial);
+    check(
+        "V17.54 Kampf D: attackSpeed-Cooldown — ein sofortiger zweiter Schlag prallt ab (kein Schaden)",
+        res.cooldownGates
+    );
+    check(
+        "V17.54 Kampf D: KONSUM — die SCHULD ist lebendig-gegated (Spieler-Kill eines lebendig-Wesens → sorrow)",
+        res.guiltGatedByLiving
+    );
+    check(
+        "V17.54 Kampf D: ein Material-Wesen (lebendig≈0) zu töten löst KEINE Schuld aus (Kontext-Appraisal)",
+        res.noGuiltForMaterial
+    );
     check("V17.54 Kampf D: der Knockback-Pfad (fromPos + knockback) läuft + schädigt", res.knockbackRuns);
-    check("V17.54 Kampf D: tryMouseBreak dispatcht zur Kreatur + die Schuld ist in _creatureCombatDeath wired", res.dispatchWired && res.guiltWired);
+    check(
+        "V17.54 Kampf D: tryMouseBreak dispatcht zur Kreatur + die Schuld ist in _creatureCombatDeath wired",
+        res.dispatchWired && res.guiltWired
+    );
 }
 
 // V17.55 W1 (kampf-plan §8/§9) — der WURZELFEHLER geheilt: Abbauen kostet substanz-gebundene
@@ -4176,7 +4371,8 @@ async function checkBandV1755HarvestEffort(ctx) {
         const toolStrikes = strikeUntilGone(aTool, 200);
         const steinTool = steinCount();
         out.multiStrikeHand = handStrikes > 1; // die Faust: KEIN Instant
-        out.brokeEventually = r.state.architectures.indexOf(aHand) === -1 && r.state.architectures.indexOf(aTool) === -1;
+        out.brokeEventually =
+            r.state.architectures.indexOf(aHand) === -1 && r.state.architectures.indexOf(aTool) === -1;
         out.toolFasterThanHand = toolStrikes >= 1 && toolStrikes < handStrikes;
         out.yieldScalesWithFitness = steinTool > steinHand && steinTool > 0;
 
@@ -4457,16 +4653,106 @@ async function checkBandV1758CreatureNature(ctx) {
         "V17.58 W3: deine Aura treibt die Reaktion (chaotisch verschreckt mehr als sanft, gleiches Wesen)",
         res.auraDrivesReaction
     );
-    check("V17.58 W3: KONSUM — ein kühnes Wesen ist weniger scheu als ein zartes (die NATUR zählt)", res.boldLessWaryThanTimid);
+    check(
+        "V17.58 W3: KONSUM — ein kühnes Wesen ist weniger scheu als ein zartes (die NATUR zählt)",
+        res.boldLessWaryThanTimid
+    );
     check("V17.58 W3: KONSUM — die Bindung senkt die Scheu (Vertrauen)", res.bondReducesWariness);
     check("V17.58 W3: KONSUM — frieden dämpft die Bedrohung (neugierige Welt) vs pfad", res.friedenDampsMenace);
     check("V17.58 W3: ein fernes Wesen ist neutral (es wandert, ignoriert den Spieler)", res.farIsNeutral);
-    check("V17.58 W3: KONSUM — ein getroffenes Wesen FÜRCHTET sich (fearUntil + sad)", res.hitSetsFear && res.hitSetsSad);
+    check(
+        "V17.58 W3: KONSUM — ein getroffenes Wesen FÜRCHTET sich (fearUntil + sad)",
+        res.hitSetsFear && res.hitSetsSad
+    );
     check(
         "V17.58 W3: KONSUM — ein getroffenes Wesen flieht selbst bei sanfter Aura (die Kampf-Furcht überschreibt)",
         res.hitFlees
     );
     check("V17.58 W3: der wander-Tick liest _creatureWariness (der Konsument ist verdrahtet)", res.wanderReadsWariness);
+}
+
+// V17.59 S1 (kampf-plan §11.7) — die Werkstatt erkennt JEDE Lesart: der emergente Fähigkeits-Readout
+// (Klinge/Brecher/Gerät · Schutz · Wesen · Tor · Wirkung) aus Form × Material, rollen-unabhängig.
+// Heilt den „nur Bauwerk"-Befund. KONSUM (nicht Existenz, V17.31): die Werkstatt-Rollen-Zeile rendert es.
+async function checkBandV1759CapabilityReadout(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        // greifbare Klinge (octahedron) vs greifbarer Brecher (box), DIESELBE Materie stein, eine Position (span 0)
+        blu.__cap_blade = {
+            name: "__cap_blade",
+            parts: [
+                {
+                    shape: "octahedron",
+                    material: "stein",
+                    size: { x: 0.3, y: 1.4, z: 0.3 },
+                    position: { x: 0, y: 0, z: 0 },
+                },
+            ],
+        };
+        blu.__cap_maul = {
+            name: "__cap_maul",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        // ein großes Bauwerk: Parts über >6 m gespreizt → KEINE in-der-Hand-Lesart
+        blu.__cap_struct = {
+            name: "__cap_struct",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 }, position: { x: 10, y: 0, z: 0 } },
+            ],
+        };
+
+        out.method = typeof r._blueprintCapabilityHints === "function";
+
+        const bladeHints = r._blueprintCapabilityHints(blu.__cap_blade);
+        const maulHints = r._blueprintCapabilityHints(blu.__cap_maul);
+        const structHints = r._blueprintCapabilityHints(blu.__cap_struct);
+        out.bladeKlinge = bladeHints.some((h) => h.indexOf("Klinge") === 0);
+        out.maulBrecher = maulHints.some((h) => h.indexOf("Brecher") === 0);
+
+        // DER HEAL: der Brecher-Bauplan hat die abstrakte Rolle „architecture" (kein Domain-Op),
+        // ZEIGT aber die Geräte-Fähigkeit „Brecher" — der Readout ist rollen-unabhängig.
+        out.maulRoleArchitecture = r.computeBlueprintRole(blu.__cap_maul) === "architecture";
+        out.healNurBauwerk = out.maulRoleArchitecture && out.maulBrecher;
+
+        // große Struktur → KEINE in-der-Hand-Lesart (kein „Brecher" auf einem Dorf)
+        out.structNoImplement = !structHints.some(
+            (h) => h.indexOf("Klinge") === 0 || h.indexOf("Brecher") === 0 || h.indexOf("Gerät") === 0
+        );
+
+        // KONSUM (DOM, V17.31): _workshopAppendRoleRow rendert eine „Fähigkeit"-Zeile mit der Brecher-Lesart
+        const panel = document.createElement("div");
+        r._workshopAppendRoleRow(panel, blu.__cap_maul);
+        const chips = Array.prototype.slice
+            .call(panel.querySelectorAll(".capability-chip"))
+            .map((c) => c.textContent || "");
+        out.domShowsCapability = chips.some((txt) => txt.indexOf("Brecher") !== -1);
+
+        delete blu.__cap_blade;
+        delete blu.__cap_maul;
+        delete blu.__cap_struct;
+        return out;
+    });
+    check("V17.59 S1: die Fähigkeits-Methode _blueprintCapabilityHints existiert", res.method);
+    check("V17.59 S1: ein greifbares spitzes Geraet liest Klinge (schneidet)", res.bladeKlinge);
+    check("V17.59 S1: ein greifbarer stumpfer Klotz liest Brecher (wuchtet)", res.maulBrecher);
+    check(
+        "V17.59 S1: DER HEAL — ein Bauplan der Rolle Bauwerk (architecture) zeigt TROTZDEM die Geraete-Faehigkeit Brecher (rollen-unabhaengig)",
+        res.healNurBauwerk
+    );
+    check(
+        "V17.59 S1: eine grosse Struktur (>6 m gespreizt) zeigt KEINE in-der-Hand-Lesart (kein Brecher auf einem Dorf)",
+        res.structNoImplement
+    );
+    check(
+        "V17.59 S1: KONSUM — _workshopAppendRoleRow rendert die Faehigkeit-Zeile mit der Brecher-Lesart ins DOM",
+        res.domShowsCapability
+    );
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -12560,7 +12846,10 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
         check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
         check("Welle 6.D Etappe 3b: setBlueprintAsArmor-Methode existiert", wave6d3bResults.hasSetArmor);
-        check("Welle 6.D Etappe 3b: state.player.equipped = {held, armor} (V17.57 W2-B)", wave6d3bResults.hasEquippedState);
+        check(
+            "Welle 6.D Etappe 3b: state.player.equipped = {held, armor} (V17.57 W2-B)",
+            wave6d3bResults.hasEquippedState
+        );
         check("Welle 6.D Etappe 3b: AURA_TAG_HUE-Map existiert", wave6d3bResults.hasAuraHueMap);
         check(
             "Welle 6.D Etappe 3b: AURA_TAG_HUE-Map deckt alle 10 MATERIAL_TAG_KEYS ab",
@@ -12594,7 +12883,10 @@ async function checkBandWelle6DSoul(ctx) {
             "V17.57 W2-B: equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)",
             wave6d3bResults.equipBuiltinToolOk
         );
-        check("V17.57 W2-B: nach der Ablehnung ist nichts gehalten (equipped.held leer)", wave6d3bResults.equippedToolIs);
+        check(
+            "V17.57 W2-B: nach der Ablehnung ist nichts gehalten (equipped.held leer)",
+            wave6d3bResults.equippedToolIs
+        );
         check(
             "V17.57 W2-B: das abgelehnte builtIn-Tool ließ die Stats unberührt (ok)",
             wave6d3bResults.builtinToolNoStatChange
@@ -13361,7 +13653,10 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D: computePlayerStats liefert {tags, stats}",
             wave6dResults.computedHasTags && wave6dResults.computedHasStats
         );
-        check("Welle 6.D: computed.stats hat alle 11 Werte als finite Zahlen (8 Basis + Kampf-Trio, V17.51)", wave6dResults.computedStatsHasAll);
+        check(
+            "Welle 6.D: computed.stats hat alle 11 Werte als finite Zahlen (8 Basis + Kampf-Trio, V17.51)",
+            wave6dResults.computedStatsHasAll
+        );
         // Vision-Diskrimination
         check(
             "Welle 6.D: Diskrimination — Phönix schneller als Drache (low dichte)",
@@ -13401,7 +13696,10 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D: #player-stats im DOM (Spieler-Drawer)", wave6dResults.statsContainerInDom);
         check("Welle 6.D: renderPlayerStatsUI läuft ohne Crash", wave6dResults.renderOk);
         if (wave6dResults.renderOk) {
-            check("Welle 6.D: 11 stat-row-Einträge im DOM (8 Basis + Kampf-Trio Rückschlag/Tempo/Verteidigung, V17.51)", wave6dResults.statRowsCount === 11);
+            check(
+                "Welle 6.D: 11 stat-row-Einträge im DOM (8 Basis + Kampf-Trio Rückschlag/Tempo/Verteidigung, V17.51)",
+                wave6dResults.statRowsCount === 11
+            );
             check("Welle 6.D: stat-tags-Zeile (dominante Achsen) im DOM", wave6dResults.hasTagLine);
         }
     }
@@ -36597,6 +36895,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1755HarvestEffort(ctx);
             await checkBandV1755W2Profile(ctx);
             await checkBandV1758CreatureNature(ctx);
+            await checkBandV1759CapabilityReadout(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

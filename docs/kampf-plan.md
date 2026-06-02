@@ -608,10 +608,14 @@ Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis,
 
 ### 11.7 Der sequenzierte Teilschritt-Plan (S1–S11 — §10s F-Schritte falten ein)
 
-- **S1 — die Werkstatt erkennt JEDE Lesart** (verallgemeinert §10-F1 auf alle Rollen): die Werkstatt-Rollen-
-  Zeile zeigt die emergente Fähigkeit für ALLE (Gerät → Klinge/Brecher · Rüstung → Schutz-Profil · Trank →
-  Wirk-Profil · Seele → Wesen · Portal → Tor · Maschine → Werkbank), aus der Form abgelesen, nicht „nur
-  Bauwerk". *Niedrig · headless · heilt sofort den sichtbaren Befund überall.*
+- **S1 — die Werkstatt erkennt JEDE Lesart — ✅ GEBAUT (V17.59):** `_blueprintCapabilityHints(bp)` liest die
+  emergente Fähigkeit aus Form × Material (die in-der-Hand-Lesart Klinge/Brecher/Gerät via
+  `_implementAffordanceLabel`, nur bei greifbarer Größe `IMPLEMENT_GRASP_SPAN_M` 6 m · Schutz aus dichte+härte
+  · Wesen/Tor/Wirkung via `_isBodyShaped`/`_isPortalShaped`/`_isFoodLike`), UNABHÄNGIG von der abstrakten
+  Rolle; `_workshopAppendRoleRow` rendert eine „Fähigkeit"-Zeile. Der Holzstiel+Steinkopf liest „Brecher —
+  wuchtet Fels", obwohl seine Rolle „Bauwerk" ist — der „nur Bauwerk"-Befund GEHEILT. `checkBandV1759Capability­
+  Readout` 6 grün (inkl. der rollen-unabhängige Heal + die Struktur-Suppression + der DOM-Konsum). *Reuse, kein
+  neuer Pfad; das Feel/die Optik der Chips = Schöpfer-Browser.*
 - **S2 — das Mach-Tor `_makeCostGate` + die Modus-Kristallisation** (§11.2): `_buildMaterialGate`
   verallgemeinern; `confirmBuild` darauf umhängen; UND die Modus-Achse kristallisieren (Materie kostet in
   pfad+frieden, frei nur in schöpfer — frieden zahlt jetzt). Fundament für S3–S6 + die Diskrepanz-Heilung.

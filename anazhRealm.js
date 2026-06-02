@@ -35834,6 +35834,38 @@ class AnazhRealm {
         return "Gerät";
     }
 
+    // S1 (kampf-plan §11.7) — die Werkstatt erkennt JEDE Lesart: die emergente FÄHIGKEIT eines
+    // Bauplans aus Form × Material, UNABHÄNGIG von der abstrakten Rolle. Heilt den „nur Bauwerk"-
+    // Befund (ein Holzstiel + Steinkopf liest „Brecher — wuchtet Fels", auch ohne Schmiede-Domain).
+    // Reuse der bestehenden Profil-/Form-Leser (kein neuer Pfad). Die Geräte-Lesart (Klinge/Brecher)
+    // nur bei greifbar-/schwingbarer Größe — ein Dorf ist ein Bauwerk, kein Brecher.
+    _blueprintCapabilityHints(bp) {
+        const hints = [];
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return hints;
+        const t = this.computeCompoundTags(bp) || {};
+        // (1) die in-der-Hand-Lesart (Werkzeug + Waffe vereint, W2-B): Klinge/Brecher/Gerät + was es gut tut.
+        const bbox = this._compoundBBox(bp);
+        const span = bbox ? Math.max(bbox.max.x - bbox.min.x, bbox.max.y - bbox.min.y, bbox.max.z - bbox.min.z) : 0;
+        if (span <= AnazhRealm.IMPLEMENT_GRASP_SPAN_M) {
+            const label = this._implementAffordanceLabel(bp);
+            const doing =
+                label === "Klinge"
+                    ? "schneidet Weiches (Holz/Pflanzen), schwach an Fels"
+                    : label === "Brecher"
+                      ? "wuchtet Fels/Hartes, schneidet kaum"
+                      : "ausgewogen (schneiden + wuchten)";
+            hints.push(`${label} — ${doing}`);
+        }
+        // (2) die Schutz-Lesart (Rüstung): dichte + härte verteilen den Stoß.
+        const schutz = (t.dichte || 0) + (t.härte || 0);
+        if (schutz >= 1.2) hints.push(`Schutz (Rüstung) ~${(schutz * 0.5).toFixed(1)}`);
+        // (3) die FORM-emergenten Lesarten (dieselben Prädikate wie computeBlueprintRole):
+        if (this._isBodyShaped && this._isBodyShaped(bp)) hints.push("Wesen (Seele/Avatar)");
+        if (this._isPortalShaped && this._isPortalShaped(bp)) hints.push("Tor (Portal)");
+        if (this._isFoodLike && this._isFoodLike(bp)) hints.push("Wirkung (Trank/Nahrung)");
+        return hints;
+    }
+
     // V17.55 W1-Kompat — die reine Grab-Kraft (für Aufrufer, die nur die Wucht brauchen).
     _heldMinePower() {
         return this._implementProfile().minePower;
@@ -39324,6 +39356,24 @@ class AnazhRealm {
             roleRow.appendChild(chip);
         }
         panel.appendChild(roleRow);
+        // S1 (kampf-plan §11.7) — die FÄHIGKEIT aus der Form (JEDE Lesart), unabhängig von der
+        // abstrakten Rolle: ein Holzstiel + Steinkopf liest „Brecher — wuchtet Fels" statt nur „Bauwerk".
+        const caps = this._blueprintCapabilityHints(bp);
+        if (caps.length) {
+            const capRow = document.createElement("div");
+            capRow.className = "stat-row";
+            const capLab = document.createElement("span");
+            capLab.className = "stat-label";
+            capLab.textContent = "Fähigkeit";
+            capRow.appendChild(capLab);
+            for (const c of caps) {
+                const chip = document.createElement("span");
+                chip.className = "affordance-chip capability-chip";
+                chip.textContent = "✦ " + c;
+                capRow.appendChild(chip);
+            }
+            panel.appendChild(capRow);
+        }
     }
 
     // V8.37 — Bau-Kosten sichtbar im Werkstatt-Panel. computeBuildCost ist
@@ -44763,7 +44813,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.58.0";
+AnazhRealm.VERSION = "17.59.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -45491,6 +45541,11 @@ AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
 // Konzept §4.3 sagt: eine Maschine ist präziser als Handarbeit. Bonus
 // wird auf 1.0 gedeckelt (perfekte Präzision bleibt theoretisch).
 AnazhRealm.MACHINE_PRECISION_BONUS = 0.05;
+
+// S1 (kampf-plan §11.7) — bis zu dieser Bauplan-Spannweite (m) liest die Werkstatt die
+// in-der-Hand-Lesart (Klinge/Brecher); größere Baupläne sind Bauwerke/Strukturen (kein
+// „Brecher" auf einem Dorf). Browser-justierbar (Hand bis Großschwert ja, Dorf/Tempel nein).
+AnazhRealm.IMPLEMENT_GRASP_SPAN_M = 6;
 
 // ============================================================
 // Welle 10b — Compound-Tag-Affordances. Welt liest die Tag+räumliche
