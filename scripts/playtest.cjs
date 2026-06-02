@@ -2556,6 +2556,499 @@ async function checkBandV1740LlmRules(ctx) {
     );
 }
 
+// V17.41 — Der Gesetzes-Faden: die Regeln wirken nicht mehr unsichtbar. Zwei
+// Konsumenten der EINEN Spur (lastFired/fires, die das Feuern schon aufzeichnet):
+// (a) die Gesetze-Console geht LIVE — _worldRuleActivityLabel zeigt „⚡ feuert"
+// (im Moment des Wirkens) statt des alten sticky „⚡ aktiv"; (b) das erste Erwachen
+// einer EIGENEN (Mensch-)Regel wird eine Welt-Erinnerung („Dein Gesetz erwachte").
+// Gemessen wird KONSUM (V17.31-Lehre): der DOM-Span zeigt „feuert" nach echtem
+// Feuern, die Signatur ändert sich (Live-ness im Diff), das Journal bekommt die
+// Erinnerung (einmal, idempotent über die Signatur), eine Nexus-Regel NICHT.
+async function checkBandV1741RuleThread(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const now = () => performance.now() / 1000;
+
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+        const savedEntries = r.state.worldJournal.entries.slice();
+        const savedSeen = { ...r.state.worldJournal.seen };
+
+        // --- (1) der Aktivitäts-Faden ist LIVE (nicht sticky-binär „⚡ aktiv") ---
+        out.wired = typeof r._worldRuleActivityLabel === "function";
+        const tNow = now();
+        const mk = (over) => Object.assign({ fires: 0, lastFired: -Infinity, disabled: false }, over);
+        out.labelRuht = r._worldRuleActivityLabel(mk({}), tNow) === "ruht";
+        out.labelFeuert = r._worldRuleActivityLabel(mk({ fires: 1, lastFired: tNow }), tNow) === "⚡ feuert";
+        out.labelAktiv = r._worldRuleActivityLabel(mk({ fires: 3, lastFired: tNow - 999 }), tNow) === "⚡ aktiv · 3×";
+        out.labelPausiert =
+            r._worldRuleActivityLabel(mk({ fires: 2, lastFired: tNow, disabled: true }), tNow) === "pausiert";
+
+        // --- (2) DOM-KONSUM: nach echtem Feuern zeigt der Namen-Span „⚡ feuert" + pulst ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        const domRule = r.state.worldRules.find((x) => x.source === "human");
+        r.state.weather = "rainy";
+        domRule.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        r._statusRefs.worldrulesSignature = "__force__"; // != aktuelle Signatur → echtes Re-Render
+        r.renderWorldRulesList();
+        const host = document.getElementById("status-worldrules");
+        const nameSpan = host.querySelector(".ability-row.source-human .name");
+        out.domShowsFeuert =
+            !!nameSpan && /feuert/.test(nameSpan.textContent) && nameSpan.classList.contains("rule-firing");
+
+        // --- (3) der Live-Faden treibt das Re-Render: feuert ein Gesetz, ändert sich
+        //         die Signatur VON SELBST (kein manueller Reset → die 0.4-s-Render-
+        //         Schleife pickt es auf, der Puls ist sichtbar) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        const sigRule = r.state.worldRules.find((x) => x.source === "human");
+        r._statusRefs.worldrulesSignature = "";
+        r.renderWorldRulesList(); // rendert „ruht"
+        const sigRuht = r._statusRefs.worldrulesSignature;
+        r.state.weather = "rainy";
+        sigRule.lastFired = -Infinity;
+        r._tickWorldRules(now()); // feuert
+        r.renderWorldRulesList(); // KEIN manueller Reset — die Signatur muss sich geändert haben
+        const sigFeuert = r._statusRefs.worldrulesSignature;
+        out.signatureLive = sigRuht !== sigFeuert && /feuert/.test(sigFeuert) && /ruht/.test(sigRuht);
+
+        // --- (4) Journal-Erwachen: erstes Feuern einer MENSCH-Regel schreibt eine
+        //         Welt-Erinnerung („Dein Gesetz erwachte — ...") ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        const hRule = r.state.worldRules.find((x) => x.source === "human");
+        delete r.state.worldJournal.seen["ruleAwoke:" + hRule._sig]; // sicherstellen: noch nicht erwacht
+        const jBefore = r.state.worldJournal.entries.length;
+        r.state.worldRules = [hRule];
+        r.state.weather = "rainy";
+        hRule.lastFired = -Infinity;
+        r._tickWorldRules(now()); // fires===1 → Erwachen
+        const awoke = r.state.worldJournal.entries
+            .slice(jBefore)
+            .find((e) => e.type === "rule" && /erwachte/.test(e.text));
+        out.journalAwoke = !!awoke && r.state.weather === "sunny";
+
+        // --- (5) idempotent über die Signatur: dieselbe Regel NEU aufgestellt (frische
+        //         Akkus, fires zurück auf 0→1) + gefeuert schreibt KEINE zweite
+        //         Erinnerung (seen[ruleAwoke:sig] hält über die Regel-Instanz hinweg) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        const hRule2 = r.state.worldRules.find((x) => x.source === "human"); // gleiche Signatur
+        const jBefore2 = r.state.worldJournal.entries.length;
+        r.state.worldRules = [hRule2];
+        r.state.weather = "rainy";
+        hRule2.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        out.journalIdempotent = r.state.worldJournal.entries.length === jBefore2;
+
+        // --- (6) Gating: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung
+        //         (der Faden ist „weil DEIN Gesetz wirkte" — Nexus/LLM bleiben dem
+        //         Live-Console-Faden vorbehalten, kein Journal-Flut) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "sunny"], ["weather", "rainy"], { ttlSec: 60 }], { source: "nexus" });
+        const nRule = r.state.worldRules.find((x) => x.source === "nexus");
+        const jBeforeN = r.state.worldJournal.entries.length;
+        r.state.worldRules = [nRule];
+        r.state.weather = "sunny";
+        nRule.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        out.nexusNoJournal = r.state.worldJournal.entries.length === jBeforeN && r.state.weather === "rainy";
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        r.state.worldJournal.entries = savedEntries;
+        r.state.worldJournal.seen = savedSeen;
+        r._statusRefs.worldrulesSignature = "";
+        return out;
+    });
+
+    check(
+        "V17.41 Gesetzes-Faden: _worldRuleActivityLabel ist LIVE (ruht / ⚡ feuert / ⚡ aktiv · N× / pausiert)",
+        res.wired && res.labelRuht && res.labelFeuert && res.labelAktiv && res.labelPausiert
+    );
+    check(
+        'V17.41 Gesetzes-Faden: nach echtem Feuern zeigt der Console-Span „⚡ feuert" + pulst (.rule-firing) — DOM-Konsum',
+        res.domShowsFeuert
+    );
+    check(
+        "V17.41 Gesetzes-Faden: das Feuern ändert die Render-Signatur VON SELBST (Live-ness im Diff, kein manueller Reset)",
+        res.signatureLive
+    );
+    check(
+        'V17.41 Gesetzes-Faden: das erste Erwachen einer MENSCH-Regel wird eine Welt-Erinnerung („Dein Gesetz erwachte")',
+        res.journalAwoke
+    );
+    check(
+        "V17.41 Gesetzes-Faden: idempotent — dieselbe Regel neu aufgestellt + gefeuert schreibt KEINE zweite Erinnerung",
+        res.journalIdempotent
+    );
+    check(
+        'V17.41 Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung (der Faden ist DEIN Gesetz)',
+        res.nexusNoJournal
+    );
+}
+
+// V17.42 — DIE LEBENDIGE WERTUNG, Phase 1: das Wohl-Maß + die gleitende Baseline (das
+// dritte Verb des Feldes — die Mess-Schicht, auf der Phase 2/3 die Regel-Fitness + die
+// Emotion echt machen). Gemessen wird KONSUM (V17.31-Lehre): die EMA verfolgt ihren
+// Input KORREKT + LIVE — Cold-Start = erste Beobachtung, stabiler Input → Baseline hält,
+// ein Sprung → die Baseline trackt aber LAGGT (das EMA-Wesen), die Spieler-Baseline
+// ebenso. Nicht „die Methode existiert", sondern „die Gleichung rechnet richtig".
+async function checkBandV1742Wohl(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const W = window.AnazhRealm ? window.AnazhRealm.WERTUNG : r.constructor.WERTUNG;
+
+        // --- (1) das Wohl-Maß: Struktur = lebendig; Erlebt = Valenz (Russell) ---
+        const a0 = r.auraAt(0, 0, 0);
+        out.wohlStruktur = Math.abs(r._fieldWohlStruktur(a0) - a0.lebendig) < 1e-9;
+        out.wohlErlebtValence =
+            r._fieldWohlErlebt({ emotion: { joy: 1 } }) > 0.2 && // positive Valenz
+            r._fieldWohlErlebt({ emotion: { sorrow: 1 } }) < -0.2 && // negative Valenz
+            Math.abs(r._fieldWohlErlebt({ emotion: { awe: 1 } })) < 1e-9; // awe ambivalent → 0
+
+        // --- (2) die Feld-Baseline: Cold-Start = erste Beobachtung ---
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        // eine Zelle mit Headroom (frozen lebendig < 0.7) finden
+        let sx = 1000,
+            sz = 1000,
+            struktur0 = 1;
+        for (let i = 0; i < 24; i++) {
+            const cx = 1000 + i * 37,
+                cz = 1000 + i * 53;
+            const s = r._fieldWohlStruktur(r.auraAt(cx, cz, 0));
+            if (s < 0.7) {
+                sx = cx;
+                sz = cz;
+                struktur0 = s;
+                break;
+            }
+        }
+        const b0 = r._observeFieldWohl(sx, sz, 0);
+        out.coldStart = Math.abs(b0 - struktur0) < 1e-6 && Math.abs(r._fieldWohlBaselineAt(sx, sz) - struktur0) < 1e-6;
+
+        // --- (3) stabiler Input → die Baseline HÄLT (kein Drift ohne Änderung) ---
+        r._observeFieldWohl(sx, sz, 1);
+        out.stableHolds = Math.abs(r._fieldWohlBaselineAt(sx, sz) - struktur0) < 1e-3;
+
+        // --- (4) ein Sprung (Leben deponiert) → die Baseline TRACKT, aber LAGGT (EMA) ---
+        r._depositLife(sx, sz, 0.6);
+        const strukturHigh = r._fieldWohlStruktur(r.auraAt(sx, sz, 1));
+        const pre = r._observeFieldWohl(sx, sz, 3); // Δt=2s ≪ fieldTau → kleiner Schritt
+        const bAfter = r._fieldWohlBaselineAt(sx, sz);
+        out.tracksAndLags =
+            strukturHigh > struktur0 + 0.05
+                ? // der Sprung war real: Baseline bewegte sich HOCH, lagt aber WEIT unter dem neuen Wert
+                  Math.abs(pre - struktur0) < 1e-3 && bAfter > struktur0 + 1e-4 && bAfter < strukturHigh - 0.05
+                : true; // kein Headroom an diesem Spot → vacuously ok (selten)
+
+        // --- (5) Prune: eine alte (lange nicht beobachtete) Zelle wird entfernt ---
+        r.state.wohlBaseline.set("9,9", { b: 0.5, t: 0 });
+        r._wohlPruneLast = -Infinity;
+        r._pruneWohlBaseline(W.pruneAgeSec + 10);
+        out.prunes = !r.state.wohlBaseline.has("9,9");
+
+        // (Die SPIELER-Baseline + ihr Appraisal-Konsum sind Phase 3 → getestet in
+        // checkBandV1744Appraisal, mit der Situations-Semantik statt der Stimmung.)
+
+        // restore
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        return out;
+    });
+
+    check(
+        "V17.42 Wertung: das Wohl-Maß — Struktur = lebendig, Erlebt = Valenz (joy + / sorrow − / awe neutral)",
+        res.wohlStruktur && res.wohlErlebtValence
+    );
+    check("V17.42 Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)", res.coldStart);
+    check("V17.42 Wertung: stabiler Input → die Baseline HÄLT (EMA driftet nicht ohne Änderung)", res.stableHolds);
+    check(
+        "V17.42 Wertung: ein Sprung → die Baseline TRACKT, aber LAGGT weit darunter (das EMA-Wesen, zeit-korrigiert)",
+        res.tracksAndLags
+    );
+    check("V17.42 Wertung: die Baseline-Map wird gepruned (lange nicht beobachtete Zelle → weg, bounded)", res.prunes);
+}
+
+// V17.43 — DIE LEBENDIGE WERTUNG, Phase 2: die lokal-attribuierte Regel-Fitness. Eine
+// Regel überlebt, weil der ORT, den sie berührt, AUFBLÜHT — reward = struktureller δ am
+// Effekt-Ort über die Baseline, EMA in rule.value; _worldRuleFitness wird viability-Floor
+// + value-Bonus/Penalty (valueScore zentriert bei 0.5 → neutral überlebt, KEINE Monokultur).
+// Gemessen wird KONSUM: die Fitness DISKRIMINIERT (Heiler/neutral/Schädling — was die alte
+// ≈0.99-Fitness NICHT konnte), eine heilende Regel akkumuliert positiven Wert, eine neutrale
+// ~0, die Eviction wirft den wert-niedrigsten (nicht den ältesten), Mensch/pinned geschützt.
+async function checkBandV1743RuleFitness(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+
+        // --- (1) die Fitness DISKRIMINIERT (Heiler > neutral > Schädling) ---
+        const mkF = (value) => ({ fires: 5, value, errors: 0, costMsSum: 0.1 });
+        const fHeal = r._worldRuleFitness(mkF(1));
+        const fNeutral = r._worldRuleFitness(mkF(0));
+        const fHarm = r._worldRuleFitness(mkF(-1));
+        out.fitnessDiscriminates =
+            fHeal > 0.9 && fNeutral > 0.6 && fNeutral < 0.8 && fHarm < 0.5 && fHeal > fNeutral && fNeutral > fHarm;
+        // renewFitness 0.5: Heiler+neutral überleben, Schädling verfällt
+        out.harmerDecays = fHarm < r.constructor.WORLD_RULES.renewFitness && fNeutral >= r.constructor.WORLD_RULES.renewFitness;
+
+        // --- (2) _ruleRewardPos: der Effekt-Ort (at) bzw. Spieler (positionslos) ---
+        const ctx0 = r._worldRuleCtx({ id: 0, source: "nexus", fires: 0 });
+        const pHeal = r._ruleRewardPos(["deposit_life", ["at", 333, 0, 444]], ctx0);
+        out.rewardPosFromEffect = Math.abs(pHeal.x - 333) < 1e-6 && Math.abs(pHeal.z - 444) < 1e-6;
+        const pm = r.state.playerMesh.position;
+        const pW = r._ruleRewardPos(["weather", "sunny"], ctx0);
+        out.rewardPosFallbackPlayer = Math.abs(pW.x - pm.x) < 1e-6 && Math.abs(pW.z - pm.z) < 1e-6;
+
+        // --- (3) END-TO-END: eine heilende Regel akkumuliert POSITIVEN Wert ---
+        const savedRules = r.state.worldRules.slice();
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        const savedWeather = r.state.weather;
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        // einen Spot mit Leben-Headroom finden (frozen lebendig < 0.6)
+        let sx = 2000,
+            sz = 2000;
+        for (let i = 0; i < 24; i++) {
+            const cx = 2000 + i * 41,
+                cz = 2000 + i * 59;
+            if (r._fieldWohlStruktur(r.auraAt(cx, cz, 0)) < 0.6) {
+                sx = cx;
+                sz = cz;
+                break;
+            }
+        }
+        r.state.worldRules = [];
+        r.dslRun(["rule", ["random_chance", 1], ["deposit_life", ["at", sx, 0, sz]], { everySec: 0.001, ttlSec: 9999 }], {
+            source: "nexus",
+        });
+        const heal = r.state.worldRules[0];
+        heal.lastFired = -Infinity;
+        r._tickWorldRules(1000); // Feuer 1: Baseline (niedrig) gesnapshottet, Leben deponiert
+        heal.lastFired = -Infinity;
+        r._tickWorldRules(1000.02); // Feuer 2: Reward gemessen (hoch − niedrig = +) → value > 0
+        out.healerPositiveValue = heal.value > 0.05;
+
+        // --- (3b) eine NEUTRALE Regel (Wetter, berührt lebendig nicht) → value ≈ 0 ---
+        r.state.worldRules = [];
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 0.001, ttlSec: 9999 }], {
+            source: "nexus",
+        });
+        const neutral = r.state.worldRules[0];
+        neutral.lastFired = -Infinity;
+        r._tickWorldRules(2000);
+        neutral.lastFired = -Infinity;
+        r._tickWorldRules(2000.02);
+        out.neutralZeroValue = Math.abs(neutral.value) < 0.05;
+
+        // --- (4) Eviction wirft den wert-NIEDRIGSTEN ephemeren (nicht den ältesten) ---
+        const rr = [
+            { id: 1, source: "nexus", value: 0.8, born: 1, pinned: false },
+            { id: 2, source: "nexus", value: -0.5, born: 2, pinned: false }, // niedrigster Wert
+            { id: 3, source: "nexus", value: 0.2, born: 3, pinned: false },
+        ];
+        r._evictWorldRule(rr);
+        out.evictsLowestValue = rr.length === 2 && !rr.some((x) => x.id === 2);
+        // Mensch/pinned geschützt, auch bei niedrigstem Wert
+        const rr2 = [
+            { id: 1, source: "human", value: -0.9, born: 1, pinned: false },
+            { id: 2, source: "nexus", value: 0.1, born: 2, pinned: false },
+        ];
+        r._evictWorldRule(rr2);
+        out.evictProtectsHuman = rr2.some((x) => x.id === 1) && !rr2.some((x) => x.id === 2);
+
+        // --- (5) Mutations-Elternschaft ist wert-gewichtet (verdrahtet) ---
+        out.parentWeighted = /0\.5 \+ 0\.5 \* \(r\.value/.test(r._composeNexusRule.toString());
+
+        // --- (6) value ist reaktiv (NICHT im Snapshot — wie die anderen Akkus) ---
+        r.state.worldRules = [];
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        const snap = r.buildStateSnapshot();
+        out.valueNotInSnapshot = Array.isArray(snap.worldRules) && snap.worldRules[0] && snap.worldRules[0].value === undefined;
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        r.state.weather = savedWeather;
+        return out;
+    });
+
+    check(
+        "V17.43 Wertung: _worldRuleFitness DISKRIMINIERT (Heiler > neutral > Schädling — die alte ≈0.99-Fitness konnte das nicht)",
+        res.fitnessDiscriminates
+    );
+    check("V17.43 Wertung: ein Schädling fällt unter renewFitness (verfällt), neutral überlebt (keine Monokultur)", res.harmerDecays);
+    check(
+        "V17.43 Wertung: _ruleRewardPos misst am Effekt-Ort (at) bzw. an der Spieler-Position (positionsloser Effekt)",
+        res.rewardPosFromEffect && res.rewardPosFallbackPlayer
+    );
+    check(
+        "V17.43 Wertung: END-TO-END — eine heilende Regel (deposit_life) akkumuliert POSITIVEN Wert (der Ort blüht auf)",
+        res.healerPositiveValue
+    );
+    check("V17.43 Wertung: eine neutrale Regel (Wetter, berührt lebendig nicht) akkumuliert ~0 Wert", res.neutralZeroValue);
+    check(
+        "V17.43 Wertung: Eviction wirft den wert-NIEDRIGSTEN ephemeren Eintrag (nicht den ältesten); Mensch/pinned geschützt",
+        res.evictsLowestValue && res.evictProtectsHuman
+    );
+    check("V17.43 Wertung: die Mutations-Elternschaft ist wert-gewichtet (gerichtete Evolution Richtung Heilung)", res.parentWeighted);
+    check("V17.43 Wertung: rule.value ist reaktiv — NICHT im Snapshot serialisiert (wie die anderen Akkus)", res.valueNotInSnapshot);
+}
+
+// V17.44 — DIE LEBENDIGE WERTUNG, Phase 3: die Emotion als APPRAISAL (Vorhersagefehler
+// des Erlebens). δ = SITUATION − Spieler-Baseline, wobei die Situation die WELT um den
+// Spieler (lebendig) + sein Zustand (HP) ist — NICHT seine Stimmung (sonst Rückkopplung →
+// Runaway, in der Selbstprüfung gemessen + hier bewiesen). Gemessen wird KONSUM: die
+// Situation IGNORIERT die Stimmung (kein Feedback-Input), die Baseline trackt die Situation
+// (nicht die Stimmung), eine Situations-Verbesserung gibt einen joy-Puls (Überraschung), die
+// Gewöhnung fällt heraus (Baseline holt auf → δ→0), KEIN Runaway, und V17.30 bleibt heil
+// (anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle).
+async function checkBandV1744Appraisal(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh.position;
+
+        // save
+        const savedEmo = { ...p.emotions };
+        const savedBase = p.wohlBaseline;
+        const savedTick = p.emotionLastTick;
+        const savedApply = { ...(p.emotionLastApply || {}) };
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        const savedEmoField = r.state.emotionField;
+        const savedWeather = r.state.weather;
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+
+        // --- (1) die Situation IGNORIERT die Stimmung (kein Feedback-Input) ---
+        r.state.lifeField = new Map();
+        r.state.emotionField = new Map();
+        setEmo({ joy: 1, hope: 1, peace: 1 });
+        const sitHighMood = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        setEmo({});
+        const sitLowMood = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        out.situationIgnoresMood = Math.abs(sitHighMood - sitLowMood) < 1e-9;
+
+        // --- (2) die Situation STEIGT mit dem Leben der Welt (deposit_life) ---
+        const sit0 = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        r._depositLife(pm.x, pm.z, 0.6);
+        const sit1 = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        out.situationRisesWithLife = sit1 > sit0 + 0.05 || sit0 > 0.9;
+
+        // --- (3) die Baseline trackt die SITUATION, nicht die Stimmung (der no-Feedback-Beweis) ---
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        setEmo({ joy: 1, hope: 1, peace: 1 }); // Stimmung HOCH …
+        p.wohlBaseline = undefined;
+        p.emotionLastTick = 1000;
+        r.updatePlayerEmotions(1001); // Cold-Start: baseline = SITUATION (lebendig@player), NICHT die ~1 Stimmung
+        const baseCold = p.wohlBaseline;
+        const sitAtCold = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 1001));
+        out.baselineTracksSituation = Math.abs(baseCold - sitAtCold) < 0.05;
+
+        // --- (4) Überraschung: die Situation springt (Leben deponiert) → joy-Puls ---
+        setEmo({});
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        p.wohlBaseline = undefined;
+        p.emotionLastTick = 2000;
+        r.updatePlayerEmotions(2001); // Cold-Start: baseline = sit (karg/frozen)
+        const sitPre = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 2001));
+        r._depositLife(pm.x, pm.z, 0.85); // Situation springt ÜBER die Baseline
+        const sitPost = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 2001));
+        const joyBefore = p.emotions.joy;
+        p.emotionLastTick = 2001;
+        r.updatePlayerEmotions(2002); // δ>0 → joy steigt
+        // nur prüfen, wenn der Sprung real war (sonst war kein Headroom — vacuously ok)
+        out.surpriseRaisesJoy = sitPost - sitPre > 0.1 ? p.emotions.joy > joyBefore + 0.001 : true;
+
+        // --- (5) Gewöhnung + KEIN Feedback-Runaway (feedback-frei bewiesen) ---
+        setEmo({});
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        p.wohlBaseline = 0; // Erwartung: karg
+        p.emotionLastTick = 4000;
+        r._depositLife(pm.x, pm.z, 0.5);
+        for (let t = 4001; t <= 4200; t++) {
+            r._depositLife(pm.x, pm.z, 0.5); // die Situation konstant halten (Overlay sättigt)
+            r.updatePlayerEmotions(t);
+        }
+        const sitFinal = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 4200));
+        out.habituatesBaselineConverges = Math.abs(p.wohlBaseline - sitFinal) < 0.1; // Baseline holt die Situation ein
+        // bei Gewöhnung (Baseline = Situation, δ≈0) gibt EIN weiterer Tick keinen joy-Zuwachs:
+        const jPre = p.emotions.joy;
+        r._depositLife(pm.x, pm.z, 0.5);
+        r.updatePlayerEmotions(4201);
+        out.habituatedNoMoreJoy = p.emotions.joy - jPre < 0.01; // δ≈0 → kein joy-Zuwachs mehr
+        // KEIN Feedback: baseline = Situation (δ≈0), eine GESEEDETE Stimmung amplifiziert NICHT
+        // (eine Mood-Rückkopplung würde joy von 0.5 Richtung 1.0 aufschaukeln — der Runaway-Beweis).
+        p.wohlBaseline = sitFinal;
+        p.emotions.joy = 0.5;
+        for (let t = 4300; t <= 4360; t++) {
+            r._depositLife(pm.x, pm.z, 0.5);
+            r.updatePlayerEmotions(t);
+        }
+        out.noRunaway = p.emotions.joy <= 0.52; // hielt/zerfiel — KEIN Aufschaukeln aus der Stimmung
+
+        // --- (6) V17.30 bleibt heil: anhaltendes Tun erreicht WEITER 0.7 + triggert ---
+        setEmo({});
+        p.emotionLastApply = {};
+        for (let i = 0; i < 10; i++) r._feelAction("build"); // joy → ~1.0 (ACTION_TO_EMOTION, V17.30)
+        const joyHigh = p.emotions.joy;
+        p.emotionLastTick = 5000;
+        r.updatePlayerEmotions(5001); // der 0.7-Trigger für joy feuert
+        out.triggerPreserved = joyHigh >= 0.7 && (p.emotionLastApply.joy ?? -Infinity) > -Infinity;
+
+        // restore
+        setEmo(savedEmo);
+        p.wohlBaseline = savedBase;
+        p.emotionLastTick = savedTick;
+        p.emotionLastApply = savedApply;
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        r.state.emotionField = savedEmoField;
+        r.state.weather = savedWeather;
+        return out;
+    });
+
+    check(
+        "V17.44 Appraisal: _playerSituationWohl IGNORIERT die Stimmung (kein Feedback-Input — die Wurzel gegen Runaway)",
+        res.situationIgnoresMood
+    );
+    check("V17.44 Appraisal: die Situation STEIGT mit dem Leben der Welt (deposit_life → lebendig)", res.situationRisesWithLife);
+    check(
+        "V17.44 Appraisal: die Spieler-Baseline trackt die SITUATION, nicht die Stimmung (Cold-Start = lebendig@player, nicht die ~1 Stimmung)",
+        res.baselineTracksSituation
+    );
+    check("V17.44 Appraisal: eine Situations-Verbesserung (Region blüht auf) gibt einen joy-Puls (Überraschung, δ>0)", res.surpriseRaisesJoy);
+    check(
+        "V17.44 Appraisal: GEWÖHNUNG — konstante Situation → Baseline holt auf (δ→0) → kein weiterer joy-Zuwachs",
+        res.habituatesBaselineConverges && res.habituatedNoMoreJoy
+    );
+    check("V17.44 Appraisal: KEIN Runaway — eine konstante Situation pinnt joy nicht auf 1.0 (feedback-frei bewiesen)", res.noRunaway);
+    check(
+        "V17.44 Appraisal: V17.30 bleibt heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle + feuert (δ ist ADDITIV)",
+        res.triggerPreserved
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -34624,6 +35117,10 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1738RulePersistence(ctx);
             await checkBandV1739RulesUX(ctx);
             await checkBandV1740LlmRules(ctx);
+            await checkBandV1741RuleThread(ctx);
+            await checkBandV1742Wohl(ctx);
+            await checkBandV1743RuleFitness(ctx);
+            await checkBandV1744Appraisal(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

@@ -1639,6 +1639,11 @@ class AnazhRealm {
             costMsSum: 0,
             errors: 0,
             fitness: 0,
+            // V17.43 Phase 2 — der gelernte WERT der Regel: ein EMA des lokal-attribuierten
+            // Rewards (struktureller δ am Ort, den die Regel berührt). 0 = neutral (noch
+            // unbewiesen / atmosphärisch). Überlebt Renewals (die Identität der Regel);
+            // reaktiv (NICHT im Snapshot, V17.38). _vPos/_vBase/_vPending = lazy (erstes Feuern).
+            value: 0,
             // V17.39 — Schöpfer-Kontrolle: pinned (Favorit/adoptiert → permanent +
             // eviction-geschützt), disabled (pausiert → feuert nicht).
             pinned: false,
@@ -1653,17 +1658,23 @@ class AnazhRealm {
     // Mensch-Regeln, den ältesten überhaupt (Notbremse, hält das Cap hart).
     _evictWorldRule(rules) {
         let victim = -1;
-        let oldest = Infinity;
+        // V17.43 Phase 2 — den wert-NIEDRIGSTEN ephemeren Eintrag verdrängen (nicht
+        // den ältesten): die Welt behält ihre WERTVOLLEN Experimente, wirft die
+        // wertlosen/schädlichen. value default 0 (neutral); Tie-Break = älter zuerst.
+        let worst = Infinity;
         for (let i = 0; i < rules.length; i++) {
             // Mensch-Gesetze + vom Schöpfer ANGEPINNTE (adoptierte) Regeln sind
             // geschützt — nur ephemere Nexus-Experimente werden verdrängt.
             if (rules[i].source === "human" || rules[i].pinned) continue;
-            if (rules[i].born < oldest) {
-                oldest = rules[i].born;
+            const v = rules[i].value || 0;
+            if (v < worst || (v === worst && victim >= 0 && rules[i].born < rules[victim].born)) {
+                worst = v;
                 victim = i;
             }
         }
         if (victim < 0) {
+            // Notbremse (alle Mensch/pinned): den ältesten überhaupt.
+            let oldest = Infinity;
             for (let i = 0; i < rules.length; i++) {
                 if (rules[i].born < oldest) {
                     oldest = rules[i].born;
@@ -1697,12 +1708,15 @@ class AnazhRealm {
             // welche Regeln sie behält. Mensch-Regeln (ttlSec=null) sind permanent
             // → überspringen diesen Zweig (ihr Gesetz steht, keine Fitness-Prüfung).
             if (r.ttlSec != null && currentTime - r.born >= r.ttlSec) {
+                this._measureRuleReward(r, currentTime); // V17.43 — das letzte Feuern noch werten
                 r.fitness = this._worldRuleFitness(r);
                 if (r.fitness >= cfg.renewFitness && (r.fires || 0) > 0) {
                     r.born = currentTime; // erneuern
                     r.fires = 0;
                     r.costMsSum = 0;
                     r.errors = 0;
+                    // value BLEIBT (der gelernte Wert ist die Identität der Regel über
+                    // Renewals hinweg — nur die per-Fenster-Akkus oben werden zurückgesetzt).
                     // kein continue → die erneuerte Regel darf diesen Frame normal feuern
                 } else {
                     rules[i] = null; // verfallen (Compaction unten, allokationsfrei im Normalfall)
@@ -1724,6 +1738,17 @@ class AnazhRealm {
             budget--;
             r.lastFired = currentTime;
             r.fires = (r.fires || 0) + 1;
+            // V17.43 Phase 2 — die lokal-attribuierte Regel-Fitness. (a) MISS den Reward
+            // des VORIGEN Feuerns (das Feld hatte everySec Zeit zu reagieren) → EMA in
+            // rule.value. (b) SNAPSHOT für DIESES Feuern: der Ort, den der Effekt berührt,
+            // + die Baseline DORT VOR dem Effekt (= die Erwartung). _observeFieldWohl hält
+            // die Orts-Baseline am Leben + gibt die Baseline vor der Beobachtung zurück.
+            // Beides VOR dslEval (die Messung ist pre-Effekt, kein Self-Pollute).
+            this._measureRuleReward(r, currentTime);
+            const rp = this._ruleRewardPos(r.effect, ctx);
+            r._vBase = this._observeFieldWohl(rp.x, rp.z, currentTime);
+            r._vPos = rp;
+            r._vPending = true;
             // V17.35 — die Effekt-Wallzeit ist das attributierbare Kosten-Signal der
             // per-Regel-Fitness (ein FPS-Hog wird so gepruned, die 119 FPS bleiben heilig).
             const t0 = performance.now();
@@ -1734,6 +1759,11 @@ class AnazhRealm {
                 ctx.log.push({ event: "rule_effect_exception", message: err.message });
             }
             r.costMsSum = (r.costMsSum || 0) + (performance.now() - t0);
+            // V17.41 — der Gesetzes-Faden: das ERSTE Feuern einer EIGENEN
+            // (Mensch-)Regel wird eine Welt-Erinnerung — der Spieler bekommt den
+            // Faden „weil dein Gesetz wirkte". fires===1 = das Erwachen (Mensch-
+            // Regeln sind permanent → kein TTL-Renew, der Zähler kippt nie zurück).
+            if (r.fires === 1 && r.source === "human") this._journalRuleAwoke(r);
         }
         if (expired) {
             const kept = [];
@@ -1790,7 +1820,69 @@ class AnazhRealm {
         const avgMs = (rule.costMsSum || 0) / fires;
         const costScore = Math.max(0, Math.min(1, 1 - avgMs / cfg.costBudgetMs));
         const successScore = Math.max(0, 1 - (rule.errors || 0) / fires);
-        return Number((0.4 * costScore + 0.6 * successScore).toFixed(3));
+        // V17.43 Phase 2 — der WERT ist die diskriminierende Achse (lokal-attribuiert):
+        // valueScore zentriert bei 0.5 = NEUTRAL (atmosphärische / unbewiesene Regel
+        // überlebt → KEINE Monokultur-Kollabierung, der in der Selbstprüfung gefundene
+        // Fehler), >0.5 Heiler, <0.5 Schädling. cost+success bleiben Wächter (ein FPS-Hog
+        // / crashende Regel stirbt weiter). So hat renewFitness endlich echte Auflösung
+        // (vorher ≈0.99 für alles Laufende). Neutral→0.7, Heiler→1.0, Schädling→0.4.
+        const valueScore = 0.5 + 0.5 * Math.max(-1, Math.min(1, rule.value || 0));
+        return Number((0.6 * valueScore + 0.25 * successScore + 0.15 * costScore).toFixed(3));
+    }
+
+    // V17.43 Phase 2 — MISS den Reward des letzten Feuerns einer Regel: wie weit hob die
+    // Regel das strukturelle Wohl am berührten Ort ÜBER seine Baseline-Bahn (das Advantage-
+    // Signal, REINFORCE-mit-Baseline)? δ = wohlStruktur(jetzt) − Baseline-vor-dem-Effekt,
+    // geklemmt [−1,1], EMA in rule.value. Das Feld hatte seit dem Feuern Zeit zu reagieren
+    // (Deposit-Zerfall + ökologische Antwort) → ein transienter Stempel zählt weniger,
+    // sustained Heilung zählt. Idempotent (nur wenn _vPending).
+    _measureRuleReward(rule, now) {
+        if (!rule._vPending || !rule._vPos) return;
+        const after = this._fieldWohlStruktur(this.auraAt(rule._vPos.x, rule._vPos.z, now));
+        const reward = Math.max(-1, Math.min(1, after - (rule._vBase || 0)));
+        rule.value = (rule.value || 0) + AnazhRealm.WERTUNG.ruleValueBeta * (reward - (rule.value || 0));
+        rule._vPending = false;
+    }
+
+    // Der Mess-Ort des Regel-Rewards: die Position, die der Effekt BERÜHRT — der erste
+    // Positions-Knoten im Effekt-AST (at_field_need/at_player/…), resolved wie der Effekt
+    // sie resolved (gleicher Tick, gleicher State → derselbe Punkt). Ohne Positions-Knoten
+    // (z. B. weather = global) → die Spieler-Position (der Erlebnis-Ort).
+    _ruleRewardPos(effectNode, ctx) {
+        const posOps = this.dslPositions;
+        let found = null;
+        const scan = (node) => {
+            if (found || !Array.isArray(node)) return;
+            if (typeof node[0] === "string" && posOps[node[0]]) {
+                found = node;
+                return;
+            }
+            for (const a of node) if (Array.isArray(a)) scan(a);
+        };
+        scan(effectNode);
+        if (found) {
+            const p = this.dslEvalPos(found, ctx);
+            if (p && typeof p.x === "number") return { x: p.x, z: p.z };
+        }
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        return pm ? { x: pm.x, z: pm.z } : { x: 0, z: 0 };
+    }
+
+    // V17.41 — der Gesetzes-Faden, die narrative Hälfte: das erste Erwachen einer
+    // EIGENEN (Mensch-)Regel als Welt-Erinnerung. Idempotent über die Signatur
+    // (re-issued/reloaded → eine Erinnerung; `seen` reist im Snapshot mit). NUR
+    // Mensch-Regeln („DEIN Gesetz") — Nexus/LLM-Experimente bleiben dem Live-
+    // Console-Faden vorbehalten (sonst flutet die ephemere Regel-Evolution das
+    // persönliche Tagebuch + verdrängt die Genesis-Anker). Die EINE Wand:
+    // aufgerufen aus _tickWorldRules beim ersten Feuern.
+    _journalRuleAwoke(rule) {
+        let desc;
+        try {
+            desc = this.describeProgram(["rule", rule.cond, rule.effect]);
+        } catch {
+            desc = "ein Gesetz";
+        }
+        this.journalAppendOnce(`ruleAwoke:${rule._sig || rule.id}`, "rule", `Dein Gesetz erwachte — ${desc}.`);
     }
 
     // ### Op-Tabellen ###
@@ -3262,7 +3354,21 @@ class AnazhRealm {
             (r) => r.source === "nexus" && (r.fires || 0) > 0 && (r.fitness || 0) >= cfg.renewFitness
         );
         if (survivors.length > 0 && rng() < cfg.mutateSurvivorProb) {
-            const parent = survivors[Math.floor(rng() * survivors.length)];
+            // V17.43 Phase 2 — wert-GEWICHTETE Elternschaft (gerichtete Evolution Richtung
+            // Heilung, nicht zufällig): P(Elter) ∝ valueScore (0.5 + 0.5·value, Floor 0.05
+            // → auch ein neutraler Überlebender kann Elter werden). Heiler descenden öfter.
+            const weight = (r) => Math.max(0.05, 0.5 + 0.5 * (r.value || 0));
+            let total = 0;
+            for (const s of survivors) total += weight(s);
+            let pick = rng() * total;
+            let parent = survivors[survivors.length - 1];
+            for (const s of survivors) {
+                pick -= weight(s);
+                if (pick <= 0) {
+                    parent = s;
+                    break;
+                }
+            }
             const prog = ["rule", parent.cond, parent.effect, { everySec: parent.everySec, ttlSec: parent.ttlSec }];
             const mutated = this.dslMutate(prog, rng);
             // dslMutate hält den "rule"-Kopf (der Fallback ersetzt nur einen chain-Kopf)
@@ -8120,6 +8226,37 @@ class AnazhRealm {
                     }
                 }
             }
+            // V17.44 — DIE LEBENDIGE WERTUNG Phase 3: die Emotion als APPRAISAL
+            // (Vorhersagefehler des Erlebens). δ = SITUATION − Spieler-Baseline. Die
+            // Situation ist die WELT um den Spieler (lebendig) + sein Zustand (HP) — NICHT
+            // seine Stimmung (sonst Rückkopplung → Runaway, in der Selbstprüfung gemessen).
+            // ADDITIV zu V17.30 (Taten) + V17.21 (Feld-Drift, LEVEL): der δ-Kanal ist die
+            // ÄNDERUNGS-Responsivität — eine Region, die um dich AUFBLÜHT (Phase-2-Heilung!),
+            // gibt einen joy-Puls; eine, die verdorrt / eine Wunde, einen sorrow-Puls. Die
+            // Baseline lagt (playerTau) → die GEWÖHNUNG fällt umsonst heraus (anhaltend Gutes
+            // hebt die Baseline → δ → 0 → die Umstände berühren weniger; die Tretmühle).
+            const sit = this._playerSituationWohl(aura);
+            if (typeof p.wohlBaseline !== "number") {
+                p.wohlBaseline = sit; // Cold-Start: die erste Situation IST die Erwartung (kein δ)
+            } else {
+                const dsig = sit - p.wohlBaseline; // [−1, 1] — besser/schlechter als erwartet
+                const dead = AnazhRealm.WERTUNG.appraisalDeadzone;
+                if (dsig > dead) {
+                    const g = AnazhRealm.WERTUNG.appraisalGain * (dsig - dead) * delta;
+                    p.emotions.joy = Math.min(1, (p.emotions.joy || 0) + g);
+                    p.emotions.hope = Math.min(1, (p.emotions.hope || 0) + g * 0.6);
+                } else if (dsig < -dead) {
+                    const g = AnazhRealm.WERTUNG.appraisalGain * (-dsig - dead) * delta;
+                    p.emotions.sorrow = Math.min(1, (p.emotions.sorrow || 0) + g);
+                    p.emotions.chaos = Math.min(1, (p.emotions.chaos || 0) + g * 0.5);
+                }
+                // Baseline NACH dem δ aktualisieren (sie lagt → δ hält an → Gewöhnung über τ).
+                const aPl = 1 - Math.exp(-delta / AnazhRealm.WERTUNG.playerTau);
+                p.wohlBaseline += aPl * (sit - p.wohlBaseline);
+            }
+            // Die Feld-Baseline-Map an der Spieler-Zelle füttern (für die Regel-Fitness, Phase 2).
+            this._observeFieldWohl(pm.x, pm.z, currentTime);
+            this._pruneWohlBaseline(currentTime);
         }
 
         // === Der ZUSTAND-Kanal von Pfeiler 2 (V17.30) ===
@@ -9877,6 +10014,23 @@ class AnazhRealm {
         return `verfällt in ~${rem}s`;
     }
 
+    // V17.41 — der Gesetzes-Faden: der LIVE-Aktivitäts-Faden eines Gesetzes (löst
+    // das alte sticky-binäre „⚡ aktiv / ruht" ab — das wurde beim ersten Feuern
+    // „aktiv" und blieb es für immer, die Welt-WIRKUNG war unsichtbar). Jetzt
+    // SIEHT der Spieler, ob sein Gesetz GERADE wirkt: „⚡ feuert" (innerhalb
+    // threadRecentSec gefeuert — der Puls), sonst „⚡ aktiv · N×" (das Lebenswerk,
+    // wenn es ruht — der Zähler ist die Spur), „ruht" (noch nie), „pausiert". EINE
+    // Quelle für den Namen-Span UND die Render-Signatur (→ die Row pulst, wenn das
+    // Gesetz feuert; bounded: „feuert" ist stabil während des Feuerns [Frist >
+    // everySec], ein einziges Re-Render wenn es verstummt → „aktiv · N×").
+    _worldRuleActivityLabel(rule, now) {
+        if (rule.disabled) return "pausiert";
+        const fires = rule.fires || 0;
+        if (fires === 0) return "ruht";
+        if (now - rule.lastFired <= AnazhRealm.WORLD_RULES.threadRecentSec) return "⚡ feuert";
+        return `⚡ aktiv · ${fires}×`;
+    }
+
     renderWorldRulesList() {
         const r = this._statusRefs;
         if (!r || !r.worldrules) return;
@@ -9895,7 +10049,9 @@ class AnazhRealm {
                 .map(
                     (x) =>
                         `${x.id}:${x.source || "?"}:${x.pinned ? "p" : "_"}:${x.disabled ? "x" : "_"}:${
-                            (x.fires || 0) > 0 ? "f" : "_"
+                            // V17.41 — der LIVE-Aktivitäts-Faden in der Signatur → die
+                            // Row re-rendert, wenn ein Gesetz feuert/verstummt (der Puls).
+                            this._worldRuleActivityLabel(x, now)
                         }:${this._worldRuleStatusLabel(x, now)}`
                 )
                 .join("|");
@@ -9933,8 +10089,10 @@ class AnazhRealm {
             const head = document.createElement("div");
             head.className = "ability-head";
             const name = document.createElement("span");
-            name.className = "name";
-            name.textContent = rule.disabled ? "pausiert" : (rule.fires || 0) > 0 ? "⚡ aktiv" : "ruht";
+            const activity = this._worldRuleActivityLabel(rule, now);
+            // V17.41 — „⚡ feuert" pulst (CSS .rule-firing), der Spieler SIEHT die Wirkung.
+            name.className = "name" + (activity === "⚡ feuert" ? " rule-firing" : "");
+            name.textContent = activity;
             const source = document.createElement("span");
             source.className = "source";
             source.textContent =
@@ -33414,6 +33572,98 @@ class AnazhRealm {
         };
     }
 
+    // === V17.42 — DIE LEBENDIGE WERTUNG: das Wohl-Maß + die gleitende Baseline ===
+    // Das DRITTE Verb des Feldes (lesen → schreiben → WERTEN). Die Welt erinnert sich,
+    // wie ein Ort / der Spieler USUALLY ist (die Baseline = ein EMA-Tiefpass), und misst
+    // den Vorhersagefehler `δ = jetzt − Baseline` — die EINE bewährte Währung (RL-
+    // Advantage, Dopamin-RPE, Prospect-Theory). Phase 1 baut NUR die Mess-Schicht; die
+    // Konsumenten (Regel-Fitness Phase 2, Emotion-Appraisal Phase 3) kommen danach.
+    // docs/lebendige-wertung-plan.md §4.
+
+    // Das OBJEKTIVE, strukturelle Wohl eines Ortes = `lebendig` (die einzige SCHREIBBARE
+    // Struktur-Achse; die frozen Achsen dichte/glut/magie sind pro Ort konstant → von der
+    // Baseline absorbiert, tragen kein δ). Schwer zu faken (ökologisch: Leben muss
+    // leben+tenden, V17.29). Das Fitness-Maß für Regeln (Phase 2).
+    _fieldWohlStruktur(aura) {
+        return aura && typeof aura.lebendig === "number" ? aura.lebendig : 0;
+    }
+
+    // Das SUBJEKTIVE, erlebte Wohl = die VALENZ der lokalen Emotion (Russell-Circumplex:
+    // joy/peace/hope positiv, sorrow/chaos negativ, awe ambivalent → ausgelassen),
+    // normalisiert auf ~[−1, +1]. Das Appraisal-Maß für die Spieler-Emotion (Phase 3).
+    _fieldWohlErlebt(aura) {
+        const e = (aura && aura.emotion) || {};
+        const pos = ((e.joy || 0) + (e.peace || 0) + (e.hope || 0)) / 3;
+        const neg = ((e.sorrow || 0) + (e.chaos || 0)) / 2;
+        return pos - neg;
+    }
+
+    // V17.44 Phase 3 — die SITUATION des Spielers = der Appraisal-INPUT: wie gut ist seine
+    // WELT + sein Zustand JETZT — `lebendig` am Ort (+ HP, wo es eine Konsequenz IST:
+    // pfad-Modus). BEWUSST OHNE die Stimmung des Spielers (`_fieldWohlErlebt`/`emotion`) —
+    // sonst wäre der δ-Kanal eine RÜCKKOPPLUNG (joy → Valenz → δ → joy → Runaway, gemessen).
+    // Das Gefühl ist die ANTWORT auf die Situation, nicht ihr eigener Input (OCC/RPE). ∈ [0,1].
+    _playerSituationWohl(aura) {
+        const leb = this._fieldWohlStruktur(aura); // lebendig ∈ [0,1] (die Welt um den Spieler)
+        const p = this.state.player;
+        const hpMax = (p.stats && p.stats.hpMax) || 0;
+        if (hpMax > 0 && this.getGameMode && this.getGameMode() === "pfad") {
+            const hp = Math.max(0, Math.min(1, (p.hp || 0) / hpMax));
+            return leb * 0.6 + hp * 0.4;
+        }
+        return leb;
+    }
+
+    _wohlCellKey(x, z) {
+        const cs = AnazhRealm.WERTUNG.cell;
+        return Math.floor(x / cs) + "," + Math.floor(z / cs);
+    }
+
+    // Beobachte das Struktur-Wohl an (x,z) → aktualisiere die Zell-Baseline (lazy EMA, EIN
+    // Pol-IIR: `α = 1 − exp(−Δt/τ)`, zeit-korrigiert → tick-rate-unabhängig, V9.83-Lehre).
+    // Cold-Start: die erste Beobachtung IST die Baseline (anfangs keine Überraschung — eine
+    // neue Welt ist voller Staunen, dann normalisiert sie). Gibt die Baseline VOR der
+    // Beobachtung zurück (= die Erwartung, gegen die Phase 2 den Reward misst). now in s.
+    // Sparse Map wie das Leben-Overlay — KEIN per-Frame-Sweep. now in Sekunden.
+    _observeFieldWohl(x, z, now) {
+        if (!this.state.wohlBaseline) this.state.wohlBaseline = new Map();
+        const key = this._wohlCellKey(x, z);
+        const obs = this._fieldWohlStruktur(this.auraAt(x, z, now));
+        const cur = this.state.wohlBaseline.get(key);
+        if (!cur) {
+            this.state.wohlBaseline.set(key, { b: obs, t: now });
+            return obs;
+        }
+        const dt = Math.max(0, now - cur.t);
+        const alpha = 1 - Math.exp(-dt / AnazhRealm.WERTUNG.fieldTau);
+        const before = cur.b;
+        cur.b = before + alpha * (obs - before);
+        cur.t = now;
+        return before;
+    }
+
+    // Lies die aktuelle Zell-Baseline (ohne Beobachtung) — 0/neutral, wenn keine Zelle.
+    _fieldWohlBaselineAt(x, z) {
+        const wb = this.state.wohlBaseline;
+        if (!wb || wb.size === 0) return 0;
+        const e = wb.get(this._wohlCellKey(x, z));
+        return e ? e.b : 0;
+    }
+
+    // Prune ferner Baseline-Zellen (bounded halten, wie _pruneLifeField). Eine EMA-Baseline
+    // „zerfällt" nicht von selbst (sie hält die letzte Schätzung) → wir prunen nach ALTER
+    // (lange nicht beobachtet → die Region ist fern/irrelevant). Rate-limitiert.
+    _pruneWohlBaseline(now) {
+        const wb = this.state.wohlBaseline;
+        if (!wb || wb.size === 0) return;
+        if (now - (this._wohlPruneLast || -Infinity) < AnazhRealm.WERTUNG.pruneEverySec) return;
+        this._wohlPruneLast = now;
+        const maxAge = AnazhRealm.WERTUNG.pruneAgeSec;
+        for (const [k, e] of wb) {
+            if (now - e.t > maxAge) wb.delete(k);
+        }
+    }
+
     // === Das lebendige Feld — die SCHREIB-Seite (V17.27) ===
     // Das Overlay ist eine sparse Map: Schlüssel "cx,cz" = die 16-m-Zelle,
     // Wert { a, t } = Overlay-Menge + Zeitstempel (Sekunden). Der Decay läuft
@@ -43625,7 +43875,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.40.0";
+AnazhRealm.VERSION = "17.44.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -43653,6 +43903,39 @@ AnazhRealm.WORLD_RULES = Object.freeze({
     // Phase C — Fitness (per-Regel, attributierbar: Kosten + Erfolg + Engagement)
     costBudgetMs: 4, // ein Regel-Effekt sollte < ~4 ms kosten (sonst Cost-Penalty)
     renewFitness: 0.5, // ab dieser Fitness wird eine Nexus-Regel am ttl-Ende erneuert
+    // V17.41 — der Gesetzes-Faden: ein Gesetz, das innerhalb dieser Frist gefeuert
+    // hat, gilt als „feuert gerade" (der Live-Puls in der Gesetze-Console). > als
+    // der größte everySec (ruleEverySecMax 5) → ein aktiv feuerndes Gesetz pulst
+    // kontinuierlich; verstummt es, fällt es nach dieser Frist auf „aktiv · N×".
+    threadRecentSec: 6,
+});
+
+// V17.42 — DIE LEBENDIGE WERTUNG (das dritte Verb des Feldes: lesen → schreiben →
+// WERTEN). Die Stellschrauben der gleitenden Baseline + des Wohl-Maßes. Die EINE
+// bewährte Gleichung (EMA-Tiefpass + Differenz `δ = x − baseline`, auf die RL/Dopamin-
+// RPE/Prospect-Theory unabhängig kamen) braucht nur Zeitkonstanten — der GESAMTE neue
+// „Hardcode". Phase 1 (V17.42) baut NUR das Maß + die Baseline (Mess-Schicht); die
+// Konsumenten — Regel-Fitness (Phase 2) + Emotion-Appraisal (Phase 3) — kommen danach.
+// Reaktive Schicht (nicht persistiert, kein Worker-Mirror, V9.67). docs/lebendige-wertung-plan.md.
+//   cell        — Zell-Größe der Baseline-Map (= LIFE_FIELD.cell, 16 m)
+//   fieldTau    — Zeitkonstante der ORTS-Baseline (s); ~120 s → ein Ort re-normalisiert langsam
+//   playerTau   — Zeitkonstante der SPIELER-Baseline (s); ~30 s → Gewöhnung in einer Sitzung
+//   pruneEverySec / pruneAgeSec — die Baseline-Map bounded halten (lange nicht beobachtet → weg)
+AnazhRealm.WERTUNG = Object.freeze({
+    cell: 16,
+    fieldTau: 120,
+    playerTau: 30,
+    pruneEverySec: 5,
+    pruneAgeSec: 180,
+    // V17.43 Phase 2 — die EMA-Rate, mit der rule.value den per-Feuern gemessenen
+    // Reward (lokaler struktureller δ) integriert. Eine Regel braucht mehrere Feuern,
+    // um sich als Heiler/Schädling zu beweisen (kein Snap-Urteil). value ∈ [−1, +1].
+    ruleValueBeta: 0.3,
+    // V17.44 Phase 3 — der Appraisal-Kanal (Emotion = Vorhersagefehler des ERLEBENS,
+    // δ = Situation − Spieler-Baseline). gain = wie stark ein δ die Emotion bewegt (pro
+    // Sekunde, sanft, ADDITIV zu V17.30/V17.21); deadzone = Totzone gegen Zappeln.
+    appraisalGain: 0.4,
+    appraisalDeadzone: 0.05,
 });
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
