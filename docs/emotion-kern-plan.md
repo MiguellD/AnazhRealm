@@ -183,7 +183,7 @@ getestet).* — **Das Substrat, auf dem L2/L3 stehen.**
 > konsumiert); ob es sich „echt anfühlt" ist der Schöpfer-Browser. **Nächst: W2 (der Keystone).**
 
 **W2 — Die Appraisal-Brücke + der Hylomorphismus (EVENT → Appraisal → Emotion). DER
-KEYSTONE.** `_appraise(event)` → Appraisal-Vektor (Valenz/Magnitude/Agency/Gewissheit/
+KEYSTONE. ✅ GEBAUT (V17.46).** `_appraise(event)` → Appraisal-Vektor (Valenz/Magnitude/Agency/Gewissheit/
 Neuheit/Norm), gespeist aus (a) dem Ereignis-Typ, (b) der SUBSTANZ (`TAG_TO_EMOTION` über
 `computeCompoundTags` — lebendig→+Valenz/Pflege, härte/scharf→+Erregung/Potenz, glut→
 +Erregung/Bedrohung, resoniert→+Neuheit/Wunder, dichte→+Magnitude/Solidität), (c) dem δ
@@ -198,6 +198,28 @@ Achsen sichtbar); die Werkstatt-Schöpfung (Bauplan speichern) feuert Stolz ∝ 
 Differenzierung auf den 6 Achsen. Die Dimensionen Agency/Norm werden berechnet, aber sind
 noch LATENT (das SUBSTRAT für W4/W5 — Zorn/Furcht/Schuld brauchen die sozialen/Kampf-
 Konsumenten); W2 behauptet NICHT, sie schon zu konsumieren. *Heilt Schatten 1+5.*
+
+> **GEBAUT (V17.46):** `AnazhRealm.TAG_TO_EMOTION` (frozen Resonanz-Tabelle über die 10
+> Compound-Tags, GENAU wie `FIELD_TO_EMOTION` — Regel über Tabelle: lebendig→peace/joy,
+> dichte→hope, brennbar→chaos/awe, magieleitung/resoniert→awe, …; sorrow erzeugt KEIN Tag) +
+> `_appraiseSubstance(tags, magnitude)` (die Emotion EMERGIERT aus `computeCompoundTags` ×
+> Magnitude) + `_substanceMagnitude(bp)` (∝ Part-Zahl, ~0.78–1.6, saturierend). **`_feelAction(type, opts)`
+> ist die BRÜCKE:** base (ACTION_TO_EMOTION × Magnitude) + Substanz-Appraisal; ohne `opts`
+> exakt V17.30 (kein Regress). Verdrahtet: confirmBuild `{blueprint}`, harvestArchitecture
+> `{blueprint}`, assignCreatureTask `{creature}`, spawn_creature `{creature, magnitude∝count}`,
+> + ein NEUER Akt `create` (define_blueprint-Op, NUR `ctx.source==="human"`) → Stolz ∝ Komplexität.
+> **GEMESSEN-KONSUM (`checkBandV1746EmotionSubstance`, 14 grün):** lebendig→peace / dichte→hope /
+> brennbar→chaos+awe, Achsen sauber getrennt, Magnitude linear + Tags>1 geklemmt, **END-TO-END
+> build(lebendiges Holz) > peace als build(toter Stein) + build(Stein) > hope** (die Substanz-
+> Differenzierung auf den 6 Achsen, der beweisbare Konsum), Magnitude end-to-end (Kathedrale >
+> Box), der create-Akt → Stolz+Magie-awe + Source-Gate (Nexus löst KEINEN Stolz aus),
+> confirmBuild übergibt die Substanz, KEIN Regress (build ohne opts = joy 0.1/hope 0.1), Fallback
+> (explore tag-los). node-check/format/lint grün, „Alle Invarianten OK". **EHRLICH (Scope, kein
+> Passagier):** gebaut ist die SUBSTANZ→Emotion-Brücke (Valenz via Tag-Resonanz + Magnitude via
+> Komplexität — die konsumierten Dimensionen); der VOLLE Appraisal-Vektor (Agency/Norm/Gewissheit
+> → Zorn/Furcht/Schuld differenziert) ist NICHT gebaut (er wäre ein Passagier ohne Konsument) —
+> er kommt in W4/W5, wenn das Soziale/der Kampf ihn konsumieren. Ob es sich „echt anfühlt" ist der
+> Schöpfer-Browser. **Nächst: W3 (Fast/Slow — Emotion vs. Stimmung, pro-Achse-Decay, Kongruenz).**
 
 **W3 — Fast/Slow: EMOTION vs. STIMMUNG + pro-Achse-Decay + Stimmungs-Kongruenz.** Trenne
 die schnelle Emotion (akuter Spike) von der langsamen Stimmung (`mood`, ein EMA-Vektor

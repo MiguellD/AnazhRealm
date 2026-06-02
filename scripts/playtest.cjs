@@ -1276,12 +1276,14 @@ async function checkBandV1730EmotionFromBeing(ctx) {
         out.bondPeace = e.peace > 0;
         reset();
         // Hooks an jeder realen Handlungs-Stelle (Source-Proben)
-        out.hookBuild = /_feelAction\("build"\)/.test(r.confirmBuild.toString());
-        out.hookDamage = /_feelAction\("damage"\)/.test(r.damagePlayer.toString());
-        out.hookHarvest = /_feelAction\("harvest"\)/.test(r.harvestArchitecture.toString());
-        out.hookBond = /_feelAction\("bond"\)/.test(r.assignCreatureTask.toString());
-        out.hookExplore = /_feelAction\("explore"\)/.test(r._setLastPlayerVoxelChunk.toString());
-        out.hookLife = /_feelAction\("create_life"\)/.test(r.dslEffects.spawn_creature.toString());
+        // V17.46 — die Hooks tragen jetzt z.T. ein opts-Argument (die Substanz) → Prefix-
+        // Match statt exaktem ")" (V9.56-i: die strukturelle Probe wandert mit dem Code).
+        out.hookBuild = /_feelAction\("build"/.test(r.confirmBuild.toString());
+        out.hookDamage = /_feelAction\("damage"/.test(r.damagePlayer.toString());
+        out.hookHarvest = /_feelAction\("harvest"/.test(r.harvestArchitecture.toString());
+        out.hookBond = /_feelAction\("bond"/.test(r.assignCreatureTask.toString());
+        out.hookExplore = /_feelAction\("explore"/.test(r._setLastPlayerVoxelChunk.toString());
+        out.hookLife = /_feelAction\("create_life"/.test(r.dslEffects.spawn_creature.toString());
         // ZUSTAND-Kanal: niedrige HP driftet sorrow/chaos (updatePlayerEmotions, pfad)
         const upe = r.updatePlayerEmotions.toString();
         out.hpChannel = /hpMax/.test(upe) && /sorrow/.test(upe) && /chaos/.test(upe);
@@ -3167,6 +3169,107 @@ async function checkBandV1745EmotionCore(ctx) {
     check("V17.45 Emotion-Kern: KONSUM — die KI kennt die Ruhe", res.promptCalm);
     check("V17.45 Emotion-Kern: Kohärenz — ein Gegenpol (sorrow) dämpft joy (der Zustand wird kohärent)", res.coherenceDamps);
     check("V17.45 Emotion-Kern: Kohärenz — eine EINZELNE klare Emotion wird NICHT gedämpft (0.7-Trigger heil)", res.singleNotDamped);
+}
+
+// V17.46 — Der emotionale Kern W2: die APPRAISAL-BRÜCKE + der Hylomorphismus
+// (docs/emotion-kern-plan.md, der Keystone). Die Gefühls-Antwort auf eine Tat
+// EMERGIERT aus den TAGS der beteiligten Substanz (computeCompoundTags → TAG_TO_
+// EMOTION × Magnitude), nicht aus einem Lookup nach Tat-NAME. Regel über Tabelle,
+// Logik über Hardcode. Diese Welle prüft KONSUM (build mit lebendigem Holz ≠ mit
+// totem Stein, auf den 6 Achsen sichtbar; der schöpferische Akt feuert Stolz ∝
+// Komplexität), nicht blosse Existenz (V17.31-Lehre). ACTION_TO_EMOTION bleibt als
+// FALLBACK für tag-lose Akte (explore/damage) → kein Regress.
+async function checkBandV1746EmotionSubstance(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const T2E = r.constructor.TAG_TO_EMOTION;
+        const A2E = r.constructor.ACTION_TO_EMOTION;
+        const savedEmo = { ...p.emotions };
+        const savedLife = r.state.lifeField;
+        const savedEmoField = r.state.emotionField;
+        r.state.lifeField = new Map();
+        r.state.emotionField = new Map(); // Deposits gehen in eine Wegwerf-Map (kein Leak)
+        const reset = () => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
+        };
+
+        // (1) die Resonanz-Tabelle + der schöpferische Akt
+        out.tableExists = !!T2E && typeof T2E.lebendig === "object" && typeof T2E.dichte === "object";
+        out.createAct = !!A2E && typeof A2E.create === "object";
+
+        // (2) _appraiseSubstance — die Substanz färbt das Gefühl
+        const sLeb = r._appraiseSubstance({ lebendig: 1 }, 1);
+        const sDic = r._appraiseSubstance({ dichte: 1 }, 1);
+        const sBrn = r._appraiseSubstance({ brennbar: 1 }, 1);
+        out.lebendigPeace = (sLeb.peace || 0) > (sLeb.hope || 0) && (sLeb.peace || 0) > 0; // lebendig → peace dominant
+        out.dichteHope = (sDic.hope || 0) > (sDic.peace || 0) && (sDic.hope || 0) > 0; // dichte → hope dominant
+        out.brennbarChaos = (sBrn.chaos || 0) > 0 && (sBrn.awe || 0) > 0; // brennbar → chaos + awe
+        out.noLebInDichte = !((sDic.joy || 0) > 0); // dichte erzeugt KEINE lebendig-joy (Achsen sauber getrennt)
+        const sLeb2 = r._appraiseSubstance({ lebendig: 1 }, 2);
+        out.magnitudeScales = Math.abs((sLeb2.peace || 0) - 2 * (sLeb.peace || 0)) < 1e-9; // linear in Magnitude
+        const sLeb3 = r._appraiseSubstance({ lebendig: 3 }, 1);
+        out.tagsClamped = Math.abs((sLeb3.peace || 0) - (sLeb.peace || 0)) < 1e-9; // Tag-Stärke >1 geklemmt
+
+        // (3) END-TO-END (der beweisbare Konsum): build(Holz/lebendig) ≠ build(Stein/dichte)
+        reset();
+        r._feelAction("build", { tags: { lebendig: 1 } });
+        const woodPeace = p.emotions.peace;
+        const woodHope = p.emotions.hope;
+        reset();
+        r._feelAction("build", { tags: { dichte: 1 } });
+        const stonePeace = p.emotions.peace;
+        const stoneHope = p.emotions.hope;
+        out.woodMorePeace = woodPeace > stonePeace + 0.02; // lebendiges Holz → mehr Frieden
+        out.stoneMoreHope = stoneHope > woodHope + 0.02; // toter Stein → mehr Hoffnung (Solidität)
+
+        // (4) Magnitude end-to-end: eine große Schöpfung (Kathedrale) bewegt mehr als eine Box
+        reset();
+        r._feelAction("build", { tags: { lebendig: 1 }, magnitude: 1.5 });
+        const big = p.emotions.joy + p.emotions.peace + p.emotions.hope;
+        reset();
+        r._feelAction("build", { tags: { lebendig: 1 }, magnitude: 0.7 });
+        const small = p.emotions.joy + p.emotions.peace + p.emotions.hope;
+        out.magnitudeEndToEnd = big > small + 0.05;
+
+        // (5) der schöpferische Akt (Werkstatt/Chat): Stolz + Substanz-Färbung + Source-Gate
+        reset();
+        r._feelAction("create", { tags: { magieleitung: 1 }, magnitude: 1.5 });
+        out.createPride = p.emotions.joy > 0 && p.emotions.hope > 0 && p.emotions.awe > 0; // Stolz (joy+hope) + Magie (awe)
+        const dbSrc = r.dslEffects.define_blueprint.toString();
+        out.createHooked = /_feelAction\("create"/.test(dbSrc) && /source === "human"/.test(dbSrc);
+        out.buildHooked = /_feelAction\("build", \{ blueprint/.test(r.confirmBuild.toString());
+
+        // (6) KEIN Regress: ohne Substanz exakt V17.30 (build → joy 0.1, hope 0.1; explore-Fallback)
+        reset();
+        r._feelAction("build");
+        out.noRegressBuild = Math.abs(p.emotions.joy - 0.1) < 1e-9 && Math.abs(p.emotions.hope - 0.1) < 1e-9;
+        reset();
+        r._feelAction("explore"); // tag-los → Fallback ACTION_TO_EMOTION
+        out.fallbackExplore = p.emotions.awe > 0;
+
+        // restore
+        for (const k of Object.keys(savedEmo)) p.emotions[k] = savedEmo[k];
+        r.state.lifeField = savedLife;
+        r.state.emotionField = savedEmoField;
+        return out;
+    });
+    check("V17.46 Substanz: TAG_TO_EMOTION-Resonanz + der create-Akt existieren", res.tableExists && res.createAct);
+    check("V17.46 Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt", res.lebendigPeace && res.dichteHope);
+    check("V17.46 Substanz: brennbar → chaos + awe (Gefahr-Thrill)", res.brennbarChaos);
+    check("V17.46 Substanz: die Achsen sind sauber getrennt (dichte erzeugt keine lebendig-joy)", res.noLebInDichte);
+    check("V17.46 Substanz: die Magnitude skaliert den Beitrag linear (Kathedrale > Box)", res.magnitudeScales);
+    check("V17.46 Substanz: Tag-Stärke >1 geklemmt (Richtung); die Komplexität trägt die Magnitude", res.tagsClamped);
+    check("V17.46 Substanz: KONSUM — build(lebendiges Holz) gibt mehr peace als build(toter Stein)", res.woodMorePeace);
+    check("V17.46 Substanz: KONSUM — build(Stein) gibt mehr hope als build(Holz) — verschiedene Substanz, verschiedenes Gefühl", res.stoneMoreHope);
+    check("V17.46 Substanz: KONSUM — Magnitude end-to-end (große Schöpfung bewegt mehr)", res.magnitudeEndToEnd);
+    check("V17.46 Substanz: der schöpferische Akt → Stolz (joy+hope) + Substanz-Färbung (Magie → awe)", res.createPride);
+    check("V17.46 Substanz: define_blueprint feuert create-Stolz NUR für den Menschen (Source-Gate)", res.createHooked);
+    check("V17.46 Substanz: confirmBuild übergibt die Substanz (blueprint) an _feelAction", res.buildHooked);
+    check("V17.46 Substanz: KEIN Regress — _feelAction('build') ohne Substanz = exakt V17.30 (joy 0.1, hope 0.1)", res.noRegressBuild);
+    check("V17.46 Substanz: Fallback — ein tag-loser Akt (explore) nutzt weiter ACTION_TO_EMOTION", res.fallbackExplore);
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -35260,6 +35363,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1743RuleFitness(ctx);
             await checkBandV1744Appraisal(ctx);
             await checkBandV1745EmotionCore(ctx);
+            await checkBandV1746EmotionSubstance(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

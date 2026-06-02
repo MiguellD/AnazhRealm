@@ -1999,6 +1999,7 @@ class AnazhRealm {
                 const ppos = ctx.state.playerMesh && ctx.state.playerMesh.position;
                 const onPlayer = !!(ppos && Math.hypot(pos.x - ppos.x, pos.z - ppos.z) < 2.0);
                 let spawned = 0;
+                let lastBorn = null;
                 for (let i = 0; i < n; i++) {
                     if (ctx.budget.spawnsLeft <= 0) {
                         ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
@@ -2015,6 +2016,7 @@ class AnazhRealm {
                     // _tickCreatureLifeTrickle). Die ambiente Fauna bekommt das Flag
                     // NICHT → sie bleibt die FOLGE des Feldes (kein Runaway).
                     if (born && born.userData) born.userData.tendsLife = true;
+                    if (born) lastBorn = born;
                     // V17.27 — eine Geburt TRÄGT Leben ins Feld (die Schreib-Seite):
                     // sie hebt lebendig an der Wiege → schließt den at_field_need-
                     // Loop (der Mangel sinkt, der Nexus zieht weiter) + die Region
@@ -2031,7 +2033,11 @@ class AnazhRealm {
                 // "human") → joy + peace (nähren, der Taten-Kanal). Der NEXUS, der
                 // autonom Leben trägt, hebt NICHT die Spieler-Emotion (es ist seine
                 // Tat, nicht meine).
-                if (spawned > 0 && ctx.source === "human") this._feelAction("create_life");
+                if (spawned > 0 && ctx.source === "human")
+                    this._feelAction("create_life", {
+                        creature: lastBorn,
+                        magnitude: Math.min(1.6, 0.7 + spawned * 0.2),
+                    });
             },
             // Welle 6.G Phase 1.5 — Hylomorphismus-Unification.
             // spawn_tree/spawn_island/spawn_ufo waren in V7.73 als Placeholder
@@ -2235,6 +2241,11 @@ class AnazhRealm {
                         name: result.name,
                         parts: valid.parts.length,
                     });
+                    // V17.46 — der schöpferische Akt: einen EIGENEN Bauplan erschaffen
+                    // (Werkstatt/Chat) feuert Stolz (joy + hope) ∝ Komplexität (Magnitude)
+                    // + gefärbt von der Substanz. NUR die Mensch-Geste (nicht Nexus/LLM/
+                    // remote — wie spawn_creature: es ist MEINE Schöpfung, die mich stolz macht).
+                    if (ctx && ctx.source === "human") this._feelAction("create", { blueprint: result.name });
                 }
             },
             // Welle 6.D Etappe 3b — Bauplan als Rüstung markieren + Equip-Ops.
@@ -8170,24 +8181,84 @@ class AnazhRealm {
         }
     }
 
-    // V17.30 — der TATEN-Kanal von Pfeiler 2: eine reale Spieler-Handlung
-    // (bauen, ernten, Leben spawnen, erkunden, sich verbünden, Schaden nehmen)
-    // leitet Emotion über ALLE Achsen ab — generisch aus AnazhRealm.ACTION_TO_
-    // EMOTION (die Tabelle IST die Regel, wie der Chat-Sentiment + der Feld-Read).
-    // EINE Quelle, viele Aufrufer (an jeder Handlungs-Stelle verdrahtet). So liest
-    // die Emotion endlich, was der Spieler TUT, nicht nur was er TIPPT.
-    _feelAction(type) {
-        const map = AnazhRealm.ACTION_TO_EMOTION[type];
+    // V17.30/V17.46 — der TATEN-Kanal von Pfeiler 2 + die APPRAISAL-BRÜCKE: eine reale
+    // Spieler-Handlung (bauen, ernten, Leben spawnen, erkunden, sich verbünden, Schaden,
+    // erschaffen) leitet Emotion über ALLE Achsen ab. Zwei Quellen verschmelzen:
+    //   (1) die TAT-Richtung — AnazhRealm.ACTION_TO_EMOTION (die Basis, der FALLBACK für
+    //       tag-lose Akte wie explore/damage; V17.30);
+    //   (2) die SUBSTANZ — V17.46: ist ein Compound beteiligt (ein Bauplan, eine Kreatur),
+    //       EMERGIERT die Gefühls-Färbung aus seinen TAGS (computeCompoundTags → TAG_TO_
+    //       EMOTION, der Hylomorphismus der Emotionen — Regel über Tabelle), skaliert mit
+    //       der Magnitude (∝ Komplexität: eine Kathedrale bewegt mehr als eine Box).
+    // So fühlt sich build-mit-lebendigem-Holz anders an als build-mit-totem-Stein. `opts`
+    // optional → ohne Substanz exakt V17.30-Verhalten (kein Regress). `opts.blueprint`
+    // (Name ODER Objekt), `opts.creature`, `opts.tags`, `opts.magnitude` (Override).
+    _feelAction(type, opts) {
         const e = this.state.player && this.state.player.emotions;
-        if (!map || !e) return;
-        for (const axis of Object.keys(map)) {
-            e[axis] = Math.min(1, (e[axis] || 0) + map[axis]);
+        if (!e) return;
+        const base = AnazhRealm.ACTION_TO_EMOTION[type];
+        // Substanz auflösen: Tags + Magnitude (∝ Komplexität).
+        let tags = null;
+        let magnitude = 1;
+        if (opts && typeof opts === "object") {
+            if (opts.tags) {
+                tags = opts.tags;
+            } else if (opts.blueprint) {
+                const bp =
+                    typeof opts.blueprint === "string"
+                        ? this.state.blueprints && this.state.blueprints[opts.blueprint]
+                        : opts.blueprint;
+                if (bp && Array.isArray(bp.parts)) {
+                    tags = this.computeCompoundTags(bp);
+                    magnitude = this._substanceMagnitude(bp);
+                }
+            } else if (opts.creature) {
+                tags = this.computeCreatureCompoundTags(opts.creature);
+            }
+            if (typeof opts.magnitude === "number" && opts.magnitude > 0) magnitude = opts.magnitude;
         }
-        // V17.32 — der Moment des Fühlens MARKIERT den Ort: die Emotion der Tat
-        // wird an der Spieler-Zelle deponiert (das räumliche Gedächtnis der Welt
-        // — ein Ort, an dem ich baute/litt/staunte, trägt diese Stimmung weiter).
+        // Beitrag = Tat-Basis (× Magnitude) + Substanz-Appraisal.
+        const contrib = {};
+        if (base) for (const axis of Object.keys(base)) contrib[axis] = (contrib[axis] || 0) + base[axis] * magnitude;
+        if (tags) {
+            const sub = this._appraiseSubstance(tags, magnitude);
+            for (const axis of Object.keys(sub)) contrib[axis] = (contrib[axis] || 0) + sub[axis];
+        }
+        if (Object.keys(contrib).length === 0) return;
+        for (const axis of Object.keys(contrib)) {
+            e[axis] = Math.min(1, (e[axis] || 0) + contrib[axis]);
+        }
+        // V17.32 — der Moment des Fühlens MARKIERT den Ort: die (jetzt substanz-gefärbte)
+        // Emotion der Tat wird an der Spieler-Zelle deponiert (das räumliche Gedächtnis
+        // der Welt — ein Ort, an dem ich eine Kathedrale baute, trägt diese Stimmung).
         const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (pm) this._depositEmotion(pm.x, pm.z, map);
+        if (pm) this._depositEmotion(pm.x, pm.z, contrib);
+    }
+
+    // V17.46 — der HYLOMORPHISMUS der Emotionen: die Gefühls-Antwort EMERGIERT aus den
+    // Tags der Substanz (× Magnitude), über die frozen Resonanz-Tabelle TAG_TO_EMOTION.
+    // Tags können >1 sein (Welt-Effekte) → für die Emotion auf [0,1] geklemmt (die Richtung
+    // pro Tag), die KOMPLEXITÄT trägt die Magnitude. Gibt einen {achse: delta}-Beitrag.
+    _appraiseSubstance(tags, magnitude = 1) {
+        const T2E = AnazhRealm.TAG_TO_EMOTION;
+        const contrib = {};
+        if (!tags) return contrib;
+        for (const tagKey of Object.keys(T2E)) {
+            const strength = Math.min(1, Math.max(0, tags[tagKey] || 0));
+            if (strength <= 0.02) continue;
+            const map = T2E[tagKey];
+            for (const emo of Object.keys(map)) {
+                contrib[emo] = (contrib[emo] || 0) + map[emo] * strength * magnitude;
+            }
+        }
+        return contrib;
+    }
+
+    // V17.46 — die Magnitude eines Compounds ∝ Komplexität (Part-Zahl): eine Box (~2-4
+    // Parts) bewegt weniger als eine Kathedrale (~30). Saturierend + gebounded (~0.78..1.6).
+    _substanceMagnitude(bp) {
+        const n = bp && Array.isArray(bp.parts) ? bp.parts.length : 1;
+        return 0.7 + Math.min(0.9, n * 0.04);
     }
 
     updatePlayerEmotions(currentTime) {
@@ -13134,7 +13205,7 @@ class AnazhRealm {
         // (Beziehung, Pfeiler 1). Nur die echte Spieler-Geste (nicht silent =
         // Spawn-Default/Test-Reset).
         if (!options.silent && taskName === "follow_player" && prevName !== "follow_player") {
-            this._feelAction("bond");
+            this._feelAction("bond", { creature });
         }
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
@@ -34825,8 +34896,9 @@ class AnazhRealm {
                 .join(", ");
             this.log(`Gebaut: ${bm.blueprintName} (verbraucht ${consumedStr}).`, "INFO");
         }
-        // V17.30 — erschaffen hebt joy + hope (der Taten-Kanal von Pfeiler 2).
-        this._feelAction("build");
+        // V17.30/V17.46 — erschaffen hebt joy + hope, GEFÄRBT von der Substanz des
+        // Gebauten (lebendiges Holz ≠ toter Stein) + skaliert mit der Komplexität.
+        this._feelAction("build", { blueprint: bm.blueprintName });
         return true;
     }
 
@@ -35018,7 +35090,7 @@ class AnazhRealm {
         if (!removed) return null;
         // V17.30 — der Spieler erntet (sammelt Fülle) → joy + hope. Nur der
         // Spieler fühlt; eine erntende Kreatur (harvester="creature:…") nicht.
-        if (harvester === "player") this._feelAction("harvest");
+        if (harvester === "player") this._feelAction("harvest", { blueprint: blueprintName });
         if (typeof this.journalAppend === "function" && totalParts > 0) {
             const matSummary = Object.entries(materials)
                 .map(([m, n]) => `${n}× ${m}`)
@@ -43973,7 +44045,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.45.0";
+AnazhRealm.VERSION = "17.46.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -44929,6 +45001,29 @@ AnazhRealm.ACTION_TO_EMOTION = Object.freeze({
     bond: { peace: 0.12, joy: 0.06 }, // eine Kreatur folgt — Beziehung
     resonance: { awe: 0.1 }, // resonante Architektur erlebt
     damage: { sorrow: 0.12, chaos: 0.1 }, // Schaden/Gefahr — Angst
+    create: { joy: 0.1, hope: 0.1 }, // V17.46 — einen Bauplan ERSCHAFFEN (Werkstatt/Chat): der Stolz (× Komplexität)
+});
+
+// V17.46 — Der emotionale Kern W2: der HYLOMORPHISMUS der Emotionen (die Appraisal-
+// Brücke, docs/emotion-kern-plan.md). Die Gefühls-Antwort auf eine Tat EMERGIERT aus
+// den TAGS der beteiligten Substanz (Material × Form via computeCompoundTags) — nicht
+// aus einem Lookup nach Tat-NAME. EINE Resonanz-Tabelle (Tag-Achse → Emotions-Beitrag),
+// GENAU wie FIELD_TO_EMOTION die Feld-Achsen abbildet — nur ist die Quelle hier der
+// Compound. So fühlt sich build-mit-lebendigem-Holz anders an als build-mit-totem-Stein,
+// eine Kathedrale anders als eine Box (× Magnitude ∝ Komplexität). Regel über Tabelle,
+// Logik über Hardcode: EINE Quelle (die Tags), viele emergente Gefühle. Browser-justierbar.
+// (sorrow erzeugt KEIN Tag — kein Material ist „traurig"; Trauer kommt aus Schaden/Verlust/δ.)
+AnazhRealm.TAG_TO_EMOTION = Object.freeze({
+    lebendig: { peace: 0.12, joy: 0.07 }, // Leben/Nähren — warm, ruhig, lebendig
+    dichte: { hope: 0.08, peace: 0.03 }, // Solidität, Dauer, Vollendung
+    härte: { chaos: 0.05, hope: 0.03 }, // Härte/Kraft — Potenz (auf chaos projiziert)
+    zähigkeit: { hope: 0.05 }, // Widerstandskraft, Ausdauer
+    wärmeleitung: { peace: 0.05 }, // Wärme, Behaglichkeit
+    stromleitung: { awe: 0.05, chaos: 0.03 }, // Energie, Strom
+    magieleitung: { awe: 0.1, hope: 0.05 }, // Magie, Wunder, Potenzial
+    transparent: { awe: 0.05, peace: 0.03 }, // ätherische Klarheit
+    brennbar: { chaos: 0.07, awe: 0.05 }, // Feuer, Gefahr-Thrill, Flüchtigkeit
+    resoniert: { awe: 0.1, hope: 0.04 }, // das Singen, Wunder
 });
 
 // V17.23 Sky-Harmonie — die maximale Blend-Stärke der DSL/Mood-Himmels-Tönung
