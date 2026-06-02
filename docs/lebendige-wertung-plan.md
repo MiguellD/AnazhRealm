@@ -158,15 +158,38 @@ Wenn eine Regel an Ort P feuert (ihr Effekt hat eine Position — `at_field_need
 `at_player`/`at_player`-Default):
 
 ```
-reward = wohlStruktur(aura@P)_nach_Fenster − baseline_P     // wie weit über die Erwartung des Orts?
-rule.value ← rule.value + β·(reward − rule.value)            // EMA über das Lebens-Fenster
+reward = wohlStruktur(aura@P)_nach_Fenster − baseline_P     // Beitrag ÜBER die Baseline-Bahn des Orts
+rule.value ← rule.value + β·(reward − rule.value)            // EMA, value ∈ ~[−1, +1]
 ```
 
-`rule.value` ist ein per-Regel **Advantage-Schätzer** (REINFORCE-mit-Baseline). Die
-Fitness wird wert-dominant: `_worldRuleFitness` → `value` ist die diskriminierende Achse,
-`successScore`/`fires>0` bleiben als **Wächter** (eine crashende/inerte Regel stirbt
-weiter). Jetzt hat `renewFitness` echte Auflösung: eine heilende Regel (`value>0`) wird
-erneuert, eine sinnlose (`value≈0`) verfällt.
+`rule.value` ist ein per-Regel **Advantage-Schätzer** (REINFORCE-mit-Baseline): wie weit
+hebt die Regel den Ort ÜBER das, was ohnehin (die Baseline-Bahn) passiert wäre. Das
+Fenster ist LÄNGER als der Sofort-Effekt eines Deposits (~1–2 Halbwertszeiten des
+Overlays) → ein transienter Stempel, der zerfällt, zählt nicht, nur SUSTAINED Heilung
+(via tendende Kreaturen, V17.29) zählt; und die Homöostase-Baseline absorbiert anhaltende
+Effekte → eine Regel muss netto liefern, nicht coasten (kein Self-Stamp-Farming, §6.1).
+
+**KORREKTUR (adversariale Selbstprüfung 02.06.): NICHT „value-dominant" — das würde die
+Regel-Vielfalt zu einer Leben-Pump-MONOKULTUR kollabieren.** Viele Effekt-Typen heben
+`lebendig` GAR NICHT (`weather`, `creatures_emotion`, `creatures_color`, `deposit_emotion`)
+→ sie hätten `value≈0` → würden alle verfallen → nur `deposit_life` überlebt. Falsch. Die
+saubere Trennung (§6.2): **strukturelle Regeln (Leben/Kreaturen) verdienen ihren Wert in
+Phase 2 (struktureller δ); atmosphärische Regeln (Wetter/Emotion/Farbe) verdienen ihn in
+Phase 4 (Spieler-Appraisal-δ).** Dazwischen sind atmosphärische Regeln NEUTRAL, nicht
+bestraft. Also ist `value` zentriert bei 0 = neutral, und:
+
+```
+valueScore = 0.5 + 0.5·clamp(value, −1, 1)     // 0.5 = neutral (überlebt), >0.5 Heiler, <0.5 Schädling
+fitness    = 0.4·successScore + 0.6·valueScore  // echte Auflösung (kein ≈0.99-Degenerat mehr)
+```
+
+Eine neutrale (atmosphärische / wirkungslose) Regel → valueScore 0.5 → fitness ~0.5–0.7
+→ überlebt am Boden (Vielfalt bleibt). Ein Heiler → valueScore >0.5 → hohe Fitness. Ein
+SCHÄDLING (senkt lokal Leben) → valueScore <0.5 → fällt unter `renewFitness` → verfällt
++ wird zuerst evingiert. **Der Gradient wirkt vor allem an ZWEI Stellen** (wo die heutige
+≈0.99-Fitness blind ist): (1) Eviction (`_evictWorldRule` wirft den wert-NIEDRIGSTEN, nicht
+den ältesten), (2) **Mutations-Elternschaft** (`_composeNexusRule` zieht Eltern
+wert-GEWICHTET, nicht zufällig → gerichtete Evolution Richtung Heilung, nicht random walk).
 
 **(d) Spieler-Emotion = Appraisal (Vorhersagefehler des Erlebens).** In
 `updatePlayerEmotions`:
@@ -179,10 +202,21 @@ erneuert, eine sinnlose (`value≈0`) verfällt.
 
 **Gewöhnung fällt UMSONST heraus:** anhaltend Gutes hebt `baseline_spieler` → `δ`
 schrumpft → das 100. Haus bewegt joy kaum, eine plötzliche Besserung nach einer Flaute
-gibt einen joy-Puls (Prospect Theory + Dopamin-RPE, exakt). `ACTION_TO_EMOTION` bleibt
-als kleiner **Sofort-Appraisal-Keim** (die Tat selbst ist ein Mikro-Vorhersagefehler:
-„ich tat etwas Konstruktives" → kleiner Sofort-+), aber die ANHALTENDE Stimmung ist
-δ-getrieben. V17.30 wird VERTIEFT, nicht ersetzt (Verdichtung).
+gibt einen joy-Puls (Prospect Theory + Dopamin-RPE, exakt).
+
+**KORREKTUR (adversariale Selbstprüfung 02.06.): der δ-Kanal ist ADDITIV, er ERSETZT die
+Akkumulation NICHT — sonst un-täte er V17.30.** V17.30 machte die Emotion erst lebendig,
+weil ANHALTENDES Tun die 0.7-Trigger-Schwelle erreicht (joy → gelber Himmel etc.). Würde
+ich die Emotion rein δ-getrieben machen, zöge die Gewöhnung sie ständig zur Baseline
+zurück → sie erreichte 0.7 fast nie → die Emotion→Welt-Kopplungen gingen wieder STUMM
+(genau der Fleck, den V17.30 heilte). Darum: `ACTION_TO_EMOTION` (der Akkumulations-Pfad)
++ die V17.21-Feld-Drift BLEIBEN; der δ-Kanal kommt OBENDRAUF als RESPONSIVITÄT (Puls bei
+Überraschung, Dämpfung bei Gewöhnung). Sie ergänzen sich sauber: die V17.21-Feld-Drift ist
+LEVEL-basiert (du bist an einem friedlichen Ort → ambiente Ruhe bleibt), der δ-Kanal ist
+ÄNDERUNGS-basiert (der Reiz des Neuen verfliegt) — ambiente Färbung vs. Nervenkitzel,
+beides zugleich korrekt. **Regressions-Wächter (Phase-3-Pflicht-Test): anhaltendes
+positives Tun erreicht WEITER 0.7 + triggert** (V17.30 bleibt grün). V17.30 wird VERTIEFT,
+nicht ersetzt (Verdichtung).
 
 ---
 
@@ -202,20 +236,26 @@ mit Valenz (joy hebt, sorrow senkt). Das ist „miss, bevor du selektierst".
 
 **Phase 2 (V17.43) — Lokal-attribuierte Regel-Fitness (die Regeln werden ECHT).**
 Snapshot-bei-Feuern (Ort + `baseline_P`) → verzögerte Messung (nächstes Fenster) →
-`reward` → EMA in `rule.value`; `_worldRuleFitness` umverdrahtet (wert-dominant, Wächter
-behalten). **KONSUM-Test (das Genie der Messung — was die alte Fitness NICHT konnte):**
-eine heilende Regel (`deposit_life at_field_need`) akkumuliert positives `value` + wird
-am ttl-Ende erneuert; eine sinnlose Churner-Regel (Wetter-Flip ohne Wohl-Gewinn)
-akkumuliert `value≈0` + verfällt → über ein Fenster ist der ÜBERLEBENDE Regel-Satz
-**angereichert für Wert** vs. einem Zufalls-Baseline. Das ist der erste echte
-Selektions-Gradient.
+`reward` → EMA in `rule.value`; `_worldRuleFitness` umverdrahtet zu **viability + value-
+Bonus/Penalty** (`0.4·successScore + 0.6·valueScore`, `valueScore = 0.5 + 0.5·value` →
+neutral überlebt, Heiler steigt, Schädling fällt — §4c, KEIN value-dominant); `_evictWorldRule`
++ `_composeNexusRule` werden wert-gewichtet. **KONSUM-Test (das Genie der Messung — was die
+alte Fitness NICHT konnte):** eine heilende Regel (`deposit_life at_field_need` in eine karge
+Region) akkumuliert positives `value` + wird erneuert + wird Mutations-Elter; eine SCHÄDIGENDE
+Regel (senkt lokal Leben) fällt unter `renewFitness` + verfällt + wird zuerst evingiert; eine
+NEUTRALE atmosphärische Regel (Wetter-Flip) bleibt am Boden (valueScore 0.5, KEINE Monokultur-
+Kollabierung — der Vielfalt-Wächter); über ein Fenster ist der überlebende Regel-Satz
+**wert-angereichert** vs. einem Zufalls-Baseline. Das ist der erste echte Selektions-Gradient.
 
 **Phase 3 (V17.44) — Emotion als Appraisal (Psychologie statt Reflex).**
-Spieler-Baseline + der δ-Kanal in `updatePlayerEmotions`; `ACTION_TO_EMOTION` schrumpft
-zum Sofort-Keim. **KONSUM-Test (psychologische Signaturen, gemessen):** Gewöhnung
-(dieselbe Tat wiederholt → abnehmende joy-Hebung), Erleichterung (Erholung aus niedriger
-HP / aus einer trüben Region → joy-Puls aus dem Vorzeichen-Wechsel von δ), Überraschung
-(plötzliche Feld-Besserung → joy-Puls). Echte Affekt-Dynamik, nicht eine flache Tabelle.
+Spieler-Baseline + der δ-Kanal in `updatePlayerEmotions` (ADDITIV — V17.30-Akkumulation +
+V17.21-Feld-Drift bleiben, δ kommt obendrauf, §4d). **KONSUM-Test (psychologische Signaturen,
+gemessen):** Gewöhnung (dieselbe Tat wiederholt → abnehmende joy-Hebung), Erleichterung
+(Erholung aus niedriger HP / aus einer trüben Region → joy-Puls aus dem Vorzeichen-Wechsel
+von δ), Überraschung (plötzliche Feld-Besserung → joy-Puls). **+ REGRESSIONS-WÄCHTER (Pflicht):
+anhaltendes positives Tun erreicht WEITER die 0.7-Trigger-Schwelle + feuert den Welt-Effekt**
+(V17.30 darf nicht un-getan werden — der δ-Kanal ist additiv, nicht ersetzend). Echte Affekt-
+Dynamik, nicht eine flache Tabelle.
 
 **Phase 4 (V17.45, KÜR) — Der Kreis: die Welt lernt, was DICH glücklich macht.**
 Die Klammer: `rule.value` und `δ_spieler` sind DASSELBE Vorhersagefehler-Signal an
@@ -230,6 +270,23 @@ Schöpfer-Browser-Audit.
 ---
 
 ## 6. Die harten Probleme + Lösungen (profi der profis — die Wurzeln, nicht Pflaster)
+
+> **Die zwei Wurzeln, die die adversariale Selbstprüfung (02.06.) fand UND korrigierte
+> — bevor eine Zeile Code entstand** (genau das, wovor der Schöpfer warnte: erst prüfen,
+> dann rein):
+>
+> **A. Monokultur-Kollaps (war ein echter Plan-Fehler).** „Value-dominant" hätte alle
+> nicht-strukturellen Regeln (Wetter/Emotion/Farbe → `value≈0`) verfallen lassen → nur
+> Leben-Pumpen überleben → die Regel-Vielfalt kollabiert. **Korrigiert (§4c):** `valueScore`
+> zentriert bei 0.5 = neutral überlebt; struktureller Wert ist Bonus/Penalty auf der
+> Viabilität, nicht die alleinige Achse; atmosphärische Regeln verdienen ihren Wert erst
+> in Phase 4 (Spieler-Appraisal). Der Gradient wirkt an Eviction + Mutations-Elternschaft.
+>
+> **B. 0.7-Trigger-Regression (hätte V17.30 un-getan).** Rein δ-getriebene Emotion +
+> Gewöhnung → die Emotion erreicht die 0.7-Schwelle fast nie → die Emotion→Welt-Kopplungen
+> gehen wieder stumm (der Fleck, den V17.30 heilte). **Korrigiert (§4d):** der δ-Kanal ist
+> ADDITIV (Responsivität obendrauf), die V17.30-Akkumulation + V17.21-Feld-Drift bleiben;
+> Phase-3-Pflicht-Test: anhaltendes Tun erreicht WEITER 0.7.
 
 1. **Reward-Hacking: „lass die Regel nicht ihre eigene Hausaufgabe benoten"** (der
    tiefste Punkt, der Cousin des V17.31-Passagier-Trugschlusses). Eine Regel, deren
