@@ -3797,6 +3797,122 @@ async function checkBandV1751CombatStats(ctx) {
     check("V17.51 Kampf A: die Stats-UI macht das Kampf-Profil sichtbar (Rückschlag/Tempo/Verteidigung)", res.uiShowsCombat);
 }
 
+// V17.52 — Der Kampf-Bogen Phase B: die Waffen-Rolle + der Equip-Slot
+// (docs/kampf-plan.md §4-B). Eine Waffe ist ein Compound wie jeder andere; ihr
+// Kombat-Profil (damage/knockback/attackSpeed) EMERGIERT aus den Tags beim
+// Ausrüsten — REUSE der Equip-Pipeline mit WEAPON_STAT_WEIGHT (0.4), KEIN neuer
+// „Waffen-Schaden"-Pfad. Diese Welle prüft KONSUM (eine ausgerüstete harte Waffe
+// HEBT das Kombat-Profil des Spielers; die Rolle persistiert durch serialize/
+// deserialize) + die Validierung + die UI-Trennung, nicht blosse Existenz (V17.31).
+async function checkBandV1752Weapon(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const savedEquipped = p.equipped ? { ...p.equipped } : { tool: null, armor: null, weapon: null };
+
+        // (0) der weapon-Slot + WEAPON_STAT_WEIGHT (0.4 > Rüstung 0.3 → die Waffe prägt stark)
+        out.slotExists = !!p.equipped && "weapon" in p.equipped;
+        out.weightExists = r.constructor.WEAPON_STAT_WEIGHT > r.constructor.ARMOR_STAT_WEIGHT;
+
+        // (1) eine harte Waffe konstruieren (material/shape-agnostisch: die HÄRTESTE
+        // verfügbare Form × Material; via _deserializeBlueprint → valide opChains/Präzision)
+        const FTA = r.constructor.FORM_TAG_ACTIVATION;
+        let hardShape = "box";
+        let maxAct = 0;
+        for (const s of Object.keys(FTA)) {
+            const a = FTA[s].härte || 0;
+            if (a > maxAct) {
+                maxAct = a;
+                hardShape = s;
+            }
+        }
+        let hardMat = "stein";
+        let maxH = 0;
+        for (const m of Object.keys(r.state.materials)) {
+            const h = (r.state.materials[m].tags && r.state.materials[m].tags.härte) || 0;
+            if (h > maxH) {
+                maxH = h;
+                hardMat = m;
+            }
+        }
+        const wName = "_t1752_weapon";
+        r.state.blueprints[wName] = r._deserializeBlueprint({
+            name: wName,
+            label: "Testklinge",
+            parts: [{ shape: hardShape, material: hardMat, position: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } }],
+            connections: [],
+        });
+        const wTags = r.computeCompoundTags(r.state.blueprints[wName]);
+        out.weaponHasHardness = (wTags.härte || 0) > 0; // die Substanz-Prämisse hält
+
+        // (2) setBlueprintAsWeapon setzt role + roleManual
+        const setR = r.setBlueprintAsWeapon(wName);
+        out.setRoleOk = setR.ok && r.state.blueprints[wName].role === "weapon" && r.state.blueprints[wName].roleManual === true;
+
+        // (3) equipWeapon validiert: unbekannt + NICHT-Waffe (eine Rüstung) werden abgelehnt
+        out.rejectsUnknown = !r.equipWeapon("nonexistent_bp_xyz").ok;
+        const aName = "_t1752_armor";
+        r.state.blueprints[aName] = r._deserializeBlueprint({
+            name: aName,
+            label: "Testpanzer",
+            parts: [{ shape: hardShape, material: hardMat }],
+            connections: [],
+        });
+        r.setBlueprintAsArmor(aName);
+        const rejArmor = r.equipWeapon(aName);
+        out.rejectsNonWeapon = !rejArmor.ok && rejArmor.reason === "not_marked_as_weapon";
+
+        // (4) KONSUM — die ausgerüstete harte Waffe HEBT das Kombat-Profil des Spielers
+        r.equipWeapon(null);
+        const base = r.computePlayerStats().stats;
+        const eqR = r.equipWeapon(wName);
+        out.equipOk = eqR.ok && p.equipped.weapon === wName;
+        const armed = r.computePlayerStats().stats;
+        out.weaponRaisesDamage = armed.damage > base.damage + 0.01; // härte → mehr Schaden
+        out.weaponRaisesDefense = armed.defense > base.defense; // härte → mehr Verteidigung (das Trio fließt)
+        // (5) abnehmen → zurück auf die Baseline (kein Rest-Effekt)
+        r.equipWeapon(null);
+        const bare = r.computePlayerStats().stats;
+        out.unequipRestores = Math.abs(bare.damage - base.damage) < 1e-9;
+
+        // (6) Persistenz: die Waffen-Rolle reist durch serialize → deserialize (voll persistent)
+        const ser = r._serializeBlueprint(r.state.blueprints[wName]);
+        out.serializesRole = ser.role === "weapon" && ser.roleManual === true;
+        const de = r._deserializeBlueprint(ser);
+        out.deserializesRole = !!de && de.role === "weapon";
+
+        // (7) UI: die Partition trennt Waffen + die Waffen-Reihe existiert
+        const part = r._equipPartitionEquipBlueprints();
+        out.partitionSeparates =
+            Array.isArray(part.weaponBlueprints) && part.weaponBlueprints.includes(wName) && !part.candidateBlueprints.includes(wName);
+        out.weaponRowExists = typeof r._equipAppendWeaponRow === "function";
+
+        // cleanup
+        r.equipWeapon(null);
+        delete r.state.blueprints[wName];
+        delete r.state.blueprints[aName];
+        p.equipped.tool = savedEquipped.tool || null;
+        p.equipped.armor = savedEquipped.armor || null;
+        p.equipped.weapon = savedEquipped.weapon || null;
+        r.recomputePlayerStats();
+        return out;
+    });
+    check("V17.52 Kampf B: der weapon-Equip-Slot + WEAPON_STAT_WEIGHT (0.4 > Rüstung 0.3) existieren", res.slotExists && res.weightExists);
+    check("V17.52 Kampf B: die Test-Waffe trägt härte (die Substanz-Prämisse hält)", res.weaponHasHardness);
+    check("V17.52 Kampf B: setBlueprintAsWeapon setzt role:weapon + roleManual", res.setRoleOk);
+    check("V17.52 Kampf B: equipWeapon lehnt einen unbekannten Bauplan ab", res.rejectsUnknown);
+    check("V17.52 Kampf B: equipWeapon lehnt einen NICHT-Waffen-Bauplan ab (not_marked_as_weapon)", res.rejectsNonWeapon);
+    check("V17.52 Kampf B: equipWeapon setzt den weapon-Slot", res.equipOk);
+    check("V17.52 Kampf B: KONSUM — eine ausgerüstete harte Waffe HEBT den Schaden (Substanz → Profil, nicht Slider)", res.weaponRaisesDamage);
+    check("V17.52 Kampf B: KONSUM — die harte Waffe hebt auch die Verteidigung (das Defense-Trio fließt mit)", res.weaponRaisesDefense);
+    check("V17.52 Kampf B: Waffe abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
+    check("V17.52 Kampf B: Persistenz — die Waffen-Rolle reist durch _serializeBlueprint (role + roleManual)", res.serializesRole);
+    check("V17.52 Kampf B: Persistenz — _deserializeBlueprint stellt die Waffen-Rolle wieder her", res.deserializesRole);
+    check("V17.52 Kampf B: die UI trennt Waffen in der Partition + die Waffen-Reihe existiert", res.partitionSeparates && res.weaponRowExists);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -35908,6 +36024,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1749Adventure(ctx);
             await checkBandV1750Klammer(ctx);
             await checkBandV1751CombatStats(ctx);
+            await checkBandV1752Weapon(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

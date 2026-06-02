@@ -801,7 +801,8 @@ class AnazhRealm {
                 // Werkzeug-Beitrag = sourceBlueprint.compoundTags × toolWeight,
                 // Rüstung-Beitrag = blueprint.compoundTags × armorWeight.
                 // Wirkungen fließen in computePlayerStats vor den Boosts.
-                equipped: { tool: null, armor: null },
+                // V17.52 Kampf B — der weapon-Slot ergänzt tool/armor.
+                equipped: { tool: null, armor: null, weapon: null },
                 // Welle 6.C1 — Hylomorphismus-Inventar. 27 Slots (3 Reihen × 9),
                 // jeder Slot ist {blueprintName, count} oder null. Anders als
                 // Minecraft: die Slots tragen TAG-PROFILE der referenzierten
@@ -1320,6 +1321,7 @@ class AnazhRealm {
             // (jeder hat sein eigenes Inventar + Ausrüstung).
             "equip_tool",
             "equip_armor",
+            "equip_weapon",
             "unequip",
             // Welle 6.C2 — Spielmodus ist Welt-Beziehung pro Spieler. Mitspieler
             // in derselben Welt dürfen verschiedene Modi haben (einer pfad,
@@ -2290,6 +2292,17 @@ class AnazhRealm {
                     });
                 }
             },
+            // V17.52 Kampf Phase B — Bauplan als Waffe markieren (Spiegel von set_armor_role).
+            set_weapon_role: ([blueprintName], ctx) => {
+                const result = this.setBlueprintAsWeapon(blueprintName);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "weapon_role_set" : "weapon_role_failed",
+                        name: blueprintName,
+                        reason: result.reason,
+                    });
+                }
+            },
             // Welle 6.D Etappe 3a+ — Bauplan als Konsumabel markieren. Wirkung
             // emergiert aus Compound-Tags × scale (Default 0.2). So entsteht
             // die Tag-Bonus-Tabelle aus der Komposition (Wasser + Pflanze →
@@ -2336,10 +2349,22 @@ class AnazhRealm {
                     });
                 }
             },
+            // V17.52 Kampf Phase B — Waffe ausrüsten (Spiegel von equip_armor).
+            equip_weapon: ([name], ctx) => {
+                const result = this.equipWeapon(name);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "weapon_equipped" : "weapon_equip_failed",
+                        name: name || null,
+                        reason: result.reason,
+                    });
+                }
+            },
             unequip: ([slot], ctx) => {
                 let result;
                 if (slot === "tool") result = this.equipTool(null);
                 else if (slot === "armor") result = this.equipArmor(null);
+                else if (slot === "weapon") result = this.equipWeapon(null);
                 else result = { ok: false, reason: "unknown_slot" };
                 if (ctx && ctx.log) {
                     ctx.log.push({
@@ -7917,11 +7942,20 @@ class AnazhRealm {
                     describe: `Rüstung: ${m[1]}`,
                 }),
             },
+            // V17.52 Kampf Phase B — Waffe ausrüsten via Chat (Spiegel der Rüstung).
+            {
+                example: "rüste waffe schwert",
+                re: /^rüste\s+waffe\s+([a-z0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["equip_weapon", m[1]],
+                    describe: `Waffe: ${m[1]}`,
+                }),
+            },
             {
                 example: "rüste ab werkzeug",
-                re: /^rüste\s+ab\s+(werkzeug|rüstung|tool|armor)$/i,
+                re: /^rüste\s+ab\s+(werkzeug|rüstung|waffe|tool|armor|weapon)$/i,
                 build: (m) => {
-                    const slot = /werkzeug|tool/i.test(m[1]) ? "tool" : "armor";
+                    const slot = /werkzeug|tool/i.test(m[1]) ? "tool" : /waffe|weapon/i.test(m[1]) ? "weapon" : "armor";
                     return {
                         program: ["unequip", slot],
                         describe: `Ausrüstung ab: ${slot}`,
@@ -22656,6 +22690,15 @@ class AnazhRealm {
             out.role = "tool";
             out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
         }
+        // V17.52 Kampf Phase B — die Waffen-Rolle reist mit (sonst verlöre eine
+        // geschmiedete Waffe beim Reload ihre Rolle + die Equip-Bindung). Volle
+        // Persistenz — bewusst sauberer als die heutige armor/consumable-Rolle,
+        // die hier (gemessen) nicht serialisiert wird. Kein Meta (das Profil
+        // emergiert aus den Parts, die ohnehin mitreisen).
+        if (bp.role === "weapon") {
+            out.role = "weapon";
+            if (bp.roleManual) out.roleManual = true;
+        }
         // W14 — Portal-Bauplan: Rolle + portalMeta (das Welt-Ziel) müssen
         // mitreisen. Ohne das verlöre ein über die Bibliothek geholtes
         // Portal beim Reload seine Ausrichtung — role + portalMeta fehlten,
@@ -22743,6 +22786,13 @@ class AnazhRealm {
         ) {
             restored.role = "tool";
             restored.toolMeta = { opName: data.toolMeta.opName, opClass: data.toolMeta.opClass };
+        }
+        // V17.52 Kampf Phase B — die Waffen-Rolle wiederherstellen (Gegenstück zu
+        // _serializeBlueprint). Die Parts tragen das Profil; roleManual schützt
+        // die Rolle vor der Emergenz.
+        if (data.role === "weapon") {
+            restored.role = "weapon";
+            if (data.roleManual === true) restored.roleManual = true;
         }
         // W14 — Portal-Bauplan wiederherstellen. portalMeta läuft durch
         // _sanitizePortalMeta (erzwingt einen same-origin worlds/-Pfad) —
@@ -22855,7 +22905,11 @@ class AnazhRealm {
             // Welle 6.D Etappe 3a — Konsumable-Rezepte persistieren.
             consumables: this.state.consumables || {},
             // Welle 6.D Etappe 3b — Equipped-Slots persistieren.
-            playerEquipped: (this.state.player && this.state.player.equipped) || { tool: null, armor: null },
+            playerEquipped: (this.state.player && this.state.player.equipped) || {
+                tool: null,
+                armor: null,
+                weapon: null,
+            },
             // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei
             // jedem Init wieder verfügbar, aber Persistenz erlaubt zukünftig
             // eigen-geschmiedete (Welle 6) zu überleben.
@@ -24951,6 +25005,9 @@ class AnazhRealm {
         if (state.playerEquipped && typeof state.playerEquipped === "object") {
             if (state.playerEquipped.tool) this.equipTool(state.playerEquipped.tool);
             if (state.playerEquipped.armor) this.equipArmor(state.playerEquipped.armor);
+            // V17.52 Kampf B — die Waffe wiederherstellen (ihre role:"weapon" reist
+            // im Bauplan-Snapshot mit, anders als die armor-Rolle → equipWeapon greift).
+            if (state.playerEquipped.weapon) this.equipWeapon(state.playerEquipped.weapon);
         }
     }
 
@@ -26930,6 +26987,20 @@ class AnazhRealm {
         return { ok: true, name };
     }
 
+    // V17.52 Kampf-Bogen Phase B — Bauplan als Waffe markieren. Spiegel von
+    // setBlueprintAsArmor: role:"weapon" + roleManual (manueller Override, die
+    // Emergenz lässt die Rolle in Ruhe). Das Kombat-Profil der Waffe (damage/
+    // knockback/attackSpeed) EMERGIERT aus ihren Compound-Tags beim Ausrüsten —
+    // keine Meta nötig (anders als das Werkzeug, das opName/opClass trägt).
+    setBlueprintAsWeapon(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        bp.role = "weapon";
+        bp.roleManual = true;
+        return { ok: true, name };
+    }
+
     // Werkzeug ausrüsten. Akzeptiert null/leer für „abnehmen".
     equipTool(name) {
         if (!this.state.player) return { ok: false, reason: "no_player" };
@@ -26966,6 +27037,28 @@ class AnazhRealm {
         if (bp.role !== "armor") return { ok: false, reason: "not_marked_as_armor" };
         this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
         this.state.player.equipped.armor = name;
+        this.recomputePlayerStats();
+        return { ok: true, equipped: name };
+    }
+
+    // V17.52 Kampf-Bogen Phase B — Waffe ausrüsten. Akzeptiert null/leer für
+    // „abnehmen". Spiegel von equipArmor: der Bauplan muss role:"weapon" tragen
+    // (via setBlueprintAsWeapon). recomputePlayerStats faltet die Waffen-Tags
+    // mit WEAPON_STAT_WEIGHT in den Spieler-Compound → das Kombat-Profil spiegelt
+    // die geschmiedete Waffe.
+    equipWeapon(name) {
+        if (!this.state.player) return { ok: false, reason: "no_player" };
+        if (!name) {
+            this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null, weapon: null };
+            this.state.player.equipped.weapon = null;
+            this.recomputePlayerStats();
+            return { ok: true, equipped: null };
+        }
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.role !== "weapon") return { ok: false, reason: "not_marked_as_weapon" };
+        this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null, weapon: null };
+        this.state.player.equipped.weapon = name;
         this.recomputePlayerStats();
         return { ok: true, equipped: name };
     }
@@ -30257,6 +30350,24 @@ class AnazhRealm {
                 const armorPrec = this._compoundAvgPrecisionFromParts(bp.parts);
                 const armorMul = 0.5 + 0.5 * armorPrec;
                 const w = AnazhRealm.ARMOR_STAT_WEIGHT * armorMul;
+                for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+                    finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
+                }
+            }
+        }
+        // V17.52 Kampf Phase B — Waffen-Beitrag (aus Bauplan mit role:"weapon").
+        // Spiegelt den Rüstung-Beitrag, aber mit WEAPON_STAT_WEIGHT (0.4 > 0.3):
+        // die geschmiedete Waffe prägt damage/knockback/attackSpeed stark. REUSE
+        // der Equip-Pipeline — kein separater „Waffen-Schaden"-Pfad (der Kern-
+        // Gedanke des Kampf-Bogens: die Waffe ist ein Compound wie jeder andere,
+        // ihr Profil emergiert aus den Tags wie ihre Optik/ihr Spawn-Ort).
+        if (equipped.weapon && this.state.blueprints[equipped.weapon]) {
+            const bp = this.state.blueprints[equipped.weapon];
+            if (bp.role === "weapon") {
+                const tags = this.computeCompoundTags(bp);
+                const weaponPrec = this._compoundAvgPrecisionFromParts(bp.parts);
+                const weaponMul = 0.5 + 0.5 * weaponPrec;
+                const w = AnazhRealm.WEAPON_STAT_WEIGHT * weaponMul;
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -39975,6 +40086,7 @@ class AnazhRealm {
         // Plus equipped + boosts kurz
         const eq = (this.state.player && this.state.player.equipped) || {};
         if (eq.tool) lines.push(`Werkzeug      ${eq.tool}`);
+        if (eq.weapon) lines.push(`Waffe         ${eq.weapon}`);
         if (eq.armor) lines.push(`Rüstung       ${eq.armor}`);
         const boosts = (this.state.player && this.state.player.boosts) || [];
         const now = performance.now() / 1000;
@@ -41553,14 +41665,21 @@ class AnazhRealm {
         if (!container) return;
         container.innerHTML = "";
         this._equipAppendDrawerHint(container);
-        const equipped = (this.state.player && this.state.player.equipped) || { tool: null, armor: null };
+        const equipped = (this.state.player && this.state.player.equipped) || { tool: null, armor: null, weapon: null };
         const ownedTools = Array.isArray(this.state.player && this.state.player.tools) ? this.state.player.tools : [];
         this._equipAppendToolRow(container, equipped, ownedTools);
-        const { armorBlueprints, candidateBlueprints } = this._equipPartitionEquipBlueprints();
+        const { armorBlueprints, weaponBlueprints, candidateBlueprints } = this._equipPartitionEquipBlueprints();
         this._equipAppendArmorRow(container, equipped, armorBlueprints);
+        // V17.52 Kampf B — die Waffen-Reihe (Spiegel der Rüstung-Reihe).
+        this._equipAppendWeaponRow(container, equipped, weaponBlueprints);
         this._equipAppendMarkSection(container, candidateBlueprints);
         this._equipAppendConsumablesSection(container);
-        if (ownedTools.length === 0 && armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
+        if (
+            ownedTools.length === 0 &&
+            armorBlueprints.length === 0 &&
+            weaponBlueprints.length === 0 &&
+            candidateBlueprints.length === 0
+        ) {
             this._equipAppendEmptyHint(container);
         }
     }
@@ -41616,14 +41735,16 @@ class AnazhRealm {
     // umwidmen. Die Reihe zeigt die aktuelle Rolle; ein erneuter Klick widmet um.
     _equipPartitionEquipBlueprints() {
         const armorBlueprints = [];
+        const weaponBlueprints = [];
         const candidateBlueprints = [];
         for (const name of Object.keys(this.state.blueprints || {})) {
             const bp = this.state.blueprints[name];
             if (!bp || bp.builtIn) continue;
             if (bp.role === "armor") armorBlueprints.push(name);
+            else if (bp.role === "weapon") weaponBlueprints.push(name);
             else candidateBlueprints.push(name);
         }
-        return { armorBlueprints, candidateBlueprints };
+        return { armorBlueprints, weaponBlueprints, candidateBlueprints };
     }
 
     _equipAppendArmorRow(container, equipped, armorBlueprints) {
@@ -41658,6 +41779,41 @@ class AnazhRealm {
         container.appendChild(armorRow);
     }
 
+    // V17.52 Kampf-Bogen Phase B — die Waffen-Reihe (Spiegel von _equipAppendArmorRow):
+    // ein Dropdown der als Waffe markierten eigenen Baupläne; wählen → equipWeapon →
+    // recomputePlayerStats faltet die Waffen-Tags ins Kombat-Profil.
+    _equipAppendWeaponRow(container, equipped, weaponBlueprints) {
+        const weaponRow = document.createElement("div");
+        weaponRow.className = "equip-row";
+        const weaponLabel = document.createElement("span");
+        weaponLabel.className = "equip-slot-label";
+        weaponLabel.textContent = "Waffe";
+        weaponRow.appendChild(weaponLabel);
+        const weaponSel = document.createElement("select");
+        weaponSel.title = "Aktive Waffe";
+        const noneWeapon = document.createElement("option");
+        noneWeapon.value = "";
+        noneWeapon.textContent = "— keine —";
+        weaponSel.appendChild(noneWeapon);
+        for (const name of weaponBlueprints) {
+            const bp = this.state.blueprints[name];
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = bp.label || name;
+            if (equipped.weapon === name) opt.selected = true;
+            weaponSel.appendChild(opt);
+        }
+        weaponSel.addEventListener("change", () => {
+            const v = weaponSel.value;
+            const result = v ? this.equipWeapon(v) : this.equipWeapon(null);
+            if (!result.ok) this.log(`equipWeapon fehlgeschlagen: ${result.reason}`, "ERROR");
+            this.renderPlayerEquipUI();
+            if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+        });
+        weaponRow.appendChild(weaponSel);
+        container.appendChild(weaponRow);
+    }
+
     // Markier-Sektion: jeder eigene Bauplan bekommt Rüstung-/Konsumabel-/
     // Portal-Optionen. So entscheidet der Schöpfer pro Bauplan, was es IST —
     // und kann eine Wahl jederzeit umwidmen (die Reihe nennt die Rolle).
@@ -41687,6 +41843,16 @@ class AnazhRealm {
                 this.renderPlayerEquipUI();
             });
             row.appendChild(armorBtn);
+            // V17.52 Kampf B — „als Waffe" markieren (Spiegel des Rüstung-Knopfs).
+            const weaponBtn = document.createElement("button");
+            weaponBtn.type = "button";
+            weaponBtn.textContent = "Waffe";
+            weaponBtn.addEventListener("click", () => {
+                const result = this.setBlueprintAsWeapon(name);
+                if (!result.ok) this.log(`setBlueprintAsWeapon: ${result.reason}`, "ERROR");
+                this.renderPlayerEquipUI();
+            });
+            row.appendChild(weaponBtn);
             const consBtn = document.createElement("button");
             consBtn.type = "button";
             consBtn.textContent = "Konsumabel";
@@ -44251,7 +44417,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.51.0";
+AnazhRealm.VERSION = "17.52.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -44376,6 +44542,11 @@ AnazhRealm.AURA_TAG_HUE = Object.freeze({
 // wave-6-design §5.3).
 AnazhRealm.ARMOR_STAT_WEIGHT = 0.3;
 AnazhRealm.TOOL_STAT_WEIGHT = 0.15;
+// V17.52 Kampf-Bogen Phase B — die ausgerüstete Waffe prägt das Kombat-Profil
+// STARK (mehr als Werkzeug 0.15, mehr als Rüstung 0.3): sie ist der Kern von
+// Schaden/Rückschlag/Tempo. Ihre Compound-Tags falten mit diesem Gewicht in den
+// Spieler-Compound (REUSE der Equip-Pipeline, kein separater „Waffen-Schaden"-Pfad).
+AnazhRealm.WEAPON_STAT_WEIGHT = 0.4;
 
 // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Werkzeug-Anwendung
 // kostet Stamina. Ohne Kosten könnte der Spieler unbegrenzt Polier-Schritte
@@ -44874,6 +45045,7 @@ AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
     architecture: "Bauwerk",
     tool: "Werkzeug",
     armor: "Rüstung",
+    weapon: "Waffe",
     consumable: "Konsumable",
     soul: "Seele",
     machine: "Maschine",
