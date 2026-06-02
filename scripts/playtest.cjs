@@ -3535,6 +3535,107 @@ async function checkBandV1748Social(ctx) {
     check("V17.48 Soziales: die KI tendet aus dem grokTick (Ko-Regulator wired, nicht nur Kommentar)", res.tendWired);
 }
 
+// V17.49 — Der emotionale Kern W5: das ABENTEUER GRADUIERT (docs/emotion-kern-plan.md).
+// Bis hier feuerte `explore` flach (awe+hope) bei JEDEM Chunk-Wechsel. Jetzt wird das
+// WAGNIS gewichtet: die Magnitude EMERGIERT aus Neuheit (visitedRegions) + Distanz vom
+// Ursprung + Kühnheit (in karge/glut-Aura wagen, liest auraAt). Diese Welle prüft KONSUM
+// (kühnes Erkunden ≫ Pendeln, auf awe sichtbar), nicht blosse Existenz (V17.31). (Der
+// KAMPF-Affekt wartet bewusst auf eine Kampf-Mechanik — die W1/W2-Substrate sind bereit.)
+async function checkBandV1749Adventure(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const E = r.constructor.EXPLORE;
+        const pm = r.state.playerMesh.position;
+        const savedEmo = { ...p.emotions };
+        const savedVisited = r.state.visitedRegions;
+        const savedLife = r.state.lifeField;
+        const savedPos = { x: pm.x, y: pm.y, z: pm.z };
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+        const fresh = () => {
+            r.state.visitedRegions = new Set();
+        };
+
+        // (1) Config
+        out.config = !!E && E.noveltyNew > E.noveltyRevisit && E.max > E.min;
+
+        // (2) NEUHEIT — gleiche Position/Aura → nur die Neuheit variiert (erste Begegnung > Wiederkehr)
+        fresh();
+        const magNew = r._exploreMagnitude(111, 111);
+        const magRevisit = r._exploreMagnitude(111, 111);
+        out.noveltyGrades = magNew > magRevisit + 0.3;
+
+        // (3) HOLISTISCH — kühnes Erkunden (neu + fern + karg) ≫ vertrautes Pendeln (Wiederkehr + nah + üppig)
+        fresh();
+        r.state.lifeField = new Map(); // karg
+        pm.x = 3000;
+        pm.z = 0; // fern
+        const magAdventure = r._exploreMagnitude(222, 222); // neu
+        r.state.visitedRegions = new Set(["333,333"]); // markiert → Wiederkehr
+        pm.x = savedPos.x;
+        pm.z = savedPos.z; // nah
+        r._depositLife(pm.x, pm.z, 1.0);
+        r._depositLife(pm.x, pm.z, 1.0); // üppig
+        const magCommute = r._exploreMagnitude(333, 333);
+        out.adventureGrades = magAdventure > magCommute + 0.5;
+        out.distWired = /distScale|hypot/.test(r._exploreMagnitude.toString());
+        r.state.lifeField = new Map();
+
+        // (4) KÜHNHEIT — in eine karge Aura wagen staunt mehr als in eine üppige (liest auraAt;
+        // gegated für bereits-üppige Spots, wo kein Boldness-Spielraum bleibt)
+        pm.x = savedPos.x;
+        pm.z = savedPos.z;
+        r.state.lifeField = new Map();
+        const lebFrozen = r.auraAt(pm.x, pm.z, 0).lebendig || 0;
+        r.state.visitedRegions = new Set(["444,444"]);
+        const magBarren = r._exploreMagnitude(444, 444);
+        r._depositLife(pm.x, pm.z, 1.0);
+        r._depositLife(pm.x, pm.z, 1.0);
+        r.state.visitedRegions = new Set(["444,444"]);
+        const magLush = r._exploreMagnitude(444, 444);
+        out.boldnessGrades = lebFrozen >= 0.85 ? magLush <= magBarren + 1e-6 : magBarren > magLush + 0.02;
+        r.state.lifeField = new Map();
+
+        // (5) KONSUM end-to-end: die explore-Tat SKALIERT mit der Magnitude (awe graduiert)
+        setEmo({});
+        r._feelAction("explore", { magnitude: 1.8 });
+        const aweBold = p.emotions.awe;
+        setEmo({});
+        r._feelAction("explore", { magnitude: 0.3 });
+        const aweTimid = p.emotions.awe;
+        out.exploreScales = aweBold > aweTimid + 0.02;
+        out.hookWired = /_exploreMagnitude/.test(r._setLastPlayerVoxelChunk.toString());
+
+        // (6) visitedRegions bounded (Prune beim Überlauf)
+        const big = new Set();
+        for (let i = 0; i < E.maxRegions + 5; i++) big.add("d" + i);
+        r.state.visitedRegions = big;
+        r._exploreMagnitude(99999, 99999);
+        out.bounded = r.state.visitedRegions.size <= E.maxRegions;
+
+        // restore
+        setEmo(savedEmo);
+        r.state.visitedRegions = savedVisited;
+        r.state.lifeField = savedLife;
+        pm.x = savedPos.x;
+        pm.y = savedPos.y;
+        pm.z = savedPos.z;
+        return out;
+    });
+    check("V17.49 Abenteuer: EXPLORE-Config (Neuheit > Wiederkehr, max > min)", res.config);
+    check("V17.49 Abenteuer: KONSUM — eine NEUE Region staunt mehr als eine Wiederkehr (Neuheit)", res.noveltyGrades);
+    check("V17.49 Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)", res.adventureGrades);
+    check("V17.49 Abenteuer: die Distanz vom Ursprung fließt ein (_exploreMagnitude wired)", res.distWired);
+    check("V17.49 Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)", res.boldnessGrades);
+    check("V17.49 Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)", res.exploreScales);
+    check("V17.49 Abenteuer: _setLastPlayerVoxelChunk nutzt _exploreMagnitude (hook wired)", res.hookWired);
+    check("V17.49 Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -35629,6 +35730,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1746EmotionSubstance(ctx);
             await checkBandV1747FastSlow(ctx);
             await checkBandV1748Social(ctx);
+            await checkBandV1749Adventure(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

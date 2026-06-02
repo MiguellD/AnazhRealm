@@ -18022,18 +18022,52 @@ class AnazhRealm {
     // V9.92 — letzter Spieler-Chunk-Index, zwischengespeichert für die
     // Lazy-BVH-Distance-Decision in `_ensureVoxelChunkAt`. Update im
     // Streaming-Tick.
+    // W5 (V17.49) — das WAGNIS graduiert: die explore-Magnitude EMERGIERT aus Neuheit
+    // (erste Begegnung > Wiederkehr) + Distanz vom Ursprung + Kühnheit (in karge/glut-Aura
+    // wagen). Ein vertrautes, nahes, üppiges Pendeln bewegt wenig; ein neuer, ferner,
+    // karger Vorstoß viel. Die Kühnheit liest das Feld (auraAt) — die Synergie mit dem
+    // lebendigen Feld. `state.visitedRegions` ist reaktiv (nicht persistiert), bounded.
+    _exploreMagnitude(pcx, pcz) {
+        const cfg = AnazhRealm.EXPLORE;
+        if (!this.state.visitedRegions) this.state.visitedRegions = new Set();
+        const regions = this.state.visitedRegions;
+        const key = pcx + "," + pcz;
+        const novel = !regions.has(key);
+        regions.add(key);
+        if (regions.size > cfg.maxRegions) {
+            const it = regions.values(); // Set hält Insertion-Order → die ältesten zuerst
+            for (let i = 0; i < cfg.pruneRegions; i++) {
+                const next = it.next();
+                if (next.done) break;
+                regions.delete(next.value);
+            }
+        }
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const dist = pm ? Math.hypot(pm.x, pm.z) : 0;
+        const distTerm = Math.min(1, dist / cfg.distScale) * cfg.distWeight; // das epische Reisen
+        let boldTerm = 0;
+        if (pm) {
+            const aura = this.auraAt(pm.x, pm.z, performance.now() / 1000);
+            const bold = Math.max(0, Math.min(1, (1 - (aura.lebendig || 0)) * 0.5 + (aura.glut || 0) * 0.5));
+            boldTerm = bold * cfg.boldWeight; // Kühnheit: in das Karge/Glühende wagen
+        }
+        const noveltyTerm = novel ? cfg.noveltyNew : cfg.noveltyRevisit;
+        return Math.max(cfg.min, Math.min(cfg.max, cfg.base + noveltyTerm + distTerm + boldTerm));
+    }
+
     _setLastPlayerVoxelChunk(pcx, pcz) {
         if (!this.state) return;
-        // V17.30 — Erkundung: betritt der Spieler einen ANDEREN Chunk, hebt das
-        // awe + hope (Entdeckung, der Taten-Kanal von Pfeiler 2) — rate-limitiert
-        // (alle ~6 s ein Entdeckungs-Schlag, nicht jede 16-m-Grenze), damit awe
-        // nicht beim normalen Laufen sättigt.
+        // V17.30/V17.49 — Erkundung: betritt der Spieler einen ANDEREN Chunk, hebt das
+        // awe + hope (Entdeckung, der Taten-Kanal von Pfeiler 2) — rate-limitiert (alle
+        // ~6 s ein Entdeckungs-Schlag, nicht jede 16-m-Grenze). W5: GRADUIERT über die
+        // Magnitude (Neuheit + Distanz + Kühnheit) — ein neuer, ferner, karger Vorstoß
+        // staunt VIEL mehr als ein vertrautes Pendeln.
         const prev = this.state.lastPlayerVoxelChunk;
         if (prev && (prev.cx !== pcx || prev.cz !== pcz)) {
             const now = performance.now() / 1000;
             if (now - (this.state.lastExploreFelt ?? -Infinity) >= 6) {
                 this.state.lastExploreFelt = now;
-                this._feelAction("explore");
+                this._feelAction("explore", { magnitude: this._exploreMagnitude(pcx, pcz) });
             }
         }
         this.state.lastPlayerVoxelChunk = { cx: pcx, cz: pcz };
@@ -44185,7 +44219,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.48.0";
+AnazhRealm.VERSION = "17.49.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -45302,6 +45336,28 @@ AnazhRealm.CONTAGION_TARGET = Object.freeze({
 AnazhRealm.EMOTION_TEND = Object.freeze({
     threshold: -0.35, // moodValence darunter (anhaltend trüb) → die KI tröstet
     amount: 0.12, // der Hoffnungs-Schub der tröstenden Geste
+});
+
+// === Der emotionale Kern W5 — das ABENTEUER GRADUIERT (docs/emotion-kern-plan.md) ===
+// Bis hier feuerte `explore` flach (awe+hope) bei JEDEM Chunk-Wechsel. Jetzt wird das
+// WAGNIS gewichtet: die explore-Magnitude EMERGIERT aus (1) NEUHEIT (erste Begegnung mit
+// einer Region > Wiederkehr, via `state.visitedRegions`), (2) DISTANZ vom Ursprung (das
+// epische Reisen), (3) KÜHNHEIT (in eine karge/glut-Aura wagen → Mut). Synergie: die
+// Appraisal (V17.44) wertet das ZIEL (lebendig steigt), W5 den AKT des Wagens; die
+// Kühnheit liest das Feld (auraAt). Binär → graduiert (× `_substanceMagnitude`-Pfad).
+// (Der KAMPF-Affekt — Zorn/Furcht/Schuld differenziert — wartet bewusst auf eine echte
+// Kampf-Mechanik: die W1-Geometrie + die W2-Brücke sind das fertige Substrat dafür.)
+AnazhRealm.EXPLORE = Object.freeze({
+    base: 0.3, // der Grund-Beitrag jedes Chunk-Wechsels
+    noveltyNew: 0.7, // erste Begegnung mit einer Region → starkes Staunen
+    noveltyRevisit: 0.05, // Wiederkehr → kaum (du kennst den Ort)
+    distScale: 600, // m — die Distanz vom Ursprung, ab der das Reisen episch wird
+    distWeight: 0.4, // der Distanz-Beitrag (geklemmt auf 1× distWeight)
+    boldWeight: 0.5, // die Kühnheit (karge/glut-Aura) als Mut-Beitrag
+    min: 0.3,
+    max: 1.8, // ein neuer, ferner, karger Wagnis bewegt ~6× ein vertrautes Pendeln
+    maxRegions: 4000, // die visitedRegions-Map bounded halten
+    pruneRegions: 1000, // beim Überlauf die ältesten Regionen vergessen
 });
 
 AnazhRealm.EMOTION_FIELD = Object.freeze({

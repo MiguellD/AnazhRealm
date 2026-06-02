@@ -294,7 +294,7 @@ Kreatur verlieren → sorrow ∝ bond; der Tend-Pfad feuert bei anhaltend niedri
 > echte NLU der KI = Schöpfer-Browser + API-Key (headless LLM-taub). **Nächst: W5 (Abenteuer +
 > KAMPF über die Brücke — hier bekommt der Agency/Norm-Vektor endlich seinen Konsumenten).**
 
-**W5 — Die volle Tat-Abdeckung über die Brücke: ABENTEUER + KAMPF.** Jetzt billig, weil
+**W5 — Die volle Tat-Abdeckung über die Brücke: ABENTEUER ✅ GEBAUT (V17.49) + KAMPF (wartet).** Jetzt billig, weil
 die Brücke (W2) steht: **Abenteuer** = ein Neuheits-Appraisal (ein grob-gerastertes
 `visitedRegions`-Set → echte Neuheit > Wiederkehr; Distanz vom Ursprung; Kühnheit = in
 karge/unwirtliche Aura) → awe + Mut (graduiert statt binär). **Kampf** (wenn die Mechanik
@@ -305,6 +305,34 @@ töten → Schuld (norm-negativ + self-agency → sorrow ∝ dessen lebendig). K
 Erkunden ≠ Pendeln (gemessen); Kampf-Affekt differenziert. *Heilt Schatten 2+3.* (Die
 neuen Achsen — Zorn/Furcht/Stolz/Schuld — kommen HIER als Achsen dazu, wenn die Welt
 Konsumenten hat [Kampf/Sozial]; bis dahin projizieren sie auf die 6.)
+
+> **GEBAUT (V17.49) — die ABENTEUER-Hälfte:** `_exploreMagnitude(pcx, pcz)` (in
+> `_setLastPlayerVoxelChunk`, dem explore-Hook): die Magnitude EMERGIERT aus (1) NEUHEIT
+> (`state.visitedRegions`, ein Set, reaktiv + bounded: erste Begegnung `noveltyNew` 0.7 >
+> Wiederkehr 0.05), (2) DISTANZ vom Ursprung (`min(1, dist/600)·0.4` — das epische Reisen),
+> (3) KÜHNHEIT (`(1−lebendig)·0.5 + glut·0.5` aus `auraAt` × 0.5 — in das Karge/Glühende wagen
+> = Mut, die Synergie mit dem Feld). `_feelAction("explore", {magnitude})` skaliert das base
+> awe/hope → graduiert statt binär. GEMESSEN (`checkBandV1749Adventure`, 8 grün: Neuheit [neu >
+> Wiederkehr], **HOLISTISCH kühnes Erkunden [neu+fern+karg] ≫ vertrautes Pendeln [Wiederkehr+
+> nah+üppig]**, Kühnheit liest das Feld [karg > üppig], Distanz wired, die explore-Tat skaliert
+> mit der Magnitude [awe graduiert], Hook wired, visitedRegions bounded). node-check/format/lint
+> grün, „Alle Invarianten OK".
+>
+> **EHRLICH (Scope, gemessen): der KAMPF-Affekt ist NICHT gebaut — weil die Kampf-MECHANIK NICHT
+> EXISTIERT** (gemessen: `damagePlayer` wird nur per DSL-Op gerufen; kein Spieler-Angriff, keine
+> feindlichen Kreaturen, kein Kill-Pfad). Einen Zorn/Furcht/Schuld-Affekt ohne Kampf-Konsumenten
+> zu bauen wäre der Passagier-Trugschluss (V17.31). Das SUBSTRAT ist fertig + wartet: die W1-
+> Geometrie projiziert jede neue Achse auf den Raum, die W2-Brücke (`_feelAction(type, opts)` +
+> `TAG_TO_EMOTION`) wertet jede Substanz (Waffen-härte/scharf → chaos/resolve), der W3-δ trägt
+> Triumph/Erleichterung, der V17.44-δ die Bedrohung. **Wenn die Kampf-Mechanik landet, wird der
+> Affekt von Anfang an eingewebt** (`_feelAction("attack", {weapon})` → Zorn ∝ härte; bedroht +
+> keine-Bewältigung → Furcht; besiegen → δ-Triumph; ein friedliches lebendig-Wesen töten → Schuld
+> ∝ dessen lebendig — derselbe Kontext-abhängige Appraisal wie der W4-Verlust). **Damit ist der
+> Emotion-Kern-Bogen (W1–W5) in seiner BAUBAREN Tiefe KOMPLETT** (dimensional · Substanz · Zeit ·
+> Sozial · Abenteuer); der Kampf-Affekt ist das EINE dokumentierte Future-Hook, das auf sein
+> Feature wartet. **Nächst (jenseits des Emotion-Kerns): die Wertungs-Phase 4 (die Klammer) —
+> jetzt ist `δ_spieler` REICH (differenziert, fusioniert, zeitlich, sozial) → die Welt kann
+> LERNEN, was den Spieler freut (Black & White, generalisiert).**
 
 ---
 
