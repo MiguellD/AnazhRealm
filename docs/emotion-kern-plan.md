@@ -151,16 +151,36 @@ ist die Vereinheitlichung (Effizienz durch Einheit, §2 des wahren Nordens) UND 
 
 ## 4. Die WELLEN (jede Verdichtung, foundation-first, mit VERIFIZIERTEM Konsumenten)
 
-**W1 — Das dimensionale Substrat + die FUSION (die Geometrie).** `AnazhRealm.EMOTION_
-GEOMETRY` (frozen: jede Achse → `{valenz, erregung}`) + `_emotionState()` → der fusionierte
-READOUT: das DOMINANTE Gefühl + der Valenz/Erregung-Schwerpunkt + die INTENSITÄT (Abstand
-vom Neutralen). Plus eine SANFTE Kohärenz in `updatePlayerEmotions` (gegensätzliche Achsen
-dämpfen sich mild → der Zustand ist ein kohärenter Punkt, nicht 6 unabhängige Maxima) —
-ADDITIV + gentle, getestet dass die 0.7-Trigger erreichbar BLEIBEN (V17.30-Wächter).
-KONSUM: bittersüß (joy+sorrow hoch) → Valenz ~0 ABER Intensität hoch + ein dominantes
-Gefühl emergiert (die Fusion, messbar); der Readout speist Journal/UI/KI mit einem
+**W1 — Das dimensionale Substrat + die FUSION (die Geometrie). ✅ GEBAUT (V17.45).**
+`AnazhRealm.EMOTION_GEOMETRY` (frozen: jede Achse → `{valenz, erregung}`) + `_emotionState()`
+→ der fusionierte READOUT: das DOMINANTE Gefühl + der Valenz/Erregung-Schwerpunkt + die
+INTENSITÄT (Abstand vom Neutralen). Plus eine SANFTE Kohärenz in `updatePlayerEmotions`
+(gegensätzliche Achsen dämpfen sich mild → der Zustand ist ein kohärenter Punkt, nicht 6
+unabhängige Maxima) — ADDITIV + gentle, getestet dass die 0.7-Trigger erreichbar BLEIBEN
+(V17.30-Wächter). KONSUM: bittersüß (joy+sorrow hoch) → Valenz ~0 ABER Intensität hoch + ein
+dominantes Gefühl emergiert (die Fusion, messbar); der Readout speist Journal/UI/KI mit einem
 REICHEN Zustand statt 6 Zahlen. *Risiko niedrig (Geometrie ist Daten; Kohärenz gentle +
 getestet).* — **Das Substrat, auf dem L2/L3 stehen.**
+
+> **GEBAUT (V17.45):** `EMOTION_GEOMETRY` + `EMOTION_LABEL` (frozen, Russell-Werte: joy/hope/
+> peace +Valenz, sorrow/chaos −Valenz, awe ambivalent/höchste Erregung; peace↔chaos Erregungs-
+> Gegenpol) + `_emotionState()` (Schwerpunkt + INTENSITÄT). **Der Schlüssel-Konstruktions-Punkt
+> (in der adversarialen Selbstprüfung gefunden): die Intensität ist die 6-dim Vektor-Magnitude,
+> NICHT die des Schwerpunkts** — sonst läse bittersüß als „low-intensity neutral" (Schwerpunkt
+> ~0); mit der 6-dim-Magnitude hat bittersüß Valenz~0 ABER hohe Intensität → ein voller Zustand
+> (Label „Zwiespalt (Freude und Trauer)", `mix`). Die KOHÄRENZ in `updatePlayerEmotions` ist
+> geometrie-deriviert (negativer Dot → mild dämpfen), rein DISSIPATIV (kein Runaway) +
+> proportional zur Gegen-Achse → eine EINZELNE klare Emotion bleibt unberührt (0.7-Trigger heil).
+> **KONSUMENT (kein Passagier, V17.31): `llmBuildSystemPrompt` trägt jetzt die Spieler-Stimmung**
+> — vorher kannte die KI-Persona die Spieler-Emotion GAR NICHT (eine Symbiose-Lücke). GEMESSEN
+> (`checkBandV1745EmotionCore`, 13 grün: Geometrie + Vorzeichen, klares dominantes Gefühl,
+> bittersüß [Valenz~0, Intensität HOCH, Zwiespalt+mix], Ruhe, **KONSUM die KI kennt Freude/
+> Zwiespalt/Ruhe**, Kohärenz [Gegenpol dämpft, EINZELNE Emotion nicht]). Plus zwei seit V17.44
+> latente KONFOUNDER geheilt (gemessen, kein „Last-Flake": die Ring-3-Decay-Probe — der
+> Appraisal hob joy über die 10s-delta → auf reinen Decay isoliert; 6.G3.c — gesättigtes sorrow
+> clampt den +0.2-Stempel → auf den Intent isoliert). node-check/format/lint grün, „Alle
+> Invarianten OK". EHRLICH: W1 beweist die MECHANIK (Fusion + Kohärenz rechnen richtig + werden
+> konsumiert); ob es sich „echt anfühlt" ist der Schöpfer-Browser. **Nächst: W2 (der Keystone).**
 
 **W2 — Die Appraisal-Brücke + der Hylomorphismus (EVENT → Appraisal → Emotion). DER
 KEYSTONE.** `_appraise(event)` → Appraisal-Vektor (Valenz/Magnitude/Agency/Gewissheit/

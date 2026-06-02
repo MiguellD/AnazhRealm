@@ -282,7 +282,11 @@ EHRLICH: action-spezifische Gewöhnung (das 100. Haus) ist NICHT voll gelöst (d
 Nudge bleibt fix) — bewusst (Schöpfung darf belohnend bleiben); die SITUATIONS-Gewöhnung ist der
 echte Tretmühl-Effekt.
 
-**Phase 4 (V17.45, KÜR) — Der Kreis: die Welt lernt, was DICH glücklich macht.**
+**Phase 4 (KÜR — NACH dem Emotion-Kern, `docs/emotion-kern-plan.md`) — Der Kreis: die
+Welt lernt, was DICH glücklich macht.** (Re-sequenziert 02.06.: V17.45 wurde der
+Emotion-Kern W1 — das dimensionale Substrat + die Fusion; Phase 4 folgt, sobald der
+Emotion-Kern das `δ_spieler` REICH gemacht hat. Die Klammer ist nur so mächtig wie das
+Erleben, das sie selektiert — darum erst der Kern, dann die Klammer.)
 Die Klammer: `rule.value` und `δ_spieler` sind DASSELBE Vorhersagefehler-Signal an
 verschiedenen Orten. Eine Regel, die nahe dem Spieler feuert UND mit einem positiven
 `δ_spieler` zusammenfällt, bekommt Bonus-Credit → der Nexus **evolviert Regeln, die das

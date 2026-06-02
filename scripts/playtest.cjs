@@ -3049,6 +3049,126 @@ async function checkBandV1744Appraisal(ctx) {
     );
 }
 
+// V17.45 — Der emotionale Kern W1: das dimensionale Substrat + die FUSION
+// (docs/emotion-kern-plan.md). Unter den sechs diskreten Gefühlen liegt ein
+// kontinuierlicher Affekt-Raum (EMOTION_GEOMETRY: Valenz × Erregung, Russell). Der
+// fusionierte Readout (`_emotionState`) liest das dominante Gefühl + den Schwerpunkt
+// + die INTENSITÄT (6-dim Abstand vom Neutralen) — bittersüß hat Valenz~0 ABER hohe
+// Intensität (die Fusion, die das additive Modell VERFEHLT). Eine gentle Kohärenz
+// in updatePlayerEmotions lässt gegensätzliche Achsen sich mild dämpfen → der
+// Zustand wird ein kohärenter Punkt. Diese Welle prüft KONSUM (die KI kennt jetzt
+// die Stimmung — vorher eine Lücke), nicht blosse Existenz (V17.31-Lehre).
+async function checkBandV1745EmotionCore(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const GEO = r.constructor.EMOTION_GEOMETRY;
+        const axes = r.constructor.EMOTION_AXES;
+
+        // save
+        const savedEmo = { ...p.emotions };
+        const savedBase = p.wohlBaseline;
+        const savedTick = p.emotionLastTick;
+        const savedApply = { ...(p.emotionLastApply || {}) };
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        const savedEmoField = r.state.emotionField;
+        const savedHp = p.hp;
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+
+        // (1) Die Geometrie: alle 6 Achsen, prinzipielle Vorzeichen (Russell-Circumplex).
+        out.geoComplete =
+            !!GEO &&
+            axes.every((a) => GEO[a] && typeof GEO[a].valenz === "number" && typeof GEO[a].erregung === "number");
+        out.geoValenceSigns =
+            GEO.joy.valenz > 0 && GEO.hope.valenz > 0 && GEO.peace.valenz > 0 && GEO.sorrow.valenz < 0 && GEO.chaos.valenz < 0;
+        out.geoArousalOpposed = GEO.peace.erregung < 0 && GEO.chaos.erregung > 0; // peace↔chaos = Erregungs-Gegenpol
+
+        // (2) Der Readout — ein KLARES dominantes Gefühl.
+        setEmo({ joy: 0.8 });
+        const sClear = r._emotionState();
+        out.clearDominant =
+            sClear.dominant === "joy" && sClear.valence > 0.5 && sClear.intensity > 0.7 && sClear.label === "Freude";
+
+        // (3) Die FUSION — bittersüß: die VALENZ hebt sich auf, die INTENSITÄT bleibt HOCH.
+        setEmo({ joy: 0.7, sorrow: 0.7 });
+        const sMix = r._emotionState();
+        out.bittersweetValenceCancels = Math.abs(sMix.valence) < 0.1;
+        out.bittersweetIntensityHigh = sMix.intensity > 0.9; // das additive Modell verfehlt das
+        out.bittersweetLabel = typeof sMix.label === "string" && sMix.label.includes("Zwiespalt") && Array.isArray(sMix.mix);
+
+        // (4) Ruhe — wenig Aktivierung → ein ruhiger Grund-Affekt.
+        setEmo({});
+        const sCalm = r._emotionState();
+        out.calmReadout = sCalm.intensity < 0.2 && sCalm.label === "ruhig";
+
+        // (5) KONSUM (kein Passagier, V17.31): die KI KENNT die Stimmung des Spielers
+        // (llmBuildSystemPrompt — vorher trug der Persona-Prompt NULL Emotion).
+        setEmo({ joy: 0.8 });
+        out.promptClear = r.llmBuildSystemPrompt().includes("Freude");
+        setEmo({ joy: 0.7, sorrow: 0.7 });
+        out.promptMix = r.llmBuildSystemPrompt().includes("Zwiespalt");
+        setEmo({});
+        out.promptCalm = r.llmBuildSystemPrompt().includes("ruhig");
+
+        // (6) Die KOHÄRENZ — ein Gegenpol (sorrow) dämpft joy; eine EINZELNE klare
+        // Emotion wird NICHT gedämpft (der V17.30-Wächter: 0.7 bleibt erreichbar).
+        // Differential gegen die gleiche Welt-Position → gemeinsame Feld-Drift kürzt sich.
+        r.state.lifeField = new Map();
+        r.state.emotionField = new Map();
+        p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
+        const pm = r.state.playerMesh.position;
+        const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        const supApply = { joy: 9000, awe: 9000, sorrow: 9000, hope: 9000, peace: 9000, chaos: 9000 }; // Trigger unterdrücken
+        setEmo({ joy: 0.8, sorrow: 0.8 }); // joy + Gegenpol
+        p.wohlBaseline = sit; // δ=0 → kein Appraisal
+        p.emotionLastApply = { ...supApply };
+        p.emotionLastTick = 9000;
+        r.updatePlayerEmotions(9001);
+        const joyWithOpp = p.emotions.joy;
+        setEmo({ joy: 0.8 }); // joy allein
+        p.wohlBaseline = sit;
+        p.emotionLastApply = { ...supApply };
+        p.emotionLastTick = 9000;
+        r.updatePlayerEmotions(9001);
+        const joyAlone = p.emotions.joy;
+        out.coherenceDamps = joyAlone - joyWithOpp > 0.02; // der Gegenpol zieht joy herunter
+        out.singleNotDamped = joyAlone > 0.75; // eine klare Emotion bleibt (0.7-Trigger heil)
+
+        // restore
+        setEmo(savedEmo);
+        p.wohlBaseline = savedBase;
+        p.emotionLastTick = savedTick;
+        p.emotionLastApply = savedApply;
+        p.hp = savedHp;
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        r.state.emotionField = savedEmoField;
+        return out;
+    });
+
+    check("V17.45 Emotion-Kern: EMOTION_GEOMETRY vollständig (alle 6 Achsen, Valenz × Erregung)", res.geoComplete);
+    check("V17.45 Emotion-Kern: prinzipielle Valenz-Vorzeichen (joy/hope/peace +, sorrow/chaos −) — Russell", res.geoValenceSigns);
+    check("V17.45 Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol (die Geometrie trägt die Kohärenz)", res.geoArousalOpposed);
+    check("V17.45 Emotion-Kern: Readout — ein klares dominantes Gefühl (joy=0.8 → Freude, Valenz +)", res.clearDominant);
+    check("V17.45 Emotion-Kern: FUSION — bittersüß hebt die Valenz auf (~0)", res.bittersweetValenceCancels);
+    check(
+        "V17.45 Emotion-Kern: FUSION — bittersüß behält HOHE Intensität (das additive Modell verfehlt das)",
+        res.bittersweetIntensityHigh
+    );
+    check('V17.45 Emotion-Kern: FUSION — bittersüß labelt „Zwiespalt" + nennt die zwei Gefühle (mix)', res.bittersweetLabel);
+    check('V17.45 Emotion-Kern: Ruhe — wenig Aktivierung → „ruhig"', res.calmReadout);
+    check("V17.45 Emotion-Kern: KONSUM — die KI (llmBuildSystemPrompt) kennt ein klares Gefühl (Freude)", res.promptClear);
+    check("V17.45 Emotion-Kern: KONSUM — die KI kennt den Zwiespalt (bittersüß)", res.promptMix);
+    check("V17.45 Emotion-Kern: KONSUM — die KI kennt die Ruhe", res.promptCalm);
+    check("V17.45 Emotion-Kern: Kohärenz — ein Gegenpol (sorrow) dämpft joy (der Zustand wird kohärent)", res.coherenceDamps);
+    check("V17.45 Emotion-Kern: Kohärenz — eine EINZELNE klare Emotion wird NICHT gedämpft (0.7-Trigger heil)", res.singleNotDamped);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -21323,6 +21443,12 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
         if (r.state.creatures.length > 0) {
             const beforeCount = r.state.creatures.length;
+            // V17.45-Härtung (KONFOUNDER, gemessen — kein „Last-Flake"): nach langem
+            // Warmup kann die Stimmung gesättigt sein (sorrow == 1.0) → der +0.2-
+            // Stempel von _creatureNaturalDeath clampt auf 1.0 → der strikte „>"-
+            // Vergleich (1.0 > 1.0) ist FALSCH. Den INTENT isolieren (Tod ADDIERT
+            // sorrow): sorrow auf einen bekannten sub-Sättigungs-Wert setzen.
+            if (r.state.player.emotions) r.state.player.emotions.sorrow = 0.1;
             const beforeSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) || 0;
             const beforeJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
             r._creatureNaturalDeath(r.state.creatures[0]);
@@ -32733,11 +32859,23 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.collectAweOk = out.aweAfterCollect >= 0.1 - 1e-9;
 
         // (b) Decay reduziert über simulierten Zeitfortschritt
+        // V17.45-Härtung (KONFOUNDER, gemessen — kein „Flake"): seit V17.44 HEBT der
+        // Appraisal-Kanal joy bei δ>0 (Situation über der Spieler-Baseline); über die
+        // 10s-delta dieses Tests überstimmt das den 0.05-Decay (warmup-abhängig, ob
+        // δ>0 → der Test flaket). Der INTENT ist NUR der Decay → ihn isolieren: das
+        // lifeField leeren (stabile Aura) + die Spieler-Baseline = aktuelle Situation
+        // → δ=0 → kein Appraisal-Hub, nur der Decay wirkt.
+        const savedLifeRing3 = r.state.lifeField;
+        r.state.lifeField = new Map();
+        const pmRing3 = r.state.playerMesh.position;
+        for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0; // nur joy → keine Kohärenz-Dämpfung
         r.state.player.emotions.joy = 0.5;
+        r.state.player.wohlBaseline = r._playerSituationWohl(r.auraAt(pmRing3.x, pmRing3.z, 110));
         r.state.player.emotionLastTick = 100;
         r.updatePlayerEmotions(110); // 10s vergangen
         out.joyAfterDecay = r.state.player.emotions.joy;
         out.decayLowered = out.joyAfterDecay < 0.5 && out.joyAfterDecay > 0;
+        r.state.lifeField = savedLifeRing3;
 
         // (c) Schwellen-Trigger: sorrow > 0.7 → state.weather = "rainy".
         // lastTick nahe an currentTime, damit der Decay-Schritt
@@ -35121,6 +35259,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1742Wohl(ctx);
             await checkBandV1743RuleFitness(ctx);
             await checkBandV1744Appraisal(ctx);
+            await checkBandV1745EmotionCore(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

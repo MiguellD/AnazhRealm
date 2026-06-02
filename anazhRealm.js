@@ -4070,11 +4070,21 @@ class AnazhRealm {
         // werden kann.
         const companionName = (this.state.grok && this.state.grok.companionName) || "Grok";
         const playerName = (this.state.player && this.state.player.name) || "Schöpfer";
+        // Der emotionale Kern W1 — die KI KENNT jetzt die Stimmung des Spielers (der
+        // fusionierte Readout, kein Sechs-Zahlen-Dump). Bisher war die Spieler-Emotion
+        // der Persona UNSICHTBAR (eine echte Lücke der Symbiose, Pfeiler 1); jetzt liest
+        // sie den reichen Zustand (dominantes Gefühl / „Zwiespalt" bei bittersüß / „ruhig").
+        const es = this._emotionState();
+        const moodLine =
+            es.intensity < 0.2
+                ? `${playerName} ist gerade emotional ruhig.`
+                : `${playerName} fühlt gerade vor allem: ${es.label}.`;
         return [
             `Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
             `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
             `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
             `Dein Spieler heißt ${playerName} und hält sich gern auf: ${tendency}.`,
+            moodLine,
             journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
             "",
             "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
@@ -8280,6 +8290,41 @@ class AnazhRealm {
             }
         }
 
+        // === Der emotionale Kern W1 — die FUSION/Kohärenz ===
+        // Gegensätzliche Achsen (negativer Dot in EMOTION_GEOMETRY: joy↔sorrow,
+        // peace↔chaos, awe↔peace …) dämpfen sich MILD → der Zustand wird EIN
+        // kohärenter Punkt, kein inkohärentes „6 unabhängige Maxima" (joy=1 UND
+        // sorrow=1 zugleich = bedeutungslos). Rein DISSIPATIV (treibt nur Richtung
+        // Kohärenz, kann nicht runaway-en — die V17.44-Feedback-Disziplin) +
+        // proportional zur GEGEN-Achse → eine EINZELNE klare Emotion (Gegen-Achse
+        // ~0) wird NICHT gedämpft → die 0.7-Trigger bleiben erreichbar (V17.30-
+        // Wächter). ADDITIV (alle bestehenden Kanäle bleiben). Damps werden ZUERST
+        // aus dem aktuellen Snapshot berechnet, DANN angewandt → scan-reihenfolge-
+        // unabhängig (deterministisch). Die Dämpfung EMERGIERT aus der Geometrie,
+        // kein Paar-Hardcode (der Hylomorphismus der Emotionen, eine Ebene höher).
+        if (delta > 0) {
+            const geo = AnazhRealm.EMOTION_GEOMETRY;
+            const axes = AnazhRealm.EMOTION_AXES;
+            const cohRate = AnazhRealm.EMOTION_COHERENCE_RATE;
+            const damp = {};
+            for (const a of axes) {
+                const ga = geo[a];
+                let d = 0;
+                for (const b of axes) {
+                    if (b === a) continue;
+                    const gb = geo[b];
+                    const dot = ga.valenz * gb.valenz + ga.erregung * gb.erregung;
+                    if (dot < 0) d += -dot * (p.emotions[b] || 0); // nur gegensätzliche ziehen
+                }
+                damp[a] = d;
+            }
+            for (const a of axes) {
+                if (damp[a] > 0) {
+                    p.emotions[a] = Math.max(0, (p.emotions[a] || 0) - cohRate * damp[a] * delta);
+                }
+            }
+        }
+
         const trigger = (axis, program) => {
             if (p.emotions[axis] < p.emotionThreshold) return;
             const last = p.emotionLastApply[axis] ?? -Infinity;
@@ -8297,6 +8342,59 @@ class AnazhRealm {
         trigger("hope", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]);
         trigger("peace", ["creatures_speed_mul", 0.7]);
         trigger("chaos", ["creatures_speed_mul", 1.5]);
+    }
+
+    // === Der emotionale Kern W1 — der fusionierte READOUT (docs/emotion-kern-plan.md) ===
+    // Projiziert die sechs Achsen über die EMOTION_GEOMETRY auf den kontinuierlichen
+    // Affekt-Raum + liest die FUSION: das dominante Gefühl, der Valenz/Erregung-
+    // Schwerpunkt und die INTENSITÄT (Abstand vom Neutralen, 6-dim). Der Witz, den
+    // das additive Modell verfehlt: bei bittersüß (joy + sorrow beide hoch) hebt sich
+    // die VALENZ ~auf, aber die INTENSITÄT bleibt HOCH — ein voller, ambivalenter
+    // Zustand, kein neutraler. So fühlt die Welt einen reichen Zustand statt sechs
+    // Zahlen — das speist die KI (llmBuildSystemPrompt), das Journal, die UI.
+    _emotionState() {
+        const e = this.state.player && this.state.player.emotions;
+        const geo = AnazhRealm.EMOTION_GEOMETRY;
+        const axes = AnazhRealm.EMOTION_AXES;
+        const LABEL = AnazhRealm.EMOTION_LABEL;
+        if (!e) return { dominant: null, valence: 0, arousal: 0, intensity: 0, label: "leer", mix: null };
+        let valence = 0;
+        let arousal = 0;
+        let sumSq = 0;
+        let top1 = null;
+        let top1v = 0;
+        let top2 = null;
+        let top2v = 0;
+        for (const axis of axes) {
+            const v = Math.max(0, e[axis] || 0);
+            const g = geo[axis] || { valenz: 0, erregung: 0 };
+            valence += v * g.valenz;
+            arousal += v * g.erregung;
+            sumSq += v * v;
+            if (v > top1v) {
+                top2 = top1;
+                top2v = top1v;
+                top1 = axis;
+                top1v = v;
+            } else if (v > top2v) {
+                top2 = axis;
+                top2v = v;
+            }
+        }
+        const intensity = Math.sqrt(sumSq); // Abstand vom Neutralen — bittersüß = HOCH trotz Valenz~0
+        let label;
+        let mix = null;
+        if (intensity < 0.2 || !top1) {
+            label = "ruhig"; // wenig Aktivierung → ein ruhiger Grund-Affekt
+        } else if (top2 && top2v > 0.25 && top2v > 0.5 * top1v && geo[top1].valenz * geo[top2].valenz < 0) {
+            // zwei vergleichbar starke Gefühle GEGENSÄTZLICHER Valenz koexistieren
+            // → ein voller, ambivalenter Zustand (bittersüß), kein neutraler.
+            mix = [top1, top2];
+            label = `Zwiespalt (${LABEL[top1]} und ${LABEL[top2]})`;
+        } else {
+            label = LABEL[top1]; // ein klares dominantes Gefühl
+        }
+        return { dominant: top1, valence, arousal, intensity, label, mix };
     }
 
     // ### Ring 4 — anazhSymphony V1 ###
@@ -43875,7 +43973,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.44.0";
+AnazhRealm.VERSION = "17.45.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -44877,6 +44975,45 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
 // Die sechs Emotions-Achsen — die EINE Liste (Hylomorphismus-Stil), genutzt vom
 // räumlichen Emotions-Blend (auraAt) + den Reset-Pfaden.
 AnazhRealm.EMOTION_AXES = Object.freeze(["joy", "awe", "sorrow", "hope", "peace", "chaos"]);
+
+// === Der emotionale Kern W1 — das dimensionale Substrat (docs/emotion-kern-plan.md) ===
+// Unter den sechs diskreten Gefühlen liegt ein KONTINUIERLICHER Raum: jeder Affekt
+// ist ein PUNKT in Valenz × Erregung (Russell-Circumplex, Mehrabian-PAD). Diese
+// Geometrie macht aus „6 unabhängigen Schiebern" EINEN kohärenten Zustand:
+//   - der READOUT (`_emotionState`) liest den Valenz/Erregung-Schwerpunkt + die
+//     INTENSITÄT (Abstand vom Neutralen, 6-dim) → bittersüß (joy+sorrow) hat
+//     Valenz~0 ABER hohe Intensität (die FUSION, die das additive Modell verfehlt);
+//   - die KOHÄRENZ (in updatePlayerEmotions) lässt gegensätzliche Achsen (negativer
+//     Dot in DIESER Geometrie) sich mild dämpfen → der Zustand wird ein Punkt, kein
+//     inkohärentes „6 Maxima zugleich". Die Dämpfung EMERGIERT aus der Geometrie
+//     (kein Sonderfall-Paar-Hardcode) — der Hylomorphismus der Emotionen, eine Ebene
+//     höher. Werte aus dem Circumplex (joy/awe/hope/peace +Valenz, sorrow/chaos
+//     −Valenz; awe ambivalent → ~0, höchste Erregung/„Weite"). Browser-justierbar.
+AnazhRealm.EMOTION_GEOMETRY = Object.freeze({
+    joy: { valenz: 0.9, erregung: 0.5 }, // hohe Valenz, gehobene Erregung
+    awe: { valenz: 0.1, erregung: 0.9 }, // ambivalent (Furcht + Wunder), höchste Erregung/Weite
+    sorrow: { valenz: -0.9, erregung: -0.4 }, // tiefe Valenz, niedrige Erregung
+    hope: { valenz: 0.7, erregung: 0.2 }, // positiv, sanfte zukunfts-Erregung
+    peace: { valenz: 0.6, erregung: -0.7 }, // positiv, ruhig (niedrigste Erregung)
+    chaos: { valenz: -0.7, erregung: 0.7 }, // negativ, hohe Erregung (das Gegenteil von Frieden)
+});
+
+// Menschen-lesbare Namen der Achsen — der fusionierte Readout (`_emotionState`)
+// gibt sie an die KI/das Journal/die UI als REICHEN Zustand statt sechs Zahlen.
+AnazhRealm.EMOTION_LABEL = Object.freeze({
+    joy: "Freude",
+    awe: "Ehrfurcht",
+    sorrow: "Trauer",
+    hope: "Hoffnung",
+    peace: "Frieden",
+    chaos: "Aufruhr",
+});
+
+// Die GENTLE Rate der Kohärenz-Dämpfung (pro Sekunde × Gegen-Achsen-Aktivierung ×
+// |Dot|). Bewusst klein: eine EINZELNE klare Emotion (Gegen-Achse ~0) wird NICHT
+// gedämpft (die 0.7-Trigger bleiben erreichbar, V17.30); nur ein inkohärenter
+// Doppel-Maxima-Zustand (joy UND sorrow hoch) löst sich sanft auf. Browser-justierbar.
+AnazhRealm.EMOTION_COHERENCE_RATE = 0.04;
 
 AnazhRealm.EMOTION_FIELD = Object.freeze({
     decayPerSec: 0.012, // Halbwertszeit ~58 s — Gefühle verblassen schneller als Leben
