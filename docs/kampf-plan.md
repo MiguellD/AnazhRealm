@@ -20,8 +20,10 @@ Fähigkeits-Profil). **Der AKTIVE, noch ungebaute Plan ist §11 — der vereinte
 frei · Materie kostet), das jeder Lesart (Gerät · Rüstung · Trank · Avatar · Portal · Fahrzeug) ihren
 material-zahlenden Werk-Akt gibt, die vier Schöpfungs-Drawer in EINE Werkstatt-Gebärmutter zieht, und das
 Teilen im Ultiversum klärt (Plan frei kopierbar/signiert, Werk kostet herkunfts-agnostisch — für Strukturen
-schon BEWIESEN, Sonde B). §10 ist die erste konkrete Instanz (das Gerät schmieden). Teilschritte S1–S9 in
-§11.7. Wer den Bogen weiterbaut, liest §8/§9 (was gilt) + §11 (was kommt) ZUERST.
+schon BEWIESEN, Sonde B). §10 ist die erste konkrete Instanz (das Gerät schmieden). Teilschritte S1–S11 in
+§11.7 (inkl. der Modus-Kristallisation §11.2: Materie kostet in pfad+frieden, frei nur in schöpfer · der
+Avatar als Werk-Akt · die Zutaten-Ökonomie des Tranks · die Animation in der Werkstatt als Kirsche). Wer den
+Bogen weiterbaut, liest §8/§9 (was gilt) + §11 (was kommt) ZUERST.
 
 ---
 
@@ -432,7 +434,7 @@ wird begrifflich „**Gerät**".
   ein „Fertigen/Schmieden"-Akt verbraucht die Teil-Materialien (Reuse `computeBuildCost`/
   `tryConsumeBuildCost` — DIESELBE Volumen-Formel wie Bauen) + friert die Präzision ein (Snapshot) +
   registriert das Gerät als haltbar/equip-fähig. Der Bauplan bleibt der freie Plan; das Schmieden ist die
-  Verkörperung. Modus-gated wie Bauen (pfad zahlt; frieden/schöpfer frei). VERSCHMILZT die zwei Systeme:
+  Verkörperung. Modus-gated (pfad+frieden zahlen, frei nur in schöpfer — die §11.2-Kristallisation). VERSCHMILZT die zwei Systeme:
   das geschmiedete Gerät ist im Register UND in der Hand. *Headless: schmieden zieht Inventar + produziert
   ein registriertes, haltbares Gerät; im Plan-Zustand kein Material-Zug.*
 - **F4 — In der Hand SICHTBAR** (Riss E · Render · Schöpfer-Browser): das gehaltene Gerät rendert als
@@ -494,18 +496,37 @@ wie ein selbst-entworfener), und Pläne reisen frei (`define_blueprint`-Broadcas
 Modell nicht — wir GENERALISIEREN das bewährte Struktur-Muster auf alle Rollen** (die Heilige Lektion:
 Verdichtung des Vorhandenen, kein neues System).
 
-### 11.2 Die drei Akte (die Kosten-Klärung — „wann wird das Material gespeist?")
+### 11.2 Die drei Akte + die Modus-Kristallisation (die Kosten-Klärung)
 
-Der „wann kostet es?"-Faden löst sich in drei sauber getrennte Akte:
+Der „wann kostet es?"-Faden löst sich in Akte:
 
-- **WERK** (machen: bauen · schmieden · weben · brauen): zieht Material EINMAL, friert die Präzision ein
-  (Snapshot), gebiert das reale Ding. Modus-gated wie heute (pfad zahlt; frieden/schöpfer frei — die Agency
-  bleibt nur im Wettkampf-Modus material-gebunden, der bestehende Design-Treiber).
-- **GEBRAUCH** (benutzen: ausrüsten · schwingen · tragen): FREI — du hast beim Werk schon gezahlt. (Der
-  Trank ist die Ausnahme: trinken verbraucht EINE Ladung — das Werk gebar N endliche Ladungen.)
-- **VERKÖRPERN** (eine Seele/Avatar tragen): die bewusste AUSNAHME — Identität ist keine Materie. Frei
-  (oder eine symbolische „erste Verkörperung" — **Schöpfer-Entscheid**, nicht angenommen). Eine Seele ist
-  WER du bist, kein Objekt; der Vibe-Pass trägt sie (Custom-Seele = Avatar-Identität).
+- **WERK** (machen: bauen · schmieden · weben · brauen · **einen Körper formen**): zieht Material EINMAL,
+  friert die Präzision ein (Snapshot), gebiert das reale Ding.
+- **GEBRAUCH** (benutzen: ausrüsten · schwingen · tragen · **eine fertige Seele verkörpern**): FREI — du hast
+  beim Werk schon gezahlt. (Der Trank: trinken verbraucht das Gebraute — die Wurzel ist die Zutaten, §11.3.)
+
+**Der Avatar ist KEINE Ausnahme** (Schöpfer-Korrektur 02.06., kongruenter als mein erster Wurf): einen
+stärkeren/eigenen Körper zu FORMEN ist ein Werk-Akt (kostet gesammelte Rohstoffe) — `applyPlayerSoulFrom­
+Blueprint` baut heute aus DENSELBEN Parts × Material wie alles, nur ohne Kosten. Eine fertige Seele zu
+TRAGEN ist Gebrauch (frei). Die drei Starter-Seelen (Mensch/Phönix/Drache) sind frei gegebene Identitäten
+(wie die built-in Baupläne freie Pläne sind). **Identität ist der GEBRAUCH; der Körper ist das WERK** — im
+pfad/frieden sammelst du Rohstoffe für individuelle, stärkere Avatare. Voll kongruent, alles in der Werkstatt.
+
+**Die Modus-Kristallisation (Schöpfer-Korrektur 02.06. — eine echte Diskrepanz):** GEMESSEN sind HEUTE ALLE
+Kosten-/Mühe-Gates `pfad`-only (`_buildMaterialGate` · die Stamina · die Abbau-Mühe · das Stations-Gate) →
+**frieden ist exakt so gratis + mühelos wie schöpfer.** Das ist falsch: *frieden bedeutet nicht gratis — das
+wäre der Schöpfer-Modus.* Die saubere Kristallisation — zwei Achsen (Materie · Mühe), drei Modi:
+
+| Modus | Mantra | Materie (machen) | Mühe + Bedrohung (Stamina · Abbau-Hieb · Furcht) |
+| --- | --- | --- | --- |
+| **schöpfer** | gehorcht | frei | frei |
+| **frieden** | umarmt | **kostet** (du sammelst + machst) | mild/keine (friedlich, kein Schrecken) |
+| **pfad** | verhandelt | kostet | voll (Mühe + Ausdauer + Bedrohung) |
+
+→ **Materie kostet in pfad UND frieden; gratis nur in schöpfer. Mühe/Bedrohung ist die pfad-Achse** (frieden
+dämpft sie schon — die Kreatur-Menace ist seit V17.58 modus-skaliert `pfad=1 · frieden<1 · schöpfer<<1`).
+Das ändert das bestehende `_buildMaterialGate` (heute pfad-only → soll pfad+frieden zahlen) und prägt das
+neue `_makeCostGate` von Anfang an. Eine echte Welle, kein bloßer Plan-Satz.
 
 ### 11.3 Das vollständige Hauptbuch der losen Fäden (GEMESSEN, beide Sonden 02.06.)
 
@@ -516,8 +537,8 @@ Der „wann kostet es?"-Faden löst sich in drei sauber getrennte Akte:
 | **Bauwerk · Maschine · Portal-Struktur** | bauen (`confirmBuild`) | ✅ pfad (`tryConsumeBuildCost`) | platzieren | — **das VORBILD (korrekt)** |
 | **Gerät** (Werkzeug+Waffe) | schmieden | ❌ frei (`equipHeld`) | schwingen/abbauen frei | kein Schmiede-Akt (§10) |
 | **Rüstung** | schmieden/weben | ❌ frei (`equipArmor`) | tragen frei | kein Mach-Akt |
-| **Trank** | brauen | ❌ frei (`setBlueprintAsConsumable`) | `activateConsumable` gibt **unendlichen Boost, NIE verbraucht** | kein Brau-Akt + unerschöpflich + Bauplan = Trank (1 Plan = ∞ Tränke) |
-| **Avatar/Seele** | verkörpern | ❌ frei (`applyPlayerSoul`) | swap frei | die bewusste Ausnahme (§11.2) |
+| **Trank** | brauen | ❌ frei (`setBlueprintAsConsumable`) | `activateConsumable` gibt **∞ Boost, NIE verbraucht** | **keine Zutaten in der Welt** (Wurzel) + kein Brau-Akt + unerschöpflich |
+| **Avatar/Seele** | einen Körper FORMEN (`applyPlayerSoulFromBlueprint`) | ❌ frei | fertige Seele tragen frei | kein Mach-Akt + der Baukasten noch nicht sauber in der Werkstatt |
 | **Fahrzeug** (moveable) | bauen ✅ + fahren | ✅ bauen / mount frei | `mountArchitecture`/Fahren dünn | die Fahr-Tiefe (eigener Gameplay-Faden) |
 
 **Quer-schneidende Fäden (gelten für ALLE Lesarten, aus §10.1):**
@@ -529,6 +550,11 @@ Der „wann kostet es?"-Faden löst sich in drei sauber getrennte Akte:
 4. **Keine In-der-Hand-Optik** — das gehaltene Gerät unsichtbar; der einzige Visual ist der Platzier-Schatten.
 5. **Die Schöpfung ist über VIER Drawer zerstreut** — `werkstatt` (Parts/Tools) · `ausrüstung` (Rüstung/
    Trank/Portal markieren+ausrüsten) · `spieler` (Seele) · `kreaturen` (Kreatur-Seele); fünf Orte, ein Akt.
+6. **Keine Zutaten-Ökonomie** (Schöpfer-Befund 02.06., die wahre Tiefe des Tranks) — GEMESSEN sind die
+   Materialien stein/holz/eisen/bronze/quarz/leder; KEIN Kraut/keine Essenz, keine erntbare Flora für Tränke.
+   Ein Trank kann nichts „verbrauchen", weil es nichts zu ernten gibt — darum ist „brauen kostet" heute leer.
+   Die wahre Tiefe: ein Busch/eine Pflanze → eine Alchemie-Zutat → brauen verbraucht sie, wie der Rest. Sie
+   knüpft an die V17.1-Klein-Vegetation (Blüten/Farne/Sporen existieren als DEKO → erntbar machen = Zutaten).
 
 **Das Teilen (GEMESSEN, Sonde B — das Modell HÄLT für Strukturen, bricht für den Rest):**
 - Pläne frei teilbar ✅ — `define_blueprint` (broadcastbar, NICHT in `NON_BROADCASTABLE_OPS`), Welt-Snapshot
@@ -544,18 +570,19 @@ Der „wann kostet es?"-Faden löst sich in drei sauber getrennte Akte:
 
 Die Lösung ist NICHT ein neues Kosten-System, sondern die **Generalisierung des bewährten Struktur-Akts**:
 ein rollen-agnostisches Mach-Tor `_makeCostGate(name)` (die Verallgemeinerung von `_buildMaterialGate`)
-routet JEDEN Werk-Akt durch `computeBuildCost`/`tryConsumeBuildCost` (dieselbe Volumen-Formel, dasselbe
-Modus-Gate, dieselbe Herkunfts-Agnostik). Dann bekommt jede Lesart ihren Werk-Verb, der durch DASSELBE Tor
-geht:
-- **bauen** → platzieren (existiert — wird auf `_makeCostGate` umgehängt, verhaltens-gleich).
-- **schmieden** (Gerät/Rüstung) → Material ziehen + Präzision einfrieren + als haltbar/ausrüstbar registrieren
-  (der §10-F3-Akt, jetzt auch für Rüstung).
-- **brauen** (Trank) → Material ziehen + N endliche Ladungen gebären (der Trank wird verdient + endlich;
-  trinken verbraucht eine Ladung statt unendlichem Gratis-Boost).
-- **verkörpern** (Seele) → frei (die §11.2-Ausnahme; kein Mach-Tor, es sei denn der Schöpfer will eine
-  symbolische erste-Verkörperung-Gebühr).
+routet JEDEN Werk-Akt durch `computeBuildCost`/`tryConsumeBuildCost` (dieselbe Volumen-Formel, dieselbe
+Herkunfts-Agnostik) — mit der KRISTALLISIERTEN Modus-Achse (§11.2: zahlt in pfad UND frieden, frei nur in
+schöpfer). Dann bekommt jede Lesart ihren Werk-Verb durch DASSELBE Tor:
+- **bauen** → platzieren (existiert — wird auf `_makeCostGate` umgehängt; lädt damit zugleich die Modus-
+  Korrektur — frieden zahlt jetzt auch).
+- **schmieden/weben** (Gerät/Rüstung) → Material ziehen + Präzision einfrieren + als haltbar/ausrüstbar
+  registrieren (der §10-F3-Akt, jetzt auch für Rüstung).
+- **brauen** (Trank) → die GEERNTETEN Zutaten ziehen (sobald die Zutaten-Ökonomie steht, §11.3-Faden 6) + die
+  Wirkung als verbrauchbares Gebräu gebären (trinken verbraucht es — kein ∞-Gratis-Boost mehr).
+- **einen Körper formen** (Avatar) → `applyPlayerSoulFromBlueprint` durchs Mach-Tor: gesammelte Rohstoffe
+  ziehen → ein stärkerer/eigener Körper. Eine fertige Seele zu tragen (verkörpern) bleibt frei (§11.2).
 Die BEWÄHRTE Maschinerie (`confirmBuild` zahlt seit V8.37 korrekt + herkunfts-agnostisch), nur einmal
-verallgemeinert + sechsfach gerufen. Kein Parallelpfad (V17.9).
+verallgemeinert + rollen-gerecht gerufen. Kein Parallelpfad (V17.9).
 
 ### 11.5 Die EINE Werkstatt-Gebärmutter (ein Fluss, nicht vier Drawer)
 
@@ -579,45 +606,66 @@ signiert den Plan → teilt ihn (Broadcast/Recipe-Import/Fusion/Bibliothek) → 
 gratis → zahlt SEIN Material beim Schmieden → hält das echte Gerät, mit der beweisbaren Autoren-Signatur.
 Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis, ökonomisch sauber.
 
-### 11.7 Der sequenzierte Teilschritt-Plan (S1–S9 — §10s F-Schritte falten ein)
+### 11.7 Der sequenzierte Teilschritt-Plan (S1–S11 — §10s F-Schritte falten ein)
 
 - **S1 — die Werkstatt erkennt JEDE Lesart** (verallgemeinert §10-F1 auf alle Rollen): die Werkstatt-Rollen-
   Zeile zeigt die emergente Fähigkeit für ALLE (Gerät → Klinge/Brecher · Rüstung → Schutz-Profil · Trank →
   Wirk-Profil · Seele → Wesen · Portal → Tor · Maschine → Werkbank), aus der Form abgelesen, nicht „nur
   Bauwerk". *Niedrig · headless · heilt sofort den sichtbaren Befund überall.*
-- **S2 — der universelle Werk-Akt `_makeCostGate`** (die Generalisierung von `_buildMaterialGate`):
-  `confirmBuild` wird darauf umgehängt (verhaltens-gleich, ein Refactor zum geteilten Rückgrat). Das
-  Fundament für S3–S5. *Niedrig · headless (kein Verhaltens-Bruch).*
+- **S2 — das Mach-Tor `_makeCostGate` + die Modus-Kristallisation** (§11.2): `_buildMaterialGate`
+  verallgemeinern; `confirmBuild` darauf umhängen; UND die Modus-Achse kristallisieren (Materie kostet in
+  pfad+frieden, frei nur in schöpfer — frieden zahlt jetzt). Fundament für S3–S6 + die Diskrepanz-Heilung.
+  *Niedrig-mittel · headless (ein echter Verhaltens-Wechsel für frieden, getestet).*
 - **S3 — Gerät schmieden** (= §10-F2+F3): schmieden zieht Material + friert Präzision + registriert das
   gehaltene Gerät; Präzision moduliert auch das Abbauen (die §4.3-Rekursion schließt). *Headless.*
 - **S4 — Rüstung schmieden/weben**: dasselbe Muster — Rüstung machen kostet Material + friert Präzision;
   ausrüsten bleibt frei. *Headless.*
-- **S5 — Trank brauen**: brauen kostet Material + gebiert N endliche Ladungen; trinken verbraucht eine
-  Ladung (heilt den unendlich-gratis-Boost — der subtilste Fund von Sonde A). *Headless.*
-- **S6 — der EINE Fluss** (§11.5): die Schöpfung in die Werkstatt zusammenziehen, `ausrüstung`/`spieler`
+- **S5 — Avatar: einen Körper formen** (§11.2): `applyPlayerSoulFromBlueprint` durchs Mach-Tor → gesammelte
+  Rohstoffe ziehen für einen stärkeren/eigenen Körper; verkörpern (tragen) bleibt frei. Reiner Mach-Kosten-
+  Zusatz, risikoarm wie S3/S4. *Headless.*
+- **S6 — die Zutaten-Ökonomie + Trank brauen** (§11.3-Faden 6, die wahre Tiefe): die V17.1-Klein-Vegetation
+  (Blüten/Farne/Sporen) ERNTBAR machen → Alchemie-Zutat-Materialien → brauen zieht sie (`_makeCostGate`) +
+  gebiert ein verbrauchbares Gebräu (trinken verbraucht es). Größer (Welt-Inhalt + Material-System). *Headless
+  für Kosten/Verbrauch; das Flora-Feel = Schöpfer-Browser.*
+- **S7 — der EINE Fluss** (§11.5): die Schöpfung in die Werkstatt zusammenziehen, `ausrüstung`/`spieler`
   werden Gebrauchs-Flächen. *UI-Konsolidierung · teils Schöpfer-Browser (Intuition/UX).*
-- **S7 — die Teilen-Konsistenz** (§11.6): das Mach-Tor ist herkunfts-agnostisch by-construction → ein
-  geteiltes Gerät/Trank kostet wie ein eigenes; die Signatur reist. Fällt fast aus S2 heraus. *Headless-
-  Verifikation.*
-- **S8 — in der Hand sichtbar** (= §10-F4): das gehaltene Gerät rendert in der Hand. *Render · Schöpfer-Browser.*
-- **S9 — die Crafting-Op emergiert aus der Form** (= §10-F5): scharf → schneiden, stumpf-hart → schmieden,
+- **S8 — die Teilen-Konsistenz** (§11.6): das Mach-Tor ist herkunfts-agnostisch by-construction → ein
+  geteiltes Gerät/Trank/Avatar kostet wie ein eigenes; die Signatur reist. Fällt fast aus S2 heraus.
+  *Headless-Verifikation.*
+- **S9 — in der Hand sichtbar** (= §10-F4): das gehaltene Gerät rendert in der Hand. *Render · Schöpfer-Browser.*
+- **S10 — die Crafting-Op emergiert aus der Form** (= §10-F5): scharf → schneiden, stumpf-hart → schmieden,
   das manuelle opName-Tippen fällt. *Tief · mit `diag-arch-tags`-Wächter.*
-- **Avatar-Verkörpern** (§11.2) + **Fahrzeug-Fahren** (§11.3): die bewusste Ausnahme bzw. ein eigener
-  Gameplay-Faden — **Schöpfer-Entscheid**, nicht in dieser Sequenz angenommen.
+- **S11 — die Animation in der Werkstatt (DIE KIRSCHE)** (Schöpfer-Vision 02.06.): heute ist die Animation
+  pro built-in Seele hartcodiert (das sin/cos in `createPlayerSoul`/`buildCreatureGroup` — Walk-Cycle,
+  Flügelschlag, Schweif-Welle); ein Custom-Körper/Fahrzeug bewegt sich nicht eigen. Die Krönung: eine
+  DEKLARATIVE Part-Animation im Werkstatt-Editor (welche Parts oszillieren/rotieren, Frequenz · Phase · Achse
+  · Amplitude) → ein geschmiedeter Avatar geht, ein gebautes Fahrzeug dreht seine Räder, alles vom Schöpfer
+  geformt, nichts hartcodiert. Der Hylomorphismus eine letzte Ebene weiter (Form × Material × Bewegung). *Die
+  ambitionierteste Welle — ein echtes Animations-Substrat; das Feel = Schöpfer-Browser.*
+- **Fahrzeug-Fahren** (§11.3): das Bauen kostet schon; die Fahr-/Mount-Tiefe (Steuerung, Sitz, Trägheit) ist
+  ein eigener Gameplay-Faden — **Schöpfer-Entscheid** wann, nicht in dieser Sequenz angenommen (S11 gibt ihm
+  die Bewegung).
 
-**Reihenfolge-Logik:** S1 (universeller Readout, heilt „nur Bauwerk" überall) + S2 (das Mach-Tor-Rückgrat)
-ZUERST — Fundament + sofort sichtbare Heilung. Dann S3/S4/S5 (die drei Mach-Akte, je eine Welle, je ein
-`checkBand`). Dann S6 (der Fluss), S7 (Teilen, fast gratis), S8/S9 (Optik + tiefes Crafting).
+**Reihenfolge-Logik:** S1 (universeller Readout, heilt „nur Bauwerk" überall) + S2 (das Mach-Tor + die
+Modus-Heilung) ZUERST — Fundament + sofort sichtbare Heilung + die Diskrepanz weg. Dann S3/S4/S5 (die
+risikoarmen Mach-Akte Gerät/Rüstung/Avatar, je eine Welle, je ein `checkBand`). Dann S6 (die Zutaten-
+Ökonomie, Welt-Inhalt), S7 (der Fluss), S8 (Teilen, fast gratis), S9/S10 (Optik + tiefes Crafting), S11 (die
+Animations-Kirsche, zuletzt + am ambitioniertesten).
 
 ### 11.8 Scope + Disziplin (heilig)
 
 - **Heilige Lektion:** die bewährte `confirmBuild`/`computeBuildCost`-Maschinerie wird EINMAL verallgemeinert
   (`_makeCostGate`) + rollen-gerecht gerufen — KEIN „CreationManager"-Modul, kein Parallelpfad (V17.9). Die
   vier Drawer verschmelzen, sie verdoppeln sich nicht.
-- **Die Kosten bleiben modus-gated** (pfad zahlt, frieden/schöpfer frei) — konsistent mit Bauen, bewahrt den
-  bestehenden Design-Treiber (Agency nur im Wettkampf material-gebunden).
-- **Die Avatar-Ausnahme + die Fahrzeug-Fahr-Tiefe sind Schöpfer-Entscheide** — benannt, nicht angenommen.
-- **Headless beweisbar:** der Readout (S1), der Material-Zug + Präzisions-Snapshot (S2–S5), die endlichen
-  Trank-Ladungen, die Herkunfts-Agnostik (S7). **Schöpfer-Browser:** das Feel, der EINE-Fluss-UX (S6), die
-  Hand-Optik (S8). **`diag-arch-tags` vor jeder Rollen-/Tag-Verschiebung** (S9, V17.17). KONSUM verifizieren,
-  nicht Existenz (V17.31).
+- **Die Modi sind kristallisiert** (§11.2): Materie kostet in pfad+frieden (NICHT nur pfad wie heute), frei
+  nur in schöpfer; Mühe/Bedrohung ist die pfad-Achse (frieden mild). Das HEILT die gemessene Diskrepanz
+  (frieden = schöpfer = gratis) — eine bewusste Verhaltens-Korrektur am bestehenden Build-Gate, kein
+  Versehen; sie lädt mit S2.
+- **Der Avatar ist KEINE Ausnahme** (Schöpfer-Korrektur): einen Körper formen = Werk (kostet), tragen = frei.
+  Die **Fahrzeug-Fahr-Tiefe** + das **endlich-vs-wiederholbar des Tranks** bleiben Schöpfer-Entscheide —
+  benannt, nicht angenommen.
+- **Headless beweisbar:** der Readout (S1), der Material-Zug + Präzisions-Snapshot (S2–S6), das Zutaten-
+  Verbrauchen, die Herkunfts-Agnostik (S8). **Schöpfer-Browser:** das Feel, der EINE-Fluss-UX (S7), die
+  Hand-Optik (S9), das Flora-Feel (S6), die Animation (S11 — ein echtes Substrat, am ambitioniertesten).
+  **`diag-arch-tags` vor jeder Rollen-/Tag-Verschiebung** (S10, V17.17). KONSUM verifizieren, nicht Existenz
+  (V17.31).
