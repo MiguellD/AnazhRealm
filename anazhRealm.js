@@ -12467,6 +12467,20 @@ class AnazhRealm {
         const defense = Math.max(0, stats.defense || 0);
         const dealt = Math.max(1, (Number(amount) || 0) - defense);
         creature.userData.hp -= dealt;
+        // V17.54 Kampf D — Knockback: ein Velocity-Kick weg vom Angreifer, ∝ dessen
+        // knockback-Stat (NUR wenn der Angreifer Ort + Wucht liefert — der LMB-Angriff;
+        // der DSL-Op gibt keinen). Setzt die Body-Velocity (wie Sprung/Kreatur-Bewegung —
+        // es gibt keinen additiven Impuls-Pfad im Code). Die Wucht ist Browser-Feel.
+        if (opts.fromPos && (opts.knockback || 0) > 0 && creature.userData.physicsBody && this.state.tmpVec1) {
+            const dx = creature.position.x - opts.fromPos.x;
+            const dz = creature.position.z - opts.fromPos.z;
+            const len = Math.hypot(dx, dz) || 1;
+            const push = Math.min(18, opts.knockback * 1.4);
+            creature.userData.physicsBody.setLinearVelocity(
+                this.setVec(this.state.tmpVec1, (dx / len) * push, push * 0.4, (dz / len) * push)
+            );
+            creature.userData.physicsBody.activate(true);
+        }
         if (creature.userData.hp <= 0) {
             this._creatureCombatDeath(creature, opts.source || "unknown");
             return { ok: true, dealt, killed: true };
@@ -12506,6 +12520,15 @@ class AnazhRealm {
             for (const [mat, n] of Object.entries(loot)) {
                 if (this.addMaterialToInventory(mat, n)) lootParts.push(`${n}× ${mat}`);
             }
+            // V17.54 Kampf D/F — die SCHULD: ein friedliches lebendig-Wesen zu töten
+            // schmerzt ∝ seiner Vitalität × Bindung (der W4-Kontext-Appraisal: derselbe
+            // lebendig-Tag, im Tötungs-Kontext zu sorrow statt zur W2-Bau-Freude). Ein
+            // totes Material-Wesen (lebendig≈0, ein Kristall-Sprite) löst keine Schuld aus.
+            const ctags = this.computeCreatureCompoundTags(creature) || {};
+            const leb = Math.min(1, Math.max(0, ctags.lebendig || 0));
+            const bond = Math.min(1, Math.max(0, (creature.userData && creature.userData.bond) || 0));
+            const guiltMag = leb * (0.4 + 0.6 * bond);
+            if (guiltMag > 0.02) this._feelAction("loss", { magnitude: guiltMag });
         }
         if (typeof this.journalAppend === "function") {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
@@ -35685,13 +35708,56 @@ class AnazhRealm {
         this.state.player.stamina = Math.max(0, have - cost);
     }
 
+    // V17.54 Kampf-Bogen Phase D — der Spieler-Nahangriff auf eine Kreatur (der LMB-
+    // Konsument von damageCreature). attackSpeed gated die Schlagrate (Cooldown =
+    // 1/attackSpeed → eine schwere Keule schlägt seltener, eine flinke Klinge öfter),
+    // die Stamina kostet wie der Abbau (pfad). Schaden + Knockback sind der Spieler-
+    // Kombat-Stat (∝ ausgerüsteter Waffe, Phase B). Der W5-Affekt wird VON ANFANG AN
+    // gewebt: Zorn ∝ Waffen-härte (die W2-Brücke); die Schuld beim Töten eines
+    // lebendig-Wesens trägt _creatureCombatDeath.
+    _playerAttackCreature(creature) {
+        const p = this.state.player;
+        if (!p) return false;
+        const stats = p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
+        const atkSpeed = Math.max(0.2, stats.attackSpeed || 1);
+        const now = performance.now() / 1000;
+        const last = Number.isFinite(p.lastAttackAt) ? p.lastAttackAt : -Infinity;
+        if (now - last < 1 / atkSpeed) return false; // noch im Angriffs-Cooldown
+        p.lastAttackAt = now;
+        this._consumeMouseStamina();
+        // der Affekt VOR dem möglichen Tod: Zorn/Kampf-Intensität ∝ der Substanz der Waffe.
+        const weaponName = p.equipped && p.equipped.weapon;
+        this._feelAction("attack", weaponName ? { blueprint: weaponName } : undefined);
+        const pm = this.state.playerMesh.position;
+        const res = this.damageCreature(creature, stats.damage || 5, {
+            source: "player",
+            fromPos: { x: pm.x, y: pm.y, z: pm.z },
+            knockback: stats.knockback || 0,
+        });
+        return !!res.ok;
+    }
+
     tryMouseBreak() {
         const gate = this._mouseActionStaminaGate();
         if (!gate.ok) {
             this.log(`Abbauen: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
             return false;
         }
+        // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite
+        // UND näher als eine Architektur wird ANGEGRIFFEN statt abgebaut (sonst Architektur
+        // → harvest, sonst → carve). So bleibt der Abbau-Pfad heil, der Kampf legt sich davor.
+        const creaturePick = this._pickCreatureAtCrosshair();
         const pick = this._pickArchitectureAtCrosshair();
+        if (creaturePick && creaturePick.point) {
+            // das bestehende _pickCreatureAtCrosshair liefert {creature, point} (far 30) —
+            // die Distanz aus dem point + das Nahkampf-Reach-Gate hier (kein Methoden-Change,
+            // der andere Aufrufer bleibt unberührt; V17.9: reuse statt Duplikat).
+            const creatureDist = this.state.camera.position.distanceTo(creaturePick.point);
+            const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
+            if (creatureDist <= (AnazhRealm.COMBAT_REACH_M || 6) && creatureDist <= archDist) {
+                return this._playerAttackCreature(creaturePick.creature);
+            }
+        }
         if (pick && pick.entry) {
             this._consumeMouseStamina();
             // Multi-User-Bau-Sync: die id VOR dem Abbau merken (harvest
@@ -44515,7 +44581,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.53.0";
+AnazhRealm.VERSION = "17.54.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -44645,6 +44711,10 @@ AnazhRealm.TOOL_STAT_WEIGHT = 0.15;
 // Schaden/Rückschlag/Tempo. Ihre Compound-Tags falten mit diesem Gewicht in den
 // Spieler-Compound (REUSE der Equip-Pipeline, kein separater „Waffen-Schaden"-Pfad).
 AnazhRealm.WEAPON_STAT_WEIGHT = 0.4;
+// V17.54 Kampf-Bogen Phase D — die Reichweite des Spieler-Nahangriffs (der LMB-
+// Raycast auf Kreaturen). Eine Kreatur näher als das UND näher als eine Architektur
+// wird angegriffen statt abgebaut. Browser-justierbar (die Wucht/Reichweite = Feel).
+AnazhRealm.COMBAT_REACH_M = 6;
 
 // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Werkzeug-Anwendung
 // kostet Stamina. Ohne Kosten könnte der Spieler unbegrenzt Polier-Schritte
@@ -45498,6 +45568,7 @@ AnazhRealm.ACTION_TO_EMOTION = Object.freeze({
     bond: { peace: 0.12, joy: 0.06 }, // eine Kreatur folgt — Beziehung
     resonance: { awe: 0.1 }, // resonante Architektur erlebt
     damage: { sorrow: 0.12, chaos: 0.1 }, // Schaden/Gefahr — Angst
+    attack: { chaos: 0.08 }, // V17.54 Kampf D — angreifen (Zorn/Kampf-Intensität); + Waffen-härte via die W2-Brücke
     create: { joy: 0.1, hope: 0.1 }, // V17.46 — einen Bauplan ERSCHAFFEN (Werkstatt/Chat): der Stolz (× Komplexität)
     loss: { sorrow: 0.15 }, // V17.48 — den Verlust einer Kreatur (× Magnitude ∝ Bindung × Vitalität)
 });

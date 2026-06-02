@@ -3995,6 +3995,107 @@ async function checkBandV1753CreatureCombat(ctx) {
     check("V17.53 Kampf C: KONSUM — der damage_creature-DSL-Op schädigt eine Kreatur per Index", res.dslOpDamages);
 }
 
+// V17.54 — Der Kampf-Bogen Phase D: der LMB-Angriff + der W5-Affekt (der letzte
+// Konsument des Emotion-Kerns, docs/kampf-plan.md §4-D/F). `_playerAttackCreature`
+// ist der LMB-Konsument von damageCreature (attackSpeed-Cooldown + Stamina + Spieler-
+// damage/knockback); tryMouseBreak dispatcht zum nächsten Ziel (Kreatur in Reichweite
+// → angreifen; sonst Architektur → harvest; sonst carve). Der W5-Affekt wird gewebt:
+// Zorn ∝ Waffen-härte (chaos via die W2-Brücke) beim Angreifen; SCHULD ∝ lebendig×bond
+// beim Töten eines friedlichen Wesens (der W4-Kontext-Appraisal). Diese Welle prüft
+// KONSUM (Angriff schädigt, Cooldown gated, der Affekt feuert, die Schuld ist lebendig-
+// gegated), nicht blosse Existenz (V17.31). Die WUCHT/das Feel sind der Schöpfer-Browser.
+async function checkBandV1754PlayerAttack(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh.position;
+        const e = p.emotions;
+        const setEmo = (o) => {
+            for (const k of Object.keys(e)) e[k] = o[k] || 0;
+        };
+        const savedEmo = { ...e };
+        const savedLastAtk = p.lastAttackAt;
+        const savedInv = JSON.parse(JSON.stringify(p.inventory));
+        const savedLife = r.state.lifeField;
+        const savedEmoField = r.state.emotionField;
+        r.state.lifeField = new Map();
+        r.state.emotionField = new Map();
+
+        // (0) Methoden + die attack-Emotion + COMBAT_REACH existieren
+        out.exists =
+            typeof r._pickCreatureAtCrosshair === "function" &&
+            typeof r._playerAttackCreature === "function" &&
+            !!r.constructor.ACTION_TO_EMOTION.attack &&
+            r.constructor.COMBAT_REACH_M > 0;
+
+        // (1) KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Konsument)
+        const c1 = r.spawnCreatureAt(pm.x + 320, pm.y, pm.z + 320, "happy", "wesen");
+        p.lastAttackAt = -Infinity;
+        setEmo({});
+        const hp1Before = c1.userData.hp;
+        const atk1 = r._playerAttackCreature(c1);
+        out.attackDamages = atk1 === true && c1.userData.hp < hp1Before;
+        // (2) der Angriff feuert den Zorn-Affekt (chaos — die Kampf-Intensität via die W2-Brücke)
+        out.attackFeelsChaos = e.chaos > 0;
+        // (3) attackSpeed-Cooldown: ein sofortiger zweiter Schlag prallt ab (kein Schaden)
+        const hp1Mid = c1.userData.hp;
+        const atk2 = r._playerAttackCreature(c1);
+        out.cooldownGates = atk2 === false && c1.userData.hp === hp1Mid;
+
+        // (4) die SCHULD ist lebendig-gegated: ein Spieler-Kill eines lebendig-Wesens → sorrow
+        // (der W4-Kontext-Appraisal: derselbe lebendig-Tag, im Tötungs-Kontext zu Schmerz)
+        setEmo({});
+        const c2 = r.spawnCreatureAt(pm.x + 340, pm.y, pm.z + 340, "happy", "wesen");
+        c2.userData.bond = 1; // Bindung hebt die Schuld (wenn lebendig)
+        const leb2 = r.computeCreatureCompoundTags(c2).lebendig || 0;
+        r.damageCreature(c2, 99999, { source: "player" });
+        out.guiltGatedByLiving = leb2 > 0.02 ? e.sorrow > 0 : e.sorrow < 0.01;
+
+        // (5) ein Material-Wesen (quarz-Sprite, lebendig≈0) zu töten löst KEINE Schuld aus
+        setEmo({});
+        const c3 = r.spawnCreatureAt(pm.x + 360, pm.y, pm.z + 360, "happy", "sprite");
+        const leb3 = r.computeCreatureCompoundTags(c3).lebendig || 0;
+        r.damageCreature(c3, 99999, { source: "player" });
+        out.noGuiltForMaterial = leb3 < 0.05 ? e.sorrow < 0.01 : true;
+
+        // (6) der Knockback-Pfad (fromPos + knockback) läuft ohne Fehler + schädigt
+        const c4 = r.spawnCreatureAt(pm.x + 380, pm.y, pm.z + 380, "happy", "wesen");
+        let kbOk = true;
+        try {
+            r.damageCreature(c4, 5, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z }, knockback: 8 });
+        } catch {
+            kbOk = false;
+        }
+        out.knockbackRuns = kbOk && c4.userData.hp < c4.userData.hpMax;
+        if (r.state.creatures.indexOf(c4) !== -1) r.removeCreature(c4);
+
+        // (7) der Dispatch + die Schuld sind wired (Source-Probe)
+        const tmb = r.tryMouseBreak.toString();
+        const dth = r._creatureCombatDeath.toString();
+        out.dispatchWired = /_pickCreatureAtCrosshair/.test(tmb) && /_playerAttackCreature/.test(tmb);
+        out.guiltWired = /computeCreatureCompoundTags/.test(dth) && /_feelAction\("loss"/.test(dth);
+
+        // cleanup
+        if (r.state.creatures.indexOf(c1) !== -1) r.removeCreature(c1);
+        setEmo(savedEmo);
+        p.lastAttackAt = savedLastAtk;
+        for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];
+        r.state.lifeField = savedLife;
+        r.state.emotionField = savedEmoField;
+        return out;
+    });
+    check("V17.54 Kampf D: _pickCreatureAtCrosshair + _playerAttackCreature + die attack-Emotion + COMBAT_REACH existieren", res.exists);
+    check("V17.54 Kampf D: KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Angriff)", res.attackDamages);
+    check("V17.54 Kampf D: der Angriff feuert den Zorn-Affekt (chaos — die Kampf-Intensität)", res.attackFeelsChaos);
+    check("V17.54 Kampf D: attackSpeed-Cooldown — ein sofortiger zweiter Schlag prallt ab (kein Schaden)", res.cooldownGates);
+    check("V17.54 Kampf D: KONSUM — die SCHULD ist lebendig-gegated (Spieler-Kill eines lebendig-Wesens → sorrow)", res.guiltGatedByLiving);
+    check("V17.54 Kampf D: ein Material-Wesen (lebendig≈0) zu töten löst KEINE Schuld aus (Kontext-Appraisal)", res.noGuiltForMaterial);
+    check("V17.54 Kampf D: der Knockback-Pfad (fromPos + knockback) läuft + schädigt", res.knockbackRuns);
+    check("V17.54 Kampf D: tryMouseBreak dispatcht zur Kreatur + die Schuld ist in _creatureCombatDeath wired", res.dispatchWired && res.guiltWired);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -36108,6 +36209,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1751CombatStats(ctx);
             await checkBandV1752Weapon(ctx);
             await checkBandV1753CreatureCombat(ctx);
+            await checkBandV1754PlayerAttack(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
