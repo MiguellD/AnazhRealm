@@ -10,13 +10,19 @@
 
 ---
 
-## STATUS (Stand V17.58) — lies §8/§9 (gebaut) + §11 (der aktive Plan; §10 ist seine erste Instanz)
+## STATUS (Stand V17.65) — lies §11 (der aktive Plan; §11.9 = die Browser-Audit-Ausrichtung)
 
-**Der Kern-Kampf-Loop A–D + der W5-Affekt sind GEBAUT** (V17.51–.54), **und der Interaktions-Bogen
-W1·W2·W2-B·W3 ist RUND** (V17.55–.58 — §9). §1–§7 sind der ursprüngliche Loop-Plan (Geschichte + die
-offene Phase E „Bedrohung/Furcht"). §8/§9 sind die GEBAUTE Vertiefung (vom Rollen-Schloss zum
-Fähigkeits-Profil). **Der AKTIVE, noch ungebaute Plan ist §11 — der vereinte Schöpfungs-Fluss**
-(Schöpfer-Dialog 02.06., die Weitung von §10 auf ALLE Rollen): das Prinzip **„Plan → Werk"** (Information
+**Der Kern-Kampf-Loop A–D + W5-Affekt + der Interaktions-Bogen W1·W2·W2-B·W3 sind GEBAUT** (V17.51–.58, §8/§9).
+**§11 — der vereinte Schöpfungs-Fluss — ist im Bau:** S1 Readout · S2 Mach-Tor+Modi · S3+S3-B Gerät · S4 Rüstung
+· S5 Avatar · S6 Trank GEBAUT (V17.59–.65) — VIER Mach-Akte zahlen Material durch EIN `_makeCostGate` +
+`fertigeBlueprint`. **ABER der Schöpfer-Browser-Audit (02.06.) fand die Fehl-Ausrichtung (§11.9): die Mach-Akte
+sind funktional korrekt, aber als PARALLELER Pfad PRÄSENTIERT** (der „⚒ Schmieden"-Knopf im Detail-Editor wirkt
+wie eine Doublette des bestehenden „Prozess-ziehen-fixiert-die-Rolle"-Flusses). **Der AKTIVE nächste Schritt ist
+der RE-FRAMED S7 (§11.7): das FERTIGEN in den Prozess-Fluss + die Maschine-in-der-Welt falten** (kein neuer Pfad,
+eine UI-Verdichtung; die Mach-Logik bleibt). Wer weiterbaut, liest §11.9 (die Lehre + der Lebenszyklus + die drei
+Schichten Tags/Fähigkeit/Rolle) ZUERST. **PERMANENTE LEHRE: headless-grün ≠ vision-aligned — den FLUSS im
+Schöpfer-Browser zeigen, bevor man Welle auf Welle stapelt.** Das ursprüngliche §11-Prinzip bleibt
+(Schöpfer-Dialog 02.06., die Weitung von §10 auf ALLE Rollen): **„Plan → Werk"** (Information
 frei · Materie kostet), das jeder Lesart (Gerät · Rüstung · Trank · Avatar · Portal · Fahrzeug) ihren
 material-zahlenden Werk-Akt gibt, die vier Schöpfungs-Drawer in EINE Werkstatt-Gebärmutter zieht, und das
 Teilen im Ultiversum klärt (Plan frei kopierbar/signiert, Werk kostet herkunfts-agnostisch — für Strukturen
@@ -675,8 +681,22 @@ Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis,
   reine GPU-Deko (kein Harvest/Collision) → erntbar machen = ein neues GPU-Instanz-Harvest-System + dedizierte
   Alchemie-Material-Tags (kraut/essenz). HEUTE sind die Zutaten die Part-Materialien (laub von Bäumen funktioniert
   schon); S6-B gibt der Alchemie eigene erntbare Flora. *Eine eigene meatige Welle (V17.17-Spawn-Affinität messen).*
-- **S7 — der EINE Fluss** (§11.5): die Schöpfung in die Werkstatt zusammenziehen, `ausrüstung`/`spieler`
-  werden Gebrauchs-Flächen. *UI-Konsolidierung · teils Schöpfer-Browser (Intuition/UX).*
+- **S7 — der EINE Fluss: das FERTIGEN in den Prozess-Fluss falten (RE-FRAMED nach dem Schöpfer-Browser-Audit
+  02.06.):** Der Befund: die S3–S6-Mach-Akte erscheinen als PARALLELER Pfad — der „⚒ Schmieden"-Knopf liegt im
+  Detail-Editor + heißt wie der Schmiede-Hammer-PROZESS, also wirkt er wie eine Doublette des bestehenden
+  „Prozess-ziehen-fixiert-die-Rolle"-Flusses (`applyOpToPart` + die Domain-Rolle-Emergenz). Die WURZEL ist NICHT
+  die Logik (Material-Kosten + rollen-bewusster Abschluss sind richtig), sondern die PRÄSENTATION + die Benennung.
+  Die Heilung (kein neuer Code-Pfad — eine Verdichtung der UI): **(a)** den Knopf von „Schmieden" zu **„FERTIGEN"**
+  umbenennen (der ABSCHLUSS, nicht der Prozess) + prominent in die Stats-Tabelle unter der 3D-Ansicht (wo die Rolle
+  kristallisiert), raus aus dem Detail-Editor; **(b)** das FERTIGEN durch `_workshopStationGate` gaten (ein
+  forging-Gerät fertigen → Esse nah, ein Trank → Brennkolben — die Maschine-in-der-Welt, Welle 9c, jetzt
+  end-to-end angeschlossen, nicht nur bei confirmBuild); **(c)** die optimierbaren ACHSEN (Tags → Stats) in der
+  Tabelle sichtbar machen; **(d)** den LEBENSZYKLUS klar zeigen — die Rolle EMERGIERT (reversibel: mehr von einer
+  Domain → wandert; ↺ löst eine manuelle), bis das FERTIGEN sie zum realen Werk macht (Material + ausrüsten;
+  re-fertigbar). Der eine Fluss: **verfeinern (Prozesse ziehen + Maschine) → ablesen (Tabelle: Rolle + Achsen +
+  Lebenszyklus) → FERTIGEN (zahlen + real, an der Maschine).** Plus die chat/DSL-Vereinheitlichung (der letzte
+  Gratis-Bypass „rüste/werde X" → durchs FERTIGEN). *Meist UI + der Maschine-Gate-Anschluss; die Mach-Logik bleibt.
+  Schöpfer-Browser für das Feel.*
 - **S8 — die Teilen-Konsistenz** (§11.6): das Mach-Tor ist herkunfts-agnostisch by-construction → ein
   geteiltes Gerät/Trank/Avatar kostet wie ein eigenes; die Signatur reist. Fällt fast aus S2 heraus.
   *Headless-Verifikation.*
@@ -717,3 +737,39 @@ Animations-Kirsche, zuletzt + am ambitioniertesten).
   Hand-Optik (S9), das Flora-Feel (S6), die Animation (S11 — ein echtes Substrat, am ambitioniertesten).
   **`diag-arch-tags` vor jeder Rollen-/Tag-Verschiebung** (S10, V17.17). KONSUM verifizieren, nicht Existenz
   (V17.31).
+- **Headless-grün ≠ vision-aligned (S7-Lehre, §11.9):** der FLUSS/die UI-Präsentation braucht das Schöpfer-Auge
+  früh — eine korrekte Mach-Logik kann trotzdem als Parallel-Pfad WIRKEN; zeige den Fluss im Browser, bevor du
+  Welle auf Welle stapelst.
+
+### 11.9 Browser-Audit-Ausrichtung (Schöpfer 02.06.) — die Lehre + der Lebenszyklus
+
+Nach S1–S6 (alle headless-grün) zeigte der Schöpfer-Browser-Audit eine echte Fehl-Ausrichtung, die headless
+NICHT sichtbar war: **die Mach-Akte sind funktional korrekt, aber als PARALLELER Pfad PRÄSENTIERT.** Der
+„⚒ Schmieden"-Knopf (im Detail-Editor, benannt wie der Schmiede-Hammer-PROZESS) wirkte wie eine Doublette des
+intuitiven Flusses, in dem das Ziehen eines Prozesses die Rolle schon fixiert. Der Schöpfer: „ein weiterer
+Pfad, die bestehenden nicht vereint?". **Er hatte recht.** Die Heilung ist S7 (oben re-framed) — den Abschluss
+in den bestehenden Prozess-Fluss + die Maschine-in-der-Welt FALTEN, nicht daneben stellen.
+
+**Der Lebenszyklus (geklärt, gegen die Sorge „könnte man nichtmehr zurück?"):** die Rolle ist NICHT
+irreversibel — sie EMERGIERT live aus der dominanten opChain-Domain (`_refreshBlueprintRoleEmergent` nach jedem
+`applyOpToPart`): mehr forging → Gerät, dann mehr alchemy → wandert zu Trank; die Domain-Analyse-Tabelle zeigt
+das. Manuell fixieren (setBlueprintAsArmor etc.) sperrt es, das ↺ löst es wieder. Das FERTIGEN ist KEIN
+„Speichern" (Baupläne speichern automatisch) und KEIN Rollen-Schloss — es ist „das reale Werk herstellen"
+(Material zahlen + ausrüsten/tragen/verkörpern); der einzige Commit ist die eingefrorene `forgedPrecision`, auch
+re-fertigbar. **Frei wie die Welt.**
+
+**Die drei Schichten (geklärt, gegen „Fähigkeit = die Eigenschaften, die die Rolle ermöglichen?"):** Tags
+(härte/dichte/lebendig — die rohen Eigenschaften aus Material × Form) → daraus emergieren ZWEI Lesarten: die
+FÄHIGKEIT (Klinge/Brecher/Schutz — was es KANN, die Form-Wahrheit, der S1-Readout) UND die ROLLE (die
+Crafting-Kategorie, via die dominante Prozess-Domain + der forging-Tag-Split). Fähigkeit = „was kann es",
+Rolle = „was IST es" — beide aus derselben Substanz. Die Domain-FARBE eines Prozesses sagt, welche Rolle er
+steuert (forging→Gerät/Rüstung · alchemy→Trank · soulwork→Seele · …; generische Prozesse ohne Farbe heben nur
+die Präzision, steuern keine Rolle).
+
+**PERMANENTE LEHRE: headless-grün ≠ vision-aligned.** Eine Mach-/Feature-Logik kann KORREKT sein (alle
+Invarianten grün) und TROTZDEM den intuitiven Fluss brechen, wenn ihre UI-PRÄSENTATION einen Parallel-Pfad
+schafft oder einen bestehenden Fluss zu duplizieren SCHEINT (Benennung, Platzierung). Der headless-Test beweist
+die MECHANIK, nicht die AUSRICHTUNG. Den FLUSS/die UI früh im Schöpfer-Browser zeigen — BEVOR man Welle auf
+Welle stapelt; ein Prozess-Drag-Crafting-System verlangt das Schöpfer-Auge für die Synergie, nicht nur grüne
+Bänder. Die Mach-Akte S3–S6 waren NICHT umsonst — die Logik (Material-Kosten, rollen-bewusster Abschluss,
+Präzisions-Snapshot) bleibt; S7 stellt sie nur in den richtigen Fluss.
