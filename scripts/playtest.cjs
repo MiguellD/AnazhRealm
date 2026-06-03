@@ -5323,9 +5323,9 @@ async function checkBandV1766FertigenFlow(ctx) {
             typeof r._makeStationGate === "function" &&
             typeof r._stationLabelForDomain === "function";
 
-        // --- die alten parallelen Mach-Knoepfe sind WEG aus dem Detail-Editor ---
-        const actionsSrc = r._workshopRenderActions.toString();
-        out.oldButtonsGone = !actionsSrc.includes("workshop-forge") && !actionsSrc.includes("workshop-soul-activate");
+        // --- V17.91: der Detail-Editor (samt _workshopRenderActions) ist ENTFERNT → die alten parallelen
+        // Mach-Knöpfe existieren definitiv nicht mehr; der EINE FERTIGEN-Akt lebt im Stats-Panel. ---
+        out.oldButtonsGone = typeof r._workshopRenderActions !== "function";
         // --- der EINE FERTIGEN-Akt lebt jetzt im Abschluss der Stats-Tabelle ---
         out.statsPanelCallsFertigen = r._workshopRenderStatsPanel.toString().includes("_workshopAppendFertigenRow");
 
@@ -7232,9 +7232,11 @@ async function checkBandV1789WorkshopReadout(ctx) {
         r.selectBlueprintForEdit("_ab_clone");
         r._renderWorkshopDOM();
         out.domAbilitiesRow = !!document.querySelector(".workshop-abilities-row");
-        out.domHistoryControls = !!document.querySelector("#workshop-editor .workshop-history");
-        // die Werkzeuge-Box zeigt in schöpfer die besessenen Werkstatt-Prozesse (die Drehbank u.a.)
-        out.domWorkshopChips = document.querySelectorAll("#workshop-editor .workshop-station-chip").length >= 1;
+        // V17.91 — Undo/Redo wohnen jetzt in der Top-Leiste (aus dem entfernten Detail-Editor migriert).
+        out.domHistoryControls = !!document.getElementById("workshop-undo-btn") && !!document.getElementById("workshop-redo-btn");
+        // V17.91 — die Werkstatt-Prozesse sind jetzt ziehbare Karten in der rechten WERKZEUGE-Palette
+        // (schöpfer → alle besessenen Werkstätten); auf einen Part im 3D ziehen wendet den Prozess an.
+        out.domWorkshopChips = document.querySelectorAll("#workshop-tool-palette .workshop-station-card").length >= 1;
         // restore
         for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor"]) delete blu[n];
         if (blu["_ab_clone"]) r.deleteBlueprint("_ab_clone");
@@ -7258,10 +7260,10 @@ async function checkBandV1789WorkshopReadout(ctx) {
     check("V17.89: rollen-gerechte Werte — eine Rüstung zeigt Verteidigung (nicht Schaden)", res.armorHasDefense);
     check("V17.89 KONSUM (DOM): die Werte-Zeile rendert im Werkstatt-Readout", res.domAbilitiesRow);
     check(
-        "V17.89 KONSUM (DOM): die Werkstatt-Prozesse erscheinen im Werkzeuge-Feld (schöpfer → besessene Werkstätten)",
+        "V17.91 KONSUM (DOM): die Werkstatt-Prozesse sind ziehbare Karten in der WERKZEUGE-Palette (schöpfer → besessene Werkstätten)",
         res.domWorkshopChips
     );
-    check("V17.89 (DOM): Undo/Redo sitzt jetzt unter den Parts (workshop-history im Editor)", res.domHistoryControls);
+    check("V17.91 (DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)", res.domHistoryControls);
 }
 
 // V17.90 (resonanz-system.md — die Re-Kalibrierung): die vier „blass"-Facetten + zwei UI-Heilungen GEMESSEN.
@@ -7348,12 +7350,14 @@ async function checkBandV1790Recalibration(ctx) {
         out.drehbankFarHidden = !far.some((p) => p.stationName === "drehbank");
         out.proximityM = r.constructor.WORKSHOP_PROXIMITY_M;
 
-        // (6) UI-Befund (b) — die History-Buttons haben jetzt CSS (nicht mehr nackt/übersehbar).
+        // (6) UI-Befund (b) — V17.91: Undo/Redo wohnen jetzt in der Top-Leiste als .workshop-action-btn; ihr
+        // disabled-Zustand ist gestylt (ausgegraut), die Station-Karten der Palette sind abgehoben.
         let cssHistory = false;
         for (const sheet of document.styleSheets) {
             try {
                 for (const rule of sheet.cssRules) {
-                    if (rule.selectorText && /workshop-(history|undo|redo)/.test(rule.selectorText)) cssHistory = true;
+                    if (rule.selectorText && /workshop-action-btn:disabled|workshop-station-card/.test(rule.selectorText))
+                        cssHistory = true;
                 }
             } catch (e) {
                 void e;
@@ -7391,7 +7395,7 @@ async function checkBandV1790Recalibration(ctx) {
         res.drehbankNearAppears && res.drehbankFarHidden,
         `radius=${res.proximityM}m near=${res.drehbankNearAppears} far=${res.drehbankFarHidden}`
     );
-    check("V17.90 Befund (b): die Undo/Redo-History-Zeile hat CSS (sichtbar, nicht mehr nackt)", res.cssHistory);
+    check("V17.91 Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)", res.cssHistory);
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -7721,11 +7725,13 @@ async function checkBandWave4(ctx) {
         r.loadState(oldSnap);
         out.legacyPartGotDefaultMaterial =
             r.state.blueprints["legacy-test"] && r.state.blueprints["legacy-test"].parts[0].material === "stein";
-        // Werkstatt-UI: Material-Dropdown im DOM
+        // V17.91 — das Material wählt man jetzt durch ZIEHEN aus der rechten MATERIALIEN-Palette auf einen
+        // Part im 3D (kein Dropdown mehr im entfernten Detail-Editor). Hier datennah geprüft (der Container
+        // existiert + es gibt ≥6 Materialien) — kein erzwungenes Re-Render (das die V8.03-Card-Zählung stören
+        // könnte, wenn ein späterer Test ein Material ergänzt).
         r.selectBlueprintForEdit("legacy-test");
-        const matSelect = document.querySelector(".workshop-material");
-        out.uiHasMaterialDropdown = !!matSelect;
-        out.uiDropdownLists6PlusOptions = matSelect && matSelect.options.length >= 6;
+        out.uiHasMaterialDropdown = !!document.getElementById("workshop-material-palette");
+        out.uiDropdownLists6PlusOptions = Object.keys(r.state.materials || {}).length >= 6;
         // updatePartInBlueprint mit recolor zieht Farbe nach
         r.updatePartInBlueprint("legacy-test", 0, { material: "quarz", recolor: true });
         out.recolorAppliesMaterialColor = r.state.blueprints["legacy-test"].parts[0].color === mats.quarz.color;
@@ -7877,16 +7883,18 @@ async function checkBandWave4(ctx) {
             state: r.state,
         });
 
-        // UI: Tags-Sektion erscheint im Werkstatt-Editor
+        // V17.91 — die aktiven Tags (Eigenschaften) werden jetzt im intuitiven Stats-Panel angezeigt
+        // (_workshopAppendTagsRow → .tag-chip in einer .stat-row „Tags"), nicht in der entfernten Editor-
+        // Tags-Sektion. Die Formen (inkl. helix) sind die ziehbaren Karten der linken FORMEN-Palette (kein
+        // Dropdown mehr) — der Spieler zieht eine Form ins 3D, statt sie in einer Tabelle zu wählen.
         r.selectBlueprintForEdit("test-quarz-orb");
-        out.uiTagsSection = !!document.querySelector(".workshop-tags");
-        out.uiTagsTitle = !!document.querySelector(".workshop-tags-title");
-        out.uiHasAtomareHint = !!document.querySelector(".workshop-tags-hint");
-        const tagRows = document.querySelectorAll(".workshop-tag-row");
-        out.uiTagsHasRows = tagRows.length > 0;
-        // Werkstatt-Shape-Dropdown enthält helix
-        const shapeOpts = Array.from(document.querySelectorAll(".workshop-part-row select option")).map((o) => o.value);
-        out.uiShapeIncludesHelix = shapeOpts.includes("helix");
+        r._renderWorkshopDOM();
+        const tagsLabel = [...document.querySelectorAll("#workshop-stats-panel .stat-label")].some(
+            (l) => l.textContent === "Tags"
+        );
+        out.uiTagsSection = tagsLabel;
+        out.uiTagsHasRows = document.querySelectorAll("#workshop-stats-panel .tag-chip").length > 0;
+        out.uiShapeIncludesHelix = !!document.querySelector('.workshop-shape-card[data-shape="helix"]');
 
         // Aufräumen
         delete r.state.blueprints["test-quarz-orb"];
@@ -7917,11 +7925,9 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P2: compound_has_tag erkennt hohe Resonanz", wave4p2Results.condResonatesHigh);
         check("Welle 4 P2: compound_has_tag respektiert Schwellwert", wave4p2Results.condResonatesAboveSig);
         check("Welle 4 P2: compound_has_tag unbekanntes Tag → false", wave4p2Results.condUnknownTagFalse);
-        check("Welle 4 P2: UI .workshop-tags-Sektion im DOM", wave4p2Results.uiTagsSection);
-        check("Welle 4 P2: UI Tags-Titel im DOM", wave4p2Results.uiTagsTitle);
-        check('Welle 4 P2: UI „atomare Schicht"-Hint im DOM', wave4p2Results.uiHasAtomareHint);
-        check("Welle 4 P2: UI rendert Tag-Zeilen", wave4p2Results.uiTagsHasRows);
-        check("Welle 4 P2: UI Shape-Dropdown enthält helix", wave4p2Results.uiShapeIncludesHelix);
+        check("Welle 4 P2 (V17.91): die Tags-Zeile erscheint im Stats-Panel", wave4p2Results.uiTagsSection);
+        check("Welle 4 P2 (V17.91): das Stats-Panel rendert Tag-Chips", wave4p2Results.uiTagsHasRows);
+        check("Welle 4 P2 (V17.91): die FORMEN-Palette bietet helix als ziehbare Karte", wave4p2Results.uiShapeIncludesHelix);
     }
 
     // ### Welle 4 Phase 3 — Werkzeuge + opChain + Präzision ###
@@ -8071,13 +8077,23 @@ async function checkBandWave4(ctx) {
         rawGroup.traverse((o) => o.geometry && typeof o.geometry.dispose === "function" && o.geometry.dispose());
         polGroup.traverse((o) => o.geometry && typeof o.geometry.dispose === "function" && o.geometry.dispose());
 
-        // UI: opChain pro Part im Workshop
+        // V17.91 — die Werkstatt ist 3D-zentrisch: der per-Part-opChain-Dropdown + die Tools-Chips des alten
+        // Detail-Editors sind ENTFERNT. Die Werkzeuge/Prozesse leben jetzt als ziehbare Karten in der rechten
+        // WERKZEUGE-Palette (auf einen Part im 3D ziehen wendet die Op/den Prozess an); der Readout (inkl.
+        // Präzision/Qualität) im intuitiven #workshop-stats-panel.
+        const prevModeP3 = r.getGameMode ? r.getGameMode() : "frieden";
+        if (r.setGameMode) r.setGameMode("schöpfer");
         r.selectBlueprintForEdit("test-precision");
-        out.uiOpChainSection = !!document.querySelector(".workshop-opchain");
-        out.uiOpChainHeader = !!document.querySelector(".workshop-opchain-header");
-        out.uiApplyDropdown = !!document.querySelector(".workshop-op-tool");
-        out.uiToolsBox = !!document.querySelector(".workshop-tools");
-        out.uiToolChips = document.querySelectorAll(".workshop-tool-chip").length >= 5;
+        r._renderWorkshopDOM();
+        out.uiStatsPanel = !!document.querySelector("#workshop-stats-panel .stat-row");
+        out.uiQualityRow = [...document.querySelectorAll("#workshop-stats-panel .stat-label")].some(
+            (l) => l.textContent === "Qualität"
+        );
+        out.uiToolPalette = !!document.getElementById("workshop-tool-palette");
+        out.uiToolCards = document.querySelectorAll("#workshop-tool-palette .workshop-tool-card").length >= 1;
+        // in schöpfer erscheinen die besessenen Werkstatt-Prozesse als ziehbare Station-Karten (Drehbank u.a.)
+        out.uiStationCards = document.querySelectorAll("#workshop-tool-palette .workshop-station-card").length >= 1;
+        if (r.setGameMode) r.setGameMode(prevModeP3);
 
         // Save-Roundtrip: playerTools persistiert
         const snap = r.buildStateSnapshot();
@@ -8134,11 +8150,14 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P3: Roh-Compound triggert keinen Welt-Effekt", wave4p3Results.rawDoesNotTrigger);
         check("Welle 4 P3: Magie-Compound hebt awe an", wave4p3Results.magicLiftsAwe);
         check("Welle 4 P3: Präzision moduliert Part-Farbe sichtbar", wave4p3Results.precisionVisibleTint);
-        check("Welle 4 P3: UI opChain-Sektion im DOM", wave4p3Results.uiOpChainSection);
-        check("Welle 4 P3: UI opChain-Header zeigt Präzision", wave4p3Results.uiOpChainHeader);
-        check("Welle 4 P3: UI Tool-Apply-Dropdown im DOM", wave4p3Results.uiApplyDropdown);
-        check("Welle 4 P3: UI Werkzeug-Box im DOM", wave4p3Results.uiToolsBox);
-        check("Welle 4 P3: UI listet ≥5 Tool-Chips", wave4p3Results.uiToolChips);
+        check("Welle 4 P3 (V17.91): Stats-Panel rendert den Readout (stat-row)", wave4p3Results.uiStatsPanel);
+        check("Welle 4 P3 (V17.91): der Readout zeigt die Qualität (Handwerk/Präzision)", wave4p3Results.uiQualityRow);
+        check("Welle 4 P3 (V17.91): die WERKZEUGE-Palette existiert (Drag-Quelle)", wave4p3Results.uiToolPalette);
+        check("Welle 4 P3 (V17.91): die Palette hat ziehbare Werkzeug-Karten (≥1, Hand)", wave4p3Results.uiToolCards);
+        check(
+            "Welle 4 P3 (V17.91): in schöpfer erscheinen die Werkstatt-Prozesse als ziehbare Station-Karten",
+            wave4p3Results.uiStationCards
+        );
         check("Welle 4 P3: Save persistiert playerTools", wave4p3Results.snapshotHasPlayerTools);
         check("Welle 4 P3: validateBlueprintParts clamped opChain cap", wave4p3Results.opChainCapClamped);
     }
@@ -8361,12 +8380,13 @@ async function checkBandWave5(ctx) {
             builtIn: false,
             parts: tipBp.parts.map((p) => ({ ...p, opChain: r._defaultPartOpChain() })),
         };
+        // V17.91 — die räumlichen Tags lebten in der entfernten Editor-Tags-Sektion; die DATEN-Schicht
+        // (computeSpatialTags) bleibt das Subjekt + ihre Wirkung ist im neuen UI in der Resonanz-/Fähigkeit-
+        // Zeile reflektiert. Wir prüfen, dass die räumliche Emergenz die FORM diskriminiert.
         r.selectBlueprintForEdit("wave5b-test");
-        out.uiSpatialTitle = !!document.querySelector(".workshop-spatial-title");
-        out.uiSpatialRow = !!document.querySelector(".workshop-spatial-row");
-        // Hinweis-Text muss den räumlichen Modus benennen
-        const hint = document.querySelector(".workshop-tags-hint");
-        out.uiHintMentionsSpatial = hint && /Spitze richtet/.test(hint.textContent);
+        out.uiSpatialTitle = typeof r.computeSpatialTags === "function";
+        const spatPointed = r.computeSpatialTags(r.state.blueprints["wave5b-test"]) || {};
+        out.uiSpatialRow = Object.keys(spatPointed).length > 0;
 
         // Reiner atomarer Bauplan: Hinweis sollte nicht "Spitze richtet" benennen
         r.state.blueprints["wave5b-atomar"] = {
@@ -8384,8 +8404,9 @@ async function checkBandWave5(ctx) {
             ],
         };
         r.selectBlueprintForEdit("wave5b-atomar");
-        const hint2 = document.querySelector(".workshop-tags-hint");
-        out.uiHintAtomarMode = hint2 && !/Spitze richtet/.test(hint2.textContent);
+        const spatAtomar = r.computeSpatialTags(r.state.blueprints["wave5b-atomar"]) || {};
+        // der pointed-am-Rand-Bauplan trägt ANDERE räumliche Tags als der reine Box-Bauplan (die Form zählt)
+        out.uiSpatialDiscriminates = JSON.stringify(spatPointed) !== JSON.stringify(spatAtomar);
 
         // DSL-Condition compound_has_spatial_tag funktioniert
         out.dslSpatialCondHigh = r.dslConditions.compound_has_spatial_tag.call(
@@ -8455,10 +8476,9 @@ async function checkBandWave5(ctx) {
         check("Welle 5 B: Pyramide oben verstärkt Magieleitung räumlich", wave5bResults.tipBoostsMagic);
         check("Welle 5 B: Pyramide unten gibt KEINEN Top-Bonus", wave5bResults.bottomNoTipBoost);
         check("Welle 5 B: Helix am Rand hat at_outside", wave5bResults.helixAtOutside);
-        check("Welle 5 B: UI .workshop-spatial-title bei pointed-am-Rand", wave5bResults.uiSpatialTitle);
-        check("Welle 5 B: UI .workshop-spatial-row im DOM", wave5bResults.uiSpatialRow);
-        check("Welle 5 B: Hinweis-Text nennt Spitze-richtet im raeumlichen Modus", wave5bResults.uiHintMentionsSpatial);
-        check("Welle 5 B: Hinweis-Text fällt im rein-atomaren Modus zurück", wave5bResults.uiHintAtomarMode);
+        check("Welle 5 B (V17.91): computeSpatialTags existiert (die räumliche Emergenz-Daten-Schicht)", wave5bResults.uiSpatialTitle);
+        check("Welle 5 B (V17.91): der pointed-am-Rand-Bauplan trägt räumliche Tags", wave5bResults.uiSpatialRow);
+        check("Welle 5 B (V17.91): die räumliche Emergenz diskriminiert die Form (pointed ≠ atomar)", wave5bResults.uiSpatialDiscriminates);
         check("Welle 5 B: DSL compound_has_spatial_tag erkennt verstärkte Magie", wave5bResults.dslSpatialCondHigh);
         check("Welle 5 B: Tip-Compound triggert Magie-Welt-Effekt (awe)", wave5bResults.tipTriggersMagic);
         check("Welle 5 B: Magie tip-oben > Magie tip-unten (Diskrimination)", wave5bResults.tipMagicExceedsBottom);
@@ -8821,12 +8841,23 @@ async function checkBandWave5(ctx) {
         out.saveCarriesConnections =
             ourSavedBp && Array.isArray(ourSavedBp.connections) && ourSavedBp.connections.length === 1;
 
-        // UI: Verbindungs-Sektion erscheint
+        // V17.91 — Verbindungen werden jetzt im 3D-Connect-Modus angelegt (zwei Parts klicken → Typ-Popover)
+        // + per Toggle (zwei verbundene Parts erneut anklicken) gelöst; die alte Editor-Listen-UI entfiel.
         r.selectBlueprintForEdit("w5a-test");
-        out.uiConnectionsSection = !!document.querySelector(".workshop-connections");
-        out.uiConnRow = !!document.querySelector(".workshop-conn-row");
-        out.uiAddRow = !!document.querySelector(".workshop-conn-add");
-        out.uiTypeDropdown = !!document.querySelector(".workshop-conn-type");
+        r._renderWorkshopDOM();
+        out.uiConnectMode = !!document.querySelector('#workshop-mode-bar [data-workshop-mode="connect"]');
+        if (typeof r._workshopOpenConnectPopover === "function") {
+            try {
+                r._workshopOpenConnectPopover(0, 1);
+            } catch (e) {
+                void e;
+            }
+        }
+        const connOverlay = document.getElementById("workshop-connect-overlay");
+        out.uiConnectPopover = !!connOverlay;
+        out.uiConnectTypeButtons = connOverlay ? connOverlay.querySelectorAll("button").length > 1 : false;
+        if (typeof r._workshopCloseConnectPopover === "function") r._workshopCloseConnectPopover();
+        out.uiConnectRemoveApi = typeof r.removeConnectionFromBlueprint === "function";
 
         // Solid-Threshold: schwache Verbindung hat workshop-conn-weak class
         r.state.blueprints["w5a-weak"] = {
@@ -8849,9 +8880,14 @@ async function checkBandWave5(ctx) {
             ],
             connections: [{ type: "sewing", partA: 0, partB: 1 }],
         };
-        r.selectBlueprintForEdit("w5a-weak");
-        const weakBar = document.querySelector(".workshop-conn-bar");
-        out.weakClassApplied = weakBar && weakBar.classList.contains("workshop-conn-weak");
+        // V17.91 — die „schwache Verbindung"-Markierung ist eine DATEN-Eigenschaft (computeConnectionStrength
+        // unter der Solid-Schwelle); die alte Editor-Listen-Klasse entfiel. Eine sewing-Verbindung zwischen
+        // kleinen Holz-Parts liegt unter der Schwelle (Brech-Risiko).
+        const weakConnStrength = r.computeConnectionStrength(
+            { type: "sewing", partA: 0, partB: 1 },
+            r.state.blueprints["w5a-weak"]
+        );
+        out.weakClassApplied = weakConnStrength < (r.constructor.CONNECTION_SOLID_THRESHOLD || 0.7);
 
         // Aufräumen
         delete r.state.blueprints["w5a-test"];
@@ -8887,10 +8923,10 @@ async function checkBandWave5(ctx) {
         check("Welle 5 A: DSL apply_connection wirkt", wave5aResults.dslApplyConnection);
         check("Welle 5 A: DSL-Connection persistiert in state", wave5aResults.dslConnectionPersisted);
         check("Welle 5 A: Save traegt connections im Snapshot", wave5aResults.saveCarriesConnections);
-        check("Welle 5 A: UI .workshop-connections im DOM", wave5aResults.uiConnectionsSection);
-        check("Welle 5 A: UI .workshop-conn-row im DOM", wave5aResults.uiConnRow);
-        check("Welle 5 A: UI .workshop-conn-add im DOM", wave5aResults.uiAddRow);
-        check("Welle 5 A: UI Typ-Dropdown im DOM", wave5aResults.uiTypeDropdown);
+        check("Welle 5 A (V17.91): Connect-Modus existiert in der Top-Leiste", wave5aResults.uiConnectMode);
+        check("Welle 5 A (V17.91): der Connect-Typ-Popover öffnet im 3D (zwei Parts → Typ wählen)", wave5aResults.uiConnectPopover);
+        check("Welle 5 A (V17.91): das Popover bietet Verbindungs-Typen", wave5aResults.uiConnectTypeButtons);
+        check("Welle 5 A (V17.91): Verbindung lösen via Toggle/API (removeConnectionFromBlueprint)", wave5aResults.uiConnectRemoveApi);
         check("Welle 5 A: Schwache Verbindung traegt workshop-conn-weak class", wave5aResults.weakClassApplied);
     }
 
@@ -9036,11 +9072,12 @@ async function checkBandWave5(ctx) {
         );
         out.snapshotHasTool = (snap.tools || []).some((t) => t.name === "w5c-lathe" && t.precisionCap === 0.97);
 
-        // UI
-        r.selectBlueprintForEdit("w5c-lathe");
-        out.uiToolSection = !!document.querySelector(".workshop-tool-recursion");
-        out.uiRegisteredBadge = !!document.querySelector(".workshop-tool-registered");
-        out.uiOpNameInput = !!document.querySelector(".workshop-tool-opname");
+        // V17.91 — die „Als Werkzeug registrieren"-UI ist ENTFERNT (von V17.88 „die Werkstatt IST der Prozess"
+        // abgelöst — Prozesse kommen aus platzierten Werkstätten, nicht aus registrierten Bauplänen). Die
+        // Daten-Methoden bleiben (oben getestet: registerBlueprintAsTool → snapshotHasTool); ein registriertes
+        // Werkzeug erscheint als ziehbare Karte in der WERKZEUGE-Palette, wenn der Spieler es besitzt.
+        out.toolMethodSurvives =
+            typeof r.registerBlueprintAsTool === "function" && typeof r.setBlueprintToolMeta === "function";
 
         // Cleanup
         delete r.state.tools["w5c-lathe"];
@@ -9092,9 +9129,7 @@ async function checkBandWave5(ctx) {
         check("Welle 5 C: DSL-Werkzeug landet in state.tools", wave5cResults.dslToolInState);
         check("Welle 5 C: Save traegt role + toolMeta im Bauplan", wave5cResults.snapshotHasToolBp);
         check("Welle 5 C: Save traegt eigenes Werkzeug", wave5cResults.snapshotHasTool);
-        check("Welle 5 C: UI .workshop-tool-recursion im DOM", wave5cResults.uiToolSection);
-        check("Welle 5 C: UI Registered-Badge im DOM", wave5cResults.uiRegisteredBadge);
-        check("Welle 5 C: UI opName-Input im DOM", wave5cResults.uiOpNameInput);
+        check("Welle 5 C (V17.91): die Werkzeug-Registrierungs-Methoden überleben (UI von V17.88 abgelöst)", wave5cResults.toolMethodSurvives);
     }
 
     // ### Bugfixes nach Welle-5-Reflexion ###
@@ -27749,8 +27784,8 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             const pre = r.state.workshop && r.state.workshop.preview;
             out.connNotCountedAsPart = !!pre && pre.partMeshes.size === 2;
             r._renderWorkshopDOM();
-            const connSection = document.querySelector(".workshop-connections");
-            out.connHintShown = !!connSection && /Sollbruchstelle/.test(connSection.textContent || "");
+            // V17.91 — die Verbindungs-Erklärung lebte in der alten Editor-Liste (entfernt); Verbindungen
+            // werden jetzt im 3D-Connect-Modus angelegt/gelöst. Der frühere „Sollbruchstelle"-Text-Check entfiel.
             delete r.state.blueprints["_t838d"];
             // Auswahl wiederherstellen — kein hängender Verweis auf
             // den gelöschten Test-Bauplan für nachfolgende Tests.
@@ -27782,7 +27817,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             "V8.38: Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)",
             v838Results.connNotCountedAsPart
         );
-        check("V8.38: Werkstatt-Panel erklärt, was eine Verbindung tut", v838Results.connHintShown);
         check("V8.38: Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)", v838Results.previewAspect);
         check("V8.38: Canvas-Sync setzt camera.aspect (kein gestauchtes Bild)", v838Results.cameraAspectSync);
     } else {
@@ -34624,30 +34658,30 @@ async function checkBandWaves9And10a(ctx) {
             if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
             r.cloneBlueprint("village", "test_9b");
             r.selectBlueprintForEdit("test_9b");
-            // Frisch geklont: Rolle ist architecture (emergent default)
-            // Status sollte das anzeigen
-            const status = document.querySelector("#workshop-editor .workshop-status");
+            r._renderWorkshopDOM();
+            // V17.91 — die Rolle wird jetzt im intuitiven Stats-Panel angezeigt (Rolle-Zeile mit .role-chip),
+            // nicht im entfernten Editor-Header. Frisch geklont: architecture (emergent default) → der Chip
+            // zeigt „Bauwerk" + trägt .role-emergent (der emergent/manuell-Indikator).
+            const roleChip9b = document.querySelector("#workshop-stats-panel .role-chip");
             out.statusShowsBauwerk =
-                !!status && status.textContent.includes("Bauwerk") && status.textContent.includes("emergent");
+                !!roleChip9b && roleChip9b.textContent.includes("Bauwerk") && roleChip9b.classList.contains("role-emergent");
             // Apply schmiede-hammer auf eisen-Part (V17.88 — Domain-Op aus der Op-Bibliothek leihen)
             if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
             r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9b", 0, "schmiede-hammer");
             r._renderWorkshopDOM();
-            const statusAfter = document.querySelector("#workshop-editor .workshop-status");
-            // Rolle sollte jetzt Werkzeug oder Rüstung sein (forging-split)
+            // V17.91 — die Rolle wird im Stats-Panel-Chip angezeigt; nach dem forging-Op sollte sie
+            // Werkzeug/Rüstung sein (emergent, via .role-emergent-Klasse statt eines Status-Texts).
+            const roleChipAfter = document.querySelector("#workshop-stats-panel .role-chip");
             out.statusShowsForgingRole =
-                !!statusAfter &&
-                (statusAfter.textContent.includes("Werkzeug") || statusAfter.textContent.includes("Rüstung")) &&
-                statusAfter.textContent.includes("emergent");
+                !!roleChipAfter &&
+                (roleChipAfter.textContent.includes("Werkzeug") || roleChipAfter.textContent.includes("Rüstung")) &&
+                roleChipAfter.classList.contains("role-emergent");
 
-            // Tool-Chip: Domain-Dot ist im DOM für Domain-Werkzeug
-            const chips = document.querySelectorAll(".workshop-tool-chip");
-            let hasDomainDot = false;
-            chips.forEach((chip) => {
-                if (chip.querySelector(".workshop-tool-domain-dot")) hasDomainDot = true;
-            });
-            out.toolChipHasDomainDot = hasDomainDot;
+            // V17.91 — der Domain-Punkt lebt jetzt auf den Werkzeug-Karten der WERKZEUGE-Palette (das
+            // besessene schmiede-hammer erscheint dort als Karte mit Domänen-Punkt).
+            out.toolChipHasDomainDot =
+                document.querySelectorAll("#workshop-tool-palette .workshop-tool-domain-dot").length > 0;
 
             // Cleanup
             if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
@@ -35701,8 +35735,10 @@ async function checkBandWave10b(ctx) {
             if (tab) tab.click();
             r.selectBlueprintForEdit("test_10b_car");
             r._renderWorkshopDOM();
-            const statusEl = document.querySelector(".workshop-status");
-            out.statusShowsAffordance = !!statusEl && statusEl.textContent.includes("fahrbar");
+            // V17.91 — die Affordanzen werden jetzt in der „Fähigkeit"-Zeile des intuitiven Stats-Panels
+            // angezeigt (V17.86), nicht im entfernten Editor-Header-Status.
+            const spCar = document.getElementById("workshop-stats-panel");
+            out.statusShowsAffordance = !!spCar && spCar.textContent.includes("fahrbar");
 
             // Cleanup
             for (const n of [
@@ -36141,7 +36177,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             out.hasRenderTools = typeof r._workshopRenderToolPalette === "function";
             out.hasHandleToolDrop = typeof r._workshopHandleToolDrop === "function";
             out.hasRenderStats = typeof r._workshopRenderStatsPanel === "function";
-            out.hasInstallEditorToggle = typeof r._workshopInstallEditorToggle === "function";
+            // V17.91 — der Editor-Toggle entfiel mit dem Detail-Editor; die Top-Leisten-Akte (Undo/Redo/
+            // Löschen/Klonen/Neu) verdrahtet jetzt _workshopInstallActionButtons + ihr Zustand _workshopUpdateTopBarState.
+            out.hasInstallActionBtns = typeof r._workshopInstallActionButtons === "function";
+            out.hasUpdateTopBarState = typeof r._workshopUpdateTopBarState === "function";
             out.hasInstallDelBtn = typeof r._workshopInstallDeleteButton === "function";
 
             // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
@@ -36173,23 +36212,17 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Wenn Spieler Werkzeuge hat, sind Cards drin
             const playerTools = (r.state.player && r.state.player.tools) || [];
             out.toolCardsCount = toolPalette ? toolPalette.querySelectorAll(".workshop-tool-card").length : 0;
-            out.toolPaletteHasCards = out.toolCardsCount > 0 && out.toolCardsCount <= playerTools.length;
+            // V17.91 — die Palette enthält die Hand + (in schöpfer/nah) die Werkstatt-Prozess-Karten; mind. eine Karte.
+            void playerTools;
+            out.toolPaletteHasCards = out.toolCardsCount > 0;
 
-            // Editor-Toggle
-            const editorToggle = document.getElementById("workshop-editor-toggle");
-            const editor = document.getElementById("workshop-editor");
-            out.toggleInDom = !!editorToggle;
-            if (editorToggle && editor) {
-                // Default: zugeklappt (hidden=true)
-                out.editorInitiallyHidden = editor.hidden === true;
-                // Click → ausklappen
-                editorToggle.click();
-                out.editorVisibleAfterClick = editor.hidden === false;
-                out.toggleAriaExpanded = editorToggle.getAttribute("aria-expanded") === "true";
-                // Nochmal Click → wieder zu
-                editorToggle.click();
-                out.editorHiddenAfterSecondClick = editor.hidden === true;
-            }
+            // V17.91 — der alte einklappbare Detail-Editor (#workshop-editor + Toggle) ist ENTFERNT (die
+            // Werkstatt ist 3D-zentrisch); die Editor-Akte Undo/Redo/Löschen wohnen jetzt in der Top-Leiste.
+            out.editorRemoved =
+                !document.getElementById("workshop-editor") && !document.getElementById("workshop-editor-toggle");
+            out.topBarUndoRedo =
+                !!document.getElementById("workshop-undo-btn") && !!document.getElementById("workshop-redo-btn");
+            out.topBarDeleteBlueprint = !!document.getElementById("workshop-delete-blueprint-btn");
 
             // Del-Button
             const delBtn = document.getElementById("workshop-delete-selected-part");
@@ -36229,11 +36262,12 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
     if (v805Results && !v805Results.error) {
         check(
-            "V8.05: 5 neue Methoden existieren (Tool-Render/Drop + Stats + Editor-Toggle + Del-Btn)",
+            "V8.05 (V17.91): Werkstatt-Methoden existieren (Tool-Render/Drop + Stats + Top-Leisten-Akte + Del-Btn)",
             v805Results.hasRenderTools &&
                 v805Results.hasHandleToolDrop &&
                 v805Results.hasRenderStats &&
-                v805Results.hasInstallEditorToggle &&
+                v805Results.hasInstallActionBtns &&
+                v805Results.hasUpdateTopBarState &&
                 v805Results.hasInstallDelBtn
         );
         check(
@@ -36248,15 +36282,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             "V8.05: Werkzeug-Palette im DOM mit Cards für Spieler-Werkzeuge",
             v805Results.toolPaletteInDom && v805Results.toolPaletteHasCards
         );
+        check("V8.05 (V17.91): der alte Detail-Editor ist entfernt (#workshop-editor + Toggle weg)", v805Results.editorRemoved);
         check(
-            "V8.05: Editor-Toggle im DOM + initial zugeklappt (Details-Tabelle versteckt)",
-            v805Results.toggleInDom && v805Results.editorInitiallyHidden
-        );
-        check(
-            "V8.05: Editor-Toggle-Click ein- + ausklappen + aria-expanded sync",
-            v805Results.editorVisibleAfterClick &&
-                v805Results.toggleAriaExpanded &&
-                v805Results.editorHiddenAfterSecondClick
+            "V8.05 (V17.91): Undo/Redo + Löschen wohnen in der Top-Leiste",
+            v805Results.topBarUndoRedo && v805Results.topBarDeleteBlueprint
         );
         check(
             "V8.05: Del-Button im DOM + initial disabled (keine Selection)",
@@ -36284,10 +36313,11 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             out.cloneBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-clone-btn"));
             out.newBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-new-btn"));
             out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
-            // Mode-Bar hat 5 Mode-Buttons + 2 Action-Buttons = 7
+            // V17.91 — die Mode-Bar trägt jetzt 11 Buttons: 4 Modi (Move/Rotate/Scale/Connect) + Snap +
+            // Zentrieren + Undo + Redo + Klonen + Neu + Löschen (Undo/Redo/Löschen aus dem entfernten Detail-
+            // Editor hoch-migriert).
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
-            // V8.14: Reset-Button (Zentrieren) hinzugefügt → 8 Buttons.
-            out.sevenButtonsInBar = allBtns === 8;
+            out.sevenButtonsInBar = allBtns === 11;
 
             // Methode existiert
             out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
@@ -36344,7 +36374,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
         );
         check(
-            "V8.06/V8.14: Mode-Bar hat 8 Buttons (5 Modi + Snap + Klone + Neu + Zentrieren)",
+            "V8.06/V17.91: Mode-Bar hat 11 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + Klonen + Neu + Löschen)",
             v806Results.sevenButtonsInBar
         );
         check(
@@ -39078,7 +39108,7 @@ async function checkBandRing6Workshop(ctx) {
         out.workshopTabInDom = !!document.querySelector('#topbar [data-tab="werkstatt"]');
         out.workshopDrawerInDom = !!document.querySelector('.drawer[data-drawer="werkstatt"]');
         out.workshopListInDom = !!document.getElementById("workshop-list");
-        out.workshopEditorInDom = !!document.getElementById("workshop-editor");
+        out.workshopStatsPanelInDom = !!document.getElementById("workshop-stats-panel"); // V17.91 — der intuitive Readout (statt des entfernten #workshop-editor)
 
         // Liste hat einen Eintrag pro Bauplan
         const list = document.getElementById("workshop-list");
@@ -39193,7 +39223,7 @@ async function checkBandRing6Workshop(ctx) {
         check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
         check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
         check("Ring 6.6: #workshop-list im DOM", ring66Results.workshopListInDom);
-        check("Ring 6.6: #workshop-editor im DOM", ring66Results.workshopEditorInDom);
+        check("Ring 6.6 (V17.91): #workshop-stats-panel im DOM (intuitiver Readout, der Editor ist entfernt)", ring66Results.workshopStatsPanelInDom);
         check("Ring 6.6: Liste zeigt einen Eintrag pro Bauplan", ring66Results.listShowsAllBlueprints);
         check("Ring 6.6: createBlueprint legt neuen eigenen Bauplan an", ring66Results.createBlueprintOk);
         check("Ring 6.6: createBlueprint lehnt doppelte Namen ab", ring66Results.duplicateNameRejected);

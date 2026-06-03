@@ -38541,24 +38541,21 @@ class AnazhRealm {
     // Sub-Methoden (das erprobte `_workshopRenderStatsPanel`-Muster, weiter
     // geschnitten). Jede Sektion baut ihren DOM-Teilbaum + hängt ihn an;
     // sie teilen nur `list`/`editor`/`ws`/`selected` — die Methoden-Parameter.
+    // V17.91 — die Werkstatt ist 3D-zentrisch: der alte einklappbare Detail-Editor (#workshop-editor mit
+    // Dropdown-Tabellen) ist ENTFERNT. Editieren geschieht im 3D (Form/Material/Farbe ziehen · Gizmo ·
+    // „Part entfernen" · Prozess-Karte aus der rechten Palette ziehen), der READOUT lebt im intuitiven
+    // #workshop-stats-panel (Rolle/Fähigkeit/Werte/Resonanz/FERTIGEN, via _workshopRenderTail →
+    // _workshopRenderStatsPanel), die Editor-Akte (Undo/Redo/Löschen/Klonen/Neu) in der Top-Leiste. Dieser
+    // Render macht nur noch: die Bauplan-Liste, den Top-Leisten-Zustand, + den Tail (Stats/Palette/Preview/Hotbar).
     _renderWorkshopDOM() {
         if (typeof document === "undefined") return;
         const list = document.getElementById("workshop-list");
-        const editor = document.getElementById("workshop-editor");
-        if (!list || !editor) return;
+        if (!list) return;
         const ws = this._ensureWorkshopState();
         this._workshopRenderBlueprintList(list, ws);
-        editor.innerHTML = "";
         const selected = this.state.blueprints[ws.selectedBlueprint];
+        this._workshopUpdateTopBarState(selected);
         if (!selected) return;
-        this._workshopRenderHeader(editor, selected);
-        this._workshopRenderToolsBox(editor);
-        this._workshopRenderPartsList(editor, selected, ws);
-        this._workshopRenderHistoryControls(editor, selected);
-        this._workshopRenderConnections(editor, selected);
-        this._workshopRenderToolRecursion(editor, selected);
-        this._workshopRenderTagsSection(editor, selected);
-        this._workshopRenderActions(editor, selected);
         this._workshopRenderTail(selected);
     }
 
@@ -38589,697 +38586,6 @@ class AnazhRealm {
             row.addEventListener("click", () => this.selectBlueprintForEdit(name));
             list.appendChild(row);
         }
-    }
-
-    _workshopRenderHeader(editor, selected) {
-        // Header mit Label + Aktionen
-        const header = document.createElement("div");
-        header.className = "workshop-header";
-        const title = document.createElement("h3");
-        title.textContent = selected.label || selected.name;
-        header.appendChild(title);
-        const status = document.createElement("span");
-        status.className = "workshop-status";
-        if (selected.builtIn) {
-            status.textContent = "Eingebaut — zum Bearbeiten klonen";
-        } else {
-            // Welle 9b — emergente Rolle live anzeigen. Manueller Override
-            // wird mit „(manuell)" markiert, sonst „(aus Werkzeugen)".
-            const role = selected.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
-            const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
-            const origin = selected.roleManual ? "manuell" : "emergent";
-            // Welle 10b — emergente Affordances (Verhaltens-Flags die aus
-            // Tag+Form-Signatur abgeleitet werden) im Status mit anzeigen.
-            const affordances = this.computeBlueprintAffordances(selected);
-            const affLabels = AnazhRealm.AFFORDANCE_LABELS || {};
-            const affList = Object.keys(affordances)
-                .map((k) => affLabels[k] || k)
-                .join(" · ");
-            const affPart = affList ? ` · ✦ ${affList}` : "";
-            status.textContent = `${selected.parts.length} Parts · Rolle: ${roleLabel} (${origin})${affPart}`;
-        }
-        header.appendChild(status);
-        editor.appendChild(header);
-    }
-
-    // V17.89 (Schöpfer-Befund „undo/redo unterhalb des Part-Entfernen-Buttons sehe ich noch nicht") — das
-    // V17.87-UNDO/REDO lag im Editor-HEADER (oben), der Schöpfer sucht es bei den Parts. Jetzt sitzt es als
-    // eigene Zeile DIREKT UNTER der Parts-Liste (wo man editiert). Nur für eigene Baupläne (Built-ins sind
-    // unveränderlich → kein Verlauf). Jeder Editor-Akt (Part hinzu/weg/ändern, Op, Verbindung) ist umkehrbar.
-    _workshopRenderHistoryControls(editor, selected) {
-        if (selected.builtIn) return;
-        const hist = document.createElement("div");
-        hist.className = "workshop-history";
-        const undoBtn = document.createElement("button");
-        undoBtn.type = "button";
-        undoBtn.className = "workshop-undo";
-        undoBtn.textContent = "↶ Rückgängig";
-        undoBtn.title = "Den letzten Editor-Schritt rückgängig machen (Part, Form, Op, Verbindung).";
-        undoBtn.disabled = !this.canUndoBlueprintEdit(selected.name);
-        undoBtn.addEventListener("click", () => {
-            const r = this.undoBlueprintEdit(selected.name);
-            if (!r.ok) this.log(`Rückgängig: ${r.reason}`, "INFO");
-            this._renderWorkshopDOM();
-        });
-        const redoBtn = document.createElement("button");
-        redoBtn.type = "button";
-        redoBtn.className = "workshop-redo";
-        redoBtn.textContent = "↷ Wiederholen";
-        redoBtn.title = "Den zuletzt rückgängig gemachten Schritt wiederherstellen.";
-        redoBtn.disabled = !this.canRedoBlueprintEdit(selected.name);
-        redoBtn.addEventListener("click", () => {
-            const r = this.redoBlueprintEdit(selected.name);
-            if (!r.ok) this.log(`Wiederholen: ${r.reason}`, "INFO");
-            this._renderWorkshopDOM();
-        });
-        hist.appendChild(undoBtn);
-        hist.appendChild(redoBtn);
-        editor.appendChild(hist);
-    }
-
-    _workshopRenderToolsBox(editor) {
-        // Welle 4 Phase 3 — Werkzeug-Sammlung. Eine Liste der besessenen
-        // Tools mit ihrem Cap. Sichtbarmacht, womit Spieler aktuell arbeiten
-        // kann. Read-only in Phase 3 (eigene Werkzeuge gehen in Welle 6 auf).
-        const toolsBox = document.createElement("div");
-        toolsBox.className = "workshop-tools";
-        const toolsTitle = document.createElement("div");
-        toolsTitle.className = "workshop-tools-title";
-        toolsTitle.textContent = "Werkzeuge";
-        toolsBox.appendChild(toolsTitle);
-        const owned = this.state.player.tools || [];
-        for (const tn of owned) {
-            const t = this.state.tools[tn];
-            if (!t) continue;
-            const chip = document.createElement("span");
-            chip.className = "workshop-tool-chip";
-            // Welle 9b — Domain-Punkt als visueller Anker. Werkzeuge ohne
-            // Domain (null) bekommen keinen Punkt; Domain-Werkzeuge zeigen
-            // einen farbigen Indikator + Tooltip mit Werkstatt-Domäne.
-            if (t.domain && AnazhRealm.TOOL_DOMAIN_COLORS[t.domain]) {
-                const dot = document.createElement("span");
-                dot.className = "workshop-tool-domain-dot";
-                dot.style.background = AnazhRealm.TOOL_DOMAIN_COLORS[t.domain];
-                dot.title = AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain;
-                chip.appendChild(dot);
-            }
-            const labelSpan = document.createElement("span");
-            labelSpan.textContent = `${t.label} ${t.precisionCap.toFixed(2)}`;
-            chip.appendChild(labelSpan);
-            const domainLabel = t.domain ? AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain : "generisch";
-            chip.title = `${t.opName} (${t.opClass}) · ${domainLabel}`;
-            toolsBox.appendChild(chip);
-        }
-        // V17.89 (Schöpfer „sobald die Drehbank nah ist, muss sie in dem Feld erscheinen") — die verfügbaren
-        // WERKSTATT-PROZESSE erscheinen hier neben der Hand: in frieden/pfad die platzierten + nahen, in
-        // schöpfer alle besessenen (`_workshopProcessesForMenu`). Die Werkstatt IST der Prozess (V17.88) —
-        // dieses Feld zeigt, womit du JETZT arbeiten kannst (Hand + die nahen Werkstätten).
-        for (const proc of this._workshopProcessesForMenu()) {
-            const chip = document.createElement("span");
-            chip.className = "workshop-tool-chip workshop-station-chip";
-            const color = AnazhRealm.TOOL_DOMAIN_COLORS[proc.domain];
-            if (color) {
-                const dot = document.createElement("span");
-                dot.className = "workshop-tool-domain-dot";
-                dot.style.background = color;
-                dot.title = AnazhRealm.TOOL_DOMAIN_LABELS[proc.domain] || proc.domain;
-                chip.appendChild(dot);
-            }
-            const labelSpan = document.createElement("span");
-            const verb = AnazhRealm.OP_VERB_LABELS[proc.opName] || proc.opName;
-            labelSpan.textContent = `${proc.label} · ${verb} ${proc.cap.toFixed(2)}`;
-            chip.appendChild(labelSpan);
-            chip.title = `Werkstatt-Prozess (${proc.domain}) — platziert + nah. Präzisions-Cap ${proc.cap.toFixed(2)}.`;
-            toolsBox.appendChild(chip);
-        }
-        editor.appendChild(toolsBox);
-    }
-
-    _workshopRenderPartsList(editor, selected, ws) {
-        // Parts-Liste — bei Built-ins nur lesbar
-        const partsDiv = document.createElement("div");
-        partsDiv.className = "workshop-parts";
-        if (selected.parts.length === 0) {
-            const empty = document.createElement("div");
-            empty.className = "workshop-empty";
-            empty.textContent = "Noch keine Parts.";
-            partsDiv.appendChild(empty);
-        }
-        for (let i = 0; i < selected.parts.length; i++) {
-            const part = selected.parts[i];
-            const row = document.createElement("div");
-            const isSelected = ws.selectedPartIdx === i;
-            row.className = "workshop-part-row" + (isSelected ? " selected" : "");
-            row.setAttribute("data-part-idx", String(i));
-            // Welle 6.B Phase 1 — Klick auf Row (außerhalb der Inputs) wechselt
-            // die Part-Selektion. Inputs müssen frei klickbar bleiben für ihre
-            // eigenen Edit-Gesten.
-            row.addEventListener("mousedown", (event) => {
-                if (event.target.closest("input, select, button")) return;
-                this._workshopSetSelection(i);
-            });
-            // Shape-Dropdown
-            const shapeSelect = document.createElement("select");
-            for (const shape of [
-                "box",
-                "sphere",
-                "cylinder",
-                "cone",
-                "pyramid",
-                "octahedron",
-                "plane",
-                "torus",
-                "helix",
-            ]) {
-                const opt = document.createElement("option");
-                opt.value = shape;
-                opt.textContent = shape;
-                if (shape === part.shape) opt.selected = true;
-                shapeSelect.appendChild(opt);
-            }
-            shapeSelect.disabled = !!selected.builtIn;
-            shapeSelect.addEventListener("change", () => {
-                this.updatePartInBlueprint(selected.name, i, { shape: shapeSelect.value });
-                this._renderWorkshopDOM();
-            });
-            row.appendChild(shapeSelect);
-            // Welle 4 Phase 1 — Material-Dropdown vor dem Color-Picker.
-            // Built-ins zeigen Material read-only; bei eigenen Bauplänen
-            // wechselt die Material-Wahl auch die Default-Farbe (recolor).
-            const materialSelect = document.createElement("select");
-            materialSelect.className = "workshop-material";
-            materialSelect.title = "Material";
-            for (const matName of Object.keys(this.state.materials || {})) {
-                const opt = document.createElement("option");
-                opt.value = matName;
-                opt.textContent = this.state.materials[matName].label || matName;
-                if (matName === (part.material || "stein")) opt.selected = true;
-                materialSelect.appendChild(opt);
-            }
-            materialSelect.disabled = !!selected.builtIn;
-            materialSelect.addEventListener("change", () => {
-                this.updatePartInBlueprint(selected.name, i, {
-                    material: materialSelect.value,
-                    recolor: true,
-                });
-                this._renderWorkshopDOM();
-            });
-            row.appendChild(materialSelect);
-            // Color-Input
-            const colorInput = document.createElement("input");
-            colorInput.type = "color";
-            const hex = "#" + (part.color || 0).toString(16).padStart(6, "0");
-            colorInput.value = hex;
-            colorInput.disabled = !!selected.builtIn;
-            colorInput.addEventListener("input", () => {
-                const num = parseInt(colorInput.value.replace("#", ""), 16);
-                this.updatePartInBlueprint(selected.name, i, { color: num });
-            });
-            row.appendChild(colorInput);
-            // Position + Size + Rotation kompakt als 9 Mini-Inputs
-            const xyzGrid = document.createElement("div");
-            xyzGrid.className = "workshop-xyz";
-            const fields = [
-                { label: "Pos X", key: "position", axis: "x" },
-                { label: "Y", key: "position", axis: "y" },
-                { label: "Z", key: "position", axis: "z" },
-                { label: "Größe X", key: "size", axis: "x" },
-                { label: "Y", key: "size", axis: "y" },
-                { label: "Z", key: "size", axis: "z" },
-                { label: "Rot X", key: "rotation", axis: "x" },
-                { label: "Y", key: "rotation", axis: "y" },
-                { label: "Z", key: "rotation", axis: "z" },
-            ];
-            for (const f of fields) {
-                const wrap = document.createElement("label");
-                wrap.className = "workshop-field";
-                const lbl = document.createElement("span");
-                lbl.textContent = f.label;
-                const input = document.createElement("input");
-                input.type = "number";
-                input.step = "0.1";
-                input.value = String((part[f.key] && part[f.key][f.axis]) || 0);
-                input.disabled = !!selected.builtIn;
-                input.addEventListener("change", () => {
-                    const v = parseFloat(input.value);
-                    if (!Number.isFinite(v)) return;
-                    this.updatePartInBlueprint(selected.name, i, {
-                        [f.key]: { [f.axis]: v },
-                    });
-                });
-                wrap.appendChild(lbl);
-                wrap.appendChild(input);
-                xyzGrid.appendChild(wrap);
-            }
-            row.appendChild(xyzGrid);
-            // Entfernen-Button
-            const delBtn = document.createElement("button");
-            delBtn.type = "button";
-            delBtn.className = "workshop-del";
-            delBtn.textContent = "×";
-            delBtn.disabled = !!selected.builtIn;
-            delBtn.addEventListener("click", () => {
-                this.removePartFromBlueprint(selected.name, i);
-                this._renderWorkshopDOM();
-            });
-            // Welle 4 Phase 3 — opChain pro Part: Liste der bisherigen Ops +
-            // Apply-Dropdown der besessenen, kompatiblen Werkzeuge. Built-in-
-            // Baupläne sind read-only (keine Apply-Buttons).
-            const opChainDiv = document.createElement("div");
-            opChainDiv.className = "workshop-opchain";
-            const precision = this.computePartPrecision(part);
-            const precHeader = document.createElement("div");
-            precHeader.className = "workshop-opchain-header";
-            precHeader.textContent = `Präzision ${precision.toFixed(2)} — Op-Kette:`;
-            opChainDiv.appendChild(precHeader);
-            const chainList = document.createElement("div");
-            chainList.className = "workshop-opchain-list";
-            const chain = Array.isArray(part.opChain) ? part.opChain : [];
-            for (const op of chain) {
-                const opRow = document.createElement("span");
-                opRow.className = "workshop-op";
-                opRow.textContent = `${op.op}(${(op.cap || 0).toFixed(2)})`;
-                opRow.title = `Werkzeug: ${op.tool}`;
-                chainList.appendChild(opRow);
-            }
-            opChainDiv.appendChild(chainList);
-            if (!selected.builtIn) {
-                const applyRow = document.createElement("div");
-                applyRow.className = "workshop-opchain-apply";
-                const toolSelect = document.createElement("select");
-                toolSelect.className = "workshop-op-tool";
-                const matName = part.material || "stein";
-                const compat = AnazhRealm.MATERIAL_OP_COMPATIBILITY[matName];
-                const opAllowed = (cls) => !compat || compat.includes(cls);
-                // V17.88 (Schöpfer-Vision „die Werkstatt IST der Prozess") — das Prozess-Menü: die HAND immer
-                // (die Basis), PLUS jede verfügbare Werkstatt-Station (in schöpfer alle besessenen, sonst nur
-                // die in der Welt platzierten + nahen — der „wahre Weg": setze die Esse ab, dann erscheint ihr
-                // Prozess). Ihr Substanz-Cap (bessere Esse → feiner) steht im Eintrag → der Spieler lernt die
-                // Rekursion. Die gehaltenen Domain-Werkzeuge sind in die Werkstatt gefaltet.
-                const verbs = AnazhRealm.OP_VERB_LABELS;
-                const options = [];
-                const hand = this.state.tools["hände"];
-                if (hand && opAllowed(hand.opClass)) {
-                    options.push({
-                        kind: "hand",
-                        value: "hände",
-                        text: `Hände → behauen (${hand.precisionCap.toFixed(2)})`,
-                    });
-                }
-                for (const p of this._workshopProcessesForMenu()) {
-                    if (!opAllowed(p.opClass)) continue;
-                    options.push({
-                        kind: "workshop",
-                        value: p.stationName,
-                        text: `${p.label} · ${verbs[p.opName] || p.opName} (${p.cap.toFixed(2)})`,
-                    });
-                }
-                if (options.length === 0) {
-                    const noTool = document.createElement("span");
-                    noTool.textContent = "(keine Werkstatt in der Nähe — platziere eine passende)";
-                    noTool.className = "workshop-op-empty";
-                    applyRow.appendChild(noTool);
-                } else {
-                    for (const o of options) {
-                        const opt = document.createElement("option");
-                        opt.value = `${o.kind}:${o.value}`;
-                        opt.textContent = o.text;
-                        toolSelect.appendChild(opt);
-                    }
-                    const applyBtn = document.createElement("button");
-                    applyBtn.type = "button";
-                    applyBtn.className = "workshop-op-apply";
-                    applyBtn.textContent = "anwenden";
-                    // V17.90 (Schöpfer-Befund „Werkstatt erschien nichtmehr als Werkzeug um Rolle zu fixen"):
-                    // wenn nur die HAND verfügbar ist (keine Werkstatt im Werkstatt-Areal), SIEHT der Spieler
-                    // nicht, WARUM — der alte `options.length === 0`-Hinweis feuerte nie (Hände ist immer da).
-                    // Jetzt ein klarer Hinweis, sobald KEIN Werkstatt-Prozess im Menü ist → der Spieler weiß,
-                    // dass er eine Werkstatt (Esse/Drehbank/…) platzieren + sich ihr nähern muss, um die Rolle
-                    // über ihren Prozess zu fixen (die Hand allein behaut nur, ohne Domäne).
-                    if (!options.some((o) => o.kind === "workshop")) {
-                        const hint = document.createElement("span");
-                        hint.className = "workshop-op-empty";
-                        hint.textContent = "nur Hände — platziere eine Werkstatt (Esse · Drehbank · …) in der Nähe";
-                        hint.title =
-                            "Eine Werkstatt-Station in deinem Werkstatt-Areal erscheint hier als Prozess. " +
-                            "Ihr Prozess (schmieden/drehen/weben/…) fixt die Rolle deines Werks; die Hand allein behaut nur.";
-                        applyRow.appendChild(hint);
-                    }
-                    applyBtn.addEventListener("click", () => {
-                        const sel = toolSelect.value || "";
-                        const sep = sel.indexOf(":");
-                        const kind = sel.slice(0, sep);
-                        const val = sel.slice(sep + 1);
-                        const r =
-                            kind === "workshop"
-                                ? this.applyWorkshopProcessToPart(selected.name, i, val)
-                                : this.applyOpToPart(selected.name, i, val);
-                        if (!r.ok) this.log(`Prozess fehlgeschlagen: ${r.reason}`, "ERROR");
-                        this._renderWorkshopDOM();
-                    });
-                    applyRow.appendChild(toolSelect);
-                    applyRow.appendChild(applyBtn);
-                }
-                // V17.87 — die per-Part-„letzte Op entfernen"-Geste (V17.85) ist durch das globale UNDO/REDO
-                // im Header abgelöst (der Schöpfer fand den per-Part-Knopf nicht — er erschien nur, wenn eine
-                // Op gelandet war; das Header-Undo umkehrt JEDEN Editor-Schritt chronologisch + ist immer da).
-                opChainDiv.appendChild(applyRow);
-            }
-            row.appendChild(opChainDiv);
-            row.appendChild(delBtn);
-            partsDiv.appendChild(row);
-        }
-        editor.appendChild(partsDiv);
-    }
-
-    _workshopRenderConnections(editor, selected) {
-        // Welle 5 A — Verbindungen zwischen Parts. Acht Typen aus Konzept
-        // §5.1, jede mit eigener Last-Formel (Material-Tags × Kontaktfläche
-        // × Typ-Multiplier). Built-ins read-only.
-        const connectionsSection = document.createElement("div");
-        connectionsSection.className = "workshop-connections";
-        const connTitle = document.createElement("div");
-        connTitle.className = "workshop-tags-title";
-        connTitle.textContent = "Verbindungen";
-        connectionsSection.appendChild(connTitle);
-        // V8.38 — erklärt, was eine Verbindung TUT (Schöpfer-Frage: „verstehe
-        // noch nicht ganz wie die beeinflussen").
-        const connHint = document.createElement("div");
-        connHint.className = "workshop-tags-empty";
-        connHint.textContent =
-            "Eine Verbindung trägt eine Last (0–3 ★) aus Verbindungstyp × Material-Stärke × " +
-            "Kontaktfläche. Schwach (rot, <0.7) = Sollbruchstelle. Im 3D-Preview markiert ein " +
-            "farbiger Punkt jede Verbindung.";
-        connectionsSection.appendChild(connHint);
-        const connections = Array.isArray(selected.connections) ? selected.connections : [];
-        if (connections.length === 0) {
-            const empty = document.createElement("div");
-            empty.className = "workshop-tags-empty";
-            empty.textContent = "Keine Verbindungen — Parts sitzen lose im Compound.";
-            connectionsSection.appendChild(empty);
-        } else {
-            for (let ci = 0; ci < connections.length; ci++) {
-                const conn = connections[ci];
-                const ctype = AnazhRealm.CONNECTION_TYPES[conn.type];
-                const strength = this.computeConnectionStrength(conn, selected);
-                const row = document.createElement("div");
-                row.className = "workshop-conn-row";
-                const label = document.createElement("span");
-                label.className = "workshop-conn-label";
-                label.textContent = `${ctype ? ctype.label : conn.type}: #${conn.partA} ↔ #${conn.partB}`;
-                const bar = document.createElement("span");
-                bar.className = "workshop-conn-bar";
-                const stars = Math.max(0, Math.min(3, Math.round(strength)));
-                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
-                if (strength < AnazhRealm.CONNECTION_SOLID_THRESHOLD) bar.classList.add("workshop-conn-weak");
-                const num = document.createElement("span");
-                num.className = "workshop-conn-num";
-                num.textContent = strength.toFixed(2);
-                row.appendChild(label);
-                row.appendChild(bar);
-                row.appendChild(num);
-                if (!selected.builtIn) {
-                    const delConnBtn = document.createElement("button");
-                    delConnBtn.type = "button";
-                    delConnBtn.className = "workshop-conn-del";
-                    delConnBtn.textContent = "×";
-                    delConnBtn.addEventListener("click", () => {
-                        this.removeConnectionFromBlueprint(selected.name, ci);
-                        this._renderWorkshopDOM();
-                    });
-                    row.appendChild(delConnBtn);
-                }
-                connectionsSection.appendChild(row);
-            }
-        }
-        if (!selected.builtIn && selected.parts.length >= 2) {
-            const addRow = document.createElement("div");
-            addRow.className = "workshop-conn-add";
-            const typeSel = document.createElement("select");
-            typeSel.className = "workshop-conn-type";
-            for (const tname of Object.keys(AnazhRealm.CONNECTION_TYPES)) {
-                const opt = document.createElement("option");
-                opt.value = tname;
-                opt.textContent = AnazhRealm.CONNECTION_TYPES[tname].label;
-                opt.title = AnazhRealm.CONNECTION_TYPES[tname].description;
-                typeSel.appendChild(opt);
-            }
-            const aSel = document.createElement("select");
-            aSel.className = "workshop-conn-part";
-            const bSel = document.createElement("select");
-            bSel.className = "workshop-conn-part";
-            for (let pi = 0; pi < selected.parts.length; pi++) {
-                const optA = document.createElement("option");
-                optA.value = String(pi);
-                optA.textContent = `#${pi} ${selected.parts[pi].shape}`;
-                aSel.appendChild(optA);
-                const optB = optA.cloneNode(true);
-                bSel.appendChild(optB);
-            }
-            if (selected.parts.length > 1) bSel.value = "1";
-            const addBtn = document.createElement("button");
-            addBtn.type = "button";
-            addBtn.className = "workshop-conn-addbtn";
-            addBtn.textContent = "verbinden";
-            addBtn.addEventListener("click", () => {
-                const r = this.addConnectionToBlueprint(selected.name, {
-                    type: typeSel.value,
-                    partA: parseInt(aSel.value, 10),
-                    partB: parseInt(bSel.value, 10),
-                });
-                if (!r.ok) this.log(`apply_connection fehlgeschlagen: ${r.reason}`, "ERROR");
-                this._renderWorkshopDOM();
-            });
-            addRow.appendChild(typeSel);
-            addRow.appendChild(aSel);
-            addRow.appendChild(bSel);
-            addRow.appendChild(addBtn);
-            connectionsSection.appendChild(addRow);
-        }
-        editor.appendChild(connectionsSection);
-    }
-
-    _workshopRenderToolRecursion(editor, selected) {
-        // Welle 5 C — Bauplan als Werkzeug markieren + registrieren. Nur für
-        // eigene Baupläne. UI zeigt: aktuelle Bauplan-Präzision (= zukünftiger
-        // Cap), opName + opClass Inputs, „als Werkzeug registrieren"-Button.
-        // Bereits registriert → Status-Indikator + Cap-Wert.
-        if (!selected.builtIn) {
-            const toolSection = document.createElement("div");
-            toolSection.className = "workshop-tool-recursion";
-            const toolHeading = document.createElement("div");
-            toolHeading.className = "workshop-tags-title";
-            toolHeading.textContent = "Werkzeug-Rolle (Konzept §4.3)";
-            toolSection.appendChild(toolHeading);
-            const currentCap = this.computeBlueprintPrecisionCap(selected);
-            const capInfo = document.createElement("div");
-            capInfo.className = "workshop-tags-empty";
-            capInfo.textContent = `Bauplan-Präzision: ${currentCap.toFixed(2)} (wird zum Tool-Cap beim Registrieren)`;
-            toolSection.appendChild(capInfo);
-            const existingTool = this.state.tools[selected.name];
-            const isRegistered =
-                existingTool && !existingTool.builtIn && existingTool.sourceBlueprint === selected.name;
-            if (isRegistered) {
-                const registeredInfo = document.createElement("div");
-                registeredInfo.className = "workshop-tool-registered";
-                registeredInfo.textContent = `Registriert als ${existingTool.opName} (${existingTool.opClass}) — Cap ${existingTool.precisionCap.toFixed(2)}.`;
-                toolSection.appendChild(registeredInfo);
-            }
-            const toolRow = document.createElement("div");
-            toolRow.className = "workshop-tool-form";
-            const opNameInput = document.createElement("input");
-            opNameInput.type = "text";
-            opNameInput.className = "workshop-tool-opname";
-            opNameInput.placeholder = "op-name (z.B. lathe)";
-            opNameInput.maxLength = 24;
-            opNameInput.value = (selected.toolMeta && selected.toolMeta.opName) || "";
-            const opClassSel = document.createElement("select");
-            opClassSel.className = "workshop-tool-opclass";
-            for (const cls of ["subtractive", "plastic", "additive", "phaseChange"]) {
-                const opt = document.createElement("option");
-                opt.value = cls;
-                opt.textContent = cls;
-                if ((selected.toolMeta && selected.toolMeta.opClass) === cls) opt.selected = true;
-                opClassSel.appendChild(opt);
-            }
-            const registerBtn = document.createElement("button");
-            registerBtn.type = "button";
-            registerBtn.className = "workshop-tool-register";
-            registerBtn.textContent = isRegistered ? "neu registrieren" : "als Werkzeug registrieren";
-            registerBtn.addEventListener("click", () => {
-                const metaR = this.setBlueprintToolMeta(selected.name, opNameInput.value.trim(), opClassSel.value);
-                if (!metaR.ok) {
-                    this.log(`set_tool_meta fehlgeschlagen: ${metaR.reason}`, "ERROR");
-                    return;
-                }
-                const regR = this.registerBlueprintAsTool(selected.name);
-                if (!regR.ok) {
-                    this.log(`register_tool fehlgeschlagen: ${regR.reason}`, "ERROR");
-                } else {
-                    this.journalAppend(
-                        "growth",
-                        `Ein eigenes Werkzeug entstand: ${selected.name} (Cap ${regR.precisionCap.toFixed(2)}).`,
-                        { tool: selected.name, cap: regR.precisionCap }
-                    );
-                }
-                this._renderWorkshopDOM();
-            });
-            toolRow.appendChild(opNameInput);
-            toolRow.appendChild(opClassSel);
-            toolRow.appendChild(registerBtn);
-            toolSection.appendChild(toolRow);
-            editor.appendChild(toolSection);
-        }
-    }
-
-    _workshopRenderTagsSection(editor, selected) {
-        // Welle 4 Phase 2 — emergente Tag-Anzeige für den ganzen Compound.
-        // Read-only: Spieler sehen, was Form + Material zusammen aktivieren.
-        // Hinweis-Text dokumentiert die Grenze zur räumlichen Emergenz
-        // (Welle 5+). Nur einmal pro Render, nicht pro Part.
-        const tagsSection = document.createElement("div");
-        tagsSection.className = "workshop-tags";
-        const tagsTitle = document.createElement("div");
-        tagsTitle.className = "workshop-tags-title";
-        tagsTitle.textContent = "Aktive Eigenschaften";
-        tagsSection.appendChild(tagsTitle);
-        const compoundTags = this.computeCompoundTags(selected);
-        const tagKeys = AnazhRealm.MATERIAL_TAG_KEYS;
-        const anyActive = tagKeys.some((k) => (compoundTags[k] || 0) > 0);
-        if (!anyActive) {
-            const empty = document.createElement("div");
-            empty.className = "workshop-tags-empty";
-            empty.textContent = "Keine Tags aktiviert (Form × Material ergibt 0).";
-            tagsSection.appendChild(empty);
-        } else {
-            for (const tag of tagKeys) {
-                const val = compoundTags[tag] || 0;
-                if (val <= 0) continue;
-                const row = document.createElement("div");
-                row.className = "workshop-tag-row";
-                row.dataset.tag = tag;
-                const name = document.createElement("span");
-                name.className = "workshop-tag-name";
-                name.textContent = tag;
-                const bar = document.createElement("span");
-                bar.className = "workshop-tag-bar";
-                const stars = Math.min(3, Math.round(val));
-                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
-                const num = document.createElement("span");
-                num.className = "workshop-tag-num";
-                num.textContent = val.toFixed(2);
-                row.appendChild(name);
-                row.appendChild(bar);
-                row.appendChild(num);
-                tagsSection.appendChild(row);
-            }
-        }
-        // Welle 5 B — räumliche Anreicherung als zweite Strahler-Reihe.
-        // Nur Tags zeigen, deren räumlicher Wert über dem atomaren liegt
-        // (sonst hätten wir doppelte Anzeige). Erscheint nur wenn der Spieler
-        // mindestens einen pointed-Shape oder eine Kontakt-Brücke gebaut hat.
-        const spatialTags = this.computeSpatialTags(selected);
-        const spatialDeltas = [];
-        for (const tag of tagKeys) {
-            const atomar = compoundTags[tag] || 0;
-            const spatial = spatialTags[tag] || 0;
-            if (spatial > atomar + 0.01) {
-                spatialDeltas.push({ tag, atomar, spatial });
-            }
-        }
-        if (spatialDeltas.length > 0) {
-            const spatialTitle = document.createElement("div");
-            spatialTitle.className = "workshop-tags-title workshop-spatial-title";
-            spatialTitle.textContent = "Räumliche Verstärkung";
-            tagsSection.appendChild(spatialTitle);
-            for (const d of spatialDeltas) {
-                const row = document.createElement("div");
-                row.className = "workshop-tag-row workshop-spatial-row";
-                row.dataset.tag = d.tag;
-                const name = document.createElement("span");
-                name.className = "workshop-tag-name";
-                name.textContent = d.tag;
-                const bar = document.createElement("span");
-                bar.className = "workshop-tag-bar";
-                const stars = Math.min(3, Math.round(d.spatial));
-                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
-                const num = document.createElement("span");
-                num.className = "workshop-tag-num";
-                num.textContent = `${d.atomar.toFixed(2)} → ${d.spatial.toFixed(2)}`;
-                row.appendChild(name);
-                row.appendChild(bar);
-                row.appendChild(num);
-                tagsSection.appendChild(row);
-            }
-        }
-        const tagsHint = document.createElement("div");
-        tagsHint.className = "workshop-tags-hint";
-        tagsHint.textContent =
-            spatialDeltas.length > 0
-                ? "Atomar = Form × Material. Räumlich = fünf Prinzipien (§5.2): Spitze richtet, Hohlraum enthält, Symmetrieachse trägt, Kontakt überträgt, Abstände resonieren."
-                : "Atomare Schicht: pro Part. Räumliche Verstärkung erscheint bei pointed-Spitzen am Rand, Hohlraum-Paaren (Sphere/Torus mit Inhalt), Y-Achsen-Symmetrie oder Resonanz-Arrays (≥3 gleiche Shape auf gleichem Radius).";
-        tagsSection.appendChild(tagsHint);
-        editor.appendChild(tagsSection);
-    }
-
-    _workshopRenderActions(editor, selected) {
-        // Aktions-Buttons
-        const actions = document.createElement("div");
-        actions.className = "workshop-actions";
-        // Part hinzufügen (nur eigene Baupläne)
-        if (!selected.builtIn) {
-            const addBtn = document.createElement("button");
-            addBtn.type = "button";
-            addBtn.textContent = "Part hinzufügen";
-            addBtn.addEventListener("click", () => {
-                this.addPartToBlueprint(selected.name);
-                this._renderWorkshopDOM();
-            });
-            actions.appendChild(addBtn);
-        }
-        // S7 (kampf-plan §11.7/§11.9) — die Mach-Knöpfe (⚒ Schmieden/Weben + „Als Seele tragen")
-        // wohnen NICHT mehr hier im Detail-Editor (sie wirkten wie ein paralleler Pfad). Sie sind in
-        // den EINEN „FERTIGEN"-Akt der Stats-Tabelle gefaltet (_workshopAppendFertigenRow) — der
-        // Abschluss des Lese-Flusses (verfeinern → ablesen → FERTIGEN).
-        // Klonen
-        const cloneBtn = document.createElement("button");
-        cloneBtn.type = "button";
-        cloneBtn.textContent = "Klonen";
-        cloneBtn.addEventListener("click", () => {
-            const newName = window.prompt("Name für die Kopie?", `${selected.name}-kopie`);
-            if (!newName) return;
-            if (this.cloneBlueprint(selected.name, newName)) {
-                this.selectBlueprintForEdit(newName);
-            }
-        });
-        actions.appendChild(cloneBtn);
-        // Löschen (nur eigene)
-        if (!selected.builtIn) {
-            const delBtn = document.createElement("button");
-            delBtn.type = "button";
-            delBtn.className = "workshop-danger";
-            delBtn.textContent = "Löschen";
-            delBtn.addEventListener("click", () => {
-                if (!window.confirm(`Bauplan '${selected.name}' wirklich löschen?`)) return;
-                this.deleteBlueprint(selected.name);
-                // Auf einen anderen Bauplan umschalten
-                const remaining = Object.keys(this.state.blueprints);
-                if (remaining.length > 0) this.selectBlueprintForEdit(remaining[0]);
-                else this._renderWorkshopDOM();
-            });
-            actions.appendChild(delBtn);
-        }
-        // Neuer Bauplan (immer verfügbar)
-        const newBtn = document.createElement("button");
-        newBtn.type = "button";
-        newBtn.textContent = "Neuer Bauplan";
-        newBtn.addEventListener("click", () => {
-            const name = window.prompt("Name des neuen Bauplans?");
-            if (!name) return;
-            if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
-        });
-        actions.appendChild(newBtn);
-        editor.appendChild(actions);
     }
 
     _workshopRenderTail(selected) {
@@ -39526,8 +38832,7 @@ class AnazhRealm {
         }
         // V8.02 Phase 3a — Shape-Palette HTML5-Drag-Sources + Canvas-Drop-Target
         this._workshopInstallShapeDragDrop();
-        // V8.05 — Editor-Toggle + Del-Button-Handler (beide idempotent)
-        this._workshopInstallEditorToggle();
+        // V8.05 — Del-Button-Handler (idempotent)
         this._workshopInstallDeleteButton();
         // V8.06 — Klonen + Neuer Bauplan direkt in der Mode-Bar
         this._workshopInstallActionButtons();
@@ -40005,25 +39310,10 @@ class AnazhRealm {
         if (ws.selectedPartIdx === idx) return;
         ws.selectedPartIdx = idx;
         if (ws.preview) ws.preview.dirty = true;
-        // DOM neu rendern (für .selected-Klasse auf Part-Row).
-        // ABER: nur wenn DOM existiert — Headless-Pfad könnte _workshopSetSelection
-        // via Test-Code aufrufen.
-        if (typeof document !== "undefined") {
-            const editor = document.getElementById("workshop-editor");
-            if (editor) {
-                // Wir rendern nur die Part-Rows neu, das volle _renderWorkshopDOM
-                // wäre teuer und würde scroll-Position reset. Spar-Refresh:
-                // alle .workshop-part-row durchlaufen, .selected toggeln.
-                const rows = editor.querySelectorAll(".workshop-part-row");
-                rows.forEach((row) => {
-                    const rowIdx = parseInt(row.getAttribute("data-part-idx") || "-1", 10);
-                    row.classList.toggle("selected", rowIdx === idx);
-                });
-            }
-            // V8.05 — Del-Button-Status synchen (UpdateManipulatorButtons macht das)
-            if (typeof this._workshopUpdateManipulatorButtons === "function") {
-                this._workshopUpdateManipulatorButtons();
-            }
+        // V17.91 — die Selektion lebt im 3D (Mesh-Highlight via preview.dirty) + im „Part entfernen"-Knopf-
+        // Status; der alte Part-Row-Listen-Refresh entfiel mit dem Detail-Editor.
+        if (typeof document !== "undefined" && typeof this._workshopUpdateManipulatorButtons === "function") {
+            this._workshopUpdateManipulatorButtons();
         }
     }
 
@@ -41176,39 +40466,7 @@ class AnazhRealm {
         });
     }
 
-    // V8.05 — Editor-Toggle. Persistent in localStorage (Spieler will
-    // den Editor meist geschlossen halten — die Werkstatt-Hauptarbeit
-    // läuft über Drag-Drop + Manipulator).
-    _workshopInstallEditorToggle() {
-        if (typeof document === "undefined") return;
-        const ws = this._ensureWorkshopState();
-        if (ws._editorToggleInstalled) return;
-        ws._editorToggleInstalled = true;
-        const btn = document.getElementById("workshop-editor-toggle");
-        const editor = document.getElementById("workshop-editor");
-        if (!btn || !editor) return;
-        // Initialer Zustand aus localStorage (Default: zugeklappt)
-        const stored = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.workshop.editorOpen") : null;
-        const open = stored === "1";
-        editor.hidden = !open;
-        btn.setAttribute("aria-expanded", open ? "true" : "false");
-        btn.addEventListener("click", () => {
-            const wasOpen = btn.getAttribute("aria-expanded") === "true";
-            const newOpen = !wasOpen;
-            btn.setAttribute("aria-expanded", newOpen ? "true" : "false");
-            editor.hidden = !newOpen;
-            try {
-                if (typeof localStorage !== "undefined") {
-                    localStorage.setItem("anazh.workshop.editorOpen", newOpen ? "1" : "0");
-                }
-            } catch {
-                /* ignore */
-            }
-        });
-    }
-
-    // V8.06 — Klonen + Neuer Bauplan direkt in der Mode-Bar (statt am
-    // Editor-Ende). Idempotent.
+    // V8.06 — Klonen + Neuer Bauplan + (V17.91) Undo/Redo/Löschen direkt in der Mode-Bar. Idempotent.
     _workshopInstallActionButtons() {
         if (typeof document === "undefined") return;
         const ws = this._ensureWorkshopState();
@@ -41235,6 +40493,51 @@ class AnazhRealm {
                 if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
             });
         }
+        // V17.91 — Undo/Redo + Löschen hoch in die Top-Leiste (wo der Schöpfer sie sucht), aus dem
+        // alten versteckten Detail-Editor migriert. Der disabled-Zustand pflegt _workshopUpdateTopBarState.
+        const undoBtn = document.getElementById("workshop-undo-btn");
+        const redoBtn = document.getElementById("workshop-redo-btn");
+        const delBlueprintBtn = document.getElementById("workshop-delete-blueprint-btn");
+        if (undoBtn) {
+            undoBtn.addEventListener("click", () => {
+                const sel = this._ensureWorkshopState().selectedBlueprint;
+                const r = this.undoBlueprintEdit(sel);
+                if (!r.ok) this.log(`Rückgängig: ${r.reason}`, "INFO");
+                this._renderWorkshopDOM();
+            });
+        }
+        if (redoBtn) {
+            redoBtn.addEventListener("click", () => {
+                const sel = this._ensureWorkshopState().selectedBlueprint;
+                const r = this.redoBlueprintEdit(sel);
+                if (!r.ok) this.log(`Wiederholen: ${r.reason}`, "INFO");
+                this._renderWorkshopDOM();
+            });
+        }
+        if (delBlueprintBtn) {
+            delBlueprintBtn.addEventListener("click", () => {
+                const selected = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
+                if (!selected || selected.builtIn) return;
+                if (!window.confirm(`Bauplan '${selected.name}' wirklich löschen?`)) return;
+                this.deleteBlueprint(selected.name);
+                const remaining = Object.keys(this.state.blueprints);
+                if (remaining.length > 0) this.selectBlueprintForEdit(remaining[0]);
+                else this._renderWorkshopDOM();
+            });
+        }
+    }
+
+    // V17.91 — der disabled-Zustand der Top-Leisten-Akte (Undo/Redo/Löschen) pro Render: nur eigene Baupläne
+    // sind editier-/löschbar, Undo/Redo nur wenn der Editier-Verlauf etwas hergibt.
+    _workshopUpdateTopBarState(selected) {
+        if (typeof document === "undefined") return;
+        const undoBtn = document.getElementById("workshop-undo-btn");
+        const redoBtn = document.getElementById("workshop-redo-btn");
+        const delBtn = document.getElementById("workshop-delete-blueprint-btn");
+        const editable = !!(selected && !selected.builtIn);
+        if (undoBtn) undoBtn.disabled = !(editable && this.canUndoBlueprintEdit(selected.name));
+        if (redoBtn) redoBtn.disabled = !(editable && this.canRedoBlueprintEdit(selected.name));
+        if (delBtn) delBtn.disabled = !editable;
     }
 
     // V8.05 — Del-Button-Handler. Entfernt den selektierten Part.
@@ -41403,6 +40706,38 @@ class AnazhRealm {
             card.appendChild(precEl);
             palette.appendChild(card);
         }
+        // V17.91 — die WERKSTATT-PROZESSE als ziehbare Karten neben der Hand (der „wahre Weg": platzier eine
+        // Werkstatt → ihr Prozess erscheint hier → auf einen Part im 3D ziehen fixt die Rolle). Ersetzt den
+        // versteckten per-Part-Dropdown des alten Editors. data-tool="station:<name>" → der Drop-Handler routet
+        // auf applyWorkshopProcessToPart. In schöpfer alle besessenen Werkstätten, sonst die platzierten + nahen.
+        const verbs = AnazhRealm.OP_VERB_LABELS || {};
+        for (const proc of this._workshopProcessesForMenu()) {
+            const card = document.createElement("div");
+            card.className = "workshop-tool-card workshop-station-card";
+            card.setAttribute("draggable", "true");
+            card.setAttribute("data-tool", `station:${proc.stationName}`);
+            const verb = verbs[proc.opName] || proc.opName;
+            card.setAttribute(
+                "title",
+                `${proc.label} · ${verb} (${proc.cap.toFixed(2)}) · Werkstatt-Prozess — auf einen Part im 3D ziehen fixt die Rolle`
+            );
+            const color = AnazhRealm.TOOL_DOMAIN_COLORS && AnazhRealm.TOOL_DOMAIN_COLORS[proc.domain];
+            if (color) {
+                const dot = document.createElement("span");
+                dot.className = "workshop-tool-domain-dot";
+                dot.style.background = color;
+                dot.title = `Domäne: ${(AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[proc.domain]) || proc.domain}`;
+                card.appendChild(dot);
+            }
+            const nameEl = document.createElement("span");
+            nameEl.textContent = proc.label;
+            card.appendChild(nameEl);
+            const precEl = document.createElement("span");
+            precEl.className = "tool-prec";
+            precEl.textContent = proc.cap.toFixed(2);
+            card.appendChild(precEl);
+            palette.appendChild(card);
+        }
     }
 
     // V8.05 — Tool-Drop: identifiziert den getroffenen Part via Raycast,
@@ -41420,6 +40755,40 @@ class AnazhRealm {
                 `Built-in-Bauplan „${bp.label || bp.name}" — klicke „Klonen" in der Mode-Bar um eine editierbare Kopie zu erstellen.`,
                 "WARNING"
             );
+            return;
+        }
+        // V17.91 — eine WERKSTATT-PROZESS-Karte (data-tool="station:<name>") auf einen Part ziehen wendet den
+        // Prozess der platzierten/besessenen Werkstatt an (fixt die Rolle) — der intuitive Drag-Ersatz für den
+        // entfernten per-Part-Dropdown. Routet auf applyWorkshopProcessToPart (Modus-Gate + Stamina darin).
+        if (typeof toolName === "string" && toolName.startsWith("station:")) {
+            const stationName = toolName.slice("station:".length);
+            const idx = this._workshopRaycastPartIdxAt(clientX, clientY);
+            if (idx === null) {
+                this.log("Prozess auf einen Part im 3D-Mesh ziehen (Treffer-Punkt war daneben).", "INFO");
+                return;
+            }
+            const r = this.applyWorkshopProcessToPart(bp.name, idx, stationName);
+            if (r && r.ok) {
+                this._renderWorkshopDOM();
+                this._workshopSetSelection(idx);
+                const st = this.state.blueprints[stationName];
+                this.log(
+                    `Prozess „${(st && st.label) || stationName}" angewandt auf Part ${idx} (Präzision ${(r.precision || 0).toFixed(2)}).`,
+                    "INFO"
+                );
+            } else {
+                const reason = (r && r.reason) || "unknown";
+                if (reason === "workshop_not_placed_near") {
+                    this.log(
+                        "Diese Werkstatt ist nicht in der Nähe — platziere sie näher (oder schöpfer-Modus).",
+                        "WARNING"
+                    );
+                } else if (reason === "not_enough_stamina") {
+                    this.log("Nicht genug Stamina für diesen Prozess (frieden/schöpfer ist reibungsfrei).", "WARNING");
+                } else {
+                    this.log(`Prozess fehlgeschlagen: ${reason}`, "ERROR");
+                }
+            }
             return;
         }
         const tool = this.state.tools && this.state.tools[toolName];
@@ -41691,8 +41060,22 @@ class AnazhRealm {
             this._workshopSetSelection(null);
             return;
         }
-        // Zweiter Klick auf anderes Part → Type-Popover öffnen
-        this._workshopOpenConnectPopover(ws.connectFirstPartIdx, partIdx);
+        // Zweiter Klick auf ein anderes Part: existiert schon eine Verbindung A↔B → LÖSEN (Toggle). V17.91 —
+        // das Entfernen wandert aus dem entfernten Editor-Listen-✕ ins 3D: zwei verbundene Parts erneut
+        // anklicken löst die Verbindung. Sonst das Type-Popover zum ANLEGEN öffnen (wie gehabt).
+        const a = ws.connectFirstPartIdx;
+        const existingIdx = (bp.connections || []).findIndex(
+            (c) => (c.partA === a && c.partB === partIdx) || (c.partA === partIdx && c.partB === a)
+        );
+        if (existingIdx >= 0) {
+            this.removeConnectionFromBlueprint(bp.name, existingIdx);
+            ws.connectFirstPartIdx = null;
+            this._workshopSetSelection(null);
+            this._renderWorkshopDOM();
+            this.log(`Verbindung Part ${a} ↔ ${partIdx} gelöst.`, "INFO");
+            return;
+        }
+        this._workshopOpenConnectPopover(a, partIdx);
     }
 
     // Öffnet das Connection-Type-Auswahl-Popover über dem Canvas. Klick auf
@@ -46466,7 +45849,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.90.0";
+AnazhRealm.VERSION = "17.91.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

@@ -3401,41 +3401,10 @@
             /* V17.90 (Schöpfer-Befund „undo/redo sehe ich nicht") — die History-Zeile direkt unter den Parts
                war ungestylt (nackte Default-Buttons) → leicht übersehen. Jetzt eine klare, sichtbare Zeile im
                Werkstatt-Stil; die Knöpfe deutlich, disabled-Zustand erkennbar. */
-            .workshop-history {
-                display: flex;
-                gap: 6px;
-                align-items: center;
-                margin: 6px 0 10px 0;
-                padding: 5px 8px;
-                background: rgba(40, 25, 10, 0.05);
-                border: 1px solid var(--parch-edge);
-                border-radius: 2px;
-            }
-            .workshop-undo,
-            .workshop-redo {
-                font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
-                letter-spacing: 0.04em;
-                padding: 3px 10px;
-                background: var(--brass-2);
-                color: var(--parch-ink);
-                border: 1px solid var(--brass-3);
-                border-radius: 2px;
-                cursor: pointer;
-            }
-            .workshop-undo:hover:not(:disabled),
-            .workshop-redo:hover:not(:disabled) {
-                background: var(--brass-1);
-            }
-            .workshop-undo:disabled,
-            .workshop-redo:disabled {
-                opacity: 0.4;
-                cursor: default;
-            }
-            /* V17.90 — die Werkstatt-Prozesse im „Werkzeuge"-Feld (platzierte/nahe Stationen) optisch von den
-               Hand-Werkzeug-Chips abheben: ein wärmerer Messing-Ton + Punkt = „das ist eine Werkstatt, kein
-               Hand-Werkzeug". */
-            .workshop-station-chip {
+            /* V17.91 — die Werkstatt-PROZESSE als ziehbare Karten in der rechten WERKZEUGE-Palette (platziert/
+               nah). Optisch vom Hand-Werkzeug abgehoben (wärmerer Messing-Ton) = „das ist eine Werkstatt, zieh
+               sie auf einen Part". (Undo/Redo wohnen jetzt in der Top-Leiste als .workshop-action-btn.) */
+            .workshop-station-card {
                 background: rgba(214, 158, 74, 0.28);
                 border-color: var(--brass-2);
             }
@@ -3933,31 +3902,11 @@
                 margin-left: auto;
             }
             /* V8.05 — Editor collapsible */
-            .workshop-editor-toggle {
-                width: 100%;
-                padding: 6px 10px;
-                background: rgba(40, 25, 10, 0.08);
-                border: 1px solid var(--brass-3);
-                border-radius: 3px;
-                font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
-                color: var(--parch-ink);
-                text-align: left;
-                cursor: pointer;
-                letter-spacing: 0.5px;
-                margin: 4px 0;
-            }
-            .workshop-editor-toggle:hover {
-                background: rgba(40, 25, 10, 0.18);
-            }
-            .workshop-editor-toggle .caret {
-                display: inline-block;
-                transition: transform 0.15s ease;
-                margin-right: 6px;
-                color: var(--brass-1);
-            }
-            .workshop-editor-toggle[aria-expanded="true"] .caret {
-                transform: rotate(90deg);
+            /* V17.91 — der disabled-Zustand der Top-Leisten-Akte (Undo/Redo/Löschen): ausgegraut, nicht klickbar
+               (z.B. Undo ohne Verlauf, Löschen bei einem Built-in). */
+            .workshop-action-btn:disabled {
+                opacity: 0.4;
+                cursor: default;
             }
             /* V8.06 — höherer Kontrast für Mode-Bar. Mode-Bar sitzt jetzt
                auf hellem Pergament, also dunkler Hintergrund + dunklerer Text
@@ -4410,7 +4359,8 @@
             .workshop-actions button:hover {
                 border-color: var(--brass-1);
             }
-            .workshop-actions button.workshop-danger {
+            .workshop-actions button.workshop-danger,
+            .workshop-action-btn.workshop-danger {
                 background: linear-gradient(180deg, rgba(180, 60, 60, 0.4), rgba(120, 30, 30, 0.5));
                 border-color: #8a2222;
                 color: #f8d8d8;
@@ -4970,7 +4920,10 @@
             </section>
             <section class="section" id="faehigkeiten-gesetze">
                 <h3>Gesetze · Welt-Regeln</h3>
-                <p class="drawer-hint">Stehende „wann immer X, dann Y" — sie feuern von selbst. Im Chat: „wann immer es regnet, dann setze wetter sunny".</p>
+                <p class="drawer-hint">
+                    Stehende „wann immer X, dann Y" — sie feuern von selbst. Im Chat: „wann immer es regnet, dann setze
+                    wetter sunny".
+                </p>
                 <div id="status-worldrules"></div>
             </section>
         </aside>
@@ -5095,6 +5048,25 @@
                             <span class="workshop-mode-divider" aria-hidden="true"></span>
                             <button
                                 type="button"
+                                id="workshop-undo-btn"
+                                class="workshop-action-btn"
+                                title="Rückgängig (Strg+Z) — den letzten Editor-Schritt zurücknehmen"
+                                disabled
+                            >
+                                ↶ Rückgängig
+                            </button>
+                            <button
+                                type="button"
+                                id="workshop-redo-btn"
+                                class="workshop-action-btn"
+                                title="Wiederholen (Strg+Y) — den zurückgenommenen Schritt wiederherstellen"
+                                disabled
+                            >
+                                ↷ Wiederholen
+                            </button>
+                            <span class="workshop-mode-divider" aria-hidden="true"></span>
+                            <button
+                                type="button"
                                 id="workshop-clone-btn"
                                 class="workshop-action-btn"
                                 title="Aktuellen Bauplan klonen"
@@ -5108,6 +5080,15 @@
                                 title="Neuer leerer Bauplan"
                             >
                                 Neu
+                            </button>
+                            <button
+                                type="button"
+                                id="workshop-delete-blueprint-btn"
+                                class="workshop-action-btn workshop-danger"
+                                title="Aktuellen Bauplan löschen (nur eigene)"
+                                disabled
+                            >
+                                Löschen
                             </button>
                         </div>
                         <canvas id="workshop-preview-canvas"></canvas>
@@ -5128,18 +5109,6 @@
                         <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
                     </aside>
                 </div>
-            </section>
-            <section class="section" id="workshop-editor-section">
-                <button
-                    type="button"
-                    id="workshop-editor-toggle"
-                    class="workshop-editor-toggle"
-                    aria-expanded="false"
-                    title="Editor-Tabelle ein-/ausklappen"
-                >
-                    <span class="caret">▸</span> Editor (Detail-Werte)
-                </button>
-                <div id="workshop-editor" hidden></div>
             </section>
         </aside>
         <!-- W14 Phase 1 — Bibliothek: die WORLD_REGISTRY browsbar. Pro Welt
@@ -5436,8 +5405,8 @@
                 <p class="drawer-hint">
                     Cel-Stufen formen die Licht-Abstufung auf Strukturen — wenig Stufen geben harte gemalte Linien
                     (Studio-Ghibli-Look), viele einen weichen Verlauf. Fog-Distanz regelt, wie nah der Welt-Dunst
-                    beginnt. Wasser-Cull blendet dünnes, flaches Wasser pro Pixel aus (0 = alles sichtbar; höher
-                    dreht das dünne Ufer-/Wand-Bluten weg, tiefes Wasser bleibt).
+                    beginnt. Wasser-Cull blendet dünnes, flaches Wasser pro Pixel aus (0 = alles sichtbar; höher dreht
+                    das dünne Ufer-/Wand-Bluten weg, tiefes Wasser bleibt).
                 </p>
                 <div class="slider-row">
                     <label for="slider-cel">Cel-Stufen</label>
@@ -5878,6 +5847,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=17.90.0" defer></script>
+        <script src="anazhRealm.js?v=17.91.0" defer></script>
     </body>
 </html>
