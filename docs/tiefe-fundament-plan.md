@@ -26,24 +26,25 @@ Jede Welle: `node --check anazhRealm.js` → `npm run format:check` → `npm run
 
 ---
 
-## Welle A — Der 10-Sekunden-Ruckel (Console + Save + Nexus)
+## Welle A — Der 10-Sekunden-Ruckel — GEMESSEN, Wurzel REDIRECTED
 
-**Ziel.** Die drei Main-Thread-Hitches im 10-s-Takt eliminieren, ohne Qualität/Tiefe zu verlieren — reines Timing.
+**A0-MESSUNG (`scripts/diag-stutter.cjs` + `diag-edit-perf.cjs`, 03.06.) widerlegt die Annahme.** In einer repräsentativen Welt (46 Bauten, 17 Kreaturen, 39 KB Snapshot): **Journal-Rebuild 1.8 ms · Save gesamt 1 ms (Snapshot 0.2 + stringify 0.3 + localStorage 0.5) · Nexus-Frame 4.1 ms** — KEINE blockiert einen Frame (>16 ms). Die ursprünglich geplanten Fixes (idle-Save, inkrementelles Journal) zielten auf ein Nicht-Problem (V17.90-Lehre: messen, bevor du "Last-Flake" akzeptierst).
 
-**Wurzel (gemessen).** Drei teure synchrone Operationen im selben Takt: Journal-DOM-Vollrebuild (`renderWorldJournal:24899`, cap 200, `innerHTML=""`), synchroner Save (`saveState:23169`, `saveInterval 10s:241`), Nexus-Spawn + synchroner Remesh (`evolveNexus:15727` → `spawnArchitecture` → `_remeshVoxelChunksAround(…,skirt=0):22723`, `nexusEvolutionInterval 10s:323`).
+**Die ECHTE Wurzel (gemessen).** Ein **Per-Chunk-Rebuild kostet 75 ms** (`diag-edit-perf`): Gras **34 ms** (dominant) · Density+Data 22 ms · Wasser-Iso 18.7 ms · BVH 8 ms. Der Ruckel ist der **deferred Rebuild-Drain**: ein Nexus-Struktur-Spawn ruft `_remeshVoxelChunksAround(skirt=1)` → markiert ~9 Chunks dirty (billig, 0.1 ms) → `_tickDirtyVoxelChunks:22749` rebuildet sie **1/Frame à 75 ms** → ~9 Frames Stutter (~13 FPS). **Das ist DIESELBE Wurzel wie "FPS-Einbruch in neue Chunks"** (der Streaming-Finalize baut Gras 34 ms + Wasser-Iso 18.7 ms + BVH main-thread). Zwei Schöpfer-Befunde vereinen sich in EINEM Hebel: die Per-Chunk-Main-Thread-Kosten.
 
-**Vorgehen.**
-- **A0 — MESSEN zuerst** (`scripts/diag-stutter.cjs`): die drei Operationen mit `performance.now()` instrumentieren, eine Headless-Session triggert sie (Nexus-Spawn erzwingen, Save erzwingen, Journal füllen), die ms-Dauer pro Operation loggen → die DOMINANTE Quelle identifizieren, BEVOR geheilt wird.
-- **A1 — Takte entkoppeln**: Save + Nexus + Journal-Flush phasen-versetzen → sie können nicht im selben Frame zusammenfallen.
-- **A2 — Save idle + dirty-gated + Delta**: `worldDirty`-Flag bei echten Mutationen; Save nur wenn dirty; ausgeführt in `requestIdleCallback` (Fallback Timeout); nur geänderte Entitäten re-serialisieren (Delta), erzwungener Flush bei Welt-Wechsel/Reload.
-- **A3 — Journal inkrementell**: nur das neue `<li>` anhängen + ältestes entfernen (kein `innerHTML=""`); harte DOM-Sichtbarkeits-Grenze (~50 Zeilen).
-- **A4 — Nexus-Remesh verteilen**: Nexus-Spawn markiert nur `dirtyVoxelChunks` (der bestehende 1-Chunk/Frame-Drain baut sie); der synchrone `_remeshVoxelChunksAround` entfällt für Nexus-Geburten (Spieler-Bauten bleiben sync).
+**Der Schlüssel-Befund: ein Struktur-Spawn-Remesh ändert NUR die Wasser-Cells, NICHT Terrain/Gras** — der Rebuild regeneriert Gras (34 ms) umsonst (`_rebuildVoxelChunk:19579` → `_finalizeVoxelChunkBuild` → `_buildVoxelChunkGrass:19503`).
 
-**Messung.** `diag-stutter.cjs` vorher/nachher: max-Frame-Spike (ms) während eines Nexus-Spawns + Save + Journal-Fülls. Playtest-Invarianten: Save feuert nur bei `worldDirty`; Journal-DOM-Knoten ≤ Sichtbarkeits-Grenze; Nexus-Spawn fügt keine synchrone Remesh-Wallzeit hinzu (markiert nur dirty).
+**Vorgehen (REDIRECTED — der gemessene #1-Hebel: Gras von der Rebuild-Kritik-Pfad nehmen).**
+- **A1 — Gras deferred** (wie Scatter V17.1): `_buildVoxelChunkGrass` aus dem synchronen `_finalizeVoxelChunkBuild` in eine `_enqueueGrass`/`_tickPendingGrass`-Queue (≤budget/Frame, nahe zuerst); Dispose verwirft die pending. Senkt den Rebuild-/Streaming-Spike 75 → ~40 ms.
+- **A2 — Wasser-only-Remesh hält Gras** (optional, größerer Hebel): ein Struktur-Spawn-Remesh (`_remeshVoxelChunksAround`) reklassifiziert nur Wasser-Cells → er muss Gras NICHT disposen/neu bauen (es ist unverändert). Spart 34 ms je gespawntem-Struktur-Rebuild.
+- **A3 — Takt-Versatz** (trivial, billig): Save (12 s) vs Nexus (10 s) phasen-versetzen, damit ihre kleinen Kosten nie im selben Frame liegen.
+- **VERWORFEN (gemessen unnötig)**: idle-Save (1 ms), inkrementelles Journal (1.8 ms) — kein messbarer Gewinn, nur Risiko.
 
-**Abnahme (erfüllt wenn).** (1) `diag-stutter` zeigt die teuerste Einzeloperation < 16 ms ODER über mehrere Frames verteilt (kein Single-Frame-Block > 16 ms); (2) die drei Takte kollidieren nachweisbar nie (Phasen-Versatz-Invariante); (3) Save überspringt, wenn nichts dirty ist (Invariante); (4) Journal-DOM bounded (Invariante); (5) Playtest "Alle Invarianten OK". **Browser-Sign-off**: "kein Ruckeln mehr alle 10 s".
+**Messung.** `diag-edit-perf` vorher/nachher: Per-Chunk-Rebuild-ms + die Komponenten-Aufschlüsselung (Gras aus dem Sync-Pfad → fällt der Rebuild < 40 ms). Playtest: Gras-Pool-Leak-Test (maxPoolSize=1) bleibt grün; das Test-Naht-Drain (`_drainDirtyVoxelChunks`) drainet auch die Gras-Queue (V9.56-i).
 
-**Risiko.** Niedrig. A2 muss bei Welt-Wechsel zwingend flushen (Datenverlust-Schutz).
+**Abnahme (erfüllt wenn).** (1) `diag-edit-perf` zeigt Per-Chunk-Rebuild < 45 ms (Gras raus aus dem Sync-Pfad); (2) Gras-Leak-Test grün (kein Pool-Snowball); (3) ein Struktur-Spawn behält das Gras (A2, Invariante); (4) Playtest "Alle Invarianten OK". **Browser-Sign-off**: "kein Ruckeln bei Nexus-Spawns + sanfteres Chunk-Laden".
+
+**Risiko.** Niedrig-mittel. Gras-Defer ändert WANN Gras erscheint (1 Frame später, imperzeptibel) → Test-Naht muss die Gras-Queue drainen (V9.56-i, wie Scatter/dirty-Chunks).
 
 ---
 
