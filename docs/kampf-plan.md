@@ -38,8 +38,11 @@ in EINEN optionalen Override auf. Die Schritte (§11.10): **R1 ✅ (V17.68)** di
 **R3 ✅ (V17.69)** die Rollen-Resonanz (`computeBlueprintRole` = Domäne-Vorrang → argmax über `FORM_ROLE_SIGNATURES`;
 DER HEAL: architecture als positive dichte+harte Signatur → Stein-Tempel wird Bauwerk statt Seele; `checkBandV1769`
 7 grün + V8.35/W12 kein Regress). **Die Resonanz-Vereinheitlichung STEHT — Domäne + Rolle als argmax des Produkt-
-Vektors, ein Produkt-Vektor viele Leser.** Offen in §11.10: die workshop-station-Resonanz-Signatur (Spieler-Apparate
-emergieren als Werkstatt) + S10 (Op-aus-Form als Resonanz). **OFFEN daneben:** der Schöpfer-Browser-Audit des S7-FERTIGEN-
+Vektors, ein Produkt-Vektor viele Leser.** **R3-Schluss ✅ (V17.70):** GEMESSEN, dass die Werkstatt-NATUR NICHT
+emergiert (Esse vs. dichtes Bauwerk = Substanz-Zwillinge, village resoniert forging 2.78 wie eine Esse) — sie ist
+INTENT (`setBlueprintAsWorkshopStation`, der vorgesehene Override), aber die DOMÄNE emergiert (R1). **Damit ist die
+Prozess-Hardcode-Insel aufgelöst.** Offen: S10 (Op-aus-Form als Resonanz, der letzte TOOL-Hardcode) + der Schöpfer-
+Browser-Audit des FERTIGEN-Flusses. **OFFEN daneben:** der Schöpfer-Browser-Audit des S7-FERTIGEN-
 Flusses (Feel/Synergie) · S6-B (erntbare Flora) · **S7-C die chat/DSL-Vereinheitlichung** (der letzte Gratis-Bypass;
 die load-bearing scripting-Schicht, S3-B hielt sie bewusst frei) · S8 (Teilen) · S9 (Hand-Optik) · S11 (Animation).
 Wer weiterbaut, liest §11.10 (die Resonanz) + §11.9 (die Lehre + der Lebenszyklus + die drei Schichten Tags/
@@ -885,9 +888,22 @@ food) wandern mit (V9.56-i). Beweise SUBSTANZ statt Name durch den FLIP (eine Ma
   body-Geometrie → Bauwerk statt Seele; ein weicher fleisch-Körper resoniert soul stärker. Die Hand-Flags bleiben
   Override (`roleManual`). `checkBandV1769` 7 grün + V8.35/W12 grün (kein Regress). *Damit steht die Resonanz-
   Vereinheitlichung: Domäne (R1) + Rolle (R3) als argmax des Produkt-Vektors — ein Produkt-Vektor, viele Leser.*
-- **danach:** die workshop-station-Resonanz-Signatur (vom Spieler gebaute Apparate emergieren als Werkstatt, S7-B-ii
-  fällt heraus) + S10 (Op-aus-Form, auch eine Resonanz: der Werkzeug-Op aus dem Form-Vektor) — dann ist die ganze
-  Prozess-Hardcode-Insel aufgelöst, die Rekursion schließt durch verbesserbare Prozessbaupläne.
+- **R3-Schluss — die Werkstatt-DESIGNATION als Intent-Override — ✅ GEBAUT (V17.70):** GEMESSEN (die domain-vs-
+  architecture-Resonanz aller Built-ins): die Werkstatt-NATUR emergiert NICHT sauber — eine Esse und ein dichtes
+  Bauwerk sind Substanz-Zwillinge (village resoniert forging 2.78, felsturm mechanism 2.97, kristall_geode soulwork
+  3.09 — so stark wie die Stationen). Es gibt kein „ist-es-eine-Werkstatt?"-Substanz-Signal (Forge vs. Gebäude =
+  ZWECK, nicht Materie — wie ein Hammer vs. ein Felsblock). Die ehrliche Form (der Resonanz-Plan reservierte sie):
+  die DOMÄNE emergiert (R1), die DESIGNATION ist Intent — `setBlueprintAsWorkshopStation` (Spiegel von
+  setBlueprintAsArmor) + DSL-Op `set_workshop_station`. Ein Spieler baut einen Apparat → markiert → er bedient seine
+  EMERGENTE Domäne, das Gate findet ihn. `checkBandV1770` 6 grün. **Damit ist die Prozess-Hardcode-Insel aufgelöst:
+  Domäne + Rolle emergieren, die einzige Hand-Geste (Werkstatt-Designation) ist der vorgesehene Intent-Override, und
+  auch dort emergiert die Domäne.** PERMANENTE LEHRE: nicht alles emergiert aus der Substanz — manche
+  Unterscheidungen sind INTENT (Zweck über Materie); MISS welche, und nutze den „optionalen Override" für sie,
+  während die EIGENSCHAFTEN (Domäne) emergent bleiben. Ein Hand-Flag ist kein Hardcode-Versagen, wenn die
+  Unterscheidung GEMESSEN nicht-emergent ist.
+- **danach:** S10 (Op-aus-Form, auch eine Resonanz: der Werkzeug-Op aus dem Form-Vektor — der letzte TOOL-Hardcode;
+  GEMESSEN ob er sauber emergiert) — dann emergieren auch die Werkzeuge vollständig, die Rekursion schließt durch
+  verbesserbare Prozessbaupläne.
 
 **PERMANENTE LEHRE (die Architektur-Lehre): wenn das System schon einen Vektor trägt (Tags, Aura) und an EINER Stelle
 eine Resonanz/ein Skalarprodukt rechnet (Spawn-Affinität), dann ist JEDE Einzel-Signal-Schwelle (`wenn ein Tag ≥ X`)

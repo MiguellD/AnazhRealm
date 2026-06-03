@@ -2306,6 +2306,19 @@ class AnazhRealm {
                     });
                 }
             },
+            // R3-Schluss (§11.10) — Bauplan als Welt-Werkstatt markieren (Intent); die bediente Domäne
+            // EMERGIERT (R1). Spiegel von set_armor_role.
+            set_workshop_station: ([blueprintName], ctx) => {
+                const result = this.setBlueprintAsWorkshopStation(blueprintName);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "workshop_station_set" : "workshop_station_failed",
+                        name: blueprintName,
+                        domain: result.domain,
+                        reason: result.reason,
+                    });
+                }
+            },
             // Welle 6.D Etappe 3a+ — Bauplan als Konsumabel markieren. Wirkung
             // emergiert aus Compound-Tags × scale (Default 0.2). So entsteht
             // die Tag-Bonus-Tabelle aus der Komposition (Wasser + Pflanze →
@@ -27156,6 +27169,25 @@ class AnazhRealm {
         return { ok: true, name };
     }
 
+    // R3-Schluss (kampf-plan §11.10) — einen Bauplan als WELT-WERKSTATT markieren. GEMESSEN (die
+    // domain-vs-architecture-Resonanz, Schöpfer-Dialog 03.06.): ob etwas eine Werkstatt IST, emergiert
+    // NICHT sauber aus der Substanz — eine Esse (dichte Glut-Masse) und ein dichtes Bauwerk sind Substanz-
+    // Zwillinge (village resoniert forging 2.78, ein Eisen-Turm mechanism 2.97, eine Quarz-Geode soulwork
+    // 3.09). Die Werkstatt-NATUR ist INTENT (wie ein Hammer vs. ein Felsblock — gleiche Materie, andere
+    // Absicht), kein Substanz-Signal. Das ist der „optionale Schöpfer-Override" aus dem Resonanz-Plan: die
+    // DESIGNATION ist eine bewusste Geste, aber die bediente DOMÄNE EMERGIERT (R1, `_computeWorkshopDomain`).
+    // Damit kann ein Spieler einen eigenen Apparat bauen → markieren → er bedient seine emergente Domäne
+    // (ein Spieler-Forge → forging, ein Spieler-Kolben → alchemy), das Gate findet ihn. Spiegel von
+    // setBlueprintAsArmor; nur eigene Baupläne (Built-in-Stationen sind deklarierte Saat).
+    setBlueprintAsWorkshopStation(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        bp.role = "workshop-station";
+        bp.roleManual = true;
+        return { ok: true, name, domain: this._computeWorkshopDomain(bp) };
+    }
+
     // V17.52 Kampf-Bogen Phase B — Bauplan als Waffe markieren. Spiegel von
     // setBlueprintAsArmor: role:"weapon" + roleManual (manueller Override, die
     // Emergenz lässt die Rolle in Ruhe). Das Kombat-Profil der Waffe (damage/
@@ -45160,7 +45192,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.69.0";
+AnazhRealm.VERSION = "17.70.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

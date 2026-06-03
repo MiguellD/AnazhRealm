@@ -5669,6 +5669,106 @@ async function checkBandV1769RoleResonance(ctx) {
     );
 }
 
+// V17.70 R3-Schluss (kampf-plan §11.10) — die WORKSHOP-STATION-DESIGNATION als Override + emergente Domäne.
+// GEMESSEN: ob etwas eine Werkstatt IST emergiert NICHT sauber (eine Esse und ein dichtes Bauwerk sind Substanz-
+// Zwillinge) — die Werkstatt-Natur ist INTENT (Hand-Flag, der „optionale Override"), aber die bediente Domäne
+// EMERGIERT (R1). Damit kann ein Spieler einen eigenen Apparat bauen → markieren → er bedient seine emergente
+// Domäne, das Gate findet ihn. KONSUM, nicht Existenz.
+async function checkBandV1770WorkshopStationMark(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const savedArch = r.state.architectures.slice();
+        const savedMode = r.getGameMode();
+
+        out.method = typeof r.setBlueprintAsWorkshopStation === "function";
+
+        // ein eigener Apparat: ein Quarz-Gefäß (durchsichtig → alchemy-Domäne, R1)
+        if (blu.__ws_vessel) delete blu.__ws_vessel;
+        blu.__ws_vessel = {
+            name: "__ws_vessel",
+            parts: [{ shape: "sphere", material: "quarz", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }],
+        };
+        // VOR der Markierung: die Rolle ist NICHT workshop-station (emergiert nicht als Werkstatt)
+        out.notStationBeforeMark = r.computeBlueprintRole(blu.__ws_vessel) !== "workshop-station";
+
+        const mark = r.setBlueprintAsWorkshopStation("__ws_vessel");
+        out.markSetsRole =
+            mark.ok === true && blu.__ws_vessel.role === "workshop-station" && blu.__ws_vessel.roleManual === true;
+        // KONSUM: die bediente Domäne EMERGIERT aus der Substanz (durchsichtiges Gefäß → alchemy), nicht deklariert
+        out.domainEmerges = mark.domain === "alchemy" && r._computeWorkshopDomain(blu.__ws_vessel) === "alchemy";
+
+        // Validierung: Built-in + unbekannt abgelehnt (die Built-in-Stationen sind deklarierte Saat)
+        out.rejectsBuiltin = r.setBlueprintAsWorkshopStation("esse").ok === false;
+        out.rejectsUnknown = r.setBlueprintAsWorkshopStation("__nonexist_xyz").ok === false;
+
+        // (end-to-end) ein vom SPIELER gebauter, markierter forging-Apparat (eisen, dichte → forging) bedient das
+        // Gate: ein forging-Werk passt zu ihm. (Forging, weil eisen+schmiede-hammer eine saubere Material-Op-
+        // Kompatibilität hat — der Punkt ist „Spieler-Station bedient das Gate via emergenter Domäne", domain-agnostisch.)
+        if (blu.__ws_forge) delete blu.__ws_forge;
+        blu.__ws_forge = {
+            name: "__ws_forge",
+            parts: [{ shape: "box", material: "eisen", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }],
+        };
+        r.setBlueprintAsWorkshopStation("__ws_forge");
+        out.forgeStationDomain = r._computeWorkshopDomain(blu.__ws_forge) === "forging"; // eisen-Masse → forging (emergent)
+        if (blu.__ws_work) delete blu.__ws_work;
+        blu.__ws_work = {
+            name: "__ws_work",
+            parts: [
+                { shape: "box", material: "eisen", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        r.setGameMode("schöpfer");
+        r.applyOpToPart("__ws_work", 0, "schmiede-hammer"); // forging-Domäne (opChain)
+        out.workIsForging = r.computeBlueprintDomain(blu.__ws_work) === "forging";
+        r.setGameMode("pfad");
+        r.state.architectures = r.state.architectures.filter((e) => e.type !== "__ws_forge");
+        r.state.architectures.push({ type: "__ws_forge", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__ws_st" });
+        const gate = r._workshopStationGate("__ws_work", { x: pm.x, y: pm.y, z: pm.z });
+        out.playerStationServes = gate.ok === true && gate.found === "__ws_forge"; // ein SPIELER-Apparat bedient das Gate
+
+        // der DSL-Op (Spiegel von set_armor_role)
+        if (blu.__ws_dsl) delete blu.__ws_dsl;
+        blu.__ws_dsl = {
+            name: "__ws_dsl",
+            parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }],
+        };
+        r.dslRun(["set_workshop_station", "__ws_dsl"], { source: "test" });
+        out.dslMarks = blu.__ws_dsl.role === "workshop-station";
+
+        // cleanup
+        delete blu.__ws_vessel;
+        delete blu.__ws_forge;
+        delete blu.__ws_work;
+        delete blu.__ws_dsl;
+        r.state.architectures = savedArch;
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.70 R3-Schluss: setBlueprintAsWorkshopStation existiert", res.method);
+    check(
+        "V17.70 R3-Schluss: die Markierung setzt role=workshop-station + roleManual (der Intent-Override); vorher emergiert der Apparat NICHT als Werkstatt",
+        res.markSetsRole && res.notStationBeforeMark
+    );
+    check(
+        "V17.70 R3-Schluss: KONSUM — die bediente Domäne EMERGIERT aus der Substanz (Quarz-Gefäß → alchemy via R1), nicht deklariert",
+        res.domainEmerges
+    );
+    check(
+        "V17.70 R3-Schluss: Built-in (esse) + unbekannt werden abgelehnt (Saat unantastbar)",
+        res.rejectsBuiltin && res.rejectsUnknown
+    );
+    check(
+        "V17.70 R3-Schluss: end-to-end — ein vom SPIELER gebauter, markierter Apparat bedient das Werkstatt-Gate (ein alchemy-Werk passt zu ihm)",
+        res.forgeStationDomain && res.workIsForging && res.playerStationServes
+    );
+    check("V17.70 R3-Schluss: der DSL-Op set_workshop_station markiert (Spiegel von set_armor_role)", res.dslMarks);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -37855,6 +37955,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1766FertigenFlow(ctx);
             await checkBandV1767WorkshopDomainEmergent(ctx);
             await checkBandV1769RoleResonance(ctx);
+            await checkBandV1770WorkshopStationMark(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
