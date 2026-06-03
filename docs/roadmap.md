@@ -13,7 +13,7 @@ Stand: **V17.91 (03.06.2026) — der Crafting-/Werkstatt-Bogen ist DURCH (V17.72
 
 ---
 
-## OFFENE FÄDEN — der Gesamt-Backlog (Stand V17.91, geordnet, reconciled)
+## OFFENE FÄDEN — der Gesamt-Backlog (Stand V17.92, geordnet, reconciled)
 
 **A — den Crafting-Bogen abschließen (kampf-plan §11, der aktive Arc):**
 

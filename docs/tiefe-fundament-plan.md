@@ -1,4 +1,4 @@
-# Tiefe-Fundament-Plan — der Plan unter der Oberfläche (Stand V17.91, 03.06.2026)
+# Tiefe-Fundament-Plan — der Plan unter der Oberfläche (Stand V17.92, 03.06.2026)
 
 Schöpfer-Befund (Browser-Audit, drei Screenshots): das Terrain ist nahe + ruckelt in neue Chunks; die Console/Save/Nexus ruckeln im 10-s-Takt; ein Licht-Bug ("Trapeze" tagsüber, weg nach 18:00) + Stein/Eisen nachts schwarz + Strukturen ohne Mikrostruktur; Höhlen sind mit dem gigantisch gewordenen Terrain NICHT mitgewachsen (mickrige Schläuche, keine Eingänge/Canyons); Wasser klebt an Höhlenwänden / unter dem Boden, die Schwimmmechanik greift über Lufthöhlen.
 

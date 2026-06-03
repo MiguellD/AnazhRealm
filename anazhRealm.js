@@ -870,6 +870,14 @@ class AnazhRealm {
             // Streuen (worldFieldAt + Surface-Scan pro Zelle) läuft ≤budget/
             // Frame nach → kein Streaming-Hitch, kein CI-Warmup-Druck (V9.83).
             pendingScatter: null,
+            // Welle A (Tiefe-Fundament) — deferred-Queue für das Gras (Set von
+            // Chunk-Keys). GEMESSEN (diag-edit-perf): `_buildVoxelChunkGrass` ist
+            // mit ~34 ms der dominante Per-Chunk-Rebuild-Posten; synchron im
+            // Finalize trieb es den 75-ms-Rebuild-Spike (Streaming + Nexus-Spawn-
+            // Drain). Deferred (wie Scatter/Wasser-Iso): der Chunk finalisiert
+            // ohne den Gras-Aufwand, der Tick baut ≤1/Frame auf einer ruhigen
+            // (nicht-Streaming-)Frame nach. Gras 1 Frame später = imperzeptibel.
+            pendingGrass: null,
             // V12.0-perf.c — Architektur-Instancing-Registry (HISM-Pattern).
             // archFlattenCache: Map<blueprintName, {instanceable, reason,
             //   leaves:[{geom, mat, localMatrix}]}> — ein Bauplan flach in
@@ -19500,7 +19508,12 @@ class AnazhRealm {
             const _pcx = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cx : cx;
             const _pcz = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cz : cz;
             const _gr = Math.max(Math.abs(cx - _pcx), Math.abs(cz - _pcz));
-            if (_gr <= 2) this._buildVoxelChunkGrass(cx, cz);
+            // Welle A — Gras DEFERRED (war synchron, ~34 ms): der dominante
+            // Per-Chunk-Rebuild-Posten aus dem Finalize-Frame verlagert. Der
+            // Tick baut ≤1/Frame auf einer ruhigen Frame nach (1 Frame später =
+            // imperzeptibel). Erscheint beim Näherkommen über den LOD-Rebuild,
+            // der diesen Finalize-Pfad erneut durchläuft (re-enqueue).
+            if (_gr <= 2) this._enqueueGrass(cx, cz);
         }
         // V17.1 — FÜLLE/DICHTE: die artenreiche Klein-Vegetation (Blüten/Farne/
         // Gestrüpp/Fels/Sporen) aus den vier worldFieldAt-Feldern. DEFERRED (wie
@@ -19708,6 +19721,8 @@ class AnazhRealm {
         if (this.state.pendingWaterIso) this.state.pendingWaterIso.delete(key);
         // V17.1 — ausstehenden Scatter-Build für diesen Chunk verwerfen.
         if (this.state.pendingScatter) this.state.pendingScatter.delete(key);
+        // Welle A — ausstehenden Gras-Build für diesen Chunk verwerfen.
+        if (this.state.pendingGrass) this.state.pendingGrass.delete(key);
         this.state.voxelChunks.delete(key);
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
@@ -22275,6 +22290,49 @@ class AnazhRealm {
         this.state.pendingScatter.add(`${cx},${cz}`);
     }
 
+    // Welle A — Gras deferred (GEMESSEN: 34 ms/Chunk, der dominante Rebuild-
+    // Posten). Spiegel von `_enqueueScatter`/`_tickPendingScatter`: enqueue
+    // statt synchron im Finalize bauen → kein 34-ms-Aufschlag auf den Streaming-
+    // /Nexus-Spawn-Drain-Frame.
+    _enqueueGrass(cx, cz) {
+        if (!this.state.pendingGrass) this.state.pendingGrass = new Set();
+        this.state.pendingGrass.add(`${cx},${cz}`);
+    }
+
+    // Per-Frame-Tick: baut ≤maxPerFrame Gras-Chunks, NAHE zuerst; ferne (Ring
+    // > 2, der V16.1-Gras-Ring) aus der Queue werfen. maxPerFrame=1 (Default),
+    // weil EIN Gras-Build ~34 ms kostet — nie zwei in einem Frame.
+    _tickPendingGrass(maxPerFrame = 1) {
+        const queue = this.state.pendingGrass;
+        if (!queue || queue.size === 0) return 0;
+        const lpc = this.state.lastPlayerVoxelChunk;
+        const GRASS_RING = 2; // V16.1: Gras baut nur bei Chunk-Distanz ≤ 2
+        let keys = [...queue];
+        if (lpc) {
+            const distOf = (k) => {
+                const ci = k.indexOf(",");
+                const kx = parseInt(k.slice(0, ci), 10);
+                const kz = parseInt(k.slice(ci + 1), 10);
+                return Math.max(Math.abs(kx - lpc.cx), Math.abs(kz - lpc.cz));
+            };
+            for (const k of keys) if (distOf(k) > GRASS_RING) queue.delete(k);
+            keys = [...queue].sort((a, b) => distOf(a) - distOf(b));
+        }
+        let built = 0;
+        for (const key of keys) {
+            if (built >= maxPerFrame) break;
+            queue.delete(key);
+            if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+            if (this.state.voxelChunkGrass && this.state.voxelChunkGrass.has(key)) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            this._buildVoxelChunkGrass(cx, cz);
+            built++;
+        }
+        return built;
+    }
+
     // Per-Frame-Tick: streut ≤maxPerFrame Chunks, NAHE zuerst (priorisiert wie
     // der Wasser-Iso-Tick), ferne (jenseits maxRing — dort baut die Streuung
     // ohnehin nichts) aus der Queue werfen → kein unbegrenztes Wachstum.
@@ -22801,6 +22859,9 @@ class AnazhRealm {
         // V12.0-perf.h — der Rebuild enqueued den Wasser-Iso (deferred); die
         // Test-Naht braucht ihn sofort → die Wasser-Iso-Queue mit-drainen.
         this._drainPendingWaterIso();
+        // Welle A — desgleichen das deferred Gras (sonst sehen Tests, die nach
+        // dem Drain `voxelChunkGrass` lesen, leere Chunks).
+        this._drainPendingGrass();
         return built;
     }
 
@@ -35850,6 +35911,26 @@ class AnazhRealm {
         return built;
     }
 
+    // Welle A — die Gras-Queue synchron leeren (Test-Naht, Spiegel von
+    // `_drainPendingWaterIso`): das Gras ist seit Welle A deferred, die Tests
+    // brauchen es sofort nach einem Drain/Streaming.
+    _drainPendingGrass() {
+        const queue = this.state.pendingGrass;
+        if (!queue || queue.size === 0) return 0;
+        let built = 0;
+        for (const key of [...queue]) {
+            queue.delete(key);
+            if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+            if (this.state.voxelChunkGrass && this.state.voxelChunkGrass.has(key)) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            this._buildVoxelChunkGrass(cx, cz);
+            built++;
+        }
+        return built;
+    }
+
     // V9.24 — der Voxel-Pendant zu populateChunkVegetation: ein Voxel-Chunk
     // bekommt seine Streu-Strukturen (Wälder/Felsen/Geoden/Glutbrunnen +
     // Felsformationen). Spiegelt populateChunkVegetation — 8×8-Sample-Raster,
@@ -45152,7 +45233,14 @@ class AnazhRealm {
         // den CI-Warmup-Druck (V9.83): der Warmup-Pump läuft Ticks back-to-back
         // ohne Idle, da darf die Deko nicht mit dem Streaming um Wall-Clock
         // konkurrieren (gemessen: Baseline 18 Chunks, ungated 12-14).
-        if (!chunksBuilt) this._tickPendingScatter(2);
+        // Welle A — Gras deferred (≤1/Frame, ~34 ms), NUR auf einer ruhigen
+        // Frame (kein Streaming-Build) → nie Gras-Build + Chunk-Finalize im
+        // selben Frame (das war der 75-ms-Spike). Gras hat Vorrang vor Scatter
+        // (sichtbarer); baute es diese Frame, wartet Scatter eine Frame.
+        if (!chunksBuilt) {
+            const grassBuilt = this._tickPendingGrass(1);
+            if (!grassBuilt) this._tickPendingScatter(2);
+        }
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
         // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
@@ -45849,7 +45937,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.91.0";
+AnazhRealm.VERSION = "17.92.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

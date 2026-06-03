@@ -17812,6 +17812,11 @@ async function checkBandVoxelTerrainCore(ctx) {
             const pmInit = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
             if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
             for (let s = 0; s < 50; s++) r._tickVoxelChunkStreaming(pmInit);
+            // Welle A — das Gras ist seit Welle A deferred (enqueue im Finalize,
+            // Build ≤1/Frame im Loop). Das Streaming oben enqueued es nur; die
+            // Test-Naht drainet es sofort, sonst sieht der Grass-Check unten
+            // leere Chunks (V9.56-i: das Verhalten wanderte, der Test wandert mit).
+            if (typeof r._drainPendingGrass === "function") r._drainPendingGrass();
             out.activated = r.state.voxelTerrainActive === true;
             out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
             // jeder gemeshte Voxel-Chunk trägt eine Kollision.
