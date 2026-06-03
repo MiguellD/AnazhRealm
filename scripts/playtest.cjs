@@ -4963,6 +4963,134 @@ async function checkBandV1762ForgeMeaningful(ctx) {
     );
 }
 
+// V17.63 S4 (kampf-plan §11.7) — Rüstung schmieden/weben: derselbe WERK-Kern (_forgeMaterialAndFreeze) wie
+// das Gerät, in den armor-Slot; wearArmor ist der Spieler-Pfad (forge-wenn-ungemacht), fertigeBlueprint
+// routet nach Rolle. KONSUM (nicht Existenz, V17.31).
+async function checkBandV1763ForgeArmor(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+        if (!p.equipped) p.equipped = {};
+        const savedHeld = p.equipped.held;
+        const savedArmor = p.equipped.armor;
+
+        out.methods = ["forgeArmor", "wearArmor", "fertigeBlueprint", "_forgeMaterialAndFreeze"].every(
+            (m) => typeof r[m] === "function"
+        );
+
+        // ein dichtes Rüstungs-Compound (stein → dichte+härte = Schutz)
+        blu.__arm = {
+            name: "__arm",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 1.2, y: 1.4, z: 0.4 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+
+        // (2) forgeArmor verlangt role="armor"
+        r.setGameMode("schöpfer");
+        const armNoRole = r.forgeArmor("__arm");
+        out.forgeArmorRequiresRole = armNoRole.ok === false && armNoRole.reason === "not_marked_as_armor";
+        r.setBlueprintAsArmor("__arm");
+        out.markedArmor = blu.__arm.role === "armor";
+
+        // (3) forgeArmor in pfad OHNE Material → abgelehnt + nicht getragen
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        p.equipped.armor = null;
+        const armNoMat = r.forgeArmor("__arm");
+        out.pfadArmorRejectsWithoutMaterial =
+            armNoMat.ok === false && armNoMat.reason === "not_enough_material" && p.equipped.armor === null;
+
+        // (4) forgeArmor in pfad MIT Material → webt (zahlt + trägt + friert ein)
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        const steinBefore = p.inventory[0].count;
+        const armForge = r.forgeArmor("__arm");
+        const steinAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadArmorForges =
+            armForge.ok === true &&
+            steinBefore > steinAfter &&
+            p.equipped.armor === "__arm" &&
+            Number.isFinite(blu.__arm.forgedPrecision);
+
+        // (5) wearArmor: eine gemachte Rüstung → frei tragen (leeres Inventar)
+        p.equipped.armor = null;
+        p.inventory = new Array(27).fill(null);
+        const armWearMade = r.wearArmor("__arm");
+        out.wearMadeArmorFree = armWearMade.ok === true && p.equipped.armor === "__arm";
+
+        // (6) fertigeBlueprint routet nach Rolle: armor → armor-Slot, non-armor → held-Slot
+        delete blu.__arm.forgedPrecision;
+        p.equipped.armor = null;
+        p.equipped.held = null;
+        r.setGameMode("schöpfer");
+        const fertArmor = r.fertigeBlueprint("__arm");
+        out.fertigeArmorToArmorSlot =
+            fertArmor.ok === true && p.equipped.armor === "__arm" && p.equipped.held !== "__arm";
+        blu.__geraet = {
+            name: "__geraet",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.6, y: 0.6, z: 0.6 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        const fertHeld = r.fertigeBlueprint("__geraet");
+        out.fertigeGeraetToHeldSlot = fertHeld.ok === true && p.equipped.held === "__geraet";
+
+        // (7) forgeBlueprint funktioniert nach dem Refactor noch (zahlt + held)
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        p.equipped.held = null;
+        delete blu.__geraet.forgedPrecision;
+        const heldBefore = p.inventory[0].count;
+        const heldForge = r.forgeBlueprint("__geraet");
+        const heldAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.forgeBlueprintStillWorks =
+            heldForge.ok === true && heldBefore > heldAfter && p.equipped.held === "__geraet";
+
+        // cleanup
+        delete blu.__arm;
+        delete blu.__geraet;
+        p.equipped.held = savedHeld;
+        p.equipped.armor = savedArmor;
+        p.inventory = new Array(27).fill(null);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.63 S4: die Methoden (forgeArmor/wearArmor/fertigeBlueprint/_forgeMaterialAndFreeze) existieren",
+        res.methods
+    );
+    check(
+        "V17.63 S4: forgeArmor verlangt einen als Ruestung markierten Bauplan (sonst not_marked_as_armor)",
+        res.forgeArmorRequiresRole && res.markedArmor
+    );
+    check(
+        "V17.63 S4: forgeArmor in pfad OHNE Material → abgelehnt + nicht getragen",
+        res.pfadArmorRejectsWithoutMaterial
+    );
+    check(
+        "V17.63 S4: KONSUM — forgeArmor in pfad MIT Material → webt (zahlt + traegt + friert ein)",
+        res.pfadArmorForges
+    );
+    check(
+        "V17.63 S4: GEBRAUCH frei — eine gemachte Ruestung tragen kostet nichts (leeres Inventar)",
+        res.wearMadeArmorFree
+    );
+    check(
+        "V17.63 S4: fertigeBlueprint routet nach Rolle (Ruestung → armor-Slot, Geraet → held-Slot)",
+        res.fertigeArmorToArmorSlot && res.fertigeGeraetToHeldSlot
+    );
+    check(
+        "V17.63 S4: forgeBlueprint funktioniert nach dem Refactor noch (zahlt + in die Hand)",
+        res.forgeBlueprintStillWorks
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -37133,6 +37261,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1759CapabilityReadout(ctx);
             await checkBandV1761ForgeImplement(ctx);
             await checkBandV1762ForgeMeaningful(ctx);
+            await checkBandV1763ForgeArmor(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

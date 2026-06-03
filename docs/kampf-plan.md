@@ -646,8 +646,14 @@ Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis,
   6 grün (Persistenz, wield-ungeschmiedet-ohne-Material lehnt ab, **KONSUM** wield-mit-Material schmiedet,
   GEBRAUCH-frei für geschmiedete, schöpfer frei). *Damit hat S3 seinen Anreiz; S4–S6 replizieren ein WERK-
   Muster, das tatsächlich BEISST.*
-- **S4 — Rüstung schmieden/weben**: dasselbe Muster — Rüstung machen kostet Material + friert Präzision;
-  ausrüsten bleibt frei. *Headless.*
+- **S4 — Rüstung schmieden/weben — ✅ GEBAUT (V17.63):** der gemeinsame WERK-Kern `_forgeMaterialAndFreeze`
+  (Material + Präzision-Snapshot + Affekt) extrahiert (forgeBlueprint hängt jetzt darauf, verhaltens-gleich);
+  `forgeArmor(name)` (verlangt role:"armor") + `wearArmor(name)` (der Spieler-Pfad, forge-wenn-ungemacht, sonst
+  frei) spiegeln forge/wield in den armor-Slot; die Rüstungs-Zeile im Equip-Drawer routet darüber; der eine
+  rollen-bewusste `fertigeBlueprint` + der ⚒-Knopf (Rüstung → weben, sonst → schmieden) = der erste Schritt
+  zur EINEN Werkstatt-Gebärmutter (§11.5). `checkBandV1763ForgeArmor` 7 grün (forgeArmor verlangt die Rolle,
+  pfad ohne Material lehnt ab, **KONSUM** pfad mit Material webt + zahlt + trägt, GEBRAUCH frei, fertige routet
+  nach Rolle, forgeBlueprint nach dem Refactor heil). *Das Web-Muster BEISST (auf S3-B). Headless bewiesen.*
 - **S5 — Avatar: einen Körper formen** (§11.2): `applyPlayerSoulFromBlueprint` durchs Mach-Tor → gesammelte
   Rohstoffe ziehen für einen stärkeren/eigenen Körper; verkörpern (tragen) bleibt frei. Reiner Mach-Kosten-
   Zusatz, risikoarm wie S3/S4. *Headless.*

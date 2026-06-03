@@ -27207,14 +27207,11 @@ class AnazhRealm {
         return this.equipHeld(name);
     }
 
-    // S3 (kampf-plan §11.7, §10-F3) — das Gerät SCHMIEDEN: der Werk-Akt, der den Bauplan (den freien Plan)
-    // zum realen Gerät macht — der Spiegel von „bauen" für gehaltene Geräte. Drei Schritte: (1) Material
-    // ziehen durch das §11.2-Mach-Tor (pfad+frieden zahlen, schöpfer frei; herkunfts-agnostisch — ein
-    // geteilter Bauplan kostet wie ein eigener); (2) die Präzision EINFRIEREN (`forgedPrecision`-Snapshot —
-    // die Schmiede-Qualität dieses Werks, die das Abbauen via F2 moduliert; Edit-stabil bis zum Neu-
-    // Schmieden); (3) das Gerät AUSRÜSTEN (equipHeld). Der Affekt liest die Tat (Stolz ∝ Substanz, W2-Brücke).
-    // (equipHeld bleibt der freie GEBRAUCH/die Use-Fläche; das Kosten-Tor sitzt hier im WERK-Akt.)
-    forgeBlueprint(name) {
+    // S4 (kampf-plan §11.4) — der gemeinsame WERK-KERN, den JEDER Mach-Akt teilt (Gerät/Rüstung/…): Material
+    // ziehen durchs §11.2-Mach-Tor (pfad+frieden zahlen, schöpfer frei) + die Präzision EINFRIEREN
+    // (`forgedPrecision`-Snapshot, persistiert) + der schöpferische Affekt (Stolz ∝ Substanz, W2-Brücke).
+    // Was sich pro Rolle unterscheidet, ist nur das AUSRÜSTEN (held vs armor) — das macht der Aufrufer.
+    _forgeMaterialAndFreeze(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
         const gate = this._makeCostGate(name);
@@ -27222,9 +27219,18 @@ class AnazhRealm {
             return { ok: false, reason: "not_enough_material", missing: gate.missing || {}, cost: gate.cost || {} };
         }
         bp.forgedPrecision = this._compoundAvgPrecisionFromParts(bp.parts);
-        const eq = this.equipHeld(name);
         if (typeof this._feelAction === "function") this._feelAction("create", { blueprint: name });
-        return { ok: true, equipped: eq.equipped, free: !!gate.free, forgedPrecision: bp.forgedPrecision };
+        return { ok: true, free: !!gate.free, forgedPrecision: bp.forgedPrecision };
+    }
+
+    // S3 (kampf-plan §11.7, §10-F3) — das Gerät SCHMIEDEN: der WERK-Kern (Material + Präzision-Snapshot +
+    // Affekt) + das gehaltene Gerät AUSRÜSTEN (equipHeld). Der Spiegel von „bauen" für gehaltene Geräte.
+    // (equipHeld bleibt der freie GEBRAUCH; das Kosten-Tor sitzt hier im WERK-Akt.)
+    forgeBlueprint(name) {
+        const make = this._forgeMaterialAndFreeze(name);
+        if (!make.ok) return make;
+        const eq = this.equipHeld(name);
+        return { ok: true, equipped: eq.equipped, free: make.free, forgedPrecision: make.forgedPrecision };
     }
 
     // S3-B (kampf-plan §11.7) — „in die Hand nehmen": der SPIELER-Pfad zum gehaltenen Gerät, der den
@@ -27240,6 +27246,41 @@ class AnazhRealm {
         if (!bp) return this.equipHeld(name); // unbekannt → equipHeld liefert die saubere Ablehnung
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         if (Number.isFinite(bp.forgedPrecision) || mode === "schöpfer") return this.equipHeld(name);
+        return this.forgeBlueprint(name);
+    }
+
+    // S4 (kampf-plan §11.7) — Rüstung SCHMIEDEN/WEBEN: derselbe WERK-Kern wie das Gerät, nur in den
+    // armor-Slot ausgerüstet. Verlangt einen als Rüstung markierten Bauplan (role:"armor" — die Schutz-
+    // Lesart, gesetzt via setBlueprintAsArmor); dann zahlt der Akt Material + friert die Präzision ein.
+    forgeArmor(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.role !== "armor") return { ok: false, reason: "not_marked_as_armor" };
+        const make = this._forgeMaterialAndFreeze(name);
+        if (!make.ok) return make;
+        const eq = this.equipArmor(name);
+        return { ok: true, equipped: eq.equipped, free: make.free, forgedPrecision: make.forgedPrecision };
+    }
+
+    // S4 — „Rüstung anlegen": der SPIELER-Pfad (Spiegel von wieldBlueprint), der den Web-/Schmiede-Akt
+    // BEDEUTSAM macht: eine UNgemachte Rüstung in pfad/frieden → erst SCHMIEDEN/WEBEN (zahlt + friert ein),
+    // eine bereits gemachte (forgedPrecision) ODER schöpfer → frei tragen (GEBRAUCH). equipArmor bleibt
+    // das freie Low-Level-Primitiv (Restore/DSL/Chat).
+    wearArmor(name) {
+        if (!name) return this.equipArmor(null);
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return this.equipArmor(name);
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (Number.isFinite(bp.forgedPrecision) || mode === "schöpfer") return this.equipArmor(name);
+        return this.forgeArmor(name);
+    }
+
+    // S4 (kampf-plan §11.5) — der EINE „Fertigen"-Akt der Werkstatt: routet nach der Rolle in den richtigen
+    // Werk-Verb (Rüstung → weben/forgeArmor, sonst → das gehaltene Gerät schmieden/forgeBlueprint). Der erste
+    // Schritt zur EINEN Werkstatt-Gebärmutter (§11.5) — ein Knopf, rollen-gerecht.
+    fertigeBlueprint(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (bp && bp.role === "armor") return this.forgeArmor(name);
         return this.forgeBlueprint(name);
     }
 
@@ -37990,19 +38031,24 @@ class AnazhRealm {
             });
             actions.appendChild(soulBtn);
         }
-        // S3 (kampf-plan §10-F3) — „Schmieden": den Bauplan zum gehaltenen Gerät machen (Material ziehen
-        // im pfad/frieden, Präzision einfrieren, ausrüsten). Der Werk-Akt, der Spiegel von „bauen".
+        // S3/S4 (kampf-plan §11.5) — „Fertigen": den Bauplan zum realen Werk machen (Material ziehen im
+        // pfad/frieden, Präzision einfrieren, ausrüsten). Rollen-bewusst (fertigeBlueprint): eine Rüstung
+        // wird gewebt + getragen, sonst ein Gerät geschmiedet + in die Hand. Der Werk-Akt, der Spiegel von „bauen".
+        const isArmor = selected.role === "armor";
         const forgeBtn = document.createElement("button");
         forgeBtn.type = "button";
         forgeBtn.className = "workshop-forge";
-        forgeBtn.textContent = "⚒ Schmieden (in die Hand)";
-        forgeBtn.title =
-            "Dieses Gerät schmieden — zieht Material (pfad/frieden), friert die Präzision ein, rüstet es aus.";
+        forgeBtn.textContent = isArmor ? "⚒ Weben (Rüstung tragen)" : "⚒ Schmieden (in die Hand)";
+        forgeBtn.title = isArmor
+            ? "Diese Rüstung weben — zieht Material (pfad/frieden), friert die Präzision ein, trägt sie."
+            : "Dieses Gerät schmieden — zieht Material (pfad/frieden), friert die Präzision ein, rüstet es aus.";
         forgeBtn.addEventListener("click", () => {
-            const res = this.forgeBlueprint(selected.name);
+            const res = this.fertigeBlueprint(selected.name);
+            const verb = isArmor ? "Gewebt" : "Geschmiedet";
+            const where = isArmor ? "getragen" : "in der Hand";
             if (res.ok) {
                 this.log(
-                    `Geschmiedet: „${selected.label || selected.name}" (in der Hand${res.free ? ", frei" : ""}).`,
+                    `${verb}: „${selected.label || selected.name}" (${where}${res.free ? ", frei" : ""}).`,
                     "INFO"
                 );
                 this._renderWorkshopDOM();
@@ -38010,9 +38056,9 @@ class AnazhRealm {
                 const missingStr = Object.entries(res.missing || {})
                     .map(([m, n]) => `${n}× ${m}`)
                     .join(", ");
-                this.log(`Schmieden fehlgeschlagen — fehlt: ${missingStr || "Material"}.`, "ERROR");
+                this.log(`Fertigen fehlgeschlagen — fehlt: ${missingStr || "Material"}.`, "ERROR");
             } else {
-                this.log(`Schmieden fehlgeschlagen (${res.reason || "unknown"}).`, "ERROR");
+                this.log(`Fertigen fehlgeschlagen (${res.reason || "unknown"}).`, "ERROR");
             }
         });
         actions.appendChild(forgeBtn);
@@ -42293,9 +42339,22 @@ class AnazhRealm {
             armorSel.appendChild(opt);
         }
         armorSel.addEventListener("change", () => {
+            // S4 — der Spieler-Pfad geht durch wearArmor: eine ungemachte Rüstung wird hier GESCHMIEDET/
+            // GEWEBT (zahlt im pfad/frieden), eine gemachte frei getragen.
             const v = armorSel.value;
-            const result = v ? this.equipArmor(v) : this.equipArmor(null);
-            if (!result.ok) this.log(`equipArmor fehlgeschlagen: ${result.reason}`, "ERROR");
+            const result = this.wearArmor(v || null);
+            if (!result.ok) {
+                if (result.reason === "not_enough_material") {
+                    const missingStr = Object.entries(result.missing || {})
+                        .map(([m, n]) => `${n}× ${m}`)
+                        .join(", ");
+                    this.log(`Rüstung weben nötig — fehlt: ${missingStr || "Material"} (⚒ in der Werkstatt).`, "ERROR");
+                } else {
+                    this.log(`Rüstung anlegen fehlgeschlagen: ${result.reason}`, "ERROR");
+                }
+            } else if (!result.free && result.forgedPrecision != null) {
+                this.log(`Gewebt + getragen: „${this.state.blueprints[v]?.label || v}".`, "INFO");
+            }
             this.renderPlayerEquipUI();
             if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
         });
@@ -44919,7 +44978,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.62.0";
+AnazhRealm.VERSION = "17.63.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
