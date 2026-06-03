@@ -6670,6 +6670,60 @@ async function checkBandV1781RoleRegister(ctx) {
     );
 }
 
+// V17.82 U3 (resonanz-system.md §5) — der KATALYSATOR SICHTBAR: das Rollen-Spektrum (was es IST über die
+// ganze Resonanz) + die Achse zum perfekten Katalysator. Der Spieler-Kompass: er baut frei, das Spektrum
+// liest ihn + sagt, welche Achse zu drehen ist. (Die Klassifikation Klinge→Waffe macht erst U4.)
+async function checkBandV1782CatalystReadout(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const round = (x) => Math.round((x || 0) * 100) / 100;
+        const mk = (parts) => ({ name: "_u3", parts });
+        const blade = mk([
+            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 2.0 } },
+            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.5 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+        ]);
+        const ball = mk([{ shape: "sphere", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }]);
+        const block = mk([{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } }]);
+        const out = {};
+        const spec = r._blueprintRoleSpectrum(blade);
+        const getW = (s) => (s.find((x) => x.role === "weapon") || { score: 0 }).score;
+        out.weaponHigh = getW(spec) > 0.85; // die Klinge ist eine starke Waffe
+        out.discriminates = getW(spec) > getW(r._blueprintRoleSpectrum(ball)); // > eine weiche Kugel
+        out.sorted = spec.every((s, i) => i === 0 || spec[i - 1].score >= s.score - 1e-9);
+        out.specVals = spec.slice(0, 3).map((s) => `${s.role}=${round(s.score)}`).join(" ");
+        // der Katalysator-Hinweis: ein harter dichter Block ist für eine Waffe SCHÄRFE-arm → Hinweis Schärfe
+        const hint = r._blueprintCatalystHint(block, "weapon");
+        out.hintSharpness = !!hint && hint.axis === "pointedFraction" && hint.label === "Schärfe";
+        out.hintVal = hint ? `${hint.axis}/${hint.label}` : "—";
+        // der Readout rendert das Spektrum + die Resonanz-Zeile
+        const panel = document.createElement("div");
+        r._workshopAppendRoleRow(panel, blade);
+        const labels = [...panel.querySelectorAll(".stat-label")].map((e) => e.textContent);
+        const specText = [...panel.querySelectorAll(".role-spectrum-text")].map((e) => e.textContent).join("|");
+        out.readoutRenders =
+            labels.includes("Resonanz") &&
+            (specText.includes("Waffe") || specText.includes("Werkzeug") || specText.includes("Gerät") || specText.includes("Bauwerk"));
+        out.readoutText = specText;
+        return out;
+    });
+    check(
+        "V17.82 U3: das Rollen-Spektrum — die Klinge ist eine starke Waffe (>0.85), diskriminiert gegen eine weiche Kugel, sortiert",
+        res.weaponHigh && res.discriminates && res.sorted,
+        res.specVals
+    );
+    check(
+        "V17.82 U3 KATALYSATOR: ein harter dichter Block ist für eine Waffe SCHÄRFE-arm → der Hinweis nennt die Schärfe (die Achse zum Katalysator)",
+        res.hintSharpness,
+        res.hintVal
+    );
+    check(
+        "V17.82 U3 KONSUM: der Werkstatt-Readout rendert das Rollen-Spektrum (der Kompass, sichtbar/lernbar)",
+        res.readoutRenders,
+        res.readoutText
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -38927,6 +38981,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1779RoleFitQuality(ctx);
             await checkBandV1780FormAxes(ctx);
             await checkBandV1781RoleRegister(ctx);
+            await checkBandV1782CatalystReadout(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

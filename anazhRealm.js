@@ -32792,6 +32792,44 @@ class AnazhRealm {
         return cfg.min + (cfg.max - cfg.min) * norm;
     }
 
+    // U3 (resonanz-system.md §5) — das ROLLEN-SPEKTRUM: die normierte Resonanz (0–1) des Bauplans gegen ALLE
+    // Rollen des Registers, sortiert. Der Spieler SIEHT, was sein Werk IST (Waffe 0.9 · Bauwerk 0.4 · …) über
+    // die GANZE Resonanz — kein Rezept, ein Kompass. Die Freiheit: er baut einen Punkt, das Spektrum liest ihn.
+    _blueprintRoleSpectrum(bp) {
+        const v = this._blueprintProductVector(bp);
+        const cfg = AnazhRealm.QUALITY_ROLE_FIT;
+        const out = [];
+        for (const role in AnazhRealm.ROLE_SIGNATURES) {
+            const raw = this._blueprintResonance(v, AnazhRealm.ROLE_SIGNATURES[role]);
+            const ref = (cfg.refs && cfg.refs[role]) || 3.0;
+            out.push({ role, score: Math.max(0, Math.min(1, raw / ref)) });
+        }
+        out.sort((a, b) => b.score - a.score);
+        return out;
+    }
+
+    // U3 — der KATALYSATOR-Hinweis: welche Achse drehen, um die Passung für eine Rolle am meisten zu heben —
+    // die positive Signatur-Achse mit dem größten UNGENUTZTEN Potenzial (hohe Gewichtung, aktuell schwach).
+    // „mehr Schärfe → bessere Klinge". So lernt + dreht der Spieler die Achsen Richtung perfekten Katalysator.
+    _blueprintCatalystHint(bp, role) {
+        const sig = AnazhRealm.ROLE_SIGNATURES[role];
+        if (!sig) return null;
+        const v = this._blueprintProductVector(bp);
+        let bestAxis = null;
+        let bestGap = 0;
+        for (const axis in sig) {
+            const w = sig[axis];
+            if (w <= 0) continue; // nur positive Achsen (Gegen-Achsen sind kein Katalysator-Ziel)
+            const axisMax = AnazhRealm.MATERIAL_TAG_KEYS.includes(axis) ? 3 : 1; // Material-Tags bis ~3, Form-Achsen [0,1]
+            const gap = w * (1 - Math.min(1, (v[axis] || 0) / axisMax));
+            if (gap > bestGap) {
+                bestGap = gap;
+                bestAxis = axis;
+            }
+        }
+        return bestAxis ? { axis: bestAxis, label: AnazhRealm.AXIS_LABELS[bestAxis] || bestAxis } : null;
+    }
+
     computeBlueprintQuality(blueprint) {
         if (!blueprint || !Array.isArray(blueprint.parts)) return 1.0;
         return this._compoundAvgPrecisionFromParts(blueprint.parts);
@@ -40247,6 +40285,30 @@ class AnazhRealm {
             precRow.appendChild(precVal);
             panel.appendChild(precRow);
         }
+        // U3 (resonanz-system.md §5) — der KATALYSATOR-Readout: das Rollen-Spektrum (was es IST, über die
+        // GANZE Resonanz) + die Achse zum perfekten Katalysator (Tooltip) → der Spieler dreht frei + kreativ.
+        const spectrum = this._blueprintRoleSpectrum(bp);
+        if (spectrum.length) {
+            const specRow = document.createElement("div");
+            specRow.className = "stat-row";
+            const specLab = document.createElement("span");
+            specLab.className = "stat-label";
+            specLab.textContent = "Resonanz";
+            specRow.appendChild(specLab);
+            const specVal = document.createElement("span");
+            specVal.className = "role-spectrum-text";
+            specVal.textContent = spectrum
+                .slice(0, 3)
+                .map((s) => `${AnazhRealm.ROLE_LABELS[s.role] || s.role} ${s.score.toFixed(2)}`)
+                .join(" · ");
+            const top = spectrum[0];
+            const hint = this._blueprintCatalystHint(bp, top.role);
+            specVal.title = hint
+                ? `Stärkste Rolle: ${AnazhRealm.ROLE_LABELS[top.role] || top.role}. Mehr ${hint.label} → besserer Katalysator.`
+                : `Stärkste Rolle: ${AnazhRealm.ROLE_LABELS[top.role] || top.role}.`;
+            specRow.appendChild(specVal);
+            panel.appendChild(specRow);
+        }
     }
 
     // V8.37 — Bau-Kosten sichtbar im Werkstatt-Panel. computeBuildCost ist
@@ -45784,7 +45846,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.81.0";
+AnazhRealm.VERSION = "17.82.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -46752,6 +46814,41 @@ AnazhRealm.QUALITY_ROLE_FIT = Object.freeze({
         "workshop-station": 3.5,
         architecture: 4.0,
     }),
+});
+// U3 (resonanz-system.md §5) — die Labels für den Katalysator-Readout (das Rollen-Spektrum + die Achse zum
+// perfekten Katalysator). Deutsch, browser-justierbar.
+AnazhRealm.ROLE_LABELS = Object.freeze({
+    held: "Gerät",
+    weapon: "Waffe",
+    tool: "Werkzeug",
+    brecher: "Brecher",
+    armor: "Rüstung",
+    consumable: "Trank",
+    soul: "Seele",
+    portal: "Tor",
+    vehicle: "Fahrzeug",
+    machine: "Maschine",
+    "workshop-station": "Werkstatt",
+    architecture: "Bauwerk",
+});
+AnazhRealm.AXIS_LABELS = Object.freeze({
+    pointedFraction: "Schärfe",
+    elongation: "Streckung",
+    härte: "Härte",
+    dichte: "Dichte",
+    zähigkeit: "Zähigkeit",
+    hollowness: "Hohlraum",
+    axialSymmetry: "Symmetrie",
+    spread: "Standfläche",
+    lebendig: "Lebendigkeit",
+    transparent: "Transparenz",
+    resoniert: "Resonanz",
+    magieleitung: "Magie-Leitung",
+    stromleitung: "Strom-Leitung",
+    wärmeleitung: "Wärme-Leitung",
+    brennbar: "Brennbarkeit",
+    bodyShape: "Körper-Form",
+    portalShape: "Tor-Form",
 });
 
 // S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der Form: ein Werkzeug katalysiert eine Transformation, und
