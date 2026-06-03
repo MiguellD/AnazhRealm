@@ -6257,6 +6257,83 @@ async function checkBandV1775MakeActCost(ctx) {
     check("V17.75: ein geschmiedetes Gerät zeigt keinen Kosten-Marker (der Gebrauch ist frei)", res.forgedFree);
 }
 
+// V17.76 Welle 2 (Schritt 1) — die WERKSTATT als Präzisions-Quelle: ihre Präzision emergiert aus der
+// Substanz (dichte+harte Esse → feiner), und applyOpToPart NAH einer passenden Station hebt den opChain-
+// Cap über den Werkzeug-Cap (bessere Esse → höherer Cap, kein Crafting-Zirkel). Additiv (max), kein Regress.
+async function checkBandV1776WorkshopPrecision(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh;
+        const px = pm ? pm.position.x : 0,
+            py = pm ? pm.position.y : 0,
+            pz = pm ? pm.position.z : 0;
+
+        // (1) Substanz-Präzision: die dichte+harte Esse hält feinere Toleranzen als eine weiche Werkstatt
+        const esseP = r._workshopStationPrecision(r.state.blueprints["esse"]);
+        r.state.blueprints["wp_soft"] = {
+            name: "wp_soft",
+            label: "soft",
+            parts: [{ shape: "box", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+        };
+        const softP = r._workshopStationPrecision(r.state.blueprints["wp_soft"]);
+        out.esseP = esseP;
+        out.softP = softP;
+        out.substancePrecision = esseP > 0.8 && softP < esseP;
+
+        // (2) _nearbyWorkshopStationPrecision: keine Station → 0; eine forging-Esse nah → ihre Präzision;
+        //     die falsche Domäne (alchemy) → 0 (nur die EIGENE Domäne zählt). Synthetischer Eintrag (leicht).
+        out.noStationZero = r._nearbyWorkshopStationPrecision("forging", { x: px, y: py, z: pz }) === 0;
+        const esseEntry = { type: "esse", position: { x: px + 2, y: py, z: pz }, id: "wp_test_esse" };
+        r.state.architectures.push(esseEntry);
+        const nearPrec = r._nearbyWorkshopStationPrecision("forging", { x: px, y: py, z: pz });
+        out.stationBoosts = nearPrec > 0.8 && Math.abs(nearPrec - esseP) < 1e-6;
+        out.wrongDomainZero = r._nearbyWorkshopStationPrecision("alchemy", { x: px, y: py, z: pz }) === 0;
+
+        // (3) KONSUM — applyOpToPart: ein forging-Werkzeug (schmiede-hammer, cap 0.75) NAH der Esse hebt
+        //     den gepushten opChain-Cap über den Werkzeug-Cap (auf die Esse-Substanz, >0.8).
+        r.state.blueprints["wp_work"] = {
+            name: "wp_work",
+            label: "work",
+            parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+        };
+        if (!Array.isArray(p.tools)) p.tools = [];
+        if (!p.tools.includes("schmiede-hammer")) p.tools.push("schmiede-hammer");
+        const savedMode = r.getGameMode();
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        else r.state.worldMeta.gameMode = "schöpfer"; // keine Stamina-Reibung im Test
+        const opR = r.applyOpToPart("wp_work", 0, "schmiede-hammer");
+        const chain = r.state.blueprints["wp_work"].parts[0].opChain || [];
+        const lastCap = chain.length ? chain[chain.length - 1].cap : 0;
+        out.konsum = opR.ok === true && lastCap > 0.8 && lastCap >= esseP - 1e-6;
+
+        // restore
+        if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
+        else r.state.worldMeta.gameMode = savedMode;
+        const ai = r.state.architectures.indexOf(esseEntry);
+        if (ai >= 0) r.state.architectures.splice(ai, 1);
+        delete r.state.blueprints["wp_soft"];
+        delete r.state.blueprints["wp_work"];
+        return out;
+    });
+    check(
+        "V17.76 Welle 2: die Werkstatt-Präzision emergiert aus SUBSTANZ — eine dichte+harte Esse (>0.8) hält feiner als eine weiche Werkstatt (kein Crafting-Zirkel)",
+        res.substancePrecision,
+        `esseP=${(res.esseP || 0).toFixed(3)} softP=${(res.softP || 0).toFixed(3)}`
+    );
+    check(
+        "V17.76 Welle 2: _nearbyWorkshopStationPrecision — keine Station → 0, eine passende Esse nah → ihre Präzision (== Substanz)",
+        res.noStationZero && res.stationBoosts
+    );
+    check("V17.76 Welle 2: nur die EIGENE Domäne zählt — die forging-Esse boostet alchemy NICHT", res.wrongDomainZero);
+    check(
+        "V17.76 Welle 2 KONSUM: applyOpToPart NAH der Esse hebt den opChain-Cap über den Werkzeug-Cap (bessere Esse → feiner)",
+        res.konsum
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -38506,6 +38583,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1773HeldMesh(ctx);
             await checkBandV1774UseByRole(ctx);
             await checkBandV1775MakeActCost(ctx);
+            await checkBandV1776WorkshopPrecision(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

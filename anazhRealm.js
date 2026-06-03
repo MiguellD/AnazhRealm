@@ -32834,10 +32834,18 @@ class AnazhRealm {
             this.state.player.stamina = Math.max(0, stamina - cost);
         }
         if (!Array.isArray(part.opChain)) part.opChain = this._defaultPartOpChain();
+        // V17.76 Welle 2 (kampf-plan §11.10) — DIE WERKSTATT ALS PRÄZISIONS-QUELLE: trägt das Werkzeug eine
+        // Domäne (forge/weave/brew/…) UND steht eine passende Welt-Werkstatt nah, hebt ihre Substanz-Präzision
+        // den erreichbaren Cap (max aus Werkzeug + Werkstatt — eine bessere Esse fertigt feiner). Generische
+        // Werkzeuge (domain=null) ODER ohne Station: der Werkzeug-Cap wie bisher (additiv, kein Regress).
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const stationPrec =
+            tool.domain && pm ? this._nearbyWorkshopStationPrecision(tool.domain, { x: pm.x, y: pm.y, z: pm.z }) : 0;
+        const effectiveCap = Math.max(tool.precisionCap || 0, stationPrec);
         part.opChain.push({
             tool: toolName,
             op: tool.opName,
-            cap: tool.precisionCap,
+            cap: effectiveCap,
             at: performance.now() / 1000,
         });
         // Welle 9a — emergente Bauplan-Rolle aktualisieren. Wenn das Werkzeug
@@ -35854,6 +35862,41 @@ class AnazhRealm {
             }
         }
         return { ok: false, neededDomain: needed };
+    }
+
+    // V17.76 Welle 2 (kampf-plan §11.10, S7-B) — die WERKSTATT als Präzisions-Quelle: WIE fein eine
+    // Station Werke fertigt, emergiert aus ihrer SUBSTANZ (Material × Form — eine dichtere, härtere Esse
+    // hält feinere Toleranzen), NICHT aus ihrer Crafting-Qualität (das wäre zirkulär: eine mit Basis-
+    // Werkzeug gebaute Esse cappte bei Basis-Präzision → kein Aufstieg). So ist die Rekursion „bessere
+    // Materialien → bessere Esse → höherer Cap" henne-ei-frei + vision-treu (der Hylomorphismus, eine
+    // Ebene weiter). Alle Werte browser-justierbar (AnazhRealm.WORKSHOP_PRECISION).
+    _workshopStationPrecision(bp) {
+        const t = this.computeCompoundTags(bp) || {};
+        const cfg = AnazhRealm.WORKSHOP_PRECISION;
+        const solid = Math.min(1, t.dichte || 0);
+        const hard = Math.min(1, t.härte || 0);
+        return Math.max(0, Math.min(cfg.max, cfg.base + cfg.fromDichte * solid + cfg.fromHärte * hard));
+    }
+
+    // V17.76 Welle 2 — die beste Präzision, die eine Welt-Werkstatt der gegebenen Domäne in
+    // WORKSHOP_PROXIMITY_M bietet (Substanz, S7-B-emergent); 0 wenn keine passende Station nah ist.
+    _nearbyWorkshopStationPrecision(domain, atPos) {
+        if (!domain || !atPos) return 0;
+        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M || 10;
+        const r2 = radius * radius;
+        let best = 0;
+        for (const entry of this.state.architectures || []) {
+            const wbp = this.state.blueprints && this.state.blueprints[entry.type];
+            if (!wbp || wbp.role !== "workshop-station" || !entry.position) continue;
+            if (this._computeWorkshopDomain(wbp) !== domain) continue;
+            const dx = entry.position.x - atPos.x;
+            const dy = entry.position.y - atPos.y;
+            const dz = entry.position.z - atPos.z;
+            if (dx * dx + dy * dy + dz * dz > r2) continue;
+            const prec = this._workshopStationPrecision(wbp);
+            if (prec > best) best = prec;
+        }
+        return best;
     }
 
     confirmBuild() {
@@ -45659,7 +45702,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.75.0";
+AnazhRealm.VERSION = "17.76.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -46394,6 +46437,10 @@ AnazhRealm.TOOL_DOMAIN_COLORS = Object.freeze({
 // Architektur mit passender EMERGENTER Domäne stehen (gemessen vom Spawn-
 // Punkt des neuen Bauplans), sonst lehnt confirmBuild im pfad-Modus ab.
 AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
+// V17.76 Welle 2 — die Präzisions-Kapazität einer Werkstatt-Station aus ihrer SUBSTANZ (Material × Form):
+// base (eine schlichte Werkstatt) + dichte/härte (eine dichte, harte Esse hält feinere Toleranzen), gedeckelt.
+// So emergiert „bessere Esse → höherer Cap" aus den Materialien (kein Crafting-Zirkel). Browser-justierbar.
+AnazhRealm.WORKSHOP_PRECISION = Object.freeze({ base: 0.5, fromDichte: 0.28, fromHärte: 0.2, max: 0.98 });
 
 // Welle 9d — Maschinen-Bonus. Ein als Werkzeug registriertes Bauplan
 // mit role="machine" (z. B. eine Drehbank-Kreation des Spielers) bekommt
