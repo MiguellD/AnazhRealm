@@ -27281,6 +27281,7 @@ class AnazhRealm {
     fertigeBlueprint(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (bp && bp.role === "armor") return this.forgeArmor(name);
+        if (bp && bp.role === "soul") return this.forgeAvatar(name);
         return this.forgeBlueprint(name);
     }
 
@@ -30436,6 +30437,32 @@ class AnazhRealm {
         };
         const ok = this.applyPlayerSoul(soulName);
         return { ok: !!ok, soulName };
+    }
+
+    // S5 (kampf-plan §11.7, §11.2) — einen Körper FORMEN (Avatar): der Werk-Akt, der eine eigene/stärkere
+    // Seele macht. Der Avatar ist KEINE Ausnahme (Schöpfer-Korrektur): einen Körper formen kostet (derselbe
+    // WERK-Kern wie Gerät/Rüstung — Material + Präzision-Snapshot + Affekt), eine fertige Seele TRAGEN ist
+    // frei. Verlangt role:"soul"; dann den Körper erschaffen + verkörpern (applyPlayerSoulFromBlueprint).
+    forgeAvatar(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.role !== "soul") return { ok: false, reason: "blueprint_not_soul" };
+        const make = this._forgeMaterialAndFreeze(name);
+        if (!make.ok) return make;
+        const res = this.applyPlayerSoulFromBlueprint(name);
+        return { ok: !!res.ok, soulName: res.soulName, free: make.free, forgedPrecision: make.forgedPrecision };
+    }
+
+    // S5 — „verkörpern": der SPIELER-Pfad (Spiegel von wield/wear). Eine UNgemachte Seele in pfad/frieden →
+    // erst FORMEN (forgeAvatar, zahlt + friert ein); eine gemachte (forgedPrecision) ODER schöpfer → frei
+    // verkörpern (applyPlayerSoulFromBlueprint = der freie GEBRAUCH, re-erschafft denselben Körper). Die drei
+    // Starter-Seelen (Mensch/Phönix/Drache) sind gegebene Identitäten — die laufen über applyPlayerSoul, frei.
+    embodyBlueprint(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (Number.isFinite(bp.forgedPrecision) || mode === "schöpfer") return this.applyPlayerSoulFromBlueprint(name);
+        return this.forgeAvatar(name);
     }
 
     applyPlayerSoul(name) {
@@ -38020,48 +38047,65 @@ class AnazhRealm {
             soulBtn.type = "button";
             soulBtn.className = "workshop-soul-activate";
             soulBtn.textContent = "Als Seele tragen";
-            soulBtn.title = "Diesen Bauplan als deine Seele aktivieren — du wirst zur geschaffenen Form";
+            soulBtn.title =
+                "Diesen Körper FORMEN + tragen — einen eigenen Körper zu formen zieht Material (pfad/frieden); " +
+                "eine schon geformte Seele wieder zu tragen ist frei (§11.2: der Avatar ist kein Sonderfall).";
             soulBtn.addEventListener("click", () => {
-                const res = this.applyPlayerSoulFromBlueprint(selected.name);
+                // S5 — der Spieler-Pfad geht durch embodyBlueprint: ein ungeformter Körper wird hier
+                // GEFORMT (zahlt im pfad/frieden), ein geformter frei verkörpert.
+                const res = this.embodyBlueprint(selected.name);
                 if (res.ok) {
-                    this.log(`Seele gewechselt zu „${selected.label || selected.name}".`, "INFO");
+                    const made = res.forgedPrecision != null && res.free === false;
+                    this.log(
+                        `Seele gewechselt zu „${selected.label || selected.name}"${made ? " (Körper geformt)" : ""}.`,
+                        "INFO"
+                    );
+                    this._renderWorkshopDOM();
+                } else if (res.reason === "not_enough_material") {
+                    const missingStr = Object.entries(res.missing || {})
+                        .map(([m, n]) => `${n}× ${m}`)
+                        .join(", ");
+                    this.log(`Körper formen nötig — fehlt: ${missingStr || "Material"} (Rohstoffe sammeln).`, "ERROR");
                 } else {
                     this.log(`Seele konnte nicht aktiviert werden (${res.reason || "unknown"})`, "ERROR");
                 }
             });
             actions.appendChild(soulBtn);
         }
-        // S3/S4 (kampf-plan §11.5) — „Fertigen": den Bauplan zum realen Werk machen (Material ziehen im
-        // pfad/frieden, Präzision einfrieren, ausrüsten). Rollen-bewusst (fertigeBlueprint): eine Rüstung
-        // wird gewebt + getragen, sonst ein Gerät geschmiedet + in die Hand. Der Werk-Akt, der Spiegel von „bauen".
-        const isArmor = selected.role === "armor";
-        const forgeBtn = document.createElement("button");
-        forgeBtn.type = "button";
-        forgeBtn.className = "workshop-forge";
-        forgeBtn.textContent = isArmor ? "⚒ Weben (Rüstung tragen)" : "⚒ Schmieden (in die Hand)";
-        forgeBtn.title = isArmor
-            ? "Diese Rüstung weben — zieht Material (pfad/frieden), friert die Präzision ein, trägt sie."
-            : "Dieses Gerät schmieden — zieht Material (pfad/frieden), friert die Präzision ein, rüstet es aus.";
-        forgeBtn.addEventListener("click", () => {
-            const res = this.fertigeBlueprint(selected.name);
-            const verb = isArmor ? "Gewebt" : "Geschmiedet";
-            const where = isArmor ? "getragen" : "in der Hand";
-            if (res.ok) {
-                this.log(
-                    `${verb}: „${selected.label || selected.name}" (${where}${res.free ? ", frei" : ""}).`,
-                    "INFO"
-                );
-                this._renderWorkshopDOM();
-            } else if (res.reason === "not_enough_material") {
-                const missingStr = Object.entries(res.missing || {})
-                    .map(([m, n]) => `${n}× ${m}`)
-                    .join(", ");
-                this.log(`Fertigen fehlgeschlagen — fehlt: ${missingStr || "Material"}.`, "ERROR");
-            } else {
-                this.log(`Fertigen fehlgeschlagen (${res.reason || "unknown"}).`, "ERROR");
-            }
-        });
-        actions.appendChild(forgeBtn);
+        // S3/S4/S5 (kampf-plan §11.5) — „Fertigen": den Bauplan zum realen Werk machen (Material ziehen,
+        // Präzision einfrieren, ausrüsten). Rollen-bewusst (fertigeBlueprint): Rüstung → weben + tragen,
+        // sonst → Gerät schmieden + in die Hand. NUR für Gerät/Rüstung (held/worn) — Seelen haben den
+        // dedizierten „Als Seele tragen"-Knopf (oben), darum hier übersprungen.
+        if (selected.role !== "soul") {
+            const isArmor = selected.role === "armor";
+            const forgeBtn = document.createElement("button");
+            forgeBtn.type = "button";
+            forgeBtn.className = "workshop-forge";
+            forgeBtn.textContent = isArmor ? "⚒ Weben (Rüstung tragen)" : "⚒ Schmieden (in die Hand)";
+            forgeBtn.title = isArmor
+                ? "Diese Rüstung weben — zieht Material (pfad/frieden), friert die Präzision ein, trägt sie."
+                : "Dieses Gerät schmieden — zieht Material (pfad/frieden), friert die Präzision ein, rüstet es aus.";
+            forgeBtn.addEventListener("click", () => {
+                const res = this.fertigeBlueprint(selected.name);
+                const verb = isArmor ? "Gewebt" : "Geschmiedet";
+                const where = isArmor ? "getragen" : "in der Hand";
+                if (res.ok) {
+                    this.log(
+                        `${verb}: „${selected.label || selected.name}" (${where}${res.free ? ", frei" : ""}).`,
+                        "INFO"
+                    );
+                    this._renderWorkshopDOM();
+                } else if (res.reason === "not_enough_material") {
+                    const missingStr = Object.entries(res.missing || {})
+                        .map(([m, n]) => `${n}× ${m}`)
+                        .join(", ");
+                    this.log(`Fertigen fehlgeschlagen — fehlt: ${missingStr || "Material"}.`, "ERROR");
+                } else {
+                    this.log(`Fertigen fehlgeschlagen (${res.reason || "unknown"}).`, "ERROR");
+                }
+            });
+            actions.appendChild(forgeBtn);
+        }
         // Klonen
         const cloneBtn = document.createElement("button");
         cloneBtn.type = "button";
@@ -44978,7 +45022,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.63.0";
+AnazhRealm.VERSION = "17.64.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

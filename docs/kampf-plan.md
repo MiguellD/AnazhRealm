@@ -654,9 +654,15 @@ Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis,
   zur EINEN Werkstatt-Gebärmutter (§11.5). `checkBandV1763ForgeArmor` 7 grün (forgeArmor verlangt die Rolle,
   pfad ohne Material lehnt ab, **KONSUM** pfad mit Material webt + zahlt + trägt, GEBRAUCH frei, fertige routet
   nach Rolle, forgeBlueprint nach dem Refactor heil). *Das Web-Muster BEISST (auf S3-B). Headless bewiesen.*
-- **S5 — Avatar: einen Körper formen** (§11.2): `applyPlayerSoulFromBlueprint` durchs Mach-Tor → gesammelte
-  Rohstoffe ziehen für einen stärkeren/eigenen Körper; verkörpern (tragen) bleibt frei. Reiner Mach-Kosten-
-  Zusatz, risikoarm wie S3/S4. *Headless.*
+- **S5 — Avatar: einen Körper formen — ✅ GEBAUT (V17.64):** `forgeAvatar(name)` (verlangt role:"soul";
+  derselbe WERK-Kern `_forgeMaterialAndFreeze` → dann `applyPlayerSoulFromBlueprint` erschafft + verkörpert)
+  + `embodyBlueprint(name)` (der Spieler-Pfad: ungeformte Seele in pfad/frieden → forgeAvatar/zahlt, geformte
+  oder schöpfer → frei verkörpern). `fertigeBlueprint` routet jetzt auch soul → forgeAvatar; der „Als Seele
+  tragen"-Knopf läuft über embodyBlueprint (zahlt-wenn-ungeformt), der ⚒-Knopf überspringt Seelen (sie haben
+  den dedizierten Knopf). `applyPlayerSoulFromBlueprint` bleibt das freie Low-Level-Primitiv (Welle-9d-Band
+  unberührt). `checkBandV1764ForgeAvatar` 7 grün (forgeAvatar verlangt role=soul, pfad ohne Material lehnt ab,
+  **KONSUM** pfad mit Material formt+zahlt+verkörpert+friert ein, GEBRAUCH frei, schöpfer frei, fertige routet
+  soul). *Der Avatar ist KEINE Ausnahme mehr — drei Rollen teilen den Kern. Headless bewiesen.*
 - **S6 — die Zutaten-Ökonomie + Trank brauen** (§11.3-Faden 6, die wahre Tiefe): die V17.1-Klein-Vegetation
   (Blüten/Farne/Sporen) ERNTBAR machen → Alchemie-Zutat-Materialien → brauen zieht sie (`_makeCostGate`) +
   gebiert ein verbrauchbares Gebräu (trinken verbraucht es). Größer (Welt-Inhalt + Material-System). *Headless

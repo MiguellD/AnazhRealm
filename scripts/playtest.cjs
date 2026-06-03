@@ -5091,6 +5091,115 @@ async function checkBandV1763ForgeArmor(ctx) {
     );
 }
 
+// V17.64 S5 (kampf-plan §11.7, §11.2) — Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
+// ist KEINE Ausnahme — formen kostet, tragen frei); forgeAvatar (role:soul, pay+freeze+verkörpern) +
+// embodyBlueprint (der Spieler-Pfad, forge-wenn-ungeformt). KONSUM (nicht Existenz, V17.31).
+async function checkBandV1764ForgeAvatar(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+        const savedSoul = p.soul;
+
+        out.methods = typeof r.forgeAvatar === "function" && typeof r.embodyBlueprint === "function";
+
+        // ein körper-geformter Bauplan, role="soul" + ein Nicht-Soul
+        blu.__soul = {
+            name: "__soul",
+            role: "soul",
+            roleManual: true,
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.5, y: 1.6, z: 0.5 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        blu.__notsoul = {
+            name: "__notsoul",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.5, y: 0.5, z: 0.5 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+
+        // (2) forgeAvatar verlangt role="soul"
+        r.setGameMode("schöpfer");
+        const avNoRole = r.forgeAvatar("__notsoul");
+        out.forgeAvatarRequiresSoul = avNoRole.ok === false && avNoRole.reason === "blueprint_not_soul";
+
+        // (3) forgeAvatar in pfad OHNE Material → abgelehnt (kein Körper geformt, Seele bleibt)
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        r.applyPlayerSoul("human");
+        const avNoMat = r.forgeAvatar("__soul");
+        out.pfadAvatarRejectsWithoutMaterial =
+            avNoMat.ok === false && avNoMat.reason === "not_enough_material" && p.soul === "human";
+
+        // (4) forgeAvatar in pfad MIT Material → formt (zahlt + verkörpert + friert ein)
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        const steinBefore = p.inventory[0].count;
+        const avForge = r.forgeAvatar("__soul");
+        const steinAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadAvatarForges =
+            avForge.ok === true &&
+            steinBefore > steinAfter &&
+            Number.isFinite(blu.__soul.forgedPrecision) &&
+            p.soul !== "human";
+
+        // (5) embodyBlueprint: eine geformte Seele → frei verkörpern (leeres Inventar)
+        r.applyPlayerSoul("human");
+        p.inventory = new Array(27).fill(null);
+        const embMade = r.embodyBlueprint("__soul");
+        out.embodyMadeFree = embMade.ok === true && p.soul !== "human";
+
+        // (6) embodyBlueprint UNgeformt in schöpfer → frei
+        delete blu.__soul.forgedPrecision;
+        r.applyPlayerSoul("human");
+        r.setGameMode("schöpfer");
+        p.inventory = new Array(27).fill(null);
+        const embSchoepfer = r.embodyBlueprint("__soul");
+        out.schoepferEmbodiesFree = embSchoepfer.ok === true && p.soul !== "human";
+
+        // (7) fertigeBlueprint routet soul → forgeAvatar (formt + verkörpert, NICHT in die Hand)
+        delete blu.__soul.forgedPrecision;
+        r.applyPlayerSoul("human");
+        if (!p.equipped) p.equipped = {};
+        p.equipped.held = null;
+        r.setGameMode("schöpfer");
+        const fert = r.fertigeBlueprint("__soul");
+        out.fertigeRoutesSoul = fert.ok === true && p.soul !== "human" && p.equipped.held !== "__soul";
+
+        // cleanup
+        delete blu.__soul;
+        delete blu.__notsoul;
+        if (r.state.customSouls) delete r.state.customSouls["bp___soul"];
+        r.applyPlayerSoul(savedSoul && r.playerSoulDefs[savedSoul] ? savedSoul : "human");
+        p.inventory = new Array(27).fill(null);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.64 S5: forgeAvatar + embodyBlueprint existieren", res.methods);
+    check("V17.64 S5: forgeAvatar verlangt role=soul (sonst blueprint_not_soul)", res.forgeAvatarRequiresSoul);
+    check(
+        "V17.64 S5: forgeAvatar in pfad OHNE Material → abgelehnt (kein Koerper geformt, Seele bleibt)",
+        res.pfadAvatarRejectsWithoutMaterial
+    );
+    check(
+        "V17.64 S5: KONSUM — forgeAvatar in pfad MIT Material → formt (zahlt + verkoerpert + friert ein)",
+        res.pfadAvatarForges
+    );
+    check(
+        "V17.64 S5: GEBRAUCH frei — eine geformte Seele verkoerpern kostet nichts (leeres Inventar)",
+        res.embodyMadeFree
+    );
+    check("V17.64 S5: schoepfer verkoerpert frei (ohne Material)", res.schoepferEmbodiesFree);
+    check(
+        "V17.64 S5: fertigeBlueprint routet soul → forgeAvatar (formt + verkoerpert, nicht in die Hand)",
+        res.fertigeRoutesSoul
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -37262,6 +37371,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1761ForgeImplement(ctx);
             await checkBandV1762ForgeMeaningful(ctx);
             await checkBandV1763ForgeArmor(ctx);
+            await checkBandV1764ForgeAvatar(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
