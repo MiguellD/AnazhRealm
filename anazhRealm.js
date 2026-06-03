@@ -27213,6 +27213,7 @@ class AnazhRealm {
         if (!name) {
             eq.held = null;
             this.recomputePlayerStats();
+            this._refreshHeldMesh(); // S9 — die Hand-Optik leeren
             return { ok: true, equipped: null };
         }
         // den Bauplan auflösen: ein direkter Bauplan ODER ein gecraftetes Werkzeug (name == Bauplan
@@ -27226,6 +27227,7 @@ class AnazhRealm {
         if (!bpName || !this.state.blueprints[bpName]) return { ok: false, reason: "blueprint_unknown" };
         eq.held = bpName;
         this.recomputePlayerStats();
+        this._refreshHeldMesh(); // S9 — das Gerät in der Hand sichtbar machen
         return { ok: true, equipped: bpName };
     }
 
@@ -27237,6 +27239,60 @@ class AnazhRealm {
     }
     equipWeapon(name) {
         return this.equipHeld(name);
+    }
+
+    // S9 (kampf-plan §10-F4) — das gehaltene Gerät SICHTBAR in der Hand. Reuse _buildFromBlueprint
+    // (derselbe Pfad wie Bauten/Phantom/Avatare — KEIN Parallel-Pfad): ein Mesh, an den rechten
+    // Arm/Flügel des Avatars gehängt (schwingt automatisch mit dem _animateHuman-Walk-Cycle via der
+    // THREE-Transform-Kette) bzw. an die Körper-Wurzel (Fallback für Custom-Seelen ohne benannten
+    // Arm). EINE Quelle: liest state.player.equipped.held + state.playerMesh; gerufen aus equipHeld
+    // (Equip-Wechsel) + applyPlayerSoul (Körper-Wechsel/Restore — re-attach an den neuen Körper).
+    // Kein per-Frame-Update nötig (die Transform-Kette trägt Position + Schwung). Die Optik/Pose/
+    // Skala (AnazhRealm.HELD_MESH) ist browser-justierbar; headless beweist Existenz + Lifecycle.
+    _refreshHeldMesh() {
+        const pm = this.state.playerMesh;
+        if (!pm) return;
+        // ein vorhandenes Hand-Mesh DIESES Körpers abräumen (Equip-Wechsel am selben Körper).
+        // (Beim Körper-Wechsel disposed applyPlayerSoul den alten Körper inkl. seines heldMesh-
+        // Kindes — dessen Geometrie wird mit dem alten Group disposed; der neue Körper hat noch
+        // keins → hier wird frisch gebaut.)
+        const prev = pm.userData && pm.userData.heldMesh;
+        if (prev) {
+            if (prev.parent) prev.parent.remove(prev);
+            this._disposeSoulGroup(prev);
+            pm.userData.heldMesh = null;
+        }
+        const eq = this.state.player && this.state.player.equipped;
+        const held = eq && eq.held;
+        if (!held) return;
+        const bp = this.state.blueprints && this.state.blueprints[held];
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return;
+        const mesh = this._buildFromBlueprint({ name: `held_${held}`, parts: bp.parts });
+        const cfg = AnazhRealm.HELD_MESH;
+        // auf greifbare Hand-Größe skalieren — die ECHTE Geometrie-Spanne (positions + sizes +
+        // rotation), robust auch bei Ein-Part-Geräten (anders als _compoundBBox, das positions-only ist).
+        try {
+            mesh.updateMatrixWorld(true);
+            const box = new THREE.Box3().setFromObject(mesh);
+            if (box && Number.isFinite(box.min.x) && Number.isFinite(box.max.x)) {
+                const span = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
+                if (span > 1e-4) {
+                    const s = Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span));
+                    mesh.scale.setScalar(s);
+                }
+            }
+        } catch (_e) {
+            /* headless/degeneriert — Skala 1 lassen, die Optik ist ohnehin der Browser */
+        }
+        // Anker: der rechte Arm/Flügel (schwingt mit dem Walk-Cycle) wenn die Seele ihn benennt,
+        // sonst die Körper-Wurzel (sichtbar, folgt dem Körper, schwingt nicht — Custom-/Flug-Seelen).
+        const parts = pm.userData && pm.userData.parts;
+        const anchor = (parts && (parts.rightArm || parts.rightWing)) || pm;
+        const off = anchor === pm ? cfg.rootOffset : cfg.handOffset;
+        mesh.position.set(off.x, off.y, off.z);
+        mesh.rotation.set(cfg.tilt.x, cfg.tilt.y, cfg.tilt.z);
+        anchor.add(mesh);
+        pm.userData.heldMesh = mesh;
     }
 
     // S4 (kampf-plan §11.4) — der gemeinsame WERK-KERN, den JEDER Mach-Akt teilt (Gerät/Rüstung/…): Material
@@ -30658,6 +30714,10 @@ class AnazhRealm {
         // und Resistenzen. DSL-Tuning via player_speed/player_jump_power
         // überschreibt danach frei, bleibt aber bis zum nächsten Soul-Wechsel.
         this.recomputePlayerStats();
+        // S9 (kampf-plan §10-F4) — das gehaltene Gerät an den NEUEN Körper re-attachen (der alte
+        // Körper + sein heldMesh-Kind wurden oben disposed); liest equipped.held — deckt damit auch
+        // den Restore (init() ruft applyPlayerSoul nach Mesh-Bau erneut, wenn equipped.held gesetzt ist).
+        this._refreshHeldMesh();
         // Ring 11 V3 — Soul-Sync: Mitspieler über den Seelen-Wechsel
         // informieren, damit ihr Renderer den neuen Avatar baut.
         if (this.state.p2p && this.state.p2p.enabled) this._p2pBroadcastSoul();
@@ -45412,7 +45472,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.72.0";
+AnazhRealm.VERSION = "17.73.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -45547,6 +45607,20 @@ AnazhRealm.WEAPON_STAT_WEIGHT = 0.4;
 // Tempo (Angriff) UND die Grab-/Schneid-Kraft (W1/W2) spiegeln dasselbe Gerät. (TOOL/WEAPON_
 // STAT_WEIGHT bleiben für den KREATUR-Equip-Fold, der getrennt {tool, armor} nutzt.)
 AnazhRealm.HELD_STAT_WEIGHT = 0.4;
+// V17.73 S9 (kampf-plan §10-F4) — das gehaltene Gerät SICHTBAR in der Hand: die Optik des
+// „in der Hand"-Geräts. Reuse von _buildFromBlueprint (kein Parallel-Pfad) → ein Mesh am
+// rechten Arm/Flügel des Avatars (schwingt mit dem _animateHuman-Walk-Cycle via der THREE-
+// Transform-Kette) bzw. an der Körper-Wurzel (Fallback für Custom-Seelen ohne benannten Arm).
+// Alle Werte browser-justierbar — die Pose/Skala/der Sitz in der Hand sind das Schöpfer-Auge;
+// headless beweist nur Existenz + Lifecycle + Anker (V13-Render-Lehre, pixel-blind).
+AnazhRealm.HELD_MESH = Object.freeze({
+    targetSpanM: 0.62, // die längste Dimension des Geräts in der Hand (auf Werkzeug-Größe skaliert)
+    minScale: 0.04,
+    maxScale: 3,
+    handOffset: Object.freeze({ x: 0, y: -0.5, z: 0.12 }), // im Arm-Anker-Lokalraum (Handfläche/-spitze)
+    rootOffset: Object.freeze({ x: 0.42, y: 0.9, z: 0.32 }), // Fallback: vorn-rechts an der Körper-Wurzel
+    tilt: Object.freeze({ x: 0.5, y: 0, z: 0 }), // ein leichter Vorwärts-Neigung (ein langes Werkzeug zeigt nach vorn/unten)
+});
 // V17.54 Kampf-Bogen Phase D — die Reichweite des Spieler-Nahangriffs (der LMB-
 // Raycast auf Kreaturen). Eine Kreatur näher als das UND näher als eine Architektur
 // wird angegriffen statt abgebaut. Browser-justierbar (die Wucht/Reichweite = Feel).

@@ -5949,6 +5949,98 @@ async function checkBandV1772Library(ctx) {
     );
 }
 
+// V17.73 S9 (kampf-plan §10-F4) — das gehaltene Gerät SICHTBAR in der Hand. Headless beweist
+// Existenz + Lifecycle + Anker (Mesh erscheint beim Equip · skaliert · am Avatar geparentet ·
+// wechselt beim Equip-Wechsel ohne Leak · verschwindet beim Ablegen · ein formloses builtIn-Tool
+// wird abgelehnt · re-attached beim Körper-Wechsel). Die Optik/Pose/Skala = Schöpfer-Browser
+// (pixel-blind headless, V13). Snapshot + Restore des Player-States (wie V17.66).
+async function checkBandV1773HeldMesh(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh;
+        out.hasPlayerMesh = !!pm;
+        if (!pm) return out;
+
+        // Snapshot — am Ende restauriert (kein dangling Held/Soul für die nächsten Bands).
+        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedSoul = (p && p.soul) || "mensch";
+
+        // sauberer Start
+        r.equipHeld(null);
+        out.startNoMesh = !(pm.userData && pm.userData.heldMesh);
+
+        // (1) ein echtes Geräte-Bauplan (die V17.72-Bibliothek) → Mesh erscheint, am Avatar geparentet
+        const eq1 = r.equipHeld("geraet_spitzhacke");
+        const m1 = pm.userData && pm.userData.heldMesh;
+        out.equipOk = eq1.ok === true && p.equipped.held === "geraet_spitzhacke";
+        out.meshBuilt = !!m1 && Array.isArray(m1.children) && m1.children.length > 0;
+        const parts = pm.userData && pm.userData.parts;
+        const armAnchor = parts && (parts.rightArm || parts.rightWing);
+        out.parented = !!m1 && (m1.parent === armAnchor || m1.parent === pm);
+        // Mensch/Phönix haben einen Arm/Flügel → daran (schwingt mit); Custom-Seele → an die Wurzel
+        out.onAnchor = !!m1 && (armAnchor ? m1.parent === armAnchor : m1.parent === pm);
+
+        // (2) auf greifbare Hand-Größe skaliert (nicht roh)
+        out.scaled = !!m1 && m1.scale.x > 0 && m1.scale.x <= r.constructor.HELD_MESH.maxScale;
+
+        // (3) Equip-Wechsel: anderer Bauplan → das Mesh wechselt (neues Objekt) + das alte ist
+        //     aus dem Graph (kein Leak). `village` (große Struktur) testet zugleich die Skalierung.
+        const m1uuid = m1 && m1.uuid;
+        r.equipHeld("village");
+        const m2 = pm.userData && pm.userData.heldMesh;
+        out.swapped = !!m2 && m2.uuid !== m1uuid;
+        out.oldDetached = !m1 || m1.parent === null;
+
+        // (4) ablegen → kein Mesh
+        r.equipHeld(null);
+        out.unequipNoMesh = !(pm.userData && pm.userData.heldMesh);
+
+        // (5) ein formloses builtIn-Crafting-Tool (hammer, kein Bauplan) → equipHeld lehnt ab, kein Mesh
+        //     (die Werkstatt-Schicht state.tools bleibt getrennt vom Welt-Gerät)
+        const eqTool = r.equipHeld("hammer");
+        out.toolRejected = eqTool.ok === false;
+        out.toolNoMesh = !(pm.userData && pm.userData.heldMesh);
+
+        // (6) KONSUM — KÖRPER-WECHSEL: Gerät halten, Seele wechseln → das Mesh re-attached am NEUEN
+        //     Körper (Restore-/Seelen-sicher; deckt auch den loadState-Pfad).
+        r.equipHeld("geraet_spitzhacke");
+        r.applyPlayerSoul(savedSoul === "phoenix" ? "human" : "phoenix");
+        const pm2 = r.state.playerMesh;
+        const m3 = pm2.userData && pm2.userData.heldMesh;
+        out.reattached = !!m3 && m3.parent !== null;
+        out.reattachedNewBody = !!m3 && pm2 !== pm;
+
+        // restore — die Original-Seele + das Original-Equip wiederherstellen
+        r.applyPlayerSoul(savedSoul);
+        if (p) p.equipped = savedEquip;
+        r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        return out;
+    });
+    check("V17.73 S9: Hand-Mesh — Spieler-Mesh da + sauberer Start (kein Held-Mesh nach equipHeld(null))", res.hasPlayerMesh && res.startNoMesh);
+    check(
+        "V17.73 S9: ein Geräte-Bauplan (geraet_spitzhacke) erzeugt ein Hand-Mesh, an den Avatar geparentet (Arm/Flügel/Wurzel)",
+        res.equipOk && res.meshBuilt && res.parented && res.onAnchor
+    );
+    check("V17.73 S9: das Hand-Mesh ist auf greifbare Hand-Größe skaliert (0 < scale ≤ maxScale)", res.scaled);
+    check(
+        "V17.73 S9: Equip-Wechsel tauscht das Mesh (neues Objekt) + das alte ist aus dem Szenen-Graph (kein Leak)",
+        res.swapped && res.oldDetached
+    );
+    check("V17.73 S9: ablegen (equipHeld(null)) entfernt das Hand-Mesh", res.unequipNoMesh);
+    check(
+        "V17.73 S9: ein formloses builtIn-Crafting-Tool (hammer) wird abgelehnt → kein Hand-Mesh (die Werkstatt-Schicht bleibt getrennt)",
+        res.toolRejected && res.toolNoMesh
+    );
+    check(
+        "V17.73 S9 KONSUM: Körper-Wechsel (applyPlayerSoul) re-attached das Hand-Mesh am NEUEN Avatar (Restore-/Seelen-sicher)",
+        res.reattached && res.reattachedNewBody
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -38187,6 +38279,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1770WorkshopStationMark(ctx);
             await checkBandV1771ToolOpFromForm(ctx);
             await checkBandV1772Library(ctx);
+            await checkBandV1773HeldMesh(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
