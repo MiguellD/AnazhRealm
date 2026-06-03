@@ -6787,6 +6787,66 @@ async function checkBandV1783ImplementClassification(ctx) {
     check("V17.83 U4: die Greifbar-Implement-Erkennung (spitz/elongiert + klein vs großer Block/Würfel)", res.graspDetect);
 }
 
+// V17.84 U6 (resonanz-system.md §5) — die FORM in die WIRKUNG für den AVATAR: ein gut geformter Custom-
+// Avatar (körper-förmig, symmetrisch) wirkt stärker als ein Klumpen (die soul-Resonanz liest die bodyParts-
+// Form). NUR Custom-Avatare — die Built-in-Seelen (human/phoenix/dragon) bleiben neutral (kein Balance-Bruch).
+async function checkBandV1784AvatarFormFit(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const round = (x) => Math.round((x || 0) * 1000) / 1000;
+        const p = r.state.player;
+        const out = {};
+        const bodyParts = [
+            { shape: "box", material: "fleisch", position: { x: 0, y: 1.2, z: 0 }, size: { x: 0.9, y: 1.6, z: 0.5 } },
+            { shape: "cylinder", material: "fleisch", position: { x: -0.95, y: 1.1, z: 0 }, size: { x: 0.3, y: 1.3, z: 0.3 } },
+            { shape: "cylinder", material: "fleisch", position: { x: 0.95, y: 1.1, z: 0 }, size: { x: 0.3, y: 1.3, z: 0.3 } },
+            { shape: "cylinder", material: "fleisch", position: { x: -0.4, y: 0, z: 0 }, size: { x: 0.35, y: 1.2, z: 0.35 } },
+            { shape: "cylinder", material: "fleisch", position: { x: 0.4, y: 0, z: 0 }, size: { x: 0.35, y: 1.2, z: 0.35 } },
+        ];
+        const blobParts = [{ shape: "box", material: "fleisch", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 1.5, z: 1.5 } }];
+        // (1) der Gate: Built-in-Seele → neutral (in playerSoulDefs), ein Custom-Name nicht
+        out.builtinGate = !!r.playerSoulDefs["human"] && !r.playerSoulDefs["_av_body"];
+        // (2) die soul-Passung diskriminiert über die FORM (gleiches Material fleisch)
+        const fitBody = r._blueprintRoleFit({ parts: bodyParts }, "soul");
+        const fitBlob = r._blueprintRoleFit({ parts: blobParts }, "soul");
+        out.soulDiscriminates = fitBody > fitBlob;
+        out.bodyShaped = r._isBodyShaped({ parts: bodyParts }) === true;
+        out.soulVals = `Körper=${round(fitBody)} Klumpen=${round(fitBlob)}`;
+        // (3) KONSUM: ein körper-förmiger Custom-Avatar hat höhere Basis-Stats als ein Klumpen (gleiches Material)
+        const savedSoul = p.soul;
+        const savedCustom = r.state.customSouls ? JSON.parse(JSON.stringify(r.state.customSouls)) : {};
+        r.state.customSouls = r.state.customSouls || {};
+        r.state.customSouls["_av_body"] = { label: "body", bodyParts: bodyParts };
+        r.state.customSouls["_av_blob"] = { label: "blob", bodyParts: blobParts };
+        p.soul = "_av_body";
+        const sBody = r.computePlayerStats().stats;
+        p.soul = "_av_blob";
+        const sBlob = r.computePlayerStats().stats;
+        out.konsum = sBody.hpMax > sBlob.hpMax;
+        out.konsumVals = `Körper.hp=${Math.round(sBody.hpMax)} Klumpen.hp=${Math.round(sBlob.hpMax)}`;
+        // restore
+        p.soul = savedSoul;
+        r.state.customSouls = savedCustom;
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        return out;
+    });
+    check(
+        "V17.84 U6: der Gate — eine Built-in-Seele bleibt neutral (in playerSoulDefs, soulFit 1.0), ein Custom-Avatar bekommt die Form-Passung",
+        res.builtinGate
+    );
+    check(
+        "V17.84 U6: die soul-Passung diskriminiert über die FORM — ein körper-förmiger Avatar > ein Klumpen (gleiches Material)",
+        res.soulDiscriminates && res.bodyShaped,
+        res.soulVals
+    );
+    check(
+        "V17.84 U6 KONSUM: ein körper-förmiger Custom-Avatar hat höhere Basis-Stats als ein Klumpen-Avatar — die FORM erreicht die Avatar-Wirkung",
+        res.konsum,
+        res.konsumVals
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -39046,6 +39106,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1781RoleRegister(ctx);
             await checkBandV1782CatalystReadout(ctx);
             await checkBandV1783ImplementClassification(ctx);
+            await checkBandV1784AvatarFormFit(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

@@ -30754,7 +30754,13 @@ class AnazhRealm {
         // kein Effekt). Custom-Soulen aus geschmiedeten Baupläne tragen ihre
         // Werkzeug-Geschichte mit.
         const soulPrec = this._compoundAvgPrecisionFromParts(soul && soul.bodyParts);
-        const soulMul = 0.5 + 0.5 * soulPrec;
+        // U6 (resonanz-system.md §5) — die FORM in die WIRKUNG für die SEELE/den AVATAR: ein gut geformter
+        // Custom-Avatar (körper-förmig, symmetrisch, lebendig) wirkt stärker als ein form-fremder Klumpen
+        // (die soul-Resonanz liest die Form der bodyParts). NUR Custom-Avatare — die Built-in-Seelen
+        // (human/phoenix/dragon) bleiben neutral (soulFit 1.0) → kein Balance-Bruch an den getunten Souls.
+        const isBuiltinSoul = !!(this.playerSoulDefs && this.playerSoulDefs[soulName]);
+        const soulFit = isBuiltinSoul ? 1.0 : this._blueprintRoleFit({ parts: (soul && soul.bodyParts) || [] }, "soul");
+        const soulMul = 0.5 + 0.5 * soulPrec * soulFit;
         for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
             const raw = Number(compoundTags[key]) || 0;
             finalTags[key] = Math.max(0, Math.min(1, raw)) * soulMul;
@@ -45898,7 +45904,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.83.0";
+AnazhRealm.VERSION = "17.84.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
