@@ -12287,7 +12287,7 @@ class AnazhRealm {
         const scale = meta.scale || 0.2;
         // V8.39 — Qualität skaliert die Trank-Stärke (selber Pfad wie
         // activateConsumable).
-        const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp);
+        const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp) * this._blueprintRoleFit(bp, "consumable");
         const tagBonus = {};
         for (const tag of Object.keys(tags)) {
             const v = tags[tag] * scale * qMul;
@@ -12407,7 +12407,9 @@ class AnazhRealm {
                 const tags = this.computeCompoundTags(toolBp) || {};
                 // V8.39 — Qualität skaliert das Stat-Gewicht (selber Pfad wie
                 // computePlayerStats): ein grob gebautes Werkzeug wirkt halb.
-                const w = AnazhRealm.TOOL_STAT_WEIGHT * (0.5 + 0.5 * this.computeBlueprintQuality(toolBp));
+                const w =
+                    AnazhRealm.TOOL_STAT_WEIGHT *
+                    (0.5 + 0.5 * this.computeBlueprintQuality(toolBp) * this._blueprintRoleFit(toolBp, "held"));
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -12420,7 +12422,9 @@ class AnazhRealm {
                 const tags = this.computeCompoundTags(bp) || {};
                 // V8.39 — Qualität skaliert das Stat-Gewicht (selber Pfad wie
                 // computePlayerStats): eine grob gebaute Rüstung wirkt halb.
-                const w = AnazhRealm.ARMOR_STAT_WEIGHT * (0.5 + 0.5 * this.computeBlueprintQuality(bp));
+                const w =
+                    AnazhRealm.ARMOR_STAT_WEIGHT *
+                    (0.5 + 0.5 * this.computeBlueprintQuality(bp) * this._blueprintRoleFit(bp, "armor"));
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -12447,6 +12451,13 @@ class AnazhRealm {
         for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
             stats[stat] = AnazhRealm.STAT_FROM_TAGS[stat](finalTags);
         }
+        // V17.90 — die INVERS-dichte Stats (attackSpeed/speed = base + (1−dichte)·…) können NEGATIV werden, wenn
+        // ein schweres Gerät/eine schwere Rüstung die compound-dichte über 1 hebt (die equip-Additionen umgehen
+        // den [0,1]-Soul-Clamp). Ein positiver Floor verhindert den kaputten Negativ-/Null-Wert (ein Cooldown
+        // 1/attackSpeed darf nie negativ werden) — ein schweres Gerät ist TRÄGE (Floor), nicht kaputt. Der
+        // Trade-off „leicht = flink, schwer = träge" bleibt: leichte Geräte liegen klar über dem Floor.
+        if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
+        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
         return { tags: finalTags, stats };
     }
 
@@ -27213,6 +27224,7 @@ class AnazhRealm {
         if (!name) {
             eq.held = null;
             this.recomputePlayerStats();
+            this._refreshHeldMesh(); // S9 — die Hand-Optik leeren
             return { ok: true, equipped: null };
         }
         // den Bauplan auflösen: ein direkter Bauplan ODER ein gecraftetes Werkzeug (name == Bauplan
@@ -27226,6 +27238,7 @@ class AnazhRealm {
         if (!bpName || !this.state.blueprints[bpName]) return { ok: false, reason: "blueprint_unknown" };
         eq.held = bpName;
         this.recomputePlayerStats();
+        this._refreshHeldMesh(); // S9 — das Gerät in der Hand sichtbar machen
         return { ok: true, equipped: bpName };
     }
 
@@ -27237,6 +27250,60 @@ class AnazhRealm {
     }
     equipWeapon(name) {
         return this.equipHeld(name);
+    }
+
+    // S9 (kampf-plan §10-F4) — das gehaltene Gerät SICHTBAR in der Hand. Reuse _buildFromBlueprint
+    // (derselbe Pfad wie Bauten/Phantom/Avatare — KEIN Parallel-Pfad): ein Mesh, an den rechten
+    // Arm/Flügel des Avatars gehängt (schwingt automatisch mit dem _animateHuman-Walk-Cycle via der
+    // THREE-Transform-Kette) bzw. an die Körper-Wurzel (Fallback für Custom-Seelen ohne benannten
+    // Arm). EINE Quelle: liest state.player.equipped.held + state.playerMesh; gerufen aus equipHeld
+    // (Equip-Wechsel) + applyPlayerSoul (Körper-Wechsel/Restore — re-attach an den neuen Körper).
+    // Kein per-Frame-Update nötig (die Transform-Kette trägt Position + Schwung). Die Optik/Pose/
+    // Skala (AnazhRealm.HELD_MESH) ist browser-justierbar; headless beweist Existenz + Lifecycle.
+    _refreshHeldMesh() {
+        const pm = this.state.playerMesh;
+        if (!pm) return;
+        // ein vorhandenes Hand-Mesh DIESES Körpers abräumen (Equip-Wechsel am selben Körper).
+        // (Beim Körper-Wechsel disposed applyPlayerSoul den alten Körper inkl. seines heldMesh-
+        // Kindes — dessen Geometrie wird mit dem alten Group disposed; der neue Körper hat noch
+        // keins → hier wird frisch gebaut.)
+        const prev = pm.userData && pm.userData.heldMesh;
+        if (prev) {
+            if (prev.parent) prev.parent.remove(prev);
+            this._disposeSoulGroup(prev);
+            pm.userData.heldMesh = null;
+        }
+        const eq = this.state.player && this.state.player.equipped;
+        const held = eq && eq.held;
+        if (!held) return;
+        const bp = this.state.blueprints && this.state.blueprints[held];
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return;
+        const mesh = this._buildFromBlueprint({ name: `held_${held}`, parts: bp.parts });
+        const cfg = AnazhRealm.HELD_MESH;
+        // auf greifbare Hand-Größe skalieren — die ECHTE Geometrie-Spanne (positions + sizes +
+        // rotation), robust auch bei Ein-Part-Geräten (anders als _compoundBBox, das positions-only ist).
+        try {
+            mesh.updateMatrixWorld(true);
+            const box = new THREE.Box3().setFromObject(mesh);
+            if (box && Number.isFinite(box.min.x) && Number.isFinite(box.max.x)) {
+                const span = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
+                if (span > 1e-4) {
+                    const s = Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span));
+                    mesh.scale.setScalar(s);
+                }
+            }
+        } catch (_e) {
+            /* headless/degeneriert — Skala 1 lassen, die Optik ist ohnehin der Browser */
+        }
+        // Anker: der rechte Arm/Flügel (schwingt mit dem Walk-Cycle) wenn die Seele ihn benennt,
+        // sonst die Körper-Wurzel (sichtbar, folgt dem Körper, schwingt nicht — Custom-/Flug-Seelen).
+        const parts = pm.userData && pm.userData.parts;
+        const anchor = (parts && (parts.rightArm || parts.rightWing)) || pm;
+        const off = anchor === pm ? cfg.rootOffset : cfg.handOffset;
+        mesh.position.set(off.x, off.y, off.z);
+        mesh.rotation.set(cfg.tilt.x, cfg.tilt.y, cfg.tilt.z);
+        anchor.add(mesh);
+        pm.userData.heldMesh = mesh;
     }
 
     // S4 (kampf-plan §11.4) — der gemeinsame WERK-KERN, den JEDER Mach-Akt teilt (Gerät/Rüstung/…): Material
@@ -29357,7 +29424,7 @@ class AnazhRealm {
             const scale = meta.scale || 0.2;
             // V8.39 — Qualität skaliert die Trank-Stärke: ein grob gebrautes
             // Konsumable wirkt halb, ein fein gefertigtes voll.
-            const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp);
+            const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp) * this._blueprintRoleFit(bp, "consumable");
             const tagBonus = {};
             for (const tag of Object.keys(tags)) {
                 const v = tags[tag] * scale * qMul;
@@ -30658,6 +30725,10 @@ class AnazhRealm {
         // und Resistenzen. DSL-Tuning via player_speed/player_jump_power
         // überschreibt danach frei, bleibt aber bis zum nächsten Soul-Wechsel.
         this.recomputePlayerStats();
+        // S9 (kampf-plan §10-F4) — das gehaltene Gerät an den NEUEN Körper re-attachen (der alte
+        // Körper + sein heldMesh-Kind wurden oben disposed); liest equipped.held — deckt damit auch
+        // den Restore (init() ruft applyPlayerSoul nach Mesh-Bau erneut, wenn equipped.held gesetzt ist).
+        this._refreshHeldMesh();
         // Ring 11 V3 — Soul-Sync: Mitspieler über den Seelen-Wechsel
         // informieren, damit ihr Renderer den neuen Avatar baut.
         if (this.state.p2p && this.state.p2p.enabled) this._p2pBroadcastSoul();
@@ -30690,7 +30761,13 @@ class AnazhRealm {
         // kein Effekt). Custom-Soulen aus geschmiedeten Baupläne tragen ihre
         // Werkzeug-Geschichte mit.
         const soulPrec = this._compoundAvgPrecisionFromParts(soul && soul.bodyParts);
-        const soulMul = 0.5 + 0.5 * soulPrec;
+        // U6 (resonanz-system.md §5) — die FORM in die WIRKUNG für die SEELE/den AVATAR: ein gut geformter
+        // Custom-Avatar (körper-förmig, symmetrisch, lebendig) wirkt stärker als ein form-fremder Klumpen
+        // (die soul-Resonanz liest die Form der bodyParts). NUR Custom-Avatare — die Built-in-Seelen
+        // (human/phoenix/dragon) bleiben neutral (soulFit 1.0) → kein Balance-Bruch an den getunten Souls.
+        const isBuiltinSoul = !!(this.playerSoulDefs && this.playerSoulDefs[soulName]);
+        const soulFit = isBuiltinSoul ? 1.0 : this._blueprintRoleFit({ parts: (soul && soul.bodyParts) || [] }, "soul");
+        const soulMul = 0.5 + 0.5 * soulPrec * soulFit;
         for (const key of AnazhRealm.MATERIAL_TAG_KEYS) {
             const raw = Number(compoundTags[key]) || 0;
             finalTags[key] = Math.max(0, Math.min(1, raw)) * soulMul;
@@ -30708,8 +30785,13 @@ class AnazhRealm {
         const heldBp = this._heldImplementBlueprint();
         if (heldBp && Array.isArray(heldBp.parts)) {
             const tags = this.computeCompoundTags(heldBp);
-            const heldMul = 0.5 + 0.5 * this._compoundAvgPrecisionFromParts(heldBp.parts);
-            const w = AnazhRealm.HELD_STAT_WEIGHT * heldMul;
+            // V17.79 — die Rolle-Passung (Form-Fit): eine scharfe Klinge wirkt als Gerät stärker als ein
+            // form-fremder Klotz (die FORM-Achse, die STAT_FROM_TAGS nicht sieht). Handwerk × Design.
+            const heldMul =
+                0.5 + 0.5 * this._compoundAvgPrecisionFromParts(heldBp.parts) * this._blueprintRoleFit(heldBp, "held");
+            // V17.90 Facette 3 — die GRÖSSE trägt schwerer: ein größeres gehaltenes Gerät faltet seine Substanz
+            // stärker in den Spieler-Compound (mehr Schaden/Rückschlag) — konsistent mit der Werte-Anzeige.
+            const w = AnazhRealm.HELD_STAT_WEIGHT * heldMul * this._compoundSizeFactor(heldBp);
             for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                 finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
             }
@@ -30720,8 +30802,9 @@ class AnazhRealm {
             if (bp.role === "armor") {
                 const tags = this.computeCompoundTags(bp);
                 const armorPrec = this._compoundAvgPrecisionFromParts(bp.parts);
-                const armorMul = 0.5 + 0.5 * armorPrec;
-                const w = AnazhRealm.ARMOR_STAT_WEIGHT * armorMul;
+                const armorMul = 0.5 + 0.5 * armorPrec * this._blueprintRoleFit(bp, "armor"); // V17.79 — Form-Fit
+                // V17.90 Facette 3 — größere Rüstung deckt mehr → trägt schwerer in den Compound (mehr Verteidigung).
+                const w = AnazhRealm.ARMOR_STAT_WEIGHT * armorMul * this._compoundSizeFactor(bp);
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -30753,6 +30836,13 @@ class AnazhRealm {
         for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
             stats[stat] = AnazhRealm.STAT_FROM_TAGS[stat](finalTags);
         }
+        // V17.90 — die INVERS-dichte Stats (attackSpeed/speed = base + (1−dichte)·…) können NEGATIV werden, wenn
+        // ein schweres Gerät/eine schwere Rüstung die compound-dichte über 1 hebt (die equip-Additionen umgehen
+        // den [0,1]-Soul-Clamp). Ein positiver Floor verhindert den kaputten Negativ-/Null-Wert (ein Cooldown
+        // 1/attackSpeed darf nie negativ werden) — ein schweres Gerät ist TRÄGE (Floor), nicht kaputt. Der
+        // Trade-off „leicht = flink, schwer = träge" bleibt: leichte Geräte liegen klar über dem Floor.
+        if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
+        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
         return { tags: finalTags, stats };
     }
 
@@ -31806,7 +31896,7 @@ class AnazhRealm {
         // Bauplane mit role="workshop-station"; die bediente Domäne EMERGIERT
         // aus ihrer Substanz (_computeWorkshopDomain, S7-B), kein hardcoded Feld.
         // confirmBuild + FERTIGEN eines domain-Bauplans prüfen im pfad-Modus, ob
-        // eine passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M=10m Nähe ist.
+        // eine passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M Nähe ist.
         // Construction-Default-Bauplane (architecture) brauchen keine
         // Welt-Werkstatt — sie sind die "Open-Air-Welt" selbst.
         const esseParts = [
@@ -31833,6 +31923,21 @@ class AnazhRealm {
                 size: { x: 0.9, y: 0.5, z: 0.8 },
                 opacity: 0.85,
             },
+        ];
+        // V17.77 — die MEISTER-Esse: derselbe Schmiede-Sinn, aber ein EISEN-Körper (dichter + härter als
+        // Stein/Bronze → feinere Toleranzen) + ein Eisen-Amboss; die Glut bleibt das Feuer. Die craftbare
+        // „bessere Esse" — sie hebt den Präzisions-Cap, den Werke an ihr erreichen (die Steigerung sichtbar).
+        const esseMeisterParts = [
+            { shape: "box", material: "eisen", position: { x: 0, y: 0.6, z: 0 }, size: { x: 2.2, y: 1.2, z: 1.8 } },
+            { shape: "box", material: "eisen", position: { x: 0, y: 1.5, z: 0 }, size: { x: 1.6, y: 0.6, z: 1.4 } },
+            {
+                shape: "sphere",
+                material: "glut",
+                position: { x: 0, y: 1.7, z: 0 },
+                size: { x: 1.0, y: 0.55, z: 0.9 },
+                opacity: 0.85,
+            },
+            { shape: "box", material: "eisen", position: { x: 0, y: 2.2, z: 0 }, size: { x: 1.2, y: 0.5, z: 0.8 } },
         ];
         const brennkolbenParts = [
             // Holz-Untersatz
@@ -32045,6 +32150,33 @@ class AnazhRealm {
                 rotation: { x: 0, y: 0, z: Math.PI / 2 },
             },
         ];
+        // V17.86 — DAS SCHWERT (Schöpfer-Wunsch: „ein Schwert wäre als Samen/Hilfestellung gut"). Die
+        // Waffen-Saat neben der Werkzeug-Saat (Spitzhacke). ROLLENLOS wie die Spitzhacke (V17.72) → die
+        // Rolle EMERGIERT aus der Form: ein Griff + eine LANGE, SPITZE eisen-Klinge (scharf+gestreckt →
+        // `_isGraspableBladeForm` → Waffe/Gerät, U4). Knauf + Klinge sind beide spitze Formen → die
+        // pointedFraction (2/3) ist hoch genug, dass das Profil als KLINGE (schneidet) liest, nicht als
+        // Brecher — ein Schwert SCHNEIDET (der Substanz-Trade-off W2: scharfe Form → cutPower > minePower).
+        const geraetSchwertParts = [
+            {
+                shape: "octahedron",
+                material: "eisen",
+                position: { x: 0, y: 0.18, z: 0 },
+                size: { x: 0.14, y: 0.14, z: 0.14 },
+            },
+            {
+                shape: "cylinder",
+                material: "leder",
+                position: { x: 0, y: 0.5, z: 0 },
+                size: { x: 0.1, y: 0.55, z: 0.1 },
+                segments: 6,
+            },
+            {
+                shape: "cone",
+                material: "eisen",
+                position: { x: 0, y: 1.5, z: 0 },
+                size: { x: 0.16, y: 1.7, z: 0.05 },
+            },
+        ];
         // RÜSTUNG — ein eiserner Brustpanzer. Dicht + hart → Schutz-Fähigkeit.
         // role:"armor" deklariert (Rüstung vs. Bauwerk sind Substanz-Zwillinge,
         // die Unterscheidung ist INTENT — der V17.70-Override, wie die Stationen).
@@ -32224,6 +32356,16 @@ class AnazhRealm {
                 roleManual: true,
                 parts: esseParts,
             },
+            // V17.77 — die craftbare MEISTER-Esse (Eisen): eine bessere Werkstatt → höherer Präzisions-Cap.
+            // Die „bessere Esse", die der Schöpfer suchte; sie lehrt das Prinzip (besseres Material → feiner).
+            esse_meister: {
+                name: "esse_meister",
+                label: "Meister-Esse (Eisen)",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                parts: esseMeisterParts,
+            },
             brennkolben: {
                 name: "brennkolben",
                 label: "Brennkolben",
@@ -32306,6 +32448,12 @@ class AnazhRealm {
                 label: "Spitzhacke",
                 builtIn: true,
                 parts: geraetSpitzhackeParts,
+            },
+            geraet_schwert: {
+                name: "geraet_schwert",
+                label: "Schwert",
+                builtIn: true,
+                parts: geraetSchwertParts,
             },
             ruestung_brustpanzer: {
                 name: "ruestung_brustpanzer",
@@ -32537,46 +32685,11 @@ class AnazhRealm {
                 isStarter: true,
                 builtIn: true,
             },
-            {
-                name: "feuerstein-knapper",
-                label: "Feuerstein-Knapper",
-                opClass: "subtractive",
-                opName: "hand_knap",
-                precisionCap: 0.5,
-                domain: null,
-                isStarter: true,
-                builtIn: true,
-            },
-            {
-                name: "hammer",
-                label: "Hammer",
-                opClass: "plastic",
-                opName: "forge",
-                precisionCap: 0.7,
-                domain: null,
-                isStarter: true,
-                builtIn: true,
-            },
-            {
-                name: "feile",
-                label: "Feile",
-                opClass: "subtractive",
-                opName: "file",
-                precisionCap: 0.85,
-                domain: null,
-                isStarter: true,
-                builtIn: true,
-            },
-            {
-                name: "polierscheibe",
-                label: "Polierscheibe",
-                opClass: "subtractive",
-                opName: "polish",
-                precisionCap: 0.97,
-                domain: null,
-                isStarter: true,
-                builtIn: true,
-            },
+            // V17.78 Welle 2 Schritt 2 — die generischen Präzisions-Werkzeuge (feuerstein-knapper / hammer /
+            // feile / polierscheibe) sind ENTFERNT: die Präzision kommt jetzt aus der WERKSTATT (V17.76/.77 —
+            // eine bessere Esse → höherer Cap, aus der Substanz). `hände` bleibt die domain-NEUTRALE Faust-
+            // Baseline (0.4); der Präzisions-Aufstieg läuft über die domain-Werkzeuge AN domain-Werkstätten
+            // (purposeful — schmieden an der Esse, weben am Webstuhl); die generische Leiter ist gefallen.
             // ### Welle 9b — Domain-Werkzeuge ###
             // Eines pro Nicht-Default-Domain. Jedes Werkzeug erbt eine
             // opClass (Material-Bearbeitung physikalisch) PLUS eine domain
@@ -32591,7 +32704,11 @@ class AnazhRealm {
                 opName: "forge_shape",
                 precisionCap: 0.75,
                 domain: "forging",
-                isStarter: true,
+                // V17.88 — die 5 Domain-Werkzeuge sind nicht mehr STARTER: der Spieler startet mit den
+                // Basics (nur `hände` + die Werkstatt-Baupläne als Hilfestellung). Sie bleiben die OP-
+                // BIBLIOTHEK (opClass/opName), aus der die platzierte Werkstatt ihren Prozess zieht
+                // (`applyWorkshopProcessToPart`) — die Werkstatt IST der Prozess, das Werkzeug ist gefaltet.
+                isStarter: false,
                 builtIn: true,
             },
             {
@@ -32601,7 +32718,7 @@ class AnazhRealm {
                 opName: "brew",
                 precisionCap: 0.7,
                 domain: "alchemy",
-                isStarter: true,
+                isStarter: false,
                 builtIn: true,
             },
             {
@@ -32611,7 +32728,7 @@ class AnazhRealm {
                 opName: "weave",
                 precisionCap: 0.7,
                 domain: "textile",
-                isStarter: true,
+                isStarter: false,
                 builtIn: true,
             },
             {
@@ -32621,7 +32738,7 @@ class AnazhRealm {
                 opName: "imbue",
                 precisionCap: 0.85,
                 domain: "soulwork",
-                isStarter: true,
+                isStarter: false,
                 builtIn: true,
             },
             {
@@ -32631,7 +32748,7 @@ class AnazhRealm {
                 opName: "turn",
                 precisionCap: 0.9,
                 domain: "mechanism",
-                isStarter: true,
+                isStarter: false,
                 builtIn: true,
             },
         ];
@@ -32719,6 +32836,60 @@ class AnazhRealm {
     // bearbeiteter trägt seine min-Werte. Die Qualität skaliert die Wirkung
     // des Produkts: Rüstungs-Stat-Gewicht + Trank-Stärke gehen mit
     // (0.5 + 0.5·Qualität) — ein grobes Produkt wirkt halb, ein feines voll.
+    // V17.79 — die ROLLE-PASSUNG der FORM für eine GEDIENTE Rolle ∈ [min, max] (1.0 = neutral): die Resonanz
+    // des Produkt-Vektors (inkl. der FORM-Achsen pointedFraction/dichte/härte) gegen die Rollen-Signatur,
+    // normalisiert über den per-Rolle ref. Ein gut geformtes Werk (scharfe Klinge als Gerät, dichte Platte als
+    // Rüstung, lebendiger Saft als Trank) → max; ein form-fremdes → min. Unbekannte Rolle → 1.0 (kein Effekt).
+    // Das Call-Site übergibt die GEDIENTE Rolle (Hand→held, Slot→armor, Trinken→consumable) — nicht die
+    // emergente (eine scharfe Klinge wird als „architecture" klassifiziert, ist aber ein gehaltenes Gerät).
+    _blueprintRoleFit(bp, role) {
+        const sig = AnazhRealm.ROLE_SIGNATURES[role];
+        if (!sig || !bp) return 1.0;
+        const cfg = AnazhRealm.QUALITY_ROLE_FIT;
+        const ref = (cfg.refs && cfg.refs[role]) || 3.0;
+        const raw = this._blueprintResonance(this._blueprintProductVector(bp), sig);
+        const norm = Math.max(0, Math.min(1, raw / ref));
+        return cfg.min + (cfg.max - cfg.min) * norm;
+    }
+
+    // U3 (resonanz-system.md §5) — das ROLLEN-SPEKTRUM: die normierte Resonanz (0–1) des Bauplans gegen ALLE
+    // Rollen des Registers, sortiert. Der Spieler SIEHT, was sein Werk IST (Waffe 0.9 · Bauwerk 0.4 · …) über
+    // die GANZE Resonanz — kein Rezept, ein Kompass. Die Freiheit: er baut einen Punkt, das Spektrum liest ihn.
+    _blueprintRoleSpectrum(bp) {
+        const v = this._blueprintProductVector(bp);
+        const cfg = AnazhRealm.QUALITY_ROLE_FIT;
+        const out = [];
+        for (const role in AnazhRealm.ROLE_SIGNATURES) {
+            const raw = this._blueprintResonance(v, AnazhRealm.ROLE_SIGNATURES[role]);
+            const ref = (cfg.refs && cfg.refs[role]) || 3.0;
+            out.push({ role, score: Math.max(0, Math.min(1, raw / ref)) });
+        }
+        out.sort((a, b) => b.score - a.score);
+        return out;
+    }
+
+    // U3 — der KATALYSATOR-Hinweis: welche Achse drehen, um die Passung für eine Rolle am meisten zu heben —
+    // die positive Signatur-Achse mit dem größten UNGENUTZTEN Potenzial (hohe Gewichtung, aktuell schwach).
+    // „mehr Schärfe → bessere Klinge". So lernt + dreht der Spieler die Achsen Richtung perfekten Katalysator.
+    _blueprintCatalystHint(bp, role) {
+        const sig = AnazhRealm.ROLE_SIGNATURES[role];
+        if (!sig) return null;
+        const v = this._blueprintProductVector(bp);
+        let bestAxis = null;
+        let bestGap = 0;
+        for (const axis in sig) {
+            const w = sig[axis];
+            if (w <= 0) continue; // nur positive Achsen (Gegen-Achsen sind kein Katalysator-Ziel)
+            const axisMax = AnazhRealm.MATERIAL_TAG_KEYS.includes(axis) ? 3 : 1; // Material-Tags bis ~3, Form-Achsen [0,1]
+            const gap = w * (1 - Math.min(1, (v[axis] || 0) / axisMax));
+            if (gap > bestGap) {
+                bestGap = gap;
+                bestAxis = axis;
+            }
+        }
+        return bestAxis ? { axis: bestAxis, label: AnazhRealm.AXIS_LABELS[bestAxis] || bestAxis } : null;
+    }
+
     computeBlueprintQuality(blueprint) {
         if (!blueprint || !Array.isArray(blueprint.parts)) return 1.0;
         return this._compoundAvgPrecisionFromParts(blueprint.parts);
@@ -32773,11 +32944,22 @@ class AnazhRealm {
             }
             this.state.player.stamina = Math.max(0, stamina - cost);
         }
+        // V17.87 — der Edit-Verlauf: VOR der opChain-Mutation den Vor-Zustand schnappen (nach allen
+        // Validierungen, damit ein abgelehnter Op-Versuch keinen leeren Undo-Schritt erzeugt).
+        this._recordBlueprintEdit(blueprintName);
         if (!Array.isArray(part.opChain)) part.opChain = this._defaultPartOpChain();
+        // V17.76 Welle 2 (kampf-plan §11.10) — DIE WERKSTATT ALS PRÄZISIONS-QUELLE: trägt das Werkzeug eine
+        // Domäne (forge/weave/brew/…) UND steht eine passende Welt-Werkstatt nah, hebt ihre Substanz-Präzision
+        // den erreichbaren Cap (max aus Werkzeug + Werkstatt — eine bessere Esse fertigt feiner). Generische
+        // Werkzeuge (domain=null) ODER ohne Station: der Werkzeug-Cap wie bisher (additiv, kein Regress).
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const stationPrec =
+            tool.domain && pm ? this._nearbyWorkshopStationPrecision(tool.domain, { x: pm.x, y: pm.y, z: pm.z }) : 0;
+        const effectiveCap = Math.max(tool.precisionCap || 0, stationPrec);
         part.opChain.push({
             tool: toolName,
             op: tool.opName,
-            cap: tool.precisionCap,
+            cap: effectiveCap,
             at: performance.now() / 1000,
         });
         // Welle 9a — emergente Bauplan-Rolle aktualisieren. Wenn das Werkzeug
@@ -32787,7 +32969,234 @@ class AnazhRealm {
         return { ok: true, precision: this.computePartPrecision(part), staminaRemaining: this.state.player.stamina };
     }
 
-    // ### Welle 4 Phase 2 — Aktivierte Tag-Stärken ###
+    // V17.88 (Schöpfer-Vision „die Werkstatt IST der Prozess") — der Prozess einer Domäne: die opClass +
+    // der opName aus dem kanonischen Domain-Werkzeug (die 5 Domain-Tools sind ab V17.88 die OP-BIBLIOTHEK,
+    // aus der die platzierten Werkstätten schöpfen — sie selbst werden nicht mehr gehalten). EINE Quelle
+    // (state.tools), kein Parallel-Pfad.
+    _domainProcess(domain) {
+        if (!domain) return null;
+        for (const t of Object.values(this.state.tools || {})) {
+            if (t && t.domain === domain) return { opClass: t.opClass, opName: t.opName, toolName: t.name };
+        }
+        return null;
+    }
+
+    // V17.88 — die platzierte/besessene Werkstatt-Station IST der Prozess: ihre Domäne (emergent aus der
+    // Substanz) liefert die Op, ihre Substanz-Präzision (V17.76) den Cap (eine Meister-Esse fertigt feiner
+    // → bessere Werke — die §4.3-Rekursion). Modus-Gate: in pfad/frieden MUSS die Station platziert + nah
+    // sein (`_isWorkshopStationPlacedNear`), in schöpfer reicht der besessene Bauplan (frei). Die HAND
+    // (`hände`) bleibt immer da (über applyOpToPart). Spiegelt applyOpToPart (Validierung → Stamina →
+    // Edit-Verlauf → opChain), aber die Op + der Cap kommen aus der STATION, nicht einem gehaltenen Tool.
+    applyWorkshopProcessToPart(blueprintName, partIndex, stationName) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        if (!Array.isArray(bp.parts) || partIndex < 0 || partIndex >= bp.parts.length) {
+            return { ok: false, reason: "invalid_part_index" };
+        }
+        const station = this.state.blueprints[stationName];
+        if (!station || station.role !== "workshop-station") return { ok: false, reason: "not_a_workshop" };
+        const domain = this._computeWorkshopDomain(station);
+        const proc = this._domainProcess(domain);
+        if (!proc) return { ok: false, reason: "no_process_for_domain" };
+        const mode = this.getGameMode ? this.getGameMode() : "frieden";
+        // Modus-Gate: außerhalb schöpfer muss die Station in der Welt platziert + nah sein (der „wahre Weg").
+        if (mode !== "schöpfer" && !this._isWorkshopStationPlacedNear(stationName)) {
+            return { ok: false, reason: "workshop_not_placed_near" };
+        }
+        const part = bp.parts[partIndex];
+        const matName = part.material || "stein";
+        const compat = AnazhRealm.MATERIAL_OP_COMPATIBILITY[matName];
+        if (compat && !compat.includes(proc.opClass)) return { ok: false, reason: "material_op_incompatible" };
+        // Stamina (nur pfad) — der Aufwand skaliert wie bei applyOpToPart mit der Präzision.
+        const cap = this._workshopStationPrecision(station);
+        if (mode === "pfad") {
+            const baseCost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            const cost = Math.max(2, Math.round(baseCost * (1.5 - cap)));
+            const stamina = (this.state.player && this.state.player.stamina) || 0;
+            if (stamina < cost) {
+                return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+            }
+            this.state.player.stamina = Math.max(0, stamina - cost);
+        }
+        this._recordBlueprintEdit(blueprintName);
+        if (!Array.isArray(part.opChain)) part.opChain = this._defaultPartOpChain();
+        // Der opChain-Eintrag trägt den KANONISCHEN Domain-Werkzeug-Namen (proc.toolName, z.B.
+        // „schmiede-hammer") — NICHT den Stations-Namen: `computeBlueprintDomainCounts` löst die Domäne
+        // über `state.tools[op.tool].domain` auf, und die Station ist kein Tool. Der Cap kommt aus der
+        // Station (die Werkstatt fertigt feiner), die Domäne aus der Op-Bibliothek. `station` notiert die
+        // Quelle für die Anzeige.
+        part.opChain.push({
+            tool: proc.toolName,
+            op: proc.opName,
+            cap,
+            station: stationName,
+            at: performance.now() / 1000,
+        });
+        this._refreshBlueprintRoleEmergent(blueprintName);
+        return { ok: true, precision: this.computePartPrecision(part), cap, domain };
+    }
+
+    // V17.88 — ist eine Werkstatt-Station dieses Bauplan-NAMENS in der Welt platziert + nah am Spieler?
+    // (Spiegel von `_nearbyWorkshopStationPrecision`, aber per Bauplan-Name statt Domäne.)
+    _isWorkshopStationPlacedNear(stationName) {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return false;
+        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M || 10;
+        const r2 = radius * radius;
+        for (const entry of this.state.architectures || []) {
+            if (!entry || entry.type !== stationName || !entry.position) continue;
+            const dx = entry.position.x - pm.x;
+            const dy = entry.position.y - pm.y;
+            const dz = entry.position.z - pm.z;
+            if (dx * dx + dy * dy + dz * dz <= r2) return true;
+        }
+        return false;
+    }
+
+    // V17.88 — die im Prozess-Menü verfügbaren Werkstatt-Prozesse: in schöpfer ALLE besessenen Werkstatt-
+    // Baupläne (frei), sonst nur die in der Welt platzierten + nahen. Jeder Eintrag trägt die Station, ihre
+    // Domäne-Op + den Substanz-Präzisions-Cap. So SIEHT der Spieler „Esse · schmieden 0.93" + lernt: bessere
+    // Werkstatt → höherer Cap (die Rekursion). Die HAND ist immer separat verfügbar (applyOpToPart).
+    _workshopProcessesForMenu() {
+        const mode = this.getGameMode ? this.getGameMode() : "frieden";
+        const out = [];
+        const seen = new Set();
+        const consider = (stationName) => {
+            if (seen.has(stationName)) return;
+            const station = this.state.blueprints[stationName];
+            if (!station || station.role !== "workshop-station") return;
+            const domain = this._computeWorkshopDomain(station);
+            const proc = this._domainProcess(domain);
+            if (!proc) return;
+            seen.add(stationName);
+            out.push({
+                stationName,
+                label: station.label || stationName,
+                domain,
+                opClass: proc.opClass,
+                opName: proc.opName,
+                cap: this._workshopStationPrecision(station),
+            });
+        };
+        if (mode === "schöpfer") {
+            for (const name of Object.keys(this.state.blueprints || {})) consider(name);
+        } else {
+            for (const entry of this.state.architectures || []) {
+                if (entry && entry.type && this._isWorkshopStationPlacedNear(entry.type)) consider(entry.type);
+            }
+        }
+        return out;
+    }
+
+    removePartOp(blueprintName, partIndex) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        if (!Array.isArray(bp.parts) || partIndex < 0 || partIndex >= bp.parts.length) {
+            return { ok: false, reason: "invalid_part_index" };
+        }
+        const part = bp.parts[partIndex];
+        const defLen = this._defaultPartOpChain().length;
+        if (!Array.isArray(part.opChain) || part.opChain.length <= defLen) {
+            return { ok: false, reason: "nothing_to_remove" }; // schon auf der Default-Op-Kette
+        }
+        this._recordBlueprintEdit(blueprintName);
+        part.opChain.pop();
+        this._refreshBlueprintRoleEmergent(blueprintName);
+        return { ok: true, precision: this.computePartPrecision(part), opCount: part.opChain.length };
+    }
+
+    // V17.87 (Schöpfer-Browser-Wunsch: „ein zurück button wäre hammer und allgemein nützlich, ein paar
+    // Schritte zurück und wieder nach vorn") — das volle UNDO/REDO im Bauplan-Editor. Eine reaktive
+    // Editor-Schicht (NICHT persistiert — eine Sitzungs-Geschichte, wie der opChain-Verlauf, aber über
+    // ALLE Editor-Akte: Part hinzu/weg/ändern, Op anwenden/entfernen, Verbindung hinzu/weg). Jede
+    // Mutation ruft `_recordBlueprintEdit` (schnappt den Vor-Zustand), undo/redo tauschen zwischen den
+    // Stapeln. Nur eigene Baupläne (Built-ins sind unveränderlich → keine Geschichte).
+    _blueprintEditHistory(name) {
+        if (!this.state.blueprintEditHistory) this.state.blueprintEditHistory = {};
+        if (!this.state.blueprintEditHistory[name]) this.state.blueprintEditHistory[name] = { undo: [], redo: [] };
+        return this.state.blueprintEditHistory[name];
+    }
+
+    // Der editierbare Zustand eines Bauplans (Parts + Verbindungen + Rolle), tief geklont.
+    _snapshotBlueprintEdit(name) {
+        const bp = (this.state.blueprints && this.state.blueprints[name]) || {};
+        return {
+            parts: JSON.parse(JSON.stringify(bp.parts || [])),
+            connections: bp.connections ? JSON.parse(JSON.stringify(bp.connections)) : undefined,
+            role: bp.role,
+            roleManual: bp.roleManual,
+        };
+    }
+
+    // VOR jeder Mutation aufgerufen: schnappt den aktuellen (Vor-Mutations-)Zustand auf den Undo-Stapel,
+    // verwirft den Redo-Zweig (ein neuer Edit gabelt die Geschichte). Bounded (max 50 Schritte).
+    _recordBlueprintEdit(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || bp.builtIn) return; // Built-ins werden nicht editiert → keine Geschichte
+        const hist = this._blueprintEditHistory(name);
+        hist.undo.push(this._snapshotBlueprintEdit(name));
+        if (hist.undo.length > 50) hist.undo.shift();
+        hist.redo.length = 0;
+    }
+
+    // Stellt einen Schnappschuss wieder her (Parts + Verbindungen + Rolle direkt — der Schnappschuss ist
+    // ein konsistenter Vor-Zustand, kein Re-Emergieren nötig).
+    _restoreBlueprintEdit(name, snap) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || !snap) return;
+        bp.parts = JSON.parse(JSON.stringify(snap.parts || []));
+        if (snap.connections) bp.connections = JSON.parse(JSON.stringify(snap.connections));
+        else delete bp.connections;
+        if (snap.role === undefined) delete bp.role;
+        else bp.role = snap.role;
+        if (snap.roleManual === undefined) delete bp.roleManual;
+        else bp.roleManual = snap.roleManual;
+    }
+
+    canUndoBlueprintEdit(name) {
+        const h = this.state.blueprintEditHistory && this.state.blueprintEditHistory[name];
+        return !!(h && h.undo.length);
+    }
+
+    canRedoBlueprintEdit(name) {
+        const h = this.state.blueprintEditHistory && this.state.blueprintEditHistory[name];
+        return !!(h && h.redo.length);
+    }
+
+    undoBlueprintEdit(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || bp.builtIn) return { ok: false, reason: "not_editable" };
+        const hist = this._blueprintEditHistory(name);
+        if (!hist.undo.length) return { ok: false, reason: "nothing_to_undo" };
+        hist.redo.push(this._snapshotBlueprintEdit(name)); // der aktuelle Zustand → Redo
+        this._restoreBlueprintEdit(name, hist.undo.pop());
+        return { ok: true, undoLeft: hist.undo.length, redoLeft: hist.redo.length };
+    }
+
+    redoBlueprintEdit(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || bp.builtIn) return { ok: false, reason: "not_editable" };
+        const hist = this._blueprintEditHistory(name);
+        if (!hist.redo.length) return { ok: false, reason: "nothing_to_redo" };
+        hist.undo.push(this._snapshotBlueprintEdit(name)); // der aktuelle Zustand → Undo
+        this._restoreBlueprintEdit(name, hist.redo.pop());
+        return { ok: true, undoLeft: hist.undo.length, redoLeft: hist.redo.length };
+    }
+
+    // V17.85 (Schöpfer-Browser-Befund: „die Spitzhacke scheint ein Bauwerk zu bleiben") — die ANGEZEIGTE
+    // Rolle: ein deklarierter Override gilt (roleManual = Spieler-Intent ODER eine built-in-Saat-Rolle =
+    // Designer-Intent, beide autoritativ wie V17.70); sonst die EMERGENTE Rolle (computeBlueprintRole),
+    // damit ein ROLLENLOSER Bauplan (eine Klingen-Form ohne deklarierte Rolle) seine WAHRE Rolle
+    // „Werkzeug" zeigt, nicht den „Bauwerk"-Default (bp.role war undefined → DEFAULT, obwohl
+    // computeBlueprintRole längst „tool" sagt — der Spitzhacke-Befund). Eine built-in-Rüstung
+    // (role:"armor", Substanz-Zwilling architecture) bleibt „Rüstung" (die Saat ist der Intent).
+    _displayRole(bp) {
+        if (!bp) return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        if ((bp.roleManual || bp.builtIn) && bp.role) return bp.role;
+        return this.computeBlueprintRole(bp);
+    }
     // computePartTags(part): pro Part die aktivierten Tags (Form × Material).
     // Werte 0..3, der Bereich aus FORM_TAG_ACTIVATION × MATERIAL_TAG (0..1).
     // Unbekannte Shape (z. B. "blueprint") oder fehlendes Material → leeres
@@ -33234,6 +33643,7 @@ class AnazhRealm {
         }
         const valid = this.validateBlueprintConnections([connection], bp.parts.length);
         if (valid.length === 0) return { ok: false, reason: "invalid_connection" };
+        this._recordBlueprintEdit(name); // V17.87 — Edit-Verlauf
         bp.connections.push(valid[0]);
         return { ok: true, index: bp.connections.length - 1 };
     }
@@ -33242,6 +33652,7 @@ class AnazhRealm {
         const bp = this.state.blueprints[name];
         if (!bp || bp.builtIn) return false;
         if (!Array.isArray(bp.connections) || index < 0 || index >= bp.connections.length) return false;
+        this._recordBlueprintEdit(name); // V17.87 — Edit-Verlauf
         bp.connections.splice(index, 1);
         return true;
     }
@@ -33367,12 +33778,106 @@ class AnazhRealm {
     // Vektor, viele Leser.
     _blueprintProductVector(bp) {
         const v = Object.assign({}, this.computeCompoundTags(bp) || {});
+        // V17.90 (resonanz-system.md §2 — die SÄTTIGUNGS-Heilung): die Material-Tags kommen aus
+        // computeCompoundTags als MAX(aktivierung[0..3] · materialTag[0..1]) ∈ [0..3] — also auf einer
+        // GANZ ANDEREN Skala als die Form-Achsen (alle [0..1]). Folge: dichte (bis 2.7) ÜBERSTIMMT die
+        // Form (pointedFraction bis 1) in JEDER Resonanz → ein Eisen-Block resoniert „Rüstung" stärker als
+        // eine Eisen-Klinge „Waffe", und das Spektrum sättigt (viele Rollen bei 1.0 = der „blass"-Befund).
+        // HEILUNG: die Material-Tags auf [0..1] normalisieren (÷ Aktivierungs-Decke) → jede Achse ist „wie
+        // stark drückt dieses Werk diese Qualität aus" auf EINER Skala → die FORM konkurriert mit dem
+        // MATERIAL, die Signatur-GEWICHTE bestimmen die Rolle (nicht die rohe Magnitude). Die Material-
+        // MAGNITUDE (Eisen dichter als Holz) lebt weiter in STAT_FROM_TAGS (die Roh-Kraft); hier zählt das
+        // PROFIL. Nur in _blueprintProductVector (die Resonanz-Leser) — computeCompoundTags bleibt roh
+        // (Spawn-Affinität/Emotion lesen die volle Magnitude).
+        const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM || 3;
+        for (const k of AnazhRealm.MATERIAL_TAG_KEYS) {
+            v[k] = Math.max(0, Math.min(1, (v[k] || 0) / norm));
+        }
         v.bodyShape = this._isBodyShaped(bp) ? 1 : 0;
         v.portalShape = this._isPortalShaped(bp) ? 1 : 0;
+        // V17.90 (resonanz-system.md §3.4 + CLAUDE.md-Lehre „eine KONJUNKTION legt man in eine 0/1-FEATURE-
+        // Achse"): eine SEELE ist ein LEBENDIGER Körper — bodyShape ALLEIN reicht nicht (ein Brustpanzer ist
+        // körper-förmig + symmetrisch, aber TOT → er läse fälschlich soul). `livingBody` = Körper-Form UND
+        // lebendiges MATERIAL. WICHTIG: das compound-`lebendig` taugt hier NICHT — eine BOX maskiert lebendig
+        // (FORM_TAG_ACTIVATION[box][lebendig]=0) auch bei fleisch → ein fleisch-Körper hätte compound-lebendig 0
+        // wie ein Metall-Panzer. Der Unterschied lebendig/tot liegt im MATERIAL (fleisch lebt, Metall nicht) →
+        // wir lesen das UNMASKIERTE Material-lebendig (MAX über die Parts). So wird ein fleisch-Körper soul, ein
+        // Metall-Panzer nicht — egal welche Form die Parts haben.
+        let maxMatLebendig = 0;
+        const _mats = this.state.materials || {};
+        for (const p of bp.parts || []) {
+            const ml = (_mats[p.material] && _mats[p.material].tags && _mats[p.material].tags.lebendig) || 0;
+            if (ml > maxMatLebendig) maxMatLebendig = ml;
+        }
+        v.livingBody = v.bodyShape === 1 && maxMatLebendig > 0.3 ? 1 : 0;
         // S10 (kampf-plan §11.10) — die Katalysator-Geometrie: der Anteil spitzer/klingen-Parts (W2). Eine
         // weitere Achse des EINEN Produkt-Vektors (die Rollen-Resonanz ignoriert sie, die Op-Resonanz liest sie).
         v.pointedFraction = this._blueprintPointedFraction(bp);
+        // U1 (resonanz-system.md §2.2) — die räumlichen Form-Achsen (die 5 Prinzipien §5.2) als numerische
+        // Achsen DESSELBEN Vektors. Die Helfer existieren; hier in den Vektor gehoben, damit JEDE Lesart
+        // (Rolle/Stat/Affordanz) die volle FORM liest, nicht nur die Material-Tags. Additiv: keine bestehende
+        // Signatur referenziert sie (U2 webt sie ein) → kein Regress.
+        const ext = this._compoundVisualExtent(bp);
+        const dims = [ext.dx || 0, ext.dy || 0, ext.dz || 0].sort((a, b) => b - a);
+        const longest = dims[0] || 0;
+        const middle = Math.max(dims[1] || 0, 0.001);
+        v.elongation = Math.max(0, Math.min(1, (longest / middle - 1) / 3)); // Nadel/Klinge/Stab vs Klotz
+        // hohlraum: wie viel des Hüll-Volumens NICHT mit Part-Masse gefüllt ist (Behälter/Ring vs Vollkörper)
+        let partVol = 0;
+        for (const p of bp.parts || []) {
+            const s = p.size || { x: 1, y: 1, z: 1 };
+            partVol += Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1));
+        }
+        const extVol = (ext.dx || 0) * (ext.dy || 0) * (ext.dz || 0);
+        v.hollowness = extVol > 0.001 ? Math.max(0, Math.min(1, 1 - partVol / extVol)) : 0;
+        v.axialSymmetry = (this._compoundSymmetry(bp) || {}).ratio || 0; // Symmetrieachse trägt Alignment
+        v.spread = this._compoundSpread(bp); // Trag-Basis (Fahrzeug/Bauwerk) vs Säule (Mast/Stab)
         return v;
+    }
+
+    // U1 (resonanz-system.md §2.2) — die Standflächen-Spreizung als 0–1-Achse (Trag-Basis vs Säule): die
+    // _isMoveable-Logik extrahiert — wie weit die unteren (Stütz-)Parts in der x-z-Ebene spreizen, relativ
+    // zur Compound-Breite. Eine Säule (Stamm-Stapel) ~0; eine Trag-Basis (Räder/Beine/Fundament) spreizt.
+    _compoundSpread(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 2) return 0;
+        const support = this._partsBelowMidline(bp, 0.5);
+        if (support.length < 2) return 0;
+        const bbox = this._compoundBBox(bp);
+        if (!bbox) return 0;
+        let sMinX = Infinity,
+            sMaxX = -Infinity,
+            sMinZ = Infinity,
+            sMaxZ = -Infinity;
+        for (const p of support) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            const px = pos.x || 0,
+                pz = pos.z || 0;
+            if (px < sMinX) sMinX = px;
+            if (px > sMaxX) sMaxX = px;
+            if (pz < sMinZ) sMinZ = pz;
+            if (pz > sMaxZ) sMaxZ = pz;
+        }
+        const compW = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z, 0.001);
+        return Math.max(0, Math.min(1, Math.max(sMaxX - sMinX, sMaxZ - sMinZ) / compW));
+    }
+
+    // V17.90 (resonanz-system.md §1 + Schöpfer-Befund „größer = stärker, doch 3× größer = identische Werte"):
+    // die MASSE/GRÖSSE eines Werks verstärkt seine Wucht. Bis hier war die Wirkung GRÖSSEN-BLIND (die Compound-
+    // Tags sind MAX-aggregiert → eine 3× größere gleich-materielle Klinge gab dieselben Stats). Der Größen-
+    // Faktor liest das Hüll-Volumen (gegen eine Referenz, sanfte Potenz, gebounded): ein größeres Werk → mehr
+    // Schaden/Rückschlag/Verteidigung, aber TRÄGER (geringeres Tempo) — der vision-treue Trade-off (eine riesige
+    // Keule ist mächtig + langsam). Zentriert ~1.0 für ein typisches Werk → Modulation, kein Dominator. Wirkt
+    // konsistent in der Werte-Anzeige UND im Ausrüstungs-Fold (ein größeres gehaltenes Gerät trägt schwerer).
+    _compoundSizeFactor(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return 1;
+        const ext = this._compoundVisualExtent(bp);
+        const vol = Math.max(0.0001, (ext.dx || 0) * (ext.dy || 0) * (ext.dz || 0));
+        const ref = AnazhRealm.SIZE_STAT_REF_VOLUME || 0.15;
+        const exp = AnazhRealm.SIZE_STAT_EXPONENT || 0.2;
+        const f = Math.pow(vol / ref, exp);
+        const lo = AnazhRealm.SIZE_STAT_MIN || 0.7;
+        const hi = AnazhRealm.SIZE_STAT_MAX || 1.7;
+        return Math.max(lo, Math.min(hi, f));
     }
 
     // R3 (kampf-plan §11.10) — die intrinsische Rolle als ARGMAX der Resonanz des Produkt-Vektors gegen die
@@ -33381,6 +33886,22 @@ class AnazhRealm {
     // „architecture" ist eine positive Signatur (dichte+harte Struktur) — ein Stein-Tempel resoniert sie stärker
     // als soul (DER HEAL). Bleibt alles unter dem Floor → architecture (Default).
     _computeFormRole(bp) {
+        // U4 (resonanz-system.md §5) — eine greifbare GERÄTE-Form (spitz/griff-elongiert, klein) wird über die
+        // FORM als Waffe/Werkzeug klassifiziert, NICHT als Bauwerk — der Substanz-Zwilling Klinge/Bauwerk (beide
+        // dicht+hart) wird über die FORM getrennt (V17.70-Klasse: die Substanz allein trennt sie nicht; Metall
+        // resoniert dicht+hart wie ein Bauwerk, aber eine spitze Klinge IST ein Gerät).
+        // EHRLICH eng (vision-treu): nur eine greifbare KLINGE/SPIKE (spitz UND gestreckt) ist EINDEUTIG ein
+        // Gerät (eine scharfe Klinge) → Waffe/Werkzeug. Ein spitzes KOMPAKTES Ding (Kristall-Cluster) bleibt
+        // Bauwerk; ein stumpfes elongiertes (Stab/Säule/Körper) bleibt den Form-Rollen — die FORM trennt die
+        // Klinge vom Cluster (spitz+kompakt) UND von der Säule (stumpf+elongiert), beides Substanz-Zwillinge.
+        if (this._isGraspableBladeForm(bp)) return this._argmaxImplementRole(bp);
+        // sonst: die intrinsischen Form-Rollen (soul/portal/consumable/architecture) — BEWUSST konservativ
+        // (Welt-Strukturen → architecture als sicherer Default; V17.68 an den 12 Built-ins gemessen). Sie lesen
+        // jetzt denselben NORMALISIERTEN Produkt-Vektor (A1) wie Fit/Spektrum — die Konvergenz ist der EINE
+        // konsistent skalierte Vektor (resonanz-system.md §2), nicht ein einzelnes Konstanten-Objekt; die
+        // Signatur-GEWICHTE bleiben pro Leser verschieden (Klassifikation konservativ, Fit/Spektrum reich).
+        // soul liest `livingBody` (V17.90 — ein toter Körper-Panzer ist KEINE Seele); portal braucht die
+        // Ring-FORM (ein magisches Kristall ohne Ring ist kein Tor).
         const v = this._blueprintProductVector(bp);
         const sigs = AnazhRealm.FORM_ROLE_SIGNATURES;
         let best = AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
@@ -33389,6 +33910,24 @@ class AnazhRealm {
             const score = this._blueprintResonance(v, sigs[role]);
             if (score > bestScore) {
                 bestScore = score;
+                best = role;
+            }
+        }
+        return best;
+    }
+
+    // U4 — die GERÄTE-Rolle aus der Form: argmax der NORMIERTEN Resonanz (raw/ref, damit die Signatur-Skalen
+    // vergleichbar sind) unter weapon/tool — eine scharfe/spitze Klinge → Waffe, ein stumpfes/breites → Werkzeug.
+    _argmaxImplementRole(bp) {
+        const v = this._blueprintProductVector(bp);
+        const cfg = AnazhRealm.QUALITY_ROLE_FIT;
+        let best = "tool";
+        let bestNorm = -Infinity;
+        for (const role of ["weapon", "tool"]) {
+            const raw = this._blueprintResonance(v, AnazhRealm.ROLE_SIGNATURES[role]);
+            const norm = raw / ((cfg.refs && cfg.refs[role]) || 3.0);
+            if (norm > bestNorm) {
+                bestNorm = norm;
                 best = role;
             }
         }
@@ -35553,6 +36092,43 @@ class AnazhRealm {
             this._updateHotbarHighlight();
             return;
         }
+        // V17.74 Welle 1b (kampf-plan §11.5) — DER MINECRAFT-HOTBAR-GATE: die Natur des Bauplans (aus
+        // Rolle + Form AUSGELESEN, kein Hand-Flag) entscheidet. Eine PLATZIERBARE Welt-Struktur bekommt
+        // das Platzier-Phantom (unten); alles andere (greifbares Gerät / Rüstung / Seele / Trank) geht
+        // NICHT als Struktur in die Welt — es wird IN DIE HAND genommen / an den Körper, KEIN Platzier-
+        // Schatten. Re-Auswahl des schon gehaltenen Slots → ablegen (Toggle, wie der Bau-Modus-Toggle).
+        if (!this._isPlaceableBlueprint(this.state.blueprints[blueprintName])) {
+            this._clearBuildMode(); // kein Phantom
+            bm.slotIndex = idx;
+            const heldNow = this.state.player && this.state.player.equipped && this.state.player.equipped.held;
+            const label = this.state.blueprints[blueprintName].label || blueprintName;
+            if (heldNow === blueprintName) {
+                this.equipHeld(null); // schon in der Hand → ablegen (Faust)
+                this.log(`Abgelegt: ${label}`, "INFO");
+            } else {
+                // S3-B — der Spieler-Pfad: ein ungeschmiedetes Gerät wird hier GESCHMIEDET (zahlt
+                // pfad/frieden), ein geschmiedetes frei in die Hand genommen.
+                const result = this.wieldBlueprint(blueprintName);
+                if (!result.ok) {
+                    if (result.reason === "not_enough_material") {
+                        const missingStr = Object.entries(result.missing || {})
+                            .map(([m, n]) => `${n}× ${m}`)
+                            .join(", ");
+                        this.log(
+                            `In die Hand: Schmieden nötig — fehlt ${missingStr || "Material"} (⚒ Werkstatt).`,
+                            "INFO"
+                        );
+                    } else {
+                        this.log(`In die Hand fehlgeschlagen: ${result.reason}`, "INFO");
+                    }
+                } else {
+                    this.log(`In der Hand: ${label} (Slot ${idx + 1})`, "INFO");
+                }
+            }
+            this._updateHotbarHighlight();
+            if (typeof this.renderPlayerEquipUI === "function") this.renderPlayerEquipUI();
+            return;
+        }
         // Altes Phantom wegräumen, falls Bauplan-Wechsel.
         if (bm.phantomMesh && this.state.scene) {
             this.state.scene.remove(bm.phantomMesh);
@@ -35757,6 +36333,43 @@ class AnazhRealm {
             }
         }
         return { ok: false, neededDomain: needed };
+    }
+
+    // V17.76 Welle 2 (kampf-plan §11.10, S7-B) — die WERKSTATT als Präzisions-Quelle: WIE fein eine
+    // Station Werke fertigt, emergiert aus ihrer SUBSTANZ (Material × Form — eine dichtere, härtere Esse
+    // hält feinere Toleranzen), NICHT aus ihrer Crafting-Qualität (das wäre zirkulär: eine mit Basis-
+    // Werkzeug gebaute Esse cappte bei Basis-Präzision → kein Aufstieg). So ist die Rekursion „bessere
+    // Materialien → bessere Esse → höherer Cap" henne-ei-frei + vision-treu (der Hylomorphismus, eine
+    // Ebene weiter). Alle Werte browser-justierbar (AnazhRealm.WORKSHOP_PRECISION).
+    _workshopStationPrecision(bp) {
+        const t = this.computeCompoundTags(bp) || {};
+        const cfg = AnazhRealm.WORKSHOP_PRECISION;
+        // dichte über dichteRef normalisiert (die Compound-dichte reicht bis ~2.7) → ein dichteres Material
+        // DIFFERENZIERT, statt bei 1 zu sättigen; härte ist schon ~[0,1]. So zählt „dichter UND härter".
+        const solid = Math.min(1, (t.dichte || 0) / (cfg.dichteRef || 1));
+        const hard = Math.min(1, t.härte || 0);
+        return Math.max(0, Math.min(cfg.max, cfg.base + cfg.fromDichte * solid + cfg.fromHärte * hard));
+    }
+
+    // V17.76 Welle 2 — die beste Präzision, die eine Welt-Werkstatt der gegebenen Domäne in
+    // WORKSHOP_PROXIMITY_M bietet (Substanz, S7-B-emergent); 0 wenn keine passende Station nah ist.
+    _nearbyWorkshopStationPrecision(domain, atPos) {
+        if (!domain || !atPos) return 0;
+        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M || 10;
+        const r2 = radius * radius;
+        let best = 0;
+        for (const entry of this.state.architectures || []) {
+            const wbp = this.state.blueprints && this.state.blueprints[entry.type];
+            if (!wbp || wbp.role !== "workshop-station" || !entry.position) continue;
+            if (this._computeWorkshopDomain(wbp) !== domain) continue;
+            const dx = entry.position.x - atPos.x;
+            const dy = entry.position.y - atPos.y;
+            const dz = entry.position.z - atPos.z;
+            if (dx * dx + dy * dy + dz * dz > r2) continue;
+            const prec = this._workshopStationPrecision(wbp);
+            if (prec > best) best = prec;
+        }
+        return best;
     }
 
     confirmBuild() {
@@ -36322,6 +36935,117 @@ class AnazhRealm {
         if (prof.cutPower > prof.minePower * 1.3) return "Klinge";
         if (prof.minePower > prof.cutPower * 1.3) return "Brecher";
         return "Gerät";
+    }
+
+    // V17.74 Welle 1b — die VISUELLE Spanne (positions ± size, größen-bewusst), anders als
+    // _compoundBBox (positions-only — das unterschätzt z.B. einen Wasserfall: Klippe bei y=4, aber
+    // 8 m hoch). Für den greifbar-vs-groß-Schalter braucht es die echte Ausdehnung. Cheap (O(parts),
+    // ignoriert Rotation — für die Greif-Entscheidung genau genug).
+    _compoundVisualExtent(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return { dx: 0, dy: 0, dz: 0 };
+        let minX = Infinity,
+            minY = Infinity,
+            minZ = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity,
+            maxZ = -Infinity;
+        for (const p of bp.parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            const sz = p.size || { x: 1, y: 1, z: 1 };
+            const hx = Math.abs(sz.x || 1) / 2,
+                hy = Math.abs(sz.y || 1) / 2,
+                hz = Math.abs(sz.z || 1) / 2;
+            const px = pos.x || 0,
+                py = pos.y || 0,
+                pz = pos.z || 0;
+            if (px - hx < minX) minX = px - hx;
+            if (px + hx > maxX) maxX = px + hx;
+            if (py - hy < minY) minY = py - hy;
+            if (py + hy > maxY) maxY = py + hy;
+            if (pz - hz < minZ) minZ = pz - hz;
+            if (pz + hz > maxZ) maxZ = pz + hz;
+        }
+        return { dx: maxX - minX, dy: maxY - minY, dz: maxZ - minZ };
+    }
+
+    _compoundVisualSpan(bp) {
+        const e = this._compoundVisualExtent(bp);
+        return Math.max(e.dx, e.dy, e.dz);
+    }
+
+    // V17.74 Welle 1b (kampf-plan §11.5) — WIE wird ein Bauplan BENUTZT? Aus Rolle + Form AUSGELESEN
+    // (kein Hand-Flag — das Minecraft-Modell: die Natur des Dings bestimmt die Aktion; EIN Mechanismus
+    // [Hotbar/Drawer], rollen-getrieben = Freiheit + robust + intuitiv). Ein Bauwerk → platzieren, ein
+    // greifbares Gerät → in die Hand, Rüstung → tragen, eine Seele → verkörpern, ein Trank → brauen+wirken.
+    // Der Gerät-vs-Bauwerk-Substanz-Zwilling (V17.70) wird über die FORM getrennt (greifbar ≤ IMPLEMENT_
+    // GRASP_SPAN_M → Hand, sonst Welt).
+    _blueprintUseKind(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return "place";
+        const role = bp.role;
+        if (role === "armor") return "wear";
+        if (role === "soul") return "embody";
+        if (role === "consumable") return "drink";
+        if (role === "tool" || role === "weapon") return "hold"; // explizite Geräte
+        if (role === "portal" || role === "workshop-station" || role === "machine") return "place"; // Welt-Apparate
+        // architecture / rollenlos: die FORM entscheidet — der stein_block-vs-Spitzhacke-Zwilling (beide
+        // klein + rollenlos) wird über die WERKZEUG-Form getrennt. Default „place" (konservativ — bricht
+        // keinen Block); „hold" NUR wenn die Form ein Gerät verrät: eine SPITZE/Klinge (pointedFraction>0)
+        // ODER ein länglicher GRIFF (eine Achse dominiert klar — kein Würfel, kein flacher Block).
+        // U4 — die FORM entscheidet (reuse _isGraspableImplementForm): spitz/klingen ODER griff-elongiert,
+        // klein genug für die Hand → „hold"; sonst „place" (konservativ, bricht keinen Block).
+        return this._isGraspableImplementForm(bp) ? "hold" : "place";
+    }
+
+    // U4 (resonanz-system.md §5) — ist die FORM ein GREIFBARES Implement? Klein genug für die Hand
+    // (IMPLEMENT_GRASP_SPAN_M) + spitz/klingen (pointedFraction>0) ODER griff-elongiert (eine Achse dominiert
+    // ≥2.2×). Reine FORM-Frage (liest NICHT die Rolle) → nutzbar in computeBlueprintRole (der Substanz-
+    // Zwilling Klinge/Bauwerk wird über die Form getrennt) UND in _blueprintUseKind (V17.74 Hotbar-Gate).
+    _isGraspableImplementForm(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return false;
+        const e = this._compoundVisualExtent(bp);
+        const span = Math.max(e.dx, e.dy, e.dz);
+        if (span > AnazhRealm.IMPLEMENT_GRASP_SPAN_M) return false; // zu groß für die Hand → Welt-Struktur
+        const dims = [e.dx, e.dy, e.dz].sort((a, b) => b - a);
+        const elongated = dims[0] / Math.max(1e-4, dims[1]) >= 2.2;
+        const pointed = this._blueprintPointedFraction(bp) > 0;
+        return pointed || elongated;
+    }
+
+    // U4 (resonanz-system.md §5) — ist die FORM eine greifbare KLINGE/SPIKE: spitz UND gestreckt (eine
+    // scharfe, längliche Klinge — das EINDEUTIGE Gerät)? Strenger als _isGraspableImplementForm (das pointed
+    // ODER elongated für den Hotbar-Gate nutzt): für die ROLLEN-Klassifikation braucht es BEIDES, damit ein
+    // spitzer Kristall-Cluster (kompakt) UND ein stumpfer Stab (elongiert) NICHT fälschlich zum Gerät werden.
+    _isGraspableBladeForm(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return false;
+        const e = this._compoundVisualExtent(bp);
+        if (Math.max(e.dx, e.dy, e.dz) > AnazhRealm.IMPLEMENT_GRASP_SPAN_M) return false;
+        const dims = [e.dx, e.dy, e.dz].sort((a, b) => b - a);
+        const elongated = dims[0] / Math.max(1e-4, dims[1]) >= 2.2;
+        return elongated && this._blueprintPointedFraction(bp) > 0;
+    }
+
+    // V17.74 — ist der Bauplan eine PLATZIERBARE Welt-Struktur (Phantom) vs ein in-die-Hand/an-den-
+    // Körper-Ding? Der Hotbar-Gate-Schalter (Bauwerk → Platzier-Phantom, alles andere → benutzt).
+    _isPlaceableBlueprint(bp) {
+        return this._blueprintUseKind(bp) === "place";
+    }
+
+    // V17.75 — die MATERIAL-Sichtbarkeit für die Mach-Akte (schmieden/weben/formen/verkörpern): ein kurzer
+    // Suffix am Dropdown-Eintrag, der den Kosten-Status auf einen BLICK zeigt (der Profi-/Minecraft-Weg:
+    // man SIEHT, was fehlt, BEVOR man wählt — kein stiller Fehlschlag mehr). frei (schöpfer ODER schon
+    // geschmiedet) → kein Marker · Material da → „· ✓" (bereit) · es fehlt → „· ✗ fehlt 12× stein" (das
+    // Fehlende sticht heraus). Reuse checkBuildCost (dieselbe Volumen-Formel, die der Mach-Akt zieht).
+    _makeActCostSuffix(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return "";
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode === "schöpfer" || Number.isFinite(bp.forgedPrecision)) return ""; // frei → kein Marker
+        const check = this.checkBuildCost(name);
+        if (check.ok) return " · ✓"; // Material da → bereit zum Schmieden
+        const missing = Object.entries(check.missing || {})
+            .map(([m, n]) => `${n}× ${m}`)
+            .join(", ");
+        return ` · ✗ fehlt ${missing}`;
     }
 
     // S1 (kampf-plan §11.7) — die Werkstatt erkennt JEDE Lesart: die emergente FÄHIGKEIT eines
@@ -37532,8 +38256,13 @@ class AnazhRealm {
         if (typeof document === "undefined") return;
         const slots = document.querySelectorAll("#hotbar .hotbar-slot");
         const bm = this.state.buildMode;
+        // V17.74 — der ausgewählte Slot ist hervorgehoben: entweder der aktive Bau-Modus-Slot
+        // (Platzier-Phantom) ODER der Slot, dessen Bauplan gerade in der Hand ist (Hotbar-Gate).
+        const held = this.state.player && this.state.player.equipped && this.state.player.equipped.held;
         slots.forEach((slot, i) => {
-            slot.classList.toggle("active", bm.active && bm.slotIndex === i);
+            const isBuild = bm.active && bm.slotIndex === i;
+            const isHeld = !!held && this.state.hotbar[i] === held;
+            slot.classList.toggle("active", isBuild || isHeld);
         });
     }
 
@@ -37618,6 +38347,11 @@ class AnazhRealm {
             builtIn: false,
             parts: JSON.parse(JSON.stringify(source.parts || [])),
         };
+        // V17.85 — der Klon ist ein Nicht-Built-in → er trägt seine EMERGENTE Rolle (wie jeder
+        // Nicht-Built-in nach _refreshBlueprintRoleEmergent). Ohne das blieb bp.role undefined →
+        // der Klon einer rollenlosen Klinge (Spitzhacke) zeigte „Bauwerk" + alle bp.role-Leser
+        // (fertigeBlueprint-Routing, Use-Kind) sahen den Default, statt der Form-Rolle „Werkzeug".
+        this._refreshBlueprintRoleEmergent && this._refreshBlueprintRoleEmergent(cleanNew);
         this.log(`Bauplan '${sourceName}' nach '${cleanNew}' geklont`, "INFO");
         return true;
     }
@@ -37662,6 +38396,7 @@ class AnazhRealm {
             this.log(`addPart: '${name}' ist Built-in — bitte erst klonen`, "ERROR");
             return false;
         }
+        this._recordBlueprintEdit(name); // V17.87 — Edit-Verlauf
         // Default-Werte für ein neues Part, falls nicht alles übergeben wird.
         // Welle 4 Phase 1: Default-Material „stein", Color folgt der Material-
         // Farbe wenn der Caller nichts vorgibt.
@@ -37686,6 +38421,7 @@ class AnazhRealm {
         const bp = this.state.blueprints[name];
         if (!bp || bp.builtIn) return false;
         if (index < 0 || index >= bp.parts.length) return false;
+        this._recordBlueprintEdit(name); // V17.87 — Edit-Verlauf
         bp.parts.splice(index, 1);
         // Welle 5 A — Connections referenzieren Part-Indizes. Beim Lösch:
         //   (a) Connections, die den gelöschten Part berühren, verschwinden.
@@ -37710,6 +38446,7 @@ class AnazhRealm {
         const bp = this.state.blueprints[name];
         if (!bp || bp.builtIn) return false;
         if (index < 0 || index >= bp.parts.length) return false;
+        this._recordBlueprintEdit(name); // V17.87 — Edit-Verlauf
         const part = bp.parts[index];
         // Patch ist ein Teil-Objekt; wir mergen rekursiv für position/size/
         // rotation, damit man einzelne Koordinaten verändern kann.
@@ -37804,23 +38541,21 @@ class AnazhRealm {
     // Sub-Methoden (das erprobte `_workshopRenderStatsPanel`-Muster, weiter
     // geschnitten). Jede Sektion baut ihren DOM-Teilbaum + hängt ihn an;
     // sie teilen nur `list`/`editor`/`ws`/`selected` — die Methoden-Parameter.
+    // V17.91 — die Werkstatt ist 3D-zentrisch: der alte einklappbare Detail-Editor (#workshop-editor mit
+    // Dropdown-Tabellen) ist ENTFERNT. Editieren geschieht im 3D (Form/Material/Farbe ziehen · Gizmo ·
+    // „Part entfernen" · Prozess-Karte aus der rechten Palette ziehen), der READOUT lebt im intuitiven
+    // #workshop-stats-panel (Rolle/Fähigkeit/Werte/Resonanz/FERTIGEN, via _workshopRenderTail →
+    // _workshopRenderStatsPanel), die Editor-Akte (Undo/Redo/Löschen/Klonen/Neu) in der Top-Leiste. Dieser
+    // Render macht nur noch: die Bauplan-Liste, den Top-Leisten-Zustand, + den Tail (Stats/Palette/Preview/Hotbar).
     _renderWorkshopDOM() {
         if (typeof document === "undefined") return;
         const list = document.getElementById("workshop-list");
-        const editor = document.getElementById("workshop-editor");
-        if (!list || !editor) return;
+        if (!list) return;
         const ws = this._ensureWorkshopState();
         this._workshopRenderBlueprintList(list, ws);
-        editor.innerHTML = "";
         const selected = this.state.blueprints[ws.selectedBlueprint];
+        this._workshopUpdateTopBarState(selected);
         if (!selected) return;
-        this._workshopRenderHeader(editor, selected);
-        this._workshopRenderToolsBox(editor);
-        this._workshopRenderPartsList(editor, selected, ws);
-        this._workshopRenderConnections(editor, selected);
-        this._workshopRenderToolRecursion(editor, selected);
-        this._workshopRenderTagsSection(editor, selected);
-        this._workshopRenderActions(editor, selected);
         this._workshopRenderTail(selected);
     }
 
@@ -37851,596 +38586,6 @@ class AnazhRealm {
             row.addEventListener("click", () => this.selectBlueprintForEdit(name));
             list.appendChild(row);
         }
-    }
-
-    _workshopRenderHeader(editor, selected) {
-        // Header mit Label + Aktionen
-        const header = document.createElement("div");
-        header.className = "workshop-header";
-        const title = document.createElement("h3");
-        title.textContent = selected.label || selected.name;
-        header.appendChild(title);
-        const status = document.createElement("span");
-        status.className = "workshop-status";
-        if (selected.builtIn) {
-            status.textContent = "Eingebaut — zum Bearbeiten klonen";
-        } else {
-            // Welle 9b — emergente Rolle live anzeigen. Manueller Override
-            // wird mit „(manuell)" markiert, sonst „(aus Werkzeugen)".
-            const role = selected.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
-            const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
-            const origin = selected.roleManual ? "manuell" : "emergent";
-            // Welle 10b — emergente Affordances (Verhaltens-Flags die aus
-            // Tag+Form-Signatur abgeleitet werden) im Status mit anzeigen.
-            const affordances = this.computeBlueprintAffordances(selected);
-            const affLabels = AnazhRealm.AFFORDANCE_LABELS || {};
-            const affList = Object.keys(affordances)
-                .map((k) => affLabels[k] || k)
-                .join(" · ");
-            const affPart = affList ? ` · ✦ ${affList}` : "";
-            status.textContent = `${selected.parts.length} Parts · Rolle: ${roleLabel} (${origin})${affPart}`;
-        }
-        header.appendChild(status);
-        editor.appendChild(header);
-    }
-
-    _workshopRenderToolsBox(editor) {
-        // Welle 4 Phase 3 — Werkzeug-Sammlung. Eine Liste der besessenen
-        // Tools mit ihrem Cap. Sichtbarmacht, womit Spieler aktuell arbeiten
-        // kann. Read-only in Phase 3 (eigene Werkzeuge gehen in Welle 6 auf).
-        const toolsBox = document.createElement("div");
-        toolsBox.className = "workshop-tools";
-        const toolsTitle = document.createElement("div");
-        toolsTitle.className = "workshop-tools-title";
-        toolsTitle.textContent = "Werkzeuge";
-        toolsBox.appendChild(toolsTitle);
-        const owned = this.state.player.tools || [];
-        for (const tn of owned) {
-            const t = this.state.tools[tn];
-            if (!t) continue;
-            const chip = document.createElement("span");
-            chip.className = "workshop-tool-chip";
-            // Welle 9b — Domain-Punkt als visueller Anker. Werkzeuge ohne
-            // Domain (null) bekommen keinen Punkt; Domain-Werkzeuge zeigen
-            // einen farbigen Indikator + Tooltip mit Werkstatt-Domäne.
-            if (t.domain && AnazhRealm.TOOL_DOMAIN_COLORS[t.domain]) {
-                const dot = document.createElement("span");
-                dot.className = "workshop-tool-domain-dot";
-                dot.style.background = AnazhRealm.TOOL_DOMAIN_COLORS[t.domain];
-                dot.title = AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain;
-                chip.appendChild(dot);
-            }
-            const labelSpan = document.createElement("span");
-            labelSpan.textContent = `${t.label} ${t.precisionCap.toFixed(2)}`;
-            chip.appendChild(labelSpan);
-            const domainLabel = t.domain ? AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain : "generisch";
-            chip.title = `${t.opName} (${t.opClass}) · ${domainLabel}`;
-            toolsBox.appendChild(chip);
-        }
-        editor.appendChild(toolsBox);
-    }
-
-    _workshopRenderPartsList(editor, selected, ws) {
-        // Parts-Liste — bei Built-ins nur lesbar
-        const partsDiv = document.createElement("div");
-        partsDiv.className = "workshop-parts";
-        if (selected.parts.length === 0) {
-            const empty = document.createElement("div");
-            empty.className = "workshop-empty";
-            empty.textContent = "Noch keine Parts.";
-            partsDiv.appendChild(empty);
-        }
-        for (let i = 0; i < selected.parts.length; i++) {
-            const part = selected.parts[i];
-            const row = document.createElement("div");
-            const isSelected = ws.selectedPartIdx === i;
-            row.className = "workshop-part-row" + (isSelected ? " selected" : "");
-            row.setAttribute("data-part-idx", String(i));
-            // Welle 6.B Phase 1 — Klick auf Row (außerhalb der Inputs) wechselt
-            // die Part-Selektion. Inputs müssen frei klickbar bleiben für ihre
-            // eigenen Edit-Gesten.
-            row.addEventListener("mousedown", (event) => {
-                if (event.target.closest("input, select, button")) return;
-                this._workshopSetSelection(i);
-            });
-            // Shape-Dropdown
-            const shapeSelect = document.createElement("select");
-            for (const shape of [
-                "box",
-                "sphere",
-                "cylinder",
-                "cone",
-                "pyramid",
-                "octahedron",
-                "plane",
-                "torus",
-                "helix",
-            ]) {
-                const opt = document.createElement("option");
-                opt.value = shape;
-                opt.textContent = shape;
-                if (shape === part.shape) opt.selected = true;
-                shapeSelect.appendChild(opt);
-            }
-            shapeSelect.disabled = !!selected.builtIn;
-            shapeSelect.addEventListener("change", () => {
-                this.updatePartInBlueprint(selected.name, i, { shape: shapeSelect.value });
-                this._renderWorkshopDOM();
-            });
-            row.appendChild(shapeSelect);
-            // Welle 4 Phase 1 — Material-Dropdown vor dem Color-Picker.
-            // Built-ins zeigen Material read-only; bei eigenen Bauplänen
-            // wechselt die Material-Wahl auch die Default-Farbe (recolor).
-            const materialSelect = document.createElement("select");
-            materialSelect.className = "workshop-material";
-            materialSelect.title = "Material";
-            for (const matName of Object.keys(this.state.materials || {})) {
-                const opt = document.createElement("option");
-                opt.value = matName;
-                opt.textContent = this.state.materials[matName].label || matName;
-                if (matName === (part.material || "stein")) opt.selected = true;
-                materialSelect.appendChild(opt);
-            }
-            materialSelect.disabled = !!selected.builtIn;
-            materialSelect.addEventListener("change", () => {
-                this.updatePartInBlueprint(selected.name, i, {
-                    material: materialSelect.value,
-                    recolor: true,
-                });
-                this._renderWorkshopDOM();
-            });
-            row.appendChild(materialSelect);
-            // Color-Input
-            const colorInput = document.createElement("input");
-            colorInput.type = "color";
-            const hex = "#" + (part.color || 0).toString(16).padStart(6, "0");
-            colorInput.value = hex;
-            colorInput.disabled = !!selected.builtIn;
-            colorInput.addEventListener("input", () => {
-                const num = parseInt(colorInput.value.replace("#", ""), 16);
-                this.updatePartInBlueprint(selected.name, i, { color: num });
-            });
-            row.appendChild(colorInput);
-            // Position + Size + Rotation kompakt als 9 Mini-Inputs
-            const xyzGrid = document.createElement("div");
-            xyzGrid.className = "workshop-xyz";
-            const fields = [
-                { label: "Pos X", key: "position", axis: "x" },
-                { label: "Y", key: "position", axis: "y" },
-                { label: "Z", key: "position", axis: "z" },
-                { label: "Größe X", key: "size", axis: "x" },
-                { label: "Y", key: "size", axis: "y" },
-                { label: "Z", key: "size", axis: "z" },
-                { label: "Rot X", key: "rotation", axis: "x" },
-                { label: "Y", key: "rotation", axis: "y" },
-                { label: "Z", key: "rotation", axis: "z" },
-            ];
-            for (const f of fields) {
-                const wrap = document.createElement("label");
-                wrap.className = "workshop-field";
-                const lbl = document.createElement("span");
-                lbl.textContent = f.label;
-                const input = document.createElement("input");
-                input.type = "number";
-                input.step = "0.1";
-                input.value = String((part[f.key] && part[f.key][f.axis]) || 0);
-                input.disabled = !!selected.builtIn;
-                input.addEventListener("change", () => {
-                    const v = parseFloat(input.value);
-                    if (!Number.isFinite(v)) return;
-                    this.updatePartInBlueprint(selected.name, i, {
-                        [f.key]: { [f.axis]: v },
-                    });
-                });
-                wrap.appendChild(lbl);
-                wrap.appendChild(input);
-                xyzGrid.appendChild(wrap);
-            }
-            row.appendChild(xyzGrid);
-            // Entfernen-Button
-            const delBtn = document.createElement("button");
-            delBtn.type = "button";
-            delBtn.className = "workshop-del";
-            delBtn.textContent = "×";
-            delBtn.disabled = !!selected.builtIn;
-            delBtn.addEventListener("click", () => {
-                this.removePartFromBlueprint(selected.name, i);
-                this._renderWorkshopDOM();
-            });
-            // Welle 4 Phase 3 — opChain pro Part: Liste der bisherigen Ops +
-            // Apply-Dropdown der besessenen, kompatiblen Werkzeuge. Built-in-
-            // Baupläne sind read-only (keine Apply-Buttons).
-            const opChainDiv = document.createElement("div");
-            opChainDiv.className = "workshop-opchain";
-            const precision = this.computePartPrecision(part);
-            const precHeader = document.createElement("div");
-            precHeader.className = "workshop-opchain-header";
-            precHeader.textContent = `Präzision ${precision.toFixed(2)} — Op-Kette:`;
-            opChainDiv.appendChild(precHeader);
-            const chainList = document.createElement("div");
-            chainList.className = "workshop-opchain-list";
-            const chain = Array.isArray(part.opChain) ? part.opChain : [];
-            for (const op of chain) {
-                const opRow = document.createElement("span");
-                opRow.className = "workshop-op";
-                opRow.textContent = `${op.op}(${(op.cap || 0).toFixed(2)})`;
-                opRow.title = `Werkzeug: ${op.tool}`;
-                chainList.appendChild(opRow);
-            }
-            opChainDiv.appendChild(chainList);
-            if (!selected.builtIn) {
-                const applyRow = document.createElement("div");
-                applyRow.className = "workshop-opchain-apply";
-                const toolSelect = document.createElement("select");
-                toolSelect.className = "workshop-op-tool";
-                const matName = part.material || "stein";
-                const compat = AnazhRealm.MATERIAL_OP_COMPATIBILITY[matName];
-                const ownedTools = (this.state.player.tools || [])
-                    .map((tn) => this.state.tools[tn])
-                    .filter((t) => t && (!compat || compat.includes(t.opClass)));
-                if (ownedTools.length === 0) {
-                    const noTool = document.createElement("span");
-                    noTool.textContent = "(kein passendes Werkzeug)";
-                    noTool.className = "workshop-op-empty";
-                    applyRow.appendChild(noTool);
-                } else {
-                    for (const t of ownedTools) {
-                        const opt = document.createElement("option");
-                        opt.value = t.name;
-                        opt.textContent = `${t.label} → ${t.opName} (${t.precisionCap.toFixed(2)})`;
-                        toolSelect.appendChild(opt);
-                    }
-                    const applyBtn = document.createElement("button");
-                    applyBtn.type = "button";
-                    applyBtn.className = "workshop-op-apply";
-                    applyBtn.textContent = "anwenden";
-                    applyBtn.addEventListener("click", () => {
-                        const r = this.applyOpToPart(selected.name, i, toolSelect.value);
-                        if (!r.ok) {
-                            this.log(`apply_op fehlgeschlagen: ${r.reason}`, "ERROR");
-                        }
-                        this._renderWorkshopDOM();
-                    });
-                    applyRow.appendChild(toolSelect);
-                    applyRow.appendChild(applyBtn);
-                }
-                opChainDiv.appendChild(applyRow);
-            }
-            row.appendChild(opChainDiv);
-            row.appendChild(delBtn);
-            partsDiv.appendChild(row);
-        }
-        editor.appendChild(partsDiv);
-    }
-
-    _workshopRenderConnections(editor, selected) {
-        // Welle 5 A — Verbindungen zwischen Parts. Acht Typen aus Konzept
-        // §5.1, jede mit eigener Last-Formel (Material-Tags × Kontaktfläche
-        // × Typ-Multiplier). Built-ins read-only.
-        const connectionsSection = document.createElement("div");
-        connectionsSection.className = "workshop-connections";
-        const connTitle = document.createElement("div");
-        connTitle.className = "workshop-tags-title";
-        connTitle.textContent = "Verbindungen";
-        connectionsSection.appendChild(connTitle);
-        // V8.38 — erklärt, was eine Verbindung TUT (Schöpfer-Frage: „verstehe
-        // noch nicht ganz wie die beeinflussen").
-        const connHint = document.createElement("div");
-        connHint.className = "workshop-tags-empty";
-        connHint.textContent =
-            "Eine Verbindung trägt eine Last (0–3 ★) aus Verbindungstyp × Material-Stärke × " +
-            "Kontaktfläche. Schwach (rot, <0.7) = Sollbruchstelle. Im 3D-Preview markiert ein " +
-            "farbiger Punkt jede Verbindung.";
-        connectionsSection.appendChild(connHint);
-        const connections = Array.isArray(selected.connections) ? selected.connections : [];
-        if (connections.length === 0) {
-            const empty = document.createElement("div");
-            empty.className = "workshop-tags-empty";
-            empty.textContent = "Keine Verbindungen — Parts sitzen lose im Compound.";
-            connectionsSection.appendChild(empty);
-        } else {
-            for (let ci = 0; ci < connections.length; ci++) {
-                const conn = connections[ci];
-                const ctype = AnazhRealm.CONNECTION_TYPES[conn.type];
-                const strength = this.computeConnectionStrength(conn, selected);
-                const row = document.createElement("div");
-                row.className = "workshop-conn-row";
-                const label = document.createElement("span");
-                label.className = "workshop-conn-label";
-                label.textContent = `${ctype ? ctype.label : conn.type}: #${conn.partA} ↔ #${conn.partB}`;
-                const bar = document.createElement("span");
-                bar.className = "workshop-conn-bar";
-                const stars = Math.max(0, Math.min(3, Math.round(strength)));
-                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
-                if (strength < AnazhRealm.CONNECTION_SOLID_THRESHOLD) bar.classList.add("workshop-conn-weak");
-                const num = document.createElement("span");
-                num.className = "workshop-conn-num";
-                num.textContent = strength.toFixed(2);
-                row.appendChild(label);
-                row.appendChild(bar);
-                row.appendChild(num);
-                if (!selected.builtIn) {
-                    const delConnBtn = document.createElement("button");
-                    delConnBtn.type = "button";
-                    delConnBtn.className = "workshop-conn-del";
-                    delConnBtn.textContent = "×";
-                    delConnBtn.addEventListener("click", () => {
-                        this.removeConnectionFromBlueprint(selected.name, ci);
-                        this._renderWorkshopDOM();
-                    });
-                    row.appendChild(delConnBtn);
-                }
-                connectionsSection.appendChild(row);
-            }
-        }
-        if (!selected.builtIn && selected.parts.length >= 2) {
-            const addRow = document.createElement("div");
-            addRow.className = "workshop-conn-add";
-            const typeSel = document.createElement("select");
-            typeSel.className = "workshop-conn-type";
-            for (const tname of Object.keys(AnazhRealm.CONNECTION_TYPES)) {
-                const opt = document.createElement("option");
-                opt.value = tname;
-                opt.textContent = AnazhRealm.CONNECTION_TYPES[tname].label;
-                opt.title = AnazhRealm.CONNECTION_TYPES[tname].description;
-                typeSel.appendChild(opt);
-            }
-            const aSel = document.createElement("select");
-            aSel.className = "workshop-conn-part";
-            const bSel = document.createElement("select");
-            bSel.className = "workshop-conn-part";
-            for (let pi = 0; pi < selected.parts.length; pi++) {
-                const optA = document.createElement("option");
-                optA.value = String(pi);
-                optA.textContent = `#${pi} ${selected.parts[pi].shape}`;
-                aSel.appendChild(optA);
-                const optB = optA.cloneNode(true);
-                bSel.appendChild(optB);
-            }
-            if (selected.parts.length > 1) bSel.value = "1";
-            const addBtn = document.createElement("button");
-            addBtn.type = "button";
-            addBtn.className = "workshop-conn-addbtn";
-            addBtn.textContent = "verbinden";
-            addBtn.addEventListener("click", () => {
-                const r = this.addConnectionToBlueprint(selected.name, {
-                    type: typeSel.value,
-                    partA: parseInt(aSel.value, 10),
-                    partB: parseInt(bSel.value, 10),
-                });
-                if (!r.ok) this.log(`apply_connection fehlgeschlagen: ${r.reason}`, "ERROR");
-                this._renderWorkshopDOM();
-            });
-            addRow.appendChild(typeSel);
-            addRow.appendChild(aSel);
-            addRow.appendChild(bSel);
-            addRow.appendChild(addBtn);
-            connectionsSection.appendChild(addRow);
-        }
-        editor.appendChild(connectionsSection);
-    }
-
-    _workshopRenderToolRecursion(editor, selected) {
-        // Welle 5 C — Bauplan als Werkzeug markieren + registrieren. Nur für
-        // eigene Baupläne. UI zeigt: aktuelle Bauplan-Präzision (= zukünftiger
-        // Cap), opName + opClass Inputs, „als Werkzeug registrieren"-Button.
-        // Bereits registriert → Status-Indikator + Cap-Wert.
-        if (!selected.builtIn) {
-            const toolSection = document.createElement("div");
-            toolSection.className = "workshop-tool-recursion";
-            const toolHeading = document.createElement("div");
-            toolHeading.className = "workshop-tags-title";
-            toolHeading.textContent = "Werkzeug-Rolle (Konzept §4.3)";
-            toolSection.appendChild(toolHeading);
-            const currentCap = this.computeBlueprintPrecisionCap(selected);
-            const capInfo = document.createElement("div");
-            capInfo.className = "workshop-tags-empty";
-            capInfo.textContent = `Bauplan-Präzision: ${currentCap.toFixed(2)} (wird zum Tool-Cap beim Registrieren)`;
-            toolSection.appendChild(capInfo);
-            const existingTool = this.state.tools[selected.name];
-            const isRegistered =
-                existingTool && !existingTool.builtIn && existingTool.sourceBlueprint === selected.name;
-            if (isRegistered) {
-                const registeredInfo = document.createElement("div");
-                registeredInfo.className = "workshop-tool-registered";
-                registeredInfo.textContent = `Registriert als ${existingTool.opName} (${existingTool.opClass}) — Cap ${existingTool.precisionCap.toFixed(2)}.`;
-                toolSection.appendChild(registeredInfo);
-            }
-            const toolRow = document.createElement("div");
-            toolRow.className = "workshop-tool-form";
-            const opNameInput = document.createElement("input");
-            opNameInput.type = "text";
-            opNameInput.className = "workshop-tool-opname";
-            opNameInput.placeholder = "op-name (z.B. lathe)";
-            opNameInput.maxLength = 24;
-            opNameInput.value = (selected.toolMeta && selected.toolMeta.opName) || "";
-            const opClassSel = document.createElement("select");
-            opClassSel.className = "workshop-tool-opclass";
-            for (const cls of ["subtractive", "plastic", "additive", "phaseChange"]) {
-                const opt = document.createElement("option");
-                opt.value = cls;
-                opt.textContent = cls;
-                if ((selected.toolMeta && selected.toolMeta.opClass) === cls) opt.selected = true;
-                opClassSel.appendChild(opt);
-            }
-            const registerBtn = document.createElement("button");
-            registerBtn.type = "button";
-            registerBtn.className = "workshop-tool-register";
-            registerBtn.textContent = isRegistered ? "neu registrieren" : "als Werkzeug registrieren";
-            registerBtn.addEventListener("click", () => {
-                const metaR = this.setBlueprintToolMeta(selected.name, opNameInput.value.trim(), opClassSel.value);
-                if (!metaR.ok) {
-                    this.log(`set_tool_meta fehlgeschlagen: ${metaR.reason}`, "ERROR");
-                    return;
-                }
-                const regR = this.registerBlueprintAsTool(selected.name);
-                if (!regR.ok) {
-                    this.log(`register_tool fehlgeschlagen: ${regR.reason}`, "ERROR");
-                } else {
-                    this.journalAppend(
-                        "growth",
-                        `Ein eigenes Werkzeug entstand: ${selected.name} (Cap ${regR.precisionCap.toFixed(2)}).`,
-                        { tool: selected.name, cap: regR.precisionCap }
-                    );
-                }
-                this._renderWorkshopDOM();
-            });
-            toolRow.appendChild(opNameInput);
-            toolRow.appendChild(opClassSel);
-            toolRow.appendChild(registerBtn);
-            toolSection.appendChild(toolRow);
-            editor.appendChild(toolSection);
-        }
-    }
-
-    _workshopRenderTagsSection(editor, selected) {
-        // Welle 4 Phase 2 — emergente Tag-Anzeige für den ganzen Compound.
-        // Read-only: Spieler sehen, was Form + Material zusammen aktivieren.
-        // Hinweis-Text dokumentiert die Grenze zur räumlichen Emergenz
-        // (Welle 5+). Nur einmal pro Render, nicht pro Part.
-        const tagsSection = document.createElement("div");
-        tagsSection.className = "workshop-tags";
-        const tagsTitle = document.createElement("div");
-        tagsTitle.className = "workshop-tags-title";
-        tagsTitle.textContent = "Aktive Eigenschaften";
-        tagsSection.appendChild(tagsTitle);
-        const compoundTags = this.computeCompoundTags(selected);
-        const tagKeys = AnazhRealm.MATERIAL_TAG_KEYS;
-        const anyActive = tagKeys.some((k) => (compoundTags[k] || 0) > 0);
-        if (!anyActive) {
-            const empty = document.createElement("div");
-            empty.className = "workshop-tags-empty";
-            empty.textContent = "Keine Tags aktiviert (Form × Material ergibt 0).";
-            tagsSection.appendChild(empty);
-        } else {
-            for (const tag of tagKeys) {
-                const val = compoundTags[tag] || 0;
-                if (val <= 0) continue;
-                const row = document.createElement("div");
-                row.className = "workshop-tag-row";
-                row.dataset.tag = tag;
-                const name = document.createElement("span");
-                name.className = "workshop-tag-name";
-                name.textContent = tag;
-                const bar = document.createElement("span");
-                bar.className = "workshop-tag-bar";
-                const stars = Math.min(3, Math.round(val));
-                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
-                const num = document.createElement("span");
-                num.className = "workshop-tag-num";
-                num.textContent = val.toFixed(2);
-                row.appendChild(name);
-                row.appendChild(bar);
-                row.appendChild(num);
-                tagsSection.appendChild(row);
-            }
-        }
-        // Welle 5 B — räumliche Anreicherung als zweite Strahler-Reihe.
-        // Nur Tags zeigen, deren räumlicher Wert über dem atomaren liegt
-        // (sonst hätten wir doppelte Anzeige). Erscheint nur wenn der Spieler
-        // mindestens einen pointed-Shape oder eine Kontakt-Brücke gebaut hat.
-        const spatialTags = this.computeSpatialTags(selected);
-        const spatialDeltas = [];
-        for (const tag of tagKeys) {
-            const atomar = compoundTags[tag] || 0;
-            const spatial = spatialTags[tag] || 0;
-            if (spatial > atomar + 0.01) {
-                spatialDeltas.push({ tag, atomar, spatial });
-            }
-        }
-        if (spatialDeltas.length > 0) {
-            const spatialTitle = document.createElement("div");
-            spatialTitle.className = "workshop-tags-title workshop-spatial-title";
-            spatialTitle.textContent = "Räumliche Verstärkung";
-            tagsSection.appendChild(spatialTitle);
-            for (const d of spatialDeltas) {
-                const row = document.createElement("div");
-                row.className = "workshop-tag-row workshop-spatial-row";
-                row.dataset.tag = d.tag;
-                const name = document.createElement("span");
-                name.className = "workshop-tag-name";
-                name.textContent = d.tag;
-                const bar = document.createElement("span");
-                bar.className = "workshop-tag-bar";
-                const stars = Math.min(3, Math.round(d.spatial));
-                bar.textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
-                const num = document.createElement("span");
-                num.className = "workshop-tag-num";
-                num.textContent = `${d.atomar.toFixed(2)} → ${d.spatial.toFixed(2)}`;
-                row.appendChild(name);
-                row.appendChild(bar);
-                row.appendChild(num);
-                tagsSection.appendChild(row);
-            }
-        }
-        const tagsHint = document.createElement("div");
-        tagsHint.className = "workshop-tags-hint";
-        tagsHint.textContent =
-            spatialDeltas.length > 0
-                ? "Atomar = Form × Material. Räumlich = fünf Prinzipien (§5.2): Spitze richtet, Hohlraum enthält, Symmetrieachse trägt, Kontakt überträgt, Abstände resonieren."
-                : "Atomare Schicht: pro Part. Räumliche Verstärkung erscheint bei pointed-Spitzen am Rand, Hohlraum-Paaren (Sphere/Torus mit Inhalt), Y-Achsen-Symmetrie oder Resonanz-Arrays (≥3 gleiche Shape auf gleichem Radius).";
-        tagsSection.appendChild(tagsHint);
-        editor.appendChild(tagsSection);
-    }
-
-    _workshopRenderActions(editor, selected) {
-        // Aktions-Buttons
-        const actions = document.createElement("div");
-        actions.className = "workshop-actions";
-        // Part hinzufügen (nur eigene Baupläne)
-        if (!selected.builtIn) {
-            const addBtn = document.createElement("button");
-            addBtn.type = "button";
-            addBtn.textContent = "Part hinzufügen";
-            addBtn.addEventListener("click", () => {
-                this.addPartToBlueprint(selected.name);
-                this._renderWorkshopDOM();
-            });
-            actions.appendChild(addBtn);
-        }
-        // S7 (kampf-plan §11.7/§11.9) — die Mach-Knöpfe (⚒ Schmieden/Weben + „Als Seele tragen")
-        // wohnen NICHT mehr hier im Detail-Editor (sie wirkten wie ein paralleler Pfad). Sie sind in
-        // den EINEN „FERTIGEN"-Akt der Stats-Tabelle gefaltet (_workshopAppendFertigenRow) — der
-        // Abschluss des Lese-Flusses (verfeinern → ablesen → FERTIGEN).
-        // Klonen
-        const cloneBtn = document.createElement("button");
-        cloneBtn.type = "button";
-        cloneBtn.textContent = "Klonen";
-        cloneBtn.addEventListener("click", () => {
-            const newName = window.prompt("Name für die Kopie?", `${selected.name}-kopie`);
-            if (!newName) return;
-            if (this.cloneBlueprint(selected.name, newName)) {
-                this.selectBlueprintForEdit(newName);
-            }
-        });
-        actions.appendChild(cloneBtn);
-        // Löschen (nur eigene)
-        if (!selected.builtIn) {
-            const delBtn = document.createElement("button");
-            delBtn.type = "button";
-            delBtn.className = "workshop-danger";
-            delBtn.textContent = "Löschen";
-            delBtn.addEventListener("click", () => {
-                if (!window.confirm(`Bauplan '${selected.name}' wirklich löschen?`)) return;
-                this.deleteBlueprint(selected.name);
-                // Auf einen anderen Bauplan umschalten
-                const remaining = Object.keys(this.state.blueprints);
-                if (remaining.length > 0) this.selectBlueprintForEdit(remaining[0]);
-                else this._renderWorkshopDOM();
-            });
-            actions.appendChild(delBtn);
-        }
-        // Neuer Bauplan (immer verfügbar)
-        const newBtn = document.createElement("button");
-        newBtn.type = "button";
-        newBtn.textContent = "Neuer Bauplan";
-        newBtn.addEventListener("click", () => {
-            const name = window.prompt("Name des neuen Bauplans?");
-            if (!name) return;
-            if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
-        });
-        actions.appendChild(newBtn);
-        editor.appendChild(actions);
     }
 
     _workshopRenderTail(selected) {
@@ -38687,8 +38832,7 @@ class AnazhRealm {
         }
         // V8.02 Phase 3a — Shape-Palette HTML5-Drag-Sources + Canvas-Drop-Target
         this._workshopInstallShapeDragDrop();
-        // V8.05 — Editor-Toggle + Del-Button-Handler (beide idempotent)
-        this._workshopInstallEditorToggle();
+        // V8.05 — Del-Button-Handler (idempotent)
         this._workshopInstallDeleteButton();
         // V8.06 — Klonen + Neuer Bauplan direkt in der Mode-Bar
         this._workshopInstallActionButtons();
@@ -39166,25 +39310,10 @@ class AnazhRealm {
         if (ws.selectedPartIdx === idx) return;
         ws.selectedPartIdx = idx;
         if (ws.preview) ws.preview.dirty = true;
-        // DOM neu rendern (für .selected-Klasse auf Part-Row).
-        // ABER: nur wenn DOM existiert — Headless-Pfad könnte _workshopSetSelection
-        // via Test-Code aufrufen.
-        if (typeof document !== "undefined") {
-            const editor = document.getElementById("workshop-editor");
-            if (editor) {
-                // Wir rendern nur die Part-Rows neu, das volle _renderWorkshopDOM
-                // wäre teuer und würde scroll-Position reset. Spar-Refresh:
-                // alle .workshop-part-row durchlaufen, .selected toggeln.
-                const rows = editor.querySelectorAll(".workshop-part-row");
-                rows.forEach((row) => {
-                    const rowIdx = parseInt(row.getAttribute("data-part-idx") || "-1", 10);
-                    row.classList.toggle("selected", rowIdx === idx);
-                });
-            }
-            // V8.05 — Del-Button-Status synchen (UpdateManipulatorButtons macht das)
-            if (typeof this._workshopUpdateManipulatorButtons === "function") {
-                this._workshopUpdateManipulatorButtons();
-            }
+        // V17.91 — die Selektion lebt im 3D (Mesh-Highlight via preview.dirty) + im „Part entfernen"-Knopf-
+        // Status; der alte Part-Row-Listen-Refresh entfiel mit dem Detail-Editor.
+        if (typeof document !== "undefined" && typeof this._workshopUpdateManipulatorButtons === "function") {
+            this._workshopUpdateManipulatorButtons();
         }
     }
 
@@ -39768,6 +39897,7 @@ class AnazhRealm {
         panel.innerHTML = "";
         if (!bp) return;
         this._workshopAppendRoleRow(panel, bp);
+        this._workshopAppendAbilitiesRow(panel, bp);
         this._workshopAppendBuildCostRow(panel, bp);
         if (!bp.builtIn) this._workshopAppendDomainAnalysis(panel, bp);
         this._workshopAppendTagsRow(panel, bp);
@@ -39785,7 +39915,10 @@ class AnazhRealm {
     // nur die Präsentation vereint sich: lesen → FERTIGEN. Die Maschine-in-der-Welt (Esse/Brennkolben)
     // ist sichtbar gegated (pfad) — der Knopf zeigt, welche Werkstatt nah sein muss.
     _workshopAppendFertigenRow(panel, bp) {
-        const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        // V17.85 — die EMERGENTE/deklarierte Rolle (rollenlose Klinge → „tool", nicht der „architecture"-
+        // Default) bestimmt den FERTIGEN-Akt: eine Spitzhacke wird „geschmiedet (in die Hand)", nicht
+        // als Bauwerk behandelt — der Mach-Verb folgt der angezeigten Rolle.
+        const role = this._displayRole(bp);
         // Welt-platzierte Rollen (Station/Portal) werden gebaut (confirmBuild), nicht gefertigt; eine
         // geborene (built-in) Seele wird nicht geformt.
         if (role === "workshop-station" || role === "portal") return;
@@ -39862,8 +39995,15 @@ class AnazhRealm {
     // Tooltips (V8.17), Rollen-Farbe als Glow (V8.39), Reset-Button bei
     // manueller Rolle. Affordances als ✦-Chips.
     _workshopAppendRoleRow(panel, bp) {
-        const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
-        const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
+        // V17.85 — die ANGEZEIGTE Rolle ist die emergente/deklarierte (computeBlueprintRole), NICHT der
+        // rohe `bp.role || DEFAULT`: ein rollenloser Bauplan (eine Klingen-Form) zeigte „Bauwerk", obwohl
+        // er der Form nach längst „Werkzeug" ist (der Spitzhacke-Befund) — die Form trägt die Rolle, auch
+        // ohne deklariertes Feld. Der manuell/emergent-Indikator (unten) liest weiter `bp.roleManual`.
+        const role = this._displayRole(bp);
+        // V17.86 (Schöpfer-Browser-Befund: die Esse zeigte den rohen „workshop-station") — die Rolle-Chip
+        // liest das VOLLSTÄNDIGE U2-Register `ROLE_LABELS` (12 Rollen inkl. Werkstatt/Fahrzeug/Brecher),
+        // nicht das alte 8-Rollen-`BLUEPRINT_ROLE_LABELS` → kein roher Rollen-String mehr im UI.
+        const roleLabel = AnazhRealm.ROLE_LABELS[role] || AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
         const roleRow = document.createElement("div");
         roleRow.className = "stat-row";
         const roleLab = document.createElement("span");
@@ -39907,18 +40047,17 @@ class AnazhRealm {
             });
             roleRow.appendChild(resetBtn);
         }
-        const aff = this.computeBlueprintAffordances(bp) || {};
-        for (const key of Object.keys(aff)) {
-            const chip = document.createElement("span");
-            chip.className = "affordance-chip";
-            chip.textContent = "✦ " + (AnazhRealm.AFFORDANCE_LABELS[key] || key);
-            roleRow.appendChild(chip);
-        }
         panel.appendChild(roleRow);
-        // S1 (kampf-plan §11.7) — die FÄHIGKEIT aus der Form (JEDE Lesart), unabhängig von der
-        // abstrakten Rolle: ein Holzstiel + Steinkopf liest „Brecher — wuchtet Fels" statt nur „Bauwerk".
+        // V17.86 (Schöpfer-Browser-Befund „vergrößernd/bündelnd/strahlend erscheinen als ROLLE — sind das
+        // nicht Fähigkeiten?") — die FÄHIGKEITEN an EINEN Ort: die Form-Lesart (Klinge/Brecher/Schutz/…, S1)
+        // UND die Affordanzen (vergrößernd/strahlend/…, die räumlich-aktiven Eigenschaften) in EINE
+        // „Fähigkeit"-Zeile. Vorher mischten die Affordanz-Chips in die Rolle-Zeile (das verwirrte: eine
+        // Affordanz ist KEINE Rolle). Die Rolle-Zeile zeigt jetzt NUR die EINE Rolle, die Fähigkeit-Zeile
+        // ALLE Lesarten — der ungebundene Faden ist gebunden.
         const caps = this._blueprintCapabilityHints(bp);
-        if (caps.length) {
+        const aff = this.computeBlueprintAffordances(bp) || {};
+        const affLabels = Object.keys(aff).map((k) => AnazhRealm.AFFORDANCE_LABELS[k] || k);
+        if (caps.length || affLabels.length) {
             const capRow = document.createElement("div");
             capRow.className = "stat-row";
             const capLab = document.createElement("span");
@@ -39931,7 +40070,59 @@ class AnazhRealm {
                 chip.textContent = "✦ " + c;
                 capRow.appendChild(chip);
             }
+            for (const a of affLabels) {
+                const chip = document.createElement("span");
+                chip.className = "affordance-chip affordance-active-chip";
+                chip.textContent = "✦ " + a;
+                capRow.appendChild(chip);
+            }
             panel.appendChild(capRow);
+        }
+        // V17.77 — die WERKSTATT-PRÄZISION sichtbar (die Steigerung lernbar): WIE fein eine Station fertigt,
+        // emergiert aus ihrer Substanz (dichter + härter → feiner). So SIEHT der Spieler „bessere Esse →
+        // höherer Cap" + lernt das Prinzip für alle Systeme (besseres Material → besseres Werk).
+        if (bp.role === "workshop-station") {
+            const prec = this._workshopStationPrecision(bp);
+            const dom = this._computeWorkshopDomain(bp);
+            const precRow = document.createElement("div");
+            precRow.className = "stat-row";
+            const precLab = document.createElement("span");
+            precLab.className = "stat-label";
+            precLab.textContent = "Werkstatt-Präzision";
+            precRow.appendChild(precLab);
+            const precVal = document.createElement("span");
+            precVal.className = "workshop-precision-text";
+            precVal.textContent = prec.toFixed(2) + (dom ? ` · ${dom}` : "");
+            precVal.title =
+                "Wie fein diese Werkstatt fertigt — emergiert aus ihrer Substanz (dichteres, härteres " +
+                "Material → feinere Toleranzen). Eine bessere Esse hebt den Präzisions-Cap deiner Werke. " +
+                "Dasselbe Prinzip trägt alle Systeme: besseres Material → besseres Werk.";
+            precRow.appendChild(precVal);
+            panel.appendChild(precRow);
+        }
+        // U3 (resonanz-system.md §5) — der KATALYSATOR-Readout: das Rollen-Spektrum (was es IST, über die
+        // GANZE Resonanz) + die Achse zum perfekten Katalysator (Tooltip) → der Spieler dreht frei + kreativ.
+        const spectrum = this._blueprintRoleSpectrum(bp);
+        if (spectrum.length) {
+            const specRow = document.createElement("div");
+            specRow.className = "stat-row";
+            const specLab = document.createElement("span");
+            specLab.className = "stat-label";
+            specLab.textContent = "Resonanz";
+            specRow.appendChild(specLab);
+            const specVal = document.createElement("span");
+            specVal.className = "role-spectrum-text";
+            specVal.textContent = spectrum
+                .slice(0, 3)
+                .map((s) => `${AnazhRealm.ROLE_LABELS[s.role] || s.role} ${s.score.toFixed(2)}`)
+                .join(" · ");
+            const top = spectrum[0];
+            const hint = this._blueprintCatalystHint(bp, top.role);
+            specVal.title = hint
+                ? `Stärkste Rolle: ${AnazhRealm.ROLE_LABELS[top.role] || top.role}. Mehr ${hint.label} → besserer Katalysator.`
+                : `Stärkste Rolle: ${AnazhRealm.ROLE_LABELS[top.role] || top.role}.`;
+            specRow.appendChild(specVal);
+            panel.appendChild(specRow);
         }
     }
 
@@ -40100,6 +40291,101 @@ class AnazhRealm {
 
     // V8.39 — „Präzision" → „Qualität": dieselbe Zahl, aber der Name sagt,
     // was sie BEDEUTET — sie skaliert die Produkt-Wirkung.
+    // V17.89 (Schöpfer-Befund „die Werte ändern sich nicht, müsste das System nicht dynamisch Avatar/
+    // Rüstung/Schwert/Qualität anpassen, Fähigkeiten steigen+sinken?") — die LIVE Fähigkeits-Werte: die
+    // WIRKUNG eines Werks emergiert aus Material × Form × Handwerk (dieselbe Formel wie der Ausrüstungs-
+    // Beitrag, V17.79: STAT_FROM_TAGS × (0.5 + 0.5·Qualität·RoleFit)). Das Material liefert die Tags, die
+    // FORM die Rolle-Passung (Eignung), das Handwerk die Präzision. So SIEHT der Spieler, wie ein längeres
+    // Schwert oder ein härteres Material die Werte hebt/senkt — die fragmentierten Achsen werden EINE Zahl.
+    _blueprintAbilityStats(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
+        const role = this._displayRole(bp);
+        const servedRole =
+            role === "armor" ? "armor" : role === "soul" ? "soul" : role === "consumable" ? "consumable" : "held";
+        const raw = this.computeCompoundTags(bp) || {};
+        // V17.90 Facette 2 (Material-Spanne): die Tags NICHT auf [0,1] kappen (das kappte Eisens härte 2.25→1.0
+        // → Holz↔Eisen nur 1.4×, obwohl der ECHTE Ausrüstungs-Beitrag 3.3× ist — der Readout log). Ceiling auf
+        // den natürlichen Tag-Bereich → der Readout zeigt die wahre Material-Macht (Eisen-Klinge ≫ Holz-Klinge).
+        // Zwei Tag-Sets: tagsHi (Ceiling 2.5) für die SCHWEREN Stats (Schaden/Rückschlag/Verteidigung/HP —
+        // sie skalieren MIT härte/dichte, das Entkappen zeigt die Material-Macht). tagsLo (Ceiling 1.0) für die
+        // INVERS-dichte Stats (Tempo/Bewegung = 0.8 + (1−dichte)·… — ungekappt würde dichte>1 sie NEGATIV machen,
+        // CLAUDE.md-Gotcha „Tags clampen vor den Stat-Formeln, sonst negative Speed"). So zeigt der Readout die
+        // Material-Spanne UND bleibt korrekt.
+        const tagsHi = {};
+        const tagsLo = {};
+        for (const k of AnazhRealm.MATERIAL_TAG_KEYS) {
+            const v0 = Math.max(0, raw[k] || 0);
+            tagsHi[k] = Math.min(2.5, v0);
+            tagsLo[k] = Math.min(1, v0);
+        }
+        const q = this.computeBlueprintQuality(bp);
+        const fit = this._blueprintRoleFit(bp, servedRole);
+        const mul = 0.5 + 0.5 * q * fit;
+        // V17.90 Facette 3 (Größe): der MASSE-Faktor verstärkt die Wucht + bremst das Tempo — ein größeres Gerät
+        // schlägt härter, aber träger (vision-treuer Trade-off). Nur für Geräte/Rüstung (wo er auch im
+        // Ausrüstungs-Fold wirkt → ehrlich); die Seele liest ihn NICHT (der Avatar-Körper-Pfad bekäme ihn nicht).
+        const size = role === "soul" ? 1 : this._compoundSizeFactor(bp);
+        const S = AnazhRealm.STAT_FROM_TAGS;
+        const INV = AnazhRealm.INVERSE_DICHTE_STATS;
+        // dir: +1 = schwer (Größe verstärkt), −1 = agil (Größe bremst), 0 = neutral.
+        const val = (stat, dir = 0) => {
+            const sf = dir > 0 ? size : dir < 0 ? 1 / size : 1;
+            const t = INV[stat] ? tagsLo : tagsHi;
+            return Math.max(0, S[stat](t) * mul * sf);
+        };
+        let stats = null;
+        if (role === "armor") {
+            stats = [
+                ["Verteidigung", val("defense", 1)],
+                ["Magie-Resist", val("magicResist")],
+                ["Hitze-Resist", val("heatResist")],
+            ];
+        } else if (role === "soul") {
+            stats = [
+                ["HP", val("hpMax")],
+                ["Bewegung", val("speed")],
+                ["Schaden", val("damage")],
+            ];
+        } else if (role === "tool" || role === "weapon" || role === "held" || role === "brecher") {
+            stats = [
+                ["Schaden", val("damage", 1)],
+                ["Rückschlag", val("knockback", 1)],
+                ["Tempo", val("attackSpeed", -1)],
+            ];
+        } else {
+            return null; // architecture/station/portal/vehicle/consumable → keine Ausrüstungs-Werte
+        }
+        return { role, servedRole, fit, mul, size, stats };
+    }
+
+    _workshopAppendAbilitiesRow(panel, bp) {
+        const ab = this._blueprintAbilityStats(bp);
+        if (!ab || !ab.stats) return;
+        const row = document.createElement("div");
+        row.className = "stat-row workshop-abilities-row";
+        const lab = document.createElement("span");
+        lab.className = "stat-label";
+        lab.textContent = "Werte";
+        row.appendChild(lab);
+        for (const [name, v] of ab.stats) {
+            const chip = document.createElement("span");
+            chip.className = "tag-chip ability-chip";
+            chip.textContent = `${name} ${v.toFixed(1)}`;
+            row.appendChild(chip);
+        }
+        // Die EIGNUNG (Form-Passung zur Rolle) sichtbar — sie steigt/sinkt mit der FORM (eine spitze Klinge
+        // passt besser als ein Klotz). So versteht der Spieler, warum die Werte sich ändern.
+        const fitChip = document.createElement("span");
+        fitChip.className = "tag-chip ability-fit-chip";
+        fitChip.textContent = `Eignung ${ab.fit.toFixed(2)}×`;
+        fitChip.title =
+            "Die Werte emergieren aus Material × Form × Handwerk: das Material liefert die Substanz (Tags), " +
+            "die FORM die Rolle-Passung (Eignung 0.8–1.2×), das Handwerk die Präzision (Qualität). " +
+            "Ändere Form oder Material → die Werte steigen oder sinken.";
+        row.appendChild(fitChip);
+        panel.appendChild(row);
+    }
+
     _workshopAppendQualityRow(panel, bp) {
         const avgPrec = this._compoundAvgPrecision(bp);
         if (avgPrec <= 0) return;
@@ -40180,39 +40466,7 @@ class AnazhRealm {
         });
     }
 
-    // V8.05 — Editor-Toggle. Persistent in localStorage (Spieler will
-    // den Editor meist geschlossen halten — die Werkstatt-Hauptarbeit
-    // läuft über Drag-Drop + Manipulator).
-    _workshopInstallEditorToggle() {
-        if (typeof document === "undefined") return;
-        const ws = this._ensureWorkshopState();
-        if (ws._editorToggleInstalled) return;
-        ws._editorToggleInstalled = true;
-        const btn = document.getElementById("workshop-editor-toggle");
-        const editor = document.getElementById("workshop-editor");
-        if (!btn || !editor) return;
-        // Initialer Zustand aus localStorage (Default: zugeklappt)
-        const stored = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.workshop.editorOpen") : null;
-        const open = stored === "1";
-        editor.hidden = !open;
-        btn.setAttribute("aria-expanded", open ? "true" : "false");
-        btn.addEventListener("click", () => {
-            const wasOpen = btn.getAttribute("aria-expanded") === "true";
-            const newOpen = !wasOpen;
-            btn.setAttribute("aria-expanded", newOpen ? "true" : "false");
-            editor.hidden = !newOpen;
-            try {
-                if (typeof localStorage !== "undefined") {
-                    localStorage.setItem("anazh.workshop.editorOpen", newOpen ? "1" : "0");
-                }
-            } catch {
-                /* ignore */
-            }
-        });
-    }
-
-    // V8.06 — Klonen + Neuer Bauplan direkt in der Mode-Bar (statt am
-    // Editor-Ende). Idempotent.
+    // V8.06 — Klonen + Neuer Bauplan + (V17.91) Undo/Redo/Löschen direkt in der Mode-Bar. Idempotent.
     _workshopInstallActionButtons() {
         if (typeof document === "undefined") return;
         const ws = this._ensureWorkshopState();
@@ -40239,6 +40493,51 @@ class AnazhRealm {
                 if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
             });
         }
+        // V17.91 — Undo/Redo + Löschen hoch in die Top-Leiste (wo der Schöpfer sie sucht), aus dem
+        // alten versteckten Detail-Editor migriert. Der disabled-Zustand pflegt _workshopUpdateTopBarState.
+        const undoBtn = document.getElementById("workshop-undo-btn");
+        const redoBtn = document.getElementById("workshop-redo-btn");
+        const delBlueprintBtn = document.getElementById("workshop-delete-blueprint-btn");
+        if (undoBtn) {
+            undoBtn.addEventListener("click", () => {
+                const sel = this._ensureWorkshopState().selectedBlueprint;
+                const r = this.undoBlueprintEdit(sel);
+                if (!r.ok) this.log(`Rückgängig: ${r.reason}`, "INFO");
+                this._renderWorkshopDOM();
+            });
+        }
+        if (redoBtn) {
+            redoBtn.addEventListener("click", () => {
+                const sel = this._ensureWorkshopState().selectedBlueprint;
+                const r = this.redoBlueprintEdit(sel);
+                if (!r.ok) this.log(`Wiederholen: ${r.reason}`, "INFO");
+                this._renderWorkshopDOM();
+            });
+        }
+        if (delBlueprintBtn) {
+            delBlueprintBtn.addEventListener("click", () => {
+                const selected = this.state.blueprints[this._ensureWorkshopState().selectedBlueprint];
+                if (!selected || selected.builtIn) return;
+                if (!window.confirm(`Bauplan '${selected.name}' wirklich löschen?`)) return;
+                this.deleteBlueprint(selected.name);
+                const remaining = Object.keys(this.state.blueprints);
+                if (remaining.length > 0) this.selectBlueprintForEdit(remaining[0]);
+                else this._renderWorkshopDOM();
+            });
+        }
+    }
+
+    // V17.91 — der disabled-Zustand der Top-Leisten-Akte (Undo/Redo/Löschen) pro Render: nur eigene Baupläne
+    // sind editier-/löschbar, Undo/Redo nur wenn der Editier-Verlauf etwas hergibt.
+    _workshopUpdateTopBarState(selected) {
+        if (typeof document === "undefined") return;
+        const undoBtn = document.getElementById("workshop-undo-btn");
+        const redoBtn = document.getElementById("workshop-redo-btn");
+        const delBtn = document.getElementById("workshop-delete-blueprint-btn");
+        const editable = !!(selected && !selected.builtIn);
+        if (undoBtn) undoBtn.disabled = !(editable && this.canUndoBlueprintEdit(selected.name));
+        if (redoBtn) redoBtn.disabled = !(editable && this.canRedoBlueprintEdit(selected.name));
+        if (delBtn) delBtn.disabled = !editable;
     }
 
     // V8.05 — Del-Button-Handler. Entfernt den selektierten Part.
@@ -40407,6 +40706,38 @@ class AnazhRealm {
             card.appendChild(precEl);
             palette.appendChild(card);
         }
+        // V17.91 — die WERKSTATT-PROZESSE als ziehbare Karten neben der Hand (der „wahre Weg": platzier eine
+        // Werkstatt → ihr Prozess erscheint hier → auf einen Part im 3D ziehen fixt die Rolle). Ersetzt den
+        // versteckten per-Part-Dropdown des alten Editors. data-tool="station:<name>" → der Drop-Handler routet
+        // auf applyWorkshopProcessToPart. In schöpfer alle besessenen Werkstätten, sonst die platzierten + nahen.
+        const verbs = AnazhRealm.OP_VERB_LABELS || {};
+        for (const proc of this._workshopProcessesForMenu()) {
+            const card = document.createElement("div");
+            card.className = "workshop-tool-card workshop-station-card";
+            card.setAttribute("draggable", "true");
+            card.setAttribute("data-tool", `station:${proc.stationName}`);
+            const verb = verbs[proc.opName] || proc.opName;
+            card.setAttribute(
+                "title",
+                `${proc.label} · ${verb} (${proc.cap.toFixed(2)}) · Werkstatt-Prozess — auf einen Part im 3D ziehen fixt die Rolle`
+            );
+            const color = AnazhRealm.TOOL_DOMAIN_COLORS && AnazhRealm.TOOL_DOMAIN_COLORS[proc.domain];
+            if (color) {
+                const dot = document.createElement("span");
+                dot.className = "workshop-tool-domain-dot";
+                dot.style.background = color;
+                dot.title = `Domäne: ${(AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[proc.domain]) || proc.domain}`;
+                card.appendChild(dot);
+            }
+            const nameEl = document.createElement("span");
+            nameEl.textContent = proc.label;
+            card.appendChild(nameEl);
+            const precEl = document.createElement("span");
+            precEl.className = "tool-prec";
+            precEl.textContent = proc.cap.toFixed(2);
+            card.appendChild(precEl);
+            palette.appendChild(card);
+        }
     }
 
     // V8.05 — Tool-Drop: identifiziert den getroffenen Part via Raycast,
@@ -40424,6 +40755,40 @@ class AnazhRealm {
                 `Built-in-Bauplan „${bp.label || bp.name}" — klicke „Klonen" in der Mode-Bar um eine editierbare Kopie zu erstellen.`,
                 "WARNING"
             );
+            return;
+        }
+        // V17.91 — eine WERKSTATT-PROZESS-Karte (data-tool="station:<name>") auf einen Part ziehen wendet den
+        // Prozess der platzierten/besessenen Werkstatt an (fixt die Rolle) — der intuitive Drag-Ersatz für den
+        // entfernten per-Part-Dropdown. Routet auf applyWorkshopProcessToPart (Modus-Gate + Stamina darin).
+        if (typeof toolName === "string" && toolName.startsWith("station:")) {
+            const stationName = toolName.slice("station:".length);
+            const idx = this._workshopRaycastPartIdxAt(clientX, clientY);
+            if (idx === null) {
+                this.log("Prozess auf einen Part im 3D-Mesh ziehen (Treffer-Punkt war daneben).", "INFO");
+                return;
+            }
+            const r = this.applyWorkshopProcessToPart(bp.name, idx, stationName);
+            if (r && r.ok) {
+                this._renderWorkshopDOM();
+                this._workshopSetSelection(idx);
+                const st = this.state.blueprints[stationName];
+                this.log(
+                    `Prozess „${(st && st.label) || stationName}" angewandt auf Part ${idx} (Präzision ${(r.precision || 0).toFixed(2)}).`,
+                    "INFO"
+                );
+            } else {
+                const reason = (r && r.reason) || "unknown";
+                if (reason === "workshop_not_placed_near") {
+                    this.log(
+                        "Diese Werkstatt ist nicht in der Nähe — platziere sie näher (oder schöpfer-Modus).",
+                        "WARNING"
+                    );
+                } else if (reason === "not_enough_stamina") {
+                    this.log("Nicht genug Stamina für diesen Prozess (frieden/schöpfer ist reibungsfrei).", "WARNING");
+                } else {
+                    this.log(`Prozess fehlgeschlagen: ${reason}`, "ERROR");
+                }
+            }
             return;
         }
         const tool = this.state.tools && this.state.tools[toolName];
@@ -40695,8 +41060,22 @@ class AnazhRealm {
             this._workshopSetSelection(null);
             return;
         }
-        // Zweiter Klick auf anderes Part → Type-Popover öffnen
-        this._workshopOpenConnectPopover(ws.connectFirstPartIdx, partIdx);
+        // Zweiter Klick auf ein anderes Part: existiert schon eine Verbindung A↔B → LÖSEN (Toggle). V17.91 —
+        // das Entfernen wandert aus dem entfernten Editor-Listen-✕ ins 3D: zwei verbundene Parts erneut
+        // anklicken löst die Verbindung. Sonst das Type-Popover zum ANLEGEN öffnen (wie gehabt).
+        const a = ws.connectFirstPartIdx;
+        const existingIdx = (bp.connections || []).findIndex(
+            (c) => (c.partA === a && c.partB === partIdx) || (c.partA === partIdx && c.partB === a)
+        );
+        if (existingIdx >= 0) {
+            this.removeConnectionFromBlueprint(bp.name, existingIdx);
+            ws.connectFirstPartIdx = null;
+            this._workshopSetSelection(null);
+            this._renderWorkshopDOM();
+            this.log(`Verbindung Part ${a} ↔ ${partIdx} gelöst.`, "INFO");
+            return;
+        }
+        this._workshopOpenConnectPopover(a, partIdx);
     }
 
     // Öffnet das Connection-Type-Auswahl-Popover über dem Canvas. Klick auf
@@ -42602,7 +42981,37 @@ class AnazhRealm {
         if (!select) return;
         this._refreshSoulSelect();
         select.addEventListener("change", () => {
-            this.applyPlayerSoul(select.value);
+            const v = select.value;
+            // V17.74 Welle 1b — ein role:"soul"-Bauplan (noch kein registrierter Soul) → VERKÖRPERN
+            // (embodyBlueprint formt ihn, zahlt pfad/frieden); eine Built-in/Custom-Seele → frei tragen.
+            const bp = this.state.blueprints && this.state.blueprints[v];
+            const isSoulBlueprint =
+                bp &&
+                bp.role === "soul" &&
+                !(this.playerSoulDefs[v] || (this.state.customSouls && this.state.customSouls[v]));
+            if (isSoulBlueprint) {
+                const result = this.embodyBlueprint(v);
+                if (!result.ok) {
+                    if (result.reason === "not_enough_material") {
+                        const missingStr = Object.entries(result.missing || {})
+                            .map(([m, n]) => `${n}× ${m}`)
+                            .join(", ");
+                        this.log(
+                            `Avatar „${bp.label || v}" formen — es fehlt ${missingStr || "Material"} (⚒ Werkstatt).`,
+                            "ERROR"
+                        );
+                    } else {
+                        this.log(`Verkörpern fehlgeschlagen: ${result.reason}`, "ERROR");
+                    }
+                    // V17.75 — der Fehlschlag (z.B. kein Material) → das Select auf die WIRKLICHE Seele
+                    // zurücksetzen (sonst zeigt es den Wächter, während der Avatar der alte bleibt — der Bug).
+                    select.value = this.state.player.soul;
+                } else {
+                    this._refreshSoulSelect(); // den neuen customSoul aufnehmen + selektieren
+                }
+            } else {
+                this.applyPlayerSoul(v);
+            }
         });
         // Status-Bar mit Default beschriften, falls vorhanden.
         const status = document.getElementById("status-soul");
@@ -42677,14 +43086,22 @@ class AnazhRealm {
         none.textContent = "— leer (Faust) —";
         sel.appendChild(none);
         const blu = this.state.blueprints || {};
+        // V17.74 Welle 1b — die GEBRAUCHS-Fläche listet eigene Baupläne (wie bisher) UND built-in
+        // greifbare Geräte (die V17.72-Bibliothek, z.B. geraet_spitzhacke) — nicht mehr nur `!builtIn`,
+        // sonst bleibt die craftbare Saat unsichtbar. Built-in-Strukturen (Dorf) bleiben draußen (place).
         const names = Object.keys(blu).filter(
-            (n) => blu[n] && !blu[n].builtIn && Array.isArray(blu[n].parts) && blu[n].parts.length
+            (n) =>
+                blu[n] &&
+                Array.isArray(blu[n].parts) &&
+                blu[n].parts.length &&
+                (!blu[n].builtIn || this._blueprintUseKind(blu[n]) === "hold")
         );
         names.sort();
         for (const name of names) {
             const opt = document.createElement("option");
             opt.value = name;
-            opt.textContent = `${blu[name].label || name} · ${this._implementAffordanceLabel(blu[name])}`;
+            opt.textContent = `${blu[name].label || name} · ${this._implementAffordanceLabel(blu[name])}${this._makeActCostSuffix(name)}`;
+            opt.title = this._blueprintCostTooltip(name);
             if (equipped.held === name) opt.selected = true;
             sel.appendChild(opt);
         }
@@ -42732,8 +43149,12 @@ class AnazhRealm {
         const candidateBlueprints = [];
         for (const name of Object.keys(this.state.blueprints || {})) {
             const bp = this.state.blueprints[name];
-            if (!bp || bp.builtIn) continue;
+            if (!bp) continue;
+            // V17.74 Welle 1b — Rüstung wird nach ROLLE gelistet (Built-in-Bibliothek INKLUSIVE) → die
+            // GEBRAUCHS-Fläche erkennt eine craftbare Beispiel-Rüstung (ruestung_brustpanzer), nicht nur
+            // eigene Baupläne. Andere Built-ins (Strukturen) sind keine Markier-/Tragen-Kandidaten.
             if (bp.role === "armor") armorBlueprints.push(name);
+            else if (bp.builtIn) continue;
             else if (bp.role === "weapon") weaponBlueprints.push(name);
             else candidateBlueprints.push(name);
         }
@@ -42757,7 +43178,8 @@ class AnazhRealm {
             const bp = this.state.blueprints[name];
             const opt = document.createElement("option");
             opt.value = name;
-            opt.textContent = bp.label || name;
+            opt.textContent = (bp.label || name) + this._makeActCostSuffix(name);
+            opt.title = this._blueprintCostTooltip(name);
             if (equipped.armor === name) opt.selected = true;
             armorSel.appendChild(opt);
         }
@@ -43199,6 +43621,21 @@ class AnazhRealm {
                 opt.textContent = this.state.customSouls[key].label + " ✦";
                 select.appendChild(opt);
             }
+        }
+        // V17.74 Welle 1b (kampf-plan §11.5) — die GEBRAUCHS-Fläche listet AUCH noch-nicht-verkörperte
+        // role:"soul"-Baupläne (die craftbaren Avatare, Built-in-Bibliothek INKLUSIVE) → der Spieler kann
+        // sie hier VERKÖRPERN. Schon-verkörperte (bp_<name> liegt als customSoul) werden übersprungen
+        // (oben gelistet), damit kein Doppel-Eintrag. ⚒ markiert „ein Bauplan-Avatar (verkörpern formt ihn)".
+        const blu = this.state.blueprints || {};
+        for (const name of Object.keys(blu)) {
+            const bp = blu[name];
+            if (!bp || bp.role !== "soul" || !Array.isArray(bp.parts) || !bp.parts.length) continue;
+            if (this.state.customSouls && this.state.customSouls[`bp_${name}`]) continue; // schon verkörpert
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = (bp.label || name) + " ⚒" + this._makeActCostSuffix(name);
+            opt.title = this._blueprintCostTooltip(name);
+            select.appendChild(opt);
         }
         const desired = previous || this.state.player.soul || "human";
         // Wenn die zuvor gewählte Option weg ist (z. B. Custom gelöscht),
@@ -45412,7 +45849,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.72.0";
+AnazhRealm.VERSION = "17.91.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -45547,6 +45984,20 @@ AnazhRealm.WEAPON_STAT_WEIGHT = 0.4;
 // Tempo (Angriff) UND die Grab-/Schneid-Kraft (W1/W2) spiegeln dasselbe Gerät. (TOOL/WEAPON_
 // STAT_WEIGHT bleiben für den KREATUR-Equip-Fold, der getrennt {tool, armor} nutzt.)
 AnazhRealm.HELD_STAT_WEIGHT = 0.4;
+// V17.73 S9 (kampf-plan §10-F4) — das gehaltene Gerät SICHTBAR in der Hand: die Optik des
+// „in der Hand"-Geräts. Reuse von _buildFromBlueprint (kein Parallel-Pfad) → ein Mesh am
+// rechten Arm/Flügel des Avatars (schwingt mit dem _animateHuman-Walk-Cycle via der THREE-
+// Transform-Kette) bzw. an der Körper-Wurzel (Fallback für Custom-Seelen ohne benannten Arm).
+// Alle Werte browser-justierbar — die Pose/Skala/der Sitz in der Hand sind das Schöpfer-Auge;
+// headless beweist nur Existenz + Lifecycle + Anker (V13-Render-Lehre, pixel-blind).
+AnazhRealm.HELD_MESH = Object.freeze({
+    targetSpanM: 0.62, // die längste Dimension des Geräts in der Hand (auf Werkzeug-Größe skaliert)
+    minScale: 0.04,
+    maxScale: 3,
+    handOffset: Object.freeze({ x: 0, y: -0.5, z: 0.12 }), // im Arm-Anker-Lokalraum (Handfläche/-spitze)
+    rootOffset: Object.freeze({ x: 0.42, y: 0.9, z: 0.32 }), // Fallback: vorn-rechts an der Körper-Wurzel
+    tilt: Object.freeze({ x: 0.5, y: 0, z: 0 }), // ein leichter Vorwärts-Neigung (ein langes Werkzeug zeigt nach vorn/unten)
+});
 // V17.54 Kampf-Bogen Phase D — die Reichweite des Spieler-Nahangriffs (der LMB-
 // Raycast auf Kreaturen). Eine Kreatur näher als das UND näher als eine Architektur
 // wird angegriffen statt abgebaut. Browser-justierbar (die Wucht/Reichweite = Feel).
@@ -45859,6 +46310,10 @@ AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
     "resoniert",
     "lebendig",
 ]);
+// V17.90 (resonanz-system.md §2) — die Aktivierungs-Decke: computeCompoundTags gibt MAX(aktivierung[0..3] ·
+// materialTag[0..1]); ÷3 normalisiert die Material-Tags des Produkt-Vektors auf [0..1] (= dieselbe Skala wie
+// die Form-Achsen) → die FORM konkurriert mit dem MATERIAL in der Resonanz (heilt die Spektrum-Sättigung).
+AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
 AnazhRealm.MATERIAL_TAG_DEFAULTS = Object.freeze(
     AnazhRealm.MATERIAL_TAG_KEYS.reduce((acc, key) => {
         acc[key] = 0;
@@ -45964,6 +46419,16 @@ AnazhRealm.MATERIAL_OP_COMPATIBILITY = Object.freeze({
     bronze: Object.freeze(["subtractive", "plastic", "additive", "phaseChange"]),
     quarz: Object.freeze(["subtractive", "phaseChange"]),
     leder: Object.freeze(["subtractive", "plastic", "additive"]),
+});
+
+// V17.89 — die deutschen Verben der Op-Namen (für das Prozess-Menü + die Werkzeuge-Box). Eine Quelle.
+AnazhRealm.OP_VERB_LABELS = Object.freeze({
+    hand_knap: "behauen",
+    forge_shape: "schmieden",
+    brew: "brauen",
+    weave: "weben",
+    imbue: "beseelen",
+    turn: "drehen",
 });
 
 // ============================================================
@@ -46132,7 +46597,32 @@ AnazhRealm.TOOL_DOMAIN_COLORS = Object.freeze({
 // Welle 9c — Welt-Werkstatt-Radius. Spieler muss in dieser Nähe einer
 // Architektur mit passender EMERGENTER Domäne stehen (gemessen vom Spawn-
 // Punkt des neuen Bauplans), sonst lehnt confirmBuild im pfad-Modus ab.
-AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
+// V17.90 (Schöpfer-Befund „die Drehbank in der Nähe erschien NICHT im Prozessfeld"): 10 m war viel zu
+// eng — der Spieler platziert eine Werkstatt in seiner Basis, editiert dann ein paar Meter weiter, und
+// der Prozess verschwand (gemessen: ab 11 m weg). „In der Nähe" meint die WERKSTATT-GEGEND (die Basis),
+// nicht „direkt daneben". 32 m (2 Chunk-Breiten) deckt eine Basis großzügig — der Prozess bleibt, solange
+// man in seinem Werkstatt-Areal ist. Gilt für die Prozess-Erkennung UND das Schmiede-Tor (konsistent).
+AnazhRealm.WORKSHOP_PROXIMITY_M = 32;
+// V17.90 — der GRÖSSEN/MASSE-Stat-Faktor (_compoundSizeFactor): das Hüll-Volumen gegen diese Referenz, sanfte
+// Potenz, gebounded. Zentriert ~1.0 für ein typisches Hand-Werk (~0.15 m³); ein 3× größeres → ~1.4 (mächtiger
+// + träger). Alle browser-justierbar (die Balance „wie viel stärker ist größer" ist das Schöpfer-Auge).
+AnazhRealm.SIZE_STAT_REF_VOLUME = 0.1;
+AnazhRealm.SIZE_STAT_EXPONENT = 0.15;
+AnazhRealm.SIZE_STAT_MIN = 0.75;
+AnazhRealm.SIZE_STAT_MAX = 1.6;
+// V17.90 — die INVERS-dichte Stats (0.8 + (1−dichte)·…): ihr Tag-Input MUSS auf [0,1] gekappt bleiben, sonst
+// macht dichte>1 sie negativ. Der Werte-Readout liest sie aus dem tagsLo-Set (die schweren Stats aus tagsHi).
+AnazhRealm.INVERSE_DICHTE_STATS = Object.freeze({ attackSpeed: true, speed: true, jumpPower: true, staminaMax: true });
+// V17.76 Welle 2 — die Präzisions-Kapazität einer Werkstatt-Station aus ihrer SUBSTANZ (Material × Form):
+// base (eine schlichte Werkstatt) + dichte/härte (eine dichte, harte Esse hält feinere Toleranzen), gedeckelt.
+// So emergiert „bessere Esse → höherer Cap" aus den Materialien (kein Crafting-Zirkel). Browser-justierbar.
+AnazhRealm.WORKSHOP_PRECISION = Object.freeze({
+    base: 0.5,
+    fromDichte: 0.28,
+    fromHärte: 0.2,
+    dichteRef: 2.7,
+    max: 0.98,
+});
 
 // Welle 9d — Maschinen-Bonus. Ein als Werkzeug registriertes Bauplan
 // mit role="machine" (z. B. eine Drehbank-Kreation des Spielers) bekommt
@@ -46277,13 +46767,149 @@ AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR = 2.0;
 // Tempel/Felsbogen (Stein: dichte 2.55, härte 1.95) resoniert damit STÄRKER als mit soul, obwohl seine
 // Geometrie body-förmig ist → er wird Bauwerk, nicht Seele; ein weicher fleisch-Körper resoniert soul stärker.
 // An den 12 Form-Fallback-Built-ins GEMESSEN (checkBandV1768 friert die Baseline ein). Floor → architecture.
+// V17.90 — für die NORMALISIERTE Skala (A1: Material-Tags jetzt [0..1]) neu justiert + zwei Konjunktions-
+// Heilungen: soul liest `livingBody` (Körper-Form UND lebendig — ein toter Panzer ist keine Seele), portal
+// liest `portalShape` (die Ring-Form — ein magisches Kristall ohne Ring ist kein Tor). architecture bleibt
+// der dichte-harte Default für Welt-Strukturen (konservativ). An den Built-ins GEMESSEN (diag).
 AnazhRealm.FORM_ROLE_SIGNATURES = Object.freeze({
-    soul: Object.freeze({ bodyShape: 2.0, lebendig: 0.3 }),
-    portal: Object.freeze({ portalShape: 2.0 }),
-    consumable: Object.freeze({ lebendig: 1.0, härte: -1.0 }),
-    architecture: Object.freeze({ dichte: 0.8, härte: 0.5 }),
+    soul: Object.freeze({ livingBody: 1.4, lebendig: 0.4 }),
+    portal: Object.freeze({ portalShape: 1.6 }),
+    consumable: Object.freeze({ lebendig: 1.5, härte: -0.5 }),
+    architecture: Object.freeze({ dichte: 1.0, härte: 0.6 }),
 });
-AnazhRealm.FORM_ROLE_RESONANCE_FLOOR = 0.5;
+// Der Floor auf die NORMALISIERTE Skala gesenkt (A1: Material-Tags jetzt [0..1] statt [0..3] → die rohen
+// Resonanzen fielen ~3× → der alte 0.5-Floor schluckte z.B. den Trank in den architecture-Default).
+AnazhRealm.FORM_ROLE_RESONANCE_FLOOR = 0.35;
+
+// U2 (resonanz-system.md §3) — DAS EINE ROLLEN-SIGNATUR-REGISTER: jede Rolle als VOLLE Signatur über alle
+// Achsen (10 Material-Tags ⊕ die Form-Achsen V17.80) — die EINE Wahrheit „was ist eine gute X". Die früher
+// fragmentierten Definitionen (FORM_ROLE_SIGNATURES · ROLE_FIT_SIGNATURES · der forging-split) führen hier
+// zusammen: ein Register, viele Leser (Rolle-Passung U2 · Klassifikation U4 · der Katalysator-Readout U3).
+// Der Resonanz-Kern (_blueprintResonance) liest den vollen Produkt-Vektor gegen die gediente Rolle. Negative
+// Gewichte = Gegen-Achsen (eine Klinge ist NICHT zäh; ein Trank NICHT hart; ein Gerät NICHT hohl). Nicht
+// „eine Achse" — das volle Profil (Schöpfer: „über die GESAMTE Resonanz, welche Achsen wie gedreht").
+AnazhRealm.ROLE_SIGNATURES = Object.freeze({
+    // GERÄTE (gehaltenes Implement): held = der generische Slot (scharf ODER schwer, hart, gestreckt, nicht hohl).
+    held: Object.freeze({
+        pointedFraction: 1.2,
+        härte: 0.8,
+        dichte: 0.5,
+        elongation: 0.6,
+        zähigkeit: 0.2,
+        hollowness: -0.3,
+    }),
+    // V17.90 — der lebendig-Distinguisher trennt Waffe/Werkzeug bei sonst gleicher Spitz-Form: ein WERKZEUG hat
+    // einen organischen GRIFF (Holzstiel → lebendig+), eine WAFFE ist totes Metall (lebendig−). So liest ein
+    // Pickel mit Holzstiel „Werkzeug", ein reines Metall-Schwert „Waffe".
+    weapon: Object.freeze({
+        pointedFraction: 1.5,
+        härte: 1.0,
+        elongation: 0.8,
+        dichte: 0.7,
+        zähigkeit: -0.5,
+        lebendig: -0.5,
+    }),
+    tool: Object.freeze({
+        pointedFraction: 1.1,
+        härte: 0.9,
+        elongation: 0.5,
+        dichte: 0.2,
+        zähigkeit: 0.4,
+        lebendig: 0.5,
+    }),
+    brecher: Object.freeze({ dichte: 1.3, härte: 0.6, zähigkeit: 0.4, pointedFraction: -0.8 }),
+    // RÜSTUNG: dicht, hart, zäh, leicht hohl (Polster), nicht spitz, mit Standfläche.
+    armor: Object.freeze({
+        dichte: 1.0,
+        härte: 0.9,
+        zähigkeit: 0.4,
+        hollowness: 0.2,
+        spread: 0.2,
+        pointedFraction: -0.4,
+    }),
+    // TRANK: lebendig, transparent, resonant, hohl (Behälter), weich.
+    consumable: Object.freeze({ lebendig: 1.5, transparent: 0.4, resoniert: 0.3, hollowness: 0.3, härte: -0.6 }),
+    // SEELE: ein LEBENDIGER Körper (livingBody = Körper-Form UND lebendig, V17.90 — ein toter Körper-Panzer
+    // ist KEINE Seele) + lebendig-Gradient + Symmetrie/Resonanz für die Feinheit.
+    soul: Object.freeze({ livingBody: 1.8, lebendig: 0.6, axialSymmetry: 0.4, bodyShape: 0.3, resoniert: 0.2 }),
+    // PORTAL: Ring-Form, magie-leitend, transparent, resonant.
+    portal: Object.freeze({ portalShape: 2.0, magieleitung: 1.0, transparent: 0.5, resoniert: 0.4 }),
+    // FAHRZEUG: Trag-Basis, zäh, gestreckt, angetrieben (magie/strom), tot, mittel-dicht.
+    vehicle: Object.freeze({
+        spread: 1.4,
+        zähigkeit: 1.0,
+        elongation: 0.4,
+        magieleitung: 0.4,
+        stromleitung: 0.4,
+        dichte: 0.2,
+        lebendig: -0.4,
+    }),
+    // MASCHINE: leitend, warm, dicht, standfest.
+    machine: Object.freeze({ stromleitung: 1.4, wärmeleitung: 0.5, dichte: 0.6, spread: 0.5 }),
+    // WERKSTATT: solide Substanz (Präzision) + Standfläche; die Domäne emergiert separat (R1).
+    "workshop-station": Object.freeze({ dichte: 1.0, härte: 0.7, spread: 0.3 }),
+    // BAUWERK: massiv, hart, standfest, nicht spitz.
+    architecture: Object.freeze({ dichte: 1.2, härte: 0.7, spread: 0.4, pointedFraction: -0.6 }),
+});
+// Die Passung ∈ [min, max] (1.0 = neutral): ein gut geformtes Werk → max (Buff), ein form-fremdes → min
+// (Nerf). Der per-Rolle ref normalisiert (die vollen Signaturen haben andere Skalen) — an Archetypen gemessen.
+// V17.90 — die refs auf die NORMIERTE Skala neu justiert (A1 brachte die Material-Tags von [0..3] auf [0..1]
+// → die rohen Resonanzen fielen ~2-3×). Jeder ref ≈ die Resonanz des perfekten Katalysators dieser Rolle →
+// ein Archetyp landet bei ~1.0, ein typisches Werk bei ~0.5-0.7 → das Spektrum SPREIZT (kein 1.0/1.0/1.0).
+// An den Bibliotheks- + Synthetik-Werken GEMESSEN (diag-blass).
+AnazhRealm.QUALITY_ROLE_FIT = Object.freeze({
+    min: 0.8,
+    max: 1.2,
+    refs: Object.freeze({
+        held: 2.6,
+        weapon: 2.8,
+        tool: 2.6,
+        brecher: 2.3,
+        armor: 2.4,
+        consumable: 1.1,
+        soul: 2.3,
+        portal: 2.3,
+        vehicle: 3.4,
+        machine: 3.2,
+        "workshop-station": 2.7,
+        architecture: 2.5,
+    }),
+});
+// U3 (resonanz-system.md §5) — die Labels für den Katalysator-Readout (das Rollen-Spektrum + die Achse zum
+// perfekten Katalysator). Deutsch, browser-justierbar.
+AnazhRealm.ROLE_LABELS = Object.freeze({
+    held: "Gerät",
+    weapon: "Waffe",
+    tool: "Werkzeug",
+    brecher: "Brecher",
+    armor: "Rüstung",
+    consumable: "Trank",
+    soul: "Seele",
+    portal: "Tor",
+    vehicle: "Fahrzeug",
+    machine: "Maschine",
+    "workshop-station": "Werkstatt",
+    architecture: "Bauwerk",
+});
+AnazhRealm.AXIS_LABELS = Object.freeze({
+    pointedFraction: "Schärfe",
+    elongation: "Streckung",
+    härte: "Härte",
+    dichte: "Dichte",
+    zähigkeit: "Zähigkeit",
+    hollowness: "Hohlraum",
+    axialSymmetry: "Symmetrie",
+    spread: "Standfläche",
+    lebendig: "Lebendigkeit",
+    transparent: "Transparenz",
+    resoniert: "Resonanz",
+    magieleitung: "Magie-Leitung",
+    stromleitung: "Strom-Leitung",
+    wärmeleitung: "Wärme-Leitung",
+    brennbar: "Brennbarkeit",
+    bodyShape: "Körper-Form",
+    portalShape: "Tor-Form",
+});
 
 // S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der Form: ein Werkzeug katalysiert eine Transformation, und
 // seine FORM bestimmt welche. Die opClass emergiert als argmax-Resonanz des Produkt-Vektors (Tags ⊕ pointedFraction)
@@ -46295,11 +46921,15 @@ AnazhRealm.FORM_ROLE_RESONANCE_FLOOR = 0.5;
 // (wie die Werkstatt-Natur, V17.70). Darum ist additive die schwache Residual-Signatur (weich/zäh/lebendig) — die
 // EMERGENZ trägt die drei physischen Klassen; eine reine Misch-Absicht bleibt der Schöpfer-Override (opClass von
 // Hand). Die Built-in-Werkzeuge sind FORMLOS → der Wächter ist synthetisch (checkBandV1771).
+// V17.90 — die Material-Gewichte für die NORMALISIERTE Skala angehoben (A1: dichte/magieleitung jetzt [0..1]
+// statt [0..3]). Sonst schlüge die unveränderte pointedFraction (subtractive) die material-getriebenen Klassen
+// (plastic/phaseChange) zu oft (eine magie-Helix las subtractive statt phaseChange). pointedFraction bleibt
+// [0..1], also keine Anhebung; die Balance scharf→subtractive / stumpf-dicht→plastic / magie→phaseChange GEMESSEN.
 AnazhRealm.OP_CLASS_SIGNATURES = Object.freeze({
     subtractive: Object.freeze({ pointedFraction: 2.3, härte: 0.2 }),
-    plastic: Object.freeze({ dichte: 1.0, härte: 0.3 }),
-    phaseChange: Object.freeze({ magieleitung: 1.2 }),
-    additive: Object.freeze({ zähigkeit: 0.6, lebendig: 0.6, härte: -0.4 }),
+    plastic: Object.freeze({ dichte: 1.8, härte: 0.5 }),
+    phaseChange: Object.freeze({ magieleitung: 3.0 }),
+    additive: Object.freeze({ zähigkeit: 1.5, lebendig: 1.5, härte: -1.0 }),
 });
 // Der Standard-opName je opClass (die opChain-„Geschichte"; die opClass treibt die Material-Kompatibilität).
 AnazhRealm.OP_NAME_BY_CLASS = Object.freeze({

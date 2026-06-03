@@ -4014,7 +4014,7 @@ async function checkBandV1757HeldSlot(ctx) {
 
         // (3) equipHeld lehnt ab: ein unbekannter Bauplan + ein builtIn-Crafting-Tool (kein Welt-Gerät)
         out.rejectsUnknown = !r.equipHeld("nonexistent_bp_xyz").ok;
-        out.rejectsBuiltinTool = !r.equipHeld("hammer").ok; // hammer = builtIn-Crafting-Tool, kein Bauplan
+        out.rejectsBuiltinTool = !r.equipHeld("schmiede-hammer").ok; // builtIn-Crafting-Tool, kein Welt-Bauplan
         r.equipHeld(wName); // (die fehlgeschlagenen Versuche ändern nichts; sicherheitshalber neu setzen)
 
         // (4) KONSUM — das gehaltene harte Gerät HEBT das Kombat-Profil (Angriff-mit-jedem-Gerät)
@@ -5323,9 +5323,9 @@ async function checkBandV1766FertigenFlow(ctx) {
             typeof r._makeStationGate === "function" &&
             typeof r._stationLabelForDomain === "function";
 
-        // --- die alten parallelen Mach-Knoepfe sind WEG aus dem Detail-Editor ---
-        const actionsSrc = r._workshopRenderActions.toString();
-        out.oldButtonsGone = !actionsSrc.includes("workshop-forge") && !actionsSrc.includes("workshop-soul-activate");
+        // --- V17.91: der Detail-Editor (samt _workshopRenderActions) ist ENTFERNT → die alten parallelen
+        // Mach-Knöpfe existieren definitiv nicht mehr; der EINE FERTIGEN-Akt lebt im Stats-Panel. ---
+        out.oldButtonsGone = typeof r._workshopRenderActions !== "function";
         // --- der EINE FERTIGEN-Akt lebt jetzt im Abschluss der Stats-Tabelle ---
         out.statsPanelCallsFertigen = r._workshopRenderStatsPanel.toString().includes("_workshopAppendFertigenRow");
 
@@ -5340,6 +5340,9 @@ async function checkBandV1766FertigenFlow(ctx) {
                 { shape: "box", material: "eisen", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
+        // V17.88 — die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
+        // direkten applyOpToPart-Test (Domain-Logik) leihen wir das Werkzeug aus der Op-Bibliothek.
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
         r.applyOpToPart("__s7_forge", 0, "schmiede-hammer");
         out.forgeHasDomain = r.computeBlueprintDomain(blu.__s7_forge) === "forging";
 
@@ -5490,6 +5493,7 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
         delete blu.__wd_work;
         blu.__wd_work = mk("eisen", "box");
         blu.__wd_work.name = "__wd_work";
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
         r.applyOpToPart("__wd_work", 0, "schmiede-hammer"); // forging-Domain über die opChain
         out.workIsForging = r.computeBlueprintDomain(blu.__wd_work) === "forging";
         r.setGameMode("pfad");
@@ -5632,6 +5636,7 @@ async function checkBandV1769RoleResonance(ctx) {
         blu.__rr_forge = { name: "__rr_forge", parts: [part("eisen", 0, 0, 0)] };
         const savedMode = r.getGameMode();
         r.setGameMode("schöpfer");
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
         r.applyOpToPart("__rr_forge", 0, "schmiede-hammer");
         const forgeRole = r.computeBlueprintRole(blu.__rr_forge);
         out.domainPriority = forgeRole === "tool" || forgeRole === "armor";
@@ -5723,6 +5728,7 @@ async function checkBandV1770WorkshopStationMark(ctx) {
             ],
         };
         r.setGameMode("schöpfer");
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
         r.applyOpToPart("__ws_work", 0, "schmiede-hammer"); // forging-Domäne (opChain)
         out.workIsForging = r.computeBlueprintDomain(blu.__ws_work) === "forging";
         r.setGameMode("pfad");
@@ -5879,8 +5885,8 @@ async function checkBandV1772Library(ctx) {
         //     ein deklarierter Override, V17.70, kein Emergenz-Versagen).
         out.trankHonest = r.computeBlueprintRole(T) === "consumable";
         out.avatarHonest = r.computeBlueprintRole(V) === "soul" && r._isBodyShaped(V) === true;
-        out.armorIsTwin = r.computeBlueprintRole(A) === "architecture";
-        out.geraetIsHeldArch = r.computeBlueprintRole(G) === "architecture";
+        out.armorIsTwin = r.computeBlueprintRole(A) === "architecture"; // Platte (stumpf) → Bauwerk, armor-Rolle ist Intent
+        out.geraetIsImplement = ["weapon", "tool"].includes(r.computeBlueprintRole(G)); // V17.83 U4: die Spitzhacke (spitz+gestreckt) → Gerät aus der Form
 
         // (3) das Role-GATE beißt: die rollen-spezifischen Mach-Akte lehnen das rollenlose Gerät ab.
         out.armorGate = r.forgeArmor("geraet_spitzhacke").reason === "not_marked_as_armor";
@@ -5911,6 +5917,10 @@ async function checkBandV1772Library(ctx) {
         // restore — kein dangling Held/Soul/Boost für die nächsten Bands
         if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
         else r.state.worldMeta.gameMode = savedMode;
+        if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"]; // V17.74 — kein Soul-Leck für spätere Bands
+        for (const bn of ["geraet_spitzhacke", "ruestung_brustpanzer", "trank_lebenssaft", "avatar_waechter"]) {
+            if (r.state.blueprints[bn]) delete r.state.blueprints[bn].forgedPrecision; // V17.75 — kein forge-Leck (un-forged Default)
+        }
         r.applyPlayerSoul(savedSoul);
         if (p) {
             p.equipped = savedEquip;
@@ -5932,8 +5942,8 @@ async function checkBandV1772Library(ctx) {
         res.trankHonest && res.avatarHonest
     );
     check(
-        "V17.72 A1: Rüstung + Gerät resonieren architecture (der dichte+harte Intent-Zwilling) → die armor-Rolle ist ein deklarierter Override (V17.70)",
-        res.armorIsTwin && res.geraetIsHeldArch
+        "V17.72 A1 / V17.83 U4: die Rüstungs-Platte (stumpf) → Bauwerk (armor-Rolle = Intent-Override, V17.70); die Spitzhacke (spitz+gestreckt) → Gerät AUS DER FORM (U4 trennt Klinge vom Bauwerk)",
+        res.armorIsTwin && res.geraetIsImplement
     );
     check(
         "V17.72 A1: das Role-GATE beißt — forgeArmor/brewConsumable/forgeAvatar lehnen das rollenlose Gerät ab",
@@ -5947,6 +5957,1445 @@ async function checkBandV1772Library(ctx) {
         "V17.72 A1 KONSUM: die vier Mach-Akte FEUERN rollen-gerecht — fertigeBlueprint schmiedet Gerät (held) + webt Rüstung (armor) + braut Trank + formt Avatar",
         res.geraetForged && res.armorForged && res.trankBrewed && res.avatarEmbodied
     );
+}
+
+// V17.73 S9 (kampf-plan §10-F4) — das gehaltene Gerät SICHTBAR in der Hand. Headless beweist
+// Existenz + Lifecycle + Anker (Mesh erscheint beim Equip · skaliert · am Avatar geparentet ·
+// wechselt beim Equip-Wechsel ohne Leak · verschwindet beim Ablegen · ein formloses builtIn-Tool
+// wird abgelehnt · re-attached beim Körper-Wechsel). Die Optik/Pose/Skala = Schöpfer-Browser
+// (pixel-blind headless, V13). Snapshot + Restore des Player-States (wie V17.66).
+async function checkBandV1773HeldMesh(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh;
+        out.hasPlayerMesh = !!pm;
+        if (!pm) return out;
+
+        // Snapshot — am Ende restauriert (kein dangling Held/Soul für die nächsten Bands).
+        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedSoul = (p && p.soul) || "mensch";
+
+        // sauberer Start
+        r.equipHeld(null);
+        out.startNoMesh = !(pm.userData && pm.userData.heldMesh);
+
+        // (1) ein echtes Geräte-Bauplan (die V17.72-Bibliothek) → Mesh erscheint, am Avatar geparentet
+        const eq1 = r.equipHeld("geraet_spitzhacke");
+        const m1 = pm.userData && pm.userData.heldMesh;
+        out.equipOk = eq1.ok === true && p.equipped.held === "geraet_spitzhacke";
+        out.meshBuilt = !!m1 && Array.isArray(m1.children) && m1.children.length > 0;
+        const parts = pm.userData && pm.userData.parts;
+        const armAnchor = parts && (parts.rightArm || parts.rightWing);
+        out.parented = !!m1 && (m1.parent === armAnchor || m1.parent === pm);
+        // Mensch/Phönix haben einen Arm/Flügel → daran (schwingt mit); Custom-Seele → an die Wurzel
+        out.onAnchor = !!m1 && (armAnchor ? m1.parent === armAnchor : m1.parent === pm);
+
+        // (2) auf greifbare Hand-Größe skaliert (nicht roh)
+        out.scaled = !!m1 && m1.scale.x > 0 && m1.scale.x <= r.constructor.HELD_MESH.maxScale;
+
+        // (3) Equip-Wechsel: anderer Bauplan → das Mesh wechselt (neues Objekt) + das alte ist
+        //     aus dem Graph (kein Leak). `village` (große Struktur) testet zugleich die Skalierung.
+        const m1uuid = m1 && m1.uuid;
+        r.equipHeld("village");
+        const m2 = pm.userData && pm.userData.heldMesh;
+        out.swapped = !!m2 && m2.uuid !== m1uuid;
+        out.oldDetached = !m1 || m1.parent === null;
+
+        // (4) ablegen → kein Mesh
+        r.equipHeld(null);
+        out.unequipNoMesh = !(pm.userData && pm.userData.heldMesh);
+
+        // (5) ein formloses builtIn-Crafting-Tool (schmiede-hammer, kein Bauplan) → equipHeld lehnt ab, kein Mesh
+        //     (die Werkstatt-Schicht state.tools bleibt getrennt vom Welt-Gerät)
+        const eqTool = r.equipHeld("schmiede-hammer");
+        out.toolRejected = eqTool.ok === false;
+        out.toolNoMesh = !(pm.userData && pm.userData.heldMesh);
+
+        // (6) KONSUM — KÖRPER-WECHSEL: Gerät halten, Seele wechseln → das Mesh re-attached am NEUEN
+        //     Körper (Restore-/Seelen-sicher; deckt auch den loadState-Pfad).
+        r.equipHeld("geraet_spitzhacke");
+        r.applyPlayerSoul(savedSoul === "phoenix" ? "human" : "phoenix");
+        const pm2 = r.state.playerMesh;
+        const m3 = pm2.userData && pm2.userData.heldMesh;
+        out.reattached = !!m3 && m3.parent !== null;
+        out.reattachedNewBody = !!m3 && pm2 !== pm;
+
+        // restore — die Original-Seele + das Original-Equip wiederherstellen
+        r.applyPlayerSoul(savedSoul);
+        if (p) p.equipped = savedEquip;
+        r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        return out;
+    });
+    check("V17.73 S9: Hand-Mesh — Spieler-Mesh da + sauberer Start (kein Held-Mesh nach equipHeld(null))", res.hasPlayerMesh && res.startNoMesh);
+    check(
+        "V17.73 S9: ein Geräte-Bauplan (geraet_spitzhacke) erzeugt ein Hand-Mesh, an den Avatar geparentet (Arm/Flügel/Wurzel)",
+        res.equipOk && res.meshBuilt && res.parented && res.onAnchor
+    );
+    check("V17.73 S9: das Hand-Mesh ist auf greifbare Hand-Größe skaliert (0 < scale ≤ maxScale)", res.scaled);
+    check(
+        "V17.73 S9: Equip-Wechsel tauscht das Mesh (neues Objekt) + das alte ist aus dem Szenen-Graph (kein Leak)",
+        res.swapped && res.oldDetached
+    );
+    check("V17.73 S9: ablegen (equipHeld(null)) entfernt das Hand-Mesh", res.unequipNoMesh);
+    check(
+        "V17.73 S9: ein formloses builtIn-Crafting-Tool (schmiede-hammer) wird abgelehnt → kein Hand-Mesh (die Werkstatt-Schicht bleibt getrennt)",
+        res.toolRejected && res.toolNoMesh
+    );
+    check(
+        "V17.73 S9 KONSUM: Körper-Wechsel (applyPlayerSoul) re-attached das Hand-Mesh am NEUEN Avatar (Restore-/Seelen-sicher)",
+        res.reattached && res.reattachedNewBody
+    );
+}
+
+// V17.74 Welle 1b (kampf-plan §11.5) — die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
+// der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
+// Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States (V17.66).
+async function checkBandV1774UseByRole(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const blu = r.state.blueprints;
+
+        // Snapshot — am Ende restauriert.
+        const savedMode = r.getGameMode();
+        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedSoul = (p && p.soul) || "mensch";
+        const savedHotbar = r.state.hotbar.slice(0, 9);
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        else r.state.worldMeta.gameMode = "schöpfer";
+        // V17.74 — falls eine frühere Band (V1772) den Avatar verkörpert + den customSoul gelassen hat:
+        // sauberer Start, damit der „noch nicht verkörpert"-Listen-Test ehrlich ist.
+        if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"];
+
+        // (1) _blueprintUseKind — aus Rolle + Form AUSGELESEN
+        const kind = (n) => r._blueprintUseKind(blu[n]);
+        out.kindGeraet = kind("geraet_spitzhacke") === "hold";
+        out.kindArmor = kind("ruestung_brustpanzer") === "wear";
+        out.kindTrank = kind("trank_lebenssaft") === "drink";
+        out.kindAvatar = kind("avatar_waechter") === "embody";
+        // die DEFAULT-Hotbar MUSS „place" bleiben — Wasserfall ist der Test der größen-bewussten Spanne
+        // (Klippe pos y=4, aber 8 m hoch; positions-only läse 3.8 < 6 → fälschlich „hold").
+        out.defaultHotbarPlace =
+            kind("village") === "place" && kind("temple") === "place" && kind("waterfall") === "place";
+
+        // (2) HOTBAR-GATE — Gerät → IN DIE HAND, kein Phantom
+        r.equipHeld(null);
+        r._clearBuildMode();
+        r.setHotbarSlot(0, "geraet_spitzhacke");
+        r.selectHotbarSlot(0);
+        const bm = r.state.buildMode;
+        out.deviceToHand = p.equipped.held === "geraet_spitzhacke" && bm.active === false && !bm.phantomMesh;
+
+        // (3) HOTBAR-TOGGLE — schon gehaltenen Slot re-auswählen → ablegen (Faust)
+        r.selectHotbarSlot(0);
+        out.toggleOff = p.equipped.held == null;
+
+        // (4) HOTBAR-GATE — Struktur → Platzier-Phantom (wie bisher, kein Regress)
+        r.setHotbarSlot(1, "village");
+        r.selectHotbarSlot(1);
+        out.structureToPhantom = bm.active === true && !!bm.phantomMesh;
+        r._clearBuildMode(); // das Test-Phantom abräumen
+
+        // (5) BUG a — die Ausrüstung-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät
+        const part = r._equipPartitionEquipBlueprints();
+        out.armorListed = part.armorBlueprints.includes("ruestung_brustpanzer");
+        if (typeof r.renderPlayerEquipUI === "function") r.renderPlayerEquipUI();
+        const equipSels = document.querySelectorAll("#player-equip select");
+        out.heldDeviceListed = [...equipSels].some((sel) =>
+            [...sel.options].some((o) => o.value === "geraet_spitzhacke")
+        );
+
+        // (6) BUG b — die Seele-Select listet den built-in Bauplan-Avatar + Verkörpern registriert ihn
+        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        const soulSel = document.getElementById("player-soul-select");
+        out.avatarListed = !!soulSel && [...soulSel.options].some((o) => o.value === "avatar_waechter");
+        const emb = r.embodyBlueprint("avatar_waechter");
+        out.avatarEmbodied =
+            emb.ok === true &&
+            p.soul === "bp_avatar_waechter" &&
+            !!(r.state.customSouls && r.state.customSouls["bp_avatar_waechter"]);
+        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        const soulSel2 = document.getElementById("player-soul-select");
+        out.noDuplicate =
+            !!soulSel2 &&
+            [...soulSel2.options].filter((o) => o.value === "avatar_waechter").length === 0 &&
+            [...soulSel2.options].some((o) => o.value === "bp_avatar_waechter");
+
+        // restore — kein dangling Held/Soul/Hotbar/customSoul/Phantom für die nächsten Bands
+        if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
+        else r.state.worldMeta.gameMode = savedMode;
+        r._clearBuildMode();
+        if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"];
+        r.applyPlayerSoul(savedSoul);
+        if (p) p.equipped = savedEquip;
+        r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
+        for (let i = 0; i < 9; i++) r.state.hotbar[i] = savedHotbar[i] || null;
+        if (typeof r._renderHotbarDOM === "function") r._renderHotbarDOM();
+        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        return out;
+    });
+    check(
+        "V17.74 Welle 1b: _blueprintUseKind liest aus Rolle+Form — Gerät→hold · Rüstung→wear · Trank→drink · Avatar→embody",
+        res.kindGeraet && res.kindArmor && res.kindTrank && res.kindAvatar
+    );
+    check(
+        "V17.74 Welle 1b: die DEFAULT-Hotbar (Dorf/Tempel/Wasserfall) bleibt platzierbar — die groessen-bewusste Spanne faengt den 8-m-Wasserfall (kein Gate-Regress)",
+        res.defaultHotbarPlace
+    );
+    check(
+        "V17.74 Welle 1b HOTBAR-GATE: ein Gerät im Slot geht IN DIE HAND (equipped.held), KEIN Platzier-Phantom",
+        res.deviceToHand
+    );
+    check("V17.74 Welle 1b: ein gehaltener Slot re-ausgewählt → ablegen (Toggle zur Faust)", res.toggleOff);
+    check(
+        "V17.74 Welle 1b HOTBAR-GATE: eine Struktur im Slot baut das Platzier-Phantom (wie bisher, kein Regress)",
+        res.structureToPhantom
+    );
+    check(
+        "V17.74 Welle 1b BUG-a: die Ausrüstung-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät (nicht mehr nur !builtIn)",
+        res.armorListed && res.heldDeviceListed
+    );
+    check(
+        "V17.74 Welle 1b BUG-b: die Seele-Select listet den built-in Bauplan-Avatar (avatar_waechter) als verkörperbar",
+        res.avatarListed
+    );
+    check(
+        "V17.74 Welle 1b BUG-b KONSUM: einen Bauplan-Avatar verkörpern formt + registriert ihn (player.soul=bp_…, customSoul), kein Doppel-Eintrag danach",
+        res.avatarEmbodied && res.noDuplicate
+    );
+}
+
+// V17.75 — die MATERIAL-Sichtbarkeit für die Mach-Akte (der Avatar-Bug: stiller Fehlschlag bei fehlendem
+// Material). Das Fehlende sticht am Dropdown-Eintrag heraus (✗ fehlt …) + ein gescheitertes Verkörpern
+// setzt das Select zurück, statt eine falsche Seele zu zeigen. Snapshot + Restore (Mode/Soul/Inventar).
+async function checkBandV1775MakeActCost(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const setMode = (m) => {
+            if (typeof r.setGameMode === "function") r.setGameMode(m);
+            else r.state.worldMeta.gameMode = m;
+        };
+
+        // Snapshot
+        const savedMode = r.getGameMode();
+        const savedSoul = (p && p.soul) || "mensch";
+        const savedInv = Array.isArray(p.inventory) ? JSON.parse(JSON.stringify(p.inventory)) : [];
+        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const invLen = Array.isArray(p.inventory) ? p.inventory.length : 27;
+        if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"];
+        if (r.state.blueprints["avatar_waechter"]) delete r.state.blueprints["avatar_waechter"].forgedPrecision;
+
+        // (1) schöpfer (Gott-Modus) → kein Kosten-Marker (frei)
+        setMode("schöpfer");
+        out.schoepferFree = r._makeActCostSuffix("avatar_waechter") === "";
+
+        // (2) pfad ohne Material → das Fehlende sticht heraus (✗ fehlt …)
+        setMode("pfad");
+        p.inventory = new Array(invLen).fill(null);
+        const sufEmpty = r._makeActCostSuffix("avatar_waechter");
+        out.pfadMissing = sufEmpty.includes("fehlt") && sufEmpty.includes("✗");
+
+        // (3) pfad MIT Material → bereit (· ✓)
+        const cost = r.computeBuildCost("avatar_waechter");
+        let si = 0;
+        for (const mat of Object.keys(cost)) {
+            p.inventory[si++] = { kind: "material", material: mat, count: cost[mat] };
+        }
+        out.pfadReady = r._makeActCostSuffix("avatar_waechter") === " · ✓";
+
+        // (4) KERN — embody in pfad OHNE Material schlägt fehl + die Seele bleibt der alte Avatar
+        p.inventory = new Array(invLen).fill(null);
+        r.applyPlayerSoul("human");
+        const emb = r.embodyBlueprint("avatar_waechter");
+        out.embodyFailsClean = emb.ok === false && p.soul === "human";
+
+        // (5) das Select RENDERT den Mangel sichtbar im Option-Text (kein stiller Fehlschlag)
+        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        const soulSel = document.getElementById("player-soul-select");
+        const avatarOpt = soulSel ? [...soulSel.options].find((o) => o.value === "avatar_waechter") : null;
+        out.optionShowsMissing = !!avatarOpt && avatarOpt.textContent.includes("fehlt");
+
+        // (6) ein GESCHMIEDETES Gerät → kein Marker (der Gebrauch ist frei)
+        const tb = r.state.blueprints["geraet_spitzhacke"];
+        const savedForged = tb ? tb.forgedPrecision : undefined;
+        if (tb) tb.forgedPrecision = 0.8;
+        out.forgedFree = r._makeActCostSuffix("geraet_spitzhacke") === "";
+        if (tb) {
+            if (savedForged === undefined) delete tb.forgedPrecision;
+            else tb.forgedPrecision = savedForged;
+        }
+
+        // restore
+        setMode(savedMode);
+        if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"];
+        r.applyPlayerSoul(savedSoul);
+        if (p) {
+            p.inventory = savedInv;
+            p.equipped = savedEquip;
+        }
+        r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
+        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        if (typeof r.renderInventoryUI === "function") r.renderInventoryUI();
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        return out;
+    });
+    check("V17.75: _makeActCostSuffix — schöpfer (Gott-Modus) zeigt keinen Kosten-Marker (frei)", res.schoepferFree);
+    check("V17.75: pfad ohne Material → das Fehlende STICHT heraus (✗ fehlt …) am Dropdown-Eintrag", res.pfadMissing);
+    check("V17.75: pfad MIT Material → bereit-Marker (· ✓)", res.pfadReady);
+    check(
+        "V17.75 KERN: ein gescheitertes Verkörpern (kein Material) ändert die Seele NICHT (player.soul bleibt) — der Avatar-Bug",
+        res.embodyFailsClean
+    );
+    check(
+        "V17.75: die Seele-Select RENDERT den Material-Mangel sichtbar im Option-Text (kein stiller Fehlschlag)",
+        res.optionShowsMissing
+    );
+    check("V17.75: ein geschmiedetes Gerät zeigt keinen Kosten-Marker (der Gebrauch ist frei)", res.forgedFree);
+}
+
+// V17.76 Welle 2 (Schritt 1) — die WERKSTATT als Präzisions-Quelle: ihre Präzision emergiert aus der
+// Substanz (dichte+harte Esse → feiner), und applyOpToPart NAH einer passenden Station hebt den opChain-
+// Cap über den Werkzeug-Cap (bessere Esse → höherer Cap, kein Crafting-Zirkel). Additiv (max), kein Regress.
+async function checkBandV1776WorkshopPrecision(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh;
+        const px = pm ? pm.position.x : 0,
+            py = pm ? pm.position.y : 0,
+            pz = pm ? pm.position.z : 0;
+
+        // (1) Substanz-Präzision: die dichte+harte Esse hält feinere Toleranzen als eine weiche Werkstatt
+        const esseP = r._workshopStationPrecision(r.state.blueprints["esse"]);
+        r.state.blueprints["wp_soft"] = {
+            name: "wp_soft",
+            label: "soft",
+            parts: [{ shape: "box", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+        };
+        const softP = r._workshopStationPrecision(r.state.blueprints["wp_soft"]);
+        out.esseP = esseP;
+        out.softP = softP;
+        out.substancePrecision = esseP > 0.8 && softP < esseP;
+
+        // (2) _nearbyWorkshopStationPrecision: keine Station → 0; eine forging-Esse nah → ihre Präzision;
+        //     die falsche Domäne (alchemy) → 0 (nur die EIGENE Domäne zählt). Synthetischer Eintrag (leicht).
+        out.noStationZero = r._nearbyWorkshopStationPrecision("forging", { x: px, y: py, z: pz }) === 0;
+        const esseEntry = { type: "esse", position: { x: px + 2, y: py, z: pz }, id: "wp_test_esse" };
+        r.state.architectures.push(esseEntry);
+        const nearPrec = r._nearbyWorkshopStationPrecision("forging", { x: px, y: py, z: pz });
+        out.stationBoosts = nearPrec > 0.8 && Math.abs(nearPrec - esseP) < 1e-6;
+        out.wrongDomainZero = r._nearbyWorkshopStationPrecision("alchemy", { x: px, y: py, z: pz }) === 0;
+
+        // (3) KONSUM — applyOpToPart: ein forging-Werkzeug (schmiede-hammer, cap 0.75) NAH der Esse hebt
+        //     den gepushten opChain-Cap über den Werkzeug-Cap (auf die Esse-Substanz, >0.8).
+        r.state.blueprints["wp_work"] = {
+            name: "wp_work",
+            label: "work",
+            parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+        };
+        if (!Array.isArray(p.tools)) p.tools = [];
+        if (!p.tools.includes("schmiede-hammer")) p.tools.push("schmiede-hammer");
+        const savedMode = r.getGameMode();
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        else r.state.worldMeta.gameMode = "schöpfer"; // keine Stamina-Reibung im Test
+        const opR = r.applyOpToPart("wp_work", 0, "schmiede-hammer");
+        const chain = r.state.blueprints["wp_work"].parts[0].opChain || [];
+        const lastCap = chain.length ? chain[chain.length - 1].cap : 0;
+        out.konsum = opR.ok === true && lastCap > 0.8 && lastCap >= esseP - 1e-6;
+
+        // restore
+        if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
+        else r.state.worldMeta.gameMode = savedMode;
+        const ai = r.state.architectures.indexOf(esseEntry);
+        if (ai >= 0) r.state.architectures.splice(ai, 1);
+        delete r.state.blueprints["wp_soft"];
+        delete r.state.blueprints["wp_work"];
+        return out;
+    });
+    check(
+        "V17.76 Welle 2: die Werkstatt-Präzision emergiert aus SUBSTANZ — eine dichte+harte Esse (>0.8) hält feiner als eine weiche Werkstatt (kein Crafting-Zirkel)",
+        res.substancePrecision,
+        `esseP=${(res.esseP || 0).toFixed(3)} softP=${(res.softP || 0).toFixed(3)}`
+    );
+    check(
+        "V17.76 Welle 2: _nearbyWorkshopStationPrecision — keine Station → 0, eine passende Esse nah → ihre Präzision (== Substanz)",
+        res.noStationZero && res.stationBoosts
+    );
+    check("V17.76 Welle 2: nur die EIGENE Domäne zählt — die forging-Esse boostet alchemy NICHT", res.wrongDomainZero);
+    check(
+        "V17.76 Welle 2 KONSUM: applyOpToPart NAH der Esse hebt den opChain-Cap über den Werkzeug-Cap (bessere Esse → feiner)",
+        res.konsum
+    );
+}
+
+// V17.77 — die STEIGERUNG sichtbar + craftbar: eine Meister-Esse (Eisen) ist die bessere Esse (höherer
+// Cap aus dichterer/härterer Substanz), und der Werkstatt-Readout zeigt die Präzision → der Spieler SIEHT
+// „bessere Esse → höherer Cap" + lernt das Prinzip für alle Systeme (besseres Material → besseres Werk).
+async function checkBandV1777SteigerungVisible(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const esse = r.state.blueprints["esse"];
+        const meister = r.state.blueprints["esse_meister"];
+        out.meisterExists = !!meister && meister.role === "workshop-station";
+        out.meisterForging = meister ? r._computeWorkshopDomain(meister) === "forging" : false;
+        const esseP = r._workshopStationPrecision(esse);
+        const meisterP = meister ? r._workshopStationPrecision(meister) : 0;
+        out.esseP = Math.round(esseP * 1e4) / 1e4;
+        out.meisterP = Math.round(meisterP * 1e4) / 1e4;
+        out.steigerung = meisterP > esseP && esseP > 0.85; // die Meister-Esse ist besser, beide präzise
+        // die Spanne sichtbar: eine weiche Werkstatt (leder) fertigt deutlich gröber als die Eisen-Esse
+        r.state.blueprints["_softws"] = {
+            name: "_softws",
+            parts: esse.parts.map((p) => ({ ...p, material: "leder" })),
+        };
+        const softP = r._workshopStationPrecision(r.state.blueprints["_softws"]);
+        out.rangeVisible = softP < meisterP - 0.1;
+        delete r.state.blueprints["_softws"];
+        // KONSUM — der Werkstatt-Readout rendert die Präzisions-Zeile (sichtbar/lernbar)
+        const panel = document.createElement("div");
+        r._workshopAppendRoleRow(panel, meister);
+        const labels = [...panel.querySelectorAll(".stat-label")].map((e) => e.textContent);
+        const precText = [...panel.querySelectorAll(".workshop-precision-text")].map((e) => e.textContent).join("|");
+        out.readoutShowsPrecision = labels.includes("Werkstatt-Präzision") && precText.includes(meisterP.toFixed(2));
+        out.noLitter = !meister.instanced; // built-in ohne instanced → kein Worldgen-Litter (V17.72)
+        return out;
+    });
+    check("V17.77: die Meister-Esse existiert als craftbare workshop-station", res.meisterExists);
+    check("V17.77: ihre Domäne emergiert als forging (Eisen+Glut → Schmiede, S7-B)", res.meisterForging);
+    check(
+        "V17.77 STEIGERUNG: die Meister-Esse (Eisen) fertigt feiner als die Basis-Esse — bessere Substanz → höherer Cap",
+        res.steigerung,
+        `esse=${res.esseP} meister=${res.meisterP}`
+    );
+    check(
+        "V17.77: die Spanne ist sichtbar — eine weiche Werkstatt fertigt deutlich gröber als die Eisen-Esse",
+        res.rangeVisible
+    );
+    check(
+        "V17.77 KONSUM: der Werkstatt-Readout rendert die Präzisions-Zeile (die Steigerung sichtbar/lernbar)",
+        res.readoutShowsPrecision
+    );
+    check("V17.77: die Meister-Esse littert den Worldgen NICHT (built-in ohne instanced)", res.noLitter);
+}
+
+// V17.78 Welle 2 Schritt 2 — die generische Präzisions-Leiter ist GEFALLEN: feuerstein/hammer/feile/
+// polierscheibe RAUS (die Werkstatt trägt jetzt die Präzision, V17.76/.77). hände bleibt die domain-
+// neutrale Baseline; die Op-Klassen-Abdeckung + der Crafting-Pfad bleiben intakt (kein Material verwaist).
+async function checkBandV1778LadderCut(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const tools = r.state.tools || {};
+        out.removedGone = !["feuerstein-knapper", "hammer", "feile", "polierscheibe"].some((n) => tools[n]);
+        // V17.88 — nur `hände` ist STARTER (die Basics); die 5 Domain-Werkzeuge bleiben als OP-Bibliothek
+        // (Definition da, isStarter:false), aus der die platzierte Werkstatt ihren Prozess zieht.
+        out.keptPresent =
+            !!tools["hände"] &&
+            tools["hände"].isStarter &&
+            ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"].every(
+                (n) => tools[n] && !tools[n].isStarter
+            );
+        out.handeNeutral = !!tools["hände"] && tools["hände"].domain === null && tools["hände"].precisionCap === 0.4;
+        const classes = new Set(Object.values(tools).map((t) => t.opClass));
+        out.allOpClasses = ["subtractive", "plastic", "additive", "phaseChange"].every((c) => classes.has(c));
+        // KONSUM — ein Material ist weiter bearbeitbar (hände subtractive auf eisen) → der Crafting-Pfad lebt
+        r.state.blueprints["_cut_test"] = {
+            name: "_cut_test",
+            parts: [{ shape: "box", material: "eisen", opChain: r._defaultPartOpChain() }],
+        };
+        const prevMode = r.getGameMode();
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        const ap = r.applyOpToPart("_cut_test", 0, "hände");
+        out.stillRefinable = ap.ok === true;
+        if (typeof r.setGameMode === "function") r.setGameMode(prevMode);
+        delete r.state.blueprints["_cut_test"];
+        return out;
+    });
+    check(
+        "V17.78 Welle 2 Schritt 2: die generische Leiter ist GEFALLEN (feuerstein/hammer/feile/polierscheibe RAUS)",
+        res.removedGone
+    );
+    check(
+        "V17.88: hände (domain-neutrale Baseline, 0.4) ist der EINZIGE Starter; die 5 Domain-Ops bleiben als Werkstatt-Op-Bibliothek (isStarter:false)",
+        res.keptPresent && res.handeNeutral
+    );
+    check(
+        "V17.78: die Op-Klassen-Abdeckung ist intakt (subtractive/plastic/additive/phaseChange je ein behaltenes Tool)",
+        res.allOpClasses
+    );
+    check(
+        "V17.78 KONSUM: ein Material ist weiter bearbeitbar (hände subtractive auf eisen) — der Crafting-Pfad lebt",
+        res.stillRefinable
+    );
+}
+
+// V17.79 — die ROLLE-PASSUNG (Schöpfer-Synergie „Qualität = wie gut passt die Form zur Rolle"): die FORM
+// eines Produkts moduliert die Wirkung seiner Ausrüstung — eine scharfe Klinge wirkt als Gerät stärker als
+// ein gleich-materieller Klotz (die FORM-Achse, die STAT_FROM_TAGS nicht sieht). Handwerk × Design.
+async function checkBandV1779RoleFitQuality(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const cfg = r.constructor.QUALITY_ROLE_FIT;
+        const round = (x) => Math.round((x || 0) * 1000) / 1000;
+        const blade = {
+            name: "_rf_blade",
+            parts: [
+                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 1.6 } },
+                { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.2 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+            ],
+        };
+        const blob = {
+            name: "_rf_blob",
+            parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } }],
+        };
+        // (1) die Passung diskriminiert über die FORM (gleiches Material eisen, andere Form)
+        const fitBlade = r._blueprintRoleFit(blade, "held");
+        const fitBlob = r._blueprintRoleFit(blob, "held");
+        out.heldDiscriminates = fitBlade > fitBlob;
+        out.fitBlade = round(fitBlade);
+        out.fitBlob = round(fitBlob);
+        // (2) Range [min, max]
+        out.inRange = fitBlade <= cfg.max + 1e-9 && fitBlob >= cfg.min - 1e-9;
+        // (3) armor: dichte Platte > weiches Leder-Ding
+        const plate = {
+            name: "_rf_plate",
+            parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } }],
+        };
+        const soft = {
+            name: "_rf_soft",
+            parts: [{ shape: "box", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } }],
+        };
+        out.armorDiscriminates = r._blueprintRoleFit(plate, "armor") > r._blueprintRoleFit(soft, "armor");
+        // (4) consumable: der lebendige Trank > ein toter Stein-Klumpen
+        const deadC = {
+            name: "_rf_dead",
+            parts: [{ shape: "sphere", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 0.5, z: 0.5 } }],
+        };
+        out.consumableDiscriminates =
+            r._blueprintRoleFit(r.state.blueprints["trank_lebenssaft"], "consumable") >
+            r._blueprintRoleFit(deadC, "consumable");
+        // (5) unbekannte Rolle → 1.0 (neutral)
+        out.unknownNeutral = r._blueprintRoleFit(blade, "kein_rollen_name") === 1.0; // V17.81: soul ist jetzt eine echte Rolle
+        // (6) KONSUM — das gehaltene SCHWERT gibt mehr Schaden als der gleich-materielle KLOTZ (Form-Fit
+        //     erreicht die echten Spieler-Stats — genau das Schöpfer-Beispiel).
+        r.state.blueprints["_rf_blade"] = blade;
+        r.state.blueprints["_rf_blob"] = blob;
+        const savedHeld = r.state.player.equipped ? r.state.player.equipped.held : null;
+        r.equipHeld("_rf_blade");
+        const dmgBlade = r.computePlayerStats().stats.damage;
+        r.equipHeld("_rf_blob");
+        const dmgBlob = r.computePlayerStats().stats.damage;
+        out.konsumDamage = dmgBlade > dmgBlob;
+        out.dmgBlade = round(dmgBlade);
+        out.dmgBlob = round(dmgBlob);
+        // restore
+        r.equipHeld(savedHeld);
+        delete r.state.blueprints["_rf_blade"];
+        delete r.state.blueprints["_rf_blob"];
+        return out;
+    });
+    check(
+        "V17.79: die Rolle-Passung diskriminiert über die FORM — eine scharfe Klinge passt besser als Gerät als ein Klotz (gleiches Material)",
+        res.heldDiscriminates,
+        `Klinge=${res.fitBlade} Klotz=${res.fitBlob}`
+    );
+    check("V17.79: die Passung bleibt in [min, max] (kein Runaway)", res.inRange);
+    check("V17.79: armor — eine dichte Platte passt besser als ein weiches Ding", res.armorDiscriminates);
+    check("V17.79: consumable — der lebendige Trank passt besser als ein toter Klumpen", res.consumableDiscriminates);
+    check("V17.79: unbekannte Rolle → neutral (1.0, kein Effekt)", res.unknownNeutral);
+    check(
+        "V17.79 KONSUM: ein gehaltenes SCHWERT gibt mehr Schaden als ein gleich-materieller KLOTZ — der Form-Fit erreicht die Stats (das Schöpfer-Beispiel)",
+        res.konsumDamage,
+        `Schwert=${res.dmgBlade} Klotz=${res.dmgBlob}`
+    );
+}
+
+// V17.80 U1 (resonanz-system.md §2.2) — der volle Produkt-Vektor: die 4 räumlichen Form-Achsen
+// (elongation/hollowness/axialSymmetry/spread) in den Vektor gehoben. Additiv — keine bestehende Signatur
+// referenziert sie (U2 webt sie ein) → die Form ist jetzt vollständig im Vektor, kein Regress.
+async function checkBandV1780FormAxes(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const round = (x) => Math.round((x || 0) * 1000) / 1000;
+        const mk = (parts) => ({ name: "_u1", parts });
+        const blade = mk([
+            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 1.8 } },
+            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.4 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+        ]);
+        const cube = mk([{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } }]);
+        const column = mk([
+            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
+            { shape: "box", material: "stein", position: { x: 0, y: 1, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
+            { shape: "box", material: "stein", position: { x: 0, y: 2, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
+        ]);
+        const wideBase = mk([
+            { shape: "box", material: "stein", position: { x: -1.5, y: 0, z: -1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
+            { shape: "box", material: "stein", position: { x: 1.5, y: 0, z: -1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
+            { shape: "box", material: "stein", position: { x: -1.5, y: 0, z: 1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
+            { shape: "box", material: "stein", position: { x: 1.5, y: 0, z: 1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
+            { shape: "box", material: "stein", position: { x: 0, y: 1.5, z: 0 }, size: { x: 2, y: 0.6, z: 2 } },
+        ]);
+        const body = mk([
+            { shape: "box", material: "stein", position: { x: 0, y: 1, z: 0 }, size: { x: 0.8, y: 1.6, z: 0.5 } },
+            { shape: "cylinder", material: "stein", position: { x: -0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
+            { shape: "cylinder", material: "stein", position: { x: 0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
+        ]);
+        const lump = mk([
+            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+            { shape: "box", material: "stein", position: { x: 1.4, y: 1.2, z: 1.0 }, size: { x: 0.6, y: 0.6, z: 0.6 } },
+        ]);
+        const container = mk([
+            { shape: "box", material: "quarz", position: { x: -1, y: 1, z: 0 }, size: { x: 0.2, y: 2, z: 2 } },
+            { shape: "box", material: "quarz", position: { x: 1, y: 1, z: 0 }, size: { x: 0.2, y: 2, z: 2 } },
+            { shape: "box", material: "quarz", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 0.2, z: 2 } },
+        ]);
+        const solid = mk([{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 } }]);
+        const V = (b) => r._blueprintProductVector(b);
+        const out = {};
+        const vb = V(blade);
+        out.hasAxes = ["elongation", "hollowness", "axialSymmetry", "spread"].every((a) => a in vb);
+        out.elongation = vb.elongation > V(cube).elongation && vb.elongation > 0.6;
+        out.elongVals = `Klinge=${round(vb.elongation)} Würfel=${round(V(cube).elongation)}`;
+        out.spread = V(wideBase).spread > V(column).spread && V(wideBase).spread > 0.4;
+        out.spreadVals = `Basis=${round(V(wideBase).spread)} Säule=${round(V(column).spread)}`;
+        out.symmetry = V(body).axialSymmetry > V(lump).axialSymmetry;
+        out.symVals = `Körper=${round(V(body).axialSymmetry)} Klumpen=${round(V(lump).axialSymmetry)}`;
+        out.hollow = V(container).hollowness > V(solid).hollowness && V(container).hollowness > 0.4;
+        out.hollowVals = `Behälter=${round(V(container).hollowness)} Block=${round(V(solid).hollowness)}`;
+        out.noRegress = r.computeBlueprintRole(solid) === "architecture"; // V17.83 U4: ein WÜRFEL (keine Geräte-Form) bleibt Bauwerk
+        return out;
+    });
+    check("V17.80 U1: die 4 Form-Achsen sind im Produkt-Vektor (elongation/hollowness/axialSymmetry/spread)", res.hasAxes);
+    check("V17.80 U1: elongation — eine Klinge ist gestreckter als ein Würfel", res.elongation, res.elongVals);
+    check("V17.80 U1: spread — eine Trag-Basis spreizt mehr als eine Säule", res.spread, res.spreadVals);
+    check("V17.80 U1: axialSymmetry — ein symmetrischer Körper > ein asymmetrischer Klumpen", res.symmetry, res.symVals);
+    check("V17.80 U1: hollowness — ein Behälter (Wände um Leere) > ein Vollblock", res.hollow, res.hollowVals);
+    check(
+        "V17.80 U1 / V17.83 U4: ein WÜRFEL (keine Geräte-Form) bleibt Bauwerk — U4 ändert nur greifbare Geräte-Formen",
+        res.noRegress
+    );
+}
+
+// V17.81 U2 (resonanz-system.md §3) — DAS EINE Rollen-Signatur-Register: jede Rolle eine VOLLE Signatur über
+// alle Achsen (die fragmentierten FORM_ROLE/ROLE_FIT/forging-split zusammengeführt). Die Tiefe: das volle
+// Profil entscheidet (eine Klinge ist eine bessere Waffe, ein Block ein besseres Bauwerk — über die GESAMTE
+// Resonanz, nicht eine Achse). _blueprintRoleFit liest das Register; die Ausrüstungs-Stats werden tiefer.
+async function checkBandV1781RoleRegister(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const round = (x) => Math.round((x || 0) * 1000) / 1000;
+        const REG = r.constructor.ROLE_SIGNATURES;
+        const cfg = r.constructor.QUALITY_ROLE_FIT;
+        const out = {};
+        const roles = [
+            "held",
+            "weapon",
+            "tool",
+            "brecher",
+            "armor",
+            "consumable",
+            "soul",
+            "portal",
+            "vehicle",
+            "machine",
+            "workshop-station",
+            "architecture",
+        ];
+        out.allRoles = roles.every((rl) => REG[rl]);
+        out.fullSignatures = ["held", "weapon", "armor", "consumable", "vehicle"].every(
+            (rl) => Object.keys(REG[rl] || {}).length >= 4
+        );
+        const mk = (parts) => ({ name: "_u2", parts });
+        const blade = mk([
+            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 2.0 } },
+            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.5 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+        ]);
+        const block = mk([{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } }]);
+        // TIEFE: das volle Profil — die Klinge ist eine bessere WAFFE, der Block ein besseres BAUWERK
+        const bladeWeapon = r._blueprintRoleFit(blade, "weapon");
+        const blockWeapon = r._blueprintRoleFit(block, "weapon");
+        const blockArch = r._blueprintRoleFit(block, "architecture");
+        out.depth = bladeWeapon > blockWeapon;
+        out.roleRelative = blockArch > blockWeapon; // derselbe Block: Bauwerk-Passung > Waffe-Passung
+        out.depthVals = `Klinge.Waffe=${round(bladeWeapon)} Block.Waffe=${round(blockWeapon)} Block.Bauwerk=${round(blockArch)}`;
+        // held + Balance
+        out.heldDiscriminates = r._blueprintRoleFit(blade, "held") > r._blueprintRoleFit(block, "held");
+        out.goodFitBuff = bladeWeapon > 1.05; // eine gute Waffe ist ein Buff
+        out.inRange = bladeWeapon <= cfg.max + 1e-9 && blockWeapon >= cfg.min - 1e-9;
+        // vehicle — die neuen Form-Achsen (spread) tragen die neue Rolle
+        const vehicleForm = mk([
+            { shape: "box", material: "eisen", position: { x: -1.5, y: 0, z: -1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
+            { shape: "box", material: "eisen", position: { x: 1.5, y: 0, z: -1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
+            { shape: "box", material: "eisen", position: { x: -1.5, y: 0, z: 1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
+            { shape: "box", material: "eisen", position: { x: 1.5, y: 0, z: 1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
+            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 3, y: 0.5, z: 2 } },
+        ]);
+        const mast = mk([
+            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.4, y: 1, z: 0.4 } },
+            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 0.4, y: 1, z: 0.4 } },
+        ]);
+        out.vehicleDiscriminates = r._blueprintRoleFit(vehicleForm, "vehicle") > r._blueprintRoleFit(mast, "vehicle");
+        out.vehVals = `Basis=${round(r._blueprintRoleFit(vehicleForm, "vehicle"))} Mast=${round(r._blueprintRoleFit(mast, "vehicle"))}`;
+        return out;
+    });
+    check(
+        "V17.81 U2: das Rollen-Register hat ALLE Rollen (held/weapon/tool/brecher/armor/consumable/soul/portal/vehicle/machine/workshop/architecture)",
+        res.allRoles
+    );
+    check("V17.81 U2: die Signaturen sind VOLL (≥4 Achsen — über die gesamte Resonanz, nicht eine Achse)", res.fullSignatures);
+    check(
+        "V17.81 U2 TIEFE: das volle Profil entscheidet — die Klinge ist eine bessere Waffe, der Block ein besseres Bauwerk",
+        res.depth && res.roleRelative,
+        res.depthVals
+    );
+    check("V17.81 U2: held — eine Klinge passt besser als ein Klotz (V1779-Kern, jetzt tiefer)", res.heldDiscriminates);
+    check("V17.81 U2 BALANCE: die Passung bleibt in [min,max], ein gut geformtes Werk ist ein Buff (>1.05)", res.inRange && res.goodFitBuff);
+    check(
+        "V17.81 U2: vehicle — eine Trag-Basis passt besser als ein Mast (die neuen Form-Achsen tragen die neue Rolle)",
+        res.vehicleDiscriminates,
+        res.vehVals
+    );
+}
+
+// V17.82 U3 (resonanz-system.md §5) — der KATALYSATOR SICHTBAR: das Rollen-Spektrum (was es IST über die
+// ganze Resonanz) + die Achse zum perfekten Katalysator. Der Spieler-Kompass: er baut frei, das Spektrum
+// liest ihn + sagt, welche Achse zu drehen ist. (Die Klassifikation Klinge→Waffe macht erst U4.)
+async function checkBandV1782CatalystReadout(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const round = (x) => Math.round((x || 0) * 100) / 100;
+        const mk = (parts) => ({ name: "_u3", parts });
+        const blade = mk([
+            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 2.0 } },
+            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.5 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+        ]);
+        const ball = mk([{ shape: "sphere", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }]);
+        const block = mk([{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } }]);
+        const out = {};
+        const spec = r._blueprintRoleSpectrum(blade);
+        const getW = (s) => (s.find((x) => x.role === "weapon") || { score: 0 }).score;
+        out.weaponHigh = getW(spec) > 0.85; // die Klinge ist eine starke Waffe
+        out.discriminates = getW(spec) > getW(r._blueprintRoleSpectrum(ball)); // > eine weiche Kugel
+        out.sorted = spec.every((s, i) => i === 0 || spec[i - 1].score >= s.score - 1e-9);
+        out.specVals = spec.slice(0, 3).map((s) => `${s.role}=${round(s.score)}`).join(" ");
+        // der Katalysator-Hinweis: ein harter dichter Block ist für eine Waffe SCHÄRFE-arm → Hinweis Schärfe
+        const hint = r._blueprintCatalystHint(block, "weapon");
+        out.hintSharpness = !!hint && hint.axis === "pointedFraction" && hint.label === "Schärfe";
+        out.hintVal = hint ? `${hint.axis}/${hint.label}` : "—";
+        // der Readout rendert das Spektrum + die Resonanz-Zeile
+        const panel = document.createElement("div");
+        r._workshopAppendRoleRow(panel, blade);
+        const labels = [...panel.querySelectorAll(".stat-label")].map((e) => e.textContent);
+        const specText = [...panel.querySelectorAll(".role-spectrum-text")].map((e) => e.textContent).join("|");
+        out.readoutRenders =
+            labels.includes("Resonanz") &&
+            (specText.includes("Waffe") || specText.includes("Werkzeug") || specText.includes("Gerät") || specText.includes("Bauwerk"));
+        out.readoutText = specText;
+        return out;
+    });
+    check(
+        "V17.82 U3: das Rollen-Spektrum — die Klinge ist eine starke Waffe (>0.85), diskriminiert gegen eine weiche Kugel, sortiert",
+        res.weaponHigh && res.discriminates && res.sorted,
+        res.specVals
+    );
+    check(
+        "V17.82 U3 KATALYSATOR: ein harter dichter Block ist für eine Waffe SCHÄRFE-arm → der Hinweis nennt die Schärfe (die Achse zum Katalysator)",
+        res.hintSharpness,
+        res.hintVal
+    );
+    check(
+        "V17.82 U3 KONSUM: der Werkstatt-Readout rendert das Rollen-Spektrum (der Kompass, sichtbar/lernbar)",
+        res.readoutRenders,
+        res.readoutText
+    );
+}
+
+// V17.83 U4 (resonanz-system.md §5) — die Rolle-KLASSIFIKATION an der Wurzel: eine greifbare GERÄTE-Form
+// (spitz/griff-elongiert) wird über die FORM als Waffe/Werkzeug klassifiziert, NICHT als Bauwerk — der
+// Substanz-Zwilling Klinge/Bauwerk (beide dicht+hart) wird über die Form getrennt. Nur greifbare Implement-
+// Formen ändern sich; Würfel/große Strukturen/Körper/Tore bleiben (die Form-Rollen unverändert).
+async function checkBandV1783ImplementClassification(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const mk = (parts) => ({ name: "_u4", parts });
+        const spike = mk([{ shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.3, z: 1.8 } }]);
+        const handle = mk([{ shape: "cylinder", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.25, y: 1.6, z: 0.25 } }]);
+        const largeBlock = mk([{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 8, y: 8, z: 8 } }]);
+        const smallCube = mk([{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }]);
+        const body = mk([
+            { shape: "box", material: "fleisch", position: { x: 0, y: 1, z: 0 }, size: { x: 0.8, y: 1.6, z: 0.5 } },
+            { shape: "cylinder", material: "fleisch", position: { x: -0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
+            { shape: "cylinder", material: "fleisch", position: { x: 0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
+        ]);
+        const out = {};
+        out.spikeRole = r.computeBlueprintRole(spike);
+        out.handleRole = r.computeBlueprintRole(handle);
+        out.largeRole = r.computeBlueprintRole(largeBlock);
+        out.cubeRole = r.computeBlueprintRole(smallCube);
+        out.bodyRole = r.computeBlueprintRole(r.state.blueprints["avatar_waechter"]); // ein echter körper-förmiger Soul-Bauplan
+        void body;
+        // (1) der KERN-FIX: ein spitzes greifbares Gerät → Waffe (NICHT mehr architecture)
+        out.spikeWeapon = out.spikeRole === "weapon";
+        // (2) ein STUMPFES griff-elongiertes Ding ist form-mehrdeutig (Stab vs Säule) → bleibt Bauwerk (konservativ)
+        out.handleArch = out.handleRole === "architecture";
+        // (3) eine große Struktur (nicht greifbar) → Bauwerk (unverändert)
+        out.largeArch = out.largeRole === "architecture";
+        // (4) ein Würfel (greifbar, aber keine Geräte-Form) → Bauwerk (unverändert)
+        out.cubeArch = out.cubeRole === "architecture";
+        // (5) ein Körper → Seele (die Form-Rollen unverändert)
+        out.bodySoul = out.bodyRole === "soul";
+        // (6) die Greifbar-Erkennung selbst
+        out.graspDetect =
+            r._isGraspableImplementForm(spike) &&
+            r._isGraspableImplementForm(handle) &&
+            !r._isGraspableImplementForm(largeBlock) &&
+            !r._isGraspableImplementForm(smallCube);
+        return out;
+    });
+    check(
+        "V17.83 U4 KERN: ein spitzes greifbares Gerät → Waffe (die scharfe Klinge ist KEIN Bauwerk mehr — das Schöpfer-Beispiel an der Wurzel)",
+        res.spikeWeapon,
+        `spike=${res.spikeRole}`
+    );
+    check(
+        "V17.83 U4: ein STUMPFES griff-elongiertes Ding bleibt Bauwerk (form-mehrdeutig — nur eine SPITZE ist eindeutig ein Gerät, konservativ)",
+        res.handleArch,
+        `handle=${res.handleRole}`
+    );
+    check("V17.83 U4: eine große Struktur (nicht greifbar) → Bauwerk (unverändert)", res.largeArch, `large=${res.largeRole}`);
+    check(
+        "V17.83 U4: ein Würfel (greifbar, aber keine Geräte-Form) → Bauwerk — U4 ändert NUR Geräte-Formen",
+        res.cubeArch,
+        `cube=${res.cubeRole}`
+    );
+    check("V17.83 U4: ein Körper → Seele (die Form-Rollen soul/portal/consumable unverändert)", res.bodySoul, `body=${res.bodyRole}`);
+    check("V17.83 U4: die Greifbar-Implement-Erkennung (spitz/elongiert + klein vs großer Block/Würfel)", res.graspDetect);
+}
+
+// V17.84 U6 (resonanz-system.md §5) — die FORM in die WIRKUNG für den AVATAR: ein gut geformter Custom-
+// Avatar (körper-förmig, symmetrisch) wirkt stärker als ein Klumpen (die soul-Resonanz liest die bodyParts-
+// Form). NUR Custom-Avatare — die Built-in-Seelen (human/phoenix/dragon) bleiben neutral (kein Balance-Bruch).
+async function checkBandV1784AvatarFormFit(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const round = (x) => Math.round((x || 0) * 1000) / 1000;
+        const p = r.state.player;
+        const out = {};
+        const bodyParts = [
+            { shape: "box", material: "fleisch", position: { x: 0, y: 1.2, z: 0 }, size: { x: 0.9, y: 1.6, z: 0.5 } },
+            { shape: "cylinder", material: "fleisch", position: { x: -0.95, y: 1.1, z: 0 }, size: { x: 0.3, y: 1.3, z: 0.3 } },
+            { shape: "cylinder", material: "fleisch", position: { x: 0.95, y: 1.1, z: 0 }, size: { x: 0.3, y: 1.3, z: 0.3 } },
+            { shape: "cylinder", material: "fleisch", position: { x: -0.4, y: 0, z: 0 }, size: { x: 0.35, y: 1.2, z: 0.35 } },
+            { shape: "cylinder", material: "fleisch", position: { x: 0.4, y: 0, z: 0 }, size: { x: 0.35, y: 1.2, z: 0.35 } },
+        ];
+        const blobParts = [{ shape: "box", material: "fleisch", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 1.5, z: 1.5 } }];
+        // (1) der Gate: Built-in-Seele → neutral (in playerSoulDefs), ein Custom-Name nicht
+        out.builtinGate = !!r.playerSoulDefs["human"] && !r.playerSoulDefs["_av_body"];
+        // (2) die soul-Passung diskriminiert über die FORM (gleiches Material fleisch)
+        const fitBody = r._blueprintRoleFit({ parts: bodyParts }, "soul");
+        const fitBlob = r._blueprintRoleFit({ parts: blobParts }, "soul");
+        out.soulDiscriminates = fitBody > fitBlob;
+        out.bodyShaped = r._isBodyShaped({ parts: bodyParts }) === true;
+        out.soulVals = `Körper=${round(fitBody)} Klumpen=${round(fitBlob)}`;
+        // (3) KONSUM: ein körper-förmiger Custom-Avatar hat höhere Basis-Stats als ein Klumpen (gleiches Material)
+        const savedSoul = p.soul;
+        const savedCustom = r.state.customSouls ? JSON.parse(JSON.stringify(r.state.customSouls)) : {};
+        r.state.customSouls = r.state.customSouls || {};
+        r.state.customSouls["_av_body"] = { label: "body", bodyParts: bodyParts };
+        r.state.customSouls["_av_blob"] = { label: "blob", bodyParts: blobParts };
+        p.soul = "_av_body";
+        const sBody = r.computePlayerStats().stats;
+        p.soul = "_av_blob";
+        const sBlob = r.computePlayerStats().stats;
+        out.konsum = sBody.hpMax > sBlob.hpMax;
+        out.konsumVals = `Körper.hp=${Math.round(sBody.hpMax)} Klumpen.hp=${Math.round(sBlob.hpMax)}`;
+        // restore
+        p.soul = savedSoul;
+        r.state.customSouls = savedCustom;
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        return out;
+    });
+    check(
+        "V17.84 U6: der Gate — eine Built-in-Seele bleibt neutral (in playerSoulDefs, soulFit 1.0), ein Custom-Avatar bekommt die Form-Passung",
+        res.builtinGate
+    );
+    check(
+        "V17.84 U6: die soul-Passung diskriminiert über die FORM — ein körper-förmiger Avatar > ein Klumpen (gleiches Material)",
+        res.soulDiscriminates && res.bodyShaped,
+        res.soulVals
+    );
+    check(
+        "V17.84 U6 KONSUM: ein körper-förmiger Custom-Avatar hat höhere Basis-Stats als ein Klumpen-Avatar — die FORM erreicht die Avatar-Wirkung",
+        res.konsum,
+        res.konsumVals
+    );
+}
+
+// V17.85 — Schöpfer-Browser-Befunde geheilt: (#1) die Prozess-Op rückgängig machen (removePartOp) +
+// (#3) die ANGEZEIGTE Rolle ist die emergente (eine rollenlose Klinge → „tool", nicht „Bauwerk").
+async function checkBandV1785RoleDisplayAndUndo(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const DEFLEN = r._defaultPartOpChain().length;
+        // (#3a) der BUILT-IN rollenlose Bauplan zeigt seine EMERGENTE Form-Rolle, nicht den Default
+        const spit = r.state.blueprints["geraet_spitzhacke"];
+        out.spitRoleField = spit ? spit.role || "(undefined)" : "(missing)";
+        out.spitDisplay = spit ? r._displayRole(spit) : "(missing)";
+        out.spitEmergent = spit ? r.computeBlueprintRole(spit) : "(missing)";
+        out.spitShowsTool = out.spitDisplay === "tool"; // war „architecture" (bp.role||DEFAULT)
+        // (#3b) eine built-in-Rüstung (Substanz-Zwilling architecture) bleibt „armor" — die Saat ist autoritativ
+        const armor = r.state.blueprints["ruestung_brustpanzer"];
+        out.armorDisplay = armor ? r._displayRole(armor) : "(missing)";
+        out.armorStaysArmor = out.armorDisplay === "armor";
+        // (#3c) cloneBlueprint materialisiert die emergente Rolle → ein frischer Spitzhacke-Klon trägt „tool"
+        delete r.state.blueprints["_v1785_clone"];
+        r.cloneBlueprint("geraet_spitzhacke", "_v1785_clone");
+        const clone = r.state.blueprints["_v1785_clone"];
+        out.cloneRoleField = clone ? clone.role || "(undefined)" : "(missing)";
+        out.cloneCarriesTool = clone && clone.role === "tool";
+        delete r.state.blueprints["_v1785_clone"];
+        // (#1) removePartOp — die Op rückgängig (Mechanik + Rolle re-emergiert)
+        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer"); // keine Stamina-Kosten
+        const savedTools = Array.isArray(r.state.player.tools) ? r.state.player.tools.slice() : [];
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
+        delete r.state.blueprints["_v1785_undo"];
+        r.createBlueprint("_v1785_undo", "Undo-Test");
+        // ein stumpfer, dichter eisen-Block → der Form nach „architecture" (kein Pointed-Blade-Gate)
+        r.addPartToBlueprint("_v1785_undo", {
+            shape: "box",
+            material: "eisen",
+            position: { x: 0, y: 1, z: 0 },
+            size: { x: 1, y: 1, z: 1 },
+        });
+        const ub = r.state.blueprints["_v1785_undo"];
+        out.roleBeforeApply = r.computeBlueprintRole(ub); // erwartet: architecture
+        // (#1a) removePartOp auf der Grund-Kette → nichts zu entfernen
+        const remEmpty = r.removePartOp("_v1785_undo", 0);
+        out.remEmptyRejected = remEmpty.ok === false && remEmpty.reason === "nothing_to_remove";
+        // eine forging-Op anwenden (schmiede-hammer, plastic → eisen kompatibel) → opCount steigt, Rolle wechselt
+        const ap = r.applyOpToPart("_v1785_undo", 0, "schmiede-hammer");
+        out.applyOk = ap.ok === true;
+        out.opCountAfterApply = (ub.parts[0].opChain || []).length;
+        out.roleAfterApply = r.computeBlueprintRole(ub); // forging-Rolle (≠ architecture)
+        out.roleFlipped = out.roleAfterApply !== "architecture";
+        // (#1b) removePartOp → opCount zurück auf Default, Rolle re-emergiert zu architecture
+        const rem = r.removePartOp("_v1785_undo", 0);
+        out.remOk = rem.ok === true;
+        out.opCountAfterRemove = (ub.parts[0].opChain || []).length;
+        out.opCountReverted = out.opCountAfterRemove === DEFLEN;
+        out.roleAfterRemove = r.computeBlueprintRole(ub);
+        out.roleReverted = out.roleAfterRemove === out.roleBeforeApply;
+        // (#1c) removePartOp lehnt einen Built-in ab
+        const remBuiltin = r.removePartOp("geraet_spitzhacke", 0);
+        out.remBuiltinRejected = remBuiltin.ok === false && remBuiltin.reason === "cannot_modify_builtin";
+        // restore
+        delete r.state.blueprints["_v1785_undo"];
+        r.state.player.tools = savedTools;
+        if (typeof r.setGameMode === "function") r.setGameMode(prevMode);
+        return out;
+    });
+    check(
+        'V17.85 #3: ein rollenloser Built-in-Bauplan (Spitzhacke) zeigt seine EMERGENTE Form-Rolle „tool", nicht den „architecture"-Default',
+        res.spitShowsTool,
+        `display=${res.spitDisplay} (Feld=${res.spitRoleField}, emergent=${res.spitEmergent})`
+    );
+    check(
+        'V17.85 #3: eine built-in-Rüstung (Substanz-Zwilling architecture) zeigt weiter „armor" — die deklarierte Saat ist autoritativ (Intent über Emergenz)',
+        res.armorStaysArmor,
+        `display=${res.armorDisplay}`
+    );
+    check(
+        'V17.85 #3: cloneBlueprint materialisiert die emergente Rolle — ein frischer Spitzhacke-Klon trägt bp.role=„tool" (alle Leser sehen die Form-Rolle)',
+        res.cloneCarriesTool,
+        `clone.role=${res.cloneRoleField}`
+    );
+    check(
+        "V17.85 #1: removePartOp auf der Grund-Op-Kette lehnt ab (nothing_to_remove) — nie unter die Default-Kette",
+        res.remEmptyRejected
+    );
+    check(
+        "V17.85 #1: eine forging-Op wechselt die Rolle (architecture → forging-Rolle) — der Prozess fixiert die Rolle",
+        res.applyOk && res.roleFlipped,
+        `vorher=${res.roleBeforeApply} nachher=${res.roleAfterApply} ops=${res.opCountAfterApply}`
+    );
+    check(
+        "V17.85 #1 KONSUM: removePartOp macht die Op rückgängig — opCount zurück auf Default UND die Rolle re-emergiert (forging-Rolle → architecture)",
+        res.remOk && res.opCountReverted && res.roleReverted,
+        `ops=${res.opCountAfterRemove} rolle=${res.roleAfterRemove} (war ${res.roleBeforeApply})`
+    );
+    check("V17.85 #1: removePartOp lehnt einen Built-in ab (cannot_modify_builtin)", res.remBuiltinRejected);
+}
+
+// V17.86 — Schöpfer-Browser-Befunde: die Werkstatt-Kohärenz (die Affordanzen sind Fähigkeiten, nicht
+// Rollen) + der Schwert-Samen (eine Klinge, die SCHNEIDET). Rendert den echten Stats-Readout.
+async function checkBandV1786WorkshopCoherence(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const renderFor = (name) => {
+            const ws = r._ensureWorkshopState();
+            ws.selectedBlueprint = name;
+            r._workshopRenderStatsPanel();
+            const panel = document.getElementById("workshop-stats-panel");
+            if (!panel) return null;
+            const rows = Array.from(panel.querySelectorAll(".stat-row"));
+            const roleRow = rows.find((row) => (row.querySelector(".stat-label") || {}).textContent === "Rolle");
+            const capRow = rows.find((row) => (row.querySelector(".stat-label") || {}).textContent === "Fähigkeit");
+            return {
+                roleChip: ((roleRow && roleRow.querySelector(".role-chip")) || {}).textContent || "",
+                roleRowAffordances: roleRow ? roleRow.querySelectorAll(".affordance-chip").length : -1,
+                capRowChips: capRow ? Array.from(capRow.querySelectorAll(".affordance-chip")).map((c) => c.textContent) : [],
+            };
+        };
+        // (1) der Schwert-Samen existiert + ist eine Klinge (schneidet) + ein gehaltenes Implement
+        const sw = r.state.blueprints["geraet_schwert"];
+        out.schwertExists = !!(sw && sw.builtIn);
+        out.schwertRole = sw ? r.computeBlueprintRole(sw) : "(missing)";
+        out.schwertHeld = out.schwertRole === "tool" || out.schwertRole === "weapon"; // ein Gerät in der Hand
+        out.schwertLabel = sw ? r._implementAffordanceLabel(sw) : "(missing)";
+        out.schwertCuts = out.schwertLabel === "Klinge"; // ein Schwert SCHNEIDET, ist kein Brecher
+        // die Spitzhacke bleibt ausgewogen/Werkzeug (kein Regress, der Substanz-Unterschied bleibt)
+        const sp = r.state.blueprints["geraet_spitzhacke"];
+        out.spitzLabel = sp ? r._implementAffordanceLabel(sp) : "(missing)";
+        // (2) das Rolle-Label liest das VOLLE Register (Esse → „Werkstatt", nicht der rohe „workshop-station")
+        const esse = r.state.blueprints["esse"];
+        const esseRender = esse ? renderFor("esse") : null;
+        out.esseRoleChip = esseRender ? esseRender.roleChip : "(keine esse)";
+        out.esseLabeled = !esse || esseRender.roleChip === "Werkstatt";
+        // (3) die Affordanzen sind in der FÄHIGKEIT-Zeile, NICHT in der Rolle-Zeile (der ungebundene Faden)
+        out.esseRoleRowAffordances = esseRender ? esseRender.roleRowAffordances : -1;
+        out.esseRoleRowClean = !esse || esseRender.roleRowAffordances === 0; // keine ✦ in der Rolle-Zeile
+        out.esseCapRowHasAffordance = !esse || esseRender.capRowChips.some((c) => /sendend|strahlend|vergrößernd|bündelnd/.test(c));
+        return out;
+    });
+    check(
+        "V17.86 Samen: das Schwert existiert als Built-in + emergiert als gehaltenes Gerät (tool/weapon aus der Klingen-Form)",
+        res.schwertExists && res.schwertHeld,
+        `role=${res.schwertRole}`
+    );
+    check(
+        'V17.86 Samen: das Schwert liest „Klinge" — es SCHNEIDET (cutPower > minePower), kein Brecher (die Waffen-Saat ist substanz-ehrlich)',
+        res.schwertCuts,
+        `schwert=${res.schwertLabel} · spitzhacke=${res.spitzLabel}`
+    );
+    check(
+        'V17.86 Kohärenz: die Rolle-Chip liest das volle ROLE_LABELS-Register — die Esse zeigt „Werkstatt", nicht den rohen „workshop-station"',
+        res.esseLabeled,
+        `chip=${res.esseRoleChip}`
+    );
+    check(
+        "V17.86 Kohärenz: die Affordanzen (vergrößernd/strahlend) sind NICHT mehr in der Rolle-Zeile — die Rolle-Zeile zeigt NUR die Rolle",
+        res.esseRoleRowClean,
+        `affordanzen in Rolle-Zeile=${res.esseRoleRowAffordances}`
+    );
+    check(
+        "V17.86 Kohärenz: die Affordanzen wandern in die FÄHIGKEIT-Zeile — alle Fähigkeiten an EINEM Ort (der gebundene Faden)",
+        res.esseCapRowHasAffordance
+    );
+}
+
+// V17.87 — das volle UNDO/REDO im Bauplan-Editor (Schöpfer-Wunsch „ein paar Schritte zurück und wieder
+// nach vorn"). Jeder Editor-Akt (Part hinzu/weg/ändern, Op anwenden/entfernen, Verbindung) ist umkehrbar.
+async function checkBandV1787UndoRedo(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        delete r.state.blueprints["_ur"];
+        if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_ur"];
+        r.createBlueprint("_ur", "Undo-Redo-Test");
+        const parts = () => r.state.blueprints["_ur"].parts.length;
+        // zwei Parts hinzu → 2; undo → 1 → 0; redo → 1 → 2
+        r.addPartToBlueprint("_ur", { shape: "box", material: "stein" });
+        r.addPartToBlueprint("_ur", { shape: "cone", material: "eisen" });
+        out.after2 = parts();
+        out.canUndo = r.canUndoBlueprintEdit("_ur") && !r.canRedoBlueprintEdit("_ur");
+        r.undoBlueprintEdit("_ur");
+        out.afterUndo1 = parts();
+        r.undoBlueprintEdit("_ur");
+        out.afterUndo2 = parts();
+        out.undoExhausted = r.undoBlueprintEdit("_ur").reason === "nothing_to_undo";
+        r.redoBlueprintEdit("_ur");
+        r.redoBlueprintEdit("_ur");
+        out.afterRedo = parts();
+        out.redoShape = r.state.blueprints["_ur"].parts[1].shape; // cone wiederhergestellt
+        // ein NEUER Edit nach einem Undo verwirft den Redo-Zweig
+        r.undoBlueprintEdit("_ur"); // → 1
+        r.addPartToBlueprint("_ur", { shape: "sphere", material: "quarz" });
+        out.newEditShape = r.state.blueprints["_ur"].parts[1].shape; // sphere, nicht cone
+        out.redoCleared = r.canRedoBlueprintEdit("_ur") === false;
+        // eine Op anwenden + undo (der opChain-Akt ist auch umkehrbar)
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
+        r.addPartToBlueprint("_ur", { shape: "box", material: "eisen" });
+        const idx = parts() - 1;
+        const opBefore = (r.state.blueprints["_ur"].parts[idx].opChain || []).length;
+        r.applyOpToPart("_ur", idx, "schmiede-hammer");
+        const opAfter = (r.state.blueprints["_ur"].parts[idx].opChain || []).length;
+        r.undoBlueprintEdit("_ur");
+        out.opUndoReverts = opAfter > opBefore && (r.state.blueprints["_ur"].parts[idx].opChain || []).length === opBefore;
+        // Built-in lehnt ab (unveränderlich → keine Geschichte)
+        out.builtinReject = r.undoBlueprintEdit("geraet_spitzhacke").ok === false;
+        // die Geschichte ist NICHT persistiert (reaktive Editor-Schicht)
+        const snap = typeof r.buildStateSnapshot === "function" ? r.buildStateSnapshot() : {};
+        out.notPersisted = snap.blueprintEditHistory === undefined;
+        delete r.state.blueprints["_ur"];
+        if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_ur"];
+        return out;
+    });
+    check(
+        "V17.87 Undo: zwei Parts hinzu → undo macht sie Schritt für Schritt rückgängig (2 → 1 → 0), dann ist der Undo-Stapel leer",
+        res.after2 === 2 && res.canUndo && res.afterUndo1 === 1 && res.afterUndo2 === 0 && res.undoExhausted,
+        `after2=${res.after2} u1=${res.afterUndo1} u2=${res.afterUndo2}`
+    );
+    check(
+        "V17.87 Redo: nach dem Zurück führt Wiederholen Schritt für Schritt nach vorn (0 → 2, die Form wiederhergestellt)",
+        res.afterRedo === 2 && res.redoShape === "cone",
+        `afterRedo=${res.afterRedo} shape=${res.redoShape}`
+    );
+    check(
+        "V17.87 Verzweigung: ein NEUER Edit nach einem Undo verwirft den Redo-Zweig (die Geschichte gabelt korrekt)",
+        res.newEditShape === "sphere" && res.redoCleared
+    );
+    check("V17.87 KONSUM: eine angewandte Op ist umkehrbar — undo nimmt den opChain-Schritt zurück", res.opUndoReverts);
+    check("V17.87: ein Built-in lehnt Undo ab (unveränderlich → keine Geschichte)", res.builtinReject);
+    check("V17.87: die Edit-Geschichte ist NICHT persistiert (reaktive Editor-Sitzungs-Schicht)", res.notPersisted);
+}
+
+// V17.88 — die WERKSTATT IST DER PROZESS (Schöpfer-Vision „der wahre Weg"): der Spieler startet mit den
+// Basics (nur hände); eine platzierte+nahe Werkstatt (frieden/pfad) ODER eine besessene (schöpfer) liefert
+// ihren Prozess; eine bessere Werkstatt → höherer Cap (die §4.3-Rekursion). Die Domain-Werkzeuge sind die
+// Op-Bibliothek, gefaltet in die Werkstatt.
+async function checkBandV1788WorkshopAsProcess(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        // (1) der Spieler startet mit den Basics: nur hände ist Starter, die Domain-Ops sind op-Bibliothek
+        const tools = r.state.tools || {};
+        out.handOnlyStarter =
+            (r.state.player.tools || []).includes("hände") &&
+            tools["hände"].isStarter === true &&
+            ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"].every(
+                (n) => tools[n] && tools[n].isStarter === false
+            );
+        out.domainProc = (() => {
+            const p = r._domainProcess("forging");
+            return !!(p && p.opClass === "plastic" && p.opName === "forge_shape");
+        })();
+        // ein eigener eisen-Bauplan
+        delete r.state.blueprints["_wp88"];
+        r.createBlueprint("_wp88", "WP88");
+        r.addPartToBlueprint("_wp88", { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 1, y: 1, z: 1 } });
+        // (2) SCHÖPFER: alle besessenen Werkstätten verfügbar (frei, ohne Platzieren)
+        r.setGameMode("schöpfer");
+        const menuS = r._workshopProcessesForMenu();
+        out.schoepferHasForging = menuS.some((p) => p.domain === "forging");
+        out.schoepferMultiDomain = new Set(menuS.map((p) => p.domain)).size >= 4;
+        // (3) die REKURSION: die Meister-Esse fertigt feiner als die Esse (höherer Substanz-Cap)
+        const esseP = menuS.find((p) => p.stationName === "esse");
+        const meisterP = menuS.find((p) => p.stationName === "esse_meister");
+        out.recursion = !!(esseP && meisterP && meisterP.cap > esseP.cap);
+        out.recursionVals = esseP && meisterP ? `esse=${esseP.cap.toFixed(3)} meister=${meisterP.cap.toFixed(3)}` : "(fehlt)";
+        // schöpfer-Anwendung (besessen, kein Platzieren) → der Cap kommt aus der Station
+        const apS = r.applyWorkshopProcessToPart("_wp88", 0, "esse_meister");
+        out.schoepferApply = apS.ok === true && Math.abs((apS.cap || 0) - meisterP.cap) < 1e-6;
+        // (4) FRIEDEN: ohne platzierte Station → kein Werkstatt-Prozess + Ablehnung (nur die Hand)
+        r.setGameMode("frieden");
+        const arches = r.state.architectures || [];
+        r.state.architectures = arches.filter((e) => !(e && e.type === "esse" && e.__v88)); // sauber starten
+        out.friedenEmpty = r._workshopProcessesForMenu().length === 0;
+        const apF0 = r.applyWorkshopProcessToPart("_wp88", 0, "esse");
+        out.friedenRejects = apF0.ok === false && apF0.reason === "workshop_not_placed_near";
+        // (5) eine Esse beim Spieler platzieren → der Prozess erscheint + lässt sich anwenden (der wahre Weg)
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const placed = pm ? { type: "esse", position: { x: pm.x, y: pm.y, z: pm.z }, __v88: true } : null;
+        if (placed) r.state.architectures.push(placed);
+        out.friedenAppears = !!pm && r._workshopProcessesForMenu().some((p) => p.stationName === "esse");
+        const apF1 = pm ? r.applyWorkshopProcessToPart("_wp88", 0, "esse") : { ok: false };
+        out.friedenAppliesAfterPlacement = apF1.ok === true;
+        // restore
+        r.state.architectures = (r.state.architectures || []).filter((e) => !(e && e.__v88));
+        if (r.setGameMode) r.setGameMode(prevMode);
+        delete r.state.blueprints["_wp88"];
+        if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_wp88"];
+        return out;
+    });
+    check(
+        "V17.88: der Spieler startet mit den Basics — nur hände ist Starter, die 5 Domain-Ops sind die Werkstatt-Op-Bibliothek (isStarter:false)",
+        res.handOnlyStarter && res.domainProc
+    );
+    check(
+        "V17.88 schöpfer: alle besessenen Werkstätten sind verfügbar (frei, ohne Platzieren) — forging + ≥4 Domänen",
+        res.schoepferHasForging && res.schoepferMultiDomain
+    );
+    check(
+        "V17.88 die REKURSION: eine bessere Werkstatt fertigt feiner — die Meister-Esse hat einen höheren Cap als die Esse",
+        res.recursion,
+        res.recursionVals
+    );
+    check(
+        "V17.88 KONSUM: der Werkstatt-Prozess wirkt + der Cap kommt aus der STATION (schöpfer, besessen → Meister-Esse-Präzision)",
+        res.schoepferApply
+    );
+    check(
+        "V17.88 der wahre Weg: in frieden ohne platzierte Werkstatt gibt es NUR die Hand — der Werkstatt-Prozess wird abgelehnt (workshop_not_placed_near)",
+        res.friedenEmpty && res.friedenRejects
+    );
+    check(
+        "V17.88 KONSUM: eine in der Welt platzierte+nahe Esse erscheint im Prozess-Menü + lässt sich anwenden (platzieren → Prozess erscheint)",
+        res.friedenAppears && res.friedenAppliesAfterPlacement
+    );
+}
+
+// V17.89 — der Schöpfer-Browser-Befund: die WERTE eines Werks müssen sich dynamisch mit Material × Form
+// ändern (fähigkeiten steigen+sinken), sichtbar im Readout; die Werkstatt erscheint im Werkzeuge-Feld
+// sobald platziert+nah; das Undo/Redo unter den Parts. Drei Befunde, eine Welle.
+async function checkBandV1789WorkshopReadout(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const blu = r.state.blueprints;
+        const mkBlade = (name, mat) => {
+            delete blu[name];
+            blu[name] = {
+                name,
+                parts: [
+                    { shape: "octahedron", material: mat, size: { x: 0.3, y: 0.3, z: 0.3 }, position: { x: 0, y: 0, z: 0 } },
+                    { shape: "cone", material: mat, size: { x: 0.2, y: 0.12, z: 1.4 }, position: { x: 0, y: 0, z: 1.0 } },
+                ],
+            };
+            return blu[name];
+        };
+        // (1) MATERIAL bewegt die Werte: eine eisen-Klinge schlägt härter als eine holz-Klinge (GLEICHE Form)
+        mkBlade("_ab_eisen", "eisen");
+        mkBlade("_ab_holz", "holz");
+        const eisenAb = r._blueprintAbilityStats(blu["_ab_eisen"]);
+        const holzAb = r._blueprintAbilityStats(blu["_ab_holz"]);
+        const dmg = (ab) => (ab && ab.stats ? (ab.stats.find((s) => s[0] === "Schaden") || [0, 0])[1] : 0);
+        out.materialMovesValues = !!eisenAb && !!holzAb && dmg(eisenAb) > dmg(holzAb) + 1;
+        out.materialVals = `eisen=${dmg(eisenAb).toFixed(1)} holz=${dmg(holzAb).toFixed(1)}`;
+        // (2) FORM bewegt die Eignung: ein stumpfer Zylinder an der Klinge senkt die Waffen-Eignung
+        const bladeFit = eisenAb ? eisenAb.fit : 0;
+        const longer = mkBlade("_ab_long", "eisen");
+        longer.parts.push({ shape: "cylinder", material: "eisen", size: { x: 0.3, y: 0.3, z: 1.2 }, position: { x: 0, y: 0, z: -1.0 } });
+        const longAb = r._blueprintAbilityStats(longer);
+        out.formMovesValues = !!longAb && Math.abs(longAb.fit - bladeFit) > 0.001;
+        out.formVals = `klinge-Eignung=${bladeFit.toFixed(3)} +zylinder=${longAb ? longAb.fit.toFixed(3) : "?"}`;
+        // (3) rollen-gerechte Werte: Rüstung → Verteidigung; Avatar → HP
+        delete blu["_ab_armor"];
+        blu["_ab_armor"] = {
+            name: "_ab_armor",
+            role: "armor",
+            roleManual: true,
+            parts: [{ shape: "box", material: "eisen", size: { x: 1.2, y: 1.4, z: 0.4 }, position: { x: 0, y: 0, z: 0 } }],
+        };
+        const armorAb = r._blueprintAbilityStats(blu["_ab_armor"]);
+        out.armorHasDefense = !!armorAb && armorAb.stats.some((s) => s[0] === "Verteidigung");
+        // (4) DOM: die Werte-Zeile rendert + reagiert; die Werkstatt erscheint im Werkzeuge-Feld; Undo/Redo unter den Parts
+        r.setGameMode("schöpfer");
+        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+        if (tab) tab.click();
+        delete blu["_ab_clone"];
+        // ein WAFFEN-Klon (geraet_schwert) — eine Ausrüstungs-Rolle, die Werte hat (village = architecture
+        // → bewusst KEINE Werte-Zeile); zugleich nicht-builtIn → der Undo/Redo-Verlauf rendert.
+        r.cloneBlueprint("geraet_schwert", "_ab_clone");
+        r.selectBlueprintForEdit("_ab_clone");
+        r._renderWorkshopDOM();
+        out.domAbilitiesRow = !!document.querySelector(".workshop-abilities-row");
+        // V17.91 — Undo/Redo wohnen jetzt in der Top-Leiste (aus dem entfernten Detail-Editor migriert).
+        out.domHistoryControls = !!document.getElementById("workshop-undo-btn") && !!document.getElementById("workshop-redo-btn");
+        // V17.91 — die Werkstatt-Prozesse sind jetzt ziehbare Karten in der rechten WERKZEUGE-Palette
+        // (schöpfer → alle besessenen Werkstätten); auf einen Part im 3D ziehen wendet den Prozess an.
+        out.domWorkshopChips = document.querySelectorAll("#workshop-tool-palette .workshop-station-card").length >= 1;
+        // restore
+        for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor"]) delete blu[n];
+        if (blu["_ab_clone"]) r.deleteBlueprint("_ab_clone");
+        if (r.state.blueprintEditHistory) {
+            for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor", "_ab_clone"]) delete r.state.blueprintEditHistory[n];
+        }
+        r.selectBlueprintForEdit("village");
+        if (r.setGameMode) r.setGameMode(prevMode);
+        return out;
+    });
+    check(
+        "V17.89 KONSUM: die Werte folgen dem MATERIAL — eine eisen-Klinge schlägt härter als eine holz-Klinge (gleiche Form)",
+        res.materialMovesValues,
+        res.materialVals
+    );
+    check(
+        "V17.89 KONSUM: die Werte folgen der FORM — ein stumpfer Zylinder an der Klinge verschiebt die Waffen-Eignung (fähigkeiten steigen+sinken)",
+        res.formMovesValues,
+        res.formVals
+    );
+    check("V17.89: rollen-gerechte Werte — eine Rüstung zeigt Verteidigung (nicht Schaden)", res.armorHasDefense);
+    check("V17.89 KONSUM (DOM): die Werte-Zeile rendert im Werkstatt-Readout", res.domAbilitiesRow);
+    check(
+        "V17.91 KONSUM (DOM): die Werkstatt-Prozesse sind ziehbare Karten in der WERKZEUGE-Palette (schöpfer → besessene Werkstätten)",
+        res.domWorkshopChips
+    );
+    check("V17.91 (DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)", res.domHistoryControls);
+}
+
+// V17.90 (resonanz-system.md — die Re-Kalibrierung): die vier „blass"-Facetten + zwei UI-Heilungen GEMESSEN.
+// (1) das Spektrum SPREIZT (nicht 1.0/1.0/1.0 — die A1-Vektor-Normalisierung) + führt mit der richtigen Rolle.
+// (2) MATERIAL dramatisch (Eisen-Klinge ≫ Holz-Klinge, ≥2×). (3) GRÖSSE wirkt (3× Klinge > 1×, träger).
+// (4) ROLLE scharf (Pickel→Werkzeug [Holzstiel], Schwert→Waffe [Metall-Klinge]). + Drehbank-Proximity + CSS.
+async function checkBandV1790Recalibration(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const box = (m, s, p) => ({ shape: "box", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
+        const cone = (m, s, p) => ({ shape: "cone", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
+        const blade = (m, k = 1) => ({
+            name: "_rc",
+            parts: [box(m, { x: 0.2 * k, y: 0.1 * k, z: 1.4 * k }), cone(m, { x: 0.2 * k, y: 0.1 * k, z: 0.6 * k }, { x: 0, y: 0, z: 1.0 * k })],
+        });
+        const dmg = (ab) => (ab && ab.stats ? (ab.stats.find((s) => s[0] === "Schaden") || [0, 0])[1] : 0);
+        const tempo = (ab) => (ab && ab.stats ? (ab.stats.find((s) => s[0] === "Tempo") || [0, 0])[1] : 0);
+
+        // (1) FACETTE 1 — das Spektrum ENTSÄTTIGT: eine Eisen-Klinge führt mit weapon, NICHT alles bei 1.0.
+        const spec = r._blueprintRoleSpectrum(blade("eisen"));
+        out.specTop = spec[0] ? `${spec[0].role} ${spec[0].score.toFixed(2)}` : "?";
+        out.spectrumSpreads = spec.length >= 5 && spec[0].score - spec[4].score > 0.15; // Top deutlich über dem 5.
+        out.spectrumLeadsWeapon = spec[0] && spec[0].role === "weapon";
+
+        // (2) FACETTE 2 — MATERIAL: eine Eisen-Klinge zeigt ≫ Schaden als eine Holz-Klinge (gleiche Form).
+        const dEisen = dmg(r._blueprintAbilityStats(blade("eisen")));
+        const dHolz = dmg(r._blueprintAbilityStats(blade("holz")));
+        out.materialDramatic = dHolz > 0 && dEisen > dHolz * 1.8;
+        out.materialVals = `eisen=${dEisen.toFixed(1)} holz=${dHolz.toFixed(1)} (${(dEisen / Math.max(0.01, dHolz)).toFixed(2)}×)`;
+
+        // (3) FACETTE 3 — GRÖSSE: eine 3× größere Klinge schlägt härter UND ist träger (Trade-off).
+        const ab1 = r._blueprintAbilityStats(blade("eisen", 1));
+        const ab3 = r._blueprintAbilityStats(blade("eisen", 3));
+        out.sizeRaisesDamage = dmg(ab3) > dmg(ab1) * 1.2;
+        out.sizeLowersTempo = tempo(ab3) < tempo(ab1) - 0.05;
+        out.sizeVals = `1×=${dmg(ab1).toFixed(1)}/T${tempo(ab1).toFixed(2)} 3×=${dmg(ab3).toFixed(1)}/T${tempo(ab3).toFixed(2)}`;
+        // die Größe erreicht auch den ECHTEN Kampf (Equip-Fold), nicht nur die Anzeige
+        const blu = r.state.blueprints;
+        const eqDmg = (bp) => {
+            blu._rceq = bp;
+            bp.name = "_rceq";
+            r.state.player.equipped = { held: "_rceq" };
+            const d = r.computePlayerStats().stats.damage;
+            delete blu._rceq;
+            return d;
+        };
+        const eq1 = eqDmg(blade("eisen", 1));
+        const eq3 = eqDmg(blade("eisen", 3));
+        r.state.player.equipped = {};
+        out.sizeReachesEquip = eq3 > eq1 + 1;
+        out.equipVals = `equip 1×=${eq1.toFixed(1)} 3×=${eq3.toFixed(1)}`;
+        // attackSpeed bleibt POSITIV (kein negativer Cooldown trotz schwerem Gerät)
+        blu._rcheavy = blade("eisen", 3);
+        blu._rcheavy.name = "_rcheavy";
+        r.state.player.equipped = { held: "_rcheavy" };
+        out.attackSpeedPositive = r.computePlayerStats().stats.attackSpeed > 0;
+        r.state.player.equipped = {};
+        delete blu._rcheavy;
+
+        // (4) FACETTE 4 — ROLLE scharf: Pickel→Werkzeug (Holzstiel), Schwert→Waffe (Metall-Klinge).
+        out.spitzhackeTool = r.computeBlueprintRole(blu.geraet_spitzhacke) === "tool";
+        out.schwertWeapon = r.computeBlueprintRole(blu.geraet_schwert) === "weapon";
+        // ein lebendiger Körper bleibt soul, ein dichter Klotz bleibt architecture (kein Regress durch livingBody)
+        out.bladeWeapon = r.computeBlueprintRole(blade("eisen")) === "weapon";
+
+        // (5) UI-Befund (a) — die platzierte Drehbank erscheint in 32 m im Prozess-Menü (frieden/pfad).
+        r.setGameMode("frieden");
+        r.state.architectures = (r.state.architectures || []).filter((a) => a && a.type !== "drehbank");
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        let near = [],
+            far = [];
+        if (pm) {
+            r.spawnArchitecture("drehbank", { x: pm.x + 20, y: pm.y, z: pm.z }); // 20 m — in der neuen Reichweite
+            near = r._workshopProcessesForMenu();
+            r.state.architectures = r.state.architectures.filter((a) => a && a.type !== "drehbank");
+            r.spawnArchitecture("drehbank", { x: pm.x + 45, y: pm.y, z: pm.z }); // 45 m — zu weit
+            far = r._workshopProcessesForMenu();
+            r.state.architectures = r.state.architectures.filter((a) => a && a.type !== "drehbank");
+        }
+        out.drehbankNearAppears = near.some((p) => p.stationName === "drehbank");
+        out.drehbankFarHidden = !far.some((p) => p.stationName === "drehbank");
+        out.proximityM = r.constructor.WORKSHOP_PROXIMITY_M;
+
+        // (6) UI-Befund (b) — V17.91: Undo/Redo wohnen jetzt in der Top-Leiste als .workshop-action-btn; ihr
+        // disabled-Zustand ist gestylt (ausgegraut), die Station-Karten der Palette sind abgehoben.
+        let cssHistory = false;
+        for (const sheet of document.styleSheets) {
+            try {
+                for (const rule of sheet.cssRules) {
+                    if (rule.selectorText && /workshop-action-btn:disabled|workshop-station-card/.test(rule.selectorText))
+                        cssHistory = true;
+                }
+            } catch (e) {
+                void e;
+            }
+        }
+        out.cssHistory = cssHistory;
+
+        if (r.setGameMode) r.setGameMode(prevMode);
+        return out;
+    });
+    check(
+        "V17.90 Facette 1: das Rollen-Spektrum SPREIZT (Top ≫ 5., nicht 1.0/1.0/1.0) + führt mit der Form-Rolle (Klinge→Waffe)",
+        res.spectrumSpreads && res.spectrumLeadsWeapon,
+        `top=${res.specTop}`
+    );
+    check(
+        "V17.90 Facette 2: MATERIAL bewegt die Werte dramatisch — eine Eisen-Klinge ≥1.8× Schaden einer Holz-Klinge",
+        res.materialDramatic,
+        res.materialVals
+    );
+    check(
+        "V17.90 Facette 3: GRÖSSE hebt den Schaden + senkt das Tempo (mächtig + träge) — 3× Klinge vs 1×",
+        res.sizeRaisesDamage && res.sizeLowersTempo,
+        res.sizeVals
+    );
+    check("V17.90 Facette 3: die Größe erreicht den ECHTEN Kampf (Equip-Fold), nicht nur die Anzeige", res.sizeReachesEquip, res.equipVals);
+    check("V17.90 Facette 3: attackSpeed bleibt POSITIV trotz schwerem Gerät (kein negativer Cooldown)", res.attackSpeedPositive);
+    check(
+        "V17.90 Facette 4: ROLLE scharf — Pickel→Werkzeug (Holzstiel), Schwert→Waffe (Metall-Klinge), Klinge→Waffe",
+        res.spitzhackeTool && res.schwertWeapon && res.bladeWeapon,
+        `spitz=${res.spitzhackeTool} schwert=${res.schwertWeapon}`
+    );
+    check(
+        "V17.90 Befund (a): die platzierte Drehbank erscheint in WORKSHOP_PROXIMITY_M (32 m) im Prozess-Menü, jenseits NICHT",
+        res.drehbankNearAppears && res.drehbankFarHidden,
+        `radius=${res.proximityM}m near=${res.drehbankNearAppears} far=${res.drehbankFarHidden}`
+    );
+    check("V17.91 Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)", res.cssHistory);
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -6276,11 +7725,13 @@ async function checkBandWave4(ctx) {
         r.loadState(oldSnap);
         out.legacyPartGotDefaultMaterial =
             r.state.blueprints["legacy-test"] && r.state.blueprints["legacy-test"].parts[0].material === "stein";
-        // Werkstatt-UI: Material-Dropdown im DOM
+        // V17.91 — das Material wählt man jetzt durch ZIEHEN aus der rechten MATERIALIEN-Palette auf einen
+        // Part im 3D (kein Dropdown mehr im entfernten Detail-Editor). Hier datennah geprüft (der Container
+        // existiert + es gibt ≥6 Materialien) — kein erzwungenes Re-Render (das die V8.03-Card-Zählung stören
+        // könnte, wenn ein späterer Test ein Material ergänzt).
         r.selectBlueprintForEdit("legacy-test");
-        const matSelect = document.querySelector(".workshop-material");
-        out.uiHasMaterialDropdown = !!matSelect;
-        out.uiDropdownLists6PlusOptions = matSelect && matSelect.options.length >= 6;
+        out.uiHasMaterialDropdown = !!document.getElementById("workshop-material-palette");
+        out.uiDropdownLists6PlusOptions = Object.keys(r.state.materials || {}).length >= 6;
         // updatePartInBlueprint mit recolor zieht Farbe nach
         r.updatePartInBlueprint("legacy-test", 0, { material: "quarz", recolor: true });
         out.recolorAppliesMaterialColor = r.state.blueprints["legacy-test"].parts[0].color === mats.quarz.color;
@@ -6432,16 +7883,18 @@ async function checkBandWave4(ctx) {
             state: r.state,
         });
 
-        // UI: Tags-Sektion erscheint im Werkstatt-Editor
+        // V17.91 — die aktiven Tags (Eigenschaften) werden jetzt im intuitiven Stats-Panel angezeigt
+        // (_workshopAppendTagsRow → .tag-chip in einer .stat-row „Tags"), nicht in der entfernten Editor-
+        // Tags-Sektion. Die Formen (inkl. helix) sind die ziehbaren Karten der linken FORMEN-Palette (kein
+        // Dropdown mehr) — der Spieler zieht eine Form ins 3D, statt sie in einer Tabelle zu wählen.
         r.selectBlueprintForEdit("test-quarz-orb");
-        out.uiTagsSection = !!document.querySelector(".workshop-tags");
-        out.uiTagsTitle = !!document.querySelector(".workshop-tags-title");
-        out.uiHasAtomareHint = !!document.querySelector(".workshop-tags-hint");
-        const tagRows = document.querySelectorAll(".workshop-tag-row");
-        out.uiTagsHasRows = tagRows.length > 0;
-        // Werkstatt-Shape-Dropdown enthält helix
-        const shapeOpts = Array.from(document.querySelectorAll(".workshop-part-row select option")).map((o) => o.value);
-        out.uiShapeIncludesHelix = shapeOpts.includes("helix");
+        r._renderWorkshopDOM();
+        const tagsLabel = [...document.querySelectorAll("#workshop-stats-panel .stat-label")].some(
+            (l) => l.textContent === "Tags"
+        );
+        out.uiTagsSection = tagsLabel;
+        out.uiTagsHasRows = document.querySelectorAll("#workshop-stats-panel .tag-chip").length > 0;
+        out.uiShapeIncludesHelix = !!document.querySelector('.workshop-shape-card[data-shape="helix"]');
 
         // Aufräumen
         delete r.state.blueprints["test-quarz-orb"];
@@ -6472,11 +7925,9 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P2: compound_has_tag erkennt hohe Resonanz", wave4p2Results.condResonatesHigh);
         check("Welle 4 P2: compound_has_tag respektiert Schwellwert", wave4p2Results.condResonatesAboveSig);
         check("Welle 4 P2: compound_has_tag unbekanntes Tag → false", wave4p2Results.condUnknownTagFalse);
-        check("Welle 4 P2: UI .workshop-tags-Sektion im DOM", wave4p2Results.uiTagsSection);
-        check("Welle 4 P2: UI Tags-Titel im DOM", wave4p2Results.uiTagsTitle);
-        check('Welle 4 P2: UI „atomare Schicht"-Hint im DOM', wave4p2Results.uiHasAtomareHint);
-        check("Welle 4 P2: UI rendert Tag-Zeilen", wave4p2Results.uiTagsHasRows);
-        check("Welle 4 P2: UI Shape-Dropdown enthält helix", wave4p2Results.uiShapeIncludesHelix);
+        check("Welle 4 P2 (V17.91): die Tags-Zeile erscheint im Stats-Panel", wave4p2Results.uiTagsSection);
+        check("Welle 4 P2 (V17.91): das Stats-Panel rendert Tag-Chips", wave4p2Results.uiTagsHasRows);
+        check("Welle 4 P2 (V17.91): die FORMEN-Palette bietet helix als ziehbare Karte", wave4p2Results.uiShapeIncludesHelix);
     }
 
     // ### Welle 4 Phase 3 — Werkzeuge + opChain + Präzision ###
@@ -6486,12 +7937,14 @@ async function checkBandWave4(ctx) {
         const out = {};
         // Werkzeug-State + Konstanten
         const tools = r.state.tools || {};
-        out.fiveStarterTools = ["hände", "feuerstein-knapper", "hammer", "feile", "polierscheibe"].every(
-            (n) => tools[n] && tools[n].isStarter
-        );
-        out.playerOwnsStarters = ["hände", "hammer", "polierscheibe"].every((n) =>
-            (r.state.player.tools || []).includes(n)
-        );
+        // V17.88 — hände ist der einzige Starter; die Domain-Ops existieren als Werkstatt-Op-Bibliothek.
+        out.fiveStarterTools =
+            !!tools["hände"] &&
+            tools["hände"].isStarter &&
+            ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "drehbank-meißel"].every(
+                (n) => tools[n] && !tools[n].isStarter
+            );
+        out.playerOwnsStarters = (r.state.player.tools || []).includes("hände");
         out.matCompatFrozen = Object.isFrozen(r.constructor.MATERIAL_OP_COMPATIBILITY);
         out.thresholdsFrozen = Object.isFrozen(r.constructor.WORLD_EFFECT_THRESHOLDS);
         out.steinSubtractiveOnly =
@@ -6514,6 +7967,11 @@ async function checkBandWave4(ctx) {
         const part2 = { shape: "sphere", material: "quarz" }; // no opChain
         out.precisionDefaultsTo04 = r.computePartPrecision(part2) === 0.4;
 
+        // V17.88 — die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für die
+        // direkten applyOpToPart-/Tools-Box-Tests leihen wir sie aus der Op-Bibliothek (state.tools).
+        for (const dt of ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"]) {
+            if (!r.state.player.tools.includes(dt)) r.state.player.tools.push(dt);
+        }
         // applyOpToPart — Tool-Gating
         r.state.blueprints["test-precision"] = {
             name: "test-precision",
@@ -6521,29 +7979,29 @@ async function checkBandWave4(ctx) {
             builtIn: false,
             parts: [{ shape: "cone", material: "eisen", opChain: r._defaultPartOpChain() }],
         };
-        // Hand-Knap auf eisen-cone: OK (subtractive matches)
-        const ap1 = r.applyOpToPart("test-precision", 0, "feile");
+        // V17.78 — drehbank-meißel (subtractive) auf eisen-cone: OK (subtractive matches eisen)
+        const ap1 = r.applyOpToPart("test-precision", 0, "drehbank-meißel");
         out.applyOpAppends = ap1.ok && r.state.blueprints["test-precision"].parts[0].opChain.length === 2;
-        // Hammer (plastic) auf stein (subtractive only): FAIL
+        // Schmiede-Hammer (plastic) auf stein (subtractive only): FAIL
         r.state.blueprints["test-precision-stein"] = {
             name: "test-precision-stein",
             label: "Stein-Test",
             builtIn: false,
             parts: [{ shape: "box", material: "stein", opChain: r._defaultPartOpChain() }],
         };
-        const ap2 = r.applyOpToPart("test-precision-stein", 0, "hammer");
+        const ap2 = r.applyOpToPart("test-precision-stein", 0, "schmiede-hammer");
         out.materialOpIncompat = !ap2.ok && ap2.reason === "material_op_incompatible";
-        // Tool not owned
-        r.state.player.tools = r.state.player.tools.filter((t) => t !== "feile");
-        const ap3 = r.applyOpToPart("test-precision", 0, "feile");
+        // Tool not owned (drehbank-meißel ist subtractive + Starter)
+        r.state.player.tools = r.state.player.tools.filter((t) => t !== "drehbank-meißel");
+        const ap3 = r.applyOpToPart("test-precision", 0, "drehbank-meißel");
         out.toolOwnershipEnforced = !ap3.ok && ap3.reason === "tool_not_owned";
-        r.state.player.tools.push("feile"); // restore
+        r.state.player.tools.push("drehbank-meißel"); // restore
         // Built-in protection
-        const ap4 = r.applyOpToPart("village", 0, "hammer");
+        const ap4 = r.applyOpToPart("village", 0, "schmiede-hammer");
         out.builtInBlueprintProtected = !ap4.ok && ap4.reason === "cannot_modify_builtin";
 
         // DSL-Op apply_op
-        const dslRes = r.dslRun(["apply_op", "test-precision", 0, "polierscheibe"], { source: "test" });
+        const dslRes = r.dslRun(["apply_op", "test-precision", 0, "hände"], { source: "test" });
         out.dslApplyOpWorks = dslRes.log.some((e) => e.event === "applied_op");
 
         // Diskriminations-Test: zwei Resonanz-Compounds, einer
@@ -6619,17 +8077,27 @@ async function checkBandWave4(ctx) {
         rawGroup.traverse((o) => o.geometry && typeof o.geometry.dispose === "function" && o.geometry.dispose());
         polGroup.traverse((o) => o.geometry && typeof o.geometry.dispose === "function" && o.geometry.dispose());
 
-        // UI: opChain pro Part im Workshop
+        // V17.91 — die Werkstatt ist 3D-zentrisch: der per-Part-opChain-Dropdown + die Tools-Chips des alten
+        // Detail-Editors sind ENTFERNT. Die Werkzeuge/Prozesse leben jetzt als ziehbare Karten in der rechten
+        // WERKZEUGE-Palette (auf einen Part im 3D ziehen wendet die Op/den Prozess an); der Readout (inkl.
+        // Präzision/Qualität) im intuitiven #workshop-stats-panel.
+        const prevModeP3 = r.getGameMode ? r.getGameMode() : "frieden";
+        if (r.setGameMode) r.setGameMode("schöpfer");
         r.selectBlueprintForEdit("test-precision");
-        out.uiOpChainSection = !!document.querySelector(".workshop-opchain");
-        out.uiOpChainHeader = !!document.querySelector(".workshop-opchain-header");
-        out.uiApplyDropdown = !!document.querySelector(".workshop-op-tool");
-        out.uiToolsBox = !!document.querySelector(".workshop-tools");
-        out.uiToolChips = document.querySelectorAll(".workshop-tool-chip").length >= 5;
+        r._renderWorkshopDOM();
+        out.uiStatsPanel = !!document.querySelector("#workshop-stats-panel .stat-row");
+        out.uiQualityRow = [...document.querySelectorAll("#workshop-stats-panel .stat-label")].some(
+            (l) => l.textContent === "Qualität"
+        );
+        out.uiToolPalette = !!document.getElementById("workshop-tool-palette");
+        out.uiToolCards = document.querySelectorAll("#workshop-tool-palette .workshop-tool-card").length >= 1;
+        // in schöpfer erscheinen die besessenen Werkstatt-Prozesse als ziehbare Station-Karten (Drehbank u.a.)
+        out.uiStationCards = document.querySelectorAll("#workshop-tool-palette .workshop-station-card").length >= 1;
+        if (r.setGameMode) r.setGameMode(prevModeP3);
 
         // Save-Roundtrip: playerTools persistiert
         const snap = r.buildStateSnapshot();
-        out.snapshotHasPlayerTools = Array.isArray(snap.playerTools) && snap.playerTools.includes("hammer");
+        out.snapshotHasPlayerTools = Array.isArray(snap.playerTools) && snap.playerTools.includes("schmiede-hammer");
 
         // validateBlueprintParts: opChain wird sanitized
         const v = r.validateBlueprintParts([
@@ -6658,8 +8126,8 @@ async function checkBandWave4(ctx) {
             (wave4p3Results && wave4p3Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Welle 4 P3: 5 Starter-Werkzeuge existieren", wave4p3Results.fiveStarterTools);
-        check("Welle 4 P3: Spieler besitzt Starter-Werkzeuge", wave4p3Results.playerOwnsStarters);
+        check("V17.88: hände ist der einzige Starter, die Domain-Ops sind die Werkstatt-Bibliothek", wave4p3Results.fiveStarterTools);
+        check("V17.88: Spieler startet mit den Basics (hände)", wave4p3Results.playerOwnsStarters);
         check("Welle 4 P3: MATERIAL_OP_COMPATIBILITY frozen", wave4p3Results.matCompatFrozen);
         check("Welle 4 P3: WORLD_EFFECT_THRESHOLDS frozen", wave4p3Results.thresholdsFrozen);
         check("Welle 4 P3: Stein erlaubt nur subtractive Ops", wave4p3Results.steinSubtractiveOnly);
@@ -6682,11 +8150,14 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P3: Roh-Compound triggert keinen Welt-Effekt", wave4p3Results.rawDoesNotTrigger);
         check("Welle 4 P3: Magie-Compound hebt awe an", wave4p3Results.magicLiftsAwe);
         check("Welle 4 P3: Präzision moduliert Part-Farbe sichtbar", wave4p3Results.precisionVisibleTint);
-        check("Welle 4 P3: UI opChain-Sektion im DOM", wave4p3Results.uiOpChainSection);
-        check("Welle 4 P3: UI opChain-Header zeigt Präzision", wave4p3Results.uiOpChainHeader);
-        check("Welle 4 P3: UI Tool-Apply-Dropdown im DOM", wave4p3Results.uiApplyDropdown);
-        check("Welle 4 P3: UI Werkzeug-Box im DOM", wave4p3Results.uiToolsBox);
-        check("Welle 4 P3: UI listet ≥5 Tool-Chips", wave4p3Results.uiToolChips);
+        check("Welle 4 P3 (V17.91): Stats-Panel rendert den Readout (stat-row)", wave4p3Results.uiStatsPanel);
+        check("Welle 4 P3 (V17.91): der Readout zeigt die Qualität (Handwerk/Präzision)", wave4p3Results.uiQualityRow);
+        check("Welle 4 P3 (V17.91): die WERKZEUGE-Palette existiert (Drag-Quelle)", wave4p3Results.uiToolPalette);
+        check("Welle 4 P3 (V17.91): die Palette hat ziehbare Werkzeug-Karten (≥1, Hand)", wave4p3Results.uiToolCards);
+        check(
+            "Welle 4 P3 (V17.91): in schöpfer erscheinen die Werkstatt-Prozesse als ziehbare Station-Karten",
+            wave4p3Results.uiStationCards
+        );
         check("Welle 4 P3: Save persistiert playerTools", wave4p3Results.snapshotHasPlayerTools);
         check("Welle 4 P3: validateBlueprintParts clamped opChain cap", wave4p3Results.opChainCapClamped);
     }
@@ -6909,12 +8380,13 @@ async function checkBandWave5(ctx) {
             builtIn: false,
             parts: tipBp.parts.map((p) => ({ ...p, opChain: r._defaultPartOpChain() })),
         };
+        // V17.91 — die räumlichen Tags lebten in der entfernten Editor-Tags-Sektion; die DATEN-Schicht
+        // (computeSpatialTags) bleibt das Subjekt + ihre Wirkung ist im neuen UI in der Resonanz-/Fähigkeit-
+        // Zeile reflektiert. Wir prüfen, dass die räumliche Emergenz die FORM diskriminiert.
         r.selectBlueprintForEdit("wave5b-test");
-        out.uiSpatialTitle = !!document.querySelector(".workshop-spatial-title");
-        out.uiSpatialRow = !!document.querySelector(".workshop-spatial-row");
-        // Hinweis-Text muss den räumlichen Modus benennen
-        const hint = document.querySelector(".workshop-tags-hint");
-        out.uiHintMentionsSpatial = hint && /Spitze richtet/.test(hint.textContent);
+        out.uiSpatialTitle = typeof r.computeSpatialTags === "function";
+        const spatPointed = r.computeSpatialTags(r.state.blueprints["wave5b-test"]) || {};
+        out.uiSpatialRow = Object.keys(spatPointed).length > 0;
 
         // Reiner atomarer Bauplan: Hinweis sollte nicht "Spitze richtet" benennen
         r.state.blueprints["wave5b-atomar"] = {
@@ -6932,8 +8404,9 @@ async function checkBandWave5(ctx) {
             ],
         };
         r.selectBlueprintForEdit("wave5b-atomar");
-        const hint2 = document.querySelector(".workshop-tags-hint");
-        out.uiHintAtomarMode = hint2 && !/Spitze richtet/.test(hint2.textContent);
+        const spatAtomar = r.computeSpatialTags(r.state.blueprints["wave5b-atomar"]) || {};
+        // der pointed-am-Rand-Bauplan trägt ANDERE räumliche Tags als der reine Box-Bauplan (die Form zählt)
+        out.uiSpatialDiscriminates = JSON.stringify(spatPointed) !== JSON.stringify(spatAtomar);
 
         // DSL-Condition compound_has_spatial_tag funktioniert
         out.dslSpatialCondHigh = r.dslConditions.compound_has_spatial_tag.call(
@@ -7003,10 +8476,9 @@ async function checkBandWave5(ctx) {
         check("Welle 5 B: Pyramide oben verstärkt Magieleitung räumlich", wave5bResults.tipBoostsMagic);
         check("Welle 5 B: Pyramide unten gibt KEINEN Top-Bonus", wave5bResults.bottomNoTipBoost);
         check("Welle 5 B: Helix am Rand hat at_outside", wave5bResults.helixAtOutside);
-        check("Welle 5 B: UI .workshop-spatial-title bei pointed-am-Rand", wave5bResults.uiSpatialTitle);
-        check("Welle 5 B: UI .workshop-spatial-row im DOM", wave5bResults.uiSpatialRow);
-        check("Welle 5 B: Hinweis-Text nennt Spitze-richtet im raeumlichen Modus", wave5bResults.uiHintMentionsSpatial);
-        check("Welle 5 B: Hinweis-Text fällt im rein-atomaren Modus zurück", wave5bResults.uiHintAtomarMode);
+        check("Welle 5 B (V17.91): computeSpatialTags existiert (die räumliche Emergenz-Daten-Schicht)", wave5bResults.uiSpatialTitle);
+        check("Welle 5 B (V17.91): der pointed-am-Rand-Bauplan trägt räumliche Tags", wave5bResults.uiSpatialRow);
+        check("Welle 5 B (V17.91): die räumliche Emergenz diskriminiert die Form (pointed ≠ atomar)", wave5bResults.uiSpatialDiscriminates);
         check("Welle 5 B: DSL compound_has_spatial_tag erkennt verstärkte Magie", wave5bResults.dslSpatialCondHigh);
         check("Welle 5 B: Tip-Compound triggert Magie-Welt-Effekt (awe)", wave5bResults.tipTriggersMagic);
         check("Welle 5 B: Magie tip-oben > Magie tip-unten (Diskrimination)", wave5bResults.tipMagicExceedsBottom);
@@ -7369,12 +8841,23 @@ async function checkBandWave5(ctx) {
         out.saveCarriesConnections =
             ourSavedBp && Array.isArray(ourSavedBp.connections) && ourSavedBp.connections.length === 1;
 
-        // UI: Verbindungs-Sektion erscheint
+        // V17.91 — Verbindungen werden jetzt im 3D-Connect-Modus angelegt (zwei Parts klicken → Typ-Popover)
+        // + per Toggle (zwei verbundene Parts erneut anklicken) gelöst; die alte Editor-Listen-UI entfiel.
         r.selectBlueprintForEdit("w5a-test");
-        out.uiConnectionsSection = !!document.querySelector(".workshop-connections");
-        out.uiConnRow = !!document.querySelector(".workshop-conn-row");
-        out.uiAddRow = !!document.querySelector(".workshop-conn-add");
-        out.uiTypeDropdown = !!document.querySelector(".workshop-conn-type");
+        r._renderWorkshopDOM();
+        out.uiConnectMode = !!document.querySelector('#workshop-mode-bar [data-workshop-mode="connect"]');
+        if (typeof r._workshopOpenConnectPopover === "function") {
+            try {
+                r._workshopOpenConnectPopover(0, 1);
+            } catch (e) {
+                void e;
+            }
+        }
+        const connOverlay = document.getElementById("workshop-connect-overlay");
+        out.uiConnectPopover = !!connOverlay;
+        out.uiConnectTypeButtons = connOverlay ? connOverlay.querySelectorAll("button").length > 1 : false;
+        if (typeof r._workshopCloseConnectPopover === "function") r._workshopCloseConnectPopover();
+        out.uiConnectRemoveApi = typeof r.removeConnectionFromBlueprint === "function";
 
         // Solid-Threshold: schwache Verbindung hat workshop-conn-weak class
         r.state.blueprints["w5a-weak"] = {
@@ -7397,9 +8880,14 @@ async function checkBandWave5(ctx) {
             ],
             connections: [{ type: "sewing", partA: 0, partB: 1 }],
         };
-        r.selectBlueprintForEdit("w5a-weak");
-        const weakBar = document.querySelector(".workshop-conn-bar");
-        out.weakClassApplied = weakBar && weakBar.classList.contains("workshop-conn-weak");
+        // V17.91 — die „schwache Verbindung"-Markierung ist eine DATEN-Eigenschaft (computeConnectionStrength
+        // unter der Solid-Schwelle); die alte Editor-Listen-Klasse entfiel. Eine sewing-Verbindung zwischen
+        // kleinen Holz-Parts liegt unter der Schwelle (Brech-Risiko).
+        const weakConnStrength = r.computeConnectionStrength(
+            { type: "sewing", partA: 0, partB: 1 },
+            r.state.blueprints["w5a-weak"]
+        );
+        out.weakClassApplied = weakConnStrength < (r.constructor.CONNECTION_SOLID_THRESHOLD || 0.7);
 
         // Aufräumen
         delete r.state.blueprints["w5a-test"];
@@ -7435,10 +8923,10 @@ async function checkBandWave5(ctx) {
         check("Welle 5 A: DSL apply_connection wirkt", wave5aResults.dslApplyConnection);
         check("Welle 5 A: DSL-Connection persistiert in state", wave5aResults.dslConnectionPersisted);
         check("Welle 5 A: Save traegt connections im Snapshot", wave5aResults.saveCarriesConnections);
-        check("Welle 5 A: UI .workshop-connections im DOM", wave5aResults.uiConnectionsSection);
-        check("Welle 5 A: UI .workshop-conn-row im DOM", wave5aResults.uiConnRow);
-        check("Welle 5 A: UI .workshop-conn-add im DOM", wave5aResults.uiAddRow);
-        check("Welle 5 A: UI Typ-Dropdown im DOM", wave5aResults.uiTypeDropdown);
+        check("Welle 5 A (V17.91): Connect-Modus existiert in der Top-Leiste", wave5aResults.uiConnectMode);
+        check("Welle 5 A (V17.91): der Connect-Typ-Popover öffnet im 3D (zwei Parts → Typ wählen)", wave5aResults.uiConnectPopover);
+        check("Welle 5 A (V17.91): das Popover bietet Verbindungs-Typen", wave5aResults.uiConnectTypeButtons);
+        check("Welle 5 A (V17.91): Verbindung lösen via Toggle/API (removeConnectionFromBlueprint)", wave5aResults.uiConnectRemoveApi);
         check("Welle 5 A: Schwache Verbindung traegt workshop-conn-weak class", wave5aResults.weakClassApplied);
     }
 
@@ -7504,19 +8992,19 @@ async function checkBandWave5(ctx) {
         const regNotMarked = r.registerBlueprintAsTool("w5c-not-a-tool");
         out.rejectsUnmarked = !regNotMarked.ok && regNotMarked.reason === "not_marked_as_tool";
 
-        // Cannot override starter tool name
-        r.state.blueprints["hammer"] = {
-            name: "hammer",
-            label: "Mein Hammer",
+        // Cannot override starter tool name (schmiede-hammer ist ein Built-in-Starter, V17.78)
+        r.state.blueprints["schmiede-hammer"] = {
+            name: "schmiede-hammer",
+            label: "Mein Schmiede-Hammer",
             builtIn: false,
             role: "tool",
             toolMeta: { opName: "forge", opClass: "plastic" },
             parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
             connections: [],
         };
-        const regHammerOverride = r.registerBlueprintAsTool("hammer");
+        const regHammerOverride = r.registerBlueprintAsTool("schmiede-hammer");
         out.starterProtected = !regHammerOverride.ok && regHammerOverride.reason === "starter_name_protected";
-        delete r.state.blueprints["hammer"];
+        delete r.state.blueprints["schmiede-hammer"];
 
         // Recursive: das neue Werkzeug funktioniert in applyOpToPart
         r.state.blueprints["w5c-target"] = {
@@ -7584,11 +9072,12 @@ async function checkBandWave5(ctx) {
         );
         out.snapshotHasTool = (snap.tools || []).some((t) => t.name === "w5c-lathe" && t.precisionCap === 0.97);
 
-        // UI
-        r.selectBlueprintForEdit("w5c-lathe");
-        out.uiToolSection = !!document.querySelector(".workshop-tool-recursion");
-        out.uiRegisteredBadge = !!document.querySelector(".workshop-tool-registered");
-        out.uiOpNameInput = !!document.querySelector(".workshop-tool-opname");
+        // V17.91 — die „Als Werkzeug registrieren"-UI ist ENTFERNT (von V17.88 „die Werkstatt IST der Prozess"
+        // abgelöst — Prozesse kommen aus platzierten Werkstätten, nicht aus registrierten Bauplänen). Die
+        // Daten-Methoden bleiben (oben getestet: registerBlueprintAsTool → snapshotHasTool); ein registriertes
+        // Werkzeug erscheint als ziehbare Karte in der WERKZEUGE-Palette, wenn der Spieler es besitzt.
+        out.toolMethodSurvives =
+            typeof r.registerBlueprintAsTool === "function" && typeof r.setBlueprintToolMeta === "function";
 
         // Cleanup
         delete r.state.tools["w5c-lathe"];
@@ -7640,9 +9129,7 @@ async function checkBandWave5(ctx) {
         check("Welle 5 C: DSL-Werkzeug landet in state.tools", wave5cResults.dslToolInState);
         check("Welle 5 C: Save traegt role + toolMeta im Bauplan", wave5cResults.snapshotHasToolBp);
         check("Welle 5 C: Save traegt eigenes Werkzeug", wave5cResults.snapshotHasTool);
-        check("Welle 5 C: UI .workshop-tool-recursion im DOM", wave5cResults.uiToolSection);
-        check("Welle 5 C: UI Registered-Badge im DOM", wave5cResults.uiRegisteredBadge);
-        check("Welle 5 C: UI opName-Input im DOM", wave5cResults.uiOpNameInput);
+        check("Welle 5 C (V17.91): die Werkzeug-Registrierungs-Methoden überleben (UI von V17.88 abgelöst)", wave5cResults.toolMethodSurvives);
     }
 
     // ### Bugfixes nach Welle-5-Reflexion ###
@@ -7744,7 +9231,10 @@ async function checkBandWave5(ctx) {
         r.deleteBlueprint("bug2-lathe");
         out.toolRemovedFromState = !r.state.tools["bug2-lathe"];
         out.toolRemovedFromPlayer = !(r.state.player.tools || []).includes("bug2-lathe");
-        out.starterToolsUnaffected = !!r.state.tools["hammer"] && (r.state.player.tools || []).includes("hammer");
+        // V17.88 — die Op-Bibliothek (schmiede-hammer-Definition) + der Hand-Starter überleben einen
+        // Bauplan-Lösch unberührt (das Werkzeug ist ab V17.88 nicht mehr im player.tools-Starter-Satz).
+        out.starterToolsUnaffected =
+            !!r.state.tools["schmiede-hammer"] && (r.state.player.tools || []).includes("hände");
 
         // Negativ: deleteBlueprint eines non-tool-Bauplans laesst
         // andere Tools komplett unberuehrt.
@@ -13763,9 +15253,9 @@ async function checkBandWelle6DSoul(ctx) {
                 },
             ],
         };
-        if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
         const staBefore = r.state.player.stamina;
-        const applyOk = r.applyOpToPart("wound_test_bp", 0, "hammer");
+        const applyOk = r.applyOpToPart("wound_test_bp", 0, "schmiede-hammer");
         out.applyOpResult = applyOk;
         out.staBefore = staBefore;
         out.staAfter = r.state.player.stamina;
@@ -13773,7 +15263,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.staminaWasDeducted = r.state.player.stamina < staBefore;
         // Stamina auf 0 → applyOpToPart lehnt ab
         r.state.player.stamina = 1; // weniger als cost 10
-        const applyFail = r.applyOpToPart("wound_test_bp", 0, "hammer");
+        const applyFail = r.applyOpToPart("wound_test_bp", 0, "schmiede-hammer");
         out.applyOpRejectedNoStamina = !applyFail.ok && applyFail.reason === "not_enough_stamina";
         // Cleanup
         delete r.state.blueprints.wound_test_bp;
@@ -13997,11 +15487,11 @@ async function checkBandWelle6DSoul(ctx) {
         r.dslRun(["unequip", "armor"], { source: "test" });
         out.dslUnequipWorks = r.state.player.equipped.armor === null;
 
-        // V17.57 W2-B — ein builtIn-Crafting-Tool (hammer) ist KEIN Welt-Gerät → equipHeld lehnt es
+        // V17.57 W2-B — ein builtIn-Crafting-Tool (schmiede-hammer) ist KEIN Welt-Gerät → equipHeld lehnt es
         // ab (kein Bauplan); ein eigener Bauplan IST haltbar (kein Rollen-Schloss) + faltet in die Stats.
         r.state.player.tools = r.state.player.tools || [];
-        if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
-        out.equipBuiltinToolOk = !r.equipHeld("hammer").ok; // builtIn-Tool → abgelehnt (kein Bauplan)
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
+        out.equipBuiltinToolOk = !r.equipHeld("schmiede-hammer").ok; // builtIn-Tool → abgelehnt (kein Bauplan)
         out.equippedToolIs = !r.state.player.equipped.held; // nichts gehalten nach der Ablehnung
         const toolStats = r.state.player.stats;
         out.builtinToolNoStatChange = Math.abs(toolStats.hpMax - baselineStats.hpMax) < 0.01;
@@ -21431,17 +22921,17 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.state.player.stamina = 100;
 
         r.setGameMode("frieden");
-        const opResultFrieden = r.applyOpToPart("mode-test-bp", 0, "feile");
+        const opResultFrieden = r.applyOpToPart("mode-test-bp", 0, "hände");
         out.friedenSkipsStamina = opResultFrieden.ok === true && r.state.player.stamina === 100;
 
         r.state.player.stamina = 100;
         r.setGameMode("schöpfer");
-        const opResultSchoepfer = r.applyOpToPart("mode-test-bp", 0, "feile");
+        const opResultSchoepfer = r.applyOpToPart("mode-test-bp", 0, "hände");
         out.schoepferSkipsStamina = opResultSchoepfer.ok === true && r.state.player.stamina === 100;
 
         r.state.player.stamina = 100;
         r.setGameMode("pfad");
-        const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "feile");
+        const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "hände");
         // V8.39 — die Kosten skalieren mit dem Werkzeug-cap (nicht
         // mehr fix 10); dieser Test prüft das Modus-GATE (pfad
         // konsumiert), die genaue Skalierung prüft der V8.39-Block.
@@ -26294,8 +27784,8 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             const pre = r.state.workshop && r.state.workshop.preview;
             out.connNotCountedAsPart = !!pre && pre.partMeshes.size === 2;
             r._renderWorkshopDOM();
-            const connSection = document.querySelector(".workshop-connections");
-            out.connHintShown = !!connSection && /Sollbruchstelle/.test(connSection.textContent || "");
+            // V17.91 — die Verbindungs-Erklärung lebte in der alten Editor-Liste (entfernt); Verbindungen
+            // werden jetzt im 3D-Connect-Modus angelegt/gelöst. Der frühere „Sollbruchstelle"-Text-Check entfiel.
             delete r.state.blueprints["_t838d"];
             // Auswahl wiederherstellen — kein hängender Verweis auf
             // den gelöschten Test-Bauplan für nachfolgende Tests.
@@ -26327,7 +27817,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             "V8.38: Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)",
             v838Results.connNotCountedAsPart
         );
-        check("V8.38: Werkstatt-Panel erklärt, was eine Verbindung tut", v838Results.connHintShown);
         check("V8.38: Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)", v838Results.previewAspect);
         check("V8.38: Canvas-Sync setzt camera.aspect (kein gestauchtes Bild)", v838Results.cameraAspectSync);
     } else {
@@ -26388,7 +27877,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             const res1 = r.applyOpToPart("_t839s", 0, "hände");
             const costLow = b1 - r.state.player.stamina;
             const b2 = r.state.player.stamina;
-            const res2 = r.applyOpToPart("_t839s", 0, "polierscheibe");
+            const res2 = r.applyOpToPart("_t839s", 0, "drehbank-meißel"); // cap 0.9 → niedrigere Mühe (V17.78: polier raus)
             const costHigh = b2 - r.state.player.stamina;
             out.staminaScales = !!res1.ok && !!res2.ok && costLow > costHigh && costLow >= 9 && costHigh <= 7;
             r.setGameMode(prevMode);
@@ -28161,7 +29650,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             ownP.materials.some((m) => m.name === "_w14m0") && !ownP.materials.some((m) => m.name === "stein");
         out.payloadMaterialCap = ownP.materials.length <= 16;
         out.payloadOwnTools =
-            ownP.tools.some((t) => t.name === "_w14tool") && !ownP.tools.some((t) => t.name === "hammer");
+            ownP.tools.some((t) => t.name === "_w14tool") && !ownP.tools.some((t) => t.name === "schmiede-hammer");
         for (let i = 0; i < 20; i++) delete r.state.materials["_w14m" + i];
         delete r.state.tools._w14tool;
         out.sendUsesPayload = /_portalEnterPayload/.test(r._portalSendEnter.toString());
@@ -30882,14 +32371,14 @@ async function checkBandWelle6HCreatureStats(ctx) {
         out.initialArmorNull = c.userData.equipped && c.userData.equipped.armor === null;
 
         // 3. equipCreatureTool mit existing Starter-Tool (hammer)
-        const eqTool = r.equipCreatureTool(c, "hammer");
+        const eqTool = r.equipCreatureTool(c, "schmiede-hammer");
         out.equipToolOk = eqTool.ok === true;
-        out.toolSet = c.userData.equipped.tool === "hammer";
+        out.toolSet = c.userData.equipped.tool === "schmiede-hammer";
 
         // 4. equipCreatureTool mit unbekanntem Tool → reject
         const eqUnknown = r.equipCreatureTool(c, "fictional_tool_xyz");
         out.unknownToolRejected = eqUnknown.ok === false && eqUnknown.reason === "tool_unknown";
-        out.toolUnchangedAfterReject = c.userData.equipped.tool === "hammer";
+        out.toolUnchangedAfterReject = c.userData.equipped.tool === "schmiede-hammer";
 
         // 5. equipCreatureArmor — erst Bauplan markieren, dann ausrüsten.
         // Built-ins sind read-only; wir nutzen cloneBlueprint(src, newName)
@@ -30959,8 +32448,8 @@ async function checkBandWelle6HCreatureStats(ctx) {
         // 8. DSL-Ops creature_equip_tool/armor/unequip wirken
         const cDsl = r.spawnCreatureAt(player.x + 320, player.y, player.z + 320, "happy", "wesen");
         const idx = r.state.creatures.indexOf(cDsl);
-        r.dslRun(["creature_equip_tool", idx, "hammer"], { source: "test" });
-        out.dslEquipToolOk = cDsl.userData.equipped.tool === "hammer";
+        r.dslRun(["creature_equip_tool", idx, "schmiede-hammer"], { source: "test" });
+        out.dslEquipToolOk = cDsl.userData.equipped.tool === "schmiede-hammer";
         r.dslRun(["creature_unequip", idx, "tool"], { source: "test" });
         out.dslUnequipOk = cDsl.userData.equipped.tool === null;
 
@@ -30971,7 +32460,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
             Class.NON_BROADCASTABLE_OPS.has("creature_unequip");
 
         // 10. describeProgram-Einträge
-        const d1 = r.describeProgram(["creature_equip_tool", 0, "hammer"]);
+        const d1 = r.describeProgram(["creature_equip_tool", 0, "schmiede-hammer"]);
         out.descEquipTool = /Werkzeug/.test(d1) && /hammer/.test(d1);
         const d2 = r.describeProgram(["creature_equip_armor", 0, "lederrüstung"]);
         out.descEquipArmor = /Rüstung/.test(d2);
@@ -30979,12 +32468,12 @@ async function checkBandWelle6HCreatureStats(ctx) {
         out.descUnequip = /tool/.test(d3) || /Slot/.test(d3);
 
         // 11. Snapshot persistiert equipped (Round-Trip)
-        r.equipCreatureTool(cDsl, "hammer");
+        r.equipCreatureTool(cDsl, "schmiede-hammer");
         const snap = r._serializeCreature(cDsl);
-        out.snapHasEquipped = snap.equipped && snap.equipped.tool === "hammer";
+        out.snapHasEquipped = snap.equipped && snap.equipped.tool === "schmiede-hammer";
         // Restore validiert tool-Existenz
         const restored = r._restoreCreatureFromSnapshot(snap, "happy");
-        out.restoreKeepsEquippedTool = restored && restored.userData.equipped.tool === "hammer";
+        out.restoreKeepsEquippedTool = restored && restored.userData.equipped.tool === "schmiede-hammer";
         // Restore mit unbekanntem Tool → null statt crash
         const badSnap = { ...snap, equipped: { tool: "fictional_xyz", armor: null } };
         const restoredBad = r._restoreCreatureFromSnapshot(badSnap, "happy");
@@ -31377,7 +32866,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
             { type: "gathered", content: { material: "holz" }, at: 3 },
             { type: "built", content: { blueprint: "stein_block" }, at: 4 },
         ];
-        r.equipCreatureTool(c, "hammer");
+        r.equipCreatureTool(c, "schmiede-hammer");
         r.applyCreatureBoost(c, {
             source: "test:tonic",
             tagDelta: { dichte: 0.3 },
@@ -32924,10 +34413,10 @@ async function checkBandWaves9And10a(ctx) {
 
             // Default-Tools sind alle generic (domain=null)
             const tools = r.state.tools || {};
-            // Welle 9b — die 5 ORIGINAL-Built-ins (hand/feuer/hammer/
-            // feile/polier) sind generic. Die 5 NEUEN Domain-Tools
-            // tragen jeweils eine domain ∈ TOOL_DOMAINS.
-            const originalGenericNames = ["hände", "feuerstein-knapper", "hammer", "feile", "polierscheibe"];
+            // Welle 9b / V17.78 — die generische Präzisions-Leiter ist gefallen (feuerstein/hammer/feile/
+            // polier RAUS, die Werkstatt trägt jetzt die Präzision); nur `hände` bleibt domain-neutral (0.4).
+            // Die Domain-Tools tragen jeweils eine domain ∈ TOOL_DOMAINS.
+            const originalGenericNames = ["hände"];
             out.originalToolsGeneric = originalGenericNames.every((n) => tools[n] && tools[n].domain === null);
             out.domainToolsHaveDomain = Object.values(tools)
                 .filter((t) => t.builtIn && t.domain)
@@ -33070,7 +34559,7 @@ async function checkBandWaves9And10a(ctx) {
                 wave9aResults.hasRefresh
         );
         check(
-            "Welle 9a: Original-Built-ins (hände/feuerstein/hammer/feile/polierscheibe) sind generic (domain=null)",
+            "Welle 9a/V17.78: hände ist die domain-neutrale Baseline (domain=null) — die generische Leiter ist gefallen",
             wave9aResults.originalToolsGeneric
         );
         check(
@@ -33135,13 +34624,16 @@ async function checkBandWaves9And10a(ctx) {
             out.drehbankMechanism =
                 r.state.tools["drehbank-meißel"] && r.state.tools["drehbank-meißel"].domain === "mechanism";
 
-            // Alle 5 Domain-Werkzeuge sind isStarter → im Spieler-Inventar
-            const playerTools = r.state.player.tools || [];
-            out.allDomainToolsInInventory = domainToolNames.every((n) => playerTools.includes(n));
+            // V17.88 — die 5 Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); sie
+            // bleiben als Op-Bibliothek in state.tools (isStarter:false), aus der die Werkstatt schöpft.
+            out.allDomainToolsInInventory = domainToolNames.every(
+                (n) => r.state.tools[n] && r.state.tools[n].isStarter === false
+            );
 
-            // Insgesamt 10 Built-in-Werkzeuge (5 generic + 5 domain)
+            // V17.78 — insgesamt 6 Built-in-Werkzeuge: hände (domain-neutrale Baseline) + 5 domain;
+            // die generische Präzisions-Leiter (feuerstein/hammer/feile/polier) ist gefallen.
             const builtIns = Object.values(r.state.tools).filter((t) => t.builtIn);
-            out.tenBuiltInTools = builtIns.length === 10;
+            out.sixBuiltInTools = builtIns.length === 6;
 
             // Konstanten für UI: Labels + Farben
             out.roleLabelsFrozen =
@@ -33166,29 +34658,30 @@ async function checkBandWaves9And10a(ctx) {
             if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
             r.cloneBlueprint("village", "test_9b");
             r.selectBlueprintForEdit("test_9b");
-            // Frisch geklont: Rolle ist architecture (emergent default)
-            // Status sollte das anzeigen
-            const status = document.querySelector("#workshop-editor .workshop-status");
+            r._renderWorkshopDOM();
+            // V17.91 — die Rolle wird jetzt im intuitiven Stats-Panel angezeigt (Rolle-Zeile mit .role-chip),
+            // nicht im entfernten Editor-Header. Frisch geklont: architecture (emergent default) → der Chip
+            // zeigt „Bauwerk" + trägt .role-emergent (der emergent/manuell-Indikator).
+            const roleChip9b = document.querySelector("#workshop-stats-panel .role-chip");
             out.statusShowsBauwerk =
-                !!status && status.textContent.includes("Bauwerk") && status.textContent.includes("emergent");
-            // Apply schmiede-hammer auf eisen-Part
+                !!roleChip9b && roleChip9b.textContent.includes("Bauwerk") && roleChip9b.classList.contains("role-emergent");
+            // Apply schmiede-hammer auf eisen-Part (V17.88 — Domain-Op aus der Op-Bibliothek leihen)
+            if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
             r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9b", 0, "schmiede-hammer");
             r._renderWorkshopDOM();
-            const statusAfter = document.querySelector("#workshop-editor .workshop-status");
-            // Rolle sollte jetzt Werkzeug oder Rüstung sein (forging-split)
+            // V17.91 — die Rolle wird im Stats-Panel-Chip angezeigt; nach dem forging-Op sollte sie
+            // Werkzeug/Rüstung sein (emergent, via .role-emergent-Klasse statt eines Status-Texts).
+            const roleChipAfter = document.querySelector("#workshop-stats-panel .role-chip");
             out.statusShowsForgingRole =
-                !!statusAfter &&
-                (statusAfter.textContent.includes("Werkzeug") || statusAfter.textContent.includes("Rüstung")) &&
-                statusAfter.textContent.includes("emergent");
+                !!roleChipAfter &&
+                (roleChipAfter.textContent.includes("Werkzeug") || roleChipAfter.textContent.includes("Rüstung")) &&
+                roleChipAfter.classList.contains("role-emergent");
 
-            // Tool-Chip: Domain-Dot ist im DOM für Domain-Werkzeug
-            const chips = document.querySelectorAll(".workshop-tool-chip");
-            let hasDomainDot = false;
-            chips.forEach((chip) => {
-                if (chip.querySelector(".workshop-tool-domain-dot")) hasDomainDot = true;
-            });
-            out.toolChipHasDomainDot = hasDomainDot;
+            // V17.91 — der Domain-Punkt lebt jetzt auf den Werkzeug-Karten der WERKZEUGE-Palette (das
+            // besessene schmiede-hammer erscheint dort als Karte mit Domänen-Punkt).
+            out.toolChipHasDomainDot =
+                document.querySelectorAll("#workshop-tool-palette .workshop-tool-domain-dot").length > 0;
 
             // Cleanup
             if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
@@ -33214,10 +34707,10 @@ async function checkBandWaves9And10a(ctx) {
                 wave9bResults.drehbankMechanism
         );
         check(
-            "Welle 9b: alle 5 Domain-Werkzeuge sind isStarter + im Spieler-Inventar",
+            "V17.88: alle 5 Domain-Werkzeuge bleiben als Werkstatt-Op-Bibliothek (isStarter:false, in state.tools)",
             wave9bResults.allDomainToolsInInventory
         );
-        check("Welle 9b: 10 Built-in-Werkzeuge insgesamt (5 generic + 5 domain)", wave9bResults.tenBuiltInTools);
+        check("Welle 9b/V17.78: 6 Built-in-Werkzeuge (hände-Baseline + 5 domain; die generische Leiter fiel)", wave9bResults.sixBuiltInTools);
         check(
             "Welle 9b: BLUEPRINT_ROLE_LABELS frozen + deutsche Bezeichnungen (Bauwerk/Werkzeug/Maschine)",
             wave9bResults.roleLabelsFrozen
@@ -33263,7 +34756,7 @@ async function checkBandWaves9And10a(ctx) {
             out.altarSoulwork = r._computeWorkshopDomain(r.state.blueprints.seelenstein_altar) === "soulwork";
             out.drehbankMechanism = r._computeWorkshopDomain(r.state.blueprints.drehbank) === "mechanism";
             out.noHardcodedDomain = r.state.blueprints.esse.workshopDomain === undefined;
-            out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 10;
+            out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 32;
             out.gateMethodExists = typeof r._workshopStationGate === "function";
 
             // Modus auf pfad für strikten Test
@@ -33329,7 +34822,7 @@ async function checkBandWaves9And10a(ctx) {
                 wave9cResults.drehbankMechanism &&
                 wave9cResults.noHardcodedDomain
         );
-        check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 10", wave9cResults.proximityConst);
+        check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 32 (V17.90 — Basis-Maßstab)", wave9cResults.proximityConst);
         check("Welle 9c: _workshopStationGate-Methode existiert", wave9cResults.gateMethodExists);
         check(
             "Welle 9c: pfad ohne nahe Werkstatt → Gate lehnt ab + nennt neededDomain",
@@ -34242,8 +35735,10 @@ async function checkBandWave10b(ctx) {
             if (tab) tab.click();
             r.selectBlueprintForEdit("test_10b_car");
             r._renderWorkshopDOM();
-            const statusEl = document.querySelector(".workshop-status");
-            out.statusShowsAffordance = !!statusEl && statusEl.textContent.includes("fahrbar");
+            // V17.91 — die Affordanzen werden jetzt in der „Fähigkeit"-Zeile des intuitiven Stats-Panels
+            // angezeigt (V17.86), nicht im entfernten Editor-Header-Status.
+            const spCar = document.getElementById("workshop-stats-panel");
+            out.statusShowsAffordance = !!spCar && spCar.textContent.includes("fahrbar");
 
             // Cleanup
             for (const n of [
@@ -34682,7 +36177,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             out.hasRenderTools = typeof r._workshopRenderToolPalette === "function";
             out.hasHandleToolDrop = typeof r._workshopHandleToolDrop === "function";
             out.hasRenderStats = typeof r._workshopRenderStatsPanel === "function";
-            out.hasInstallEditorToggle = typeof r._workshopInstallEditorToggle === "function";
+            // V17.91 — der Editor-Toggle entfiel mit dem Detail-Editor; die Top-Leisten-Akte (Undo/Redo/
+            // Löschen/Klonen/Neu) verdrahtet jetzt _workshopInstallActionButtons + ihr Zustand _workshopUpdateTopBarState.
+            out.hasInstallActionBtns = typeof r._workshopInstallActionButtons === "function";
+            out.hasUpdateTopBarState = typeof r._workshopUpdateTopBarState === "function";
             out.hasInstallDelBtn = typeof r._workshopInstallDeleteButton === "function";
 
             // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
@@ -34714,23 +36212,17 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Wenn Spieler Werkzeuge hat, sind Cards drin
             const playerTools = (r.state.player && r.state.player.tools) || [];
             out.toolCardsCount = toolPalette ? toolPalette.querySelectorAll(".workshop-tool-card").length : 0;
-            out.toolPaletteHasCards = out.toolCardsCount > 0 && out.toolCardsCount <= playerTools.length;
+            // V17.91 — die Palette enthält die Hand + (in schöpfer/nah) die Werkstatt-Prozess-Karten; mind. eine Karte.
+            void playerTools;
+            out.toolPaletteHasCards = out.toolCardsCount > 0;
 
-            // Editor-Toggle
-            const editorToggle = document.getElementById("workshop-editor-toggle");
-            const editor = document.getElementById("workshop-editor");
-            out.toggleInDom = !!editorToggle;
-            if (editorToggle && editor) {
-                // Default: zugeklappt (hidden=true)
-                out.editorInitiallyHidden = editor.hidden === true;
-                // Click → ausklappen
-                editorToggle.click();
-                out.editorVisibleAfterClick = editor.hidden === false;
-                out.toggleAriaExpanded = editorToggle.getAttribute("aria-expanded") === "true";
-                // Nochmal Click → wieder zu
-                editorToggle.click();
-                out.editorHiddenAfterSecondClick = editor.hidden === true;
-            }
+            // V17.91 — der alte einklappbare Detail-Editor (#workshop-editor + Toggle) ist ENTFERNT (die
+            // Werkstatt ist 3D-zentrisch); die Editor-Akte Undo/Redo/Löschen wohnen jetzt in der Top-Leiste.
+            out.editorRemoved =
+                !document.getElementById("workshop-editor") && !document.getElementById("workshop-editor-toggle");
+            out.topBarUndoRedo =
+                !!document.getElementById("workshop-undo-btn") && !!document.getElementById("workshop-redo-btn");
+            out.topBarDeleteBlueprint = !!document.getElementById("workshop-delete-blueprint-btn");
 
             // Del-Button
             const delBtn = document.getElementById("workshop-delete-selected-part");
@@ -34770,11 +36262,12 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
     if (v805Results && !v805Results.error) {
         check(
-            "V8.05: 5 neue Methoden existieren (Tool-Render/Drop + Stats + Editor-Toggle + Del-Btn)",
+            "V8.05 (V17.91): Werkstatt-Methoden existieren (Tool-Render/Drop + Stats + Top-Leisten-Akte + Del-Btn)",
             v805Results.hasRenderTools &&
                 v805Results.hasHandleToolDrop &&
                 v805Results.hasRenderStats &&
-                v805Results.hasInstallEditorToggle &&
+                v805Results.hasInstallActionBtns &&
+                v805Results.hasUpdateTopBarState &&
                 v805Results.hasInstallDelBtn
         );
         check(
@@ -34789,15 +36282,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             "V8.05: Werkzeug-Palette im DOM mit Cards für Spieler-Werkzeuge",
             v805Results.toolPaletteInDom && v805Results.toolPaletteHasCards
         );
+        check("V8.05 (V17.91): der alte Detail-Editor ist entfernt (#workshop-editor + Toggle weg)", v805Results.editorRemoved);
         check(
-            "V8.05: Editor-Toggle im DOM + initial zugeklappt (Details-Tabelle versteckt)",
-            v805Results.toggleInDom && v805Results.editorInitiallyHidden
-        );
-        check(
-            "V8.05: Editor-Toggle-Click ein- + ausklappen + aria-expanded sync",
-            v805Results.editorVisibleAfterClick &&
-                v805Results.toggleAriaExpanded &&
-                v805Results.editorHiddenAfterSecondClick
+            "V8.05 (V17.91): Undo/Redo + Löschen wohnen in der Top-Leiste",
+            v805Results.topBarUndoRedo && v805Results.topBarDeleteBlueprint
         );
         check(
             "V8.05: Del-Button im DOM + initial disabled (keine Selection)",
@@ -34825,10 +36313,11 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             out.cloneBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-clone-btn"));
             out.newBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-new-btn"));
             out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
-            // Mode-Bar hat 5 Mode-Buttons + 2 Action-Buttons = 7
+            // V17.91 — die Mode-Bar trägt jetzt 11 Buttons: 4 Modi (Move/Rotate/Scale/Connect) + Snap +
+            // Zentrieren + Undo + Redo + Klonen + Neu + Löschen (Undo/Redo/Löschen aus dem entfernten Detail-
+            // Editor hoch-migriert).
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
-            // V8.14: Reset-Button (Zentrieren) hinzugefügt → 8 Buttons.
-            out.sevenButtonsInBar = allBtns === 8;
+            out.sevenButtonsInBar = allBtns === 11;
 
             // Methode existiert
             out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
@@ -34885,7 +36374,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
         );
         check(
-            "V8.06/V8.14: Mode-Bar hat 8 Buttons (5 Modi + Snap + Klone + Neu + Zentrieren)",
+            "V8.06/V17.91: Mode-Bar hat 11 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + Klonen + Neu + Löschen)",
             v806Results.sevenButtonsInBar
         );
         check(
@@ -36566,7 +38055,15 @@ async function checkBandRing5Soul(ctx) {
         out.drawerSelectInDom = !!document.getElementById("player-soul-select");
         out.statusBarSoulInDom = !!document.getElementById("status-soul");
         const select = document.getElementById("player-soul-select");
-        out.dropdownHasThreeOptions = select && select.options.length === 3;
+        // V17.74 Welle 1b — die Seele-Select listet die 3 Built-in-Seelen PLUS verkörperbare
+        // role:"soul"-Baupläne (die Bibliothek, z.B. avatar_waechter). Migriert von „genau 3" auf
+        // „die 3 Built-ins sind da + die Bauplan-Avatare" (das Verhalten wandert mit, V9.56-i).
+        const ring5SoulVals = select ? [...select.options].map((o) => o.value) : [];
+        out.dropdownHasBuiltinSouls =
+            ring5SoulVals.includes("human") &&
+            ring5SoulVals.includes("phoenix") &&
+            ring5SoulVals.includes("dragon") &&
+            ring5SoulVals.includes("avatar_waechter");
         out.dropdownOptionCount = select ? select.options.length : -1;
         out.dropdownOptionValues = select ? [...select.options].map((o) => o.value).join(",") : "";
 
@@ -36740,8 +38237,8 @@ async function checkBandRing5Soul(ctx) {
         check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);
         check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
         check(
-            "Ring 5: Dropdown hat drei Optionen (Built-in-Seelen)",
-            ring5Results.dropdownHasThreeOptions,
+            "Ring 5: Dropdown listet die 3 Built-in-Seelen + verkörperbare Bauplan-Avatare (V17.74)",
+            ring5Results.dropdownHasBuiltinSouls,
             `count=${ring5Results.dropdownOptionCount} values=${ring5Results.dropdownOptionValues}`
         );
         check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
@@ -37611,7 +39108,7 @@ async function checkBandRing6Workshop(ctx) {
         out.workshopTabInDom = !!document.querySelector('#topbar [data-tab="werkstatt"]');
         out.workshopDrawerInDom = !!document.querySelector('.drawer[data-drawer="werkstatt"]');
         out.workshopListInDom = !!document.getElementById("workshop-list");
-        out.workshopEditorInDom = !!document.getElementById("workshop-editor");
+        out.workshopStatsPanelInDom = !!document.getElementById("workshop-stats-panel"); // V17.91 — der intuitive Readout (statt des entfernten #workshop-editor)
 
         // Liste hat einen Eintrag pro Bauplan
         const list = document.getElementById("workshop-list");
@@ -37726,7 +39223,7 @@ async function checkBandRing6Workshop(ctx) {
         check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
         check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
         check("Ring 6.6: #workshop-list im DOM", ring66Results.workshopListInDom);
-        check("Ring 6.6: #workshop-editor im DOM", ring66Results.workshopEditorInDom);
+        check("Ring 6.6 (V17.91): #workshop-stats-panel im DOM (intuitiver Readout, der Editor ist entfernt)", ring66Results.workshopStatsPanelInDom);
         check("Ring 6.6: Liste zeigt einen Eintrag pro Bauplan", ring66Results.listShowsAllBlueprints);
         check("Ring 6.6: createBlueprint legt neuen eigenen Bauplan an", ring66Results.createBlueprintOk);
         check("Ring 6.6: createBlueprint lehnt doppelte Namen ab", ring66Results.duplicateNameRejected);
@@ -38187,6 +39684,24 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1770WorkshopStationMark(ctx);
             await checkBandV1771ToolOpFromForm(ctx);
             await checkBandV1772Library(ctx);
+            await checkBandV1773HeldMesh(ctx);
+            await checkBandV1774UseByRole(ctx);
+            await checkBandV1775MakeActCost(ctx);
+            await checkBandV1776WorkshopPrecision(ctx);
+            await checkBandV1777SteigerungVisible(ctx);
+            await checkBandV1778LadderCut(ctx);
+            await checkBandV1779RoleFitQuality(ctx);
+            await checkBandV1780FormAxes(ctx);
+            await checkBandV1781RoleRegister(ctx);
+            await checkBandV1782CatalystReadout(ctx);
+            await checkBandV1783ImplementClassification(ctx);
+            await checkBandV1784AvatarFormFit(ctx);
+            await checkBandV1785RoleDisplayAndUndo(ctx);
+            await checkBandV1786WorkshopCoherence(ctx);
+            await checkBandV1787UndoRedo(ctx);
+            await checkBandV1788WorkshopAsProcess(ctx);
+            await checkBandV1789WorkshopReadout(ctx);
+            await checkBandV1790Recalibration(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
