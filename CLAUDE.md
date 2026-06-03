@@ -448,7 +448,7 @@ Kuratierte **quer-schneidende Stolperdrähte** — die Fallen, die in jeder Well
 - **lebendiger Welt / Emotion / Nexus / DSL / Kreaturen** → `docs/das-lebendige-feld.md` (DER WAHRE NORDEN: das Feld, das alle lesen · schreiben · WERTEN).
 - **Kampf / Waffen / Werkzeug / Rüstung / Trank / Avatar / Abbauen / Werkstatt / Schmieden / Crafting / Bauplan-Teilen** → `docs/kampf-plan.md` (DER AKTIVE BOGEN — §11 Schöpfungs-Fluss + Resonanz-Vereinheitlichung).
 - **W18 / Portal-Ko-Präsenz / in fremden Welten leben** → `docs/world-portal-w18-plan.md` · **Welle 12+ / Fremd-Engine** → `docs/world-portal.md`.
-- **Wasser** → `docs/hydrosphere.md` (das Modell, §16 der V13-Bogen) · **Material/Form/Tag/Compound** → `docs/crafting-konzept.md` + `docs/aktivierungsmatrix.md` (`FORM_TAG_ACTIVATION`).
+- **Wasser** → `docs/hydrosphere.md` (das Modell, §16 der V13-Bogen) · **Material/Form/Tag/Compound/Resonanz/Rolle/Katalysator** → `docs/crafting-konzept.md` + `docs/aktivierungsmatrix.md` (`FORM_TAG_ACTIVATION`) + `docs/resonanz-system.md` (DIE systematische Vereinheitlichung — ein Produkt-Vektor, viele Leser; der Pfad U1–U6, geerdet im Archiv).
 - **Stand/Vision/Plan**: `docs/handover.md` (Chronik + Start) · `docs/state-of-realm.md` (Vision) · `docs/roadmap.md` (Plan vorwärts, „OFFENE FÄDEN") · `docs/archiv/` (abgeschlossen, Index in `docs/archiv/README.md`).
 
 ## Skripte + Infrastruktur
