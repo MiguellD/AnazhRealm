@@ -5340,6 +5340,9 @@ async function checkBandV1766FertigenFlow(ctx) {
                 { shape: "box", material: "eisen", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
+        // V17.88 — die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
+        // direkten applyOpToPart-Test (Domain-Logik) leihen wir das Werkzeug aus der Op-Bibliothek.
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
         r.applyOpToPart("__s7_forge", 0, "schmiede-hammer");
         out.forgeHasDomain = r.computeBlueprintDomain(blu.__s7_forge) === "forging";
 
@@ -5490,6 +5493,7 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
         delete blu.__wd_work;
         blu.__wd_work = mk("eisen", "box");
         blu.__wd_work.name = "__wd_work";
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
         r.applyOpToPart("__wd_work", 0, "schmiede-hammer"); // forging-Domain über die opChain
         out.workIsForging = r.computeBlueprintDomain(blu.__wd_work) === "forging";
         r.setGameMode("pfad");
@@ -5632,6 +5636,7 @@ async function checkBandV1769RoleResonance(ctx) {
         blu.__rr_forge = { name: "__rr_forge", parts: [part("eisen", 0, 0, 0)] };
         const savedMode = r.getGameMode();
         r.setGameMode("schöpfer");
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
         r.applyOpToPart("__rr_forge", 0, "schmiede-hammer");
         const forgeRole = r.computeBlueprintRole(blu.__rr_forge);
         out.domainPriority = forgeRole === "tool" || forgeRole === "armor";
@@ -5723,6 +5728,7 @@ async function checkBandV1770WorkshopStationMark(ctx) {
             ],
         };
         r.setGameMode("schöpfer");
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
         r.applyOpToPart("__ws_work", 0, "schmiede-hammer"); // forging-Domäne (opChain)
         out.workIsForging = r.computeBlueprintDomain(blu.__ws_work) === "forging";
         r.setGameMode("pfad");
@@ -6396,14 +6402,14 @@ async function checkBandV1778LadderCut(ctx) {
         const out = {};
         const tools = r.state.tools || {};
         out.removedGone = !["feuerstein-knapper", "hammer", "feile", "polierscheibe"].some((n) => tools[n]);
-        out.keptPresent = [
-            "hände",
-            "schmiede-hammer",
-            "mörser",
-            "webstuhl-schiffchen",
-            "ritueller-stab",
-            "drehbank-meißel",
-        ].every((n) => tools[n] && tools[n].isStarter);
+        // V17.88 — nur `hände` ist STARTER (die Basics); die 5 Domain-Werkzeuge bleiben als OP-Bibliothek
+        // (Definition da, isStarter:false), aus der die platzierte Werkstatt ihren Prozess zieht.
+        out.keptPresent =
+            !!tools["hände"] &&
+            tools["hände"].isStarter &&
+            ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"].every(
+                (n) => tools[n] && !tools[n].isStarter
+            );
         out.handeNeutral = !!tools["hände"] && tools["hände"].domain === null && tools["hände"].precisionCap === 0.4;
         const classes = new Set(Object.values(tools).map((t) => t.opClass));
         out.allOpClasses = ["subtractive", "plastic", "additive", "phaseChange"].every((c) => classes.has(c));
@@ -6425,7 +6431,7 @@ async function checkBandV1778LadderCut(ctx) {
         res.removedGone
     );
     check(
-        "V17.78: hände (domain-neutrale Baseline, 0.4) + die 6 Domain-Starter bleiben",
+        "V17.88: hände (domain-neutrale Baseline, 0.4) ist der EINZIGE Starter; die 5 Domain-Ops bleiben als Werkstatt-Op-Bibliothek (isStarter:false)",
         res.keptPresent && res.handeNeutral
     );
     check(
@@ -7082,6 +7088,93 @@ async function checkBandV1787UndoRedo(ctx) {
     check("V17.87: die Edit-Geschichte ist NICHT persistiert (reaktive Editor-Sitzungs-Schicht)", res.notPersisted);
 }
 
+// V17.88 — die WERKSTATT IST DER PROZESS (Schöpfer-Vision „der wahre Weg"): der Spieler startet mit den
+// Basics (nur hände); eine platzierte+nahe Werkstatt (frieden/pfad) ODER eine besessene (schöpfer) liefert
+// ihren Prozess; eine bessere Werkstatt → höherer Cap (die §4.3-Rekursion). Die Domain-Werkzeuge sind die
+// Op-Bibliothek, gefaltet in die Werkstatt.
+async function checkBandV1788WorkshopAsProcess(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        // (1) der Spieler startet mit den Basics: nur hände ist Starter, die Domain-Ops sind op-Bibliothek
+        const tools = r.state.tools || {};
+        out.handOnlyStarter =
+            (r.state.player.tools || []).includes("hände") &&
+            tools["hände"].isStarter === true &&
+            ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"].every(
+                (n) => tools[n] && tools[n].isStarter === false
+            );
+        out.domainProc = (() => {
+            const p = r._domainProcess("forging");
+            return !!(p && p.opClass === "plastic" && p.opName === "forge_shape");
+        })();
+        // ein eigener eisen-Bauplan
+        delete r.state.blueprints["_wp88"];
+        r.createBlueprint("_wp88", "WP88");
+        r.addPartToBlueprint("_wp88", { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 1, y: 1, z: 1 } });
+        // (2) SCHÖPFER: alle besessenen Werkstätten verfügbar (frei, ohne Platzieren)
+        r.setGameMode("schöpfer");
+        const menuS = r._workshopProcessesForMenu();
+        out.schoepferHasForging = menuS.some((p) => p.domain === "forging");
+        out.schoepferMultiDomain = new Set(menuS.map((p) => p.domain)).size >= 4;
+        // (3) die REKURSION: die Meister-Esse fertigt feiner als die Esse (höherer Substanz-Cap)
+        const esseP = menuS.find((p) => p.stationName === "esse");
+        const meisterP = menuS.find((p) => p.stationName === "esse_meister");
+        out.recursion = !!(esseP && meisterP && meisterP.cap > esseP.cap);
+        out.recursionVals = esseP && meisterP ? `esse=${esseP.cap.toFixed(3)} meister=${meisterP.cap.toFixed(3)}` : "(fehlt)";
+        // schöpfer-Anwendung (besessen, kein Platzieren) → der Cap kommt aus der Station
+        const apS = r.applyWorkshopProcessToPart("_wp88", 0, "esse_meister");
+        out.schoepferApply = apS.ok === true && Math.abs((apS.cap || 0) - meisterP.cap) < 1e-6;
+        // (4) FRIEDEN: ohne platzierte Station → kein Werkstatt-Prozess + Ablehnung (nur die Hand)
+        r.setGameMode("frieden");
+        const arches = r.state.architectures || [];
+        r.state.architectures = arches.filter((e) => !(e && e.type === "esse" && e.__v88)); // sauber starten
+        out.friedenEmpty = r._workshopProcessesForMenu().length === 0;
+        const apF0 = r.applyWorkshopProcessToPart("_wp88", 0, "esse");
+        out.friedenRejects = apF0.ok === false && apF0.reason === "workshop_not_placed_near";
+        // (5) eine Esse beim Spieler platzieren → der Prozess erscheint + lässt sich anwenden (der wahre Weg)
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const placed = pm ? { type: "esse", position: { x: pm.x, y: pm.y, z: pm.z }, __v88: true } : null;
+        if (placed) r.state.architectures.push(placed);
+        out.friedenAppears = !!pm && r._workshopProcessesForMenu().some((p) => p.stationName === "esse");
+        const apF1 = pm ? r.applyWorkshopProcessToPart("_wp88", 0, "esse") : { ok: false };
+        out.friedenAppliesAfterPlacement = apF1.ok === true;
+        // restore
+        r.state.architectures = (r.state.architectures || []).filter((e) => !(e && e.__v88));
+        if (r.setGameMode) r.setGameMode(prevMode);
+        delete r.state.blueprints["_wp88"];
+        if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_wp88"];
+        return out;
+    });
+    check(
+        "V17.88: der Spieler startet mit den Basics — nur hände ist Starter, die 5 Domain-Ops sind die Werkstatt-Op-Bibliothek (isStarter:false)",
+        res.handOnlyStarter && res.domainProc
+    );
+    check(
+        "V17.88 schöpfer: alle besessenen Werkstätten sind verfügbar (frei, ohne Platzieren) — forging + ≥4 Domänen",
+        res.schoepferHasForging && res.schoepferMultiDomain
+    );
+    check(
+        "V17.88 die REKURSION: eine bessere Werkstatt fertigt feiner — die Meister-Esse hat einen höheren Cap als die Esse",
+        res.recursion,
+        res.recursionVals
+    );
+    check(
+        "V17.88 KONSUM: der Werkstatt-Prozess wirkt + der Cap kommt aus der STATION (schöpfer, besessen → Meister-Esse-Präzision)",
+        res.schoepferApply
+    );
+    check(
+        "V17.88 der wahre Weg: in frieden ohne platzierte Werkstatt gibt es NUR die Hand — der Werkstatt-Prozess wird abgelehnt (workshop_not_placed_near)",
+        res.friedenEmpty && res.friedenRejects
+    );
+    check(
+        "V17.88 KONSUM: eine in der Welt platzierte+nahe Esse erscheint im Prozess-Menü + lässt sich anwenden (platzieren → Prozess erscheint)",
+        res.friedenAppears && res.friedenAppliesAfterPlacement
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -7619,12 +7712,14 @@ async function checkBandWave4(ctx) {
         const out = {};
         // Werkzeug-State + Konstanten
         const tools = r.state.tools || {};
-        out.fiveStarterTools = ["hände", "schmiede-hammer", "mörser", "webstuhl-schiffchen", "drehbank-meißel"].every(
-            (n) => tools[n] && tools[n].isStarter
-        );
-        out.playerOwnsStarters = ["hände", "schmiede-hammer", "drehbank-meißel"].every((n) =>
-            (r.state.player.tools || []).includes(n)
-        );
+        // V17.88 — hände ist der einzige Starter; die Domain-Ops existieren als Werkstatt-Op-Bibliothek.
+        out.fiveStarterTools =
+            !!tools["hände"] &&
+            tools["hände"].isStarter &&
+            ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "drehbank-meißel"].every(
+                (n) => tools[n] && !tools[n].isStarter
+            );
+        out.playerOwnsStarters = (r.state.player.tools || []).includes("hände");
         out.matCompatFrozen = Object.isFrozen(r.constructor.MATERIAL_OP_COMPATIBILITY);
         out.thresholdsFrozen = Object.isFrozen(r.constructor.WORLD_EFFECT_THRESHOLDS);
         out.steinSubtractiveOnly =
@@ -7647,6 +7742,11 @@ async function checkBandWave4(ctx) {
         const part2 = { shape: "sphere", material: "quarz" }; // no opChain
         out.precisionDefaultsTo04 = r.computePartPrecision(part2) === 0.4;
 
+        // V17.88 — die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für die
+        // direkten applyOpToPart-/Tools-Box-Tests leihen wir sie aus der Op-Bibliothek (state.tools).
+        for (const dt of ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"]) {
+            if (!r.state.player.tools.includes(dt)) r.state.player.tools.push(dt);
+        }
         // applyOpToPart — Tool-Gating
         r.state.blueprints["test-precision"] = {
             name: "test-precision",
@@ -7791,8 +7891,8 @@ async function checkBandWave4(ctx) {
             (wave4p3Results && wave4p3Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Welle 4 P3: 5 Starter-Werkzeuge existieren", wave4p3Results.fiveStarterTools);
-        check("Welle 4 P3: Spieler besitzt Starter-Werkzeuge", wave4p3Results.playerOwnsStarters);
+        check("V17.88: hände ist der einzige Starter, die Domain-Ops sind die Werkstatt-Bibliothek", wave4p3Results.fiveStarterTools);
+        check("V17.88: Spieler startet mit den Basics (hände)", wave4p3Results.playerOwnsStarters);
         check("Welle 4 P3: MATERIAL_OP_COMPATIBILITY frozen", wave4p3Results.matCompatFrozen);
         check("Welle 4 P3: WORLD_EFFECT_THRESHOLDS frozen", wave4p3Results.thresholdsFrozen);
         check("Welle 4 P3: Stein erlaubt nur subtractive Ops", wave4p3Results.steinSubtractiveOnly);
@@ -8877,8 +8977,10 @@ async function checkBandWave5(ctx) {
         r.deleteBlueprint("bug2-lathe");
         out.toolRemovedFromState = !r.state.tools["bug2-lathe"];
         out.toolRemovedFromPlayer = !(r.state.player.tools || []).includes("bug2-lathe");
+        // V17.88 — die Op-Bibliothek (schmiede-hammer-Definition) + der Hand-Starter überleben einen
+        // Bauplan-Lösch unberührt (das Werkzeug ist ab V17.88 nicht mehr im player.tools-Starter-Satz).
         out.starterToolsUnaffected =
-            !!r.state.tools["schmiede-hammer"] && (r.state.player.tools || []).includes("schmiede-hammer");
+            !!r.state.tools["schmiede-hammer"] && (r.state.player.tools || []).includes("hände");
 
         // Negativ: deleteBlueprint eines non-tool-Bauplans laesst
         // andere Tools komplett unberuehrt.
@@ -34269,9 +34371,11 @@ async function checkBandWaves9And10a(ctx) {
             out.drehbankMechanism =
                 r.state.tools["drehbank-meißel"] && r.state.tools["drehbank-meißel"].domain === "mechanism";
 
-            // Alle 5 Domain-Werkzeuge sind isStarter → im Spieler-Inventar
-            const playerTools = r.state.player.tools || [];
-            out.allDomainToolsInInventory = domainToolNames.every((n) => playerTools.includes(n));
+            // V17.88 — die 5 Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); sie
+            // bleiben als Op-Bibliothek in state.tools (isStarter:false), aus der die Werkstatt schöpft.
+            out.allDomainToolsInInventory = domainToolNames.every(
+                (n) => r.state.tools[n] && r.state.tools[n].isStarter === false
+            );
 
             // V17.78 — insgesamt 6 Built-in-Werkzeuge: hände (domain-neutrale Baseline) + 5 domain;
             // die generische Präzisions-Leiter (feuerstein/hammer/feile/polier) ist gefallen.
@@ -34306,7 +34410,8 @@ async function checkBandWaves9And10a(ctx) {
             const status = document.querySelector("#workshop-editor .workshop-status");
             out.statusShowsBauwerk =
                 !!status && status.textContent.includes("Bauwerk") && status.textContent.includes("emergent");
-            // Apply schmiede-hammer auf eisen-Part
+            // Apply schmiede-hammer auf eisen-Part (V17.88 — Domain-Op aus der Op-Bibliothek leihen)
+            if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
             r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9b", 0, "schmiede-hammer");
             r._renderWorkshopDOM();
@@ -34349,7 +34454,7 @@ async function checkBandWaves9And10a(ctx) {
                 wave9bResults.drehbankMechanism
         );
         check(
-            "Welle 9b: alle 5 Domain-Werkzeuge sind isStarter + im Spieler-Inventar",
+            "V17.88: alle 5 Domain-Werkzeuge bleiben als Werkstatt-Op-Bibliothek (isStarter:false, in state.tools)",
             wave9bResults.allDomainToolsInInventory
         );
         check("Welle 9b/V17.78: 6 Built-in-Werkzeuge (hände-Baseline + 5 domain; die generische Leiter fiel)", wave9bResults.sixBuiltInTools);
@@ -39345,6 +39450,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1785RoleDisplayAndUndo(ctx);
             await checkBandV1786WorkshopCoherence(ctx);
             await checkBandV1787UndoRedo(ctx);
+            await checkBandV1788WorkshopAsProcess(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

@@ -32687,7 +32687,11 @@ class AnazhRealm {
                 opName: "forge_shape",
                 precisionCap: 0.75,
                 domain: "forging",
-                isStarter: true,
+                // V17.88 — die 5 Domain-Werkzeuge sind nicht mehr STARTER: der Spieler startet mit den
+                // Basics (nur `hände` + die Werkstatt-Baupläne als Hilfestellung). Sie bleiben die OP-
+                // BIBLIOTHEK (opClass/opName), aus der die platzierte Werkstatt ihren Prozess zieht
+                // (`applyWorkshopProcessToPart`) — die Werkstatt IST der Prozess, das Werkzeug ist gefaltet.
+                isStarter: false,
                 builtIn: true,
             },
             {
@@ -32697,7 +32701,7 @@ class AnazhRealm {
                 opName: "brew",
                 precisionCap: 0.7,
                 domain: "alchemy",
-                isStarter: true,
+                isStarter: false,
                 builtIn: true,
             },
             {
@@ -32707,7 +32711,7 @@ class AnazhRealm {
                 opName: "weave",
                 precisionCap: 0.7,
                 domain: "textile",
-                isStarter: true,
+                isStarter: false,
                 builtIn: true,
             },
             {
@@ -32717,7 +32721,7 @@ class AnazhRealm {
                 opName: "imbue",
                 precisionCap: 0.85,
                 domain: "soulwork",
-                isStarter: true,
+                isStarter: false,
                 builtIn: true,
             },
             {
@@ -32727,7 +32731,7 @@ class AnazhRealm {
                 opName: "turn",
                 precisionCap: 0.9,
                 domain: "mechanism",
-                isStarter: true,
+                isStarter: false,
                 builtIn: true,
             },
         ];
@@ -32948,11 +32952,120 @@ class AnazhRealm {
         return { ok: true, precision: this.computePartPrecision(part), staminaRemaining: this.state.player.stamina };
     }
 
-    // V17.85 (Schöpfer-Browser-Befund: „es stapelt Prozesse, aber kann sie nicht entfernen") — eine Op
-    // RÜCKGÄNGIG machen. Die opChain ist Geschichte (append-only, V4 P3), aber der Spieler muss zurück
-    // können: entfernt die ZULETZT angewandte Op eines Parts (nie unter die Default-Kette), dann die Rolle
-    // neu emergieren (eine entfernte forging-Op kann die Rolle zurück zu Bauwerk drehen — der Prozess-Fluss
-    // wird umkehrbar). Built-ins bleiben unberührbar (wie applyOpToPart).
+    // V17.88 (Schöpfer-Vision „die Werkstatt IST der Prozess") — der Prozess einer Domäne: die opClass +
+    // der opName aus dem kanonischen Domain-Werkzeug (die 5 Domain-Tools sind ab V17.88 die OP-BIBLIOTHEK,
+    // aus der die platzierten Werkstätten schöpfen — sie selbst werden nicht mehr gehalten). EINE Quelle
+    // (state.tools), kein Parallel-Pfad.
+    _domainProcess(domain) {
+        if (!domain) return null;
+        for (const t of Object.values(this.state.tools || {})) {
+            if (t && t.domain === domain) return { opClass: t.opClass, opName: t.opName, toolName: t.name };
+        }
+        return null;
+    }
+
+    // V17.88 — die platzierte/besessene Werkstatt-Station IST der Prozess: ihre Domäne (emergent aus der
+    // Substanz) liefert die Op, ihre Substanz-Präzision (V17.76) den Cap (eine Meister-Esse fertigt feiner
+    // → bessere Werke — die §4.3-Rekursion). Modus-Gate: in pfad/frieden MUSS die Station platziert + nah
+    // sein (`_isWorkshopStationPlacedNear`), in schöpfer reicht der besessene Bauplan (frei). Die HAND
+    // (`hände`) bleibt immer da (über applyOpToPart). Spiegelt applyOpToPart (Validierung → Stamina →
+    // Edit-Verlauf → opChain), aber die Op + der Cap kommen aus der STATION, nicht einem gehaltenen Tool.
+    applyWorkshopProcessToPart(blueprintName, partIndex, stationName) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        if (!Array.isArray(bp.parts) || partIndex < 0 || partIndex >= bp.parts.length) {
+            return { ok: false, reason: "invalid_part_index" };
+        }
+        const station = this.state.blueprints[stationName];
+        if (!station || station.role !== "workshop-station") return { ok: false, reason: "not_a_workshop" };
+        const domain = this._computeWorkshopDomain(station);
+        const proc = this._domainProcess(domain);
+        if (!proc) return { ok: false, reason: "no_process_for_domain" };
+        const mode = this.getGameMode ? this.getGameMode() : "frieden";
+        // Modus-Gate: außerhalb schöpfer muss die Station in der Welt platziert + nah sein (der „wahre Weg").
+        if (mode !== "schöpfer" && !this._isWorkshopStationPlacedNear(stationName)) {
+            return { ok: false, reason: "workshop_not_placed_near" };
+        }
+        const part = bp.parts[partIndex];
+        const matName = part.material || "stein";
+        const compat = AnazhRealm.MATERIAL_OP_COMPATIBILITY[matName];
+        if (compat && !compat.includes(proc.opClass)) return { ok: false, reason: "material_op_incompatible" };
+        // Stamina (nur pfad) — der Aufwand skaliert wie bei applyOpToPart mit der Präzision.
+        const cap = this._workshopStationPrecision(station);
+        if (mode === "pfad") {
+            const baseCost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            const cost = Math.max(2, Math.round(baseCost * (1.5 - cap)));
+            const stamina = (this.state.player && this.state.player.stamina) || 0;
+            if (stamina < cost) {
+                return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+            }
+            this.state.player.stamina = Math.max(0, stamina - cost);
+        }
+        this._recordBlueprintEdit(blueprintName);
+        if (!Array.isArray(part.opChain)) part.opChain = this._defaultPartOpChain();
+        // Der opChain-Eintrag trägt den KANONISCHEN Domain-Werkzeug-Namen (proc.toolName, z.B.
+        // „schmiede-hammer") — NICHT den Stations-Namen: `computeBlueprintDomainCounts` löst die Domäne
+        // über `state.tools[op.tool].domain` auf, und die Station ist kein Tool. Der Cap kommt aus der
+        // Station (die Werkstatt fertigt feiner), die Domäne aus der Op-Bibliothek. `station` notiert die
+        // Quelle für die Anzeige.
+        part.opChain.push({ tool: proc.toolName, op: proc.opName, cap, station: stationName, at: performance.now() / 1000 });
+        this._refreshBlueprintRoleEmergent(blueprintName);
+        return { ok: true, precision: this.computePartPrecision(part), cap, domain };
+    }
+
+    // V17.88 — ist eine Werkstatt-Station dieses Bauplan-NAMENS in der Welt platziert + nah am Spieler?
+    // (Spiegel von `_nearbyWorkshopStationPrecision`, aber per Bauplan-Name statt Domäne.)
+    _isWorkshopStationPlacedNear(stationName) {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return false;
+        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M || 10;
+        const r2 = radius * radius;
+        for (const entry of this.state.architectures || []) {
+            if (!entry || entry.type !== stationName || !entry.position) continue;
+            const dx = entry.position.x - pm.x;
+            const dy = entry.position.y - pm.y;
+            const dz = entry.position.z - pm.z;
+            if (dx * dx + dy * dy + dz * dz <= r2) return true;
+        }
+        return false;
+    }
+
+    // V17.88 — die im Prozess-Menü verfügbaren Werkstatt-Prozesse: in schöpfer ALLE besessenen Werkstatt-
+    // Baupläne (frei), sonst nur die in der Welt platzierten + nahen. Jeder Eintrag trägt die Station, ihre
+    // Domäne-Op + den Substanz-Präzisions-Cap. So SIEHT der Spieler „Esse · schmieden 0.93" + lernt: bessere
+    // Werkstatt → höherer Cap (die Rekursion). Die HAND ist immer separat verfügbar (applyOpToPart).
+    _workshopProcessesForMenu() {
+        const mode = this.getGameMode ? this.getGameMode() : "frieden";
+        const out = [];
+        const seen = new Set();
+        const consider = (stationName) => {
+            if (seen.has(stationName)) return;
+            const station = this.state.blueprints[stationName];
+            if (!station || station.role !== "workshop-station") return;
+            const domain = this._computeWorkshopDomain(station);
+            const proc = this._domainProcess(domain);
+            if (!proc) return;
+            seen.add(stationName);
+            out.push({
+                stationName,
+                label: station.label || stationName,
+                domain,
+                opClass: proc.opClass,
+                opName: proc.opName,
+                cap: this._workshopStationPrecision(station),
+            });
+        };
+        if (mode === "schöpfer") {
+            for (const name of Object.keys(this.state.blueprints || {})) consider(name);
+        } else {
+            for (const entry of this.state.architectures || []) {
+                if (entry && entry.type && this._isWorkshopStationPlacedNear(entry.type)) consider(entry.type);
+            }
+        }
+        return out;
+    }
+
     removePartOp(blueprintName, partIndex) {
         const bp = this.state.blueprints && this.state.blueprints[blueprintName];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
@@ -38653,19 +38766,47 @@ class AnazhRealm {
                 toolSelect.className = "workshop-op-tool";
                 const matName = part.material || "stein";
                 const compat = AnazhRealm.MATERIAL_OP_COMPATIBILITY[matName];
-                const ownedTools = (this.state.player.tools || [])
-                    .map((tn) => this.state.tools[tn])
-                    .filter((t) => t && (!compat || compat.includes(t.opClass)));
-                if (ownedTools.length === 0) {
+                const opAllowed = (cls) => !compat || compat.includes(cls);
+                // V17.88 (Schöpfer-Vision „die Werkstatt IST der Prozess") — das Prozess-Menü: die HAND immer
+                // (die Basis), PLUS jede verfügbare Werkstatt-Station (in schöpfer alle besessenen, sonst nur
+                // die in der Welt platzierten + nahen — der „wahre Weg": setze die Esse ab, dann erscheint ihr
+                // Prozess). Ihr Substanz-Cap (bessere Esse → feiner) steht im Eintrag → der Spieler lernt die
+                // Rekursion. Die gehaltenen Domain-Werkzeuge sind in die Werkstatt gefaltet.
+                const verbs = {
+                    forge_shape: "schmieden",
+                    brew: "brauen",
+                    weave: "weben",
+                    imbue: "beseelen",
+                    turn: "drehen",
+                    hand_knap: "behauen",
+                };
+                const options = [];
+                const hand = this.state.tools["hände"];
+                if (hand && opAllowed(hand.opClass)) {
+                    options.push({
+                        kind: "hand",
+                        value: "hände",
+                        text: `Hände → behauen (${hand.precisionCap.toFixed(2)})`,
+                    });
+                }
+                for (const p of this._workshopProcessesForMenu()) {
+                    if (!opAllowed(p.opClass)) continue;
+                    options.push({
+                        kind: "workshop",
+                        value: p.stationName,
+                        text: `${p.label} · ${verbs[p.opName] || p.opName} (${p.cap.toFixed(2)})`,
+                    });
+                }
+                if (options.length === 0) {
                     const noTool = document.createElement("span");
-                    noTool.textContent = "(kein passendes Werkzeug)";
+                    noTool.textContent = "(keine Werkstatt in der Nähe — platziere eine passende)";
                     noTool.className = "workshop-op-empty";
                     applyRow.appendChild(noTool);
                 } else {
-                    for (const t of ownedTools) {
+                    for (const o of options) {
                         const opt = document.createElement("option");
-                        opt.value = t.name;
-                        opt.textContent = `${t.label} → ${t.opName} (${t.precisionCap.toFixed(2)})`;
+                        opt.value = `${o.kind}:${o.value}`;
+                        opt.textContent = o.text;
                         toolSelect.appendChild(opt);
                     }
                     const applyBtn = document.createElement("button");
@@ -38673,10 +38814,15 @@ class AnazhRealm {
                     applyBtn.className = "workshop-op-apply";
                     applyBtn.textContent = "anwenden";
                     applyBtn.addEventListener("click", () => {
-                        const r = this.applyOpToPart(selected.name, i, toolSelect.value);
-                        if (!r.ok) {
-                            this.log(`apply_op fehlgeschlagen: ${r.reason}`, "ERROR");
-                        }
+                        const sel = toolSelect.value || "";
+                        const sep = sel.indexOf(":");
+                        const kind = sel.slice(0, sep);
+                        const val = sel.slice(sep + 1);
+                        const r =
+                            kind === "workshop"
+                                ? this.applyWorkshopProcessToPart(selected.name, i, val)
+                                : this.applyOpToPart(selected.name, i, val);
+                        if (!r.ok) this.log(`Prozess fehlgeschlagen: ${r.reason}`, "ERROR");
                         this._renderWorkshopDOM();
                     });
                     applyRow.appendChild(toolSelect);
@@ -46112,7 +46258,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.87.0";
+AnazhRealm.VERSION = "17.88.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
