@@ -12287,7 +12287,7 @@ class AnazhRealm {
         const scale = meta.scale || 0.2;
         // V8.39 — Qualität skaliert die Trank-Stärke (selber Pfad wie
         // activateConsumable).
-        const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp);
+        const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp) * this._blueprintRoleFit(bp, "consumable");
         const tagBonus = {};
         for (const tag of Object.keys(tags)) {
             const v = tags[tag] * scale * qMul;
@@ -12407,7 +12407,9 @@ class AnazhRealm {
                 const tags = this.computeCompoundTags(toolBp) || {};
                 // V8.39 — Qualität skaliert das Stat-Gewicht (selber Pfad wie
                 // computePlayerStats): ein grob gebautes Werkzeug wirkt halb.
-                const w = AnazhRealm.TOOL_STAT_WEIGHT * (0.5 + 0.5 * this.computeBlueprintQuality(toolBp));
+                const w =
+                    AnazhRealm.TOOL_STAT_WEIGHT *
+                    (0.5 + 0.5 * this.computeBlueprintQuality(toolBp) * this._blueprintRoleFit(toolBp, "held"));
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -12420,7 +12422,9 @@ class AnazhRealm {
                 const tags = this.computeCompoundTags(bp) || {};
                 // V8.39 — Qualität skaliert das Stat-Gewicht (selber Pfad wie
                 // computePlayerStats): eine grob gebaute Rüstung wirkt halb.
-                const w = AnazhRealm.ARMOR_STAT_WEIGHT * (0.5 + 0.5 * this.computeBlueprintQuality(bp));
+                const w =
+                    AnazhRealm.ARMOR_STAT_WEIGHT *
+                    (0.5 + 0.5 * this.computeBlueprintQuality(bp) * this._blueprintRoleFit(bp, "armor"));
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -29413,7 +29417,7 @@ class AnazhRealm {
             const scale = meta.scale || 0.2;
             // V8.39 — Qualität skaliert die Trank-Stärke: ein grob gebrautes
             // Konsumable wirkt halb, ein fein gefertigtes voll.
-            const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp);
+            const qMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp) * this._blueprintRoleFit(bp, "consumable");
             const tagBonus = {};
             for (const tag of Object.keys(tags)) {
                 const v = tags[tag] * scale * qMul;
@@ -30768,7 +30772,10 @@ class AnazhRealm {
         const heldBp = this._heldImplementBlueprint();
         if (heldBp && Array.isArray(heldBp.parts)) {
             const tags = this.computeCompoundTags(heldBp);
-            const heldMul = 0.5 + 0.5 * this._compoundAvgPrecisionFromParts(heldBp.parts);
+            // V17.79 — die Rolle-Passung (Form-Fit): eine scharfe Klinge wirkt als Gerät stärker als ein
+            // form-fremder Klotz (die FORM-Achse, die STAT_FROM_TAGS nicht sieht). Handwerk × Design.
+            const heldMul =
+                0.5 + 0.5 * this._compoundAvgPrecisionFromParts(heldBp.parts) * this._blueprintRoleFit(heldBp, "held");
             const w = AnazhRealm.HELD_STAT_WEIGHT * heldMul;
             for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                 finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
@@ -30780,7 +30787,7 @@ class AnazhRealm {
             if (bp.role === "armor") {
                 const tags = this.computeCompoundTags(bp);
                 const armorPrec = this._compoundAvgPrecisionFromParts(bp.parts);
-                const armorMul = 0.5 + 0.5 * armorPrec;
+                const armorMul = 0.5 + 0.5 * armorPrec * this._blueprintRoleFit(bp, "armor"); // V17.79 — Form-Fit
                 const w = AnazhRealm.ARMOR_STAT_WEIGHT * armorMul;
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
@@ -32769,6 +32776,22 @@ class AnazhRealm {
     // bearbeiteter trägt seine min-Werte. Die Qualität skaliert die Wirkung
     // des Produkts: Rüstungs-Stat-Gewicht + Trank-Stärke gehen mit
     // (0.5 + 0.5·Qualität) — ein grobes Produkt wirkt halb, ein feines voll.
+    // V17.79 — die ROLLE-PASSUNG der FORM für eine GEDIENTE Rolle ∈ [min, max] (1.0 = neutral): die Resonanz
+    // des Produkt-Vektors (inkl. der FORM-Achsen pointedFraction/dichte/härte) gegen die Rollen-Signatur,
+    // normalisiert über den per-Rolle ref. Ein gut geformtes Werk (scharfe Klinge als Gerät, dichte Platte als
+    // Rüstung, lebendiger Saft als Trank) → max; ein form-fremdes → min. Unbekannte Rolle → 1.0 (kein Effekt).
+    // Das Call-Site übergibt die GEDIENTE Rolle (Hand→held, Slot→armor, Trinken→consumable) — nicht die
+    // emergente (eine scharfe Klinge wird als „architecture" klassifiziert, ist aber ein gehaltenes Gerät).
+    _blueprintRoleFit(bp, role) {
+        const sig = AnazhRealm.ROLE_FIT_SIGNATURES[role];
+        if (!sig || !bp) return 1.0;
+        const cfg = AnazhRealm.QUALITY_ROLE_FIT;
+        const ref = (cfg.refs && cfg.refs[role]) || 3.0;
+        const raw = this._blueprintResonance(this._blueprintProductVector(bp), sig);
+        const norm = Math.max(0, Math.min(1, raw / ref));
+        return cfg.min + (cfg.max - cfg.min) * norm;
+    }
+
     computeBlueprintQuality(blueprint) {
         if (!blueprint || !Array.isArray(blueprint.parts)) return 1.0;
         return this._compoundAvgPrecisionFromParts(blueprint.parts);
@@ -45716,7 +45739,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.78.0";
+AnazhRealm.VERSION = "17.79.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -46612,6 +46635,24 @@ AnazhRealm.FORM_ROLE_SIGNATURES = Object.freeze({
     architecture: Object.freeze({ dichte: 0.8, härte: 0.5 }),
 });
 AnazhRealm.FORM_ROLE_RESONANCE_FLOOR = 0.5;
+
+// V17.79 — die ROLLE-PASSUNG (die Schöpfer-Synergie „Qualität = wie gut passt die Form zur Rolle"): wie gut
+// die FORM eines Produkts zu seiner GEDIENTEN Rolle passt — über die FORM-Achsen (pointedFraction für ein
+// gehaltenes Gerät, dichte/härte für Rüstung), die STAT_FROM_TAGS (nur die 10 Material-Tags) NICHT sieht. Sie
+// moduliert die QUALITÄT der AUSRÜSTUNG (Gerät/Rüstung/Trank): ein gut geformtes Werk wirkt STÄRKER, ein
+// form-fremdes schwächer → das vereint Handwerk (Präzision) × Design (Form-Fit) zu „wie gut wirkt es".
+AnazhRealm.ROLE_FIT_SIGNATURES = Object.freeze({
+    held: Object.freeze({ pointedFraction: 1.5, dichte: 0.6, härte: 0.6 }), // ein Gerät: scharf ODER schwer+hart
+    armor: Object.freeze({ dichte: 1.0, härte: 1.0 }), // Rüstung: dicht + hart
+    consumable: Object.freeze({ lebendig: 1.5, härte: -0.6 }), // Trank: lebendig + weich
+});
+// Die Passung ∈ [min, max] (1.0 = neutral): ein gut geformtes Werk → max (Buff), ein form-fremdes → min
+// (Nerf), ein durchschnittliches ~neutral. Der per-Rolle ref normalisiert (die Signaturen haben andere Skalen).
+AnazhRealm.QUALITY_ROLE_FIT = Object.freeze({
+    min: 0.8,
+    max: 1.2,
+    refs: Object.freeze({ held: 3.7, armor: 3.4, consumable: 2.0 }),
+});
 
 // S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der Form: ein Werkzeug katalysiert eine Transformation, und
 // seine FORM bestimmt welche. Die opClass emergiert als argmax-Resonanz des Produkt-Vektors (Tags ⊕ pointedFraction)

@@ -6438,6 +6438,89 @@ async function checkBandV1778LadderCut(ctx) {
     );
 }
 
+// V17.79 — die ROLLE-PASSUNG (Schöpfer-Synergie „Qualität = wie gut passt die Form zur Rolle"): die FORM
+// eines Produkts moduliert die Wirkung seiner Ausrüstung — eine scharfe Klinge wirkt als Gerät stärker als
+// ein gleich-materieller Klotz (die FORM-Achse, die STAT_FROM_TAGS nicht sieht). Handwerk × Design.
+async function checkBandV1779RoleFitQuality(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const cfg = r.constructor.QUALITY_ROLE_FIT;
+        const round = (x) => Math.round((x || 0) * 1000) / 1000;
+        const blade = {
+            name: "_rf_blade",
+            parts: [
+                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 1.6 } },
+                { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.2 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+            ],
+        };
+        const blob = {
+            name: "_rf_blob",
+            parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } }],
+        };
+        // (1) die Passung diskriminiert über die FORM (gleiches Material eisen, andere Form)
+        const fitBlade = r._blueprintRoleFit(blade, "held");
+        const fitBlob = r._blueprintRoleFit(blob, "held");
+        out.heldDiscriminates = fitBlade > fitBlob;
+        out.fitBlade = round(fitBlade);
+        out.fitBlob = round(fitBlob);
+        // (2) Range [min, max]
+        out.inRange = fitBlade <= cfg.max + 1e-9 && fitBlob >= cfg.min - 1e-9;
+        // (3) armor: dichte Platte > weiches Leder-Ding
+        const plate = {
+            name: "_rf_plate",
+            parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } }],
+        };
+        const soft = {
+            name: "_rf_soft",
+            parts: [{ shape: "box", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } }],
+        };
+        out.armorDiscriminates = r._blueprintRoleFit(plate, "armor") > r._blueprintRoleFit(soft, "armor");
+        // (4) consumable: der lebendige Trank > ein toter Stein-Klumpen
+        const deadC = {
+            name: "_rf_dead",
+            parts: [{ shape: "sphere", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 0.5, z: 0.5 } }],
+        };
+        out.consumableDiscriminates =
+            r._blueprintRoleFit(r.state.blueprints["trank_lebenssaft"], "consumable") >
+            r._blueprintRoleFit(deadC, "consumable");
+        // (5) unbekannte Rolle → 1.0 (neutral)
+        out.unknownNeutral = r._blueprintRoleFit(blade, "soul") === 1.0;
+        // (6) KONSUM — das gehaltene SCHWERT gibt mehr Schaden als der gleich-materielle KLOTZ (Form-Fit
+        //     erreicht die echten Spieler-Stats — genau das Schöpfer-Beispiel).
+        r.state.blueprints["_rf_blade"] = blade;
+        r.state.blueprints["_rf_blob"] = blob;
+        const savedHeld = r.state.player.equipped ? r.state.player.equipped.held : null;
+        r.equipHeld("_rf_blade");
+        const dmgBlade = r.computePlayerStats().stats.damage;
+        r.equipHeld("_rf_blob");
+        const dmgBlob = r.computePlayerStats().stats.damage;
+        out.konsumDamage = dmgBlade > dmgBlob;
+        out.dmgBlade = round(dmgBlade);
+        out.dmgBlob = round(dmgBlob);
+        // restore
+        r.equipHeld(savedHeld);
+        delete r.state.blueprints["_rf_blade"];
+        delete r.state.blueprints["_rf_blob"];
+        return out;
+    });
+    check(
+        "V17.79: die Rolle-Passung diskriminiert über die FORM — eine scharfe Klinge passt besser als Gerät als ein Klotz (gleiches Material)",
+        res.heldDiscriminates,
+        `Klinge=${res.fitBlade} Klotz=${res.fitBlob}`
+    );
+    check("V17.79: die Passung bleibt in [min, max] (kein Runaway)", res.inRange);
+    check("V17.79: armor — eine dichte Platte passt besser als ein weiches Ding", res.armorDiscriminates);
+    check("V17.79: consumable — der lebendige Trank passt besser als ein toter Klumpen", res.consumableDiscriminates);
+    check("V17.79: unbekannte Rolle → neutral (1.0, kein Effekt)", res.unknownNeutral);
+    check(
+        "V17.79 KONSUM: ein gehaltenes SCHWERT gibt mehr Schaden als ein gleich-materieller KLOTZ — der Form-Fit erreicht die Stats (das Schöpfer-Beispiel)",
+        res.konsumDamage,
+        `Schwert=${res.dmgBlade} Klotz=${res.dmgBlob}`
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -38692,6 +38775,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1776WorkshopPrecision(ctx);
             await checkBandV1777SteigerungVisible(ctx);
             await checkBandV1778LadderCut(ctx);
+            await checkBandV1779RoleFitQuality(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
