@@ -32,11 +32,14 @@ Leser".** Der Schöpfer-Befund: meine Klassifikatoren messen EINSEITIG (Einzel-T
 in Vektoren (die Aura ist ein Vektor, `spawnAffinityForBlueprint` ist ein SKALARPRODUKT, die Tags SIND der Substanz-
 Vektor). Die synergetische Form: Rolle/Domäne/Affordanz sind RESONANZEN des vollen Produkt-Vektors (Tags ⊕ räumliche
 Signatur ⊕ Skala) gegen frozen Signaturen (argmax), nicht Einzel-Signal-Tore — die per-Rolle Hand-Flags lösen sich
-in EINEN optionalen Override auf. Die Schritte (§11.10): **R1 ✅ GEBAUT (V17.68)** die Domänen-Resonanz
-(`_computeWorkshopDomain` von first-match auf `_blueprintResonance` + `WORKSHOP_DOMAIN_SIGNATURES` gehoben, argmax,
-`checkBandV1767` 6 grün) · **R2** die räumliche Schicht in den Vektor (heilt die Glut-Maskierung + „die Esse ist
-klein") · **R3** die Rollen-Resonanz (`computeBlueprintRole` → argmax über `ROLE_SIGNATURES`; die „ist es eine
-Werkstatt?"-Emergenz + S10 Op-aus-Form fallen heraus). **OFFEN daneben:** der Schöpfer-Browser-Audit des S7-FERTIGEN-
+in EINEN optionalen Override auf. Die Schritte (§11.10): **R1 ✅ (V17.68)** die Domänen-Resonanz
+(`_computeWorkshopDomain` → argmax über `WORKSHOP_DOMAIN_SIGNATURES`) · **R2 ✅ (V17.69)** der volle Produkt-Vektor
+(`_blueprintProductVector` = Tags ⊕ bodyShape/portalShape; Konjunktion im Feature, argmax in der Entscheidung) ·
+**R3 ✅ (V17.69)** die Rollen-Resonanz (`computeBlueprintRole` = Domäne-Vorrang → argmax über `FORM_ROLE_SIGNATURES`;
+DER HEAL: architecture als positive dichte+harte Signatur → Stein-Tempel wird Bauwerk statt Seele; `checkBandV1769`
+7 grün + V8.35/W12 kein Regress). **Die Resonanz-Vereinheitlichung STEHT — Domäne + Rolle als argmax des Produkt-
+Vektors, ein Produkt-Vektor viele Leser.** Offen in §11.10: die workshop-station-Resonanz-Signatur (Spieler-Apparate
+emergieren als Werkstatt) + S10 (Op-aus-Form als Resonanz). **OFFEN daneben:** der Schöpfer-Browser-Audit des S7-FERTIGEN-
 Flusses (Feel/Synergie) · S6-B (erntbare Flora) · **S7-C die chat/DSL-Vereinheitlichung** (der letzte Gratis-Bypass;
 die load-bearing scripting-Schicht, S3-B hielt sie bewusst frei) · S8 (Teilen) · S9 (Hand-Optik) · S11 (Animation).
 Wer weiterbaut, liest §11.10 (die Resonanz) + §11.9 (die Lehre + der Lebenszyklus + die drei Schichten Tags/
@@ -869,15 +872,22 @@ food) wandern mit (V9.56-i). Beweise SUBSTANZ statt Name durch den FLIP (eine Ma
   (frozen, an den 5 Built-ins gemessen) gehoben → ARGMAX, null unter dem Floor 2.0. `checkBandV1767` 6 grün
   (der Kern mit Invers-Achse, der Wächter per argmax, Substanz-statt-Name [lone Block→null], der Flip, das Gate).
   *Beweist den Resonanz-Kern; Tags-Resonanz reicht für die 5 Stationen — gemessen.*
-- **R2 — die räumliche Schicht in den Vektor:** die 5 Prinzipien + Skala/Greifbarkeit als numerische Features → der
-  VOLLE Produkt-Vektor (heilt die Glut-Maskierung + das „die Esse ist klein wie ein Werkzeug"-Problem; die Form
-  resoniert mit).
-- **R3 — die Rollen-Resonanz:** `computeBlueprintRole` → argmax über `ROLE_SIGNATURES` (body · portal · food ·
-  forging-split · workshop-station · tool/armor werden Signaturen über den vollen Vektor); die „IST es eine
-  Werkstatt?"-Emergenz (S7-B-ii) FÄLLT HERAUS (eine workshop-station-Signatur), die Hand-Flags werden Override.
-- **danach:** S10 (Op-aus-Form) wird auch eine Resonanz (der Werkzeug-Op aus dem Form-Vektor) — und die ganze
-  Prozess-Hardcode-Insel (S7-B) ist aufgelöst: Werkzeuge UND Werkstätten emergieren als Resonanz, die Rekursion
-  schließt durch verbesserbare Prozessbaupläne.
+- **R2 — die räumliche Schicht in den Vektor — ✅ GEBAUT (V17.69):** `_blueprintProductVector(bp)` = die 10 Tags ⊕
+  `bodyShape`/`portalShape` als Achsen (0/1 aus den bestehenden Prädikaten). GEMESSENER Schlüssel: die Geometrie-
+  Prädikate sind KONJUNKTIONEN (Symmetrie UND Vertikalität UND Glieder) — eine lineare Resonanz bräche das (ein
+  flaches symmetrisches Dorf kippte zu soul). Die Konjunktion lebt im FEATURE (0/1), die disjunktive Entscheidung
+  im argmax. *Heilt das „die Esse ist klein"-Problem strukturell: die Form ist eine Achse, kein Größen-Veto.*
+- **R3 — die Rollen-Resonanz — ✅ GEBAUT (V17.69):** `computeBlueprintRole` = die opChain-Domäne (Intent, Vorrang)
+  → sonst `_computeFormRole` = argmax über `FORM_ROLE_SIGNATURES` (soul {bodyShape, lebendig} · portal {portalShape}
+  · consumable {lebendig, −härte} · architecture {dichte, härte}), Floor → architecture. Ersetzt die priority-
+  Prädikat-Kette (kein first-match-bias). **DER HEAL (Schöpfer „jetzt heilen"):** „architecture" ist eine POSITIVE
+  Signatur (dichte+harte Struktur) — ein Stein-Tempel/Felsbogen resoniert architecture (3.0) > soul (2.0) trotz
+  body-Geometrie → Bauwerk statt Seele; ein weicher fleisch-Körper resoniert soul stärker. Die Hand-Flags bleiben
+  Override (`roleManual`). `checkBandV1769` 7 grün + V8.35/W12 grün (kein Regress). *Damit steht die Resonanz-
+  Vereinheitlichung: Domäne (R1) + Rolle (R3) als argmax des Produkt-Vektors — ein Produkt-Vektor, viele Leser.*
+- **danach:** die workshop-station-Resonanz-Signatur (vom Spieler gebaute Apparate emergieren als Werkstatt, S7-B-ii
+  fällt heraus) + S10 (Op-aus-Form, auch eine Resonanz: der Werkzeug-Op aus dem Form-Vektor) — dann ist die ganze
+  Prozess-Hardcode-Insel aufgelöst, die Rekursion schließt durch verbesserbare Prozessbaupläne.
 
 **PERMANENTE LEHRE (die Architektur-Lehre): wenn das System schon einen Vektor trägt (Tags, Aura) und an EINER Stelle
 eine Resonanz/ein Skalarprodukt rechnet (Spawn-Affinität), dann ist JEDE Einzel-Signal-Schwelle (`wenn ein Tag ≥ X`)

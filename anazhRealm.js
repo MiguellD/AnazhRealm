@@ -33138,10 +33138,41 @@ class AnazhRealm {
             if (role === "forging-split") return this._computeForgingRole(blueprint);
             if (role) return role;
         }
-        if (this._isBodyShaped(blueprint)) return "soul";
-        if (this._isPortalShaped(blueprint)) return "portal";
-        if (this._isFoodLike(blueprint)) return "consumable";
-        return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        // R3 (§11.10) — sonst: die intrinsische Form/Substanz als RESONANZ (statt der priority-Prädikat-Kette).
+        return this._computeFormRole(blueprint);
+    }
+
+    // R2/R3 (kampf-plan §11.10) — der volle PRODUKT-VEKTOR: die Material-Tags (10) ⊕ die räumliche Signatur als
+    // numerische Achsen. Die KONJUNKTIVE Geometrie (ein Körper braucht Symmetrie UND Vertikalität UND Glieder; ein
+    // Tor einen magie-Ring der Reisenden-Größe) lebt in den bestehenden Prädikaten — hier als 0/1-Achse, damit die
+    // Resonanz sie liest, ohne dass eine lineare Summe die Konjunktion bräche (sonst läse ein flaches, symmetrisches
+    // Dorf fälschlich als „Körper"). So liest die Rollen-Resonanz den GANZEN Vektor (Tags + Form), ein Produkt = ein
+    // Vektor, viele Leser.
+    _blueprintProductVector(bp) {
+        const v = Object.assign({}, this.computeCompoundTags(bp) || {});
+        v.bodyShape = this._isBodyShaped(bp) ? 1 : 0;
+        v.portalShape = this._isPortalShaped(bp) ? 1 : 0;
+        return v;
+    }
+
+    // R3 (kampf-plan §11.10) — die intrinsische Rolle als ARGMAX der Resonanz des Produkt-Vektors gegen die
+    // FORM_ROLE_SIGNATURES (soul/portal/consumable/architecture). Ersetzt die priority-Prädikat-Kette
+    // (body→soul, portal, food, default) durch EINE Resonanz: die stärkste gewinnt, kein first-match-bias.
+    // „architecture" ist eine positive Signatur (dichte+harte Struktur) — ein Stein-Tempel resoniert sie stärker
+    // als soul (DER HEAL). Bleibt alles unter dem Floor → architecture (Default).
+    _computeFormRole(bp) {
+        const v = this._blueprintProductVector(bp);
+        const sigs = AnazhRealm.FORM_ROLE_SIGNATURES;
+        let best = AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        let bestScore = AnazhRealm.FORM_ROLE_RESONANCE_FLOOR;
+        for (const role in sigs) {
+            const score = this._blueprintResonance(v, sigs[role]);
+            if (score > bestScore) {
+                bestScore = score;
+                best = role;
+            }
+        }
+        return best;
     }
 
     // Setzt bp.role emergent ein. Wird aus den Mutations-Methoden gerufen
@@ -45129,7 +45160,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.68.0";
+AnazhRealm.VERSION = "17.69.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -45984,6 +46015,23 @@ AnazhRealm.WORKSHOP_DOMAIN_SIGNATURES = Object.freeze({
     textile: Object.freeze({ zähigkeit: 1.0, lebendig: 1.0, härte: -1.0 }),
 });
 AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR = 2.0;
+
+// R3 (kampf-plan §11.10) — die ROLLE als RESONANZ des vollen Produkt-Vektors (Tags ⊕ räumliche Achsen
+// bodyShape/portalShape). computeBlueprintRole = die opChain-Domäne (Krafting-Intent, Vorrang) → sonst das
+// ARGMAX dieser Form-Signaturen (`_computeFormRole`). Die per-Rolle Hand-Flags (setBlueprintAs*) bleiben als
+// optionaler Schöpfer-OVERRIDE (roleManual). Die KONJUNKTIVE Geometrie (body/portal) lebt im Feature
+// (bodyShape/portalShape = 0/1 aus den bestehenden Prädikaten); die DISJUNKTIVE Entscheidung ist das argmax.
+// DER HEAL (Schöpfer 03.06.): „architecture" ist eine POSITIVE Signatur (eine dichte, harte Struktur) — ein
+// Tempel/Felsbogen (Stein: dichte 2.55, härte 1.95) resoniert damit STÄRKER als mit soul, obwohl seine
+// Geometrie body-förmig ist → er wird Bauwerk, nicht Seele; ein weicher fleisch-Körper resoniert soul stärker.
+// An den 12 Form-Fallback-Built-ins GEMESSEN (checkBandV1768 friert die Baseline ein). Floor → architecture.
+AnazhRealm.FORM_ROLE_SIGNATURES = Object.freeze({
+    soul: Object.freeze({ bodyShape: 2.0, lebendig: 0.3 }),
+    portal: Object.freeze({ portalShape: 2.0 }),
+    consumable: Object.freeze({ lebendig: 1.0, härte: -1.0 }),
+    architecture: Object.freeze({ dichte: 0.8, härte: 0.5 }),
+});
+AnazhRealm.FORM_ROLE_RESONANCE_FLOOR = 0.5;
 
 // Deutsche Affordance-Labels für UI-Anzeige.
 AnazhRealm.AFFORDANCE_LABELS = Object.freeze({

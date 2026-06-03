@@ -5534,6 +5534,141 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
     );
 }
 
+// V17.69 R2/R3 (kampf-plan §11.10) — die ROLLEN-RESONANZ: computeBlueprintRole entscheidet die intrinsische Rolle
+// als ARGMAX der Resonanz des Produkt-Vektors (Tags ⊕ bodyShape/portalShape) gegen FORM_ROLE_SIGNATURES, statt der
+// priority-Prädikat-Kette. DER HEAL (Schöpfer 03.06.): „architecture" ist eine positive Signatur (dichte+harte
+// Struktur) → ein Stein-Tempel/Felsbogen wird Bauwerk statt Seele, obwohl body-förmig. KONSUM, nicht Existenz.
+async function checkBandV1769RoleResonance(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const part = (mat, x, y, z) => ({
+            shape: "box",
+            material: mat,
+            size: { x: 0.6, y: 0.6, z: 0.6 },
+            position: { x, y, z },
+        });
+
+        out.methods =
+            typeof r._blueprintProductVector === "function" &&
+            typeof r._computeFormRole === "function" &&
+            !!r.constructor.FORM_ROLE_SIGNATURES;
+
+        // (1) der Produkt-Vektor trägt die räumliche Schicht (R2): bodyShape/portalShape als Achsen neben den Tags
+        const tv = r._blueprintProductVector(blu.temple);
+        out.vectorHasSpatial = "bodyShape" in tv && "portalShape" in tv && "dichte" in tv;
+
+        // (2) DER HEAL (Schöpfer-Wahl „jetzt heilen") — temple + felsbogen WAREN soul (body-förmig), sind jetzt
+        // architecture: ihre Geometrie ist body-förmig (bodyShape=1), aber als dichte, harte Stein-Struktur
+        // resoniert „architecture" STÄRKER als „soul". Der Mechanismus, nicht nur das Resultat.
+        out.templeHealed = r.computeBlueprintRole(blu.temple) === "architecture";
+        out.felsbogenHealed = r.computeBlueprintRole(blu.felsbogen) === "architecture";
+        const tvBody = r._isBodyShaped(blu.temple);
+        const archScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.architecture);
+        const soulScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.soul);
+        out.healMechanism = tvBody === true && archScore > soulScore; // body-förmig, aber architecture resoniert stärker
+
+        // (3) DER WÄCHTER — die 12 Form-Fallback-Built-ins, Baseline eingefroren (temple/felsbogen jetzt architecture)
+        const wantArch = [
+            "village",
+            "waterfall",
+            "stein_block",
+            "damm",
+            "start_plattform",
+            "kristall_geode",
+            "glutbrunnen",
+            "felsturm",
+            "temple",
+            "felsbogen",
+        ];
+        out.allArch = wantArch.every((n) => r.computeBlueprintRole(blu[n]) === "architecture");
+        out.baeumeConsumable =
+            r.computeBlueprintRole(blu.baum_eiche) === "consumable" &&
+            r.computeBlueprintRole(blu.baum_kiefer) === "consumable";
+
+        // (4) die Form-Rollen via Resonanz: ein weicher fleisch-Körper → soul, ein Turm → architecture, Nahrung →
+        // consumable, ein magie-Ring → portal, ein Stein-Ring → architecture (KONSUM der Fixtures durch die Resonanz)
+        const body = {
+            parts: [
+                part("fleisch", 0, 1, 0),
+                part("knochen", 0, 3, 0),
+                part("fleisch", -1, 2, 0),
+                part("fleisch", 1, 2, 0),
+            ],
+        };
+        const tower = { parts: [part("stein", 0, 0, 0), part("stein", 0, 1, 0), part("stein", 0, 2, 0)] };
+        const food = {
+            parts: [
+                { shape: "sphere", material: "fleisch", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        const magicRing = {
+            parts: [
+                { shape: "torus", material: "quarz", size: { x: 3, y: 0.4, z: 3 }, position: { x: 0, y: 1, z: 0 } },
+            ],
+        };
+        const stoneRing = {
+            parts: [
+                { shape: "torus", material: "stein", size: { x: 3, y: 0.4, z: 3 }, position: { x: 0, y: 1, z: 0 } },
+            ],
+        };
+        out.bodySoul = r.computeBlueprintRole(body) === "soul";
+        out.towerArch = r.computeBlueprintRole(tower) === "architecture";
+        out.foodConsumable = r.computeBlueprintRole(food) === "consumable";
+        out.ringPortal = r.computeBlueprintRole(magicRing) === "portal";
+        out.stoneRingArch = r.computeBlueprintRole(stoneRing) === "architecture";
+
+        // (5) DER FLIP — dieselbe body-Geometrie, andere Substanz kippt die Rolle: fleisch → soul, stein → architecture
+        const stoneBody = {
+            parts: [part("stein", 0, 1, 0), part("stein", 0, 3, 0), part("stein", -1, 2, 0), part("stein", 1, 2, 0)],
+        };
+        out.substanceFlip =
+            r.computeBlueprintRole(body) === "soul" && r.computeBlueprintRole(stoneBody) === "architecture";
+
+        // (6) die opChain-DOMÄNE behält Vorrang (Krafting-Intent vor Form) — ein forging-Gerät bleibt tool/armor
+        if (blu.__rr_forge) delete blu.__rr_forge;
+        blu.__rr_forge = { name: "__rr_forge", parts: [part("eisen", 0, 0, 0)] };
+        const savedMode = r.getGameMode();
+        r.setGameMode("schöpfer");
+        r.applyOpToPart("__rr_forge", 0, "schmiede-hammer");
+        const forgeRole = r.computeBlueprintRole(blu.__rr_forge);
+        out.domainPriority = forgeRole === "tool" || forgeRole === "armor";
+        delete blu.__rr_forge;
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.69 R2/R3: die Methoden existieren (_blueprintProductVector/_computeFormRole/FORM_ROLE_SIGNATURES)",
+        res.methods
+    );
+    check(
+        "V17.69 R2: der Produkt-Vektor trägt die räumliche Schicht (bodyShape/portalShape) neben den Tags",
+        res.vectorHasSpatial
+    );
+    check(
+        "V17.69 R3 DER HEAL: temple + felsbogen sind jetzt architecture (waren soul) — body-förmig, aber als dichte Stein-Struktur resoniert architecture STÄRKER als soul",
+        res.templeHealed && res.felsbogenHealed && res.healMechanism
+    );
+    check(
+        "V17.69 R3 DER WÄCHTER: die 12 Form-Fallback-Built-ins emergieren auf der Baseline (10 architecture, 2 Bäume consumable)",
+        res.allArch && res.baeumeConsumable
+    );
+    check(
+        "V17.69 R3 KONSUM: die Form-Rollen via Resonanz — fleisch-Körper→soul, Turm→architecture, Nahrung→consumable, magie-Ring→portal, Stein-Ring→architecture",
+        res.bodySoul && res.towerArch && res.foodConsumable && res.ringPortal && res.stoneRingArch
+    );
+    check(
+        "V17.69 R3 DER FLIP: dieselbe Körper-Geometrie, andere Substanz kippt die Rolle (fleisch→soul, stein→architecture) — live Vektor, kein Schloss",
+        res.substanceFlip
+    );
+    check(
+        "V17.69 R3: die opChain-DOMÄNE behält Vorrang (ein forging-Gerät bleibt tool/armor, nicht die Form-Resonanz)",
+        res.domainPriority
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -37719,6 +37854,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1765BrewConsumable(ctx);
             await checkBandV1766FertigenFlow(ctx);
             await checkBandV1767WorkshopDomainEmergent(ctx);
+            await checkBandV1769RoleResonance(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
