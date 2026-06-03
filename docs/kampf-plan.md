@@ -10,18 +10,24 @@
 
 ---
 
-## STATUS (Stand V17.65) — lies §11 (der aktive Plan; §11.9 = die Browser-Audit-Ausrichtung)
+## STATUS (Stand V17.66) — lies §11 (der aktive Plan; §11.9 = die Browser-Audit-Ausrichtung)
 
 **Der Kern-Kampf-Loop A–D + W5-Affekt + der Interaktions-Bogen W1·W2·W2-B·W3 sind GEBAUT** (V17.51–.58, §8/§9).
-**§11 — der vereinte Schöpfungs-Fluss — ist im Bau:** S1 Readout · S2 Mach-Tor+Modi · S3+S3-B Gerät · S4 Rüstung
-· S5 Avatar · S6 Trank GEBAUT (V17.59–.65) — VIER Mach-Akte zahlen Material durch EIN `_makeCostGate` +
-`fertigeBlueprint`. **ABER der Schöpfer-Browser-Audit (02.06.) fand die Fehl-Ausrichtung (§11.9): die Mach-Akte
-sind funktional korrekt, aber als PARALLELER Pfad PRÄSENTIERT** (der „⚒ Schmieden"-Knopf im Detail-Editor wirkt
-wie eine Doublette des bestehenden „Prozess-ziehen-fixiert-die-Rolle"-Flusses). **Der AKTIVE nächste Schritt ist
-der RE-FRAMED S7 (§11.7): das FERTIGEN in den Prozess-Fluss + die Maschine-in-der-Welt falten** (kein neuer Pfad,
-eine UI-Verdichtung; die Mach-Logik bleibt). Wer weiterbaut, liest §11.9 (die Lehre + der Lebenszyklus + die drei
-Schichten Tags/Fähigkeit/Rolle) ZUERST. **PERMANENTE LEHRE: headless-grün ≠ vision-aligned — den FLUSS im
-Schöpfer-Browser zeigen, bevor man Welle auf Welle stapelt.** Das ursprüngliche §11-Prinzip bleibt
+**§11 — der vereinte Schöpfungs-Fluss:** S1 Readout · S2 Mach-Tor+Modi · S3+S3-B Gerät · S4 Rüstung · S5 Avatar ·
+S6 Trank GEBAUT (V17.59–.65) — VIER Mach-Akte zahlen Material durch EIN `_makeCostGate` + `fertigeBlueprint`. Der
+Schöpfer-Browser-Audit (02.06.) fand die Fehl-Ausrichtung (§11.9): die Mach-Akte waren funktional korrekt, aber als
+PARALLELER Pfad PRÄSENTIERT (der „⚒ Schmieden"-Knopf im Detail-Editor wirkte wie eine Doublette des „Prozess-ziehen-
+fixiert-die-Rolle"-Flusses). **S7 KERN GEBAUT (V17.66): das FERTIGEN ist in den Prozess-Fluss gefaltet** — EIN
+rollen-bewusster „⚒ FERTIGEN"-Akt als Abschluss der Stats-Tabelle (`_workshopAppendFertigenRow`, der Fluss
+verfeinern → ablesen → FERTIGEN), die zwei alten Detail-Editor-Knöpfe entfernt; das Mach-Tor `_workshopStationGate`
+ist end-to-end am Mach-Akt angeschlossen (`_makeStationGate` in `_forgeMaterialAndFreeze`/`brewConsumable`, nicht
+nur confirmBuild — ein forging-Gerät → Esse nah, ein Trank → Brennkolben). `checkBandV1766` 9 grün. **OFFEN
+(GEMESSEN-bewusste Schnitte, keine „halben Schritte"): S7-B der Werkzeug-Aufräum** (hammer+feuerstein raus —
+GEMESSEN ripple-schwer: `hammer` = ~15 Test-Fixtures; feile/polier-Decke → Maschine = Crafting-Ökonomie-Feel) +
+**S7-C die chat/DSL-Vereinheitlichung** (der letzte Gratis-Bypass; die load-bearing scripting-Schicht, S3-B hielt
+sie bewusst frei) — **beide nach dem Schöpfer-Browser-Audit des Flusses**. Wer weiterbaut, liest §11.9 (die Lehre +
+der Lebenszyklus + die drei Schichten Tags/Fähigkeit/Rolle) ZUERST. **PERMANENTE LEHRE: headless-grün ≠ vision-
+aligned — den FLUSS im Schöpfer-Browser zeigen, bevor man Welle auf Welle stapelt.** Das ursprüngliche §11-Prinzip bleibt
 (Schöpfer-Dialog 02.06., die Weitung von §10 auf ALLE Rollen): **„Plan → Werk"** (Information
 frei · Materie kostet), das jeder Lesart (Gerät · Rüstung · Trank · Avatar · Portal · Fahrzeug) ihren
 material-zahlenden Werk-Akt gibt, die vier Schöpfungs-Drawer in EINE Werkstatt-Gebärmutter zieht, und das
@@ -681,22 +687,33 @@ Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis,
   reine GPU-Deko (kein Harvest/Collision) → erntbar machen = ein neues GPU-Instanz-Harvest-System + dedizierte
   Alchemie-Material-Tags (kraut/essenz). HEUTE sind die Zutaten die Part-Materialien (laub von Bäumen funktioniert
   schon); S6-B gibt der Alchemie eigene erntbare Flora. *Eine eigene meatige Welle (V17.17-Spawn-Affinität messen).*
-- **S7 — der EINE Fluss: das FERTIGEN in den Prozess-Fluss falten (RE-FRAMED nach dem Schöpfer-Browser-Audit
-  02.06.):** Der Befund: die S3–S6-Mach-Akte erscheinen als PARALLELER Pfad — der „⚒ Schmieden"-Knopf liegt im
-  Detail-Editor + heißt wie der Schmiede-Hammer-PROZESS, also wirkt er wie eine Doublette des bestehenden
-  „Prozess-ziehen-fixiert-die-Rolle"-Flusses (`applyOpToPart` + die Domain-Rolle-Emergenz). Die WURZEL ist NICHT
-  die Logik (Material-Kosten + rollen-bewusster Abschluss sind richtig), sondern die PRÄSENTATION + die Benennung.
-  Die Heilung (kein neuer Code-Pfad — eine Verdichtung der UI): **(a)** den Knopf von „Schmieden" zu **„FERTIGEN"**
-  umbenennen (der ABSCHLUSS, nicht der Prozess) + prominent in die Stats-Tabelle unter der 3D-Ansicht (wo die Rolle
-  kristallisiert), raus aus dem Detail-Editor; **(b)** das FERTIGEN durch `_workshopStationGate` gaten (ein
-  forging-Gerät fertigen → Esse nah, ein Trank → Brennkolben — die Maschine-in-der-Welt, Welle 9c, jetzt
-  end-to-end angeschlossen, nicht nur bei confirmBuild); **(c)** die optimierbaren ACHSEN (Tags → Stats) in der
-  Tabelle sichtbar machen; **(d)** den LEBENSZYKLUS klar zeigen — die Rolle EMERGIERT (reversibel: mehr von einer
-  Domain → wandert; ↺ löst eine manuelle), bis das FERTIGEN sie zum realen Werk macht (Material + ausrüsten;
-  re-fertigbar). Der eine Fluss: **verfeinern (Prozesse ziehen + Maschine) → ablesen (Tabelle: Rolle + Achsen +
-  Lebenszyklus) → FERTIGEN (zahlen + real, an der Maschine).** Plus die chat/DSL-Vereinheitlichung (der letzte
-  Gratis-Bypass „rüste/werde X" → durchs FERTIGEN). *Meist UI + der Maschine-Gate-Anschluss; die Mach-Logik bleibt.
-  Schöpfer-Browser für das Feel.*
+- **S7 — der EINE Fluss: das FERTIGEN in den Prozess-Fluss falten — ✅ KERN GEBAUT (V17.66):** Der Befund (Schöpfer-
+  Browser-Audit 02.06.): die S3–S6-Mach-Akte erschienen als PARALLELER Pfad — der „⚒ Schmieden"-Knopf lag im
+  Detail-Editor + hieß wie der Schmiede-Hammer-PROZESS, also wirkte er wie eine Doublette des „Prozess-ziehen-fixiert-
+  die-Rolle"-Flusses. Die WURZEL war die PRÄSENTATION + Benennung, nicht die Logik. **Gebaut (eine UI-Verdichtung,
+  kein neuer Pfad):** **(a)** der EINE rollen-bewusste **`_workshopAppendFertigenRow`** als ABSCHLUSS der Stats-Tabelle
+  (`_workshopRenderStatsPanel`, nach Rolle/Fähigkeit/Kosten/Tags/Qualität — der Fluss „verfeinern → ablesen →
+  FERTIGEN"); der Knopf heißt **„⚒ FERTIGEN"** (der Abschluss), routet rollen-gerecht (soul → `embodyBlueprint`, sonst
+  → `fertigeBlueprint`: Gerät schmieden / Rüstung weben / Trank brauen). Die ZWEI alten Detail-Editor-Knöpfe (⚒ +
+  „Als Seele tragen") sind ENTFERNT. **(b)** das FERTIGEN ist durch das §11.2-Werkstatt-Gate gegated — `_makeStationGate`
+  (liest die Spieler-Position) im gemeinsamen Mach-Kern `_forgeMaterialAndFreeze` + `brewConsumable` → ein domain-
+  tragender Bauplan (forging-Gerät → Esse, alchemy-Trank → Brennkolben) verlangt im pfad-Modus die passende Welt-
+  Werkstatt nah; **end-to-end (nicht nur confirmBuild)**, das Tor schließt VOR den Material-Kosten. Die FERTIGEN-Zeile
+  zeigt den Stations-Status (⚙ „Esse nah" / „braucht Esse"). **(c)/(d)** die Achsen (Tags/Qualität) + der Lebenszyklus
+  (Rolle emergent/manuell + ↺ + Domain-Bars/Wachstumshinweis) liegen schon im Panel — die FERTIGEN-Zeile ist ihr
+  Abschluss. `checkBandV1766FertigenFlow` 9 grün (Methoden da, die alten Knöpfe weg, das Gate lehnt forging-ohne-Esse
+  ab + Material bleibt, **KONSUM** Esse-beim-Spieler → fertigt + zieht Material, ein domain-loses Gerät braucht KEINE
+  Station [darum brechen die S3–S6-Bands nicht], frieden/schöpfer überspringen, **KONSUM-DOM** die FERTIGEN-Zeile
+  rendert + eine Station-Rolle rendert keine). *Die Mach-Logik bleibt unverändert; nur die PRÄSENTATION vereint sich.
+  Das FEEL/der Fluss = Schöpfer-Browser (headless beweist die Mechanik + die Faltung, nicht die Synergie).*
+  **OFFEN (zwei bewusste, GEMESSENE Schnitte — eigene Wellen, kein „weichen"):** **(S7-B) der Werkzeug-Aufräum-Schritt**
+  (hammer+feuerstein-knapper raus, feile/polier-„Decke" → Maschine): GEMESSEN ripple-schwer — `hammer` ist ein
+  load-bearing Test-Fixture (~15 Invarianten, inkl. Kreatur-Equip + `rejectsBuiltinTool`); das Registry-Aufräumen ist
+  ein eigenes Anliegen (Tool-Schicht, nicht UI-Fluss), und „feile/polier → Maschine" ist eine Crafting-Ökonomie-
+  Verhaltensänderung, deren Schwelle/Feel das Schöpfer-Auge braucht. **(S7-C) die chat/DSL-Vereinheitlichung** (der
+  letzte Gratis-Bypass „rüste/werde X" → durchs FERTIGEN): die scripting-Schicht (DSL/Chat/Restore/Aliase) ist
+  load-bearing + multi-user-broadcast-sensibel; S3-B hielt `equipHeld`/`equipArmor`/`applyPlayerSoul` BEWUSST als das
+  freie Low-Level-Primitiv. Beide nach dem Browser-Audit des Flusses.
 - **S8 — die Teilen-Konsistenz** (§11.6): das Mach-Tor ist herkunfts-agnostisch by-construction → ein
   geteiltes Gerät/Trank/Avatar kostet wie ein eigenes; die Signatur reist. Fällt fast aus S2 heraus.
   *Headless-Verifikation.*

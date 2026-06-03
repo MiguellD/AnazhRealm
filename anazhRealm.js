@@ -27211,9 +27211,25 @@ class AnazhRealm {
     // ziehen durchs §11.2-Mach-Tor (pfad+frieden zahlen, schöpfer frei) + die Präzision EINFRIEREN
     // (`forgedPrecision`-Snapshot, persistiert) + der schöpferische Affekt (Stolz ∝ Substanz, W2-Brücke).
     // Was sich pro Rolle unterscheidet, ist nur das AUSRÜSTEN (held vs armor) — das macht der Aufrufer.
+    // S7 (kampf-plan §11.7/§11.9) — die Maschine-in-der-Welt fürs FERTIGEN: derselbe
+    // Welle-9c-Werkstatt-Gate, jetzt am Mach-Akt (nicht nur bei confirmBuild — „end-to-end
+    // angeschlossen"). Ein domain-tragender Bauplan (forging-Gerät → Esse, alchemy-Trank →
+    // Brennkolben) verlangt im pfad-Modus die passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M
+    // des Spielers; ein domain-loser Bauplan + frieden/schöpfer überspringen es (genau wie das
+    // Build-Gate). Ohne Spieler-Position (defensiv) kein Proximity-Check.
+    _makeStationGate(name) {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return { ok: true };
+        return this._workshopStationGate(name, { x: pm.x, y: pm.y, z: pm.z });
+    }
+
     _forgeMaterialAndFreeze(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        const station = this._makeStationGate(name);
+        if (!station.ok) {
+            return { ok: false, reason: "no_workshop_station", neededDomain: station.neededDomain };
+        }
         const gate = this._makeCostGate(name);
         if (!gate.ok) {
             return { ok: false, reason: "not_enough_material", missing: gate.missing || {}, cost: gate.cost || {} };
@@ -27284,6 +27300,10 @@ class AnazhRealm {
     brewConsumable(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp || bp.role !== "consumable") return { ok: false, reason: "not_a_consumable" };
+        const station = this._makeStationGate(name);
+        if (!station.ok) {
+            return { ok: false, reason: "no_workshop_station", neededDomain: station.neededDomain };
+        }
         const gate = this._makeCostGate(name);
         if (!gate.ok) {
             return { ok: false, reason: "not_enough_material", missing: gate.missing || {}, cost: gate.cost || {} };
@@ -38058,72 +38078,10 @@ class AnazhRealm {
             });
             actions.appendChild(addBtn);
         }
-        // Welle 9d — "Als Seele aktivieren"-Button bei eigenen role:soul-Baupläne.
-        // Synthesisiert eine custom-soul aus den bp.parts und triggert applyPlayerSoul.
-        if (!selected.builtIn && selected.role === "soul") {
-            const soulBtn = document.createElement("button");
-            soulBtn.type = "button";
-            soulBtn.className = "workshop-soul-activate";
-            soulBtn.textContent = "Als Seele tragen";
-            soulBtn.title =
-                "Diesen Körper FORMEN + tragen — einen eigenen Körper zu formen zieht Material (pfad/frieden); " +
-                "eine schon geformte Seele wieder zu tragen ist frei (§11.2: der Avatar ist kein Sonderfall).";
-            soulBtn.addEventListener("click", () => {
-                // S5 — der Spieler-Pfad geht durch embodyBlueprint: ein ungeformter Körper wird hier
-                // GEFORMT (zahlt im pfad/frieden), ein geformter frei verkörpert.
-                const res = this.embodyBlueprint(selected.name);
-                if (res.ok) {
-                    const made = res.forgedPrecision != null && res.free === false;
-                    this.log(
-                        `Seele gewechselt zu „${selected.label || selected.name}"${made ? " (Körper geformt)" : ""}.`,
-                        "INFO"
-                    );
-                    this._renderWorkshopDOM();
-                } else if (res.reason === "not_enough_material") {
-                    const missingStr = Object.entries(res.missing || {})
-                        .map(([m, n]) => `${n}× ${m}`)
-                        .join(", ");
-                    this.log(`Körper formen nötig — fehlt: ${missingStr || "Material"} (Rohstoffe sammeln).`, "ERROR");
-                } else {
-                    this.log(`Seele konnte nicht aktiviert werden (${res.reason || "unknown"})`, "ERROR");
-                }
-            });
-            actions.appendChild(soulBtn);
-        }
-        // S3/S4/S5 (kampf-plan §11.5) — „Fertigen": den Bauplan zum realen Werk machen (Material ziehen,
-        // Präzision einfrieren, ausrüsten). Rollen-bewusst (fertigeBlueprint): Rüstung → weben + tragen,
-        // sonst → Gerät schmieden + in die Hand. NUR für Gerät/Rüstung (held/worn) — Seelen haben den
-        // dedizierten „Als Seele tragen"-Knopf (oben), darum hier übersprungen.
-        if (selected.role !== "soul" && selected.role !== "consumable") {
-            const isArmor = selected.role === "armor";
-            const forgeBtn = document.createElement("button");
-            forgeBtn.type = "button";
-            forgeBtn.className = "workshop-forge";
-            forgeBtn.textContent = isArmor ? "⚒ Weben (Rüstung tragen)" : "⚒ Schmieden (in die Hand)";
-            forgeBtn.title = isArmor
-                ? "Diese Rüstung weben — zieht Material (pfad/frieden), friert die Präzision ein, trägt sie."
-                : "Dieses Gerät schmieden — zieht Material (pfad/frieden), friert die Präzision ein, rüstet es aus.";
-            forgeBtn.addEventListener("click", () => {
-                const res = this.fertigeBlueprint(selected.name);
-                const verb = isArmor ? "Gewebt" : "Geschmiedet";
-                const where = isArmor ? "getragen" : "in der Hand";
-                if (res.ok) {
-                    this.log(
-                        `${verb}: „${selected.label || selected.name}" (${where}${res.free ? ", frei" : ""}).`,
-                        "INFO"
-                    );
-                    this._renderWorkshopDOM();
-                } else if (res.reason === "not_enough_material") {
-                    const missingStr = Object.entries(res.missing || {})
-                        .map(([m, n]) => `${n}× ${m}`)
-                        .join(", ");
-                    this.log(`Fertigen fehlgeschlagen — fehlt: ${missingStr || "Material"}.`, "ERROR");
-                } else {
-                    this.log(`Fertigen fehlgeschlagen (${res.reason || "unknown"}).`, "ERROR");
-                }
-            });
-            actions.appendChild(forgeBtn);
-        }
+        // S7 (kampf-plan §11.7/§11.9) — die Mach-Knöpfe (⚒ Schmieden/Weben + „Als Seele tragen")
+        // wohnen NICHT mehr hier im Detail-Editor (sie wirkten wie ein paralleler Pfad). Sie sind in
+        // den EINEN „FERTIGEN"-Akt der Stats-Tabelle gefaltet (_workshopAppendFertigenRow) — der
+        // Abschluss des Lese-Flusses (verfeinern → ablesen → FERTIGEN).
         // Klonen
         const cloneBtn = document.createElement("button");
         cloneBtn.type = "button";
@@ -39495,6 +39453,88 @@ class AnazhRealm {
         this._workshopAppendTagsRow(panel, bp);
         this._workshopAppendQualityRow(panel, bp);
         if (!bp.builtIn) this._workshopAppendSignatureRow(panel, bp, ws);
+        // S7 (kampf-plan §11.7/§11.9) — der EINE Fluss: das FERTIGEN als Abschluss der Lese-Tabelle
+        // (verfeinern → ablesen → FERTIGEN), nicht als paralleler ⚒-Knopf im Detail-Editor.
+        this._workshopAppendFertigenRow(panel, bp);
+    }
+
+    // S7 (kampf-plan §11.7/§11.9) — DER EINE FLUSS: das FERTIGEN gehört in die Stats-Tabelle (wo die
+    // Rolle kristallisiert), als ABSCHLUSS, nicht als paralleler ⚒-Knopf im Detail-Editor (der
+    // Schöpfer-Browser-Audit-Befund: er wirkte wie eine Doublette des Prozess-zieht-Rolle-Flusses).
+    // Ein rollen-bewusster „FERTIGEN"-Akt — die Mach-Logik bleibt (fertigeBlueprint/embodyBlueprint),
+    // nur die Präsentation vereint sich: lesen → FERTIGEN. Die Maschine-in-der-Welt (Esse/Brennkolben)
+    // ist sichtbar gegated (pfad) — der Knopf zeigt, welche Werkstatt nah sein muss.
+    _workshopAppendFertigenRow(panel, bp) {
+        const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        // Welt-platzierte Rollen (Station/Portal) werden gebaut (confirmBuild), nicht gefertigt; eine
+        // geborene (built-in) Seele wird nicht geformt.
+        if (role === "workshop-station" || role === "portal") return;
+        if (role === "soul" && bp.builtIn) return;
+        const isSoul = role === "soul";
+        const verb =
+            role === "armor"
+                ? "Rüstung weben (tragen)"
+                : isSoul
+                  ? "Körper formen (verkörpern)"
+                  : role === "consumable"
+                    ? "Trank brauen (trinken)"
+                    : "Gerät schmieden (in die Hand)";
+        const row = document.createElement("div");
+        row.className = "stat-row workshop-fertigen-row";
+        const lab = document.createElement("span");
+        lab.className = "stat-label";
+        lab.textContent = "Werk";
+        row.appendChild(lab);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "workshop-fertigen";
+        btn.textContent = "⚒ FERTIGEN";
+        btn.title = `${verb} — das reale Werk herstellen: zieht Material (pfad/frieden, frei in schöpfer), friert die Präzision ein, rüstet/wirkt. Re-fertigbar.`;
+        btn.addEventListener("click", () => {
+            const res = isSoul ? this.embodyBlueprint(bp.name) : this.fertigeBlueprint(bp.name);
+            // embodyBlueprint lässt `free` weg, wenn es den freien Verkörpern-Pfad nahm (schon geformt
+            // oder schöpfer) → das werten wir als frei.
+            const wasFree = res.free === true || (isSoul && res.ok && res.free === undefined);
+            if (res.ok) {
+                this.log(`Gefertigt: „${bp.label || bp.name}" — ${verb}${wasFree ? " (frei)" : ""}.`, "INFO");
+                this._renderWorkshopDOM();
+            } else if (res.reason === "no_workshop_station") {
+                const stationLabel = this._stationLabelForDomain(res.neededDomain);
+                this.log(`Fertigen braucht eine Werkstatt: „${stationLabel}" in der Nähe (pfad-Modus).`, "ERROR");
+            } else if (res.reason === "not_enough_material") {
+                const missingStr = Object.entries(res.missing || {})
+                    .map(([m, n]) => `${n}× ${m}`)
+                    .join(", ");
+                this.log(`Fertigen fehlt an Material: ${missingStr || "Material"}.`, "ERROR");
+            } else {
+                this.log(`Fertigen fehlgeschlagen (${res.reason || "unknown"}).`, "ERROR");
+            }
+        });
+        row.appendChild(btn);
+        // die Maschine-in-der-Welt sichtbar (Lebenszyklus + Gate-Status): ist die nötige Werkstatt nah?
+        const station = this._makeStationGate(bp.name);
+        const hint = document.createElement("span");
+        hint.className = "workshop-fertigen-station";
+        if (station.ok && station.found) {
+            hint.textContent = `⚙ ${this._stationLabelForDomain(station.domain)} nah`;
+            hint.title = "Die passende Welt-Werkstatt ist in der Nähe — du kannst hier fertigen.";
+        } else if (!station.ok) {
+            hint.textContent = `⚙ braucht ${this._stationLabelForDomain(station.neededDomain)}`;
+            hint.classList.add("workshop-fertigen-station-missing");
+            hint.title = "Im pfad-Modus braucht dieses Werk die passende Welt-Werkstatt in der Nähe.";
+        }
+        if (hint.textContent) row.appendChild(hint);
+        panel.appendChild(row);
+    }
+
+    // Das Label der Welt-Werkstatt, die eine Domäne bedient (Esse/Brennkolben/…) — für die
+    // FERTIGEN-Station-Hinweise. Fällt auf das Domänen-Label zurück, wenn kein Bauplan passt.
+    _stationLabelForDomain(domain) {
+        if (!domain) return "Werkstatt";
+        for (const b of Object.values(this.state.blueprints || {})) {
+            if (b && b.role === "workshop-station" && b.workshopDomain === domain) return b.label || b.name;
+        }
+        return (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[domain]) || domain;
     }
 
     // Rolle-Chip + Affordances. Emergent-vs-manuell-Indikator mit erweiterten
@@ -45051,7 +45091,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.65.0";
+AnazhRealm.VERSION = "17.66.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

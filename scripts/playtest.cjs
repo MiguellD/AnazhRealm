@@ -5298,6 +5298,139 @@ async function checkBandV1765BrewConsumable(ctx) {
     );
 }
 
+// V17.66 S7 (kampf-plan §11.7/§11.9) — DER EINE FLUSS: das FERTIGEN in den Prozess-Fluss falten
+// (raus aus dem parallelen ⚒-Knopf im Detail-Editor, rein in die Stats-Tabelle als Abschluss) +
+// die Maschine-in-der-Welt (_workshopStationGate) end-to-end am Mach-Akt anschliessen (nicht nur
+// confirmBuild). KONSUM, nicht Existenz (V17.31): das Gate lehnt ab/laesst durch, die FERTIGEN-Zeile
+// rendert ins DOM, die alten Knoepfe sind weg.
+async function checkBandV1766FertigenFlow(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const savedArch = r.state.architectures.slice();
+        // FERTIGEN rüstet das geschmiedete Werk aus (equipped.held/armor) — sauber zurücksetzen, sonst
+        // zeigt eine spätere Band einen baumelnden Held (gelöschter Bauplan).
+        const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
+
+        // --- die Methoden da ---
+        out.methods =
+            typeof r._workshopAppendFertigenRow === "function" &&
+            typeof r._makeStationGate === "function" &&
+            typeof r._stationLabelForDomain === "function";
+
+        // --- die alten parallelen Mach-Knoepfe sind WEG aus dem Detail-Editor ---
+        const actionsSrc = r._workshopRenderActions.toString();
+        out.oldButtonsGone = !actionsSrc.includes("workshop-forge") && !actionsSrc.includes("workshop-soul-activate");
+        // --- der EINE FERTIGEN-Akt lebt jetzt im Abschluss der Stats-Tabelle ---
+        out.statsPanelCallsFertigen = r._workshopRenderStatsPanel.toString().includes("_workshopAppendFertigenRow");
+
+        // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
+        // eisen-Part (Einzel-Material → die Kosten sind eindeutig eisen) + ein schmiede-hammer-Op
+        // (forging-Domain). ===
+        r.setGameMode("schöpfer");
+        if (blu.__s7_forge) delete blu.__s7_forge;
+        blu.__s7_forge = {
+            name: "__s7_forge",
+            parts: [
+                { shape: "box", material: "eisen", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        r.applyOpToPart("__s7_forge", 0, "schmiede-hammer");
+        out.forgeHasDomain = r.computeBlueprintDomain(blu.__s7_forge) === "forging";
+
+        // === (b) DAS MASCHINE-GATE — pfad + forging-domain + KEINE Esse → no_workshop_station ===
+        r.setGameMode("pfad");
+        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("eisen", 400);
+        const eisenStart = p.inventory[0].count;
+        const noStation = r.fertigeBlueprint("__s7_forge");
+        out.pfadNoStationRejects = noStation.ok === false && noStation.reason === "no_workshop_station";
+        out.noStationReportsDomain = noStation.neededDomain === "forging";
+        // das Tor schloss VOR den Kosten → Material bleibt unberuehrt
+        out.noStationKeepsMaterial = p.inventory[0] && p.inventory[0].count === eisenStart;
+
+        // === KONSUM: Esse beim Spieler → FERTIGEN gelingt + zieht Material ===
+        r.state.architectures.push({ type: "esse", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__s7_esse" });
+        const eisenBefore = p.inventory[0].count;
+        const withStation = r.fertigeBlueprint("__s7_forge");
+        const eisenAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadWithStationMakes = withStation.ok === true && eisenBefore > eisenAfter;
+
+        // === ein DOMAIN-LOSES Geraet braucht KEINE Station (das Gate ist transparent) ===
+        delete blu.__s7_plain;
+        blu.__s7_plain = {
+            name: "__s7_plain",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 400);
+        const plainOk = r.fertigeBlueprint("__s7_plain");
+        out.domainlessNeedsNoStation = plainOk.ok === true;
+
+        // === frieden/schoepfer ueberspringen die Station (forging-domain, KEINE Esse) ===
+        r.setGameMode("schöpfer");
+        const schoepferNoStation = r.fertigeBlueprint("__s7_forge");
+        out.schoepferSkipsStation = schoepferNoStation.ok === true;
+
+        // === KONSUM (DOM): die FERTIGEN-Zeile rendert; eine Station-Rolle rendert KEINE (der Guard) ===
+        const panel = document.createElement("div");
+        r._workshopAppendFertigenRow(panel, blu.__s7_plain);
+        out.domHasFertigenButton = !!panel.querySelector(".workshop-fertigen");
+        const panel2 = document.createElement("div");
+        r._workshopAppendFertigenRow(panel2, blu.esse); // esse = role workshop-station → wird gebaut, nicht gefertigt
+        out.stationRoleNoFertigen = !panel2.querySelector(".workshop-fertigen");
+
+        // cleanup
+        delete blu.__s7_forge;
+        delete blu.__s7_plain;
+        r.state.architectures = savedArch;
+        p.inventory = new Array(27).fill(null);
+        p.equipped = savedEquipped;
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.66 S7: die FERTIGEN-/Station-Methoden existieren (_workshopAppendFertigenRow/_makeStationGate/_stationLabelForDomain)",
+        res.methods
+    );
+    check(
+        "V17.66 S7: die alten parallelen Mach-Knoepfe (⚒/Seele) sind aus dem Detail-Editor ENTFERNT",
+        res.oldButtonsGone
+    );
+    check(
+        "V17.66 S7: das FERTIGEN lebt jetzt im Abschluss der Stats-Tabelle (verfeinern → ablesen → FERTIGEN)",
+        res.statsPanelCallsFertigen
+    );
+    check("V17.66 S7: das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
+    check(
+        "V17.66 S7: (b) DAS MASCHINE-GATE — pfad + forging ohne Esse → no_workshop_station (Domain gemeldet + Material bleibt)",
+        res.pfadNoStationRejects && res.noStationReportsDomain && res.noStationKeepsMaterial
+    );
+    check(
+        "V17.66 S7: KONSUM — Esse beim Spieler → FERTIGEN gelingt + zieht Material (end-to-end, nicht nur confirmBuild)",
+        res.pfadWithStationMakes
+    );
+    check(
+        "V17.66 S7: ein domain-loses Geraet braucht KEINE Station (das Gate ist transparent — darum brechen die S3-S6-Bands nicht)",
+        res.domainlessNeedsNoStation
+    );
+    check("V17.66 S7: frieden/schoepfer ueberspringen die Station (forging ohne Esse → ok)", res.schoepferSkipsStation);
+    check(
+        "V17.66 S7: KONSUM — die FERTIGEN-Zeile rendert ins DOM; eine Station-Rolle (esse) rendert KEINE (Guard)",
+        res.domHasFertigenButton && res.stationRoleNoFertigen
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -32743,18 +32876,21 @@ async function checkBandWaves9And10a(ctx) {
             const unknownRes = r.applyPlayerSoulFromBlueprint("nonsense_blueprint");
             out.unknownReject = unknownRes && unknownRes.ok === false && unknownRes.reason === "blueprint_unknown";
 
-            // UI-Button
+            // UI — S7 (V17.66): die role-spezifischen Mach-Knöpfe (.workshop-soul-activate /
+            // .workshop-forge) sind in den EINEN „FERTIGEN"-Akt der Stats-Tabelle gefaltet. Der
+            // Soul-Bauplan zeigt jetzt die FERTIGEN-Zeile (im LIVE Werkstatt-DOM, ergänzt das
+            // isolierte V1766-Band).
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
             r.selectBlueprintForEdit("test_9d_soul");
-            const soulBtn = document.querySelector(".workshop-soul-activate");
-            out.soulButtonRendered = !!soulBtn;
+            out.soulFertigenRendered = !!document.querySelector("#workshop-stats-panel .workshop-fertigen");
+            out.oldSoulButtonGone = !document.querySelector(".workshop-soul-activate");
 
             if (r.state.blueprints["test_9d_arch"]) r.deleteBlueprint("test_9d_arch");
             r.cloneBlueprint("village", "test_9d_arch");
             r.selectBlueprintForEdit("test_9d_arch");
-            const soulBtnArch = document.querySelector(".workshop-soul-activate");
-            out.archHasNoSoulButton = !soulBtnArch;
+            // die EINE FERTIGEN-Zeile erscheint auch fürs Gerät/Bauwerk — ein Akt für alle Mach-Rollen.
+            out.archAlsoFertigen = !!document.querySelector("#workshop-stats-panel .workshop-fertigen");
 
             // Cleanup
             r.applyPlayerSoul("human");
@@ -32802,10 +32938,13 @@ async function checkBandWaves9And10a(ctx) {
             wave9dResults.unknownReject
         );
         check(
-            "Welle 9d UI: 'Als Seele tragen'-Button bei role=soul gerendert (.workshop-soul-activate)",
-            wave9dResults.soulButtonRendered
+            "Welle 9d UI (S7 V17.66): die EINE FERTIGEN-Zeile rendert bei role=soul im Werkstatt-DOM (statt des alten Soul-Knopfs)",
+            wave9dResults.soulFertigenRendered && wave9dResults.oldSoulButtonGone
         );
-        check("Welle 9d UI: KEIN Soul-Button bei role=architecture (Default)", wave9dResults.archHasNoSoulButton);
+        check(
+            "Welle 9d UI (S7 V17.66): die FERTIGEN-Zeile rendert auch bei role=architecture (ein Akt fuer alle Mach-Rollen)",
+            wave9dResults.archAlsoFertigen
+        );
     } else if (wave9dResults && wave9dResults.error) {
         check(`Welle 9d: evaluate-Fehler — ${wave9dResults.error}`, false);
     }
@@ -37471,6 +37610,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1763ForgeArmor(ctx);
             await checkBandV1764ForgeAvatar(ctx);
             await checkBandV1765BrewConsumable(ctx);
+            await checkBandV1766FertigenFlow(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
