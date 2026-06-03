@@ -6334,6 +6334,58 @@ async function checkBandV1776WorkshopPrecision(ctx) {
     );
 }
 
+// V17.77 — die STEIGERUNG sichtbar + craftbar: eine Meister-Esse (Eisen) ist die bessere Esse (höherer
+// Cap aus dichterer/härterer Substanz), und der Werkstatt-Readout zeigt die Präzision → der Spieler SIEHT
+// „bessere Esse → höherer Cap" + lernt das Prinzip für alle Systeme (besseres Material → besseres Werk).
+async function checkBandV1777SteigerungVisible(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const esse = r.state.blueprints["esse"];
+        const meister = r.state.blueprints["esse_meister"];
+        out.meisterExists = !!meister && meister.role === "workshop-station";
+        out.meisterForging = meister ? r._computeWorkshopDomain(meister) === "forging" : false;
+        const esseP = r._workshopStationPrecision(esse);
+        const meisterP = meister ? r._workshopStationPrecision(meister) : 0;
+        out.esseP = Math.round(esseP * 1e4) / 1e4;
+        out.meisterP = Math.round(meisterP * 1e4) / 1e4;
+        out.steigerung = meisterP > esseP && esseP > 0.85; // die Meister-Esse ist besser, beide präzise
+        // die Spanne sichtbar: eine weiche Werkstatt (leder) fertigt deutlich gröber als die Eisen-Esse
+        r.state.blueprints["_softws"] = {
+            name: "_softws",
+            parts: esse.parts.map((p) => ({ ...p, material: "leder" })),
+        };
+        const softP = r._workshopStationPrecision(r.state.blueprints["_softws"]);
+        out.rangeVisible = softP < meisterP - 0.1;
+        delete r.state.blueprints["_softws"];
+        // KONSUM — der Werkstatt-Readout rendert die Präzisions-Zeile (sichtbar/lernbar)
+        const panel = document.createElement("div");
+        r._workshopAppendRoleRow(panel, meister);
+        const labels = [...panel.querySelectorAll(".stat-label")].map((e) => e.textContent);
+        const precText = [...panel.querySelectorAll(".workshop-precision-text")].map((e) => e.textContent).join("|");
+        out.readoutShowsPrecision = labels.includes("Werkstatt-Präzision") && precText.includes(meisterP.toFixed(2));
+        out.noLitter = !meister.instanced; // built-in ohne instanced → kein Worldgen-Litter (V17.72)
+        return out;
+    });
+    check("V17.77: die Meister-Esse existiert als craftbare workshop-station", res.meisterExists);
+    check("V17.77: ihre Domäne emergiert als forging (Eisen+Glut → Schmiede, S7-B)", res.meisterForging);
+    check(
+        "V17.77 STEIGERUNG: die Meister-Esse (Eisen) fertigt feiner als die Basis-Esse — bessere Substanz → höherer Cap",
+        res.steigerung,
+        `esse=${res.esseP} meister=${res.meisterP}`
+    );
+    check(
+        "V17.77: die Spanne ist sichtbar — eine weiche Werkstatt fertigt deutlich gröber als die Eisen-Esse",
+        res.rangeVisible
+    );
+    check(
+        "V17.77 KONSUM: der Werkstatt-Readout rendert die Präzisions-Zeile (die Steigerung sichtbar/lernbar)",
+        res.readoutShowsPrecision
+    );
+    check("V17.77: die Meister-Esse littert den Worldgen NICHT (built-in ohne instanced)", res.noLitter);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -38584,6 +38636,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1774UseByRole(ctx);
             await checkBandV1775MakeActCost(ctx);
             await checkBandV1776WorkshopPrecision(ctx);
+            await checkBandV1777SteigerungVisible(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

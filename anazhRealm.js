@@ -31894,6 +31894,21 @@ class AnazhRealm {
                 opacity: 0.85,
             },
         ];
+        // V17.77 — die MEISTER-Esse: derselbe Schmiede-Sinn, aber ein EISEN-Körper (dichter + härter als
+        // Stein/Bronze → feinere Toleranzen) + ein Eisen-Amboss; die Glut bleibt das Feuer. Die craftbare
+        // „bessere Esse" — sie hebt den Präzisions-Cap, den Werke an ihr erreichen (die Steigerung sichtbar).
+        const esseMeisterParts = [
+            { shape: "box", material: "eisen", position: { x: 0, y: 0.6, z: 0 }, size: { x: 2.2, y: 1.2, z: 1.8 } },
+            { shape: "box", material: "eisen", position: { x: 0, y: 1.5, z: 0 }, size: { x: 1.6, y: 0.6, z: 1.4 } },
+            {
+                shape: "sphere",
+                material: "glut",
+                position: { x: 0, y: 1.7, z: 0 },
+                size: { x: 1.0, y: 0.55, z: 0.9 },
+                opacity: 0.85,
+            },
+            { shape: "box", material: "eisen", position: { x: 0, y: 2.2, z: 0 }, size: { x: 1.2, y: 0.5, z: 0.8 } },
+        ];
         const brennkolbenParts = [
             // Holz-Untersatz
             {
@@ -32283,6 +32298,16 @@ class AnazhRealm {
                 role: "workshop-station",
                 roleManual: true,
                 parts: esseParts,
+            },
+            // V17.77 — die craftbare MEISTER-Esse (Eisen): eine bessere Werkstatt → höherer Präzisions-Cap.
+            // Die „bessere Esse", die der Schöpfer suchte; sie lehrt das Prinzip (besseres Material → feiner).
+            esse_meister: {
+                name: "esse_meister",
+                label: "Meister-Esse (Eisen)",
+                builtIn: true,
+                role: "workshop-station",
+                roleManual: true,
+                parts: esseMeisterParts,
             },
             brennkolben: {
                 name: "brennkolben",
@@ -35873,7 +35898,9 @@ class AnazhRealm {
     _workshopStationPrecision(bp) {
         const t = this.computeCompoundTags(bp) || {};
         const cfg = AnazhRealm.WORKSHOP_PRECISION;
-        const solid = Math.min(1, t.dichte || 0);
+        // dichte über dichteRef normalisiert (die Compound-dichte reicht bis ~2.7) → ein dichteres Material
+        // DIFFERENZIERT, statt bei 1 zu sättigen; härte ist schon ~[0,1]. So zählt „dichter UND härter".
+        const solid = Math.min(1, (t.dichte || 0) / (cfg.dichteRef || 1));
         const hard = Math.min(1, t.härte || 0);
         return Math.max(0, Math.min(cfg.max, cfg.base + cfg.fromDichte * solid + cfg.fromHärte * hard));
     }
@@ -40164,6 +40191,28 @@ class AnazhRealm {
                 capRow.appendChild(chip);
             }
             panel.appendChild(capRow);
+        }
+        // V17.77 — die WERKSTATT-PRÄZISION sichtbar (die Steigerung lernbar): WIE fein eine Station fertigt,
+        // emergiert aus ihrer Substanz (dichter + härter → feiner). So SIEHT der Spieler „bessere Esse →
+        // höherer Cap" + lernt das Prinzip für alle Systeme (besseres Material → besseres Werk).
+        if (bp.role === "workshop-station") {
+            const prec = this._workshopStationPrecision(bp);
+            const dom = this._computeWorkshopDomain(bp);
+            const precRow = document.createElement("div");
+            precRow.className = "stat-row";
+            const precLab = document.createElement("span");
+            precLab.className = "stat-label";
+            precLab.textContent = "Werkstatt-Präzision";
+            precRow.appendChild(precLab);
+            const precVal = document.createElement("span");
+            precVal.className = "workshop-precision-text";
+            precVal.textContent = prec.toFixed(2) + (dom ? ` · ${dom}` : "");
+            precVal.title =
+                "Wie fein diese Werkstatt fertigt — emergiert aus ihrer Substanz (dichteres, härteres " +
+                "Material → feinere Toleranzen). Eine bessere Esse hebt den Präzisions-Cap deiner Werke. " +
+                "Dasselbe Prinzip trägt alle Systeme: besseres Material → besseres Werk.";
+            precRow.appendChild(precVal);
+            panel.appendChild(precRow);
         }
     }
 
@@ -45702,7 +45751,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.76.0";
+AnazhRealm.VERSION = "17.77.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -46440,7 +46489,13 @@ AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
 // V17.76 Welle 2 — die Präzisions-Kapazität einer Werkstatt-Station aus ihrer SUBSTANZ (Material × Form):
 // base (eine schlichte Werkstatt) + dichte/härte (eine dichte, harte Esse hält feinere Toleranzen), gedeckelt.
 // So emergiert „bessere Esse → höherer Cap" aus den Materialien (kein Crafting-Zirkel). Browser-justierbar.
-AnazhRealm.WORKSHOP_PRECISION = Object.freeze({ base: 0.5, fromDichte: 0.28, fromHärte: 0.2, max: 0.98 });
+AnazhRealm.WORKSHOP_PRECISION = Object.freeze({
+    base: 0.5,
+    fromDichte: 0.28,
+    fromHärte: 0.2,
+    dichteRef: 2.7,
+    max: 0.98,
+});
 
 // Welle 9d — Maschinen-Bonus. Ein als Werkzeug registriertes Bauplan
 // mit role="machine" (z. B. eine Drehbank-Kreation des Spielers) bekommt
