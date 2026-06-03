@@ -35,7 +35,7 @@ Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
 npm run check           # Syntax-Check (node --check)
 npm run lint            # ESLint
 npm run format:check    # Prettier
-npm run playtest        # ~3300 Headless-Invarianten (~60s)
+npm run playtest        # ~3500 Headless-Invarianten (~90s; render-frei, V17.72-Twist)
 npm run audit:strict    # 5 generische Audit-Schichten (~25s)
 ```
 
