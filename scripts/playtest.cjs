@@ -5848,6 +5848,107 @@ async function checkBandV1771ToolOpFromForm(ctx) {
     );
 }
 
+// V17.72 A1 — DIE BIBLIOTHEK: ein craftbarer Beispiel-Bauplan pro Mach-Akt-Rolle.
+// KONSUM-Disziplin (V17.31): nicht „existiert", sondern (a) die Rolle ist
+// substanz-EHRLICH (computeBlueprintRole — die pure Substanz-Funktion —
+// emergiert zu derselben Rolle für Trank/Avatar; architecture = der Intent-
+// Zwilling für Rüstung/Gerät), (b) die vier Mach-Akte FEUERN rollen-gerecht
+// (fertigeBlueprint routet, das Role-Gate beißt), (c) kein Worldgen-Litter.
+// Player-State wird gesnapshottet + restauriert (V17.66-Lehre: forge-equip
+// + embody mutieren equipped/soul/boosts → ein dangling Held bräche spätere Bands).
+async function checkBandV1772Library(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+
+        const G = blu.geraet_spitzhacke;
+        const A = blu.ruestung_brustpanzer;
+        const T = blu.trank_lebenssaft;
+        const V = blu.avatar_waechter;
+        out.allExist = !!(G && A && T && V) && G.builtIn && A.builtIn && T.builtIn && V.builtIn;
+
+        // (1) die deklarierten Rollen: Gerät rollenlos (gehalten, W2-B), die drei anderen deklariert.
+        out.rolesDeclared = G.role === undefined && A.role === "armor" && T.role === "consumable" && V.role === "soul";
+
+        // (2) SUBSTANZ-EHRLICH: computeBlueprintRole (die pure Substanz-Funktion, liest NICHT bp.role) emergiert
+        //     für Trank/Avatar zur SELBEN Rolle (ein Spieler-Klon bekäme dieselbe → die Rekursion-Saat ist ehrlich);
+        //     Rüstung+Gerät resonieren architecture (der dichte+harte Intent-Zwilling — darum ist die armor-Rolle
+        //     ein deklarierter Override, V17.70, kein Emergenz-Versagen).
+        out.trankHonest = r.computeBlueprintRole(T) === "consumable";
+        out.avatarHonest = r.computeBlueprintRole(V) === "soul" && r._isBodyShaped(V) === true;
+        out.armorIsTwin = r.computeBlueprintRole(A) === "architecture";
+        out.geraetIsHeldArch = r.computeBlueprintRole(G) === "architecture";
+
+        // (3) das Role-GATE beißt: die rollen-spezifischen Mach-Akte lehnen das rollenlose Gerät ab.
+        out.armorGate = r.forgeArmor("geraet_spitzhacke").reason === "not_marked_as_armor";
+        out.brewGate = r.brewConsumable("geraet_spitzhacke").reason === "not_a_consumable";
+        out.avatarGate = r.forgeAvatar("geraet_spitzhacke").reason === "blueprint_not_soul";
+
+        // (4) kein Worldgen-Litter: deliberate Items (kein `instanced` → nicht in der Mass-Spawn-Bahn).
+        out.noLitter = !G.instanced && !A.instanced && !T.instanced && !V.instanced;
+
+        // (5) KONSUM — die vier Mach-Akte FEUERN rollen-gerecht (schöpfer = frei, kein Material/Station nötig).
+        //     Snapshot des Player-States, danach restauriert (V17.66).
+        const savedMode = r.getGameMode();
+        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
+        const savedSoul = (p && p.soul) || "mensch";
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        else r.state.worldMeta.gameMode = "schöpfer";
+
+        const fg = r.fertigeBlueprint("geraet_spitzhacke");
+        out.geraetForged = fg.ok === true && p.equipped.held === "geraet_spitzhacke";
+        const fa = r.fertigeBlueprint("ruestung_brustpanzer");
+        out.armorForged = fa.ok === true && p.equipped.armor === "ruestung_brustpanzer";
+        const ft = r.fertigeBlueprint("trank_lebenssaft");
+        out.trankBrewed = ft.ok === true; // brewConsumable → activateConsumable → Boost
+        const fv = r.fertigeBlueprint("avatar_waechter");
+        out.avatarEmbodied = fv.ok === true;
+
+        // restore — kein dangling Held/Soul/Boost für die nächsten Bands
+        if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
+        else r.state.worldMeta.gameMode = savedMode;
+        r.applyPlayerSoul(savedSoul);
+        if (p) {
+            p.equipped = savedEquip;
+            p.boosts = savedBoosts;
+        }
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        return out;
+    });
+    check(
+        "V17.72 A1: die vier Bibliotheks-Baupläne existieren als Built-in-Saat (Gerät/Rüstung/Trank/Avatar)",
+        res.allExist
+    );
+    check(
+        "V17.72 A1: die Rollen sind deklariert — Gerät rollenlos (gehalten, W2-B), Rüstung/Trank/Avatar = armor/consumable/soul",
+        res.rolesDeclared
+    );
+    check(
+        "V17.72 A1 SUBSTANZ-EHRLICH: der Trank resoniert consumable + der Avatar soul (body-shaped) — ein Spieler-Klon emergierte zur selben Rolle",
+        res.trankHonest && res.avatarHonest
+    );
+    check(
+        "V17.72 A1: Rüstung + Gerät resonieren architecture (der dichte+harte Intent-Zwilling) → die armor-Rolle ist ein deklarierter Override (V17.70)",
+        res.armorIsTwin && res.geraetIsHeldArch
+    );
+    check(
+        "V17.72 A1: das Role-GATE beißt — forgeArmor/brewConsumable/forgeAvatar lehnen das rollenlose Gerät ab",
+        res.armorGate && res.brewGate && res.avatarGate
+    );
+    check(
+        "V17.72 A1: kein Worldgen-Litter — die vier sind deliberate Items (kein instanced-Flag, nicht in der Spawn-Kandidatenliste)",
+        res.noLitter
+    );
+    check(
+        "V17.72 A1 KONSUM: die vier Mach-Akte FEUERN rollen-gerecht — fertigeBlueprint schmiedet Gerät (held) + webt Rüstung (armor) + braut Trank + formt Avatar",
+        res.geraetForged && res.armorForged && res.trankBrewed && res.avatarEmbodied
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -38036,6 +38137,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1769RoleResonance(ctx);
             await checkBandV1770WorkshopStationMark(ctx);
             await checkBandV1771ToolOpFromForm(ctx);
+            await checkBandV1772Library(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

@@ -32006,6 +32006,156 @@ class AnazhRealm {
             },
         ];
 
+        // A1 (roadmap „OFFENE FÄDEN") — DIE BIBLIOTHEK: ein craftbarer Beispiel-
+        // Bauplan pro Mach-Akt-Rolle (Schöpfer-Befund 03.06.). Portal + Werkstatt
+        // hatten schon Saat (welt_*/esse/…); die VIER Lücken sind genau die vier
+        // Mach-Akte aus V17.59–.66 (forgeBlueprint/forgeArmor/brewConsumable/
+        // forgeAvatar). Die Schmiede KONNTE sie fertigen — es fehlte nur ein
+        // Bauplan zum Fertigen. Diese vier sind die optimierbare SAAT, an der die
+        // Rekursion sichtbar wird (besserer Prozessbauplan → höherer Cap → bessere
+        // Werke). Reine DATEN; die Resonanz liest Rolle/Domäne/Op automatisch.
+        // VISION-TREU: wo die Substanz die Rolle TRÄGT (Trank=weich+lebendig →
+        // consumable; Avatar=körper-förmig+lebendig → soul), ist die deklarierte
+        // Rolle substanz-EHRLICH (ein Spieler-Klon emergierte zur selben Rolle).
+        // Wo sie ein INTENT-Zwilling ist (Rüstung vs. Bauwerk = beide dicht+hart,
+        // wie Werkstatt vs. Bauwerk, V17.70), ist `role` der deklarierte Override.
+        // Das Gerät bleibt ROLLENLOS — es ist „in der Hand" (equipHeld nimmt jeden
+        // Bauplan, W2-B), seine Fähigkeit (Klinge/Brecher) EMERGIERT aus der Form.
+        // Built-ins überspringen `_refreshBlueprintRoleEmergent` (feste Saat) →
+        // die Rolle MUSS hier deklariert sein, wie bei den Stationen/Portalen.
+        // KEIN `instanced` (deliberate Items, kein Worldgen-Spawn — sie stehen
+        // NICHT in der `_vegetationSampleSpawn`-Kandidatenliste → kein Litter).
+
+        // GERÄT — eine Spitzhacke (Werkzeug UND Waffe, W2-B). Holz-Stiel + eiserne
+        // Spitze; eisen ist hart+dicht → kräftiges Abbauen/Schneiden. Rollenlos:
+        // gehalten, die Fähigkeit emergiert aus Form × Material.
+        const geraetSpitzhackeParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 0.6, z: 0 },
+                size: { x: 0.12, y: 1.2, z: 0.12 },
+                segments: 6,
+            },
+            {
+                shape: "cone",
+                material: "eisen",
+                position: { x: 0, y: 1.25, z: 0 },
+                size: { x: 0.3, y: 0.95, z: 0.3 },
+                rotation: { x: 0, y: 0, z: Math.PI / 2 },
+            },
+        ];
+        // RÜSTUNG — ein eiserner Brustpanzer. Dicht + hart → Schutz-Fähigkeit.
+        // role:"armor" deklariert (Rüstung vs. Bauwerk sind Substanz-Zwillinge,
+        // die Unterscheidung ist INTENT — der V17.70-Override, wie die Stationen).
+        const ruestungBrustpanzerParts = [
+            {
+                shape: "box",
+                material: "eisen",
+                position: { x: 0, y: 1.05, z: 0 },
+                size: { x: 1.0, y: 1.2, z: 0.45 },
+            },
+            {
+                shape: "sphere",
+                material: "eisen",
+                position: { x: -0.58, y: 1.5, z: 0 },
+                size: { x: 0.42, y: 0.42, z: 0.42 },
+            },
+            {
+                shape: "sphere",
+                material: "eisen",
+                position: { x: 0.58, y: 1.5, z: 0 },
+                size: { x: 0.42, y: 0.42, z: 0.42 },
+            },
+            {
+                shape: "box",
+                material: "bronze",
+                position: { x: 0, y: 0.95, z: 0.0 },
+                size: { x: 1.04, y: 0.16, z: 0.48 },
+            },
+        ];
+        // TRANK — ein Lebenssaft. Leder-Flasche + Laub-Essenz (lebendig 1.0,
+        // härte 0.05) + Holz-Korken: weich + lebendig → resoniert ehrlich
+        // `consumable` (ein Spieler-Klon emergierte zur selben Rolle). KEIN
+        // hartes Material (quarz/stein) — sonst kippte die Resonanz zu
+        // architecture (dichte+härte). brewConsumable verlangt role:"consumable".
+        const trankLebenssaftParts = [
+            {
+                shape: "sphere",
+                material: "leder",
+                position: { x: 0, y: 0.42, z: 0 },
+                size: { x: 0.46, y: 0.56, z: 0.46 },
+                opacity: 0.92,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                position: { x: 0, y: 0.42, z: 0 },
+                size: { x: 0.36, y: 0.44, z: 0.36 },
+                opacity: 0.8,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 0.82, z: 0 },
+                size: { x: 0.14, y: 0.26, z: 0.14 },
+                segments: 6,
+            },
+        ];
+        // AVATAR — ein hölzerner Wächter. Sechs Parts (Torso + Kopf + 2 Arme +
+        // 2 Beine), bilateral symmetrisch + vertikal + Glied-Paare → _isBodyShaped
+        // TRUE → resoniert ehrlich `soul` (bodyShape 2.0 + lebendig). role:"soul"
+        // deklariert; forgeAvatar formt den Körper (applyPlayerSoulFromBlueprint).
+        const avatarWaechterParts = [
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 1.25, z: 0 },
+                size: { x: 0.6, y: 0.9, z: 0.35 },
+            },
+            {
+                shape: "sphere",
+                material: "holz",
+                position: { x: 0, y: 1.95, z: 0 },
+                size: { x: 0.42, y: 0.42, z: 0.42 },
+            },
+            // Arme + Beine als bilaterale Spiegel-Paare (_compoundSymmetry-Glieder).
+            // GEMESSEN (diag-library-roles): die Spiegel-Toleranz skaliert mit der
+            // größten Spanne (≈0.56 bei spanY 1.5) → Arme MÜSSEN deutlich weiter
+            // außen als der Torso (x=0) stehen, sonst „spiegelt" ein Arm den Torso
+            // (Fehl-Partner) statt den anderen Arm → limbPairs=0, kein Körper.
+            // Beine müssen > offAxisCut (≈0.29 bei spanX 1.6) liegen, um als Glied
+            // zu zählen. Arme ±0.8 / Beine ±0.34 → zwei echte Glied-Paare.
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -0.8, y: 1.25, z: 0 },
+                size: { x: 0.16, y: 0.85, z: 0.16 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0.8, y: 1.25, z: 0 },
+                size: { x: 0.16, y: 0.85, z: 0.16 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -0.34, y: 0.45, z: 0 },
+                size: { x: 0.2, y: 0.9, z: 0.2 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0.34, y: 0.45, z: 0 },
+                size: { x: 0.2, y: 0.9, z: 0.2 },
+                segments: 6,
+            },
+        ];
+
         // W12 Phase 2 — portalMeta aus der Welt-Registry (eine Quelle der
         // Wahrheit; je Bauplan eine eigene dsl-Kopie).
         const portalTo = (id) => {
@@ -32145,6 +32295,41 @@ class AnazhRealm {
                 roleManual: true,
                 portalMeta: portalTo("terrain"),
                 parts: weltTerrainParts,
+            },
+            // A1 — DIE BIBLIOTHEK: die vier craftbaren Beispiel-Baupläne (Gerät/
+            // Rüstung/Trank/Avatar), die den vier Mach-Akten (V17.59–.66) endlich
+            // einen Bauplan zum Fertigen geben. Siehe der Kommentar bei den
+            // *Parts-Definitionen oben (vision-treu: emergent wo die Substanz
+            // trägt, Intent-Override nur bei Rüstung/Bauwerk-Zwilling).
+            geraet_spitzhacke: {
+                name: "geraet_spitzhacke",
+                label: "Spitzhacke",
+                builtIn: true,
+                parts: geraetSpitzhackeParts,
+            },
+            ruestung_brustpanzer: {
+                name: "ruestung_brustpanzer",
+                label: "Brustpanzer",
+                builtIn: true,
+                role: "armor",
+                roleManual: true,
+                parts: ruestungBrustpanzerParts,
+            },
+            trank_lebenssaft: {
+                name: "trank_lebenssaft",
+                label: "Lebenssaft",
+                builtIn: true,
+                role: "consumable",
+                roleManual: true,
+                parts: trankLebenssaftParts,
+            },
+            avatar_waechter: {
+                name: "avatar_waechter",
+                label: "Wächter",
+                builtIn: true,
+                role: "soul",
+                roleManual: true,
+                parts: avatarWaechterParts,
             },
         };
     }
@@ -45227,7 +45412,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.71.0";
+AnazhRealm.VERSION = "17.72.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
