@@ -32783,7 +32783,7 @@ class AnazhRealm {
     // Das Call-Site übergibt die GEDIENTE Rolle (Hand→held, Slot→armor, Trinken→consumable) — nicht die
     // emergente (eine scharfe Klinge wird als „architecture" klassifiziert, ist aber ein gehaltenes Gerät).
     _blueprintRoleFit(bp, role) {
-        const sig = AnazhRealm.ROLE_FIT_SIGNATURES[role];
+        const sig = AnazhRealm.ROLE_SIGNATURES[role];
         if (!sig || !bp) return 1.0;
         const cfg = AnazhRealm.QUALITY_ROLE_FIT;
         const ref = (cfg.refs && cfg.refs[role]) || 3.0;
@@ -45784,7 +45784,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.80.0";
+AnazhRealm.VERSION = "17.81.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -46681,22 +46681,77 @@ AnazhRealm.FORM_ROLE_SIGNATURES = Object.freeze({
 });
 AnazhRealm.FORM_ROLE_RESONANCE_FLOOR = 0.5;
 
-// V17.79 — die ROLLE-PASSUNG (die Schöpfer-Synergie „Qualität = wie gut passt die Form zur Rolle"): wie gut
-// die FORM eines Produkts zu seiner GEDIENTEN Rolle passt — über die FORM-Achsen (pointedFraction für ein
-// gehaltenes Gerät, dichte/härte für Rüstung), die STAT_FROM_TAGS (nur die 10 Material-Tags) NICHT sieht. Sie
-// moduliert die QUALITÄT der AUSRÜSTUNG (Gerät/Rüstung/Trank): ein gut geformtes Werk wirkt STÄRKER, ein
-// form-fremdes schwächer → das vereint Handwerk (Präzision) × Design (Form-Fit) zu „wie gut wirkt es".
-AnazhRealm.ROLE_FIT_SIGNATURES = Object.freeze({
-    held: Object.freeze({ pointedFraction: 1.5, dichte: 0.6, härte: 0.6 }), // ein Gerät: scharf ODER schwer+hart
-    armor: Object.freeze({ dichte: 1.0, härte: 1.0 }), // Rüstung: dicht + hart
-    consumable: Object.freeze({ lebendig: 1.5, härte: -0.6 }), // Trank: lebendig + weich
+// U2 (resonanz-system.md §3) — DAS EINE ROLLEN-SIGNATUR-REGISTER: jede Rolle als VOLLE Signatur über alle
+// Achsen (10 Material-Tags ⊕ die Form-Achsen V17.80) — die EINE Wahrheit „was ist eine gute X". Die früher
+// fragmentierten Definitionen (FORM_ROLE_SIGNATURES · ROLE_FIT_SIGNATURES · der forging-split) führen hier
+// zusammen: ein Register, viele Leser (Rolle-Passung U2 · Klassifikation U4 · der Katalysator-Readout U3).
+// Der Resonanz-Kern (_blueprintResonance) liest den vollen Produkt-Vektor gegen die gediente Rolle. Negative
+// Gewichte = Gegen-Achsen (eine Klinge ist NICHT zäh; ein Trank NICHT hart; ein Gerät NICHT hohl). Nicht
+// „eine Achse" — das volle Profil (Schöpfer: „über die GESAMTE Resonanz, welche Achsen wie gedreht").
+AnazhRealm.ROLE_SIGNATURES = Object.freeze({
+    // GERÄTE (gehaltenes Implement): held = der generische Slot (scharf ODER schwer, hart, gestreckt, nicht hohl).
+    held: Object.freeze({
+        pointedFraction: 1.2,
+        härte: 0.8,
+        dichte: 0.5,
+        elongation: 0.6,
+        zähigkeit: 0.2,
+        hollowness: -0.3,
+    }),
+    weapon: Object.freeze({ pointedFraction: 1.6, härte: 1.0, elongation: 0.8, dichte: 0.3, zähigkeit: -0.6 }),
+    tool: Object.freeze({ pointedFraction: 1.0, härte: 0.9, elongation: 0.5, dichte: 0.5, zähigkeit: 0.3 }),
+    brecher: Object.freeze({ dichte: 1.3, härte: 0.6, zähigkeit: 0.4, pointedFraction: -0.8 }),
+    // RÜSTUNG: dicht, hart, zäh, leicht hohl (Polster), nicht spitz, mit Standfläche.
+    armor: Object.freeze({
+        dichte: 1.0,
+        härte: 0.9,
+        zähigkeit: 0.4,
+        hollowness: 0.2,
+        spread: 0.2,
+        pointedFraction: -0.4,
+    }),
+    // TRANK: lebendig, transparent, resonant, hohl (Behälter), weich.
+    consumable: Object.freeze({ lebendig: 1.5, transparent: 0.4, resoniert: 0.3, hollowness: 0.3, härte: -0.6 }),
+    // SEELE: Körper-Form, lebendig, symmetrisch, resonant.
+    soul: Object.freeze({ bodyShape: 2.0, lebendig: 0.6, axialSymmetry: 0.6, resoniert: 0.3 }),
+    // PORTAL: Ring-Form, magie-leitend, transparent, resonant.
+    portal: Object.freeze({ portalShape: 2.0, magieleitung: 1.0, transparent: 0.5, resoniert: 0.4 }),
+    // FAHRZEUG: Trag-Basis, zäh, gestreckt, angetrieben (magie/strom), tot, mittel-dicht.
+    vehicle: Object.freeze({
+        spread: 1.4,
+        zähigkeit: 1.0,
+        elongation: 0.4,
+        magieleitung: 0.4,
+        stromleitung: 0.4,
+        dichte: 0.2,
+        lebendig: -0.4,
+    }),
+    // MASCHINE: leitend, warm, dicht, standfest.
+    machine: Object.freeze({ stromleitung: 1.4, wärmeleitung: 0.5, dichte: 0.6, spread: 0.5 }),
+    // WERKSTATT: solide Substanz (Präzision) + Standfläche; die Domäne emergiert separat (R1).
+    "workshop-station": Object.freeze({ dichte: 1.0, härte: 0.7, spread: 0.3 }),
+    // BAUWERK: massiv, hart, standfest, nicht spitz.
+    architecture: Object.freeze({ dichte: 1.2, härte: 0.7, spread: 0.4, pointedFraction: -0.6 }),
 });
 // Die Passung ∈ [min, max] (1.0 = neutral): ein gut geformtes Werk → max (Buff), ein form-fremdes → min
-// (Nerf), ein durchschnittliches ~neutral. Der per-Rolle ref normalisiert (die Signaturen haben andere Skalen).
+// (Nerf). Der per-Rolle ref normalisiert (die vollen Signaturen haben andere Skalen) — an Archetypen gemessen.
 AnazhRealm.QUALITY_ROLE_FIT = Object.freeze({
     min: 0.8,
     max: 1.2,
-    refs: Object.freeze({ held: 3.7, armor: 3.4, consumable: 2.0 }),
+    refs: Object.freeze({
+        held: 4.3,
+        weapon: 4.5,
+        tool: 3.8,
+        brecher: 4.2,
+        armor: 3.9,
+        consumable: 2.4,
+        soul: 3.0,
+        portal: 3.5,
+        vehicle: 3.0,
+        machine: 3.5,
+        "workshop-station": 3.5,
+        architecture: 4.0,
+    }),
 });
 
 // S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der Form: ein Werkzeug katalysiert eine Transformation, und

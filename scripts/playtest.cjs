@@ -6486,7 +6486,7 @@ async function checkBandV1779RoleFitQuality(ctx) {
             r._blueprintRoleFit(r.state.blueprints["trank_lebenssaft"], "consumable") >
             r._blueprintRoleFit(deadC, "consumable");
         // (5) unbekannte Rolle → 1.0 (neutral)
-        out.unknownNeutral = r._blueprintRoleFit(blade, "soul") === 1.0;
+        out.unknownNeutral = r._blueprintRoleFit(blade, "kein_rollen_name") === 1.0; // V17.81: soul ist jetzt eine echte Rolle
         // (6) KONSUM — das gehaltene SCHWERT gibt mehr Schaden als der gleich-materielle KLOTZ (Form-Fit
         //     erreicht die echten Spieler-Stats — genau das Schöpfer-Beispiel).
         r.state.blueprints["_rf_blade"] = blade;
@@ -6585,6 +6585,88 @@ async function checkBandV1780FormAxes(ctx) {
     check(
         "V17.80 U1 KEIN REGRESS: die neuen Achsen sind inert — die Rolle eines Blades bleibt architecture (U5 ändert das)",
         res.noRegress
+    );
+}
+
+// V17.81 U2 (resonanz-system.md §3) — DAS EINE Rollen-Signatur-Register: jede Rolle eine VOLLE Signatur über
+// alle Achsen (die fragmentierten FORM_ROLE/ROLE_FIT/forging-split zusammengeführt). Die Tiefe: das volle
+// Profil entscheidet (eine Klinge ist eine bessere Waffe, ein Block ein besseres Bauwerk — über die GESAMTE
+// Resonanz, nicht eine Achse). _blueprintRoleFit liest das Register; die Ausrüstungs-Stats werden tiefer.
+async function checkBandV1781RoleRegister(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const round = (x) => Math.round((x || 0) * 1000) / 1000;
+        const REG = r.constructor.ROLE_SIGNATURES;
+        const cfg = r.constructor.QUALITY_ROLE_FIT;
+        const out = {};
+        const roles = [
+            "held",
+            "weapon",
+            "tool",
+            "brecher",
+            "armor",
+            "consumable",
+            "soul",
+            "portal",
+            "vehicle",
+            "machine",
+            "workshop-station",
+            "architecture",
+        ];
+        out.allRoles = roles.every((rl) => REG[rl]);
+        out.fullSignatures = ["held", "weapon", "armor", "consumable", "vehicle"].every(
+            (rl) => Object.keys(REG[rl] || {}).length >= 4
+        );
+        const mk = (parts) => ({ name: "_u2", parts });
+        const blade = mk([
+            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 2.0 } },
+            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.5 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+        ]);
+        const block = mk([{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } }]);
+        // TIEFE: das volle Profil — die Klinge ist eine bessere WAFFE, der Block ein besseres BAUWERK
+        const bladeWeapon = r._blueprintRoleFit(blade, "weapon");
+        const blockWeapon = r._blueprintRoleFit(block, "weapon");
+        const blockArch = r._blueprintRoleFit(block, "architecture");
+        out.depth = bladeWeapon > blockWeapon;
+        out.roleRelative = blockArch > blockWeapon; // derselbe Block: Bauwerk-Passung > Waffe-Passung
+        out.depthVals = `Klinge.Waffe=${round(bladeWeapon)} Block.Waffe=${round(blockWeapon)} Block.Bauwerk=${round(blockArch)}`;
+        // held + Balance
+        out.heldDiscriminates = r._blueprintRoleFit(blade, "held") > r._blueprintRoleFit(block, "held");
+        out.goodFitBuff = bladeWeapon > 1.05; // eine gute Waffe ist ein Buff
+        out.inRange = bladeWeapon <= cfg.max + 1e-9 && blockWeapon >= cfg.min - 1e-9;
+        // vehicle — die neuen Form-Achsen (spread) tragen die neue Rolle
+        const vehicleForm = mk([
+            { shape: "box", material: "eisen", position: { x: -1.5, y: 0, z: -1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
+            { shape: "box", material: "eisen", position: { x: 1.5, y: 0, z: -1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
+            { shape: "box", material: "eisen", position: { x: -1.5, y: 0, z: 1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
+            { shape: "box", material: "eisen", position: { x: 1.5, y: 0, z: 1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
+            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 3, y: 0.5, z: 2 } },
+        ]);
+        const mast = mk([
+            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.4, y: 1, z: 0.4 } },
+            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 0.4, y: 1, z: 0.4 } },
+        ]);
+        out.vehicleDiscriminates = r._blueprintRoleFit(vehicleForm, "vehicle") > r._blueprintRoleFit(mast, "vehicle");
+        out.vehVals = `Basis=${round(r._blueprintRoleFit(vehicleForm, "vehicle"))} Mast=${round(r._blueprintRoleFit(mast, "vehicle"))}`;
+        return out;
+    });
+    check(
+        "V17.81 U2: das Rollen-Register hat ALLE Rollen (held/weapon/tool/brecher/armor/consumable/soul/portal/vehicle/machine/workshop/architecture)",
+        res.allRoles
+    );
+    check("V17.81 U2: die Signaturen sind VOLL (≥4 Achsen — über die gesamte Resonanz, nicht eine Achse)", res.fullSignatures);
+    check(
+        "V17.81 U2 TIEFE: das volle Profil entscheidet — die Klinge ist eine bessere Waffe, der Block ein besseres Bauwerk",
+        res.depth && res.roleRelative,
+        res.depthVals
+    );
+    check("V17.81 U2: held — eine Klinge passt besser als ein Klotz (V1779-Kern, jetzt tiefer)", res.heldDiscriminates);
+    check("V17.81 U2 BALANCE: die Passung bleibt in [min,max], ein gut geformtes Werk ist ein Buff (>1.05)", res.inRange && res.goodFitBuff);
+    check(
+        "V17.81 U2: vehicle — eine Trag-Basis passt besser als ein Mast (die neuen Form-Achsen tragen die neue Rolle)",
+        res.vehicleDiscriminates,
+        res.vehVals
     );
 }
 
@@ -38844,6 +38926,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1778LadderCut(ctx);
             await checkBandV1779RoleFitQuality(ctx);
             await checkBandV1780FormAxes(ctx);
+            await checkBandV1781RoleRegister(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
