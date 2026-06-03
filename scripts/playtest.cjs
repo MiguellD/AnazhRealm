@@ -7014,6 +7014,74 @@ async function checkBandV1786WorkshopCoherence(ctx) {
     );
 }
 
+// V17.87 — das volle UNDO/REDO im Bauplan-Editor (Schöpfer-Wunsch „ein paar Schritte zurück und wieder
+// nach vorn"). Jeder Editor-Akt (Part hinzu/weg/ändern, Op anwenden/entfernen, Verbindung) ist umkehrbar.
+async function checkBandV1787UndoRedo(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        delete r.state.blueprints["_ur"];
+        if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_ur"];
+        r.createBlueprint("_ur", "Undo-Redo-Test");
+        const parts = () => r.state.blueprints["_ur"].parts.length;
+        // zwei Parts hinzu → 2; undo → 1 → 0; redo → 1 → 2
+        r.addPartToBlueprint("_ur", { shape: "box", material: "stein" });
+        r.addPartToBlueprint("_ur", { shape: "cone", material: "eisen" });
+        out.after2 = parts();
+        out.canUndo = r.canUndoBlueprintEdit("_ur") && !r.canRedoBlueprintEdit("_ur");
+        r.undoBlueprintEdit("_ur");
+        out.afterUndo1 = parts();
+        r.undoBlueprintEdit("_ur");
+        out.afterUndo2 = parts();
+        out.undoExhausted = r.undoBlueprintEdit("_ur").reason === "nothing_to_undo";
+        r.redoBlueprintEdit("_ur");
+        r.redoBlueprintEdit("_ur");
+        out.afterRedo = parts();
+        out.redoShape = r.state.blueprints["_ur"].parts[1].shape; // cone wiederhergestellt
+        // ein NEUER Edit nach einem Undo verwirft den Redo-Zweig
+        r.undoBlueprintEdit("_ur"); // → 1
+        r.addPartToBlueprint("_ur", { shape: "sphere", material: "quarz" });
+        out.newEditShape = r.state.blueprints["_ur"].parts[1].shape; // sphere, nicht cone
+        out.redoCleared = r.canRedoBlueprintEdit("_ur") === false;
+        // eine Op anwenden + undo (der opChain-Akt ist auch umkehrbar)
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
+        r.addPartToBlueprint("_ur", { shape: "box", material: "eisen" });
+        const idx = parts() - 1;
+        const opBefore = (r.state.blueprints["_ur"].parts[idx].opChain || []).length;
+        r.applyOpToPart("_ur", idx, "schmiede-hammer");
+        const opAfter = (r.state.blueprints["_ur"].parts[idx].opChain || []).length;
+        r.undoBlueprintEdit("_ur");
+        out.opUndoReverts = opAfter > opBefore && (r.state.blueprints["_ur"].parts[idx].opChain || []).length === opBefore;
+        // Built-in lehnt ab (unveränderlich → keine Geschichte)
+        out.builtinReject = r.undoBlueprintEdit("geraet_spitzhacke").ok === false;
+        // die Geschichte ist NICHT persistiert (reaktive Editor-Schicht)
+        const snap = typeof r.buildStateSnapshot === "function" ? r.buildStateSnapshot() : {};
+        out.notPersisted = snap.blueprintEditHistory === undefined;
+        delete r.state.blueprints["_ur"];
+        if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_ur"];
+        return out;
+    });
+    check(
+        "V17.87 Undo: zwei Parts hinzu → undo macht sie Schritt für Schritt rückgängig (2 → 1 → 0), dann ist der Undo-Stapel leer",
+        res.after2 === 2 && res.canUndo && res.afterUndo1 === 1 && res.afterUndo2 === 0 && res.undoExhausted,
+        `after2=${res.after2} u1=${res.afterUndo1} u2=${res.afterUndo2}`
+    );
+    check(
+        "V17.87 Redo: nach dem Zurück führt Wiederholen Schritt für Schritt nach vorn (0 → 2, die Form wiederhergestellt)",
+        res.afterRedo === 2 && res.redoShape === "cone",
+        `afterRedo=${res.afterRedo} shape=${res.redoShape}`
+    );
+    check(
+        "V17.87 Verzweigung: ein NEUER Edit nach einem Undo verwirft den Redo-Zweig (die Geschichte gabelt korrekt)",
+        res.newEditShape === "sphere" && res.redoCleared
+    );
+    check("V17.87 KONSUM: eine angewandte Op ist umkehrbar — undo nimmt den opChain-Schritt zurück", res.opUndoReverts);
+    check("V17.87: ein Built-in lehnt Undo ab (unveränderlich → keine Geschichte)", res.builtinReject);
+    check("V17.87: die Edit-Geschichte ist NICHT persistiert (reaktive Editor-Sitzungs-Schicht)", res.notPersisted);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -39276,6 +39344,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1784AvatarFormFit(ctx);
             await checkBandV1785RoleDisplayAndUndo(ctx);
             await checkBandV1786WorkshopCoherence(ctx);
+            await checkBandV1787UndoRedo(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

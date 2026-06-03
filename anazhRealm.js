@@ -32923,6 +32923,9 @@ class AnazhRealm {
             }
             this.state.player.stamina = Math.max(0, stamina - cost);
         }
+        // V17.87 — der Edit-Verlauf: VOR der opChain-Mutation den Vor-Zustand schnappen (nach allen
+        // Validierungen, damit ein abgelehnter Op-Versuch keinen leeren Undo-Schritt erzeugt).
+        this._recordBlueprintEdit(blueprintName);
         if (!Array.isArray(part.opChain)) part.opChain = this._defaultPartOpChain();
         // V17.76 Welle 2 (kampf-plan §11.10) — DIE WERKSTATT ALS PRÄZISIONS-QUELLE: trägt das Werkzeug eine
         // Domäne (forge/weave/brew/…) UND steht eine passende Welt-Werkstatt nah, hebt ihre Substanz-Präzision
@@ -32962,9 +32965,88 @@ class AnazhRealm {
         if (!Array.isArray(part.opChain) || part.opChain.length <= defLen) {
             return { ok: false, reason: "nothing_to_remove" }; // schon auf der Default-Op-Kette
         }
+        this._recordBlueprintEdit(blueprintName);
         part.opChain.pop();
         this._refreshBlueprintRoleEmergent(blueprintName);
         return { ok: true, precision: this.computePartPrecision(part), opCount: part.opChain.length };
+    }
+
+    // V17.87 (Schöpfer-Browser-Wunsch: „ein zurück button wäre hammer und allgemein nützlich, ein paar
+    // Schritte zurück und wieder nach vorn") — das volle UNDO/REDO im Bauplan-Editor. Eine reaktive
+    // Editor-Schicht (NICHT persistiert — eine Sitzungs-Geschichte, wie der opChain-Verlauf, aber über
+    // ALLE Editor-Akte: Part hinzu/weg/ändern, Op anwenden/entfernen, Verbindung hinzu/weg). Jede
+    // Mutation ruft `_recordBlueprintEdit` (schnappt den Vor-Zustand), undo/redo tauschen zwischen den
+    // Stapeln. Nur eigene Baupläne (Built-ins sind unveränderlich → keine Geschichte).
+    _blueprintEditHistory(name) {
+        if (!this.state.blueprintEditHistory) this.state.blueprintEditHistory = {};
+        if (!this.state.blueprintEditHistory[name]) this.state.blueprintEditHistory[name] = { undo: [], redo: [] };
+        return this.state.blueprintEditHistory[name];
+    }
+
+    // Der editierbare Zustand eines Bauplans (Parts + Verbindungen + Rolle), tief geklont.
+    _snapshotBlueprintEdit(name) {
+        const bp = (this.state.blueprints && this.state.blueprints[name]) || {};
+        return {
+            parts: JSON.parse(JSON.stringify(bp.parts || [])),
+            connections: bp.connections ? JSON.parse(JSON.stringify(bp.connections)) : undefined,
+            role: bp.role,
+            roleManual: bp.roleManual,
+        };
+    }
+
+    // VOR jeder Mutation aufgerufen: schnappt den aktuellen (Vor-Mutations-)Zustand auf den Undo-Stapel,
+    // verwirft den Redo-Zweig (ein neuer Edit gabelt die Geschichte). Bounded (max 50 Schritte).
+    _recordBlueprintEdit(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || bp.builtIn) return; // Built-ins werden nicht editiert → keine Geschichte
+        const hist = this._blueprintEditHistory(name);
+        hist.undo.push(this._snapshotBlueprintEdit(name));
+        if (hist.undo.length > 50) hist.undo.shift();
+        hist.redo.length = 0;
+    }
+
+    // Stellt einen Schnappschuss wieder her (Parts + Verbindungen + Rolle direkt — der Schnappschuss ist
+    // ein konsistenter Vor-Zustand, kein Re-Emergieren nötig).
+    _restoreBlueprintEdit(name, snap) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || !snap) return;
+        bp.parts = JSON.parse(JSON.stringify(snap.parts || []));
+        if (snap.connections) bp.connections = JSON.parse(JSON.stringify(snap.connections));
+        else delete bp.connections;
+        if (snap.role === undefined) delete bp.role;
+        else bp.role = snap.role;
+        if (snap.roleManual === undefined) delete bp.roleManual;
+        else bp.roleManual = snap.roleManual;
+    }
+
+    canUndoBlueprintEdit(name) {
+        const h = this.state.blueprintEditHistory && this.state.blueprintEditHistory[name];
+        return !!(h && h.undo.length);
+    }
+
+    canRedoBlueprintEdit(name) {
+        const h = this.state.blueprintEditHistory && this.state.blueprintEditHistory[name];
+        return !!(h && h.redo.length);
+    }
+
+    undoBlueprintEdit(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || bp.builtIn) return { ok: false, reason: "not_editable" };
+        const hist = this._blueprintEditHistory(name);
+        if (!hist.undo.length) return { ok: false, reason: "nothing_to_undo" };
+        hist.redo.push(this._snapshotBlueprintEdit(name)); // der aktuelle Zustand → Redo
+        this._restoreBlueprintEdit(name, hist.undo.pop());
+        return { ok: true, undoLeft: hist.undo.length, redoLeft: hist.redo.length };
+    }
+
+    redoBlueprintEdit(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || bp.builtIn) return { ok: false, reason: "not_editable" };
+        const hist = this._blueprintEditHistory(name);
+        if (!hist.redo.length) return { ok: false, reason: "nothing_to_redo" };
+        hist.undo.push(this._snapshotBlueprintEdit(name)); // der aktuelle Zustand → Undo
+        this._restoreBlueprintEdit(name, hist.redo.pop());
+        return { ok: true, undoLeft: hist.undo.length, redoLeft: hist.redo.length };
     }
 
     // V17.85 (Schöpfer-Browser-Befund: „die Spitzhacke scheint ein Bauwerk zu bleiben") — die ANGEZEIGTE
@@ -33425,6 +33507,7 @@ class AnazhRealm {
         }
         const valid = this.validateBlueprintConnections([connection], bp.parts.length);
         if (valid.length === 0) return { ok: false, reason: "invalid_connection" };
+        this._recordBlueprintEdit(name); // V17.87 — Edit-Verlauf
         bp.connections.push(valid[0]);
         return { ok: true, index: bp.connections.length - 1 };
     }
@@ -33433,6 +33516,7 @@ class AnazhRealm {
         const bp = this.state.blueprints[name];
         if (!bp || bp.builtIn) return false;
         if (!Array.isArray(bp.connections) || index < 0 || index >= bp.connections.length) return false;
+        this._recordBlueprintEdit(name); // V17.87 — Edit-Verlauf
         bp.connections.splice(index, 1);
         return true;
     }
@@ -38121,6 +38205,7 @@ class AnazhRealm {
             this.log(`addPart: '${name}' ist Built-in — bitte erst klonen`, "ERROR");
             return false;
         }
+        this._recordBlueprintEdit(name); // V17.87 — Edit-Verlauf
         // Default-Werte für ein neues Part, falls nicht alles übergeben wird.
         // Welle 4 Phase 1: Default-Material „stein", Color folgt der Material-
         // Farbe wenn der Caller nichts vorgibt.
@@ -38145,6 +38230,7 @@ class AnazhRealm {
         const bp = this.state.blueprints[name];
         if (!bp || bp.builtIn) return false;
         if (index < 0 || index >= bp.parts.length) return false;
+        this._recordBlueprintEdit(name); // V17.87 — Edit-Verlauf
         bp.parts.splice(index, 1);
         // Welle 5 A — Connections referenzieren Part-Indizes. Beim Lösch:
         //   (a) Connections, die den gelöschten Part berühren, verschwinden.
@@ -38169,6 +38255,7 @@ class AnazhRealm {
         const bp = this.state.blueprints[name];
         if (!bp || bp.builtIn) return false;
         if (index < 0 || index >= bp.parts.length) return false;
+        this._recordBlueprintEdit(name); // V17.87 — Edit-Verlauf
         const part = bp.parts[index];
         // Patch ist ein Teil-Objekt; wir mergen rekursiv für position/size/
         // rotation, damit man einzelne Koordinaten verändern kann.
@@ -38340,6 +38427,38 @@ class AnazhRealm {
             status.textContent = `${selected.parts.length} Parts · Rolle: ${roleLabel} (${origin})${affPart}`;
         }
         header.appendChild(status);
+        // V17.87 (Schöpfer-Wunsch „ein zurück button, ein paar Schritte zurück und wieder nach vorn") — das
+        // UNDO/REDO im Editor-Header. Nur für eigene Baupläne (Built-ins sind unveränderlich). Jeder Editor-
+        // Akt (Part hinzu/weg/ändern, Op anwenden/entfernen, Verbindung) ist umkehrbar + wiederholbar.
+        if (!selected.builtIn) {
+            const hist = document.createElement("span");
+            hist.className = "workshop-history";
+            const undoBtn = document.createElement("button");
+            undoBtn.type = "button";
+            undoBtn.className = "workshop-undo";
+            undoBtn.textContent = "↶ Rückgängig";
+            undoBtn.title = "Den letzten Editor-Schritt rückgängig machen (Part, Form, Op, Verbindung).";
+            undoBtn.disabled = !this.canUndoBlueprintEdit(selected.name);
+            undoBtn.addEventListener("click", () => {
+                const r = this.undoBlueprintEdit(selected.name);
+                if (!r.ok) this.log(`Rückgängig: ${r.reason}`, "INFO");
+                this._renderWorkshopDOM();
+            });
+            const redoBtn = document.createElement("button");
+            redoBtn.type = "button";
+            redoBtn.className = "workshop-redo";
+            redoBtn.textContent = "↷ Wiederholen";
+            redoBtn.title = "Den zuletzt rückgängig gemachten Schritt wiederherstellen.";
+            redoBtn.disabled = !this.canRedoBlueprintEdit(selected.name);
+            redoBtn.addEventListener("click", () => {
+                const r = this.redoBlueprintEdit(selected.name);
+                if (!r.ok) this.log(`Wiederholen: ${r.reason}`, "INFO");
+                this._renderWorkshopDOM();
+            });
+            hist.appendChild(undoBtn);
+            hist.appendChild(redoBtn);
+            header.appendChild(hist);
+        }
         editor.appendChild(header);
     }
 
@@ -38563,24 +38682,9 @@ class AnazhRealm {
                     applyRow.appendChild(toolSelect);
                     applyRow.appendChild(applyBtn);
                 }
-                // V17.85 (Schöpfer-Browser-Befund „es stapelt Prozesse, aber kann sie nicht entfernen") —
-                // die ZULETZT angewandte Op rückgängig machen (nie unter die Default-Kette). Der Prozess-
-                // Fluss wird umkehrbar; entfernt sich eine forging-Op, dreht die Rolle zurück (re-emergiert).
-                if (chain.length > this._defaultPartOpChain().length) {
-                    const undoBtn = document.createElement("button");
-                    undoBtn.type = "button";
-                    undoBtn.className = "workshop-op-undo";
-                    undoBtn.textContent = "↶ letzte Op entfernen";
-                    undoBtn.title =
-                        "Macht die zuletzt angewandte Op rückgängig (nie unter die Grund-Kette). " +
-                        "Die Rolle emergiert danach neu.";
-                    undoBtn.addEventListener("click", () => {
-                        const r = this.removePartOp(selected.name, i);
-                        if (!r.ok) this.log(`op_entfernen fehlgeschlagen: ${r.reason}`, "ERROR");
-                        this._renderWorkshopDOM();
-                    });
-                    applyRow.appendChild(undoBtn);
-                }
+                // V17.87 — die per-Part-„letzte Op entfernen"-Geste (V17.85) ist durch das globale UNDO/REDO
+                // im Header abgelöst (der Schöpfer fand den per-Part-Knopf nicht — er erschien nur, wenn eine
+                // Op gelandet war; das Header-Undo umkehrt JEDEN Editor-Schritt chronologisch + ist immer da).
                 opChainDiv.appendChild(applyRow);
             }
             row.appendChild(opChainDiv);
@@ -46008,7 +46112,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.86.0";
+AnazhRealm.VERSION = "17.87.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
