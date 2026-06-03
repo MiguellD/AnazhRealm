@@ -2306,6 +2306,19 @@ class AnazhRealm {
                     });
                 }
             },
+            // R3-Schluss (§11.10) — Bauplan als Welt-Werkstatt markieren (Intent); die bediente Domäne
+            // EMERGIERT (R1). Spiegel von set_armor_role.
+            set_workshop_station: ([blueprintName], ctx) => {
+                const result = this.setBlueprintAsWorkshopStation(blueprintName);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "workshop_station_set" : "workshop_station_failed",
+                        name: blueprintName,
+                        domain: result.domain,
+                        reason: result.reason,
+                    });
+                }
+            },
             // Welle 6.D Etappe 3a+ — Bauplan als Konsumabel markieren. Wirkung
             // emergiert aus Compound-Tags × scale (Default 0.2). So entsteht
             // die Tag-Bonus-Tabelle aus der Komposition (Wasser + Pflanze →
@@ -27156,6 +27169,25 @@ class AnazhRealm {
         return { ok: true, name };
     }
 
+    // R3-Schluss (kampf-plan §11.10) — einen Bauplan als WELT-WERKSTATT markieren. GEMESSEN (die
+    // domain-vs-architecture-Resonanz, Schöpfer-Dialog 03.06.): ob etwas eine Werkstatt IST, emergiert
+    // NICHT sauber aus der Substanz — eine Esse (dichte Glut-Masse) und ein dichtes Bauwerk sind Substanz-
+    // Zwillinge (village resoniert forging 2.78, ein Eisen-Turm mechanism 2.97, eine Quarz-Geode soulwork
+    // 3.09). Die Werkstatt-NATUR ist INTENT (wie ein Hammer vs. ein Felsblock — gleiche Materie, andere
+    // Absicht), kein Substanz-Signal. Das ist der „optionale Schöpfer-Override" aus dem Resonanz-Plan: die
+    // DESIGNATION ist eine bewusste Geste, aber die bediente DOMÄNE EMERGIERT (R1, `_computeWorkshopDomain`).
+    // Damit kann ein Spieler einen eigenen Apparat bauen → markieren → er bedient seine emergente Domäne
+    // (ein Spieler-Forge → forging, ein Spieler-Kolben → alchemy), das Gate findet ihn. Spiegel von
+    // setBlueprintAsArmor; nur eigene Baupläne (Built-in-Stationen sind deklarierte Saat).
+    setBlueprintAsWorkshopStation(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        bp.role = "workshop-station";
+        bp.roleManual = true;
+        return { ok: true, name, domain: this._computeWorkshopDomain(bp) };
+    }
+
     // V17.52 Kampf-Bogen Phase B — Bauplan als Waffe markieren. Spiegel von
     // setBlueprintAsArmor: role:"weapon" + roleManual (manueller Override, die
     // Emergenz lässt die Rolle in Ruhe). Das Kombat-Profil der Waffe (damage/
@@ -27211,9 +27243,25 @@ class AnazhRealm {
     // ziehen durchs §11.2-Mach-Tor (pfad+frieden zahlen, schöpfer frei) + die Präzision EINFRIEREN
     // (`forgedPrecision`-Snapshot, persistiert) + der schöpferische Affekt (Stolz ∝ Substanz, W2-Brücke).
     // Was sich pro Rolle unterscheidet, ist nur das AUSRÜSTEN (held vs armor) — das macht der Aufrufer.
+    // S7 (kampf-plan §11.7/§11.9) — die Maschine-in-der-Welt fürs FERTIGEN: derselbe
+    // Welle-9c-Werkstatt-Gate, jetzt am Mach-Akt (nicht nur bei confirmBuild — „end-to-end
+    // angeschlossen"). Ein domain-tragender Bauplan (forging-Gerät → Esse, alchemy-Trank →
+    // Brennkolben) verlangt im pfad-Modus die passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M
+    // des Spielers; ein domain-loser Bauplan + frieden/schöpfer überspringen es (genau wie das
+    // Build-Gate). Ohne Spieler-Position (defensiv) kein Proximity-Check.
+    _makeStationGate(name) {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return { ok: true };
+        return this._workshopStationGate(name, { x: pm.x, y: pm.y, z: pm.z });
+    }
+
     _forgeMaterialAndFreeze(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        const station = this._makeStationGate(name);
+        if (!station.ok) {
+            return { ok: false, reason: "no_workshop_station", neededDomain: station.neededDomain };
+        }
         const gate = this._makeCostGate(name);
         if (!gate.ok) {
             return { ok: false, reason: "not_enough_material", missing: gate.missing || {}, cost: gate.cost || {} };
@@ -27284,6 +27332,10 @@ class AnazhRealm {
     brewConsumable(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp || bp.role !== "consumable") return { ok: false, reason: "not_a_consumable" };
+        const station = this._makeStationGate(name);
+        if (!station.ok) {
+            return { ok: false, reason: "no_workshop_station", neededDomain: station.neededDomain };
+        }
         const gate = this._makeCostGate(name);
         if (!gate.ok) {
             return { ok: false, reason: "not_enough_material", missing: gate.missing || {}, cost: gate.cost || {} };
@@ -30094,6 +30146,40 @@ class AnazhRealm {
         return (tags.magieleitung || 0) >= T.magieleitungMin;
     }
 
+    // R1 (kampf-plan §11.10) — DER RESONANZ-KERN: ein Produkt ist ein Vektor, jede Ablesung ist eine
+    // Resonanz dieses Vektors gegen eine Signatur. Das `spawnAffinityForBlueprint`-Muster verallgemeinert
+    // (`Σ tag[achse]·gewicht`, statt gegen das Welt-Feld gegen eine Rollen-/Domänen-Signatur). Gewichte
+    // dürfen NEGATIV sein (Invers-Achsen: „weich" = niedrige härte). Liest den GANZEN Vektor, nicht ein Tag.
+    _blueprintResonance(tags, signature) {
+        if (!tags || !signature) return 0;
+        let score = 0;
+        for (const axis in signature) score += (tags[axis] || 0) * signature[axis];
+        return score;
+    }
+
+    // S7-B / R1 (kampf-plan §11.10) — DIE WERKSTATT-DOMÄNE EMERGIERT als RESONANZ aus der Substanz, kein
+    // hardcoded `workshopDomain` + keine Einzel-Tag-Schwelle mehr. Jede Domäne hat einen Signatur-Vektor
+    // (`WORKSHOP_DOMAIN_SIGNATURES`, an den 5 Built-ins GEMESSEN); die bediente Domäne ist das ARGMAX der
+    // Resonanz des vollen Tag-Vektors gegen jede Signatur (das `spawnAffinity`-Muster, Vorbild auch
+    // `_isPortalShaped`: die Substanz sagt, was es IST). Gibt null, wenn die beste Resonanz unter dem Floor
+    // bleibt (eine bloße Struktur ist keine Werkstatt). NUR sinnvoll für eine Werkstatt-Struktur — die „IST
+    // es überhaupt eine Werkstatt?"-Emergenz fällt aus der Rollen-Resonanz R3 (§11.10).
+    _computeWorkshopDomain(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
+        const t = this.computeCompoundTags(bp) || {};
+        const sigs = AnazhRealm.WORKSHOP_DOMAIN_SIGNATURES;
+        let best = null;
+        let bestScore = AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR;
+        for (const domain in sigs) {
+            const score = this._blueprintResonance(t, sigs[domain]);
+            if (score > bestScore) {
+                bestScore = score;
+                best = domain;
+            }
+        }
+        return best;
+    }
+
     // ----- Welt-Reaktion: moveable (Spieler steigt ein, Compound folgt) -----
 
     // Findet die nächste Architektur mit gegebener Affordance im Radius.
@@ -31717,9 +31803,10 @@ class AnazhRealm {
 
         // ### Welle 9c — Welt-Werkstatt-Architekturen ###
         // Fünf Welt-Werkstätten, eine pro Nicht-Default-Domain. Sie sind
-        // Bauplane mit role="workshop-station" + workshopDomain=<domain>.
-        // confirmBuild eines domain-Bauplans prüft im pfad-Modus, ob eine
-        // passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M=10m Nähe ist.
+        // Bauplane mit role="workshop-station"; die bediente Domäne EMERGIERT
+        // aus ihrer Substanz (_computeWorkshopDomain, S7-B), kein hardcoded Feld.
+        // confirmBuild + FERTIGEN eines domain-Bauplans prüfen im pfad-Modus, ob
+        // eine passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M=10m Nähe ist.
         // Construction-Default-Bauplane (architecture) brauchen keine
         // Welt-Werkstatt — sie sind die "Open-Air-Welt" selbst.
         const esseParts = [
@@ -31919,6 +32006,156 @@ class AnazhRealm {
             },
         ];
 
+        // A1 (roadmap „OFFENE FÄDEN") — DIE BIBLIOTHEK: ein craftbarer Beispiel-
+        // Bauplan pro Mach-Akt-Rolle (Schöpfer-Befund 03.06.). Portal + Werkstatt
+        // hatten schon Saat (welt_*/esse/…); die VIER Lücken sind genau die vier
+        // Mach-Akte aus V17.59–.66 (forgeBlueprint/forgeArmor/brewConsumable/
+        // forgeAvatar). Die Schmiede KONNTE sie fertigen — es fehlte nur ein
+        // Bauplan zum Fertigen. Diese vier sind die optimierbare SAAT, an der die
+        // Rekursion sichtbar wird (besserer Prozessbauplan → höherer Cap → bessere
+        // Werke). Reine DATEN; die Resonanz liest Rolle/Domäne/Op automatisch.
+        // VISION-TREU: wo die Substanz die Rolle TRÄGT (Trank=weich+lebendig →
+        // consumable; Avatar=körper-förmig+lebendig → soul), ist die deklarierte
+        // Rolle substanz-EHRLICH (ein Spieler-Klon emergierte zur selben Rolle).
+        // Wo sie ein INTENT-Zwilling ist (Rüstung vs. Bauwerk = beide dicht+hart,
+        // wie Werkstatt vs. Bauwerk, V17.70), ist `role` der deklarierte Override.
+        // Das Gerät bleibt ROLLENLOS — es ist „in der Hand" (equipHeld nimmt jeden
+        // Bauplan, W2-B), seine Fähigkeit (Klinge/Brecher) EMERGIERT aus der Form.
+        // Built-ins überspringen `_refreshBlueprintRoleEmergent` (feste Saat) →
+        // die Rolle MUSS hier deklariert sein, wie bei den Stationen/Portalen.
+        // KEIN `instanced` (deliberate Items, kein Worldgen-Spawn — sie stehen
+        // NICHT in der `_vegetationSampleSpawn`-Kandidatenliste → kein Litter).
+
+        // GERÄT — eine Spitzhacke (Werkzeug UND Waffe, W2-B). Holz-Stiel + eiserne
+        // Spitze; eisen ist hart+dicht → kräftiges Abbauen/Schneiden. Rollenlos:
+        // gehalten, die Fähigkeit emergiert aus Form × Material.
+        const geraetSpitzhackeParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 0.6, z: 0 },
+                size: { x: 0.12, y: 1.2, z: 0.12 },
+                segments: 6,
+            },
+            {
+                shape: "cone",
+                material: "eisen",
+                position: { x: 0, y: 1.25, z: 0 },
+                size: { x: 0.3, y: 0.95, z: 0.3 },
+                rotation: { x: 0, y: 0, z: Math.PI / 2 },
+            },
+        ];
+        // RÜSTUNG — ein eiserner Brustpanzer. Dicht + hart → Schutz-Fähigkeit.
+        // role:"armor" deklariert (Rüstung vs. Bauwerk sind Substanz-Zwillinge,
+        // die Unterscheidung ist INTENT — der V17.70-Override, wie die Stationen).
+        const ruestungBrustpanzerParts = [
+            {
+                shape: "box",
+                material: "eisen",
+                position: { x: 0, y: 1.05, z: 0 },
+                size: { x: 1.0, y: 1.2, z: 0.45 },
+            },
+            {
+                shape: "sphere",
+                material: "eisen",
+                position: { x: -0.58, y: 1.5, z: 0 },
+                size: { x: 0.42, y: 0.42, z: 0.42 },
+            },
+            {
+                shape: "sphere",
+                material: "eisen",
+                position: { x: 0.58, y: 1.5, z: 0 },
+                size: { x: 0.42, y: 0.42, z: 0.42 },
+            },
+            {
+                shape: "box",
+                material: "bronze",
+                position: { x: 0, y: 0.95, z: 0.0 },
+                size: { x: 1.04, y: 0.16, z: 0.48 },
+            },
+        ];
+        // TRANK — ein Lebenssaft. Leder-Flasche + Laub-Essenz (lebendig 1.0,
+        // härte 0.05) + Holz-Korken: weich + lebendig → resoniert ehrlich
+        // `consumable` (ein Spieler-Klon emergierte zur selben Rolle). KEIN
+        // hartes Material (quarz/stein) — sonst kippte die Resonanz zu
+        // architecture (dichte+härte). brewConsumable verlangt role:"consumable".
+        const trankLebenssaftParts = [
+            {
+                shape: "sphere",
+                material: "leder",
+                position: { x: 0, y: 0.42, z: 0 },
+                size: { x: 0.46, y: 0.56, z: 0.46 },
+                opacity: 0.92,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                position: { x: 0, y: 0.42, z: 0 },
+                size: { x: 0.36, y: 0.44, z: 0.36 },
+                opacity: 0.8,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 0.82, z: 0 },
+                size: { x: 0.14, y: 0.26, z: 0.14 },
+                segments: 6,
+            },
+        ];
+        // AVATAR — ein hölzerner Wächter. Sechs Parts (Torso + Kopf + 2 Arme +
+        // 2 Beine), bilateral symmetrisch + vertikal + Glied-Paare → _isBodyShaped
+        // TRUE → resoniert ehrlich `soul` (bodyShape 2.0 + lebendig). role:"soul"
+        // deklariert; forgeAvatar formt den Körper (applyPlayerSoulFromBlueprint).
+        const avatarWaechterParts = [
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 1.25, z: 0 },
+                size: { x: 0.6, y: 0.9, z: 0.35 },
+            },
+            {
+                shape: "sphere",
+                material: "holz",
+                position: { x: 0, y: 1.95, z: 0 },
+                size: { x: 0.42, y: 0.42, z: 0.42 },
+            },
+            // Arme + Beine als bilaterale Spiegel-Paare (_compoundSymmetry-Glieder).
+            // GEMESSEN (diag-library-roles): die Spiegel-Toleranz skaliert mit der
+            // größten Spanne (≈0.56 bei spanY 1.5) → Arme MÜSSEN deutlich weiter
+            // außen als der Torso (x=0) stehen, sonst „spiegelt" ein Arm den Torso
+            // (Fehl-Partner) statt den anderen Arm → limbPairs=0, kein Körper.
+            // Beine müssen > offAxisCut (≈0.29 bei spanX 1.6) liegen, um als Glied
+            // zu zählen. Arme ±0.8 / Beine ±0.34 → zwei echte Glied-Paare.
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -0.8, y: 1.25, z: 0 },
+                size: { x: 0.16, y: 0.85, z: 0.16 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0.8, y: 1.25, z: 0 },
+                size: { x: 0.16, y: 0.85, z: 0.16 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -0.34, y: 0.45, z: 0 },
+                size: { x: 0.2, y: 0.9, z: 0.2 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0.34, y: 0.45, z: 0 },
+                size: { x: 0.2, y: 0.9, z: 0.2 },
+                segments: 6,
+            },
+        ];
+
         // W12 Phase 2 — portalMeta aus der Welt-Registry (eine Quelle der
         // Wahrheit; je Bauplan eine eigene dsl-Kopie).
         const portalTo = (id) => {
@@ -31973,14 +32210,18 @@ class AnazhRealm {
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, instanced: true, parts: felsbogenParts },
             felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, instanced: true, parts: felsturmParts },
-            // Welle 9c — Welt-Werkstätten
+            // Welle 9c — Welt-Werkstätten. Die BEDIENTE Domäne (forging/alchemy/textile/soulwork/
+            // mechanism) ist NICHT mehr hardcoded — sie EMERGIERT aus der Substanz via
+            // _computeWorkshopDomain (S7-B): die Esse bedient forging, weil sie eine dichte, glühende
+            // Masse IST, nicht weil ein Feld es sagt (wie ein Ring ein Tor IST). Die `role`-Deklaration
+            // bleibt als Built-in-Saat (wie die gegebenen Seelen); die „IST es eine Werkstatt?"-
+            // Emergenz für vom Spieler gebaute Apparate ist der nächste Schritt.
             esse: {
                 name: "esse",
                 label: "Esse",
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                workshopDomain: "forging",
                 parts: esseParts,
             },
             brennkolben: {
@@ -31989,7 +32230,6 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                workshopDomain: "alchemy",
                 parts: brennkolbenParts,
             },
             webstuhl: {
@@ -31998,7 +32238,6 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                workshopDomain: "textile",
                 parts: webstuhlParts,
             },
             seelenstein_altar: {
@@ -32007,7 +32246,6 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                workshopDomain: "soulwork",
                 parts: seelenstein_altarParts,
             },
             drehbank: {
@@ -32016,7 +32254,6 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                workshopDomain: "mechanism",
                 parts: drehbankParts,
             },
             // W12 Phase 1 — Welt-Portal. Rolle "portal" — emergiert aus
@@ -32058,6 +32295,41 @@ class AnazhRealm {
                 roleManual: true,
                 portalMeta: portalTo("terrain"),
                 parts: weltTerrainParts,
+            },
+            // A1 — DIE BIBLIOTHEK: die vier craftbaren Beispiel-Baupläne (Gerät/
+            // Rüstung/Trank/Avatar), die den vier Mach-Akten (V17.59–.66) endlich
+            // einen Bauplan zum Fertigen geben. Siehe der Kommentar bei den
+            // *Parts-Definitionen oben (vision-treu: emergent wo die Substanz
+            // trägt, Intent-Override nur bei Rüstung/Bauwerk-Zwilling).
+            geraet_spitzhacke: {
+                name: "geraet_spitzhacke",
+                label: "Spitzhacke",
+                builtIn: true,
+                parts: geraetSpitzhackeParts,
+            },
+            ruestung_brustpanzer: {
+                name: "ruestung_brustpanzer",
+                label: "Brustpanzer",
+                builtIn: true,
+                role: "armor",
+                roleManual: true,
+                parts: ruestungBrustpanzerParts,
+            },
+            trank_lebenssaft: {
+                name: "trank_lebenssaft",
+                label: "Lebenssaft",
+                builtIn: true,
+                role: "consumable",
+                roleManual: true,
+                parts: trankLebenssaftParts,
+            },
+            avatar_waechter: {
+                name: "avatar_waechter",
+                label: "Wächter",
+                builtIn: true,
+                role: "soul",
+                roleManual: true,
+                parts: avatarWaechterParts,
             },
         };
     }
@@ -33083,10 +33355,44 @@ class AnazhRealm {
             if (role === "forging-split") return this._computeForgingRole(blueprint);
             if (role) return role;
         }
-        if (this._isBodyShaped(blueprint)) return "soul";
-        if (this._isPortalShaped(blueprint)) return "portal";
-        if (this._isFoodLike(blueprint)) return "consumable";
-        return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        // R3 (§11.10) — sonst: die intrinsische Form/Substanz als RESONANZ (statt der priority-Prädikat-Kette).
+        return this._computeFormRole(blueprint);
+    }
+
+    // R2/R3 (kampf-plan §11.10) — der volle PRODUKT-VEKTOR: die Material-Tags (10) ⊕ die räumliche Signatur als
+    // numerische Achsen. Die KONJUNKTIVE Geometrie (ein Körper braucht Symmetrie UND Vertikalität UND Glieder; ein
+    // Tor einen magie-Ring der Reisenden-Größe) lebt in den bestehenden Prädikaten — hier als 0/1-Achse, damit die
+    // Resonanz sie liest, ohne dass eine lineare Summe die Konjunktion bräche (sonst läse ein flaches, symmetrisches
+    // Dorf fälschlich als „Körper"). So liest die Rollen-Resonanz den GANZEN Vektor (Tags + Form), ein Produkt = ein
+    // Vektor, viele Leser.
+    _blueprintProductVector(bp) {
+        const v = Object.assign({}, this.computeCompoundTags(bp) || {});
+        v.bodyShape = this._isBodyShaped(bp) ? 1 : 0;
+        v.portalShape = this._isPortalShaped(bp) ? 1 : 0;
+        // S10 (kampf-plan §11.10) — die Katalysator-Geometrie: der Anteil spitzer/klingen-Parts (W2). Eine
+        // weitere Achse des EINEN Produkt-Vektors (die Rollen-Resonanz ignoriert sie, die Op-Resonanz liest sie).
+        v.pointedFraction = this._blueprintPointedFraction(bp);
+        return v;
+    }
+
+    // R3 (kampf-plan §11.10) — die intrinsische Rolle als ARGMAX der Resonanz des Produkt-Vektors gegen die
+    // FORM_ROLE_SIGNATURES (soul/portal/consumable/architecture). Ersetzt die priority-Prädikat-Kette
+    // (body→soul, portal, food, default) durch EINE Resonanz: die stärkste gewinnt, kein first-match-bias.
+    // „architecture" ist eine positive Signatur (dichte+harte Struktur) — ein Stein-Tempel resoniert sie stärker
+    // als soul (DER HEAL). Bleibt alles unter dem Floor → architecture (Default).
+    _computeFormRole(bp) {
+        const v = this._blueprintProductVector(bp);
+        const sigs = AnazhRealm.FORM_ROLE_SIGNATURES;
+        let best = AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        let bestScore = AnazhRealm.FORM_ROLE_RESONANCE_FLOOR;
+        for (const role in sigs) {
+            const score = this._blueprintResonance(v, sigs[role]);
+            if (score > bestScore) {
+                bestScore = score;
+                best = role;
+            }
+        }
+        return best;
     }
 
     // Setzt bp.role emergent ein. Wird aus den Mutations-Methoden gerufen
@@ -33102,12 +33408,44 @@ class AnazhRealm {
         bp.role = this.computeBlueprintRole(bp);
     }
 
+    // S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der FORM: welche Transformation ein Werkzeug katalysiert,
+    // emergiert aus seiner Form × Material als argmax-Resonanz des Produkt-Vektors gegen OP_CLASS_SIGNATURES
+    // (scharf → schneiden, stumpf-dicht → schmieden, magie → wandeln). Leerer/formloser Bauplan → subtractive
+    // (der Grund-Schnitt). additive (mischen) gewinnt selten — es ist die funktionale Intent-Klasse (V17.70-Muster).
+    _computeToolOpFromForm(bp) {
+        const fallback = { opClass: "subtractive", opName: AnazhRealm.OP_NAME_BY_CLASS.subtractive };
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return fallback;
+        const v = this._blueprintProductVector(bp);
+        const sigs = AnazhRealm.OP_CLASS_SIGNATURES;
+        let best = null;
+        let bestScore = -Infinity;
+        for (const cls in sigs) {
+            const score = this._blueprintResonance(v, sigs[cls]);
+            if (score > bestScore) {
+                bestScore = score;
+                best = cls;
+            }
+        }
+        if (!best || bestScore <= 0) return fallback;
+        return { opClass: best, opName: AnazhRealm.OP_NAME_BY_CLASS[best] || "carve" };
+    }
+
     // Setzt Bauplan-Werkzeug-Meta. Nur eigene Baupläne, nur whitelisted
     // opClass, nur sanitized opName. Mutiert in-place, idempotent.
+    // S10 (§11.10) — wird KEINE opClass gegeben, EMERGIERT die Op aus der Form (`_computeToolOpFromForm`); eine
+    // explizit gegebene opClass ist der Schöpfer-Override (manuell, mit voller Validierung — der einzige Weg zu
+    // additive/Misch-Werkzeugen, die nicht aus der Form emergieren).
     setBlueprintToolMeta(name, opName, opClass) {
         const bp = this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
         if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        let emergent = false;
+        if (!opClass) {
+            const derived = this._computeToolOpFromForm(bp);
+            opClass = derived.opClass;
+            if (!opName) opName = derived.opName;
+            emergent = true;
+        }
         if (!AnazhRealm.TOOL_OP_CLASSES.has(opClass)) {
             return { ok: false, reason: "invalid_op_class" };
         }
@@ -33119,7 +33457,7 @@ class AnazhRealm {
         // Welle 9a — manueller Role-Override (siehe setBlueprintAsArmor)
         bp.roleManual = true;
         bp.toolMeta = { opName: cleanOpName, opClass };
-        return { ok: true };
+        return { ok: true, opName: cleanOpName, opClass, emergent };
     }
 
     // Registriert einen markierten Bauplan als Werkzeug in state.tools. Der
@@ -35384,8 +35722,9 @@ class AnazhRealm {
     // ============================================================
     // ### Welle 9c — Welt-Werkstatt-Gate ###
     // Prüft im pfad-Modus, ob für einen domain-tragenden Bauplan eine
-    // passende Welt-Werkstatt-Architektur (role="workshop-station" mit
-    // workshopDomain === <Bauplan-Domain>) in WORKSHOP_PROXIMITY_M nähe ist.
+    // passende Welt-Werkstatt-Architektur (role="workshop-station", deren
+    // EMERGENTE Domäne _computeWorkshopDomain === <Bauplan-Domain>) in
+    // WORKSHOP_PROXIMITY_M nähe ist.
     // In frieden + schöpfer: kein Gate (frieden umarmt, schöpfer gehorcht).
     // Bauplane ohne Domain (architecture/default) brauchen NIE eine
     // Welt-Werkstatt — sie sind die Open-Air-Welt selbst.
@@ -35408,7 +35747,8 @@ class AnazhRealm {
         for (const entry of this.state.architectures || []) {
             const wbp = this.state.blueprints && this.state.blueprints[entry.type];
             if (!wbp || wbp.role !== "workshop-station") continue;
-            if (wbp.workshopDomain !== needed) continue;
+            // S7-B — die bediente Domäne EMERGIERT aus der Substanz (kein hardcoded workshopDomain).
+            if (this._computeWorkshopDomain(wbp) !== needed) continue;
             const dx = entry.position.x - atPos.x;
             const dy = entry.position.y - atPos.y;
             const dz = entry.position.z - atPos.z;
@@ -38058,72 +38398,10 @@ class AnazhRealm {
             });
             actions.appendChild(addBtn);
         }
-        // Welle 9d — "Als Seele aktivieren"-Button bei eigenen role:soul-Baupläne.
-        // Synthesisiert eine custom-soul aus den bp.parts und triggert applyPlayerSoul.
-        if (!selected.builtIn && selected.role === "soul") {
-            const soulBtn = document.createElement("button");
-            soulBtn.type = "button";
-            soulBtn.className = "workshop-soul-activate";
-            soulBtn.textContent = "Als Seele tragen";
-            soulBtn.title =
-                "Diesen Körper FORMEN + tragen — einen eigenen Körper zu formen zieht Material (pfad/frieden); " +
-                "eine schon geformte Seele wieder zu tragen ist frei (§11.2: der Avatar ist kein Sonderfall).";
-            soulBtn.addEventListener("click", () => {
-                // S5 — der Spieler-Pfad geht durch embodyBlueprint: ein ungeformter Körper wird hier
-                // GEFORMT (zahlt im pfad/frieden), ein geformter frei verkörpert.
-                const res = this.embodyBlueprint(selected.name);
-                if (res.ok) {
-                    const made = res.forgedPrecision != null && res.free === false;
-                    this.log(
-                        `Seele gewechselt zu „${selected.label || selected.name}"${made ? " (Körper geformt)" : ""}.`,
-                        "INFO"
-                    );
-                    this._renderWorkshopDOM();
-                } else if (res.reason === "not_enough_material") {
-                    const missingStr = Object.entries(res.missing || {})
-                        .map(([m, n]) => `${n}× ${m}`)
-                        .join(", ");
-                    this.log(`Körper formen nötig — fehlt: ${missingStr || "Material"} (Rohstoffe sammeln).`, "ERROR");
-                } else {
-                    this.log(`Seele konnte nicht aktiviert werden (${res.reason || "unknown"})`, "ERROR");
-                }
-            });
-            actions.appendChild(soulBtn);
-        }
-        // S3/S4/S5 (kampf-plan §11.5) — „Fertigen": den Bauplan zum realen Werk machen (Material ziehen,
-        // Präzision einfrieren, ausrüsten). Rollen-bewusst (fertigeBlueprint): Rüstung → weben + tragen,
-        // sonst → Gerät schmieden + in die Hand. NUR für Gerät/Rüstung (held/worn) — Seelen haben den
-        // dedizierten „Als Seele tragen"-Knopf (oben), darum hier übersprungen.
-        if (selected.role !== "soul" && selected.role !== "consumable") {
-            const isArmor = selected.role === "armor";
-            const forgeBtn = document.createElement("button");
-            forgeBtn.type = "button";
-            forgeBtn.className = "workshop-forge";
-            forgeBtn.textContent = isArmor ? "⚒ Weben (Rüstung tragen)" : "⚒ Schmieden (in die Hand)";
-            forgeBtn.title = isArmor
-                ? "Diese Rüstung weben — zieht Material (pfad/frieden), friert die Präzision ein, trägt sie."
-                : "Dieses Gerät schmieden — zieht Material (pfad/frieden), friert die Präzision ein, rüstet es aus.";
-            forgeBtn.addEventListener("click", () => {
-                const res = this.fertigeBlueprint(selected.name);
-                const verb = isArmor ? "Gewebt" : "Geschmiedet";
-                const where = isArmor ? "getragen" : "in der Hand";
-                if (res.ok) {
-                    this.log(
-                        `${verb}: „${selected.label || selected.name}" (${where}${res.free ? ", frei" : ""}).`,
-                        "INFO"
-                    );
-                    this._renderWorkshopDOM();
-                } else if (res.reason === "not_enough_material") {
-                    const missingStr = Object.entries(res.missing || {})
-                        .map(([m, n]) => `${n}× ${m}`)
-                        .join(", ");
-                    this.log(`Fertigen fehlgeschlagen — fehlt: ${missingStr || "Material"}.`, "ERROR");
-                } else {
-                    this.log(`Fertigen fehlgeschlagen (${res.reason || "unknown"}).`, "ERROR");
-                }
-            });
-            actions.appendChild(forgeBtn);
-        }
+        // S7 (kampf-plan §11.7/§11.9) — die Mach-Knöpfe (⚒ Schmieden/Weben + „Als Seele tragen")
+        // wohnen NICHT mehr hier im Detail-Editor (sie wirkten wie ein paralleler Pfad). Sie sind in
+        // den EINEN „FERTIGEN"-Akt der Stats-Tabelle gefaltet (_workshopAppendFertigenRow) — der
+        // Abschluss des Lese-Flusses (verfeinern → ablesen → FERTIGEN).
         // Klonen
         const cloneBtn = document.createElement("button");
         cloneBtn.type = "button";
@@ -39495,6 +39773,89 @@ class AnazhRealm {
         this._workshopAppendTagsRow(panel, bp);
         this._workshopAppendQualityRow(panel, bp);
         if (!bp.builtIn) this._workshopAppendSignatureRow(panel, bp, ws);
+        // S7 (kampf-plan §11.7/§11.9) — der EINE Fluss: das FERTIGEN als Abschluss der Lese-Tabelle
+        // (verfeinern → ablesen → FERTIGEN), nicht als paralleler ⚒-Knopf im Detail-Editor.
+        this._workshopAppendFertigenRow(panel, bp);
+    }
+
+    // S7 (kampf-plan §11.7/§11.9) — DER EINE FLUSS: das FERTIGEN gehört in die Stats-Tabelle (wo die
+    // Rolle kristallisiert), als ABSCHLUSS, nicht als paralleler ⚒-Knopf im Detail-Editor (der
+    // Schöpfer-Browser-Audit-Befund: er wirkte wie eine Doublette des Prozess-zieht-Rolle-Flusses).
+    // Ein rollen-bewusster „FERTIGEN"-Akt — die Mach-Logik bleibt (fertigeBlueprint/embodyBlueprint),
+    // nur die Präsentation vereint sich: lesen → FERTIGEN. Die Maschine-in-der-Welt (Esse/Brennkolben)
+    // ist sichtbar gegated (pfad) — der Knopf zeigt, welche Werkstatt nah sein muss.
+    _workshopAppendFertigenRow(panel, bp) {
+        const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        // Welt-platzierte Rollen (Station/Portal) werden gebaut (confirmBuild), nicht gefertigt; eine
+        // geborene (built-in) Seele wird nicht geformt.
+        if (role === "workshop-station" || role === "portal") return;
+        if (role === "soul" && bp.builtIn) return;
+        const isSoul = role === "soul";
+        const verb =
+            role === "armor"
+                ? "Rüstung weben (tragen)"
+                : isSoul
+                  ? "Körper formen (verkörpern)"
+                  : role === "consumable"
+                    ? "Trank brauen (trinken)"
+                    : "Gerät schmieden (in die Hand)";
+        const row = document.createElement("div");
+        row.className = "stat-row workshop-fertigen-row";
+        const lab = document.createElement("span");
+        lab.className = "stat-label";
+        lab.textContent = "Werk";
+        row.appendChild(lab);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "workshop-fertigen";
+        btn.textContent = "⚒ FERTIGEN";
+        btn.title = `${verb} — das reale Werk herstellen: zieht Material (pfad/frieden, frei in schöpfer), friert die Präzision ein, rüstet/wirkt. Re-fertigbar.`;
+        btn.addEventListener("click", () => {
+            const res = isSoul ? this.embodyBlueprint(bp.name) : this.fertigeBlueprint(bp.name);
+            // embodyBlueprint lässt `free` weg, wenn es den freien Verkörpern-Pfad nahm (schon geformt
+            // oder schöpfer) → das werten wir als frei.
+            const wasFree = res.free === true || (isSoul && res.ok && res.free === undefined);
+            if (res.ok) {
+                this.log(`Gefertigt: „${bp.label || bp.name}" — ${verb}${wasFree ? " (frei)" : ""}.`, "INFO");
+                this._renderWorkshopDOM();
+            } else if (res.reason === "no_workshop_station") {
+                const stationLabel = this._stationLabelForDomain(res.neededDomain);
+                this.log(`Fertigen braucht eine Werkstatt: „${stationLabel}" in der Nähe (pfad-Modus).`, "ERROR");
+            } else if (res.reason === "not_enough_material") {
+                const missingStr = Object.entries(res.missing || {})
+                    .map(([m, n]) => `${n}× ${m}`)
+                    .join(", ");
+                this.log(`Fertigen fehlt an Material: ${missingStr || "Material"}.`, "ERROR");
+            } else {
+                this.log(`Fertigen fehlgeschlagen (${res.reason || "unknown"}).`, "ERROR");
+            }
+        });
+        row.appendChild(btn);
+        // die Maschine-in-der-Welt sichtbar (Lebenszyklus + Gate-Status): ist die nötige Werkstatt nah?
+        const station = this._makeStationGate(bp.name);
+        const hint = document.createElement("span");
+        hint.className = "workshop-fertigen-station";
+        if (station.ok && station.found) {
+            hint.textContent = `⚙ ${this._stationLabelForDomain(station.domain)} nah`;
+            hint.title = "Die passende Welt-Werkstatt ist in der Nähe — du kannst hier fertigen.";
+        } else if (!station.ok) {
+            hint.textContent = `⚙ braucht ${this._stationLabelForDomain(station.neededDomain)}`;
+            hint.classList.add("workshop-fertigen-station-missing");
+            hint.title = "Im pfad-Modus braucht dieses Werk die passende Welt-Werkstatt in der Nähe.";
+        }
+        if (hint.textContent) row.appendChild(hint);
+        panel.appendChild(row);
+    }
+
+    // Das Label der Welt-Werkstatt, die eine Domäne bedient (Esse/Brennkolben/…) — für die
+    // FERTIGEN-Station-Hinweise. Fällt auf das Domänen-Label zurück, wenn kein Bauplan passt.
+    _stationLabelForDomain(domain) {
+        if (!domain) return "Werkstatt";
+        for (const b of Object.values(this.state.blueprints || {})) {
+            if (b && b.role === "workshop-station" && this._computeWorkshopDomain(b) === domain)
+                return b.label || b.name;
+        }
+        return (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[domain]) || domain;
     }
 
     // Rolle-Chip + Affordances. Emergent-vs-manuell-Indikator mit erweiterten
@@ -45051,7 +45412,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.65.0";
+AnazhRealm.VERSION = "17.72.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -45769,7 +46130,7 @@ AnazhRealm.TOOL_DOMAIN_COLORS = Object.freeze({
 });
 
 // Welle 9c — Welt-Werkstatt-Radius. Spieler muss in dieser Nähe einer
-// Architektur mit passendem workshopDomain stehen (gemessen vom Spawn-
+// Architektur mit passender EMERGENTER Domäne stehen (gemessen vom Spawn-
 // Punkt des neuen Bauplans), sonst lehnt confirmBuild im pfad-Modus ab.
 AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
 
@@ -45887,6 +46248,65 @@ AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS = Object.freeze({
     portal: Object.freeze({
         magieleitungMin: 1.3,
     }),
+});
+
+// R1 (kampf-plan §11.10) — die WERKSTATT-DOMÄNE als RESONANZ-Signaturen (ein Produkt-Vektor, viele Leser).
+// Jede Domäne ein Signatur-Vektor über die Material-Tags (Gewichte dürfen NEGATIV sein — Invers-Achsen);
+// _computeWorkshopDomain gibt das ARGMAX der Resonanz (`_blueprintResonance`), null unter dem Floor. An den
+// 5 Built-in-Werkstätten GEMESSEN (checkBandV1767 friert die Baseline ein): alchemy = ein durchsichtiges
+// Gefäß (Quarz-Kolben transparent 2.85); mechanism = ein strom-leitender, wärme-führender Apparat (Eisen-
+// Spindel stromleitung 2.55, wärme 2.1); soulwork = ein magie-leitender, resonierender Kanal (Quarz-Helix
+// magie 2.55); forging = eine dichte, hitze-tragende Masse (Stein+Bronze+Glut dichte 2.64); textile = ein
+// weicher, zäh-lebendiger Rahmen (Leder/Holz: niedrige härte, zähigkeit+lebendig). Multi-Achsen = der ganze
+// Vektor wird gelesen, nicht ein Tag. Der Floor trennt eine Werkstatt von einer bloßen Struktur.
+AnazhRealm.WORKSHOP_DOMAIN_SIGNATURES = Object.freeze({
+    alchemy: Object.freeze({ transparent: 1.0 }),
+    mechanism: Object.freeze({ stromleitung: 1.0, wärmeleitung: 0.2 }),
+    soulwork: Object.freeze({ magieleitung: 1.0, resoniert: 0.2 }),
+    forging: Object.freeze({ dichte: 1.0, wärmeleitung: 0.3 }),
+    textile: Object.freeze({ zähigkeit: 1.0, lebendig: 1.0, härte: -1.0 }),
+});
+AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR = 2.0;
+
+// R3 (kampf-plan §11.10) — die ROLLE als RESONANZ des vollen Produkt-Vektors (Tags ⊕ räumliche Achsen
+// bodyShape/portalShape). computeBlueprintRole = die opChain-Domäne (Krafting-Intent, Vorrang) → sonst das
+// ARGMAX dieser Form-Signaturen (`_computeFormRole`). Die per-Rolle Hand-Flags (setBlueprintAs*) bleiben als
+// optionaler Schöpfer-OVERRIDE (roleManual). Die KONJUNKTIVE Geometrie (body/portal) lebt im Feature
+// (bodyShape/portalShape = 0/1 aus den bestehenden Prädikaten); die DISJUNKTIVE Entscheidung ist das argmax.
+// DER HEAL (Schöpfer 03.06.): „architecture" ist eine POSITIVE Signatur (eine dichte, harte Struktur) — ein
+// Tempel/Felsbogen (Stein: dichte 2.55, härte 1.95) resoniert damit STÄRKER als mit soul, obwohl seine
+// Geometrie body-förmig ist → er wird Bauwerk, nicht Seele; ein weicher fleisch-Körper resoniert soul stärker.
+// An den 12 Form-Fallback-Built-ins GEMESSEN (checkBandV1768 friert die Baseline ein). Floor → architecture.
+AnazhRealm.FORM_ROLE_SIGNATURES = Object.freeze({
+    soul: Object.freeze({ bodyShape: 2.0, lebendig: 0.3 }),
+    portal: Object.freeze({ portalShape: 2.0 }),
+    consumable: Object.freeze({ lebendig: 1.0, härte: -1.0 }),
+    architecture: Object.freeze({ dichte: 0.8, härte: 0.5 }),
+});
+AnazhRealm.FORM_ROLE_RESONANCE_FLOOR = 0.5;
+
+// S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der Form: ein Werkzeug katalysiert eine Transformation, und
+// seine FORM bestimmt welche. Die opClass emergiert als argmax-Resonanz des Produkt-Vektors (Tags ⊕ pointedFraction)
+// gegen diese Signaturen — die physischen Katalyse-Geometrien (an synthetischen Formen GEMESSEN): subtractive = eine
+// SCHARFE/spitze Klinge (schneidet/schnitzt; pointedFraction dominiert, damit eine dichte Spitze nicht zu plastic
+// kippt); plastic = eine STUMPFE, dichte Masse (schmiedet/schlägt — ein Klotz/Hammer); phaseChange = ein MAGIE-
+// leitender Stab (wandelt/imbue; magie schlägt sogar die Spitze einer Helix). EHRLICH: additive (mischen/weben) ist
+// FORM-mehrdeutig — ein Mörser und ein Hammer sind stumpf-dichte Zwillinge; die add.-Natur ist FUNKTION, nicht Form
+// (wie die Werkstatt-Natur, V17.70). Darum ist additive die schwache Residual-Signatur (weich/zäh/lebendig) — die
+// EMERGENZ trägt die drei physischen Klassen; eine reine Misch-Absicht bleibt der Schöpfer-Override (opClass von
+// Hand). Die Built-in-Werkzeuge sind FORMLOS → der Wächter ist synthetisch (checkBandV1771).
+AnazhRealm.OP_CLASS_SIGNATURES = Object.freeze({
+    subtractive: Object.freeze({ pointedFraction: 2.3, härte: 0.2 }),
+    plastic: Object.freeze({ dichte: 1.0, härte: 0.3 }),
+    phaseChange: Object.freeze({ magieleitung: 1.2 }),
+    additive: Object.freeze({ zähigkeit: 0.6, lebendig: 0.6, härte: -0.4 }),
+});
+// Der Standard-opName je opClass (die opChain-„Geschichte"; die opClass treibt die Material-Kompatibilität).
+AnazhRealm.OP_NAME_BY_CLASS = Object.freeze({
+    subtractive: "carve",
+    plastic: "forge",
+    phaseChange: "imbue",
+    additive: "mix",
 });
 
 // Deutsche Affordance-Labels für UI-Anzeige.

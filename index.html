@@ -3708,6 +3708,47 @@
                 background: rgba(198, 154, 74, 0.2);
                 color: #fff;
             }
+            /* S7 — der EINE „FERTIGEN"-Akt als Abschluss der Stats-Tabelle (verfeinern →
+               ablesen → FERTIGEN). Prominenter Brass-Knopf; der ⚙-Hinweis zeigt die nötige
+               Welt-Werkstatt (Esse/Brennkolben) im pfad-Modus. */
+            #workshop-stats-panel .workshop-fertigen-row {
+                margin-top: 6px;
+                padding-top: 8px;
+                border-top: 1px solid rgba(184, 138, 80, 0.35);
+                align-items: center;
+            }
+            #workshop-stats-panel .workshop-fertigen {
+                padding: 5px 14px;
+                background: linear-gradient(180deg, rgba(212, 150, 70, 0.95), rgba(150, 92, 30, 0.8));
+                border: 1px solid var(--brass-1, #c69a4a);
+                border-radius: 3px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                font-weight: 700;
+                color: #fff;
+                letter-spacing: 0.6px;
+                cursor: pointer;
+                text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+                box-shadow: 0 0 8px rgba(198, 154, 74, 0.45);
+                transition:
+                    filter 0.15s ease,
+                    box-shadow 0.15s ease;
+            }
+            #workshop-stats-panel .workshop-fertigen:hover {
+                filter: brightness(1.12);
+                box-shadow: 0 0 12px rgba(212, 150, 70, 0.7);
+            }
+            #workshop-stats-panel .workshop-fertigen-station {
+                margin-left: 8px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                color: var(--brass-1, #c69a4a);
+                letter-spacing: 0.05em;
+                opacity: 0.9;
+            }
+            #workshop-stats-panel .workshop-fertigen-station.workshop-fertigen-station-missing {
+                color: #e0935f;
+            }
             /* Domain-Bars: kleine inline-Bars zeigen Verteilung der Werkzeug-
                Anwendungen pro Domain. Dominante Domain bekommt Brass-Highlight. */
             #workshop-stats-panel .workshop-domain-bars {
@@ -5796,6 +5837,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=17.65.0" defer></script>
+        <script src="anazhRealm.js?v=17.72.0" defer></script>
     </body>
 </html>

@@ -10,18 +10,48 @@
 
 ---
 
-## STATUS (Stand V17.65) — lies §11 (der aktive Plan; §11.9 = die Browser-Audit-Ausrichtung)
+## STATUS (Stand V17.67) — lies §11 (der aktive Plan; §11.9 = die Browser-Audit-Ausrichtung)
 
 **Der Kern-Kampf-Loop A–D + W5-Affekt + der Interaktions-Bogen W1·W2·W2-B·W3 sind GEBAUT** (V17.51–.58, §8/§9).
-**§11 — der vereinte Schöpfungs-Fluss — ist im Bau:** S1 Readout · S2 Mach-Tor+Modi · S3+S3-B Gerät · S4 Rüstung
-· S5 Avatar · S6 Trank GEBAUT (V17.59–.65) — VIER Mach-Akte zahlen Material durch EIN `_makeCostGate` +
-`fertigeBlueprint`. **ABER der Schöpfer-Browser-Audit (02.06.) fand die Fehl-Ausrichtung (§11.9): die Mach-Akte
-sind funktional korrekt, aber als PARALLELER Pfad PRÄSENTIERT** (der „⚒ Schmieden"-Knopf im Detail-Editor wirkt
-wie eine Doublette des bestehenden „Prozess-ziehen-fixiert-die-Rolle"-Flusses). **Der AKTIVE nächste Schritt ist
-der RE-FRAMED S7 (§11.7): das FERTIGEN in den Prozess-Fluss + die Maschine-in-der-Welt falten** (kein neuer Pfad,
-eine UI-Verdichtung; die Mach-Logik bleibt). Wer weiterbaut, liest §11.9 (die Lehre + der Lebenszyklus + die drei
-Schichten Tags/Fähigkeit/Rolle) ZUERST. **PERMANENTE LEHRE: headless-grün ≠ vision-aligned — den FLUSS im
-Schöpfer-Browser zeigen, bevor man Welle auf Welle stapelt.** Das ursprüngliche §11-Prinzip bleibt
+**§11 — der vereinte Schöpfungs-Fluss:** S1 Readout · S2 Mach-Tor+Modi · S3+S3-B Gerät · S4 Rüstung · S5 Avatar ·
+S6 Trank GEBAUT (V17.59–.65) — VIER Mach-Akte zahlen Material durch EIN `_makeCostGate` + `fertigeBlueprint`. Der
+Schöpfer-Browser-Audit (02.06.) fand die Fehl-Ausrichtung (§11.9): die Mach-Akte waren funktional korrekt, aber als
+PARALLELER Pfad PRÄSENTIERT (der „⚒ Schmieden"-Knopf im Detail-Editor wirkte wie eine Doublette des „Prozess-ziehen-
+fixiert-die-Rolle"-Flusses). **S7 KERN GEBAUT (V17.66): das FERTIGEN ist in den Prozess-Fluss gefaltet** — EIN
+rollen-bewusster „⚒ FERTIGEN"-Akt als Abschluss der Stats-Tabelle (`_workshopAppendFertigenRow`, der Fluss
+verfeinern → ablesen → FERTIGEN), die zwei alten Detail-Editor-Knöpfe entfernt; das Mach-Tor `_workshopStationGate`
+ist end-to-end am Mach-Akt angeschlossen (`_makeStationGate` in `_forgeMaterialAndFreeze`/`brewConsumable`, nicht
+nur confirmBuild — ein forging-Gerät → Esse nah, ein Trank → Brennkolben). `checkBandV1766` 9 grün. **S7-B
+BEGONNEN (V17.67) — die Prozess-Hardcode-Insel auflösen (Schöpfer-Dialog 03.06.):** der „Werkzeug-Aufräum" war
+nie ein Aufräum, er zeigte auf die letzte Hardcode-Insel — die WORK-Seite emergiert (Rolle aus Form×Material), die
+PROZESS-Seite (Werkzeuge + Werkstätten) trug noch Hardcode (`roleManual`+`workshopDomain`). Erster Schnitt: die
+WERKSTATT-DOMÄNE EMERGIERT aus der Substanz (`_computeWorkshopDomain`, Vorbild `_isPortalShaped`; das `workshop­
+Domain`-Feld entfernt; eine Esse bedient forging, weil sie eine glühende dichte Masse IST), `checkBandV1767` 5 grün.
+**Der AKTIVE Plan (Schöpfer-Dialog 03.06., §11.10 NEU): die RESONANZ-VEREINHEITLICHUNG — „ein Produkt-Vektor, viele
+Leser".** Der Schöpfer-Befund: meine Klassifikatoren messen EINSEITIG (Einzel-Tag-Schwellen), aber das System denkt
+in Vektoren (die Aura ist ein Vektor, `spawnAffinityForBlueprint` ist ein SKALARPRODUKT, die Tags SIND der Substanz-
+Vektor). Die synergetische Form: Rolle/Domäne/Affordanz sind RESONANZEN des vollen Produkt-Vektors (Tags ⊕ räumliche
+Signatur ⊕ Skala) gegen frozen Signaturen (argmax), nicht Einzel-Signal-Tore — die per-Rolle Hand-Flags lösen sich
+in EINEN optionalen Override auf. Die Schritte (§11.10): **R1 ✅ (V17.68)** die Domänen-Resonanz
+(`_computeWorkshopDomain` → argmax über `WORKSHOP_DOMAIN_SIGNATURES`) · **R2 ✅ (V17.69)** der volle Produkt-Vektor
+(`_blueprintProductVector` = Tags ⊕ bodyShape/portalShape; Konjunktion im Feature, argmax in der Entscheidung) ·
+**R3 ✅ (V17.69)** die Rollen-Resonanz (`computeBlueprintRole` = Domäne-Vorrang → argmax über `FORM_ROLE_SIGNATURES`;
+DER HEAL: architecture als positive dichte+harte Signatur → Stein-Tempel wird Bauwerk statt Seele; `checkBandV1769`
+7 grün + V8.35/W12 kein Regress). **Die Resonanz-Vereinheitlichung STEHT — Domäne + Rolle als argmax des Produkt-
+Vektors, ein Produkt-Vektor viele Leser.** **R3-Schluss ✅ (V17.70):** GEMESSEN, dass die Werkstatt-NATUR NICHT
+emergiert (Esse vs. dichtes Bauwerk = Substanz-Zwillinge, village resoniert forging 2.78 wie eine Esse) — sie ist
+INTENT (`setBlueprintAsWorkshopStation`, der vorgesehene Override), aber die DOMÄNE emergiert (R1). **Damit ist die
+Prozess-Hardcode-Insel aufgelöst.** **S10 ✅ (V17.71):** die Werkzeug-Op emergiert aus der Form (scharf→schneiden,
+stumpf-dicht→schmieden, magie→wandeln; `_computeToolOpFromForm` + `OP_CLASS_SIGNATURES`, `pointedFraction` als neue
+Vektor-Achse; additive bleibt Intent). **Domäne (R1) + Rolle (R3) + Werkzeug-Op (S10) emergieren als Resonanz — die
+Prozess-Hardcode-Insel ist VOLLSTÄNDIG aufgelöst.** Offen: der Schöpfer-Browser-Audit des ganzen Bogens (die
+umfassende Schluss-Prüfung) + S6-B (erntbare Flora) · S9 (Gerät in der Hand) · S11 (Animation) · Phase E (Bedrohung). **OFFEN daneben:** der Schöpfer-Browser-Audit des S7-FERTIGEN-
+Flusses (Feel/Synergie) · S6-B (erntbare Flora) · **S7-C die chat/DSL-Vereinheitlichung** (der letzte Gratis-Bypass;
+die load-bearing scripting-Schicht, S3-B hielt sie bewusst frei) · S8 (Teilen) · S9 (Hand-Optik) · S11 (Animation).
+Wer weiterbaut, liest §11.10 (die Resonanz) + §11.9 (die Lehre + der Lebenszyklus + die drei Schichten Tags/
+Fähigkeit/Rolle) ZUERST. **PERMANENTE LEHRE: headless-grün ≠ vision-aligned — den FLUSS im Schöpfer-Browser zeigen, bevor man
+Welle auf Welle stapelt. + Die Prozess-Seite (Werkzeuge/Werkstätten) ist die letzte Hardcode-Insel: sie löst man
+wie alles andere, Form×Material → Eigenschaft, nach dem `_isPortalShaped`-Vorbild, NIE ein Flag.** Das ursprüngliche §11-Prinzip bleibt
 (Schöpfer-Dialog 02.06., die Weitung von §10 auf ALLE Rollen): **„Plan → Werk"** (Information
 frei · Materie kostet), das jeder Lesart (Gerät · Rüstung · Trank · Avatar · Portal · Fahrzeug) ihren
 material-zahlenden Werk-Akt gibt, die vier Schöpfungs-Drawer in EINE Werkstatt-Gebärmutter zieht, und das
@@ -681,22 +711,52 @@ Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis,
   reine GPU-Deko (kein Harvest/Collision) → erntbar machen = ein neues GPU-Instanz-Harvest-System + dedizierte
   Alchemie-Material-Tags (kraut/essenz). HEUTE sind die Zutaten die Part-Materialien (laub von Bäumen funktioniert
   schon); S6-B gibt der Alchemie eigene erntbare Flora. *Eine eigene meatige Welle (V17.17-Spawn-Affinität messen).*
-- **S7 — der EINE Fluss: das FERTIGEN in den Prozess-Fluss falten (RE-FRAMED nach dem Schöpfer-Browser-Audit
-  02.06.):** Der Befund: die S3–S6-Mach-Akte erscheinen als PARALLELER Pfad — der „⚒ Schmieden"-Knopf liegt im
-  Detail-Editor + heißt wie der Schmiede-Hammer-PROZESS, also wirkt er wie eine Doublette des bestehenden
-  „Prozess-ziehen-fixiert-die-Rolle"-Flusses (`applyOpToPart` + die Domain-Rolle-Emergenz). Die WURZEL ist NICHT
-  die Logik (Material-Kosten + rollen-bewusster Abschluss sind richtig), sondern die PRÄSENTATION + die Benennung.
-  Die Heilung (kein neuer Code-Pfad — eine Verdichtung der UI): **(a)** den Knopf von „Schmieden" zu **„FERTIGEN"**
-  umbenennen (der ABSCHLUSS, nicht der Prozess) + prominent in die Stats-Tabelle unter der 3D-Ansicht (wo die Rolle
-  kristallisiert), raus aus dem Detail-Editor; **(b)** das FERTIGEN durch `_workshopStationGate` gaten (ein
-  forging-Gerät fertigen → Esse nah, ein Trank → Brennkolben — die Maschine-in-der-Welt, Welle 9c, jetzt
-  end-to-end angeschlossen, nicht nur bei confirmBuild); **(c)** die optimierbaren ACHSEN (Tags → Stats) in der
-  Tabelle sichtbar machen; **(d)** den LEBENSZYKLUS klar zeigen — die Rolle EMERGIERT (reversibel: mehr von einer
-  Domain → wandert; ↺ löst eine manuelle), bis das FERTIGEN sie zum realen Werk macht (Material + ausrüsten;
-  re-fertigbar). Der eine Fluss: **verfeinern (Prozesse ziehen + Maschine) → ablesen (Tabelle: Rolle + Achsen +
-  Lebenszyklus) → FERTIGEN (zahlen + real, an der Maschine).** Plus die chat/DSL-Vereinheitlichung (der letzte
-  Gratis-Bypass „rüste/werde X" → durchs FERTIGEN). *Meist UI + der Maschine-Gate-Anschluss; die Mach-Logik bleibt.
-  Schöpfer-Browser für das Feel.*
+- **S7 — der EINE Fluss: das FERTIGEN in den Prozess-Fluss falten — ✅ KERN GEBAUT (V17.66):** Der Befund (Schöpfer-
+  Browser-Audit 02.06.): die S3–S6-Mach-Akte erschienen als PARALLELER Pfad — der „⚒ Schmieden"-Knopf lag im
+  Detail-Editor + hieß wie der Schmiede-Hammer-PROZESS, also wirkte er wie eine Doublette des „Prozess-ziehen-fixiert-
+  die-Rolle"-Flusses. Die WURZEL war die PRÄSENTATION + Benennung, nicht die Logik. **Gebaut (eine UI-Verdichtung,
+  kein neuer Pfad):** **(a)** der EINE rollen-bewusste **`_workshopAppendFertigenRow`** als ABSCHLUSS der Stats-Tabelle
+  (`_workshopRenderStatsPanel`, nach Rolle/Fähigkeit/Kosten/Tags/Qualität — der Fluss „verfeinern → ablesen →
+  FERTIGEN"); der Knopf heißt **„⚒ FERTIGEN"** (der Abschluss), routet rollen-gerecht (soul → `embodyBlueprint`, sonst
+  → `fertigeBlueprint`: Gerät schmieden / Rüstung weben / Trank brauen). Die ZWEI alten Detail-Editor-Knöpfe (⚒ +
+  „Als Seele tragen") sind ENTFERNT. **(b)** das FERTIGEN ist durch das §11.2-Werkstatt-Gate gegated — `_makeStationGate`
+  (liest die Spieler-Position) im gemeinsamen Mach-Kern `_forgeMaterialAndFreeze` + `brewConsumable` → ein domain-
+  tragender Bauplan (forging-Gerät → Esse, alchemy-Trank → Brennkolben) verlangt im pfad-Modus die passende Welt-
+  Werkstatt nah; **end-to-end (nicht nur confirmBuild)**, das Tor schließt VOR den Material-Kosten. Die FERTIGEN-Zeile
+  zeigt den Stations-Status (⚙ „Esse nah" / „braucht Esse"). **(c)/(d)** die Achsen (Tags/Qualität) + der Lebenszyklus
+  (Rolle emergent/manuell + ↺ + Domain-Bars/Wachstumshinweis) liegen schon im Panel — die FERTIGEN-Zeile ist ihr
+  Abschluss. `checkBandV1766FertigenFlow` 9 grün (Methoden da, die alten Knöpfe weg, das Gate lehnt forging-ohne-Esse
+  ab + Material bleibt, **KONSUM** Esse-beim-Spieler → fertigt + zieht Material, ein domain-loses Gerät braucht KEINE
+  Station [darum brechen die S3–S6-Bands nicht], frieden/schöpfer überspringen, **KONSUM-DOM** die FERTIGEN-Zeile
+  rendert + eine Station-Rolle rendert keine). *Die Mach-Logik bleibt unverändert; nur die PRÄSENTATION vereint sich.
+  Das FEEL/der Fluss = Schöpfer-Browser (headless beweist die Mechanik + die Faltung, nicht die Synergie).*
+  **OFFEN (zwei bewusste, GEMESSENE Schnitte — eigene Wellen, kein „weichen"):** **(S7-B) der Werkzeug-Aufräum-Schritt**
+  (hammer+feuerstein-knapper raus, feile/polier-„Decke" → Maschine): GEMESSEN ripple-schwer — `hammer` ist ein
+  load-bearing Test-Fixture (~15 Invarianten, inkl. Kreatur-Equip + `rejectsBuiltinTool`); das Registry-Aufräumen ist
+  ein eigenes Anliegen (Tool-Schicht, nicht UI-Fluss), und „feile/polier → Maschine" ist eine Crafting-Ökonomie-
+  Verhaltensänderung, deren Schwelle/Feel das Schöpfer-Auge braucht. **(S7-C) die chat/DSL-Vereinheitlichung** (der
+  letzte Gratis-Bypass „rüste/werde X" → durchs FERTIGEN): die scripting-Schicht (DSL/Chat/Restore/Aliase) ist
+  load-bearing + multi-user-broadcast-sensibel; S3-B hielt `equipHeld`/`equipArmor`/`applyPlayerSoul` BEWUSST als das
+  freie Low-Level-Primitiv. Beide nach dem Browser-Audit des Flusses.
+- **S7-B — die PROZESS-HARDCODE-INSEL auflösen (Schöpfer-Dialog 03.06., re-framed):** der „Werkzeug-Aufräum"
+  (hammer raus / feile-polier → Maschine) war nie ein Aufräum — er zeigte auf die letzte Hardcode-Insel. Die WORK-
+  Seite emergiert (Rolle aus Form × Material, der forging-split / `_isPortalShaped`), aber die PROZESS-Seite
+  (Werkzeuge + Werkstätten) trug Hardcode: die 5 Werkstätten hatten `roleManual: true` + ein **von Hand vergebenes**
+  `workshopDomain`; ein Werkzeug bekommt seinen Op nur durch **manuelles** `setBlueprintToolMeta` (das opName-Tippen).
+  Die Insel auflösen, EIN Bogen: **(i) ✅ GEBAUT (V17.67)** — die WERKSTATT-DOMÄNE emergiert via `_compute­
+  WorkshopDomain` (eine Prioritäts-Kette positiver Substanz-Signale, Vorbild `_isPortalShaped`, an den 5 Built-ins
+  gemessen: alchemy=durchsichtiges Gefäß · mechanism=strom-leitend · soulwork=magie-leitend · forging=dichte
+  hitze-Masse · textile=weicher Rahmen); `_workshopStationGate` liest sie, das `workshopDomain`-Feld ist entfernt;
+  `checkBandV1767` 5 grün (der Wächter friert die 5-Built-in-Baseline ein, der FLIP beweist Substanz statt Name).
+  **(ii)** die „IST es eine Werkstatt?"-Emergenz für vom Spieler gebaute Apparate — **fällt jetzt aus der Rollen-
+  Resonanz R3 heraus (§11.10)**, eine workshop-station-Signatur statt eines eigenen `_isWorkshopStationShaped`; die
+  `role`-Deklaration auf den Built-in-Saaten bleibt bis dahin. **(iii)** der Op-aus-Form (= S10: scharf→schneiden,
+  stumpf-hart→schmieden, das opName-Tippen fällt). **(iv)** ein Beispiel pro Rolle (die Bibliothek, optimierbare
+  Saat). Dann schließt die Rekursion durch verbesserbare PROZESSBAUPLÄNE: ein besserer Prozessbauplan (Werkzeug ODER
+  Werkstatt) → höhere Qualität → höherer Cap (`computeBlueprintQuality`-Snapshot) → höhere Präzision → bessere Werke →
+  bessere Prozessbaupläne. *„Decke → Maschine" ist dann kein Designer-Pick, sondern: ein feines Werk braucht eine
+  feine Esse, und die kannst du bauen.* *Headless beweisbar (die emergente Klassifikation + der Wächter); das Feel =
+  Schöpfer-Browser.*
 - **S8 — die Teilen-Konsistenz** (§11.6): das Mach-Tor ist herkunfts-agnostisch by-construction → ein
   geteiltes Gerät/Trank/Avatar kostet wie ein eigenes; die Signatur reist. Fällt fast aus S2 heraus.
   *Headless-Verifikation.*
@@ -773,3 +833,89 @@ die MECHANIK, nicht die AUSRICHTUNG. Den FLUSS/die UI früh im Schöpfer-Browser
 Welle stapelt; ein Prozess-Drag-Crafting-System verlangt das Schöpfer-Auge für die Synergie, nicht nur grüne
 Bänder. Die Mach-Akte S3–S6 waren NICHT umsonst — die Logik (Material-Kosten, rollen-bewusster Abschluss,
 Präzisions-Snapshot) bleibt; S7 stellt sie nur in den richtigen Fluss.
+
+### 11.10 EIN Produkt-Vektor, viele Leser — die Resonanz-Vereinheitlichung (Schöpfer-Dialog 03.06.)
+
+**Der Befund (Schöpfer, nach V17.67):** *„die meisten Dinge misst du sehr einseitig — müsste das nicht wie die
+Aura sein? ist nicht bei jedem Produkt das Ergebnis ein Vektor aus allen Teilsystemen?"* **Er hat recht, GEMESSEN:**
+das System denkt bereits in Vektoren — `auraAt` ist ein Vektor, **`spawnAffinityForBlueprint` ist buchstäblich ein
+SKALARPRODUKT** (`score = Σ world[achse] · tags[achse]`), die `computeCompoundTags` SIND der 10-dim Substanz-Vektor
+jedes Produkts. ABER die emergenten Klassifikatoren reduzieren ihn auf EINZEL-Tag-Schwellen: `_computeWorkshopDomain`
+(V17.67) ist eine first-match-Kette (`wenn transparent ≥ 1.5 → alchemy`), und `computeBlueprintRole` mischt
+Einzel-Prädikate. **Das bricht die Vektor-Natur, die das System überall sonst trägt** — die Inkonsistenz, die der
+Schöpfer benannte.
+
+**Das Prinzip (der wahre Norden auf das PRODUKT angewandt — „ein Feld, viele Leser"):** ein Produkt IST ein Vektor;
+jede Ablesung (Rolle · Domäne · Affordanz · Spawn · Stats · Emotion) ist eine **RESONANZ/Projektion** dieses
+Vektors, KEIN Einzel-Signal-Tor. Der volle **Produkt-Vektor** = **Tags** (10, Material × `FORM_TAG_ACTIVATION` — der
+effiziente Rückgrat) ⊕ **räumliche Signatur** (die 5 Prinzipien spitze/hohlraum/symmetrie/kontakt/resonanz — heute
+separat für Affordanzen/Portal/Körper berechnet) ⊕ **Skala/Komplexität**.
+
+**Die Vereinheitlichung (das `spawnAffinityForBlueprint`-Muster, verallgemeinert):**
+- `_blueprintResonance(produktVektor, signatur)` — der EINE Resonanz-Kern (Skalarprodukt/Cosinus: Bauplan gegen eine
+  Signatur statt gegen das Welt-Feld).
+- frozen `DOMAIN_SIGNATURES` + `ROLE_SIGNATURES` (ein Signatur-Vektor je Domäne/Rolle), an den Built-ins GEMESSEN.
+- `_computeWorkshopDomain` + `computeBlueprintRole` → **argmax-Resonanz** (das best-resonierende gewinnt;
+  null/architecture wenn nichts klar resoniert).
+- **Folge:** die per-Rolle Hand-Flags (`setBlueprintAsArmor/-Consumable/-Weapon/setBlueprintToolMeta/-Portal` +
+  `roleManual`) lösen sich in EINEN optionalen Schöpfer-Override auf (eine bewusste Geste, NIE der einzige Weg) — die
+  Antwort auf „ist workshop-station die einzige hand-definierte Rolle?": nein, und der synergetische Weg macht das
+  Hand-Setzen überall zum bloßen Override, jede Rolle bekommt ihren emergenten Resonanz-Pfad.
+
+**Die Nuancen (EHRLICH, GEMESSEN — kein naives Dot-Product):**
+- **Invers-Achsen:** „weich" (textile) ist NIEDRIGE härte → die Signatur braucht inverse/anti-Achsen, kein bloßes `+`.
+- **die Glut-Maskierung** (V17.17): glut auf einer Kugel aktiviert `brennbar` NICHT → die Esse trägt kein „Feuer"-Tag,
+  nur `dichte` → erst die **räumliche Schicht im Vektor** heilt das (die Form trägt, was das Tag verbirgt).
+- **Normalisierung** (Cosinus statt rohem Dot), damit ein vielteiliger Apparat einen kleinen nicht überstrahlt.
+
+**Die Disziplin (V17.16/.17, heilig):** die Baseline ALLER Built-in-Rollen/Domänen MESSEN (`diag`) → der Wächter
+friert sie ein → die Resonanz MUSS sie reproduzieren; die bestehenden Rollen-Tests (forging-split · body · portal ·
+food) wandern mit (V9.56-i). Beweise SUBSTANZ statt Name durch den FLIP (eine Material-Änderung kippt die Klasse).
+
+**Die re-sequenzierten Resonanz-Schritte (sie ERSETZEN die Einzel-Signal-Form, kein neuer Pfad):**
+- **R1 — die Domänen-Resonanz — ✅ GEBAUT (V17.68):** `_computeWorkshopDomain` von der first-match-Kette auf
+  `_blueprintResonance` (der Kern: `Σ tag·gewicht`, Invers-Achsen erlaubt) + `WORKSHOP_DOMAIN_SIGNATURES`
+  (frozen, an den 5 Built-ins gemessen) gehoben → ARGMAX, null unter dem Floor 2.0. `checkBandV1767` 6 grün
+  (der Kern mit Invers-Achse, der Wächter per argmax, Substanz-statt-Name [lone Block→null], der Flip, das Gate).
+  *Beweist den Resonanz-Kern; Tags-Resonanz reicht für die 5 Stationen — gemessen.*
+- **R2 — die räumliche Schicht in den Vektor — ✅ GEBAUT (V17.69):** `_blueprintProductVector(bp)` = die 10 Tags ⊕
+  `bodyShape`/`portalShape` als Achsen (0/1 aus den bestehenden Prädikaten). GEMESSENER Schlüssel: die Geometrie-
+  Prädikate sind KONJUNKTIONEN (Symmetrie UND Vertikalität UND Glieder) — eine lineare Resonanz bräche das (ein
+  flaches symmetrisches Dorf kippte zu soul). Die Konjunktion lebt im FEATURE (0/1), die disjunktive Entscheidung
+  im argmax. *Heilt das „die Esse ist klein"-Problem strukturell: die Form ist eine Achse, kein Größen-Veto.*
+- **R3 — die Rollen-Resonanz — ✅ GEBAUT (V17.69):** `computeBlueprintRole` = die opChain-Domäne (Intent, Vorrang)
+  → sonst `_computeFormRole` = argmax über `FORM_ROLE_SIGNATURES` (soul {bodyShape, lebendig} · portal {portalShape}
+  · consumable {lebendig, −härte} · architecture {dichte, härte}), Floor → architecture. Ersetzt die priority-
+  Prädikat-Kette (kein first-match-bias). **DER HEAL (Schöpfer „jetzt heilen"):** „architecture" ist eine POSITIVE
+  Signatur (dichte+harte Struktur) — ein Stein-Tempel/Felsbogen resoniert architecture (3.0) > soul (2.0) trotz
+  body-Geometrie → Bauwerk statt Seele; ein weicher fleisch-Körper resoniert soul stärker. Die Hand-Flags bleiben
+  Override (`roleManual`). `checkBandV1769` 7 grün + V8.35/W12 grün (kein Regress). *Damit steht die Resonanz-
+  Vereinheitlichung: Domäne (R1) + Rolle (R3) als argmax des Produkt-Vektors — ein Produkt-Vektor, viele Leser.*
+- **R3-Schluss — die Werkstatt-DESIGNATION als Intent-Override — ✅ GEBAUT (V17.70):** GEMESSEN (die domain-vs-
+  architecture-Resonanz aller Built-ins): die Werkstatt-NATUR emergiert NICHT sauber — eine Esse und ein dichtes
+  Bauwerk sind Substanz-Zwillinge (village resoniert forging 2.78, felsturm mechanism 2.97, kristall_geode soulwork
+  3.09 — so stark wie die Stationen). Es gibt kein „ist-es-eine-Werkstatt?"-Substanz-Signal (Forge vs. Gebäude =
+  ZWECK, nicht Materie — wie ein Hammer vs. ein Felsblock). Die ehrliche Form (der Resonanz-Plan reservierte sie):
+  die DOMÄNE emergiert (R1), die DESIGNATION ist Intent — `setBlueprintAsWorkshopStation` (Spiegel von
+  setBlueprintAsArmor) + DSL-Op `set_workshop_station`. Ein Spieler baut einen Apparat → markiert → er bedient seine
+  EMERGENTE Domäne, das Gate findet ihn. `checkBandV1770` 6 grün. **Damit ist die Prozess-Hardcode-Insel aufgelöst:
+  Domäne + Rolle emergieren, die einzige Hand-Geste (Werkstatt-Designation) ist der vorgesehene Intent-Override, und
+  auch dort emergiert die Domäne.** PERMANENTE LEHRE: nicht alles emergiert aus der Substanz — manche
+  Unterscheidungen sind INTENT (Zweck über Materie); MISS welche, und nutze den „optionalen Override" für sie,
+  während die EIGENSCHAFTEN (Domäne) emergent bleiben. Ein Hand-Flag ist kein Hardcode-Versagen, wenn die
+  Unterscheidung GEMESSEN nicht-emergent ist.
+- **S10 — die Katalysator-Op aus der Form — ✅ GEBAUT (V17.71):** die opClass emergiert als argmax-Resonanz des
+  Produkt-Vektors (Tags ⊕ `pointedFraction`, die W2-Geometrie als neue Achse) gegen `OP_CLASS_SIGNATURES`:
+  subtractive=scharf (pointedFraction dominant) · plastic=stumpf-dicht · phaseChange=magie. `_computeToolOpFromForm`
+  + `setBlueprintToolMeta(name)` ohne opClass leitet ab (explizite opClass = Override). `checkBandV1771` 5 grün
+  (KONSUM scharf→schneiden/stumpf→schmieden/magie→wandeln, der FLIP eisen-cone→sub vs eisen-box→plastic, die
+  Auto-Ableitung, der Override unbroken). EHRLICH: additive (mischen) ist FORM-mehrdeutig (Mörser=Hammer-Zwilling)
+  → Intent-Override, wie die Werkstatt-Natur (V17.70). Synthetisch gewächtert (Built-in-Tools sind formlos).
+  **Damit ist die Prozess-Hardcode-Insel VOLLSTÄNDIG aufgelöst: Domäne (R1) + Rolle (R3) + Werkzeug-Op (S10)
+  emergieren; die einzigen Hand-Gesten (Werkstatt-Designation, additive-Op) sind die gemessen-nicht-emergenten
+  Intent-Überschreibungen.**
+
+**PERMANENTE LEHRE (die Architektur-Lehre): wenn das System schon einen Vektor trägt (Tags, Aura) und an EINER Stelle
+eine Resonanz/ein Skalarprodukt rechnet (Spawn-Affinität), dann ist JEDE Einzel-Signal-Schwelle (`wenn ein Tag ≥ X`)
+ein architektonischer Riss — die synergetische Form liest den GANZEN Vektor (argmax-Resonanz gegen frozen Signaturen).
+Ein Produkt ist ein Vektor; Rolle/Domäne/Affordanz/Stats sind seine Projektionen, nicht seine Einzel-Tags.**

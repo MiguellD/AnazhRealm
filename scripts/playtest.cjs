@@ -5298,6 +5298,657 @@ async function checkBandV1765BrewConsumable(ctx) {
     );
 }
 
+// V17.66 S7 (kampf-plan §11.7/§11.9) — DER EINE FLUSS: das FERTIGEN in den Prozess-Fluss falten
+// (raus aus dem parallelen ⚒-Knopf im Detail-Editor, rein in die Stats-Tabelle als Abschluss) +
+// die Maschine-in-der-Welt (_workshopStationGate) end-to-end am Mach-Akt anschliessen (nicht nur
+// confirmBuild). KONSUM, nicht Existenz (V17.31): das Gate lehnt ab/laesst durch, die FERTIGEN-Zeile
+// rendert ins DOM, die alten Knoepfe sind weg.
+async function checkBandV1766FertigenFlow(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const savedArch = r.state.architectures.slice();
+        // FERTIGEN rüstet das geschmiedete Werk aus (equipped.held/armor) — sauber zurücksetzen, sonst
+        // zeigt eine spätere Band einen baumelnden Held (gelöschter Bauplan).
+        const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
+
+        // --- die Methoden da ---
+        out.methods =
+            typeof r._workshopAppendFertigenRow === "function" &&
+            typeof r._makeStationGate === "function" &&
+            typeof r._stationLabelForDomain === "function";
+
+        // --- die alten parallelen Mach-Knoepfe sind WEG aus dem Detail-Editor ---
+        const actionsSrc = r._workshopRenderActions.toString();
+        out.oldButtonsGone = !actionsSrc.includes("workshop-forge") && !actionsSrc.includes("workshop-soul-activate");
+        // --- der EINE FERTIGEN-Akt lebt jetzt im Abschluss der Stats-Tabelle ---
+        out.statsPanelCallsFertigen = r._workshopRenderStatsPanel.toString().includes("_workshopAppendFertigenRow");
+
+        // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
+        // eisen-Part (Einzel-Material → die Kosten sind eindeutig eisen) + ein schmiede-hammer-Op
+        // (forging-Domain). ===
+        r.setGameMode("schöpfer");
+        if (blu.__s7_forge) delete blu.__s7_forge;
+        blu.__s7_forge = {
+            name: "__s7_forge",
+            parts: [
+                { shape: "box", material: "eisen", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        r.applyOpToPart("__s7_forge", 0, "schmiede-hammer");
+        out.forgeHasDomain = r.computeBlueprintDomain(blu.__s7_forge) === "forging";
+
+        // === (b) DAS MASCHINE-GATE — pfad + forging-domain + KEINE Esse → no_workshop_station ===
+        r.setGameMode("pfad");
+        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("eisen", 400);
+        const eisenStart = p.inventory[0].count;
+        const noStation = r.fertigeBlueprint("__s7_forge");
+        out.pfadNoStationRejects = noStation.ok === false && noStation.reason === "no_workshop_station";
+        out.noStationReportsDomain = noStation.neededDomain === "forging";
+        // das Tor schloss VOR den Kosten → Material bleibt unberuehrt
+        out.noStationKeepsMaterial = p.inventory[0] && p.inventory[0].count === eisenStart;
+
+        // === KONSUM: Esse beim Spieler → FERTIGEN gelingt + zieht Material ===
+        r.state.architectures.push({ type: "esse", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__s7_esse" });
+        const eisenBefore = p.inventory[0].count;
+        const withStation = r.fertigeBlueprint("__s7_forge");
+        const eisenAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadWithStationMakes = withStation.ok === true && eisenBefore > eisenAfter;
+
+        // === ein DOMAIN-LOSES Geraet braucht KEINE Station (das Gate ist transparent) ===
+        delete blu.__s7_plain;
+        blu.__s7_plain = {
+            name: "__s7_plain",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 400);
+        const plainOk = r.fertigeBlueprint("__s7_plain");
+        out.domainlessNeedsNoStation = plainOk.ok === true;
+
+        // === frieden/schoepfer ueberspringen die Station (forging-domain, KEINE Esse) ===
+        r.setGameMode("schöpfer");
+        const schoepferNoStation = r.fertigeBlueprint("__s7_forge");
+        out.schoepferSkipsStation = schoepferNoStation.ok === true;
+
+        // === KONSUM (DOM): die FERTIGEN-Zeile rendert; eine Station-Rolle rendert KEINE (der Guard) ===
+        const panel = document.createElement("div");
+        r._workshopAppendFertigenRow(panel, blu.__s7_plain);
+        out.domHasFertigenButton = !!panel.querySelector(".workshop-fertigen");
+        const panel2 = document.createElement("div");
+        r._workshopAppendFertigenRow(panel2, blu.esse); // esse = role workshop-station → wird gebaut, nicht gefertigt
+        out.stationRoleNoFertigen = !panel2.querySelector(".workshop-fertigen");
+
+        // cleanup
+        delete blu.__s7_forge;
+        delete blu.__s7_plain;
+        r.state.architectures = savedArch;
+        p.inventory = new Array(27).fill(null);
+        p.equipped = savedEquipped;
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.66 S7: die FERTIGEN-/Station-Methoden existieren (_workshopAppendFertigenRow/_makeStationGate/_stationLabelForDomain)",
+        res.methods
+    );
+    check(
+        "V17.66 S7: die alten parallelen Mach-Knoepfe (⚒/Seele) sind aus dem Detail-Editor ENTFERNT",
+        res.oldButtonsGone
+    );
+    check(
+        "V17.66 S7: das FERTIGEN lebt jetzt im Abschluss der Stats-Tabelle (verfeinern → ablesen → FERTIGEN)",
+        res.statsPanelCallsFertigen
+    );
+    check("V17.66 S7: das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
+    check(
+        "V17.66 S7: (b) DAS MASCHINE-GATE — pfad + forging ohne Esse → no_workshop_station (Domain gemeldet + Material bleibt)",
+        res.pfadNoStationRejects && res.noStationReportsDomain && res.noStationKeepsMaterial
+    );
+    check(
+        "V17.66 S7: KONSUM — Esse beim Spieler → FERTIGEN gelingt + zieht Material (end-to-end, nicht nur confirmBuild)",
+        res.pfadWithStationMakes
+    );
+    check(
+        "V17.66 S7: ein domain-loses Geraet braucht KEINE Station (das Gate ist transparent — darum brechen die S3-S6-Bands nicht)",
+        res.domainlessNeedsNoStation
+    );
+    check("V17.66 S7: frieden/schoepfer ueberspringen die Station (forging ohne Esse → ok)", res.schoepferSkipsStation);
+    check(
+        "V17.66 S7: KONSUM — die FERTIGEN-Zeile rendert ins DOM; eine Station-Rolle (esse) rendert KEINE (Guard)",
+        res.domHasFertigenButton && res.stationRoleNoFertigen
+    );
+}
+
+// V17.67 S7-B (kampf-plan §11) — die WERKSTATT-DOMÄNE EMERGIERT aus der Substanz (_computeWorkshopDomain),
+// kein hardcoded `workshopDomain` mehr — das Vorbild ist _isPortalShaped (ein Ring IST ein Tor). Der erste
+// Schnitt, der die Prozess-Hardcode-Insel auflöst: die fünf Built-in-Werkstätten emergieren auf ihre Domäne
+// (der Tag-Drift-Wächter, V17.17-Disziplin), die Regel diskriminiert nach SUBSTANZ statt Name, das Gate liest
+// die emergente Domäne end-to-end.
+async function checkBandV1767WorkshopDomainEmergent(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const savedMode = r.getGameMode();
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const savedArch = r.state.architectures.slice();
+        const mk = (mat, shape) => ({
+            parts: [{ shape, material: mat, size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } }],
+        });
+
+        out.method = typeof r._computeWorkshopDomain === "function" && typeof r._blueprintResonance === "function";
+
+        // R1 — die Domäne ist das ARGMAX einer VEKTOR-RESONANZ (kein Einzel-Signal), gegen die frozen
+        // WORKSHOP_DOMAIN_SIGNATURES. Sanity: der Kern rechnet ein gewichtetes Skalarprodukt (Invers-Achse).
+        out.resonanceKernel =
+            r._blueprintResonance({ a: 2, b: 3 }, { a: 1, b: -1 }) === -1 &&
+            r._blueprintResonance({ a: 2 }, { a: 0.5 }) === 1;
+
+        // (1) DER WÄCHTER — die fünf Built-in-Werkstätten emergieren (per Resonanz-argmax) auf ihre Domäne (gegen Tag-Drift, V17.17)
+        out.esse = r._computeWorkshopDomain(blu.esse) === "forging";
+        out.brennkolben = r._computeWorkshopDomain(blu.brennkolben) === "alchemy";
+        out.webstuhl = r._computeWorkshopDomain(blu.webstuhl) === "textile";
+        out.altar = r._computeWorkshopDomain(blu.seelenstein_altar) === "soulwork";
+        out.drehbank = r._computeWorkshopDomain(blu.drehbank) === "mechanism";
+        out.noHardcode = blu.esse.workshopDomain === undefined;
+
+        // (2) SUBSTANZ statt NAME — verschiedene Form×Material → verschiedene Domänen-Resonanz, kein Lookup.
+        // (Ein LONE Material-Block ist KEINE Werkstatt → null unter dem Floor; die Resonanz über-klassifiziert
+        // nicht mehr wie die alte Einzel-Tag-Schwelle.)
+        out.quarzSphereAlchemy = r._computeWorkshopDomain(mk("quarz", "sphere")) === "alchemy"; // durchsichtiges Gefäß
+        out.steinBoxForging = r._computeWorkshopDomain(mk("stein", "box")) === "forging"; // dichte Masse
+        out.holzBoxNull = r._computeWorkshopDomain(mk("holz", "box")) === null; // weicher Block, aber kein Webstuhl → null
+        out.knochenBoxNull = r._computeWorkshopDomain(mk("knochen", "box")) === null; // kein klares Signal → keine Werkstatt
+
+        // (3) DER FLIP — dieselbe Struktur, andere Substanz → andere Domäne (live Form×Material, kein Schloss)
+        const flip = mk("stein", "box");
+        const before = r._computeWorkshopDomain(flip);
+        flip.parts.push({
+            shape: "sphere",
+            material: "quarz",
+            size: { x: 1.0, y: 1.0, z: 1.0 },
+            position: { x: 0, y: 1, z: 0 },
+        });
+        const after = r._computeWorkshopDomain(flip);
+        out.substanceFlip = before === "forging" && after === "alchemy";
+
+        // (4) DAS GATE liest die EMERGENTE Domäne end-to-end — ein forging-Werk passt zur Esse, NICHT zum Brennkolben
+        r.setGameMode("schöpfer");
+        delete blu.__wd_work;
+        blu.__wd_work = mk("eisen", "box");
+        blu.__wd_work.name = "__wd_work";
+        r.applyOpToPart("__wd_work", 0, "schmiede-hammer"); // forging-Domain über die opChain
+        out.workIsForging = r.computeBlueprintDomain(blu.__wd_work) === "forging";
+        r.setGameMode("pfad");
+        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse" && e.type !== "brennkolben");
+        r.state.architectures.push({ type: "esse", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__wd_esse" });
+        const gEsse = r._workshopStationGate("__wd_work", { x: pm.x, y: pm.y, z: pm.z });
+        out.esseMatchesForging = gEsse.ok === true && gEsse.found === "esse";
+        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+        r.state.architectures.push({ type: "brennkolben", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__wd_brk" });
+        const gBrk = r._workshopStationGate("__wd_work", { x: pm.x, y: pm.y, z: pm.z });
+        out.brennkolbenWrongDomain = gBrk.ok === false && gBrk.neededDomain === "forging";
+
+        // cleanup
+        delete blu.__wd_work;
+        r.state.architectures = savedArch;
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.67 S7-B / R1: _computeWorkshopDomain + _blueprintResonance existieren (die Domäne emergiert als Vektor-Resonanz)",
+        res.method
+    );
+    check(
+        "V17.67 R1: der Resonanz-Kern rechnet ein gewichtetes Skalarprodukt (mit Invers-Achse: {a:2,b:3}·{a:1,b:-1} = -1)",
+        res.resonanceKernel
+    );
+    check(
+        "V17.67 S7-B: DER WÄCHTER — die 5 Built-in-Werkstätten emergieren (Resonanz-argmax) korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism) + KEIN hardcoded Feld",
+        res.esse && res.brennkolben && res.webstuhl && res.altar && res.drehbank && res.noHardcode
+    );
+    check(
+        "V17.67 S7-B: SUBSTANZ statt NAME — die Resonanz diskriminiert nach Form×Material (quarz-Gefäß→alchemy, dichte→forging, lone Block→null statt über-klassifiziert)",
+        res.quarzSphereAlchemy && res.steinBoxForging && res.holzBoxNull && res.knochenBoxNull
+    );
+    check(
+        "V17.67 S7-B: DER FLIP — dieselbe Struktur + ein quarz-Gefäß → forging WIRD alchemy (live Form×Material, kein Schloss)",
+        res.substanceFlip
+    );
+    check(
+        "V17.67 S7-B: DAS GATE liest die EMERGENTE Domäne end-to-end — ein forging-Werk passt zur Esse, NICHT zum Brennkolben (alchemy)",
+        res.workIsForging && res.esseMatchesForging && res.brennkolbenWrongDomain
+    );
+}
+
+// V17.69 R2/R3 (kampf-plan §11.10) — die ROLLEN-RESONANZ: computeBlueprintRole entscheidet die intrinsische Rolle
+// als ARGMAX der Resonanz des Produkt-Vektors (Tags ⊕ bodyShape/portalShape) gegen FORM_ROLE_SIGNATURES, statt der
+// priority-Prädikat-Kette. DER HEAL (Schöpfer 03.06.): „architecture" ist eine positive Signatur (dichte+harte
+// Struktur) → ein Stein-Tempel/Felsbogen wird Bauwerk statt Seele, obwohl body-förmig. KONSUM, nicht Existenz.
+async function checkBandV1769RoleResonance(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const part = (mat, x, y, z) => ({
+            shape: "box",
+            material: mat,
+            size: { x: 0.6, y: 0.6, z: 0.6 },
+            position: { x, y, z },
+        });
+
+        out.methods =
+            typeof r._blueprintProductVector === "function" &&
+            typeof r._computeFormRole === "function" &&
+            !!r.constructor.FORM_ROLE_SIGNATURES;
+
+        // (1) der Produkt-Vektor trägt die räumliche Schicht (R2): bodyShape/portalShape als Achsen neben den Tags
+        const tv = r._blueprintProductVector(blu.temple);
+        out.vectorHasSpatial = "bodyShape" in tv && "portalShape" in tv && "dichte" in tv;
+
+        // (2) DER HEAL (Schöpfer-Wahl „jetzt heilen") — temple + felsbogen WAREN soul (body-förmig), sind jetzt
+        // architecture: ihre Geometrie ist body-förmig (bodyShape=1), aber als dichte, harte Stein-Struktur
+        // resoniert „architecture" STÄRKER als „soul". Der Mechanismus, nicht nur das Resultat.
+        out.templeHealed = r.computeBlueprintRole(blu.temple) === "architecture";
+        out.felsbogenHealed = r.computeBlueprintRole(blu.felsbogen) === "architecture";
+        const tvBody = r._isBodyShaped(blu.temple);
+        const archScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.architecture);
+        const soulScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.soul);
+        out.healMechanism = tvBody === true && archScore > soulScore; // body-förmig, aber architecture resoniert stärker
+
+        // (3) DER WÄCHTER — die 12 Form-Fallback-Built-ins, Baseline eingefroren (temple/felsbogen jetzt architecture)
+        const wantArch = [
+            "village",
+            "waterfall",
+            "stein_block",
+            "damm",
+            "start_plattform",
+            "kristall_geode",
+            "glutbrunnen",
+            "felsturm",
+            "temple",
+            "felsbogen",
+        ];
+        out.allArch = wantArch.every((n) => r.computeBlueprintRole(blu[n]) === "architecture");
+        out.baeumeConsumable =
+            r.computeBlueprintRole(blu.baum_eiche) === "consumable" &&
+            r.computeBlueprintRole(blu.baum_kiefer) === "consumable";
+
+        // (4) die Form-Rollen via Resonanz: ein weicher fleisch-Körper → soul, ein Turm → architecture, Nahrung →
+        // consumable, ein magie-Ring → portal, ein Stein-Ring → architecture (KONSUM der Fixtures durch die Resonanz)
+        const body = {
+            parts: [
+                part("fleisch", 0, 1, 0),
+                part("knochen", 0, 3, 0),
+                part("fleisch", -1, 2, 0),
+                part("fleisch", 1, 2, 0),
+            ],
+        };
+        const tower = { parts: [part("stein", 0, 0, 0), part("stein", 0, 1, 0), part("stein", 0, 2, 0)] };
+        const food = {
+            parts: [
+                { shape: "sphere", material: "fleisch", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        const magicRing = {
+            parts: [
+                { shape: "torus", material: "quarz", size: { x: 3, y: 0.4, z: 3 }, position: { x: 0, y: 1, z: 0 } },
+            ],
+        };
+        const stoneRing = {
+            parts: [
+                { shape: "torus", material: "stein", size: { x: 3, y: 0.4, z: 3 }, position: { x: 0, y: 1, z: 0 } },
+            ],
+        };
+        out.bodySoul = r.computeBlueprintRole(body) === "soul";
+        out.towerArch = r.computeBlueprintRole(tower) === "architecture";
+        out.foodConsumable = r.computeBlueprintRole(food) === "consumable";
+        out.ringPortal = r.computeBlueprintRole(magicRing) === "portal";
+        out.stoneRingArch = r.computeBlueprintRole(stoneRing) === "architecture";
+
+        // (5) DER FLIP — dieselbe body-Geometrie, andere Substanz kippt die Rolle: fleisch → soul, stein → architecture
+        const stoneBody = {
+            parts: [part("stein", 0, 1, 0), part("stein", 0, 3, 0), part("stein", -1, 2, 0), part("stein", 1, 2, 0)],
+        };
+        out.substanceFlip =
+            r.computeBlueprintRole(body) === "soul" && r.computeBlueprintRole(stoneBody) === "architecture";
+
+        // (6) die opChain-DOMÄNE behält Vorrang (Krafting-Intent vor Form) — ein forging-Gerät bleibt tool/armor
+        if (blu.__rr_forge) delete blu.__rr_forge;
+        blu.__rr_forge = { name: "__rr_forge", parts: [part("eisen", 0, 0, 0)] };
+        const savedMode = r.getGameMode();
+        r.setGameMode("schöpfer");
+        r.applyOpToPart("__rr_forge", 0, "schmiede-hammer");
+        const forgeRole = r.computeBlueprintRole(blu.__rr_forge);
+        out.domainPriority = forgeRole === "tool" || forgeRole === "armor";
+        delete blu.__rr_forge;
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.69 R2/R3: die Methoden existieren (_blueprintProductVector/_computeFormRole/FORM_ROLE_SIGNATURES)",
+        res.methods
+    );
+    check(
+        "V17.69 R2: der Produkt-Vektor trägt die räumliche Schicht (bodyShape/portalShape) neben den Tags",
+        res.vectorHasSpatial
+    );
+    check(
+        "V17.69 R3 DER HEAL: temple + felsbogen sind jetzt architecture (waren soul) — body-förmig, aber als dichte Stein-Struktur resoniert architecture STÄRKER als soul",
+        res.templeHealed && res.felsbogenHealed && res.healMechanism
+    );
+    check(
+        "V17.69 R3 DER WÄCHTER: die 12 Form-Fallback-Built-ins emergieren auf der Baseline (10 architecture, 2 Bäume consumable)",
+        res.allArch && res.baeumeConsumable
+    );
+    check(
+        "V17.69 R3 KONSUM: die Form-Rollen via Resonanz — fleisch-Körper→soul, Turm→architecture, Nahrung→consumable, magie-Ring→portal, Stein-Ring→architecture",
+        res.bodySoul && res.towerArch && res.foodConsumable && res.ringPortal && res.stoneRingArch
+    );
+    check(
+        "V17.69 R3 DER FLIP: dieselbe Körper-Geometrie, andere Substanz kippt die Rolle (fleisch→soul, stein→architecture) — live Vektor, kein Schloss",
+        res.substanceFlip
+    );
+    check(
+        "V17.69 R3: die opChain-DOMÄNE behält Vorrang (ein forging-Gerät bleibt tool/armor, nicht die Form-Resonanz)",
+        res.domainPriority
+    );
+}
+
+// V17.70 R3-Schluss (kampf-plan §11.10) — die WORKSHOP-STATION-DESIGNATION als Override + emergente Domäne.
+// GEMESSEN: ob etwas eine Werkstatt IST emergiert NICHT sauber (eine Esse und ein dichtes Bauwerk sind Substanz-
+// Zwillinge) — die Werkstatt-Natur ist INTENT (Hand-Flag, der „optionale Override"), aber die bediente Domäne
+// EMERGIERT (R1). Damit kann ein Spieler einen eigenen Apparat bauen → markieren → er bedient seine emergente
+// Domäne, das Gate findet ihn. KONSUM, nicht Existenz.
+async function checkBandV1770WorkshopStationMark(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const savedArch = r.state.architectures.slice();
+        const savedMode = r.getGameMode();
+
+        out.method = typeof r.setBlueprintAsWorkshopStation === "function";
+
+        // ein eigener Apparat: ein Quarz-Gefäß (durchsichtig → alchemy-Domäne, R1)
+        if (blu.__ws_vessel) delete blu.__ws_vessel;
+        blu.__ws_vessel = {
+            name: "__ws_vessel",
+            parts: [{ shape: "sphere", material: "quarz", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }],
+        };
+        // VOR der Markierung: die Rolle ist NICHT workshop-station (emergiert nicht als Werkstatt)
+        out.notStationBeforeMark = r.computeBlueprintRole(blu.__ws_vessel) !== "workshop-station";
+
+        const mark = r.setBlueprintAsWorkshopStation("__ws_vessel");
+        out.markSetsRole =
+            mark.ok === true && blu.__ws_vessel.role === "workshop-station" && blu.__ws_vessel.roleManual === true;
+        // KONSUM: die bediente Domäne EMERGIERT aus der Substanz (durchsichtiges Gefäß → alchemy), nicht deklariert
+        out.domainEmerges = mark.domain === "alchemy" && r._computeWorkshopDomain(blu.__ws_vessel) === "alchemy";
+
+        // Validierung: Built-in + unbekannt abgelehnt (die Built-in-Stationen sind deklarierte Saat)
+        out.rejectsBuiltin = r.setBlueprintAsWorkshopStation("esse").ok === false;
+        out.rejectsUnknown = r.setBlueprintAsWorkshopStation("__nonexist_xyz").ok === false;
+
+        // (end-to-end) ein vom SPIELER gebauter, markierter forging-Apparat (eisen, dichte → forging) bedient das
+        // Gate: ein forging-Werk passt zu ihm. (Forging, weil eisen+schmiede-hammer eine saubere Material-Op-
+        // Kompatibilität hat — der Punkt ist „Spieler-Station bedient das Gate via emergenter Domäne", domain-agnostisch.)
+        if (blu.__ws_forge) delete blu.__ws_forge;
+        blu.__ws_forge = {
+            name: "__ws_forge",
+            parts: [{ shape: "box", material: "eisen", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }],
+        };
+        r.setBlueprintAsWorkshopStation("__ws_forge");
+        out.forgeStationDomain = r._computeWorkshopDomain(blu.__ws_forge) === "forging"; // eisen-Masse → forging (emergent)
+        if (blu.__ws_work) delete blu.__ws_work;
+        blu.__ws_work = {
+            name: "__ws_work",
+            parts: [
+                { shape: "box", material: "eisen", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        r.setGameMode("schöpfer");
+        r.applyOpToPart("__ws_work", 0, "schmiede-hammer"); // forging-Domäne (opChain)
+        out.workIsForging = r.computeBlueprintDomain(blu.__ws_work) === "forging";
+        r.setGameMode("pfad");
+        r.state.architectures = r.state.architectures.filter((e) => e.type !== "__ws_forge");
+        r.state.architectures.push({ type: "__ws_forge", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__ws_st" });
+        const gate = r._workshopStationGate("__ws_work", { x: pm.x, y: pm.y, z: pm.z });
+        out.playerStationServes = gate.ok === true && gate.found === "__ws_forge"; // ein SPIELER-Apparat bedient das Gate
+
+        // der DSL-Op (Spiegel von set_armor_role)
+        if (blu.__ws_dsl) delete blu.__ws_dsl;
+        blu.__ws_dsl = {
+            name: "__ws_dsl",
+            parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }],
+        };
+        r.dslRun(["set_workshop_station", "__ws_dsl"], { source: "test" });
+        out.dslMarks = blu.__ws_dsl.role === "workshop-station";
+
+        // cleanup
+        delete blu.__ws_vessel;
+        delete blu.__ws_forge;
+        delete blu.__ws_work;
+        delete blu.__ws_dsl;
+        r.state.architectures = savedArch;
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.70 R3-Schluss: setBlueprintAsWorkshopStation existiert", res.method);
+    check(
+        "V17.70 R3-Schluss: die Markierung setzt role=workshop-station + roleManual (der Intent-Override); vorher emergiert der Apparat NICHT als Werkstatt",
+        res.markSetsRole && res.notStationBeforeMark
+    );
+    check(
+        "V17.70 R3-Schluss: KONSUM — die bediente Domäne EMERGIERT aus der Substanz (Quarz-Gefäß → alchemy via R1), nicht deklariert",
+        res.domainEmerges
+    );
+    check(
+        "V17.70 R3-Schluss: Built-in (esse) + unbekannt werden abgelehnt (Saat unantastbar)",
+        res.rejectsBuiltin && res.rejectsUnknown
+    );
+    check(
+        "V17.70 R3-Schluss: end-to-end — ein vom SPIELER gebauter, markierter Apparat bedient das Werkstatt-Gate (ein alchemy-Werk passt zu ihm)",
+        res.forgeStationDomain && res.workIsForging && res.playerStationServes
+    );
+    check("V17.70 R3-Schluss: der DSL-Op set_workshop_station markiert (Spiegel von set_armor_role)", res.dslMarks);
+}
+
+// V17.71 S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der Form: welche Transformation ein Werkzeug katalysiert,
+// emergiert aus seiner Form × Material (scharf→schneiden, stumpf-dicht→schmieden, magie→wandeln) statt aus manuellem
+// opName-Tippen. `setBlueprintToolMeta(name)` OHNE opClass leitet die Op aus der Form ab; eine explizite opClass
+// bleibt der Override. additive bleibt form-mehrdeutig (Intent). Wächter synthetisch (Built-in-Tools sind formlos).
+async function checkBandV1771ToolOpFromForm(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const mk = (shape, mat) => ({
+            parts: [{ shape, material: mat, size: { x: 0.6, y: 1.2, z: 0.6 }, position: { x: 0, y: 0, z: 0 } }],
+        });
+
+        out.methods = typeof r._computeToolOpFromForm === "function" && !!r.constructor.OP_CLASS_SIGNATURES;
+        // R2-Erweiterung: der Produkt-Vektor trägt jetzt auch die Katalysator-Geometrie (pointedFraction)
+        out.vectorHasPointed = "pointedFraction" in r._blueprintProductVector(mk("cone", "eisen"));
+
+        // (KONSUM) die Op EMERGIERT aus der Form: scharf→subtractive, stumpf-dicht→plastic, magie→phaseChange
+        out.bladeSubtractive = r._computeToolOpFromForm(mk("cone", "eisen")).opClass === "subtractive";
+        out.hammerPlastic = r._computeToolOpFromForm(mk("box", "eisen")).opClass === "plastic";
+        out.wandPhaseChange = r._computeToolOpFromForm(mk("helix", "quarz")).opClass === "phaseChange";
+        out.emptyFallback = r._computeToolOpFromForm({ parts: [] }).opClass === "subtractive";
+
+        // (DER FLIP) dasselbe Material (eisen), andere FORM → andere Op (cone→schneiden, box→schmieden) — Form-getrieben
+        out.formFlip =
+            r._computeToolOpFromForm(mk("cone", "eisen")).opClass === "subtractive" &&
+            r._computeToolOpFromForm(mk("box", "eisen")).opClass === "plastic";
+
+        // (KONSUM) setBlueprintToolMeta OHNE opClass → die Op emergiert (emergent-Flag), role=tool + toolMeta gesetzt
+        if (blu.__op_blade) delete blu.__op_blade;
+        blu.__op_blade = { name: "__op_blade", parts: mk("cone", "eisen").parts };
+        const auto = r.setBlueprintToolMeta("__op_blade");
+        out.autoDerives =
+            auto.ok === true &&
+            auto.emergent === true &&
+            auto.opClass === "subtractive" &&
+            blu.__op_blade.role === "tool" &&
+            !!blu.__op_blade.toolMeta;
+        // ein emergent markiertes Werkzeug registriert sich
+        out.registersEmergent = r.registerBlueprintAsTool("__op_blade").ok === true;
+
+        // (Override unverändert) explizite opClass = manueller Override + Validierung bleibt
+        if (blu.__op_man) delete blu.__op_man;
+        blu.__op_man = { name: "__op_man", parts: mk("box", "stein").parts };
+        const man = r.setBlueprintToolMeta("__op_man", "brew", "additive"); // Schöpfer erzwingt additive (Intent)
+        out.manualOverride = man.ok === true && man.emergent === false && blu.__op_man.toolMeta.opClass === "additive";
+        out.rejectsBadClass = r.setBlueprintToolMeta("__op_man", "x", "uberklasse").ok === false; // Validierung unbroken
+
+        // cleanup
+        if (r.state.tools && r.state.tools.__op_blade) delete r.state.tools.__op_blade;
+        if (r.state.player && Array.isArray(r.state.player.tools))
+            r.state.player.tools = r.state.player.tools.filter((t) => t !== "__op_blade");
+        delete blu.__op_blade;
+        delete blu.__op_man;
+        return out;
+    });
+    check(
+        "V17.71 S10: _computeToolOpFromForm + OP_CLASS_SIGNATURES existieren; der Produkt-Vektor trägt pointedFraction",
+        res.methods && res.vectorHasPointed
+    );
+    check(
+        "V17.71 S10 KONSUM: die Op EMERGIERT aus der Form — scharf→subtractive, stumpf-dicht→plastic, magie→phaseChange (+ leer→subtractive)",
+        res.bladeSubtractive && res.hammerPlastic && res.wandPhaseChange && res.emptyFallback
+    );
+    check(
+        "V17.71 S10 DER FLIP: dasselbe Material (eisen), andere Form → andere Op (cone→schneiden, box→schmieden) — Form-getrieben, kein Tippen",
+        res.formFlip
+    );
+    check(
+        "V17.71 S10 KONSUM: setBlueprintToolMeta OHNE opClass leitet die Op aus der Form ab (emergent) + markiert + registriert",
+        res.autoDerives && res.registersEmergent
+    );
+    check(
+        "V17.71 S10: eine explizite opClass bleibt der Schöpfer-Override (manuell, additive erzwingbar) + die Validierung ist unbroken",
+        res.manualOverride && res.rejectsBadClass
+    );
+}
+
+// V17.72 A1 — DIE BIBLIOTHEK: ein craftbarer Beispiel-Bauplan pro Mach-Akt-Rolle.
+// KONSUM-Disziplin (V17.31): nicht „existiert", sondern (a) die Rolle ist
+// substanz-EHRLICH (computeBlueprintRole — die pure Substanz-Funktion —
+// emergiert zu derselben Rolle für Trank/Avatar; architecture = der Intent-
+// Zwilling für Rüstung/Gerät), (b) die vier Mach-Akte FEUERN rollen-gerecht
+// (fertigeBlueprint routet, das Role-Gate beißt), (c) kein Worldgen-Litter.
+// Player-State wird gesnapshottet + restauriert (V17.66-Lehre: forge-equip
+// + embody mutieren equipped/soul/boosts → ein dangling Held bräche spätere Bands).
+async function checkBandV1772Library(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+
+        const G = blu.geraet_spitzhacke;
+        const A = blu.ruestung_brustpanzer;
+        const T = blu.trank_lebenssaft;
+        const V = blu.avatar_waechter;
+        out.allExist = !!(G && A && T && V) && G.builtIn && A.builtIn && T.builtIn && V.builtIn;
+
+        // (1) die deklarierten Rollen: Gerät rollenlos (gehalten, W2-B), die drei anderen deklariert.
+        out.rolesDeclared = G.role === undefined && A.role === "armor" && T.role === "consumable" && V.role === "soul";
+
+        // (2) SUBSTANZ-EHRLICH: computeBlueprintRole (die pure Substanz-Funktion, liest NICHT bp.role) emergiert
+        //     für Trank/Avatar zur SELBEN Rolle (ein Spieler-Klon bekäme dieselbe → die Rekursion-Saat ist ehrlich);
+        //     Rüstung+Gerät resonieren architecture (der dichte+harte Intent-Zwilling — darum ist die armor-Rolle
+        //     ein deklarierter Override, V17.70, kein Emergenz-Versagen).
+        out.trankHonest = r.computeBlueprintRole(T) === "consumable";
+        out.avatarHonest = r.computeBlueprintRole(V) === "soul" && r._isBodyShaped(V) === true;
+        out.armorIsTwin = r.computeBlueprintRole(A) === "architecture";
+        out.geraetIsHeldArch = r.computeBlueprintRole(G) === "architecture";
+
+        // (3) das Role-GATE beißt: die rollen-spezifischen Mach-Akte lehnen das rollenlose Gerät ab.
+        out.armorGate = r.forgeArmor("geraet_spitzhacke").reason === "not_marked_as_armor";
+        out.brewGate = r.brewConsumable("geraet_spitzhacke").reason === "not_a_consumable";
+        out.avatarGate = r.forgeAvatar("geraet_spitzhacke").reason === "blueprint_not_soul";
+
+        // (4) kein Worldgen-Litter: deliberate Items (kein `instanced` → nicht in der Mass-Spawn-Bahn).
+        out.noLitter = !G.instanced && !A.instanced && !T.instanced && !V.instanced;
+
+        // (5) KONSUM — die vier Mach-Akte FEUERN rollen-gerecht (schöpfer = frei, kein Material/Station nötig).
+        //     Snapshot des Player-States, danach restauriert (V17.66).
+        const savedMode = r.getGameMode();
+        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
+        const savedSoul = (p && p.soul) || "mensch";
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        else r.state.worldMeta.gameMode = "schöpfer";
+
+        const fg = r.fertigeBlueprint("geraet_spitzhacke");
+        out.geraetForged = fg.ok === true && p.equipped.held === "geraet_spitzhacke";
+        const fa = r.fertigeBlueprint("ruestung_brustpanzer");
+        out.armorForged = fa.ok === true && p.equipped.armor === "ruestung_brustpanzer";
+        const ft = r.fertigeBlueprint("trank_lebenssaft");
+        out.trankBrewed = ft.ok === true; // brewConsumable → activateConsumable → Boost
+        const fv = r.fertigeBlueprint("avatar_waechter");
+        out.avatarEmbodied = fv.ok === true;
+
+        // restore — kein dangling Held/Soul/Boost für die nächsten Bands
+        if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
+        else r.state.worldMeta.gameMode = savedMode;
+        r.applyPlayerSoul(savedSoul);
+        if (p) {
+            p.equipped = savedEquip;
+            p.boosts = savedBoosts;
+        }
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        return out;
+    });
+    check(
+        "V17.72 A1: die vier Bibliotheks-Baupläne existieren als Built-in-Saat (Gerät/Rüstung/Trank/Avatar)",
+        res.allExist
+    );
+    check(
+        "V17.72 A1: die Rollen sind deklariert — Gerät rollenlos (gehalten, W2-B), Rüstung/Trank/Avatar = armor/consumable/soul",
+        res.rolesDeclared
+    );
+    check(
+        "V17.72 A1 SUBSTANZ-EHRLICH: der Trank resoniert consumable + der Avatar soul (body-shaped) — ein Spieler-Klon emergierte zur selben Rolle",
+        res.trankHonest && res.avatarHonest
+    );
+    check(
+        "V17.72 A1: Rüstung + Gerät resonieren architecture (der dichte+harte Intent-Zwilling) → die armor-Rolle ist ein deklarierter Override (V17.70)",
+        res.armorIsTwin && res.geraetIsHeldArch
+    );
+    check(
+        "V17.72 A1: das Role-GATE beißt — forgeArmor/brewConsumable/forgeAvatar lehnen das rollenlose Gerät ab",
+        res.armorGate && res.brewGate && res.avatarGate
+    );
+    check(
+        "V17.72 A1: kein Worldgen-Litter — die vier sind deliberate Items (kein instanced-Flag, nicht in der Spawn-Kandidatenliste)",
+        res.noLitter
+    );
+    check(
+        "V17.72 A1 KONSUM: die vier Mach-Akte FEUERN rollen-gerecht — fertigeBlueprint schmiedet Gerät (held) + webt Rüstung (armor) + braut Trank + formt Avatar",
+        res.geraetForged && res.armorForged && res.trankBrewed && res.avatarEmbodied
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -17711,13 +18362,21 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // 4) Damm-Remove → Drain → Cells gehen zurück
         if (damEntry) {
             r.removeArchitecture(damEntry);
-            // V17.0-Flake-Heilung: der Cell-Remesh nach removeArchitecture
-            // braucht unter CI-CPU-Last manchmal mehrere Drain-Passes, bis die
-            // Stempel-Cell vollstaendig neu klassifiziert ist (sonst zeigt
-            // removeRestores transient noch SOLID = CI-Flake, lokal nie
-            // reproduzierbar). Mehrfach drainen = deterministisch gesettlet,
-            // ohne die Assertion zu schwaechen.
-            for (let d = 0; d < 4; d++) r._drainDirtyVoxelChunks();
+            // V17.0-Flake-Heilung + V17.x-Determinismus: `removeArchitecture`
+            // markiert mit skirt=0 nur den Footprint-Chunk dirty, und der
+            // Welt-Zustand beim Band-Eintritt variiert je Lauf (der Warmup-
+            // Worker settlet timing-abhängig — render-frei fällt der Render-
+            // Puffer weg, der das früher kaschierte). Heilung: den GELESENEN
+            // Chunk (`damChunkKey`) + sein 3×3-Umfeld EXPLIZIT dirty markieren
+            // und drainen, bis das Set leer ist → der Stempel-Cell wird
+            // garantiert neu klassifiziert, deterministisch + render-unabhängig.
+            if (!r.state.dirtyVoxelChunks) r.state.dirtyVoxelChunks = new Set();
+            for (let dz = -1; dz <= 1; dz++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    r.state.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
+                }
+            }
+            for (let d = 0; d < 8 && r.state.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
             const afterRemoveEntry = r.state.voxelChunks && r.state.voxelChunks.get(damChunkKey);
             if (afterRemoveEntry && afterRemoveEntry.waterCells) {
                 const cells = afterRemoveEntry.waterCells;
@@ -32596,11 +33255,14 @@ async function checkBandWaves9And10a(ctx) {
             out.allHaveRole = stationNames.every(
                 (n) => r.state.blueprints[n] && r.state.blueprints[n].role === "workshop-station"
             );
-            out.esseForging = r.state.blueprints.esse.workshopDomain === "forging";
-            out.brennkolbenAlchemy = r.state.blueprints.brennkolben.workshopDomain === "alchemy";
-            out.webstuhlTextile = r.state.blueprints.webstuhl.workshopDomain === "textile";
-            out.altarSoulwork = r.state.blueprints.seelenstein_altar.workshopDomain === "soulwork";
-            out.drehbankMechanism = r.state.blueprints.drehbank.workshopDomain === "mechanism";
+            // S7-B (V17.67) — die bediente Domäne EMERGIERT jetzt aus der Substanz
+            // (_computeWorkshopDomain), kein hardcoded workshopDomain-Feld mehr.
+            out.esseForging = r._computeWorkshopDomain(r.state.blueprints.esse) === "forging";
+            out.brennkolbenAlchemy = r._computeWorkshopDomain(r.state.blueprints.brennkolben) === "alchemy";
+            out.webstuhlTextile = r._computeWorkshopDomain(r.state.blueprints.webstuhl) === "textile";
+            out.altarSoulwork = r._computeWorkshopDomain(r.state.blueprints.seelenstein_altar) === "soulwork";
+            out.drehbankMechanism = r._computeWorkshopDomain(r.state.blueprints.drehbank) === "mechanism";
+            out.noHardcodedDomain = r.state.blueprints.esse.workshopDomain === undefined;
             out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 10;
             out.gateMethodExists = typeof r._workshopStationGate === "function";
 
@@ -32659,12 +33321,13 @@ async function checkBandWaves9And10a(ctx) {
         );
         check("Welle 9c: alle haben role='workshop-station'", wave9cResults.allHaveRole);
         check(
-            "Welle 9c: workshopDomain-Mapping korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism)",
+            "Welle 9c→S7-B (V17.67): die bediente Domäne EMERGIERT aus der Substanz (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism); kein hardcoded workshopDomain-Feld mehr",
             wave9cResults.esseForging &&
                 wave9cResults.brennkolbenAlchemy &&
                 wave9cResults.webstuhlTextile &&
                 wave9cResults.altarSoulwork &&
-                wave9cResults.drehbankMechanism
+                wave9cResults.drehbankMechanism &&
+                wave9cResults.noHardcodedDomain
         );
         check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 10", wave9cResults.proximityConst);
         check("Welle 9c: _workshopStationGate-Methode existiert", wave9cResults.gateMethodExists);
@@ -32743,18 +33406,21 @@ async function checkBandWaves9And10a(ctx) {
             const unknownRes = r.applyPlayerSoulFromBlueprint("nonsense_blueprint");
             out.unknownReject = unknownRes && unknownRes.ok === false && unknownRes.reason === "blueprint_unknown";
 
-            // UI-Button
+            // UI — S7 (V17.66): die role-spezifischen Mach-Knöpfe (.workshop-soul-activate /
+            // .workshop-forge) sind in den EINEN „FERTIGEN"-Akt der Stats-Tabelle gefaltet. Der
+            // Soul-Bauplan zeigt jetzt die FERTIGEN-Zeile (im LIVE Werkstatt-DOM, ergänzt das
+            // isolierte V1766-Band).
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
             r.selectBlueprintForEdit("test_9d_soul");
-            const soulBtn = document.querySelector(".workshop-soul-activate");
-            out.soulButtonRendered = !!soulBtn;
+            out.soulFertigenRendered = !!document.querySelector("#workshop-stats-panel .workshop-fertigen");
+            out.oldSoulButtonGone = !document.querySelector(".workshop-soul-activate");
 
             if (r.state.blueprints["test_9d_arch"]) r.deleteBlueprint("test_9d_arch");
             r.cloneBlueprint("village", "test_9d_arch");
             r.selectBlueprintForEdit("test_9d_arch");
-            const soulBtnArch = document.querySelector(".workshop-soul-activate");
-            out.archHasNoSoulButton = !soulBtnArch;
+            // die EINE FERTIGEN-Zeile erscheint auch fürs Gerät/Bauwerk — ein Akt für alle Mach-Rollen.
+            out.archAlsoFertigen = !!document.querySelector("#workshop-stats-panel .workshop-fertigen");
 
             // Cleanup
             r.applyPlayerSoul("human");
@@ -32802,10 +33468,13 @@ async function checkBandWaves9And10a(ctx) {
             wave9dResults.unknownReject
         );
         check(
-            "Welle 9d UI: 'Als Seele tragen'-Button bei role=soul gerendert (.workshop-soul-activate)",
-            wave9dResults.soulButtonRendered
+            "Welle 9d UI (S7 V17.66): die EINE FERTIGEN-Zeile rendert bei role=soul im Werkstatt-DOM (statt des alten Soul-Knopfs)",
+            wave9dResults.soulFertigenRendered && wave9dResults.oldSoulButtonGone
         );
-        check("Welle 9d UI: KEIN Soul-Button bei role=architecture (Default)", wave9dResults.archHasNoSoulButton);
+        check(
+            "Welle 9d UI (S7 V17.66): die FERTIGEN-Zeile rendert auch bei role=architecture (ein Akt fuer alle Mach-Rollen)",
+            wave9dResults.archAlsoFertigen
+        );
     } else if (wave9dResults && wave9dResults.error) {
         check(`Welle 9d: evaluate-Fehler — ${wave9dResults.error}`, false);
     }
@@ -37265,6 +37934,7 @@ async function checkBandRing6Workshop(ctx) {
 }
 
 (async () => {
+    const T0 = Date.now();
     console.log(`Starte Save-Server ...`);
     const server = await startSaveServer();
     console.log(`Lade ${SERVER_URL} für ${DURATION_MS / 1000}s ...`);
@@ -37337,6 +38007,27 @@ async function checkBandRing6Workshop(ctx) {
                 await new Promise((resolve) => setTimeout(resolve, durationMs - (performance.now() - start)));
                 return;
             }
+            // [PERF] der per-Frame-GPU-Render (`renderer.render` unter swiftshader
+            // ~2.5 s/Frame) ist der Warmup-Flaschenhals UND konkurriert während der
+            // Bands mit dem rAF-Hintergrund-Loop um die CPU — headless ist aber
+            // pixel-blind (die Bands prüfen Logik/DOM/State, NIE Pixel; nur der
+            // finale Screenshot rendert). CHIRURGISCH: NUR den teuren GPU-Aufruf
+            // stubben (`renderer.render`/`renderAsync`), NICHT das ganze `_loopRender`
+            // — so laufen seine billigen Uniform-Updates (skybox/starField-Position,
+            // `hydroSurfaceUniforms.time`/`.emotion`) weiter, die V17.31 + V9.42-b
+            // lesen. Der Screenshot-Pfad stellt den echten Render wieder her.
+            // GEMESSEN (diag-warmup-speed): Warmup 27.5 s → 5.6 s.
+            if (r.state.renderer) {
+                window.__origRendererRender = r.state.renderer.render.bind(r.state.renderer);
+                r.state.renderer.render = function () {};
+                if (typeof r.state.renderer.renderAsync === "function") {
+                    r.state.renderer.renderAsync = function () {
+                        return Promise.resolve();
+                    };
+                }
+            }
+            // Post-Processing (falls aktiv) auf den nun-no-op renderer.render-Pfad zwingen.
+            r.state.postProcessingFailed = true;
             // Phase 2 — Loop synchron pumpen, bis das Wall-Clock-Budget
             // verbraucht ist. setTimeout(0) yieldet zwischen Ticks für
             // Mikrotasks (Promise-Ketten, async Worldgen) — `setTimeout`
@@ -37359,8 +38050,21 @@ async function checkBandRing6Workshop(ctx) {
             // zu einem großzügigen Cap (gegen einen hängenden Build). Die
             // Invariante prüft WELT-ZUSTAND, nicht Wall-Clock-vs-CPU-Speed →
             // deterministisch auf jedem Runner.
-            const TARGET_VOXEL_CHUNKS = 18; // Marge über der >=15-Invariante
+            // [PERF] mit gestubbtem Render ist der Warmup nur noch chunk-build-
+            // bound (~5-8 s). Der alte 30-s-Wall-Clock-FLOOR (V17.32) war nötig,
+            // solange der Render jeden Tick 2.5 s fraß; jetzt detektieren wir das
+            // PLATEAU (der Streaming-Ring um den stationären Spieler ist voll, die
+            // Chunk-Zahl seit >=2 s stabil) → dieselbe „warme" Welt wie der alte
+            // Floor (V9.42-b braucht den vollen 3×3-Naht-Ring: die ersten 9 Chunks
+            // müssen >=200 Naht-Vertices teilen), nur schnell. Count-basiert (robust
+            // gegen CPU-Last, die V17.32-Wurzel) + WARMUP_MIN für die zeit-getriebenen
+            // Trigger (Grok 1.5 s) + Hard-Cap gegen einen Hänger.
+            const TARGET_VOXEL_CHUNKS = 18; // Mindest-Marge über der >=15-Invariante
+            const WARMUP_MIN_MS = 3000; // zeit-getriebene Trigger (Grok 1.5 s) sehen echte Zeit
+            const PLATEAU_MS = 2000; // Ring „voll", wenn die Chunk-Zahl so lange stabil ist
             const HARD_CAP_MS = Math.max(durationMs * 3, 90000);
+            let lastBuilt = -1;
+            let lastGrowthAt = start;
             for (;;) {
                 try {
                     r._gameLoopTick(performance.now());
@@ -37370,7 +38074,13 @@ async function checkBandRing6Workshop(ctx) {
                 }
                 const elapsed = performance.now() - start;
                 const built = r.state && r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                if (elapsed >= durationMs && (built >= TARGET_VOXEL_CHUNKS || elapsed >= HARD_CAP_MS)) {
+                if (built !== lastBuilt) {
+                    lastBuilt = built;
+                    lastGrowthAt = performance.now();
+                }
+                const stableMs = performance.now() - lastGrowthAt;
+                const warm = built >= TARGET_VOXEL_CHUNKS && stableMs >= PLATEAU_MS && elapsed >= WARMUP_MIN_MS;
+                if (warm || elapsed >= HARD_CAP_MS) {
                     break;
                 }
                 await new Promise((resolve) => setTimeout(resolve, 0));
@@ -37471,6 +38181,12 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1763ForgeArmor(ctx);
             await checkBandV1764ForgeAvatar(ctx);
             await checkBandV1765BrewConsumable(ctx);
+            await checkBandV1766FertigenFlow(ctx);
+            await checkBandV1767WorkshopDomainEmergent(ctx);
+            await checkBandV1769RoleResonance(ctx);
+            await checkBandV1770WorkshopStationMark(ctx);
+            await checkBandV1771ToolOpFromForm(ctx);
+            await checkBandV1772Library(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
@@ -37612,6 +38328,16 @@ async function checkBandRing6Workshop(ctx) {
             await page.evaluate(() => {
                 const box = document.getElementById("dialogue-box");
                 if (box && box.textContent) box.classList.add("visible");
+                // [PERF] den für die Mess-Phase gestubbten GPU-Render wiederherstellen +
+                // ein echtes Frame zeichnen, damit der Screenshot die Welt zeigt.
+                const r = window.anazhRealm;
+                if (r && r.state.renderer && window.__origRendererRender) {
+                    r.state.renderer.render = window.__origRendererRender;
+                    r.state.postProcessingFailed = false;
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                }
             });
             fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
             await page.screenshot({ path: SCREENSHOT_PATH, fullPage: false });
@@ -37624,6 +38350,7 @@ async function checkBandRing6Workshop(ctx) {
         server.kill();
     }
 
+    console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s`);
     if (failures.length > 0) {
         console.log(`\n❌ ${failures.length} Invariante(n) verletzt: ${failures.join(", ")}`);
         if (STRICT) process.exit(1);

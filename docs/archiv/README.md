@@ -1,31 +1,71 @@
-# docs/archiv — Abgeschlossene Dokumente
+# docs/archiv — Abgeschlossene Dokumente (nach Bögen gruppiert)
 
-Hier liegen Dokumente, die ihren Zweck erfüllt haben: **fertige Designs** und
-**Audit-Schnappschüsse**. Sie werden **nicht mehr gepflegt** — sie sind reine
-Referenz auf den Stand, an dem sie entstanden.
+Hier liegen Dokumente, die ihren Zweck erfüllt haben: **fertige Designs**,
+**vollendete Arc-Pläne** und **Audit-Schnappschüsse**. Sie werden **nicht mehr
+gepflegt** — sie sind reine Referenz auf den Stand, an dem sie entstanden. (Sie
+bleiben physisch getrennt, weil die Chronik in `docs/handover.md` sie je Welle
+beim Namen nennt — ein historischer Link, den ein Merge brechen würde.)
 
-Wer den *aktuellen* Stand sucht: `CLAUDE.md` (Projektgedächtnis, kanonische
-Versions-Historie), `docs/handover.md` (Erstorientierung), `docs/state-of-realm.md`
-(Tiefe), `docs/roadmap.md` (Vorwärts-Plan).
+Wer den *aktuellen* Stand sucht: die kanonische Landkarte in **`docs/README.md`** →
+`CLAUDE.md` (JETZT-Stand + Gotchas), `docs/handover.md` (Chronik + Start),
+`docs/state-of-realm.md` (Vision), `docs/roadmap.md` (Plan), `docs/das-lebendige-feld.md`
+(der wahre Norden).
 
-| Datei | Was | Warum archiviert |
+---
+
+## Bogen: Das lebendige Feld + die Seele der Welt (V17.33–.50) — VOLLENDET
+
+Die drei Arc-Pläne, die das DRITTE Verb des Feldes (lesen → schreiben → **WERTEN**)
+und den Emotion-Kern bauten. Stand-vs-aktuell: alle drei sind umgesetzt; das
+LEBENDE Verständnis lebt in `docs/das-lebendige-feld.md`.
+
+| Datei | Was | Stand |
 |---|---|---|
-| `wave-6-design.md` | Welle-6-Brainstorm (A–H: Interaktion, CAD, Inventar, Stats, Lesbarkeit, Crafting, Welt-Sinne, Kreaturen) | Welle 6 ist seit V8.23 vollständig umgesetzt |
-| `nexus-dsl.md` | Ring-2-DSL-Design (v0.1-Diskussionsentwurf) — AST-Format, V1-Primitive, Control-Flow, Sicherheits-Budgets, Phasen-Plan 0–7 | Ring 2 ist mit Phase 1–7 vollständig live (`roadmap.md` §3 „Akzeptanz Ring 2 vollständig"); der Entwurf hat seinen Zweck erfüllt. Hinweis: der DSL ist seither auf 41 Ops gewachsen — das Doc ist ein historischer Stand, kein lebender Index |
-| `code-hygiene.md` | V9.44-Stamm-Pflege-Plan — sechs verhaltensneutrale Refactoring-Sub-Wellen a–f (Persistenz-Schema, kanonische Setter, Mesh-Router-Dispatch, Konstanten, UI-Giganten, Game-Loop-Phasen) | der Bogen ist mit V9.44-a..f abgeschlossen; der zweite Bogen (V9.56-a..k, 11 Funktionen → 77 Helfer) ist ebenfalls durch (`roadmap.md` §1) |
-| `playtest-hygiene.md` | V9.52-Playtest-Pflege-Plan + Akzeptanz — `playtest.cjs` 31 k → 29.5 k Z., 1 Monolith → 41 Band-Funktionen + 5 Helfer, Median-Einrückung 20 → 8 | der Bogen ist mit V9.52-a..f abgeschlossen (§6/§7-Akzeptanz erfüllt) |
-| `performance.md` | Performance-Welle-Design (V9.84+) — drei Code-Audits (Game-Loop-Allokationen, Voxel-Chunk-Build, Renderer) + 14 priorisierte Heilungen, geschnitten in Perf-1/2/3 | vollständig abgearbeitet (Perf-1 V9.84 + Perf-2 V9.85 + Perf-3 V9.87–V9.92 + V9.96 Spawn-Budget; das Doc trägt das Postscript „vollständig abgearbeitet"). Aktuelle Perf-Themen leben im `CLAUDE.md`-Stand + `roadmap.md` |
-| `learnings.md` | Gesammelte Session-Learnings — das volle historische Lehren-Archiv der frühen Wellen | die quer-schneidenden Lehren leben kuratiert in `CLAUDE.md/Wichtige Gotchas` + `docs/handover.md/Gotcha-Vollarchiv`; dieses Doc ist die ungekürzte Sammlung |
-| `system-audit.md` | System-Audit V7.71 — Methoden-Inventar, Dead-Code, Vision-Alignment | Schnappschuss, durch `system-audit-v8.25.md` abgelöst |
-| `system-audit-v8.25.md` | System-Audit V8.25 — vollständige Methoden-/Verbindungs-/Performance-Bilanz | Schnappschuss; ein frisches Audit erzeugt `/audit` jederzeit neu |
-| `render-realismus-diagnose.md` | Render-Realismus-Diagnose — die vier Hebel (ACES-Tone-Mapping · Post-FX · IBL · PBR), von denen nur ACES bestand | der Render-Realismus-Bogen (V17.0 Post-FX · V17.1 Fülle · V17.2 Wolken · V17.3 Farbe · V17.4 Bewegung) ist umgesetzt |
-| `ghibli-tiefe-diagnose.md` | Ghibli-Tiefe-Diagnose — die malerischen Befunde (Wolken · Bäume · Farbe · Fülle · Strukturen-Kontrast) | die Befunde sind in den V17-Render-/Tiefe-Wellen geheilt |
-| `lebende-umgebung.md` | Lebende-Umgebung-Bogen-Design — GPU-instanzierte Vegetation + Gras-Riese | umgesetzt (V16.1 Gras-Riese · V17.1 artenreiche Scatter-Vegetation) |
-| `tiefe-bogen-plan.md` | Tiefe-Bogen-Plan — vier Wurzeln (Wolken-Noise · Bäume · Terrain-Makrotextur · Strukturen-Kontrast) | abgeschlossen (V17.10 Wolken · V17.11 Bäume · V17.12 Triplanar · V17.13 Unsharp-Mask) |
-| `dsl-weltregeln-plan.md` | DSL-Weltregeln-Arc-Plan — von der Gesten-Sprache zu stehenden `Bedingung→Effekt`-Welt-Regeln (Phasen A–E) | **VOLLENDET** (V17.33–.40: Mensch · Nexus · KI schreiben am selben Regel-Satz; das `rule`-Primitiv, Feld-Kopplung, Nexus-Evolution, Mensch-Regeln, Persistenz/Merge). Der lebende Regel-Satz steht; aktuelle DSL-Themen leben im `CLAUDE.md`-Stand + den Gotchas |
-| `lebendige-wertung-plan.md` | Lebendige-Wertung-Arc-Plan — das DRITTE Verb (WERTEN) via Vorhersagefehler gegen eine gleitende Baseline (4 Phasen) | **KOMPLETT** (V17.42 Wohl-Maß · V17.43 lokal-attribuierte Regel-Fitness · V17.44 Emotion-Appraisal · V17.50 die Klammer: die Welt lernt ökologisch, was den Spieler freut). Die Anti-Gaming-Lehre lebt in den Gotchas |
-| `emotion-kern-plan.md` | Emotion-Kern-Arc-Plan — wie Gefühl WIRKLICH funktioniert (W1 dimensional/Fusion · W2 Appraisal-Brücke/Hylomorphismus · W3 Fast/Slow-Stimmung · W4 Sozial · W5 Abenteuer) | **KOMPLETT in baubarer Tiefe** (V17.45–.49). Der W5-Kampf-Affekt-Hook wird im aktiven Kampf-Bogen konsumiert (`docs/kampf-plan.md` §F, V17.54) |
+| `dsl-weltregeln-plan.md` | DSL-Weltregeln-Arc (Phasen A–E) — von der Gesten-Sprache zu stehenden `Bedingung→Effekt`-Welt-Regeln | **VOLLENDET** (V17.33–.40: Mensch · Nexus · KI schreiben am selben Regel-Satz) |
+| `lebendige-wertung-plan.md` | Lebendige-Wertung-Arc (4 Phasen) — das WERTEN via Vorhersagefehler gegen eine gleitende Baseline | **KOMPLETT** (V17.42–.50: lokal-attribuierte Regel-Fitness · Emotion-Appraisal · die Klammer) |
+| `emotion-kern-plan.md` | Emotion-Kern-Arc (W1–W5) — wie Gefühl WIRKLICH funktioniert (dimensional · Substanz-Brücke · Fast/Slow · sozial · Abenteuer) | **KOMPLETT in baubarer Tiefe** (V17.45–.49); der W5-Kampf-Affekt wird im `kampf-plan.md` konsumiert |
 
-Ein Audit ist seinem Wesen nach ein Schnappschuss — sobald die nächste große
-Welle ansteht, erzeugt der `/audit`-Slash-Befehl einen frischen Bericht. Der
-liegt dann in `docs/` bis er selbst wieder hierher wandert.
+## Bogen: Der Körper der Welt — Render · Terrain · Tiefe (V14–V17) — VOLLENDET
+
+Die Diagnosen + Pläne, die die Welt-OBERFLÄCHE malerisch machten.
+
+| Datei | Was | Stand |
+|---|---|---|
+| `render-realismus-diagnose.md` | Die vier Realismus-Hebel (ACES · Post-FX · IBL · PBR), von denen nur ACES bestand | umgesetzt (V17.0–.4 Post-FX-Bogen) |
+| `ghibli-tiefe-diagnose.md` | Die malerischen Befunde (Wolken · Bäume · Farbe · Fülle · Strukturen-Kontrast) | geheilt in den V17-Render-/Tiefe-Wellen |
+| `tiefe-bogen-plan.md` | Vier Wurzeln (Wolken-Noise · Bäume · Terrain-Makrotextur · Strukturen-Kontrast) | abgeschlossen (V17.10–.13) |
+| `lebende-umgebung.md` | GPU-instanzierte Vegetation + Gras-Riese | umgesetzt (V16.1 Gras-Riese · V17.1 Scatter-Vegetation) |
+
+## Bögen: Code- + Test- + Performance-Hygiene — VOLLENDET
+
+| Datei | Was | Stand |
+|---|---|---|
+| `code-hygiene.md` | V9.44-Stamm-Pflege — sechs verhaltensneutrale Refactoring-Sub-Wellen | abgeschlossen (V9.44-a..f + der V9.56-Bogen 11 Funktionen → 77 Helfer) |
+| `playtest-hygiene.md` | V9.52-Playtest-Pflege — `playtest.cjs` 1 Monolith → 41 Band-Funktionen | abgeschlossen (V9.52-a..f) |
+| `performance.md` | Performance-Welle-Design (V9.84+) — 3 Code-Audits + 14 Heilungen, geschnitten in Perf-1/2/3 | vollständig abgearbeitet (V9.84–V9.96); aktuelle Perf-Themen im `CLAUDE.md`-Stand |
+
+## Frühe Designs + DSL-Entwurf
+
+| Datei | Was | Stand |
+|---|---|---|
+| `wave-6-design.md` | Welle-6-Brainstorm (A–H: Interaktion · CAD · Inventar · Stats · Lesbarkeit · Crafting · Welt-Sinne · Kreaturen) | seit V8.23 vollständig umgesetzt |
+| `nexus-dsl.md` | Ring-2-DSL-Design (v0.1-Entwurf) — AST-Format, V1-Primitive, Sicherheits-Budgets, Phasen 0–7 | Ring 2 vollständig live; der DSL ist seither auf 41 Ops gewachsen (das Doc ist ein historischer Stand) |
+
+## System-Audits (Schnappschüsse)
+
+| Datei | Was | Stand |
+|---|---|---|
+| `system-audit.md` | System-Audit V7.71 — Methoden-Inventar, Dead-Code, Vision-Alignment | abgelöst durch `system-audit-v8.25.md` |
+| `system-audit-v8.25.md` | System-Audit V8.25 — Methoden-/Verbindungs-/Performance-Bilanz | Schnappschuss; `/audit` erzeugt jederzeit ein frisches |
+
+## Das Lehren-Archiv
+
+| Datei | Was | Stand |
+|---|---|---|
+| `learnings.md` | Die ungekürzte Sammlung der Session-Learnings der frühen Wellen | die quer-schneidenden Lehren leben kuratiert in `CLAUDE.md/Wichtige Gotchas` + `handover.md/Gotcha-Vollarchiv`; dies ist das volle historische Archiv |
+
+---
+
+Ein Audit ist seinem Wesen nach ein Schnappschuss — sobald die nächste große Welle
+ansteht, erzeugt der `/audit`-Slash-Befehl einen frischen Bericht. Der liegt dann
+in `docs/` bis er selbst wieder hierher wandert.
