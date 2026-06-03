@@ -5912,6 +5912,9 @@ async function checkBandV1772Library(ctx) {
         if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
         else r.state.worldMeta.gameMode = savedMode;
         if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"]; // V17.74 — kein Soul-Leck für spätere Bands
+        for (const bn of ["geraet_spitzhacke", "ruestung_brustpanzer", "trank_lebenssaft", "avatar_waechter"]) {
+            if (r.state.blueprints[bn]) delete r.state.blueprints[bn].forgedPrecision; // V17.75 — kein forge-Leck (un-forged Default)
+        }
         r.applyPlayerSoul(savedSoul);
         if (p) {
             p.equipped = savedEquip;
@@ -6161,6 +6164,97 @@ async function checkBandV1774UseByRole(ctx) {
         "V17.74 Welle 1b BUG-b KONSUM: einen Bauplan-Avatar verkörpern formt + registriert ihn (player.soul=bp_…, customSoul), kein Doppel-Eintrag danach",
         res.avatarEmbodied && res.noDuplicate
     );
+}
+
+// V17.75 — die MATERIAL-Sichtbarkeit für die Mach-Akte (der Avatar-Bug: stiller Fehlschlag bei fehlendem
+// Material). Das Fehlende sticht am Dropdown-Eintrag heraus (✗ fehlt …) + ein gescheitertes Verkörpern
+// setzt das Select zurück, statt eine falsche Seele zu zeigen. Snapshot + Restore (Mode/Soul/Inventar).
+async function checkBandV1775MakeActCost(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const setMode = (m) => {
+            if (typeof r.setGameMode === "function") r.setGameMode(m);
+            else r.state.worldMeta.gameMode = m;
+        };
+
+        // Snapshot
+        const savedMode = r.getGameMode();
+        const savedSoul = (p && p.soul) || "mensch";
+        const savedInv = Array.isArray(p.inventory) ? JSON.parse(JSON.stringify(p.inventory)) : [];
+        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const invLen = Array.isArray(p.inventory) ? p.inventory.length : 27;
+        if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"];
+        if (r.state.blueprints["avatar_waechter"]) delete r.state.blueprints["avatar_waechter"].forgedPrecision;
+
+        // (1) schöpfer (Gott-Modus) → kein Kosten-Marker (frei)
+        setMode("schöpfer");
+        out.schoepferFree = r._makeActCostSuffix("avatar_waechter") === "";
+
+        // (2) pfad ohne Material → das Fehlende sticht heraus (✗ fehlt …)
+        setMode("pfad");
+        p.inventory = new Array(invLen).fill(null);
+        const sufEmpty = r._makeActCostSuffix("avatar_waechter");
+        out.pfadMissing = sufEmpty.includes("fehlt") && sufEmpty.includes("✗");
+
+        // (3) pfad MIT Material → bereit (· ✓)
+        const cost = r.computeBuildCost("avatar_waechter");
+        let si = 0;
+        for (const mat of Object.keys(cost)) {
+            p.inventory[si++] = { kind: "material", material: mat, count: cost[mat] };
+        }
+        out.pfadReady = r._makeActCostSuffix("avatar_waechter") === " · ✓";
+
+        // (4) KERN — embody in pfad OHNE Material schlägt fehl + die Seele bleibt der alte Avatar
+        p.inventory = new Array(invLen).fill(null);
+        r.applyPlayerSoul("human");
+        const emb = r.embodyBlueprint("avatar_waechter");
+        out.embodyFailsClean = emb.ok === false && p.soul === "human";
+
+        // (5) das Select RENDERT den Mangel sichtbar im Option-Text (kein stiller Fehlschlag)
+        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        const soulSel = document.getElementById("player-soul-select");
+        const avatarOpt = soulSel ? [...soulSel.options].find((o) => o.value === "avatar_waechter") : null;
+        out.optionShowsMissing = !!avatarOpt && avatarOpt.textContent.includes("fehlt");
+
+        // (6) ein GESCHMIEDETES Gerät → kein Marker (der Gebrauch ist frei)
+        const tb = r.state.blueprints["geraet_spitzhacke"];
+        const savedForged = tb ? tb.forgedPrecision : undefined;
+        if (tb) tb.forgedPrecision = 0.8;
+        out.forgedFree = r._makeActCostSuffix("geraet_spitzhacke") === "";
+        if (tb) {
+            if (savedForged === undefined) delete tb.forgedPrecision;
+            else tb.forgedPrecision = savedForged;
+        }
+
+        // restore
+        setMode(savedMode);
+        if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"];
+        r.applyPlayerSoul(savedSoul);
+        if (p) {
+            p.inventory = savedInv;
+            p.equipped = savedEquip;
+        }
+        r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
+        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        if (typeof r.renderInventoryUI === "function") r.renderInventoryUI();
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        return out;
+    });
+    check("V17.75: _makeActCostSuffix — schöpfer (Gott-Modus) zeigt keinen Kosten-Marker (frei)", res.schoepferFree);
+    check("V17.75: pfad ohne Material → das Fehlende STICHT heraus (✗ fehlt …) am Dropdown-Eintrag", res.pfadMissing);
+    check("V17.75: pfad MIT Material → bereit-Marker (· ✓)", res.pfadReady);
+    check(
+        "V17.75 KERN: ein gescheitertes Verkörpern (kein Material) ändert die Seele NICHT (player.soul bleibt) — der Avatar-Bug",
+        res.embodyFailsClean
+    );
+    check(
+        "V17.75: die Seele-Select RENDERT den Material-Mangel sichtbar im Option-Text (kein stiller Fehlschlag)",
+        res.optionShowsMissing
+    );
+    check("V17.75: ein geschmiedetes Gerät zeigt keinen Kosten-Marker (der Gebrauch ist frei)", res.forgedFree);
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -38411,6 +38505,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1772Library(ctx);
             await checkBandV1773HeldMesh(ctx);
             await checkBandV1774UseByRole(ctx);
+            await checkBandV1775MakeActCost(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

@@ -36490,6 +36490,24 @@ class AnazhRealm {
         return this._blueprintUseKind(bp) === "place";
     }
 
+    // V17.75 — die MATERIAL-Sichtbarkeit für die Mach-Akte (schmieden/weben/formen/verkörpern): ein kurzer
+    // Suffix am Dropdown-Eintrag, der den Kosten-Status auf einen BLICK zeigt (der Profi-/Minecraft-Weg:
+    // man SIEHT, was fehlt, BEVOR man wählt — kein stiller Fehlschlag mehr). frei (schöpfer ODER schon
+    // geschmiedet) → kein Marker · Material da → „· ✓" (bereit) · es fehlt → „· ✗ fehlt 12× stein" (das
+    // Fehlende sticht heraus). Reuse checkBuildCost (dieselbe Volumen-Formel, die der Mach-Akt zieht).
+    _makeActCostSuffix(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return "";
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode === "schöpfer" || Number.isFinite(bp.forgedPrecision)) return ""; // frei → kein Marker
+        const check = this.checkBuildCost(name);
+        if (check.ok) return " · ✓"; // Material da → bereit zum Schmieden
+        const missing = Object.entries(check.missing || {})
+            .map(([m, n]) => `${n}× ${m}`)
+            .join(", ");
+        return ` · ✗ fehlt ${missing}`;
+    }
+
     // S1 (kampf-plan §11.7) — die Werkstatt erkennt JEDE Lesart: die emergente FÄHIGKEIT eines
     // Bauplans aus Form × Material, UNABHÄNGIG von der abstrakten Rolle. Heilt den „nur Bauwerk"-
     // Befund (ein Holzstiel + Steinkopf liest „Brecher — wuchtet Fels", auch ohne Schmiede-Domain).
@@ -42788,12 +42806,19 @@ class AnazhRealm {
                         const missingStr = Object.entries(result.missing || {})
                             .map(([m, n]) => `${n}× ${m}`)
                             .join(", ");
-                        this.log(`Avatar formen nötig — fehlt ${missingStr || "Material"} (⚒ Werkstatt).`, "ERROR");
+                        this.log(
+                            `Avatar „${bp.label || v}" formen — es fehlt ${missingStr || "Material"} (⚒ Werkstatt).`,
+                            "ERROR"
+                        );
                     } else {
                         this.log(`Verkörpern fehlgeschlagen: ${result.reason}`, "ERROR");
                     }
+                    // V17.75 — der Fehlschlag (z.B. kein Material) → das Select auf die WIRKLICHE Seele
+                    // zurücksetzen (sonst zeigt es den Wächter, während der Avatar der alte bleibt — der Bug).
+                    select.value = this.state.player.soul;
+                } else {
+                    this._refreshSoulSelect(); // den neuen customSoul aufnehmen + selektieren
                 }
-                this._refreshSoulSelect(); // den neuen customSoul aufnehmen + selektieren
             } else {
                 this.applyPlayerSoul(v);
             }
@@ -42885,7 +42910,8 @@ class AnazhRealm {
         for (const name of names) {
             const opt = document.createElement("option");
             opt.value = name;
-            opt.textContent = `${blu[name].label || name} · ${this._implementAffordanceLabel(blu[name])}`;
+            opt.textContent = `${blu[name].label || name} · ${this._implementAffordanceLabel(blu[name])}${this._makeActCostSuffix(name)}`;
+            opt.title = this._blueprintCostTooltip(name);
             if (equipped.held === name) opt.selected = true;
             sel.appendChild(opt);
         }
@@ -42962,7 +42988,8 @@ class AnazhRealm {
             const bp = this.state.blueprints[name];
             const opt = document.createElement("option");
             opt.value = name;
-            opt.textContent = bp.label || name;
+            opt.textContent = (bp.label || name) + this._makeActCostSuffix(name);
+            opt.title = this._blueprintCostTooltip(name);
             if (equipped.armor === name) opt.selected = true;
             armorSel.appendChild(opt);
         }
@@ -43416,7 +43443,8 @@ class AnazhRealm {
             if (this.state.customSouls && this.state.customSouls[`bp_${name}`]) continue; // schon verkörpert
             const opt = document.createElement("option");
             opt.value = name;
-            opt.textContent = (bp.label || name) + " ⚒";
+            opt.textContent = (bp.label || name) + " ⚒" + this._makeActCostSuffix(name);
+            opt.title = this._blueprintCostTooltip(name);
             select.appendChild(opt);
         }
         const desired = previous || this.state.player.soul || "human";
@@ -45631,7 +45659,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.74.0";
+AnazhRealm.VERSION = "17.75.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
