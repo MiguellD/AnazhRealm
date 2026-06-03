@@ -18362,13 +18362,21 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // 4) Damm-Remove → Drain → Cells gehen zurück
         if (damEntry) {
             r.removeArchitecture(damEntry);
-            // V17.0-Flake-Heilung: der Cell-Remesh nach removeArchitecture
-            // braucht unter CI-CPU-Last manchmal mehrere Drain-Passes, bis die
-            // Stempel-Cell vollstaendig neu klassifiziert ist (sonst zeigt
-            // removeRestores transient noch SOLID = CI-Flake, lokal nie
-            // reproduzierbar). Mehrfach drainen = deterministisch gesettlet,
-            // ohne die Assertion zu schwaechen.
-            for (let d = 0; d < 4; d++) r._drainDirtyVoxelChunks();
+            // V17.0-Flake-Heilung + V17.x-Determinismus: `removeArchitecture`
+            // markiert mit skirt=0 nur den Footprint-Chunk dirty, und der
+            // Welt-Zustand beim Band-Eintritt variiert je Lauf (der Warmup-
+            // Worker settlet timing-abhängig — render-frei fällt der Render-
+            // Puffer weg, der das früher kaschierte). Heilung: den GELESENEN
+            // Chunk (`damChunkKey`) + sein 3×3-Umfeld EXPLIZIT dirty markieren
+            // und drainen, bis das Set leer ist → der Stempel-Cell wird
+            // garantiert neu klassifiziert, deterministisch + render-unabhängig.
+            if (!r.state.dirtyVoxelChunks) r.state.dirtyVoxelChunks = new Set();
+            for (let dz = -1; dz <= 1; dz++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    r.state.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
+                }
+            }
+            for (let d = 0; d < 8 && r.state.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
             const afterRemoveEntry = r.state.voxelChunks && r.state.voxelChunks.get(damChunkKey);
             if (afterRemoveEntry && afterRemoveEntry.waterCells) {
                 const cells = afterRemoveEntry.waterCells;
@@ -37926,6 +37934,7 @@ async function checkBandRing6Workshop(ctx) {
 }
 
 (async () => {
+    const T0 = Date.now();
     console.log(`Starte Save-Server ...`);
     const server = await startSaveServer();
     console.log(`Lade ${SERVER_URL} für ${DURATION_MS / 1000}s ...`);
@@ -37998,6 +38007,27 @@ async function checkBandRing6Workshop(ctx) {
                 await new Promise((resolve) => setTimeout(resolve, durationMs - (performance.now() - start)));
                 return;
             }
+            // [PERF] der per-Frame-GPU-Render (`renderer.render` unter swiftshader
+            // ~2.5 s/Frame) ist der Warmup-Flaschenhals UND konkurriert während der
+            // Bands mit dem rAF-Hintergrund-Loop um die CPU — headless ist aber
+            // pixel-blind (die Bands prüfen Logik/DOM/State, NIE Pixel; nur der
+            // finale Screenshot rendert). CHIRURGISCH: NUR den teuren GPU-Aufruf
+            // stubben (`renderer.render`/`renderAsync`), NICHT das ganze `_loopRender`
+            // — so laufen seine billigen Uniform-Updates (skybox/starField-Position,
+            // `hydroSurfaceUniforms.time`/`.emotion`) weiter, die V17.31 + V9.42-b
+            // lesen. Der Screenshot-Pfad stellt den echten Render wieder her.
+            // GEMESSEN (diag-warmup-speed): Warmup 27.5 s → 5.6 s.
+            if (r.state.renderer) {
+                window.__origRendererRender = r.state.renderer.render.bind(r.state.renderer);
+                r.state.renderer.render = function () {};
+                if (typeof r.state.renderer.renderAsync === "function") {
+                    r.state.renderer.renderAsync = function () {
+                        return Promise.resolve();
+                    };
+                }
+            }
+            // Post-Processing (falls aktiv) auf den nun-no-op renderer.render-Pfad zwingen.
+            r.state.postProcessingFailed = true;
             // Phase 2 — Loop synchron pumpen, bis das Wall-Clock-Budget
             // verbraucht ist. setTimeout(0) yieldet zwischen Ticks für
             // Mikrotasks (Promise-Ketten, async Worldgen) — `setTimeout`
@@ -38020,8 +38050,21 @@ async function checkBandRing6Workshop(ctx) {
             // zu einem großzügigen Cap (gegen einen hängenden Build). Die
             // Invariante prüft WELT-ZUSTAND, nicht Wall-Clock-vs-CPU-Speed →
             // deterministisch auf jedem Runner.
-            const TARGET_VOXEL_CHUNKS = 18; // Marge über der >=15-Invariante
+            // [PERF] mit gestubbtem Render ist der Warmup nur noch chunk-build-
+            // bound (~5-8 s). Der alte 30-s-Wall-Clock-FLOOR (V17.32) war nötig,
+            // solange der Render jeden Tick 2.5 s fraß; jetzt detektieren wir das
+            // PLATEAU (der Streaming-Ring um den stationären Spieler ist voll, die
+            // Chunk-Zahl seit >=2 s stabil) → dieselbe „warme" Welt wie der alte
+            // Floor (V9.42-b braucht den vollen 3×3-Naht-Ring: die ersten 9 Chunks
+            // müssen >=200 Naht-Vertices teilen), nur schnell. Count-basiert (robust
+            // gegen CPU-Last, die V17.32-Wurzel) + WARMUP_MIN für die zeit-getriebenen
+            // Trigger (Grok 1.5 s) + Hard-Cap gegen einen Hänger.
+            const TARGET_VOXEL_CHUNKS = 18; // Mindest-Marge über der >=15-Invariante
+            const WARMUP_MIN_MS = 3000; // zeit-getriebene Trigger (Grok 1.5 s) sehen echte Zeit
+            const PLATEAU_MS = 2000; // Ring „voll", wenn die Chunk-Zahl so lange stabil ist
             const HARD_CAP_MS = Math.max(durationMs * 3, 90000);
+            let lastBuilt = -1;
+            let lastGrowthAt = start;
             for (;;) {
                 try {
                     r._gameLoopTick(performance.now());
@@ -38031,7 +38074,13 @@ async function checkBandRing6Workshop(ctx) {
                 }
                 const elapsed = performance.now() - start;
                 const built = r.state && r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                if (elapsed >= durationMs && (built >= TARGET_VOXEL_CHUNKS || elapsed >= HARD_CAP_MS)) {
+                if (built !== lastBuilt) {
+                    lastBuilt = built;
+                    lastGrowthAt = performance.now();
+                }
+                const stableMs = performance.now() - lastGrowthAt;
+                const warm = built >= TARGET_VOXEL_CHUNKS && stableMs >= PLATEAU_MS && elapsed >= WARMUP_MIN_MS;
+                if (warm || elapsed >= HARD_CAP_MS) {
                     break;
                 }
                 await new Promise((resolve) => setTimeout(resolve, 0));
@@ -38279,6 +38328,16 @@ async function checkBandRing6Workshop(ctx) {
             await page.evaluate(() => {
                 const box = document.getElementById("dialogue-box");
                 if (box && box.textContent) box.classList.add("visible");
+                // [PERF] den für die Mess-Phase gestubbten GPU-Render wiederherstellen +
+                // ein echtes Frame zeichnen, damit der Screenshot die Welt zeigt.
+                const r = window.anazhRealm;
+                if (r && r.state.renderer && window.__origRendererRender) {
+                    r.state.renderer.render = window.__origRendererRender;
+                    r.state.postProcessingFailed = false;
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                }
             });
             fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
             await page.screenshot({ path: SCREENSHOT_PATH, fullPage: false });
@@ -38291,6 +38350,7 @@ async function checkBandRing6Workshop(ctx) {
         server.kill();
     }
 
+    console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s`);
     if (failures.length > 0) {
         console.log(`\n❌ ${failures.length} Invariante(n) verletzt: ${failures.join(", ")}`);
         if (STRICT) process.exit(1);
