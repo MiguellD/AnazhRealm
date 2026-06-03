@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — der Plan
 
-Stand: **V17.83 (03.06.2026) — der Crafting-/Resonanz-Bogen ist DURCH; WELLE 2 (b) vollendet (die Werkstatt als Präzisions-Quelle) + die ROLLE-PASSUNG (V17.79) + DIE RESONANZ-VEREINHEITLICHUNG U1–U4 (V17.80–.83, `docs/resonanz-system.md`): EIN Produkt-Vektor (4 neue Form-Achsen) → EIN Rollen-Register (12 Rollen, volle Signaturen) → der Katalysator sichtbar (Spektrum + Achse zum perfekten Katalysator) → die Klassifikation richtig (eine Klinge → Waffe aus der Form). Die 7 fragmentierten Signatur-Systeme zu EINEM Resonanz-Raum vereint (wie das Archiv es beschrieb). OFFEN: der Schöpfer-Browser-Pass des Resonanz-Systems · Fahrzeug-Gameplay (das Register ist bereit) · Backlog: das Zwei-Hand-Modell · Rüstung am Avatar (Kirsche) · Phase E (Bedrohung).** Seit dem Detail-Kopf unten (V17.32) gebaut + „Alle Invarianten OK":
+Stand: **V17.89 (03.06.2026) — der Crafting-/Werkstatt-Bogen ist DURCH (V17.72–.89). DIE RESONANZ-VEREINHEITLICHUNG U1–U6 (V17.80–.84, `docs/resonanz-system.md`): EIN Produkt-Vektor → EIN Rollen-Register (12 Rollen) → der Katalysator sichtbar → die Klassifikation richtig (Klinge→Waffe aus der Form) → die Rolle-Passung erreicht ALLE Effekt-Träger inkl. Avatar (U6). DANN der Schöpfer-Browser-Bogen V17.85–.89: die emergente Rolle sichtbar + der Prozess umkehrbar (.85) · Werkstatt-Kohärenz + Schwert-Saat (.86) · volles UNDO/REDO (.87) · DIE WERKSTATT IST DER PROZESS (.88 — platzieren → der Prozess erscheint, in frieden/pfad; bessere Werkstatt → höhere Präzision → bessere Tools, die Rekursion; der Spieler startet mit den Basics, nur hände) · DIE WERTE SICHTBAR + DYNAMISCH (.89 — `_blueprintAbilityStats`: Material × Form × Handwerk → Schaden/Verteidigung/HP live im Readout, „fähigkeiten steigen+sinken"; die Werkstatt im Werkzeuge-Feld; Undo/Redo unter den Parts). OFFEN: der Schöpfer-Browser-Pass V17.85–.89 (Feel) · die Design-Frage „größer = stärker" (eine Volumen→Stat-Achse) · Fahrzeug-Gameplay · Backlog: Zwei-Hand-Modell · Rüstung am Avatar sichtbar · Phase E (Bedrohung).** Seit dem Detail-Kopf unten (V17.32) gebaut + „Alle Invarianten OK":
 
 - **Der lebendige-Feld-Bogen ist VOLLENDET — das DRITTE Verb:** lesen (`auraAt`, V17.21) · schreiben (`_depositLife`/`_depositEmotion`, V17.27/.32) · **WERTEN** (der Wertungs-Bogen V17.42–.50: die Regel-Fitness wird der lokale strukturelle δ am Ort, die Emotion der Appraisal-δ, die Welt LERNT was den Spieler freut — Vorhersagefehler gegen gleitende Baseline). → damit ist `das-lebendige-feld.md §3.5/§7-Fleck-1 „WERTUNG flach" GEHEILT, nicht mehr offen.
 - **Der Emotion-Kern W1–W5** (V17.45–.49): dimensional · Substanz-Brücke · Fast/Slow · sozial · Abenteuer.
@@ -13,7 +13,7 @@ Stand: **V17.83 (03.06.2026) — der Crafting-/Resonanz-Bogen ist DURCH; WELLE 2
 
 ---
 
-## OFFENE FÄDEN — der Gesamt-Backlog (Stand V17.72, geordnet, reconciled)
+## OFFENE FÄDEN — der Gesamt-Backlog (Stand V17.89, geordnet, reconciled)
 
 **A — den Crafting-Bogen abschließen (kampf-plan §11, der aktive Arc):**
 

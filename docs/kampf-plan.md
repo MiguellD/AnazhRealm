@@ -10,7 +10,9 @@
 
 ---
 
-## STATUS (Stand V17.67) — lies §11 (der aktive Plan; §11.9 = die Browser-Audit-Ausrichtung)
+## STATUS (Stand V17.89) — lies §11 (der aktive Plan; §11.9 = die Browser-Audit-Ausrichtung)
+
+**FRONTIER V17.89 (der Werkstatt-Bogen ist DURCH):** seit dem V17.67-Detail unten ist die RESONANZ-VEREINHEITLICHUNG §11.10 KOMPLETT (R1–R3 V17.68–.70 + S10 Op-aus-Form V17.71 + die Bibliothek A1 V17.72 + das Gerät in der Hand S9 V17.73–.75 + Welle-2 Werkstatt-Präzision V17.76–.78 + die Rolle-Passung V17.79 + U1–U6 V17.80–.84). Dann der Schöpfer-Browser-Bogen V17.85–.89: die emergente Rolle sichtbar + der Prozess umkehrbar (`removePartOp`, .85) · Werkstatt-Kohärenz + Schwert-Saat (.86) · volles UNDO/REDO (.87) · **DIE WERKSTATT IST DER PROZESS** (.88 — `_workshopProcessesForMenu`/`applyWorkshopProcessToPart`: platzieren → der Prozess erscheint [frieden/pfad], besessen frei [schöpfer]; bessere Werkstatt → höhere Substanz-Präzision → bessere Tools = die Rekursion; Start mit den Basics, nur hände) · **DIE WERTE SICHTBAR + DYNAMISCH** (.89 — `_blueprintAbilityStats`: Material × Form × Handwerk → Schaden/Verteidigung/HP live im Readout; die Werkstatt im Werkzeuge-Feld; Undo/Redo unter den Parts). **OFFEN: der Schöpfer-Browser-Pass V17.85–.89 (Feel) · die Design-Frage „größer = stärker" (eine Volumen→Stat-Achse) · Phase E (Bedrohung/Furcht) · Backlog: Zwei-Hand-Modell · Rüstung am Avatar sichtbar.** Das §11.10-Detail unten ist damit HISTORIE des gebauten Bogens. — Der V17.67-Detail-Stand folgt:
 
 **Der Kern-Kampf-Loop A–D + W5-Affekt + der Interaktions-Bogen W1·W2·W2-B·W3 sind GEBAUT** (V17.51–.58, §8/§9).
 **§11 — der vereinte Schöpfungs-Fluss:** S1 Readout · S2 Mach-Tor+Modi · S3+S3-B Gerät · S4 Rüstung · S5 Avatar ·
