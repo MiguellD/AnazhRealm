@@ -5879,8 +5879,8 @@ async function checkBandV1772Library(ctx) {
         //     ein deklarierter Override, V17.70, kein Emergenz-Versagen).
         out.trankHonest = r.computeBlueprintRole(T) === "consumable";
         out.avatarHonest = r.computeBlueprintRole(V) === "soul" && r._isBodyShaped(V) === true;
-        out.armorIsTwin = r.computeBlueprintRole(A) === "architecture";
-        out.geraetIsHeldArch = r.computeBlueprintRole(G) === "architecture";
+        out.armorIsTwin = r.computeBlueprintRole(A) === "architecture"; // Platte (stumpf) → Bauwerk, armor-Rolle ist Intent
+        out.geraetIsImplement = ["weapon", "tool"].includes(r.computeBlueprintRole(G)); // V17.83 U4: die Spitzhacke (spitz+gestreckt) → Gerät aus der Form
 
         // (3) das Role-GATE beißt: die rollen-spezifischen Mach-Akte lehnen das rollenlose Gerät ab.
         out.armorGate = r.forgeArmor("geraet_spitzhacke").reason === "not_marked_as_armor";
@@ -5936,8 +5936,8 @@ async function checkBandV1772Library(ctx) {
         res.trankHonest && res.avatarHonest
     );
     check(
-        "V17.72 A1: Rüstung + Gerät resonieren architecture (der dichte+harte Intent-Zwilling) → die armor-Rolle ist ein deklarierter Override (V17.70)",
-        res.armorIsTwin && res.geraetIsHeldArch
+        "V17.72 A1 / V17.83 U4: die Rüstungs-Platte (stumpf) → Bauwerk (armor-Rolle = Intent-Override, V17.70); die Spitzhacke (spitz+gestreckt) → Gerät AUS DER FORM (U4 trennt Klinge vom Bauwerk)",
+        res.armorIsTwin && res.geraetIsImplement
     );
     check(
         "V17.72 A1: das Role-GATE beißt — forgeArmor/brewConsumable/forgeAvatar lehnen das rollenlose Gerät ab",
@@ -6574,7 +6574,7 @@ async function checkBandV1780FormAxes(ctx) {
         out.symVals = `Körper=${round(V(body).axialSymmetry)} Klumpen=${round(V(lump).axialSymmetry)}`;
         out.hollow = V(container).hollowness > V(solid).hollowness && V(container).hollowness > 0.4;
         out.hollowVals = `Behälter=${round(V(container).hollowness)} Block=${round(V(solid).hollowness)}`;
-        out.noRegress = r.computeBlueprintRole(blade) === "architecture"; // die Achsen sind inert (U5 ändert das)
+        out.noRegress = r.computeBlueprintRole(solid) === "architecture"; // V17.83 U4: ein WÜRFEL (keine Geräte-Form) bleibt Bauwerk
         return out;
     });
     check("V17.80 U1: die 4 Form-Achsen sind im Produkt-Vektor (elongation/hollowness/axialSymmetry/spread)", res.hasAxes);
@@ -6583,7 +6583,7 @@ async function checkBandV1780FormAxes(ctx) {
     check("V17.80 U1: axialSymmetry — ein symmetrischer Körper > ein asymmetrischer Klumpen", res.symmetry, res.symVals);
     check("V17.80 U1: hollowness — ein Behälter (Wände um Leere) > ein Vollblock", res.hollow, res.hollowVals);
     check(
-        "V17.80 U1 KEIN REGRESS: die neuen Achsen sind inert — die Rolle eines Blades bleibt architecture (U5 ändert das)",
+        "V17.80 U1 / V17.83 U4: ein WÜRFEL (keine Geräte-Form) bleibt Bauwerk — U4 ändert nur greifbare Geräte-Formen",
         res.noRegress
     );
 }
@@ -6722,6 +6722,69 @@ async function checkBandV1782CatalystReadout(ctx) {
         res.readoutRenders,
         res.readoutText
     );
+}
+
+// V17.83 U4 (resonanz-system.md §5) — die Rolle-KLASSIFIKATION an der Wurzel: eine greifbare GERÄTE-Form
+// (spitz/griff-elongiert) wird über die FORM als Waffe/Werkzeug klassifiziert, NICHT als Bauwerk — der
+// Substanz-Zwilling Klinge/Bauwerk (beide dicht+hart) wird über die Form getrennt. Nur greifbare Implement-
+// Formen ändern sich; Würfel/große Strukturen/Körper/Tore bleiben (die Form-Rollen unverändert).
+async function checkBandV1783ImplementClassification(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const mk = (parts) => ({ name: "_u4", parts });
+        const spike = mk([{ shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.3, z: 1.8 } }]);
+        const handle = mk([{ shape: "cylinder", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.25, y: 1.6, z: 0.25 } }]);
+        const largeBlock = mk([{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 8, y: 8, z: 8 } }]);
+        const smallCube = mk([{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }]);
+        const body = mk([
+            { shape: "box", material: "fleisch", position: { x: 0, y: 1, z: 0 }, size: { x: 0.8, y: 1.6, z: 0.5 } },
+            { shape: "cylinder", material: "fleisch", position: { x: -0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
+            { shape: "cylinder", material: "fleisch", position: { x: 0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
+        ]);
+        const out = {};
+        out.spikeRole = r.computeBlueprintRole(spike);
+        out.handleRole = r.computeBlueprintRole(handle);
+        out.largeRole = r.computeBlueprintRole(largeBlock);
+        out.cubeRole = r.computeBlueprintRole(smallCube);
+        out.bodyRole = r.computeBlueprintRole(r.state.blueprints["avatar_waechter"]); // ein echter körper-förmiger Soul-Bauplan
+        void body;
+        // (1) der KERN-FIX: ein spitzes greifbares Gerät → Waffe (NICHT mehr architecture)
+        out.spikeWeapon = out.spikeRole === "weapon";
+        // (2) ein STUMPFES griff-elongiertes Ding ist form-mehrdeutig (Stab vs Säule) → bleibt Bauwerk (konservativ)
+        out.handleArch = out.handleRole === "architecture";
+        // (3) eine große Struktur (nicht greifbar) → Bauwerk (unverändert)
+        out.largeArch = out.largeRole === "architecture";
+        // (4) ein Würfel (greifbar, aber keine Geräte-Form) → Bauwerk (unverändert)
+        out.cubeArch = out.cubeRole === "architecture";
+        // (5) ein Körper → Seele (die Form-Rollen unverändert)
+        out.bodySoul = out.bodyRole === "soul";
+        // (6) die Greifbar-Erkennung selbst
+        out.graspDetect =
+            r._isGraspableImplementForm(spike) &&
+            r._isGraspableImplementForm(handle) &&
+            !r._isGraspableImplementForm(largeBlock) &&
+            !r._isGraspableImplementForm(smallCube);
+        return out;
+    });
+    check(
+        "V17.83 U4 KERN: ein spitzes greifbares Gerät → Waffe (die scharfe Klinge ist KEIN Bauwerk mehr — das Schöpfer-Beispiel an der Wurzel)",
+        res.spikeWeapon,
+        `spike=${res.spikeRole}`
+    );
+    check(
+        "V17.83 U4: ein STUMPFES griff-elongiertes Ding bleibt Bauwerk (form-mehrdeutig — nur eine SPITZE ist eindeutig ein Gerät, konservativ)",
+        res.handleArch,
+        `handle=${res.handleRole}`
+    );
+    check("V17.83 U4: eine große Struktur (nicht greifbar) → Bauwerk (unverändert)", res.largeArch, `large=${res.largeRole}`);
+    check(
+        "V17.83 U4: ein Würfel (greifbar, aber keine Geräte-Form) → Bauwerk — U4 ändert NUR Geräte-Formen",
+        res.cubeArch,
+        `cube=${res.cubeRole}`
+    );
+    check("V17.83 U4: ein Körper → Seele (die Form-Rollen soul/portal/consumable unverändert)", res.bodySoul, `body=${res.bodyRole}`);
+    check("V17.83 U4: die Greifbar-Implement-Erkennung (spitz/elongiert + klein vs großer Block/Würfel)", res.graspDetect);
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -38982,6 +39045,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1780FormAxes(ctx);
             await checkBandV1781RoleRegister(ctx);
             await checkBandV1782CatalystReadout(ctx);
+            await checkBandV1783ImplementClassification(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

@@ -33545,6 +33545,16 @@ class AnazhRealm {
     // „architecture" ist eine positive Signatur (dichte+harte Struktur) — ein Stein-Tempel resoniert sie stärker
     // als soul (DER HEAL). Bleibt alles unter dem Floor → architecture (Default).
     _computeFormRole(bp) {
+        // U4 (resonanz-system.md §5) — eine greifbare GERÄTE-Form (spitz/griff-elongiert, klein) wird über die
+        // FORM als Waffe/Werkzeug klassifiziert, NICHT als Bauwerk — der Substanz-Zwilling Klinge/Bauwerk (beide
+        // dicht+hart) wird über die FORM getrennt (V17.70-Klasse: die Substanz allein trennt sie nicht; Metall
+        // resoniert dicht+hart wie ein Bauwerk, aber eine spitze Klinge IST ein Gerät).
+        // EHRLICH eng (vision-treu): nur eine greifbare KLINGE/SPIKE (spitz UND gestreckt) ist EINDEUTIG ein
+        // Gerät (eine scharfe Klinge) → Waffe/Werkzeug. Ein spitzes KOMPAKTES Ding (Kristall-Cluster) bleibt
+        // Bauwerk; ein stumpfes elongiertes (Stab/Säule/Körper) bleibt den Form-Rollen — die FORM trennt die
+        // Klinge vom Cluster (spitz+kompakt) UND von der Säule (stumpf+elongiert), beides Substanz-Zwillinge.
+        if (this._isGraspableBladeForm(bp)) return this._argmaxImplementRole(bp);
+        // sonst: die intrinsischen Form-Rollen (soul/portal/consumable/architecture) — unverändert.
         const v = this._blueprintProductVector(bp);
         const sigs = AnazhRealm.FORM_ROLE_SIGNATURES;
         let best = AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
@@ -33553,6 +33563,24 @@ class AnazhRealm {
             const score = this._blueprintResonance(v, sigs[role]);
             if (score > bestScore) {
                 bestScore = score;
+                best = role;
+            }
+        }
+        return best;
+    }
+
+    // U4 — die GERÄTE-Rolle aus der Form: argmax der NORMIERTEN Resonanz (raw/ref, damit die Signatur-Skalen
+    // vergleichbar sind) unter weapon/tool — eine scharfe/spitze Klinge → Waffe, ein stumpfes/breites → Werkzeug.
+    _argmaxImplementRole(bp) {
+        const v = this._blueprintProductVector(bp);
+        const cfg = AnazhRealm.QUALITY_ROLE_FIT;
+        let best = "tool";
+        let bestNorm = -Infinity;
+        for (const role of ["weapon", "tool"]) {
+            const raw = this._blueprintResonance(v, AnazhRealm.ROLE_SIGNATURES[role]);
+            const norm = raw / ((cfg.refs && cfg.refs[role]) || 3.0);
+            if (norm > bestNorm) {
+                bestNorm = norm;
                 best = role;
             }
         }
@@ -36616,13 +36644,37 @@ class AnazhRealm {
         // klein + rollenlos) wird über die WERKZEUG-Form getrennt. Default „place" (konservativ — bricht
         // keinen Block); „hold" NUR wenn die Form ein Gerät verrät: eine SPITZE/Klinge (pointedFraction>0)
         // ODER ein länglicher GRIFF (eine Achse dominiert klar — kein Würfel, kein flacher Block).
+        // U4 — die FORM entscheidet (reuse _isGraspableImplementForm): spitz/klingen ODER griff-elongiert,
+        // klein genug für die Hand → „hold"; sonst „place" (konservativ, bricht keinen Block).
+        return this._isGraspableImplementForm(bp) ? "hold" : "place";
+    }
+
+    // U4 (resonanz-system.md §5) — ist die FORM ein GREIFBARES Implement? Klein genug für die Hand
+    // (IMPLEMENT_GRASP_SPAN_M) + spitz/klingen (pointedFraction>0) ODER griff-elongiert (eine Achse dominiert
+    // ≥2.2×). Reine FORM-Frage (liest NICHT die Rolle) → nutzbar in computeBlueprintRole (der Substanz-
+    // Zwilling Klinge/Bauwerk wird über die Form getrennt) UND in _blueprintUseKind (V17.74 Hotbar-Gate).
+    _isGraspableImplementForm(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return false;
         const e = this._compoundVisualExtent(bp);
         const span = Math.max(e.dx, e.dy, e.dz);
-        if (span > AnazhRealm.IMPLEMENT_GRASP_SPAN_M) return "place"; // zu groß für die Hand → Welt
-        const dims = [e.dx, e.dy, e.dz].sort((a, b) => b - a); // [längste, mittlere, kürzeste]
-        const elongated = dims[0] / Math.max(1e-4, dims[1]) >= 2.2; // ein Griff dominiert eine Achse
-        const pointed = this._blueprintPointedFraction(bp) > 0; // eine Klinge/Spitze
-        return pointed || elongated ? "hold" : "place";
+        if (span > AnazhRealm.IMPLEMENT_GRASP_SPAN_M) return false; // zu groß für die Hand → Welt-Struktur
+        const dims = [e.dx, e.dy, e.dz].sort((a, b) => b - a);
+        const elongated = dims[0] / Math.max(1e-4, dims[1]) >= 2.2;
+        const pointed = this._blueprintPointedFraction(bp) > 0;
+        return pointed || elongated;
+    }
+
+    // U4 (resonanz-system.md §5) — ist die FORM eine greifbare KLINGE/SPIKE: spitz UND gestreckt (eine
+    // scharfe, längliche Klinge — das EINDEUTIGE Gerät)? Strenger als _isGraspableImplementForm (das pointed
+    // ODER elongated für den Hotbar-Gate nutzt): für die ROLLEN-Klassifikation braucht es BEIDES, damit ein
+    // spitzer Kristall-Cluster (kompakt) UND ein stumpfer Stab (elongiert) NICHT fälschlich zum Gerät werden.
+    _isGraspableBladeForm(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return false;
+        const e = this._compoundVisualExtent(bp);
+        if (Math.max(e.dx, e.dy, e.dz) > AnazhRealm.IMPLEMENT_GRASP_SPAN_M) return false;
+        const dims = [e.dx, e.dy, e.dz].sort((a, b) => b - a);
+        const elongated = dims[0] / Math.max(1e-4, dims[1]) >= 2.2;
+        return elongated && this._blueprintPointedFraction(bp) > 0;
     }
 
     // V17.74 — ist der Bauplan eine PLATZIERBARE Welt-Struktur (Phantom) vs ein in-die-Hand/an-den-
@@ -45846,7 +45898,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.82.0";
+AnazhRealm.VERSION = "17.83.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
