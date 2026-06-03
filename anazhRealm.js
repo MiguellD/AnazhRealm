@@ -801,7 +801,8 @@ class AnazhRealm {
                 // Werkzeug-Beitrag = sourceBlueprint.compoundTags × toolWeight,
                 // Rüstung-Beitrag = blueprint.compoundTags × armorWeight.
                 // Wirkungen fließen in computePlayerStats vor den Boosts.
-                equipped: { tool: null, armor: null },
+                // V17.52 Kampf B — der weapon-Slot ergänzt tool/armor.
+                equipped: { held: null, armor: null },
                 // Welle 6.C1 — Hylomorphismus-Inventar. 27 Slots (3 Reihen × 9),
                 // jeder Slot ist {blueprintName, count} oder null. Anders als
                 // Minecraft: die Slots tragen TAG-PROFILE der referenzierten
@@ -1320,6 +1321,7 @@ class AnazhRealm {
             // (jeder hat sein eigenes Inventar + Ausrüstung).
             "equip_tool",
             "equip_armor",
+            "equip_weapon",
             "unequip",
             // Welle 6.C2 — Spielmodus ist Welt-Beziehung pro Spieler. Mitspieler
             // in derselben Welt dürfen verschiedene Modi haben (einer pfad,
@@ -1336,6 +1338,9 @@ class AnazhRealm {
             "creature_task",
             "creature_task_nearest",
             "creature_task_all",
+            // V17.53 Kampf C — Schaden an einer Kreatur (per Index) ist Spieler-privat
+            // (im Multi-User hat „#3" pro Peer eine andere Bedeutung, wie creature_task).
+            "damage_creature",
             // Welle 6.H Phase 2F.2 — Kreatur-Equipped ist Spieler-private
             // Aktion in Multi-User (jeder Spieler stattet seine eigenen
             // Kreaturen aus, gleiche Disziplin wie creature_task).
@@ -2290,6 +2295,17 @@ class AnazhRealm {
                     });
                 }
             },
+            // V17.52 Kampf Phase B — Bauplan als Waffe markieren (Spiegel von set_armor_role).
+            set_weapon_role: ([blueprintName], ctx) => {
+                const result = this.setBlueprintAsWeapon(blueprintName);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "weapon_role_set" : "weapon_role_failed",
+                        name: blueprintName,
+                        reason: result.reason,
+                    });
+                }
+            },
             // Welle 6.D Etappe 3a+ — Bauplan als Konsumabel markieren. Wirkung
             // emergiert aus Compound-Tags × scale (Default 0.2). So entsteht
             // die Tag-Bonus-Tabelle aus der Komposition (Wasser + Pflanze →
@@ -2336,10 +2352,22 @@ class AnazhRealm {
                     });
                 }
             },
+            // V17.52 Kampf Phase B — Waffe ausrüsten (Spiegel von equip_armor).
+            equip_weapon: ([name], ctx) => {
+                const result = this.equipWeapon(name);
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: result.ok ? "weapon_equipped" : "weapon_equip_failed",
+                        name: name || null,
+                        reason: result.reason,
+                    });
+                }
+            },
             unequip: ([slot], ctx) => {
                 let result;
                 if (slot === "tool") result = this.equipTool(null);
                 else if (slot === "armor") result = this.equipArmor(null);
+                else if (slot === "weapon") result = this.equipWeapon(null);
                 else result = { ok: false, reason: "unknown_slot" };
                 if (ctx && ctx.log) {
                     ctx.log.push({
@@ -2378,6 +2406,25 @@ class AnazhRealm {
                         event: ok ? "creature_task_assigned" : "creature_task_failed",
                         index: idx,
                         task: String(taskName),
+                    });
+                }
+            },
+            // V17.53 Kampf Phase C — Schaden an einer Kreatur (per Index, wie creature_task).
+            // Der Konsument von damageCreature (symmetrisch zum Spieler-`damage`-Op). Loot
+            // fällt dem Spieler zu, wenn der Befehl vom Menschen kam; ein Welt-/LLM-Tod gibt keins.
+            damage_creature: ([indexOrId, amount], ctx) => {
+                const idx = Number(indexOrId);
+                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
+                    if (ctx && ctx.log) ctx.log.push({ event: "damage_creature_index_oob", index: idx });
+                    return;
+                }
+                const src = ctx && ctx.source === "human" ? "player" : "world";
+                const res = this.damageCreature(this.state.creatures[idx], Number(amount) || 0, { source: src });
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: res.killed ? "creature_killed" : res.ok ? "creature_damaged" : "creature_damage_failed",
+                        index: idx,
+                        dealt: res.dealt,
                     });
                 }
             },
@@ -7917,11 +7964,20 @@ class AnazhRealm {
                     describe: `Rüstung: ${m[1]}`,
                 }),
             },
+            // V17.52 Kampf Phase B — Waffe ausrüsten via Chat (Spiegel der Rüstung).
+            {
+                example: "rüste waffe schwert",
+                re: /^rüste\s+waffe\s+([a-z0-9_-]+)$/i,
+                build: (m) => ({
+                    program: ["equip_weapon", m[1]],
+                    describe: `Waffe: ${m[1]}`,
+                }),
+            },
             {
                 example: "rüste ab werkzeug",
-                re: /^rüste\s+ab\s+(werkzeug|rüstung|tool|armor)$/i,
+                re: /^rüste\s+ab\s+(werkzeug|rüstung|waffe|tool|armor|weapon)$/i,
                 build: (m) => {
-                    const slot = /werkzeug|tool/i.test(m[1]) ? "tool" : "armor";
+                    const slot = /werkzeug|tool/i.test(m[1]) ? "tool" : /waffe|weapon/i.test(m[1]) ? "weapon" : "armor";
                     return {
                         program: ["unequip", slot],
                         describe: `Ausrüstung ab: ${slot}`,
@@ -11955,6 +12011,13 @@ class AnazhRealm {
         // + bei der „folge mir"-Geste; gewichtet die Contagion + den Schmerz des Verlusts.
         // Reaktiv, NICHT persistiert (wie der Task — die Beziehung wird gelebt, nicht gespeichert).
         group.userData.bond = 0;
+        // V17.53 Kampf-Bogen Phase C — Kreatur-HP (init = hpMax aus DERSELBEN
+        // Stat-Pipeline wie der Spieler). Reaktiv, NICHT persistiert (wie Task/
+        // Bond — ein Reload heilt auf voll, akzeptabel; die Beziehung/das Leben
+        // werden gelebt, nicht gespeichert). damageCreature lazy-init't ebenfalls.
+        const _cStats = this.computeCreatureStats(group).stats;
+        group.userData.hpMax = _cStats.hpMax;
+        group.userData.hp = _cStats.hpMax;
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
@@ -12383,6 +12446,101 @@ class AnazhRealm {
         const computed = this.computeCreatureStats(creature);
         creature.userData.stats = computed.stats;
         creature.userData.statTags = computed.tags;
+    }
+
+    // V17.53 Kampf-Bogen Phase C — Schaden an einer Kreatur (symmetrisch zum
+    // Spieler: DIESELBE computeCreatureStats-Pipeline liefert hpMax + defense).
+    // `dealt = max(1, amount − defense)` (keine Unverwundbarkeit, wie der Spieler-
+    // damagePlayer-Floor); hp ≤ 0 → Kampf-Tod (Loot + removeCreature). Der
+    // Knockback-Impuls + der Kampf-AFFEKT (Zorn/Triumph/Schuld) werden in Phase D
+    // eingewebt, wo die Agency (WER schlägt, aus welcher Richtung) klar ist —
+    // hier (DSL-/Welt-Quelle) wären sie mehrdeutig (kampf-plan.md §4-D/F).
+    damageCreature(creature, amount, opts = {}) {
+        if (!creature || !creature.userData || creature.userData.kind !== "creature") {
+            return { ok: false, reason: "not_creature" };
+        }
+        const stats =
+            creature.userData.stats && Number.isFinite(creature.userData.stats.hpMax)
+                ? creature.userData.stats
+                : this.computeCreatureStats(creature).stats;
+        if (typeof creature.userData.hp !== "number") creature.userData.hp = stats.hpMax; // lazy-init (Restore/alt)
+        const defense = Math.max(0, stats.defense || 0);
+        const dealt = Math.max(1, (Number(amount) || 0) - defense);
+        creature.userData.hp -= dealt;
+        // V17.54 Kampf D — Knockback: ein Velocity-Kick weg vom Angreifer, ∝ dessen
+        // knockback-Stat (NUR wenn der Angreifer Ort + Wucht liefert — der LMB-Angriff;
+        // der DSL-Op gibt keinen). Setzt die Body-Velocity (wie Sprung/Kreatur-Bewegung —
+        // es gibt keinen additiven Impuls-Pfad im Code). Die Wucht ist Browser-Feel.
+        if (opts.fromPos && (opts.knockback || 0) > 0 && creature.userData.physicsBody && this.state.tmpVec1) {
+            const dx = creature.position.x - opts.fromPos.x;
+            const dz = creature.position.z - opts.fromPos.z;
+            const len = Math.hypot(dx, dz) || 1;
+            const push = Math.min(18, opts.knockback * 1.4);
+            creature.userData.physicsBody.setLinearVelocity(
+                this.setVec(this.state.tmpVec1, (dx / len) * push, push * 0.4, (dz / len) * push)
+            );
+            creature.userData.physicsBody.activate(true);
+        }
+        if (creature.userData.hp <= 0) {
+            this._creatureCombatDeath(creature, opts.source || "unknown");
+            return { ok: true, dealt, killed: true };
+        }
+        // V17.58 W3 — Selbst-Verteidigung: ein ÜBERLEBENDES getroffenes Wesen FÜRCHTET sich → es flieht
+        // (kein passives Stehenbleiben mehr). Ein Furcht-Fenster (fearUntil) + die Emotion sad → der
+        // wander-Tick erzwingt die Flucht über _creatureWariness. Echtes Zurückschlagen bleibt Phase E.
+        creature.userData.fearUntil = performance.now() / 1000 + AnazhRealm.CREATURE_NATURE.fearSec;
+        const fidx = this.state.creatures.indexOf(creature);
+        if (fidx >= 0 && Array.isArray(this.state.creatureEmotions)) this.state.creatureEmotions[fidx] = "sad";
+        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+        return { ok: true, dealt, killed: false };
+    }
+
+    // V17.53 — die Loot-Materialien einer Kreatur, aus ihren Soul-bodyParts mit
+    // DERSELBEN Volumen-Formel wie harvestArchitecture (eine Sprache: Abbauen ≡
+    // Erlegen, beide ernten die Substanz). Kleine Kreaturen tragen wenig.
+    _creatureLootMaterials(creature) {
+        const soulName = creature && creature.userData && creature.userData.soul;
+        const soul = soulName && AnazhRealm.CREATURE_SOULS[soulName];
+        const materials = {};
+        if (soul && Array.isArray(soul.bodyParts)) {
+            const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS || 4;
+            for (const part of soul.bodyParts) {
+                if (!part || typeof part.material !== "string") continue;
+                const sx = Math.abs((part.size && part.size.x) || 1);
+                const sy = Math.abs((part.size && part.size.y) || 1);
+                const sz = Math.abs((part.size && part.size.z) || 1);
+                materials[part.material] = (materials[part.material] || 0) + Math.max(1, Math.round(sx * sy * sz * k));
+            }
+        }
+        return materials;
+    }
+
+    // V17.53 — der Kampf-Tod: Loot (NUR wenn der Spieler der Töter war — kein Loot
+    // bei einem DSL-/Welt-Tod), eine Welt-Erinnerung, dann removeCreature. Der
+    // W5-Affekt (Triumph/Schuld ∝ lebendig×bond) wird in Phase D/F eingewebt.
+    _creatureCombatDeath(creature, source) {
+        const name = (creature.userData && creature.userData.name) || "Ein Wesen";
+        const loot = this._creatureLootMaterials(creature);
+        const lootParts = [];
+        if (source === "player") {
+            for (const [mat, n] of Object.entries(loot)) {
+                if (this.addMaterialToInventory(mat, n)) lootParts.push(`${n}× ${mat}`);
+            }
+            // V17.54 Kampf D/F — die SCHULD: ein friedliches lebendig-Wesen zu töten
+            // schmerzt ∝ seiner Vitalität × Bindung (der W4-Kontext-Appraisal: derselbe
+            // lebendig-Tag, im Tötungs-Kontext zu sorrow statt zur W2-Bau-Freude). Ein
+            // totes Material-Wesen (lebendig≈0, ein Kristall-Sprite) löst keine Schuld aus.
+            const ctags = this.computeCreatureCompoundTags(creature) || {};
+            const leb = Math.min(1, Math.max(0, ctags.lebendig || 0));
+            const bond = Math.min(1, Math.max(0, (creature.userData && creature.userData.bond) || 0));
+            const guiltMag = leb * (0.4 + 0.6 * bond);
+            if (guiltMag > 0.02) this._feelAction("loss", { magnitude: guiltMag });
+        }
+        if (typeof this.journalAppend === "function") {
+            const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
+            this.journalAppend("relationship", `${name} fiel im Kampf${lootSummary}.`, { source, loot });
+        }
+        this.removeCreature(creature);
     }
 
     // === Welle 6.H Phase 2B.1 — Helper: context-dependentes Args-Mapping ===
@@ -13475,6 +13633,41 @@ class AnazhRealm {
         return best;
     }
 
+    // V17.58 W3 (kampf-plan §9) — die NATÜRLICHE Reaktion eines wilden Wesens auf den Spieler, als EIN
+    // emergentes Signal (kein Skript): die WARINESS. Sie liest deine Aura-MENACE (vor allem `chaos` =
+    // deine Aggression [V17.54], feedback-frei — NICHT von der Contagion getrieben; minus die sanften
+    // peace/joy) gegen die NATUR des Wesens (dicht/hart = kühn, lebendig = scheu) + die BINDUNG (Vertrauen)
+    // + den MODUS (frieden dämpft, schöpfer ruhig) + frische Kampf-Furcht. Negativ = neugierig (näher),
+    // positiv = scheu (fort). Reuse: player.emotions + computeCreatureCompoundTags + bond + getGameMode.
+    _creatureWariness(creature) {
+        const NAT = AnazhRealm.CREATURE_NATURE;
+        const now = performance.now() / 1000;
+        const ud = creature.userData || {};
+        const fearActive = Number.isFinite(ud.fearUntil) && now < ud.fearUntil;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return fearActive ? NAT.combatFearWariness : 0;
+        const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
+        if (!fearActive && dist > NAT.noticeRadius) return 0; // fern → neutral, das Wesen wandert
+        const e = (this.state.player && this.state.player.emotions) || {};
+        const menace =
+            (e.chaos || 0) * NAT.menaceFromChaos +
+            (e.sorrow || 0) * NAT.menaceFromSorrow -
+            (e.peace || 0) * NAT.calmFromPeace -
+            (e.joy || 0) * NAT.calmFromJoy;
+        const t = this.computeCreatureCompoundTags(creature) || {};
+        const boldness =
+            (t.dichte || 0) * NAT.boldFromDichte +
+            (t.härte || 0) * NAT.boldFromHärte -
+            (t.lebendig || 0) * NAT.shyFromLebendig +
+            (ud.bond || 0) * NAT.boldFromBond;
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        const modeMul = mode === "pfad" ? 1 : mode === "frieden" ? NAT.friedenMenace : NAT.schoepferMenace;
+        const proximity = Math.max(0, 1 - dist / NAT.noticeRadius);
+        let wariness = (menace * modeMul - boldness) * (fearActive ? 1 : proximity);
+        if (fearActive) wariness = Math.max(wariness, NAT.combatFearWariness);
+        return wariness;
+    }
+
     // Direction-Berechnung für den aktiven Task. Liefert immer einen
     // THREE.Vector3 (nullt bei wait, Spieler-Vektor bei follow_player,
     // null bei wander → Caller fällt auf heutige Emotion-Logik zurück).
@@ -13775,7 +13968,7 @@ class AnazhRealm {
             const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
             if (distp <= handover) {
                 // Material entnehmen — selber modus-gated Pfad wie Spieler-
-                // confirmBuild (pfad konsumiert, frieden+schöpfer kostenlos).
+                // confirmBuild (pfad+frieden konsumieren, nur schöpfer kostenlos — S2/§11.2).
                 const gate = this._buildMaterialGate(blueprint);
                 if (!gate.ok) {
                     const missingStr = Object.entries(gate.missing || {})
@@ -14181,21 +14374,31 @@ class AnazhRealm {
             let direction = this._tickCreatureTaskDirection(creature, task, emotion);
             if (direction === null) {
                 direction = scratchDir.set(0, 0, 0);
-                if (emotion === "happy") {
+                // V17.58 W3 — die wilde Kreatur LIEST den Spieler: die WARINESS (deine Aura-Menace × der
+                // Natur des Wesens × Bindung × Modus + frische Kampf-Furcht) ersetzt die statische happy/
+                // sad-Wahl. Neugierig NÄHER (sanfte Aura, kühnes/gebundenes Wesen) · scheu FORT (chaotische
+                // Aura, scheues Wesen, oder getroffen) · sonst gemächlich wandern. Kein Skript — Emergenz.
+                const wariness = this._creatureWariness(creature);
+                const NAT = AnazhRealm.CREATURE_NATURE;
+                if (wariness >= NAT.fleeThreshold) {
+                    // SCHEU/verschreckt — fort vom Spieler (schneller als das Schlendern; sonst Zufalls-Drift).
+                    const fromPlayer = scratchA.subVectors(creature.position, playerPos);
+                    fromPlayer.y = 0;
+                    if (fromPlayer.length() < NAT.fleeRadius) {
+                        direction.copy(fromPlayer.normalize().multiplyScalar(speed * NAT.fleeSpeedBoost));
+                    } else {
+                        direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
+                    }
+                } else if (wariness <= NAT.curiousThreshold) {
+                    // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
                     const toPlayer = scratchA.subVectors(playerPos, creature.position);
                     toPlayer.y = 0;
                     if (toPlayer.length() > 2) {
                         direction.copy(toPlayer.normalize().multiplyScalar(speed));
                     }
-                    // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare
-                    // Kreaturen (off-screen ist Flocking unsichtbar), distanceToSquared
-                    // statt distanceTo (kein sqrt), nach 6 Nachbarn abbrechen, UND
-                    // jetzt Spatial-Hash statt voller O(N²)-Schleife. Wir prüfen
-                    // nur die 9 Cells (3×3) um die eigene Kreatur, statt aller 120.
-                    // Bei verteilten happy-Kreaturen typisch 5–15 Kandidaten
-                    // statt 120 → 10–20× schneller. Bei dichtem Cluster fällt
-                    // der Win auf early-exit-Niveau (alle 6 Nachbarn in derselben
-                    // Cell), bleibt aber nie schlechter als der alte Pfad.
+                    // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare Kreaturen (off-screen
+                    // ist Flocking unsichtbar), distanceToSquared (kein sqrt), nach 6 Nachbarn abbrechen,
+                    // Spatial-Hash (nur die 9 Cells um die eigene Kreatur). REUSE für die neugierige Schar.
                     if (inFrustum) {
                         let neighbors = 0;
                         const gcx = Math.floor(creature.position.x / FLOCK_CELL);
@@ -14207,9 +14410,6 @@ class AnazhRealm {
                                 for (let bi = 0; bi < bucket.length; bi++) {
                                     const j = bucket[bi];
                                     if (i === j) continue;
-                                    // creatureEmotions[j] === "happy" ist beim
-                                    // Grid-Bau schon garantiert (Filter oben),
-                                    // also brauchen wir den Check hier nicht.
                                     const otherCreature = this.state.creatures[j];
                                     const dsq = creature.position.distanceToSquared(otherCreature.position);
                                     if (dsq > 1 && dsq < 25) {
@@ -14224,13 +14424,8 @@ class AnazhRealm {
                         }
                     }
                 } else {
-                    const fromPlayer = scratchA.subVectors(creature.position, playerPos);
-                    fromPlayer.y = 0;
-                    if (fromPlayer.length() < 10) {
-                        direction.copy(fromPlayer.normalize().multiplyScalar(speed));
-                    } else {
-                        direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
-                    }
+                    // NEUTRAL — weder gelockt noch verschreckt → gemächliches Wandern.
+                    direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
                 }
             }
 
@@ -15338,6 +15533,7 @@ class AnazhRealm {
             creature_equip_armor: (a) =>
                 a[1] ? `rüstet Kreatur #${a[0]} mit Rüstung „${a[1]}" aus` : `nimmt Kreatur #${a[0]} die Rüstung ab`,
             creature_unequip: (a) => `nimmt Kreatur #${a[0]} den Slot „${a[1]}" ab`,
+            damage_creature: (a) => `fügt Kreatur #${a[0]} ${a[1]} Schaden zu`,
             creature_apply_boost: (a) => `gibt Kreatur #${a[0]} den Trank „${a[1]}"`,
             creatures_color: () => `färbt alle Kreaturen`,
             creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
@@ -22656,6 +22852,19 @@ class AnazhRealm {
             out.role = "tool";
             out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
         }
+        // S3-B (kampf-plan §11.7) — die Schmiede-Qualität reist mit: ein geschmiedetes Gerät bleibt
+        // geschmiedet (forgedPrecision gesetzt) über den Reload → der Werk-Akt wird nicht beim Laden
+        // entwertet, der Gebrauch bleibt frei (sonst müsste man nach jedem Reload neu schmieden/zahlen).
+        if (Number.isFinite(bp.forgedPrecision)) out.forgedPrecision = bp.forgedPrecision;
+        // V17.52 Kampf Phase B — die Waffen-Rolle reist mit (sonst verlöre eine
+        // geschmiedete Waffe beim Reload ihre Rolle + die Equip-Bindung). Volle
+        // Persistenz — bewusst sauberer als die heutige armor/consumable-Rolle,
+        // die hier (gemessen) nicht serialisiert wird. Kein Meta (das Profil
+        // emergiert aus den Parts, die ohnehin mitreisen).
+        if (bp.role === "weapon") {
+            out.role = "weapon";
+            if (bp.roleManual) out.roleManual = true;
+        }
         // W14 — Portal-Bauplan: Rolle + portalMeta (das Welt-Ziel) müssen
         // mitreisen. Ohne das verlöre ein über die Bibliothek geholtes
         // Portal beim Reload seine Ausrichtung — role + portalMeta fehlten,
@@ -22734,6 +22943,8 @@ class AnazhRealm {
             parts: migratedParts,
             connections: validConnections,
         };
+        // S3-B — geschmiedet bleibt geschmiedet (Gegenstück zu _serializeBlueprint).
+        if (Number.isFinite(data.forgedPrecision)) restored.forgedPrecision = data.forgedPrecision;
         // Welle 5 C — role + toolMeta beim Load wiederherstellen.
         if (
             data.role === "tool" &&
@@ -22743,6 +22954,13 @@ class AnazhRealm {
         ) {
             restored.role = "tool";
             restored.toolMeta = { opName: data.toolMeta.opName, opClass: data.toolMeta.opClass };
+        }
+        // V17.52 Kampf Phase B — die Waffen-Rolle wiederherstellen (Gegenstück zu
+        // _serializeBlueprint). Die Parts tragen das Profil; roleManual schützt
+        // die Rolle vor der Emergenz.
+        if (data.role === "weapon") {
+            restored.role = "weapon";
+            if (data.roleManual === true) restored.roleManual = true;
         }
         // W14 — Portal-Bauplan wiederherstellen. portalMeta läuft durch
         // _sanitizePortalMeta (erzwingt einen same-origin worlds/-Pfad) —
@@ -22854,8 +23072,11 @@ class AnazhRealm {
             customSouls: this.state.customSouls || {},
             // Welle 6.D Etappe 3a — Konsumable-Rezepte persistieren.
             consumables: this.state.consumables || {},
-            // Welle 6.D Etappe 3b — Equipped-Slots persistieren.
-            playerEquipped: (this.state.player && this.state.player.equipped) || { tool: null, armor: null },
+            // Welle 6.D Etappe 3b / V17.57 W2-B — Equipped-Slots persistieren ({held, armor}).
+            playerEquipped: (this.state.player && this.state.player.equipped) || {
+                held: null,
+                armor: null,
+            },
             // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei
             // jedem Init wieder verfügbar, aber Persistenz erlaubt zukünftig
             // eigen-geschmiedete (Welle 6) zu überleben.
@@ -24949,8 +25170,13 @@ class AnazhRealm {
             }
         }
         if (state.playerEquipped && typeof state.playerEquipped === "object") {
-            if (state.playerEquipped.tool) this.equipTool(state.playerEquipped.tool);
-            if (state.playerEquipped.armor) this.equipArmor(state.playerEquipped.armor);
+            const pe = state.playerEquipped;
+            // V17.57 W2-B — ein „held"-Slot; Alt-Saves (tool/weapon) wandern darauf (Waffe
+            // bevorzugt, sonst Werkzeug — beide routen via equipHeld auf denselben Slot).
+            if (pe.held) this.equipHeld(pe.held);
+            else if (pe.weapon) this.equipHeld(pe.weapon);
+            else if (pe.tool) this.equipHeld(pe.tool);
+            if (pe.armor) this.equipArmor(pe.armor);
         }
     }
 
@@ -26930,33 +27156,160 @@ class AnazhRealm {
         return { ok: true, name };
     }
 
-    // Werkzeug ausrüsten. Akzeptiert null/leer für „abnehmen".
-    equipTool(name) {
+    // V17.52 Kampf-Bogen Phase B — Bauplan als Waffe markieren. Spiegel von
+    // setBlueprintAsArmor: role:"weapon" + roleManual (manueller Override, die
+    // Emergenz lässt die Rolle in Ruhe). Das Kombat-Profil der Waffe (damage/
+    // knockback/attackSpeed) EMERGIERT aus ihren Compound-Tags beim Ausrüsten —
+    // keine Meta nötig (anders als das Werkzeug, das opName/opClass trägt).
+    setBlueprintAsWeapon(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        bp.role = "weapon";
+        bp.roleManual = true;
+        return { ok: true, name };
+    }
+
+    // V17.57 W2-B (kampf-plan §8.1) — EIN gehaltenes Gerät: equipHeld nimmt JEDEN Bauplan
+    // (kein Rollen-Schloss mehr). Es verschmilzt das alte Werkzeug + die Waffe zu einer „in der
+    // Hand"-Sache; sein FORM-bewusstes Profil (W2) bestimmt, was es gut kann (schneiden/wuchten/
+    // schlagen). recomputePlayerStats faltet seine Tags mit HELD_STAT_WEIGHT → Schaden/Rückschlag/
+    // Tempo spiegeln das Gerät; Abbauen (W1/W2) + Angriff lesen DASSELBE Gerät (alles-für-alles).
+    equipHeld(name) {
         if (!this.state.player) return { ok: false, reason: "no_player" };
+        const eq = (this.state.player.equipped = this.state.player.equipped || { held: null, armor: null });
         if (!name) {
-            this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
-            this.state.player.equipped.tool = null;
+            eq.held = null;
             this.recomputePlayerStats();
             return { ok: true, equipped: null };
         }
-        if (!this.state.tools || !this.state.tools[name]) {
-            return { ok: false, reason: "tool_unknown" };
+        // den Bauplan auflösen: ein direkter Bauplan ODER ein gecraftetes Werkzeug (name == Bauplan
+        // bzw. über sourceBlueprint). builtIn-Crafting-Tools (hammer/feile, kein Bauplan) → abgelehnt
+        // (sie sind die Werkstatt-Schicht, kein Welt-Gerät).
+        let bpName = name;
+        if (!(this.state.blueprints && this.state.blueprints[name])) {
+            const tool = this.state.tools && this.state.tools[name];
+            bpName = tool && tool.sourceBlueprint ? tool.sourceBlueprint : null;
         }
-        if (Array.isArray(this.state.player.tools) && !this.state.player.tools.includes(name)) {
-            return { ok: false, reason: "tool_not_owned" };
-        }
-        this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
-        this.state.player.equipped.tool = name;
+        if (!bpName || !this.state.blueprints[bpName]) return { ok: false, reason: "blueprint_unknown" };
+        eq.held = bpName;
         this.recomputePlayerStats();
-        return { ok: true, equipped: name };
+        return { ok: true, equipped: bpName };
+    }
+
+    // V17.57 W2-B — equipTool/equipWeapon sind jetzt ALIASE auf equipHeld (ein Slot, kein
+    // Schloss). Die DSL-Ops, der Chat, die Persistenz-Restore + das Abnehmen routen darüber —
+    // so bleibt die ganze bestehende API heil, während das Modell sich vereint.
+    equipTool(name) {
+        return this.equipHeld(name);
+    }
+    equipWeapon(name) {
+        return this.equipHeld(name);
+    }
+
+    // S4 (kampf-plan §11.4) — der gemeinsame WERK-KERN, den JEDER Mach-Akt teilt (Gerät/Rüstung/…): Material
+    // ziehen durchs §11.2-Mach-Tor (pfad+frieden zahlen, schöpfer frei) + die Präzision EINFRIEREN
+    // (`forgedPrecision`-Snapshot, persistiert) + der schöpferische Affekt (Stolz ∝ Substanz, W2-Brücke).
+    // Was sich pro Rolle unterscheidet, ist nur das AUSRÜSTEN (held vs armor) — das macht der Aufrufer.
+    _forgeMaterialAndFreeze(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        const gate = this._makeCostGate(name);
+        if (!gate.ok) {
+            return { ok: false, reason: "not_enough_material", missing: gate.missing || {}, cost: gate.cost || {} };
+        }
+        bp.forgedPrecision = this._compoundAvgPrecisionFromParts(bp.parts);
+        if (typeof this._feelAction === "function") this._feelAction("create", { blueprint: name });
+        return { ok: true, free: !!gate.free, forgedPrecision: bp.forgedPrecision };
+    }
+
+    // S3 (kampf-plan §11.7, §10-F3) — das Gerät SCHMIEDEN: der WERK-Kern (Material + Präzision-Snapshot +
+    // Affekt) + das gehaltene Gerät AUSRÜSTEN (equipHeld). Der Spiegel von „bauen" für gehaltene Geräte.
+    // (equipHeld bleibt der freie GEBRAUCH; das Kosten-Tor sitzt hier im WERK-Akt.)
+    forgeBlueprint(name) {
+        const make = this._forgeMaterialAndFreeze(name);
+        if (!make.ok) return make;
+        const eq = this.equipHeld(name);
+        return { ok: true, equipped: eq.equipped, free: make.free, forgedPrecision: make.forgedPrecision };
+    }
+
+    // S3-B (kampf-plan §11.7) — „in die Hand nehmen": der SPIELER-Pfad zum gehaltenen Gerät, der den
+    // Schmiede-Akt BEDEUTSAM macht (sonst wäre equipHeld gratis = der Werk-Akt sinnlos, strikt schlechter
+    // als gratis-equippen). Ein UNgeschmiedetes Gerät in pfad/frieden → erst SCHMIEDEN (Material zahlen +
+    // Präzision einfrieren, der Werk-Akt); ein bereits geschmiedetes (forgedPrecision gesetzt, reist im
+    // Snapshot) ODER schöpfer → frei ausrüsten (der GEBRAUCH). So: schmieden EINMAL, halten frei.
+    // (equipHeld bleibt das freie Low-Level-Primitiv für Restore/DSL/Chat/Aliase — die scripting-Schicht;
+    // deren volle Vereinheitlichung ist S7.)
+    wieldBlueprint(name) {
+        if (!name) return this.equipHeld(null);
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return this.equipHeld(name); // unbekannt → equipHeld liefert die saubere Ablehnung
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (Number.isFinite(bp.forgedPrecision) || mode === "schöpfer") return this.equipHeld(name);
+        return this.forgeBlueprint(name);
+    }
+
+    // S4 (kampf-plan §11.7) — Rüstung SCHMIEDEN/WEBEN: derselbe WERK-Kern wie das Gerät, nur in den
+    // armor-Slot ausgerüstet. Verlangt einen als Rüstung markierten Bauplan (role:"armor" — die Schutz-
+    // Lesart, gesetzt via setBlueprintAsArmor); dann zahlt der Akt Material + friert die Präzision ein.
+    forgeArmor(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.role !== "armor") return { ok: false, reason: "not_marked_as_armor" };
+        const make = this._forgeMaterialAndFreeze(name);
+        if (!make.ok) return make;
+        const eq = this.equipArmor(name);
+        return { ok: true, equipped: eq.equipped, free: make.free, forgedPrecision: make.forgedPrecision };
+    }
+
+    // S4 — „Rüstung anlegen": der SPIELER-Pfad (Spiegel von wieldBlueprint), der den Web-/Schmiede-Akt
+    // BEDEUTSAM macht: eine UNgemachte Rüstung in pfad/frieden → erst SCHMIEDEN/WEBEN (zahlt + friert ein),
+    // eine bereits gemachte (forgedPrecision) ODER schöpfer → frei tragen (GEBRAUCH). equipArmor bleibt
+    // das freie Low-Level-Primitiv (Restore/DSL/Chat).
+    wearArmor(name) {
+        if (!name) return this.equipArmor(null);
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return this.equipArmor(name);
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (Number.isFinite(bp.forgedPrecision) || mode === "schöpfer") return this.equipArmor(name);
+        return this.forgeArmor(name);
+    }
+
+    // S6 (kampf-plan §11.7, §11.3-Faden 6) — einen Trank BRAUEN: der Werk-Akt zieht die ZUTATEN (die
+    // Material-Kosten des Konsumable-Bauplans — z.B. `laub`, das von Bäumen geerntet wird) durch das
+    // §11.2-Mach-Tor, DANN wirkt der Trank (activateConsumable). Heilt den ∞-Gratis-Boost (Sonde A): jeder
+    // Brau+Trunk kostet geerntete Zutaten (pfad/frieden zahlen, schöpfer frei). activateConsumable bleibt das
+    // freie Low-Level-Primitiv (DSL/Chat/Tabellen-Tränke). EHRLICH: die echte Zutaten-TIEFE (erntbare
+    // Scatter-Flora → eigene Alchemie-Materialien) ist S6-B — heute sind die Zutaten die Part-Materialien.
+    brewConsumable(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || bp.role !== "consumable") return { ok: false, reason: "not_a_consumable" };
+        const gate = this._makeCostGate(name);
+        if (!gate.ok) {
+            return { ok: false, reason: "not_enough_material", missing: gate.missing || {}, cost: gate.cost || {} };
+        }
+        const res = this.activateConsumable(name);
+        return { ok: !!res.ok, reason: res.reason, free: !!gate.free };
+    }
+
+    // S4/S5/S6 (kampf-plan §11.5) — der EINE „Fertigen"-Akt der Werkstatt: routet nach der Rolle in den
+    // richtigen Werk-Verb (Rüstung → weben, Seele → Körper formen, Trank → brauen, sonst → Gerät schmieden).
+    // Der Keim der EINEN Werkstatt-Gebärmutter (§11.5) — ein Akt, rollen-gerecht.
+    fertigeBlueprint(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (bp && bp.role === "armor") return this.forgeArmor(name);
+        if (bp && bp.role === "soul") return this.forgeAvatar(name);
+        if (bp && bp.role === "consumable") return this.brewConsumable(name);
+        return this.forgeBlueprint(name);
     }
 
     // Rüstung ausrüsten. Akzeptiert null/leer für „abnehmen". Blueprint muss
-    // mit role:"armor" markiert sein (via setBlueprintAsArmor).
+    // mit role:"armor" markiert sein (via setBlueprintAsArmor). (Rüstung bleibt ein
+    // eigener GETRAGENER Slot — sie ist nicht „in der Hand".)
     equipArmor(name) {
         if (!this.state.player) return { ok: false, reason: "no_player" };
         if (!name) {
-            this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
+            this.state.player.equipped = this.state.player.equipped || { held: null, armor: null };
             this.state.player.equipped.armor = null;
             this.recomputePlayerStats();
             return { ok: true, equipped: null };
@@ -26964,7 +27317,7 @@ class AnazhRealm {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
         if (bp.role !== "armor") return { ok: false, reason: "not_marked_as_armor" };
-        this.state.player.equipped = this.state.player.equipped || { tool: null, armor: null };
+        this.state.player.equipped = this.state.player.equipped || { held: null, armor: null };
         this.state.player.equipped.armor = name;
         this.recomputePlayerStats();
         return { ok: true, equipped: name };
@@ -30104,6 +30457,32 @@ class AnazhRealm {
         return { ok: !!ok, soulName };
     }
 
+    // S5 (kampf-plan §11.7, §11.2) — einen Körper FORMEN (Avatar): der Werk-Akt, der eine eigene/stärkere
+    // Seele macht. Der Avatar ist KEINE Ausnahme (Schöpfer-Korrektur): einen Körper formen kostet (derselbe
+    // WERK-Kern wie Gerät/Rüstung — Material + Präzision-Snapshot + Affekt), eine fertige Seele TRAGEN ist
+    // frei. Verlangt role:"soul"; dann den Körper erschaffen + verkörpern (applyPlayerSoulFromBlueprint).
+    forgeAvatar(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.role !== "soul") return { ok: false, reason: "blueprint_not_soul" };
+        const make = this._forgeMaterialAndFreeze(name);
+        if (!make.ok) return make;
+        const res = this.applyPlayerSoulFromBlueprint(name);
+        return { ok: !!res.ok, soulName: res.soulName, free: make.free, forgedPrecision: make.forgedPrecision };
+    }
+
+    // S5 — „verkörpern": der SPIELER-Pfad (Spiegel von wield/wear). Eine UNgemachte Seele in pfad/frieden →
+    // erst FORMEN (forgeAvatar, zahlt + friert ein); eine gemachte (forgedPrecision) ODER schöpfer → frei
+    // verkörpern (applyPlayerSoulFromBlueprint = der freie GEBRAUCH, re-erschafft denselben Körper). Die drei
+    // Starter-Seelen (Mensch/Phönix/Drache) sind gegebene Identitäten — die laufen über applyPlayerSoul, frei.
+    embodyBlueprint(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (Number.isFinite(bp.forgedPrecision) || mode === "schöpfer") return this.applyPlayerSoulFromBlueprint(name);
+        return this.forgeAvatar(name);
+    }
+
     applyPlayerSoul(name) {
         const defs = this.playerSoulDefs;
         const key = typeof name === "string" ? name.toLowerCase().trim() : "";
@@ -30235,21 +30614,21 @@ class AnazhRealm {
         //                 + tool.compoundTags[t] × toolWeight × toolPrec + boost-Deltas
         // Welle 10a: Präzisions-Multiplier auch hier, pro Quelle.
         const equipped = (this.state.player && this.state.player.equipped) || {};
-        // Werkzeug-Beitrag (nur wenn Bauplan-Tool, sourceBlueprint vorhanden)
-        if (equipped.tool && this.state.tools && this.state.tools[equipped.tool]) {
-            const tool = this.state.tools[equipped.tool];
-            if (tool.sourceBlueprint && this.state.blueprints[tool.sourceBlueprint]) {
-                const bp = this.state.blueprints[tool.sourceBlueprint];
-                const tags = this.computeCompoundTags(bp);
-                const toolPrec = this._compoundAvgPrecisionFromParts(bp.parts);
-                const toolMul = 0.5 + 0.5 * toolPrec;
-                const w = AnazhRealm.TOOL_STAT_WEIGHT * toolMul;
-                for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
-                    finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
-                }
+        // V17.57 W2-B — der HELD-Beitrag: das EINE gehaltene Gerät (Werkzeug + Waffe verschmolzen)
+        // faltet mit HELD_STAT_WEIGHT in den Spieler-Compound → Schaden/Rückschlag/Tempo spiegeln das
+        // Gerät (eine harte Klinge → mehr Schaden, eine schwere Keule → mehr Rückschlag). DAS gehaltene
+        // Ding bestimmt den ANGRIFF (alles-für-alles), wie es das ABBAUEN bestimmt (W1/W2) — eine
+        // Pipeline, kein Rollen-Schloss. `_heldImplementBlueprint` löst Werkzeug ODER Waffe auf.
+        const heldBp = this._heldImplementBlueprint();
+        if (heldBp && Array.isArray(heldBp.parts)) {
+            const tags = this.computeCompoundTags(heldBp);
+            const heldMul = 0.5 + 0.5 * this._compoundAvgPrecisionFromParts(heldBp.parts);
+            const w = AnazhRealm.HELD_STAT_WEIGHT * heldMul;
+            for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+                finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
             }
         }
-        // Rüstung-Beitrag (immer aus Bauplan mit role:"armor")
+        // Rüstung-Beitrag (ein eigener GETRAGENER Slot, aus Bauplan mit role:"armor")
         if (equipped.armor && this.state.blueprints[equipped.armor]) {
             const bp = this.state.blueprints[equipped.armor];
             if (bp.role === "armor") {
@@ -34984,10 +35363,22 @@ class AnazhRealm {
     // frieden + schöpfer bauen kostenlos (Vision §1.5 + §10.1). Liefert
     // dasselbe {ok, missing}-Shape wie checkBuildCost; im Free-Modus immer
     // ok=true ohne Konsum.
-    _buildMaterialGate(blueprintName) {
+    // S2 (kampf-plan §11.7) — das rollen-agnostische MACH-TOR: jeder Werk-Akt (bauen/schmieden/weben/
+    // brauen/Körper-formen) zieht das Material durch DIESELBE bewährte computeBuildCost-Maschinerie, mit
+    // der KRISTALLISIERTEN Modus-Achse (§11.2): Materie kostet in pfad UND frieden (du sammelst + machst),
+    // frei nur in schöpfer (gehorcht). Herkunfts-agnostisch — ein geteilter Bauplan kostet wie ein eigener
+    // (das „Plan frei / Werk kostet"-Modell, §11.1). Mühe/Bedrohung (Stamina/Abbau-Hieb) bleiben die
+    // pfad-Achse (frieden ist friedlich, aber NICHT gratis — die V17.59-Diskrepanz geheilt).
+    _makeCostGate(blueprintName) {
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
-        if (mode !== "pfad") return { ok: true, cost: {}, missing: {}, free: true };
+        if (mode === "schöpfer") return { ok: true, cost: {}, missing: {}, free: true };
         return this.tryConsumeBuildCost(blueprintName);
+    }
+
+    // Bauen ist der erste Werk-Akt — auf das generalisierte Mach-Tor umgehängt (verhaltens-gleich
+    // bis auf die §11.2-Modus-Heilung: frieden zahlt jetzt auch Material).
+    _buildMaterialGate(blueprintName) {
+        return this._makeCostGate(blueprintName);
     }
 
     // ============================================================
@@ -35262,7 +35653,7 @@ class AnazhRealm {
     // Caller entscheidet wohin: Spieler-LMB → direkt addMaterialToInventory;
     // Kreatur-gather → erst in creature.userData.carrying, dann beim Bring-
     // Übergabe-Schritt ins Spieler-Inventar.
-    harvestArchitecture(entry, harvester = "player") {
+    harvestArchitecture(entry, harvester = "player", yieldMult = 1) {
         if (!entry) return null;
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         const materials = {};
@@ -35275,7 +35666,11 @@ class AnazhRealm {
                 const sy = Math.abs((part.size && part.size.y) || 1);
                 const sz = Math.abs((part.size && part.size.z) || 1);
                 const volume = sx * sy * sz;
-                const units = Math.max(1, Math.round(volume * k));
+                // V17.55 W1 — der ERTRAG skaliert mit der Tauglichkeit (yieldMult): das
+                // richtige Werkzeug → voll, das falsche → wenig/nichts (Floor in
+                // _harvestFitness). yieldMult=1 (Kreatur-gather/Welt-Tod) = volles altes
+                // Verhalten (min 1 Einheit/Part).
+                const units = Math.max(yieldMult >= 0.999 ? 1 : 0, Math.round(volume * k * yieldMult));
                 materials[part.material] = (materials[part.material] || 0) + units;
                 totalParts++;
             }
@@ -35285,7 +35680,15 @@ class AnazhRealm {
         if (!removed) return null;
         // V17.30 — der Spieler erntet (sammelt Fülle) → joy + hope. Nur der
         // Spieler fühlt; eine erntende Kreatur (harvester="creature:…") nicht.
-        if (harvester === "player") this._feelAction("harvest", { blueprint: blueprintName });
+        // V17.55 W1 — der GEFÜHL-Kanal: die Erntefreude skaliert mit dem Ertrag (eine
+        // reiche, effiziente Ernte beglückt mehr als ein mühsam abgeschabter Rest).
+        if (harvester === "player") {
+            const mag =
+                bp && Array.isArray(bp.parts) ? this._substanceMagnitude(bp) * (0.4 + 0.6 * yieldMult) : undefined;
+            const harvestOpts = { blueprint: blueprintName };
+            if (mag !== undefined) harvestOpts.magnitude = mag;
+            this._feelAction("harvest", harvestOpts);
+        }
         if (typeof this.journalAppend === "function" && totalParts > 0) {
             const matSummary = Object.entries(materials)
                 .map(([m, n]) => `${n}× ${m}`)
@@ -35478,50 +35881,297 @@ class AnazhRealm {
         this.state.player.stamina = Math.max(0, have - cost);
     }
 
+    // V17.54 Kampf-Bogen Phase D — der Spieler-Nahangriff auf eine Kreatur (der LMB-
+    // Konsument von damageCreature). attackSpeed gated die Schlagrate (Cooldown =
+    // 1/attackSpeed → eine schwere Keule schlägt seltener, eine flinke Klinge öfter),
+    // die Stamina kostet wie der Abbau (pfad). Schaden + Knockback sind der Spieler-
+    // Kombat-Stat (∝ ausgerüsteter Waffe, Phase B). Der W5-Affekt wird VON ANFANG AN
+    // gewebt: Zorn ∝ Waffen-härte (die W2-Brücke); die Schuld beim Töten eines
+    // lebendig-Wesens trägt _creatureCombatDeath.
+    _playerAttackCreature(creature) {
+        const p = this.state.player;
+        if (!p) return false;
+        const stats = p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
+        const atkSpeed = Math.max(0.2, stats.attackSpeed || 1);
+        const now = performance.now() / 1000;
+        const last = Number.isFinite(p.lastAttackAt) ? p.lastAttackAt : -Infinity;
+        if (now - last < 1 / atkSpeed) return false; // noch im Angriffs-Cooldown
+        p.lastAttackAt = now;
+        this._consumeMouseStamina();
+        // der Affekt VOR dem möglichen Tod: Zorn/Kampf-Intensität ∝ der Substanz des GEHALTENEN
+        // Geräts (V17.57 W2-B: das eine „in der Hand"-Ding — Werkzeug + Waffe verschmolzen).
+        const weaponName = p.equipped && p.equipped.held;
+        this._feelAction("attack", weaponName ? { blueprint: weaponName } : undefined);
+        const pm = this.state.playerMesh.position;
+        const res = this.damageCreature(creature, stats.damage || 5, {
+            source: "player",
+            fromPos: { x: pm.x, y: pm.y, z: pm.z },
+            knockback: stats.knockback || 0,
+        });
+        return !!res.ok;
+    }
+
+    // V17.56 W2 (kampf-plan §8.1) — das GEHALTENE Gerät: das ausgerüstete Werkzeug (Welt-Arbeit)
+    // ODER die Waffe (was in der Hand ist) → sein Bauplan. Behebt den W1-Bug: ein echtes Werkzeug
+    // ist eine Instanz (`state.tools[name].sourceBlueprint`), nicht direkt ein Bauplan; ein direkter
+    // Bauplan-Name (Test/Waffe) passt auch. So benutzt du DIESELBE Sache zum Schlagen UND Abbauen.
+    _heldImplementBlueprint() {
+        const eq = this.state.player && this.state.player.equipped;
+        if (!eq) return null;
+        const blu = this.state.blueprints || {};
+        // V17.57 W2-B — EIN Slot: `held` (ein Bauplan). Direkt auflösen; ein gecraftetes
+        // Werkzeug (name == Bauplan, sonst sourceBlueprint) wird ebenso aufgelöst (Robustheit
+        // für Alt-Saves / Werkzeug-Namen).
+        const held = eq.held;
+        if (!held) return null;
+        if (blu[held]) return blu[held];
+        const tool = this.state.tools && this.state.tools[held];
+        if (tool && tool.sourceBlueprint && blu[tool.sourceBlueprint]) return blu[tool.sourceBlueprint];
+        return null;
+    }
+
+    // V17.56 W2 — der Anteil SPITZER/klingen-Parts (SPATIAL_POINTED_SHAPES) am Bauplan — das
+    // reine FORM-Maß. Daraus emergiert die Schärfe (× härte, für das Schneiden) UND die Stumpfheit
+    // (1 − das, für die Wucht). Reuse der bestehenden Form-Sprache (dieselben Shapes wie der TIP-Bonus).
+    _blueprintPointedFraction(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return 0;
+        const pointed = AnazhRealm.SPATIAL_POINTED_SHAPES;
+        let n = 0;
+        for (const part of bp.parts) if (part && pointed.has(part.shape)) n++;
+        return n / bp.parts.length;
+    }
+
+    // V17.56 W2 (kampf-plan §8.1) — das FÄHIGKEITS-PROFIL des gehaltenen Geräts, ein FORM-getriebener
+    // TRADE-OFF aus Form × Material: WUCHT (`minePower`, ∝ STUMPFHEIT × (dichte+härte) → bricht Fels;
+    // eine scharfe Klinge taugt NICHT zum Wuchten) vs SCHÄRFE (`cutPower`, ∝ SCHÄRFE = spitze Form ×
+    // härte → schneidet Weiches/Lebendiges; ein stumpfer Klotz schneidet nicht). DIESELBE harte Materie
+    // wird so zur Keule ODER zur Klinge — die FORM entscheidet, nicht ein Slider. Die Faust: beides schwach.
+    _implementProfile() {
+        return this._implementProfileForBlueprint(this._heldImplementBlueprint());
+    }
+
+    // V17.57 W2-B — das Profil eines BELIEBIGEN Bauplans (für die UI-Ablesung + das gehaltene Gerät).
+    _implementProfileForBlueprint(bp) {
+        const H = AnazhRealm.HARVEST;
+        if (!bp) return { minePower: H.handMinePower, cutPower: H.handCutPower };
+        const t = this.computeCompoundTags(bp) || {};
+        const pointedFrac = this._blueprintPointedFraction(bp);
+        const sharpness = pointedFrac * (t.härte || 0);
+        const bluntness = 1 - pointedFrac;
+        // S3 (kampf-plan §10-F2) — die PRÄZISION moduliert die Welt-Kraft: ein besser geschmiedetes Gerät
+        // bricht/schneidet kräftiger (die Konzept-§4.3-Rekursion schließt END-TO-END — besseres Crafting-
+        // Werkzeug → höhere Werkstück-Präzision → besseres Gerät → besseres Abbauen → womit du Besseres
+        // schmiedest). Eingefroren beim Schmieden (`forgedPrecision`, Snapshot), sonst live aus den Parts;
+        // ein opChain-loser („geborener") Bauplan = 1.0 → Faktor 1.0 (kein Regress für die Form-Profile).
+        const precision = Number.isFinite(bp.forgedPrecision)
+            ? bp.forgedPrecision
+            : this._compoundAvgPrecisionFromParts(bp.parts);
+        const precMul = 0.5 + 0.5 * precision;
+        const minePower =
+            (H.toolMineBase + bluntness * ((t.härte || 0) * H.mineFromHärte + (t.dichte || 0) * H.mineFromDichte)) *
+            precMul;
+        const cutPower = (H.toolCutBase + sharpness * H.cutFromSharp) * precMul;
+        return { minePower, cutPower };
+    }
+
+    // V17.57 W2-B — die ROLLE wird ein ABLESEN: das dominante Können des Geräts aus seinem Profil
+    // (kein manuelles Markieren mehr). Eine spitze Klinge liest „Klinge" (schneidet), ein stumpfer
+    // schwerer Klotz „Brecher" (wuchtet), ausgewogen „Gerät".
+    _implementAffordanceLabel(bp) {
+        const prof = this._implementProfileForBlueprint(bp);
+        if (prof.cutPower > prof.minePower * 1.3) return "Klinge";
+        if (prof.minePower > prof.cutPower * 1.3) return "Brecher";
+        return "Gerät";
+    }
+
+    // S1 (kampf-plan §11.7) — die Werkstatt erkennt JEDE Lesart: die emergente FÄHIGKEIT eines
+    // Bauplans aus Form × Material, UNABHÄNGIG von der abstrakten Rolle. Heilt den „nur Bauwerk"-
+    // Befund (ein Holzstiel + Steinkopf liest „Brecher — wuchtet Fels", auch ohne Schmiede-Domain).
+    // Reuse der bestehenden Profil-/Form-Leser (kein neuer Pfad). Die Geräte-Lesart (Klinge/Brecher)
+    // nur bei greifbar-/schwingbarer Größe — ein Dorf ist ein Bauwerk, kein Brecher.
+    _blueprintCapabilityHints(bp) {
+        const hints = [];
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return hints;
+        const t = this.computeCompoundTags(bp) || {};
+        // (1) die in-der-Hand-Lesart (Werkzeug + Waffe vereint, W2-B): Klinge/Brecher/Gerät + was es gut tut.
+        const bbox = this._compoundBBox(bp);
+        const span = bbox ? Math.max(bbox.max.x - bbox.min.x, bbox.max.y - bbox.min.y, bbox.max.z - bbox.min.z) : 0;
+        if (span <= AnazhRealm.IMPLEMENT_GRASP_SPAN_M) {
+            const label = this._implementAffordanceLabel(bp);
+            const doing =
+                label === "Klinge"
+                    ? "schneidet Weiches (Holz/Pflanzen), schwach an Fels"
+                    : label === "Brecher"
+                      ? "wuchtet Fels/Hartes, schneidet kaum"
+                      : "ausgewogen (schneiden + wuchten)";
+            hints.push(`${label} — ${doing}`);
+        }
+        // (2) die Schutz-Lesart (Rüstung): dichte + härte verteilen den Stoß.
+        const schutz = (t.dichte || 0) + (t.härte || 0);
+        if (schutz >= 1.2) hints.push(`Schutz (Rüstung) ~${(schutz * 0.5).toFixed(1)}`);
+        // (3) die FORM-emergenten Lesarten (dieselben Prädikate wie computeBlueprintRole):
+        if (this._isBodyShaped && this._isBodyShaped(bp)) hints.push("Wesen (Seele/Avatar)");
+        if (this._isPortalShaped && this._isPortalShaped(bp)) hints.push("Tor (Portal)");
+        if (this._isFoodLike && this._isFoodLike(bp)) hints.push("Wirkung (Trank/Nahrung)");
+        return hints;
+    }
+
+    // V17.55 W1-Kompat — die reine Grab-Kraft (für Aufrufer, die nur die Wucht brauchen).
+    _heldMinePower() {
+        return this._implementProfile().minePower;
+    }
+
+    // V17.56 W2 — der Widerstand eines Bauwerks, ZWEI Kanäle: `mineResist` (∝ härte+dichte, gegen
+    // Wucht — Fels widersteht) + `cutResist` (∝ härte+dichte, gegen Schärfe — Hartes/Dichtes lässt
+    // sich nicht schneiden, Weiches/Lebendiges gibt nach). So entscheidet das MATERIAL, welche Kraft
+    // greift (Fels → nur Wucht; ein Baum → auch Schärfe).
+    _architectureResistance(entry) {
+        const H = AnazhRealm.HARVEST;
+        const bp = entry && this.state.blueprints && this.state.blueprints[entry.type];
+        if (!bp) return { mineResist: H.resistBase, cutResist: H.cutResistBase };
+        const t = this.computeCompoundTags(bp) || {};
+        const mineResist = H.resistBase + (t.härte || 0) * H.resistFromHärte + (t.dichte || 0) * H.resistFromDichte;
+        const cutResist =
+            H.cutResistBase + (t.härte || 0) * H.cutResistFromHärte + (t.dichte || 0) * H.cutResistFromDichte;
+        return { mineResist, cutResist };
+    }
+
+    // V17.56 W2 — die EINE Tauglichkeit + die vier Kanäle, jetzt FORM-bewusst: das Gerät nutzt
+    // seinen BESTEN anwendbaren Kanal (max aus Wucht- und Schneid-Tauglichkeit) — eine Klinge an
+    // einem Baum schneidet, an Fels mahlt sie; eine Keule an Fels wuchtet. Tempo (Fortschritt/Hieb),
+    // Stamina (invers), Ertrag (∝ Tauglichkeit, Floor) folgen DERSELBEN Zahl.
+    _harvestFitnessFromResist(res) {
+        const H = AnazhRealm.HARVEST;
+        const prof = this._implementProfile();
+        const mineFit = prof.minePower / Math.max(0.1, res.mineResist);
+        const cutFit = prof.cutPower / Math.max(0.1, res.cutResist);
+        const fit = Math.max(mineFit, cutFit);
+        const progress = Math.min(H.maxStrikeProgress, Math.max(H.minStrikeProgress, fit * H.strikeScale));
+        const stamina = Math.min(
+            H.maxStrikeStamina,
+            Math.max(H.minStrikeStamina, H.strikeStaminaBase / Math.max(0.12, fit))
+        );
+        const yieldMult = Math.min(1, Math.max(0, (fit - H.yieldFloorRatio) / (1 - H.yieldFloorRatio)));
+        return {
+            minePower: prof.minePower,
+            cutPower: prof.cutPower,
+            mineFit,
+            cutFit,
+            fit,
+            progress,
+            stamina,
+            yieldMult,
+            channel: cutFit > mineFit ? "cut" : "mine",
+        };
+    }
+
+    _harvestFitness(entry) {
+        return this._harvestFitnessFromResist(this._architectureResistance(entry));
+    }
+
+    // V17.55 W1 — ein Abbau-HIEB auf ein Bauwerk (kein Instant mehr). Der Fortschritt
+    // akkumuliert auf dem Eintrag (∝ Tauglichkeit/Hieb), jeder Hieb kostet Stamina (invers
+    // zur Effizienz, pfad); bei Vollendung fällt das Bauwerk + lootet (Ertrag ∝ Tauglichkeit,
+    // das Gefühl skaliert mit). Halten → _tickHarvest auto-hiebt. Gibt true, solange der Hieb
+    // zählt (Bauwerk steht ODER fiel), false bei Erschöpfung.
+    _strikeArchitecture(entry) {
+        if (!entry) return false;
+        const fit = this._harvestFitness(entry);
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode === "pfad") {
+            const have = (this.state.player && this.state.player.stamina) || 0;
+            if (have < fit.stamina) {
+                this.log(`Abbauen: zu erschöpft (${Math.round(have)} Ausdauer).`, "INFO");
+                return false;
+            }
+            this.state.player.stamina = Math.max(0, have - fit.stamina);
+        }
+        entry.harvestProgress = (entry.harvestProgress || 0) + fit.progress;
+        if (entry.harvestProgress < 1) return true; // der Hieb zählt — das Bauwerk steht noch
+        const archId = entry.id;
+        const harvest = this.harvestArchitecture(entry, "player", fit.yieldMult);
+        if (harvest && harvest.materials) {
+            const parts = [];
+            for (const [mat, n] of Object.entries(harvest.materials)) {
+                if (n > 0 && this.addMaterialToInventory(mat, n)) parts.push(`${n}× ${mat}`);
+            }
+            this.log(
+                `Abgebaut: ${harvest.blueprint} → ${parts.join(", ") || "(zu untauglich — kein Material)"}`,
+                "INFO"
+            );
+        }
+        if (
+            typeof archId === "string" &&
+            this.state.p2p &&
+            this.state.p2p.enabled &&
+            typeof this.p2pBroadcastDsl === "function"
+        ) {
+            this.p2pBroadcastDsl(["remove_architecture", archId]);
+        }
+        return true;
+    }
+
+    // V17.55 W1 — HALTEN-zum-Abbauen: solange die Abbau-Taste gehalten wird (+ Pointer-Lock,
+    // Inventar zu), wird in der strikeInterval-Kadenz auto-gehiebt → kontinuierliches Mahlen
+    // (frame-rate-unabhängig, Intervall-gegated; der erste Hieb kommt sofort beim mousedown).
+    _tickHarvest() {
+        const p = this.state.player;
+        if (!p || !p.breakHeld) return;
+        if (!this.state.isPointerLocked || this.state.inventoryOpen) {
+            p.breakHeld = false;
+            return;
+        }
+        const now = performance.now() / 1000;
+        const last = Number.isFinite(p.lastHarvestStrikeAt) ? p.lastHarvestStrikeAt : -Infinity;
+        if (now - last < (AnazhRealm.HARVEST.strikeIntervalSec || 0.2)) return;
+        p.lastHarvestStrikeAt = now;
+        this.tryMouseBreak();
+    }
+
     tryMouseBreak() {
-        const gate = this._mouseActionStaminaGate();
-        if (!gate.ok) {
-            this.log(`Abbauen: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
-            return false;
-        }
+        // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite
+        // UND näher als eine Architektur wird ANGEGRIFFEN statt abgebaut (sonst Architektur
+        // → harvest, sonst → carve). So bleibt der Abbau-Pfad heil, der Kampf legt sich davor.
+        const creaturePick = this._pickCreatureAtCrosshair();
         const pick = this._pickArchitectureAtCrosshair();
-        if (pick && pick.entry) {
-            this._consumeMouseStamina();
-            // Multi-User-Bau-Sync: die id VOR dem Abbau merken (harvest
-            // entfernt den Eintrag) — Mitspieler holen die Entfernung nach.
-            const archId = pick.entry.id;
-            // Welle 6.H P2B.5 — harvestArchitecture statt nur removeArchitecture.
-            // Die Materialien des Bauplans fließen ins Spieler-Inventar. Eine
-            // Sprache für Spieler-LMB + Kreatur-gather: beide ernten gleich.
-            const harvest = this.harvestArchitecture(pick.entry, "player");
-            if (harvest && harvest.materials) {
-                const parts = [];
-                for (const [mat, n] of Object.entries(harvest.materials)) {
-                    if (this.addMaterialToInventory(mat, n)) {
-                        parts.push(`${n}× ${mat}`);
-                    }
+        if (creaturePick && creaturePick.point) {
+            // das bestehende _pickCreatureAtCrosshair liefert {creature, point} (far 30) —
+            // die Distanz aus dem point + das Nahkampf-Reach-Gate hier (kein Methoden-Change,
+            // der andere Aufrufer bleibt unberührt; V17.9: reuse statt Duplikat).
+            const creatureDist = this.state.camera.position.distanceTo(creaturePick.point);
+            const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
+            if (creatureDist <= (AnazhRealm.COMBAT_REACH_M || 6) && creatureDist <= archDist) {
+                const gate = this._mouseActionStaminaGate();
+                if (!gate.ok) {
+                    this.log(`Angriff: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
+                    return false;
                 }
-                this.log(`Abgebaut: ${harvest.blueprint} → ${parts.join(", ") || "(kein Material)"}`, "INFO");
+                return this._playerAttackCreature(creaturePick.creature);
             }
-            // Multi-User-Bau-Sync — Mitspieler entfernen ihre Kopie. Nur
-            // geteilte string-ids (spieler-gebaut); eine numerische Worldgen-
-            // id bleibt lokal (träfe bei einem Peer nichts oder das Falsche).
-            if (
-                typeof archId === "string" &&
-                this.state.p2p &&
-                this.state.p2p.enabled &&
-                typeof this.p2pBroadcastDsl === "function"
-            ) {
-                this.p2pBroadcastDsl(["remove_architecture", archId]);
-            }
-            return true;
         }
+        // V17.55 W1 — Abbauen kostet jetzt MÜHE: ein Bauwerk wird per Hieb-Fortschritt
+        // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
+        // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
+        if (pick && pick.entry) return this._strikeArchitecture(pick.entry);
         const target = this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
             return false;
         }
-        this._consumeMouseStamina();
+        // V17.55 W1 — auch der Boden leistet Widerstand: die Stamina pro Grabe-Hieb skaliert
+        // invers zur Tauglichkeit (ein gutes Werkzeug gräbt billig, die bloße Faust teuer).
+        if ((typeof this.getGameMode === "function" ? this.getGameMode() : "frieden") === "pfad") {
+            const digFit = this._harvestFitnessFromResist({
+                mineResist: AnazhRealm.HARVEST.terrainResist,
+                cutResist: AnazhRealm.HARVEST.terrainCutResist,
+            });
+            const have = (this.state.player && this.state.player.stamina) || 0;
+            if (have < digFit.stamina) {
+                this.log(`Graben: zu erschöpft (${Math.round(have)} Ausdauer).`, "INFO");
+                return false;
+            }
+            this.state.player.stamina = Math.max(0, have - digFit.stamina);
+        }
         // V9.36 Phase 5c.2.c.3.a: Voxel ist permanent (V9.35) — der Grabe-Hieb
         // schnitzt immer das 3D-Dichte-Feld (ein echtes Loch). Der ehemalige
         // V7.68-Heightfield-Mod-Fallback ist als toter Pfad entfernt. Der
@@ -35808,13 +36458,13 @@ class AnazhRealm {
             // initialisiert ist (Test-Edge-Cases).
             const kb = this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS;
             const fmt = (code) => this._formatBindingCode(code);
-            // Welle 6.H Phase 2C — Material-Kosten + Verfügbarkeit. Nur in
-            // pfad-Modus angezeigt (frieden + schöpfer bauen frei und sollen
-            // die HUD nicht mit Zahlen zumüllen). Fehlende Materialien sind
-            // rot getintet, ausreichende sind brass-warm.
+            // Welle 6.H Phase 2C + S2 (kampf-plan §11.2) — Material-Kosten + Verfügbarkeit. Angezeigt in
+            // pfad UND frieden (beide zahlen Materie — die kristallisierte Modus-Achse); nur schöpfer baut
+            // frei und soll die HUD nicht mit Zahlen zumüllen. Fehlende Materialien sind rot getintet,
+            // ausreichende sind brass-warm.
             const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
             let costLine = "";
-            if (mode === "pfad" && typeof this.checkBuildCost === "function") {
+            if ((mode === "pfad" || mode === "frieden") && typeof this.checkBuildCost === "function") {
                 const check = this.checkBuildCost(bm.blueprintName);
                 const parts = Object.entries(check.cost).map(([m, n]) => {
                     const have = check.have[m] || 0;
@@ -35825,8 +36475,8 @@ class AnazhRealm {
                 if (parts.length > 0) {
                     costLine = ` · ${parts.join(", ")}`;
                 }
-            } else if (mode === "schöpfer" || mode === "frieden") {
-                costLine = ` · <span style="color:#a8c8ff">${mode === "schöpfer" ? "Schöpfer" : "Frieden"}: frei</span>`;
+            } else if (mode === "schöpfer") {
+                costLine = ` · <span style="color:#a8c8ff">Schöpfer: frei</span>`;
             }
             hud.innerHTML =
                 `Bau: ${label} — ${fmt(kb.confirmBuild)}/${fmt(kb.place)} bauen, ` +
@@ -36231,8 +36881,10 @@ class AnazhRealm {
                 try {
                     const cs = this.computeCreatureStats(c).stats;
                     const fmt = (n) => (Number.isFinite(n) ? n.toFixed(1) : "—");
+                    // V17.53 Kampf C — die LEBENDE HP (cur/max) sichtbar machen (der hp-Konsument).
+                    const curHp = c.userData && Number.isFinite(c.userData.hp) ? c.userData.hp : cs.hpMax;
                     row.title =
-                        `HP ${fmt(cs.hpMax)} · DMG ${fmt(cs.damage)} · SPD ${fmt(cs.speed)} · ` +
+                        `HP ${fmt(curHp)}/${fmt(cs.hpMax)} · DMG ${fmt(cs.damage)} · SPD ${fmt(cs.speed)} · ` +
                         `JMP ${fmt(cs.jumpPower)} · STA ${fmt(cs.staminaMax)} · ` +
                         `PRC ${fmt(cs.precision)} · MR ${fmt(cs.magicResist)} · HR ${fmt(cs.heatResist)}`;
                 } catch {
@@ -37413,16 +38065,64 @@ class AnazhRealm {
             soulBtn.type = "button";
             soulBtn.className = "workshop-soul-activate";
             soulBtn.textContent = "Als Seele tragen";
-            soulBtn.title = "Diesen Bauplan als deine Seele aktivieren — du wirst zur geschaffenen Form";
+            soulBtn.title =
+                "Diesen Körper FORMEN + tragen — einen eigenen Körper zu formen zieht Material (pfad/frieden); " +
+                "eine schon geformte Seele wieder zu tragen ist frei (§11.2: der Avatar ist kein Sonderfall).";
             soulBtn.addEventListener("click", () => {
-                const res = this.applyPlayerSoulFromBlueprint(selected.name);
+                // S5 — der Spieler-Pfad geht durch embodyBlueprint: ein ungeformter Körper wird hier
+                // GEFORMT (zahlt im pfad/frieden), ein geformter frei verkörpert.
+                const res = this.embodyBlueprint(selected.name);
                 if (res.ok) {
-                    this.log(`Seele gewechselt zu „${selected.label || selected.name}".`, "INFO");
+                    const made = res.forgedPrecision != null && res.free === false;
+                    this.log(
+                        `Seele gewechselt zu „${selected.label || selected.name}"${made ? " (Körper geformt)" : ""}.`,
+                        "INFO"
+                    );
+                    this._renderWorkshopDOM();
+                } else if (res.reason === "not_enough_material") {
+                    const missingStr = Object.entries(res.missing || {})
+                        .map(([m, n]) => `${n}× ${m}`)
+                        .join(", ");
+                    this.log(`Körper formen nötig — fehlt: ${missingStr || "Material"} (Rohstoffe sammeln).`, "ERROR");
                 } else {
                     this.log(`Seele konnte nicht aktiviert werden (${res.reason || "unknown"})`, "ERROR");
                 }
             });
             actions.appendChild(soulBtn);
+        }
+        // S3/S4/S5 (kampf-plan §11.5) — „Fertigen": den Bauplan zum realen Werk machen (Material ziehen,
+        // Präzision einfrieren, ausrüsten). Rollen-bewusst (fertigeBlueprint): Rüstung → weben + tragen,
+        // sonst → Gerät schmieden + in die Hand. NUR für Gerät/Rüstung (held/worn) — Seelen haben den
+        // dedizierten „Als Seele tragen"-Knopf (oben), darum hier übersprungen.
+        if (selected.role !== "soul" && selected.role !== "consumable") {
+            const isArmor = selected.role === "armor";
+            const forgeBtn = document.createElement("button");
+            forgeBtn.type = "button";
+            forgeBtn.className = "workshop-forge";
+            forgeBtn.textContent = isArmor ? "⚒ Weben (Rüstung tragen)" : "⚒ Schmieden (in die Hand)";
+            forgeBtn.title = isArmor
+                ? "Diese Rüstung weben — zieht Material (pfad/frieden), friert die Präzision ein, trägt sie."
+                : "Dieses Gerät schmieden — zieht Material (pfad/frieden), friert die Präzision ein, rüstet es aus.";
+            forgeBtn.addEventListener("click", () => {
+                const res = this.fertigeBlueprint(selected.name);
+                const verb = isArmor ? "Gewebt" : "Geschmiedet";
+                const where = isArmor ? "getragen" : "in der Hand";
+                if (res.ok) {
+                    this.log(
+                        `${verb}: „${selected.label || selected.name}" (${where}${res.free ? ", frei" : ""}).`,
+                        "INFO"
+                    );
+                    this._renderWorkshopDOM();
+                } else if (res.reason === "not_enough_material") {
+                    const missingStr = Object.entries(res.missing || {})
+                        .map(([m, n]) => `${n}× ${m}`)
+                        .join(", ");
+                    this.log(`Fertigen fehlgeschlagen — fehlt: ${missingStr || "Material"}.`, "ERROR");
+                } else {
+                    this.log(`Fertigen fehlgeschlagen (${res.reason || "unknown"}).`, "ERROR");
+                }
+            });
+            actions.appendChild(forgeBtn);
         }
         // Klonen
         const cloneBtn = document.createElement("button");
@@ -38854,6 +39554,24 @@ class AnazhRealm {
             roleRow.appendChild(chip);
         }
         panel.appendChild(roleRow);
+        // S1 (kampf-plan §11.7) — die FÄHIGKEIT aus der Form (JEDE Lesart), unabhängig von der
+        // abstrakten Rolle: ein Holzstiel + Steinkopf liest „Brecher — wuchtet Fels" statt nur „Bauwerk".
+        const caps = this._blueprintCapabilityHints(bp);
+        if (caps.length) {
+            const capRow = document.createElement("div");
+            capRow.className = "stat-row";
+            const capLab = document.createElement("span");
+            capLab.className = "stat-label";
+            capLab.textContent = "Fähigkeit";
+            capRow.appendChild(capLab);
+            for (const c of caps) {
+                const chip = document.createElement("span");
+                chip.className = "affordance-chip capability-chip";
+                chip.textContent = "✦ " + c;
+                capRow.appendChild(chip);
+            }
+            panel.appendChild(capRow);
+        }
     }
 
     // V8.37 — Bau-Kosten sichtbar im Werkstatt-Panel. computeBuildCost ist
@@ -39963,15 +40681,19 @@ class AnazhRealm {
         }
         const lines = [
             `Schaden       ${(stats.damage || 0).toFixed(1)}`,
+            `Rückschlag    ${(stats.knockback || 0).toFixed(1)}`,
+            `Angriffstempo ${(stats.attackSpeed || 0).toFixed(2)}`,
             `Geschwindigk. ${(stats.speed || 0).toFixed(2)}`,
             `Sprungkraft   ${(stats.jumpPower || 0).toFixed(2)}`,
             `Präzision     ${(stats.precision || 0).toFixed(2)}`,
+            `Verteidigung  ${(stats.defense || 0).toFixed(1)}`,
             `Magie-Resist  ${(stats.magicResist || 0).toFixed(2)}`,
             `Hitze-Resist  ${(stats.heatResist || 0).toFixed(2)}`,
         ];
         // Plus equipped + boosts kurz
         const eq = (this.state.player && this.state.player.equipped) || {};
         if (eq.tool) lines.push(`Werkzeug      ${eq.tool}`);
+        if (eq.weapon) lines.push(`Waffe         ${eq.weapon}`);
         if (eq.armor) lines.push(`Rüstung       ${eq.armor}`);
         const boosts = (this.state.player && this.state.player.boosts) || [];
         const now = performance.now() / 1000;
@@ -41550,14 +42272,18 @@ class AnazhRealm {
         if (!container) return;
         container.innerHTML = "";
         this._equipAppendDrawerHint(container);
-        const equipped = (this.state.player && this.state.player.equipped) || { tool: null, armor: null };
-        const ownedTools = Array.isArray(this.state.player && this.state.player.tools) ? this.state.player.tools : [];
-        this._equipAppendToolRow(container, equipped, ownedTools);
+        const equipped = (this.state.player && this.state.player.equipped) || { held: null, armor: null };
+        // V17.57 W2-B — EINE „in der Hand"-Zeile (Werkzeug + Waffe verschmolzen, kein Rollen-Schloss).
+        this._equipAppendHeldRow(container, equipped);
         const { armorBlueprints, candidateBlueprints } = this._equipPartitionEquipBlueprints();
         this._equipAppendArmorRow(container, equipped, armorBlueprints);
         this._equipAppendMarkSection(container, candidateBlueprints);
         this._equipAppendConsumablesSection(container);
-        if (ownedTools.length === 0 && armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
+        const blu = this.state.blueprints || {};
+        const anyHoldable = Object.keys(blu).some(
+            (n) => blu[n] && !blu[n].builtIn && Array.isArray(blu[n].parts) && blu[n].parts.length
+        );
+        if (!anyHoldable && armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
             this._equipAppendEmptyHint(container);
         }
     }
@@ -41573,37 +42299,65 @@ class AnazhRealm {
         container.appendChild(equipHint);
     }
 
-    _equipAppendToolRow(container, equipped, ownedTools) {
-        const toolRow = document.createElement("div");
-        toolRow.className = "equip-row";
-        const toolLabel = document.createElement("span");
-        toolLabel.className = "equip-slot-label";
-        toolLabel.textContent = "Werkzeug";
-        toolRow.appendChild(toolLabel);
-        const toolSel = document.createElement("select");
-        toolSel.title = "Aktives Werkzeug";
-        const noneTool = document.createElement("option");
-        noneTool.value = "";
-        noneTool.textContent = "— keins —";
-        toolSel.appendChild(noneTool);
-        for (const name of ownedTools) {
-            const t = this.state.tools[name];
-            if (!t) continue;
+    // V17.57 W2-B — die EINE „in der Hand"-Zeile: jeder eigene Bauplan ist haltbar (kein Rollen-
+    // Schloss). Das gehaltene Gerät schlägt + gräbt + schneidet; sein Profil (W2) bestimmt, was es
+    // gut kann — die UI liest die Affordanz ab („Klinge"/„Brecher") + zeigt Wucht/Schärfe.
+    _equipAppendHeldRow(container, equipped) {
+        const row = document.createElement("div");
+        row.className = "equip-row";
+        const label = document.createElement("span");
+        label.className = "equip-slot-label";
+        label.textContent = "In der Hand";
+        row.appendChild(label);
+        const sel = document.createElement("select");
+        sel.title = "Das gehaltene Gerät — die Form bestimmt, ob es schneidet oder wuchtet";
+        const none = document.createElement("option");
+        none.value = "";
+        none.textContent = "— leer (Faust) —";
+        sel.appendChild(none);
+        const blu = this.state.blueprints || {};
+        const names = Object.keys(blu).filter(
+            (n) => blu[n] && !blu[n].builtIn && Array.isArray(blu[n].parts) && blu[n].parts.length
+        );
+        names.sort();
+        for (const name of names) {
             const opt = document.createElement("option");
             opt.value = name;
-            opt.textContent = t.label || name;
-            if (equipped.tool === name) opt.selected = true;
-            toolSel.appendChild(opt);
+            opt.textContent = `${blu[name].label || name} · ${this._implementAffordanceLabel(blu[name])}`;
+            if (equipped.held === name) opt.selected = true;
+            sel.appendChild(opt);
         }
-        toolSel.addEventListener("change", () => {
-            const v = toolSel.value;
-            const result = v ? this.equipTool(v) : this.equipTool(null);
-            if (!result.ok) this.log(`equipTool fehlgeschlagen: ${result.reason}`, "ERROR");
+        sel.addEventListener("change", () => {
+            // S3-B — der Spieler-Pfad geht durch wieldBlueprint: ein ungeschmiedetes Gerät wird hier
+            // GESCHMIEDET (zahlt im pfad/frieden), ein geschmiedetes frei in die Hand genommen.
+            const result = this.wieldBlueprint(sel.value || null);
+            if (!result.ok) {
+                if (result.reason === "not_enough_material") {
+                    const missingStr = Object.entries(result.missing || {})
+                        .map(([m, n]) => `${n}× ${m}`)
+                        .join(", ");
+                    this.log(`Schmieden nötig — fehlt: ${missingStr || "Material"} (⚒ in der Werkstatt).`, "ERROR");
+                } else {
+                    this.log(`In die Hand fehlgeschlagen: ${result.reason}`, "ERROR");
+                }
+            } else if (!result.free && result.forgedPrecision != null) {
+                this.log(
+                    `Geschmiedet + in der Hand: „${this.state.blueprints[sel.value]?.label || sel.value}".`,
+                    "INFO"
+                );
+            }
             this.renderPlayerEquipUI();
             if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
         });
-        toolRow.appendChild(toolSel);
-        container.appendChild(toolRow);
+        row.appendChild(sel);
+        if (equipped.held && blu[equipped.held]) {
+            const prof = this._implementProfileForBlueprint(blu[equipped.held]);
+            const read = document.createElement("span");
+            read.className = "equip-readout";
+            read.textContent = `Wucht ${prof.minePower.toFixed(1)} · Schärfe ${prof.cutPower.toFixed(1)}`;
+            row.appendChild(read);
+        }
+        container.appendChild(row);
     }
 
     // W12 Phase 2 — JEDER eigene Nicht-Rüstung-Bauplan ist Markier-Kandidat,
@@ -41613,14 +42367,16 @@ class AnazhRealm {
     // umwidmen. Die Reihe zeigt die aktuelle Rolle; ein erneuter Klick widmet um.
     _equipPartitionEquipBlueprints() {
         const armorBlueprints = [];
+        const weaponBlueprints = [];
         const candidateBlueprints = [];
         for (const name of Object.keys(this.state.blueprints || {})) {
             const bp = this.state.blueprints[name];
             if (!bp || bp.builtIn) continue;
             if (bp.role === "armor") armorBlueprints.push(name);
+            else if (bp.role === "weapon") weaponBlueprints.push(name);
             else candidateBlueprints.push(name);
         }
-        return { armorBlueprints, candidateBlueprints };
+        return { armorBlueprints, weaponBlueprints, candidateBlueprints };
     }
 
     _equipAppendArmorRow(container, equipped, armorBlueprints) {
@@ -41645,9 +42401,22 @@ class AnazhRealm {
             armorSel.appendChild(opt);
         }
         armorSel.addEventListener("change", () => {
+            // S4 — der Spieler-Pfad geht durch wearArmor: eine ungemachte Rüstung wird hier GESCHMIEDET/
+            // GEWEBT (zahlt im pfad/frieden), eine gemachte frei getragen.
             const v = armorSel.value;
-            const result = v ? this.equipArmor(v) : this.equipArmor(null);
-            if (!result.ok) this.log(`equipArmor fehlgeschlagen: ${result.reason}`, "ERROR");
+            const result = this.wearArmor(v || null);
+            if (!result.ok) {
+                if (result.reason === "not_enough_material") {
+                    const missingStr = Object.entries(result.missing || {})
+                        .map(([m, n]) => `${n}× ${m}`)
+                        .join(", ");
+                    this.log(`Rüstung weben nötig — fehlt: ${missingStr || "Material"} (⚒ in der Werkstatt).`, "ERROR");
+                } else {
+                    this.log(`Rüstung anlegen fehlgeschlagen: ${result.reason}`, "ERROR");
+                }
+            } else if (!result.free && result.forgedPrecision != null) {
+                this.log(`Gewebt + getragen: „${this.state.blueprints[v]?.label || v}".`, "INFO");
+            }
             this.renderPlayerEquipUI();
             if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
         });
@@ -41684,6 +42453,8 @@ class AnazhRealm {
                 this.renderPlayerEquipUI();
             });
             row.appendChild(armorBtn);
+            // V17.57 W2-B — der „als Waffe"-Knopf ist weg: das gehaltene Gerät braucht KEINE
+            // Markierung mehr (jeder Bauplan ist haltbar, die Rolle wird abgelesen, nicht gesetzt).
             const consBtn = document.createElement("button");
             consBtn.type = "button";
             consBtn.textContent = "Konsumabel";
@@ -41743,10 +42514,21 @@ class AnazhRealm {
             row.appendChild(label);
             const drinkBtn = document.createElement("button");
             drinkBtn.type = "button";
-            drinkBtn.textContent = "Trinken";
+            drinkBtn.textContent = "Brauen + Trinken";
+            drinkBtn.title = "Brauen zieht die Zutaten (die Material-Kosten, pfad/frieden), dann wirkt der Trank.";
             drinkBtn.addEventListener("click", () => {
-                const result = this.activateConsumable(name);
-                if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
+                // S6 — der Spieler-Pfad geht durch brewConsumable: brauen zieht die Zutaten, dann wirkt der Trank.
+                const result = this.brewConsumable(name);
+                if (!result.ok) {
+                    if (result.reason === "not_enough_material") {
+                        const missingStr = Object.entries(result.missing || {})
+                            .map(([m, n]) => `${n}× ${m}`)
+                            .join(", ");
+                        this.log(`Brauen — fehlt an Zutaten: ${missingStr || "Material"} (ernten).`, "ERROR");
+                    } else {
+                        this.log(`Brauen fehlgeschlagen: ${result.reason}`, "ERROR");
+                    }
+                }
                 if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
             });
             row.appendChild(drinkBtn);
@@ -42118,10 +42900,13 @@ class AnazhRealm {
         const rows = [
             { key: "hpMax", label: "Lebenskraft", fmt: (v) => Math.round(v) },
             { key: "damage", label: "Schaden", fmt: (v) => v.toFixed(1) },
+            { key: "knockback", label: "Rückschlag", fmt: (v) => v.toFixed(1) },
+            { key: "attackSpeed", label: "Angriffstempo", fmt: (v) => v.toFixed(2) },
             { key: "speed", label: "Lauf-Geschwindigkeit", fmt: (v) => v.toFixed(2) },
             { key: "jumpPower", label: "Sprungkraft", fmt: (v) => v.toFixed(2) },
             { key: "staminaMax", label: "Ausdauer", fmt: (v) => Math.round(v) },
             { key: "precision", label: "Präzision", fmt: (v) => v.toFixed(2) },
+            { key: "defense", label: "Verteidigung", fmt: (v) => v.toFixed(1) },
             { key: "magicResist", label: "Magie-Resistenz", fmt: (v) => v.toFixed(2) },
             { key: "heatResist", label: "Hitze-Resistenz", fmt: (v) => v.toFixed(2) },
         ];
@@ -42154,7 +42939,7 @@ class AnazhRealm {
         // Spieler musste in den Spieler-Drawer scrollen und Dropdown lesen.
         // Stats-Panel zeigt jetzt direkt unter den Werten was getragen wird.
         const equipped = (this.state.player && this.state.player.equipped) || {};
-        if (equipped.tool || equipped.armor) {
+        if (equipped.held || equipped.armor) {
             const divider = document.createElement("div");
             divider.className = "stats-divider";
             container.appendChild(divider);
@@ -42172,16 +42957,18 @@ class AnazhRealm {
                 row.appendChild(value);
                 container.appendChild(row);
             }
-            if (equipped.tool) {
-                const tool = (this.state.tools && this.state.tools[equipped.tool]) || null;
+            // V17.57 W2-B — das EINE gehaltene Gerät + seine abgelesene Affordanz („Klinge"/„Brecher").
+            if (equipped.held) {
+                const heldBp = (this.state.blueprints && this.state.blueprints[equipped.held]) || null;
                 const row = document.createElement("div");
                 row.className = "stat-row";
                 const label = document.createElement("span");
                 label.className = "stat-label";
-                label.textContent = "Werkzeug";
+                label.textContent = "In der Hand";
                 const value = document.createElement("span");
                 value.className = "stat-value";
-                value.textContent = (tool && tool.label) || equipped.tool;
+                const aff = heldBp ? this._implementAffordanceLabel(heldBp) : "";
+                value.textContent = ((heldBp && heldBp.label) || equipped.held) + (aff ? ` (${aff})` : "");
                 row.appendChild(label);
                 row.appendChild(value);
                 container.appendChild(row);
@@ -42771,6 +43558,8 @@ class AnazhRealm {
         );
         document.addEventListener("pointerlockchange", () => {
             this.state.isPointerLocked = document.pointerLockElement === canvas;
+            // V17.55 W1 — verliert der Spieler den Lock (Esc/UI), stoppt das Mahlen.
+            if (!this.state.isPointerLocked && this.state.player) this.state.player.breakHeld = false;
             this.log(`Pointer-Lock: ${this.state.isPointerLocked ? "Aktiv" : "Inaktiv"}`, "INFO");
         });
         document.addEventListener("mousemove", (event) => {
@@ -43011,6 +43800,10 @@ class AnazhRealm {
             // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
             // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
             this._rescuePlayerFromVoid();
+
+            // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
+            // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
+            this._tickHarvest();
 
             // ### Spielerbewegung + Sprung ### (V9.44-f → _loopPlayerMovement)
             this._loopPlayerMovement(currentTime);
@@ -43997,11 +44790,24 @@ class AnazhRealm {
             const code = this._eventToBindingCode(event);
             const action = this._actionForBindingCode(code);
             if (action === "break") {
+                // V17.55 W1 — Halten startet das Mahlen: der erste Hieb sofort, dann auto
+                // (_tickHarvest) in der Kadenz, bis losgelassen wird.
+                if (this.state.player) {
+                    this.state.player.breakHeld = true;
+                    this.state.player.lastHarvestStrikeAt = performance.now() / 1000;
+                }
                 this.tryMouseBreak();
                 event.preventDefault();
             } else if (action === "place") {
                 this.tryMousePlace();
                 event.preventDefault();
+            }
+        });
+        // V17.55 W1 — Loslassen der Abbau-Taste stoppt das Mahlen (nur die break-Taste).
+        canvas.addEventListener("mouseup", (event) => {
+            if (!this.state.player) return;
+            if (this._actionForBindingCode(this._eventToBindingCode(event)) === "break") {
+                this.state.player.breakHeld = false;
             }
         });
     }
@@ -44245,7 +45051,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.50.0";
+AnazhRealm.VERSION = "17.65.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -44318,6 +45124,15 @@ AnazhRealm.WERTUNG = Object.freeze({
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
     damage: (t) => 5 + (t.härte || 0) * 15 + (t.dichte || 0) * 5,
+    // V17.51 Kampf-Bogen Phase A (kampf-plan.md §4-A) — die Kombat-Stats EMERGIEREN
+    // aus der Substanz, GENAU im bestehenden Muster (Base + Tag·Gewicht; die Tabelle
+    // IST die Regel). knockback ∝ dichte (Masse stößt zurück) + härte (schwach);
+    // attackSpeed ∝ (1−dichte) (leicht = schnell) + magieleitung (flink) → eine schwere
+    // dichte Keule schlägt langsam-wuchtig, eine leichte harte Klinge schnell. Der
+    // GAMEPLAY-Konsum (Knockback-Impuls + Angriffs-Cooldown) folgt in Phase C/D; hier
+    // wird das tag-emergente Profil definiert + sichtbar gemacht (renderPlayerStatsUI).
+    knockback: (t) => 1 + (t.dichte || 0) * 9 + (t.härte || 0) * 2,
+    attackSpeed: (t) => 0.8 + (1 - (t.dichte || 0)) * 0.7 + (t.magieleitung || 0) * 0.3,
     // Schöpfer-Feedback 13.05.2026 (Welle 6.D Polish): „Mensch extrem
     // langsam, evt. Basegeschwindigkeit für alle etwas höher". Base 4→6,
     // Multiplikator (1-dichte) 4→5, magieleitung 1→1.5. Mensch springt
@@ -44329,6 +45144,11 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     precision: (t) => 0.5 + (t.magieleitung || 0) * 0.3 + (t.zähigkeit || 0) * 0.2,
     magicResist: (t) => (t.magieleitung || 0) * 0.4 + (t.resoniert || 0) * 0.3,
     heatResist: (t) => (t.wärmeleitung || 0) * 0.5 - (t.brennbar || 0) * 0.3,
+    // V17.51 Kampf-Bogen Phase A — defense (PHYSISCH) ∝ dichte + härte (dichte, harte
+    // Rüstung blockt); ergänzt magicResist/heatResist (elementar) zum vollständigen
+    // Defense-Trio. Base-los wie die elementaren Resists (ein weiches Wesen blockt ~0).
+    // Konsum als flache Schadens-Reduktion (dealt = max(1, amount − defense)) in Phase C.
+    defense: (t) => (t.dichte || 0) * 8 + (t.härte || 0) * 6,
 });
 
 // Welle 6.D Etappe 3b — Aura-Hue-Map: jede der 10 MATERIAL_TAG_KEYS bekommt
@@ -44356,6 +45176,20 @@ AnazhRealm.AURA_TAG_HUE = Object.freeze({
 // wave-6-design §5.3).
 AnazhRealm.ARMOR_STAT_WEIGHT = 0.3;
 AnazhRealm.TOOL_STAT_WEIGHT = 0.15;
+// V17.52 Kampf-Bogen Phase B — die ausgerüstete Waffe prägt das Kombat-Profil
+// STARK (mehr als Werkzeug 0.15, mehr als Rüstung 0.3): sie ist der Kern von
+// Schaden/Rückschlag/Tempo. Ihre Compound-Tags falten mit diesem Gewicht in den
+// Spieler-Compound (REUSE der Equip-Pipeline, kein separater „Waffen-Schaden"-Pfad).
+AnazhRealm.WEAPON_STAT_WEIGHT = 0.4;
+// V17.57 W2-B — das EINE gehaltene Gerät (Werkzeug + Waffe verschmolzen) prägt das Profil
+// STARK: seine Tags falten mit diesem Gewicht in den Spieler-Compound → Schaden/Rückschlag/
+// Tempo (Angriff) UND die Grab-/Schneid-Kraft (W1/W2) spiegeln dasselbe Gerät. (TOOL/WEAPON_
+// STAT_WEIGHT bleiben für den KREATUR-Equip-Fold, der getrennt {tool, armor} nutzt.)
+AnazhRealm.HELD_STAT_WEIGHT = 0.4;
+// V17.54 Kampf-Bogen Phase D — die Reichweite des Spieler-Nahangriffs (der LMB-
+// Raycast auf Kreaturen). Eine Kreatur näher als das UND näher als eine Architektur
+// wird angegriffen statt abgebaut. Browser-justierbar (die Wucht/Reichweite = Feel).
+AnazhRealm.COMBAT_REACH_M = 6;
 
 // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Werkzeug-Anwendung
 // kostet Stamina. Ohne Kosten könnte der Spieler unbegrenzt Polier-Schritte
@@ -44369,6 +45203,42 @@ AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
 // niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger
 // als Polier-Schritte sind. Modus-Gate (frieden+schöpfer: 0, pfad: 5).
 AnazhRealm.MOUSE_ACTION_STAMINA_COST = 5;
+
+// V17.55 W1 (kampf-plan.md §8/§9) — DER WURZELFEHLER GEHEILT: Abbauen kostet jetzt
+// substanz-gebundene MÜHE (mehrere Hiebe statt Instant), und EINE Tauglichkeit (die
+// Grab-Kraft des gehaltenen Dings vs der Widerstand des Materials) dirigiert VIER
+// Kanäle zugleich — TEMPO (Fortschritt/Hieb), STAMINA (invers zur Effizienz), ERTRAG
+// (∝ Tauglichkeit, mit Floor → das falsche Werkzeug gibt nichts), GEFÜHL (_feelAction
+// skaliert mit dem Ertrag). KEIN Slider — die SUBSTANZ entscheidet (eine geschmiedete
+// harte Spitzhacke knackt Fels, die bloße Faust mahlt sich müde für nichts). Alle Werte
+// browser-justierbar (das Feel/die Balance ist der Schöpfer-Browser).
+AnazhRealm.HARVEST = Object.freeze({
+    // V17.56 W2 — das FORM-getriebene Doppel-Profil. WUCHT (mine) ∝ STUMPFHEIT × (härte+dichte);
+    // SCHÄRFE (cut) ∝ spitze Form × härte. So wird DIESELBE harte Materie zur Keule ODER zur Klinge.
+    handMinePower: 0.5, // die bloße Faust — schwach beim Wuchten
+    handCutPower: 0.4, // die bloße Faust — schwach beim Schneiden (pflückt nur ganz Weiches)
+    toolMineBase: 0.5,
+    toolCutBase: 0.4,
+    mineFromHärte: 1.6, // ein hartes stumpfes Gerät bricht Hartes
+    mineFromDichte: 2.2, // die MASSE wuchtet (eine schwere Keule) — der dominante Mine-Term
+    cutFromSharp: 3.4, // die SCHÄRFE (spitze Form × härte) schneidet
+    resistBase: 0.7, // Wucht-Widerstand: jedes Material leistet etwas
+    resistFromHärte: 2.2, // hartes Material widersteht der Wucht
+    resistFromDichte: 1.3, // dichtes Material widersteht der Wucht
+    cutResistBase: 0.5, // Schneid-Widerstand
+    cutResistFromHärte: 6.0, // HARTES ist UNschneidbar (Fels) — der dominante Cut-Resist-Term: eine Klinge gräbt Fels miserabel
+    cutResistFromDichte: 0.7, // dichtes etwas
+    strikeScale: 0.55, // Fortschritt/Hieb = clamp(Tauglichkeit · strikeScale, min, max)
+    minStrikeProgress: 0.06, // selbst die Faust an Granit macht WINZIGEN Fortschritt (nie 0 = Hänger)
+    maxStrikeProgress: 1.0, // ein überlegenes Werkzeug ein-hiebt Weiches
+    strikeStaminaBase: 4, // Stamina/Hieb-Basis (pfad) ÷ Tauglichkeit (INVERS zur Effizienz)
+    minStrikeStamina: 2,
+    maxStrikeStamina: 30, // ein falsches Werkzeug verbrennt Ausdauer für fast nichts
+    yieldFloorRatio: 0.35, // Tauglichkeit darunter → KEIN Ertrag (das falsche Werkzeug gibt nichts)
+    strikeIntervalSec: 0.2, // Halten → Auto-Hieb-Kadenz (5 Hiebe/s) → kontinuierliches Mahlen
+    terrainResist: 2.4, // der Boden-Wucht-Widerstand (W1: konstant; später aus der lokalen Dichte)
+    terrainCutResist: 9, // der Boden wird GEWUCHTET, nicht geschnitten (Schärfe greift nicht)
+});
 
 // W7 Phase 2 — Welt-Snapshot über das Mesh. Ein Joiner/Guest holt die
 // Welt des Hosts in Stücken über den RTCDataChannel statt in einem WS-
@@ -44854,6 +45724,7 @@ AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
     architecture: "Bauwerk",
     tool: "Werkzeug",
     armor: "Rüstung",
+    weapon: "Waffe",
     consumable: "Konsumable",
     soul: "Seele",
     machine: "Maschine",
@@ -44908,6 +45779,11 @@ AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
 // Konzept §4.3 sagt: eine Maschine ist präziser als Handarbeit. Bonus
 // wird auf 1.0 gedeckelt (perfekte Präzision bleibt theoretisch).
 AnazhRealm.MACHINE_PRECISION_BONUS = 0.05;
+
+// S1 (kampf-plan §11.7) — bis zu dieser Bauplan-Spannweite (m) liest die Werkstatt die
+// in-der-Hand-Lesart (Klinge/Brecher); größere Baupläne sind Bauwerke/Strukturen (kein
+// „Brecher" auf einem Dorf). Browser-justierbar (Hand bis Großschwert ja, Dorf/Tempel nein).
+AnazhRealm.IMPLEMENT_GRASP_SPAN_M = 6;
 
 // ============================================================
 // Welle 10b — Compound-Tag-Affordances. Welt liest die Tag+räumliche
@@ -45208,6 +46084,7 @@ AnazhRealm.ACTION_TO_EMOTION = Object.freeze({
     bond: { peace: 0.12, joy: 0.06 }, // eine Kreatur folgt — Beziehung
     resonance: { awe: 0.1 }, // resonante Architektur erlebt
     damage: { sorrow: 0.12, chaos: 0.1 }, // Schaden/Gefahr — Angst
+    attack: { chaos: 0.08 }, // V17.54 Kampf D — angreifen (Zorn/Kampf-Intensität); + Waffen-härte via die W2-Brücke
     create: { joy: 0.1, hope: 0.1 }, // V17.46 — einen Bauplan ERSCHAFFEN (Werkstatt/Chat): der Stolz (× Komplexität)
     loss: { sorrow: 0.15 }, // V17.48 — den Verlust einer Kreatur (× Magnitude ∝ Bindung × Vitalität)
 });
@@ -45361,6 +46238,29 @@ AnazhRealm.EMOTION_CONTAGION = Object.freeze({
 AnazhRealm.CONTAGION_TARGET = Object.freeze({
     happy: { joy: 0.5, peace: 0.4 }, // ein freudiges Wesen hebt + beruhigt
     sad: { sorrow: 0.5 }, // ein leidendes Wesen betrübt
+});
+// V17.58 W3 (kampf-plan §9) — die NATÜRLICHE, aura-reaktive Kreatur: die Gewichte der WARINESS
+// (_creatureWariness) — deine Aura-Menace × der Natur des Wesens × Bindung × Modus. Browser-justierbar
+// (das Feel: wie scheu/neugierig, wann es kippt). Die MENACE ist chaos-dominant (deine Aggression,
+// V17.54 — feedback-frei: die Contagion treibt chaos NICHT, also kein Furcht-Runaway).
+AnazhRealm.CREATURE_NATURE = Object.freeze({
+    noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler (es wandert nur)
+    menaceFromChaos: 1.3, // deine Aggression/Zorn verschreckt am stärksten (feedback-frei)
+    menaceFromSorrow: 0.5, // deine Trauer verunsichert etwas
+    calmFromPeace: 0.9, // deine Ruhe lädt ein
+    calmFromJoy: 0.5, // deine Freude lockt
+    boldFromDichte: 0.8, // ein dichtes/massives Wesen ist robust → kühner
+    boldFromHärte: 0.6, // ein hartes Wesen steht fester
+    shyFromLebendig: 1.1, // ein lebendiges/zartes Wesen ist scheuer (die wilde Natur)
+    boldFromBond: 0.9, // eine Bindung macht das Wesen mutig in deiner Nähe (Vertrauen)
+    friedenMenace: 0.3, // frieden dämpft die Bedrohung stark (eine neugierige Welt)
+    schoepferMenace: 0.1, // schöpfer: die Welt ist ruhig (du regierst)
+    curiousThreshold: -0.2, // Wariness darunter → neugierig (näher)
+    fleeThreshold: 0.3, // Wariness darüber → scheu (fort)
+    fleeRadius: 14, // m — innerhalb davon flieht ein verschrecktes Wesen aktiv weg
+    fleeSpeedBoost: 1.6, // Flucht ist schneller als das Schlendern
+    combatFearWariness: 1.5, // ein getroffenes Wesen ist garantiert über der Flucht-Schwelle
+    fearSec: 5, // s — wie lange die Kampf-Furcht (fearUntil) anhält
 });
 // Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
 // TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur

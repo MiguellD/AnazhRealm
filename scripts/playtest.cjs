@@ -2690,7 +2690,7 @@ async function checkBandV1741RuleThread(ctx) {
         res.journalIdempotent
     );
     check(
-        'V17.41 Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung (der Faden ist DEIN Gesetz)',
+        "V17.41 Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung (der Faden ist DEIN Gesetz)",
         res.nexusNoJournal
     );
 }
@@ -2773,7 +2773,10 @@ async function checkBandV1742Wohl(ctx) {
         "V17.42 Wertung: das Wohl-Maß — Struktur = lebendig, Erlebt = Valenz (joy + / sorrow − / awe neutral)",
         res.wohlStruktur && res.wohlErlebtValence
     );
-    check("V17.42 Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)", res.coldStart);
+    check(
+        "V17.42 Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)",
+        res.coldStart
+    );
     check("V17.42 Wertung: stabiler Input → die Baseline HÄLT (EMA driftet nicht ohne Änderung)", res.stableHolds);
     check(
         "V17.42 Wertung: ein Sprung → die Baseline TRACKT, aber LAGGT weit darunter (das EMA-Wesen, zeit-korrigiert)",
@@ -2803,7 +2806,8 @@ async function checkBandV1743RuleFitness(ctx) {
         out.fitnessDiscriminates =
             fHeal > 0.9 && fNeutral > 0.6 && fNeutral < 0.8 && fHarm < 0.5 && fHeal > fNeutral && fNeutral > fHarm;
         // renewFitness 0.5: Heiler+neutral überleben, Schädling verfällt
-        out.harmerDecays = fHarm < r.constructor.WORLD_RULES.renewFitness && fNeutral >= r.constructor.WORLD_RULES.renewFitness;
+        out.harmerDecays =
+            fHarm < r.constructor.WORLD_RULES.renewFitness && fNeutral >= r.constructor.WORLD_RULES.renewFitness;
 
         // --- (2) _ruleRewardPos: der Effekt-Ort (at) bzw. Spieler (positionslos) ---
         const ctx0 = r._worldRuleCtx({ id: 0, source: "nexus", fires: 0 });
@@ -2833,9 +2837,12 @@ async function checkBandV1743RuleFitness(ctx) {
             }
         }
         r.state.worldRules = [];
-        r.dslRun(["rule", ["random_chance", 1], ["deposit_life", ["at", sx, 0, sz]], { everySec: 0.001, ttlSec: 9999 }], {
-            source: "nexus",
-        });
+        r.dslRun(
+            ["rule", ["random_chance", 1], ["deposit_life", ["at", sx, 0, sz]], { everySec: 0.001, ttlSec: 9999 }],
+            {
+                source: "nexus",
+            }
+        );
         const heal = r.state.worldRules[0];
         heal.lastFired = -Infinity;
         r._tickWorldRules(1000); // Feuer 1: Baseline (niedrig) gesnapshottet, Leben deponiert
@@ -2878,7 +2885,8 @@ async function checkBandV1743RuleFitness(ctx) {
         r.state.worldRules = [];
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
         const snap = r.buildStateSnapshot();
-        out.valueNotInSnapshot = Array.isArray(snap.worldRules) && snap.worldRules[0] && snap.worldRules[0].value === undefined;
+        out.valueNotInSnapshot =
+            Array.isArray(snap.worldRules) && snap.worldRules[0] && snap.worldRules[0].value === undefined;
 
         // restore
         r.state.worldRules = savedRules;
@@ -2892,7 +2900,10 @@ async function checkBandV1743RuleFitness(ctx) {
         "V17.43 Wertung: _worldRuleFitness DISKRIMINIERT (Heiler > neutral > Schädling — die alte ≈0.99-Fitness konnte das nicht)",
         res.fitnessDiscriminates
     );
-    check("V17.43 Wertung: ein Schädling fällt unter renewFitness (verfällt), neutral überlebt (keine Monokultur)", res.harmerDecays);
+    check(
+        "V17.43 Wertung: ein Schädling fällt unter renewFitness (verfällt), neutral überlebt (keine Monokultur)",
+        res.harmerDecays
+    );
     check(
         "V17.43 Wertung: _ruleRewardPos misst am Effekt-Ort (at) bzw. an der Spieler-Position (positionsloser Effekt)",
         res.rewardPosFromEffect && res.rewardPosFallbackPlayer
@@ -2901,13 +2912,22 @@ async function checkBandV1743RuleFitness(ctx) {
         "V17.43 Wertung: END-TO-END — eine heilende Regel (deposit_life) akkumuliert POSITIVEN Wert (der Ort blüht auf)",
         res.healerPositiveValue
     );
-    check("V17.43 Wertung: eine neutrale Regel (Wetter, berührt lebendig nicht) akkumuliert ~0 Wert", res.neutralZeroValue);
+    check(
+        "V17.43 Wertung: eine neutrale Regel (Wetter, berührt lebendig nicht) akkumuliert ~0 Wert",
+        res.neutralZeroValue
+    );
     check(
         "V17.43 Wertung: Eviction wirft den wert-NIEDRIGSTEN ephemeren Eintrag (nicht den ältesten); Mensch/pinned geschützt",
         res.evictsLowestValue && res.evictProtectsHuman
     );
-    check("V17.43 Wertung: die Mutations-Elternschaft ist wert-gewichtet (gerichtete Evolution Richtung Heilung)", res.parentWeighted);
-    check("V17.43 Wertung: rule.value ist reaktiv — NICHT im Snapshot serialisiert (wie die anderen Akkus)", res.valueNotInSnapshot);
+    check(
+        "V17.43 Wertung: die Mutations-Elternschaft ist wert-gewichtet (gerichtete Evolution Richtung Heilung)",
+        res.parentWeighted
+    );
+    check(
+        "V17.43 Wertung: rule.value ist reaktiv — NICHT im Snapshot serialisiert (wie die anderen Akkus)",
+        res.valueNotInSnapshot
+    );
 }
 
 // V17.44 — DIE LEBENDIGE WERTUNG, Phase 3: die Emotion als APPRAISAL (Vorhersagefehler
@@ -3034,17 +3054,26 @@ async function checkBandV1744Appraisal(ctx) {
         "V17.44 Appraisal: _playerSituationWohl IGNORIERT die Stimmung (kein Feedback-Input — die Wurzel gegen Runaway)",
         res.situationIgnoresMood
     );
-    check("V17.44 Appraisal: die Situation STEIGT mit dem Leben der Welt (deposit_life → lebendig)", res.situationRisesWithLife);
+    check(
+        "V17.44 Appraisal: die Situation STEIGT mit dem Leben der Welt (deposit_life → lebendig)",
+        res.situationRisesWithLife
+    );
     check(
         "V17.44 Appraisal: die Spieler-Baseline trackt die SITUATION, nicht die Stimmung (Cold-Start = lebendig@player, nicht die ~1 Stimmung)",
         res.baselineTracksSituation
     );
-    check("V17.44 Appraisal: eine Situations-Verbesserung (Region blüht auf) gibt einen joy-Puls (Überraschung, δ>0)", res.surpriseRaisesJoy);
+    check(
+        "V17.44 Appraisal: eine Situations-Verbesserung (Region blüht auf) gibt einen joy-Puls (Überraschung, δ>0)",
+        res.surpriseRaisesJoy
+    );
     check(
         "V17.44 Appraisal: GEWÖHNUNG — konstante Situation → Baseline holt auf (δ→0) → kein weiterer joy-Zuwachs",
         res.habituatesBaselineConverges && res.habituatedNoMoreJoy
     );
-    check("V17.44 Appraisal: KEIN Runaway — eine konstante Situation pinnt joy nicht auf 1.0 (feedback-frei bewiesen)", res.noRunaway);
+    check(
+        "V17.44 Appraisal: KEIN Runaway — eine konstante Situation pinnt joy nicht auf 1.0 (feedback-frei bewiesen)",
+        res.noRunaway
+    );
     check(
         "V17.44 Appraisal: V17.30 bleibt heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle + feuert (δ ist ADDITIV)",
         res.triggerPreserved
@@ -3087,7 +3116,11 @@ async function checkBandV1745EmotionCore(ctx) {
             !!GEO &&
             axes.every((a) => GEO[a] && typeof GEO[a].valenz === "number" && typeof GEO[a].erregung === "number");
         out.geoValenceSigns =
-            GEO.joy.valenz > 0 && GEO.hope.valenz > 0 && GEO.peace.valenz > 0 && GEO.sorrow.valenz < 0 && GEO.chaos.valenz < 0;
+            GEO.joy.valenz > 0 &&
+            GEO.hope.valenz > 0 &&
+            GEO.peace.valenz > 0 &&
+            GEO.sorrow.valenz < 0 &&
+            GEO.chaos.valenz < 0;
         out.geoArousalOpposed = GEO.peace.erregung < 0 && GEO.chaos.erregung > 0; // peace↔chaos = Erregungs-Gegenpol
 
         // (2) Der Readout — ein KLARES dominantes Gefühl.
@@ -3101,7 +3134,8 @@ async function checkBandV1745EmotionCore(ctx) {
         const sMix = r._emotionState();
         out.bittersweetValenceCancels = Math.abs(sMix.valence) < 0.1;
         out.bittersweetIntensityHigh = sMix.intensity > 0.9; // das additive Modell verfehlt das
-        out.bittersweetLabel = typeof sMix.label === "string" && sMix.label.includes("Zwiespalt") && Array.isArray(sMix.mix);
+        out.bittersweetLabel =
+            typeof sMix.label === "string" && sMix.label.includes("Zwiespalt") && Array.isArray(sMix.mix);
 
         // (4) Ruhe — wenig Aktivierung → ein ruhiger Grund-Affekt.
         setEmo({});
@@ -3154,21 +3188,42 @@ async function checkBandV1745EmotionCore(ctx) {
     });
 
     check("V17.45 Emotion-Kern: EMOTION_GEOMETRY vollständig (alle 6 Achsen, Valenz × Erregung)", res.geoComplete);
-    check("V17.45 Emotion-Kern: prinzipielle Valenz-Vorzeichen (joy/hope/peace +, sorrow/chaos −) — Russell", res.geoValenceSigns);
-    check("V17.45 Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol (die Geometrie trägt die Kohärenz)", res.geoArousalOpposed);
-    check("V17.45 Emotion-Kern: Readout — ein klares dominantes Gefühl (joy=0.8 → Freude, Valenz +)", res.clearDominant);
+    check(
+        "V17.45 Emotion-Kern: prinzipielle Valenz-Vorzeichen (joy/hope/peace +, sorrow/chaos −) — Russell",
+        res.geoValenceSigns
+    );
+    check(
+        "V17.45 Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol (die Geometrie trägt die Kohärenz)",
+        res.geoArousalOpposed
+    );
+    check(
+        "V17.45 Emotion-Kern: Readout — ein klares dominantes Gefühl (joy=0.8 → Freude, Valenz +)",
+        res.clearDominant
+    );
     check("V17.45 Emotion-Kern: FUSION — bittersüß hebt die Valenz auf (~0)", res.bittersweetValenceCancels);
     check(
         "V17.45 Emotion-Kern: FUSION — bittersüß behält HOHE Intensität (das additive Modell verfehlt das)",
         res.bittersweetIntensityHigh
     );
-    check('V17.45 Emotion-Kern: FUSION — bittersüß labelt „Zwiespalt" + nennt die zwei Gefühle (mix)', res.bittersweetLabel);
+    check(
+        'V17.45 Emotion-Kern: FUSION — bittersüß labelt „Zwiespalt" + nennt die zwei Gefühle (mix)',
+        res.bittersweetLabel
+    );
     check('V17.45 Emotion-Kern: Ruhe — wenig Aktivierung → „ruhig"', res.calmReadout);
-    check("V17.45 Emotion-Kern: KONSUM — die KI (llmBuildSystemPrompt) kennt ein klares Gefühl (Freude)", res.promptClear);
+    check(
+        "V17.45 Emotion-Kern: KONSUM — die KI (llmBuildSystemPrompt) kennt ein klares Gefühl (Freude)",
+        res.promptClear
+    );
     check("V17.45 Emotion-Kern: KONSUM — die KI kennt den Zwiespalt (bittersüß)", res.promptMix);
     check("V17.45 Emotion-Kern: KONSUM — die KI kennt die Ruhe", res.promptCalm);
-    check("V17.45 Emotion-Kern: Kohärenz — ein Gegenpol (sorrow) dämpft joy (der Zustand wird kohärent)", res.coherenceDamps);
-    check("V17.45 Emotion-Kern: Kohärenz — eine EINZELNE klare Emotion wird NICHT gedämpft (0.7-Trigger heil)", res.singleNotDamped);
+    check(
+        "V17.45 Emotion-Kern: Kohärenz — ein Gegenpol (sorrow) dämpft joy (der Zustand wird kohärent)",
+        res.coherenceDamps
+    );
+    check(
+        "V17.45 Emotion-Kern: Kohärenz — eine EINZELNE klare Emotion wird NICHT gedämpft (0.7-Trigger heil)",
+        res.singleNotDamped
+    );
 }
 
 // V17.46 — Der emotionale Kern W2: die APPRAISAL-BRÜCKE + der Hylomorphismus
@@ -3257,19 +3312,34 @@ async function checkBandV1746EmotionSubstance(ctx) {
         return out;
     });
     check("V17.46 Substanz: TAG_TO_EMOTION-Resonanz + der create-Akt existieren", res.tableExists && res.createAct);
-    check("V17.46 Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt", res.lebendigPeace && res.dichteHope);
+    check(
+        "V17.46 Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt",
+        res.lebendigPeace && res.dichteHope
+    );
     check("V17.46 Substanz: brennbar → chaos + awe (Gefahr-Thrill)", res.brennbarChaos);
     check("V17.46 Substanz: die Achsen sind sauber getrennt (dichte erzeugt keine lebendig-joy)", res.noLebInDichte);
     check("V17.46 Substanz: die Magnitude skaliert den Beitrag linear (Kathedrale > Box)", res.magnitudeScales);
     check("V17.46 Substanz: Tag-Stärke >1 geklemmt (Richtung); die Komplexität trägt die Magnitude", res.tagsClamped);
     check("V17.46 Substanz: KONSUM — build(lebendiges Holz) gibt mehr peace als build(toter Stein)", res.woodMorePeace);
-    check("V17.46 Substanz: KONSUM — build(Stein) gibt mehr hope als build(Holz) — verschiedene Substanz, verschiedenes Gefühl", res.stoneMoreHope);
+    check(
+        "V17.46 Substanz: KONSUM — build(Stein) gibt mehr hope als build(Holz) — verschiedene Substanz, verschiedenes Gefühl",
+        res.stoneMoreHope
+    );
     check("V17.46 Substanz: KONSUM — Magnitude end-to-end (große Schöpfung bewegt mehr)", res.magnitudeEndToEnd);
-    check("V17.46 Substanz: der schöpferische Akt → Stolz (joy+hope) + Substanz-Färbung (Magie → awe)", res.createPride);
+    check(
+        "V17.46 Substanz: der schöpferische Akt → Stolz (joy+hope) + Substanz-Färbung (Magie → awe)",
+        res.createPride
+    );
     check("V17.46 Substanz: define_blueprint feuert create-Stolz NUR für den Menschen (Source-Gate)", res.createHooked);
     check("V17.46 Substanz: confirmBuild übergibt die Substanz (blueprint) an _feelAction", res.buildHooked);
-    check("V17.46 Substanz: KEIN Regress — _feelAction('build') ohne Substanz = exakt V17.30 (joy 0.1, hope 0.1)", res.noRegressBuild);
-    check("V17.46 Substanz: Fallback — ein tag-loser Akt (explore) nutzt weiter ACTION_TO_EMOTION", res.fallbackExplore);
+    check(
+        "V17.46 Substanz: KEIN Regress — _feelAction('build') ohne Substanz = exakt V17.30 (joy 0.1, hope 0.1)",
+        res.noRegressBuild
+    );
+    check(
+        "V17.46 Substanz: Fallback — ein tag-loser Akt (explore) nutzt weiter ACTION_TO_EMOTION",
+        res.fallbackExplore
+    );
 }
 
 // V17.47 — Der emotionale Kern W3: Fast/Slow — EMOTION vs. STIMMUNG
@@ -3311,7 +3381,8 @@ async function checkBandV1747FastSlow(ctx) {
         const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
 
         // (1) die Decay-Tabelle: Furcht/chaos schnell, Trauer/peace langsam
-        out.decayTable = !!DECAY && DECAY.chaos > DECAY.sorrow && DECAY.chaos > 1 && DECAY.sorrow < 1 && DECAY.peace < 1;
+        out.decayTable =
+            !!DECAY && DECAY.chaos > DECAY.sorrow && DECAY.chaos > 1 && DECAY.sorrow < 1 && DECAY.peace < 1;
 
         // (2) PRO-ACHSE-Decay end-to-end: chaos (Furcht) verfliegt SCHNELLER als sorrow (Trauer)
         setEmo({ chaos: 0.8, sorrow: 0.8 });
@@ -3393,10 +3464,19 @@ async function checkBandV1747FastSlow(ctx) {
         return out;
     });
     check("V17.47 Fast/Slow: EMOTION_DECAY-Tabelle (chaos/Furcht schnell, sorrow/peace langsam)", res.decayTable);
-    check("V17.47 Fast/Slow: KONSUM — Furcht (chaos) verfliegt SCHNELLER als Trauer (sorrow) [pro-Achse-Decay]", res.fearFadesFasterThanGrief);
+    check(
+        "V17.47 Fast/Slow: KONSUM — Furcht (chaos) verfliegt SCHNELLER als Trauer (sorrow) [pro-Achse-Decay]",
+        res.fearFadesFasterThanGrief
+    );
     check("V17.47 Fast/Slow: beide Achsen zerfallen (Decay wirkt)", res.bothDecayed);
-    check("V17.47 Fast/Slow: die STIMMUNG ist eine langsame EMA — sie lagt der Emotion (ein Tick → klein)", res.moodLagsEmotion);
-    check("V17.47 Fast/Slow: KONSUM — anhaltendes Gefühl → die Stimmung KONVERGIERT (das Temperament wächst)", res.moodConverges);
+    check(
+        "V17.47 Fast/Slow: die STIMMUNG ist eine langsame EMA — sie lagt der Emotion (ein Tick → klein)",
+        res.moodLagsEmotion
+    );
+    check(
+        "V17.47 Fast/Slow: KONSUM — anhaltendes Gefühl → die Stimmung KONVERGIERT (das Temperament wächst)",
+        res.moodConverges
+    );
     check(
         "V17.47 Fast/Slow: KONSUM — eine trübe Stimmung färbt das Erleben (dämpft die Freude eines guten Ereignisses)",
         res.moodColorsAppraisal
@@ -3409,7 +3489,10 @@ async function checkBandV1747FastSlow(ctx) {
         "V17.47 Fast/Slow: KONSUM — die KI kennt die GRUNDSTIMMUNG (Trauer), getrennt vom akuten Gefühl (Freude)",
         res.promptHasMood && res.promptHasAcute
     );
-    check("V17.47 Fast/Slow: V17.30 heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle", res.triggerReachable);
+    check(
+        "V17.47 Fast/Slow: V17.30 heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle",
+        res.triggerReachable
+    );
 }
 
 // V17.48 — Der emotionale Kern W4: das SOZIALE — Contagion + Bindung + die KI als
@@ -3441,7 +3524,10 @@ async function checkBandV1748Social(ctx) {
             for (const k of AX) p.mood[k] = o[k] || 0;
         };
         // eine kontrollierte Kreatur AM Spieler-Ort (proximity 1)
-        const fake = (bond, task) => ({ position: { x: pm.x, y: pm.y, z: pm.z }, userData: { bond, task: { name: task || "wait" } } });
+        const fake = (bond, task) => ({
+            position: { x: pm.x, y: pm.y, z: pm.z },
+            userData: { bond, task: { name: task || "wait" } },
+        });
         const inject = (emo, bond, task) => {
             r.state.creatures = [fake(bond, task)];
             r.state.creatureEmotions = [emo];
@@ -3523,15 +3609,33 @@ async function checkBandV1748Social(ctx) {
     check("V17.48 Soziales: EMOTION_CONTAGION-Config + CONTAGION_TARGET + die loss-Tat existieren", res.config);
     check("V17.48 Soziales: KONSUM — ein freudiges Wesen nah HEBT joy + peace (Contagion)", res.happyLifts);
     check("V17.48 Soziales: KONSUM — ein leidendes Wesen nah betrübt (sorrow)", res.sadGrieves);
-    check("V17.48 Soziales: gebounded — die Contagion sättigt am Ziel (≤0.5), kein Runaway (V17.44-Lehre)", res.contagionBounded);
-    check("V17.48 Soziales: KONSUM — die BINDUNG gewichtet die Contagion (gebunden färbt mehr als fremd)", res.bondWeights);
+    check(
+        "V17.48 Soziales: gebounded — die Contagion sättigt am Ziel (≤0.5), kein Runaway (V17.44-Lehre)",
+        res.contagionBounded
+    );
+    check(
+        "V17.48 Soziales: KONSUM — die BINDUNG gewichtet die Contagion (gebunden färbt mehr als fremd)",
+        res.bondWeights
+    );
     check("V17.48 Soziales: KONSUM — die Bindung WÄCHST, während eine folgende Kreatur nah ist", res.bondGrows);
     check("V17.48 Soziales: eine WARTENDE Kreatur baut keine Bindung auf (nur gemeinsame Zeit zählt)", res.waitNoBond);
-    check('V17.48 Soziales: die „folge mir"-Geste vertieft die Bindung (assignCreatureTask wired)', res.followBumpWired);
-    check("V17.48 Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)", res.bondLossHurts);
-    check("V17.48 Soziales: der Verlust ist ein Ereignis ∝ Bindung × Vitalität (_creatureNaturalDeath wired)", res.lossWired);
+    check(
+        'V17.48 Soziales: die „folge mir"-Geste vertieft die Bindung (assignCreatureTask wired)',
+        res.followBumpWired
+    );
+    check(
+        "V17.48 Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)",
+        res.bondLossHurts
+    );
+    check(
+        "V17.48 Soziales: der Verlust ist ein Ereignis ∝ Bindung × Vitalität (_creatureNaturalDeath wired)",
+        res.lossWired
+    );
     check("V17.48 Soziales: KONSUM — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Trost)", res.tendComforts);
-    check("V17.48 Soziales: kein Trost ohne Trübsal — bei ausgeglichener Stimmung TENDET die KI nicht", res.noTendWhenOk);
+    check(
+        "V17.48 Soziales: kein Trost ohne Trübsal — bei ausgeglichener Stimmung TENDET die KI nicht",
+        res.noTendWhenOk
+    );
     check("V17.48 Soziales: die KI tendet aus dem grokTick (Ko-Regulator wired, nicht nur Kommentar)", res.tendWired);
 }
 
@@ -3628,10 +3732,19 @@ async function checkBandV1749Adventure(ctx) {
     });
     check("V17.49 Abenteuer: EXPLORE-Config (Neuheit > Wiederkehr, max > min)", res.config);
     check("V17.49 Abenteuer: KONSUM — eine NEUE Region staunt mehr als eine Wiederkehr (Neuheit)", res.noveltyGrades);
-    check("V17.49 Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)", res.adventureGrades);
+    check(
+        "V17.49 Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)",
+        res.adventureGrades
+    );
     check("V17.49 Abenteuer: die Distanz vom Ursprung fließt ein (_exploreMagnitude wired)", res.distWired);
-    check("V17.49 Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)", res.boldnessGrades);
-    check("V17.49 Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)", res.exploreScales);
+    check(
+        "V17.49 Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)",
+        res.boldnessGrades
+    );
+    check(
+        "V17.49 Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)",
+        res.exploreScales
+    );
     check("V17.49 Abenteuer: _setLastPlayerVoxelChunk nutzt _exploreMagnitude (hook wired)", res.hookWired);
     check("V17.49 Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
 }
@@ -3714,7 +3827,9 @@ async function checkBandV1750Klammer(ctx) {
         // Situations-Verbesserung) → KEIN Bonus (Phase 2 unverändert), egal wie hoch die Emotion ist.
         const vNearNeg = measureRule(pm.x, pm.z, vbaseNear, -0.5);
         out.noGamingWhenNoSituation = Math.abs(vNearNeg - vNearNoBonus) < 1e-9;
-        out.wired = /appraisalDelta/.test(r._measureRuleReward.toString()) && /phase4Radius/.test(r._measureRuleReward.toString());
+        out.wired =
+            /appraisalDelta/.test(r._measureRuleReward.toString()) &&
+            /phase4Radius/.test(r._measureRuleReward.toString());
 
         // restore
         setEmo(savedEmo);
@@ -3728,12 +3843,1459 @@ async function checkBandV1750Klammer(ctx) {
         return out;
     });
     check("V17.50 Klammer: WERTUNG Phase-4-Config (phase4Radius/Weight/appraisalEmaTau)", res.config);
-    check("V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta trackt die SITUATION (steigt mit Leben)", res.deltaTracksSituationUp);
-    check("V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta IGNORIERT die Emotion (hohe Stimmung, flache Situation → ~0)", res.deltaIgnoresEmotion);
-    check("V17.50 Klammer: KONSUM — eine Regel NAH am Spieler + positiver δ_spieler bekommt MEHR Wert (die Klammer)", res.clampRewardsNearPositive);
-    check("V17.50 Klammer: der Proximity-Gate — eine FERNE Regel bekommt KEINEN Bonus (δ_spieler ändert nichts)", res.proximityGate);
-    check("V17.50 Klammer: ANTI-GAMING — eine nahe Regel ohne echte Situations-Verbesserung (δ≤0) bekommt KEINEN Bonus", res.noGamingWhenNoSituation);
+    check(
+        "V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta trackt die SITUATION (steigt mit Leben)",
+        res.deltaTracksSituationUp
+    );
+    check(
+        "V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta IGNORIERT die Emotion (hohe Stimmung, flache Situation → ~0)",
+        res.deltaIgnoresEmotion
+    );
+    check(
+        "V17.50 Klammer: KONSUM — eine Regel NAH am Spieler + positiver δ_spieler bekommt MEHR Wert (die Klammer)",
+        res.clampRewardsNearPositive
+    );
+    check(
+        "V17.50 Klammer: der Proximity-Gate — eine FERNE Regel bekommt KEINEN Bonus (δ_spieler ändert nichts)",
+        res.proximityGate
+    );
+    check(
+        "V17.50 Klammer: ANTI-GAMING — eine nahe Regel ohne echte Situations-Verbesserung (δ≤0) bekommt KEINEN Bonus",
+        res.noGamingWhenNoSituation
+    );
     check("V17.50 Klammer: _measureRuleReward nutzt appraisalDelta + phase4Radius (wired)", res.wired);
+}
+
+// V17.51 — Der Kampf-Bogen Phase A: die Kombat-Stats (kampf-plan.md §4-A).
+// Kampf ist KEIN neues System — er ist der Hylomorphismus, eine Ebene weiter:
+// knockback/attackSpeed/defense EMERGIEREN aus der Substanz (Tags → STAT_FROM_TAGS),
+// GENAU wie damage/speed/hpMax. Eine schwere dichte Keule schlägt langsam-wuchtig,
+// eine leichte harte Klinge schnell + scharf — das Profil WÄHLT man über die Materie,
+// nicht über einen Slider. Diese Welle prüft KONSUM (die Profile DIFFERENZIEREN aus der
+// Substanz, durch DIESELBE Pipeline für Spieler + Kreatur + sichtbar in der UI), nicht
+// blosse Existenz (V17.31). Der GAMEPLAY-Konsum (Impuls/Cooldown/Reduktion) folgt C/D.
+async function checkBandV1751CombatStats(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const S = r.constructor.STAT_FROM_TAGS;
+
+        // (1) Struktur: die drei Kombat-Stats existieren als Formeln in der EINEN Tabelle
+        out.formulasExist =
+            typeof S.knockback === "function" && typeof S.attackSpeed === "function" && typeof S.defense === "function";
+
+        // (2) Substanz-Differenzierung (der KERN — die Tabelle IST die Regel):
+        // schwere dichte Keule vs. leichte harte Klinge vs. weiches Wesen.
+        const keule = { dichte: 0.9, härte: 0.5 }; // schwer + dicht (Masse)
+        const klinge = { dichte: 0.3, härte: 0.9 }; // leicht + hart (scharf)
+        const weich = { dichte: 0.05, härte: 0.05 }; // weich (kein Schutz)
+        out.heavyMoreKnockback = S.knockback(keule) > S.knockback(klinge) + 1; // Masse stößt zurück
+        out.lightFasterAttack = S.attackSpeed(klinge) > S.attackSpeed(keule) + 0.1; // leicht = flink
+        out.hardMoreDamage = S.damage(klinge) > S.damage(keule); // härte schneidet (bestehendes damage)
+        out.denseMoreDefense = S.defense(keule) > S.defense(weich) + 3; // dichte/harte Rüstung blockt
+        out.softNoDefense = S.defense(weich) < 1; // base-los wie die elementaren Resists
+        out.attackSpeedPositive = S.attackSpeed(keule) > 0 && S.attackSpeed({ dichte: 1 }) > 0; // kein negativer Cooldown
+        out.magicFlink = S.attackSpeed({ dichte: 0.3, magieleitung: 1 }) > S.attackSpeed({ dichte: 0.3 }); // flink-Term
+
+        // (3) Spieler-Pipeline-KONSUM: die ECHTE computePlayerStats berechnet das Trio
+        const ps = r.computePlayerStats().stats;
+        out.playerComputes =
+            Number.isFinite(ps.knockback) &&
+            Number.isFinite(ps.attackSpeed) &&
+            Number.isFinite(ps.defense) &&
+            ps.attackSpeed > 0;
+
+        // (4) Kreatur-Pipeline-KONSUM (symmetrisch — DIESELBE Pipeline, kein Parallelpfad)
+        const pm = r.state.playerMesh.position;
+        const c = r.spawnCreatureAt(pm.x + 240, pm.y, pm.z + 240, "happy", "wesen");
+        const cs = r.computeCreatureStats(c).stats;
+        out.creatureComputes =
+            Number.isFinite(cs.knockback) && Number.isFinite(cs.attackSpeed) && Number.isFinite(cs.defense);
+        r.removeCreature(c); // sauber aufräumen (kein Kreatur-Zahl-Leck)
+
+        // (5) die Sichtbarkeit — renderPlayerStatsUI trägt das Kombat-Profil (echter UI-Konsum)
+        const uiSrc = r.renderPlayerStatsUI.toString();
+        out.uiShowsCombat = /knockback/.test(uiSrc) && /attackSpeed/.test(uiSrc) && /defense/.test(uiSrc);
+
+        return out;
+    });
+    check("V17.51 Kampf A: die Kombat-Stats existieren als Formeln (knockback/attackSpeed/defense)", res.formulasExist);
+    check(
+        "V17.51 Kampf A: KONSUM — eine schwere dichte Keule hat MEHR Rückschlag als eine leichte Klinge (Masse)",
+        res.heavyMoreKnockback
+    );
+    check(
+        "V17.51 Kampf A: KONSUM — eine leichte Klinge schlägt SCHNELLER als eine schwere Keule (leicht = flink)",
+        res.lightFasterAttack
+    );
+    check(
+        "V17.51 Kampf A: KONSUM — eine harte Klinge macht MEHR Schaden als eine stumpfe Keule (härte schneidet)",
+        res.hardMoreDamage
+    );
+    check(
+        "V17.51 Kampf A: KONSUM — dichte/harte Substanz blockt MEHR (defense), ein weiches Wesen ~0 (base-los)",
+        res.denseMoreDefense && res.softNoDefense
+    );
+    check(
+        "V17.51 Kampf A: attackSpeed bleibt positiv (kein negativer Cooldown); magieleitung macht flink",
+        res.attackSpeedPositive && res.magicFlink
+    );
+    check(
+        "V17.51 Kampf A: KONSUM — die ECHTE Spieler-Pipeline (computePlayerStats) berechnet das Kampf-Trio",
+        res.playerComputes
+    );
+    check(
+        "V17.51 Kampf A: KONSUM — die Kreatur-Pipeline (computeCreatureStats) berechnet es symmetrisch (eine Pipeline)",
+        res.creatureComputes
+    );
+    check(
+        "V17.51 Kampf A: die Stats-UI macht das Kampf-Profil sichtbar (Rückschlag/Tempo/Verteidigung)",
+        res.uiShowsCombat
+    );
+}
+
+// V17.52 — Der Kampf-Bogen Phase B: die Waffen-Rolle + der Equip-Slot
+// (docs/kampf-plan.md §4-B). Eine Waffe ist ein Compound wie jeder andere; ihr
+// Kombat-Profil (damage/knockback/attackSpeed) EMERGIERT aus den Tags beim
+// Ausrüsten — REUSE der Equip-Pipeline mit WEAPON_STAT_WEIGHT (0.4), KEIN neuer
+// „Waffen-Schaden"-Pfad. Diese Welle prüft KONSUM (eine ausgerüstete harte Waffe
+// HEBT das Kombat-Profil des Spielers; die Rolle persistiert durch serialize/
+// deserialize) + die Validierung + die UI-Trennung, nicht blosse Existenz (V17.31).
+// V17.57 W2-B (kampf-plan §8.1) — der EINE „in der Hand"-Slot: Werkzeug + Waffe verschmolzen, kein
+// Rollen-Schloss. equipHeld nimmt JEDEN Bauplan (keine Markierung nötig); das gehaltene Gerät faltet
+// in die Kombat-Stats (Angriff-mit-jedem-Gerät) UND treibt das Abbauen (W1/W2) — eine Pipeline. KONSUM.
+async function checkBandV1757HeldSlot(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const savedHeld = p.equipped ? p.equipped.held : null;
+
+        // (0) der held-Slot + HELD_STAT_WEIGHT
+        out.slotExists = !!p.equipped && "held" in p.equipped;
+        out.weightExists = r.constructor.HELD_STAT_WEIGHT > 0;
+
+        // (1) ein hartes Gerät konstruieren (härteste Form × Material)
+        const FTA = r.constructor.FORM_TAG_ACTIVATION;
+        let hardShape = "box";
+        let maxAct = 0;
+        for (const s of Object.keys(FTA)) {
+            const a = FTA[s].härte || 0;
+            if (a > maxAct) {
+                maxAct = a;
+                hardShape = s;
+            }
+        }
+        let hardMat = "stein";
+        let maxH = 0;
+        for (const m of Object.keys(r.state.materials)) {
+            const h = (r.state.materials[m].tags && r.state.materials[m].tags.härte) || 0;
+            if (h > maxH) {
+                maxH = h;
+                hardMat = m;
+            }
+        }
+        const wName = "_t1757_impl";
+        r.state.blueprints[wName] = r._deserializeBlueprint({
+            name: wName,
+            label: "Testgerät",
+            parts: [
+                { shape: hardShape, material: hardMat, position: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },
+            ],
+            connections: [],
+        });
+        out.implHasHardness = (r.computeCompoundTags(r.state.blueprints[wName]).härte || 0) > 0;
+
+        // (2) equipHeld nimmt JEDEN Bauplan — KEINE Markierung nötig (das Rollen-Schloss ist weg)
+        const eqR = r.equipHeld(wName);
+        out.equipNoRoleNeeded = eqR.ok && p.equipped.held === wName;
+
+        // (3) equipHeld lehnt ab: ein unbekannter Bauplan + ein builtIn-Crafting-Tool (kein Welt-Gerät)
+        out.rejectsUnknown = !r.equipHeld("nonexistent_bp_xyz").ok;
+        out.rejectsBuiltinTool = !r.equipHeld("hammer").ok; // hammer = builtIn-Crafting-Tool, kein Bauplan
+        r.equipHeld(wName); // (die fehlgeschlagenen Versuche ändern nichts; sicherheitshalber neu setzen)
+
+        // (4) KONSUM — das gehaltene harte Gerät HEBT das Kombat-Profil (Angriff-mit-jedem-Gerät)
+        r.equipHeld(null);
+        const base = r.computePlayerStats().stats;
+        r.equipHeld(wName);
+        const armed = r.computePlayerStats().stats;
+        out.heldRaisesDamage = armed.damage > base.damage + 0.01; // härte → mehr Schaden
+        out.heldRaisesDefense = armed.defense > base.defense; // das Defense-Trio fließt mit
+
+        // (5) abnehmen → zurück auf die Baseline (kein Rest-Effekt)
+        r.equipHeld(null);
+        const bare = r.computePlayerStats().stats;
+        out.unequipRestores = Math.abs(bare.damage - base.damage) < 1e-9;
+
+        // (6) DASSELBE Gerät treibt das Abbauen (W1/W2) — _heldImplementBlueprint löst den held-Slot auf
+        r.equipHeld(wName);
+        out.heldDrivesHarvest = r._heldImplementBlueprint() === r.state.blueprints[wName];
+
+        // (7) Persistenz: der held-Slot reist im Snapshot
+        const snap = r.buildStateSnapshot();
+        out.snapHasHeld = snap.playerEquipped && snap.playerEquipped.held === wName;
+
+        // (8) UI: EINE „in der Hand"-Zeile (die getrennte Waffen-Zeile ist weg)
+        out.heldRowExists = typeof r._equipAppendHeldRow === "function";
+        out.noWeaponRow = typeof r._equipAppendWeaponRow !== "function";
+
+        // cleanup
+        r.equipHeld(null);
+        delete r.state.blueprints[wName];
+        if (savedHeld) r.equipHeld(savedHeld);
+        r.recomputePlayerStats();
+        return out;
+    });
+    check("V17.57 W2-B: der held-Equip-Slot + HELD_STAT_WEIGHT existieren", res.slotExists && res.weightExists);
+    check("V17.57 W2-B: das Test-Gerät trägt härte (die Substanz-Prämisse hält)", res.implHasHardness);
+    check(
+        "V17.57 W2-B: equipHeld nimmt JEDEN Bauplan — keine Markierung nötig (kein Rollen-Schloss)",
+        res.equipNoRoleNeeded
+    );
+    check("V17.57 W2-B: equipHeld lehnt einen unbekannten Bauplan ab", res.rejectsUnknown);
+    check("V17.57 W2-B: equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)", res.rejectsBuiltinTool);
+    check(
+        "V17.57 W2-B: KONSUM — ein gehaltenes hartes Gerät HEBT den Schaden (Angriff-mit-jedem-Gerät, Substanz→Profil)",
+        res.heldRaisesDamage
+    );
+    check(
+        "V17.57 W2-B: KONSUM — das harte Gerät hebt auch die Verteidigung (das Defense-Trio fließt)",
+        res.heldRaisesDefense
+    );
+    check("V17.57 W2-B: Gerät abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
+    check(
+        "V17.57 W2-B: DASSELBE Gerät treibt das Abbauen (_heldImplementBlueprint löst den held-Slot auf)",
+        res.heldDrivesHarvest
+    );
+    check("V17.57 W2-B: Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
+    check(
+        "V17.57 W2-B: die UI hat EINE in-der-Hand-Zeile (die getrennte Waffen-Zeile ist weg)",
+        res.heldRowExists && res.noWeaponRow
+    );
+}
+
+// V17.53 — Der Kampf-Bogen Phase C: Kreatur-HP + Schaden + Tod/Loot
+// (docs/kampf-plan.md §4-C). Symmetrisch zum Spieler: DIESELBE computeCreatureStats-
+// Pipeline liefert hpMax + defense; `dealt = max(1, amount − defense)` (Schadens-Floor
+// wie der Spieler); hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien, NUR für den
+// Spieler-Töter; removeCreature). Der damage_creature-DSL-Op ist der Konsument (wie der
+// Spieler-`damage`-Op). Diese Welle prüft KONSUM (Schaden reduziert hp, der Floor, der
+// Kill entfernt + lootet, der DSL-Op), nicht blosse Existenz (V17.31). Knockback + der
+// Kampf-AFFEKT folgen Phase D (wo die Agency klar ist).
+async function checkBandV1753CreatureCombat(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh.position;
+        const matUnits = (inv) =>
+            inv.reduce((s, slot) => s + (slot && slot.kind === "material" ? slot.count || 0 : 0), 0);
+
+        // (0) Methoden + DSL-Op existieren
+        out.methodsExist =
+            typeof r.damageCreature === "function" &&
+            typeof r._creatureLootMaterials === "function" &&
+            !!(r.dslEffects && r.dslEffects.damage_creature);
+
+        // (1) hp wird bei spawn auf hpMax initialisiert (DIESELBE Pipeline wie der Spieler)
+        const c1 = r.spawnCreatureAt(pm.x + 260, pm.y, pm.z + 260, "happy", "wesen");
+        const stats1 = r.computeCreatureStats(c1).stats;
+        out.hpInit =
+            c1.userData.hp === c1.userData.hpMax &&
+            Math.abs(c1.userData.hp - stats1.hpMax) < 1e-6 &&
+            c1.userData.hp > 0;
+
+        // (2) KONSUM — damageCreature reduziert hp um max(1, amount − defense)
+        const def1 = Math.max(0, stats1.defense || 0);
+        const hpBefore = c1.userData.hp;
+        const dmgR = r.damageCreature(c1, def1 + 10, { source: "world" });
+        out.damageReduces =
+            dmgR.ok &&
+            !dmgR.killed &&
+            Math.abs(dmgR.dealt - 10) < 1e-6 &&
+            Math.abs(c1.userData.hp - (hpBefore - 10)) < 1e-6;
+        // (3) der Schadens-Floor — ein winziger Treffer macht mind. 1 (keine Unverwundbarkeit, kein 0-Schaden)
+        out.damageFloor = r.damageCreature(c1, 0.1, { source: "world" }).dealt === 1;
+
+        // (4) ein Nicht-Kreatur-Ziel (der Spieler-Mesh) wird abgelehnt
+        out.rejectsNonCreature = !r.damageCreature(r.state.playerMesh, 10, {}).ok;
+
+        // (5) der Loot — die Body-Materialien (nicht leer)
+        const loot = r._creatureLootMaterials(c1);
+        out.lootNonEmpty = !!loot && Object.keys(loot).length > 0;
+
+        // (6) KONSUM — ein Spieler-Kill entfernt die Kreatur + der Loot fällt ins Inventar
+        const invBefore = JSON.parse(JSON.stringify(p.inventory));
+        for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null; // Platz für Loot garantieren
+        const countBefore = r.state.creatures.length;
+        const killR = r.damageCreature(c1, 99999, { source: "player" });
+        out.killRemoves =
+            killR.killed && r.state.creatures.indexOf(c1) === -1 && r.state.creatures.length === countBefore - 1;
+        out.lootToInventory = matUnits(p.inventory) > 0;
+
+        // (7) ein Welt-Tod gibt KEIN Loot (nur der Spieler erntet die Substanz)
+        for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null;
+        const c2 = r.spawnCreatureAt(pm.x + 280, pm.y, pm.z + 280, "happy", "wesen");
+        r.damageCreature(c2, 99999, { source: "world" });
+        out.noLootForWorldKill = matUnits(p.inventory) === 0;
+
+        // (8) der DSL-Op damage_creature schädigt eine Kreatur per Index (der Konsument)
+        const c3 = r.spawnCreatureAt(pm.x + 300, pm.y, pm.z + 300, "happy", "wesen");
+        const idx3 = r.state.creatures.indexOf(c3);
+        const hp3Before = c3.userData.hp;
+        r.dslEffects.damage_creature([idx3, 5], { source: "test", log: [] });
+        out.dslOpDamages = c3.userData.hp < hp3Before;
+
+        // cleanup (c1/c2 fielen im Kampf; c3 entfernen; Inventar restaurieren)
+        if (r.state.creatures.indexOf(c3) !== -1) r.removeCreature(c3);
+        for (let i = 0; i < invBefore.length; i++) p.inventory[i] = invBefore[i];
+        return out;
+    });
+    check(
+        "V17.53 Kampf C: damageCreature + _creatureLootMaterials + der damage_creature-DSL-Op existieren",
+        res.methodsExist
+    );
+    check("V17.53 Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
+    check("V17.53 Kampf C: KONSUM — damageCreature reduziert hp um max(1, amount − defense)", res.damageReduces);
+    check(
+        "V17.53 Kampf C: der Schadens-Floor — ein winziger Treffer macht mind. 1 Schaden (keine Unverwundbarkeit)",
+        res.damageFloor
+    );
+    check("V17.53 Kampf C: ein Nicht-Kreatur-Ziel wird abgelehnt (not_creature)", res.rejectsNonCreature);
+    check("V17.53 Kampf C: der Loot sind die Body-Materialien der Kreatur (nicht leer)", res.lootNonEmpty);
+    check("V17.53 Kampf C: KONSUM — ein Spieler-Kill (hp≤0) entfernt die Kreatur aus state.creatures", res.killRemoves);
+    check(
+        "V17.53 Kampf C: KONSUM — der Loot eines Spieler-Kills fällt ins Inventar (Erlegen ≡ Ernten)",
+        res.lootToInventory
+    );
+    check("V17.53 Kampf C: ein Welt-/DSL-Tod gibt KEIN Loot (nur der Spieler erntet)", res.noLootForWorldKill);
+    check("V17.53 Kampf C: KONSUM — der damage_creature-DSL-Op schädigt eine Kreatur per Index", res.dslOpDamages);
+}
+
+// V17.54 — Der Kampf-Bogen Phase D: der LMB-Angriff + der W5-Affekt (der letzte
+// Konsument des Emotion-Kerns, docs/kampf-plan.md §4-D/F). `_playerAttackCreature`
+// ist der LMB-Konsument von damageCreature (attackSpeed-Cooldown + Stamina + Spieler-
+// damage/knockback); tryMouseBreak dispatcht zum nächsten Ziel (Kreatur in Reichweite
+// → angreifen; sonst Architektur → harvest; sonst carve). Der W5-Affekt wird gewebt:
+// Zorn ∝ Waffen-härte (chaos via die W2-Brücke) beim Angreifen; SCHULD ∝ lebendig×bond
+// beim Töten eines friedlichen Wesens (der W4-Kontext-Appraisal). Diese Welle prüft
+// KONSUM (Angriff schädigt, Cooldown gated, der Affekt feuert, die Schuld ist lebendig-
+// gegated), nicht blosse Existenz (V17.31). Die WUCHT/das Feel sind der Schöpfer-Browser.
+async function checkBandV1754PlayerAttack(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh.position;
+        const e = p.emotions;
+        const setEmo = (o) => {
+            for (const k of Object.keys(e)) e[k] = o[k] || 0;
+        };
+        const savedEmo = { ...e };
+        const savedLastAtk = p.lastAttackAt;
+        const savedInv = JSON.parse(JSON.stringify(p.inventory));
+        const savedLife = r.state.lifeField;
+        const savedEmoField = r.state.emotionField;
+        r.state.lifeField = new Map();
+        r.state.emotionField = new Map();
+
+        // (0) Methoden + die attack-Emotion + COMBAT_REACH existieren
+        out.exists =
+            typeof r._pickCreatureAtCrosshair === "function" &&
+            typeof r._playerAttackCreature === "function" &&
+            !!r.constructor.ACTION_TO_EMOTION.attack &&
+            r.constructor.COMBAT_REACH_M > 0;
+
+        // (1) KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Konsument)
+        const c1 = r.spawnCreatureAt(pm.x + 320, pm.y, pm.z + 320, "happy", "wesen");
+        p.lastAttackAt = -Infinity;
+        setEmo({});
+        const hp1Before = c1.userData.hp;
+        const atk1 = r._playerAttackCreature(c1);
+        out.attackDamages = atk1 === true && c1.userData.hp < hp1Before;
+        // (2) der Angriff feuert den Zorn-Affekt (chaos — die Kampf-Intensität via die W2-Brücke)
+        out.attackFeelsChaos = e.chaos > 0;
+        // (3) attackSpeed-Cooldown: ein sofortiger zweiter Schlag prallt ab (kein Schaden)
+        const hp1Mid = c1.userData.hp;
+        const atk2 = r._playerAttackCreature(c1);
+        out.cooldownGates = atk2 === false && c1.userData.hp === hp1Mid;
+
+        // (4) die SCHULD ist lebendig-gegated: ein Spieler-Kill eines lebendig-Wesens → sorrow
+        // (der W4-Kontext-Appraisal: derselbe lebendig-Tag, im Tötungs-Kontext zu Schmerz)
+        setEmo({});
+        const c2 = r.spawnCreatureAt(pm.x + 340, pm.y, pm.z + 340, "happy", "wesen");
+        c2.userData.bond = 1; // Bindung hebt die Schuld (wenn lebendig)
+        const leb2 = r.computeCreatureCompoundTags(c2).lebendig || 0;
+        r.damageCreature(c2, 99999, { source: "player" });
+        out.guiltGatedByLiving = leb2 > 0.02 ? e.sorrow > 0 : e.sorrow < 0.01;
+
+        // (5) ein Material-Wesen (quarz-Sprite, lebendig≈0) zu töten löst KEINE Schuld aus
+        setEmo({});
+        const c3 = r.spawnCreatureAt(pm.x + 360, pm.y, pm.z + 360, "happy", "sprite");
+        const leb3 = r.computeCreatureCompoundTags(c3).lebendig || 0;
+        r.damageCreature(c3, 99999, { source: "player" });
+        out.noGuiltForMaterial = leb3 < 0.05 ? e.sorrow < 0.01 : true;
+
+        // (6) der Knockback-Pfad (fromPos + knockback) läuft ohne Fehler + schädigt
+        const c4 = r.spawnCreatureAt(pm.x + 380, pm.y, pm.z + 380, "happy", "wesen");
+        let kbOk = true;
+        try {
+            r.damageCreature(c4, 5, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z }, knockback: 8 });
+        } catch {
+            kbOk = false;
+        }
+        out.knockbackRuns = kbOk && c4.userData.hp < c4.userData.hpMax;
+        if (r.state.creatures.indexOf(c4) !== -1) r.removeCreature(c4);
+
+        // (7) der Dispatch + die Schuld sind wired (Source-Probe)
+        const tmb = r.tryMouseBreak.toString();
+        const dth = r._creatureCombatDeath.toString();
+        out.dispatchWired = /_pickCreatureAtCrosshair/.test(tmb) && /_playerAttackCreature/.test(tmb);
+        out.guiltWired = /computeCreatureCompoundTags/.test(dth) && /_feelAction\("loss"/.test(dth);
+
+        // cleanup
+        if (r.state.creatures.indexOf(c1) !== -1) r.removeCreature(c1);
+        setEmo(savedEmo);
+        p.lastAttackAt = savedLastAtk;
+        for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];
+        r.state.lifeField = savedLife;
+        r.state.emotionField = savedEmoField;
+        return out;
+    });
+    check(
+        "V17.54 Kampf D: _pickCreatureAtCrosshair + _playerAttackCreature + die attack-Emotion + COMBAT_REACH existieren",
+        res.exists
+    );
+    check("V17.54 Kampf D: KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Angriff)", res.attackDamages);
+    check("V17.54 Kampf D: der Angriff feuert den Zorn-Affekt (chaos — die Kampf-Intensität)", res.attackFeelsChaos);
+    check(
+        "V17.54 Kampf D: attackSpeed-Cooldown — ein sofortiger zweiter Schlag prallt ab (kein Schaden)",
+        res.cooldownGates
+    );
+    check(
+        "V17.54 Kampf D: KONSUM — die SCHULD ist lebendig-gegated (Spieler-Kill eines lebendig-Wesens → sorrow)",
+        res.guiltGatedByLiving
+    );
+    check(
+        "V17.54 Kampf D: ein Material-Wesen (lebendig≈0) zu töten löst KEINE Schuld aus (Kontext-Appraisal)",
+        res.noGuiltForMaterial
+    );
+    check("V17.54 Kampf D: der Knockback-Pfad (fromPos + knockback) läuft + schädigt", res.knockbackRuns);
+    check(
+        "V17.54 Kampf D: tryMouseBreak dispatcht zur Kreatur + die Schuld ist in _creatureCombatDeath wired",
+        res.dispatchWired && res.guiltWired
+    );
+}
+
+// V17.55 W1 (kampf-plan §8/§9) — der WURZELFEHLER geheilt: Abbauen kostet substanz-gebundene
+// MÜHE, und EINE Tauglichkeit (gehaltenes Ding vs Material) dirigiert vier Kanäle. KONSUM, nicht
+// Existenz (V17.31): die Tauglichkeit DIFFERENZIERT Tempo/Stamina/Ertrag; die Mühe ist real
+// (viele Hiebe, kein Instant); ein gutes Werkzeug bricht schneller + lootet, die Faust nicht.
+async function checkBandV1755HarvestEffort(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const H = r.constructor.HARVEST;
+        const savedTool = p.equipped ? p.equipped.held : null;
+        const savedStam = p.stamina;
+        const savedInv = p.inventory.slice();
+        const savedMode = r.getGameMode();
+        if (!p.equipped) p.equipped = {};
+        const clearInv = () => {
+            for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null;
+        };
+        const steinCount = () =>
+            p.inventory.reduce(
+                (n, sl) => n + (sl && sl.kind === "material" && sl.material === "stein" ? sl.count || 0 : 0),
+                0
+            );
+        const strikeUntilGone = (a, cap) => {
+            let s = 0;
+            while (r.state.architectures.indexOf(a) !== -1 && s < cap) {
+                r._strikeArchitecture(a);
+                s++;
+            }
+            return s;
+        };
+
+        // (1) die Methoden existieren
+        out.methods = [
+            "_heldMinePower",
+            "_architectureResistance",
+            "_harvestFitness",
+            "_strikeArchitecture",
+            "_tickHarvest",
+        ].every((m) => typeof r[m] === "function");
+
+        // (2) minePower: die bloße Faust schwach, ein hartes Werkzeug stark (das gehaltene Ding zählt)
+        p.equipped.held = null;
+        const handPower = r._heldMinePower();
+        p.equipped.held = "stein_block";
+        const toolPower = r._heldMinePower();
+        out.toolBeatsHand = toolPower > handPower && handPower > 0;
+
+        // (3) Widerstand: ein hartes Bauwerk widersteht mehr als die Basis (V17.56 W2: {mineResist, cutResist})
+        const hardRes = r._architectureResistance({ type: "stein_block" });
+        out.hardResists = hardRes.mineResist > H.resistBase;
+
+        // (4) die Tauglichkeit DIFFERENZIERT die vier Kanäle (gutes Werkzeug vs Faust auf HARTEM)
+        p.equipped.held = "stein_block";
+        const fitGood = r._harvestFitnessFromResist(hardRes);
+        p.equipped.held = null;
+        const fitHand = r._harvestFitnessFromResist(hardRes);
+        out.fitnessDifferentiates =
+            fitGood.progress > fitHand.progress && // TEMPO
+            fitGood.yieldMult > fitHand.yieldMult && // ERTRAG
+            fitGood.stamina < fitHand.stamina; // STAMINA (invers)
+        out.handYieldsNothingOnHard = fitHand.yieldMult <= 0.001;
+
+        // (5)+(6) KONSUM: Mühe (viele Hiebe) + gutes Werkzeug schneller + Ertrag skaliert.
+        // In frieden (keine Stamina-Störung) den Hieb-Kern _strikeArchitecture direkt treiben.
+        r.setGameMode("frieden");
+        p.stamina = 1e6;
+        clearInv();
+        p.equipped.held = null;
+        const aHand = r.spawnArchitecture("stein_block", { x: p.x + 8, y: p.y, z: p.z });
+        const handStrikes = strikeUntilGone(aHand, 200);
+        const steinHand = steinCount();
+        clearInv();
+        p.equipped.held = "stein_block";
+        const aTool = r.spawnArchitecture("stein_block", { x: p.x + 12, y: p.y, z: p.z });
+        const toolStrikes = strikeUntilGone(aTool, 200);
+        const steinTool = steinCount();
+        out.multiStrikeHand = handStrikes > 1; // die Faust: KEIN Instant
+        out.brokeEventually =
+            r.state.architectures.indexOf(aHand) === -1 && r.state.architectures.indexOf(aTool) === -1;
+        out.toolFasterThanHand = toolStrikes >= 1 && toolStrikes < handStrikes;
+        out.yieldScalesWithFitness = steinTool > steinHand && steinTool > 0;
+
+        // (7) der Hold-Tick ist gegated (ohne breakHeld → nichts)
+        p.breakHeld = false;
+        const beforeTick = r.state.architectures.length;
+        r._tickHarvest();
+        out.tickGuarded = r.state.architectures.length === beforeTick;
+
+        // (8) KONSUM Stamina: ein Hieb in pfad zieht Stamina (∝ invers zur Effizienz)
+        r.setGameMode("pfad");
+        p.equipped.held = null;
+        p.stamina = 100;
+        const aS = r.spawnArchitecture("stein_block", { x: p.x + 16, y: p.y, z: p.z });
+        const stamBefore = p.stamina;
+        r._strikeArchitecture(aS);
+        out.staminaDrains = p.stamina < stamBefore;
+        if (r.state.architectures.indexOf(aS) !== -1) r.removeArchitecture(aS);
+
+        // cleanup
+        for (const a of [aHand, aTool]) if (a && r.state.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
+        p.equipped.held = savedTool;
+        p.stamina = savedStam;
+        p.breakHeld = false;
+        clearInv();
+        for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.55 W1: die Harvest-Methoden existieren (_heldMinePower/_architectureResistance/_harvestFitness/_strikeArchitecture/_tickHarvest)",
+        res.methods
+    );
+    check(
+        "V17.55 W1: minePower — ein hartes Werkzeug schlägt die bloße Faust (das gehaltene Ding bestimmt die Kraft)",
+        res.toolBeatsHand
+    );
+    check("V17.55 W1: ein hartes Bauwerk leistet Widerstand (> Basis)", res.hardResists);
+    check(
+        "V17.55 W1: KONSUM — die Tauglichkeit DIFFERENZIERT die vier Kanäle (gutes Werkzeug: mehr Tempo+Ertrag, weniger Stamina)",
+        res.fitnessDifferentiates
+    );
+    check(
+        "V17.55 W1: die bloße Faust an HARTEM gibt KEINEN Ertrag (das falsche Werkzeug gibt nichts)",
+        res.handYieldsNothingOnHard
+    );
+    check("V17.55 W1: KONSUM — Abbauen kostet MÜHE (die Faust braucht VIELE Hiebe, kein Instant)", res.multiStrikeHand);
+    check("V17.55 W1: ein Bauwerk fällt schließlich (der Fortschritt vollendet sich)", res.brokeEventually);
+    check(
+        "V17.55 W1: KONSUM — ein gutes Werkzeug bricht SCHNELLER (weniger Hiebe als die Faust)",
+        res.toolFasterThanHand
+    );
+    check(
+        "V17.55 W1: KONSUM — der ERTRAG skaliert mit der Tauglichkeit (Werkzeug füllt das Inventar, die Faust ~nicht)",
+        res.yieldScalesWithFitness
+    );
+    check("V17.55 W1: der Hold-Tick ist gegated (ohne breakHeld passiert nichts)", res.tickGuarded);
+    check("V17.55 W1: KONSUM — ein Hieb zieht Stamina (pfad, ∝ invers zur Effizienz)", res.staminaDrains);
+}
+
+// V17.56 W2 (kampf-plan §8.1) — das FORM-bewusste Fähigkeits-Profil + alles-für-alles: DIESELBE
+// harte Materie wird zur KLINGE (spitz → schneidet Weiches) ODER zur KEULE (stumpf → wuchtet Hartes),
+// das Material wählt den Kanal, das richtige Gerät gewinnt; man erntet auch mit der Waffe. KONSUM.
+async function checkBandV1755W2Profile(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const blu = r.state.blueprints;
+        const savedTool = p.equipped ? p.equipped.held : null;
+        const savedWeapon = p.equipped ? p.equipped.held : null;
+        if (!p.equipped) p.equipped = {};
+        // Konstruierte Geräte aus DERSELBEN harten Materie (stein), nur die FORM unterscheidet:
+        // eine spitze KLINGE (octahedron) vs ein stumpfer KLOTZ (box).
+        blu.__w2_blade = { parts: [{ shape: "octahedron", material: "stein", size: { x: 0.3, y: 1.4, z: 0.3 } }] };
+        blu.__w2_maul = { parts: [{ shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 } }] };
+
+        out.methods = [
+            "_heldImplementBlueprint",
+            "_blueprintPointedFraction",
+            "_implementProfile",
+            "_harvestFitnessFromResist",
+        ].every((m) => typeof r[m] === "function");
+
+        // (2) die FORM treibt das Profil — gleiche Materie, andere Form → Klinge schneidet, Klotz wuchtet
+        p.equipped.held = null;
+        p.equipped.held = "__w2_blade";
+        const bladeProf = r._implementProfile();
+        p.equipped.held = "__w2_maul";
+        const maulProf = r._implementProfile();
+        out.formDrivesProfile = bladeProf.cutPower > maulProf.cutPower && maulProf.minePower > bladeProf.minePower;
+
+        // (3) die Faust ist beides schwach
+        p.equipped.held = null;
+        const handProf = r._implementProfile();
+        out.handWeakBoth = handProf.minePower < maulProf.minePower && handProf.cutPower < bladeProf.cutPower;
+
+        // (4)+(5) das MATERIAL wählt den Kanal + das richtige Gerät gewinnt (synthetische Widerstände)
+        const soft = { mineResist: 2.0, cutResist: 0.6 };
+        const hard = { mineResist: 3.2, cutResist: 4.5 };
+        p.equipped.held = "__w2_blade";
+        const bladeSoft = r._harvestFitnessFromResist(soft);
+        const bladeHard = r._harvestFitnessFromResist(hard);
+        p.equipped.held = "__w2_maul";
+        const maulSoft = r._harvestFitnessFromResist(soft);
+        const maulHard = r._harvestFitnessFromResist(hard);
+        out.bladeCutsSoft = bladeSoft.channel === "cut" && bladeSoft.fit > bladeHard.fit;
+        out.maulMinesHard = maulHard.channel === "mine" && maulHard.fit > bladeHard.fit;
+        out.rightToolWins = bladeSoft.fit > maulSoft.fit && maulHard.fit > bladeHard.fit;
+
+        // (6) ALLES-FÜR-ALLES: eine ausgerüstete WAFFE (kein tool) ist das gehaltene Gerät → man erntet mit ihr
+        p.equipped.held = null;
+        p.equipped.held = "__w2_blade";
+        out.weaponIsHeld = r._heldImplementBlueprint() === blu.__w2_blade;
+        out.weaponHarvests = r._implementProfile().cutPower > handProf.cutPower;
+
+        // (7) der W1-Bug behoben: ein echtes Werkzeug ist eine Instanz (sourceBlueprint), nicht direkt ein Bauplan
+        p.equipped.held = null;
+        const savedTools = r.state.tools;
+        r.state.tools = Object.assign({}, savedTools || {}, { __w2_realtool: { sourceBlueprint: "__w2_maul" } });
+        p.equipped.held = "__w2_realtool";
+        out.toolInstanceResolves = r._heldImplementBlueprint() === blu.__w2_maul;
+        r.state.tools = savedTools;
+
+        // (8) END-TO-END am ECHTEN Bauwerk (stein_block = Fels): die Keule (Wucht) gewinnt KLAR über die
+        // Klinge (Fels ist unschneidbar) — robuster Fit-Vergleich (keine Rundungs-Marge) + der Kanal ist mine.
+        p.equipped.held = "__w2_maul";
+        const maulRock = r._harvestFitness({ type: "stein_block" });
+        p.equipped.held = "__w2_blade";
+        const bladeRock = r._harvestFitness({ type: "stein_block" });
+        out.maulBeatsBladeOnRock = maulRock.fit > bladeRock.fit && maulRock.channel === "mine";
+        // + die Keule bricht das ECHTE Bauwerk tatsächlich (der ganze Pfad läuft end-to-end)
+        const savedMode = r.getGameMode();
+        r.setGameMode("frieden");
+        p.stamina = 1e6;
+        p.equipped.held = "__w2_maul";
+        const aRock = r.spawnArchitecture("stein_block", { x: p.x + 8, y: p.y, z: p.z });
+        let rs = 0;
+        while (aRock && r.state.architectures.indexOf(aRock) !== -1 && rs < 300) {
+            r._strikeArchitecture(aRock);
+            rs++;
+        }
+        out.maulBreaksRock = rs >= 1 && (!aRock || r.state.architectures.indexOf(aRock) === -1);
+        if (aRock && r.state.architectures.indexOf(aRock) !== -1) r.removeArchitecture(aRock);
+
+        // cleanup
+        delete blu.__w2_blade;
+        delete blu.__w2_maul;
+        p.equipped.held = savedTool;
+        p.equipped.held = savedWeapon;
+        p.stamina = 1e6;
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.56 W2: die Profil-Methoden existieren (_heldImplementBlueprint/_blueprintPointedFraction/_implementProfile/_harvestFitnessFromResist)",
+        res.methods
+    );
+    check(
+        "V17.56 W2: die FORM treibt das Profil — DIESELBE Materie wird zur Klinge (schneidet) ODER zur Keule (wuchtet)",
+        res.formDrivesProfile
+    );
+    check("V17.56 W2: die bloße Faust ist an beidem schwach (kein Gerät, kein Profil)", res.handWeakBoth);
+    check(
+        "V17.56 W2: KONSUM — die Klinge glänzt am Weichen (cut) + scheitert am Harten; das Material wählt den Kanal",
+        res.bladeCutsSoft
+    );
+    check("V17.56 W2: KONSUM — die Keule wuchtet das Harte (mine) + schlägt dort die Klinge", res.maulMinesHard);
+    check("V17.56 W2: jedes Gerät ist an SEINEM Material überlegen (das richtige Werkzeug zählt)", res.rightToolWins);
+    check(
+        "V17.56 W2: ALLES-FÜR-ALLES — eine ausgerüstete Waffe ist das gehaltene Gerät, man erntet mit ihr",
+        res.weaponIsHeld && res.weaponHarvests
+    );
+    check(
+        "V17.56 W2: der W1-Bug behoben — ein echtes Werkzeug (sourceBlueprint-Instanz) löst zu seinem Bauplan auf (nicht die Faust)",
+        res.toolInstanceResolves
+    );
+    check(
+        "V17.56 W2: KONSUM — am ECHTEN Fels gewinnt die Keule (Wucht) klar über die Klinge (Fels ist unschneidbar)",
+        res.maulBeatsBladeOnRock
+    );
+    check("V17.56 W2: die Keule bricht das echte Bauwerk end-to-end (der ganze Abbau-Pfad läuft)", res.maulBreaksRock);
+}
+
+// V17.58 W3 (kampf-plan §9) — die NATÜRLICHE, aura-reaktive Kreatur: ein wildes Wesen LIEST den Spieler
+// (deine Aura-Menace × seine Natur × Bindung × Modus → die Wariness), wird neugierig (näher) oder scheu
+// (fort), und flieht wenn getroffen. KONSUM (nicht Existenz): die Wariness DIFFERENZIERT nach Aura/Natur/
+// Bindung/Modus + treibt den wander-Tick; ein Treffer setzt Furcht.
+async function checkBandV1758CreatureNature(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh.position;
+        const e = p.emotions;
+        const savedEmo = {};
+        for (const k of Object.keys(e)) savedEmo[k] = e[k];
+        const savedMode = r.getGameMode();
+        const setEmo = (o) => {
+            for (const k of Object.keys(e)) e[k] = o[k] || 0;
+        };
+        const NAT = r.constructor.CREATURE_NATURE;
+        out.exists = typeof r._creatureWariness === "function" && !!NAT && typeof NAT.fleeThreshold === "number";
+
+        r.setGameMode("pfad");
+        const near = (soul) => r.spawnCreatureAt(pm.x + 3, pm.y, pm.z + 3, "happy", soul);
+        const timid = near("geist"); // laub → hoch lebendig → scheu
+        const bold = near("sprite"); // quarz → hart/mineral → kühn
+
+        // (2) sanfte Aura + KÜHNES Wesen → neugierig (näher); (3) chaotische Aura + SCHEUES → fliehen
+        setEmo({ peace: 0.9 });
+        out.calmIsCurious = r._creatureWariness(bold) <= NAT.curiousThreshold;
+        setEmo({ chaos: 0.9 });
+        const angryTimidW = r._creatureWariness(timid);
+        out.angryScaresTimid = angryTimidW >= NAT.fleeThreshold;
+        // die Aura treibt die Reaktion (chaotisch verschreckt mehr als sanft, gleiches Wesen)
+        setEmo({ peace: 0.9 });
+        out.auraDrivesReaction = angryTimidW > r._creatureWariness(timid);
+
+        // (4) ein kühnes Wesen ist weniger scheu als ein zartes (bei gleicher chaotischer Aura)
+        setEmo({ chaos: 0.9 });
+        out.boldLessWaryThanTimid = r._creatureWariness(bold) < r._creatureWariness(timid);
+
+        // (5) Bindung senkt die Scheu (Vertrauen)
+        timid.userData.bond = 0;
+        const unbondW = r._creatureWariness(timid);
+        timid.userData.bond = 1;
+        const bondW = r._creatureWariness(timid);
+        timid.userData.bond = 0;
+        out.bondReducesWariness = bondW < unbondW;
+
+        // (6) frieden dämpft die Bedrohung vs pfad (gleiche chaotische Aura)
+        r.setGameMode("pfad");
+        const pfadW = r._creatureWariness(timid);
+        r.setGameMode("frieden");
+        const friedenW = r._creatureWariness(timid);
+        out.friedenDampsMenace = friedenW < pfadW;
+        r.setGameMode("pfad");
+
+        // (7) fern → neutral (Wariness 0, das Wesen wandert)
+        const far = near("geist");
+        far.position.set(pm.x + 999, pm.y, pm.z + 999);
+        out.farIsNeutral = r._creatureWariness(far) === 0;
+
+        // (8)+(9) KONSUM Kampf-Furcht: ein getroffenes (überlebendes) Wesen → fearUntil + sad + flieht
+        // selbst bei SANFTER Aura (die Furcht überschreibt die Ruhe)
+        setEmo({ peace: 0.9 });
+        timid.userData.hp = 9999;
+        const idx = r.state.creatures.indexOf(timid);
+        r.damageCreature(timid, 5, { source: "player" });
+        out.hitSetsFear =
+            Number.isFinite(timid.userData.fearUntil) && timid.userData.fearUntil > performance.now() / 1000;
+        out.hitSetsSad = idx >= 0 && r.state.creatureEmotions[idx] === "sad";
+        out.hitFlees = r._creatureWariness(timid) >= NAT.fleeThreshold;
+        timid.userData.fearUntil = 0;
+
+        // (10) der wander-Tick liest _creatureWariness (der Konsument ist verdrahtet)
+        out.wanderReadsWariness = /_creatureWariness/.test(r.updateCreatures.toString());
+
+        // cleanup
+        for (const c of [timid, bold, far]) if (c && r.state.creatures.indexOf(c) !== -1) r.removeCreature(c);
+        setEmo(savedEmo);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.58 W3: _creatureWariness + CREATURE_NATURE existieren", res.exists);
+    check(
+        "V17.58 W3: KONSUM — eine sanfte Aura macht ein kühnes Wesen neugierig (Wariness ≤ Schwelle → näher)",
+        res.calmIsCurious
+    );
+    check(
+        "V17.58 W3: KONSUM — eine chaotische Aura verschreckt ein scheues Wesen (Wariness ≥ Flucht → fort)",
+        res.angryScaresTimid
+    );
+    check(
+        "V17.58 W3: deine Aura treibt die Reaktion (chaotisch verschreckt mehr als sanft, gleiches Wesen)",
+        res.auraDrivesReaction
+    );
+    check(
+        "V17.58 W3: KONSUM — ein kühnes Wesen ist weniger scheu als ein zartes (die NATUR zählt)",
+        res.boldLessWaryThanTimid
+    );
+    check("V17.58 W3: KONSUM — die Bindung senkt die Scheu (Vertrauen)", res.bondReducesWariness);
+    check("V17.58 W3: KONSUM — frieden dämpft die Bedrohung (neugierige Welt) vs pfad", res.friedenDampsMenace);
+    check("V17.58 W3: ein fernes Wesen ist neutral (es wandert, ignoriert den Spieler)", res.farIsNeutral);
+    check(
+        "V17.58 W3: KONSUM — ein getroffenes Wesen FÜRCHTET sich (fearUntil + sad)",
+        res.hitSetsFear && res.hitSetsSad
+    );
+    check(
+        "V17.58 W3: KONSUM — ein getroffenes Wesen flieht selbst bei sanfter Aura (die Kampf-Furcht überschreibt)",
+        res.hitFlees
+    );
+    check("V17.58 W3: der wander-Tick liest _creatureWariness (der Konsument ist verdrahtet)", res.wanderReadsWariness);
+}
+
+// V17.59 S1 (kampf-plan §11.7) — die Werkstatt erkennt JEDE Lesart: der emergente Fähigkeits-Readout
+// (Klinge/Brecher/Gerät · Schutz · Wesen · Tor · Wirkung) aus Form × Material, rollen-unabhängig.
+// Heilt den „nur Bauwerk"-Befund. KONSUM (nicht Existenz, V17.31): die Werkstatt-Rollen-Zeile rendert es.
+async function checkBandV1759CapabilityReadout(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        // greifbare Klinge (octahedron) vs greifbarer Brecher (box), DIESELBE Materie stein, eine Position (span 0)
+        blu.__cap_blade = {
+            name: "__cap_blade",
+            parts: [
+                {
+                    shape: "octahedron",
+                    material: "stein",
+                    size: { x: 0.3, y: 1.4, z: 0.3 },
+                    position: { x: 0, y: 0, z: 0 },
+                },
+            ],
+        };
+        blu.__cap_maul = {
+            name: "__cap_maul",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        // ein großes Bauwerk: Parts über >6 m gespreizt → KEINE in-der-Hand-Lesart
+        blu.__cap_struct = {
+            name: "__cap_struct",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 }, position: { x: 10, y: 0, z: 0 } },
+            ],
+        };
+
+        out.method = typeof r._blueprintCapabilityHints === "function";
+
+        const bladeHints = r._blueprintCapabilityHints(blu.__cap_blade);
+        const maulHints = r._blueprintCapabilityHints(blu.__cap_maul);
+        const structHints = r._blueprintCapabilityHints(blu.__cap_struct);
+        out.bladeKlinge = bladeHints.some((h) => h.indexOf("Klinge") === 0);
+        out.maulBrecher = maulHints.some((h) => h.indexOf("Brecher") === 0);
+
+        // DER HEAL: der Brecher-Bauplan hat die abstrakte Rolle „architecture" (kein Domain-Op),
+        // ZEIGT aber die Geräte-Fähigkeit „Brecher" — der Readout ist rollen-unabhängig.
+        out.maulRoleArchitecture = r.computeBlueprintRole(blu.__cap_maul) === "architecture";
+        out.healNurBauwerk = out.maulRoleArchitecture && out.maulBrecher;
+
+        // große Struktur → KEINE in-der-Hand-Lesart (kein „Brecher" auf einem Dorf)
+        out.structNoImplement = !structHints.some(
+            (h) => h.indexOf("Klinge") === 0 || h.indexOf("Brecher") === 0 || h.indexOf("Gerät") === 0
+        );
+
+        // KONSUM (DOM, V17.31): _workshopAppendRoleRow rendert eine „Fähigkeit"-Zeile mit der Brecher-Lesart
+        const panel = document.createElement("div");
+        r._workshopAppendRoleRow(panel, blu.__cap_maul);
+        const chips = Array.prototype.slice
+            .call(panel.querySelectorAll(".capability-chip"))
+            .map((c) => c.textContent || "");
+        out.domShowsCapability = chips.some((txt) => txt.indexOf("Brecher") !== -1);
+
+        delete blu.__cap_blade;
+        delete blu.__cap_maul;
+        delete blu.__cap_struct;
+        return out;
+    });
+    check("V17.59 S1: die Fähigkeits-Methode _blueprintCapabilityHints existiert", res.method);
+    check("V17.59 S1: ein greifbares spitzes Geraet liest Klinge (schneidet)", res.bladeKlinge);
+    check("V17.59 S1: ein greifbarer stumpfer Klotz liest Brecher (wuchtet)", res.maulBrecher);
+    check(
+        "V17.59 S1: DER HEAL — ein Bauplan der Rolle Bauwerk (architecture) zeigt TROTZDEM die Geraete-Faehigkeit Brecher (rollen-unabhaengig)",
+        res.healNurBauwerk
+    );
+    check(
+        "V17.59 S1: eine grosse Struktur (>6 m gespreizt) zeigt KEINE in-der-Hand-Lesart (kein Brecher auf einem Dorf)",
+        res.structNoImplement
+    );
+    check(
+        "V17.59 S1: KONSUM — _workshopAppendRoleRow rendert die Faehigkeit-Zeile mit der Brecher-Lesart ins DOM",
+        res.domShowsCapability
+    );
+}
+
+// V17.61 S3 (kampf-plan §11.7, §10-F2+F3) — das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
+// (die §4.3-Rekursion schließt), F3 der Werk-Akt forgeBlueprint (Material ziehen + Präzision einfrieren +
+// ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz, V17.31).
+async function checkBandV1761ForgeImplement(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+        if (!p.equipped) p.equipped = {};
+        const savedHeld = p.equipped.held;
+
+        out.method = typeof r.forgeBlueprint === "function";
+
+        // F2 — die Präzision moduliert die Welt-Kraft: gleiche Form/Materie, aber ein hoch-präziser
+        // opChain ergibt ein stärkeres Gerät als ein grob-präziser (die Rekursion: besseres Crafting
+        // → besseres Abbauen).
+        blu.__f2_fine = {
+            name: "__f2_fine",
+            parts: [
+                {
+                    shape: "box",
+                    material: "stein",
+                    size: { x: 0.8, y: 0.8, z: 0.8 },
+                    position: { x: 0, y: 0, z: 0 },
+                    opChain: [{ cap: 0.95, op: "polish", tool: "x" }],
+                },
+            ],
+        };
+        blu.__f2_rough = {
+            name: "__f2_rough",
+            parts: [
+                {
+                    shape: "box",
+                    material: "stein",
+                    size: { x: 0.8, y: 0.8, z: 0.8 },
+                    position: { x: 0, y: 0, z: 0 },
+                    opChain: [{ cap: 0.4, op: "knap", tool: "x" }],
+                },
+            ],
+        };
+        const fineProf = r._implementProfileForBlueprint(blu.__f2_fine);
+        const roughProf = r._implementProfileForBlueprint(blu.__f2_rough);
+        out.precisionModulatesMine = fineProf.minePower > roughProf.minePower;
+
+        // F3 — das Schmieden ZIEHT Material (pfad), schlägt ohne fehl
+        blu.__forge_tool = {
+            name: "__forge_tool",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        p.equipped.held = null;
+        const forgeNoMat = r.forgeBlueprint("__forge_tool");
+        out.pfadForgeRejectsWithoutMaterial = forgeNoMat.ok === false && forgeNoMat.reason === "not_enough_material";
+        out.notEquippedAfterFail = p.equipped.held === null;
+
+        // F3 — mit Material: schmiedet + KONSUMIERT + rüstet aus + friert die Präzision ein
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        const steinBefore = p.inventory[0].count;
+        const forgeOk = r.forgeBlueprint("__forge_tool");
+        const steinAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadForgeSucceeds = forgeOk.ok === true;
+        out.pfadForgeConsumes = steinBefore > steinAfter;
+        out.forgeEquips = p.equipped.held === "__forge_tool";
+        out.forgeFreezesPrecision = Number.isFinite(blu.__forge_tool.forgedPrecision);
+
+        // F3 — schöpfer schmiedet frei (ohne Material)
+        r.setGameMode("schöpfer");
+        p.inventory = new Array(27).fill(null);
+        p.equipped.held = null;
+        const forgeFree = r.forgeBlueprint("__forge_tool");
+        out.schoepferForgesFree =
+            forgeFree.ok === true && forgeFree.free === true && p.equipped.held === "__forge_tool";
+
+        // cleanup
+        delete blu.__f2_fine;
+        delete blu.__f2_rough;
+        delete blu.__forge_tool;
+        p.equipped.held = savedHeld;
+        p.inventory = new Array(27).fill(null);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.61 S3: forgeBlueprint (der Werk-Akt) existiert", res.method);
+    check(
+        "V17.61 S3: F2 — die Praezision moduliert die Abbau-Kraft (fein > grob, gleiche Form/Materie; die Rekursion schliesst)",
+        res.precisionModulatesMine
+    );
+    check(
+        "V17.61 S3: F3 — schmieden in pfad OHNE Material → abgelehnt (not_enough_material) + nicht ausgeruestet",
+        res.pfadForgeRejectsWithoutMaterial && res.notEquippedAfterFail
+    );
+    check(
+        "V17.61 S3: F3 KONSUM — schmieden in pfad MIT Material → erfolg + verbraucht Material + ausgeruestet",
+        res.pfadForgeSucceeds && res.pfadForgeConsumes && res.forgeEquips
+    );
+    check("V17.61 S3: F3 — schmieden friert die Praezision ein (forgedPrecision gesetzt)", res.forgeFreezesPrecision);
+    check("V17.61 S3: F3 — schoepfer schmiedet frei (ohne Material) + ruestet aus", res.schoepferForgesFree);
+}
+
+// V17.62 S3-B (kampf-plan §11.7) — der Schmiede-Akt wird BEDEUTSAM: der Spieler-Equip-Pfad (wieldBlueprint)
+// geht durch das Schmieden — ein ungeschmiedetes Geraet in pfad/frieden kostet (schmieden), ein
+// geschmiedetes (forgedPrecision, persistiert) ist frei in die Hand zu nehmen. Heilt den Gratis-Bypass.
+async function checkBandV1762ForgeMeaningful(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+        if (!p.equipped) p.equipped = {};
+        const savedHeld = p.equipped.held;
+
+        out.method = typeof r.wieldBlueprint === "function";
+
+        // (2) Persistenz: forgedPrecision überlebt serialize → deserialize (geschmiedet bleibt geschmiedet)
+        blu.__wield_persist = {
+            name: "__wield_persist",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+            forgedPrecision: 0.73,
+        };
+        const ser = r._serializeBlueprint(blu.__wield_persist);
+        const deser = r._deserializeBlueprint(ser);
+        out.forgedPrecisionPersists = !!deser && Math.abs((deser.forgedPrecision || 0) - 0.73) < 1e-6;
+
+        // (3) wield UNgeschmiedet in pfad OHNE Material → not_enough_material (nicht ausgerüstet)
+        blu.__wield_tool = {
+            name: "__wield_tool",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        p.equipped.held = null;
+        const wieldNoMat = r.wieldBlueprint("__wield_tool");
+        out.pfadWieldRejectsUnforged =
+            wieldNoMat.ok === false && wieldNoMat.reason === "not_enough_material" && p.equipped.held === null;
+
+        // (4) wield UNgeschmiedet in pfad MIT Material → SCHMIEDET (zahlt + rüstet aus + friert ein)
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        const steinBefore = p.inventory[0].count;
+        const wieldForges = r.wieldBlueprint("__wield_tool");
+        const steinAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadWieldForgesUnforged =
+            wieldForges.ok === true &&
+            steinBefore > steinAfter &&
+            p.equipped.held === "__wield_tool" &&
+            Number.isFinite(blu.__wield_tool.forgedPrecision);
+
+        // (5) wield GESCHMIEDET in pfad mit LEEREM Inventar → FREI (Gebrauch, kein Neu-Zahlen)
+        p.equipped.held = null;
+        p.inventory = new Array(27).fill(null);
+        const wieldForged = r.wieldBlueprint("__wield_tool");
+        out.pfadWieldForgedIsFree = wieldForged.ok === true && p.equipped.held === "__wield_tool";
+
+        // (6) wield UNgeschmiedet in schöpfer → FREI (Gott-Modus, kein Schmieden nötig)
+        delete blu.__wield_tool.forgedPrecision;
+        r.setGameMode("schöpfer");
+        p.equipped.held = null;
+        p.inventory = new Array(27).fill(null);
+        const wieldSchoepfer = r.wieldBlueprint("__wield_tool");
+        out.schoepferWieldsFree =
+            wieldSchoepfer.ok === true &&
+            p.equipped.held === "__wield_tool" &&
+            !Number.isFinite(blu.__wield_tool.forgedPrecision);
+
+        // cleanup
+        delete blu.__wield_persist;
+        delete blu.__wield_tool;
+        p.equipped.held = savedHeld;
+        p.inventory = new Array(27).fill(null);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.62 S3-B: wieldBlueprint (der bedeutsame Spieler-Pfad) existiert", res.method);
+    check(
+        "V17.62 S3-B: forgedPrecision persistiert (serialize → deserialize; geschmiedet bleibt geschmiedet)",
+        res.forgedPrecisionPersists
+    );
+    check(
+        "V17.62 S3-B: DER HEAL — ein UNgeschmiedetes Geraet in pfad OHNE Material in die Hand → abgelehnt (schmieden noetig, nicht gratis)",
+        res.pfadWieldRejectsUnforged
+    );
+    check(
+        "V17.62 S3-B: KONSUM — ein ungeschmiedetes in pfad MIT Material in die Hand → SCHMIEDET (zahlt + ruestet aus + friert ein)",
+        res.pfadWieldForgesUnforged
+    );
+    check(
+        "V17.62 S3-B: GEBRAUCH frei — ein GESCHMIEDETES Geraet in die Hand nehmen kostet NICHTS (leeres Inventar, trotzdem ok)",
+        res.pfadWieldForgedIsFree
+    );
+    check(
+        "V17.62 S3-B: schoepfer nimmt ungeschmiedet frei in die Hand (Gott-Modus, kein Schmieden)",
+        res.schoepferWieldsFree
+    );
+}
+
+// V17.63 S4 (kampf-plan §11.7) — Rüstung schmieden/weben: derselbe WERK-Kern (_forgeMaterialAndFreeze) wie
+// das Gerät, in den armor-Slot; wearArmor ist der Spieler-Pfad (forge-wenn-ungemacht), fertigeBlueprint
+// routet nach Rolle. KONSUM (nicht Existenz, V17.31).
+async function checkBandV1763ForgeArmor(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+        if (!p.equipped) p.equipped = {};
+        const savedHeld = p.equipped.held;
+        const savedArmor = p.equipped.armor;
+
+        out.methods = ["forgeArmor", "wearArmor", "fertigeBlueprint", "_forgeMaterialAndFreeze"].every(
+            (m) => typeof r[m] === "function"
+        );
+
+        // ein dichtes Rüstungs-Compound (stein → dichte+härte = Schutz)
+        blu.__arm = {
+            name: "__arm",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 1.2, y: 1.4, z: 0.4 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+
+        // (2) forgeArmor verlangt role="armor"
+        r.setGameMode("schöpfer");
+        const armNoRole = r.forgeArmor("__arm");
+        out.forgeArmorRequiresRole = armNoRole.ok === false && armNoRole.reason === "not_marked_as_armor";
+        r.setBlueprintAsArmor("__arm");
+        out.markedArmor = blu.__arm.role === "armor";
+
+        // (3) forgeArmor in pfad OHNE Material → abgelehnt + nicht getragen
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        p.equipped.armor = null;
+        const armNoMat = r.forgeArmor("__arm");
+        out.pfadArmorRejectsWithoutMaterial =
+            armNoMat.ok === false && armNoMat.reason === "not_enough_material" && p.equipped.armor === null;
+
+        // (4) forgeArmor in pfad MIT Material → webt (zahlt + trägt + friert ein)
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        const steinBefore = p.inventory[0].count;
+        const armForge = r.forgeArmor("__arm");
+        const steinAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadArmorForges =
+            armForge.ok === true &&
+            steinBefore > steinAfter &&
+            p.equipped.armor === "__arm" &&
+            Number.isFinite(blu.__arm.forgedPrecision);
+
+        // (5) wearArmor: eine gemachte Rüstung → frei tragen (leeres Inventar)
+        p.equipped.armor = null;
+        p.inventory = new Array(27).fill(null);
+        const armWearMade = r.wearArmor("__arm");
+        out.wearMadeArmorFree = armWearMade.ok === true && p.equipped.armor === "__arm";
+
+        // (6) fertigeBlueprint routet nach Rolle: armor → armor-Slot, non-armor → held-Slot
+        delete blu.__arm.forgedPrecision;
+        p.equipped.armor = null;
+        p.equipped.held = null;
+        r.setGameMode("schöpfer");
+        const fertArmor = r.fertigeBlueprint("__arm");
+        out.fertigeArmorToArmorSlot =
+            fertArmor.ok === true && p.equipped.armor === "__arm" && p.equipped.held !== "__arm";
+        blu.__geraet = {
+            name: "__geraet",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.6, y: 0.6, z: 0.6 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        const fertHeld = r.fertigeBlueprint("__geraet");
+        out.fertigeGeraetToHeldSlot = fertHeld.ok === true && p.equipped.held === "__geraet";
+
+        // (7) forgeBlueprint funktioniert nach dem Refactor noch (zahlt + held)
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        p.equipped.held = null;
+        delete blu.__geraet.forgedPrecision;
+        const heldBefore = p.inventory[0].count;
+        const heldForge = r.forgeBlueprint("__geraet");
+        const heldAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.forgeBlueprintStillWorks =
+            heldForge.ok === true && heldBefore > heldAfter && p.equipped.held === "__geraet";
+
+        // cleanup
+        delete blu.__arm;
+        delete blu.__geraet;
+        p.equipped.held = savedHeld;
+        p.equipped.armor = savedArmor;
+        p.inventory = new Array(27).fill(null);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.63 S4: die Methoden (forgeArmor/wearArmor/fertigeBlueprint/_forgeMaterialAndFreeze) existieren",
+        res.methods
+    );
+    check(
+        "V17.63 S4: forgeArmor verlangt einen als Ruestung markierten Bauplan (sonst not_marked_as_armor)",
+        res.forgeArmorRequiresRole && res.markedArmor
+    );
+    check(
+        "V17.63 S4: forgeArmor in pfad OHNE Material → abgelehnt + nicht getragen",
+        res.pfadArmorRejectsWithoutMaterial
+    );
+    check(
+        "V17.63 S4: KONSUM — forgeArmor in pfad MIT Material → webt (zahlt + traegt + friert ein)",
+        res.pfadArmorForges
+    );
+    check(
+        "V17.63 S4: GEBRAUCH frei — eine gemachte Ruestung tragen kostet nichts (leeres Inventar)",
+        res.wearMadeArmorFree
+    );
+    check(
+        "V17.63 S4: fertigeBlueprint routet nach Rolle (Ruestung → armor-Slot, Geraet → held-Slot)",
+        res.fertigeArmorToArmorSlot && res.fertigeGeraetToHeldSlot
+    );
+    check(
+        "V17.63 S4: forgeBlueprint funktioniert nach dem Refactor noch (zahlt + in die Hand)",
+        res.forgeBlueprintStillWorks
+    );
+}
+
+// V17.64 S5 (kampf-plan §11.7, §11.2) — Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
+// ist KEINE Ausnahme — formen kostet, tragen frei); forgeAvatar (role:soul, pay+freeze+verkörpern) +
+// embodyBlueprint (der Spieler-Pfad, forge-wenn-ungeformt). KONSUM (nicht Existenz, V17.31).
+async function checkBandV1764ForgeAvatar(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+        const savedSoul = p.soul;
+
+        out.methods = typeof r.forgeAvatar === "function" && typeof r.embodyBlueprint === "function";
+
+        // ein körper-geformter Bauplan, role="soul" + ein Nicht-Soul
+        blu.__soul = {
+            name: "__soul",
+            role: "soul",
+            roleManual: true,
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.5, y: 1.6, z: 0.5 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+        blu.__notsoul = {
+            name: "__notsoul",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.5, y: 0.5, z: 0.5 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+
+        // (2) forgeAvatar verlangt role="soul"
+        r.setGameMode("schöpfer");
+        const avNoRole = r.forgeAvatar("__notsoul");
+        out.forgeAvatarRequiresSoul = avNoRole.ok === false && avNoRole.reason === "blueprint_not_soul";
+
+        // (3) forgeAvatar in pfad OHNE Material → abgelehnt (kein Körper geformt, Seele bleibt)
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        r.applyPlayerSoul("human");
+        const avNoMat = r.forgeAvatar("__soul");
+        out.pfadAvatarRejectsWithoutMaterial =
+            avNoMat.ok === false && avNoMat.reason === "not_enough_material" && p.soul === "human";
+
+        // (4) forgeAvatar in pfad MIT Material → formt (zahlt + verkörpert + friert ein)
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        const steinBefore = p.inventory[0].count;
+        const avForge = r.forgeAvatar("__soul");
+        const steinAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadAvatarForges =
+            avForge.ok === true &&
+            steinBefore > steinAfter &&
+            Number.isFinite(blu.__soul.forgedPrecision) &&
+            p.soul !== "human";
+
+        // (5) embodyBlueprint: eine geformte Seele → frei verkörpern (leeres Inventar)
+        r.applyPlayerSoul("human");
+        p.inventory = new Array(27).fill(null);
+        const embMade = r.embodyBlueprint("__soul");
+        out.embodyMadeFree = embMade.ok === true && p.soul !== "human";
+
+        // (6) embodyBlueprint UNgeformt in schöpfer → frei
+        delete blu.__soul.forgedPrecision;
+        r.applyPlayerSoul("human");
+        r.setGameMode("schöpfer");
+        p.inventory = new Array(27).fill(null);
+        const embSchoepfer = r.embodyBlueprint("__soul");
+        out.schoepferEmbodiesFree = embSchoepfer.ok === true && p.soul !== "human";
+
+        // (7) fertigeBlueprint routet soul → forgeAvatar (formt + verkörpert, NICHT in die Hand)
+        delete blu.__soul.forgedPrecision;
+        r.applyPlayerSoul("human");
+        if (!p.equipped) p.equipped = {};
+        p.equipped.held = null;
+        r.setGameMode("schöpfer");
+        const fert = r.fertigeBlueprint("__soul");
+        out.fertigeRoutesSoul = fert.ok === true && p.soul !== "human" && p.equipped.held !== "__soul";
+
+        // cleanup
+        delete blu.__soul;
+        delete blu.__notsoul;
+        if (r.state.customSouls) delete r.state.customSouls["bp___soul"];
+        r.applyPlayerSoul(savedSoul && r.playerSoulDefs[savedSoul] ? savedSoul : "human");
+        p.inventory = new Array(27).fill(null);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.64 S5: forgeAvatar + embodyBlueprint existieren", res.methods);
+    check("V17.64 S5: forgeAvatar verlangt role=soul (sonst blueprint_not_soul)", res.forgeAvatarRequiresSoul);
+    check(
+        "V17.64 S5: forgeAvatar in pfad OHNE Material → abgelehnt (kein Koerper geformt, Seele bleibt)",
+        res.pfadAvatarRejectsWithoutMaterial
+    );
+    check(
+        "V17.64 S5: KONSUM — forgeAvatar in pfad MIT Material → formt (zahlt + verkoerpert + friert ein)",
+        res.pfadAvatarForges
+    );
+    check(
+        "V17.64 S5: GEBRAUCH frei — eine geformte Seele verkoerpern kostet nichts (leeres Inventar)",
+        res.embodyMadeFree
+    );
+    check("V17.64 S5: schoepfer verkoerpert frei (ohne Material)", res.schoepferEmbodiesFree);
+    check(
+        "V17.64 S5: fertigeBlueprint routet soul → forgeAvatar (formt + verkoerpert, nicht in die Hand)",
+        res.fertigeRoutesSoul
+    );
+}
+
+// V17.65 S6 (kampf-plan §11.7, §11.3-Faden 6) — Trank brauen: der Werk-Akt zieht die Zutaten (die
+// Material-Kosten des Konsumable-Bauplans) durchs Mach-Tor, dann wirkt der Trank. Heilt den ∞-Gratis-Boost.
+// activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz, V17.31).
+async function checkBandV1765BrewConsumable(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+
+        out.method = typeof r.brewConsumable === "function";
+
+        blu.__trank = {
+            name: "__trank",
+            parts: [
+                {
+                    shape: "sphere",
+                    material: "stein",
+                    size: { x: 0.5, y: 0.5, z: 0.5 },
+                    position: { x: 0, y: 0, z: 0 },
+                },
+            ],
+        };
+        r.setBlueprintAsConsumable("__trank", 30, "Test-Trank", 0.2);
+        out.markedConsumable = blu.__trank.role === "consumable";
+        blu.__nottrank = {
+            name: "__nottrank",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.5, y: 0.5, z: 0.5 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+
+        // (2) brewConsumable verlangt role="consumable"
+        r.setGameMode("schöpfer");
+        const brewNoRole = r.brewConsumable("__nottrank");
+        out.brewRequiresConsumable = brewNoRole.ok === false && brewNoRole.reason === "not_a_consumable";
+
+        // (3) brewConsumable in pfad OHNE Zutaten → abgelehnt
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        const brewNoMat = r.brewConsumable("__trank");
+        out.pfadBrewRejectsWithoutMaterial = brewNoMat.ok === false && brewNoMat.reason === "not_enough_material";
+
+        // (4) brewConsumable in pfad MIT Zutaten → braut (zieht Material + der Trank wirkt)
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        const steinBefore = p.inventory[0].count;
+        const brewOk = r.brewConsumable("__trank");
+        const steinAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadBrewConsumesAndWorks = brewOk.ok === true && steinBefore > steinAfter;
+
+        // (5) activateConsumable bleibt FREI (Low-Level): wirkt mit leerem Inventar (zieht kein Material)
+        p.inventory = new Array(27).fill(null);
+        const actDirect = r.activateConsumable("__trank");
+        out.activateStillFree = actDirect.ok === true;
+
+        // (6) brewConsumable frei in schöpfer
+        r.setGameMode("schöpfer");
+        p.inventory = new Array(27).fill(null);
+        const brewSchoepfer = r.brewConsumable("__trank");
+        out.schoepferBrewsFree = brewSchoepfer.ok === true && brewSchoepfer.free === true;
+
+        // (7) fertigeBlueprint routet consumable → brewConsumable (Brau-Ablehnung, nicht Gerät-Schmieden)
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        const fertNoMat = r.fertigeBlueprint("__trank");
+        out.fertigeRoutesConsumable = fertNoMat.ok === false && fertNoMat.reason === "not_enough_material";
+
+        // cleanup
+        delete blu.__trank;
+        delete blu.__nottrank;
+        p.inventory = new Array(27).fill(null);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.65 S6: brewConsumable existiert", res.method);
+    check(
+        "V17.65 S6: brewConsumable verlangt role=consumable (sonst not_a_consumable)",
+        res.brewRequiresConsumable && res.markedConsumable
+    );
+    check("V17.65 S6: brauen in pfad OHNE Zutaten → abgelehnt (kein Trank)", res.pfadBrewRejectsWithoutMaterial);
+    check(
+        "V17.65 S6: KONSUM — brauen in pfad MIT Zutaten → zieht Material + der Trank wirkt",
+        res.pfadBrewConsumesAndWorks
+    );
+    check(
+        "V17.65 S6: activateConsumable bleibt das freie Low-Level-Primitiv (wirkt ohne Material)",
+        res.activateStillFree
+    );
+    check("V17.65 S6: schoepfer braut frei (ohne Zutaten)", res.schoepferBrewsFree);
+    check(
+        "V17.65 S6: fertigeBlueprint routet consumable → brewConsumable (Brau-Ablehnung, nicht Geraet)",
+        res.fertigeRoutesConsumable
+    );
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -11323,9 +12885,20 @@ async function checkBandWelle6DSoul(ctx) {
         out.computedStatsHasAll =
             computed &&
             computed.stats &&
-            ["hpMax", "damage", "speed", "jumpPower", "staminaMax", "precision", "magicResist", "heatResist"].every(
-                (k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k])
-            );
+            // V17.51 Kampf Phase A — das Kampf-Trio fließt durch DIESELBE Pipeline.
+            [
+                "hpMax",
+                "damage",
+                "speed",
+                "jumpPower",
+                "staminaMax",
+                "precision",
+                "magicResist",
+                "heatResist",
+                "knockback",
+                "attackSpeed",
+                "defense",
+            ].every((k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k]));
 
         // Diskriminations-Test: drei Seelen → drei verschiedene Stat-Profile
         const savedSoul = r.state.player.soul;
@@ -11487,7 +13060,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.soul = "human";
         r.state.player.boosts = [];
         r.state.player.deathWoundIntensity = 0;
-        r.state.player.equipped = { tool: null, armor: null };
+        r.state.player.equipped = { held: null, armor: null };
         r.recomputePlayerStats();
         // Höhere Base-Speed (Schöpfer-Wunsch): Mensch sollte ~8-9 sein
         const humanResult = r.computePlayerStats();
@@ -11693,7 +13266,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.hasEquipArmor = typeof r.equipArmor === "function";
         out.hasSetArmor = typeof r.setBlueprintAsArmor === "function";
         out.hasEquippedState =
-            r.state.player.equipped && "tool" in r.state.player.equipped && "armor" in r.state.player.equipped;
+            r.state.player.equipped && "held" in r.state.player.equipped && "armor" in r.state.player.equipped;
         out.hasAuraHueMap = C.AURA_TAG_HUE && typeof C.AURA_TAG_HUE === "object";
         out.auraHueMapHasAllTags = C.MATERIAL_TAG_KEYS.every((k) => k in C.AURA_TAG_HUE);
         // NON_BROADCASTABLE
@@ -11773,26 +13346,24 @@ async function checkBandWelle6DSoul(ctx) {
         r.dslRun(["unequip", "armor"], { source: "test" });
         out.dslUnequipWorks = r.state.player.equipped.armor === null;
 
-        // Werkzeug equippen
+        // V17.57 W2-B — ein builtIn-Crafting-Tool (hammer) ist KEIN Welt-Gerät → equipHeld lehnt es
+        // ab (kein Bauplan); ein eigener Bauplan IST haltbar (kein Rollen-Schloss) + faltet in die Stats.
         r.state.player.tools = r.state.player.tools || [];
         if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
-        const equipToolResult = r.equipTool("hammer");
-        out.equipBuiltinToolOk = equipToolResult.ok;
-        out.equippedToolIs = r.state.player.equipped.tool === "hammer";
-        // Built-in-Werkzeug hat KEINEN sourceBlueprint → trägt kein Tag-Bonus
-        // (das ist ok: nur Bauplan-Werkzeuge stacken Stats; Built-ins
-        // sind Präzisions-Modulatoren via opChain).
+        out.equipBuiltinToolOk = !r.equipHeld("hammer").ok; // builtIn-Tool → abgelehnt (kein Bauplan)
+        out.equippedToolIs = !r.state.player.equipped.held; // nichts gehalten nach der Ablehnung
         const toolStats = r.state.player.stats;
         out.builtinToolNoStatChange = Math.abs(toolStats.hpMax - baselineStats.hpMax) < 0.01;
 
-        // Save-Round-Trip
+        // Save-Round-Trip — ein eigener Bauplan als gehaltenes Gerät (kein Rollen-Schloss) reist mit.
         r.equipArmor("test_armor_eisen");
-        r.equipTool("hammer");
+        r.equipHeld("test_armor_eisen");
         const snap = r.buildStateSnapshot();
         out.snapHasEquipped =
             snap.playerEquipped &&
             snap.playerEquipped.armor === "test_armor_eisen" &&
-            snap.playerEquipped.tool === "hammer";
+            snap.playerEquipped.held === "test_armor_eisen";
+        r.equipHeld(null);
 
         // Aura-Visual (Schöpfer-Feedback: jetzt am Charakter, nicht Boden-Ring)
         r.tickPlayerAura();
@@ -11818,7 +13389,10 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
         check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
         check("Welle 6.D Etappe 3b: setBlueprintAsArmor-Methode existiert", wave6d3bResults.hasSetArmor);
-        check("Welle 6.D Etappe 3b: state.player.equipped = {tool, armor}", wave6d3bResults.hasEquippedState);
+        check(
+            "Welle 6.D Etappe 3b: state.player.equipped = {held, armor} (V17.57 W2-B)",
+            wave6d3bResults.hasEquippedState
+        );
         check("Welle 6.D Etappe 3b: AURA_TAG_HUE-Map existiert", wave6d3bResults.hasAuraHueMap);
         check(
             "Welle 6.D Etappe 3b: AURA_TAG_HUE-Map deckt alle 10 MATERIAL_TAG_KEYS ab",
@@ -11848,13 +13422,22 @@ async function checkBandWelle6DSoul(ctx) {
             wave6d3bResults.equippedArmorNull
         );
         check("Welle 6.D Etappe 3b: DSL-Op unequip(armor) entfernt Rüstung", wave6d3bResults.dslUnequipWorks);
-        check("Welle 6.D Etappe 3b: equipTool akzeptiert Built-in-Werkzeug", wave6d3bResults.equipBuiltinToolOk);
-        check("Welle 6.D Etappe 3b: state.player.equipped.tool ist gesetzt", wave6d3bResults.equippedToolIs);
         check(
-            "Welle 6.D Etappe 3b: Built-in-Werkzeug ohne sourceBlueprint → kein Stat-Beitrag (ok)",
+            "V17.57 W2-B: equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)",
+            wave6d3bResults.equipBuiltinToolOk
+        );
+        check(
+            "V17.57 W2-B: nach der Ablehnung ist nichts gehalten (equipped.held leer)",
+            wave6d3bResults.equippedToolIs
+        );
+        check(
+            "V17.57 W2-B: das abgelehnte builtIn-Tool ließ die Stats unberührt (ok)",
             wave6d3bResults.builtinToolNoStatChange
         );
-        check("Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped", wave6d3bResults.snapHasEquipped);
+        check(
+            "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped (held)",
+            wave6d3bResults.snapHasEquipped
+        );
         check(
             "Welle 6.D Etappe 3b (V2): Aura tintet Spieler-Sub-Meshes (statt Boden-Ring)",
             wave6d3bResults.auraSubMeshTinted
@@ -12578,8 +14161,11 @@ async function checkBandWelle6DSoul(ctx) {
     if (wave6dResults) {
         check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
         check(
-            "Welle 6.D: STAT_FROM_TAGS hat 8 Stats (hpMax + damage + speed + jumpPower + stamina + precision + 2× Resist)",
-            wave6dResults.statKeys === "damage,heatResist,hpMax,jumpPower,magicResist,precision,speed,staminaMax"
+            // V17.51 Kampf Phase A — STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
+            // attackSpeed, defense). Die feste Satz-Assertion wandert mit (V9.56-i).
+            "Welle 6.D: STAT_FROM_TAGS hat 11 Stats (8 Basis + Kampf-Trio knockback/attackSpeed/defense)",
+            wave6dResults.statKeys ===
+                "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,precision,speed,staminaMax"
         );
         check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
         check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
@@ -12610,7 +14196,10 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D: computePlayerStats liefert {tags, stats}",
             wave6dResults.computedHasTags && wave6dResults.computedHasStats
         );
-        check("Welle 6.D: computed.stats hat alle 8 Werte als finite Zahlen", wave6dResults.computedStatsHasAll);
+        check(
+            "Welle 6.D: computed.stats hat alle 11 Werte als finite Zahlen (8 Basis + Kampf-Trio, V17.51)",
+            wave6dResults.computedStatsHasAll
+        );
         // Vision-Diskrimination
         check(
             "Welle 6.D: Diskrimination — Phönix schneller als Drache (low dichte)",
@@ -12650,7 +14239,10 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D: #player-stats im DOM (Spieler-Drawer)", wave6dResults.statsContainerInDom);
         check("Welle 6.D: renderPlayerStatsUI läuft ohne Crash", wave6dResults.renderOk);
         if (wave6dResults.renderOk) {
-            check("Welle 6.D: 8 stat-row-Einträge im DOM", wave6dResults.statRowsCount === 8);
+            check(
+                "Welle 6.D: 11 stat-row-Einträge im DOM (8 Basis + Kampf-Trio Rückschlag/Tempo/Verteidigung, V17.51)",
+                wave6dResults.statRowsCount === 11
+            );
             check("Welle 6.D: stat-tags-Zeile (dominante Achsen) im DOM", wave6dResults.hasTagLine);
         }
     }
@@ -21037,7 +22629,14 @@ async function checkBandWelle6HCreatures(ctx) {
             r.state.camera.updateMatrixWorld(true);
         }
         const archBeforeLmb = r.state.architectures.length;
-        r.tryMouseBreak();
+        // V17.55 W1 — Abbauen kostet jetzt MÜHE + braucht ein taugliches Werkzeug (kein Instant
+        // mehr). Wir rüsten ein hartes Werkzeug aus (stein als harte Substanz) + hieben bis zum
+        // Bruch; der Ertrag fließt nur mit tauglichem Werkzeug (die bloße Faust gäbe ~nichts).
+        r.state.player.equipped = r.state.player.equipped || {};
+        r.state.player.equipped.held = "stein_block";
+        r.state.player.stamina = 1e6; // V17.55 — der Stamina-Gate soll diese Mess-Schleife nicht stören
+        for (let s = 0; s < 40 && r.state.architectures.length >= archBeforeLmb; s++) r.tryMouseBreak();
+        r.state.player.equipped.held = null;
         out.lmbShrunkArch = r.state.architectures.length < archBeforeLmb;
         out.lmbFilledInventory = r.state.player.inventory.some(
             (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
@@ -21229,15 +22828,31 @@ async function checkBandWelle6HCreatures(ctx) {
         out.schoepferEmptyAfter = r.state.player.inventory.every((s) => !s);
         out.schoepferGrows = r.state.architectures.length > archBeforeSchoepfer;
 
-        // confirmBuild frieden ohne Material → baut frei
+        // S2 (kampf-plan §11.2) — confirmBuild frieden OHNE Material → ABGELEHNT (die kristallisierte
+        // Modus-Achse: Materie kostet in pfad UND frieden, frei nur in schöpfer; frieden ist friedlich,
+        // aber NICHT gratis — die V17.59-Diskrepanz geheilt).
         r.setGameMode("frieden");
         r.state.player.inventory = new Array(27).fill(null);
         r._clearBuildMode && r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
-        const builtFrieden = r.confirmBuild();
-        out.friedenBuildsFree = builtFrieden === true;
-        out.friedenEmptyAfter = r.state.player.inventory.every((s) => !s);
+        const archBeforeFriedenNoMat = r.state.architectures.length;
+        const builtFriedenNoMat = r.confirmBuild();
+        out.friedenRejectsWithoutMaterial = builtFriedenNoMat === false;
+        out.friedenNoArchOnReject = r.state.architectures.length === archBeforeFriedenNoMat;
+        // frieden MIT Material → baut + KONSUMIERT (wie pfad; nur die Mühe/Bedrohung fehlt in frieden)
+        r.state.player.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        r._clearBuildMode && r._clearBuildMode();
+        r.setHotbarSlot(0, "stein_block");
+        r.selectHotbarSlot(0);
+        const archBeforeFriedenMat = r.state.architectures.length;
+        const stoneBeforeFrieden = r.state.player.inventory[0].count;
+        const builtFriedenMat = r.confirmBuild();
+        const stoneAfterFrieden = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+        out.friedenBuildsWithMaterial = builtFriedenMat === true && r.state.architectures.length > archBeforeFriedenMat;
+        out.friedenConsumesMaterial = stoneBeforeFrieden > stoneAfterFrieden;
+        out.hasMakeCostGate = typeof r._makeCostGate === "function";
 
         // HUD-Reflexion
         r.setGameMode("pfad");
@@ -21254,9 +22869,10 @@ async function checkBandWelle6HCreatures(ctx) {
         const hudSchoepfer = document.getElementById("build-mode-hud").innerHTML;
         out.hudShowsFreiInSchoepfer = /frei/i.test(hudSchoepfer);
 
+        // S2 — frieden-HUD zeigt jetzt die Material-Kosten (wie pfad), nicht „frei".
         r.setGameMode("frieden");
         const hudFrieden = document.getElementById("build-mode-hud").innerHTML;
-        out.hudShowsFreiInFrieden = /frei/i.test(hudFrieden);
+        out.hudShowsCostInFrieden = hudFrieden && /stein/.test(hudFrieden) && /\(30\)/.test(hudFrieden);
 
         // Cleanup: zurück auf frieden + Hotbar-Defaults für nachfolgende Tests.
         // Default-Hotbar (Ring 6.5): [village, temple, waterfall, null×6].
@@ -21304,14 +22920,21 @@ async function checkBandWelle6HCreatures(ctx) {
             wave6hP2cResults.schoepferBuildsFree && wave6hP2cResults.schoepferGrows
         );
         check("Welle 6.H P2C: schöpfer-Modus: Inventar bleibt leer (unbegrenzt)", wave6hP2cResults.schoepferEmptyAfter);
+        check("V17.60 S2: _makeCostGate (das generalisierte Mach-Tor) existiert", wave6hP2cResults.hasMakeCostGate);
         check(
-            "Welle 6.H P2C: frieden-Modus baut ohne Material (Erstbegegnung umarmt)",
-            wave6hP2cResults.friedenBuildsFree
+            "V17.60 S2: frieden ohne Material → confirmBuild lehnt ab (frieden zahlt Materie, nicht gratis)",
+            wave6hP2cResults.friedenRejectsWithoutMaterial && wave6hP2cResults.friedenNoArchOnReject
         );
-        check("Welle 6.H P2C: frieden-Modus: Inventar bleibt leer", wave6hP2cResults.friedenEmptyAfter);
+        check(
+            "V17.60 S2: KONSUM — frieden MIT Material baut + verbraucht das Material (wie pfad; nur Mühe/Bedrohung fehlt)",
+            wave6hP2cResults.friedenBuildsWithMaterial && wave6hP2cResults.friedenConsumesMaterial
+        );
         check("Welle 6.H P2C: pfad-HUD zeigt Material-Kosten + verfügbare Menge", wave6hP2cResults.hudShowsCostInPfad);
         check("Welle 6.H P2C: schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
-        check("Welle 6.H P2C: frieden-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInFrieden);
+        check(
+            "V17.60 S2: frieden-HUD zeigt die Material-Kosten (nicht mehr 'frei')",
+            wave6hP2cResults.hudShowsCostInFrieden
+        );
     }
 }
 
@@ -35576,7 +37199,9 @@ async function checkBandRing6Workshop(ctx) {
         // Slot wechseln (Slot 1 = temple)
         r.selectHotbarSlot(1);
         out.switchFormChanges = r.state.buildMode.blueprintName === "temple";
-        // confirmBuild platziert echte Struktur
+        // confirmBuild platziert echte Struktur — S2 (kampf-plan §11.2): in schöpfer testen, weil
+        // frieden jetzt Material zahlt; dieser Test prüft den SPAWN-Mechanismus, nicht die Kosten.
+        r.setGameMode("schöpfer");
         const arBefore = r.state.architectures.length;
         r.confirmBuild();
         out.confirmBuildSpawns = r.state.architectures.length === arBefore + 1;
@@ -35593,6 +37218,7 @@ async function checkBandRing6Workshop(ctx) {
             }
         }
         r.state.architectures = [];
+        r.setGameMode("frieden"); // S2 — Modus zurücksetzen (schöpfer war nur für den Spawn-Test)
         return out;
     });
 
@@ -35832,6 +37458,19 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1748Social(ctx);
             await checkBandV1749Adventure(ctx);
             await checkBandV1750Klammer(ctx);
+            await checkBandV1751CombatStats(ctx);
+            await checkBandV1757HeldSlot(ctx);
+            await checkBandV1753CreatureCombat(ctx);
+            await checkBandV1754PlayerAttack(ctx);
+            await checkBandV1755HarvestEffort(ctx);
+            await checkBandV1755W2Profile(ctx);
+            await checkBandV1758CreatureNature(ctx);
+            await checkBandV1759CapabilityReadout(ctx);
+            await checkBandV1761ForgeImplement(ctx);
+            await checkBandV1762ForgeMeaningful(ctx);
+            await checkBandV1763ForgeArmor(ctx);
+            await checkBandV1764ForgeAvatar(ctx);
+            await checkBandV1765BrewConsumable(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

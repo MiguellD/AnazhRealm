@@ -282,7 +282,7 @@ EHRLICH: action-spezifische Gewöhnung (das 100. Haus) ist NICHT voll gelöst (d
 Nudge bleibt fix) — bewusst (Schöpfung darf belohnend bleiben); die SITUATIONS-Gewöhnung ist der
 echte Tretmühl-Effekt.
 
-**Phase 4 (KÜR — NACH dem Emotion-Kern, `docs/emotion-kern-plan.md`) — Der Kreis: die
+**Phase 4 (KÜR — NACH dem Emotion-Kern, `docs/archiv/emotion-kern-plan.md`) — Der Kreis: die
 Welt lernt, was DICH glücklich macht. ✅ GEBAUT (V17.50).** (Re-sequenziert 02.06.: V17.45 wurde der
 Emotion-Kern W1 — das dimensionale Substrat + die Fusion; Phase 4 folgt, sobald der
 Emotion-Kern das `δ_spieler` REICH gemacht hat. Die Klammer ist nur so mächtig wie das
@@ -451,7 +451,7 @@ kamen — minimal, bewährt, auf dem einen Stamm.
 
 ## 10. Die emotionale TIEFE — der Hylomorphismus der Emotionen (graue Schatten + Folge-Bogen)
 
-> **→ DIE FUNDAMENTALE HEILUNG dieser Schatten lebt jetzt in `docs/emotion-kern-plan.md`**
+> **→ DIE FUNDAMENTALE HEILUNG dieser Schatten lebt jetzt in `docs/archiv/emotion-kern-plan.md`**
 > (02.06., der Schöpfer bat um „wirklich tief, wie funktionieren Emotionen, wie fusionieren
 > sie … ein fundamentaler Plan"). Dieser §10 ist die DIAGNOSE (die fünf gemessenen Schatten);
 > der `emotion-kern-plan` ist die ARCHITEKTUR an der Wurzel (EVENT → APPRAISAL → EMOTION,

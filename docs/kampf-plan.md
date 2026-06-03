@@ -5,8 +5,31 @@
 > die GEMESSENE Bestandsaufnahme (02.06.2026, Explore-Diagnose) + den Plan fest: Kampf
 > EMERGIERT aus dem bestehenden Hylomorphismus (Tags → Stats, EINE Pipeline für Spieler/
 > Kreatur/Waffe/Rüstung), KEIN Parallel-System. Verwandte Anker: `crafting-konzept.md`
-> (das Tag-Substrat), `emotion-kern-plan.md` §W5 (der fertige Kampf-AFFEKT-Hook, der hier
+> (das Tag-Substrat), `archiv/emotion-kern-plan.md` §W5 (der fertige Kampf-AFFEKT-Hook, der hier
 > seinen Konsumenten bekommt), `das-lebendige-feld.md` (der wahre Norden).
+
+---
+
+## STATUS (Stand V17.65) — lies §11 (der aktive Plan; §11.9 = die Browser-Audit-Ausrichtung)
+
+**Der Kern-Kampf-Loop A–D + W5-Affekt + der Interaktions-Bogen W1·W2·W2-B·W3 sind GEBAUT** (V17.51–.58, §8/§9).
+**§11 — der vereinte Schöpfungs-Fluss — ist im Bau:** S1 Readout · S2 Mach-Tor+Modi · S3+S3-B Gerät · S4 Rüstung
+· S5 Avatar · S6 Trank GEBAUT (V17.59–.65) — VIER Mach-Akte zahlen Material durch EIN `_makeCostGate` +
+`fertigeBlueprint`. **ABER der Schöpfer-Browser-Audit (02.06.) fand die Fehl-Ausrichtung (§11.9): die Mach-Akte
+sind funktional korrekt, aber als PARALLELER Pfad PRÄSENTIERT** (der „⚒ Schmieden"-Knopf im Detail-Editor wirkt
+wie eine Doublette des bestehenden „Prozess-ziehen-fixiert-die-Rolle"-Flusses). **Der AKTIVE nächste Schritt ist
+der RE-FRAMED S7 (§11.7): das FERTIGEN in den Prozess-Fluss + die Maschine-in-der-Welt falten** (kein neuer Pfad,
+eine UI-Verdichtung; die Mach-Logik bleibt). Wer weiterbaut, liest §11.9 (die Lehre + der Lebenszyklus + die drei
+Schichten Tags/Fähigkeit/Rolle) ZUERST. **PERMANENTE LEHRE: headless-grün ≠ vision-aligned — den FLUSS im
+Schöpfer-Browser zeigen, bevor man Welle auf Welle stapelt.** Das ursprüngliche §11-Prinzip bleibt
+(Schöpfer-Dialog 02.06., die Weitung von §10 auf ALLE Rollen): **„Plan → Werk"** (Information
+frei · Materie kostet), das jeder Lesart (Gerät · Rüstung · Trank · Avatar · Portal · Fahrzeug) ihren
+material-zahlenden Werk-Akt gibt, die vier Schöpfungs-Drawer in EINE Werkstatt-Gebärmutter zieht, und das
+Teilen im Ultiversum klärt (Plan frei kopierbar/signiert, Werk kostet herkunfts-agnostisch — für Strukturen
+schon BEWIESEN, Sonde B). §10 ist die erste konkrete Instanz (das Gerät schmieden). Teilschritte S1–S11 in
+§11.7 (inkl. der Modus-Kristallisation §11.2: Materie kostet in pfad+frieden, frei nur in schöpfer · der
+Avatar als Werk-Akt · die Zutaten-Ökonomie des Tranks · die Animation in der Werkstatt als Kirsche). Wer den
+Bogen weiterbaut, liest §8/§9 (was gilt) + §11 (was kommt) ZUERST.
 
 ---
 
@@ -206,3 +229,547 @@ E ist die game-design-schwerste (Aggression-Balance) — evtl. eigene Welle. Jed
 nachher, KONSUM verifizieren, playtest-grün, ein Commit. Der Schöpfer-Browser ist die finale Wucht-/
 Spaß-/Balance-Wahrheit. **Damit bekommt der Emotion-Kern seinen letzten Konsumenten + die Welt eine
 Kampf-Schleife, die — wie alles hier — aus der Substanz emergiert.**
+
+---
+
+## 8. Die Vertiefung — vom Rollen-Schloss zum Fähigkeits-Profil (Schöpfer-Dialog 02.06.)
+
+Nach dem Kern-Loop (A–D) öffnete der Schöpfer drei tiefere Befunde, die den Bogen vom „Kampf" zur
+GANZEN Welt-Interaktion weiten. Sie lösen die Rollen-Kategorien (Waffe/Werkzeug) AUF und vereinen
+Kampf + Abbau in EINER emergenten Logik. **Diese Sicht überschreibt §3.2/§4-B (das Rollen-Schloss).**
+
+### 8.1 Es gibt keine festen Rollen — geformte Materie ERMÖGLICHT Handlungen
+Ein Ding ist nicht „Waffe" ODER „Werkzeug". Geformte Materie trägt ein **Fähigkeits-Profil** — eine
+emergente Tauglichkeit für JEDE Handlung (angreifen · schneiden · graben/abbauen · schützen), aus
+Form × Material, GENAU wie Stats/Affordanzen/Spawn/Resonanz/Gefühl. Eine scharfe harte Klinge:
+schneidet/sticht exzellent, gräbt Fels schlecht. Eine dichte stumpfe Masse: wuchtet/bricht Fels gut,
+schneidet schlecht. Die bloße Hand: pflückt Weiches, scheitert an Hartem. **Du benutzt alles für
+alles — die EFFIZIENZ ergibt sich aus dem Profil; das ZIEL + dein Klick wählen die Handlung (Kreatur
+→ schlagen, Fels → graben), das Profil bestimmt, wie gut.** „Schmieden fixiert eine Rolle" ist FALSCH:
+Schmieden formt die Materie → verschiebt das Profil; die „Rolle" der Werkstatt ist nur ein ABLESEN des
+dominanten Könnens, kein Schloss. → das manuelle „als Waffe" (V17.52) + der Rollen-Split LÖSEN SICH AUF
+in dieses Profil (das „daneben klicken + Boden abbauen" verschwindet: eine Klinge gräbt nur miserabel).
+
+### 8.2 Der Wurzelfehler: das Instant-Abbauen (GEMESSEN 02.06.)
+`harvestArchitecture`/`tryMouseBreak` sind heute **werkzeug-blind + instant + voller Ertrag** — egal ob
+Hand oder geschmiedete Spitzhacke. Solange Abbauen sofort + gratis ist, KANN „unterschiedliche Effizienz"
+nicht existieren (sofort ist sofort). **Abbauen muss Mühe kosten:** Fortschritt = die Grab-/Schneid-Kraft
+des gehaltenen Dings (emergent) gegen den **Widerstand** des Materials (emergent aus seinen Tags — härte/
+dichte = schwer, lebendig/weich = leicht). Bloße Hand an Fels → ~0 Fortschritt; geschmiedeter Pickel →
+schnell. Minecraft's Werkzeug-Gating, aber EMERGENT (kein Tier-Tag) → forge ein härteres Ding, bau
+Härteres ab = Freiheit. (Der Hylomorphismus, der an der Werkstatt-Tür endete, tritt in die Welt.)
+
+### 8.3 Die Effizienz als Dirigent — Ausdauer/Stamina webt ein (GEMESSEN bestehend)
+`staminaMax` ist schon emergent (`100 + (1−dichte)·60 + wärmeleitung·40`), aber die KOSTEN sind flach
+(abbauen `MOUSE_ACTION_STAMINA_COST` 5, schmieden `TOOL_OP_STAMINA_COST` 10) + modus-gated (nur `pfad`;
+frieden/schöpfer mühelos). Die Heilung: EINE Zahl — die `Tauglichkeit` (Profil des Dings vs Handlung +
+Material) — dirigiert VIER Kanäle: **(1) Tempo** (hoch → schnell), **(2) Stamina-Kosten INVERS** (richtiges
+Werkzeug billig pro Fortschritt; falsches verbrennt Ausdauer für fast nichts), **(3) Ertrag** (hoch →
+voller Drop, niedrig → wenig/keiner), **(4) Gefühl** (`_feelAction` liest schon jede Tat → effiziente
+Meisterung = Freude, vergebliches Mahlen = Frust). So KOMMUNIZIEREN die Systeme: ein substanz-abgeleitetes
+Signal, vier Leser, kein Sonderfall (das „eine Quelle, viele Leser"-Muster des Projekts).
+
+### 8.4 Die schnell/ausdauer-Achse aus `dichte` (Trägheit ↔ Fortschritt)
+- **leicht** (niedrig `dichte`): hohes Tempo, kleine Stamina-Schlucke, durchhaltend (Ausdauer), wenig Wucht.
+- **schwer** (hoch `dichte`): hohe Wucht/Rückschlag pro Schlag (Burst), langsam + große Stamina-Züge, erschöpft schnell.
+Trägheit kauft Kraft, Leichtigkeit kauft Durchhalten — du schmiedest deinen Stil + wählst je Material.
+(`dichte` treibt schon attackSpeed + knockback; Stamina-Kosten ∝ `dichte` schließt das Dreieck.)
+
+### 8.5 Wachstum + die Mana-Symmetrie (vision-treu, kein XP-Grind)
+AnazhRealm wächst NICHT über eine XP-Leiste (das wäre ein Label — die Heilige Lektion): (a) **bessere
+Materie** (forge — weniger Mühe, mehr Ertrag), (b) das **blühende Feld** (Boosts heben Stats/Ausdauer,
+wo die Welt gedeiht), (c) **Bindungen** (Kreaturen, die KI als Ko-Regulator). Optional eine leichte „der
+Körper erinnert sich"-Adaption (Ausdauer wächst sanft mit Gebrauch) — die einzige Wachstums-Schraube, die
+zum lebendigen Thema passt. **Die fehlende symmetrische Hälfte (dein „/mana"):** Stamina ist die körperliche
+Mühe; eine magische Energie aus `magieleitung` (Äther — Zauber/Aura/DSL kosten ihn, regen ∝ magieleitung)
+wäre ihr Spiegelbild (heute zahlt Magie nichts) — die zweite Achse, wenn die Magie-Seite genauso echt wird.
+
+---
+
+## 9. Der revidierte Pfad (an der Wurzel)
+
+- **W1 — der Wurzelfehler + die Effizienz als Dirigent — ✅ GEBAUT (V17.55):** Abbauen kostet Mühe;
+  EINE `_harvestFitness` (`_heldMinePower` des ausgerüsteten Werkzeugs vs `_architectureResistance`)
+  treibt Tempo (`entry.harvestProgress`/Hieb) + Stamina (variabel, invers) + Ertrag (`yieldMult`, Floor)
+  + Gefühl (`_feelAction`-Magnitude) zugleich; Halten-zum-Abbauen (`_tickHarvest` + `breakHeld`). Lebt in
+  `pfad` (frieden/schöpfer mühelos). `checkBandV1755HarvestEffort` 11 grün. *Der Schlüssel — die Mühe macht
+  „unterschiedliche Effizienz" erst fühlbar.* Offen (Schöpfer-Browser): das FEEL + ein Fortschritts-Balken.
+- **W2 — das form-bewusste Profil + alles-für-alles — ✅ GEBAUT (V17.56):** das Doppel-Profil
+  (`_implementProfile`: WUCHT ∝ Stumpfheit×(härte+dichte) vs SCHÄRFE ∝ spitze Form×härte) — DIESELBE
+  Materie wird zur Klinge ODER Keule, die FORM entscheidet; der Widerstand zwei-kanalig (`{mineResist,
+  cutResist}`, Fels unschneidbar), die Tauglichkeit nutzt `max(mine, cut)` → das Ziel-Material wählt den
+  Kanal; das gehaltene Gerät = Werkzeug ODER Waffe (`_heldImplementBlueprint`, der W1-sourceBlueprint-Bug
+  behoben). `checkBandV1756W2Profile` 10 grün.
+- **W2-B — das Rollen-Schloss aufgelöst — ✅ GEBAUT (V17.57):** EIN `equipped.held`-Slot (Werkzeug + Waffe
+  verschmolzen, `armor` bleibt getragen); `equipHeld` nimmt JEDEN Bauplan (kein Rollen-Check); EIN
+  `HELD_STAT_WEIGHT`-Fold → das gehaltene Gerät treibt Angriff (alles-für-alles) UND Abbauen (W1/W2); die
+  Rolle wird ABLESUNG (`_implementAffordanceLabel` „Klinge"/„Brecher", das manuelle Markieren fällt). Synergie:
+  `equipTool`/`equipWeapon`/DSL/Chat/Restore = Aliase auf `equipHeld` (die API bleibt heil, nur die Leser
+  wandern); die Crafting-Tools (`state.tools`) + der Kreatur-Equip (`{tool,armor}`) bleiben orthogonal.
+  `checkBandV1757HeldSlot` 11 grün. Offen (Browser): das Feel der einen Hand-Zeile + der Affordanz-Readout.
+- **W3 — die natürliche, aura-reaktive Kreatur — ✅ GEBAUT (V17.58):** EIN Signal `_creatureWariness`
+  (deine Aura-Menace [chaos-dominant, feedback-frei] × der Natur des Wesens [dicht/hart kühn, lebendig
+  scheu] × Bindung × Modus, per Nähe skaliert) ersetzt im wander-Fallback die statische happy/sad-Wahl →
+  neugierig näher / scheu fort / sonst wandern; ein getroffenes Wesen flieht (`damageCreature` → fearUntil
+  + sad). Reuse des Flock/Flee/Drift, kein Parallel-AI. `checkBandV1758CreatureNature` 11 grün. Offen
+  (Browser): das Feel. **Damit ist der Interaktions-Bogen (W1·W2·W2-B·W3) rund.**
+- **Phase E — die Bedrohung (offen, game-design-schwer):** aggressive/raubtier-Kreaturen, die den Spieler
+  JAGEN (`damagePlayer` aus echter Quelle, pfad-gated, sparsam) → der FURCHT-Konsument + der Triumph-δ
+  (Bedrohung beseitigt). + optional die „Körper-erinnert-sich"-Adaption + die Mana-Hälfte (magieleitung → Äther).
+
+**Disziplin (heilig):** tag-emergent, kein neues Modul, kein Parallelpfad; modus-gated; der Affekt von
+Anfang an (`_feelAction` liest die Mühe gratis mit); die Wucht/das Feel/die Balance = Schöpfer-Browser.
+Headless beweisbar sind die Tauglichkeit-Berechnung, die vier Kanäle, die Substanz-Differenzierung.
+
+---
+
+## 10. Der Schmiede-/Gerät-Bogen — die Werkstatt schließt den Kreis (Schöpfer-Dialog 02.06., NACH W3)
+
+Der Interaktions-Bogen (§9) machte das Abbauen + die Kreatur emergent. Der Schöpfer-Audit danach legt
+den Finger auf die **Werkstatt** — die Quelle, aus der ein Gerät kommt. Dort sind **zwei Crafting-Systeme
+nie verschmolzen**; der Bogen schließt erst, wenn die Werkstatt das Gerät ERKENNT, das Schmieden Material
+SPEIST + die Substanz in die HAND bringt. **Diese Sicht vollendet §8/§9 und löst die letzte Tool/Waffe-
+Trennung auf.**
+
+**Schöpfer (02.06.):** „in der Werkstatt steht bei Rolle nur ‚Bauwerk' — ich mache einen Holzzylinder als
+Stiel + einen Steinquader als Kopf (Griff-Verhältnis, massiver schwerer Kopf, stumpf), das ist nah an
+einem Werkzeug/Brecher, dachte hier erscheinen mehrere Dinge, und je nach Form wird die Rolle erkannt …
+Schmieden als Verarbeitungsprozess fixiert die Rolle auf Tool/Waffe? … vordefinierte Werkzeuge mit
+Präzisionen beissen sich noch, sind nicht synergetisch … Drehbank/Schmiede-Hammer sind andere Baupläne,
+die die Rollfixierung freischalten, mit unterschiedlichen Präzisionen? besserer Schmiede-Hammer → bessere
+Werkzeuge, die selbst an der Grundgeometrie schon mehr/weniger Qualität bieten? … einige Dinge sind nie
+sauber zusammengeflossen … ein gehaltenes Gerät sollte VISUELL in der Hand sein, nicht der Platzier-
+Schatten … wann wird das Material gespeist (bei Waffen/Tools)? wie erreicht man Synergie?"
+
+**Die bestätigte Reconciliation (Schöpfer):** *„Die Schmiede erstellt ein Gerät — ein Gerät ist Waffe UND
+Werkzeug."* → die saubere Vereinigung: **kein Rollen-Schloss** (W2-B bleibt: du benutzt alles für alles),
+aber **Schmieden ist ein ECHTER Fertigungs-Akt**. Der Prozess fertigt (Material + Präzision + Sichtbarkeit),
+die Fähigkeit bleibt emergent (die Form sagt, was es gut kann).
+
+### 10.1 Das komplette System, wie es WIRKLICH läuft (GEMESSEN, Explore 02.06.)
+
+**Der Bauplan ist das EINE Substrat** — Struktur, Werkzeug, Waffe, Rüstung, Seele, Portal, Maschine,
+Nahrung, gehaltenes Gerät: alles ist ein Bauplan (`parts` = Form × Material × Position × `opChain`).
+
+**Die Rollen — wie sie ENTSTEHEN (`computeBlueprintRole`, in Priorität):** (1) **Crafting-Geschichte** —
+die dominante `opChain`-Werkzeug-**Domain** (forging → tool/armor als Tag-Split [`härte/magieleitung/
+stromleitung` → tool, `dichte/zähigkeit/wärmeleitung` → armor], alchemy → consumable, textile → armor,
+soulwork → soul, mechanism → machine, construction → architecture). **Generische Werkzeuge (Hand/Hammer/
+Feile, `domain=null`) zählen NICHT** → ein frisch geformter Hammer-Bauplan, nur mit der Hand geknappt,
+bleibt rollenlos. (2) **Form** → bilateral-symmetrischer Glieder-Körper → soul. (3) **Form+Material** →
+magie-leitender Ring → portal. (4) **Material** → lebendig+weich → consumable. (5) **Default** →
+architecture (**„Bauwerk"**). Manueller Override (`roleManual`) friert ein. **→ DARUM zeigt der Hammer
+„Bauwerk": er ging nie durch die (versteckte) Domain-Schmiede-Pipeline; und selbst dann wäre die Rolle
+„Werkzeug" (abstrakt), NICHT das form-emergente Können (Klinge/Brecher), das der Schöpfer erwartet.**
+
+**Die ZWEI „Tool"-Begriffe (die Wurzel des „beisst sich"):**
+- **Crafting-Werkzeug** (`state.tools[name]`): `opClass`/`opName`/`precisionCap`/`domain` — das, womit man
+  IN der Werkstatt Parts bearbeitet (`applyOpToPart`). Registriert via `setBlueprintToolMeta` +
+  `registerBlueprintAsTool` (manuelles `opName`-Tippen + opClass-Dropdown). 10 Built-ins (Hand …
+  Polierscheibe, Schmiede-Hammer [forging], Drehbank-Meißel [mechanism]).
+- **In-der-Hand-Gerät** (`equipped.held` → Bauplan, W2-B): das, womit man in der WELT abbaut/kämpft. Jeder
+  Bauplan, gratis, **keine Optik**.
+- Halbe Brücke (existiert schon!): `equipHeld` löst `state.tools[name].sourceBlueprint` auf → ein
+  registriertes Crafting-Werkzeug IST haltbar. Die Vereinigung ist halb gebaut, nur nicht zu Ende gedacht.
+
+**Die Präzisions-Kette (existiert, die §4.3-Rekursion ist REAL):** `applyOpToPart` → `opChain` (Geschichte)
+→ `computePartPrecision` (Min-Regel + Decay) → `computeBlueprintPrecisionCap` (Min der Parts). Ein besseres
+Crafting-Werkzeug (höherer `precisionCap`) hebt die erreichbare Werkstück-Präzision; `MACHINE_PRECISION_
+BONUS` (+0.05). **Die Drehbank/Esse/Webstuhl/etc. SIND Beispiel-Baupläne** (`role:"workshop-station"` +
+`workshopDomain`, Nähe-gated `WORKSHOP_PROXIMITY_M`); ihre Präzision kommt aus ihren Bauteilen — die
+Rekursion, die der Schöpfer meinte (besserer Hammer → bessere Drehbank → bessere Werkzeuge), ist gebaut.
+**ABER** die Präzision fließt nur in **Kampf**-Stats (`heldMul = 0.5 + 0.5·präzision` auf das Tag-Fold) +
+Rüstung — NICHT ins Abbauen (Riss C).
+
+**Die FÜNF Risse (nie verschmolzen — die ehrliche Wahrheit hinter „beisst sich"):**
+- **A — die Werkstatt zeigt nur die abstrakte Rolle read-only** („Bauwerk"); die Geräte-Fähigkeit
+  (`_implementAffordanceLabel` → Klinge/Brecher) wird berechnet, aber NUR im Equip-Drawer gezeigt, nicht
+  in der Werkstatt. → der „nur Bauwerk"-Befund.
+- **B — zwei Rollen-Philosophien koexistieren:** Welt-9a-Schmiede-Rolle (`registerBlueprintAsTool` =
+  fixiert in `state.tools`) vs. W2-B-Ablesung (`equipped.held`, kein Schloss). Werkzeuge → ein Pfad,
+  Waffen/Gehaltenes → ein anderer. → das „nie sauber zusammengeflossen".
+- **C — die Präzision erreicht das Abbauen NICHT:** `_implementProfile` (minePower/cutPower) liest reine
+  Form × Material; ein polierter Pickel bricht Fels genauso schnell wie ein roher. Der „Präzision
+  moduliert"-Faden (Konzept §6.3) endet vor der Ernte.
+- **D — ein Gerät schmieden/ausrüsten kostet NULL Material** (`equipHeld`/`registerBlueprintAsTool`
+  verbrauchen nichts), während Strukturen-Bauen Inventar zieht (`confirmBuild` → `tryConsumeBuildCost`,
+  pfad-Modus). → der „offene Faden: wann wird das Material gespeist?".
+- **E — keine In-der-Hand-Optik:** das gehaltene Gerät ist unsichtbar; der einzige Bauplan-Visual ist der
+  Platzier-Schatten (`tickBuildMode`-Phantom bei 40% Opacity, Hotbar/Bau-Modus — ein ANDERES System).
+
+### 10.2 Die Synergie: „Plan → Werk" (Bauen ↔ Schmieden als Spiegel)
+
+Ein Bauplan ist IMMER ein freier **Plan**. Ihn real zu machen kostet Material — in ZWEI spiegelbildlichen
+Akten:
+- **BAUEN** (Strukturen): Plan → in der Welt platzieren → Material verbraucht → ein Bauwerk steht. *(da)*
+- **SCHMIEDEN/FERTIGEN** (gehaltene Geräte): Plan → schmieden → Material verbraucht + Präzision eingefroren
+  → ein **Gerät in der Hand**. *(der fehlende Spiegel)*
+
+So beantwortet sich „wann wird das Material gespeist?": **beim Schmieden** — der exakte Spiegel von „beim
+Bauen". Der Bauplan ist der Plan; der Akt des Machens (bauen ODER schmieden) zieht das Material (Reuse
+`computeBuildCost` — dieselbe Volumen-Formel). DAS ist die Synergie, die der Schöpfer sucht: **ein Muster,
+zwei Anwendungen** (die Heilige Lektion — kein Parallel-System, eine Verdichtung).
+
+### 10.3 Das vereinte Gerät (die Reconciliation in Code-Sprache)
+
+Ein **Gerät** = das vereinte gehaltene Werkzeug = **Waffe + Werkzeug** (+ optional Crafting-Werkzeug). Was
+es GUT kann, emergiert aus der **Form** (Klinge schneidet / Brecher wuchtet, `_implementProfile`); die
+**Qualität** aus der Präzision (die Crafting-Kette); benutzbar für ALLES (kein Schloss, W2-B bleibt). Das
+geschmiedete Gerät lebt im Werkzeug-Register (`state.tools` mit `sourceBlueprint`) UND ist das gehaltene
+Welt-Gerät (`equipped.held`) UND rendert in der Hand. **EIN geschmiedeter Hammer = Werkstatt-Werkzeug +
+Welt-Brecher + Hand-Optik** — eine Substanz, alle Anwendungen, alle emergent aus Form × Material ×
+Präzision. Die Rolle „weapon" (seit W2-B vestigial, der „als Waffe"-Knopf ist schon weg) entfällt; „tool"
+wird begrifflich „**Gerät**".
+
+### 10.4 Der Teilschritt-Plan (F1–F5 — jede Logik-Welle ein `checkBand`)
+
+- **F1 — die Werkstatt ERKENNT das Gerät** (Riss A · niedrigstes Risiko · headless-beweisbar): die
+  Werkstatt-Rollen-Zeile (`_workshopAppendRoleRow`) zeigt für jeden Bauplan mit einem Geräte-Profil
+  prominent die Affordanz (`_implementAffordanceLabel` → „Klinge"/„Brecher"/„Gerät") + das Ernte-Profil
+  („schneidet Weiches · wuchtet Fels"), aus der Form abgelesen — UNABHÄNGIG von der abstrakten Rolle. Der
+  Holzstiel+Steinkopf liest dann live: „Brecher · wuchtet Fels gut · schneidet schlecht". Reuse
+  `_implementProfileForBlueprint`/`_implementAffordanceLabel`. Heilt sofort den „nur Bauwerk"-Befund.
+  *Headless: der Readout existiert + differenziert (Klinge vs Brecher aus derselben Materie).*
+- **F2 — Präzision moduliert das Abbauen** (Riss C · ~eine Zeile · headless-beweisbar): der
+  `heldMul`-Präzisionsfaktor (heute nur Kampf) erreicht auch `_implementProfile`/die `_harvestFitness` →
+  besseres Schmieden = besseres Abbauen. Schließt die §4.3-Rekursion END-TO-END: besseres Crafting-Werkzeug
+  → höhere Werkstück-Präzision → besseres Gerät → bricht Fels schneller + voller Ertrag → womit du noch
+  besseres schmiedest. *Headless: ein hochpräziser gehaltener Bauplan baut schneller ab als ein roher
+  gleicher Form/Materie.*
+- **F3 — Schmieden speist Material (der Spiegel von Bauen)** (Riss D · der Kern-Merge · headless-beweisbar):
+  ein „Fertigen/Schmieden"-Akt verbraucht die Teil-Materialien (Reuse `computeBuildCost`/
+  `tryConsumeBuildCost` — DIESELBE Volumen-Formel wie Bauen) + friert die Präzision ein (Snapshot) +
+  registriert das Gerät als haltbar/equip-fähig. Der Bauplan bleibt der freie Plan; das Schmieden ist die
+  Verkörperung. Modus-gated (pfad+frieden zahlen, frei nur in schöpfer — die §11.2-Kristallisation). VERSCHMILZT die zwei Systeme:
+  das geschmiedete Gerät ist im Register UND in der Hand. *Headless: schmieden zieht Inventar + produziert
+  ein registriertes, haltbares Gerät; im Plan-Zustand kein Material-Zug.*
+- **F4 — In der Hand SICHTBAR** (Riss E · Render · Schöpfer-Browser): das gehaltene Gerät rendert als
+  First-Person-/Avatar-Hand-Mesh (Reuse `_buildFromBlueprint`), getrennt vom Platzier-Schatten. Eigene
+  Welle — headless pixel-blind (V13-Lehre); die Optik/Pose/Skala/Schwingung beim Hieb = Schöpfer-Browser.
+- **F5 — die Crafting-Op emergiert aus der Form (+ optional „Gerät" als Rolle)** (Risse A+B tief · braucht
+  Mess-Disziplin): die Operation, die ein Gerät in der Werkstatt ausführt, emergiert aus seinem Profil
+  (scharf → subtractive/schneiden, stumpf-hart → plastic/schmieden) statt manuell getippt
+  (`setBlueprintToolMeta`-opName-Feld fällt). Optional: „Gerät" wird eine FORM-emergente Rolle (ein
+  greifbares Implement-Profil ohne andere dominante Domain → Rolle „Gerät"). **ABER `computeBlueprintRole`
+  speist die Spawn-Affinität** — jede Tag-/Rollen-Verschiebung ZUERST mit `scripts/diag-arch-tags.cjs`
+  messen (V17.17-Lehre: eine Affinitäts-Verschiebung kann das Baum-/Architektur-Spawning kippen). Die
+  tiefste, riskanteste Stufe — die volle Hylomorphismus-Schließung der Werkstatt.
+
+### 10.5 Reihenfolge + Scope + Disziplin (heilig)
+
+**Reihenfolge:** F1 → F2 → F3 sind die **Logik-Synergie** (headless beweisbar, je eine Welle, je ein
+`checkBand`). F4 ist die **Optik** (Schöpfer-Browser-Audit). F5 ist die **tiefe Kür** (mit Mess-Wächter).
+**F1 zuerst** — es heilt sofort den sichtbaren Befund („nur Bauwerk") + ist risikoarm; danach F2 (die
+Rekursion schließen), F3 (der Material-Merge). **Scope/Disziplin:** kein neues Modul, kein Parallelpfad —
+die zwei bestehenden Systeme (`state.tools` + `equipped.held`) VERSCHMELZEN über die halbe Brücke
+(`equipHeld`-`sourceBlueprint`), die schon existiert; Material-Verbrauch reuse `computeBuildCost`;
+modus-gated wie Bauen; der Affekt (`_feelAction("create"/"forge")`) liest die Tat gratis mit (W2-Brücke →
+Stolz ∝ Komplexität + Substanz). Die Wucht/das Feel/die Hand-Optik = Schöpfer-Browser. **Vor F5 (Rollen-/
+Tag-Verschiebung) IMMER `diag-arch-tags` (V17.17-Lehre).** KONSUM verifizieren, nicht Existenz (V17.31).
+
+---
+
+## 11. Der vereinte Schöpfungs-Fluss — Plan → Werk über ALLE Rollen (Schöpfer-Dialog 02.06., die Weitung von §10)
+
+§10 heilte den Geräte-Pfad. Der Schöpfer weitet (02.06.): *„dieses Problem besteht für mehrere Dinge —
+Rüstung, Fahrzeuge, Tränke, etc. Wir machen keine halben Sachen, wir heilen den GESAMTEN Prozess. Siehst
+du alle Schnittstellen und Flüsse, von Avatar erstellen bis zum Portal, alles in der Werkstatt erstellt,
+intuitiv, in EINEM Fluss? Was passiert mit dem Teilen von Bauplänen — wie noch kopierbar und trotzdem
+Kosten beim Erstellen? Wie lebt es im gesamten Ultiversum? Welche Fäden sind alle ungebunden, nicht mehr
+synergetisch?"* **§10 war eine Instanz. §11 ist das Ganze** — derselbe Riss (zwei nie verschmolzene
+Systeme, asymmetrische Kosten, kein durchdachter Lebenszyklus) gilt für JEDE Lesart, die die Werkstatt
+gebiert. Gemessen (zwei Explore-Sonden, 02.06.), nicht geraten.
+
+### 11.1 Das EINE Prinzip: Plan → Werk (Information frei · Materie kostet)
+
+Das Crafting-Konzept (§7): *„Dasselbe System macht alles — was sich unterscheidet ist nur, welche Tags
+wofür nützlich werden."* Die Bibliothek-Vision (state-of-realm §4.2): *„eine Welt IST ein Set von
+Programmen."* Daraus fällt EINE Wahrheit, die jede Schöpfer-Frage zugleich beantwortet:
+
+- **Der Bauplan = der PLAN = reine Information.** Komponierbar, signierbar (W13 `signBlueprint` signiert die
+  SUBSTANZ, nicht den Namen → Recipe-Import/Fusion brechen die Signatur nicht), teilbar, kopierbar,
+  fusionierbar quer durchs Ultiversum. **Den Plan zu kopieren/teilen kostet NICHTS** — die Bibliothek von
+  Alexandria, die nicht brennt.
+- **Das WERK = das verkörperte Ding = kostet Materie.** Egal ob selbst entworfen oder von einem anderen
+  Schöpfer empfangen — es REAL zu machen zieht Material.
+
+**→ Die Antwort auf „kopierbar UND Kosten beim Erstellen?": der Plan ist frei (Information), das Werk
+kostet (Materie).** Ein geteilter Bauplan bleibt frei kopierbar UND jeder Macher zahlt das Material beim
+Verkörpern. **Und das Geniale (GEMESSEN, Sonde B): dieses Modell ist für STRUKTUREN schon gebaut + korrekt**
+— `computeBuildCost` macht KEINEN Unterschied nach Herkunft (ein geteilter Bauplan kostet beim Bauen genau
+wie ein selbst-entworfener), und Pläne reisen frei (`define_blueprint`-Broadcast · Welt-Snapshot ·
+`importRecipesFromWorld` · `fuseWorlds` · `cloneBlueprint`, alle deep-cloned + signiert). **Wir erfinden das
+Modell nicht — wir GENERALISIEREN das bewährte Struktur-Muster auf alle Rollen** (die Heilige Lektion:
+Verdichtung des Vorhandenen, kein neues System).
+
+### 11.2 Die drei Akte + die Modus-Kristallisation (die Kosten-Klärung)
+
+Der „wann kostet es?"-Faden löst sich in Akte:
+
+- **WERK** (machen: bauen · schmieden · weben · brauen · **einen Körper formen**): zieht Material EINMAL,
+  friert die Präzision ein (Snapshot), gebiert das reale Ding.
+- **GEBRAUCH** (benutzen: ausrüsten · schwingen · tragen · **eine fertige Seele verkörpern**): FREI — du hast
+  beim Werk schon gezahlt. (Der Trank: trinken verbraucht das Gebraute — die Wurzel ist die Zutaten, §11.3.)
+
+**Der Avatar ist KEINE Ausnahme** (Schöpfer-Korrektur 02.06., kongruenter als mein erster Wurf): einen
+stärkeren/eigenen Körper zu FORMEN ist ein Werk-Akt (kostet gesammelte Rohstoffe) — `applyPlayerSoulFrom­
+Blueprint` baut heute aus DENSELBEN Parts × Material wie alles, nur ohne Kosten. Eine fertige Seele zu
+TRAGEN ist Gebrauch (frei). Die drei Starter-Seelen (Mensch/Phönix/Drache) sind frei gegebene Identitäten
+(wie die built-in Baupläne freie Pläne sind). **Identität ist der GEBRAUCH; der Körper ist das WERK** — im
+pfad/frieden sammelst du Rohstoffe für individuelle, stärkere Avatare. Voll kongruent, alles in der Werkstatt.
+
+**Die Modus-Kristallisation (Schöpfer-Korrektur 02.06. — eine echte Diskrepanz):** GEMESSEN sind HEUTE ALLE
+Kosten-/Mühe-Gates `pfad`-only (`_buildMaterialGate` · die Stamina · die Abbau-Mühe · das Stations-Gate) →
+**frieden ist exakt so gratis + mühelos wie schöpfer.** Das ist falsch: *frieden bedeutet nicht gratis — das
+wäre der Schöpfer-Modus.* Die saubere Kristallisation — zwei Achsen (Materie · Mühe), drei Modi:
+
+| Modus | Mantra | Materie (machen) | Mühe + Bedrohung (Stamina · Abbau-Hieb · Furcht) |
+| --- | --- | --- | --- |
+| **schöpfer** | gehorcht | frei | frei |
+| **frieden** | umarmt | **kostet** (du sammelst + machst) | mild/keine (friedlich, kein Schrecken) |
+| **pfad** | verhandelt | kostet | voll (Mühe + Ausdauer + Bedrohung) |
+
+→ **Materie kostet in pfad UND frieden; gratis nur in schöpfer. Mühe/Bedrohung ist die pfad-Achse** (frieden
+dämpft sie schon — die Kreatur-Menace ist seit V17.58 modus-skaliert `pfad=1 · frieden<1 · schöpfer<<1`).
+Das ändert das bestehende `_buildMaterialGate` (heute pfad-only → soll pfad+frieden zahlen) und prägt das
+neue `_makeCostGate` von Anfang an. Eine echte Welle, kein bloßer Plan-Satz.
+
+### 11.3 Das vollständige Hauptbuch der losen Fäden (GEMESSEN, beide Sonden 02.06.)
+
+**Pro Lesart — der Werk-Akt, die heutige Kosten-Wahrheit, der Faden:**
+
+| Lesart | Werk-Akt (machen) | kostet heute? | Gebrauch | loser Faden |
+| --- | --- | --- | --- | --- |
+| **Bauwerk · Maschine · Portal-Struktur** | bauen (`confirmBuild`) | ✅ pfad (`tryConsumeBuildCost`) | platzieren | — **das VORBILD (korrekt)** |
+| **Gerät** (Werkzeug+Waffe) | schmieden | ❌ frei (`equipHeld`) | schwingen/abbauen frei | kein Schmiede-Akt (§10) |
+| **Rüstung** | schmieden/weben | ❌ frei (`equipArmor`) | tragen frei | kein Mach-Akt |
+| **Trank** | brauen | ❌ frei (`setBlueprintAsConsumable`) | `activateConsumable` gibt **∞ Boost, NIE verbraucht** | **keine Zutaten in der Welt** (Wurzel) + kein Brau-Akt + unerschöpflich |
+| **Avatar/Seele** | einen Körper FORMEN (`applyPlayerSoulFromBlueprint`) | ❌ frei | fertige Seele tragen frei | kein Mach-Akt + der Baukasten noch nicht sauber in der Werkstatt |
+| **Fahrzeug** (moveable) | bauen ✅ + fahren | ✅ bauen / mount frei | `mountArchitecture`/Fahren dünn | die Fahr-Tiefe (eigener Gameplay-Faden) |
+
+**Quer-schneidende Fäden (gelten für ALLE Lesarten, aus §10.1):**
+1. **Der Werk-Akt fehlt für Nicht-Strukturen** — nur `confirmBuild` zahlt; Gerät/Rüstung/Trank gehen vom
+   Plan DIREKT zum Gebrauch, der material-zahlende Werk-Schritt fehlt (die Wurzel der Asymmetrie).
+2. **Die Werkstatt zeigt die Rolle read-only** („nur Bauwerk"); die Form-Fähigkeit (Klinge/Brecher/Schutz/
+   Wirkung) ist berechnet, aber nicht in der Werkstatt sichtbar.
+3. **Die Präzision erreicht die Welt nicht** — nur Kampf-Stats, nicht das Abbauen (die §4.3-Rekursion endet).
+4. **Keine In-der-Hand-Optik** — das gehaltene Gerät unsichtbar; der einzige Visual ist der Platzier-Schatten.
+5. **Die Schöpfung ist über VIER Drawer zerstreut** — `werkstatt` (Parts/Tools) · `ausrüstung` (Rüstung/
+   Trank/Portal markieren+ausrüsten) · `spieler` (Seele) · `kreaturen` (Kreatur-Seele); fünf Orte, ein Akt.
+6. **Keine Zutaten-Ökonomie** (Schöpfer-Befund 02.06., die wahre Tiefe des Tranks) — GEMESSEN sind die
+   Materialien stein/holz/eisen/bronze/quarz/leder; KEIN Kraut/keine Essenz, keine erntbare Flora für Tränke.
+   Ein Trank kann nichts „verbrauchen", weil es nichts zu ernten gibt — darum ist „brauen kostet" heute leer.
+   Die wahre Tiefe: ein Busch/eine Pflanze → eine Alchemie-Zutat → brauen verbraucht sie, wie der Rest. Sie
+   knüpft an die V17.1-Klein-Vegetation (Blüten/Farne/Sporen existieren als DEKO → erntbar machen = Zutaten).
+
+**Das Teilen (GEMESSEN, Sonde B — das Modell HÄLT für Strukturen, bricht für den Rest):**
+- Pläne frei teilbar ✅ — `define_blueprint` (broadcastbar, NICHT in `NON_BROADCASTABLE_OPS`), Welt-Snapshot
+  (Baupläne reisen zum Joiner), `importRecipesFromWorld` (deep-clone quer durch Welten, `-import`-Suffix +
+  Cascade-Rewire), `fuseWorlds` (Union-Merge, `-fusion`-Suffix), `cloneBlueprint` (lokal), W13-Signatur reist.
+- Werk-Kosten herkunfts-agnostisch ✅ — `computeBuildCost` unterscheidet nicht built-in/eigen/importiert; ein
+  geteilter Bauplan kostet beim Bauen wie ein eigener. **ABER nur `confirmBuild` honoriert das** — Gerät/
+  Rüstung/Trank haben keinen Werk-Akt → die „Werk kostet"-Hälfte ist für sie gebrochen.
+- Bewusst KEINE Herkunfts-Abrechnung/„geteilt"-Rabatt — empfangenes Wissen löst sich in lokalen Besitz auf
+  (Vision); das ist Absicht, kein Faden.
+
+### 11.4 Die Heilung — jeder Rolle ihr Werk-Akt (eine Maschinerie, sechs Geschmäcker)
+
+Die Lösung ist NICHT ein neues Kosten-System, sondern die **Generalisierung des bewährten Struktur-Akts**:
+ein rollen-agnostisches Mach-Tor `_makeCostGate(name)` (die Verallgemeinerung von `_buildMaterialGate`)
+routet JEDEN Werk-Akt durch `computeBuildCost`/`tryConsumeBuildCost` (dieselbe Volumen-Formel, dieselbe
+Herkunfts-Agnostik) — mit der KRISTALLISIERTEN Modus-Achse (§11.2: zahlt in pfad UND frieden, frei nur in
+schöpfer). Dann bekommt jede Lesart ihren Werk-Verb durch DASSELBE Tor:
+- **bauen** → platzieren (existiert — wird auf `_makeCostGate` umgehängt; lädt damit zugleich die Modus-
+  Korrektur — frieden zahlt jetzt auch).
+- **schmieden/weben** (Gerät/Rüstung) → Material ziehen + Präzision einfrieren + als haltbar/ausrüstbar
+  registrieren (der §10-F3-Akt, jetzt auch für Rüstung).
+- **brauen** (Trank) → die GEERNTETEN Zutaten ziehen (sobald die Zutaten-Ökonomie steht, §11.3-Faden 6) + die
+  Wirkung als verbrauchbares Gebräu gebären (trinken verbraucht es — kein ∞-Gratis-Boost mehr).
+- **einen Körper formen** (Avatar) → `applyPlayerSoulFromBlueprint` durchs Mach-Tor: gesammelte Rohstoffe
+  ziehen → ein stärkerer/eigener Körper. Eine fertige Seele zu tragen (verkörpern) bleibt frei (§11.2).
+Die BEWÄHRTE Maschinerie (`confirmBuild` zahlt seit V8.37 korrekt + herkunfts-agnostisch), nur einmal
+verallgemeinert + rollen-gerecht gerufen. Kein Parallelpfad (V17.9).
+
+### 11.5 Die EINE Werkstatt-Gebärmutter (ein Fluss, nicht vier Drawer)
+
+Die Werkstatt wird der Mutterleib von allem — ein durchgängiger Fluss statt fünf verstreuter Orte:
+**(1) entwerfen** (Parts: Form × Material × Position) → **(2) verarbeiten** (Crafting-Tools anwenden →
+Präzision; nahe der passenden Welt-Werkstatt-Station) → **(3) ABLESEN** (die emergente Fähigkeit: Klinge/
+Brecher · Schutz-Profil · Wirk-Profil · Wesen · Tor — die Form sagt, was es IST) → **(4) FERTIGEN** (der
+rollen-gerechte Werk-Verb aus §11.4, Material ziehend) → **(5) real** (platziert via Hotbar / gehalten /
+getragen / als Ladungen). Die Rollen-Markierung (`setBlueprintAsArmor/Consumable/Tool`) + die Mach-Akte
+kollabieren in DIESEN Fluss. Die `ausrüstung`/`spieler`-Drawer werden zu GEBRAUCHS-Flächen (das schon
+gefertigte Gerät/Rüstung anlegen, die schon verkörperte Seele wechseln), KEINE Schöpfungs-Flächen mehr —
+die Schöpfung wohnt in der Werkstatt, der Gebrauch am Körper.
+
+### 11.6 Das Teilen-Modell — schon bewiesen, nur generalisieren
+
+Sonde B zeigt: für Strukturen ist „Plan frei / Werk kostet" bereits Code-Wahrheit. Sobald das Mach-Tor
+(§11.4) verallgemeinert ist, ERBEN die neuen Werk-Akte die Herkunfts-Agnostik GRATIS — ein geteiltes Gerät/
+ein geteilter Trank kostet beim Schmieden/Brauen genau wie ein selbst-entworfener, und die W13-Signatur
+(über die Substanz) reist mit jedem Mach-Akt. So lebt es im Ultiversum: der Schöpfer entwirft ein Gerät →
+signiert den Plan → teilt ihn (Broadcast/Recipe-Import/Fusion/Bibliothek) → ein anderer kopiert den Plan
+gratis → zahlt SEIN Material beim Schmieden → hält das echte Gerät, mit der beweisbaren Autoren-Signatur.
+Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis, ökonomisch sauber.
+
+### 11.7 Der sequenzierte Teilschritt-Plan (S1–S11 — §10s F-Schritte falten ein)
+
+- **S1 — die Werkstatt erkennt JEDE Lesart — ✅ GEBAUT (V17.59):** `_blueprintCapabilityHints(bp)` liest die
+  emergente Fähigkeit aus Form × Material (die in-der-Hand-Lesart Klinge/Brecher/Gerät via
+  `_implementAffordanceLabel`, nur bei greifbarer Größe `IMPLEMENT_GRASP_SPAN_M` 6 m · Schutz aus dichte+härte
+  · Wesen/Tor/Wirkung via `_isBodyShaped`/`_isPortalShaped`/`_isFoodLike`), UNABHÄNGIG von der abstrakten
+  Rolle; `_workshopAppendRoleRow` rendert eine „Fähigkeit"-Zeile. Der Holzstiel+Steinkopf liest „Brecher —
+  wuchtet Fels", obwohl seine Rolle „Bauwerk" ist — der „nur Bauwerk"-Befund GEHEILT. `checkBandV1759Capability­
+  Readout` 6 grün (inkl. der rollen-unabhängige Heal + die Struktur-Suppression + der DOM-Konsum). *Reuse, kein
+  neuer Pfad; das Feel/die Optik der Chips = Schöpfer-Browser.*
+- **S2 — das Mach-Tor `_makeCostGate` + die Modus-Kristallisation — ✅ GEBAUT (V17.60):** `_makeCostGate(name)`
+  (die Generalisierung von `_buildMaterialGate`, das jetzt darauf delegiert) routet jeden Werk-Akt durch
+  `tryConsumeBuildCost` mit der kristallisierten Modus-Achse: **Materie kostet in pfad UND frieden, frei nur in
+  schöpfer** (`mode === "schöpfer"` ist der einzige Free-Pass) — die V17.59-Diskrepanz „frieden = gratis wie
+  schöpfer" GEHEILT. Die Bau-HUD zeigt jetzt auch in frieden die Kosten (nur schöpfer „frei"). Der Kreatur-
+  Bau-Pfad erbt es (konsistent). Mühe/Bedrohung (Stamina/Abbau-Hieb) bleiben die pfad-Achse — frieden ist
+  friedlich, aber nicht gratis. `checkBandV17.60` (im 6.H-P2C-Band, 4 grün: `_makeCostGate` da, frieden lehnt
+  ohne Material ab, **KONSUM** frieden MIT Material baut + verbraucht, frieden-HUD zeigt Kosten); Test-Migration
+  (V9.56-i): die alten „frieden baut frei"-Proben → „frieden zahlt", + der Ring-6-V2-Spawn-Test auf schöpfer
+  (er prüft den Spawn, nicht die Kosten). *Fundament für S3–S6; headless bewiesen.*
+- **S3 — Gerät schmieden — ✅ GEBAUT (V17.61):** **F2** — `_implementProfileForBlueprint` multipliziert
+  minePower+cutPower mit `0.5+0.5·präzision` (`forgedPrecision`-Snapshot wenn geschmiedet, sonst live aus
+  den Parts; opChain-los = 1.0 → Faktor 1.0, kein Regress) → besseres Crafting hebt das Abbauen, die §4.3-
+  Rekursion schließt END-TO-END. **F3** — `forgeBlueprint(name)`: zieht Material durchs §11.2-Mach-Tor
+  (pfad/frieden zahlen, schöpfer frei) + friert die Präzision ein + rüstet das Gerät aus (equipHeld) + der
+  Affekt (`_feelAction("create")`); ein „⚒ Schmieden (in die Hand)"-Knopf in der Werkstatt. `checkBandV1761­
+  ForgeImplement` 6 grün (F2 fein>grob; F3 pfad ohne Material lehnt ab, **KONSUM** pfad mit Material baut +
+  verbraucht + rüstet aus, friert Präzision ein, schöpfer frei). *equipHeld bleibt der freie GEBRAUCH; das
+  Kosten-Tor sitzt im Schmiede-WERK. Das Feel/die Balance = Schöpfer-Browser.*
+- **S3-B — der Schmiede-Akt wird BEDEUTSAM — ✅ GEBAUT (V17.62):** Reflexions-Fund (Schöpfer 02.06.): der
+  Schmiede-Akt war UMGEHBAR — `equipHeld` gab ein Gerät gratis, mit derselben (live-)Präzision, die das
+  Schmieden einfriert → schmieden war STRIKT SCHLECHTER (zahlt nur Material) → kein Anreiz, die „Werk kostet"-
+  Synergie für das Gerät nicht erzwungen. Heilung: `wieldBlueprint(name)` (der Spieler-Equip-Pfad, der
+  Drawer-Dropdown routet darüber): ein UNgeschmiedetes Gerät in pfad/frieden → erst SCHMIEDEN (zahlt), ein
+  geschmiedetes (`forgedPrecision`, jetzt im Snapshot PERSISTIERT) ODER schöpfer → frei (GEBRAUCH). Schmieden
+  EINMAL, halten frei, überlebt Reload. `equipHeld` bleibt das freie Low-Level-Primitiv (Restore/DSL/Chat/
+  Aliase = die scripting-Schicht; deren volle Vereinheitlichung bleibt S7). `checkBandV1762ForgeMeaningful`
+  6 grün (Persistenz, wield-ungeschmiedet-ohne-Material lehnt ab, **KONSUM** wield-mit-Material schmiedet,
+  GEBRAUCH-frei für geschmiedete, schöpfer frei). *Damit hat S3 seinen Anreiz; S4–S6 replizieren ein WERK-
+  Muster, das tatsächlich BEISST.*
+- **S4 — Rüstung schmieden/weben — ✅ GEBAUT (V17.63):** der gemeinsame WERK-Kern `_forgeMaterialAndFreeze`
+  (Material + Präzision-Snapshot + Affekt) extrahiert (forgeBlueprint hängt jetzt darauf, verhaltens-gleich);
+  `forgeArmor(name)` (verlangt role:"armor") + `wearArmor(name)` (der Spieler-Pfad, forge-wenn-ungemacht, sonst
+  frei) spiegeln forge/wield in den armor-Slot; die Rüstungs-Zeile im Equip-Drawer routet darüber; der eine
+  rollen-bewusste `fertigeBlueprint` + der ⚒-Knopf (Rüstung → weben, sonst → schmieden) = der erste Schritt
+  zur EINEN Werkstatt-Gebärmutter (§11.5). `checkBandV1763ForgeArmor` 7 grün (forgeArmor verlangt die Rolle,
+  pfad ohne Material lehnt ab, **KONSUM** pfad mit Material webt + zahlt + trägt, GEBRAUCH frei, fertige routet
+  nach Rolle, forgeBlueprint nach dem Refactor heil). *Das Web-Muster BEISST (auf S3-B). Headless bewiesen.*
+- **S5 — Avatar: einen Körper formen — ✅ GEBAUT (V17.64):** `forgeAvatar(name)` (verlangt role:"soul";
+  derselbe WERK-Kern `_forgeMaterialAndFreeze` → dann `applyPlayerSoulFromBlueprint` erschafft + verkörpert)
+  + `embodyBlueprint(name)` (der Spieler-Pfad: ungeformte Seele in pfad/frieden → forgeAvatar/zahlt, geformte
+  oder schöpfer → frei verkörpern). `fertigeBlueprint` routet jetzt auch soul → forgeAvatar; der „Als Seele
+  tragen"-Knopf läuft über embodyBlueprint (zahlt-wenn-ungeformt), der ⚒-Knopf überspringt Seelen (sie haben
+  den dedizierten Knopf). `applyPlayerSoulFromBlueprint` bleibt das freie Low-Level-Primitiv (Welle-9d-Band
+  unberührt). `checkBandV1764ForgeAvatar` 7 grün (forgeAvatar verlangt role=soul, pfad ohne Material lehnt ab,
+  **KONSUM** pfad mit Material formt+zahlt+verkörpert+friert ein, GEBRAUCH frei, schöpfer frei, fertige routet
+  soul). *Der Avatar ist KEINE Ausnahme mehr — drei Rollen teilen den Kern. Headless bewiesen.*
+- **S6 — Trank brauen zieht die Zutaten — ✅ GEBAUT (V17.65, der STRUKTUR-Heal):** `brewConsumable(name)`
+  (verlangt role:"consumable") zieht die Zutaten (die Material-Kosten des Trank-Bauplans, z.B. `laub` von
+  Bäumen) durchs §11.2-Mach-Tor, DANN wirkt der Trank (activateConsumable) → heilt den ∞-Gratis-Boost (Sonde
+  A): jeder Brau+Trunk kostet geerntete Zutaten (pfad/frieden), frei nur in schöpfer. activateConsumable bleibt
+  das freie Low-Level-Primitiv (DSL/Chat/Tabellen-Tränke); der Bauplan-Trank-Knopf („Brauen + Trinken") +
+  `fertigeBlueprint` (consumable → brewConsumable) + der ⚒-Skip für Tränke routen darüber. `checkBandV1765­
+  BrewConsumable` 7 grün (verlangt die Rolle, pfad ohne Zutaten lehnt ab, **KONSUM** pfad mit Zutaten zieht
+  Material + wirkt, activateConsumable bleibt frei, schöpfer frei, fertige routet consumable). *Headless bewiesen.*
+- **S6-B — die echte Zutaten-TIEFE (offen, Welt-Inhalt):** die V17.1-Klein-Vegetation (Blüten/Farne/Sporen) ist
+  reine GPU-Deko (kein Harvest/Collision) → erntbar machen = ein neues GPU-Instanz-Harvest-System + dedizierte
+  Alchemie-Material-Tags (kraut/essenz). HEUTE sind die Zutaten die Part-Materialien (laub von Bäumen funktioniert
+  schon); S6-B gibt der Alchemie eigene erntbare Flora. *Eine eigene meatige Welle (V17.17-Spawn-Affinität messen).*
+- **S7 — der EINE Fluss: das FERTIGEN in den Prozess-Fluss falten (RE-FRAMED nach dem Schöpfer-Browser-Audit
+  02.06.):** Der Befund: die S3–S6-Mach-Akte erscheinen als PARALLELER Pfad — der „⚒ Schmieden"-Knopf liegt im
+  Detail-Editor + heißt wie der Schmiede-Hammer-PROZESS, also wirkt er wie eine Doublette des bestehenden
+  „Prozess-ziehen-fixiert-die-Rolle"-Flusses (`applyOpToPart` + die Domain-Rolle-Emergenz). Die WURZEL ist NICHT
+  die Logik (Material-Kosten + rollen-bewusster Abschluss sind richtig), sondern die PRÄSENTATION + die Benennung.
+  Die Heilung (kein neuer Code-Pfad — eine Verdichtung der UI): **(a)** den Knopf von „Schmieden" zu **„FERTIGEN"**
+  umbenennen (der ABSCHLUSS, nicht der Prozess) + prominent in die Stats-Tabelle unter der 3D-Ansicht (wo die Rolle
+  kristallisiert), raus aus dem Detail-Editor; **(b)** das FERTIGEN durch `_workshopStationGate` gaten (ein
+  forging-Gerät fertigen → Esse nah, ein Trank → Brennkolben — die Maschine-in-der-Welt, Welle 9c, jetzt
+  end-to-end angeschlossen, nicht nur bei confirmBuild); **(c)** die optimierbaren ACHSEN (Tags → Stats) in der
+  Tabelle sichtbar machen; **(d)** den LEBENSZYKLUS klar zeigen — die Rolle EMERGIERT (reversibel: mehr von einer
+  Domain → wandert; ↺ löst eine manuelle), bis das FERTIGEN sie zum realen Werk macht (Material + ausrüsten;
+  re-fertigbar). Der eine Fluss: **verfeinern (Prozesse ziehen + Maschine) → ablesen (Tabelle: Rolle + Achsen +
+  Lebenszyklus) → FERTIGEN (zahlen + real, an der Maschine).** Plus die chat/DSL-Vereinheitlichung (der letzte
+  Gratis-Bypass „rüste/werde X" → durchs FERTIGEN). *Meist UI + der Maschine-Gate-Anschluss; die Mach-Logik bleibt.
+  Schöpfer-Browser für das Feel.*
+- **S8 — die Teilen-Konsistenz** (§11.6): das Mach-Tor ist herkunfts-agnostisch by-construction → ein
+  geteiltes Gerät/Trank/Avatar kostet wie ein eigenes; die Signatur reist. Fällt fast aus S2 heraus.
+  *Headless-Verifikation.*
+- **S9 — in der Hand sichtbar** (= §10-F4): das gehaltene Gerät rendert in der Hand. *Render · Schöpfer-Browser.*
+- **S10 — die Crafting-Op emergiert aus der Form** (= §10-F5): scharf → schneiden, stumpf-hart → schmieden,
+  das manuelle opName-Tippen fällt. *Tief · mit `diag-arch-tags`-Wächter.*
+- **S11 — die Animation in der Werkstatt (DIE KIRSCHE)** (Schöpfer-Vision 02.06.): heute ist die Animation
+  pro built-in Seele hartcodiert (das sin/cos in `createPlayerSoul`/`buildCreatureGroup` — Walk-Cycle,
+  Flügelschlag, Schweif-Welle); ein Custom-Körper/Fahrzeug bewegt sich nicht eigen. Die Krönung: eine
+  DEKLARATIVE Part-Animation im Werkstatt-Editor (welche Parts oszillieren/rotieren, Frequenz · Phase · Achse
+  · Amplitude) → ein geschmiedeter Avatar geht, ein gebautes Fahrzeug dreht seine Räder, alles vom Schöpfer
+  geformt, nichts hartcodiert. Der Hylomorphismus eine letzte Ebene weiter (Form × Material × Bewegung). *Die
+  ambitionierteste Welle — ein echtes Animations-Substrat; das Feel = Schöpfer-Browser.*
+- **Fahrzeug-Fahren** (§11.3): das Bauen kostet schon; die Fahr-/Mount-Tiefe (Steuerung, Sitz, Trägheit) ist
+  ein eigener Gameplay-Faden — **Schöpfer-Entscheid** wann, nicht in dieser Sequenz angenommen (S11 gibt ihm
+  die Bewegung).
+
+**Reihenfolge-Logik:** S1 (universeller Readout, heilt „nur Bauwerk" überall) + S2 (das Mach-Tor + die
+Modus-Heilung) ZUERST — Fundament + sofort sichtbare Heilung + die Diskrepanz weg. Dann S3/S4/S5 (die
+risikoarmen Mach-Akte Gerät/Rüstung/Avatar, je eine Welle, je ein `checkBand`). Dann S6 (die Zutaten-
+Ökonomie, Welt-Inhalt), S7 (der Fluss), S8 (Teilen, fast gratis), S9/S10 (Optik + tiefes Crafting), S11 (die
+Animations-Kirsche, zuletzt + am ambitioniertesten).
+
+### 11.8 Scope + Disziplin (heilig)
+
+- **Heilige Lektion:** die bewährte `confirmBuild`/`computeBuildCost`-Maschinerie wird EINMAL verallgemeinert
+  (`_makeCostGate`) + rollen-gerecht gerufen — KEIN „CreationManager"-Modul, kein Parallelpfad (V17.9). Die
+  vier Drawer verschmelzen, sie verdoppeln sich nicht.
+- **Die Modi sind kristallisiert** (§11.2): Materie kostet in pfad+frieden (NICHT nur pfad wie heute), frei
+  nur in schöpfer; Mühe/Bedrohung ist die pfad-Achse (frieden mild). Das HEILT die gemessene Diskrepanz
+  (frieden = schöpfer = gratis) — eine bewusste Verhaltens-Korrektur am bestehenden Build-Gate, kein
+  Versehen; sie lädt mit S2.
+- **Der Avatar ist KEINE Ausnahme** (Schöpfer-Korrektur): einen Körper formen = Werk (kostet), tragen = frei.
+  Die **Fahrzeug-Fahr-Tiefe** + das **endlich-vs-wiederholbar des Tranks** bleiben Schöpfer-Entscheide —
+  benannt, nicht angenommen.
+- **Headless beweisbar:** der Readout (S1), der Material-Zug + Präzisions-Snapshot (S2–S6), das Zutaten-
+  Verbrauchen, die Herkunfts-Agnostik (S8). **Schöpfer-Browser:** das Feel, der EINE-Fluss-UX (S7), die
+  Hand-Optik (S9), das Flora-Feel (S6), die Animation (S11 — ein echtes Substrat, am ambitioniertesten).
+  **`diag-arch-tags` vor jeder Rollen-/Tag-Verschiebung** (S10, V17.17). KONSUM verifizieren, nicht Existenz
+  (V17.31).
+- **Headless-grün ≠ vision-aligned (S7-Lehre, §11.9):** der FLUSS/die UI-Präsentation braucht das Schöpfer-Auge
+  früh — eine korrekte Mach-Logik kann trotzdem als Parallel-Pfad WIRKEN; zeige den Fluss im Browser, bevor du
+  Welle auf Welle stapelst.
+
+### 11.9 Browser-Audit-Ausrichtung (Schöpfer 02.06.) — die Lehre + der Lebenszyklus
+
+Nach S1–S6 (alle headless-grün) zeigte der Schöpfer-Browser-Audit eine echte Fehl-Ausrichtung, die headless
+NICHT sichtbar war: **die Mach-Akte sind funktional korrekt, aber als PARALLELER Pfad PRÄSENTIERT.** Der
+„⚒ Schmieden"-Knopf (im Detail-Editor, benannt wie der Schmiede-Hammer-PROZESS) wirkte wie eine Doublette des
+intuitiven Flusses, in dem das Ziehen eines Prozesses die Rolle schon fixiert. Der Schöpfer: „ein weiterer
+Pfad, die bestehenden nicht vereint?". **Er hatte recht.** Die Heilung ist S7 (oben re-framed) — den Abschluss
+in den bestehenden Prozess-Fluss + die Maschine-in-der-Welt FALTEN, nicht daneben stellen.
+
+**Der Lebenszyklus (geklärt, gegen die Sorge „könnte man nichtmehr zurück?"):** die Rolle ist NICHT
+irreversibel — sie EMERGIERT live aus der dominanten opChain-Domain (`_refreshBlueprintRoleEmergent` nach jedem
+`applyOpToPart`): mehr forging → Gerät, dann mehr alchemy → wandert zu Trank; die Domain-Analyse-Tabelle zeigt
+das. Manuell fixieren (setBlueprintAsArmor etc.) sperrt es, das ↺ löst es wieder. Das FERTIGEN ist KEIN
+„Speichern" (Baupläne speichern automatisch) und KEIN Rollen-Schloss — es ist „das reale Werk herstellen"
+(Material zahlen + ausrüsten/tragen/verkörpern); der einzige Commit ist die eingefrorene `forgedPrecision`, auch
+re-fertigbar. **Frei wie die Welt.**
+
+**Die drei Schichten (geklärt, gegen „Fähigkeit = die Eigenschaften, die die Rolle ermöglichen?"):** Tags
+(härte/dichte/lebendig — die rohen Eigenschaften aus Material × Form) → daraus emergieren ZWEI Lesarten: die
+FÄHIGKEIT (Klinge/Brecher/Schutz — was es KANN, die Form-Wahrheit, der S1-Readout) UND die ROLLE (die
+Crafting-Kategorie, via die dominante Prozess-Domain + der forging-Tag-Split). Fähigkeit = „was kann es",
+Rolle = „was IST es" — beide aus derselben Substanz. Die Domain-FARBE eines Prozesses sagt, welche Rolle er
+steuert (forging→Gerät/Rüstung · alchemy→Trank · soulwork→Seele · …; generische Prozesse ohne Farbe heben nur
+die Präzision, steuern keine Rolle).
+
+**PERMANENTE LEHRE: headless-grün ≠ vision-aligned.** Eine Mach-/Feature-Logik kann KORREKT sein (alle
+Invarianten grün) und TROTZDEM den intuitiven Fluss brechen, wenn ihre UI-PRÄSENTATION einen Parallel-Pfad
+schafft oder einen bestehenden Fluss zu duplizieren SCHEINT (Benennung, Platzierung). Der headless-Test beweist
+die MECHANIK, nicht die AUSRICHTUNG. Den FLUSS/die UI früh im Schöpfer-Browser zeigen — BEVOR man Welle auf
+Welle stapelt; ein Prozess-Drag-Crafting-System verlangt das Schöpfer-Auge für die Synergie, nicht nur grüne
+Bänder. Die Mach-Akte S3–S6 waren NICHT umsonst — die Logik (Material-Kosten, rollen-bewusster Abschluss,
+Präzisions-Snapshot) bleibt; S7 stellt sie nur in den richtigen Fluss.
