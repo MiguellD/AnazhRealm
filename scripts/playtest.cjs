@@ -5200,6 +5200,104 @@ async function checkBandV1764ForgeAvatar(ctx) {
     );
 }
 
+// V17.65 S6 (kampf-plan §11.7, §11.3-Faden 6) — Trank brauen: der Werk-Akt zieht die Zutaten (die
+// Material-Kosten des Konsumable-Bauplans) durchs Mach-Tor, dann wirkt der Trank. Heilt den ∞-Gratis-Boost.
+// activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz, V17.31).
+async function checkBandV1765BrewConsumable(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const p = r.state.player;
+        const savedMode = r.getGameMode();
+
+        out.method = typeof r.brewConsumable === "function";
+
+        blu.__trank = {
+            name: "__trank",
+            parts: [
+                {
+                    shape: "sphere",
+                    material: "stein",
+                    size: { x: 0.5, y: 0.5, z: 0.5 },
+                    position: { x: 0, y: 0, z: 0 },
+                },
+            ],
+        };
+        r.setBlueprintAsConsumable("__trank", 30, "Test-Trank", 0.2);
+        out.markedConsumable = blu.__trank.role === "consumable";
+        blu.__nottrank = {
+            name: "__nottrank",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.5, y: 0.5, z: 0.5 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
+
+        // (2) brewConsumable verlangt role="consumable"
+        r.setGameMode("schöpfer");
+        const brewNoRole = r.brewConsumable("__nottrank");
+        out.brewRequiresConsumable = brewNoRole.ok === false && brewNoRole.reason === "not_a_consumable";
+
+        // (3) brewConsumable in pfad OHNE Zutaten → abgelehnt
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        const brewNoMat = r.brewConsumable("__trank");
+        out.pfadBrewRejectsWithoutMaterial = brewNoMat.ok === false && brewNoMat.reason === "not_enough_material";
+
+        // (4) brewConsumable in pfad MIT Zutaten → braut (zieht Material + der Trank wirkt)
+        p.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        const steinBefore = p.inventory[0].count;
+        const brewOk = r.brewConsumable("__trank");
+        const steinAfter = p.inventory[0] ? p.inventory[0].count : 0;
+        out.pfadBrewConsumesAndWorks = brewOk.ok === true && steinBefore > steinAfter;
+
+        // (5) activateConsumable bleibt FREI (Low-Level): wirkt mit leerem Inventar (zieht kein Material)
+        p.inventory = new Array(27).fill(null);
+        const actDirect = r.activateConsumable("__trank");
+        out.activateStillFree = actDirect.ok === true;
+
+        // (6) brewConsumable frei in schöpfer
+        r.setGameMode("schöpfer");
+        p.inventory = new Array(27).fill(null);
+        const brewSchoepfer = r.brewConsumable("__trank");
+        out.schoepferBrewsFree = brewSchoepfer.ok === true && brewSchoepfer.free === true;
+
+        // (7) fertigeBlueprint routet consumable → brewConsumable (Brau-Ablehnung, nicht Gerät-Schmieden)
+        r.setGameMode("pfad");
+        p.inventory = new Array(27).fill(null);
+        const fertNoMat = r.fertigeBlueprint("__trank");
+        out.fertigeRoutesConsumable = fertNoMat.ok === false && fertNoMat.reason === "not_enough_material";
+
+        // cleanup
+        delete blu.__trank;
+        delete blu.__nottrank;
+        p.inventory = new Array(27).fill(null);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.65 S6: brewConsumable existiert", res.method);
+    check(
+        "V17.65 S6: brewConsumable verlangt role=consumable (sonst not_a_consumable)",
+        res.brewRequiresConsumable && res.markedConsumable
+    );
+    check("V17.65 S6: brauen in pfad OHNE Zutaten → abgelehnt (kein Trank)", res.pfadBrewRejectsWithoutMaterial);
+    check(
+        "V17.65 S6: KONSUM — brauen in pfad MIT Zutaten → zieht Material + der Trank wirkt",
+        res.pfadBrewConsumesAndWorks
+    );
+    check(
+        "V17.65 S6: activateConsumable bleibt das freie Low-Level-Primitiv (wirkt ohne Material)",
+        res.activateStillFree
+    );
+    check("V17.65 S6: schoepfer braut frei (ohne Zutaten)", res.schoepferBrewsFree);
+    check(
+        "V17.65 S6: fertigeBlueprint routet consumable → brewConsumable (Brau-Ablehnung, nicht Geraet)",
+        res.fertigeRoutesConsumable
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -37372,6 +37470,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1762ForgeMeaningful(ctx);
             await checkBandV1763ForgeArmor(ctx);
             await checkBandV1764ForgeAvatar(ctx);
+            await checkBandV1765BrewConsumable(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

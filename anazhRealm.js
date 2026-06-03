@@ -27275,13 +27275,31 @@ class AnazhRealm {
         return this.forgeArmor(name);
     }
 
-    // S4 (kampf-plan §11.5) — der EINE „Fertigen"-Akt der Werkstatt: routet nach der Rolle in den richtigen
-    // Werk-Verb (Rüstung → weben/forgeArmor, sonst → das gehaltene Gerät schmieden/forgeBlueprint). Der erste
-    // Schritt zur EINEN Werkstatt-Gebärmutter (§11.5) — ein Knopf, rollen-gerecht.
+    // S6 (kampf-plan §11.7, §11.3-Faden 6) — einen Trank BRAUEN: der Werk-Akt zieht die ZUTATEN (die
+    // Material-Kosten des Konsumable-Bauplans — z.B. `laub`, das von Bäumen geerntet wird) durch das
+    // §11.2-Mach-Tor, DANN wirkt der Trank (activateConsumable). Heilt den ∞-Gratis-Boost (Sonde A): jeder
+    // Brau+Trunk kostet geerntete Zutaten (pfad/frieden zahlen, schöpfer frei). activateConsumable bleibt das
+    // freie Low-Level-Primitiv (DSL/Chat/Tabellen-Tränke). EHRLICH: die echte Zutaten-TIEFE (erntbare
+    // Scatter-Flora → eigene Alchemie-Materialien) ist S6-B — heute sind die Zutaten die Part-Materialien.
+    brewConsumable(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp || bp.role !== "consumable") return { ok: false, reason: "not_a_consumable" };
+        const gate = this._makeCostGate(name);
+        if (!gate.ok) {
+            return { ok: false, reason: "not_enough_material", missing: gate.missing || {}, cost: gate.cost || {} };
+        }
+        const res = this.activateConsumable(name);
+        return { ok: !!res.ok, reason: res.reason, free: !!gate.free };
+    }
+
+    // S4/S5/S6 (kampf-plan §11.5) — der EINE „Fertigen"-Akt der Werkstatt: routet nach der Rolle in den
+    // richtigen Werk-Verb (Rüstung → weben, Seele → Körper formen, Trank → brauen, sonst → Gerät schmieden).
+    // Der Keim der EINEN Werkstatt-Gebärmutter (§11.5) — ein Akt, rollen-gerecht.
     fertigeBlueprint(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (bp && bp.role === "armor") return this.forgeArmor(name);
         if (bp && bp.role === "soul") return this.forgeAvatar(name);
+        if (bp && bp.role === "consumable") return this.brewConsumable(name);
         return this.forgeBlueprint(name);
     }
 
@@ -38076,7 +38094,7 @@ class AnazhRealm {
         // Präzision einfrieren, ausrüsten). Rollen-bewusst (fertigeBlueprint): Rüstung → weben + tragen,
         // sonst → Gerät schmieden + in die Hand. NUR für Gerät/Rüstung (held/worn) — Seelen haben den
         // dedizierten „Als Seele tragen"-Knopf (oben), darum hier übersprungen.
-        if (selected.role !== "soul") {
+        if (selected.role !== "soul" && selected.role !== "consumable") {
             const isArmor = selected.role === "armor";
             const forgeBtn = document.createElement("button");
             forgeBtn.type = "button";
@@ -42496,10 +42514,21 @@ class AnazhRealm {
             row.appendChild(label);
             const drinkBtn = document.createElement("button");
             drinkBtn.type = "button";
-            drinkBtn.textContent = "Trinken";
+            drinkBtn.textContent = "Brauen + Trinken";
+            drinkBtn.title = "Brauen zieht die Zutaten (die Material-Kosten, pfad/frieden), dann wirkt der Trank.";
             drinkBtn.addEventListener("click", () => {
-                const result = this.activateConsumable(name);
-                if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
+                // S6 — der Spieler-Pfad geht durch brewConsumable: brauen zieht die Zutaten, dann wirkt der Trank.
+                const result = this.brewConsumable(name);
+                if (!result.ok) {
+                    if (result.reason === "not_enough_material") {
+                        const missingStr = Object.entries(result.missing || {})
+                            .map(([m, n]) => `${n}× ${m}`)
+                            .join(", ");
+                        this.log(`Brauen — fehlt an Zutaten: ${missingStr || "Material"} (ernten).`, "ERROR");
+                    } else {
+                        this.log(`Brauen fehlgeschlagen: ${result.reason}`, "ERROR");
+                    }
+                }
                 if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
             });
             row.appendChild(drinkBtn);
@@ -45022,7 +45051,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.64.0";
+AnazhRealm.VERSION = "17.65.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

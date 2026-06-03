@@ -663,10 +663,18 @@ Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis,
   unberührt). `checkBandV1764ForgeAvatar` 7 grün (forgeAvatar verlangt role=soul, pfad ohne Material lehnt ab,
   **KONSUM** pfad mit Material formt+zahlt+verkörpert+friert ein, GEBRAUCH frei, schöpfer frei, fertige routet
   soul). *Der Avatar ist KEINE Ausnahme mehr — drei Rollen teilen den Kern. Headless bewiesen.*
-- **S6 — die Zutaten-Ökonomie + Trank brauen** (§11.3-Faden 6, die wahre Tiefe): die V17.1-Klein-Vegetation
-  (Blüten/Farne/Sporen) ERNTBAR machen → Alchemie-Zutat-Materialien → brauen zieht sie (`_makeCostGate`) +
-  gebiert ein verbrauchbares Gebräu (trinken verbraucht es). Größer (Welt-Inhalt + Material-System). *Headless
-  für Kosten/Verbrauch; das Flora-Feel = Schöpfer-Browser.*
+- **S6 — Trank brauen zieht die Zutaten — ✅ GEBAUT (V17.65, der STRUKTUR-Heal):** `brewConsumable(name)`
+  (verlangt role:"consumable") zieht die Zutaten (die Material-Kosten des Trank-Bauplans, z.B. `laub` von
+  Bäumen) durchs §11.2-Mach-Tor, DANN wirkt der Trank (activateConsumable) → heilt den ∞-Gratis-Boost (Sonde
+  A): jeder Brau+Trunk kostet geerntete Zutaten (pfad/frieden), frei nur in schöpfer. activateConsumable bleibt
+  das freie Low-Level-Primitiv (DSL/Chat/Tabellen-Tränke); der Bauplan-Trank-Knopf („Brauen + Trinken") +
+  `fertigeBlueprint` (consumable → brewConsumable) + der ⚒-Skip für Tränke routen darüber. `checkBandV1765­
+  BrewConsumable` 7 grün (verlangt die Rolle, pfad ohne Zutaten lehnt ab, **KONSUM** pfad mit Zutaten zieht
+  Material + wirkt, activateConsumable bleibt frei, schöpfer frei, fertige routet consumable). *Headless bewiesen.*
+- **S6-B — die echte Zutaten-TIEFE (offen, Welt-Inhalt):** die V17.1-Klein-Vegetation (Blüten/Farne/Sporen) ist
+  reine GPU-Deko (kein Harvest/Collision) → erntbar machen = ein neues GPU-Instanz-Harvest-System + dedizierte
+  Alchemie-Material-Tags (kraut/essenz). HEUTE sind die Zutaten die Part-Materialien (laub von Bäumen funktioniert
+  schon); S6-B gibt der Alchemie eigene erntbare Flora. *Eine eigene meatige Welle (V17.17-Spawn-Affinität messen).*
 - **S7 — der EINE Fluss** (§11.5): die Schöpfung in die Werkstatt zusammenziehen, `ausrüstung`/`spieler`
   werden Gebrauchs-Flächen. *UI-Konsolidierung · teils Schöpfer-Browser (Intuition/UX).*
 - **S8 — die Teilen-Konsistenz** (§11.6): das Mach-Tor ist herkunfts-agnostisch by-construction → ein
