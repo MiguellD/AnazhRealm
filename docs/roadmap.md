@@ -16,7 +16,18 @@ Stand: **V17.71 (03.06.2026) — der Crafting-/Resonanz-Bogen ist DURCH.** Seit 
 
 **A — den Crafting-Bogen abschließen (kampf-plan §11, der aktive Arc):**
 
-1. **Die Bibliothek — ein Beispiel-Bauplan pro Rolle** (Gerät · Rüstung · Trank · Avatar · Portal · Werkstatt): die optimierbare Saat, an der die Rekursion sichtbar wird (besserer Prozessbauplan → höherer Cap → bessere Werke). GEMESSEN (03.06.): heute KEIN craftbarer Built-in-Bauplan (nur Welt-Architekturen/Stationen/Bäume) — der Spieler startet ohne Referenz. *Schöpfer-Befund, der nächste konkrete Schritt.*
+1. **Die Bibliothek — ein Beispiel-Bauplan pro craftbarer Rolle** (die optimierbare Saat, an der die Rekursion sichtbar wird: besserer Prozessbauplan → höherer Cap → bessere Werke). **GEMESSEN (03.06., `_defaultBlueprints` ausgelesen — der präzise Bestand, NICHT „keiner"):** von den SECHS craftbaren Rollen haben ZWEI schon Built-in-Saat, VIER fehlen:
+
+   | Rolle | Built-in-Beispiel | Stand |
+   | --- | --- | --- |
+   | **Portal** | `welt_portal` · `welt_strom` · `welt_terrain` | ✅ 3 |
+   | **Werkstatt** | `esse` · `brennkolben` · `webstuhl` · `seelenstein_altar` · `drehbank` | ✅ 5 |
+   | **Gerät** (gehalten: Werkzeug/Waffe) | — | ❌ fehlt |
+   | **Rüstung** | — | ❌ fehlt |
+   | **Trank** (consumable) | — | ❌ fehlt |
+   | **Avatar** (Seele) | — | ❌ fehlt |
+
+   Die VIER Lücken sind genau die VIER Mach-Akte, die V17.59–.66 gebaut haben (`forgeBlueprint`/`forgeArmor`/`brewConsumable`/`forgeAvatar` über `_makeCostGate`+`fertigeBlueprint`) — die Schmiede KANN sie fertigen, aber es gibt keinen Bauplan zum Fertigen. (Daneben existieren als EIGENE Subsysteme, nicht als Bibliotheks-Baupläne: die 10 Crafting-Werkzeuge `state.tools` [hände/hammer/feile/schmiede-hammer/mörser/… — formlos, die Prozess-Methoden] + die 3 Soul-Templates `state.souls` [Mensch/Phönix/Drache, bodyParts] + die ~12 Welt-Architekturen ohne Rolle [village/temple/felsbogen/baum_eiche/…] die emergent als „architecture" lesen.) **Der nächste konkrete Schritt: vier craftbare Beispiel-Baupläne (Gerät/Rüstung/Trank/Avatar) als Built-in-Saat — reine DATEN via `_defaultBlueprints`, die die Resonanz automatisch liest.**
 2. **Der Schöpfer-Browser-Audit** des FERTIGEN-Flusses + des temple→Bauwerk-Heals + der Resonanz-Rollen (die umfassende Schluss-Prüfung; headless beweist die Mechanik, NICHT das Feel — §11.9).
 3. **S6-B — erntbare Flora** → echte Alchemie-Zutaten (GPU-Instanz-Harvest-System; aufgeschoben seit V17.65).
 4. **S9 — das gehaltene Gerät in der Hand sichtbar** (Render; Schöpfer-Browser).
