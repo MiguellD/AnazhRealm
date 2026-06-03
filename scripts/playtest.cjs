@@ -6847,6 +6847,104 @@ async function checkBandV1784AvatarFormFit(ctx) {
     );
 }
 
+// V17.85 — Schöpfer-Browser-Befunde geheilt: (#1) die Prozess-Op rückgängig machen (removePartOp) +
+// (#3) die ANGEZEIGTE Rolle ist die emergente (eine rollenlose Klinge → „tool", nicht „Bauwerk").
+async function checkBandV1785RoleDisplayAndUndo(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const DEFLEN = r._defaultPartOpChain().length;
+        // (#3a) der BUILT-IN rollenlose Bauplan zeigt seine EMERGENTE Form-Rolle, nicht den Default
+        const spit = r.state.blueprints["geraet_spitzhacke"];
+        out.spitRoleField = spit ? spit.role || "(undefined)" : "(missing)";
+        out.spitDisplay = spit ? r._displayRole(spit) : "(missing)";
+        out.spitEmergent = spit ? r.computeBlueprintRole(spit) : "(missing)";
+        out.spitShowsTool = out.spitDisplay === "tool"; // war „architecture" (bp.role||DEFAULT)
+        // (#3b) eine built-in-Rüstung (Substanz-Zwilling architecture) bleibt „armor" — die Saat ist autoritativ
+        const armor = r.state.blueprints["ruestung_brustpanzer"];
+        out.armorDisplay = armor ? r._displayRole(armor) : "(missing)";
+        out.armorStaysArmor = out.armorDisplay === "armor";
+        // (#3c) cloneBlueprint materialisiert die emergente Rolle → ein frischer Spitzhacke-Klon trägt „tool"
+        delete r.state.blueprints["_v1785_clone"];
+        r.cloneBlueprint("geraet_spitzhacke", "_v1785_clone");
+        const clone = r.state.blueprints["_v1785_clone"];
+        out.cloneRoleField = clone ? clone.role || "(undefined)" : "(missing)";
+        out.cloneCarriesTool = clone && clone.role === "tool";
+        delete r.state.blueprints["_v1785_clone"];
+        // (#1) removePartOp — die Op rückgängig (Mechanik + Rolle re-emergiert)
+        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer"); // keine Stamina-Kosten
+        const savedTools = Array.isArray(r.state.player.tools) ? r.state.player.tools.slice() : [];
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
+        delete r.state.blueprints["_v1785_undo"];
+        r.createBlueprint("_v1785_undo", "Undo-Test");
+        // ein stumpfer, dichter eisen-Block → der Form nach „architecture" (kein Pointed-Blade-Gate)
+        r.addPartToBlueprint("_v1785_undo", {
+            shape: "box",
+            material: "eisen",
+            position: { x: 0, y: 1, z: 0 },
+            size: { x: 1, y: 1, z: 1 },
+        });
+        const ub = r.state.blueprints["_v1785_undo"];
+        out.roleBeforeApply = r.computeBlueprintRole(ub); // erwartet: architecture
+        // (#1a) removePartOp auf der Grund-Kette → nichts zu entfernen
+        const remEmpty = r.removePartOp("_v1785_undo", 0);
+        out.remEmptyRejected = remEmpty.ok === false && remEmpty.reason === "nothing_to_remove";
+        // eine forging-Op anwenden (schmiede-hammer, plastic → eisen kompatibel) → opCount steigt, Rolle wechselt
+        const ap = r.applyOpToPart("_v1785_undo", 0, "schmiede-hammer");
+        out.applyOk = ap.ok === true;
+        out.opCountAfterApply = (ub.parts[0].opChain || []).length;
+        out.roleAfterApply = r.computeBlueprintRole(ub); // forging-Rolle (≠ architecture)
+        out.roleFlipped = out.roleAfterApply !== "architecture";
+        // (#1b) removePartOp → opCount zurück auf Default, Rolle re-emergiert zu architecture
+        const rem = r.removePartOp("_v1785_undo", 0);
+        out.remOk = rem.ok === true;
+        out.opCountAfterRemove = (ub.parts[0].opChain || []).length;
+        out.opCountReverted = out.opCountAfterRemove === DEFLEN;
+        out.roleAfterRemove = r.computeBlueprintRole(ub);
+        out.roleReverted = out.roleAfterRemove === out.roleBeforeApply;
+        // (#1c) removePartOp lehnt einen Built-in ab
+        const remBuiltin = r.removePartOp("geraet_spitzhacke", 0);
+        out.remBuiltinRejected = remBuiltin.ok === false && remBuiltin.reason === "cannot_modify_builtin";
+        // restore
+        delete r.state.blueprints["_v1785_undo"];
+        r.state.player.tools = savedTools;
+        if (typeof r.setGameMode === "function") r.setGameMode(prevMode);
+        return out;
+    });
+    check(
+        'V17.85 #3: ein rollenloser Built-in-Bauplan (Spitzhacke) zeigt seine EMERGENTE Form-Rolle „tool", nicht den „architecture"-Default',
+        res.spitShowsTool,
+        `display=${res.spitDisplay} (Feld=${res.spitRoleField}, emergent=${res.spitEmergent})`
+    );
+    check(
+        'V17.85 #3: eine built-in-Rüstung (Substanz-Zwilling architecture) zeigt weiter „armor" — die deklarierte Saat ist autoritativ (Intent über Emergenz)',
+        res.armorStaysArmor,
+        `display=${res.armorDisplay}`
+    );
+    check(
+        'V17.85 #3: cloneBlueprint materialisiert die emergente Rolle — ein frischer Spitzhacke-Klon trägt bp.role=„tool" (alle Leser sehen die Form-Rolle)',
+        res.cloneCarriesTool,
+        `clone.role=${res.cloneRoleField}`
+    );
+    check(
+        "V17.85 #1: removePartOp auf der Grund-Op-Kette lehnt ab (nothing_to_remove) — nie unter die Default-Kette",
+        res.remEmptyRejected
+    );
+    check(
+        "V17.85 #1: eine forging-Op wechselt die Rolle (architecture → forging-Rolle) — der Prozess fixiert die Rolle",
+        res.applyOk && res.roleFlipped,
+        `vorher=${res.roleBeforeApply} nachher=${res.roleAfterApply} ops=${res.opCountAfterApply}`
+    );
+    check(
+        "V17.85 #1 KONSUM: removePartOp macht die Op rückgängig — opCount zurück auf Default UND die Rolle re-emergiert (forging-Rolle → architecture)",
+        res.remOk && res.opCountReverted && res.roleReverted,
+        `ops=${res.opCountAfterRemove} rolle=${res.roleAfterRemove} (war ${res.roleBeforeApply})`
+    );
+    check("V17.85 #1: removePartOp lehnt einen Built-in ab (cannot_modify_builtin)", res.remBuiltinRejected);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -39107,6 +39205,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1782CatalystReadout(ctx);
             await checkBandV1783ImplementClassification(ctx);
             await checkBandV1784AvatarFormFit(ctx);
+            await checkBandV1785RoleDisplayAndUndo(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

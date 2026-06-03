@@ -32912,7 +32912,40 @@ class AnazhRealm {
         return { ok: true, precision: this.computePartPrecision(part), staminaRemaining: this.state.player.stamina };
     }
 
-    // ### Welle 4 Phase 2 — Aktivierte Tag-Stärken ###
+    // V17.85 (Schöpfer-Browser-Befund: „es stapelt Prozesse, aber kann sie nicht entfernen") — eine Op
+    // RÜCKGÄNGIG machen. Die opChain ist Geschichte (append-only, V4 P3), aber der Spieler muss zurück
+    // können: entfernt die ZULETZT angewandte Op eines Parts (nie unter die Default-Kette), dann die Rolle
+    // neu emergieren (eine entfernte forging-Op kann die Rolle zurück zu Bauwerk drehen — der Prozess-Fluss
+    // wird umkehrbar). Built-ins bleiben unberührbar (wie applyOpToPart).
+    removePartOp(blueprintName, partIndex) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        if (!Array.isArray(bp.parts) || partIndex < 0 || partIndex >= bp.parts.length) {
+            return { ok: false, reason: "invalid_part_index" };
+        }
+        const part = bp.parts[partIndex];
+        const defLen = this._defaultPartOpChain().length;
+        if (!Array.isArray(part.opChain) || part.opChain.length <= defLen) {
+            return { ok: false, reason: "nothing_to_remove" }; // schon auf der Default-Op-Kette
+        }
+        part.opChain.pop();
+        this._refreshBlueprintRoleEmergent(blueprintName);
+        return { ok: true, precision: this.computePartPrecision(part), opCount: part.opChain.length };
+    }
+
+    // V17.85 (Schöpfer-Browser-Befund: „die Spitzhacke scheint ein Bauwerk zu bleiben") — die ANGEZEIGTE
+    // Rolle: ein deklarierter Override gilt (roleManual = Spieler-Intent ODER eine built-in-Saat-Rolle =
+    // Designer-Intent, beide autoritativ wie V17.70); sonst die EMERGENTE Rolle (computeBlueprintRole),
+    // damit ein ROLLENLOSER Bauplan (eine Klingen-Form ohne deklarierte Rolle) seine WAHRE Rolle
+    // „Werkzeug" zeigt, nicht den „Bauwerk"-Default (bp.role war undefined → DEFAULT, obwohl
+    // computeBlueprintRole längst „tool" sagt — der Spitzhacke-Befund). Eine built-in-Rüstung
+    // (role:"armor", Substanz-Zwilling architecture) bleibt „Rüstung" (die Saat ist der Intent).
+    _displayRole(bp) {
+        if (!bp) return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        if ((bp.roleManual || bp.builtIn) && bp.role) return bp.role;
+        return this.computeBlueprintRole(bp);
+    }
     // computePartTags(part): pro Part die aktivierten Tags (Form × Material).
     // Werte 0..3, der Bereich aus FORM_TAG_ACTIVATION × MATERIAL_TAG (0..1).
     // Unbekannte Shape (z. B. "blueprint") oder fehlendes Material → leeres
@@ -38006,6 +38039,11 @@ class AnazhRealm {
             builtIn: false,
             parts: JSON.parse(JSON.stringify(source.parts || [])),
         };
+        // V17.85 — der Klon ist ein Nicht-Built-in → er trägt seine EMERGENTE Rolle (wie jeder
+        // Nicht-Built-in nach _refreshBlueprintRoleEmergent). Ohne das blieb bp.role undefined →
+        // der Klon einer rollenlosen Klinge (Spitzhacke) zeigte „Bauwerk" + alle bp.role-Leser
+        // (fertigeBlueprint-Routing, Use-Kind) sahen den Default, statt der Form-Rolle „Werkzeug".
+        this._refreshBlueprintRoleEmergent && this._refreshBlueprintRoleEmergent(cleanNew);
         this.log(`Bauplan '${sourceName}' nach '${cleanNew}' geklont`, "INFO");
         return true;
     }
@@ -38491,6 +38529,24 @@ class AnazhRealm {
                     });
                     applyRow.appendChild(toolSelect);
                     applyRow.appendChild(applyBtn);
+                }
+                // V17.85 (Schöpfer-Browser-Befund „es stapelt Prozesse, aber kann sie nicht entfernen") —
+                // die ZULETZT angewandte Op rückgängig machen (nie unter die Default-Kette). Der Prozess-
+                // Fluss wird umkehrbar; entfernt sich eine forging-Op, dreht die Rolle zurück (re-emergiert).
+                if (chain.length > this._defaultPartOpChain().length) {
+                    const undoBtn = document.createElement("button");
+                    undoBtn.type = "button";
+                    undoBtn.className = "workshop-op-undo";
+                    undoBtn.textContent = "↶ letzte Op entfernen";
+                    undoBtn.title =
+                        "Macht die zuletzt angewandte Op rückgängig (nie unter die Grund-Kette). " +
+                        "Die Rolle emergiert danach neu.";
+                    undoBtn.addEventListener("click", () => {
+                        const r = this.removePartOp(selected.name, i);
+                        if (!r.ok) this.log(`op_entfernen fehlgeschlagen: ${r.reason}`, "ERROR");
+                        this._renderWorkshopDOM();
+                    });
+                    applyRow.appendChild(undoBtn);
                 }
                 opChainDiv.appendChild(applyRow);
             }
@@ -40173,7 +40229,10 @@ class AnazhRealm {
     // nur die Präsentation vereint sich: lesen → FERTIGEN. Die Maschine-in-der-Welt (Esse/Brennkolben)
     // ist sichtbar gegated (pfad) — der Knopf zeigt, welche Werkstatt nah sein muss.
     _workshopAppendFertigenRow(panel, bp) {
-        const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        // V17.85 — die EMERGENTE/deklarierte Rolle (rollenlose Klinge → „tool", nicht der „architecture"-
+        // Default) bestimmt den FERTIGEN-Akt: eine Spitzhacke wird „geschmiedet (in die Hand)", nicht
+        // als Bauwerk behandelt — der Mach-Verb folgt der angezeigten Rolle.
+        const role = this._displayRole(bp);
         // Welt-platzierte Rollen (Station/Portal) werden gebaut (confirmBuild), nicht gefertigt; eine
         // geborene (built-in) Seele wird nicht geformt.
         if (role === "workshop-station" || role === "portal") return;
@@ -40250,7 +40309,11 @@ class AnazhRealm {
     // Tooltips (V8.17), Rollen-Farbe als Glow (V8.39), Reset-Button bei
     // manueller Rolle. Affordances als ✦-Chips.
     _workshopAppendRoleRow(panel, bp) {
-        const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+        // V17.85 — die ANGEZEIGTE Rolle ist die emergente/deklarierte (computeBlueprintRole), NICHT der
+        // rohe `bp.role || DEFAULT`: ein rollenloser Bauplan (eine Klingen-Form) zeigte „Bauwerk", obwohl
+        // er der Form nach längst „Werkzeug" ist (der Spitzhacke-Befund) — die Form trägt die Rolle, auch
+        // ohne deklariertes Feld. Der manuell/emergent-Indikator (unten) liest weiter `bp.roleManual`.
+        const role = this._displayRole(bp);
         const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
         const roleRow = document.createElement("div");
         roleRow.className = "stat-row";
@@ -45904,7 +45967,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.84.0";
+AnazhRealm.VERSION = "17.85.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
