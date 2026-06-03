@@ -1,0 +1,210 @@
+# Tiefe-Fundament-Plan — der Plan unter der Oberfläche (Stand V17.91, 03.06.2026)
+
+Schöpfer-Befund (Browser-Audit, drei Screenshots): das Terrain ist nahe + ruckelt in neue Chunks; die Console/Save/Nexus ruckeln im 10-s-Takt; ein Licht-Bug ("Trapeze" tagsüber, weg nach 18:00) + Stein/Eisen nachts schwarz + Strukturen ohne Mikrostruktur; Höhlen sind mit dem gigantisch gewordenen Terrain NICHT mitgewachsen (mickrige Schläuche, keine Eingänge/Canyons); Wasser klebt an Höhlenwänden / unter dem Boden, die Schwimmmechanik greift über Lufthöhlen.
+
+## 0. Die EINE Wurzel (vier der sechs Befunde teilen sie)
+
+Die **vertikale Chunk-Hülle ist beim V14-Terrain-Bogen NICHT mitgewachsen.** Sie ist fix an `base` (≈0) verankert (`_voxelChunkConfig` `anazhRealm.js:18231`: `floorDrop 90`, `dimY 136 × step 1.8` → `base−90 .. base+154.8`). Das Terrain wuchs auf −15..+235 m (`_terrainMacroSurfaceY`, `cont0` λ7100 m) und wird per `tanh`-Deckel bei 110/136 m gekappt (`:17390`). Die Höhlen sind ebenfalls base-verankert (`_terrainBaseDensityAt:17448`, Band `base−35..surf−16`, λ≈33 m). Das Wasser ist 2.5D (`_hydroWaterLevelAt:21030`, ignoriert y).
+
+Der Backlog-Faden **#11 "Effiziente Höhe"** (adaptives Vertikalband) ist der **Keystone**: er koppelt die Vertikal-Domäne wieder an die Oberfläche → gewaltige Berge + mitwachsende Höhlen + sauberes Wasser-Sampling werden erst dadurch möglich. Die anderen zwei Befunde (10-s-Ruckel, Trapeze/schwarze Strukturen) sind eigene Wurzeln (Timing/Render).
+
+## 0.1 Die Narben, an denen sich dieser Plan messen lässt (Disziplin)
+
+- **V9.69 — eine Welt-Substanz lebt in EINER Skala, sonst zerbricht sie an der Naht.**
+- **V9.70 — Skirts gebaut, "visuell wirkungslos": die Naht ist nicht die Geometrie.**
+- **V9.77 — PRO-CHUNK-Variablen in der Klassifikations-Logik sind fast immer Naht-Bug-Quellen.**
+- **V9.79/V13.13.2 — naht-frei per Konstruktion verlangt Pad+Crop; ein zweiter Konsument einer Welt-Wahrheit MUSS sie LESEN, nie neu raten.**
+- **V13 — Symptom-Patches auf einem System, dessen Wurzel benannt ist, sind Flickenteppich.**
+- **V9.58 / V17.90 — messen vor schneiden; "Last-Flake" ist die bequeme Diagnose, bevor du sie akzeptierst, MISS.**
+- **V17.31 — Passagier-Trugschluss: KONSUM verifizieren, nicht Existenz.**
+- **V17.91 — UI-Ort-Bug: prüfe, ob das neue Element default-sichtbar ist + der Schöpfer dort hinschaut.**
+- **Heilige Lektion — Verdichtung auf dem einen Stamm, kein Parallel-System, kein Rewrite.**
+
+## 0.2 Verifikations-Doktrin
+
+Jede Welle: `node --check anazhRealm.js` → `npm run format:check` → `npm run lint` → `npm run playtest` ("Alle Invarianten OK") → Commit (ein Commit + ein `handover.md`-Eintrag). **Render-Wellen (C/D) + LOD-Feel (E) sind pixel-blind headless** → headless beweist Konstruktion/KONSUM/keine Page-Errors, die VISUELLE Wahrheit ist der Schöpfer-Browser-Sign-off (explizit als Wartepunkt markiert, nicht "grün = fertig"). **Worldgen-Wellen (F/G/H)** brechen Determinismus (Welt-Aussehen) → Schöpfer-Sign-off + `diag`-Mess-Baseline VOR dem Schnitt + Worker-Mirror bit-identisch.
+
+---
+
+## Welle A — Der 10-Sekunden-Ruckel (Console + Save + Nexus)
+
+**Ziel.** Die drei Main-Thread-Hitches im 10-s-Takt eliminieren, ohne Qualität/Tiefe zu verlieren — reines Timing.
+
+**Wurzel (gemessen).** Drei teure synchrone Operationen im selben Takt: Journal-DOM-Vollrebuild (`renderWorldJournal:24899`, cap 200, `innerHTML=""`), synchroner Save (`saveState:23169`, `saveInterval 10s:241`), Nexus-Spawn + synchroner Remesh (`evolveNexus:15727` → `spawnArchitecture` → `_remeshVoxelChunksAround(…,skirt=0):22723`, `nexusEvolutionInterval 10s:323`).
+
+**Vorgehen.**
+- **A0 — MESSEN zuerst** (`scripts/diag-stutter.cjs`): die drei Operationen mit `performance.now()` instrumentieren, eine Headless-Session triggert sie (Nexus-Spawn erzwingen, Save erzwingen, Journal füllen), die ms-Dauer pro Operation loggen → die DOMINANTE Quelle identifizieren, BEVOR geheilt wird.
+- **A1 — Takte entkoppeln**: Save + Nexus + Journal-Flush phasen-versetzen → sie können nicht im selben Frame zusammenfallen.
+- **A2 — Save idle + dirty-gated + Delta**: `worldDirty`-Flag bei echten Mutationen; Save nur wenn dirty; ausgeführt in `requestIdleCallback` (Fallback Timeout); nur geänderte Entitäten re-serialisieren (Delta), erzwungener Flush bei Welt-Wechsel/Reload.
+- **A3 — Journal inkrementell**: nur das neue `<li>` anhängen + ältestes entfernen (kein `innerHTML=""`); harte DOM-Sichtbarkeits-Grenze (~50 Zeilen).
+- **A4 — Nexus-Remesh verteilen**: Nexus-Spawn markiert nur `dirtyVoxelChunks` (der bestehende 1-Chunk/Frame-Drain baut sie); der synchrone `_remeshVoxelChunksAround` entfällt für Nexus-Geburten (Spieler-Bauten bleiben sync).
+
+**Messung.** `diag-stutter.cjs` vorher/nachher: max-Frame-Spike (ms) während eines Nexus-Spawns + Save + Journal-Fülls. Playtest-Invarianten: Save feuert nur bei `worldDirty`; Journal-DOM-Knoten ≤ Sichtbarkeits-Grenze; Nexus-Spawn fügt keine synchrone Remesh-Wallzeit hinzu (markiert nur dirty).
+
+**Abnahme (erfüllt wenn).** (1) `diag-stutter` zeigt die teuerste Einzeloperation < 16 ms ODER über mehrere Frames verteilt (kein Single-Frame-Block > 16 ms); (2) die drei Takte kollidieren nachweisbar nie (Phasen-Versatz-Invariante); (3) Save überspringt, wenn nichts dirty ist (Invariante); (4) Journal-DOM bounded (Invariante); (5) Playtest "Alle Invarianten OK". **Browser-Sign-off**: "kein Ruckeln mehr alle 10 s".
+
+**Risiko.** Niedrig. A2 muss bei Welt-Wechsel zwingend flushen (Datenverlust-Schutz).
+
+---
+
+## Welle B — Die Falsch-Schwimm-Mechanik (3D-Zelle statt 2.5D-Spalte)
+
+**Ziel.** Der Auftrieb liest die echte 3D-Wasserzelle an der Spieler-Position, nicht die 2.5D-Spalte.
+
+**Wurzel (gemessen).** `:44857–44898`: `submerged = scaledY < _hydroWaterLevelAt(x,z)` — Spalten-Lookup ohne y. Der `scaledY >= wTerrainY − 22`-Guard (`:44884`) fängt nur tiefe Glitches, nicht flache Lufthöhlen unter Seen. Der Auftrieb ist der **DRITTE Konsument der Wasser-Wahrheit, der sie 2.5D neu rät statt die Cells zu lesen** (V13.13.2-Muster: erst Iso-Mesher-OOB, dann Seeding, jetzt Auftrieb).
+
+**Vorgehen.** Ein Helper `_waterCellAt(x,y,z)` → liest `entry.waterCells` des gestreamten Chunks am 3D-Index (`i + k·dim + j·dim·dim`, `oy/step` aus `_voxelChunkConfig`). Der Auftrieb gated zusätzlich auf `_waterCellAt === WATER`. Fallback auf den 2.5D-Wert nur, wenn der Chunk (noch) nicht gestreamt ist (Backward-Compat am Streaming-Rand).
+
+**Messung.** `diag-water-truth.cjs`-Muster erweitern: ein synthetischer Aufbau (Lufthöhle unter einem See-Spiegel) → der Auftrieb darf NICHT greifen; ein echter See → greift. Playtest-Invariante: `_waterCellAt` an einer trockenen Höhlen-Zelle unter Wasserspiegel = nicht-WATER → kein `submerged`.
+
+**Abnahme (erfüllt wenn).** (1) synthetische Lufthöhle unter See → `playerUnderwater === false` (Invariante); (2) echtes See-Wasser → `submerged === true` (Invariante, kein Regress); (3) Streaming-Rand-Fallback funktioniert; (4) Playtest "Alle Invarianten OK". **Browser-Sign-off**: "schwimme nicht mehr unter dem Boden".
+
+**Risiko.** Niedrig. Berührt nur den Auftrieb-Read, nicht die Wasser-Cells.
+
+---
+
+## Welle C — Strukturen schwarz/flach (Tiefe-colorNode für Flach-Materialien)
+
+**Ziel.** Stein/Eisen-Strukturen fallen nachts nicht mehr nach Schwarz; Strukturen tragen Mikro-Textur/Tiefe wie das Terrain.
+
+**Wurzel.** Mikro-Textur (V15.1) + Kavitäts-AO (V15.2) + Aerial-Perspektive (V15.4) sind auf `opts.vertexColors` gegated (`:19084`) → nur Terrain. Strukturen (`_buildFromBlueprint:31110`) sind Flach-Farb-`MeshToon` ohne das Flag. V17.7 hob nur den Ambient-Floor (laut eigener Notiz `:41890` für colorNode-lose Materialien wirkungsarm).
+
+**Vorgehen.** Ein gemeinsamer Helper `_applyDepthColorNode(mat)` (Verdichtung, kein Parallel-Pfad): triplanar Mikro-Textur + sanfte AO + Aerial-Blende auf Flach-Farb-Toon-Materialien — via `outputNode` (post-lighting), gegated GEGEN die dynamischen Avatar-/Kreatur-Farb-Mutationen (CLAUDE.md-Gotcha: ein `colorNode` würde `material.color` ignorieren). Ein Schwarz-Floor (Mindest-Aerial/Ambient-Term), sodass Stein/Eisen in den Sky-Ton statt nach Schwarz fallen.
+
+**Messung.** `diag-structure-color.cjs`: `material` nach `outputNode`-Bau headless deterministisch lesbar — beweist KONSUM (Struktur-Helligkeit bei Nacht-Licht > Schwarz-Schwelle), nicht nur Existenz. Page-Error-Probe (kein `AttributeNode`-Crash, V15.1.1-Klasse).
+
+**Abnahme (erfüllt wenn).** (1) `outputNode` gesetzt + kein Marker/Page-Error; (2) headless: Struktur-Output bei Nacht-Intensität hebt sich messbar über Schwarz; (3) dynamische Avatar-/Kreatur-Farben unberührt (Invariante); (4) Playtest "Alle Invarianten OK". **Browser-Sign-off (pixel-blind, zwingend)**: "nicht mehr schwarz, jetzt tief".
+
+**Risiko.** Mittel — der `outputNode`-Pfad muss strikt gegen dynamische Material-Farben gegated sein.
+
+---
+
+## Welle D — Die Trapeze (Facetten-Cel-Shading)
+
+**Ziel.** Die hellen Rauten-Facetten verschwinden — die Oberfläche wirkt tief, nicht flach-facettiert.
+
+**Wurzel (Dev-Notiz `:19117`).** Vertex-Farbe linear interpoliert über große Surface-Nets-Dreiecke + hartes Toon-Cel-Shading → sonnenzugewandte Facetten poppen als helle Rauten; abends dominiert Ambient/Hemi → Kontrast bricht zusammen → weg. V17.12/.13/.14 überdeckten dreimal die ALBEDO; die BELEUCHTUNGS-/Normalen-Facette blieb. **Disziplin: kein vierter Überdeck-Patch.**
+
+**Vorgehen.**
+- **D0 — MESSEN zuerst (Browser-Toggle)**: Schatten aus / Cel→Lambert / Aerial aus → in 3 Klicks isolieren, ob Cel-Härte, Schatten-Acne, Aerial-Höhenband oder Vertex-Interp die Wurzel ist. KEIN Vorab-Commit auf einen Fix.
+- **D1 — führender Kandidat: Cel-Gradient glätten** (die Beleuchtungs-Härte, der wurzel-nächste + billigste Hebel) — mehr/weichere Cel-Stufen, sodass die Bänder nicht an Facetten-Grenzen snappen.
+- **D2 — falls Restanteil**: per-Pixel-Normal-Detail (triplanar Normal-Perturbation, bricht die flache Facette ohne Geometrie-Änderung) ODER Schatten-Bias slope-skaliert / CSM.
+
+**Messung.** D0 ist die Messung (Browser, isolierende Toggles). Headless: der colorNode/gradientMap-Bau kompiliert + kein Page-Error.
+
+**Abnahme (erfüllt wenn).** (1) D0 hat die Wurzel isoliert (dokumentiert); (2) der gewählte Fix kompiliert headless ohne Page-Error; (3) Playtest "Alle Invarianten OK". **Browser-Sign-off (pixel-blind, zwingend)**: "keine Trapeze mehr, tags wie nachts".
+
+**Risiko.** Render-only, aber pixel-blind → strikt Browser-iteriert.
+
+---
+
+## Welle F — KEYSTONE: Effiziente Höhe (fixes globales Vertikal-Section-Raster) [#11]
+
+**Ziel.** Gewaltige Berge (Deckel weg) + billigere Chunks (leere Luft kostet nichts) → trägt E + G.
+
+**Wurzel.** Jeder Chunk sampelt die volle 136-Zellen-Säule; der `tanh`-Deckel (`:17390`) kappt Berge. Die V14.6-Notiz nennt den Deckel selbst die "Zwischenlösung".
+
+**Vorgehen (SEAM-SAFE, korrigiert).** KEIN per-Chunk-`[surfMin,surfMax]`-Band (das wären Pro-Chunk-Variablen → V9.77-Naht-Bug). Stattdessen ein **fixes GLOBALES vertikales Section-Raster** (Minecraft-true: das vertikale Sampling/Meshing läuft pro fester Section, leere/voll-solide Sections werden übersprungen). Die Section-Grenzen sind global → zwei Nachbar-Chunks samplen am Rand bit-identisch (seam-frei per Konstruktion, Pad+Crop V9.79). Decke folgt der Oberfläche (kein festes Dach) → Berge bis +235 m ohne Durchbruch. Worker-Mirror bit-identisch (Determinismus-Wächter); das tote GPU-WGSL gehört vorher geschnitten (Welle I).
+
+**Messung.** `diag-radius.cjs` (Decken-Marge radial ±5 km, 0 Durchbrüche) + `diag-relief.cjs` (Berg-Höhen-Verteilung erreicht jetzt > 136 m) + ein Determinismus-Test (Main- vs Worker-Density bit-identisch) + ein Naht-Test (Nachbar-Chunk-Boundary-Iso identisch) + Per-Chunk-Zell-Zahl (gesunken).
+
+**Abnahme (erfüllt wenn).** (1) Berge erreichen messbar > 136 m, 0 Decken-Durchbrüche bei jedem Radius (`diag-radius`); (2) Worker bit-identisch (Determinismus-Test); (3) keine neuen Nähte (Boundary-Iso-Test); (4) Per-Chunk-Kosten gesunken (Zell-Zahl/Build-Zeit); (5) Playtest "Alle Invarianten OK". **Schöpfer-Sign-off** (Determinismus-Bruch): "gewaltige Berge, kein Loch, kein FPS-Verlust".
+
+**Risiko.** HOCH — Mesh-Fundament + Worker-Mirror + Naht-Garantie. Sub-Schritte mit Determinismus-Wächter, `cp`-Backup vor sed-Chirurgie (V17.20-Lehre).
+
+---
+
+## Welle E — Weite Terrain + LOD-Pyramide + Stitching
+
+**Ziel.** Terrain bis hinter den Fog-Horizont, sanftes Laden über viele Stufen, kein Pop-in, kein Sync-Build-Spike.
+
+**Wurzel.** View-Ring 4 (≈173 m) endet vor dem Fog (450 m); nur 2 LOD-Stufen, harter Pop, Naht am LOD-Rand (`:18224`); Sync-CPU-Build-Fallback (~126 ms) wenn der Worker hinterherhinkt.
+
+**Vorgehen (SEAM-SAFE, korrigiert).**
+- **E1 — LOD-Pyramide**: LOD2 (step 7.2 m) + LOD3 (14.4 m) für ferne Ringe (64× weniger Zellen). Vorbedingung F (billige Chunks).
+- **E2 — View bis Fog-Horizont**: Ringe füllen ~450 m → Pop-in jenseits der Sichtbarkeit.
+- **E3 — kein Sync-Streaming-Build**: nur der Spieler-Chunk darf sync; ferne warten auf den Worker, alter Chunk bleibt sichtbar (der Sync-Fallback ist der Spike).
+- **E4 — LOD-Stitching (ERST-KLASSE)**: die V9.70-Skirts haben Nähte NICHT geheilt → ein echtes Stitching/Geomorphing am LOD-Übergang (Clipmap-Transition-Region) + dithered Crossfade. KEINE blanken Skirts.
+
+**Messung.** Headless: Chunk-Zahl/LOD-Verteilung; kein Sync-Build im Streaming-Pfad (Invariante: nur Spieler-Chunk sync); Worker-Determinismus über LODs. Naht-Test am LOD2/LOD3-Rand.
+
+**Abnahme (erfüllt wenn).** (1) Terrain reicht bis Fog-Horizont (Chunk-Verteilungs-Invariante); (2) kein Sync-Build außer Spieler-Chunk (Invariante); (3) LOD-Naht-Test grün; (4) Playtest "Alle Invarianten OK". **Browser-Sign-off (pixel-blind)**: "weite Sicht, sanftes Laden, kein Pop-in, keine LOD-Naht".
+
+**Risiko.** Hoch — LOD-Nähte sind die historische Wunde (V9.70). Nach F.
+
+---
+
+## Welle H — Wasser-3D-Wahrheit (V18 Wasser-Finish) [#10]
+
+**Ziel.** Wasser ist überall 3D-konsistent; ferne Chunks tragen Wasser; Carve frame-sauber.
+
+**Wurzel.** Cells korrekt (V13.14), aber Seeds 2.5D (`_atlasWaterLevelAt(x,z,∞):19963`), Auftrieb 2.5D (= B), Hydrosphäre nur ±1024 m.
+
+**Vorgehen.** H1 = B (Auftrieb 3D, vorgezogen). H2 — Seeds 3D-konsistent (nur fluten, was über nicht-soliden Raum mit einer Quelle verbunden ist; der Flood macht's, die Seeds müssen nachziehen). H3 — Hydrosphäre-Region mit dem Spieler mitwandern ODER Ozean-Default global vom `waterLevel` entkoppeln. H4 — frame-sauberer Sub-Region-Carve.
+
+**Messung.** `diag-water-truth.cjs` (under-lid 0, >3 m über Quelle 0, Phantom-Seam 0) an mehreren Orten; ferner Chunk trägt Wasser (Invariante).
+
+**Abnahme (erfüllt wenn).** (1) `diag-water-truth` an 3 Orten sauber; (2) ferner Chunk (> 1024 m) trägt Wasser (Invariante); (3) Playtest "Alle Invarianten OK". **Browser-Sign-off** (Spawn ≠ Fehlstelle, V13.0-Mess-Falle): Dump an der echten Stelle vor H2/H3.
+
+**Risiko.** Hoch (headless reproduziert Browser-Artefakte nicht).
+
+---
+
+## Welle G — Höhlen, die mit dem Terrain wachsen (Canyons/Eingänge)
+
+**Ziel.** Höhlen skalieren mit dem Terrain; große Kavernen + Ravines + kontrollierte Oberflächen-Eingänge.
+
+**Wurzel.** Höhlen base-verankert + dünn; `surf−16`-Decke verbietet bewusst Eingänge (war der V14.5-Water-Bleed-Fix).
+
+**Vorgehen (STRIKT NACH H — Eingänge brauchen 3D-Wasser-Wahrheit/Aquifer, sonst Bleed).** G1 — Höhlen-Tiefe relativ zur Oberfläche (an F gekoppelt). G2 — Typen: große Kavernen (niederfrequent) + Tunnel (λ33 m) + Ravines (vertikal). G3 — `surf−16`-Decke selektiv öffnen (Ravine/Cheese) → Canyons. G4 — Aquifer (lokaler Höhlen-Wasserspiegel statt globaler Spalte; Eingang flutet die Höhle nicht).
+
+**Messung.** Erweitertes `diag-relief.cjs`: Höhlen-Volumen/Tiefe-Verteilung skaliert mit der Surface; Eingangs-Zahl > 0; kein Water-Bleed an Eingängen (`diag-water-truth`).
+
+**Abnahme (erfüllt wenn).** (1) Höhlen-Tiefe skaliert mit Surface (Mess-Baseline); (2) Eingänge existieren ohne Water-Bleed; (3) Playtest "Alle Invarianten OK". **Schöpfer-Sign-off** (Determinismus-Bruch): "Höhlen wie Minecraft, Canyons in die Unterwelt".
+
+**Risiko.** Hoch (Worldgen + Wasser-Kopplung). Letzte Welle des Bogens.
+
+---
+
+## Welle I — Tote Infra schneiden [#12]
+
+**Ziel.** Begleitend zu F/E: abgeklemmtes GPU-Density-WGSL (~500 Z.), `mxFractal`, V10.0-Hot-Swap-Reste raus → senkt die Mirror-Last für F.
+
+**Vorgehen.** `cp`-Backup → `awk`-Methoden-Audit im Range (nicht nur Pattern-Treffer) → `diag-page-error.cjs` nach dem Schnitt (V17.20-Lehre: ein Line-Range-Delete brach einmal die ganze Welt) → Playtest.
+
+**Abnahme (erfüllt wenn).** node-check/lint/playtest grün, kein Page-Error, Zeilen-Reduktion belegt.
+
+---
+
+## Reihenfolge & Abhängigkeiten
+
+```
+A (10s-Ruckel)  → B (Falsch-Schwimm)  → C, D (Render, Browser-iteriert)
+                                              │
+F (Effiziente Höhe, KEYSTONE) ───────────────┼──► E (weite LOD-Pyramide, nach F)
+                                              └──► G-Vorbereitung (Höhlen-Tiefe)
+H (Wasser-3D)  ──────────────────────────────────► G (Höhlen-Eingänge, nach H)
+I (Tote Infra) mit F/E
+```
+
+**Empfohlen:** A → B → (C, D parallel, Browser) → I → F → E → H → G.
+A/B/C/D = sofortige Linderung; F = Keystone; H vor G's Eingängen.
+
+## Abdeckungs-Matrix
+
+| Schöpfer-Befund | Welle |
+|---|---|
+| Weite Terrain / Ring max / soft / kein Pop-in | E (+ F billiger) |
+| FPS-Einbruch in neue Chunks | E3 + F + A4 |
+| Console hält jede Struktur fest | A3 |
+| Speichern ruckelt | A0/A2 |
+| Nexus ruckelt | A1/A4 |
+| Trapeze nach 18:00 | D |
+| Stein/Eisen schwarz | C |
+| Strukturen ohne Mikrostruktur | C |
+| Höhlen nicht mitgewachsen | G1/G2 (+ F) |
+| Keine Eingänge/Canyons | G3 |
+| Wasser an Höhlenwänden/unter Boden | B + H2 |
+| Schwimmmechanik falsch | B/H1 |
+| Berg-Höhenlayerband | F (#11) |
+| Roadmap #10/#11/#12 | H / F / I |

@@ -41,19 +41,25 @@ Stand: **V17.91 (03.06.2026) — der Crafting-/Werkstatt-Bogen ist DURCH (V17.72
 8. **Phase E — Bedrohung/Furcht**: aggressive Kreaturen → der W5-Furcht-Konsument + der Triumph-δ (die game-design-schwerste Phase, lange benannt, gibt dem Emotion-Kern seinen letzten Konsumenten).
 9. **Mana-Symmetrie** (§8.5): `magieleitung` → ein Äther/Mana, die zweite Ausdauer-Achse (Magie zahlt heute nichts; verblasst).
 
-**C — das Fundament vertiefen (lange aufgeschoben):**
+**C — das Fundament vertiefen — DER TIEFE-FUNDAMENT-BOGEN (Schöpfer-Browser-Audit 03.06.2026, voll geplant in `docs/tiefe-fundament-plan.md` — ZUERST lesen):** Der Audit (drei Screenshots) deckte sechs Befunde auf, vier mit EINER Wurzel — **die vertikale Chunk-Hülle wuchs beim V14-Terrain-Bogen NICHT mit** (fix base-verankert `base−90..base+154.8`, `tanh`-Deckel bei 110/136 m). Der Keystone ist die effiziente Höhe (#14, adaptives Section-Raster): er koppelt die Vertikal-Domäne wieder an die Oberfläche → gewaltige Berge + mitwachsende Höhlen + sauberes Wasser-Sampling. Reihenfolge A→B→C→D→I→F→E→H→G (Teilziele/Messung/Abnahme im Plan-Doc):
 
-10. **V18 — Wasser-Finish**: die ±1024-m-Hydrosphäre-Region mit dem Spieler MITWANDERN lassen (ferne Chunks tragen heute kein Wasser/Drainage) + frame-sauberer Sub-Region-Carve (~6× verschoben). Wasser-MODELL ist korrekt (V13.14).
-11. **Effiziente Höhe**: adaptives vertikales Chunk-Band / Sub-Chunk-Culling statt des V14.6-tanh-Deckels (gewaltige Berge ohne FPS-Kosten; Minecraft-Pattern).
-12. **Tote Infra schneiden**: das abgeklemmte GPU-Density-WGSL (~500 Z.), `mxFractal` (Lint-Warning), V10.0-e-Hot-Swap-Reste.
+10. **A — der 10-Sekunden-Ruckel** (NEU): drei Main-Thread-Hitches im selben 10-s-Takt (Journal-DOM-Vollrebuild `renderWorldJournal`, synchroner Save, Nexus-Spawn+synchroner Remesh). Heilung: Takte entkoppeln + Save idle/dirty/Delta + Journal inkrementell + Nexus-Remesh über Frames verteilen. Reines Timing, null Qualitätsverlust. **MESSEN zuerst** (`diag-stutter`).
+11. **B — Falsch-Schwimm** (NEU, Teil von V18): der Auftrieb ist der dritte Konsument der Wasser-Wahrheit, der sie 2.5D neu rät (`_hydroWaterLevelAt(x,z)`) statt die 3D-Cells zu lesen (V13.13.2-Muster). Heilung: `_waterCellAt(x,y,z)` liest die Zelle.
+12. **C — Strukturen schwarz/flach** (NEU, Render/Browser): Mikro-Textur/AO/Aerial sind auf `opts.vertexColors` gegated → nur Terrain; Strukturen fallen nachts nach Schwarz. Heilung: `_applyDepthColorNode` (outputNode, gegen dynamische Farben gegated).
+13. **D — die Trapeze** (NEU, Render/Browser): grobe Surface-Nets-Facetten × hartes Toon-Cel (Dev-Notiz `:19117`). **D0 misst zuerst (Browser-Toggle); kein vierter Albedo-Überdeck-Patch** — führend: Cel-Gradient glätten.
+14. **F — Effiziente Höhe (KEYSTONE)** [war #11]: **fixes globales Vertikal-Section-Raster** (Minecraft-true, leere Sections überspringen), NICHT per-Chunk-Band (V9.77-Naht-Bug); Deckel weg → gewaltige Berge ohne FPS-Kosten. Worker bit-identisch.
+15. **E — weite Terrain + LOD-Pyramide**: LOD2/LOD3 für ferne Ringe + View bis Fog-Horizont + kein Sync-Streaming-Build + **echtes LOD-Stitching** (Skirts scheiterten V9.70). Nach F.
+16. **H — Wasser-3D-Finish (V18)** [war #10]: ±1024-Region mitwandern + Seeds 3D-konsistent + frame-sauberer Carve. Vor G.
+17. **G — Höhlen wachsen mit dem Terrain** (NEU): an F gekoppelt, Typen (Kavernen/Tunnel/Ravines), kontrollierte Eingänge/Canyons + Aquifer. NACH H (sonst Water-Bleed).
+18. **I — Tote Infra schneiden** [war #12]: GPU-Density-WGSL (~500 Z.), `mxFractal`, Hot-Swap-Reste; begleitend zu F/E.
 
 **D — die Vision weiter (jenseits des Crafting-Arcs):**
 
-13. **W18 — in fremden Welten LEBEN**: Ko-Präsenz-Injektion in Single-Player-Fremdwelten (B) · Input-Brücke (C) · Leben/Swappen (D) — voll geplant in `world-portal-w18-plan.md`.
-14. **Emotion→Regel-EMERGENZ vertiefen**: einzelne Kopplungen (`sorrow→rainy`) sind noch hand-codiert; via die Weltregeln-DSL (V17.34 macht sie ausdrückbar) emergent machen.
-15. **Fern (Schöpfer-Entscheid)**: Fahrzeug-Fahr-Tiefe (Sitz/Steuerung/Trägheit) · evolveCommunity (Kreatur-Kulturen) · VR (`vrMenu.js` vorhanden, nicht im Gate) · IndexedDB-Persistenz.
+19. **W18 — in fremden Welten LEBEN**: Ko-Präsenz-Injektion in Single-Player-Fremdwelten (B) · Input-Brücke (C) · Leben/Swappen (D) — voll geplant in `world-portal-w18-plan.md`.
+20. **Emotion→Regel-EMERGENZ vertiefen**: einzelne Kopplungen (`sorrow→rainy`) sind noch hand-codiert; via die Weltregeln-DSL (V17.34 macht sie ausdrückbar) emergent machen.
+21. **Fern (Schöpfer-Entscheid)**: Fahrzeug-Fahr-Tiefe (Sitz/Steuerung/Trägheit) · evolveCommunity (Kreatur-Kulturen) · VR (`vrMenu.js` vorhanden, nicht im Gate) · IndexedDB-Persistenz.
 
-**Reihenfolge-Logik (Schöpfer-bestätigt: Fundament → Tiefe → Seele):** der Crafting-Arc (A) ist fast rund — die Bibliothek (A1) + der Browser-Audit (A2) schließen ihn. Phase E (B8) gibt dem Emotion-Kern den letzten Konsumenten. V18/Höhe (C) sind die Fundament-Schuld. W18 (D13) ist der nächste große Vision-Bogen.
+**Reihenfolge-Logik (Schöpfer-bestätigt: Fundament → Tiefe → Seele):** der Crafting-Arc (A) ist fast rund — die Bibliothek (A1) + der Browser-Audit (A2) schließen ihn. Phase E (B8) gibt dem Emotion-Kern den letzten Konsumenten. Der **Tiefe-Fundament-Bogen (C, #10–18)** ist die nächste konkrete Arbeit — die Fundament-Schuld + die akuten Browser-Befunde, gestartet mit Welle A. W18 (#19) ist der nächste große Vision-Bogen.
 
 ---
 
