@@ -30114,23 +30114,38 @@ class AnazhRealm {
         return (tags.magieleitung || 0) >= T.magieleitungMin;
     }
 
-    // S7-B (kampf-plan §11) — DIE WERKSTATT-DOMÄNE EMERGIERT aus der Substanz (Form × Material),
-    // kein hardcoded `workshopDomain` mehr. Das Vorbild ist _isPortalShaped: ein Ring IST ein Tor,
-    // weil seine Substanz es sagt — eine Werkstatt-Struktur BEDIENT die Domäne, deren Substanz-
-    // Signatur sie am klarsten trägt. Priorität nach Eindeutigkeit (an den fünf Built-ins gemessen,
-    // checkBandV1767 friert die Schwellen ein). Gibt null, wenn keine Domäne klar resoniert. NUR
-    // sinnvoll für eine Werkstatt-Struktur — die „IST es überhaupt eine Werkstatt?"-Emergenz (für
-    // vom Spieler gebaute Apparate) ist der nächste Schritt (heute deklarieren die Built-ins role).
+    // R1 (kampf-plan §11.10) — DER RESONANZ-KERN: ein Produkt ist ein Vektor, jede Ablesung ist eine
+    // Resonanz dieses Vektors gegen eine Signatur. Das `spawnAffinityForBlueprint`-Muster verallgemeinert
+    // (`Σ tag[achse]·gewicht`, statt gegen das Welt-Feld gegen eine Rollen-/Domänen-Signatur). Gewichte
+    // dürfen NEGATIV sein (Invers-Achsen: „weich" = niedrige härte). Liest den GANZEN Vektor, nicht ein Tag.
+    _blueprintResonance(tags, signature) {
+        if (!tags || !signature) return 0;
+        let score = 0;
+        for (const axis in signature) score += (tags[axis] || 0) * signature[axis];
+        return score;
+    }
+
+    // S7-B / R1 (kampf-plan §11.10) — DIE WERKSTATT-DOMÄNE EMERGIERT als RESONANZ aus der Substanz, kein
+    // hardcoded `workshopDomain` + keine Einzel-Tag-Schwelle mehr. Jede Domäne hat einen Signatur-Vektor
+    // (`WORKSHOP_DOMAIN_SIGNATURES`, an den 5 Built-ins GEMESSEN); die bediente Domäne ist das ARGMAX der
+    // Resonanz des vollen Tag-Vektors gegen jede Signatur (das `spawnAffinity`-Muster, Vorbild auch
+    // `_isPortalShaped`: die Substanz sagt, was es IST). Gibt null, wenn die beste Resonanz unter dem Floor
+    // bleibt (eine bloße Struktur ist keine Werkstatt). NUR sinnvoll für eine Werkstatt-Struktur — die „IST
+    // es überhaupt eine Werkstatt?"-Emergenz fällt aus der Rollen-Resonanz R3 (§11.10).
     _computeWorkshopDomain(bp) {
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
-        const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.workshop;
         const t = this.computeCompoundTags(bp) || {};
-        if ((t.transparent || 0) >= T.alchemyTransparentMin) return "alchemy"; // das durchsichtige Gefäß
-        if ((t.stromleitung || 0) >= T.mechanismStromMin) return "mechanism"; // der strom-leitende Apparat
-        if ((t.magieleitung || 0) >= T.soulworkMagieMin) return "soulwork"; // der magie-leitende Kanal
-        if ((t.dichte || 0) >= T.forgingDichteMin) return "forging"; // die dichte, hitze-tragende Masse
-        if ((t.härte || 0) <= T.textileHärteMax) return "textile"; // der weiche Rahmen
-        return null;
+        const sigs = AnazhRealm.WORKSHOP_DOMAIN_SIGNATURES;
+        let best = null;
+        let bestScore = AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR;
+        for (const domain in sigs) {
+            const score = this._blueprintResonance(t, sigs[domain]);
+            if (score > bestScore) {
+                bestScore = score;
+                best = domain;
+            }
+        }
+        return best;
     }
 
     // ----- Welt-Reaktion: moveable (Spieler steigt ein, Compound folgt) -----
@@ -45114,7 +45129,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.67.0";
+AnazhRealm.VERSION = "17.68.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -45950,22 +45965,25 @@ AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS = Object.freeze({
     portal: Object.freeze({
         magieleitungMin: 1.3,
     }),
-    // S7-B (kampf-plan §11) — WELCHE Crafting-Domäne eine Werkstatt-Struktur BEDIENT, emergiert
-    // aus ihrer Substanz (Form × Material), kein hardcoded `workshopDomain` mehr (Vorbild: ein Ring
-    // IST ein Tor via _isPortalShaped). Die Schwellen sind an den fünf Built-in-Werkstätten GEMESSEN
-    // (diag-arch-tags; checkBandV1767 friert sie ein): das klarste Substanz-Signal gewinnt, Reihen-
-    // folge nach Eindeutigkeit. alchemy: ein durchsichtiges Gefäß (Quarz-Kolben transparent 2.85);
-    // mechanism: ein strom-leitender Apparat (Eisen-Spindel stromleitung 2.55); soulwork: ein stark
-    // magie-leitender Kanal (Quarz-Helix 2.55); forging: eine dichte, hitze-tragende Masse (Stein +
-    // Bronze + Glut, dichte 2.64); textile: ein weicher Rahmen (Leder/Holz, härte 0.2).
-    workshop: Object.freeze({
-        alchemyTransparentMin: 1.5,
-        mechanismStromMin: 1.5,
-        soulworkMagieMin: 2.0,
-        forgingDichteMin: 2.0,
-        textileHärteMax: 0.5,
-    }),
 });
+
+// R1 (kampf-plan §11.10) — die WERKSTATT-DOMÄNE als RESONANZ-Signaturen (ein Produkt-Vektor, viele Leser).
+// Jede Domäne ein Signatur-Vektor über die Material-Tags (Gewichte dürfen NEGATIV sein — Invers-Achsen);
+// _computeWorkshopDomain gibt das ARGMAX der Resonanz (`_blueprintResonance`), null unter dem Floor. An den
+// 5 Built-in-Werkstätten GEMESSEN (checkBandV1767 friert die Baseline ein): alchemy = ein durchsichtiges
+// Gefäß (Quarz-Kolben transparent 2.85); mechanism = ein strom-leitender, wärme-führender Apparat (Eisen-
+// Spindel stromleitung 2.55, wärme 2.1); soulwork = ein magie-leitender, resonierender Kanal (Quarz-Helix
+// magie 2.55); forging = eine dichte, hitze-tragende Masse (Stein+Bronze+Glut dichte 2.64); textile = ein
+// weicher, zäh-lebendiger Rahmen (Leder/Holz: niedrige härte, zähigkeit+lebendig). Multi-Achsen = der ganze
+// Vektor wird gelesen, nicht ein Tag. Der Floor trennt eine Werkstatt von einer bloßen Struktur.
+AnazhRealm.WORKSHOP_DOMAIN_SIGNATURES = Object.freeze({
+    alchemy: Object.freeze({ transparent: 1.0 }),
+    mechanism: Object.freeze({ stromleitung: 1.0, wärmeleitung: 0.2 }),
+    soulwork: Object.freeze({ magieleitung: 1.0, resoniert: 0.2 }),
+    forging: Object.freeze({ dichte: 1.0, wärmeleitung: 0.3 }),
+    textile: Object.freeze({ zähigkeit: 1.0, lebendig: 1.0, härte: -1.0 }),
+});
+AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR = 2.0;
 
 // Deutsche Affordance-Labels für UI-Anzeige.
 AnazhRealm.AFFORDANCE_LABELS = Object.freeze({

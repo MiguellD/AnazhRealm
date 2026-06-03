@@ -5449,9 +5449,15 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
             parts: [{ shape, material: mat, size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } }],
         });
 
-        out.method = typeof r._computeWorkshopDomain === "function";
+        out.method = typeof r._computeWorkshopDomain === "function" && typeof r._blueprintResonance === "function";
 
-        // (1) DER WÄCHTER — die fünf Built-in-Werkstätten emergieren auf ihre Domäne (gegen Tag-Drift, V17.17)
+        // R1 — die Domäne ist das ARGMAX einer VEKTOR-RESONANZ (kein Einzel-Signal), gegen die frozen
+        // WORKSHOP_DOMAIN_SIGNATURES. Sanity: der Kern rechnet ein gewichtetes Skalarprodukt (Invers-Achse).
+        out.resonanceKernel =
+            r._blueprintResonance({ a: 2, b: 3 }, { a: 1, b: -1 }) === -1 &&
+            r._blueprintResonance({ a: 2 }, { a: 0.5 }) === 1;
+
+        // (1) DER WÄCHTER — die fünf Built-in-Werkstätten emergieren (per Resonanz-argmax) auf ihre Domäne (gegen Tag-Drift, V17.17)
         out.esse = r._computeWorkshopDomain(blu.esse) === "forging";
         out.brennkolben = r._computeWorkshopDomain(blu.brennkolben) === "alchemy";
         out.webstuhl = r._computeWorkshopDomain(blu.webstuhl) === "textile";
@@ -5459,10 +5465,12 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
         out.drehbank = r._computeWorkshopDomain(blu.drehbank) === "mechanism";
         out.noHardcode = blu.esse.workshopDomain === undefined;
 
-        // (2) SUBSTANZ statt NAME — verschiedene Form×Material → verschiedene Domänen, kein Lookup
+        // (2) SUBSTANZ statt NAME — verschiedene Form×Material → verschiedene Domänen-Resonanz, kein Lookup.
+        // (Ein LONE Material-Block ist KEINE Werkstatt → null unter dem Floor; die Resonanz über-klassifiziert
+        // nicht mehr wie die alte Einzel-Tag-Schwelle.)
         out.quarzSphereAlchemy = r._computeWorkshopDomain(mk("quarz", "sphere")) === "alchemy"; // durchsichtiges Gefäß
         out.steinBoxForging = r._computeWorkshopDomain(mk("stein", "box")) === "forging"; // dichte Masse
-        out.holzBoxTextile = r._computeWorkshopDomain(mk("holz", "box")) === "textile"; // weich
+        out.holzBoxNull = r._computeWorkshopDomain(mk("holz", "box")) === null; // weicher Block, aber kein Webstuhl → null
         out.knochenBoxNull = r._computeWorkshopDomain(mk("knochen", "box")) === null; // kein klares Signal → keine Werkstatt
 
         // (3) DER FLIP — dieselbe Struktur, andere Substanz → andere Domäne (live Form×Material, kein Schloss)
@@ -5501,16 +5509,20 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
         return out;
     });
     check(
-        "V17.67 S7-B: _computeWorkshopDomain existiert (die Werkstatt-Domäne emergiert aus der Substanz)",
+        "V17.67 S7-B / R1: _computeWorkshopDomain + _blueprintResonance existieren (die Domäne emergiert als Vektor-Resonanz)",
         res.method
     );
     check(
-        "V17.67 S7-B: DER WÄCHTER — die 5 Built-in-Werkstätten emergieren korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism) + KEIN hardcoded Feld",
+        "V17.67 R1: der Resonanz-Kern rechnet ein gewichtetes Skalarprodukt (mit Invers-Achse: {a:2,b:3}·{a:1,b:-1} = -1)",
+        res.resonanceKernel
+    );
+    check(
+        "V17.67 S7-B: DER WÄCHTER — die 5 Built-in-Werkstätten emergieren (Resonanz-argmax) korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism) + KEIN hardcoded Feld",
         res.esse && res.brennkolben && res.webstuhl && res.altar && res.drehbank && res.noHardcode
     );
     check(
-        "V17.67 S7-B: SUBSTANZ statt NAME — verschiedene Form×Material → verschiedene Domänen (quarz-Gefäß→alchemy, dichte→forging, weich→textile, kein Signal→null)",
-        res.quarzSphereAlchemy && res.steinBoxForging && res.holzBoxTextile && res.knochenBoxNull
+        "V17.67 S7-B: SUBSTANZ statt NAME — die Resonanz diskriminiert nach Form×Material (quarz-Gefäß→alchemy, dichte→forging, lone Block→null statt über-klassifiziert)",
+        res.quarzSphereAlchemy && res.steinBoxForging && res.holzBoxNull && res.knochenBoxNull
     );
     check(
         "V17.67 S7-B: DER FLIP — dieselbe Struktur + ein quarz-Gefäß → forging WIRD alchemy (live Form×Material, kein Schloss)",

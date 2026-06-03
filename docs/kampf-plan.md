@@ -32,8 +32,9 @@ Leser".** Der Schöpfer-Befund: meine Klassifikatoren messen EINSEITIG (Einzel-T
 in Vektoren (die Aura ist ein Vektor, `spawnAffinityForBlueprint` ist ein SKALARPRODUKT, die Tags SIND der Substanz-
 Vektor). Die synergetische Form: Rolle/Domäne/Affordanz sind RESONANZEN des vollen Produkt-Vektors (Tags ⊕ räumliche
 Signatur ⊕ Skala) gegen frozen Signaturen (argmax), nicht Einzel-Signal-Tore — die per-Rolle Hand-Flags lösen sich
-in EINEN optionalen Override auf. Die Schritte (§11.10): **R1** die Domänen-Resonanz (V17.67 von first-match auf
-`_blueprintResonance` heben) · **R2** die räumliche Schicht in den Vektor (heilt die Glut-Maskierung + „die Esse ist
+in EINEN optionalen Override auf. Die Schritte (§11.10): **R1 ✅ GEBAUT (V17.68)** die Domänen-Resonanz
+(`_computeWorkshopDomain` von first-match auf `_blueprintResonance` + `WORKSHOP_DOMAIN_SIGNATURES` gehoben, argmax,
+`checkBandV1767` 6 grün) · **R2** die räumliche Schicht in den Vektor (heilt die Glut-Maskierung + „die Esse ist
 klein") · **R3** die Rollen-Resonanz (`computeBlueprintRole` → argmax über `ROLE_SIGNATURES`; die „ist es eine
 Werkstatt?"-Emergenz + S10 Op-aus-Form fallen heraus). **OFFEN daneben:** der Schöpfer-Browser-Audit des S7-FERTIGEN-
 Flusses (Feel/Synergie) · S6-B (erntbare Flora) · **S7-C die chat/DSL-Vereinheitlichung** (der letzte Gratis-Bypass;
@@ -863,9 +864,11 @@ friert sie ein → die Resonanz MUSS sie reproduzieren; die bestehenden Rollen-T
 food) wandern mit (V9.56-i). Beweise SUBSTANZ statt Name durch den FLIP (eine Material-Änderung kippt die Klasse).
 
 **Die re-sequenzierten Resonanz-Schritte (sie ERSETZEN die Einzel-Signal-Form, kein neuer Pfad):**
-- **R1 — die Domänen-Resonanz:** `_computeWorkshopDomain` (V17.67) von der first-match-Kette auf `_blueprintResonance`
-  + `DOMAIN_SIGNATURES` heben (Tags-Resonanz reicht für die 5 Stationen — gemessen); der Wächter `checkBandV1767`
-  wandert auf die Resonanz-Form. *Beweist den Kern, kleinstes Ziel.*
+- **R1 — die Domänen-Resonanz — ✅ GEBAUT (V17.68):** `_computeWorkshopDomain` von der first-match-Kette auf
+  `_blueprintResonance` (der Kern: `Σ tag·gewicht`, Invers-Achsen erlaubt) + `WORKSHOP_DOMAIN_SIGNATURES`
+  (frozen, an den 5 Built-ins gemessen) gehoben → ARGMAX, null unter dem Floor 2.0. `checkBandV1767` 6 grün
+  (der Kern mit Invers-Achse, der Wächter per argmax, Substanz-statt-Name [lone Block→null], der Flip, das Gate).
+  *Beweist den Resonanz-Kern; Tags-Resonanz reicht für die 5 Stationen — gemessen.*
 - **R2 — die räumliche Schicht in den Vektor:** die 5 Prinzipien + Skala/Greifbarkeit als numerische Features → der
   VOLLE Produkt-Vektor (heilt die Glut-Maskierung + das „die Esse ist klein wie ein Werkzeug"-Problem; die Form
   resoniert mit).
