@@ -7175,6 +7175,95 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
     );
 }
 
+// V17.89 — der Schöpfer-Browser-Befund: die WERTE eines Werks müssen sich dynamisch mit Material × Form
+// ändern (fähigkeiten steigen+sinken), sichtbar im Readout; die Werkstatt erscheint im Werkzeuge-Feld
+// sobald platziert+nah; das Undo/Redo unter den Parts. Drei Befunde, eine Welle.
+async function checkBandV1789WorkshopReadout(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const blu = r.state.blueprints;
+        const mkBlade = (name, mat) => {
+            delete blu[name];
+            blu[name] = {
+                name,
+                parts: [
+                    { shape: "octahedron", material: mat, size: { x: 0.3, y: 0.3, z: 0.3 }, position: { x: 0, y: 0, z: 0 } },
+                    { shape: "cone", material: mat, size: { x: 0.2, y: 0.12, z: 1.4 }, position: { x: 0, y: 0, z: 1.0 } },
+                ],
+            };
+            return blu[name];
+        };
+        // (1) MATERIAL bewegt die Werte: eine eisen-Klinge schlägt härter als eine holz-Klinge (GLEICHE Form)
+        mkBlade("_ab_eisen", "eisen");
+        mkBlade("_ab_holz", "holz");
+        const eisenAb = r._blueprintAbilityStats(blu["_ab_eisen"]);
+        const holzAb = r._blueprintAbilityStats(blu["_ab_holz"]);
+        const dmg = (ab) => (ab && ab.stats ? (ab.stats.find((s) => s[0] === "Schaden") || [0, 0])[1] : 0);
+        out.materialMovesValues = !!eisenAb && !!holzAb && dmg(eisenAb) > dmg(holzAb) + 1;
+        out.materialVals = `eisen=${dmg(eisenAb).toFixed(1)} holz=${dmg(holzAb).toFixed(1)}`;
+        // (2) FORM bewegt die Eignung: ein stumpfer Zylinder an der Klinge senkt die Waffen-Eignung
+        const bladeFit = eisenAb ? eisenAb.fit : 0;
+        const longer = mkBlade("_ab_long", "eisen");
+        longer.parts.push({ shape: "cylinder", material: "eisen", size: { x: 0.3, y: 0.3, z: 1.2 }, position: { x: 0, y: 0, z: -1.0 } });
+        const longAb = r._blueprintAbilityStats(longer);
+        out.formMovesValues = !!longAb && Math.abs(longAb.fit - bladeFit) > 0.001;
+        out.formVals = `klinge-Eignung=${bladeFit.toFixed(3)} +zylinder=${longAb ? longAb.fit.toFixed(3) : "?"}`;
+        // (3) rollen-gerechte Werte: Rüstung → Verteidigung; Avatar → HP
+        delete blu["_ab_armor"];
+        blu["_ab_armor"] = {
+            name: "_ab_armor",
+            role: "armor",
+            roleManual: true,
+            parts: [{ shape: "box", material: "eisen", size: { x: 1.2, y: 1.4, z: 0.4 }, position: { x: 0, y: 0, z: 0 } }],
+        };
+        const armorAb = r._blueprintAbilityStats(blu["_ab_armor"]);
+        out.armorHasDefense = !!armorAb && armorAb.stats.some((s) => s[0] === "Verteidigung");
+        // (4) DOM: die Werte-Zeile rendert + reagiert; die Werkstatt erscheint im Werkzeuge-Feld; Undo/Redo unter den Parts
+        r.setGameMode("schöpfer");
+        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+        if (tab) tab.click();
+        delete blu["_ab_clone"];
+        // ein WAFFEN-Klon (geraet_schwert) — eine Ausrüstungs-Rolle, die Werte hat (village = architecture
+        // → bewusst KEINE Werte-Zeile); zugleich nicht-builtIn → der Undo/Redo-Verlauf rendert.
+        r.cloneBlueprint("geraet_schwert", "_ab_clone");
+        r.selectBlueprintForEdit("_ab_clone");
+        r._renderWorkshopDOM();
+        out.domAbilitiesRow = !!document.querySelector(".workshop-abilities-row");
+        out.domHistoryControls = !!document.querySelector("#workshop-editor .workshop-history");
+        // die Werkzeuge-Box zeigt in schöpfer die besessenen Werkstatt-Prozesse (die Drehbank u.a.)
+        out.domWorkshopChips = document.querySelectorAll("#workshop-editor .workshop-station-chip").length >= 1;
+        // restore
+        for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor"]) delete blu[n];
+        if (blu["_ab_clone"]) r.deleteBlueprint("_ab_clone");
+        if (r.state.blueprintEditHistory) {
+            for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor", "_ab_clone"]) delete r.state.blueprintEditHistory[n];
+        }
+        r.selectBlueprintForEdit("village");
+        if (r.setGameMode) r.setGameMode(prevMode);
+        return out;
+    });
+    check(
+        "V17.89 KONSUM: die Werte folgen dem MATERIAL — eine eisen-Klinge schlägt härter als eine holz-Klinge (gleiche Form)",
+        res.materialMovesValues,
+        res.materialVals
+    );
+    check(
+        "V17.89 KONSUM: die Werte folgen der FORM — ein stumpfer Zylinder an der Klinge verschiebt die Waffen-Eignung (fähigkeiten steigen+sinken)",
+        res.formMovesValues,
+        res.formVals
+    );
+    check("V17.89: rollen-gerechte Werte — eine Rüstung zeigt Verteidigung (nicht Schaden)", res.armorHasDefense);
+    check("V17.89 KONSUM (DOM): die Werte-Zeile rendert im Werkstatt-Readout", res.domAbilitiesRow);
+    check(
+        "V17.89 KONSUM (DOM): die Werkstatt-Prozesse erscheinen im Werkzeuge-Feld (schöpfer → besessene Werkstätten)",
+        res.domWorkshopChips
+    );
+    check("V17.89 (DOM): Undo/Redo sitzt jetzt unter den Parts (workshop-history im Editor)", res.domHistoryControls);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -39451,6 +39540,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1786WorkshopCoherence(ctx);
             await checkBandV1787UndoRedo(ctx);
             await checkBandV1788WorkshopAsProcess(ctx);
+            await checkBandV1789WorkshopReadout(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

@@ -33009,7 +33009,13 @@ class AnazhRealm {
         // über `state.tools[op.tool].domain` auf, und die Station ist kein Tool. Der Cap kommt aus der
         // Station (die Werkstatt fertigt feiner), die Domäne aus der Op-Bibliothek. `station` notiert die
         // Quelle für die Anzeige.
-        part.opChain.push({ tool: proc.toolName, op: proc.opName, cap, station: stationName, at: performance.now() / 1000 });
+        part.opChain.push({
+            tool: proc.toolName,
+            op: proc.opName,
+            cap,
+            station: stationName,
+            at: performance.now() / 1000,
+        });
         this._refreshBlueprintRoleEmergent(blueprintName);
         return { ok: true, precision: this.computePartPrecision(part), cap, domain };
     }
@@ -38476,6 +38482,7 @@ class AnazhRealm {
         this._workshopRenderHeader(editor, selected);
         this._workshopRenderToolsBox(editor);
         this._workshopRenderPartsList(editor, selected, ws);
+        this._workshopRenderHistoryControls(editor, selected);
         this._workshopRenderConnections(editor, selected);
         this._workshopRenderToolRecursion(editor, selected);
         this._workshopRenderTagsSection(editor, selected);
@@ -38540,39 +38547,42 @@ class AnazhRealm {
             status.textContent = `${selected.parts.length} Parts · Rolle: ${roleLabel} (${origin})${affPart}`;
         }
         header.appendChild(status);
-        // V17.87 (Schöpfer-Wunsch „ein zurück button, ein paar Schritte zurück und wieder nach vorn") — das
-        // UNDO/REDO im Editor-Header. Nur für eigene Baupläne (Built-ins sind unveränderlich). Jeder Editor-
-        // Akt (Part hinzu/weg/ändern, Op anwenden/entfernen, Verbindung) ist umkehrbar + wiederholbar.
-        if (!selected.builtIn) {
-            const hist = document.createElement("span");
-            hist.className = "workshop-history";
-            const undoBtn = document.createElement("button");
-            undoBtn.type = "button";
-            undoBtn.className = "workshop-undo";
-            undoBtn.textContent = "↶ Rückgängig";
-            undoBtn.title = "Den letzten Editor-Schritt rückgängig machen (Part, Form, Op, Verbindung).";
-            undoBtn.disabled = !this.canUndoBlueprintEdit(selected.name);
-            undoBtn.addEventListener("click", () => {
-                const r = this.undoBlueprintEdit(selected.name);
-                if (!r.ok) this.log(`Rückgängig: ${r.reason}`, "INFO");
-                this._renderWorkshopDOM();
-            });
-            const redoBtn = document.createElement("button");
-            redoBtn.type = "button";
-            redoBtn.className = "workshop-redo";
-            redoBtn.textContent = "↷ Wiederholen";
-            redoBtn.title = "Den zuletzt rückgängig gemachten Schritt wiederherstellen.";
-            redoBtn.disabled = !this.canRedoBlueprintEdit(selected.name);
-            redoBtn.addEventListener("click", () => {
-                const r = this.redoBlueprintEdit(selected.name);
-                if (!r.ok) this.log(`Wiederholen: ${r.reason}`, "INFO");
-                this._renderWorkshopDOM();
-            });
-            hist.appendChild(undoBtn);
-            hist.appendChild(redoBtn);
-            header.appendChild(hist);
-        }
         editor.appendChild(header);
+    }
+
+    // V17.89 (Schöpfer-Befund „undo/redo unterhalb des Part-Entfernen-Buttons sehe ich noch nicht") — das
+    // V17.87-UNDO/REDO lag im Editor-HEADER (oben), der Schöpfer sucht es bei den Parts. Jetzt sitzt es als
+    // eigene Zeile DIREKT UNTER der Parts-Liste (wo man editiert). Nur für eigene Baupläne (Built-ins sind
+    // unveränderlich → kein Verlauf). Jeder Editor-Akt (Part hinzu/weg/ändern, Op, Verbindung) ist umkehrbar.
+    _workshopRenderHistoryControls(editor, selected) {
+        if (selected.builtIn) return;
+        const hist = document.createElement("div");
+        hist.className = "workshop-history";
+        const undoBtn = document.createElement("button");
+        undoBtn.type = "button";
+        undoBtn.className = "workshop-undo";
+        undoBtn.textContent = "↶ Rückgängig";
+        undoBtn.title = "Den letzten Editor-Schritt rückgängig machen (Part, Form, Op, Verbindung).";
+        undoBtn.disabled = !this.canUndoBlueprintEdit(selected.name);
+        undoBtn.addEventListener("click", () => {
+            const r = this.undoBlueprintEdit(selected.name);
+            if (!r.ok) this.log(`Rückgängig: ${r.reason}`, "INFO");
+            this._renderWorkshopDOM();
+        });
+        const redoBtn = document.createElement("button");
+        redoBtn.type = "button";
+        redoBtn.className = "workshop-redo";
+        redoBtn.textContent = "↷ Wiederholen";
+        redoBtn.title = "Den zuletzt rückgängig gemachten Schritt wiederherstellen.";
+        redoBtn.disabled = !this.canRedoBlueprintEdit(selected.name);
+        redoBtn.addEventListener("click", () => {
+            const r = this.redoBlueprintEdit(selected.name);
+            if (!r.ok) this.log(`Wiederholen: ${r.reason}`, "INFO");
+            this._renderWorkshopDOM();
+        });
+        hist.appendChild(undoBtn);
+        hist.appendChild(redoBtn);
+        editor.appendChild(hist);
     }
 
     _workshopRenderToolsBox(editor) {
@@ -38606,6 +38616,28 @@ class AnazhRealm {
             chip.appendChild(labelSpan);
             const domainLabel = t.domain ? AnazhRealm.TOOL_DOMAIN_LABELS[t.domain] || t.domain : "generisch";
             chip.title = `${t.opName} (${t.opClass}) · ${domainLabel}`;
+            toolsBox.appendChild(chip);
+        }
+        // V17.89 (Schöpfer „sobald die Drehbank nah ist, muss sie in dem Feld erscheinen") — die verfügbaren
+        // WERKSTATT-PROZESSE erscheinen hier neben der Hand: in frieden/pfad die platzierten + nahen, in
+        // schöpfer alle besessenen (`_workshopProcessesForMenu`). Die Werkstatt IST der Prozess (V17.88) —
+        // dieses Feld zeigt, womit du JETZT arbeiten kannst (Hand + die nahen Werkstätten).
+        for (const proc of this._workshopProcessesForMenu()) {
+            const chip = document.createElement("span");
+            chip.className = "workshop-tool-chip workshop-station-chip";
+            const color = AnazhRealm.TOOL_DOMAIN_COLORS[proc.domain];
+            if (color) {
+                const dot = document.createElement("span");
+                dot.className = "workshop-tool-domain-dot";
+                dot.style.background = color;
+                dot.title = AnazhRealm.TOOL_DOMAIN_LABELS[proc.domain] || proc.domain;
+                chip.appendChild(dot);
+            }
+            const labelSpan = document.createElement("span");
+            const verb = AnazhRealm.OP_VERB_LABELS[proc.opName] || proc.opName;
+            labelSpan.textContent = `${proc.label} · ${verb} ${proc.cap.toFixed(2)}`;
+            chip.appendChild(labelSpan);
+            chip.title = `Werkstatt-Prozess (${proc.domain}) — platziert + nah. Präzisions-Cap ${proc.cap.toFixed(2)}.`;
             toolsBox.appendChild(chip);
         }
         editor.appendChild(toolsBox);
@@ -38772,14 +38804,7 @@ class AnazhRealm {
                 // die in der Welt platzierten + nahen — der „wahre Weg": setze die Esse ab, dann erscheint ihr
                 // Prozess). Ihr Substanz-Cap (bessere Esse → feiner) steht im Eintrag → der Spieler lernt die
                 // Rekursion. Die gehaltenen Domain-Werkzeuge sind in die Werkstatt gefaltet.
-                const verbs = {
-                    forge_shape: "schmieden",
-                    brew: "brauen",
-                    weave: "weben",
-                    imbue: "beseelen",
-                    turn: "drehen",
-                    hand_knap: "behauen",
-                };
+                const verbs = AnazhRealm.OP_VERB_LABELS;
                 const options = [];
                 const hand = this.state.tools["hände"];
                 if (hand && opAllowed(hand.opClass)) {
@@ -40495,6 +40520,7 @@ class AnazhRealm {
         panel.innerHTML = "";
         if (!bp) return;
         this._workshopAppendRoleRow(panel, bp);
+        this._workshopAppendAbilitiesRow(panel, bp);
         this._workshopAppendBuildCostRow(panel, bp);
         if (!bp.builtIn) this._workshopAppendDomainAnalysis(panel, bp);
         this._workshopAppendTagsRow(panel, bp);
@@ -40888,6 +40914,78 @@ class AnazhRealm {
 
     // V8.39 — „Präzision" → „Qualität": dieselbe Zahl, aber der Name sagt,
     // was sie BEDEUTET — sie skaliert die Produkt-Wirkung.
+    // V17.89 (Schöpfer-Befund „die Werte ändern sich nicht, müsste das System nicht dynamisch Avatar/
+    // Rüstung/Schwert/Qualität anpassen, Fähigkeiten steigen+sinken?") — die LIVE Fähigkeits-Werte: die
+    // WIRKUNG eines Werks emergiert aus Material × Form × Handwerk (dieselbe Formel wie der Ausrüstungs-
+    // Beitrag, V17.79: STAT_FROM_TAGS × (0.5 + 0.5·Qualität·RoleFit)). Das Material liefert die Tags, die
+    // FORM die Rolle-Passung (Eignung), das Handwerk die Präzision. So SIEHT der Spieler, wie ein längeres
+    // Schwert oder ein härteres Material die Werte hebt/senkt — die fragmentierten Achsen werden EINE Zahl.
+    _blueprintAbilityStats(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
+        const role = this._displayRole(bp);
+        const servedRole =
+            role === "armor" ? "armor" : role === "soul" ? "soul" : role === "consumable" ? "consumable" : "held";
+        const raw = this.computeCompoundTags(bp) || {};
+        const tags = {};
+        for (const k of AnazhRealm.MATERIAL_TAG_KEYS) tags[k] = Math.max(0, Math.min(1, raw[k] || 0));
+        const q = this.computeBlueprintQuality(bp);
+        const fit = this._blueprintRoleFit(bp, servedRole);
+        const mul = 0.5 + 0.5 * q * fit;
+        const S = AnazhRealm.STAT_FROM_TAGS;
+        const val = (stat) => Math.max(0, S[stat](tags) * mul);
+        let stats = null;
+        if (role === "armor") {
+            stats = [
+                ["Verteidigung", val("defense")],
+                ["Magie-Resist", val("magicResist")],
+                ["Hitze-Resist", val("heatResist")],
+            ];
+        } else if (role === "soul") {
+            stats = [
+                ["HP", val("hpMax")],
+                ["Bewegung", val("speed")],
+                ["Schaden", val("damage")],
+            ];
+        } else if (role === "tool" || role === "weapon" || role === "held" || role === "brecher") {
+            stats = [
+                ["Schaden", val("damage")],
+                ["Rückschlag", val("knockback")],
+                ["Tempo", val("attackSpeed")],
+            ];
+        } else {
+            return null; // architecture/station/portal/vehicle/consumable → keine Ausrüstungs-Werte
+        }
+        return { role, servedRole, fit, mul, stats };
+    }
+
+    _workshopAppendAbilitiesRow(panel, bp) {
+        const ab = this._blueprintAbilityStats(bp);
+        if (!ab || !ab.stats) return;
+        const row = document.createElement("div");
+        row.className = "stat-row workshop-abilities-row";
+        const lab = document.createElement("span");
+        lab.className = "stat-label";
+        lab.textContent = "Werte";
+        row.appendChild(lab);
+        for (const [name, v] of ab.stats) {
+            const chip = document.createElement("span");
+            chip.className = "tag-chip ability-chip";
+            chip.textContent = `${name} ${v.toFixed(1)}`;
+            row.appendChild(chip);
+        }
+        // Die EIGNUNG (Form-Passung zur Rolle) sichtbar — sie steigt/sinkt mit der FORM (eine spitze Klinge
+        // passt besser als ein Klotz). So versteht der Spieler, warum die Werte sich ändern.
+        const fitChip = document.createElement("span");
+        fitChip.className = "tag-chip ability-fit-chip";
+        fitChip.textContent = `Eignung ${ab.fit.toFixed(2)}×`;
+        fitChip.title =
+            "Die Werte emergieren aus Material × Form × Handwerk: das Material liefert die Substanz (Tags), " +
+            "die FORM die Rolle-Passung (Eignung 0.8–1.2×), das Handwerk die Präzision (Qualität). " +
+            "Ändere Form oder Material → die Werte steigen oder sinken.";
+        row.appendChild(fitChip);
+        panel.appendChild(row);
+    }
+
     _workshopAppendQualityRow(panel, bp) {
         const avgPrec = this._compoundAvgPrecision(bp);
         if (avgPrec <= 0) return;
@@ -46258,7 +46356,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.88.0";
+AnazhRealm.VERSION = "17.89.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -46824,6 +46922,16 @@ AnazhRealm.MATERIAL_OP_COMPATIBILITY = Object.freeze({
     bronze: Object.freeze(["subtractive", "plastic", "additive", "phaseChange"]),
     quarz: Object.freeze(["subtractive", "phaseChange"]),
     leder: Object.freeze(["subtractive", "plastic", "additive"]),
+});
+
+// V17.89 — die deutschen Verben der Op-Namen (für das Prozess-Menü + die Werkzeuge-Box). Eine Quelle.
+AnazhRealm.OP_VERB_LABELS = Object.freeze({
+    hand_knap: "behauen",
+    forge_shape: "schmieden",
+    brew: "brauen",
+    weave: "weben",
+    imbue: "beseelen",
+    turn: "drehen",
 });
 
 // ============================================================
