@@ -5431,6 +5431,97 @@ async function checkBandV1766FertigenFlow(ctx) {
     );
 }
 
+// V17.67 S7-B (kampf-plan §11) — die WERKSTATT-DOMÄNE EMERGIERT aus der Substanz (_computeWorkshopDomain),
+// kein hardcoded `workshopDomain` mehr — das Vorbild ist _isPortalShaped (ein Ring IST ein Tor). Der erste
+// Schnitt, der die Prozess-Hardcode-Insel auflöst: die fünf Built-in-Werkstätten emergieren auf ihre Domäne
+// (der Tag-Drift-Wächter, V17.17-Disziplin), die Regel diskriminiert nach SUBSTANZ statt Name, das Gate liest
+// die emergente Domäne end-to-end.
+async function checkBandV1767WorkshopDomainEmergent(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const savedMode = r.getGameMode();
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const savedArch = r.state.architectures.slice();
+        const mk = (mat, shape) => ({
+            parts: [{ shape, material: mat, size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } }],
+        });
+
+        out.method = typeof r._computeWorkshopDomain === "function";
+
+        // (1) DER WÄCHTER — die fünf Built-in-Werkstätten emergieren auf ihre Domäne (gegen Tag-Drift, V17.17)
+        out.esse = r._computeWorkshopDomain(blu.esse) === "forging";
+        out.brennkolben = r._computeWorkshopDomain(blu.brennkolben) === "alchemy";
+        out.webstuhl = r._computeWorkshopDomain(blu.webstuhl) === "textile";
+        out.altar = r._computeWorkshopDomain(blu.seelenstein_altar) === "soulwork";
+        out.drehbank = r._computeWorkshopDomain(blu.drehbank) === "mechanism";
+        out.noHardcode = blu.esse.workshopDomain === undefined;
+
+        // (2) SUBSTANZ statt NAME — verschiedene Form×Material → verschiedene Domänen, kein Lookup
+        out.quarzSphereAlchemy = r._computeWorkshopDomain(mk("quarz", "sphere")) === "alchemy"; // durchsichtiges Gefäß
+        out.steinBoxForging = r._computeWorkshopDomain(mk("stein", "box")) === "forging"; // dichte Masse
+        out.holzBoxTextile = r._computeWorkshopDomain(mk("holz", "box")) === "textile"; // weich
+        out.knochenBoxNull = r._computeWorkshopDomain(mk("knochen", "box")) === null; // kein klares Signal → keine Werkstatt
+
+        // (3) DER FLIP — dieselbe Struktur, andere Substanz → andere Domäne (live Form×Material, kein Schloss)
+        const flip = mk("stein", "box");
+        const before = r._computeWorkshopDomain(flip);
+        flip.parts.push({
+            shape: "sphere",
+            material: "quarz",
+            size: { x: 1.0, y: 1.0, z: 1.0 },
+            position: { x: 0, y: 1, z: 0 },
+        });
+        const after = r._computeWorkshopDomain(flip);
+        out.substanceFlip = before === "forging" && after === "alchemy";
+
+        // (4) DAS GATE liest die EMERGENTE Domäne end-to-end — ein forging-Werk passt zur Esse, NICHT zum Brennkolben
+        r.setGameMode("schöpfer");
+        delete blu.__wd_work;
+        blu.__wd_work = mk("eisen", "box");
+        blu.__wd_work.name = "__wd_work";
+        r.applyOpToPart("__wd_work", 0, "schmiede-hammer"); // forging-Domain über die opChain
+        out.workIsForging = r.computeBlueprintDomain(blu.__wd_work) === "forging";
+        r.setGameMode("pfad");
+        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse" && e.type !== "brennkolben");
+        r.state.architectures.push({ type: "esse", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__wd_esse" });
+        const gEsse = r._workshopStationGate("__wd_work", { x: pm.x, y: pm.y, z: pm.z });
+        out.esseMatchesForging = gEsse.ok === true && gEsse.found === "esse";
+        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+        r.state.architectures.push({ type: "brennkolben", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__wd_brk" });
+        const gBrk = r._workshopStationGate("__wd_work", { x: pm.x, y: pm.y, z: pm.z });
+        out.brennkolbenWrongDomain = gBrk.ok === false && gBrk.neededDomain === "forging";
+
+        // cleanup
+        delete blu.__wd_work;
+        r.state.architectures = savedArch;
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.67 S7-B: _computeWorkshopDomain existiert (die Werkstatt-Domäne emergiert aus der Substanz)",
+        res.method
+    );
+    check(
+        "V17.67 S7-B: DER WÄCHTER — die 5 Built-in-Werkstätten emergieren korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism) + KEIN hardcoded Feld",
+        res.esse && res.brennkolben && res.webstuhl && res.altar && res.drehbank && res.noHardcode
+    );
+    check(
+        "V17.67 S7-B: SUBSTANZ statt NAME — verschiedene Form×Material → verschiedene Domänen (quarz-Gefäß→alchemy, dichte→forging, weich→textile, kein Signal→null)",
+        res.quarzSphereAlchemy && res.steinBoxForging && res.holzBoxTextile && res.knochenBoxNull
+    );
+    check(
+        "V17.67 S7-B: DER FLIP — dieselbe Struktur + ein quarz-Gefäß → forging WIRD alchemy (live Form×Material, kein Schloss)",
+        res.substanceFlip
+    );
+    check(
+        "V17.67 S7-B: DAS GATE liest die EMERGENTE Domäne end-to-end — ein forging-Werk passt zur Esse, NICHT zum Brennkolben (alchemy)",
+        res.workIsForging && res.esseMatchesForging && res.brennkolbenWrongDomain
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -32729,11 +32820,14 @@ async function checkBandWaves9And10a(ctx) {
             out.allHaveRole = stationNames.every(
                 (n) => r.state.blueprints[n] && r.state.blueprints[n].role === "workshop-station"
             );
-            out.esseForging = r.state.blueprints.esse.workshopDomain === "forging";
-            out.brennkolbenAlchemy = r.state.blueprints.brennkolben.workshopDomain === "alchemy";
-            out.webstuhlTextile = r.state.blueprints.webstuhl.workshopDomain === "textile";
-            out.altarSoulwork = r.state.blueprints.seelenstein_altar.workshopDomain === "soulwork";
-            out.drehbankMechanism = r.state.blueprints.drehbank.workshopDomain === "mechanism";
+            // S7-B (V17.67) — die bediente Domäne EMERGIERT jetzt aus der Substanz
+            // (_computeWorkshopDomain), kein hardcoded workshopDomain-Feld mehr.
+            out.esseForging = r._computeWorkshopDomain(r.state.blueprints.esse) === "forging";
+            out.brennkolbenAlchemy = r._computeWorkshopDomain(r.state.blueprints.brennkolben) === "alchemy";
+            out.webstuhlTextile = r._computeWorkshopDomain(r.state.blueprints.webstuhl) === "textile";
+            out.altarSoulwork = r._computeWorkshopDomain(r.state.blueprints.seelenstein_altar) === "soulwork";
+            out.drehbankMechanism = r._computeWorkshopDomain(r.state.blueprints.drehbank) === "mechanism";
+            out.noHardcodedDomain = r.state.blueprints.esse.workshopDomain === undefined;
             out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 10;
             out.gateMethodExists = typeof r._workshopStationGate === "function";
 
@@ -32792,12 +32886,13 @@ async function checkBandWaves9And10a(ctx) {
         );
         check("Welle 9c: alle haben role='workshop-station'", wave9cResults.allHaveRole);
         check(
-            "Welle 9c: workshopDomain-Mapping korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism)",
+            "Welle 9c→S7-B (V17.67): die bediente Domäne EMERGIERT aus der Substanz (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism); kein hardcoded workshopDomain-Feld mehr",
             wave9cResults.esseForging &&
                 wave9cResults.brennkolbenAlchemy &&
                 wave9cResults.webstuhlTextile &&
                 wave9cResults.altarSoulwork &&
-                wave9cResults.drehbankMechanism
+                wave9cResults.drehbankMechanism &&
+                wave9cResults.noHardcodedDomain
         );
         check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 10", wave9cResults.proximityConst);
         check("Welle 9c: _workshopStationGate-Methode existiert", wave9cResults.gateMethodExists);
@@ -37611,6 +37706,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1764ForgeAvatar(ctx);
             await checkBandV1765BrewConsumable(ctx);
             await checkBandV1766FertigenFlow(ctx);
+            await checkBandV1767WorkshopDomainEmergent(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

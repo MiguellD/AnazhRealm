@@ -30114,6 +30114,25 @@ class AnazhRealm {
         return (tags.magieleitung || 0) >= T.magieleitungMin;
     }
 
+    // S7-B (kampf-plan §11) — DIE WERKSTATT-DOMÄNE EMERGIERT aus der Substanz (Form × Material),
+    // kein hardcoded `workshopDomain` mehr. Das Vorbild ist _isPortalShaped: ein Ring IST ein Tor,
+    // weil seine Substanz es sagt — eine Werkstatt-Struktur BEDIENT die Domäne, deren Substanz-
+    // Signatur sie am klarsten trägt. Priorität nach Eindeutigkeit (an den fünf Built-ins gemessen,
+    // checkBandV1767 friert die Schwellen ein). Gibt null, wenn keine Domäne klar resoniert. NUR
+    // sinnvoll für eine Werkstatt-Struktur — die „IST es überhaupt eine Werkstatt?"-Emergenz (für
+    // vom Spieler gebaute Apparate) ist der nächste Schritt (heute deklarieren die Built-ins role).
+    _computeWorkshopDomain(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
+        const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.workshop;
+        const t = this.computeCompoundTags(bp) || {};
+        if ((t.transparent || 0) >= T.alchemyTransparentMin) return "alchemy"; // das durchsichtige Gefäß
+        if ((t.stromleitung || 0) >= T.mechanismStromMin) return "mechanism"; // der strom-leitende Apparat
+        if ((t.magieleitung || 0) >= T.soulworkMagieMin) return "soulwork"; // der magie-leitende Kanal
+        if ((t.dichte || 0) >= T.forgingDichteMin) return "forging"; // die dichte, hitze-tragende Masse
+        if ((t.härte || 0) <= T.textileHärteMax) return "textile"; // der weiche Rahmen
+        return null;
+    }
+
     // ----- Welt-Reaktion: moveable (Spieler steigt ein, Compound folgt) -----
 
     // Findet die nächste Architektur mit gegebener Affordance im Radius.
@@ -31737,9 +31756,10 @@ class AnazhRealm {
 
         // ### Welle 9c — Welt-Werkstatt-Architekturen ###
         // Fünf Welt-Werkstätten, eine pro Nicht-Default-Domain. Sie sind
-        // Bauplane mit role="workshop-station" + workshopDomain=<domain>.
-        // confirmBuild eines domain-Bauplans prüft im pfad-Modus, ob eine
-        // passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M=10m Nähe ist.
+        // Bauplane mit role="workshop-station"; die bediente Domäne EMERGIERT
+        // aus ihrer Substanz (_computeWorkshopDomain, S7-B), kein hardcoded Feld.
+        // confirmBuild + FERTIGEN eines domain-Bauplans prüfen im pfad-Modus, ob
+        // eine passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M=10m Nähe ist.
         // Construction-Default-Bauplane (architecture) brauchen keine
         // Welt-Werkstatt — sie sind die "Open-Air-Welt" selbst.
         const esseParts = [
@@ -31993,14 +32013,18 @@ class AnazhRealm {
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, instanced: true, parts: felsbogenParts },
             felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, instanced: true, parts: felsturmParts },
-            // Welle 9c — Welt-Werkstätten
+            // Welle 9c — Welt-Werkstätten. Die BEDIENTE Domäne (forging/alchemy/textile/soulwork/
+            // mechanism) ist NICHT mehr hardcoded — sie EMERGIERT aus der Substanz via
+            // _computeWorkshopDomain (S7-B): die Esse bedient forging, weil sie eine dichte, glühende
+            // Masse IST, nicht weil ein Feld es sagt (wie ein Ring ein Tor IST). Die `role`-Deklaration
+            // bleibt als Built-in-Saat (wie die gegebenen Seelen); die „IST es eine Werkstatt?"-
+            // Emergenz für vom Spieler gebaute Apparate ist der nächste Schritt.
             esse: {
                 name: "esse",
                 label: "Esse",
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                workshopDomain: "forging",
                 parts: esseParts,
             },
             brennkolben: {
@@ -32009,7 +32033,6 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                workshopDomain: "alchemy",
                 parts: brennkolbenParts,
             },
             webstuhl: {
@@ -32018,7 +32041,6 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                workshopDomain: "textile",
                 parts: webstuhlParts,
             },
             seelenstein_altar: {
@@ -32027,7 +32049,6 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                workshopDomain: "soulwork",
                 parts: seelenstein_altarParts,
             },
             drehbank: {
@@ -32036,7 +32057,6 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                workshopDomain: "mechanism",
                 parts: drehbankParts,
             },
             // W12 Phase 1 — Welt-Portal. Rolle "portal" — emergiert aus
@@ -35404,8 +35424,9 @@ class AnazhRealm {
     // ============================================================
     // ### Welle 9c — Welt-Werkstatt-Gate ###
     // Prüft im pfad-Modus, ob für einen domain-tragenden Bauplan eine
-    // passende Welt-Werkstatt-Architektur (role="workshop-station" mit
-    // workshopDomain === <Bauplan-Domain>) in WORKSHOP_PROXIMITY_M nähe ist.
+    // passende Welt-Werkstatt-Architektur (role="workshop-station", deren
+    // EMERGENTE Domäne _computeWorkshopDomain === <Bauplan-Domain>) in
+    // WORKSHOP_PROXIMITY_M nähe ist.
     // In frieden + schöpfer: kein Gate (frieden umarmt, schöpfer gehorcht).
     // Bauplane ohne Domain (architecture/default) brauchen NIE eine
     // Welt-Werkstatt — sie sind die Open-Air-Welt selbst.
@@ -35428,7 +35449,8 @@ class AnazhRealm {
         for (const entry of this.state.architectures || []) {
             const wbp = this.state.blueprints && this.state.blueprints[entry.type];
             if (!wbp || wbp.role !== "workshop-station") continue;
-            if (wbp.workshopDomain !== needed) continue;
+            // S7-B — die bediente Domäne EMERGIERT aus der Substanz (kein hardcoded workshopDomain).
+            if (this._computeWorkshopDomain(wbp) !== needed) continue;
             const dx = entry.position.x - atPos.x;
             const dy = entry.position.y - atPos.y;
             const dz = entry.position.z - atPos.z;
@@ -39532,7 +39554,8 @@ class AnazhRealm {
     _stationLabelForDomain(domain) {
         if (!domain) return "Werkstatt";
         for (const b of Object.values(this.state.blueprints || {})) {
-            if (b && b.role === "workshop-station" && b.workshopDomain === domain) return b.label || b.name;
+            if (b && b.role === "workshop-station" && this._computeWorkshopDomain(b) === domain)
+                return b.label || b.name;
         }
         return (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[domain]) || domain;
     }
@@ -45091,7 +45114,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.66.0";
+AnazhRealm.VERSION = "17.67.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -45809,7 +45832,7 @@ AnazhRealm.TOOL_DOMAIN_COLORS = Object.freeze({
 });
 
 // Welle 9c — Welt-Werkstatt-Radius. Spieler muss in dieser Nähe einer
-// Architektur mit passendem workshopDomain stehen (gemessen vom Spawn-
+// Architektur mit passender EMERGENTER Domäne stehen (gemessen vom Spawn-
 // Punkt des neuen Bauplans), sonst lehnt confirmBuild im pfad-Modus ab.
 AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
 
@@ -45926,6 +45949,21 @@ AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS = Object.freeze({
     // ein Quarz-Ring darüber.
     portal: Object.freeze({
         magieleitungMin: 1.3,
+    }),
+    // S7-B (kampf-plan §11) — WELCHE Crafting-Domäne eine Werkstatt-Struktur BEDIENT, emergiert
+    // aus ihrer Substanz (Form × Material), kein hardcoded `workshopDomain` mehr (Vorbild: ein Ring
+    // IST ein Tor via _isPortalShaped). Die Schwellen sind an den fünf Built-in-Werkstätten GEMESSEN
+    // (diag-arch-tags; checkBandV1767 friert sie ein): das klarste Substanz-Signal gewinnt, Reihen-
+    // folge nach Eindeutigkeit. alchemy: ein durchsichtiges Gefäß (Quarz-Kolben transparent 2.85);
+    // mechanism: ein strom-leitender Apparat (Eisen-Spindel stromleitung 2.55); soulwork: ein stark
+    // magie-leitender Kanal (Quarz-Helix 2.55); forging: eine dichte, hitze-tragende Masse (Stein +
+    // Bronze + Glut, dichte 2.64); textile: ein weicher Rahmen (Leder/Holz, härte 0.2).
+    workshop: Object.freeze({
+        alchemyTransparentMin: 1.5,
+        mechanismStromMin: 1.5,
+        soulworkMagieMin: 2.0,
+        forgingDichteMin: 2.0,
+        textileHärteMax: 0.5,
     }),
 });
 

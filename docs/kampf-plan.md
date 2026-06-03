@@ -10,7 +10,7 @@
 
 ---
 
-## STATUS (Stand V17.66) — lies §11 (der aktive Plan; §11.9 = die Browser-Audit-Ausrichtung)
+## STATUS (Stand V17.67) — lies §11 (der aktive Plan; §11.9 = die Browser-Audit-Ausrichtung)
 
 **Der Kern-Kampf-Loop A–D + W5-Affekt + der Interaktions-Bogen W1·W2·W2-B·W3 sind GEBAUT** (V17.51–.58, §8/§9).
 **§11 — der vereinte Schöpfungs-Fluss:** S1 Readout · S2 Mach-Tor+Modi · S3+S3-B Gerät · S4 Rüstung · S5 Avatar ·
@@ -21,13 +21,20 @@ fixiert-die-Rolle"-Flusses). **S7 KERN GEBAUT (V17.66): das FERTIGEN ist in den 
 rollen-bewusster „⚒ FERTIGEN"-Akt als Abschluss der Stats-Tabelle (`_workshopAppendFertigenRow`, der Fluss
 verfeinern → ablesen → FERTIGEN), die zwei alten Detail-Editor-Knöpfe entfernt; das Mach-Tor `_workshopStationGate`
 ist end-to-end am Mach-Akt angeschlossen (`_makeStationGate` in `_forgeMaterialAndFreeze`/`brewConsumable`, nicht
-nur confirmBuild — ein forging-Gerät → Esse nah, ein Trank → Brennkolben). `checkBandV1766` 9 grün. **OFFEN
-(GEMESSEN-bewusste Schnitte, keine „halben Schritte"): S7-B der Werkzeug-Aufräum** (hammer+feuerstein raus —
-GEMESSEN ripple-schwer: `hammer` = ~15 Test-Fixtures; feile/polier-Decke → Maschine = Crafting-Ökonomie-Feel) +
+nur confirmBuild — ein forging-Gerät → Esse nah, ein Trank → Brennkolben). `checkBandV1766` 9 grün. **S7-B
+BEGONNEN (V17.67) — die Prozess-Hardcode-Insel auflösen (Schöpfer-Dialog 03.06.):** der „Werkzeug-Aufräum" war
+nie ein Aufräum, er zeigte auf die letzte Hardcode-Insel — die WORK-Seite emergiert (Rolle aus Form×Material), die
+PROZESS-Seite (Werkzeuge + Werkstätten) trug noch Hardcode (`roleManual`+`workshopDomain`). Erster Schnitt: die
+WERKSTATT-DOMÄNE EMERGIERT aus der Substanz (`_computeWorkshopDomain`, Vorbild `_isPortalShaped`; das `workshop­
+Domain`-Feld entfernt; eine Esse bedient forging, weil sie eine glühende dichte Masse IST), `checkBandV1767` 5 grün.
+Der AKTIVE nächste Schritt: die „IST es eine Werkstatt?"-Emergenz (vom Spieler gebaute Apparate, `_isWorkshopStation­
+Shaped`) + der Op-aus-Form (S10) + ein Beispiel pro Rolle (die Bibliothek) — bis die Rekursion durch verbesserbare
+Prozessbaupläne schließt. **OFFEN daneben:** der Schöpfer-Browser-Audit des S7-FERTIGEN-Flusses (Feel/Synergie) +
 **S7-C die chat/DSL-Vereinheitlichung** (der letzte Gratis-Bypass; die load-bearing scripting-Schicht, S3-B hielt
-sie bewusst frei) — **beide nach dem Schöpfer-Browser-Audit des Flusses**. Wer weiterbaut, liest §11.9 (die Lehre +
-der Lebenszyklus + die drei Schichten Tags/Fähigkeit/Rolle) ZUERST. **PERMANENTE LEHRE: headless-grün ≠ vision-
-aligned — den FLUSS im Schöpfer-Browser zeigen, bevor man Welle auf Welle stapelt.** Das ursprüngliche §11-Prinzip bleibt
+sie bewusst frei). Wer weiterbaut, liest §11.9 (die Lehre + der Lebenszyklus + die drei Schichten Tags/Fähigkeit/
+Rolle) ZUERST. **PERMANENTE LEHRE: headless-grün ≠ vision-aligned — den FLUSS im Schöpfer-Browser zeigen, bevor man
+Welle auf Welle stapelt. + Die Prozess-Seite (Werkzeuge/Werkstätten) ist die letzte Hardcode-Insel: sie löst man
+wie alles andere, Form×Material → Eigenschaft, nach dem `_isPortalShaped`-Vorbild, NIE ein Flag.** Das ursprüngliche §11-Prinzip bleibt
 (Schöpfer-Dialog 02.06., die Weitung von §10 auf ALLE Rollen): **„Plan → Werk"** (Information
 frei · Materie kostet), das jeder Lesart (Gerät · Rüstung · Trank · Avatar · Portal · Fahrzeug) ihren
 material-zahlenden Werk-Akt gibt, die vier Schöpfungs-Drawer in EINE Werkstatt-Gebärmutter zieht, und das
@@ -714,6 +721,24 @@ Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis,
   letzte Gratis-Bypass „rüste/werde X" → durchs FERTIGEN): die scripting-Schicht (DSL/Chat/Restore/Aliase) ist
   load-bearing + multi-user-broadcast-sensibel; S3-B hielt `equipHeld`/`equipArmor`/`applyPlayerSoul` BEWUSST als das
   freie Low-Level-Primitiv. Beide nach dem Browser-Audit des Flusses.
+- **S7-B — die PROZESS-HARDCODE-INSEL auflösen (Schöpfer-Dialog 03.06., re-framed):** der „Werkzeug-Aufräum"
+  (hammer raus / feile-polier → Maschine) war nie ein Aufräum — er zeigte auf die letzte Hardcode-Insel. Die WORK-
+  Seite emergiert (Rolle aus Form × Material, der forging-split / `_isPortalShaped`), aber die PROZESS-Seite
+  (Werkzeuge + Werkstätten) trug Hardcode: die 5 Werkstätten hatten `roleManual: true` + ein **von Hand vergebenes**
+  `workshopDomain`; ein Werkzeug bekommt seinen Op nur durch **manuelles** `setBlueprintToolMeta` (das opName-Tippen).
+  Die Insel auflösen, EIN Bogen: **(i) ✅ GEBAUT (V17.67)** — die WERKSTATT-DOMÄNE emergiert via `_compute­
+  WorkshopDomain` (eine Prioritäts-Kette positiver Substanz-Signale, Vorbild `_isPortalShaped`, an den 5 Built-ins
+  gemessen: alchemy=durchsichtiges Gefäß · mechanism=strom-leitend · soulwork=magie-leitend · forging=dichte
+  hitze-Masse · textile=weicher Rahmen); `_workshopStationGate` liest sie, das `workshopDomain`-Feld ist entfernt;
+  `checkBandV1767` 5 grün (der Wächter friert die 5-Built-in-Baseline ein, der FLIP beweist Substanz statt Name).
+  **(ii)** die „IST es eine Werkstatt?"-Emergenz (`_isWorkshopStationShaped` für vom Spieler gebaute Apparate — die
+  `role`-Deklaration auf den Built-in-Saaten bleibt bis dahin). **(iii)** der Op-aus-Form (= S10: scharf→schneiden,
+  stumpf-hart→schmieden, das opName-Tippen fällt). **(iv)** ein Beispiel pro Rolle (die Bibliothek, optimierbare
+  Saat). Dann schließt die Rekursion durch verbesserbare PROZESSBAUPLÄNE: ein besserer Prozessbauplan (Werkzeug ODER
+  Werkstatt) → höhere Qualität → höherer Cap (`computeBlueprintQuality`-Snapshot) → höhere Präzision → bessere Werke →
+  bessere Prozessbaupläne. *„Decke → Maschine" ist dann kein Designer-Pick, sondern: ein feines Werk braucht eine
+  feine Esse, und die kannst du bauen.* *Headless beweisbar (die emergente Klassifikation + der Wächter); das Feel =
+  Schöpfer-Browser.*
 - **S8 — die Teilen-Konsistenz** (§11.6): das Mach-Tor ist herkunfts-agnostisch by-construction → ein
   geteiltes Gerät/Trank/Avatar kostet wie ein eigenes; die Signatur reist. Fällt fast aus S2 heraus.
   *Headless-Verifikation.*
