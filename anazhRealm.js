@@ -35613,6 +35613,43 @@ class AnazhRealm {
             this._updateHotbarHighlight();
             return;
         }
+        // V17.74 Welle 1b (kampf-plan §11.5) — DER MINECRAFT-HOTBAR-GATE: die Natur des Bauplans (aus
+        // Rolle + Form AUSGELESEN, kein Hand-Flag) entscheidet. Eine PLATZIERBARE Welt-Struktur bekommt
+        // das Platzier-Phantom (unten); alles andere (greifbares Gerät / Rüstung / Seele / Trank) geht
+        // NICHT als Struktur in die Welt — es wird IN DIE HAND genommen / an den Körper, KEIN Platzier-
+        // Schatten. Re-Auswahl des schon gehaltenen Slots → ablegen (Toggle, wie der Bau-Modus-Toggle).
+        if (!this._isPlaceableBlueprint(this.state.blueprints[blueprintName])) {
+            this._clearBuildMode(); // kein Phantom
+            bm.slotIndex = idx;
+            const heldNow = this.state.player && this.state.player.equipped && this.state.player.equipped.held;
+            const label = this.state.blueprints[blueprintName].label || blueprintName;
+            if (heldNow === blueprintName) {
+                this.equipHeld(null); // schon in der Hand → ablegen (Faust)
+                this.log(`Abgelegt: ${label}`, "INFO");
+            } else {
+                // S3-B — der Spieler-Pfad: ein ungeschmiedetes Gerät wird hier GESCHMIEDET (zahlt
+                // pfad/frieden), ein geschmiedetes frei in die Hand genommen.
+                const result = this.wieldBlueprint(blueprintName);
+                if (!result.ok) {
+                    if (result.reason === "not_enough_material") {
+                        const missingStr = Object.entries(result.missing || {})
+                            .map(([m, n]) => `${n}× ${m}`)
+                            .join(", ");
+                        this.log(
+                            `In die Hand: Schmieden nötig — fehlt ${missingStr || "Material"} (⚒ Werkstatt).`,
+                            "INFO"
+                        );
+                    } else {
+                        this.log(`In die Hand fehlgeschlagen: ${result.reason}`, "INFO");
+                    }
+                } else {
+                    this.log(`In der Hand: ${label} (Slot ${idx + 1})`, "INFO");
+                }
+            }
+            this._updateHotbarHighlight();
+            if (typeof this.renderPlayerEquipUI === "function") this.renderPlayerEquipUI();
+            return;
+        }
         // Altes Phantom wegräumen, falls Bauplan-Wechsel.
         if (bm.phantomMesh && this.state.scene) {
             this.state.scene.remove(bm.phantomMesh);
@@ -36382,6 +36419,75 @@ class AnazhRealm {
         if (prof.cutPower > prof.minePower * 1.3) return "Klinge";
         if (prof.minePower > prof.cutPower * 1.3) return "Brecher";
         return "Gerät";
+    }
+
+    // V17.74 Welle 1b — die VISUELLE Spanne (positions ± size, größen-bewusst), anders als
+    // _compoundBBox (positions-only — das unterschätzt z.B. einen Wasserfall: Klippe bei y=4, aber
+    // 8 m hoch). Für den greifbar-vs-groß-Schalter braucht es die echte Ausdehnung. Cheap (O(parts),
+    // ignoriert Rotation — für die Greif-Entscheidung genau genug).
+    _compoundVisualExtent(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return { dx: 0, dy: 0, dz: 0 };
+        let minX = Infinity,
+            minY = Infinity,
+            minZ = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity,
+            maxZ = -Infinity;
+        for (const p of bp.parts) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            const sz = p.size || { x: 1, y: 1, z: 1 };
+            const hx = Math.abs(sz.x || 1) / 2,
+                hy = Math.abs(sz.y || 1) / 2,
+                hz = Math.abs(sz.z || 1) / 2;
+            const px = pos.x || 0,
+                py = pos.y || 0,
+                pz = pos.z || 0;
+            if (px - hx < minX) minX = px - hx;
+            if (px + hx > maxX) maxX = px + hx;
+            if (py - hy < minY) minY = py - hy;
+            if (py + hy > maxY) maxY = py + hy;
+            if (pz - hz < minZ) minZ = pz - hz;
+            if (pz + hz > maxZ) maxZ = pz + hz;
+        }
+        return { dx: maxX - minX, dy: maxY - minY, dz: maxZ - minZ };
+    }
+
+    _compoundVisualSpan(bp) {
+        const e = this._compoundVisualExtent(bp);
+        return Math.max(e.dx, e.dy, e.dz);
+    }
+
+    // V17.74 Welle 1b (kampf-plan §11.5) — WIE wird ein Bauplan BENUTZT? Aus Rolle + Form AUSGELESEN
+    // (kein Hand-Flag — das Minecraft-Modell: die Natur des Dings bestimmt die Aktion; EIN Mechanismus
+    // [Hotbar/Drawer], rollen-getrieben = Freiheit + robust + intuitiv). Ein Bauwerk → platzieren, ein
+    // greifbares Gerät → in die Hand, Rüstung → tragen, eine Seele → verkörpern, ein Trank → brauen+wirken.
+    // Der Gerät-vs-Bauwerk-Substanz-Zwilling (V17.70) wird über die FORM getrennt (greifbar ≤ IMPLEMENT_
+    // GRASP_SPAN_M → Hand, sonst Welt).
+    _blueprintUseKind(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return "place";
+        const role = bp.role;
+        if (role === "armor") return "wear";
+        if (role === "soul") return "embody";
+        if (role === "consumable") return "drink";
+        if (role === "tool" || role === "weapon") return "hold"; // explizite Geräte
+        if (role === "portal" || role === "workshop-station" || role === "machine") return "place"; // Welt-Apparate
+        // architecture / rollenlos: die FORM entscheidet — der stein_block-vs-Spitzhacke-Zwilling (beide
+        // klein + rollenlos) wird über die WERKZEUG-Form getrennt. Default „place" (konservativ — bricht
+        // keinen Block); „hold" NUR wenn die Form ein Gerät verrät: eine SPITZE/Klinge (pointedFraction>0)
+        // ODER ein länglicher GRIFF (eine Achse dominiert klar — kein Würfel, kein flacher Block).
+        const e = this._compoundVisualExtent(bp);
+        const span = Math.max(e.dx, e.dy, e.dz);
+        if (span > AnazhRealm.IMPLEMENT_GRASP_SPAN_M) return "place"; // zu groß für die Hand → Welt
+        const dims = [e.dx, e.dy, e.dz].sort((a, b) => b - a); // [längste, mittlere, kürzeste]
+        const elongated = dims[0] / Math.max(1e-4, dims[1]) >= 2.2; // ein Griff dominiert eine Achse
+        const pointed = this._blueprintPointedFraction(bp) > 0; // eine Klinge/Spitze
+        return pointed || elongated ? "hold" : "place";
+    }
+
+    // V17.74 — ist der Bauplan eine PLATZIERBARE Welt-Struktur (Phantom) vs ein in-die-Hand/an-den-
+    // Körper-Ding? Der Hotbar-Gate-Schalter (Bauwerk → Platzier-Phantom, alles andere → benutzt).
+    _isPlaceableBlueprint(bp) {
+        return this._blueprintUseKind(bp) === "place";
     }
 
     // S1 (kampf-plan §11.7) — die Werkstatt erkennt JEDE Lesart: die emergente FÄHIGKEIT eines
@@ -37592,8 +37698,13 @@ class AnazhRealm {
         if (typeof document === "undefined") return;
         const slots = document.querySelectorAll("#hotbar .hotbar-slot");
         const bm = this.state.buildMode;
+        // V17.74 — der ausgewählte Slot ist hervorgehoben: entweder der aktive Bau-Modus-Slot
+        // (Platzier-Phantom) ODER der Slot, dessen Bauplan gerade in der Hand ist (Hotbar-Gate).
+        const held = this.state.player && this.state.player.equipped && this.state.player.equipped.held;
         slots.forEach((slot, i) => {
-            slot.classList.toggle("active", bm.active && bm.slotIndex === i);
+            const isBuild = bm.active && bm.slotIndex === i;
+            const isHeld = !!held && this.state.hotbar[i] === held;
+            slot.classList.toggle("active", isBuild || isHeld);
         });
     }
 
@@ -42662,7 +42773,30 @@ class AnazhRealm {
         if (!select) return;
         this._refreshSoulSelect();
         select.addEventListener("change", () => {
-            this.applyPlayerSoul(select.value);
+            const v = select.value;
+            // V17.74 Welle 1b — ein role:"soul"-Bauplan (noch kein registrierter Soul) → VERKÖRPERN
+            // (embodyBlueprint formt ihn, zahlt pfad/frieden); eine Built-in/Custom-Seele → frei tragen.
+            const bp = this.state.blueprints && this.state.blueprints[v];
+            const isSoulBlueprint =
+                bp &&
+                bp.role === "soul" &&
+                !(this.playerSoulDefs[v] || (this.state.customSouls && this.state.customSouls[v]));
+            if (isSoulBlueprint) {
+                const result = this.embodyBlueprint(v);
+                if (!result.ok) {
+                    if (result.reason === "not_enough_material") {
+                        const missingStr = Object.entries(result.missing || {})
+                            .map(([m, n]) => `${n}× ${m}`)
+                            .join(", ");
+                        this.log(`Avatar formen nötig — fehlt ${missingStr || "Material"} (⚒ Werkstatt).`, "ERROR");
+                    } else {
+                        this.log(`Verkörpern fehlgeschlagen: ${result.reason}`, "ERROR");
+                    }
+                }
+                this._refreshSoulSelect(); // den neuen customSoul aufnehmen + selektieren
+            } else {
+                this.applyPlayerSoul(v);
+            }
         });
         // Status-Bar mit Default beschriften, falls vorhanden.
         const status = document.getElementById("status-soul");
@@ -42737,8 +42871,15 @@ class AnazhRealm {
         none.textContent = "— leer (Faust) —";
         sel.appendChild(none);
         const blu = this.state.blueprints || {};
+        // V17.74 Welle 1b — die GEBRAUCHS-Fläche listet eigene Baupläne (wie bisher) UND built-in
+        // greifbare Geräte (die V17.72-Bibliothek, z.B. geraet_spitzhacke) — nicht mehr nur `!builtIn`,
+        // sonst bleibt die craftbare Saat unsichtbar. Built-in-Strukturen (Dorf) bleiben draußen (place).
         const names = Object.keys(blu).filter(
-            (n) => blu[n] && !blu[n].builtIn && Array.isArray(blu[n].parts) && blu[n].parts.length
+            (n) =>
+                blu[n] &&
+                Array.isArray(blu[n].parts) &&
+                blu[n].parts.length &&
+                (!blu[n].builtIn || this._blueprintUseKind(blu[n]) === "hold")
         );
         names.sort();
         for (const name of names) {
@@ -42792,8 +42933,12 @@ class AnazhRealm {
         const candidateBlueprints = [];
         for (const name of Object.keys(this.state.blueprints || {})) {
             const bp = this.state.blueprints[name];
-            if (!bp || bp.builtIn) continue;
+            if (!bp) continue;
+            // V17.74 Welle 1b — Rüstung wird nach ROLLE gelistet (Built-in-Bibliothek INKLUSIVE) → die
+            // GEBRAUCHS-Fläche erkennt eine craftbare Beispiel-Rüstung (ruestung_brustpanzer), nicht nur
+            // eigene Baupläne. Andere Built-ins (Strukturen) sind keine Markier-/Tragen-Kandidaten.
             if (bp.role === "armor") armorBlueprints.push(name);
+            else if (bp.builtIn) continue;
             else if (bp.role === "weapon") weaponBlueprints.push(name);
             else candidateBlueprints.push(name);
         }
@@ -43259,6 +43404,20 @@ class AnazhRealm {
                 opt.textContent = this.state.customSouls[key].label + " ✦";
                 select.appendChild(opt);
             }
+        }
+        // V17.74 Welle 1b (kampf-plan §11.5) — die GEBRAUCHS-Fläche listet AUCH noch-nicht-verkörperte
+        // role:"soul"-Baupläne (die craftbaren Avatare, Built-in-Bibliothek INKLUSIVE) → der Spieler kann
+        // sie hier VERKÖRPERN. Schon-verkörperte (bp_<name> liegt als customSoul) werden übersprungen
+        // (oben gelistet), damit kein Doppel-Eintrag. ⚒ markiert „ein Bauplan-Avatar (verkörpern formt ihn)".
+        const blu = this.state.blueprints || {};
+        for (const name of Object.keys(blu)) {
+            const bp = blu[name];
+            if (!bp || bp.role !== "soul" || !Array.isArray(bp.parts) || !bp.parts.length) continue;
+            if (this.state.customSouls && this.state.customSouls[`bp_${name}`]) continue; // schon verkörpert
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = (bp.label || name) + " ⚒";
+            select.appendChild(opt);
         }
         const desired = previous || this.state.player.soul || "human";
         // Wenn die zuvor gewählte Option weg ist (z. B. Custom gelöscht),
@@ -45472,7 +45631,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.73.0";
+AnazhRealm.VERSION = "17.74.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

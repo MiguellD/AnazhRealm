@@ -5911,6 +5911,7 @@ async function checkBandV1772Library(ctx) {
         // restore — kein dangling Held/Soul/Boost für die nächsten Bands
         if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
         else r.state.worldMeta.gameMode = savedMode;
+        if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"]; // V17.74 — kein Soul-Leck für spätere Bands
         r.applyPlayerSoul(savedSoul);
         if (p) {
             p.equipped = savedEquip;
@@ -6038,6 +6039,127 @@ async function checkBandV1773HeldMesh(ctx) {
     check(
         "V17.73 S9 KONSUM: Körper-Wechsel (applyPlayerSoul) re-attached das Hand-Mesh am NEUEN Avatar (Restore-/Seelen-sicher)",
         res.reattached && res.reattachedNewBody
+    );
+}
+
+// V17.74 Welle 1b (kampf-plan §11.5) — die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
+// der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
+// Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States (V17.66).
+async function checkBandV1774UseByRole(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const blu = r.state.blueprints;
+
+        // Snapshot — am Ende restauriert.
+        const savedMode = r.getGameMode();
+        const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
+        const savedSoul = (p && p.soul) || "mensch";
+        const savedHotbar = r.state.hotbar.slice(0, 9);
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        else r.state.worldMeta.gameMode = "schöpfer";
+        // V17.74 — falls eine frühere Band (V1772) den Avatar verkörpert + den customSoul gelassen hat:
+        // sauberer Start, damit der „noch nicht verkörpert"-Listen-Test ehrlich ist.
+        if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"];
+
+        // (1) _blueprintUseKind — aus Rolle + Form AUSGELESEN
+        const kind = (n) => r._blueprintUseKind(blu[n]);
+        out.kindGeraet = kind("geraet_spitzhacke") === "hold";
+        out.kindArmor = kind("ruestung_brustpanzer") === "wear";
+        out.kindTrank = kind("trank_lebenssaft") === "drink";
+        out.kindAvatar = kind("avatar_waechter") === "embody";
+        // die DEFAULT-Hotbar MUSS „place" bleiben — Wasserfall ist der Test der größen-bewussten Spanne
+        // (Klippe pos y=4, aber 8 m hoch; positions-only läse 3.8 < 6 → fälschlich „hold").
+        out.defaultHotbarPlace =
+            kind("village") === "place" && kind("temple") === "place" && kind("waterfall") === "place";
+
+        // (2) HOTBAR-GATE — Gerät → IN DIE HAND, kein Phantom
+        r.equipHeld(null);
+        r._clearBuildMode();
+        r.setHotbarSlot(0, "geraet_spitzhacke");
+        r.selectHotbarSlot(0);
+        const bm = r.state.buildMode;
+        out.deviceToHand = p.equipped.held === "geraet_spitzhacke" && bm.active === false && !bm.phantomMesh;
+
+        // (3) HOTBAR-TOGGLE — schon gehaltenen Slot re-auswählen → ablegen (Faust)
+        r.selectHotbarSlot(0);
+        out.toggleOff = p.equipped.held == null;
+
+        // (4) HOTBAR-GATE — Struktur → Platzier-Phantom (wie bisher, kein Regress)
+        r.setHotbarSlot(1, "village");
+        r.selectHotbarSlot(1);
+        out.structureToPhantom = bm.active === true && !!bm.phantomMesh;
+        r._clearBuildMode(); // das Test-Phantom abräumen
+
+        // (5) BUG a — die Ausrüstung-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät
+        const part = r._equipPartitionEquipBlueprints();
+        out.armorListed = part.armorBlueprints.includes("ruestung_brustpanzer");
+        if (typeof r.renderPlayerEquipUI === "function") r.renderPlayerEquipUI();
+        const equipSels = document.querySelectorAll("#player-equip select");
+        out.heldDeviceListed = [...equipSels].some((sel) =>
+            [...sel.options].some((o) => o.value === "geraet_spitzhacke")
+        );
+
+        // (6) BUG b — die Seele-Select listet den built-in Bauplan-Avatar + Verkörpern registriert ihn
+        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        const soulSel = document.getElementById("player-soul-select");
+        out.avatarListed = !!soulSel && [...soulSel.options].some((o) => o.value === "avatar_waechter");
+        const emb = r.embodyBlueprint("avatar_waechter");
+        out.avatarEmbodied =
+            emb.ok === true &&
+            p.soul === "bp_avatar_waechter" &&
+            !!(r.state.customSouls && r.state.customSouls["bp_avatar_waechter"]);
+        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        const soulSel2 = document.getElementById("player-soul-select");
+        out.noDuplicate =
+            !!soulSel2 &&
+            [...soulSel2.options].filter((o) => o.value === "avatar_waechter").length === 0 &&
+            [...soulSel2.options].some((o) => o.value === "bp_avatar_waechter");
+
+        // restore — kein dangling Held/Soul/Hotbar/customSoul/Phantom für die nächsten Bands
+        if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
+        else r.state.worldMeta.gameMode = savedMode;
+        r._clearBuildMode();
+        if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"];
+        r.applyPlayerSoul(savedSoul);
+        if (p) p.equipped = savedEquip;
+        r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
+        for (let i = 0; i < 9; i++) r.state.hotbar[i] = savedHotbar[i] || null;
+        if (typeof r._renderHotbarDOM === "function") r._renderHotbarDOM();
+        if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+        return out;
+    });
+    check(
+        "V17.74 Welle 1b: _blueprintUseKind liest aus Rolle+Form — Gerät→hold · Rüstung→wear · Trank→drink · Avatar→embody",
+        res.kindGeraet && res.kindArmor && res.kindTrank && res.kindAvatar
+    );
+    check(
+        "V17.74 Welle 1b: die DEFAULT-Hotbar (Dorf/Tempel/Wasserfall) bleibt platzierbar — die groessen-bewusste Spanne faengt den 8-m-Wasserfall (kein Gate-Regress)",
+        res.defaultHotbarPlace
+    );
+    check(
+        "V17.74 Welle 1b HOTBAR-GATE: ein Gerät im Slot geht IN DIE HAND (equipped.held), KEIN Platzier-Phantom",
+        res.deviceToHand
+    );
+    check("V17.74 Welle 1b: ein gehaltener Slot re-ausgewählt → ablegen (Toggle zur Faust)", res.toggleOff);
+    check(
+        "V17.74 Welle 1b HOTBAR-GATE: eine Struktur im Slot baut das Platzier-Phantom (wie bisher, kein Regress)",
+        res.structureToPhantom
+    );
+    check(
+        "V17.74 Welle 1b BUG-a: die Ausrüstung-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät (nicht mehr nur !builtIn)",
+        res.armorListed && res.heldDeviceListed
+    );
+    check(
+        "V17.74 Welle 1b BUG-b: die Seele-Select listet den built-in Bauplan-Avatar (avatar_waechter) als verkörperbar",
+        res.avatarListed
+    );
+    check(
+        "V17.74 Welle 1b BUG-b KONSUM: einen Bauplan-Avatar verkörpern formt + registriert ihn (player.soul=bp_…, customSoul), kein Doppel-Eintrag danach",
+        res.avatarEmbodied && res.noDuplicate
     );
 }
 
@@ -36658,7 +36780,15 @@ async function checkBandRing5Soul(ctx) {
         out.drawerSelectInDom = !!document.getElementById("player-soul-select");
         out.statusBarSoulInDom = !!document.getElementById("status-soul");
         const select = document.getElementById("player-soul-select");
-        out.dropdownHasThreeOptions = select && select.options.length === 3;
+        // V17.74 Welle 1b — die Seele-Select listet die 3 Built-in-Seelen PLUS verkörperbare
+        // role:"soul"-Baupläne (die Bibliothek, z.B. avatar_waechter). Migriert von „genau 3" auf
+        // „die 3 Built-ins sind da + die Bauplan-Avatare" (das Verhalten wandert mit, V9.56-i).
+        const ring5SoulVals = select ? [...select.options].map((o) => o.value) : [];
+        out.dropdownHasBuiltinSouls =
+            ring5SoulVals.includes("human") &&
+            ring5SoulVals.includes("phoenix") &&
+            ring5SoulVals.includes("dragon") &&
+            ring5SoulVals.includes("avatar_waechter");
         out.dropdownOptionCount = select ? select.options.length : -1;
         out.dropdownOptionValues = select ? [...select.options].map((o) => o.value).join(",") : "";
 
@@ -36832,8 +36962,8 @@ async function checkBandRing5Soul(ctx) {
         check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);
         check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
         check(
-            "Ring 5: Dropdown hat drei Optionen (Built-in-Seelen)",
-            ring5Results.dropdownHasThreeOptions,
+            "Ring 5: Dropdown listet die 3 Built-in-Seelen + verkörperbare Bauplan-Avatare (V17.74)",
+            ring5Results.dropdownHasBuiltinSouls,
             `count=${ring5Results.dropdownOptionCount} values=${ring5Results.dropdownOptionValues}`
         );
         check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
@@ -38280,6 +38410,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1771ToolOpFromForm(ctx);
             await checkBandV1772Library(ctx);
             await checkBandV1773HeldMesh(ctx);
+            await checkBandV1774UseByRole(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
