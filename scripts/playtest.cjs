@@ -4014,7 +4014,7 @@ async function checkBandV1757HeldSlot(ctx) {
 
         // (3) equipHeld lehnt ab: ein unbekannter Bauplan + ein builtIn-Crafting-Tool (kein Welt-Gerät)
         out.rejectsUnknown = !r.equipHeld("nonexistent_bp_xyz").ok;
-        out.rejectsBuiltinTool = !r.equipHeld("hammer").ok; // hammer = builtIn-Crafting-Tool, kein Bauplan
+        out.rejectsBuiltinTool = !r.equipHeld("schmiede-hammer").ok; // builtIn-Crafting-Tool, kein Welt-Bauplan
         r.equipHeld(wName); // (die fehlgeschlagenen Versuche ändern nichts; sicherheitshalber neu setzen)
 
         // (4) KONSUM — das gehaltene harte Gerät HEBT das Kombat-Profil (Angriff-mit-jedem-Gerät)
@@ -6002,9 +6002,9 @@ async function checkBandV1773HeldMesh(ctx) {
         r.equipHeld(null);
         out.unequipNoMesh = !(pm.userData && pm.userData.heldMesh);
 
-        // (5) ein formloses builtIn-Crafting-Tool (hammer, kein Bauplan) → equipHeld lehnt ab, kein Mesh
+        // (5) ein formloses builtIn-Crafting-Tool (schmiede-hammer, kein Bauplan) → equipHeld lehnt ab, kein Mesh
         //     (die Werkstatt-Schicht state.tools bleibt getrennt vom Welt-Gerät)
-        const eqTool = r.equipHeld("hammer");
+        const eqTool = r.equipHeld("schmiede-hammer");
         out.toolRejected = eqTool.ok === false;
         out.toolNoMesh = !(pm.userData && pm.userData.heldMesh);
 
@@ -6036,7 +6036,7 @@ async function checkBandV1773HeldMesh(ctx) {
     );
     check("V17.73 S9: ablegen (equipHeld(null)) entfernt das Hand-Mesh", res.unequipNoMesh);
     check(
-        "V17.73 S9: ein formloses builtIn-Crafting-Tool (hammer) wird abgelehnt → kein Hand-Mesh (die Werkstatt-Schicht bleibt getrennt)",
+        "V17.73 S9: ein formloses builtIn-Crafting-Tool (schmiede-hammer) wird abgelehnt → kein Hand-Mesh (die Werkstatt-Schicht bleibt getrennt)",
         res.toolRejected && res.toolNoMesh
     );
     check(
@@ -6384,6 +6384,58 @@ async function checkBandV1777SteigerungVisible(ctx) {
         res.readoutShowsPrecision
     );
     check("V17.77: die Meister-Esse littert den Worldgen NICHT (built-in ohne instanced)", res.noLitter);
+}
+
+// V17.78 Welle 2 Schritt 2 — die generische Präzisions-Leiter ist GEFALLEN: feuerstein/hammer/feile/
+// polierscheibe RAUS (die Werkstatt trägt jetzt die Präzision, V17.76/.77). hände bleibt die domain-
+// neutrale Baseline; die Op-Klassen-Abdeckung + der Crafting-Pfad bleiben intakt (kein Material verwaist).
+async function checkBandV1778LadderCut(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const tools = r.state.tools || {};
+        out.removedGone = !["feuerstein-knapper", "hammer", "feile", "polierscheibe"].some((n) => tools[n]);
+        out.keptPresent = [
+            "hände",
+            "schmiede-hammer",
+            "mörser",
+            "webstuhl-schiffchen",
+            "ritueller-stab",
+            "drehbank-meißel",
+        ].every((n) => tools[n] && tools[n].isStarter);
+        out.handeNeutral = !!tools["hände"] && tools["hände"].domain === null && tools["hände"].precisionCap === 0.4;
+        const classes = new Set(Object.values(tools).map((t) => t.opClass));
+        out.allOpClasses = ["subtractive", "plastic", "additive", "phaseChange"].every((c) => classes.has(c));
+        // KONSUM — ein Material ist weiter bearbeitbar (hände subtractive auf eisen) → der Crafting-Pfad lebt
+        r.state.blueprints["_cut_test"] = {
+            name: "_cut_test",
+            parts: [{ shape: "box", material: "eisen", opChain: r._defaultPartOpChain() }],
+        };
+        const prevMode = r.getGameMode();
+        if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
+        const ap = r.applyOpToPart("_cut_test", 0, "hände");
+        out.stillRefinable = ap.ok === true;
+        if (typeof r.setGameMode === "function") r.setGameMode(prevMode);
+        delete r.state.blueprints["_cut_test"];
+        return out;
+    });
+    check(
+        "V17.78 Welle 2 Schritt 2: die generische Leiter ist GEFALLEN (feuerstein/hammer/feile/polierscheibe RAUS)",
+        res.removedGone
+    );
+    check(
+        "V17.78: hände (domain-neutrale Baseline, 0.4) + die 6 Domain-Starter bleiben",
+        res.keptPresent && res.handeNeutral
+    );
+    check(
+        "V17.78: die Op-Klassen-Abdeckung ist intakt (subtractive/plastic/additive/phaseChange je ein behaltenes Tool)",
+        res.allOpClasses
+    );
+    check(
+        "V17.78 KONSUM: ein Material ist weiter bearbeitbar (hände subtractive auf eisen) — der Crafting-Pfad lebt",
+        res.stillRefinable
+    );
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -6923,10 +6975,10 @@ async function checkBandWave4(ctx) {
         const out = {};
         // Werkzeug-State + Konstanten
         const tools = r.state.tools || {};
-        out.fiveStarterTools = ["hände", "feuerstein-knapper", "hammer", "feile", "polierscheibe"].every(
+        out.fiveStarterTools = ["hände", "schmiede-hammer", "mörser", "webstuhl-schiffchen", "drehbank-meißel"].every(
             (n) => tools[n] && tools[n].isStarter
         );
-        out.playerOwnsStarters = ["hände", "hammer", "polierscheibe"].every((n) =>
+        out.playerOwnsStarters = ["hände", "schmiede-hammer", "drehbank-meißel"].every((n) =>
             (r.state.player.tools || []).includes(n)
         );
         out.matCompatFrozen = Object.isFrozen(r.constructor.MATERIAL_OP_COMPATIBILITY);
@@ -6958,29 +7010,29 @@ async function checkBandWave4(ctx) {
             builtIn: false,
             parts: [{ shape: "cone", material: "eisen", opChain: r._defaultPartOpChain() }],
         };
-        // Hand-Knap auf eisen-cone: OK (subtractive matches)
-        const ap1 = r.applyOpToPart("test-precision", 0, "feile");
+        // V17.78 — drehbank-meißel (subtractive) auf eisen-cone: OK (subtractive matches eisen)
+        const ap1 = r.applyOpToPart("test-precision", 0, "drehbank-meißel");
         out.applyOpAppends = ap1.ok && r.state.blueprints["test-precision"].parts[0].opChain.length === 2;
-        // Hammer (plastic) auf stein (subtractive only): FAIL
+        // Schmiede-Hammer (plastic) auf stein (subtractive only): FAIL
         r.state.blueprints["test-precision-stein"] = {
             name: "test-precision-stein",
             label: "Stein-Test",
             builtIn: false,
             parts: [{ shape: "box", material: "stein", opChain: r._defaultPartOpChain() }],
         };
-        const ap2 = r.applyOpToPart("test-precision-stein", 0, "hammer");
+        const ap2 = r.applyOpToPart("test-precision-stein", 0, "schmiede-hammer");
         out.materialOpIncompat = !ap2.ok && ap2.reason === "material_op_incompatible";
-        // Tool not owned
-        r.state.player.tools = r.state.player.tools.filter((t) => t !== "feile");
-        const ap3 = r.applyOpToPart("test-precision", 0, "feile");
+        // Tool not owned (drehbank-meißel ist subtractive + Starter)
+        r.state.player.tools = r.state.player.tools.filter((t) => t !== "drehbank-meißel");
+        const ap3 = r.applyOpToPart("test-precision", 0, "drehbank-meißel");
         out.toolOwnershipEnforced = !ap3.ok && ap3.reason === "tool_not_owned";
-        r.state.player.tools.push("feile"); // restore
+        r.state.player.tools.push("drehbank-meißel"); // restore
         // Built-in protection
-        const ap4 = r.applyOpToPart("village", 0, "hammer");
+        const ap4 = r.applyOpToPart("village", 0, "schmiede-hammer");
         out.builtInBlueprintProtected = !ap4.ok && ap4.reason === "cannot_modify_builtin";
 
         // DSL-Op apply_op
-        const dslRes = r.dslRun(["apply_op", "test-precision", 0, "polierscheibe"], { source: "test" });
+        const dslRes = r.dslRun(["apply_op", "test-precision", 0, "hände"], { source: "test" });
         out.dslApplyOpWorks = dslRes.log.some((e) => e.event === "applied_op");
 
         // Diskriminations-Test: zwei Resonanz-Compounds, einer
@@ -7066,7 +7118,7 @@ async function checkBandWave4(ctx) {
 
         // Save-Roundtrip: playerTools persistiert
         const snap = r.buildStateSnapshot();
-        out.snapshotHasPlayerTools = Array.isArray(snap.playerTools) && snap.playerTools.includes("hammer");
+        out.snapshotHasPlayerTools = Array.isArray(snap.playerTools) && snap.playerTools.includes("schmiede-hammer");
 
         // validateBlueprintParts: opChain wird sanitized
         const v = r.validateBlueprintParts([
@@ -7941,19 +7993,19 @@ async function checkBandWave5(ctx) {
         const regNotMarked = r.registerBlueprintAsTool("w5c-not-a-tool");
         out.rejectsUnmarked = !regNotMarked.ok && regNotMarked.reason === "not_marked_as_tool";
 
-        // Cannot override starter tool name
-        r.state.blueprints["hammer"] = {
-            name: "hammer",
-            label: "Mein Hammer",
+        // Cannot override starter tool name (schmiede-hammer ist ein Built-in-Starter, V17.78)
+        r.state.blueprints["schmiede-hammer"] = {
+            name: "schmiede-hammer",
+            label: "Mein Schmiede-Hammer",
             builtIn: false,
             role: "tool",
             toolMeta: { opName: "forge", opClass: "plastic" },
             parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
             connections: [],
         };
-        const regHammerOverride = r.registerBlueprintAsTool("hammer");
+        const regHammerOverride = r.registerBlueprintAsTool("schmiede-hammer");
         out.starterProtected = !regHammerOverride.ok && regHammerOverride.reason === "starter_name_protected";
-        delete r.state.blueprints["hammer"];
+        delete r.state.blueprints["schmiede-hammer"];
 
         // Recursive: das neue Werkzeug funktioniert in applyOpToPart
         r.state.blueprints["w5c-target"] = {
@@ -8181,7 +8233,8 @@ async function checkBandWave5(ctx) {
         r.deleteBlueprint("bug2-lathe");
         out.toolRemovedFromState = !r.state.tools["bug2-lathe"];
         out.toolRemovedFromPlayer = !(r.state.player.tools || []).includes("bug2-lathe");
-        out.starterToolsUnaffected = !!r.state.tools["hammer"] && (r.state.player.tools || []).includes("hammer");
+        out.starterToolsUnaffected =
+            !!r.state.tools["schmiede-hammer"] && (r.state.player.tools || []).includes("schmiede-hammer");
 
         // Negativ: deleteBlueprint eines non-tool-Bauplans laesst
         // andere Tools komplett unberuehrt.
@@ -14200,9 +14253,9 @@ async function checkBandWelle6DSoul(ctx) {
                 },
             ],
         };
-        if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
         const staBefore = r.state.player.stamina;
-        const applyOk = r.applyOpToPart("wound_test_bp", 0, "hammer");
+        const applyOk = r.applyOpToPart("wound_test_bp", 0, "schmiede-hammer");
         out.applyOpResult = applyOk;
         out.staBefore = staBefore;
         out.staAfter = r.state.player.stamina;
@@ -14210,7 +14263,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.staminaWasDeducted = r.state.player.stamina < staBefore;
         // Stamina auf 0 → applyOpToPart lehnt ab
         r.state.player.stamina = 1; // weniger als cost 10
-        const applyFail = r.applyOpToPart("wound_test_bp", 0, "hammer");
+        const applyFail = r.applyOpToPart("wound_test_bp", 0, "schmiede-hammer");
         out.applyOpRejectedNoStamina = !applyFail.ok && applyFail.reason === "not_enough_stamina";
         // Cleanup
         delete r.state.blueprints.wound_test_bp;
@@ -14434,11 +14487,11 @@ async function checkBandWelle6DSoul(ctx) {
         r.dslRun(["unequip", "armor"], { source: "test" });
         out.dslUnequipWorks = r.state.player.equipped.armor === null;
 
-        // V17.57 W2-B — ein builtIn-Crafting-Tool (hammer) ist KEIN Welt-Gerät → equipHeld lehnt es
+        // V17.57 W2-B — ein builtIn-Crafting-Tool (schmiede-hammer) ist KEIN Welt-Gerät → equipHeld lehnt es
         // ab (kein Bauplan); ein eigener Bauplan IST haltbar (kein Rollen-Schloss) + faltet in die Stats.
         r.state.player.tools = r.state.player.tools || [];
-        if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
-        out.equipBuiltinToolOk = !r.equipHeld("hammer").ok; // builtIn-Tool → abgelehnt (kein Bauplan)
+        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
+        out.equipBuiltinToolOk = !r.equipHeld("schmiede-hammer").ok; // builtIn-Tool → abgelehnt (kein Bauplan)
         out.equippedToolIs = !r.state.player.equipped.held; // nichts gehalten nach der Ablehnung
         const toolStats = r.state.player.stats;
         out.builtinToolNoStatChange = Math.abs(toolStats.hpMax - baselineStats.hpMax) < 0.01;
@@ -21868,17 +21921,17 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.state.player.stamina = 100;
 
         r.setGameMode("frieden");
-        const opResultFrieden = r.applyOpToPart("mode-test-bp", 0, "feile");
+        const opResultFrieden = r.applyOpToPart("mode-test-bp", 0, "hände");
         out.friedenSkipsStamina = opResultFrieden.ok === true && r.state.player.stamina === 100;
 
         r.state.player.stamina = 100;
         r.setGameMode("schöpfer");
-        const opResultSchoepfer = r.applyOpToPart("mode-test-bp", 0, "feile");
+        const opResultSchoepfer = r.applyOpToPart("mode-test-bp", 0, "hände");
         out.schoepferSkipsStamina = opResultSchoepfer.ok === true && r.state.player.stamina === 100;
 
         r.state.player.stamina = 100;
         r.setGameMode("pfad");
-        const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "feile");
+        const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "hände");
         // V8.39 — die Kosten skalieren mit dem Werkzeug-cap (nicht
         // mehr fix 10); dieser Test prüft das Modus-GATE (pfad
         // konsumiert), die genaue Skalierung prüft der V8.39-Block.
@@ -26825,7 +26878,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             const res1 = r.applyOpToPart("_t839s", 0, "hände");
             const costLow = b1 - r.state.player.stamina;
             const b2 = r.state.player.stamina;
-            const res2 = r.applyOpToPart("_t839s", 0, "polierscheibe");
+            const res2 = r.applyOpToPart("_t839s", 0, "drehbank-meißel"); // cap 0.9 → niedrigere Mühe (V17.78: polier raus)
             const costHigh = b2 - r.state.player.stamina;
             out.staminaScales = !!res1.ok && !!res2.ok && costLow > costHigh && costLow >= 9 && costHigh <= 7;
             r.setGameMode(prevMode);
@@ -28598,7 +28651,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             ownP.materials.some((m) => m.name === "_w14m0") && !ownP.materials.some((m) => m.name === "stein");
         out.payloadMaterialCap = ownP.materials.length <= 16;
         out.payloadOwnTools =
-            ownP.tools.some((t) => t.name === "_w14tool") && !ownP.tools.some((t) => t.name === "hammer");
+            ownP.tools.some((t) => t.name === "_w14tool") && !ownP.tools.some((t) => t.name === "schmiede-hammer");
         for (let i = 0; i < 20; i++) delete r.state.materials["_w14m" + i];
         delete r.state.tools._w14tool;
         out.sendUsesPayload = /_portalEnterPayload/.test(r._portalSendEnter.toString());
@@ -31319,14 +31372,14 @@ async function checkBandWelle6HCreatureStats(ctx) {
         out.initialArmorNull = c.userData.equipped && c.userData.equipped.armor === null;
 
         // 3. equipCreatureTool mit existing Starter-Tool (hammer)
-        const eqTool = r.equipCreatureTool(c, "hammer");
+        const eqTool = r.equipCreatureTool(c, "schmiede-hammer");
         out.equipToolOk = eqTool.ok === true;
-        out.toolSet = c.userData.equipped.tool === "hammer";
+        out.toolSet = c.userData.equipped.tool === "schmiede-hammer";
 
         // 4. equipCreatureTool mit unbekanntem Tool → reject
         const eqUnknown = r.equipCreatureTool(c, "fictional_tool_xyz");
         out.unknownToolRejected = eqUnknown.ok === false && eqUnknown.reason === "tool_unknown";
-        out.toolUnchangedAfterReject = c.userData.equipped.tool === "hammer";
+        out.toolUnchangedAfterReject = c.userData.equipped.tool === "schmiede-hammer";
 
         // 5. equipCreatureArmor — erst Bauplan markieren, dann ausrüsten.
         // Built-ins sind read-only; wir nutzen cloneBlueprint(src, newName)
@@ -31396,8 +31449,8 @@ async function checkBandWelle6HCreatureStats(ctx) {
         // 8. DSL-Ops creature_equip_tool/armor/unequip wirken
         const cDsl = r.spawnCreatureAt(player.x + 320, player.y, player.z + 320, "happy", "wesen");
         const idx = r.state.creatures.indexOf(cDsl);
-        r.dslRun(["creature_equip_tool", idx, "hammer"], { source: "test" });
-        out.dslEquipToolOk = cDsl.userData.equipped.tool === "hammer";
+        r.dslRun(["creature_equip_tool", idx, "schmiede-hammer"], { source: "test" });
+        out.dslEquipToolOk = cDsl.userData.equipped.tool === "schmiede-hammer";
         r.dslRun(["creature_unequip", idx, "tool"], { source: "test" });
         out.dslUnequipOk = cDsl.userData.equipped.tool === null;
 
@@ -31408,7 +31461,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
             Class.NON_BROADCASTABLE_OPS.has("creature_unequip");
 
         // 10. describeProgram-Einträge
-        const d1 = r.describeProgram(["creature_equip_tool", 0, "hammer"]);
+        const d1 = r.describeProgram(["creature_equip_tool", 0, "schmiede-hammer"]);
         out.descEquipTool = /Werkzeug/.test(d1) && /hammer/.test(d1);
         const d2 = r.describeProgram(["creature_equip_armor", 0, "lederrüstung"]);
         out.descEquipArmor = /Rüstung/.test(d2);
@@ -31416,12 +31469,12 @@ async function checkBandWelle6HCreatureStats(ctx) {
         out.descUnequip = /tool/.test(d3) || /Slot/.test(d3);
 
         // 11. Snapshot persistiert equipped (Round-Trip)
-        r.equipCreatureTool(cDsl, "hammer");
+        r.equipCreatureTool(cDsl, "schmiede-hammer");
         const snap = r._serializeCreature(cDsl);
-        out.snapHasEquipped = snap.equipped && snap.equipped.tool === "hammer";
+        out.snapHasEquipped = snap.equipped && snap.equipped.tool === "schmiede-hammer";
         // Restore validiert tool-Existenz
         const restored = r._restoreCreatureFromSnapshot(snap, "happy");
-        out.restoreKeepsEquippedTool = restored && restored.userData.equipped.tool === "hammer";
+        out.restoreKeepsEquippedTool = restored && restored.userData.equipped.tool === "schmiede-hammer";
         // Restore mit unbekanntem Tool → null statt crash
         const badSnap = { ...snap, equipped: { tool: "fictional_xyz", armor: null } };
         const restoredBad = r._restoreCreatureFromSnapshot(badSnap, "happy");
@@ -31814,7 +31867,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
             { type: "gathered", content: { material: "holz" }, at: 3 },
             { type: "built", content: { blueprint: "stein_block" }, at: 4 },
         ];
-        r.equipCreatureTool(c, "hammer");
+        r.equipCreatureTool(c, "schmiede-hammer");
         r.applyCreatureBoost(c, {
             source: "test:tonic",
             tagDelta: { dichte: 0.3 },
@@ -33361,10 +33414,10 @@ async function checkBandWaves9And10a(ctx) {
 
             // Default-Tools sind alle generic (domain=null)
             const tools = r.state.tools || {};
-            // Welle 9b — die 5 ORIGINAL-Built-ins (hand/feuer/hammer/
-            // feile/polier) sind generic. Die 5 NEUEN Domain-Tools
-            // tragen jeweils eine domain ∈ TOOL_DOMAINS.
-            const originalGenericNames = ["hände", "feuerstein-knapper", "hammer", "feile", "polierscheibe"];
+            // Welle 9b / V17.78 — die generische Präzisions-Leiter ist gefallen (feuerstein/hammer/feile/
+            // polier RAUS, die Werkstatt trägt jetzt die Präzision); nur `hände` bleibt domain-neutral (0.4).
+            // Die Domain-Tools tragen jeweils eine domain ∈ TOOL_DOMAINS.
+            const originalGenericNames = ["hände"];
             out.originalToolsGeneric = originalGenericNames.every((n) => tools[n] && tools[n].domain === null);
             out.domainToolsHaveDomain = Object.values(tools)
                 .filter((t) => t.builtIn && t.domain)
@@ -33507,7 +33560,7 @@ async function checkBandWaves9And10a(ctx) {
                 wave9aResults.hasRefresh
         );
         check(
-            "Welle 9a: Original-Built-ins (hände/feuerstein/hammer/feile/polierscheibe) sind generic (domain=null)",
+            "Welle 9a/V17.78: hände ist die domain-neutrale Baseline (domain=null) — die generische Leiter ist gefallen",
             wave9aResults.originalToolsGeneric
         );
         check(
@@ -33576,9 +33629,10 @@ async function checkBandWaves9And10a(ctx) {
             const playerTools = r.state.player.tools || [];
             out.allDomainToolsInInventory = domainToolNames.every((n) => playerTools.includes(n));
 
-            // Insgesamt 10 Built-in-Werkzeuge (5 generic + 5 domain)
+            // V17.78 — insgesamt 6 Built-in-Werkzeuge: hände (domain-neutrale Baseline) + 5 domain;
+            // die generische Präzisions-Leiter (feuerstein/hammer/feile/polier) ist gefallen.
             const builtIns = Object.values(r.state.tools).filter((t) => t.builtIn);
-            out.tenBuiltInTools = builtIns.length === 10;
+            out.sixBuiltInTools = builtIns.length === 6;
 
             // Konstanten für UI: Labels + Farben
             out.roleLabelsFrozen =
@@ -33654,7 +33708,7 @@ async function checkBandWaves9And10a(ctx) {
             "Welle 9b: alle 5 Domain-Werkzeuge sind isStarter + im Spieler-Inventar",
             wave9bResults.allDomainToolsInInventory
         );
-        check("Welle 9b: 10 Built-in-Werkzeuge insgesamt (5 generic + 5 domain)", wave9bResults.tenBuiltInTools);
+        check("Welle 9b/V17.78: 6 Built-in-Werkzeuge (hände-Baseline + 5 domain; die generische Leiter fiel)", wave9bResults.sixBuiltInTools);
         check(
             "Welle 9b: BLUEPRINT_ROLE_LABELS frozen + deutsche Bezeichnungen (Bauwerk/Werkzeug/Maschine)",
             wave9bResults.roleLabelsFrozen
@@ -38637,6 +38691,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1775MakeActCost(ctx);
             await checkBandV1776WorkshopPrecision(ctx);
             await checkBandV1777SteigerungVisible(ctx);
+            await checkBandV1778LadderCut(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

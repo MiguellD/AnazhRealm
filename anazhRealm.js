@@ -32622,46 +32622,11 @@ class AnazhRealm {
                 isStarter: true,
                 builtIn: true,
             },
-            {
-                name: "feuerstein-knapper",
-                label: "Feuerstein-Knapper",
-                opClass: "subtractive",
-                opName: "hand_knap",
-                precisionCap: 0.5,
-                domain: null,
-                isStarter: true,
-                builtIn: true,
-            },
-            {
-                name: "hammer",
-                label: "Hammer",
-                opClass: "plastic",
-                opName: "forge",
-                precisionCap: 0.7,
-                domain: null,
-                isStarter: true,
-                builtIn: true,
-            },
-            {
-                name: "feile",
-                label: "Feile",
-                opClass: "subtractive",
-                opName: "file",
-                precisionCap: 0.85,
-                domain: null,
-                isStarter: true,
-                builtIn: true,
-            },
-            {
-                name: "polierscheibe",
-                label: "Polierscheibe",
-                opClass: "subtractive",
-                opName: "polish",
-                precisionCap: 0.97,
-                domain: null,
-                isStarter: true,
-                builtIn: true,
-            },
+            // V17.78 Welle 2 Schritt 2 — die generischen Präzisions-Werkzeuge (feuerstein-knapper / hammer /
+            // feile / polierscheibe) sind ENTFERNT: die Präzision kommt jetzt aus der WERKSTATT (V17.76/.77 —
+            // eine bessere Esse → höherer Cap, aus der Substanz). `hände` bleibt die domain-NEUTRALE Faust-
+            // Baseline (0.4); der Präzisions-Aufstieg läuft über die domain-Werkzeuge AN domain-Werkstätten
+            // (purposeful — schmieden an der Esse, weben am Webstuhl); die generische Leiter ist gefallen.
             // ### Welle 9b — Domain-Werkzeuge ###
             // Eines pro Nicht-Default-Domain. Jedes Werkzeug erbt eine
             // opClass (Material-Bearbeitung physikalisch) PLUS eine domain
@@ -45751,7 +45716,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.77.0";
+AnazhRealm.VERSION = "17.78.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
