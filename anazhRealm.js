@@ -33453,7 +33453,52 @@ class AnazhRealm {
         // S10 (kampf-plan §11.10) — die Katalysator-Geometrie: der Anteil spitzer/klingen-Parts (W2). Eine
         // weitere Achse des EINEN Produkt-Vektors (die Rollen-Resonanz ignoriert sie, die Op-Resonanz liest sie).
         v.pointedFraction = this._blueprintPointedFraction(bp);
+        // U1 (resonanz-system.md §2.2) — die räumlichen Form-Achsen (die 5 Prinzipien §5.2) als numerische
+        // Achsen DESSELBEN Vektors. Die Helfer existieren; hier in den Vektor gehoben, damit JEDE Lesart
+        // (Rolle/Stat/Affordanz) die volle FORM liest, nicht nur die Material-Tags. Additiv: keine bestehende
+        // Signatur referenziert sie (U2 webt sie ein) → kein Regress.
+        const ext = this._compoundVisualExtent(bp);
+        const dims = [ext.dx || 0, ext.dy || 0, ext.dz || 0].sort((a, b) => b - a);
+        const longest = dims[0] || 0;
+        const middle = Math.max(dims[1] || 0, 0.001);
+        v.elongation = Math.max(0, Math.min(1, (longest / middle - 1) / 3)); // Nadel/Klinge/Stab vs Klotz
+        // hohlraum: wie viel des Hüll-Volumens NICHT mit Part-Masse gefüllt ist (Behälter/Ring vs Vollkörper)
+        let partVol = 0;
+        for (const p of bp.parts || []) {
+            const s = p.size || { x: 1, y: 1, z: 1 };
+            partVol += Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1));
+        }
+        const extVol = (ext.dx || 0) * (ext.dy || 0) * (ext.dz || 0);
+        v.hollowness = extVol > 0.001 ? Math.max(0, Math.min(1, 1 - partVol / extVol)) : 0;
+        v.axialSymmetry = (this._compoundSymmetry(bp) || {}).ratio || 0; // Symmetrieachse trägt Alignment
+        v.spread = this._compoundSpread(bp); // Trag-Basis (Fahrzeug/Bauwerk) vs Säule (Mast/Stab)
         return v;
+    }
+
+    // U1 (resonanz-system.md §2.2) — die Standflächen-Spreizung als 0–1-Achse (Trag-Basis vs Säule): die
+    // _isMoveable-Logik extrahiert — wie weit die unteren (Stütz-)Parts in der x-z-Ebene spreizen, relativ
+    // zur Compound-Breite. Eine Säule (Stamm-Stapel) ~0; eine Trag-Basis (Räder/Beine/Fundament) spreizt.
+    _compoundSpread(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 2) return 0;
+        const support = this._partsBelowMidline(bp, 0.5);
+        if (support.length < 2) return 0;
+        const bbox = this._compoundBBox(bp);
+        if (!bbox) return 0;
+        let sMinX = Infinity,
+            sMaxX = -Infinity,
+            sMinZ = Infinity,
+            sMaxZ = -Infinity;
+        for (const p of support) {
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            const px = pos.x || 0,
+                pz = pos.z || 0;
+            if (px < sMinX) sMinX = px;
+            if (px > sMaxX) sMaxX = px;
+            if (pz < sMinZ) sMinZ = pz;
+            if (pz > sMaxZ) sMaxZ = pz;
+        }
+        const compW = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z, 0.001);
+        return Math.max(0, Math.min(1, Math.max(sMaxX - sMinX, sMaxZ - sMinZ) / compW));
     }
 
     // R3 (kampf-plan §11.10) — die intrinsische Rolle als ARGMAX der Resonanz des Produkt-Vektors gegen die
@@ -45739,7 +45784,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.79.0";
+AnazhRealm.VERSION = "17.80.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

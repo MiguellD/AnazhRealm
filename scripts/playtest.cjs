@@ -6521,6 +6521,73 @@ async function checkBandV1779RoleFitQuality(ctx) {
     );
 }
 
+// V17.80 U1 (resonanz-system.md §2.2) — der volle Produkt-Vektor: die 4 räumlichen Form-Achsen
+// (elongation/hollowness/axialSymmetry/spread) in den Vektor gehoben. Additiv — keine bestehende Signatur
+// referenziert sie (U2 webt sie ein) → die Form ist jetzt vollständig im Vektor, kein Regress.
+async function checkBandV1780FormAxes(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const round = (x) => Math.round((x || 0) * 1000) / 1000;
+        const mk = (parts) => ({ name: "_u1", parts });
+        const blade = mk([
+            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 1.8 } },
+            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.4 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+        ]);
+        const cube = mk([{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } }]);
+        const column = mk([
+            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
+            { shape: "box", material: "stein", position: { x: 0, y: 1, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
+            { shape: "box", material: "stein", position: { x: 0, y: 2, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
+        ]);
+        const wideBase = mk([
+            { shape: "box", material: "stein", position: { x: -1.5, y: 0, z: -1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
+            { shape: "box", material: "stein", position: { x: 1.5, y: 0, z: -1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
+            { shape: "box", material: "stein", position: { x: -1.5, y: 0, z: 1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
+            { shape: "box", material: "stein", position: { x: 1.5, y: 0, z: 1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
+            { shape: "box", material: "stein", position: { x: 0, y: 1.5, z: 0 }, size: { x: 2, y: 0.6, z: 2 } },
+        ]);
+        const body = mk([
+            { shape: "box", material: "stein", position: { x: 0, y: 1, z: 0 }, size: { x: 0.8, y: 1.6, z: 0.5 } },
+            { shape: "cylinder", material: "stein", position: { x: -0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
+            { shape: "cylinder", material: "stein", position: { x: 0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
+        ]);
+        const lump = mk([
+            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+            { shape: "box", material: "stein", position: { x: 1.4, y: 1.2, z: 1.0 }, size: { x: 0.6, y: 0.6, z: 0.6 } },
+        ]);
+        const container = mk([
+            { shape: "box", material: "quarz", position: { x: -1, y: 1, z: 0 }, size: { x: 0.2, y: 2, z: 2 } },
+            { shape: "box", material: "quarz", position: { x: 1, y: 1, z: 0 }, size: { x: 0.2, y: 2, z: 2 } },
+            { shape: "box", material: "quarz", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 0.2, z: 2 } },
+        ]);
+        const solid = mk([{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 } }]);
+        const V = (b) => r._blueprintProductVector(b);
+        const out = {};
+        const vb = V(blade);
+        out.hasAxes = ["elongation", "hollowness", "axialSymmetry", "spread"].every((a) => a in vb);
+        out.elongation = vb.elongation > V(cube).elongation && vb.elongation > 0.6;
+        out.elongVals = `Klinge=${round(vb.elongation)} Würfel=${round(V(cube).elongation)}`;
+        out.spread = V(wideBase).spread > V(column).spread && V(wideBase).spread > 0.4;
+        out.spreadVals = `Basis=${round(V(wideBase).spread)} Säule=${round(V(column).spread)}`;
+        out.symmetry = V(body).axialSymmetry > V(lump).axialSymmetry;
+        out.symVals = `Körper=${round(V(body).axialSymmetry)} Klumpen=${round(V(lump).axialSymmetry)}`;
+        out.hollow = V(container).hollowness > V(solid).hollowness && V(container).hollowness > 0.4;
+        out.hollowVals = `Behälter=${round(V(container).hollowness)} Block=${round(V(solid).hollowness)}`;
+        out.noRegress = r.computeBlueprintRole(blade) === "architecture"; // die Achsen sind inert (U5 ändert das)
+        return out;
+    });
+    check("V17.80 U1: die 4 Form-Achsen sind im Produkt-Vektor (elongation/hollowness/axialSymmetry/spread)", res.hasAxes);
+    check("V17.80 U1: elongation — eine Klinge ist gestreckter als ein Würfel", res.elongation, res.elongVals);
+    check("V17.80 U1: spread — eine Trag-Basis spreizt mehr als eine Säule", res.spread, res.spreadVals);
+    check("V17.80 U1: axialSymmetry — ein symmetrischer Körper > ein asymmetrischer Klumpen", res.symmetry, res.symVals);
+    check("V17.80 U1: hollowness — ein Behälter (Wände um Leere) > ein Vollblock", res.hollow, res.hollowVals);
+    check(
+        "V17.80 U1 KEIN REGRESS: die neuen Achsen sind inert — die Rolle eines Blades bleibt architecture (U5 ändert das)",
+        res.noRegress
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -38776,6 +38843,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1777SteigerungVisible(ctx);
             await checkBandV1778LadderCut(ctx);
             await checkBandV1779RoleFitQuality(ctx);
+            await checkBandV1780FormAxes(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

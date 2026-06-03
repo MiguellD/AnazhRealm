@@ -147,7 +147,7 @@ Derselbe Produkt-Vektor, gelesen von jedem Subsystem über den EINEN Resonanz-Ke
 
 **Prinzip: ADDITIV + GEMESSEN, kein Regress. Jeder Schritt zentriert um die heutige Balance (×1.0 im Schnitt), die Gewichte an Archetypen GEMESSEN (`diag-quality-rolefit`-Muster) + browser-justierbar.**
 
-- **U1 — der volle Produkt-Vektor:** die 4 fehlenden Form-Achsen (`elongation · hollowness · axialSymmetry · spread`) in `_blueprintProductVector` heben (die Helfer existieren). Test: der Vektor trägt sie, an Archetypen gemessen (Klinge elongation↑, Glocke hollowness↑, Fahrzeug spread↑).
+- **U1 ✅ GEBAUT (V17.80)** — der volle Produkt-Vektor: die 4 fehlenden Form-Achsen (`elongation · hollowness · axialSymmetry · spread`) in `_blueprintProductVector` gehoben (`_compoundVisualExtent` + `_compoundSymmetry` + neuer `_compoundSpread`). Additiv, inert (kein Leser referenziert sie noch) → kein Regress. GEMESSEN (`checkBandV1780FormAxes`, 6 grün: Klinge elongation 1 > Würfel 0, Trag-Basis spread 1 > Säule 0, Körper symmetry 1 > Klumpen 0, Behälter hollowness 0.74 > Block 0).
 
 - **U2 — EIN Rollen-Signatur-Register:** `ROLE_SIGNATURES` (§3) als die EINE Wahrheit „was ist eine gute X über alle Achsen" — die fragmentierten `FORM_ROLE_SIGNATURES` + `ROLE_FIT_SIGNATURES` + der `_computeForgingRole`-Split darauf zusammenführen (ein Register, viele Leser). Test: jede Rolle hat EINE volle Signatur; die alten Rollen-/Fit-Bänder bleiben grün (verhaltens-nah).
 
