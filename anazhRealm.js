@@ -12451,6 +12451,13 @@ class AnazhRealm {
         for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
             stats[stat] = AnazhRealm.STAT_FROM_TAGS[stat](finalTags);
         }
+        // V17.90 — die INVERS-dichte Stats (attackSpeed/speed = base + (1−dichte)·…) können NEGATIV werden, wenn
+        // ein schweres Gerät/eine schwere Rüstung die compound-dichte über 1 hebt (die equip-Additionen umgehen
+        // den [0,1]-Soul-Clamp). Ein positiver Floor verhindert den kaputten Negativ-/Null-Wert (ein Cooldown
+        // 1/attackSpeed darf nie negativ werden) — ein schweres Gerät ist TRÄGE (Floor), nicht kaputt. Der
+        // Trade-off „leicht = flink, schwer = träge" bleibt: leichte Geräte liegen klar über dem Floor.
+        if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
+        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
         return { tags: finalTags, stats };
     }
 
@@ -30782,7 +30789,9 @@ class AnazhRealm {
             // form-fremder Klotz (die FORM-Achse, die STAT_FROM_TAGS nicht sieht). Handwerk × Design.
             const heldMul =
                 0.5 + 0.5 * this._compoundAvgPrecisionFromParts(heldBp.parts) * this._blueprintRoleFit(heldBp, "held");
-            const w = AnazhRealm.HELD_STAT_WEIGHT * heldMul;
+            // V17.90 Facette 3 — die GRÖSSE trägt schwerer: ein größeres gehaltenes Gerät faltet seine Substanz
+            // stärker in den Spieler-Compound (mehr Schaden/Rückschlag) — konsistent mit der Werte-Anzeige.
+            const w = AnazhRealm.HELD_STAT_WEIGHT * heldMul * this._compoundSizeFactor(heldBp);
             for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                 finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
             }
@@ -30794,7 +30803,8 @@ class AnazhRealm {
                 const tags = this.computeCompoundTags(bp);
                 const armorPrec = this._compoundAvgPrecisionFromParts(bp.parts);
                 const armorMul = 0.5 + 0.5 * armorPrec * this._blueprintRoleFit(bp, "armor"); // V17.79 — Form-Fit
-                const w = AnazhRealm.ARMOR_STAT_WEIGHT * armorMul;
+                // V17.90 Facette 3 — größere Rüstung deckt mehr → trägt schwerer in den Compound (mehr Verteidigung).
+                const w = AnazhRealm.ARMOR_STAT_WEIGHT * armorMul * this._compoundSizeFactor(bp);
                 for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
                     finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
                 }
@@ -30826,6 +30836,13 @@ class AnazhRealm {
         for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
             stats[stat] = AnazhRealm.STAT_FROM_TAGS[stat](finalTags);
         }
+        // V17.90 — die INVERS-dichte Stats (attackSpeed/speed = base + (1−dichte)·…) können NEGATIV werden, wenn
+        // ein schweres Gerät/eine schwere Rüstung die compound-dichte über 1 hebt (die equip-Additionen umgehen
+        // den [0,1]-Soul-Clamp). Ein positiver Floor verhindert den kaputten Negativ-/Null-Wert (ein Cooldown
+        // 1/attackSpeed darf nie negativ werden) — ein schweres Gerät ist TRÄGE (Floor), nicht kaputt. Der
+        // Trade-off „leicht = flink, schwer = träge" bleibt: leichte Geräte liegen klar über dem Floor.
+        if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
+        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
         return { tags: finalTags, stats };
     }
 
@@ -31879,7 +31896,7 @@ class AnazhRealm {
         // Bauplane mit role="workshop-station"; die bediente Domäne EMERGIERT
         // aus ihrer Substanz (_computeWorkshopDomain, S7-B), kein hardcoded Feld.
         // confirmBuild + FERTIGEN eines domain-Bauplans prüfen im pfad-Modus, ob
-        // eine passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M=10m Nähe ist.
+        // eine passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M Nähe ist.
         // Construction-Default-Bauplane (architecture) brauchen keine
         // Welt-Werkstatt — sie sind die "Open-Air-Welt" selbst.
         const esseParts = [
@@ -33761,8 +33778,38 @@ class AnazhRealm {
     // Vektor, viele Leser.
     _blueprintProductVector(bp) {
         const v = Object.assign({}, this.computeCompoundTags(bp) || {});
+        // V17.90 (resonanz-system.md §2 — die SÄTTIGUNGS-Heilung): die Material-Tags kommen aus
+        // computeCompoundTags als MAX(aktivierung[0..3] · materialTag[0..1]) ∈ [0..3] — also auf einer
+        // GANZ ANDEREN Skala als die Form-Achsen (alle [0..1]). Folge: dichte (bis 2.7) ÜBERSTIMMT die
+        // Form (pointedFraction bis 1) in JEDER Resonanz → ein Eisen-Block resoniert „Rüstung" stärker als
+        // eine Eisen-Klinge „Waffe", und das Spektrum sättigt (viele Rollen bei 1.0 = der „blass"-Befund).
+        // HEILUNG: die Material-Tags auf [0..1] normalisieren (÷ Aktivierungs-Decke) → jede Achse ist „wie
+        // stark drückt dieses Werk diese Qualität aus" auf EINER Skala → die FORM konkurriert mit dem
+        // MATERIAL, die Signatur-GEWICHTE bestimmen die Rolle (nicht die rohe Magnitude). Die Material-
+        // MAGNITUDE (Eisen dichter als Holz) lebt weiter in STAT_FROM_TAGS (die Roh-Kraft); hier zählt das
+        // PROFIL. Nur in _blueprintProductVector (die Resonanz-Leser) — computeCompoundTags bleibt roh
+        // (Spawn-Affinität/Emotion lesen die volle Magnitude).
+        const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM || 3;
+        for (const k of AnazhRealm.MATERIAL_TAG_KEYS) {
+            v[k] = Math.max(0, Math.min(1, (v[k] || 0) / norm));
+        }
         v.bodyShape = this._isBodyShaped(bp) ? 1 : 0;
         v.portalShape = this._isPortalShaped(bp) ? 1 : 0;
+        // V17.90 (resonanz-system.md §3.4 + CLAUDE.md-Lehre „eine KONJUNKTION legt man in eine 0/1-FEATURE-
+        // Achse"): eine SEELE ist ein LEBENDIGER Körper — bodyShape ALLEIN reicht nicht (ein Brustpanzer ist
+        // körper-förmig + symmetrisch, aber TOT → er läse fälschlich soul). `livingBody` = Körper-Form UND
+        // lebendiges MATERIAL. WICHTIG: das compound-`lebendig` taugt hier NICHT — eine BOX maskiert lebendig
+        // (FORM_TAG_ACTIVATION[box][lebendig]=0) auch bei fleisch → ein fleisch-Körper hätte compound-lebendig 0
+        // wie ein Metall-Panzer. Der Unterschied lebendig/tot liegt im MATERIAL (fleisch lebt, Metall nicht) →
+        // wir lesen das UNMASKIERTE Material-lebendig (MAX über die Parts). So wird ein fleisch-Körper soul, ein
+        // Metall-Panzer nicht — egal welche Form die Parts haben.
+        let maxMatLebendig = 0;
+        const _mats = this.state.materials || {};
+        for (const p of bp.parts || []) {
+            const ml = (_mats[p.material] && _mats[p.material].tags && _mats[p.material].tags.lebendig) || 0;
+            if (ml > maxMatLebendig) maxMatLebendig = ml;
+        }
+        v.livingBody = v.bodyShape === 1 && maxMatLebendig > 0.3 ? 1 : 0;
         // S10 (kampf-plan §11.10) — die Katalysator-Geometrie: der Anteil spitzer/klingen-Parts (W2). Eine
         // weitere Achse des EINEN Produkt-Vektors (die Rollen-Resonanz ignoriert sie, die Op-Resonanz liest sie).
         v.pointedFraction = this._blueprintPointedFraction(bp);
@@ -33814,6 +33861,25 @@ class AnazhRealm {
         return Math.max(0, Math.min(1, Math.max(sMaxX - sMinX, sMaxZ - sMinZ) / compW));
     }
 
+    // V17.90 (resonanz-system.md §1 + Schöpfer-Befund „größer = stärker, doch 3× größer = identische Werte"):
+    // die MASSE/GRÖSSE eines Werks verstärkt seine Wucht. Bis hier war die Wirkung GRÖSSEN-BLIND (die Compound-
+    // Tags sind MAX-aggregiert → eine 3× größere gleich-materielle Klinge gab dieselben Stats). Der Größen-
+    // Faktor liest das Hüll-Volumen (gegen eine Referenz, sanfte Potenz, gebounded): ein größeres Werk → mehr
+    // Schaden/Rückschlag/Verteidigung, aber TRÄGER (geringeres Tempo) — der vision-treue Trade-off (eine riesige
+    // Keule ist mächtig + langsam). Zentriert ~1.0 für ein typisches Werk → Modulation, kein Dominator. Wirkt
+    // konsistent in der Werte-Anzeige UND im Ausrüstungs-Fold (ein größeres gehaltenes Gerät trägt schwerer).
+    _compoundSizeFactor(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return 1;
+        const ext = this._compoundVisualExtent(bp);
+        const vol = Math.max(0.0001, (ext.dx || 0) * (ext.dy || 0) * (ext.dz || 0));
+        const ref = AnazhRealm.SIZE_STAT_REF_VOLUME || 0.15;
+        const exp = AnazhRealm.SIZE_STAT_EXPONENT || 0.2;
+        const f = Math.pow(vol / ref, exp);
+        const lo = AnazhRealm.SIZE_STAT_MIN || 0.7;
+        const hi = AnazhRealm.SIZE_STAT_MAX || 1.7;
+        return Math.max(lo, Math.min(hi, f));
+    }
+
     // R3 (kampf-plan §11.10) — die intrinsische Rolle als ARGMAX der Resonanz des Produkt-Vektors gegen die
     // FORM_ROLE_SIGNATURES (soul/portal/consumable/architecture). Ersetzt die priority-Prädikat-Kette
     // (body→soul, portal, food, default) durch EINE Resonanz: die stärkste gewinnt, kein first-match-bias.
@@ -33829,7 +33895,13 @@ class AnazhRealm {
         // Bauwerk; ein stumpfes elongiertes (Stab/Säule/Körper) bleibt den Form-Rollen — die FORM trennt die
         // Klinge vom Cluster (spitz+kompakt) UND von der Säule (stumpf+elongiert), beides Substanz-Zwillinge.
         if (this._isGraspableBladeForm(bp)) return this._argmaxImplementRole(bp);
-        // sonst: die intrinsischen Form-Rollen (soul/portal/consumable/architecture) — unverändert.
+        // sonst: die intrinsischen Form-Rollen (soul/portal/consumable/architecture) — BEWUSST konservativ
+        // (Welt-Strukturen → architecture als sicherer Default; V17.68 an den 12 Built-ins gemessen). Sie lesen
+        // jetzt denselben NORMALISIERTEN Produkt-Vektor (A1) wie Fit/Spektrum — die Konvergenz ist der EINE
+        // konsistent skalierte Vektor (resonanz-system.md §2), nicht ein einzelnes Konstanten-Objekt; die
+        // Signatur-GEWICHTE bleiben pro Leser verschieden (Klassifikation konservativ, Fit/Spektrum reich).
+        // soul liest `livingBody` (V17.90 — ein toter Körper-Panzer ist KEINE Seele); portal braucht die
+        // Ring-FORM (ein magisches Kristall ohne Ring ist kein Tor).
         const v = this._blueprintProductVector(bp);
         const sigs = AnazhRealm.FORM_ROLE_SIGNATURES;
         let best = AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
@@ -38838,6 +38910,21 @@ class AnazhRealm {
                     applyBtn.type = "button";
                     applyBtn.className = "workshop-op-apply";
                     applyBtn.textContent = "anwenden";
+                    // V17.90 (Schöpfer-Befund „Werkstatt erschien nichtmehr als Werkzeug um Rolle zu fixen"):
+                    // wenn nur die HAND verfügbar ist (keine Werkstatt im Werkstatt-Areal), SIEHT der Spieler
+                    // nicht, WARUM — der alte `options.length === 0`-Hinweis feuerte nie (Hände ist immer da).
+                    // Jetzt ein klarer Hinweis, sobald KEIN Werkstatt-Prozess im Menü ist → der Spieler weiß,
+                    // dass er eine Werkstatt (Esse/Drehbank/…) platzieren + sich ihr nähern muss, um die Rolle
+                    // über ihren Prozess zu fixen (die Hand allein behaut nur, ohne Domäne).
+                    if (!options.some((o) => o.kind === "workshop")) {
+                        const hint = document.createElement("span");
+                        hint.className = "workshop-op-empty";
+                        hint.textContent = "nur Hände — platziere eine Werkstatt (Esse · Drehbank · …) in der Nähe";
+                        hint.title =
+                            "Eine Werkstatt-Station in deinem Werkstatt-Areal erscheint hier als Prozess. " +
+                            "Ihr Prozess (schmieden/drehen/weben/…) fixt die Rolle deines Werks; die Hand allein behaut nur.";
+                        applyRow.appendChild(hint);
+                    }
                     applyBtn.addEventListener("click", () => {
                         const sel = toolSelect.value || "";
                         const sep = sel.indexOf(":");
@@ -40926,17 +41013,40 @@ class AnazhRealm {
         const servedRole =
             role === "armor" ? "armor" : role === "soul" ? "soul" : role === "consumable" ? "consumable" : "held";
         const raw = this.computeCompoundTags(bp) || {};
-        const tags = {};
-        for (const k of AnazhRealm.MATERIAL_TAG_KEYS) tags[k] = Math.max(0, Math.min(1, raw[k] || 0));
+        // V17.90 Facette 2 (Material-Spanne): die Tags NICHT auf [0,1] kappen (das kappte Eisens härte 2.25→1.0
+        // → Holz↔Eisen nur 1.4×, obwohl der ECHTE Ausrüstungs-Beitrag 3.3× ist — der Readout log). Ceiling auf
+        // den natürlichen Tag-Bereich → der Readout zeigt die wahre Material-Macht (Eisen-Klinge ≫ Holz-Klinge).
+        // Zwei Tag-Sets: tagsHi (Ceiling 2.5) für die SCHWEREN Stats (Schaden/Rückschlag/Verteidigung/HP —
+        // sie skalieren MIT härte/dichte, das Entkappen zeigt die Material-Macht). tagsLo (Ceiling 1.0) für die
+        // INVERS-dichte Stats (Tempo/Bewegung = 0.8 + (1−dichte)·… — ungekappt würde dichte>1 sie NEGATIV machen,
+        // CLAUDE.md-Gotcha „Tags clampen vor den Stat-Formeln, sonst negative Speed"). So zeigt der Readout die
+        // Material-Spanne UND bleibt korrekt.
+        const tagsHi = {};
+        const tagsLo = {};
+        for (const k of AnazhRealm.MATERIAL_TAG_KEYS) {
+            const v0 = Math.max(0, raw[k] || 0);
+            tagsHi[k] = Math.min(2.5, v0);
+            tagsLo[k] = Math.min(1, v0);
+        }
         const q = this.computeBlueprintQuality(bp);
         const fit = this._blueprintRoleFit(bp, servedRole);
         const mul = 0.5 + 0.5 * q * fit;
+        // V17.90 Facette 3 (Größe): der MASSE-Faktor verstärkt die Wucht + bremst das Tempo — ein größeres Gerät
+        // schlägt härter, aber träger (vision-treuer Trade-off). Nur für Geräte/Rüstung (wo er auch im
+        // Ausrüstungs-Fold wirkt → ehrlich); die Seele liest ihn NICHT (der Avatar-Körper-Pfad bekäme ihn nicht).
+        const size = role === "soul" ? 1 : this._compoundSizeFactor(bp);
         const S = AnazhRealm.STAT_FROM_TAGS;
-        const val = (stat) => Math.max(0, S[stat](tags) * mul);
+        const INV = AnazhRealm.INVERSE_DICHTE_STATS;
+        // dir: +1 = schwer (Größe verstärkt), −1 = agil (Größe bremst), 0 = neutral.
+        const val = (stat, dir = 0) => {
+            const sf = dir > 0 ? size : dir < 0 ? 1 / size : 1;
+            const t = INV[stat] ? tagsLo : tagsHi;
+            return Math.max(0, S[stat](t) * mul * sf);
+        };
         let stats = null;
         if (role === "armor") {
             stats = [
-                ["Verteidigung", val("defense")],
+                ["Verteidigung", val("defense", 1)],
                 ["Magie-Resist", val("magicResist")],
                 ["Hitze-Resist", val("heatResist")],
             ];
@@ -40948,14 +41058,14 @@ class AnazhRealm {
             ];
         } else if (role === "tool" || role === "weapon" || role === "held" || role === "brecher") {
             stats = [
-                ["Schaden", val("damage")],
-                ["Rückschlag", val("knockback")],
-                ["Tempo", val("attackSpeed")],
+                ["Schaden", val("damage", 1)],
+                ["Rückschlag", val("knockback", 1)],
+                ["Tempo", val("attackSpeed", -1)],
             ];
         } else {
             return null; // architecture/station/portal/vehicle/consumable → keine Ausrüstungs-Werte
         }
-        return { role, servedRole, fit, mul, stats };
+        return { role, servedRole, fit, mul, size, stats };
     }
 
     _workshopAppendAbilitiesRow(panel, bp) {
@@ -46356,7 +46466,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.89.0";
+AnazhRealm.VERSION = "17.90.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -46817,6 +46927,10 @@ AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
     "resoniert",
     "lebendig",
 ]);
+// V17.90 (resonanz-system.md §2) — die Aktivierungs-Decke: computeCompoundTags gibt MAX(aktivierung[0..3] ·
+// materialTag[0..1]); ÷3 normalisiert die Material-Tags des Produkt-Vektors auf [0..1] (= dieselbe Skala wie
+// die Form-Achsen) → die FORM konkurriert mit dem MATERIAL in der Resonanz (heilt die Spektrum-Sättigung).
+AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
 AnazhRealm.MATERIAL_TAG_DEFAULTS = Object.freeze(
     AnazhRealm.MATERIAL_TAG_KEYS.reduce((acc, key) => {
         acc[key] = 0;
@@ -47100,7 +47214,22 @@ AnazhRealm.TOOL_DOMAIN_COLORS = Object.freeze({
 // Welle 9c — Welt-Werkstatt-Radius. Spieler muss in dieser Nähe einer
 // Architektur mit passender EMERGENTER Domäne stehen (gemessen vom Spawn-
 // Punkt des neuen Bauplans), sonst lehnt confirmBuild im pfad-Modus ab.
-AnazhRealm.WORKSHOP_PROXIMITY_M = 10;
+// V17.90 (Schöpfer-Befund „die Drehbank in der Nähe erschien NICHT im Prozessfeld"): 10 m war viel zu
+// eng — der Spieler platziert eine Werkstatt in seiner Basis, editiert dann ein paar Meter weiter, und
+// der Prozess verschwand (gemessen: ab 11 m weg). „In der Nähe" meint die WERKSTATT-GEGEND (die Basis),
+// nicht „direkt daneben". 32 m (2 Chunk-Breiten) deckt eine Basis großzügig — der Prozess bleibt, solange
+// man in seinem Werkstatt-Areal ist. Gilt für die Prozess-Erkennung UND das Schmiede-Tor (konsistent).
+AnazhRealm.WORKSHOP_PROXIMITY_M = 32;
+// V17.90 — der GRÖSSEN/MASSE-Stat-Faktor (_compoundSizeFactor): das Hüll-Volumen gegen diese Referenz, sanfte
+// Potenz, gebounded. Zentriert ~1.0 für ein typisches Hand-Werk (~0.15 m³); ein 3× größeres → ~1.4 (mächtiger
+// + träger). Alle browser-justierbar (die Balance „wie viel stärker ist größer" ist das Schöpfer-Auge).
+AnazhRealm.SIZE_STAT_REF_VOLUME = 0.1;
+AnazhRealm.SIZE_STAT_EXPONENT = 0.15;
+AnazhRealm.SIZE_STAT_MIN = 0.75;
+AnazhRealm.SIZE_STAT_MAX = 1.6;
+// V17.90 — die INVERS-dichte Stats (0.8 + (1−dichte)·…): ihr Tag-Input MUSS auf [0,1] gekappt bleiben, sonst
+// macht dichte>1 sie negativ. Der Werte-Readout liest sie aus dem tagsLo-Set (die schweren Stats aus tagsHi).
+AnazhRealm.INVERSE_DICHTE_STATS = Object.freeze({ attackSpeed: true, speed: true, jumpPower: true, staminaMax: true });
 // V17.76 Welle 2 — die Präzisions-Kapazität einer Werkstatt-Station aus ihrer SUBSTANZ (Material × Form):
 // base (eine schlichte Werkstatt) + dichte/härte (eine dichte, harte Esse hält feinere Toleranzen), gedeckelt.
 // So emergiert „bessere Esse → höherer Cap" aus den Materialien (kein Crafting-Zirkel). Browser-justierbar.
@@ -47255,13 +47384,19 @@ AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR = 2.0;
 // Tempel/Felsbogen (Stein: dichte 2.55, härte 1.95) resoniert damit STÄRKER als mit soul, obwohl seine
 // Geometrie body-förmig ist → er wird Bauwerk, nicht Seele; ein weicher fleisch-Körper resoniert soul stärker.
 // An den 12 Form-Fallback-Built-ins GEMESSEN (checkBandV1768 friert die Baseline ein). Floor → architecture.
+// V17.90 — für die NORMALISIERTE Skala (A1: Material-Tags jetzt [0..1]) neu justiert + zwei Konjunktions-
+// Heilungen: soul liest `livingBody` (Körper-Form UND lebendig — ein toter Panzer ist keine Seele), portal
+// liest `portalShape` (die Ring-Form — ein magisches Kristall ohne Ring ist kein Tor). architecture bleibt
+// der dichte-harte Default für Welt-Strukturen (konservativ). An den Built-ins GEMESSEN (diag).
 AnazhRealm.FORM_ROLE_SIGNATURES = Object.freeze({
-    soul: Object.freeze({ bodyShape: 2.0, lebendig: 0.3 }),
-    portal: Object.freeze({ portalShape: 2.0 }),
-    consumable: Object.freeze({ lebendig: 1.0, härte: -1.0 }),
-    architecture: Object.freeze({ dichte: 0.8, härte: 0.5 }),
+    soul: Object.freeze({ livingBody: 1.4, lebendig: 0.4 }),
+    portal: Object.freeze({ portalShape: 1.6 }),
+    consumable: Object.freeze({ lebendig: 1.5, härte: -0.5 }),
+    architecture: Object.freeze({ dichte: 1.0, härte: 0.6 }),
 });
-AnazhRealm.FORM_ROLE_RESONANCE_FLOOR = 0.5;
+// Der Floor auf die NORMALISIERTE Skala gesenkt (A1: Material-Tags jetzt [0..1] statt [0..3] → die rohen
+// Resonanzen fielen ~3× → der alte 0.5-Floor schluckte z.B. den Trank in den architecture-Default).
+AnazhRealm.FORM_ROLE_RESONANCE_FLOOR = 0.35;
 
 // U2 (resonanz-system.md §3) — DAS EINE ROLLEN-SIGNATUR-REGISTER: jede Rolle als VOLLE Signatur über alle
 // Achsen (10 Material-Tags ⊕ die Form-Achsen V17.80) — die EINE Wahrheit „was ist eine gute X". Die früher
@@ -47280,8 +47415,25 @@ AnazhRealm.ROLE_SIGNATURES = Object.freeze({
         zähigkeit: 0.2,
         hollowness: -0.3,
     }),
-    weapon: Object.freeze({ pointedFraction: 1.6, härte: 1.0, elongation: 0.8, dichte: 0.3, zähigkeit: -0.6 }),
-    tool: Object.freeze({ pointedFraction: 1.0, härte: 0.9, elongation: 0.5, dichte: 0.5, zähigkeit: 0.3 }),
+    // V17.90 — der lebendig-Distinguisher trennt Waffe/Werkzeug bei sonst gleicher Spitz-Form: ein WERKZEUG hat
+    // einen organischen GRIFF (Holzstiel → lebendig+), eine WAFFE ist totes Metall (lebendig−). So liest ein
+    // Pickel mit Holzstiel „Werkzeug", ein reines Metall-Schwert „Waffe".
+    weapon: Object.freeze({
+        pointedFraction: 1.5,
+        härte: 1.0,
+        elongation: 0.8,
+        dichte: 0.7,
+        zähigkeit: -0.5,
+        lebendig: -0.5,
+    }),
+    tool: Object.freeze({
+        pointedFraction: 1.1,
+        härte: 0.9,
+        elongation: 0.5,
+        dichte: 0.2,
+        zähigkeit: 0.4,
+        lebendig: 0.5,
+    }),
     brecher: Object.freeze({ dichte: 1.3, härte: 0.6, zähigkeit: 0.4, pointedFraction: -0.8 }),
     // RÜSTUNG: dicht, hart, zäh, leicht hohl (Polster), nicht spitz, mit Standfläche.
     armor: Object.freeze({
@@ -47294,8 +47446,9 @@ AnazhRealm.ROLE_SIGNATURES = Object.freeze({
     }),
     // TRANK: lebendig, transparent, resonant, hohl (Behälter), weich.
     consumable: Object.freeze({ lebendig: 1.5, transparent: 0.4, resoniert: 0.3, hollowness: 0.3, härte: -0.6 }),
-    // SEELE: Körper-Form, lebendig, symmetrisch, resonant.
-    soul: Object.freeze({ bodyShape: 2.0, lebendig: 0.6, axialSymmetry: 0.6, resoniert: 0.3 }),
+    // SEELE: ein LEBENDIGER Körper (livingBody = Körper-Form UND lebendig, V17.90 — ein toter Körper-Panzer
+    // ist KEINE Seele) + lebendig-Gradient + Symmetrie/Resonanz für die Feinheit.
+    soul: Object.freeze({ livingBody: 1.8, lebendig: 0.6, axialSymmetry: 0.4, bodyShape: 0.3, resoniert: 0.2 }),
     // PORTAL: Ring-Form, magie-leitend, transparent, resonant.
     portal: Object.freeze({ portalShape: 2.0, magieleitung: 1.0, transparent: 0.5, resoniert: 0.4 }),
     // FAHRZEUG: Trag-Basis, zäh, gestreckt, angetrieben (magie/strom), tot, mittel-dicht.
@@ -47317,22 +47470,26 @@ AnazhRealm.ROLE_SIGNATURES = Object.freeze({
 });
 // Die Passung ∈ [min, max] (1.0 = neutral): ein gut geformtes Werk → max (Buff), ein form-fremdes → min
 // (Nerf). Der per-Rolle ref normalisiert (die vollen Signaturen haben andere Skalen) — an Archetypen gemessen.
+// V17.90 — die refs auf die NORMIERTE Skala neu justiert (A1 brachte die Material-Tags von [0..3] auf [0..1]
+// → die rohen Resonanzen fielen ~2-3×). Jeder ref ≈ die Resonanz des perfekten Katalysators dieser Rolle →
+// ein Archetyp landet bei ~1.0, ein typisches Werk bei ~0.5-0.7 → das Spektrum SPREIZT (kein 1.0/1.0/1.0).
+// An den Bibliotheks- + Synthetik-Werken GEMESSEN (diag-blass).
 AnazhRealm.QUALITY_ROLE_FIT = Object.freeze({
     min: 0.8,
     max: 1.2,
     refs: Object.freeze({
-        held: 4.3,
-        weapon: 4.5,
-        tool: 3.8,
-        brecher: 4.2,
-        armor: 3.9,
-        consumable: 2.4,
-        soul: 3.0,
-        portal: 3.5,
-        vehicle: 3.0,
-        machine: 3.5,
-        "workshop-station": 3.5,
-        architecture: 4.0,
+        held: 2.6,
+        weapon: 2.8,
+        tool: 2.6,
+        brecher: 2.3,
+        armor: 2.4,
+        consumable: 1.1,
+        soul: 2.3,
+        portal: 2.3,
+        vehicle: 3.4,
+        machine: 3.2,
+        "workshop-station": 2.7,
+        architecture: 2.5,
     }),
 });
 // U3 (resonanz-system.md §5) — die Labels für den Katalysator-Readout (das Rollen-Spektrum + die Achse zum
@@ -47381,11 +47538,15 @@ AnazhRealm.AXIS_LABELS = Object.freeze({
 // (wie die Werkstatt-Natur, V17.70). Darum ist additive die schwache Residual-Signatur (weich/zäh/lebendig) — die
 // EMERGENZ trägt die drei physischen Klassen; eine reine Misch-Absicht bleibt der Schöpfer-Override (opClass von
 // Hand). Die Built-in-Werkzeuge sind FORMLOS → der Wächter ist synthetisch (checkBandV1771).
+// V17.90 — die Material-Gewichte für die NORMALISIERTE Skala angehoben (A1: dichte/magieleitung jetzt [0..1]
+// statt [0..3]). Sonst schlüge die unveränderte pointedFraction (subtractive) die material-getriebenen Klassen
+// (plastic/phaseChange) zu oft (eine magie-Helix las subtractive statt phaseChange). pointedFraction bleibt
+// [0..1], also keine Anhebung; die Balance scharf→subtractive / stumpf-dicht→plastic / magie→phaseChange GEMESSEN.
 AnazhRealm.OP_CLASS_SIGNATURES = Object.freeze({
     subtractive: Object.freeze({ pointedFraction: 2.3, härte: 0.2 }),
-    plastic: Object.freeze({ dichte: 1.0, härte: 0.3 }),
-    phaseChange: Object.freeze({ magieleitung: 1.2 }),
-    additive: Object.freeze({ zähigkeit: 0.6, lebendig: 0.6, härte: -0.4 }),
+    plastic: Object.freeze({ dichte: 1.8, härte: 0.5 }),
+    phaseChange: Object.freeze({ magieleitung: 3.0 }),
+    additive: Object.freeze({ zähigkeit: 1.5, lebendig: 1.5, härte: -1.0 }),
 });
 // Der Standard-opName je opClass (die opChain-„Geschichte"; die opClass treibt die Material-Kompatibilität).
 AnazhRealm.OP_NAME_BY_CLASS = Object.freeze({

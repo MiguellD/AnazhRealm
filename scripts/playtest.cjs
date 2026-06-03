@@ -7264,6 +7264,136 @@ async function checkBandV1789WorkshopReadout(ctx) {
     check("V17.89 (DOM): Undo/Redo sitzt jetzt unter den Parts (workshop-history im Editor)", res.domHistoryControls);
 }
 
+// V17.90 (resonanz-system.md — die Re-Kalibrierung): die vier „blass"-Facetten + zwei UI-Heilungen GEMESSEN.
+// (1) das Spektrum SPREIZT (nicht 1.0/1.0/1.0 — die A1-Vektor-Normalisierung) + führt mit der richtigen Rolle.
+// (2) MATERIAL dramatisch (Eisen-Klinge ≫ Holz-Klinge, ≥2×). (3) GRÖSSE wirkt (3× Klinge > 1×, träger).
+// (4) ROLLE scharf (Pickel→Werkzeug [Holzstiel], Schwert→Waffe [Metall-Klinge]). + Drehbank-Proximity + CSS.
+async function checkBandV1790Recalibration(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const prevMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const box = (m, s, p) => ({ shape: "box", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
+        const cone = (m, s, p) => ({ shape: "cone", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
+        const blade = (m, k = 1) => ({
+            name: "_rc",
+            parts: [box(m, { x: 0.2 * k, y: 0.1 * k, z: 1.4 * k }), cone(m, { x: 0.2 * k, y: 0.1 * k, z: 0.6 * k }, { x: 0, y: 0, z: 1.0 * k })],
+        });
+        const dmg = (ab) => (ab && ab.stats ? (ab.stats.find((s) => s[0] === "Schaden") || [0, 0])[1] : 0);
+        const tempo = (ab) => (ab && ab.stats ? (ab.stats.find((s) => s[0] === "Tempo") || [0, 0])[1] : 0);
+
+        // (1) FACETTE 1 — das Spektrum ENTSÄTTIGT: eine Eisen-Klinge führt mit weapon, NICHT alles bei 1.0.
+        const spec = r._blueprintRoleSpectrum(blade("eisen"));
+        out.specTop = spec[0] ? `${spec[0].role} ${spec[0].score.toFixed(2)}` : "?";
+        out.spectrumSpreads = spec.length >= 5 && spec[0].score - spec[4].score > 0.15; // Top deutlich über dem 5.
+        out.spectrumLeadsWeapon = spec[0] && spec[0].role === "weapon";
+
+        // (2) FACETTE 2 — MATERIAL: eine Eisen-Klinge zeigt ≫ Schaden als eine Holz-Klinge (gleiche Form).
+        const dEisen = dmg(r._blueprintAbilityStats(blade("eisen")));
+        const dHolz = dmg(r._blueprintAbilityStats(blade("holz")));
+        out.materialDramatic = dHolz > 0 && dEisen > dHolz * 1.8;
+        out.materialVals = `eisen=${dEisen.toFixed(1)} holz=${dHolz.toFixed(1)} (${(dEisen / Math.max(0.01, dHolz)).toFixed(2)}×)`;
+
+        // (3) FACETTE 3 — GRÖSSE: eine 3× größere Klinge schlägt härter UND ist träger (Trade-off).
+        const ab1 = r._blueprintAbilityStats(blade("eisen", 1));
+        const ab3 = r._blueprintAbilityStats(blade("eisen", 3));
+        out.sizeRaisesDamage = dmg(ab3) > dmg(ab1) * 1.2;
+        out.sizeLowersTempo = tempo(ab3) < tempo(ab1) - 0.05;
+        out.sizeVals = `1×=${dmg(ab1).toFixed(1)}/T${tempo(ab1).toFixed(2)} 3×=${dmg(ab3).toFixed(1)}/T${tempo(ab3).toFixed(2)}`;
+        // die Größe erreicht auch den ECHTEN Kampf (Equip-Fold), nicht nur die Anzeige
+        const blu = r.state.blueprints;
+        const eqDmg = (bp) => {
+            blu._rceq = bp;
+            bp.name = "_rceq";
+            r.state.player.equipped = { held: "_rceq" };
+            const d = r.computePlayerStats().stats.damage;
+            delete blu._rceq;
+            return d;
+        };
+        const eq1 = eqDmg(blade("eisen", 1));
+        const eq3 = eqDmg(blade("eisen", 3));
+        r.state.player.equipped = {};
+        out.sizeReachesEquip = eq3 > eq1 + 1;
+        out.equipVals = `equip 1×=${eq1.toFixed(1)} 3×=${eq3.toFixed(1)}`;
+        // attackSpeed bleibt POSITIV (kein negativer Cooldown trotz schwerem Gerät)
+        blu._rcheavy = blade("eisen", 3);
+        blu._rcheavy.name = "_rcheavy";
+        r.state.player.equipped = { held: "_rcheavy" };
+        out.attackSpeedPositive = r.computePlayerStats().stats.attackSpeed > 0;
+        r.state.player.equipped = {};
+        delete blu._rcheavy;
+
+        // (4) FACETTE 4 — ROLLE scharf: Pickel→Werkzeug (Holzstiel), Schwert→Waffe (Metall-Klinge).
+        out.spitzhackeTool = r.computeBlueprintRole(blu.geraet_spitzhacke) === "tool";
+        out.schwertWeapon = r.computeBlueprintRole(blu.geraet_schwert) === "weapon";
+        // ein lebendiger Körper bleibt soul, ein dichter Klotz bleibt architecture (kein Regress durch livingBody)
+        out.bladeWeapon = r.computeBlueprintRole(blade("eisen")) === "weapon";
+
+        // (5) UI-Befund (a) — die platzierte Drehbank erscheint in 32 m im Prozess-Menü (frieden/pfad).
+        r.setGameMode("frieden");
+        r.state.architectures = (r.state.architectures || []).filter((a) => a && a.type !== "drehbank");
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        let near = [],
+            far = [];
+        if (pm) {
+            r.spawnArchitecture("drehbank", { x: pm.x + 20, y: pm.y, z: pm.z }); // 20 m — in der neuen Reichweite
+            near = r._workshopProcessesForMenu();
+            r.state.architectures = r.state.architectures.filter((a) => a && a.type !== "drehbank");
+            r.spawnArchitecture("drehbank", { x: pm.x + 45, y: pm.y, z: pm.z }); // 45 m — zu weit
+            far = r._workshopProcessesForMenu();
+            r.state.architectures = r.state.architectures.filter((a) => a && a.type !== "drehbank");
+        }
+        out.drehbankNearAppears = near.some((p) => p.stationName === "drehbank");
+        out.drehbankFarHidden = !far.some((p) => p.stationName === "drehbank");
+        out.proximityM = r.constructor.WORKSHOP_PROXIMITY_M;
+
+        // (6) UI-Befund (b) — die History-Buttons haben jetzt CSS (nicht mehr nackt/übersehbar).
+        let cssHistory = false;
+        for (const sheet of document.styleSheets) {
+            try {
+                for (const rule of sheet.cssRules) {
+                    if (rule.selectorText && /workshop-(history|undo|redo)/.test(rule.selectorText)) cssHistory = true;
+                }
+            } catch (e) {
+                void e;
+            }
+        }
+        out.cssHistory = cssHistory;
+
+        if (r.setGameMode) r.setGameMode(prevMode);
+        return out;
+    });
+    check(
+        "V17.90 Facette 1: das Rollen-Spektrum SPREIZT (Top ≫ 5., nicht 1.0/1.0/1.0) + führt mit der Form-Rolle (Klinge→Waffe)",
+        res.spectrumSpreads && res.spectrumLeadsWeapon,
+        `top=${res.specTop}`
+    );
+    check(
+        "V17.90 Facette 2: MATERIAL bewegt die Werte dramatisch — eine Eisen-Klinge ≥1.8× Schaden einer Holz-Klinge",
+        res.materialDramatic,
+        res.materialVals
+    );
+    check(
+        "V17.90 Facette 3: GRÖSSE hebt den Schaden + senkt das Tempo (mächtig + träge) — 3× Klinge vs 1×",
+        res.sizeRaisesDamage && res.sizeLowersTempo,
+        res.sizeVals
+    );
+    check("V17.90 Facette 3: die Größe erreicht den ECHTEN Kampf (Equip-Fold), nicht nur die Anzeige", res.sizeReachesEquip, res.equipVals);
+    check("V17.90 Facette 3: attackSpeed bleibt POSITIV trotz schwerem Gerät (kein negativer Cooldown)", res.attackSpeedPositive);
+    check(
+        "V17.90 Facette 4: ROLLE scharf — Pickel→Werkzeug (Holzstiel), Schwert→Waffe (Metall-Klinge), Klinge→Waffe",
+        res.spitzhackeTool && res.schwertWeapon && res.bladeWeapon,
+        `spitz=${res.spitzhackeTool} schwert=${res.schwertWeapon}`
+    );
+    check(
+        "V17.90 Befund (a): die platzierte Drehbank erscheint in WORKSHOP_PROXIMITY_M (32 m) im Prozess-Menü, jenseits NICHT",
+        res.drehbankNearAppears && res.drehbankFarHidden,
+        `radius=${res.proximityM}m near=${res.drehbankNearAppears} far=${res.drehbankFarHidden}`
+    );
+    check("V17.90 Befund (b): die Undo/Redo-History-Zeile hat CSS (sichtbar, nicht mehr nackt)", res.cssHistory);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -34592,7 +34722,7 @@ async function checkBandWaves9And10a(ctx) {
             out.altarSoulwork = r._computeWorkshopDomain(r.state.blueprints.seelenstein_altar) === "soulwork";
             out.drehbankMechanism = r._computeWorkshopDomain(r.state.blueprints.drehbank) === "mechanism";
             out.noHardcodedDomain = r.state.blueprints.esse.workshopDomain === undefined;
-            out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 10;
+            out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 32;
             out.gateMethodExists = typeof r._workshopStationGate === "function";
 
             // Modus auf pfad für strikten Test
@@ -34658,7 +34788,7 @@ async function checkBandWaves9And10a(ctx) {
                 wave9cResults.drehbankMechanism &&
                 wave9cResults.noHardcodedDomain
         );
-        check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 10", wave9cResults.proximityConst);
+        check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 32 (V17.90 — Basis-Maßstab)", wave9cResults.proximityConst);
         check("Welle 9c: _workshopStationGate-Methode existiert", wave9cResults.gateMethodExists);
         check(
             "Welle 9c: pfad ohne nahe Werkstatt → Gate lehnt ab + nennt neededDomain",
@@ -39541,6 +39671,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1787UndoRedo(ctx);
             await checkBandV1788WorkshopAsProcess(ctx);
             await checkBandV1789WorkshopReadout(ctx);
+            await checkBandV1790Recalibration(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
