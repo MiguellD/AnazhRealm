@@ -6945,6 +6945,75 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
     check("V17.85 #1: removePartOp lehnt einen Built-in ab (cannot_modify_builtin)", res.remBuiltinRejected);
 }
 
+// V17.86 — Schöpfer-Browser-Befunde: die Werkstatt-Kohärenz (die Affordanzen sind Fähigkeiten, nicht
+// Rollen) + der Schwert-Samen (eine Klinge, die SCHNEIDET). Rendert den echten Stats-Readout.
+async function checkBandV1786WorkshopCoherence(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const renderFor = (name) => {
+            const ws = r._ensureWorkshopState();
+            ws.selectedBlueprint = name;
+            r._workshopRenderStatsPanel();
+            const panel = document.getElementById("workshop-stats-panel");
+            if (!panel) return null;
+            const rows = Array.from(panel.querySelectorAll(".stat-row"));
+            const roleRow = rows.find((row) => (row.querySelector(".stat-label") || {}).textContent === "Rolle");
+            const capRow = rows.find((row) => (row.querySelector(".stat-label") || {}).textContent === "Fähigkeit");
+            return {
+                roleChip: ((roleRow && roleRow.querySelector(".role-chip")) || {}).textContent || "",
+                roleRowAffordances: roleRow ? roleRow.querySelectorAll(".affordance-chip").length : -1,
+                capRowChips: capRow ? Array.from(capRow.querySelectorAll(".affordance-chip")).map((c) => c.textContent) : [],
+            };
+        };
+        // (1) der Schwert-Samen existiert + ist eine Klinge (schneidet) + ein gehaltenes Implement
+        const sw = r.state.blueprints["geraet_schwert"];
+        out.schwertExists = !!(sw && sw.builtIn);
+        out.schwertRole = sw ? r.computeBlueprintRole(sw) : "(missing)";
+        out.schwertHeld = out.schwertRole === "tool" || out.schwertRole === "weapon"; // ein Gerät in der Hand
+        out.schwertLabel = sw ? r._implementAffordanceLabel(sw) : "(missing)";
+        out.schwertCuts = out.schwertLabel === "Klinge"; // ein Schwert SCHNEIDET, ist kein Brecher
+        // die Spitzhacke bleibt ausgewogen/Werkzeug (kein Regress, der Substanz-Unterschied bleibt)
+        const sp = r.state.blueprints["geraet_spitzhacke"];
+        out.spitzLabel = sp ? r._implementAffordanceLabel(sp) : "(missing)";
+        // (2) das Rolle-Label liest das VOLLE Register (Esse → „Werkstatt", nicht der rohe „workshop-station")
+        const esse = r.state.blueprints["esse"];
+        const esseRender = esse ? renderFor("esse") : null;
+        out.esseRoleChip = esseRender ? esseRender.roleChip : "(keine esse)";
+        out.esseLabeled = !esse || esseRender.roleChip === "Werkstatt";
+        // (3) die Affordanzen sind in der FÄHIGKEIT-Zeile, NICHT in der Rolle-Zeile (der ungebundene Faden)
+        out.esseRoleRowAffordances = esseRender ? esseRender.roleRowAffordances : -1;
+        out.esseRoleRowClean = !esse || esseRender.roleRowAffordances === 0; // keine ✦ in der Rolle-Zeile
+        out.esseCapRowHasAffordance = !esse || esseRender.capRowChips.some((c) => /sendend|strahlend|vergrößernd|bündelnd/.test(c));
+        return out;
+    });
+    check(
+        "V17.86 Samen: das Schwert existiert als Built-in + emergiert als gehaltenes Gerät (tool/weapon aus der Klingen-Form)",
+        res.schwertExists && res.schwertHeld,
+        `role=${res.schwertRole}`
+    );
+    check(
+        'V17.86 Samen: das Schwert liest „Klinge" — es SCHNEIDET (cutPower > minePower), kein Brecher (die Waffen-Saat ist substanz-ehrlich)',
+        res.schwertCuts,
+        `schwert=${res.schwertLabel} · spitzhacke=${res.spitzLabel}`
+    );
+    check(
+        'V17.86 Kohärenz: die Rolle-Chip liest das volle ROLE_LABELS-Register — die Esse zeigt „Werkstatt", nicht den rohen „workshop-station"',
+        res.esseLabeled,
+        `chip=${res.esseRoleChip}`
+    );
+    check(
+        "V17.86 Kohärenz: die Affordanzen (vergrößernd/strahlend) sind NICHT mehr in der Rolle-Zeile — die Rolle-Zeile zeigt NUR die Rolle",
+        res.esseRoleRowClean,
+        `affordanzen in Rolle-Zeile=${res.esseRoleRowAffordances}`
+    );
+    check(
+        "V17.86 Kohärenz: die Affordanzen wandern in die FÄHIGKEIT-Zeile — alle Fähigkeiten an EINEM Ort (der gebundene Faden)",
+        res.esseCapRowHasAffordance
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -39206,6 +39275,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1783ImplementClassification(ctx);
             await checkBandV1784AvatarFormFit(ctx);
             await checkBandV1785RoleDisplayAndUndo(ctx);
+            await checkBandV1786WorkshopCoherence(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

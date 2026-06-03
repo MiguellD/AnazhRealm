@@ -32133,6 +32133,33 @@ class AnazhRealm {
                 rotation: { x: 0, y: 0, z: Math.PI / 2 },
             },
         ];
+        // V17.86 — DAS SCHWERT (Schöpfer-Wunsch: „ein Schwert wäre als Samen/Hilfestellung gut"). Die
+        // Waffen-Saat neben der Werkzeug-Saat (Spitzhacke). ROLLENLOS wie die Spitzhacke (V17.72) → die
+        // Rolle EMERGIERT aus der Form: ein Griff + eine LANGE, SPITZE eisen-Klinge (scharf+gestreckt →
+        // `_isGraspableBladeForm` → Waffe/Gerät, U4). Knauf + Klinge sind beide spitze Formen → die
+        // pointedFraction (2/3) ist hoch genug, dass das Profil als KLINGE (schneidet) liest, nicht als
+        // Brecher — ein Schwert SCHNEIDET (der Substanz-Trade-off W2: scharfe Form → cutPower > minePower).
+        const geraetSchwertParts = [
+            {
+                shape: "octahedron",
+                material: "eisen",
+                position: { x: 0, y: 0.18, z: 0 },
+                size: { x: 0.14, y: 0.14, z: 0.14 },
+            },
+            {
+                shape: "cylinder",
+                material: "leder",
+                position: { x: 0, y: 0.5, z: 0 },
+                size: { x: 0.1, y: 0.55, z: 0.1 },
+                segments: 6,
+            },
+            {
+                shape: "cone",
+                material: "eisen",
+                position: { x: 0, y: 1.5, z: 0 },
+                size: { x: 0.16, y: 1.7, z: 0.05 },
+            },
+        ];
         // RÜSTUNG — ein eiserner Brustpanzer. Dicht + hart → Schutz-Fähigkeit.
         // role:"armor" deklariert (Rüstung vs. Bauwerk sind Substanz-Zwillinge,
         // die Unterscheidung ist INTENT — der V17.70-Override, wie die Stationen).
@@ -32404,6 +32431,12 @@ class AnazhRealm {
                 label: "Spitzhacke",
                 builtIn: true,
                 parts: geraetSpitzhackeParts,
+            },
+            geraet_schwert: {
+                name: "geraet_schwert",
+                label: "Schwert",
+                builtIn: true,
+                parts: geraetSchwertParts,
             },
             ruestung_brustpanzer: {
                 name: "ruestung_brustpanzer",
@@ -40314,7 +40347,10 @@ class AnazhRealm {
         // er der Form nach längst „Werkzeug" ist (der Spitzhacke-Befund) — die Form trägt die Rolle, auch
         // ohne deklariertes Feld. Der manuell/emergent-Indikator (unten) liest weiter `bp.roleManual`.
         const role = this._displayRole(bp);
-        const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
+        // V17.86 (Schöpfer-Browser-Befund: die Esse zeigte den rohen „workshop-station") — die Rolle-Chip
+        // liest das VOLLSTÄNDIGE U2-Register `ROLE_LABELS` (12 Rollen inkl. Werkstatt/Fahrzeug/Brecher),
+        // nicht das alte 8-Rollen-`BLUEPRINT_ROLE_LABELS` → kein roher Rollen-String mehr im UI.
+        const roleLabel = AnazhRealm.ROLE_LABELS[role] || AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
         const roleRow = document.createElement("div");
         roleRow.className = "stat-row";
         const roleLab = document.createElement("span");
@@ -40358,18 +40394,17 @@ class AnazhRealm {
             });
             roleRow.appendChild(resetBtn);
         }
-        const aff = this.computeBlueprintAffordances(bp) || {};
-        for (const key of Object.keys(aff)) {
-            const chip = document.createElement("span");
-            chip.className = "affordance-chip";
-            chip.textContent = "✦ " + (AnazhRealm.AFFORDANCE_LABELS[key] || key);
-            roleRow.appendChild(chip);
-        }
         panel.appendChild(roleRow);
-        // S1 (kampf-plan §11.7) — die FÄHIGKEIT aus der Form (JEDE Lesart), unabhängig von der
-        // abstrakten Rolle: ein Holzstiel + Steinkopf liest „Brecher — wuchtet Fels" statt nur „Bauwerk".
+        // V17.86 (Schöpfer-Browser-Befund „vergrößernd/bündelnd/strahlend erscheinen als ROLLE — sind das
+        // nicht Fähigkeiten?") — die FÄHIGKEITEN an EINEN Ort: die Form-Lesart (Klinge/Brecher/Schutz/…, S1)
+        // UND die Affordanzen (vergrößernd/strahlend/…, die räumlich-aktiven Eigenschaften) in EINE
+        // „Fähigkeit"-Zeile. Vorher mischten die Affordanz-Chips in die Rolle-Zeile (das verwirrte: eine
+        // Affordanz ist KEINE Rolle). Die Rolle-Zeile zeigt jetzt NUR die EINE Rolle, die Fähigkeit-Zeile
+        // ALLE Lesarten — der ungebundene Faden ist gebunden.
         const caps = this._blueprintCapabilityHints(bp);
-        if (caps.length) {
+        const aff = this.computeBlueprintAffordances(bp) || {};
+        const affLabels = Object.keys(aff).map((k) => AnazhRealm.AFFORDANCE_LABELS[k] || k);
+        if (caps.length || affLabels.length) {
             const capRow = document.createElement("div");
             capRow.className = "stat-row";
             const capLab = document.createElement("span");
@@ -40380,6 +40415,12 @@ class AnazhRealm {
                 const chip = document.createElement("span");
                 chip.className = "affordance-chip capability-chip";
                 chip.textContent = "✦ " + c;
+                capRow.appendChild(chip);
+            }
+            for (const a of affLabels) {
+                const chip = document.createElement("span");
+                chip.className = "affordance-chip affordance-active-chip";
+                chip.textContent = "✦ " + a;
                 capRow.appendChild(chip);
             }
             panel.appendChild(capRow);
@@ -45967,7 +46008,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.85.0";
+AnazhRealm.VERSION = "17.86.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
