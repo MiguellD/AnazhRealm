@@ -5769,6 +5769,85 @@ async function checkBandV1770WorkshopStationMark(ctx) {
     check("V17.70 R3-Schluss: der DSL-Op set_workshop_station markiert (Spiegel von set_armor_role)", res.dslMarks);
 }
 
+// V17.71 S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der Form: welche Transformation ein Werkzeug katalysiert,
+// emergiert aus seiner Form × Material (scharf→schneiden, stumpf-dicht→schmieden, magie→wandeln) statt aus manuellem
+// opName-Tippen. `setBlueprintToolMeta(name)` OHNE opClass leitet die Op aus der Form ab; eine explizite opClass
+// bleibt der Override. additive bleibt form-mehrdeutig (Intent). Wächter synthetisch (Built-in-Tools sind formlos).
+async function checkBandV1771ToolOpFromForm(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const mk = (shape, mat) => ({
+            parts: [{ shape, material: mat, size: { x: 0.6, y: 1.2, z: 0.6 }, position: { x: 0, y: 0, z: 0 } }],
+        });
+
+        out.methods = typeof r._computeToolOpFromForm === "function" && !!r.constructor.OP_CLASS_SIGNATURES;
+        // R2-Erweiterung: der Produkt-Vektor trägt jetzt auch die Katalysator-Geometrie (pointedFraction)
+        out.vectorHasPointed = "pointedFraction" in r._blueprintProductVector(mk("cone", "eisen"));
+
+        // (KONSUM) die Op EMERGIERT aus der Form: scharf→subtractive, stumpf-dicht→plastic, magie→phaseChange
+        out.bladeSubtractive = r._computeToolOpFromForm(mk("cone", "eisen")).opClass === "subtractive";
+        out.hammerPlastic = r._computeToolOpFromForm(mk("box", "eisen")).opClass === "plastic";
+        out.wandPhaseChange = r._computeToolOpFromForm(mk("helix", "quarz")).opClass === "phaseChange";
+        out.emptyFallback = r._computeToolOpFromForm({ parts: [] }).opClass === "subtractive";
+
+        // (DER FLIP) dasselbe Material (eisen), andere FORM → andere Op (cone→schneiden, box→schmieden) — Form-getrieben
+        out.formFlip =
+            r._computeToolOpFromForm(mk("cone", "eisen")).opClass === "subtractive" &&
+            r._computeToolOpFromForm(mk("box", "eisen")).opClass === "plastic";
+
+        // (KONSUM) setBlueprintToolMeta OHNE opClass → die Op emergiert (emergent-Flag), role=tool + toolMeta gesetzt
+        if (blu.__op_blade) delete blu.__op_blade;
+        blu.__op_blade = { name: "__op_blade", parts: mk("cone", "eisen").parts };
+        const auto = r.setBlueprintToolMeta("__op_blade");
+        out.autoDerives =
+            auto.ok === true &&
+            auto.emergent === true &&
+            auto.opClass === "subtractive" &&
+            blu.__op_blade.role === "tool" &&
+            !!blu.__op_blade.toolMeta;
+        // ein emergent markiertes Werkzeug registriert sich
+        out.registersEmergent = r.registerBlueprintAsTool("__op_blade").ok === true;
+
+        // (Override unverändert) explizite opClass = manueller Override + Validierung bleibt
+        if (blu.__op_man) delete blu.__op_man;
+        blu.__op_man = { name: "__op_man", parts: mk("box", "stein").parts };
+        const man = r.setBlueprintToolMeta("__op_man", "brew", "additive"); // Schöpfer erzwingt additive (Intent)
+        out.manualOverride = man.ok === true && man.emergent === false && blu.__op_man.toolMeta.opClass === "additive";
+        out.rejectsBadClass = r.setBlueprintToolMeta("__op_man", "x", "uberklasse").ok === false; // Validierung unbroken
+
+        // cleanup
+        if (r.state.tools && r.state.tools.__op_blade) delete r.state.tools.__op_blade;
+        if (r.state.player && Array.isArray(r.state.player.tools))
+            r.state.player.tools = r.state.player.tools.filter((t) => t !== "__op_blade");
+        delete blu.__op_blade;
+        delete blu.__op_man;
+        return out;
+    });
+    check(
+        "V17.71 S10: _computeToolOpFromForm + OP_CLASS_SIGNATURES existieren; der Produkt-Vektor trägt pointedFraction",
+        res.methods && res.vectorHasPointed
+    );
+    check(
+        "V17.71 S10 KONSUM: die Op EMERGIERT aus der Form — scharf→subtractive, stumpf-dicht→plastic, magie→phaseChange (+ leer→subtractive)",
+        res.bladeSubtractive && res.hammerPlastic && res.wandPhaseChange && res.emptyFallback
+    );
+    check(
+        "V17.71 S10 DER FLIP: dasselbe Material (eisen), andere Form → andere Op (cone→schneiden, box→schmieden) — Form-getrieben, kein Tippen",
+        res.formFlip
+    );
+    check(
+        "V17.71 S10 KONSUM: setBlueprintToolMeta OHNE opClass leitet die Op aus der Form ab (emergent) + markiert + registriert",
+        res.autoDerives && res.registersEmergent
+    );
+    check(
+        "V17.71 S10: eine explizite opClass bleibt der Schöpfer-Override (manuell, additive erzwingbar) + die Validierung ist unbroken",
+        res.manualOverride && res.rejectsBadClass
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -37956,6 +38035,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1767WorkshopDomainEmergent(ctx);
             await checkBandV1769RoleResonance(ctx);
             await checkBandV1770WorkshopStationMark(ctx);
+            await checkBandV1771ToolOpFromForm(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

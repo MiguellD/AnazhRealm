@@ -41,8 +41,11 @@ DER HEAL: architecture als positive dichte+harte Signatur → Stein-Tempel wird 
 Vektors, ein Produkt-Vektor viele Leser.** **R3-Schluss ✅ (V17.70):** GEMESSEN, dass die Werkstatt-NATUR NICHT
 emergiert (Esse vs. dichtes Bauwerk = Substanz-Zwillinge, village resoniert forging 2.78 wie eine Esse) — sie ist
 INTENT (`setBlueprintAsWorkshopStation`, der vorgesehene Override), aber die DOMÄNE emergiert (R1). **Damit ist die
-Prozess-Hardcode-Insel aufgelöst.** Offen: S10 (Op-aus-Form als Resonanz, der letzte TOOL-Hardcode) + der Schöpfer-
-Browser-Audit des FERTIGEN-Flusses. **OFFEN daneben:** der Schöpfer-Browser-Audit des S7-FERTIGEN-
+Prozess-Hardcode-Insel aufgelöst.** **S10 ✅ (V17.71):** die Werkzeug-Op emergiert aus der Form (scharf→schneiden,
+stumpf-dicht→schmieden, magie→wandeln; `_computeToolOpFromForm` + `OP_CLASS_SIGNATURES`, `pointedFraction` als neue
+Vektor-Achse; additive bleibt Intent). **Domäne (R1) + Rolle (R3) + Werkzeug-Op (S10) emergieren als Resonanz — die
+Prozess-Hardcode-Insel ist VOLLSTÄNDIG aufgelöst.** Offen: der Schöpfer-Browser-Audit des ganzen Bogens (die
+umfassende Schluss-Prüfung) + S6-B (erntbare Flora) · S9 (Gerät in der Hand) · S11 (Animation) · Phase E (Bedrohung). **OFFEN daneben:** der Schöpfer-Browser-Audit des S7-FERTIGEN-
 Flusses (Feel/Synergie) · S6-B (erntbare Flora) · **S7-C die chat/DSL-Vereinheitlichung** (der letzte Gratis-Bypass;
 die load-bearing scripting-Schicht, S3-B hielt sie bewusst frei) · S8 (Teilen) · S9 (Hand-Optik) · S11 (Animation).
 Wer weiterbaut, liest §11.10 (die Resonanz) + §11.9 (die Lehre + der Lebenszyklus + die drei Schichten Tags/
@@ -901,9 +904,16 @@ food) wandern mit (V9.56-i). Beweise SUBSTANZ statt Name durch den FLIP (eine Ma
   Unterscheidungen sind INTENT (Zweck über Materie); MISS welche, und nutze den „optionalen Override" für sie,
   während die EIGENSCHAFTEN (Domäne) emergent bleiben. Ein Hand-Flag ist kein Hardcode-Versagen, wenn die
   Unterscheidung GEMESSEN nicht-emergent ist.
-- **danach:** S10 (Op-aus-Form, auch eine Resonanz: der Werkzeug-Op aus dem Form-Vektor — der letzte TOOL-Hardcode;
-  GEMESSEN ob er sauber emergiert) — dann emergieren auch die Werkzeuge vollständig, die Rekursion schließt durch
-  verbesserbare Prozessbaupläne.
+- **S10 — die Katalysator-Op aus der Form — ✅ GEBAUT (V17.71):** die opClass emergiert als argmax-Resonanz des
+  Produkt-Vektors (Tags ⊕ `pointedFraction`, die W2-Geometrie als neue Achse) gegen `OP_CLASS_SIGNATURES`:
+  subtractive=scharf (pointedFraction dominant) · plastic=stumpf-dicht · phaseChange=magie. `_computeToolOpFromForm`
+  + `setBlueprintToolMeta(name)` ohne opClass leitet ab (explizite opClass = Override). `checkBandV1771` 5 grün
+  (KONSUM scharf→schneiden/stumpf→schmieden/magie→wandeln, der FLIP eisen-cone→sub vs eisen-box→plastic, die
+  Auto-Ableitung, der Override unbroken). EHRLICH: additive (mischen) ist FORM-mehrdeutig (Mörser=Hammer-Zwilling)
+  → Intent-Override, wie die Werkstatt-Natur (V17.70). Synthetisch gewächtert (Built-in-Tools sind formlos).
+  **Damit ist die Prozess-Hardcode-Insel VOLLSTÄNDIG aufgelöst: Domäne (R1) + Rolle (R3) + Werkzeug-Op (S10)
+  emergieren; die einzigen Hand-Gesten (Werkstatt-Designation, additive-Op) sind die gemessen-nicht-emergenten
+  Intent-Überschreibungen.**
 
 **PERMANENTE LEHRE (die Architektur-Lehre): wenn das System schon einen Vektor trägt (Tags, Aura) und an EINER Stelle
 eine Resonanz/ein Skalarprodukt rechnet (Spawn-Affinität), dann ist JEDE Einzel-Signal-Schwelle (`wenn ein Tag ≥ X`)

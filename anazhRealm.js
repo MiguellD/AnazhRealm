@@ -33184,6 +33184,9 @@ class AnazhRealm {
         const v = Object.assign({}, this.computeCompoundTags(bp) || {});
         v.bodyShape = this._isBodyShaped(bp) ? 1 : 0;
         v.portalShape = this._isPortalShaped(bp) ? 1 : 0;
+        // S10 (kampf-plan §11.10) — die Katalysator-Geometrie: der Anteil spitzer/klingen-Parts (W2). Eine
+        // weitere Achse des EINEN Produkt-Vektors (die Rollen-Resonanz ignoriert sie, die Op-Resonanz liest sie).
+        v.pointedFraction = this._blueprintPointedFraction(bp);
         return v;
     }
 
@@ -33220,12 +33223,44 @@ class AnazhRealm {
         bp.role = this.computeBlueprintRole(bp);
     }
 
+    // S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der FORM: welche Transformation ein Werkzeug katalysiert,
+    // emergiert aus seiner Form × Material als argmax-Resonanz des Produkt-Vektors gegen OP_CLASS_SIGNATURES
+    // (scharf → schneiden, stumpf-dicht → schmieden, magie → wandeln). Leerer/formloser Bauplan → subtractive
+    // (der Grund-Schnitt). additive (mischen) gewinnt selten — es ist die funktionale Intent-Klasse (V17.70-Muster).
+    _computeToolOpFromForm(bp) {
+        const fallback = { opClass: "subtractive", opName: AnazhRealm.OP_NAME_BY_CLASS.subtractive };
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return fallback;
+        const v = this._blueprintProductVector(bp);
+        const sigs = AnazhRealm.OP_CLASS_SIGNATURES;
+        let best = null;
+        let bestScore = -Infinity;
+        for (const cls in sigs) {
+            const score = this._blueprintResonance(v, sigs[cls]);
+            if (score > bestScore) {
+                bestScore = score;
+                best = cls;
+            }
+        }
+        if (!best || bestScore <= 0) return fallback;
+        return { opClass: best, opName: AnazhRealm.OP_NAME_BY_CLASS[best] || "carve" };
+    }
+
     // Setzt Bauplan-Werkzeug-Meta. Nur eigene Baupläne, nur whitelisted
     // opClass, nur sanitized opName. Mutiert in-place, idempotent.
+    // S10 (§11.10) — wird KEINE opClass gegeben, EMERGIERT die Op aus der Form (`_computeToolOpFromForm`); eine
+    // explizit gegebene opClass ist der Schöpfer-Override (manuell, mit voller Validierung — der einzige Weg zu
+    // additive/Misch-Werkzeugen, die nicht aus der Form emergieren).
     setBlueprintToolMeta(name, opName, opClass) {
         const bp = this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
         if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        let emergent = false;
+        if (!opClass) {
+            const derived = this._computeToolOpFromForm(bp);
+            opClass = derived.opClass;
+            if (!opName) opName = derived.opName;
+            emergent = true;
+        }
         if (!AnazhRealm.TOOL_OP_CLASSES.has(opClass)) {
             return { ok: false, reason: "invalid_op_class" };
         }
@@ -33237,7 +33272,7 @@ class AnazhRealm {
         // Welle 9a — manueller Role-Override (siehe setBlueprintAsArmor)
         bp.roleManual = true;
         bp.toolMeta = { opName: cleanOpName, opClass };
-        return { ok: true };
+        return { ok: true, opName: cleanOpName, opClass, emergent };
     }
 
     // Registriert einen markierten Bauplan als Werkzeug in state.tools. Der
@@ -45192,7 +45227,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.70.0";
+AnazhRealm.VERSION = "17.71.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -46064,6 +46099,30 @@ AnazhRealm.FORM_ROLE_SIGNATURES = Object.freeze({
     architecture: Object.freeze({ dichte: 0.8, härte: 0.5 }),
 });
 AnazhRealm.FORM_ROLE_RESONANCE_FLOOR = 0.5;
+
+// S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der Form: ein Werkzeug katalysiert eine Transformation, und
+// seine FORM bestimmt welche. Die opClass emergiert als argmax-Resonanz des Produkt-Vektors (Tags ⊕ pointedFraction)
+// gegen diese Signaturen — die physischen Katalyse-Geometrien (an synthetischen Formen GEMESSEN): subtractive = eine
+// SCHARFE/spitze Klinge (schneidet/schnitzt; pointedFraction dominiert, damit eine dichte Spitze nicht zu plastic
+// kippt); plastic = eine STUMPFE, dichte Masse (schmiedet/schlägt — ein Klotz/Hammer); phaseChange = ein MAGIE-
+// leitender Stab (wandelt/imbue; magie schlägt sogar die Spitze einer Helix). EHRLICH: additive (mischen/weben) ist
+// FORM-mehrdeutig — ein Mörser und ein Hammer sind stumpf-dichte Zwillinge; die add.-Natur ist FUNKTION, nicht Form
+// (wie die Werkstatt-Natur, V17.70). Darum ist additive die schwache Residual-Signatur (weich/zäh/lebendig) — die
+// EMERGENZ trägt die drei physischen Klassen; eine reine Misch-Absicht bleibt der Schöpfer-Override (opClass von
+// Hand). Die Built-in-Werkzeuge sind FORMLOS → der Wächter ist synthetisch (checkBandV1771).
+AnazhRealm.OP_CLASS_SIGNATURES = Object.freeze({
+    subtractive: Object.freeze({ pointedFraction: 2.3, härte: 0.2 }),
+    plastic: Object.freeze({ dichte: 1.0, härte: 0.3 }),
+    phaseChange: Object.freeze({ magieleitung: 1.2 }),
+    additive: Object.freeze({ zähigkeit: 0.6, lebendig: 0.6, härte: -0.4 }),
+});
+// Der Standard-opName je opClass (die opChain-„Geschichte"; die opClass treibt die Material-Kompatibilität).
+AnazhRealm.OP_NAME_BY_CLASS = Object.freeze({
+    subtractive: "carve",
+    plastic: "forge",
+    phaseChange: "imbue",
+    additive: "mix",
+});
 
 // Deutsche Affordance-Labels für UI-Anzeige.
 AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
