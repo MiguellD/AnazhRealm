@@ -13,7 +13,7 @@ Stand: **V17.72 (03.06.2026) — der Crafting-/Resonanz-Bogen ist DURCH + die Bi
 
 ---
 
-## OFFENE FÄDEN — der Gesamt-Backlog (Stand V17.71, geordnet, reconciled)
+## OFFENE FÄDEN — der Gesamt-Backlog (Stand V17.72, geordnet, reconciled)
 
 **A — den Crafting-Bogen abschließen (kampf-plan §11, der aktive Arc):**
 
