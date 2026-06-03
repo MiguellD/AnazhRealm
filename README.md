@@ -2,15 +2,17 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V17.32 (01.06.2026) — **das lebendige Feld trägt jetzt ZWEI schreibbare, räumliche Gedächtnis-Achsen (Leben + Emotion) + Pfeiler 2 wird WAHR: V17.21–.26 das Feld lesen + der Nexus heilt gezielt + V17.27 die SCHREIB-Seite (Loop schließt sich ECHT) + V17.28 Spawn-Harmonie + Void-Boden + V17.29 der Kreatur-Trickle (eine geheilte Region BLEIBT lebendig) + V17.30 EMOTION AUS DEM SEIN-IN-DER-WELT (über ALLE sechs Achsen aus TATEN + ZUSTAND + UMGEBUNG) + V17.31 zwei tote Emotions-Haken geheilt (die Emotion treibt die Welt KONTINUIERLICH, Licht + Wasser) + V17.32 die RÄUMLICH-dynamische Emotion-Achse (das Feld bekommt ein emotionales GEDÄCHTNIS — `_feelAction` prägt die Emotion am ORT ein, `auraAt.emotion` blendet den lokalen Abdruck über die globale Stimmung, der Welt-Tint färbt den Ort → die Welt erinnert sich, wo du fühltest; emotion ist die zweite schreibbare Feld-Achse nach lebendig). Davor: V17.19 Werkstatt-Auge + V17.20 tote Glieder (~−1430 Z.); der Render-/Tiefe-Bogen + die Architektur-Aufwertung sind durch; die Welt-OBERFLÄCHE lebt (Ghibli-malerisch).** V17.0–.13 Render-Realismus (Post-FX-Bloom/Grading · fraktale Klein-Vegetation · gemalter Wolkenhimmel · Entgrauen · Böen+Pollen · `mx_noise`-Wolken · Ghibli-Bäume · triplanar Terrain-Makrotextur · Unsharp-Strukturkontrast); V17.14–.15 Halm-Variation + Dorf/Tempel-Binnenstruktur; **V17.16.2 REVERT** (eine Architektur-Aufwertung killte das Baum-Spawning — die Wurzel war eine entfesselte Material-Resonanz, nicht ein Crash); **V17.17** disziplinierter Neuanlauf (Turm + Steintor tag-neutral angereichert) + Affinitäts-Tag-Wächter; **V17.18** der Turm wird die Antenne (felsturm stein→eisen → `broadcasting`-Relais). Davor: V14 Terrain-Bogen (epische Geomorphologie, Feature-Größe 176→464 m, Anden-Ketten, DREI Region-Typen) · V15 Render-Bogen · V16 Lebende-Umgebung/Gras-Riese · V13 Wasser-Profi-Bogen (pausiert @ V13.14) · V12 Genie-Bogen (r184 + WebGPU, 119 FPS).
+**Stand**: V17.72 (03.06.2026) — der **Körper der Welt** steht (Terrain · Wasser-Modell · Render/Ghibli · Strukturen) UND die **Seele** ist substanziell gebaut: das lebendige Feld (lesen · schreiben · WERTEN), der DSL-Weltregeln-Bogen (Mensch · Nexus · KI schreiben am selben Regel-Satz), der Emotion-Kern, der Kampf-Bogen und der vereinte Schöpfungs-Fluss + die Resonanz-Vereinheitlichung („ein Produkt-Vektor, viele Leser" — Domäne · Rolle · Werkzeug-Op emergieren als argmax-Resonanz). Zuletzt V17.72: die Bibliothek — ein craftbarer Beispiel-Bauplan pro Rolle.
 
-**Nächste — die TIEFEN, noch nicht in voller Tiefe angepackten Roadmap-Fäden** (der aktuelle Stand + Gotchas leben im `CLAUDE.md`-Kopf, der Plan in `docs/roadmap.md`): die Welt-OBERFLÄCHE/Körper steht (Terrain · Render · Strukturen) — offen ist die **TIEFE darunter**: **(1) Wasser-Finish (V18)** — die ±1024-Hydrosphäre-Region (ferne Chunks tragen heute KEIN Wasser/Drainage) + frame-sauberer Sub-Region-Carve + die Render-Sync-Wurzeln; **(2) die lebendige Welt (V19, Pfeiler E/F/G)** — Emotion ↔ lokale Welt, Hylomorphismus-Cluster-Resonanz, Multi-Spieler-Vibe (die emotionale SEELE des Ultiversums, mehrfach verschoben); **(3) effiziente Höhe** — adaptives vertikales Chunk-Band (gewaltige Berge OHNE den V14.6-Clamp-Deckel). Reihenfolge-Disziplin (V9.51): Fundament (Terrain ✅ + Wasser) vor Vision-Vollendung.
+> Der **live gepflegte Stand** (mit allen Gotchas) lebt im `CLAUDE.md`-Kopf — dort steht immer die Wahrheit, dieser Absatz ist nur ein Schnappschuss.
+
+**Nächste offene Fäden** (geordnet in `docs/roadmap.md` „OFFENE FÄDEN"): **A** den Crafting-Bogen abschließen (Browser-Audit · erntbare Flora · Gerät-in-der-Hand sichtbar · Werkstatt-Animation) · **B** den Kampf-Bogen (Phase E Bedrohung/Furcht) · **C** das Fundament (V18 Wasser-Finish mit der ±1024-Hydrosphäre-Region · effiziente Höhe) · **D** die Vision weiter (W18 in fremden Welten LEBEN). Reihenfolge-Disziplin: Fundament vor Vertiefung.
 
 Die **volle Wellen-Chronik** (jede Welle ein Eintrag) lebt in `docs/handover.md`; der **aktuelle Stand + Gotchas** in `CLAUDE.md`; der **Plan vorwärts** in `docs/roadmap.md`; die **Vision** in `docs/state-of-realm.md`.
 
 ## Was es ist
 
-AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~42 000 Zeilen, Vanilla JS + Three.js r184/WebGPU + Ammo.js). Drei zentrale Vision-Pfeiler:
+AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~45 000 Zeilen, Vanilla JS + Three.js r184/WebGPU + Ammo.js). Drei zentrale Vision-Pfeiler:
 
 - **Hylomorphismus als Sprache**: Form × Material × Werkzeug × räumliche Konfiguration → emergente Identität. Player-Seele, Bauwerk, Kreatur, Werkzeug, Rüstung, Trank — alles spricht dieselbe Compound-Tag-Sprache.
 - **DSL als Co-Schöpfer-Werkzeug**: 41 Ops, Sandbox mit Budget-Limits + Op-Whitelist + kein `eval`. Mensch und Welt-LLM teilen sich die Sprache. CSP-strict.
@@ -41,17 +43,14 @@ Pre-Push-Empfehlung: `npm run check && npm run playtest && npm run audit:strict`
 
 ## Doku-Map
 
-| Datei                        | Was                                                                                                                  |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `docs/handover.md`           | **Die Chronik + Erstorientierung** — volle Wellen-Historie, drei heilige Gesetze, wie du eine Session startest       |
-| `docs/state-of-realm.md`     | **Die Vision** — fünf Pfeiler, Heilige Lektion, Stand-vs-Vision-Matrix                                               |
-| `docs/roadmap.md`            | Vollständige Roadmap aller Ringe + zukünftige Wellen (V13-Plan in §1.4)                                              |
-| `docs/hydrosphere.md`        | **Wasser-Design** — Drainage-Netz + Voxel-Cell-Wasser (Algorithmus, Datenstrukturen, Wellen-Schnitt)                 |
-| `docs/world-portal.md`       | **W12-Vision-Anker** — Bibliothek von Alexandria der Vibecode-Ära                                                    |
-| `docs/crafting-konzept.md`   | Hylomorphismus-Konzept                                                                                               |
-| `docs/aktivierungsmatrix.md` | Form × Tag Aktivierungs-Matrix v2                                                                                    |
-| `docs/archiv/`               | Abgeschlossene Dokumente — fertige Designs + Plan-Bögen + Audit-Snapshots (eigener Index in `docs/archiv/README.md`) |
-| `CLAUDE.md`                  | Projektgedächtnis — kompakter Top-Stand, wird bei Session-Start geladen                                              |
+Die **EINE kanonische Doc-Landkarte** lebt in **[`docs/README.md`](docs/README.md)** — sie ordnet jedes Dokument nach Zeit-Ebene des Wissens (Einstiege · lebendige Anker · aktive Pläne · Referenz · Archiv). Die wichtigsten Routen:
+
+- **JETZT** (Stand + Gotchas) → `CLAUDE.md` (auto-geladen)
+- **DIE CHRONIK** (Wellen-Historie + Start) → `docs/handover.md`
+- **DIE VISION** → `docs/state-of-realm.md` · **DER WAHRE NORDEN** → `docs/das-lebendige-feld.md`
+- **DER PLAN** → `docs/roadmap.md` · **DER AKTIVE BOGEN** → `docs/kampf-plan.md`
+- **REFERENZ** → `docs/crafting-konzept.md` · `docs/aktivierungsmatrix.md` · `docs/hydrosphere.md` · `docs/world-portal.md`
+- **ARCHIV** (abgeschlossen) → `docs/archiv/` (Index: `docs/archiv/README.md`)
 
 ## Heilige Lektion
 

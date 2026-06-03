@@ -1,12 +1,13 @@
 # AnazhRealm Roadmap — der Plan
 
-Stand: **V17.71 (03.06.2026) — der Crafting-/Resonanz-Bogen ist DURCH.** Seit dem Detail-Kopf unten (V17.32) gebaut + „Alle Invarianten OK":
+Stand: **V17.72 (03.06.2026) — der Crafting-/Resonanz-Bogen ist DURCH + die Bibliothek steht.** Seit dem Detail-Kopf unten (V17.32) gebaut + „Alle Invarianten OK":
 
 - **Der lebendige-Feld-Bogen ist VOLLENDET — das DRITTE Verb:** lesen (`auraAt`, V17.21) · schreiben (`_depositLife`/`_depositEmotion`, V17.27/.32) · **WERTEN** (der Wertungs-Bogen V17.42–.50: die Regel-Fitness wird der lokale strukturelle δ am Ort, die Emotion der Appraisal-δ, die Welt LERNT was den Spieler freut — Vorhersagefehler gegen gleitende Baseline). → damit ist `das-lebendige-feld.md §3.5/§7-Fleck-1 „WERTUNG flach" GEHEILT, nicht mehr offen.
 - **Der Emotion-Kern W1–W5** (V17.45–.49): dimensional · Substanz-Brücke · Fast/Slow · sozial · Abenteuer.
 - **Der DSL-Weltregeln-Bogen** (V17.33–.41): Mensch · Nexus · KI schreiben am SELBEN Regel-Satz → §3.4 „KI schreibt DSL nicht" GEHEILT.
 - **Der Kampf-/Interaktions-Bogen** (V17.51–.58): Kombat-Stats · Waffe · Kreatur-HP/Tod · LMB-Angriff + W5-Affekt · Abbau-Mühe · Form-Profil · ein „in-der-Hand"-Gerät · aura-reaktive Kreatur.
 - **Der vereinte Schöpfungs-Fluss + die RESONANZ-VEREINHEITLICHUNG** (V17.59–.71, kampf-plan §11): die vier Mach-Akte (Gerät/Rüstung/Avatar/Trank durch EIN `_makeCostGate`), das FERTIGEN in den Prozess-Fluss gefaltet (S7), und — Schöpfer-Dialog 03.06., **„ein Produkt-Vektor, viele Leser"** — Domäne (R1) · Rolle (R3, + der temple→Bauwerk-Heal) · Werkzeug-Op (S10, der Katalysator: scharf→schneiden/stumpf-dicht→schmieden/magie→wandeln) emergieren als **argmax-Resonanz** des Produkt-Vektors. Die Prozess-Hardcode-Insel ist aufgelöst; die Werkstatt-Designation + die additive-Op sind die GEMESSEN-nicht-emergenten Intent-Overrides.
+- **Die Bibliothek** (V17.72, A1): ein craftbarer Beispiel-Bauplan pro Rolle — die vier Mach-Akt-Lücken (Gerät/Rüstung/Trank/Avatar) gefüllt, substanz-ehrlich (Trank→consumable, Avatar→soul emergieren GEMESSEN), kein Worldgen-Litter. Die optimierbare Saat, an der die Rekursion sichtbar wird.
 
 **Der gepflegte JETZT-Stand lebt im `CLAUDE.md`-Kopf; die volle Chronik in `handover.md`. Der V17.32-Kopf unten ist die ältere Detail-Chronik (Feld-/Render-/Terrain-Bogen).**
 
