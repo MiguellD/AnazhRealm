@@ -15171,7 +15171,19 @@ class AnazhRealm {
         // neue Erosion/Tarn/Noise/Hydro → alte Basis ungültig). Worker-
         // unabhängig, daher VOR dem Worker-Early-Return.
         if (this.state.voxelBaseDensityCache) this.state.voxelBaseDensityCache.clear();
-        if (!this.state.voxelWorker) return;
+        // V17.118 (E3) — den Voxel-Worker JETZT BOOTSTRAPPEN. Vorher stand hier
+        // `if (!voxelWorker) return` — ABER nichts spawnte den Worker je im
+        // Normalfluss (`_getVoxelWorker` wird nur aus den Worker-Helfern gerufen,
+        // die `_acquireVoxelChunkBuild` zirkulär hinter dem null-`voxelWorker`-Feld
+        // gated). Folge (gemessen, `scripts/diag-stream-spike.cjs`): JEDER Chunk
+        // sync-baute ~71 ms im Main-Thread = der Streaming-Spike (FPS 9–17), die
+        // V9.91/V17.20-„Produktions"-Worker-Pipeline lag brach. Diese Methode läuft
+        // beim Worldgen NACH dem Hydrosphäre-Build → `_getVoxelWorker` spawnt +
+        // init-synct mit dem FERTIGEN Snapshot (Atlas/Erosion/Tarns). Ab dem
+        // init-ack (voxelWorkerReady) nutzt der Streaming-Pfad den async Mesh-Bau
+        // (Mesh off-thread); nur der Spieler-Chunk baut weiter sync (Kollision).
+        const worker = this._getVoxelWorker();
+        if (!worker) return; // Browser ohne Worker-Support → voller Sync-Fallback (Stufe 3)
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
         if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
         // state-gen bumpt durch _voxelWorkerSyncState (send-time-bump).
@@ -20206,7 +20218,13 @@ class AnazhRealm {
         // KEIN re-dirty — der Streaming-Tick versucht via has(key)===false
         // erneut, inzwischen gibt `_pruneDistantVoxelChunks` Heap frei). Erfolg
         // → geteilter `_finalizeVoxelChunkBuild`.
-        const fresh = this._acquireVoxelChunkBuild(cx, cz, lod, { forceSync: false });
+        // V17.118 (E3) — der SPIELER-Chunk baut SYNC (sofortige Kollision, kein
+        // Pop-in/Durchfallen unter dem Spieler — „kein Sync-Build außer Spieler-
+        // Chunk", die EINE Intent-Ausnahme); ALLE anderen async via Worker (der
+        // ~71-ms-Mesh-Bau off-thread). Derselbe `_voxelChunkIsPlayerChunk`-Helfer
+        // wie der Edit-Rebuild-Pfad (EINE Quelle).
+        const forceSyncPlayer = this._voxelChunkIsPlayerChunk(cx, cz);
+        const fresh = this._acquireVoxelChunkBuild(cx, cz, lod, { forceSync: forceSyncPlayer });
         if (fresh === "pending") return null;
         if (fresh === null) {
             if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
@@ -47006,7 +47024,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.117.0";
+AnazhRealm.VERSION = "17.118.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

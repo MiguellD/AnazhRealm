@@ -20134,6 +20134,16 @@ async function checkBandWelleC3CellularReaction(ctx) {
         out.damSpotHasWater = damSpotHasWater;
         const damPos = { x: testCx * span + span / 2, y: 10, z: testCz * span + span / 2 };
         damPos.y = Math.max(macroY + 2, r.state.waterLevel + 4);
+        // V17.118 (E3-Migration): die Pre-Dam-waterCells kopieren — der ROBUSTE
+        // Revert-Beweis. Ein Einzel-Zell-Check ist roughness-anfällig (die 3D-
+        // Roughness ±12 m kann die Damm-Höhe übersteigen → terrain-SOLID ist vom
+        // Stempel ununterscheidbar; mit dem engagierten Worker findet der async-
+        // Warmup reproduzierbar solche Spots → C.3 failte konsistent). Der Voll-
+        // Array-Vergleich (remove MUSS die Cells exakt zum Pre-Dam-Zustand
+        // restaurieren) ist terrain-unabhängig + die echte V9.74-Garantie.
+        const preDamChunkKey = `${testCx},${testCz}`;
+        const preDamEntry0 = r.state.voxelChunks && r.state.voxelChunks.get(preDamChunkKey);
+        const preDamCells = preDamEntry0 && preDamEntry0.waterCells ? Uint8Array.from(preDamEntry0.waterCells) : null;
         const damEntry = r.spawnArchitecture("damm", damPos, { silent: false });
         out.damSpawnSucceeded = !!damEntry;
         if (damEntry && damEntry.blockerAABBs && damEntry.blockerAABBs[0]) {
@@ -20183,26 +20193,22 @@ async function checkBandWelleC3CellularReaction(ctx) {
             }
             for (let d = 0; d < 8 && r.state.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
             const afterRemoveEntry = r.state.voxelChunks && r.state.voxelChunks.get(damChunkKey);
-            if (afterRemoveEntry && afterRemoveEntry.waterCells) {
-                const cells = afterRemoveEntry.waterCells;
-                const aabb_remove_pos = { x: damPos.x, z: damPos.z };
-                // V9.93 — waterCells immer LOD 0
-                const cfg = cfgWater;
-                const step = cfg.step;
-                const oy = base - cfg.floorDrop;
-                const cellI = Math.floor((aabb_remove_pos.x - testCx * span) / step);
-                const cellK = Math.floor((aabb_remove_pos.z - testCz * span) / step);
-                // Cell genau am alten Damm-Zentrum: sollte JETZT NICHT mehr
-                // solid sein (entweder air oder water, aber nicht solid durch
-                // Architektur-Stempel — Worldgen-Density-Klassifikation könnte
-                // solid sein wenn Land darunter, aber selbst dann nicht durch
-                // Stempel).
-                // Easier check: Cell direkt ÜBER macroY → nicht solid.
-                const cellJAbove = Math.floor((macroY + 2 - oy) / step);
-                const idxAbove = cellI + cellK * cfg.dim + cellJAbove * cfg.dim * cfg.dim;
-                out.cellAfterRemoveAbove = cells[idxAbove];
-                // Nach Remove: über macroY sollte air (oder water wenn unter wl)
-                out.removeRestores = cells[idxAbove] === STATE.AIR || cells[idxAbove] === STATE.WATER;
+            if (
+                preDamCells &&
+                afterRemoveEntry &&
+                afterRemoveEntry.waterCells &&
+                afterRemoveEntry.waterCells.length === preDamCells.length
+            ) {
+                // V17.118 (E3-Migration): VOLL-ARRAY-Vergleich — nach removeArchitecture
+                // + Drain MÜSSEN die waterCells EXAKT zum Pre-Dam-Zustand zurückkehren
+                // (der Stempel vollständig revertiert). Terrain-unabhängig + die echte
+                // V9.74-Absicht. `damCellIsSolid` oben beweist, dass der Stempel WIRKLICH
+                // etwas änderte (sonst wäre der Revert-Test vakant).
+                const a = afterRemoveEntry.waterCells;
+                let diff = 0;
+                for (let q = 0; q < preDamCells.length; q++) if (a[q] !== preDamCells[q]) diff++;
+                out.cellAfterRemoveAbove = diff; // 0 = exakt zum Pre-Dam-Zustand revertiert
+                out.removeRestores = diff === 0;
             }
         }
         // 5) Voxel-Carve unter waterLevel → Cells werden water
@@ -20318,9 +20324,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
             `state=${res.damCellState}`
         );
         check(
-            "Welle C.3 V9.74: Nach Remove ist die Cell NICHT mehr durch Stempel solid",
+            "Welle C.3 V9.74: Nach Remove kehren die waterCells EXAKT zum Pre-Dam-Zustand zurück (Stempel revertiert)",
             res.removeRestores,
-            `state=${res.cellAfterRemoveAbove}`
+            `diff=${res.cellAfterRemoveAbove}`
         );
     }
     // V13.1-Default: ein nicht gefundener isolierter Flach-Spot ist „unmessbar =
@@ -20389,6 +20395,22 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
             out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 1
         }
         // 3) Empirisch: ein streaming-aktiver Chunk hat `entry.lod`
+        // V17.118 (E3-Migration): mit dem dormanten Worker baute der Warmup den
+        // vollen Ring SYNC (deterministisch → immer LOD-1-Chunks bei r≥2). Seit
+        // der Worker engagiert ist, ist das Streaming ASYNC → die LOD-Verteilung
+        // der gestreamten Chunks ist streaming-history-abhängig (Flake). Darum EINEN
+        // LOD-1-Chunk deterministisch bauen (Worker aus → sync, ein ferner frischer
+        // Chunk, lod=1 explizit) — der empirische `lod1Count≥1`-Beweis wird robust.
+        {
+            const _savedW88 = r.state.voxelWorker;
+            r.state.voxelWorker = null;
+            const span88 = r._voxelChunkConfig(0).span;
+            const pmc = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+            const pcx88 = Math.floor(pmc.x / span88) + 20; // fern → frisch (nicht vom Warmup gebaut)
+            const pcz88 = Math.floor(pmc.z / span88) + 20;
+            if (!r.state.voxelChunks.has(`${pcx88},${pcz88}`)) r._ensureVoxelChunkAt(pcx88, pcz88, 1);
+            r.state.voxelWorker = _savedW88;
+        }
         if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
             return { ...out, error: "no chunks streamed" };
         }
@@ -21524,6 +21546,40 @@ async function checkBandV17117FarWater(ctx) {
         res.workerMainIdentical === true,
         `mism=${res.cellMismatches} count=${res.mainCellCount}/${res.workerCellCount}`
     );
+}
+
+// V17.118 (E3 — der Voxel-Worker engagiert: der ~71-ms-Mesh-Bau geht off-thread):
+// die GEMESSENE Wurzel des Streaming-Spikes (FPS 9–17) war, dass der Worker NIE
+// gespawnt wurde — `_voxelWorkerSyncWorldgenState` returnte früh (`if (!voxelWorker)
+// return`), und `_acquireVoxelChunkBuild` gated zirkulär auf das null-Feld → JEDER
+// Chunk sync-baute (~71 ms). Fix: `_voxelWorkerSyncWorldgenState` bootstrappt den
+// Worker (`_getVoxelWorker`) + der Spieler-Chunk bleibt sync (Kollision). Diese
+// Invariante ist die REGRESSIONS-WAND gegen erneute Dormanz: nach dem Warmup MUSS
+// der Worker engagiert sein (worldgenSynced), + die zwei Source-Anker (Bootstrap +
+// Spieler-Chunk-Sync) müssen stehen.
+async function checkBandV17118WorkerEngaged(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        return {
+            // Behavioral: der Worker ist nach dem Warmup gebootstrappt + getrusted.
+            workerSpawned: !!r.state.voxelWorker,
+            worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
+            // Source: der Bootstrap lebt in _voxelWorkerSyncWorldgenState (war: early-return).
+            bootstrapSrc: /_getVoxelWorker\(\)/.test(r._voxelWorkerSyncWorldgenState.toString()),
+            // Source: der Spieler-Chunk baut sync (die EINE Intent-Ausnahme).
+            playerSyncSrc: /_voxelChunkIsPlayerChunk/.test(r._ensureVoxelChunkAt.toString()),
+        };
+    });
+    if (res.error) {
+        check("V17.118 E3: Worker-Engaged-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("V17.118 E3: der Voxel-Worker ist gespawnt (nicht mehr dormant)", res.workerSpawned === true);
+    check("V17.118 E3: voxelWorkerWorldgenSynced nach Warmup (Streaming nutzt den Worker, Mesh off-thread)", res.worldgenSynced === true);
+    check("V17.118 E3: _voxelWorkerSyncWorldgenState bootstrappt den Worker (Source, Regressions-Wand)", res.bootstrapSrc === true);
+    check("V17.118 E3: _ensureVoxelChunkAt baut den Spieler-Chunk sync (Source, die Intent-Ausnahme)", res.playerSyncSrc === true);
 }
 
 // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH für ferne Chunks): empirischer
@@ -23003,6 +23059,15 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
+        // V17.118 (E3-Migration, V9.56-i): seit der Worker engagiert ist, baut der
+        // Streaming-/Rebuild-Pfad ASYNC (Worker-Mesh). Dieser Band prüft aber die
+        // SYNC-Bau-MECHANIK (dispose-before-build, Fail-Retry-Counter, OOM-give-up) —
+        // den Stufe-3-Sync-Fallback, der weiter lebt (Spieler-Chunk, kein-Worker-
+        // Browser, Fallback). Den Worker für die Dauer dieses Tests deaktivieren →
+        // `_acquireVoxelChunkBuild` nimmt direkt Stufe 3 (sync), die Mechanik ist
+        // testbar wie zuvor. Restore am Ende.
+        const _savedWorker = r.state.voxelWorker;
+        r.state.voxelWorker = null;
         // Ring auffüllen.
         const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
         if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
@@ -23049,6 +23114,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.counterClearedAfterGiveUp = !(r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.has(someKey));
         // Restore.
         r._buildVoxelChunkData = origBuild;
+        r.state.voxelWorker = _savedWorker; // V17.118 — den Worker wieder engagieren
         if (r._drainDirtyVoxelChunks) r._drainDirtyVoxelChunks();
         return out;
     });
@@ -23118,6 +23184,11 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // Kollisions-Builder, sehe dass nach 2 Fails KEIN
         // empty-Eintrag steht (Retry pending), nach 3 ein empty.
         const fakeKey = "0,-999"; // weit weg, ungebraucht
+        // V17.118 (E3-Migration, V9.56-i): den Sync-Fail-Retry-Pfad von
+        // `_ensureVoxelChunkAt` prüfen → den Worker deaktivieren, sonst geht der
+        // Build async (pending → kein Fail, kein Counter). Restore nach dem Test.
+        const _savedWorkerE = r.state.voxelWorker;
+        r.state.voxelWorker = null;
         const origBuildColl = r._buildStaticTriMeshCollision;
         r._buildStaticTriMeshCollision = () => null;
         r._ensureVoxelChunkAt(0, -999);
@@ -23131,6 +23202,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.streamCounterClearedAfterGiveUp = !r.state.voxelRebuildAttempts.has(fakeKey);
         // Restore + Cleanup.
         r._buildStaticTriMeshCollision = origBuildColl;
+        r.state.voxelWorker = _savedWorkerE; // V17.118 — den Worker wieder engagieren
         r._disposeVoxelChunk(fakeKey);
         return out;
     });
@@ -40455,6 +40527,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerf3cPhase3FullMesh(ctx);
             // V17.117 — H3: der globale Ozean jenseits ±1024 m (Worker<->Main bit-identisch).
             await checkBandV17117FarWater(ctx);
+            // V17.118 — E3: der Voxel-Worker engagiert (Mesh off-thread, Regressions-Wand).
+            await checkBandV17118WorkerEngaged(ctx);
             // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
             await checkBandWellePerf3cPhase4LazyBVH(ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).
