@@ -18367,7 +18367,21 @@ class AnazhRealm {
     //   Geometrie-Maschinerie (`_voxelChunkGeometry`), zwei step-Varianten.
     _voxelChunkConfig(lod = 0) {
         // V9.24: ringRadius folgt dem Sicht-Ring-Regler (Default 4).
-        const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
+        const ringRadius = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
+        // Welle E (E1) — die LOD-PYRAMIDE: alle Stufen teilen denselben
+        // Horizontal-Span (dim·step = 43.2 m) UND denselben Vertikal-Span
+        // (dimY·step = 360 m, floorDrop 90 → Decke base+270) → LOD-invariant,
+        // jede gröbere Stufe hat 4× weniger Cells als die vorige. Der Band-Skip
+        // (`_voxelSampleDensityGrid`) sampelt nur das Oberflächen-Band → die
+        // hohe Hülle ist billig. LOD2/LOD3 sind die FERNEN Ringe (E1).
+        if (lod >= 3) {
+            // LOD 3 — step 14.4, dim 3 (64× weniger Cells als LOD0). Fernster Ring.
+            return { dim: 3, step: 14.4, span: 43.2, ringRadius, dimY: 25, floorDrop: 90, lod: 3 };
+        }
+        if (lod >= 2) {
+            // LOD 2 — step 7.2, dim 6 (16× weniger Cells als LOD0).
+            return { dim: 6, step: 7.2, span: 43.2, ringRadius, dimY: 50, floorDrop: 90, lod: 2 };
+        }
         if (lod >= 1) {
             // LOD 1 — Half-Resolution (8× weniger Cells). dimY 68→100 (Welle F:
             // gewaltige Berge — die Hülle wuchs, der Band-Skip hält die Kosten).

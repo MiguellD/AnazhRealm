@@ -424,6 +424,11 @@ const CELL_STATE = { AIR: 0, WATER: 1, SOLID: 2 };
 function voxelChunkConfig(lod) {
     // Welle F (mirror): dimY 68→100 / 136→200 — gewaltige Berge (Decke base+270),
     // der Band-Skip in computeDensityGrid hält die Kosten. Vertikal-Span 360 m.
+    // Welle E (E1, mirror): die LOD-PYRAMIDE — LOD2/LOD3 für die fernen
+    // Ringe (dim·step = 43.2 m horizontal, dimY·step = 360 m vertikal, beide
+    // LOD-invariant). MUSS bit-identisch zum Main-`_voxelChunkConfig` bleiben.
+    if ((lod | 0) >= 3) return { dim: 3, step: 14.4, span: 43.2, dimY: 25, floorDrop: 90, lod: 3 };
+    if ((lod | 0) >= 2) return { dim: 6, step: 7.2, span: 43.2, dimY: 50, floorDrop: 90, lod: 2 };
     if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 100, floorDrop: 90, lod: 1 };
     return { dim: 24, step: 1.8, span: 43.2, dimY: 200, floorDrop: 90, lod: 0 };
 }
