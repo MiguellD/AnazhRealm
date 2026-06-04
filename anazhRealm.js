@@ -878,6 +878,13 @@ class AnazhRealm {
             // ohne den Gras-Aufwand, der Tick baut ≤1/Frame auf einer ruhigen
             // (nicht-Streaming-)Frame nach. Gras 1 Frame später = imperzeptibel.
             pendingGrass: null,
+            // Welle G-fix — Chunks, deren OBERFLÄCHE sich änderte (Carve/Fill) →
+            // ihr Gras MUSS neu (synchron, kein Flackern). Ein Struktur-Spawn/
+            // Skirt-/LOD-Rebuild ändert die Oberfläche NICHT → das Gras bleibt
+            // (kein Dispose, kein Reset). Heilt den V17.92-Defer-Regress „beim
+            // Abbauen flackert die ganze Wiese" — jetzt resettet nur der edierte
+            // Chunk sein Gras (ein Bereich), nicht alle Skirt-Nachbarn.
+            grassDirtyChunks: null,
             // V12.0-perf.c — Architektur-Instancing-Registry (HISM-Pattern).
             // archFlattenCache: Map<blueprintName, {instanceable, reason,
             //   leaves:[{geom, mat, localMatrix}]}> — ein Bauplan flach in
@@ -19564,12 +19571,24 @@ class AnazhRealm {
             const _pcx = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cx : cx;
             const _pcz = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cz : cz;
             const _gr = Math.max(Math.abs(cx - _pcx), Math.abs(cz - _pcz));
-            // Welle A — Gras DEFERRED (war synchron, ~34 ms): der dominante
-            // Per-Chunk-Rebuild-Posten aus dem Finalize-Frame verlagert. Der
-            // Tick baut ≤1/Frame auf einer ruhigen Frame nach (1 Frame später =
-            // imperzeptibel). Erscheint beim Näherkommen über den LOD-Rebuild,
-            // der diesen Finalize-Pfad erneut durchläuft (re-enqueue).
-            if (_gr <= 2) this._enqueueGrass(cx, cz);
+            if (_gr <= 2) {
+                const _gKey = `${cx},${cz}`;
+                const _gd = this.state.grassDirtyChunks;
+                const _hasGrass = this.state.voxelChunkGrass && this.state.voxelChunkGrass.has(_gKey);
+                if (_gd && _gd.has(_gKey)) {
+                    // Welle G-fix — die Oberfläche änderte sich (Carve/Fill): das
+                    // (in _disposeVoxelChunk mit keepGrass=false entfernte) Gras
+                    // SYNCHRON neu bauen → kein Flackern, nur DIESER Bereich.
+                    _gd.delete(_gKey);
+                    this._buildVoxelChunkGrass(cx, cz);
+                } else if (!_hasGrass) {
+                    // Welle A — Streaming/Erst-Build (kein Gras vorhanden): deferred
+                    // (≤1/Frame, kein Flackern da kein altes Gras da war).
+                    this._enqueueGrass(cx, cz);
+                }
+                // sonst: Gras existiert + Oberfläche unverändert (Nexus-Spawn/
+                // Skirt/LOD) → es wurde gar nicht disposed → BEHALTEN.
+            }
         }
         // V17.1 — FÜLLE/DICHTE: die artenreiche Klein-Vegetation (Blüten/Farne/
         // Gestrüpp/Fels/Sporen) aus den vier worldFieldAt-Feldern. DEFERRED (wie
@@ -19652,9 +19671,13 @@ class AnazhRealm {
         const oldEntry = this.state.voxelChunks.get(key);
         const useLod = lod !== null ? lod : oldEntry && Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0;
         const forceSync = opts.forceSync === true || this._voxelChunkIsPlayerChunk(cx, cz);
+        // Welle G-fix — das Gras nur disposen, wenn die Oberfläche sich änderte
+        // (Carve/Fill markierte den Chunk grass-dirty). Sonst behalten (kein
+        // Flackern bei Nexus-Spawn/Skirt/LOD-Rebuild).
+        const keepGrass = !(this.state.grassDirtyChunks && this.state.grassDirtyChunks.has(key));
         if (forceSync) {
             // V9.40-d — dispose-before-build (kein Loch, Sync-Build same-frame).
-            if (oldEntry) this._disposeVoxelChunk(key);
+            if (oldEntry) this._disposeVoxelChunk(key, keepGrass);
             const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: true });
             return this._completeVoxelRebuild(key, cx, cz, useLod, fresh);
         }
@@ -19668,7 +19691,7 @@ class AnazhRealm {
             return false;
         }
         // Build fertig/fail → atomarer Swap: alten erst JETZT disposen.
-        if (oldEntry) this._disposeVoxelChunk(key);
+        if (oldEntry) this._disposeVoxelChunk(key, keepGrass);
         return this._completeVoxelRebuild(key, cx, cz, useLod, fresh);
     }
 
@@ -19756,7 +19779,7 @@ class AnazhRealm {
 
     // Räumt einen Voxel-Chunk: Kollision, Mesh, Geometrie, Material.
     // Idempotent.
-    _disposeVoxelChunk(key) {
+    _disposeVoxelChunk(key, keepGrass = false) {
         if (!this.state.voxelChunks) return;
         const entry = this.state.voxelChunks.get(key);
         if (entry && entry.mesh) {
@@ -19766,7 +19789,11 @@ class AnazhRealm {
             this._queueGeometryDispose(entry.mesh.geometry);
             // V9.84 Perf-1.a — Material NICHT disposen: Singleton-geteilt.
         }
-        this._disposeVoxelChunkGrass(key);
+        // Welle G-fix — bei einem Rebuild, der die Oberfläche NICHT ändert
+        // (Struktur-Spawn/Skirt/LOD), das Gras BEHALTEN (kein Dispose → kein
+        // Flackern, kein 34-ms-Rebuild). Prune + oberflächen-ändernder Rebuild
+        // disposen normal (keepGrass=false).
+        if (!keepGrass) this._disposeVoxelChunkGrass(key);
         // V17.1 — die Klein-Vegetation des Chunks zurück in die Art-Pools.
         this._disposeVoxelChunkScatter(key);
         // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh
@@ -22827,6 +22854,20 @@ class AnazhRealm {
         // Cell-Feld klassifiziert die neue Lage (carve unter waterLevel →
         // WATER, fill → SOLID), der Iso-Mesher rendert. Kein Hydro-Recompute
         // mehr (V9.67-Maschinerie ist weg, V9.74-Erkenntnis: Cell ist DERIVED).
+        // Welle G-fix — der Carve/Fill änderte die OBERFLÄCHE → die Gras-Chunks
+        // im xz-Footprint müssen ihr Gras neu bauen (synchron im Rebuild → kein
+        // Flackern). Die Skirt-Nachbarn (von `_remeshVoxelChunksAround` mit-dirty,
+        // aber Oberfläche unverändert) behalten ihr Gras → nur DIESER Bereich
+        // resettet, nicht die ganze Wiese.
+        if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
+        const { span } = this._voxelChunkConfig();
+        const fcx0 = Math.floor((x - radius) / span);
+        const fcx1 = Math.floor((x + radius) / span);
+        const fcz0 = Math.floor((z - radius) / span);
+        const fcz1 = Math.floor((z + radius) / span);
+        for (let fcx = fcx0; fcx <= fcx1; fcx++) {
+            for (let fcz = fcz0; fcz <= fcz1; fcz++) this.state.grassDirtyChunks.add(`${fcx},${fcz}`);
+        }
         this._remeshVoxelChunksAround(x, z, radius);
         if (typeof this.saveState === "function") this.saveState();
         return true;
@@ -46081,7 +46122,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.96.0";
+AnazhRealm.VERSION = "17.97.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
