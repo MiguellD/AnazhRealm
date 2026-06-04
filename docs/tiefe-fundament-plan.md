@@ -12,7 +12,7 @@ Schöpfer-Befund (Browser-Audit, drei Screenshots): das Terrain ist nahe + rucke
 - **G — Große Kavernen:** ✅ Kern V17.98 (niederfrequentes Kavernen-Feld, subsurface gegated). Offen: G3 Oberflächen-Eingänge/Canyons (braucht H).
 - **H — Aquifer:** ✅ V17.99 (caveDry: See flutet Höhlen darunter nicht; 0 Höhlen-Blasen, Seen intakt). Offen: H3 ferne-Chunk-Wasser (>1024 m).
 - **I — Tote Infra:** ✅ V17.20.
-- **E — Weite LOD-Pyramide:** ⏳ OFFEN (jetzt von F entriegelt — billige Chunks).
+- **E — Weite LOD-Pyramide:** ◐ E1+E2 GEBAUT (V17.112 — LOD2/LOD3-Pyramide additiv + Sicht-Ring bis 12; Browser-Sign-off offen). E3 (kein Sync-Build) + E4 (Stitching) offen.
 
 **Der Render-Harmonie-Bogen (J) — Stand V17.104:** **J1 ✅ ECHTE HARMONIE** (die geteilte `_applyAerialOutput` — alle opaken Ebenen lesen DIESELBE Atmosphäre post-lighting; die fernen Berge schmelzen schön, Schöpfer-bestätigt). **J3 ✅** (Himmelskörper kamera-relativ — Sonne/Mond/Planeten stehen fest am Himmel, kein Origin-Orbit-Rasen + der Wasser-Glitzer-Versatz mit-geheilt). **J4 (die Trapeze) ⏳ — die WURZEL IST GEFUNDEN, aber sie ist KEIN Cel-Dial:** über fünf Browser-Pässe wurde durch Elimination (via die live-Slider Cel/AO/Kanten-Schärfe/Oberflächen-Textur/Farb-Variation) bewiesen, dass die Trapeze NICHT die AO, NICHT die Post-FX, NICHT die triplanar-Striation, NICHT der Makro-Tint, NICHT der Normal-eps sind. **Die Wurzel: ein Biom besteht aus ZWEI stark kontrastierenden Grundfarben (`snow` 0.92 vs `stone` 0.42 in `_attachVoxelFieldColors`); Mesh-Flächen bändern zwischen ihnen, die Hemisphäre(Nacht)/Sonne(Tag)-Beleuchtung invertiert die Flächen-Helligkeit, und der hohe Farb-Kontrast richtet sich an den Cel-Lichtbändern auf der facettierten Geometrie aus → Zebra-Trapeze.** Der Fix ist der **SURFACE-ORDER-Bogen (§J-2 unten)** — das J1-Analog für die Oberfläche, NICHT ein weiterer Slider. **Versuche die NICHT klappten (ehrlich): eps-Normalen-Glättung (V17.100/.102 — widerlegt + Schatten-Regression über normalBias, zurückgerollt) · 2-Iterationen-Geometrie-Glättung (Seam-Riss am geteilten Density-Grid-pad, zurückgerollt) · alle Shading-/Albedo-Dials (per Slider ausgeschlossen).**
 
@@ -145,7 +145,7 @@ Jede Welle: `node --check anazhRealm.js` → `npm run format:check` → `npm run
 
 **Vorgehen (SEAM-SAFE, korrigiert).**
 
-- **E1 — LOD-Pyramide**: LOD2 (step 7.2 m) + LOD3 (14.4 m) für ferne Ringe (64× weniger Zellen). Vorbedingung F (billige Chunks).
+- **E1 — LOD-Pyramide**: ✅ GEBAUT (V17.112). LOD2 (dim6/step7.2, 16× weniger Cells) + LOD3 (dim3/step14.4, ~300×) für ferne Ringe r≥9; r≤8 BYTE-IDENTISCH (additiv, kein Regress). + **E2** Sicht-Ring 8→12 (346→518 m). GEMESSEN 5.5× billiger als naiv-LOD1 (`scripts/diag-lod-pyramid.cjs`). Wasser bleibt LOD0 (Playtest-Invariante). LOD2/LOD3 meshet ohne Crash (explizit getestet, der Warmup bei Ring 4 erreicht sie nie). Browser-Sign-off offen.
 - **E2 — View bis Fog-Horizont**: Ringe füllen ~450 m → Pop-in jenseits der Sichtbarkeit.
 - **E3 — kein Sync-Streaming-Build**: nur der Spieler-Chunk darf sync; ferne warten auf den Worker, alter Chunk bleibt sichtbar (der Sync-Fallback ist der Spike).
 - **E4 — LOD-Stitching (ERST-KLASSE)**: die V9.70-Skirts haben Nähte NICHT geheilt → ein echtes Stitching/Geomorphing am LOD-Übergang (Clipmap-Transition-Region) + dithered Crossfade. KEINE blanken Skirts.

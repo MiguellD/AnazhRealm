@@ -18404,7 +18404,20 @@ class AnazhRealm {
     // ein einfacher Distance-Threshold für den Beweis.
     _voxelChunkLodFor(cx, cz, pcx, pcz) {
         const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
-        return r >= 2 ? 1 : 0;
+        // Welle E (E1) — die LOD-PYRAMIDE (Clipmap-Muster: konzentrische Ringe
+        // abnehmender Auflösung; die fernen Details vom Fog/Höhen-Dunst geschluckt).
+        // BEWUSST ADDITIV: r ≤ 8 ist BYTE-IDENTISCH zum alten `r >= 2 ? 1 : 0`
+        // (LOD0 ≤86 m, LOD1 86–345 m) → die geliebte Nah-/Mittelsicht UNVERÄNDERT.
+        // NUR die NEUEN, vom erweiterten Ring-Cap (E2: 8→12) erschlossenen fernen
+        // Ringe werden billig: LOD2 (r9–10, ~345–432 m, 16× weniger Cells) + LOD3
+        // (r≥11, ~432–518 m, ~300× weniger Cells) — tief im Fog, ihre Cross-LOD-
+        // Naht wie die akzeptierte LOD0↔LOD1-Naht vom Dunst getarnt (Stitching = E4,
+        // erst wenn dein Browser-Auge eine Naht zeigt). So bringt „ein paar mehr
+        // Ringe" Weitsicht OHNE FPS-Einbruch (ferne Geometrie fast gratis).
+        if (r >= 11) return 3;
+        if (r >= 9) return 2;
+        if (r >= 2) return 1;
+        return 0;
     }
 
     // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH): soll dieser Chunk SOFORT
@@ -43379,7 +43392,7 @@ class AnazhRealm {
                 const vv = parseFloat(localStorage.getItem("anazh.audio.voiceVol"));
                 if (Number.isFinite(vv) && vv >= 0 && vv <= 1) this.state.symphony.voiceVolume = vv;
                 const rr = parseInt(localStorage.getItem("anazh.world.ringRadius"), 10);
-                if (Number.isFinite(rr) && rr >= 1 && rr <= 8) this.state.chunkRingRadius = rr;
+                if (Number.isFinite(rr) && rr >= 1 && rr <= 12) this.state.chunkRingRadius = rr;
             } catch {
                 /* ignore */
             }
@@ -43482,8 +43495,10 @@ class AnazhRealm {
             rs.value = String(this.state.chunkRingRadius || 4);
             applyRingRadius(parseInt(rs.value, 10));
             rs.addEventListener("input", () => {
-                // V8.40 — Regler-Bereich 1–8 (3×3 … 17×17), Default 4 (9×9).
-                const v = Math.max(1, Math.min(8, parseInt(rs.value, 10)));
+                // V8.40 — Regler-Bereich 1–8; Welle E (E2): erweitert auf 1–12
+                // (3×3 … 25×25). Die fernen Ringe 9–12 sind dank der LOD-Pyramide
+                // (E1) billig (LOD2/LOD3) → Weitsicht bis ~518 m ohne FPS-Einbruch.
+                const v = Math.max(1, Math.min(12, parseInt(rs.value, 10)));
                 applyRingRadius(v);
                 if (typeof localStorage !== "undefined") {
                     try {
@@ -46856,7 +46871,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.111.0";
+AnazhRealm.VERSION = "17.112.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

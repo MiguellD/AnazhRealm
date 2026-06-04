@@ -48,7 +48,7 @@ Stand: **V17.91 (03.06.2026) — der Crafting-/Werkstatt-Bogen ist DURCH (V17.72
 12. ◐ **C — Strukturen schwarz/flach (V17.94/.99):** C1 Schwarz-Floor (emissive) + C2 Aerial-MELT (outputNode). **ABER: C2 heilte das Symptom auf einem PARALLELEN Pfad → die Wurzel ist J (Render-Harmonie).**
 13. ◐ **D — die Trapeze (V17.99/.100):** AO gedämpft + Gradient-Normalen geglättet (eps 1.5, Makro statt Mikro). **Rest = Cel-Härte → J2.**
 14. ✅ **F — Effiziente Höhe (KEYSTONE, V17.96):** Hülle dimY 200/100 + tanh-Deckel 225 + Band-Skip (bit-identisch billiger) → Berge 244 m, 0 Decken-Durchbrüche bei ±5 km.
-15. ⏳ **E — weite Terrain + LOD-Pyramide:** LOD2/LOD3 + View bis Fog-Horizont + kein Sync-Build + echtes LOD-Stitching. **Von F entriegelt (billige Chunks), noch OFFEN.**
+15. ◐ **E — weite Terrain + LOD-Pyramide:** E1+E2 GEBAUT (V17.112 — LOD2/LOD3-Pyramide ADDITIV [r≤8 byte-identisch] + Sicht-Ring bis 12, +50 % Weitsicht für 5.5× weniger Mehr-Kosten als naiv, gemessen `diag-lod-pyramid`; Browser-Sign-off offen). **OFFEN: E3** (kein Sync-Build außer Spieler-Chunk) **· E4** (echtes Cross-LOD-Stitching — erst wenn der Browser eine ferne Naht zeigt; sonst Fog-getarnt wie die akzeptierte LOD0↔LOD1) **· das echte Clipmap** (größere ferne Chunks → VIEL mehr Ringe; der Draw-Call-Hebel 289→625, die „künftige geniale Struktur").
 16. ◐ **H — Wasser-3D-Finish (V17.95/.99):** B+H1 (Auftrieb 3D) + Aquifer (See flutet Höhlen nicht). Offen: H3 ferne-Chunk-Wasser (>1024 m).
 17. ◐ **G — Höhlen wachsen mit dem Terrain (V17.96/.98):** F hob das Band + G-Kern gab große Kavernen (subsurface). Offen: G3 Oberflächen-Eingänge/Canyons (braucht H3).
 18. ✅ **I — Tote Infra geschnitten (V17.20):** GPU-Density-WGSL raus, `mxFractal` weg, lint warning-frei.

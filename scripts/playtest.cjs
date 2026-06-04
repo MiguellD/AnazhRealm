@@ -18147,6 +18147,47 @@ async function checkBandVoxelTerrainCore(ctx) {
             // Spieler-Ring neu auf — wir restaurieren das hier
             // direkt, damit nachfolgende Tests Voxel-Chunks haben.
             r._tickVoxelChunkStreaming(pos);
+
+            // Welle E (E1/E2) — die LOD-Pyramide. Der Warmup läuft bei Ring 4 →
+            // er erreicht LOD2/LOD3 (r≥9) NIE; darum hier explizit prüfen:
+            // (a) Config LOD-invariant (dim·step=43.2, dimY·step=360),
+            // (b) Zuweisung additiv (r≤8 wie alt: r2-8→LOD1; neu r9-10→2, r≥11→3),
+            // (c) ein LOD2- + LOD3-Chunk meshet ohne Crash (dim 6/3 ist sehr grob —
+            //     der Surface-Nets-Mesher + pad/crop muss es tragen).
+            const cL2 = r._voxelChunkConfig(2);
+            const cL3 = r._voxelChunkConfig(3);
+            out.lodPyramidConfig =
+                cL2.dim === 6 &&
+                Math.abs(cL2.dim * cL2.step - 43.2) < 1e-6 &&
+                Math.abs(cL2.dimY * cL2.step - 360) < 1e-6 &&
+                cL3.dim === 3 &&
+                Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
+                Math.abs(cL3.dimY * cL3.step - 360) < 1e-6;
+            const lf = (rr) => r._voxelChunkLodFor(rr, 0, 0, 0);
+            out.lodPyramidBands =
+                lf(0) === 0 &&
+                lf(1) === 0 &&
+                lf(2) === 1 &&
+                lf(8) === 1 &&
+                lf(9) === 2 &&
+                lf(10) === 2 &&
+                lf(11) === 3 &&
+                lf(12) === 3;
+            let lod23Builds = true;
+            try {
+                for (const lod of [2, 3]) {
+                    const cfg = r._voxelChunkConfig(lod);
+                    const surfY = r._terrainMacroSurfaceY(2000, 2000);
+                    const oy = Math.round(surfY - cfg.dimY * cfg.step * 0.4);
+                    const g = r._voxelChunkGeometry(2000, oy, 2000, cfg.dim, cfg.dimY, cfg.dim, cfg.step, null, 1);
+                    const posAttr = g && g.getAttribute && g.getAttribute("position");
+                    if (!posAttr || posAttr.count === 0) lod23Builds = false;
+                }
+            } catch (_e) {
+                lod23Builds = false;
+                out.lod23Err = String(_e && _e.message);
+            }
+            out.lod23Builds = lod23Builds;
         }
         return out;
     });
@@ -18181,6 +18222,18 @@ async function checkBandVoxelTerrainCore(ctx) {
         check(
             "Voxel P2b-Politur: der Chunk-Skirt schliesst die Naht (Geometrie überlappt die Chunk-Spanne)",
             voxelP2bResults.voxelSkirt
+        );
+        check(
+            "Welle E (E1): die LOD-Pyramide-Config ist LOD-invariant (LOD2 dim6/step7.2, LOD3 dim3/step14.4; span 43.2 m / 360 m)",
+            voxelP2bResults.lodPyramidConfig
+        );
+        check(
+            "Welle E (E1): die LOD-Zuweisung ist ADDITIV (r≤8 wie alt: r2-8→LOD1; neue ferne Ringe r9-10→LOD2, r≥11→LOD3)",
+            voxelP2bResults.lodPyramidBands
+        );
+        check(
+            `Welle E (E1): ein LOD2- + LOD3-Chunk meshet ohne Crash (grobe dim 6/3)${voxelP2bResults.lod23Err ? " — " + voxelP2bResults.lod23Err : ""}`,
+            voxelP2bResults.lod23Builds
         );
         check(
             "Voxel V9.22: _buildVoxelChunkGrass + _voxelSurfaceY existieren",
@@ -31187,7 +31240,9 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const ring = document.getElementById("slider-ring");
-        out.ringSliderRange = !!ring && ring.max === "8" && ring.value === "4";
+        // Welle E (E2): der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
+        // fernen Ringe 9–12 sind dank der LOD-Pyramide billig. Default bleibt 4.
+        out.ringSliderRange = !!ring && ring.max === "12" && ring.value === "4";
         const cel = document.getElementById("slider-cel");
         // V8.41 — Cel-Regler 2–8. V17.109: Default-Wert 8→6 (Schöpfer-getunte Basis).
         out.celSliderRange = !!cel && cel.max === "8" && cel.value === "6";
@@ -31239,7 +31294,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     });
 
     if (v840Results && !v840Results.error) {
-        check("V8.40: Sicht-Ring-Regler 1–8, Default 4 (9×9)", v840Results.ringSliderRange);
+        check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
         check("V8.41/V17.109: Cel-Stufen-Regler 2–8, Default 6 (Schöpfer-Basis)", v840Results.celSliderRange);
         check("V8.41: Cel-Stufen clampt über 8 auf 8", v840Results.celClampsAt8);
         check("V8.40: Cel ab 8 bleibt smooth (32-Stufen-Gradient)", v840Results.celSmoothThreshold);
