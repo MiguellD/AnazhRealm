@@ -26932,6 +26932,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin).
         out.aerialNoError = !window.__aerialOutputError;
         out.aerialOutputError = window.__aerialOutputError || null;
+        // (7) V17.106 — der Höhen-Melt ist EYE-RELATIV: er hängt an `cameraPosition`
+        // (Distanz + Höhe-über-Auge), NICHT an der absoluten Welt-Höhe → auf einen
+        // Berg klettern bleicht den Boden um dich nicht mehr. Source-Probe (Render
+        // pixel-blind), schützt gegen Rückfall auf `smoothstep(.., positionWorld.y)`.
+        const _aerSrc = typeof r._applyAerialOutput === "function" ? r._applyAerialOutput.toString() : "";
+        out.aerialEyeRelative = _aerSrc.includes("cameraPosition") && _aerSrc.includes("hazeNear");
         // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
         // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
         const ppSrc = r._ensurePostProcessing ? r._ensurePostProcessing.toString() : "";
@@ -27032,6 +27038,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V17.J: Struktur bekommt DENSELBEN Aerial-outputNode (eine Atmosphäre, viele Leser)", v828Results.structHasAerialOutput);
         check("V17.J: der Builder ruft EINE Quelle (kein Parallel-Pfad, kein __structAerialError)", v828Results.aerialFromOneSource);
         check("V17.J: die dynamische material.color bleibt setzbar (kein colorNode-Override)", v828Results.structDynamicColorPreserved);
+        check("V17.106: der Aerial-Höhen-Melt ist EYE-RELATIV (cameraPosition + hazeNear, nicht absolute Höhe)", v828Results.aerialEyeRelative);
         check("V17.J: transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element)", v828Results.phantomNoAerial);
         check(
             `V17.J: kein still gefangener Aerial-Node-Fehler${v828Results.aerialOutputError ? " — " + v828Results.aerialOutputError : ""}`,

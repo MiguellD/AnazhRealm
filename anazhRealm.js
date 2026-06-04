@@ -19206,6 +19206,13 @@ class AnazhRealm {
             density: TSL.uniform(0.0085),
             hazeBase: TSL.uniform(40.0),
             hazeTop: TSL.uniform(150.0),
+            // V17.106 — EYE-RELATIV: die Distanz-Gate des Höhen-Melts. Der Höhen-
+            // Term verblasst eine Oberfläche nur, wenn sie HOCH ÜBER dem Auge UND
+            // WEIT weg ist → stehst du auf dem Gipfel (Boden nah), kein Melt mehr.
+            // hazeNear = innerhalb dieser Distanz nie Höhen-Melt; hazeFar = die
+            // Distanz-Spanne bis zum vollen Faktor. Live-tunbar (Schöpfer-Sign-off).
+            hazeNear: TSL.uniform(70.0),
+            hazeFar: TSL.uniform(350.0),
             // WELLE J4-DEBUG — Browser-Isolations-Regler (default 1 = unverändert):
             // `aoScale`=0 schaltet die Kavitäts-AO ab (der `fwidth`-Term, der jede
             // Surface-Nets-Facetten-Kante als Linie zeichnet — mein Haupt-Verdacht
@@ -19306,8 +19313,27 @@ class AnazhRealm {
             // (J1) die Aerial-Perspektive — der HÖHEN-Melt zur Himmelsfarbe,
             // IDENTISCH für jede Ebene (Terrain, Inseln, Strukturen, Bäume,
             // Kreaturen). scene.fog trägt die DISTANZ; dieser Term die HÖHE.
+            //
+            // V17.106 — EYE-RELATIV (Schöpfer-Befund): „gehe ich auf einen hohen
+            // Berg, wird alles blass — in echt sind Berge aus der FERNE blass (die
+            // Gipfel), nicht wenn ich draufstehe". Die alte Form `smoothstep(.., _wp.y)`
+            // las die ABSOLUTE Welt-Höhe → ein Gipfel bleichte, egal wo das Auge war
+            // → kletterst du hoch, ist der Boden um dich auch hoch → alles blass.
+            // Physikalisch korrekt ist Aerial-Perspektive In-Streuung über die SICHT-
+            // LINIE (Distanz Oberfläche↔Auge), nicht die absolute Höhe. Heilung:
+            // der Melt hängt an der Höhe der Oberfläche ÜBER DEM AUGE × der Distanz
+            // zum Auge — ein ferner hoher Gipfel (aboveEye groß + dist groß) bleicht,
+            // der Boden, auf dem du stehst (aboveEye≈0 + nah), bleicht NICHT. Beide
+            // Größen sind kamera-relativ (`cameraPosition` aktualisiert pro Frame) →
+            // die Verblassung folgt deiner Position, wie die echte Atmosphäre.
+            const _cam = _T.cameraPosition;
+            const _aboveEye = _wp.y.sub(_cam.y); // < 0 (unter dem Auge) → smoothstep gibt 0
+            const _hazeNear = _au.hazeNear || _T.float(70.0);
+            const _hazeFar = _au.hazeFar || _T.float(350.0);
+            const _distF = _wp.sub(_cam).length().sub(_hazeNear).div(_hazeFar).clamp(0.0, 1.0);
             const _haze = _T
-                .smoothstep(_au.hazeBase, _au.hazeTop, _wp.y)
+                .smoothstep(_au.hazeBase, _au.hazeTop, _aboveEye)
+                .mul(_distF)
                 .mul(cfg.heightWeight)
                 .clamp(0.0, cfg.heightCap);
             _rgb = _T.mix(_rgb, _au.skyColor, _haze);
@@ -46560,7 +46586,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.105.0";
+AnazhRealm.VERSION = "17.106.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
