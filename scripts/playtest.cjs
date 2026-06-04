@@ -26890,10 +26890,17 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Schicht lautlos verschwinden — der Playtest-grün verdeckt das sonst.
         // `window.__toonColorNodeError` ist der Diagnose-Marker (null = sauber).
         window.__toonColorNodeError = null;
+        window.__terrainNormalError = null;
         const _terrMat =
             typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ vertexColors: true }) : null;
         out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && !window.__toonColorNodeError;
         out.terrainColorNodeError = window.__toonColorNodeError || null;
+        // V17.107 — die 2.5D-Lichtung: das Terrain-Material trägt einen normalNode
+        // (Shading-Normale zur Up-Achse geblendet, terrainFlatten) → die Facetten-
+        // Streuung kollabiert; ein Flach-Farb-Strukturmaterial trägt KEINEN (nur
+        // Terrain/Inseln). KONSUM, nicht Existenz; Marker gegen still gefangenen Fehler.
+        out.terrainNormalFlatten = !!(_terrMat && _terrMat.normalNode) && !window.__terrainNormalError;
+        out.terrainNormalError = window.__terrainNormalError || null;
         // ===== WELLE J — die EINE geteilte Aerial-Perspektive (Render-Harmonie) =====
         // KONSUM (nicht Existenz, V17.31): die geteilte `_applyAerialOutput` setzt
         // outputNode IDENTISCH auf Terrain UND Strukturen (eine Atmosphäre, viele
@@ -27039,6 +27046,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V17.J: der Builder ruft EINE Quelle (kein Parallel-Pfad, kein __structAerialError)", v828Results.aerialFromOneSource);
         check("V17.J: die dynamische material.color bleibt setzbar (kein colorNode-Override)", v828Results.structDynamicColorPreserved);
         check("V17.106: der Aerial-Höhen-Melt ist EYE-RELATIV (cameraPosition + hazeNear, nicht absolute Höhe)", v828Results.aerialEyeRelative);
+        check("V17.107: das Terrain-Material trägt die 2.5D-Lichtung (normalNode/terrainFlatten, kein Fehler)", v828Results.terrainNormalFlatten);
         check("V17.J: transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element)", v828Results.phantomNoAerial);
         check(
             `V17.J: kein still gefangener Aerial-Node-Fehler${v828Results.aerialOutputError ? " — " + v828Results.aerialOutputError : ""}`,

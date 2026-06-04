@@ -19213,6 +19213,15 @@ class AnazhRealm {
             // Distanz-Spanne bis zum vollen Faktor. Live-tunbar (Schöpfer-Sign-off).
             hazeNear: TSL.uniform(70.0),
             hazeFar: TSL.uniform(350.0),
+            // V17.107 — die 2.5D-LICHTUNG: wie stark die Terrain-SHADING-Normale
+            // zur Welt-Up-Achse geblendet wird (0 = volle 3D-Facetten, 1 = flach
+            // wie 2.5D). GEMESSEN (diag-facets): die Surface-Nets-Normalen haben
+            // dot(N,Sonne) STD 0.333 bimodal → die directional Sonne malt zwei
+            // Helligkeits-Flächen auf die EINE Albedo (die „Trapeze"); Flatten
+            // senkt die STD (0.5→0.24, 0.8→0.076) → grosse Cel-Regionen wie 2.5D.
+            // NUR Shading (Render-only), NICHT die Geometrie/Schatten. Live-tunbar:
+            //   anazhRealm.state.atmoUniforms.terrainFlatten.value = 0.6
+            terrainFlatten: TSL.uniform(0.5),
             // WELLE J4-DEBUG — Browser-Isolations-Regler (default 1 = unverändert):
             // `aoScale`=0 schaltet die Kavitäts-AO ab (der `fwidth`-Term, der jede
             // Surface-Nets-Facetten-Kante als Linie zeichnet — mein Haupt-Verdacht
@@ -19412,6 +19421,34 @@ class AnazhRealm {
         // sie im colorNode); transparente Phantome bleiben unberührt (UI-Element).
         if (!opts.transparent) {
             this._applyAerialOutput(mat, { microTexture: !opts.vertexColors && opts.color !== undefined });
+        }
+
+        // V17.107 — die 2.5D-LICHTUNG: die Terrain-SHADING-Normale zur Welt-Up-Achse
+        // blenden. GEMESSEN (diag-facets) am echten Stein-Hang: die Surface-Nets-
+        // Gradient-Normalen haben dot(N,Sonne) STD 0.333 mit BIMODALER Verteilung
+        // (grosser Dunkel-Cluster bei dot≈0 + Hell-Cluster bei dot≈1) → die
+        // directional Sonne malt ZWEI Helligkeits-Flächen auf die EINE Stein-Albedo
+        // = die „Trapeze"/Rauten, die der Schöpfer jagt (kein Albedo-Bug — eine
+        // Farbe, zwei Licht-Winkel; abends dominiert Ambient → verschmelzen). Der
+        // Schöpfer-Befund: „in 2.5D liefen die Cel-Stufen über GROSSE Regionen, seit
+        // 3D brechen sie in Trapeze". Heilung: die LICHTUNGS-Normale (nicht die
+        // Geometrie, nicht die Schatten-Map) Richtung oben blenden → die hochfrequente
+        // Facetten-Variation kollabiert (STD 0.333 → 0.24 @0.5 → 0.076 @0.8), grosse
+        // licht-reaktive Regionen wie in 2.5D. NUR Terrain/Inseln (vertexColors); die
+        // Strukturen/Bäume haben saubere Design-Geometrie. Render-only (kein Worker/
+        // Determinismus/Geometrie-Bake → KEIN eps-Schatten-Konflikt, V17.103); live-
+        // tunbar via `atmoUniforms.terrainFlatten`. try/catch + Marker (V17.12-Lehre).
+        if (opts.vertexColors) {
+            try {
+                const _Tn = THREE.TSL;
+                const _aun = this.state.atmoUniforms;
+                if (_Tn && _Tn.normalWorld && _Tn.normalize && _Tn.mix && _Tn.vec3 && _aun && _aun.terrainFlatten) {
+                    const _up = _Tn.vec3(0.0, 1.0, 0.0);
+                    mat.normalNode = _Tn.normalize(_Tn.mix(_Tn.normalWorld, _up, _aun.terrainFlatten));
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__terrainNormalError = String((_e && _e.message) || _e);
+            }
         }
 
         // V15.1 - prozedurale Mikro-Textur (render-only): zwei Oktaven
@@ -46586,7 +46623,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.106.0";
+AnazhRealm.VERSION = "17.107.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
