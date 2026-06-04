@@ -23920,7 +23920,7 @@ class AnazhRealm {
                 this.state.versionHistory = this.state.versionHistory.slice(-this.state.maxVersionHistoryEntries);
             }
             localStorage.setItem("anazhRealmVersions", JSON.stringify(this.state.versionHistory));
-            this.log("Zustand in localStorage gespeichert");
+            this.log("Zustand in localStorage gespeichert", "DEBUG");
         } catch (error) {
             this.log(`localStorage-Speichern fehlgeschlagen: ${error.message}`, "ERROR");
         }
@@ -35826,7 +35826,7 @@ class AnazhRealm {
         if (inRange) this._rebuildArchitectureMesh(entry);
         this.log(
             `Struktur gebaut: ${type} bei (${entry.position.x.toFixed(1)}, ${entry.position.z.toFixed(1)})${scale !== 1 ? ` ×${scale.toFixed(2)}` : ""}${inRange ? "" : " (cold)"}`,
-            "INFO"
+            "DEBUG"
         );
         // V7.75 — Welt-Effekte (awe/hope-Boost, Singing-Sinus) sind eine
         // Antwort der Welt auf SPIELER-GESTE, nicht auf ihre eigene Saat.
@@ -46075,7 +46075,7 @@ class AnazhRealm {
                             this.state.isJumping = false;
                             // Ring 5 V2: Material-Tint entfernt (siehe handleJump).
                             if (currentTime - this.state.lastGroundedLog >= this.state.groundedLogInterval) {
-                                this.log("Spieler geerdet!", "INFO");
+                                this.log("Spieler geerdet!", "DEBUG");
                                 this.state.lastGroundedLog = currentTime;
                             }
                         } else {
@@ -46968,7 +46968,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.115.0";
+AnazhRealm.VERSION = "17.116.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

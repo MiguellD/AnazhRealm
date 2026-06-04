@@ -13,7 +13,21 @@ Stand: **V17.91 (03.06.2026) — der Crafting-/Werkstatt-Bogen ist DURCH (V17.72
 
 ---
 
-## OFFENE FÄDEN — der Gesamt-Backlog (Stand V17.104, geordnet, reconciled)
+## OFFENE FÄDEN — der Gesamt-Backlog (Stand V17.115, geordnet, reconciled)
+
+### ⭐ AKTIVER AUDIT-STAND + DIE REIHENFOLGE (Schöpfer-Audit 04.06.2026)
+
+**Die FPS-Wahrheit (gemessen, Schöpfer-Browser-Log V17.115):** steady-state **45–60 FPS (gut!)**; die Einbrüche auf 9–17 kommen NUR beim STREAMEN (Chunk-/Baum-Bau beim Betreten neuer Gebiete) — KEIN Dauer-Last-Problem mehr (V17.113-Boden-Cache + U3 bändigten den Kreatur-CPU). Zwei verbleibende Ursachen, eine geheilt: **(a) Konsolen-Spam ✅ GEHEILT (V17.116)** — „Struktur gebaut"/„Spieler geerdet!"/„Zustand gespeichert" loggten pro Event auf INFO (jeder Baum beim Streamen = String-Format + console.log) → auf DEBUG gesetzt (das Gate existierte schon); FPS-Log bleibt INFO (1×/s, nützlich). **(b) STREAMING-BUILD-SPIKE (NEU als Faden, war unter-getrackt):** der Architektur-/Baum-Spawn beim Chunk-Finalize ist BURSTY (mehrere Bäume synchron) → der echte 9–17-Einbruch. Gehört zu **E3** (kein Sync-Build außer Spieler-Chunk) + ein FRAME-BUDGET für den Architektur-Spawn (spreizen über Frames, KEIN Terrain-Gate — V17.9-Lehre: Substanz darf nicht verhungern).
+
+**Die Detail-Kaskade (der vereinte LOD-Plan, `docs/lod-kaskade-plan.md`):** EINE kamera-relative Distanz, sechs Gesichter. **U1 ✅ (V17.114)** das Fundament (`_detailBand` + frozen Tabelle, `_voxelChunkLodFor` liest sie byte-identisch, Aerial-`hazeFar` an die Ring-Kante gekoppelt). **U3 ✅ (V17.115)** Kreaturen lesen die Kaskade (`aiDiv`, ferne KI seltener, glatt). Offen: **U2** (Wasser-LOD) · **U4** (Deko-Distanz+Dichte+Impostor) · **U5** (Schatten-CSM) · **U6** (echtes Clipmap). **Corner (notiert):** U1 koppelte NUR `hazeFar` (Aerial) an den Ring, NICHT die getunte `scene.fog` — die volle §2-Synergie (Haupt-Fog am Ring-Rand) ist Teil-erledigt; der Haupt-Fog bleibt der Schöpfer-getunte Wert (pixel-blind, end-review).
+
+**DIE REIHENFOLGE (Schöpfer-Vorschlag, ich stimme zu): erst die Fundament-Subsysteme SAUBER, DANN das LOD darauf.** Begründung: U2 (fernes Wasser-LOD) baut auf dem Wasser-System — das hat offene Restbefunde; LOD auf eine buggy Basis zu legen ist verkehrt. Also:
+1. **Wasser-System schließen:** H3 (Wasserspawn >1024 m, #16) + Kapillar/Stempel-Sync an Gebäuden (V13-Wasser-Finish-Restbefund, roadmap §1.4/Z79: orientierungs-freier Stempel + `skirt=0`-Remesh → Phantom an Struktur-Grenzen). **Pixel-blind → Schöpfer-Dump an der echten Fehlstelle (V13.0-Mess-Falle: Spawn ≠ Fehlstelle).**
+2. **G3 — Höhleneingänge (gross, beeindruckend) + Canyons (#17)** — braucht H3 (3D-Wasser-Wahrheit, sonst Bleed an Eingängen). Worldgen + Determinismus-Bruch.
+3. **DANN die Kaskade vollenden:** U2 (Wasser-LOD auf dem sauberen Wasser) · E3 (kein Sync-Build, heilt den Streaming-Spike) · U4 (Deko) · U5 (Schatten-CSM) · U6 (Clipmap). U2/U5/U6 sind pixel-blind → Schöpfer-Browser-Loop (V13/V10-Lehre: Wasser/Schatten NUR im Browser).
+
+**Die genannten + die verblassenden Fäden (vollständig, nichts verloren):** G3 (Eingänge/Canyons) · H3 (ferne Wasser) · Kapillar/Stempel an Gebäuden · der Streaming-Build-Spike (NEU) · der Haupt-Fog-Kopplungs-Corner (NEU) · R2 (Schatten-Geometrie-Bake) · R3 (Kanten-Schärfe verifizieren) · R5 (Textur auf Strukturen) · die Browser-Sign-offs (R1 Schatten · U1/U2 Kaskade · J4 Facetten · S9 Hand · A2 Crafting) · S6-B (erntbare Flora) · S11 (Werkstatt-Animation) · S7-C (chat/DSL) · Phase E (Bedrohung/Furcht) · Mana-Symmetrie · W18 · Emotion→Regel-Emergenz.
+
 
 **A — den Crafting-Bogen abschließen (kampf-plan §11, der aktive Arc):**
 
