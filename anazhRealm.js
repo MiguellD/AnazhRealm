@@ -17395,7 +17395,12 @@ class AnazhRealm {
         // Kompression ist sanft (126 m → 124 m). Der Clamp greift VOR dem
         // Sub-Ozean-/Tarn-Block (beide senken nur niedrige Surfaces → unberührt).
         // MUSS bit-identisch im Worker (`voxel-worker.js`, Naht-Schutz).
-        if (withoutTarn > 110) withoutTarn = 110 + 26 * Math.tanh((withoutTarn - 110) / 26);
+        // Welle F — der Deckel hochgezogen (110/Asymptote 136 → 225/Asymptote
+        // ~245): die Hülle wuchs auf Decke base+270 m, also dürfen die Berge
+        // GEWALTIG werden (~235 m statt 136). Der weiche Cap bei 225 ist nur noch
+        // ein Sicherheits-Backstop gegen einen seltenen Ausreißer > Decke (245 +
+        // Roughness 12 = 257 < 270). MUSS bit-identisch im Worker (Naht-Schutz).
+        if (withoutTarn > 225) withoutTarn = 225 + 20 * Math.tanh((withoutTarn - 225) / 20);
         // V9.60-c.2 — Riesen-Lehre vertieft: Continental Slope + Mid-Ocean
         // Ridge + tiefen-skalierte Variation. Schöpfer-Befund nach V9.60-c.1:
         // "see und meere immernoch sehr flach, nicht natürlich". Vor-Versuch
@@ -17763,10 +17768,29 @@ class AnazhRealm {
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
         const density = new Float32Array(Nx * Ny * Nz);
+        // Welle F — BAND-SKIP: pro Spalte (i,k) nur die j-Ebenen um die Oberfläche
+        // sample()-n. Über `surf + Roughness` ist garantiert Luft (Dichte < 0),
+        // unter dem Höhlen-Boden (base−40, das Höhlen-Band endet bei base−28) ist
+        // garantiert Fels (Dichte > 0). Diese Konstant-Zonen tragen KEINEN Sign-
+        // Change → −1/+1 statt sample() → bit-identische Geometrie, aber ~60–70 %
+        // weniger sample()-Calls (der teure ~22-ms-Posten, diag-edit-perf). Edits
+        // (strength 48) dominieren das ±1 → der Edit-Overlay bleibt korrekt. MUSS
+        // bit-identisch im Worker (`computeDensityGrid`, Determinismus-/Naht-Schutz).
+        const base = this.state.terrainBaseHeight || 0;
+        const ROUGH = 12; // max 3D-Roughness (noise·7 + noise·5)
+        const bandBotJ = Math.floor((base - 40 - oy) / step);
         for (let k = 0; k < Nz; k++) {
-            for (let j = 0; j < Ny; j++) {
-                for (let i = 0; i < Nx; i++) {
-                    density[i + j * Nx + k * Nx * Ny] = sample(ox + i * step, oy + j * step, oz + k * step);
+            const wz = oz + k * step;
+            for (let i = 0; i < Nx; i++) {
+                const wx = ox + i * step;
+                const surf = this._terrainMacroSurfaceY(wx, wz);
+                const bandTopJ = Math.floor((surf + ROUGH + 2 * step - oy) / step) + 1;
+                const colBase = i + k * Nx * Ny;
+                for (let j = 0; j < Ny; j++) {
+                    const idx = colBase + j * Nx;
+                    if (j > bandTopJ) density[idx] = -1;
+                    else if (j < bandBotJ) density[idx] = 1;
+                    else density[idx] = sample(wx, oy + j * step, wz);
                 }
             }
         }
@@ -18240,11 +18264,15 @@ class AnazhRealm {
         // V9.24: ringRadius folgt dem Sicht-Ring-Regler (Default 4).
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
         if (lod >= 1) {
-            // LOD 1 — Half-Resolution (8× weniger Cells). dimY 62→68 (V14.6).
-            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 68, floorDrop: 90, lod: 1 };
+            // LOD 1 — Half-Resolution (8× weniger Cells). dimY 68→100 (Welle F:
+            // gewaltige Berge — die Hülle wuchs, der Band-Skip hält die Kosten).
+            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 100, floorDrop: 90, lod: 1 };
         }
-        // LOD 0 — Full-Resolution (Default, V14.6-Stand: dimY 124→136 für die hohe cont0-Welt)
-        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 136, floorDrop: 90, lod: 0 };
+        // LOD 0 — Full-Resolution. Welle F: dimY 136→200 (Decke base+270 m, für
+        // den uncapped cont0-Gipfel ~+235 m); der Band-Skip (`_voxelSampleDensity
+        // Grid`) sampelt NUR die Ebenen um die Oberfläche → trotz höherer Hülle
+        // billiger als zuvor. Vertikal-Span 200·1.8 = 100·3.6 = 360 m (LOD-invariant).
+        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 200, floorDrop: 90, lod: 0 };
     }
 
     // V9.88 (Welle Perf-3.b) — distance-basierte LOD-Entscheidung pro Chunk.
@@ -46053,7 +46081,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.95.0";
+AnazhRealm.VERSION = "17.96.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

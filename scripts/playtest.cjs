@@ -20299,12 +20299,12 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         return;
     }
     check(
-        "Welle Perf-3.b V9.88 / V14.6: LOD 0 Config (dim=24, step=1.8, dimY=136)",
-        res.lod0Dim === 24 && Math.abs(res.lod0Step - 1.8) < 0.001 && res.lod0DimY === 136
+        "Welle F: LOD 0 Config (dim=24, step=1.8, dimY=200 — gewaltige Berge, Band-Skip)",
+        res.lod0Dim === 24 && Math.abs(res.lod0Step - 1.8) < 0.001 && res.lod0DimY === 200
     );
     check(
-        "Welle Perf-3.b V9.88 / V14.6: LOD 1 Config (dim=12, step=3.6, dimY=68) — 8× weniger Cells",
-        res.lod1Dim === 12 && Math.abs(res.lod1Step - 3.6) < 0.001 && res.lod1DimY === 68
+        "Welle F: LOD 1 Config (dim=12, step=3.6, dimY=100) — Vertikal-Span 360 m LOD-invariant",
+        res.lod1Dim === 12 && Math.abs(res.lod1Step - 3.6) < 0.001 && res.lod1DimY === 100
     );
     check("Welle Perf-3.b V9.88: span invariant über LOD (43.2 m, Chunks world-aligned)", res.spanInvariant);
     check("Welle Perf-3.b V9.88 / V14.6: vertikaler Range invariant (dimY·step = 244.8 m)", res.verticalRangeInvariant);
