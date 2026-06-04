@@ -31330,30 +31330,52 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         if (pm) {
             const ox = pm.position.x;
             const oz = pm.position.z;
+            const oTod = r.state.timeOfDay;
+            // V17.111 R1 — deterministische schräge Sonne: der Light-Space-Snap
+            // zeigt sich nur bei NICHT-achsparalleler Sonne (bei Zenit/Achse
+            // deckt er sich mit dem alten Welt-Snap). t=0.3 ≈ tiefe Morgensonne.
+            r.setTimeOfDay(0.3);
             pm.position.x = 123.5;
             pm.position.z = -77.25;
             r._applyDayNightToScene();
             const tgt = r.state.directionalLight.target.position;
-            // V9.85 Perf-2.b — Texel-Snap-Toleranz: das Shadow-Target wird
-            // jetzt auf die Texel-Boundary gerundet (~0.293m bei 600m/2048).
-            // Toleranz 0.5m deckt den Snap-Rundungsfehler ab. Der Schatten
-            // FOLGT weiterhin dem Spieler, nur diskret pro Texel statt
-            // kontinuierlich — das ist GENAU die Stable-Shadow-Maps-Heilung.
+            // Texel-Snap-Toleranz: das Shadow-Target FOLGT dem Spieler, auf das
+            // Texel-Grid gerundet (~0.29 m bei 600 m / 2048). Der V17.111-Light-
+            // Space-Snap rundet in der Ebene ⟂ sunDir → Versatz ≤ ~1 Texel < 0.5.
             out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.5 && Math.abs(tgt.z - -77.25) < 0.5;
-            // V9.85 Perf-2.b — Snap-Beweis: eine winzige Sub-Texel-Bewegung
-            // (0.05m, weniger als texelSize=0.293) darf das Shadow-Target
-            // NICHT verändern. Wenn der Snap kaputt ist, kriecht es um 0.05m
-            // mit → Schatten-Swimming. Wenn der Snap wirkt, bleibt es exakt
-            // wo es war → Schatten stabil. Das IST der Welle-2.b-Beweis.
+            // V17.111 R1 — Snap-Stabilitäts-Beweis (V9.56-i-Migration des V9.85-
+            // Tests). Das Schatten-Swimming lebt NUR in der Ebene ⟂ sunDir (das
+            // Texel-Grid). Eine Sub-Texel-Bewegung darf dort KEIN Sub-Texel-Crawl
+            // erzeugen: der Light-Space-Snap QUANTISIERT die LATERALE Target-
+            // Bewegung auf ganze Texel — ~0 (gleiche Zelle) ODER ein sauberer
+            // Sprung (≥~0.29 m bei Grenz-Übertritt), NIE ein Kriechen in Schritt-
+            // Höhe (~0.05 m = der Bug). Die Bewegung ENTLANG sunDir (Tiefe) ist
+            // harmlos (verschiebt keine Texel) → wird herausprojiziert. sunDir bei
+            // t=0.3 aus der replizierten _dayNightSunDirection-Formel.
+            const _ang = 0.3 * Math.PI * 2 - Math.PI / 2;
+            let _sx = Math.cos(_ang);
+            let _sy = Math.sin(_ang);
+            let _sz = Math.sin(_ang * 0.5) * 0.4;
+            const _sl = Math.hypot(_sx, _sy, _sz) || 1;
+            _sx /= _sl;
+            _sy /= _sl;
+            _sz /= _sl;
             const tgtX1 = tgt.x;
+            const tgtY1 = tgt.y;
             const tgtZ1 = tgt.z;
             pm.position.x = 123.5 + 0.05;
             pm.position.z = -77.25 + 0.05;
             r._applyDayNightToScene();
             const tgt2 = r.state.directionalLight.target.position;
-            out.shadowSnapStable = Math.abs(tgt2.x - tgtX1) < 0.001 && Math.abs(tgt2.z - tgtZ1) < 0.001;
+            const dX = tgt2.x - tgtX1;
+            const dY = tgt2.y - tgtY1;
+            const dZ = tgt2.z - tgtZ1;
+            const along = dX * _sx + dY * _sy + dZ * _sz; // Komponente entlang sunDir (harmlos)
+            const latMove = Math.hypot(dX - along * _sx, dY - along * _sy, dZ - along * _sz); // ⟂ sunDir
+            out.shadowSnapStable = latMove < 0.01 || latMove > 0.2;
             pm.position.x = ox;
             pm.position.z = oz;
+            r.setTimeOfDay(oTod);
             r._applyDayNightToScene();
         }
         // _applyDayNightToScene leitet die Terrain-lightDirection aus

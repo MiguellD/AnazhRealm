@@ -303,6 +303,10 @@ class AnazhRealm {
                 colorVar: 1.5,
                 fogDistance: 5.31, // Slider 177 % (= /3 × 100)
                 waterCull: 0.0025,
+                // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
+                // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
+                shadowRange: 300, // Frustum-Halbbreite m (kleiner = schärfer)
+                shadowBias: 1.0, // normalBias (Acne ↔ Peter-Panning)
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
@@ -23677,6 +23681,15 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.colorVar)
                         ? this.state.atmosphere.colorVar
                         : 1.0,
+                // V17.111 R1 — Schatten-Hebel (Reichweite/Bias).
+                shadowRange:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.shadowRange)
+                        ? this.state.atmosphere.shadowRange
+                        : 300,
+                shadowBias:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.shadowBias)
+                        ? this.state.atmosphere.shadowBias
+                        : 1.0,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -25778,6 +25791,10 @@ class AnazhRealm {
             if (Number.isFinite(cv)) this.setColorVariation(Math.max(0, Math.min(2, cv)));
             const tf = Number(state.atmosphere.terrainFlatten);
             if (Number.isFinite(tf)) this.setTerrainFlatten(Math.max(0, Math.min(1, tf)));
+            const sr = Number(state.atmosphere.shadowRange);
+            if (Number.isFinite(sr)) this.setShadowRange(Math.max(80, Math.min(400, sr)));
+            const sb = Number(state.atmosphere.shadowBias);
+            if (Number.isFinite(sb)) this.setShadowBias(Math.max(0, Math.min(3, sb)));
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -36266,6 +36283,47 @@ class AnazhRealm {
         return m;
     }
 
+    // V17.111 R1 — die SCHATTEN-Hebel als sichtbare Slider (Lebens-Regel: der
+    // wichtigste Regler ist UI, nie nur Konsole). Reichweite = die Frustum-
+    // Halbbreite des Shadow-Camera in Metern. KLEINER = schärfere Texel (mehr
+    // Auflösung pro Meter → der Kern-Hebel gegen die grobe Rasterlinie an
+    // vertikalen Wänden), aber kleinere Abdeckung. Texel-Größe = 2·Reichweite /
+    // mapSize (bei 300 m / 2048 ≈ 0.29 m, bei 150 m ≈ 0.15 m). Der Light-Space-
+    // Snap liest die Frustum-Breite live → er passt sich automatisch an.
+    setShadowRange(meters) {
+        const v = Math.max(80, Math.min(400, Number(meters)));
+        const m = Number.isFinite(v) ? v : 300;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.shadowRange = m;
+        const dl = this.state.directionalLight;
+        if (dl && dl.shadow && dl.shadow.camera) {
+            const sc = dl.shadow.camera;
+            sc.left = -m;
+            sc.right = m;
+            sc.top = m;
+            sc.bottom = -m;
+            sc.updateProjectionMatrix();
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // V17.111 R1 — der Schatten-Bias (Three.js shadow.normalBias). Verschiebt
+    // den Shadow-Sample entlang der Flächen-Normale; an steilen, edge-on zur
+    // Sonne liegenden Wänden (wenige Texel) ist das der Hebel gegen Shadow-Acne
+    // (zu klein → Streifen) ↔ Peter-Panning (zu gross → der Schatten löst sich
+    // vom Fuss). Default 1.0 (= bisheriger V8.47-Wert, keine Look-Änderung).
+    setShadowBias(bias) {
+        const v = Math.max(0, Math.min(3, Number(bias)));
+        const m = Number.isFinite(v) ? v : 1.0;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.shadowBias = m;
+        const dl = this.state.directionalLight;
+        if (dl && dl.shadow) dl.shadow.normalBias = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
     // dem Welt-Feld an Position (x, z)? Dot-Product über die 4 Achsen des
     // Welt-Feldes. Resultat 0..1 (sum / 4 da MAX-aggregierte Tags ebenfalls
@@ -42532,15 +42590,21 @@ class AnazhRealm {
     // Kamera, ändert pm.position NICHT). Heilung: focusX/Z auf das Shadow-
     // Texel-Grid snappen. Spieler bewegt sich kontinuierlich, die Shadow-
     // Camera springt diskret um ganze Texel — das Schatten-Muster fällt
-    // immer exakt auf dieselben World-Space-Punkte. Konsequenz: kein
-    // Swimming, identische optische Qualität, ein paar Multiplikationen
-    // pro Frame extra. Texel-Größe wird aus der aktuellen Shadow-Frustum-
-    // Breite + mapSize gelesen (selbst-anpassend bei künftigen Anpassungen).
+    // immer exakt auf dieselben World-Space-Punkte. Texel-Größe wird aus der
+    // aktuellen Shadow-Frustum-Breite + mapSize gelesen (selbst-anpassend).
+    //
+    // V17.111 R1 — der V9.85-Snap snappte in WELT-X/Z, was nur bei achs-
+    // paralleler Sonne dem echten Texel-Grid entspricht. GEMESSEN (diag-shadow-
+    // snap): bei schräger Sonne (tiefe Elevation, jede nicht-achsparallele
+    // Azimut) liess er bis ~1 Texel (~0.29 m) Rest-Swimming → die Rasterlinie
+    // „wandert beim Laufen" an vertikalen Wänden. Geheilt durch den LIGHT-SPACE-
+    // Snap im Block unten (Snap in der Ebene ⟂ sunDir statt Welt-X/Z) → 0.
     _dayNightApplyDirectionalLight(sunDir, tint) {
         const dl = this.state.directionalLight;
         const pm = this.state.playerMesh;
         const lightDist = 200;
         let focusX = pm ? pm.position.x : 0;
+        let focusY = 0;
         let focusZ = pm ? pm.position.z : 0;
         if (pm && dl.shadow && dl.shadow.camera && dl.shadow.mapSize) {
             const sc = dl.shadow.camera;
@@ -42548,13 +42612,52 @@ class AnazhRealm {
             const shadowMapSize = dl.shadow.mapSize.width; // typisch 2048
             if (shadowWidth > 0 && shadowMapSize > 0) {
                 const texelSize = shadowWidth / shadowMapSize; // ~0.293 m bei 600/2048
-                focusX = Math.round(focusX / texelSize) * texelSize;
-                focusZ = Math.round(focusZ / texelSize) * texelSize;
+                // V17.111 R1 — LIGHT-SPACE Texel-Snap (ersetzt den V9.85-Welt-X/Z-
+                // Snap). Das Shadow-Texel-Grid liegt in der Ebene SENKRECHT zu
+                // sunDir (den Lateral-Achsen der Light-View-Camera), NICHT in
+                // Welt-X/Z. Ein Welt-X/Z-Snap lässt bei schräger Sonne bis ~1 Texel
+                // Rest-Versatz gegen dieses Grid (GEMESSEN diag-shadow-snap: ~0.29 m
+                // bei tiefer Sonne, ~0 bei Zenit) → die Schatten-Rasterlinie
+                // „wandert beim Laufen" an vertikalen Wänden. Heilung: focus auf die
+                // Lateral-Achsen (axis ⟂ sunDir) projizieren, DORT auf das Texel-Grid
+                // snappen, zurück in Welt-Space → jeder Texel fällt pro Frame exakt
+                // auf denselben World-Space-Punkt (Swimming → Maschinen-Epsilon).
+                // Allokationsfreie Skalar-Mathematik (1×/Frame); die Basis spiegelt
+                // EXAKT Three.js' Matrix4.lookAt der Shadow-Camera (z=sunDir,
+                // x=up×z, y=z×x; up = Default (0,1,0), Zenit-Fallback (0,0,1)).
+                const sl = Math.hypot(sunDir.x, sunDir.y, sunDir.z) || 1;
+                const sx = sunDir.x / sl;
+                const sy = sunDir.y / sl;
+                const sz = sunDir.z / sl;
+                const zenith = Math.abs(sy) > 0.999;
+                const uy = zenith ? 0 : 1;
+                const uz = zenith ? 1 : 0;
+                // xAxis = normalize(up × sunDir)   (up = (0, uy, uz))
+                let axx = uy * sz - uz * sy;
+                let axy = uz * sx;
+                let axz = -uy * sx;
+                const axl = Math.hypot(axx, axy, axz) || 1;
+                axx /= axl;
+                axy /= axl;
+                axz /= axl;
+                // yAxis = sunDir × xAxis   (Einheit: sunDir ⟂ xAxis, beide normiert)
+                const ayx = sy * axz - sz * axy;
+                const ayy = sz * axx - sx * axz;
+                const ayz = sx * axy - sy * axx;
+                // focus (focusX, 0, focusZ) auf die Lateral-Achsen projizieren +
+                // auf das Texel-Grid snappen (focusY=0 → die axy/ayy-Terme entfallen)
+                const fa = focusX * axx + focusZ * axz;
+                const fb = focusX * ayx + focusZ * ayz;
+                const dFa = Math.round(fa / texelSize) * texelSize - fa;
+                const dFb = Math.round(fb / texelSize) * texelSize - fb;
+                focusX += dFa * axx + dFb * ayx;
+                focusY += dFa * axy + dFb * ayy;
+                focusZ += dFa * axz + dFb * ayz;
             }
         }
-        dl.position.set(focusX + sunDir.x * lightDist, sunDir.y * lightDist, focusZ + sunDir.z * lightDist);
+        dl.position.set(focusX + sunDir.x * lightDist, focusY + sunDir.y * lightDist, focusZ + sunDir.z * lightDist);
         if (dl.target) {
-            dl.target.position.set(focusX, 0, focusZ);
+            dl.target.position.set(focusX, focusY, focusZ);
             dl.target.updateMatrixWorld();
         }
         dl.color.setRGB(
@@ -43543,6 +43646,38 @@ class AnazhRealm {
                 const pct = parseInt(cvS.value, 10);
                 this.setColorVariation(pct / 100);
                 if (cvVal) cvVal.textContent = `${pct} %`;
+            });
+        }
+        // V17.111 R1 — Schatten-Reichweite (Frustum-Halbbreite, 80..400 m;
+        // kleiner = schärfere Texel an vertikalen Wänden) + Schatten-Bias
+        // (normalBias ×100, 0..3). Das Wandern ist an der Wurzel geheilt
+        // (Light-Space-Snap), diese Regler feilen die Schärfe (Browser-Loop).
+        const srS = document.getElementById("slider-shadowrange");
+        const srVal = document.getElementById("slider-shadowrange-val");
+        if (srS) {
+            const s0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.shadowRange)
+                    ? this.state.atmosphere.shadowRange
+                    : 300;
+            srS.value = String(Math.round(s0));
+            if (srVal) srVal.textContent = `${Math.round(s0)} m`;
+            srS.addEventListener("input", () => {
+                const v = this.setShadowRange(parseInt(srS.value, 10));
+                if (srVal) srVal.textContent = `${Math.round(v)} m`;
+            });
+        }
+        const sbS = document.getElementById("slider-shadowbias");
+        const sbVal = document.getElementById("slider-shadowbias-val");
+        if (sbS) {
+            const b0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.shadowBias)
+                    ? this.state.atmosphere.shadowBias
+                    : 1.0;
+            sbS.value = String(Math.round(b0 * 100));
+            if (sbVal) sbVal.textContent = b0.toFixed(2);
+            sbS.addEventListener("input", () => {
+                const v = this.setShadowBias(parseInt(sbS.value, 10) / 100);
+                if (sbVal) sbVal.textContent = v.toFixed(2);
             });
         }
     }
@@ -44888,10 +45023,16 @@ class AnazhRealm {
         directionalLight.shadow.mapSize.height = 2048;
         directionalLight.shadow.camera.near = 0.5;
         directionalLight.shadow.camera.far = 500;
-        directionalLight.shadow.camera.left = -300;
-        directionalLight.shadow.camera.right = 300;
-        directionalLight.shadow.camera.top = 300;
-        directionalLight.shadow.camera.bottom = -300;
+        // V17.111 R1 — die Frustum-Halbbreite + der normalBias kommen aus den
+        // persistierten Schatten-Hebeln (Default 300 / 1.0 = bisherige Werte),
+        // falls loadState VOR dieser Licht-Erstellung lief (sonst greifen die
+        // setShadowRange/setShadowBias-Aufrufe in loadState direkt).
+        const _atmo = this.state.atmosphere || {};
+        const _shRange = Number.isFinite(_atmo.shadowRange) ? Math.max(80, Math.min(400, _atmo.shadowRange)) : 300;
+        directionalLight.shadow.camera.left = -_shRange;
+        directionalLight.shadow.camera.right = _shRange;
+        directionalLight.shadow.camera.top = _shRange;
+        directionalLight.shadow.camera.bottom = -_shRange;
         // V8.47 — Shadow-Bias gegen Shadow-Acne. Ohne Bias schattet die
         // grobe Shadow-Map (600 Welt-Einheiten / 2048 Texel ≈ 0.3 Einh./
         // Texel) flache, zur Sonne zeigende Flächen SELBST → diagonale
@@ -44901,7 +45042,9 @@ class AnazhRealm {
         // flachen Flächen; bias ist der kleine zusätzliche Tiefen-Nudge. Die
         // mapSize 1024→2048 halbiert zugleich die Texel-Größe (schärfer).
         directionalLight.shadow.bias = -0.0005;
-        directionalLight.shadow.normalBias = 1.0;
+        directionalLight.shadow.normalBias = Number.isFinite(_atmo.shadowBias)
+            ? Math.max(0, Math.min(3, _atmo.shadowBias))
+            : 1.0;
         // V8.48 — KRITISCH: nach dem Setzen der Shadow-Camera-Bounds MUSS
         // updateProjectionMatrix() laufen. Die OrthographicCamera berechnet
         // ihre projectionMatrix nur im Konstruktor (für die ±5-Defaults) und
@@ -46699,7 +46842,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.110.0";
+AnazhRealm.VERSION = "17.111.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

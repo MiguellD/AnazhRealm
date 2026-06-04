@@ -5414,6 +5414,11 @@
                     nach). Oberflächen-Textur ist die Fels-/Boden-Striation auf dem Terrain (0 % = glatte Farbe — testet,
                     ob die „Maserung" die Facetten/Trapeze betont). Fog-Distanz regelt, wie nah der Welt-Dunst beginnt. Wasser-Cull blendet dünnes, flaches Wasser
                     pro Pixel aus (0 = alles sichtbar; höher dreht das dünne Ufer-/Wand-Bluten weg, tiefes Wasser bleibt).
+                    <b>Schatten-Reichweite</b> ist die Halbbreite des Schatten-Frustums in Metern — KLEINER = schärfere
+                    Schatten-Texel (weniger grobe Rasterlinie an steilen/vertikalen Wänden), aber kleinere abgedeckte Fläche
+                    um dich. Schatten-Bias verschiebt den Schatten entlang der Flächen-Normale (zu klein → Acne-Streifen an
+                    edge-on Wänden, zu gross → der Schatten löst sich vom Fuss ab). Das Wandern der Rasterlinie beim Laufen ist
+                    bereits an der Wurzel geheilt (Light-Space-Snap, V17.111); diese zwei Regler feilen die Schärfe.
                 </p>
                 <div class="slider-row">
                     <label for="slider-cel">Cel-Stufen</label>
@@ -5454,6 +5459,16 @@
                     <label for="slider-watercull">Wasser-Cull</label>
                     <input type="range" id="slider-watercull" min="0" max="200" value="25" />
                     <span class="slider-value" id="slider-watercull-val">0.0025</span>
+                </div>
+                <div class="slider-row">
+                    <label for="slider-shadowrange">Schatten-Reichweite</label>
+                    <input type="range" id="slider-shadowrange" min="80" max="400" step="10" value="300" />
+                    <span class="slider-value" id="slider-shadowrange-val">300 m</span>
+                </div>
+                <div class="slider-row">
+                    <label for="slider-shadowbias">Schatten-Bias</label>
+                    <input type="range" id="slider-shadowbias" min="0" max="300" step="5" value="100" />
+                    <span class="slider-value" id="slider-shadowbias-val">1.00</span>
                 </div>
             </section>
             <!-- Welle 6.X.4 F1 (Audit 17.05.2026) — Personalisierung der
@@ -5879,6 +5894,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=17.110.0" defer></script>
+        <script src="anazhRealm.js?v=17.111.0" defer></script>
     </body>
 </html>
