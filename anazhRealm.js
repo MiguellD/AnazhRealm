@@ -19169,6 +19169,15 @@ class AnazhRealm {
             density: TSL.uniform(0.0085),
             hazeBase: TSL.uniform(40.0),
             hazeTop: TSL.uniform(150.0),
+            // WELLE J4-DEBUG — Browser-Isolations-Regler (default 1 = unverändert):
+            // `aoScale`=0 schaltet die Kavitäts-AO ab (der `fwidth`-Term, der jede
+            // Surface-Nets-Facetten-Kante als Linie zeichnet — mein Haupt-Verdacht
+            // für die Trapeze + das Lauf-Flackern, beide screen-space). So kannst du
+            // im Browser in EINEM Befehl messen, welcher Filter die Trapeze macht:
+            //   anazhRealm.state.atmoUniforms.aoScale.value = 0   // Kavitäts-AO aus
+            //   anazhRealm.state.postProcessingUniforms.localContrast.value = 0 // Post-FX-Schärfung aus
+            //   anazhRealm.setCelLevels(8)                        // Cel → glatt
+            aoScale: TSL.uniform(1.0),
         };
         return this.state.atmoUniforms;
     }
@@ -19228,7 +19237,9 @@ class AnazhRealm {
                 // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
                 // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
                 const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
-                const _ao = _T.float(1.0).sub(_curv.mul(cfg.aoStrength).clamp(0.0, cfg.aoCap));
+                // J4-DEBUG: aoScale (default 1) schaltet die Kavitäts-AO ab (=0).
+                const _aoStr = _au.aoScale ? _T.float(cfg.aoStrength).mul(_au.aoScale) : _T.float(cfg.aoStrength);
+                const _ao = _T.float(1.0).sub(_curv.mul(_aoStr).clamp(0.0, cfg.aoCap));
                 _rgb = _rgb.mul(_shade.mul(_ao));
             }
             // (J1) die Aerial-Perspektive — der HÖHEN-Melt zur Himmelsfarbe,
@@ -19359,7 +19370,13 @@ class AnazhRealm {
                     // darf die AO schwächer sein: die Facetten-Linien verblassen,
                     // ein Hauch Kontakt-Schatten in echten Mulden bleibt.
                     const _aoCfg = AnazhRealm.TERRAIN_AO || { strength: 0.4, cap: 0.18 };
-                    const _ao = _T.float(1.0).sub(_curv.mul(_aoCfg.strength).clamp(0.0, _aoCfg.cap));
+                    // J4-DEBUG: aoScale (default 1) macht die Kavitäts-AO browser-
+                    // abschaltbar (=0 → der Facetten-Kanten-Zeichner aus).
+                    const _aoStr =
+                        this.state.atmoUniforms && this.state.atmoUniforms.aoScale
+                            ? _T.float(_aoCfg.strength).mul(this.state.atmoUniforms.aoScale)
+                            : _T.float(_aoCfg.strength);
+                    const _ao = _T.float(1.0).sub(_curv.mul(_aoStr).clamp(0.0, _aoCfg.cap));
                     _shade = _shade.mul(_ao);
                 }
                 let _albedo = _vc.mul(_shade);
@@ -46316,7 +46333,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.102.0";
+AnazhRealm.VERSION = "17.102.1";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
