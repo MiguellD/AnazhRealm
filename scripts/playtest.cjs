@@ -18188,6 +18188,41 @@ async function checkBandVoxelTerrainCore(ctx) {
                 out.lod23Err = String(_e && _e.message);
             }
             out.lod23Builds = lod23Builds;
+
+            // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle,
+            // `_voxelChunkLodFor` liest sie (byte-identisch), die Tabelle ist frozen,
+            // und der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (§2).
+            out.detailBandFn = typeof r._detailBand === "function";
+            if (out.detailBandFn) {
+                const b = (rr) => r._detailBand(rr);
+                out.bandLods =
+                    b(0).lod === 0 &&
+                    b(1).lod === 0 &&
+                    b(2).lod === 1 &&
+                    b(8).lod === 1 &&
+                    b(9).lod === 2 &&
+                    b(10).lod === 2 &&
+                    b(11).lod === 3 &&
+                    b(99).lod === 3;
+                out.lodReadsBand =
+                    r._voxelChunkLodFor(0, 0, 0, 0) === b(0).lod && r._voxelChunkLodFor(9, 0, 0, 0) === b(9).lod;
+                out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
+                // §2-Synergie: hazeFar = max(350, ring × 43.2). Ring 12 → 518 (>Floor),
+                // Ring 4 → 350 (Floor = geliebte Sicht unverändert).
+                r._ensureAtmoUniforms();
+                const ringBefore = r.state.chunkRingRadius;
+                r.state.chunkRingRadius = 12;
+                r._syncAtmoToViewDistance();
+                const haze12 =
+                    r.state.atmoUniforms && r.state.atmoUniforms.hazeFar ? r.state.atmoUniforms.hazeFar.value : 0;
+                r.state.chunkRingRadius = 4;
+                r._syncAtmoToViewDistance();
+                const haze4 =
+                    r.state.atmoUniforms && r.state.atmoUniforms.hazeFar ? r.state.atmoUniforms.hazeFar.value : 0;
+                r.state.chunkRingRadius = ringBefore;
+                r._syncAtmoToViewDistance();
+                out.hazeCouplesRing = Math.abs(haze12 - 12 * 43.2) < 1 && Math.abs(haze4 - 350) < 1;
+            }
         }
         return out;
     });
@@ -18235,6 +18270,25 @@ async function checkBandVoxelTerrainCore(ctx) {
             `Welle E (E1): ein LOD2- + LOD3-Chunk meshet ohne Crash (grobe dim 6/3)${voxelP2bResults.lod23Err ? " — " + voxelP2bResults.lod23Err : ""}`,
             voxelP2bResults.lod23Builds
         );
+        check(
+            "V17.114 U1: _detailBand (die Detail-Kaskade) ist die EINE Distanz-Quelle",
+            voxelP2bResults.detailBandFn === true
+        );
+        if (voxelP2bResults.detailBandFn) {
+            check(
+                "V17.114 U1: Kaskaden-Bänder byte-identisch (r≤1→0, r2-8→1, r9-10→2, r≥11→3)",
+                voxelP2bResults.bandLods === true
+            );
+            check(
+                "V17.114 U1: _voxelChunkLodFor liest die Kaskade (kein Parallel-Pfad)",
+                voxelP2bResults.lodReadsBand === true
+            );
+            check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
+            check(
+                "V17.114 U1 §2: der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (Floor 350 m)",
+                voxelP2bResults.hazeCouplesRing === true
+            );
+        }
         check(
             "Voxel V9.22: _buildVoxelChunkGrass + _voxelSurfaceY existieren",
             voxelP2bResults.hasVoxelGrass && voxelP2bResults.hasVoxelSurfaceY
@@ -21745,7 +21799,10 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         res.perfMs < 200,
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
     );
-    check("Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25, via _creatureGroundY)", res.usesVoxelSurfaceY === true);
+    check(
+        "Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25, via _creatureGroundY)",
+        res.usesVoxelSurfaceY === true
+    );
     check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
     check("Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)", res.usesIsAboveWaterAt === true);
     check("V17.113 Kreatur-FPS-Dirigent: _creatureGroundY (Boden-Cache) existiert", res.groundCacheFn === true);
@@ -27136,9 +27193,18 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check("V17.2: Skybox hat sunDir-Uniform (Wolken-Sonnen-Glow)", v828Results.skyboxHasSunDir);
-        check("V17.J3: _followCelestialBodies existiert (Sonne/Mond/Planeten kamera-relativ)", v828Results.celestialFollowExists);
-        check("V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)", v828Results.sunFollowsCamera);
-        check("V17.J3: die Sonne orbitet NICHT mehr den Welt-Ursprung (fern bei fernem Spieler)", v828Results.sunNotAtOrigin);
+        check(
+            "V17.J3: _followCelestialBodies existiert (Sonne/Mond/Planeten kamera-relativ)",
+            v828Results.celestialFollowExists
+        );
+        check(
+            "V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)",
+            v828Results.sunFollowsCamera
+        );
+        check(
+            "V17.J3: die Sonne orbitet NICHT mehr den Welt-Ursprung (fern bei fernem Spieler)",
+            v828Results.sunNotAtOrigin
+        );
         check("V17.2: Wolken-Shader ist FBM-gemalt (fbm + sunGlow + cloudShade)", v828Results.skyboxCloudFbm);
         check("V17.10: Himmel nutzt mx_noise (eine Noise-Sprache, kein hash3-Flackern)", v828Results.skyboxMxNoise);
         check(
@@ -27146,14 +27212,38 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v828Results.terrainColorNodeBuilds === true
         );
         // ===== WELLE J — Render-Harmonie (die EINE geteilte Aerial-Perspektive) =====
-        check("V17.J: _applyAerialOutput existiert (die EINE geteilte Umgebungs-Funktion)", v828Results.aerialHelperExists);
-        check("V17.J: Terrain bekommt den geteilten Aerial-outputNode (post-lighting)", v828Results.terrainHasAerialOutput);
-        check("V17.J: Struktur bekommt DENSELBEN Aerial-outputNode (eine Atmosphäre, viele Leser)", v828Results.structHasAerialOutput);
-        check("V17.J: der Builder ruft EINE Quelle (kein Parallel-Pfad, kein __structAerialError)", v828Results.aerialFromOneSource);
-        check("V17.J: die dynamische material.color bleibt setzbar (kein colorNode-Override)", v828Results.structDynamicColorPreserved);
-        check("V17.106: der Aerial-Höhen-Melt ist EYE-RELATIV (cameraPosition + hazeNear, nicht absolute Höhe)", v828Results.aerialEyeRelative);
-        check("V17.107: das Terrain-Material trägt die 2.5D-Lichtung (normalNode/terrainFlatten, kein Fehler)", v828Results.terrainNormalFlatten);
-        check("V17.J: transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element)", v828Results.phantomNoAerial);
+        check(
+            "V17.J: _applyAerialOutput existiert (die EINE geteilte Umgebungs-Funktion)",
+            v828Results.aerialHelperExists
+        );
+        check(
+            "V17.J: Terrain bekommt den geteilten Aerial-outputNode (post-lighting)",
+            v828Results.terrainHasAerialOutput
+        );
+        check(
+            "V17.J: Struktur bekommt DENSELBEN Aerial-outputNode (eine Atmosphäre, viele Leser)",
+            v828Results.structHasAerialOutput
+        );
+        check(
+            "V17.J: der Builder ruft EINE Quelle (kein Parallel-Pfad, kein __structAerialError)",
+            v828Results.aerialFromOneSource
+        );
+        check(
+            "V17.J: die dynamische material.color bleibt setzbar (kein colorNode-Override)",
+            v828Results.structDynamicColorPreserved
+        );
+        check(
+            "V17.106: der Aerial-Höhen-Melt ist EYE-RELATIV (cameraPosition + hazeNear, nicht absolute Höhe)",
+            v828Results.aerialEyeRelative
+        );
+        check(
+            "V17.107: das Terrain-Material trägt die 2.5D-Lichtung (normalNode/terrainFlatten, kein Fehler)",
+            v828Results.terrainNormalFlatten
+        );
+        check(
+            "V17.J: transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element)",
+            v828Results.phantomNoAerial
+        );
         check(
             `V17.J: kein still gefangener Aerial-Node-Fehler${v828Results.aerialOutputError ? " — " + v828Results.aerialOutputError : ""}`,
             v828Results.aerialNoError === true
@@ -27165,13 +27255,25 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
-        check("V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)", v828Results.cavityAOSetter);
+        check(
+            "V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)",
+            v828Results.cavityAOSetter
+        );
         check("V17.J4: setEdgeSharp setzt die Post-FX-Kanten-Schärfe + persistiert", v828Results.edgeSharpSetter);
         check("V17.103: setSurfaceTexture pusht live ins triplanar-Uniform + persistiert", v828Results.surfTexSetter);
-        check("V17.104: setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)", v828Results.colorVarSetter);
+        check(
+            "V17.104: setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)",
+            v828Results.colorVarSetter
+        );
         check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
-        check("V17.109: setTerrainFlatten (2.5D-Lichtung-Slider) pusht live + persistiert", v828Results.terrainFlattenSetter);
-        check("V17.109: Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0", v828Results.sliderHeadroom);
+        check(
+            "V17.109: setTerrainFlatten (2.5D-Lichtung-Slider) pusht live + persistiert",
+            v828Results.terrainFlattenSetter
+        );
+        check(
+            "V17.109: Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0",
+            v828Results.sliderHeadroom
+        );
     } else {
         check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
     }

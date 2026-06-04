@@ -18404,30 +18404,38 @@ class AnazhRealm {
         return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 200, floorDrop: 90, lod: 0 };
     }
 
-    // V9.88 (Welle Perf-3.b) — distance-basierte LOD-Entscheidung pro Chunk.
-    // r ≤ 1 (chunk-distance, also ≤ 43.2 m + 43.2 m = 86 m world)
-    // → LOD 0 (Nahbereich, volle Auflösung). r ≥ 2 → LOD 1 (Fernbereich,
-    // 8× weniger Cells). Threshold ehrt den Doc-Plan §4 (80 m). KEIN
-    // Affinity-Feld in der Erst-Welle — Folge-Welle 3.b-ext kann Threshold
-    // emergent über `worldFieldAt`-Affinity machen (dichte Wälder = näher
-    // hochauflösend), das ist die V9.56-Disziplin (sub-wellen). Hier reicht
-    // ein einfacher Distance-Threshold für den Beweis.
+    // ===== DIE DETAIL-KASKADE (V17.114, U1) — die EINE Distanz-Quelle ========
+    // Schöpfer-Auftrag: „man baut nicht 10 LOD-Systeme; ein Profi bringt Synergie,
+    // klare Flüsse, Regelkreise die sich selbst stabilisieren". Voller Plan:
+    // docs/lod-kaskade-plan.md. Die Detail-Kaskade ist die Distanz-Schwester der
+    // Aura: EIN kamera-relatives Distanz-Feld (`r` = Chebyshev-Chunk-Distanz vom
+    // Spieler), das alle Welt-Schichten lesen für „wie viel Detail HIER". Sechs
+    // Gesichter teilen dieselbe Distanz: Farbe (Aerial V17.106), Geometrie (LOD),
+    // Licht (Schatten-CSM, U5), Leben (Deko/Kreaturen, U3/U4), Draw-Calls
+    // (Clipmap, U6). EINE frozen Tabelle (`DETAIL_CASCADE`), wächst pro Welle um
+    // ein Band-Feld (jedes mit seinem Leser verifiziert — kein Passagier). Der
+    // Regelkreis stabilisiert sich selbst: alles ist `f(r)`, kamera-relativ,
+    // derived (kein State, kein Drift) → ein Regler, alle folgen.
+    _detailBand(r) {
+        const c = AnazhRealm.DETAIL_CASCADE;
+        for (let i = 0; i < c.length; i++) if (r <= c[i].maxRing) return c[i];
+        return c[c.length - 1];
+    }
+
+    // Die äußerste Kante der Kaskade in Metern (kamera-relativ): Sicht-Ring ×
+    // Chunk-Span. Der Fog-/Aerial-Schleier koppelt hieran (§2-Synergie) → der
+    // Dunst wandert mit dem Sicht-Ring, die ferne LOD-Naht bleibt verborgen.
+    _detailViewDistance() {
+        const cfg = this._voxelChunkConfig();
+        return cfg.ringRadius * cfg.span;
+    }
+
+    // V17.114 U1 — der erste Leser: die Terrain-Chunk-LOD. BYTE-IDENTISCH zur
+    // V17.112-Pyramide (r≤1→0, r2-8→1, r9-10→2, r≥11→3), jetzt aus der EINEN
+    // Kaskaden-Tabelle statt einer eigenen if-Kette.
     _voxelChunkLodFor(cx, cz, pcx, pcz) {
         const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
-        // Welle E (E1) — die LOD-PYRAMIDE (Clipmap-Muster: konzentrische Ringe
-        // abnehmender Auflösung; die fernen Details vom Fog/Höhen-Dunst geschluckt).
-        // BEWUSST ADDITIV: r ≤ 8 ist BYTE-IDENTISCH zum alten `r >= 2 ? 1 : 0`
-        // (LOD0 ≤86 m, LOD1 86–345 m) → die geliebte Nah-/Mittelsicht UNVERÄNDERT.
-        // NUR die NEUEN, vom erweiterten Ring-Cap (E2: 8→12) erschlossenen fernen
-        // Ringe werden billig: LOD2 (r9–10, ~345–432 m, 16× weniger Cells) + LOD3
-        // (r≥11, ~432–518 m, ~300× weniger Cells) — tief im Fog, ihre Cross-LOD-
-        // Naht wie die akzeptierte LOD0↔LOD1-Naht vom Dunst getarnt (Stitching = E4,
-        // erst wenn dein Browser-Auge eine Naht zeigt). So bringt „ein paar mehr
-        // Ringe" Weitsicht OHNE FPS-Einbruch (ferne Geometrie fast gratis).
-        if (r >= 11) return 3;
-        if (r >= 9) return 2;
-        if (r >= 2) return 1;
-        return 0;
+        return this._detailBand(r).lod;
     }
 
     // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH): soll dieser Chunk SOFORT
@@ -19311,7 +19319,21 @@ class AnazhRealm {
                     : 1.0
             ),
         };
+        // V17.114 U1 — die §2-Synergie: der Aerial-Schleier koppelt an die
+        // Kaskaden-Kante (der Dunst wandert mit dem Sicht-Ring).
+        this._syncAtmoToViewDistance();
         return this.state.atmoUniforms;
+    }
+
+    // V17.114 U1 — der Fog-/Aerial-Schleier koppelt an die Detail-Kaskaden-Kante
+    // (§2-Synergie): die Aerial-Höhen-Melt-Ferne (hazeFar) wandert mit dem Sicht-
+    // Ring → die NEUEN fernen Ringe (9–12) werden vom Dunst verborgen (ihre LOD-
+    // Naht bleibt unsichtbar), die geliebte Sicht (Ring ≤ 8) bleibt beim getunten
+    // Default-Floor (350 m) UNVERÄNDERT. Ein Floor statt Override = kein Regress.
+    _syncAtmoToViewDistance() {
+        const u = this.state.atmoUniforms;
+        if (!u || !u.hazeFar) return;
+        u.hazeFar.value = Math.max(350, this._detailViewDistance());
     }
 
     // ===== WELLE J — DIE EINE GETEILTE UMGEBUNGS-FUNKTION (Render-Harmonie) =====
@@ -43536,6 +43558,9 @@ class AnazhRealm {
             //   Ring=4 → max 243 (große Welt-Sicht)
             this.state.maxLoadedChunks = Math.max(15, Math.ceil(ringSize * ringSize * 3));
             if (rsv) rsv.textContent = ringText(v);
+            // V17.114 U1 — der Sicht-Ring ist die Kaskaden-Kante: der Aerial-
+            // Schleier wandert mit (§2-Synergie), die ferne LOD-Naht bleibt im Dunst.
+            this._syncAtmoToViewDistance();
         };
         if (rs) {
             rs.value = String(this.state.chunkRingRadius || 4);
@@ -46917,7 +46942,23 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.113.0";
+AnazhRealm.VERSION = "17.114.0";
+
+// V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
+// `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
+// Welt (Geometrie/Licht/Leben/Draw-Calls) leitet ihr Detail HIER ab — kein
+// per-Schicht-Schwellenwert mehr (docs/lod-kaskade-plan.md). `maxRing` = die
+// obere Ring-Grenze des Bandes (Welt-Distanz = maxRing × 43.2 m); `lod` = die
+// Terrain-/Geometrie-Auflösungsstufe. Die Tabelle WÄCHST pro Welle um ein Feld
+// (U2 waterLod · U3 creatureTickDiv · U4 dekoMode · U5 shadowCascade) — jedes
+// erst, wenn sein Leser landet (kein Passagier-Feld, V17.31). Frozen → kein
+// Drift; ein Array-Read pro Lookup (keine Allokation pro Aufruf).
+AnazhRealm.DETAIL_CASCADE = Object.freeze([
+    Object.freeze({ maxRing: 1, lod: 0 }), // Band 0 — ≤ 86 m: volles Detail
+    Object.freeze({ maxRing: 8, lod: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
+    Object.freeze({ maxRing: 10, lod: 2 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
+    Object.freeze({ maxRing: Infinity, lod: 3 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
+]);
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
