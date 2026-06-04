@@ -18222,6 +18222,13 @@ async function checkBandVoxelTerrainCore(ctx) {
                 r.state.chunkRingRadius = ringBefore;
                 r._syncAtmoToViewDistance();
                 out.hazeCouplesRing = Math.abs(haze12 - 12 * 43.2) < 1 && Math.abs(haze4 - 350) < 1;
+                // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
+                // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
+                out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
+                r.updateCreatures(0.016);
+                out.creatureAiCached =
+                    r.state.creatures.length === 0 ||
+                    r.state.creatures.some((c) => c.userData && c.userData.aiDir && c.userData.aiDir.isVector3);
             }
         }
         return out;
@@ -18287,6 +18294,14 @@ async function checkBandVoxelTerrainCore(ctx) {
             check(
                 "V17.114 U1 §2: der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (Floor 350 m)",
                 voxelP2bResults.hazeCouplesRing === true
+            );
+            check(
+                "V17.115 U3: das Band trägt aiDiv (nah jeden Frame=1, fern seltener: Band2=3, Band3=6)",
+                voxelP2bResults.bandAiDiv === true
+            );
+            check(
+                "V17.115 U3: Kreaturen cachen die KI-Richtung nach einem Tick (creature.userData.aiDir)",
+                voxelP2bResults.creatureAiCached === true
             );
         }
         check(

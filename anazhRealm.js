@@ -14388,6 +14388,11 @@ class AnazhRealm {
         // Frame, egal wie viele Kreaturen; der Rest nutzt den Cache. Bei 120
         // Kreaturen: ~240 Scans/Frame → ≤ 20.
         this._creatureGroundBudget = 20;
+        // V17.115 U3 — die Kaskade gewinnt einen Leser: ferne Kreaturen rechnen
+        // ihre teure KI-Richtung seltener (Band-`aiDiv`), bewegen sich aber jeden
+        // Frame GLATT mit der gecachten Richtung weiter. Der Frame-Zähler staffelt
+        // die Neuberechnung über die Kreaturen (kein Sammel-Spike).
+        const aiFrame = (this._creatureAiFrame = (this._creatureAiFrame || 0) + 1);
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
             const emotion = this.state.creatureEmotions[i];
@@ -14428,67 +14433,89 @@ class AnazhRealm {
                 hasHit = this._runRaycast(rayStart, rayEnd, (_cb, hit) => hit);
             }
 
+            // V17.115 U3 — die Kreatur LIEST die Detail-Kaskade: ihre Distanz-Band
+            // bestimmt, wie oft die teure KI-Richtung neu gerechnet wird. distSq
+            // (XZ) hier EINMAL berechnet (der Wasser-Kontext unten nutzt es wieder).
+            const dxToPlayer = creature.position.x - playerPos.x;
+            const dzToPlayer = creature.position.z - playerPos.z;
+            const distSqToPlayer = dxToPlayer * dxToPlayer + dzToPlayer * dzToPlayer;
+            const aiBand = this._detailBand(Math.sqrt(distSqToPlayer) / 43.2);
+            const recomputeAI = aiBand.aiDiv <= 1 || !creature.userData.aiDir || (aiFrame + i) % aiBand.aiDiv === 0;
             // Bewegung: Welle 6.H Phase 1. Wenn ein non-wander-Task aktiv ist,
             // hat er Vorrang über die heutige Emotion-Logik (follow_player /
             // wait). Bei wander oder ohne Task fällt's auf die historische
-            // Emotion-basierte Bewegung zurück.
-            const task = this._getCreatureTask(creature);
-            let direction = this._tickCreatureTaskDirection(creature, task, emotion);
-            if (direction === null) {
-                direction = scratchDir.set(0, 0, 0);
-                // V17.58 W3 — die wilde Kreatur LIEST den Spieler: die WARINESS (deine Aura-Menace × der
-                // Natur des Wesens × Bindung × Modus + frische Kampf-Furcht) ersetzt die statische happy/
-                // sad-Wahl. Neugierig NÄHER (sanfte Aura, kühnes/gebundenes Wesen) · scheu FORT (chaotische
-                // Aura, scheues Wesen, oder getroffen) · sonst gemächlich wandern. Kein Skript — Emergenz.
-                const wariness = this._creatureWariness(creature);
-                const NAT = AnazhRealm.CREATURE_NATURE;
-                if (wariness >= NAT.fleeThreshold) {
-                    // SCHEU/verschreckt — fort vom Spieler (schneller als das Schlendern; sonst Zufalls-Drift).
-                    const fromPlayer = scratchA.subVectors(creature.position, playerPos);
-                    fromPlayer.y = 0;
-                    if (fromPlayer.length() < NAT.fleeRadius) {
-                        direction.copy(fromPlayer.normalize().multiplyScalar(speed * NAT.fleeSpeedBoost));
-                    } else {
-                        direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
-                    }
-                } else if (wariness <= NAT.curiousThreshold) {
-                    // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
-                    const toPlayer = scratchA.subVectors(playerPos, creature.position);
-                    toPlayer.y = 0;
-                    if (toPlayer.length() > 2) {
-                        direction.copy(toPlayer.normalize().multiplyScalar(speed));
-                    }
-                    // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare Kreaturen (off-screen
-                    // ist Flocking unsichtbar), distanceToSquared (kein sqrt), nach 6 Nachbarn abbrechen,
-                    // Spatial-Hash (nur die 9 Cells um die eigene Kreatur). REUSE für die neugierige Schar.
-                    if (inFrustum) {
-                        let neighbors = 0;
-                        const gcx = Math.floor(creature.position.x / FLOCK_CELL);
-                        const gcz = Math.floor(creature.position.z / FLOCK_CELL);
-                        cellLoop: for (let dgx = -1; dgx <= 1; dgx++) {
-                            for (let dgz = -1; dgz <= 1; dgz++) {
-                                const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
-                                if (!bucket) continue;
-                                for (let bi = 0; bi < bucket.length; bi++) {
-                                    const j = bucket[bi];
-                                    if (i === j) continue;
-                                    const otherCreature = this.state.creatures[j];
-                                    const dsq = creature.position.distanceToSquared(otherCreature.position);
-                                    if (dsq > 1 && dsq < 25) {
-                                        const toOther = scratchB.subVectors(otherCreature.position, creature.position);
-                                        toOther.y = 0;
-                                        direction.add(toOther.normalize().multiplyScalar(0.5));
-                                        neighbors++;
-                                        if (neighbors >= 6) break cellLoop;
+            // Emotion-basierte Bewegung zurück. Ferne Kreaturen (Band 2/3) rechnen
+            // die Richtung nur jeden aiDiv-ten Frame neu (cache+reuse → glatt).
+            let task = null;
+            let direction;
+            if (recomputeAI) {
+                task = this._getCreatureTask(creature);
+                direction = this._tickCreatureTaskDirection(creature, task, emotion);
+                if (direction === null) {
+                    direction = scratchDir.set(0, 0, 0);
+                    // V17.58 W3 — die wilde Kreatur LIEST den Spieler: die WARINESS (deine Aura-Menace × der
+                    // Natur des Wesens × Bindung × Modus + frische Kampf-Furcht) ersetzt die statische happy/
+                    // sad-Wahl. Neugierig NÄHER (sanfte Aura, kühnes/gebundenes Wesen) · scheu FORT (chaotische
+                    // Aura, scheues Wesen, oder getroffen) · sonst gemächlich wandern. Kein Skript — Emergenz.
+                    const wariness = this._creatureWariness(creature);
+                    const NAT = AnazhRealm.CREATURE_NATURE;
+                    if (wariness >= NAT.fleeThreshold) {
+                        // SCHEU/verschreckt — fort vom Spieler (schneller als das Schlendern; sonst Zufalls-Drift).
+                        const fromPlayer = scratchA.subVectors(creature.position, playerPos);
+                        fromPlayer.y = 0;
+                        if (fromPlayer.length() < NAT.fleeRadius) {
+                            direction.copy(fromPlayer.normalize().multiplyScalar(speed * NAT.fleeSpeedBoost));
+                        } else {
+                            direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
+                        }
+                    } else if (wariness <= NAT.curiousThreshold) {
+                        // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
+                        const toPlayer = scratchA.subVectors(playerPos, creature.position);
+                        toPlayer.y = 0;
+                        if (toPlayer.length() > 2) {
+                            direction.copy(toPlayer.normalize().multiplyScalar(speed));
+                        }
+                        // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare Kreaturen (off-screen
+                        // ist Flocking unsichtbar), distanceToSquared (kein sqrt), nach 6 Nachbarn abbrechen,
+                        // Spatial-Hash (nur die 9 Cells um die eigene Kreatur). REUSE für die neugierige Schar.
+                        if (inFrustum) {
+                            let neighbors = 0;
+                            const gcx = Math.floor(creature.position.x / FLOCK_CELL);
+                            const gcz = Math.floor(creature.position.z / FLOCK_CELL);
+                            cellLoop: for (let dgx = -1; dgx <= 1; dgx++) {
+                                for (let dgz = -1; dgz <= 1; dgz++) {
+                                    const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
+                                    if (!bucket) continue;
+                                    for (let bi = 0; bi < bucket.length; bi++) {
+                                        const j = bucket[bi];
+                                        if (i === j) continue;
+                                        const otherCreature = this.state.creatures[j];
+                                        const dsq = creature.position.distanceToSquared(otherCreature.position);
+                                        if (dsq > 1 && dsq < 25) {
+                                            const toOther = scratchB.subVectors(
+                                                otherCreature.position,
+                                                creature.position
+                                            );
+                                            toOther.y = 0;
+                                            direction.add(toOther.normalize().multiplyScalar(0.5));
+                                            neighbors++;
+                                            if (neighbors >= 6) break cellLoop;
+                                        }
                                     }
                                 }
                             }
                         }
+                    } else {
+                        // NEUTRAL — weder gelockt noch verschreckt → gemächliches Wandern.
+                        direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
                     }
-                } else {
-                    // NEUTRAL — weder gelockt noch verschreckt → gemächliches Wandern.
-                    direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
                 }
+                // V17.115 U3 — die KI-Richtung cachen; ferne Kreaturen verwenden sie
+                // aiDiv Frames lang wieder → glatte Bewegung, seltene Neuberechnung.
+                if (!creature.userData.aiDir) creature.userData.aiDir = new THREE.Vector3();
+                creature.userData.aiDir.copy(direction);
+            } else {
+                direction = scratchDir.copy(creature.userData.aiDir);
             }
 
             // V11.0-d.2 (Pfeiler D — Wasser ↔ Kreaturen, Tiefen-Scheue +
@@ -14519,9 +14546,8 @@ class AnazhRealm {
             // semantisch korrekter: die V9.84-Perf-1.e-Distance-LOD-Lehre ist
             // „sichtbare horizontale Nähe", nicht 3D-Kugel — der Spieler sieht
             // eine Kreatur die seitlich 30 m entfernt ist, unabhängig von y.
-            const dxToPlayer = creature.position.x - playerPos.x;
-            const dzToPlayer = creature.position.z - playerPos.z;
-            const distSqToPlayer = dxToPlayer * dxToPlayer + dzToPlayer * dzToPlayer;
+            // V17.115 U3 — distSqToPlayer (XZ) ist oben schon berechnet (für die
+            // Kaskaden-Band-Entscheidung); hier nur das <50-m-Wasser-Gate.
             if (distSqToPlayer < 2500) {
                 const wctx = this._creatureWaterContextAt(creature, this._creatureGroundY(creature));
                 if (wctx.inWater) {
@@ -46942,7 +46968,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.114.0";
+AnazhRealm.VERSION = "17.115.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
@@ -46953,11 +46979,14 @@ AnazhRealm.VERSION = "17.114.0";
 // (U2 waterLod · U3 creatureTickDiv · U4 dekoMode · U5 shadowCascade) — jedes
 // erst, wenn sein Leser landet (kein Passagier-Feld, V17.31). Frozen → kein
 // Drift; ein Array-Read pro Lookup (keine Allokation pro Aufruf).
+// `aiDiv` (V17.115 U3): wie selten ferne Kreaturen ihre teure KI-Richtung neu
+// rechnen (jeden N-ten Frame; dazwischen bewegen sie sich GLATT mit der gecachten
+// Richtung weiter → kein Ruckeln). Band 0/1 (nah/mittel, sichtbar) = jeden Frame.
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
-    Object.freeze({ maxRing: 1, lod: 0 }), // Band 0 — ≤ 86 m: volles Detail
-    Object.freeze({ maxRing: 8, lod: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
-    Object.freeze({ maxRing: 10, lod: 2 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
-    Object.freeze({ maxRing: Infinity, lod: 3 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
+    Object.freeze({ maxRing: 1, lod: 0, aiDiv: 1 }), // Band 0 — ≤ 86 m: volles Detail
+    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
+    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
+    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
 ]);
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
