@@ -18037,7 +18037,19 @@ class AnazhRealm {
     // (Edge-Vertices nach Crop+Smooth) — selten, aber sicher.
     _voxelGradientNormals(positions, sample, step, preGrid = null) {
         const normals = new Float32Array(positions.length);
-        const eps = step * 0.5;
+        // Welle D — die Trapeze. GEMESSEN (diag-normals): die Normalen sind
+        // sauber (0 % degeneriert), F verzerrt sie NICHT — die Trapeze sind die
+        // Cel-Quantisierung, die entlang der HOCH-frequenten Normalen-Variation
+        // fragmentiert (Schöpfer: „in 2.5D liefen die Cel-Stufen kontrastreich
+        // über GROSSE Regionen, seit 3D mit Überhängen brechen sie in Trapeze").
+        // In 2.5D zeigten alle Normalen nach oben → grosse Cel-Regionen; die 3D-
+        // Density-Gradienten-Normalen folgen der ±12-m-Roughness → fragmentiert.
+        // Heilung: die Gradient-Baseline weiten (eps 0.5→1.5 Zellen) → der Normal
+        // liest die MAKRO-Neigung statt der Mikro-Roughness → wieder grosse,
+        // licht-reaktive Cel-Regionen. Der Wert (1.5) ist hart kodiert UND im
+        // Worker (`gradientNormals`) gespiegelt — eine Runtime-Tunable würde den
+        // Worker desyncen (Determinismus-/Naht-Bruch). Feel = Browser.
+        const eps = step * 1.5;
         // Schneller Trilinear-Sampler aus dem Grid. Wenn preGrid==null oder
         // Sample-Punkt out-of-bounds → fallback auf sample(x,y,z).
         let lookup;
@@ -46207,7 +46219,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.99.0";
+AnazhRealm.VERSION = "17.100.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

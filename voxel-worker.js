@@ -750,7 +750,10 @@ function cropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
 
 function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
     const normals = new Float32Array(positions.length);
-    const eps = step * 0.5;
+    // Welle D (mirror): eps 0.5→1.5 Zellen — die Gradient-Baseline weiten, damit
+    // der Normal die MAKRO-Neigung liest (grosse Cel-Regionen wie in 2.5D) statt
+    // der Mikro-Roughness (Trapeze). Bit-identisch zum Main (Determinismus).
+    const eps = step * 1.5;
     const NxNy = Nx * Ny;
     const NxMax = Nx - 1;
     const NyMax = Ny - 1;
