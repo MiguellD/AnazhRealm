@@ -21614,7 +21614,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
                 const sy = r._voxelSurfaceY(dx, dz);
                 if (sy === null || !Number.isFinite(sy)) continue;
                 probe.position.set(dx, sy + 0.5, dz);
-                const ctx2 = r._creatureWaterContextAt(probe);
+                const ctx2 = r._creatureWaterContextAt(probe, sy);
                 if (ctx2.inWater === false && !landSample) landSample = { dx, dz, ctx: ctx2 };
                 else if (ctx2.inWater === true && !waterSample) waterSample = { dx, dz, ctx: ctx2 };
             }
@@ -21655,17 +21655,48 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         // loopen, Distance-LOD-gated).
         if (landSample) probe.position.set(landSample.dx, 5, landSample.dz);
         else probe.position.set(0, 5, 0);
+        // V17.113 — der Wasser-Kontext bekommt die Boden-Höhe jetzt als Param
+        // (im Frame-Loop gecacht via _creatureGroundY), scannt sie nicht mehr
+        // selbst. Die Perf-Probe reicht eine vorberechnete Surface = die
+        // realistische Frame-Kosten.
+        const psy = r._voxelSurfaceY(probe.position.x, probe.position.z);
         const t0 = performance.now();
-        for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe);
+        for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe, psy);
         out.perfMs = performance.now() - t0;
 
-        // Source-Probe: Helper liest aus _voxelSurfaceY + _waterLevelAt +
-        // _isAboveWaterAt (die V9.50/V9.59-Wahrheits-Quellen). Wer einen
-        // separaten Atlas-Lookup einbaut, bricht die EIN-Quelle-Disziplin.
+        // Source-Probe: die Wahrheits-Quellen (V9.50/V9.59). V17.113: die Surface
+        // kommt jetzt aus `_creatureGroundY` (gecacht) → die `_voxelSurfaceY`-
+        // Quelle ist dorthin gewandert; `_creatureGroundY` ist der EINZIGE
+        // Surface-Leser (EIN-Quelle-Disziplin bleibt, eine Ebene höher).
         const helperSrc = r._creatureWaterContextAt.toString();
-        out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(helperSrc);
+        out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(r._creatureGroundY.toString());
         out.usesWaterLevelAt = /_waterLevelAt\(/.test(helperSrc);
         out.usesIsAboveWaterAt = /_isAboveWaterAt\(/.test(helperSrc);
+
+        // V17.113 Kreatur-FPS-Dirigent — der BODEN-CACHE (die FPS-13-Wurzel-
+        // Heilung). Beweist deterministisch: die teuren `_voxelSurfaceY`-Scans
+        // sind pro Frame GEBOUNDET (Budget), nicht 1–2× pro Kreatur. Budget
+        // dekrementiert pro echtem Scan → wir lesen es als Scan-Zähler.
+        out.groundCacheFn = typeof r._creatureGroundY === "function";
+        if (out.groundCacheFn) {
+            const mk = (x, z) => ({ position: new THREE.Vector3(x, 5, z), userData: {} });
+            r._creatureGroundBudget = 5;
+            const m = mk(12, 12);
+            const g1 = r._creatureGroundY(m); // erster Scan: Budget 5→4
+            out.gFirstScan = r._creatureGroundBudget === 4;
+            const g2 = r._creatureGroundY(m); // gleiche Position → Cache-Hit (Budget bleibt 4)
+            out.gCacheHit = r._creatureGroundBudget === 4 && g2 === g1;
+            m.position.x += 0.3; // < 0.5 m bewegt → Cache-Hit
+            const g3 = r._creatureGroundY(m);
+            out.gCacheNear = r._creatureGroundBudget === 4 && g3 === g1;
+            m.position.x += 1.0; // jetzt > 0.5 m vom Cache-Punkt → Refresh: Budget 4→3
+            r._creatureGroundY(m);
+            out.gRefreshOnMove = r._creatureGroundBudget === 3;
+            r._creatureGroundBudget = 0; // Budget erschöpft
+            const fresh = mk(800, 800);
+            const gf = r._creatureGroundY(fresh); // kein Budget + kein Cache → Makro-Schätzwert, KEIN Scan
+            out.gBudgetBound = r._creatureGroundBudget === 0 && typeof gf === "number" && Number.isFinite(gf);
+        }
 
         return out;
     });
@@ -21714,9 +21745,17 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         res.perfMs < 200,
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
     );
-    check("Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25)", res.usesVoxelSurfaceY === true);
+    check("Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25, via _creatureGroundY)", res.usesVoxelSurfaceY === true);
     check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
     check("Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)", res.usesIsAboveWaterAt === true);
+    check("V17.113 Kreatur-FPS-Dirigent: _creatureGroundY (Boden-Cache) existiert", res.groundCacheFn === true);
+    if (res.groundCacheFn) {
+        check("V17.113: erster Boden-Zugriff scannt (Budget dekrementiert)", res.gFirstScan === true);
+        check("V17.113: gleiche Position → Cache-Hit (kein Scan)", res.gCacheHit === true);
+        check("V17.113: Bewegung < 0.5 m → Cache-Hit (kein Scan)", res.gCacheNear === true);
+        check("V17.113: Bewegung > 0.5 m → Refresh (ein Scan)", res.gRefreshOnMove === true);
+        check("V17.113: Budget erschöpft → kein Scan mehr, Makro-Fallback (FPS-Bound)", res.gBudgetBound === true);
+    }
 }
 
 // V11.0-d.2 (Pfeiler D — Tiefen-Scheue + Schwimm-Surface) — Beweis dass der

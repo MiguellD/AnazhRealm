@@ -14383,6 +14383,11 @@ class AnazhRealm {
             bucket.push(j);
         }
         const lifeTrickleNow = performance.now() / 1000;
+        // V17.113 Kreatur-FPS-Dirigent — das Frame-Budget für teure Boden-Scans
+        // (`_creatureGroundY`). Max so viele volle `_voxelSurfaceY`-Scans pro
+        // Frame, egal wie viele Kreaturen; der Rest nutzt den Cache. Bei 120
+        // Kreaturen: ~240 Scans/Frame → ≤ 20.
+        this._creatureGroundBudget = 20;
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
             const emotion = this.state.creatureEmotions[i];
@@ -14518,7 +14523,7 @@ class AnazhRealm {
             const dzToPlayer = creature.position.z - playerPos.z;
             const distSqToPlayer = dxToPlayer * dxToPlayer + dzToPlayer * dzToPlayer;
             if (distSqToPlayer < 2500) {
-                const wctx = this._creatureWaterContextAt(creature);
+                const wctx = this._creatureWaterContextAt(creature, this._creatureGroundY(creature));
                 if (wctx.inWater) {
                     if (wctx.depthBelow > 1.5 && wctx.shoreDir && (!task || task.name === "wander")) {
                         // shoreDir ist Kardinal-Vector3 (±1 oder 0) — keine
@@ -14550,7 +14555,12 @@ class AnazhRealm {
             // vorher), in einer Voxel-Welt liefert es `_voxelSurfaceY` (V9.25).
             // Eine Funktion, alle Höhen-Konsumenten — die Phase-5b-Disziplin
             // ehrlich abgeschlossen.
-            const terrainHeight = this.getTerrainHeightAt(creature.position.x, creature.position.z);
+            // V17.113 — der gecachte Boden (Kreatur-FPS-Dirigent) statt eines
+            // vollen `_voxelSurfaceY`-Scans pro Kreatur/Frame. Selbe Semantik wie
+            // `getTerrainHeightAt` (null → terrainBaseHeight).
+            const _gY = this._creatureGroundY(creature);
+            const terrainHeight =
+                typeof _gY === "number" && Number.isFinite(_gY) ? _gY : this.state.terrainBaseHeight || 0;
             // V11.0-d.2 — wenn die Spalte nass + tief ist, schwebt die Kreatur
             // 0.3 m unter dem Wasser-Spiegel (Schwimm-Surface, sichtbar als
             // halb-eingetaucht). Sonst sitzt sie wie bisher 0.5 m über dem
@@ -20533,11 +20543,47 @@ class AnazhRealm {
     // ≈ 144 Float-Compares. Deutlich unter 100µs im Browser. D.2 wird zudem
     // Distance-LOD (nur für Kreaturen <50m vom Spieler) anwenden — der Test-
     // Band misst die Per-Call-Cost separat.
-    _creatureWaterContextAt(creature) {
+    // Welle E / Kreatur-FPS-Dirigent (V17.113) — der BODEN-CACHE. GEMESSEN
+    // (scripts/diag-frame-budget.cjs): jede Kreatur löste PRO FRAME einen
+    // `_voxelSurfaceY`-Scan aus (der Settle Z~14553, für ALLE Kreaturen) + nahe
+    // Kreaturen einen zweiten im Wasser-Kontext — je ein vertikaler Density-Scan
+    // (~100–280 Noise-Evals). Bei 120 Kreaturen war das die gemessene ~49-ms-
+    // Wurzel (FPS 13). Heilung: das Terrain ist STATISCH → die Boden-Höhe pro
+    // Kreatur cachen, NUR neu scannen wenn sie sich > 0.5 m bewegt hat UND ein
+    // Frame-Budget frei ist (durch die Bewegung selbst gestaffelt). Der Scan-
+    // Aufwand ist damit pro Frame GEBOUNDET, UNABHÄNGIG von der Kreatur-Zahl.
+    // EINE Quelle für Wasser-Kontext + Settle (kein Doppel-Scan). Liefert die
+    // rohe `_voxelSurfaceY` (Zahl|null); die Konsumenten machen ihr null-Handling.
+    _creatureGroundY(creature) {
+        const cx = creature.position.x;
+        const cz = creature.position.z;
+        const ud = creature.userData;
+        if (ud.cachedGroundY !== undefined) {
+            const dx = cx - ud.cachedGroundX;
+            const dz = cz - ud.cachedGroundZ;
+            if (dx * dx + dz * dz < 0.25) return ud.cachedGroundY; // < 0.5 m bewegt → Cache
+        }
+        if (this._creatureGroundBudget > 0) {
+            this._creatureGroundBudget--;
+            const gY = this._voxelSurfaceY(cx, cz);
+            ud.cachedGroundY = gY;
+            ud.cachedGroundX = cx;
+            ud.cachedGroundZ = cz;
+            return gY;
+        }
+        // Budget erschöpft: leicht veralteter Cache (imperzeptibel, < 1 Frame) ODER
+        // — für eine frische Kreatur ohne Cache — ein billiger Makro-Schätzwert
+        // (kein Density-Scan; nächsten Frame vom Budget verfeinert).
+        if (ud.cachedGroundY !== undefined) return ud.cachedGroundY;
+        return this._terrainMacroSurfaceY(cx, cz);
+    }
+
+    _creatureWaterContextAt(creature, surfaceY) {
         const x = creature.position.x;
         const z = creature.position.z;
         const cy = creature.position.y;
-        const surfaceY = this._voxelSurfaceY(x, z);
+        // V17.113 — `surfaceY` kommt jetzt aus `_creatureGroundY` (gecacht) statt
+        // einem eigenen `_voxelSurfaceY`-Scan → kein Doppel-Scan pro Kreatur.
         const waterY = this._waterLevelAt(x, z);
         const surfY = surfaceY === null || !Number.isFinite(surfaceY) ? cy : surfaceY;
         const depthBelow = waterY - surfY;
@@ -46871,7 +46917,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.112.0";
+AnazhRealm.VERSION = "17.113.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
