@@ -26299,14 +26299,20 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.sunMeshExists = !!r.state.sunMesh && r.state.sunMesh.type === "Mesh";
         out.moonMeshExists = !!r.state.moonMesh && r.state.moonMesh.type === "Mesh";
         if (r.state.sunMesh && r.state.moonMesh) {
+            // V17.J3-Migration (V9.56-i): die Orbit-HÖHE lebt jetzt im skyOffset
+            // (die Welt-Position ist kamera-relativ = camera+skyOffset, pro Render-
+            // Frame in `_followCelestialBodies` gesetzt — dieser Test ruft kein
+            // _loopRender). Der skyOffset.y (= sin(angle)·380) ist das kamera-
+            // unabhängige Maß für „über/unter dem Horizont".
+            const offY = (m) => (m.userData && m.userData.skyOffset ? m.userData.skyOffset.y : m.position.y);
             r.setTimeOfDay(0.5); // Mittag
             r._applyDayNightToScene();
-            const sunYNoon = r.state.sunMesh.position.y;
-            const moonYNoon = r.state.moonMesh.position.y;
+            const sunYNoon = offY(r.state.sunMesh);
+            const moonYNoon = offY(r.state.moonMesh);
             r.setTimeOfDay(0); // Mitternacht
             r._applyDayNightToScene();
-            const sunYMidnight = r.state.sunMesh.position.y;
-            const moonYMidnight = r.state.moonMesh.position.y;
+            const sunYMidnight = offY(r.state.sunMesh);
+            const moonYMidnight = offY(r.state.moonMesh);
             // Mittag: Sonne oben, Mond unten. Mitternacht: umgekehrt.
             out.sunHighAtNoon = sunYNoon > 100;
             out.moonLowAtNoon = moonYNoon < -100;
@@ -26848,6 +26854,31 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // V17.2 — der gemalte Wolkenhimmel: sunDir-Uniform (Glow) + FBM-Struktur.
         const sd = r.state.skyboxUniforms.sunDir;
         out.skyboxHasSunDir = !!(sd && sd.value && typeof sd.value.x === "number");
+        // ===== WELLE J3 — die Himmelskörper folgen der KAMERA, nicht dem Ursprung =====
+        // KONSUM: nach einem fernen Kamera-Teleport steht die Sonne nahe der Kamera
+        // (in Himmelsrichtung), NICHT um den Welt-Ursprung (der „rast neben mir
+        // durchs Terrain"-Befund). Beweis-Probe.
+        out.celestialFollowExists = typeof r._followCelestialBodies === "function";
+        out.sunFollowsCamera = false;
+        out.sunNotAtOrigin = false;
+        if (r.state.sunMesh && r.state.camera && typeof r._updateCelestialBodies === "function") {
+            r._updateCelestialBodies(Math.PI * 0.3, 1.0); // setzt skyOffset
+            const camOrig = r.state.camera.position.clone();
+            r.state.camera.position.set(2000, 50, 2000); // ferner Spieler
+            r._followCelestialBodies();
+            const sun = r.state.sunMesh;
+            const off = sun.userData && sun.userData.skyOffset ? sun.userData.skyOffset : null;
+            if (off) {
+                const dCam = sun.position.distanceTo(r.state.camera.position);
+                const dOrig = sun.position.length();
+                // Sonne ~|skyOffset| von der Kamera entfernt (in Himmelsrichtung)…
+                out.sunFollowsCamera = Math.abs(dCam - off.length()) < 1.0;
+                // …und WEIT vom Ursprung (sie orbitiert nicht mehr um (0,0,0)).
+                out.sunNotAtOrigin = dOrig > 1500;
+            }
+            r.state.camera.position.copy(camOrig);
+            r._followCelestialBodies();
+        }
         const skySrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
         out.skyboxCloudFbm = skySrc.includes("fbm") && skySrc.includes("sunGlow") && skySrc.includes("cloudShade");
         // V17.10 — die Wolken-Wurzel: der Himmel nutzt jetzt mx_noise (dieselbe
@@ -26951,6 +26982,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check("V17.2: Skybox hat sunDir-Uniform (Wolken-Sonnen-Glow)", v828Results.skyboxHasSunDir);
+        check("V17.J3: _followCelestialBodies existiert (Sonne/Mond/Planeten kamera-relativ)", v828Results.celestialFollowExists);
+        check("V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)", v828Results.sunFollowsCamera);
+        check("V17.J3: die Sonne orbitet NICHT mehr den Welt-Ursprung (fern bei fernem Spieler)", v828Results.sunNotAtOrigin);
         check("V17.2: Wolken-Shader ist FBM-gemalt (fbm + sunGlow + cloudShade)", v828Results.skyboxCloudFbm);
         check("V17.10: Himmel nutzt mx_noise (eine Noise-Sprache, kein hash3-Flackern)", v828Results.skyboxMxNoise);
         check(

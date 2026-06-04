@@ -157,12 +157,15 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     // unter base−40 Fels (+1). Bit-identisch zum Main (Determinismus-Test).
     const base = state.baseHeight || 0;
     const ROUGH = 12;
+    // WELLE J4 (mirror): Band-Top-Margin deckt den Normalen-eps (6 Zellen) →
+    // Gipfel-Gradient bleibt im real gesampelten Band (sonst Normalen-Kippen).
+    const topMargin = (6 + 2) * step;
     for (let k = 0; k < Nz; k++) {
         const wz = oz + k * step;
         for (let i = 0; i < Nx; i++) {
             const wx = ox + i * step;
             const surf = terrainMacroSurfaceY(wx, wz, true);
-            const bandTopJ = Math.floor((surf + ROUGH + 2 * step - oy) / step) + 1;
+            const bandTopJ = Math.floor((surf + ROUGH + topMargin - oy) / step) + 1;
             // V17.96-Fix (mirror): Band-Boden folgt surf (Tiefsee-Rinne ~−75).
             const bandBotJ = Math.floor((Math.min(surf, base) - 40 - oy) / step);
             const colBase = i + k * Nx * Ny;
@@ -750,10 +753,11 @@ function cropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
 
 function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
     const normals = new Float32Array(positions.length);
-    // Welle D (mirror): eps 0.5→1.5 Zellen — die Gradient-Baseline weiten, damit
-    // der Normal die MAKRO-Neigung liest (grosse Cel-Regionen wie in 2.5D) statt
-    // der Mikro-Roughness (Trapeze). Bit-identisch zum Main (Determinismus).
-    const eps = step * 1.5;
+    // Welle J4 (mirror): eps 1.5→6 Zellen (≈10.8 m) — die Gradient-Baseline weiten,
+    // damit der Normal die MAKRO-Neigung liest (grosse Cel-Regionen wie in 2.5D)
+    // statt der 20-m-Mikro-Roughness (das Trapez-Netz; `diag-cel-eps`: −39 %
+    // lokale Licht-Δ, Makro-Relief intakt). Bit-identisch zum Main (Determinismus).
+    const eps = step * 6.0;
     const NxNy = Nx * Ny;
     const NxMax = Nx - 1;
     const NyMax = Ny - 1;

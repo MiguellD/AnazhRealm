@@ -11538,14 +11538,20 @@ class AnazhRealm {
                 color: new THREE.Color(Math.random(), Math.random(), Math.random()),
             });
             const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+            planet.frustumCulled = false; // Himmelskörper — immer rendern
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.random() * Math.PI;
             const radius = 400 + Math.random() * 50;
-            planet.position.set(
+            // WELLE J3 — die FIXE Himmelsrichtung als skyOffset; `_followCelestial-
+            // Bodies` heftet den Planeten pro Frame an `camera.position + skyOffset`
+            // (kamera-relativ wie das Stern-Feld) → er rast nicht mehr neben dem
+            // fernen Spieler durchs Terrain, sondern steht fest am Himmel.
+            planet.userData.skyOffset = new THREE.Vector3(
                 radius * Math.sin(phi) * Math.cos(theta),
                 radius * Math.cos(phi),
                 radius * Math.sin(phi) * Math.sin(theta)
             );
+            planet.position.copy(planet.userData.skyOffset);
             this.state.scene.add(planet);
             this.state.planets.push(planet);
             this.log(
@@ -17795,12 +17801,20 @@ class AnazhRealm {
         // bit-identisch im Worker (`computeDensityGrid`, Determinismus-/Naht-Schutz).
         const base = this.state.terrainBaseHeight || 0;
         const ROUGH = 12; // max 3D-Roughness (noise·7 + noise·5)
+        // WELLE J4 — der Band-Top-Margin MUSS den Gradient-Normalen-eps (6 Zellen,
+        // `_voxelGradientNormals`) decken: ein Oberflächen-Vertex am Roughness-Gipfel
+        // (surf+ROUGH) sampelt +eps nach oben → das muss noch im REAL gesampelten
+        // Band liegen, nicht in der Konstant-Luft-Füllung (−1), sonst kippt seine
+        // Normale (gemessen: bis 26° an Gipfeln bei zu engem Margin). 6 (eps) + 2
+        // (Puffer) Zellen über dem Roughness-Envelope.
+        const NORMAL_EPS_CELLS = 6;
+        const topMargin = (NORMAL_EPS_CELLS + 2) * step;
         for (let k = 0; k < Nz; k++) {
             const wz = oz + k * step;
             for (let i = 0; i < Nx; i++) {
                 const wx = ox + i * step;
                 const surf = this._terrainMacroSurfaceY(wx, wz);
-                const bandTopJ = Math.floor((surf + ROUGH + 2 * step - oy) / step) + 1;
+                const bandTopJ = Math.floor((surf + ROUGH + topMargin - oy) / step) + 1;
                 // Band-Boden: unter `min(surf, base) − 40` ist garantiert Fels.
                 // WICHTIG (V17.96-Fix): in einer TIEFSEE-Rinne liegt der Seeboden
                 // (surf) bei ~−75 m, also MUSS der Band-Boden surf folgen — ein
@@ -18044,12 +18058,20 @@ class AnazhRealm {
         // über GROSSE Regionen, seit 3D mit Überhängen brechen sie in Trapeze").
         // In 2.5D zeigten alle Normalen nach oben → grosse Cel-Regionen; die 3D-
         // Density-Gradienten-Normalen folgen der ±12-m-Roughness → fragmentiert.
-        // Heilung: die Gradient-Baseline weiten (eps 0.5→1.5 Zellen) → der Normal
-        // liest die MAKRO-Neigung statt der Mikro-Roughness → wieder grosse,
-        // licht-reaktive Cel-Regionen. Der Wert (1.5) ist hart kodiert UND im
-        // Worker (`gradientNormals`) gespiegelt — eine Runtime-Tunable würde den
-        // Worker desyncen (Determinismus-/Naht-Bruch). Feel = Browser.
-        const eps = step * 1.5;
+        // Heilung: die Gradient-Baseline weiten → der Normal liest die MAKRO-
+        // Neigung statt der Mikro-Roughness → wieder grosse, licht-reaktive Cel-
+        // Regionen. WELLE J4 — eps 1.5→6 Zellen (≈10.8 m). GEMESSEN (`diag-cel-
+        // eps`): die Surface-Roughness ist noise3D(x·0.05)·7 (λ~20 m) +
+        // noise3D(x·0.018)·5 (λ~55 m); eps 1.5 (~2.7 m) sampelt INNERHALB der
+        // 20-m-Beule → liest ihre Mikro-Neigung → das Cel quantisiert sie in feine
+        // Bänder (das „Trapez-Netz", das V17.100-eps-1.5 NICHT heilte). eps 6
+        // (≈λ/2 der 20-m-Roughness) senkt die cel-relevante lokale Licht-Δ um
+        // −39 % (0.147→0.090) und HÄLT die Makro-Spanne (0.957 — Berge/Klippen
+        // shaden weiter) → grosse, gleichmässig licht-reaktive Cel-Regionen wie in
+        // 2.5D. Der Wert ist hart kodiert UND im Worker (`gradientNormals`)
+        // gespiegelt — eine Runtime-Tunable würde den Worker desyncen
+        // (Determinismus-/Naht-Bruch). Feel = Browser-Sign-off.
+        const eps = step * 6.0;
         // Schneller Trilinear-Sampler aus dem Grid. Wenn preGrid==null oder
         // Sample-Punkt out-of-bounds → fallback auf sample(x,y,z).
         let lookup;
@@ -42409,11 +42431,24 @@ class AnazhRealm {
         const sunDist = 380;
         const sun = this.state.sunMesh;
         const moon = this.state.moonMesh;
+        // WELLE J3 — die Himmelskörper folgen der KAMERA, nicht dem Welt-Ursprung.
+        // GEMESSENE Wurzel (Schöpfer-Befund „Sonne/Mond/Planeten rasen neben mir
+        // durchs Terrain, wenn ich 1000 Einheiten laufe; die Sonne verschwindet
+        // wenn ich sie zentriere"): Sonne/Mond/Planeten saßen an ABSOLUTEN Welt-
+        // Positionen um den Ursprung (cos·380) → bei fernem Spieler standen sie auf
+        // endlicher Distanz NEBEN/HINTER ihm → vom Terrain verdeckt (verschwindet
+        // beim Hinschauen) + an der falschen Himmelsstelle (der Wasser-Glitzer-
+        // Versatz J3: der sichtbare Sonnen-MESH ≠ die `sunDir`-Lichtrichtung). Der
+        // Profi-Weg (wie das Stern-Feld längst): nur die RICHTUNG (skyOffset) hier
+        // setzen; `_loopRender` addiert pro Frame `camera.position` → der
+        // Himmelskörper steht immer in derselben Himmelsrichtung wie die Sonne, die
+        // das Licht + das Wasser-Glitzern speist (alle aus `_dayNightSunDirection`).
         if (sun) {
             const sx = Math.cos(angle) * sunDist;
             const sy = Math.sin(angle) * sunDist;
             const sz = Math.sin(angle * 0.5) * sunDist * 0.4;
-            sun.position.set(sx, sy, sz);
+            if (!sun.userData.skyOffset) sun.userData.skyOffset = new THREE.Vector3();
+            sun.userData.skyOffset.set(sx, sy, sz);
             sun.visible = sy > -10; // unter Horizont ausblenden
             // Sonne dimmt mit Wetter (rainy = trüber Schein)
             if (sun.material && sun.material.color) {
@@ -42429,9 +42464,29 @@ class AnazhRealm {
             const mx = Math.cos(moonAngle) * sunDist;
             const my = Math.sin(moonAngle) * sunDist;
             const mz = Math.sin(moonAngle * 0.5) * sunDist * 0.4;
-            moon.position.set(mx, my, mz);
+            if (!moon.userData.skyOffset) moon.userData.skyOffset = new THREE.Vector3();
+            moon.userData.skyOffset.set(mx, my, mz);
             moon.visible = my > -10;
         }
+    }
+
+    // WELLE J3 — die Himmelskörper (Sonne·Mond·Planeten) pro Render-Frame an die
+    // Kamera heften: Weltposition = Kamera + skyOffset (die Orbit-/Fix-Richtung).
+    // Im `_loopRender` SYNCHRON nach skybox/starField (V8.26-Lehre: vor dem
+    // Camera-Update kopiert → 1 Frame Nachlauf/Rauschen). Damit stehen sie immer
+    // an derselben Himmelsstelle, egal wie weit der Spieler vom Ursprung läuft.
+    _followCelestialBodies() {
+        const cam = this.state.camera;
+        if (!cam) return;
+        const pin = (obj) => {
+            if (obj && obj.userData && obj.userData.skyOffset) {
+                obj.position.copy(cam.position).add(obj.userData.skyOffset);
+            }
+        };
+        pin(this.state.sunMesh);
+        pin(this.state.moonMesh);
+        const planets = this.state.planets;
+        if (planets) for (let i = 0; i < planets.length; i++) pin(planets[i]);
     }
 
     // Treibt timeOfDay vorwärts basierend auf realer Echtzeit + dayLength.
@@ -45849,6 +45904,10 @@ class AnazhRealm {
             const tod = this.state.timeOfDay || 0;
             this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
         }
+        // WELLE J3 — Sonne·Mond·Planeten SYNCHRON an die Kamera heften (wie das
+        // Stern-Feld) → sie stehen fest am Himmel statt um den Welt-Ursprung zu
+        // orbiten + neben dem fernen Spieler durchs Terrain zu rasen.
+        this._followCelestialBodies();
         // V9.43-a — das geteilte Wasserfall-Material wird hier zentral
         // animiert (`uTime`); die Wasserfall-Planes haben keinen eigenen
         // per-Frame-Loop mehr — der Flow-Shader trägt die Bewegung.
@@ -46257,7 +46316,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.101.0";
+AnazhRealm.VERSION = "17.102.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
