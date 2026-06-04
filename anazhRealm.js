@@ -18174,6 +18174,12 @@ class AnazhRealm {
             this._voxelNoise = new SimplexNoise(seed + ":voxel");
         }
         const sandNoise = this._voxelNoise;
+        const base = this.state.terrainBaseHeight || 0;
+        // V17.105 — Schnee-Schwelle als PROMINENZ (Relief über der kontinentalen
+        // Basis), nicht absolutes y. Browser-justierbar (HARTKODIERT + im Worker
+        // gespiegelt — eine Runtime-Tunable würde den Worker desyncen, V17.100).
+        const SNOW_PROM_START = 50;
+        const SNOW_PROM_FULL = 115;
         const n = pos.count;
         const colors = new Float32Array(n * 3);
         const ss = (e0, e1, x) => {
@@ -18211,7 +18217,24 @@ class AnazhRealm {
             mix(earth, ss(0.25, 0.85, f.lebendig));
             mix(lava, ss(0.38, 0.92, f.glut));
             mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
-            mix(snow, ss(12, 42, y));
+            // V17.105 — Schnee auf PROMINENZ (y − kontinentale Basis cont0), nicht
+            // absolutem y. Die alte ss(12,42,y) war kalibriert, als Gipfel bei ~40 m
+            // lagen; nach V14 (Terrain geweitet) + V17.96 (Berge 244 m) liegt der
+            // Median bei ~30 m → Schnee schmierte über ~53 % des Bodens (gemessen
+            // `diag-snowband`) = die stone(0.42)/snow(0.92)-Hochkontrast-Flecken, die
+            // unter Licht auseinanderdriften (fast-weißer Schnee erreicht die hellen
+            // Cel-Bänder, dunkler Stein bleibt dunkel → max. Kontrast tags, kollabiert
+            // nachts → „Trapeze tagsüber, weg nach 18:00"). Heilung (V14.5-Co-Tuning:
+            // wer die Terrain-Höhe ändert, MUSS die surf-relativen Schichten nachziehen):
+            // die Prominenz `y − cont0` (Relief über der λ7100-m-Basis) → Schnee-Caps
+            // NUR auf genuine Erhebungen, robust gegen die regionale Höhenvariation
+            // (nahe Region max-Prom 70 m, weite 156 m — kein absoluter Wert passt
+            // beiden). cont0 bit-identisch zum Worker (`attachFieldColors`).
+            const _wpX = sandNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
+            const _wpZ = sandNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
+            const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
+            const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
+            mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
             mix(sed, ss(-2, -14, y));
             // Strand: Glocken-Profil über dem Wasser. `_waterLevelAt` ist
             // O(1) für Ozean (häufig); seetiefe Vertices haben den See-
@@ -46537,7 +46560,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.104.0";
+AnazhRealm.VERSION = "17.105.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

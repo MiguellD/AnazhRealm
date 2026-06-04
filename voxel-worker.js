@@ -833,6 +833,10 @@ function attachFieldColors(positions) {
     const sed = [0.78, 0.72, 0.52];
     const sand = [0.87, 0.78, 0.55];
     const sandNoise = state.noise; // Mirror anazhRealm._voxelNoise (selber Seed)
+    const base = state.baseHeight || 0;
+    // V17.105 — Schnee-Prominenz-Schwelle (Mirror von _attachVoxelFieldColors).
+    const SNOW_PROM_START = 50;
+    const SNOW_PROM_FULL = 115;
     for (let i = 0; i < n; i++) {
         const x = positions[i * 3];
         const y = positions[i * 3 + 1];
@@ -847,7 +851,15 @@ function attachFieldColors(positions) {
         mix(earth, ss(0.25, 0.85, f.lebendig));
         mix(lava, ss(0.38, 0.92, f.glut));
         mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
-        mix(snow, ss(12, 42, y));
+        // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y. Bit-
+        // identisch zum Main (`_attachVoxelFieldColors`): cont0 = λ7100-m-
+        // kontinentale Basis; Schnee-Caps nur auf genuine Erhebungen statt über
+        // ~53 % des Bodens geschmiert (V14.5-Co-Tuning nach der Terrain-Weitung).
+        const _wpX = sandNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
+        const _wpZ = sandNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
+        const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
+        const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
+        mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
         mix(sed, ss(-2, -14, y));
         const waterY = waterLevelAt(x, z);
         const aboveWater = y - waterY;
