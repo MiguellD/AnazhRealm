@@ -18147,6 +18147,89 @@ async function checkBandVoxelTerrainCore(ctx) {
             // Spieler-Ring neu auf — wir restaurieren das hier
             // direkt, damit nachfolgende Tests Voxel-Chunks haben.
             r._tickVoxelChunkStreaming(pos);
+
+            // Welle E (E1/E2) — die LOD-Pyramide. Der Warmup läuft bei Ring 4 →
+            // er erreicht LOD2/LOD3 (r≥9) NIE; darum hier explizit prüfen:
+            // (a) Config LOD-invariant (dim·step=43.2, dimY·step=360),
+            // (b) Zuweisung additiv (r≤8 wie alt: r2-8→LOD1; neu r9-10→2, r≥11→3),
+            // (c) ein LOD2- + LOD3-Chunk meshet ohne Crash (dim 6/3 ist sehr grob —
+            //     der Surface-Nets-Mesher + pad/crop muss es tragen).
+            const cL2 = r._voxelChunkConfig(2);
+            const cL3 = r._voxelChunkConfig(3);
+            out.lodPyramidConfig =
+                cL2.dim === 6 &&
+                Math.abs(cL2.dim * cL2.step - 43.2) < 1e-6 &&
+                Math.abs(cL2.dimY * cL2.step - 360) < 1e-6 &&
+                cL3.dim === 3 &&
+                Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
+                Math.abs(cL3.dimY * cL3.step - 360) < 1e-6;
+            const lf = (rr) => r._voxelChunkLodFor(rr, 0, 0, 0);
+            out.lodPyramidBands =
+                lf(0) === 0 &&
+                lf(1) === 0 &&
+                lf(2) === 1 &&
+                lf(8) === 1 &&
+                lf(9) === 2 &&
+                lf(10) === 2 &&
+                lf(11) === 3 &&
+                lf(12) === 3;
+            let lod23Builds = true;
+            try {
+                for (const lod of [2, 3]) {
+                    const cfg = r._voxelChunkConfig(lod);
+                    const surfY = r._terrainMacroSurfaceY(2000, 2000);
+                    const oy = Math.round(surfY - cfg.dimY * cfg.step * 0.4);
+                    const g = r._voxelChunkGeometry(2000, oy, 2000, cfg.dim, cfg.dimY, cfg.dim, cfg.step, null, 1);
+                    const posAttr = g && g.getAttribute && g.getAttribute("position");
+                    if (!posAttr || posAttr.count === 0) lod23Builds = false;
+                }
+            } catch (_e) {
+                lod23Builds = false;
+                out.lod23Err = String(_e && _e.message);
+            }
+            out.lod23Builds = lod23Builds;
+
+            // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle,
+            // `_voxelChunkLodFor` liest sie (byte-identisch), die Tabelle ist frozen,
+            // und der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (§2).
+            out.detailBandFn = typeof r._detailBand === "function";
+            if (out.detailBandFn) {
+                const b = (rr) => r._detailBand(rr);
+                out.bandLods =
+                    b(0).lod === 0 &&
+                    b(1).lod === 0 &&
+                    b(2).lod === 1 &&
+                    b(8).lod === 1 &&
+                    b(9).lod === 2 &&
+                    b(10).lod === 2 &&
+                    b(11).lod === 3 &&
+                    b(99).lod === 3;
+                out.lodReadsBand =
+                    r._voxelChunkLodFor(0, 0, 0, 0) === b(0).lod && r._voxelChunkLodFor(9, 0, 0, 0) === b(9).lod;
+                out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
+                // §2-Synergie: hazeFar = max(350, ring × 43.2). Ring 12 → 518 (>Floor),
+                // Ring 4 → 350 (Floor = geliebte Sicht unverändert).
+                r._ensureAtmoUniforms();
+                const ringBefore = r.state.chunkRingRadius;
+                r.state.chunkRingRadius = 12;
+                r._syncAtmoToViewDistance();
+                const haze12 =
+                    r.state.atmoUniforms && r.state.atmoUniforms.hazeFar ? r.state.atmoUniforms.hazeFar.value : 0;
+                r.state.chunkRingRadius = 4;
+                r._syncAtmoToViewDistance();
+                const haze4 =
+                    r.state.atmoUniforms && r.state.atmoUniforms.hazeFar ? r.state.atmoUniforms.hazeFar.value : 0;
+                r.state.chunkRingRadius = ringBefore;
+                r._syncAtmoToViewDistance();
+                out.hazeCouplesRing = Math.abs(haze12 - 12 * 43.2) < 1 && Math.abs(haze4 - 350) < 1;
+                // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
+                // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
+                out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
+                r.updateCreatures(0.016);
+                out.creatureAiCached =
+                    r.state.creatures.length === 0 ||
+                    r.state.creatures.some((c) => c.userData && c.userData.aiDir && c.userData.aiDir.isVector3);
+            }
         }
         return out;
     });
@@ -18182,6 +18265,45 @@ async function checkBandVoxelTerrainCore(ctx) {
             "Voxel P2b-Politur: der Chunk-Skirt schliesst die Naht (Geometrie überlappt die Chunk-Spanne)",
             voxelP2bResults.voxelSkirt
         );
+        check(
+            "Welle E (E1): die LOD-Pyramide-Config ist LOD-invariant (LOD2 dim6/step7.2, LOD3 dim3/step14.4; span 43.2 m / 360 m)",
+            voxelP2bResults.lodPyramidConfig
+        );
+        check(
+            "Welle E (E1): die LOD-Zuweisung ist ADDITIV (r≤8 wie alt: r2-8→LOD1; neue ferne Ringe r9-10→LOD2, r≥11→LOD3)",
+            voxelP2bResults.lodPyramidBands
+        );
+        check(
+            `Welle E (E1): ein LOD2- + LOD3-Chunk meshet ohne Crash (grobe dim 6/3)${voxelP2bResults.lod23Err ? " — " + voxelP2bResults.lod23Err : ""}`,
+            voxelP2bResults.lod23Builds
+        );
+        check(
+            "V17.114 U1: _detailBand (die Detail-Kaskade) ist die EINE Distanz-Quelle",
+            voxelP2bResults.detailBandFn === true
+        );
+        if (voxelP2bResults.detailBandFn) {
+            check(
+                "V17.114 U1: Kaskaden-Bänder byte-identisch (r≤1→0, r2-8→1, r9-10→2, r≥11→3)",
+                voxelP2bResults.bandLods === true
+            );
+            check(
+                "V17.114 U1: _voxelChunkLodFor liest die Kaskade (kein Parallel-Pfad)",
+                voxelP2bResults.lodReadsBand === true
+            );
+            check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
+            check(
+                "V17.114 U1 §2: der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (Floor 350 m)",
+                voxelP2bResults.hazeCouplesRing === true
+            );
+            check(
+                "V17.115 U3: das Band trägt aiDiv (nah jeden Frame=1, fern seltener: Band2=3, Band3=6)",
+                voxelP2bResults.bandAiDiv === true
+            );
+            check(
+                "V17.115 U3: Kreaturen cachen die KI-Richtung nach einem Tick (creature.userData.aiDir)",
+                voxelP2bResults.creatureAiCached === true
+            );
+        }
         check(
             "Voxel V9.22: _buildVoxelChunkGrass + _voxelSurfaceY existieren",
             voxelP2bResults.hasVoxelGrass && voxelP2bResults.hasVoxelSurfaceY
@@ -21561,7 +21683,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
                 const sy = r._voxelSurfaceY(dx, dz);
                 if (sy === null || !Number.isFinite(sy)) continue;
                 probe.position.set(dx, sy + 0.5, dz);
-                const ctx2 = r._creatureWaterContextAt(probe);
+                const ctx2 = r._creatureWaterContextAt(probe, sy);
                 if (ctx2.inWater === false && !landSample) landSample = { dx, dz, ctx: ctx2 };
                 else if (ctx2.inWater === true && !waterSample) waterSample = { dx, dz, ctx: ctx2 };
             }
@@ -21602,17 +21724,48 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         // loopen, Distance-LOD-gated).
         if (landSample) probe.position.set(landSample.dx, 5, landSample.dz);
         else probe.position.set(0, 5, 0);
+        // V17.113 — der Wasser-Kontext bekommt die Boden-Höhe jetzt als Param
+        // (im Frame-Loop gecacht via _creatureGroundY), scannt sie nicht mehr
+        // selbst. Die Perf-Probe reicht eine vorberechnete Surface = die
+        // realistische Frame-Kosten.
+        const psy = r._voxelSurfaceY(probe.position.x, probe.position.z);
         const t0 = performance.now();
-        for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe);
+        for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe, psy);
         out.perfMs = performance.now() - t0;
 
-        // Source-Probe: Helper liest aus _voxelSurfaceY + _waterLevelAt +
-        // _isAboveWaterAt (die V9.50/V9.59-Wahrheits-Quellen). Wer einen
-        // separaten Atlas-Lookup einbaut, bricht die EIN-Quelle-Disziplin.
+        // Source-Probe: die Wahrheits-Quellen (V9.50/V9.59). V17.113: die Surface
+        // kommt jetzt aus `_creatureGroundY` (gecacht) → die `_voxelSurfaceY`-
+        // Quelle ist dorthin gewandert; `_creatureGroundY` ist der EINZIGE
+        // Surface-Leser (EIN-Quelle-Disziplin bleibt, eine Ebene höher).
         const helperSrc = r._creatureWaterContextAt.toString();
-        out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(helperSrc);
+        out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(r._creatureGroundY.toString());
         out.usesWaterLevelAt = /_waterLevelAt\(/.test(helperSrc);
         out.usesIsAboveWaterAt = /_isAboveWaterAt\(/.test(helperSrc);
+
+        // V17.113 Kreatur-FPS-Dirigent — der BODEN-CACHE (die FPS-13-Wurzel-
+        // Heilung). Beweist deterministisch: die teuren `_voxelSurfaceY`-Scans
+        // sind pro Frame GEBOUNDET (Budget), nicht 1–2× pro Kreatur. Budget
+        // dekrementiert pro echtem Scan → wir lesen es als Scan-Zähler.
+        out.groundCacheFn = typeof r._creatureGroundY === "function";
+        if (out.groundCacheFn) {
+            const mk = (x, z) => ({ position: new THREE.Vector3(x, 5, z), userData: {} });
+            r._creatureGroundBudget = 5;
+            const m = mk(12, 12);
+            const g1 = r._creatureGroundY(m); // erster Scan: Budget 5→4
+            out.gFirstScan = r._creatureGroundBudget === 4;
+            const g2 = r._creatureGroundY(m); // gleiche Position → Cache-Hit (Budget bleibt 4)
+            out.gCacheHit = r._creatureGroundBudget === 4 && g2 === g1;
+            m.position.x += 0.3; // < 0.5 m bewegt → Cache-Hit
+            const g3 = r._creatureGroundY(m);
+            out.gCacheNear = r._creatureGroundBudget === 4 && g3 === g1;
+            m.position.x += 1.0; // jetzt > 0.5 m vom Cache-Punkt → Refresh: Budget 4→3
+            r._creatureGroundY(m);
+            out.gRefreshOnMove = r._creatureGroundBudget === 3;
+            r._creatureGroundBudget = 0; // Budget erschöpft
+            const fresh = mk(800, 800);
+            const gf = r._creatureGroundY(fresh); // kein Budget + kein Cache → Makro-Schätzwert, KEIN Scan
+            out.gBudgetBound = r._creatureGroundBudget === 0 && typeof gf === "number" && Number.isFinite(gf);
+        }
 
         return out;
     });
@@ -21661,9 +21814,20 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         res.perfMs < 200,
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
     );
-    check("Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25)", res.usesVoxelSurfaceY === true);
+    check(
+        "Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25, via _creatureGroundY)",
+        res.usesVoxelSurfaceY === true
+    );
     check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
     check("Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)", res.usesIsAboveWaterAt === true);
+    check("V17.113 Kreatur-FPS-Dirigent: _creatureGroundY (Boden-Cache) existiert", res.groundCacheFn === true);
+    if (res.groundCacheFn) {
+        check("V17.113: erster Boden-Zugriff scannt (Budget dekrementiert)", res.gFirstScan === true);
+        check("V17.113: gleiche Position → Cache-Hit (kein Scan)", res.gCacheHit === true);
+        check("V17.113: Bewegung < 0.5 m → Cache-Hit (kein Scan)", res.gCacheNear === true);
+        check("V17.113: Bewegung > 0.5 m → Refresh (ein Scan)", res.gRefreshOnMove === true);
+        check("V17.113: Budget erschöpft → kein Scan mehr, Makro-Fallback (FPS-Bound)", res.gBudgetBound === true);
+    }
 }
 
 // V11.0-d.2 (Pfeiler D — Tiefen-Scheue + Schwimm-Surface) — Beweis dass der
@@ -27044,9 +27208,18 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check("V17.2: Skybox hat sunDir-Uniform (Wolken-Sonnen-Glow)", v828Results.skyboxHasSunDir);
-        check("V17.J3: _followCelestialBodies existiert (Sonne/Mond/Planeten kamera-relativ)", v828Results.celestialFollowExists);
-        check("V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)", v828Results.sunFollowsCamera);
-        check("V17.J3: die Sonne orbitet NICHT mehr den Welt-Ursprung (fern bei fernem Spieler)", v828Results.sunNotAtOrigin);
+        check(
+            "V17.J3: _followCelestialBodies existiert (Sonne/Mond/Planeten kamera-relativ)",
+            v828Results.celestialFollowExists
+        );
+        check(
+            "V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)",
+            v828Results.sunFollowsCamera
+        );
+        check(
+            "V17.J3: die Sonne orbitet NICHT mehr den Welt-Ursprung (fern bei fernem Spieler)",
+            v828Results.sunNotAtOrigin
+        );
         check("V17.2: Wolken-Shader ist FBM-gemalt (fbm + sunGlow + cloudShade)", v828Results.skyboxCloudFbm);
         check("V17.10: Himmel nutzt mx_noise (eine Noise-Sprache, kein hash3-Flackern)", v828Results.skyboxMxNoise);
         check(
@@ -27054,14 +27227,38 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v828Results.terrainColorNodeBuilds === true
         );
         // ===== WELLE J — Render-Harmonie (die EINE geteilte Aerial-Perspektive) =====
-        check("V17.J: _applyAerialOutput existiert (die EINE geteilte Umgebungs-Funktion)", v828Results.aerialHelperExists);
-        check("V17.J: Terrain bekommt den geteilten Aerial-outputNode (post-lighting)", v828Results.terrainHasAerialOutput);
-        check("V17.J: Struktur bekommt DENSELBEN Aerial-outputNode (eine Atmosphäre, viele Leser)", v828Results.structHasAerialOutput);
-        check("V17.J: der Builder ruft EINE Quelle (kein Parallel-Pfad, kein __structAerialError)", v828Results.aerialFromOneSource);
-        check("V17.J: die dynamische material.color bleibt setzbar (kein colorNode-Override)", v828Results.structDynamicColorPreserved);
-        check("V17.106: der Aerial-Höhen-Melt ist EYE-RELATIV (cameraPosition + hazeNear, nicht absolute Höhe)", v828Results.aerialEyeRelative);
-        check("V17.107: das Terrain-Material trägt die 2.5D-Lichtung (normalNode/terrainFlatten, kein Fehler)", v828Results.terrainNormalFlatten);
-        check("V17.J: transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element)", v828Results.phantomNoAerial);
+        check(
+            "V17.J: _applyAerialOutput existiert (die EINE geteilte Umgebungs-Funktion)",
+            v828Results.aerialHelperExists
+        );
+        check(
+            "V17.J: Terrain bekommt den geteilten Aerial-outputNode (post-lighting)",
+            v828Results.terrainHasAerialOutput
+        );
+        check(
+            "V17.J: Struktur bekommt DENSELBEN Aerial-outputNode (eine Atmosphäre, viele Leser)",
+            v828Results.structHasAerialOutput
+        );
+        check(
+            "V17.J: der Builder ruft EINE Quelle (kein Parallel-Pfad, kein __structAerialError)",
+            v828Results.aerialFromOneSource
+        );
+        check(
+            "V17.J: die dynamische material.color bleibt setzbar (kein colorNode-Override)",
+            v828Results.structDynamicColorPreserved
+        );
+        check(
+            "V17.106: der Aerial-Höhen-Melt ist EYE-RELATIV (cameraPosition + hazeNear, nicht absolute Höhe)",
+            v828Results.aerialEyeRelative
+        );
+        check(
+            "V17.107: das Terrain-Material trägt die 2.5D-Lichtung (normalNode/terrainFlatten, kein Fehler)",
+            v828Results.terrainNormalFlatten
+        );
+        check(
+            "V17.J: transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element)",
+            v828Results.phantomNoAerial
+        );
         check(
             `V17.J: kein still gefangener Aerial-Node-Fehler${v828Results.aerialOutputError ? " — " + v828Results.aerialOutputError : ""}`,
             v828Results.aerialNoError === true
@@ -27073,13 +27270,25 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
-        check("V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)", v828Results.cavityAOSetter);
+        check(
+            "V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)",
+            v828Results.cavityAOSetter
+        );
         check("V17.J4: setEdgeSharp setzt die Post-FX-Kanten-Schärfe + persistiert", v828Results.edgeSharpSetter);
         check("V17.103: setSurfaceTexture pusht live ins triplanar-Uniform + persistiert", v828Results.surfTexSetter);
-        check("V17.104: setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)", v828Results.colorVarSetter);
+        check(
+            "V17.104: setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)",
+            v828Results.colorVarSetter
+        );
         check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
-        check("V17.109: setTerrainFlatten (2.5D-Lichtung-Slider) pusht live + persistiert", v828Results.terrainFlattenSetter);
-        check("V17.109: Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0", v828Results.sliderHeadroom);
+        check(
+            "V17.109: setTerrainFlatten (2.5D-Lichtung-Slider) pusht live + persistiert",
+            v828Results.terrainFlattenSetter
+        );
+        check(
+            "V17.109: Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0",
+            v828Results.sliderHeadroom
+        );
     } else {
         check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
     }
@@ -31187,7 +31396,9 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const ring = document.getElementById("slider-ring");
-        out.ringSliderRange = !!ring && ring.max === "8" && ring.value === "4";
+        // Welle E (E2): der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
+        // fernen Ringe 9–12 sind dank der LOD-Pyramide billig. Default bleibt 4.
+        out.ringSliderRange = !!ring && ring.max === "12" && ring.value === "4";
         const cel = document.getElementById("slider-cel");
         // V8.41 — Cel-Regler 2–8. V17.109: Default-Wert 8→6 (Schöpfer-getunte Basis).
         out.celSliderRange = !!cel && cel.max === "8" && cel.value === "6";
@@ -31239,7 +31450,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     });
 
     if (v840Results && !v840Results.error) {
-        check("V8.40: Sicht-Ring-Regler 1–8, Default 4 (9×9)", v840Results.ringSliderRange);
+        check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
         check("V8.41/V17.109: Cel-Stufen-Regler 2–8, Default 6 (Schöpfer-Basis)", v840Results.celSliderRange);
         check("V8.41: Cel-Stufen clampt über 8 auf 8", v840Results.celClampsAt8);
         check("V8.40: Cel ab 8 bleibt smooth (32-Stufen-Gradient)", v840Results.celSmoothThreshold);
@@ -31330,30 +31541,52 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         if (pm) {
             const ox = pm.position.x;
             const oz = pm.position.z;
+            const oTod = r.state.timeOfDay;
+            // V17.111 R1 — deterministische schräge Sonne: der Light-Space-Snap
+            // zeigt sich nur bei NICHT-achsparalleler Sonne (bei Zenit/Achse
+            // deckt er sich mit dem alten Welt-Snap). t=0.3 ≈ tiefe Morgensonne.
+            r.setTimeOfDay(0.3);
             pm.position.x = 123.5;
             pm.position.z = -77.25;
             r._applyDayNightToScene();
             const tgt = r.state.directionalLight.target.position;
-            // V9.85 Perf-2.b — Texel-Snap-Toleranz: das Shadow-Target wird
-            // jetzt auf die Texel-Boundary gerundet (~0.293m bei 600m/2048).
-            // Toleranz 0.5m deckt den Snap-Rundungsfehler ab. Der Schatten
-            // FOLGT weiterhin dem Spieler, nur diskret pro Texel statt
-            // kontinuierlich — das ist GENAU die Stable-Shadow-Maps-Heilung.
+            // Texel-Snap-Toleranz: das Shadow-Target FOLGT dem Spieler, auf das
+            // Texel-Grid gerundet (~0.29 m bei 600 m / 2048). Der V17.111-Light-
+            // Space-Snap rundet in der Ebene ⟂ sunDir → Versatz ≤ ~1 Texel < 0.5.
             out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.5 && Math.abs(tgt.z - -77.25) < 0.5;
-            // V9.85 Perf-2.b — Snap-Beweis: eine winzige Sub-Texel-Bewegung
-            // (0.05m, weniger als texelSize=0.293) darf das Shadow-Target
-            // NICHT verändern. Wenn der Snap kaputt ist, kriecht es um 0.05m
-            // mit → Schatten-Swimming. Wenn der Snap wirkt, bleibt es exakt
-            // wo es war → Schatten stabil. Das IST der Welle-2.b-Beweis.
+            // V17.111 R1 — Snap-Stabilitäts-Beweis (V9.56-i-Migration des V9.85-
+            // Tests). Das Schatten-Swimming lebt NUR in der Ebene ⟂ sunDir (das
+            // Texel-Grid). Eine Sub-Texel-Bewegung darf dort KEIN Sub-Texel-Crawl
+            // erzeugen: der Light-Space-Snap QUANTISIERT die LATERALE Target-
+            // Bewegung auf ganze Texel — ~0 (gleiche Zelle) ODER ein sauberer
+            // Sprung (≥~0.29 m bei Grenz-Übertritt), NIE ein Kriechen in Schritt-
+            // Höhe (~0.05 m = der Bug). Die Bewegung ENTLANG sunDir (Tiefe) ist
+            // harmlos (verschiebt keine Texel) → wird herausprojiziert. sunDir bei
+            // t=0.3 aus der replizierten _dayNightSunDirection-Formel.
+            const _ang = 0.3 * Math.PI * 2 - Math.PI / 2;
+            let _sx = Math.cos(_ang);
+            let _sy = Math.sin(_ang);
+            let _sz = Math.sin(_ang * 0.5) * 0.4;
+            const _sl = Math.hypot(_sx, _sy, _sz) || 1;
+            _sx /= _sl;
+            _sy /= _sl;
+            _sz /= _sl;
             const tgtX1 = tgt.x;
+            const tgtY1 = tgt.y;
             const tgtZ1 = tgt.z;
             pm.position.x = 123.5 + 0.05;
             pm.position.z = -77.25 + 0.05;
             r._applyDayNightToScene();
             const tgt2 = r.state.directionalLight.target.position;
-            out.shadowSnapStable = Math.abs(tgt2.x - tgtX1) < 0.001 && Math.abs(tgt2.z - tgtZ1) < 0.001;
+            const dX = tgt2.x - tgtX1;
+            const dY = tgt2.y - tgtY1;
+            const dZ = tgt2.z - tgtZ1;
+            const along = dX * _sx + dY * _sy + dZ * _sz; // Komponente entlang sunDir (harmlos)
+            const latMove = Math.hypot(dX - along * _sx, dY - along * _sy, dZ - along * _sz); // ⟂ sunDir
+            out.shadowSnapStable = latMove < 0.01 || latMove > 0.2;
             pm.position.x = ox;
             pm.position.z = oz;
+            r.setTimeOfDay(oTod);
             r._applyDayNightToScene();
         }
         // _applyDayNightToScene leitet die Terrain-lightDirection aus

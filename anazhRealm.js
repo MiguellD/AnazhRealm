@@ -303,6 +303,10 @@ class AnazhRealm {
                 colorVar: 1.5,
                 fogDistance: 5.31, // Slider 177 % (= /3 × 100)
                 waterCull: 0.0025,
+                // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
+                // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
+                shadowRange: 300, // Frustum-Halbbreite m (kleiner = schärfer)
+                shadowBias: 1.0, // normalBias (Acne ↔ Peter-Panning)
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
@@ -14379,6 +14383,16 @@ class AnazhRealm {
             bucket.push(j);
         }
         const lifeTrickleNow = performance.now() / 1000;
+        // V17.113 Kreatur-FPS-Dirigent — das Frame-Budget für teure Boden-Scans
+        // (`_creatureGroundY`). Max so viele volle `_voxelSurfaceY`-Scans pro
+        // Frame, egal wie viele Kreaturen; der Rest nutzt den Cache. Bei 120
+        // Kreaturen: ~240 Scans/Frame → ≤ 20.
+        this._creatureGroundBudget = 20;
+        // V17.115 U3 — die Kaskade gewinnt einen Leser: ferne Kreaturen rechnen
+        // ihre teure KI-Richtung seltener (Band-`aiDiv`), bewegen sich aber jeden
+        // Frame GLATT mit der gecachten Richtung weiter. Der Frame-Zähler staffelt
+        // die Neuberechnung über die Kreaturen (kein Sammel-Spike).
+        const aiFrame = (this._creatureAiFrame = (this._creatureAiFrame || 0) + 1);
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
             const emotion = this.state.creatureEmotions[i];
@@ -14419,67 +14433,89 @@ class AnazhRealm {
                 hasHit = this._runRaycast(rayStart, rayEnd, (_cb, hit) => hit);
             }
 
+            // V17.115 U3 — die Kreatur LIEST die Detail-Kaskade: ihre Distanz-Band
+            // bestimmt, wie oft die teure KI-Richtung neu gerechnet wird. distSq
+            // (XZ) hier EINMAL berechnet (der Wasser-Kontext unten nutzt es wieder).
+            const dxToPlayer = creature.position.x - playerPos.x;
+            const dzToPlayer = creature.position.z - playerPos.z;
+            const distSqToPlayer = dxToPlayer * dxToPlayer + dzToPlayer * dzToPlayer;
+            const aiBand = this._detailBand(Math.sqrt(distSqToPlayer) / 43.2);
+            const recomputeAI = aiBand.aiDiv <= 1 || !creature.userData.aiDir || (aiFrame + i) % aiBand.aiDiv === 0;
             // Bewegung: Welle 6.H Phase 1. Wenn ein non-wander-Task aktiv ist,
             // hat er Vorrang über die heutige Emotion-Logik (follow_player /
             // wait). Bei wander oder ohne Task fällt's auf die historische
-            // Emotion-basierte Bewegung zurück.
-            const task = this._getCreatureTask(creature);
-            let direction = this._tickCreatureTaskDirection(creature, task, emotion);
-            if (direction === null) {
-                direction = scratchDir.set(0, 0, 0);
-                // V17.58 W3 — die wilde Kreatur LIEST den Spieler: die WARINESS (deine Aura-Menace × der
-                // Natur des Wesens × Bindung × Modus + frische Kampf-Furcht) ersetzt die statische happy/
-                // sad-Wahl. Neugierig NÄHER (sanfte Aura, kühnes/gebundenes Wesen) · scheu FORT (chaotische
-                // Aura, scheues Wesen, oder getroffen) · sonst gemächlich wandern. Kein Skript — Emergenz.
-                const wariness = this._creatureWariness(creature);
-                const NAT = AnazhRealm.CREATURE_NATURE;
-                if (wariness >= NAT.fleeThreshold) {
-                    // SCHEU/verschreckt — fort vom Spieler (schneller als das Schlendern; sonst Zufalls-Drift).
-                    const fromPlayer = scratchA.subVectors(creature.position, playerPos);
-                    fromPlayer.y = 0;
-                    if (fromPlayer.length() < NAT.fleeRadius) {
-                        direction.copy(fromPlayer.normalize().multiplyScalar(speed * NAT.fleeSpeedBoost));
-                    } else {
-                        direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
-                    }
-                } else if (wariness <= NAT.curiousThreshold) {
-                    // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
-                    const toPlayer = scratchA.subVectors(playerPos, creature.position);
-                    toPlayer.y = 0;
-                    if (toPlayer.length() > 2) {
-                        direction.copy(toPlayer.normalize().multiplyScalar(speed));
-                    }
-                    // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare Kreaturen (off-screen
-                    // ist Flocking unsichtbar), distanceToSquared (kein sqrt), nach 6 Nachbarn abbrechen,
-                    // Spatial-Hash (nur die 9 Cells um die eigene Kreatur). REUSE für die neugierige Schar.
-                    if (inFrustum) {
-                        let neighbors = 0;
-                        const gcx = Math.floor(creature.position.x / FLOCK_CELL);
-                        const gcz = Math.floor(creature.position.z / FLOCK_CELL);
-                        cellLoop: for (let dgx = -1; dgx <= 1; dgx++) {
-                            for (let dgz = -1; dgz <= 1; dgz++) {
-                                const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
-                                if (!bucket) continue;
-                                for (let bi = 0; bi < bucket.length; bi++) {
-                                    const j = bucket[bi];
-                                    if (i === j) continue;
-                                    const otherCreature = this.state.creatures[j];
-                                    const dsq = creature.position.distanceToSquared(otherCreature.position);
-                                    if (dsq > 1 && dsq < 25) {
-                                        const toOther = scratchB.subVectors(otherCreature.position, creature.position);
-                                        toOther.y = 0;
-                                        direction.add(toOther.normalize().multiplyScalar(0.5));
-                                        neighbors++;
-                                        if (neighbors >= 6) break cellLoop;
+            // Emotion-basierte Bewegung zurück. Ferne Kreaturen (Band 2/3) rechnen
+            // die Richtung nur jeden aiDiv-ten Frame neu (cache+reuse → glatt).
+            let task = null;
+            let direction;
+            if (recomputeAI) {
+                task = this._getCreatureTask(creature);
+                direction = this._tickCreatureTaskDirection(creature, task, emotion);
+                if (direction === null) {
+                    direction = scratchDir.set(0, 0, 0);
+                    // V17.58 W3 — die wilde Kreatur LIEST den Spieler: die WARINESS (deine Aura-Menace × der
+                    // Natur des Wesens × Bindung × Modus + frische Kampf-Furcht) ersetzt die statische happy/
+                    // sad-Wahl. Neugierig NÄHER (sanfte Aura, kühnes/gebundenes Wesen) · scheu FORT (chaotische
+                    // Aura, scheues Wesen, oder getroffen) · sonst gemächlich wandern. Kein Skript — Emergenz.
+                    const wariness = this._creatureWariness(creature);
+                    const NAT = AnazhRealm.CREATURE_NATURE;
+                    if (wariness >= NAT.fleeThreshold) {
+                        // SCHEU/verschreckt — fort vom Spieler (schneller als das Schlendern; sonst Zufalls-Drift).
+                        const fromPlayer = scratchA.subVectors(creature.position, playerPos);
+                        fromPlayer.y = 0;
+                        if (fromPlayer.length() < NAT.fleeRadius) {
+                            direction.copy(fromPlayer.normalize().multiplyScalar(speed * NAT.fleeSpeedBoost));
+                        } else {
+                            direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
+                        }
+                    } else if (wariness <= NAT.curiousThreshold) {
+                        // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
+                        const toPlayer = scratchA.subVectors(playerPos, creature.position);
+                        toPlayer.y = 0;
+                        if (toPlayer.length() > 2) {
+                            direction.copy(toPlayer.normalize().multiplyScalar(speed));
+                        }
+                        // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare Kreaturen (off-screen
+                        // ist Flocking unsichtbar), distanceToSquared (kein sqrt), nach 6 Nachbarn abbrechen,
+                        // Spatial-Hash (nur die 9 Cells um die eigene Kreatur). REUSE für die neugierige Schar.
+                        if (inFrustum) {
+                            let neighbors = 0;
+                            const gcx = Math.floor(creature.position.x / FLOCK_CELL);
+                            const gcz = Math.floor(creature.position.z / FLOCK_CELL);
+                            cellLoop: for (let dgx = -1; dgx <= 1; dgx++) {
+                                for (let dgz = -1; dgz <= 1; dgz++) {
+                                    const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
+                                    if (!bucket) continue;
+                                    for (let bi = 0; bi < bucket.length; bi++) {
+                                        const j = bucket[bi];
+                                        if (i === j) continue;
+                                        const otherCreature = this.state.creatures[j];
+                                        const dsq = creature.position.distanceToSquared(otherCreature.position);
+                                        if (dsq > 1 && dsq < 25) {
+                                            const toOther = scratchB.subVectors(
+                                                otherCreature.position,
+                                                creature.position
+                                            );
+                                            toOther.y = 0;
+                                            direction.add(toOther.normalize().multiplyScalar(0.5));
+                                            neighbors++;
+                                            if (neighbors >= 6) break cellLoop;
+                                        }
                                     }
                                 }
                             }
                         }
+                    } else {
+                        // NEUTRAL — weder gelockt noch verschreckt → gemächliches Wandern.
+                        direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
                     }
-                } else {
-                    // NEUTRAL — weder gelockt noch verschreckt → gemächliches Wandern.
-                    direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
                 }
+                // V17.115 U3 — die KI-Richtung cachen; ferne Kreaturen verwenden sie
+                // aiDiv Frames lang wieder → glatte Bewegung, seltene Neuberechnung.
+                if (!creature.userData.aiDir) creature.userData.aiDir = new THREE.Vector3();
+                creature.userData.aiDir.copy(direction);
+            } else {
+                direction = scratchDir.copy(creature.userData.aiDir);
             }
 
             // V11.0-d.2 (Pfeiler D — Wasser ↔ Kreaturen, Tiefen-Scheue +
@@ -14510,11 +14546,10 @@ class AnazhRealm {
             // semantisch korrekter: die V9.84-Perf-1.e-Distance-LOD-Lehre ist
             // „sichtbare horizontale Nähe", nicht 3D-Kugel — der Spieler sieht
             // eine Kreatur die seitlich 30 m entfernt ist, unabhängig von y.
-            const dxToPlayer = creature.position.x - playerPos.x;
-            const dzToPlayer = creature.position.z - playerPos.z;
-            const distSqToPlayer = dxToPlayer * dxToPlayer + dzToPlayer * dzToPlayer;
+            // V17.115 U3 — distSqToPlayer (XZ) ist oben schon berechnet (für die
+            // Kaskaden-Band-Entscheidung); hier nur das <50-m-Wasser-Gate.
             if (distSqToPlayer < 2500) {
-                const wctx = this._creatureWaterContextAt(creature);
+                const wctx = this._creatureWaterContextAt(creature, this._creatureGroundY(creature));
                 if (wctx.inWater) {
                     if (wctx.depthBelow > 1.5 && wctx.shoreDir && (!task || task.name === "wander")) {
                         // shoreDir ist Kardinal-Vector3 (±1 oder 0) — keine
@@ -14546,7 +14581,12 @@ class AnazhRealm {
             // vorher), in einer Voxel-Welt liefert es `_voxelSurfaceY` (V9.25).
             // Eine Funktion, alle Höhen-Konsumenten — die Phase-5b-Disziplin
             // ehrlich abgeschlossen.
-            const terrainHeight = this.getTerrainHeightAt(creature.position.x, creature.position.z);
+            // V17.113 — der gecachte Boden (Kreatur-FPS-Dirigent) statt eines
+            // vollen `_voxelSurfaceY`-Scans pro Kreatur/Frame. Selbe Semantik wie
+            // `getTerrainHeightAt` (null → terrainBaseHeight).
+            const _gY = this._creatureGroundY(creature);
+            const terrainHeight =
+                typeof _gY === "number" && Number.isFinite(_gY) ? _gY : this.state.terrainBaseHeight || 0;
             // V11.0-d.2 — wenn die Spalte nass + tief ist, schwebt die Kreatur
             // 0.3 m unter dem Wasser-Spiegel (Schwimm-Surface, sichtbar als
             // halb-eingetaucht). Sonst sitzt sie wie bisher 0.5 m über dem
@@ -18363,7 +18403,21 @@ class AnazhRealm {
     //   Geometrie-Maschinerie (`_voxelChunkGeometry`), zwei step-Varianten.
     _voxelChunkConfig(lod = 0) {
         // V9.24: ringRadius folgt dem Sicht-Ring-Regler (Default 4).
-        const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
+        const ringRadius = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
+        // Welle E (E1) — die LOD-PYRAMIDE: alle Stufen teilen denselben
+        // Horizontal-Span (dim·step = 43.2 m) UND denselben Vertikal-Span
+        // (dimY·step = 360 m, floorDrop 90 → Decke base+270) → LOD-invariant,
+        // jede gröbere Stufe hat 4× weniger Cells als die vorige. Der Band-Skip
+        // (`_voxelSampleDensityGrid`) sampelt nur das Oberflächen-Band → die
+        // hohe Hülle ist billig. LOD2/LOD3 sind die FERNEN Ringe (E1).
+        if (lod >= 3) {
+            // LOD 3 — step 14.4, dim 3 (64× weniger Cells als LOD0). Fernster Ring.
+            return { dim: 3, step: 14.4, span: 43.2, ringRadius, dimY: 25, floorDrop: 90, lod: 3 };
+        }
+        if (lod >= 2) {
+            // LOD 2 — step 7.2, dim 6 (16× weniger Cells als LOD0).
+            return { dim: 6, step: 7.2, span: 43.2, ringRadius, dimY: 50, floorDrop: 90, lod: 2 };
+        }
         if (lod >= 1) {
             // LOD 1 — Half-Resolution (8× weniger Cells). dimY 68→100 (Welle F:
             // gewaltige Berge — die Hülle wuchs, der Band-Skip hält die Kosten).
@@ -18376,17 +18430,38 @@ class AnazhRealm {
         return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 200, floorDrop: 90, lod: 0 };
     }
 
-    // V9.88 (Welle Perf-3.b) — distance-basierte LOD-Entscheidung pro Chunk.
-    // r ≤ 1 (chunk-distance, also ≤ 43.2 m + 43.2 m = 86 m world)
-    // → LOD 0 (Nahbereich, volle Auflösung). r ≥ 2 → LOD 1 (Fernbereich,
-    // 8× weniger Cells). Threshold ehrt den Doc-Plan §4 (80 m). KEIN
-    // Affinity-Feld in der Erst-Welle — Folge-Welle 3.b-ext kann Threshold
-    // emergent über `worldFieldAt`-Affinity machen (dichte Wälder = näher
-    // hochauflösend), das ist die V9.56-Disziplin (sub-wellen). Hier reicht
-    // ein einfacher Distance-Threshold für den Beweis.
+    // ===== DIE DETAIL-KASKADE (V17.114, U1) — die EINE Distanz-Quelle ========
+    // Schöpfer-Auftrag: „man baut nicht 10 LOD-Systeme; ein Profi bringt Synergie,
+    // klare Flüsse, Regelkreise die sich selbst stabilisieren". Voller Plan:
+    // docs/lod-kaskade-plan.md. Die Detail-Kaskade ist die Distanz-Schwester der
+    // Aura: EIN kamera-relatives Distanz-Feld (`r` = Chebyshev-Chunk-Distanz vom
+    // Spieler), das alle Welt-Schichten lesen für „wie viel Detail HIER". Sechs
+    // Gesichter teilen dieselbe Distanz: Farbe (Aerial V17.106), Geometrie (LOD),
+    // Licht (Schatten-CSM, U5), Leben (Deko/Kreaturen, U3/U4), Draw-Calls
+    // (Clipmap, U6). EINE frozen Tabelle (`DETAIL_CASCADE`), wächst pro Welle um
+    // ein Band-Feld (jedes mit seinem Leser verifiziert — kein Passagier). Der
+    // Regelkreis stabilisiert sich selbst: alles ist `f(r)`, kamera-relativ,
+    // derived (kein State, kein Drift) → ein Regler, alle folgen.
+    _detailBand(r) {
+        const c = AnazhRealm.DETAIL_CASCADE;
+        for (let i = 0; i < c.length; i++) if (r <= c[i].maxRing) return c[i];
+        return c[c.length - 1];
+    }
+
+    // Die äußerste Kante der Kaskade in Metern (kamera-relativ): Sicht-Ring ×
+    // Chunk-Span. Der Fog-/Aerial-Schleier koppelt hieran (§2-Synergie) → der
+    // Dunst wandert mit dem Sicht-Ring, die ferne LOD-Naht bleibt verborgen.
+    _detailViewDistance() {
+        const cfg = this._voxelChunkConfig();
+        return cfg.ringRadius * cfg.span;
+    }
+
+    // V17.114 U1 — der erste Leser: die Terrain-Chunk-LOD. BYTE-IDENTISCH zur
+    // V17.112-Pyramide (r≤1→0, r2-8→1, r9-10→2, r≥11→3), jetzt aus der EINEN
+    // Kaskaden-Tabelle statt einer eigenen if-Kette.
     _voxelChunkLodFor(cx, cz, pcx, pcz) {
         const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
-        return r >= 2 ? 1 : 0;
+        return this._detailBand(r).lod;
     }
 
     // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH): soll dieser Chunk SOFORT
@@ -19270,7 +19345,21 @@ class AnazhRealm {
                     : 1.0
             ),
         };
+        // V17.114 U1 — die §2-Synergie: der Aerial-Schleier koppelt an die
+        // Kaskaden-Kante (der Dunst wandert mit dem Sicht-Ring).
+        this._syncAtmoToViewDistance();
         return this.state.atmoUniforms;
+    }
+
+    // V17.114 U1 — der Fog-/Aerial-Schleier koppelt an die Detail-Kaskaden-Kante
+    // (§2-Synergie): die Aerial-Höhen-Melt-Ferne (hazeFar) wandert mit dem Sicht-
+    // Ring → die NEUEN fernen Ringe (9–12) werden vom Dunst verborgen (ihre LOD-
+    // Naht bleibt unsichtbar), die geliebte Sicht (Ring ≤ 8) bleibt beim getunten
+    // Default-Floor (350 m) UNVERÄNDERT. Ein Floor statt Override = kein Regress.
+    _syncAtmoToViewDistance() {
+        const u = this.state.atmoUniforms;
+        if (!u || !u.hazeFar) return;
+        u.hazeFar.value = Math.max(350, this._detailViewDistance());
     }
 
     // ===== WELLE J — DIE EINE GETEILTE UMGEBUNGS-FUNKTION (Render-Harmonie) =====
@@ -20502,11 +20591,47 @@ class AnazhRealm {
     // ≈ 144 Float-Compares. Deutlich unter 100µs im Browser. D.2 wird zudem
     // Distance-LOD (nur für Kreaturen <50m vom Spieler) anwenden — der Test-
     // Band misst die Per-Call-Cost separat.
-    _creatureWaterContextAt(creature) {
+    // Welle E / Kreatur-FPS-Dirigent (V17.113) — der BODEN-CACHE. GEMESSEN
+    // (scripts/diag-frame-budget.cjs): jede Kreatur löste PRO FRAME einen
+    // `_voxelSurfaceY`-Scan aus (der Settle Z~14553, für ALLE Kreaturen) + nahe
+    // Kreaturen einen zweiten im Wasser-Kontext — je ein vertikaler Density-Scan
+    // (~100–280 Noise-Evals). Bei 120 Kreaturen war das die gemessene ~49-ms-
+    // Wurzel (FPS 13). Heilung: das Terrain ist STATISCH → die Boden-Höhe pro
+    // Kreatur cachen, NUR neu scannen wenn sie sich > 0.5 m bewegt hat UND ein
+    // Frame-Budget frei ist (durch die Bewegung selbst gestaffelt). Der Scan-
+    // Aufwand ist damit pro Frame GEBOUNDET, UNABHÄNGIG von der Kreatur-Zahl.
+    // EINE Quelle für Wasser-Kontext + Settle (kein Doppel-Scan). Liefert die
+    // rohe `_voxelSurfaceY` (Zahl|null); die Konsumenten machen ihr null-Handling.
+    _creatureGroundY(creature) {
+        const cx = creature.position.x;
+        const cz = creature.position.z;
+        const ud = creature.userData;
+        if (ud.cachedGroundY !== undefined) {
+            const dx = cx - ud.cachedGroundX;
+            const dz = cz - ud.cachedGroundZ;
+            if (dx * dx + dz * dz < 0.25) return ud.cachedGroundY; // < 0.5 m bewegt → Cache
+        }
+        if (this._creatureGroundBudget > 0) {
+            this._creatureGroundBudget--;
+            const gY = this._voxelSurfaceY(cx, cz);
+            ud.cachedGroundY = gY;
+            ud.cachedGroundX = cx;
+            ud.cachedGroundZ = cz;
+            return gY;
+        }
+        // Budget erschöpft: leicht veralteter Cache (imperzeptibel, < 1 Frame) ODER
+        // — für eine frische Kreatur ohne Cache — ein billiger Makro-Schätzwert
+        // (kein Density-Scan; nächsten Frame vom Budget verfeinert).
+        if (ud.cachedGroundY !== undefined) return ud.cachedGroundY;
+        return this._terrainMacroSurfaceY(cx, cz);
+    }
+
+    _creatureWaterContextAt(creature, surfaceY) {
         const x = creature.position.x;
         const z = creature.position.z;
         const cy = creature.position.y;
-        const surfaceY = this._voxelSurfaceY(x, z);
+        // V17.113 — `surfaceY` kommt jetzt aus `_creatureGroundY` (gecacht) statt
+        // einem eigenen `_voxelSurfaceY`-Scan → kein Doppel-Scan pro Kreatur.
         const waterY = this._waterLevelAt(x, z);
         const surfY = surfaceY === null || !Number.isFinite(surfaceY) ? cy : surfaceY;
         const depthBelow = waterY - surfY;
@@ -23677,6 +23802,15 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.colorVar)
                         ? this.state.atmosphere.colorVar
                         : 1.0,
+                // V17.111 R1 — Schatten-Hebel (Reichweite/Bias).
+                shadowRange:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.shadowRange)
+                        ? this.state.atmosphere.shadowRange
+                        : 300,
+                shadowBias:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.shadowBias)
+                        ? this.state.atmosphere.shadowBias
+                        : 1.0,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -23786,7 +23920,7 @@ class AnazhRealm {
                 this.state.versionHistory = this.state.versionHistory.slice(-this.state.maxVersionHistoryEntries);
             }
             localStorage.setItem("anazhRealmVersions", JSON.stringify(this.state.versionHistory));
-            this.log("Zustand in localStorage gespeichert");
+            this.log("Zustand in localStorage gespeichert", "DEBUG");
         } catch (error) {
             this.log(`localStorage-Speichern fehlgeschlagen: ${error.message}`, "ERROR");
         }
@@ -25778,6 +25912,10 @@ class AnazhRealm {
             if (Number.isFinite(cv)) this.setColorVariation(Math.max(0, Math.min(2, cv)));
             const tf = Number(state.atmosphere.terrainFlatten);
             if (Number.isFinite(tf)) this.setTerrainFlatten(Math.max(0, Math.min(1, tf)));
+            const sr = Number(state.atmosphere.shadowRange);
+            if (Number.isFinite(sr)) this.setShadowRange(Math.max(80, Math.min(400, sr)));
+            const sb = Number(state.atmosphere.shadowBias);
+            if (Number.isFinite(sb)) this.setShadowBias(Math.max(0, Math.min(3, sb)));
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -35688,7 +35826,7 @@ class AnazhRealm {
         if (inRange) this._rebuildArchitectureMesh(entry);
         this.log(
             `Struktur gebaut: ${type} bei (${entry.position.x.toFixed(1)}, ${entry.position.z.toFixed(1)})${scale !== 1 ? ` ×${scale.toFixed(2)}` : ""}${inRange ? "" : " (cold)"}`,
-            "INFO"
+            "DEBUG"
         );
         // V7.75 — Welt-Effekte (awe/hope-Boost, Singing-Sinus) sind eine
         // Antwort der Welt auf SPIELER-GESTE, nicht auf ihre eigene Saat.
@@ -36262,6 +36400,47 @@ class AnazhRealm {
         this.state.atmosphere.edgeSharp = m;
         if (this.state.postProcessingUniforms && this.state.postProcessingUniforms.localContrast)
             this.state.postProcessingUniforms.localContrast.value = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // V17.111 R1 — die SCHATTEN-Hebel als sichtbare Slider (Lebens-Regel: der
+    // wichtigste Regler ist UI, nie nur Konsole). Reichweite = die Frustum-
+    // Halbbreite des Shadow-Camera in Metern. KLEINER = schärfere Texel (mehr
+    // Auflösung pro Meter → der Kern-Hebel gegen die grobe Rasterlinie an
+    // vertikalen Wänden), aber kleinere Abdeckung. Texel-Größe = 2·Reichweite /
+    // mapSize (bei 300 m / 2048 ≈ 0.29 m, bei 150 m ≈ 0.15 m). Der Light-Space-
+    // Snap liest die Frustum-Breite live → er passt sich automatisch an.
+    setShadowRange(meters) {
+        const v = Math.max(80, Math.min(400, Number(meters)));
+        const m = Number.isFinite(v) ? v : 300;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.shadowRange = m;
+        const dl = this.state.directionalLight;
+        if (dl && dl.shadow && dl.shadow.camera) {
+            const sc = dl.shadow.camera;
+            sc.left = -m;
+            sc.right = m;
+            sc.top = m;
+            sc.bottom = -m;
+            sc.updateProjectionMatrix();
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // V17.111 R1 — der Schatten-Bias (Three.js shadow.normalBias). Verschiebt
+    // den Shadow-Sample entlang der Flächen-Normale; an steilen, edge-on zur
+    // Sonne liegenden Wänden (wenige Texel) ist das der Hebel gegen Shadow-Acne
+    // (zu klein → Streifen) ↔ Peter-Panning (zu gross → der Schatten löst sich
+    // vom Fuss). Default 1.0 (= bisheriger V8.47-Wert, keine Look-Änderung).
+    setShadowBias(bias) {
+        const v = Math.max(0, Math.min(3, Number(bias)));
+        const m = Number.isFinite(v) ? v : 1.0;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.shadowBias = m;
+        const dl = this.state.directionalLight;
+        if (dl && dl.shadow) dl.shadow.normalBias = m;
         if (typeof this.saveState === "function") this.saveState();
         return m;
     }
@@ -42532,15 +42711,21 @@ class AnazhRealm {
     // Kamera, ändert pm.position NICHT). Heilung: focusX/Z auf das Shadow-
     // Texel-Grid snappen. Spieler bewegt sich kontinuierlich, die Shadow-
     // Camera springt diskret um ganze Texel — das Schatten-Muster fällt
-    // immer exakt auf dieselben World-Space-Punkte. Konsequenz: kein
-    // Swimming, identische optische Qualität, ein paar Multiplikationen
-    // pro Frame extra. Texel-Größe wird aus der aktuellen Shadow-Frustum-
-    // Breite + mapSize gelesen (selbst-anpassend bei künftigen Anpassungen).
+    // immer exakt auf dieselben World-Space-Punkte. Texel-Größe wird aus der
+    // aktuellen Shadow-Frustum-Breite + mapSize gelesen (selbst-anpassend).
+    //
+    // V17.111 R1 — der V9.85-Snap snappte in WELT-X/Z, was nur bei achs-
+    // paralleler Sonne dem echten Texel-Grid entspricht. GEMESSEN (diag-shadow-
+    // snap): bei schräger Sonne (tiefe Elevation, jede nicht-achsparallele
+    // Azimut) liess er bis ~1 Texel (~0.29 m) Rest-Swimming → die Rasterlinie
+    // „wandert beim Laufen" an vertikalen Wänden. Geheilt durch den LIGHT-SPACE-
+    // Snap im Block unten (Snap in der Ebene ⟂ sunDir statt Welt-X/Z) → 0.
     _dayNightApplyDirectionalLight(sunDir, tint) {
         const dl = this.state.directionalLight;
         const pm = this.state.playerMesh;
         const lightDist = 200;
         let focusX = pm ? pm.position.x : 0;
+        let focusY = 0;
         let focusZ = pm ? pm.position.z : 0;
         if (pm && dl.shadow && dl.shadow.camera && dl.shadow.mapSize) {
             const sc = dl.shadow.camera;
@@ -42548,13 +42733,52 @@ class AnazhRealm {
             const shadowMapSize = dl.shadow.mapSize.width; // typisch 2048
             if (shadowWidth > 0 && shadowMapSize > 0) {
                 const texelSize = shadowWidth / shadowMapSize; // ~0.293 m bei 600/2048
-                focusX = Math.round(focusX / texelSize) * texelSize;
-                focusZ = Math.round(focusZ / texelSize) * texelSize;
+                // V17.111 R1 — LIGHT-SPACE Texel-Snap (ersetzt den V9.85-Welt-X/Z-
+                // Snap). Das Shadow-Texel-Grid liegt in der Ebene SENKRECHT zu
+                // sunDir (den Lateral-Achsen der Light-View-Camera), NICHT in
+                // Welt-X/Z. Ein Welt-X/Z-Snap lässt bei schräger Sonne bis ~1 Texel
+                // Rest-Versatz gegen dieses Grid (GEMESSEN diag-shadow-snap: ~0.29 m
+                // bei tiefer Sonne, ~0 bei Zenit) → die Schatten-Rasterlinie
+                // „wandert beim Laufen" an vertikalen Wänden. Heilung: focus auf die
+                // Lateral-Achsen (axis ⟂ sunDir) projizieren, DORT auf das Texel-Grid
+                // snappen, zurück in Welt-Space → jeder Texel fällt pro Frame exakt
+                // auf denselben World-Space-Punkt (Swimming → Maschinen-Epsilon).
+                // Allokationsfreie Skalar-Mathematik (1×/Frame); die Basis spiegelt
+                // EXAKT Three.js' Matrix4.lookAt der Shadow-Camera (z=sunDir,
+                // x=up×z, y=z×x; up = Default (0,1,0), Zenit-Fallback (0,0,1)).
+                const sl = Math.hypot(sunDir.x, sunDir.y, sunDir.z) || 1;
+                const sx = sunDir.x / sl;
+                const sy = sunDir.y / sl;
+                const sz = sunDir.z / sl;
+                const zenith = Math.abs(sy) > 0.999;
+                const uy = zenith ? 0 : 1;
+                const uz = zenith ? 1 : 0;
+                // xAxis = normalize(up × sunDir)   (up = (0, uy, uz))
+                let axx = uy * sz - uz * sy;
+                let axy = uz * sx;
+                let axz = -uy * sx;
+                const axl = Math.hypot(axx, axy, axz) || 1;
+                axx /= axl;
+                axy /= axl;
+                axz /= axl;
+                // yAxis = sunDir × xAxis   (Einheit: sunDir ⟂ xAxis, beide normiert)
+                const ayx = sy * axz - sz * axy;
+                const ayy = sz * axx - sx * axz;
+                const ayz = sx * axy - sy * axx;
+                // focus (focusX, 0, focusZ) auf die Lateral-Achsen projizieren +
+                // auf das Texel-Grid snappen (focusY=0 → die axy/ayy-Terme entfallen)
+                const fa = focusX * axx + focusZ * axz;
+                const fb = focusX * ayx + focusZ * ayz;
+                const dFa = Math.round(fa / texelSize) * texelSize - fa;
+                const dFb = Math.round(fb / texelSize) * texelSize - fb;
+                focusX += dFa * axx + dFb * ayx;
+                focusY += dFa * axy + dFb * ayy;
+                focusZ += dFa * axz + dFb * ayz;
             }
         }
-        dl.position.set(focusX + sunDir.x * lightDist, sunDir.y * lightDist, focusZ + sunDir.z * lightDist);
+        dl.position.set(focusX + sunDir.x * lightDist, focusY + sunDir.y * lightDist, focusZ + sunDir.z * lightDist);
         if (dl.target) {
-            dl.target.position.set(focusX, 0, focusZ);
+            dl.target.position.set(focusX, focusY, focusZ);
             dl.target.updateMatrixWorld();
         }
         dl.color.setRGB(
@@ -43262,7 +43486,7 @@ class AnazhRealm {
                 const vv = parseFloat(localStorage.getItem("anazh.audio.voiceVol"));
                 if (Number.isFinite(vv) && vv >= 0 && vv <= 1) this.state.symphony.voiceVolume = vv;
                 const rr = parseInt(localStorage.getItem("anazh.world.ringRadius"), 10);
-                if (Number.isFinite(rr) && rr >= 1 && rr <= 8) this.state.chunkRingRadius = rr;
+                if (Number.isFinite(rr) && rr >= 1 && rr <= 12) this.state.chunkRingRadius = rr;
             } catch {
                 /* ignore */
             }
@@ -43360,13 +43584,18 @@ class AnazhRealm {
             //   Ring=4 → max 243 (große Welt-Sicht)
             this.state.maxLoadedChunks = Math.max(15, Math.ceil(ringSize * ringSize * 3));
             if (rsv) rsv.textContent = ringText(v);
+            // V17.114 U1 — der Sicht-Ring ist die Kaskaden-Kante: der Aerial-
+            // Schleier wandert mit (§2-Synergie), die ferne LOD-Naht bleibt im Dunst.
+            this._syncAtmoToViewDistance();
         };
         if (rs) {
             rs.value = String(this.state.chunkRingRadius || 4);
             applyRingRadius(parseInt(rs.value, 10));
             rs.addEventListener("input", () => {
-                // V8.40 — Regler-Bereich 1–8 (3×3 … 17×17), Default 4 (9×9).
-                const v = Math.max(1, Math.min(8, parseInt(rs.value, 10)));
+                // V8.40 — Regler-Bereich 1–8; Welle E (E2): erweitert auf 1–12
+                // (3×3 … 25×25). Die fernen Ringe 9–12 sind dank der LOD-Pyramide
+                // (E1) billig (LOD2/LOD3) → Weitsicht bis ~518 m ohne FPS-Einbruch.
+                const v = Math.max(1, Math.min(12, parseInt(rs.value, 10)));
                 applyRingRadius(v);
                 if (typeof localStorage !== "undefined") {
                     try {
@@ -43543,6 +43772,38 @@ class AnazhRealm {
                 const pct = parseInt(cvS.value, 10);
                 this.setColorVariation(pct / 100);
                 if (cvVal) cvVal.textContent = `${pct} %`;
+            });
+        }
+        // V17.111 R1 — Schatten-Reichweite (Frustum-Halbbreite, 80..400 m;
+        // kleiner = schärfere Texel an vertikalen Wänden) + Schatten-Bias
+        // (normalBias ×100, 0..3). Das Wandern ist an der Wurzel geheilt
+        // (Light-Space-Snap), diese Regler feilen die Schärfe (Browser-Loop).
+        const srS = document.getElementById("slider-shadowrange");
+        const srVal = document.getElementById("slider-shadowrange-val");
+        if (srS) {
+            const s0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.shadowRange)
+                    ? this.state.atmosphere.shadowRange
+                    : 300;
+            srS.value = String(Math.round(s0));
+            if (srVal) srVal.textContent = `${Math.round(s0)} m`;
+            srS.addEventListener("input", () => {
+                const v = this.setShadowRange(parseInt(srS.value, 10));
+                if (srVal) srVal.textContent = `${Math.round(v)} m`;
+            });
+        }
+        const sbS = document.getElementById("slider-shadowbias");
+        const sbVal = document.getElementById("slider-shadowbias-val");
+        if (sbS) {
+            const b0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.shadowBias)
+                    ? this.state.atmosphere.shadowBias
+                    : 1.0;
+            sbS.value = String(Math.round(b0 * 100));
+            if (sbVal) sbVal.textContent = b0.toFixed(2);
+            sbS.addEventListener("input", () => {
+                const v = this.setShadowBias(parseInt(sbS.value, 10) / 100);
+                if (sbVal) sbVal.textContent = v.toFixed(2);
             });
         }
     }
@@ -44888,10 +45149,16 @@ class AnazhRealm {
         directionalLight.shadow.mapSize.height = 2048;
         directionalLight.shadow.camera.near = 0.5;
         directionalLight.shadow.camera.far = 500;
-        directionalLight.shadow.camera.left = -300;
-        directionalLight.shadow.camera.right = 300;
-        directionalLight.shadow.camera.top = 300;
-        directionalLight.shadow.camera.bottom = -300;
+        // V17.111 R1 — die Frustum-Halbbreite + der normalBias kommen aus den
+        // persistierten Schatten-Hebeln (Default 300 / 1.0 = bisherige Werte),
+        // falls loadState VOR dieser Licht-Erstellung lief (sonst greifen die
+        // setShadowRange/setShadowBias-Aufrufe in loadState direkt).
+        const _atmo = this.state.atmosphere || {};
+        const _shRange = Number.isFinite(_atmo.shadowRange) ? Math.max(80, Math.min(400, _atmo.shadowRange)) : 300;
+        directionalLight.shadow.camera.left = -_shRange;
+        directionalLight.shadow.camera.right = _shRange;
+        directionalLight.shadow.camera.top = _shRange;
+        directionalLight.shadow.camera.bottom = -_shRange;
         // V8.47 — Shadow-Bias gegen Shadow-Acne. Ohne Bias schattet die
         // grobe Shadow-Map (600 Welt-Einheiten / 2048 Texel ≈ 0.3 Einh./
         // Texel) flache, zur Sonne zeigende Flächen SELBST → diagonale
@@ -44901,7 +45168,9 @@ class AnazhRealm {
         // flachen Flächen; bias ist der kleine zusätzliche Tiefen-Nudge. Die
         // mapSize 1024→2048 halbiert zugleich die Texel-Größe (schärfer).
         directionalLight.shadow.bias = -0.0005;
-        directionalLight.shadow.normalBias = 1.0;
+        directionalLight.shadow.normalBias = Number.isFinite(_atmo.shadowBias)
+            ? Math.max(0, Math.min(3, _atmo.shadowBias))
+            : 1.0;
         // V8.48 — KRITISCH: nach dem Setzen der Shadow-Camera-Bounds MUSS
         // updateProjectionMatrix() laufen. Die OrthographicCamera berechnet
         // ihre projectionMatrix nur im Konstruktor (für die ±5-Defaults) und
@@ -45806,7 +46075,7 @@ class AnazhRealm {
                             this.state.isJumping = false;
                             // Ring 5 V2: Material-Tint entfernt (siehe handleJump).
                             if (currentTime - this.state.lastGroundedLog >= this.state.groundedLogInterval) {
-                                this.log("Spieler geerdet!", "INFO");
+                                this.log("Spieler geerdet!", "DEBUG");
                                 this.state.lastGroundedLog = currentTime;
                             }
                         } else {
@@ -46699,7 +46968,26 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.110.0";
+AnazhRealm.VERSION = "17.116.0";
+
+// V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
+// `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
+// Welt (Geometrie/Licht/Leben/Draw-Calls) leitet ihr Detail HIER ab — kein
+// per-Schicht-Schwellenwert mehr (docs/lod-kaskade-plan.md). `maxRing` = die
+// obere Ring-Grenze des Bandes (Welt-Distanz = maxRing × 43.2 m); `lod` = die
+// Terrain-/Geometrie-Auflösungsstufe. Die Tabelle WÄCHST pro Welle um ein Feld
+// (U2 waterLod · U3 creatureTickDiv · U4 dekoMode · U5 shadowCascade) — jedes
+// erst, wenn sein Leser landet (kein Passagier-Feld, V17.31). Frozen → kein
+// Drift; ein Array-Read pro Lookup (keine Allokation pro Aufruf).
+// `aiDiv` (V17.115 U3): wie selten ferne Kreaturen ihre teure KI-Richtung neu
+// rechnen (jeden N-ten Frame; dazwischen bewegen sie sich GLATT mit der gecachten
+// Richtung weiter → kein Ruckeln). Band 0/1 (nah/mittel, sichtbar) = jeden Frame.
+AnazhRealm.DETAIL_CASCADE = Object.freeze([
+    Object.freeze({ maxRing: 1, lod: 0, aiDiv: 1 }), // Band 0 — ≤ 86 m: volles Detail
+    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
+    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
+    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
+]);
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
