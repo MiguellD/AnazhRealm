@@ -18401,6 +18401,16 @@ class AnazhRealm {
         return Object.freeze({ intensity: 0.07 });
     }
 
+    // Welle D — die Kavitäts-AO (V15.2/V17.14) zeichnet Surface-Nets-Facetten-
+    // Kanten als „Treppenstufen/Trapeze"-Linien nach (Dev-Notiz :19227). Der
+    // Schöpfer-Befund „Trapeze tags, weg nach 18:00" ist zum Teil dieser AO-
+    // Term. Strength 0.6→0.4 gedämpft (die V17.12-triplanar-Textur trägt die
+    // Tiefe). Browser-justierbar für D0; die hellen Cel-Facetten (der Licht-
+    // getriebene Teil) sind der Cel-Levels-Slider + der Browser-Sign-off.
+    static get TERRAIN_AO() {
+        return Object.freeze({ strength: 0.4, cap: 0.18 });
+    }
+
     // V9.71 (Welle C.1) — initialisiert das Wasser-Cell-Feld für einen Voxel-
     // Chunk. Pro Cell ein State (0=air, 1=water, 2=solid) via Density-Sample
     // am Cell-Center + waterLevel-Test. Returnt einen Uint8Array der Länge
@@ -18578,6 +18588,23 @@ class AnazhRealm {
         //    3×3 (`rim < +∞` ist immer false) → liefert nur den echten Body-Spiegel.
         const WATER = STATE.WATER;
         const AIR = STATE.AIR;
+        // Welle H — AQUIFER: ein Oberflächen-See (Spiegel über dem Wassertisch)
+        // flutet NICHT in die Höhlen darunter. Eine TIEFE Höhlen-Zelle (cy unter
+        // surf-18 = klar unter dem See-Becken) bleibt TROCKEN, wenn sie ÜBER dem
+        // globalen Wassertisch (`waterLevel`/Meeresspiegel) liegt; unter dem
+        // Wassertisch bleibt sie nass (Ozean/echter Aquifer). Heilt die „Wasser-
+        // Blasen an Höhlenwänden" + „Wasser klebt an Strukturen nahe am See" an
+        // der Wurzel (gemessen: Höhlen liefen vom See herab voll). Minecraft-1.18-
+        // Prinzip (lokaler Höhlen-Wassertisch statt See-Flutung). MUSS bit-
+        // identisch im Worker (Determinismus/Naht).
+        const aquiferY = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        const AQ_DEPTH = 18; // Tiefe unter surf, ab der die Aquifer-Regel greift
+        const colSurf = new Float64Array(dim * dim);
+        for (let k = 0; k < dim; k++) {
+            const cz = oz + (k + 0.5) * step;
+            for (let i = 0; i < dim; i++) colSurf[i + k * dim] = this._terrainMacroSurfaceY(ox + (i + 0.5) * step, cz);
+        }
+        const caveDry = (i, k, cy) => cy < colSurf[i + k * dim] - AQ_DEPTH && cy > aquiferY;
         const flLevel = new Float64Array(dimSq * dimY);
         const queue = [];
         const seedColumn = (i, k, lvl) => {
@@ -18587,7 +18614,7 @@ class AnazhRealm {
                 const cy = oy + (j + 0.5) * step;
                 if (cy > lvl) break;
                 const cidx = i + baseK + j * dimSq;
-                if (cells[cidx] === AIR) {
+                if (cells[cidx] === AIR && !caveDry(i, k, cy)) {
                     cells[cidx] = WATER;
                     flLevel[cidx] = lvl;
                     queue.push(cidx);
@@ -18616,9 +18643,10 @@ class AnazhRealm {
         // 4) BFS-Flood durch nicht-soliden Raum unter dem getragenen Spiegel.
         const pushN = (ni, nk, nj, lvl) => {
             if (ni < 0 || nk < 0 || ni >= dim || nk >= dim || nj < 0 || nj > jMax) return;
-            if (oy + (nj + 0.5) * step > lvl) return;
+            const cy = oy + (nj + 0.5) * step;
+            if (cy > lvl) return;
             const nidx = ni + nk * dim + nj * dimSq;
-            if (cells[nidx] === AIR) {
+            if (cells[nidx] === AIR && !caveDry(ni, nk, cy)) {
                 cells[nidx] = WATER;
                 flLevel[nidx] = lvl;
                 queue.push(nidx);
@@ -19154,6 +19182,47 @@ class AnazhRealm {
         // fuer alle Terrain-Materials, vom Tag-Nacht-Wetter-Sync gespeist).
         this._ensureAtmoUniforms();
 
+        // Welle C2 — die AERIAL-MELT der Strukturen (der „flach/pappig"-Befund).
+        // Das Terrain blendet ferne/hohe Flächen zur Sky-Farbe (V15.4, auf
+        // vertexColors gegated → nur Terrain); die Flach-Farb-Bauten fehlten → sie
+        // „kleben" vor der Atmosphäre statt hineinzuschmelzen. Hier via `outputNode`
+        // (POST-LIGHTING, auf der FERTIGEN lit-Farbe `output` → ersetzt
+        // `material.color` NICHT → die dynamischen Marking-/Emotion-Farben bleiben
+        // heil, CLAUDE.md-Gotcha; ein colorNode würde sie brechen). Nur opake
+        // Flach-Farb-Bauten (Terrain trägt die Aerial-Schicht selbst; Phantom
+        // transparent). Nahe/niedrige Bauten: _haze≈0 → C1-Emissive-Floor bleibt;
+        // ferne: schmelzen in die Atmosphäre. try/catch + Marker (V17.12: ein still
+        // gefangener Node-Fehler verdeckt sonst die ganze Schicht unsichtbar).
+        if (!opts.vertexColors && opts.color !== undefined && !opts.transparent) {
+            try {
+                const _T = THREE.TSL;
+                const _au = this.state.atmoUniforms;
+                if (
+                    _T &&
+                    _T.output &&
+                    _T.positionView &&
+                    _T.positionWorld &&
+                    _T.exp &&
+                    _T.mix &&
+                    _T.smoothstep &&
+                    _au
+                ) {
+                    const _viewDist = _T.positionView.length();
+                    const _distHaze = _T
+                        .float(1.0)
+                        .sub(_T.exp(_viewDist.mul(_au.density).negate()))
+                        .clamp(0.0, 1.0)
+                        .mul(0.35);
+                    const _heightHaze = _T.smoothstep(_au.hazeBase, _au.hazeTop, _T.positionWorld.y);
+                    const _haze = _distHaze.add(_heightHaze.mul(0.5)).clamp(0.0, 0.8);
+                    const _o = _T.output;
+                    mat.outputNode = _T.vec4(_T.mix(_o.xyz, _au.skyColor, _haze), _o.w);
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__structAerialError = String((_e && _e.message) || _e);
+            }
+        }
+
         // V15.1 - prozedurale Mikro-Textur (render-only): zwei Oktaven
         // 3D-Welt-Noise brechen die flache Vertex-Farbe in reiche Variation.
         // Reine Render-Output-Stufe -> keine Geometrie-/Determinismus-
@@ -19196,7 +19265,8 @@ class AnazhRealm {
                     // triplanar-Textur trägt jetzt die Oberflächen-Tiefe, darum
                     // darf die AO schwächer sein: die Facetten-Linien verblassen,
                     // ein Hauch Kontakt-Schatten in echten Mulden bleibt.
-                    const _ao = _T.float(1.0).sub(_curv.mul(0.6).clamp(0.0, 0.18));
+                    const _aoCfg = AnazhRealm.TERRAIN_AO || { strength: 0.4, cap: 0.18 };
+                    const _ao = _T.float(1.0).sub(_curv.mul(_aoCfg.strength).clamp(0.0, _aoCfg.cap));
                     _shade = _shade.mul(_ao);
                 }
                 let _albedo = _vc.mul(_shade);
@@ -46137,7 +46207,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.98.0";
+AnazhRealm.VERSION = "17.99.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

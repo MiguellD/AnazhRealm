@@ -915,6 +915,15 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     }
     const WATER = CELL_STATE.WATER;
     const AIR = CELL_STATE.AIR;
+    // Welle H (mirror): AQUIFER — tiefe Höhlen-Zellen über dem Wassertisch trocken.
+    const aquiferY = typeof state.waterLevel === "number" ? state.waterLevel : 0;
+    const AQ_DEPTH = 18;
+    const colSurf = new Float64Array(dim * dim);
+    for (let k = 0; k < dim; k++) {
+        const cz = oz + (k + 0.5) * step;
+        for (let i = 0; i < dim; i++) colSurf[i + k * dim] = terrainMacroSurfaceY(ox + (i + 0.5) * step, cz, true);
+    }
+    const caveDry = (i, k, cy) => cy < colSurf[i + k * dim] - AQ_DEPTH && cy > aquiferY;
     const flLevel = new Float64Array(dimSq * dimY);
     const queue = [];
     const seedColumn = (i, k, lvl) => {
@@ -924,7 +933,7 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
             const cy = oy + (j + 0.5) * step;
             if (cy > lvl) break;
             const cidx = i + baseK + j * dimSq;
-            if (cells[cidx] === AIR) {
+            if (cells[cidx] === AIR && !caveDry(i, k, cy)) {
                 cells[cidx] = WATER;
                 flLevel[cidx] = lvl;
                 queue.push(cidx);
@@ -949,9 +958,10 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     }
     const pushN = (ni, nk, nj, lvl) => {
         if (ni < 0 || nk < 0 || ni >= dim || nk >= dim || nj < 0 || nj > jMax) return;
-        if (oy + (nj + 0.5) * step > lvl) return;
+        const cy = oy + (nj + 0.5) * step;
+        if (cy > lvl) return;
         const nidx = ni + nk * dim + nj * dimSq;
-        if (cells[nidx] === AIR) {
+        if (cells[nidx] === AIR && !caveDry(ni, nk, cy)) {
             cells[nidx] = WATER;
             flLevel[nidx] = lvl;
             queue.push(nidx);
