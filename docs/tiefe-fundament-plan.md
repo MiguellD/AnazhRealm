@@ -35,6 +35,7 @@ Jede Welle: `node --check anazhRealm.js` → `npm run format:check` → `npm run
 **Der Schlüssel-Befund: ein Struktur-Spawn-Remesh ändert NUR die Wasser-Cells, NICHT Terrain/Gras** — der Rebuild regeneriert Gras (34 ms) umsonst (`_rebuildVoxelChunk:19579` → `_finalizeVoxelChunkBuild` → `_buildVoxelChunkGrass:19503`).
 
 **Vorgehen (REDIRECTED — der gemessene #1-Hebel: Gras von der Rebuild-Kritik-Pfad nehmen).**
+
 - **A1 — Gras deferred** (wie Scatter V17.1): `_buildVoxelChunkGrass` aus dem synchronen `_finalizeVoxelChunkBuild` in eine `_enqueueGrass`/`_tickPendingGrass`-Queue (≤budget/Frame, nahe zuerst); Dispose verwirft die pending. Senkt den Rebuild-/Streaming-Spike 75 → ~40 ms.
 - **A2 — Wasser-only-Remesh hält Gras** (optional, größerer Hebel): ein Struktur-Spawn-Remesh (`_remeshVoxelChunksAround`) reklassifiziert nur Wasser-Cells → er muss Gras NICHT disposen/neu bauen (es ist unverändert). Spart 34 ms je gespawntem-Struktur-Rebuild.
 - **A3 — Takt-Versatz** (trivial, billig): Save (12 s) vs Nexus (10 s) phasen-versetzen, damit ihre kleinen Kosten nie im selben Frame liegen.
@@ -71,6 +72,7 @@ Jede Welle: `node --check anazhRealm.js` → `npm run format:check` → `npm run
 **Wurzel.** Mikro-Textur (V15.1) + Kavitäts-AO (V15.2) + Aerial-Perspektive (V15.4) sind auf `opts.vertexColors` gegated (`:19084`) → nur Terrain. Strukturen (`_buildFromBlueprint:31110`) sind Flach-Farb-`MeshToon` ohne das Flag. V17.7 hob nur den Ambient-Floor (laut eigener Notiz `:41890` für colorNode-lose Materialien wirkungsarm).
 
 **Vorgehen.**
+
 - **C1 ✅ GEBAUT (V17.94) — der Schwarz-Floor (native, headless-sicher)**: ein schwaches Eigen-Leuchten (`mat.emissive` in der EIGENEN Materialfarbe, `emissiveIntensity` 0.07) auf Flach-Farb-Toon-Materials (nicht-`vertexColors`, nicht transparent) → Stein/Eisen glimmen nachts schwach in ihrem Ton statt nach Schwarz zu fallen; tags von der Sonne überstimmt. KEIN TSL-/outputNode-Risiko, KEIN colorNode (der die dynamischen Marking-/Emotion-Farben bräche — CLAUDE.md-Gotcha). `AnazhRealm.STRUCTURE_EMISSIVE` browser-justierbar. GEMESSEN-KONSUM (`diag-structure-color`): Struktur trägt das Leuchten, Terrain/Phantom nicht, dynamische Farbe weiter setzbar, kein Page-Error.
 - **C2 — die Aerial-MELT + Mikro-Textur der Strukturen (pixel-blind, BROWSER-iteriert)**: der „flach/pappig"-Teil (Strukturen schmelzen in dieselbe Atmosphäre wie das Terrain + tragen Mikro-Tiefe). Via `outputNode` (post-lighting, gegen dynamische Farben gegated) — aber der WebGPU-outputNode-Mechanismus + das Feel sind pixel-blind → NICHT blind bauen (V10.0-g.r „Render-Disharmonie vor technische Ambition; Rollback ist Disziplin"); der Schöpfer-Browser-Loop justiert es.
 
@@ -89,6 +91,7 @@ Jede Welle: `node --check anazhRealm.js` → `npm run format:check` → `npm run
 **Wurzel (Dev-Notiz `:19117`).** Vertex-Farbe linear interpoliert über große Surface-Nets-Dreiecke + hartes Toon-Cel-Shading → sonnenzugewandte Facetten poppen als helle Rauten; abends dominiert Ambient/Hemi → Kontrast bricht zusammen → weg. V17.12/.13/.14 überdeckten dreimal die ALBEDO; die BELEUCHTUNGS-/Normalen-Facette blieb. **Disziplin: kein vierter Überdeck-Patch.**
 
 **Vorgehen.**
+
 - **D0 — MESSEN zuerst (Browser-Toggle)**: Schatten aus / Cel→Lambert / Aerial aus → in 3 Klicks isolieren, ob Cel-Härte, Schatten-Acne, Aerial-Höhenband oder Vertex-Interp die Wurzel ist. KEIN Vorab-Commit auf einen Fix.
 - **D1 — führender Kandidat: Cel-Gradient glätten** (die Beleuchtungs-Härte, der wurzel-nächste + billigste Hebel) — mehr/weichere Cel-Stufen, sodass die Bänder nicht an Facetten-Grenzen snappen.
 - **D2 — falls Restanteil**: per-Pixel-Normal-Detail (triplanar Normal-Perturbation, bricht die flache Facette ohne Geometrie-Änderung) ODER Schatten-Bias slope-skaliert / CSM.
@@ -107,7 +110,10 @@ Jede Welle: `node --check anazhRealm.js` → `npm run format:check` → `npm run
 
 **Wurzel.** Jeder Chunk sampelt die volle 136-Zellen-Säule; der `tanh`-Deckel (`:17390`) kappt Berge. Die V14.6-Notiz nennt den Deckel selbst die "Zwischenlösung".
 
-**Vorgehen (SEAM-SAFE, korrigiert).** KEIN per-Chunk-`[surfMin,surfMax]`-Band (das wären Pro-Chunk-Variablen → V9.77-Naht-Bug). Stattdessen ein **fixes GLOBALES vertikales Section-Raster** (Minecraft-true: das vertikale Sampling/Meshing läuft pro fester Section, leere/voll-solide Sections werden übersprungen). Die Section-Grenzen sind global → zwei Nachbar-Chunks samplen am Rand bit-identisch (seam-frei per Konstruktion, Pad+Crop V9.79). Decke folgt der Oberfläche (kein festes Dach) → Berge bis +235 m ohne Durchbruch. Worker-Mirror bit-identisch (Determinismus-Wächter); das tote GPU-WGSL gehört vorher geschnitten (Welle I).
+**Vorgehen (gemessen, in zwei Stufen — F1 sicher, F2 look-ändernd).** GEMESSEN (`:17761` `_voxelSampleDensityGrid`): die Density wird als volles `Nx×(dimY+1)×Nz`-Grid (137 vertikale Ebenen) gesampelt — die `sample()`-Aufrufe sind der teure Teil (22 ms, `diag-edit-perf`).
+
+- **F1 — Band-Skip-Sampling (SICHER, bit-identisch, echte Effizienz):** innerhalb der BESTEHENDEN Hülle nur die j-Ebenen um die Oberfläche `sample()`-n; Ebenen über `surfMax+Marge` mit AIR (konstant < 0), unter dem Höhlen-Boden (`base−35`) mit SOLID (konstant > 0) FÜLLEN — ohne `sample()`. Gleiche Geometrie (kein Sign-Change in den Konstant-Zonen → identisches Mesh), weniger Sample-Calls → billigere Chunks (hilft den Stutter-Wurzel-Rest + E). Seam-frei (das Band hat Marge + enthält jeden Sign-Change inkl. Edit-Bounds; die Band-Grenzen aus `_terrainMacroSurfaceY` sind deterministisch). Worker-Mirror bit-identisch (Determinismus-Test), Edit-Delta bleibt separat (V12.0-perf.b). **Das ist der sichere Effizienz-Hebel — KEINE Hüllen-/Deckel-Änderung, kein Look-Wechsel.**
+- **F2 — gewaltige Berge (LOOK-ÄNDERND, Determinismus-Bruch, Schöpfer-Sign-off):** den `tanh`-Deckel (`:17390`) lösen + die Hülle der Oberfläche folgen lassen (Decke = `surfMax + Marge` pro Chunk-Region, NICHT per-Chunk-variabel → ein globales Section-Raster, leere Sections übersprungen; V9.77-naht-sicher). Berge bis +235 m ohne Durchbruch. **Ändert das Welt-Aussehen → Browser-Sign-off zwingend (genau dein End-Audit).**
 
 **Messung.** `diag-radius.cjs` (Decken-Marge radial ±5 km, 0 Durchbrüche) + `diag-relief.cjs` (Berg-Höhen-Verteilung erreicht jetzt > 136 m) + ein Determinismus-Test (Main- vs Worker-Density bit-identisch) + ein Naht-Test (Nachbar-Chunk-Boundary-Iso identisch) + Per-Chunk-Zell-Zahl (gesunken).
 
@@ -124,6 +130,7 @@ Jede Welle: `node --check anazhRealm.js` → `npm run format:check` → `npm run
 **Wurzel.** View-Ring 4 (≈173 m) endet vor dem Fog (450 m); nur 2 LOD-Stufen, harter Pop, Naht am LOD-Rand (`:18224`); Sync-CPU-Build-Fallback (~126 ms) wenn der Worker hinterherhinkt.
 
 **Vorgehen (SEAM-SAFE, korrigiert).**
+
 - **E1 — LOD-Pyramide**: LOD2 (step 7.2 m) + LOD3 (14.4 m) für ferne Ringe (64× weniger Zellen). Vorbedingung F (billige Chunks).
 - **E2 — View bis Fog-Horizont**: Ringe füllen ~450 m → Pop-in jenseits der Sichtbarkeit.
 - **E3 — kein Sync-Streaming-Build**: nur der Spieler-Chunk darf sync; ferne warten auf den Worker, alter Chunk bleibt sichtbar (der Sync-Fallback ist der Spike).
@@ -169,13 +176,9 @@ Jede Welle: `node --check anazhRealm.js` → `npm run format:check` → `npm run
 
 ---
 
-## Welle I — Tote Infra schneiden [#12]
+## Welle I — Tote Infra schneiden [#12] — ✅ BEREITS ERLEDIGT (V17.20)
 
-**Ziel.** Begleitend zu F/E: abgeklemmtes GPU-Density-WGSL (~500 Z.), `mxFractal`, V10.0-Hot-Swap-Reste raus → senkt die Mirror-Last für F.
-
-**Vorgehen.** `cp`-Backup → `awk`-Methoden-Audit im Range (nicht nur Pattern-Treffer) → `diag-page-error.cjs` nach dem Schnitt (V17.20-Lehre: ein Line-Range-Delete brach einmal die ganze Welt) → Playtest.
-
-**Abnahme (erfüllt wenn).** node-check/lint/playtest grün, kein Page-Error, Zeilen-Reduktion belegt.
+GEMESSEN (04.06.): das GPU-Density-WGSL-Cluster (`WGSL_DENSITY_GRID`/`_voxelGpu*`) ist seit V17.20 entfernt (nur Erklär-Kommentare bleiben bei `:19480`); `mxFractal` existiert nicht mehr; `npm run lint` ist warning-frei; keine Hot-Swap-Reste. Die Mirror-Last für F ist damit schon reduziert. Kein Schnitt nötig.
 
 ---
 
@@ -195,19 +198,19 @@ A/B/C/D = sofortige Linderung; F = Keystone; H vor G's Eingängen.
 
 ## Abdeckungs-Matrix
 
-| Schöpfer-Befund | Welle |
-|---|---|
+| Schöpfer-Befund                               | Welle            |
+| --------------------------------------------- | ---------------- |
 | Weite Terrain / Ring max / soft / kein Pop-in | E (+ F billiger) |
-| FPS-Einbruch in neue Chunks | E3 + F + A4 |
-| Console hält jede Struktur fest | A3 |
-| Speichern ruckelt | A0/A2 |
-| Nexus ruckelt | A1/A4 |
-| Trapeze nach 18:00 | D |
-| Stein/Eisen schwarz | C |
-| Strukturen ohne Mikrostruktur | C |
-| Höhlen nicht mitgewachsen | G1/G2 (+ F) |
-| Keine Eingänge/Canyons | G3 |
-| Wasser an Höhlenwänden/unter Boden | B + H2 |
-| Schwimmmechanik falsch | B/H1 |
-| Berg-Höhenlayerband | F (#11) |
-| Roadmap #10/#11/#12 | H / F / I |
+| FPS-Einbruch in neue Chunks                   | E3 + F + A4      |
+| Console hält jede Struktur fest               | A3               |
+| Speichern ruckelt                             | A0/A2            |
+| Nexus ruckelt                                 | A1/A4            |
+| Trapeze nach 18:00                            | D                |
+| Stein/Eisen schwarz                           | C                |
+| Strukturen ohne Mikrostruktur                 | C                |
+| Höhlen nicht mitgewachsen                     | G1/G2 (+ F)      |
+| Keine Eingänge/Canyons                        | G3               |
+| Wasser an Höhlenwänden/unter Boden            | B + H2           |
+| Schwimmmechanik falsch                        | B/H1             |
+| Berg-Höhenlayerband                           | F (#11)          |
+| Roadmap #10/#11/#12                           | H / F / I        |
