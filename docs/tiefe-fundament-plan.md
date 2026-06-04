@@ -1,6 +1,20 @@
-# Tiefe-Fundament-Plan — der Plan unter der Oberfläche (Stand V17.92, 03.06.2026)
+# Tiefe-Fundament-Plan — der Plan unter der Oberfläche (Stand V17.100, 04.06.2026)
 
 Schöpfer-Befund (Browser-Audit, drei Screenshots): das Terrain ist nahe + ruckelt in neue Chunks; die Console/Save/Nexus ruckeln im 10-s-Takt; ein Licht-Bug ("Trapeze" tagsüber, weg nach 18:00) + Stein/Eisen nachts schwarz + Strukturen ohne Mikrostruktur; Höhlen sind mit dem gigantisch gewordenen Terrain NICHT mitgewachsen (mickrige Schläuche, keine Eingänge/Canyons); Wasser klebt an Höhlenwänden / unter dem Boden, die Schwimmmechanik greift über Lufthöhlen.
+
+## Stand-Übersicht (V17.100) — was gebaut ist
+
+- **A — 10-s-Ruckel:** ✅ A1 (Gras deferred, V17.92) + A2 (surface-aware Gras-Keep, V17.97). Per-Chunk-Rebuild 75 → 48.8 ms.
+- **B / H1 — Falsch-Schwimm:** ✅ V17.93 (`_waterCellAt`) + V17.95 (`_playerWaterContext`, Cell-Spiegel statt 2.5D-Spalte).
+- **C — Strukturen schwarz/flach:** ✅ C1 (Schwarz-Floor emissive, V17.94) + C2 (Aerial-MELT via outputNode, V17.99). **Aber: C2 heilte das Symptom auf einem PARALLELEN Pfad → siehe Render-Harmonie-Bogen unten.**
+- **D — Trapeze:** ✅ teil-geheilt — AO gedämpft (V17.99) + Gradient-Normalen geglättet (eps 1.5, V17.100). **Rest (Cel-Härte) = Render-Harmonie-Bogen.**
+- **F — Effiziente Höhe (KEYSTONE):** ✅ V17.96 (Hülle dimY 200/100, tanh-Deckel 225, Band-Skip bit-identisch, Berge 244 m, 0 Durchbrüche).
+- **G — Große Kavernen:** ✅ Kern V17.98 (niederfrequentes Kavernen-Feld, subsurface gegated). Offen: G3 Oberflächen-Eingänge/Canyons (braucht H).
+- **H — Aquifer:** ✅ V17.99 (caveDry: See flutet Höhlen darunter nicht; 0 Höhlen-Blasen, Seen intakt). Offen: H3 ferne-Chunk-Wasser (>1024 m).
+- **I — Tote Infra:** ✅ V17.20.
+- **E — Weite LOD-Pyramide:** ⏳ OFFEN (jetzt von F entriegelt — billige Chunks).
+
+**Der NEUE aktive Faden ist der Render-Harmonie-Bogen (J) — siehe unten.** Er ist die Wurzel-Heilung des „Strukturen reagieren anders als Terrain auf Licht/Nebel"-Befundes, den C2 nur als Parallel-Pfad symptom-behandelt hat.
 
 ## 0. Die EINE Wurzel (vier der sechs Befunde teilen sie)
 
@@ -182,35 +196,84 @@ GEMESSEN (04.06.): das GPU-Density-WGSL-Cluster (`WGSL_DENSITY_GRID`/`_voxelGpu*
 
 ---
 
+## Welle J — DER RENDER-HARMONIE-BOGEN (der neue aktive Faden, V17.101+)
+
+**Schöpfer-Befund (04.06., Browser-Audit nach V17.100):** „Strukturen wie Bäume, Türme tragen fast die Himmelsfarbe, bei rainy völlig nebelig — reagieren ANDERS als das Terrain auf die Fog-Distanz. Trapeze/Streifen driften mit dem Licht (Schatten wo Licht sein sollte). Die Sonnenreflexion im Wasser ist versetzt. Ist das wie Aura/Werkstatt eine Matrix, die alle Ebenen gleich lesen?"
+
+### J.0 — Die GEMESSENE Wurzel (im Code verifiziert, `anazhRealm.js`)
+
+Die acht Render-Ebenen teilen KEINE gemeinsame Atmosphäre — sie lesen **sieben divergente Approximationen**. Die zwei kritischen Divergenzen, gerechnet:
+
+- **Terrain-Aerial (`:19401-19411`) liegt auf der ALBEDO (`colorNode`, VOR dem Licht)** → `_haze = distHaze(cap 0.35) + heightHaze·0.6`, cap 0.85, dann `mix(albedo, skyColor, haze)`. Die Beleuchtung dunkelt die gemeltete Albedo danach ab → das Terrain bleibt *neblig-aber-beleuchtet* (atmosphärisch).
+- **Struktur-Aerial (`:19222-19231`) liegt auf der FERTIGEN lit-Farbe (`outputNode`, NACH dem Licht)** → `_haze = distHaze(cap 0.35) + heightHaze·0.5`, cap 0.8, dann `mix(output.xyz, skyColor, haze)`. Das Licht ist schon drin → die Melt überschreibt es → die Struktur wird flach zur reinen Himmelsfarbe, **lichtunabhängig**.
+- **Doppel-Nebel:** Strukturen tragen `scene.fog` (post, `:44468`) UND die outputNode-Melt (post) → zweifache Distanz-Haze; das Terrain trägt `scene.fog` (post) + colorNode-Melt (pre).
+- **Rainy-Rechnung** (gemessen `_dayNightApplyHemiAndFog:42287-42301`): `density 0.0145`, `hazeTop 95 m`. Ein Baum auf einem V17.96-Berg (Boden y≥100) → `smoothstep(40, 95, 100)=1.0` → Struktur-haze ≥0.5 **post-lighting** → Endfarbe ≥50 % reiner Himmel, egal wie das Licht fällt = „völlig nebelig". Das Terrain am selben Ort melt'et zwar auch, bleibt aber lit. **Das ist die Disharmonie, gerechnet.**
+- **Mikro-Textur + Kavitäts-AO (`:19251`)** sind auf `opts.vertexColors` gegated → NUR Terrain/Inseln. Strukturen/Bäume sind flach-pappig.
+
+**Eigen-Befund (Disziplin):** meine C2-Welle (V17.99) heilte das Symptom auf einem PARALLELEN Pfad (eine zweite, andere Aerial-Mathematik für Strukturen) — statt sie in DENSELBEN Pfad wie das Terrain zu führen. Das ist die V9.82-Parallel-Pfade-Sünde in Render-Gestalt + die V13-„Symptom-Patch auf benannter Wurzel"-Narbe.
+
+### J.1 — Der wahre Weg: EINE Atmosphäre, die alle Ebenen identisch lesen (wie die Aura)
+
+Die Riesen (Genshin/BotW/Ghibli-Engines) haben EINE geteilte Atmosphären-Funktion, die jede opake Ebene am Ende identisch aufruft — physikalisch korrekt **post-lighting** (die Luft streut Licht zwischen Oberfläche und Auge, unabhängig von der Oberflächen-Beleuchtung):
+
+```
+finalColor = applyAtmosphere( litColor, worldPos, viewDist )   // ein Term, viele Leser
+```
+
+- **EIN geteilter `outputNode`-Helper** (`_applyAerialOutput(mat)`) mit IDENTISCHER Mathematik (dieselbe `atmoUniforms`-Quelle, dieselben Gewichte, derselbe Cap) für Terrain, Inseln, Strukturen, Bäume, Kreaturen.
+- **`scene.fog = false` auf diesen Materialien** (`material.fog = false`) → genau EIN Atmosphären-Pfad, kein Doppel-Nebel. (Gras/Wasser bleiben Sonderfälle mit eigenem Shader — sie rufen denselben Helper-Term, wo möglich.)
+- **Terrain von colorNode-Aerial auf outputNode-Aerial umstellen** → es melt'et dann wie alles andere post-lighting. **Das ändert den Terrain-Look (heute light-modulated) → Browser-Sign-off ZWINGEND (Determinismus-Bruch im Aussehen).**
+- **Mikro-Textur/AO für Strukturen** über den Output-Pfad verfügbar machen (NICHT colorNode — der bräche die dynamischen Marking-/Emotion-`material.color`, CLAUDE.md-Gotcha) → Strukturen verlieren das Pappige, ohne die Farb-Mutation zu brechen.
+
+Das schneidet KEINE System-Tiefe — es macht die Atmosphäre *einheitlich* tief: „ein Feld, viele Leser", exakt analog zur Aura.
+
+### J.2 — Trapeze (Cel-Härte, der Rest nach V17.100)
+
+Die Trapeze sind die Iso-Konturen von `dot(Normale, Sonne)` im Cel-Shading — sie wandern mit der Sonne, weg nach 18:00 (Ambient dominiert). **NICHT die Biomdurchmischung.** V17.100 glättete die Normalen (eps 1.5); der Rest ist die Cel-Stufen-HÄRTE. Hebel: mehr/weichere Cel-Stufen (Cel-Levels-Slider) ODER den Cel-Term nur auf den Sonnen-Beitrag beschränken (AO/Ambient glatt). Pixel-blind → Browser-iteriert.
+
+### J.3 — Wasser-Sonnenreflexion-Versatz (NICHT headless verifizierbar)
+
+Verifiziert: das Glitzern (`:21645-21648`, Blinn-Phong) nutzt DENSELBEN `sunDir` wie DirectionalLight + Skybox-Glow (`:42214/42219/42352`, alle aus `_dayNightSunDirection`). Ein Blinn-Phong-Glitzern IST physikalisch die Spiegelung der Sonne → naturgemäß versetzt (unter der Sonne). **Browser-Check:** läuft das Glitzern mit der Sonne mit (gleiche senkrechte Ebene), wenn die Zeit fortschreitet? Ja → korrekt (Spiegel-Versatz). Seitlicher Drift → echter Bug (Wasser-Mesh-Normal/Eye-Position, nicht sunDir).
+
+### J — Vorgehen, Messung, Abnahme
+
+- **J1 — der geteilte Aerial-Helper:** `_applyAerialOutput(mat)` extrahieren; Strukturen/Bäume/Kreaturen/Terrain/Inseln rufen ihn; `material.fog=false` setzen; Terrain-colorNode-Aerial entfernen. **Messung:** headless beweist Konstruktion + kein Page-Error + `material.fog===false` (Invariante) + die outputNode existiert auf allen Ebenen (KONSUM-Probe, V17.31). **Browser-Sign-off:** „Strukturen + Terrain schmelzen IDENTISCH in die Atmosphäre, kein Pappig-mehr bei rainy."
+- **J2 — Mikro-Textur/AO für Strukturen** (Output-seitig, nicht colorNode). **Messung:** dynamische Avatar-/Kreatur-Farbe unberührt (Invariante). **Browser:** „Strukturen tragen Tiefe wie das Terrain."
+- **J3 — Trapeze-Cel-Härte** (Browser-iteriert, Cel-Levels-Slider als Dial).
+- **J4 — Wasser-Glitzer-Check** (Browser-Messung zuerst, dann ggf. Fix).
+
+**Risiko.** Render-only, aber pixel-blind + look-ändernd (Terrain pre→post) → **strikt Browser-iteriert, NICHT blind bauen** (V10.0-g.r). Headless: try/catch + Marker (V17.12), KONSUM-Invarianten, kein Page-Error.
+
+---
+
 ## Reihenfolge & Abhängigkeiten
 
 ```
-A (10s-Ruckel)  → B (Falsch-Schwimm)  → C, D (Render, Browser-iteriert)
-                                              │
-F (Effiziente Höhe, KEYSTONE) ───────────────┼──► E (weite LOD-Pyramide, nach F)
-                                              └──► G-Vorbereitung (Höhlen-Tiefe)
-H (Wasser-3D)  ──────────────────────────────────► G (Höhlen-Eingänge, nach H)
-I (Tote Infra) mit F/E
+✅ A → ✅ B → ✅ C1/C2 → ✅ D(teil) → ✅ I → ✅ F → ✅ G(Kern) → ✅ H(Aquifer)
+                                                          │
+                                            JETZT: J (Render-Harmonie) ◄── der aktive Faden
+                                                   + offen: E (LOD-Pyramide), G3 (Eingänge), H3 (ferne Wasser)
 ```
 
-**Empfohlen:** A → B → (C, D parallel, Browser) → I → F → E → H → G.
-A/B/C/D = sofortige Linderung; F = Keystone; H vor G's Eingängen.
+**Erledigt (V17.92–.100):** A, B, C, D(teil), F, G-Kern, H-Aquifer, I.
+**Aktiv jetzt:** **J (Render-Harmonie)** — die Wurzel-Heilung der Licht/Nebel-Disharmonie (C2 war nur ein Parallel-Pfad-Symptom-Patch).
+**Offen daneben:** E (weite LOD-Pyramide, von F entriegelt) · G3 (Oberflächen-Eingänge/Canyons, braucht H) · H3 (ferne-Chunk-Wasser >1024 m) · Kreatur-FPS-Dirigent (gemessen: `getTerrainHeightAt` 50 % von 49 ms @ 90 Kreaturen → Ground-Cache + Frame-Budget).
 
 ## Abdeckungs-Matrix
 
-| Schöpfer-Befund                               | Welle            |
-| --------------------------------------------- | ---------------- |
-| Weite Terrain / Ring max / soft / kein Pop-in | E (+ F billiger) |
-| FPS-Einbruch in neue Chunks                   | E3 + F + A4      |
-| Console hält jede Struktur fest               | A3               |
-| Speichern ruckelt                             | A0/A2            |
-| Nexus ruckelt                                 | A1/A4            |
-| Trapeze nach 18:00                            | D                |
-| Stein/Eisen schwarz                           | C                |
-| Strukturen ohne Mikrostruktur                 | C                |
-| Höhlen nicht mitgewachsen                     | G1/G2 (+ F)      |
-| Keine Eingänge/Canyons                        | G3               |
-| Wasser an Höhlenwänden/unter Boden            | B + H2           |
-| Schwimmmechanik falsch                        | B/H1             |
-| Berg-Höhenlayerband                           | F (#11)          |
-| Roadmap #10/#11/#12                           | H / F / I        |
+| Schöpfer-Befund                               | Welle            | Status |
+| --------------------------------------------- | ---------------- | ------ |
+| Weite Terrain / Ring max / soft / kein Pop-in | E (+ F billiger) | ⏳ E offen |
+| FPS-Einbruch in neue Chunks                   | A1 + F           | ✅ (E vertieft) |
+| Speichern/Nexus ruckelt (10s)                 | A1/A2            | ✅ V17.92/.97 |
+| Trapeze nach 18:00                            | D + J2           | ◐ Normalen V17.100, Cel-Härte → J2 |
+| Stein/Eisen schwarz                           | C1               | ✅ V17.94 |
+| Strukturen ohne Mikrostruktur / pappig        | C2 → **J1/J2**   | ◐ C2 Parallel-Pfad → J Wurzel |
+| Strukturen reagieren anders auf Licht/Nebel   | **J1**           | ⏳ aktiv |
+| Wasser-Sonnenreflexion versetzt               | **J3**           | ⏳ Browser-Check |
+| Höhlen nicht mitgewachsen / kleine Schläuche  | F + G-Kern       | ✅ V17.96/.98 |
+| Keine Eingänge/Canyons                        | G3               | ⏳ offen (nach H) |
+| Wasser an Höhlenwänden/unter Boden            | B + H-Aquifer    | ✅ V17.95/.99 |
+| Schwimmmechanik falsch                        | B/H1             | ✅ V17.95 |
+| Berg-Höhenlayerband (#11)                     | F                | ✅ V17.96 |
+| Kreatur-FPS @ 80-90                           | Dirigent         | ⏳ gemessen, offen |

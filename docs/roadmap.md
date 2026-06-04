@@ -13,7 +13,7 @@ Stand: **V17.91 (03.06.2026) — der Crafting-/Werkstatt-Bogen ist DURCH (V17.72
 
 ---
 
-## OFFENE FÄDEN — der Gesamt-Backlog (Stand V17.92, geordnet, reconciled)
+## OFFENE FÄDEN — der Gesamt-Backlog (Stand V17.100, geordnet, reconciled)
 
 **A — den Crafting-Bogen abschließen (kampf-plan §11, der aktive Arc):**
 
@@ -41,17 +41,19 @@ Stand: **V17.91 (03.06.2026) — der Crafting-/Werkstatt-Bogen ist DURCH (V17.72
 8. **Phase E — Bedrohung/Furcht**: aggressive Kreaturen → der W5-Furcht-Konsument + der Triumph-δ (die game-design-schwerste Phase, lange benannt, gibt dem Emotion-Kern seinen letzten Konsumenten).
 9. **Mana-Symmetrie** (§8.5): `magieleitung` → ein Äther/Mana, die zweite Ausdauer-Achse (Magie zahlt heute nichts; verblasst).
 
-**C — das Fundament vertiefen — DER TIEFE-FUNDAMENT-BOGEN (Schöpfer-Browser-Audit 03.06.2026, voll geplant in `docs/tiefe-fundament-plan.md` — ZUERST lesen):** Der Audit (drei Screenshots) deckte sechs Befunde auf, vier mit EINER Wurzel — **die vertikale Chunk-Hülle wuchs beim V14-Terrain-Bogen NICHT mit** (fix base-verankert `base−90..base+154.8`, `tanh`-Deckel bei 110/136 m). Der Keystone ist die effiziente Höhe (#14, adaptives Section-Raster): er koppelt die Vertikal-Domäne wieder an die Oberfläche → gewaltige Berge + mitwachsende Höhlen + sauberes Wasser-Sampling. Reihenfolge A→B→C→D→I→F→E→H→G (Teilziele/Messung/Abnahme im Plan-Doc):
+**C — das Fundament vertiefen — DER TIEFE-FUNDAMENT-BOGEN (Schöpfer-Browser-Audit 03.06.2026, voll geplant in `docs/tiefe-fundament-plan.md` — ZUERST lesen):** Der Audit (drei Screenshots) deckte sechs Befunde auf, vier mit EINER Wurzel — **die vertikale Chunk-Hülle wuchs beim V14-Terrain-Bogen NICHT mit**. **Der Bogen ist GRÖSSTENTEILS GEBAUT (V17.92–.100):** A (Ruckel ✅) · B (Falsch-Schwimm ✅) · C1/C2 (Strukturen ✅, aber C2 = Parallel-Pfad-Symptom → siehe J) · D (Trapeze teil ✅) · F (Keystone effiziente Höhe ✅, Berge 244 m) · G-Kern (große Kavernen ✅) · H-Aquifer ✅ · I ✅. **Der NEUE aktive Faden ist J (Render-Harmonie) + die offenen Reste E/G3/H3:**
 
-10. **A — der 10-Sekunden-Ruckel** (NEU): drei Main-Thread-Hitches im selben 10-s-Takt (Journal-DOM-Vollrebuild `renderWorldJournal`, synchroner Save, Nexus-Spawn+synchroner Remesh). Heilung: Takte entkoppeln + Save idle/dirty/Delta + Journal inkrementell + Nexus-Remesh über Frames verteilen. Reines Timing, null Qualitätsverlust. **MESSEN zuerst** (`diag-stutter`).
-11. **B — Falsch-Schwimm** (NEU, Teil von V18): der Auftrieb ist der dritte Konsument der Wasser-Wahrheit, der sie 2.5D neu rät (`_hydroWaterLevelAt(x,z)`) statt die 3D-Cells zu lesen (V13.13.2-Muster). Heilung: `_waterCellAt(x,y,z)` liest die Zelle.
-12. **C — Strukturen schwarz/flach** (NEU, Render/Browser): Mikro-Textur/AO/Aerial sind auf `opts.vertexColors` gegated → nur Terrain; Strukturen fallen nachts nach Schwarz. Heilung: `_applyDepthColorNode` (outputNode, gegen dynamische Farben gegated).
-13. **D — die Trapeze** (NEU, Render/Browser): grobe Surface-Nets-Facetten × hartes Toon-Cel (Dev-Notiz `:19117`). **D0 misst zuerst (Browser-Toggle); kein vierter Albedo-Überdeck-Patch** — führend: Cel-Gradient glätten.
-14. **F — Effiziente Höhe (KEYSTONE)** [war #11]: **fixes globales Vertikal-Section-Raster** (Minecraft-true, leere Sections überspringen), NICHT per-Chunk-Band (V9.77-Naht-Bug); Deckel weg → gewaltige Berge ohne FPS-Kosten. Worker bit-identisch.
-15. **E — weite Terrain + LOD-Pyramide**: LOD2/LOD3 für ferne Ringe + View bis Fog-Horizont + kein Sync-Streaming-Build + **echtes LOD-Stitching** (Skirts scheiterten V9.70). Nach F.
-16. **H — Wasser-3D-Finish (V18)** [war #10]: ±1024-Region mitwandern + Seeds 3D-konsistent + frame-sauberer Carve. Vor G.
-17. **G — Höhlen wachsen mit dem Terrain** (NEU): an F gekoppelt, Typen (Kavernen/Tunnel/Ravines), kontrollierte Eingänge/Canyons + Aquifer. NACH H (sonst Water-Bleed).
-18. **I — Tote Infra schneiden** [war #12]: GPU-Density-WGSL (~500 Z.), `mxFractal`, Hot-Swap-Reste; begleitend zu F/E.
+10. ✅ **A — 10-Sekunden-Ruckel (V17.92/.97):** GEMESSEN (`diag-stutter`) widerlegte die Annahme (Save 1 ms, Nexus 4.1 ms — kein Hitch); die ECHTE Wurzel war der Per-Chunk-Rebuild (Gras 34 ms dominant). A1 Gras deferred + A2 surface-aware Gras-Keep → 75 → 48.8 ms.
+11. ✅ **B — Falsch-Schwimm (V17.93/.95):** `_waterCellAt` + `_playerWaterContext` lesen die 3D-Cell-Wahrheit (Cell-Spiegel statt 2.5D-Spalte) — die Schwimm-Physik im Bergsee geheilt.
+12. ◐ **C — Strukturen schwarz/flach (V17.94/.99):** C1 Schwarz-Floor (emissive) + C2 Aerial-MELT (outputNode). **ABER: C2 heilte das Symptom auf einem PARALLELEN Pfad → die Wurzel ist J (Render-Harmonie).**
+13. ◐ **D — die Trapeze (V17.99/.100):** AO gedämpft + Gradient-Normalen geglättet (eps 1.5, Makro statt Mikro). **Rest = Cel-Härte → J2.**
+14. ✅ **F — Effiziente Höhe (KEYSTONE, V17.96):** Hülle dimY 200/100 + tanh-Deckel 225 + Band-Skip (bit-identisch billiger) → Berge 244 m, 0 Decken-Durchbrüche bei ±5 km.
+15. ⏳ **E — weite Terrain + LOD-Pyramide:** LOD2/LOD3 + View bis Fog-Horizont + kein Sync-Build + echtes LOD-Stitching. **Von F entriegelt (billige Chunks), noch OFFEN.**
+16. ◐ **H — Wasser-3D-Finish (V17.95/.99):** B+H1 (Auftrieb 3D) + Aquifer (See flutet Höhlen nicht). Offen: H3 ferne-Chunk-Wasser (>1024 m).
+17. ◐ **G — Höhlen wachsen mit dem Terrain (V17.96/.98):** F hob das Band + G-Kern gab große Kavernen (subsurface). Offen: G3 Oberflächen-Eingänge/Canyons (braucht H3).
+18. ✅ **I — Tote Infra geschnitten (V17.20):** GPU-Density-WGSL raus, `mxFractal` weg, lint warning-frei.
+18b. ⏳ **J — DER RENDER-HARMONIE-BOGEN (NEU, der aktive Faden):** Schöpfer-Befund (04.06.) „Strukturen/Bäume tragen die Himmelsfarbe, bei rainy völlig nebelig, reagieren ANDERS als das Terrain". GEMESSEN-Wurzel (im Code verifiziert): die acht Ebenen lesen SIEBEN divergente Atmosphären — **Terrain melt'et PRE-lighting (colorNode, light-moduliert), Strukturen POST-lighting (outputNode, light-unabhängig)** + Doppel-Nebel (scene.fog + outputNode). Der wahre Weg (wie die Riesen): EINE geteilte `_applyAerialOutput`-Funktion, die ALLE opaken Ebenen identisch post-lighting aufrufen (`material.fog=false` → ein Pfad), + Mikro-Textur/AO output-seitig für Strukturen — „ein Feld, viele Leser", analog zur Aura. **Look-ändernd (Terrain pre→post) + pixel-blind → strikt Browser-iteriert.** J2 Trapeze-Cel-Härte · J3 Wasser-Glitzer-Versatz (Browser-Check: läuft es mit der Sonne mit?). Voll in `tiefe-fundament-plan.md` „Welle J".
+18c. ⏳ **Kreatur-FPS-Dirigent:** GEMESSEN (`diag-creature-perf`): `getTerrainHeightAt` = 50 % von 49 ms @ 90 Kreaturen, linear, main-thread, kein Leak. Heilung: Ground-Cache + Frame-Budget-Dirigent (ferne Kreaturen seltener) — KEIN Schnitt an der KI-Tiefe, nur an der Arbeits-Verteilung.
 
 **D — die Vision weiter (jenseits des Crafting-Arcs):**
 
@@ -59,7 +61,7 @@ Stand: **V17.91 (03.06.2026) — der Crafting-/Werkstatt-Bogen ist DURCH (V17.72
 20. **Emotion→Regel-EMERGENZ vertiefen**: einzelne Kopplungen (`sorrow→rainy`) sind noch hand-codiert; via die Weltregeln-DSL (V17.34 macht sie ausdrückbar) emergent machen.
 21. **Fern (Schöpfer-Entscheid)**: Fahrzeug-Fahr-Tiefe (Sitz/Steuerung/Trägheit) · evolveCommunity (Kreatur-Kulturen) · VR (`vrMenu.js` vorhanden, nicht im Gate) · IndexedDB-Persistenz.
 
-**Reihenfolge-Logik (Schöpfer-bestätigt: Fundament → Tiefe → Seele):** der Crafting-Arc (A) ist fast rund — die Bibliothek (A1) + der Browser-Audit (A2) schließen ihn. Phase E (B8) gibt dem Emotion-Kern den letzten Konsumenten. Der **Tiefe-Fundament-Bogen (C, #10–18)** ist die nächste konkrete Arbeit — die Fundament-Schuld + die akuten Browser-Befunde, gestartet mit Welle A. W18 (#19) ist der nächste große Vision-Bogen.
+**Reihenfolge-Logik (Schöpfer-bestätigt: Fundament → Tiefe → Seele):** der Crafting-Arc (A) ist fast rund — die Bibliothek (A1) + der Browser-Audit (A2) schließen ihn. Phase E (B8) gibt dem Emotion-Kern den letzten Konsumenten. Der **Tiefe-Fundament-Bogen (C, #10–18)** ist GRÖSSTENTEILS GEBAUT (V17.92–.100: A·B·C·D-teil·F·G-Kern·H-Aquifer·I) — **der AKTIVE Faden jetzt ist J (Render-Harmonie, #18b)**: die Wurzel-Heilung der Licht/Nebel-Disharmonie (Strukturen vs Terrain melten an verschiedenen Lighting-Stufen). Daneben offen: E (LOD-Pyramide), G3 (Eingänge), H3 (ferne Wasser), Kreatur-FPS-Dirigent. **J ist look-ändernd + pixel-blind → der Schöpfer-Browser-Loop führt, kein blindes Bauen (V10.0-g.r).** W18 (#19) ist der nächste große Vision-Bogen.
 
 ---
 
