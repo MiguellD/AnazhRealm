@@ -21042,6 +21042,30 @@ class AnazhRealm {
     // Out + deckt exakt die Region, die `_buildLakeMesh` mit Wasser deckt;
     // (2) absorbierte Seen (`level ≤ waterLevel+2`, ohne eigene Plane) zählen
     // nicht — die Meeres-Plane vertritt sie. Sonst klafften Optik + Physik.
+    // Welle B (Tiefe-Fundament) — die 3D-Wasser-WAHRHEIT an einer Welt-Position.
+    // Liest die geflutete Zelle (`entry.waterCells`, AIR/WATER/SOLID) des
+    // gestreamten Chunks am 3D-Index `i + k·dim + j·dim·dim`. Die Wasser-Cells
+    // leben IMMER auf LOD0 (V9.93 — uniform für die naht-freie Iso), darum die
+    // LOD0-Config unabhängig vom Render-LOD des Chunks. Gibt den Zell-Zustand
+    // (0/1/2) zurück ODER null, wenn der Chunk (noch) nicht gestreamt ist / die
+    // Position außerhalb der Hülle liegt → der Aufrufer fällt auf die 2.5D-
+    // Spalte zurück (Backward-Compat am Streaming-Rand). KEIN Re-Raten: die
+    // Zelle IST die Wahrheit (V13.13.2 — ein zweiter Konsument LIEST sie).
+    _waterCellAt(x, y, z) {
+        if (!this.state.voxelChunks) return null;
+        const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
+        const cx = Math.floor(x / span);
+        const cz = Math.floor(z / span);
+        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
+        if (!entry || !entry.waterCells) return null;
+        const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
+        const i = Math.floor((x - cx * span) / step);
+        const k = Math.floor((z - cz * span) / step);
+        const j = Math.floor((y - oy) / step);
+        if (i < 0 || k < 0 || j < 0 || i >= dim || k >= dim || j >= dimY) return null;
+        return entry.waterCells[i + k * dim + j * dim * dim];
+    }
+
     _hydroWaterLevelAt(x, z) {
         const base = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
         const hydro = this.state.hydrosphere;
@@ -44946,10 +44970,27 @@ class AnazhRealm {
                             pos.z() * this.state.scaleFactor
                         );
                         const waterY = typeof effWater === "number" ? effWater : this.state.waterLevel;
-                        const submerged = scaledY < waterY;
+                        // Welle B (Tiefe-Fundament) — die 2.5D-Spalte (`waterY`)
+                        // ignoriert die 3D-Topologie: über einer Lufthöhle UNTER
+                        // einem See sagt die Spalte „Wasser", obwohl die Zelle am
+                        // Spieler Luft ist → Falsch-Schwimmen. Der Auftrieb war der
+                        // DRITTE Konsument der Wasser-Wahrheit, der sie 2.5D neu
+                        // riet statt die Cells zu LESEN (V13.13.2-Muster). Heilung:
+                        // die echte 3D-Wasserzelle am Körper lesen. `_waterCellAt`
+                        // gibt null, wenn der Chunk (noch) nicht gestreamt ist →
+                        // Fallback auf die 2.5D-Spalte (Backward-Compat am Rand).
+                        const wcx = pos.x() * this.state.scaleFactor;
+                        const wcz = pos.z() * this.state.scaleFactor;
+                        const waterCell = this._waterCellAt(wcx, scaledY, wcz);
+                        const submerged =
+                            waterCell !== null && waterCell !== undefined
+                                ? waterCell === AnazhRealm.CELL_STATE.WATER
+                                : scaledY < waterY;
                         this.state.playerUnderwater = submerged;
-                        // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
-                        this.state.playerEyesUnderwater = scaledY + 1.6 < waterY;
+                        // Augen sitzen auf Kamera-Höhe (scaledY + 1.6); nur unter
+                        // Wasser, wenn der Körper in einer Wasserzelle ist UND die
+                        // Augen unter dem Spiegel liegen (kein blauer Tint über Luft).
+                        this.state.playerEyesUnderwater = submerged && scaledY + 1.6 < waterY;
                         if (submerged) {
                             // V8.36 — Auftrieb wirkt NUR über dem Terrain.
                             // Fällt der Spieler durch die Welt (weit unter
@@ -45937,7 +45978,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.92.0";
+AnazhRealm.VERSION = "17.93.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

@@ -6030,7 +6030,10 @@ async function checkBandV1773HeldMesh(ctx) {
         if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
         return out;
     });
-    check("V17.73 S9: Hand-Mesh — Spieler-Mesh da + sauberer Start (kein Held-Mesh nach equipHeld(null))", res.hasPlayerMesh && res.startNoMesh);
+    check(
+        "V17.73 S9: Hand-Mesh — Spieler-Mesh da + sauberer Start (kein Held-Mesh nach equipHeld(null))",
+        res.hasPlayerMesh && res.startNoMesh
+    );
     check(
         "V17.73 S9: ein Geräte-Bauplan (geraet_spitzhacke) erzeugt ein Hand-Mesh, an den Avatar geparentet (Arm/Flügel/Wurzel)",
         res.equipOk && res.meshBuilt && res.parented && res.onAnchor
@@ -6458,12 +6461,19 @@ async function checkBandV1779RoleFitQuality(ctx) {
             name: "_rf_blade",
             parts: [
                 { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 1.6 } },
-                { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.2 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+                {
+                    shape: "cone",
+                    material: "eisen",
+                    position: { x: 0, y: 0, z: 1.2 },
+                    size: { x: 0.2, y: 0.1, z: 0.6 },
+                },
             ],
         };
         const blob = {
             name: "_rf_blob",
-            parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } }],
+            parts: [
+                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } },
+            ],
         };
         // (1) die Passung diskriminiert über die FORM (gleiches Material eisen, andere Form)
         const fitBlade = r._blueprintRoleFit(blade, "held");
@@ -6476,17 +6486,28 @@ async function checkBandV1779RoleFitQuality(ctx) {
         // (3) armor: dichte Platte > weiches Leder-Ding
         const plate = {
             name: "_rf_plate",
-            parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } }],
+            parts: [
+                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } },
+            ],
         };
         const soft = {
             name: "_rf_soft",
-            parts: [{ shape: "box", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } }],
+            parts: [
+                { shape: "box", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } },
+            ],
         };
         out.armorDiscriminates = r._blueprintRoleFit(plate, "armor") > r._blueprintRoleFit(soft, "armor");
         // (4) consumable: der lebendige Trank > ein toter Stein-Klumpen
         const deadC = {
             name: "_rf_dead",
-            parts: [{ shape: "sphere", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 0.5, y: 0.5, z: 0.5 } }],
+            parts: [
+                {
+                    shape: "sphere",
+                    material: "stein",
+                    position: { x: 0, y: 0, z: 0 },
+                    size: { x: 0.5, y: 0.5, z: 0.5 },
+                },
+            ],
         };
         out.consumableDiscriminates =
             r._blueprintRoleFit(r.state.blueprints["trank_lebenssaft"], "consumable") >
@@ -6540,7 +6561,9 @@ async function checkBandV1780FormAxes(ctx) {
             { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 1.8 } },
             { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.4 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
         ]);
-        const cube = mk([{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } }]);
+        const cube = mk([
+            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } },
+        ]);
         const column = mk([
             { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
             { shape: "box", material: "stein", position: { x: 0, y: 1, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
@@ -6555,8 +6578,18 @@ async function checkBandV1780FormAxes(ctx) {
         ]);
         const body = mk([
             { shape: "box", material: "stein", position: { x: 0, y: 1, z: 0 }, size: { x: 0.8, y: 1.6, z: 0.5 } },
-            { shape: "cylinder", material: "stein", position: { x: -0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
-            { shape: "cylinder", material: "stein", position: { x: 0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: -0.7, y: 1, z: 0 },
+                size: { x: 0.3, y: 1.2, z: 0.3 },
+            },
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0.7, y: 1, z: 0 },
+                size: { x: 0.3, y: 1.2, z: 0.3 },
+            },
         ]);
         const lump = mk([
             { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
@@ -6567,7 +6600,9 @@ async function checkBandV1780FormAxes(ctx) {
             { shape: "box", material: "quarz", position: { x: 1, y: 1, z: 0 }, size: { x: 0.2, y: 2, z: 2 } },
             { shape: "box", material: "quarz", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 0.2, z: 2 } },
         ]);
-        const solid = mk([{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 } }]);
+        const solid = mk([
+            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 } },
+        ]);
         const V = (b) => r._blueprintProductVector(b);
         const out = {};
         const vb = V(blade);
@@ -6583,10 +6618,17 @@ async function checkBandV1780FormAxes(ctx) {
         out.noRegress = r.computeBlueprintRole(solid) === "architecture"; // V17.83 U4: ein WÜRFEL (keine Geräte-Form) bleibt Bauwerk
         return out;
     });
-    check("V17.80 U1: die 4 Form-Achsen sind im Produkt-Vektor (elongation/hollowness/axialSymmetry/spread)", res.hasAxes);
+    check(
+        "V17.80 U1: die 4 Form-Achsen sind im Produkt-Vektor (elongation/hollowness/axialSymmetry/spread)",
+        res.hasAxes
+    );
     check("V17.80 U1: elongation — eine Klinge ist gestreckter als ein Würfel", res.elongation, res.elongVals);
     check("V17.80 U1: spread — eine Trag-Basis spreizt mehr als eine Säule", res.spread, res.spreadVals);
-    check("V17.80 U1: axialSymmetry — ein symmetrischer Körper > ein asymmetrischer Klumpen", res.symmetry, res.symVals);
+    check(
+        "V17.80 U1: axialSymmetry — ein symmetrischer Körper > ein asymmetrischer Klumpen",
+        res.symmetry,
+        res.symVals
+    );
     check("V17.80 U1: hollowness — ein Behälter (Wände um Leere) > ein Vollblock", res.hollow, res.hollowVals);
     check(
         "V17.80 U1 / V17.83 U4: ein WÜRFEL (keine Geräte-Form) bleibt Bauwerk — U4 ändert nur greifbare Geräte-Formen",
@@ -6629,7 +6671,9 @@ async function checkBandV1781RoleRegister(ctx) {
             { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 2.0 } },
             { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.5 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
         ]);
-        const block = mk([{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } }]);
+        const block = mk([
+            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } },
+        ]);
         // TIEFE: das volle Profil — die Klinge ist eine bessere WAFFE, der Block ein besseres BAUWERK
         const bladeWeapon = r._blueprintRoleFit(blade, "weapon");
         const blockWeapon = r._blueprintRoleFit(block, "weapon");
@@ -6661,14 +6705,20 @@ async function checkBandV1781RoleRegister(ctx) {
         "V17.81 U2: das Rollen-Register hat ALLE Rollen (held/weapon/tool/brecher/armor/consumable/soul/portal/vehicle/machine/workshop/architecture)",
         res.allRoles
     );
-    check("V17.81 U2: die Signaturen sind VOLL (≥4 Achsen — über die gesamte Resonanz, nicht eine Achse)", res.fullSignatures);
+    check(
+        "V17.81 U2: die Signaturen sind VOLL (≥4 Achsen — über die gesamte Resonanz, nicht eine Achse)",
+        res.fullSignatures
+    );
     check(
         "V17.81 U2 TIEFE: das volle Profil entscheidet — die Klinge ist eine bessere Waffe, der Block ein besseres Bauwerk",
         res.depth && res.roleRelative,
         res.depthVals
     );
     check("V17.81 U2: held — eine Klinge passt besser als ein Klotz (V1779-Kern, jetzt tiefer)", res.heldDiscriminates);
-    check("V17.81 U2 BALANCE: die Passung bleibt in [min,max], ein gut geformtes Werk ist ein Buff (>1.05)", res.inRange && res.goodFitBuff);
+    check(
+        "V17.81 U2 BALANCE: die Passung bleibt in [min,max], ein gut geformtes Werk ist ein Buff (>1.05)",
+        res.inRange && res.goodFitBuff
+    );
     check(
         "V17.81 U2: vehicle — eine Trag-Basis passt besser als ein Mast (die neuen Form-Achsen tragen die neue Rolle)",
         res.vehicleDiscriminates,
@@ -6689,15 +6739,22 @@ async function checkBandV1782CatalystReadout(ctx) {
             { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 2.0 } },
             { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.5 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
         ]);
-        const ball = mk([{ shape: "sphere", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }]);
-        const block = mk([{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } }]);
+        const ball = mk([
+            { shape: "sphere", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+        ]);
+        const block = mk([
+            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } },
+        ]);
         const out = {};
         const spec = r._blueprintRoleSpectrum(blade);
         const getW = (s) => (s.find((x) => x.role === "weapon") || { score: 0 }).score;
         out.weaponHigh = getW(spec) > 0.85; // die Klinge ist eine starke Waffe
         out.discriminates = getW(spec) > getW(r._blueprintRoleSpectrum(ball)); // > eine weiche Kugel
         out.sorted = spec.every((s, i) => i === 0 || spec[i - 1].score >= s.score - 1e-9);
-        out.specVals = spec.slice(0, 3).map((s) => `${s.role}=${round(s.score)}`).join(" ");
+        out.specVals = spec
+            .slice(0, 3)
+            .map((s) => `${s.role}=${round(s.score)}`)
+            .join(" ");
         // der Katalysator-Hinweis: ein harter dichter Block ist für eine Waffe SCHÄRFE-arm → Hinweis Schärfe
         const hint = r._blueprintCatalystHint(block, "weapon");
         out.hintSharpness = !!hint && hint.axis === "pointedFraction" && hint.label === "Schärfe";
@@ -6709,7 +6766,10 @@ async function checkBandV1782CatalystReadout(ctx) {
         const specText = [...panel.querySelectorAll(".role-spectrum-text")].map((e) => e.textContent).join("|");
         out.readoutRenders =
             labels.includes("Resonanz") &&
-            (specText.includes("Waffe") || specText.includes("Werkzeug") || specText.includes("Gerät") || specText.includes("Bauwerk"));
+            (specText.includes("Waffe") ||
+                specText.includes("Werkzeug") ||
+                specText.includes("Gerät") ||
+                specText.includes("Bauwerk"));
         out.readoutText = specText;
         return out;
     });
@@ -6739,14 +6799,37 @@ async function checkBandV1783ImplementClassification(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const mk = (parts) => ({ name: "_u4", parts });
-        const spike = mk([{ shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.3, z: 1.8 } }]);
-        const handle = mk([{ shape: "cylinder", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.25, y: 1.6, z: 0.25 } }]);
-        const largeBlock = mk([{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 8, y: 8, z: 8 } }]);
-        const smallCube = mk([{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }]);
+        const spike = mk([
+            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.3, z: 1.8 } },
+        ]);
+        const handle = mk([
+            {
+                shape: "cylinder",
+                material: "eisen",
+                position: { x: 0, y: 0, z: 0 },
+                size: { x: 0.25, y: 1.6, z: 0.25 },
+            },
+        ]);
+        const largeBlock = mk([
+            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 8, y: 8, z: 8 } },
+        ]);
+        const smallCube = mk([
+            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+        ]);
         const body = mk([
             { shape: "box", material: "fleisch", position: { x: 0, y: 1, z: 0 }, size: { x: 0.8, y: 1.6, z: 0.5 } },
-            { shape: "cylinder", material: "fleisch", position: { x: -0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
-            { shape: "cylinder", material: "fleisch", position: { x: 0.7, y: 1, z: 0 }, size: { x: 0.3, y: 1.2, z: 0.3 } },
+            {
+                shape: "cylinder",
+                material: "fleisch",
+                position: { x: -0.7, y: 1, z: 0 },
+                size: { x: 0.3, y: 1.2, z: 0.3 },
+            },
+            {
+                shape: "cylinder",
+                material: "fleisch",
+                position: { x: 0.7, y: 1, z: 0 },
+                size: { x: 0.3, y: 1.2, z: 0.3 },
+            },
         ]);
         const out = {};
         out.spikeRole = r.computeBlueprintRole(spike);
@@ -6783,14 +6866,25 @@ async function checkBandV1783ImplementClassification(ctx) {
         res.handleArch,
         `handle=${res.handleRole}`
     );
-    check("V17.83 U4: eine große Struktur (nicht greifbar) → Bauwerk (unverändert)", res.largeArch, `large=${res.largeRole}`);
+    check(
+        "V17.83 U4: eine große Struktur (nicht greifbar) → Bauwerk (unverändert)",
+        res.largeArch,
+        `large=${res.largeRole}`
+    );
     check(
         "V17.83 U4: ein Würfel (greifbar, aber keine Geräte-Form) → Bauwerk — U4 ändert NUR Geräte-Formen",
         res.cubeArch,
         `cube=${res.cubeRole}`
     );
-    check("V17.83 U4: ein Körper → Seele (die Form-Rollen soul/portal/consumable unverändert)", res.bodySoul, `body=${res.bodyRole}`);
-    check("V17.83 U4: die Greifbar-Implement-Erkennung (spitz/elongiert + klein vs großer Block/Würfel)", res.graspDetect);
+    check(
+        "V17.83 U4: ein Körper → Seele (die Form-Rollen soul/portal/consumable unverändert)",
+        res.bodySoul,
+        `body=${res.bodyRole}`
+    );
+    check(
+        "V17.83 U4: die Greifbar-Implement-Erkennung (spitz/elongiert + klein vs großer Block/Würfel)",
+        res.graspDetect
+    );
 }
 
 // V17.84 U6 (resonanz-system.md §5) — die FORM in die WIRKUNG für den AVATAR: ein gut geformter Custom-
@@ -6805,12 +6899,34 @@ async function checkBandV1784AvatarFormFit(ctx) {
         const out = {};
         const bodyParts = [
             { shape: "box", material: "fleisch", position: { x: 0, y: 1.2, z: 0 }, size: { x: 0.9, y: 1.6, z: 0.5 } },
-            { shape: "cylinder", material: "fleisch", position: { x: -0.95, y: 1.1, z: 0 }, size: { x: 0.3, y: 1.3, z: 0.3 } },
-            { shape: "cylinder", material: "fleisch", position: { x: 0.95, y: 1.1, z: 0 }, size: { x: 0.3, y: 1.3, z: 0.3 } },
-            { shape: "cylinder", material: "fleisch", position: { x: -0.4, y: 0, z: 0 }, size: { x: 0.35, y: 1.2, z: 0.35 } },
-            { shape: "cylinder", material: "fleisch", position: { x: 0.4, y: 0, z: 0 }, size: { x: 0.35, y: 1.2, z: 0.35 } },
+            {
+                shape: "cylinder",
+                material: "fleisch",
+                position: { x: -0.95, y: 1.1, z: 0 },
+                size: { x: 0.3, y: 1.3, z: 0.3 },
+            },
+            {
+                shape: "cylinder",
+                material: "fleisch",
+                position: { x: 0.95, y: 1.1, z: 0 },
+                size: { x: 0.3, y: 1.3, z: 0.3 },
+            },
+            {
+                shape: "cylinder",
+                material: "fleisch",
+                position: { x: -0.4, y: 0, z: 0 },
+                size: { x: 0.35, y: 1.2, z: 0.35 },
+            },
+            {
+                shape: "cylinder",
+                material: "fleisch",
+                position: { x: 0.4, y: 0, z: 0 },
+                size: { x: 0.35, y: 1.2, z: 0.35 },
+            },
         ];
-        const blobParts = [{ shape: "box", material: "fleisch", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 1.5, z: 1.5 } }];
+        const blobParts = [
+            { shape: "box", material: "fleisch", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 1.5, z: 1.5 } },
+        ];
         // (1) der Gate: Built-in-Seele → neutral (in playerSoulDefs), ein Custom-Name nicht
         out.builtinGate = !!r.playerSoulDefs["human"] && !r.playerSoulDefs["_av_body"];
         // (2) die soul-Passung diskriminiert über die FORM (gleiches Material fleisch)
@@ -6970,7 +7086,9 @@ async function checkBandV1786WorkshopCoherence(ctx) {
             return {
                 roleChip: ((roleRow && roleRow.querySelector(".role-chip")) || {}).textContent || "",
                 roleRowAffordances: roleRow ? roleRow.querySelectorAll(".affordance-chip").length : -1,
-                capRowChips: capRow ? Array.from(capRow.querySelectorAll(".affordance-chip")).map((c) => c.textContent) : [],
+                capRowChips: capRow
+                    ? Array.from(capRow.querySelectorAll(".affordance-chip")).map((c) => c.textContent)
+                    : [],
             };
         };
         // (1) der Schwert-Samen existiert + ist eine Klinge (schneidet) + ein gehaltenes Implement
@@ -6991,7 +7109,8 @@ async function checkBandV1786WorkshopCoherence(ctx) {
         // (3) die Affordanzen sind in der FÄHIGKEIT-Zeile, NICHT in der Rolle-Zeile (der ungebundene Faden)
         out.esseRoleRowAffordances = esseRender ? esseRender.roleRowAffordances : -1;
         out.esseRoleRowClean = !esse || esseRender.roleRowAffordances === 0; // keine ✦ in der Rolle-Zeile
-        out.esseCapRowHasAffordance = !esse || esseRender.capRowChips.some((c) => /sendend|strahlend|vergrößernd|bündelnd/.test(c));
+        out.esseCapRowHasAffordance =
+            !esse || esseRender.capRowChips.some((c) => /sendend|strahlend|vergrößernd|bündelnd/.test(c));
         return out;
     });
     check(
@@ -7059,7 +7178,8 @@ async function checkBandV1787UndoRedo(ctx) {
         r.applyOpToPart("_ur", idx, "schmiede-hammer");
         const opAfter = (r.state.blueprints["_ur"].parts[idx].opChain || []).length;
         r.undoBlueprintEdit("_ur");
-        out.opUndoReverts = opAfter > opBefore && (r.state.blueprints["_ur"].parts[idx].opChain || []).length === opBefore;
+        out.opUndoReverts =
+            opAfter > opBefore && (r.state.blueprints["_ur"].parts[idx].opChain || []).length === opBefore;
         // Built-in lehnt ab (unveränderlich → keine Geschichte)
         out.builtinReject = r.undoBlueprintEdit("geraet_spitzhacke").ok === false;
         // die Geschichte ist NICHT persistiert (reaktive Editor-Schicht)
@@ -7113,7 +7233,12 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
         // ein eigener eisen-Bauplan
         delete r.state.blueprints["_wp88"];
         r.createBlueprint("_wp88", "WP88");
-        r.addPartToBlueprint("_wp88", { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 1, y: 1, z: 1 } });
+        r.addPartToBlueprint("_wp88", {
+            shape: "box",
+            material: "eisen",
+            position: { x: 0, y: 1, z: 0 },
+            size: { x: 1, y: 1, z: 1 },
+        });
         // (2) SCHÖPFER: alle besessenen Werkstätten verfügbar (frei, ohne Platzieren)
         r.setGameMode("schöpfer");
         const menuS = r._workshopProcessesForMenu();
@@ -7123,7 +7248,8 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
         const esseP = menuS.find((p) => p.stationName === "esse");
         const meisterP = menuS.find((p) => p.stationName === "esse_meister");
         out.recursion = !!(esseP && meisterP && meisterP.cap > esseP.cap);
-        out.recursionVals = esseP && meisterP ? `esse=${esseP.cap.toFixed(3)} meister=${meisterP.cap.toFixed(3)}` : "(fehlt)";
+        out.recursionVals =
+            esseP && meisterP ? `esse=${esseP.cap.toFixed(3)} meister=${meisterP.cap.toFixed(3)}` : "(fehlt)";
         // schöpfer-Anwendung (besessen, kein Platzieren) → der Cap kommt aus der Station
         const apS = r.applyWorkshopProcessToPart("_wp88", 0, "esse_meister");
         out.schoepferApply = apS.ok === true && Math.abs((apS.cap || 0) - meisterP.cap) < 1e-6;
@@ -7190,8 +7316,18 @@ async function checkBandV1789WorkshopReadout(ctx) {
             blu[name] = {
                 name,
                 parts: [
-                    { shape: "octahedron", material: mat, size: { x: 0.3, y: 0.3, z: 0.3 }, position: { x: 0, y: 0, z: 0 } },
-                    { shape: "cone", material: mat, size: { x: 0.2, y: 0.12, z: 1.4 }, position: { x: 0, y: 0, z: 1.0 } },
+                    {
+                        shape: "octahedron",
+                        material: mat,
+                        size: { x: 0.3, y: 0.3, z: 0.3 },
+                        position: { x: 0, y: 0, z: 0 },
+                    },
+                    {
+                        shape: "cone",
+                        material: mat,
+                        size: { x: 0.2, y: 0.12, z: 1.4 },
+                        position: { x: 0, y: 0, z: 1.0 },
+                    },
                 ],
             };
             return blu[name];
@@ -7207,7 +7343,12 @@ async function checkBandV1789WorkshopReadout(ctx) {
         // (2) FORM bewegt die Eignung: ein stumpfer Zylinder an der Klinge senkt die Waffen-Eignung
         const bladeFit = eisenAb ? eisenAb.fit : 0;
         const longer = mkBlade("_ab_long", "eisen");
-        longer.parts.push({ shape: "cylinder", material: "eisen", size: { x: 0.3, y: 0.3, z: 1.2 }, position: { x: 0, y: 0, z: -1.0 } });
+        longer.parts.push({
+            shape: "cylinder",
+            material: "eisen",
+            size: { x: 0.3, y: 0.3, z: 1.2 },
+            position: { x: 0, y: 0, z: -1.0 },
+        });
         const longAb = r._blueprintAbilityStats(longer);
         out.formMovesValues = !!longAb && Math.abs(longAb.fit - bladeFit) > 0.001;
         out.formVals = `klinge-Eignung=${bladeFit.toFixed(3)} +zylinder=${longAb ? longAb.fit.toFixed(3) : "?"}`;
@@ -7217,7 +7358,9 @@ async function checkBandV1789WorkshopReadout(ctx) {
             name: "_ab_armor",
             role: "armor",
             roleManual: true,
-            parts: [{ shape: "box", material: "eisen", size: { x: 1.2, y: 1.4, z: 0.4 }, position: { x: 0, y: 0, z: 0 } }],
+            parts: [
+                { shape: "box", material: "eisen", size: { x: 1.2, y: 1.4, z: 0.4 }, position: { x: 0, y: 0, z: 0 } },
+            ],
         };
         const armorAb = r._blueprintAbilityStats(blu["_ab_armor"]);
         out.armorHasDefense = !!armorAb && armorAb.stats.some((s) => s[0] === "Verteidigung");
@@ -7233,7 +7376,8 @@ async function checkBandV1789WorkshopReadout(ctx) {
         r._renderWorkshopDOM();
         out.domAbilitiesRow = !!document.querySelector(".workshop-abilities-row");
         // V17.91 — Undo/Redo wohnen jetzt in der Top-Leiste (aus dem entfernten Detail-Editor migriert).
-        out.domHistoryControls = !!document.getElementById("workshop-undo-btn") && !!document.getElementById("workshop-redo-btn");
+        out.domHistoryControls =
+            !!document.getElementById("workshop-undo-btn") && !!document.getElementById("workshop-redo-btn");
         // V17.91 — die Werkstatt-Prozesse sind jetzt ziehbare Karten in der rechten WERKZEUGE-Palette
         // (schöpfer → alle besessenen Werkstätten); auf einen Part im 3D ziehen wendet den Prozess an.
         out.domWorkshopChips = document.querySelectorAll("#workshop-tool-palette .workshop-station-card").length >= 1;
@@ -7241,7 +7385,8 @@ async function checkBandV1789WorkshopReadout(ctx) {
         for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor"]) delete blu[n];
         if (blu["_ab_clone"]) r.deleteBlueprint("_ab_clone");
         if (r.state.blueprintEditHistory) {
-            for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor", "_ab_clone"]) delete r.state.blueprintEditHistory[n];
+            for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor", "_ab_clone"])
+                delete r.state.blueprintEditHistory[n];
         }
         r.selectBlueprintForEdit("village");
         if (r.setGameMode) r.setGameMode(prevMode);
@@ -7263,7 +7408,10 @@ async function checkBandV1789WorkshopReadout(ctx) {
         "V17.91 KONSUM (DOM): die Werkstatt-Prozesse sind ziehbare Karten in der WERKZEUGE-Palette (schöpfer → besessene Werkstätten)",
         res.domWorkshopChips
     );
-    check("V17.91 (DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)", res.domHistoryControls);
+    check(
+        "V17.91 (DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)",
+        res.domHistoryControls
+    );
 }
 
 // V17.90 (resonanz-system.md — die Re-Kalibrierung): die vier „blass"-Facetten + zwei UI-Heilungen GEMESSEN.
@@ -7280,7 +7428,10 @@ async function checkBandV1790Recalibration(ctx) {
         const cone = (m, s, p) => ({ shape: "cone", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
         const blade = (m, k = 1) => ({
             name: "_rc",
-            parts: [box(m, { x: 0.2 * k, y: 0.1 * k, z: 1.4 * k }), cone(m, { x: 0.2 * k, y: 0.1 * k, z: 0.6 * k }, { x: 0, y: 0, z: 1.0 * k })],
+            parts: [
+                box(m, { x: 0.2 * k, y: 0.1 * k, z: 1.4 * k }),
+                cone(m, { x: 0.2 * k, y: 0.1 * k, z: 0.6 * k }, { x: 0, y: 0, z: 1.0 * k }),
+            ],
         });
         const dmg = (ab) => (ab && ab.stats ? (ab.stats.find((s) => s[0] === "Schaden") || [0, 0])[1] : 0);
         const tempo = (ab) => (ab && ab.stats ? (ab.stats.find((s) => s[0] === "Tempo") || [0, 0])[1] : 0);
@@ -7356,7 +7507,10 @@ async function checkBandV1790Recalibration(ctx) {
         for (const sheet of document.styleSheets) {
             try {
                 for (const rule of sheet.cssRules) {
-                    if (rule.selectorText && /workshop-action-btn:disabled|workshop-station-card/.test(rule.selectorText))
+                    if (
+                        rule.selectorText &&
+                        /workshop-action-btn:disabled|workshop-station-card/.test(rule.selectorText)
+                    )
                         cssHistory = true;
                 }
             } catch (e) {
@@ -7383,8 +7537,15 @@ async function checkBandV1790Recalibration(ctx) {
         res.sizeRaisesDamage && res.sizeLowersTempo,
         res.sizeVals
     );
-    check("V17.90 Facette 3: die Größe erreicht den ECHTEN Kampf (Equip-Fold), nicht nur die Anzeige", res.sizeReachesEquip, res.equipVals);
-    check("V17.90 Facette 3: attackSpeed bleibt POSITIV trotz schwerem Gerät (kein negativer Cooldown)", res.attackSpeedPositive);
+    check(
+        "V17.90 Facette 3: die Größe erreicht den ECHTEN Kampf (Equip-Fold), nicht nur die Anzeige",
+        res.sizeReachesEquip,
+        res.equipVals
+    );
+    check(
+        "V17.90 Facette 3: attackSpeed bleibt POSITIV trotz schwerem Gerät (kein negativer Cooldown)",
+        res.attackSpeedPositive
+    );
     check(
         "V17.90 Facette 4: ROLLE scharf — Pickel→Werkzeug (Holzstiel), Schwert→Waffe (Metall-Klinge), Klinge→Waffe",
         res.spitzhackeTool && res.schwertWeapon && res.bladeWeapon,
@@ -7395,7 +7556,10 @@ async function checkBandV1790Recalibration(ctx) {
         res.drehbankNearAppears && res.drehbankFarHidden,
         `radius=${res.proximityM}m near=${res.drehbankNearAppears} far=${res.drehbankFarHidden}`
     );
-    check("V17.91 Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)", res.cssHistory);
+    check(
+        "V17.91 Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)",
+        res.cssHistory
+    );
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -7927,7 +8091,10 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P2: compound_has_tag unbekanntes Tag → false", wave4p2Results.condUnknownTagFalse);
         check("Welle 4 P2 (V17.91): die Tags-Zeile erscheint im Stats-Panel", wave4p2Results.uiTagsSection);
         check("Welle 4 P2 (V17.91): das Stats-Panel rendert Tag-Chips", wave4p2Results.uiTagsHasRows);
-        check("Welle 4 P2 (V17.91): die FORMEN-Palette bietet helix als ziehbare Karte", wave4p2Results.uiShapeIncludesHelix);
+        check(
+            "Welle 4 P2 (V17.91): die FORMEN-Palette bietet helix als ziehbare Karte",
+            wave4p2Results.uiShapeIncludesHelix
+        );
     }
 
     // ### Welle 4 Phase 3 — Werkzeuge + opChain + Präzision ###
@@ -8126,7 +8293,10 @@ async function checkBandWave4(ctx) {
             (wave4p3Results && wave4p3Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("V17.88: hände ist der einzige Starter, die Domain-Ops sind die Werkstatt-Bibliothek", wave4p3Results.fiveStarterTools);
+        check(
+            "V17.88: hände ist der einzige Starter, die Domain-Ops sind die Werkstatt-Bibliothek",
+            wave4p3Results.fiveStarterTools
+        );
         check("V17.88: Spieler startet mit den Basics (hände)", wave4p3Results.playerOwnsStarters);
         check("Welle 4 P3: MATERIAL_OP_COMPATIBILITY frozen", wave4p3Results.matCompatFrozen);
         check("Welle 4 P3: WORLD_EFFECT_THRESHOLDS frozen", wave4p3Results.thresholdsFrozen);
@@ -8476,9 +8646,15 @@ async function checkBandWave5(ctx) {
         check("Welle 5 B: Pyramide oben verstärkt Magieleitung räumlich", wave5bResults.tipBoostsMagic);
         check("Welle 5 B: Pyramide unten gibt KEINEN Top-Bonus", wave5bResults.bottomNoTipBoost);
         check("Welle 5 B: Helix am Rand hat at_outside", wave5bResults.helixAtOutside);
-        check("Welle 5 B (V17.91): computeSpatialTags existiert (die räumliche Emergenz-Daten-Schicht)", wave5bResults.uiSpatialTitle);
+        check(
+            "Welle 5 B (V17.91): computeSpatialTags existiert (die räumliche Emergenz-Daten-Schicht)",
+            wave5bResults.uiSpatialTitle
+        );
         check("Welle 5 B (V17.91): der pointed-am-Rand-Bauplan trägt räumliche Tags", wave5bResults.uiSpatialRow);
-        check("Welle 5 B (V17.91): die räumliche Emergenz diskriminiert die Form (pointed ≠ atomar)", wave5bResults.uiSpatialDiscriminates);
+        check(
+            "Welle 5 B (V17.91): die räumliche Emergenz diskriminiert die Form (pointed ≠ atomar)",
+            wave5bResults.uiSpatialDiscriminates
+        );
         check("Welle 5 B: DSL compound_has_spatial_tag erkennt verstärkte Magie", wave5bResults.dslSpatialCondHigh);
         check("Welle 5 B: Tip-Compound triggert Magie-Welt-Effekt (awe)", wave5bResults.tipTriggersMagic);
         check("Welle 5 B: Magie tip-oben > Magie tip-unten (Diskrimination)", wave5bResults.tipMagicExceedsBottom);
@@ -8924,9 +9100,15 @@ async function checkBandWave5(ctx) {
         check("Welle 5 A: DSL-Connection persistiert in state", wave5aResults.dslConnectionPersisted);
         check("Welle 5 A: Save traegt connections im Snapshot", wave5aResults.saveCarriesConnections);
         check("Welle 5 A (V17.91): Connect-Modus existiert in der Top-Leiste", wave5aResults.uiConnectMode);
-        check("Welle 5 A (V17.91): der Connect-Typ-Popover öffnet im 3D (zwei Parts → Typ wählen)", wave5aResults.uiConnectPopover);
+        check(
+            "Welle 5 A (V17.91): der Connect-Typ-Popover öffnet im 3D (zwei Parts → Typ wählen)",
+            wave5aResults.uiConnectPopover
+        );
         check("Welle 5 A (V17.91): das Popover bietet Verbindungs-Typen", wave5aResults.uiConnectTypeButtons);
-        check("Welle 5 A (V17.91): Verbindung lösen via Toggle/API (removeConnectionFromBlueprint)", wave5aResults.uiConnectRemoveApi);
+        check(
+            "Welle 5 A (V17.91): Verbindung lösen via Toggle/API (removeConnectionFromBlueprint)",
+            wave5aResults.uiConnectRemoveApi
+        );
         check("Welle 5 A: Schwache Verbindung traegt workshop-conn-weak class", wave5aResults.weakClassApplied);
     }
 
@@ -9129,7 +9311,10 @@ async function checkBandWave5(ctx) {
         check("Welle 5 C: DSL-Werkzeug landet in state.tools", wave5cResults.dslToolInState);
         check("Welle 5 C: Save traegt role + toolMeta im Bauplan", wave5cResults.snapshotHasToolBp);
         check("Welle 5 C: Save traegt eigenes Werkzeug", wave5cResults.snapshotHasTool);
-        check("Welle 5 C (V17.91): die Werkzeug-Registrierungs-Methoden überleben (UI von V17.88 abgelöst)", wave5cResults.toolMethodSurvives);
+        check(
+            "Welle 5 C (V17.91): die Werkzeug-Registrierungs-Methoden überleben (UI von V17.88 abgelöst)",
+            wave5cResults.toolMethodSurvives
+        );
     }
 
     // ### Bugfixes nach Welle-5-Reflexion ###
@@ -27052,6 +27237,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // playerEyesUnderwater (Augen/Tauchen).
         out.eyesFlagExists = typeof r.state.playerEyesUnderwater === "boolean";
         // Physik-Loop berechnet playerEyesUnderwater aus scaledY+1.6.
+        // Welle B (V9.56-i): seit der 3D-Zellen-Heilung ist die Augen-Höhe auf
+        // `submerged` gegated (`= submerged && scaledY + 1.6 < waterY`) — die
+        // Augen-Höhen-Quelle (scaledY+1.6) bleibt, die Probe akzeptiert beide
+        // Formen (das Verhalten wanderte, der Test wandert mit).
         {
             let found = false;
             const proto = Object.getPrototypeOf(r);
@@ -27059,7 +27248,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 try {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
-                    if (/playerEyesUnderwater\s*=\s*scaledY \+ 1\.6/.test(fn.toString())) found = true;
+                    if (/playerEyesUnderwater\s*=\s*(?:submerged\s*&&\s*)?scaledY \+ 1\.6/.test(fn.toString()))
+                        found = true;
                 } catch {
                     /* skip */
                 }
@@ -34669,7 +34859,9 @@ async function checkBandWaves9And10a(ctx) {
             // zeigt „Bauwerk" + trägt .role-emergent (der emergent/manuell-Indikator).
             const roleChip9b = document.querySelector("#workshop-stats-panel .role-chip");
             out.statusShowsBauwerk =
-                !!roleChip9b && roleChip9b.textContent.includes("Bauwerk") && roleChip9b.classList.contains("role-emergent");
+                !!roleChip9b &&
+                roleChip9b.textContent.includes("Bauwerk") &&
+                roleChip9b.classList.contains("role-emergent");
             // Apply schmiede-hammer auf eisen-Part (V17.88 — Domain-Op aus der Op-Bibliothek leihen)
             if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
             r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
@@ -34715,7 +34907,10 @@ async function checkBandWaves9And10a(ctx) {
             "V17.88: alle 5 Domain-Werkzeuge bleiben als Werkstatt-Op-Bibliothek (isStarter:false, in state.tools)",
             wave9bResults.allDomainToolsInInventory
         );
-        check("Welle 9b/V17.78: 6 Built-in-Werkzeuge (hände-Baseline + 5 domain; die generische Leiter fiel)", wave9bResults.sixBuiltInTools);
+        check(
+            "Welle 9b/V17.78: 6 Built-in-Werkzeuge (hände-Baseline + 5 domain; die generische Leiter fiel)",
+            wave9bResults.sixBuiltInTools
+        );
         check(
             "Welle 9b: BLUEPRINT_ROLE_LABELS frozen + deutsche Bezeichnungen (Bauwerk/Werkzeug/Maschine)",
             wave9bResults.roleLabelsFrozen
@@ -36287,7 +36482,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             "V8.05: Werkzeug-Palette im DOM mit Cards für Spieler-Werkzeuge",
             v805Results.toolPaletteInDom && v805Results.toolPaletteHasCards
         );
-        check("V8.05 (V17.91): der alte Detail-Editor ist entfernt (#workshop-editor + Toggle weg)", v805Results.editorRemoved);
+        check(
+            "V8.05 (V17.91): der alte Detail-Editor ist entfernt (#workshop-editor + Toggle weg)",
+            v805Results.editorRemoved
+        );
         check(
             "V8.05 (V17.91): Undo/Redo + Löschen wohnen in der Top-Leiste",
             v805Results.topBarUndoRedo && v805Results.topBarDeleteBlueprint
@@ -39228,7 +39426,10 @@ async function checkBandRing6Workshop(ctx) {
         check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
         check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
         check("Ring 6.6: #workshop-list im DOM", ring66Results.workshopListInDom);
-        check("Ring 6.6 (V17.91): #workshop-stats-panel im DOM (intuitiver Readout, der Editor ist entfernt)", ring66Results.workshopStatsPanelInDom);
+        check(
+            "Ring 6.6 (V17.91): #workshop-stats-panel im DOM (intuitiver Readout, der Editor ist entfernt)",
+            ring66Results.workshopStatsPanelInDom
+        );
         check("Ring 6.6: Liste zeigt einen Eintrag pro Bauplan", ring66Results.listShowsAllBlueprints);
         check("Ring 6.6: createBlueprint legt neuen eigenen Bauplan an", ring66Results.createBlueprintOk);
         check("Ring 6.6: createBlueprint lehnt doppelte Namen ab", ring66Results.duplicateNameRejected);
