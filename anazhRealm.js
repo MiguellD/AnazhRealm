@@ -17503,6 +17503,16 @@ class AnazhRealm {
             const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
             const cave = Math.max(0, (ridge - 0.7) / 0.3);
             d -= cave * caveEnv * 36;
+            // Welle G — GROSSE KAVERNEN: ein nieder-frequentes Feld (λ~77 m horiz.,
+            // ~55 m vert.) carvt runde, begehbare HALLEN, wo der Befund nur dünne
+            // λ33-Schläuche fand. Sparse (Schwelle 0.55 → die oberen ~22 % des
+            // Noise) → vereinzelte große Räume, von den Tunneln verbunden
+            // (Minecraft spaghetti+cheese). Gegated durch DASSELBE caveEnv → bleibt
+            // unter surf-16 (kein Water-Bleed) + über base-28 (Boden-Garantie).
+            // MUSS bit-identisch im Worker (Determinismus-/Naht-Schutz).
+            const cavern = n.noise3D(x * 0.013, y * 0.018, z * 0.013);
+            const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
+            d -= cavernCarve * caveEnv * 46;
         }
         // V9.43-d / V9.45-b — der Hydrosphären-Carve. (1) Fluss-Kanäle senken
         // die Dichte → echte Rinnen mit Ufern. (2) See-Becken werden zu einem
@@ -17785,13 +17795,18 @@ class AnazhRealm {
         // bit-identisch im Worker (`computeDensityGrid`, Determinismus-/Naht-Schutz).
         const base = this.state.terrainBaseHeight || 0;
         const ROUGH = 12; // max 3D-Roughness (noise·7 + noise·5)
-        const bandBotJ = Math.floor((base - 40 - oy) / step);
         for (let k = 0; k < Nz; k++) {
             const wz = oz + k * step;
             for (let i = 0; i < Nx; i++) {
                 const wx = ox + i * step;
                 const surf = this._terrainMacroSurfaceY(wx, wz);
                 const bandTopJ = Math.floor((surf + ROUGH + 2 * step - oy) / step) + 1;
+                // Band-Boden: unter `min(surf, base) − 40` ist garantiert Fels.
+                // WICHTIG (V17.96-Fix): in einer TIEFSEE-Rinne liegt der Seeboden
+                // (surf) bei ~−75 m, also MUSS der Band-Boden surf folgen — ein
+                // fixes base−40 hätte die Wassersäule zwischen −40 und dem Seeboden
+                // fälschlich als Fels gefüllt (zu flache Ozeane).
+                const bandBotJ = Math.floor((Math.min(surf, base) - 40 - oy) / step);
                 const colBase = i + k * Nx * Ny;
                 for (let j = 0; j < Ny; j++) {
                     const idx = colBase + j * Nx;
@@ -46122,7 +46137,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.97.0";
+AnazhRealm.VERSION = "17.98.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

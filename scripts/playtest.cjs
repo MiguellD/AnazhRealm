@@ -17698,11 +17698,14 @@ async function checkBandVoxelTerrainCore(ctx) {
             let ceilAllAir = true;
             for (let sx = -220; sx <= 220; sx += 20) {
                 for (let sz = -220; sz <= 220; sz += 20) {
-                    // V14.7: SURF-RELATIV — 45 m unter der Oberfläche fest, 30 m darüber
-                    // Luft (statt absolut base-58/base+86; die V14.7-Massive heben surf
-                    // teils über base+86 → das alte Decken-Sample wäre fälschlich solid).
+                    // V14.7: SURF-RELATIV (Decke 30 m über surf = Luft).
+                    // Welle G (V9.56-i): der Boden-Sample wandert UNTER das Höhlen-
+                    // Band — die V17.97-Kavernen reichen legitim bis ~surf-45 (eine
+                    // Höhle 15 m unter der Oberfläche ist korrekt, gegated durch
+                    // surf-16/base-28). Garantiert fest ist es erst unter caveFloor
+                    // (base-28) UND unter dem Seeboden → `min(surf, base) - 40`.
                     const surf = r._terrainMacroSurfaceY(sx, sz);
-                    if (r._terrainDensityAt(sx, surf - 45, sz) <= 0) floorAllSolid = false;
+                    if (r._terrainDensityAt(sx, Math.min(surf, cBase) - 40, sz) <= 0) floorAllSolid = false;
                     if (r._terrainDensityAt(sx, surf + 30, sz) >= 0) ceilAllAir = false;
                 }
             }

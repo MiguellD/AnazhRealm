@@ -157,13 +157,14 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     // unter base−40 Fels (+1). Bit-identisch zum Main (Determinismus-Test).
     const base = state.baseHeight || 0;
     const ROUGH = 12;
-    const bandBotJ = Math.floor((base - 40 - oy) / step);
     for (let k = 0; k < Nz; k++) {
         const wz = oz + k * step;
         for (let i = 0; i < Nx; i++) {
             const wx = ox + i * step;
             const surf = terrainMacroSurfaceY(wx, wz, true);
             const bandTopJ = Math.floor((surf + ROUGH + 2 * step - oy) / step) + 1;
+            // V17.96-Fix (mirror): Band-Boden folgt surf (Tiefsee-Rinne ~−75).
+            const bandBotJ = Math.floor((Math.min(surf, base) - 40 - oy) / step);
             const colBase = i + k * Nx * Ny;
             for (let j = 0; j < Ny; j++) {
                 const idx = colBase + j * Nx;
@@ -196,6 +197,10 @@ function terrainDensityAt(x, y, z) {
         const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
         const cave = Math.max(0, (ridge - 0.7) / 0.3);
         d -= cave * caveEnv * 36;
+        // Welle G (mirror): große Kavernen (λ~77 m), Schwelle 0.55, carve 46.
+        const cavern = state.noise.noise3D(x * 0.013, y * 0.018, z * 0.013);
+        const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
+        d -= cavernCarve * caveEnv * 46;
     }
     // Hydrosphäre-Carve + See-Becken (nur wenn ready + nicht hydroComputing).
     const hydro = state.hydrosphere;
