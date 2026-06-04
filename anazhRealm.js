@@ -19485,7 +19485,29 @@ class AnazhRealm {
                 // Konkavitaeten (Edge-Tint a la Genshin/BotW). Staerke 1.6 /
                 // Cap 0.45 browser-justierbar.
                 if (_T.fwidth && _T.normalWorld) {
-                    const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
+                    // V17.108 — die Kavitäts-AO mit der V17.107-2.5D-Lichtung KONSISTENT.
+                    // Schöpfer-Befund nach V17.107: „je nach Blickrichtung taucht ein
+                    // Schattenfragment auf, das dieses Muster in dunkel wiedergibt, das
+                    // vorhin im Licht war". Wurzel: ich flattete nur die DIFFUS-Normale
+                    // (normalNode), aber die AO maß weiter `fwidth(normalWorld)` = die
+                    // un-geflattete GEOMETRIE-Normale → sie zeichnete die Facetten-Kanten
+                    // als VIEW-ABHÄNGIGE (`fwidth` = screen-space → „je nach Blickrichtung")
+                    // dunkle Linien nach, die nach dem Diffus-Flatten durchschlugen.
+                    // Heilung: die AO liest DIESELBE geflattete Lichtungs-Normale wie der
+                    // Diffus → die Facetten-Kanten kollabieren mit dem Flatten
+                    // (`fwidth(mix(N,up,tf))` → (1−tf)·`fwidth(N)`), ein Hauch Kontakt-
+                    // Schatten in echten Mulden bleibt. Live-tunbar via terrainFlatten.
+                    const _aoN =
+                        this.state.atmoUniforms &&
+                        this.state.atmoUniforms.terrainFlatten &&
+                        _T.normalize &&
+                        _T.mix &&
+                        _T.vec3
+                            ? _T.normalize(
+                                  _T.mix(_T.normalWorld, _T.vec3(0.0, 1.0, 0.0), this.state.atmoUniforms.terrainFlatten)
+                              )
+                            : _T.normalWorld;
+                    const _curv = _T.fwidth(_aoN).length().div(_T.fwidth(_wp).length().add(0.0001));
                     // V17.14 - weiter gedämpft (1.0/0.3 → 0.6/0.18): der Tag-Rest
                     // der „Treppenstufen" (Schöpfer-Audit) ist die `fwidth(normal
                     // World)`-AO, die JEDE Surface-Nets-Facetten-Kante als Linie
@@ -46623,7 +46645,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.107.0";
+AnazhRealm.VERSION = "17.108.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
