@@ -18672,6 +18672,29 @@ class AnazhRealm {
                 }
             }
         }
+        // (4) V17.117 (H3) — der GLOBALE Ozean jenseits der ±1024-Atlas-Region:
+        // liegt ein Teil des Chunk-Footprints außerhalb der Region UND dippt sein
+        // Makro-Terrain unter den Meeresspiegel (+ Roughness-Marge), trägt der
+        // Chunk Ozean (Mirror des Ozean-Defaults in `_atlasWaterLevelAt`). NUR
+        // beyond-region (in-region entscheidet der getunte Atlas oben → kein
+        // Mehraufwand, kein Verhaltens-Wandel). Marge ≥ der 3D-Roughness-Amplitude
+        // (±12 m in `_terrainBaseDensityAt`) → keine dünne Küsten-Ozean-Fehlstelle.
+        const OCEAN_GATE_MARGIN = 16;
+        const regX1 = h.originX + h.dim * h.cell;
+        const regZ1 = h.originZ + h.dim * h.cell;
+        if (ox < h.originX || oz < h.originZ || ox + span > regX1 || oz + span > regZ1) {
+            const thr = waterLevel + OCEAN_GATE_MARGIN;
+            for (let gj = 0; gj <= 4; gj++) {
+                for (let gi = 0; gi <= 4; gi++) {
+                    const sx = ox + (gi / 4) * span;
+                    const sz = oz + (gj / 4) * span;
+                    const ci = Math.floor((sx - h.originX) / h.cell);
+                    const cj = Math.floor((sz - h.originZ) / h.cell);
+                    if (ci >= 0 && cj >= 0 && ci < h.dim && cj < h.dim) continue;
+                    if (this._terrainMacroSurfaceY(sx, sz, true) < thr) return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -20500,6 +20523,7 @@ class AnazhRealm {
     // -Infinity heißt „hier nie Wasser" (`cy <= -Infinity` ist immer false).
     _atlasWaterLevelAt(x, z, terrainTopY) {
         let level = -Infinity;
+        let inRegion = false;
         const h = this.state.hydrosphere;
         if (h && h.ready && h.water && h.water.waterKind) {
             const dim = h.dim;
@@ -20507,6 +20531,7 @@ class AnazhRealm {
             const ci = Math.floor((x - h.originX) / cell);
             const cj = Math.floor((z - h.originZ) / cell);
             if (ci >= 0 && cj >= 0 && ci < dim && cj < dim) {
+                inRegion = true;
                 const wK = h.water.waterKind;
                 const wY = h.water.waterY;
                 const here = wK[ci + cj * dim];
@@ -20542,6 +20567,19 @@ class AnazhRealm {
                     }
                 }
             }
+        }
+        // V17.117 (H3) — der OZEAN ist GLOBAL: jenseits der region-bound Atlas-
+        // Domäne (±1024 m) ist der Meeresspiegel der Default-Wasserkörper, genau
+        // wie eine Atlas-Ozean-Zelle (waterKind===1 → waterLevel). Der Flood + die
+        // soliden Terrain-Cells trennen Land/Wasser von selbst (eine Land-Spalte
+        // hat unter waterLevel nur SOLID → kein AIR → kein Wasser; eine submerse
+        // Spalte flutet bis waterLevel). In-Region bleibt der getunte V13-Atlas
+        // UNANGETASTET (Determinismus, keine Küsten-Regression). CLAUDE.md-Gotcha:
+        // „Worldgen lebt nur in ±1024 m … den Ozean-Default global vom waterLevel
+        // ableiten (entkoppelt vom Atlas)". Seen/Flüsse bleiben region-lokal.
+        if (h && h.ready && !inRegion) {
+            const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+            level = waterLevel;
         }
         const river = this._hydroRiverAt(x, z);
         if (river && river.surfaceY > level) level = river.surfaceY;
@@ -46968,7 +47006,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.116.0";
+AnazhRealm.VERSION = "17.117.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

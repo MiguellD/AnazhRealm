@@ -21415,6 +21415,117 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
     );
 }
 
+// V17.117 (H3 — der globale Ozean jenseits der ±1024-Hydrosphäre-Region): die
+// Wurzel (CLAUDE.md-Gotcha) war, dass der Ozean-Default (state.waterLevel) hinter
+// dem region-bound Atlas gegated ist → ferne Chunks (>1024 m) trugen KEIN Wasser,
+// obwohl ihr Terrain unter dem Meeresspiegel liegt. Fix: `_atlasWaterLevelAt` +
+// `_voxelChunkHasAnyWater` leiten den Ozean beyond-region direkt vom waterLevel ab
+// (in-region UNANGETASTET). Beweis: (1) ein beyond-region Ozean-Chunk trägt jetzt
+// Wasser-Cells (Gate true + Klassifikator > 0); (2) ein beyond-region Land-Chunk
+// bleibt trocken (Gate false → kein Mehraufwand); (3) Worker↔Main bauen beyond-
+// region bit-identische Wasser-Cells (die NAHT-WAND — beyond-region kein
+// Architektur-Stempel → exakt gleich, kein Determinismus-Drift).
+async function checkBandV17117FarWater(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const s = r.state;
+        const h = s.hydrosphere;
+        if (!h || !h.ready) return { error: "hydrosphere not ready" };
+        const out = {};
+        const cfg = r._voxelChunkConfig(0);
+        const span = cfg.span;
+        const base = s.terrainBaseHeight || 0;
+        const oy = base - cfg.floorDrop;
+        const WL = typeof s.waterLevel === "number" ? s.waterLevel : 0;
+        const WATER = r.constructor.CELL_STATE.WATER;
+        const regHalf = (h.dim * h.cell) / 2; // ±1024
+        // Finde je einen beyond-region Ozean- und Land-Chunk (über Chunk-Indizes,
+        // selbst-konsistent: der Klassifikations-Punkt = der Chunk-Mittelpunkt).
+        let oCx = null,
+            oCz = null,
+            lCx = null,
+            lCz = null;
+        const cmax = Math.ceil((regHalf + 1400) / span);
+        for (let cx = -cmax; cx <= cmax && (oCx === null || lCx === null); cx++) {
+            for (let cz = -cmax; cz <= cmax; cz++) {
+                if (oCx !== null && lCx !== null) break;
+                const mx = cx * span + span / 2;
+                const mz = cz * span + span / 2;
+                if (Math.max(Math.abs(mx), Math.abs(mz)) <= regHalf + span) continue; // ganz beyond
+                const macro = r._terrainMacroSurfaceY(mx, mz, true);
+                if (oCx === null && macro < WL - 2) {
+                    oCx = cx;
+                    oCz = cz;
+                } else if (lCx === null && macro > WL + 30) {
+                    lCx = cx;
+                    lCz = cz;
+                }
+            }
+        }
+        out.foundOcean = oCx !== null;
+        out.foundLand = lCx !== null;
+        if (oCx === null) return { ...out, error: "kein beyond-region Ozean-Chunk gefunden" };
+        // (1) Main: Gate + Klassifikator am beyond-region Ozean.
+        out.oceanGate = r._voxelChunkHasAnyWater(oCx, oCz);
+        const ocCells = r._buildVoxelChunkWaterCells(oCx * span, oy, oCz * span, cfg.step, null, 0);
+        let ocWater = 0;
+        for (let i = 0; i < ocCells.length; i++) if (ocCells[i] === WATER) ocWater++;
+        out.oceanWaterCells = ocWater;
+        // (2) beyond-region Land: Gate false, keine Wasser-Cells.
+        if (lCx !== null) {
+            out.landGate = r._voxelChunkHasAnyWater(lCx, lCz);
+            const lCells = r._buildVoxelChunkWaterCells(lCx * span, oy, lCz * span, cfg.step, null, 0);
+            let lWater = 0;
+            for (let i = 0; i < lCells.length; i++) if (lCells[i] === WATER) lWater++;
+            out.landWaterCells = lWater;
+        }
+        // (3) Worker↔Main bit-identisch beyond-region (die Naht-Wand).
+        try {
+            await r._voxelWorkerSyncState({ op: "init" });
+        } catch (e) {
+            return { ...out, error: "worker init failed: " + e.message };
+        }
+        r._voxelWorkerSyncWorldgenState();
+        await new Promise((resolve) => setTimeout(resolve, 80));
+        let wm;
+        try {
+            wm = await r._voxelWorkerComputeChunkMesh(oCx, oCz, 0);
+        } catch (e) {
+            return { ...out, error: "worker mesh failed: " + e.message };
+        }
+        if (wm && wm.waterCells) {
+            out.mainCellCount = ocCells.length;
+            out.workerCellCount = wm.waterCells.length;
+            let mism = 0;
+            const len = Math.min(ocCells.length, wm.waterCells.length);
+            for (let i = 0; i < len; i++) if (ocCells[i] !== wm.waterCells[i]) mism++;
+            out.cellMismatches = mism;
+            out.workerMainIdentical = mism === 0 && ocCells.length === wm.waterCells.length;
+        } else {
+            out.workerMainIdentical = false;
+        }
+        return out;
+    });
+    if (res.error) {
+        check("V17.117 H3: Far-Water-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("V17.117 H3: beyond-region Ozean-Chunk gefunden", res.foundOcean);
+    check("V17.117 H3: beyond-region Ozean — Gate true", res.oceanGate === true);
+    check("V17.117 H3: beyond-region Ozean trägt Wasser-Cells (Heilung)", res.oceanWaterCells > 0, `cells=${res.oceanWaterCells}`);
+    if (res.foundLand) {
+        check("V17.117 H3: beyond-region Land — Gate false (kein Mehraufwand)", res.landGate === false);
+        check("V17.117 H3: beyond-region Land — keine Wasser-Cells", res.landWaterCells === 0, `cells=${res.landWaterCells}`);
+    }
+    check(
+        "V17.117 H3: Worker<->Main Wasser-Cells bit-identisch beyond-region (Naht-Wand)",
+        res.workerMainIdentical === true,
+        `mism=${res.cellMismatches} count=${res.mainCellCount}/${res.workerCellCount}`
+    );
+}
+
 // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH für ferne Chunks): empirischer
 // Beweis dass die BVH-Collision (Ammo, ~25-30ms pro Chunk) jetzt nur noch
 // im 2-Ring (r ≤ 1, Spieler-Nähe) sofort gebaut wird. Ferne Chunks (r ≥ 2)
@@ -40342,6 +40453,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerf3cPhase2Async(ctx);
             // V9.91 — Welle Perf-3.c Phase 3 voller Worker-Mesh-Beweis (Iso+Cells+Colors).
             await checkBandWellePerf3cPhase3FullMesh(ctx);
+            // V17.117 — H3: der globale Ozean jenseits ±1024 m (Worker<->Main bit-identisch).
+            await checkBandV17117FarWater(ctx);
             // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
             await checkBandWellePerf3cPhase4LazyBVH(ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).

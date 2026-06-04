@@ -532,6 +532,7 @@ function waterLevelAt(x, z) {
 // mit der Main-Thread-Methode wandern (Determinismus-Test ist die Wand).
 function atlasWaterLevelAt(x, z, terrainTopY) {
     let level = -Infinity;
+    let inRegion = false;
     const h = state.hydrosphere;
     if (h && h.ready && h.water && h.water.waterKind) {
         const dim = h.dim;
@@ -539,6 +540,7 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
         const ci = Math.floor((x - h.originX) / cell);
         const cj = Math.floor((z - h.originZ) / cell);
         if (ci >= 0 && cj >= 0 && ci < dim && cj < dim) {
+            inRegion = true;
             const wK = h.water.waterKind;
             const wY = h.water.waterY;
             const here = wK[ci + cj * dim];
@@ -564,6 +566,13 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
                 }
             }
         }
+    }
+    // V17.117 (H3) — Mirror des globalen Ozean-Defaults (siehe `_atlasWaterLevelAt`):
+    // jenseits der ±1024-Atlas-Region ist der Meeresspiegel der Default-Wasserkörper;
+    // der Flood + die soliden Cells trennen Land/Wasser. Muss bit-identisch zum Main.
+    if (h && h.ready && !inRegion) {
+        const waterLevel = typeof state.waterLevel === "number" ? state.waterLevel : 0;
+        level = waterLevel;
     }
     const river = hydroRiverAt(x, z);
     if (river && river.surfaceY > level) level = river.surfaceY;
@@ -1147,6 +1156,25 @@ function chunkHasAnyWater(cx, cz, lod) {
                 if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
                 const list = h.riverBuckets[bi + bj * h.bucketsDim];
                 if (list && list.length) return true;
+            }
+        }
+    }
+    // (4) V17.117 (H3) — Mirror des globalen Ozean-Gates (siehe `_voxelChunkHasAnyWater`):
+    // beyond-region Chunk, dessen Makro-Terrain unter den Meeresspiegel dippt, trägt
+    // Ozean. Bit-identisch zum Main (terrainMacroSurfaceY ist bereits gespiegelt).
+    const OCEAN_GATE_MARGIN = 16;
+    const regX1 = h.originX + h.dim * h.cell;
+    const regZ1 = h.originZ + h.dim * h.cell;
+    if (ox < h.originX || oz < h.originZ || ox + span > regX1 || oz + span > regZ1) {
+        const thr = waterLevel + OCEAN_GATE_MARGIN;
+        for (let gj = 0; gj <= 4; gj++) {
+            for (let gi = 0; gi <= 4; gi++) {
+                const sx = ox + (gi / 4) * span;
+                const sz = oz + (gj / 4) * span;
+                const ci = Math.floor((sx - h.originX) / h.cell);
+                const cj = Math.floor((sz - h.originZ) / h.cell);
+                if (ci >= 0 && cj >= 0 && ci < h.dim && cj < h.dim) continue;
+                if (terrainMacroSurfaceY(sx, sz, true) < thr) return true;
             }
         }
     }
