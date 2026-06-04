@@ -157,9 +157,8 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     // unter base−40 Fels (+1). Bit-identisch zum Main (Determinismus-Test).
     const base = state.baseHeight || 0;
     const ROUGH = 12;
-    // WELLE J4 (mirror): Band-Top-Margin deckt den Normalen-eps (6 Zellen) →
-    // Gipfel-Gradient bleibt im real gesampelten Band (sonst Normalen-Kippen).
-    const topMargin = (6 + 2) * step;
+    // V17.103 (mirror): Band-Top-Margin deckt den Normalen-eps (1.5 Zellen) + Puffer.
+    const topMargin = 4 * step;
     for (let k = 0; k < Nz; k++) {
         const wz = oz + k * step;
         for (let i = 0; i < Nx; i++) {
@@ -678,7 +677,7 @@ function emitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
     return indices;
 }
 
-function laplacianSmoothPositions(positions, indices) {
+function laplacianSmoothPositions(positions, indices, iterations = 1) {
     if (indices.length < 3) return;
     const vertCount = positions.length / 3;
     const neighborSets = new Array(vertCount);
@@ -696,31 +695,33 @@ function laplacianSmoothPositions(positions, indices) {
     }
     const lambda = 0.5;
     const smoothed = new Array(positions.length);
-    for (let v = 0; v < vertCount; v++) {
-        const nbrs = neighborSets[v];
-        const cnt = nbrs.size;
-        if (cnt === 0) {
-            smoothed[v * 3] = positions[v * 3];
-            smoothed[v * 3 + 1] = positions[v * 3 + 1];
-            smoothed[v * 3 + 2] = positions[v * 3 + 2];
-            continue;
+    for (let iter = 0; iter < iterations; iter++) {
+        for (let v = 0; v < vertCount; v++) {
+            const nbrs = neighborSets[v];
+            const cnt = nbrs.size;
+            if (cnt === 0) {
+                smoothed[v * 3] = positions[v * 3];
+                smoothed[v * 3 + 1] = positions[v * 3 + 1];
+                smoothed[v * 3 + 2] = positions[v * 3 + 2];
+                continue;
+            }
+            let sx = 0;
+            let sy = 0;
+            let sz = 0;
+            for (const n of nbrs) {
+                sx += positions[n * 3];
+                sy += positions[n * 3 + 1];
+                sz += positions[n * 3 + 2];
+            }
+            const ax = sx / cnt;
+            const ay = sy / cnt;
+            const az = sz / cnt;
+            smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
+            smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
+            smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
         }
-        let sx = 0;
-        let sy = 0;
-        let sz = 0;
-        for (const n of nbrs) {
-            sx += positions[n * 3];
-            sy += positions[n * 3 + 1];
-            sz += positions[n * 3 + 2];
-        }
-        const ax = sx / cnt;
-        const ay = sy / cnt;
-        const az = sz / cnt;
-        smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
-        smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
-        smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
+        for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
     }
-    for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
 }
 
 function cropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
@@ -753,11 +754,9 @@ function cropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
 
 function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
     const normals = new Float32Array(positions.length);
-    // Welle J4 (mirror): eps 1.5→6 Zellen (≈10.8 m) — die Gradient-Baseline weiten,
-    // damit der Normal die MAKRO-Neigung liest (grosse Cel-Regionen wie in 2.5D)
-    // statt der 20-m-Mikro-Roughness (das Trapez-Netz; `diag-cel-eps`: −39 %
-    // lokale Licht-Δ, Makro-Relief intakt). Bit-identisch zum Main (Determinismus).
-    const eps = step * 6.0;
+    // V17.103 (mirror): ROLLBACK auf eps 1.5 — der eps-6-Versuch half die Trapeze
+    // nicht + verschlechterte den Schatten (normalBias). Wurzel = Geometrie.
+    const eps = step * 1.5;
     const NxNy = Nx * Ny;
     const NxMax = Nx - 1;
     const NyMax = Ny - 1;

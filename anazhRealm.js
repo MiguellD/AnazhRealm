@@ -17744,7 +17744,19 @@ class AnazhRealm {
     // bewusst NICHT würfelförmig: er ist nur `span` breit (X/Z) aber hoch
     // genug (Y), um das ganze Oberflächen-Band zu fassen (sonst klafft ein
     // Loch, wo die Oberfläche oben/unten aus dem Chunk-Kasten austritt).
-    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn, cropMargin = 0, preDensity = null) {
+    _voxelChunkGeometry(
+        ox,
+        oy,
+        oz,
+        dimX,
+        dimY,
+        dimZ,
+        step,
+        densityFn,
+        cropMargin = 0,
+        preDensity = null,
+        smoothIters = 1
+    ) {
         const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
         // V9.81 (Welle C.11 — Density-Grid-Sharing): wenn der Aufrufer schon
         // das Density-Grid hat (z.B. weil er es auch für die Cell-Klassifikation
@@ -17764,7 +17776,7 @@ class AnazhRealm {
         );
         if (positions.length === 0) return null;
         const indices = this._voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ);
-        this._voxelLaplacianSmoothPositions(positions, indices);
+        this._voxelLaplacianSmoothPositions(positions, indices, smoothIters);
         this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin);
         if (positions.length === 0) return null;
         // V9.85 Perf-2.d — Gradient-Normals nutzen das geteilte preDensity-
@@ -17801,14 +17813,12 @@ class AnazhRealm {
         // bit-identisch im Worker (`computeDensityGrid`, Determinismus-/Naht-Schutz).
         const base = this.state.terrainBaseHeight || 0;
         const ROUGH = 12; // max 3D-Roughness (noise·7 + noise·5)
-        // WELLE J4 — der Band-Top-Margin MUSS den Gradient-Normalen-eps (6 Zellen,
-        // `_voxelGradientNormals`) decken: ein Oberflächen-Vertex am Roughness-Gipfel
-        // (surf+ROUGH) sampelt +eps nach oben → das muss noch im REAL gesampelten
-        // Band liegen, nicht in der Konstant-Luft-Füllung (−1), sonst kippt seine
-        // Normale (gemessen: bis 26° an Gipfeln bei zu engem Margin). 6 (eps) + 2
-        // (Puffer) Zellen über dem Roughness-Envelope.
-        const NORMAL_EPS_CELLS = 6;
-        const topMargin = (NORMAL_EPS_CELLS + 2) * step;
+        // Der Band-Top-Margin MUSS den Gradient-Normalen-eps (`_voxelGradient-
+        // Normals`, 1.5 Zellen) decken: ein Oberflächen-Vertex am Roughness-Gipfel
+        // sampelt +eps nach oben → das muss im REAL gesampelten Band liegen, nicht
+        // in der Konstant-Luft-Füllung (sonst kippt die Gipfel-Normale). eps 1.5 +
+        // Puffer → 4 Zellen (V17.103: zurück von 8, nach dem eps-6-Rollback).
+        const topMargin = 4 * step;
         for (let k = 0; k < Nz; k++) {
             const wz = oz + k * step;
             for (let i = 0; i < Nx; i++) {
@@ -17954,13 +17964,16 @@ class AnazhRealm {
         return indices;
     }
 
-    // V9.41.b/V9.42-d — Laplacian-Smooth (1 Iteration, λ=0.5) MUTIERT positions
-    // in place. Surface-Nets liefert EINEN Vertex pro Zelle → schräge flache
-    // Flächen zeigen Treppen; Smooth glättet zu sanften Schrägen über die
-    // topologischen Nachbarn. Läuft über ALLE Vertices (kein Skirt-Sonderfall;
-    // der pad+Crop-Pass sichert den Naht-Determinismus — jeder Nachbar-Chunk
-    // hat seinen pad an derselben Welt-Region, identischer Smooth → nahtlos).
-    _voxelLaplacianSmoothPositions(positions, indices) {
+    // V9.41.b/V9.42-d — Laplacian-Smooth MUTIERT positions in place. Surface-Nets
+    // liefert EINEN Vertex pro Zelle → schräge flache Flächen zeigen Treppen/
+    // Facetten; Smooth glättet zu sanften Schrägen über die topologischen Nachbarn.
+    // `iterations` parametrisiert (Default 1). WICHTIG (Naht): N Iterationen
+    // propagieren den Einfluss N Zellen → der pad+crop MUSS N Zellen breit sein,
+    // sonst divergieren die Naht-Vertices zwischen Nachbar-Chunks (Risse; der
+    // V9.42-b-Seam-Test fängt es). Heute nutzen ALLE Pfade 1 (cropMargin 1). Mehr
+    // Geometrie-Glättung gegen die Trapeze braucht einen breiteren pad im GETEILTEN
+    // Density-Grid (auch von den Wasser-Cells indiziert) → ein eigener Bogen.
+    _voxelLaplacianSmoothPositions(positions, indices, iterations = 1) {
         if (indices.length < 3) return;
         const vertCount = positions.length / 3;
         const neighborSets = new Array(vertCount);
@@ -17978,31 +17991,33 @@ class AnazhRealm {
         }
         const lambda = 0.5;
         const smoothed = new Array(positions.length);
-        for (let v = 0; v < vertCount; v++) {
-            const nbrs = neighborSets[v];
-            const cnt = nbrs.size;
-            if (cnt === 0) {
-                smoothed[v * 3] = positions[v * 3];
-                smoothed[v * 3 + 1] = positions[v * 3 + 1];
-                smoothed[v * 3 + 2] = positions[v * 3 + 2];
-                continue;
+        for (let iter = 0; iter < iterations; iter++) {
+            for (let v = 0; v < vertCount; v++) {
+                const nbrs = neighborSets[v];
+                const cnt = nbrs.size;
+                if (cnt === 0) {
+                    smoothed[v * 3] = positions[v * 3];
+                    smoothed[v * 3 + 1] = positions[v * 3 + 1];
+                    smoothed[v * 3 + 2] = positions[v * 3 + 2];
+                    continue;
+                }
+                let sx = 0;
+                let sy = 0;
+                let sz = 0;
+                for (const n of nbrs) {
+                    sx += positions[n * 3];
+                    sy += positions[n * 3 + 1];
+                    sz += positions[n * 3 + 2];
+                }
+                const ax = sx / cnt;
+                const ay = sy / cnt;
+                const az = sz / cnt;
+                smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
+                smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
+                smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
             }
-            let sx = 0;
-            let sy = 0;
-            let sz = 0;
-            for (const n of nbrs) {
-                sx += positions[n * 3];
-                sy += positions[n * 3 + 1];
-                sz += positions[n * 3 + 2];
-            }
-            const ax = sx / cnt;
-            const ay = sy / cnt;
-            const az = sz / cnt;
-            smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
-            smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
-            smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
+            for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
         }
-        for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
     }
 
     // V9.42-d Crop-Pass — die äussersten `cropMargin` Zell-Ebenen in X/Z
@@ -18058,20 +18073,19 @@ class AnazhRealm {
         // über GROSSE Regionen, seit 3D mit Überhängen brechen sie in Trapeze").
         // In 2.5D zeigten alle Normalen nach oben → grosse Cel-Regionen; die 3D-
         // Density-Gradienten-Normalen folgen der ±12-m-Roughness → fragmentiert.
-        // Heilung: die Gradient-Baseline weiten → der Normal liest die MAKRO-
-        // Neigung statt der Mikro-Roughness → wieder grosse, licht-reaktive Cel-
-        // Regionen. WELLE J4 — eps 1.5→6 Zellen (≈10.8 m). GEMESSEN (`diag-cel-
-        // eps`): die Surface-Roughness ist noise3D(x·0.05)·7 (λ~20 m) +
-        // noise3D(x·0.018)·5 (λ~55 m); eps 1.5 (~2.7 m) sampelt INNERHALB der
-        // 20-m-Beule → liest ihre Mikro-Neigung → das Cel quantisiert sie in feine
-        // Bänder (das „Trapez-Netz", das V17.100-eps-1.5 NICHT heilte). eps 6
-        // (≈λ/2 der 20-m-Roughness) senkt die cel-relevante lokale Licht-Δ um
-        // −39 % (0.147→0.090) und HÄLT die Makro-Spanne (0.957 — Berge/Klippen
-        // shaden weiter) → grosse, gleichmässig licht-reaktive Cel-Regionen wie in
-        // 2.5D. Der Wert ist hart kodiert UND im Worker (`gradientNormals`)
-        // gespiegelt — eine Runtime-Tunable würde den Worker desyncen
-        // (Determinismus-/Naht-Bruch). Feel = Browser-Sign-off.
-        const eps = step * 6.0;
+        // V17.103 — ROLLBACK des eps-Experiments (V17.100 0.5→1.5, V17.102 1.5→6).
+        // GEMESSEN am Browser (Schöpfer-Augen): KEINE der eps-Stufen änderte die
+        // Trapeze sichtbar — der Normal-eps ist NICHT der Trapeze-Hebel (die Wurzel
+        // ist die facettierte GEOMETRIE, die die Cel-Bänder bricht; sie heilt die
+        // Laplacian-Geometrie-Glättung, nicht der Normal-eps). UND eps=6 hat über
+        // `shadow.normalBias` den Schatten verschlechtert (die makro-geglättete
+        // Normale divergiert von der bumpigen Geometrie → der normalBias-Offset
+        // landet falsch → Schatten-Swimming beim Laufen). Also zurück auf 1.5 (der
+        // schlanke Wert, der die Mikro-Roughness leicht dämpft ohne den Schatten zu
+        // brechen). PERMANENTE LEHRE: ein pixel-blinder „Messwert" (−39 % lokale
+        // Licht-Δ) ist KEIN Beweis fürs FEEL — die Augen des Schöpfers sind die
+        // Wahrheit; wenn drei eps-Stufen nichts ändern, ist eps der falsche Hebel.
+        const eps = step * 1.5;
         // Schneller Trilinear-Sampler aus dem Grid. Wenn preGrid==null oder
         // Sample-Punkt out-of-bounds → fallback auf sample(x,y,z).
         let lookup;
@@ -19183,6 +19197,15 @@ class AnazhRealm {
                     ? this.state.atmosphere.cavityAO
                     : 1.0
             ),
+            // V17.103-Regler „Oberflächen-Textur" (0..1): skaliert die triplanar Fels-/
+            // Boden-Striation (das „Holzmaserung"-Muster, das die Facetten betont). 0 =
+            // glatte Farbe (testet, ob die Striation die Trapeze mit-verursacht). Nur
+            // Terrain (colorNode, render-only — kein Naht-/Determinismus-Risiko).
+            triplanarScale: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.triplanar)
+                    ? this.state.atmosphere.triplanar
+                    : 1.0
+            ),
         };
         return this.state.atmoUniforms;
     }
@@ -19429,14 +19452,20 @@ class AnazhRealm {
                     // überdecken) — ±18 % statt der mutlosen V17.8-±5 %. Plus eine
                     // sanfte Sättigungs-Spreizung (Täler/Spitzen der Textur leicht
                     // satter/matter) → gemalte Tiefe statt flacher Fläche.
-                    const _texShade = _T.float(1.0).add(_detailN.mul(0.18));
+                    // V17.103 — `_tri` (Regler „Oberflächen-Textur", default 1) skaliert
+                    // die Striation-Stärke; 0 = glatte Farbe.
+                    const _tri =
+                        this.state.atmoUniforms && this.state.atmoUniforms.triplanarScale
+                            ? this.state.atmoUniforms.triplanarScale
+                            : _T.float(1.0);
+                    const _texShade = _T.float(1.0).add(_detailN.mul(_T.float(0.18).mul(_tri)));
                     _albedo = _albedo.mul(_texShade);
                     // Fels-Flächen bekommen zusätzlich einen kühlen Stein-Stich in
                     // den Schraffur-Tälern (Schattenfugen zwischen den Schichten).
                     const _crevice = _T
                         .smoothstep(_T.float(-0.2), _T.float(-0.7), _strataY)
                         .mul(_T.float(1.0).sub(_surf));
-                    _albedo = _albedo.mul(_T.float(1.0).sub(_crevice.mul(0.22)));
+                    _albedo = _albedo.mul(_T.float(1.0).sub(_crevice.mul(_T.float(0.22).mul(_tri))));
                 }
                 // V15.3.1 - Wiesen-Boden (render-only, die "weit auch Wiese"-
                 // Illusion): der Schoepfer-Befund war doppelt — Gras laedt nur
@@ -19555,9 +19584,11 @@ class AnazhRealm {
             );
         }
         // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
-        // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
-        // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
-        // ab. V9.81: `preDensity` reicht das geteilte Grid herein.
+        // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`, smoothIters=1.
+        // (V17.103: das 2-Iterationen-Geometrie-Glätten gegen die Trapeze brauchte
+        // einen 2-Zellen-pad im GETEILTEN Density-Grid [auch von den Wasser-Cells
+        // bei dim+4 indiziert] → ein Mehr-Konsumenten-Umbau, KEIN Terrain-Edit;
+        // zurückgerollt [Seam-Riss], als eigener Bogen zu bauen.)
         const geom = this._voxelChunkGeometry(
             ox - step,
             oy,
@@ -23497,6 +23528,10 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
                         ? this.state.atmosphere.edgeSharp
                         : 0.5,
+                triplanar:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.triplanar)
+                        ? this.state.atmosphere.triplanar
+                        : 1.0,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -25592,6 +25627,8 @@ class AnazhRealm {
             if (Number.isFinite(ao)) this.setCavityAO(Math.max(0, Math.min(1, ao)));
             const es = Number(state.atmosphere.edgeSharp);
             if (Number.isFinite(es)) this.setEdgeSharp(Math.max(0, Math.min(1, es)));
+            const tri = Number(state.atmosphere.triplanar);
+            if (Number.isFinite(tri)) this.setSurfaceTexture(Math.max(0, Math.min(1, tri)));
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -36019,6 +36056,19 @@ class AnazhRealm {
         return m;
     }
 
+    // V17.103-Regler — die Oberflächen-Textur (triplanar Striation-Stärke, 0..1).
+    // 0 = glatte Terrain-Farbe (testet, ob die „Holzmaserung" die Trapeze betont).
+    setSurfaceTexture(scale) {
+        const v = Math.max(0, Math.min(1, Number(scale)));
+        const m = Number.isFinite(v) ? v : 1.0;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.triplanar = m;
+        if (this.state.atmoUniforms && this.state.atmoUniforms.triplanarScale)
+            this.state.atmoUniforms.triplanarScale.value = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // WELLE J4-Regler — die Kanten-Schärfe (Post-FX local-contrast/Unsharp).
     // Verstärkt Helligkeits-Kanten (schärft Cel-/Facetten-Grenzen NACH, screen-
     // space → flackert) — der zweite Verdacht. 0 = aus, 0.5 = Default (V17.13).
@@ -43265,6 +43315,21 @@ class AnazhRealm {
                 if (esVal) esVal.textContent = v.toFixed(2);
             });
         }
+        const txS = document.getElementById("slider-surftex");
+        const txVal = document.getElementById("slider-surftex-val");
+        if (txS) {
+            const t0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.triplanar)
+                    ? this.state.atmosphere.triplanar
+                    : 1.0;
+            txS.value = String(Math.round(t0 * 100));
+            if (txVal) txVal.textContent = `${Math.round(t0 * 100)} %`;
+            txS.addEventListener("input", () => {
+                const pct = parseInt(txS.value, 10);
+                this.setSurfaceTexture(pct / 100);
+                if (txVal) txVal.textContent = `${pct} %`;
+            });
+        }
     }
 
     // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name + Avatar-Name.
@@ -46419,7 +46484,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.102.2";
+AnazhRealm.VERSION = "17.103.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

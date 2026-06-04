@@ -26968,15 +26968,23 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             Math.abs(r.state.atmoUniforms.aoScale.value - 0.3) < 1e-6;
         const esRet = r.setEdgeSharp(0);
         out.edgeSharpSetter = esRet === 0 && r.state.atmosphere.edgeSharp === 0;
+        const txRet = r.setSurfaceTexture(0);
+        out.surfTexSetter =
+            txRet === 0 &&
+            r.state.atmosphere.triplanar === 0 &&
+            r.state.atmoUniforms &&
+            r.state.atmoUniforms.triplanarScale.value === 0;
         const snap2 = r.buildStateSnapshot();
         out.j4SlidersPersist = !!(
             snap2 &&
             snap2.atmosphere &&
             Math.abs(snap2.atmosphere.cavityAO - 0.3) < 1e-6 &&
-            snap2.atmosphere.edgeSharp === 0
+            snap2.atmosphere.edgeSharp === 0 &&
+            snap2.atmosphere.triplanar === 0
         );
         r.setCavityAO(1.0);
         r.setEdgeSharp(0.5);
+        r.setSurfaceTexture(1.0);
 
         return out;
     });
@@ -27031,6 +27039,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
         check("V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)", v828Results.cavityAOSetter);
         check("V17.J4: setEdgeSharp setzt die Post-FX-Kanten-Schärfe + persistiert", v828Results.edgeSharpSetter);
+        check("V17.103: setSurfaceTexture pusht live ins triplanar-Uniform + persistiert", v828Results.surfTexSetter);
         check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
     } else {
         check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
