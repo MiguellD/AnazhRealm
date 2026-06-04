@@ -26863,6 +26863,44 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ vertexColors: true }) : null;
         out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && !window.__toonColorNodeError;
         out.terrainColorNodeError = window.__toonColorNodeError || null;
+        // ===== WELLE J — die EINE geteilte Aerial-Perspektive (Render-Harmonie) =====
+        // KONSUM (nicht Existenz, V17.31): die geteilte `_applyAerialOutput` setzt
+        // outputNode IDENTISCH auf Terrain UND Strukturen (eine Atmosphäre, viele
+        // Leser); transparente Phantome bleiben unberührt; die dynamische
+        // material.color bleibt setzbar (kein colorNode-Override).
+        window.__aerialOutputError = null;
+        out.aerialHelperExists = typeof r._applyAerialOutput === "function";
+        // (1) Terrain (vertexColors) bekommt den geteilten Höhen-Aerial-outputNode.
+        out.terrainHasAerialOutput = !!(_terrMat && _terrMat.outputNode);
+        // (2) Struktur (Flach-Farbe) bekommt DENSELBEN outputNode + Mikro-Tiefe.
+        const _structMat =
+            typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ color: 0x808080 }) : null;
+        out.structHasAerialOutput = !!(_structMat && _structMat.outputNode);
+        // (3) der Builder ruft die EINE Quelle (Source-Probe: kein Parallel-Pfad).
+        const _btSrc = r._buildToonNodeMaterial ? r._buildToonNodeMaterial.toString() : "";
+        out.aerialFromOneSource = _btSrc.includes("_applyAerialOutput") && !_btSrc.includes("__structAerialError");
+        // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
+        // outputNode liest `output` (post-lighting), überschreibt material.color
+        // NICHT (CLAUDE.md-Gotcha).
+        let _dynColorOk = false;
+        if (_structMat) {
+            try {
+                _structMat.color.setHex(0xc0392b);
+                _dynColorOk = _structMat.color.getHexString() === "c0392b";
+            } catch (_e) {
+                _dynColorOk = false;
+            }
+        }
+        out.structDynamicColorPreserved = _dynColorOk;
+        // (5) transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element).
+        const _phantomMat =
+            typeof r._buildToonNodeMaterial === "function"
+                ? r._buildToonNodeMaterial({ color: 0x44ccff, transparent: true, opacity: 0.4 })
+                : null;
+        out.phantomNoAerial = !!_phantomMat && !_phantomMat.outputNode;
+        // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin).
+        out.aerialNoError = !window.__aerialOutputError;
+        out.aerialOutputError = window.__aerialOutputError || null;
         // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
         // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
         const ppSrc = r._ensurePostProcessing ? r._ensurePostProcessing.toString() : "";
@@ -26918,6 +26956,17 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check(
             `V17.12: Terrain-colorNode (triplanar-Textur) baut OHNE geschluckte Exception${v828Results.terrainColorNodeError ? " — " + v828Results.terrainColorNodeError : ""}`,
             v828Results.terrainColorNodeBuilds === true
+        );
+        // ===== WELLE J — Render-Harmonie (die EINE geteilte Aerial-Perspektive) =====
+        check("V17.J: _applyAerialOutput existiert (die EINE geteilte Umgebungs-Funktion)", v828Results.aerialHelperExists);
+        check("V17.J: Terrain bekommt den geteilten Aerial-outputNode (post-lighting)", v828Results.terrainHasAerialOutput);
+        check("V17.J: Struktur bekommt DENSELBEN Aerial-outputNode (eine Atmosphäre, viele Leser)", v828Results.structHasAerialOutput);
+        check("V17.J: der Builder ruft EINE Quelle (kein Parallel-Pfad, kein __structAerialError)", v828Results.aerialFromOneSource);
+        check("V17.J: die dynamische material.color bleibt setzbar (kein colorNode-Override)", v828Results.structDynamicColorPreserved);
+        check("V17.J: transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element)", v828Results.phantomNoAerial);
+        check(
+            `V17.J: kein still gefangener Aerial-Node-Fehler${v828Results.aerialOutputError ? " — " + v828Results.aerialOutputError : ""}`,
+            v828Results.aerialNoError === true
         );
         check("V17.3: Post-FX-Grading hat den Entgrauen-Hebel (degrayStrength + greyness)", v828Results.degrayPresent);
         check(

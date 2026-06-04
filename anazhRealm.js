@@ -18423,6 +18423,22 @@ class AnazhRealm {
         return Object.freeze({ strength: 0.4, cap: 0.18 });
     }
 
+    // Welle J — die EINE geteilte Aerial-Perspektive (`_applyAerialOutput`), die
+    // ALLE opaken Ebenen identisch post-lighting aufrufen. heightWeight/heightCap =
+    // der Höhen-Melt zur Himmelsfarbe (scene.fog trägt die Distanz); microStrength/
+    // aoStrength/aoCap = die output-seitige Mikro-Tiefe für Flach-Farb-Strukturen
+    // (das Terrain hat seine triplanar-Schicht im colorNode). Alle browser-
+    // justierbar für den Schöpfer-Sign-off (pixel-blind headless).
+    static get AERIAL() {
+        return Object.freeze({
+            heightWeight: 0.6,
+            heightCap: 0.85,
+            microStrength: 0.1,
+            aoStrength: 0.35,
+            aoCap: 0.16,
+        });
+    }
+
     // V9.71 (Welle C.1) — initialisiert das Wasser-Cell-Feld für einen Voxel-
     // Chunk. Pro Cell ein State (0=air, 1=water, 2=solid) via Density-Sample
     // am Cell-Center + waterLevel-Test. Returnt einen Uint8Array der Länge
@@ -19135,6 +19151,78 @@ class AnazhRealm {
         return this.state.atmoUniforms;
     }
 
+    // ===== WELLE J — DIE EINE GETEILTE UMGEBUNGS-FUNKTION (Render-Harmonie) =====
+    // Schöpfer-Befund (04.06.): Strukturen/Bäume tragen bei rainy die Himmelsfarbe,
+    // reagieren ANDERS als das Terrain auf Licht/Nebel. GEMESSENE Wurzel: die acht
+    // Render-Ebenen lasen SIEBEN divergente Atmosphären — das Terrain melt'ete VOR
+    // dem Licht (colorNode, light-moduliert = atmosphärisch), die Strukturen NACH
+    // dem Licht (eigener outputNode, light-unabhängig = flach zur Himmelsfarbe) +
+    // ein redundanter Distanz-Term ÜBER scene.fog (Doppel-Nebel). Der wahre Weg
+    // (wie die Riesen — „ein Feld, viele Leser", analog zur Aura): EINE Funktion,
+    // die JEDE opake Ebene identisch POST-lighting aufruft. Physikalisch korrekt:
+    // die Aerial-Perspektive ist In-Streuung zwischen Oberfläche und Auge,
+    // unabhängig davon, wie die Oberfläche selbst beleuchtet ist → sie gehört auf
+    // die FERTIGE lit-Farbe (`TSL.output`), nicht auf die Albedo.
+    //
+    // Arbeitsteilung der Atmosphäre (zwei geteilte, uniforme Terme — keiner
+    // divergent): die DISTANZ-Haze trägt `scene.fog` (uniform für ALLE Materials,
+    // tag/nacht/wetter-synct via _dayNightApplyHemiAndFog); die HÖHEN-Aerial (was
+    // scene.fog nicht kann — Gipfel/hohe Bauten bleichen in den Himmel) trägt
+    // DIESE Funktion, identisch für alle Ebenen. Damit fällt der alte Doppel-Nebel
+    // (der Struktur-outputNode hatte einen eigenen Distanz-Term ZUSÄTZLICH zu
+    // scene.fog) weg.
+    //
+    // (J2) Optionale Mikro-Tiefe für FLACH-FARB-Strukturen: das Terrain trägt
+    // seine triplanar-Textur + Kavitäts-AO im colorNode (es hat vertexColors); die
+    // Flach-Farb-Bauten waren ohne sie „pappig". Hier OUTPUT-seitig (ein
+    // multiplikativer Shade auf die lit-Farbe) → bricht `material.color` NICHT (die
+    // dynamischen Marking-/Emotion-Farben bleiben heil — ein colorNode würde sie
+    // überschreiben, CLAUDE.md-Gotcha). Werte browser-justierbar via
+    // `AnazhRealm.AERIAL`. try/catch + `window.__aerialOutputError`-Marker (V17.12:
+    // ein still gefangener Node-Fehler verdeckt sonst die ganze Schicht).
+    _applyAerialOutput(mat, opts = {}) {
+        if (!mat) return;
+        try {
+            const _T = THREE.TSL;
+            const _au = this.state.atmoUniforms;
+            if (!_T || !_T.output || !_T.positionWorld || !_T.smoothstep || !_T.mix || !_au) return;
+            const cfg = AnazhRealm.AERIAL || {
+                heightWeight: 0.6,
+                heightCap: 0.85,
+                microStrength: 0.1,
+                aoStrength: 0.35,
+                aoCap: 0.16,
+            };
+            const _o = _T.output; // die FERTIGE lit-Farbe (post-lighting)
+            let _rgb = _o.xyz;
+            const _wp = _T.positionWorld;
+            // (J2) Mikro-Tiefe nur für die Flach-Farb-Strukturen (das Terrain trägt
+            // seine eigene reichere triplanar-Schicht im colorNode).
+            if (opts.microTexture && _T.mx_noise_float && _T.fwidth && _T.normalWorld && _T.float) {
+                const _n1 = _T.mx_noise_float(_wp.mul(0.33));
+                const _n2 = _T.mx_noise_float(_wp.mul(1.6));
+                const _det = _n1.mul(0.7).add(_n2.mul(0.3));
+                let _shade = _T.float(1.0).add(_det.mul(cfg.microStrength));
+                // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
+                // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
+                const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
+                const _ao = _T.float(1.0).sub(_curv.mul(cfg.aoStrength).clamp(0.0, cfg.aoCap));
+                _rgb = _rgb.mul(_shade.mul(_ao));
+            }
+            // (J1) die Aerial-Perspektive — der HÖHEN-Melt zur Himmelsfarbe,
+            // IDENTISCH für jede Ebene (Terrain, Inseln, Strukturen, Bäume,
+            // Kreaturen). scene.fog trägt die DISTANZ; dieser Term die HÖHE.
+            const _haze = _T
+                .smoothstep(_au.hazeBase, _au.hazeTop, _wp.y)
+                .mul(cfg.heightWeight)
+                .clamp(0.0, cfg.heightCap);
+            _rgb = _T.mix(_rgb, _au.skyColor, _haze);
+            mat.outputNode = _T.vec4(_rgb, _o.w);
+        } catch (_e) {
+            if (typeof window !== "undefined") window.__aerialOutputError = String((_e && _e.message) || _e);
+        }
+    }
+
     // Quelle für die fünf Call-Sites — `vertexColors`/`color`/`opacity`/`side`
     // sind native Material-Properties, `gradientMap` aus `state.toonGradientMap`
     // wird geteilt (der `_refreshToonGradient`-Pfad via DataTexture.needsUpdate
@@ -19194,45 +19282,16 @@ class AnazhRealm {
         // fuer alle Terrain-Materials, vom Tag-Nacht-Wetter-Sync gespeist).
         this._ensureAtmoUniforms();
 
-        // Welle C2 — die AERIAL-MELT der Strukturen (der „flach/pappig"-Befund).
-        // Das Terrain blendet ferne/hohe Flächen zur Sky-Farbe (V15.4, auf
-        // vertexColors gegated → nur Terrain); die Flach-Farb-Bauten fehlten → sie
-        // „kleben" vor der Atmosphäre statt hineinzuschmelzen. Hier via `outputNode`
-        // (POST-LIGHTING, auf der FERTIGEN lit-Farbe `output` → ersetzt
-        // `material.color` NICHT → die dynamischen Marking-/Emotion-Farben bleiben
-        // heil, CLAUDE.md-Gotcha; ein colorNode würde sie brechen). Nur opake
-        // Flach-Farb-Bauten (Terrain trägt die Aerial-Schicht selbst; Phantom
-        // transparent). Nahe/niedrige Bauten: _haze≈0 → C1-Emissive-Floor bleibt;
-        // ferne: schmelzen in die Atmosphäre. try/catch + Marker (V17.12: ein still
-        // gefangener Node-Fehler verdeckt sonst die ganze Schicht unsichtbar).
-        if (!opts.vertexColors && opts.color !== undefined && !opts.transparent) {
-            try {
-                const _T = THREE.TSL;
-                const _au = this.state.atmoUniforms;
-                if (
-                    _T &&
-                    _T.output &&
-                    _T.positionView &&
-                    _T.positionWorld &&
-                    _T.exp &&
-                    _T.mix &&
-                    _T.smoothstep &&
-                    _au
-                ) {
-                    const _viewDist = _T.positionView.length();
-                    const _distHaze = _T
-                        .float(1.0)
-                        .sub(_T.exp(_viewDist.mul(_au.density).negate()))
-                        .clamp(0.0, 1.0)
-                        .mul(0.35);
-                    const _heightHaze = _T.smoothstep(_au.hazeBase, _au.hazeTop, _T.positionWorld.y);
-                    const _haze = _distHaze.add(_heightHaze.mul(0.5)).clamp(0.0, 0.8);
-                    const _o = _T.output;
-                    mat.outputNode = _T.vec4(_T.mix(_o.xyz, _au.skyColor, _haze), _o.w);
-                }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__structAerialError = String((_e && _e.message) || _e);
-            }
+        // Welle J — die EINE geteilte Aerial-Perspektive (`_applyAerialOutput`).
+        // ERSETZT den alten divergenten Pfad (V17.99-C2: ein eigener outputNode
+        // für Strukturen mit ANDERER Mathematik + redundantem Distanz-Term über
+        // scene.fog = Doppel-Nebel; das Terrain melt'ete VOR dem Licht im
+        // colorNode). Jetzt rufen Terrain, Inseln, Strukturen, Bäume, Kreaturen
+        // DIESELBE Funktion identisch POST-lighting → eine Atmosphäre, viele
+        // Leser. Mikro-Tiefe (J2) nur für Flach-Farb-Strukturen (das Terrain trägt
+        // sie im colorNode); transparente Phantome bleiben unberührt (UI-Element).
+        if (!opts.transparent) {
+            this._applyAerialOutput(mat, { microTexture: !opts.vertexColors && opts.color !== undefined });
         }
 
         // V15.1 - prozedurale Mikro-Textur (render-only): zwei Oktaven
@@ -19380,36 +19439,15 @@ class AnazhRealm {
                     const _lumA = _albedo.x.mul(0.3).add(_albedo.y.mul(0.59)).add(_albedo.z.mul(0.11));
                     _albedo = _T.mix(_T.vec3(_lumA, _lumA, _lumA), _albedo, _T.float(0.9).add(_tintN.mul(0.25)));
                 }
-                // V15.4 - Aerial Perspective (der "brutale Tiefe aus simplem
-                // System"-Hebel): ferne UND hohe Flaechen verschleiern
-                // exponentiell zur Himmelsfarbe. EIN Term, den die ganze Szene
-                // teilt (Terrain hier, Gras/Strukturen via scene.fog) -> alles
-                // schmilzt in DIESELBE atmosphaerische Stimmung = Tiefe + die
-                // Harmonie, die der Schoepfer vermisste. Distanz aus
-                // positionView.length() (Kamera-Abstand), Hoehen-Term laesst
-                // Gipfel in den Himmel ausbleichen (Berg-Silhouetten statt
-                // harter Fels-Kanten). Die Sky-Farbe + Dichte kommen aus
-                // state.atmoUniforms (vom Tag-Nacht-Wetter-Sync gespeist, EINE
-                // Quelle = die Fog-Farbe) -> tag/nacht/wetter-kohaerent. Reine
-                // Render-Albedo, try/catch-sicher. WICHTIG: scene.fog deckt
-                // schon die DISTANZ-Haze ab (alle Materials teilen sie). Dieser
-                // Term ist HOEHEN-DOMINANT — er ergaenzt, was scene.fog NICHT
-                // kann: hohe Gipfel bleichen in den Himmel aus (Berg-Silhouette
-                // statt harter Fels-Kante) + ein dezenter Distanz-Anteil fuer
-                // die Form-Aufloesung. Kein Doppel-Fog (nur der Hoehen-Teil ist
-                // stark), darum kein Ueber-Abdunkeln.
-                if (_T.positionView && _T.exp && this.state.atmoUniforms) {
-                    const _au = this.state.atmoUniforms;
-                    const _viewDist = _T.positionView.length();
-                    const _distHaze = _T
-                        .float(1.0)
-                        .sub(_T.exp(_viewDist.mul(_au.density).negate()))
-                        .clamp(0.0, 1.0)
-                        .mul(0.35);
-                    const _heightHaze = _T.smoothstep(_au.hazeBase, _au.hazeTop, _wp.y);
-                    const _haze = _distHaze.add(_heightHaze.mul(0.6)).clamp(0.0, 0.85);
-                    _albedo = _T.mix(_albedo, _au.skyColor, _haze);
-                }
+                // V15.4 → WELLE J: die Aerial-Perspektive ist NICHT mehr hier
+                // (pre-lighting, auf der Albedo) — sie wandert in die EINE geteilte
+                // `_applyAerialOutput` (post-lighting, IDENTISCH für alle Ebenen).
+                // Das war die Wurzel der Schöpfer-Disharmonie: das Terrain melt'ete
+                // VOR dem Licht (atmosphärisch), die Strukturen NACH dem Licht
+                // (flach) → sie schmolzen verschieden. Jetzt melten beide identisch
+                // post-lighting. Der colorNode trägt nur noch die ALBEDO (Vertex-
+                // Farbe + triplanar-Textur + Wiese + Tint); die Atmosphäre ist eine
+                // Output-Stufe (siehe `_applyAerialOutput`, am Ende des Builders).
                 mat.colorNode = _T.vec4(_albedo, 1.0);
             }
         } catch (_e) {
@@ -46219,7 +46257,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.100.0";
+AnazhRealm.VERSION = "17.101.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

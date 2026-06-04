@@ -14,7 +14,7 @@ Schöpfer-Befund (Browser-Audit, drei Screenshots): das Terrain ist nahe + rucke
 - **I — Tote Infra:** ✅ V17.20.
 - **E — Weite LOD-Pyramide:** ⏳ OFFEN (jetzt von F entriegelt — billige Chunks).
 
-**Der NEUE aktive Faden ist der Render-Harmonie-Bogen (J) — siehe unten.** Er ist die Wurzel-Heilung des „Strukturen reagieren anders als Terrain auf Licht/Nebel"-Befundes, den C2 nur als Parallel-Pfad symptom-behandelt hat.
+**Der Render-Harmonie-Bogen (J) — J1+J2 ✅ GEBAUT (V17.101), J3/J4 = Browser-Dials.** Er ist die Wurzel-Heilung des „Strukturen reagieren anders als Terrain auf Licht/Nebel"-Befundes, den C2 nur als Parallel-Pfad symptom-behandelt hat. **J1 (geteilte `_applyAerialOutput`, alle Ebenen post-lighting identisch) + J2 (output-seitige Mikro-Tiefe für Strukturen) sind gebaut + KONSUM-verifiziert (7 Invarianten); der Schöpfer-Browser-Sign-off der vereinten Atmosphäre + J3 (Wasser-Glitzer) + J4 (Cel-Härte) sind die pixel-blinden Reste.**
 
 ## 0. Die EINE Wurzel (vier der sechs Befunde teilen sie)
 
@@ -237,12 +237,12 @@ Verifiziert: das Glitzern (`:21645-21648`, Blinn-Phong) nutzt DENSELBEN `sunDir`
 
 ### J — Vorgehen, Messung, Abnahme
 
-- **J1 — der geteilte Aerial-Helper:** `_applyAerialOutput(mat)` extrahieren; Strukturen/Bäume/Kreaturen/Terrain/Inseln rufen ihn; `material.fog=false` setzen; Terrain-colorNode-Aerial entfernen. **Messung:** headless beweist Konstruktion + kein Page-Error + `material.fog===false` (Invariante) + die outputNode existiert auf allen Ebenen (KONSUM-Probe, V17.31). **Browser-Sign-off:** „Strukturen + Terrain schmelzen IDENTISCH in die Atmosphäre, kein Pappig-mehr bei rainy."
-- **J2 — Mikro-Textur/AO für Strukturen** (Output-seitig, nicht colorNode). **Messung:** dynamische Avatar-/Kreatur-Farbe unberührt (Invariante). **Browser:** „Strukturen tragen Tiefe wie das Terrain."
-- **J3 — Trapeze-Cel-Härte** (Browser-iteriert, Cel-Levels-Slider als Dial).
-- **J4 — Wasser-Glitzer-Check** (Browser-Messung zuerst, dann ggf. Fix).
+- **J1 — der geteilte Aerial-Helper ✅ GEBAUT (V17.101):** `_applyAerialOutput(mat, opts)` extrahiert; Terrain/Inseln/Strukturen/Bäume/Kreaturen rufen ihn am Ende von `_buildToonNodeMaterial` IDENTISCH (post-lighting auf `TSL.output`); der alte Struktur-outputNode (C2) + der Terrain-colorNode-Aerial (V15.4) sind ENTFERNT. **Arbeitsteilung korrigiert (Path X statt fog=false): scene.fog trägt die DISTANZ uniform (umhüllt den outputNode — vom Symptom „Strukturen MEHR nebelig" bewiesen), `_applyAerialOutput` trägt die HÖHE → kein Doppel-Distanz-Term mehr.** GEMESSEN-KONSUM (7 Invarianten im V8.28-Band): Terrain UND Struktur bekommen DENSELBEN outputNode, EINE Quelle (kein `__structAerialError`), dynamische Farbe heil, Phantom gegated, kein Node-Fehler. **OFFEN: Browser-Sign-off** „Strukturen + Terrain schmelzen IDENTISCH, kein Pappig bei rainy".
+- **J2 — Mikro-Textur/AO für Strukturen ✅ GEBAUT (V17.101):** output-seitiger Mikro-Shade (mx_noise ±10 %) + Kavitäts-AO, multiplikativ auf `output.xyz` (nicht colorNode → dynamische Farbe heil); nur Flach-Farb-Bauten (`microTexture: !vertexColors`). **OFFEN: Browser** „Strukturen tragen Tiefe wie das Terrain".
+- **J3 — Wasser-Glitzer-Versatz ⏳ Browser-Check:** das Blinn-Phong-Glitzern nutzt denselben `sunDir` wie Sonne+Skybox → physikalisch die Spiegelung (naturgemäß versetzt). Browser-Messung: läuft es mit der Sonne mit (gleiche senkrechte Ebene)? ja=korrekt, seitlicher Drift=Bug am Wasser-Mesh-Normal/Eye. **NICHT blind gebaut.**
+- **J4 — Trapeze-Cel-Härte ⏳ Browser-Dial:** nach der V17.100-Normalen-Glättung ist der Rest die Cel-Stufen-Härte → Cel-Levels-Slider. **Pixel-blind, Browser-iteriert.**
 
-**Risiko.** Render-only, aber pixel-blind + look-ändernd (Terrain pre→post) → **strikt Browser-iteriert, NICHT blind bauen** (V10.0-g.r). Headless: try/catch + Marker (V17.12), KONSUM-Invarianten, kein Page-Error.
+**Risiko.** J1/J2 render-only + pixel-blind + look-ändernd (Terrain pre→post) → headless beweist die VEREINHEITLICHUNG (try/catch + `window.__aerialOutputError`-Marker V17.12 + KONSUM-Invarianten), das FEEL ist der Browser-Sign-off (V10.0-g.r). Dials: `AnazhRealm.AERIAL` + `hazeBase`/`hazeTop` (atmoUniforms), falls die Höhen-Melt bei den 244-m-Bergen zu stark/schwach ist.
 
 ---
 
@@ -255,8 +255,8 @@ Verifiziert: das Glitzern (`:21645-21648`, Blinn-Phong) nutzt DENSELBEN `sunDir`
                                                    + offen: E (LOD-Pyramide), G3 (Eingänge), H3 (ferne Wasser)
 ```
 
-**Erledigt (V17.92–.100):** A, B, C, D(teil), F, G-Kern, H-Aquifer, I.
-**Aktiv jetzt:** **J (Render-Harmonie)** — die Wurzel-Heilung der Licht/Nebel-Disharmonie (C2 war nur ein Parallel-Pfad-Symptom-Patch).
+**Erledigt (V17.92–.101):** A, B, C, D(teil), F, G-Kern, H-Aquifer, I, **J1+J2 (Render-Harmonie-Kern, V17.101)**.
+**Wartet auf Browser-Sign-off:** **J** (die vereinte Atmosphäre — fühlt sie sich harmonisch an? + J3 Wasser-Glitzer + J4 Cel-Härte, beide pixel-blinde Dials).
 **Offen daneben:** E (weite LOD-Pyramide, von F entriegelt) · G3 (Oberflächen-Eingänge/Canyons, braucht H) · H3 (ferne-Chunk-Wasser >1024 m) · Kreatur-FPS-Dirigent (gemessen: `getTerrainHeightAt` 50 % von 49 ms @ 90 Kreaturen → Ground-Cache + Frame-Budget).
 
 ## Abdeckungs-Matrix
