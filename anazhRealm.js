@@ -293,8 +293,16 @@ class AnazhRealm {
             // celLevels: Cel-Shading-Stufen (1=bold, 6≈smooth)
             // fogDistance: Multiplikator auf Fog-near/far (klein=dichter)
             atmosphere: {
-                celLevels: 8,
-                fogDistance: 3.0,
+                // V17.109 — Schöpfer-getunte Basis-Werte (Browser-Sign-off 04.06.):
+                // 2.5D-Lichtung 100 % killt die Facetten, der Rest sein bevorzugter Look.
+                celLevels: 6,
+                terrainFlatten: 1.0,
+                cavityAO: 0.35,
+                edgeSharp: 0.46,
+                triplanar: 2.0,
+                colorVar: 1.5,
+                fogDistance: 5.31, // Slider 177 % (= /3 × 100)
+                waterCull: 0.0025,
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
@@ -19226,7 +19234,7 @@ class AnazhRealm {
             terrainFlatten: TSL.uniform(
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainFlatten)
                     ? this.state.atmosphere.terrainFlatten
-                    : 0.8
+                    : 1.0
             ),
             // WELLE J4-DEBUG — Browser-Isolations-Regler (default 1 = unverändert):
             // `aoScale`=0 schaltet die Kavitäts-AO ab (der `fwidth`-Term, der jede
@@ -25765,7 +25773,7 @@ class AnazhRealm {
             const es = Number(state.atmosphere.edgeSharp);
             if (Number.isFinite(es)) this.setEdgeSharp(Math.max(0, Math.min(1, es)));
             const tri = Number(state.atmosphere.triplanar);
-            if (Number.isFinite(tri)) this.setSurfaceTexture(Math.max(0, Math.min(2, tri)));
+            if (Number.isFinite(tri)) this.setSurfaceTexture(Math.max(0, Math.min(4, tri)));
             const cv = Number(state.atmosphere.colorVar);
             if (Number.isFinite(cv)) this.setColorVariation(Math.max(0, Math.min(2, cv)));
             const tf = Number(state.atmosphere.terrainFlatten);
@@ -36234,7 +36242,7 @@ class AnazhRealm {
     // V17.103-Regler — die Oberflächen-Textur (triplanar Striation-Stärke, 0..1).
     // 0 = glatte Terrain-Farbe (testet, ob die „Holzmaserung" die Trapeze betont).
     setSurfaceTexture(scale) {
-        const v = Math.max(0, Math.min(2, Number(scale))); // V17.109 Headroom 0..2
+        const v = Math.max(0, Math.min(4, Number(scale))); // V17.109 Headroom 0..4 (Schöpfer liebt die Striation, will >200%)
         const m = Number.isFinite(v) ? v : 1.0;
         if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.triplanar = m;
@@ -43465,7 +43473,7 @@ class AnazhRealm {
             const f0 =
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainFlatten)
                     ? this.state.atmosphere.terrainFlatten
-                    : 0.8;
+                    : 1.0;
             tfS.value = String(Math.round(f0 * 100));
             if (tfVal) tfVal.textContent = `${Math.round(f0 * 100)} %`;
             tfS.addEventListener("input", () => {
@@ -46691,7 +46699,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.109.0";
+AnazhRealm.VERSION = "17.110.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

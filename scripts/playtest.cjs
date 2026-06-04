@@ -31189,8 +31189,8 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const ring = document.getElementById("slider-ring");
         out.ringSliderRange = !!ring && ring.max === "8" && ring.value === "4";
         const cel = document.getElementById("slider-cel");
-        // V8.41 — Cel-Regler auf 2–8 zurückgenommen (Reserve verworfen).
-        out.celSliderRange = !!cel && cel.max === "8" && cel.value === "8";
+        // V8.41 — Cel-Regler 2–8. V17.109: Default-Wert 8→6 (Schöpfer-getunte Basis).
+        out.celSliderRange = !!cel && cel.max === "8" && cel.value === "6";
 
         // Cel-Stufen 2–8: 8 = smooth, höhere Werte clampen auf 8.
         const origCel = r.state.atmosphere ? r.state.atmosphere.celLevels : 8;
@@ -31240,7 +31240,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     if (v840Results && !v840Results.error) {
         check("V8.40: Sicht-Ring-Regler 1–8, Default 4 (9×9)", v840Results.ringSliderRange);
-        check("V8.41: Cel-Stufen-Regler 2–8, Default 8 (Reserve verworfen)", v840Results.celSliderRange);
+        check("V8.41/V17.109: Cel-Stufen-Regler 2–8, Default 6 (Schöpfer-Basis)", v840Results.celSliderRange);
         check("V8.41: Cel-Stufen clampt über 8 auf 8", v840Results.celClampsAt8);
         check("V8.40: Cel ab 8 bleibt smooth (32-Stufen-Gradient)", v840Results.celSmoothThreshold);
         check("V8.42: Cel-Gradient nutzt LinearFilter (crawl-frei)", v840Results.celGradientLinear);
