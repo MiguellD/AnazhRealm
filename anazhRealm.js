@@ -21094,6 +21094,47 @@ class AnazhRealm {
         return entry.waterCells[i + k * dim + j * dim * dim];
     }
 
+    // Welle B + H1 — der Wasser-Kontext am Spieler aus den 3D-Cells (ersetzt die
+    // 2.5D-`_hydroWaterLevelAt`-Spalte für den Auftrieb). Liest die Wasser-Cells
+    // in der Spieler-Spalte: ist eine Wasserzelle in der Körper-Höhe (Füße
+    // yFeet .. Kopf yFeet+1.8)? Wenn ja, scannt aufwärts bis zur ersten Nicht-
+    // Wasser-Zelle → der ECHTE Spiegel DIESES Wasserkörpers (ein Bergsee bei +8
+    // gibt +8, nicht den Meeresspiegel −3, den `_hydroWaterLevelAt` zurückgibt).
+    // Returnt `{ submerged, surfaceY }` oder null (kein gestreamter Chunk →
+    // 2.5D-Fallback am Streaming-Rand). Wasser-Cells leben auf LOD0 (V9.93).
+    _playerWaterContext(x, yFeet, z) {
+        if (!this.state.voxelChunks) return null;
+        const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
+        const cx = Math.floor(x / span);
+        const cz = Math.floor(z / span);
+        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
+        if (!entry || !entry.waterCells) return null;
+        const cells = entry.waterCells;
+        const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
+        const i = Math.floor((x - cx * span) / step);
+        const k = Math.floor((z - cz * span) / step);
+        if (i < 0 || k < 0 || i >= dim || k >= dim) return null;
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        const colBase = i + k * dim;
+        const cellJ = (j) => cells[colBase + j * dim * dim];
+        // Körper-Spanne Füße..Kopf: eine Wasserzelle darin → im Wasser.
+        const jFeet = Math.max(0, Math.floor((yFeet - oy) / step));
+        const jHead = Math.min(dimY - 1, Math.floor((yFeet + 1.8 - oy) / step));
+        let bodyWaterJ = -1;
+        for (let j = jFeet; j <= jHead; j++) {
+            if (cellJ(j) === WATER) {
+                bodyWaterJ = j;
+                break;
+            }
+        }
+        if (bodyWaterJ < 0) return { submerged: false, surfaceY: null };
+        // Aufwärts bis zum Spiegel DIESES Wasserkörpers (erste Nicht-Wasser-Zelle).
+        let topJ = bodyWaterJ;
+        while (topJ + 1 < dimY && cellJ(topJ + 1) === WATER) topJ++;
+        const surfaceY = oy + (topJ + 1) * step; // Oberkante der obersten Wasserzelle
+        return { submerged: true, surfaceY };
+    }
+
     _hydroWaterLevelAt(x, z) {
         const base = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
         const hydro = this.state.hydrosphere;
@@ -44993,31 +45034,37 @@ class AnazhRealm {
                         // Meeresspiegel. So schwimmt/taucht er im See wie im
                         // Meer — die Hydrosphäre ist EIN Wasser-System mit dem
                         // Meer (Schöpfer-Befund: „nicht synergetisch").
-                        const effWater = this._hydroWaterLevelAt(
-                            pos.x() * this.state.scaleFactor,
-                            pos.z() * this.state.scaleFactor
-                        );
-                        const waterY = typeof effWater === "number" ? effWater : this.state.waterLevel;
-                        // Welle B (Tiefe-Fundament) — die 2.5D-Spalte (`waterY`)
-                        // ignoriert die 3D-Topologie: über einer Lufthöhle UNTER
-                        // einem See sagt die Spalte „Wasser", obwohl die Zelle am
-                        // Spieler Luft ist → Falsch-Schwimmen. Der Auftrieb war der
-                        // DRITTE Konsument der Wasser-Wahrheit, der sie 2.5D neu
-                        // riet statt die Cells zu LESEN (V13.13.2-Muster). Heilung:
-                        // die echte 3D-Wasserzelle am Körper lesen. `_waterCellAt`
-                        // gibt null, wenn der Chunk (noch) nicht gestreamt ist →
-                        // Fallback auf die 2.5D-Spalte (Backward-Compat am Rand).
+                        // Welle B + H1 (Tiefe-Fundament) — der Auftrieb liest die
+                        // 3D-Wasser-WAHRHEIT (Cells), nicht die 2.5D-Spalte. Die
+                        // GEMESSENE Wurzel (diag-swim-repro): `_hydroWaterLevelAt`
+                        // gibt für einen BERGSEE (Wasser-Cells/Iso bei y=+8) den
+                        // MEERES-Spiegel (−3) zurück — die V9.69-Zwei-Skalen-Lücke
+                        // (Spalten-Atlas ≠ Flood-Cells). Folge: `waterY−scaledY`
+                        // wurde NEGATIV → der Auftrieb drückte im See nach UNTEN →
+                        // „ich sehe Wasser, aber keine Schwimmphysik". `_player
+                        // WaterContext` liest aus den Cells den ECHTEN Spiegel
+                        // DIESES Wasserkörpers (aufwärts-Scan bis zur Nicht-Wasser-
+                        // Zelle) + ob der Körper (Füße..Kopf) wirklich in Wasser ist
+                        // → KEIN Falsch-Schwimmen über Lufthöhlen UND korrektes
+                        // Schwimmen in Bergseen. Fallback auf die 2.5D-Spalte nur
+                        // am ungestreamten Streaming-Rand (Backward-Compat).
                         const wcx = pos.x() * this.state.scaleFactor;
                         const wcz = pos.z() * this.state.scaleFactor;
-                        const waterCell = this._waterCellAt(wcx, scaledY, wcz);
-                        const submerged =
-                            waterCell !== null && waterCell !== undefined
-                                ? waterCell === AnazhRealm.CELL_STATE.WATER
-                                : scaledY < waterY;
+                        const wctx = this._playerWaterContext(wcx, scaledY, wcz);
+                        let submerged;
+                        let waterY;
+                        if (wctx !== null) {
+                            submerged = wctx.submerged;
+                            waterY = submerged ? wctx.surfaceY : scaledY;
+                        } else {
+                            const effWater = this._hydroWaterLevelAt(wcx, wcz);
+                            waterY = typeof effWater === "number" ? effWater : this.state.waterLevel;
+                            submerged = scaledY < waterY;
+                        }
                         this.state.playerUnderwater = submerged;
                         // Augen sitzen auf Kamera-Höhe (scaledY + 1.6); nur unter
-                        // Wasser, wenn der Körper in einer Wasserzelle ist UND die
-                        // Augen unter dem Spiegel liegen (kein blauer Tint über Luft).
+                        // Wasser, wenn der Körper submerged ist UND die Augen unter
+                        // dem (Cell-)Spiegel liegen (kein blauer Tint über Luft).
                         this.state.playerEyesUnderwater = submerged && scaledY + 1.6 < waterY;
                         if (submerged) {
                             // V8.36 — Auftrieb wirkt NUR über dem Terrain.
@@ -46006,7 +46053,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.94.0";
+AnazhRealm.VERSION = "17.95.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

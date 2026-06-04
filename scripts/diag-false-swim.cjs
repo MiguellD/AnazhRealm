@@ -9,7 +9,15 @@ const path = require("path");
 
 const PORT = 4320;
 const root = path.resolve(__dirname, "..");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".woff2": "font/woff2", ".css": "text/css", ".png": "image/png" };
+const mime = {
+    ".html": "text/html",
+    ".js": "application/javascript",
+    ".wasm": "application/wasm",
+    ".json": "application/json",
+    ".woff2": "font/woff2",
+    ".css": "text/css",
+    ".png": "image/png",
+};
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
     if (p === "/") p = "/index.html";
@@ -32,7 +40,15 @@ const server = http.createServer((req, res) => {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
         headless: true,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist", "--no-sandbox", "--disable-setuid-sandbox", "--autoplay-policy=no-user-gesture-required"],
+        args: [
+            "--use-angle=swiftshader",
+            "--enable-unsafe-swiftshader",
+            "--enable-webgl",
+            "--ignore-gpu-blocklist",
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--autoplay-policy=no-user-gesture-required",
+        ],
     });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
@@ -57,7 +73,7 @@ const server = http.createServer((req, res) => {
         const r = window.anazhRealm;
         const out = { hasHelper: typeof r._waterCellAt === "function", buoyancyReadsCell: false };
         // Source-Probe: liest die Auftrieb-Logik die 3D-Zelle?
-        out.buoyancyReadsCell = /_waterCellAt\(/.test(r._loopPhysicsSync ? r._loopPhysicsSync.toString() : "") || /_waterCellAt\(/.test(r._gameLoopTick.toString());
+        out.buoyancyReadsCell = /_playerWaterContext\(/.test(r._loopPhysicsSync ? r._loopPhysicsSync.toString() : "");
         // Fallback-Probe: außerhalb jeder Welt → null (2.5D-Fallback greift).
         out.farAwayNull = r._waterCellAt(999999, 0, 999999) === null;
 
@@ -117,15 +133,25 @@ const server = http.createServer((req, res) => {
     console.log("\n========= WELLE B — FALSCH-SCHWIMM-DIAGNOSE =========\n");
     const line = (label, ok) => console.log(`  [${ok ? "OK" : "XX"}] ${label}`);
     line("_waterCellAt existiert", report.hasHelper);
-    line("Auftrieb-Logik liest _waterCellAt (Source-Probe)", report.buoyancyReadsCell);
+    line("Auftrieb-Logik liest _playerWaterContext (Source-Probe)", report.buoyancyReadsCell);
     line("fern (keine Welt) → null (2.5D-Fallback)", report.farAwayNull);
     line("ein WATER-Cell gefunden", report.foundWaterCell);
     line("Helper liest echte Wasserzelle als WATER", report.waterCellReadsWater);
     line("synthetische Lufthöhle unter Wasser → Zelle ist AIR", report.caveCellIsAir);
     line("→ Helper gibt NOT-WATER (kein Auftrieb)", report.caveCellNotWater);
     line("…obwohl die 2.5D-Spalte dort 'Wasser' sagt (der Bug)", report.columnSaysWaterAboveCave);
-    const allOk = report.hasHelper && report.buoyancyReadsCell && report.farAwayNull && report.foundWaterCell && report.waterCellReadsWater && report.caveCellIsAir && report.caveCellNotWater;
-    console.log("\n  VERDIKT:", allOk ? "GRÜN — die 3D-Zelle diskriminiert, wo die 2.5D-Spalte falsch riet." : "ROT — siehe oben.");
+    const allOk =
+        report.hasHelper &&
+        report.buoyancyReadsCell &&
+        report.farAwayNull &&
+        report.foundWaterCell &&
+        report.waterCellReadsWater &&
+        report.caveCellIsAir &&
+        report.caveCellNotWater;
+    console.log(
+        "\n  VERDIKT:",
+        allOk ? "GRÜN — die 3D-Zelle diskriminiert, wo die 2.5D-Spalte falsch riet." : "ROT — siehe oben."
+    );
     console.log("\n====================================================\n");
     await browser.close();
     server.close();
