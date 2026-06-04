@@ -19206,6 +19206,16 @@ class AnazhRealm {
                     ? this.state.atmosphere.triplanar
                     : 1.0
             ),
+            // V17.104-Regler „Farb-Variation" (0..1): skaliert die V17.12-Makro-Tint
+            // (warm/kühl-Patches λ~25 m + Sättigungs-Spreizung), die PRE-lighting auf
+            // die Albedo addiert wird → die „zwei Basisfarben, die unter Licht
+            // auseinanderdriften" (Schöpfer-Befund). 0 = uniforme Basisfarbe (testet,
+            // ob die Tint-Patches die Trapeze sind). Render-only.
+            tintScale: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.colorVar)
+                    ? this.state.atmosphere.colorVar
+                    : 1.0
+            ),
         };
         return this.state.atmoUniforms;
     }
@@ -19505,12 +19515,21 @@ class AnazhRealm {
                 // ±0.05) — zusammen mit der triplanar-Textur bricht das die
                 // interpolierten Vertex-Trapeze sichtbar auf.
                 if (_T.vec3) {
+                    // V17.104 — `_cv` (Regler „Farb-Variation", default 1) skaliert die
+                    // warm/kühl-Patches + die Sättigungs-Spreizung; bei 0 bleibt die
+                    // reine Basisfarbe (kein Pre-lighting-Tint, der unter Licht driftet).
+                    const _cv =
+                        this.state.atmoUniforms && this.state.atmoUniforms.tintScale
+                            ? this.state.atmoUniforms.tintScale
+                            : _T.float(1.0);
                     const _tintLo = _T.mx_noise_float(_wp.mul(0.04));
                     const _tintN = _tintLo.mul(0.5).add(0.5);
-                    _albedo = _albedo.add(_T.vec3(0.09, 0.025, -0.07).mul(_tintLo));
+                    _albedo = _albedo.add(_T.vec3(0.09, 0.025, -0.07).mul(_tintLo).mul(_cv));
                     // leichte Saettigungs-Spreizung nach dem grossraeumigen Noise.
+                    // Bei _cv=0 ist der Faktor 1.0 (Identität → keine Spreizung).
                     const _lumA = _albedo.x.mul(0.3).add(_albedo.y.mul(0.59)).add(_albedo.z.mul(0.11));
-                    _albedo = _T.mix(_T.vec3(_lumA, _lumA, _lumA), _albedo, _T.float(0.9).add(_tintN.mul(0.25)));
+                    const _satF = _T.float(1.0).add(_T.float(0.9).add(_tintN.mul(0.25)).sub(1.0).mul(_cv));
+                    _albedo = _T.mix(_T.vec3(_lumA, _lumA, _lumA), _albedo, _satF);
                 }
                 // V15.4 → WELLE J: die Aerial-Perspektive ist NICHT mehr hier
                 // (pre-lighting, auf der Albedo) — sie wandert in die EINE geteilte
@@ -23532,6 +23551,10 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.triplanar)
                         ? this.state.atmosphere.triplanar
                         : 1.0,
+                colorVar:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.colorVar)
+                        ? this.state.atmosphere.colorVar
+                        : 1.0,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -25629,6 +25652,8 @@ class AnazhRealm {
             if (Number.isFinite(es)) this.setEdgeSharp(Math.max(0, Math.min(1, es)));
             const tri = Number(state.atmosphere.triplanar);
             if (Number.isFinite(tri)) this.setSurfaceTexture(Math.max(0, Math.min(1, tri)));
+            const cv = Number(state.atmosphere.colorVar);
+            if (Number.isFinite(cv)) this.setColorVariation(Math.max(0, Math.min(1, cv)));
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -36056,6 +36081,19 @@ class AnazhRealm {
         return m;
     }
 
+    // V17.104-Regler — die Farb-Variation (V17.12-Makro-Tint-Stärke, 0..1). 0 = reine
+    // Basisfarbe (testet, ob die warm/kühl-Patches die „zwei Basisfarben" sind, die
+    // unter Licht zu Trapeze-Parzellen auseinanderdriften — Schöpfer-Diagnose).
+    setColorVariation(scale) {
+        const v = Math.max(0, Math.min(1, Number(scale)));
+        const m = Number.isFinite(v) ? v : 1.0;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.colorVar = m;
+        if (this.state.atmoUniforms && this.state.atmoUniforms.tintScale) this.state.atmoUniforms.tintScale.value = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // V17.103-Regler — die Oberflächen-Textur (triplanar Striation-Stärke, 0..1).
     // 0 = glatte Terrain-Farbe (testet, ob die „Holzmaserung" die Trapeze betont).
     setSurfaceTexture(scale) {
@@ -43330,6 +43368,21 @@ class AnazhRealm {
                 if (txVal) txVal.textContent = `${pct} %`;
             });
         }
+        const cvS = document.getElementById("slider-colorvar");
+        const cvVal = document.getElementById("slider-colorvar-val");
+        if (cvS) {
+            const c0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.colorVar)
+                    ? this.state.atmosphere.colorVar
+                    : 1.0;
+            cvS.value = String(Math.round(c0 * 100));
+            if (cvVal) cvVal.textContent = `${Math.round(c0 * 100)} %`;
+            cvS.addEventListener("input", () => {
+                const pct = parseInt(cvS.value, 10);
+                this.setColorVariation(pct / 100);
+                if (cvVal) cvVal.textContent = `${pct} %`;
+            });
+        }
     }
 
     // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name + Avatar-Name.
@@ -46484,7 +46537,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.103.0";
+AnazhRealm.VERSION = "17.104.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

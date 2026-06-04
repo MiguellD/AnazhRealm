@@ -26974,6 +26974,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.atmosphere.triplanar === 0 &&
             r.state.atmoUniforms &&
             r.state.atmoUniforms.triplanarScale.value === 0;
+        const cvRet = r.setColorVariation(0);
+        out.colorVarSetter =
+            cvRet === 0 &&
+            r.state.atmosphere.colorVar === 0 &&
+            r.state.atmoUniforms &&
+            r.state.atmoUniforms.tintScale.value === 0;
+        r.setColorVariation(1.0);
         const snap2 = r.buildStateSnapshot();
         out.j4SlidersPersist = !!(
             snap2 &&
@@ -27040,6 +27047,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)", v828Results.cavityAOSetter);
         check("V17.J4: setEdgeSharp setzt die Post-FX-Kanten-Schärfe + persistiert", v828Results.edgeSharpSetter);
         check("V17.103: setSurfaceTexture pusht live ins triplanar-Uniform + persistiert", v828Results.surfTexSetter);
+        check("V17.104: setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)", v828Results.colorVarSetter);
         check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
     } else {
         check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
