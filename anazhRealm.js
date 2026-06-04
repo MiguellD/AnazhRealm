@@ -18345,6 +18345,12 @@ class AnazhRealm {
         return Object.freeze({ AIR: 0, WATER: 1, SOLID: 2 });
     }
 
+    // Welle C — der Schwarz-Floor für Flach-Farb-Strukturen (Eigen-Leuchten in
+    // der Materialfarbe, hebt Stein/Eisen nachts über Schwarz). Browser-justierbar.
+    static get STRUCTURE_EMISSIVE() {
+        return Object.freeze({ intensity: 0.07 });
+    }
+
     // V9.71 (Welle C.1) — initialisiert das Wasser-Cell-Feld für einen Voxel-
     // Chunk. Pro Cell ein State (0=air, 1=water, 2=solid) via Density-Sample
     // am Cell-Center + waterLevel-Test. Returnt einen Uint8Array der Länge
@@ -19071,6 +19077,28 @@ class AnazhRealm {
         // patcht die DataTexture in-place (_refreshToonGradient.needsUpdate),
         // alle Materials samplen die aktualisierten Pixel beim nächsten Frame.
         if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+
+        // Welle C (Tiefe-Fundament) — der SCHWARZ-FLOOR für Flach-Farb-Strukturen.
+        // Schöpfer-Befund: Stein/Eisen-Bauten fallen nachts fast nach Schwarz,
+        // während das Terrain (V15.4-Aerial-Perspektive, blendet zur Sky-Farbe =
+        // ein Helligkeits-Boden unabhängig vom Licht) hell bleibt. Die Aerial-/
+        // Mikro-Schicht ist auf `vertexColors` gegated (nur Terrain) → die flachen
+        // Bauten sehen nur Directional+Ambient+Hemi (nachts ~0.6 × dunkles Albedo
+        // ≈ schwarz). Der NATIVE, render-pipeline-sichere Floor (kein TSL-/
+        // outputNode-Risiko, kein colorNode der die dynamischen Marking-/Emotion-
+        // Farben bräche — CLAUDE.md-Gotcha): ein schwaches Eigen-Leuchten in der
+        // EIGENEN Materialfarbe. Nachts hebt es die Bauten über Schwarz (ihr Ton
+        // glimmt schwach), tags von der Sonne überstimmt → kaum sichtbar. NUR
+        // Flach-Farb-Materials mit definierter Farbe (Terrain trägt die Aerial-
+        // Schicht selbst; Phantom/transparent bleibt unberührt). EHRLICH: das
+        // heilt „nachts schwarz"; die Aerial-MELT + Mikro-Textur der Strukturen
+        // (der „flach/pappig"-Teil) ist pixel-blind → Browser-iterierte Folge (C2).
+        // Werte browser-justierbar via `AnazhRealm.STRUCTURE_EMISSIVE`.
+        if (!opts.vertexColors && opts.color !== undefined && !opts.transparent && mat.emissive) {
+            const ef = AnazhRealm.STRUCTURE_EMISSIVE || { intensity: 0.07 };
+            mat.emissive.setHex(opts.color);
+            mat.emissiveIntensity = ef.intensity;
+        }
 
         // V15.4 - Aerial-Perspective-Uniforms sicherstellen (lazy, EIN Satz
         // fuer alle Terrain-Materials, vom Tag-Nacht-Wetter-Sync gespeist).
@@ -45978,7 +46006,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.93.0";
+AnazhRealm.VERSION = "17.94.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
