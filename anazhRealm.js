@@ -19177,7 +19177,12 @@ class AnazhRealm {
             //   anazhRealm.state.atmoUniforms.aoScale.value = 0   // Kavitäts-AO aus
             //   anazhRealm.state.postProcessingUniforms.localContrast.value = 0 // Post-FX-Schärfung aus
             //   anazhRealm.setCelLevels(8)                        // Cel → glatt
-            aoScale: TSL.uniform(1.0),
+            // ODER per Slider (Einstellungen): „Kavitäts-AO" + „Kanten-Schärfe".
+            aoScale: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
+                    ? this.state.atmosphere.cavityAO
+                    : 1.0
+            ),
         };
         return this.state.atmoUniforms;
     }
@@ -23483,6 +23488,15 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
                         ? this.state.atmosphere.waterCull
                         : 0.0025,
+                // J4-Regler: Kavitäts-AO-Stärke (0..1) + Kanten-Schärfe (Post-FX local-contrast, 0..1).
+                cavityAO:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
+                        ? this.state.atmosphere.cavityAO
+                        : 1.0,
+                edgeSharp:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
+                        ? this.state.atmosphere.edgeSharp
+                        : 0.5,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -25572,6 +25586,12 @@ class AnazhRealm {
             if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
             const wc = Number(state.atmosphere.waterCull);
             if (Number.isFinite(wc)) this.state.atmosphere.waterCull = Math.max(0.0, Math.min(0.05, wc));
+            // J4-Regler (default 1.0 / 0.5 = unverändert) + an die Uniforms pushen,
+            // falls sie schon erzeugt sind (sonst liest `_ensure*` sie beim Bau).
+            const ao = Number(state.atmosphere.cavityAO);
+            if (Number.isFinite(ao)) this.setCavityAO(Math.max(0, Math.min(1, ao)));
+            const es = Number(state.atmosphere.edgeSharp);
+            if (Number.isFinite(es)) this.setEdgeSharp(Math.max(0, Math.min(1, es)));
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -35985,6 +36005,34 @@ class AnazhRealm {
         return m;
     }
 
+    // WELLE J4-Regler — die Kavitäts-AO-Stärke (0 = aus … 1 = voll). Die
+    // `fwidth(normalWorld)`-AO zeichnet jede Surface-Nets-Facetten-Kante als
+    // Linie (screen-space → flackert beim Laufen) — der Haupt-Verdacht für die
+    // Trapeze. Live justierbar, bis sie weg sind, ohne pixel-blindes Raten.
+    setCavityAO(scale) {
+        const v = Math.max(0, Math.min(1, Number(scale)));
+        const m = Number.isFinite(v) ? v : 1.0;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.cavityAO = m;
+        if (this.state.atmoUniforms && this.state.atmoUniforms.aoScale) this.state.atmoUniforms.aoScale.value = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // WELLE J4-Regler — die Kanten-Schärfe (Post-FX local-contrast/Unsharp).
+    // Verstärkt Helligkeits-Kanten (schärft Cel-/Facetten-Grenzen NACH, screen-
+    // space → flackert) — der zweite Verdacht. 0 = aus, 0.5 = Default (V17.13).
+    setEdgeSharp(amount) {
+        const v = Math.max(0, Math.min(1, Number(amount)));
+        const m = Number.isFinite(v) ? v : 0.5;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.edgeSharp = m;
+        if (this.state.postProcessingUniforms && this.state.postProcessingUniforms.localContrast)
+            this.state.postProcessingUniforms.localContrast.value = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
     // dem Welt-Feld an Position (x, z)? Dot-Product über die 4 Achsen des
     // Welt-Feldes. Resultat 0..1 (sum / 4 da MAX-aggregierte Tags ebenfalls
@@ -43184,6 +43232,39 @@ class AnazhRealm {
                 if (wcVal) wcVal.textContent = v.toFixed(4);
             });
         }
+        // J4-Regler — Kavitäts-AO (0..100 % → aoScale 0..1) + Kanten-Schärfe
+        // (0..100 → local-contrast 0..1). Live-Wert im Label, damit der Schöpfer
+        // den Trapeze-/Flacker-Beitrag jedes Filters misst statt zu raten.
+        const aoS = document.getElementById("slider-cavityao");
+        const aoVal = document.getElementById("slider-cavityao-val");
+        if (aoS) {
+            const a0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
+                    ? this.state.atmosphere.cavityAO
+                    : 1.0;
+            aoS.value = String(Math.round(a0 * 100));
+            if (aoVal) aoVal.textContent = `${Math.round(a0 * 100)} %`;
+            aoS.addEventListener("input", () => {
+                const pct = parseInt(aoS.value, 10);
+                this.setCavityAO(pct / 100);
+                if (aoVal) aoVal.textContent = `${pct} %`;
+            });
+        }
+        const esS = document.getElementById("slider-edgesharp");
+        const esVal = document.getElementById("slider-edgesharp-val");
+        if (esS) {
+            const e0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
+                    ? this.state.atmosphere.edgeSharp
+                    : 0.5;
+            esS.value = String(Math.round(e0 * 100));
+            if (esVal) esVal.textContent = e0.toFixed(2);
+            esS.addEventListener("input", () => {
+                const pct = parseInt(esS.value, 10);
+                const v = this.setEdgeSharp(pct / 100);
+                if (esVal) esVal.textContent = v.toFixed(2);
+            });
+        }
     }
 
     // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name + Avatar-Name.
@@ -45817,7 +45898,12 @@ class AnazhRealm {
                 // plastisch statt pappig (Schoepfer „kaum Kontraste, basic"). Wirkt
                 // global im Post-FX (kein Material angefasst → bricht keine
                 // dynamischen Farben). Browser-justierbar.
-                localContrast: uniform(0.5),
+                // J4-Regler „Kanten-Schärfe" — Default 0.5, persistiert via state.atmosphere.edgeSharp.
+                localContrast: uniform(
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
+                        ? this.state.atmosphere.edgeSharp
+                        : 0.5
+                ),
             };
             this.state.postProcessingUniforms = u;
 
@@ -46333,7 +46419,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.102.1";
+AnazhRealm.VERSION = "17.102.2";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

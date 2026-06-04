@@ -26957,6 +26957,26 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         r.setCelLevels(4);
         r.setFogDistance(1.0);
+        // J4-Regler — KONSUM: setCavityAO/setEdgeSharp pushen live ins Uniform +
+        // persistieren in state.atmosphere (so liest der Slider den Wert ab).
+        r._ensureAtmoUniforms();
+        const aoRet = r.setCavityAO(0.3);
+        out.cavityAOSetter =
+            aoRet === 0.3 &&
+            r.state.atmosphere.cavityAO === 0.3 &&
+            r.state.atmoUniforms &&
+            Math.abs(r.state.atmoUniforms.aoScale.value - 0.3) < 1e-6;
+        const esRet = r.setEdgeSharp(0);
+        out.edgeSharpSetter = esRet === 0 && r.state.atmosphere.edgeSharp === 0;
+        const snap2 = r.buildStateSnapshot();
+        out.j4SlidersPersist = !!(
+            snap2 &&
+            snap2.atmosphere &&
+            Math.abs(snap2.atmosphere.cavityAO - 0.3) < 1e-6 &&
+            snap2.atmosphere.edgeSharp === 0
+        );
+        r.setCavityAO(1.0);
+        r.setEdgeSharp(0.5);
 
         return out;
     });
@@ -27009,6 +27029,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
+        check("V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)", v828Results.cavityAOSetter);
+        check("V17.J4: setEdgeSharp setzt die Post-FX-Kanten-Schärfe + persistiert", v828Results.edgeSharpSetter);
+        check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
     } else {
         check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
     }
