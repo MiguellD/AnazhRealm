@@ -19221,7 +19221,13 @@ class AnazhRealm {
             // senkt die STD (0.5→0.24, 0.8→0.076) → grosse Cel-Regionen wie 2.5D.
             // NUR Shading (Render-only), NICHT die Geometrie/Schatten. Live-tunbar:
             //   anazhRealm.state.atmoUniforms.terrainFlatten.value = 0.6
-            terrainFlatten: TSL.uniform(0.5),
+            // ODER per Slider „2.5D-Lichtung" (Einstellungen). Liest den
+            // persistierten Wert (V17.109-Slider), sonst Default 0.5.
+            terrainFlatten: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainFlatten)
+                    ? this.state.atmosphere.terrainFlatten
+                    : 0.8
+            ),
             // WELLE J4-DEBUG — Browser-Isolations-Regler (default 1 = unverändert):
             // `aoScale`=0 schaltet die Kavitäts-AO ab (der `fwidth`-Term, der jede
             // Surface-Nets-Facetten-Kante als Linie zeichnet — mein Haupt-Verdacht
@@ -25755,13 +25761,15 @@ class AnazhRealm {
             // J4-Regler (default 1.0 / 0.5 = unverändert) + an die Uniforms pushen,
             // falls sie schon erzeugt sind (sonst liest `_ensure*` sie beim Bau).
             const ao = Number(state.atmosphere.cavityAO);
-            if (Number.isFinite(ao)) this.setCavityAO(Math.max(0, Math.min(1, ao)));
+            if (Number.isFinite(ao)) this.setCavityAO(Math.max(0, Math.min(2, ao)));
             const es = Number(state.atmosphere.edgeSharp);
             if (Number.isFinite(es)) this.setEdgeSharp(Math.max(0, Math.min(1, es)));
             const tri = Number(state.atmosphere.triplanar);
-            if (Number.isFinite(tri)) this.setSurfaceTexture(Math.max(0, Math.min(1, tri)));
+            if (Number.isFinite(tri)) this.setSurfaceTexture(Math.max(0, Math.min(2, tri)));
             const cv = Number(state.atmosphere.colorVar);
-            if (Number.isFinite(cv)) this.setColorVariation(Math.max(0, Math.min(1, cv)));
+            if (Number.isFinite(cv)) this.setColorVariation(Math.max(0, Math.min(2, cv)));
+            const tf = Number(state.atmosphere.terrainFlatten);
+            if (Number.isFinite(tf)) this.setTerrainFlatten(Math.max(0, Math.min(1, tf)));
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -36180,7 +36188,10 @@ class AnazhRealm {
     // Linie (screen-space → flackert beim Laufen) — der Haupt-Verdacht für die
     // Trapeze. Live justierbar, bis sie weg sind, ohne pixel-blindes Raten.
     setCavityAO(scale) {
-        const v = Math.max(0, Math.min(1, Number(scale)));
+        // V17.109 — Headroom: Bereich 0..2 (200 %), damit 100 % die Mitte ist
+        // (Schöpfer-Wunsch „nicht am Anschlag"). >1 verstärkt die AO über den
+        // Default; der aoCap im Shader bleibt der Sicherheits-Deckel.
+        const v = Math.max(0, Math.min(2, Number(scale)));
         const m = Number.isFinite(v) ? v : 1.0;
         if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.cavityAO = m;
@@ -36189,11 +36200,29 @@ class AnazhRealm {
         return m;
     }
 
+    // V17.109 — die 2.5D-LICHTUNG als sichtbarer Slider (war nur Konsole). Wie
+    // stark die Terrain-Shading-Normale zur Up-Achse geblendet wird (0 = volle
+    // 3D-Facetten, 1 = flach wie 2.5D). GEMESSEN (diag-facets): senkt die
+    // dot(N,L)-Streuung (0.5→0.24, 0.8→0.076) → die Facetten-Rauten kollabieren
+    // zu grossen Cel-Regionen. Der HAUPT-Hebel gegen das Facetten-Muster; bei
+    // hartem Cel (Stufen<8) muss er hoch sein, damit die Bänder über GROSSE
+    // Regionen laufen statt über einzelne Facetten.
+    setTerrainFlatten(scale) {
+        const v = Math.max(0, Math.min(1, Number(scale)));
+        const m = Number.isFinite(v) ? v : 0.5;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.terrainFlatten = m;
+        if (this.state.atmoUniforms && this.state.atmoUniforms.terrainFlatten)
+            this.state.atmoUniforms.terrainFlatten.value = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // V17.104-Regler — die Farb-Variation (V17.12-Makro-Tint-Stärke, 0..1). 0 = reine
     // Basisfarbe (testet, ob die warm/kühl-Patches die „zwei Basisfarben" sind, die
     // unter Licht zu Trapeze-Parzellen auseinanderdriften — Schöpfer-Diagnose).
     setColorVariation(scale) {
-        const v = Math.max(0, Math.min(1, Number(scale)));
+        const v = Math.max(0, Math.min(2, Number(scale))); // V17.109 Headroom 0..2
         const m = Number.isFinite(v) ? v : 1.0;
         if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.colorVar = m;
@@ -36205,7 +36234,7 @@ class AnazhRealm {
     // V17.103-Regler — die Oberflächen-Textur (triplanar Striation-Stärke, 0..1).
     // 0 = glatte Terrain-Farbe (testet, ob die „Holzmaserung" die Trapeze betont).
     setSurfaceTexture(scale) {
-        const v = Math.max(0, Math.min(1, Number(scale)));
+        const v = Math.max(0, Math.min(2, Number(scale))); // V17.109 Headroom 0..2
         const m = Number.isFinite(v) ? v : 1.0;
         if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.triplanar = m;
@@ -43428,7 +43457,24 @@ class AnazhRealm {
                 if (wcVal) wcVal.textContent = v.toFixed(4);
             });
         }
-        // J4-Regler — Kavitäts-AO (0..100 % → aoScale 0..1) + Kanten-Schärfe
+        // V17.109 — die 2.5D-Lichtung (0..100 % → terrainFlatten 0..1). Der HAUPT-
+        // Hebel gegen die Facetten-Rauten (blendet die Shading-Normale zur Up-Achse).
+        const tfS = document.getElementById("slider-flatten");
+        const tfVal = document.getElementById("slider-flatten-val");
+        if (tfS) {
+            const f0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainFlatten)
+                    ? this.state.atmosphere.terrainFlatten
+                    : 0.8;
+            tfS.value = String(Math.round(f0 * 100));
+            if (tfVal) tfVal.textContent = `${Math.round(f0 * 100)} %`;
+            tfS.addEventListener("input", () => {
+                const pct = parseInt(tfS.value, 10);
+                this.setTerrainFlatten(pct / 100);
+                if (tfVal) tfVal.textContent = `${pct} %`;
+            });
+        }
+        // J4-Regler — Kavitäts-AO (0..200 % → aoScale 0..2) + Kanten-Schärfe
         // (0..100 → local-contrast 0..1). Live-Wert im Label, damit der Schöpfer
         // den Trapeze-/Flacker-Beitrag jedes Filters misst statt zu raten.
         const aoS = document.getElementById("slider-cavityao");
@@ -46645,7 +46691,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.108.0";
+AnazhRealm.VERSION = "17.109.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

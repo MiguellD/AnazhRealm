@@ -26993,6 +26993,20 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.atmosphere.colorVar === 0 &&
             r.state.atmoUniforms &&
             r.state.atmoUniforms.tintScale.value === 0;
+        // V17.109 — die 2.5D-Lichtung als Slider: setTerrainFlatten pusht live +
+        // persistiert (KONSUM); + Headroom 0..2 für die maxed Slider (kein [0,1]-Clamp).
+        const tfRet = r.setTerrainFlatten(0.8);
+        out.terrainFlattenSetter =
+            tfRet === 0.8 &&
+            r.state.atmosphere.terrainFlatten === 0.8 &&
+            r.state.atmoUniforms &&
+            Math.abs(r.state.atmoUniforms.terrainFlatten.value - 0.8) < 1e-6;
+        out.sliderHeadroom = r.setCavityAO(1.5) === 1.5 && r.setSurfaceTexture(1.5) === 1.5;
+        // Werte wiederherstellen, die der j4SlidersPersist-Test unten erwartet
+        // (mein Headroom-Check hat cavityAO/triplanar verändert).
+        r.setCavityAO(0.3);
+        r.setSurfaceTexture(0);
+        r.setTerrainFlatten(0.5);
         r.setColorVariation(1.0);
         const snap2 = r.buildStateSnapshot();
         out.j4SlidersPersist = !!(
@@ -27064,6 +27078,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V17.103: setSurfaceTexture pusht live ins triplanar-Uniform + persistiert", v828Results.surfTexSetter);
         check("V17.104: setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)", v828Results.colorVarSetter);
         check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
+        check("V17.109: setTerrainFlatten (2.5D-Lichtung-Slider) pusht live + persistiert", v828Results.terrainFlattenSetter);
+        check("V17.109: Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0", v828Results.sliderHeadroom);
     } else {
         check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
     }

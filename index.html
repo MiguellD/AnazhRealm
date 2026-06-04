@@ -5404,8 +5404,12 @@
                 <h3>Atmosphäre</h3>
                 <p class="drawer-hint">
                     Cel-Stufen formen die Licht-Abstufung auf Strukturen — wenig Stufen geben harte gemalte Linien
-                    (Studio-Ghibli-Look), viele einen weichen Verlauf. Kavitäts-AO zeichnet die Facetten-Kanten als
-                    Kontakt-Schatten nach (0 % = aus — testet, ob die Trapeze/das Lauf-Flackern daher kommen).
+                    (Studio-Ghibli-Look), viele einen weichen Verlauf. <b>2.5D-Lichtung</b> ist der HAUPT-Hebel gegen die
+                    Facetten-Rauten auf dem Terrain: er blendet die Beleuchtungs-Normale Richtung oben (0 % = volle
+                    3D-Facetten, 100 % = flach wie 2.5D, grosse einheitliche Licht-Regionen). Bei harten Cel-Stufen (&lt;8)
+                    hoch drehen, damit die Bänder über GROSSE Flächen laufen statt über einzelne Facetten. Kavitäts-AO
+                    zeichnet die Facetten-Kanten als Kontakt-Schatten nach (0 % = aus — der view-abhängige „Schatten"-Term;
+                    bei sichtbaren Facetten runter drehen).
                     Kanten-Schärfe ist der Post-FX-Unsharp, der Kontraste hebt (0 = aus, schärft sonst die Cel-Grenzen
                     nach). Oberflächen-Textur ist die Fels-/Boden-Striation auf dem Terrain (0 % = glatte Farbe — testet,
                     ob die „Maserung" die Facetten/Trapeze betont). Fog-Distanz regelt, wie nah der Welt-Dunst beginnt. Wasser-Cull blendet dünnes, flaches Wasser
@@ -5417,8 +5421,13 @@
                     <span class="slider-value" id="slider-cel-val">8</span>
                 </div>
                 <div class="slider-row">
+                    <label for="slider-flatten">2.5D-Lichtung</label>
+                    <input type="range" id="slider-flatten" min="0" max="100" value="80" />
+                    <span class="slider-value" id="slider-flatten-val">80 %</span>
+                </div>
+                <div class="slider-row">
                     <label for="slider-cavityao">Kavitäts-AO</label>
-                    <input type="range" id="slider-cavityao" min="0" max="100" value="100" />
+                    <input type="range" id="slider-cavityao" min="0" max="200" value="100" />
                     <span class="slider-value" id="slider-cavityao-val">100 %</span>
                 </div>
                 <div class="slider-row">
@@ -5428,12 +5437,12 @@
                 </div>
                 <div class="slider-row">
                     <label for="slider-surftex">Oberflächen-Textur</label>
-                    <input type="range" id="slider-surftex" min="0" max="100" value="100" />
+                    <input type="range" id="slider-surftex" min="0" max="200" value="100" />
                     <span class="slider-value" id="slider-surftex-val">100 %</span>
                 </div>
                 <div class="slider-row">
                     <label for="slider-colorvar">Farb-Variation</label>
-                    <input type="range" id="slider-colorvar" min="0" max="100" value="100" />
+                    <input type="range" id="slider-colorvar" min="0" max="200" value="100" />
                     <span class="slider-value" id="slider-colorvar-val">100 %</span>
                 </div>
                 <div class="slider-row">
@@ -5870,6 +5879,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=17.108.0" defer></script>
+        <script src="anazhRealm.js?v=17.109.0" defer></script>
     </body>
 </html>
