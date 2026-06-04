@@ -293,8 +293,16 @@ class AnazhRealm {
             // celLevels: Cel-Shading-Stufen (1=bold, 6≈smooth)
             // fogDistance: Multiplikator auf Fog-near/far (klein=dichter)
             atmosphere: {
-                celLevels: 8,
-                fogDistance: 3.0,
+                // V17.109 — Schöpfer-getunte Basis-Werte (Browser-Sign-off 04.06.):
+                // 2.5D-Lichtung 100 % killt die Facetten, der Rest sein bevorzugter Look.
+                celLevels: 6,
+                terrainFlatten: 1.0,
+                cavityAO: 0.35,
+                edgeSharp: 0.46,
+                triplanar: 2.0,
+                colorVar: 1.5,
+                fogDistance: 5.31, // Slider 177 % (= /3 × 100)
+                waterCull: 0.0025,
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
@@ -870,6 +878,21 @@ class AnazhRealm {
             // Streuen (worldFieldAt + Surface-Scan pro Zelle) läuft ≤budget/
             // Frame nach → kein Streaming-Hitch, kein CI-Warmup-Druck (V9.83).
             pendingScatter: null,
+            // Welle A (Tiefe-Fundament) — deferred-Queue für das Gras (Set von
+            // Chunk-Keys). GEMESSEN (diag-edit-perf): `_buildVoxelChunkGrass` ist
+            // mit ~34 ms der dominante Per-Chunk-Rebuild-Posten; synchron im
+            // Finalize trieb es den 75-ms-Rebuild-Spike (Streaming + Nexus-Spawn-
+            // Drain). Deferred (wie Scatter/Wasser-Iso): der Chunk finalisiert
+            // ohne den Gras-Aufwand, der Tick baut ≤1/Frame auf einer ruhigen
+            // (nicht-Streaming-)Frame nach. Gras 1 Frame später = imperzeptibel.
+            pendingGrass: null,
+            // Welle G-fix — Chunks, deren OBERFLÄCHE sich änderte (Carve/Fill) →
+            // ihr Gras MUSS neu (synchron, kein Flackern). Ein Struktur-Spawn/
+            // Skirt-/LOD-Rebuild ändert die Oberfläche NICHT → das Gras bleibt
+            // (kein Dispose, kein Reset). Heilt den V17.92-Defer-Regress „beim
+            // Abbauen flackert die ganze Wiese" — jetzt resettet nur der edierte
+            // Chunk sein Gras (ein Bereich), nicht alle Skirt-Nachbarn.
+            grassDirtyChunks: null,
             // V12.0-perf.c — Architektur-Instancing-Registry (HISM-Pattern).
             // archFlattenCache: Map<blueprintName, {instanceable, reason,
             //   leaves:[{geom, mat, localMatrix}]}> — ein Bauplan flach in
@@ -11523,14 +11546,20 @@ class AnazhRealm {
                 color: new THREE.Color(Math.random(), Math.random(), Math.random()),
             });
             const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+            planet.frustumCulled = false; // Himmelskörper — immer rendern
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.random() * Math.PI;
             const radius = 400 + Math.random() * 50;
-            planet.position.set(
+            // WELLE J3 — die FIXE Himmelsrichtung als skyOffset; `_followCelestial-
+            // Bodies` heftet den Planeten pro Frame an `camera.position + skyOffset`
+            // (kamera-relativ wie das Stern-Feld) → er rast nicht mehr neben dem
+            // fernen Spieler durchs Terrain, sondern steht fest am Himmel.
+            planet.userData.skyOffset = new THREE.Vector3(
                 radius * Math.sin(phi) * Math.cos(theta),
                 radius * Math.cos(phi),
                 radius * Math.sin(phi) * Math.sin(theta)
             );
+            planet.position.copy(planet.userData.skyOffset);
             this.state.scene.add(planet);
             this.state.planets.push(planet);
             this.log(
@@ -17387,7 +17416,12 @@ class AnazhRealm {
         // Kompression ist sanft (126 m → 124 m). Der Clamp greift VOR dem
         // Sub-Ozean-/Tarn-Block (beide senken nur niedrige Surfaces → unberührt).
         // MUSS bit-identisch im Worker (`voxel-worker.js`, Naht-Schutz).
-        if (withoutTarn > 110) withoutTarn = 110 + 26 * Math.tanh((withoutTarn - 110) / 26);
+        // Welle F — der Deckel hochgezogen (110/Asymptote 136 → 225/Asymptote
+        // ~245): die Hülle wuchs auf Decke base+270 m, also dürfen die Berge
+        // GEWALTIG werden (~235 m statt 136). Der weiche Cap bei 225 ist nur noch
+        // ein Sicherheits-Backstop gegen einen seltenen Ausreißer > Decke (245 +
+        // Roughness 12 = 257 < 270). MUSS bit-identisch im Worker (Naht-Schutz).
+        if (withoutTarn > 225) withoutTarn = 225 + 20 * Math.tanh((withoutTarn - 225) / 20);
         // V9.60-c.2 — Riesen-Lehre vertieft: Continental Slope + Mid-Ocean
         // Ridge + tiefen-skalierte Variation. Schöpfer-Befund nach V9.60-c.1:
         // "see und meere immernoch sehr flach, nicht natürlich". Vor-Versuch
@@ -17483,6 +17517,16 @@ class AnazhRealm {
             const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
             const cave = Math.max(0, (ridge - 0.7) / 0.3);
             d -= cave * caveEnv * 36;
+            // Welle G — GROSSE KAVERNEN: ein nieder-frequentes Feld (λ~77 m horiz.,
+            // ~55 m vert.) carvt runde, begehbare HALLEN, wo der Befund nur dünne
+            // λ33-Schläuche fand. Sparse (Schwelle 0.55 → die oberen ~22 % des
+            // Noise) → vereinzelte große Räume, von den Tunneln verbunden
+            // (Minecraft spaghetti+cheese). Gegated durch DASSELBE caveEnv → bleibt
+            // unter surf-16 (kein Water-Bleed) + über base-28 (Boden-Garantie).
+            // MUSS bit-identisch im Worker (Determinismus-/Naht-Schutz).
+            const cavern = n.noise3D(x * 0.013, y * 0.018, z * 0.013);
+            const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
+            d -= cavernCarve * caveEnv * 46;
         }
         // V9.43-d / V9.45-b — der Hydrosphären-Carve. (1) Fluss-Kanäle senken
         // die Dichte → echte Rinnen mit Ufern. (2) See-Becken werden zu einem
@@ -17708,7 +17752,19 @@ class AnazhRealm {
     // bewusst NICHT würfelförmig: er ist nur `span` breit (X/Z) aber hoch
     // genug (Y), um das ganze Oberflächen-Band zu fassen (sonst klafft ein
     // Loch, wo die Oberfläche oben/unten aus dem Chunk-Kasten austritt).
-    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn, cropMargin = 0, preDensity = null) {
+    _voxelChunkGeometry(
+        ox,
+        oy,
+        oz,
+        dimX,
+        dimY,
+        dimZ,
+        step,
+        densityFn,
+        cropMargin = 0,
+        preDensity = null,
+        smoothIters = 1
+    ) {
         const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
         // V9.81 (Welle C.11 — Density-Grid-Sharing): wenn der Aufrufer schon
         // das Density-Grid hat (z.B. weil er es auch für die Cell-Klassifikation
@@ -17728,7 +17784,7 @@ class AnazhRealm {
         );
         if (positions.length === 0) return null;
         const indices = this._voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ);
-        this._voxelLaplacianSmoothPositions(positions, indices);
+        this._voxelLaplacianSmoothPositions(positions, indices, smoothIters);
         this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin);
         if (positions.length === 0) return null;
         // V9.85 Perf-2.d — Gradient-Normals nutzen das geteilte preDensity-
@@ -17755,10 +17811,40 @@ class AnazhRealm {
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
         const density = new Float32Array(Nx * Ny * Nz);
+        // Welle F — BAND-SKIP: pro Spalte (i,k) nur die j-Ebenen um die Oberfläche
+        // sample()-n. Über `surf + Roughness` ist garantiert Luft (Dichte < 0),
+        // unter dem Höhlen-Boden (base−40, das Höhlen-Band endet bei base−28) ist
+        // garantiert Fels (Dichte > 0). Diese Konstant-Zonen tragen KEINEN Sign-
+        // Change → −1/+1 statt sample() → bit-identische Geometrie, aber ~60–70 %
+        // weniger sample()-Calls (der teure ~22-ms-Posten, diag-edit-perf). Edits
+        // (strength 48) dominieren das ±1 → der Edit-Overlay bleibt korrekt. MUSS
+        // bit-identisch im Worker (`computeDensityGrid`, Determinismus-/Naht-Schutz).
+        const base = this.state.terrainBaseHeight || 0;
+        const ROUGH = 12; // max 3D-Roughness (noise·7 + noise·5)
+        // Der Band-Top-Margin MUSS den Gradient-Normalen-eps (`_voxelGradient-
+        // Normals`, 1.5 Zellen) decken: ein Oberflächen-Vertex am Roughness-Gipfel
+        // sampelt +eps nach oben → das muss im REAL gesampelten Band liegen, nicht
+        // in der Konstant-Luft-Füllung (sonst kippt die Gipfel-Normale). eps 1.5 +
+        // Puffer → 4 Zellen (V17.103: zurück von 8, nach dem eps-6-Rollback).
+        const topMargin = 4 * step;
         for (let k = 0; k < Nz; k++) {
-            for (let j = 0; j < Ny; j++) {
-                for (let i = 0; i < Nx; i++) {
-                    density[i + j * Nx + k * Nx * Ny] = sample(ox + i * step, oy + j * step, oz + k * step);
+            const wz = oz + k * step;
+            for (let i = 0; i < Nx; i++) {
+                const wx = ox + i * step;
+                const surf = this._terrainMacroSurfaceY(wx, wz);
+                const bandTopJ = Math.floor((surf + ROUGH + topMargin - oy) / step) + 1;
+                // Band-Boden: unter `min(surf, base) − 40` ist garantiert Fels.
+                // WICHTIG (V17.96-Fix): in einer TIEFSEE-Rinne liegt der Seeboden
+                // (surf) bei ~−75 m, also MUSS der Band-Boden surf folgen — ein
+                // fixes base−40 hätte die Wassersäule zwischen −40 und dem Seeboden
+                // fälschlich als Fels gefüllt (zu flache Ozeane).
+                const bandBotJ = Math.floor((Math.min(surf, base) - 40 - oy) / step);
+                const colBase = i + k * Nx * Ny;
+                for (let j = 0; j < Ny; j++) {
+                    const idx = colBase + j * Nx;
+                    if (j > bandTopJ) density[idx] = -1;
+                    else if (j < bandBotJ) density[idx] = 1;
+                    else density[idx] = sample(wx, oy + j * step, wz);
                 }
             }
         }
@@ -17886,13 +17972,16 @@ class AnazhRealm {
         return indices;
     }
 
-    // V9.41.b/V9.42-d — Laplacian-Smooth (1 Iteration, λ=0.5) MUTIERT positions
-    // in place. Surface-Nets liefert EINEN Vertex pro Zelle → schräge flache
-    // Flächen zeigen Treppen; Smooth glättet zu sanften Schrägen über die
-    // topologischen Nachbarn. Läuft über ALLE Vertices (kein Skirt-Sonderfall;
-    // der pad+Crop-Pass sichert den Naht-Determinismus — jeder Nachbar-Chunk
-    // hat seinen pad an derselben Welt-Region, identischer Smooth → nahtlos).
-    _voxelLaplacianSmoothPositions(positions, indices) {
+    // V9.41.b/V9.42-d — Laplacian-Smooth MUTIERT positions in place. Surface-Nets
+    // liefert EINEN Vertex pro Zelle → schräge flache Flächen zeigen Treppen/
+    // Facetten; Smooth glättet zu sanften Schrägen über die topologischen Nachbarn.
+    // `iterations` parametrisiert (Default 1). WICHTIG (Naht): N Iterationen
+    // propagieren den Einfluss N Zellen → der pad+crop MUSS N Zellen breit sein,
+    // sonst divergieren die Naht-Vertices zwischen Nachbar-Chunks (Risse; der
+    // V9.42-b-Seam-Test fängt es). Heute nutzen ALLE Pfade 1 (cropMargin 1). Mehr
+    // Geometrie-Glättung gegen die Trapeze braucht einen breiteren pad im GETEILTEN
+    // Density-Grid (auch von den Wasser-Cells indiziert) → ein eigener Bogen.
+    _voxelLaplacianSmoothPositions(positions, indices, iterations = 1) {
         if (indices.length < 3) return;
         const vertCount = positions.length / 3;
         const neighborSets = new Array(vertCount);
@@ -17910,31 +17999,33 @@ class AnazhRealm {
         }
         const lambda = 0.5;
         const smoothed = new Array(positions.length);
-        for (let v = 0; v < vertCount; v++) {
-            const nbrs = neighborSets[v];
-            const cnt = nbrs.size;
-            if (cnt === 0) {
-                smoothed[v * 3] = positions[v * 3];
-                smoothed[v * 3 + 1] = positions[v * 3 + 1];
-                smoothed[v * 3 + 2] = positions[v * 3 + 2];
-                continue;
+        for (let iter = 0; iter < iterations; iter++) {
+            for (let v = 0; v < vertCount; v++) {
+                const nbrs = neighborSets[v];
+                const cnt = nbrs.size;
+                if (cnt === 0) {
+                    smoothed[v * 3] = positions[v * 3];
+                    smoothed[v * 3 + 1] = positions[v * 3 + 1];
+                    smoothed[v * 3 + 2] = positions[v * 3 + 2];
+                    continue;
+                }
+                let sx = 0;
+                let sy = 0;
+                let sz = 0;
+                for (const n of nbrs) {
+                    sx += positions[n * 3];
+                    sy += positions[n * 3 + 1];
+                    sz += positions[n * 3 + 2];
+                }
+                const ax = sx / cnt;
+                const ay = sy / cnt;
+                const az = sz / cnt;
+                smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
+                smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
+                smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
             }
-            let sx = 0;
-            let sy = 0;
-            let sz = 0;
-            for (const n of nbrs) {
-                sx += positions[n * 3];
-                sy += positions[n * 3 + 1];
-                sz += positions[n * 3 + 2];
-            }
-            const ax = sx / cnt;
-            const ay = sy / cnt;
-            const az = sz / cnt;
-            smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
-            smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
-            smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
+            for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
         }
-        for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
     }
 
     // V9.42-d Crop-Pass — die äussersten `cropMargin` Zell-Ebenen in X/Z
@@ -17983,7 +18074,26 @@ class AnazhRealm {
     // (Edge-Vertices nach Crop+Smooth) — selten, aber sicher.
     _voxelGradientNormals(positions, sample, step, preGrid = null) {
         const normals = new Float32Array(positions.length);
-        const eps = step * 0.5;
+        // Welle D — die Trapeze. GEMESSEN (diag-normals): die Normalen sind
+        // sauber (0 % degeneriert), F verzerrt sie NICHT — die Trapeze sind die
+        // Cel-Quantisierung, die entlang der HOCH-frequenten Normalen-Variation
+        // fragmentiert (Schöpfer: „in 2.5D liefen die Cel-Stufen kontrastreich
+        // über GROSSE Regionen, seit 3D mit Überhängen brechen sie in Trapeze").
+        // In 2.5D zeigten alle Normalen nach oben → grosse Cel-Regionen; die 3D-
+        // Density-Gradienten-Normalen folgen der ±12-m-Roughness → fragmentiert.
+        // V17.103 — ROLLBACK des eps-Experiments (V17.100 0.5→1.5, V17.102 1.5→6).
+        // GEMESSEN am Browser (Schöpfer-Augen): KEINE der eps-Stufen änderte die
+        // Trapeze sichtbar — der Normal-eps ist NICHT der Trapeze-Hebel (die Wurzel
+        // ist die facettierte GEOMETRIE, die die Cel-Bänder bricht; sie heilt die
+        // Laplacian-Geometrie-Glättung, nicht der Normal-eps). UND eps=6 hat über
+        // `shadow.normalBias` den Schatten verschlechtert (die makro-geglättete
+        // Normale divergiert von der bumpigen Geometrie → der normalBias-Offset
+        // landet falsch → Schatten-Swimming beim Laufen). Also zurück auf 1.5 (der
+        // schlanke Wert, der die Mikro-Roughness leicht dämpft ohne den Schatten zu
+        // brechen). PERMANENTE LEHRE: ein pixel-blinder „Messwert" (−39 % lokale
+        // Licht-Δ) ist KEIN Beweis fürs FEEL — die Augen des Schöpfers sind die
+        // Wahrheit; wenn drei eps-Stufen nichts ändern, ist eps der falsche Hebel.
+        const eps = step * 1.5;
         // Schneller Trilinear-Sampler aus dem Grid. Wenn preGrid==null oder
         // Sample-Punkt out-of-bounds → fallback auf sample(x,y,z).
         let lookup;
@@ -18072,6 +18182,12 @@ class AnazhRealm {
             this._voxelNoise = new SimplexNoise(seed + ":voxel");
         }
         const sandNoise = this._voxelNoise;
+        const base = this.state.terrainBaseHeight || 0;
+        // V17.105 — Schnee-Schwelle als PROMINENZ (Relief über der kontinentalen
+        // Basis), nicht absolutes y. Browser-justierbar (HARTKODIERT + im Worker
+        // gespiegelt — eine Runtime-Tunable würde den Worker desyncen, V17.100).
+        const SNOW_PROM_START = 50;
+        const SNOW_PROM_FULL = 115;
         const n = pos.count;
         const colors = new Float32Array(n * 3);
         const ss = (e0, e1, x) => {
@@ -18109,7 +18225,24 @@ class AnazhRealm {
             mix(earth, ss(0.25, 0.85, f.lebendig));
             mix(lava, ss(0.38, 0.92, f.glut));
             mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
-            mix(snow, ss(12, 42, y));
+            // V17.105 — Schnee auf PROMINENZ (y − kontinentale Basis cont0), nicht
+            // absolutem y. Die alte ss(12,42,y) war kalibriert, als Gipfel bei ~40 m
+            // lagen; nach V14 (Terrain geweitet) + V17.96 (Berge 244 m) liegt der
+            // Median bei ~30 m → Schnee schmierte über ~53 % des Bodens (gemessen
+            // `diag-snowband`) = die stone(0.42)/snow(0.92)-Hochkontrast-Flecken, die
+            // unter Licht auseinanderdriften (fast-weißer Schnee erreicht die hellen
+            // Cel-Bänder, dunkler Stein bleibt dunkel → max. Kontrast tags, kollabiert
+            // nachts → „Trapeze tagsüber, weg nach 18:00"). Heilung (V14.5-Co-Tuning:
+            // wer die Terrain-Höhe ändert, MUSS die surf-relativen Schichten nachziehen):
+            // die Prominenz `y − cont0` (Relief über der λ7100-m-Basis) → Schnee-Caps
+            // NUR auf genuine Erhebungen, robust gegen die regionale Höhenvariation
+            // (nahe Region max-Prom 70 m, weite 156 m — kein absoluter Wert passt
+            // beiden). cont0 bit-identisch zum Worker (`attachFieldColors`).
+            const _wpX = sandNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
+            const _wpZ = sandNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
+            const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
+            const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
+            mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
             mix(sed, ss(-2, -14, y));
             // Strand: Glocken-Profil über dem Wasser. `_waterLevelAt` ist
             // O(1) für Ozean (häufig); seetiefe Vertices haben den See-
@@ -18232,11 +18365,15 @@ class AnazhRealm {
         // V9.24: ringRadius folgt dem Sicht-Ring-Regler (Default 4).
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
         if (lod >= 1) {
-            // LOD 1 — Half-Resolution (8× weniger Cells). dimY 62→68 (V14.6).
-            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 68, floorDrop: 90, lod: 1 };
+            // LOD 1 — Half-Resolution (8× weniger Cells). dimY 68→100 (Welle F:
+            // gewaltige Berge — die Hülle wuchs, der Band-Skip hält die Kosten).
+            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 100, floorDrop: 90, lod: 1 };
         }
-        // LOD 0 — Full-Resolution (Default, V14.6-Stand: dimY 124→136 für die hohe cont0-Welt)
-        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 136, floorDrop: 90, lod: 0 };
+        // LOD 0 — Full-Resolution. Welle F: dimY 136→200 (Decke base+270 m, für
+        // den uncapped cont0-Gipfel ~+235 m); der Band-Skip (`_voxelSampleDensity
+        // Grid`) sampelt NUR die Ebenen um die Oberfläche → trotz höherer Hülle
+        // billiger als zuvor. Vertikal-Span 200·1.8 = 100·3.6 = 360 m (LOD-invariant).
+        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 200, floorDrop: 90, lod: 0 };
     }
 
     // V9.88 (Welle Perf-3.b) — distance-basierte LOD-Entscheidung pro Chunk.
@@ -18335,6 +18472,38 @@ class AnazhRealm {
     // Vision-Kern (statt parallele Drainage-Karte + Quad-Mesh-Sandwich).
     static get CELL_STATE() {
         return Object.freeze({ AIR: 0, WATER: 1, SOLID: 2 });
+    }
+
+    // Welle C — der Schwarz-Floor für Flach-Farb-Strukturen (Eigen-Leuchten in
+    // der Materialfarbe, hebt Stein/Eisen nachts über Schwarz). Browser-justierbar.
+    static get STRUCTURE_EMISSIVE() {
+        return Object.freeze({ intensity: 0.07 });
+    }
+
+    // Welle D — die Kavitäts-AO (V15.2/V17.14) zeichnet Surface-Nets-Facetten-
+    // Kanten als „Treppenstufen/Trapeze"-Linien nach (Dev-Notiz :19227). Der
+    // Schöpfer-Befund „Trapeze tags, weg nach 18:00" ist zum Teil dieser AO-
+    // Term. Strength 0.6→0.4 gedämpft (die V17.12-triplanar-Textur trägt die
+    // Tiefe). Browser-justierbar für D0; die hellen Cel-Facetten (der Licht-
+    // getriebene Teil) sind der Cel-Levels-Slider + der Browser-Sign-off.
+    static get TERRAIN_AO() {
+        return Object.freeze({ strength: 0.4, cap: 0.18 });
+    }
+
+    // Welle J — die EINE geteilte Aerial-Perspektive (`_applyAerialOutput`), die
+    // ALLE opaken Ebenen identisch post-lighting aufrufen. heightWeight/heightCap =
+    // der Höhen-Melt zur Himmelsfarbe (scene.fog trägt die Distanz); microStrength/
+    // aoStrength/aoCap = die output-seitige Mikro-Tiefe für Flach-Farb-Strukturen
+    // (das Terrain hat seine triplanar-Schicht im colorNode). Alle browser-
+    // justierbar für den Schöpfer-Sign-off (pixel-blind headless).
+    static get AERIAL() {
+        return Object.freeze({
+            heightWeight: 0.6,
+            heightCap: 0.85,
+            microStrength: 0.1,
+            aoStrength: 0.35,
+            aoCap: 0.16,
+        });
     }
 
     // V9.71 (Welle C.1) — initialisiert das Wasser-Cell-Feld für einen Voxel-
@@ -18514,6 +18683,23 @@ class AnazhRealm {
         //    3×3 (`rim < +∞` ist immer false) → liefert nur den echten Body-Spiegel.
         const WATER = STATE.WATER;
         const AIR = STATE.AIR;
+        // Welle H — AQUIFER: ein Oberflächen-See (Spiegel über dem Wassertisch)
+        // flutet NICHT in die Höhlen darunter. Eine TIEFE Höhlen-Zelle (cy unter
+        // surf-18 = klar unter dem See-Becken) bleibt TROCKEN, wenn sie ÜBER dem
+        // globalen Wassertisch (`waterLevel`/Meeresspiegel) liegt; unter dem
+        // Wassertisch bleibt sie nass (Ozean/echter Aquifer). Heilt die „Wasser-
+        // Blasen an Höhlenwänden" + „Wasser klebt an Strukturen nahe am See" an
+        // der Wurzel (gemessen: Höhlen liefen vom See herab voll). Minecraft-1.18-
+        // Prinzip (lokaler Höhlen-Wassertisch statt See-Flutung). MUSS bit-
+        // identisch im Worker (Determinismus/Naht).
+        const aquiferY = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        const AQ_DEPTH = 18; // Tiefe unter surf, ab der die Aquifer-Regel greift
+        const colSurf = new Float64Array(dim * dim);
+        for (let k = 0; k < dim; k++) {
+            const cz = oz + (k + 0.5) * step;
+            for (let i = 0; i < dim; i++) colSurf[i + k * dim] = this._terrainMacroSurfaceY(ox + (i + 0.5) * step, cz);
+        }
+        const caveDry = (i, k, cy) => cy < colSurf[i + k * dim] - AQ_DEPTH && cy > aquiferY;
         const flLevel = new Float64Array(dimSq * dimY);
         const queue = [];
         const seedColumn = (i, k, lvl) => {
@@ -18523,7 +18709,7 @@ class AnazhRealm {
                 const cy = oy + (j + 0.5) * step;
                 if (cy > lvl) break;
                 const cidx = i + baseK + j * dimSq;
-                if (cells[cidx] === AIR) {
+                if (cells[cidx] === AIR && !caveDry(i, k, cy)) {
                     cells[cidx] = WATER;
                     flLevel[cidx] = lvl;
                     queue.push(cidx);
@@ -18552,9 +18738,10 @@ class AnazhRealm {
         // 4) BFS-Flood durch nicht-soliden Raum unter dem getragenen Spiegel.
         const pushN = (ni, nk, nj, lvl) => {
             if (ni < 0 || nk < 0 || ni >= dim || nk >= dim || nj < 0 || nj > jMax) return;
-            if (oy + (nj + 0.5) * step > lvl) return;
+            const cy = oy + (nj + 0.5) * step;
+            if (cy > lvl) return;
             const nidx = ni + nk * dim + nj * dimSq;
-            if (cells[nidx] === AIR) {
+            if (cells[nidx] === AIR && !caveDry(ni, nk, cy)) {
                 cells[nidx] = WATER;
                 flLevel[nidx] = lvl;
                 queue.push(nidx);
@@ -19027,8 +19214,156 @@ class AnazhRealm {
             density: TSL.uniform(0.0085),
             hazeBase: TSL.uniform(40.0),
             hazeTop: TSL.uniform(150.0),
+            // V17.106 — EYE-RELATIV: die Distanz-Gate des Höhen-Melts. Der Höhen-
+            // Term verblasst eine Oberfläche nur, wenn sie HOCH ÜBER dem Auge UND
+            // WEIT weg ist → stehst du auf dem Gipfel (Boden nah), kein Melt mehr.
+            // hazeNear = innerhalb dieser Distanz nie Höhen-Melt; hazeFar = die
+            // Distanz-Spanne bis zum vollen Faktor. Live-tunbar (Schöpfer-Sign-off).
+            hazeNear: TSL.uniform(70.0),
+            hazeFar: TSL.uniform(350.0),
+            // V17.107 — die 2.5D-LICHTUNG: wie stark die Terrain-SHADING-Normale
+            // zur Welt-Up-Achse geblendet wird (0 = volle 3D-Facetten, 1 = flach
+            // wie 2.5D). GEMESSEN (diag-facets): die Surface-Nets-Normalen haben
+            // dot(N,Sonne) STD 0.333 bimodal → die directional Sonne malt zwei
+            // Helligkeits-Flächen auf die EINE Albedo (die „Trapeze"); Flatten
+            // senkt die STD (0.5→0.24, 0.8→0.076) → grosse Cel-Regionen wie 2.5D.
+            // NUR Shading (Render-only), NICHT die Geometrie/Schatten. Live-tunbar:
+            //   anazhRealm.state.atmoUniforms.terrainFlatten.value = 0.6
+            // ODER per Slider „2.5D-Lichtung" (Einstellungen). Liest den
+            // persistierten Wert (V17.109-Slider), sonst Default 0.5.
+            terrainFlatten: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainFlatten)
+                    ? this.state.atmosphere.terrainFlatten
+                    : 1.0
+            ),
+            // WELLE J4-DEBUG — Browser-Isolations-Regler (default 1 = unverändert):
+            // `aoScale`=0 schaltet die Kavitäts-AO ab (der `fwidth`-Term, der jede
+            // Surface-Nets-Facetten-Kante als Linie zeichnet — mein Haupt-Verdacht
+            // für die Trapeze + das Lauf-Flackern, beide screen-space). So kannst du
+            // im Browser in EINEM Befehl messen, welcher Filter die Trapeze macht:
+            //   anazhRealm.state.atmoUniforms.aoScale.value = 0   // Kavitäts-AO aus
+            //   anazhRealm.state.postProcessingUniforms.localContrast.value = 0 // Post-FX-Schärfung aus
+            //   anazhRealm.setCelLevels(8)                        // Cel → glatt
+            // ODER per Slider (Einstellungen): „Kavitäts-AO" + „Kanten-Schärfe".
+            aoScale: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
+                    ? this.state.atmosphere.cavityAO
+                    : 1.0
+            ),
+            // V17.103-Regler „Oberflächen-Textur" (0..1): skaliert die triplanar Fels-/
+            // Boden-Striation (das „Holzmaserung"-Muster, das die Facetten betont). 0 =
+            // glatte Farbe (testet, ob die Striation die Trapeze mit-verursacht). Nur
+            // Terrain (colorNode, render-only — kein Naht-/Determinismus-Risiko).
+            triplanarScale: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.triplanar)
+                    ? this.state.atmosphere.triplanar
+                    : 1.0
+            ),
+            // V17.104-Regler „Farb-Variation" (0..1): skaliert die V17.12-Makro-Tint
+            // (warm/kühl-Patches λ~25 m + Sättigungs-Spreizung), die PRE-lighting auf
+            // die Albedo addiert wird → die „zwei Basisfarben, die unter Licht
+            // auseinanderdriften" (Schöpfer-Befund). 0 = uniforme Basisfarbe (testet,
+            // ob die Tint-Patches die Trapeze sind). Render-only.
+            tintScale: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.colorVar)
+                    ? this.state.atmosphere.colorVar
+                    : 1.0
+            ),
         };
         return this.state.atmoUniforms;
+    }
+
+    // ===== WELLE J — DIE EINE GETEILTE UMGEBUNGS-FUNKTION (Render-Harmonie) =====
+    // Schöpfer-Befund (04.06.): Strukturen/Bäume tragen bei rainy die Himmelsfarbe,
+    // reagieren ANDERS als das Terrain auf Licht/Nebel. GEMESSENE Wurzel: die acht
+    // Render-Ebenen lasen SIEBEN divergente Atmosphären — das Terrain melt'ete VOR
+    // dem Licht (colorNode, light-moduliert = atmosphärisch), die Strukturen NACH
+    // dem Licht (eigener outputNode, light-unabhängig = flach zur Himmelsfarbe) +
+    // ein redundanter Distanz-Term ÜBER scene.fog (Doppel-Nebel). Der wahre Weg
+    // (wie die Riesen — „ein Feld, viele Leser", analog zur Aura): EINE Funktion,
+    // die JEDE opake Ebene identisch POST-lighting aufruft. Physikalisch korrekt:
+    // die Aerial-Perspektive ist In-Streuung zwischen Oberfläche und Auge,
+    // unabhängig davon, wie die Oberfläche selbst beleuchtet ist → sie gehört auf
+    // die FERTIGE lit-Farbe (`TSL.output`), nicht auf die Albedo.
+    //
+    // Arbeitsteilung der Atmosphäre (zwei geteilte, uniforme Terme — keiner
+    // divergent): die DISTANZ-Haze trägt `scene.fog` (uniform für ALLE Materials,
+    // tag/nacht/wetter-synct via _dayNightApplyHemiAndFog); die HÖHEN-Aerial (was
+    // scene.fog nicht kann — Gipfel/hohe Bauten bleichen in den Himmel) trägt
+    // DIESE Funktion, identisch für alle Ebenen. Damit fällt der alte Doppel-Nebel
+    // (der Struktur-outputNode hatte einen eigenen Distanz-Term ZUSÄTZLICH zu
+    // scene.fog) weg.
+    //
+    // (J2) Optionale Mikro-Tiefe für FLACH-FARB-Strukturen: das Terrain trägt
+    // seine triplanar-Textur + Kavitäts-AO im colorNode (es hat vertexColors); die
+    // Flach-Farb-Bauten waren ohne sie „pappig". Hier OUTPUT-seitig (ein
+    // multiplikativer Shade auf die lit-Farbe) → bricht `material.color` NICHT (die
+    // dynamischen Marking-/Emotion-Farben bleiben heil — ein colorNode würde sie
+    // überschreiben, CLAUDE.md-Gotcha). Werte browser-justierbar via
+    // `AnazhRealm.AERIAL`. try/catch + `window.__aerialOutputError`-Marker (V17.12:
+    // ein still gefangener Node-Fehler verdeckt sonst die ganze Schicht).
+    _applyAerialOutput(mat, opts = {}) {
+        if (!mat) return;
+        try {
+            const _T = THREE.TSL;
+            const _au = this.state.atmoUniforms;
+            if (!_T || !_T.output || !_T.positionWorld || !_T.smoothstep || !_T.mix || !_au) return;
+            const cfg = AnazhRealm.AERIAL || {
+                heightWeight: 0.6,
+                heightCap: 0.85,
+                microStrength: 0.1,
+                aoStrength: 0.35,
+                aoCap: 0.16,
+            };
+            const _o = _T.output; // die FERTIGE lit-Farbe (post-lighting)
+            let _rgb = _o.xyz;
+            const _wp = _T.positionWorld;
+            // (J2) Mikro-Tiefe nur für die Flach-Farb-Strukturen (das Terrain trägt
+            // seine eigene reichere triplanar-Schicht im colorNode).
+            if (opts.microTexture && _T.mx_noise_float && _T.fwidth && _T.normalWorld && _T.float) {
+                const _n1 = _T.mx_noise_float(_wp.mul(0.33));
+                const _n2 = _T.mx_noise_float(_wp.mul(1.6));
+                const _det = _n1.mul(0.7).add(_n2.mul(0.3));
+                let _shade = _T.float(1.0).add(_det.mul(cfg.microStrength));
+                // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
+                // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
+                const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
+                // J4-DEBUG: aoScale (default 1) schaltet die Kavitäts-AO ab (=0).
+                const _aoStr = _au.aoScale ? _T.float(cfg.aoStrength).mul(_au.aoScale) : _T.float(cfg.aoStrength);
+                const _ao = _T.float(1.0).sub(_curv.mul(_aoStr).clamp(0.0, cfg.aoCap));
+                _rgb = _rgb.mul(_shade.mul(_ao));
+            }
+            // (J1) die Aerial-Perspektive — der HÖHEN-Melt zur Himmelsfarbe,
+            // IDENTISCH für jede Ebene (Terrain, Inseln, Strukturen, Bäume,
+            // Kreaturen). scene.fog trägt die DISTANZ; dieser Term die HÖHE.
+            //
+            // V17.106 — EYE-RELATIV (Schöpfer-Befund): „gehe ich auf einen hohen
+            // Berg, wird alles blass — in echt sind Berge aus der FERNE blass (die
+            // Gipfel), nicht wenn ich draufstehe". Die alte Form `smoothstep(.., _wp.y)`
+            // las die ABSOLUTE Welt-Höhe → ein Gipfel bleichte, egal wo das Auge war
+            // → kletterst du hoch, ist der Boden um dich auch hoch → alles blass.
+            // Physikalisch korrekt ist Aerial-Perspektive In-Streuung über die SICHT-
+            // LINIE (Distanz Oberfläche↔Auge), nicht die absolute Höhe. Heilung:
+            // der Melt hängt an der Höhe der Oberfläche ÜBER DEM AUGE × der Distanz
+            // zum Auge — ein ferner hoher Gipfel (aboveEye groß + dist groß) bleicht,
+            // der Boden, auf dem du stehst (aboveEye≈0 + nah), bleicht NICHT. Beide
+            // Größen sind kamera-relativ (`cameraPosition` aktualisiert pro Frame) →
+            // die Verblassung folgt deiner Position, wie die echte Atmosphäre.
+            const _cam = _T.cameraPosition;
+            const _aboveEye = _wp.y.sub(_cam.y); // < 0 (unter dem Auge) → smoothstep gibt 0
+            const _hazeNear = _au.hazeNear || _T.float(70.0);
+            const _hazeFar = _au.hazeFar || _T.float(350.0);
+            const _distF = _wp.sub(_cam).length().sub(_hazeNear).div(_hazeFar).clamp(0.0, 1.0);
+            const _haze = _T
+                .smoothstep(_au.hazeBase, _au.hazeTop, _aboveEye)
+                .mul(_distF)
+                .mul(cfg.heightWeight)
+                .clamp(0.0, cfg.heightCap);
+            _rgb = _T.mix(_rgb, _au.skyColor, _haze);
+            mat.outputNode = _T.vec4(_rgb, _o.w);
+        } catch (_e) {
+            if (typeof window !== "undefined") window.__aerialOutputError = String((_e && _e.message) || _e);
+        }
     }
 
     // Quelle für die fünf Call-Sites — `vertexColors`/`color`/`opacity`/`side`
@@ -19064,9 +19399,71 @@ class AnazhRealm {
         // alle Materials samplen die aktualisierten Pixel beim nächsten Frame.
         if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
 
+        // Welle C (Tiefe-Fundament) — der SCHWARZ-FLOOR für Flach-Farb-Strukturen.
+        // Schöpfer-Befund: Stein/Eisen-Bauten fallen nachts fast nach Schwarz,
+        // während das Terrain (V15.4-Aerial-Perspektive, blendet zur Sky-Farbe =
+        // ein Helligkeits-Boden unabhängig vom Licht) hell bleibt. Die Aerial-/
+        // Mikro-Schicht ist auf `vertexColors` gegated (nur Terrain) → die flachen
+        // Bauten sehen nur Directional+Ambient+Hemi (nachts ~0.6 × dunkles Albedo
+        // ≈ schwarz). Der NATIVE, render-pipeline-sichere Floor (kein TSL-/
+        // outputNode-Risiko, kein colorNode der die dynamischen Marking-/Emotion-
+        // Farben bräche — CLAUDE.md-Gotcha): ein schwaches Eigen-Leuchten in der
+        // EIGENEN Materialfarbe. Nachts hebt es die Bauten über Schwarz (ihr Ton
+        // glimmt schwach), tags von der Sonne überstimmt → kaum sichtbar. NUR
+        // Flach-Farb-Materials mit definierter Farbe (Terrain trägt die Aerial-
+        // Schicht selbst; Phantom/transparent bleibt unberührt). EHRLICH: das
+        // heilt „nachts schwarz"; die Aerial-MELT + Mikro-Textur der Strukturen
+        // (der „flach/pappig"-Teil) ist pixel-blind → Browser-iterierte Folge (C2).
+        // Werte browser-justierbar via `AnazhRealm.STRUCTURE_EMISSIVE`.
+        if (!opts.vertexColors && opts.color !== undefined && !opts.transparent && mat.emissive) {
+            const ef = AnazhRealm.STRUCTURE_EMISSIVE || { intensity: 0.07 };
+            mat.emissive.setHex(opts.color);
+            mat.emissiveIntensity = ef.intensity;
+        }
+
         // V15.4 - Aerial-Perspective-Uniforms sicherstellen (lazy, EIN Satz
         // fuer alle Terrain-Materials, vom Tag-Nacht-Wetter-Sync gespeist).
         this._ensureAtmoUniforms();
+
+        // Welle J — die EINE geteilte Aerial-Perspektive (`_applyAerialOutput`).
+        // ERSETZT den alten divergenten Pfad (V17.99-C2: ein eigener outputNode
+        // für Strukturen mit ANDERER Mathematik + redundantem Distanz-Term über
+        // scene.fog = Doppel-Nebel; das Terrain melt'ete VOR dem Licht im
+        // colorNode). Jetzt rufen Terrain, Inseln, Strukturen, Bäume, Kreaturen
+        // DIESELBE Funktion identisch POST-lighting → eine Atmosphäre, viele
+        // Leser. Mikro-Tiefe (J2) nur für Flach-Farb-Strukturen (das Terrain trägt
+        // sie im colorNode); transparente Phantome bleiben unberührt (UI-Element).
+        if (!opts.transparent) {
+            this._applyAerialOutput(mat, { microTexture: !opts.vertexColors && opts.color !== undefined });
+        }
+
+        // V17.107 — die 2.5D-LICHTUNG: die Terrain-SHADING-Normale zur Welt-Up-Achse
+        // blenden. GEMESSEN (diag-facets) am echten Stein-Hang: die Surface-Nets-
+        // Gradient-Normalen haben dot(N,Sonne) STD 0.333 mit BIMODALER Verteilung
+        // (grosser Dunkel-Cluster bei dot≈0 + Hell-Cluster bei dot≈1) → die
+        // directional Sonne malt ZWEI Helligkeits-Flächen auf die EINE Stein-Albedo
+        // = die „Trapeze"/Rauten, die der Schöpfer jagt (kein Albedo-Bug — eine
+        // Farbe, zwei Licht-Winkel; abends dominiert Ambient → verschmelzen). Der
+        // Schöpfer-Befund: „in 2.5D liefen die Cel-Stufen über GROSSE Regionen, seit
+        // 3D brechen sie in Trapeze". Heilung: die LICHTUNGS-Normale (nicht die
+        // Geometrie, nicht die Schatten-Map) Richtung oben blenden → die hochfrequente
+        // Facetten-Variation kollabiert (STD 0.333 → 0.24 @0.5 → 0.076 @0.8), grosse
+        // licht-reaktive Regionen wie in 2.5D. NUR Terrain/Inseln (vertexColors); die
+        // Strukturen/Bäume haben saubere Design-Geometrie. Render-only (kein Worker/
+        // Determinismus/Geometrie-Bake → KEIN eps-Schatten-Konflikt, V17.103); live-
+        // tunbar via `atmoUniforms.terrainFlatten`. try/catch + Marker (V17.12-Lehre).
+        if (opts.vertexColors) {
+            try {
+                const _Tn = THREE.TSL;
+                const _aun = this.state.atmoUniforms;
+                if (_Tn && _Tn.normalWorld && _Tn.normalize && _Tn.mix && _Tn.vec3 && _aun && _aun.terrainFlatten) {
+                    const _up = _Tn.vec3(0.0, 1.0, 0.0);
+                    mat.normalNode = _Tn.normalize(_Tn.mix(_Tn.normalWorld, _up, _aun.terrainFlatten));
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__terrainNormalError = String((_e && _e.message) || _e);
+            }
+        }
 
         // V15.1 - prozedurale Mikro-Textur (render-only): zwei Oktaven
         // 3D-Welt-Noise brechen die flache Vertex-Farbe in reiche Variation.
@@ -19102,7 +19499,29 @@ class AnazhRealm {
                 // Konkavitaeten (Edge-Tint a la Genshin/BotW). Staerke 1.6 /
                 // Cap 0.45 browser-justierbar.
                 if (_T.fwidth && _T.normalWorld) {
-                    const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
+                    // V17.108 — die Kavitäts-AO mit der V17.107-2.5D-Lichtung KONSISTENT.
+                    // Schöpfer-Befund nach V17.107: „je nach Blickrichtung taucht ein
+                    // Schattenfragment auf, das dieses Muster in dunkel wiedergibt, das
+                    // vorhin im Licht war". Wurzel: ich flattete nur die DIFFUS-Normale
+                    // (normalNode), aber die AO maß weiter `fwidth(normalWorld)` = die
+                    // un-geflattete GEOMETRIE-Normale → sie zeichnete die Facetten-Kanten
+                    // als VIEW-ABHÄNGIGE (`fwidth` = screen-space → „je nach Blickrichtung")
+                    // dunkle Linien nach, die nach dem Diffus-Flatten durchschlugen.
+                    // Heilung: die AO liest DIESELBE geflattete Lichtungs-Normale wie der
+                    // Diffus → die Facetten-Kanten kollabieren mit dem Flatten
+                    // (`fwidth(mix(N,up,tf))` → (1−tf)·`fwidth(N)`), ein Hauch Kontakt-
+                    // Schatten in echten Mulden bleibt. Live-tunbar via terrainFlatten.
+                    const _aoN =
+                        this.state.atmoUniforms &&
+                        this.state.atmoUniforms.terrainFlatten &&
+                        _T.normalize &&
+                        _T.mix &&
+                        _T.vec3
+                            ? _T.normalize(
+                                  _T.mix(_T.normalWorld, _T.vec3(0.0, 1.0, 0.0), this.state.atmoUniforms.terrainFlatten)
+                              )
+                            : _T.normalWorld;
+                    const _curv = _T.fwidth(_aoN).length().div(_T.fwidth(_wp).length().add(0.0001));
                     // V17.14 - weiter gedämpft (1.0/0.3 → 0.6/0.18): der Tag-Rest
                     // der „Treppenstufen" (Schöpfer-Audit) ist die `fwidth(normal
                     // World)`-AO, die JEDE Surface-Nets-Facetten-Kante als Linie
@@ -19110,7 +19529,14 @@ class AnazhRealm {
                     // triplanar-Textur trägt jetzt die Oberflächen-Tiefe, darum
                     // darf die AO schwächer sein: die Facetten-Linien verblassen,
                     // ein Hauch Kontakt-Schatten in echten Mulden bleibt.
-                    const _ao = _T.float(1.0).sub(_curv.mul(0.6).clamp(0.0, 0.18));
+                    const _aoCfg = AnazhRealm.TERRAIN_AO || { strength: 0.4, cap: 0.18 };
+                    // J4-DEBUG: aoScale (default 1) macht die Kavitäts-AO browser-
+                    // abschaltbar (=0 → der Facetten-Kanten-Zeichner aus).
+                    const _aoStr =
+                        this.state.atmoUniforms && this.state.atmoUniforms.aoScale
+                            ? _T.float(_aoCfg.strength).mul(this.state.atmoUniforms.aoScale)
+                            : _T.float(_aoCfg.strength);
+                    const _ao = _T.float(1.0).sub(_curv.mul(_aoStr).clamp(0.0, _aoCfg.cap));
                     _shade = _shade.mul(_ao);
                 }
                 let _albedo = _vc.mul(_shade);
@@ -19158,14 +19584,20 @@ class AnazhRealm {
                     // überdecken) — ±18 % statt der mutlosen V17.8-±5 %. Plus eine
                     // sanfte Sättigungs-Spreizung (Täler/Spitzen der Textur leicht
                     // satter/matter) → gemalte Tiefe statt flacher Fläche.
-                    const _texShade = _T.float(1.0).add(_detailN.mul(0.18));
+                    // V17.103 — `_tri` (Regler „Oberflächen-Textur", default 1) skaliert
+                    // die Striation-Stärke; 0 = glatte Farbe.
+                    const _tri =
+                        this.state.atmoUniforms && this.state.atmoUniforms.triplanarScale
+                            ? this.state.atmoUniforms.triplanarScale
+                            : _T.float(1.0);
+                    const _texShade = _T.float(1.0).add(_detailN.mul(_T.float(0.18).mul(_tri)));
                     _albedo = _albedo.mul(_texShade);
                     // Fels-Flächen bekommen zusätzlich einen kühlen Stein-Stich in
                     // den Schraffur-Tälern (Schattenfugen zwischen den Schichten).
                     const _crevice = _T
                         .smoothstep(_T.float(-0.2), _T.float(-0.7), _strataY)
                         .mul(_T.float(1.0).sub(_surf));
-                    _albedo = _albedo.mul(_T.float(1.0).sub(_crevice.mul(0.22)));
+                    _albedo = _albedo.mul(_T.float(1.0).sub(_crevice.mul(_T.float(0.22).mul(_tri))));
                 }
                 // V15.3.1 - Wiesen-Boden (render-only, die "weit auch Wiese"-
                 // Illusion): der Schoepfer-Befund war doppelt — Gras laedt nur
@@ -19205,43 +19637,31 @@ class AnazhRealm {
                 // ±0.05) — zusammen mit der triplanar-Textur bricht das die
                 // interpolierten Vertex-Trapeze sichtbar auf.
                 if (_T.vec3) {
+                    // V17.104 — `_cv` (Regler „Farb-Variation", default 1) skaliert die
+                    // warm/kühl-Patches + die Sättigungs-Spreizung; bei 0 bleibt die
+                    // reine Basisfarbe (kein Pre-lighting-Tint, der unter Licht driftet).
+                    const _cv =
+                        this.state.atmoUniforms && this.state.atmoUniforms.tintScale
+                            ? this.state.atmoUniforms.tintScale
+                            : _T.float(1.0);
                     const _tintLo = _T.mx_noise_float(_wp.mul(0.04));
                     const _tintN = _tintLo.mul(0.5).add(0.5);
-                    _albedo = _albedo.add(_T.vec3(0.09, 0.025, -0.07).mul(_tintLo));
+                    _albedo = _albedo.add(_T.vec3(0.09, 0.025, -0.07).mul(_tintLo).mul(_cv));
                     // leichte Saettigungs-Spreizung nach dem grossraeumigen Noise.
+                    // Bei _cv=0 ist der Faktor 1.0 (Identität → keine Spreizung).
                     const _lumA = _albedo.x.mul(0.3).add(_albedo.y.mul(0.59)).add(_albedo.z.mul(0.11));
-                    _albedo = _T.mix(_T.vec3(_lumA, _lumA, _lumA), _albedo, _T.float(0.9).add(_tintN.mul(0.25)));
+                    const _satF = _T.float(1.0).add(_T.float(0.9).add(_tintN.mul(0.25)).sub(1.0).mul(_cv));
+                    _albedo = _T.mix(_T.vec3(_lumA, _lumA, _lumA), _albedo, _satF);
                 }
-                // V15.4 - Aerial Perspective (der "brutale Tiefe aus simplem
-                // System"-Hebel): ferne UND hohe Flaechen verschleiern
-                // exponentiell zur Himmelsfarbe. EIN Term, den die ganze Szene
-                // teilt (Terrain hier, Gras/Strukturen via scene.fog) -> alles
-                // schmilzt in DIESELBE atmosphaerische Stimmung = Tiefe + die
-                // Harmonie, die der Schoepfer vermisste. Distanz aus
-                // positionView.length() (Kamera-Abstand), Hoehen-Term laesst
-                // Gipfel in den Himmel ausbleichen (Berg-Silhouetten statt
-                // harter Fels-Kanten). Die Sky-Farbe + Dichte kommen aus
-                // state.atmoUniforms (vom Tag-Nacht-Wetter-Sync gespeist, EINE
-                // Quelle = die Fog-Farbe) -> tag/nacht/wetter-kohaerent. Reine
-                // Render-Albedo, try/catch-sicher. WICHTIG: scene.fog deckt
-                // schon die DISTANZ-Haze ab (alle Materials teilen sie). Dieser
-                // Term ist HOEHEN-DOMINANT — er ergaenzt, was scene.fog NICHT
-                // kann: hohe Gipfel bleichen in den Himmel aus (Berg-Silhouette
-                // statt harter Fels-Kante) + ein dezenter Distanz-Anteil fuer
-                // die Form-Aufloesung. Kein Doppel-Fog (nur der Hoehen-Teil ist
-                // stark), darum kein Ueber-Abdunkeln.
-                if (_T.positionView && _T.exp && this.state.atmoUniforms) {
-                    const _au = this.state.atmoUniforms;
-                    const _viewDist = _T.positionView.length();
-                    const _distHaze = _T
-                        .float(1.0)
-                        .sub(_T.exp(_viewDist.mul(_au.density).negate()))
-                        .clamp(0.0, 1.0)
-                        .mul(0.35);
-                    const _heightHaze = _T.smoothstep(_au.hazeBase, _au.hazeTop, _wp.y);
-                    const _haze = _distHaze.add(_heightHaze.mul(0.6)).clamp(0.0, 0.85);
-                    _albedo = _T.mix(_albedo, _au.skyColor, _haze);
-                }
+                // V15.4 → WELLE J: die Aerial-Perspektive ist NICHT mehr hier
+                // (pre-lighting, auf der Albedo) — sie wandert in die EINE geteilte
+                // `_applyAerialOutput` (post-lighting, IDENTISCH für alle Ebenen).
+                // Das war die Wurzel der Schöpfer-Disharmonie: das Terrain melt'ete
+                // VOR dem Licht (atmosphärisch), die Strukturen NACH dem Licht
+                // (flach) → sie schmolzen verschieden. Jetzt melten beide identisch
+                // post-lighting. Der colorNode trägt nur noch die ALBEDO (Vertex-
+                // Farbe + triplanar-Textur + Wiese + Tint); die Atmosphäre ist eine
+                // Output-Stufe (siehe `_applyAerialOutput`, am Ende des Builders).
                 mat.colorNode = _T.vec4(_albedo, 1.0);
             }
         } catch (_e) {
@@ -19305,9 +19725,11 @@ class AnazhRealm {
             );
         }
         // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
-        // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
-        // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
-        // ab. V9.81: `preDensity` reicht das geteilte Grid herein.
+        // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`, smoothIters=1.
+        // (V17.103: das 2-Iterationen-Geometrie-Glätten gegen die Trapeze brauchte
+        // einen 2-Zellen-pad im GETEILTEN Density-Grid [auch von den Wasser-Cells
+        // bei dim+4 indiziert] → ein Mehr-Konsumenten-Umbau, KEIN Terrain-Edit;
+        // zurückgerollt [Seam-Riss], als eigener Bogen zu bauen.)
         const geom = this._voxelChunkGeometry(
             ox - step,
             oy,
@@ -19500,7 +19922,24 @@ class AnazhRealm {
             const _pcx = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cx : cx;
             const _pcz = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cz : cz;
             const _gr = Math.max(Math.abs(cx - _pcx), Math.abs(cz - _pcz));
-            if (_gr <= 2) this._buildVoxelChunkGrass(cx, cz);
+            if (_gr <= 2) {
+                const _gKey = `${cx},${cz}`;
+                const _gd = this.state.grassDirtyChunks;
+                const _hasGrass = this.state.voxelChunkGrass && this.state.voxelChunkGrass.has(_gKey);
+                if (_gd && _gd.has(_gKey)) {
+                    // Welle G-fix — die Oberfläche änderte sich (Carve/Fill): das
+                    // (in _disposeVoxelChunk mit keepGrass=false entfernte) Gras
+                    // SYNCHRON neu bauen → kein Flackern, nur DIESER Bereich.
+                    _gd.delete(_gKey);
+                    this._buildVoxelChunkGrass(cx, cz);
+                } else if (!_hasGrass) {
+                    // Welle A — Streaming/Erst-Build (kein Gras vorhanden): deferred
+                    // (≤1/Frame, kein Flackern da kein altes Gras da war).
+                    this._enqueueGrass(cx, cz);
+                }
+                // sonst: Gras existiert + Oberfläche unverändert (Nexus-Spawn/
+                // Skirt/LOD) → es wurde gar nicht disposed → BEHALTEN.
+            }
         }
         // V17.1 — FÜLLE/DICHTE: die artenreiche Klein-Vegetation (Blüten/Farne/
         // Gestrüpp/Fels/Sporen) aus den vier worldFieldAt-Feldern. DEFERRED (wie
@@ -19583,9 +20022,13 @@ class AnazhRealm {
         const oldEntry = this.state.voxelChunks.get(key);
         const useLod = lod !== null ? lod : oldEntry && Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0;
         const forceSync = opts.forceSync === true || this._voxelChunkIsPlayerChunk(cx, cz);
+        // Welle G-fix — das Gras nur disposen, wenn die Oberfläche sich änderte
+        // (Carve/Fill markierte den Chunk grass-dirty). Sonst behalten (kein
+        // Flackern bei Nexus-Spawn/Skirt/LOD-Rebuild).
+        const keepGrass = !(this.state.grassDirtyChunks && this.state.grassDirtyChunks.has(key));
         if (forceSync) {
             // V9.40-d — dispose-before-build (kein Loch, Sync-Build same-frame).
-            if (oldEntry) this._disposeVoxelChunk(key);
+            if (oldEntry) this._disposeVoxelChunk(key, keepGrass);
             const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: true });
             return this._completeVoxelRebuild(key, cx, cz, useLod, fresh);
         }
@@ -19599,7 +20042,7 @@ class AnazhRealm {
             return false;
         }
         // Build fertig/fail → atomarer Swap: alten erst JETZT disposen.
-        if (oldEntry) this._disposeVoxelChunk(key);
+        if (oldEntry) this._disposeVoxelChunk(key, keepGrass);
         return this._completeVoxelRebuild(key, cx, cz, useLod, fresh);
     }
 
@@ -19687,7 +20130,7 @@ class AnazhRealm {
 
     // Räumt einen Voxel-Chunk: Kollision, Mesh, Geometrie, Material.
     // Idempotent.
-    _disposeVoxelChunk(key) {
+    _disposeVoxelChunk(key, keepGrass = false) {
         if (!this.state.voxelChunks) return;
         const entry = this.state.voxelChunks.get(key);
         if (entry && entry.mesh) {
@@ -19697,7 +20140,11 @@ class AnazhRealm {
             this._queueGeometryDispose(entry.mesh.geometry);
             // V9.84 Perf-1.a — Material NICHT disposen: Singleton-geteilt.
         }
-        this._disposeVoxelChunkGrass(key);
+        // Welle G-fix — bei einem Rebuild, der die Oberfläche NICHT ändert
+        // (Struktur-Spawn/Skirt/LOD), das Gras BEHALTEN (kein Dispose → kein
+        // Flackern, kein 34-ms-Rebuild). Prune + oberflächen-ändernder Rebuild
+        // disposen normal (keepGrass=false).
+        if (!keepGrass) this._disposeVoxelChunkGrass(key);
         // V17.1 — die Klein-Vegetation des Chunks zurück in die Art-Pools.
         this._disposeVoxelChunkScatter(key);
         // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh
@@ -19708,6 +20155,8 @@ class AnazhRealm {
         if (this.state.pendingWaterIso) this.state.pendingWaterIso.delete(key);
         // V17.1 — ausstehenden Scatter-Build für diesen Chunk verwerfen.
         if (this.state.pendingScatter) this.state.pendingScatter.delete(key);
+        // Welle A — ausstehenden Gras-Build für diesen Chunk verwerfen.
+        if (this.state.pendingGrass) this.state.pendingGrass.delete(key);
         this.state.voxelChunks.delete(key);
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
@@ -21027,6 +21476,71 @@ class AnazhRealm {
     // Out + deckt exakt die Region, die `_buildLakeMesh` mit Wasser deckt;
     // (2) absorbierte Seen (`level ≤ waterLevel+2`, ohne eigene Plane) zählen
     // nicht — die Meeres-Plane vertritt sie. Sonst klafften Optik + Physik.
+    // Welle B (Tiefe-Fundament) — die 3D-Wasser-WAHRHEIT an einer Welt-Position.
+    // Liest die geflutete Zelle (`entry.waterCells`, AIR/WATER/SOLID) des
+    // gestreamten Chunks am 3D-Index `i + k·dim + j·dim·dim`. Die Wasser-Cells
+    // leben IMMER auf LOD0 (V9.93 — uniform für die naht-freie Iso), darum die
+    // LOD0-Config unabhängig vom Render-LOD des Chunks. Gibt den Zell-Zustand
+    // (0/1/2) zurück ODER null, wenn der Chunk (noch) nicht gestreamt ist / die
+    // Position außerhalb der Hülle liegt → der Aufrufer fällt auf die 2.5D-
+    // Spalte zurück (Backward-Compat am Streaming-Rand). KEIN Re-Raten: die
+    // Zelle IST die Wahrheit (V13.13.2 — ein zweiter Konsument LIEST sie).
+    _waterCellAt(x, y, z) {
+        if (!this.state.voxelChunks) return null;
+        const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
+        const cx = Math.floor(x / span);
+        const cz = Math.floor(z / span);
+        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
+        if (!entry || !entry.waterCells) return null;
+        const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
+        const i = Math.floor((x - cx * span) / step);
+        const k = Math.floor((z - cz * span) / step);
+        const j = Math.floor((y - oy) / step);
+        if (i < 0 || k < 0 || j < 0 || i >= dim || k >= dim || j >= dimY) return null;
+        return entry.waterCells[i + k * dim + j * dim * dim];
+    }
+
+    // Welle B + H1 — der Wasser-Kontext am Spieler aus den 3D-Cells (ersetzt die
+    // 2.5D-`_hydroWaterLevelAt`-Spalte für den Auftrieb). Liest die Wasser-Cells
+    // in der Spieler-Spalte: ist eine Wasserzelle in der Körper-Höhe (Füße
+    // yFeet .. Kopf yFeet+1.8)? Wenn ja, scannt aufwärts bis zur ersten Nicht-
+    // Wasser-Zelle → der ECHTE Spiegel DIESES Wasserkörpers (ein Bergsee bei +8
+    // gibt +8, nicht den Meeresspiegel −3, den `_hydroWaterLevelAt` zurückgibt).
+    // Returnt `{ submerged, surfaceY }` oder null (kein gestreamter Chunk →
+    // 2.5D-Fallback am Streaming-Rand). Wasser-Cells leben auf LOD0 (V9.93).
+    _playerWaterContext(x, yFeet, z) {
+        if (!this.state.voxelChunks) return null;
+        const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
+        const cx = Math.floor(x / span);
+        const cz = Math.floor(z / span);
+        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
+        if (!entry || !entry.waterCells) return null;
+        const cells = entry.waterCells;
+        const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
+        const i = Math.floor((x - cx * span) / step);
+        const k = Math.floor((z - cz * span) / step);
+        if (i < 0 || k < 0 || i >= dim || k >= dim) return null;
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        const colBase = i + k * dim;
+        const cellJ = (j) => cells[colBase + j * dim * dim];
+        // Körper-Spanne Füße..Kopf: eine Wasserzelle darin → im Wasser.
+        const jFeet = Math.max(0, Math.floor((yFeet - oy) / step));
+        const jHead = Math.min(dimY - 1, Math.floor((yFeet + 1.8 - oy) / step));
+        let bodyWaterJ = -1;
+        for (let j = jFeet; j <= jHead; j++) {
+            if (cellJ(j) === WATER) {
+                bodyWaterJ = j;
+                break;
+            }
+        }
+        if (bodyWaterJ < 0) return { submerged: false, surfaceY: null };
+        // Aufwärts bis zum Spiegel DIESES Wasserkörpers (erste Nicht-Wasser-Zelle).
+        let topJ = bodyWaterJ;
+        while (topJ + 1 < dimY && cellJ(topJ + 1) === WATER) topJ++;
+        const surfaceY = oy + (topJ + 1) * step; // Oberkante der obersten Wasserzelle
+        return { submerged: true, surfaceY };
+    }
+
     _hydroWaterLevelAt(x, z) {
         const base = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
         const hydro = this.state.hydrosphere;
@@ -22275,6 +22789,49 @@ class AnazhRealm {
         this.state.pendingScatter.add(`${cx},${cz}`);
     }
 
+    // Welle A — Gras deferred (GEMESSEN: 34 ms/Chunk, der dominante Rebuild-
+    // Posten). Spiegel von `_enqueueScatter`/`_tickPendingScatter`: enqueue
+    // statt synchron im Finalize bauen → kein 34-ms-Aufschlag auf den Streaming-
+    // /Nexus-Spawn-Drain-Frame.
+    _enqueueGrass(cx, cz) {
+        if (!this.state.pendingGrass) this.state.pendingGrass = new Set();
+        this.state.pendingGrass.add(`${cx},${cz}`);
+    }
+
+    // Per-Frame-Tick: baut ≤maxPerFrame Gras-Chunks, NAHE zuerst; ferne (Ring
+    // > 2, der V16.1-Gras-Ring) aus der Queue werfen. maxPerFrame=1 (Default),
+    // weil EIN Gras-Build ~34 ms kostet — nie zwei in einem Frame.
+    _tickPendingGrass(maxPerFrame = 1) {
+        const queue = this.state.pendingGrass;
+        if (!queue || queue.size === 0) return 0;
+        const lpc = this.state.lastPlayerVoxelChunk;
+        const GRASS_RING = 2; // V16.1: Gras baut nur bei Chunk-Distanz ≤ 2
+        let keys = [...queue];
+        if (lpc) {
+            const distOf = (k) => {
+                const ci = k.indexOf(",");
+                const kx = parseInt(k.slice(0, ci), 10);
+                const kz = parseInt(k.slice(ci + 1), 10);
+                return Math.max(Math.abs(kx - lpc.cx), Math.abs(kz - lpc.cz));
+            };
+            for (const k of keys) if (distOf(k) > GRASS_RING) queue.delete(k);
+            keys = [...queue].sort((a, b) => distOf(a) - distOf(b));
+        }
+        let built = 0;
+        for (const key of keys) {
+            if (built >= maxPerFrame) break;
+            queue.delete(key);
+            if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+            if (this.state.voxelChunkGrass && this.state.voxelChunkGrass.has(key)) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            this._buildVoxelChunkGrass(cx, cz);
+            built++;
+        }
+        return built;
+    }
+
     // Per-Frame-Tick: streut ≤maxPerFrame Chunks, NAHE zuerst (priorisiert wie
     // der Wasser-Iso-Tick), ferne (jenseits maxRing — dort baut die Streuung
     // ohnehin nichts) aus der Queue werfen → kein unbegrenztes Wachstum.
@@ -22648,6 +23205,20 @@ class AnazhRealm {
         // Cell-Feld klassifiziert die neue Lage (carve unter waterLevel →
         // WATER, fill → SOLID), der Iso-Mesher rendert. Kein Hydro-Recompute
         // mehr (V9.67-Maschinerie ist weg, V9.74-Erkenntnis: Cell ist DERIVED).
+        // Welle G-fix — der Carve/Fill änderte die OBERFLÄCHE → die Gras-Chunks
+        // im xz-Footprint müssen ihr Gras neu bauen (synchron im Rebuild → kein
+        // Flackern). Die Skirt-Nachbarn (von `_remeshVoxelChunksAround` mit-dirty,
+        // aber Oberfläche unverändert) behalten ihr Gras → nur DIESER Bereich
+        // resettet, nicht die ganze Wiese.
+        if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
+        const { span } = this._voxelChunkConfig();
+        const fcx0 = Math.floor((x - radius) / span);
+        const fcx1 = Math.floor((x + radius) / span);
+        const fcz0 = Math.floor((z - radius) / span);
+        const fcz1 = Math.floor((z + radius) / span);
+        for (let fcx = fcx0; fcx <= fcx1; fcx++) {
+            for (let fcz = fcz0; fcz <= fcz1; fcz++) this.state.grassDirtyChunks.add(`${fcx},${fcz}`);
+        }
         this._remeshVoxelChunksAround(x, z, radius);
         if (typeof this.saveState === "function") this.saveState();
         return true;
@@ -22801,6 +23372,9 @@ class AnazhRealm {
         // V12.0-perf.h — der Rebuild enqueued den Wasser-Iso (deferred); die
         // Test-Naht braucht ihn sofort → die Wasser-Iso-Queue mit-drainen.
         this._drainPendingWaterIso();
+        // Welle A — desgleichen das deferred Gras (sonst sehen Tests, die nach
+        // dem Drain `voxelChunkGrass` lesen, leere Chunks).
+        this._drainPendingGrass();
         return built;
     }
 
@@ -23086,6 +23660,23 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
                         ? this.state.atmosphere.waterCull
                         : 0.0025,
+                // J4-Regler: Kavitäts-AO-Stärke (0..1) + Kanten-Schärfe (Post-FX local-contrast, 0..1).
+                cavityAO:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
+                        ? this.state.atmosphere.cavityAO
+                        : 1.0,
+                edgeSharp:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
+                        ? this.state.atmosphere.edgeSharp
+                        : 0.5,
+                triplanar:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.triplanar)
+                        ? this.state.atmosphere.triplanar
+                        : 1.0,
+                colorVar:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.colorVar)
+                        ? this.state.atmosphere.colorVar
+                        : 1.0,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -25175,6 +25766,18 @@ class AnazhRealm {
             if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
             const wc = Number(state.atmosphere.waterCull);
             if (Number.isFinite(wc)) this.state.atmosphere.waterCull = Math.max(0.0, Math.min(0.05, wc));
+            // J4-Regler (default 1.0 / 0.5 = unverändert) + an die Uniforms pushen,
+            // falls sie schon erzeugt sind (sonst liest `_ensure*` sie beim Bau).
+            const ao = Number(state.atmosphere.cavityAO);
+            if (Number.isFinite(ao)) this.setCavityAO(Math.max(0, Math.min(2, ao)));
+            const es = Number(state.atmosphere.edgeSharp);
+            if (Number.isFinite(es)) this.setEdgeSharp(Math.max(0, Math.min(1, es)));
+            const tri = Number(state.atmosphere.triplanar);
+            if (Number.isFinite(tri)) this.setSurfaceTexture(Math.max(0, Math.min(4, tri)));
+            const cv = Number(state.atmosphere.colorVar);
+            if (Number.isFinite(cv)) this.setColorVariation(Math.max(0, Math.min(2, cv)));
+            const tf = Number(state.atmosphere.terrainFlatten);
+            if (Number.isFinite(tf)) this.setTerrainFlatten(Math.max(0, Math.min(1, tf)));
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -35588,6 +36191,81 @@ class AnazhRealm {
         return m;
     }
 
+    // WELLE J4-Regler — die Kavitäts-AO-Stärke (0 = aus … 1 = voll). Die
+    // `fwidth(normalWorld)`-AO zeichnet jede Surface-Nets-Facetten-Kante als
+    // Linie (screen-space → flackert beim Laufen) — der Haupt-Verdacht für die
+    // Trapeze. Live justierbar, bis sie weg sind, ohne pixel-blindes Raten.
+    setCavityAO(scale) {
+        // V17.109 — Headroom: Bereich 0..2 (200 %), damit 100 % die Mitte ist
+        // (Schöpfer-Wunsch „nicht am Anschlag"). >1 verstärkt die AO über den
+        // Default; der aoCap im Shader bleibt der Sicherheits-Deckel.
+        const v = Math.max(0, Math.min(2, Number(scale)));
+        const m = Number.isFinite(v) ? v : 1.0;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.cavityAO = m;
+        if (this.state.atmoUniforms && this.state.atmoUniforms.aoScale) this.state.atmoUniforms.aoScale.value = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // V17.109 — die 2.5D-LICHTUNG als sichtbarer Slider (war nur Konsole). Wie
+    // stark die Terrain-Shading-Normale zur Up-Achse geblendet wird (0 = volle
+    // 3D-Facetten, 1 = flach wie 2.5D). GEMESSEN (diag-facets): senkt die
+    // dot(N,L)-Streuung (0.5→0.24, 0.8→0.076) → die Facetten-Rauten kollabieren
+    // zu grossen Cel-Regionen. Der HAUPT-Hebel gegen das Facetten-Muster; bei
+    // hartem Cel (Stufen<8) muss er hoch sein, damit die Bänder über GROSSE
+    // Regionen laufen statt über einzelne Facetten.
+    setTerrainFlatten(scale) {
+        const v = Math.max(0, Math.min(1, Number(scale)));
+        const m = Number.isFinite(v) ? v : 0.5;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.terrainFlatten = m;
+        if (this.state.atmoUniforms && this.state.atmoUniforms.terrainFlatten)
+            this.state.atmoUniforms.terrainFlatten.value = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // V17.104-Regler — die Farb-Variation (V17.12-Makro-Tint-Stärke, 0..1). 0 = reine
+    // Basisfarbe (testet, ob die warm/kühl-Patches die „zwei Basisfarben" sind, die
+    // unter Licht zu Trapeze-Parzellen auseinanderdriften — Schöpfer-Diagnose).
+    setColorVariation(scale) {
+        const v = Math.max(0, Math.min(2, Number(scale))); // V17.109 Headroom 0..2
+        const m = Number.isFinite(v) ? v : 1.0;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.colorVar = m;
+        if (this.state.atmoUniforms && this.state.atmoUniforms.tintScale) this.state.atmoUniforms.tintScale.value = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // V17.103-Regler — die Oberflächen-Textur (triplanar Striation-Stärke, 0..1).
+    // 0 = glatte Terrain-Farbe (testet, ob die „Holzmaserung" die Trapeze betont).
+    setSurfaceTexture(scale) {
+        const v = Math.max(0, Math.min(4, Number(scale))); // V17.109 Headroom 0..4 (Schöpfer liebt die Striation, will >200%)
+        const m = Number.isFinite(v) ? v : 1.0;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.triplanar = m;
+        if (this.state.atmoUniforms && this.state.atmoUniforms.triplanarScale)
+            this.state.atmoUniforms.triplanarScale.value = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // WELLE J4-Regler — die Kanten-Schärfe (Post-FX local-contrast/Unsharp).
+    // Verstärkt Helligkeits-Kanten (schärft Cel-/Facetten-Grenzen NACH, screen-
+    // space → flackert) — der zweite Verdacht. 0 = aus, 0.5 = Default (V17.13).
+    setEdgeSharp(amount) {
+        const v = Math.max(0, Math.min(1, Number(amount)));
+        const m = Number.isFinite(v) ? v : 0.5;
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.edgeSharp = m;
+        if (this.state.postProcessingUniforms && this.state.postProcessingUniforms.localContrast)
+            this.state.postProcessingUniforms.localContrast.value = m;
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
     // dem Welt-Feld an Position (x, z)? Dot-Product über die 4 Achsen des
     // Welt-Feldes. Resultat 0..1 (sum / 4 da MAX-aggregierte Tags ebenfalls
@@ -35845,6 +36523,26 @@ class AnazhRealm {
             const cx = parseInt(key.slice(0, comma), 10);
             const cz = parseInt(key.slice(comma + 1), 10);
             this._buildVoxelChunkWaterIsoSurface(cx, cz);
+            built++;
+        }
+        return built;
+    }
+
+    // Welle A — die Gras-Queue synchron leeren (Test-Naht, Spiegel von
+    // `_drainPendingWaterIso`): das Gras ist seit Welle A deferred, die Tests
+    // brauchen es sofort nach einem Drain/Streaming.
+    _drainPendingGrass() {
+        const queue = this.state.pendingGrass;
+        if (!queue || queue.size === 0) return 0;
+        let built = 0;
+        for (const key of [...queue]) {
+            queue.delete(key);
+            if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+            if (this.state.voxelChunkGrass && this.state.voxelChunkGrass.has(key)) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            this._buildVoxelChunkGrass(cx, cz);
             built++;
         }
         return built;
@@ -42031,11 +42729,24 @@ class AnazhRealm {
         const sunDist = 380;
         const sun = this.state.sunMesh;
         const moon = this.state.moonMesh;
+        // WELLE J3 — die Himmelskörper folgen der KAMERA, nicht dem Welt-Ursprung.
+        // GEMESSENE Wurzel (Schöpfer-Befund „Sonne/Mond/Planeten rasen neben mir
+        // durchs Terrain, wenn ich 1000 Einheiten laufe; die Sonne verschwindet
+        // wenn ich sie zentriere"): Sonne/Mond/Planeten saßen an ABSOLUTEN Welt-
+        // Positionen um den Ursprung (cos·380) → bei fernem Spieler standen sie auf
+        // endlicher Distanz NEBEN/HINTER ihm → vom Terrain verdeckt (verschwindet
+        // beim Hinschauen) + an der falschen Himmelsstelle (der Wasser-Glitzer-
+        // Versatz J3: der sichtbare Sonnen-MESH ≠ die `sunDir`-Lichtrichtung). Der
+        // Profi-Weg (wie das Stern-Feld längst): nur die RICHTUNG (skyOffset) hier
+        // setzen; `_loopRender` addiert pro Frame `camera.position` → der
+        // Himmelskörper steht immer in derselben Himmelsrichtung wie die Sonne, die
+        // das Licht + das Wasser-Glitzern speist (alle aus `_dayNightSunDirection`).
         if (sun) {
             const sx = Math.cos(angle) * sunDist;
             const sy = Math.sin(angle) * sunDist;
             const sz = Math.sin(angle * 0.5) * sunDist * 0.4;
-            sun.position.set(sx, sy, sz);
+            if (!sun.userData.skyOffset) sun.userData.skyOffset = new THREE.Vector3();
+            sun.userData.skyOffset.set(sx, sy, sz);
             sun.visible = sy > -10; // unter Horizont ausblenden
             // Sonne dimmt mit Wetter (rainy = trüber Schein)
             if (sun.material && sun.material.color) {
@@ -42051,9 +42762,29 @@ class AnazhRealm {
             const mx = Math.cos(moonAngle) * sunDist;
             const my = Math.sin(moonAngle) * sunDist;
             const mz = Math.sin(moonAngle * 0.5) * sunDist * 0.4;
-            moon.position.set(mx, my, mz);
+            if (!moon.userData.skyOffset) moon.userData.skyOffset = new THREE.Vector3();
+            moon.userData.skyOffset.set(mx, my, mz);
             moon.visible = my > -10;
         }
+    }
+
+    // WELLE J3 — die Himmelskörper (Sonne·Mond·Planeten) pro Render-Frame an die
+    // Kamera heften: Weltposition = Kamera + skyOffset (die Orbit-/Fix-Richtung).
+    // Im `_loopRender` SYNCHRON nach skybox/starField (V8.26-Lehre: vor dem
+    // Camera-Update kopiert → 1 Frame Nachlauf/Rauschen). Damit stehen sie immer
+    // an derselben Himmelsstelle, egal wie weit der Spieler vom Ursprung läuft.
+    _followCelestialBodies() {
+        const cam = this.state.camera;
+        if (!cam) return;
+        const pin = (obj) => {
+            if (obj && obj.userData && obj.userData.skyOffset) {
+                obj.position.copy(cam.position).add(obj.userData.skyOffset);
+            }
+        };
+        pin(this.state.sunMesh);
+        pin(this.state.moonMesh);
+        const planets = this.state.planets;
+        if (planets) for (let i = 0; i < planets.length; i++) pin(planets[i]);
     }
 
     // Treibt timeOfDay vorwärts basierend auf realer Echtzeit + dayLength.
@@ -42732,6 +43463,86 @@ class AnazhRealm {
                 const raw = parseInt(wcS.value, 10) / 10000;
                 const v = this.setWaterCull(raw);
                 if (wcVal) wcVal.textContent = v.toFixed(4);
+            });
+        }
+        // V17.109 — die 2.5D-Lichtung (0..100 % → terrainFlatten 0..1). Der HAUPT-
+        // Hebel gegen die Facetten-Rauten (blendet die Shading-Normale zur Up-Achse).
+        const tfS = document.getElementById("slider-flatten");
+        const tfVal = document.getElementById("slider-flatten-val");
+        if (tfS) {
+            const f0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainFlatten)
+                    ? this.state.atmosphere.terrainFlatten
+                    : 1.0;
+            tfS.value = String(Math.round(f0 * 100));
+            if (tfVal) tfVal.textContent = `${Math.round(f0 * 100)} %`;
+            tfS.addEventListener("input", () => {
+                const pct = parseInt(tfS.value, 10);
+                this.setTerrainFlatten(pct / 100);
+                if (tfVal) tfVal.textContent = `${pct} %`;
+            });
+        }
+        // J4-Regler — Kavitäts-AO (0..200 % → aoScale 0..2) + Kanten-Schärfe
+        // (0..100 → local-contrast 0..1). Live-Wert im Label, damit der Schöpfer
+        // den Trapeze-/Flacker-Beitrag jedes Filters misst statt zu raten.
+        const aoS = document.getElementById("slider-cavityao");
+        const aoVal = document.getElementById("slider-cavityao-val");
+        if (aoS) {
+            const a0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
+                    ? this.state.atmosphere.cavityAO
+                    : 1.0;
+            aoS.value = String(Math.round(a0 * 100));
+            if (aoVal) aoVal.textContent = `${Math.round(a0 * 100)} %`;
+            aoS.addEventListener("input", () => {
+                const pct = parseInt(aoS.value, 10);
+                this.setCavityAO(pct / 100);
+                if (aoVal) aoVal.textContent = `${pct} %`;
+            });
+        }
+        const esS = document.getElementById("slider-edgesharp");
+        const esVal = document.getElementById("slider-edgesharp-val");
+        if (esS) {
+            const e0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
+                    ? this.state.atmosphere.edgeSharp
+                    : 0.5;
+            esS.value = String(Math.round(e0 * 100));
+            if (esVal) esVal.textContent = e0.toFixed(2);
+            esS.addEventListener("input", () => {
+                const pct = parseInt(esS.value, 10);
+                const v = this.setEdgeSharp(pct / 100);
+                if (esVal) esVal.textContent = v.toFixed(2);
+            });
+        }
+        const txS = document.getElementById("slider-surftex");
+        const txVal = document.getElementById("slider-surftex-val");
+        if (txS) {
+            const t0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.triplanar)
+                    ? this.state.atmosphere.triplanar
+                    : 1.0;
+            txS.value = String(Math.round(t0 * 100));
+            if (txVal) txVal.textContent = `${Math.round(t0 * 100)} %`;
+            txS.addEventListener("input", () => {
+                const pct = parseInt(txS.value, 10);
+                this.setSurfaceTexture(pct / 100);
+                if (txVal) txVal.textContent = `${pct} %`;
+            });
+        }
+        const cvS = document.getElementById("slider-colorvar");
+        const cvVal = document.getElementById("slider-colorvar-val");
+        if (cvS) {
+            const c0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.colorVar)
+                    ? this.state.atmosphere.colorVar
+                    : 1.0;
+            cvS.value = String(Math.round(c0 * 100));
+            if (cvVal) cvVal.textContent = `${Math.round(c0 * 100)} %`;
+            cvS.addEventListener("input", () => {
+                const pct = parseInt(cvS.value, 10);
+                this.setColorVariation(pct / 100);
+                if (cvVal) cvVal.textContent = `${pct} %`;
             });
         }
     }
@@ -44860,15 +45671,38 @@ class AnazhRealm {
                         // Meeresspiegel. So schwimmt/taucht er im See wie im
                         // Meer — die Hydrosphäre ist EIN Wasser-System mit dem
                         // Meer (Schöpfer-Befund: „nicht synergetisch").
-                        const effWater = this._hydroWaterLevelAt(
-                            pos.x() * this.state.scaleFactor,
-                            pos.z() * this.state.scaleFactor
-                        );
-                        const waterY = typeof effWater === "number" ? effWater : this.state.waterLevel;
-                        const submerged = scaledY < waterY;
+                        // Welle B + H1 (Tiefe-Fundament) — der Auftrieb liest die
+                        // 3D-Wasser-WAHRHEIT (Cells), nicht die 2.5D-Spalte. Die
+                        // GEMESSENE Wurzel (diag-swim-repro): `_hydroWaterLevelAt`
+                        // gibt für einen BERGSEE (Wasser-Cells/Iso bei y=+8) den
+                        // MEERES-Spiegel (−3) zurück — die V9.69-Zwei-Skalen-Lücke
+                        // (Spalten-Atlas ≠ Flood-Cells). Folge: `waterY−scaledY`
+                        // wurde NEGATIV → der Auftrieb drückte im See nach UNTEN →
+                        // „ich sehe Wasser, aber keine Schwimmphysik". `_player
+                        // WaterContext` liest aus den Cells den ECHTEN Spiegel
+                        // DIESES Wasserkörpers (aufwärts-Scan bis zur Nicht-Wasser-
+                        // Zelle) + ob der Körper (Füße..Kopf) wirklich in Wasser ist
+                        // → KEIN Falsch-Schwimmen über Lufthöhlen UND korrektes
+                        // Schwimmen in Bergseen. Fallback auf die 2.5D-Spalte nur
+                        // am ungestreamten Streaming-Rand (Backward-Compat).
+                        const wcx = pos.x() * this.state.scaleFactor;
+                        const wcz = pos.z() * this.state.scaleFactor;
+                        const wctx = this._playerWaterContext(wcx, scaledY, wcz);
+                        let submerged;
+                        let waterY;
+                        if (wctx !== null) {
+                            submerged = wctx.submerged;
+                            waterY = submerged ? wctx.surfaceY : scaledY;
+                        } else {
+                            const effWater = this._hydroWaterLevelAt(wcx, wcz);
+                            waterY = typeof effWater === "number" ? effWater : this.state.waterLevel;
+                            submerged = scaledY < waterY;
+                        }
                         this.state.playerUnderwater = submerged;
-                        // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
-                        this.state.playerEyesUnderwater = scaledY + 1.6 < waterY;
+                        // Augen sitzen auf Kamera-Höhe (scaledY + 1.6); nur unter
+                        // Wasser, wenn der Körper submerged ist UND die Augen unter
+                        // dem (Cell-)Spiegel liegen (kein blauer Tint über Luft).
+                        this.state.playerEyesUnderwater = submerged && scaledY + 1.6 < waterY;
                         if (submerged) {
                             // V8.36 — Auftrieb wirkt NUR über dem Terrain.
                             // Fällt der Spieler durch die Welt (weit unter
@@ -45152,7 +45986,14 @@ class AnazhRealm {
         // den CI-Warmup-Druck (V9.83): der Warmup-Pump läuft Ticks back-to-back
         // ohne Idle, da darf die Deko nicht mit dem Streaming um Wall-Clock
         // konkurrieren (gemessen: Baseline 18 Chunks, ungated 12-14).
-        if (!chunksBuilt) this._tickPendingScatter(2);
+        // Welle A — Gras deferred (≤1/Frame, ~34 ms), NUR auf einer ruhigen
+        // Frame (kein Streaming-Build) → nie Gras-Build + Chunk-Finalize im
+        // selben Frame (das war der 75-ms-Spike). Gras hat Vorrang vor Scatter
+        // (sichtbarer); baute es diese Frame, wartet Scatter eine Frame.
+        if (!chunksBuilt) {
+            const grassBuilt = this._tickPendingGrass(1);
+            if (!grassBuilt) this._tickPendingScatter(2);
+        }
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
         // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
@@ -45337,7 +46178,12 @@ class AnazhRealm {
                 // plastisch statt pappig (Schoepfer „kaum Kontraste, basic"). Wirkt
                 // global im Post-FX (kein Material angefasst → bricht keine
                 // dynamischen Farben). Browser-justierbar.
-                localContrast: uniform(0.5),
+                // J4-Regler „Kanten-Schärfe" — Default 0.5, persistiert via state.atmosphere.edgeSharp.
+                localContrast: uniform(
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
+                        ? this.state.atmosphere.edgeSharp
+                        : 0.5
+                ),
             };
             this.state.postProcessingUniforms = u;
 
@@ -45441,6 +46287,10 @@ class AnazhRealm {
             const tod = this.state.timeOfDay || 0;
             this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
         }
+        // WELLE J3 — Sonne·Mond·Planeten SYNCHRON an die Kamera heften (wie das
+        // Stern-Feld) → sie stehen fest am Himmel statt um den Welt-Ursprung zu
+        // orbiten + neben dem fernen Spieler durchs Terrain zu rasen.
+        this._followCelestialBodies();
         // V9.43-a — das geteilte Wasserfall-Material wird hier zentral
         // animiert (`uTime`); die Wasserfall-Planes haben keinen eigenen
         // per-Frame-Loop mehr — der Flow-Shader trägt die Bewegung.
@@ -45849,7 +46699,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.91.0";
+AnazhRealm.VERSION = "17.110.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

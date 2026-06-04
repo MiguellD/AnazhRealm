@@ -152,10 +152,27 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     const Ny = dimY + 1;
     const Nz = dimZ + 1;
     const density = new Float32Array(Nx * Ny * Nz);
+    // Welle F (mirror von `_voxelSampleDensityGrid`): BAND-SKIP — pro Spalte nur
+    // die j-Ebenen um die Oberfläche samplen, über `surf+Roughness` Luft (−1),
+    // unter base−40 Fels (+1). Bit-identisch zum Main (Determinismus-Test).
+    const base = state.baseHeight || 0;
+    const ROUGH = 12;
+    // V17.103 (mirror): Band-Top-Margin deckt den Normalen-eps (1.5 Zellen) + Puffer.
+    const topMargin = 4 * step;
     for (let k = 0; k < Nz; k++) {
-        for (let j = 0; j < Ny; j++) {
-            for (let i = 0; i < Nx; i++) {
-                density[i + j * Nx + k * Nx * Ny] = terrainDensityAt(ox + i * step, oy + j * step, oz + k * step);
+        const wz = oz + k * step;
+        for (let i = 0; i < Nx; i++) {
+            const wx = ox + i * step;
+            const surf = terrainMacroSurfaceY(wx, wz, true);
+            const bandTopJ = Math.floor((surf + ROUGH + topMargin - oy) / step) + 1;
+            // V17.96-Fix (mirror): Band-Boden folgt surf (Tiefsee-Rinne ~−75).
+            const bandBotJ = Math.floor((Math.min(surf, base) - 40 - oy) / step);
+            const colBase = i + k * Nx * Ny;
+            for (let j = 0; j < Ny; j++) {
+                const idx = colBase + j * Nx;
+                if (j > bandTopJ) density[idx] = -1;
+                else if (j < bandBotJ) density[idx] = 1;
+                else density[idx] = terrainDensityAt(wx, oy + j * step, wz);
             }
         }
     }
@@ -182,6 +199,10 @@ function terrainDensityAt(x, y, z) {
         const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
         const cave = Math.max(0, (ridge - 0.7) / 0.3);
         d -= cave * caveEnv * 36;
+        // Welle G (mirror): große Kavernen (λ~77 m), Schwelle 0.55, carve 46.
+        const cavern = state.noise.noise3D(x * 0.013, y * 0.018, z * 0.013);
+        const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
+        d -= cavernCarve * caveEnv * 46;
     }
     // Hydrosphäre-Carve + See-Becken (nur wenn ready + nicht hydroComputing).
     const hydro = state.hydrosphere;
@@ -257,7 +278,8 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     // Ursprung bis ~235 m über die Voxel-Decke → Löcher. tanh-Clamp komprimiert
     // hohe Surfaces (>110 m) asymptotisch gegen 136 m. MUSS bit-identisch zum
     // Main-Thread `_terrainMacroSurfaceY` sein (Naht-/Determinismus-Schutz).
-    if (withoutTarn > 110) withoutTarn = 110 + 26 * Math.tanh((withoutTarn - 110) / 26);
+    // Welle F (mirror): Deckel 110/136 → 225/~245 (Hülle wuchs auf Decke +270).
+    if (withoutTarn > 225) withoutTarn = 225 + 20 * Math.tanh((withoutTarn - 225) / 20);
     const waterRefSub = Number.isFinite(state.waterLevel) ? state.waterLevel : base + 4;
     const depthBelow = waterRefSub - withoutTarn;
     let withoutTarnFinal = withoutTarn;
@@ -400,9 +422,10 @@ function clamp01(v) {
 const CELL_STATE = { AIR: 0, WATER: 1, SOLID: 2 };
 
 function voxelChunkConfig(lod) {
-    // V14.6 (mirror): dimY 62→68 / 124→136 — höhere Hülle für die cont0-Welt.
-    if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 68, floorDrop: 90, lod: 1 };
-    return { dim: 24, step: 1.8, span: 43.2, dimY: 136, floorDrop: 90, lod: 0 };
+    // Welle F (mirror): dimY 68→100 / 136→200 — gewaltige Berge (Decke base+270),
+    // der Band-Skip in computeDensityGrid hält die Kosten. Vertikal-Span 360 m.
+    if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 100, floorDrop: 90, lod: 1 };
+    return { dim: 24, step: 1.8, span: 43.2, dimY: 200, floorDrop: 90, lod: 0 };
 }
 
 // Lazy-Init der 5 worldField-Noises (separate Seeds für unkorrelierte Kanäle).
@@ -654,7 +677,7 @@ function emitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
     return indices;
 }
 
-function laplacianSmoothPositions(positions, indices) {
+function laplacianSmoothPositions(positions, indices, iterations = 1) {
     if (indices.length < 3) return;
     const vertCount = positions.length / 3;
     const neighborSets = new Array(vertCount);
@@ -672,31 +695,33 @@ function laplacianSmoothPositions(positions, indices) {
     }
     const lambda = 0.5;
     const smoothed = new Array(positions.length);
-    for (let v = 0; v < vertCount; v++) {
-        const nbrs = neighborSets[v];
-        const cnt = nbrs.size;
-        if (cnt === 0) {
-            smoothed[v * 3] = positions[v * 3];
-            smoothed[v * 3 + 1] = positions[v * 3 + 1];
-            smoothed[v * 3 + 2] = positions[v * 3 + 2];
-            continue;
+    for (let iter = 0; iter < iterations; iter++) {
+        for (let v = 0; v < vertCount; v++) {
+            const nbrs = neighborSets[v];
+            const cnt = nbrs.size;
+            if (cnt === 0) {
+                smoothed[v * 3] = positions[v * 3];
+                smoothed[v * 3 + 1] = positions[v * 3 + 1];
+                smoothed[v * 3 + 2] = positions[v * 3 + 2];
+                continue;
+            }
+            let sx = 0;
+            let sy = 0;
+            let sz = 0;
+            for (const n of nbrs) {
+                sx += positions[n * 3];
+                sy += positions[n * 3 + 1];
+                sz += positions[n * 3 + 2];
+            }
+            const ax = sx / cnt;
+            const ay = sy / cnt;
+            const az = sz / cnt;
+            smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
+            smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
+            smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
         }
-        let sx = 0;
-        let sy = 0;
-        let sz = 0;
-        for (const n of nbrs) {
-            sx += positions[n * 3];
-            sy += positions[n * 3 + 1];
-            sz += positions[n * 3 + 2];
-        }
-        const ax = sx / cnt;
-        const ay = sy / cnt;
-        const az = sz / cnt;
-        smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
-        smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
-        smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
+        for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
     }
-    for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
 }
 
 function cropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
@@ -729,7 +754,9 @@ function cropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
 
 function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
     const normals = new Float32Array(positions.length);
-    const eps = step * 0.5;
+    // V17.103 (mirror): ROLLBACK auf eps 1.5 — der eps-6-Versuch half die Trapeze
+    // nicht + verschlechterte den Schatten (normalBias). Wurzel = Geometrie.
+    const eps = step * 1.5;
     const NxNy = Nx * Ny;
     const NxMax = Nx - 1;
     const NyMax = Ny - 1;
@@ -806,6 +833,10 @@ function attachFieldColors(positions) {
     const sed = [0.78, 0.72, 0.52];
     const sand = [0.87, 0.78, 0.55];
     const sandNoise = state.noise; // Mirror anazhRealm._voxelNoise (selber Seed)
+    const base = state.baseHeight || 0;
+    // V17.105 — Schnee-Prominenz-Schwelle (Mirror von _attachVoxelFieldColors).
+    const SNOW_PROM_START = 50;
+    const SNOW_PROM_FULL = 115;
     for (let i = 0; i < n; i++) {
         const x = positions[i * 3];
         const y = positions[i * 3 + 1];
@@ -820,7 +851,15 @@ function attachFieldColors(positions) {
         mix(earth, ss(0.25, 0.85, f.lebendig));
         mix(lava, ss(0.38, 0.92, f.glut));
         mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
-        mix(snow, ss(12, 42, y));
+        // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y. Bit-
+        // identisch zum Main (`_attachVoxelFieldColors`): cont0 = λ7100-m-
+        // kontinentale Basis; Schnee-Caps nur auf genuine Erhebungen statt über
+        // ~53 % des Bodens geschmiert (V14.5-Co-Tuning nach der Terrain-Weitung).
+        const _wpX = sandNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
+        const _wpZ = sandNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
+        const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
+        const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
+        mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
         mix(sed, ss(-2, -14, y));
         const waterY = waterLevelAt(x, z);
         const aboveWater = y - waterY;
@@ -894,6 +933,15 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     }
     const WATER = CELL_STATE.WATER;
     const AIR = CELL_STATE.AIR;
+    // Welle H (mirror): AQUIFER — tiefe Höhlen-Zellen über dem Wassertisch trocken.
+    const aquiferY = typeof state.waterLevel === "number" ? state.waterLevel : 0;
+    const AQ_DEPTH = 18;
+    const colSurf = new Float64Array(dim * dim);
+    for (let k = 0; k < dim; k++) {
+        const cz = oz + (k + 0.5) * step;
+        for (let i = 0; i < dim; i++) colSurf[i + k * dim] = terrainMacroSurfaceY(ox + (i + 0.5) * step, cz, true);
+    }
+    const caveDry = (i, k, cy) => cy < colSurf[i + k * dim] - AQ_DEPTH && cy > aquiferY;
     const flLevel = new Float64Array(dimSq * dimY);
     const queue = [];
     const seedColumn = (i, k, lvl) => {
@@ -903,7 +951,7 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
             const cy = oy + (j + 0.5) * step;
             if (cy > lvl) break;
             const cidx = i + baseK + j * dimSq;
-            if (cells[cidx] === AIR) {
+            if (cells[cidx] === AIR && !caveDry(i, k, cy)) {
                 cells[cidx] = WATER;
                 flLevel[cidx] = lvl;
                 queue.push(cidx);
@@ -928,9 +976,10 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     }
     const pushN = (ni, nk, nj, lvl) => {
         if (ni < 0 || nk < 0 || ni >= dim || nk >= dim || nj < 0 || nj > jMax) return;
-        if (oy + (nj + 0.5) * step > lvl) return;
+        const cy = oy + (nj + 0.5) * step;
+        if (cy > lvl) return;
         const nidx = ni + nk * dim + nj * dimSq;
-        if (cells[nidx] === AIR) {
+        if (cells[nidx] === AIR && !caveDry(ni, nk, cy)) {
             cells[nidx] = WATER;
             flLevel[nidx] = lvl;
             queue.push(nidx);
