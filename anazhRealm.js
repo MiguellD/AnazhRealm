@@ -20082,16 +20082,24 @@ class AnazhRealm {
         // Edit-Punkt. Streaming (ferne neue Chunks) deferred weiter.
         if (syncWater) this._buildVoxelChunkWaterIsoSurface(cx, cz);
         else this._enqueueWaterIso(cx, cz);
-        // V13.13.2 — der neue Chunk ist jetzt eine präsente Flood-Wahrheit für
-        // seine Nachbarn. Deren Iso wurde evtl. gegen einen ABWESENDEN Nachbarn
-        // (diesen Chunk) gebaut → die Kant-Spiegelung. Re-enqueue der 4 Nachbar-
-        // Iso, damit ihr Seam exakt gegen die jetzt-präsente Wahrheit heilt
-        // (deferred, idempotent über das Set). Nur Wasser-tragende Nachbarn.
+        // V13.13.2 / V18.1 — der neue Chunk ist jetzt eine präsente Flood-Wahrheit
+        // für seine Nachbarn. Deren Iso wurde evtl. gegen einen ABWESENDEN Nachbarn
+        // (diesen Chunk) gebaut → die Kant-Spiegelung. **V18.1-Heilung des
+        // 50-Versionen-Blobs (GEMESSEN `diag-water-blob.cjs` Teil A/C):** der
+        // Iso-Mesher liest die 8 Nachbarn (Achsen + DIAGONALEN, OOB-`cellClass`),
+        // aber bis V18.0 wurden nur die 4 ACHSEN re-enqueued → die DIAGONAL-Iso
+        // blieb stale = das „Wasser klebt an der Gebäude-Ecke". Jetzt ALLE 8
+        // re-enqueuen (deferred, idempotent über das Set, distanz-priorisiert in
+        // `_tickPendingWaterIso`). Nur Wasser-tragende Nachbarn.
         for (const [nx, nz] of [
             [cx - 1, cz],
             [cx + 1, cz],
             [cx, cz - 1],
             [cx, cz + 1],
+            [cx - 1, cz - 1],
+            [cx + 1, cz - 1],
+            [cx - 1, cz + 1],
+            [cx + 1, cz + 1],
         ]) {
             const nb = this.state.voxelChunks.get(`${nx},${nz}`);
             if (nb && nb.waterCells) this._enqueueWaterIso(nx, nz);
@@ -35850,6 +35858,8 @@ class AnazhRealm {
         // die Welle-A-Vision auf Cell-Sprache (Damm-Cells werden SOLID,
         // Wasser-Cells im Stempel-Bereich werden überschrieben).
         if (!opts.silent && entry.blockerAABBs) {
+            const { span: _fpSpan } = this._voxelChunkConfig();
+            const footprintKeys = new Set();
             for (const aabb of entry.blockerAABBs) {
                 const cxw = (aabb.minX + aabb.maxX) * 0.5;
                 const czw = (aabb.minZ + aabb.maxZ) * 0.5;
@@ -35860,6 +35870,32 @@ class AnazhRealm {
                 // Inkonsistenz). Spart ~89 % der dirty-Chunks → kein
                 // FPS-Spike beim Bau-Klick mehr.
                 this._remeshVoxelChunksAround(cxw, czw, r, 0);
+                // V18.1 — die Footprint-Chunk-Keys sammeln (gleiches Raster wie
+                // `_remeshVoxelChunksAround` mit skirt=0) für den Wasser-Sync unten.
+                const minCX = Math.floor((cxw - r) / _fpSpan);
+                const maxCX = Math.floor((cxw + r) / _fpSpan);
+                const minCZ = Math.floor((czw - r) / _fpSpan);
+                const maxCZ = Math.floor((czw + r) / _fpSpan);
+                for (let fcx = minCX; fcx <= maxCX; fcx++)
+                    for (let fcz = minCZ; fcz <= maxCZ; fcz++) footprintKeys.add(`${fcx},${fcz}`);
+            }
+            // V18.1 (Wasser-Finish, GEMESSEN `diag-water-blob.cjs` Teil C) —
+            // verdrängt die Architektur WASSER, MUSS ihr Footprint SYNCHRON neu
+            // meshen: seit V17.118 baut `_rebuildVoxelChunk` ferne (Nicht-Spieler-)
+            // Chunks ASYNC (Worker) → die Wasser-Verdrängung des Stempels landet
+            // verspätet → das Wasser steht sichtbar IN der Struktur, bis der
+            // Rebuild kommt („das Wasser klettert die Struktur hoch", 89→0 nach
+            // forceSync gemessen = TRANSIENT, kein Stempel-Loch). NUR wasser-
+            // tragende, schon gestreamte Footprint-Chunks (sonst kein Transient)
+            // → bounded (skirt=0, kleine Footprint, nur intentionale Spawns).
+            for (const key of footprintKeys) {
+                const fe = this.state.voxelChunks.get(key);
+                if (!fe || !fe.waterCells) continue;
+                const comma = key.indexOf(",");
+                const fcx = parseInt(key.slice(0, comma), 10);
+                const fcz = parseInt(key.slice(comma + 1), 10);
+                this._rebuildVoxelChunk(fcx, fcz, null, { forceSync: true });
+                if (this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks.delete(key);
             }
             // V9.75 (Welle C.4+5 — multisensorische Spur erhalten): wenn eine
             // solide Architektur die Welt-Cell-Klassifikation mutiert (Wasser
@@ -47024,7 +47060,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.118.0";
+AnazhRealm.VERSION = "18.0.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

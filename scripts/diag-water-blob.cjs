@@ -319,7 +319,10 @@ const server = http.createServer((req, res) => {
                         const i1 = Math.min(dim - 1, Math.floor((ab.maxX - cox) / step));
                         const k0 = Math.max(0, Math.floor((ab.minZ - coz) / step));
                         const k1 = Math.min(dim - 1, Math.floor((ab.maxZ - coz) / step));
-                        const j0 = Math.max(0, Math.floor(((Number.isFinite(ab.botY) ? ab.botY : ab.topY - 4) - oyG) / step));
+                        const j0 = Math.max(
+                            0,
+                            Math.floor(((Number.isFinite(ab.botY) ? ab.botY : ab.topY - 4) - oyG) / step)
+                        );
                         const j1 = Math.min(dimY - 1, Math.floor((ab.topY - oyG) / step));
                         for (let j = j0; j <= j1; j++)
                             for (let kk = k0; kk <= k1; kk++)
@@ -387,10 +390,12 @@ const server = http.createServer((req, res) => {
     const a = result.partA;
     console.log(`  rebuilt Chunk:                 ${a.rebuiltChunk}`);
     console.log(`  ACHSEN-Nachbarn re-enqueued:   ${a.axisNeighborsEnqueued}`);
-    console.log(`  DIAGONAL-Nachbarn re-enqueued: ${a.diagonalNeighborsEnqueued}   <-- erwartet 0 (die Lücke)`);
     console.log(
-        `  Wasser-Diagonalen, die die Iso LIEST aber die Finalize NICHT enqueued: ${a.waterDiagonalsReadButNotEnqueued.length}` +
-            (a.waterDiagonalsReadButNotEnqueued.length ? ` [${a.waterDiagonalsReadButNotEnqueued.join(" ")}]` : ""),
+        `  DIAGONAL-Nachbarn re-enqueued: ${a.diagonalNeighborsEnqueued}   <-- V18.0-Fix: erwartet >0 (Diagonalen JETZT re-enqueued)`
+    );
+    console.log(
+        `  Wasser-Diagonalen, die die Iso LIEST aber die Finalize NICHT enqueued: ${a.waterDiagonalsReadButNotEnqueued.length}   <-- V18.0-Fix: erwartet 0 (geheilt)` +
+            (a.waterDiagonalsReadButNotEnqueued.length ? ` [${a.waterDiagonalsReadButNotEnqueued.join(" ")}]` : "")
     );
 
     console.log("\n--- Teil B: die DEPENDENZ (Diagonal-Iso vs. Nachbar-Eck-Stempel) ---");
@@ -400,7 +405,9 @@ const server = http.createServer((req, res) => {
         console.log(`  stärkstes Paar:                ${b.best.pair} (Eck-Wasser-Zellen ${b.best.cornerWater})`);
         console.log(`  Diag-Eck-Vertices VOR Stempel: ${b.best.cornerBefore}`);
         console.log(`  Diag-Eck-Vertices NACH Stempel:${b.best.cornerAfter}`);
-        console.log(`  DELTA (Phantom-Vertices):      ${b.best.delta}   <-- >0 = die Diag-Iso HÄNGT vom Nachbar-Eck ab`);
+        console.log(
+            `  DELTA (Phantom-Vertices):      ${b.best.delta}   <-- >0 = die Diag-Iso HÄNGT vom Nachbar-Eck ab`
+        );
     } else {
         console.log(`  kein +x+z-Wasser-Eck-Paar im gestreamten Set`);
     }
@@ -412,30 +419,42 @@ const server = http.createServer((req, res) => {
     } else {
         console.log(`  nassester Chunk:               ${c.wettestChunk} (${c.waterCells} WATER-Cells)`);
         console.log(`  felsturm gespawnt:             ${c.buildingSpawned} (${c.buildingAABBs} solide AABBs)`);
-        console.log(`  (a) WATER IM Gebäude (nach 40 Ticks):     ${c.waterCellsInsideBuilding}`);
-        console.log(`      WATER IM Gebäude (nach forceSync):    ${c.waterInsideAfterForceSync}   <-- bleibt >0 = ECHTES Stempel-Loch (ROOT #3); →0 = nur async-Rebuild-Timing (V17.118)`);
-        console.log(`  (b) stale Nachbar-Iso:         ${c.staleNeighborIsos}   <-- >0 = ROOT #1/#2 „klebt an der Grenze"` + (c.staleList.length ? ` [${c.staleList.join(" ")}]` : ""));
+        console.log(
+            `  (a) WATER IM Gebäude (nach 40 Ticks):     ${c.waterCellsInsideBuilding}   <-- V18.0-Fix: erwartet 0 (Sync-Footprint-Rebuild verdrängt sofort)`
+        );
+        console.log(
+            `      WATER IM Gebäude (nach forceSync):    ${c.waterInsideAfterForceSync}   <-- >0 = ECHTES Stempel-Loch (war nie der Fall)`
+        );
+        console.log(
+            `  (b) stale Nachbar-Iso:         ${c.staleNeighborIsos}   <-- V18.0-Fix: erwartet 0 (Diagonale heilt)` +
+                (c.staleList.length ? ` [${c.staleList.join(" ")}]` : "")
+        );
     }
 
-    console.log("\n=== Urteil (welche Wurzel DOMINIERT den echten Blob) ===");
-    console.log(`  Struktur-Lücke (Teil A): Diagonalen nie re-enqueued = ${a.diagonalNeighborsEnqueued === 0 ? "JA (bewiesen)" : "NEIN"}`);
+    // V18.0 — REGRESSIONS-GATE: nach dem Fix MÜSSEN alle gemessenen Wurzeln 0 sein.
+    console.log("\n=== V18.0-Regressions-Gate (der Fix muss die gemessenen Zahlen auf 0 halten) ===");
+    const checks = [];
+    checks.push([
+        "#1 Diagonal-Iso geheilt (waterDiagonalsReadButNotEnqueued=0)",
+        a.waterDiagonalsReadButNotEnqueued.length === 0,
+    ]);
     if (c && c.found) {
-        const root3Permanent = c.waterInsideAfterForceSync > 0;
-        const root3Transient = c.waterCellsInsideBuilding > 0 && c.waterInsideAfterForceSync === 0;
-        const root12 = c.staleNeighborIsos > 0;
-        if (root3Permanent)
-            console.log(`  ROOT #3 (ECHT/permanent): ${c.waterInsideAfterForceSync} WATER-Cells IM Gebäude AUCH nach forceSync → der Stempel deckt das Gebäude wirklich nicht („klettert hoch").`);
-        if (root3Transient)
-            console.log(`  ROOT #3 war TRANSIENT: ${c.waterCellsInsideBuilding}→0 nach forceSync → KEIN Stempel-Loch, sondern der V17.118-async-Rebuild des fernen Chunks landete in 40 Ticks nicht (Timing). In-Game heilt das, wenn der Rebuild landet — ABER ein Nexus/Worldgen-Spawn fern vom Spieler zeigt das Wasser bis dahin = ein realer transienter Blob.`);
-        if (root12)
-            console.log(`  ROOT #1/#2 aktiv: ${c.staleNeighborIsos} Nachbar-Iso stale nach dem realen Spawn [${c.staleList.join(" ")}] → Phantom an der Grenze („klebt"), klein.`);
-        if (!root3Permanent && !root3Transient && !root12)
-            console.log(`  WEDER #3 noch #1/#2 am Spawn-Ort sichtbar — Browser-Verify am realen Wasser-Gebäude bleibt der Schluss.`);
-        console.log(`  → fix REPRODUKTION-FIRST: die dominante (permanente) Wurzel zuerst, nicht alle drei blind (= das nächste Pflaster).`);
+        checks.push(["V17.118-Transient geheilt (WATER im Gebäude nach Ticks=0)", c.waterCellsInsideBuilding === 0]);
+        checks.push(["KEIN Stempel-Loch (WATER im Gebäude nach forceSync=0)", c.waterInsideAfterForceSync === 0]);
+        checks.push(["#1/#2 keine stale Nachbar-Iso nach realem Spawn (=0)", c.staleNeighborIsos === 0]);
     } else {
-        console.log("  Teil C nicht reproduziert (kein Wasser-Chunk) — Teil A (die Lücke) steht; ein wasser-reicheres Seed/Teleport nötig.");
+        console.log("  (Teil C nicht reproduziert — kein Wasser-Chunk im Set; #1 bleibt der harte Beweis.)");
     }
+    let regressed = false;
+    for (const [label, ok] of checks) {
+        console.log(`  ${ok ? "OK  " : "FAIL"}  ${label}`);
+        if (!ok) regressed = true;
+    }
+    console.log(
+        `\n  ${regressed ? "REGRESSION — der Wasser-Blob ist zurück." : "GRÜN — die gemessenen Wurzeln sind 0. Browser-Verify am Wasser-Gebäude bleibt der Seh-Schluss (V13: Wasser-RENDER nur im Browser)."}`
+    );
 
     await browser.close();
     server.close();
+    process.exit(regressed ? 1 : 0);
 })();

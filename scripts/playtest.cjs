@@ -20911,6 +20911,20 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         // ODER sync-build (Edit-Rebuild via syncWater, kein Flacker). Beide da.
         out.finalizeEnqueues = /_enqueueWaterIso\(/.test(finSrc);
         out.finalizeGatedOnSyncWater = /syncWater/.test(finSrc);
+        // V18.0 (Wasser-Finish) — REGRESSIONS-WALL des 50-Versionen-Blobs (GEMESSEN
+        // `diag-water-blob.cjs` Teil A/C): der Iso-Mesher liest die 8 Nachbarn
+        // (Achsen + DIAGONALEN, OOB-`cellClass`); bis V18.0 re-enqueued die Finalize
+        // nur die 4 ACHSEN → die Diagonal-Iso blieb stale = „Wasser klebt am
+        // Gebäude-Eck". Die Probe verlangt die Diagonal-Offsets im re-enqueue-Block.
+        // Wird der Block in einen Helfer refaktoriert, wandert die Probe mit (V9.56-i).
+        out.finalizeReEnqueuesDiagonals = /\[cx - 1, cz - 1\]/.test(finSrc) && /\[cx \+ 1, cz \+ 1\]/.test(finSrc);
+        // V18.0 — der V17.118-Transient-Fix: ein wasser-verdrängender Architektur-
+        // Spawn meshet seinen Footprint SYNCHRON (sonst deferred der async-Worker die
+        // Verdrängung → Wasser steht in der Struktur). Probe: spawnArchitecture
+        // sammelt `footprintKeys` + forceSynct wasser-tragende.
+        const spawnSrc = r.spawnArchitecture.toString();
+        out.spawnSyncsWaterFootprint =
+            /footprintKeys/.test(spawnSrc) && /forceSync: true/.test(spawnSrc) && /waterCells/.test(spawnSrc);
         out.queueIsSet = r.state.pendingWaterIso === null || r.state.pendingWaterIso instanceof Set;
         // Loop ruft den per-Frame-Tick (lebt in _loopVoxelStreaming).
         out.loopTicksQueue =
@@ -20945,6 +20959,14 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         res.finalizeEnqueues && res.finalizeGatedOnSyncWater
     );
     check("V12.0-perf.h: Game-Loop ruft _tickPendingWaterIso (per-Frame-Bau)", res.loopTicksQueue);
+    check(
+        "V18.0: Finalize re-enqueued ALLE 8 Nachbarn inkl. DIAGONALEN (der 50-Versionen-Blob-Fix)",
+        res.finalizeReEnqueuesDiagonals
+    );
+    check(
+        "V18.0: Architektur-Spawn meshet den wasser-tragenden Footprint SYNCHRON (V17.118-Transient)",
+        res.spawnSyncsWaterFootprint
+    );
     check("V12.0-perf.h: 3 Keys enqueued", res.enqueuedCount === 3, `enqueued=${res.enqueuedCount}`);
     check(
         "V12.0-perf.h: tick baut ≤budget + verkleinert die Queue (kein Burst)",
@@ -21536,10 +21558,18 @@ async function checkBandV17117FarWater(ctx) {
     }
     check("V17.117 H3: beyond-region Ozean-Chunk gefunden", res.foundOcean);
     check("V17.117 H3: beyond-region Ozean — Gate true", res.oceanGate === true);
-    check("V17.117 H3: beyond-region Ozean trägt Wasser-Cells (Heilung)", res.oceanWaterCells > 0, `cells=${res.oceanWaterCells}`);
+    check(
+        "V17.117 H3: beyond-region Ozean trägt Wasser-Cells (Heilung)",
+        res.oceanWaterCells > 0,
+        `cells=${res.oceanWaterCells}`
+    );
     if (res.foundLand) {
         check("V17.117 H3: beyond-region Land — Gate false (kein Mehraufwand)", res.landGate === false);
-        check("V17.117 H3: beyond-region Land — keine Wasser-Cells", res.landWaterCells === 0, `cells=${res.landWaterCells}`);
+        check(
+            "V17.117 H3: beyond-region Land — keine Wasser-Cells",
+            res.landWaterCells === 0,
+            `cells=${res.landWaterCells}`
+        );
     }
     check(
         "V17.117 H3: Worker<->Main Wasser-Cells bit-identisch beyond-region (Naht-Wand)",
@@ -21577,9 +21607,18 @@ async function checkBandV17118WorkerEngaged(ctx) {
         return;
     }
     check("V17.118 E3: der Voxel-Worker ist gespawnt (nicht mehr dormant)", res.workerSpawned === true);
-    check("V17.118 E3: voxelWorkerWorldgenSynced nach Warmup (Streaming nutzt den Worker, Mesh off-thread)", res.worldgenSynced === true);
-    check("V17.118 E3: _voxelWorkerSyncWorldgenState bootstrappt den Worker (Source, Regressions-Wand)", res.bootstrapSrc === true);
-    check("V17.118 E3: _ensureVoxelChunkAt baut den Spieler-Chunk sync (Source, die Intent-Ausnahme)", res.playerSyncSrc === true);
+    check(
+        "V17.118 E3: voxelWorkerWorldgenSynced nach Warmup (Streaming nutzt den Worker, Mesh off-thread)",
+        res.worldgenSynced === true
+    );
+    check(
+        "V17.118 E3: _voxelWorkerSyncWorldgenState bootstrappt den Worker (Source, Regressions-Wand)",
+        res.bootstrapSrc === true
+    );
+    check(
+        "V17.118 E3: _ensureVoxelChunkAt baut den Spieler-Chunk sync (Source, die Intent-Ausnahme)",
+        res.playerSyncSrc === true
+    );
 }
 
 // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH für ferne Chunks): empirischer

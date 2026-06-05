@@ -5404,21 +5404,22 @@
                 <h3>Atmosphäre</h3>
                 <p class="drawer-hint">
                     Cel-Stufen formen die Licht-Abstufung auf Strukturen — wenig Stufen geben harte gemalte Linien
-                    (Studio-Ghibli-Look), viele einen weichen Verlauf. <b>2.5D-Lichtung</b> ist der HAUPT-Hebel gegen die
-                    Facetten-Rauten auf dem Terrain: er blendet die Beleuchtungs-Normale Richtung oben (0 % = volle
-                    3D-Facetten, 100 % = flach wie 2.5D, grosse einheitliche Licht-Regionen). Bei harten Cel-Stufen (&lt;8)
-                    hoch drehen, damit die Bänder über GROSSE Flächen laufen statt über einzelne Facetten. Kavitäts-AO
-                    zeichnet die Facetten-Kanten als Kontakt-Schatten nach (0 % = aus — der view-abhängige „Schatten"-Term;
-                    bei sichtbaren Facetten runter drehen).
-                    Kanten-Schärfe ist der Post-FX-Unsharp, der Kontraste hebt (0 = aus, schärft sonst die Cel-Grenzen
-                    nach). Oberflächen-Textur ist die Fels-/Boden-Striation auf dem Terrain (0 % = glatte Farbe — testet,
-                    ob die „Maserung" die Facetten/Trapeze betont). Fog-Distanz regelt, wie nah der Welt-Dunst beginnt. Wasser-Cull blendet dünnes, flaches Wasser
-                    pro Pixel aus (0 = alles sichtbar; höher dreht das dünne Ufer-/Wand-Bluten weg, tiefes Wasser bleibt).
-                    <b>Schatten-Reichweite</b> ist die Halbbreite des Schatten-Frustums in Metern — KLEINER = schärfere
-                    Schatten-Texel (weniger grobe Rasterlinie an steilen/vertikalen Wänden), aber kleinere abgedeckte Fläche
-                    um dich. Schatten-Bias verschiebt den Schatten entlang der Flächen-Normale (zu klein → Acne-Streifen an
-                    edge-on Wänden, zu gross → der Schatten löst sich vom Fuss ab). Das Wandern der Rasterlinie beim Laufen ist
-                    bereits an der Wurzel geheilt (Light-Space-Snap, V17.111); diese zwei Regler feilen die Schärfe.
+                    (Studio-Ghibli-Look), viele einen weichen Verlauf. <b>2.5D-Lichtung</b> ist der HAUPT-Hebel gegen
+                    die Facetten-Rauten auf dem Terrain: er blendet die Beleuchtungs-Normale Richtung oben (0 % = volle
+                    3D-Facetten, 100 % = flach wie 2.5D, grosse einheitliche Licht-Regionen). Bei harten Cel-Stufen
+                    (&lt;8) hoch drehen, damit die Bänder über GROSSE Flächen laufen statt über einzelne Facetten.
+                    Kavitäts-AO zeichnet die Facetten-Kanten als Kontakt-Schatten nach (0 % = aus — der view-abhängige
+                    „Schatten"-Term; bei sichtbaren Facetten runter drehen). Kanten-Schärfe ist der Post-FX-Unsharp, der
+                    Kontraste hebt (0 = aus, schärft sonst die Cel-Grenzen nach). Oberflächen-Textur ist die
+                    Fels-/Boden-Striation auf dem Terrain (0 % = glatte Farbe — testet, ob die „Maserung" die
+                    Facetten/Trapeze betont). Fog-Distanz regelt, wie nah der Welt-Dunst beginnt. Wasser-Cull blendet
+                    dünnes, flaches Wasser pro Pixel aus (0 = alles sichtbar; höher dreht das dünne Ufer-/Wand-Bluten
+                    weg, tiefes Wasser bleibt). <b>Schatten-Reichweite</b> ist die Halbbreite des Schatten-Frustums in
+                    Metern — KLEINER = schärfere Schatten-Texel (weniger grobe Rasterlinie an steilen/vertikalen
+                    Wänden), aber kleinere abgedeckte Fläche um dich. Schatten-Bias verschiebt den Schatten entlang der
+                    Flächen-Normale (zu klein → Acne-Streifen an edge-on Wänden, zu gross → der Schatten löst sich vom
+                    Fuss ab). Das Wandern der Rasterlinie beim Laufen ist bereits an der Wurzel geheilt
+                    (Light-Space-Snap, V17.111); diese zwei Regler feilen die Schärfe.
                 </p>
                 <div class="slider-row">
                     <label for="slider-cel">Cel-Stufen</label>
@@ -5894,6 +5895,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=17.118.0" defer></script>
+        <script src="anazhRealm.js?v=18.0.0" defer></script>
     </body>
 </html>
