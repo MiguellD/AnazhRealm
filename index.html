@@ -5484,6 +5484,16 @@
                     <span class="slider-value" id="slider-waterdepth-val">0.030</span>
                 </div>
                 <div class="slider-row">
+                    <label for="slider-waterdepthfoam">Fluss-Schaum (Tiefe)</label>
+                    <input type="range" id="slider-waterdepthfoam" min="1" max="60" step="1" value="12" />
+                    <span class="slider-value" id="slider-waterdepthfoam-val">1.2 m</span>
+                </div>
+                <div class="slider-row">
+                    <label for="slider-waterfallsteep">Wasserfall-Steilheit</label>
+                    <input type="range" id="slider-waterfallsteep" min="2" max="40" step="1" value="10" />
+                    <span class="slider-value" id="slider-waterfallsteep-val">1.0</span>
+                </div>
+                <div class="slider-row">
                     <label for="slider-shadowrange">Schatten-Reichweite</label>
                     <input type="range" id="slider-shadowrange" min="80" max="400" step="10" value="300" />
                     <span class="slider-value" id="slider-shadowrange-val">300 m</span>
@@ -5917,6 +5927,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.13.0" defer></script>
+        <script src="anazhRealm.js?v=18.14.0" defer></script>
     </body>
 </html>

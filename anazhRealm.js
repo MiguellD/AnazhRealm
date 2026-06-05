@@ -310,6 +310,8 @@ class AnazhRealm {
                 waterRenderMode: "surface", // "surface" (Fläche-auf-L) | "iso" (alte Zell-Iso)
                 waterShoreWidth: 0.0045, // Tiefen-Uferlinie (uShoreWidth) — kleiner = schärferes Ufer
                 waterDepthRange: 0.03, // Tiefen-Farb-Rampe (uDepthRange) — kleiner = schneller tief
+                waterDepthFoam: 1.2, // V18.14 M1 — Schaum nur bis dieser ECHTEN Tiefe (m); kleiner = weniger Fluss-Schaum
+                waterfallSteep: 1.0, // V18.14 M3 — Wasserfall-Plane nur ab dieser Terrain-Steilheit (Drop/Lauf); grösser = nur echte Wände
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
                 shadowRange: 300, // Frustum-Halbbreite m (kleiner = schärfer)
@@ -19361,6 +19363,11 @@ class AnazhRealm {
         if (!geom.getAttribute("aWave")) {
             geom.setAttribute("aWave", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         }
+        // V18.14 — jeder Mesh am geteilten hydroSurfaceMaterial braucht `aDepth`
+        // (WebGPU-strikt, V10.0-g.1); 0 = flach (der Iso-A/B-Pfad ist sowieso Vergleich).
+        if (!geom.getAttribute("aDepth")) {
+            geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(vCount), 1));
+        }
         const mesh = new THREE.Mesh(geom, mat);
         mesh.renderOrder = 1; // transparent — nach den opaken Objekten
         mesh.userData = {
@@ -19461,6 +19468,21 @@ class AnazhRealm {
         const indices = [];
         const aFlow = [];
         const aWave = [];
+        // V18.14 — DIE MAKRO-KONTEXT-SCHNITTSTELLE (Schöpfer „die Systeme reden nicht
+        // miteinander"): der Shader bekommt den MAKRO-Kontext pro Vertex (eine Quelle,
+        // viele Leser — wie das Aura-Feld), statt überall dasselbe Mikro-Rezept.
+        // `aDepth` = die ECHTE Wassertiefe (Wasser-Spalten-Höhe aus den Flood-Zellen) →
+        // der Shader schäumt nur die echte Uferlinie (Tiefe→0), NICHT den ganzen flachen
+        // Fluss (GEMESSEN `diag-water-systems`: Fluss median 1.31 m vs See/Ozean 5–6 m →
+        // der alte Tiefen-Schaum hielt den flachen Fluss für „lauter Uferlinie" = das Chaos).
+        const aDepth = [];
+        const STATE = AnazhRealm.CELL_STATE;
+        const cells = entry.waterCells;
+        const cfg0 = this._voxelChunkConfig(0);
+        const dim0 = cfg0.dim;
+        const step0 = cfg0.step;
+        const dimY0 = cfg0.dimY;
+        const dq0 = dim0 * dim0;
         const vmap = new Int32Array(NV * NV).fill(-1);
         const addVert = (i, k) => {
             const vi = i + k * NV;
@@ -19470,9 +19492,25 @@ class AnazhRealm {
             const L = Lg[vi];
             const id = positions.length / 3;
             positions.push(wx, L, wz);
-            // aWave: 1 = Ozean (Spiegel ≈ Meereshöhe) → Gerstner-Wellen; 0 = See
-            // (ruhig).
-            aWave.push(Math.abs(L - waterLevel) < 1.5 ? 1 : 0);
+            // aWave: 1 = Ozean (Spiegel ≈ Meereshöhe) → Gerstner-Wellen; 0 = See/Fluss
+            // (ruhig). V18.14 — WEICHE Rampe statt hartem 0/1-Flip → die Fluss↔Ozean-
+            // MÜNDUNG fadet, statt zu stossen (M2: der alte `< 1.5`-Schalter war die
+            // harsche Kante; gemessen 11 % der Fluss-Punkte trugen fälschlich Ozean-Wellen).
+            aWave.push(Math.max(0, Math.min(1, 1 - (Math.abs(L - waterLevel) - 0.8) / 2.0)));
+            // aDepth — die ECHTE Wassertiefe (Anzahl WATER-Zellen × step) aus dem Flood-
+            // Feld; der Shader schäumt nur, wo sie klein ist (die echte Uferlinie), M1.
+            let depthM = 0;
+            if (cells) {
+                const ci = Math.floor((wx - ox) / step0);
+                const ck = Math.floor((wz - oz) / step0);
+                if (ci >= 0 && ck >= 0 && ci < dim0 && ck < dim0) {
+                    const base = ci + ck * dim0;
+                    let wc = 0;
+                    for (let j = 0; j < dimY0; j++) if (cells[base + j * dq0] === STATE.WATER) wc++;
+                    depthM = wc * step0;
+                }
+            }
+            aDepth.push(depthM);
             // aFlow — die Fluss-Strömung GEGLÄTTET (Schöpfer-Naht-Befund „an der
             // Chunknaht plötzlich quer zur Strömung + anders skaliert"): `_hydroRiverAt`
             // gibt eine D8-quantisierte Segment-Strömung → an den Segment-Grenzen
@@ -19533,6 +19571,7 @@ class AnazhRealm {
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(aFlow, 2));
         geom.setAttribute("aWave", new THREE.Float32BufferAttribute(aWave, 1));
+        geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(aDepth, 1));
         // aShore wird vom Tiefen-Shader getragen → 0 (wie die Iso).
         geom.setAttribute("aShore", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
         geom.setIndex(indices);
@@ -21857,6 +21896,12 @@ class AnazhRealm {
         const wfMat = this._ensureWaterfallMaterial();
         if (wfMat) {
             for (const wf of hydro.waterfalls) {
+                // V18.14 (M3) — die vertikale Plane NUR an einer ECHTEN Wand, nicht über
+                // einem Hang (gemessen `diag-water-systems`: 85 % der „Wasserfälle" sind
+                // Hänge, Steilheit median 0.36 → die Plane schwebt = das Artefakt „zu hoch").
+                // Hang-Fälle trägt die Fluss-Fläche selbst (steiles `L`-Gefälle = schnelle
+                // Strömung). Steilheit = Drop / horizontaler Lauf des echten Terrain-Abfalls.
+                if (!this._waterfallIsRealWall(wf)) continue;
                 // V9.63 (Cleanup für Welle A): zwei Meshes pro Wasserfall.
                 //   (1) Plane = vertikaler Strahl (V9.60-d.3 mit See-Spiegel-
                 //       Verbindung)
@@ -22047,6 +22092,37 @@ class AnazhRealm {
     // Eine Wasserfall-Plane: die V9.43-a-Geometrie + das geteilte
     // `_ensureWaterfallMaterial` — wiederverwendet, nur die Spawn-Quelle ist
     // jetzt das Drainage-Netz (`hydro.waterfalls`) statt per-Chunk-Zufall.
+    // V18.14 (M3) — ein Wasserfall ist nur eine vertikale PLANE wert, wenn das Terrain
+    // dort WIRKLICH steil abfällt (eine Wand). Steilheit = Drop / horizontaler Lauf, bis
+    // das Terrain um den Drop gefallen ist. < `waterfallSteep` = ein Hang → die Fluss-
+    // Fläche trägt ihn als schnelle Strömung (keine schwebende Plane). Browser-Slider.
+    // GEMESSEN (`diag-water-systems`): 85 % der extrahierten „Fälle" sind Hänge (0.36).
+    _waterfallIsRealWall(wf) {
+        const dropH = (wf.topY || 0) - (wf.bottomY || 0);
+        if (dropH < 2) return false;
+        const thr =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterfallSteep)
+                ? this.state.atmosphere.waterfallSteep
+                : 1.0;
+        let fx = wf.flowX || 0;
+        let fz = wf.flowZ || 0;
+        const fm = Math.hypot(fx, fz) || 1;
+        fx /= fm;
+        fz /= fm;
+        const y0 = this._voxelSurfaceY(wf.x, wf.z);
+        if (y0 === null || !Number.isFinite(y0)) return true; // unklar → behalten
+        let run = 40;
+        for (let d = 2; d <= 40; d += 2) {
+            const yy = this._voxelSurfaceY(wf.x + fx * d, wf.z + fz * d);
+            if (yy === null || !Number.isFinite(yy)) continue;
+            if (y0 - yy >= dropH * 0.8) {
+                run = d;
+                break;
+            }
+        }
+        return dropH / run >= thr;
+    }
+
     // Vertikale Plane an der Fluss-Klippen-Kreuzung, gedreht so dass die
     // Normale (+z) den Sturz hinab zeigt (die Gefälle-Tangente).
     _buildHydroWaterfall(wf, mat) {
@@ -22109,6 +22185,8 @@ class AnazhRealm {
         geo.setAttribute("aShore", new THREE.BufferAttribute(aShoreArr, 1));
         geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlowArr, 2));
         geo.setAttribute("aWave", new THREE.BufferAttribute(aWaveArr, 1));
+        // V18.14 — `aDepth`=0 (flach) → der Aufprall-Pool ist volle Gischt (aShore=1), passt.
+        geo.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         const mesh = new THREE.Mesh(geo, mat);
         // V9.60-d.4: Pool sitzt leicht in einer Erosion-Senke (Real-World)
         mesh.position.set(wf.x, wf.bottomY - 0.25, wf.z);
@@ -22221,6 +22299,10 @@ class AnazhRealm {
                 ? this.state.atmosphere.waterCull
                 : 0.0025;
         const uMinDepth = uniform(initMinDepth);
+        // V18.14 — die MAKRO-bewusste Schaum-Tiefe (M1): der Schaum schäumt nur, wo die
+        // ECHTE Wassertiefe `aDepth` < uDepthFoam (die echte Uferlinie), NICHT den ganzen
+        // flachen Fluss (gemessen median 1.31 m). In METERN (nicht Lineardepth), Slider.
+        const uDepthFoam = uniform(Number.isFinite(atmoW.waterDepthFoam) ? atmoW.waterDepthFoam : 1.2);
 
         // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
         const hash2 = Fn(([p]) => {
@@ -22267,6 +22349,8 @@ class AnazhRealm {
         const aFlowV = attribute("aFlow", "vec2");
         const aShoreV = attribute("aShore", "float");
         const aWaveV = attribute("aWave", "float");
+        // V18.14 — der MAKRO-Kontext: die echte Wassertiefe (L−Bett) pro Vertex.
+        const aDepthV = attribute("aDepth", "float");
 
         const p = positionLocal;
         // Welt-verankert: das Wasser-Mesh hat mesh.position=(0,0,0) (V9.71),
@@ -22361,7 +22445,13 @@ class AnazhRealm {
         // spannung", pro-Pixel dem Terrain folgend. Ersetzt funktional das für
         // Chunk-Wasser tote aShore-Band.
         const shoreSparkle = float(0.6).add(vnoise(xz.mul(0.7).add(uTime.mul(0.25))).mul(0.4));
-        const depthFoam = shoreLine.mul(shoreSparkle);
+        // V18.14 (M1) — der Schaum-Saum wird vom MAKRO-Kontext gegated: NUR wo die ECHTE
+        // Wassertiefe `aDepth` klein ist (die echte Uferlinie, Tiefe→0), nicht überall, wo
+        // die Sicht-Dicke `waterThick` klein ist (das traf den ganzen flachen Fluss → Chaos).
+        // `realShallow` = 1 an der echten Kante, 0 ab uDepthFoam m Tiefe → der flache Fluss-
+        // Kern (median 1.31 m > uDepthFoam) schäumt NICHT mehr, nur sein Rand.
+        const realShallow = float(1.0).sub(smoothstep(float(0.0), uDepthFoam, aDepthV));
+        const depthFoam = shoreLine.mul(realShallow).mul(shoreSparkle);
         // V14-Emotions-Haken: uEmotion>0 hebt den Schaum sanft an (die Welt atmet
         // im Wasser); default 0 = exakt das alte Bild.
         const foamD = clamp(max(foam, depthFoam).add(uEmotion.mul(0.25)), 0.0, 1.0);
@@ -22435,6 +22525,7 @@ class AnazhRealm {
             depthRange: uDepthRange,
             emotion: uEmotion,
             minDepth: uMinDepth,
+            depthFoam: uDepthFoam,
         };
         this.state.hydroSurfaceMaterial = mat;
         return mat;
@@ -24152,6 +24243,15 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthRange)
                         ? this.state.atmosphere.waterDepthRange
                         : 0.03,
+                // V18.14 M1/M3 — Makro-Kontext-Regler persistieren.
+                waterDepthFoam:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthFoam)
+                        ? this.state.atmosphere.waterDepthFoam
+                        : 1.2,
+                waterfallSteep:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterfallSteep)
+                        ? this.state.atmosphere.waterfallSteep
+                        : 1.0,
                 // J4-Regler: Kavitäts-AO-Stärke (0..1) + Kanten-Schärfe (Post-FX local-contrast, 0..1).
                 cavityAO:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
@@ -26275,6 +26375,12 @@ class AnazhRealm {
             if (Number.isFinite(sw)) this.setWaterShoreWidth(Math.max(0.0005, Math.min(0.05, sw)));
             const dr = Number(state.atmosphere.waterDepthRange);
             if (Number.isFinite(dr)) this.setWaterDepthRange(Math.max(0.005, Math.min(0.2, dr)));
+            // V18.14 M1/M3 — die Makro-Kontext-Regler (vor dem Hydrosphäre-Mesh-Bau setzen,
+            // damit waterfallSteep die erste Wasserfall-Auswahl steuert).
+            const df = Number(state.atmosphere.waterDepthFoam);
+            if (Number.isFinite(df)) this.state.atmosphere.waterDepthFoam = Math.max(0.1, Math.min(6.0, df));
+            const ws = Number(state.atmosphere.waterfallSteep);
+            if (Number.isFinite(ws)) this.state.atmosphere.waterfallSteep = Math.max(0.2, Math.min(4.0, ws));
             // J4-Regler (default 1.0 / 0.5 = unverändert) + an die Uniforms pushen,
             // falls sie schon erzeugt sind (sonst liest `_ensure*` sie beim Bau).
             const ao = Number(state.atmosphere.cavityAO);
@@ -36778,6 +36884,32 @@ class AnazhRealm {
         return m;
     }
 
+    // V18.14 M1 — die MAKRO-bewusste Schaum-Tiefe (uDepthFoam, in Metern): der Schaum
+    // schäumt nur Wasser flacher als dieser Tiefe (die echte Uferlinie). Kleiner = der
+    // flache Fluss schäumt weniger; grösser = mehr Schaum auch im flachen Wasser.
+    setWaterDepthFoam(meters) {
+        const m = Math.max(0.1, Math.min(6.0, Number(meters) || 1.2));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.waterDepthFoam = m;
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.depthFoam) {
+            this.state.hydroSurfaceUniforms.depthFoam.value = m;
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // V18.14 M3 — die Wasserfall-Steilheits-Schwelle (Drop/Lauf): eine vertikale Plane
+    // nur ab dieser Terrain-Steilheit (echte Wand), darunter ist es ein Hang (die Fluss-
+    // Fläche trägt ihn). Rebuildet die Hydrosphäre-Meshes (die Wasserfall-Auswahl ändert sich).
+    setWaterfallSteep(v) {
+        const m = Math.max(0.2, Math.min(4.0, Number(v) || 1.0));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.waterfallSteep = m;
+        if (typeof this._buildHydrosphereMeshes === "function") this._buildHydrosphereMeshes();
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // WELLE J4-Regler — die Kavitäts-AO-Stärke (0 = aus … 1 = voll). Die
     // `fwidth(normalWorld)`-AO zeichnet jede Surface-Nets-Facetten-Kante als
     // Linie (screen-space → flackert beim Laufen) — der Haupt-Verdacht für die
@@ -44178,6 +44310,36 @@ class AnazhRealm {
                 if (wdVal) wdVal.textContent = v.toFixed(3);
             });
         }
+        // V18.14 M1 — Fluss-Schaum-Tiefe (uDepthFoam, m): Schaum nur bis dieser ECHTEN Tiefe.
+        const dfS = document.getElementById("slider-waterdepthfoam");
+        const dfVal = document.getElementById("slider-waterdepthfoam-val");
+        if (dfS) {
+            const f0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthFoam)
+                    ? this.state.atmosphere.waterDepthFoam
+                    : 1.2;
+            dfS.value = String(Math.round(f0 * 10));
+            if (dfVal) dfVal.textContent = f0.toFixed(1) + " m";
+            dfS.addEventListener("input", () => {
+                const v = this.setWaterDepthFoam(parseInt(dfS.value, 10) / 10);
+                if (dfVal) dfVal.textContent = v.toFixed(1) + " m";
+            });
+        }
+        // V18.14 M3 — Wasserfall-Steilheit (Drop/Lauf): Plane nur ab echter Wand.
+        const wfsS = document.getElementById("slider-waterfallsteep");
+        const wfsVal = document.getElementById("slider-waterfallsteep-val");
+        if (wfsS) {
+            const s0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterfallSteep)
+                    ? this.state.atmosphere.waterfallSteep
+                    : 1.0;
+            wfsS.value = String(Math.round(s0 * 10));
+            if (wfsVal) wfsVal.textContent = s0.toFixed(1);
+            wfsS.addEventListener("input", () => {
+                const v = this.setWaterfallSteep(parseInt(wfsS.value, 10) / 10);
+                if (wfsVal) wfsVal.textContent = v.toFixed(1);
+            });
+        }
         // V17.109 — die 2.5D-Lichtung (0..100 % → terrainFlatten 0..1). Der HAUPT-
         // Hebel gegen die Facetten-Rauten (blendet die Shading-Normale zur Up-Achse).
         const tfS = document.getElementById("slider-flatten");
@@ -47452,7 +47614,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.13.0";
+AnazhRealm.VERSION = "18.14.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
