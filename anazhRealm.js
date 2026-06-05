@@ -19040,6 +19040,52 @@ class AnazhRealm {
     // Pfad zum alten Quad-Mesh-System; das Mesh existiert in der Scene aber
     // mit `visible = false` per Default — der Toggle (`_setVoxelWaterIsoVisible`)
     // schaltet auf das neue System um. C.5 räumt das alte System ab.
+    // V18.1 (Wasser-finale-Form W1) — Wasser ist eine FLÄCHE, kein Volumen
+    // (der Profi-Weg: GDC-2023 „Photon Water" + die Distant-Horizons-Lehre —
+    // das einzige andere LOD-Voxel-Wasser hatte unsere exakten Bugs #424/#503/
+    // #606). Die geschlossene Surface-Nets-Iso-Hülle hat eine UNTERSEITE, die
+    // der Schöpfer von unter der Karte als „Wasser auf der falschen Seite des
+    // Bodens, klettert überall in die Welt" sieht. GEMESSEN (diag-water-surface):
+    // die Iso-Wicklung zeigt nach INNEN (ins Wasser), area-gewichtetes ny = −0.47
+    // → die OBERSEITEN haben ny<0 (Front zeigt nach unten, ins Wasser; von oben
+    // über ihre Rückseite sichtbar = `mat.side=BackSide`), die UNTERSEITEN ny>0.
+    // Wir verwerfen die Unterseiten (ny>cullNy) → es bleibt die Oberseite + die
+    // fast-vertikalen Ufer. Zusammen mit BackSide ist die Unterseite strukturell
+    // unsichtbar (von unten Front-gecullt, die Unterseite ist weg). Die Uferlinie
+    // trägt der Tiefen-Shader allein (V13.5 `waterThick`) — nicht die Geometrie.
+    // Indiziert → ALLE Attribute (aFlow/aShore/aWave werden danach gesetzt) bleiben
+    // gültig; nur der Index wird neu gebaut.
+    _cullWaterUndersideTris(geom, cullNy = 0.2) {
+        const pos = geom && geom.attributes && geom.attributes.position;
+        if (!pos) return geom;
+        const idx = geom.index ? geom.index.array : null;
+        const triCount = idx ? idx.length / 3 : Math.floor(pos.count / 3);
+        const kept = [];
+        for (let t = 0; t < triCount; t++) {
+            const a = idx ? idx[t * 3] : t * 3;
+            const b = idx ? idx[t * 3 + 1] : t * 3 + 1;
+            const c = idx ? idx[t * 3 + 2] : t * 3 + 2;
+            const ax = pos.getX(a);
+            const ay = pos.getY(a);
+            const az = pos.getZ(a);
+            const ex1 = pos.getX(b) - ax;
+            const ey1 = pos.getY(b) - ay;
+            const ez1 = pos.getZ(b) - az;
+            const ex2 = pos.getX(c) - ax;
+            const ey2 = pos.getY(c) - ay;
+            const ez2 = pos.getZ(c) - az;
+            // y-Komponente + Länge von (b-a)×(c-a)
+            const nx = ey1 * ez2 - ez1 * ey2;
+            const ny = ez1 * ex2 - ex1 * ez2;
+            const nz = ex1 * ey2 - ey1 * ex2;
+            const nlen = Math.hypot(nx, ny, nz) || 1e-9;
+            if (ny / nlen <= cullNy) kept.push(a, b, c); // Unterseite (ny>cullNy) verwerfen
+        }
+        if (kept.length === 0) return null;
+        geom.setIndex(kept);
+        return geom;
+    }
+
     _buildVoxelChunkWaterIsoSurface(cx, cz) {
         if (!this.state.scene || typeof THREE === "undefined") return null;
         if (!this.state.voxelChunks) return null;
@@ -19234,6 +19280,13 @@ class AnazhRealm {
         );
         if (!geom) {
             // Kein Wasser-Iso im Band → kein Mesh.
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        // V18.1 W1 — die Unterseite der Iso-Hülle verwerfen (s. `_cullWaterUndersideTris`).
+        // Das tötet „Wasser auf der falschen Seite des Bodens" an der Geometrie-Wurzel.
+        if (!this._cullWaterUndersideTris(geom)) {
+            this._queueDispose(geom);
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
@@ -22125,7 +22178,14 @@ class AnazhRealm {
         mat.polygonOffset = true;
         mat.polygonOffsetFactor = 1;
         mat.polygonOffsetUnits = 1;
-        mat.side = THREE.DoubleSide;
+        // V18.1 W1 — Wasser ist eine einseitige FLÄCHE, kein Volumen. Die Iso-
+        // Wicklung zeigt nach INNEN (GEMESSEN ny=−0.47) → die Oberseite ist von
+        // OBEN über ihre RÜCKSEITE sichtbar (= das Bild, das der Schöpfer von
+        // oben schon JETZT sieht, unverändert) und von UNTEN front-gecullt →
+        // „Wasser auf der falschen Seite des Bodens" (unter der Karte) ist weg.
+        // Der Unterwasser-Blick trägt der Voll-Bild-Tint (playerEyesUnderwater,
+        // _dayNightApplyHemiAndFog), NICHT das Mesh — also sicher (geprüft).
+        mat.side = THREE.BackSide;
 
         this.state.hydroSurfaceUniforms = {
             time: uTime,
@@ -47060,7 +47120,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.0.0";
+AnazhRealm.VERSION = "18.1.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

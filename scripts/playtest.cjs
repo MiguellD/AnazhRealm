@@ -19985,11 +19985,52 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
             out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
             out.sampleMeshUserData = sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-iso";
+            // V18.1 W1 (Wasser-finale-Form) — Wasser ist eine FLÄCHE, kein Volumen:
+            // Material BackSide (von oben über die Rückseite sichtbar, von unten
+            // front-gecullt) + die Iso trägt KEINE Unterseiten-Dreiecke mehr
+            // (ny>0.2 am Build verworfen). Tötet „Wasser auf der falschen Seite
+            // des Bodens" an der Geometrie-Wurzel. Über ALLE Iso-Meshes gezählt.
+            const BACK = window.THREE && window.THREE.BackSide !== undefined ? window.THREE.BackSide : 1;
+            out.waterMatBackSide = r.state.hydroSurfaceMaterial ? r.state.hydroSurfaceMaterial.side === BACK : false;
+            let undersideTris = 0;
+            let topsTris = 0;
+            for (const [, mm] of r.state.voxelChunkWaterIso) {
+                if (!mm || !mm.geometry || !mm.geometry.attributes.position) continue;
+                const pos = mm.geometry.attributes.position;
+                const idx = mm.geometry.index ? mm.geometry.index.array : null;
+                const tc = idx ? idx.length / 3 : Math.floor(pos.count / 3);
+                for (let t = 0; t < tc; t++) {
+                    const a = idx ? idx[t * 3] : t * 3;
+                    const b = idx ? idx[t * 3 + 1] : t * 3 + 1;
+                    const c = idx ? idx[t * 3 + 2] : t * 3 + 2;
+                    const ax = pos.getX(a);
+                    const ay = pos.getY(a);
+                    const az = pos.getZ(a);
+                    const e1x = pos.getX(b) - ax;
+                    const e1y = pos.getY(b) - ay;
+                    const e1z = pos.getZ(b) - az;
+                    const e2x = pos.getX(c) - ax;
+                    const e2y = pos.getY(c) - ay;
+                    const e2z = pos.getZ(c) - az;
+                    const nx = e1y * e2z - e1z * e2y;
+                    const ny = e1z * e2x - e1x * e2z;
+                    const nz = e1x * e2y - e1y * e2x;
+                    const nl = Math.hypot(nx, ny, nz) || 1e-9;
+                    const nyn = ny / nl;
+                    if (nyn > 0.2) undersideTris++;
+                    else if (nyn < -0.2) topsTris++;
+                }
+            }
+            out.waterUndersideTris = undersideTris;
+            out.waterTopsTris = topsTris;
         } else {
             // Welt hatte keinen Iso-Mesh (z.B. alle Chunks im Hochland, kein
             // Wasser) — Test überspringen, aber als sanity-skip markieren.
             out.sampleMeshUsesHydroMat = "skip — kein Iso-Mesh in der Welt";
             out.sampleMeshUserData = "skip";
+            out.waterMatBackSide = "skip";
+            out.waterUndersideTris = "skip";
+            out.waterTopsTris = "skip";
         }
         return out;
     });
@@ -20022,6 +20063,20 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         );
         check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
         check("Welle C.2 V9.72: Iso-Mesh trägt userData.hydroKind='chunk-water-iso'", res.sampleMeshUserData === true);
+        check(
+            "V18.1 W1: Wasser-Material ist BackSide (einseitige Flaeche, kein Volumen, kein Wasser-von-unten)",
+            res.waterMatBackSide === true
+        );
+        check(
+            "V18.1 W1: Wasser-Iso trägt KEINE Unterseiten-Dreiecke (ny>0.2 am Build verworfen)",
+            res.waterUndersideTris === 0,
+            `Unterseite=${res.waterUndersideTris}, Oberseite=${res.waterTopsTris}`
+        );
+        check(
+            "V18.1 W1: Wasser-Iso trägt Oberseiten-Dreiecke (von oben über die Rückseite sichtbar)",
+            typeof res.waterTopsTris === "number" && res.waterTopsTris > 0,
+            `Oberseite=${res.waterTopsTris}`
+        );
         if (res.bergseeCheckable) {
             check(
                 "Welle C.2 V9.73 (Heilung): Bergsee-Cells über waterLevel sind als state=WATER im Feld",
