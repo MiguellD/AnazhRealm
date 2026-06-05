@@ -475,8 +475,13 @@ function hydroRiverAt(x, z) {
     const list = h.riverBuckets[bj * bd + bi];
     if (!list) return null;
     const bankSlope = state.carveBankSlope;
-    let bestD = Infinity;
-    let depth = 0;
+    // V18.21 — der Fluss-RIM (die Fläche reicht über die Bank, damit der Tiefen-Shader die
+    // Uferlinie macht statt der Gitter-Quad-Kante = der Sägezahn). MUSS bit-identisch zum Main
+    // `_hydroRiverAt` sein (surfaceY → colL → Cell-Naht, Determinismus-Wand). Der Worker braucht
+    // nur surfaceY (kein Flow) — `bestSurfD` = nächstes Segment im Ribbon+RIM, surfDepth dessen Tiefe.
+    const SURFACE_RIM = 14;
+    let bestSurfD = Infinity;
+    let surfDepth = 0;
     for (let s = 0; s < list.length; s++) {
         const seg = list[s];
         const ex = seg.bx - seg.ax;
@@ -491,14 +496,13 @@ function hydroRiverAt(x, z) {
         const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
         const D = seg.dA + (seg.dB - seg.dA) * t;
         const bankW = Math.max(2, D * bankSlope);
-        if (dist <= halfW + bankW && dist < bestD) {
-            bestD = dist;
-            depth = D;
+        if (dist <= halfW + bankW + SURFACE_RIM && dist < bestSurfD) {
+            bestSurfD = dist;
+            surfDepth = D;
         }
     }
-    if (bestD === Infinity) return null;
-    // V18.21 — voller Spiegel bleibt (Freibord 0.25); MUSS bit-identisch zum Main sein.
-    return { depth, surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.25 };
+    if (bestSurfD === Infinity) return null;
+    return { surfaceY: terrainMacroSurfaceY(x, z, true) - surfDepth * 0.25 };
 }
 
 function waterLevelAt(x, z) {

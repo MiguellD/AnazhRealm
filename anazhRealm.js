@@ -21206,10 +21206,22 @@ class AnazhRealm {
         const list = h.riverBuckets[bj * bd + bi];
         if (!list) return null;
         const bankSlope = AnazhRealm.HYDROSPHERE.carveBankSlope;
-        let bestD = Infinity;
+        // V18.21 — die WURZEL der Fluss-Sägezähne (Schöpfer „das Wasser läuft nicht aus, darum
+        // der Sägezahn; der See hat das Problem nicht, Minecraft hat das längst gelöst"): die
+        // Fluss-FLÄCHE endete EXAKT an der Ribbon-Kante (`halfW+bankW`) → die sichtbare Uferlinie
+        // war die GITTER-quantisierte Quad-Kante (= Sägezahn, am schlimmsten genau auf der Chunk-
+        // Naht, wo das Gitter ausgerichtet liegt). Ein SEE reicht ~16 m ÜBER die Uferlinie (der
+        // Rim in `_atlasWaterLevelAt`) → der Tiefen-Shader malt die Uferlinie PRO PIXEL (glatt,
+        // der Profi-/Riesen-Weg V18.10). Der Fluss bekommt jetzt denselben RIM: die Fläche reicht
+        // `SURFACE_RIM` m über die Bank → terrain-OKKLUDIERT (die Bank steht darüber, rendert nicht),
+        // gibt dem Tiefen-Shader nur GEOMETRIE-Spielraum für den weichen Saum → kein Quad-Sägezahn,
+        // bei JEDEM Pegel. Flow/Strömung bleiben STRIKT im Ribbon (kein Rim-Flow). main↔Worker bit-id.
+        const SURFACE_RIM = 14;
+        let bestD = Infinity; // nächster Punkt im RIBBON → Flow
+        let bestSurfD = Infinity; // nächster Punkt im RIBBON+RIM → Flächen-Ausdehnung
         let dirX = 0;
         let dirZ = 0;
-        let depth = 0;
+        let surfDepth = 0;
         for (let s = 0; s < list.length; s++) {
             const seg = list[s];
             const ex = seg.bx - seg.ax;
@@ -21224,25 +21236,27 @@ class AnazhRealm {
             const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
             const D = seg.dA + (seg.dB - seg.dA) * t;
             const bankW = Math.max(2, D * bankSlope);
-            if (dist <= halfW + bankW && dist < bestD) {
+            const ribbon = halfW + bankW;
+            if (dist <= ribbon && dist < bestD) {
                 bestD = dist;
                 const len = Math.sqrt(len2);
                 dirX = ex / len;
                 dirZ = ez / len;
-                depth = D;
+            }
+            if (dist <= ribbon + SURFACE_RIM && dist < bestSurfD) {
+                bestSurfD = dist;
+                surfDepth = D;
             }
         }
-        if (bestD === Infinity) return null;
+        if (bestSurfD === Infinity) return null;
+        const inRibbon = bestD < Infinity;
         return {
-            flowX: dirX,
-            flowZ: dirZ,
-            depth,
-            // V18.21 — der volle Spiegel BLEIBT (Freibord 0.25·Tiefe, Schöpfer „die Höhe behalten,
-            // es wurde schlechter weil du einen Fehler AUFGEDECKT hast, nicht weil sie schlecht war").
-            // Der aufgedeckte Fehler (die Sägezähne am höheren Ufer) wird an der WURZEL geheilt: das
-            // 3D-Rauschen im Fluss-Kanal wird geglättet (`_terrainBaseDensityAt`), nicht der Shader
-            // weichgezeichnet — die Bank wird glatt → saubere Wasserlinie bei jedem Pegel.
-            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.25,
+            // Flow nur im echten Ribbon (im Rim 0 → die Foam-Strähnen/aWave behandeln ihn als ruhig).
+            flowX: inRibbon ? dirX : 0,
+            flowZ: inRibbon ? dirZ : 0,
+            // Der volle Spiegel BLEIBT (Freibord 0.25·Tiefe, V18.21 — Schöpfer „die Höhe behalten").
+            // Die Fläche reicht bis zum Rim; im Ribbon unverändert (surfDepth = Segment-Tiefe).
+            surfaceY: this._terrainMacroSurfaceY(x, z) - surfDepth * 0.25,
         };
     }
 
@@ -47760,7 +47774,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.21.0";
+AnazhRealm.VERSION = "18.22.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
