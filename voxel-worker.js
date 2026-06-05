@@ -956,9 +956,36 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
         for (let i = 0; i < dim; i++) colSurf[i + k * dim] = terrainMacroSurfaceY(ox + (i + 0.5) * step, cz, true);
     }
     const caveDry = (i, k, cy) => cy < colSurf[i + k * dim] - AQ_DEPTH && cy > aquiferY;
-    const flLevel = new Float64Array(dimSq * dimY);
+    // U-W1/U-W3 (mirror von _buildVoxelChunkWaterCells; MUSS bit-identisch):
+    // die EINE kanonische Wasserspiegel-Höhe colL PRO SPALTE (terrain-gated) +
+    // jede Zelle füllt nur bis colL[ihre Spalte] — kein propagierter Quell-Spiegel,
+    // keine Über-Füllung; BFS-Konnektivität bleibt.
+    const colL = new Float64Array(dimSq);
+    const colSrc = new Uint8Array(dimSq);
+    for (let k = 0; k < dim; k++) {
+        const cz = oz + (k + 0.5) * step;
+        for (let i = 0; i < dim; i++) {
+            const cxw = ox + (i + 0.5) * step;
+            const idx0 = i + k * dim;
+            colL[idx0] = atlasWaterLevelAt(cxw, cz, colSurf[idx0]);
+            colSrc[idx0] = atlasWaterLevelAt(cxw, cz, Infinity) > -Infinity ? 1 : 0;
+        }
+    }
+    for (let k = 0; k < dim; k++) {
+        const cz = oz + (k + 0.5) * step;
+        if (atlasWaterLevelAt(ox - 0.5 * step, cz, Infinity) > -Infinity) colSrc[0 + k * dim] = 1;
+        if (atlasWaterLevelAt(ox + (dim + 0.5) * step, cz, Infinity) > -Infinity) colSrc[dim - 1 + k * dim] = 1;
+    }
+    for (let i = 0; i < dim; i++) {
+        const cxw = ox + (i + 0.5) * step;
+        if (atlasWaterLevelAt(cxw, oz - 0.5 * step, Infinity) > -Infinity) colSrc[i + 0 * dim] = 1;
+        if (atlasWaterLevelAt(cxw, oz + (dim + 0.5) * step, Infinity) > -Infinity) colSrc[i + (dim - 1) * dim] = 1;
+    }
     const queue = [];
-    const seedColumn = (i, k, lvl) => {
+    const seedColumn = (i, k) => {
+        const idx0 = i + k * dim;
+        if (!colSrc[idx0]) return;
+        const lvl = colL[idx0];
         if (!(lvl > -Infinity)) return;
         const baseK = k * dim;
         for (let j = 0; j <= jMax; j++) {
@@ -967,51 +994,33 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
             const cidx = i + baseK + j * dimSq;
             if (cells[cidx] === AIR && !caveDry(i, k, cy)) {
                 cells[cidx] = WATER;
-                flLevel[cidx] = lvl;
                 queue.push(cidx);
             }
         }
     };
-    for (let k = 0; k < dim; k++) {
-        const cz = oz + (k + 0.5) * step;
-        for (let i = 0; i < dim; i++) {
-            seedColumn(i, k, atlasWaterLevelAt(ox + (i + 0.5) * step, cz, Infinity));
-        }
-    }
-    for (let k = 0; k < dim; k++) {
-        const cz = oz + (k + 0.5) * step;
-        seedColumn(0, k, atlasWaterLevelAt(ox - 0.5 * step, cz, Infinity));
-        seedColumn(dim - 1, k, atlasWaterLevelAt(ox + (dim + 0.5) * step, cz, Infinity));
-    }
-    for (let i = 0; i < dim; i++) {
-        const cx = ox + (i + 0.5) * step;
-        seedColumn(i, 0, atlasWaterLevelAt(cx, oz - 0.5 * step, Infinity));
-        seedColumn(i, dim - 1, atlasWaterLevelAt(cx, oz + (dim + 0.5) * step, Infinity));
-    }
-    const pushN = (ni, nk, nj, lvl) => {
+    for (let k = 0; k < dim; k++) for (let i = 0; i < dim; i++) seedColumn(i, k);
+    const pushN = (ni, nk, nj) => {
         if (ni < 0 || nk < 0 || ni >= dim || nk >= dim || nj < 0 || nj > jMax) return;
         const cy = oy + (nj + 0.5) * step;
-        if (cy > lvl) return;
+        if (cy > colL[ni + nk * dim]) return;
         const nidx = ni + nk * dim + nj * dimSq;
         if (cells[nidx] === AIR && !caveDry(ni, nk, cy)) {
             cells[nidx] = WATER;
-            flLevel[nidx] = lvl;
             queue.push(nidx);
         }
     };
     for (let qh = 0; qh < queue.length; qh++) {
         const cidx = queue[qh];
-        const lvl = flLevel[cidx];
         const j = (cidx / dimSq) | 0;
         const rem = cidx - j * dimSq;
         const k = (rem / dim) | 0;
         const i = rem - k * dim;
-        pushN(i + 1, k, j, lvl);
-        pushN(i - 1, k, j, lvl);
-        pushN(i, k + 1, j, lvl);
-        pushN(i, k - 1, j, lvl);
-        pushN(i, k, j + 1, lvl);
-        pushN(i, k, j - 1, lvl);
+        pushN(i + 1, k, j);
+        pushN(i - 1, k, j);
+        pushN(i, k + 1, j);
+        pushN(i, k - 1, j);
+        pushN(i, k, j + 1);
+        pushN(i, k, j - 1);
     }
     // 5) ROBUSTE 3D-KONNEKTIVITÄT (V13.14, Mirror von `_skyOpenWaterFilter`):
     //    Wasser existiert nur, wo es durch Wasser mit der offenen Atmosphäre

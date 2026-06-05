@@ -89,10 +89,10 @@ Die Messung (Chunk 2,−2): die Zellen (=Physik) füllen **uniform auf y=9**, de
 Das ist der Profi-Weg (Sea of Thieves / Unreal: Oberfläche am Spiegel, depth-versöhnt) UND die V9.69-„Sheet war zwei Skalen"-Lehre **richtig** aufgelöst: **nicht zwei Skalen — EINE, `L`.**
 
 **Der Bau-Bogen (jede Welle misst die Konvergenz via `diag-water-level-truth` — alle Pfade → `L`):**
-- **U-W1** — `waterSurfaceHeightAt(x,z) → L`: die EINE kanonische Spiegel-Funktion (Ozean/See/Fluss/reaktiv vereint), pro Chunk gecacht.
-- **U-W2** — Physik liest `L` direkt (statt Zell-Oberkante). Messen: `render−physik → 0` (eliminiert „Physik stimmt, Render fällt").
-- **U-W3** — der Flood füllt GENAU bis `L` (kein Über-Füllen). Messen: `cellTop−L → 0` (heilt die gemessene 4–15-m-Über-Füllung).
-- **U-W4** — die Render-Oberfläche sitzt EXAKT auf `L` (kein Rand-Sacken; Iso an `L` gepinnt ODER eine `L`-Höhenfeld-Fläche), depth-versöhnt. Fluss-Drops aus dem `L`-Gefälle, Ufer glatt aus der Tiefe. Messen: `isoY−L → 0`.
+- **U-W1 ✅ GEBAUT (V18.5)** — `colL` pro Spalte (terrain-gated `_atlasWaterLevelAt(col, colSurf)` → Ufer/Rim füllt sub-zellig, Land trocken); die EINE kanonische Spiegel-Höhe, main+worker bit-identisch.
+- **U-W2 ✅ SUBSUMIERT (V18.5)** — Physik liest den Zell-Top (`_playerWaterContext`), der nach U-W3 = `L` ist (reaktiv: graben/dämmen ändert die Zellen → `L`). Kein eigener Fix nötig.
+- **U-W3 ✅ GEBAUT (V18.5)** — Seed + BFS füllen jede Zelle nur bis `colL[ihre Spalte]` (kein propagierter Quell-Spiegel; `flLevel` entfernt) → keine Über-Füllung; die BFS-Konnektivität bleibt (kein Phantom/Bluten). GEMESSEN (`diag-water-level-truth`): `cellTop−L` 14.78→**0.66 m**. Determinismus-Wand grün (Wasser-Cells Worker↔Main mism=0/115200).
+- **U-W4 ◐ OFFEN (pixel-blind → Browser)** — die Render-Iso sitzt noch ±1 m (`isoY−cellTop`, Zell-Granularität) von `L`; exakt-auf-`L` (Iso-Top-Vertices an `L` pinnen ODER eine `L`-Höhenfeld-Fläche) + das Rand-Sacken (Smoothing) sind der Rest. Der Browser zeigt, ob der ±1-m-Rest überhaupt sichtbar ist (nicht blind iterieren, V13-Lehre).
 
 **Separater Faden (nicht Wasser):** der Sprung-von-Strukturen-Bug — in frieden ist das Soul-Tor offen, der Sprung braucht nur `isGrounded`; der 9-Strahl-Erdungs-Raycast trifft die Bauwerks-Kollision nicht (fehlt/zu tief/distanz-gepruned). Eigener Bogen (Struktur-Kollisions-Lebenszyklus; auch die echte Wurzel hinter dem 6.A3-Flake).
 

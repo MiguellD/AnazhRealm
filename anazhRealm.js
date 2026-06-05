@@ -18810,9 +18810,44 @@ class AnazhRealm {
             for (let i = 0; i < dim; i++) colSurf[i + k * dim] = this._terrainMacroSurfaceY(ox + (i + 0.5) * step, cz);
         }
         const caveDry = (i, k, cy) => cy < colSurf[i + k * dim] - AQ_DEPTH && cy > aquiferY;
-        const flLevel = new Float64Array(dimSq * dimY);
+        // U-W1 (die WAHRE FORMEL) — die EINE kanonische Wasserspiegel-Höhe `colL`
+        // PRO SPALTE, terrain-gated (`_atlasWaterLevelAt` mit dem echten Spalten-
+        // Terrain-Top → Ufer/Rim füllt sub-zellig, Land bleibt trocken). Jede Spalte
+        // trägt IHREN eigenen Body-Spiegel. `colSrc` = echte Atlas-Wasser-Quelle (Seed).
+        const colL = new Float64Array(dimSq);
+        const colSrc = new Uint8Array(dimSq);
+        for (let k = 0; k < dim; k++) {
+            const cz = oz + (k + 0.5) * step;
+            for (let i = 0; i < dim; i++) {
+                const cxw = ox + (i + 0.5) * step;
+                const idx0 = i + k * dim;
+                colL[idx0] = this._atlasWaterLevelAt(cxw, cz, colSurf[idx0]);
+                colSrc[idx0] = this._atlasWaterLevelAt(cxw, cz, Infinity) > -Infinity ? 1 : 0;
+            }
+        }
+        // OOB-Ring: ein Wasser-Körper jenseits der Kante flutet herein → die
+        // Kant-Spalte als Quelle markieren (Konnektivität von außen, seam-frei via
+        // globalem Atlas; gefüllt wird sie bis IHR eigenes colL).
+        for (let k = 0; k < dim; k++) {
+            const cz = oz + (k + 0.5) * step;
+            if (this._atlasWaterLevelAt(ox - 0.5 * step, cz, Infinity) > -Infinity) colSrc[0 + k * dim] = 1;
+            if (this._atlasWaterLevelAt(ox + (dim + 0.5) * step, cz, Infinity) > -Infinity)
+                colSrc[dim - 1 + k * dim] = 1;
+        }
+        for (let i = 0; i < dim; i++) {
+            const cxw = ox + (i + 0.5) * step;
+            if (this._atlasWaterLevelAt(cxw, oz - 0.5 * step, Infinity) > -Infinity) colSrc[i + 0 * dim] = 1;
+            if (this._atlasWaterLevelAt(cxw, oz + (dim + 0.5) * step, Infinity) > -Infinity)
+                colSrc[i + (dim - 1) * dim] = 1;
+        }
         const queue = [];
-        const seedColumn = (i, k, lvl) => {
+        // U-W3: eine Quell-Spalte wird bis IHR colL geflutet (NICHT bis ein
+        // propagierter höherer Quell-Spiegel — das heilt die gemessene 4–15-m-
+        // Über-Füllung `cellTop−L`).
+        const seedColumn = (i, k) => {
+            const idx0 = i + k * dim;
+            if (!colSrc[idx0]) return;
+            const lvl = colL[idx0];
             if (!(lvl > -Infinity)) return;
             const baseK = k * dim;
             for (let j = 0; j <= jMax; j++) {
@@ -18821,55 +18856,36 @@ class AnazhRealm {
                 const cidx = i + baseK + j * dimSq;
                 if (cells[cidx] === AIR && !caveDry(i, k, cy)) {
                     cells[cidx] = WATER;
-                    flLevel[cidx] = lvl;
                     queue.push(cidx);
                 }
             }
         };
-        // In-chunk-Seeds (echte Atlas-Wasser-Spalten).
-        for (let k = 0; k < dim; k++) {
-            const cz = oz + (k + 0.5) * step;
-            for (let i = 0; i < dim; i++) {
-                seedColumn(i, k, this._atlasWaterLevelAt(ox + (i + 0.5) * step, cz, Infinity));
-            }
-        }
-        // OOB-Ring-Seeds: ein Atlas-Wasser-Körper jenseits der Chunk-Grenze flutet
-        // über die Kante herein (seam-frei via globalem Atlas).
-        for (let k = 0; k < dim; k++) {
-            const cz = oz + (k + 0.5) * step;
-            seedColumn(0, k, this._atlasWaterLevelAt(ox - 0.5 * step, cz, Infinity));
-            seedColumn(dim - 1, k, this._atlasWaterLevelAt(ox + (dim + 0.5) * step, cz, Infinity));
-        }
-        for (let i = 0; i < dim; i++) {
-            const cx = ox + (i + 0.5) * step;
-            seedColumn(i, 0, this._atlasWaterLevelAt(cx, oz - 0.5 * step, Infinity));
-            seedColumn(i, dim - 1, this._atlasWaterLevelAt(cx, oz + (dim + 0.5) * step, Infinity));
-        }
-        // 4) BFS-Flood durch nicht-soliden Raum unter dem getragenen Spiegel.
-        const pushN = (ni, nk, nj, lvl) => {
+        for (let k = 0; k < dim; k++) for (let i = 0; i < dim; i++) seedColumn(i, k);
+        // 4) BFS-Flood durch nicht-soliden Raum — jede Zelle bis colL[ihre Spalte]
+        //    (U-W3: kein propagierter Quell-Spiegel → keine Über-Füllung; die
+        //    BFS-Konnektivität bleibt = kein Phantom-Wasser, kein Bluten an Wänden).
+        const pushN = (ni, nk, nj) => {
             if (ni < 0 || nk < 0 || ni >= dim || nk >= dim || nj < 0 || nj > jMax) return;
             const cy = oy + (nj + 0.5) * step;
-            if (cy > lvl) return;
+            if (cy > colL[ni + nk * dim]) return;
             const nidx = ni + nk * dim + nj * dimSq;
             if (cells[nidx] === AIR && !caveDry(ni, nk, cy)) {
                 cells[nidx] = WATER;
-                flLevel[nidx] = lvl;
                 queue.push(nidx);
             }
         };
         for (let qh = 0; qh < queue.length; qh++) {
             const cidx = queue[qh];
-            const lvl = flLevel[cidx];
             const j = (cidx / dimSq) | 0;
             const rem = cidx - j * dimSq;
             const k = (rem / dim) | 0;
             const i = rem - k * dim;
-            pushN(i + 1, k, j, lvl);
-            pushN(i - 1, k, j, lvl);
-            pushN(i, k + 1, j, lvl);
-            pushN(i, k - 1, j, lvl);
-            pushN(i, k, j + 1, lvl);
-            pushN(i, k, j - 1, lvl);
+            pushN(i + 1, k, j);
+            pushN(i - 1, k, j);
+            pushN(i, k + 1, j);
+            pushN(i, k - 1, j);
+            pushN(i, k, j + 1);
+            pushN(i, k, j - 1);
         }
         // 5) ROBUSTE 3D-KONNEKTIVITÄT (V13.14, ersetzt den per-Spalten-Trocken-
         //    Pass V13.12): eine WATER-Zelle ist nur echt, wenn sie durch Wasser
@@ -47135,7 +47151,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.4.0";
+AnazhRealm.VERSION = "18.5.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
