@@ -259,6 +259,121 @@ const server = http.createServer((req, res) => {
             dependencyProven: !!(best && best.delta > 0),
         };
 
+        // ---------- Teil C — der ECHTE Blob: ein felsturm IN Wasser ----------
+        // Den nassesten gestreamten Chunk finden → dort ein felsturm spawnen →
+        // nach dem REALEN Remesh+Finalize+Iso-Drain (40 Ticks) messen:
+        //  (a) ROOT #3 „klettert hoch": bleiben WATER-Cells INNERHALB der
+        //      Gebäude-Footprint-AABBs (xz, botY..topY)? (Stempel sollte sie
+        //      SOLID machen → >0 = der Stempel deckt das Gebäude NICHT.)
+        //  (b) ROOT #1/#2 „klebt an Ecke/Kante": trägt ein 8er-Ring-Nachbar nach
+        //      dem Spawn eine STALE Iso (force-rebuild ändert die Vertex-Zahl)?
+        const baseY = s.terrainBaseHeight || 0;
+        const oyG = baseY - cfg.floorDrop;
+        let wettest = null;
+        for (const [key, e] of s.voxelChunks) {
+            if (!e || !e.waterCells) continue;
+            let w = 0;
+            for (let n = 0; n < e.waterCells.length; n++) if (e.waterCells[n] === STATE.WATER) w++;
+            if (!wettest || w > wettest.w) wettest = { key, w };
+        }
+        if (!wettest || wettest.w === 0) {
+            out.partC = { found: false, note: "kein Wasser-Chunk im gestreamten Set" };
+        } else {
+            const [wcx, wcz] = wettest.key.split(",").map(Number);
+            const bx = wcx * span + span / 2;
+            const bz = wcz * span + span / 2;
+            const gy = typeof r.getTerrainHeightAt === "function" ? r.getTerrainHeightAt(bx, bz) : 0;
+            const ring = [];
+            for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) ring.push(`${wcx + dx},${wcz + dz}`);
+            let be = null;
+            try {
+                be = r.spawnArchitecture("felsturm", { x: bx, y: gy + 0.5, z: bz }, {});
+            } catch (e) {
+                out.notes.push("C spawn: " + ((e && e.message) || e));
+            }
+            // Den realen Pfad deterministisch zu Ende treiben (Dirty-Rebuild + Iso-Drain).
+            for (let f = 0; f < 40; f++) {
+                try {
+                    r._gameLoopTick(performance.now());
+                    r._tickPendingWaterIso(64);
+                } catch (_e) {
+                    /* ignore */
+                }
+            }
+            // (a) WATER innerhalb der Gebäude-AABBs (= Stempel-Loch / „klettert hoch")?
+            const aabbs = (be && be.blockerAABBs) || [];
+            const aabbChunks = new Set();
+            const countWaterInBuilding = () => {
+                let n = 0;
+                for (const k of ring) {
+                    const e = s.voxelChunks.get(k);
+                    if (!e || !e.waterCells) continue;
+                    const [ccx, ccz] = k.split(",").map(Number);
+                    const cox = ccx * span;
+                    const coz = ccz * span;
+                    for (const ab of aabbs) {
+                        if (ab.maxX < cox || ab.minX > cox + dim * step) continue;
+                        if (ab.maxZ < coz || ab.minZ > coz + dim * step) continue;
+                        aabbChunks.add(k);
+                        const i0 = Math.max(0, Math.floor((ab.minX - cox) / step));
+                        const i1 = Math.min(dim - 1, Math.floor((ab.maxX - cox) / step));
+                        const k0 = Math.max(0, Math.floor((ab.minZ - coz) / step));
+                        const k1 = Math.min(dim - 1, Math.floor((ab.maxZ - coz) / step));
+                        const j0 = Math.max(0, Math.floor(((Number.isFinite(ab.botY) ? ab.botY : ab.topY - 4) - oyG) / step));
+                        const j1 = Math.min(dimY - 1, Math.floor((ab.topY - oyG) / step));
+                        for (let j = j0; j <= j1; j++)
+                            for (let kk = k0; kk <= k1; kk++)
+                                for (let ii = i0; ii <= i1; ii++)
+                                    if (e.waterCells[ii + kk * dim + j * dim * dim] === STATE.WATER) n++;
+                    }
+                }
+                return n;
+            };
+            const waterInBuilding = countWaterInBuilding();
+            // Über-Claim-Schutz: ist das WASSER-im-Gebäude PERMANENT (echtes
+            // Stempel-Loch = ROOT #3) oder nur TRANSIENT (der V17.118-async-Rebuild
+            // des fernen Chunks landete in 40 Ticks nicht)? → die AABB-Chunks JETZT
+            // synchron zwangs-rebuilden (forceSync stempelt garantiert) + neu zählen.
+            for (const k of aabbChunks) {
+                const [kx, kz] = k.split(",").map(Number);
+                try {
+                    r._rebuildVoxelChunk(kx, kz, null, { forceSync: true });
+                } catch (_e) {
+                    /* ignore */
+                }
+            }
+            const waterInBuildingAfterSync = countWaterInBuilding();
+            // (b) stale Nachbar-Iso? force-rebuild jede Ring-Iso, vergleiche Count.
+            let staleNeighbors = 0;
+            const staleList = [];
+            for (const k of ring) {
+                if (k === wettest.key) continue;
+                const e = s.voxelChunks.get(k);
+                if (!e || !e.waterCells) continue;
+                const before = isoCount(k);
+                const [kx, kz] = k.split(",").map(Number);
+                r._buildVoxelChunkWaterIsoSurface(kx, kz);
+                const after = isoCount(k);
+                if (before !== after) {
+                    staleNeighbors++;
+                    const dx = Math.abs(kx - wcx);
+                    const dz = Math.abs(kz - wcz);
+                    staleList.push(`${k}(${dx === 1 && dz === 1 ? "diag" : "axis"}):${before}->${after}`);
+                }
+            }
+            out.partC = {
+                found: true,
+                wettestChunk: wettest.key,
+                waterCells: wettest.w,
+                buildingSpawned: !!be,
+                buildingAABBs: aabbs.length,
+                waterCellsInsideBuilding: waterInBuilding,
+                waterInsideAfterForceSync: waterInBuildingAfterSync,
+                staleNeighborIsos: staleNeighbors,
+                staleList,
+            };
+        }
+
         out.playerPos = { x: s.playerMesh.position.x, y: s.playerMesh.position.y, z: s.playerMesh.position.z };
         out.voxelChunks = s.voxelChunks ? s.voxelChunks.size : 0;
         return out;
@@ -290,18 +405,35 @@ const server = http.createServer((req, res) => {
         console.log(`  kein +x+z-Wasser-Eck-Paar im gestreamten Set`);
     }
 
-    console.log("\n=== Urteil ===");
-    const gapProven = a.diagonalNeighborsEnqueued === 0 && b.dependencyProven;
-    if (gapProven) {
-        console.log("BESTÄTIGT: (A) die Finalize re-enqueued NIE die Diagonalen, obwohl die Iso sie liest;");
-        console.log("(B) die Diagonal-Iso HÄNGT vom Eck-Cell-Zustand des Nachbarn ab → ein Gebäude-Stempel");
-        console.log("an der Ecke lässt sie als PHANTOM-WASSER stehen (heilt nicht selbst) = der Blob.");
-        console.log("Die Render-Sync-Schicht, NICHT die Worldgen-Cells (die V17.119/.120 band-aideten).");
-    } else if (a.diagonalNeighborsEnqueued === 0 && !b.dependencyProven) {
-        console.log("TEIL A bestätigt (Diagonalen nie re-enqueued), TEIL B im gestreamten Set NICHT");
-        console.log("reproduziert (kein passendes Wasser-Eck-Paar / Dependenz=0) → weiter messen, NICHT raten.");
+    console.log("\n--- Teil C: der ECHTE Blob (felsturm IN Wasser, realer Spawn-Pfad) ---");
+    const c = result.partC;
+    if (!c || !c.found) {
+        console.log(`  ${(c && c.note) || "nicht ausgeführt"}`);
     } else {
-        console.log("UNERWARTET — Diagonale wurde re-enqueued. Hypothese überdenken, neu messen.");
+        console.log(`  nassester Chunk:               ${c.wettestChunk} (${c.waterCells} WATER-Cells)`);
+        console.log(`  felsturm gespawnt:             ${c.buildingSpawned} (${c.buildingAABBs} solide AABBs)`);
+        console.log(`  (a) WATER IM Gebäude (nach 40 Ticks):     ${c.waterCellsInsideBuilding}`);
+        console.log(`      WATER IM Gebäude (nach forceSync):    ${c.waterInsideAfterForceSync}   <-- bleibt >0 = ECHTES Stempel-Loch (ROOT #3); →0 = nur async-Rebuild-Timing (V17.118)`);
+        console.log(`  (b) stale Nachbar-Iso:         ${c.staleNeighborIsos}   <-- >0 = ROOT #1/#2 „klebt an der Grenze"` + (c.staleList.length ? ` [${c.staleList.join(" ")}]` : ""));
+    }
+
+    console.log("\n=== Urteil (welche Wurzel DOMINIERT den echten Blob) ===");
+    console.log(`  Struktur-Lücke (Teil A): Diagonalen nie re-enqueued = ${a.diagonalNeighborsEnqueued === 0 ? "JA (bewiesen)" : "NEIN"}`);
+    if (c && c.found) {
+        const root3Permanent = c.waterInsideAfterForceSync > 0;
+        const root3Transient = c.waterCellsInsideBuilding > 0 && c.waterInsideAfterForceSync === 0;
+        const root12 = c.staleNeighborIsos > 0;
+        if (root3Permanent)
+            console.log(`  ROOT #3 (ECHT/permanent): ${c.waterInsideAfterForceSync} WATER-Cells IM Gebäude AUCH nach forceSync → der Stempel deckt das Gebäude wirklich nicht („klettert hoch").`);
+        if (root3Transient)
+            console.log(`  ROOT #3 war TRANSIENT: ${c.waterCellsInsideBuilding}→0 nach forceSync → KEIN Stempel-Loch, sondern der V17.118-async-Rebuild des fernen Chunks landete in 40 Ticks nicht (Timing). In-Game heilt das, wenn der Rebuild landet — ABER ein Nexus/Worldgen-Spawn fern vom Spieler zeigt das Wasser bis dahin = ein realer transienter Blob.`);
+        if (root12)
+            console.log(`  ROOT #1/#2 aktiv: ${c.staleNeighborIsos} Nachbar-Iso stale nach dem realen Spawn [${c.staleList.join(" ")}] → Phantom an der Grenze („klebt"), klein.`);
+        if (!root3Permanent && !root3Transient && !root12)
+            console.log(`  WEDER #3 noch #1/#2 am Spawn-Ort sichtbar — Browser-Verify am realen Wasser-Gebäude bleibt der Schluss.`);
+        console.log(`  → fix REPRODUKTION-FIRST: die dominante (permanente) Wurzel zuerst, nicht alle drei blind (= das nächste Pflaster).`);
+    } else {
+        console.log("  Teil C nicht reproduziert (kein Wasser-Chunk) — Teil A (die Lücke) steht; ein wasser-reicheres Seed/Teleport nötig.");
     }
 
     await browser.close();
