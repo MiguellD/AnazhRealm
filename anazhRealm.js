@@ -18476,6 +18476,21 @@ class AnazhRealm {
         return this._detailBand(r).lod;
     }
 
+    // V18.1 W2 (Wasser-finale-Form) — der zweite Kaskaden-Leser: die WASSER-Iso-
+    // Auflösung pro Terrain-LOD. Die Zellen bleiben IMMER LOD0 (reaktive Wahrheit,
+    // kein Worker-Mirror, kein Cross-LOD-Zell-Mismatch); nur das Iso-GRID
+    // vergröbert fern (es sampelt die feinen Zellen mit grobem Schritt) → die
+    // ferne Wasserfläche reitet die grobe Terrain-LOD statt feines Wasser über
+    // grobem (die Zwei-Skalen-Wurzel: „klettert zum Kliff" + der FPS-Verdacht).
+    // Nah+mittel (Band 0/1) = waterLod 0 = byte-identisch zur geliebten Sicht,
+    // keine neue Naht; nur die Fog-Bänder 2/3 vergröbern (ihre Cross-LOD-Naht
+    // liegt im Schleier, §2-Kaskade). Frozen-Tabelle, kein Passagier (Leser = Iso).
+    _waterLodFor(terrainLod) {
+        const c = AnazhRealm.DETAIL_CASCADE;
+        for (let i = 0; i < c.length; i++) if (c[i].lod === terrainLod) return c[i].waterLod;
+        return 0;
+    }
+
     // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH): soll dieser Chunk SOFORT
     // beim Build seine BVH-Collision bekommen? Profi-Pattern aus Subnautica/
     // NMS: nur 2-Ring (Spieler-Nähe, r ≤ 1, ≤ 86 m) braucht sofort BVH —
@@ -19254,27 +19269,42 @@ class AnazhRealm {
             if (cWater === 0) return -1; // außen → kein Iso (Mountain-Top trägt das Terrain)
             return (cWater - cAir) / 8; // Wasser+Luft-Mischung → glatte Iso, 8-Cell-geglättet
         };
-        // Y-Bereich aufs globale Wasser-Band beschränken (statt volle dimY = 124).
+        // V18.1 W2 — die ferne Wasser-Iso reitet die Terrain-LOD. Das Zell-Feld
+        // bleibt IMMER LOD0 (reaktive Wahrheit; `sampleWater`/`cellClass`
+        // indizieren es mit `step`/`dim`) — nur das Iso-GRID vergröbert fern
+        // (gridStep = step·2^waterLod): es sampelt die feinen Zellen mit grobem
+        // Schritt → grobe Wasserfläche ÜBER grobem Terrain statt feines Wasser
+        // über grobem (die Zwei-Skalen-Wurzel). waterLod 0 (Band 0/1) ⇒
+        // gridStep=step ⇒ BYTE-IDENTISCH zur geliebten Sicht, keine neue Naht.
+        // Die OOB-`cellClass` liest weiter LOD0-Nachbarzellen (alle Chunks LOD0)
+        // → KEIN Cross-LOD-Zell-Mismatch (die V9.93-Wurzel umgangen).
+        const wLod = this._waterLodFor(entry.lod || 0);
+        const gridMul = 1 << wLod; // 1,2,4,8
+        const gridStep = step * gridMul;
+        const gridDim = Math.max(1, Math.round(dim / gridMul));
+        // Y-Bereich aufs globale Wasser-Band beschränken (am groben Gitter).
         const bBot = band ? band.bottom : oy;
         const bTopY = band ? band.top : oy + dimY * step;
-        let jBot = Math.floor((bBot - oy) / step);
-        let jTop = Math.ceil((bTopY - oy) / step);
-        if (jBot < 0) jBot = 0;
-        if (jTop > dimY) jTop = dimY;
-        const bandDimY = jTop - jBot;
-        if (bandDimY <= 0) {
+        let gJBot = Math.floor((bBot - oy) / gridStep);
+        let gJTop = Math.ceil((bTopY - oy) / gridStep);
+        if (gJBot < 0) gJBot = 0;
+        const gridDimYMax = Math.floor(dimY / gridMul);
+        if (gJTop > gridDimYMax) gJTop = gridDimYMax;
+        const bandGridDimY = gJTop - gJBot;
+        if (bandGridDimY <= 0) {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
-        // Pad+Crop in X/Z (V9.79, naht-frei); Y band-limitiert (Crop schneidet nur X/Z).
+        // Pad+Crop in X/Z (V9.79, naht-frei); Y band-limitiert. Grobes Gitter (W2);
+        // sampleWater liest die feinen LOD0-Zellen an den groben Gitterpunkten.
         const geom = this._voxelChunkGeometry(
-            ox - step,
-            oy + jBot * step,
-            oz - step,
-            dim + 3,
-            bandDimY,
-            dim + 3,
-            step,
+            ox - gridStep,
+            oy + gJBot * gridStep,
+            oz - gridStep,
+            gridDim + 3,
+            bandGridDimY,
+            gridDim + 3,
+            gridStep,
             sampleWater,
             1
         );
@@ -47120,7 +47150,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.1.0";
+AnazhRealm.VERSION = "18.2.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
@@ -47135,10 +47165,10 @@ AnazhRealm.VERSION = "18.1.0";
 // rechnen (jeden N-ten Frame; dazwischen bewegen sie sich GLATT mit der gecachten
 // Richtung weiter → kein Ruckeln). Band 0/1 (nah/mittel, sichtbar) = jeden Frame.
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
-    Object.freeze({ maxRing: 1, lod: 0, aiDiv: 1 }), // Band 0 — ≤ 86 m: volles Detail
-    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
-    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
-    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
+    Object.freeze({ maxRing: 1, lod: 0, aiDiv: 1, waterLod: 0 }), // Band 0 — ≤ 86 m: volles Detail
+    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1, waterLod: 0 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht (Wasser bleibt fein → keine Naht)
+    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3, waterLod: 2 }), // Band 2 — ≤ 432 m: ferner Ring (Wasser reitet die Terrain-LOD, W2)
+    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6, waterLod: 3 }), // Band 3 — ≤ 518 m: tief im Fog
 ]);
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.

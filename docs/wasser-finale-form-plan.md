@@ -28,25 +28,31 @@ Harte Bedingung: **reaktives Nah-Wasser** (graben/dämmen → Zellen → Wasser 
 
 ## Der Bogen (jeder Schritt: Ziel · Mechanik · Messung · Risiko · Sign-off)
 
-### **W1 — Flächen-Werdung (der Schlussstein, reaktivitäts-sicher)** — IM BAU
+### **W1 — Flächen-Werdung (der Schlussstein, reaktivitäts-sicher)** — ✅ GEBAUT (gemessen, headless)
 - **Ziel.** Wasser rendert als einseitige Oberseite, nicht als geschlossenes Volumen. Tötet „unter der Karte" + die Seiten-Wände. Zellen unangetastet.
 - **Mechanik.** (a) `mat.side = FrontSide` (Rückseiten-Cull — von unten unsichtbar; Unterwasser trägt der `playerEyesUnderwater`-Tint). (b) Nach dem Iso die nach-UNTEN zeigenden Dreiecke verwerfen (`_cullDownFacingWaterTris`, Face-Normal `ny < −downCull`) → keine sichtbare Unterseite, die grobes Fern-Terrain nicht verdeckt. (c) Die Uferlinie trägt der Tiefen-Shader allein (V13.5 `waterThick`, schon da).
 - **Messung.** `diag-water-surface.cjs`: Wicklung (Oberseiten `ny>0`?), Down-Faces vor/nach (→ ~0), Zellen unverändert (Reaktivität), Mesh nicht leer.
 - **Risiko.** Niedrig (Zellen + Nah-Look der Oberseite unberührt). Pixel-Wahrheit = Browser.
 - **Sign-off.** Unter der Karte sauber; Nah-Wasser unverändert schön.
 
-### **W2 — Wasser reitet die Terrain-LOD (Zwei-Skalen geheilt)** — die FPS- + Fern-Klettern-Wurzel
+### **W2 — Wasser reitet die Terrain-LOD (Zwei-Skalen geheilt)** — ✅ GEBAUT (gemessen: 14.5× grober fern, main-only, Zellen LOD0)
+
+> **GEBAUT V18.2 — der CLEANE Weg (main-only, V9.93-Wurzel umgangen):** die Zellen bleiben IMMER LOD0 (reaktive Wahrheit; kein Worker-Mirror; die OOB-`cellClass` liest weiter LOD0-Nachbarzellen → KEIN Cross-LOD-Zell-Mismatch). Nur das Iso-GRID vergröbert fern: `_buildVoxelChunkWaterIsoSurface` liest `_waterLodFor(entry.lod)` (Kaskade `waterLod` 0/0/2/3) → `gridStep = step·2^waterLod`, `sampleWater` liest die feinen LOD0-Zellen an den groben Gitterpunkten. waterLod 0 (Band 0/1, nah+mittel) ⇒ gridStep=step ⇒ byte-identisch (die geliebte Sicht unberührt). GEMESSEN (`diag-water-surface.cjs`): ein Wasser-Chunk forciert LOD2 = 3427 → 236 Tris (14.5× grober). **Rest (Browser):** die Cross-LOD-Naht der Fog-Bänder (band1↔2 ~346 m); wenn sichtbar → die Transition tiefer schieben oder Skirts. Die ALTE FPS-/Fern-Klettern-Wurzel:
 - **Ziel.** Fernes Wasser (Band 2/3) meshet auf der Chunk-LOD statt erzwungenem LOD0 → grobes Terrain verdeckt es korrekt, kein Fern-Ufer-Versatz (dein „klettert zum Kliff"). = U2 der Detail-Kaskade, aber als KORREKTHEITS-Fix.
 - **Mechanik.** `_buildVoxelChunkWaterIsoSurface` liest `_detailBand(r).waterLod`; nah LOD0 (naht-frei), fern grob. Die Cross-LOD-Naht via Morph/Weld (Unreal-Quadtree-Stil: 4↔1/16↔4) ODER Fog-Tarnung (§2 der Kaskade). **Die V9.93-Falle (Wasser-LOD-auf-Terrain-LOD gab die Naht) wird durch die W1-Flächen-Werdung + Skirts + Tiefen-Versöhnung entschärft** — die Naht ist nicht mehr ein Iso-Positions-Klaffen, sondern eine Tiefen-getestete Fläche.
 - **Messung.** Fern-Wasser-Vertices LOD0→LOD2 ~16× weniger; kein Fern-Ufer-Versatz headless-messbar (Wasser-Top vs. Terrain-Top am Fern-Chunk).
 - **Risiko.** Mittel (LOD-Naht-Geschichte). Browser-Sign-off Pflicht.
 
-### **W3 — Die ±1024-Grenze: eine kohärente Fläche** — die Atlas-Klassifikator-Kante
+### **W3 — Die ±1024-Grenze: eine kohärente Fläche** — ✅ GEMESSEN: NON-BUG (kein Fix nötig)
+
+> **GEMESSEN V18.2 (`diag-water-fill.cjs`): der Ozean ist schon EINE kohärente Sea-Level-Fläche.** Der Ozean-Atlas-`wY` ist uniform −3 = `state.waterLevel`; `_atlasWaterLevelAt` knapp innen (-1020) vs. außen (-1030) der Grenze = **0 m Stufe** über alle z-Proben. V17.117 (H3) leitet den fernen Ozean schon vom selben `waterLevel` ab → keine Klassifikator-Kante, kein W3-Fix (keine Nicht-Bugs heilen). Die unter-der-Karte-Sicht bei −1048 war das VOLUMEN + die Zwei-Skalen (W1+W2), nicht eine Spiegel-Stufe. (Ferne Seen/Flüsse jenseits ±1024 existieren nicht — region-lokal — also auch dort keine Stufe.) Die alte Hypothese (Atlas-Klassifikator-Kante):
 - **Ziel.** Nah-Atlas-Wasser + Fern-Global-Ozean = dieselbe Sea-Level-Fläche; das Nah-Feld faded seine Abweichung an `waterLevel` an der Grenze (Sea-of-Thieves-Wellen-Attenuation / Unreal Water Zone).
 - **Mechanik.** `_atlasWaterLevelAt` glättet den Übergang in-region→beyond statt harter Quell-Umschaltung; der Iso behandelt die Grenze als LOD-Wechsel.
 - **Messung.** Wasserspiegel-Stetigkeit über ±1024 (kein Sprung); `diag-far-water.cjs` erweitert.
 
-### **W4 — „Seen füllen sich nicht" (separater Faden, gegen die V14-Topologie)**
+### **W4 — „Seen füllen sich nicht"** — ◐ GEMESSEN: die Zellen FÜLLEN (Render → Browser)
+
+> **GEMESSEN V18.2: die Wasser-ZELLEN füllen Seen korrekt** (der Bergsee-Playtest-Invariant „Bergsee-Cells über waterLevel sind WATER" ist grün; `diag-water-fill.cjs` konnte headless keinen Bergsee in den nahen Ring streamen, aber der bestehende Test deckt die Klassifikation). → „füllt sich nicht" ist ein RENDER-Symptom (die W1/W2-Flächen-Werdung macht die Füllung sichtbar — vorher verdeckte das Volumen/die Unterseite/die Zwei-Skalen sie) + Browser-Sign-off. WENN es im Browser persistiert, ist die nächste Messung an der Schöpfer-SEESTELLE: (a) baut der Iso für den See-Chunk (Queue-Starvation?), (b) trocknet der V13.14-Sky-Filter den See unter neuer Überhang-Topologie, (c) Hydrologie-Spiegel vs. V14-Becken-Tiefe. Die Kandidaten (zu MESSEN an der echten Stelle, nicht raten):
 - **Ziel.** Nach der V14-Terrain-Umwälzung füllen Seen sichtbar. Wurzel-Kandidaten (zu MESSEN, nicht raten): (a) Flood-Zellen werden bei Nachbar-Load nicht neu geflutet (Kontradiktion 11), (b) der Sky-Open-Filter (V13.14) trocknet See-Wasser unter neuer Überhang-Topologie, (c) die Hydrologie-Atlas-Spiegel passen nicht zur neuen Becken-Tiefe.
 - **Messung.** `diag-lake-fill.cjs`: ein Becken streamen, Wasser-Zell-Füllung vs. Becken-Volumen.
 

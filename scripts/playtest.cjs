@@ -20032,6 +20032,12 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             out.waterUndersideTris = "skip";
             out.waterTopsTris = "skip";
         }
+        // V18.1 W2 — die ferne Wasser-Iso reitet die Terrain-LOD: die Kaskade
+        // trägt waterLod (0,0,2,3) + der Iso-Mesher liest `_waterLodFor`.
+        out.cascadeWaterLod = r.constructor.DETAIL_CASCADE.map((b) => b.waterLod).join(",");
+        out.isoReadsWaterLod = /_waterLodFor/.test(r._buildVoxelChunkWaterIsoSurface.toString());
+        out.waterLodFor2 = r._waterLodFor(2);
+        out.waterLodFor1 = r._waterLodFor(1);
         return out;
     });
     if (res.error) {
@@ -20076,6 +20082,16 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             "V18.1 W1: Wasser-Iso trägt Oberseiten-Dreiecke (von oben über die Rückseite sichtbar)",
             typeof res.waterTopsTris === "number" && res.waterTopsTris > 0,
             `Oberseite=${res.waterTopsTris}`
+        );
+        check(
+            "V18.1 W2: Kaskade trägt waterLod 0,0,2,3 (Wasser reitet die Terrain-LOD fern)",
+            res.cascadeWaterLod === "0,0,2,3",
+            `waterLod=${res.cascadeWaterLod}`
+        );
+        check("V18.1 W2: Iso-Mesher liest _waterLodFor (Source-Probe)", res.isoReadsWaterLod === true);
+        check(
+            "V18.1 W2: _waterLodFor — nah/mittel fein (lod1→0), fern grob (lod2→2)",
+            res.waterLodFor1 === 0 && res.waterLodFor2 === 2
         );
         if (res.bergseeCheckable) {
             check(
@@ -27744,14 +27760,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.waterMinDepthCull = waterMinDepthCull;
         // V13.6: Wasser-Oberfläche ist wieder die Surface-Nets-Iso (Synergie mit dem
         // Terrain — derselbe Mesher), band-limitiert aufs globale hydroBand. Source-
-        // Probe: der Iso-Builder nutzt sampleWater + _voxelChunkGeometry + bandDimY.
+        // Probe: der Iso-Builder nutzt sampleWater + _voxelChunkGeometry + die
+        // Band-Limitierung (V18.1 W2: `bandDimY` → `bandGridDimY`, grobes Gitter).
         {
             const isoSrc =
                 typeof r._buildVoxelChunkWaterIsoSurface === "function"
                     ? r._buildVoxelChunkWaterIsoSurface.toString()
                     : "";
             out.waterIsoSynergy =
-                /sampleWater/.test(isoSrc) && /_voxelChunkGeometry\(/.test(isoSrc) && /bandDimY/.test(isoSrc);
+                /sampleWater/.test(isoSrc) && /_voxelChunkGeometry\(/.test(isoSrc) && /bandGridDimY/.test(isoSrc);
         }
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
