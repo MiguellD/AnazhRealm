@@ -61,6 +61,41 @@ Harte Bedingung: **reaktives Nah-Wasser** (graben/dämmen → Zellen → Wasser 
 ### **W5 (Nordstern, optional) — Felder → adaptives CDLOD-Mesh**
 - Wenn Flow/Wellen/Schaum fern glatt aus-LODen sollen: das reaktive Nah-Feld zu (Höhe/Geschwindigkeit/Schaum)-Feldern → adaptives CDLOD-Mesh, das in den Fern-Ozean blendet (die GDC-2023-Architektur). Nicht nötig für die Bugs; die Decke.
 
+---
+
+## DIE WAHRE FORMEL — das EINE Wasserspiegel-Feld `L` (V18.5+, der Schöpfer-Kern „die wahren Formeln finden")
+
+> **Schöpfer-Browser-Befund (V18.3, der schärfste): „im Seezentrum fällt die Render-Oberfläche, aber die Physik stimmt — nicht ein Wahrheitspfad, Parallelcode, Interferenzen? … See gleicht das Niveau an, Ufer darf nicht klettern, Fluss bildet natürliche Senkungen/Wasserfälle — das Bild ist noch nicht logisch robust, die wahren Formeln noch nicht gefunden."**
+
+**GEMESSEN (`scripts/diag-water-level-truth.cjs`, nassester Chunk):** es gibt nicht einen Wasserspiegel, sondern **VIER parallele Höhen-Quellen**, die unabhängig rechnen → genau die Interferenzen:
+1. **Atlas-Seed** — `_atlasWaterLevelAt(x,z,∞)` (Flood-Saat).
+2. **Zellen (Flood)** — `_buildVoxelChunkWaterCells` füllt von der Saat.
+3. **Physik** — `_playerWaterContext` liest die Zell-Oberkante `oy+(topJ+1)·step`.
+4. **Render-Iso** — `_buildVoxelChunkWaterIsoSurface`/`sampleWater` legt die Fläche an die Zell-WATER/AIR-Grenze.
+
+Die Messung (Chunk 2,−2): die Zellen (=Physik) füllen **uniform auf y=9**, der Atlas-Spiegel `L` ist aber **1–5 m** (`cellTop−L` = 4–15 m!) → das Wasser ist gegen die Hydrologie **über-gefüllt**; und der Render-Iso **sackt am Rand −0.5…−1.0 m** gegen die Zellen (Smoothing/Crop). Drei verschiedene Höhen am selben Ort.
+
+**DIE FORMEL (eine Skala, ein Wahrheitspfad):** EIN Feld **`L(x,z)`** = die Wasser-Oberflächen-Höhe (oder −∞ = trocken). ALLE lesen es.
+- **`L` aus der Hydrologie:** Ozean `waterLevel` · See `lake.level` (flach) · Fluss `river.surfaceY` (Gefälle → Stufen → natürliche Wasserfälle) · + reaktive Edits (graben/dämmen ändern `L`).
+- **Zellen** = die reaktive Substanz (Wasser bei (x,z,y) gdw. nicht-solide ∧ `y<L` ∧ mit Quelle verbunden) — für Reaktivität + 3D (Höhlen).
+- **Physik** liest `L` direkt.
+- **Render** = Oberfläche AUF `L`, mit dem Terrain durch den **Tiefenpuffer** versöhnt (nach den Opaken, depth-getestet → glattes Ufer, keine Treppe). An Fluss-Stufen fällt `L` → die Oberfläche fällt (Wasserfall).
+
+**Daraus folgt JEDES Verhalten aus EINER Regel (die fehlende logische Robustheit):**
+- **See/Meer:** `L` flach → flache Oberfläche, Ufer wo `Terrain=L` (pro Pixel) → **kein Klettern, keine Treppe.**
+- **Fluss:** `L` Gefälle → Oberfläche fällt an Stufen → **natürliche Wasserfälle** (statt der „komischen Plane").
+- **Physik = Render** (beide `L`) → kein „Seezentrum fällt".
+
+Das ist der Profi-Weg (Sea of Thieves / Unreal: Oberfläche am Spiegel, depth-versöhnt) UND die V9.69-„Sheet war zwei Skalen"-Lehre **richtig** aufgelöst: **nicht zwei Skalen — EINE, `L`.**
+
+**Der Bau-Bogen (jede Welle misst die Konvergenz via `diag-water-level-truth` — alle Pfade → `L`):**
+- **U-W1** — `waterSurfaceHeightAt(x,z) → L`: die EINE kanonische Spiegel-Funktion (Ozean/See/Fluss/reaktiv vereint), pro Chunk gecacht.
+- **U-W2** — Physik liest `L` direkt (statt Zell-Oberkante). Messen: `render−physik → 0` (eliminiert „Physik stimmt, Render fällt").
+- **U-W3** — der Flood füllt GENAU bis `L` (kein Über-Füllen). Messen: `cellTop−L → 0` (heilt die gemessene 4–15-m-Über-Füllung).
+- **U-W4** — die Render-Oberfläche sitzt EXAKT auf `L` (kein Rand-Sacken; Iso an `L` gepinnt ODER eine `L`-Höhenfeld-Fläche), depth-versöhnt. Fluss-Drops aus dem `L`-Gefälle, Ufer glatt aus der Tiefe. Messen: `isoY−L → 0`.
+
+**Separater Faden (nicht Wasser):** der Sprung-von-Strukturen-Bug — in frieden ist das Soul-Tor offen, der Sprung braucht nur `isGrounded`; der 9-Strahl-Erdungs-Raycast trifft die Bauwerks-Kollision nicht (fehlt/zu tief/distanz-gepruned). Eigener Bogen (Struktur-Kollisions-Lebenszyklus; auch die echte Wurzel hinter dem 6.A3-Flake).
+
 ## Was NICHT zu tun (die Anti-Lehre)
 - Wasser NICHT als geschlossenes Volumen auf einer ANDEREN LOD als das Terrain halten — diese Kombination IST der Bug.
 - Die Uferlinie NICHT in der Geometrie heilen (Zell-Klassifikation/Klettern), wenn die TIEFE sie pro Pixel exakt löst.

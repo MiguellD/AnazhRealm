@@ -19992,7 +19992,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             // des Bodens" an der Geometrie-Wurzel. Über ALLE Iso-Meshes gezählt.
             const BACK = window.THREE && window.THREE.BackSide !== undefined ? window.THREE.BackSide : 1;
             out.waterMatBackSide = r.state.hydroSurfaceMaterial ? r.state.hydroSurfaceMaterial.side === BACK : false;
-            let nonTopTris = 0;
+            let undersideTris = 0;
             let topsTris = 0;
             for (const [, mm] of r.state.voxelChunkWaterIso) {
                 if (!mm || !mm.geometry || !mm.geometry.attributes.position) continue;
@@ -20017,13 +20017,13 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                     const nz = e1x * e2y - e1y * e2x;
                     const nl = Math.hypot(nx, ny, nz) || 1e-9;
                     const nyn = ny / nl;
-                    // V18.3 W1+B6 (top-only): nur die Oberseite bleibt; Seiten-
-                    // Wände + Unterseiten (ny > -0.2) sind verworfen → nonTop ≈ 0.
-                    if (nyn <= -0.2) topsTris++;
-                    else nonTopTris++;
+                    // V18.4 W1: nur die Unterseite (ny>0.2) verworfen → undersideTris ≈ 0;
+                    // Oberseite + Ufer/Fluss-Drops (fast-vertikal) bleiben (top-only reverted).
+                    if (nyn > 0.2) undersideTris++;
+                    else topsTris++;
                 }
             }
-            out.waterNonTopTris = nonTopTris;
+            out.waterUndersideTris = undersideTris;
             out.waterTopsTris = topsTris;
         } else {
             // Welt hatte keinen Iso-Mesh (z.B. alle Chunks im Hochland, kein
@@ -20031,7 +20031,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             out.sampleMeshUsesHydroMat = "skip — kein Iso-Mesh in der Welt";
             out.sampleMeshUserData = "skip";
             out.waterMatBackSide = "skip";
-            out.waterNonTopTris = "skip";
+            out.waterUndersideTris = "skip";
             out.waterTopsTris = "skip";
         }
         return out;
@@ -20070,9 +20070,9 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             res.waterMatBackSide === true
         );
         check(
-            "V18.3 W1+B6: Wasser-Iso ist NUR Oberseite (Seiten-Wände + Unterseiten verworfen, ny>-0.2 → 0)",
-            res.waterNonTopTris === 0,
-            `nonTop=${res.waterNonTopTris}, Oberseite=${res.waterTopsTris}`
+            "V18.4 W1: Wasser-Iso trägt KEINE Unterseiten-Dreiecke (ny>0.2 verworfen; Ufer/Fluss-Drops bleiben)",
+            res.waterUndersideTris === 0,
+            `Unterseite=${res.waterUndersideTris}, Oberseite=${res.waterTopsTris}`
         );
         check(
             "V18.3 W1: Wasser-Iso trägt Oberseiten-Dreiecke (von oben über die Rückseite sichtbar)",

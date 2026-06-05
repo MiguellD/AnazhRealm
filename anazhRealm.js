@@ -19040,24 +19040,20 @@ class AnazhRealm {
     // Pfad zum alten Quad-Mesh-System; das Mesh existiert in der Scene aber
     // mit `visible = false` per Default — der Toggle (`_setVoxelWaterIsoVisible`)
     // schaltet auf das neue System um. C.5 räumt das alte System ab.
-    // V18.1/V18.3 (Wasser-finale-Form W1+B6) — Wasser ist eine FLÄCHE, kein
-    // Volumen, und die GEOMETRIE definiert NICHT die Uferlinie (der Profi-Weg:
-    // Minecraft/Unreal-Water + GDC-2023 „Photon Water"; der Schöpfer-Befund
-    // „klettert die Strukturen/das Ufer hoch"). Die geschlossene Surface-Nets-Iso-
-    // Hülle hat eine UNTERSEITE (von unter der Karte sichtbar) UND fast-vertikale
-    // SEITEN-WÄNDE — DAS ist das „Klettern" am Ufer/an Strukturen (der Tiefen-
-    // Shader verblasst nur DÜNNES Ufer-Wasser, nicht eine tiefe Wand). GEMESSEN
-    // (diag-water-surface): die Iso-Wicklung zeigt nach INNEN (area-gew. ny=−0.47)
-    // → die OBERSEITEN haben ny<0 (von oben über ihre Rückseite sichtbar =
-    // BackSide), die SEITEN |ny|≈0, die UNTERSEITEN ny>0. Wir behalten NUR die
-    // Oberseite (`ny < −minDown`) → die Wand-Geometrie fällt weg, die Uferlinie
-    // trägt der Tiefen-Shader ALLEIN (V13.5 `waterThick`, pro Pixel dem Terrain
-    // folgend — wie die Riesen). Das tötet ZUGLEICH das B6-Flackern (die Wände
-    // waren unter BackSide einseitig/blickwinkel-abhängig). Indiziert → ALLE
-    // Attribute (aFlow/aShore/aWave werden danach gesetzt) bleiben gültig; nur der
-    // Index wird neu gebaut. minDown=0.2 behält Flächen bis ~78° Steilheit,
-    // verwirft die 78–90°-Wände + Unterseiten (browser-justierbar: höher = mehr Wand weg).
-    _cullWaterToTopSurface(geom, minDown = 0.2) {
+    // V18.1/V18.4 (Wasser-finale-Form W1) — Wasser ist eine FLÄCHE, kein Volumen:
+    // die geschlossene Surface-Nets-Iso-Hülle hat eine UNTERSEITE (von unter der
+    // Karte sichtbar). GEMESSEN (diag-water-surface): die Iso-Wicklung zeigt nach
+    // INNEN (area-gew. ny=−0.47) → OBERSEITEN ny<0 (von oben über die Rückseite
+    // sichtbar = BackSide), UNTERSEITEN ny>0. Wir verwerfen NUR die Unterseite
+    // (ny>upCull) — die Oberseite UND die fast-vertikalen Ufer/FLUSS-DROPS bleiben.
+    // **V18.4: top-only (V18.3) ZURÜCKGEROLLT** — es verwarf auch die fast-vertikalen
+    // Flächen, und die sind an Fluss-Stufen die NATÜRLICHEN Wasserfälle (Schöpfer-
+    // Befund: „vor der Änderung sind Flussstufen/Wasserfälle entstanden, statt der
+    // komischen Plane"). Dieselbe Geometrie ist am Fluss ein Wasserfall (gut) und am
+    // See-Ufer eine Treppe (die 16-m-Atlas-vs-1,8-m-Zell-Granularität — die heilt die
+    // Unified-L-Form + der Tiefen-Shader, NICHT ein pauschaler Geometrie-Cull).
+    // Indiziert → alle Attribute (aFlow/aShore/aWave danach) gültig.
+    _cullWaterUndersides(geom, upCull = 0.2) {
         const pos = geom && geom.attributes && geom.attributes.position;
         if (!pos) return geom;
         const idx = geom.index ? geom.index.array : null;
@@ -19081,8 +19077,8 @@ class AnazhRealm {
             const ny = ez1 * ex2 - ex1 * ez2;
             const nz = ex1 * ey2 - ey1 * ex2;
             const nlen = Math.hypot(nx, ny, nz) || 1e-9;
-            // NUR die Oberseite behalten; Seiten-Wände (|ny|<minDown) + Unterseiten (ny>0) verwerfen.
-            if (ny / nlen <= -minDown) kept.push(a, b, c);
+            // nur die UNTERSEITE (ny>upCull) verwerfen; Oberseite + Ufer/Fluss-Drops behalten.
+            if (ny / nlen <= upCull) kept.push(a, b, c);
         }
         if (kept.length === 0) return null;
         geom.setIndex(kept);
@@ -19295,10 +19291,10 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
-        // V18.1/V18.3 W1+B6 — auf die OBERSEITE reduzieren (s. `_cullWaterToTopSurface`):
-        // tötet „Wasser auf der falschen Seite des Bodens" (Unterseite) UND das
-        // „Klettern" am Ufer/an Strukturen (die Seiten-Wände) an der Geometrie-Wurzel.
-        if (!this._cullWaterToTopSurface(geom)) {
+        // V18.1/V18.4 W1 — die Unterseite verwerfen (s. `_cullWaterUndersides`):
+        // tötet „Wasser auf der falschen Seite des Bodens" (von unter der Karte);
+        // die Oberseite + die fast-vertikalen Fluss-Wasserfälle/Ufer bleiben.
+        if (!this._cullWaterUndersides(geom)) {
             this._queueDispose(geom);
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
@@ -47139,7 +47135,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.3.0";
+AnazhRealm.VERSION = "18.4.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

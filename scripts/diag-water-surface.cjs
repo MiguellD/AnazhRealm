@@ -194,7 +194,7 @@ const server = http.createServer((req, res) => {
     if (out.tris > 0) {
         const pct = (n) => ((100 * n) / out.tris).toFixed(1);
         console.log(`  OBERSEITE (ny<-0.2):    ${topside}  (${pct(topside)} %)   <- bleibt (von oben via Rückseite sichtbar)`);
-        console.log(`  SEITEN-WÄNDE(|ny|<=.2): ${sides}  (${pct(sides)} %)   <- B6 „Klettern", top-only verwirft sie`);
+        console.log(`  SEITEN-WÄNDE(|ny|<=.2): ${sides}  (${pct(sides)} %)   <- Ufer/Fluss-Drops, BLEIBEN (V18.4 top-only reverted)`);
         console.log(`  UNTERSEITE (ny>0.2):    ${underside}  (${pct(underside)} %)   <- W1 verwirft sie`);
         console.log(`  area-gewichtetes mittleres ny: ${out.avgAreaNy}   (stark <0 ⇒ Oberseiten ins Wasser gewickelt ⇒ BackSide korrekt)`);
         console.log("  Stichprobe pro Mesh:");
@@ -207,17 +207,16 @@ const server = http.createServer((req, res) => {
     // + Unterseiten < 1 %) + Oberseite vorhanden. Exit 1, wenn das Volumen oder die
     // kletternden Wände zurückkehren.
     const hasWater = out.tris > 0;
-    const nonTop = underside + sides;
-    const nonTopPct = hasWater ? (100 * nonTop) / out.tris : 100;
+    const undersidePct = hasWater ? (100 * underside) / out.tris : 100;
     const backSide = out.matSide === 1; // THREE.BackSide
     const topsPresent = topside > 0;
 
-    console.log("\n=== URTEIL (W1+B6-Regressions-Gate) ===");
+    console.log("\n=== URTEIL (W1-Regressions-Gate) ===");
     console.log(`Material BackSide: ${backSide ? "JA" : "NEIN — Volumen-Look (DoubleSide) zurück!"}`);
-    console.log(`NUR Oberseite (Wände+Unterseite <1%): ${nonTopPct < 1 ? "JA (" + nonTopPct.toFixed(2) + " %)" : "NEIN (" + nonTopPct.toFixed(1) + " %) — Wände/Leck zurück!"}`);
-    console.log(`Oberseite vorhanden: ${topsPresent ? "JA" : "NEIN — Wasser von oben unsichtbar!"}`);
-    const pass = hasWater && backSide && nonTopPct < 1 && topsPresent;
-    console.log(pass ? "\nW1+B6 GRÜN — Wasser ist eine reine Oberseite (eine Skala, kein Volumen, keine kletternden Wände)." : "\nROT.");
+    console.log(`Unterseite verworfen (<1%): ${undersidePct < 1 ? "JA (" + undersidePct.toFixed(2) + " %)" : "NEIN (" + undersidePct.toFixed(1) + " %) — Unterseiten-Leck zurück!"}`);
+    console.log(`Oberseite + Ufer/Fluss-Drops vorhanden: ${topsPresent ? "JA" : "NEIN — Wasser von oben unsichtbar!"}`);
+    const pass = hasWater && backSide && undersidePct < 1 && topsPresent;
+    console.log(pass ? "\nW1 GRÜN — Wasser ist eine Fläche (BackSide + Unterseite weg; Ufer/Fluss-Drops bleiben)." : "\nROT.");
 
     await browser.close();
     server.close();
