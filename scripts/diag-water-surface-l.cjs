@@ -154,11 +154,18 @@ const server = http.createServer((req, res) => {
         res.maxLerr = +maxLerr.toFixed(4);
         res.lerrN = lerrN;
         res.sagBelow = +sagBelow.toFixed(4);
-        // V18.8 — KEIN SCHWEBEN: jeder Surface-Vertex muss WASSER unter sich tragen
-        // (die Fläche ist auf die Zell-Ausdehnung maskiert, schwebt nicht über die
-        // Ribbon-Domäne hinaus). Pro Vertex: trägt eine LOD0-Zell-Spalte im 3×3
-        // (±1 Zelle) Wasser? Floating-Vertices = Vertices ohne Wasser darunter.
-        let floatVerts = 0;
+        // V18.16 — KEIN SCHWEBEN ist eine SHADER-Invariante, KEINE Geometrie-Maske mehr:
+        // die Fläche bleibt grosszügig auf der `L`-Domäne (der Profi-Weg, V18.10 bestätigt),
+        // die SICHTBARKEIT trägt der Tiefen-Shader PRO PIXEL aus `aDepth` (echte Meter-Tiefe
+        // → 0 an der Uferlinie → Alpha 0; eine Zell-Maske auf der Geometrie gab den Sägezahn).
+        // Headless beweisbar ist die VERDRAHTUNG: jeder geometrisch schwebende Vertex (kein
+        // Wasser darunter) MUSS aDepth≈0 tragen (dann fadet ihn der Shader), und das echte
+        // Wasser MUSS aDepth>0 tragen (opak). Ein „harter Schweber" (kein Wasser darunter
+        // ABER aDepth gross) wäre der sichtbare Bug = aDepth-Verdrahtung kaputt.
+        let floatVerts = 0; // geometrisch schwebend (informativ — der Shader fadet sie)
+        let hardFloat = 0; // schwebend UND aDepth gross (>0.5 m) = SICHTBARER Schweber (Bug)
+        let maxDepth = 0; // tiefstes echtes Wasser (beweist die aDepth-Verdrahtung)
+        const aDepthAttr = iso && iso.geometry ? iso.geometry.attributes.aDepth : null;
         if (isoPos && e.waterCells) {
             const dq0 = dim * dim;
             const colWet = (i0, k0) => {
@@ -170,14 +177,21 @@ const server = http.createServer((req, res) => {
             for (let v = 0; v < isoPos.count; v++) {
                 const ci = Math.round((isoPos.getX(v) - ox) / step);
                 const ck = Math.round((isoPos.getZ(v) - oz) / step);
+                const d = aDepthAttr ? aDepthAttr.getX(v) : 0;
+                if (d > maxDepth) maxDepth = d;
                 // ±2 = GROBES Schweben (der Sägezahn); die bewusste ±1-Zell-Marge ist OK.
                 let wet = false;
                 for (let dk = -2; dk <= 2 && !wet; dk++)
                     for (let di = -2; di <= 2 && !wet; di++) if (colWet(ci + di, ck + dk)) wet = true;
-                if (!wet) floatVerts++;
+                if (!wet) {
+                    floatVerts++;
+                    if (d > 0.5) hardFloat++; // schwebt UND trägt sichtbare Tiefe → der Shader fadet ihn NICHT
+                }
             }
         }
         res.floatVerts = floatVerts;
+        res.hardFloat = hardFloat;
+        res.maxDepth = +maxDepth.toFixed(2);
         // A/B-Kontrast: dieselbe Spalte im ALTEN iso-Modus → der Render sackt ±1 m
         // unter L (Zell-Granularität). Beweist, dass die Fläche der Fortschritt ist.
         let isoErr = null;
@@ -333,7 +347,7 @@ const server = http.createServer((req, res) => {
         `    A/B vs alt:     die ALTE Zell-Iso wich |isoY−L| = ${out.isoErr} m ab (Granularität) → Fläche ${out.isoErr != null && out.maxLerr < out.isoErr ? "ist der Fortschritt" : "?"}`
     );
     console.log(
-        `(2b) kein Schweben: Surface-Vertices OHNE Wasser darunter = ${out.floatVerts}  → ${out.floatVerts === 0 ? "auf die Zell-Ausdehnung maskiert (kein schwebender Layer/Saegezahn)" : "SCHWEBT noch"}`
+        `(2b) Shader-Cull: geom-schwebende Vertices = ${out.floatVerts} (informativ, Shader fadet sie), davon mit sichtbarer Tiefe >0.5m = ${out.hardFloat}  → ${out.hardFloat === 0 ? "ALLE Schweber tragen aDepth~0 → Shader-Uferlinie (kein sichtbarer Layer, kein Saegezahn)" : "HARTE SCHWEBER (aDepth-Verdrahtung kaputt)"};  tiefstes echtes Wasser aDepth=${out.maxDepth} m`
     );
     console.log(
         `(3) Oberseite:      area-ny = ${out.areaNy}  → ${out.areaNy != null && out.areaNy < -0.2 ? "-Y (BackSide-Oberseite, keine Unterseite unter der Karte)" : "WICKLUNG FALSCH"}`
@@ -348,7 +362,7 @@ const server = http.createServer((req, res) => {
     const checks = [
         ["(1) jeder Vertex sitzt auf L (≤ 0.05 m)", out.maxLerr != null && out.maxLerr <= 0.05 && out.lerrN > 0],
         ["(2) Fläche sackt NICHT unter L (≤ 0.05 m)", out.sagBelow != null && out.sagBelow <= 0.05],
-        ["(2b) kein Schweben — jeder Vertex hat Wasser darunter (Zell-Maske)", out.floatVerts === 0],
+        ["(2b) Shader-Cull verdrahtet — geom-Schweber tragen aDepth~0 (Shader fadet sie) + echtes Wasser aDepth>0", out.hardFloat === 0 && out.maxDepth > 0],
         ["(3) -Y-Oberseite (keine Unterseite)", out.areaNy != null && out.areaNy < -0.2],
         ["(4) naht-frei (≤ 0.05 m) ODER kein Paar", out.nahtMax == null || out.nahtMax <= 0.05],
         [

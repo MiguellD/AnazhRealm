@@ -1,12 +1,22 @@
 # Wasser-Render — die kohärente Schicht-Architektur (der Vollendungs-Plan)
 
-> **Status:** PHASE 1–4 GEBAUT (V18.15, 05.06.2026) — Browser-Sign-off des Schöpfers offen;
-> Phase 5 (Fluss-Volumen lateral↔flach) bewusst dem Auge überlassen. **GEBAUT:** Phase 1 (die
-> Tiefen-Schicht liest die glatte Meter-`aDepth` statt der facetten-verratenden `waterThick`;
-> `uShoreWidth`/`uDepthRange` in Metern) · Phase 2 (die Zell-Maske nachbar-lesend zurück, jetzt
-> WEICH durch Phase 1) · Phase 3 (See-Wellen-Floor `uLakeRipple` + Foam-Zweige gemischt statt
-> geschaltet) · Phase 4 (Wasserfall-Plane aus dem lokalen Terrain). + 3 Feinregler (Ufer-Schärfe/
-> Wasser-Tiefe in Metern · See-Wellen). format/lint/Playtest grün; der LOOK = das Schöpfer-Auge.
+> **Status:** PHASE 1 + 3 + 4 GEBAUT, PHASE 2 VERWORFEN (V18.16, 05.06.2026) — Browser-Sign-off
+> des Schöpfers offen; Phase 5 (Fluss-Volumen lateral↔flach) bewusst dem Auge überlassen.
+> **V18.16 — die Zell-Maske (Phase 2) ist RAUS (Schöpfer-Befund „das Seeufer war korrekt, jetzt
+> Sägezahn; sobald die Sägezähne weg, das Problem behoben"):** die Maske quantisierte die
+> Wasser-Ausdehnung aufs LOD0-Zell-Gitter → der harte SÄGEZAHN am Ufer (See UND Fluss). Der
+> Profi-Weg (V18.10 bestätigt): die Geometrie bleibt GROSSZÜGIG auf der `L`-Domäne, die
+> SICHTBARKEIT trägt der Tiefen-Shader PRO PIXEL aus der echten Meter-`aDepth` — der Ufer-Saum
+> fadet jetzt auf **NULL** an der echten Wasserkante (`alpha = alpha0·max(edgeFade, aShore)`,
+> kein 0.4-Boden mehr) → das „Schweben" der L-Fläche über die echte Kante (Fluss-Ribbon + See-
+> Rand) stirbt GLATT pro Pixel, ohne Gitter-Sägezahn. Die Foam-Meshes (Wasserfall-Pool, aShore=1)
+> bleiben voll sichtbar. GEMESSEN (`diag-water-surface-l`): 28 geom-Schweber, ALLE mit aDepth≈0
+> (Shader fadet sie), echtes Wasser bis 9 m → die Cull-Verdrahtung steht. **GEBAUT (bleibt):**
+> Phase 1 (die Tiefen-Schicht liest die glatte Meter-`aDepth` statt der facetten-verratenden
+> `waterThick`; `uShoreWidth`/`uDepthRange` in Metern) · Phase 3 (See-Wellen-Floor `uLakeRipple`
+> + Foam-Zweige gemischt statt geschaltet) · Phase 4 (Wasserfall-Plane aus dem lokalen Terrain).
+> + 3 Feinregler (Ufer-Schärfe/Wasser-Tiefe in Metern · See-Wellen). Playtest grün (98 s);
+> der LOOK = das Schöpfer-Auge.
 >
 > **(Ursprünglich) ANALYSE + PLAN (Stand V18.14).** Nach 15 Versionen Einzel-Tweak
 > (V18.0–.14) der Schöpfer-Befund: _„die Regler, die du mir gegeben hast, ändern nichts —

@@ -19484,82 +19484,13 @@ class AnazhRealm {
         const step0 = cfg0.step;
         const dimY0 = cfg0.dimY;
         const dq0 = dim0 * dim0;
-        // V18.15 (Phase 2) — die AUSDEHNUNG auf die ECHTEN Wasser-Zellen MASKIERT (nachbar-
-        // lesend, das V18.9-Muster zurück): vorher schwebte die Fläche GEMESSEN 45 % über die
-        // echte Uferlinie (nur die `L > -Inf`-Domäne) → das vergrösserte die Kaleidoskop-Zone
-        // + das Schnitt-Ufer. Jetzt ein Quad nur, wo eine LOD0-Zell-Spalte im 3×3 Wasser trägt;
-        // am Chunk-Rand die NACHBAR-Zellen gelesen (kein Geradenschnitt, V13.13.2). Mit Phase 1
-        // (weiter aDepth-Tiefen-Fade) ist der Masken-Rand WEICH (kein Sägezahn — DAS war der
-        // V18.8-Grund zum Revert, jetzt durch die richtige Schicht-Ordnung geheilt).
-        const useMask = !!cells;
-        const colWetAt = (oi, ok) => {
-            let ncx = cx,
-                ncz = cz,
-                li = oi,
-                lk = ok;
-            if (oi < 0) {
-                ncx -= 1;
-                li = oi + dim0;
-            } else if (oi >= dim0) {
-                ncx += 1;
-                li = oi - dim0;
-            }
-            if (ok < 0) {
-                ncz -= 1;
-                lk = ok + dim0;
-            } else if (ok >= dim0) {
-                ncz += 1;
-                lk = ok - dim0;
-            }
-            let src;
-            if (ncx === cx && ncz === cz) src = cells;
-            else {
-                const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
-                if (nb && nb.waterCells) src = nb.waterCells;
-                else if (nb) return 0;
-                else {
-                    src = cells;
-                    li = oi < 0 ? 0 : oi >= dim0 ? dim0 - 1 : oi;
-                    lk = ok < 0 ? 0 : ok >= dim0 ? dim0 - 1 : ok;
-                }
-            }
-            if (!src) return 0;
-            const base = li + lk * dim0;
-            for (let j = 0; j < dimY0; j++) if (src[base + j * dq0] === STATE.WATER) return 1;
-            return 0;
-        };
-        const MLO = -1;
-        const MHI = dim0 + 1;
-        const MPW = MHI - MLO + 1;
-        const colWetP = new Uint8Array(MPW * MPW);
-        if (useMask) {
-            for (let ok = MLO; ok <= MHI; ok++)
-                for (let oi = MLO; oi <= MHI; oi++) colWetP[oi - MLO + (ok - MLO) * MPW] = colWetAt(oi, ok);
-        }
-        const wetG = new Uint8Array(NV * NV);
-        if (useMask) {
-            for (let k = 0; k <= dim; k++) {
-                const ck = Math.floor((oz + k * step - oz) / step0);
-                for (let i = 0; i <= dim; i++) {
-                    const ci = Math.floor((ox + i * step - ox) / step0);
-                    let wet = 0;
-                    for (let dk = -1; dk <= 1 && !wet; dk++)
-                        for (let di = -1; di <= 1 && !wet; di++) {
-                            const ii = ci + di,
-                                kk = ck + dk;
-                            if (
-                                ii >= MLO &&
-                                kk >= MLO &&
-                                ii <= MHI &&
-                                kk <= MHI &&
-                                colWetP[ii - MLO + (kk - MLO) * MPW]
-                            )
-                                wet = 1;
-                        }
-                    wetG[i + k * NV] = wet;
-                }
-            }
-        }
+        // V18.16 — KEINE Zell-Maske auf der Geometrie (der Profi-Weg, V18.10 bestätigt):
+        // die Fläche bleibt grosszügig auf der `L`-Domäne (~16 m über die Uferlinie), die
+        // SICHTBARKEIT trägt der Tiefen-Shader PRO PIXEL aus der echten Meter-Tiefe `aDepth`
+        // (→0 an der echten Wasserkante → Alpha→0). Die V18.8/.15-Zell-Maske quantisierte die
+        // Ausdehnung aufs LOD0-Gitter → der SÄGEZAHN am Ufer (Schöpfer „das Seeufer war
+        // korrekt, jetzt Sägezahn"); ein per-Pixel-aDepth-Fade ist glatt (lineare Interpolation
+        // + smoothstep) und tötet zugleich das „Schweben" des Fluss-Ribbons (aDepth=0 → unsichtbar).
         const vmap = new Int32Array(NV * NV).fill(-1);
         const addVert = (i, k) => {
             const vi = i + k * NV;
@@ -19631,13 +19562,6 @@ class AnazhRealm {
                 const l01 = Lg[i + (k + 1) * NV];
                 const l11 = Lg[i + 1 + (k + 1) * NV];
                 if (!(l00 > -Infinity && l10 > -Infinity && l01 > -Infinity && l11 > -Infinity)) continue;
-                // V18.15 (Phase 2) — UND auf echtem Wasser (Zell-Maske, nachbar-lesend);
-                // ohne Zellen (useMask=false) fällt es auf die L-Domäne zurück (kein Loch).
-                if (
-                    useMask &&
-                    !(wetG[i + k * NV] && wetG[i + 1 + k * NV] && wetG[i + (k + 1) * NV] && wetG[i + 1 + (k + 1) * NV])
-                )
-                    continue;
                 const v00 = addVert(i, k);
                 const v10 = addVert(i + 1, k);
                 const v01 = addVert(i, k + 1);
@@ -22594,7 +22518,14 @@ class AnazhRealm {
         // Schicht 3: an der Uferlinie ausfaden — ein weicher, durchscheinender
         // Wasser-Saum statt einer harten Mesh-Kante gegen das Terrain (heilt auch
         // das streifende Z-Fighting, das V9.49-f mit polygonOffset bekämpfte).
-        const alpha = alpha0.mul(mix(float(0.4), float(1.0), edgeFade));
+        // V18.16 — der Saum fadet pro Pixel auf NULL an der echten Uferlinie (aDepth→0),
+        // NICHT auf einen 0.4-Boden: das tötet das „Schweben" der grosszügigen `L`-Domäne-
+        // Fläche über die echte Wasserkante (Fluss-Ribbon UND See-Rand) GLATT pro Pixel —
+        // die Sichtbarkeit trägt die echte Meter-Tiefe, kein Zell-Gitter-Sägezahn (der
+        // Profi-Weg, Geometrie grosszügig + Tiefenpuffer-Uferlinie). Die Foam-Meshes
+        // (Wasserfall-Pool, aShore=1) bleiben voll sichtbar (max gegen aShore).
+        const edgeVis = max(edgeFade, aShoreV);
+        const alpha = alpha0.mul(edgeVis);
         // V13.9 — dünnes Wand-Bluten pro Pixel cullen: wo die Wasser-Dicke in
         // Sicht-Richtung (waterThick) unter uMinDepth liegt, Alpha auf 0 → der
         // Fragment fällt via mat.alphaTest weg (kein Farb-/Tiefen-Schreiben).
@@ -47771,7 +47702,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.15.0";
+AnazhRealm.VERSION = "18.16.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
