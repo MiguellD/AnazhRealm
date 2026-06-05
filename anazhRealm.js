@@ -21237,12 +21237,12 @@ class AnazhRealm {
             flowX: dirX,
             flowZ: dirZ,
             depth,
-            // V18.19 — der Wasserspiegel sitzt höher im gecarvten Bett (Freibord 0.4→0.25·Tiefe):
-            // die Flüsse füllen ~75 % statt 60 % des Betts → tieferes, blaueres Wasser statt
-            // flacher Schaum-Folie, die flachen Zwischenstücke füllen sich (verbindet die
-            // fragmentierten Flecken im Schöpfer-Bild). KEINE Re-Erosion (das Bett-Carve nutzt
-            // `depth` direkt, unverändert) — nur der Wasserstand/Flood; Worker-Mirror Pflicht.
-            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.25,
+            // V18.20 — Freibord zurück auf 0.4·Tiefe (V18.19s 0.25 hob den Spiegel auf die
+            // FACETTIERTE Bank → die Render-Uferlinie sägezahnte; Schöpfer „das Anheben machte
+            // die Flussränder kaputt"). Der RICHTIGE Hebel für volleres, geführtes Wasser ist
+            // NICHT den Spiegel heben, sondern das BETT tiefer carven (Kanal führt den Fluss,
+            // die Bank bleibt ÜBER dem Wasser → kein Falten) — das ist die Terrain-Welle.
+            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.4,
         };
     }
 
@@ -47760,7 +47760,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.19.0";
+AnazhRealm.VERSION = "18.20.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
