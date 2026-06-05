@@ -1,5 +1,95 @@
 # AnazhRealm Roadmap — der Plan
 
+## ⭐ DER PLAN VORWÄRTS (Stand V18.8 · 05.06.2026 · die Konsolidierung)
+
+> **Diese Sektion ist der EINE Plan vorwärts.** Sie entstand aus der Konsolidierung am
+> 05.06.2026: der Schöpfer-Befund „du drehst dich im Kreis, pflasterst Bug auf Bug,
+> verlierst den Überblick; Minecraft hat das gelöst, aber wir basteln etwas Billiges".
+> Die Diagnose, GEMESSEN: nicht der CODE ist krank — alle Subsysteme existieren (geprüft),
+> der Playtest ist grün (~3500 Invarianten), die Wasser-FORM ist endlich die der Riesen
+> (V18.6). Krank war die DISZIPLIN: **16 Wellen (V17.117→V18.8) wurden headless-grün gebaut
+> und NIE im Browser bestätigt, NIE gemergt.** Die Detail-Threads unten („OFFENE FÄDEN")
+> bleiben die Referenz; DIESE Sektion ordnet sie und ist der Startpunkt jeder Session.
+
+### Die EINE Wahrheit (für die Zukunft fixiert — Regel #0)
+
+**Render · Wasser · Schatten · Hand-Optik sind PIXEL-BLIND headless. Der Schöpfer-Browser
+ist die EINZIGE Wahrheit. Baue NIE 2+ pixel-blinde Wellen tief, ohne dass sein Auge die
+vorige bestätigt hat — und merge einen bestätigten Bogen, bevor du den nächsten beginnst.**
+Diese Lehre stand schon mehrfach in den Gotchas (V10.0-g.r, V13.x, V17.x): sie wurde
+benannt, dann vergessen, wieder benannt, wieder vergessen — DAS ist die Spirale. Sie ist
+jetzt die operative Regel #0.
+
+### Phase 1 — DEN STAPEL SCHLIESSEN (das Dringendste, vor IRGENDWAS Neuem)
+
+Der 16-Wellen-Stapel ist die größte Schuld. `main` = V17.116; der Branch = V18.8.
+
+1. **Schöpfer-Browser-Pass über den Wasser-Stapel** (V17.117–V18.8), mit dem A/B-Schalter
+   (Einstellungen → Wasser-Render: Fläche ↔ Zell-Iso):
+   - Wasser-Fläche auf `L`: See ✅ („deutlich besser"). **Offen: Fluss — kaskadiert die
+     Fläche an den nassen Zell-Treppen sauber? Sägezahn/Schweben an der Chunkgrenze weg?**
+   - **Wasserfall-Planes: bleiben (dedizierter vertikaler Sturz) oder raus?** (Schöpfer-Auge
+     — headless nicht entscheidbar, V18.8 bewusst nicht vorschnell entfernt.)
+   - Ferner Ozean (H3) sichtbar korrekt · async Pop-in beim Streamen (E3) flüssig?
+2. **Die älteren pixel-blinden Sign-offs mitnehmen:** R1 (Schatten-Raster an vertikalen
+   Wänden — wandert es noch?) · E1/E2 (Sicht-Ring 12 — Weite + FPS? ferne LOD-Nähte?) · J4
+   (Facetten weg bei 2.5D-Lichtung 100 %?) · S9 (Gerät in der Hand — Pose/Skala) · A2
+   (Crafting-FERTIGEN-Fluss + Resonanz-Rollen — Feel/Synergie).
+3. **Was bestätigt ist → ein PR nach `main`. Was wackelt → gezielt mit dem Auge schließen.**
+   → Ergebnis: `main` ist wieder die Wahrheit, der Stapel ist Geschichte, die Spirale gebrochen.
+
+### Phase 2 — DAS FUNDAMENT SAUBER SCHLIESSEN (Reihenfolge: erst sauber, DANN LOD)
+
+Nach dem Merge die Fundament-Reste (`docs/tiefe-fundament-plan.md`, Bogen A–J grösstenteils
+GEBAUT V17.92–.118; `docs/lod-kaskade-plan.md` für die Kaskade):
+
+4. **Wasser zu Ende:** H3-Seen/Flüsse jenseits ±1024 m (Region mit dem Spieler MITWANDERN —
+   eigene Welle; nur falls der Schöpfer ferne Binnengewässer will) · aufgestaute Hoch-Becken
+   (gedämmt über `L` → brauchen weiter die Zellen) · echter Unterwasser-Decken-Pass (V18.3 B5).
+5. **G3 — Höhleneingänge + Canyons** (gross, beeindruckend; braucht die H3-Wasser-Wahrheit,
+   sonst Bleed an Eingängen). Worldgen + Determinismus-Bruch (eigener Sign-off).
+6. **Die LOD-Kaskade vollenden** (auf sauberem Wasser): U2 (Wasser-LOD auf der Terrain-LOD,
+   nicht erzwungenem LOD0) · U4 (Deko-Distanz + Dichte + Impostor) · U5 (Schatten-CSM) ·
+   U6/E4 (echtes Clipmap + Cross-LOD-Stitching — der Draw-Call-Hebel 289→625, löst auch den
+   Haupt-Fog-Kopplungs-Corner). Alle pixel-blind → Schöpfer-Browser-Loop führt jeden Schritt.
+7. **Render-Feinschliff:** R2 (geflattete Normale in die Terrain-Geometrie backen → Diffus +
+   AO + Schatten lesen EINE Normale) · R3 (Kanten-Schärfe verifizieren/tunen) · R5 (Textur
+   auf Strukturen, output-seitig).
+8. **Kreatur-FPS-Rest:** Frame-Budget für ferne Kreatur-KI — NUR falls der V17.113-Boden-Cache
+   im Browser nicht reicht (erst MESSEN, ob CPU- oder GPU-bound, kein blinder KI-Schnitt).
+
+### Phase 3 — DIE SEELE (die offenen Vision-Fäden, wenn das Fundament trägt)
+
+9.  **A — Crafting-Bogen schließen** (`docs/kampf-plan.md` §11): A2 ist Teil von Phase 1
+    (Browser-Audit) · **S6-B erntbare Flora** → echte Trank-Zutaten-Ökonomie (GPU-Instanz-
+    Harvest; aufgeschoben seit V17.65, knüpft an die V17.1-Vegetation) · S11 Werkstatt-
+    Animation (Parts oszillieren/rotieren deklarativ statt hartcodiert) · S7-C chat/DSL-
+    Vereinheitlichung (der letzte Gratis-Bypass „rüste/werde X").
+10. **B — Kampf-Bogen schließen:** **Phase E — Bedrohung/Furcht** (aggressive Kreaturen →
+    der W5-Furcht-Konsument + Triumph-δ; lange benannt, NIE gebaut — gibt dem Emotion-Kern
+    seinen LETZTEN Konsumenten, die game-design-schwerste Phase) · Mana-Symmetrie
+    (`magieleitung` → ein Äther/Mana, die zweite Ausdauer-Achse; Magie zahlt heute nichts).
+11. **D — Vision weiter:** Emotion→Regel-EMERGENZ (die hand-codierten Kopplungen
+    `sorrow→rainy` via die Weltregeln-DSL emergent machen, V17.34 macht sie ausdrückbar) ·
+    **W18 — in fremden Welten LEBEN** (`docs/world-portal-w18-plan.md`, der nächste grosse
+    Vision-Bogen: Ko-Präsenz-Injektion in Single-Player-Fremdwelten) · Fern: Fahrzeug-Tiefe ·
+    evolveCommunity · VR · IndexedDB.
+
+### Die operative Disziplin (für JEDE künftige Welle — was diese Session lehrt)
+
+1. **Regel #0:** pixel-blinde Arbeit wird browser-validiert, BEVOR die nächste Welle darauf
+   stapelt. Nie 2+ tief ohne Sign-off.
+2. **Merge-Rhythmus:** ein validierter Bogen = ein Merge zu `main`. Kein 16-Wellen-Stapel mehr.
+3. **Miss, rate nicht** (55 diag-Skripte beweisen die Disziplin — sie gilt weiter; der
+   Reproducer mit Output-Lesen VOR dem Fix).
+4. **Verdichte, baue nie parallel** (V17.9). **Harmonie statt Revert** (V17.23).
+5. **Keine halben Schritte, kein Ausweichen** (V17.30): ist der Plan klar + das Gap benannt
+   → baue das GANZE Subsystem an die Wurzel, nicht ein Pflaster nach dem nächsten.
+
+---
+
+**Detail-Chronik (historisch — der aktive Plan steht oben „⭐ DER PLAN VORWÄRTS"):**
+
 Stand: **V17.91 (03.06.2026) — der Crafting-/Werkstatt-Bogen ist DURCH (V17.72–.91); V17.91 machte die Werkstatt 3D-zentrisch (der alte versteckte Detail-Editor entfernt, Undo/Redo/Löschen → Top-Leiste, Prozesse → ziehbare Palette-Karten, Verbindungen via Connect-Toggle, Readout im Stats-Panel). DIE RESONANZ-VEREINHEITLICHUNG U1–U6 (V17.80–.84, `docs/resonanz-system.md`): EIN Produkt-Vektor → EIN Rollen-Register (12 Rollen) → der Katalysator sichtbar → die Klassifikation richtig (Klinge→Waffe aus der Form) → die Rolle-Passung erreicht ALLE Effekt-Träger inkl. Avatar (U6). DANN der Schöpfer-Browser-Bogen V17.85–.89: die emergente Rolle sichtbar + der Prozess umkehrbar (.85) · Werkstatt-Kohärenz + Schwert-Saat (.86) · volles UNDO/REDO (.87) · DIE WERKSTATT IST DER PROZESS (.88 — platzieren → der Prozess erscheint, in frieden/pfad; bessere Werkstatt → höhere Präzision → bessere Tools, die Rekursion; der Spieler startet mit den Basics, nur hände) · DIE WERTE SICHTBAR + DYNAMISCH (.89). DANN **V17.90 — DIE RE-KALIBRIERUNG** (das „blass"-Gefühl an der Wurzel): die Resonanz war GEBAUT, aber skalen-inkonsistent (Material [0..3] überstimmte Form [0..1]) → Spektrum gesättigt (alles 1.0), Material kaum spürbar, Größe unsichtbar, Rolle unscharf. Geheilt: Produkt-Vektor auf EINE Skala normalisiert (`PRODUCT_VECTOR_TAG_NORM`) → Spektrum spreizt + führt mit der Form-Rolle; Material dramatisch (Holz↔Eisen 2.7×, Readout-Clamp gelockert); eine **Größe→Stat-Achse** (`_compoundSizeFactor` — größer = mehr Schaden/Rückschlag/Verteidigung, träger; im Readout UND im Equip-Fold, die V17.89-„größer=stärker"-Frage GELÖST); Rolle scharf (`livingBody` aus dem Material; Waffe/Werkzeug-Distinguisher → Pickel→Werkzeug, Schwert→Waffe); + die platzierte Werkstatt erscheint zuverlässig als Prozess (`WORKSHOP_PROXIMITY_M` 10→32) + Undo/Redo-CSS sichtbar. OFFEN: der Schöpfer-Browser-Pass (Feel der Material-/Größen-Balance, alle Gewichte browser-justierbar) · Avatar-Körper-Größe→HP (bewusst aufgeschoben) · Fahrzeug-Gameplay · Backlog: Zwei-Hand-Modell · Rüstung am Avatar sichtbar · Phase E (Bedrohung).** Seit dem Detail-Kopf unten (V17.32) gebaut + „Alle Invarianten OK":
 
 - **Der lebendige-Feld-Bogen ist VOLLENDET — das DRITTE Verb:** lesen (`auraAt`, V17.21) · schreiben (`_depositLife`/`_depositEmotion`, V17.27/.32) · **WERTEN** (der Wertungs-Bogen V17.42–.50: die Regel-Fitness wird der lokale strukturelle δ am Ort, die Emotion der Appraisal-δ, die Welt LERNT was den Spieler freut — Vorhersagefehler gegen gleitende Baseline). → damit ist `das-lebendige-feld.md §3.5/§7-Fleck-1 „WERTUNG flach" GEHEILT, nicht mehr offen.
@@ -13,7 +103,7 @@ Stand: **V17.91 (03.06.2026) — der Crafting-/Werkstatt-Bogen ist DURCH (V17.72
 
 ---
 
-## OFFENE FÄDEN — der Gesamt-Backlog (Stand V17.115, geordnet, reconciled)
+## OFFENE FÄDEN — der Gesamt-Backlog (Detail-Referenz; die geordnete Reihenfolge steht oben „⭐ DER PLAN VORWÄRTS")
 
 ### ⭐ AKTIVER AUDIT-STAND + DIE REIHENFOLGE (Schöpfer-Audit 04.06.2026)
 
