@@ -19984,7 +19984,13 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         if (sampleMeshKey) {
             const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
             out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
-            out.sampleMeshUserData = sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-iso";
+            // V18.6 U-W4 — der Default-Render ist die Höhenfeld-FLÄCHE ("chunk-
+            // water-surface"); der A/B-Schalter "iso" baut die alte Zell-Iso
+            // ("chunk-water-iso"). Beide Kind-Stempel sind gültig.
+            out.sampleMeshUserData =
+                sampleMesh.userData &&
+                (sampleMesh.userData.hydroKind === "chunk-water-surface" ||
+                    sampleMesh.userData.hydroKind === "chunk-water-iso");
             // V18.1 W1 (Wasser-finale-Form) — Wasser ist eine FLÄCHE, kein Volumen:
             // Material BackSide (von oben über die Rückseite sichtbar, von unten
             // front-gecullt) + die Iso trägt KEINE Unterseiten-Dreiecke mehr
@@ -20025,6 +20031,24 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             }
             out.waterUndersideTris = undersideTris;
             out.waterTopsTris = topsTris;
+            // V18.6 U-W4 — DIE FINALE FORM: die Fläche IST das Feld L. Jeder
+            // Vertex sitzt EXAKT auf `_atlasWaterLevelAt(x,z,-Inf)` (so wird er
+            // gebaut) → keine ±1-m-Zell-Granularität mehr (Seezentrum-Fix). Nur
+            // im surface-Modus messbar (der iso-Modus baut die alte Zell-Iso).
+            if (sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-surface") {
+                const sp = sampleMesh.geometry.attributes.position;
+                let mx = 0;
+                for (let v = 0; v < sp.count; v++) {
+                    const L = r._atlasWaterLevelAt(sp.getX(v), sp.getZ(v), -Infinity);
+                    if (isFinite(L)) {
+                        const er = Math.abs(sp.getY(v) - L);
+                        if (er > mx) mx = er;
+                    }
+                }
+                out.surfaceMaxLErr = mx;
+            } else {
+                out.surfaceMaxLErr = "skip — iso-Modus (A/B)";
+            }
         } else {
             // Welt hatte keinen Iso-Mesh (z.B. alle Chunks im Hochland, kein
             // Wasser) — Test überspringen, aber als sanity-skip markieren.
@@ -20064,7 +20088,10 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             `visible=${res.isoMeshVisibleCount}/${res.isoMeshCount}`
         );
         check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
-        check("Welle C.2 V9.72: Iso-Mesh trägt userData.hydroKind='chunk-water-iso'", res.sampleMeshUserData === true);
+        check(
+            "V18.6 U-W4: Wasser-Mesh trägt userData.hydroKind='chunk-water-surface' (Fläche) ODER 'chunk-water-iso' (A/B)",
+            res.sampleMeshUserData === true
+        );
         check(
             "V18.1 W1: Wasser-Material ist BackSide (einseitige Flaeche, kein Volumen, kein Wasser-von-unten)",
             res.waterMatBackSide === true
@@ -20079,6 +20106,13 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             typeof res.waterTopsTris === "number" && res.waterTopsTris > 0,
             `Oberseite=${res.waterTopsTris}`
         );
+        if (typeof res.surfaceMaxLErr === "number") {
+            check(
+                "V18.6 U-W4: Wasser-FLÄCHE sitzt EXAKT auf dem Spiegel L (max|vertexY−L| ≤ 0.05 m, Granularität geheilt)",
+                res.surfaceMaxLErr <= 0.05,
+                `maxErr=${res.surfaceMaxLErr}`
+            );
+        }
         if (res.bergseeCheckable) {
             check(
                 "Welle C.2 V9.73 (Heilung): Bergsee-Cells über waterLevel sind als state=WATER im Feld",

@@ -303,6 +303,13 @@ class AnazhRealm {
                 colorVar: 1.5,
                 fogDistance: 5.31, // Slider 177 % (= /3 × 100)
                 waterCull: 0.0025,
+                // V18.6 U-W4 — die FINALE WASSER-FORM: Wasser ist eine FLÄCHE auf
+                // dem Spiegel L (Höhenfeld, tiefen-versöhnt), nicht die Zell-Iso.
+                // `iso` ist der A/B-Schalter auf die alte Zell-Iso (Browser-Vergleich
+                // während des Sign-offs; nach dem Sign-off entfernbar).
+                waterRenderMode: "surface", // "surface" (Fläche-auf-L) | "iso" (alte Zell-Iso)
+                waterShoreWidth: 0.0045, // Tiefen-Uferlinie (uShoreWidth) — kleiner = schärferes Ufer
+                waterDepthRange: 0.03, // Tiefen-Farb-Rampe (uDepthRange) — kleiner = schneller tief
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
                 shadowRange: 300, // Frustum-Halbbreite m (kleiner = schärfer)
@@ -19101,6 +19108,13 @@ class AnazhRealm {
         return geom;
     }
 
+    // V18.6 U-W4 — der Wasser-Render-Modus. "surface" (Default) = die FINALE
+    // FORM (Höhenfeld-Fläche auf dem Spiegel `L`); "iso" = die alte Zell-Iso
+    // (A/B-Schalter für den Browser-Sign-off, in den Einstellungen umstellbar).
+    _waterRenderMode() {
+        return this.state.atmosphere && this.state.atmosphere.waterRenderMode === "iso" ? "iso" : "surface";
+    }
+
     _buildVoxelChunkWaterIsoSurface(cx, cz) {
         if (!this.state.scene || typeof THREE === "undefined") return null;
         if (!this.state.voxelChunks) return null;
@@ -19108,6 +19122,12 @@ class AnazhRealm {
         const key = `${cx},${cz}`;
         // Idempotenz: vorhandenes Mesh disposen, bevor wir neu bauen
         this._disposeVoxelChunkWaterIso(key);
+        // U-W4 — die FINALE FORM: Wasser ist eine FLÄCHE auf dem Spiegel `L`
+        // (Höhenfeld, reitet die Terrain-LOD, tiefen-versöhnt), nicht die Zell-
+        // Iso. Dispatch NACH dem Dispose (geteilter Map-/Material-Pfad), VOR dem
+        // waterCells-Lesen — die Fläche braucht die Zellen nicht (sie liest `L`
+        // direkt; die Zellen bleiben die Physik-/Reaktivitäts-/Höhlen-Wahrheit).
+        if (this._waterRenderMode() !== "iso") return this._buildVoxelChunkWaterSurfaceMesh(cx, cz, key);
         const entry = this.state.voxelChunks.get(key);
         if (!entry || !entry.waterCells) {
             this.state.voxelChunkWaterIso.set(key, null);
@@ -19352,6 +19372,158 @@ class AnazhRealm {
         // V9.75 (Welle C.4+5) — das Iso-Mesh ist seit jetzt das EINZIGE
         // Wasser-Mesh. Default sichtbar; der Toggle `_setVoxelWaterIsoVisible`
         // ist gestrichen (war Browser-Audit-Werkzeug der Migration-Phase).
+        this.state.scene.add(mesh);
+        this.state.voxelChunkWaterIso.set(key, mesh);
+        return mesh;
+    }
+
+    // V18.6 U-W4 — DIE FINALE WASSER-FORM: Wasser als FLÄCHE auf dem Spiegel `L`.
+    //
+    // Der ganze V13–V18-Wasser-Render-Bogen drehte um die Zell-Iso (Surface-Nets
+    // über die Flood-Zellen). Sie ist die WURZEL aller Restsymptome: sie sitzt
+    // ±1 m unter `L` (Granularität → „Seezentrum fällt"), ist ein VOLUMEN mit
+    // Unterseiten (→ „Wasser unter der Karte" an Nähten), definiert die Uferlinie
+    // GEOMETRISCH (→ „klettert die Küste hoch", obwohl der Tiefen-Shader sie pro
+    // Pixel lösen KÖNNTE), und behandelt SOLID neutral → zeichnet die Fläche QUER
+    // DURCH Strukturen auf `L` (→ Phantome an deren flachen Oberseiten). Jedes
+    // ausgelieferte Wasser-Spiel (Sea of Thieves, Unreal Water, No Man's Sky,
+    // Minecraft/Distant-Horizons) macht das Gegenteil: Wasser ist eine FLÄCHE auf
+    // der Wasserhöhe, mit dem Terrain durch den TIEFENPUFFER versöhnt — nie ein
+    // gemeshtes Volumen von Zellen. Unser Plan benannte das (U-W4 „L-Höhenfeld-
+    // Fläche"); HIER ist es gebaut.
+    //
+    // Das Höhenfeld: pro Eck-Vertex `L = _atlasWaterLevelAt(x,z, -Inf)` — der
+    // Körper-Spiegel, wenn die Spalte in/neben (±16 m, das 3×3-Atlas) einem
+    // Wasser-Körper liegt (inkl. Fluss-Gefälle → die Fläche fällt an Stufen =
+    // natürliche Wasserfälle), sonst -Inf (Land → keine Fläche). `-Inf` als
+    // terrainTop EXTENDED die Domäne ~16 m über die echte Uferlinie hinaus; den
+    // genauen Pixel-Verlauf des Ufers macht der Tiefen-Shader (`waterThick`,
+    // V13.5). KEINE Geometrie-Uferlinie → kein Klettern, keine Treppe.
+    //
+    // Naht-frei PER KONSTRUKTION: `L` ist ein geteiltes kontinuierliches Feld →
+    // zwei Nachbar-Chunks berechnen an der gemeinsamen Kante DENSELBEN `L` → die
+    // Vertices fallen zusammen (kein Smoothing, kein OOB-Iso, keine Zell-
+    // Granularität). Darum reitet die Fläche die TERRAIN-LOD gefahrlos (das war
+    // W2s Ziel — bei der Zell-Iso scheiterte es an der Höhen-Verschiebung der
+    // Vergröberung [DH #606]; auf `L` gibt es nichts zu verschieben).
+    //
+    // Einseitige Oberseite: die Wicklung gibt der Oberseite eine -Y-Normale →
+    // über die RÜCKSEITE sichtbar (das geteilte `hydroSurfaceMaterial` ist
+    // BackSide) → von oben sichtbar, von UNTEN front-gecullt = kein „Wasser unter
+    // der Karte". Der Unterwasser-Blick trägt der `playerEyesUnderwater`-Tint.
+    // Strukturen/Terrain schreiben Tiefe → sie verdecken die Fläche pro Pixel, wo
+    // sie über `L` ragen (→ kein Phantom an flachen Oberseiten).
+    //
+    // Die ZELLEN bleiben unangetastet: Physik (`_playerWaterContext`),
+    // Reaktivität (graben/dämmen → Zellen) + 3D-Höhlen-Wasser. Die Fläche LIEST
+    // die Zellen NICHT (sie liest `L`) → sie ist korrekt, auch wenn der Zell-Bau
+    // einen Frame nachhängt. Reaktivität: graben unter `L` → die Fläche (schon
+    // auf `L`) deckt die neue Tiefe, der Tiefen-Shader zeigt sie nass; dämmen
+    // ÜBER `L` → das Terrain verdeckt die Fläche (Tiefen-Test). (Aufgestaute
+    // Hoch-Becken über dem umgebenden `L` brauchen weiter die Zellen — eigener
+    // Faden.) Geht in dieselbe `voxelChunkWaterIso`-Map + denselben Dispose.
+    _buildVoxelChunkWaterSurfaceMesh(cx, cz, key) {
+        const entry = this.state.voxelChunks.get(key);
+        if (!entry) {
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        // Gleiches Gate wie die Zellen — ein Chunk trägt Fläche gdw. er Wasser hat.
+        if (!this._voxelChunkHasAnyWater(cx, cz)) {
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        const lod = entry.lod || 0;
+        const { dim, step, span } = this._voxelChunkConfig(lod);
+        const ox = cx * span;
+        const oz = cz * span;
+        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        // `L` pro Eck-Vertex ((dim+1)²). `_atlasWaterLevelAt(x,z,-Inf)`: Körper-
+        // Spiegel in/neben einem Wasser-Körper (Ozean/See/Fluss-Gefälle), sonst
+        // -Inf. -Inf als terrainTop hebt das Rim-Gate → die Fläche reicht ~16 m
+        // über die Uferlinie (der Tiefen-Shader blendet pro Pixel aus).
+        const NV = dim + 1;
+        const Lg = new Float64Array(NV * NV);
+        let anyWet = false;
+        for (let k = 0; k <= dim; k++) {
+            const wz = oz + k * step;
+            for (let i = 0; i <= dim; i++) {
+                const L = this._atlasWaterLevelAt(ox + i * step, wz, -Infinity);
+                Lg[i + k * NV] = L;
+                if (L > -Infinity) anyWet = true;
+            }
+        }
+        if (!anyWet) {
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        const positions = [];
+        const indices = [];
+        const aFlow = [];
+        const aWave = [];
+        const vmap = new Int32Array(NV * NV).fill(-1);
+        const addVert = (i, k) => {
+            const vi = i + k * NV;
+            if (vmap[vi] >= 0) return vmap[vi];
+            const wx = ox + i * step;
+            const wz = oz + k * step;
+            const L = Lg[vi];
+            const id = positions.length / 3;
+            positions.push(wx, L, wz);
+            // aWave: 1 = Ozean (Spiegel ≈ Meereshöhe) → Gerstner-Wellen; 0 = See
+            // (ruhig). aFlow: Fluss-Gefälle-Tangente (Strömung + speist die Drops).
+            aWave.push(Math.abs(L - waterLevel) < 1.5 ? 1 : 0);
+            const river = this._hydroRiverAt(wx, wz);
+            if (river && (river.flowX || river.flowZ)) {
+                const fl = Math.hypot(river.flowX, river.flowZ) || 1;
+                aFlow.push(river.flowX / fl, river.flowZ / fl);
+            } else {
+                aFlow.push(0, 0);
+            }
+            vmap[vi] = id;
+            return id;
+        };
+        for (let k = 0; k < dim; k++) {
+            for (let i = 0; i < dim; i++) {
+                const l00 = Lg[i + k * NV];
+                const l10 = Lg[i + 1 + k * NV];
+                const l01 = Lg[i + (k + 1) * NV];
+                const l11 = Lg[i + 1 + (k + 1) * NV];
+                if (!(l00 > -Infinity && l10 > -Infinity && l01 > -Infinity && l11 > -Infinity)) continue;
+                const v00 = addVert(i, k);
+                const v10 = addVert(i + 1, k);
+                const v01 = addVert(i, k + 1);
+                const v11 = addVert(i + 1, k + 1);
+                // Wicklung → -Y-Normale (Oberseite über die Rückseite sichtbar =
+                // BackSide; von unten gecullt). Dieselbe Konvention wie die Iso.
+                indices.push(v00, v10, v01, v11, v01, v10);
+            }
+        }
+        if (indices.length === 0) {
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(aFlow, 2));
+        geom.setAttribute("aWave", new THREE.Float32BufferAttribute(aWave, 1));
+        // aShore wird vom Tiefen-Shader getragen → 0 (wie die Iso).
+        geom.setAttribute("aShore", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
+        geom.setIndex(indices);
+        const mat = this._ensureHydroSurfaceMaterial();
+        if (!mat) {
+            this._queueGeometryDispose(geom);
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
+        mesh.userData = {
+            isHydrosphere: true,
+            hydroKind: "chunk-water-surface",
+            voxelChunkX: cx,
+            voxelChunkZ: cz,
+        };
         this.state.scene.add(mesh);
         this.state.voxelChunkWaterIso.set(key, mesh);
         return mesh;
@@ -22005,8 +22177,11 @@ class AnazhRealm {
         // uShoreWidth/uDepthRange in [0,1]-Lineardepth-Einheiten (über near..far);
         // im Browser-Audit fein justierbar. uEmotion ist der V14-Kopplungs-Haken
         // (0 = neutral, exakt das alte Bild; V14 treibt ihn → die Welt atmet im Wasser).
-        const uShoreWidth = uniform(0.0045);
-        const uDepthRange = uniform(0.03);
+        // V18.6 — aus dem persistierten Atmosphäre-Wert initialisiert (Settings-
+        // Slider, überlebt Reload), wie waterCull. Default = die bisherigen Werte.
+        const atmoW = this.state.atmosphere || {};
+        const uShoreWidth = uniform(Number.isFinite(atmoW.waterShoreWidth) ? atmoW.waterShoreWidth : 0.0045);
+        const uDepthRange = uniform(Number.isFinite(atmoW.waterDepthRange) ? atmoW.waterDepthRange : 0.03);
         const uEmotion = uniform(0.0);
         // V13.9 (Schicht 3) — Mindest-Wasser-Dicke fürs pro-Pixel-Cullen des
         // dünnen Wand-Blutens (16-m-Atlas-Spiegel spillt minimal über den Voxel-
@@ -23940,6 +24115,17 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
                         ? this.state.atmosphere.waterCull
                         : 0.0025,
+                // V18.6 U-W4 — Wasser-Render-Modus + Tiefen-Ufer-Hebel persistieren.
+                waterRenderMode:
+                    this.state.atmosphere && this.state.atmosphere.waterRenderMode === "iso" ? "iso" : "surface",
+                waterShoreWidth:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterShoreWidth)
+                        ? this.state.atmosphere.waterShoreWidth
+                        : 0.0045,
+                waterDepthRange:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthRange)
+                        ? this.state.atmosphere.waterDepthRange
+                        : 0.03,
                 // J4-Regler: Kavitäts-AO-Stärke (0..1) + Kanten-Schärfe (Post-FX local-contrast, 0..1).
                 cavityAO:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
@@ -26055,6 +26241,14 @@ class AnazhRealm {
             if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
             const wc = Number(state.atmosphere.waterCull);
             if (Number.isFinite(wc)) this.state.atmosphere.waterCull = Math.max(0.0, Math.min(0.05, wc));
+            // V18.6 U-W4 — Wasser-Render-Modus + Tiefen-Ufer-Hebel.
+            if (state.atmosphere.waterRenderMode === "iso" || state.atmosphere.waterRenderMode === "surface") {
+                this.setWaterRenderMode(state.atmosphere.waterRenderMode);
+            }
+            const sw = Number(state.atmosphere.waterShoreWidth);
+            if (Number.isFinite(sw)) this.setWaterShoreWidth(Math.max(0.0005, Math.min(0.05, sw)));
+            const dr = Number(state.atmosphere.waterDepthRange);
+            if (Number.isFinite(dr)) this.setWaterDepthRange(Math.max(0.005, Math.min(0.2, dr)));
             // J4-Regler (default 1.0 / 0.5 = unverändert) + an die Uniforms pushen,
             // falls sie schon erzeugt sind (sonst liest `_ensure*` sie beim Bau).
             const ao = Number(state.atmosphere.cavityAO);
@@ -36512,6 +36706,52 @@ class AnazhRealm {
         return m;
     }
 
+    // V18.6 U-W4 — der Wasser-Render-Modus ("surface" = die finale Höhenfeld-
+    // Fläche auf `L`, Default; "iso" = die alte Zell-Iso, A/B-Schalter für den
+    // Browser-Sign-off). Setzt alle gestreamten Wasser-Meshes neu (re-enqueued).
+    setWaterRenderMode(mode) {
+        const m = mode === "iso" ? "iso" : "surface";
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.waterRenderMode = m;
+        // Alle Wasser-tragenden Chunks neu meshen, damit der Modus-Wechsel sofort
+        // greift (die Zellen/Physik bleiben unberührt — nur der Render-Pfad).
+        if (this.state.voxelChunks) {
+            for (const [key, e] of this.state.voxelChunks) {
+                if (!e || !e.waterCells) continue;
+                const comma = key.indexOf(",");
+                this._enqueueWaterIso(parseInt(key.slice(0, comma), 10), parseInt(key.slice(comma + 1), 10));
+            }
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // V18.6 U-W4 — die Tiefen-Uferlinie (uShoreWidth, [0,1]-Lineardepth): wie
+    // breit das Wasser pro Pixel vom Ufer einblendet. Kleiner = schärferes Ufer.
+    setWaterShoreWidth(width) {
+        const m = Math.max(0.0005, Math.min(0.05, Number(width) || 0.0045));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.waterShoreWidth = m;
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.shoreWidth) {
+            this.state.hydroSurfaceUniforms.shoreWidth.value = m;
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // V18.6 U-W4 — die Tiefen-Farb-Rampe (uDepthRange, [0,1]-Lineardepth): wie
+    // schnell das Wasser mit der Tiefe ins Dunkle/Blaue kippt. Kleiner = schneller tief.
+    setWaterDepthRange(range) {
+        const m = Math.max(0.005, Math.min(0.2, Number(range) || 0.03));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.waterDepthRange = m;
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.depthRange) {
+            this.state.hydroSurfaceUniforms.depthRange.value = m;
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // WELLE J4-Regler — die Kavitäts-AO-Stärke (0 = aus … 1 = voll). Die
     // `fwidth(normalWorld)`-AO zeichnet jede Surface-Nets-Facetten-Kante als
     // Linie (screen-space → flackert beim Laufen) — der Haupt-Verdacht für die
@@ -43877,6 +44117,41 @@ class AnazhRealm {
                 if (wcVal) wcVal.textContent = v.toFixed(4);
             });
         }
+        // V18.6 U-W4 — Wasser-Render-Modus (Fläche-auf-L | Zell-Iso) + die zwei
+        // Tiefen-Ufer-Hebel (Ufer-Schärfe uShoreWidth, Wasser-Tiefe uDepthRange).
+        const wrSel = document.getElementById("select-waterrender");
+        if (wrSel) {
+            wrSel.value = this._waterRenderMode();
+            wrSel.addEventListener("change", () => this.setWaterRenderMode(wrSel.value));
+        }
+        const wsS = document.getElementById("slider-watershore");
+        const wsVal = document.getElementById("slider-watershore-val");
+        if (wsS) {
+            const s0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterShoreWidth)
+                    ? this.state.atmosphere.waterShoreWidth
+                    : 0.0045;
+            wsS.value = String(Math.round(s0 * 10000));
+            if (wsVal) wsVal.textContent = s0.toFixed(4);
+            wsS.addEventListener("input", () => {
+                const v = this.setWaterShoreWidth(parseInt(wsS.value, 10) / 10000);
+                if (wsVal) wsVal.textContent = v.toFixed(4);
+            });
+        }
+        const wdS = document.getElementById("slider-waterdepth");
+        const wdVal = document.getElementById("slider-waterdepth-val");
+        if (wdS) {
+            const d0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthRange)
+                    ? this.state.atmosphere.waterDepthRange
+                    : 0.03;
+            wdS.value = String(Math.round(d0 * 1000));
+            if (wdVal) wdVal.textContent = d0.toFixed(3);
+            wdS.addEventListener("input", () => {
+                const v = this.setWaterDepthRange(parseInt(wdS.value, 10) / 1000);
+                if (wdVal) wdVal.textContent = v.toFixed(3);
+            });
+        }
         // V17.109 — die 2.5D-Lichtung (0..100 % → terrainFlatten 0..1). Der HAUPT-
         // Hebel gegen die Facetten-Rauten (blendet die Shading-Normale zur Up-Achse).
         const tfS = document.getElementById("slider-flatten");
@@ -47151,7 +47426,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.5.0";
+AnazhRealm.VERSION = "18.6.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
