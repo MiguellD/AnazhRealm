@@ -1,6 +1,17 @@
 # Wasser-Render — die kohärente Schicht-Architektur (der Vollendungs-Plan)
 
-> **Status:** PHASE 1 + 3 + 4 GEBAUT, PHASE 2 VERWORFEN (V18.16, 05.06.2026) — Browser-Sign-off
+> **Status (V18.17, 05.06.2026):** der Schöpfer-Befund „seit 18.14 nur der Shader besser, das
+> See-Ufer war in 18.14 PERFEKT, jetzt überall scheisse, Wellen weg" GEMESSEN korrigiert: die
+> Tiefen-FARBE (`deepen`) liest die glatte Meter-`aDepth` (DER Kaleidoskop-Fix, bleibt), der
+> Ufer-ALPHA (`edgeFade`) liest WIEDER die view-space `waterThick` wie in V18.14 (`alpha =
+> alpha0·mix(0.4, 1.0, edgeFade)`) → das perfekte V18.14-See-Ufer zurück; `uShoreWidth` wieder
+> VIEWPORT (0.0045), `uDepthRange` METER. See-Wellen sichtbar (`uLakeRipple` 0.2). Die Maske
+> bleibt RAUS (V18.16, kein Sägezahn). **Die Lehre: Kaleidoskop-Fix (Farbe←aDepth) und perfektes
+> Ufer (Alpha←waterThick) sind ZWEI getrennte Quellen — in V18.15 zusammengeworfen, das gute Ufer
+> mit mit-kaputt; sagt der Schöpfer „nur EIN Ding besser", isoliere genau das (git-Diff) + revertiere
+> den Rest.** Offen (pixel-blind): der Fluss-Float (depth-occluded, KEINE Maske) + Phase 5.
+>
+> _(Davor)_ PHASE 1 + 3 + 4 GEBAUT, PHASE 2 VERWORFEN (V18.16, 05.06.2026) — Browser-Sign-off
 > des Schöpfers offen; Phase 5 (Fluss-Volumen lateral↔flach) bewusst dem Auge überlassen.
 > **V18.16 — die Zell-Maske (Phase 2) ist RAUS (Schöpfer-Befund „das Seeufer war korrekt, jetzt
 > Sägezahn; sobald die Sägezähne weg, das Problem behoben"):** die Maske quantisierte die
