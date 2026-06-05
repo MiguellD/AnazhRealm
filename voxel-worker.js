@@ -497,9 +497,8 @@ function hydroRiverAt(x, z) {
         }
     }
     if (bestD === Infinity) return null;
-    // V18.20 — Freibord zurück auf 0.4·Tiefe (V18.19s Anheben sägezahnte die Bank); MUSS
-    // bit-identisch zum Main `_hydroRiverAt` sein (colL → Cell-Naht, Determinismus-Wand).
-    return { depth, surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.4 };
+    // V18.21 — voller Spiegel bleibt (Freibord 0.25); MUSS bit-identisch zum Main sein.
+    return { depth, surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.25 };
 }
 
 function waterLevelAt(x, z) {

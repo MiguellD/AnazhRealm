@@ -21237,12 +21237,12 @@ class AnazhRealm {
             flowX: dirX,
             flowZ: dirZ,
             depth,
-            // V18.20 — Freibord zurück auf 0.4·Tiefe (V18.19s 0.25 hob den Spiegel auf die
-            // FACETTIERTE Bank → die Render-Uferlinie sägezahnte; Schöpfer „das Anheben machte
-            // die Flussränder kaputt"). Der RICHTIGE Hebel für volleres, geführtes Wasser ist
-            // NICHT den Spiegel heben, sondern das BETT tiefer carven (Kanal führt den Fluss,
-            // die Bank bleibt ÜBER dem Wasser → kein Falten) — das ist die Terrain-Welle.
-            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.4,
+            // V18.21 — der volle Spiegel BLEIBT (Freibord 0.25·Tiefe, Schöpfer „die Höhe behalten,
+            // es wurde schlechter weil du einen Fehler AUFGEDECKT hast, nicht weil sie schlecht war").
+            // Der aufgedeckte Fehler (die Sägezähne am höheren Ufer) wird an der WURZEL geheilt: das
+            // 3D-Rauschen im Fluss-Kanal wird geglättet (`_terrainBaseDensityAt`), nicht der Shader
+            // weichgezeichnet — die Bank wird glatt → saubere Wasserlinie bei jedem Pegel.
+            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.25,
         };
     }
 
@@ -47760,7 +47760,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.20.0";
+AnazhRealm.VERSION = "18.21.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
