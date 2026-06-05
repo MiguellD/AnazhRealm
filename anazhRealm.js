@@ -21125,8 +21125,6 @@ class AnazhRealm {
         let dirX = 0;
         let dirZ = 0;
         let depth = 0;
-        let bestSeg = null;
-        let bestT = 0;
         for (let s = 0; s < list.length; s++) {
             const seg = list[s];
             const ex = seg.bx - seg.ax;
@@ -21147,8 +21145,6 @@ class AnazhRealm {
                 dirX = ex / len;
                 dirZ = ez / len;
                 depth = D;
-                bestSeg = seg;
-                bestT = t;
             }
         }
         if (bestD === Infinity) return null;
@@ -21156,27 +21152,8 @@ class AnazhRealm {
             flowX: dirX,
             flowZ: dirZ,
             depth,
-            // V18.12 (= V18.7-Kern, sauber zurückgeholt) — der Wasserspiegel hängt
-            // NUR vom Längs-Parameter `t` ab (entlang der Strömung), NICHT vom
-            // lateralen Sample-Punkt (x,z). Sonst folgt er dem `_terrainMacroSurfaceY`
-            // quer zur Strömung → in der gecarvten Kanal-MITTE ist das Makro am
-            // tiefsten → die Render-Fläche SACKT in der Mitte (Schöpfer-Befund „die
-            // Strömung fällt im Zentrum zusammen, keine ebene Fläche"). Jetzt linear
-            // zwischen den Segment-ENDPUNKTEN interpoliert → FLACH im Querschnitt,
-            // stetig über Knicke (verbundene Segmente teilen den Endknoten), fallend
-            // entlang der Strömung (natürliche Drops). (Das war der GUTE Kern von
-            // V18.7; nur die V18.8-Zell-Maske war der Rückschritt — die ist raus.)
-            surfaceY: this._riverSegSurfaceY(bestSeg, bestT) - depth * 0.4,
+            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.4,
         };
-    }
-
-    // V18.12 — der Makro-Spiegel an der Segment-Längsposition `t`, linear zwischen
-    // den Endpunkten (`_sA`/`_sB` einmalig pro Segment gecacht, deterministisch =
-    // bit-identisch im Worker-Mirror `riverSegSurfaceY`). Stetig über geteilte Knoten.
-    _riverSegSurfaceY(seg, t) {
-        if (seg._sA === undefined) seg._sA = this._terrainMacroSurfaceY(seg.ax, seg.az);
-        if (seg._sB === undefined) seg._sB = this._terrainMacroSurfaceY(seg.bx, seg.bz);
-        return seg._sA + (seg._sB - seg._sA) * t;
     }
 
     // Phase 1 — Surface-Sampling. Das Region-Raster mit `_terrainMacroSurfaceY`
@@ -47475,7 +47452,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.12.0";
+AnazhRealm.VERSION = "18.13.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

@@ -477,8 +477,6 @@ function hydroRiverAt(x, z) {
     const bankSlope = state.carveBankSlope;
     let bestD = Infinity;
     let depth = 0;
-    let bestSeg = null;
-    let bestT = 0;
     for (let s = 0; s < list.length; s++) {
         const seg = list[s];
         const ex = seg.bx - seg.ax;
@@ -496,22 +494,10 @@ function hydroRiverAt(x, z) {
         if (dist <= halfW + bankW && dist < bestD) {
             bestD = dist;
             depth = D;
-            bestSeg = seg;
-            bestT = t;
         }
     }
     if (bestD === Infinity) return null;
-    // V18.12 — Mirror von `_riverSegSurfaceY`: der Spiegel haengt nur vom Laengs-
-    // Parameter `t` ab (zwischen den Segment-Endpunkten interpoliert) -> flach im
-    // Querschnitt (kein Sacken in der Kanal-Mitte), stetig ueber Knicke. Bit-
-    // identisch zur Main (`colL` -> Cell-Naht, Determinismus-Wand).
-    return { depth, surfaceY: riverSegSurfaceY(bestSeg, bestT) - depth * 0.4 };
-}
-
-function riverSegSurfaceY(seg, t) {
-    if (seg._sA === undefined) seg._sA = terrainMacroSurfaceY(seg.ax, seg.az, true);
-    if (seg._sB === undefined) seg._sB = terrainMacroSurfaceY(seg.bx, seg.bz, true);
-    return seg._sA + (seg._sB - seg._sA) * t;
+    return { depth, surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.4 };
 }
 
 function waterLevelAt(x, z) {
