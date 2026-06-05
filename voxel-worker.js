@@ -497,7 +497,9 @@ function hydroRiverAt(x, z) {
         }
     }
     if (bestD === Infinity) return null;
-    return { depth, surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.4 };
+    // V18.19 — Spiegel höher im Bett (Freibord 0.4→0.25·Tiefe); MUSS bit-identisch zum
+    // Main `_hydroRiverAt` sein (colL → Cell-Naht, Determinismus-Wand).
+    return { depth, surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.25 };
 }
 
 function waterLevelAt(x, z) {

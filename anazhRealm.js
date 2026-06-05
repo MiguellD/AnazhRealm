@@ -21237,7 +21237,12 @@ class AnazhRealm {
             flowX: dirX,
             flowZ: dirZ,
             depth,
-            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.4,
+            // V18.19 — der Wasserspiegel sitzt höher im gecarvten Bett (Freibord 0.4→0.25·Tiefe):
+            // die Flüsse füllen ~75 % statt 60 % des Betts → tieferes, blaueres Wasser statt
+            // flacher Schaum-Folie, die flachen Zwischenstücke füllen sich (verbindet die
+            // fragmentierten Flecken im Schöpfer-Bild). KEINE Re-Erosion (das Bett-Carve nutzt
+            // `depth` direkt, unverändert) — nur der Wasserstand/Flood; Worker-Mirror Pflicht.
+            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.25,
         };
     }
 
@@ -22423,10 +22428,14 @@ class AnazhRealm {
         // Welt-verankert: das Wasser-Mesh hat mesh.position=(0,0,0) (V9.71),
         // Vertex-Positionen sind in Welt-Koord. positionLocal.xz = Welt-xz.
         // V18.15 (Phase 3) — der See LEBT: ein FLOOR auf der Wellen-Amplitude
-        // (`uLakeRipple`) gibt auch See/Fluss (aWave≈0) ein SANFTES Kräuseln (der „der See
-        // hatte mal Wellen"-Rückschritt: der Ozean-Gerstner war see-aus → Seen perfekt
-        // flach). Ozean (aWave=1) unverändert (max(1, klein)=1). Browser-justierbar.
-        const aWaveEff = max(aWaveV, uLakeRipple);
+        // (`uLakeRipple`) gibt auch See/Fluss (aWave≈0) ein SANFTES Kräuseln.
+        // V18.19 — der Floor SKALIERT MIT DER TIEFE (`aDepth`): TIEFE Seen kräuseln voll
+        // (die gewollten See-Wellen), FLACHE Tümpel/Fluss-Ränder bleiben RUHIG. GRUND
+        // (Schöpfer-Bild V18.18): die volle 0.2-Amplitude auf einem 0.5-m-Tümpel ist ~44 %
+        // der Tiefe → die Oberfläche zerknittert → das weisse Chevron-„Alufolie"-Muster.
+        // smoothstep(0.3→2.0 m) → unter ~0.3 m ruhig, ab ~2 m volle Wellen. Ozean (aWaveV=1)
+        // unverändert (max). Browser-justierbar über uLakeRipple.
+        const aWaveEff = max(aWaveV, uLakeRipple.mul(smoothstep(float(0.3), float(2.0), aDepthV)));
         const disp = waveDisplace(p.xz).mul(aWaveEff);
         const pd = p.add(disp);
         const vWave = disp.y;
@@ -47751,7 +47760,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.18.0";
+AnazhRealm.VERSION = "18.19.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
