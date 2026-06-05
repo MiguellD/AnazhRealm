@@ -19491,6 +19491,52 @@ class AnazhRealm {
         // Ausdehnung aufs LOD0-Gitter → der SÄGEZAHN am Ufer (Schöpfer „das Seeufer war
         // korrekt, jetzt Sägezahn"); ein per-Pixel-aDepth-Fade ist glatt (lineare Interpolation
         // + smoothstep) und tötet zugleich das „Schweben" des Fluss-Ribbons (aDepth=0 → unsichtbar).
+        // V18.18 — `colDepthAt`: die WATER-Spalten-Tiefe einer LOD0-Zelle, NACHBAR-LESEND am
+        // Chunk-Rand (das V13.13.2-Muster). Die fernen Rand-Vertices (ci=dim0, eine Zelle ausser
+        // Reichweite) lasen sonst aDepth=0 → ein Schaum-/Farb-Streifen an JEDER Chunk-Fernkante
+        // = die FLUSS-Chunknaht (GEMESSEN `diag-river-seam`: ferne Kante 0 % nass vs Interieur
+        // 50 %). Bei tiefen Seen gated `shoreLine` den Schaum weg → unsichtbar; bei flachen
+        // Flüssen (shoreLine≈1) sichtbar → DARUM Fluss und nicht See. Hier liest der ferne
+        // Vertex die ZELLE DES NACHBARN (wo die Fluss-Fortsetzung wirklich liegt — die thin-
+        // Ribbon-Zelle ist oft erst jenseits der Grenze) = EXAKT der Wert, den die Nachbar-
+        // Nahkante liest → naht-frei. Nachbar nicht gestreamt → die eigene Rand-Zelle (Fallback;
+        // `_finalizeVoxelChunkBuild` re-enqueued diesen Chunk, wenn der Nachbar kommt → heilt).
+        const colDepthAt = (ci, ck) => {
+            if (!cells) return 0;
+            let ncx = cx,
+                ncz = cz,
+                li = ci,
+                lk = ck;
+            if (ci >= dim0) {
+                ncx = cx + 1;
+                li = ci - dim0;
+            } else if (ci < 0) {
+                ncx = cx - 1;
+                li = ci + dim0;
+            }
+            if (ck >= dim0) {
+                ncz = cz + 1;
+                lk = ck - dim0;
+            } else if (ck < 0) {
+                ncz = cz - 1;
+                lk = ck + dim0;
+            }
+            let src = cells;
+            if (ncx !== cx || ncz !== cz) {
+                const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
+                if (nb && nb.waterCells) src = nb.waterCells;
+                else {
+                    // Nachbar fehlt/leer → die eigene Rand-Zelle (clamp), bis er kommt.
+                    li = ci < 0 ? 0 : ci >= dim0 ? dim0 - 1 : ci;
+                    lk = ck < 0 ? 0 : ck >= dim0 ? dim0 - 1 : ck;
+                    src = cells;
+                }
+            }
+            const base = li + lk * dim0;
+            let wc = 0;
+            for (let j = 0; j < dimY0; j++) if (src[base + j * dq0] === STATE.WATER) wc++;
+            return wc * step0;
+        };
         const vmap = new Int32Array(NV * NV).fill(-1);
         const addVert = (i, k) => {
             const vi = i + k * NV;
@@ -19507,17 +19553,9 @@ class AnazhRealm {
             aWave.push(Math.max(0, Math.min(1, 1 - (Math.abs(L - waterLevel) - 0.8) / 2.0)));
             // aDepth — die ECHTE Wassertiefe (Anzahl WATER-Zellen × step) aus dem Flood-
             // Feld; der Shader schäumt nur, wo sie klein ist (die echte Uferlinie), M1.
-            let depthM = 0;
-            if (cells) {
-                const ci = Math.floor((wx - ox) / step0);
-                const ck = Math.floor((wz - oz) / step0);
-                if (ci >= 0 && ck >= 0 && ci < dim0 && ck < dim0) {
-                    const base = ci + ck * dim0;
-                    let wc = 0;
-                    for (let j = 0; j < dimY0; j++) if (cells[base + j * dq0] === STATE.WATER) wc++;
-                    depthM = wc * step0;
-                }
-            }
+            // V18.18 — `colDepthAt` liest am Chunk-Rand die NACHBAR-Zelle (kein aDepth=0-
+            // Streifen mehr = die geheilte Fluss-Chunknaht; s.o.).
+            const depthM = colDepthAt(Math.floor((wx - ox) / step0), Math.floor((wz - oz) / step0));
             aDepth.push(depthM);
             // aFlow — die Fluss-Strömung GEGLÄTTET (Schöpfer-Naht-Befund „an der
             // Chunknaht plötzlich quer zur Strömung + anders skaliert"): `_hydroRiverAt`
@@ -47713,7 +47751,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.17.0";
+AnazhRealm.VERSION = "18.18.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
