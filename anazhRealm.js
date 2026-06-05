@@ -19460,19 +19460,71 @@ class AnazhRealm {
         const dim0 = cfg0.dim;
         const step0 = cfg0.step;
         const dimY0 = cfg0.dimY;
-        const colWet = new Uint8Array(dim0 * dim0);
-        if (cells) {
-            const dq0 = dim0 * dim0;
-            for (let k0 = 0; k0 < dim0; k0++) {
-                for (let i0 = 0; i0 < dim0; i0++) {
-                    const base = i0 + k0 * dim0;
-                    for (let j = 0; j < dimY0; j++) {
-                        if (cells[base + j * dq0] === STATE.WATER) {
-                            colWet[base] = 1;
-                            break;
-                        }
-                    }
+        const dq0 = dim0 * dim0;
+        // V18.9 — DIE MASKE LIEST DIE NACHBAR-ZELLEN AM CHUNK-RAND (die EINE Wurzel
+        // des „Geradenschnitts an der Chunkgrenze" / „Kommunikation mit dem Terrain"):
+        // `cornerWet` wertet ein 3×3 um jede Eck-Spalte aus, das an der Chunkgrenze in
+        // den Nachbarn reicht (ci/ck ∈ [-1, dim0+1]). Las es dort NUR die eigenen
+        // Zellen (Klipp bei OOB), klassifizierten zwei Nachbar-Chunks DIESELBE
+        // Uferlinie UNTERSCHIEDLICH (A sieht nur seine letzte Spalte, B nur seine
+        // erste) → die Fläche wurde entlang der Chunk-Kante abgeschnitten = der harte
+        // Geradenschnitt. Das ist GENAU die V13.13.2-Iso-Lehre („der Mesher MUSS die
+        // Nachbar-Flood-Zellen LESEN, nie per-Spalte raten"), die die neue Flächen-
+        // Maske (V18.6/.8) nie erbte. Heilung: die Spalten-Nässe eines OOB-Index aus
+        // dem Nachbar-Chunk `waterCells` lesen (geladen+nass → exakt; geladen+trocken
+        // → 0; ungestreamt → eigene Kant-Spalte spiegeln, heilt beim Nachbar-Load via
+        // die 8-Nachbar-Re-Enqueue in `_finalizeVoxelChunkBuild`). EINE Wahrheit,
+        // gelesen statt geraten (V9.82). Die Maske ist damit naht-frei PER KONSTRUKTION
+        // (beide Seiten lesen dieselben Zellen → identische Uferlinie am Seam).
+        const colWetAt = (oi, ok) => {
+            let ncx = cx;
+            let ncz = cz;
+            let li = oi;
+            let lk = ok;
+            if (oi < 0) {
+                ncx -= 1;
+                li = oi + dim0;
+            } else if (oi >= dim0) {
+                ncx += 1;
+                li = oi - dim0;
+            }
+            if (ok < 0) {
+                ncz -= 1;
+                lk = ok + dim0;
+            } else if (ok >= dim0) {
+                ncz += 1;
+                lk = ok - dim0;
+            }
+            let src;
+            if (ncx === cx && ncz === cz) {
+                src = cells;
+            } else {
+                const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
+                if (nb && nb.waterCells) {
+                    src = nb.waterCells; // geladen + nass → exakte Flood-Wahrheit
+                } else if (nb) {
+                    return 0; // geladen + trocken (Atlas-Gate) → garantiert kein Wasser
+                } else {
+                    // ungestreamt → eigene Kant-Spalte spiegeln (heilt via Re-Enqueue)
+                    src = cells;
+                    li = oi < 0 ? 0 : oi >= dim0 ? dim0 - 1 : oi;
+                    lk = ok < 0 ? 0 : ok >= dim0 ? dim0 - 1 : ok;
                 }
+            }
+            if (!src) return 0;
+            const base = li + lk * dim0;
+            for (let j = 0; j < dimY0; j++) if (src[base + j * dq0] === STATE.WATER) return 1;
+            return 0;
+        };
+        // Padded Spalten-Nässe [-1 .. dim0+1]² (die volle 3×3-Reichweite der Eck-
+        // Vertices i∈[0,dim0]) — jede Spalte EINMAL aufgelöst statt pro Vertex.
+        const LO = -1;
+        const HI = dim0 + 1;
+        const PW = HI - LO + 1;
+        const colWetP = new Uint8Array(PW * PW);
+        for (let ok = LO; ok <= HI; ok++) {
+            for (let oi = LO; oi <= HI; oi++) {
+                colWetP[oi - LO + (ok - LO) * PW] = colWetAt(oi, ok);
             }
         }
         // Ein Eck-Vertex ist „nass", wenn eine LOD0-Zell-Spalte in seinem 3×3 (±1
@@ -19485,7 +19537,7 @@ class AnazhRealm {
                 for (let di = -1; di <= 1; di++) {
                     const ii = ci + di;
                     const kk = ck + dk;
-                    if (ii >= 0 && kk >= 0 && ii < dim0 && kk < dim0 && colWet[ii + kk * dim0]) return true;
+                    if (ii >= LO && kk >= LO && ii <= HI && kk <= HI && colWetP[ii - LO + (kk - LO) * PW]) return true;
                 }
             }
             return false;
@@ -47497,7 +47549,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.8.0";
+AnazhRealm.VERSION = "18.9.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
