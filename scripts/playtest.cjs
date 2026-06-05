@@ -20046,8 +20046,47 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                     }
                 }
                 out.surfaceMaxLErr = mx;
+                // V18.8 — KEIN SCHWEBEN: die Fläche ist auf die ECHTE Wasser-
+                // Ausdehnung (Zellen) maskiert, schwebt nicht über die `L`-/Ribbon-
+                // Domäne hinaus (der Fluss-„schwebende Layer/Sägezahn"). Jeder Vertex
+                // MUSS Wasser unter sich (LOD0-Zell-Spalte im 3×3) tragen.
+                const [smcx, smcz] = sampleMeshKey.split(",").map(Number);
+                const sment = r.state.voxelChunks.get(sampleMeshKey);
+                let floatV = 0;
+                if (sment && sment.waterCells) {
+                    const cfg0 = r._voxelChunkConfig(0);
+                    const d0 = cfg0.dim,
+                        st0 = cfg0.step,
+                        dy0 = cfg0.dimY,
+                        sp0 = cfg0.span;
+                    const sox = smcx * sp0,
+                        soz = smcz * sp0;
+                    const wc = sment.waterCells;
+                    const colWet = (i0, k0) => {
+                        if (i0 < 0 || k0 < 0 || i0 >= d0 || k0 >= d0) return false;
+                        const base = i0 + k0 * d0;
+                        for (let j = 0; j < dy0; j++) if (wc[base + j * d0 * d0] === STATE.WATER) return true;
+                        return false;
+                    };
+                    for (let v = 0; v < sp.count; v++) {
+                        // Vertices sitzen auf exakten Zell-Ecken (ox+i·step); der Float32-
+                        // Read rundet an der Zellgrenze → round() holt den Eck-Index zurück
+                        // (sonst landet floor() 1 Zelle daneben = Schein-Schweben).
+                        const ci = Math.round((sp.getX(v) - sox) / st0);
+                        const ck = Math.round((sp.getZ(v) - soz) / st0);
+                        // ±2 Zellen = GROBES Schweben (der Sägezahn spannte viele Zellen
+                        // über die Wasserkante); die bewusste ±1-Zell-Marge (kein Trocken-
+                        // Spalt, der Tiefen-Shader blendet sie) ist KEIN Schweben.
+                        let wet = false;
+                        for (let dk = -2; dk <= 2 && !wet; dk++)
+                            for (let di = -2; di <= 2 && !wet; di++) if (colWet(ci + di, ck + dk)) wet = true;
+                        if (!wet) floatV++;
+                    }
+                }
+                out.surfaceFloatVerts = floatV;
             } else {
                 out.surfaceMaxLErr = "skip — iso-Modus (A/B)";
+                out.surfaceFloatVerts = "skip — iso-Modus (A/B)";
             }
         } else {
             // Welt hatte keinen Iso-Mesh (z.B. alle Chunks im Hochland, kein
@@ -20111,6 +20150,13 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                 "V18.6 U-W4: Wasser-FLÄCHE sitzt EXAKT auf dem Spiegel L (max|vertexY−L| ≤ 0.05 m, Granularität geheilt)",
                 res.surfaceMaxLErr <= 0.05,
                 `maxErr=${res.surfaceMaxLErr}`
+            );
+        }
+        if (typeof res.surfaceFloatVerts === "number") {
+            check(
+                "V18.8: Wasser-FLÄCHE schwebt NICHT — jeder Vertex hat Wasser darunter (auf die Zell-Ausdehnung maskiert)",
+                res.surfaceFloatVerts === 0,
+                `floatVerts=${res.surfaceFloatVerts}`
             );
         }
         if (res.bergseeCheckable) {

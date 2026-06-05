@@ -154,6 +154,30 @@ const server = http.createServer((req, res) => {
         res.maxLerr = +maxLerr.toFixed(4);
         res.lerrN = lerrN;
         res.sagBelow = +sagBelow.toFixed(4);
+        // V18.8 — KEIN SCHWEBEN: jeder Surface-Vertex muss WASSER unter sich tragen
+        // (die Fläche ist auf die Zell-Ausdehnung maskiert, schwebt nicht über die
+        // Ribbon-Domäne hinaus). Pro Vertex: trägt eine LOD0-Zell-Spalte im 3×3
+        // (±1 Zelle) Wasser? Floating-Vertices = Vertices ohne Wasser darunter.
+        let floatVerts = 0;
+        if (isoPos && e.waterCells) {
+            const dq0 = dim * dim;
+            const colWet = (i0, k0) => {
+                if (i0 < 0 || k0 < 0 || i0 >= dim || k0 >= dim) return false;
+                const base = i0 + k0 * dim;
+                for (let j = 0; j < dimY; j++) if (e.waterCells[base + j * dq0] === STATE.WATER) return true;
+                return false;
+            };
+            for (let v = 0; v < isoPos.count; v++) {
+                const ci = Math.round((isoPos.getX(v) - ox) / step);
+                const ck = Math.round((isoPos.getZ(v) - oz) / step);
+                // ±2 = GROBES Schweben (der Sägezahn); die bewusste ±1-Zell-Marge ist OK.
+                let wet = false;
+                for (let dk = -2; dk <= 2 && !wet; dk++)
+                    for (let di = -2; di <= 2 && !wet; di++) if (colWet(ci + di, ck + dk)) wet = true;
+                if (!wet) floatVerts++;
+            }
+        }
+        res.floatVerts = floatVerts;
         // A/B-Kontrast: dieselbe Spalte im ALTEN iso-Modus → der Render sackt ±1 m
         // unter L (Zell-Granularität). Beweist, dass die Fläche der Fortschritt ist.
         let isoErr = null;
@@ -309,6 +333,9 @@ const server = http.createServer((req, res) => {
         `    A/B vs alt:     die ALTE Zell-Iso wich |isoY−L| = ${out.isoErr} m ab (Granularität) → Fläche ${out.isoErr != null && out.maxLerr < out.isoErr ? "ist der Fortschritt" : "?"}`
     );
     console.log(
+        `(2b) kein Schweben: Surface-Vertices OHNE Wasser darunter = ${out.floatVerts}  → ${out.floatVerts === 0 ? "auf die Zell-Ausdehnung maskiert (kein schwebender Layer/Saegezahn)" : "SCHWEBT noch"}`
+    );
+    console.log(
         `(3) Oberseite:      area-ny = ${out.areaNy}  → ${out.areaNy != null && out.areaNy < -0.2 ? "-Y (BackSide-Oberseite, keine Unterseite unter der Karte)" : "WICKLUNG FALSCH"}`
     );
     console.log(
@@ -321,6 +348,7 @@ const server = http.createServer((req, res) => {
     const checks = [
         ["(1) jeder Vertex sitzt auf L (≤ 0.05 m)", out.maxLerr != null && out.maxLerr <= 0.05 && out.lerrN > 0],
         ["(2) Fläche sackt NICHT unter L (≤ 0.05 m)", out.sagBelow != null && out.sagBelow <= 0.05],
+        ["(2b) kein Schweben — jeder Vertex hat Wasser darunter (Zell-Maske)", out.floatVerts === 0],
         ["(3) -Y-Oberseite (keine Unterseite)", out.areaNy != null && out.areaNy < -0.2],
         ["(4) naht-frei (≤ 0.05 m) ODER kein Paar", out.nahtMax == null || out.nahtMax <= 0.05],
         [

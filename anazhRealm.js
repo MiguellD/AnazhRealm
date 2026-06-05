@@ -19444,13 +19444,64 @@ class AnazhRealm {
         // über die Uferlinie (der Tiefen-Shader blendet pro Pixel aus).
         const NV = dim + 1;
         const Lg = new Float64Array(NV * NV);
+        // V18.8 — die Fläche wird auf die ECHTE Wasser-Ausdehnung MASKIERT (die
+        // Zellen), nicht über die `L`-Domäne gezogen. Wurzel des Fluss-„schwebenden
+        // Layers / Sägezahns": ein See ist ein GESCHLOSSENES Becken (die Bank steigt
+        // → der Tiefen-Test verdeckt die Mesh-Kante), ein Fluss ein OFFENER Kanal
+        // (die feste Ribbon-Breite `halfW+bankW` ragt über Terrain UNTER `L` → die
+        // Fläche schwebt, die Gitter-quantisierte Ribbon-Kante = der Sägezahn). Die
+        // ZELLEN sind die terrain-begrenzte Wahrheit (Wasser sitzt auf Solidem, nie
+        // schwebend — die Minecraft-Form). Maskiert auf sie: keine schwebende Kante,
+        // der Rand sitzt auf der Uferlinie (dünn → der Tiefen-Shader blendet ihn).
+        // EINE Regel für See/Fluss/Ozean. Die Zellen liegen IMMER auf LOD0 (V9.93).
+        const STATE = AnazhRealm.CELL_STATE;
+        const cells = entry.waterCells;
+        const cfg0 = this._voxelChunkConfig(0);
+        const dim0 = cfg0.dim;
+        const step0 = cfg0.step;
+        const dimY0 = cfg0.dimY;
+        const colWet = new Uint8Array(dim0 * dim0);
+        if (cells) {
+            const dq0 = dim0 * dim0;
+            for (let k0 = 0; k0 < dim0; k0++) {
+                for (let i0 = 0; i0 < dim0; i0++) {
+                    const base = i0 + k0 * dim0;
+                    for (let j = 0; j < dimY0; j++) {
+                        if (cells[base + j * dq0] === STATE.WATER) {
+                            colWet[base] = 1;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // Ein Eck-Vertex ist „nass", wenn eine LOD0-Zell-Spalte in seinem 3×3 (±1
+        // Zelle Marge → der Rand reicht bis zur Uferlinie, kein Trocken-Spalt) Wasser
+        // trägt. So folgt die Fläche der Wasser-Ausdehnung statt der Ribbon-Domäne.
+        const cornerWet = (wx, wz) => {
+            const ci = Math.floor((wx - ox) / step0);
+            const ck = Math.floor((wz - oz) / step0);
+            for (let dk = -1; dk <= 1; dk++) {
+                for (let di = -1; di <= 1; di++) {
+                    const ii = ci + di;
+                    const kk = ck + dk;
+                    if (ii >= 0 && kk >= 0 && ii < dim0 && kk < dim0 && colWet[ii + kk * dim0]) return true;
+                }
+            }
+            return false;
+        };
+        const wetG = new Uint8Array(NV * NV);
         let anyWet = false;
         for (let k = 0; k <= dim; k++) {
             const wz = oz + k * step;
             for (let i = 0; i <= dim; i++) {
-                const L = this._atlasWaterLevelAt(ox + i * step, wz, -Infinity);
+                const wx = ox + i * step;
+                const L = this._atlasWaterLevelAt(wx, wz, -Infinity);
                 Lg[i + k * NV] = L;
-                if (L > -Infinity) anyWet = true;
+                if (L > -Infinity && cornerWet(wx, wz)) {
+                    wetG[i + k * NV] = 1;
+                    anyWet = true;
+                }
             }
         }
         if (!anyWet) {
@@ -19485,11 +19536,10 @@ class AnazhRealm {
         };
         for (let k = 0; k < dim; k++) {
             for (let i = 0; i < dim; i++) {
-                const l00 = Lg[i + k * NV];
-                const l10 = Lg[i + 1 + k * NV];
-                const l01 = Lg[i + (k + 1) * NV];
-                const l11 = Lg[i + 1 + (k + 1) * NV];
-                if (!(l00 > -Infinity && l10 > -Infinity && l01 > -Infinity && l11 > -Infinity)) continue;
+                // Quad nur, wo alle 4 Ecken `L` tragen UND nass sind (auf der
+                // echten Wasser-Ausdehnung, nicht über die Ribbon-Domäne schwebend).
+                if (!(wetG[i + k * NV] && wetG[i + 1 + k * NV] && wetG[i + (k + 1) * NV] && wetG[i + 1 + (k + 1) * NV]))
+                    continue;
                 const v00 = addVert(i, k);
                 const v10 = addVert(i + 1, k);
                 const v01 = addVert(i, k + 1);
@@ -47447,7 +47497,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.7.0";
+AnazhRealm.VERSION = "18.8.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
