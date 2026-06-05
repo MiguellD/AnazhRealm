@@ -308,9 +308,10 @@ class AnazhRealm {
                 // `iso` ist der A/B-Schalter auf die alte Zell-Iso (Browser-Vergleich
                 // während des Sign-offs; nach dem Sign-off entfernbar).
                 waterRenderMode: "surface", // "surface" (Fläche-auf-L) | "iso" (alte Zell-Iso)
-                waterShoreWidth: 0.0045, // Tiefen-Uferlinie (uShoreWidth) — kleiner = schärferes Ufer
-                waterDepthRange: 0.03, // Tiefen-Farb-Rampe (uDepthRange) — kleiner = schneller tief
+                waterShoreWidth: 1.0, // V18.15 — Ufer-Alpha-Saum in METERN (gegen aDepth); kleiner = schärferes Ufer
+                waterDepthRange: 5.0, // V18.15 — Meter bis volle Tiefen-Farbe (gegen aDepth); kleiner = schneller tief
                 waterDepthFoam: 1.2, // V18.14 M1 — Schaum nur bis dieser ECHTEN Tiefe (m); kleiner = weniger Fluss-Schaum
+                waterLakeRipple: 0.06, // V18.15 Phase 3 — See-Wellen-Floor (0 = flach, 0.06 sanft, 1 = wie Ozean)
                 waterfallSteep: 1.0, // V18.14 M3 — Wasserfall-Plane nur ab dieser Terrain-Steilheit (Drop/Lauf); grösser = nur echte Wände
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
@@ -19483,6 +19484,82 @@ class AnazhRealm {
         const step0 = cfg0.step;
         const dimY0 = cfg0.dimY;
         const dq0 = dim0 * dim0;
+        // V18.15 (Phase 2) — die AUSDEHNUNG auf die ECHTEN Wasser-Zellen MASKIERT (nachbar-
+        // lesend, das V18.9-Muster zurück): vorher schwebte die Fläche GEMESSEN 45 % über die
+        // echte Uferlinie (nur die `L > -Inf`-Domäne) → das vergrösserte die Kaleidoskop-Zone
+        // + das Schnitt-Ufer. Jetzt ein Quad nur, wo eine LOD0-Zell-Spalte im 3×3 Wasser trägt;
+        // am Chunk-Rand die NACHBAR-Zellen gelesen (kein Geradenschnitt, V13.13.2). Mit Phase 1
+        // (weiter aDepth-Tiefen-Fade) ist der Masken-Rand WEICH (kein Sägezahn — DAS war der
+        // V18.8-Grund zum Revert, jetzt durch die richtige Schicht-Ordnung geheilt).
+        const useMask = !!cells;
+        const colWetAt = (oi, ok) => {
+            let ncx = cx,
+                ncz = cz,
+                li = oi,
+                lk = ok;
+            if (oi < 0) {
+                ncx -= 1;
+                li = oi + dim0;
+            } else if (oi >= dim0) {
+                ncx += 1;
+                li = oi - dim0;
+            }
+            if (ok < 0) {
+                ncz -= 1;
+                lk = ok + dim0;
+            } else if (ok >= dim0) {
+                ncz += 1;
+                lk = ok - dim0;
+            }
+            let src;
+            if (ncx === cx && ncz === cz) src = cells;
+            else {
+                const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
+                if (nb && nb.waterCells) src = nb.waterCells;
+                else if (nb) return 0;
+                else {
+                    src = cells;
+                    li = oi < 0 ? 0 : oi >= dim0 ? dim0 - 1 : oi;
+                    lk = ok < 0 ? 0 : ok >= dim0 ? dim0 - 1 : ok;
+                }
+            }
+            if (!src) return 0;
+            const base = li + lk * dim0;
+            for (let j = 0; j < dimY0; j++) if (src[base + j * dq0] === STATE.WATER) return 1;
+            return 0;
+        };
+        const MLO = -1;
+        const MHI = dim0 + 1;
+        const MPW = MHI - MLO + 1;
+        const colWetP = new Uint8Array(MPW * MPW);
+        if (useMask) {
+            for (let ok = MLO; ok <= MHI; ok++)
+                for (let oi = MLO; oi <= MHI; oi++) colWetP[oi - MLO + (ok - MLO) * MPW] = colWetAt(oi, ok);
+        }
+        const wetG = new Uint8Array(NV * NV);
+        if (useMask) {
+            for (let k = 0; k <= dim; k++) {
+                const ck = Math.floor((oz + k * step - oz) / step0);
+                for (let i = 0; i <= dim; i++) {
+                    const ci = Math.floor((ox + i * step - ox) / step0);
+                    let wet = 0;
+                    for (let dk = -1; dk <= 1 && !wet; dk++)
+                        for (let di = -1; di <= 1 && !wet; di++) {
+                            const ii = ci + di,
+                                kk = ck + dk;
+                            if (
+                                ii >= MLO &&
+                                kk >= MLO &&
+                                ii <= MHI &&
+                                kk <= MHI &&
+                                colWetP[ii - MLO + (kk - MLO) * MPW]
+                            )
+                                wet = 1;
+                        }
+                    wetG[i + k * NV] = wet;
+                }
+            }
+        }
         const vmap = new Int32Array(NV * NV).fill(-1);
         const addVert = (i, k) => {
             const vi = i + k * NV;
@@ -19554,6 +19631,13 @@ class AnazhRealm {
                 const l01 = Lg[i + (k + 1) * NV];
                 const l11 = Lg[i + 1 + (k + 1) * NV];
                 if (!(l00 > -Infinity && l10 > -Infinity && l01 > -Infinity && l11 > -Infinity)) continue;
+                // V18.15 (Phase 2) — UND auf echtem Wasser (Zell-Maske, nachbar-lesend);
+                // ohne Zellen (useMask=false) fällt es auf die L-Domäne zurück (kein Loch).
+                if (
+                    useMask &&
+                    !(wetG[i + k * NV] && wetG[i + 1 + k * NV] && wetG[i + (k + 1) * NV] && wetG[i + 1 + (k + 1) * NV])
+                )
+                    continue;
                 const v00 = addVert(i, k);
                 const v10 = addVert(i + 1, k);
                 const v01 = addVert(i, k + 1);
@@ -22131,15 +22215,26 @@ class AnazhRealm {
         // die Plane bis zum See-Spiegel hoch. Heilt den Riss zwischen See-
         // Wasserfläche und Wasserfall-Plane-Top. Witcher 3 + NMS machen das
         // genauso — Wasser muss optisch verbunden sein.
+        // V18.15 (Phase 4) — Höhe/Position aus dem LOKALEN Surface-Nets-Terrain, nicht dem
+        // 16-m-Drainage-Raster (`wf.topY/bottomY`), das die Plane schweben/zu hoch ragen
+        // liess. Lippe = lokales Terrain am Fall-Punkt (mit dem See-Spiegel verbunden,
+        // V9.60-d.3); Basis = lokales Terrain ein Stück STROMAB; das Zentrum liegt dazwischen.
+        const flowLen = Math.hypot(wf.flowX || 0, wf.flowZ || 0) || 1;
+        const fdx = (wf.flowX || 0) / flowLen;
+        const fdz = (wf.flowZ || 0) / flowLen;
+        const baseDist = Math.max(4, wf.width || 3);
+        const lipLocal = this._voxelSurfaceY(wf.x, wf.z);
+        const baseLocal = this._voxelSurfaceY(wf.x + fdx * baseDist, wf.z + fdz * baseDist);
         const waterHere = typeof this._waterLevelAt === "function" ? this._waterLevelAt(wf.x, wf.z) : wf.topY;
-        const topY = Math.max(wf.topY, waterHere);
-        const dropH = Math.min(Math.max(topY - wf.bottomY, 2), 60);
+        const topY = Math.max(Number.isFinite(lipLocal) ? lipLocal : wf.topY, waterHere);
+        const botY = Number.isFinite(baseLocal) ? Math.min(baseLocal, wf.bottomY) : wf.bottomY;
+        const dropH = Math.min(Math.max(topY - botY, 2), 60);
         const width = Math.max(3, wf.width || 3);
         const planeH = dropH + 2;
         const segH = Math.max(6, Math.round(planeH / 2.5));
         const geo = new THREE.PlaneGeometry(width, planeH, 4, segH);
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(wf.x, (topY + wf.bottomY) / 2, wf.z);
+        mesh.position.set(wf.x + fdx * baseDist * 0.5, (topY + botY) / 2, wf.z + fdz * baseDist * 0.5);
         let dx = wf.flowX || 0;
         let dz = wf.flowZ || 0;
         if (dx === 0 && dz === 0) dz = 1;
@@ -22284,8 +22379,10 @@ class AnazhRealm {
         // V18.6 — aus dem persistierten Atmosphäre-Wert initialisiert (Settings-
         // Slider, überlebt Reload), wie waterCull. Default = die bisherigen Werte.
         const atmoW = this.state.atmosphere || {};
-        const uShoreWidth = uniform(Number.isFinite(atmoW.waterShoreWidth) ? atmoW.waterShoreWidth : 0.0045);
-        const uDepthRange = uniform(Number.isFinite(atmoW.waterDepthRange) ? atmoW.waterDepthRange : 0.03);
+        // V18.15 — uShoreWidth/uDepthRange jetzt in METERN (gegen `aDepth`, nicht mehr
+        // view-space Lineardepth). Defaults: 1.0 m Ufer-Saum, 5.0 m bis volle Tiefen-Farbe.
+        const uShoreWidth = uniform(Number.isFinite(atmoW.waterShoreWidth) ? atmoW.waterShoreWidth : 1.0);
+        const uDepthRange = uniform(Number.isFinite(atmoW.waterDepthRange) ? atmoW.waterDepthRange : 5.0);
         const uEmotion = uniform(0.0);
         // V13.9 (Schicht 3) — Mindest-Wasser-Dicke fürs pro-Pixel-Cullen des
         // dünnen Wand-Blutens (16-m-Atlas-Spiegel spillt minimal über den Voxel-
@@ -22303,6 +22400,9 @@ class AnazhRealm {
         // ECHTE Wassertiefe `aDepth` < uDepthFoam (die echte Uferlinie), NICHT den ganzen
         // flachen Fluss (gemessen median 1.31 m). In METERN (nicht Lineardepth), Slider.
         const uDepthFoam = uniform(Number.isFinite(atmoW.waterDepthFoam) ? atmoW.waterDepthFoam : 1.2);
+        // V18.15 (Phase 3) — der See-Wellen-FLOOR: auch See/Fluss (aWave=0) bekommen diesen
+        // Anteil der Wellen-Amplitude → sanftes Kräuseln (0 = flach wie vorher, ~0.06 sanft).
+        const uLakeRipple = uniform(Number.isFinite(atmoW.waterLakeRipple) ? atmoW.waterLakeRipple : 0.06);
 
         // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
         const hash2 = Fn(([p]) => {
@@ -22355,17 +22455,22 @@ class AnazhRealm {
         const p = positionLocal;
         // Welt-verankert: das Wasser-Mesh hat mesh.position=(0,0,0) (V9.71),
         // Vertex-Positionen sind in Welt-Koord. positionLocal.xz = Welt-xz.
-        const disp = waveDisplace(p.xz).mul(aWaveV);
+        // V18.15 (Phase 3) — der See LEBT: ein FLOOR auf der Wellen-Amplitude
+        // (`uLakeRipple`) gibt auch See/Fluss (aWave≈0) ein SANFTES Kräuseln (der „der See
+        // hatte mal Wellen"-Rückschritt: der Ozean-Gerstner war see-aus → Seen perfekt
+        // flach). Ozean (aWave=1) unverändert (max(1, klein)=1). Browser-justierbar.
+        const aWaveEff = max(aWaveV, uLakeRipple);
+        const disp = waveDisplace(p.xz).mul(aWaveEff);
         const pd = p.add(disp);
         const vWave = disp.y;
 
         // Normale aus Tangenten-Kreuzprodukt (3 Samples: pd, px, pz).
-        // Bei aWave=0 degeneriert das Kreuzprodukt sauber zu (0, 1, 0).
+        // Bei aWaveEff=0 degeneriert das Kreuzprodukt sauber zu (0, 1, 0).
         const e = float(1.4);
         const pxBase = vec3(p.x.add(e), p.y, p.z);
         const pzBase = vec3(p.x, p.y, p.z.add(e));
-        const pxPos = pxBase.add(waveDisplace(vec2(p.x.add(e), p.z)).mul(aWaveV));
-        const pzPos = pzBase.add(waveDisplace(vec2(p.x, p.z.add(e))).mul(aWaveV));
+        const pxPos = pxBase.add(waveDisplace(vec2(p.x.add(e), p.z)).mul(aWaveEff));
+        const pzPos = pzBase.add(waveDisplace(vec2(p.x, p.z.add(e))).mul(aWaveEff));
         const nrmRaw = normalize(cross(pzPos.sub(pd), pxPos.sub(pd)));
         // n.y < 0 → flip (sicherer Up-Vektor) via cond-Knoten.
         const nrmFlipped = cond(nrmRaw.y.lessThan(0.0), nrmRaw.mul(-1.0), nrmRaw);
@@ -22392,12 +22497,21 @@ class AnazhRealm {
         // Ihre Differenz ist die Wasser-„Dicke" in Sicht-Richtung: ~0 genau an der
         // Uferlinie (Wasser trifft Terrain), wächst zur Tiefe hin. PRO PIXEL → die
         // weiche Kante folgt dem Terrain exakt, egal wie blockig das 1,8-m-Mesh.
+        // === V18.15 — DIE KOHÄRENTE TIEFEN-SCHICHT: Tiefen-Farbe, Schaum-Saum und
+        // Ufer-Alpha lesen die GLATTE Meter-Tiefe `aDepth` (echte Wassersäule aus den
+        // Flood-Zellen), NICHT die view-space `waterThick`. GRUND (Fremder-Blick-Audit):
+        // `waterThick = viewportLinearDepth − linearDepth` las durch das Wasser auf die
+        // FACETTIERTE Surface-Nets-Sohle; `uShoreWidth`/`uDepthRange` waren razor-dünne
+        // Viewport-Tiefe-Schwellen → die Sohle-Rippel (~1–2 m/1.5 m) oszillierten in
+        // Kontur-BÄNDER = das Kaleidoskop, am schlimmsten im flachen Wasser. `aDepth`
+        // (vertikal, zell-gemittelt) trägt KEINE Sohle-Facetten. `uShoreWidth`/`uDepthRange`
+        // sind jetzt in METERN (die Slider mit-umgestellt). `waterThick` bleibt NUR fürs
+        // uMinDepth-Thin-Cull (echte view-Dicke).
         const sceneLin = viewportLinearDepth;
         const fragLin = linearDepth(depth);
         const waterThick = max(sceneLin.sub(fragLin), float(0.0));
-        const edgeFade = smoothstep(float(0.0), uShoreWidth, waterThick); // 0 an Uferlinie → 1 dahinter
-        const shoreLine = float(1.0).sub(edgeFade); // 1 genau an der Uferlinie
-        const deepen = smoothstep(float(0.0), uDepthRange, waterThick); // 0 flach → 1 tief
+        const edgeFade = smoothstep(float(0.0), uShoreWidth, aDepthV); // Alpha-Saum: 0 an der echten Uferlinie → 1 in der Tiefe
+        const deepen = smoothstep(float(0.0), uDepthRange, aDepthV); // Tiefen-Farbe: 0 flach → 1 tief (echte Meter-Tiefe)
 
         // Basis-Wasserfarbe: am See/Fluss sanftes Welt-Raum-Noise, am Ozean
         // nach Gerstner-Wellenhöhe — über aWave gemischt, weicher Übergang.
@@ -22438,20 +22552,25 @@ class AnazhRealm {
         const crest = smoothstep(0.62, 1.0, waveT).mul(aWaveV);
         const lakeFoam = max(max(lakeBaseFoam, shoreFoam), crest.mul(0.6));
 
-        const foam = cond(isRiver, riverFoam, lakeFoam);
+        // V18.15 (Phase 3) — die Foam-Zweige MISCHEN statt hart `cond`-schalten: am
+        // Fluss↔See-Übergang blendet `riverness` (0=See … 1=Fluss) die Strähnen in den
+        // Schimmer → keine Naht, die der Shader hervorhebt (Schöpfer-Befund). `isRiver`
+        // bleibt für die Strähnen-Skalierung, aber das Ergebnis ist ein Blend.
+        const riverness = smoothstep(float(0.01), float(0.09), fmag);
+        const foam = mix(lakeFoam, riverFoam, riverness);
+        void isRiver;
 
         // Uferlinien-Schaum aus der Tiefe (Schicht 3): ein heller, leicht
         // rauschender Saum genau am Wasser-Rand — die sichtbare „Oberflächen-
         // spannung", pro-Pixel dem Terrain folgend. Ersetzt funktional das für
         // Chunk-Wasser tote aShore-Band.
         const shoreSparkle = float(0.6).add(vnoise(xz.mul(0.7).add(uTime.mul(0.25))).mul(0.4));
-        // V18.14 (M1) — der Schaum-Saum wird vom MAKRO-Kontext gegated: NUR wo die ECHTE
-        // Wassertiefe `aDepth` klein ist (die echte Uferlinie, Tiefe→0), nicht überall, wo
-        // die Sicht-Dicke `waterThick` klein ist (das traf den ganzen flachen Fluss → Chaos).
-        // `realShallow` = 1 an der echten Kante, 0 ab uDepthFoam m Tiefe → der flache Fluss-
-        // Kern (median 1.31 m > uDepthFoam) schäumt NICHT mehr, nur sein Rand.
-        const realShallow = float(1.0).sub(smoothstep(float(0.0), uDepthFoam, aDepthV));
-        const depthFoam = shoreLine.mul(realShallow).mul(shoreSparkle);
+        // V18.15 (Phase 1) — der Schaum-Saum liest die GLATTE Meter-Tiefe `aDepth`: NUR
+        // wo die ECHTE Wassertiefe klein ist (die echte Uferlinie, Tiefe→0), schäumt es —
+        // `foamShore` = 1 an der Kante, 0 ab `uDepthFoam` m. KEIN view-space `shoreLine`/
+        // `waterThick` mehr (das las die facettierte Sohle = das Kaleidoskop-Chaos).
+        const foamShore = float(1.0).sub(smoothstep(float(0.0), uDepthFoam, aDepthV));
+        const depthFoam = foamShore.mul(shoreSparkle);
         // V14-Emotions-Haken: uEmotion>0 hebt den Schaum sanft an (die Welt atmet
         // im Wasser); default 0 = exakt das alte Bild.
         const foamD = clamp(max(foam, depthFoam).add(uEmotion.mul(0.25)), 0.0, 1.0);
@@ -22526,6 +22645,7 @@ class AnazhRealm {
             emotion: uEmotion,
             minDepth: uMinDepth,
             depthFoam: uDepthFoam,
+            lakeRipple: uLakeRipple,
         };
         this.state.hydroSurfaceMaterial = mat;
         return mat;
@@ -24238,16 +24358,20 @@ class AnazhRealm {
                 waterShoreWidth:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterShoreWidth)
                         ? this.state.atmosphere.waterShoreWidth
-                        : 0.0045,
+                        : 1.0,
                 waterDepthRange:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthRange)
                         ? this.state.atmosphere.waterDepthRange
-                        : 0.03,
-                // V18.14 M1/M3 — Makro-Kontext-Regler persistieren.
+                        : 5.0,
+                // V18.14/.15 — Makro-Kontext-Regler persistieren.
                 waterDepthFoam:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthFoam)
                         ? this.state.atmosphere.waterDepthFoam
                         : 1.2,
+                waterLakeRipple:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterLakeRipple)
+                        ? this.state.atmosphere.waterLakeRipple
+                        : 0.06,
                 waterfallSteep:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterfallSteep)
                         ? this.state.atmosphere.waterfallSteep
@@ -26371,10 +26495,14 @@ class AnazhRealm {
             if (state.atmosphere.waterRenderMode === "iso" || state.atmosphere.waterRenderMode === "surface") {
                 this.setWaterRenderMode(state.atmosphere.waterRenderMode);
             }
+            // V18.15 — uShoreWidth/uDepthRange jetzt in METERN (alte Viewport-Werte
+            // clampen auf den Meter-Bereich = self-heal; der Setter clampt nochmal).
             const sw = Number(state.atmosphere.waterShoreWidth);
-            if (Number.isFinite(sw)) this.setWaterShoreWidth(Math.max(0.0005, Math.min(0.05, sw)));
+            if (Number.isFinite(sw)) this.setWaterShoreWidth(Math.max(0.2, Math.min(6.0, sw)));
             const dr = Number(state.atmosphere.waterDepthRange);
-            if (Number.isFinite(dr)) this.setWaterDepthRange(Math.max(0.005, Math.min(0.2, dr)));
+            if (Number.isFinite(dr)) this.setWaterDepthRange(Math.max(1.0, Math.min(15.0, dr)));
+            const lr = Number(state.atmosphere.waterLakeRipple);
+            if (Number.isFinite(lr)) this.setLakeRipple(Math.max(0.0, Math.min(1.0, lr)));
             // V18.14 M1/M3 — die Makro-Kontext-Regler (vor dem Hydrosphäre-Mesh-Bau setzen,
             // damit waterfallSteep die erste Wasserfall-Auswahl steuert).
             const df = Number(state.atmosphere.waterDepthFoam);
@@ -36861,7 +36989,8 @@ class AnazhRealm {
     // V18.6 U-W4 — die Tiefen-Uferlinie (uShoreWidth, [0,1]-Lineardepth): wie
     // breit das Wasser pro Pixel vom Ufer einblendet. Kleiner = schärferes Ufer.
     setWaterShoreWidth(width) {
-        const m = Math.max(0.0005, Math.min(0.05, Number(width) || 0.0045));
+        // V18.15 — jetzt in METERN (Ufer-Alpha-Saum gegen die echte aDepth).
+        const m = Math.max(0.2, Math.min(6.0, Number(width) || 1.0));
         if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterShoreWidth = m;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.shoreWidth) {
@@ -36871,14 +37000,27 @@ class AnazhRealm {
         return m;
     }
 
-    // V18.6 U-W4 — die Tiefen-Farb-Rampe (uDepthRange, [0,1]-Lineardepth): wie
-    // schnell das Wasser mit der Tiefe ins Dunkle/Blaue kippt. Kleiner = schneller tief.
+    // V18.15 — die Tiefen-Farb-Rampe (uDepthRange, jetzt in METERN gegen aDepth): wie
+    // schnell das Wasser mit der echten Tiefe ins Dunkle/Blaue kippt. Kleiner = schneller tief.
     setWaterDepthRange(range) {
-        const m = Math.max(0.005, Math.min(0.2, Number(range) || 0.03));
+        const m = Math.max(1.0, Math.min(15.0, Number(range) || 5.0));
         if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterDepthRange = m;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.depthRange) {
             this.state.hydroSurfaceUniforms.depthRange.value = m;
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // V18.15 Phase 3 — der See-Wellen-Floor (uLakeRipple, 0..1): wie stark See/Fluss
+    // kräuseln (0 = flach, 0.06 sanft, 1 = wie Ozean). Live an die Uniform.
+    setLakeRipple(v) {
+        const m = Math.max(0.0, Math.min(1.0, Number(v) || 0.06));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.waterLakeRipple = m;
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.lakeRipple) {
+            this.state.hydroSurfaceUniforms.lakeRipple.value = m;
         }
         if (typeof this.saveState === "function") this.saveState();
         return m;
@@ -44287,13 +44429,13 @@ class AnazhRealm {
         if (wsS) {
             const s0 =
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterShoreWidth)
-                    ? this.state.atmosphere.waterShoreWidth
-                    : 0.0045;
-            wsS.value = String(Math.round(s0 * 10000));
-            if (wsVal) wsVal.textContent = s0.toFixed(4);
+                    ? Math.max(0.2, Math.min(6.0, this.state.atmosphere.waterShoreWidth))
+                    : 1.0;
+            wsS.value = String(Math.round(s0 * 10));
+            if (wsVal) wsVal.textContent = s0.toFixed(1) + " m";
             wsS.addEventListener("input", () => {
-                const v = this.setWaterShoreWidth(parseInt(wsS.value, 10) / 10000);
-                if (wsVal) wsVal.textContent = v.toFixed(4);
+                const v = this.setWaterShoreWidth(parseInt(wsS.value, 10) / 10);
+                if (wsVal) wsVal.textContent = v.toFixed(1) + " m";
             });
         }
         const wdS = document.getElementById("slider-waterdepth");
@@ -44301,13 +44443,28 @@ class AnazhRealm {
         if (wdS) {
             const d0 =
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthRange)
-                    ? this.state.atmosphere.waterDepthRange
-                    : 0.03;
-            wdS.value = String(Math.round(d0 * 1000));
-            if (wdVal) wdVal.textContent = d0.toFixed(3);
+                    ? Math.max(1.0, Math.min(15.0, this.state.atmosphere.waterDepthRange))
+                    : 5.0;
+            wdS.value = String(Math.round(d0 * 10));
+            if (wdVal) wdVal.textContent = d0.toFixed(1) + " m";
             wdS.addEventListener("input", () => {
-                const v = this.setWaterDepthRange(parseInt(wdS.value, 10) / 1000);
-                if (wdVal) wdVal.textContent = v.toFixed(3);
+                const v = this.setWaterDepthRange(parseInt(wdS.value, 10) / 10);
+                if (wdVal) wdVal.textContent = v.toFixed(1) + " m";
+            });
+        }
+        // V18.15 Phase 3 — See-Wellen (uLakeRipple 0..1, Slider ×100).
+        const lrS = document.getElementById("slider-lakeripple");
+        const lrVal = document.getElementById("slider-lakeripple-val");
+        if (lrS) {
+            const r0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterLakeRipple)
+                    ? this.state.atmosphere.waterLakeRipple
+                    : 0.06;
+            lrS.value = String(Math.round(r0 * 100));
+            if (lrVal) lrVal.textContent = r0.toFixed(2);
+            lrS.addEventListener("input", () => {
+                const v = this.setLakeRipple(parseInt(lrS.value, 10) / 100);
+                if (lrVal) lrVal.textContent = v.toFixed(2);
             });
         }
         // V18.14 M1 — Fluss-Schaum-Tiefe (uDepthFoam, m): Schaum nur bis dieser ECHTEN Tiefe.
@@ -47614,7 +47771,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.14.0";
+AnazhRealm.VERSION = "18.15.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

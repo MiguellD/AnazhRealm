@@ -1,6 +1,14 @@
 # Wasser-Render — die kohärente Schicht-Architektur (der Vollendungs-Plan)
 
-> **Status:** ANALYSE + PLAN (Stand V18.14, 05.06.2026). Nach 15 Versionen Einzel-Tweak
+> **Status:** PHASE 1–4 GEBAUT (V18.15, 05.06.2026) — Browser-Sign-off des Schöpfers offen;
+> Phase 5 (Fluss-Volumen lateral↔flach) bewusst dem Auge überlassen. **GEBAUT:** Phase 1 (die
+> Tiefen-Schicht liest die glatte Meter-`aDepth` statt der facetten-verratenden `waterThick`;
+> `uShoreWidth`/`uDepthRange` in Metern) · Phase 2 (die Zell-Maske nachbar-lesend zurück, jetzt
+> WEICH durch Phase 1) · Phase 3 (See-Wellen-Floor `uLakeRipple` + Foam-Zweige gemischt statt
+> geschaltet) · Phase 4 (Wasserfall-Plane aus dem lokalen Terrain). + 3 Feinregler (Ufer-Schärfe/
+> Wasser-Tiefe in Metern · See-Wellen). format/lint/Playtest grün; der LOOK = das Schöpfer-Auge.
+>
+> **(Ursprünglich) ANALYSE + PLAN (Stand V18.14).** Nach 15 Versionen Einzel-Tweak
 > (V18.0–.14) der Schöpfer-Befund: _„die Regler, die du mir gegeben hast, ändern nichts —
 > es muss das Fusionieren selbst sein, die Reihenfolge der Ebenen, wann der Shader, die
 > Details, die Harmonie und Synergie."_ Dieser Plan ist die Antwort: **keine weitere Formel,
