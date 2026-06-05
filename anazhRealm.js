@@ -18476,21 +18476,6 @@ class AnazhRealm {
         return this._detailBand(r).lod;
     }
 
-    // V18.1 W2 (Wasser-finale-Form) — der zweite Kaskaden-Leser: die WASSER-Iso-
-    // Auflösung pro Terrain-LOD. Die Zellen bleiben IMMER LOD0 (reaktive Wahrheit,
-    // kein Worker-Mirror, kein Cross-LOD-Zell-Mismatch); nur das Iso-GRID
-    // vergröbert fern (es sampelt die feinen Zellen mit grobem Schritt) → die
-    // ferne Wasserfläche reitet die grobe Terrain-LOD statt feines Wasser über
-    // grobem (die Zwei-Skalen-Wurzel: „klettert zum Kliff" + der FPS-Verdacht).
-    // Nah+mittel (Band 0/1) = waterLod 0 = byte-identisch zur geliebten Sicht,
-    // keine neue Naht; nur die Fog-Bänder 2/3 vergröbern (ihre Cross-LOD-Naht
-    // liegt im Schleier, §2-Kaskade). Frozen-Tabelle, kein Passagier (Leser = Iso).
-    _waterLodFor(terrainLod) {
-        const c = AnazhRealm.DETAIL_CASCADE;
-        for (let i = 0; i < c.length; i++) if (c[i].lod === terrainLod) return c[i].waterLod;
-        return 0;
-    }
-
     // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH): soll dieser Chunk SOFORT
     // beim Build seine BVH-Collision bekommen? Profi-Pattern aus Subnautica/
     // NMS: nur 2-Ring (Spieler-Nähe, r ≤ 1, ≤ 86 m) braucht sofort BVH —
@@ -19055,22 +19040,24 @@ class AnazhRealm {
     // Pfad zum alten Quad-Mesh-System; das Mesh existiert in der Scene aber
     // mit `visible = false` per Default — der Toggle (`_setVoxelWaterIsoVisible`)
     // schaltet auf das neue System um. C.5 räumt das alte System ab.
-    // V18.1 (Wasser-finale-Form W1) — Wasser ist eine FLÄCHE, kein Volumen
-    // (der Profi-Weg: GDC-2023 „Photon Water" + die Distant-Horizons-Lehre —
-    // das einzige andere LOD-Voxel-Wasser hatte unsere exakten Bugs #424/#503/
-    // #606). Die geschlossene Surface-Nets-Iso-Hülle hat eine UNTERSEITE, die
-    // der Schöpfer von unter der Karte als „Wasser auf der falschen Seite des
-    // Bodens, klettert überall in die Welt" sieht. GEMESSEN (diag-water-surface):
-    // die Iso-Wicklung zeigt nach INNEN (ins Wasser), area-gewichtetes ny = −0.47
-    // → die OBERSEITEN haben ny<0 (Front zeigt nach unten, ins Wasser; von oben
-    // über ihre Rückseite sichtbar = `mat.side=BackSide`), die UNTERSEITEN ny>0.
-    // Wir verwerfen die Unterseiten (ny>cullNy) → es bleibt die Oberseite + die
-    // fast-vertikalen Ufer. Zusammen mit BackSide ist die Unterseite strukturell
-    // unsichtbar (von unten Front-gecullt, die Unterseite ist weg). Die Uferlinie
-    // trägt der Tiefen-Shader allein (V13.5 `waterThick`) — nicht die Geometrie.
-    // Indiziert → ALLE Attribute (aFlow/aShore/aWave werden danach gesetzt) bleiben
-    // gültig; nur der Index wird neu gebaut.
-    _cullWaterUndersideTris(geom, cullNy = 0.2) {
+    // V18.1/V18.3 (Wasser-finale-Form W1+B6) — Wasser ist eine FLÄCHE, kein
+    // Volumen, und die GEOMETRIE definiert NICHT die Uferlinie (der Profi-Weg:
+    // Minecraft/Unreal-Water + GDC-2023 „Photon Water"; der Schöpfer-Befund
+    // „klettert die Strukturen/das Ufer hoch"). Die geschlossene Surface-Nets-Iso-
+    // Hülle hat eine UNTERSEITE (von unter der Karte sichtbar) UND fast-vertikale
+    // SEITEN-WÄNDE — DAS ist das „Klettern" am Ufer/an Strukturen (der Tiefen-
+    // Shader verblasst nur DÜNNES Ufer-Wasser, nicht eine tiefe Wand). GEMESSEN
+    // (diag-water-surface): die Iso-Wicklung zeigt nach INNEN (area-gew. ny=−0.47)
+    // → die OBERSEITEN haben ny<0 (von oben über ihre Rückseite sichtbar =
+    // BackSide), die SEITEN |ny|≈0, die UNTERSEITEN ny>0. Wir behalten NUR die
+    // Oberseite (`ny < −minDown`) → die Wand-Geometrie fällt weg, die Uferlinie
+    // trägt der Tiefen-Shader ALLEIN (V13.5 `waterThick`, pro Pixel dem Terrain
+    // folgend — wie die Riesen). Das tötet ZUGLEICH das B6-Flackern (die Wände
+    // waren unter BackSide einseitig/blickwinkel-abhängig). Indiziert → ALLE
+    // Attribute (aFlow/aShore/aWave werden danach gesetzt) bleiben gültig; nur der
+    // Index wird neu gebaut. minDown=0.2 behält Flächen bis ~78° Steilheit,
+    // verwirft die 78–90°-Wände + Unterseiten (browser-justierbar: höher = mehr Wand weg).
+    _cullWaterToTopSurface(geom, minDown = 0.2) {
         const pos = geom && geom.attributes && geom.attributes.position;
         if (!pos) return geom;
         const idx = geom.index ? geom.index.array : null;
@@ -19094,7 +19081,8 @@ class AnazhRealm {
             const ny = ez1 * ex2 - ex1 * ez2;
             const nz = ex1 * ey2 - ey1 * ex2;
             const nlen = Math.hypot(nx, ny, nz) || 1e-9;
-            if (ny / nlen <= cullNy) kept.push(a, b, c); // Unterseite (ny>cullNy) verwerfen
+            // NUR die Oberseite behalten; Seiten-Wände (|ny|<minDown) + Unterseiten (ny>0) verwerfen.
+            if (ny / nlen <= -minDown) kept.push(a, b, c);
         }
         if (kept.length === 0) return null;
         geom.setIndex(kept);
@@ -19269,42 +19257,36 @@ class AnazhRealm {
             if (cWater === 0) return -1; // außen → kein Iso (Mountain-Top trägt das Terrain)
             return (cWater - cAir) / 8; // Wasser+Luft-Mischung → glatte Iso, 8-Cell-geglättet
         };
-        // V18.1 W2 — die ferne Wasser-Iso reitet die Terrain-LOD. Das Zell-Feld
-        // bleibt IMMER LOD0 (reaktive Wahrheit; `sampleWater`/`cellClass`
-        // indizieren es mit `step`/`dim`) — nur das Iso-GRID vergröbert fern
-        // (gridStep = step·2^waterLod): es sampelt die feinen Zellen mit grobem
-        // Schritt → grobe Wasserfläche ÜBER grobem Terrain statt feines Wasser
-        // über grobem (die Zwei-Skalen-Wurzel). waterLod 0 (Band 0/1) ⇒
-        // gridStep=step ⇒ BYTE-IDENTISCH zur geliebten Sicht, keine neue Naht.
-        // Die OOB-`cellClass` liest weiter LOD0-Nachbarzellen (alle Chunks LOD0)
-        // → KEIN Cross-LOD-Zell-Mismatch (die V9.93-Wurzel umgangen).
-        const wLod = this._waterLodFor(entry.lod || 0);
-        const gridMul = 1 << wLod; // 1,2,4,8
-        const gridStep = step * gridMul;
-        const gridDim = Math.max(1, Math.round(dim / gridMul));
-        // Y-Bereich aufs globale Wasser-Band beschränken (am groben Gitter).
+        // V18.3 — W2 (Iso-Grid-Vergröberung fern) ZURÜCKGEROLLT. Der kritische
+        // Review hat GEMESSEN, dass die grobe Wasser-Iso die feine Nachbar-Iso
+        // um bis ~3 m in der Höhe verschiebt + ~6–12 m über den Footprint quillt
+        // → eine Naht + Höhen-Stufe am Band-1↔2-Rand = exakt Distant-Horizons
+        // #606/#503, die wir als Lehre ZITIERT hatten. „Die Diskrepanz in den Fog
+        // parken" ist der Profi-untypische Shortcut. Wasser lebt darum wieder auf
+        // EINER Skala (LOD0, konsistent, naht-frei). Die ECHTE ferne Wasser-LOD
+        // (konsistente Höhe + Stitching/Morph wie Unreal-Quadtree ODER eine
+        // Ozean-Schale fürs Fernfeld) ist ein eigener Bogen — `docs/wasser-finale-form-plan.md` W2.
+        // Y-Bereich aufs globale Wasser-Band beschränken (statt volle dimY).
         const bBot = band ? band.bottom : oy;
         const bTopY = band ? band.top : oy + dimY * step;
-        let gJBot = Math.floor((bBot - oy) / gridStep);
-        let gJTop = Math.ceil((bTopY - oy) / gridStep);
-        if (gJBot < 0) gJBot = 0;
-        const gridDimYMax = Math.floor(dimY / gridMul);
-        if (gJTop > gridDimYMax) gJTop = gridDimYMax;
-        const bandGridDimY = gJTop - gJBot;
-        if (bandGridDimY <= 0) {
+        let jBot = Math.floor((bBot - oy) / step);
+        let jTop = Math.ceil((bTopY - oy) / step);
+        if (jBot < 0) jBot = 0;
+        if (jTop > dimY) jTop = dimY;
+        const bandDimY = jTop - jBot;
+        if (bandDimY <= 0) {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
-        // Pad+Crop in X/Z (V9.79, naht-frei); Y band-limitiert. Grobes Gitter (W2);
-        // sampleWater liest die feinen LOD0-Zellen an den groben Gitterpunkten.
+        // Pad+Crop in X/Z (V9.79, naht-frei); Y band-limitiert (Crop schneidet nur X/Z).
         const geom = this._voxelChunkGeometry(
-            ox - gridStep,
-            oy + gJBot * gridStep,
-            oz - gridStep,
-            gridDim + 3,
-            bandGridDimY,
-            gridDim + 3,
-            gridStep,
+            ox - step,
+            oy + jBot * step,
+            oz - step,
+            dim + 3,
+            bandDimY,
+            dim + 3,
+            step,
             sampleWater,
             1
         );
@@ -19313,9 +19295,10 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
-        // V18.1 W1 — die Unterseite der Iso-Hülle verwerfen (s. `_cullWaterUndersideTris`).
-        // Das tötet „Wasser auf der falschen Seite des Bodens" an der Geometrie-Wurzel.
-        if (!this._cullWaterUndersideTris(geom)) {
+        // V18.1/V18.3 W1+B6 — auf die OBERSEITE reduzieren (s. `_cullWaterToTopSurface`):
+        // tötet „Wasser auf der falschen Seite des Bodens" (Unterseite) UND das
+        // „Klettern" am Ufer/an Strukturen (die Seiten-Wände) an der Geometrie-Wurzel.
+        if (!this._cullWaterToTopSurface(geom)) {
             this._queueDispose(geom);
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
@@ -21901,7 +21884,13 @@ class AnazhRealm {
         const width = Math.max(3, wf.width || 3);
         const radius = Math.max(width * 1.5, 3.5 + dropH * 0.18);
         const geo = new THREE.CircleGeometry(radius, 22);
-        geo.rotateX(-Math.PI / 2);
+        // V18.3 (B1-Fix) — der Pool teilt das `hydroSurfaceMaterial`, das seit W1
+        // BackSide ist (die Iso-Wicklung zeigt ins Wasser). Eine `+PI/2`-Drehung
+        // legt die RÜCKSEITE der Scheibe nach OBEN (wie die Iso-Oberseite) → von
+        // oben über die Rückseite sichtbar (BackSide), nicht front-gecullt. Der
+        // Shader klappt die Normale (ny<0 → up) ohnehin → Beleuchtung korrekt.
+        // (Vorher `-PI/2` → Vorderseite oben → BackSide cullte den Pool von oben.)
+        geo.rotateX(Math.PI / 2);
         const vCount = geo.attributes.position.count;
         const aShoreArr = new Float32Array(vCount);
         const aFlowArr = new Float32Array(vCount * 2);
@@ -47150,7 +47139,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.2.0";
+AnazhRealm.VERSION = "18.3.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
@@ -47165,10 +47154,10 @@ AnazhRealm.VERSION = "18.2.0";
 // rechnen (jeden N-ten Frame; dazwischen bewegen sie sich GLATT mit der gecachten
 // Richtung weiter → kein Ruckeln). Band 0/1 (nah/mittel, sichtbar) = jeden Frame.
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
-    Object.freeze({ maxRing: 1, lod: 0, aiDiv: 1, waterLod: 0 }), // Band 0 — ≤ 86 m: volles Detail
-    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1, waterLod: 0 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht (Wasser bleibt fein → keine Naht)
-    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3, waterLod: 2 }), // Band 2 — ≤ 432 m: ferner Ring (Wasser reitet die Terrain-LOD, W2)
-    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6, waterLod: 3 }), // Band 3 — ≤ 518 m: tief im Fog
+    Object.freeze({ maxRing: 1, lod: 0, aiDiv: 1 }), // Band 0 — ≤ 86 m: volles Detail
+    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
+    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
+    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
 ]);
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.

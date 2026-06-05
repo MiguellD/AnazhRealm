@@ -180,76 +180,44 @@ const server = http.createServer((req, res) => {
     // (ins Wasser) → die OBERSEITE hat ny<0 (Front nach unten, von oben über die
     // Rückseite sichtbar), die UNTERSEITE ny>0 (der „Wasser-auf-der-falschen-Seite"-
     // Leck). out.up = ny>0.2 = UNTERSEITE; out.down = ny<-0.2 = OBERSEITE.
-    // W2-Probe: die ferne Wasser-Iso reitet die Terrain-LOD. _waterLodFor-Map +
-    // ein echter Wasser-Chunk bei waterLod 0 vs. forciert LOD2 (Iso neu gebaut)
-    // → die Tri-Zahl MUSS fern drastisch fallen (grobes Gitter, ~16x weniger).
-    const w2 = await page.evaluate(async () => {
-        const r = window.anazhRealm;
-        const s = r.state;
-        const o = { lodMap: [r._waterLodFor(0), r._waterLodFor(1), r._waterLodFor(2), r._waterLodFor(3)], tris0: 0, tris2: 0 };
-        let sampleKey = null;
-        for (const [key, mesh] of s.voxelChunkWaterIso) {
-            if (mesh && mesh.geometry && mesh.geometry.index && mesh.geometry.index.count > 600) {
-                sampleKey = key;
-                break;
-            }
-        }
-        if (!sampleKey) return o;
-        const [cx, cz] = sampleKey.split(",").map(Number);
-        const entry = s.voxelChunks.get(sampleKey);
-        const origLod = entry.lod || 0;
-        entry.lod = 0;
-        const m0 = r._buildVoxelChunkWaterIsoSurface(cx, cz);
-        o.tris0 = m0 && m0.geometry && m0.geometry.index ? Math.round(m0.geometry.index.count / 3) : 0;
-        entry.lod = 2;
-        const m2 = r._buildVoxelChunkWaterIsoSurface(cx, cz);
-        o.tris2 = m2 && m2.geometry && m2.geometry.index ? Math.round(m2.geometry.index.count / 3) : 0;
-        entry.lod = origLod;
-        r._buildVoxelChunkWaterIsoSurface(cx, cz); // wiederherstellen
-        return o;
-    });
+    // (W2 — die ferne Iso-Vergröberung — wurde V18.3 zurückgerollt: sie verschob
+    //  die ferne Wasser-Höhe ~3 m + quoll über den Footprint = DH #606/#503.
+    //  Wasser lebt wieder auf EINER Skala (LOD0). Far-Water-LOD ist ein eigener Bogen.)
 
-    const underside = out.up;
-    const topside = out.down;
+    const underside = out.up; // ny>0.2 = UNTERSEITE
+    const sides = out.side; // |ny|<=0.2 = SEITEN-WÄNDE (das „Klettern", B6)
+    const topside = out.down; // ny<-0.2 = OBERSEITE
     const sideLabel = out.matSide === out.DoubleSide ? "DoubleSide" : out.matSide === out.FrontSide ? "FrontSide" : out.matSide === 1 ? "BackSide" : `?(${out.matSide})`;
-    console.log("\n=== W1 Wasser-Flächen-Werdung — MESSUNG ===");
+    console.log("\n=== W1+B6 Wasser-Flächen-Werdung (top-only) — MESSUNG ===");
     console.log(`mat.side: ${sideLabel}  (FrontSide=${out.FrontSide}, BackSide=1, DoubleSide=${out.DoubleSide})`);
     console.log(`Wasser-Iso-Meshes: ${out.meshes},  Dreiecke gesamt: ${out.tris}`);
     if (out.tris > 0) {
         const pct = (n) => ((100 * n) / out.tris).toFixed(1);
-        console.log(`  OBERSEITE (ny<-0.2):   ${topside}  (${pct(topside)} %)   <- bleibt (von oben via Rückseite sichtbar)`);
-        console.log(`  Ufer/seitlich(|ny|<=.2): ${out.side}  (${pct(out.side)} %)`);
-        console.log(`  UNTERSEITE (ny>0.2):   ${underside}  (${pct(underside)} %)   <- W1 verwirft sie am Build`);
+        console.log(`  OBERSEITE (ny<-0.2):    ${topside}  (${pct(topside)} %)   <- bleibt (von oben via Rückseite sichtbar)`);
+        console.log(`  SEITEN-WÄNDE(|ny|<=.2): ${sides}  (${pct(sides)} %)   <- B6 „Klettern", top-only verwirft sie`);
+        console.log(`  UNTERSEITE (ny>0.2):    ${underside}  (${pct(underside)} %)   <- W1 verwirft sie`);
         console.log(`  area-gewichtetes mittleres ny: ${out.avgAreaNy}   (stark <0 ⇒ Oberseiten ins Wasser gewickelt ⇒ BackSide korrekt)`);
         console.log("  Stichprobe pro Mesh:");
-        for (const m of out.byMesh) console.log(`    ${m.key}: tris=${m.tris} oben=${m.down} ufer=${m.side} UNTEN=${m.up} areaNy=${m.areaNy}`);
+        for (const m of out.byMesh) console.log(`    ${m.key}: tris=${m.tris} oben=${m.down} wand=${m.side} UNTEN=${m.up} areaNy=${m.areaNy}`);
     } else {
         console.log("  (keine Wasser-Iso-Dreiecke gefunden — kein Wasser im gestreamten Ring?)");
     }
 
-    // REGRESSIONS-GATE: W1 (Material BackSide + Unterseite<1%) + W2 (Kaskade-Map +
-    // fern vergröbert). Exit 1, wenn der Volumen-Look ODER die Zwei-Skalen zurück.
+    // REGRESSIONS-GATE (top-only): Material BackSide + NUR Oberseite (Seiten-Wände
+    // + Unterseiten < 1 %) + Oberseite vorhanden. Exit 1, wenn das Volumen oder die
+    // kletternden Wände zurückkehren.
     const hasWater = out.tris > 0;
-    const undersidePct = hasWater ? (100 * underside) / out.tris : 100;
+    const nonTop = underside + sides;
+    const nonTopPct = hasWater ? (100 * nonTop) / out.tris : 100;
     const backSide = out.matSide === 1; // THREE.BackSide
     const topsPresent = topside > 0;
 
-    console.log("\n=== W2 (Wasser reitet die Terrain-LOD) ===");
-    console.log(`_waterLodFor [lod0,1,2,3] = [${w2.lodMap.join(", ")}]  (erwartet 0, 0, 2, 3)`);
-    const w2lodOk = w2.lodMap[0] === 0 && w2.lodMap[1] === 0 && w2.lodMap[2] === 2 && w2.lodMap[3] === 3;
-    const ratio = w2.tris2 > 0 ? (w2.tris0 / w2.tris2).toFixed(1) : "?";
-    console.log(`Iso-Tris bei waterLod 0: ${w2.tris0}  →  forciert LOD2: ${w2.tris2}  (${ratio}× grober)`);
-    const w2coarsens = w2.tris0 > 0 && w2.tris2 > 0 && w2.tris2 < w2.tris0 * 0.5;
-    const w2ok = w2lodOk && (w2.tris0 === 0 || w2coarsens);
-
-    console.log("\n=== URTEIL ===");
-    console.log(`W1 Material BackSide: ${backSide ? "JA" : "NEIN — Volumen-Look (DoubleSide) zurück!"}`);
-    console.log(`W1 Unterseite verworfen (<1%): ${undersidePct < 1 ? "JA (" + undersidePct.toFixed(2) + " %)" : "NEIN (" + undersidePct.toFixed(1) + " %) — Leck zurück!"}`);
-    console.log(`W1 Oberseite vorhanden: ${topsPresent ? "JA" : "NEIN — Wasser von oben unsichtbar!"}`);
-    console.log(`W2 Kaskade-Map (0,0,2,3): ${w2lodOk ? "JA" : "NEIN"}`);
-    console.log(`W2 fern vergröbert: ${w2.tris0 === 0 ? "n/a (kein Sample im Ring)" : w2coarsens ? "JA" : "NEIN — Iso vergröbert nicht!"}`);
-    const pass = hasWater && backSide && undersidePct < 1 && topsPresent && w2ok;
-    console.log(pass ? "\nW1+W2 GRÜN — Wasser ist eine Fläche auf der Terrain-Skala." : "\nROT.");
+    console.log("\n=== URTEIL (W1+B6-Regressions-Gate) ===");
+    console.log(`Material BackSide: ${backSide ? "JA" : "NEIN — Volumen-Look (DoubleSide) zurück!"}`);
+    console.log(`NUR Oberseite (Wände+Unterseite <1%): ${nonTopPct < 1 ? "JA (" + nonTopPct.toFixed(2) + " %)" : "NEIN (" + nonTopPct.toFixed(1) + " %) — Wände/Leck zurück!"}`);
+    console.log(`Oberseite vorhanden: ${topsPresent ? "JA" : "NEIN — Wasser von oben unsichtbar!"}`);
+    const pass = hasWater && backSide && nonTopPct < 1 && topsPresent;
+    console.log(pass ? "\nW1+B6 GRÜN — Wasser ist eine reine Oberseite (eine Skala, kein Volumen, keine kletternden Wände)." : "\nROT.");
 
     await browser.close();
     server.close();
