@@ -1,15 +1,17 @@
 # AnazhRealm Roadmap — der Plan
 
-## ⭐ DER PLAN VORWÄRTS (Stand V18.9 · 05.06.2026 · die Konsolidierung + die Chunkgrenze-Naht)
+## ⭐ DER PLAN VORWÄRTS (Stand V18.10 · 05.06.2026 · die Konsolidierung + der Revert auf den V18.6-Riesen-Stand)
 
 > **Diese Sektion ist der EINE Plan vorwärts.** Sie entstand aus der Konsolidierung am
 > 05.06.2026: der Schöpfer-Befund „du drehst dich im Kreis, pflasterst Bug auf Bug,
 > verlierst den Überblick; Minecraft hat das gelöst, aber wir basteln etwas Billiges".
 > Die Diagnose, GEMESSEN: nicht der CODE ist krank — alle Subsysteme existieren (geprüft),
 > der Playtest ist grün (~3500 Invarianten), die Wasser-FORM ist endlich die der Riesen
-> (V18.6). Krank war die DISZIPLIN: **17 Wellen (V17.117→V18.9) wurden headless-grün gebaut
-> und NIE im Browser bestätigt, NIE gemergt.** Die Detail-Threads unten („OFFENE FÄDEN")
-> bleiben die Referenz; DIESE Sektion ordnet sie und ist der Startpunkt jeder Session.
+> (V18.6 — „wie ein Riese"). Krank war die DISZIPLIN: **der Wasser-Stapel (V17.117→V18.6) wurde headless-grün gebaut
+> und NIE im Browser bestätigt, NIE gemergt** — und der Beweis kam SOFORT: V18.7/.8/.9 stapelten
+> drei Wellen auf einer visuellen Wasser-Regression (die Zell-Maske klippte das saubere See-Ufer
+> zu Sägezähnen), bis der Schöpfer es im Browser sah; V18.10 reverted auf V18.6. Die Detail-Threads
+> unten („OFFENE FÄDEN") bleiben die Referenz; DIESE Sektion ordnet sie + ist der Startpunkt jeder Session.
 
 ### Die EINE Wahrheit (für die Zukunft fixiert — Regel #0)
 
@@ -24,13 +26,13 @@ jetzt die operative Regel #0.
 
 Der 16-Wellen-Stapel ist die größte Schuld. `main` = V17.116; der Branch = V18.8.
 
-1. **Schöpfer-Browser-Pass über den Wasser-Stapel** (V17.117–V18.9), mit dem A/B-Schalter
+1. **Schöpfer-Browser-Pass über den Wasser-Stapel** (V17.117–V18.6+revert), mit dem A/B-Schalter
    (Einstellungen → Wasser-Render: Fläche ↔ Zell-Iso):
-   - Wasser-Fläche auf `L`: See ✅ („deutlich besser"). **Der Chunkgrenze-„Geradenschnitt"
-     (Schöpfer: „Nahtfehler, Kommunikation mit dem Terrain") ist V18.9 an der Wurzel geheilt
-     — die Flächen-Maske liest die NACHBAR-Zellen (`diag-water-seam` alt 3→neu 0); im
-     wasser-reichen Bild (See/Fluss über viele Chunkgrenzen) bestätigen.** Offen + pixel-blind:
-     Fluss-Kaskade an den nassen Zell-Treppen · die Uferlinien-Abstufung (Tiefen-Shader-Overhang).
+   - Wasser-Fläche auf `L`: **See-Ufer ✅ (V18.6, Schöpfer „wie ein Riese gezaubert" — depth-
+     versöhnt). V18.7/.8/.9 (die Zell-Maske) waren ein RÜCKSCHRITT (Sägezahn-Ufer), REVERTED (V18.10).**
+     **Die EINE offene Wurzel: der FLUSS-FLOAT (das „schlechte Netz der Flüsse")** — die Fluss-Fläche
+     SMOOTH begrenzen, wo das Terrain den Kanal verlässt (depth-occluded), NIE eine harte Maske
+     (die das See-Ufer mitklippt; V13.4: die Uferlinie ist der Tiefenpuffer, nie Geometrie). Mit dem Auge.
    - **Wasserfall-Planes: bleiben (dedizierter vertikaler Sturz) oder raus?** (Schöpfer-Auge
      — headless nicht entscheidbar, V18.8 bewusst nicht vorschnell entfernt.)
    - Ferner Ozean (H3) sichtbar korrekt · async Pop-in beim Streamen (E3) flüssig?

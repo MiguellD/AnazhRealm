@@ -20046,47 +20046,8 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                     }
                 }
                 out.surfaceMaxLErr = mx;
-                // V18.8 — KEIN SCHWEBEN: die Fläche ist auf die ECHTE Wasser-
-                // Ausdehnung (Zellen) maskiert, schwebt nicht über die `L`-/Ribbon-
-                // Domäne hinaus (der Fluss-„schwebende Layer/Sägezahn"). Jeder Vertex
-                // MUSS Wasser unter sich (LOD0-Zell-Spalte im 3×3) tragen.
-                const [smcx, smcz] = sampleMeshKey.split(",").map(Number);
-                const sment = r.state.voxelChunks.get(sampleMeshKey);
-                let floatV = 0;
-                if (sment && sment.waterCells) {
-                    const cfg0 = r._voxelChunkConfig(0);
-                    const d0 = cfg0.dim,
-                        st0 = cfg0.step,
-                        dy0 = cfg0.dimY,
-                        sp0 = cfg0.span;
-                    const sox = smcx * sp0,
-                        soz = smcz * sp0;
-                    const wc = sment.waterCells;
-                    const colWet = (i0, k0) => {
-                        if (i0 < 0 || k0 < 0 || i0 >= d0 || k0 >= d0) return false;
-                        const base = i0 + k0 * d0;
-                        for (let j = 0; j < dy0; j++) if (wc[base + j * d0 * d0] === STATE.WATER) return true;
-                        return false;
-                    };
-                    for (let v = 0; v < sp.count; v++) {
-                        // Vertices sitzen auf exakten Zell-Ecken (ox+i·step); der Float32-
-                        // Read rundet an der Zellgrenze → round() holt den Eck-Index zurück
-                        // (sonst landet floor() 1 Zelle daneben = Schein-Schweben).
-                        const ci = Math.round((sp.getX(v) - sox) / st0);
-                        const ck = Math.round((sp.getZ(v) - soz) / st0);
-                        // ±2 Zellen = GROBES Schweben (der Sägezahn spannte viele Zellen
-                        // über die Wasserkante); die bewusste ±1-Zell-Marge (kein Trocken-
-                        // Spalt, der Tiefen-Shader blendet sie) ist KEIN Schweben.
-                        let wet = false;
-                        for (let dk = -2; dk <= 2 && !wet; dk++)
-                            for (let di = -2; di <= 2 && !wet; di++) if (colWet(ci + di, ck + dk)) wet = true;
-                        if (!wet) floatV++;
-                    }
-                }
-                out.surfaceFloatVerts = floatV;
             } else {
                 out.surfaceMaxLErr = "skip — iso-Modus (A/B)";
-                out.surfaceFloatVerts = "skip — iso-Modus (A/B)";
             }
         } else {
             // Welt hatte keinen Iso-Mesh (z.B. alle Chunks im Hochland, kein
@@ -20096,92 +20057,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             out.waterMatBackSide = "skip";
             out.waterUndersideTris = "skip";
             out.waterTopsTris = "skip";
-        }
-        // V18.9 — DIE NAHT AN DER CHUNKGRENZE (der „Geradenschnitt", den der
-        // Schöpfer seit Versionen sieht): die Flächen-Maske `cornerWet` MUSS die
-        // NACHBAR-Zellen am Chunk-Rand lesen (die V13.13.2-Iso-Lehre, die die neue
-        // Maske nie erbte) — sonst klassifizieren zwei Nachbar-Chunks dieselbe
-        // Boundary-Uferlinie unterschiedlich → Klipp entlang der Kante. (1) Source-
-        // Probe: liest der Mach-Pfad die Nachbarn (`colWetAt`)? (2) Daten-Probe: an
-        // jeder geteilten LOD0-Wasser-Chunkgrenze klassifizieren beide Seiten denselben
-        // Eck-Vertex GLEICH (neighbor-read Maske repliziert) → seamMismatch MUSS 0.
-        out.surfaceMaskReadsNeighbor =
-            typeof r._buildVoxelChunkWaterSurfaceMesh === "function" &&
-            r._buildVoxelChunkWaterSurfaceMesh.toString().includes("colWetAt");
-        {
-            const cfg0 = r._voxelChunkConfig(0);
-            const d0 = cfg0.dim,
-                st0 = cfg0.step,
-                dy0 = cfg0.dimY,
-                sp0 = cfg0.span,
-                dq0 = d0 * d0;
-            const water = new Map();
-            for (const [key, e] of r.state.voxelChunks) {
-                if (!e || !e.waterCells || (e.lod || 0) !== 0) continue;
-                let has = false;
-                for (let n = 0; n < e.waterCells.length && !has; n++) if (e.waterCells[n] === STATE.WATER) has = true;
-                if (has) water.set(key, e);
-            }
-            const colWetIn = (arr, li, lk) => {
-                if (!arr || li < 0 || lk < 0 || li >= d0 || lk >= d0) return 0;
-                const base = li + lk * d0;
-                for (let j = 0; j < dy0; j++) if (arr[base + j * dq0] === STATE.WATER) return 1;
-                return 0;
-            };
-            const colWetNbr = (cx, cz, e, oi, ok) => {
-                let ncx = cx,
-                    ncz = cz,
-                    li = oi,
-                    lk = ok;
-                if (oi < 0) {
-                    ncx -= 1;
-                    li = oi + d0;
-                } else if (oi >= d0) {
-                    ncx += 1;
-                    li = oi - d0;
-                }
-                if (ok < 0) {
-                    ncz -= 1;
-                    lk = ok + d0;
-                } else if (ok >= d0) {
-                    ncz += 1;
-                    lk = ok - d0;
-                }
-                if (ncx === cx && ncz === cz) return colWetIn(e.waterCells, li, lk);
-                const nb = r.state.voxelChunks.get(`${ncx},${ncz}`);
-                if (nb && nb.waterCells) return colWetIn(nb.waterCells, li, lk);
-                if (nb) return 0;
-                const ci2 = oi < 0 ? 0 : oi >= d0 ? d0 - 1 : oi;
-                const ck2 = ok < 0 ? 0 : ok >= d0 ? d0 - 1 : ok;
-                return colWetIn(e.waterCells, ci2, ck2);
-            };
-            const cornerWet = (cx, cz, e, wx, wz) => {
-                const ci = Math.floor((wx - cx * sp0) / st0),
-                    ck = Math.floor((wz - cz * sp0) / st0);
-                for (let dk = -1; dk <= 1; dk++)
-                    for (let di = -1; di <= 1; di++) if (colWetNbr(cx, cz, e, ci + di, ck + dk)) return 1;
-                return 0;
-            };
-            let seamPairs = 0,
-                seamMismatch = 0;
-            for (const [key, eA] of water) {
-                const [cx, cz] = key.split(",").map(Number);
-                for (const [dx, dz] of [
-                    [1, 0],
-                    [0, 1],
-                ]) {
-                    const eB = water.get(`${cx + dx},${cz + dz}`);
-                    if (!eB) continue;
-                    seamPairs++;
-                    for (let t = 0; t <= d0; t++) {
-                        const wx = dx === 1 ? (cx + 1) * sp0 : cx * sp0 + t * st0;
-                        const wz = dx === 1 ? cz * sp0 + t * st0 : (cz + 1) * sp0;
-                        if (cornerWet(cx, cz, eA, wx, wz) !== cornerWet(cx + dx, cz + dz, eB, wx, wz)) seamMismatch++;
-                    }
-                }
-            }
-            out.seamPairs = seamPairs;
-            out.seamMismatch = seamMismatch;
         }
         return out;
     });
@@ -20236,24 +20111,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                 "V18.6 U-W4: Wasser-FLÄCHE sitzt EXAKT auf dem Spiegel L (max|vertexY−L| ≤ 0.05 m, Granularität geheilt)",
                 res.surfaceMaxLErr <= 0.05,
                 `maxErr=${res.surfaceMaxLErr}`
-            );
-        }
-        if (typeof res.surfaceFloatVerts === "number") {
-            check(
-                "V18.8: Wasser-FLÄCHE schwebt NICHT — jeder Vertex hat Wasser darunter (auf die Zell-Ausdehnung maskiert)",
-                res.surfaceFloatVerts === 0,
-                `floatVerts=${res.surfaceFloatVerts}`
-            );
-        }
-        check(
-            "V18.9: die Wasser-Flächen-Maske LIEST die Nachbar-Zellen am Chunk-Rand (colWetAt; die V13.13.2-Lehre, kein per-Spalte-Klipp)",
-            res.surfaceMaskReadsNeighbor === true
-        );
-        if (typeof res.seamMismatch === "number" && res.seamPairs > 0) {
-            check(
-                "V18.9: Wasser-FLÄCHE ist an der Chunkgrenze NAHT-FREI — beide Seiten klassifizieren den geteilten Vertex GLEICH (kein Geradenschnitt)",
-                res.seamMismatch === 0,
-                `seamMismatch=${res.seamMismatch} über ${res.seamPairs} Paare`
             );
         }
         if (res.bergseeCheckable) {
