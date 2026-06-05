@@ -21099,6 +21099,8 @@ class AnazhRealm {
         let dirX = 0;
         let dirZ = 0;
         let depth = 0;
+        let bestSeg = null;
+        let bestT = 0;
         for (let s = 0; s < list.length; s++) {
             const seg = list[s];
             const ex = seg.bx - seg.ax;
@@ -21119,6 +21121,8 @@ class AnazhRealm {
                 dirX = ex / len;
                 dirZ = ez / len;
                 depth = D;
+                bestSeg = seg;
+                bestT = t;
             }
         }
         if (bestD === Infinity) return null;
@@ -21126,8 +21130,25 @@ class AnazhRealm {
             flowX: dirX,
             flowZ: dirZ,
             depth,
-            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.4,
+            // V18.7 — der Wasserspiegel hängt NUR vom Längs-Parameter `t` ab
+            // (entlang der Strömung), nicht vom Sample-Punkt (x,z): er wird linear
+            // zwischen den Segment-ENDPUNKTEN interpoliert (`_sA`/`_sB` = Makro an
+            // den Knoten). FLACH im Querschnitt (kein laterales Kippen = der
+            // „schwebende Layer") UND STETIG über Knicke (verbundene Segmente teilen
+            // den Endknoten → keine Stufe an Biegungen). Entlang der Strömung fällt
+            // er (natürliche Drops). Die Bank ragt über den flachen Spiegel → die
+            // Mesh-Kante wird pro Pixel verdeckt (glattes Ufer, wie der See).
+            surfaceY: this._riverSegSurfaceY(bestSeg, bestT) - depth * 0.4,
         };
+    }
+
+    // V18.7 — der Makro-Spiegel an der Segment-Längsposition `t`, linear zwischen
+    // den Endpunkten (`_sA`/`_sB` einmalig pro Segment gecacht, deterministisch =
+    // bit-identisch im Worker-Mirror). Stetig über geteilte Knoten.
+    _riverSegSurfaceY(seg, t) {
+        if (seg._sA === undefined) seg._sA = this._terrainMacroSurfaceY(seg.ax, seg.az);
+        if (seg._sB === undefined) seg._sB = this._terrainMacroSurfaceY(seg.bx, seg.bz);
+        return seg._sA + (seg._sB - seg._sA) * t;
     }
 
     // Phase 1 — Surface-Sampling. Das Region-Raster mit `_terrainMacroSurfaceY`
@@ -47426,7 +47447,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.6.0";
+AnazhRealm.VERSION = "18.7.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
