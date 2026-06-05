@@ -13,14 +13,21 @@
 // DIAGONAL-Nachbar-Iso bleibt auf dem Vor-Stempel-State stehen = Phantom-Wasser
 // an der Struktur-Ecke, das sich NICHT selbst heilt.
 //
-// Diese Diagnose BEWEIST das headless (deterministisch, kein Pixel nötig):
-//   Teil A — die STRUKTUR-LÜCKE: ein echter Arch-Spawn, `_enqueueWaterIso`
-//            instrumentiert → zeigt, welche Nachbarn re-enqueued werden
-//            (nur die 4 Achsen, nie die 4 Diagonalen).
-//   Teil B — die VERHALTENS-FOLGE: ein Wasser-Eck-Stempel (faithful zu
-//            `_stampArchitectureSolidCellsInto`) → die Diagonal-Nachbar-Iso
-//            ist NICHT in der Queue UND ihr Vertex-Count ändert sich beim
-//            erzwungenen Rebuild = sie WAR stale (Phantom-Wasser an der Ecke).
+// Diese Diagnose BEWEIST das headless (deterministisch, kein Pixel nötig) +
+// ist seit V18.0 das exit-codierte REGRESSIONS-GATE (exit 1, wenn der Blob
+// zurückkehrt):
+//   Teil A — die STRUKTUR-LÜCKE: ein echter forceSync-Rebuild, `_enqueueWaterIso`
+//            instrumentiert → welche Nachbarn re-enqueued werden. NACH V18.0:
+//            ALLE 8 (Achsen + Diagonalen) → ungeheilte Wasser-Diagonalen = 0.
+//   Teil B — die DEPENDENZ: ein Wasser-Eck-Stempel (faithful zu
+//            `_stampArchitectureSolidCellsInto`) → hängt die Diagonal-Iso vom
+//            Nachbar-Eck ab.
+//   Teil C — der ECHTE Blob: ein felsturm in den nassesten NAHEN Chunk gespawnt;
+//            WATER im Gebäude (Transient) + stale Nachbar-Iso → NACH V18.0 = 0
+//            (89→0; der forceSync-Gegenprobe-Schutz trennt Transient vom Loch).
+//   Teil D — der FERNE Spawn (der V17.118-Transient-Trigger): ein felsturm an
+//            einem Wasser-Chunk >6 Chunks draussen (async-Rebuild-Pfad) →
+//            WATER im Gebäude + stale Iso = 0 (der Sync-Footprint-Fix hält fern).
 const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
@@ -377,6 +384,113 @@ const server = http.createServer((req, res) => {
             };
         }
 
+        // ---------- Teil D — der FERNE Wasser-Spawn (der V17.118-Transient-Trigger) ----------
+        // Der Transient bisst NUR bei einem Spawn FERN vom Spieler (Nicht-Spieler-
+        // Chunk → async-Worker-Rebuild). Teil C nahm den nassesten NAHEN Chunk;
+        // Teil D sucht einen Wasser-Chunk WEIT draussen (>6 Chunks = klar async),
+        // baut sein 3×3 force-in, spawnt dort ein felsturm → bestätigt, dass der
+        // Fix auch im fernen (Ozean-)Kontext greift (eine zweite, unabhängige Probe).
+        let farKey = null;
+        const pcx0 = Math.floor((s.playerMesh.position.x + span / 2) / span);
+        const pcz0 = Math.floor((s.playerMesh.position.z + span / 2) / span);
+        for (let rad = 7; rad <= 22 && !farKey; rad++) {
+            for (let a = 0; a < 16 && !farKey; a++) {
+                const ang = (a / 16) * Math.PI * 2;
+                const fcx = pcx0 + Math.round(Math.cos(ang) * rad);
+                const fcz = pcz0 + Math.round(Math.sin(ang) * rad);
+                try {
+                    if (r._voxelChunkHasAnyWater(fcx, fcz)) farKey = `${fcx},${fcz}`;
+                } catch (_e) {
+                    /* ignore */
+                }
+            }
+        }
+        if (!farKey) {
+            out.partD = { found: false, note: "kein ferner Wasser-Chunk in Radius 7..22 gefunden" };
+        } else {
+            const [dcx, dcz] = farKey.split(",").map(Number);
+            // 3×3 um den fernen Wasser-Chunk force-in bauen + Iso.
+            for (let dz = -1; dz <= 1; dz++)
+                for (let dx = -1; dx <= 1; dx++) {
+                    try {
+                        r._ensureVoxelChunkAt(dcx + dx, dcz + dz, 0);
+                    } catch (_e) {
+                        /* ignore */
+                    }
+                }
+            for (let f = 0; f < 12; f++) {
+                try {
+                    r._tickPendingWaterIso(64);
+                } catch (_e) {
+                    /* ignore */
+                }
+            }
+            const dchebFromPlayer = Math.max(Math.abs(dcx - pcx0), Math.abs(dcz - pcz0));
+            const dbx = dcx * span + span / 2;
+            const dbz = dcz * span + span / 2;
+            const dgy = typeof r.getTerrainHeightAt === "function" ? r.getTerrainHeightAt(dbx, dbz) : 0;
+            let dbe = null;
+            try {
+                dbe = r.spawnArchitecture("felsturm", { x: dbx, y: dgy + 0.5, z: dbz }, {});
+            } catch (e) {
+                out.notes.push("D spawn: " + ((e && e.message) || e));
+            }
+            for (let f = 0; f < 40; f++) {
+                try {
+                    r._gameLoopTick(performance.now());
+                    r._tickPendingWaterIso(64);
+                } catch (_e) {
+                    /* ignore */
+                }
+            }
+            const dRing = [];
+            for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) dRing.push(`${dcx + dx},${dcz + dz}`);
+            const dAabbs = (dbe && dbe.blockerAABBs) || [];
+            let dWaterInBuilding = 0;
+            for (const k of dRing) {
+                const e = s.voxelChunks.get(k);
+                if (!e || !e.waterCells) continue;
+                const [ccx, ccz] = k.split(",").map(Number);
+                const cox = ccx * span;
+                const coz = ccz * span;
+                for (const ab of dAabbs) {
+                    if (ab.maxX < cox || ab.minX > cox + dim * step) continue;
+                    if (ab.maxZ < coz || ab.minZ > coz + dim * step) continue;
+                    const i0 = Math.max(0, Math.floor((ab.minX - cox) / step));
+                    const i1 = Math.min(dim - 1, Math.floor((ab.maxX - cox) / step));
+                    const k0 = Math.max(0, Math.floor((ab.minZ - coz) / step));
+                    const k1 = Math.min(dim - 1, Math.floor((ab.maxZ - coz) / step));
+                    const j0 = Math.max(
+                        0,
+                        Math.floor(((Number.isFinite(ab.botY) ? ab.botY : ab.topY - 4) - oyG) / step)
+                    );
+                    const j1 = Math.min(dimY - 1, Math.floor((ab.topY - oyG) / step));
+                    for (let j = j0; j <= j1; j++)
+                        for (let kk = k0; kk <= k1; kk++)
+                            for (let ii = i0; ii <= i1; ii++)
+                                if (e.waterCells[ii + kk * dim + j * dim * dim] === STATE.WATER) dWaterInBuilding++;
+                }
+            }
+            let dStale = 0;
+            for (const k of dRing) {
+                if (k === farKey) continue;
+                const e = s.voxelChunks.get(k);
+                if (!e || !e.waterCells) continue;
+                const before = isoCount(k);
+                const [kx, kz] = k.split(",").map(Number);
+                r._buildVoxelChunkWaterIsoSurface(kx, kz);
+                if (before !== isoCount(k)) dStale++;
+            }
+            out.partD = {
+                found: true,
+                farChunk: farKey,
+                chebFromPlayer: dchebFromPlayer,
+                buildingSpawned: !!dbe,
+                waterCellsInsideBuilding: dWaterInBuilding,
+                staleNeighborIsos: dStale,
+            };
+        }
+
         out.playerPos = { x: s.playerMesh.position.x, y: s.playerMesh.position.y, z: s.playerMesh.position.z };
         out.voxelChunks = s.voxelChunks ? s.voxelChunks.size : 0;
         return out;
@@ -431,6 +545,19 @@ const server = http.createServer((req, res) => {
         );
     }
 
+    console.log("\n--- Teil D: der FERNE Wasser-Spawn (der V17.118-Transient-Trigger, async) ---");
+    const d = result.partD;
+    if (!d || !d.found) {
+        console.log(`  ${(d && d.note) || "nicht ausgeführt"}`);
+    } else {
+        console.log(`  ferner Wasser-Chunk:           ${d.farChunk} (Cheb-Distanz ${d.chebFromPlayer} Chunks → async)`);
+        console.log(`  felsturm gespawnt:             ${d.buildingSpawned}`);
+        console.log(
+            `  WATER IM Gebäude:              ${d.waterCellsInsideBuilding}   <-- V18.0-Fix: erwartet 0 (Sync-Footprint trotz Ferne)`
+        );
+        console.log(`  stale Nachbar-Iso:             ${d.staleNeighborIsos}   <-- V18.0-Fix: erwartet 0`);
+    }
+
     // V18.0 — REGRESSIONS-GATE: nach dem Fix MÜSSEN alle gemessenen Wurzeln 0 sein.
     console.log("\n=== V18.0-Regressions-Gate (der Fix muss die gemessenen Zahlen auf 0 halten) ===");
     const checks = [];
@@ -444,6 +571,10 @@ const server = http.createServer((req, res) => {
         checks.push(["#1/#2 keine stale Nachbar-Iso nach realem Spawn (=0)", c.staleNeighborIsos === 0]);
     } else {
         console.log("  (Teil C nicht reproduziert — kein Wasser-Chunk im Set; #1 bleibt der harte Beweis.)");
+    }
+    if (d && d.found) {
+        checks.push(["FERN (async): WATER im Gebäude=0 (Transient-Fix hält fern)", d.waterCellsInsideBuilding === 0]);
+        checks.push(["FERN (async): keine stale Nachbar-Iso=0", d.staleNeighborIsos === 0]);
     }
     let regressed = false;
     for (const [label, ok] of checks) {
