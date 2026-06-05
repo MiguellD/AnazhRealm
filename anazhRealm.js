@@ -19471,12 +19471,38 @@ class AnazhRealm {
             const id = positions.length / 3;
             positions.push(wx, L, wz);
             // aWave: 1 = Ozean (Spiegel ≈ Meereshöhe) → Gerstner-Wellen; 0 = See
-            // (ruhig). aFlow: Fluss-Gefälle-Tangente (Strömung + speist die Drops).
+            // (ruhig).
             aWave.push(Math.abs(L - waterLevel) < 1.5 ? 1 : 0);
-            const river = this._hydroRiverAt(wx, wz);
-            if (river && (river.flowX || river.flowZ)) {
-                const fl = Math.hypot(river.flowX, river.flowZ) || 1;
-                aFlow.push(river.flowX / fl, river.flowZ / fl);
+            // aFlow — die Fluss-Strömung GEGLÄTTET (Schöpfer-Naht-Befund „an der
+            // Chunknaht plötzlich quer zur Strömung + anders skaliert"): `_hydroRiverAt`
+            // gibt eine D8-quantisierte Segment-Strömung → an den Segment-Grenzen
+            // SPRINGT sie 45° → die Foam-Strähnen im Shader reorientieren (der sichtbare
+            // Flip). Die Strömungs-RICHTUNG über ein 27-m-Fenster (3×3 @ 9 m) gemittelt
+            // glättet die Quantisierungs-Stufen, die Richtung (bergab) bleibt. GEMESSEN
+            // (`scripts/diag-water-flow.cjs`): die >45°-Sprünge zwischen Nachbar-Punkten
+            // fallen von 10 % (roh) auf 0.7 %. (Der rohe ∇L-Gradient war GEMESSEN
+            // SCHLECHTER — er folgt dem Terrain-Rauschen, nicht dem Tal-Trend, 180°-Flips
+            // → bewusst NICHT genommen; die Lehre: „lies eine Neigung" braucht die GLATTE
+            // Skala, nicht den 1,8-m-Gradienten.)
+            let sfx = 0;
+            let sfz = 0;
+            let sfn = 0;
+            for (let dz = -1; dz <= 1; dz++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const rv = this._hydroRiverAt(wx + dx * 9, wz + dz * 9);
+                    if (rv && (rv.flowX || rv.flowZ)) {
+                        const m = Math.hypot(rv.flowX, rv.flowZ) || 1;
+                        sfx += rv.flowX / m;
+                        sfz += rv.flowZ / m;
+                        sfn++;
+                    }
+                }
+            }
+            if (sfn > 0) {
+                const m = Math.hypot(sfx, sfz);
+                // m klein = widersprüchliche Richtungen (Konfluenz/Rand) → ruhig.
+                if (m > 0.3) aFlow.push(sfx / m, sfz / m);
+                else aFlow.push(0, 0);
             } else {
                 aFlow.push(0, 0);
             }
@@ -47426,7 +47452,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.10.0";
+AnazhRealm.VERSION = "18.11.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
