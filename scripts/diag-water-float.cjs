@@ -104,6 +104,7 @@ const server = http.createServer((req, res) => {
         // = okkludiert). Tiefwasser (aDepth>0) schwebt legitim (Wasser über seinem Grund).
         let overV = 0,
             overFloatV = 0,
+            overThickFloatV = 0,
             deepV = 0,
             deepFloatV = 0;
         const floatMags = [];
@@ -127,9 +128,11 @@ const server = http.createServer((req, res) => {
                 const floating = floatAmt > 0.3;
                 const d = aDepth ? aDepth.getX(v) : 1;
                 if (d < 0.5) {
-                    // Über-Deckung (keine echten Wasser-Zellen) — DARF nicht schweben
+                    // Über-Deckung (keine echten Wasser-Zellen) — DÜNN (≤2.5m) bei L = gewollt
+                    // (füllt bis ans Ufer, Shader fadet); DICK (>2.5m) = Sägezahn, MUSS gedroppt sein.
                     overV++;
                     if (floating) overFloatV++;
+                    if (floatAmt > 2.5) overThickFloatV++;
                 } else {
                     deepV++;
                     if (floating) deepFloatV++;
@@ -203,6 +206,7 @@ const server = http.createServer((req, res) => {
             lakeFloatV,
             overV,
             overFloatV,
+            overThickFloatV,
             deepV,
             deepFloatV,
             floatP50: pct(0.5),
@@ -220,7 +224,7 @@ const server = http.createServer((req, res) => {
     console.log("\n=== SCHWEBENDER WASSER-RAND (V18.24+) ===");
     console.log(`Surface-Vertices: ${out.totalV} (Fluss ${out.riverV}, See ${out.lakeV})`);
     console.log(
-        `\n(0) ÜBER-DECKUNG (aDepth<0.5, KEIN echtes Wasser) — schwebt noch: ${out.overFloatV}/${out.overV} (${out.overV ? ((100 * out.overFloatV) / out.overV).toFixed(1) : "—"}%)  <-- SOLL ~0 (in den Boden geneigt)`
+        `\n(0) ÜBER-DECKUNG (aDepth<0.5, KEIN echtes Wasser) — schwebt: ${out.overFloatV}/${out.overV} (${out.overV ? ((100 * out.overFloatV) / out.overV).toFixed(1) : "—"}%) — davon DÜNN ≤2.5m (gewollt, füllt bis ans Ufer, Shader fadet): ${out.overFloatV - out.overThickFloatV}; DICK >2.5m (=SÄGEZAHN, soll ~0): ${out.overThickFloatV} (${out.overV ? ((100 * out.overThickFloatV) / out.overV).toFixed(1) : "—"}%)`
     );
     console.log(
         `    Tiefwasser (aDepth≥0.5) schwebt legitim: ${out.deepFloatV}/${out.deepV} (${out.deepV ? ((100 * out.deepFloatV) / out.deepV).toFixed(1) : "—"}%)  (Wasser über seinem Grund = normal)`

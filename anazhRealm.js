@@ -19662,12 +19662,32 @@ class AnazhRealm {
             // Zelle wie die Gegenseite (oy0 LOD-invariant).
             let surfY = L;
             if (depthM < step0) {
-                const tY = colTerrainY(ci0, ck0, L);
+                let tY = colTerrainY(ci0, ck0, L);
+                // V18.26 — Fallback, wo die Zellen kein SOLID unter L tragen (Streaming-Rand,
+                // Zell/Density-Diskrepanz): das EXAKTE gerenderte Voxel-Terrain (`_voxelSurfaceY`,
+                // das Iso) — die 3D-Roughness dippt es unter L, wo das Makro-Terrain es VERFEHLT
+                // (Makro ≥ L → der alte Macro-Fallback liess die dicken Roughness-Floats schweben).
+                // Pure (x,z) → naht-frei; nur für die seltenen -Inf-Fälle (~few/Chunk) → bezahlbar.
+                if (tY === -Infinity) {
+                    const vs = this._voxelSurfaceY(wx, wz);
+                    tY = Number.isFinite(vs) ? vs : this._terrainMacroSurfaceY(wx, wz);
+                }
                 if (tY > -Infinity && tY < L) {
-                    const t = depthM / step0; // 0 am Rand … 1 bei 1 Wasser-Zelle
-                    const f = t * t * (3 - 2 * t); // smoothstep
-                    surfY = (tY - 1.0) * (1 - f) + L * f; // 1 m unter Terrain → okkludiert
-                    if (surfY > L) surfY = L;
+                    // V18.26 — NUR DICKE Über-Deckung (echter Float) sinkt in den Boden; DÜNNES
+                    // Ufer-Wasser (thickness ≤ thinBand) bleibt FLACH bei L → der See füllt bis ans
+                    // Ufer (der Tiefen-Shader fadet die dünne Kante), KEINE "endet vor dem Ufer"-
+                    // Regression (Schöpfer V18.25-Befund: "im See wird das Wasser ans Ufer gedrückt,
+                    // füllt sich bis ans Ufer — aktuell endet es manchmal vor dem Ufer, die Neigung
+                    // zu extrem"). `thickness` = wie weit die flache L-Fläche über dem Terrain schwebt;
+                    // ≤ thinBand = dünn (Shader fadet, bleibt L), darüber sinkt es smooth auf tY−1 m
+                    // (okkludiert). So bleibt die sichtbare Schwebe IMMER ≤ thinBand (vom Shader
+                    // versteckt) statt der harten 1-Zell-Klippe.
+                    const thickness = L - tY;
+                    const thinBand = 2.5;
+                    const slopeW = 4.0;
+                    const u = Math.max(0, Math.min(1, (thickness - thinBand) / slopeW));
+                    const s = u * u * (3 - 2 * u); // smoothstep
+                    surfY = L - (thickness + 1.0) * s; // s=0→L (Ufer flach), s=1→tY−1 (Float okkludiert)
                 }
             }
             const id = positions.length / 3;
@@ -21332,6 +21352,8 @@ class AnazhRealm {
         let dirX = 0;
         let dirZ = 0;
         let depth = 0;
+        let bestPx = x;
+        let bestPz = z;
         for (let s = 0; s < list.length; s++) {
             const seg = list[s];
             const ex = seg.bx - seg.ax;
@@ -21352,6 +21374,8 @@ class AnazhRealm {
                 dirX = ex / len;
                 dirZ = ez / len;
                 depth = D;
+                bestPx = px;
+                bestPz = pz;
             }
         }
         if (bestD === Infinity) return null;
@@ -21359,12 +21383,15 @@ class AnazhRealm {
             flowX: dirX,
             flowZ: dirZ,
             depth,
-            // V18.21 — der volle Spiegel BLEIBT (Freibord 0.25·Tiefe, Schöpfer „die Höhe behalten,
-            // es wurde schlechter weil du einen Fehler AUFGEDECKT hast, nicht weil sie schlecht war").
-            // Der aufgedeckte Fehler (die Sägezähne am höheren Ufer) wird an der WURZEL geheilt: das
-            // 3D-Rauschen im Fluss-Kanal wird geglättet (`_terrainBaseDensityAt`), nicht der Shader
-            // weichgezeichnet — die Bank wird glatt → saubere Wasserlinie bei jedem Pegel.
-            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.25,
+            // V18.26 — der Spiegel liest die Höhe am MITTELLINIEN-Punkt (`bestPx,bestPz` = die
+            // Strömungs-Projektion), NICHT am lateralen (x,z) (Schöpfer: „ein Fluss hat eine
+            // Hauptfliessrichtung, weshalb das Wasser extrem SEITLICH neigt — das berücksichtigen
+            // wir noch nicht"). `_terrainMacroSurfaceY(x,z)` lateral lässt den Spiegel mit der Bank
+            // quer zur Strömung KIPPEN (der „extreme seitliche Tilt"); die Mittellinie ist über die
+            // ganze Breite GLEICH → FLACH quer, fallend LÄNGS (die Mittellinie folgt dem Terrain
+            // entlang der Strömung → Volumen/Leben bleiben, V18.13-Befund). Das ist die Versöhnung:
+            // terrain-folgend längs (Leben), flach quer (kein Tilt) — der Profi-Weg. Freibord 0.25·D.
+            surfaceY: this._terrainMacroSurfaceY(bestPx, bestPz) - depth * 0.25,
         };
     }
 
@@ -47889,7 +47916,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.25.0";
+AnazhRealm.VERSION = "18.26.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
