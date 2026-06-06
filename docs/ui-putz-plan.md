@@ -7,9 +7,13 @@
 > (die Werkstatt — das Vorbild-Subdesign), `das-lebendige-feld.md` (die Welt, die das UI
 > trägt), `state-of-realm.md` (die Vision).
 
-**Stand: PLAN (06.06.2026).** Phase 0 (der `_el`-DOM-Builder) ist BEGONNEN (V18.31+,
-`renderPlayerStatsUI` + `_renderCreatureListUI` migriert, byte-identisch verifiziert). Der
-Rest ist geplant, nicht gebaut. Der Schöpfer-Auftrag, wörtlich:
+**Stand: GRÖSSTENTEILS GEBAUT (V18.32, 07.06.2026).** Zehn Bögen verifiziert + gepusht
+(`_el`-Builder · Tag/Nacht weg · WOW-Start · Hilfe→Einstellungen+Dev gestaffelt ·
+Emotion-Klarheit · Rezeptbuch+Equip · Der Hof · Bibliothek von Alexandria · Das Ich/Inventar
+· freier Bildschirm). **8 Tabs → 6 Kern-Räume** (Welt · Hof · Ich · Werkstatt · Bibliothek
+· Einstellungen). Offen: Soul-Editor evtl. → Werkstatt · der Schöpfer-Browser-Sign-off des
+ganzen Flusses (Feel/Schönheit auf echtem WebGPU) · weitere CSS-Verschlankung (Phase 4d).
+Der Schöpfer-Auftrag, wörtlich:
 
 > „Das UI hat dringend einen Putz verdient, effizient in Struktur des Codes wie auch das
 > UI selbst. Lerne von den Besten, intuitiv, geordnet, simpel, aber trotzdem die volle
