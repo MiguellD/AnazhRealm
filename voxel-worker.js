@@ -477,8 +477,7 @@ function hydroRiverAt(x, z) {
     const bankSlope = state.carveBankSlope;
     let bestD = Infinity;
     let depth = 0;
-    let bestPx = x;
-    let bestPz = z;
+    let bestHalfW = 1;
     for (let s = 0; s < list.length; s++) {
         const seg = list[s];
         const ex = seg.bx - seg.ax;
@@ -496,16 +495,14 @@ function hydroRiverAt(x, z) {
         if (dist <= halfW + bankW && dist < bestD) {
             bestD = dist;
             depth = D;
-            bestPx = px;
-            bestPz = pz;
+            bestHalfW = halfW;
         }
     }
     if (bestD === Infinity) return null;
-    // V18.26 — der Spiegel liest die MITTELLINIEN-Höhe (bestPx,bestPz = Strömungs-Projektion),
-    // NICHT lateral (x,z) → FLACH quer zur Strömung, fallend längs (kein „extremer seitlicher
-    // Tilt"; die Mittellinie folgt dem Terrain längs → Volumen/Leben bleiben). MUSS bit-identisch
-    // zum Main sein (Determinismus-Wand). Freibord 0.25.
-    return { depth, surfaceY: terrainMacroSurfaceY(bestPx, bestPz, true) - depth * 0.25 };
+    // V18.27 — laterale Makro (Leben) + KONVEXE Mitten-Aufwölbung (0.45·D·(1−(dist/halfW)²)) →
+    // konvexer Querschnitt (Mitte höher, fällt zu den Ufern). MUSS bit-identisch zum Main sein.
+    const convexBulge = 0.45 * depth * Math.max(0, 1 - (bestD / Math.max(bestHalfW, 1)) ** 2);
+    return { depth, surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.25 + convexBulge };
 }
 
 function waterLevelAt(x, z) {

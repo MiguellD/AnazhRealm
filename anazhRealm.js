@@ -21352,8 +21352,7 @@ class AnazhRealm {
         let dirX = 0;
         let dirZ = 0;
         let depth = 0;
-        let bestPx = x;
-        let bestPz = z;
+        let bestHalfW = 1;
         for (let s = 0; s < list.length; s++) {
             const seg = list[s];
             const ex = seg.bx - seg.ax;
@@ -21374,24 +21373,24 @@ class AnazhRealm {
                 dirX = ex / len;
                 dirZ = ez / len;
                 depth = D;
-                bestPx = px;
-                bestPz = pz;
+                bestHalfW = halfW;
             }
         }
         if (bestD === Infinity) return null;
+        // V18.27 — der KONVEXE Querschnitt (Schöpfer „wieso nicht einfach KONVEX wie ich immer
+        // sage?"): die laterale Makro-Höhe folgt dem eroded Kanal → konkav (Mitte sackt ein =
+        // sieht aus wie ein leerer Trog). Ein echter, fliessender Fluss WÖLBT sich in der Mitte
+        // (das Wasser mound im tiefsten/schnellsten Strang, fällt zu den Ufern ab). FIX: eine
+        // konvexe Mitten-Aufwölbung `bulge = 0.45·D·(1 − (dist/halfW)²)` (parabolische Kuppel,
+        // peak in der Mitte, 0 am Kanal-Ufer) ADDIERT auf die laterale Makro → terrain-folgend
+        // (LEBEN bleibt) UND konvex (Mitte höher als die Ufer-Kante). Die Mitte ist voller (mehr
+        // Wasser-Volumen), unter den Bänken (kein Überlauf). Worker bit-identisch (speist die Zellen).
+        const convexBulge = 0.45 * depth * Math.max(0, 1 - (bestD / Math.max(bestHalfW, 1)) ** 2);
         return {
             flowX: dirX,
             flowZ: dirZ,
             depth,
-            // V18.26 — der Spiegel liest die Höhe am MITTELLINIEN-Punkt (`bestPx,bestPz` = die
-            // Strömungs-Projektion), NICHT am lateralen (x,z) (Schöpfer: „ein Fluss hat eine
-            // Hauptfliessrichtung, weshalb das Wasser extrem SEITLICH neigt — das berücksichtigen
-            // wir noch nicht"). `_terrainMacroSurfaceY(x,z)` lateral lässt den Spiegel mit der Bank
-            // quer zur Strömung KIPPEN (der „extreme seitliche Tilt"); die Mittellinie ist über die
-            // ganze Breite GLEICH → FLACH quer, fallend LÄNGS (die Mittellinie folgt dem Terrain
-            // entlang der Strömung → Volumen/Leben bleiben, V18.13-Befund). Das ist die Versöhnung:
-            // terrain-folgend längs (Leben), flach quer (kein Tilt) — der Profi-Weg. Freibord 0.25·D.
-            surfaceY: this._terrainMacroSurfaceY(bestPx, bestPz) - depth * 0.25,
+            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.25 + convexBulge,
         };
     }
 
@@ -47916,7 +47915,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.26.0";
+AnazhRealm.VERSION = "18.27.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
