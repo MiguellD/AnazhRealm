@@ -314,6 +314,12 @@ class AnazhRealm {
                 waterDepthFoam: 5.0, // V18.14 M1 — Schaum nur bis dieser ECHTEN Tiefe (m); kleiner = weniger Fluss-Schaum
                 waterLakeRipple: 0.65, // V18.17 Phase 3 — See-Wellen-Floor SICHTBAR (0 = flach, 1 = wie Ozean)
                 waterfallSteep: 4.0, // V18.14 M3 — Wasserfall-Plane nur ab dieser Terrain-Steilheit (Drop/Lauf); grösser = nur echte Wände
+                // V18.30 — die AUSLAUF-BREITE: über wie viele thickness-Meter sich der Boden-
+                // Auslauf (V18.25) von der flachen L-Fläche auf den Boden neigt. Grösser =
+                // flacher/runder/konvexer (der Übergang verteilt sich über mehr Zellen), kleiner =
+                // steiler/kantiger. War bis V18.29 hartkodiert 4.0 → der Schöpfer-Befund „die
+                // Neigung fast 90°, ein Quadrat statt einer Konvexe". Browser-justierbar.
+                waterOutflowSlope: 6.0,
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
                 shadowRange: 300, // Frustum-Halbbreite m (kleiner = schärfer)
@@ -19587,6 +19593,12 @@ class AnazhRealm {
         // `oy0 = base − 90` ist überall gleich → das Terrain-Y aus den Zellen ist naht-frei
         // über Chunk-Grenzen, auch bei LOD-Mischung). Für `colTerrainY` (der Boden-Auslauf).
         const oy0 = (this.state.terrainBaseHeight || 0) - cfg0.floorDrop;
+        // V18.30 — die browser-justierbare Auslauf-Breite (Default 6.0; war hartkodiert 4.0).
+        // EINMAL pro Mesh-Build gelesen (nicht pro Vertex). Grösser = flacherer, runderer Auslauf.
+        const outflowSlope =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
+                ? this.state.atmosphere.waterOutflowSlope
+                : 6.0;
         // V18.16 — KEINE Zell-Maske auf der Geometrie (der Profi-Weg, V18.10 bestätigt):
         // die Fläche bleibt grosszügig auf der `L`-Domäne (~16 m über die Uferlinie), die
         // SICHTBARKEIT trägt der Tiefen-Shader PRO PIXEL aus der echten Meter-Tiefe `aDepth`
@@ -19735,7 +19747,14 @@ class AnazhRealm {
                     // versteckt) statt der harten 1-Zell-Klippe.
                     const thickness = L - tY;
                     const thinBand = 2.5;
-                    const slopeW = 4.0;
+                    // V18.30 — `slopeW` (browser-justierbar) steckt die thickness-Spanne, über die
+                    // der smoothstep läuft → die HORIZONTALE Breite des Auslaufs. Bei steilem Terrain
+                    // wuchs thickness pro Zelle (1.8 m) so schnell, dass der Übergang in ~1 Zelle
+                    // passierte (fast 90°). Ein grösseres slopeW streckt den smoothstep über mehr
+                    // thickness → über mehr Zellen → flacher + runder (der grössere smoothstep-Radius
+                    // IST die konvexe Lippe). Die smoothstep bleibt (C1-stetig an beiden Enden → keine
+                    // harte Kante); der Regler dreht ihre Breite.
+                    const slopeW = outflowSlope;
                     const u = Math.max(0, Math.min(1, (thickness - thinBand) / slopeW));
                     const s = u * u * (3 - 2 * u); // smoothstep
                     surfY = L - (thickness + 1.0) * s; // s=0→L (Ufer flach), s=1→tY−1 (Float okkludiert)
@@ -24593,6 +24612,11 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterfallSteep)
                         ? this.state.atmosphere.waterfallSteep
                         : 1.0,
+                // V18.30 — die Auslauf-Breite persistieren.
+                waterOutflowSlope:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
+                        ? this.state.atmosphere.waterOutflowSlope
+                        : 6.0,
                 // J4-Regler: Kavitäts-AO-Stärke (0..1) + Kanten-Schärfe (Post-FX local-contrast, 0..1).
                 cavityAO:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
@@ -26728,6 +26752,9 @@ class AnazhRealm {
             if (Number.isFinite(df)) this.state.atmosphere.waterDepthFoam = Math.max(0.1, Math.min(6.0, df));
             const ws = Number(state.atmosphere.waterfallSteep);
             if (Number.isFinite(ws)) this.state.atmosphere.waterfallSteep = Math.max(0.2, Math.min(4.0, ws));
+            // V18.30 — die Auslauf-Breite (vor dem Mesh-Bau setzen; der Setter clampt + re-enqueued).
+            const wos = Number(state.atmosphere.waterOutflowSlope);
+            if (Number.isFinite(wos)) this.state.atmosphere.waterOutflowSlope = Math.max(2.0, Math.min(16.0, wos));
             // J4-Regler (default 1.0 / 0.5 = unverändert) + an die Uniforms pushen,
             // falls sie schon erzeugt sind (sonst liest `_ensure*` sie beim Bau).
             const ao = Number(state.atmosphere.cavityAO);
@@ -37271,6 +37298,27 @@ class AnazhRealm {
         return m;
     }
 
+    // V18.30 — die AUSLAUF-BREITE (Boden-Auslauf V18.25): über wie viele thickness-Meter
+    // sich die Wasser-Fläche von L auf den Boden neigt. Grösser = flacher/runder/konvexer
+    // (der Schöpfer-Befund „die Neigung fast 90°, ein Quadrat statt einer Konvexe"), kleiner
+    // = steiler. Ist ein GEOMETRIE-Parameter (Vertex-Y im Surface-Mesh, kein Shader-Uniform)
+    // → re-enqueued alle Wasser-tragenden Chunks (wie setWaterRenderMode); die Zellen/Physik
+    // bleiben unberührt (render-only).
+    setWaterOutflowSlope(v) {
+        const m = Math.max(2.0, Math.min(16.0, Number(v) || 6.0));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.waterOutflowSlope = m;
+        if (this.state.voxelChunks) {
+            for (const [key, e] of this.state.voxelChunks) {
+                if (!e || !e.waterCells) continue;
+                const comma = key.indexOf(",");
+                this._enqueueWaterIso(parseInt(key.slice(0, comma), 10), parseInt(key.slice(comma + 1), 10));
+            }
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // WELLE J4-Regler — die Kavitäts-AO-Stärke (0 = aus … 1 = voll). Die
     // `fwidth(normalWorld)`-AO zeichnet jede Surface-Nets-Facetten-Kante als
     // Linie (screen-space → flackert beim Laufen) — der Haupt-Verdacht für die
@@ -44719,6 +44767,22 @@ class AnazhRealm {
                 if (wfsVal) wfsVal.textContent = v.toFixed(1);
             });
         }
+        // V18.30 — Auslauf-Breite: wie weit der Wasser-Rand sich in den Boden neigt.
+        // Grösser = flacher/runder/konvexer (gegen „die Neigung fast 90°, ein Quadrat").
+        const wosS = document.getElementById("slider-wateroutflow");
+        const wosVal = document.getElementById("slider-wateroutflow-val");
+        if (wosS) {
+            const o0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
+                    ? this.state.atmosphere.waterOutflowSlope
+                    : 6.0;
+            wosS.value = String(Math.round(o0 * 10));
+            if (wosVal) wosVal.textContent = o0.toFixed(1) + " m";
+            wosS.addEventListener("input", () => {
+                const v = this.setWaterOutflowSlope(parseInt(wosS.value, 10) / 10);
+                if (wosVal) wosVal.textContent = v.toFixed(1) + " m";
+            });
+        }
         // V17.109 — die 2.5D-Lichtung (0..100 % → terrainFlatten 0..1). Der HAUPT-
         // Hebel gegen die Facetten-Rauten (blendet die Shading-Normale zur Up-Achse).
         const tfS = document.getElementById("slider-flatten");
@@ -47993,7 +48057,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.29.0";
+AnazhRealm.VERSION = "18.30.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
