@@ -22780,7 +22780,10 @@ class AnazhRealm {
     }
 
     // V11.0-a — räumt den Pool vollständig (echtes dispose aller Meshes +
-    // Instance-Buffer-Freigabe). Wird beim Welt-Wechsel + Reload gerufen.
+    // Instance-Buffer-Freigabe). DEFINIERT + test-bewacht (Leak-Test maxPoolSize=1),
+    // aber im Produktions-Pfad NICHT verdrahtet (0 Aufrufe, V18-Audit): der Welt-
+    // Wechsel ist reload-basiert → der Browser räumt den GPU-Heap eh auf. Der Drain
+    // wartet auf den Tag, an dem Welt-Wechsel nicht-reload wird (Leak-Schutz-Saat).
     // Geometry-Singleton bleibt (von außen geteilt, eigene Cleanup-Disziplin).
     _drainGrassMeshPool() {
         // Pool lazy initialisieren falls noch nicht da — semantisch „leer"
@@ -23381,6 +23384,8 @@ class AnazhRealm {
         pool.push(mesh);
     }
 
+    // Analog _drainGrassMeshPool: definiert + test-bewacht, im Produktions-Pfad nicht
+    // verdrahtet (Reload räumt auf → Leak-Schutz-Saat, V18-Audit).
     _drainScatterMeshPools() {
         if (!this.state._scatterMeshPools) {
             this.state._scatterMeshPools = new Map();
