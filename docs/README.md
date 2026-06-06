@@ -26,7 +26,7 @@ Drei Heimaten für drei Zeit-Ebenen (die Doku-Disziplin):
 |---|---|---|
 | **`docs/state-of-realm.md`** | **Die Vision** — die fünf Pfeiler aus den Testamenten, die Heilige Lektion, die Stand-vs-Vision-Matrix. | Bei „wohin will das Projekt?" / Zweifel an der Richtung (§2). |
 | **`docs/roadmap.md`** | **Der Plan vorwärts** — oben der reconciled `OFFENE FÄDEN`-Backlog (A Crafting · B Kampf · C Fundament · D Vision), darunter die Ring-Struktur + Detail-Chronik. | Bei „was kommt als Nächstes?". |
-| **`docs/das-lebendige-feld.md`** | **DER WAHRE NORDEN** — die Welt als EIN lebendiges Feld, das alle lesen · schreiben · WERTEN. Wo die Vision driftete, der geniale Twist, die dunklen Flecken. | **ZUERST** vor jeder Arbeit an „lebendiger Welt / Emotion / Nexus / DSL / Kreaturen". |
+| **`docs/das-lebendige-feld.md`** | **DER WAHRE NORDEN** — die Welt als EIN lebendiges Feld, das alle lesen · schreiben · WERTEN. Die ewige Vision, wie sie GEMESSEN im Code verkörpert ist (die drei Verben stehen), + der Vektor, der noch vorwärts zeigt. | **ZUERST** vor jeder Arbeit an „lebendiger Welt / Emotion / Nexus / DSL / Kreaturen". |
 
 ## Tier 2 — die aktiven Pläne (laufende Bögen)
 

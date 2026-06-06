@@ -2,253 +2,335 @@
 
 > **Lies dieses Dokument ZUERST, wenn du an „der lebendigen Welt", „Emotion ↔ Welt",
 > „Kreaturen lebendiger", „dem Nexus", „der DSL", „fraktalem Wachstum" oder „der KI
-> als Co-Schöpfer" arbeiten willst.** Es hält das Verständnis fest, das der Schöpfer
-> und der Agent in der Reflexion vom 01.06.2026 erarbeitet haben — damit der nächste
-> Agent NICHT wieder ein Pflaster-System baut, sondern das Vorhandene zu EINEM
-> lebendigen Feld verdichtet. **Stand: nach V17.71 — der ganze Feld-Bogen ist DURCH** (lesen·schreiben·WERTEN), plus der Emotion-Kern (V17.45–.49), der Kampf-Bogen (V17.51–.58) und der Schöpfungs-Fluss + die Resonanz-Vereinheitlichung (V17.59–.71); der geordnete Rest-Backlog lebt in `docs/roadmap.md` „OFFENE FÄDEN". Die Heilung war DURCH (V17.19 Werkstatt-Auge, V17.20 tote Glieder), der ERSTE Feld-Bogen ist RUND, mit BEIDEN Hälften (lesen UND schreiben), und die Spawn-Harmonie ist geheilt (V17.28: GROSSE Strukturen spawnen footprint-bewusst nicht mehr AUF dem Spieler — „der Ort, an dem ich stehe, ist besetzt" — kein Fall-durch-den-Boden mehr; plus ein Void-Boden): `auraAt(x,z,t)` (die Lese-Seite, V17.21) + der geschlossene Kreis Welt→Spieler-Emotion (V17.21, via `FIELD_TO_EMOTION` — §3.2/§3.3 sind nicht mehr offen, der Rückweg existiert) + der Nexus LIEST das Feld + komponiert resonant (V17.22, §3.1 „blinder Nexus" geheilt) + drei Kräfte verschmelzen in HARMONIE statt Revert (V17.23: Wille führt, Feld weicht/füllt) + nichts snappt mehr (V17.24: Sky-Farb-Cross-Fade) + VIELE Leser teilen das Feld (V17.25, §5: die Logik-Konsumenten lesen `auraAt` + die VOLLEN Achsen — glut DÄMPFT die Fauna) + der Nexus heilt GEZIELT den Mangel (V17.26: Resolver `at_field_need` → er trägt Leben in die ÄRMSTE Region) + **die SCHREIB-Seite ist gebaut (V17.27): ein sparse, lazy-zerfallendes Leben-Overlay über dem frozen Kern — `_depositLife` schreibt, `auraAt` blendet (`min(1, frozen+overlay)`); eine Geburt hebt lebendig → der at_field_need-Loop schließt sich ECHT (Leben spreizt, der Mangel sinkt, Sättigung statt rich-get-richer) → „die Welt heilt sich" ist jetzt eine geschlossene REGEL, kein Vektor.** + **der Kreatur-Trickle (V17.29): die Schreib-Seite wird eine ATMENDE Ökologie** — eine Nexus/Spieler-getragene Kreatur (`tendsLife`) träufelt fortlaufend Leben in ihre Zelle → die geheilte Region BLEIBT lebendig (statt nach dem Geburts-Puls zu verblassen); Leben sustainiert sich, wo es wohnt; die ambiente Fauna träufelt NICHT (kein Runaway, V17.27-Disziplin) + **Pfeiler 2 wird WAHR (V17.30): die Emotion leitet sich aus dem echten SEIN-IN-DER-WELT ab** — über ALLE sechs Achsen, aus TATEN (`ACTION_TO_EMOTION` an jeder Handlungs-Stelle: bauen/Leben-spawnen/ernten/erkunden/verbünden/Schaden) + ZUSTAND (niedrige HP) + UMGEBUNG (Feld-Read V17.21), nicht mehr nur Chat-Stichwörter (§3.2 „Emotion ist ein Einweg-Ventil" damit weiter geheilt — die Emotion liest jetzt den Spieler) + **die Reflexion deckt zwei tote Emotions-Haken auf + heilt sie (V17.31): die `auraAt.emotion`-Achse war ein PASSAGIER** (niemand las sie, die Welt las `player.emotions` direkt — der §2-Diagramm-Anspruch „eine Feld-Achse, die alle lesen" war Deko), und der Wasser-`uEmotion`-Haken (V14) blieb stumm auf 0.0; jetzt liest der Welt-Tint `aura.emotion` (die Achse ist ein echter Leser → wird emotion künftig RÄUMLICH, färbt der Welt-Tint automatisch lokal mit) und das Wasser wird gefüttert → die Emotion treibt die Welt KONTINUIERLICH (Licht + Wasser), nicht nur in 0.7-Sprüngen + **die RÄUMLICH-dynamische Emotion-Achse (V17.32): das Feld bekommt ein emotionales GEDÄCHTNIS** — `_depositEmotion` prägt die Tat-Emotion an der Spieler-Zelle ein (dieselbe Maschinerie wie das Leben-Overlay), `auraAt.emotion` blendet den lokalen Abdruck über die globale Stimmung, der V17.31-Welt-Tint färbt den Ort automatisch räumlich (konsumiert, kein Passagier) → die Welt erinnert sich, wo du fühltest. **Emotion ist damit die ZWEITE schreibbare Feld-Achse nach lebendig — §3.3 „die Felder sind PARALLEL + EINGEFROREN" ist für emotion geheilt (sie ist jetzt INS Feld geschrieben, nicht parallel daneben).** Damit: die Welt spürt + versteht + schreibt + heilt + ERHÄLT sich + ERINNERT sich, und die Emotion treibt sie — kontinuierlich + räumlich. **UPDATE (nach V17.71 — die drei §3.4/§3.5-Flecken sind GEHEILT):** der DSL-Weltregeln-Bogen (§3.4) ist DURCH (V17.33–.41: Mensch · Nexus · KI schreiben am selben Regel-Satz, sichtbar via Gesetzes-Faden); die **WERTUNG (§3.5)** ist DURCH (V17.42–.50, das dritte Verb LESEN → SCHREIBEN → **WERTEN**: die Regel-Fitness wurde der lokale strukturelle δ am Ort, die Emotion der Appraisal-δ gegen eine gleitende Baseline — die Welt LERNT was den Spieler freut, by-construction anti-gaming; voll dokumentiert in `docs/archiv/lebendige-wertung-plan.md`). Dazu kamen der Emotion-Kern (V17.45–.49), der Kampf-Bogen (V17.51–.58, der dem Emotion-Kern den letzten Affekt-Konsumenten gibt) und der Schöpfungs-Fluss + die Resonanz-Vereinheitlichung (V17.59–.71, „ein Produkt-Vektor, viele Leser"). **Was vom alten Feld-Backlog BLEIBT:** die Spieler-Pflege als zweiter Leben-Schreib-Pfad (DU trägst Leben — Co-Schöpfung) + die anderen Feld-Achsen schreibbar machen, falls die Vision sie braucht (dichte/glut/magie sind heute absichtlich frozen = geologische Identität) + Emotion→Regel-EMERGENZ (die einzelnen Kopplungen wie `sorrow→rainy` sind noch hand-codiert, via die Weltregeln-DSL emergent machbar). Der vollständige geordnete Gesamt-Backlog (A Crafting · B Kampf · C Fundament · D Vision) lebt in **`docs/roadmap.md` „OFFENE FÄDEN".**
+> als Co-Schöpfer" arbeiten willst.** Es hält den wahren Norden des Projekts fest —
+> die EWIGE Vision (§1–§2), wie sie GEMESSEN im Code verkörpert ist (§3–§5), und den
+> Vektor, der noch vorwärts zeigt (§6–§7). Damit der nächste Agent NICHT wieder ein
+> Pflaster-System baut, sondern auf dem Vorhandenen weiterwächst.
 
-Verwandte Anker: `state-of-realm.md` (die Vision/Testamente), `world-portal.md`
-(die Bibliothek von Alexandria — das Fern-Ziel), `archiv/dsl-weltregeln-plan.md` (der
-Regel-Satz, V17.33–.40 GEBAUT), `archiv/lebendige-wertung-plan.md` (das DRITTE Verb —
-WERTEN: Regel-Fitness + Emotion via Vorhersagefehler, GEBAUT V17.42–.50),
-`archiv/nexus-dsl.md` (das alte DSL-Design, Ring 2), `crafting-konzept.md`
-(Hylomorphismus = das Material/Form-Substrat).
+**Stand: V18.31 (06.06.2026) — der ganze Seelen-Bogen ist DURCH und im Code GEMESSEN.**
+Die Reflexion vom 01.06.2026 (Schöpfer + Agent) kartierte eine Vision, die als Hülle
+stand, aber an fünf Stellen flach war. Diese fünf Stellen sind seither GEBAUT und
+verifiziert — das Dokument hat sich darum von einer **Diagnose** („wohin driftete die
+Vision") in eine **Verankerung** gewandelt („wie ist die Vision verkörpert, und wohin
+zeigt sie weiter"). Die drei Verben des Felds stehen ALLE, gemessen:
+
+- **LESEN** (V17.21): `auraAt(x,z,t)` ist die EINE Lese-API, 16 Konsumenten teilen sie.
+- **SCHREIBEN** (V17.27/.32): `_depositLife` + `_depositEmotion` schreiben in sparse,
+  lazy-zerfallende Overlays über dem frozen Kern — der Heilungs-Loop schließt sich ECHT.
+- **WERTEN** (V17.42–.50): das dritte Verb — ein Vorhersagefehler-δ gegen eine gleitende
+  Baseline, auf ZWEI Ebenen (Spieler-Appraisal + lokale Feld-Struktur). Die Welt LERNT,
+  was den Spieler freut, by-construction anti-gaming.
+
+Darauf stehen der **Emotion-Kern** (V17.45–.49: dimensional · Substanz-Brücke · Mood ·
+Contagion · Wagnis), die **DSL-Weltregeln** (V17.33–.41: Mensch · Nexus · KI schreiben am
+SELBEN Regel-Satz, persistiert + sichtbar), der **Kampf-/Interaktions-Bogen** (V17.51–.58,
+der dem Affekt seinen Konsumenten gibt) und die **Resonanz-Vereinheitlichung** (V17.59–.85:
+„ein Produkt-Vektor, viele Leser"). Der V17.92–.118-Tiefe-Fundament-Bogen + der V18-Wasser-
+Bogen bauten den KÖRPER weiter (Terrain · Render · Wasser-Geometrie); der EINE noch offene
+Körper-Vektor ist **echte Fluid-Dynamik** (Schöpfer-Entscheidung 06.06., `docs/roadmap.md`
+Phase 1.5). **Der geordnete Rest-Backlog lebt in `docs/roadmap.md` „⭐ DER PLAN VORWÄRTS".**
+
+Verwandte Anker: `state-of-realm.md` (die Vision/Testamente + die Stand-Matrix),
+`world-portal.md` (die Bibliothek von Alexandria — das Fern-Ziel), `kampf-plan.md`
+(der aktive Crafting-/Kampf-Bogen), `crafting-konzept.md` (Hylomorphismus = das
+Material/Form-Substrat). Die VOLLENDETEN Arc-Pläne liegen im Archiv:
+`archiv/dsl-weltregeln-plan.md`, `archiv/lebendige-wertung-plan.md` (das DRITTE Verb),
+`archiv/emotion-kern-plan.md`, `archiv/resonanz-system.md`.
 
 ---
 
 ## 1. Die Vision in einem Satz
 
 Die Welt soll **EIN lebendiges, fraktales, sich-selbst-verstehendes und -wachsendes
-Feld** sein — von allen **gelesen** und durch eine Sprache von allen **geschrieben** —,
-in dem Mensch, KI, Kreaturen und die Welt selbst Co-Autoren **derselben Quelle** sind.
-Niemals einzelne hand-codierte Pfade (Pflaster); **Effizienz durch Einheit.**
+Feld** sein — von allen **gelesen**, durch eine Sprache von allen **geschrieben**, und
+nach dem Wohl des Spielers **gewertet** —, in dem Mensch, KI, Kreaturen und die Welt
+selbst Co-Autoren **derselben Quelle** sind. Niemals einzelne hand-codierte Pfade
+(Pflaster); **Effizienz durch Einheit.**
 
 Das ist die wörtliche Erfüllung der Testament-Pfeiler (`state-of-realm.md` §1):
-_„Emotion treibt — Spieler-Emotionen formen Wetter, Kreaturen, Materie, Klang"_ (Pfeiler 2)
 
+- _„Emotion treibt — Spieler-Emotionen formen Wetter, Kreaturen, Materie, Klang"_ (Pfeiler 2)
 - _„Fraktales Wachstum — aus Seed entstehen alle Skalen"_ (Pfeiler 3)
 - _„Symbiose Mensch + KI — beide schreiben in dieselbe Realität"_ (Pfeiler 1).
 
 ---
 
-## 2. Der geniale Twist — Lesen (Aura-Feld) und Schreiben (DSL/Nexus) sind DASSELBE
+## 2. Der geniale Twist — Lesen, Schreiben und Werten sind DASSELBE Feld
 
-Die zwei Dinge, die getrennt aussehen, sind eine:
+Die drei Dinge, die getrennt aussehen, sind eine:
 
 - **Das Aura-Feld** = die LESE-Seite. Eine Quelle, viele Leser.
 - **Die DSL / der Nexus** = die SCHREIB-Seite. Mensch + KI + Welt schreiben hinein.
-- **Der geschlossene Kreis** = das „verstehend": der Nexus/die KI **liest** das Feld,
-  um zu entscheiden, was er **schreibt**. Die Welt spürt sich selbst und wächst.
+- **Der Vorhersagefehler-δ** = die WERTUNG. Was den Spieler freut, blüht; was ihn nicht
+  berührt, verblasst. Die Welt versteht sich selbst — und lernt.
+- **Der geschlossene Kreis** = das „verstehend": der Nexus/die KI **liest** das Feld, um
+  zu entscheiden, was er **schreibt**, und die WERTUNG sagt ihm, was GUT war. Die Welt
+  spürt sich selbst und wächst Richtung Wert.
 
 ```
-            ┌──────────────────────────────────────────────┐
-            │            EIN lebendiges Feld                │
-            │   auraAt(x, z, t)  —  fraktal + reaktiv       │
-            │   Achsen: lebendig · dichte · glut ·          │
-            │   magieleitung · emotion(awe/peace/…) ·       │
-            │   resonanz · …                                │
-            └──────────────────────────────────────────────┘
-              ▲ schreiben                    │ lesen ▼
-   ┌──────────┴───────────┐      ┌───────────┴────────────────────┐
-   │ Mensch (Chat→DSL)     │      │ Wasser-Schaum · Licht · Musik   │
-   │ Nexus (DSL, autonom)  │      │ Kreaturen (wandern/fühlen)      │
-   │ KI-Schöpfer (DSL)     │      │ Vegetation · Spawn-Affinität    │
-   │ die Welt selbst       │      │ DER NEXUS / DIE KI (verstehen)  │
-   │ (Carve/Damm/Cluster)  │      │ → schreiben geleitet vom Lesen  │
-   └───────────────────────┘      └────────────────────────────────┘
+            ┌──────────────────────────────────────────────────┐
+            │              EIN lebendiges Feld                  │
+            │   auraAt(x, z, t)  —  fraktal + reaktiv + gewertet │
+            │   frozen Kern (worldFieldAt): lebendig · dichte · │
+            │   glut · magieleitung                             │
+            │   + Overlays (sparse, lazy): lebendig · emotion   │
+            │   WERTUNG: δ = Wohl − Baseline (Spieler + Ort)    │
+            └──────────────────────────────────────────────────┘
+              ▲ schreiben            │ lesen ▼          ↻ werten
+   ┌──────────┴───────────┐  ┌───────┴────────────┐  ┌──┴───────────────┐
+   │ Mensch (Chat→DSL)     │  │ Wasser · Licht ·    │  │ wohlBaseline      │
+   │ Nexus (DSL, autonom)  │  │ Musik · Welt-Tint   │  │ (Spieler, 30 s)   │
+   │ KI/Grok (DSL, llm)    │  │ Kreaturen (fühlen)  │  │ Feld-Baseline pro │
+   │ die Welt (Carve/Damm) │  │ Vegetation · Spawn  │  │ 16-m-Zelle (120 s)│
+   │ Kreatur-Trickle       │  │ DER NEXUS/DIE KI    │  │ → Regel-Fitness   │
+   │ (tendsLife)           │  │ (verstehen)         │  │ → Emotion (joy/…) │
+   └───────────────────────┘  └─────────────────────┘  └───────────────────┘
+                                          ▲                       │
+                                          └───── schreiben ←──────┘
+                                       (der Nexus wächst Richtung δ>0)
 ```
 
-Damit wird die Vision wörtlich wahr: _„Emotion treibt alles"_ = alle lesen die
-Emotion-Achse des Felds (das Pflaster löst sich auf). _„Aus Seed alle Skalen"_ =
-das Feld IST fraktales Rauschen, unendlich, + der Nexus wächst es. _„Mensch + KI
-schreiben dieselbe Realität"_ = beide schreiben DSL ins selbe Feld; die KI liest es,
-um mit-zu-schöpfen. **Das ist die wahre Effizienz: ein Feld, viele Leser — nicht zehn
-`_tickX`-Funktionen.**
+Damit wird die Vision wörtlich wahr: _„Emotion treibt alles"_ = alle lesen das Feld,
+die Emotion ist eine seiner Achsen (das Pflaster löst sich auf). _„Aus Seed alle Skalen"_
+= das Feld IST fraktales Rauschen, unendlich, + der Nexus wächst es. _„Mensch + KI
+schreiben dieselbe Realität"_ = beide schreiben DSL ins selbe Feld; die KI liest es, um
+mit-zu-schöpfen; die WERTUNG selektiert, was sich bewährt. **Das ist die wahre Effizienz:
+ein Feld, viele Leser, eine Gleichung der Wertung — nicht zehn `_tickX`-Funktionen.**
 
 ---
 
-## 3. Wo die Vision hinwollte — und wohin sie driftete (GEMESSEN)
+## 3. Wie die Vision verkörpert wurde — die fünf Flecken, gemessen geheilt
 
 Der Ursprung (`archiv/nexus-dsl.md` §1, Ring 2): _„eine Welt, die sich selbst
-weiterentwickelt, gesteuert durch Chat"_ — Mensch UND Nexus schreiben dieselbe DSL,
-die Welt **wächst**. Gebaut wurde das Skelett (es ist mehr als „nur Hülle"), aber an
-**vier Stellen blieb es flach und entkoppelt** (kartiert im Code, 01.06.2026):
+weiterentwickelt, gesteuert durch Chat"_. Gebaut war das Skelett; an **fünf Stellen
+blieb es flach und entkoppelt** (kartiert 01.06.–02.06.2026). Jede ist seither GEBAUT.
+Diese Geschichte bleibt, weil sie erklärt, WARUM die Architektur ihre Form hat (frozen
+Kern + Overlay, anti-gaming-δ, Whitelist-Regeln) — nicht als offene Wunde.
 
-1. **Der Nexus ist BLIND.** Er existiert real (`nexusTick`, komponiert DSL via
-   `dslCompose`/`dslComposeAtomic`, lernt per Fitness `dslSelectByFitness`, mutiert
-   `dslMutate`, broadcastet). Aber er **liest die Welt nicht** — er würfelt Atome aus
-   einer fixen Liste, biased nur durch Spieler-Emotion. Er spürt nicht „dieser Wald
-   stirbt / hier ist es zu dicht / hier resoniert Magie" → er wächst nicht aus
-   Verständnis, er spamt Gesten. **Am weitesten von _fraktalem Wachstum_ weg.**
+1. **Der Nexus war BLIND** — er würfelte Atome aus einer fixen Liste, las die Welt
+   nicht. **→ GEHEILT (V17.22, .26):** er liest jetzt `auraAt` und komponiert resonant
+   (`dslComposeRule` biast Bedingung + Effekt gegen die lokale Aura), und der Resolver
+   `at_field_need` findet die ÄRMSTE Region und trägt Leben dorthin. Aus „Gesten würfeln"
+   wurde „aus Verständnis heilen".
 
-2. **Emotion ist ein EINWEG-Ventil.** `state.player.emotions` (joy/awe/sorrow/hope/
-   peace/chaos) ist EIN Vektor (gut), aber die Kopplungen sind hand-codiert
-   (`sorrow→rainy`, `joy→gelber Himmel`, in `updatePlayerEmotions`) und gehen **nur
-   Spieler→Welt**. Der Rückweg fehlt: Regen erhöht keine Trauer, eine friedliche
-   Lichtung gibt keinen Frieden. Der Kreis schließt sich nie.
-   **→ GEHEILT (V17.21 + V17.30): der Rückweg Welt→Spieler existiert** (V17.21:
-   die Aura nährt peace/hope/awe via `FIELD_TO_EMOTION`), **und die Emotion liest
-   jetzt den Spieler über ALLE Achsen** (V17.30: `ACTION_TO_EMOTION` — Taten
-   [bauen/ernten/Leben/erkunden/verbünden/Schaden] + ZUSTAND [HP] + UMGEBUNG
-   [Feld]; nicht mehr nur Chat-Stichwörter, joy bewegt sich endlich aus echtem
-   Spiel). Damit feuern die Spieler→Welt-Kopplungen wieder (Pfeiler 2 wacht auf).
-   **Noch offen:** die einzelnen Kopplungen (`sorrow→rainy` etc.) sind weiter
-   hand-codierte Trigger, nicht aus dem Feld emergent — der DSL-/Regel-Schritt (§3.4).
+2. **Emotion war ein EINWEG-Ventil** (Spieler→Welt, hand-codiert, kein Rückweg).
+   **→ GEHEILT (V17.21 + V17.30):** der Rückweg Welt→Spieler existiert (`FIELD_TO_EMOTION`:
+   lebendig nährt peace/hope, glut nährt chaos/awe, magie nährt awe), UND die Emotion
+   leitet sich jetzt aus dem echten SEIN-IN-DER-WELT ab — über ALLE sechs Achsen, aus
+   TATEN (`ACTION_TO_EMOTION` an jeder Handlungs-Stelle), ZUSTAND (HP) und UMGEBUNG
+   (Feld-Read). joy bewegt sich aus echtem Spiel, nicht mehr nur aus Chat-Stichwörtern.
 
-3. **Die Felder sind PARALLEL und EINGEFROREN.** `worldFieldAt(x,z)` (4 Achsen:
-   lebendig/dichte/glut/magieleitung) ist schön vereint — aber **read-only**, beim
-   Worldgen eingefroren. Der Spieler kann `lebendig` nicht durch Pflanzen heben;
-   Emotion moduliert es nicht; Carve/Edit ändert es nicht. Und es lebt PARALLEL neben
-   Hydrosphäre, Erosion, Emotion, Kreatur-Population — **nicht EIN Feld, sondern
-   fünf.** Die DSL kann es nur lesen (`compound_has_tag`), nie schreiben.
-   **→ TEILWEISE GEHEILT (V17.27 + V17.32): ZWEI Achsen haben jetzt eine SCHREIB-Seite**
-   — `lebendig` (V17.27: ein Leben-Overlay, `_depositLife` → `auraAt`-Blend, eine Geburt
-   hebt + es zerfällt) UND `emotion` (V17.32: ein Emotions-Overlay, `_depositEmotion` am
-   Ort des Fühlens → `auraAt.emotion`-Blend über die globale Stimmung, der Welt-Tint färbt
-   den Ort räumlich). Beide sind RÄUMLICH, reaktiv, konsumiert; der frozen Kern bleibt
-   (worldgen/cachebar), die Overlays sind die reaktive Schicht. **Noch offen:** die drei
-   geologischen Achsen (dichte/glut/magieleitung) sind ABSICHTLICH frozen (die geologische
-   Identität — eine Schreib-Seite bräuchten sie nur, wenn die Vision sie verlangt); das
-   Feld lebt noch PARALLEL neben Hydrosphäre/Erosion (nicht zu EINEM verschmolzen); und die
-   DSL schreibt die Overlays nur indirekt (über `spawn_creature`/`_feelAction`), nicht als
-   direkte Feld-Schreib-Op (§3.4).
+3. **Die Felder waren PARALLEL und EINGEFROREN** — `worldFieldAt` read-only, beim
+   Worldgen frozen, fünf Felder statt EINEM. **→ GEHEILT für die dynamischen Achsen
+   (V17.27 + V17.32):** ZWEI Achsen haben jetzt eine SCHREIB-Seite — `lebendig`
+   (`_depositLife` → `auraAt`-Blend, eine Geburt hebt, es zerfällt) und `emotion`
+   (`_depositEmotion` am Ort des Fühlens → ein räumliches emotionales GEDÄCHTNIS). Beide
+   sind ein Overlay über dem frozen Kern (`auraAt = min(1, frozen + overlay)`, nie
+   überschreiben — V17.23-Harmonie). **Bewusst frozen bleiben dichte/glut/magieleitung**
+   (die geologische Identität — eine Schreib-Seite bräuchten sie nur, wenn die Vision
+   sie verlangt; sie werden von der Wertungs-Baseline ohnehin absorbiert).
 
-4. **Der KI-Schöpfer schreibt noch nicht.** Grok ist hardcodierte Phrasen-Pools; das
-   LLM (`state.llm`) ist verdrahtet aber opt-in, nicht Kern. Die Symbiose-Hälfte „die
-   KI ist Co-Autor, der DSL ins Feld schreibt" ist Skizze.
+4. **Der KI-Schöpfer schrieb noch nicht** + **die DSL war eine GESTEN-Sprache, kein
+   Welt-DEFINITIONS-Substrat** (der damals tiefste, vision-fernste Fleck: 73 imperativ-
+   einmalige Ops auf einem hardcodierten Kern, während die Bibliotheks-Vision _„eine Welt
+   IST ein Set von DSL-Bäumen"_ verlangt). **→ GEHEILT (V17.33–.41):** der ganze DSL-
+   Weltregeln-Bogen. Der geniale Leap war EIN Primitiv — ein `rule` = ein `when`, das
+   NICHT verfällt (im Registry steht, im Welt-Tick fortlaufend geprüft). Eine Welt = ihr
+   Regel-Satz + Seed (merge = Vereinigung der Regel-Sätze → die Bibliothek wird wahr).
+   Mensch (Chat, permanent) · Nexus (autonom, ephemer) · **KI/Grok** (`source:"llm:grok"`
+   → `dslRun`) schreiben am SELBEN Regel-Satz, in EINER Sprache, persistiert + sichtbar
+   (der Gesetzes-Faden geht live „⚡ feuert", `_journalRuleAwoke`).
 
-**Plus die Architektur-Wahrheit (die Schöpfer selbst spürte): die DSL ist eine
-GESTEN-Sprache, kein Welt-DEFINITIONS-Substrat.** 73 Ops, ALLE imperativ-einmalig
-(spawn/modify/weather/equip). Schon das alte Design (`archiv/nexus-dsl.md` §15) ließ
-Terrain/Physik/Kreatur-Verhalten/Shader bewusst AUSSERHALB der DSL. Aber die
-Bibliotheks-Vision (`state-of-realm.md` §4.2) sagt _„eine Welt IST ein Set von
-DSL-Bäumen"_. **Da klafft die größte Lücke: die Vision will Welten als komponierbare
-Regel-Programme, real ist es ein hardcodierter Kern + Seed + dünne DSL-Gesten-Schicht.**
-Die Welt wird aus einem Seed GENERIERT (fixe Funktionen), aber sie WÄCHST/EVOLVIERT
-nicht. (Warum die DSL bewusst dünn blieb: Performance + Determinismus + die Heilige
-Lektion — siehe §6.)
-**→ VOLL GEPLANT (01.06.2026): `docs/archiv/dsl-weltregeln-plan.md`** — der Weg von der
-Gesten-Sprache zu stehenden `Bedingung→Effekt`-WELT-REGELN, die das (jetzt
-schreibbare, V17.27/.32) Feld lesen+schreiben. Der geniale Leap ist EIN Primitiv:
-ein `rule` = ein `when`, das nicht verfällt (im Registry steht, im Welt-Tick
-fortlaufend geprüft). Eine Welt = ihr Regel-Satz + Seed → die Bibliothek wird wahr
-(merge = Vereinigung der Regel-Sätze). Der V17-Feld-Bogen schuf den fehlenden Stein:
-einen deterministisch-sicheren Schreib-Raum (die reaktiven Overlays), in den Regeln
-schreiben, ohne den Seed zu brechen. Fünf Phasen (A–E), reine Verdichtung, kein
-Urknall. **Vor der DSL-Arbeit den Plan ZUERST lesen.**
-**→ GEBAUT (V17.33–.40): der ganze DSL-Weltregeln-Bogen ist DURCH** (A das `rule`-
-Primitiv · B Feld-Kopplung · C Nexus evolviert · D Mensch gibt Gesetze · E Persistenz/
-Merge · die KI/das LLM als dritte Schreiberin); **+ SICHTBAR (V17.41): der Gesetzes-
-Faden** (die Console geht live „⚡ feuert", das Erwachen einer Mensch-Regel wird eine
-Welt-Erinnerung). Mensch · Nexus · KI schreiben am SELBEN Regel-Satz, in EINER Sprache.
+5. **Die WERTUNG war flach — das dritte Verb fehlte** (GEMESSEN 02.06.): die Regel-Fitness
+   selektierte auf VIABILITÄT (≈0.99 für jede laufende Regel, eine heilende und eine
+   sinnlose gleich), die Emotion war ein REFLEX (feste Tabelle, das 100. Haus so freudig
+   wie das erste). **→ GEHEILT (V17.42–.50):** das dritte Verb via **Vorhersagefehler
+   gegen eine gleitende Baseline** — die EINE Gleichung, auf die RL (TD-Fehler), die
+   Neurowissenschaft (Dopamin = Reward Prediction Error), die Verhaltensökonomie
+   (Prospect Theory) und die Spiel-KI (Sims/Black & White) unabhängig kamen. Sie subsumiert
+   beide flachen Systeme (Details in §4.3).
 
-5. **Die WERTUNG ist flach — das dritte Verb fehlt (GEMESSEN, 02.06.2026).** Der DSL-
-   Bogen baute den KÖRPER der Evolution (Variation/Heredität/Selektion/Lebenszyklus),
-   aber der Selektionsdruck ist ein Platzhalter: `_worldRuleFitness` = `0.4·Kosten +
-   0.6·Erfolg` → **≈ 0.99 für JEDE feuernde, nicht-crashende Regel** (durchgerechnet) →
-   keine Auflösung, kein Gradient Richtung GUT (eine heilende und eine sinnlose Regel
-   haben dieselbe Fitness — Selektion auf VIABILITÄT, nicht WERT). Und die Emotion ist
-   ein REFLEX: `ACTION_TO_EMOTION` ist eine feste Tabelle (`build → joy+0.1`, das 100.
-   Haus so freudig wie das erste — keine Gewöhnung/Kontext/Sättigung), sechs additive
-   Achsen, eine 0.7-Stufen-Schwelle. **Das Substrat ist voraus, die WERTUNG ist zurück.**
-   **→ VOLL GEPLANT (02.06.2026): `docs/archiv/lebendige-wertung-plan.md`** — das DRITTE Verb
-   des Feldes (LESEN → SCHREIBEN → **WERTEN**). Der Hebel ist die EINE bewährte Gleichung,
-   auf die RL (TD-Fehler/Advantage), Neurowissenschaft (Dopamin = Reward Prediction
-   Error), Verhaltensökonomie (Prospect Theory) und Spiel-KI (Sims/Black & White)
-   unabhängig kamen: **Vorhersagefehler gegen eine gleitende Baseline** (`baseline ←
-   baseline + α·(x − baseline)`, `δ = x − baseline`). Sie subsumiert BEIDE flachen
-   Systeme: die Regel-Fitness wird der lokale strukturelle δ am Ort der Regel (Regeln
-   überleben, weil der Ort, den sie berühren, AUFBLÜHT — lokale, kausale Attribution,
-   die der Passagier-Trugschluss NICHT konnte, jetzt möglich weil das Feld RÄUMLICH ist),
-   und die Emotion wird der δ des Erlebens (Gewöhnung fällt umsonst heraus). Phase 4 ist
-   die Klammer: beide sind DASSELBE δ → die Welt LERNT, was den Spieler freut. Minimaler
-   Hardcode (eine prinzipielle Valenz + zwei Zeitkonstanten ersetzen eine Magie-Tabelle).
-   **Vor jeder Fitness-/Emotion-Arbeit den Plan ZUERST lesen.**
+**Damit ist der lange als „tiefster offener Vision-Faden" geführte Pfeiler E
+substanziell eingelöst:** die Welt spürt + versteht + schreibt + heilt + ERHÄLT sich +
+ERINNERT sich + WERTET — und wächst Richtung dessen, was den Spieler freut. Was bleibt,
+ist VERTIEFUNG (§6), nicht Fundament.
 
 ---
 
-## 4. Schon hier, nur nicht tief/stabil genug
+## 4. Die wahre Tiefe — wie die Systeme WIRKLICH funktionieren (gemessen)
 
-Das ist die präzise, ehrliche Lage: **die Teile existieren alle** — `worldFieldAt`
-(das Feld-Skelett), der Emotion-Vektor, die DSL (die Schreib-Sprache), der Nexus (der
-autonome Schreiber), die Fitness-Schleife, die Hylomorphismus-Tags (das emergente
-Stat/Affordanz-Substrat). Sie waren **flach und unverbunden** — und der V17.21–V17.27-Bogen
-hat sie verbunden: `auraAt` umhüllt den frozen `worldFieldAt`-Kern als living Lese-API
-(V17.21), der Kreis Welt→Spieler-Emotion ist geschlossen (V17.21), der Nexus liest +
-komponiert resonant (V17.22) + heilt gezielt den Mangel (V17.26), viele Leser teilen das
-Feld (V17.25), und **seit V17.27 hat das Feld eine SCHREIB-Seite**: die `lebendig`-Achse
-ist nicht mehr nur frozen — ein Leben-Overlay (`_depositLife` → `auraAt`-Blend) macht sie
-schreibbar (eine Geburt hebt sie, sie zerfällt zurück), und der at_field_need-Loop
-schließt sich dadurch ECHT. **Noch offen** (die tieferen Schreib-Pfade): die ANDEREN
-Achsen sind weiter frozen, joy/sorrow nur Chat-Lexik (kein Spiel-Verhalten), die DSL
-stumm als Welt-Definition (§3.4). **Der geniale Twist ist KEIN neues System — er ist das
-Vertiefen + Verbinden des Vorhandenen zu einem lebendigen Feld-Kreis.**
+Dies ist die Architektur, die ein neuer Agent SEHEN muss, bevor er anfasst. Jeder
+Eintrag ist im Code verifiziert (Methoden-/Konstanten-Namen sind real, Stand V18.31).
+
+### 4.1 Das Feld — frozen Kern + reaktives Overlay
+
+- **`worldFieldAt(x,z)`** — der frozen Worldgen-Kern, 4 Achsen (lebendig · dichte · glut ·
+  magieleitung), aus 4 seed-deterministischen SimplexNoise-Instanzen, worldgen-cachebar.
+- **`auraAt(x,z,t)`** — die EINE Lese-API. Gibt den frozen Kern zurück, geblendet mit den
+  Overlays: `lebendig = min(1, frozen + _lifeOverlayAt)`, `emotion = global ⊕ _emotionOverlayAt`,
+  die drei geologischen Achsen direkt frozen. **16 Konsumenten** teilen sie: Terrain-Farbe,
+  Spawn-Affinität, Fauna-Ziel/-Max, Gras-Dichte, Nexus-Komposition, Welt-Tint, Appraisal,
+  HUD. Wer eine neue „lebendige Welt"-Wirkung baut, liest HIER — kein neues `_tickX`.
+- **Trennung frozen ↔ Overlay** (V12.0-perf.b): der teure frozen Teil ist cachebar; das
+  billige mutable Overlay liegt sparse darüber (eine `Map` von 16-m-Zellen, lazy-decay
+  beim Lesen, kein per-Frame-Sweep). Leerer Overlay → exakt frozen (backward-compatible).
+
+### 4.2 Die Schreib-Seite — nur intentionale Akte, lazy-Decay, Sättigung
+
+- **`_depositLife(x,z,amount)`** — hebt `lebendig` (3×3-Kernel), gekappt auf
+  `LIFE_FIELD.max` (0.7), zerfällt exponentiell (`a·e^(−λΔt)`). Schreiber: eine Geburt
+  (`_finishBirth`), die DSL-Op `deposit_life`, und der **Kreatur-Trickle** (`tendsLife`:
+  eine getragene Kreatur träufelt fortlaufend Leben in ihre Zelle → die geheilte Region
+  BLEIBT lebendig statt nach dem Puls zu verblassen — eine atmende Ökologie).
+- **`_depositEmotion(x,z,emotionMap)`** — prägt die Tat-Emotion am Ort ein (6 Achsen,
+  gekappt auf `EMOTION_FIELD.max` 0.8, schnellerer Decay als Leben). Schreiber:
+  `_feelAction`, die DSL-Op `deposit_emotion`, `_giveComfort`.
+- **Disziplin (V17.27-Lehre):** NUR INTENTIONALE Akte schreiben (die Geburt, die Geste) —
+  NIE die FOLGEN des Feldes (ambiente Fauna liest lebendig → spawnt; würde sie auch
+  schreiben, gäbe es positives Feedback-Runaway). Sättigung (`max`-Cap) → das Leben
+  SPREIZT sich, kein rich-get-richer.
+
+### 4.3 Die Wertung — das dritte Verb, eine Gleichung, zwei Ebenen
+
+Die Konstante ist **`AnazhRealm.WERTUNG`**. Die Gleichung: `baseline += α·(x − baseline)`,
+`δ = x − baseline`. Zwei Ebenen lesen denselben δ:
+
+- **Spieler-Appraisal** (`p.wohlBaseline`, EMA mit `playerTau` 30 s): die Situation ist
+  60 % lebendig (Feld unter dem Spieler) + 40 % HP — **NICHT die Emotion selbst** (sonst
+  Runaway). `δ = Situation − Baseline` → joy/hope bei δ>0, sorrow/chaos bei δ<0 (über eine
+  kurze EMA `appraisalEmaTau` 8 s). Weil die Baseline langsam nachzieht, fällt die
+  **Gewöhnung umsonst heraus**: das 100. Haus ist weniger freudig als das erste, ohne
+  jeden Hardcode.
+- **Feld-Struktur** (`state.wohlBaseline`, eine Map pro 16-m-Zelle, EMA mit `fieldTau`
+  120 s): `_measureRuleReward` misst `δ = Wohl(nach der Regel) − Baseline(vor der Regel)`
+  = der **lokale strukturelle δ am Ort, den die Regel berührt**. Das ist die kausale
+  Attribution, die der Passagier-Trugschluss nicht konnte — jetzt möglich, weil das Feld
+  RÄUMLICH ist.
+- **`_worldRuleFitness` = 0.6·valueScore(δ) + 0.25·success + 0.15·cost** (NICHT mehr die
+  flache 0.4·Kosten + 0.6·Erfolg). `value` ist die EMA des lokal-attribuierten δ
+  (`ruleValueBeta` 0.3) — Heiler-Regeln descenden öfter (`_composeNexusRule`), Schädlinge
+  verfallen. **Die Welt LERNT, was den Spieler freut.**
+- **Die Phase-4-Klammer + anti-gaming:** feuert eine Regel NAH am Spieler UND ist der
+  Spieler-δ positiv → Bonus. Weil δ die SITUATION ist (lebendig + HP), nicht die
+  gestempelte Emotion, kann eine Regel nicht „den Spieler glücklich-stempeln" — sie muss
+  die Welt wirklich besser machen.
+
+### 4.4 Der Emotion-Kern — dimensional, hylomorph, sozial
+
+- **6 Achsen** (`EMOTION_AXES`: joy/awe/sorrow/hope/peace/chaos), dimensional projiziert
+  über **`EMOTION_GEOMETRY`** (Valenz × Erregung, Russell-Circumplex). `_emotionState`
+  liest Valenz/Erregung/Intensität → bittersüß (joy+sorrow) hat Valenz ≈ 0, aber hohe
+  Intensität. Gegensätzliche Achsen dämpfen sich emergent.
+- **Hylomorph** (V17.46): `ACTION_TO_EMOTION` (die Tat-Basis) × `TAG_TO_EMOTION`
+  (`_appraiseSubstance` — die Tags der berührten Substanz) → die Emotion fällt aus der
+  SUBSTANZ der Tat, nicht aus einer Etikett-Tabelle.
+- **Mood** (langsame EMA, `EMOTION_MOOD_TAU` 120 s) tönt die Appraisal kongruent (ein
+  gutes Ereignis fühlt sich in trüber Stimmung kleiner an). **Contagion + Bonding**
+  (`_tickEmotionContagion`): nahe Kreaturen stecken den Spieler an, gewichtet nach Nähe ×
+  Bindung; `bond` wächst während `follow_player`; bounded (kein Feedback-Runaway).
+  Pro-Achsen-Decay (chaos verfliegt schnell, sorrow/peace bleiben).
+
+### 4.5 Der Nexus + die Weltregeln — Mensch · Nexus · KI am selben Satz
+
+- Der Nexus **liest** (`auraAt`), **komponiert resonant** (`dslComposeRule`, biast gegen
+  die lokale Aura), **schreibt** nur reaktiv-sichere Ops, **lernt** value-gerichtet.
+- **`state.worldRules`** (Registry) + **`_tickWorldRules`** (per-Frame-Evaluator): ein
+  `rule`-Op REGISTRIERT statt einmal auszuführen. Vier Disziplinen an der Wurzel:
+  Re-Entrancy (Array-Länge am Tick-Anfang fangen), Performance (Budget/Frame + `everySec`-
+  Gate), Determinismus (deterministische Regel-RNG, multi-user-seed-sicher), Runaway-Schutz
+  (Cap 64 + Dedup + Eviction des ältesten Nicht-Mensch-Eintrags).
+- **Quellen:** Mensch (permanent, geschützt) · Nexus (ephemer, fitness-erneuert) · LLM
+  (ephemer). Eine **Whitelist** lässt Regeln nur die reaktive Schicht schreiben (Overlays/
+  Wetter/Emotion/Kreaturen), NIE den frozen Worldgen (`terrain_*`/`voxel_*`) → eine
+  fremde Welt kann meine nicht umpflügen. Persistiert + merge-bar (die Bibliotheks-Vision).
+
+### 4.6 Die Resonanz — der Hylomorphismus eine Ebene höher
+
+Das Crafting-Substrat ist die BLAUPAUSE des Felds, eine Ebene angewandt:
+**`computeCompoundTags`** (MAX über Parts von Form × Material) ist die EINE Quelle →
+**`_blueprintProductVector`** (Material-Tags normalisiert auf [0..1] via
+`PRODUCT_VECTOR_TAG_NORM` ⊕ Form-Achsen ⊕ Skala) ist der EINE Vektor → **vier argmax-Leser**
+gegen frozen Signaturen teilen ihn: Rolle (`computeBlueprintRole`/`ROLE_SIGNATURES`),
+Werkstatt-Domäne (`_computeWorkshopDomain`), Werkzeug-Op (`_computeToolOpFromForm`),
+Rollen-Fit (`_blueprintRoleFit`). „Ein Produkt-Vektor, viele Leser" — kein Whitelist,
+kein Flag (außer den GEMESSEN-nicht-emergenten Intent-Overrides). Details:
+`docs/kampf-plan.md` §11 + `docs/archiv/resonanz-system.md`.
 
 ---
 
 ## 5. Was schon EMERGENT ist (nicht anfassen — das ist das Vorbild)
 
-Damit der nächste Agent das Muster sieht, das er fortsetzt (nicht durchbricht):
+Damit der nächste Agent das Muster sieht, das er fortsetzt (nicht durchbricht). Jedes
+hier ist „eine Quelle, viele Konsumenten" — die Blaupause, die jede neue Welt-Schicht
+erbt:
 
-- **Hylomorphismus** (`computeCompoundTags` = MAX über Parts von Form × Material):
-  ALLE Stats, Affordanzen, Spawn-Affinität emergieren daraus. EINE Quelle, viele
-  Konsumenten. **Das ist die Blaupause des Felds — eine Ebene höher anwenden.**
-- **`worldFieldAt`** ist schon „ein Feld, viele Leser" (Terrain-Farbe, Spawn-Affinität,
-  Fauna-Ziel, Gras-Dichte) — es muss nur **lebendig + vollständig gelesen** werden
-  (heute lesen die meisten nur `lebendig`, nicht alle 4 Achsen).
-- **Die DSL** ist schon die geteilte Schreib-Sprache von Mensch + Nexus, persistier-/
-  broadcast-bar. Das Fundament für „beide schreiben dieselbe Realität" steht.
-
----
-
-## 6. Die Reihenfolge (Schöpfer-bestätigt) + die Heilige-Lektion-Sicherheit
-
-**Erst Heilung + Ordnung + Effizienz, dann das Chaos höherer Ordnung** (Schöpfer,
-01.06.2026). Konkret:
-
-1. **Heilung des Stamms** — das blinde Werkstatt-Auge öffnen (Bauplan-Preview auf
-   WebGPU, siehe §7) + tote Infrastruktur entfernen (GPU-Density-WGSL ~500 Z.
-   abgeklemmt, Hot-Swap-Reste, `mxFractal`). Ein sauberer Stamm, bevor die Seele
-   darauf wächst.
-2. **Das lebendige Feld** — Schritt für Schritt, durch VERDICHTUNG:
-   (a) `worldFieldAt` → `auraAt(x,z,t)` erweitern (die dynamischen Achsen: lokale
-   Emotion, Resonanz, Edit-Delta — das eingefrorene Worldgen-Substrat bleibt der Kern);
-   (b) die verstreuten Pflaster-Kopplungen EINE nach der anderen auf „lies das Feld"
-   umstellen (jede ersetzt einen hand-codierten Pfad durch einen Feld-Read = WENIGER
-   Zeilen); (c) dem Nexus Augen geben (er liest das Feld, bevor er schreibt → der Kreis
-   schließt sich); (d) optional die KI als DSL-Schreiber wecken.
-3. **Fundament schließen** parallel/danach: die ±1024-Wasser-Region, effiziente Höhe,
-   und — der tiefste Fleck — **die DSL Richtung Welt-Regeln** (damit die Bibliothek
-   wirklich auf komponierbaren Welt-Programmen steht, nicht auf Hardcode).
-
-**Heilige-Lektion-Sicherheit (kritisch):** das ist **Emergenz durch Verdichtung, kein
-Urknall-Rewrite.** Das 19-Modul-System kollabierte 2025 an Komplexität-ohne-Fundament.
-Das Feld existiert SCHON (`worldFieldAt`); wir erweitern + verbinden, wir ersetzen NIE
-den ganzen Kern auf einmal. Jede Welle: ein Pflaster fällt, ein Feld-Read entsteht,
-playtest-grün, ein Commit. Performance bleibt heilig (das Feld wird gesampelt wie
-heute, nicht pro-Frame-pro-Entity neu erfunden). Wer hier ein großes neues
-„LivingWorldManager"-Modul bauen will — **stop**, das ist die Sünde. Das Feld ist eine
-Methode auf dem einen Stamm.
+- **Hylomorphismus** (`computeCompoundTags`): ALLE Stats, Affordanzen, Spawn-Affinität,
+  Rollen emergieren daraus. Die Resonanz-Vereinheitlichung (§4.6) ist seine Krönung.
+- **`auraAt`** (§4.1): ein Feld, viele Leser — jetzt lebendig (Overlays) UND voll gelesen
+  (die Konsumenten lesen alle Achsen, nicht nur `lebendig`; glut DÄMPFT die Fauna).
+- **Der Vorhersagefehler-δ** (§4.3): EINE Gleichung wertet zwei Welten (Spieler-Gefühl +
+  Regel-Fitness). Die Gewöhnung fällt umsonst heraus — kein Hardcode pro Fall.
+- **Die DSL + die Weltregeln** (§4.5): die geteilte Schreib-Sprache von Mensch + Nexus +
+  KI, persistier-/broadcast-/merge-bar. „Beide schreiben dieselbe Realität" steht.
 
 ---
 
-## 7. Die dunklen Flecken / offene Baustellen (ehrlich, gemessen)
+## 6. Der Vektor vorwärts — wohin jede Achse noch zeigt
 
-| Fleck                                            | Was                                                                                                                                                                                                                                                                                                                                         | Tiefe / Status                                                                                                                                                                             |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Die WERTUNG ist flach (Fitness + Emotion)**    | §3.5 oben. Die Regel-Fitness selektiert auf VIABILITÄT (≈0.99 für jede laufende Regel, gemessen), nicht WERT; die Emotion ist ein REFLEX (feste `ACTION_TO_EMOTION`-Tabelle, keine Gewöhnung/Kontext). Das Substrat ist voraus, die Wertung zurück.                                                                                            | **DER NEUE tiefste Fleck (nach V17.41).** Voll geplant: `archiv/lebendige-wertung-plan.md` — das dritte Verb WERTEN via Vorhersagefehler/gleitende Baseline (eine bewährte Gleichung, 4 Phasen).  |
-| **Werkstatt-Preview tot seit GPU-Umstellung**    | → GEHEILT (V17.19): Preview auf `WebGPURenderer` umgestellt; die visuelle Wahrheit bleibt Schöpfer-Browser (headless pixel-blind).                                                                                                                                                                                                            | **Heilung-Phase DURCH.** Crafting-Auge offen.                                                                                                                                             |
-| **DSL = Geste, nicht Welt-Regel**                | Vision (§4.2) will Welten als komponierbare DSL-Programme; real ist die DSL 73 imperative Gesten auf einem hardcodierten Kern. Der tiefste, vision-fernste Fleck.                                                                                                                                                                           | **Tiefe Arbeit (Phase 3).** Der geniale Twist hier: das lebendige Feld IST der erste Schritt — wenn die DSL ins Feld schreibt (statt nur Gesten zu feuern), nähert sich „Welt = Programm". |
-| **Emotion einweg + Felder eingefroren/parallel** | §3.2/§3.3 oben.                                                                                                                                                                                                                                                                                                                             | **Kern der Feld-Phase.** Der eigentliche „lebendige Welt"-Inhalt.                                                                                                                          |
-| **Nexus blind, KI stumm**                        | §3.1/§3.4 oben.                                                                                                                                                                                                                                                                                                                             | **Feld-Phase (c)/(d).**                                                                                                                                                                    |
-| **Tote/parallele Infra**                         | GPU-Density-WGSL (~500 Z., abgeklemmt seit V14.6, 3-Mirror-Wartung), V10.0-e-Hot-Swap-Reste, `mxFractal` (Lint-Warnung Z9978).                                                                                                                                                                                                              | **Heilung-Phase.** Entfernen oder bewusst besitzen.                                                                                                                                        |
-| **Fundament-Lücken**                             | ±1024-Hydrosphäre-Region (ferne Welt trocken), Höhen-Clamp (V14.6, Berge gedeckelt statt adaptives Chunk-Band), frame-sauberer Sub-Region-Carve (6× verschoben).                                                                                                                                                                            | **Parallel/danach.** Roadmap §1.1 (V18) + Backlog (g).                                                                                                                                     |
+Die Vision ist verkörpert; was bleibt, ist VERTIEFUNG — pro Achse die nächste Tiefe. Die
+geordnete Reihenfolge (Fundament vor Seele) steht in `docs/roadmap.md` „⭐ DER PLAN
+VORWÄRTS"; hier der Vektor, gruppiert nach Dimension:
 
-Der Code ist sonst **gut** (die Giganten — `constructor` 956 Z., `_defaultBlueprints`
-985 Z. — sind Daten-Konstruktion, kein Logik-Sumpf; Scratch-Pools, Spatial-Hash,
-Worker-Determinismus sind sauber). Die Haupt-Reibung ist NICHT die Code-Qualität,
-sondern die **konzeptionelle Lücke** (Feld lebendig machen) + die **toten Glieder**
-(Werkstatt, GPU-Density).
+**Der Körper (Fundament zuerst — V9.51-Disziplin):**
+
+- **Echte Fluid-Dynamik** (der gewählte Wasser-Weg, Schöpfer 06.06.). Heute ist Wasser
+  ein statisches 2.5-D-Höhenfeld + reaktive Zell-Füllung — es fliesst NIE nach. Der Vektor:
+  ein zellbasierter Fluss-Automat über `entry.waterCells` (Wasser fliesst nach wie
+  Minecraft; ein Carve daneben → das Wasser strömt sichtbar hinein). Eigener Plan-Doc,
+  Browser-Loop, Merge pro Schritt (`docs/roadmap.md` Phase 1.5 + `wasser-render-…-plan.md`).
+- Fundament-Reste: H3-Seen/Flüsse jenseits ±1024 m · G3 Höhleneingänge/Canyons · die
+  LOD-Kaskade vollenden (`docs/lod-kaskade-plan.md` U2/U4/U5/U6).
+
+**Die Seele (wenn das Fundament trägt):**
+
+- **Phase E — Bedrohung/Furcht** (`docs/kampf-plan.md`). Der Emotion-Kern hat den
+  W5-Affekt (Furcht/Triumph), aber NOCH KEINEN Konsumenten für aggressive Kreaturen — sie
+  fliehen, schlagen nie zurück (explizit als Phase E markiert). Das ist der LETZTE fehlende
+  Konsument des Affekts und die game-design-schwerste Phase.
+- **Emotion → Regel-EMERGENZ.** Die einzelnen Kopplungen (`sorrow→rainy` etc.) sind noch
+  hand-codiert. Die Weltregeln-DSL (§4.5) macht sie ausdrückbar — der Vektor: sie als
+  emergente, evolvierbare Regeln neu fassen, nicht als feste Trigger.
+- **Die anderen Feld-Achsen schreibbar — und der Spieler als Pfleger.** Heute schreiben
+  Geburt/Nexus/Kreatur ins lebendig-Overlay; der Vektor: **DU trägst Leben** (Spieler-Pflege
+  als zweiter Schreib-Pfad = echte Co-Schöpfung). glut/dichte/magieleitung bleiben frozen,
+  bis die Vision sie verlangt (dann via `_depositLife`-Muster, kein Parallelpfad).
+- **Mana-Symmetrie:** `magieleitung` → ein Äther/Mana, die zweite Ausdauer-Achse (Magie
+  zahlt heute nichts; der Kampf-Bogen zahlt schon Stamina).
+- **Die KI als vollwertige Co-Schöpferin.** Das LLM schreibt schon Regeln (`source:"llm"`),
+  aber opt-in. Der Vektor: die KI tiefer in den Kreis weben (sie liest das gewertete Feld,
+  schlägt Regeln vor, lernt aus dem δ) — die Symbiose-Hälfte von Pfeiler 1 vollenden.
+- **W18 — in fremden Welten LEBEN** (`docs/world-portal-w18-plan.md`): Ko-Präsenz-Injektion
+  in Single-Player-Fremdwelten — der nächste große Vision-Bogen jenseits des eigenen Kerns.
+
+---
+
+## 7. Die ehrlichen offenen Flecken (gemessen)
+
+| Fleck | Was | Tiefe / Status |
+| --- | --- | --- |
+| **Wasser ist statisch (kein Nachfliessen)** | Eine Fläche auf dem Spiegel-Feld `L` + reaktive Zell-Füllung; keine Fluid-Dynamik. Der EINE offene Körper-Vektor. | **Der gewählte nächste große Bogen** (A, Schöpfer 06.06.). Plan: `roadmap.md` Phase 1.5 + `wasser-render-architektur-plan.md`. |
+| **Phase E — Bedrohung/Furcht fehlt** | Kreaturen fliehen, schlagen nie zurück. Der Emotion-Kern hat den Affekt-Hook (W5), aber keinen Aggressions-Konsumenten. | **Der tiefste offene SEELEN-Fleck.** Plan: `kampf-plan.md`. Game-design-schwerste Phase. |
+| **Emotion-Kopplungen noch hand-codiert** | `sorrow→rainy` etc. sind feste Trigger, nicht aus der Weltregeln-DSL emergent. | **Vertiefung.** Das Substrat (die `rule`-Op) macht es ausdrückbar — der Schritt ist sie umzuschreiben. |
+| **Die anderen Feld-Achsen frozen + Spieler pflegt nicht** | glut/dichte/magie sind absichtlich frozen; der Spieler hat noch keinen Leben-Schreib-Pfad. | **Vertiefung.** Spieler-Pflege = Co-Schöpfung. Die geologischen Achsen nur, wenn die Vision sie braucht. |
+| **Die KI ist opt-in, nicht Kern** | Das LLM schreibt Regeln, aber als Option, nicht als gewobener Co-Schöpfer. | **Vertiefung** (Pfeiler 1 zu Ende). Die Schreib-Seite STEHT; die Tiefe der Symbiose fehlt. |
+| **Fundament-Reste** | H3-Seen/Flüsse jenseits ±1024 m, G3-Canyons, LOD-Kaskade U2/U4/U5/U6. | **Parallel/davor.** `roadmap.md` Phase 2, `lod-kaskade-plan.md`. |
+
+Der Code ist sonst **gut + tief**: das Feld lebt (lesen·schreiben·werten), der Emotion-Kern
+ist dimensional, die Resonanz ist vereinheitlicht, die Weltregeln tragen Mensch·Nexus·KI.
+Die toten Glieder von V17.71 sind GESCHNITTEN (GPU-Density-WGSL ~500 Z. raus V17.20,
+`movementWorker` raus, `mxFractal` weg, Hot-Swap-Reste entfernt — der Stamm ist sauber).
+Die Haupt-Reibung ist nicht mehr die konzeptionelle Lücke (die ist geschlossen), sondern
+die VERTIEFUNG der gebauten Systeme + der eine offene Körper-Vektor (Fluid-Dynamik).
 
 ---
 
@@ -259,32 +341,35 @@ sondern die **konzeptionelle Lücke** (Feld lebendig machen) + die **toten Glied
 2. **Jede „lebendige Welt"-Behauptung ist ein FELD-READ, kein neues `_tickX`.** Wenn du
    eine Emotion-/Resonanz-/Cluster-Wirkung baust und sie ist eine neue hand-codierte
    Kopplung statt eines Reads aus dem einen Feld → STOP, das ist das Pflaster, das wir
-   gerade abschaffen. Verdichte, baue nie parallel (V17.9-Lehre, eine Ebene höher).
-3. **Kein Flag, kein Sonderfall, kein neues Modul.** Schärfe die emergente Regel
-   (V17.11-Lehre). Das Feld ist eine Methode auf dem einen Stamm (Heilige Lektion).
-4. **Reihenfolge halten:** erst Heilung (Werkstatt, tote Infra), dann das Feld, dann
-   das Fundament + die DSL-Tiefe. Performance + Determinismus bleiben heilig.
-5. **Miss, rate nicht** (die durchgängige Projekt-Lehre): Reproducer mit Output-Lesen,
-   vorher/nachher messen, der Schöpfer-Browser ist die visuelle Wahrheit.
-6. **Harmonie statt Revert** (V17.23-Schöpfer-Lehre): wenn das Feld eine Sache
-   beeinflusst, die schon eine andere Kraft formt (Emotion → Wetter, Tag-Nacht →
-   Himmel), und ein Test bricht — nimm das Feld NICHT wieder heraus (das ist
-   oberflächlich). Die Wurzel ist fehlende Harmonie: heile in eine **nachgebende
-   Hierarchie** — der intentionale Wille (Spieler) FÜHRT, das ambiente Feld WEICHT
-   wo der Wille stark ist (×`(1−emoSignal)`) + FÜLLT wo er schweigt; nie
-   überschreiben, immer verschmelzen, immer FADEN (kein Snap). Frage bei jeder
-   Feld-Kraft: harmonisch oder abrupt? überschreibt sie oder verschmilzt sie?
-7. **Ein Feedback-Loop über ein FROZEN Feld ist KEIN Loop** (V17.27-Schöpfer-Lehre):
-   wenn du eine „die-Welt-reagiert/heilt-sich"-Schleife baust, frag — schreibt der Akt
-   in dasselbe Feld zurück, das die Entscheidung liest? Wenn nicht (`at_field_need` las
-   `auraAt.lebendig`, das aus dem frozen `worldFieldAt` kam, das nie geschrieben wurde),
-   ist es nur eine wiederholte Messung eines unveränderlichen Feldes = ein hardcodierter
-   Vektor, kein selbstlernendes System. Die Heilung ist eine **Schreib-Seite**: ein
-   Overlay über dem frozen Kern (`auraAt = min(1, frozen + overlay)`, nie überschreiben),
-   in das NUR intentionale Akte schreiben (die Geburt via `spawn_creature`), NICHT die
-   FOLGEN des Feldes (ambiente Fauna → sonst positives Feedback-Runaway); lazy-Decay
-   (kein per-Frame-Sweep) + Sättigung (kein rich-get-richer). Das Feld bleibt frozen-Kern
-    - mutables Overlay (V12.0-perf.b-Trennung) — der frozen Teil cachebar/worldgen, das
-      Overlay reaktiv (nicht persistiert, kein Worker-Mirror, V9.67). Wer eine neue Welt-
-      Achse schreibbar macht (glut/dichte/magie, Spieler-Pflege), erweitert `_depositLife`
-      um die Achse — baut KEINEN Parallelpfad (V17.9).
+   abgeschafft haben. Verdichte, baue nie parallel (V17.9, eine Ebene höher).
+3. **Verifiziere KONSUM, nicht Existenz** (V17.31, der Passagier-Trugschluss): eine
+   Feld-Achse/ein Uniform/ein Hook ist erst real, wenn ein ECHTER Leser sie nutzt UND
+   die Welt sich beobachtbar ändert — nicht, wenn ein Test nur prüft, dass sie „da ist".
+   Die `auraAt.emotion`-Achse war einst ein toter Passagier; der Welt-Tint las sie nie.
+4. **Ein Feedback-Loop über ein FROZEN Feld ist KEIN Loop** (V17.27): schreibt der Akt in
+   dasselbe Feld zurück, das die Entscheidung liest? Wenn nicht, ist es nur eine wiederholte
+   Messung eines unveränderlichen Feldes = ein hardcodierter Vektor. Die Heilung ist eine
+   Schreib-Seite (Overlay über dem frozen Kern, nur intentionale Akte, lazy-Decay,
+   Sättigung). Wer eine neue Achse schreibbar macht, erweitert `_depositLife` — kein
+   Parallelpfad.
+5. **Werten ist Vorhersagefehler, kein absoluter Wert** (V17.42–.50): ein neuer „Wert"
+   (Fitness, Belohnung, Gefühl) gehört gegen eine gleitende Baseline gemessen (`δ = x −
+   baseline`), lokal attribuiert, und gegen Gaming gehärtet (miss die SITUATION, nicht die
+   gestempelte Emotion). Die Gewöhnung soll umsonst herausfallen.
+6. **Harmonie statt Revert** (V17.23): wenn das Feld eine Sache beeinflusst, die schon eine
+   andere Kraft formt, und ein Test bricht — nimm das Feld NICHT heraus. Heile in eine
+   nachgebende Hierarchie: der intentionale Wille (Spieler) FÜHRT, das ambiente Feld WEICHT
+   wo der Wille stark ist (×`(1−emoSignal)`) + FÜLLT wo er schweigt. Nie überschreiben,
+   immer verschmelzen, immer FADEN (kein Snap).
+7. **Kein Flag, kein Sonderfall, kein neues Modul** — schärfe die emergente Regel (V17.11).
+   Das Feld ist eine Methode auf dem EINEN Stamm. Die verfeinerte Heilige Lektion (06.06.):
+   die Sünde von 2025 war Kopplung ohne Kohäsion, nicht „mehr als eine Datei" — ein neuer
+   File NUR an einer echten Laufzeit-/Sicherheits-/stabilen-Naht-Grenze (der Drei-JA-Test
+   im `CLAUDE.md`-Kopf). Ein „LivingWorldManager"-Modul wäre die Sünde.
+8. **Miss, rate nicht** — und die VISUELLE Wahrheit ist der Schöpfer-Browser (Render/
+   Wasser/Hand-Optik sind GPU-untreu headless: die Geometrie rastert treu, die
+   Shader-Feinheiten nicht). Bei pixel-blinder Arbeit: erst der Browser, dann die nächste
+   Welle; ein bestätigter Bogen = ein Merge (die Wasser-Spirale lehrte das ZWEIMAL).
+9. **Keine halben Schritte** (V17.30): ist der Plan klar + das Gap benannt → baue das
+   GANZE Subsystem an die Wurzel, mit voller Verifikation, nicht ein Pflaster nach dem
+   nächsten. Der Mut kommt aus der Verifikation, nicht aus der Kleinheit.
