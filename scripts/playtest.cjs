@@ -20037,15 +20037,23 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             // im surface-Modus messbar (der iso-Modus baut die alte Zell-Iso).
             if (sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-surface") {
                 const sp = sampleMesh.geometry.attributes.position;
-                let mx = 0;
+                const ad = sampleMesh.geometry.attributes.aDepth;
+                // V18.25 — der Wasser-KÖRPER (aDepth ≥ 1 Zelle = 1.8 m echtes Wasser) sitzt
+                // FLACH auf L; die Über-Deckung (aDepth→0, Rim/Ribbon jenseits des Flood-Körpers)
+                // NEIGT sich auf das Terrain UNTER L (der Boden-Auslauf, V18.25) → darf < L sein,
+                // aber NIE über L (`min(L,…)`-Garantie, kein Bank-Klettern/See-Regression).
+                let mx = 0; // |Y−L| über das echte Wasser → muss ~0 (flach auf L)
+                let mxAbove = 0; // max(Y−L) über ALLE Vertices → muss ~0 (nie über L)
                 for (let v = 0; v < sp.count; v++) {
                     const L = r._atlasWaterLevelAt(sp.getX(v), sp.getZ(v), -Infinity);
-                    if (isFinite(L)) {
-                        const er = Math.abs(sp.getY(v) - L);
-                        if (er > mx) mx = er;
-                    }
+                    if (!isFinite(L)) continue;
+                    const dy = sp.getY(v) - L;
+                    if (dy > mxAbove) mxAbove = dy;
+                    const depthM = ad ? ad.getX(v) : 2;
+                    if (depthM >= 1.8 && Math.abs(dy) > mx) mx = Math.abs(dy);
                 }
                 out.surfaceMaxLErr = mx;
+                out.surfaceMaxAboveL = mxAbove;
             } else {
                 out.surfaceMaxLErr = "skip — iso-Modus (A/B)";
             }
@@ -20108,9 +20116,9 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         );
         if (typeof res.surfaceMaxLErr === "number") {
             check(
-                "V18.6 U-W4: Wasser-FLÄCHE sitzt EXAKT auf dem Spiegel L (max|vertexY−L| ≤ 0.05 m, Granularität geheilt)",
-                res.surfaceMaxLErr <= 0.05,
-                `maxErr=${res.surfaceMaxLErr}`
+                "V18.25 U-W4: Wasser-KÖRPER (aDepth≥1 Zelle) sitzt flach auf L + KEIN Vertex über L (Boden-Auslauf senkt die Über-Deckung darunter)",
+                res.surfaceMaxLErr <= 0.05 && res.surfaceMaxAboveL <= 0.05,
+                `maxErr(Körper)=${res.surfaceMaxLErr}, maxÜberL=${res.surfaceMaxAboveL}`
             );
         }
         if (res.bergseeCheckable) {

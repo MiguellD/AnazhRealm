@@ -302,17 +302,18 @@ class AnazhRealm {
                 triplanar: 2.0,
                 colorVar: 1.5,
                 fogDistance: 5.31, // Slider 177 % (= /3 × 100)
-                waterCull: 0.0025,
+                waterCull: 0.0,
                 // V18.6 U-W4 — die FINALE WASSER-FORM: Wasser ist eine FLÄCHE auf
                 // dem Spiegel L (Höhenfeld, tiefen-versöhnt), nicht die Zell-Iso.
                 // `iso` ist der A/B-Schalter auf die alte Zell-Iso (Browser-Vergleich
                 // während des Sign-offs; nach dem Sign-off entfernbar).
                 waterRenderMode: "surface", // "surface" (Fläche-auf-L) | "iso" (alte Zell-Iso)
-                waterShoreWidth: 0.0045, // V18.17 — Ufer-Alpha-Saum in VIEWPORT-Lineardepth (gegen waterThick, V18.14-Ufer); kleiner = schärfer
-                waterDepthRange: 5.0, // V18.15 — Meter bis volle Tiefen-Farbe (gegen aDepth); kleiner = schneller tief
-                waterDepthFoam: 1.2, // V18.14 M1 — Schaum nur bis dieser ECHTEN Tiefe (m); kleiner = weniger Fluss-Schaum
-                waterLakeRipple: 0.2, // V18.17 Phase 3 — See-Wellen-Floor SICHTBAR (0 = flach, 0.2 sanfte Wellen, 1 = wie Ozean)
-                waterfallSteep: 1.0, // V18.14 M3 — Wasserfall-Plane nur ab dieser Terrain-Steilheit (Drop/Lauf); grösser = nur echte Wände
+                // V18.25 — Schöpfer-getunte Wasser-Werte als Default übernommen (Browser-Sign-off 06.06.).
+                waterShoreWidth: 0.0305, // Ufer-Alpha-Saum in VIEWPORT-Lineardepth (gegen waterThick, V18.14-Ufer); kleiner = schärfer
+                waterDepthRange: 10.9, // Meter bis volle Tiefen-Farbe (gegen aDepth); kleiner = schneller tief
+                waterDepthFoam: 5.0, // V18.14 M1 — Schaum nur bis dieser ECHTEN Tiefe (m); kleiner = weniger Fluss-Schaum
+                waterLakeRipple: 0.65, // V18.17 Phase 3 — See-Wellen-Floor SICHTBAR (0 = flach, 1 = wie Ozean)
+                waterfallSteep: 4.0, // V18.14 M3 — Wasserfall-Plane nur ab dieser Terrain-Steilheit (Drop/Lauf); grösser = nur echte Wände
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
                 shadowRange: 300, // Frustum-Halbbreite m (kleiner = schärfer)
@@ -19531,6 +19532,10 @@ class AnazhRealm {
         const step0 = cfg0.step;
         const dimY0 = cfg0.dimY;
         const dq0 = dim0 * dim0;
+        // V18.25 — der vertikale Zell-Ursprung (LOD-INVARIANT: floorDrop=90 für ALLE LODs →
+        // `oy0 = base − 90` ist überall gleich → das Terrain-Y aus den Zellen ist naht-frei
+        // über Chunk-Grenzen, auch bei LOD-Mischung). Für `colTerrainY` (der Boden-Auslauf).
+        const oy0 = (this.state.terrainBaseHeight || 0) - cfg0.floorDrop;
         // V18.16 — KEINE Zell-Maske auf der Geometrie (der Profi-Weg, V18.10 bestätigt):
         // die Fläche bleibt grosszügig auf der `L`-Domäne (~16 m über die Uferlinie), die
         // SICHTBARKEIT trägt der Tiefen-Shader PRO PIXEL aus der echten Meter-Tiefe `aDepth`
@@ -19584,6 +19589,49 @@ class AnazhRealm {
             for (let j = 0; j < dimY0; j++) if (src[base + j * dq0] === STATE.WATER) wc++;
             return wc * step0;
         };
+        // V18.25 — die OBERSTE-SOLID-Höhe (= das gerenderte Voxel-Terrain) einer LOD0-Spalte,
+        // NACHBAR-LESEND am Chunk-Rand (wie `colDepthAt`, mit dem LOD-invarianten `oy0` → naht-
+        // frei). Vom Spiegel L abwärts scannen (das Terrain unter dem Schwebe-Wasser liegt nur
+        // wenige Zellen tiefer → billig). Speist den Boden-Auslauf: die L-Fläche neigt sich dort,
+        // wo es KEIN echtes Wasser gibt (aDepth→0), auf knapp unter dieses Terrain.
+        const colTerrainY = (ci, ck, L) => {
+            if (!cells) return -Infinity;
+            let ncx = cx,
+                ncz = cz,
+                li = ci,
+                lk = ck;
+            if (ci >= dim0) {
+                ncx = cx + 1;
+                li = ci - dim0;
+            } else if (ci < 0) {
+                ncx = cx - 1;
+                li = ci + dim0;
+            }
+            if (ck >= dim0) {
+                ncz = cz + 1;
+                lk = ck - dim0;
+            } else if (ck < 0) {
+                ncz = cz - 1;
+                lk = ck + dim0;
+            }
+            let src = cells;
+            if (ncx !== cx || ncz !== cz) {
+                const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
+                if (nb && nb.waterCells) src = nb.waterCells;
+                else {
+                    li = ci < 0 ? 0 : ci >= dim0 ? dim0 - 1 : ci;
+                    lk = ck < 0 ? 0 : ck >= dim0 ? dim0 - 1 : ck;
+                    src = cells;
+                }
+            }
+            const b = li + lk * dim0;
+            let jStart = Math.floor((L - oy0) / step0);
+            if (jStart >= dimY0) jStart = dimY0 - 1;
+            for (let j = jStart; j >= 0; j--) {
+                if (src[b + j * dq0] === STATE.SOLID) return oy0 + (j + 1) * step0;
+            }
+            return -Infinity;
+        };
         const vmap = new Int32Array(NV * NV).fill(-1);
         const addVert = (i, k) => {
             const vi = i + k * NV;
@@ -19591,18 +19639,44 @@ class AnazhRealm {
             const wx = ox + i * step;
             const wz = oz + k * step;
             const L = Ld[vi]; // V18.22 — die dilatierte Domäne (Original + 1-Zell-Rand)
+            // aDepth — die ECHTE Wassertiefe (Anzahl WATER-Zellen × step) aus dem Flood-
+            // Feld; der Shader schäumt nur, wo sie klein ist (die echte Uferlinie), M1.
+            // V18.18 — `colDepthAt` liest am Chunk-Rand die NACHBAR-Zelle (kein aDepth=0-
+            // Streifen mehr = die geheilte Fluss-Chunknaht; s.o.).
+            const ci0 = Math.floor((wx - ox) / step0);
+            const ck0 = Math.floor((wz - oz) / step0);
+            const depthM = colDepthAt(ci0, ck0);
+            // V18.25 — der Wasser-Rand LÄUFT IN DEN BODEN AUS (Schöpfer „wie Minecraft,
+            // Wasserauslauf; das Netz müsste am Rand in den Boden auslaufen, dann stimmt der
+            // Shader"). Wo KEINE echten Wasser-Zellen sind (aDepth→0 = die L-Domänen-Über-
+            // Deckung: der 16-m-See-Rim / das Fluss-Ribbon jenseits des Flood-Körpers), schwebt
+            // die flache L-Fläche über tiefer dippendem Voxel-Terrain (3D-Roughness) → "dick"→
+            // opak→der Tiefen-Shader fadet sie NICHT → die SÄGEZÄHNE (GEMESSEN `diag-water-float`:
+            // ein Schwebe-Band bis p90 4 / max 15 Zellen über tiefem Terrain). Statt flach bei L
+            // zu enden, NEIGT sich die Fläche dort auf knapp UNTER das Voxel-Terrain (`colTerrainY`)
+            // → das Terrain okkludiert die Über-Deckung pro Pixel (kein Schweben, kein Sägezahn —
+            // der "Wasserauslauf in den Boden"). Der echte Wasser-Körper (aDepth ≥ 1 Zelle = 1.8 m)
+            // bleibt FLACH bei L (`Math.min(L, …)` → KEINE See-Regression, KEIN Bank-Klettern);
+            // der smoothstep über genau 1 Zelle ist die GENEIGTE Uferkante, KEINE harte Geometrie-
+            // Maske (die V13.4-Sägezahn-Sünde). Naht-frei: `colTerrainY` liest dieselbe Nachbar-
+            // Zelle wie die Gegenseite (oy0 LOD-invariant).
+            let surfY = L;
+            if (depthM < step0) {
+                const tY = colTerrainY(ci0, ck0, L);
+                if (tY > -Infinity && tY < L) {
+                    const t = depthM / step0; // 0 am Rand … 1 bei 1 Wasser-Zelle
+                    const f = t * t * (3 - 2 * t); // smoothstep
+                    surfY = (tY - 1.0) * (1 - f) + L * f; // 1 m unter Terrain → okkludiert
+                    if (surfY > L) surfY = L;
+                }
+            }
             const id = positions.length / 3;
-            positions.push(wx, L, wz);
+            positions.push(wx, surfY, wz);
             // aWave: 1 = Ozean (Spiegel ≈ Meereshöhe) → Gerstner-Wellen; 0 = See/Fluss
             // (ruhig). V18.14 — WEICHE Rampe statt hartem 0/1-Flip → die Fluss↔Ozean-
             // MÜNDUNG fadet, statt zu stossen (M2: der alte `< 1.5`-Schalter war die
             // harsche Kante; gemessen 11 % der Fluss-Punkte trugen fälschlich Ozean-Wellen).
             aWave.push(Math.max(0, Math.min(1, 1 - (Math.abs(L - waterLevel) - 0.8) / 2.0)));
-            // aDepth — die ECHTE Wassertiefe (Anzahl WATER-Zellen × step) aus dem Flood-
-            // Feld; der Shader schäumt nur, wo sie klein ist (die echte Uferlinie), M1.
-            // V18.18 — `colDepthAt` liest am Chunk-Rand die NACHBAR-Zelle (kein aDepth=0-
-            // Streifen mehr = die geheilte Fluss-Chunknaht; s.o.).
-            const depthM = colDepthAt(Math.floor((wx - ox) / step0), Math.floor((wz - oz) / step0));
             aDepth.push(depthM);
             // aFlow — die Fluss-Strömung GEGLÄTTET (Schöpfer-Naht-Befund „an der
             // Chunknaht plötzlich quer zur Strömung + anders skaliert"): `_hydroRiverAt`
@@ -47815,7 +47889,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.24.0";
+AnazhRealm.VERSION = "18.25.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
