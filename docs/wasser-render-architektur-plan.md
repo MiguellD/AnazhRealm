@@ -152,9 +152,19 @@ Den Stapel auf den letzten browser-bestätigten guten Stand (V18.6, See-Ufer ✅
 DEN nach `main` mergen, und von dort EINEN Weg (A oder B) sauber + browser-validiert + mit
 Merge-Rhythmus gehen. **Das bricht die Spirale zuerst** (Regel #0), bevor wieder gebaut wird.
 
-**Empfehlung zur Reihenfolge (nicht zur Lösung — die wählt der Schöpfer):** C zuerst (Spirale
-brechen, sauberer Boden), dann die Grundsatz-Entscheidung A vs B mit dem Schöpfer, dann EIN Weg
-mit Browser-Loop + Merge pro bestätigtem Schritt.
+### ⭐ DIE ENTSCHEIDUNG (Schöpfer, 06.06.2026): **„C, und A in die Roadmap."**
+
+- **JETZT = C:** die Spirale brechen — den Stapel auf einen sauberen, browser-bestätigten Stand
+  bringen + nach `main` mergen, damit `main` wieder die Wahrheit ist (kein 41-Commit-Stapel mehr).
+- **DER WEG VORWÄRTS = A (echte Fluid-Dynamik):** das ist das Ziel des Wasser-Bogens (Wasser
+  fliesst nach wie Minecraft) — in die Roadmap als der geplante grosse Wasser-Bogen aufgenommen,
+  NACH dem Aufräumen, mit Browser-Loop + Merge pro Schritt. **B ist NICHT der Weg** (es löst die
+  Dynamik nicht); B-Ideen (dedizierte Wasserfall-Geometrie, das Mesh-Falten heilen) können in A
+  einfliessen, wenn das Fluid-Mesh gebaut wird.
+- **Offener C-Detail-Entscheid (Schöpfer):** welcher genaue Stand ist der „saubere Boden"? V18.6
+  (der klar bestätigte „wie ein Riese"-See-Ufer-Stand, verliert aber die V18.18–.23-Naht-Fixes,
+  die der Schöpfer auch lobte) ODER ein späterer Stand bis ~V18.23 (mit den Naht-Fixes, vor den
+  abgelehnten Auslauf/Querschnitt-Pflastern V18.24–.31). Vor dem Merge zu klären.
 
 ---
 

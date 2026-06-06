@@ -24,22 +24,20 @@ Diese Lehre stand schon mehrfach in den Gotchas (V10.0-g.r, V13.x, V17.x) UND in
 (V18.10) — und wurde TROTZDEM fortgesetzt. Der zweite Verstoss ist der Beweis, dass „benennen"
 nicht reicht: die Regel ist jetzt absolut. Bei Wasser/Render: erst der Browser, dann die Welle.
 
-### Phase 0 — DEN VOLLEN BOGEN VERSTEHEN + DIE GRUNDSATZ-ENTSCHEIDUNG (jetzt, kein Code)
+### Phase 0 — DIE ENTSCHEIDUNG IST GEFALLEN (Schöpfer 06.06.2026: „C, und A in die Roadmap")
 
-Der Schöpfer-Befund hat DREI Ebenen (Details in `wasser-render-architektur-plan.md` §4), die NICHT
-vermischt werden dürfen:
-- **Ebene A — KEINE DYNAMIK:** Wasser fliesst nicht nach (Minecraft). Architektur-Frage, kein Tweak.
-- **Ebene B — DAS NETZ FALTET:** die „Fläche auf `L`" gibt an komplexen Stellen (Wasserfall-Auslauf,
-  Mündung, umgegrabener Kanal) ein gefaltetes/kantiges Mesh-Gewirr (Screenshots) + Nähte; die
-  V18.25/.30/.31-Auslauf-Pflaster verschlimmerten es.
-- **Ebene C — DIE SPIRALE:** 41 Commits, nie gemergt, nie bestätigt.
+Der Schöpfer-Befund hatte DREI Ebenen (Details in `wasser-render-architektur-plan.md` §4): **A** keine
+Dynamik (Architektur) · **B** das Netz faltet an komplexen Stellen (die V18.25/.30/.31-Auslauf-Pflaster
+verschlimmerten es) · **C** die Spirale (41 Commits, nie gemergt). **Der Schöpfer hat entschieden:**
 
-**Die GRUNDSATZ-ENTSCHEIDUNG gehört dem Schöpfer** (drei echte Wege, kein Pflaster — `wasser-render-
-architektur-plan.md` §6): **(A)** echte Fluid-Dynamik (zellulärer Automat, der Minecraft-Wunsch,
-grösster Weg) · **(B)** das Mesh fundamental sauber (statisches Modell richtig gebaut + dedizierte
-Wasserfall-Assets, BotW/Genshin) · **(C)** zuerst auf V18.6 (See-Ufer ✅) mergen, die Spirale
-brechen, DANN A oder B. Empfohlene Reihenfolge: **C → Grundsatz-Entscheidung A/B → ein Weg mit
-Browser-Loop + Merge pro Schritt.**
+- **JETZT = C (Spirale brechen):** den Stapel auf einen sauberen, browser-bestätigten Stand bringen +
+  nach `main` mergen → `main` ist wieder die Wahrheit (kein 41-Commit-Stapel). **Offener Detail-Entscheid:**
+  welcher Stand (V18.6 „wie ein Riese", verliert die V18.18–.23-Naht-Fixes · ODER ~V18.23 mit den
+  Naht-Fixes, vor den abgelehnten Auslauf-Pflastern) — vor dem Merge mit dem Schöpfer zu klären.
+- **DER WEG VORWÄRTS = A (echte Fluid-Dynamik), in die Roadmap aufgenommen** (Phase 1.5 unten): ein
+  zellbasierter Wasser-Automat (Wasser fliesst nach wie Minecraft) — das Ziel des Wasser-Bogens, NACH
+  dem Aufräumen, mit Browser-Loop + Merge pro Schritt. **B ist NICHT der Weg** (löst die Dynamik nicht);
+  B-Ideen (dedizierte Wasserfall-Geometrie, das Mesh-Falten heilen) fliessen in A ein, wo nötig.
 
 ### Phase 1 — DEN STAPEL SCHLIESSEN (sobald die Richtung steht)
 
@@ -55,6 +53,21 @@ Der 41-Commit-Stapel ist die größte Schuld. `main` = V17.116; der Branch = V18
    Wänden) · E1/E2 (Sicht-Ring 12) · J4 (Facetten) · S9 (Gerät in der Hand) · A2 (Crafting-Fluss).
 3. **Was bestätigt ist → ein PR nach `main`. Was wackelt → gezielt mit dem Auge schließen.**
    → Ergebnis: `main` ist wieder die Wahrheit, der Stapel ist Geschichte, die Spirale gebrochen.
+
+### Phase 1.5 — A: ECHTE FLUID-DYNAMIK (der gewählte Wasser-Weg, Schöpfer 06.06.2026)
+
+Nach dem sauberen `main`: der grosse Wasser-Bogen, der die WURZEL heilt (Wasser fliesst NIE nach —
+ein statisches Höhenfeld `L`). **Ziel: Wasser fliesst dynamisch nach wie Minecraft.** Ein zellbasierter
+Fluss-Automat über dem bestehenden Zell-Feld (`entry.waterCells`): pro Wasser-Zelle ein Level, das
+sich pro Tick zu Nachbarn ausbreitet (bergab-Priorität, sucht sein Niveau, fällt nach). Ein Carve
+neben Wasser → das Wasser strömt sichtbar hinein; der Render speist sich aus den Fluid-Zellen (kein
+statisches `L`-Höhenfeld mehr — das löst auch das Mesh-Falten von Ebene B mit). **Die Architektur-
+Fragen, die ZUERST zu klären sind (gross, eigener Plan):** Tick-Budget/Performance auf streamendem
+Open-World-Voxel · Determinismus für Multi-User-Welt-Seeds · die Grenze frozen-Worldgen ↔ Live-Fluid
+(was bleibt das Drainage-Netz, was wird dynamisch) · Persistenz (überlebt der Fluss-Zustand den Reload?).
+Vorbilder: Minecraft (Fluid-Level 0–7, zellulärer Automat) · Terraria · Noita · GDC „Photon Water".
+**Disziplin: ein eigener Plan-Doc, browser-validiert, Merge pro Schritt — KEIN 30-Wellen-Stapel mehr.**
+B-Ideen (dedizierte Wasserfall-Geometrie, das Mesh-Falten heilen) fliessen hier ein, wo nötig.
 
 ### Phase 2 — DAS FUNDAMENT SAUBER SCHLIESSEN (Reihenfolge: erst sauber, DANN LOD)
 
