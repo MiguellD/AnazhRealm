@@ -19441,8 +19441,24 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
-        const lod = entry.lod || 0;
-        const { dim, step, span } = this._voxelChunkConfig(lod);
+        // V18.22 — die Wasser-FLÄCHE lebt auf EINER LOD-Skala (LOD0), GENAU wie die
+        // Zellen (V9.93). Der Schöpfer-Befund: „du hast die Verbindung des Flusses
+        // beachtet, aber nicht wenn er GENAU AUF DER NAHT läuft — dann entstehen
+        // immer Sägezähne; Minecraft hat das längst gelöst." GEMESSEN (scripts/
+        // diag-water-lod-seam.cjs): die Surface-Chunks streamten auf GEMISCHTEN LODs
+        // (LOD0 neben LOD1) → die feineren LOD0-Vertices an der Naht fielen ZWISCHEN
+        // die gröberen LOD1-Vertices = ein T-junction-Riss = der „chunk transition"-
+        // Sägezahn. Das `L`-Höhenfeld ist zwar eine pure (x,z)-Funktion (an GETEILTEN
+        // Vertices naht-frei), aber bei unterschiedlicher Auflösung werden die Vertices
+        // NICHT geteilt → die gröbere Kante interpoliert linear unter/über den feineren
+        // L-Wert → der Riss. Die alte Annahme „die Fläche reitet die Terrain-LOD
+        // gefahrlos" war falsch; die V9.93-Lehre („naht-freie Schicht lebt auf EINER
+        // LOD-Skala") gilt für die Fläche GENAUSO wie für die Zellen. Der span ist
+        // LOD-invariant (dim·step = 43.2 m) → cx·span bleibt gleich, der Chunk kachelt
+        // korrekt. Render-only (main-only Surface-Mesh, kein Worker/Determinismus). Die
+        // aDepth/Cells sind ohnehin schon LOD0 (`colDepthAt`/`cfg0`) → jetzt teilt die
+        // Geometrie ihre Skala = vertex-für-vertex geteilte Naht über JEDE Chunk-Grenze.
+        const { dim, step, span } = this._voxelChunkConfig(0);
         const ox = cx * span;
         const oz = cz * span;
         const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
@@ -47760,7 +47776,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.21.0";
+AnazhRealm.VERSION = "18.22.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
