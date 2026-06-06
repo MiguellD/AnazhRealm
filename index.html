@@ -613,6 +613,35 @@
                 max-height: 60vh;
                 overflow-y: auto;
             }
+            /* Charakter-Spalte (UI-Putz: das "Ich" — das migrierte Spieler-Menü). */
+            .inventory-col-character {
+                width: 300px;
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+            .inventory-col-items {
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+            .inventory-col-title {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--brass-1);
+                margin: 0 0 8px 0;
+                border-bottom: 1px solid var(--brass-3);
+                padding-bottom: 4px;
+            }
+            .inventory-col-character .section {
+                margin-bottom: 12px;
+            }
+            .inventory-col-character h4 {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                color: var(--parch-ink);
+                margin: 0 0 5px 0;
+            }
             .inventory-equip {
                 display: flex;
                 gap: 8px;
@@ -4699,28 +4728,61 @@
         <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
         <!-- Welle 6.C1 — Hylomorphismus-Inventar (Tab-Toggle). 27 Slots in
              3×9-Grid. Jeder Slot trägt Tag-Profile bei Hover als Glow + Audio. -->
-        <div id="inventory-overlay" role="dialog" aria-label="Inventar" aria-modal="false" hidden>
+        <div id="inventory-overlay" role="dialog" aria-label="Dein Ich" aria-modal="false" hidden>
             <div class="inventory-header">
-                <h2>Inventar &amp; Rezeptbuch</h2>
+                <h2>Dein Ich</h2>
                 <p class="inventory-hint">
-                    Tab schließt · Klick → wählen · Klick auf Hotbar → ablegen · Hover → Tag-Resonanz
+                    Tab schließt · deine Habe, dein Charakter + dein Rezeptbuch — alles an einem Ort (wie Minecraft)
                 </p>
             </div>
             <div class="inventory-body">
                 <div class="inventory-col-items">
+                    <h3 class="inventory-col-title">Habe</h3>
                     <div id="inventory-grid" class="inventory-grid"></div>
                     <div id="inventory-selected" class="inventory-selected" aria-live="polite">
                         <span class="label">gewählt:</span> <span class="name">—</span>
                     </div>
                 </div>
+                <!-- Charakter (UI-Putz: das Spieler-Menü ins Inventar gefaltet — das "Ich" an
+                     EINEM Ort). Die IDs bleiben → playerSoulInitDOM, renderPlayerStatsUI,
+                     initStatusPanel, renderPlayerEquipUI, _renderSoulEditor, _renderHotbarDOM
+                     füllen sie unverändert. -->
+                <div class="inventory-col-character">
+                    <h3 class="inventory-col-title">Charakter</h3>
+                    <section class="section">
+                        <h4>Seele</h4>
+                        <div class="soul-row">
+                            <label for="player-soul-select">Form</label>
+                            <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
+                        </div>
+                    </section>
+                    <section class="section">
+                        <h4>Stats <span class="section-hint">(aus Soul-Tags abgeleitet)</span></h4>
+                        <div id="player-stats" aria-live="polite"></div>
+                    </section>
+                    <section class="section">
+                        <h4>Emotionen <span class="section-hint">(Farbe = der Bildschirmrand-Schimmer)</span></h4>
+                        <div id="status-emotions"></div>
+                    </section>
+                    <section class="section">
+                        <h4>Ausrüstung <span class="section-hint">(Werkzeug + Rüstung)</span></h4>
+                        <div id="player-equip"></div>
+                    </section>
+                    <section class="section">
+                        <h4>Eigene Seele formen</h4>
+                        <div id="soul-editor"></div>
+                    </section>
+                    <section class="section">
+                        <h4>Hotbar-Belegung</h4>
+                        <div id="hotbar-config"></div>
+                    </section>
+                </div>
                 <div class="inventory-col-recipes">
+                    <h3 class="inventory-col-title">Rezeptbuch</h3>
                     <!-- Was du trägst (Gerät in Hand + Rüstung) — sichtbar, klickbar. -->
                     <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
                     <!-- Rezeptbuch (wie Minecraft): was du fertigen kannst, ein Klick
                          schmiedet aus deinem Material + nimmt es in die Hand / legt es an. -->
-                    <h3 class="inventory-recipes-title">
-                        Rezeptbuch <span class="section-hint">— was du fertigen kannst</span>
-                    </h3>
                     <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
                 </div>
             </div>
@@ -4735,7 +4797,7 @@
                         Welt
                     </button>
                     <button class="tab" type="button" data-tab="kreaturen" role="tab">Hof</button>
-                    <button class="tab" type="button" data-tab="spieler" role="tab">Spieler</button>
+                    <button class="tab" type="button" data-tab="spieler" role="tab">Ich</button>
                     <button class="tab" type="button" data-tab="werkstatt" role="tab">Werkstatt</button>
                     <button class="tab" type="button" data-tab="bibliothek" role="tab">Bibliothek</button>
                     <button class="tab" type="button" data-tab="einstellungen" role="tab">Einstellungen</button>
@@ -4947,63 +5009,6 @@
                 <h3>Befehle · die Sprache des Hofes</h3>
                 <p class="drawer-hint">Klick zum Ausführen. Befehle gehen durch denselben Pfad wie der Chat.</p>
                 <div id="help-list"></div>
-            </section>
-        </aside>
-        <aside class="drawer" data-drawer="spieler" aria-label="Spieler-Panel" hidden>
-            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-            <h2>Spieler</h2>
-            <section class="section">
-                <h3>Seele</h3>
-                <p class="drawer-hint">
-                    Form des Spieler-Avatars. Welle 6.D: jede Seele trägt ein Material-Tag-Profil, daraus folgen Stats
-                    (Mensch balanced, Phönix schnell/fragil, Drache zäh/langsam).
-                </p>
-                <div class="soul-row">
-                    <label for="player-soul-select">Form</label>
-                    <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
-                </div>
-            </section>
-            <section class="section" id="vibe-pass-section">
-                <h3>Vibe-Pass <span class="section-hint">(souveräne Identität)</span></h3>
-                <p class="drawer-hint">
-                    Ein ed25519-Schlüsselpaar, lokal erzeugt — deine unverfälschbare Identität. Damit signierst du deine
-                    Werke; andere können prüfen, dass sie wirklich von dir stammen. Kein Coin, keine Kette — nur
-                    Echtheit. Sichere ihn: ohne den Schlüssel ist die Identität verloren.
-                </p>
-                <div id="vibe-pass-body"></div>
-                <div class="vibe-pass-actions">
-                    <button type="button" id="vibe-pass-export">Vibe-Pass sichern…</button>
-                    <button type="button" id="vibe-pass-import">Wiederherstellen…</button>
-                </div>
-            </section>
-            <section class="section">
-                <h3>Stats <span class="section-hint">(aus Soul-Tags abgeleitet)</span></h3>
-                <div id="player-stats" aria-live="polite"></div>
-            </section>
-            <section class="section">
-                <h3>Eigene Seele formen <span class="section-hint">(Bauplan aus Körper-Teilen)</span></h3>
-                <p class="drawer-hint">
-                    Wie Bauwerke + Maschinen: Form × Material × Anordnung → Compound-Tags → Stats. Klone eine Built-in
-                    oder erschaffe eine neue Komposition.
-                </p>
-                <div id="soul-editor"></div>
-            </section>
-            <section class="section">
-                <h3>Ausrüstung <span class="section-hint">(Werkzeug × 0.15 + Rüstung × 0.3)</span></h3>
-                <p class="drawer-hint">
-                    Werkzeug + Rüstung tragen ihre Compound-Tags in die Stat-Rechnung. Rüstung wirkt stärker als
-                    Werkzeug.
-                </p>
-                <div id="player-equip"></div>
-            </section>
-            <section class="section">
-                <h3>Hotbar-Belegung</h3>
-                <p class="drawer-hint">Welcher Bauplan liegt auf welchem Slot (1–9). Tasten 1–9 wählen, F baut.</p>
-                <div id="hotbar-config"></div>
-            </section>
-            <section class="section">
-                <h3>Emotionen</h3>
-                <div id="status-emotions"></div>
             </section>
         </aside>
         <aside class="drawer" data-drawer="werkstatt" aria-label="Werkstatt-Panel" hidden>
@@ -5628,6 +5633,19 @@
                  Beide werden in System-Prompts eingebettet, damit Grok
                  dich beim Namen ansprechen kann und eine selbst-gewählte
                  Identität trägt. Persistenz in localStorage. -->
+            <section class="section default-collapsed" id="vibe-pass-section">
+                <h3>Vibe-Pass <span class="section-hint">(souveräne Identität)</span></h3>
+                <p class="drawer-hint">
+                    Ein ed25519-Schlüsselpaar, lokal erzeugt — deine unverfälschbare Identität. Damit signierst du deine
+                    Werke; andere prüfen, dass sie wirklich von dir stammen. Kein Coin, keine Kette — nur Echtheit.
+                    Sichere ihn: ohne den Schlüssel ist die Identität verloren.
+                </p>
+                <div id="vibe-pass-body"></div>
+                <div class="vibe-pass-actions">
+                    <button type="button" id="vibe-pass-export">Vibe-Pass sichern…</button>
+                    <button type="button" id="vibe-pass-import">Wiederherstellen…</button>
+                </div>
+            </section>
             <section class="section" id="identity-section">
                 <h3>Begleiter + Avatar</h3>
                 <p class="drawer-hint">

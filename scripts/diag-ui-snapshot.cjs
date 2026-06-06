@@ -139,9 +139,9 @@ function startSaveServer() {
                     `slider-cel=${!!document.getElementById("slider-cel")} ` +
                     `sliders=${atmo.querySelectorAll('input[type="range"]').length}\n`;
             }
-            // Den Bibliothek-Tab öffnen (UI-Putz) für den Screenshot — die Social-Plattform.
-            const libTab = document.querySelector('[data-tab="bibliothek"]');
-            if (libTab) libTab.click();
+            // Den Ich-Tab öffnen (UI-Putz) für den Screenshot — das vereinte Inventar.
+            const ichTab = document.querySelector('[data-tab="spieler"]');
+            if (ichTab) ichTab.click();
             return panels;
         });
         let txt = `# UI-Snapshot [${LABEL}]\n`;

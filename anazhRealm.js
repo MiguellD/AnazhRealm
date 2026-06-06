@@ -10082,6 +10082,17 @@ class AnazhRealm {
                 tab.classList.toggle("active", isActive);
                 tab.setAttribute("aria-selected", isActive ? "true" : "false");
             }
+            // UI-Putz: der "Ich"-Tab (data-tab="spieler") öffnet das zentrierte Inventar-
+            // Overlay (das vereinte Habe + Charakter + Rezeptbuch, wie Minecraft), keinen
+            // Seiten-Drawer. Jeder andere Tab schließt das Overlay wieder.
+            if (name === "spieler") {
+                for (const drawer of drawers) drawer.hidden = true;
+                if (typeof this.toggleInventoryOverlay === "function") this.toggleInventoryOverlay(true);
+                return;
+            }
+            if (typeof this.toggleInventoryOverlay === "function" && this.state && this.state.inventoryOpen) {
+                this.toggleInventoryOverlay(false);
+            }
             for (const drawer of drawers) {
                 const isThis = drawer.getAttribute("data-drawer") === name;
                 drawer.hidden = !isThis;

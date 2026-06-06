@@ -38512,13 +38512,13 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const out = {};
         const topbar = document.getElementById("topbar");
         const statusbar = document.getElementById("statusbar");
-        const spielerDrawer = document.querySelector('.drawer[data-drawer="spieler"]');
+        const ichRaum = document.getElementById("inventory-overlay"); // UI-Putz: das "Ich" ist das Inventar
         out.topbarInDom = !!topbar;
         out.statusbarInDom = !!statusbar;
-        out.spielerDrawerInDom = !!spielerDrawer;
+        out.spielerDrawerInDom = !!ichRaum;
 
         // Emotion-Rows leben jetzt im Spieler-Drawer
-        const rows = spielerDrawer ? spielerDrawer.querySelectorAll("#status-emotions .emotion") : [];
+        const rows = ichRaum ? ichRaum.querySelectorAll("#status-emotions .emotion") : [];
         out.emotionRowCount = rows.length;
         out.allSixAxes = rows.length === 6;
 
@@ -38531,8 +38531,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
         r.updateStatusPanel(1000);
 
-        const joyFill = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
-        const chaosFill = spielerDrawer ? spielerDrawer.querySelector(".emotion.chaos .bar > div") : null;
+        const joyFill = ichRaum ? ichRaum.querySelector(".emotion.joy .bar > div") : null;
+        const chaosFill = ichRaum ? ichRaum.querySelector(".emotion.chaos .bar > div") : null;
         out.joyBarWidth = joyFill ? joyFill.style.width : "";
         out.chaosBarWidth = chaosFill ? chaosFill.style.width : "";
         out.barReflectsValue = out.joyBarWidth === "50%" && out.chaosBarWidth === "80%";
@@ -38550,12 +38550,12 @@ async function checkBandEarlyRingsAndUi(ctx) {
         // Throttle: zweiter Aufruf direkt danach ändert nichts
         r.state.player.emotions.joy = 0.9;
         r.updateStatusPanel(1000.1);
-        const joyFill2 = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
+        const joyFill2 = ichRaum ? ichRaum.querySelector(".emotion.joy .bar > div") : null;
         out.throttleHolds = joyFill2 ? joyFill2.style.width === "50%" : false;
 
         // Nach 0.4s wieder durchlassend
         r.updateStatusPanel(1000.5);
-        const joyFill3 = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
+        const joyFill3 = ichRaum ? ichRaum.querySelector(".emotion.joy .bar > div") : null;
         out.throttleReleases = joyFill3 ? joyFill3.style.width === "90%" : false;
 
         // Tab-System
@@ -38623,7 +38623,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        const spieler = document.querySelector('.drawer[data-drawer="spieler"]');
+        const spieler = document.getElementById("inventory-overlay"); // UI-Putz: das "Ich" ist das Inventar
 
         // (a) Legende: deutscher Name statt "joy" + Wirkung-Tooltip auf der Row.
         const joyRow = spieler ? spieler.querySelector(".emotion.joy") : null;
