@@ -1,45 +1,58 @@
 # AnazhRealm Roadmap — der Plan
 
-## ⭐ DER PLAN VORWÄRTS (Stand V18.10 · 05.06.2026 · die Konsolidierung + der Revert auf den V18.6-Riesen-Stand)
+## ⭐ DER PLAN VORWÄRTS (Stand V18.31 · 06.06.2026 · die Spirale durchbrochen — KEIN Code, erst verstehen)
 
-> **Diese Sektion ist der EINE Plan vorwärts.** Sie entstand aus der Konsolidierung am
-> 05.06.2026: der Schöpfer-Befund „du drehst dich im Kreis, pflasterst Bug auf Bug,
-> verlierst den Überblick; Minecraft hat das gelöst, aber wir basteln etwas Billiges".
-> Die Diagnose, GEMESSEN: nicht der CODE ist krank — alle Subsysteme existieren (geprüft),
-> der Playtest ist grün (~3500 Invarianten), die Wasser-FORM ist endlich die der Riesen
-> (V18.6 — „wie ein Riese"). Krank war die DISZIPLIN: **der Wasser-Stapel (V17.117→V18.6) wurde headless-grün gebaut
-> und NIE im Browser bestätigt, NIE gemergt** — und der Beweis kam SOFORT: V18.7/.8/.9 stapelten
-> drei Wellen auf einer visuellen Wasser-Regression (die Zell-Maske klippte das saubere See-Ufer
-> zu Sägezähnen), bis der Schöpfer es im Browser sah; V18.10 reverted auf V18.6. Die Detail-Threads
-> unten („OFFENE FÄDEN") bleiben die Referenz; DIESE Sektion ordnet sie + ist der Startpunkt jeder Session.
+> **Diese Sektion ist der EINE Plan vorwärts.** Stand 06.06.2026: die Spirale, die bei V18.10
+> benannt wurde, **wurde fortgesetzt** (V18.11–.31, +21 weitere pixel-blinde Wasser-Wellen, 4
+> Reverts, nie gemergt). Der Schöpfer (06.06.) hat sie ein zweites Mal konfrontiert — schärfer:
+> _„du verstehst das System nicht, den vollen Bogen nicht; das Wasser fliesst nicht nach wie
+> Minecraft, selbst im alten Zell-Iso; der Auslauf-Übergang ist BS, ein Pflaster; KEINE Code-
+> Änderung mehr — such RICHTIG, verstehe das Chaos, bündle Harmonie, MD-Files auf den Stand."_
+>
+> **Der volle Bogen, GEMESSEN (Explore-Audit V18.31, voll in `docs/wasser-render-architektur-plan.md`):**
+> Das Wasser ist ein **statisches 2.5D-Höhenfeld `L`** (frozen Drainage-Netz) + reaktive Zell-
+> FÜLLUNG bis `L`. **Es gibt NIRGENDS eine Fluid-Dynamik — Wasser fliesst NIE nach** (kein Live-
+> Sim; Carve füllt nur bis zum frozen Spiegel). Die 30 Wellen drehten am RENDER-MESH, während die
+> Wurzel (kein Fluid + ein 2.5D-Feld, das an Wasserfall/Mündung/Carve FALTET) nie benannt wurde.
 
-### Die EINE Wahrheit (für die Zukunft fixiert — Regel #0)
+### Die EINE Wahrheit (Regel #0 — zweimal benannt, zweimal verletzt, jetzt absolut)
 
 **Render · Wasser · Schatten · Hand-Optik sind PIXEL-BLIND headless. Der Schöpfer-Browser
 ist die EINZIGE Wahrheit. Baue NIE 2+ pixel-blinde Wellen tief, ohne dass sein Auge die
 vorige bestätigt hat — und merge einen bestätigten Bogen, bevor du den nächsten beginnst.**
-Diese Lehre stand schon mehrfach in den Gotchas (V10.0-g.r, V13.x, V17.x): sie wurde
-benannt, dann vergessen, wieder benannt, wieder vergessen — DAS ist die Spirale. Sie ist
-jetzt die operative Regel #0.
+Diese Lehre stand schon mehrfach in den Gotchas (V10.0-g.r, V13.x, V17.x) UND in dieser Sektion
+(V18.10) — und wurde TROTZDEM fortgesetzt. Der zweite Verstoss ist der Beweis, dass „benennen"
+nicht reicht: die Regel ist jetzt absolut. Bei Wasser/Render: erst der Browser, dann die Welle.
 
-### Phase 1 — DEN STAPEL SCHLIESSEN (das Dringendste, vor IRGENDWAS Neuem)
+### Phase 0 — DEN VOLLEN BOGEN VERSTEHEN + DIE GRUNDSATZ-ENTSCHEIDUNG (jetzt, kein Code)
 
-Der 16-Wellen-Stapel ist die größte Schuld. `main` = V17.116; der Branch = V18.8.
+Der Schöpfer-Befund hat DREI Ebenen (Details in `wasser-render-architektur-plan.md` §4), die NICHT
+vermischt werden dürfen:
+- **Ebene A — KEINE DYNAMIK:** Wasser fliesst nicht nach (Minecraft). Architektur-Frage, kein Tweak.
+- **Ebene B — DAS NETZ FALTET:** die „Fläche auf `L`" gibt an komplexen Stellen (Wasserfall-Auslauf,
+  Mündung, umgegrabener Kanal) ein gefaltetes/kantiges Mesh-Gewirr (Screenshots) + Nähte; die
+  V18.25/.30/.31-Auslauf-Pflaster verschlimmerten es.
+- **Ebene C — DIE SPIRALE:** 41 Commits, nie gemergt, nie bestätigt.
 
-1. **Schöpfer-Browser-Pass über den Wasser-Stapel** (V17.117–V18.6+revert), mit dem A/B-Schalter
-   (Einstellungen → Wasser-Render: Fläche ↔ Zell-Iso):
-   - Wasser-Fläche auf `L`: **See-Ufer ✅ (V18.6, Schöpfer „wie ein Riese gezaubert" — depth-
-     versöhnt). V18.7/.8/.9 (die Zell-Maske) waren ein RÜCKSCHRITT (Sägezahn-Ufer), REVERTED (V18.10).**
-     **Die EINE offene Wurzel: der FLUSS-FLOAT (das „schlechte Netz der Flüsse")** — die Fluss-Fläche
-     SMOOTH begrenzen, wo das Terrain den Kanal verlässt (depth-occluded), NIE eine harte Maske
-     (die das See-Ufer mitklippt; V13.4: die Uferlinie ist der Tiefenpuffer, nie Geometrie). Mit dem Auge.
-   - **Wasserfall-Planes: bleiben (dedizierter vertikaler Sturz) oder raus?** (Schöpfer-Auge
-     — headless nicht entscheidbar, V18.8 bewusst nicht vorschnell entfernt.)
-   - Ferner Ozean (H3) sichtbar korrekt · async Pop-in beim Streamen (E3) flüssig?
+**Die GRUNDSATZ-ENTSCHEIDUNG gehört dem Schöpfer** (drei echte Wege, kein Pflaster — `wasser-render-
+architektur-plan.md` §6): **(A)** echte Fluid-Dynamik (zellulärer Automat, der Minecraft-Wunsch,
+grösster Weg) · **(B)** das Mesh fundamental sauber (statisches Modell richtig gebaut + dedizierte
+Wasserfall-Assets, BotW/Genshin) · **(C)** zuerst auf V18.6 (See-Ufer ✅) mergen, die Spirale
+brechen, DANN A oder B. Empfohlene Reihenfolge: **C → Grundsatz-Entscheidung A/B → ein Weg mit
+Browser-Loop + Merge pro Schritt.**
+
+### Phase 1 — DEN STAPEL SCHLIESSEN (sobald die Richtung steht)
+
+Der 41-Commit-Stapel ist die größte Schuld. `main` = V17.116; der Branch = V18.31.
+
+1. **Schöpfer-Browser-Pass über den Wasser-Stapel**, mit dem A/B-Schalter (Einstellungen →
+   Wasser-Render: Fläche ↔ Zell-Iso). Letzter browser-bestätigter guter Stand: **V18.6 See-Ufer
+   ✅ („wie ein Riese")**. Alles danach (V18.7–.31) ist UNBESTÄTIGT + enthält die Reverts + die
+   Auslauf-Pflaster. Offene Render-Wurzeln: das gefaltete Mesh am Auslauf (Ebene B), die Nähte
+   (4-Chunk-Ecken, Fluss-Saum), der Querschnitt (konkav/flach/konvex — nie bestätigt), die
+   Wasserfall-Plane (bleibt/raus?).
 2. **Die älteren pixel-blinden Sign-offs mitnehmen:** R1 (Schatten-Raster an vertikalen
-   Wänden — wandert es noch?) · E1/E2 (Sicht-Ring 12 — Weite + FPS? ferne LOD-Nähte?) · J4
-   (Facetten weg bei 2.5D-Lichtung 100 %?) · S9 (Gerät in der Hand — Pose/Skala) · A2
-   (Crafting-FERTIGEN-Fluss + Resonanz-Rollen — Feel/Synergie).
+   Wänden) · E1/E2 (Sicht-Ring 12) · J4 (Facetten) · S9 (Gerät in der Hand) · A2 (Crafting-Fluss).
 3. **Was bestätigt ist → ein PR nach `main`. Was wackelt → gezielt mit dem Auge schließen.**
    → Ergebnis: `main` ist wieder die Wahrheit, der Stapel ist Geschichte, die Spirale gebrochen.
 

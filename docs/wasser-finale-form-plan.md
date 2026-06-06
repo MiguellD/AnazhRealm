@@ -1,6 +1,14 @@
 # Die WASSER-FINALE-FORM — eine Fläche, vom Tiefenpuffer versöhnt (der Profi-Weg)
 
-> **Status:** DIE FINALE FORM GEBAUT (V18.6, 05.06.2026) — U-W1/U-W3 (Zellen→`L`) + **U-W4 (Render = FLÄCHE auf `L`, nicht Zell-Iso)** stehen; offen nur der Browser-Pixel-Sign-off + die Fern-LOD-Politur (W2 reitet jetzt mit der Fläche, naht-frei). Schöpfer-Auftrag „bring das gesamtsystem wasser endlich in die finale form, synergetisch — von den genialsten lernen, ordnung höherer stufe, keine halben sachen". Gegründet auf zwei tiefe Lesungen: (1) den eigenen Code als Fremder kartiert (12 Kontradiktionen), (2) wie die Riesen es lösen (Minecraft/Distant-Horizons · Sea of Thieves · No Man's Sky · Unreal Water · GDC 2023 „Photon Water"). **Die EINE Wurzel war: der Render aus den diskreten Zellen abgeleitet (Zell-Iso) statt eine Fläche auf dem kontinuierlichen `L` — alle ausgelieferten Wasser-Welten machen Letzteres. Jetzt auch wir.**
+> **⚠️ HISTORIE (V18.6-Stand). Subsumiert von `docs/wasser-render-architektur-plan.md`
+> (die EINE konsolidierte Wahrheit, V18.31).** Diese Datei beschreibt die Geometrie-Wahrheit
+> „Fläche auf `L`" (V18.6) — sie ist KORREKT als Beschreibung dieser einen Schicht, aber NICHT
+> der volle Bogen: sie benennt NICHT, dass das Wasser fundamental statisch ist (kein Fluid-
+> Fliessen) und dass die Fläche an komplexen Stellen (Wasserfall-Auslauf/Mündung/Carve) faltet.
+> Für den aktuellen Stand + alle offenen Punkte + die echten Optionen: **`docs/wasser-render-
+> architektur-plan.md` ZUERST lesen.**
+>
+> _(Ursprünglicher Status:)_ DIE FINALE FORM GEBAUT (V18.6, 05.06.2026) — U-W1/U-W3 (Zellen→`L`) + **U-W4 (Render = FLÄCHE auf `L`, nicht Zell-Iso)** stehen; offen nur der Browser-Pixel-Sign-off + die Fern-LOD-Politur (W2 reitet jetzt mit der Fläche, naht-frei). Schöpfer-Auftrag „bring das gesamtsystem wasser endlich in die finale form, synergetisch — von den genialsten lernen, ordnung höherer stufe, keine halben sachen". Gegründet auf zwei tiefe Lesungen: (1) den eigenen Code als Fremder kartiert (12 Kontradiktionen), (2) wie die Riesen es lösen (Minecraft/Distant-Horizons · Sea of Thieves · No Man's Sky · Unreal Water · GDC 2023 „Photon Water"). **Die EINE Wurzel war: der Render aus den diskreten Zellen abgeleitet (Zell-Iso) statt eine Fläche auf dem kontinuierlichen `L` — alle ausgelieferten Wasser-Welten machen Letzteres. Jetzt auch wir.**
 >
 > **Vor Arbeit an Wasser / Wasser-Render / Wasser-LOD / Ufer / Ozean-Ferne ZUERST lesen.**
 
