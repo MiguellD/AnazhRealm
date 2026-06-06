@@ -43,7 +43,8 @@
             /* ====================================================================
            UI V2 — Painterly High-Fantasy. Pergament, Eisen, Messing. Akzent:
            Portal-Violett. Identität inspiriert vom UI-Mockup-Entwurf des
-           Schöpfers. Tag/Nacht via [data-theme].
+           Schöpfers. Die Nacht ist der EINE Stil (Tag/Nacht-Toggle entfiel im
+           UI-Putz; die Tokens leben statisch in :root).
            Fonts: lokal vendored (vendor/fonts/), keine externen CDN-Aufrufe,
            CSP bleibt strict.
            ==================================================================== */
@@ -76,33 +77,33 @@
                 src: url("vendor/fonts/JetBrainsMono-Variable.woff2") format("woff2");
             }
 
-            :root,
-            [data-theme="tag"] {
-                /* Pergament */
-                --parch-1: #f5e7c4;
-                --parch-2: #e9d49e;
-                --parch-3: #d8b876;
-                --parch-edge: #8a6a36;
-                --parch-ink: #2b1a08;
-                --parch-ink-soft: #5a3f1d;
-                --parch-ink-faded: #7b5a2e;
+            :root {
+                /* Pergament — die Nacht ist der EINE Stil (Tag/Nacht-Toggle entfiel
+                   im UI-Putz; Nacht trägt die Schönheit, der 3D-Welt-Zyklus bleibt). */
+                --parch-1: #c8b794;
+                --parch-2: #a99172;
+                --parch-3: #7c6446;
+                --parch-edge: #3a2a14;
+                --parch-ink: #1a1023;
+                --parch-ink-soft: #3a2e4a;
+                --parch-ink-faded: #5a4a6e;
                 /* Holz */
-                --wood-1: #4a2e17;
-                --wood-2: #321d0c;
-                --wood-3: #25140a;
+                --wood-1: #221830;
+                --wood-2: #150d22;
+                --wood-3: #0a0614;
                 /* Eisen / Messing */
-                --iron-1: #2a2520;
-                --iron-2: #1a1612;
-                --iron-3: #0d0a07;
-                --brass-1: #c69a4a;
-                --brass-2: #8a6322;
-                --brass-3: #5b3f10;
+                --iron-1: #15131c;
+                --iron-2: #0a080f;
+                --iron-3: #050308;
+                --brass-1: #8a6f3a;
+                --brass-2: #5b4520;
+                --brass-3: #3a2c12;
                 /* Akzente */
                 --violet-1: #8a5cff;
                 --violet-2: #c66bff;
-                --violet-glow: rgba(180, 108, 255, 0.55);
-                --moss: #5a7a3a;
-                --honey: #e0a83a;
+                --violet-glow: rgba(190, 120, 255, 0.85);
+                --moss: #4a6a4a;
+                --honey: #c08a3a;
                 /* Emotion-Farben (Status-Balken behalten ihre Semantik) */
                 --joy: #f7d358;
                 --awe: #d4a3ff;
@@ -112,37 +113,13 @@
                 --chaos: #e94c89;
                 /* Schatten */
                 --shadow-deep: 0 24px 60px rgba(20, 8, 0, 0.55), 0 6px 14px rgba(20, 8, 0, 0.4);
-                /* Semantische Aliase — resolvern am Use-Site, atmen mit Tag/Nacht
-                   weil die Wurzel-Vars (--parch-1, --parch-edge, --wood-2, --brass-2)
-                   im [data-theme="nacht"]-Block überschrieben werden. */
+                /* Semantische Aliase — resolvern am Use-Site. */
                 --parch-bg: var(--parch-1);
                 --parch-line: var(--parch-edge);
                 --parch-mid: var(--wood-2);
                 --brass-mid: var(--brass-2);
-                /* Welt-Overlay-Backdrop — Theme-unabhängig (semi-transparent,
-                   damit die 3D-Szene durchschimmert). */
+                /* Welt-Overlay-Backdrop (semi-transparent, damit die 3D-Szene durchschimmert). */
                 --overlay-bg: rgba(38, 26, 14, 0.95);
-            }
-            [data-theme="nacht"] {
-                --parch-1: #c8b794;
-                --parch-2: #a99172;
-                --parch-3: #7c6446;
-                --parch-edge: #3a2a14;
-                --parch-ink: #1a1023;
-                --parch-ink-soft: #3a2e4a;
-                --parch-ink-faded: #5a4a6e;
-                --wood-1: #221830;
-                --wood-2: #150d22;
-                --wood-3: #0a0614;
-                --iron-1: #15131c;
-                --iron-2: #0a080f;
-                --iron-3: #050308;
-                --brass-1: #8a6f3a;
-                --brass-2: #5b4520;
-                --brass-3: #3a2c12;
-                --violet-glow: rgba(190, 120, 255, 0.85);
-                --moss: #4a6a4a;
-                --honey: #c08a3a;
             }
 
             /* Pergament-Helper: Noise-Filter + warme Vignette. ::before liefert
@@ -170,16 +147,13 @@
                 content: "";
                 position: absolute;
                 inset: 0;
-                background: radial-gradient(ellipse 90% 80% at 50% 40%, transparent 50%, rgba(80, 40, 10, 0.28) 100%);
-                pointer-events: none;
-                border-radius: inherit;
-            }
-            [data-theme="nacht"] .parchment::after {
                 background: radial-gradient(
                     ellipse 90% 80% at 50% 40%,
                     rgba(255, 220, 160, 0.06) 30%,
                     rgba(30, 20, 40, 0.55) 100%
                 );
+                pointer-events: none;
+                border-radius: inherit;
             }
 
             /* Eisen-Rahmen: gerenderte box-shadows als Rand + Messing-Innenkante +
@@ -1520,12 +1494,10 @@
             }
             .tab.active {
                 color: #ffe8b8;
+                text-shadow: 0 0 12px var(--violet-glow);
             }
             .tab.active::after {
                 opacity: 1;
-            }
-            [data-theme="nacht"] .tab.active {
-                text-shadow: 0 0 12px var(--violet-glow);
             }
 
             /* Status-Bar: kompakte Welt-Daten unter der Topbar. */
@@ -4508,7 +4480,7 @@
             }
         </style>
     </head>
-    <body data-theme="tag">
+    <body>
         <canvas id="world-canvas"></canvas>
         <div id="fps"></div>
         <div id="dialogue-box" aria-live="polite"></div>
@@ -4641,9 +4613,6 @@
                     <button class="tab" type="button" data-tab="hilfe" role="tab">Hilfe</button>
                 </nav>
                 <div class="topbar-toggles">
-                    <button id="theme-toggle" class="latch" type="button" aria-pressed="false" aria-label="Tag / Nacht">
-                        ☀ Tag
-                    </button>
                     <button id="grok-voice-toggle" class="latch" type="button" aria-pressed="false" hidden>
                         Stimme: aus
                     </button>

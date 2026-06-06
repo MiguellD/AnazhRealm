@@ -38829,44 +38829,27 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("UI: Cooldown-Slider mutiert emotionApplyCooldown", uiTuningResults.cooldownUpdatesState);
     }
 
-    // ### UI V2 — Identity (Tokens + Theme + Fonts) ###
+    // ### UI V2 — Identity (Tokens + Fonts; Nacht ist der EINE Stil seit dem UI-Putz) ###
     const uiV2Results = await safeEvaluate(page, () => {
         const out = {};
 
-        // (a) Theme-Default ist "tag"
-        out.bodyHasThemeTag = document.body.getAttribute("data-theme") === "tag";
+        // (a) Der Tag/Nacht-Toggle entfiel im UI-Putz — Nacht ist statisch der EINE Stil.
+        out.themeToggleGone = !document.getElementById("theme-toggle");
+        out.noThemeAttr = !document.body.getAttribute("data-theme");
 
-        // (b) Token-Variable kommt durch (Pergament-Farbe)
+        // (b) Token-Variable kommt durch (Pergament-Farbe, jetzt der Nacht-Wert)
         const computed = getComputedStyle(document.body);
         const parch1 = computed.getPropertyValue("--parch-1").trim();
         out.parchTokenLoaded = parch1.length > 0;
 
-        // (c) Theme-Toggle wechselt zu "nacht"
-        const toggle = document.getElementById("theme-toggle");
-        if (toggle) toggle.click();
-        out.themeSwitchedToNight = document.body.getAttribute("data-theme") === "nacht";
-        out.toggleArrayAfterSwitch = toggle && toggle.getAttribute("aria-pressed") === "true";
-
-        // (d) Theme-Wechsel ändert Token-Wert
-        const parch1Night = getComputedStyle(document.body).getPropertyValue("--parch-1").trim();
-        out.tokenChangesPerTheme = parch1 !== parch1Night && parch1Night.length > 0;
-
-        // (e) Persistenz: localStorage trägt die Wahl
-        const persisted = localStorage.getItem("anazhRealmTheme");
-        out.themePersisted = persisted === "nacht";
-
-        // (f) Latch-Klasse haftet an allen drei Topbar-Toggles
-        // (Help ist in UI V2 ein Drawer-Tab, kein Latch mehr.)
-        out.allTogglesLatched = ["grok-voice-toggle", "anazh-symphony-toggle", "theme-toggle"].every((id) => {
+        // (c) Latch-Klasse haftet an den verbleibenden Topbar-Toggles
+        out.allTogglesLatched = ["grok-voice-toggle", "anazh-symphony-toggle"].every((id) => {
             const el = document.getElementById(id);
             return el && el.classList.contains("latch");
         });
 
-        // (g) Cinzel-Font ist registriert (über @font-face)
+        // (d) Cinzel-Font ist registriert (über @font-face)
         out.fontsRegistered = Array.from(document.fonts).some((f) => f.family === "Cinzel");
-
-        // Cleanup: zurück auf "tag" damit andere Tests konsistent sind
-        if (toggle) toggle.click();
 
         return out;
     });
@@ -38878,13 +38861,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
             uiV2Results && uiV2Results.error ? uiV2Results.error : "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("UI V2: body[data-theme=tag] initial gesetzt", uiV2Results.bodyHasThemeTag);
+        check("UI V2: Tag/Nacht-Toggle entfernt (Nacht der EINE Stil)", uiV2Results.themeToggleGone);
+        check("UI V2: kein data-theme-Attribut mehr (Theme statisch)", uiV2Results.noThemeAttr);
         check("UI V2: Pergament-Tokens geladen (--parch-1)", uiV2Results.parchTokenLoaded);
-        check("UI V2: Theme-Toggle wechselt zu nacht", uiV2Results.themeSwitchedToNight);
-        check("UI V2: Theme-Toggle aria-pressed reflektiert State", uiV2Results.toggleArrayAfterSwitch);
-        check("UI V2: Token-Werte ändern sich pro Theme", uiV2Results.tokenChangesPerTheme);
-        check("UI V2: Theme-Wahl in localStorage persistiert", uiV2Results.themePersisted);
-        check("UI V2: alle Toggle-Buttons tragen .latch-Klasse", uiV2Results.allTogglesLatched);
+        check("UI V2: verbleibende Toggle-Buttons tragen .latch-Klasse", uiV2Results.allTogglesLatched);
         check("UI V2: Cinzel-Font ist via @font-face registriert", uiV2Results.fontsRegistered);
     }
 

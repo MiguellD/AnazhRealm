@@ -27929,38 +27929,6 @@ class AnazhRealm {
     // Learnings:
     // - V7.64 Basis: Stabile Initialisierung mit Physik, Szene, Kamera
     // - V7.66 Ergänzung: Fehlerbehandlung verbessert, Chat/Nexus integriert
-    // Tag/Nacht-Theme: schaltet die CSS-Custom-Properties über
-    // body[data-theme]. localStorage persistiert die Wahl, damit nach Reload
-    // die Stimmung erhalten bleibt.
-    themeInitDOM() {
-        const toggle = document.getElementById("theme-toggle");
-        if (!toggle) return;
-        const body = document.body;
-        const stored = (() => {
-            try {
-                return localStorage.getItem("anazhRealmTheme");
-            } catch {
-                return null;
-            }
-        })();
-        const initial = stored === "nacht" ? "nacht" : "tag";
-        body.setAttribute("data-theme", initial);
-        toggle.setAttribute("aria-pressed", initial === "nacht" ? "true" : "false");
-        toggle.textContent = initial === "nacht" ? "☾ Nacht" : "☀ Tag";
-        toggle.addEventListener("click", () => {
-            const next = body.getAttribute("data-theme") === "tag" ? "nacht" : "tag";
-            body.setAttribute("data-theme", next);
-            toggle.setAttribute("aria-pressed", next === "nacht" ? "true" : "false");
-            toggle.textContent = next === "nacht" ? "☾ Nacht" : "☀ Tag";
-            try {
-                localStorage.setItem("anazhRealmTheme", next);
-            } catch {
-                // Kein Persistenz-Fail-Stop — Theme-Wechsel funktioniert weiter
-                // pro Session.
-            }
-        });
-    }
-
     symphonyInitDOM() {
         // Toggle-Button koppelt User-Geste an AudioContext-Start (Browser-
         // Autoplay-Policy). Beim ersten Klick: initSymphony(); danach
@@ -45825,7 +45793,6 @@ class AnazhRealm {
         this.state.signedWorlds = this._loadSignedWorlds();
         // W14 Phase 3 — empfangene (importierte) Welt-Manifeste.
         this.state.customWorlds = this._loadCustomWorlds();
-        this.themeInitDOM();
         this.grokInitDOM();
         this.symphonyInitDOM();
         this.initStatusPanel();
