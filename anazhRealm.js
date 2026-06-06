@@ -19500,16 +19500,33 @@ class AnazhRealm {
         // ansteigende Terrain pro Pixel okkludiert (V18.16-Prinzip: Geometrie grosszügig,
         // Sichtbarkeit aus der Tiefe — KEINE Geometrie-Maske, kein Sägezahn; KEIN 16-m-Rim,
         // kein Phantom). EIN Pass aus dem ORIGINAL `Lg` (kein Kaskadieren → genau eine Zelle).
+        // V18.28 — die Dilation liest die GLOBALE Nachbarschaft (auch ÜBER die Chunkgrenze),
+        // nicht nur das lokale Gitter (Schöpfer „an der Grenze/Ecke stappelt sich das Problem,
+        // da 4 Chunks aufeinander kommen"). Bis V18.27 verfehlte ein Rand-Vertex (i=0/dim) seinen
+        // Nachbarn JENSEITS der Grenze (out-of-grid → übersprungen) → Chunk A dilatierte ihn aus
+        // SEINEN Nachbarn, Chunk B aus SEINEN → an der Ecke 4 verschiedene Lesarten = der Riss.
+        // Jetzt liest `nbL` out-of-grid den globalen Spiegel (`_atlasWaterLevelAt`, pure (x,z)) →
+        // ALLE Chunks sehen für den geteilten Rand/Ecken-Vertex DIESELBEN 4 Nachbarn → identische
+        // Dilation, naht-frei per Konstruktion (die V9.79-Pad-Lehre auf die Dilation). Nur die
+        // Rand-Ring-Vertices rufen `_atlasWaterLevelAt` (~4·dim/Chunk) → billig.
         const Ld = Lg.slice();
+        const nbL = (ni, nk) => {
+            if (ni >= 0 && ni <= dim && nk >= 0 && nk <= dim) return Lg[ni + nk * NV];
+            return this._atlasWaterLevelAt(ox + ni * step, oz + nk * step, -Infinity);
+        };
         for (let k = 0; k <= dim; k++) {
             for (let i = 0; i <= dim; i++) {
                 const idx = i + k * NV;
                 if (Lg[idx] > -Infinity) continue; // schon nass
                 let best = -Infinity;
-                if (i > 0 && Lg[idx - 1] > best) best = Lg[idx - 1];
-                if (i < dim && Lg[idx + 1] > best) best = Lg[idx + 1];
-                if (k > 0 && Lg[idx - NV] > best) best = Lg[idx - NV];
-                if (k < dim && Lg[idx + NV] > best) best = Lg[idx + NV];
+                const a = nbL(i - 1, k);
+                if (a > best) best = a;
+                const b = nbL(i + 1, k);
+                if (b > best) best = b;
+                const c = nbL(i, k - 1);
+                if (c > best) best = c;
+                const d = nbL(i, k + 1);
+                if (d > best) best = d;
                 if (best > -Infinity) Ld[idx] = best;
             }
         }
@@ -22659,9 +22676,15 @@ class AnazhRealm {
         const along = dot(xz, fdir);
         const across = dot(xz, perp);
         const scroll = uTime.mul(uFlowSpeed).mul(fmag);
-        const riverS1 = vnoise(vec2(across.mul(0.55), along.mul(0.13).sub(scroll)));
-        const riverS2 = vnoise(vec2(across.mul(1.2), along.mul(0.32).sub(scroll.mul(1.7))));
-        const riverFoam = clamp(riverS1.add(riverS2.mul(0.5)).div(1.5).sub(0.42).mul(2.4), 0.0, 1.0);
+        // V18.28 — FLOW-ausgerichtete Strähnen statt FISCHGRÄT (Schöpfer-Bild: ein Herringbone-
+        // Muster auf dem Wasser, das wie Sägezähne wirkt). Das Fischgrät entstand aus zwei hohen
+        // `across`-Frequenzen (0.55 + 1.2 = Kreuzschraffur quer zur Strömung). Jetzt NIEDRIGE
+        // across-Frequenz (breite, kohärente Strähnen ENTLANG der Strömung) + die zweite Oktave
+        // schwächer + softer Schwellwert → ruhige, strömungs-folgende Schaum-Strähnen (natürlich),
+        // kein Kreuz-Moiré. Render-only (Shader).
+        const riverS1 = vnoise(vec2(across.mul(0.28), along.mul(0.13).sub(scroll)));
+        const riverS2 = vnoise(vec2(across.mul(0.6), along.mul(0.3).sub(scroll.mul(1.6))));
+        const riverFoam = clamp(riverS1.add(riverS2.mul(0.4)).div(1.4).sub(0.44).mul(2.0), 0.0, 1.0);
 
         // LAKE/OCEAN-PFAD
         const rip = vnoise(xz.mul(0.13).add(uTime.mul(0.05)));
@@ -47915,7 +47938,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.27.0";
+AnazhRealm.VERSION = "18.28.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
