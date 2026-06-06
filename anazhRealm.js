@@ -18851,6 +18851,40 @@ class AnazhRealm {
             if (this._atlasWaterLevelAt(cxw, oz + (dim + 0.5) * step, Infinity) > -Infinity)
                 colSrc[i + (dim - 1) * dim] = 1;
         }
+        // V18.29 — REAKTIVE Flut über die Chunkgrenze (Schöpfer „beim Abbauen fliesst das Wasser
+        // INNERHALB des Chunks nach, aber NICHT über die Naht/den Übergang in die Vertiefung").
+        // Der Atlas-OOB-Ring kennt nur FROZEN Wasser-Körper — ein dynamischer Carve-Kanal, der die
+        // Grenze erreicht, ist im Nachbarn eine nasse ZELLE, aber KEINE Atlas-Quelle → der Nachbar
+        // (der zudem async im Worker re-floodet, ohne Nachbar-Zellen) seedet NICHT → trocken → der
+        // Slope senkt die Fläche ins leere Loch. WENN in der 3×3-Chunk-Region ein CARVE liegt (der
+        // Player-Abbau), seedet der OOB-Ring AUCH aus den nassen Nachbar-ZELLEN (`waterCells`) → die
+        // Carve-Flut propagiert über die Grenze. Main-only (diese Funktion + `voxelChunks` sind main;
+        // der Worker hat eine eigene atlas-only Kopie). DETERMINISMUS-SICHER: Worldgen (kein Carve)
+        // → der Gate ist false → atlas-only → bit-identisch zum Worker (der Determinismus-Test hat
+        // keine Edits). Die `_rebuildVoxelChunk`-Force-Sync (gleicher Gate) stellt sicher, dass die
+        // Nachbarn main-rebuilden (sonst greift die Zell-Lesung nicht).
+        const _span = dim * step;
+        const _cx = Math.round(ox / _span);
+        const _cz = Math.round(oz / _span);
+        if (this.state.voxelChunks && this._chunkRegionHasCarve(_cx, _cz)) {
+            const colWet = (nkey, ni, nk) => {
+                const nb = this.state.voxelChunks.get(nkey);
+                if (!nb || !nb.waterCells) return false;
+                const nc = nb.waterCells;
+                const b = ni + nk * dim;
+                for (let j = 0; j <= jMax && b + j * dimSq < nc.length; j++)
+                    if (nc[b + j * dimSq] === WATER) return true;
+                return false;
+            };
+            for (let k = 0; k < dim; k++) {
+                if (colWet(`${_cx - 1},${_cz}`, dim - 1, k)) colSrc[0 + k * dim] = 1;
+                if (colWet(`${_cx + 1},${_cz}`, 0, k)) colSrc[dim - 1 + k * dim] = 1;
+            }
+            for (let i = 0; i < dim; i++) {
+                if (colWet(`${_cx},${_cz - 1}`, i, dim - 1)) colSrc[i + 0 * dim] = 1;
+                if (colWet(`${_cx},${_cz + 1}`, i, 0)) colSrc[i + (dim - 1) * dim] = 1;
+            }
+        }
         const queue = [];
         // U-W3: eine Quell-Spalte wird bis IHR colL geflutet (NICHT bis ein
         // propagierter höherer Quell-Spiegel — das heilt die gemessene 4–15-m-
@@ -20673,7 +20707,8 @@ class AnazhRealm {
         const key = `${cx},${cz}`;
         const oldEntry = this.state.voxelChunks.get(key);
         const useLod = lod !== null ? lod : oldEntry && Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0;
-        const forceSync = opts.forceSync === true || this._voxelChunkIsPlayerChunk(cx, cz);
+        const forceSync =
+            opts.forceSync === true || this._voxelChunkIsPlayerChunk(cx, cz) || this._chunkRegionHasCarve(cx, cz);
         // Welle G-fix — das Gras nur disposen, wenn die Oberfläche sich änderte
         // (Carve/Fill markierte den Chunk grass-dirty). Sonst behalten (kein
         // Flackern bei Nexus-Spawn/Skirt/LOD-Rebuild).
@@ -24122,6 +24157,26 @@ class AnazhRealm {
         const COST = 4;
         if (this._consumeAnyMaterial(COST)) return { ok: true, free: false, cost: COST };
         return { ok: false, reason: "kein Material" };
+    }
+
+    // V18.29 — liegt ein CARVE-Edit in der 3×3-Chunk-Region um (cx,cz)? Der Gate für die
+    // REAKTIVE Flut über die Chunkgrenze: nur dort seedet der Flood aus den Nachbar-Zellen
+    // (`_buildVoxelChunkWaterCells`) UND rebuildet der Chunk SYNC-MAIN (`_rebuildVoxelChunk`),
+    // damit die Carve-Flut über die Naht propagiert. Ferne unberührte Chunks bleiben atlas-only
+    // (= bit-identisch zum Worker → Determinismus). Billig (≤256 Edits, eine Box-Prüfung).
+    _chunkRegionHasCarve(cx, cz) {
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (!edits || !edits.length) return false;
+        const { span } = this._voxelChunkConfig();
+        const loX = (cx - 1) * span,
+            hiX = (cx + 2) * span,
+            loZ = (cz - 1) * span,
+            hiZ = (cz + 2) * span;
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (ed && ed.mode === "carve" && ed.x >= loX && ed.x <= hiX && ed.z >= loZ && ed.z <= hiZ) return true;
+        }
+        return false;
     }
 
     // V9.40-c — Markiert jeden Voxel-Chunk, dessen Geometrie die Schnitz-
@@ -47938,7 +47993,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.28.0";
+AnazhRealm.VERSION = "18.29.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
