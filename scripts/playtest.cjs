@@ -10269,7 +10269,10 @@ async function checkBandRing9to10(ctx) {
         check("Ring 10: Drei Strategie-Radios im DOM", ring10Results.fusionStrategyRadios);
         check("Ring 10: Eltern-B-Dropdown im DOM", ring10Results.fusionParentBSelectInDom);
         check("Ring 10: 'Verschmelzen…'-Button im Welt-Drawer", ring10Results.fusionOpenBtnInDom);
-        check("Ring 10: Stammbaum-Sektion im Welt-Drawer", ring10Results.lineageSectionInDom);
+        check(
+            "Ring 10: Stammbaum-Sektion im DOM (UI-Putz: jetzt in der Bibliothek)",
+            ring10Results.lineageSectionInDom
+        );
         check("Ring 10: AnazhRealm.FUSION_STRATEGIES (3)", ring10Results.fusionStrategiesArray);
         check("Ring 10: Sequenz-Fusion liefert ok=true", ring10Results.seqOk);
         check("Ring 10: Sequenz-Fusion vereint beide Inventare", ring10Results.seqHasBothInventories);

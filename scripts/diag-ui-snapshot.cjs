@@ -139,9 +139,9 @@ function startSaveServer() {
                     `slider-cel=${!!document.getElementById("slider-cel")} ` +
                     `sliders=${atmo.querySelectorAll('input[type="range"]').length}\n`;
             }
-            // Den Hof-Tab öffnen (UI-Putz) für den Screenshot — der vereinte Kommunikations-Raum.
-            const hofTab = document.querySelector('[data-tab="kreaturen"]');
-            if (hofTab) hofTab.click();
+            // Den Bibliothek-Tab öffnen (UI-Putz) für den Screenshot — die Social-Plattform.
+            const libTab = document.querySelector('[data-tab="bibliothek"]');
+            if (libTab) libTab.click();
             return panels;
         });
         let txt = `# UI-Snapshot [${LABEL}]\n`;

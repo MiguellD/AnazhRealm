@@ -10086,6 +10086,12 @@ class AnazhRealm {
                 const isThis = drawer.getAttribute("data-drawer") === name;
                 drawer.hidden = !isThis;
             }
+            // UI-Putz: die Bibliothek beim Öffnen sofort füllen — die migrierten Welt-
+            // Sektionen (Stammbaum/Tagebuch/Andere Welten) + die Welten-Liste.
+            if (name === "bibliothek") {
+                if (typeof this.updateWorldInfo === "function") this.updateWorldInfo();
+                if (typeof this.renderLibraryUI === "function") this.renderLibraryUI();
+            }
         };
         for (const tab of tabs) {
             tab.addEventListener("click", () => {
