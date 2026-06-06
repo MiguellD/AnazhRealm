@@ -9830,9 +9830,13 @@ class AnazhRealm {
         for (const axis of axes) {
             const row = document.createElement("div");
             row.className = `emotion ${axis}`;
+            // Legende: deutscher Name + was die Emotion in der Welt bewirkt (Hover) —
+            // löst das "welche Farbe = welche Emotion"-Rätsel. Die Balkenfarbe (CSS
+            // .emotion.<axis>) zeigt die Farbe direkt neben dem Namen.
+            row.title = `${AnazhRealm.EMOTION_LABEL[axis] || axis} — ${AnazhRealm.EMOTION_WIRKT[axis] || ""}`;
             const name = document.createElement("span");
             name.className = "name";
-            name.textContent = axis;
+            name.textContent = AnazhRealm.EMOTION_LABEL[axis] || axis;
             const bar = document.createElement("span");
             bar.className = "bar";
             const fill = document.createElement("div");
@@ -9864,6 +9868,10 @@ class AnazhRealm {
             worldrulesSignature: "",
             lastTick: -Infinity,
         };
+        // FP-sichtbares Emotion-Feedback (UI-Putz): die Refs für den Bildschirmrand-
+        // Schimmer + das Label, gefärbt nach der dominanten Emotion in updateStatusPanel.
+        this._emotionVignette = document.getElementById("emotion-vignette");
+        this._emotionLabel = document.getElementById("emotion-label");
 
         // Abilities-Container: Event-Delegation für Ausführen-Buttons.
         const abilitiesContainer = this._statusRefs.abilities;
@@ -10349,8 +10357,32 @@ class AnazhRealm {
             r.emotions[axis].fill.style.width = `${(v * 100).toFixed(0)}%`;
             r.emotions[axis].value.textContent = v.toFixed(2);
         }
+        this._updateEmotionFeedback();
         this.renderAbilitiesList();
         this.renderWorldRulesList();
+    }
+
+    // FP-sichtbares Emotion-Feedback (UI-Putz): färbt den Bildschirmrand-Schimmer + das
+    // Label in der Farbe der dominanten Emotion. EINE Quelle (_emotionState — dasselbe
+    // dominante Gefühl, das die KI/das Journal lesen); die Intensität steuert die Opazität.
+    // Trägt die Stimmung in JEDER Kamera — die 3D-Aura ist nur in 3rd-Person sichtbar.
+    _updateEmotionFeedback() {
+        const vig = this._emotionVignette;
+        const lab = this._emotionLabel;
+        if (!vig || !lab) return;
+        const es = this._emotionState();
+        if (es.dominant && es.intensity > 0.2) {
+            const css = window.getComputedStyle(document.body).getPropertyValue(`--${es.dominant}`).trim() || "#ffffff";
+            const op = Math.min(0.45, 0.12 + es.intensity * 0.4);
+            vig.style.boxShadow = `inset 0 0 150px 28px ${css}`;
+            vig.style.opacity = op.toFixed(3);
+            lab.textContent = es.label;
+            lab.style.color = css;
+            lab.style.opacity = "0.8";
+        } else {
+            vig.style.opacity = "0";
+            lab.style.opacity = "0";
+        }
     }
 
     // Abilities-Liste re-rendern, aber nur wenn sich Name/Source-Set
@@ -49099,6 +49131,18 @@ AnazhRealm.EMOTION_LABEL = Object.freeze({
     hope: "Hoffnung",
     peace: "Frieden",
     chaos: "Aufruhr",
+});
+
+// Was jede Emotion in der WELT bewirkt — die Legende, die das Aura-Rätsel löst (der
+// Schöpfer: "verstehe nicht, welche Farbe welche Emotion"). Aus den echten Welt-Effekten
+// (_applyEmotionWorldEffects): der Spieler liest, was sein Gefühl tut, statt Farben zu raten.
+AnazhRealm.EMOTION_WIRKT = Object.freeze({
+    joy: "wärmt den Himmel golden",
+    awe: "zieht magisches Licht heran",
+    sorrow: "lässt Regen fallen",
+    hope: "klärt den Himmel, erhellt die Wesen",
+    peace: "besänftigt + verlangsamt die Wesen",
+    chaos: "entfesselt die Wesen, treibt alles an",
 });
 
 // Die GENTLE Rate der Kohärenz-Dämpfung (pro Sekunde × Gegen-Achsen-Aktivierung ×

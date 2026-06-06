@@ -38546,6 +38546,55 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("UI V2: Welt-Drawer ist initial offen", uiResults.weltDrawerOpenInitially);
     }
 
+    // ### UI-Putz — Emotion-Klarheit (Legende + FP-sichtbares Feedback) ###
+    // Das Aura-Rätsel (Schöpfer: "verstehe nicht, welche Farbe welche Emotion; in FP sieht
+    // man die Aura nicht") geheilt: die Balken tragen deutsche Namen + einen Wirkung-Tooltip
+    // (Legende), und ein Bildschirmrand-Schimmer + Label zeigen die dominante Emotion in
+    // JEDER Kamera (via _emotionState — dieselbe Quelle, die KI/Journal lesen).
+    const emoClarityResults = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        if (!r) return null;
+        const out = {};
+        const spieler = document.querySelector('.drawer[data-drawer="spieler"]');
+
+        // (a) Legende: deutscher Name statt "joy" + Wirkung-Tooltip auf der Row.
+        const joyRow = spieler ? spieler.querySelector(".emotion.joy") : null;
+        const joyName = joyRow ? joyRow.querySelector(".name") : null;
+        out.germanName = !!joyName && joyName.textContent === "Freude";
+        out.rowHasWirkungTooltip = !!joyRow && /wärmt/i.test(joyRow.getAttribute("title") || "");
+
+        // (b) Das FP-Feedback existiert (Vignette + Label) — sichtbar in jeder Kamera.
+        const vig = document.getElementById("emotion-vignette");
+        const lab = document.getElementById("emotion-label");
+        out.vignetteInDom = !!vig;
+        out.labelInDom = !!lab;
+
+        // (c) Eine starke Emotion entzündet Vignette + Label (dominante = Freude).
+        for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+        r.state.player.emotions.joy = 0.9;
+        r._updateEmotionFeedback();
+        out.vignetteLit = !!vig && parseFloat(vig.style.opacity || "0") > 0.2;
+        out.labelShowsDominant = !!lab && lab.textContent === "Freude";
+
+        // (d) Ruhe (alle ~0) verblasst das Feedback wieder.
+        for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+        r._updateEmotionFeedback();
+        out.vignetteFadesWhenCalm = !!vig && parseFloat(vig.style.opacity || "0") === 0;
+
+        for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+        return out;
+    });
+
+    if (emoClarityResults) {
+        check("UI-Putz Emotion: Balken zeigen deutschen Namen (Freude statt joy)", emoClarityResults.germanName);
+        check("UI-Putz Emotion: Row trägt Wirkung-Tooltip (Legende)", emoClarityResults.rowHasWirkungTooltip);
+        check("UI-Putz Emotion: FP-Vignette im DOM", emoClarityResults.vignetteInDom);
+        check("UI-Putz Emotion: FP-Label im DOM", emoClarityResults.labelInDom);
+        check("UI-Putz Emotion: starke Emotion entzündet die Vignette", emoClarityResults.vignetteLit);
+        check("UI-Putz Emotion: Label zeigt die dominante Emotion (Freude)", emoClarityResults.labelShowsDominant);
+        check("UI-Putz Emotion: Ruhe verblasst das Feedback", emoClarityResults.vignetteFadesWhenCalm);
+    }
+
     // ### UI V2 — Quick-Buttons + Hilfe-Sektion in Einstellungen (Tab-System) ###
     const uiActionsResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;

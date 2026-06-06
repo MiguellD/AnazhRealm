@@ -434,6 +434,35 @@
                 border-color: var(--brass-1);
                 box-shadow: 0 0 6px rgba(180, 108, 255, 0.3);
             }
+            /* FP-sichtbares Emotion-Feedback (UI-Putz): ein Bildschirmrand-Schimmer in der
+               Farbe der dominanten Emotion + ein dezentes Label. box-shadow/Farbe/Opazität
+               setzt updateStatusPanel via _emotionState; die lange Transition glättet den
+               Stimmungs-Wechsel. Trägt die Stimmung in JEDER Kamera (die 3D-Aura nicht). */
+            #emotion-vignette {
+                position: fixed;
+                inset: 0;
+                pointer-events: none;
+                z-index: 2;
+                opacity: 0;
+                transition:
+                    opacity 1.4s ease,
+                    box-shadow 1.4s ease;
+            }
+            #emotion-label {
+                position: fixed;
+                top: 92px;
+                left: 50%;
+                transform: translateX(-50%);
+                pointer-events: none;
+                z-index: 3;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                letter-spacing: 0.18em;
+                text-transform: uppercase;
+                opacity: 0;
+                transition: opacity 1.4s ease;
+                text-shadow: 0 0 8px currentColor;
+            }
             #dialogue-box {
                 position: absolute;
                 top: 28px;
@@ -4425,6 +4454,11 @@
     </head>
     <body>
         <canvas id="world-canvas"></canvas>
+        <!-- FP-sichtbares Emotion-Feedback: ein Bildschirmrand-Schimmer in der Farbe der
+             dominanten Emotion + ein Label ("Freude"). Anders als die 3D-Aura (nur in
+             3rd-Person sichtbar) trägt es die Stimmung in JEDER Kamera. -->
+        <div id="emotion-vignette" aria-hidden="true"></div>
+        <div id="emotion-label" aria-hidden="true"></div>
         <div id="fps"></div>
         <div id="dialogue-box" aria-live="polite"></div>
         <div id="build-mode-hud" aria-live="polite" hidden></div>

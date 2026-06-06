@@ -62,6 +62,17 @@ function startSaveServer() {
             )
                 await new Promise((r) => setTimeout(r, 50));
         });
+        // Emotion-Klarheit sichtbar machen: eine starke Freude -> die FP-Vignette + das
+        // Label leuchten golden (dann 1.6s für die CSS-Transition, dann Screenshot).
+        await page.evaluate(() => {
+            const r = window.anazhRealm;
+            if (r && r.state && r.state.player && r.state.player.emotions) {
+                for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+                r.state.player.emotions.joy = 0.9;
+                if (typeof r._updateEmotionFeedback === "function") r._updateEmotionFeedback();
+            }
+        });
+        await new Promise((r) => setTimeout(r, 1600));
         const dump = await page.evaluate(() => {
             const r = window.anazhRealm;
             // normalisiert outerHTML: Attribute pro Tag alphabetisch sortiert, damit
