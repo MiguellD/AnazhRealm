@@ -15677,18 +15677,6 @@ class AnazhRealm {
         if (weaknesses.length > 50) weaknesses.shift();
     }
 
-    cacheNoise(key, value) {
-        // FIFO-Cap auf 100k Einträgen verhindert unbegrenztes Wachstum
-        // bei häufigem Steepness-Wechsel (Cache-Key enthält Steepness).
-        const cache = this.state.noiseCache;
-        if (cache.size >= 100000) {
-            const oldest = cache.keys().next().value;
-            cache.delete(oldest);
-        }
-        cache.set(key, value);
-        return value;
-    }
-
     // V12.0-perf.e — adaptiver Qualitäts-Governor (ersetzt das gravity-Pflaster).
     // Bei FPS-Druck (< low) strafft er Render-Radius + Build-Budget (weniger
     // Architekturen sichtbar, langsamerer Aufbau → weniger GPU/CPU-Last); bei
@@ -15785,14 +15773,6 @@ class AnazhRealm {
             }
         });
         this.log("Kollisionen optimiert: CCD-Parameter angepasst");
-    }
-
-    optimizeTerrainRoughness() {
-        if (this.state.errorLog.some((log) => log.includes("durch Wände"))) {
-            this.state.terrainSteepness = Math.max(0.1, this.state.terrainSteepness - 0.1);
-            this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
-            this.log(`Terrain-Steilheit autonom reduziert auf ${this.state.terrainSteepness}`);
-        }
     }
 
     // ### Nexus der Unendlichkeit ###
@@ -16410,49 +16390,6 @@ class AnazhRealm {
         chatOutput.appendChild(line);
         chatOutput.scrollTop = chatOutput.scrollHeight;
     }
-    implementGameMechanics() {
-        // V9.39 Phase 5c.2.c.3.b.iii — der Legacy-`onMouseClick`-Handler
-        // (Klick platziert/entfernt graue 1×1×1-Boxen via Raycast gegen
-        // `state.groundChunks` mit `[state.groundMesh]`-Fallback) ist seit
-        // V6 vom echten Bau-System abgelöst (`tryMousePlace`/`tryMouseBreak`
-        // mit Hotbar + Bau-Modus, V6.A). Mit dem V9.39-Heightfield-Lösch
-        // wurde der Fallback `[state.groundMesh]` zu `[null]` → THREE-
-        // Raycast crashte mit „Cannot read properties of null (reading
-        // 'layers')". Hier nur das tote `gameMechanics`-Skelett behalten
-        // (state-Field-Audit), der Klick-Listener entfällt — die echten
-        // Maus-Pfade laufen über `tryMouseBreak`/`tryMousePlace`.
-        this.state.gameMechanics = {
-            raycaster: new THREE.Raycaster(),
-            mouse: new THREE.Vector2(),
-        };
-        window.addEventListener("contextmenu", (e) => e.preventDefault());
-        this.log("Spielsteuerung implementiert: LMB/RMB über tryMouseBreak/tryMousePlace (V9.39)");
-    }
-
-    createWorld(worldType) {
-        this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
-        if (worldType === "forest") {
-            for (let i = 0; i < 50; i++) {
-                const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.5, 5, 8);
-                const trunkMaterial = new THREE.MeshBasicMaterial({ color: 0x8b4513 });
-                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-                const leavesGeometry = new THREE.SphereGeometry(2, 8, 8);
-                const leavesMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
-                const x = Math.random() * 100 - 50;
-                const z = Math.random() * 100 - 50;
-                const terrainHeight = this.getTerrainHeightAt(x, z);
-                trunk.position.set(x, terrainHeight + 2.5, z);
-                leaves.position.set(x, terrainHeight + 5, z);
-                const tree = new THREE.Group();
-                tree.add(trunk);
-                tree.add(leaves);
-                this.state.scene.add(tree);
-            }
-            this.log("Wald-Welt erschaffen: 50 Bäume generiert");
-        }
-    }
-
     updateCreatureEmotions() {
         for (let i = 0; i < this.state.creatures.length; i++) {
             if (Math.random() < 0.1) {
@@ -32497,14 +32434,6 @@ class AnazhRealm {
     // Funktion mitbringen, die der Tick aufruft. Statische Strukturen
     // (Hütten, Tempel) brauchen das nicht.
 
-    _seedRng(seed) {
-        let s = (seed | 0) >>> 0 || 1;
-        return () => {
-            s = (s * 1664525 + 1013904223) >>> 0;
-            return s / 4294967296;
-        };
-    }
-
     // ### Ring 6.4 — Bauplan-Datenschicht ###
     //
     // Vorher: drei hartcodierte `_buildVillageGroup/_buildTempleGroup/
@@ -38796,11 +38725,6 @@ class AnazhRealm {
             if (pz + hz > maxZ) maxZ = pz + hz;
         }
         return { dx: maxX - minX, dy: maxY - minY, dz: maxZ - minZ };
-    }
-
-    _compoundVisualSpan(bp) {
-        const e = this._compoundVisualExtent(bp);
-        return Math.max(e.dx, e.dy, e.dz);
     }
 
     // V17.74 Welle 1b (kampf-plan §11.5) — WIE wird ein Bauplan BENUTZT? Aus Rolle + Form AUSGELESEN
@@ -46722,8 +46646,6 @@ class AnazhRealm {
             // Player-Approach. `island.userData.needsPhysics` wurde nie
             // gesetzt — der Block war tote Schicht (System-Audit §2).
 
-            this.updateWallCollisions();
-
             // ### Physik-Simulation ### (V9.44-f → _loopPhysicsSync)
             this._loopPhysicsSync(delta, currentTime);
 
@@ -47899,14 +47821,6 @@ class AnazhRealm {
         return typeof vy === "number" && Number.isFinite(vy) ? vy : this.state.terrainBaseHeight || 0;
     }
 
-    updateWallCollisions() {
-        // No-op: Mit per-Chunk btHeightfieldTerrainShape (jetzt einheitlich für
-        // initial + extension) deckt die Heightfield-Physik die Wand-Kollisionen
-        // bereits zuverlässig ab. Das alte addWallCollisions las das globale
-        // 256×256-Heightfield, das nicht mehr existiert. Wird in einem späteren
-        // Cleanup ganz entfernt.
-    }
-
     updateGrowth() {
         // ### Wachstum aktualisieren ###
         // Zweck: Dynamisches Wachstum von Kreaturen oder Terrain
@@ -47921,84 +47835,6 @@ class AnazhRealm {
             });
         }
         this.log("Wachstum aktualisiert", "DEBUG");
-    }
-
-    addWallCollisions(heightData, width, depth, scaleX, scaleZ, chunkX, chunkZ, maxBoxes) {
-        const WORLD_SIZE = 300;
-        const steepnessThreshold = 2.0; // Erhöhe Schwellenwert, um weniger Boxen zu generieren
-        // chunkData.heightData speichert die globale 256×256-Heightmap, nicht
-        // nur den Chunk-Ausschnitt. Vor diesem Fix iterierte die Schleife über
-        // alle 256×256 Zellen und addierte zusätzlich einen chunkX-Offset zu
-        // worldX – Folge: pinke Kollisionsboxen schwebten quer durch die Welt
-        // und überlagerten sich pro Chunk. Jetzt nur den eigenen Chunk-Bereich
-        // scannen und worldX/Z direkt aus dem globalen Index berechnen.
-        const chunkSize = this.state.chunkSize;
-        const startX = chunkX * chunkSize;
-        const startZ = chunkZ * chunkSize;
-        const endX = Math.min(startX + chunkSize, width - 1);
-        const endZ = Math.min(startZ + chunkSize, depth - 1);
-        let addedBoxes = 0;
-
-        for (let z = startZ; z < endZ && addedBoxes < maxBoxes; z++) {
-            for (let x = startX; x < endX && addedBoxes < maxBoxes; x++) {
-                const idx = z * width + x;
-                const worldX = (x / (width - 1)) * WORLD_SIZE - WORLD_SIZE / 2;
-                const worldZ = (z / (depth - 1)) * WORLD_SIZE - WORLD_SIZE / 2;
-                const height = heightData[idx];
-                const heightRight = heightData[idx + 1];
-                const heightDown = heightData[(z + 1) * width + x];
-                const dx = Math.abs(height - heightRight);
-                const dz = Math.abs(height - heightDown);
-                const steepness = Math.max(dx, dz);
-
-                if (steepness > steepnessThreshold) {
-                    const boxHeight = Math.max(dx, dz, 2.0);
-                    const boxGeometry = new THREE.BoxGeometry(scaleX, boxHeight, scaleZ);
-                    const boxMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true });
-                    const box = new THREE.Mesh(boxGeometry, boxMaterial);
-                    box.position.set(worldX, height + boxHeight / 2, worldZ);
-                    box.visible = true;
-
-                    // V8.26 Polish §6.4 — btVector3-Pool statt drei new-Allocs
-                    // pro Wand-Box. Ammo's btBoxShape + setOrigin + Inertia-Init
-                    // kopieren die Werte intern, also kann tmpVec1 sequentiell
-                    // wiederverwendet werden. Plus rbInfo + transform werden
-                    // nach Body-Konstruktion destroyed (sie sind Helper, ihre
-                    // Werte sind im Body gespiegelt).
-                    const halfExtents = this.setVec(this.state.tmpVec1, scaleX / 2, boxHeight / 2, scaleZ / 2);
-                    const boxShape = new Ammo.btBoxShape(halfExtents);
-                    const transform = new Ammo.btTransform();
-                    transform.setIdentity();
-                    const origin = this.setVec(
-                        this.state.tmpVec1,
-                        worldX / this.state.scaleFactor,
-                        (height + boxHeight / 2) / this.state.scaleFactor,
-                        worldZ / this.state.scaleFactor
-                    );
-                    transform.setOrigin(origin);
-                    const motionState = new Ammo.btDefaultMotionState(transform);
-                    const localInertia = this.setVec(this.state.tmpVec1, 0, 0, 0);
-                    const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, boxShape, localInertia);
-                    const body = new Ammo.btRigidBody(rbInfo);
-                    this.state.physicsWorld.addRigidBody(body);
-                    // Helper-Objekte räumen — Werte sind in MotionState + Body
-                    // bereits kopiert. boxShape + motionState bleiben referenziert
-                    // vom Body und werden beim Wand-Cleanup destroyed.
-                    Ammo.destroy(rbInfo);
-                    Ammo.destroy(transform);
-                    box.userData.physicsBody = body;
-                    box.userData.physicsShape = boxShape;
-                    box.userData.physicsMotionState = motionState;
-                    this.state.rigidBodies.push(box);
-                    this.state.wallBoxes.push(box);
-                    this.state.scene.add(box);
-                    addedBoxes++;
-                }
-            }
-        }
-
-        this.log(`Chunk (${chunkX}, ${chunkZ}): ${addedBoxes} Kollisionsboxen hinzugefügt`, "DEBUG");
-        return addedBoxes;
     }
 }
 // Welle 4 Phase 1 — Material-Tag-Achsen. Zehn Felder aus Konzept §2.2,
