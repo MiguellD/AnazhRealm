@@ -93,21 +93,21 @@ Phase 0).
 
 ### 4.1 Was ist GAR NICHT im UI (nur per Chat/Geheimwissen erreichbar)?
 
-| Funktion | heute | Schwere |
-| --- | --- | --- |
-| **Ausrüsten** (Gerät/Rüstung anlegen) | NUR Chat `rüste X` — kein Knopf, keine Slots, man sieht nicht mal, was getragen wird | 🔴 blockiert den Kampf-/Crafting-Loop |
-| **FERTIGEN** (`fertigeBlueprint`, V17.66 gebaut) | nur tief im Werkstatt-Editor-Stats-Panel; kein Chat-Befehl `fertige X` | 🔴 das Kern-Crafting-Feature ist quasi versteckt |
-| **Trank trinken** | Chat `trink X`, gratis, kein Trank-Slot/Knopf | 🟡 (S6-B Flora-Ökonomie ist eigener Faden) |
-| **Drawer-Hotkeys** (M/K/P/B/I/V) | funktionieren, aber kein sichtbarer Hinweis — der Spieler muss sie kennen | 🟡 |
+| Funktion                                         | heute                                                                                | Schwere                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| **Ausrüsten** (Gerät/Rüstung anlegen)            | NUR Chat `rüste X` — kein Knopf, keine Slots, man sieht nicht mal, was getragen wird | 🔴 blockiert den Kampf-/Crafting-Loop            |
+| **FERTIGEN** (`fertigeBlueprint`, V17.66 gebaut) | nur tief im Werkstatt-Editor-Stats-Panel; kein Chat-Befehl `fertige X`               | 🔴 das Kern-Crafting-Feature ist quasi versteckt |
+| **Trank trinken**                                | Chat `trink X`, gratis, kein Trank-Slot/Knopf                                        | 🟡 (S6-B Flora-Ökonomie ist eigener Faden)       |
+| **Drawer-Hotkeys** (M/K/P/B/I/V)                 | funktionieren, aber kein sichtbarer Hinweis — der Spieler muss sie kennen            | 🟡                                               |
 
 ### 4.2 Was ist NUR EXTREM UMSTÄNDLICH erreichbar (obwohl relevant)?
 
-| Funktion | Weg heute | besser |
-| --- | --- | --- |
-| **Bauplan platzieren** | Inventar (I) → Slot wählen → Hotbar-Slot zuweisen → F/RMB = 4 Schritte | direkter Inventar→Hand-Fluss |
-| **Inventar** | verstecktes Modal-Overlay, überdeckt die Welt; Material-Mengen schwer ablesbar | sichtbarer, geordneter Raum im „Ich"-Bereich |
-| **Logbuch sehen** | Einstellungen → Checkbox → Konsole-Caret = 3 Klicks | ein Schalter |
-| **Werkstatt-Preview** | bricht beim Tab-Wechsel ab (man verliert sie, wenn man woanders nachsieht) | persistenter Werkstatt-Zustand |
+| Funktion               | Weg heute                                                                      | besser                                       |
+| ---------------------- | ------------------------------------------------------------------------------ | -------------------------------------------- |
+| **Bauplan platzieren** | Inventar (I) → Slot wählen → Hotbar-Slot zuweisen → F/RMB = 4 Schritte         | direkter Inventar→Hand-Fluss                 |
+| **Inventar**           | verstecktes Modal-Overlay, überdeckt die Welt; Material-Mengen schwer ablesbar | sichtbarer, geordneter Raum im „Ich"-Bereich |
+| **Logbuch sehen**      | Einstellungen → Checkbox → Konsole-Caret = 3 Klicks                            | ein Schalter                                 |
+| **Werkstatt-Preview**  | bricht beim Tab-Wechsel ab (man verliert sie, wenn man woanders nachsieht)     | persistenter Werkstatt-Zustand               |
 
 ### 4.3 Was ist NICHT GEORDNET?
 
@@ -124,7 +124,7 @@ Phase 0).
 - **Kreaturen + Fähigkeiten** (Schöpfer: „der Dirigent + das Orchester") — die Kreaturen
   (wen ich dirigiere) und die Fähigkeiten/Gesetze (womit ich dirigiere) sind zwei Tabs.
 - **Das Ich ist verstreut:** Seele · Stats · Ausrüstung · Inventar leben in Spieler-Drawer
-  + verstecktem Overlay + Chat — nicht in EINEM „Ich"-Raum.
+    - verstecktem Overlay + Chat — nicht in EINEM „Ich"-Raum.
 - **Zwei Tag/Nacht-Dinge** (zu trennen!): das **UI-Theme-Toggle** (Pergament hell/dunkel,
   `#theme-toggle`) — klar entfernbar, Nacht wird der EINE Stil — UND der **3D-Welt-Zyklus**
   (Sonne/Mond, Tag-Länge/Tageszeit in den Einstellungen) — das ist die _lebende Welt_
@@ -148,7 +148,7 @@ die View) — die Voraussetzung dafür, dass die UX-Akte (2–4) sauber + kompak
   `renderPlayerStatsUI` + `_renderCreatureListUI` migriert, **DOM byte-identisch** verifiziert
   (`scripts/diag-ui-snapshot.cjs`).
 - **1b:** die Schema-Helfer für die wiederkehrenden Muster — `_wireSlider(def)` (eine
-  Slider-*Tabelle* statt 46 hand-verdrahteter Regler), `_fillSelect(sel, items, opts)` (die
+  Slider-_Tabelle_ statt 46 hand-verdrahteter Regler), `_fillSelect(sel, items, opts)` (die
   19 `<option>`-Schleifen), `_pill`/`_chip` (die Werkstatt/Kreatur-Pills), `_section`/`_drawer`
   (die Drawer-Gerüste). Jeder ersetzt eine Klasse von Wiederholung.
 - **1c:** die übrigen ~40 row/list/panel-Methoden migrieren (Inventar, Werkstatt-Render-
@@ -234,7 +234,81 @@ die Bibliothek: geordnetes Wissen). Vorschlag (vom Schöpfer zu verfeinern, §7)
 
 ---
 
-## 7. Offene Klärungen (Schöpfer-Entscheidungen)
+## 7. Die Onboarding-Philosophie — von den Riesen lernen, sie in den Schatten stellen
+
+### Die Riesen-Lehre: „das Level IST das Tutorial"
+
+Die genialsten Spiele erklären nie — sie **lehren durch Design**. Eine Anleitung am Anfang
+ist das Eingeständnis, dass das Design selbst nicht spricht.
+
+- **Mario 1-1** (Miyamoto): kein Wort — ein Goomba läuft auf dich zu, du lernst springen.
+  Das Level ist so gebaut, dass der erste sichere Instinkt der richtige ist.
+- **Half-Life / Portal** (Valve): „show, don't tell" — die erste Kammer lehrt durch die
+  Umgebung; du siehst ein Portal, gehst durch, verstehst.
+- **Zelda BotW** (Great Plateau): ein offenes Tutorial-Gebiet, das durch NEUGIER zieht
+  (ein Turm in der Ferne → du kletterst → die Welt öffnet sich). Kein Text-Dump.
+- **Outer Wilds**: KEIN Tutorial — du erwachst am Lagerfeuer, die Welt ist da, die Neugier
+  ist der Lehrer.
+- **Minecraft**: die Notwendigkeit lehrt (die Nacht kommt, du MUSST handeln).
+
+### Das geniale Meta (Tunic · Disco Elysium): die Anleitung IST das Werk
+
+- **Tunic**: das Handbuch ist ein in-Welt-Sammelobjekt (Seiten, teils in erfundener
+  Sprache) — die Anleitung ist Teil des Mysteriums, der Entdeckung.
+- **Disco Elysium**: die Fähigkeiten SPRECHEN mit dir (Stimmen im Kopf) — das UI ist
+  diegetisch + charaktervoll, kein Fremdkörper, der den Blick versperrt.
+
+### AnazhRealms Meta-Vorteil — den KEIN Riese hat
+
+Jeder Riese onboarded eine STATISCHE Welt (der Designer hat das Tutorial handgebaut, einmal,
+für alle gleich). AnazhRealm trägt zwei Dinge, die kein anderes Spiel hat:
+
+1. **Eine lebende KI im Werk** (Eins / der Nexus) — sie IST der Guide. Kein Modal nötig: die
+   KI sieht, was du tust, und führt organisch + persönlich. Das ist die perfekte Einheit von
+   Form + Inhalt — ein Werk ÜBER Mensch+KI-Schöpfung onboardet DURCH die KI.
+2. **Eine Welt, die auf dein Wort reagiert** — der erste Moment ist nicht „schau, was der
+   Designer baute" (BotW), sondern „schau, was DU gerade mit einem Wort erschaffen hast".
+
+### Info ohne Flutung — die vier Kanäle
+
+Nie alles am Anfang. Just-in-time, diegetisch, gestaffelt:
+
+1. **Der Begleiter (just-in-time):** Eins sagt das Rechte im rechten Moment (du näherst dich
+   Wasser → ein dezenter Hinweis; du hältst zum ersten Mal ein Gerät → der Equip-Hinweis).
+   Die KI ist der lebende Tooltip — Wissen kommt, wenn es gebraucht wird, von einer Stimme.
+2. **Die Welt selbst (diegetisch):** statt einer Stats-Anzeige → die Aura/Emotion-Tönung;
+   statt eines Inventar-Fensters → der Avatar trägt sichtbar; statt einer Anleitung → die
+   Welt reagiert + lehrt dadurch.
+3. **Die Bibliothek als ORT (nicht Cheat-Sheet):** die DSL-Referenz / die Gesten sind kein
+   „Hilfe-Tab", sondern ein illuminiertes Grimoire, ein Ort, den man betritt (Alexandria).
+4. **Progressive disclosure (Apple):** die Oberfläche zeigt das Häufige, die Tiefe ist einen
+   Schritt entfernt (Hover, „mehr", das eingeklappte Render-Tuning).
+
+### Wie wir die Riesen in den Schatten stellen
+
+Die Riesen sind genial im „show don't tell" — aber ihr Onboarding ist **eingefroren**
+(handgebaut, einmal, für alle gleich). AnazhRealm geht eine Stufe weiter: **von „show don't
+tell" zu „speak and it becomes".** Der erste Moment lädt nicht nur ein zu ENTDECKEN (Outer
+Wilds) oder zu folgen (BotW) — er lädt ein zu ERSCHAFFEN, sofort, mit einem Wort, und die
+Welt + die KI antworten lebendig + persönlich. Kein Riese kann das, weil keiner eine echte
+KI + eine wort-reaktive Welt trägt. **Co-Creation als Onboarding** — das ist der Schatten,
+den AnazhRealm wirft.
+
+### Der WOW-Start (GEBAUT) + die Folge-Akte
+
+- **GEBAUT (V18.x):** das 3-Seiten-Anleitungs-Modal (Welt/Spieler/Nexus mit Backdrop, das
+  die 3D-Welt verdeckte — auch bei jedem Diagnose-Screenshot) entfiel. Die Welt ist sofort
+  da; Eins lädt EINMAL diegetisch ein („Diese Welt ist still — bis du sprichst."); der Chat
+  lädt ein („sprich, und die Welt antwortet …").
+- **Folge-Akte:** (a) der **just-in-time-Begleiter** (kontextuelle Hinweise an realen
+  Momenten — Wasser/Equip/Werkstatt, statt Vorab-Anleitung); (b) der **erste-Geste-Funke**
+  (die erste Welt-Reaktion gefeiert — der WOW verstärkt, nicht stumm); (c) die **Bibliothek
+  als betretbarer Wissens-Ort**; (d) die **diegetische Habe** (der Avatar trägt sichtbar,
+  was du hast — statt eines versteckten Inventar-Fensters).
+
+---
+
+## 8. Offene Klärungen (Schöpfer-Entscheidungen)
 
 1. **Tag/Nacht — nur das UI-Theme, oder auch der 3D-Welt-Zyklus?** Sicher + sofort: das
    UI-THEME-Toggle weg, Nacht-Theme als EINER Stil. Offen: ob der 3D-Tag-Nacht-ZYKLUS
@@ -253,5 +327,5 @@ die Bibliothek: geordnetes Wissen). Vorschlag (vom Schöpfer zu verfeinern, §7)
 ---
 
 _Dieser Plan ist der aktive UI-Bogen. Der Code-Builder (Phase 1) läuft; die UX-Phasen
-warten auf den Schöpfer-Sign-off der Richtung (§7), dann Akt für Akt, verifiziert,
+warten auf den Schöpfer-Sign-off der Richtung (§8), dann Akt für Akt, verifiziert,
 gemergt._
