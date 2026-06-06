@@ -10,7 +10,7 @@
 >
 > **Diese Datei ersetzt die zwei vorigen Wasser-Pläne als die EINE Wahrheit:** sie konsolidiert
 > die Schicht-Analyse (vormals hier, V18.17) + die Geometrie-Wahrheit „Fläche auf `L`"
-> (`wasser-finale-form-plan.md`, V18.6 — jetzt HISTORIE). **Vor JEDER Wasser-Arbeit ZUERST lesen.**
+> (`docs/archiv/wasser-finale-form-plan.md`, V18.6 — jetzt HISTORIE). **Vor JEDER Wasser-Arbeit ZUERST lesen.**
 >
 > **Regel über allem (Regel #0, mehrfach benannt + mehrfach verletzt):** Wasser-RENDER ist
 > PIXEL-BLIND headless. Der Schöpfer-Browser ist die EINZIGE Wahrheit. NIE 2+ pixel-blinde

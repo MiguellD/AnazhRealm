@@ -1,5 +1,14 @@
 # Tiefe-Fundament-Plan — der Plan unter der Oberfläche (Stand V17.104, 04.06.2026)
 
+> **✅ ARCHIVIERT (06.06.2026) — der Audit-Bogen A–J ist GEBAUT (V17.92–.118).** Der Schöpfer-Browser-Audit
+> vom 03./04.06. (sechs Befunde, vier mit EINER Wurzel — die vertikale Chunk-Hülle wuchs beim V14-Terrain-Bogen
+> nicht mit) ist abgearbeitet: A (Ruckel) · B (Schwimm) · C (Strukturen) · D/J4 (Trapeze → Facetten-Lichtung) ·
+> F (effiziente Höhe, Keystone) · G-Kern (Kavernen) · H-Aquifer · H3-Ozean · I (tote Infra) · J1/J2/J3
+> (Render-Harmonie) — alle gebaut. Die OFFENEN Reste leben woanders weiter (eine Quelle pro Faden):
+> die Render-Feinschliff-Punkte **R1/R2/R3/R5** + **G3 (Höhleneingänge/Canyons)** + der Kreatur-FPS-Dirigent
+> in `docs/roadmap.md` „OFFENE FÄDEN"; die **LOD-Pyramide (E → U2/U4/U5/U6 + Cross-LOD-Stitching)** in
+> `docs/lod-kaskade-plan.md`. Dieses Dokument ist die Historie des Bogens — nicht mehr gepflegt. Stand unten: V17.104.
+
 Schöpfer-Befund (Browser-Audit, drei Screenshots): das Terrain ist nahe + ruckelt in neue Chunks; die Console/Save/Nexus ruckeln im 10-s-Takt; ein Licht-Bug ("Trapeze" tagsüber, weg nach 18:00) + Stein/Eisen nachts schwarz + Strukturen ohne Mikrostruktur; Höhlen sind mit dem gigantisch gewordenen Terrain NICHT mitgewachsen (mickrige Schläuche, keine Eingänge/Canyons); Wasser klebt an Höhlenwänden / unter dem Boden, die Schwimmmechanik greift über Lufthöhlen.
 
 ## Stand-Übersicht (V17.100) — was gebaut ist

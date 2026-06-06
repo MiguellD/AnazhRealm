@@ -1,6 +1,14 @@
 # DAS EINE RESONANZ-SYSTEM — die systematische Vereinheitlichung
 
-**Status:** PLAN (03.06.2026, nach dem Schöpfer-Auftrag „all die Funktionen überlegen … was bedeuten die Klassen/Rollen in ihren jeweiligen Parametern, nicht nur einer, sondern über die GESAMTE Resonanz … welche Achsen wie gedreht, um den perfekten Katalysator zu erreichen, damit Spieler frei + kreativ sein können, das Ganze systematisch — so war es doch ursprünglich im Archiv beschrieben").
+> **✅ VOLLENDET + ARCHIVIERT (V17.80–.85).** Die Resonanz-Vereinheitlichung ist KOMPLETT gebaut: ein
+> Produkt-Vektor → ein Rollen-Register → die Wirkung tief für ALLE Effekt-Träger → der Katalysator
+> sichtbar → die Klassifikation richtig (U1–U6, V17.80–.84 + der Schöpfer-Browser-Pass V17.85). Dieses
+> Dokument beschreibt das fertige System + bleibt die Referenz dafür; es wird nicht mehr gepflegt. Der
+> lebende Code: `_blueprintProductVector`, `ROLE_SIGNATURES`, `_blueprintRoleFit`/`_blueprintRoleSpectrum`,
+> `_computeFormRole`, `_blueprintCatalystHint`. Verwandt: `docs/crafting-konzept.md` (das Substrat) +
+> `docs/aktivierungsmatrix.md` (die Form-Tag-Matrix) + `docs/kampf-plan.md` §11.10 (die Anwendung im Kampf-Bogen).
+
+**Status:** ✅ VOLLENDET (V17.80–.85, archiviert). Ursprung (03.06.2026, nach dem Schöpfer-Auftrag „all die Funktionen überlegen … was bedeuten die Klassen/Rollen in ihren jeweiligen Parametern, nicht nur einer, sondern über die GESAMTE Resonanz … welche Achsen wie gedreht, um den perfekten Katalysator zu erreichen, damit Spieler frei + kreativ sein können, das Ganze systematisch — so war es doch ursprünglich im Archiv beschrieben").
 
 **Der wahre Norden dieses Plans:** `docs/crafting-konzept.md` §2–9 + `docs/aktivierungsmatrix.md` (die ursprüngliche, kohärente Vision) + `docs/kampf-plan.md` §11.10 (die begonnene Resonanz-Vereinheitlichung R1–R3/S10) + `docs/das-lebendige-feld.md` (lesen·schreiben·werten).
 

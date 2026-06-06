@@ -25,9 +25,18 @@ LEBENDE Verständnis lebt in `docs/das-lebendige-feld.md`.
 | `lebendige-wertung-plan.md` | Lebendige-Wertung-Arc (4 Phasen) — das WERTEN via Vorhersagefehler gegen eine gleitende Baseline | **KOMPLETT** (V17.42–.50: lokal-attribuierte Regel-Fitness · Emotion-Appraisal · die Klammer) |
 | `emotion-kern-plan.md` | Emotion-Kern-Arc (W1–W5) — wie Gefühl WIRKLICH funktioniert (dimensional · Substanz-Brücke · Fast/Slow · sozial · Abenteuer) | **KOMPLETT in baubarer Tiefe** (V17.45–.49); der W5-Kampf-Affekt wird im `kampf-plan.md` konsumiert |
 
-## Bogen: Der Körper der Welt — Render · Terrain · Tiefe (V14–V17) — VOLLENDET
+## Bogen: Der Crafting-/Schöpfungs-Fluss — die Resonanz-Vereinheitlichung (V17.59–.85) — VOLLENDET
 
-Die Diagnosen + Pläne, die die Welt-OBERFLÄCHE malerisch machten.
+Die Vereinheitlichung „ein Produkt-Vektor, viele Leser". Der lebende, noch aktive Bogen
+(Kampf + Crafting, mit den offenen Resten S6-B/S9/S11/Phase E) ist `docs/kampf-plan.md` §11.
+
+| Datei | Was | Stand |
+|---|---|---|
+| `resonanz-system.md` | Das EINE Resonanz-System — Rolle · Domäne · Op · Stat · Affordanz · Emotion emergieren als argmax-Resonanz DESSELBEN Produkt-Vektors (Material ⊕ Form ⊕ Skala), kein Whitelist | **VOLLENDET (U1–U6, V17.80–.85)**; lebender Code: `_blueprintProductVector` · `ROLE_SIGNATURES` · `_blueprintRoleFit` |
+
+## Bogen: Der Körper der Welt — Render · Terrain · Tiefe · Wasser-Geometrie (V14–V18) — VOLLENDET
+
+Die Diagnosen + Pläne, die die Welt-OBERFLÄCHE malerisch + tief machten.
 
 | Datei | Was | Stand |
 |---|---|---|
@@ -35,6 +44,8 @@ Die Diagnosen + Pläne, die die Welt-OBERFLÄCHE malerisch machten.
 | `ghibli-tiefe-diagnose.md` | Die malerischen Befunde (Wolken · Bäume · Farbe · Fülle · Strukturen-Kontrast) | geheilt in den V17-Render-/Tiefe-Wellen |
 | `tiefe-bogen-plan.md` | Vier Wurzeln (Wolken-Noise · Bäume · Terrain-Makrotextur · Strukturen-Kontrast) | abgeschlossen (V17.10–.13) |
 | `lebende-umgebung.md` | GPU-instanzierte Vegetation + Gras-Riese | umgesetzt (V16.1 Gras-Riese · V17.1 Scatter-Vegetation) |
+| `tiefe-fundament-plan.md` | Der Schöpfer-Audit-Bogen A–J (Ruckel · Schwimm · Strukturen · Trapeze · effiziente Höhe · Kavernen · Aquifer · Render-Harmonie) | **GEBAUT (V17.92–.118)**; offene Reste (R-Feinschliff · G3-Canyons) in `roadmap.md`, LOD-Teil in `lod-kaskade-plan.md` |
+| `wasser-finale-form-plan.md` | Die Wasser-Render-Geometrie „Fläche auf `L`" (vom Tiefenpuffer versöhnt) | **GEBAUT (V18.6), SUBSUMIERT** von `docs/wasser-render-architektur-plan.md` (V18.31, aktiv) |
 
 ## Bögen: Code- + Test- + Performance-Hygiene — VOLLENDET
 

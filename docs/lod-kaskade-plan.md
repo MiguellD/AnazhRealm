@@ -1,6 +1,8 @@
 # Die DETAIL-KASKADE — der vereinte LOD-Plan (eine Distanz, alle Gesichter)
 
-> **Status:** PLAN (04.06.2026, Schöpfer-Auftrag „plane wie ein Profi — man baut nicht 10 LOD-Systeme; ein Profi bringt Synergie, klare Flüsse, Regelkreise die sich selbst stabilisieren"). Ungebaut — die Teilschritte warten auf den Schöpfer-Sign-off, dann „wird gezaubert".
+> **Status:** AKTIVER PLAN (04.06.2026, Schöpfer-Auftrag „plane wie ein Profi — man baut nicht 10 LOD-Systeme; ein Profi bringt Synergie, klare Flüsse, Regelkreise die sich selbst stabilisieren").
+>
+> **Stand V18.31: U1 ✅ GEBAUT (V17.114)** — `_detailBand` + die frozen `DETAIL_CASCADE`-Tabelle (Code); `_voxelChunkLodFor` liest sie byte-identisch, Aerial-`hazeFar` an die Ring-Kante gekoppelt. **U3 ✅ GEBAUT (V17.115)** — Kreaturen lesen die Kaskade (`aiDiv`, ferne KI seltener, glatt). **OFFEN: U2** (Wasser-LOD), **U4** (Deko/Impostor), **U5** (Schatten-CSM), **U6** (echtes Clipmap) — alle pixel-blind → Schöpfer-Browser-Loop führt jeden Schritt. Reihenfolge (roadmap Phase 2): erst das Wasser-System sauber (Phase 1.5), dann U2 darauf.
 >
 > **Vor Arbeit an LOD / Streaming / Wasser-Ferne / Schatten / Deko-Distanz / Draw-Calls / Kreatur-Perf ZUERST lesen.**
 
@@ -84,7 +86,7 @@ Die ehrliche Grenze (V17.23-Harmonie-Disziplin): wo eine Unterscheidung GEMESSEN
 
 Reihenfolge-Logik: **Fundament → FPS → Reichtum → Qualität → Weite.** Jeder Schritt routet EINE Schicht durch die Kaskade; nach jedem ist die Welt grün + spielbar.
 
-### **U1 — Die Kaskade als Fundament** (Risiko: niedrig)
+### **U1 — Die Kaskade als Fundament** — ✅ GEBAUT (V17.114) (Risiko: niedrig)
 - **Ziel.** `_detailBand(r)` + die frozen `DETAIL_CASCADE`-Tabelle als EINE Quelle. Fog-`far` + Aerial-`hazeFar` an die äußerste Band-Grenze koppeln (§2-Synergie).
 - **Mechanik.** `_voxelChunkLodFor` → liest `_detailBand(r).lod` (byte-identisch zur V17.112-Zuweisung). `_dayNightApplyHemiAndFog` + `atmoUniforms` lesen `ringRadius·43.2` statt fester Werte.
 - **Messung.** `diag-lod-kaskade.cjs`: jede Schicht liest `_detailBand`; Fog-far == Ring-Kante; LOD-Bänder byte-identisch zu V17.112.
@@ -96,7 +98,7 @@ Reihenfolge-Logik: **Fundament → FPS → Reichtum → Qualität → Weite.** J
 - **Messung.** `diag-water-truth` + Wasser-Vertex-Zahl/Frame fern: LOD0→LOD2 = ~16× weniger.
 - **Sign-off.** FPS über Wasser bei Ring 12; ferne Wasser-Naht unsichtbar im Dunst.
 
-### **U3 — Kreaturen lesen die Kaskade** (Risiko: niedrig-mittel — FPS bei 120+)
+### **U3 — Kreaturen lesen die Kaskade** — ✅ GEBAUT (V17.115) (Risiko: niedrig-mittel — FPS bei 120+)
 - **Ziel.** Die Kreatur-Arbeit skaliert mit ihrem Band: ferne Kreaturen ticken seltener (KI), refreshen den Boden seltener. Verallgemeinert den V17.113-Boden-Cache + die ad-hoc-70/50-m-Gates.
 - **Mechanik.** `_detailBand(r_creature).creatureTickDiv` (Band 0: jeden Frame, Band 2: jeden 4., Band 3: jeden 8.) — die volle KI/Bewegung nur im fälligen Frame, dazwischen Interpolation der Position. Die V17.113-Budget-Disziplin bleibt der Schutz.
 - **Messung.** Tick-Kosten @ 120 Kreaturen über die Bänder verteilt; kein KI-Tiefe-Verlust nah.
