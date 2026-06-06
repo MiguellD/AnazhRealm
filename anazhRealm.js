@@ -19481,6 +19481,37 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
+        // V18.22 — EIN-ZELL-DILATION der L-Domäne gegen den CHUNKGRENZE-SCHNITT (Schöpfer
+        // „zum zigsten Mal": das Wasser fliesst NICHT über die Chunkgrenze hinaus; Seen in
+        // der Ecke / Flüsse parallel an der Naht erscheinen GESCHNITTEN). GEMESSEN
+        // (`scripts/diag-water-boundary-cut.cjs`): 9.8 % der sichtbar-nassen Rand-Positionen
+        // sind in EINEM Chunk-Mesh, im Nachbarn nicht. WURZEL: die all-4-Ecken-Quad-Regel
+        // (`l00..l11 > -Inf`) ERODIERT die Wasserkante um bis zu eine Zelle — eine Rand-Zelle
+        // mit nur 1–3 nassen Ecken wird NICHT emittiert. Fällt diese Erosion auf eine Naht,
+        // rendert die Seite mit nasser Innen-Ecke bis zur Grenze, die andere (Innen-Ecke
+        // trocken) NICHT → ein harter Schnitt in tiefem Wasser, GENAU AUF DER NAHT. (Der Gate
+        // verfehlt NICHTS — GATE-MISS=0 gemessen; es ist die Quad-Erosion.) HEILUNG (der
+        // „Minecraft"-Weg, das Wasser fliesst über): jede TROCKENE Ecke mit ≥1 nassem 4-Nachbarn
+        // bekommt einen Fallback-Spiegel (max der nassen Nachbarn) → die Quad-Erosion fällt weg,
+        // BEIDE Chunk-Seiten decken die Grenze symmetrisch (jede Seite dilatiert ihre eigene
+        // Rand-Zelle aus dem GETEILTEN Grenz-Vertex → konsistent, kein Doppel-Render). Die EINE
+        // über-deckte Zelle (1.8 m) liegt jenseits der L-Domäne = trockenes Land, das das
+        // ansteigende Terrain pro Pixel okkludiert (V18.16-Prinzip: Geometrie grosszügig,
+        // Sichtbarkeit aus der Tiefe — KEINE Geometrie-Maske, kein Sägezahn; KEIN 16-m-Rim,
+        // kein Phantom). EIN Pass aus dem ORIGINAL `Lg` (kein Kaskadieren → genau eine Zelle).
+        const Ld = Lg.slice();
+        for (let k = 0; k <= dim; k++) {
+            for (let i = 0; i <= dim; i++) {
+                const idx = i + k * NV;
+                if (Lg[idx] > -Infinity) continue; // schon nass
+                let best = -Infinity;
+                if (i > 0 && Lg[idx - 1] > best) best = Lg[idx - 1];
+                if (i < dim && Lg[idx + 1] > best) best = Lg[idx + 1];
+                if (k > 0 && Lg[idx - NV] > best) best = Lg[idx - NV];
+                if (k < dim && Lg[idx + NV] > best) best = Lg[idx + NV];
+                if (best > -Infinity) Ld[idx] = best;
+            }
+        }
         const positions = [];
         const indices = [];
         const aFlow = [];
@@ -19559,7 +19590,7 @@ class AnazhRealm {
             if (vmap[vi] >= 0) return vmap[vi];
             const wx = ox + i * step;
             const wz = oz + k * step;
-            const L = Lg[vi];
+            const L = Ld[vi]; // V18.22 — die dilatierte Domäne (Original + 1-Zell-Rand)
             const id = positions.length / 3;
             positions.push(wx, L, wz);
             // aWave: 1 = Ozean (Spiegel ≈ Meereshöhe) → Gerstner-Wellen; 0 = See/Fluss
@@ -19611,10 +19642,10 @@ class AnazhRealm {
         };
         for (let k = 0; k < dim; k++) {
             for (let i = 0; i < dim; i++) {
-                const l00 = Lg[i + k * NV];
-                const l10 = Lg[i + 1 + k * NV];
-                const l01 = Lg[i + (k + 1) * NV];
-                const l11 = Lg[i + 1 + (k + 1) * NV];
+                const l00 = Ld[i + k * NV];
+                const l10 = Ld[i + 1 + k * NV];
+                const l01 = Ld[i + (k + 1) * NV];
+                const l11 = Ld[i + 1 + (k + 1) * NV];
                 if (!(l00 > -Infinity && l10 > -Infinity && l01 > -Infinity && l11 > -Infinity)) continue;
                 const v00 = addVert(i, k);
                 const v10 = addVert(i + 1, k);
@@ -47776,7 +47807,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.22.0";
+AnazhRealm.VERSION = "18.23.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
