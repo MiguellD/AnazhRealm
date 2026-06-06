@@ -14916,44 +14916,52 @@ async function checkBandWelle6APolish(ctx) {
         );
     }
 
-    // ### Welle 6.E2 — Intro-Overlay ###
-    const wave6e2Results = await safeEvaluate(page, () => {
+    // ### UI-Putz — WOW-Start statt Anleitungs-Modal ###
+    // Das alte 3-Seiten-Intro-Modal (Welle 6.E2: Welt/Spieler/Nexus mit Backdrop)
+    // entfiel — der erste Moment gehört der WELT, nicht einer Anleitung. Der
+    // Begleiter (Eins) lädt EINMAL diegetisch ein; die Steuerung lernt der Spieler
+    // just-in-time + im Hilfe-Tab. Verifiziert: das Modal ist restlos weg, die
+    // Begrüssung ist eine Einladung (keine Steuerungs-Anleitung), gegated/idempotent.
+    const wowStartResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasInitMethod = typeof r.initIntroDialog === "function";
-        out.hasPagesHelper = typeof r._introPages === "function";
-        out.dialogInDom = !!document.getElementById("intro-dialog");
-        const pages = r._introPages ? r._introPages() : [];
-        out.pageCount = pages.length;
-        out.pagesHaveTitle = pages.every((p) => typeof p.title === "string" && p.title.length > 0);
-        out.pagesHaveBody = pages.every((p) => typeof p.body === "string" && p.body.length > 20);
-        // Buttons im DOM
-        const dlg = document.getElementById("intro-dialog");
-        if (dlg) {
-            out.hasPrevBtn = !!dlg.querySelector("[data-intro='prev']");
-            out.hasNextBtn = !!dlg.querySelector("[data-intro='next']");
-            out.hasSkipBtn = !!dlg.querySelector("[data-intro='skip']");
+        // (a) Das Anleitungs-Modal ist restlos entfernt.
+        out.introDialogGone = typeof r.initIntroDialog === "undefined";
+        out.introPagesGone = typeof r._introPages === "undefined";
+        out.noDialogInDom = !document.getElementById("intro-dialog");
+        // (b) Der WOW-Start: der Begleiter lädt ein — eine Einladung, KEINE Anleitung.
+        out.hasWelcome = typeof r._firstWorldWelcome === "function";
+        const msg = typeof r._firstWelcomeMessage === "function" ? r._firstWelcomeMessage() : "";
+        out.welcomeIsInvitation = typeof msg === "string" && msg.length > 0;
+        out.welcomeNotManual = !/WASD|Hotbar|Space|Maus|1-9|drücke/i.test(msg);
+        // (c) Beim ersten Welt-Start (Flags geleert) spricht der Begleiter diegetisch.
+        try {
+            localStorage.removeItem("anazh.ui.skipIntro");
+        } catch (_e) {
+            /* localStorage gesperrt — worldJournal trägt das Flag */
         }
-        // Idempotenz: zweiter Aufruf erzeugt kein zweites Dialog
-        r.initIntroDialog();
-        out.singletonAfterReinit = document.querySelectorAll("#intro-dialog").length === 1;
+        if (r.state.worldJournal && r.state.worldJournal.seen) r.state.worldJournal.seen.intro = false;
+        const box = document.getElementById("dialogue-box");
+        if (box) box.textContent = "";
+        r._firstWorldWelcome({ immediate: true });
+        out.welcomeSpoken = !!box && box.textContent.length > 0;
+        // (d) Gegated: ein zweiter Start (jetzt "seen") spricht nicht erneut.
+        if (box) box.textContent = "";
+        r._firstWorldWelcome({ immediate: true });
+        out.idempotent = !!box && box.textContent.length === 0;
         return out;
     });
 
-    if (wave6e2Results) {
-        check("Welle 6.E2: initIntroDialog-Methode existiert", wave6e2Results.hasInitMethod);
-        check("Welle 6.E2: _introPages-Helper existiert", wave6e2Results.hasPagesHelper);
-        check("Welle 6.E2: #intro-dialog im DOM (init-Aufruf in init()-Sequenz)", wave6e2Results.dialogInDom);
-        check("Welle 6.E2: drei Intro-Seiten", wave6e2Results.pageCount === 3);
-        check(
-            "Welle 6.E2: alle Seiten haben Titel + Text",
-            wave6e2Results.pagesHaveTitle && wave6e2Results.pagesHaveBody
-        );
-        check("Welle 6.E2: Prev-Button vorhanden", wave6e2Results.hasPrevBtn);
-        check("Welle 6.E2: Next-Button vorhanden", wave6e2Results.hasNextBtn);
-        check("Welle 6.E2: Skip-Button vorhanden", wave6e2Results.hasSkipBtn);
-        check("Welle 6.E2: Re-Init erzeugt kein Duplikat (Singleton)", wave6e2Results.singletonAfterReinit);
+    if (wowStartResults) {
+        check("UI-Putz WOW-Start: Anleitungs-Modal (initIntroDialog) entfernt", wowStartResults.introDialogGone);
+        check("UI-Putz WOW-Start: _introPages-Helper entfernt", wowStartResults.introPagesGone);
+        check("UI-Putz WOW-Start: kein #intro-dialog im DOM", wowStartResults.noDialogInDom);
+        check("UI-Putz WOW-Start: _firstWorldWelcome existiert", wowStartResults.hasWelcome);
+        check("UI-Putz WOW-Start: Begrüssung ist eine Einladung (nicht-leer)", wowStartResults.welcomeIsInvitation);
+        check("UI-Putz WOW-Start: Begrüssung ist KEINE Steuerungs-Anleitung", wowStartResults.welcomeNotManual);
+        check("UI-Putz WOW-Start: Begleiter spricht beim ersten Welt-Start", wowStartResults.welcomeSpoken);
+        check("UI-Putz WOW-Start: zweiter Start bleibt still (gegated)", wowStartResults.idempotent);
     }
 
     // ### Welle 6.F1 + 6.F2 — Visuelle Verbindungs-Linien + Brech-Warning ###

@@ -961,63 +961,6 @@
            Cinzel für die Aktions-Labels, Brass-Border. Native <dialog> wird
            per ::backdrop-Selector verdunkelt, damit die Welt im Hintergrund
            nicht ablenkt. */
-            /* Welle 6.E2 — Intro-Overlay: drei painterly Seiten beim ersten Welt-Start. */
-            #intro-dialog {
-                background:
-                    radial-gradient(circle at top left, rgba(255, 248, 225, 0.97) 0%, rgba(232, 210, 168, 0.97) 100%),
-                    var(--parch-1);
-                color: var(--parch-ink);
-                border: 1.5px solid var(--brass-1, #8b6a3f);
-                border-radius: 6px;
-                box-shadow:
-                    0 14px 50px rgba(0, 0, 0, 0.6),
-                    0 0 0 3px rgba(180, 140, 80, 0.2);
-                padding: 1.6em 1.8em;
-                max-width: 540px;
-                font-family: "IM Fell English", Georgia, serif;
-            }
-            #intro-dialog::backdrop {
-                background: rgba(20, 14, 6, 0.7);
-                backdrop-filter: blur(3px);
-            }
-            #intro-dialog #intro-title {
-                font-family: "Cinzel", Georgia, serif;
-                font-size: 1.35em;
-                margin: 0 0 0.5em;
-                color: var(--parch-ink);
-                letter-spacing: 0.05em;
-                text-align: center;
-            }
-            #intro-dialog #intro-body {
-                line-height: 1.6;
-                font-size: 1.02em;
-                margin-bottom: 1.4em;
-                min-height: 8em;
-            }
-            #intro-dialog .intro-controls {
-                display: flex;
-                justify-content: space-between;
-                gap: 0.6em;
-            }
-            #intro-dialog .intro-controls button {
-                background: linear-gradient(180deg, rgba(255, 240, 200, 0.7), rgba(190, 150, 90, 0.4));
-                color: var(--parch-ink);
-                border: 1px solid var(--brass-2, #b48c50);
-                padding: 0.45em 1em;
-                border-radius: 3px;
-                font-family: "Cinzel", Georgia, serif;
-                font-size: 0.92em;
-                cursor: pointer;
-                letter-spacing: 0.04em;
-            }
-            #intro-dialog .intro-controls button:hover:not(:disabled) {
-                background: linear-gradient(180deg, rgba(255, 248, 215, 0.85), rgba(210, 170, 110, 0.55));
-            }
-            #intro-dialog .intro-controls button:disabled {
-                opacity: 0.35;
-                cursor: not-allowed;
-            }
-
             #world-tor-dialog {
                 background:
                     radial-gradient(circle at top left, rgba(255, 245, 220, 0.95) 0%, rgba(240, 220, 180, 0.95) 100%),
@@ -5711,11 +5654,7 @@
                 </div>
             </div>
             <div id="console-footer">
-                <input
-                    type="text"
-                    id="chat-input"
-                    placeholder="Befehl oder '@Name was hast du gesehen?' (Kreatur ansprechen)"
-                />
+                <input type="text" id="chat-input" placeholder="sprich, und die Welt antwortet …" />
             </div>
         </aside>
         <!-- Versteckter File-Picker für 'Lade Datei'-Chat-Befehl. -->

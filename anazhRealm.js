@@ -15354,124 +15354,50 @@ class AnazhRealm {
         return true;
     }
 
-    // Welle 6.E2 — Intro-Overlay beim ersten Welt-Start.
-    //
-    // Drei painterly Seiten: Welt / Spieler / Nexus. Trigger: weder localStorage
-    // `anazh.ui.skipIntro === "true"` noch `worldJournal.seen.intro === true`.
-    // Schließen schreibt beide Flags, damit das Overlay nicht wieder kommt.
-    // Erzeugen wir dynamisch (kein index.html-Eintrag nötig); damit bleibt das
-    // Feature in einer Datei.
-    initIntroDialog() {
+    // Der erste Moment gehört der WELT, nicht einer Anleitung (UI-Putz, Schöpfer:
+    // "soll mit WOW starten, nicht mit einer Anleitung, die den Blick versperrt").
+    // Kein Modal, kein Backdrop, kein Steuerungs-Dump — die Welt ist sofort da, und
+    // der Begleiter (Eins) lädt EINMAL diegetisch ein. Die KI ist der lebende Guide
+    // (das Meta: ein Werk über Mensch+KI-Schöpfung onboardet DURCH die KI); die
+    // Steuerung lernt der Spieler just-in-time + im Hilfe-Tab. Gegated wie zuvor
+    // (anazh.ui.skipIntro / worldJournal.seen.intro), idempotent.
+    _firstWorldWelcome(opts = {}) {
         if (typeof document === "undefined") return;
-        if (document.getElementById("intro-dialog")) return;
-        const skip = (() => {
+        const seen = (() => {
             try {
-                return typeof localStorage !== "undefined" && localStorage.getItem("anazh.ui.skipIntro") === "true";
+                if (typeof localStorage !== "undefined" && localStorage.getItem("anazh.ui.skipIntro") === "true")
+                    return true;
             } catch {
-                return false;
+                /* localStorage gesperrt — worldJournal entscheidet */
             }
+            return !!(this.state.worldJournal && this.state.worldJournal.seen && this.state.worldJournal.seen.intro);
         })();
-        const seen = !!(this.state.worldJournal && this.state.worldJournal.seen && this.state.worldJournal.seen.intro);
-        const dialog = document.createElement("dialog");
-        dialog.id = "intro-dialog";
-        dialog.className = "intro-dialog";
-        const pages = this._introPages();
-        let pageIdx = 0;
-        const header = document.createElement("h2");
-        header.id = "intro-title";
-        const body = document.createElement("div");
-        body.id = "intro-body";
-        const controls = document.createElement("div");
-        controls.className = "intro-controls";
-        const prev = document.createElement("button");
-        prev.type = "button";
-        prev.textContent = "← Zurück";
-        prev.setAttribute("data-intro", "prev");
-        const skipBtn = document.createElement("button");
-        skipBtn.type = "button";
-        skipBtn.textContent = "Überspringen";
-        skipBtn.setAttribute("data-intro", "skip");
-        const next = document.createElement("button");
-        next.type = "button";
-        next.textContent = "Weiter →";
-        next.setAttribute("data-intro", "next");
-        controls.appendChild(prev);
-        controls.appendChild(skipBtn);
-        controls.appendChild(next);
-        dialog.appendChild(header);
-        dialog.appendChild(body);
-        dialog.appendChild(controls);
-        document.body.appendChild(dialog);
-        const renderPage = () => {
-            const p = pages[pageIdx];
-            header.textContent = p.title;
-            body.textContent = p.body;
-            prev.disabled = pageIdx === 0;
-            next.textContent = pageIdx === pages.length - 1 ? "Eintreten" : "Weiter →";
-        };
-        const close = (markSeen) => {
-            if (markSeen) {
-                try {
-                    if (typeof localStorage !== "undefined") localStorage.setItem("anazh.ui.skipIntro", "true");
-                } catch {
-                    /* localStorage gesperrt — Flag bleibt nur in worldJournal */
-                }
-                this.journalAppendOnce("intro", "ritual", "Ich schritt durch das Tor und erwachte in dieser Welt.");
-            }
-            if (dialog.open) dialog.close();
-        };
-        prev.addEventListener("click", () => {
-            if (pageIdx > 0) {
-                pageIdx--;
-                renderPage();
-            }
-        });
-        next.addEventListener("click", () => {
-            if (pageIdx < pages.length - 1) {
-                pageIdx++;
-                renderPage();
-            } else {
-                close(true);
-            }
-        });
-        skipBtn.addEventListener("click", () => close(true));
-        // ESC schließt nativ und zählt als „gesehen".
-        dialog.addEventListener("close", () => close(true));
-        renderPage();
-        // Auto-Show wenn noch nicht gesehen
-        if (!skip && !seen && typeof dialog.showModal === "function") {
+        if (seen) return;
+        // Die Welt zuerst atmen lassen (der WOW), DANN die sanfte Einladung des
+        // Begleiters — diegetisch in der Dialog-Box, kein Modal verdeckt die Sicht.
+        const invite = () => {
+            this.grokRender(this._firstWelcomeMessage());
             try {
-                dialog.showModal();
+                if (typeof localStorage !== "undefined") localStorage.setItem("anazh.ui.skipIntro", "true");
             } catch {
-                /* z. B. wenn body noch nicht im DOM ist */
+                /* localStorage gesperrt — worldJournal trägt das Flag */
             }
-        }
+            this.journalAppendOnce(
+                "intro",
+                "ritual",
+                "Ich erwachte in dieser Welt, und sie wartete auf mein erstes Wort."
+            );
+        };
+        if (opts.immediate) invite();
+        else if (typeof setTimeout === "function") setTimeout(invite, 1800);
+        else invite();
     }
 
-    _introPages() {
-        return [
-            {
-                title: "AnazhRealm — die Welt",
-                body:
-                    "Du bist im Ultiversum. Diese Welt wurde nicht für dich vorgeschrieben — sie wächst aus deiner Stimme und " +
-                    "der Antwort des Nexus. Boden, Wetter, Kreaturen, Bauwerke: alles ist sprechfähig. Schreib in den Chat, " +
-                    "rufe etwas ins Sein — die Welt hört und erinnert sich in ihrem Tagebuch.",
-            },
-            {
-                title: "Du, der Schöpfer",
-                body:
-                    "WASD läuft, Maus dreht den Blick, Space springt, 1-9 wählt einen Hotbar-Slot, F baut das Phantom. " +
-                    "Die Werkstatt öffnet einen Bauplan-Editor. Deine Emotionen färben die Welt: Freude wärmt sie, Trauer " +
-                    "lässt es regnen, Ehrfurcht zieht magisches Licht heran. Was du fühlst, hört die Welt mit.",
-            },
-            {
-                title: "Der Nexus — Eins",
-                body:
-                    "Du bist nicht allein. Der Nexus erfindet Programme, lernt aus deinen Pfaden, komponiert eigene " +
-                    "Fähigkeiten. Manche werden grün und stabil, andere kurzlebig — Auswahl per Fitness, nicht Befehl. " +
-                    "Optional gibt eine echte LLM-Stimme dem Nexus Worte (Einstellungen → Stimme).",
-            },
-        ];
+    // Die EINE Begrüssung des Begleiters — eine Einladung, keine Anleitung. Sie
+    // erklärt nichts (kein WASD/Hotbar-Dump), sie öffnet die Tür: die Welt wächst
+    // aus dem ersten Wort. Das ist der WOW — die Welt antwortet auf deine Stimme.
+    _firstWelcomeMessage() {
+        return "Ich bin Eins. Diese Welt ist still — bis du sprichst. Sag, was werden soll.";
     }
 
     // Welle 6.E1 — DSL-Programm in deutsche Beschreibung übersetzen.
@@ -45857,7 +45783,7 @@ class AnazhRealm {
         await this._ensureVibePass();
         // Welle 6.E2 — Intro-Overlay beim ersten Welt-Start. Liest seen.intro
         // aus dem soeben hydrierten worldJournal + localStorage `anazh.ui.skipIntro`.
-        this.initIntroDialog();
+        this._firstWorldWelcome();
         // Welle 3 F — Welt-Info-Sektion im Welt-Drawer.
         this.initWorldInfoUI();
         // Ring 9 — Welt-Tor Drei-Wahl-Dialog beim Import.
