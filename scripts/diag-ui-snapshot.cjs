@@ -139,9 +139,9 @@ function startSaveServer() {
                     `slider-cel=${!!document.getElementById("slider-cel")} ` +
                     `sliders=${atmo.querySelectorAll('input[type="range"]').length}\n`;
             }
-            // Den Ich-Tab öffnen (UI-Putz) für den Screenshot — das vereinte Inventar.
-            const ichTab = document.querySelector('[data-tab="spieler"]');
-            if (ichTab) ichTab.click();
+            // Das HUD ausblenden (UI-Putz) für den Screenshot — der freie Bildschirm.
+            document.body.classList.add("hud-hidden");
+
             return panels;
         });
         let txt = `# UI-Snapshot [${LABEL}]\n`;

@@ -46361,6 +46361,14 @@ class AnazhRealm {
                     this.setZoomActive(true);
                     event.preventDefault();
                 }
+            } else if (event.code === "KeyH") {
+                // UI-Putz: H blendet das HUD aus/ein — beim Spielen gehört der Bildschirm
+                // der Welt (BotW/Genshin-Geste). Topbar/Statusbar/Konsole/Stats/Hotbar
+                // verblassen. Nicht im Werkstatt-Drawer (dort ist die volle UI nötig).
+                if (this.state.uiActiveDrawer !== "werkstatt") {
+                    document.body.classList.toggle("hud-hidden");
+                    event.preventDefault();
+                }
             } else if (action === "cameraToggle") {
                 // V8.17 — Camera-Mode toggeln (1st/3rd) jetzt action-basiert.
                 this.setCameraMode(this.state.cameraMode === "first" ? "third" : "first");

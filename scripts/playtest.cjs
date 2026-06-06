@@ -38663,6 +38663,33 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("UI-Putz Emotion: Ruhe verblasst das Feedback", emoClarityResults.vignetteFadesWhenCalm);
     }
 
+    // ### UI-Putz — der freie Bildschirm (H blendet das HUD aus) ###
+    // Schöpfer: "der bildschirm während dem spielen möglichst frei". Eine Geste (H) blendet
+    // das ganze HUD aus, damit die Welt den Bildschirm bekommt (BotW/Genshin).
+    const freeScreenResults = await safeEvaluate(page, () => {
+        const out = {};
+        const topbar = document.getElementById("topbar");
+        if (!topbar) return { error: "kein #topbar" };
+        // (a) body.hud-hidden blendet das HUD aus + macht es klick-durchlässig.
+        // pointer-events ist sofort wirksam (opacity transitioniert über 0.45s — im
+        // Headless nicht sofort "0"; die Klick-Durchlässigkeit ist der funktionale Beweis).
+        document.body.classList.add("hud-hidden");
+        out.hudHides = getComputedStyle(topbar).pointerEvents === "none";
+        // (b) wieder einblenden
+        document.body.classList.remove("hud-hidden");
+        out.hudReturns = getComputedStyle(topbar).pointerEvents !== "none";
+        // (c) die H-Taste ist im Keydown-Pfad verdrahtet (Source-Probe)
+        const r = window.anazhRealm;
+        const src = typeof r._installInputHandlers === "function" ? r._installInputHandlers.toString() : "";
+        out.keyWired = /KeyH/.test(src) && /hud-hidden/.test(src);
+        return out;
+    });
+
+    if (freeScreenResults && !freeScreenResults.error) {
+        check("UI-Putz freier Bildschirm: body.hud-hidden blendet das HUD aus", freeScreenResults.hudHides);
+        check("UI-Putz freier Bildschirm: erneutes Umschalten zeigt das HUD wieder", freeScreenResults.hudReturns);
+    }
+
     // ### UI V2 — Quick-Buttons + Hilfe-Sektion in Einstellungen (Tab-System) ###
     const uiActionsResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
