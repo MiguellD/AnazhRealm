@@ -39637,17 +39637,17 @@ class AnazhRealm {
             return;
         }
         for (const c of creatures) {
-            const row = document.createElement("div");
-            row.className = "creature-row";
+            const ud = c.userData || {};
             // Welle 6.H Phase 2F.1 — Stats als Hover-Tooltip auf der Row.
             // Sichtbar machen ohne UI zu fluten: kompakt im title-Attribut.
+            let rowTitle = "";
             if (typeof this.computeCreatureStats === "function") {
                 try {
                     const cs = this.computeCreatureStats(c).stats;
                     const fmt = (n) => (Number.isFinite(n) ? n.toFixed(1) : "—");
                     // V17.53 Kampf C — die LEBENDE HP (cur/max) sichtbar machen (der hp-Konsument).
-                    const curHp = c.userData && Number.isFinite(c.userData.hp) ? c.userData.hp : cs.hpMax;
-                    row.title =
+                    const curHp = Number.isFinite(ud.hp) ? ud.hp : cs.hpMax;
+                    rowTitle =
                         `HP ${fmt(curHp)}/${fmt(cs.hpMax)} · DMG ${fmt(cs.damage)} · SPD ${fmt(cs.speed)} · ` +
                         `JMP ${fmt(cs.jumpPower)} · STA ${fmt(cs.staminaMax)} · ` +
                         `PRC ${fmt(cs.precision)} · MR ${fmt(cs.magicResist)} · HR ${fmt(cs.heatResist)}`;
@@ -39655,114 +39655,96 @@ class AnazhRealm {
                     /* Stats-Render darf nie hart blockieren */
                 }
             }
-            const nameEl = document.createElement("span");
-            nameEl.className = "creature-name";
-            // Welle 6.H Phase 2E V1.1 — Soul-Klasse für farbige Identität.
-            // Spieler erkennt am Namen sofort den Charakter-Typ (cyan=Sprite-
-            // Magie, brass=Wesen-erdig, grün=Geist-ätherisch). Erweiterbar
-            // für Boost-Tint (Phase 2F.3-Folge) oder Spec-Highlight (P2D-Folge).
-            const _soulForClass = c.userData && c.userData.soul;
-            if (typeof _soulForClass === "string" && _soulForClass.length > 0) {
-                nameEl.classList.add(`soul-${_soulForClass}`);
-            }
-            nameEl.textContent = (c.userData && c.userData.name) || "?";
-            const soulEl = document.createElement("span");
-            soulEl.className = "creature-soul";
-            const soulName = c.userData && c.userData.soul;
-            const soulLabel =
-                soulName && AnazhRealm.CREATURE_SOULS[soulName] && AnazhRealm.CREATURE_SOULS[soulName].label;
-            soulEl.textContent = soulLabel || "—";
-            // Welle 6.H Phase 2D — Spezialisierungs-Pills (Top-2). Jede Pill
-            // zeigt „Sammler·material·L3" oder „Bauer·blueprint·L2" mit
-            // kind-spezifischer Klasse für visuelle Differenzierung (cyan für
-            // gather, violett für build). Pills werden NACH soulEl + VOR taskEl
-            // in row gehängt — die finale Reihenfolge ist name/soul/specs/task.
+            // Welle 6.H Phase 2E V1.1 — Soul-Klasse für farbige Identität (cyan=Sprite-
+            // Magie, brass=Wesen-erdig, grün=Geist-ätherisch).
+            const soulForClass = typeof ud.soul === "string" && ud.soul.length > 0 ? ` soul-${ud.soul}` : "";
+            const nameEl = this._el("span", { class: "creature-name" + soulForClass, text: ud.name || "?" });
+            const soulLabel = ud.soul && AnazhRealm.CREATURE_SOULS[ud.soul] && AnazhRealm.CREATURE_SOULS[ud.soul].label;
+            const soulEl = this._el("span", { class: "creature-soul", text: soulLabel || "—" });
+            // Welle 6.H Phase 2D — Spezialisierungs-Pills (Top-2): „Sammler·material·L3"/„Bauer·blueprint·L2".
             const specs = this._creatureTopSpecializations(c, 2);
-            let specsWrap = null;
-            if (specs.length > 0) {
-                specsWrap = document.createElement("span");
-                specsWrap.className = "creature-specs";
-                for (const s of specs) {
-                    const pill = document.createElement("span");
-                    pill.className = `creature-spec creature-spec-${s.kind}`;
-                    const role = s.kind === "gather" ? "Sammler" : "Bauer";
-                    pill.textContent = `${role}·${s.key}·L${s.level}`;
-                    pill.title = `${s.count} Erfolge`;
-                    specsWrap.appendChild(pill);
-                }
-            }
-            // Welle 6.H Phase 2F.2 — Equipped-Pills. Zeigt Werkzeug + Rüstung
-            // wenn ausgerüstet (visuelle Symmetrie zu Spezialisierungen). Klein,
-            // brass-getintet mit Slot-spezifischer Akzentfarbe.
-            const equipped = (c.userData && c.userData.equipped) || {};
-            let equippedWrap = null;
-            if (equipped.tool || equipped.armor) {
-                equippedWrap = document.createElement("span");
-                equippedWrap.className = "creature-equipped";
-                if (equipped.tool) {
-                    const pill = document.createElement("span");
-                    pill.className = "creature-equip creature-equip-tool";
-                    pill.textContent = `⚒ ${equipped.tool}`;
-                    pill.title = `Werkzeug: ${equipped.tool}`;
-                    equippedWrap.appendChild(pill);
-                }
-                if (equipped.armor) {
-                    const pill = document.createElement("span");
-                    pill.className = "creature-equip creature-equip-armor";
-                    pill.textContent = `⛨ ${equipped.armor}`;
-                    pill.title = `Rüstung: ${equipped.armor}`;
-                    equippedWrap.appendChild(pill);
-                }
-            }
-            // Welle 6.H Phase 2F.3 — Boost-Pills. Aktive Konsumable-Boosts mit
-            // verbleibender Sekunden-Anzeige. Hover-Tooltip zeigt tagDelta-Detail.
-            const boostList = (c.userData && c.userData.boosts) || [];
+            const specsWrap =
+                specs.length > 0
+                    ? this._el(
+                          "span",
+                          { class: "creature-specs" },
+                          specs.map((s) =>
+                              this._el("span", {
+                                  class: `creature-spec creature-spec-${s.kind}`,
+                                  text: `${s.kind === "gather" ? "Sammler" : "Bauer"}·${s.key}·L${s.level}`,
+                                  title: `${s.count} Erfolge`,
+                              })
+                          )
+                      )
+                    : null;
+            // Welle 6.H Phase 2F.2 — Equipped-Pills (Werkzeug + Rüstung wenn ausgerüstet).
+            const equipped = ud.equipped || {};
+            const equippedWrap =
+                equipped.tool || equipped.armor
+                    ? this._el(
+                          "span",
+                          { class: "creature-equipped" },
+                          equipped.tool
+                              ? this._el("span", {
+                                    class: "creature-equip creature-equip-tool",
+                                    text: `⚒ ${equipped.tool}`,
+                                    title: `Werkzeug: ${equipped.tool}`,
+                                })
+                              : null,
+                          equipped.armor
+                              ? this._el("span", {
+                                    class: "creature-equip creature-equip-armor",
+                                    text: `⛨ ${equipped.armor}`,
+                                    title: `Rüstung: ${equipped.armor}`,
+                                })
+                              : null
+                      )
+                    : null;
+            // Welle 6.H Phase 2F.3 — Boost-Pills (aktive Konsumable-Boosts + Restzeit, tagDelta im Tooltip).
+            const boostList = ud.boosts || [];
             let boostsWrap = null;
             if (Array.isArray(boostList) && boostList.length > 0) {
                 const nowSec = performance.now() / 1000;
-                boostsWrap = document.createElement("span");
-                boostsWrap.className = "creature-boosts";
+                const pills = [];
                 for (const b of boostList) {
                     if (!b || !b.tagDelta) continue;
                     const remaining = Math.max(0, Math.round(b.expiresAt - nowSec));
-                    const pill = document.createElement("span");
-                    pill.className = "creature-boost";
-                    pill.textContent = `✺ ${b.label || b.source}·${remaining}s`;
                     const detail = Object.entries(b.tagDelta)
                         .map(([t, v]) => `${t}+${v.toFixed(2)}`)
                         .join(", ");
-                    pill.title = `${b.source} → ${detail}`;
-                    boostsWrap.appendChild(pill);
+                    pills.push(
+                        this._el("span", {
+                            class: "creature-boost",
+                            text: `✺ ${b.label || b.source}·${remaining}s`,
+                            title: `${b.source} → ${detail}`,
+                        })
+                    );
                 }
+                if (pills.length > 0) boostsWrap = this._el("span", { class: "creature-boosts" }, pills);
             }
-            const taskEl = document.createElement("span");
-            taskEl.className = "creature-task";
             const task = this._getCreatureTask(c);
             const taskName = task ? task.name : "—";
-            taskEl.classList.add(taskName);
-            if (taskName === "follow_player") {
-                taskEl.textContent = "folgt";
-            } else if (taskName === "wait") {
-                taskEl.textContent = "wartet";
-            } else if (taskName === "wander") {
-                taskEl.textContent = "streift";
-            } else if (taskName === "gather") {
-                const mat = task && task.args && task.args.material;
-                taskEl.textContent = mat ? `sammelt ${mat}` : "sammelt";
-            } else if (taskName === "build") {
-                const bp = task && task.args && task.args.blueprint;
-                taskEl.textContent = bp ? `baut ${bp}` : "baut";
-            } else if (taskName === "drink") {
-                taskEl.textContent = "trinkt am Ufer";
-            } else {
-                taskEl.textContent = "—";
-            }
-            row.appendChild(nameEl);
-            row.appendChild(soulEl);
-            if (specsWrap) row.appendChild(specsWrap);
-            if (equippedWrap) row.appendChild(equippedWrap);
-            if (boostsWrap) row.appendChild(boostsWrap);
-            row.appendChild(taskEl);
+            const taskArgs = (task && task.args) || {};
+            const TASK_LABELS = {
+                follow_player: "folgt",
+                wait: "wartet",
+                wander: "streift",
+                gather: taskArgs.material ? `sammelt ${taskArgs.material}` : "sammelt",
+                build: taskArgs.blueprint ? `baut ${taskArgs.blueprint}` : "baut",
+                drink: "trinkt am Ufer",
+            };
+            const taskEl = this._el("span", { class: `creature-task ${taskName}`, text: TASK_LABELS[taskName] || "—" });
+            const row = this._el(
+                "div",
+                { class: "creature-row" },
+                nameEl,
+                soulEl,
+                specsWrap,
+                equippedWrap,
+                boostsWrap,
+                taskEl
+            );
+            if (rowTitle) row.title = rowTitle;
             list.appendChild(row);
         }
     }
@@ -45648,6 +45630,55 @@ class AnazhRealm {
     // aus state.player.statTags (klein darunter, damit der Schöpfer sieht
     // welches Tag den Stat dominiert). Throttle ist nicht nötig — wird nur
     // bei Soul-Wechsel + initial gerufen.
+    // _el — der EINE deklarative DOM-Builder (V9.82 „verdichte zu EINER Quelle", auf die
+    // View-Schicht angewandt: die UI emergiert aus einer Beschreibung, wie alles andere aus
+    // dem Feld/den Tags emergiert). `_el(tag, attrs, ...children)`:
+    //   attrs.class→className · attrs.text→textContent · attrs.html→innerHTML ·
+    //   attrs.style→Object.assign(style) · attrs.data→dataset · attrs.on→{event:handler} ·
+    //   attrs.onClick/onInput/…→addEventListener · Keys mit „-" oder role→setAttribute · Rest→Property.
+    //   children: String→TextNode · Element→append · null/false→skip (für conditional) · Array→flach.
+    // Erzeugt EXAKT dasselbe DOM wie der imperative create→set→append-Block (verhaltensneutral).
+    _el(tag, attrs, ...children) {
+        const el = document.createElement(tag);
+        if (attrs) {
+            for (const k in attrs) {
+                const v = attrs[k];
+                if (v == null) continue;
+                if (k === "class") el.className = v;
+                else if (k === "text") el.textContent = v;
+                else if (k === "html") el.innerHTML = v;
+                else if (k === "style") Object.assign(el.style, v);
+                else if (k === "data") for (const d in v) el.dataset[d] = v[d];
+                else if (k === "on") for (const ev in v) el.addEventListener(ev, v[ev]);
+                else if (k.length > 2 && k.startsWith("on") && typeof v === "function")
+                    el.addEventListener(k.slice(2).toLowerCase(), v);
+                else if (k.includes("-") || k === "role") el.setAttribute(k, v);
+                else el[k] = v;
+            }
+        }
+        this._elAppend(el, children);
+        return el;
+    }
+
+    _elAppend(el, children) {
+        for (const c of children) {
+            if (c == null || c === false) continue;
+            if (Array.isArray(c)) this._elAppend(el, c);
+            else el.appendChild(typeof c === "object" ? c : document.createTextNode(String(c)));
+        }
+    }
+
+    // _kvRow — die label/value-Zeile, das häufigste Panel-Muster (div.rowCls > span.labelCls + span.valCls).
+    // Default-Klassen = stat-label/stat-value (der häufigste Fall); für andere Familien explizit überschreiben.
+    _kvRow(rowCls, label, value, labelCls = "stat-label", valCls = "stat-value") {
+        return this._el(
+            "div",
+            { class: rowCls },
+            this._el("span", { class: labelCls, text: label }),
+            this._el("span", { class: valCls, text: value })
+        );
+    }
+
     renderPlayerStatsUI() {
         if (typeof document === "undefined") return;
         const container = document.getElementById("player-stats");
@@ -45656,10 +45687,9 @@ class AnazhRealm {
         const tags = (this.state.player && this.state.player.statTags) || null;
         container.innerHTML = "";
         if (!stats) {
-            const empty = document.createElement("div");
-            empty.className = "stats-empty";
-            empty.textContent = "Stats werden berechnet, wenn die Seele gewählt ist.";
-            container.appendChild(empty);
+            container.appendChild(
+                this._el("div", { class: "stats-empty", text: "Stats werden berechnet, wenn die Seele gewählt ist." })
+            );
             return;
         }
         // Welle 6.D Etappe 1.5 — Körper-Teile-Liste oben, dann Stats darunter.
@@ -45668,26 +45698,21 @@ class AnazhRealm {
         const soulName = (this.state.player && this.state.player.soul) || "human";
         const soul = this.playerSoulDefs[soulName];
         if (soul && Array.isArray(soul.bodyParts) && soul.bodyParts.length > 0) {
-            const bodyHeader = document.createElement("div");
-            bodyHeader.className = "body-parts-header";
-            bodyHeader.textContent = "Körper-Teile (Form × Material → Tags)";
-            container.appendChild(bodyHeader);
+            container.appendChild(
+                this._el("div", { class: "body-parts-header", text: "Körper-Teile (Form × Material → Tags)" })
+            );
             for (const part of soul.bodyParts) {
-                const row = document.createElement("div");
-                row.className = "body-part-row";
-                const label = document.createElement("span");
-                label.className = "body-part-label";
-                label.textContent = part.label || part.shape;
-                const meta = document.createElement("span");
-                meta.className = "body-part-meta";
-                meta.textContent = `${part.shape} · ${part.material}`;
-                row.appendChild(label);
-                row.appendChild(meta);
-                container.appendChild(row);
+                container.appendChild(
+                    this._kvRow(
+                        "body-part-row",
+                        part.label || part.shape,
+                        `${part.shape} · ${part.material}`,
+                        "body-part-label",
+                        "body-part-meta"
+                    )
+                );
             }
-            const divider = document.createElement("div");
-            divider.className = "stats-divider";
-            container.appendChild(divider);
+            container.appendChild(this._el("div", { class: "stats-divider" }));
         }
         const rows = [
             { key: "hpMax", label: "Lebenskraft", fmt: (v) => Math.round(v) },
@@ -45703,17 +45728,7 @@ class AnazhRealm {
             { key: "heatResist", label: "Hitze-Resistenz", fmt: (v) => v.toFixed(2) },
         ];
         for (const row of rows) {
-            const div = document.createElement("div");
-            div.className = "stat-row";
-            const label = document.createElement("span");
-            label.className = "stat-label";
-            label.textContent = row.label;
-            const value = document.createElement("span");
-            value.className = "stat-value";
-            value.textContent = row.fmt(stats[row.key] || 0);
-            div.appendChild(label);
-            div.appendChild(value);
-            container.appendChild(div);
+            container.appendChild(this._kvRow("stat-row", row.label, row.fmt(stats[row.key] || 0)));
         }
         // Tag-Profil dezent unten — die drei dominantesten Achsen zeigen.
         if (tags) {
@@ -45721,10 +45736,12 @@ class AnazhRealm {
                 .map((k) => ({ k, v: tags[k] }))
                 .sort((a, b) => b.v - a.v)
                 .slice(0, 3);
-            const tagLine = document.createElement("div");
-            tagLine.className = "stat-tags";
-            tagLine.textContent = "Stark: " + sorted.map((s) => `${s.k} ${s.v.toFixed(2)}`).join(" · ");
-            container.appendChild(tagLine);
+            container.appendChild(
+                this._el("div", {
+                    class: "stat-tags",
+                    text: "Stark: " + sorted.map((s) => `${s.k} ${s.v.toFixed(2)}`).join(" · "),
+                })
+            );
         }
         // Welle 6.X.1 A3 — Equipped-Anzeige (Audit 17.05.2026): bisher war
         // unsichtbar OB überhaupt ein Werkzeug/Rüstung ausgerüstet ist.
@@ -45732,38 +45749,22 @@ class AnazhRealm {
         // Stats-Panel zeigt jetzt direkt unter den Werten was getragen wird.
         const equipped = (this.state.player && this.state.player.equipped) || {};
         if (equipped.held || equipped.armor) {
-            const divider = document.createElement("div");
-            divider.className = "stats-divider";
-            container.appendChild(divider);
+            container.appendChild(this._el("div", { class: "stats-divider" }));
             if (equipped.armor) {
                 const armorBp = (this.state.blueprints && this.state.blueprints[equipped.armor]) || null;
-                const row = document.createElement("div");
-                row.className = "stat-row";
-                const label = document.createElement("span");
-                label.className = "stat-label";
-                label.textContent = "Rüstung";
-                const value = document.createElement("span");
-                value.className = "stat-value";
-                value.textContent = (armorBp && armorBp.label) || equipped.armor;
-                row.appendChild(label);
-                row.appendChild(value);
-                container.appendChild(row);
+                container.appendChild(this._kvRow("stat-row", "Rüstung", (armorBp && armorBp.label) || equipped.armor));
             }
             // V17.57 W2-B — das EINE gehaltene Gerät + seine abgelesene Affordanz („Klinge"/„Brecher").
             if (equipped.held) {
                 const heldBp = (this.state.blueprints && this.state.blueprints[equipped.held]) || null;
-                const row = document.createElement("div");
-                row.className = "stat-row";
-                const label = document.createElement("span");
-                label.className = "stat-label";
-                label.textContent = "In der Hand";
-                const value = document.createElement("span");
-                value.className = "stat-value";
                 const aff = heldBp ? this._implementAffordanceLabel(heldBp) : "";
-                value.textContent = ((heldBp && heldBp.label) || equipped.held) + (aff ? ` (${aff})` : "");
-                row.appendChild(label);
-                row.appendChild(value);
-                container.appendChild(row);
+                container.appendChild(
+                    this._kvRow(
+                        "stat-row",
+                        "In der Hand",
+                        ((heldBp && heldBp.label) || equipped.held) + (aff ? ` (${aff})` : "")
+                    )
+                );
             }
         }
         // Welle 6.D Etappe 2 — Aktive Boosts unten anzeigen. Label + Tag-Delta
@@ -45773,29 +45774,22 @@ class AnazhRealm {
             const now = performance.now() / 1000;
             const active = boosts.filter((b) => b.expiresAt > now);
             if (active.length > 0) {
-                const divider = document.createElement("div");
-                divider.className = "stats-divider";
-                container.appendChild(divider);
-                const header = document.createElement("div");
-                header.className = "body-parts-header";
-                header.textContent = "Aktive Boosts";
-                container.appendChild(header);
+                container.appendChild(this._el("div", { class: "stats-divider" }));
+                container.appendChild(this._el("div", { class: "body-parts-header", text: "Aktive Boosts" }));
                 for (const b of active) {
-                    const row = document.createElement("div");
-                    row.className = "boost-row";
-                    const left = document.createElement("span");
-                    left.className = "boost-label";
                     const tagSummary = Object.keys(b.tagDelta || {})
                         .map((t) => `+${b.tagDelta[t].toFixed(2)} ${t}`)
                         .join(", ");
-                    left.textContent = `${b.label} · ${tagSummary}`;
-                    const right = document.createElement("span");
-                    right.className = "boost-remaining";
                     const rem = Math.max(0, b.expiresAt - now);
-                    right.textContent = `${rem.toFixed(0)} s`;
-                    row.appendChild(left);
-                    row.appendChild(right);
-                    container.appendChild(row);
+                    container.appendChild(
+                        this._kvRow(
+                            "boost-row",
+                            `${b.label} · ${tagSummary}`,
+                            `${rem.toFixed(0)} s`,
+                            "boost-label",
+                            "boost-remaining"
+                        )
+                    );
                 }
             }
         }
