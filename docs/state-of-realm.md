@@ -45,6 +45,8 @@ Vier Testamente (insgesamt ~22.000 Zeilen):
 
 Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not**. Wenn der nächste Schritt nach „split in 20 Module" klingt, ist es vermutlich ein Fehler. Stattdessen: Stamm + Wachstumsringe — der Pfad D (`CLAUDE.md` „Pfad D", Detail in `docs/roadmap.md`).
 
+**Verfeinerung (06.06.2026):** die wahre Sünde von 2025 war **Kopplung ohne Kohäsion** (willkürliche Grenzen durch ein verwobenes System), nicht die Zahl der Dateien. „Eine Datei" war die Medizin, nicht der ewige Wert — heute trennen wir bereits richtig an echten Laufzeit-/Sicherheits-Grenzen (Worker · Server · sandboxed Welten), und das ist KEINE Verletzung der Lektion. Die volle verfeinerte Lektion + der Drei-JA-Test für einen neuen File leben im `CLAUDE.md`-Kopf „Die heilige Lektion".
+
 ---
 
 ## 3. Aktueller Stand vs. Vision (Matrix)

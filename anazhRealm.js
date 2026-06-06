@@ -115,7 +115,7 @@ class AnazhRealm {
             // Ende — Promise resolved exakt wenn GPU alle Submits durch
             // hat (deterministisch, kein Frame-Counter-Raten).
             pendingDisposals: new Set(),
-            // V8.29 — Wind-Uniforms für Gras + zukünftige TSL-Wind-Migration.
+            // V8.29 — Wind-Uniforms für Gras (TSL-Wind-Migration GEBAUT, V10.0-i.b).
             // Aktuell: `_loopRender` schreibt `uWindTime` pro Frame +
             // `uWindStrength` aus weather (rainy = kräftiger). V10.0-g.2:
             // V12.0-f — `_grassInstanceMat` ist ein natives MeshLambertNodeMaterial
@@ -838,7 +838,7 @@ class AnazhRealm {
                 // Baupläne — bei Hover summt resoniert (Audio-Ping), brennend
                 // glüht orange, magieleitung violet (Vision §1.4 multisensorisch).
                 // Initial leer; gefüllt via DSL-Op add_to_inventory oder
-                // Werkstatt-Editor (zukünftiger Pfad — heute manuell).
+                // Werkstatt-Editor (gebaut seit V8.07, 3D-zentrisch V17.91).
                 // Drag auf Hotbar-Slot legt blueprint dort ab.
                 inventory: new Array(27).fill(null),
                 // Schicht 1 — Pfad-Buckets. Histogramm wo der Spieler sich
@@ -22458,10 +22458,10 @@ class AnazhRealm {
         // aFlow (Fluss-Gefälle-Tangente vec2), aShore (Ufer-Schaum-Band
         // float), aWave (Ozean-Anteil float, gated die Wellen-Amplitude).
         //
-        // Läuft jetzt nativ auf WebGPURenderer UND klassischem WebGLRenderer
-        // (via webgl-legacy/nodes/WebGLNodes.js-Bootstrap-Side-Effect-Patch).
-        // Nach V10.0-f-4 läuft die ganze Welt-Optik auf NodeMaterial; der
-        // V10.0-e-Hot-Swap-Pfad bleibt nur als defensive Sicherung.
+        // Läuft nativ auf WebGPURenderer (V12.0-a: WebGPU-required). r164 entfernte
+        // den webgl-legacy/WebGLNodeBuilder → NodeMaterials laufen NUR auf WebGPU,
+        // KEIN WebGL-Fallback/Hot-Swap mehr (der V10.0-e-Pfad ist gestrichen; wer
+        // kein WebGPU hat, sieht den Banner statt der Welt).
         //
         // Zehn Live-Uniforms in state.hydroSurfaceUniforms (uniform-Knoten):
         // time, flowSpeed, deep/shallow/foam (Colors), sunDir, light,

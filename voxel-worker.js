@@ -16,11 +16,13 @@
 // Profi-Vorbild Subnautica/NMS/Astroneer: Welt-Density läuft in Workers parallel
 // zum Main-Thread, dieser braucht nur noch Iso-Meshing + Collision-BVH (~30 ms).
 //
-// **Phase 1 Scope** (diese Datei jetzt): Worker spawnt, empfängt State, berechnet
-// Density-Grids bit-identisch zum Main-Thread. KEIN Integration-Pfad — der
-// Main-Thread baut weiterhin synchron, der Worker wird nur per Determinismus-
-// Test angesteuert. Phase 2 (V9.90+): tatsächliche async Integration in
-// `_buildVoxelChunkData`.
+// Stand V18.31 (integriert seit V9.90, voll engagiert seit V17.118): der Worker
+// baut die Density-Grids OFF-THREAD; der Main-Thread meshet (Iso) + sync't nur
+// noch den Spieler-Chunk, ferne Chunks warten auf den Worker (V17.118 — der
+// ~71-ms-Sync-Bau war die Streaming-Spike-Wurzel). Der Determinismus-Test
+// (playtest) bewacht weiter die bit-identische Spiegelung zum Main-Thread.
+// HINWEIS: dies ist CPU-Parallelität (eigener Thread, Subnautica/NMS-Vorbild),
+// NICHT GPU — der WebGPU-Density-COMPUTE-Pfad wurde abgeklemmt (V14.6/V17.20).
 // =============================================================================
 
 // Vendor-`simplex-noise.js` prüft `typeof window !== 'undefined'` für sein
