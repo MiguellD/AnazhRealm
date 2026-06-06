@@ -42989,7 +42989,10 @@ class AnazhRealm {
             header.classList.add("collapsible-header");
             header.setAttribute("role", "button");
             header.setAttribute("tabindex", "0");
-            if (stored[key]) sec.classList.add("collapsed");
+            // Default-collapsed (z.B. das Entwickler-Render-Tuning): zu, solange der
+            // Spieler nichts anderes wählte (kein localStorage-Eintrag für diese Sektion).
+            const collapsed = key in stored ? stored[key] : sec.classList.contains("default-collapsed");
+            if (collapsed) sec.classList.add("collapsed");
             const toggle = () => {
                 sec.classList.toggle("collapsed");
                 stored[key] = sec.classList.contains("collapsed");

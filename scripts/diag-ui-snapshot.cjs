@@ -113,6 +113,21 @@ function startSaveServer() {
                     r.state.creatures = savedCreatures;
                 }
             }
+            // Einstellungen — die gestaffelte Render-Tuning-Sektion nutzt das bestehende
+            // collapsible-Falt-System (default-collapsed → zu, Slider-IDs intakt).
+            const tab = document.querySelector('[data-tab="einstellungen"]');
+            if (tab) tab.click();
+            if (typeof r._initCollapsibleSettings === "function") r._initCollapsibleSettings();
+            const atmo = document.getElementById("atmosphere-section");
+            if (atmo) {
+                const header = atmo.querySelector("h3");
+                panels["__settings"] =
+                    `atmosphere-section: <${atmo.tagName.toLowerCase()}> ` +
+                    `collapsed=${atmo.classList.contains("collapsed")} ` +
+                    `headerIsCollapsible=${!!header && header.classList.contains("collapsible-header")} ` +
+                    `slider-cel=${!!document.getElementById("slider-cel")} ` +
+                    `sliders=${atmo.querySelectorAll('input[type="range"]').length}\n`;
+            }
             return panels;
         });
         let txt = `# UI-Snapshot [${LABEL}]\n`;
