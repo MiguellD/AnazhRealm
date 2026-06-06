@@ -314,12 +314,12 @@ class AnazhRealm {
                 waterDepthFoam: 5.0, // V18.14 M1 — Schaum nur bis dieser ECHTEN Tiefe (m); kleiner = weniger Fluss-Schaum
                 waterLakeRipple: 0.65, // V18.17 Phase 3 — See-Wellen-Floor SICHTBAR (0 = flach, 1 = wie Ozean)
                 waterfallSteep: 4.0, // V18.14 M3 — Wasserfall-Plane nur ab dieser Terrain-Steilheit (Drop/Lauf); grösser = nur echte Wände
-                // V18.30 — die AUSLAUF-BREITE: über wie viele thickness-Meter sich der Boden-
-                // Auslauf (V18.25) von der flachen L-Fläche auf den Boden neigt. Grösser =
-                // flacher/runder/konvexer (der Übergang verteilt sich über mehr Zellen), kleiner =
-                // steiler/kantiger. War bis V18.29 hartkodiert 4.0 → der Schöpfer-Befund „die
-                // Neigung fast 90°, ein Quadrat statt einer Konvexe". Browser-justierbar.
-                waterOutflowSlope: 6.0,
+                // V18.31 — der AUSLAUF-ÜBERGANG: die Breite des Ufer→Boden-Übergangs, über die
+                // sich das Auslauf-Wasser von der flachen L-Fläche auf das terrain-folgende Bett
+                // (Bodenkontakt, V18.31) legt. Klein = scharfer Kontakt (das Wasser erreicht schnell
+                // den Boden, fliesst sauber hinein), gross = sanfter (schwebt im Übergang länger). War
+                // bis V18.30 die "Auslauf-Breite" der alten Versteck-Logik (gross = flacher).
+                waterOutflowSlope: 3.0,
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
                 shadowRange: 300, // Frustum-Halbbreite m (kleiner = schärfer)
@@ -19589,12 +19589,8 @@ class AnazhRealm {
         const step0 = cfg0.step;
         const dimY0 = cfg0.dimY;
         const dq0 = dim0 * dim0;
-        // V18.25 — der vertikale Zell-Ursprung (LOD-INVARIANT: floorDrop=90 für ALLE LODs →
-        // `oy0 = base − 90` ist überall gleich → das Terrain-Y aus den Zellen ist naht-frei
-        // über Chunk-Grenzen, auch bei LOD-Mischung). Für `colTerrainY` (der Boden-Auslauf).
-        const oy0 = (this.state.terrainBaseHeight || 0) - cfg0.floorDrop;
-        // V18.30 — die browser-justierbare Auslauf-Breite (Default 6.0; war hartkodiert 4.0).
-        // EINMAL pro Mesh-Build gelesen (nicht pro Vertex). Grösser = flacherer, runderer Auslauf.
+        // V18.31 — der browser-justierbare Auslauf-Übergang (Default 3.0). EINMAL pro Mesh-Build
+        // gelesen (nicht pro Vertex). Klein = scharfer Bodenkontakt, gross = sanfter Übergang.
         const outflowSlope =
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
                 ? this.state.atmosphere.waterOutflowSlope
@@ -19652,49 +19648,6 @@ class AnazhRealm {
             for (let j = 0; j < dimY0; j++) if (src[base + j * dq0] === STATE.WATER) wc++;
             return wc * step0;
         };
-        // V18.25 — die OBERSTE-SOLID-Höhe (= das gerenderte Voxel-Terrain) einer LOD0-Spalte,
-        // NACHBAR-LESEND am Chunk-Rand (wie `colDepthAt`, mit dem LOD-invarianten `oy0` → naht-
-        // frei). Vom Spiegel L abwärts scannen (das Terrain unter dem Schwebe-Wasser liegt nur
-        // wenige Zellen tiefer → billig). Speist den Boden-Auslauf: die L-Fläche neigt sich dort,
-        // wo es KEIN echtes Wasser gibt (aDepth→0), auf knapp unter dieses Terrain.
-        const colTerrainY = (ci, ck, L) => {
-            if (!cells) return -Infinity;
-            let ncx = cx,
-                ncz = cz,
-                li = ci,
-                lk = ck;
-            if (ci >= dim0) {
-                ncx = cx + 1;
-                li = ci - dim0;
-            } else if (ci < 0) {
-                ncx = cx - 1;
-                li = ci + dim0;
-            }
-            if (ck >= dim0) {
-                ncz = cz + 1;
-                lk = ck - dim0;
-            } else if (ck < 0) {
-                ncz = cz - 1;
-                lk = ck + dim0;
-            }
-            let src = cells;
-            if (ncx !== cx || ncz !== cz) {
-                const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
-                if (nb && nb.waterCells) src = nb.waterCells;
-                else {
-                    li = ci < 0 ? 0 : ci >= dim0 ? dim0 - 1 : ci;
-                    lk = ck < 0 ? 0 : ck >= dim0 ? dim0 - 1 : ck;
-                    src = cells;
-                }
-            }
-            const b = li + lk * dim0;
-            let jStart = Math.floor((L - oy0) / step0);
-            if (jStart >= dimY0) jStart = dimY0 - 1;
-            for (let j = jStart; j >= 0; j--) {
-                if (src[b + j * dq0] === STATE.SOLID) return oy0 + (j + 1) * step0;
-            }
-            return -Infinity;
-        };
         const vmap = new Int32Array(NV * NV).fill(-1);
         const addVert = (i, k) => {
             const vi = i + k * NV;
@@ -19709,55 +19662,62 @@ class AnazhRealm {
             const ci0 = Math.floor((wx - ox) / step0);
             const ck0 = Math.floor((wz - oz) / step0);
             const depthM = colDepthAt(ci0, ck0);
-            // V18.25 — der Wasser-Rand LÄUFT IN DEN BODEN AUS (Schöpfer „wie Minecraft,
-            // Wasserauslauf; das Netz müsste am Rand in den Boden auslaufen, dann stimmt der
-            // Shader"). Wo KEINE echten Wasser-Zellen sind (aDepth→0 = die L-Domänen-Über-
-            // Deckung: der 16-m-See-Rim / das Fluss-Ribbon jenseits des Flood-Körpers), schwebt
-            // die flache L-Fläche über tiefer dippendem Voxel-Terrain (3D-Roughness) → "dick"→
-            // opak→der Tiefen-Shader fadet sie NICHT → die SÄGEZÄHNE (GEMESSEN `diag-water-float`:
-            // ein Schwebe-Band bis p90 4 / max 15 Zellen über tiefem Terrain). Statt flach bei L
-            // zu enden, NEIGT sich die Fläche dort auf knapp UNTER das Voxel-Terrain (`colTerrainY`)
-            // → das Terrain okkludiert die Über-Deckung pro Pixel (kein Schweben, kein Sägezahn —
-            // der "Wasserauslauf in den Boden"). Der echte Wasser-Körper (aDepth ≥ 1 Zelle = 1.8 m)
-            // bleibt FLACH bei L (`Math.min(L, …)` → KEINE See-Regression, KEIN Bank-Klettern);
-            // der smoothstep über genau 1 Zelle ist die GENEIGTE Uferkante, KEINE harte Geometrie-
-            // Maske (die V13.4-Sägezahn-Sünde). Naht-frei: `colTerrainY` liest dieselbe Nachbar-
-            // Zelle wie die Gegenseite (oy0 LOD-invariant).
+            // V18.31 — DAS AUSLAUF-WASSER FOLGT DEM TERRAIN (Bodenkontakt) statt als flache
+            // L-Platte unter den Boden zu tauchen. Schöpfer-Befund (Browser, nach V18.30): „es
+            // hebt einfach das vertikale Element, verliert den Kontakt zum Boden — das ist noch
+            // nicht wie die Profis; können wir die Oberfläche konvex machen ODER an den Seiten
+            // Mesh-Elemente ansetzen, bis es sauber in den Boden fliesst?". WURZEL: V18.25/.30
+            // DRÜCKTE die Über-Deckung UNTER den Boden (`surfY = tY−1`, Okklusion) — im
+            // smoothstep-Blend SCHWEBTE sie aber (grosses slopeW = breiter Blend = das Wasser
+            // bleibt lange nahe L, bevor es abtaucht → das „hebt das Element, verliert Kontakt").
+            // DER PROFI-WEG (Witcher 3 / RDR2 / Minecraft: Fluss-Wasser folgt dem Terrain, nur
+            // echte Klippen sind ein separater Wasserfall): das Auslauf-Wasser legt sich als DÜNNE
+            // SCHICHT (`skirt`) AUF das gerenderte Terrain → es fliesst sichtbar in den Boden,
+            // verliert NIE den Kontakt, so steil wie das Terrain selbst (natürlich); der Tiefen-
+            // Shader fadet die dünne Schicht pro Pixel (durchscheinend = fluidisch). Das ist die
+            // „Mesh-Elemente bis zum Boden"-Idee des Schöpfers, ohne neue Geometrie — die
+            // bestehende Über-Deckungs-Fläche FOLGT jetzt dem Terrain, statt darüber zu schweben.
+            // Dünnes Ufer (thickness ≤ thinBand) bleibt FLACH bei L (See füllt bis ans Ufer, V18.26).
             let surfY = L;
             if (depthM < step0) {
-                let tY = colTerrainY(ci0, ck0, L);
-                // V18.26 — Fallback, wo die Zellen kein SOLID unter L tragen (Streaming-Rand,
-                // Zell/Density-Diskrepanz): das EXAKTE gerenderte Voxel-Terrain (`_voxelSurfaceY`,
-                // das Iso) — die 3D-Roughness dippt es unter L, wo das Makro-Terrain es VERFEHLT
-                // (Makro ≥ L → der alte Macro-Fallback liess die dicken Roughness-Floats schweben).
-                // Pure (x,z) → naht-frei; nur für die seltenen -Inf-Fälle (~few/Chunk) → bezahlbar.
-                if (tY === -Infinity) {
-                    const vs = this._voxelSurfaceY(wx, wz);
-                    tY = Number.isFinite(vs) ? vs : this._terrainMacroSurfaceY(wx, wz);
+                // Die Boden-Höhe `tY` MUSS das GERENDERTE Terrain treffen — sonst schwebt das
+                // Wasser sichtbar (der „verliert Kontakt"-Befund). `colTerrainY` (die Zell-Oberkante)
+                // verfehlt die echte Mesh-Iso um bis ±step0/2 (1.8-m-Treppe) → das Restschweben; eine
+                // 5er-Glättung half NICHT (sie mittelt an Kanten HOCH → schwebt über der tieferen
+                // Seite). Stattdessen: ein kurzer Density-Iso-Scan ab knapp über L abwärts
+                // (`_terrainDensityAt`, pure (x,z,y) → naht-frei, glatt, EXAKT die Mesh-Oberfläche).
+                // Im Auslauf liegt die Oberfläche knapp unter L → wenige 1-m-Schritte = billig (das
+                // teure `_voxelSurfaceY` scannt von der Decke = ~150 m unnötig; hier nur ~max 34 m).
+                let tY = -Infinity;
+                let prevY = L + 2;
+                let prevD = this._terrainDensityAt(wx, prevY, wz);
+                for (let yy = L + 1; yy >= L - 32; yy -= 1.0) {
+                    const d = this._terrainDensityAt(wx, yy, wz);
+                    if (d > 0) {
+                        // EXAKTE Iso-Höhe (Density=0) zwischen dem letzten AIR (prevD≤0) und diesem
+                        // SOLID linear interpoliert → kontinuierlich (KEINE 1-m-Scan-Stufen → die
+                        // künstliche Treppen-Neigung fällt weg, das Wasser folgt dem Terrain glatt).
+                        tY = prevD <= 0 ? prevY + (yy - prevY) * (prevD / (prevD - d)) : yy;
+                        break;
+                    }
+                    prevY = yy;
+                    prevD = d;
                 }
+                // Fallback, wo der 34-m-Scan kein Terrain trifft (sehr dicke Über-Deckung):
+                // das glatte Makro-Terrain (selten → bezahlbar).
+                if (tY === -Infinity) tY = this._terrainMacroSurfaceY(wx, wz);
                 if (tY > -Infinity && tY < L) {
-                    // V18.26 — NUR DICKE Über-Deckung (echter Float) sinkt in den Boden; DÜNNES
-                    // Ufer-Wasser (thickness ≤ thinBand) bleibt FLACH bei L → der See füllt bis ans
-                    // Ufer (der Tiefen-Shader fadet die dünne Kante), KEINE "endet vor dem Ufer"-
-                    // Regression (Schöpfer V18.25-Befund: "im See wird das Wasser ans Ufer gedrückt,
-                    // füllt sich bis ans Ufer — aktuell endet es manchmal vor dem Ufer, die Neigung
-                    // zu extrem"). `thickness` = wie weit die flache L-Fläche über dem Terrain schwebt;
-                    // ≤ thinBand = dünn (Shader fadet, bleibt L), darüber sinkt es smooth auf tY−1 m
-                    // (okkludiert). So bleibt die sichtbare Schwebe IMMER ≤ thinBand (vom Shader
-                    // versteckt) statt der harten 1-Zell-Klippe.
                     const thickness = L - tY;
                     const thinBand = 2.5;
-                    // V18.30 — `slopeW` (browser-justierbar) steckt die thickness-Spanne, über die
-                    // der smoothstep läuft → die HORIZONTALE Breite des Auslaufs. Bei steilem Terrain
-                    // wuchs thickness pro Zelle (1.8 m) so schnell, dass der Übergang in ~1 Zelle
-                    // passierte (fast 90°). Ein grösseres slopeW streckt den smoothstep über mehr
-                    // thickness → über mehr Zellen → flacher + runder (der grössere smoothstep-Radius
-                    // IST die konvexe Lippe). Die smoothstep bleibt (C1-stetig an beiden Enden → keine
-                    // harte Kante); der Regler dreht ihre Breite.
-                    const slopeW = outflowSlope;
-                    const u = Math.max(0, Math.min(1, (thickness - thinBand) / slopeW));
+                    // V18.31 — `skirt`: die dünne Wasserschicht ÜBER dem Boden (Kontakt, sichtbar);
+                    // der Tiefen-Shader fadet sie → durchscheinendes, fliessendes Wasser. `outflowSlope`
+                    // (Regler) = die Breite des Ufer→Boden-Übergangs: klein = das Wasser erreicht
+                    // schnell den Boden (scharfer Kontakt), gross = sanfter (schwebt im Übergang länger).
+                    const skirt = 0.6;
+                    const u = Math.max(0, Math.min(1, (thickness - thinBand) / outflowSlope));
                     const s = u * u * (3 - 2 * u); // smoothstep
-                    surfY = L - (thickness + 1.0) * s; // s=0→L (Ufer flach), s=1→tY−1 (Float okkludiert)
+                    const followY = Math.min(L, tY + skirt); // das Wasser AUF dem Boden (Kontakt)
+                    surfY = L + (followY - L) * s; // s=0→L (Ufer flach), s=1→Boden+skirt (Kontakt, nie schwebend)
                 }
             }
             const id = positions.length / 3;
@@ -24612,11 +24572,11 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterfallSteep)
                         ? this.state.atmosphere.waterfallSteep
                         : 1.0,
-                // V18.30 — die Auslauf-Breite persistieren.
+                // V18.31 — der Auslauf-Übergang persistieren.
                 waterOutflowSlope:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
                         ? this.state.atmosphere.waterOutflowSlope
-                        : 6.0,
+                        : 3.0,
                 // J4-Regler: Kavitäts-AO-Stärke (0..1) + Kanten-Schärfe (Post-FX local-contrast, 0..1).
                 cavityAO:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
@@ -26752,9 +26712,12 @@ class AnazhRealm {
             if (Number.isFinite(df)) this.state.atmosphere.waterDepthFoam = Math.max(0.1, Math.min(6.0, df));
             const ws = Number(state.atmosphere.waterfallSteep);
             if (Number.isFinite(ws)) this.state.atmosphere.waterfallSteep = Math.max(0.2, Math.min(4.0, ws));
-            // V18.30 — die Auslauf-Breite (vor dem Mesh-Bau setzen; der Setter clampt + re-enqueued).
+            // V18.31 — der Auslauf-Übergang (vor dem Mesh-Bau setzen). Die Semantik kehrte sich
+            // um (war "Breite/flacher" für die V18.30-Versteck-Logik, jetzt "Ufer→Boden-Übergang"
+            // für den Bodenkontakt; klein = scharfer Kontakt) → ein alter, für "flacher" hoch-
+            // gedrehter Wert (>8) self-healt auf den neuen Kontakt-Default; neue Tunings (1-8) bleiben.
             const wos = Number(state.atmosphere.waterOutflowSlope);
-            if (Number.isFinite(wos)) this.state.atmosphere.waterOutflowSlope = Math.max(2.0, Math.min(16.0, wos));
+            if (Number.isFinite(wos)) this.state.atmosphere.waterOutflowSlope = wos > 8 ? 3.0 : Math.max(1.0, wos);
             // J4-Regler (default 1.0 / 0.5 = unverändert) + an die Uniforms pushen,
             // falls sie schon erzeugt sind (sonst liest `_ensure*` sie beim Bau).
             const ao = Number(state.atmosphere.cavityAO);
@@ -37298,14 +37261,14 @@ class AnazhRealm {
         return m;
     }
 
-    // V18.30 — die AUSLAUF-BREITE (Boden-Auslauf V18.25): über wie viele thickness-Meter
-    // sich die Wasser-Fläche von L auf den Boden neigt. Grösser = flacher/runder/konvexer
-    // (der Schöpfer-Befund „die Neigung fast 90°, ein Quadrat statt einer Konvexe"), kleiner
-    // = steiler. Ist ein GEOMETRIE-Parameter (Vertex-Y im Surface-Mesh, kein Shader-Uniform)
-    // → re-enqueued alle Wasser-tragenden Chunks (wie setWaterRenderMode); die Zellen/Physik
-    // bleiben unberührt (render-only).
+    // V18.31 — der AUSLAUF-ÜBERGANG (Boden-folgender Auslauf V18.31): die Breite des Ufer→
+    // Boden-Übergangs, über die sich das Auslauf-Wasser von L auf das terrain-folgende Bett
+    // (Bodenkontakt) legt. Klein = scharfer Kontakt (fliesst schnell sauber in den Boden),
+    // gross = sanfter (schwebt im Übergang länger). GEOMETRIE-Parameter (Vertex-Y im Surface-
+    // Mesh, kein Shader-Uniform) → re-enqueued alle Wasser-tragenden Chunks (wie
+    // setWaterRenderMode); die Zellen/Physik bleiben unberührt (render-only).
     setWaterOutflowSlope(v) {
-        const m = Math.max(2.0, Math.min(16.0, Number(v) || 6.0));
+        const m = Math.max(1.0, Math.min(8.0, Number(v) || 3.0));
         if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterOutflowSlope = m;
         if (this.state.voxelChunks) {
@@ -44767,15 +44730,15 @@ class AnazhRealm {
                 if (wfsVal) wfsVal.textContent = v.toFixed(1);
             });
         }
-        // V18.30 — Auslauf-Breite: wie weit der Wasser-Rand sich in den Boden neigt.
-        // Grösser = flacher/runder/konvexer (gegen „die Neigung fast 90°, ein Quadrat").
+        // V18.31 — Auslauf-Übergang: die Breite des Ufer→Boden-Übergangs (das Wasser folgt
+        // dem Boden). Klein = scharfer Kontakt (fliesst sauber in den Boden), gross = sanfter.
         const wosS = document.getElementById("slider-wateroutflow");
         const wosVal = document.getElementById("slider-wateroutflow-val");
         if (wosS) {
             const o0 =
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
                     ? this.state.atmosphere.waterOutflowSlope
-                    : 6.0;
+                    : 3.0;
             wosS.value = String(Math.round(o0 * 10));
             if (wosVal) wosVal.textContent = o0.toFixed(1) + " m";
             wosS.addEventListener("input", () => {
@@ -48057,7 +48020,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.30.0";
+AnazhRealm.VERSION = "18.31.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
