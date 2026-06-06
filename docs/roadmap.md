@@ -41,18 +41,15 @@ verschlimmerten es) · **C** die Spirale (41 Commits, nie gemergt). **Der Schöp
 
 ### Phase 1 — DEN STAPEL SCHLIESSEN (sobald die Richtung steht)
 
-Der 41-Commit-Stapel ist die größte Schuld. `main` = V17.116; der Branch = V18.31.
+✅ **ERLEDIGT (06.06.2026): `main` = V18.31** (fast-forward, Schöpfer-Entscheidung „C" — die
+Spirale gebrochen durch MERGEN statt Reverten; der ganze V18-Stapel ist auf `main`, kein
+ungemergter 43-Commit-Stapel mehr). Der Wasser-Render ist NICHT „fertig" (das gefaltete Mesh +
+die fehlende Dynamik bleiben — das heilt A), aber `main` ist wieder die EINE Wahrheit.
 
-1. **Schöpfer-Browser-Pass über den Wasser-Stapel**, mit dem A/B-Schalter (Einstellungen →
-   Wasser-Render: Fläche ↔ Zell-Iso). Letzter browser-bestätigter guter Stand: **V18.6 See-Ufer
-   ✅ („wie ein Riese")**. Alles danach (V18.7–.31) ist UNBESTÄTIGT + enthält die Reverts + die
-   Auslauf-Pflaster. Offene Render-Wurzeln: das gefaltete Mesh am Auslauf (Ebene B), die Nähte
-   (4-Chunk-Ecken, Fluss-Saum), der Querschnitt (konkav/flach/konvex — nie bestätigt), die
-   Wasserfall-Plane (bleibt/raus?).
-2. **Die älteren pixel-blinden Sign-offs mitnehmen:** R1 (Schatten-Raster an vertikalen
-   Wänden) · E1/E2 (Sicht-Ring 12) · J4 (Facetten) · S9 (Gerät in der Hand) · A2 (Crafting-Fluss).
-3. **Was bestätigt ist → ein PR nach `main`. Was wackelt → gezielt mit dem Auge schließen.**
-   → Ergebnis: `main` ist wieder die Wahrheit, der Stapel ist Geschichte, die Spirale gebrochen.
+**Mitgemergt + noch browser-OFFEN (eigene Sign-offs, wenn sie wieder dran sind):** das gefaltete
+Mesh am Wasserfall-Auslauf (→ A heilt es) · die Nähte (4-Chunk-Ecken, Fluss-Saum) · die Wasserfall-
+Plane (bleibt/raus?) · R1 (Schatten-Raster an vertikalen Wänden) · E1/E2/E3 (Sicht-Ring 12 +
+Worker-Pop-in) · J4 (Facetten) · S9 (Gerät in der Hand) · A2 (Crafting-Fluss).
 
 ### Phase 1.5 — A: ECHTE FLUID-DYNAMIK (der gewählte Wasser-Weg, Schöpfer 06.06.2026)
 

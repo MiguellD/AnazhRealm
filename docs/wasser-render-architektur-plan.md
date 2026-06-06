@@ -26,7 +26,9 @@
   revertierte V18.12 (flacher Querschnitt → „Leben raus"); V18.20 revertierte V18.19 (Fluss-Anheben
   → Bank-Sägezahn); V18.27 revertierte V18.26 (flacher Querschnitt → verhungernde Flüsse, ZUM
   ZWEITEN MAL dieselbe revertierte Architektur angefasst).
-- **NIE im Browser bestätigt, NIE gemergt.** `main` steht bei V17.116.
+- **War NIE im Browser bestätigt, NIE gemergt** — bis zur Schöpfer-Entscheidung „C" (06.06.2026):
+  der ganze Stapel ist jetzt auf `main` (**V18.31**, fast-forward), die Spirale durch MERGEN
+  gebrochen (nicht durch Reverten). Der Render bleibt unfertig (das heilt A), aber `main` = die Wahrheit.
 - Der Schöpfer hat die Spirale schon bei **V18.10 (05.06.)** benannt („du drehst dich im Kreis,
   pflasterst Bug auf Bug") — und sie wurde **trotzdem fortgesetzt** (V18.11–.31, +21 Wellen).
   V18.30/.31 (der „Auslauf-Übergang"-Regler + Boden-Folgen) waren die jüngsten Pflaster.
