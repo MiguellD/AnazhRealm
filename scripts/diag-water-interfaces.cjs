@@ -101,6 +101,11 @@ const server = http.createServer((req, res) => {
             lakeStill = 0,
             riverV = 0,
             riverFoamCover = 0;
+        const fmags = []; // V18.24 — fmag-Verteilung (Taper-Check: Kern voll? Mündung klingt ab?)
+        const rivernessOf = (f) => {
+            const t = Math.max(0, Math.min(1, (f - 0.04) / (0.5 - 0.04)));
+            return t * t * (3 - 2 * t);
+        };
         // (3) Flow-Inkohärenz: pro Fluss-Vertex die Winkel-Differenz zum nächsten Fluss-Vertex
         //     im selben Mesh (Gitter-Nachbar ~step entfernt).
         let flowPairs = 0,
@@ -124,6 +129,7 @@ const server = http.createServer((req, res) => {
                 const aWaveEff = Math.max(wv, ripple * smoothstep(0.3, 2.0, d));
                 if (fmag > 0.01) {
                     riverV++;
+                    fmags.push(fmag);
                     if (d < foamThr) riverFoamCover++;
                     fmapX.set(Math.round(pos.getX(v) * 10) + "," + Math.round(pos.getZ(v) * 10), [
                         fx / fmag,
@@ -206,6 +212,13 @@ const server = http.createServer((req, res) => {
                 else flat++;
             }
         }
+        fmags.sort((a, b) => a - b);
+        const pct = (p) => (fmags.length ? +fmags[Math.floor((fmags.length - 1) * p)].toFixed(3) : 0);
+        const fmagP10 = pct(0.1),
+            fmagMed = pct(0.5),
+            fmagP90 = pct(0.9);
+        // riverness an den Quantilen (zeigt: Kern voll ~1, Mündung/Rand klingt ab)
+        const rn = { p10: +rivernessOf(fmagP10).toFixed(2), med: +rivernessOf(fmagMed).toFixed(2), p90: +rivernessOf(fmagP90).toFixed(2) };
         return {
             uLakeRipple: ripple,
             uDepthFoam: foamThr,
@@ -213,6 +226,10 @@ const server = http.createServer((req, res) => {
             lakeStill,
             riverV,
             riverFoamCover,
+            fmagP10,
+            fmagMed,
+            fmagP90,
+            rn,
             flowPairs,
             flowIncoherent,
             flowAngleMean: flowPairs ? +(flowAngleSum / flowPairs).toFixed(1) : 0,
@@ -240,6 +257,9 @@ const server = http.createServer((req, res) => {
     );
     console.log(
         `(4) SCHAUM flacher Fluss — Fluss-Vertices: ${out.riverV}, davon aDepth<uDepthFoam (foam-Zone): ${out.riverFoamCover} (${out.riverV ? ((100 * out.riverFoamCover) / out.riverV).toFixed(0) : "—"}%)`
+    );
+    console.log(
+        `(5) MÜNDUNG-TAPER (V18.24) — fmag p10/median/p90 = ${out.fmagP10}/${out.fmagMed}/${out.fmagP90}; riverness(0.04→0.5) daran = ${out.rn.p10}/${out.rn.med}/${out.rn.p90}  (Kern→~1 voll, Mündung/Rand→<1 fadet)`
     );
     process.exit(0);
 })();

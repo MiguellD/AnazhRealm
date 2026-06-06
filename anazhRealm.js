@@ -19617,7 +19617,6 @@ class AnazhRealm {
             // Skala, nicht den 1,8-m-Gradienten.)
             let sfx = 0;
             let sfz = 0;
-            let sfn = 0;
             for (let dz = -1; dz <= 1; dz++) {
                 for (let dx = -1; dx <= 1; dx++) {
                     const rv = this._hydroRiverAt(wx + dx * 9, wz + dz * 9);
@@ -19625,18 +19624,20 @@ class AnazhRealm {
                         const m = Math.hypot(rv.flowX, rv.flowZ) || 1;
                         sfx += rv.flowX / m;
                         sfz += rv.flowZ / m;
-                        sfn++;
                     }
                 }
             }
-            if (sfn > 0) {
-                const m = Math.hypot(sfx, sfz);
-                // m klein = widersprüchliche Richtungen (Konfluenz/Rand) → ruhig.
-                if (m > 0.3) aFlow.push(sfx / m, sfz / m);
-                else aFlow.push(0, 0);
-            } else {
-                aFlow.push(0, 0);
-            }
+            // V18.24 — die MÜNDUNG fadet (Schöpfer „in und aus dem Fluss ein WAHRER Fade, die
+            // Grenzen die Strömung kennen, sauberer Makroflow"): die aFlow-MAGNITUDE TAPERT jetzt
+            // statt auf 1 normalisiert (binär Fluss/still) zu sein. `sfx/sfz` ist die Summe der
+            // 9 Einheits-Strömungsvektoren im 3×3-Fenster; `|(sfx,sfz)|/9` = ABDECKUNG×AUSRICHTUNG
+            // ∈ [0,1]: ~1 im ausgerichteten Fluss-Kern, abklingend zur Mündung/Bank (weniger
+            // Fluss-Samples) und an Konfluenzen (widersprüchliche Richtungen heben sich auf). So
+            // wird die Strömung ein GLATTES Makro-Feld: der See nahe der Mündung trägt eine
+            // Rest-Strömung (kleine fmag) → der Shader fadet die Fluss-Strähnen in den See (die
+            // Grenze „kennt" die Strömung), statt hart zu schalten. Die RICHTUNG bleibt geglättet
+            // (V18.11). Division durch die feste 9 (nicht durch m) bewahrt die Magnitude.
+            aFlow.push(sfx / 9, sfz / 9);
             vmap[vi] = id;
             return id;
         };
@@ -22580,7 +22581,14 @@ class AnazhRealm {
         // Fluss↔See-Übergang blendet `riverness` (0=See … 1=Fluss) die Strähnen in den
         // Schimmer → keine Naht, die der Shader hervorhebt (Schöpfer-Befund). `isRiver`
         // bleibt für die Strähnen-Skalierung, aber das Ergebnis ist ein Blend.
-        const riverness = smoothstep(float(0.01), float(0.09), fmag);
+        // V18.24 — die MÜNDUNG fadet über eine BREITE `fmag`-Rampe (Schöpfer „ein WAHRER Fade,
+        // die Grenze kennt die Strömung"): da `aFlow` jetzt eine TAPERNDE Magnitude trägt
+        // (V18.24, Abdeckung×Ausrichtung ∈ [0,1] statt binär 0/1), spannt `riverness` jetzt
+        // 0.04→0.5 statt 0.01→0.09 → die Fluss-Strähnen klingen über die ganze Mündungs-Zone
+        // (Fluss-Kern fmag≈1 → voll; See nahe Mündung fmag klein → die Strähnen faden weich in
+        // den See-Schimmer; offener See fmag=0 → reiner Schimmer). Der 0.04-Boden hält
+        // Rausch-Rest-Strömung im offenen See aus. Look = der Schöpfer-Browser-Schluss.
+        const riverness = smoothstep(float(0.04), float(0.5), fmag);
         const foam = mix(lakeFoam, riverFoam, riverness);
         void isRiver;
 
@@ -47807,7 +47815,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.23.0";
+AnazhRealm.VERSION = "18.24.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
