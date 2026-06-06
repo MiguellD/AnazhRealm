@@ -352,11 +352,7 @@ class AnazhRealm {
             nexusEvolutionInterval: 10.0,
             nexusAutonomyLimit: 100,
             lastGrowthUpdate: 0,
-            lastWallCollisionUpdate: 0,
             lastSelfAnalysis: 0,
-            movementWorker: null,
-            movementWorkerUrl: null,
-            movementWorkerBusy: false,
             // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): voxel-worker.js
             // baut Density-Grids parallel zum Main-Thread. Phase 1 nur Foundation
             // + Determinismus-Test (kein async Integration-Pfad). Phasen 2-4
@@ -14354,7 +14350,6 @@ class AnazhRealm {
         // W4 (V17.48) — die emotionale CONTAGION + das Wachsen der Bindung leben HIER
         // (im Kreatur-Tick), nicht im Emotion-Tick → die Emotion-Kern-Ticks bleiben isoliert.
         this._tickEmotionContagion(delta);
-        const workerData = [];
         // V8.49 — Scratch-Vektoren EINMAL angelegt + pro Kreatur pro Frame
         // wiederverwendet, statt mehrere THREE.Vector3 je Kreatur zu allokieren
         // (bei 120 Kreaturen waren das ~400 Allokationen/Frame → GC-Ruckeln).
@@ -14683,67 +14678,13 @@ class AnazhRealm {
                 );
                 body.setWorldTransform(transform);
             }
-
-            // Worker-Daten für einfache Bewegungen außerhalb des Sichtfelds
-            if (!inFrustum) {
-                workerData.push({ id: i, position: creature.position, emotion: emotion });
-            }
-        }
-
-        // Singleton-Worker für einfache Bewegungen außerhalb des Sichtfelds.
-        // Frames, in denen der Worker noch antwortet, werden übersprungen
-        // anstatt einen zweiten Worker zu spawnen.
-        if (workerData.length > 0 && !this.state.movementWorkerBusy) {
-            const worker = this.getMovementWorker();
-            this.state.movementWorkerBusy = true;
-            worker.postMessage(workerData);
         }
     }
 
-    getMovementWorker() {
-        if (this.state.movementWorker) return this.state.movementWorker;
-        const code = `
-        self.onmessage = function(e) {
-            const creatures = e.data;
-            const updated = creatures.map(c => {
-                const speed = c.emotion === "happy" ? 2 : 1;
-                c.position.x += (Math.random() - 0.5) * speed * 0.016;
-                c.position.z += (Math.random() - 0.5) * speed * 0.016;
-                return c;
-            });
-            self.postMessage(updated);
-        };
-    `;
-        const blob = new Blob([code], { type: "application/javascript" });
-        const url = URL.createObjectURL(blob);
-        const worker = new Worker(url);
-        worker.onmessage = (e) => {
-            e.data.forEach((c) => {
-                const creature = this.state.creatures[c.id];
-                if (creature) {
-                    creature.position.set(c.position.x, creature.position.y, c.position.z);
-                }
-            });
-            this.state.movementWorkerBusy = false;
-        };
-        worker.onerror = (err) => {
-            this.log(`Movement-Worker-Fehler: ${err.message}`, "ERROR");
-            this.state.movementWorkerBusy = false;
-        };
-        this.state.movementWorker = worker;
-        this.state.movementWorkerUrl = url;
-        return worker;
-    }
-
-    // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): spawnt den Voxel-
-    // Density-Worker on-demand. Worker importiert simplex-noise via
-    // importScripts, empfängt State per init-Message + Delta-Updates bei
-    // Welt-Mutationen. **Determinismus-Test-Pflicht**: jede Density-Funktion
-    // hier mit-wandert in `voxel-worker.js` — der Playtest-Band Perf-3.c-P1
-    // verifiziert bit-identische Density-Output zwischen Main + Worker.
-    // **Phase 1 Scope**: Worker existiert, State synced, Density on-demand
-    // berechenbar. KEIN async Integration-Pfad in `_buildVoxelChunkData` —
-    // das ist Phase 2 (V9.90+).
+    // Lazy-Singleton: spawnt den Voxel-Density-Worker (off-thread CPU, integriert
+    // seit V9.90, voll engagiert V17.118 — der Mesh-Bau läuft off-main-thread, nur
+    // der Spieler-Chunk sync). Der Determinismus-Test bewacht die bit-identische
+    // Spiegelung zum Main-Thread. (NICHT GPU — der WebGPU-Density-Compute ist abgeklemmt.)
     _getVoxelWorker() {
         if (this.state.voxelWorker) return this.state.voxelWorker;
         if (typeof Worker === "undefined") return null;
