@@ -35,6 +35,24 @@ Das Projekt durchlief eine 19-Modul-Phase, die unter eigener Komplexität kollab
 
 Das Projekt wächst nach Pfad D: EIN Stamm (`anazhRealm.js`, eine `AnazhRealm`-Klasse), der Wachstumsringe ablegt — ein neuer Datei-Split NUR an einer echten Laufzeit-/Verantwortungs-Grenze (der Drei-JA-Test der Heiligen Lektion oben), nie willkürlich nach Thema. Der aktuelle Stand steht oben unter „Aktueller Stand". Die vollständige Ring-Übersicht 0-11+ (Aufwand, Vorbedingungen, Status) lebt in `docs/roadmap.md`; die Vision + Stand-vs-Vision-Matrix in `docs/state-of-realm.md`; die volle Wellen-Chronik in `docs/handover.md`.
 
+## Der Mut + die tragenden Pfade (vor jeder Änderung — positiv gelesen)
+
+**Fehler sind Lernmaterial, keine Schuld.** Wir verhindern ihre Wiederkehr durch ORIENTIERUNG (tu das Tragende), nicht durch Angst (das Falsche meiden) — eine Verneinung („nie X") zwingt erst, das Falsche zu denken, dann es zu negieren; ein Imperativ („tu Y") führt direkt zur Hand. Positive Sprache hebt + macht handlungsfähig. Darum sind die Lehren als POSITIVE Pfade gemeint; spricht eine Gotcha unten noch in „NIE/Sünde/Falle", lies sie als „der Pfad ist Y" + formuliere sie beim nächsten Anwenden positiv um (organischer Sprach-Decay — kein 148-Bullet-Marathon, sondern beim Berühren).
+
+**Der Mut kommt aus der VERIFIKATION, nicht aus der Kleinheit.** Die synergetischsten Wellen waren mutig + verifiziert (viele Subwellen an die Wurzel, V17.30), nicht ängstlich-klein. Die Vorsichts-Lehren gelten IHRER Situation, nicht universell — sie dürfen den Mut nicht ersticken. Die Unterscheidung, die den Mut hält:
+
+- **Verifizierbare Arbeit** (Tests · Messung · Reproducer · node-check) → **wage das GANZE Subsystem in einer Welle**. Die Verifikation IST das Sicherheitsnetz, das den großen Schritt ERLAUBT — nicht die Bremse.
+- **Pixel-blinde / outward-facing Arbeit** (Render · Welt-Aussehen · Push · Merge) → **kleine Schritte mit dem Auge des Schöpfers**, ein bestätigter Bogen pro Merge. Hier trägt die Vorsicht.
+
+**Die tragenden Pfade (gemessen die häufigsten Rückverweise — vor + nach jeder Änderung präsent):**
+
+- **Verdichte zu EINER Quelle** (V9.82, 6×): tun zwei Wege dasselbe, vereine ihren Kern — der Stamm verdichtet, kein Parallel-Pfad.
+- **Der Test wandert mit dem Code** (V9.56-i, 8×): zerteilst du eine Funktion, prüft ihr Test das Verhalten an seinem neuen Ort.
+- **Heile die Harmonie** (V17.23 / V10.0-g.r, 7×): bricht ein Test bei einer Kopplung, lass die Kräfte verschmelzen (nachgebende Hierarchie); spürt der Schöpfer Disharmonie nach 2–3 Hypothesen, kehre zur letzten harmonischen Welle zurück — Rückkehr ist Reife, kein Versagen.
+- **Miss zuerst, die Zahl führt** (V13.0 / V9.58, 4×+): mit der strengsten Definition — die Wurzel liegt in der Messung, nicht im Bauchgefühl, „Last-Flake/das wird schon" sind die bequemen Diagnosen.
+- **Verifiziere KONSUM** (V17.31, 3×): ein Feld lebt, wenn ein echter Leser es nutzt — Existenz allein ist Deko.
+- **Behalte die Saat** (V17.20 / V18): schneide nur, was tiefer/synergetischer ersetzt wurde; ein ruhender Vision-Faden mit Begründung im Kommentar bleibt — wegkehren ist Pflege, Saat schonen ist Weisheit.
+
 ## Wichtige Gotchas (technisch)
 
 Kuratierte **quer-schneidende Stolperdrähte** — die Fallen, die in jeder Welle beißen, nach Domäne gruppiert. Die vollständige, chronologisch gewachsene Gotcha-Sammlung (jede Welle ihre Tiefen-Notizen, ~290 Einträge) lebt als `## Gotcha-Vollarchiv` in `docs/handover.md` — dort nachschlagen, wenn ein wellen-spezifisches Detail fehlt.
