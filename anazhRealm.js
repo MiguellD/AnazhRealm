@@ -43069,11 +43069,11 @@ class AnazhRealm {
     // der Schöpfer faltet selbst, was er nicht braucht. Idempotent: ein
     // schon verdrahteter Header (.collapsible-header) wird übersprungen.
     _initCollapsibleSettings() {
-        // V17.37 D-2 — generisch: dasselbe Falt-Muster für die Einstellungen UND
-        // die Fähigkeiten-UI (deren zwei Sektionen Fähigkeiten + Gesetze einklappbar
-        // werden, wie der Schöpfer es wünschte — intuitive Untertabs).
+        // V17.37 D-2 — generisch: dasselbe Falt-Muster für die Einstellungen UND den HOF
+        // (UI-Putz: Kreaturen + Fähigkeiten + Gesetze + Befehle vereint — der Ort, an dem
+        // die Kommunikation zusammentrifft; einklappbare Sektionen halten ihn übersichtlich).
         this._initCollapsibleDrawer("einstellungen", "anazh.settings.collapsed");
-        this._initCollapsibleDrawer("faehigkeiten", "anazh.faehigkeiten.collapsed");
+        this._initCollapsibleDrawer("kreaturen", "anazh.hof.collapsed");
     }
 
     _initCollapsibleDrawer(drawerName, storageKey) {
@@ -48169,7 +48169,7 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     cancelBuild: "Bau-Modus verlassen",
     jump: "Springen",
     drawerWelt: "Welt-Drawer öffnen",
-    drawerKreaturen: "Kreaturen-Drawer öffnen",
+    drawerKreaturen: "Hof öffnen (Kreaturen · Nexus · Befehle)",
     drawerSpieler: "Spieler-Drawer öffnen",
     drawerWerkstatt: "Werkstatt-Drawer öffnen",
     drawerEinstellungen: "Einstellungen-Drawer öffnen",

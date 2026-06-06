@@ -2177,8 +2177,9 @@ async function checkBandV1737RulesUI(ctx) {
         // die Nexus-Regel bleibt (nur Mensch-Regeln tragen ✕)
         out.nexusSurvives = r.state.worldRules.some((x) => x.source === "nexus");
 
-        // --- Collapsible: die Faehigkeiten-Drawer-Sektionen sind verdrahtet ---
-        const secs = document.querySelectorAll('.drawer[data-drawer="faehigkeiten"] section.section');
+        // --- Collapsible: die Hof-Sektionen (UI-Putz: Fähigkeiten + Gesetze leben jetzt
+        // im Hof mit den Kreaturen + den Befehlen) sind als collapsible-header verdrahtet ---
+        const secs = document.querySelectorAll('.drawer[data-drawer="kreaturen"] section.section');
         out.collapsibleHeaders =
             secs.length >= 2 && Array.from(secs).every((s) => s.querySelector("h3.collapsible-header"));
 
@@ -38557,8 +38558,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         // Tab-System
         const tabs = document.querySelectorAll("#topbar .tab");
         out.tabCount = tabs.length;
-        // UI-Putz: der Hilfe-Tab ist in die Einstellungen gefaltet -> 7 Tabs.
-        out.allTabsPresent = tabs.length === 7;
+        // UI-Putz: Hilfe -> Hof gefaltet, Kreaturen+Fähigkeiten -> Hof vereint -> 6 Tabs.
+        out.allTabsPresent = tabs.length === 6;
         const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
         out.weltTabActive = weltTab && weltTab.classList.contains("active");
         const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
@@ -38602,7 +38603,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("UI V2: updateStatusPanel ist throttled (Aufruf <0.4s ignoriert)", uiResults.throttleHolds);
         check("UI V2: updateStatusPanel lässt nach 0.4s wieder durch", uiResults.throttleReleases);
         check(
-            "UI V2: sieben Tabs im Topbar (Hilfe in Einstellungen gefaltet)",
+            "UI V2: sechs Tabs im Topbar (Hof vereint Kreaturen+Fähigkeiten+Befehle)",
             uiResults.allTabsPresent,
             `count=${uiResults.tabCount}`
         );
@@ -38677,22 +38678,22 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (rainyBtn) rainyBtn.click();
         out.quickButtonRoutesToChat = r.state.weather === "rainy";
 
-        // (c) Die Hilfe lebt jetzt als einklappbare Sektion im Einstellungen-Drawer
-        // (UI-Putz: Hilfe-Tab gefaltet, ein Tab weniger). Drawer initial versteckt.
-        const settingsDrawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
-        out.hilfeDrawerInitiallyHidden = settingsDrawer && settingsDrawer.hidden === true;
+        // (c) Die Befehle (Hilfe) leben jetzt im HOF (UI-Putz: der Ort, an dem die
+        // Kommunikation zusammentrifft — Kreaturen folgen, Nexus dirigiert, Spieler spricht).
+        const hofDrawer = document.querySelector('.drawer[data-drawer="kreaturen"]');
+        out.hilfeDrawerInitiallyHidden = hofDrawer && hofDrawer.hidden === true;
 
-        // (d) Klick auf Einstellungen-Tab öffnet den Drawer (mit der Hilfe-Sektion)
-        const settingsTab = document.querySelector('#topbar .tab[data-tab="einstellungen"]');
-        if (settingsTab) settingsTab.click();
-        out.hilfeDrawerOpensOnTab = settingsDrawer && settingsDrawer.hidden === false;
-        out.helpSectionInSettings = !!(settingsDrawer && settingsDrawer.querySelector("#help-section"));
+        // (d) Klick auf den Hof-Tab öffnet den Drawer (mit der Befehle-Sektion)
+        const hofTab = document.querySelector('#topbar .tab[data-tab="kreaturen"]');
+        if (hofTab) hofTab.click();
+        out.hilfeDrawerOpensOnTab = hofDrawer && hofDrawer.hidden === false;
+        out.helpSectionInSettings = !!(hofDrawer && hofDrawer.querySelector("#help-section"));
 
         // Welt-Drawer ist jetzt versteckt (nur ein Tab aktiv)
         const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
         out.otherDrawersHidden = weltDrawer && weltDrawer.hidden === true;
 
-        // (e) Die Hilfe-Liste enthält Befehl-Buttons (aus chatDslPatterns generiert)
+        // (e) Die Befehle-Liste enthält Buttons (aus chatDslPatterns generiert)
         const helpButtons = document.querySelectorAll("#help-list button.cmd");
         out.helpButtonCount = helpButtons.length;
         out.helpHasButtons = helpButtons.length >= 10;
@@ -38702,13 +38703,13 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const rainyHelp = Array.from(helpButtons).find((b) => b.getAttribute("data-cmd") === "setze wetter rainy");
         if (rainyHelp) rainyHelp.click();
         out.helpClickExecutes = r.state.weather === "rainy";
-        out.helpClickClosesDrawer = settingsDrawer && settingsDrawer.hidden === true;
+        out.helpClickClosesDrawer = hofDrawer && hofDrawer.hidden === true;
 
         // (g) Drawer wieder öffnen, dann Close-Button schließt
-        if (settingsTab) settingsTab.click();
-        const closeBtn = settingsDrawer ? settingsDrawer.querySelector("[data-drawer-close]") : null;
+        if (hofTab) hofTab.click();
+        const closeBtn = hofDrawer ? hofDrawer.querySelector("[data-drawer-close]") : null;
         if (closeBtn) closeBtn.click();
-        out.closeButtonHidesDrawer = settingsDrawer && settingsDrawer.hidden === true;
+        out.closeButtonHidesDrawer = hofDrawer && hofDrawer.hidden === true;
 
         // Cleanup: Welt-Tab wieder aktivieren
         const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
@@ -38730,12 +38731,9 @@ async function checkBandEarlyRingsAndUi(ctx) {
             `count=${uiActionsResults.quickButtonCount}`
         );
         check("UI V2: Quick-Button-Klick routet durch processChatCommand", uiActionsResults.quickButtonRoutesToChat);
-        check(
-            "UI V2: Einstellungen-Drawer (mit Hilfe-Sektion) initial versteckt",
-            uiActionsResults.hilfeDrawerInitiallyHidden
-        );
-        check("UI V2: Einstellungen-Tab öffnet den Drawer", uiActionsResults.hilfeDrawerOpensOnTab);
-        check("UI-Putz: die Hilfe-Sektion lebt im Einstellungen-Drawer", uiActionsResults.helpSectionInSettings);
+        check("UI V2: Hof-Drawer (mit Befehle-Sektion) initial versteckt", uiActionsResults.hilfeDrawerInitiallyHidden);
+        check("UI V2: Hof-Tab öffnet den Drawer", uiActionsResults.hilfeDrawerOpensOnTab);
+        check("UI-Putz: die Befehle-Sektion (DSL) lebt im Hof", uiActionsResults.helpSectionInSettings);
         check("UI V2: andere Drawer werden versteckt wenn neuer Tab aktiv", uiActionsResults.otherDrawersHidden);
         check(
             "UI V2: Hilfe-Liste enthält Befehl-Buttons (≥10)",

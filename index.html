@@ -4697,9 +4697,8 @@
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
                         Welt
                     </button>
-                    <button class="tab" type="button" data-tab="kreaturen" role="tab">Kreaturen</button>
+                    <button class="tab" type="button" data-tab="kreaturen" role="tab">Hof</button>
                     <button class="tab" type="button" data-tab="spieler" role="tab">Spieler</button>
-                    <button class="tab" type="button" data-tab="faehigkeiten" role="tab">Fähigkeiten</button>
                     <button class="tab" type="button" data-tab="werkstatt" role="tab">Werkstatt</button>
                     <button class="tab" type="button" data-tab="bibliothek" role="tab">Bibliothek</button>
                     <button class="tab" type="button" data-tab="einstellungen" role="tab">Einstellungen</button>
@@ -4814,7 +4813,7 @@
         </aside>
         <aside class="drawer" data-drawer="kreaturen" aria-label="Kreaturen-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-            <h2>Kreaturen</h2>
+            <h2>Der Hof</h2>
             <!-- Welle 6.H Phase 2A — Aufträge als direkte Buttons. data-cmd
                  routet durch processChatCommand → parseChatToDsl → DSL — selber
                  Pfad wie wenn der Spieler tippt. So bleibt eine Sprache. -->
@@ -4913,6 +4912,26 @@
                 </p>
                 <div id="creature-list" class="creature-list" aria-live="polite">—</div>
             </section>
+            <!-- Der Hof vereint die Kommunikation: die Kreaturen folgen (oben), der Nexus
+                 dirigiert (Fähigkeiten + Gesetze), der Spieler spricht (die Befehle). -->
+            <section class="section" id="faehigkeiten-abilities">
+                <h3>Fähigkeiten · der Nexus komponiert</h3>
+                <p class="drawer-hint">Benannte Gesten — ▶ wirkt sie einmal.</p>
+                <div id="status-abilities"></div>
+            </section>
+            <section class="section" id="faehigkeiten-gesetze">
+                <h3>Gesetze · Welt-Regeln</h3>
+                <p class="drawer-hint">
+                    Stehende „wann immer X, dann Y" — sie feuern von selbst. Im Chat: „wann immer es regnet, dann setze
+                    wetter sunny".
+                </p>
+                <div id="status-worldrules"></div>
+            </section>
+            <section class="section default-collapsed" id="help-section">
+                <h3>Befehle · die Sprache des Hofes</h3>
+                <p class="drawer-hint">Klick zum Ausführen. Befehle gehen durch denselben Pfad wie der Chat.</p>
+                <div id="help-list"></div>
+            </section>
         </aside>
         <aside class="drawer" data-drawer="spieler" aria-label="Spieler-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
@@ -4969,23 +4988,6 @@
             <section class="section">
                 <h3>Emotionen</h3>
                 <div id="status-emotions"></div>
-            </section>
-        </aside>
-        <aside class="drawer" data-drawer="faehigkeiten" aria-label="Fähigkeiten-Panel" hidden>
-            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-            <h2>Fähigkeiten &amp; Gesetze</h2>
-            <section class="section" id="faehigkeiten-abilities">
-                <h3>Fähigkeiten · erlernt + komponiert</h3>
-                <p class="drawer-hint">Benannte Gesten — ▶ wirkt sie einmal.</p>
-                <div id="status-abilities"></div>
-            </section>
-            <section class="section" id="faehigkeiten-gesetze">
-                <h3>Gesetze · Welt-Regeln</h3>
-                <p class="drawer-hint">
-                    Stehende „wann immer X, dann Y" — sie feuern von selbst. Im Chat: „wann immer es regnet, dann setze
-                    wetter sunny".
-                </p>
-                <div id="status-worldrules"></div>
             </section>
         </aside>
         <aside class="drawer" data-drawer="werkstatt" aria-label="Werkstatt-Panel" hidden>
@@ -5765,11 +5767,6 @@
                     </div>
                     <div id="p2p-lobby-list" class="p2p-lobby-list" aria-live="polite"></div>
                 </div>
-            </section>
-            <section class="section default-collapsed" id="help-section">
-                <h3>Alle Befehle · Hilfe</h3>
-                <p class="drawer-hint">Klick zum Ausführen. Befehle gehen durch denselben Pfad wie der Chat.</p>
-                <div id="help-list"></div>
             </section>
         </aside>
         <aside id="console" aria-label="Konsole">

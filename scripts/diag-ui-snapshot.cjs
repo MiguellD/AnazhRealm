@@ -71,8 +71,6 @@ function startSaveServer() {
                 r.state.player.emotions.joy = 0.9;
                 if (typeof r._updateEmotionFeedback === "function") r._updateEmotionFeedback();
             }
-            // Inventar + Rezeptbuch öffnen (UI-Putz) für den Screenshot.
-            if (r && typeof r.toggleInventoryOverlay === "function") r.toggleInventoryOverlay(true);
         });
         await new Promise((r) => setTimeout(r, 1600));
         const dump = await page.evaluate(() => {
@@ -141,6 +139,9 @@ function startSaveServer() {
                     `slider-cel=${!!document.getElementById("slider-cel")} ` +
                     `sliders=${atmo.querySelectorAll('input[type="range"]').length}\n`;
             }
+            // Den Hof-Tab öffnen (UI-Putz) für den Screenshot — der vereinte Kommunikations-Raum.
+            const hofTab = document.querySelector('[data-tab="kreaturen"]');
+            if (hofTab) hofTab.click();
             return panels;
         });
         let txt = `# UI-Snapshot [${LABEL}]\n`;
