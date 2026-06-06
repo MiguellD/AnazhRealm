@@ -4553,7 +4553,6 @@
                     <button class="tab" type="button" data-tab="werkstatt" role="tab">Werkstatt</button>
                     <button class="tab" type="button" data-tab="bibliothek" role="tab">Bibliothek</button>
                     <button class="tab" type="button" data-tab="einstellungen" role="tab">Einstellungen</button>
-                    <button class="tab" type="button" data-tab="hilfe" role="tab">Hilfe</button>
                 </nav>
                 <div class="topbar-toggles">
                     <button id="grok-voice-toggle" class="latch" type="button" aria-pressed="false" hidden>
@@ -5193,7 +5192,7 @@
                  Power-User-Diagnose-Schicht ist default versteckt, damit die
                  Konsole ruhig bleibt. Aktiv schalten zeigt das #log-Section
                  wieder. Persistiert in localStorage. -->
-            <section class="section" id="logbook-section">
+            <section class="section default-collapsed" id="logbook-section">
                 <h3>Logbuch</h3>
                 <p class="drawer-hint">
                     Diagnose-Logs sind standardmäßig versteckt, damit der Chat im Vordergrund bleibt. Aktivieren für
@@ -5222,7 +5221,7 @@
             <!-- Welle 6.C3 — Tastenbelegung. Sechs Aktionen rebindable; Defaults
                  sind Minecraft-Konvention (LMB abbauen / RMB platzieren). 1-9
                  (Hotbar-Slots) und WASD (Bewegung) bleiben hardcoded. -->
-            <section class="section" id="keybindings-section">
+            <section class="section default-collapsed" id="keybindings-section">
                 <h3>Tastenbelegung</h3>
                 <p class="drawer-hint">
                     Klick „Ändern" und drücke dann die gewünschte Taste oder Maustaste. Esc bricht ab. WASD und 1-9 sind
@@ -5234,7 +5233,7 @@
                     <button type="button" id="keybindings-reset">Standard wiederherstellen</button>
                 </div>
             </section>
-            <section class="section">
+            <section class="section default-collapsed" id="tuning-section">
                 <h3>Tuning (Emotionen)</h3>
                 <div class="tuning-row">
                     <label for="tune-threshold">
@@ -5617,12 +5616,11 @@
                     <div id="p2p-lobby-list" class="p2p-lobby-list" aria-live="polite"></div>
                 </div>
             </section>
-        </aside>
-        <aside class="drawer" data-drawer="hilfe" aria-label="Hilfe-Panel" hidden>
-            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-            <h2>Alle Chat-Befehle</h2>
-            <p class="drawer-hint">Klick zum Ausführen. Befehle gehen durch denselben Pfad wie der Chat.</p>
-            <div id="help-list"></div>
+            <section class="section default-collapsed" id="help-section">
+                <h3>Alle Befehle · Hilfe</h3>
+                <p class="drawer-hint">Klick zum Ausführen. Befehle gehen durch denselben Pfad wie der Chat.</p>
+                <div id="help-list"></div>
+            </section>
         </aside>
         <aside id="console" aria-label="Konsole">
             <header id="console-header">

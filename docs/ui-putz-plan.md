@@ -308,21 +308,69 @@ den AnazhRealm wirft.
 
 ---
 
-## 8. Offene Klärungen (Schöpfer-Entscheidungen)
+## 8. Die Kern-Räume — die neue Architektur (Schöpfer-Vision 07.06.2026)
 
-1. **Tag/Nacht — nur das UI-Theme, oder auch der 3D-Welt-Zyklus?** Sicher + sofort: das
-   UI-THEME-Toggle weg, Nacht-Theme als EINER Stil. Offen: ob der 3D-Tag-Nacht-ZYKLUS
-   (Sonne/Mond, die „atmende Welt") auf Nacht-Stimmung fixiert/gebiast werden soll — das
-   berührt den Vision-Pfeiler „die Welt atmet". Mein Default: UI-Theme weg, 3D-Zyklus
-   bleibt (evtl. mit Nacht-Default-Tageszeit).
-2. **Die Tab-Gruppierung (§2/§5):** die vorgeschlagenen ~5 Bedeutungs-Bereiche (Welt · Der
-   Hof · Ich · Werkstatt · Rat) — stimmt die Gruppierung? Gehört die Bibliothek zu „Welt",
-   bleibt sie eigen? Wird Hilfe ein Tab oder ein „?"-Overlay?
-3. **Inventar:** inline-Raum im „Ich"-Bereich (kein Modal) — oder ein eleganteres
-   diegetisches/radiales Muster? (Beide raus aus dem versteckten Overlay.)
-4. **Reihenfolge:** zuerst die 🔴-Erreichbarkeit (Ausrüstung/Fertigen — spielbar machen),
-   oder zuerst die sichtbare Ordnung (Tag/Nacht + Tabs + Einstellungen — der erste
-   „Putz"-Eindruck)? Mein Default: Erreichbarkeit zuerst (Substanz vor Politur).
+Der Schöpfer hat die Richtung kristallisiert: von **8 verstreuten Tabs zu 5 prägnanten
+Kern-Räumen**, jeder mit klarer Identität, nach Intention geordnet. Plus drei Quer-Themen
+(Emotion-Klarheit · der freie Bildschirm · die sofort-Gewinne).
+
+### Die fünf Kern-Räume
+
+- **🏛 1. BIBLIOTHEK — das Alexandria-Portal** (entdecken · teilen · reisen). Der KERN, groß
+  wie die Werkstatt, wie ein Browser / eine Social-Plattform: \*\*trendende/öffentliche Welten
+    - Rezepte** (man sieht, was angesagt ist, joint mit einem Klick), daneben die **eigenen
+      privaten** Welten + Rezepte. Erbt die 4 bestehenden Sektionen (KI-Übersetzer · Vendor-
+      Andocken · Mesh-Katalog · Welten-Liste) UND vom Welt-Menü: **Andere Welten · Stammbaum ·
+      Tagebuch\*\*.
+- **⚒ 2. WERKSTATT** — die Schöpfungs-Gebärmutter (erschaffen). Bleibt das Vorbild-Design.
+- **🐾 3. DER HOF — Dirigent + Orchester** (Kreaturen + Fähigkeiten vereint). Das Orchester
+  (die Kreaturen) + die Partitur (Gesten/Gesetze), in einem Raum.
+- **🎒 4. ICH — das Minecraft-artige Inventar** (wer ich bin + was ich trage). Das Spieler-
+  Menü wird ins Inventar gefaltet: die Item-/Material-/Blueprint-Slots, die **Ausrüstung als
+  Equip-Slots daneben** (die Charakter-Ansicht), die Seele, die Stats, die **Emotionen mit
+  Legende**. (Soul-Editor → Werkstatt; Hotbar-Belegung hier/kontextuell.)
+- **⚙ 5. HAUPTMENÜ — System + Welt-Verwaltung** (das Meta). Einstellungen + der
+  Verwaltungs-Teil des Welt-Menüs (Diese-Welt-Info · Speichern/Laden · Welt-Beziehung) +
+  **Vibe-Pass** + **Hilfe (einklappbar, alle Befehle — die DSL-Liste ist aktuell, kommt aus
+  `chatDslPatterns`)** + ganz unten **„Erweiterte Einstellungen"** (eingeklappt: Logbuch ·
+  Tuning · Atmosphäre/Render · Tastenbelegung).
+
+→ **8 Tabs → 5.** Welt-Menü aufgelöst (social → Bibliothek, Verwaltung → Hauptmenü), Hilfe-
+Tab → Hauptmenü-Sektion, Spieler-Tab → Inventar, Kreaturen+Fähigkeiten → Hof.
+
+### Die drei Quer-Themen
+
+- **A — Emotion-Klarheit (das Aura-Problem, GEMESSEN):** die Aura zeigt die 10 **Substanz-
+  Tags** (Hue lebendig/dichte/…), die Emotion-Balken die 6 **Emotionen** (joy/awe/…) — zwei
+  nicht-gemappte Systeme, keine Legende, Aura unsichtbar in First-Person. Lösung: (1) die
+  dominante **Emotion** wird FP-sichtbar (ein sanfter Bildschirmrand-Schimmer in der
+  Emotion-Farbe + ein kleines Glyph/Label „Freude") — man fühlt die Stimmung, ohne in
+  3rd-Person zu wechseln; (2) eine **Legende** (die 6 Emotionen mit Name + Farbe + einer
+  Zeile Bedeutung) im Ich-Raum; (3) die Substanz-Aura (Tag-Hue) bleibt der Avatar-Schimmer,
+  aber benannt als das, was sie ist (Material-Aura), getrennt von der Emotion.
+- **B — Der freie Bildschirm:** Chat (Konsole), Topbar-Titel + Welteninfo (Statusbar)
+  belegen den Spiel-Bildschirm permanent. → der Chat auto-schmal/einklappbar (expandiert bei
+  Fokus), der Titel dezent, die Welteninfo auf Abruf. Der Bildschirm gehört der Welt.
+- **C — Die sofort-Gewinne (laufend):** die fortgeschrittenen Settings (Tastenbelegung ·
+  Logbuch · Tuning · Atmosphäre) default eingeklappt (GEBAUT V18.x); die Dev-Sektionen
+  gebündelt ans Ende („Erweiterte Einstellungen"); die Hilfe in die Einstellungen.
+
+### Die Reihenfolge (Merge-Rhythmus — jeder Raum ein verifizierter Bogen)
+
+1. **Einstellungen → Hauptmenü** (Dev gestaffelt + gebündelt, Hilfe rein, Vibe-Pass +
+   Welt-Verwaltung — die sofort-Gewinne + erste Tab-Reduktion).
+2. **Ich / Inventar** (Spieler-Menü ins Inventar, Equip-Slots, Emotion-Legende —
+   trägt auch die 🔴-Erreichbarkeit Ausrüstung/Fertigen).
+3. **Der Hof** (Kreaturen + Fähigkeiten).
+4. **Bibliothek-Social** (trending/public, Welt-Menü-Migration).
+5. **Emotion-FP-Feedback** (der Bildschirmrand-Schimmer + Glyph).
+6. **Der freie Bildschirm** (HUD zähmen).
+
+### Verbleibende Klärung
+
+- **Der 3D-Tag-Nacht-ZYKLUS** (Sonne/Mond — nicht das UI-Theme, das ist weg): auf Nacht-
+  Stimmung biasen, oder der volle atmende Zyklus? Berührt „die Welt atmet". Default: Zyklus
+  bleibt, evtl. Nacht-Default-Tageszeit.
 
 ---
 

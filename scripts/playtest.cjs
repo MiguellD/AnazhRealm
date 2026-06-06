@@ -38493,8 +38493,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         // Tab-System
         const tabs = document.querySelectorAll("#topbar .tab");
         out.tabCount = tabs.length;
-        // W14 — der Bibliothek-Tab ist der 8.
-        out.allTabsPresent = tabs.length === 8;
+        // UI-Putz: der Hilfe-Tab ist in die Einstellungen gefaltet -> 7 Tabs.
+        out.allTabsPresent = tabs.length === 7;
         const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
         out.weltTabActive = weltTab && weltTab.classList.contains("active");
         const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
@@ -38538,7 +38538,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("UI V2: updateStatusPanel ist throttled (Aufruf <0.4s ignoriert)", uiResults.throttleHolds);
         check("UI V2: updateStatusPanel lässt nach 0.4s wieder durch", uiResults.throttleReleases);
         check(
-            "UI V2: sieben Tabs im Topbar (inkl. Werkstatt)",
+            "UI V2: sieben Tabs im Topbar (Hilfe in Einstellungen gefaltet)",
             uiResults.allTabsPresent,
             `count=${uiResults.tabCount}`
         );
@@ -38546,7 +38546,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("UI V2: Welt-Drawer ist initial offen", uiResults.weltDrawerOpenInitially);
     }
 
-    // ### UI V2 — Quick-Buttons + Hilfe-Drawer (Tab-System) ###
+    // ### UI V2 — Quick-Buttons + Hilfe-Sektion in Einstellungen (Tab-System) ###
     const uiActionsResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -38564,36 +38564,38 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (rainyBtn) rainyBtn.click();
         out.quickButtonRoutesToChat = r.state.weather === "rainy";
 
-        // (c) Hilfe-Drawer ist initial versteckt (Welt ist Default-Tab)
-        const hilfeDrawer = document.querySelector('.drawer[data-drawer="hilfe"]');
-        out.hilfeDrawerInitiallyHidden = hilfeDrawer && hilfeDrawer.hidden === true;
+        // (c) Die Hilfe lebt jetzt als einklappbare Sektion im Einstellungen-Drawer
+        // (UI-Putz: Hilfe-Tab gefaltet, ein Tab weniger). Drawer initial versteckt.
+        const settingsDrawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
+        out.hilfeDrawerInitiallyHidden = settingsDrawer && settingsDrawer.hidden === true;
 
-        // (d) Klick auf Hilfe-Tab öffnet Hilfe-Drawer
-        const hilfeTab = document.querySelector('#topbar .tab[data-tab="hilfe"]');
-        if (hilfeTab) hilfeTab.click();
-        out.hilfeDrawerOpensOnTab = hilfeDrawer && hilfeDrawer.hidden === false;
+        // (d) Klick auf Einstellungen-Tab öffnet den Drawer (mit der Hilfe-Sektion)
+        const settingsTab = document.querySelector('#topbar .tab[data-tab="einstellungen"]');
+        if (settingsTab) settingsTab.click();
+        out.hilfeDrawerOpensOnTab = settingsDrawer && settingsDrawer.hidden === false;
+        out.helpSectionInSettings = !!(settingsDrawer && settingsDrawer.querySelector("#help-section"));
 
         // Welt-Drawer ist jetzt versteckt (nur ein Tab aktiv)
         const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
         out.otherDrawersHidden = weltDrawer && weltDrawer.hidden === true;
 
-        // (e) Drawer enthält Befehl-Buttons
+        // (e) Die Hilfe-Liste enthält Befehl-Buttons (aus chatDslPatterns generiert)
         const helpButtons = document.querySelectorAll("#help-list button.cmd");
         out.helpButtonCount = helpButtons.length;
         out.helpHasButtons = helpButtons.length >= 10;
 
-        // (f) Klick auf Help-Eintrag schließt Drawer + führt aus.
+        // (f) Klick auf einen Befehl führt ihn aus + schließt den Drawer.
         r.state.weather = "sunny";
         const rainyHelp = Array.from(helpButtons).find((b) => b.getAttribute("data-cmd") === "setze wetter rainy");
         if (rainyHelp) rainyHelp.click();
         out.helpClickExecutes = r.state.weather === "rainy";
-        out.helpClickClosesDrawer = hilfeDrawer && hilfeDrawer.hidden === true;
+        out.helpClickClosesDrawer = settingsDrawer && settingsDrawer.hidden === true;
 
         // (g) Drawer wieder öffnen, dann Close-Button schließt
-        if (hilfeTab) hilfeTab.click();
-        const closeBtn = hilfeDrawer ? hilfeDrawer.querySelector("[data-drawer-close]") : null;
+        if (settingsTab) settingsTab.click();
+        const closeBtn = settingsDrawer ? settingsDrawer.querySelector("[data-drawer-close]") : null;
         if (closeBtn) closeBtn.click();
-        out.closeButtonHidesDrawer = hilfeDrawer && hilfeDrawer.hidden === true;
+        out.closeButtonHidesDrawer = settingsDrawer && settingsDrawer.hidden === true;
 
         // Cleanup: Welt-Tab wieder aktivieren
         const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
@@ -38615,16 +38617,20 @@ async function checkBandEarlyRingsAndUi(ctx) {
             `count=${uiActionsResults.quickButtonCount}`
         );
         check("UI V2: Quick-Button-Klick routet durch processChatCommand", uiActionsResults.quickButtonRoutesToChat);
-        check("UI V2: Hilfe-Drawer initial versteckt", uiActionsResults.hilfeDrawerInitiallyHidden);
-        check("UI V2: Tab-Klick auf Hilfe öffnet Hilfe-Drawer", uiActionsResults.hilfeDrawerOpensOnTab);
+        check(
+            "UI V2: Einstellungen-Drawer (mit Hilfe-Sektion) initial versteckt",
+            uiActionsResults.hilfeDrawerInitiallyHidden
+        );
+        check("UI V2: Einstellungen-Tab öffnet den Drawer", uiActionsResults.hilfeDrawerOpensOnTab);
+        check("UI-Putz: die Hilfe-Sektion lebt im Einstellungen-Drawer", uiActionsResults.helpSectionInSettings);
         check("UI V2: andere Drawer werden versteckt wenn neuer Tab aktiv", uiActionsResults.otherDrawersHidden);
         check(
-            "UI V2: Hilfe-Drawer enthält Befehl-Buttons (≥10)",
+            "UI V2: Hilfe-Liste enthält Befehl-Buttons (≥10)",
             uiActionsResults.helpHasButtons,
             `count=${uiActionsResults.helpButtonCount}`
         );
-        check("UI V2: Klick auf Befehl im Drawer führt aus", uiActionsResults.helpClickExecutes);
-        check("UI V2: Klick auf Befehl schließt Drawer automatisch", uiActionsResults.helpClickClosesDrawer);
+        check("UI V2: Klick auf Befehl führt aus", uiActionsResults.helpClickExecutes);
+        check("UI V2: Klick auf Befehl schließt den Drawer automatisch", uiActionsResults.helpClickClosesDrawer);
         check("UI V2: Drawer-Close-Button schließt Drawer", uiActionsResults.closeButtonHidesDrawer);
     }
 
