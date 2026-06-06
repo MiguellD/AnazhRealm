@@ -39413,6 +39413,153 @@ class AnazhRealm {
                 }
             }
         }
+        // Ich/Inventar (UI-Putz): was du trägst + das Rezeptbuch mit-aktualisieren.
+        this._renderInventoryEquip();
+        this.renderRecipeBook();
+    }
+
+    // Was du trägst — Gerät in der Hand + Rüstung, sichtbar + klickbar (Klick legt ab).
+    // Heilt "man sieht nicht mal, was getragen wird" (die 🔴-Erreichbarkeits-Lücke).
+    _renderInventoryEquip() {
+        const host = document.getElementById("inventory-equip");
+        if (!host) return;
+        host.innerHTML = "";
+        const eq = (this.state.player && this.state.player.equipped) || { held: null, armor: null };
+        const bps = this.state.blueprints || {};
+        const slots = [
+            { kind: "In der Hand", name: eq.held, clear: () => this.equipHeld(null) },
+            { kind: "Rüstung", name: eq.armor, clear: () => this.equipArmor(null) },
+        ];
+        for (const s of slots) {
+            const bp = s.name && bps[s.name];
+            const el = document.createElement("div");
+            el.className = "equip-slot";
+            const k = document.createElement("span");
+            k.className = "equip-kind";
+            k.textContent = s.kind;
+            const nm = document.createElement("span");
+            nm.className = "equip-name";
+            nm.textContent = s.name ? (bp && bp.label) || s.name : "— leer —";
+            el.appendChild(k);
+            el.appendChild(nm);
+            if (s.name) {
+                el.title = "Klick → ablegen";
+                el.addEventListener("click", () => {
+                    s.clear();
+                    this._renderInventoryEquip();
+                    this.renderRecipeBook();
+                });
+            }
+            host.appendChild(el);
+        }
+    }
+
+    // Das Rezeptbuch (wie Minecraft): die craftbaren Baupläne, gruppiert nach Verwendung,
+    // jeder mit Material-Kosten + einem rollen-gerechten Fertigen-Knopf (disabled wenn das
+    // Material fehlt). Heilt "Fertigen/Ausrüsten nur per Chat" — der intuitive Crafting-Weg.
+    renderRecipeBook() {
+        const host = document.getElementById("inventory-recipes");
+        if (!host) return;
+        host.innerHTML = "";
+        const bps = this.state.blueprints || {};
+        const groups = { hold: [], wear: [], drink: [], place: [] };
+        const groupLabel = { hold: "In die Hand", wear: "Rüstung", drink: "Trank", place: "Bauwerk" };
+        for (const name of Object.keys(bps)) {
+            const bp = bps[name];
+            if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) continue;
+            const kind = this._blueprintUseKind(bp);
+            if (groups[kind]) groups[kind].push(name);
+        }
+        let any = false;
+        for (const kind of ["hold", "wear", "drink", "place"]) {
+            const names = groups[kind].sort();
+            if (!names.length) continue;
+            any = true;
+            const g = document.createElement("div");
+            g.className = "recipe-group";
+            g.textContent = groupLabel[kind];
+            host.appendChild(g);
+            for (const name of names) host.appendChild(this._recipeRow(name, kind));
+        }
+        if (!any) {
+            const empty = document.createElement("p");
+            empty.className = "inventory-hint";
+            empty.textContent = "Noch keine craftbaren Baupläne — entwirf eines in der Werkstatt.";
+            host.appendChild(empty);
+        }
+    }
+
+    _recipeRow(name, kind) {
+        const bp = this.state.blueprints[name];
+        const row = document.createElement("div");
+        row.className = "recipe-row";
+        const info = document.createElement("div");
+        info.className = "recipe-info";
+        const nm = document.createElement("span");
+        nm.className = "recipe-name";
+        const label = (bp && bp.label) || name;
+        nm.textContent = label;
+        info.appendChild(nm);
+        const check = this.checkBuildCost(name);
+        const cost = document.createElement("span");
+        cost.className = "recipe-cost";
+        cost.textContent =
+            Object.entries(check.cost || {})
+                .map(([m, n]) => `${n}× ${m}`)
+                .join(" · ") || "frei";
+        info.appendChild(cost);
+        row.appendChild(info);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent =
+            kind === "wear" ? "Anlegen" : kind === "drink" ? "Brauen" : kind === "place" ? "Fertigen" : "In die Hand";
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        const free = mode === "schöpfer" || Number.isFinite(bp && bp.forgedPrecision);
+        btn.disabled = !free && !check.ok;
+        if (btn.disabled) {
+            btn.title =
+                "Es fehlt: " +
+                Object.entries(check.missing || {})
+                    .map(([m, n]) => `${n}× ${m}`)
+                    .join(", ");
+        }
+        btn.addEventListener("click", () => {
+            const res = this.craftFromRecipe(name);
+            if (res && res.ok) {
+                this.renderInventoryUI();
+            } else if (res && res.reason === "no_workshop_station") {
+                this.log(
+                    `„${label}" braucht eine Werkstatt-Station (${res.neededDomain || "Esse"}) in der Nähe.`,
+                    "INFO"
+                );
+            } else if (res && res.reason === "not_enough_material") {
+                this.log(`Nicht genug Material für „${label}".`, "INFO");
+            }
+        });
+        row.appendChild(btn);
+        return row;
+    }
+
+    // Der EINE Crafting-Aktions-Pfad aus dem Rezeptbuch — rollen-gerecht (Use-Kind):
+    // Gerät → in die Hand (wieldBlueprint, schmiedet mit Material+Station-Gate), Rüstung →
+    // schmieden + anlegen, Trank/Bauwerk → schmieden + ins Inventar.
+    craftFromRecipe(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        const kind = this._blueprintUseKind(bp);
+        if (kind === "wear") {
+            const made = this._forgeMaterialAndFreeze(name);
+            if (!made.ok) return made;
+            return this.equipArmor(name);
+        }
+        if (kind === "drink" || kind === "place") {
+            const made = this._forgeMaterialAndFreeze(name);
+            if (!made.ok) return made;
+            this.addToInventory(name, 1);
+            return { ok: true, made: true, kind };
+        }
+        // hold (Gerät/Waffe) + Default: schmieden (mit Gate) + in die Hand nehmen.
+        return this.wieldBlueprint(name);
     }
 
     // Slot-Klick im Inventar: wählt den Bauplan aus. Nächster Hotbar-Slot-

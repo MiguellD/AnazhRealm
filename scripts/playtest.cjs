@@ -23869,6 +23869,70 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1: Schließen räumt inventorySelected", wave6c1Results.toggleCloseClearsSelected);
     }
 
+    // ### UI-Putz — Ich/Inventar: Rezeptbuch + Equip-Status ###
+    // Der Minecraft-artige Crafting-Weg (Schöpfer: "rezeptbuch gibts ja auch schon in
+    // minecraft, intuitiv"): das Inventar listet die craftbaren Baupläne mit Kosten + einem
+    // rollen-gerechten Fertigen-Knopf, und zeigt sichtbar, was getragen wird (Equip-Status).
+    const recipeBookResults = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        if (!r) return null;
+        const out = {};
+        out.hasRenderRecipeBook = typeof r.renderRecipeBook === "function";
+        out.hasCraftFromRecipe = typeof r.craftFromRecipe === "function";
+        out.hasRenderEquip = typeof r._renderInventoryEquip === "function";
+
+        // Inventar öffnen → Rezeptbuch + Equip-Status rendern.
+        r.toggleInventoryOverlay(true);
+        const recipes = document.getElementById("inventory-recipes");
+        out.recipesContainerExists = !!recipes;
+        out.recipeRowCount = recipes ? recipes.querySelectorAll(".recipe-row").length : 0;
+        out.recipeRowsPresent = out.recipeRowCount >= 1;
+        const equip = document.getElementById("inventory-equip");
+        out.equipSlotsPresent = !!equip && equip.querySelectorAll(".equip-slot").length === 2;
+
+        // craftFromRecipe: ein gehaltenes Gerät (hold) fertigen → in die Hand.
+        // Schöpfer-Modus = frei (kein Material/Station-Gate) → deterministisch.
+        // getGameMode liest state.worldMeta.gameMode (die kanonische Quelle).
+        const prevMode = r.state.worldMeta && r.state.worldMeta.gameMode;
+        if (r.state.worldMeta) r.state.worldMeta.gameMode = "schöpfer";
+        let holdName = null;
+        for (const name of Object.keys(r.state.blueprints || {})) {
+            const bp = r.state.blueprints[name];
+            if (bp && Array.isArray(bp.parts) && bp.parts.length && r._blueprintUseKind(bp) === "hold") {
+                holdName = name;
+                break;
+            }
+        }
+        out.foundHoldBlueprint = !!holdName;
+        if (holdName) {
+            const res = r.craftFromRecipe(holdName);
+            out.craftOk = !!(res && res.ok);
+            out.craftEquipsHeld = !!(r.state.player.equipped && r.state.player.equipped.held === holdName);
+        }
+        if (r.state.worldMeta) r.state.worldMeta.gameMode = prevMode;
+        r.equipHeld(null);
+        r.toggleInventoryOverlay(false);
+        return out;
+    });
+
+    if (recipeBookResults) {
+        check("UI-Putz Rezeptbuch: renderRecipeBook existiert", recipeBookResults.hasRenderRecipeBook);
+        check("UI-Putz Rezeptbuch: craftFromRecipe existiert", recipeBookResults.hasCraftFromRecipe);
+        check("UI-Putz Rezeptbuch: _renderInventoryEquip existiert", recipeBookResults.hasRenderEquip);
+        check("UI-Putz Rezeptbuch: Container im DOM", recipeBookResults.recipesContainerExists);
+        check(
+            "UI-Putz Rezeptbuch: listet craftbare Baupläne",
+            recipeBookResults.recipeRowsPresent,
+            `rows=${recipeBookResults.recipeRowCount}`
+        );
+        check(
+            "UI-Putz Rezeptbuch: Equip-Status zeigt beide Slots (Hand + Rüstung)",
+            recipeBookResults.equipSlotsPresent
+        );
+        check("UI-Putz Rezeptbuch: craftFromRecipe fertigt ein Gerät", recipeBookResults.craftOk);
+        check("UI-Putz Rezeptbuch: gefertigtes Gerät landet in der Hand", recipeBookResults.craftEquipsHeld);
+    }
+
     // ### Welle 6.C1+ — Drag&Drop für Inventar ↔ Hotbar ===
     // Vier Pfade testen: inv→inv (swap), inv→hot (Hotbar setzt),
     // hot→hot (swap), hot→inv (Hotbar räumen). HTML5-Drag-Events

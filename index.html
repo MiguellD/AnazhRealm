@@ -599,7 +599,109 @@
                 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
                 font-family: "Cinzel", Georgia, serif;
                 color: var(--parch-ink);
-                max-width: 90vw;
+                max-width: 92vw;
+            }
+            /* Ich/Inventar (UI-Putz): zwei Spalten — links die Habe (Items), rechts was
+               du trägst + das Rezeptbuch (craftbare Baupläne, Minecraft-artig). */
+            .inventory-body {
+                display: flex;
+                gap: 20px;
+                align-items: flex-start;
+            }
+            .inventory-col-recipes {
+                width: 300px;
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+            .inventory-equip {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            .inventory-equip .equip-slot {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                padding: 6px 8px;
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.1), rgba(60, 40, 18, 0.28));
+                border: 1px solid var(--brass-3);
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 11px;
+            }
+            .inventory-equip .equip-slot .equip-kind {
+                color: var(--parch-ink-faded);
+                font-size: 9px;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+            }
+            .inventory-equip .equip-slot .equip-name {
+                color: var(--parch-ink);
+            }
+            .inventory-equip .equip-slot:hover {
+                border-color: var(--brass-1);
+            }
+            .inventory-recipes-title {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: var(--parch-ink-soft);
+                margin: 0 0 8px 0;
+            }
+            .inventory-recipes .recipe-group {
+                font-size: 9px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: var(--brass-1);
+                margin: 10px 0 4px;
+            }
+            .inventory-recipes .recipe-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                padding: 5px 8px;
+                margin-bottom: 4px;
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.08), rgba(60, 40, 18, 0.22));
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+            }
+            .inventory-recipes .recipe-row .recipe-info {
+                display: flex;
+                flex-direction: column;
+                gap: 1px;
+                min-width: 0;
+            }
+            .inventory-recipes .recipe-row .recipe-name {
+                font-size: 11px;
+                color: var(--parch-ink);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .inventory-recipes .recipe-row .recipe-cost {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                color: var(--parch-ink-faded);
+            }
+            .inventory-recipes .recipe-row button {
+                flex: none;
+                padding: 4px 10px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                background: linear-gradient(180deg, var(--brass-1), var(--brass-2));
+                color: #1a1023;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+            }
+            .inventory-recipes .recipe-row button:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+                background: var(--wood-1);
+                color: var(--parch-ink-faded);
             }
             #inventory-overlay[hidden] {
                 display: none;
@@ -4562,14 +4664,28 @@
              3×9-Grid. Jeder Slot trägt Tag-Profile bei Hover als Glow + Audio. -->
         <div id="inventory-overlay" role="dialog" aria-label="Inventar" aria-modal="false" hidden>
             <div class="inventory-header">
-                <h2>Inventar</h2>
+                <h2>Inventar &amp; Rezeptbuch</h2>
                 <p class="inventory-hint">
                     Tab schließt · Klick → wählen · Klick auf Hotbar → ablegen · Hover → Tag-Resonanz
                 </p>
             </div>
-            <div id="inventory-grid" class="inventory-grid"></div>
-            <div id="inventory-selected" class="inventory-selected" aria-live="polite">
-                <span class="label">gewählt:</span> <span class="name">—</span>
+            <div class="inventory-body">
+                <div class="inventory-col-items">
+                    <div id="inventory-grid" class="inventory-grid"></div>
+                    <div id="inventory-selected" class="inventory-selected" aria-live="polite">
+                        <span class="label">gewählt:</span> <span class="name">—</span>
+                    </div>
+                </div>
+                <div class="inventory-col-recipes">
+                    <!-- Was du trägst (Gerät in Hand + Rüstung) — sichtbar, klickbar. -->
+                    <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
+                    <!-- Rezeptbuch (wie Minecraft): was du fertigen kannst, ein Klick
+                         schmiedet aus deinem Material + nimmt es in die Hand / legt es an. -->
+                    <h3 class="inventory-recipes-title">
+                        Rezeptbuch <span class="section-hint">— was du fertigen kannst</span>
+                    </h3>
+                    <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
+                </div>
             </div>
         </div>
         <header id="topbar" class="hud-frame">

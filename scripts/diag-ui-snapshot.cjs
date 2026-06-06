@@ -71,6 +71,8 @@ function startSaveServer() {
                 r.state.player.emotions.joy = 0.9;
                 if (typeof r._updateEmotionFeedback === "function") r._updateEmotionFeedback();
             }
+            // Inventar + Rezeptbuch öffnen (UI-Putz) für den Screenshot.
+            if (r && typeof r.toggleInventoryOverlay === "function") r.toggleInventoryOverlay(true);
         });
         await new Promise((r) => setTimeout(r, 1600));
         const dump = await page.evaluate(() => {
