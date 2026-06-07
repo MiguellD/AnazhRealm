@@ -4132,7 +4132,10 @@
                 border-top: 1px solid rgba(184, 138, 80, 0.35);
                 align-items: center;
             }
-            #workshop-stats-panel .workshop-fertigen {
+            /* V18.40 — die FERTIGEN-Stile UNGESKOPT (die Klasse ist eindeutig): das FERTIGEN lebt
+               jetzt in der Mach-Zone (#workshop-action-zone), nicht mehr nur in der Stats-Tabelle —
+               ein container-geskopter Block würde sonst nicht greifen (V18.33-Lehre). */
+            .workshop-fertigen {
                 padding: 5px 14px;
                 background: linear-gradient(180deg, rgba(212, 150, 70, 0.95), rgba(150, 92, 30, 0.8));
                 border: 1px solid var(--brass-1, #c69a4a);
@@ -4149,11 +4152,38 @@
                     filter 0.15s ease,
                     box-shadow 0.15s ease;
             }
-            #workshop-stats-panel .workshop-fertigen:hover {
+            .workshop-fertigen:hover {
                 filter: brightness(1.12);
                 box-shadow: 0 0 12px rgba(212, 150, 70, 0.7);
             }
-            #workshop-stats-panel .workshop-fertigen-station {
+            /* Die Mach-Zone: FERTIGEN als prominente, vollbreite Mach-CTA (vertikal gestapelt). */
+            #workshop-action-zone {
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid var(--brass-3);
+            }
+            #workshop-action-zone .workshop-fertigen-row {
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 4px;
+                margin: 0;
+                padding: 0;
+                border-top: none;
+            }
+            #workshop-action-zone .workshop-fertigen {
+                width: 100%;
+                padding: 8px 14px;
+            }
+            #workshop-action-zone .stat-label {
+                flex: none;
+                text-align: left;
+                margin: 0;
+            }
+            #workshop-action-zone .workshop-fertigen-station {
+                margin: 0;
+            }
+            .workshop-fertigen-station {
                 margin-left: 8px;
                 font-family: "JetBrains Mono", monospace;
                 font-size: 9px;
@@ -4161,7 +4191,7 @@
                 letter-spacing: 0.05em;
                 opacity: 0.9;
             }
-            #workshop-stats-panel .workshop-fertigen-station.workshop-fertigen-station-missing {
+            .workshop-fertigen-station.workshop-fertigen-station-missing {
                 color: #e0935f;
             }
             /* Domain-Bars: kleine inline-Bars zeigen Verteilung der Werkzeug-
@@ -5403,6 +5433,10 @@
                         >
                             ✖ Part entfernen
                         </button>
+                        <!-- V18.40 — Farben nach LINKS (Schöpfer): Formen + Farben sind beide
+                             „was ich hinzufüge / wie es aussieht" → eine mentale Zone. -->
+                        <h4>Farben</h4>
+                        <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
                     </aside>
                     <div id="workshop-preview-wrapper">
                         <div id="workshop-mode-bar" role="group" aria-label="Manipulator-Modus">
@@ -5520,8 +5554,10 @@
                             >
                         </h4>
                         <div id="workshop-tool-palette" role="group" aria-label="Werkzeug-Palette"></div>
-                        <h4>Farben</h4>
-                        <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
+                        <!-- V18.40 — die MACH-Zone (Schöpfer „Ausgabe = nur Readout"): FERTIGEN
+                             (+ rollen-Verb) lebt hier bei Material/Werkzeug = „womit ich mache",
+                             nicht in der Ausgabe-Tabelle. _workshopAppendFertigenRow füllt sie. -->
+                        <div id="workshop-action-zone" aria-label="Mach-Aktion"></div>
                     </aside>
                 </div>
                 <!-- V18.37 — die Ausgabe-Tabelle auf GANZE Breite (Schöpfer): aus dem
@@ -6410,6 +6446,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.39.0" defer></script>
+        <script src="anazhRealm.js?v=18.40.0" defer></script>
     </body>
 </html>

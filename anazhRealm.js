@@ -41824,20 +41824,25 @@ class AnazhRealm {
         if (typeof document === "undefined") return;
         const panel = document.getElementById("workshop-stats-panel");
         if (!panel) return;
+        const az = document.getElementById("workshop-action-zone");
         const ws = this._ensureWorkshopState();
         const bp = this.state.blueprints[ws.selectedBlueprint];
         panel.innerHTML = "";
+        if (az) az.innerHTML = "";
         if (!bp) return;
-        this._workshopAppendRoleRow(panel, bp);
+        // V18.40 — die Ausgabe-Tabelle nach den NUTZER-FRAGEN geordnet (Schöpfer-Methodik P5):
+        // Identität (was ist es?) → Güte (wie gut?) → Preis (was kostet es?) → Wachstum (wie
+        // verbessern?). Und die Tabelle ist NUR Readout — FERTIGEN wandert in die Mach-Zone.
+        this._workshopAppendRoleRow(panel, bp); // Identität: Rolle + Fähigkeit
         this._workshopAppendAbilitiesRow(panel, bp);
-        this._workshopAppendBuildCostRow(panel, bp);
-        if (!bp.builtIn) this._workshopAppendDomainAnalysis(panel, bp);
+        this._workshopAppendQualityRow(panel, bp); // Güte
         this._workshopAppendTagsRow(panel, bp);
-        this._workshopAppendQualityRow(panel, bp);
+        this._workshopAppendBuildCostRow(panel, bp); // Preis
+        if (!bp.builtIn) this._workshopAppendDomainAnalysis(panel, bp); // Wachstum (nur eigene)
         if (!bp.builtIn) this._workshopAppendSignatureRow(panel, bp, ws);
-        // S7 (kampf-plan §11.7/§11.9) — der EINE Fluss: das FERTIGEN als Abschluss der Lese-Tabelle
-        // (verfeinern → ablesen → FERTIGEN), nicht als paralleler ⚒-Knopf im Detail-Editor.
-        this._workshopAppendFertigenRow(panel, bp);
+        // S7 (kampf-plan §11.9) — der Fluss verfeinern → ablesen → FERTIGEN; das FERTIGEN ist jetzt
+        // die MACH-Zone rechts (bei Material/Werkzeug), nicht in der Readout-Tabelle (V18.40).
+        this._workshopAppendFertigenRow(az || panel, bp);
     }
 
     // S7 (kampf-plan §11.7/§11.9) — DER EINE FLUSS: das FERTIGEN gehört in die Stats-Tabelle (wo die
@@ -48079,7 +48084,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.39.0";
+AnazhRealm.VERSION = "18.40.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

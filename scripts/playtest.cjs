@@ -35916,14 +35916,14 @@ async function checkBandWaves9And10a(ctx) {
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
             r.selectBlueprintForEdit("test_9d_soul");
-            out.soulFertigenRendered = !!document.querySelector("#workshop-stats-panel .workshop-fertigen");
+            out.soulFertigenRendered = !!document.querySelector("#workshop-action-zone .workshop-fertigen");
             out.oldSoulButtonGone = !document.querySelector(".workshop-soul-activate");
 
             if (r.state.blueprints["test_9d_arch"]) r.deleteBlueprint("test_9d_arch");
             r.cloneBlueprint("village", "test_9d_arch");
             r.selectBlueprintForEdit("test_9d_arch");
             // die EINE FERTIGEN-Zeile erscheint auch fürs Gerät/Bauwerk — ein Akt für alle Mach-Rollen.
-            out.archAlsoFertigen = !!document.querySelector("#workshop-stats-panel .workshop-fertigen");
+            out.archAlsoFertigen = !!document.querySelector("#workshop-action-zone .workshop-fertigen");
 
             // Cleanup
             r.applyPlayerSoul("human");
@@ -37448,12 +37448,12 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             });
             out.tagChipsHaveStars = anyHasStars;
             out.tagChipsHaveLevelClass = anyHasLevelClass;
-            // Stern-Inhalt: enthält Stern-Glyphen
+            // Stern-Inhalt: enthält Stern-Glyphen. V18.40 — direkt das erste `.tag-stars`-Element
+            // lesen (nicht tagChips[0]): die Qualitäts-Zeile ist AUCH ein `.tag-chip` (5 Glyphen,
+            // ohne `.tag-stars`-Kind) und steht seit der Nutzer-Frage-Ordnung evtl. vor den Tags.
             let starsContent = "";
-            if (tagChips.length > 0) {
-                const firstStarEl = tagChips[0].querySelector(".tag-stars");
-                if (firstStarEl) starsContent = firstStarEl.textContent;
-            }
+            const firstStarEl = statsPanel ? statsPanel.querySelector(".tag-stars") : null;
+            if (firstStarEl) starsContent = firstStarEl.textContent;
             out.starsAreGlyphs = /[★☆]/.test(starsContent) && starsContent.length === 3;
 
             // Default-Size-Override: setze Flag zurück + ruf default —
