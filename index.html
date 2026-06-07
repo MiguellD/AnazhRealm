@@ -2585,6 +2585,18 @@
                 border-color: var(--brass-1);
                 font-weight: 600;
             }
+            /* V18.48 Hof-C — der kompakte „Auftrag ▾"-Select pro Wesen (Sammle/Baue inline). */
+            .creature-list .creature-order-select {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                padding: 2px 4px;
+                max-width: 96px;
+                background: rgba(120, 80, 30, 0.12);
+                border: 1px solid var(--brass-2);
+                border-radius: 3px;
+                color: var(--parch-ink);
+                cursor: pointer;
+            }
             .creature-list .creature-task.follow_player {
                 color: #4faa5c;
             }
@@ -5712,58 +5724,10 @@
             <!-- V18.46 Hof-A (UI-Putz §2) — die globale „Aufträge an Kreaturen"-Knopfreihe ist AUFGELÖST:
                  die Befehle leben jetzt INLINE am Wesen (Zone „Wesen", _renderCreatureListUI, P16 eine Ebene)
                  + in der Omnibox (`k:`, Ctrl+K). Das war die Trennung Wesen↔Befehl + ein Duplikat. -->
-            <!-- Welle 6.H Phase 2B.1 — Sammeln-Sektion. Kreatur findet die
-                 nächste Architektur mit dem gewählten Material, baut sie ab
-                 und legt sie ins Spieler-Inventar (6.C1). Dropdown trägt
-                 die 12 Built-in-Materialien. -->
-            <section class="section">
-                <h3>Sammeln</h3>
-                <p class="drawer-hint">
-                    Die nächste Kreatur sucht eine Architektur mit dem gewählten Material, bringt sie ins Inventar und
-                    merkt sich was sie fand.
-                </p>
-                <div class="soul-row">
-                    <label for="creature-gather-select">Material</label>
-                    <select id="creature-gather-select" aria-label="Material wählen">
-                        <option value="holz">Holz</option>
-                        <option value="stein">Stein</option>
-                        <option value="quarz">Quarz</option>
-                        <option value="laub">Laub</option>
-                        <option value="eisen">Eisen</option>
-                        <option value="bronze">Bronze</option>
-                        <option value="leder">Leder</option>
-                        <option value="glut">Glut</option>
-                        <option value="knochen">Knochen</option>
-                        <option value="fleisch">Fleisch</option>
-                        <option value="federn">Federn</option>
-                        <option value="schuppen">Schuppen</option>
-                    </select>
-                </div>
-                <div class="actions" id="creature-gather-actions">
-                    <button type="button" data-creature-gather="nearest">Nächste sammelt</button>
-                    <button type="button" data-creature-gather="all">Alle sammeln</button>
-                </div>
-            </section>
-            <!-- Welle 6.H Phase 2B.2 — Bauen lassen. Geste-Umkehrung zu Sammeln:
-                 Spieler ist Material-Quelle, Kreatur erschafft daraus eine
-                 Architektur. In pfad zieht Material aus Inventar (lehnt bei
-                 Mangel ab); in frieden+schöpfer kostenlos. Dropdown wird beim
-                 Drawer-Init aus state.blueprints gefüllt. -->
-            <section class="section">
-                <h3>Bauen lassen</h3>
-                <p class="drawer-hint">
-                    Die nächste Kreatur kommt zum Schöpfer, nimmt das nötige Material und erschafft daraus eine
-                    Architektur ein paar Schritte entfernt. Spiegel zu „Sammeln".
-                </p>
-                <div class="soul-row">
-                    <label for="creature-build-select">Bauplan</label>
-                    <select id="creature-build-select" aria-label="Bauplan wählen"></select>
-                </div>
-                <div class="actions" id="creature-build-actions">
-                    <button type="button" data-creature-build="nearest">Nächste baut</button>
-                    <button type="button" data-creature-build="all">Alle bauen</button>
-                </div>
-            </section>
+            <!-- V18.48 Hof-C (UI-Putz §2) — die globalen „Sammeln"/„Bauen lassen"-Dropdowns sind AUFGELÖST:
+                 sie befahlen der NÄCHSTEN Kreatur (Spielerperspektiven-Bruch). Jetzt befiehlt der „Auftrag ▾"-
+                 Select INLINE am gewählten Wesen (Zone „Wesen", _renderCreatureListUI: Sammle Material / Baue
+                 Bauplan) — „wähle Wesen → befiehl". -->
             <section class="section">
                 <h3>Spawnen</h3>
                 <div class="soul-row">
@@ -6905,6 +6869,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.47.0" defer></script>
+        <script src="anazhRealm.js?v=18.48.0" defer></script>
     </body>
 </html>

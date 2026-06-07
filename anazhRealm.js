@@ -40104,44 +40104,9 @@ class AnazhRealm {
         if (typeof document === "undefined") return;
         const drawer = document.querySelector('[data-drawer="kreaturen"]');
         if (!drawer) return;
-        // Welle 6.H Phase 2B.1 — Sammeln-Buttons konsultieren den Material-
-        // Dropdown und routen über processChatCommand (selber Pfad wie Chat).
-        const gatherSelect = drawer.querySelector("#creature-gather-select");
-        drawer.querySelectorAll("[data-creature-gather]").forEach((btn) => {
-            btn.addEventListener("click", () => {
-                const mode = btn.getAttribute("data-creature-gather");
-                const material = gatherSelect ? gatherSelect.value : "holz";
-                if (!material) return;
-                const cmd = mode === "all" ? `alle sammeln ${material}` : `sammle ${material}`;
-                this.processChatCommand(cmd);
-            });
-        });
-
-        // Welle 6.H Phase 2B.2 — Bauen-Buttons. Dropdown wird aus aktuellen
-        // Bauplänen befüllt (Built-in + eigene). Selber Routing-Pfad wie Chat.
-        const buildSelect = drawer.querySelector("#creature-build-select");
-        if (buildSelect) {
-            buildSelect.innerHTML = "";
-            const blueprints = this.state.blueprints || {};
-            const names = Object.keys(blueprints).sort();
-            for (const name of names) {
-                const bp = blueprints[name];
-                const opt = document.createElement("option");
-                opt.value = name;
-                opt.textContent = (bp && bp.label) || name;
-                buildSelect.appendChild(opt);
-            }
-        }
-        drawer.querySelectorAll("[data-creature-build]").forEach((btn) => {
-            btn.addEventListener("click", () => {
-                const mode = btn.getAttribute("data-creature-build");
-                const blueprint = buildSelect ? buildSelect.value : "";
-                if (!blueprint) return;
-                const cmd = mode === "all" ? `alle bauen ${blueprint}` : `baue ${blueprint}`;
-                this.processChatCommand(cmd);
-            });
-        });
-
+        // V18.48 Hof-C — die globalen Sammeln/Bauen-Dropdowns sind aufgelöst (sie befahlen der NÄCHSTEN
+        // Kreatur); der Auftrag läuft jetzt INLINE am gewählten Wesen über den „Auftrag ▾"-Select
+        // (_renderCreatureListUI → assignCreatureTask(c, "gather"/"build", …)). Hier nur noch der Spawn.
         // Spawn-Buttons mit data-creature-spawn-Attribut konsultieren den
         // Form-Dropdown. Bei „" (Zufällig) bleibt spawnCreatures' Default
         // (random je Kreatur); sonst alle N gespawnten Kreaturen tragen
@@ -40273,14 +40238,67 @@ class AnazhRealm {
                 drink: "trinkt am Ufer",
             };
             const taskEl = this._el("span", { class: `creature-task ${taskName}`, text: TASK_LABELS[taskName] || "—" });
-            // V18.46 Hof-A (UI-Putz §2, P16 eine Ebene) — die Befehle leben INLINE am Wesen („wähle Wesen →
-            // befiehl"), nicht in einem globalen Knopf-Block (das war die Trennung Wesen↔Befehl + ein Duplikat
-            // der Omnibox `k:`). Die drei arg-freien Kern-Tasks; Sammeln/Bauen (arg-basiert) bleiben ihre Zonen.
+            // V18.46 Hof-A / V18.48 Hof-C (UI-Putz §2, P16 eine Ebene) — ALLE Befehle leben INLINE am Wesen
+            // („wähle Wesen → befiehl"), nicht in globalen Knopf-Blöcken (die der NÄCHSTEN Kreatur befahlen —
+            // der Spielerperspektiven-Bruch). Die drei arg-freien Kern-Tasks als Knöpfe, die arg-basierten
+            // (Sammle Material / Baue Bauplan) als EIN kompakter „Auftrag ▾"-Select → befiehlt GENAU diesem Wesen.
             const TASK_BTNS = [
                 ["Folge", "follow_player"],
                 ["Warte", "wait"],
                 ["Streift", "wander"],
             ];
+            const GATHER_MATS = [
+                "holz",
+                "stein",
+                "quarz",
+                "laub",
+                "eisen",
+                "bronze",
+                "leder",
+                "glut",
+                "knochen",
+                "fleisch",
+                "federn",
+                "schuppen",
+            ];
+            const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+            const bpNames = Object.keys(this.state.blueprints || {}).sort();
+            const orderSelect = this._el(
+                "select",
+                {
+                    class: "creature-order-select",
+                    "aria-label": `Auftrag für ${ud.name || "Wesen"}`,
+                    title: `${ud.name || "Wesen"}: Sammle ein Material oder Baue einen Bauplan`,
+                    onChange: (e) => {
+                        e.stopPropagation();
+                        const v = e.target.value;
+                        if (!v) return;
+                        const sep = v.indexOf(":");
+                        const kind = v.slice(0, sep);
+                        const arg = v.slice(sep + 1);
+                        if (typeof this.assignCreatureTask === "function") {
+                            if (kind === "gather") this.assignCreatureTask(c, "gather", { material: arg });
+                            else if (kind === "build") this.assignCreatureTask(c, "build", { blueprint: arg });
+                        }
+                        this._renderCreatureListUI();
+                    },
+                },
+                this._el("option", { value: "", text: "⚒ Auftrag…" }),
+                this._el(
+                    "optgroup",
+                    { label: "Sammle" },
+                    GATHER_MATS.map((m) => this._el("option", { value: `gather:${m}`, text: cap(m) }))
+                ),
+                bpNames.length
+                    ? this._el(
+                          "optgroup",
+                          { label: "Baue" },
+                          bpNames.map((n) =>
+                              this._el("option", { value: `build:${n}`, text: this.state.blueprints[n].label || n })
+                          )
+                      )
+                    : null
+            );
             const actionsEl = this._el(
                 "span",
                 { class: "creature-actions-inline" },
@@ -40297,7 +40315,8 @@ class AnazhRealm {
                             this._renderCreatureListUI();
                         },
                     })
-                )
+                ),
+                orderSelect
             );
             const row = this._el(
                 "div",
@@ -40849,8 +40868,32 @@ class AnazhRealm {
         if (!list || !search) return;
         const q = search.value.trim().toLowerCase();
         for (const row of list.children) {
-            const txt = (row.textContent || "").toLowerCase();
-            row.style.display = !q || txt.includes(q) ? "" : "none";
+            if (!q) {
+                row.style.display = "";
+                continue;
+            }
+            // V18.48 — rollen/tag-bewusst wie die Omnibox (die EINE Such-Sprache, Schöpfer-Wunsch):
+            // „Bauwerk" trifft über die emergente Rolle, „eisen" über das Material-Tag, sonst der Name.
+            let match = (row.textContent || "").toLowerCase().includes(q);
+            if (!match) {
+                const bp = this.state.blueprints[row.getAttribute("data-blueprint")];
+                if (bp) {
+                    const role = this._displayRole(bp);
+                    const roleLabel = (
+                        AnazhRealm.ROLE_LABELS[role] ||
+                        AnazhRealm.BLUEPRINT_ROLE_LABELS[role] ||
+                        role ||
+                        ""
+                    ).toLowerCase();
+                    if (roleLabel.includes(q)) match = true;
+                    else if (
+                        Array.isArray(bp.parts) &&
+                        bp.parts.some((p) => (p.material || "").toLowerCase().includes(q))
+                    )
+                        match = true;
+                }
+            }
+            row.style.display = match ? "" : "none";
         }
     }
 
@@ -48326,7 +48369,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.47.0";
+AnazhRealm.VERSION = "18.48.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

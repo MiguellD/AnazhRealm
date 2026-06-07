@@ -25367,11 +25367,17 @@ async function checkBandWelle6HCreatures(ctx) {
         out.listShowsSammelt = firstTask && /sammelt/.test(firstTask.textContent);
         out.listTaskHasGatherClass = firstTask && firstTask.classList.contains("gather");
 
-        // UI-Sammeln-Sektion
-        out.hasGatherSelect = !!document.getElementById("creature-gather-select");
-        out.gatherSelectHasMaterials = document.querySelectorAll("#creature-gather-select option").length >= 10;
-        out.hasNearestGatherBtn = !!document.querySelector('[data-creature-gather="nearest"]');
-        out.hasAllGatherBtn = !!document.querySelector('[data-creature-gather="all"]');
+        // V18.48 Hof-C: der inline „Auftrag ▾"-Select pro Wesen trägt Sammle (+ Baue) — die globalen
+        // Dropdowns sind aufgelöst (sie befahlen der NÄCHSTEN Kreatur; jetzt befiehlt man DEM Wesen).
+        const orderSel = list && list.querySelector(".creature-row .creature-order-select");
+        out.hasGatherSelect = !!orderSel;
+        out.gatherSelectHasMaterials = orderSel
+            ? [...orderSel.querySelectorAll("option")].filter((o) => o.value.startsWith("gather:")).length >= 10
+            : false;
+        out.hasNearestGatherBtn = !!(list && list.querySelector(".creature-row [data-task]"));
+        out.hasAllGatherBtn = orderSel
+            ? [...orderSel.querySelectorAll("option")].some((o) => o.value.startsWith("build:"))
+            : false;
 
         // Cleanup für nachfolgende Tests
         r.assignTaskToAllCreatures("wander", {}, { silent: true });
@@ -25442,11 +25448,11 @@ async function checkBandWelle6HCreatures(ctx) {
             wave6hP2bResults.listShowsSammelt && wave6hP2bResults.listTaskHasGatherClass
         );
         check(
-            "Welle 6.H P2B.1: #creature-gather-select im DOM mit ≥10 Optionen",
+            "V18.48 Hof-C: der inline Auftrag-Select am Wesen traegt >=10 Sammle-Materialien",
             wave6hP2bResults.hasGatherSelect && wave6hP2bResults.gatherSelectHasMaterials
         );
         check(
-            "Welle 6.H P2B.1: 'Nächste sammelt' + 'Alle sammeln' Buttons im DOM",
+            "V18.48 Hof-C: inline Task-Knöpfe am Wesen + Bau-Optionen im Auftrag-Select",
             wave6hP2bResults.hasNearestGatherBtn && wave6hP2bResults.hasAllGatherBtn
         );
     }
@@ -32498,12 +32504,14 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         out.listHasBuildClass = !!buildRow;
         out.listShowsBaut = listEl && /baut stein_block/.test(listEl.textContent);
 
-        // 18. UI: Dropdown + 2 Buttons im DOM
-        const buildSelect = document.getElementById("creature-build-select");
+        // 18. UI (V18.48 Hof-C): die Bau-Optionen leben im inline „Auftrag ▾"-Select am Wesen
+        // (statt des globalen #creature-build-select, der der NÄCHSTEN Kreatur befahl).
+        const buildSelect = listEl && listEl.querySelector(".creature-row .creature-order-select");
         out.uiBuildSelectExists = !!buildSelect;
-        out.uiBuildSelectHasOptions = buildSelect && buildSelect.options.length >= 3;
-        const buildBtns = document.querySelectorAll("[data-creature-build]");
-        out.uiBuildButtonsCount = buildBtns.length === 2;
+        out.uiBuildSelectHasOptions = buildSelect
+            ? [...buildSelect.querySelectorAll("option")].filter((o) => o.value.startsWith("build:")).length >= 3
+            : false;
+        out.uiBuildButtonsCount = !!(listEl && listEl.querySelector(".creature-row [data-task]"));
 
         // 19. Journal-Label "wird zur Schöpferin" beim build-Wechsel
         // (assignCreatureTask hat schon ein Journal geschrieben in #16, prüfen)
@@ -32624,7 +32632,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             wave6hP2b2Results.listHasBuildClass && wave6hP2b2Results.listShowsBaut
         );
         check(
-            "Welle 6.H P2B.2: UI #creature-build-select Dropdown + ≥3 Optionen + 2 Buttons",
+            "V18.48 Hof-C: der inline Auftrag-Select am Wesen traegt >=3 Bau-Optionen + Task-Knoepfe",
             wave6hP2b2Results.uiBuildSelectExists &&
                 wave6hP2b2Results.uiBuildSelectHasOptions &&
                 wave6hP2b2Results.uiBuildButtonsCount
