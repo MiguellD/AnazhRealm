@@ -10114,14 +10114,14 @@ class AnazhRealm {
         for (const closeBtn of document.querySelectorAll("[data-drawer-close]")) {
             closeBtn.addEventListener("click", () => this.closeAllDrawers());
         }
-        // ESC schließt offene Drawers (außer Welt, der bleibt als Default).
+        // ESC schließt offene Drawers → zurück zum Default-Blick: die Welt.
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") this.closeAllDrawers();
         });
-        // Welt ist Default-aktiv (siehe HTML); state.uiActiveDrawer trackt
-        // den aktuellen Tab, damit Tests + spätere Save-Persistenz darauf
-        // greifen können.
-        this.state.uiActiveDrawer = "welt";
+        // UI-Putz: kein "Welt"-Tab mehr — der Default-Blick IST die 3D-Welt (kein Drawer
+        // offen, kein Tab aktiv = der WOW-Start). state.uiActiveDrawer trackt den aktuellen
+        // Tab (null = die Welt), damit Tests + spätere Save-Persistenz darauf greifen können.
+        this.state.uiActiveDrawer = null;
         // Wir loggen Tab-Klicks indirekt via uiActiveDrawer-Update.
         // Welle 6.B Phase 1: jeder Tab-Klick informiert die Werkstatt, damit
         // sie den Preview-Renderer aktiviert (wenn Werkstatt offen) oder
@@ -46376,7 +46376,6 @@ class AnazhRealm {
                 this.setCameraMode(this.state.cameraMode === "first" ? "third" : "first");
                 event.preventDefault();
             } else if (
-                action === "drawerWelt" ||
                 action === "drawerKreaturen" ||
                 action === "drawerSpieler" ||
                 action === "drawerWerkstatt" ||
@@ -46384,8 +46383,8 @@ class AnazhRealm {
             ) {
                 // V8.17 — Drawer-Shortcuts action-basiert (rebindable).
                 // Im Bau-Modus deaktiviert um nicht mit F/B zu kollidieren.
+                // (UI-Putz: drawerWelt entfällt — die Welt ist der Default-Blick.)
                 const drawerNames = {
-                    drawerWelt: "welt",
                     drawerKreaturen: "kreaturen",
                     drawerSpieler: "spieler",
                     drawerWerkstatt: "werkstatt",
@@ -48180,7 +48179,7 @@ AnazhRealm.DEFAULT_KEYBINDINGS = Object.freeze({
     // V8.17 — Drawer + Camera-Toggle als rebindable Aktionen. Vorher
     // hardcoded in keydown-Listener; jetzt durch _actionForBindingCode-
     // Pfad damit Spieler sie in Einstellungen ändern kann.
-    drawerWelt: "KeyM",
+    // (UI-Putz: drawerWelt/KeyM entfällt — die Welt ist der Default-Blick, kein Drawer.)
     drawerKreaturen: "KeyK",
     drawerSpieler: "KeyP",
     drawerWerkstatt: "KeyB",
@@ -48195,7 +48194,6 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     inventory: "Inventar öffnen",
     cancelBuild: "Bau-Modus verlassen",
     jump: "Springen",
-    drawerWelt: "Welt-Drawer öffnen",
     drawerKreaturen: "Hof öffnen (Kreaturen · Nexus · Befehle)",
     drawerSpieler: "Spieler-Drawer öffnen",
     drawerWerkstatt: "Werkstatt-Drawer öffnen",

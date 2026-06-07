@@ -76,10 +76,11 @@ function startSaveServer() {
                 }
             }
             // Welchen Container screenshotten wir? Ich -> das zentrierte Inventar-Overlay,
-            // sonst der gerade offene Seiten-Drawer.
+            // sonst der gerade offene Seiten-Drawer (Drawer tragen data-drawer, kein id).
             if (room === "spieler") return "#inventory-overlay";
             const dr = document.querySelector(".drawer:not([hidden])");
-            return dr ? "#" + dr.id : null;
+            const dn = dr && dr.getAttribute("data-drawer");
+            return dn ? `.drawer[data-drawer="${dn}"]` : null;
         }, ROOM);
         await new Promise((r) => setTimeout(r, 1200));
         const handle = containerSel ? await page.$(containerSel) : null;

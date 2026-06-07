@@ -4880,10 +4880,10 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">Anazh Realm <span class="sub">— Das Ultiversum</span></div>
+                <!-- UI-Putz: kein "Welt"-Tab mehr — die Welt IST die 3D-Szene (der Default-
+                     Blick, kein Seiten-Panel nötig). Welt-Info + Aktionen leben in den
+                     Einstellungen bei der Welt-Beziehung. Default: kein Tab aktiv = die Welt. -->
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
-                    <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
-                        Welt
-                    </button>
                     <button class="tab" type="button" data-tab="kreaturen" role="tab">Hof</button>
                     <button class="tab" type="button" data-tab="spieler" role="tab">Ich</button>
                     <button class="tab" type="button" data-tab="werkstatt" role="tab">Werkstatt</button>
@@ -4939,44 +4939,6 @@
                 ><span class="label">Position</span><span class="value" id="status-position">—</span></span
             >
         </div>
-        <aside class="drawer open" data-drawer="welt" aria-label="Welt-Panel">
-            <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-            <h2>Welt</h2>
-            <section class="section" id="world-info-section">
-                <h3>Diese Welt</h3>
-                <div id="world-info" class="drawer-hint" aria-live="polite">…</div>
-                <!-- Ring 11.5: Host-Banner. Sichtbar nur wenn worldMeta.role === "host".
-                     Zeigt den Einladungs-Code, den der Host an Mitspieler weitergibt. -->
-                <div id="world-host-banner" class="drawer-hint" hidden></div>
-                <!-- Ring 11.5: Guest-Banner. Sichtbar nur wenn worldMeta.role === "guest".
-                     Zeigt die host-Verbindungs-Info zur Orientierung. -->
-                <div id="world-guest-banner" class="drawer-hint" hidden></div>
-                <div class="actions">
-                    <button type="button" id="world-export">Welt teilen…</button>
-                    <button type="button" id="world-import">Welt empfangen…</button>
-                </div>
-            </section>
-            <section class="section">
-                <h3>Aktionen</h3>
-                <div class="actions" id="quick-actions">
-                    <button type="button" data-cmd="Heile Welt">Heile Welt</button>
-                    <button type="button" data-cmd="Vereine Chaos Ordnung">Harmonie</button>
-                    <button type="button" data-cmd="Setze Wetter sunny">Sonne</button>
-                    <button type="button" data-cmd="Setze Wetter rainy">Regen</button>
-                    <button type="button" data-cmd="Spawne neue Welt">Neue Welt</button>
-                    <button type="button" data-cmd="Boden aktivieren">Boden an</button>
-                    <button type="button" data-cmd="Boden deaktivieren">Boden aus</button>
-                </div>
-            </section>
-            <!--
-                Welle 6.X.2 B2 (Audit 17.05.2026): Bauwerke-Quick-Spawn-Sektion
-                entfernt. Hotbar (1-9) + Werkstatt-Editor sind die richtige
-                Schöpfer-Geste. Quick-Buttons hier waren Über-Komfort, der die
-                Vision-Reibung („Werkstatt erst nutzen, dann hotbar belegen,
-                dann bauen") umging und das world-Drawer überfüllte.
-                Spawn ist weiterhin via Chat („Baue Dorf hier") möglich.
-            -->
-        </aside>
         <aside class="drawer" data-drawer="kreaturen" aria-label="Kreaturen-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
             <h2>Der Hof</h2>
@@ -5476,6 +5438,36 @@
                         <input type="radio" name="game-mode-radio" value="schöpfer" />
                         <span>schöpfer</span>
                     </label>
+                </div>
+            </section>
+            <!-- UI-Putz: der "Welt"-Tab ist aufgelöst — seine zwei Sektionen ("Diese Welt" +
+                 "Aktionen") leben jetzt hier bei der Welt-Beziehung (alles Welt-Bezogene an
+                 EINEM Ort). Die IDs bleiben → updateWorldInfo, world-export/import-Wiring,
+                 quick-actions-data-cmd-Routing füllen sie unverändert. -->
+            <section class="section" id="world-info-section">
+                <h3>Diese Welt</h3>
+                <div id="world-info" class="drawer-hint" aria-live="polite">…</div>
+                <!-- Ring 11.5: Host-Banner. Sichtbar nur wenn worldMeta.role === "host".
+                     Zeigt den Einladungs-Code, den der Host an Mitspieler weitergibt. -->
+                <div id="world-host-banner" class="drawer-hint" hidden></div>
+                <!-- Ring 11.5: Guest-Banner. Sichtbar nur wenn worldMeta.role === "guest".
+                     Zeigt die host-Verbindungs-Info zur Orientierung. -->
+                <div id="world-guest-banner" class="drawer-hint" hidden></div>
+                <div class="actions">
+                    <button type="button" id="world-export">Welt teilen…</button>
+                    <button type="button" id="world-import">Welt empfangen…</button>
+                </div>
+            </section>
+            <section class="section" id="world-actions-section">
+                <h3>Welt-Aktionen</h3>
+                <div class="actions" id="quick-actions">
+                    <button type="button" data-cmd="Heile Welt">Heile Welt</button>
+                    <button type="button" data-cmd="Vereine Chaos Ordnung">Harmonie</button>
+                    <button type="button" data-cmd="Setze Wetter sunny">Sonne</button>
+                    <button type="button" data-cmd="Setze Wetter rainy">Regen</button>
+                    <button type="button" data-cmd="Spawne neue Welt">Neue Welt</button>
+                    <button type="button" data-cmd="Boden aktivieren">Boden an</button>
+                    <button type="button" data-cmd="Boden deaktivieren">Boden aus</button>
                 </div>
             </section>
             <!-- Welle 6.X.2 B1 (Audit 17.05.2026) — Logbuch-Sichtbarkeit.

@@ -10268,7 +10268,7 @@ async function checkBandRing9to10(ctx) {
         check("Ring 10: Verschmelzen-Button im DOM", ring10Results.fusionConfirmBtnInDom);
         check("Ring 10: Drei Strategie-Radios im DOM", ring10Results.fusionStrategyRadios);
         check("Ring 10: Eltern-B-Dropdown im DOM", ring10Results.fusionParentBSelectInDom);
-        check("Ring 10: 'Verschmelzen…'-Button im Welt-Drawer", ring10Results.fusionOpenBtnInDom);
+        check("Ring 10: 'Verschmelzen…'-Button im DOM (Bibliothek)", ring10Results.fusionOpenBtnInDom);
         check(
             "Ring 10: Stammbaum-Sektion im DOM (UI-Putz: jetzt in der Bibliothek)",
             ring10Results.lineageSectionInDom
@@ -24495,9 +24495,9 @@ async function checkBandWelle6Keybindings(ctx) {
             r.constructor.DEFAULT_KEYBINDINGS &&
             typeof r.constructor.DEFAULT_KEYBINDINGS === "object" &&
             Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
-        // V8.17: 12 Aktionen (6 Original + 6 Drawer/Camera-Shortcuts).
+        // V8.17: 11 Aktionen (6 Original + 5 Drawer/Camera-Shortcuts; UI-Putz: drawerWelt entfiel).
         out.hasActions =
-            Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 12;
+            Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 11;
         out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
         const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
         out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
@@ -24587,10 +24587,10 @@ async function checkBandWelle6Keybindings(ctx) {
         out.sectionInDom = !!document.getElementById("keybindings-section");
         out.listInDom = !!document.getElementById("keybindings-list");
         out.resetInDom = !!document.getElementById("keybindings-reset");
-        // 6 keybind-row Zeilen
-        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 12;
+        // 11 keybind-row Zeilen (UI-Putz: drawerWelt entfiel)
+        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 11;
         // Pro Aktion ein Rebind-Button mit data-action
-        out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 12;
+        out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 11;
 
         // Reset für nachfolgende Tests
         r.resetKeybindings();
@@ -24601,7 +24601,7 @@ async function checkBandWelle6Keybindings(ctx) {
 
     if (wave6c3Results && !wave6c3Results.error) {
         check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
-        check("Welle 6.C3/V8.17: KEYBINDING_ACTIONS hat 12 Einträge (6 + 6 Drawer/Camera)", wave6c3Results.hasActions);
+        check("Welle 6.C3/V8.17: KEYBINDING_ACTIONS hat 11 Einträge (6 + 5 Drawer/Camera)", wave6c3Results.hasActions);
         check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
         check(
             "Welle 6.C3: Actions vollständig (break/place/confirmBuild/inventory/cancelBuild/jump)",
@@ -34862,7 +34862,8 @@ async function checkBandCadWorkshop(ctx) {
             }
             // Background-Fix: .drawer hat jetzt direkt ein background statt nur ::before.
             // Wir prüfen das via computed style — background sollte 'none' nicht sein.
-            const w = document.querySelector('[data-drawer="welt"]');
+            // (UI-Putz: Welt-Drawer aufgelöst → wir prüfen den Einstellungen-Drawer.)
+            const w = document.querySelector('[data-drawer="einstellungen"]');
             if (w) {
                 const cs = getComputedStyle(w);
                 out.drawerHasDirectBackground = cs.backgroundImage && cs.backgroundImage !== "none";
@@ -34938,7 +34939,6 @@ async function checkBandCadWorkshop(ctx) {
             // Öffne den Werkstatt-Tab kurz für den Test, später
             // alles zurück.
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
-            const weltTab = document.querySelector('#topbar [data-tab="welt"]');
             if (tab) tab.click();
             if (werkstatt) {
                 const cs = getComputedStyle(werkstatt);
@@ -34964,10 +34964,9 @@ async function checkBandCadWorkshop(ctx) {
                 // cleanup
                 werkstatt.style.width = "";
             }
-            // CRITICAL Cleanup: zurück zum Welt-Tab + Yaw zurück auf 0,
-            // sonst stört der Test nachgelagerte Welt-Drawer- und
-            // Ring-5-V2-Prep-Tests.
-            if (weltTab) weltTab.click();
+            // CRITICAL Cleanup: zurück zum Default-Blick (alle Drawer zu) + Yaw auf 0,
+            // sonst stören die nachgelagerten Drawer- und Ring-5-V2-Prep-Tests.
+            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -35298,8 +35297,8 @@ async function checkBandCadWorkshop(ctx) {
             r.state.workshop.selectedPartIdx = null;
             r.deleteBlueprint("test_v803");
             r.selectBlueprintForEdit("village");
-            const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-            if (weltTab) weltTab.click();
+            // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
+            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -35670,8 +35669,8 @@ async function checkBandWaves9And10a(ctx) {
             // Cleanup
             if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
             r.selectBlueprintForEdit("village");
-            const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-            if (weltTab) weltTab.click();
+            // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
+            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -35909,8 +35908,8 @@ async function checkBandWaves9And10a(ctx) {
             }
             if (r.state.customSouls) delete r.state.customSouls["bp_test_9d_soul"];
             r.selectBlueprintForEdit("village");
-            const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-            if (weltTab) weltTab.click();
+            // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
+            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -36747,8 +36746,8 @@ async function checkBandWave10b(ctx) {
             }
             r.selectBlueprintForEdit("village");
             r._renderWorkshopDOM();
-            const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-            if (weltTab) weltTab.click();
+            // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
+            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -37237,8 +37236,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
             r.selectBlueprintForEdit("village");
             r._renderWorkshopDOM();
-            const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-            if (weltTab) weltTab.click();
+            // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
+            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -37348,8 +37347,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             }
 
             // Cleanup
-            const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-            if (weltTab) weltTab.click();
+            // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
+            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -37449,8 +37448,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
             r.selectBlueprintForEdit("village");
             r._renderWorkshopDOM();
-            const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-            if (weltTab) weltTab.click();
+            // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
+            if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
             r.state.yaw = 0;
             if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
         } catch (err) {
@@ -38561,12 +38560,17 @@ async function checkBandEarlyRingsAndUi(ctx) {
         // Tab-System
         const tabs = document.querySelectorAll("#topbar .tab");
         out.tabCount = tabs.length;
-        // UI-Putz: Hilfe -> Hof gefaltet, Kreaturen+Fähigkeiten -> Hof vereint -> 6 Tabs.
-        out.allTabsPresent = tabs.length === 6;
-        const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
-        out.weltTabActive = weltTab && weltTab.classList.contains("active");
-        const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
-        out.weltDrawerOpenInitially = weltDrawer && !weltDrawer.hidden;
+        // UI-Putz: Hilfe -> Hof gefaltet, Kreaturen+Fähigkeiten -> Hof vereint, Welt-Tab
+        // aufgelöst (Welt = Default-Blick, Sektionen -> Einstellungen) -> 5 Tabs.
+        out.allTabsPresent = tabs.length === 5;
+        // UI-Putz: kein "Welt"-Tab mehr — der Default-Blick IST die 3D-Welt: KEIN Tab aktiv,
+        // KEIN Drawer offen (der WOW-Start). Der alte Welt-Drawer existiert nicht mehr.
+        out.weltTabGone = !document.querySelector('#topbar .tab[data-tab="welt"]');
+        out.weltDrawerGone = !document.querySelector('.drawer[data-drawer="welt"]');
+        out.noTabActiveInitially = !document.querySelector("#topbar .tab.active");
+        out.noDrawerOpenInitially = !Array.from(document.querySelectorAll(".drawer[data-drawer]")).some(
+            (d) => !d.hidden
+        );
 
         // Cleanup
         for (const k of Object.keys(r.state.player.emotions)) {
@@ -38606,12 +38610,14 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("UI V2: updateStatusPanel ist throttled (Aufruf <0.4s ignoriert)", uiResults.throttleHolds);
         check("UI V2: updateStatusPanel lässt nach 0.4s wieder durch", uiResults.throttleReleases);
         check(
-            "UI V2: sechs Tabs im Topbar (Hof vereint Kreaturen+Fähigkeiten+Befehle)",
+            "UI V2: fünf Tabs im Topbar (Hof vereint + Welt-Tab aufgelöst)",
             uiResults.allTabsPresent,
             `count=${uiResults.tabCount}`
         );
-        check("UI V2: Welt-Tab ist initial aktiv", uiResults.weltTabActive);
-        check("UI V2: Welt-Drawer ist initial offen", uiResults.weltDrawerOpenInitially);
+        check("UI-Putz: Welt-Tab ist aufgelöst (kein data-tab=welt)", uiResults.weltTabGone);
+        check("UI-Putz: Welt-Drawer ist aufgelöst (kein data-drawer=welt)", uiResults.weltDrawerGone);
+        check("UI-Putz: kein Tab initial aktiv (die Welt ist der Default-Blick)", uiResults.noTabActiveInitially);
+        check("UI-Putz: kein Drawer initial offen (der WOW-Start)", uiResults.noDrawerOpenInitially);
     }
 
     // ### UI-Putz — Emotion-Klarheit (Legende + FP-sichtbares Feedback) ###
@@ -38696,7 +38702,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (!r) return null;
         const out = {};
 
-        // (a) Quick-Buttons existieren (im Welt-Drawer)
+        // (a) Quick-Buttons existieren (UI-Putz: jetzt in Einstellungen, Welt-Aktionen)
         const qa = document.getElementById("quick-actions");
         const qaButtons = qa ? qa.querySelectorAll("button[data-cmd]") : [];
         out.quickButtonCount = qaButtons.length;
@@ -38719,9 +38725,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.hilfeDrawerOpensOnTab = hofDrawer && hofDrawer.hidden === false;
         out.helpSectionInSettings = !!(hofDrawer && hofDrawer.querySelector("#help-section"));
 
-        // Welt-Drawer ist jetzt versteckt (nur ein Tab aktiv)
-        const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
-        out.otherDrawersHidden = weltDrawer && weltDrawer.hidden === true;
+        // Andere Drawer sind versteckt, wenn ein Tab aktiv ist (UI-Putz: der Welt-Drawer ist
+        // aufgelöst → wir prüfen den Einstellungen-Drawer als den "anderen").
+        const settingsDrawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
+        out.otherDrawersHidden = settingsDrawer && settingsDrawer.hidden === true;
 
         // (e) Die Befehle-Liste enthält Buttons (aus chatDslPatterns generiert)
         const helpButtons = document.querySelectorAll("#help-list button.cmd");
@@ -38741,9 +38748,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (closeBtn) closeBtn.click();
         out.closeButtonHidesDrawer = hofDrawer && hofDrawer.hidden === true;
 
-        // Cleanup: Welt-Tab wieder aktivieren
-        const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
-        if (weltTab) weltTab.click();
+        // Cleanup: zurück zum Default-Blick (alle Drawer zu, UI-Putz: kein Welt-Tab mehr).
+        if (typeof r.closeAllDrawers === "function") r.closeAllDrawers();
 
         return out;
     });
@@ -38756,7 +38762,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         );
     } else {
         check(
-            "UI V2: Quick-Action-Buttons im Welt-Drawer (≥5)",
+            "UI V2: Quick-Action-Buttons in Einstellungen (Welt-Aktionen, ≥5)",
             uiActionsResults.quickButtonsPresent,
             `count=${uiActionsResults.quickButtonCount}`
         );
