@@ -149,9 +149,13 @@ Zwei Zonen statt eines 3-Spalten-Stapels:
 Wie das Werkstatt-Spec-Sheet: HEADER (Identität+Stimmung) → BODY (der Fingerabdruck als Daten-Viz) →
 AKTIONEN (inline, eine Ebene). **Jedes Viz-Element liest einen GEMESSENEN Vektor (Konsum, kein Passagier):**
 
-- **HEADER — Identität + Stimmung:** Name (soul-gefärbt) · Seele-Label · **Stimmung** (`state.creatureEmotions[idx]`
-  → ein Emotion-Glyph/Chip in der Emotion-Palette `--joy/--sorrow/…`, wie der Spieler-Emotion-Balken; die
-  GEMESSENE Saat: `creatures_emotion` schreibt sie, der Hof liest sie endlich) · aktuelle Task.
+- **HEADER — Identität + Stimmung:** Name (soul-gefärbt) · Seele-Label · **Stimmung** · aktuelle Task.
+  **KONSUM-EHRLICH (gemessen, §G.2): `state.creatureEmotions[idx]` ist BINÄR `"happy"/"sad"`** (wetter-/
+  task-pausen-getrieben, `updateCreatureEmotions`) — KEINE 6-Achsen-Emotion. Der HEADER zeigt darum (a) einen
+  ehrlichen **froh/trübe-Glyph** aus diesem Binär-Feld UND (b) eine **zweite, REICHERE Lesart aus
+  `_creatureWariness(creature)`** (gemessen: leitet aus `player.emotions` + creature-tags + `ud.bond` + mode
+  ein kontinuierliches Scheu/Mut ab → „neugierig · wachsam · scheu" + „vertraut/fremd" aus `ud.bond`). So ist
+  die Stimmung GEMESSEN geerdet (kein Passagier) und doch reich — die Wesen-Resonanz auf das Feld + die Bindung.
 - **BODY — der Fingerabdruck (Daten-Viz-Balken, `_specBar`-Reuse):**
   - **NATUR:** die Top-Compound-Tags (`computeCreatureCompoundTags`) als Balken (0–3, Stufen-Farbe) — die
     Substanz des Wesens, wie das Material-Profil der Werkstatt.
@@ -204,11 +208,15 @@ Regel-Erklärungen.
 ## §E — Die Wellen (mehrere messende Schritte, wie die Werkstatt — keine halben Sachen)
 
 Jede Welle: **messen (Screenshot lesen) → als System bauen → mit dem Auge + Playtest verifizieren → ein
-Bogen.** Reihenfolge nach Wert + Abhängigkeit:
+Bogen.** Reihenfolge nach Wert + Abhängigkeit (**geschärft in §G.10 — die finale Reihenfolge dort**):
 
-1. **Hof-D — die WESEN-SPEC-CARD (§D.1), der Kern.** Die Zeile zur Spec-Card: Stimmung (creatureEmotions) +
-   Natur (compound-tags-Balken) + Werte (stats) + Wachstum (Spezialisierungs-Fortschritt), `_specBar`-Reuse.
-   Klick-Fokus (auf/zu) + Aura-Ping. _Der größte Tiefen-Sprung (wie V18.44 für die Werkstatt)._
+0. **Hof-D0 — `_creatureProfile(creature)` + stabile Selektion (§G.1/G.6), das Fundament.** EIN Lese-Vektor,
+   den alle Wesen-Leser teilen (der Werkstatt-Twist); der Fokus/die Selektion an einer STABILEN Identität
+   (nicht am Array-Index). Vorbedingung der Spec-Card.
+1. **Hof-D — die WESEN-SPEC-CARD (§D.1+§G.5), der Kern.** Die Zeile DEFAULT KOMPAKT (Glyph + Mini-Natur-Balken
+   + inline-Aktionen); die VOLLE Spec-Card (Natur/Werte/Wachstum/Habe via `_specBar`) klappt NUR beim
+   fokussierten Wesen auf + Aura-Ping. Stimmung GEMESSEN geerdet (§G.2: froh/trübe + wariness/bond).
+   _Der größte Tiefen-Sprung (wie V18.44 für die Werkstatt)._
 2. **Hof-E — die ZWEI ZONEN (§D, content-first).** Vom 3-Spalten-`column-count` zum Grid ORCHESTER (Star,
    wide) | PARTITUR. Spawnen ins Orchester integriert; der Welt-Schalter raus. Die Gesetze als würdevolle
    Partitur-Zone.
@@ -244,3 +252,115 @@ Bogen.** Reihenfolge nach Wert + Abhängigkeit:
 der reichen Wesen-Vektoren (die Spec-Card), Zonen nach dem Dirigenten-Modell, Gruppen-Dirigat von den RTS-
 Großen, die Partitur + der Nexus als Ko-Dirigent (die lebendige-Feld-Vision). Die Saat ist GEMESSEN da; diese
 vier Wellen (Hof-D–G) lassen sie blühen — bis der Hof so tief atmet wie die Werkstatt.
+
+---
+
+## §G — Kontrolle → Realisation: die Lücken, gemessen + geheilt (IPERKA-Schleife, 07.06.2026)
+
+> Schöpfer-Auftrag: „Kontrolle in IPERKA richtig — reflektiere, gleiche den Plan mit der Vision/dem Ziel/
+> deinem Wissen + den Learnings ab, dem Twist, wie du ultimative Ergebnisse erzeugt hast. Findest du noch
+> Lücken, Fehler, Bereiche, wo die Synergie dunkel ist? Nach der Kontrolle erneut in die Realisation — man
+> wird zum eigenen Lehrer UND Schüler." Ich habe den Plan §A–§F gegen die Vision + die Learnings geprüft +
+> die kritischen Annahmen GEMESSEN (nicht angenommen). Zehn Befunde, jeder mit der Heilung in den Plan gefaltet.
+
+### G.1 — Der TWIST, der die Werkstatt ultimativ machte (das fehlende Herzstück)
+
+Die Werkstatt wurde nicht durch „Daten-Viz" tief, sondern durch **EINEN Vektor, den viele Leser teilen**
+(`_blueprintProductVector` → Rolle · Resonanz · Werkzeug-Op · Spec-Sheet lesen ALLE denselben Vektor;
+Resonanz-Vereinheitlichung V17.67–.71). Das §A–§F des Hofes listete die Wesen-Vektoren EINZELN auf (tags,
+stats, emotions, specs, bond, wariness) — das ist die Werkstatt VOR der Vereinheitlichung. **Heilung (in
+Hof-D vorgezogen): EIN `_creatureProfile(creature)`-Helfer** — die EINE Quelle, die alle Wesen-Leser teilen
+(die Spec-Card · die Sektions-Gruppierung · der Sortier-Schlüssel · die Stimmungs-Glyphen). Er bündelt
+GEMESSEN Bestehendes (`computeCreatureCompoundTags` · `computeCreatureStats` · `_creatureTopSpecializations` ·
+`_getCreatureTask` · `creatureEmotions[idx]` · `_creatureWariness` · `ud.bond/memory/equipped/boosts`) in
+EINEN Lese-Vektor — kein neuer Datenpfad (Konsum V17.31), das exakte Werkstatt-Muster. **Das ist der Twist:
+nicht N Lookups in der Render-Funktion, sondern EIN Profil, viele Leser.** (Source-Probe im Test:
+`_creatureProfile`-Aufrufer in `_renderCreatureListUI` + Sektion + Sortierung.)
+
+### G.2 — KONSUM-Ehrlichkeit: die Stimmung ist BINÄR (der Passagier-Trugschluss, fast wiederholt)
+
+GEMESSEN: `state.creatureEmotions[idx]` ist `"happy"`/`"sad"` (Z12528 `push(emotion === "sad" ? "sad" :
+"happy")`, Z16710 wetter-getrieben). Der Plan §D.1 implizierte eine 6-Achsen-Emotion-Palette
+(`--joy/--sorrow/…`) — **das wäre der Passagier-Trugschluss (V17.31): eine reiche Anzeige, die mehr verspricht
+als der Vektor trägt.** Geheilt (§D.1 oben umgeschrieben): froh/trübe-Glyph aus dem Binär-Feld + die REICHERE,
+ehrlich GEMESSENE zweite Lesart aus `_creatureWariness` (neugierig/wachsam/scheu) + `ud.bond` (vertraut/fremd).
+**Lehre an mich selbst: die KONSUM-Disziplin gilt im PLAN schon — eine Anzeige im Plan-Diagramm zu skizzieren,
+deren Vektor man nicht gemessen hat, sät den Über-Claim, den man später als „fertig" verkauft.**
+
+### G.3 — Die read·write·VALUE-Schleife ist im Hof nur HALB gedacht (der wahre Norden)
+
+`das-lebendige-feld.md`: alle lesen · schreiben · WERTEN. Der Plan zeigte das WERTEN (Stimmung sehen), aber
+nicht die volle SCHLEIFE. Die Tiefe, die den Hof zum lebendigen-Feld-Organ macht: **Befehl im Hof (schreiben)
+→ das Wesen wirkt im Feld (`_depositLife`/Aura, V17.27) → das Feld ändert sich → die Wesen-Stimmung/Wariness
+LIEST das veränderte Feld (werten) → sichtbar zurück im Hof.** Heilung (Hof-G, explizit gemacht): die
+Spec-Card-Stimmung wird als **Resonanz auf das Feld** gerahmt (nicht als isolierter Zustand) — der Dirigent
+sieht, wie sein Dirigat (Befehle, Gesetze) durch die Wesen ins Feld und als Stimmung zurück schwingt. Das ist
+der Unterschied zwischen „ein Sims-Mood-Icon" und „das Organ, an dem man die lebendige Welt FÜHLT".
+
+### G.4 — Omnibox ↔ Hof: EINE Quelle, gemessen (Synergie statt Doublette)
+
+Hof-A/B/C lösten die ~60-Knopf-Liste in die Omnibox auf (`k:` Kreatur-Aufträge). Der Plan §D.2 führt
+Sektions-Befehle + die „alle"-Geste sichtbar ein — **Risiko: ein zweiter Pfad neben `k:`** (die V9.82-Sünde).
+Heilung (in Hof-F verdrahtet): die Sektions-Befehle rufen DENSELBEN `assignCreatureTask` /
+`assignTaskToAllCreatures` wie die Omnibox `k:` (gefiltert über `_creatureProfile.section`); der Hof ist die
+SICHTBARE, gruppen-fähige Oberfläche desselben Pfads, kein Parallel-System. (Source-Probe: beide Pfade →
+`assignTaskToAllCreatures`.)
+
+### G.5 — SKALA: die reiche Spec-Card × N Wesen (die Werkstatt hat EINEN Bauplan, der Hof hat viele)
+
+Der entscheidende Struktur-Unterschied, den §D unterschätzte: die Werkstatt-Spec-Card rendert für EIN
+fokussiertes Produkt; der Hof rendert N Wesen (bis ~120). Eine volle Spec-Card × 120 = unlesbar + langsam.
+Heilung (Hof-D, Kern-Regel): **die Zeile ist DEFAULT KOMPAKT** (Header-Glyph + EIN Natur-Mini-Balken +
+inline-Aktionen); die VOLLE Spec-Card (Natur/Werte/Wachstum/Habe) klappt NUR beim fokussierten Wesen auf
+(ein „selected" wie der Bauplan-Fokus). Das ist content-first AUF der Liste (der Star ist das fokussierte
+Wesen) + hält die Render-Last klein. Re-Render-Disziplin: nur die berührte Zeile neu zeichnen (nicht die
+ganze Liste pro Tick) — `_creatureProfile` macht das billig (ein Lese-Vektor/Zeile).
+
+### G.6 — Die Wesen-IDENTITÄT ist fragil (Index-Reihen vs. stabiler Fokus)
+
+GEMESSEN: Wesen leben in PARALLEL-Arrays (`state.creatures[i]` ↔ `creatureEmotions[i]`), ein Despawn
+`splice`t (Z12470) → Indizes verschieben sich. Ein „fokussiertes Wesen" + „Sektions-Auswahl" über den INDEX
+würde beim Spawn/Despawn auf ein anderes Wesen springen. Heilung (Hof-D Vorbedingung): der Fokus/die Selektion
+hängt an einer STABILEN Identität (das `creature`-Objekt selbst bzw. `ud.id`/`ud.name`, gemessen welche
+existiert), nie am Array-Index. (Das ist die V8.59-Snapshot-Feld-Disziplin auf die UI-Selektion angewandt.)
+
+### G.7 — Content-FIRST heißt: der Star ist die WELT, der Hof ist ein Pult-Overlay
+
+Selbst-kritik an §D: zwei Drawer-Zonen (ORCHESTER | PARTITUR) füllen den Drawer — aber der wahre Star der
+Werkstatt ist der 3D-VIEWER (das Werk), das Chrome tritt zurück. Im Hof ist der wahre Star die **lebendige
+Welt mit den Wesen darin**. Heilung (Hof-E Leitstern + Hof-G perspektivisch): der Hof-Drawer bleibt schlank/
+seitlich (verdeckt die Welt nicht voll), das Fokussieren eines Wesens PINGT es in der 3D-Welt (Aura/Kamera-
+Hint) — der Dirigent schaut auf sein Orchester IN DER WELT, das Pult ist das Overlay. Die perspektivische
+3D-Befehls-Geste (Klick in die Welt „geh dahin") ist der content-first-Endzustand (Hof-G), nicht nur ein
+UI-Nice-to-have — sie ist die Pikmin/RTS-Wahrheit.
+
+### G.8 — Der NEXUS als Ko-Dirigent: gemessen erden, nicht erfinden
+
+§C/§D.4 versprechen „der Nexus dirigiert Wesen + komponiert Gesetze". KONSUM-Prüfung nötig: was KANN der
+Nexus heute? GEMESSEN existieren autonome Wesen-Verhalten (`_creatureWariness`, Tasks, der `rule`-Op +
+`_tickWorldRules`, der `at_field_need`-Spawn-Loop V17.27). Heilung (Hof-G ehrlich): die „Nexus komponiert"-
+Zone zeigt, was GEMESSEN da ist (die stehenden Welt-Regeln, die der Nexus/Mensch via DSL `rule` aufstellt +
+ihr Live-Puls V17.41) — KEINE erfundene „Nexus befiehlt Wesen"-Fähigkeit, bevor sie gemessen existiert. Der
+Ko-Dirigent ist HEUTE: Mensch + Nexus stellen Gesetze an DEMSELBEN `dslRun`-Pult auf (das ist real); das
+Wesen-Dirigat des Nexus ist ein markierter Vision-Faden (Hof-G+/Phase E), kein Plan-Versprechen.
+
+### G.9 — Der Leer-Zustand + das Onboarding (von den Großen, oft vergessen)
+
+Kein Wesen im Hof? Der Plan schwieg. Die Großen (Sims/RTS) führen mit einem einladenden Leer-Zustand. Heilung
+(Hof-E): die Orchester-Zone leer → eine einladende Karte „✦ Rufe dein erstes Wesen" (der Spawn als Held des
+Leer-Zustands), nicht eine kahle Liste. Erstes Wesen gespawnt → die Spec-Card lehrt sich selbst (die Glyphen
+mit P12-`.help-pop` erklärt).
+
+### G.10 — Die Wellen-Reihenfolge geschärft (Abhängigkeit zuerst)
+
+`_creatureProfile` (G.1) + die stabile Identität (G.6) sind VORBEDINGUNG der Spec-Card — sie ziehen an den
+Anfang von Hof-D. Die korrigierte Reihenfolge: **Hof-D0** (`_creatureProfile` + stabile Selektion, das
+Fundament) → **Hof-D** (die kompakte/fokussierbare Spec-Card, §D.1+G.5, der größte Sprung) → **Hof-E** (Zonen
++ content-first Leitstern + Leer-Zustand) → **Hof-F** (Sektionen, EINE Quelle mit `k:`) → **Hof-G** (die
+read·write·VALUE-Schleife sichtbar, Nexus ehrlich, verkörpern/verabschieden, perspektivisch die 3D-Geste; +
+die inerte help-list-JS schneiden) → Schöpfer-Sign-off + EIN Merge.
+
+**Auswertungs-Versprechen (warum die Bilder Freude machen werden):** mit `_creatureProfile` als EINE Quelle
+(G.1), der ehrlich-reichen Stimmung (G.2), der gefühlten Feld-Schleife (G.3), der skalen-bewussten
+Fokus-Card (G.5) und dem content-first Welt-Stern (G.7) wird der Hof nicht „eine schönere Liste", sondern das
+**Organ, an dem man das lebendige Feld dirigiert** — auf Werkstatt-Niveau, gemessen geerdet, ohne Passagier.
