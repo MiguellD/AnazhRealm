@@ -2881,6 +2881,60 @@
                 margin-bottom: 2px;
             }
             .translator-edit,
+            /* V18.37 — die genial-versteckte Anleitung (Schöpfer „wie die genialsten: versteckt,
+               aber intuitiv auffindbar"): ein „?"-Punkt neben der Überschrift, die Anleitung
+               erscheint als Popover bei Hover/Fokus. Wiederverwendbar (Apple/Figma-Muster). */
+            .help-dot {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 15px;
+                height: 15px;
+                border-radius: 50%;
+                border: 1px solid var(--brass-2);
+                background: rgba(255, 248, 230, 0.15);
+                color: var(--brass-1);
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                font-weight: 700;
+                cursor: help;
+                position: relative;
+                margin-left: 7px;
+                vertical-align: middle;
+            }
+            .help-dot:hover,
+            .help-dot:focus {
+                background: var(--brass-2);
+                color: var(--parch-1);
+                outline: none;
+            }
+            .help-dot .help-pop {
+                display: none;
+                position: absolute;
+                top: 135%;
+                left: 0;
+                z-index: 40;
+                width: max-content;
+                max-width: 300px;
+                padding: 8px 11px;
+                background: linear-gradient(180deg, var(--parch-1), var(--parch-2));
+                border: 1px solid var(--brass-2);
+                border-radius: 4px;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                font-weight: 400;
+                font-style: italic;
+                color: var(--parch-ink);
+                line-height: 1.5;
+                text-align: left;
+                white-space: normal;
+                letter-spacing: 0;
+            }
+            .help-dot:hover .help-pop,
+            .help-dot:focus .help-pop {
+                display: block;
+            }
             .help-search {
                 width: 100%;
                 box-sizing: border-box;
@@ -3469,14 +3523,34 @@
                Ausgabe-Tabelle auch im Bild"): ein Raster statt einer langen Spalte + das Such-Feld
                darüber (search-not-scroll) → die Liste bleibt niedrig, der Rest kommt ins Bild. */
             #workshop-search {
-                margin-bottom: 6px;
+                margin-bottom: 0;
+            }
+            /* V18.37 — die Bauplan-Liste als Dropdown: null Fußabdruck, wenn geschlossen
+               (der Platz gehört dem Viewer). Öffnet beim Fokus/Tippen, schließt bei Wahl/Esc. */
+            .workshop-picker {
+                position: relative;
+                z-index: 21;
             }
             #workshop-list {
-                display: grid;
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                z-index: 22;
+                margin-top: 4px;
                 grid-template-columns: 1fr 1fr;
                 gap: 3px;
-                max-height: 108px;
+                max-height: 320px;
                 overflow-y: auto;
+                padding: 7px;
+                background: linear-gradient(180deg, var(--parch-1), var(--parch-2));
+                border: 1px solid var(--brass-2);
+                border-radius: 4px;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+            }
+            .workshop-picker.open #workshop-list {
+                display: grid;
             }
             .workshop-list-row {
                 display: flex;
@@ -3805,9 +3879,15 @@
             #workshop-preview-canvas {
                 display: block;
                 width: 100%;
-                /* V8.38 — 5:3 statt 1:1 → der Viewer ist ~60% so hoch wie breit,
-                   das Bauplan-Stats-Panel rutscht ohne Scrollen ins Bild. */
+                /* V18.37 — der Viewer ist das ZUHAUSE (Spieler konstruiert ~90% der Zeit hier)
+                   → GROSS, der dominante Pane. `aspect-ratio:5/3` BLEIBT (die Form), aber die
+                   Höhe wird GEKAPPT: vorher floss er auf der vollbreiten Werkstatt ~990px hoch
+                   (halb leer). `max-height` leitet sich aus dem Platz ab (kein Magic-Number):
+                   Viewport minus das feste Chrome (Topbar/Drawer/Picker/Ausgabe ≈ 560px) → der
+                   Viewer nimmt den Rest (gross), die Ausgabe bleibt IMMER im Bild. Renderer folgt
+                   der echten Rect (`_workshopSyncCanvasSize` → Kamera-Aspect stimmt). */
                 aspect-ratio: 5 / 3;
+                max-height: clamp(300px, calc(100vh - 560px), 520px);
                 background: #1a140a;
                 border: 1px solid var(--parch-edge);
                 border-radius: 2px;
@@ -3850,7 +3930,7 @@
                Pergament-Drawer-Basis lesbar sind. */
             #workshop-stats-panel {
                 margin: 4px 0 0 0;
-                padding: 7px 9px;
+                padding: 9px 12px;
                 background: rgba(20, 12, 4, 0.65);
                 border: 1px solid var(--brass-3);
                 border-radius: 3px;
@@ -3859,6 +3939,21 @@
                 color: var(--parch-bg, #ece1c5);
                 line-height: 1.6;
                 min-height: 18px;
+                /* V18.37 — die Ausgabe-Tabelle nutzt die volle Breite (Schöpfer „nutzt die
+                   Breite nicht optimal"): 2 Spalten (CSS-Multi-Column) packen die Label/Wert-
+                   Zeilen → halb so hoch, breit, übersichtlich; FERTIGEN spannt voll als der
+                   prominente Abschluss-Akt. Füllt den roten Bereich, kein Scrollen mehr. */
+                column-count: 2;
+                column-gap: 30px;
+            }
+            #workshop-stats-panel .stat-row {
+                break-inside: avoid;
+                -webkit-column-break-inside: avoid;
+            }
+            #workshop-stats-panel .workshop-fertigen-row {
+                column-span: all;
+                -webkit-column-span: all;
+                margin-top: 6px;
             }
             #workshop-stats-panel .stat-row {
                 display: flex;
@@ -5171,23 +5266,30 @@
         <aside class="drawer" data-drawer="werkstatt" aria-label="Werkstatt-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
             <h2>Werkstatt</h2>
-            <section class="section">
-                <h3>Baupläne</h3>
+            <!-- V18.37 — die Bauplan-Wahl ist ~5% der Zeit (90% konstruiert man im Viewer):
+                 ein dünner Such-Balken, die Liste klappt als Dropdown nur beim Tippen/Fokus auf
+                 → null Dauer-Fußabdruck, der Platz gehört dem Viewer + der Ausgabe (Haupt-
+                 Ersparnis kommt aus dem OBEN, nicht aus dem Viewer). Seed der Omnibox. -->
+            <section class="section workshop-picker">
                 <input
                     type="text"
                     id="workshop-search"
                     class="help-search"
-                    placeholder="Bauplan suchen … (z. B. spitzhacke, panzer, tempel)"
-                    aria-label="Baupläne durchsuchen"
+                    placeholder="Bauplan wählen / suchen …  (Klick öffnet die Liste)"
+                    aria-label="Baupläne wählen oder durchsuchen"
+                    autocomplete="off"
                 />
                 <div id="workshop-list"></div>
             </section>
             <section class="section">
-                <h3>3D-Vorschau</h3>
-                <p class="drawer-hint">
-                    Klick: Part · Drag-Achse: bewegen · Drag-leer: orbit · Shift+Drag oder Mittelmaus: pan · Rad: zoom
-                    zum Cursor · W/E/R/C Modus · G snap
-                </p>
+                <h3>
+                    3D-Vorschau<span class="help-dot" tabindex="0" role="note" aria-label="Steuerung der 3D-Vorschau"
+                        >?<span class="help-pop"
+                            >Klick: Part wählen · Drag auf Achse: bewegen · Drag ins Leere: orbit · Shift+Drag oder
+                            Mittelmaus: pan · Rad: zoom zum Cursor · W/E/R/C: Modus · G: einrasten</span
+                        ></span
+                    >
+                </h3>
                 <div id="workshop-preview-row">
                     <aside id="workshop-side-palette" aria-label="Form-Palette">
                         <h4>Formen</h4>
@@ -5337,22 +5439,28 @@
                         </div>
                         <canvas id="workshop-preview-canvas"></canvas>
                         <div id="workshop-readonly-banner" hidden>Eingebaut — zum Bearbeiten klonen</div>
-                        <div id="workshop-stats-panel" aria-live="polite"></div>
                     </div>
                     <aside id="workshop-side-palette-right" aria-label="Material-/Werkzeug-/Farb-Palette">
                         <h4>Materialien</h4>
                         <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
-                        <h4>Werkzeuge</h4>
-                        <p class="drawer-hint workshop-hint-mini">
-                            Auf einen Part im 3D ziehen → wendet die Op an. Bearbeitet Material, hebt Präzision, schärft
-                            die Rolle (forging→tool, alchemy→konsumabel). Hand=0.40, Polierscheibe=0.97 — die schwächste
-                            Op deckelt die Compound-Präzision.
-                        </p>
+                        <h4>
+                            Werkzeuge<span class="help-dot" tabindex="0" role="note" aria-label="Werkzeuge erklärt"
+                                >?<span class="help-pop"
+                                    >Auf einen Part im 3D ziehen → wendet die Op an. Bearbeitet Material, hebt
+                                    Präzision, schärft die Rolle (forging→Werkzeug, alchemy→Trank). Hand = 0.40,
+                                    Polierscheibe = 0.97 — die schwächste Op deckelt die Compound-Präzision.</span
+                                ></span
+                            >
+                        </h4>
                         <div id="workshop-tool-palette" role="group" aria-label="Werkzeug-Palette"></div>
                         <h4>Farben</h4>
                         <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
                     </aside>
                 </div>
+                <!-- V18.37 — die Ausgabe-Tabelle auf GANZE Breite (Schöpfer): aus dem
+                     preview-wrapper heraus, als vollbreiter Geschwister UNTER der ganzen
+                     Reihe (inkl. der Paletten) → nutzt die volle Werkstatt-Breite. -->
+                <div id="workshop-stats-panel" aria-live="polite"></div>
             </section>
         </aside>
         <!-- W14 Phase 1 — Bibliothek: die WORLD_REGISTRY browsbar. Pro Welt
@@ -6235,6 +6343,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.36.0" defer></script>
+        <script src="anazhRealm.js?v=18.37.0" defer></script>
     </body>
 </html>

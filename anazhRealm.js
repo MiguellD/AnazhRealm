@@ -10034,10 +10034,38 @@ class AnazhRealm {
         if (recipeSearch) {
             recipeSearch.addEventListener("input", () => this._applyRecipeFilter());
         }
-        // V18.36 — dieselbe Such-Geste für die Werkstatt-Baupläne (kompakte Liste, Ausgabe im Bild).
+        // V18.36/37 — die Werkstatt-Baupläne als Such-Dropdown (Spielersicht: ~5% wählen,
+        // ~90% im Viewer): der Such-Balken ist dünn, die Liste klappt nur bei Fokus/Tippen auf.
         const workshopSearch = document.getElementById("workshop-search");
         if (workshopSearch) {
-            workshopSearch.addEventListener("input", () => this._applyWorkshopFilter());
+            const picker = workshopSearch.closest(".workshop-picker");
+            const open = () => picker && picker.classList.add("open");
+            workshopSearch.addEventListener("focus", open);
+            workshopSearch.addEventListener("input", () => {
+                open();
+                this._applyWorkshopFilter();
+            });
+            workshopSearch.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    this._workshopClosePicker();
+                    workshopSearch.blur();
+                }
+            });
+            document.addEventListener("mousedown", (e) => {
+                if (picker && !picker.contains(e.target)) picker.classList.remove("open");
+            });
+        }
+    }
+
+    // V18.37 — schliesst das Bauplan-Dropdown + leert die Suche (nach der Wahl).
+    _workshopClosePicker() {
+        if (typeof document === "undefined") return;
+        const picker = document.querySelector(".workshop-picker");
+        if (picker) picker.classList.remove("open");
+        const search = document.getElementById("workshop-search");
+        if (search && search.value) {
+            search.value = "";
+            this._applyWorkshopFilter();
         }
     }
 
@@ -40446,7 +40474,10 @@ class AnazhRealm {
             badge.textContent = bp.builtIn ? "fest" : "eigen";
             row.appendChild(nameSpan);
             row.appendChild(badge);
-            row.addEventListener("click", () => this.selectBlueprintForEdit(name));
+            row.addEventListener("click", () => {
+                this.selectBlueprintForEdit(name);
+                this._workshopClosePicker();
+            });
             list.appendChild(row);
         }
         // V18.36 — den Such-Filter nach dem Neu-Aufbau wieder anwenden (Zeilen neu erzeugt).
@@ -41125,8 +41156,14 @@ class AnazhRealm {
         const bp = this.state.blueprints[ws.selectedBlueprint];
         if (!bp || bp.builtIn) return null; // Built-ins haben kein nutzbares Gizmo
         const rect = p.canvas.getBoundingClientRect();
-        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
-        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        // V18.37 — robust gegen ein 0×0-Layout-Rect (versteckter Drawer) → Backing-Store-Fallback.
+        const rw = rect.width || p.canvas.width || 1;
+        const rh = rect.height || p.canvas.height || 1;
+        const ndcX = ((clientX - rect.left) / rw) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rh) * 2 + 1;
+        // V18.37 — die Kamera-Matrizen aktualisieren, BEVOR der Ray gebaut wird: bei pausiertem
+        // Preview-RAF (Drawer geschlossen) ist matrixWorld sonst stale → falscher/paralleler Ray.
+        p.camera.updateMatrixWorld();
         p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
         // Nur die Meshes der aktiven Mode-Sub-Group raycasten
         const mode = ws.manipulatorMode;
@@ -41148,8 +41185,14 @@ class AnazhRealm {
         if (!ws.preview || !ws.preview.currentMesh) return;
         const p = ws.preview;
         const rect = p.canvas.getBoundingClientRect();
-        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
-        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        // V18.37 — robust gegen ein 0×0-Layout-Rect (versteckter Drawer) → Backing-Store-Fallback.
+        const rw = rect.width || p.canvas.width || 1;
+        const rh = rect.height || p.canvas.height || 1;
+        const ndcX = ((clientX - rect.left) / rw) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rh) * 2 + 1;
+        // V18.37 — die Kamera-Matrizen aktualisieren, BEVOR der Ray gebaut wird: bei pausiertem
+        // Preview-RAF (Drawer geschlossen) ist matrixWorld sonst stale → falscher/paralleler Ray.
+        p.camera.updateMatrixWorld();
         p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
         const meshes = Array.from(p.partMeshes.keys());
         if (meshes.length === 0) return;
@@ -41427,6 +41470,11 @@ class AnazhRealm {
         const ws = this._ensureWorkshopState();
         if (!ws.preview) return;
         const p = ws.preview;
+        // V18.37 — Canvas-Grösse + Kamera-Aspect synchron ziehen, BEVOR geraycastet wird:
+        // beginnt der Spieler (oder ein Test) zu manipulieren, bevor der RAF die Rect gesynct
+        // hat, wäre camera.aspect stale → die Unprojektion passt nicht zur NDC → der Ray
+        // verfehlt die Ebene. Idempotent (no-op, wenn die Grösse schon stimmt).
+        this._workshopSyncCanvasSize();
         const idx = ws.selectedPartIdx;
         if (idx === null) return;
         const bp = this.state.blueprints[ws.selectedBlueprint];
@@ -41623,8 +41671,14 @@ class AnazhRealm {
         if (!ws.preview) return null;
         const p = ws.preview;
         const rect = p.canvas.getBoundingClientRect();
-        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
-        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        // V18.37 — robust gegen ein 0×0-Layout-Rect (versteckter Drawer) → Backing-Store-Fallback.
+        const rw = rect.width || p.canvas.width || 1;
+        const rh = rect.height || p.canvas.height || 1;
+        const ndcX = ((clientX - rect.left) / rw) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rh) * 2 + 1;
+        // V18.37 — die Kamera-Matrizen aktualisieren, BEVOR der Ray gebaut wird: bei pausiertem
+        // Preview-RAF (Drawer geschlossen) ist matrixWorld sonst stale → falscher/paralleler Ray.
+        p.camera.updateMatrixWorld();
         p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
         const target = new THREE.Vector3();
         const hit = p.raycaster.ray.intersectPlane(plane, target);
@@ -42852,8 +42906,14 @@ class AnazhRealm {
         if (!ws.preview || !ws.preview.currentMesh) return null;
         const p = ws.preview;
         const rect = p.canvas.getBoundingClientRect();
-        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
-        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        // V18.37 — robust gegen ein 0×0-Layout-Rect (versteckter Drawer) → Backing-Store-Fallback.
+        const rw = rect.width || p.canvas.width || 1;
+        const rh = rect.height || p.canvas.height || 1;
+        const ndcX = ((clientX - rect.left) / rw) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rh) * 2 + 1;
+        // V18.37 — die Kamera-Matrizen aktualisieren, BEVOR der Ray gebaut wird: bei pausiertem
+        // Preview-RAF (Drawer geschlossen) ist matrixWorld sonst stale → falscher/paralleler Ray.
+        p.camera.updateMatrixWorld();
         p.raycaster.setFromCamera({ x: ndcX, y: ndcY }, p.camera);
         const meshes = Array.from(p.partMeshes.keys());
         if (meshes.length === 0) return null;
@@ -48011,7 +48071,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.36.0";
+AnazhRealm.VERSION = "18.37.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

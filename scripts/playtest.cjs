@@ -34586,6 +34586,16 @@ async function checkBandCadWorkshop(ctx) {
             out.selectionRejectsOOB = ws.selectedPartIdx === null;
             r._workshopSetSelection(null); // reset
 
+            // V18.37 — die Werkstatt SICHTBAR machen, BEVOR der Manipulator getestet wird:
+            // _workshopBeginManipulation raycastet gegen die Canvas-Rect. Ein geschlossener
+            // Drawer hat eine 0×0-Rect → (100,100) mappt off-screen → der Ray verfehlt. Das
+            // EINZIGE reale Szenario ist eine OFFENE Werkstatt (man manipuliert nur dort). Der
+            // alte Test traf das nur inzidentell über aspect-ratio; jetzt explizit (V9.56-i).
+            {
+                const wtab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                if (wtab) wtab.click();
+            }
+
             // --- Phase 2: Manipulator-Drag auf Built-in lehnt ab ---
             // village ist built-in → kein Drag
             out.builtInRejected = true;
@@ -34616,8 +34626,21 @@ async function checkBandCadWorkshop(ctx) {
                 // Drag begin auf eigenem Bauplan
                 r._workshopEnsurePreview();
                 const pre = r.state.workshop.preview;
+                out.p2PreviewExists = !!pre;
+                out.p2SelIdx = r.state.workshop.selectedPartIdx;
                 if (pre) {
-                    r._workshopBeginManipulation("translate", "x", 100, 100);
+                    // V18.37 — die Klick-Koordinate aus der ECHTEN Canvas-Rect ableiten (Mitte),
+                    // nicht hartcodiert (100,100): seit der Layout-Putz den Canvas tiefer schiebt,
+                    // liegt (100,100) ÜBER dem Canvas → ndcY>1 → der Ray verfehlt die Ebene. Die
+                    // Canvas-Mitte ist immer drin (V9.56-i: der Test wandert mit dem Layout).
+                    const _c = document.getElementById("workshop-preview-canvas");
+                    const _rc = _c && _c.getBoundingClientRect();
+                    out.p2RectW = _rc && Math.round(_rc.width);
+                    out.p2RectH = _rc && Math.round(_rc.height);
+                    out.p2CamAspect = pre.camera && Math.round((pre.camera.aspect || 0) * 100) / 100;
+                    const _cx = _rc ? _rc.left + _rc.width / 2 : 100;
+                    const _cy = _rc ? _rc.top + _rc.height / 2 : 100;
+                    r._workshopBeginManipulation("translate", "x", _cx, _cy);
                     out.dragManipulatorSet = pre.dragManipulator !== null;
                     if (pre.dragManipulator) {
                         out.dragModeIsTranslate = pre.dragManipulator.mode === "translate";
@@ -34767,7 +34790,8 @@ async function checkBandCadWorkshop(ctx) {
         check("Welle 6.B P2: cloneBlueprint(village → test_wave6b) erfolgreich", wave6bResults.cloneOk);
         check(
             "Welle 6.B P2: _workshopBeginManipulation auf eigenem Bauplan setzt dragManipulator",
-            wave6bResults.dragManipulatorSet
+            wave6bResults.dragManipulatorSet,
+            `preview=${wave6bResults.p2PreviewExists} selIdx=${wave6bResults.p2SelIdx} rect=${wave6bResults.p2RectW}x${wave6bResults.p2RectH} camAspect=${wave6bResults.p2CamAspect}`
         );
         check(
             "Welle 6.B P2: dragManipulator trägt korrekte mode+axis (translate/x)",
@@ -37182,14 +37206,13 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
                 out.modeBarBeforeCanvas = mbIdx >= 0 && cIdx > mbIdx;
             }
 
-            // Stats-Panel im DOM + NACH Canvas
+            // Stats-Panel im DOM + NACH Canvas (V18.37: jetzt VOLLBREIT aus dem Preview-Wrapper
+            // heraus, als Geschwister unter der ganzen Reihe → Dokument-Reihenfolge prüfen, nicht
+            // Wrapper-Kind-Index; V9.56-i: der Test wandert mit dem Layout).
             const stats = document.getElementById("workshop-stats-panel");
             out.statsInDom = !!stats;
-            if (wrapper && stats && canvas) {
-                const wrapperChildren = Array.from(wrapper.children);
-                const sIdx = wrapperChildren.indexOf(stats);
-                const cIdx = wrapperChildren.indexOf(canvas);
-                out.statsAfterCanvas = sIdx > cIdx;
+            if (stats && canvas) {
+                out.statsAfterCanvas = !!(canvas.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING);
             }
 
             // Werkzeug-Palette im DOM

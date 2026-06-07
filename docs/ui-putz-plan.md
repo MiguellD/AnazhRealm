@@ -531,42 +531,54 @@ Herz (V7.66) — die Omnibox wird ADDITIV gebaut (sie ruft `processChatCommand` 
 `chatDslPatterns`, beide unangetastet); erst wenn sie trägt, wird die Konsole vom Dauer-
 Panel zum beschwörbaren Log (Tests wandern mit dem Code, V9.56-i).
 
-## Z4. Die Werkstatt — von „am besten" zu „genial" (3-Spalten-Werktisch)
+## Z4. Die Werkstatt — von „am besten" zu „genial" (SPIELERSICHT: maximierter Viewport + dünnes Chrome)
 
-GEMESSEN (`room-werkstatt-page.png`): vertikaler Stapel Liste → Preview → Ausgabe-Tabelle;
-die Tabelle erst nach Scrollen; rechts neben der Bauplan-Liste leerer Platz; das Fenster
-~94 % des Schirms (zu groß / ragt übers Hauptbild). Stark: Farbe + Drop-auf-Part/Baugruppe.
+**Schöpfer-Korrektur (07.06., die wichtige):** „den Viewer nur ein BISSCHEN [reduzieren] — die
+Haupt-Ersparnis muss in der Bauplan-Suche OBEN sein; man ist 90 % der Zeit im Viewer am
+Konstruieren; du hast dir keine Gedanken zur SPIELERSICHT gemacht." → mein erster Reflex
+(Viewer schrumpfen, Ausgabe nach rechts) war mechanisch, nicht spieler-zentriert. **Verworfen.**
 
-**Die Profi-Form (Blender/Figma/CAD), alles gleichzeitig im Blick:**
+**Die Spielersicht (die Grundlage des Designs):**
+
+- **~5 % — einen Bauplan wählen** (kurz, am Anfang). → braucht MINIMALEN Platz.
+- **~90 % — im Viewer konstruieren** (Formen ziehen, Prozesse droppen, orbiten). → der Viewer
+  ist das ZUHAUSE, er bleibt GROSS, der dominante Pane.
+- **laufender Blick — die Ausgabe lesen + FERTIGEN.** → glanceable UNTEN (Schöpfer: „die
+  Ausgabe-Tabelle scheint unten am meisten Platz, am übersichtlichsten"), nicht in eine
+  schmale rechte Spalte gequetscht.
+
+**Die brilliante Form = maximierter Viewport + dünnes funktionales Chrome (Pro-3D-Tool):**
 
 ```
 ┌─ WERKSTATT ──────────────────────────────────────────────── × ┐
-│ [Omnibox-Suche: b:/w:eisen …]   (Top-Leiste: Undo Redo Klon Neu Löschen) │
-├──────────────┬───────────────────────────────┬───────────────┤
-│ BAUPLÄNE      │        3D-VORSCHAU (Star)       │ AUSGABE        │
-│ (links,       │  + Form-Palette · Modus-Bar     │ Rolle          │
-│  kompakt,     │  + Drop-Prozess auf Part/Gruppe │ Werte (Tabelle)│
-│  tag-such-,   │  (der starke Fluss — behalten)  │ Resonanz       │
-│  hunderte-    │                                 │ Material-Palette│
-│  tauglich)    │                                 │ ⚒ FERTIGEN     │
-└──────────────┴───────────────────────────────┴───────────────┘
+│ [⌕ Bauplan wählen/suchen]      (Top: Undo Redo Klon Neu Löschen) │  ← DÜNN (5%); Liste = Dropdown
+├───┬───────────────────────────────────────────────────┬───────┤
+│ F │                                                     │ F     │
+│ o │              3D-VIEWER  (das ZUHAUSE, GROSS)         │ a     │  ← Form-Palette links,
+│ r │              + Modus-Bar · Drop-Prozess-Fluss        │ r     │     Farben rechts (flankieren,
+│ m │              (der starke Fluss — behalten)           │ b     │     keine vertikale Höhe)
+├───┴───────────────────────────────────────────────────┴───────┤
+│ ROLLE · FÄHIGKEIT │ RESONANZ · BAU-KOSTEN   (2-spaltig, breit)  │  ← AUSGABE unten, glanceable
+│ TAGS … · QUALITÄT │            ⚒ FERTIGEN (voll)                │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-- **Links — Baupläne:** schmale Spalte, omnibox-/tag-durchsuchbar (`w:eisen`), kompakt
-  (1 Zeile/Bauplan, Rollen-Farbe links), **virtualisiert/gefiltert für HUNDERTE** (nur
-  Treffer rendern; bei >N nur die ersten K + „suche, um zu filtern"). Skaliert.
-- **Mitte — 3D-Vorschau:** der Star, größter Raum. Form-Palette + Modus-Bar + der Drop-
-  Prozess-Fluss bleiben (Schöpfer-gelobt).
-- **Rechts — Ausgabe (IMMER sichtbar):** Rolle · Werte-Tabelle · Resonanz · Material-Palette
-  · der **⚒ FERTIGEN**-Akt. Nutzt die rechte Spalte (heute leer/verscrollt) → **kein
-  Scrollen mehr**, man sieht die Werte WÄHREND man formt (der entscheidende Profi-Gewinn).
-- **Fenster-Größe:** Padding straffen, `max-height`/`max-width` so, dass es bündig sitzt +
-  nicht „zu groß" wirkt (die Ränder gleich links/rechts — der Schöpfer-Befund am linken
-  Rand). Ein Hauch Welt am Rand sichtbar = „in der Welt", nicht „App über der Welt".
-- Umsetzung: das mittlere `#workshop-preview-row` + die Tail-Sektionen in ein **CSS-Grid**
-  `grid-template-columns: minmax(180px,1fr) 2.4fr minmax(220px,1fr)` legen; die Methoden
-  (`_workshopRenderBlueprintList` · Preview · `_workshopRenderStatsPanel`) füllen die drei
-  Zellen UNVERÄNDERT (Container per ID verschieben, nicht neu bauen — V18.32-Lehre).
+- **Oben (dünn, die Haupt-Ersparnis):** die Bauplan-Wahl ist ein dünner Such-Balken; die
+  Liste klappt als **Dropdown** nur bei Fokus/Tippen auf (`b:`/`w:eisen`, omnibox-Seed) →
+  NULL Dauer-Fußabdruck, skaliert auf HUNDERTE (nur Treffer). Der gewonnene Platz (~110 px)
+  geht an Viewer + Ausgabe — NICHT vom Viewer genommen.
+- **Mitte (GROSS, das Zuhause):** der Viewer, `height: clamp(300px, 46vh, 520px)` — der
+  dominante Pane (90 % der Zeit). Form-Palette links, Farben rechts flankieren (keine Höhe).
+  Der Drop-Prozess-Fluss + die Farbe bleiben (Schöpfer-gelobt).
+- **Unten (glanceable, 2-spaltig, breit):** die Ausgabe nutzt die volle Breite (CSS-Multi-
+  Column 2-spaltig → halb so hoch), **FERTIGEN spannt voll** als prominenter Abschluss. Im
+  Bild ohne Scrollen, weil das OBEN schrumpfte.
+- **Fenster-Größe:** Padding straffen, bündige Ränder (Schöpfer-Befund linker Rand), ein
+  Hauch Welt am Rand = „in der Welt".
+- Umsetzung (Container verschieben, nicht neu bauen — V18.32): `#workshop-list` →
+  `position:absolute`-Dropdown (`.workshop-picker.open`); Canvas-Höhe-Clamp (Renderer folgt
+  via `_workshopSyncCanvasSize`); `#workshop-stats-panel` → `column-count:2` +
+  `.workshop-fertigen-row{column-span:all}`. Die Render-Methoden unverändert.
 
 ## Z5. Die anderen Räume — durchdacht (Gruppierung · Fluss · Format)
 
