@@ -2880,7 +2880,8 @@
                 color: var(--parch-ink-soft, #5a3f1d);
                 margin-bottom: 2px;
             }
-            .translator-edit {
+            .translator-edit,
+            .help-search {
                 width: 100%;
                 box-sizing: border-box;
                 font-family: "IM Fell English", Georgia, serif;
@@ -2890,6 +2891,15 @@
                 border: 1px solid var(--brass-2, #8a6322);
                 border-radius: 2px;
                 padding: 4px 6px;
+            }
+            /* V18.35 — die durchsuchbaren Befehle: das Such-Feld sitzt fest, die Liste
+               darunter scrollt (Überblick statt ewiger Liste). */
+            .help-search {
+                margin-bottom: 6px;
+            }
+            #help-list {
+                max-height: 320px;
+                overflow-y: auto;
             }
             .translator-edit-desc {
                 resize: vertical;
@@ -4909,6 +4919,13 @@
                                 >(aus der Werkstatt → fertigen: in die Hand · anlegen · trinken)</span
                             >
                         </h4>
+                        <input
+                            type="text"
+                            id="recipe-search"
+                            class="help-search"
+                            placeholder="Rezept suchen … (z. B. spitzhacke, panzer, trank)"
+                            aria-label="Rezepte durchsuchen"
+                        />
                         <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
                     </section>
                     <section class="section default-collapsed" id="equip-advanced-section">
@@ -5099,9 +5116,19 @@
                 </p>
                 <div id="status-worldrules"></div>
             </section>
-            <section class="section default-collapsed" id="help-section">
+            <section class="section" id="help-section">
                 <h3>Befehle · die Sprache des Hofes</h3>
-                <p class="drawer-hint">Klick zum Ausführen. Befehle gehen durch denselben Pfad wie der Chat.</p>
+                <p class="drawer-hint">
+                    Such + klick — oder tippe es in den Chat. Hier leben ALLE Befehle (auch die alten Welt-Aktionen);
+                    ein Ort, kein Duplikat.
+                </p>
+                <input
+                    type="text"
+                    id="help-search"
+                    class="help-search"
+                    placeholder="Befehl suchen … (z. B. wetter, heile, folge, baue)"
+                    aria-label="Befehle durchsuchen"
+                />
                 <div id="help-list"></div>
             </section>
         </aside>
@@ -5501,18 +5528,10 @@
                     <button type="button" id="world-export">Welt teilen…</button>
                     <button type="button" id="world-import">Welt empfangen…</button>
                 </div>
-            </section>
-            <section class="section" id="world-actions-section">
-                <h3>Welt-Aktionen</h3>
-                <div class="actions" id="quick-actions">
-                    <button type="button" data-cmd="Heile Welt">Heile Welt</button>
-                    <button type="button" data-cmd="Vereine Chaos Ordnung">Harmonie</button>
-                    <button type="button" data-cmd="Setze Wetter sunny">Sonne</button>
-                    <button type="button" data-cmd="Setze Wetter rainy">Regen</button>
-                    <button type="button" data-cmd="Spawne neue Welt">Neue Welt</button>
-                    <button type="button" data-cmd="Boden aktivieren">Boden an</button>
-                    <button type="button" data-cmd="Boden deaktivieren">Boden aus</button>
-                </div>
+                <!-- UI-Putz V18.35: die „Welt-Aktionen"-Schnellknöpfe (Heile Welt · Wetter ·
+                     Boden · Neue Welt) waren GEMESSEN Duplikate der DSL-Befehle (alle in
+                     chatCommandHelp) — aufgelöst in den EINEN durchsuchbaren Befehls-Ort (Hof →
+                     Befehle) + den Chat. Kein dritter Pfad fürs Selbe. -->
             </section>
             <!-- Welle 6.X.2 B1 (Audit 17.05.2026) — Logbuch-Sichtbarkeit.
                  Power-User-Diagnose-Schicht ist default versteckt, damit die
@@ -6177,6 +6196,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.34.0" defer></script>
+        <script src="anazhRealm.js?v=18.35.0" defer></script>
     </body>
 </html>

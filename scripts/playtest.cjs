@@ -38702,15 +38702,32 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (!r) return null;
         const out = {};
 
-        // (a) Quick-Buttons existieren (UI-Putz: jetzt in Einstellungen, Welt-Aktionen)
-        const qa = document.getElementById("quick-actions");
-        const qaButtons = qa ? qa.querySelectorAll("button[data-cmd]") : [];
-        out.quickButtonCount = qaButtons.length;
-        out.quickButtonsPresent = qaButtons.length >= 5;
+        // (a) UI-Putz V18.35: die duplizierten Welt-Aktionen sind WEG — die Welt-Befehle leben
+        // im EINEN durchsuchbaren Befehls-Ort (Hof → Befehle). Kein #quick-actions mehr.
+        out.quickActionsGone = !document.getElementById("quick-actions");
+        const helpListEl = document.getElementById("help-list");
+        const helpCmds = helpListEl ? [...helpListEl.querySelectorAll("button.cmd")] : [];
+        out.weltCmdsInBefehle =
+            helpCmds.some((b) => /heile welt/i.test(b.textContent || "")) &&
+            helpCmds.some((b) => /wetter/i.test(b.textContent || ""));
+        // (a2) die Befehle sind DURCHSUCHBAR (search-not-scroll) — Filter blendet Nicht-Treffer aus.
+        const helpSearch = document.getElementById("help-search");
+        out.helpSearchExists = !!helpSearch;
+        if (helpSearch) {
+            helpSearch.value = "wetter";
+            helpSearch.dispatchEvent(new Event("input", { bubbles: true }));
+            const visible = helpCmds.filter((b) => b.style.display !== "none");
+            out.searchFilters =
+                visible.length > 0 &&
+                visible.length < helpCmds.length &&
+                visible.every((b) => /wetter/i.test(b.textContent || ""));
+            helpSearch.value = "";
+            helpSearch.dispatchEvent(new Event("input", { bubbles: true }));
+        }
 
-        // (b) Klick auf einen Quick-Button feuert processChatCommand
+        // (b) Klick auf einen Befehl im Hof feuert processChatCommand (der EINE data-cmd-Pfad)
         r.state.weather = "sunny";
-        const rainyBtn = qa ? qa.querySelector('button[data-cmd="Setze Wetter rainy"]') : null;
+        const rainyBtn = helpCmds.find((b) => /setze wetter rainy/i.test(b.getAttribute("data-cmd") || ""));
         if (rainyBtn) rainyBtn.click();
         out.quickButtonRoutesToChat = r.state.weather === "rainy";
 
@@ -38762,11 +38779,19 @@ async function checkBandEarlyRingsAndUi(ctx) {
         );
     } else {
         check(
-            "UI V2: Quick-Action-Buttons in Einstellungen (Welt-Aktionen, ≥5)",
-            uiActionsResults.quickButtonsPresent,
-            `count=${uiActionsResults.quickButtonCount}`
+            "UI-Putz V18.35: die duplizierten Welt-Aktionen sind aufgelöst (kein #quick-actions)",
+            uiActionsResults.quickActionsGone
         );
-        check("UI V2: Quick-Button-Klick routet durch processChatCommand", uiActionsResults.quickButtonRoutesToChat);
+        check(
+            "UI-Putz V18.35: die Welt-Befehle leben im EINEN Befehls-Ort (Hof → Befehle)",
+            uiActionsResults.weltCmdsInBefehle
+        );
+        check("UI-Putz V18.35: die Befehle sind durchsuchbar (#help-search)", uiActionsResults.helpSearchExists);
+        check(
+            "UI-Putz V18.35: die Such-Filterung blendet Nicht-Treffer aus (search-not-scroll)",
+            uiActionsResults.searchFilters
+        );
+        check("UI V2: Befehl-Klick im Hof routet durch processChatCommand", uiActionsResults.quickButtonRoutesToChat);
         check("UI V2: Hof-Drawer (mit Befehle-Sektion) initial versteckt", uiActionsResults.hilfeDrawerInitiallyHidden);
         check("UI V2: Hof-Tab öffnet den Drawer", uiActionsResults.hilfeDrawerOpensOnTab);
         check("UI-Putz: die Befehle-Sektion (DSL) lebt im Hof", uiActionsResults.helpSectionInSettings);

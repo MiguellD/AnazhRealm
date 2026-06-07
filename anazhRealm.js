@@ -9973,8 +9973,8 @@ class AnazhRealm {
         });
 
         // Quick-Action-, Kreatur- und Bauwerk-Buttons teilen den
-        // data-cmd → processChatCommand-Delegate (V9.44-e: eine Quelle).
-        this._wireCmdDelegation("quick-actions");
+        // data-cmd → processChatCommand-Delegate (V9.44-e: eine Quelle). (V18.35: quick-actions
+        // entfiel — die Welt-Aktionen waren Duplikate der durchsuchbaren Befehle.)
         this._wireCmdDelegation("creature-actions");
         this._wireCmdDelegation("architecture-actions");
 
@@ -9999,6 +9999,40 @@ class AnazhRealm {
             }
             // V9.44-e — der help-list-Delegate schliesst zusätzlich die Drawer.
             this._wireCmdDelegation("help-list", true);
+        }
+        // V18.35 — die Befehle durchSUCHEN statt scrollen (Schöpfer „ewig lange Listen,
+        // schwer Überblick"): ein Live-Filter über die Befehl-Knöpfe; leere Gruppen-Header
+        // (h3) verschwinden mit. EIN Ort für alle Befehle (die duplizierten Welt-Aktionen
+        // sind hier aufgelöst). Der Befehls-Lauf bleibt der EINE data-cmd-Pfad.
+        const helpSearch = document.getElementById("help-search");
+        if (helpList && helpSearch) {
+            const applyFilter = () => {
+                const q = helpSearch.value.trim().toLowerCase();
+                let lastHeader = null;
+                let headerHasVisible = false;
+                const finishGroup = () => {
+                    if (lastHeader) lastHeader.style.display = headerHasVisible ? "" : "none";
+                };
+                for (const node of helpList.children) {
+                    if (node.tagName === "H3") {
+                        finishGroup();
+                        lastHeader = node;
+                        headerHasVisible = false;
+                        continue;
+                    }
+                    const match = !q || (node.textContent || "").toLowerCase().includes(q);
+                    node.style.display = match ? "" : "none";
+                    if (match) headerHasVisible = true;
+                }
+                finishGroup();
+            };
+            helpSearch.addEventListener("input", applyFilter);
+        }
+        // V18.35 — dieselbe Such-Geste fürs Rezeptbuch (Schöpfer „schwer bei vielen Rezepten
+        // den Überblick"): der Filter lebt in _applyRecipeFilter (re-applied nach jedem Render).
+        const recipeSearch = document.getElementById("recipe-search");
+        if (recipeSearch) {
+            recipeSearch.addEventListener("input", () => this._applyRecipeFilter());
         }
     }
 
@@ -39510,6 +39544,37 @@ class AnazhRealm {
             empty.textContent = "Noch keine craftbaren Baupläne — entwirf eines in der Werkstatt.";
             host.appendChild(empty);
         }
+        // V18.35 — den aktuellen Such-Filter nach dem Neu-Aufbau wieder anwenden (die Zeilen
+        // werden bei jedem Render neu erzeugt; das Such-Feld lebt ausserhalb + bleibt).
+        this._applyRecipeFilter();
+    }
+
+    // Rezept-Suche (search-not-scroll, wie die Hof-Befehle): blendet Nicht-Treffer aus,
+    // leere Gruppen-Labels (.recipe-group) verschwinden mit. EIN Überblick statt langer Liste.
+    _applyRecipeFilter() {
+        if (typeof document === "undefined") return;
+        const host = document.getElementById("inventory-recipes");
+        const search = document.getElementById("recipe-search");
+        if (!host || !search) return;
+        const q = search.value.trim().toLowerCase();
+        let lastGroup = null;
+        let groupHasVisible = false;
+        const finishGroup = () => {
+            if (lastGroup) lastGroup.style.display = groupHasVisible ? "" : "none";
+        };
+        for (const node of host.children) {
+            if (node.classList.contains("recipe-group")) {
+                finishGroup();
+                lastGroup = node;
+                groupHasVisible = false;
+                continue;
+            }
+            if (!node.classList.contains("recipe-row")) continue;
+            const match = !q || (node.textContent || "").toLowerCase().includes(q);
+            node.style.display = match ? "" : "none";
+            if (match) groupHasVisible = true;
+        }
+        finishGroup();
     }
 
     _recipeRow(name, kind) {
@@ -47926,7 +47991,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.34.0";
+AnazhRealm.VERSION = "18.35.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
