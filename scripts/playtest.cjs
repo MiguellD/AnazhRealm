@@ -4726,11 +4726,11 @@ async function checkBandV1759CapabilityReadout(ctx) {
             (h) => h.indexOf("Klinge") === 0 || h.indexOf("Brecher") === 0 || h.indexOf("Gerät") === 0
         );
 
-        // KONSUM (DOM, V17.31): _workshopAppendRoleRow rendert eine „Fähigkeit"-Zeile mit der Brecher-Lesart
+        // KONSUM (DOM, V17.31): V18.44 — der Spec-Sheet-Header rendert die Fähigkeiten als .spec-cap-chips.
         const panel = document.createElement("div");
-        r._workshopAppendRoleRow(panel, blu.__cap_maul);
+        r._specRenderHeader(panel, blu.__cap_maul);
         const chips = Array.prototype.slice
-            .call(panel.querySelectorAll(".capability-chip"))
+            .call(panel.querySelectorAll(".spec-cap-chip"))
             .map((c) => c.textContent || "");
         out.domShowsCapability = chips.some((txt) => txt.indexOf("Brecher") !== -1);
 
@@ -6369,10 +6369,10 @@ async function checkBandV1777SteigerungVisible(ctx) {
         const softP = r._workshopStationPrecision(r.state.blueprints["_softws"]);
         out.rangeVisible = softP < meisterP - 0.1;
         delete r.state.blueprints["_softws"];
-        // KONSUM — der Werkstatt-Readout rendert die Präzisions-Zeile (sichtbar/lernbar)
+        // KONSUM — V18.44: der Spec-Sheet-Body rendert die Werkstatt-Präzision (sichtbar/lernbar)
         const panel = document.createElement("div");
-        r._workshopAppendRoleRow(panel, meister);
-        const labels = [...panel.querySelectorAll(".stat-label")].map((e) => e.textContent);
+        r._specRenderBody(panel, meister);
+        const labels = [...panel.querySelectorAll(".spec-col-head")].map((e) => e.textContent);
         const precText = [...panel.querySelectorAll(".workshop-precision-text")].map((e) => e.textContent).join("|");
         out.readoutShowsPrecision = labels.includes("Werkstatt-Präzision") && precText.includes(meisterP.toFixed(2));
         out.noLitter = !meister.instanced; // built-in ohne instanced → kein Worldgen-Litter (V17.72)
@@ -6760,13 +6760,13 @@ async function checkBandV1782CatalystReadout(ctx) {
         const hint = r._blueprintCatalystHint(block, "weapon");
         out.hintSharpness = !!hint && hint.axis === "pointedFraction" && hint.label === "Schärfe";
         out.hintVal = hint ? `${hint.axis}/${hint.label}` : "—";
-        // der Readout rendert das Spektrum + die Resonanz-Zeile
+        // V18.44 — der Spec-Sheet-Body rendert das Rollen-Spektrum als Resonanz-Balken (.spec-bar-label).
         const panel = document.createElement("div");
-        r._workshopAppendRoleRow(panel, blade);
-        const labels = [...panel.querySelectorAll(".stat-label")].map((e) => e.textContent);
-        const specText = [...panel.querySelectorAll(".role-spectrum-text")].map((e) => e.textContent).join("|");
+        r._specRenderBody(panel, blade);
+        const labels = [...panel.querySelectorAll(".spec-col-head")].map((e) => e.textContent);
+        const specText = [...panel.querySelectorAll(".spec-bar-label")].map((e) => e.textContent).join("|");
         out.readoutRenders =
-            labels.includes("Resonanz") &&
+            labels.includes("Rollen-Resonanz") &&
             (specText.includes("Waffe") ||
                 specText.includes("Werkzeug") ||
                 specText.includes("Gerät") ||
@@ -7081,15 +7081,17 @@ async function checkBandV1786WorkshopCoherence(ctx) {
             r._workshopRenderStatsPanel();
             const panel = document.getElementById("workshop-stats-panel");
             if (!panel) return null;
-            const rows = Array.from(panel.querySelectorAll(".stat-row"));
-            const roleRow = rows.find((row) => (row.querySelector(".stat-label") || {}).textContent === "Rolle");
-            const capRow = rows.find((row) => (row.querySelector(".stat-label") || {}).textContent === "Fähigkeit");
+            // V18.44 Spec-Sheet: Rolle + Fähigkeiten leben im Header (.spec-id), visuell GETRENNT
+            // (die .spec-role-chip zeigt NUR die Rolle; die Affordanzen sind separate .spec-cap-chips).
+            const header = panel.querySelector(".spec-header");
+            const roleChipEl = header && header.querySelector(".spec-role-chip");
+            const capChipEls = header ? Array.from(header.querySelectorAll(".spec-cap-chip")) : [];
+            const roleChipText = (roleChipEl || {}).textContent || "";
             return {
-                roleChip: ((roleRow && roleRow.querySelector(".role-chip")) || {}).textContent || "",
-                roleRowAffordances: roleRow ? roleRow.querySelectorAll(".affordance-chip").length : -1,
-                capRowChips: capRow
-                    ? Array.from(capRow.querySelectorAll(".affordance-chip")).map((c) => c.textContent)
-                    : [],
+                roleChip: roleChipText,
+                // die Rolle-Chip ist „rein": nur die Rolle, kein ✦-Affordanz-Marker.
+                roleRowAffordances: roleChipText.includes("✦") ? 1 : 0,
+                capRowChips: capChipEls.map((c) => c.textContent),
             };
         };
         // (1) der Schwert-Samen existiert + ist eine Klinge (schneidet) + ein gehaltenes Implement
@@ -7375,7 +7377,8 @@ async function checkBandV1789WorkshopReadout(ctx) {
         r.cloneBlueprint("geraet_schwert", "_ab_clone");
         r.selectBlueprintForEdit("_ab_clone");
         r._renderWorkshopDOM();
-        out.domAbilitiesRow = !!document.querySelector(".workshop-abilities-row");
+        // V18.44 Spec-Sheet: die Werte sind der Fähigkeits-Chip-Streifen (.spec-stat-strip).
+        out.domAbilitiesRow = !!document.querySelector("#workshop-stats-panel .spec-stat-strip");
         // V17.91 — Undo/Redo wohnen jetzt in der Top-Leiste (aus dem entfernten Detail-Editor migriert).
         out.domHistoryControls =
             !!document.getElementById("workshop-undo-btn") && !!document.getElementById("workshop-redo-btn");
@@ -8054,11 +8057,12 @@ async function checkBandWave4(ctx) {
         // Dropdown mehr) — der Spieler zieht eine Form ins 3D, statt sie in einer Tabelle zu wählen.
         r.selectBlueprintForEdit("test-quarz-orb");
         r._renderWorkshopDOM();
-        const tagsLabel = [...document.querySelectorAll("#workshop-stats-panel .stat-label")].some(
-            (l) => l.textContent === "Tags"
+        // V18.44 — die Tags sind jetzt das MATERIAL-PROFIL (Daten-Viz-Balken im Spec-Sheet), nicht mehr Chips.
+        const tagsLabel = [...document.querySelectorAll("#workshop-stats-panel .spec-col-head")].some(
+            (l) => l.textContent === "Material-Profil"
         );
         out.uiTagsSection = tagsLabel;
-        out.uiTagsHasRows = document.querySelectorAll("#workshop-stats-panel .tag-chip").length > 0;
+        out.uiTagsHasRows = document.querySelectorAll("#workshop-stats-panel .spec-bar").length > 0;
         out.uiShapeIncludesHelix = !!document.querySelector('.workshop-shape-card[data-shape="helix"]');
 
         // Aufräumen
@@ -8091,7 +8095,7 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P2: compound_has_tag respektiert Schwellwert", wave4p2Results.condResonatesAboveSig);
         check("Welle 4 P2: compound_has_tag unbekanntes Tag → false", wave4p2Results.condUnknownTagFalse);
         check("Welle 4 P2 (V17.91): die Tags-Zeile erscheint im Stats-Panel", wave4p2Results.uiTagsSection);
-        check("Welle 4 P2 (V17.91): das Stats-Panel rendert Tag-Chips", wave4p2Results.uiTagsHasRows);
+        check("V18.44 Spec-Sheet: das Stats-Panel rendert das Material-Profil (Balken)", wave4p2Results.uiTagsHasRows);
         check(
             "Welle 4 P2 (V17.91): die FORMEN-Palette bietet helix als ziehbare Karte",
             wave4p2Results.uiShapeIncludesHelix
@@ -8253,8 +8257,8 @@ async function checkBandWave4(ctx) {
         if (r.setGameMode) r.setGameMode("schöpfer");
         r.selectBlueprintForEdit("test-precision");
         r._renderWorkshopDOM();
-        out.uiStatsPanel = !!document.querySelector("#workshop-stats-panel .stat-row");
-        out.uiQualityRow = [...document.querySelectorAll("#workshop-stats-panel .stat-label")].some(
+        out.uiStatsPanel = !!document.querySelector("#workshop-stats-panel .spec-header");
+        out.uiQualityRow = [...document.querySelectorAll("#workshop-stats-panel .spec-q-label")].some(
             (l) => l.textContent === "Qualität"
         );
         out.uiToolPalette = !!document.getElementById("workshop-tool-palette");
@@ -8321,8 +8325,8 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P3: Roh-Compound triggert keinen Welt-Effekt", wave4p3Results.rawDoesNotTrigger);
         check("Welle 4 P3: Magie-Compound hebt awe an", wave4p3Results.magicLiftsAwe);
         check("Welle 4 P3: Präzision moduliert Part-Farbe sichtbar", wave4p3Results.precisionVisibleTint);
-        check("Welle 4 P3 (V17.91): Stats-Panel rendert den Readout (stat-row)", wave4p3Results.uiStatsPanel);
-        check("Welle 4 P3 (V17.91): der Readout zeigt die Qualität (Handwerk/Präzision)", wave4p3Results.uiQualityRow);
+        check("V18.44 Spec-Sheet: das Stats-Panel rendert den Header (Identitaet)", wave4p3Results.uiStatsPanel);
+        check("V18.44 Spec-Sheet: der Readout zeigt die Qualitaet (.spec-q-label)", wave4p3Results.uiQualityRow);
         check("Welle 4 P3 (V17.91): die WERKZEUGE-Palette existiert (Drag-Quelle)", wave4p3Results.uiToolPalette);
         check("Welle 4 P3 (V17.91): die Palette hat ziehbare Werkzeug-Karten (≥1, Hand)", wave4p3Results.uiToolCards);
         check(
@@ -32206,16 +32210,21 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         });
         r.selectBlueprintForEdit && r.selectBlueprintForEdit(tn2);
         r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+        // V18.44 — Spec-Sheet: die „Synergie" ist jetzt die ROLLEN-RESONANZ (der Fingerabdruck), das
+        // „Wachstum" der actionable Hinweis im Footer (.spec-growth, nur eigene Baupläne).
         const panel = document.getElementById("workshop-stats-panel");
-        out.synergyRowRendered = !!(panel && panel.querySelector(".workshop-synergy-row"));
-        out.growthRowRendered = !!(panel && panel.querySelector(".workshop-growth-row"));
-        // Bei 0 opChain steht „Noch keine Werkzeug-Anwendung" im growth-text
-        const growthText = panel && panel.querySelector(".workshop-growth-text");
-        out.growthShowsEmptyHint = !!growthText && /Noch keine Werkzeug-Anwendung/.test(growthText.textContent);
-        // Nach Schmiede-Hammer-Anwendung erscheint die Domain-Bar
+        out.synergyRowRendered = [...panel.querySelectorAll(".spec-col-head")].some(
+            (l) => l.textContent === "Rollen-Resonanz"
+        );
+        out.growthRowRendered = !!(panel && panel.querySelector(".spec-growth"));
+        // Bei 0 opChain steht der Emergenz-Hinweis im growth-text
+        const growthText = panel && panel.querySelector(".spec-growth-text");
+        out.growthShowsEmptyHint = !!growthText && /emergiert|Werkzeug/.test(growthText.textContent);
+        // Nach Schmiede-Hammer-Anwendung spiegelt der Wachstums-Hinweis die Domain (Mehrheit/forging)
         r.applyOpToPart(tn2, 0, "schmiede-hammer");
         r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
-        out.domainBarsAppearAfterOp = !!(panel && panel.querySelector(".workshop-domain-bar.dominant"));
+        const growthText2 = panel && panel.querySelector(".spec-growth-text");
+        out.domainBarsAppearAfterOp = !!growthText2 && /Mehrheit|forging/.test(growthText2.textContent);
 
         // Cleanup
         delete r.state.blueprints[tn2];
@@ -32234,11 +32243,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             "Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count",
             wave6x4cResults.afterForgingHasDomain
         );
-        check("Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-synergy-row", wave6x4cResults.synergyRowRendered);
-        check("Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-growth-row", wave6x4cResults.growthRowRendered);
-        check("Welle 6.X.4 V8.16: Growth-Text bei 0 Ops zeigt Wachstums-Hinweis", wave6x4cResults.growthShowsEmptyHint);
+        check("V18.44 Spec-Sheet: Stats hat die Rollen-Resonanz (Fingerabdruck)", wave6x4cResults.synergyRowRendered);
+        check("V18.44 Spec-Sheet: Stats hat den Wachstums-Hinweis (.spec-growth)", wave6x4cResults.growthRowRendered);
+        check("Welle 6.X.4 V8.16: Growth-Text bei 0 Ops zeigt Emergenz-Hinweis", wave6x4cResults.growthShowsEmptyHint);
         check(
-            "Welle 6.X.4 V8.16: Domain-Bar.dominant erscheint nach Schmiede-Hammer-Op",
+            "V18.44 Spec-Sheet: der Wachstums-Hinweis spiegelt die Domain nach Schmiede-Hammer-Op",
             wave6x4cResults.domainBarsAppearAfterOp
         );
     } else {
@@ -37433,31 +37442,24 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             r.selectBlueprintForEdit("test_v807");
             out.modeBtnEnabledOnCustom = moveBtn && moveBtn.disabled === false;
 
-            // Stats-Panel: Tag-Chips haben Stern-Levels
+            // V18.44 Spec-Sheet: die Tags sind Daten-Viz-BALKEN (.spec-bar mit .spec-bar-fill.lvl-X),
+            // nicht mehr Stern-Chips. Geprüft wird: Balken existieren + tragen eine Stufen-Klasse.
             const statsPanel = document.getElementById("workshop-stats-panel");
-            const tagChips = statsPanel ? statsPanel.querySelectorAll(".tag-chip") : [];
-            out.tagChipsCount = tagChips.length;
+            const tagBars = statsPanel ? statsPanel.querySelectorAll(".spec-bar") : [];
+            out.tagChipsCount = tagBars.length;
             let anyHasStars = false;
             let anyHasLevelClass = false;
-            tagChips.forEach((c) => {
-                if (c.querySelector(".tag-stars")) anyHasStars = true;
-                if (
-                    c.classList.contains("lvl-1") ||
-                    c.classList.contains("lvl-2") ||
-                    c.classList.contains("lvl-3") ||
-                    c.classList.contains("lvl-0")
-                )
-                    anyHasLevelClass = true;
+            tagBars.forEach((b) => {
+                const fill = b.querySelector(".spec-bar-fill");
+                if (fill) anyHasStars = true;
+                if (fill && /\blvl-[0-3]\b|\bres(-top)?\b/.test(fill.className)) anyHasLevelClass = true;
             });
             out.tagChipsHaveStars = anyHasStars;
             out.tagChipsHaveLevelClass = anyHasLevelClass;
-            // Stern-Inhalt: enthält Stern-Glyphen. V18.40 — direkt das erste `.tag-stars`-Element
-            // lesen (nicht tagChips[0]): die Qualitäts-Zeile ist AUCH ein `.tag-chip` (5 Glyphen,
-            // ohne `.tag-stars`-Kind) und steht seit der Nutzer-Frage-Ordnung evtl. vor den Tags.
-            let starsContent = "";
-            const firstStarEl = statsPanel ? statsPanel.querySelector(".tag-stars") : null;
-            if (firstStarEl) starsContent = firstStarEl.textContent;
-            out.starsAreGlyphs = /[★☆]/.test(starsContent) && starsContent.length === 3;
+            // Die Stern-Glyphen leben jetzt im Qualitäts-Rating (.spec-q-stars, 5 Glyphen ★★☆☆☆).
+            const qStarsEl = statsPanel ? statsPanel.querySelector(".spec-q-stars") : null;
+            const starsContent = qStarsEl ? qStarsEl.textContent : "";
+            out.starsAreGlyphs = /[★☆]/.test(starsContent) && starsContent.length === 5;
 
             // V18.42 — _workshopApplyDefaultSizeOnce RÄUMT jetzt die Legacy-Inline-Größe + die
             // gespeicherte Resize-Größe (Migration), statt eine fixe Vollbild-Inline-Größe zu setzen
@@ -37494,10 +37496,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check("V8.07: Mode-Buttons (Move/...) disabled bei built-in", v807Results.modeBtnDisabledOnBuiltIn);
         check("V8.07: Mode-Buttons enabled bei eigenem Bauplan", v807Results.modeBtnEnabledOnCustom);
         check(
-            `V8.07 Stats: ${v807Results.tagChipsCount} Tag-Chips mit Stern-Element + Level-Klasse`,
+            `V18.44 Spec-Sheet: ${v807Results.tagChipsCount} Profil-/Resonanz-Balken mit Fill + Stufen-Klasse`,
             v807Results.tagChipsHaveStars && v807Results.tagChipsHaveLevelClass
         );
-        check("V8.07 Stats: Stern-Glyphen sind ★/☆ (3 Zeichen)", v807Results.starsAreGlyphs);
+        check("V18.44 Spec-Sheet: Qualitäts-Sterne sind ★/☆ (5 Zeichen)", v807Results.starsAreGlyphs);
         check(
             "V18.42: _workshopApplyDefaultSizeOnce räumt die stale Resize-Größe + Inline (CSS-Rahmen trägt jetzt)",
             v807Results.defaultOverridesStale

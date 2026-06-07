@@ -3988,25 +3988,224 @@
                 color: var(--parch-bg, #ece1c5);
                 line-height: 1.6;
                 min-height: 18px;
-                /* P13 (UI-Putz §1.5) — RASTER-FLUCHT statt column-count: das alte `column-count:2`
-                   floss wie Zeitungs-Spalten → ungleiche Spaltenbreiten, die rechte Flucht driftete
-                   (Schöpfer „die rechte Flucht stimmt nicht"). Ein explizites Grid (1fr 1fr) hält
-                   beide Spalten EXAKT gleich breit → Label-/Wert-Fluchten bündig links UND rechts.
-                   Kurze Label/Wert-Zeilen füllen die zwei Spalten; breite Zeilen (Tags/Werte/
-                   Domains/Synergie/Wachstum) spannen voll. Das ist das geteilte Flucht-Muster. */
+                /* V18.44 — das Profi-SPEC-SHEET stapelt drei Zonen: Header (Identität) · Body (zwei
+                   Spalten = der Bauplan-Fingerabdruck) · Footer (Preis/Wachstum). Die innere Verteilung
+                   tragen die .spec-*-Zonen unten. */
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            /* === V18.44 — DAS SPEC-SHEET === */
+            /* Header: Identität (Rolle + Fähigkeit) links, Qualität rechts. */
+            #workshop-stats-panel .spec-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                flex-wrap: wrap;
+                padding-bottom: 7px;
+                border-bottom: 1px solid var(--brass-3);
+            }
+            #workshop-stats-panel .spec-id {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex-wrap: wrap;
+                min-width: 0;
+            }
+            #workshop-stats-panel .spec-role-chip {
+                font-size: 12px;
+                padding: 3px 11px;
+                letter-spacing: 0.6px;
+            }
+            #workshop-stats-panel .spec-cap-chip {
+                font-size: 9.5px;
+            }
+            #workshop-stats-panel .spec-quality {
+                display: inline-flex;
+                align-items: baseline;
+                gap: 6px;
+                flex: 0 0 auto;
+            }
+            #workshop-stats-panel .spec-q-label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
+                color: var(--brass-1);
+            }
+            #workshop-stats-panel .spec-q-stars {
+                color: #ffe066;
+                font-size: 12px;
+                letter-spacing: 1px;
+                text-shadow: 0 0 4px rgba(255, 224, 102, 0.4);
+            }
+            #workshop-stats-panel .spec-q-val {
+                font-family: "JetBrains Mono", monospace;
+                color: var(--ink-on-dark);
+                font-size: 10px;
+            }
+            /* Body: zwei Spalten (Material-Profil | Rollen-Resonanz + Werte). */
+            #workshop-stats-panel .spec-body {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                column-gap: 30px;
-                row-gap: 3px;
-                align-content: start;
+                gap: 6px 34px;
+                align-items: start;
             }
-            /* Breite Zeilen (Chip-Reihen + erklärender Text) spannen beide Spalten. */
-            #workshop-stats-panel .workshop-abilities-row,
-            #workshop-stats-panel .workshop-tags-row,
-            #workshop-stats-panel .workshop-domain-row,
-            #workshop-stats-panel .workshop-synergy-row,
-            #workshop-stats-panel .workshop-growth-row {
-                grid-column: 1 / -1;
+            #workshop-stats-panel .spec-col {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                min-width: 0;
+            }
+            #workshop-stats-panel .spec-col-head {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.7px;
+                text-transform: uppercase;
+                color: var(--brass-1);
+                margin-bottom: 1px;
+            }
+            #workshop-stats-panel .spec-col-head-sub {
+                margin-top: 4px;
+            }
+            #workshop-stats-panel .spec-empty {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                color: var(--ink-on-dark-soft);
+                font-size: 10px;
+            }
+            /* Die Daten-Viz-Balken: Label | Track(Fill) | Wert auf EINEM Raster. */
+            #workshop-stats-panel .spec-bar {
+                display: grid;
+                grid-template-columns: 80px 1fr 34px;
+                align-items: center;
+                gap: 8px;
+            }
+            #workshop-stats-panel .spec-bar-label {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9.5px;
+                color: var(--ink-on-dark);
+                text-align: right;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            #workshop-stats-panel .spec-bar-track {
+                height: 9px;
+                background: rgba(0, 0, 0, 0.34);
+                border: 1px solid rgba(184, 138, 80, 0.3);
+                border-radius: 5px;
+                overflow: hidden;
+            }
+            #workshop-stats-panel .spec-bar-fill {
+                display: block;
+                height: 100%;
+                border-radius: 5px 0 0 5px;
+                background: var(--brass-1);
+                transition: width 0.25s ease;
+            }
+            #workshop-stats-panel .spec-bar-fill.lvl-0 {
+                background: #6a5a3a;
+            }
+            #workshop-stats-panel .spec-bar-fill.lvl-1 {
+                background: #d4a373;
+            }
+            #workshop-stats-panel .spec-bar-fill.lvl-2 {
+                background: linear-gradient(90deg, #b48c28, #ffe066);
+            }
+            #workshop-stats-panel .spec-bar-fill.lvl-3 {
+                background: linear-gradient(90deg, #7a3cb4, #c66bff);
+            }
+            #workshop-stats-panel .spec-bar-fill.res {
+                background: linear-gradient(90deg, #6e6a3a, #b9a96a);
+            }
+            #workshop-stats-panel .spec-bar-fill.res-top {
+                background: linear-gradient(90deg, #b48c28, #ffe066);
+                box-shadow: 0 0 6px rgba(255, 224, 102, 0.4);
+            }
+            #workshop-stats-panel .spec-bar-val {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                color: var(--ink-on-dark-soft);
+                text-align: right;
+            }
+            /* Werte-Chip-Streifen. */
+            #workshop-stats-panel .spec-stat-strip {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px 6px;
+            }
+            #workshop-stats-panel .spec-stat-chip {
+                display: inline-flex;
+                align-items: baseline;
+                gap: 4px;
+                padding: 2px 8px;
+                background: rgba(255, 235, 190, 0.16);
+                border: 1px solid var(--brass-2);
+                border-radius: 3px;
+            }
+            #workshop-stats-panel .spec-stat-name {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                color: var(--ink-on-dark);
+                letter-spacing: 0.3px;
+            }
+            #workshop-stats-panel .spec-stat-val {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                color: #ffe6a8;
+            }
+            #workshop-stats-panel .spec-stat-fit {
+                background: rgba(176, 106, 217, 0.22);
+                border-color: var(--violet-1);
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 9.5px;
+                color: var(--ink-on-dark);
+            }
+            /* Footer: Preis + Wachstum. */
+            #workshop-stats-panel .spec-footer {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: baseline;
+                gap: 6px 22px;
+                padding-top: 7px;
+                border-top: 1px solid var(--brass-3);
+            }
+            #workshop-stats-panel .spec-cost,
+            #workshop-stats-panel .spec-growth {
+                display: inline-flex;
+                align-items: baseline;
+                gap: 8px;
+                min-width: 0;
+            }
+            #workshop-stats-panel .spec-growth {
+                flex: 1 1 55%;
+            }
+            #workshop-stats-panel .spec-cost-label,
+            #workshop-stats-panel .spec-growth-label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
+                color: var(--brass-1);
+                flex: 0 0 auto;
+            }
+            #workshop-stats-panel .spec-cost-val {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                color: var(--ink-on-dark-soft);
+            }
+            #workshop-stats-panel .spec-growth-text {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 10px;
+                color: var(--ink-on-dark-soft);
+                line-height: 1.4;
+            }
+            #workshop-stats-panel .spec-growth.manual-override .spec-growth-text {
+                color: #e0a85a;
             }
             /* V18.38 — FERTIGEN kompakt + rechtsbündig (Schöpfer „nutzt die ganze Länge obwohl
                kaum Platz nötig"): die primäre Schluss-Aktion sitzt rechts unten, nicht als
@@ -6540,6 +6739,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.43.0" defer></script>
+        <script src="anazhRealm.js?v=18.44.0" defer></script>
     </body>
 </html>

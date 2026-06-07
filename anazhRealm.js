@@ -41900,15 +41900,14 @@ class AnazhRealm {
         panel.innerHTML = "";
         if (az) az.innerHTML = "";
         if (!bp) return;
-        // V18.40 — die Ausgabe-Tabelle nach den NUTZER-FRAGEN geordnet (Schöpfer-Methodik P5):
-        // Identität (was ist es?) → Güte (wie gut?) → Preis (was kostet es?) → Wachstum (wie
-        // verbessern?). Und die Tabelle ist NUR Readout — FERTIGEN wandert in die Mach-Zone.
-        this._workshopAppendRoleRow(panel, bp); // Identität: Rolle + Fähigkeit
-        this._workshopAppendAbilitiesRow(panel, bp);
-        this._workshopAppendQualityRow(panel, bp); // Güte
-        this._workshopAppendTagsRow(panel, bp);
-        this._workshopAppendBuildCostRow(panel, bp); // Preis
-        if (!bp.builtIn) this._workshopAppendDomainAnalysis(panel, bp); // Wachstum (nur eigene)
+        // V18.44 — die Ausgabe als Profi-SPEC-SHEET (Schöpfer „die Tabelle ist nicht optimiert, Profis
+        // haben bessere gestalterische Ansätze; nutzt das Tag/Rollen-System, das wir haben, erzeugt
+        // Synergie"): HIERARCHIE statt flacher Tabelle — Identität (Header) → der Bauplan-FINGERABDRUCK
+        // (Material-Profil + Rollen-Resonanz als DATEN-VIZ-BALKEN, das bestehende compound-tags/
+        // _blueprintRoleSpectrum-System) → Preis/Wachstum (Footer). Einheitlich über die Breite verteilt.
+        this._specRenderHeader(panel, bp); // Identität: Rolle + Fähigkeit · Qualität
+        this._specRenderBody(panel, bp); // 2 Spalten: Material-Profil (Tags) | Rollen-Resonanz + Werte
+        this._specRenderFooter(panel, bp); // Preis + (eigene) Wachstum
         // Step 1 (UI-Putz §A-1): die MACH-ZONE ist EIN „Werk"-Block — Heading → Signatur
         // (versiegeln) → FERTIGEN (machen). Die Signatur wandert aus der Lese-Tabelle hierher
         // (P3: Versiegeln+Machen sind beide Werk-Akte, gehören zusammen; die Tabelle ist nur
@@ -42016,310 +42015,232 @@ class AnazhRealm {
         return (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[domain]) || domain;
     }
 
-    // Rolle-Chip + Affordances. Emergent-vs-manuell-Indikator mit erweiterten
-    // Tooltips (V8.17), Rollen-Farbe als Glow (V8.39), Reset-Button bei
-    // manueller Rolle. Affordances als ✦-Chips.
-    _workshopAppendRoleRow(panel, bp) {
-        // V17.85 — die ANGEZEIGTE Rolle ist die emergente/deklarierte (computeBlueprintRole), NICHT der
-        // rohe `bp.role || DEFAULT`: ein rollenloser Bauplan (eine Klingen-Form) zeigte „Bauwerk", obwohl
-        // er der Form nach längst „Werkzeug" ist (der Spitzhacke-Befund) — die Form trägt die Rolle, auch
-        // ohne deklariertes Feld. Der manuell/emergent-Indikator (unten) liest weiter `bp.roleManual`.
+    // V18.44 — DAS PROFI-SPEC-SHEET (Header/Body/Footer + ein Balken-Primitiv). Liest das BESTEHENDE
+    // Vektor-System (computeCompoundTags · _blueprintRoleSpectrum · _blueprintAbilityStats) als gestaltete
+    // Daten-Viz — kein neuer Datenpfad, eine synergetische Lesart (Konsum-Disziplin V17.31).
+    _specBar(label, frac, valText, levelClass, title) {
+        const f = Math.max(0, Math.min(1, frac || 0));
+        return this._el(
+            "div",
+            { class: "spec-bar", title: title || null },
+            this._el("span", { class: "spec-bar-label", text: label }),
+            this._el(
+                "span",
+                { class: "spec-bar-track" },
+                this._el("span", {
+                    class: `spec-bar-fill ${levelClass || ""}`,
+                    style: { width: `${Math.round(f * 100)}%` },
+                })
+            ),
+            this._el("span", { class: "spec-bar-val", text: valText })
+        );
+    }
+
+    // Header: die IDENTITÄT — Rolle (prominenter Chip) + die Fähigkeiten (Form-Lesart + Affordanzen),
+    // rechts die Qualität als Stern-Rating. „Was ist es + wie gut".
+    _specRenderHeader(panel, bp) {
         const role = this._displayRole(bp);
-        // V17.86 (Schöpfer-Browser-Befund: die Esse zeigte den rohen „workshop-station") — die Rolle-Chip
-        // liest das VOLLSTÄNDIGE U2-Register `ROLE_LABELS` (12 Rollen inkl. Werkstatt/Fahrzeug/Brecher),
-        // nicht das alte 8-Rollen-`BLUEPRINT_ROLE_LABELS` → kein roher Rollen-String mehr im UI.
         const roleLabel = AnazhRealm.ROLE_LABELS[role] || AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
-        const roleRow = document.createElement("div");
-        roleRow.className = "stat-row";
-        const roleLab = document.createElement("span");
-        roleLab.className = "stat-label";
-        roleLab.textContent = "Rolle";
-        roleRow.appendChild(roleLab);
-        const roleChip = document.createElement("span");
-        roleChip.className = "role-chip";
-        roleChip.textContent = roleLabel;
         const roleColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[role];
+        const roleChip = this._el("span", { class: "role-chip spec-role-chip", text: roleLabel });
         if (roleColor) {
             roleChip.style.borderColor = roleColor;
-            roleChip.style.boxShadow = `0 0 6px ${roleColor}`;
+            roleChip.style.boxShadow = `0 0 8px ${roleColor}`;
         }
-        if (bp.roleManual) {
-            roleChip.classList.add("role-manual");
-            roleChip.title =
-                "Manuell gesetzt. Diese Rolle überschreibt die emergente. " +
-                "Setze sie via Markier-Sektion im Spieler-Drawer (als Rüstung / als Konsumabel).";
-        } else {
-            roleChip.classList.add("role-emergent");
-            roleChip.title =
-                "✨ Emergent aus der ganzen Substanz. " +
-                "1) Form: ein bilateral-symmetrisches Glieder-Compound → Seele. " +
-                "2) Krafting: die opChain-Domain mit den meisten Ops → forging+scharf→Werkzeug, " +
-                "forging+dicht→Rüstung, alchemy→Konsumabel, soulwork→Seele. " +
-                "3) Material: lebendig+weiche Substanz → Nahrung. Sonst: Bauwerk.";
-        }
-        roleRow.appendChild(roleChip);
-        if (bp.roleManual && !bp.builtIn) {
-            const resetBtn = document.createElement("button");
-            resetBtn.type = "button";
-            resetBtn.className = "role-reset-btn";
-            resetBtn.textContent = "↺";
-            resetBtn.title = "Manuelle Rolle aufheben, zurück zur emergenten Bestimmung";
-            resetBtn.addEventListener("click", () => {
-                bp.roleManual = false;
-                this._refreshBlueprintRoleEmergent && this._refreshBlueprintRoleEmergent(bp.name);
-                this._workshopRenderStatsPanel && this._workshopRenderStatsPanel();
-                this.log(`Rolle von „${bp.label || bp.name}" auf emergent zurückgesetzt`, "INFO");
-            });
-            roleRow.appendChild(resetBtn);
-        }
-        panel.appendChild(roleRow);
-        // V17.86 (Schöpfer-Browser-Befund „vergrößernd/bündelnd/strahlend erscheinen als ROLLE — sind das
-        // nicht Fähigkeiten?") — die FÄHIGKEITEN an EINEN Ort: die Form-Lesart (Klinge/Brecher/Schutz/…, S1)
-        // UND die Affordanzen (vergrößernd/strahlend/…, die räumlich-aktiven Eigenschaften) in EINE
-        // „Fähigkeit"-Zeile. Vorher mischten die Affordanz-Chips in die Rolle-Zeile (das verwirrte: eine
-        // Affordanz ist KEINE Rolle). Die Rolle-Zeile zeigt jetzt NUR die EINE Rolle, die Fähigkeit-Zeile
-        // ALLE Lesarten — der ungebundene Faden ist gebunden.
-        const caps = this._blueprintCapabilityHints(bp);
+        // Der emergent-vs-manuell-Indikator (Glow/✋) — die Rolle ist Welt-Antwort (emergent) oder
+        // Schöpfer-Geste (manuell). Wertvolle Info, am Chip erhalten (V8.16/V8.17-Saat).
+        roleChip.classList.add(bp.roleManual ? "role-manual" : "role-emergent");
+        roleChip.title = bp.roleManual
+            ? "Manuell gesetzt — überschreibt die emergente Rolle (zurücksetzen via Markier-Sektion)."
+            : "✨ Emergent aus der ganzen Substanz: Form × Material × Handwerk → die Rolle.";
+        const caps = this._blueprintCapabilityHints(bp) || [];
         const aff = this.computeBlueprintAffordances(bp) || {};
         const affLabels = Object.keys(aff).map((k) => AnazhRealm.AFFORDANCE_LABELS[k] || k);
-        if (caps.length || affLabels.length) {
-            const capRow = document.createElement("div");
-            capRow.className = "stat-row";
-            const capLab = document.createElement("span");
-            capLab.className = "stat-label";
-            capLab.textContent = "Fähigkeit";
-            capRow.appendChild(capLab);
-            const capChips = document.createElement("div");
-            capChips.className = "stat-chips";
-            capRow.appendChild(capChips);
-            for (const c of caps) {
-                const chip = document.createElement("span");
-                chip.className = "affordance-chip capability-chip";
-                chip.textContent = "✦ " + c;
-                capChips.appendChild(chip);
-            }
-            for (const a of affLabels) {
-                const chip = document.createElement("span");
-                chip.className = "affordance-chip affordance-active-chip";
-                chip.textContent = "✦ " + a;
-                capChips.appendChild(chip);
-            }
-            panel.appendChild(capRow);
+        const capChips = [...caps, ...affLabels].map((c) =>
+            this._el("span", { class: "affordance-chip spec-cap-chip", text: "✦ " + c })
+        );
+        const q = this._compoundAvgPrecision(bp);
+        const idZone = this._el("div", { class: "spec-id" }, roleChip, ...capChips);
+        let qualZone = null;
+        if (q > 0) {
+            const q5 = Math.max(0, Math.min(5, Math.round(q * 5)));
+            qualZone = this._el(
+                "div",
+                {
+                    class: "spec-quality",
+                    title: "Qualität = mittlere Part-Präzision · skaliert die Wirkung des Werks (feiner → stärker).",
+                },
+                this._el("span", { class: "spec-q-label", text: "Qualität" }),
+                this._el("span", { class: "spec-q-stars", text: "★".repeat(q5) + "☆".repeat(5 - q5) }),
+                this._el("span", { class: "spec-q-val", text: q.toFixed(2) })
+            );
         }
-        // V17.77 — die WERKSTATT-PRÄZISION sichtbar (die Steigerung lernbar): WIE fein eine Station fertigt,
-        // emergiert aus ihrer Substanz (dichter + härter → feiner). So SIEHT der Spieler „bessere Esse →
-        // höherer Cap" + lernt das Prinzip für alle Systeme (besseres Material → besseres Werk).
+        panel.appendChild(this._el("div", { class: "spec-header" }, idZone, qualZone));
+    }
+
+    // Body: der BAUPLAN-FINGERABDRUCK in zwei Spalten — MATERIAL-PROFIL (die Compound-Tags als Balken,
+    // 0..3 mit Stufen-Farbe) | ROLLEN-RESONANZ (das _blueprintRoleSpectrum als Balken, 0..1) + die
+    // FÄHIGKEITS-WERTE (aus _blueprintAbilityStats, Chip-Streifen).
+    _specRenderBody(panel, bp) {
+        const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS || {};
+        const mild = T.resonance_mild || 0.7;
+        const strong = T.resonance_strong || 1.5;
+        const sig = T.resonance_signature || 2.5;
+        const lvlFor = (v) => (v >= sig ? "lvl-3" : v >= strong ? "lvl-2" : v >= mild ? "lvl-1" : "lvl-0");
+        const tags = this.computeCompoundTags(bp) || {};
+        const tagEntries = AnazhRealm.MATERIAL_TAG_KEYS.map((k) => ({ k, v: tags[k] || 0 }))
+            .filter((e) => e.v > 0.1)
+            .sort((a, b) => b.v - a.v)
+            .slice(0, 6);
+        const tagBars = tagEntries.map((e) =>
+            this._specBar(
+                e.k,
+                e.v / 3,
+                e.v.toFixed(2),
+                lvlFor(e.v),
+                `${e.k}: ${e.v.toFixed(2)} (Material-Resonanz, 0–3)`
+            )
+        );
+        const leftCol = this._el(
+            "div",
+            { class: "spec-col" },
+            this._el("div", { class: "spec-col-head", text: "Material-Profil" }),
+            tagBars.length ? tagBars : this._el("span", { class: "spec-empty", text: "noch keine Substanz" })
+        );
+
+        const spectrum = (this._blueprintRoleSpectrum(bp) || []).slice(0, 4);
+        const resBars = spectrum.map((s, i) =>
+            this._specBar(
+                AnazhRealm.ROLE_LABELS[s.role] || s.role,
+                s.score,
+                s.score.toFixed(2),
+                i === 0 ? "res-top" : "res",
+                `Resonanz als ${AnazhRealm.ROLE_LABELS[s.role] || s.role}: ${s.score.toFixed(2)} (0–1)`
+            )
+        );
+        const rightChildren = [this._el("div", { class: "spec-col-head", text: "Rollen-Resonanz" }), ...resBars];
+        const ab = this._blueprintAbilityStats(bp);
+        if (ab && ab.stats && ab.stats.length) {
+            const statChips = ab.stats.map(([name, v]) =>
+                this._el(
+                    "span",
+                    { class: "spec-stat-chip" },
+                    this._el("span", { class: "spec-stat-name", text: name }),
+                    this._el("span", { class: "spec-stat-val", text: v.toFixed(1) })
+                )
+            );
+            statChips.push(
+                this._el("span", {
+                    class: "spec-stat-chip spec-stat-fit",
+                    text: `Eignung ${ab.fit.toFixed(2)}×`,
+                    title: "Form-Passung zur Rolle: Material × Form × Handwerk → die Werte steigen/sinken mit Form + Material.",
+                })
+            );
+            rightChildren.push(this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Fähigkeits-Werte" }));
+            rightChildren.push(this._el("div", { class: "spec-stat-strip" }, ...statChips));
+        }
+        // Werkstatt-Station: WIE fein sie fertigt (emergiert aus ihrer Substanz) — lernbar (V17.77-Saat).
         if (bp.role === "workshop-station") {
             const prec = this._workshopStationPrecision(bp);
             const dom = this._computeWorkshopDomain(bp);
-            const precRow = document.createElement("div");
-            precRow.className = "stat-row";
-            const precLab = document.createElement("span");
-            precLab.className = "stat-label";
-            precLab.textContent = "Werkstatt-Präzision";
-            precRow.appendChild(precLab);
-            const precVal = document.createElement("span");
-            precVal.className = "workshop-precision-text";
-            precVal.textContent = prec.toFixed(2) + (dom ? ` · ${dom}` : "");
-            precVal.title =
-                "Wie fein diese Werkstatt fertigt — emergiert aus ihrer Substanz (dichteres, härteres " +
-                "Material → feinere Toleranzen). Eine bessere Esse hebt den Präzisions-Cap deiner Werke. " +
-                "Dasselbe Prinzip trägt alle Systeme: besseres Material → besseres Werk.";
-            precRow.appendChild(precVal);
-            panel.appendChild(precRow);
+            rightChildren.push(
+                this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Werkstatt-Präzision" })
+            );
+            rightChildren.push(
+                this._el(
+                    "div",
+                    { class: "spec-stat-strip" },
+                    this._el(
+                        "span",
+                        {
+                            class: "spec-stat-chip",
+                            title: "Wie fein diese Werkstatt fertigt — dichteres, härteres Material → feinere Toleranzen. Eine bessere Werkstatt hebt den Präzisions-Cap deiner Werke.",
+                        },
+                        this._el("span", {
+                            class: "spec-stat-val workshop-precision-text",
+                            text: prec.toFixed(2) + (dom ? ` · ${dom}` : ""),
+                        })
+                    )
+                )
+            );
         }
-        // U3 (resonanz-system.md §5) — der KATALYSATOR-Readout: das Rollen-Spektrum (was es IST, über die
-        // GANZE Resonanz) + die Achse zum perfekten Katalysator (Tooltip) → der Spieler dreht frei + kreativ.
-        const spectrum = this._blueprintRoleSpectrum(bp);
-        if (spectrum.length) {
-            const specRow = document.createElement("div");
-            specRow.className = "stat-row";
-            const specLab = document.createElement("span");
-            specLab.className = "stat-label";
-            specLab.textContent = "Resonanz";
-            specRow.appendChild(specLab);
-            const specVal = document.createElement("span");
-            specVal.className = "role-spectrum-text";
-            specVal.textContent = spectrum
-                .slice(0, 3)
-                .map((s) => `${AnazhRealm.ROLE_LABELS[s.role] || s.role} ${s.score.toFixed(2)}`)
-                .join(" · ");
-            const top = spectrum[0];
-            const hint = this._blueprintCatalystHint(bp, top.role);
-            specVal.title = hint
-                ? `Stärkste Rolle: ${AnazhRealm.ROLE_LABELS[top.role] || top.role}. Mehr ${hint.label} → besserer Katalysator.`
-                : `Stärkste Rolle: ${AnazhRealm.ROLE_LABELS[top.role] || top.role}.`;
-            specRow.appendChild(specVal);
-            panel.appendChild(specRow);
-        }
+        const rightCol = this._el("div", { class: "spec-col" }, ...rightChildren);
+        panel.appendChild(this._el("div", { class: "spec-body" }, leftCol, rightCol));
     }
 
-    // V8.37 — Bau-Kosten sichtbar im Werkstatt-Panel. computeBuildCost ist
-    // die EINE Quelle — dieselbe Volumen-Formel wie harvestArchitecture. Im
-    // pfad-Modus echte Kosten; frieden/schöpfer bauen frei, die Anzeige
-    // bleibt informativ. Gilt für alle Baupläne (auch built-in).
-    _workshopAppendBuildCostRow(panel, bp) {
-        const buildCost = this.computeBuildCost(bp.name);
-        const costMats = Object.keys(buildCost);
-        if (costMats.length === 0) return;
-        const costRow = document.createElement("div");
-        costRow.className = "stat-row";
-        const costLab = document.createElement("span");
-        costLab.className = "stat-label";
-        costLab.textContent = "Bau-Kosten";
-        costRow.appendChild(costLab);
-        const costText = document.createElement("span");
-        costText.className = "workshop-cost-text";
-        costText.textContent = costMats.map((m) => `${buildCost[m]}× ${m}`).join(" · ");
-        costText.title = "Materialien, die der Bau verbraucht (im pfad-Modus; frieden/schöpfer bauen frei).";
-        costRow.appendChild(costText);
-        panel.appendChild(costRow);
+    // Footer: der PREIS (Bau-Kosten) + für eigene Baupläne der WACHSTUMS-Hinweis (actionable, italic).
+    _specRenderFooter(panel, bp) {
+        const children = [];
+        const cost = this.computeBuildCost(bp.name);
+        const costMats = Object.keys(cost);
+        if (costMats.length) {
+            children.push(
+                this._el(
+                    "div",
+                    {
+                        class: "spec-cost",
+                        title: "Material, das der Bau verbraucht (pfad/frieden; schöpfer baut frei).",
+                    },
+                    this._el("span", { class: "spec-cost-label", text: "Bau-Kosten" }),
+                    this._el("span", {
+                        class: "spec-cost-val",
+                        text: costMats.map((m) => `${cost[m]}× ${m}`).join("  ·  "),
+                    })
+                )
+            );
+        }
+        if (!bp.builtIn) {
+            const g = this._blueprintGrowthHint(bp);
+            if (g && g.text) {
+                children.push(
+                    this._el(
+                        "div",
+                        { class: `spec-growth${g.manual ? " manual-override" : ""}` },
+                        this._el("span", { class: "spec-growth-label", text: "Wachstum" }),
+                        this._el("span", { class: "spec-growth-text", text: g.text })
+                    )
+                );
+            }
+        }
+        if (children.length) panel.appendChild(this._el("div", { class: "spec-footer" }, ...children));
     }
 
-    // Welle 6.X.4 V8.16 Punkt 18 — Wachstumskonzept sichtbar: wie entsteht
-    // die Rolle? wie wächst sie? welche Synergie wirkt? Drei Schichten:
-    //  (a) Domain-Verteilung als Bar-Diagramm — wer dominiert, wer könnte
-    //      mit weiterer Anwendung übernehmen.
-    //  (b) Synergie-Pfeil — Form × Material × Domain → Compound-Tags → Rolle.
-    //  (c) Wachstumshinweis — leere Chain / aktive Chain / bp.roleManual.
-    _workshopAppendDomainAnalysis(panel, bp) {
+    // Der Wachstums-Hinweis (aus dem alten DomainAnalysis extrahiert): WIE die Rolle emergiert + wohin
+    // sie sich verschieben liesse — das actionable Wissen. Liest die Werkzeug-Domain-Verteilung.
+    _blueprintGrowthHint(bp) {
         const domCounts = this.computeBlueprintDomainCounts(bp);
         const totalOps = Object.values(domCounts).reduce((a, b) => a + b, 0);
         const dominantDomain = this.computeBlueprintDomain(bp);
         const emergentRole = this.computeBlueprintRole(bp);
         const emergentLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[emergentRole] || emergentRole;
-
-        // (a) Domain-Verteilung
-        if (totalOps > 0) {
-            const domRow = document.createElement("div");
-            domRow.className = "stat-row workshop-domain-row";
-            const domLab = document.createElement("span");
-            domLab.className = "stat-label";
-            domLab.textContent = "Domains";
-            domRow.appendChild(domLab);
-            const domWrap = document.createElement("div");
-            domWrap.className = "workshop-domain-bars";
-            for (const dom of AnazhRealm.TOOL_DOMAINS) {
-                const c = domCounts[dom] || 0;
-                if (c === 0) continue;
-                const ratio = c / totalOps;
-                const bar = document.createElement("div");
-                bar.className = "workshop-domain-bar";
-                if (dom === dominantDomain) bar.classList.add("dominant");
-                bar.style.width = `${Math.max(8, Math.round(ratio * 100))}%`;
-                bar.textContent = `${dom} ×${c}`;
-                bar.title = `${dom}: ${c} Ops · ${Math.round(ratio * 100)}%`;
-                domWrap.appendChild(bar);
-            }
-            domRow.appendChild(domWrap);
-            panel.appendChild(domRow);
-        }
-
-        // (b) Synergie-Pfeil (kompakt)
-        const synRow = document.createElement("div");
-        synRow.className = "stat-row workshop-synergy-row";
-        const synLab = document.createElement("span");
-        synLab.className = "stat-label";
-        synLab.textContent = "Synergie";
-        synRow.appendChild(synLab);
-        const synText = document.createElement("span");
-        synText.className = "workshop-synergy-text";
-        synText.textContent = "Körper-Symmetrie · Werkzeug-Domain · lebendige Substanz → Rolle";
-        synRow.appendChild(synText);
-        panel.appendChild(synRow);
-
-        // (c) Wachstumshinweis
-        const hintRow = document.createElement("div");
-        hintRow.className = "stat-row workshop-growth-row";
-        const hintLab = document.createElement("span");
-        hintLab.className = "stat-label";
-        hintLab.textContent = "Wachstum";
-        hintRow.appendChild(hintLab);
-        const hintText = document.createElement("span");
-        hintText.className = "workshop-growth-text";
         if (totalOps === 0) {
-            // Welle 11 ext. — ohne Werkzeug-Ops kann die Rolle aus der
-            // intrinsischen Substanz emergieren (Körper-Form → Seele,
-            // lebendig+weich → Nahrung).
-            if (emergentRole !== AnazhRealm.DEFAULT_BLUEPRINT_ROLE) {
-                hintText.textContent = `Noch keine Werkzeug-Anwendung — die Rolle „${emergentLabel}" emergiert direkt aus der Substanz (Form/Material).`;
-            } else {
-                hintText.textContent =
-                    "Noch keine Werkzeug-Anwendung. Default: Bauwerk. Wende ein Werkzeug an, forme einen symmetrischen Körper, oder nutze lebendige Substanz — die Rolle emergiert.";
-            }
-        } else if (bp.roleManual) {
-            hintText.textContent = `Manuell gesetzt. Emergent wäre „${emergentLabel}" aus Domain „${dominantDomain || "—"}".`;
-            hintText.classList.add("manual-override");
-        } else {
-            const nextDom = AnazhRealm.TOOL_DOMAINS.filter(
-                (d) => d !== dominantDomain && (domCounts[d] || 0) >= (domCounts[dominantDomain] || 0) - 1
-            )[0];
-            if (nextDom) {
-                hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit). Eine weitere „${nextDom}"-Anwendung könnte das verschieben.`;
-            } else {
-                hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit, stabil). Weitere Anwendungen vertiefen.`;
-            }
+            if (emergentRole !== AnazhRealm.DEFAULT_BLUEPRINT_ROLE)
+                return {
+                    text: `Rolle „${emergentLabel}" emergiert direkt aus der Substanz (Form/Material).`,
+                    manual: false,
+                };
+            return {
+                text: "Default: Bauwerk. Wende ein Werkzeug an, forme einen symmetrischen Körper, oder nutze lebendige Substanz — die Rolle emergiert.",
+                manual: false,
+            };
         }
-        hintRow.appendChild(hintText);
-        panel.appendChild(hintRow);
-    }
-
-    // V8.07 — Top-5 Compound-Tags mit STERN-RATING. Schöpfer-Wunsch:
-    // schnelle Erkennung „wie stark ist das?" über visuelle Sterne statt
-    // raw Zahlen. Schwellen aus WORLD_EFFECT_THRESHOLDS damit die Sterne
-    // mit den existing Welt-Effekt-Gates konsistent sind.
-    _workshopAppendTagsRow(panel, bp) {
-        const tags = this.computeCompoundTags(bp) || {};
-        const tagEntries = AnazhRealm.MATERIAL_TAG_KEYS.map((k) => ({ k, v: tags[k] || 0 }))
-            .filter((e) => e.v > 0.1)
-            .sort((a, b) => b.v - a.v)
-            .slice(0, 5);
-        if (tagEntries.length === 0) return;
-        const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS || {};
-        const mild = T.resonance_mild || 0.7;
-        const strong = T.resonance_strong || 1.5;
-        const signature = T.resonance_signature || 2.5;
-        const starsFor = (v) => {
-            if (v >= signature) return "★★★";
-            if (v >= strong) return "★★☆";
-            if (v >= mild) return "★☆☆";
-            return "☆☆☆";
+        if (bp.roleManual)
+            return {
+                text: `Manuell gesetzt. Emergent wäre „${emergentLabel}" aus Domain „${dominantDomain || "—"}".`,
+                manual: true,
+            };
+        const nextDom = AnazhRealm.TOOL_DOMAINS.filter(
+            (d) => d !== dominantDomain && (domCounts[d] || 0) >= (domCounts[dominantDomain] || 0) - 1
+        )[0];
+        if (nextDom)
+            return {
+                text: `Rolle aus „${dominantDomain}" (Mehrheit). Eine weitere „${nextDom}"-Anwendung könnte das verschieben.`,
+                manual: false,
+            };
+        return {
+            text: `Rolle aus „${dominantDomain}" (Mehrheit, stabil). Weitere Anwendungen vertiefen.`,
+            manual: false,
         };
-        const tagRow = document.createElement("div");
-        tagRow.className = "stat-row workshop-tags-row"; // P13 — die Chip-Reihe spannt beide Grid-Spalten
-        const tagLab = document.createElement("span");
-        tagLab.className = "stat-label";
-        tagLab.textContent = "Tags";
-        tagRow.appendChild(tagLab);
-        // V18.38 — die Chips in EINEN Flex-Container (Schöpfer „resoniert falscher Einzug"):
-        // sonst bricht der 5. Chip auf x=0 unter das Label statt in Flucht mit den anderen.
-        const tagChips = document.createElement("div");
-        tagChips.className = "stat-chips";
-        tagRow.appendChild(tagChips);
-        for (const e of tagEntries) {
-            const chip = document.createElement("span");
-            chip.className = "tag-chip";
-            const stars = starsFor(e.v);
-            let levelClass = "lvl-0";
-            if (e.v >= signature) levelClass = "lvl-3";
-            else if (e.v >= strong) levelClass = "lvl-2";
-            else if (e.v >= mild) levelClass = "lvl-1";
-            chip.classList.add(levelClass);
-            const starEl = document.createElement("span");
-            starEl.className = "tag-stars";
-            starEl.textContent = stars;
-            const nameEl = document.createElement("span");
-            nameEl.className = "tag-name";
-            nameEl.textContent = e.k;
-            const valEl = document.createElement("span");
-            valEl.className = "tag-val";
-            valEl.textContent = e.v.toFixed(2);
-            chip.appendChild(starEl);
-            chip.appendChild(nameEl);
-            chip.appendChild(valEl);
-            tagChips.appendChild(chip);
-        }
-        panel.appendChild(tagRow);
     }
 
     // V8.39 — „Präzision" → „Qualität": dieselbe Zahl, aber der Name sagt,
@@ -42389,55 +42310,6 @@ class AnazhRealm {
             return null; // architecture/station/portal/vehicle/consumable → keine Ausrüstungs-Werte
         }
         return { role, servedRole, fit, mul, size, stats };
-    }
-
-    _workshopAppendAbilitiesRow(panel, bp) {
-        const ab = this._blueprintAbilityStats(bp);
-        if (!ab || !ab.stats) return;
-        const row = document.createElement("div");
-        row.className = "stat-row workshop-abilities-row";
-        const lab = document.createElement("span");
-        lab.className = "stat-label";
-        lab.textContent = "Werte";
-        row.appendChild(lab);
-        for (const [name, v] of ab.stats) {
-            const chip = document.createElement("span");
-            chip.className = "tag-chip ability-chip";
-            chip.textContent = `${name} ${v.toFixed(1)}`;
-            row.appendChild(chip);
-        }
-        // Die EIGNUNG (Form-Passung zur Rolle) sichtbar — sie steigt/sinkt mit der FORM (eine spitze Klinge
-        // passt besser als ein Klotz). So versteht der Spieler, warum die Werte sich ändern.
-        const fitChip = document.createElement("span");
-        fitChip.className = "tag-chip ability-fit-chip";
-        fitChip.textContent = `Eignung ${ab.fit.toFixed(2)}×`;
-        fitChip.title =
-            "Die Werte emergieren aus Material × Form × Handwerk: das Material liefert die Substanz (Tags), " +
-            "die FORM die Rolle-Passung (Eignung 0.8–1.2×), das Handwerk die Präzision (Qualität). " +
-            "Ändere Form oder Material → die Werte steigen oder sinken.";
-        row.appendChild(fitChip);
-        panel.appendChild(row);
-    }
-
-    _workshopAppendQualityRow(panel, bp) {
-        const avgPrec = this._compoundAvgPrecision(bp);
-        if (avgPrec <= 0) return;
-        const precRow = document.createElement("div");
-        precRow.className = "stat-row";
-        const precLab = document.createElement("span");
-        precLab.className = "stat-label";
-        precLab.textContent = "Qualität";
-        precRow.appendChild(precLab);
-        const precChip = document.createElement("span");
-        precChip.className = "tag-chip";
-        const q5 = Math.max(0, Math.min(5, Math.round(avgPrec * 5)));
-        precChip.textContent = `${"★".repeat(q5)}${"☆".repeat(5 - q5)} ${avgPrec.toFixed(2)}`;
-        precChip.title =
-            "Qualität = mittlere Part-Präzision. Sie skaliert die Wirkung des Produkts: " +
-            "Rüstung/Trank wirken mit (0.5 + 0.5·Qualität) — grob ≈ halb, fein ≈ voll. " +
-            "Feineres Werkzeug → höhere Qualität.";
-        precRow.appendChild(precChip);
-        panel.appendChild(precRow);
     }
 
     // W13 Phase 2 — Bauplan-Signatur. Der Schöpfer versiegelt sein Werk mit
@@ -48172,7 +48044,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.43.0";
+AnazhRealm.VERSION = "18.44.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
