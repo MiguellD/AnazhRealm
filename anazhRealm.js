@@ -40270,6 +40270,32 @@ class AnazhRealm {
                 drink: "trinkt am Ufer",
             };
             const taskEl = this._el("span", { class: `creature-task ${taskName}`, text: TASK_LABELS[taskName] || "—" });
+            // V18.46 Hof-A (UI-Putz §2, P16 eine Ebene) — die Befehle leben INLINE am Wesen („wähle Wesen →
+            // befiehl"), nicht in einem globalen Knopf-Block (das war die Trennung Wesen↔Befehl + ein Duplikat
+            // der Omnibox `k:`). Die drei arg-freien Kern-Tasks; Sammeln/Bauen (arg-basiert) bleiben ihre Zonen.
+            const TASK_BTNS = [
+                ["Folge", "follow_player"],
+                ["Warte", "wait"],
+                ["Streift", "wander"],
+            ];
+            const actionsEl = this._el(
+                "span",
+                { class: "creature-actions-inline" },
+                TASK_BTNS.map(([label, task]) =>
+                    this._el("button", {
+                        type: "button",
+                        class: "creature-action-btn" + (taskName === task ? " active" : ""),
+                        text: label,
+                        "data-task": task,
+                        title: `${ud.name || "Wesen"}: ${label}`,
+                        onClick: (e) => {
+                            e.stopPropagation();
+                            if (typeof this.assignCreatureTask === "function") this.assignCreatureTask(c, task);
+                            this._renderCreatureListUI();
+                        },
+                    })
+                )
+            );
             const row = this._el(
                 "div",
                 { class: "creature-row" },
@@ -40278,7 +40304,8 @@ class AnazhRealm {
                 specsWrap,
                 equippedWrap,
                 boostsWrap,
-                taskEl
+                taskEl,
+                actionsEl
             );
             if (rowTitle) row.title = rowTitle;
             list.appendChild(row);
@@ -48296,7 +48323,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.45.0";
+AnazhRealm.VERSION = "18.46.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

@@ -2441,12 +2441,17 @@
                 padding: 4px 6px;
             }
             .creature-list .creature-row {
-                display: grid;
-                grid-template-columns: 1.4fr 1fr 1.1fr;
-                gap: 6px;
-                padding: 3px 4px;
-                border-bottom: 1px dotted var(--parch-line, #b09d7c);
+                /* V18.46 Hof-A — die Zeile ist eine Wesen-Spec-Card: Name · Seele · Pills · Task fliessen,
+                   die inline-Befehle (margin-left:auto) sitzen rechts (P16 eine Ebene: wähle Wesen → befiehl). */
+                display: flex;
+                flex-wrap: wrap;
                 align-items: center;
+                gap: 4px 8px;
+                padding: 4px;
+                border-bottom: 1px dotted var(--parch-line, #b09d7c);
+            }
+            .creature-list .creature-name {
+                font-weight: 600;
             }
             /* Welle 6.H Phase 2E V1.1 — Soul-spezifische Namensfarben.
                Sprite (Magie · Quarz) → cyan; Wesen (Solid · Stein+Holz) → erdig brass;
@@ -2552,6 +2557,33 @@
             .creature-list .creature-task {
                 font-style: italic;
                 color: var(--parch-ink-soft);
+            }
+            /* V18.46 Hof-A — die inline-Befehle am Wesen (rechts in der Zeile). */
+            .creature-list .creature-actions-inline {
+                display: inline-flex;
+                gap: 3px;
+                margin-left: auto;
+                flex: 0 0 auto;
+            }
+            .creature-list .creature-action-btn {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.3px;
+                padding: 2px 7px;
+                background: rgba(120, 80, 30, 0.12);
+                border: 1px solid var(--brass-2);
+                border-radius: 3px;
+                color: var(--parch-ink);
+                cursor: pointer;
+                transition: background 0.12s ease;
+            }
+            .creature-list .creature-action-btn:hover {
+                background: rgba(198, 154, 74, 0.3);
+            }
+            .creature-list .creature-action-btn.active {
+                background: rgba(198, 154, 74, 0.45);
+                border-color: var(--brass-1);
+                font-weight: 600;
             }
             .creature-list .creature-task.follow_player {
                 color: #4faa5c;
@@ -5657,25 +5689,9 @@
         <aside class="drawer" data-drawer="kreaturen" aria-label="Kreaturen-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
             <h2>Der Hof</h2>
-            <!-- Welle 6.H Phase 2A — Aufträge als direkte Buttons. data-cmd
-                 routet durch processChatCommand → parseChatToDsl → DSL — selber
-                 Pfad wie wenn der Spieler tippt. So bleibt eine Sprache. -->
-            <section class="section">
-                <h3>Aufträge an Kreaturen</h3>
-                <p class="drawer-hint">
-                    Gesten an die nächste Kreatur in Reichweite. Aura über der Kreatur zeigt aktiven Auftrag.
-                </p>
-                <div class="actions" id="creature-task-actions">
-                    <button type="button" data-cmd="folge mir">Folge mir</button>
-                    <button type="button" data-cmd="komm her">Komm her</button>
-                    <button type="button" data-cmd="warte">Warte</button>
-                    <button type="button" data-cmd="erkunde">Erkunde</button>
-                </div>
-                <div class="actions">
-                    <button type="button" data-cmd="alle folgt mir">Alle folgen</button>
-                    <button type="button" data-cmd="alle warten">Alle warten</button>
-                </div>
-            </section>
+            <!-- V18.46 Hof-A (UI-Putz §2) — die globale „Aufträge an Kreaturen"-Knopfreihe ist AUFGELÖST:
+                 die Befehle leben jetzt INLINE am Wesen (Zone „Wesen", _renderCreatureListUI, P16 eine Ebene)
+                 + in der Omnibox (`k:`, Ctrl+K). Das war die Trennung Wesen↔Befehl + ein Duplikat. -->
             <!-- Welle 6.H Phase 2B.1 — Sammeln-Sektion. Kreatur findet die
                  nächste Architektur mit dem gewählten Material, baut sie ab
                  und legt sie ins Spieler-Inventar (6.C1). Dropdown trägt
@@ -6879,6 +6895,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.45.0" defer></script>
+        <script src="anazhRealm.js?v=18.46.0" defer></script>
     </body>
 </html>

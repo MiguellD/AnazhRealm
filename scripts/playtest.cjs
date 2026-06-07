@@ -25135,21 +25135,20 @@ async function checkBandWelle6HCreatures(ctx) {
         out.spawnWesenWorks = wesen && wesen.userData.soul === "wesen";
         out.spawnGeistWorks = geist && geist.userData.soul === "geist";
         out.hasCreatureDrawerEl = !!document.querySelector('[data-drawer="kreaturen"]');
-        out.hasTaskActions = !!document.getElementById("creature-task-actions");
         const select = document.getElementById("creature-soul-select");
         out.hasSoulSelect = !!select && select.options.length === 4;
         out.hasCreatureList = !!document.getElementById("creature-list");
-        out.hasFolgeMir = !!document.querySelector('[data-cmd="folge mir"]');
-        out.hasKommHer = !!document.querySelector('[data-cmd="komm her"]');
-        out.hasWarte = !!document.querySelector('[data-cmd="warte"]');
-        out.hasErkunde = !!document.querySelector('[data-cmd="erkunde"]');
-        out.hasAlleFolgen = !!document.querySelector('[data-cmd="alle folgt mir"]');
-        out.hasAlleWarten = !!document.querySelector('[data-cmd="alle warten"]');
         out.spawn1Button = !!document.querySelector('[data-creature-spawn="1"]');
         out.spawn5Button = !!document.querySelector('[data-creature-spawn="5"]');
         r._renderCreatureListUI();
         const list = document.getElementById("creature-list");
         out.listRendersRows = list && list.querySelectorAll(".creature-row").length === r.state.creatures.length;
+        // V18.46 Hof-A — die Befehle leben INLINE am Wesen (.creature-action-btn[data-task]); die globale
+        // „Aufträge"-Knopfreihe ist aufgelöst (Omnibox `k:` + inline tragen sie, kein Duplikat mehr).
+        out.hasTaskActions = !!(list && list.querySelector(".creature-actions-inline"));
+        out.hasFolgeInline = !!(list && list.querySelector('[data-task="follow_player"]'));
+        out.hasWarteInline = !!(list && list.querySelector('[data-task="wait"]'));
+        out.hasStreiftInline = !!(list && list.querySelector('[data-task="wander"]'));
         const firstRow = list && list.querySelector(".creature-row");
         out.rowHasNameSoulTask =
             firstRow &&
@@ -25210,17 +25209,15 @@ async function checkBandWelle6HCreatures(ctx) {
             wave6hP2aResults.spawnSpriteWorks && wave6hP2aResults.spawnWesenWorks && wave6hP2aResults.spawnGeistWorks
         );
         check("Welle 6.H P2A: Kreaturen-Drawer im DOM", wave6hP2aResults.hasCreatureDrawerEl);
-        check("Welle 6.H P2A: Aufträge-Section im DOM", wave6hP2aResults.hasTaskActions);
+        check(
+            "V18.46 Hof-A: inline-Befehle am Wesen (.creature-actions-inline, P16 eine Ebene)",
+            wave6hP2aResults.hasTaskActions
+        );
         check("Welle 6.H P2A: Form-Dropdown mit 4 Optionen", wave6hP2aResults.hasSoulSelect);
         check("Welle 6.H P2A: Kreatur-Liste-Container im DOM", wave6hP2aResults.hasCreatureList);
         check(
-            "Welle 6.H P2A: alle 6 Aufträge-Buttons als data-cmd",
-            wave6hP2aResults.hasFolgeMir &&
-                wave6hP2aResults.hasKommHer &&
-                wave6hP2aResults.hasWarte &&
-                wave6hP2aResults.hasErkunde &&
-                wave6hP2aResults.hasAlleFolgen &&
-                wave6hP2aResults.hasAlleWarten
+            "V18.46 Hof-A: die 3 inline-Tasks am Wesen (Folge/Warte/Streift via data-task)",
+            wave6hP2aResults.hasFolgeInline && wave6hP2aResults.hasWarteInline && wave6hP2aResults.hasStreiftInline
         );
         check("Welle 6.H P2A: Spawn-Buttons +1/+5", wave6hP2aResults.spawn1Button && wave6hP2aResults.spawn5Button);
         check("Welle 6.H P2A: Liste rendert eine Zeile pro Kreatur", wave6hP2aResults.listRendersRows);
