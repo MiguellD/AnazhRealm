@@ -34856,17 +34856,19 @@ async function checkBandCadWorkshop(ctx) {
             // Hotbar + Stats-HUD).
             const consoleEl = document.getElementById("console");
             out.consoleHasHandle = !!(consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-br"));
-            // Jeder Drawer: bl-handle existiert
+            // V18.42 — die V18-Drawer folgen der CSS-Rahmen-Sprache (left:12;right:12;width:auto),
+            // ein maximiertes symmetrisches Fenster → KEIN Resize-Griff mehr (das Legacy-Resize
+            // fightete den Rahmen, Schöpfer „alle Achsen verfehlt"). Die Konsole behält ihren.
             const drawers = document.querySelectorAll(".drawer[data-drawer]");
-            let allDrawersHaveHandle = drawers.length > 0;
+            let noDrawerHasHandle = drawers.length > 0;
             let drawerCount = 0;
             drawers.forEach((d) => {
                 drawerCount++;
-                if (!d.querySelector(":scope > .resize-handle.resize-bl")) {
-                    allDrawersHaveHandle = false;
+                if (d.querySelector(":scope > .resize-handle")) {
+                    noDrawerHasHandle = false;
                 }
             });
-            out.allDrawersHaveHandle = allDrawersHaveHandle;
+            out.noDrawerHasHandle = noDrawerHasHandle;
             out.drawerCount = drawerCount;
             // Idempotenz: zweiter installResizeHandles-Call erzeugt keine Duplikate
             r.installResizeHandles();
@@ -34911,8 +34913,8 @@ async function checkBandCadWorkshop(ctx) {
             resizeResults.consoleHasHandle
         );
         check(
-            `V8.00 Resize: Alle ${resizeResults.drawerCount} Drawer haben .resize-bl Handle (unten-links)`,
-            resizeResults.allDrawersHaveHandle
+            `V18.42 Rahmen: die ${resizeResults.drawerCount} V18-Drawer tragen KEINEN Resize-Griff (CSS-Rahmen, symmetrisch)`,
+            resizeResults.noDrawerHasHandle
         );
         check(
             "V8.00 Resize: installResizeHandles ist idempotent (kein Duplikat)",
@@ -34948,14 +34950,14 @@ async function checkBandCadWorkshop(ctx) {
             });
             out.allDrawersWrapped = allWrapped;
             out.drawerCount = drawers.length;
-            // Resize-Handle ist outside des scroll-Wrappers (sonst würde
-            // er weg-scrollen wie bei v8.00).
+            // V18.42 — die V18-Drawer tragen keinen Resize-Griff mehr (CSS-Rahmen, symmetrisch); der
+            // verbliebene Griff lebt an der Konsole + ist ein direktes Kind (kein Scroll-Wrapper davor
+            // → er scrollt nicht weg). Plus: kein Drawer hat einen Griff im Scroll-Wrapper.
             const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
-            if (werkstatt) {
-                const handleOutside = !!werkstatt.querySelector(":scope > .resize-handle");
-                const handleInsideWrap = !!werkstatt.querySelector(":scope > .drawer-scroll > .resize-handle");
-                out.handleOutsideScroll = handleOutside && !handleInsideWrap;
-            }
+            const consoleEl = document.getElementById("console");
+            const consoleHandleDirect = !!(consoleEl && consoleEl.querySelector(":scope > .resize-handle"));
+            const handleInsideWrap = !!(werkstatt && werkstatt.querySelector(":scope > .drawer-scroll .resize-handle"));
+            out.handleOutsideScroll = consoleHandleDirect && !handleInsideWrap;
             // h2 ist ebenfalls direktes child (bleibt oben fest)
             const w2 = document.querySelector('[data-drawer="werkstatt"] > h2');
             out.h2DirectChildOfDrawer = !!w2;
@@ -35015,7 +35017,7 @@ async function checkBandCadWorkshop(ctx) {
             v801Results.h2DirectChildOfDrawer
         );
         check(
-            "V8.01: Resize-Handle ist außerhalb des Scroll-Wrappers — bleibt fest in der Ecke",
+            "V18.42: Konsole-Resize-Griff fest (direktes Kind, kein Scroll-Wrapper); kein Drawer-Griff im Scroll",
             v801Results.handleOutsideScroll
         );
         check("V8.01: .drawer hat overflow:hidden (CSS-Wechsel von overflow-y:auto)", v801Results.drawerOverflowHidden);
@@ -37458,16 +37460,20 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             if (firstStarEl) starsContent = firstStarEl.textContent;
             out.starsAreGlyphs = /[★☆]/.test(starsContent) && starsContent.length === 3;
 
-            // Default-Size-Override: setze Flag zurück + ruf default —
-            // sollte jetzt eine grosse Größe anwenden
-            localStorage.removeItem("anazh.workshop.defaultApplied");
+            // V18.42 — _workshopApplyDefaultSizeOnce RÄUMT jetzt die Legacy-Inline-Größe + die
+            // gespeicherte Resize-Größe (Migration), statt eine fixe Vollbild-Inline-Größe zu setzen
+            // (die den V18-CSS-Rahmen left:12;right:12 überschrieb → „alle Achsen verfehlt"). Der
+            // Rahmen kommt rein aus CSS → die stale Größe muss weg sein.
             localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: 300, height: 300 }));
+            const werkstattEl807 = document.querySelector('[data-drawer="werkstatt"]');
+            if (werkstattEl807) werkstattEl807.style.width = "300px";
             r._workshopApplyDefaultSizeOnce();
-            const saved = JSON.parse(localStorage.getItem("anazh.resize.werkstatt") || "{}");
-            out.defaultOverridesStale = saved.width > 600;
-            // Idempotenz: zweiter Call überschreibt nicht
+            out.defaultOverridesStale =
+                localStorage.getItem("anazh.resize.werkstatt") === null &&
+                (!werkstattEl807 || !werkstattEl807.style.width);
+            // Idempotenz: zweiter Call wirft nicht + lässt keine Inline-Größe zurück
             r._workshopApplyDefaultSizeOnce();
-            out.idempotentAfterApply = localStorage.getItem("anazh.workshop.defaultApplied") === "1";
+            out.idempotentAfterApply = !werkstattEl807 || !werkstattEl807.style.width;
 
             // Cleanup
             if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
@@ -37494,10 +37500,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         );
         check("V8.07 Stats: Stern-Glyphen sind ★/☆ (3 Zeichen)", v807Results.starsAreGlyphs);
         check(
-            "V8.07: _workshopApplyDefaultSizeOnce überschreibt stale localStorage (alte 300px → groß)",
+            "V18.42: _workshopApplyDefaultSizeOnce räumt die stale Resize-Größe + Inline (CSS-Rahmen trägt jetzt)",
             v807Results.defaultOverridesStale
         );
-        check("V8.07: idempotent — zweiter Apply respektiert das Flag", v807Results.idempotentAfterApply);
+        check("V18.42: idempotent — zweiter Apply lässt keine Inline-Größe zurück", v807Results.idempotentAfterApply);
     } else if (v807Results && v807Results.error) {
         check(`V8.07: evaluate-Fehler — ${v807Results.error}`, false);
     }

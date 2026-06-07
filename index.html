@@ -4175,36 +4175,25 @@
                Heading, darunter die Signatur (Versiegeln) + FERTIGEN (machen) als die zwei Werk-Akte
                (P3: eine Zone, eine Aufgabe — der Werk-Akt lebt zusammen, nicht in der Lese-Tabelle). */
             #workshop-action-zone {
-                /* Step 1 Fix (Schöpfer-Befund: „FERTIGEN sehe ich nach dem Klonen nicht") — die
-                   rechte Palette scrollt (max-height + overflow), und mit vielen Werkzeugen (schöpfer
-                   = alle 7 Werkstätten) rutschte die WERK-Zone unter die Falz → die PRIMÄRE Aktion
-                   versteckt (P1/P7). Jetzt ist der Werk-Block am Boden GEPINNT (sticky), immer
-                   sichtbar + erreichbar, egal wie lang die Werkzeug-Liste ist (Blender/Figma: die
-                   primäre Aktion pinnt). Opaker Pergament-Grund + Lift-Schatten → die scrollenden
-                   Werkzeuge verschwinden sauber darunter. */
-                position: sticky;
-                bottom: 0;
-                z-index: 3;
-                margin-top: 8px;
-                padding: 8px 4px 4px;
-                border-top: 1px solid var(--brass-2);
-                border-radius: 0 0 4px 4px;
-                background: linear-gradient(180deg, var(--parch-1), var(--parch-2));
-                box-shadow: 0 -7px 12px -6px rgba(20, 8, 0, 0.55);
+                /* V18.42 — die WERK-Sektion liegt auf DERSELBEN Ebene + im selben Fluss wie MATERIALIEN
+                   und WERKZEUGE (drei gleichwertige Sektionen, das WERK-Heading im h4-Stil trägt die
+                   Trennung — keine zweite Schicht, kein Footer, kein eigener Grund). Stapelt
+                   Heading · Signatur · FERTIGEN. */
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
             }
-            /* Das „Werk"-Heading — ein echtes Heading (Cinzel), nicht ein winziger stat-label. */
+            /* Das „WERK"-Heading — EXAKT der h4-Stil von MATERIALIEN/WERKZEUGE (synergetisch:
+               die WERK-Zone ist eine Sektion wie die anderen, kein Fremdkörper). */
             .workshop-werk-heading {
+                margin: 4px 0 2px 0;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
-                font-weight: 700;
-                letter-spacing: 1px;
+                font-size: 10px;
+                letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--brass-1);
-                border-bottom: 1px solid var(--brass-3);
-                padding-bottom: 3px;
+                border-bottom: 1px solid var(--parch-edge);
+                padding-bottom: 2px;
             }
             #workshop-action-zone .workshop-fertigen-row {
                 display: flex;
@@ -4298,44 +4287,48 @@
                 color: var(--ink-on-dark-soft);
                 line-height: 1.4;
             }
-            /* W13 Phase 2 — Bauplan-Signatur-Status im Stats-Panel. */
-            #workshop-stats-panel .workshop-sig-status {
+            /* W13 Phase 2 — Bauplan-Signatur. V18.42 UNGESKOPT (die Signatur lebt jetzt in der
+               Mach-Zone #workshop-action-zone, nicht mehr im #workshop-stats-panel; ein
+               container-geskopter Block griff nicht mehr → der „Signieren"-Knopf war ungestylt,
+               die Status-Farben fehlten = „WERK schwach". Die Klasse ist eindeutig, V18.40-Lehre). */
+            .workshop-sig-status {
                 font-family: "JetBrains Mono", "Courier New", monospace;
                 font-size: 9.5px;
                 line-height: 1.4;
                 flex: 1;
             }
-            #workshop-stats-panel .workshop-sig-status.sig-valid {
-                color: #3f8a4f;
+            .workshop-sig-status.sig-valid {
+                color: #2f7a3f;
             }
-            #workshop-stats-panel .workshop-sig-status.sig-modified {
-                color: #b07a1f;
+            .workshop-sig-status.sig-modified {
+                color: #9a6a18;
             }
-            #workshop-stats-panel .workshop-sig-status.sig-forged {
+            .workshop-sig-status.sig-forged {
                 color: #a04040;
             }
-            /* Die Signatur lebt jetzt in der Mach-Zone (helles Pergament) → dunkler Text; die alte
+            /* Die Signatur sitzt in der Mach-Zone auf HELLEM Pergament → dunkler Text; die alte
                opacity:0.7 war zu blass (P11), 0.85 ist gedämpft-aber-lesbar. */
-            #workshop-action-zone .workshop-sig-status.sig-unsigned {
+            .workshop-sig-status.sig-unsigned {
                 color: var(--parch-ink-soft);
                 opacity: 0.85;
             }
-            #workshop-stats-panel .workshop-sig-btn {
-                margin-left: 4px;
-                padding: 1px 8px;
-                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+            .workshop-sig-btn {
+                padding: 2px 10px;
+                background: linear-gradient(180deg, rgba(255, 240, 205, 0.7), rgba(190, 150, 90, 0.45));
                 border: 1px solid var(--brass-2, #8a6322);
-                border-radius: 2px;
+                border-radius: 3px;
                 color: var(--parch-ink, #2b1a08);
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 9.5px;
-                letter-spacing: 0.03em;
+                font-weight: 600;
+                letter-spacing: 0.04em;
                 cursor: pointer;
+                transition: filter 0.15s ease;
             }
-            #workshop-stats-panel .workshop-sig-btn:hover {
-                background: linear-gradient(180deg, rgba(255, 248, 215, 0.75), rgba(210, 170, 110, 0.55));
+            .workshop-sig-btn:hover {
+                filter: brightness(1.08);
             }
-            #workshop-stats-panel .workshop-sig-btn:disabled {
+            .workshop-sig-btn:disabled {
                 opacity: 0.45;
                 cursor: not-allowed;
             }
@@ -4474,7 +4467,11 @@
                 display: flex;
                 flex-direction: row;
                 gap: 8px;
-                align-items: stretch;
+                /* V18.42 — flex-start statt stretch: die rechte Palette fliesst jetzt frei (kein
+                   Höhen-Cap); mit stretch würde das aspect-ratio-Canvas auf die Palette-Höhe
+                   gestretcht + bei max-height eine Lücke reissen. Top-aligned = jede Spalte ihre
+                   natürliche Höhe, kein Gap. */
+                align-items: flex-start;
             }
             /* V8.17 — linke Spalte 30% breiter (88→115px), rechte Spalte
                50% breiter (132→200px) damit Materialien als 3×4 statt 2×6
@@ -4509,11 +4506,11 @@
                 flex-direction: column;
                 gap: 6px;
                 min-width: 0;
-                /* V18.38 — auf die Viewer-Höhe gedeckelt + intern scrollend: beim Klonen
-                   erscheinen die Werkzeuge → die Spalte wuchs + schob die Ausgabe runter (Lücke).
-                   Jetzt bleibt die Zeilenhöhe = Viewer, die Palette scrollt → kein Sprung. */
-                max-height: clamp(340px, calc(100vh - 430px), 640px);
-                overflow-y: auto;
+                /* V18.42 — KEIN max-height/Scroll mehr: die Spalte FLIESST (MATERIALIEN · WERKZEUGE ·
+                   WERK auf EINER Ebene, drei gleichwertige Sektionen). Der V18.38-Cap+Scroll hielt sie
+                   zwar auf Viewer-Höhe, trennte aber WERK auf eine zweite Ebene (Schöpfer „keine
+                   Synergie"). Wird die Spalte sehr lang (viele Werkstätten), trägt der Drawer-Scroll
+                   alles GEMEINSAM — eine Ebene, kein abgetrennter Footer. */
             }
             #workshop-side-palette h4,
             #workshop-side-palette-right h4 {
@@ -5226,7 +5223,9 @@
         </div>
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
-                <div class="title">Anazh Realm <span class="sub">— Das Ultiversum</span></div>
+                <div class="title">
+                    Anazh Realm <span class="sub">— Das Ultiversum</span><span class="version"></span>
+                </div>
                 <!-- UI-Putz: kein "Welt"-Tab mehr — die Welt IST die 3D-Szene (der Default-
                      Blick, kein Seiten-Panel nötig). Welt-Info + Aktionen leben in den
                      Einstellungen bei der Welt-Beziehung. Default: kein Tab aktiv = die Welt. -->
@@ -5599,6 +5598,11 @@
                         <div id="workshop-readonly-banner" hidden>Eingebaut — zum Bearbeiten klonen</div>
                     </div>
                     <aside id="workshop-side-palette-right" aria-label="Material-/Werkzeug-/Farb-Palette">
+                        <!-- V18.42 — MATERIALIEN · WERKZEUGE · WERK sind DREI gleichwertige Sektionen in
+                             EINEM Fluss, auf EINER Ebene (Schöpfer „WERK muss auf derselben Ebene sein,
+                             keine zwei Schichten"). Kein innerer Scroll, der WERK abtrennt — die ganze
+                             Spalte fliesst; bei sehr vielen Werkzeugen trägt der Drawer-Scroll alles
+                             gemeinsam (eine Ebene). -->
                         <h4>Materialien</h4>
                         <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
                         <h4>
@@ -5615,9 +5619,8 @@
                             >
                         </h4>
                         <div id="workshop-tool-palette" role="group" aria-label="Werkzeug-Palette"></div>
-                        <!-- V18.40 — die MACH-Zone (Schöpfer „Ausgabe = nur Readout"): FERTIGEN
-                             (+ rollen-Verb) lebt hier bei Material/Werkzeug = „womit ich mache",
-                             nicht in der Ausgabe-Tabelle. _workshopAppendFertigenRow füllt sie. -->
+                        <!-- Die WERK-Sektion (Mach-Akt): dritte Sektion, gleiche Ebene wie Material/Werkzeug —
+                             „womit ich mache". _workshopAppendFertigenRow + Werk-Heading + Signatur füllen sie. -->
                         <div id="workshop-action-zone" aria-label="Mach-Aktion"></div>
                     </aside>
                 </div>
@@ -6507,6 +6510,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.41.0" defer></script>
+        <script src="anazhRealm.js?v=18.42.0" defer></script>
     </body>
 </html>

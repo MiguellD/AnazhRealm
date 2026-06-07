@@ -75,7 +75,8 @@ function startSaveServer() {
                     /* egal */
                 }
             }
-            if (r.setGameMode) r.setGameMode("schöpfer");
+            // NICHT schöpfer erzwingen — der NORMAL-Modus (wenige Werkzeuge) ist die echte
+            // Spielersicht; so prüfe ich, ob MATERIALIEN·WERKZEUGE·WERK auf EINER Ebene passen.
             // Einen Bauplan mit Parts finden + klonen (Klon = builtIn:false → volle Mach-Zone).
             const src = Object.values(r.state.blueprints).find(
                 (b) => b && Array.isArray(b.parts) && b.parts.length > 0
@@ -100,7 +101,44 @@ function startSaveServer() {
             };
         });
         console.log("Klon-Befund:", JSON.stringify(info, null, 2));
-        await new Promise((r) => setTimeout(r, 800));
+        // WICHTIG: erst die Slide-Transition abwarten (V18.39-Mess-Falle: ohne Wartezeit misst
+        // man den Drawer mid-slide off-screen), DANN die Frame-Rects messen.
+        await new Promise((r) => setTimeout(r, 700));
+        // Frame-Messung (Schöpfer „alle Achsen verfehlt"): wo sitzt der Drawer WIRKLICH?
+        const frame = await page.evaluate(() => {
+            const dr = document.querySelector('.drawer[data-drawer="werkstatt"]');
+            const tb = document.getElementById("topbar");
+            const rh = dr && dr.querySelector(".resize-handle");
+            const ver = document.querySelector(".version");
+            const r = (el) => {
+                if (!el) return null;
+                const b = el.getBoundingClientRect();
+                return {
+                    left: Math.round(b.left),
+                    top: Math.round(b.top),
+                    right: Math.round(b.right),
+                    bottom: Math.round(b.bottom),
+                    w: Math.round(b.width),
+                    h: Math.round(b.height),
+                };
+            };
+            return {
+                vw: window.innerWidth,
+                vh: window.innerHeight,
+                drawer: r(dr),
+                drawerInlineStyle: dr ? dr.getAttribute("style") : null,
+                topbar: r(tb),
+                topbarCoveredByDrawer:
+                    dr && tb ? dr.getBoundingClientRect().top < tb.getBoundingClientRect().bottom : null,
+                resizeHandle: r(rh),
+                versionExists: !!ver,
+                versionText: ver ? ver.textContent : null,
+            };
+        });
+        console.log("Frame:", JSON.stringify(frame, null, 2));
+        // Der Rahmen wie der Spieler ihn sieht (volles Viewport über der Welt).
+        await page.screenshot({ path: path.join(ARTIFACTS, "wsui-frame.png"), fullPage: false });
+        console.log("geschrieben: wsui-frame.png (Rahmen im Viewport)");
 
         // (A) die Ausgabe-Tabelle (P11/P13) — eigener Bauplan, Synergie/Wachstum sichtbar.
         const sp = await page.$("#workshop-stats-panel");

@@ -10320,12 +10320,18 @@ class AnazhRealm {
         // mit bottom 150px über der HUD, unten-rechts ist sichtbar + intuitiv.
         if (consoleEl) this._installResizeHandle(consoleEl, "br");
         const drawers = document.querySelectorAll(".drawer[data-drawer]");
-        // V8.01 — Inhalt jedes Drawers in einen .drawer-scroll-Wrapper packen,
-        // BEVOR Handle angehängt wird. Damit scrollt der Inhalt allein und
-        // Background + Border + Handle + h2 bleiben fest am Container.
+        // V18.42 — die V18-Drawer folgen der EINEN Fenster-Sprache (CSS-bounded symmetrisch:
+        // left:12;right:12;width:auto;max-height) — ein maximiertes, eingemittetes Fenster. Das
+        // Legacy-Resize (V8.00, fixe Inline-Größe + bl-Griff) fightet diesen Rahmen (Schöpfer:
+        // „links angeheftet, Regler unten links, rechte Seite bis zum Rand, alle Achsen verfehlt").
+        // Darum KEIN Resize-Griff mehr an den Drawern — nur den Inhalt scroll-wrappen + stale
+        // Inline-Größen aus alten Sessions räumen, damit der CSS-Rahmen rein greift. (Die Konsole,
+        // ein frei schwebendes Panel, behält ihren Griff.)
         drawers.forEach((d) => {
             this._wrapDrawerScroll(d);
-            this._installResizeHandle(d, "bl");
+            d.style.width = "";
+            d.style.height = "";
+            d.style.maxHeight = "";
         });
     }
 
@@ -40853,30 +40859,25 @@ class AnazhRealm {
         }
     }
 
-    // V8.06/8.07 — beim ersten Werkstatt-Open eine produktive Default-Größe
-    // setzen wenn der Spieler noch nichts manuell resized hat. Idempotent:
-    // wenn `anazh.workshop.defaultApplied` gesetzt ist, passiert nichts.
-    // V8.07: alte localStorage-Größe (z. B. 300px aus V8.05-Zeit) wird
-    // ÜBERSCHRIEBEN wenn defaultApplied-Flag fehlt — sonst hängt Bestands-User
-    // auf altem Briefkasten-Maß.
+    // V18.42 — die Werkstatt folgt jetzt der EINEN CSS-Rahmen-Sprache (left:12;right:12;
+    // width:auto;max-height:calc(100vh−134px)) wie alle V18-Drawer: maximiert, eingemittet,
+    // responsiv. Die alte V8.06-„nahezu vollbild"-INLINE-Größe (vw−40, fixe px) überschrieb
+    // diesen Rahmen → links-angeheftet + asymmetrisch (Schöpfer „alle Achsen verfehlt"). Diese
+    // Methode RÄUMT jetzt die Legacy-Inline-Größe + die gespeicherte Resize-Größe (Migration für
+    // Bestands-User), statt sie zu setzen — der Rahmen kommt rein aus CSS.
     _workshopApplyDefaultSizeOnce() {
-        if (typeof document === "undefined" || typeof localStorage === "undefined") return;
+        if (typeof document === "undefined") return;
         try {
-            const flag = localStorage.getItem("anazh.workshop.defaultApplied");
-            if (flag === "1") return; // nur einmal anwenden
             const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
-            if (!werkstatt) return;
-            // Default: nahezu vollbild (Schöpfer-Wunsch aus V8.06-Browser-Test)
-            // Begrenzt nur durch viewport — clamp 640..vw-40 (40px Rand).
-            const vw = window.innerWidth || 1400;
-            const vh = window.innerHeight || 900;
-            const w = Math.max(640, vw - 40);
-            const h = Math.max(500, vh - 140);
-            werkstatt.style.width = `${w}px`;
-            werkstatt.style.height = `${h}px`;
-            werkstatt.style.maxHeight = "none";
-            localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: w, height: h }));
-            localStorage.setItem("anazh.workshop.defaultApplied", "1");
+            if (werkstatt) {
+                werkstatt.style.width = "";
+                werkstatt.style.height = "";
+                werkstatt.style.maxHeight = "";
+            }
+            if (typeof localStorage !== "undefined") {
+                localStorage.removeItem("anazh.resize.werkstatt");
+                localStorage.removeItem("anazh.workshop.defaultApplied");
+            }
         } catch {
             /* ignore */
         }
@@ -48166,7 +48167,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.41.0";
+AnazhRealm.VERSION = "18.42.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
