@@ -99,15 +99,19 @@ function startSaveServer() {
                 });
             r._statusRefs.abilitiesSignature = "";
             r.renderAbilitiesList();
+            // V18.54 — die Bühne explizit bauen (Drawer-Hook) + das 2. Wesen darauf.
+            if (typeof r._hofHandleDrawerChange === "function") r._hofHandleDrawerChange("kreaturen");
             const list = document.getElementById("creature-list");
             const row = list && list.querySelector(".creature-row");
+            const spec = document.getElementById("hof-stage-spec");
             return {
                 creatures: r.state.creatures.length,
                 rows: list ? list.querySelectorAll(".creature-row").length : 0,
                 inlineBtns: row ? row.querySelectorAll(".creature-action-btn").length : 0,
                 moodGlyphs: list ? list.querySelectorAll(".creature-mood").length : 0,
-                detailCards: list ? list.querySelectorAll(".creature-detail").length : 0,
-                detailBars: list ? list.querySelectorAll(".creature-detail .spec-bar").length : 0,
+                stageSpecCards: spec ? spec.querySelectorAll(".creature-detail").length : -1,
+                stageSpecBars: spec ? spec.querySelectorAll(".creature-detail .spec-bar").length : -1,
+                stageCanvas: !!document.getElementById("hof-stage-canvas"),
                 sectionChips: document.querySelectorAll("#hof-sections .hof-section-chip").length,
                 hasOrchester: !!document.querySelector(".hof-orchester"),
                 hasPartitur: !!document.querySelector(".hof-partitur"),
@@ -115,7 +119,8 @@ function startSaveServer() {
             };
         });
         console.log("Hof:", JSON.stringify(info));
-        await new Promise((r) => setTimeout(r, 400));
+        // Auf die WebGPU-Bühne warten (init ist async) + ein paar Frames rendern lassen.
+        await new Promise((r) => setTimeout(r, 900));
         const focusState = await page.evaluate(() => {
             const r = window.anazhRealm;
             // Re-Fokus auf ein LEBENDES Wesen (die Welt churnt Fauna — das Fokus-Wesen kann despawnen).
@@ -124,14 +129,18 @@ function startSaveServer() {
                 r.state.hofFocusId = prof.id;
                 r._renderCreatureListUI();
             }
-            const list = document.getElementById("creature-list");
+            if (typeof r._hofHandleDrawerChange === "function") r._hofHandleDrawerChange("kreaturen");
+            const st = r.state.hofStage;
+            const spec = document.getElementById("hof-stage-spec");
             return {
                 hofFocusId: r.state.hofFocusId || null,
-                detailCards: list ? list.querySelectorAll(".creature-detail").length : -1,
-                detailBars: list ? list.querySelectorAll(".creature-detail .spec-bar").length : -1,
+                stageReady: !!(st && st.rendererReady),
+                stageHasPivot: !!(st && st.pivot),
+                stageSpecCards: spec ? spec.querySelectorAll(".creature-detail").length : -1,
             };
         });
         console.log("vor Screenshot:", JSON.stringify(focusState));
+        await new Promise((r) => setTimeout(r, 600));
         const drawer = await page.$('.drawer[data-drawer="kreaturen"]');
         if (drawer) {
             await drawer.screenshot({ path: path.join(ARTIFACTS, "hof-creatures.png") });

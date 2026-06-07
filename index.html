@@ -2545,54 +2545,54 @@
                 flex: 0 0 auto;
             }
             /* Hof-D — die Stimmung als Glyph (froh/trübe × Temperament). Resonanz auf das Feld + die Bindung. */
-            .creature-list .creature-mood {
+            .creature-mood {
                 font-size: 10px;
                 padding: 1px 6px;
                 border-radius: 8px;
                 border: 1px solid var(--brass-2, #6f5a30);
                 white-space: nowrap;
             }
-            .creature-list .creature-mood.mood-happy {
+            .creature-mood.mood-happy {
                 color: #6fae5f;
                 background: rgba(111, 174, 95, 0.1);
             }
-            .creature-list .creature-mood.mood-sad {
+            .creature-mood.mood-sad {
                 color: #c98a6e;
                 background: rgba(201, 138, 110, 0.1);
             }
             /* Hof-D — die aufgeklappte Spec-Card: NATUR · WERTE · WACHSTUM als Daten-Viz (P15, _specBar-Reuse). */
-            .creature-list .creature-detail {
+            .creature-detail {
                 display: grid;
                 grid-template-columns: 1fr 1fr 1fr;
                 gap: 6px 14px;
                 padding: 6px 8px 9px 18px;
                 background: var(--parch-2, #efe3c4);
             }
-            .creature-list .creature-detail-col {
+            .creature-detail-col {
                 display: flex;
                 flex-direction: column;
                 gap: 3px;
                 min-width: 0;
             }
-            .creature-list .creature-detail-head {
+            .creature-detail-head {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 9px;
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--brass-1, #8a6f3e);
             }
-            .creature-list .creature-detail-empty {
+            .creature-detail-empty {
                 font-size: 10px;
                 font-style: italic;
                 color: var(--parch-ink-soft);
             }
-            .creature-list .creature-detail-strip {
+            .creature-detail-strip {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 3px 5px;
                 margin-top: 2px;
             }
-            .creature-list .creature-detail-chip {
+            .creature-detail-chip {
                 font-family: "JetBrains Mono", monospace;
                 font-size: 9px;
                 padding: 1px 5px;
@@ -2603,13 +2603,13 @@
             }
             /* P15 geteilter Hebel — die _specBar-Optik (wie die Werkstatt), hier auf hellem Pergament:
                die Label/Werte tragen dunklen Pergament-Ton (nicht --ink-on-dark, der gehört auf DUNKLEN Grund). */
-            .creature-list .creature-detail .spec-bar {
+            .creature-detail .spec-bar {
                 display: grid;
                 grid-template-columns: 78px 1fr 40px;
                 align-items: center;
                 gap: 6px;
             }
-            .creature-list .creature-detail .spec-bar-label {
+            .creature-detail .spec-bar-label {
                 font-family: "JetBrains Mono", monospace;
                 font-size: 9px;
                 color: var(--parch-ink);
@@ -2618,44 +2618,44 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
-            .creature-list .creature-detail .spec-bar-track {
+            .creature-detail .spec-bar-track {
                 height: 9px;
                 background: rgba(38, 28, 12, 0.34);
                 border: 1px solid rgba(110, 88, 48, 0.55);
                 border-radius: 5px;
                 overflow: hidden;
             }
-            .creature-list .creature-detail .spec-bar-fill {
+            .creature-detail .spec-bar-fill {
                 display: block;
                 height: 100%;
                 border-radius: 5px 0 0 5px;
                 background: var(--brass-1);
             }
-            .creature-list .creature-detail .spec-bar-fill.lvl-0 {
+            .creature-detail .spec-bar-fill.lvl-0 {
                 background: #8a7a52;
             }
-            .creature-list .creature-detail .spec-bar-fill.lvl-1 {
+            .creature-detail .spec-bar-fill.lvl-1 {
                 background: #c79a5a;
             }
-            .creature-list .creature-detail .spec-bar-fill.lvl-2 {
+            .creature-detail .spec-bar-fill.lvl-2 {
                 background: linear-gradient(90deg, #b48c28, #e6c24d);
             }
-            .creature-list .creature-detail .spec-bar-fill.lvl-3 {
+            .creature-detail .spec-bar-fill.lvl-3 {
                 background: linear-gradient(90deg, #7a3cb4, #c66bff);
             }
-            .creature-list .creature-detail .spec-bar-val {
+            .creature-detail .spec-bar-val {
                 font-family: "JetBrains Mono", monospace;
                 font-size: 8.5px;
                 color: var(--parch-ink-soft);
                 text-align: right;
             }
-            .creature-list .creature-detail-foot {
+            .creature-detail-foot {
                 grid-column: 1 / -1;
                 display: flex;
                 justify-content: flex-end;
                 margin-top: 2px;
             }
-            .creature-list .creature-detail-dismiss {
+            .creature-detail-dismiss {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 9px;
                 letter-spacing: 0.3px;
@@ -2666,8 +2666,78 @@
                 color: #9a4a3a;
                 cursor: pointer;
             }
-            .creature-list .creature-detail-dismiss:hover {
+            .creature-detail-dismiss:hover {
                 background: rgba(180, 70, 55, 0.25);
+            }
+            /* V18.54 Hof-Bühne — der STAR: dunkle 3D-Bühne (Viewer-Pendant) + die Spec-Card daneben. */
+            .hof-stage {
+                display: grid;
+                grid-template-columns: 300px 1fr;
+                gap: 16px;
+                align-items: center;
+                margin: 2px 0 14px 0;
+                padding: 12px;
+                background: radial-gradient(ellipse at 30% 20%, rgba(60, 40, 70, 0.18), rgba(40, 28, 16, 0.1));
+                border: 1px solid var(--brass-2, #6f5a30);
+                border-radius: 12px;
+            }
+            .hof-stage-canvas {
+                width: 300px;
+                height: 300px;
+                display: block;
+                background: #171019;
+                border: 1px solid var(--brass-1, #8a6f3e);
+                border-radius: 10px;
+                box-shadow: inset 0 0 48px rgba(0, 0, 0, 0.55);
+            }
+            .hof-stage-spec {
+                min-width: 0;
+                align-self: center;
+            }
+            .hof-stage-title {
+                display: flex;
+                align-items: baseline;
+                flex-wrap: wrap;
+                gap: 4px 10px;
+                margin-bottom: 10px;
+            }
+            .hof-stage-name {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--parch-ink, #2a2018);
+            }
+            .hof-stage-name.soul-sprite {
+                color: #2f8f8f;
+            }
+            .hof-stage-name.soul-wesen {
+                color: #a8702f;
+            }
+            .hof-stage-name.soul-geist {
+                color: #4f8a4a;
+            }
+            .hof-stage-soul {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 11px;
+                color: var(--brass-1, #8a6f3e);
+            }
+            .hof-stage-empty {
+                grid-column: 1 / -1;
+                padding: 26px 12px;
+                text-align: center;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 13px;
+                color: var(--parch-ink-soft);
+            }
+            @media (max-width: 1100px) {
+                .hof-stage {
+                    grid-template-columns: 1fr;
+                    justify-items: center;
+                }
+                .hof-stage-spec {
+                    width: 100%;
+                }
             }
             .creature-list .creature-name {
                 font-weight: 600;
@@ -6064,9 +6134,19 @@
             <section class="section hof-orchester">
                 <h3>Das Orchester</h3>
                 <p class="drawer-hint">
-                    Deine Wesen — klick eines an für seine volle Natur, Werte + Wachstum; befiehl ihm inline. Wähle eine
-                    Sektion, um zur ganzen Gruppe zu sprechen.
+                    Wähle ein Wesen aus der Liste — es tritt auf die Bühne, seine volle Natur/Werte/Wachstum lesen
+                    darunter. Befiehl ihm inline; wähle eine Sektion, um zur ganzen Gruppe zu sprechen.
                 </p>
+                <!-- V18.54 Hof-Bühne — der STAR (das Werkstatt-Viewer-Pendant): das fokussierte Wesen groß +
+                     rotierend in 3D, darunter seine Spec-Card (Werkstatt-DNA: dunkle Bühne + Spec-Sheet). -->
+                <div class="hof-stage">
+                    <canvas
+                        id="hof-stage-canvas"
+                        class="hof-stage-canvas"
+                        aria-label="Bühne — das fokussierte Wesen"
+                    ></canvas>
+                    <div id="hof-stage-spec" class="hof-stage-spec"></div>
+                </div>
                 <!-- V18.51 Hof-F — die Sektions-Leiste (Gruppen-Dirigat): wähle [Alle]/[Geister]/[Sammler]/…
                      → die Liste filtert + die Befehle gelten der GANZEN Sektion (assignTaskToAllCreatures gefiltert). -->
                 <div id="hof-sections" class="hof-sections" aria-label="Sektionen"></div>
@@ -7202,6 +7282,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.53.0" defer></script>
+        <script src="anazhRealm.js?v=18.54.0" defer></script>
     </body>
 </html>

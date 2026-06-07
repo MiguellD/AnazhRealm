@@ -10124,6 +10124,9 @@ class AnazhRealm {
         if (typeof this._workshopHandleDrawerChange === "function") {
             this._workshopHandleDrawerChange(name);
         }
+        if (typeof this._hofHandleDrawerChange === "function") {
+            this._hofHandleDrawerChange(name);
+        }
     }
 
     // closeAllDrawers schließt alle (für Help-Klick + ESC).
@@ -10188,6 +10191,9 @@ class AnazhRealm {
                 if (name) this.state.uiActiveDrawer = name;
                 if (typeof this._workshopHandleDrawerChange === "function") {
                     this._workshopHandleDrawerChange(name);
+                }
+                if (typeof this._hofHandleDrawerChange === "function") {
+                    this._hofHandleDrawerChange(name);
                 }
             });
         }
@@ -10547,6 +10553,9 @@ class AnazhRealm {
         // alloziert für schnelles Re-Open, aber RAF-Loop stoppt).
         if (typeof this._workshopHandleDrawerChange === "function") {
             this._workshopHandleDrawerChange(null);
+        }
+        if (typeof this._hofHandleDrawerChange === "function") {
+            this._hofHandleDrawerChange(null);
         }
     }
 
@@ -40311,11 +40320,197 @@ class AnazhRealm {
     }
 
     // Hof-D (hof-plan.md §D.1/§G.5) — der Fokus-Toggle: ein Klick auf die Zeile FOKUSSIERT das Wesen
-    // (wie der Bauplan-Fokus in der Werkstatt) → die volle Spec-Card klappt auf. Die Selektion hängt an
-    // der STABILEN Identität (`prof.id` = netId/name, §G.6), NIE am splice-fragilen Array-Index.
+    // (wie der Bauplan-Fokus in der Werkstatt) → es tritt auf die BÜHNE + seine Spec-Card liest darunter.
+    // Die Selektion hängt an der STABILEN Identität (`prof.id` = netId/name, §G.6), NIE am Array-Index.
     _toggleHofFocus(id) {
         this.state.hofFocusId = this.state.hofFocusId === id ? null : id;
         this._renderCreatureListUI();
+    }
+
+    // V18.54 Hof-Bühne (das Werkstatt-Viewer-Pendant) — eine eigene kleine 3D-Szene, die das fokussierte
+    // Wesen groß + langsam rotierend zeigt (der STAR des Hofes, dunkle Bühne wie der Werkstatt-Viewer).
+    // Lazy WebGPURenderer (dasselbe Muster wie `_workshopEnsurePreview`, aber schlank: kein Gizmo/Orbit/Grid).
+    _hofEnsureStage() {
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        if (this.state.hofStage) return this.state.hofStage;
+        const canvas = document.getElementById("hof-stage-canvas");
+        if (!canvas) return null;
+        const size = 360;
+        canvas.width = size;
+        canvas.height = size;
+        let renderer;
+        try {
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+        } catch (err) {
+            this.log(`Hof-Bühne: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
+            return null;
+        }
+        renderer.stencil = false; // wie die Haupt-Welt (V10.0-j.b) — kein Pure-Depth-stencilLoadOp-Crash
+        renderer.setSize(size, size, false);
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setClearColor(0x171019, 1); // dunkle, violett-getönte Bühne (der Nexus/Seelen-Ton)
+        const scene = new THREE.Scene();
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const key = new THREE.DirectionalLight(0xffe8c2, 0.95);
+        key.position.set(4, 6, 5);
+        scene.add(key);
+        const fill = new THREE.DirectionalLight(0x88aaff, 0.4);
+        fill.position.set(-4, -1, -3);
+        scene.add(fill);
+        const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+        camera.position.set(0, 0.12, 4.2);
+        camera.lookAt(0, 0, 0);
+        const stage = {
+            canvas,
+            renderer,
+            scene,
+            camera,
+            pivot: null,
+            soul: null,
+            yaw: 0.5,
+            rafId: null,
+            active: false,
+            rendererReady: false,
+        };
+        this.state.hofStage = stage;
+        try {
+            renderer
+                .init()
+                .then(() => {
+                    stage.rendererReady = true;
+                    if (stage.active) this._hofStartRAF();
+                })
+                .catch((err) => this.log(`Hof-Bühne init: ${err && err.message}`, "ERROR"));
+        } catch (err) {
+            this.log(`Hof-Bühne init-Start: ${err && err.message}`, "ERROR");
+        }
+        return stage;
+    }
+
+    // Das Wesen auf die Bühne stellen (gebaut aus der Seele, zentriert + auf Bühnen-Höhe skaliert).
+    // Cache per Seele — die meisten Wesen teilen sprite/wesen/geist → die Bühne baut selten neu.
+    _hofStageShow(soulName) {
+        // Die 3D-Bühne wird NUR beim Hof-Öffnen gebaut (_hofHandleDrawerChange) — hier nur aktualisieren,
+        // wenn sie existiert (so kostet das List-Rendern außerhalb des Hofes keinen GPU-Renderer).
+        const stage = this.state.hofStage;
+        if (!stage) return;
+        if (stage.pivot && stage.soul === soulName) return; // schon auf der Bühne
+        if (stage.pivot) {
+            stage.scene.remove(stage.pivot);
+            stage.pivot.traverse((obj) => {
+                if (obj.isMesh || obj.isLine) {
+                    if (obj.geometry) this._queueDispose(obj.geometry);
+                    if (obj.material) {
+                        if (Array.isArray(obj.material)) obj.material.forEach((m) => this._queueDispose(m));
+                        else this._queueDispose(obj.material);
+                    }
+                }
+            });
+            stage.pivot = null;
+        }
+        stage.soul = soulName || null;
+        if (!soulName) return;
+        const group = this._buildCreatureGroup(soulName);
+        if (!group) return;
+        const box = new THREE.Box3().setFromObject(group);
+        const center = box.getCenter(new THREE.Vector3());
+        const dim = box.getSize(new THREE.Vector3());
+        group.position.sub(center); // an den Ursprung zentrieren
+        const maxDim = Math.max(dim.x, dim.y, dim.z) || 1;
+        group.scale.setScalar(3.0 / maxDim); // auf eine konstante Bühnen-Größe
+        const pivot = new THREE.Group();
+        pivot.add(group);
+        stage.scene.add(pivot);
+        stage.pivot = pivot;
+        stage.dirty = true;
+    }
+
+    _hofStartRAF() {
+        const stage = this.state.hofStage;
+        if (!stage || stage.rafId !== null || !stage.rendererReady) return;
+        const tick = () => {
+            const s = this.state.hofStage;
+            if (!s || !s.active) {
+                if (s) s.rafId = null;
+                return;
+            }
+            if (s.pivot) {
+                s.yaw += 0.008; // sanfte Rotation — bezaubernd, nicht hektisch
+                s.pivot.rotation.y = s.yaw;
+            }
+            if (s.rendererReady) {
+                const rr = s.renderer.render(s.scene, s.camera);
+                if (rr && typeof rr.catch === "function")
+                    rr.catch((e) => this.log(`Hof-Bühne-Render: ${e && e.message}`, "INFO"));
+            }
+            s.rafId = requestAnimationFrame(tick);
+        };
+        stage.rafId = requestAnimationFrame(tick);
+    }
+
+    _hofStopRAF() {
+        const stage = this.state.hofStage;
+        if (stage && stage.rafId !== null) {
+            cancelAnimationFrame(stage.rafId);
+            stage.rafId = null;
+        }
+    }
+
+    // Tab-Wechsel-Hook (Zwilling zu `_workshopHandleDrawerChange`): die Bühne lebt nur, wenn der Hof offen ist.
+    _hofHandleDrawerChange(name) {
+        const stage = this.state.hofStage;
+        if (name === "kreaturen") {
+            const s = this._hofEnsureStage();
+            if (!s) return;
+            s.active = true;
+            this._hofRefreshFocus();
+            this._hofStartRAF();
+        } else if (stage) {
+            stage.active = false;
+            this._hofStopRAF();
+        }
+    }
+
+    // Das fokussierte (oder erste) Wesen ermitteln → auf die Bühne + seine Spec-Card unter die Bühne.
+    _hofRefreshFocus() {
+        const creatures = this.state.creatures || [];
+        let creature = null;
+        if (this.state.hofFocusId)
+            creature = creatures.find((c) => this._creatureProfile(c).id === this.state.hofFocusId) || null;
+        if (!creature) creature = creatures[0] || null;
+        this._hofStageShow(creature ? this._creatureProfile(creature).soul : null);
+        this._hofRenderFocusPanel(creature);
+    }
+
+    // Die Spec-Card des fokussierten Wesens UNTER der Bühne (Werkstatt-DNA: Bühne + Spec-Sheet darunter).
+    _hofRenderFocusPanel(creature) {
+        if (typeof document === "undefined") return;
+        const host = document.getElementById("hof-stage-spec");
+        if (!host) return;
+        host.innerHTML = "";
+        if (!creature) {
+            host.appendChild(
+                this._el("div", {
+                    class: "hof-stage-empty",
+                    text: "Wähle ein Wesen aus dem Orchester — es tritt hier auf die Bühne.",
+                })
+            );
+            return;
+        }
+        const prof = this._creatureProfile(creature);
+        host.appendChild(
+            this._el(
+                "div",
+                { class: "hof-stage-title" },
+                this._el("span", { class: "hof-stage-name soul-" + prof.soul, text: prof.name }),
+                this._el("span", { class: "hof-stage-soul", text: prof.soulLabel }),
+                this._el("span", {
+                    class: "creature-mood " + (prof.emotion === "sad" ? "mood-sad" : "mood-happy"),
+                    text: (prof.emotion === "sad" ? "☹ " : "☺ ") + prof.moodLabel,
+                })
+            )
+        );
+        host.appendChild(this._buildCreatureDetailCard(prof));
     }
 
     _natureLevelClass(val) {
@@ -40522,6 +40717,7 @@ class AnazhRealm {
                     text: "Dein Hof ist still. ✦ Rufe dein erstes Wesen — wähle eine Form unten und drücke +1.",
                 })
             );
+            this._hofRefreshFocus(); // leere Bühne + einladender Platzhalter
             return;
         }
         // Hof-F — die Sektion filtert, welche Wesen die Liste zeigt (das Dirigat zur Gruppe).
@@ -40536,6 +40732,7 @@ class AnazhRealm {
                     text: `Keine „${labels[active] || active}" mehr im Hof. Wähle „Alle" oben.`,
                 })
             );
+            this._hofRefreshFocus();
             return;
         }
         for (const c of creatures) {
@@ -40721,20 +40918,20 @@ class AnazhRealm {
                 ),
                 orderSelect
             );
-            // Hof-D (§G.5 Skala + §G.6 stabile Identität) — die kompakte Zeile (`.creature-row-main`) ist DEFAULT;
-            // ein Klick FOKUSSIERT das Wesen → die volle Spec-Card (`.creature-detail`) klappt darunter auf. So
-            // bleibt die Liste bei N Wesen lesbar + die Render-Last klein (die teure Spec-Card nur fürs Fokus-Wesen).
+            // Hof-D (§G.5/§G.6) — die Zeile ist der schlanke PICKER (Werkstatt-DNA: die Liste wählt, die BÜHNE
+            // zeigt). Ein Klick FOKUSSIERT das Wesen → es tritt auf die Bühne + die Spec-Card liest DARUNTER
+            // (`_hofRefreshFocus`), nicht mehr inline in der Zeile. Die `.focused`-Markierung zeigt die Wahl.
             const focused = !!this.state.hofFocusId && prof.id === this.state.hofFocusId;
             const rowMain = this._el(
                 "div",
                 {
                     class: "creature-row-main" + (focused ? " focused" : ""),
-                    title: "Klick: Wesen fokussieren — die volle Spec-Card auf/zu",
+                    title: "Klick: Wesen auf die Bühne holen",
                     on: {
                         click: () => this._toggleHofFocus(prof.id),
                     },
                 },
-                this._el("span", { class: "creature-focus-caret", text: focused ? "▾" : "▸" }),
+                this._el("span", { class: "creature-focus-caret", text: focused ? "◆" : "▸" }),
                 nameEl,
                 soulEl,
                 moodEl,
@@ -40745,14 +40942,11 @@ class AnazhRealm {
                 actionsEl
             );
             if (rowTitle) rowMain.title = rowTitle;
-            const row = this._el(
-                "div",
-                { class: "creature-row" + (focused ? " focused" : "") },
-                rowMain,
-                focused ? this._buildCreatureDetailCard(prof) : null
-            );
+            const row = this._el("div", { class: "creature-row" + (focused ? " focused" : "") }, rowMain);
             list.appendChild(row);
         }
+        // Die Bühne + die Spec-Card unter ihr spiegeln das fokussierte (oder erste) Wesen.
+        this._hofRefreshFocus();
     }
 
     inventoryInitDOM() {
@@ -48790,7 +48984,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.53.0";
+AnazhRealm.VERSION = "18.54.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

@@ -25279,23 +25279,30 @@ async function checkBandWelle6HCreatures(ctx) {
         const firstMain = firstRow && firstRow.querySelector(".creature-row-main");
         const firstRowTitle = (firstMain && firstMain.getAttribute("title")) || "";
         out.rendererConsumesProfile = firstRowTitle.includes("Stimmung") && /froh|trübe/.test(firstRowTitle);
-        // Hof-D (hof-plan.md §D.1/§G.5) — die Stimmung als Glyph (immer sichtbar) + die fokussierbare Spec-Card.
+        // Hof-D (hof-plan.md §D.1/§G.5) — die Stimmung als Glyph an jeder Zeile (immer sichtbar).
         out.rowHasMoodGlyph = !!(firstRow && firstRow.querySelector(".creature-mood"));
-        // Default: KEINE Detail-Card (kompakt, §G.5 Skala).
-        out.detailHiddenByDefault = !!(firstRow && !firstRow.querySelector(".creature-detail"));
-        // Fokus-Toggle → die volle Spec-Card (Natur/Werte/Wachstum-Balken) klappt NUR fürs fokussierte Wesen auf.
+        // V18.54 Hof-Bühne — die Zeilen sind der schlanke PICKER: NIE eine Detail-Card inline (sie lebt auf der Bühne).
+        out.detailNotInRows = !!(firstRow && !firstRow.querySelector(".creature-detail"));
+        // Die Spec-Card des fokussierten (oder ersten) Wesens lebt unter der Bühne (#hof-stage-spec), genau EINE.
+        const stageSpec = document.getElementById("hof-stage-spec");
+        out.stageSpecPresent = !!stageSpec;
+        out.stageShowsOneCard =
+            !!stageSpec &&
+            stageSpec.querySelectorAll(".creature-detail").length === 1 &&
+            stageSpec.querySelectorAll(".creature-detail .spec-bar").length > 0;
+        out.stageHasTitle = !!(stageSpec && stageSpec.querySelector(".hof-stage-title .hof-stage-name"));
+        out.stageHasDismiss = !!(stageSpec && stageSpec.querySelector(".creature-detail .creature-detail-dismiss"));
+        // Fokus-Toggle: ein Klick auf ein Wesen fokussiert es (genau EINE Zeile .focused) → es tritt auf die Bühne.
         const firstProf = r._creatureProfile(r.state.creatures[0]);
         r._toggleHofFocus(firstProf.id);
         const listAfter = document.getElementById("creature-list");
-        const focusedRows = listAfter ? listAfter.querySelectorAll(".creature-row.focused").length : -1;
-        const detailCards = listAfter ? listAfter.querySelectorAll(".creature-detail").length : -1;
-        const detailBars = listAfter ? listAfter.querySelectorAll(".creature-detail .spec-bar").length : 0;
-        out.focusExpandsOneCard = focusedRows === 1 && detailCards === 1 && detailBars > 0;
-        // Hof-G — der Abschieds-Akt am fokussierten Wesen (Verabschieden = removeCreature, würdevoll).
-        out.focusHasDismiss = !!(listAfter && listAfter.querySelector(".creature-detail .creature-detail-dismiss"));
-        r._toggleHofFocus(firstProf.id); // wieder zu — kein Fokus-Leck in die Folge-Tests
-        const listClosed = document.getElementById("creature-list");
-        out.focusToggleCloses = !!(listClosed && listClosed.querySelectorAll(".creature-detail").length === 0);
+        out.focusMarksOneRow =
+            !!listAfter &&
+            listAfter.querySelectorAll(".creature-row.focused").length === 1 &&
+            r.state.hofFocusId === firstProf.id;
+        out.focusUpdatesStage = !!stageSpec && stageSpec.querySelectorAll(".creature-detail").length === 1;
+        r._toggleHofFocus(firstProf.id); // wieder zu → Fokus zurück auf das erste Wesen (kein Leck)
+        out.focusToggleClears = r.state.hofFocusId === null;
         // V18.51 Hof-E (hof-plan §D/§G.7) — die zwei Zonen ORCHESTER | PARTITUR + der integrierte Spawn-Fuß.
         out.hasOrchesterZone = !!document.querySelector(".hof-orchester");
         out.hasPartiturZone = !!document.querySelector(".hof-partitur");
@@ -25413,18 +25420,26 @@ async function checkBandWelle6HCreatures(ctx) {
         );
         check("Hof-D §D.1: die Stimmung als Glyph an jeder Zeile (.creature-mood)", wave6hP2aResults.rowHasMoodGlyph);
         check(
-            "Hof-D §G.5 Skala: default kompakt — keine Detail-Card ohne Fokus",
-            wave6hP2aResults.detailHiddenByDefault
+            "V18.54 Hof-Bühne: die Zeilen sind der schlanke Picker (keine Detail-Card inline)",
+            wave6hP2aResults.detailNotInRows
         );
         check(
-            "Hof-D §D.1: Fokus klappt GENAU eine volle Spec-Card auf (Natur/Werte/Wachstum-Balken)",
-            wave6hP2aResults.focusExpandsOneCard
+            "V18.54 Hof-Bühne: die Spec-Card des fokussierten Wesens lebt unter der Bühne (#hof-stage-spec, EINE Karte mit Balken)",
+            wave6hP2aResults.stageSpecPresent && wave6hP2aResults.stageShowsOneCard
+        );
+        check("V18.54 Hof-Bühne: die Bühne trägt den Wesen-Titel (Name+Seele)", wave6hP2aResults.stageHasTitle);
+        check(
+            "V18.54 Hof-Bühne: die Spec-Card unter der Bühne trägt den Verabschieden-Akt",
+            wave6hP2aResults.stageHasDismiss
         );
         check(
-            "Hof-D §G.6: der Fokus-Toggle schließt wieder (stabile Identität, kein Leck)",
-            wave6hP2aResults.focusToggleCloses
+            "V18.54 Hof-Bühne: Klick markiert GENAU eine Zeile + holt das Wesen auf die Bühne",
+            wave6hP2aResults.focusMarksOneRow && wave6hP2aResults.focusUpdatesStage
         );
-        check("Hof-G §D.1: die fokussierte Spec-Card trägt den Verabschieden-Akt", wave6hP2aResults.focusHasDismiss);
+        check(
+            "V18.54 Hof-Bühne: erneuter Klick löst den Fokus (zurück aufs erste Wesen, kein Leck)",
+            wave6hP2aResults.focusToggleClears
+        );
         check("Welle 6.H P2A: Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
         check("Welle 6.H P2A: removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);
         check(
