@@ -1699,11 +1699,13 @@
             /* Status-Bar: kompakte Welt-Daten unter der Topbar. */
             #statusbar {
                 position: absolute;
-                top: 76px;
+                /* V18.43 — direkt an den Hauptbanner gesetzt (Schöpfer „hat noch Luft zum Hauptbanner,
+                   direkt ansetzen, erzeugt mehr Synergie"): top 76→70 (Topbar-Boden 68 + 2). */
+                top: 70px;
                 left: 12px;
                 right: 12px;
                 height: 32px;
-                background: rgba(20, 12, 5, 0.55);
+                background: rgba(16, 10, 4, 0.72);
                 border: 1px solid var(--iron-1);
                 border-radius: 4px;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
@@ -1723,7 +1725,9 @@
             #statusbar .status-item .label {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                color: var(--brass-2);
+                /* V18.43 — war --brass-2 (#5b4520, dunkel auf dunklem Banner = unlesbar, Schöpfer-Befund
+                   „Schrift der Zeit/Bauten nicht lesbar"). Der lesbare Sekundär-Ton auf dunkel. */
+                color: var(--ink-on-dark-soft);
                 font-size: 10.5px;
             }
             #statusbar .status-item .value {
@@ -1738,10 +1742,14 @@
             /* Drawer: rechte Pergament-Schriftrolle, slidet rein bei .open. */
             .drawer {
                 position: absolute;
-                top: 116px;
+                /* V18.43 — direkt unter den Hauptbanner gesetzt (Schöpfer „Menü sollte oben direkt an den
+                   Hauptblock anschliessen; beim Öffnen über den Infobanner"): top 116→70 (Topbar-Boden 68
+                   + 2) → der Drawer DECKT den Statusbar beim Öffnen (mehr Raum, der Viewer wächst). max-height
+                   bound auf den Viewport (70 top + 14 Rand) → kein Überlauf unten mehr (Schöpfer-Befund). */
+                top: 70px;
                 right: 12px;
                 width: 300px;
-                max-height: calc(100vh - 140px);
+                max-height: calc(100vh - 84px);
                 /* V8.01 — overflow:hidden am Container, scroll im inneren
                    .drawer-scroll-Wrapper (via JS bei Init). So bleiben
                    Background + Border + Resize-Handle + h2 + close-button
@@ -1750,7 +1758,9 @@
                 display: flex;
                 flex-direction: column;
                 font-size: 12px;
-                z-index: 5;
+                /* V18.43 — z 5→6: der Drawer deckt beim Öffnen den Statusbar (z 5), bleibt aber
+                   unter/neben dem Topbar (z 6, räumlich getrennt: Topbar 12–68, Drawer ab 70). */
+                z-index: 6;
                 border-radius: 12px;
                 /* V8.00 Bug-Fix — Background direkt am Element (statt via
                    ::before mit inset:0). Bei overflow-y:auto scrollte das
@@ -1852,6 +1862,24 @@
                 left: 2px;
                 cursor: nesw-resize;
                 transform: scaleX(-1);
+            }
+            /* V18.43 — HÖHEN-only Griff (Drawer): unten-mittig, ns-resize. Nur die Höhe ist
+               anpassbar (die Breite bleibt beim symmetrischen CSS-Rahmen). Eine dezente Greif-Leiste
+               statt des Eck-Dreiecks (klare „ziehen-für-Höhe"-Affordanz). Heilt den Schöpfer-Befund
+               „kann ihn nicht mehr selbst anpassen" ohne die Symmetrie zu brechen. */
+            .resize-handle.resize-b {
+                bottom: 3px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 46px;
+                height: 7px;
+                border-radius: 4px;
+                background: var(--brass-2);
+                cursor: ns-resize;
+                opacity: 0.6;
+            }
+            .resize-handle.resize-b:hover {
+                opacity: 0.95;
             }
             /* Welle 6.X.2 V8.15 — top-right Resize-Handle für die Konsole.
                Sitzt am freien Eck (zur Welt hin), nicht am verdeckten unten-
@@ -3467,7 +3495,7 @@
                 left: 12px;
                 right: 12px;
                 width: auto;
-                max-height: calc(100vh - 134px);
+                max-height: calc(100vh - 84px);
             }
             /* Bibliothek von Alexandria (UI-Putz): die dezentrale Social-Plattform —
                groß wie die Werkstatt, browser/feed-artig. Die Sektionen fließen in
@@ -3476,7 +3504,7 @@
                 left: 12px;
                 right: 12px;
                 width: auto;
-                max-height: calc(100vh - 134px);
+                max-height: calc(100vh - 84px);
             }
             /* V18.36 — EINE Fenster-Sprache (Schöpfer „keines der Fenster symmetrisch, nicht
                einheitlich"): Hof + Einstellungen waren schmale 300px-Rechtsstreifen mit ewigem
@@ -3487,7 +3515,7 @@
                 left: 12px;
                 right: 12px;
                 width: auto;
-                max-height: calc(100vh - 134px);
+                max-height: calc(100vh - 84px);
             }
             .drawer[data-drawer="kreaturen"] .drawer-scroll,
             .drawer[data-drawer="einstellungen"] .drawer-scroll {
@@ -3906,7 +3934,9 @@
                    Viewer nimmt den Rest (gross), die Ausgabe bleibt IMMER im Bild. Renderer folgt
                    der echten Rect (`_workshopSyncCanvasSize` → Kamera-Aspect stimmt). */
                 aspect-ratio: 5 / 3;
-                max-height: clamp(340px, calc(100vh - 430px), 640px);
+                /* V18.43 — der Viewer wächst ~10%: das Menü rutschte 46px hoch (an den Topbar) →
+                   mehr vertikaler Platz; die Höhe-Clamp zieht nach (430→384 abgezogen). */
+                max-height: clamp(340px, calc(100vh - 384px), 700px);
                 background: #1a140a;
                 border: 1px solid var(--parch-edge);
                 border-radius: 2px;
@@ -6510,6 +6540,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.42.0" defer></script>
+        <script src="anazhRealm.js?v=18.43.0" defer></script>
     </body>
 </html>

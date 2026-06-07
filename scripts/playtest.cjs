@@ -34856,19 +34856,18 @@ async function checkBandCadWorkshop(ctx) {
             // Hotbar + Stats-HUD).
             const consoleEl = document.getElementById("console");
             out.consoleHasHandle = !!(consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-br"));
-            // V18.42 — die V18-Drawer folgen der CSS-Rahmen-Sprache (left:12;right:12;width:auto),
-            // ein maximiertes symmetrisches Fenster → KEIN Resize-Griff mehr (das Legacy-Resize
-            // fightete den Rahmen, Schöpfer „alle Achsen verfehlt"). Die Konsole behält ihren.
+            // V18.43 — die V18-Drawer tragen einen HÖHEN-only Griff (.resize-b), NICHT den alten
+            // breiten-brechenden .resize-bl (der die left/right-Symmetrie zerstörte). Heilung statt
+            // Schnitt (Schöpfer „Samen geschnitten"): anpassbar bleiben, Symmetrie wahren.
             const drawers = document.querySelectorAll(".drawer[data-drawer]");
-            let noDrawerHasHandle = drawers.length > 0;
+            let drawersHeightHandle = drawers.length > 0;
             let drawerCount = 0;
             drawers.forEach((d) => {
                 drawerCount++;
-                if (d.querySelector(":scope > .resize-handle")) {
-                    noDrawerHasHandle = false;
-                }
+                if (!d.querySelector(":scope > .resize-handle.resize-b")) drawersHeightHandle = false;
+                if (d.querySelector(":scope > .resize-handle.resize-bl")) drawersHeightHandle = false;
             });
-            out.noDrawerHasHandle = noDrawerHasHandle;
+            out.noDrawerHasHandle = drawersHeightHandle;
             out.drawerCount = drawerCount;
             // Idempotenz: zweiter installResizeHandles-Call erzeugt keine Duplikate
             r.installResizeHandles();
@@ -34913,7 +34912,7 @@ async function checkBandCadWorkshop(ctx) {
             resizeResults.consoleHasHandle
         );
         check(
-            `V18.42 Rahmen: die ${resizeResults.drawerCount} V18-Drawer tragen KEINEN Resize-Griff (CSS-Rahmen, symmetrisch)`,
+            `V18.43 Rahmen: die ${resizeResults.drawerCount} V18-Drawer tragen einen HÖHEN-Griff (.resize-b, symmetrie-treu, kein .resize-bl)`,
             resizeResults.noDrawerHasHandle
         );
         check(

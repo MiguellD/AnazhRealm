@@ -10320,18 +10320,16 @@ class AnazhRealm {
         // mit bottom 150px über der HUD, unten-rechts ist sichtbar + intuitiv.
         if (consoleEl) this._installResizeHandle(consoleEl, "br");
         const drawers = document.querySelectorAll(".drawer[data-drawer]");
-        // V18.42 — die V18-Drawer folgen der EINEN Fenster-Sprache (CSS-bounded symmetrisch:
-        // left:12;right:12;width:auto;max-height) — ein maximiertes, eingemittetes Fenster. Das
-        // Legacy-Resize (V8.00, fixe Inline-Größe + bl-Griff) fightet diesen Rahmen (Schöpfer:
-        // „links angeheftet, Regler unten links, rechte Seite bis zum Rand, alle Achsen verfehlt").
-        // Darum KEIN Resize-Griff mehr an den Drawern — nur den Inhalt scroll-wrappen + stale
-        // Inline-Größen aus alten Sessions räumen, damit der CSS-Rahmen rein greift. (Die Konsole,
-        // ein frei schwebendes Panel, behält ihren Griff.)
+        // V18.42/.43 — die V18-Drawer folgen der EINEN Fenster-Sprache (CSS-bounded symmetrisch:
+        // left:12;right:12;width:auto). Der alte bl-Griff änderte die BREITE inline → brach die
+        // Symmetrie („alle Achsen verfehlt"). HEILUNG statt Schnitt (Schöpfer „Samen geschnitten
+        // statt geheilt"): die stale Breiten-Inline räumen, ABER die Anpass-Fähigkeit ZURÜCKgeben —
+        // ein HÖHEN-only Griff (corner "b"), der nur die Höhe setzt, die Breite dem CSS-Rahmen lässt.
         drawers.forEach((d) => {
             this._wrapDrawerScroll(d);
             d.style.width = "";
-            d.style.height = "";
             d.style.maxHeight = "";
+            this._installResizeHandle(d, "b");
         });
     }
 
@@ -10368,6 +10366,9 @@ class AnazhRealm {
         // Container-ID für Persistence (entweder #id oder data-drawer)
         const cid = container.id || container.getAttribute("data-drawer") || "container";
         const storageKey = `anazh.resize.${cid}`;
+        // V18.43 — corner "b" = HÖHEN-only (Drawer): die Breite bleibt beim CSS-Rahmen
+        // (left:12;right:12), nur die Höhe ist anpassbar → Symmetrie bleibt.
+        const heightOnly = corner === "b";
 
         // Gespeicherte Größe wiederherstellen
         const restoreSavedSize = () => {
@@ -10375,7 +10376,7 @@ class AnazhRealm {
             if (!raw) return;
             try {
                 const saved = JSON.parse(raw);
-                if (saved && typeof saved.width === "number" && saved.width > 0) {
+                if (!heightOnly && saved && typeof saved.width === "number" && saved.width > 0) {
                     container.style.width = `${saved.width}px`;
                 }
                 if (saved && typeof saved.height === "number" && saved.height > 0) {
@@ -10426,6 +10427,10 @@ class AnazhRealm {
                 // sie nach oben statt nach unten.
                 newW = drag.startW + dx;
                 newH = drag.startH - dy;
+            } else if (corner === "b") {
+                // V18.43 — bottom-center: NUR Höhe (+dy), Breite unangetastet (CSS-Rahmen).
+                newW = drag.startW;
+                newH = drag.startH + dy;
             } else {
                 // Fallback (top-left, falls jemals genutzt)
                 newW = drag.startW - dx;
@@ -10434,7 +10439,7 @@ class AnazhRealm {
             // Clamp: sinnvolle Min + Max (Viewport-Abstand)
             const clampedW = Math.max(220, Math.min(window.innerWidth - 40, newW));
             const clampedH = Math.max(180, Math.min(window.innerHeight - 140, newH));
-            container.style.width = `${clampedW}px`;
+            if (!heightOnly) container.style.width = `${clampedW}px`;
             container.style.height = `${clampedH}px`;
             container.style.maxHeight = "none";
             if (container.id === "console") {
@@ -10447,7 +10452,7 @@ class AnazhRealm {
             if (!drag) return;
             // Persist
             try {
-                const w = parseInt(container.style.width, 10) || 0;
+                const w = heightOnly ? 0 : parseInt(container.style.width, 10) || 0;
                 const h = parseInt(container.style.height, 10) || 0;
                 if (typeof localStorage !== "undefined") {
                     localStorage.setItem(storageKey, JSON.stringify({ width: w, height: h }));
@@ -48167,7 +48172,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.42.0";
+AnazhRealm.VERSION = "18.43.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
