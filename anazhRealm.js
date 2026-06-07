@@ -10034,6 +10034,11 @@ class AnazhRealm {
         if (recipeSearch) {
             recipeSearch.addEventListener("input", () => this._applyRecipeFilter());
         }
+        // V18.36 — dieselbe Such-Geste für die Werkstatt-Baupläne (kompakte Liste, Ausgabe im Bild).
+        const workshopSearch = document.getElementById("workshop-search");
+        if (workshopSearch) {
+            workshopSearch.addEventListener("input", () => this._applyWorkshopFilter());
+        }
     }
 
     // Konsole-Panel: einklappbar via #console-collapse. Im eingeklappten
@@ -40444,6 +40449,21 @@ class AnazhRealm {
             row.addEventListener("click", () => this.selectBlueprintForEdit(name));
             list.appendChild(row);
         }
+        // V18.36 — den Such-Filter nach dem Neu-Aufbau wieder anwenden (Zeilen neu erzeugt).
+        this._applyWorkshopFilter();
+    }
+
+    // Bauplan-Suche (search-not-scroll, wie Hof-Befehle + Rezeptbuch): blendet Nicht-Treffer aus.
+    _applyWorkshopFilter() {
+        if (typeof document === "undefined") return;
+        const list = document.getElementById("workshop-list");
+        const search = document.getElementById("workshop-search");
+        if (!list || !search) return;
+        const q = search.value.trim().toLowerCase();
+        for (const row of list.children) {
+            const txt = (row.textContent || "").toLowerCase();
+            row.style.display = !q || txt.includes(q) ? "" : "none";
+        }
     }
 
     _workshopRenderTail(selected) {
@@ -47991,7 +48011,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.35.0";
+AnazhRealm.VERSION = "18.36.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

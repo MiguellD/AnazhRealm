@@ -3406,6 +3406,36 @@
                 width: calc(100vw - 24px);
                 max-height: calc(100vh - 200px);
             }
+            /* V18.36 — EINE Fenster-Sprache (Schöpfer „keines der Fenster symmetrisch, nicht
+               einheitlich"): Hof + Einstellungen waren schmale 300px-Rechtsstreifen mit ewigem
+               Einspalter-Scroll. Jetzt vollbreit + mehrspaltiger Sektions-Fluss wie die
+               Werkstatt/Bibliothek — balanciert, weniger Scrollen, dieselbe Form. */
+            .drawer[data-drawer="kreaturen"],
+            .drawer[data-drawer="einstellungen"] {
+                left: auto;
+                right: 12px;
+                width: calc(100vw - 24px);
+                max-height: calc(100vh - 200px);
+            }
+            .drawer[data-drawer="kreaturen"] .drawer-scroll,
+            .drawer[data-drawer="einstellungen"] .drawer-scroll {
+                column-count: 3;
+                column-gap: 20px;
+            }
+            .drawer[data-drawer="kreaturen"] .drawer-scroll > .section,
+            .drawer[data-drawer="einstellungen"] .drawer-scroll > .section {
+                break-inside: avoid;
+                -webkit-column-break-inside: avoid;
+                display: inline-block;
+                width: 100%;
+                margin: 0 0 18px 0;
+            }
+            @media (max-width: 1100px) {
+                .drawer[data-drawer="kreaturen"] .drawer-scroll,
+                .drawer[data-drawer="einstellungen"] .drawer-scroll {
+                    column-count: 2;
+                }
+            }
             .library-intro {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
@@ -3435,11 +3465,17 @@
                 }
             }
             /* Ring 6.6 — Werkstatt-Editor */
+            /* V18.36 — kompakt + 2-spaltig (Schöpfer „die Liste oben kompakter, dann ist die
+               Ausgabe-Tabelle auch im Bild"): ein Raster statt einer langen Spalte + das Such-Feld
+               darüber (search-not-scroll) → die Liste bleibt niedrig, der Rest kommt ins Bild. */
+            #workshop-search {
+                margin-bottom: 6px;
+            }
             #workshop-list {
-                display: flex;
-                flex-direction: column;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
                 gap: 3px;
-                max-height: 160px;
+                max-height: 108px;
                 overflow-y: auto;
             }
             .workshop-list-row {
@@ -5137,10 +5173,13 @@
             <h2>Werkstatt</h2>
             <section class="section">
                 <h3>Baupläne</h3>
-                <p class="drawer-hint">
-                    Built-in können geklont, eigene voll editiert werden. Parts: 8 Primitive (Würfel, Kugel, Zylinder,
-                    Kegel, Pyramide, Oktaeder, Plane, Torus).
-                </p>
+                <input
+                    type="text"
+                    id="workshop-search"
+                    class="help-search"
+                    placeholder="Bauplan suchen … (z. B. spitzhacke, panzer, tempel)"
+                    aria-label="Baupläne durchsuchen"
+                />
                 <div id="workshop-list"></div>
             </section>
             <section class="section">
@@ -6196,6 +6235,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.35.0" defer></script>
+        <script src="anazhRealm.js?v=18.36.0" defer></script>
     </body>
 </html>
