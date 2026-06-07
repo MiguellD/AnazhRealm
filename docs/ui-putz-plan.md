@@ -787,3 +787,9 @@ Pro Raum: das mentale Modell → die Zonen → die Prinzipien.
 für ein verletztes PRINZIP. Wer das Prinzip findet + das ganze System danach ordnet, heilt den Befund
 UND die zehn ungenannten Geschwister. Wer nur das Pixel schiebt, gebärt den nächsten Riss (der Schwamm).
 Die Werkstatt war die Schule; diese neun Schritte + zehn Denkmuster sind, was sie uns für JEDEN Raum lehrt.
+
+**Die Ausführungs-Ebene — der GEMESSENE Feld-für-Feld-Plan — lebt in `docs/menu-feld-plan.md`:**
+die Inventur jedes klickbaren Felds pro Raum (`scripts/diag-menu-audit.cjs`) + die Entscheidung
+„wohin / welches Format / welches Prinzip" pro Feld, plus die Duplikat-Auflösung (die ~60-Knopf-
+Hof-„Befehle"-Liste → Omnibox) + die Bau-Reihenfolge. Dieses Doc trägt die Prinzipien, jenes die
+konkrete Anwendung auf jeden Knopf.
