@@ -9873,15 +9873,44 @@ class AnazhRealm {
         this._emotionVignette = document.getElementById("emotion-vignette");
         this._emotionLabel = document.getElementById("emotion-label");
 
-        // Abilities-Container: Event-Delegation für Ausführen-Buttons.
+        // Abilities-Container: Event-Delegation — ▶ ausführen · ✕ eine Geste vergessen · „leeren" (V18.53).
         const abilitiesContainer = this._statusRefs.abilities;
         if (abilitiesContainer) {
             abilitiesContainer.addEventListener("click", (event) => {
                 const target = event.target;
                 if (!(target instanceof HTMLElement)) return;
-                const name = target.getAttribute("data-run-ability");
-                if (name && this.state.abilities[name]) {
-                    this.state.abilities[name]();
+                const run = target.getAttribute("data-run-ability");
+                if (run && this.state.abilities[run]) {
+                    this.state.abilities[run]();
+                    return;
+                }
+                // V18.53 — eine störende Geste direkt vergessen (Schöpfer-Befund „kann ihn nicht stoppen").
+                const forget = target.getAttribute("data-forget-ability");
+                if (forget) {
+                    const list = this.state.dsl.abilities;
+                    const i = list.findIndex((a) => a.name === forget);
+                    if (i >= 0) list.splice(i, 1);
+                    delete this.state.abilities[forget];
+                    this._statusRefs.abilitiesSignature = "";
+                    this.renderAbilitiesList();
+                    return;
+                }
+                // „leeren": alle EPHEMEREN Nexus-Gesten auf einmal verwerfen (Mensch-gelehrte bleiben).
+                if (target.getAttribute("data-clear-abilities") != null) {
+                    this.state.dsl.abilities = this.state.dsl.abilities.filter((a) => {
+                        const keep = !(a.source === "nexus" || (a.source || "").startsWith("ability"));
+                        if (!keep) delete this.state.abilities[a.name];
+                        return keep;
+                    });
+                    this._statusRefs.abilitiesSignature = "";
+                    this.renderAbilitiesList();
+                    return;
+                }
+                // den Auf-/Zuklappen-Toggle (▸ alle N) der Gesten-Liste.
+                if (target.getAttribute("data-toggle-abilities") != null) {
+                    this.state.hofGestenExpanded = !this.state.hofGestenExpanded;
+                    this._statusRefs.abilitiesSignature = "";
+                    this.renderAbilitiesList();
                 }
             });
         }
@@ -9900,24 +9929,31 @@ class AnazhRealm {
                     const idStr = target.getAttribute(attr);
                     return idStr == null ? null : rules.find((x) => x.id === Number(idStr)) || null;
                 };
+                let changed = false;
                 const forget = findRule("data-forget-rule");
                 if (forget) {
-                    const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
-                    if (forget.source === "human" || forget.pinned || mode === "schöpfer") {
-                        this.state.worldRules = rules.filter((x) => x.id !== forget.id);
+                    // V18.53 — JEDE Regel direkt verwerfen, auch ein ephemeres Nexus-Experiment in JEDEM Modus
+                    // (die Partitur gehört dem Schöpfer; ⏸ ist die sanfte Option, ✕ das Recht zu verwerfen).
+                    this.state.worldRules = rules.filter((x) => x.id !== forget.id);
+                    changed = true;
+                } else {
+                    const toggle = findRule("data-toggle-rule");
+                    if (toggle) {
+                        toggle.disabled = !toggle.disabled;
+                        changed = true;
+                    } else {
+                        const pin = findRule("data-pin-rule");
+                        if (pin) {
+                            pin.pinned = !pin.pinned;
+                            // Adoptieren: eine ephemere Regel wird beim Anpinnen permanent.
+                            if (pin.pinned && pin.ttlSec != null) pin.ttlSec = null;
+                            changed = true;
+                        }
                     }
-                    return;
                 }
-                const toggle = findRule("data-toggle-rule");
-                if (toggle) {
-                    toggle.disabled = !toggle.disabled;
-                    return;
-                }
-                const pin = findRule("data-pin-rule");
-                if (pin) {
-                    pin.pinned = !pin.pinned;
-                    // Adoptieren: eine ephemere Regel wird beim Anpinnen permanent.
-                    if (pin.pinned && pin.ttlSec != null) pin.ttlSec = null;
+                if (changed) {
+                    this._statusRefs.worldrulesSignature = ""; // sofortiges Feedback (kein Warten auf den Tick)
+                    this.renderWorldRulesList();
                 }
             });
         }
@@ -10752,20 +10788,23 @@ class AnazhRealm {
         }
     }
 
-    // Abilities-Liste re-rendern, aber nur wenn sich Name/Source-Set
-    // tatsächlich geändert hat — Signature-Hash hält den Diff billig.
+    // V18.53 Hof-Partitur — die Gesten („Der Nexus komponiert") auf denselben Stand wie die Regeln:
+    // jede Geste ist eine EINMALIGE Tat (✦), zeigt WANN sie wirkte, ist direkt vergessbar (✕) + die Liste
+    // ist gekappt/„leerbar" (Schöpfer-Befund: „kann nicht stoppen/löschen, die Liste wächst aus dem Bild").
     renderAbilitiesList() {
         const r = this._statusRefs;
         if (!r || !r.abilities) return;
         const list = this.state.dsl.abilities;
-        // Length-Prefix sorgt dafür, dass die initiale leere Signature ("")
-        // und ein leeres Array ("0:") unterscheidbar sind — sonst würde der
-        // erste Empty-State-Render durch den Early-Return wegoptimiert.
-        // Welle 6.E1: Description-Hash mit in die Signature, sonst würde ein
-        // Lazy-Compute (fehlende description in Legacy-Saves) keinen Re-Render
-        // triggern.
+        const now = performance.now() / 1000;
+        const GESTEN_SHOWN = 6;
+        const expanded = !!this.state.hofGestenExpanded;
+        // Neueste zuerst; default die Top-N, „alle"-Toggle zeigt mehr (wie die Regel-Gruppe).
+        const ordered = list.slice().reverse();
+        const shown = expanded ? ordered : ordered.slice(0, GESTEN_SHOWN);
+        const hidden = ordered.length - shown.length;
         const signature =
-            list.length + ":" + list.map((a) => `${a.name}:${a.source || "?"}:${a.description ? "d" : "_"}`).join("|");
+            `${list.length}:${expanded ? "E" : "C"}:` +
+            shown.map((a) => `${a.name}:${a.source || "?"}:${a.description ? "d" : "_"}`).join("|");
         if (signature === r.abilitiesSignature) return;
         r.abilitiesSignature = signature;
         const container = r.abilities;
@@ -10773,36 +10812,75 @@ class AnazhRealm {
         if (list.length === 0) {
             const empty = document.createElement("div");
             empty.className = "ability-empty";
-            empty.textContent = "Noch keine Fähigkeiten gelernt.";
+            empty.textContent = "Noch keine Gesten — der Nexus hat noch nichts komponiert.";
             container.appendChild(empty);
             return;
         }
-        // Neueste zuerst, max 20 angezeigt (UI-Limit, Save-Array bleibt 200).
-        const recent = list.slice(-20).reverse();
-        for (const ability of recent) {
+        // Gruppen-Kopf: Anzahl + „leeren" + (bei vielen) der Auf-/Zuklappen-Toggle.
+        const headRow = document.createElement("div");
+        headRow.className = "worldrule-group-head nexus";
+        const lbl = document.createElement("span");
+        lbl.textContent =
+            `✦ Gesten · ${list.length}` + (expanded || hidden === 0 ? "" : ` (die jüngsten ${shown.length})`);
+        headRow.appendChild(lbl);
+        const headBtns = document.createElement("span");
+        if (ordered.length > GESTEN_SHOWN) {
+            const toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "worldrule-toggle";
+            toggle.textContent = expanded ? "▾ weniger" : `▸ alle ${ordered.length}`;
+            toggle.setAttribute("data-toggle-abilities", "1");
+            headBtns.appendChild(toggle);
+        }
+        const clear = document.createElement("button");
+        clear.type = "button";
+        clear.className = "worldrule-toggle";
+        clear.textContent = "leeren";
+        clear.setAttribute("data-clear-abilities", "1");
+        clear.setAttribute("aria-label", "Alle Nexus-Gesten verwerfen");
+        headBtns.appendChild(clear);
+        headRow.appendChild(headBtns);
+        container.appendChild(headRow);
+        const fmtAgo = (sec) => {
+            const d = Math.max(0, Math.round(now - sec));
+            return d < 60 ? `vor ${d}s` : `vor ${Math.round(d / 60)}m`;
+        };
+        for (const ability of shown) {
             const row = document.createElement("div");
             const src = ability.source || "unknown";
             row.className = `ability-row source-${src}`;
             const head = document.createElement("div");
             head.className = "ability-head";
+            const kind = document.createElement("span");
+            kind.className = "ability-kind";
+            kind.textContent = "✦ Geste";
+            kind.title = "Eine einmalige Tat (kein stehendes Gesetz) — ▶ wirkt sie erneut.";
             const name = document.createElement("span");
             name.className = "name";
             name.textContent = ability.name;
-            const source = document.createElement("span");
-            source.className = "source";
-            source.textContent = src;
+            head.appendChild(kind);
+            head.appendChild(name);
+            // WANN sie wirkte (Schöpfer-Befund „sehe nicht ob sie feuern") — die Geste ist einmalig, also „vor Xs".
+            if (Number.isFinite(ability.createdAt)) {
+                const when = document.createElement("span");
+                when.className = "rule-status";
+                when.textContent = fmtAgo(ability.createdAt);
+                head.appendChild(when);
+            }
             const run = document.createElement("button");
             run.type = "button";
             run.textContent = "▶";
             run.setAttribute("data-run-ability", ability.name);
-            run.setAttribute("aria-label", `Fähigkeit ${ability.name} ausführen`);
-            head.appendChild(name);
-            head.appendChild(source);
+            run.setAttribute("aria-label", `Geste ${ability.name} erneut wirken`);
             head.appendChild(run);
+            const forget = document.createElement("button");
+            forget.type = "button";
+            forget.textContent = "✕";
+            forget.setAttribute("data-forget-ability", ability.name);
+            forget.setAttribute("aria-label", `Geste ${ability.name} vergessen`);
+            head.appendChild(forget);
             row.appendChild(head);
-            // Welle 6.E1 — Beschreibung unter dem Namen. Bei alten Saves
-            // (ohne `description`-Feld) lazy berechnen + persistieren, damit
-            // der nächste Save sie mitnimmt.
+            // Beschreibung (Lazy-Compute für Legacy-Saves, dann persistiert).
             if (!ability.description && Array.isArray(ability.program)) {
                 try {
                     ability.description = this.describeProgram(ability.program);
@@ -10817,6 +10895,12 @@ class AnazhRealm {
                 row.appendChild(desc);
             }
             container.appendChild(row);
+        }
+        if (hidden > 0) {
+            const more = document.createElement("div");
+            more.className = "worldrule-more";
+            more.textContent = `+ ${hidden} ältere Gesten`;
+            container.appendChild(more);
         }
     }
 
@@ -10856,7 +10940,7 @@ class AnazhRealm {
 
     // V18.52 Hof-Partitur — EINE Regel-Karte (wiederverwendet in beiden Gruppen). Der gelernte WERT
     // (`rule.value`, V17.43) wird endlich GELESEN: ein Chip an ephemeren Nexus-Regeln (Konsum V17.31).
-    _buildWorldRuleRow(rule, now, mode) {
+    _buildWorldRuleRow(rule, now) {
         const src =
             rule.source === "human"
                 ? "human"
@@ -10914,8 +10998,18 @@ class AnazhRealm {
             );
             head.appendChild(mkBtn("✕", "data-forget-rule", "Gesetz vergessen"));
         } else {
-            head.appendChild(mkBtn("📌", "data-pin-rule", "Gesetz behalten (wird permanent)"));
-            if (mode === "schöpfer") head.appendChild(mkBtn("✕", "data-forget-rule", "Gesetz verwerfen"));
+            // V18.53 — ein ephemeres Nexus-Experiment ist DIREKT steuerbar, ohne erst zu pinnen (Schöpfer-Befund
+            // „muss zuerst pinnen, um Stopp/Löschen zu nutzen"): 📌 behalten · ⏸ verstummen (das Experiment bleibt,
+            // stört aber nicht — respektiert die Welt-Autonomie) · ✕ verwerfen (dein Recht, in JEDEM Modus).
+            head.appendChild(mkBtn("📌", "data-pin-rule", "Experiment behalten (wird permanent)"));
+            head.appendChild(
+                mkBtn(
+                    rule.disabled ? "▶" : "⏸",
+                    "data-toggle-rule",
+                    rule.disabled ? "Experiment aktivieren" : "Experiment verstummen"
+                )
+            );
+            head.appendChild(mkBtn("✕", "data-forget-rule", "Experiment verwerfen"));
         }
         row.appendChild(head);
         const desc = document.createElement("div");
@@ -10976,7 +11070,7 @@ class AnazhRealm {
             hint.textContent = "Noch keine eigenen — sprich eine Regel, oder 📌 adoptiere ein Nexus-Experiment.";
             container.appendChild(hint);
         } else {
-            for (const rule of yours) container.appendChild(this._buildWorldRuleRow(rule, now, mode));
+            for (const rule of yours) container.appendChild(this._buildWorldRuleRow(rule, now));
         }
         // Gruppe 2 — DER NEXUS ERPROBT (ephemer, wert-sortiert, Top-N + Auf-/Zuklappen).
         if (nexus.length > 0) {
@@ -10999,7 +11093,7 @@ class AnazhRealm {
                 nexHead.appendChild(toggle);
             }
             container.appendChild(nexHead);
-            for (const rule of nexusShown) container.appendChild(this._buildWorldRuleRow(rule, now, mode));
+            for (const rule of nexusShown) container.appendChild(this._buildWorldRuleRow(rule, now));
             if (nexusHidden > 0) {
                 const more = document.createElement("div");
                 more.className = "worldrule-more";
@@ -48696,7 +48790,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.52.0";
+AnazhRealm.VERSION = "18.53.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

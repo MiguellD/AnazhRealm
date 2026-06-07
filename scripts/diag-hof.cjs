@@ -88,6 +88,17 @@ function startSaveServer() {
                 });
             r._statusRefs.worldrulesSignature = "";
             r.renderWorldRulesList();
+            // Ein paar Nexus-Gesten → „Der Nexus komponiert" zeigt ✦/vor Xs/✕/leeren.
+            for (let i = 0; i < 8; i++)
+                r.state.dsl.abilities.push({
+                    name: `evo_${40 + i}`,
+                    program: ["weather", i % 2 ? "rainy" : "sunny"],
+                    source: "nexus",
+                    createdAt: performance.now() / 1000 - i * 3,
+                    fitness: 0.5,
+                });
+            r._statusRefs.abilitiesSignature = "";
+            r.renderAbilitiesList();
             const list = document.getElementById("creature-list");
             const row = list && list.querySelector(".creature-row");
             return {

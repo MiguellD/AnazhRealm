@@ -463,6 +463,39 @@ async function checkBandRing2Extended(ctx) {
             typeof r.developAdvancedPhysics === "undefined" &&
             typeof r.developAdvancedRenderer === "undefined";
 
+        // V18.53 — „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
+        // direkt vergessbar (✕), gekappt + „leeren". Mehrere Nexus-Gesten anlegen + den Renderer prüfen.
+        r.state.dsl.abilities.length = 0;
+        for (let i = 0; i < 9; i++)
+            r.state.dsl.abilities.push({
+                name: `evo_test_${i}`,
+                program: ["weather", "rainy"],
+                source: "nexus",
+                createdAt: performance.now() / 1000 - i * 2,
+                fitness: 0.5,
+            });
+        r.state.hofGestenExpanded = false;
+        r._statusRefs.abilitiesSignature = "";
+        r.renderAbilitiesList();
+        const aHost = document.getElementById("status-abilities");
+        out.gestenKindBadge = !!aHost.querySelector(".ability-kind");
+        out.gestenHasForget = !!aHost.querySelector("button[data-forget-ability]");
+        out.gestenWhen = /vor \d+s/.test(aHost.textContent);
+        const gestenRows = aHost.querySelectorAll(".ability-row").length;
+        out.gestenCapped = gestenRows === 6 && /\+\s*3\s*ältere/.test(aHost.textContent);
+        out.gestenClearBtn = !!aHost.querySelector("button[data-clear-abilities]");
+        // ✕ vergisst eine Geste wirklich (evo_test_8 ist die NEUESTE → sicher in den gezeigten Top-6).
+        const forgetBtn = aHost.querySelector('button[data-forget-ability="evo_test_8"]');
+        if (forgetBtn) forgetBtn.click();
+        out.gestenForgetWorks = !r.state.dsl.abilities.some((a) => a.name === "evo_test_8");
+        // „leeren" wirft alle Nexus-Gesten
+        const clearBtn = aHost.querySelector("button[data-clear-abilities]");
+        if (clearBtn) clearBtn.click();
+        out.gestenClearWorks = r.state.dsl.abilities.filter((a) => a.source === "nexus").length === 0;
+        r.state.dsl.abilities.length = 0;
+        r._statusRefs.abilitiesSignature = "";
+        r.renderAbilitiesList();
+
         return out;
     });
 
@@ -498,6 +531,20 @@ async function checkBandRing2Extended(ctx) {
             "Phase 5: createDynamicAbility/codeParser/developAdvanced* sind entfernt",
             phase3Results.dynamicCodeMethodsRemoved
         );
+        check(
+            "V18.53 Gesten: ✦-Abzeichen + 'vor Xs' (einmalige Tat, sichtbar WANN sie wirkte)",
+            phase3Results.gestenKindBadge && phase3Results.gestenWhen
+        );
+        check(
+            "V18.53 Gesten: jede Geste direkt vergessbar (✕) + die Liste hat 'leeren'",
+            phase3Results.gestenHasForget && phase3Results.gestenClearBtn
+        );
+        check(
+            "V18.53 Gesten: Liste auf 6 gekappt + '+N ältere' (wächst nicht aus dem Bild)",
+            phase3Results.gestenCapped
+        );
+        check("V18.53 Gesten: ✕ vergisst eine Geste wirklich", phase3Results.gestenForgetWorks);
+        check("V18.53 Gesten: 'leeren' verwirft alle Nexus-Gesten", phase3Results.gestenClearWorks);
     }
 
     // ### Ring 2 Phase 6 – CSP ###
@@ -2161,20 +2208,25 @@ async function checkBandV1737RulesUI(ctx) {
             !!humanBtn &&
             humanBtn.getAttribute("data-forget-rule") === String(humanRule.id);
 
-        // --- Nexus-Regel: KEIN ✕ (sie verfaellt selbst), aber gelistet ---
+        // --- Nexus-Regel: gelistet + V18.53 DIREKT steuerbar (📌 + ⏸ + ✕), kein ▶ (sie STEHT, wird nicht invoked) ---
         r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 3, ttlSec: 60 }], {
             source: "nexus",
         });
         forceRender();
         const nexusRow = host.querySelector(".ability-row.source-nexus");
-        out.nexusRow = !!nexusRow && !nexusRow.querySelector("button[data-forget-rule]");
+        out.nexusRow =
+            !!nexusRow &&
+            !!nexusRow.querySelector("button[data-pin-rule]") &&
+            !!nexusRow.querySelector("button[data-toggle-rule]") &&
+            !!nexusRow.querySelector("button[data-forget-rule]") &&
+            !nexusRow.querySelector("button[data-run-ability]");
 
         // --- der ✕-Klick vergisst die Mensch-Regel (echte Event-Delegation) ---
         const idBefore = humanRule.id;
         const btn = host.querySelector(`button[data-forget-rule="${idBefore}"]`);
         if (btn) btn.click();
         out.forgetWorks = !r.state.worldRules.some((x) => x.id === idBefore);
-        // die Nexus-Regel bleibt (nur Mensch-Regeln tragen ✕)
+        // die Nexus-Regel bleibt (wir haben nur die Mensch-Regel ✕ geklickt)
         out.nexusSurvives = r.state.worldRules.some((x) => x.source === "nexus");
 
         // --- Collapsible: die Hof-Sektionen (UI-Putz: Fähigkeiten + Gesetze leben jetzt
@@ -2242,7 +2294,7 @@ async function checkBandV1737RulesUI(ctx) {
         "V17.37 Gesetze-UI: eine Mensch-Regel rendert als Row (describeProgram) mit ✕ (data-forget-rule)",
         res.humanRow
     );
-    check("V17.37 Gesetze-UI: eine Nexus-Regel ist gelistet, traegt aber KEIN ✕ (sie verfaellt selbst)", res.nexusRow);
+    check("V18.53 Gesetze-UI: eine Nexus-Regel ist gelistet + DIREKT steuerbar (📌+⏸+✕, kein ▶)", res.nexusRow);
     check(
         "V17.37 Gesetze-UI: der ✕-Klick vergisst die Mensch-Regel (Event-Delegation), Nexus bleibt",
         res.forgetWorks && res.nexusSurvives
@@ -2455,7 +2507,8 @@ async function checkBandV1739RulesUX(ctx) {
             r.state.worldRules.length <= r.constructor.WORLD_RULES.cap &&
             r.state.worldRules.some((x) => x.id === keepId);
 
-        // --- (E) Modus-Gating: eine fremde Nexus-Regel traegt ✕ nur im Schoepfer-Modus ---
+        // --- (E) V18.53: ein ephemeres Nexus-Experiment ist DIREKT steuerbar — ⏸ + ✕ in JEDEM Modus
+        //         (kein pin-zuerst-Trap). Geheilter Schöpfer-Befund „muss zuerst pinnen, um zu stoppen". ---
         r.state.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
             source: "nexus",
@@ -2463,11 +2516,13 @@ async function checkBandV1739RulesUX(ctx) {
         const ruleE = r.state.worldRules[0];
         r.state.worldMeta.gameMode = "frieden";
         forceRender();
-        const noXInPeace = !host.querySelector(`button[data-forget-rule="${ruleE.id}"]`);
-        r.state.worldMeta.gameMode = "schöpfer";
-        forceRender();
-        const xInCreator = !!host.querySelector(`button[data-forget-rule="${ruleE.id}"]`);
-        out.modeGating = noXInPeace && xInCreator;
+        out.ephemeralControllable =
+            !!host.querySelector(`button[data-toggle-rule="${ruleE.id}"]`) &&
+            !!host.querySelector(`button[data-forget-rule="${ruleE.id}"]`);
+        // der ✕-Klick verwirft das Experiment WIRKLICH — auch in frieden (kein Modus-Gate mehr).
+        const xBtnE = host.querySelector(`button[data-forget-rule="${ruleE.id}"]`);
+        if (xBtnE) xBtnE.click();
+        out.ephemeralForgetWorks = !r.state.worldRules.some((x) => x.id === ruleE.id);
         r.state.worldMeta.gameMode = savedMode;
 
         // --- (F) Sortierung: angepinnte (Favoriten) zuerst ---
@@ -2514,7 +2569,14 @@ async function checkBandV1739RulesUX(ctx) {
         "V17.39 Gesetze-UX: die Eviction schuetzt eine angepinnte Regel (ueberlebt die Nexus-Flut)",
         res.pinnedSurvivesEviction
     );
-    check("V17.39 Gesetze-UX: Modus-Gating — eine fremde Nexus-Regel traegt ✕ nur im Schoepfer-Modus", res.modeGating);
+    check(
+        "V18.53 Gesetze-UX: ephemeres Nexus-Experiment direkt steuerbar (⏸+✕ in JEDEM Modus, kein pin-zuerst)",
+        res.ephemeralControllable
+    );
+    check(
+        "V18.53 Gesetze-UX: der ✕-Klick verwirft das Experiment wirklich (auch in frieden)",
+        res.ephemeralForgetWorks
+    );
     check("V17.39 Gesetze-UX: Sortierung — angepinnte Favoriten rendern zuerst", res.sortPinnedFirst);
     check(
         "V17.39 Gesetze-UX: pinned/disabled ueberleben Snapshot → Restore (die Schoepfer-Wahl bleibt)",
