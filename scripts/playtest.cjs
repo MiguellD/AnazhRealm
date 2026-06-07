@@ -23926,6 +23926,36 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.assignWorks = assignOk === true && r.state.hotbar[3] === "kristall_geode";
         out.assignClearsSelection = r.state.inventorySelected === null;
 
+        // V18.57 Ich-Bogen — das Selbst-Porträt (Werkstatt-/Hof-Muster auf das Selbst): EIN _selfProfile-Vektor,
+        // das geteilte Spec-Sheet (WERTE führen | NATUR), die Bühne, die 6-Achsen-EMOTION (live), die REISE,
+        // die drei Zonen. Das Overlay ist hier offen (toggle(true) oben → _ichHandleOverlay rendert).
+        out.hasSelfProfileFn = typeof r._selfProfile === "function";
+        const sp = out.hasSelfProfileFn ? r._selfProfile() : null;
+        out.selfProfileBundles = !!(
+            sp &&
+            sp.soul &&
+            sp.stats &&
+            typeof sp.emotions === "object" &&
+            typeof sp.mood === "object" &&
+            Array.isArray(sp.journal)
+        );
+        out.ichStageCanvas = !!document.getElementById("ich-stage-canvas");
+        const ichSpec = document.getElementById("ich-stage-spec");
+        out.ichSpecSheet = !!(ichSpec && ichSpec.querySelector(".spec-sheet"));
+        out.ichSpecHeaderName = !!(ichSpec && ichSpec.querySelector(".spec-header .spec-name"));
+        out.ichSpecBody2Col = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-col").length === 2);
+        out.ichWerteBars = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-bar").length > 0);
+        // die reiche 6-Achsen-Emotion (live, ≠ Kreatur binär) prominent im Ich
+        out.ichEmotion6 = document.querySelectorAll("#status-emotions .emotion").length === 6;
+        // die Reise-Zone liest das worldJournal (Geschichte)
+        out.ichReiseZone = !!document.querySelector("#ich-reise .ich-reise-zone");
+        // die drei Zonen + „Was du trägst" wandert in die Habe-Zone
+        out.ichThreeZones = !!(
+            document.querySelector(".inventory-col-character #ich-stage-spec") &&
+            document.querySelector(".inventory-col-items #inventory-equip") &&
+            document.querySelector(".inventory-col-recipes #inventory-recipes")
+        );
+
         // Toggle close
         r.toggleInventoryOverlay(false);
         out.toggleCloseHides = overlay.hasAttribute("hidden");
@@ -23954,6 +23984,27 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1: toggleInventoryOverlay-Methode existiert", wave6c1Results.hasToggleOverlay);
         check("Welle 6.C1: playInventoryHoverPing-Methode existiert", wave6c1Results.hasPlayPing);
         check("Welle 6.C1: inventoryInitDOM-Methode existiert", wave6c1Results.hasInventoryInitDOM);
+        check(
+            "V18.57 Ich: _selfProfile bündelt die gemessenen Vektoren (soul/stats/emotions/mood/journal)",
+            wave6c1Results.hasSelfProfileFn && wave6c1Results.selfProfileBundles
+        );
+        check(
+            "V18.57 Ich: die Selbst-Bühne (Canvas) + das geteilte Spec-Sheet im Overlay",
+            wave6c1Results.ichStageCanvas && wave6c1Results.ichSpecSheet
+        );
+        check(
+            "V18.57 Ich: das Spec-Sheet trägt Header (Name) + Zwei-Spalten-Body + WERTE-Balken (Werte führen)",
+            wave6c1Results.ichSpecHeaderName && wave6c1Results.ichSpecBody2Col && wave6c1Results.ichWerteBars
+        );
+        check(
+            "V18.57 Ich: die reiche 6-Achsen-Emotion ist prominent (live, ≠ Kreatur binär)",
+            wave6c1Results.ichEmotion6
+        );
+        check("V18.57 Ich: die Reise-Zone liest das worldJournal (die Geschichte)", wave6c1Results.ichReiseZone);
+        check(
+            "V18.57 Ich: drei Zonen — WER ICH BIN (Spec) · WAS ICH HABE (Was du trägst) · WAS ICH MACHEN KANN (Rezepte)",
+            wave6c1Results.ichThreeZones
+        );
         check("Welle 6.C1: addToInventory legt Eintrag in ersten leeren Slot", wave6c1Results.slot0HasBaum);
         check("Welle 6.C1: addToInventory stackt bei gleichem Bauplan-Namen", wave6c1Results.stacksCount);
         check("Welle 6.C1: addToInventory lehnt unbekannten Bauplan ab", wave6c1Results.addRejectsUnknown);

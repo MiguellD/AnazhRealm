@@ -40181,6 +40181,8 @@ class AnazhRealm {
             this.state.inventoryOpen = true;
             document.body.classList.add("inventory-open");
             this.renderInventoryUI();
+            // V18.57 Ich-Bogen — die Selbst-Bühne + das Spec-Sheet (das Werkstatt-/Hof-Muster auf das Selbst).
+            if (typeof this._ichHandleOverlay === "function") this._ichHandleOverlay(true);
             // === UX-Konvention wie Minecraft / jedes Survival-Spiel ===
             // Inventar offen → Pointer-Lock raus, damit der Maus-Cursor
             // erscheint und Drag&Drop funktioniert. HTML5-Drag&Drop ist
@@ -40201,6 +40203,7 @@ class AnazhRealm {
             this.state.inventoryOpen = false;
             document.body.classList.remove("inventory-open");
             this.state.inventorySelected = null;
+            if (typeof this._ichHandleOverlay === "function") this._ichHandleOverlay(false);
             // Bewusst KEIN re-lock — Spieler klickt Canvas um wieder
             // in Blick-Steuerung zu gehen (Minecraft-Konvention).
         }
@@ -40751,6 +40754,354 @@ class AnazhRealm {
                       : ` · vor ${Math.round(s / 3600)}h`;
         }
         return `${what}${ago}`;
+    }
+
+    // === V18.57 Ich-Bogen — das Selbst-Porträt (das Werkstatt-/Hof-Muster auf den Spieler, ich-plan.md) ===
+
+    // Ich-A0 (ich-plan §G.1) — EIN Spieler-Lese-Vektor, viele Leser (das `_creatureProfile`-Muster auf das
+    // Selbst). Bündelt die GEMESSENEN reichsten Vektoren des Spiels: Seele · Werte (equip-gefaltet) · Natur ·
+    // die 6-Achsen-EMOTION + Mood-EMA · Habe · die Reise (worldJournal). Read-only (Konsum V17.31).
+    _selfProfile() {
+        const p = this.state.player || {};
+        const soul = p.soul || "human";
+        const custom = this.state.customSouls && this.state.customSouls[soul];
+        const builtin = this.playerSoulDefs[soul];
+        const def = custom || builtin || null;
+        const stats = p.stats || null;
+        return {
+            soul,
+            soulLabel: (custom && custom.label) || (builtin && builtin.label) || soul,
+            name: typeof p.name === "string" && p.name.trim() ? p.name.trim().slice(0, 48) : "Du",
+            mode: typeof this.getGameMode === "function" ? this.getGameMode() : "frieden",
+            stats,
+            tags: p.statTags || {},
+            emotions: p.emotions || {},
+            mood: p.mood || {},
+            hp: Number.isFinite(p.hp) ? p.hp : stats ? stats.hpMax : 0,
+            hpMax: Number.isFinite(p.hpMax) ? p.hpMax : stats ? stats.hpMax : 0,
+            equipped: p.equipped || {},
+            boosts: Array.isArray(p.boosts) ? p.boosts : [],
+            bodyParts: (def && def.bodyParts) || [],
+            journal:
+                this.state.worldJournal && Array.isArray(this.state.worldJournal.entries)
+                    ? this.state.worldJournal.entries
+                    : [],
+        };
+    }
+
+    // Ich-A (ich-plan §D.2) — das SELBST-SPEC-SHEET im GETEILTEN Werkstatt-/Hof-Design (`.spec-*`): HEADER
+    // (Name + Seele + Modus | Vigor-Sterne) → BODY (WERTE führen, equip-gefaltet | NATUR sekundär) → FOOTER
+    // (Habe). Die EMOTION + die REISE leben als eigene Zonen darunter (live bzw. §D.2-Reise) — s. _ichRenderSpecSheet.
+    _ichBuildSpecSheet(prof) {
+        const fracLvl = (f) => (f > 0.66 ? "lvl-2" : f > 0.33 ? "lvl-1" : "lvl-0");
+        // HEADER — Identität: Name (seelen-gefärbt) + Seele + Modus-Chip | Vigor (HP-Anteil) als Sterne.
+        const idZone = this._el(
+            "div",
+            { class: "spec-id" },
+            this._el("span", { class: "spec-name soul-" + prof.soul, text: prof.name }),
+            this._el("span", { class: "spec-soul-label", text: prof.soulLabel }),
+            this._el("span", { class: "ich-mode-chip mode-" + prof.mode, text: prof.mode })
+        );
+        const vigor = prof.hpMax > 0 ? Math.max(0, Math.min(1, prof.hp / prof.hpMax)) : 0;
+        const v5 = Math.round(vigor * 5);
+        const qualZone = this._el(
+            "div",
+            { class: "spec-quality", title: "Verfassung — dein Lebensanteil (HP / max)." },
+            this._el("span", { class: "spec-q-label", text: "Verfassung" }),
+            this._el("span", { class: "spec-q-stars", text: "★".repeat(v5) + "☆".repeat(5 - v5) }),
+            this._el("span", { class: "spec-q-val", text: `${Math.round(prof.hp)}/${Math.round(prof.hpMax)}` })
+        );
+        const header = this._el("div", { class: "spec-header" }, idZone, qualZone);
+
+        // BODY — WERTE führen (links, equip-gefaltet, Balken) | NATUR sekundär (rechts, Compound-Tags).
+        const werteChildren = [this._el("div", { class: "spec-col-head", text: "Werte" })];
+        if (prof.stats) {
+            const cs = prof.stats;
+            const hpFrac = prof.hpMax > 0 ? prof.hp / prof.hpMax : 0;
+            werteChildren.push(
+                this._specBar(
+                    "HP",
+                    hpFrac,
+                    `${Math.round(prof.hp)}/${Math.round(prof.hpMax)}`,
+                    fracLvl(hpFrac),
+                    "Lebenskraft (lebend/max)"
+                )
+            );
+            const statBars = [
+                ["Schaden", cs.damage, 25, "Schaden pro Schlag (härte+dichte, + Werkzeug)"],
+                ["Tempo", cs.speed, 14, "Lauf-Tempo (leicht+magieleitung)"],
+                ["Ausdauer", cs.staminaMax, 200, "max. Ausdauer"],
+                ["Abwehr", cs.defense, 14, "physische Abwehr (dichte+härte, + Rüstung)"],
+                ["Präzision", cs.precision, 1, "Präzision (magieleitung+zähigkeit)"],
+            ];
+            for (const [label, val, ref, title] of statBars) {
+                if (!Number.isFinite(val)) continue;
+                werteChildren.push(
+                    this._specBar(label, val / ref, val.toFixed(1), fracLvl(val / ref), `${title}: ${val.toFixed(2)}`)
+                );
+            }
+            const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : "—");
+            werteChildren.push(
+                this._el(
+                    "div",
+                    { class: "spec-stat-strip" },
+                    this._el(
+                        "span",
+                        { class: "spec-stat-chip", title: "Magie-Resistenz" },
+                        this._el("span", { class: "spec-stat-name", text: "MR" }),
+                        this._el("span", { class: "spec-stat-val", text: fmt(cs.magicResist) })
+                    ),
+                    this._el(
+                        "span",
+                        { class: "spec-stat-chip", title: "Hitze-Resistenz" },
+                        this._el("span", { class: "spec-stat-name", text: "HR" }),
+                        this._el("span", { class: "spec-stat-val", text: fmt(cs.heatResist) })
+                    )
+                )
+            );
+        } else {
+            werteChildren.push(
+                this._el("span", { class: "spec-empty", text: "Werte werden berechnet, wenn die Seele steht." })
+            );
+        }
+        const leftCol = this._el("div", { class: "spec-col" }, ...werteChildren);
+
+        const tagEntries = Object.entries(prof.tags || {})
+            .filter(([, v]) => Number.isFinite(v) && v > 0.05)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6);
+        const natBars = tagEntries.map(([k, v]) =>
+            this._specBar(
+                k,
+                v / 3,
+                v.toFixed(2),
+                this._natureLevelClass(v),
+                `${k}: ${v.toFixed(2)} (Natur, 0–3 — speist die Werte)`
+            )
+        );
+        const rightCol = this._el(
+            "div",
+            { class: "spec-col" },
+            this._el("div", { class: "spec-col-head", text: "Natur" }),
+            ...(natBars.length ? natBars : [this._el("span", { class: "spec-empty", text: "noch keine Substanz" })])
+        );
+        const body = this._el("div", { class: "spec-body" }, leftCol, rightCol);
+
+        // FOOTER — die getragene Habe (Werkzeug/Rüstung/Boosts) als Chips.
+        const habe = [];
+        if (prof.equipped.tool) habe.push("⚒ " + prof.equipped.tool);
+        if (prof.equipped.armor) habe.push("⛨ " + prof.equipped.armor);
+        for (const b of prof.boosts) if (b && (b.label || b.source)) habe.push("✺ " + (b.label || b.source));
+        const footer = this._el(
+            "div",
+            { class: "spec-footer hof-spec-footer" },
+            habe.length
+                ? this._el(
+                      "span",
+                      { class: "spec-habe" },
+                      ...habe.map((h) => this._el("span", { class: "spec-stat-chip", text: h }))
+                  )
+                : this._el("span", { class: "spec-empty", text: "nichts getragen" })
+        );
+        return this._el("div", { class: "spec-sheet hof-spec-sheet" }, header, body, footer);
+    }
+
+    // Die REISE (ich-plan §D.2) — die Meilensteine + jüngsten Taten aus dem worldJournal, gekappt + „+N"
+    // (Overflow gehandhabt, V18.56-Echo). Jüngste oben, mit relativer Zeit.
+    _ichBuildReise(prof) {
+        const entries = (prof.journal || []).slice(-6).reverse();
+        const zone = this._el(
+            "div",
+            { class: "ich-reise-zone" },
+            this._el("div", { class: "spec-col-head", text: "Reise · die Welt erinnert sich" })
+        );
+        if (!entries.length) {
+            zone.appendChild(
+                this._el("span", { class: "spec-empty", text: "Noch keine Geschichte — geh hinaus + erlebe." })
+            );
+            return zone;
+        }
+        const now = Date.now();
+        for (const e of entries) {
+            let ago = "";
+            if (Number.isFinite(e.at)) {
+                const s = Math.max(0, Math.round((now - e.at) / 1000));
+                ago = s < 60 ? `vor ${s}s` : s < 3600 ? `vor ${Math.round(s / 60)}m` : `vor ${Math.round(s / 3600)}h`;
+            }
+            zone.appendChild(
+                this._el(
+                    "div",
+                    { class: "ich-reise-row" },
+                    this._el("span", { class: "ich-reise-text", text: e.text || "—" }),
+                    this._el("span", { class: "ich-reise-when", text: ago })
+                )
+            );
+        }
+        const total = (prof.journal || []).length;
+        if (total > entries.length)
+            zone.appendChild(
+                this._el("div", { class: "spec-grow-more", text: `+ ${total - entries.length} ältere Einträge` })
+            );
+        return zone;
+    }
+
+    // Rendert das Selbst-Spec-Sheet + die Reise in ihre Mounts (die EMOTION lebt live in #status-emotions,
+    // wird NICHT hier gewiped — der per-Frame-updateStatusPanel hält sie aktuell).
+    _ichRenderSpecSheet() {
+        if (typeof document === "undefined") return;
+        const specMount = document.getElementById("ich-stage-spec");
+        const reiseMount = document.getElementById("ich-reise");
+        if (!specMount && !reiseMount) return;
+        const prof = this._selfProfile();
+        if (specMount) {
+            specMount.innerHTML = "";
+            specMount.appendChild(this._ichBuildSpecSheet(prof));
+        }
+        if (reiseMount) {
+            reiseMount.innerHTML = "";
+            reiseMount.appendChild(this._ichBuildReise(prof));
+        }
+    }
+
+    // Ich-C (ich-plan §D.1) — die SELBST-BÜHNE (der Avatar-3D-Star, Zwilling zur Hof-Bühne V18.54).
+    _ichEnsureStage() {
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        if (this.state.ichStage) return this.state.ichStage;
+        const canvas = document.getElementById("ich-stage-canvas");
+        if (!canvas) return null;
+        const size = 360;
+        canvas.width = size;
+        canvas.height = size;
+        let renderer;
+        try {
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+        } catch (err) {
+            this.log(`Ich-Bühne: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
+            return null;
+        }
+        renderer.stencil = false;
+        renderer.setSize(size, size, false);
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setClearColor(0x171019, 1);
+        const scene = new THREE.Scene();
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const key = new THREE.DirectionalLight(0xffe8c2, 0.95);
+        key.position.set(4, 6, 5);
+        scene.add(key);
+        const fill = new THREE.DirectionalLight(0x88aaff, 0.4);
+        fill.position.set(-4, -1, -3);
+        scene.add(fill);
+        const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 200);
+        camera.position.set(0, 0.12, 4.2);
+        camera.lookAt(0, 0, 0);
+        const stage = {
+            canvas,
+            renderer,
+            scene,
+            camera,
+            pivot: null,
+            soul: null,
+            yaw: 0.5,
+            rafId: null,
+            active: false,
+            rendererReady: false,
+        };
+        this.state.ichStage = stage;
+        try {
+            renderer
+                .init()
+                .then(() => {
+                    stage.rendererReady = true;
+                    if (stage.active) this._ichStartRAF();
+                })
+                .catch((err) => this.log(`Ich-Bühne init: ${err && err.message}`, "ERROR"));
+        } catch (err) {
+            this.log(`Ich-Bühne init-Start: ${err && err.message}`, "ERROR");
+        }
+        return stage;
+    }
+
+    _ichStageShow(soul, bodyParts) {
+        const stage = this.state.ichStage;
+        if (!stage) return;
+        if (stage.pivot && stage.soul === soul) return;
+        if (stage.pivot) {
+            stage.scene.remove(stage.pivot);
+            stage.pivot.traverse((obj) => {
+                if (obj.isMesh || obj.isLine) {
+                    if (obj.geometry) this._queueDispose(obj.geometry);
+                    if (obj.material) {
+                        if (Array.isArray(obj.material)) obj.material.forEach((m) => this._queueDispose(m));
+                        else this._queueDispose(obj.material);
+                    }
+                }
+            });
+            stage.pivot = null;
+        }
+        stage.soul = soul || null;
+        if (!Array.isArray(bodyParts) || !bodyParts.length) return;
+        const group = this._buildFromBlueprint({ name: `self_${soul}`, parts: bodyParts });
+        if (!group) return;
+        const box = new THREE.Box3().setFromObject(group);
+        const center = box.getCenter(new THREE.Vector3());
+        const dim = box.getSize(new THREE.Vector3());
+        group.position.sub(center);
+        const maxDim = Math.max(dim.x, dim.y, dim.z) || 1;
+        group.scale.setScalar(3.0 / maxDim);
+        const pivot = new THREE.Group();
+        pivot.add(group);
+        stage.scene.add(pivot);
+        stage.pivot = pivot;
+    }
+
+    _ichStartRAF() {
+        const stage = this.state.ichStage;
+        if (!stage || stage.rafId !== null || !stage.rendererReady) return;
+        const tick = () => {
+            const s = this.state.ichStage;
+            if (!s || !s.active) {
+                if (s) s.rafId = null;
+                return;
+            }
+            if (s.pivot) {
+                s.yaw += 0.008;
+                s.pivot.rotation.y = s.yaw;
+            }
+            if (s.rendererReady) {
+                const rr = s.renderer.render(s.scene, s.camera);
+                if (rr && typeof rr.catch === "function")
+                    rr.catch((e) => this.log(`Ich-Bühne-Render: ${e && e.message}`, "INFO"));
+            }
+            s.rafId = requestAnimationFrame(tick);
+        };
+        stage.rafId = requestAnimationFrame(tick);
+    }
+
+    _ichStopRAF() {
+        const stage = this.state.ichStage;
+        if (stage && stage.rafId !== null) {
+            cancelAnimationFrame(stage.rafId);
+            stage.rafId = null;
+        }
+    }
+
+    // Overlay-Hook (Zwilling zu _hofHandleDrawerChange): die Bühne + das Spec-Sheet leben nur bei offenem Ich.
+    _ichHandleOverlay(open) {
+        if (open) {
+            // frische Werte (equip-gefaltet) — recompute setzt player.stats + statTags, die das Spec-Sheet liest.
+            if (typeof this.recomputePlayerStats === "function") this.recomputePlayerStats();
+            this._ichRenderSpecSheet();
+            const stage = this._ichEnsureStage();
+            if (stage) {
+                stage.active = true;
+                const prof = this._selfProfile();
+                this._ichStageShow(prof.soul, prof.bodyParts);
+                this._ichStartRAF();
+            }
+        } else if (this.state.ichStage) {
+            this.state.ichStage.active = false;
+            this._ichStopRAF();
+        }
     }
 
     // Hof-F (hof-plan §D.2) — die freundlichen Sektions-Labels (Seele + Spezialisierung).
@@ -49110,7 +49461,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.56.0";
+AnazhRealm.VERSION = "18.57.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

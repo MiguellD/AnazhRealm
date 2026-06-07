@@ -10,7 +10,14 @@
 > Schöpfer-Auftrag (07.06.2026): „Weiter geht's, formuliere die Pläne für Ich detailliert aus, aus all dem
 > du gelernt hast — zwei Menüs, viel gelernt. Wie sieht das nächste aus, jedes Detail klar?"
 
-**Stand: PLAN (tief, ungebaut).** Die Werkstatt (Referenz, V18.32–.44) und der Hof (V18.46–.56) sind RUND —
+**Stand: GEBAUT (V18.57, Ich-A0–D) — das „Ich" erreicht das Werkstatt-/Hof-Niveau.** `_selfProfile` (A0) ·
+das geteilte Selbst-Spec-Sheet (A, WERTE führen) · die 6-Achsen-EMOTION als Herz-Signatur (B) · die
+Selbst-Bühne (C, Avatar-3D-Star) · die REISE aus dem worldJournal (D) · die drei Zonen (WER ICH BIN · WAS
+ICH HABE · WAS ICH MACHEN KANN). Mit dem Auge verifiziert (`diag-ich.cjs`). OFFEN: Ich-E (Soul-Editor in die
+Bühne integriert · die Emotion→Welt-Schleife sichtbar machen) + der Schöpfer-Browser-Sign-off (GPU-Optik des
+Avatars + die Emotion-Farben). Der Plan unten bleibt als Referenz, wie der Raum gewachsen ist.
+
+**Historie: PLAN (tief, ungebaut).** Die Werkstatt (Referenz, V18.32–.44) und der Hof (V18.46–.56) sind RUND —
 aus beiden ist die Form gelernt. Das „Ich" ist heute ein 3-Spalten-Overlay (Habe · Charakter · Ausrüstung &
 Rezepte), funktional, aber NOCH NICHT auf dem Niveau: kein content-first Star (keine Selbst-Bühne), kein
 geteiltes Spec-Sheet, die reiche Emotion nur als kleine Sektion, die Reise (Geschichte) unsichtbar. Dieser

@@ -632,29 +632,38 @@
                 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
                 font-family: "Cinzel", Georgia, serif;
                 color: var(--parch-ink);
-                max-width: 92vw;
+                width: 1080px;
+                max-width: 94vw;
             }
-            /* Ich/Inventar (UI-Putz): zwei Spalten — links die Habe (Items), rechts was
-               du trägst + das Rezeptbuch (craftbare Baupläne, Minecraft-artig). */
+            /* V18.57 Ich-Bogen — drei Zonen nach dem mentalen Modell des Selbst (wie Werkstatt/Hof):
+               WER ICH BIN (Star, wide) | WAS ICH HABE  ·  WAS ICH MACHEN KANN (volle Breite unten). */
             .inventory-body {
-                display: flex;
-                gap: 20px;
-                align-items: flex-start;
+                display: grid;
+                grid-template-columns: minmax(0, 1.7fr) 320px;
+                grid-template-areas: "selbst habe" "werk werk";
+                gap: 16px 18px;
+                align-items: start;
             }
-            .inventory-col-recipes {
-                width: 300px;
-                max-height: 60vh;
-                overflow-y: auto;
-            }
-            /* Charakter-Spalte (UI-Putz: das "Ich" — das migrierte Spieler-Menü). */
             .inventory-col-character {
-                width: 300px;
-                max-height: 60vh;
+                grid-area: selbst;
+                max-height: 64vh;
                 overflow-y: auto;
             }
             .inventory-col-items {
-                max-height: 60vh;
+                grid-area: habe;
+                max-height: 64vh;
                 overflow-y: auto;
+            }
+            .inventory-col-recipes {
+                grid-area: werk;
+                max-height: 30vh;
+                overflow-y: auto;
+            }
+            @media (max-width: 900px) {
+                .inventory-body {
+                    grid-template-columns: 1fr;
+                    grid-template-areas: "selbst" "habe" "werk";
+                }
             }
             .inventory-col-title {
                 font-family: "Cinzel", Georgia, serif;
@@ -2705,6 +2714,65 @@
                 .hof-stage-spec {
                     width: 100%;
                 }
+            }
+            /* V18.57 Ich-Bogen — die Selbst-Bühne teilt die `.hof-stage*`-Klassen (ein Design-System);
+               hier nur das Ich-Eigene: der Modus-Chip im Header + die REISE-Liste (auf hellem Grund). */
+            .hof-spec-sheet .ich-mode-chip {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.4px;
+                text-transform: uppercase;
+                padding: 1px 7px;
+                border-radius: 7px;
+                border: 1px solid var(--brass-2, #6f5a30);
+                color: var(--brass-1, #8a6f3e);
+            }
+            .hof-spec-sheet .ich-mode-chip.mode-pfad {
+                color: #d99a6a;
+                border-color: rgba(217, 154, 106, 0.5);
+            }
+            .hof-spec-sheet .ich-mode-chip.mode-schöpfer {
+                color: #c69ad9;
+                border-color: rgba(198, 154, 217, 0.5);
+            }
+            .ich-emotion-section #status-emotions {
+                margin-top: 2px;
+            }
+            #ich-reise .ich-reise-zone {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                margin: 8px 0 4px 0;
+            }
+            #ich-reise .ich-reise-row {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 8px;
+                font-size: 11px;
+            }
+            #ich-reise .ich-reise-text {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                color: var(--parch-ink);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            #ich-reise .ich-reise-when {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                color: var(--parch-ink-soft);
+                flex: 0 0 auto;
+            }
+            #ich-reise .spec-col-head {
+                color: var(--brass-1, #8a6f3e);
+            }
+            #ich-reise .spec-grow-more,
+            #ich-reise .spec-empty {
+                color: var(--parch-ink-soft);
+                font-size: 10px;
+                font-style: italic;
             }
             .creature-list .creature-name {
                 font-weight: 600;
@@ -5924,7 +5992,7 @@
                 <!-- LINKS: Habe — die Items + die Hotbar-Schnellslots, beide 9-breit (wie
                      Minecraft: das Raster + darunter die Belegung der Schnellslots). -->
                 <div class="inventory-col-items">
-                    <h3 class="inventory-col-title">Habe</h3>
+                    <h3 class="inventory-col-title">Was ich habe</h3>
                     <div id="inventory-grid" class="inventory-grid"></div>
                     <div id="inventory-selected" class="inventory-selected" aria-live="polite">
                         <span class="label">gewählt:</span> <span class="name">—</span>
@@ -5933,12 +6001,36 @@
                         <h4>Hotbar <span class="section-hint">(Schnellzugriff 1–9)</span></h4>
                         <div id="hotbar-config"></div>
                     </section>
+                    <!-- V18.57 — „Was du trägst" gehört zur HABE (es faltet die Werte des Selbst). -->
+                    <section class="section">
+                        <h4>Was du trägst <span class="section-hint">(Klick legt ab · formt deine Werte)</span></h4>
+                        <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
+                    </section>
                 </div>
                 <!-- MITTE: Charakter — wer ich BIN (Seele · Stats · Emotionen · eigene Seele).
                      Die IDs bleiben → playerSoulInitDOM, renderPlayerStatsUI, initStatusPanel,
                      _renderSoulEditor füllen sie unverändert. -->
+                <!-- V18.57 Ich-Bogen — „WER ICH BIN" (das Werkstatt-/Hof-Muster auf das Selbst): die
+                     SELBST-BÜHNE (Avatar-3D-Star) + das geteilte Spec-Sheet (Werte führen | Natur), darunter
+                     die reiche 6-Achsen-EMOTION (live) + die REISE (Journal); Seele/Körper/Avatar klappbar. -->
                 <div class="inventory-col-character">
-                    <h3 class="inventory-col-title">Charakter</h3>
+                    <h3 class="inventory-col-title">Wer ich bin</h3>
+                    <div class="hof-stage ich-stage">
+                        <canvas
+                            id="ich-stage-canvas"
+                            class="hof-stage-canvas"
+                            aria-label="Bühne — dein Avatar"
+                        ></canvas>
+                        <div id="ich-stage-spec" class="hof-stage-spec"></div>
+                    </div>
+                    <section class="section ich-emotion-section">
+                        <h4>
+                            Emotion
+                            <span class="section-hint">(wie du die Welt WERTEST · färbt den Bildschirmrand)</span>
+                        </h4>
+                        <div id="status-emotions"></div>
+                    </section>
+                    <div id="ich-reise"></div>
                     <section class="section">
                         <h4>Seele</h4>
                         <div class="soul-row">
@@ -5946,15 +6038,13 @@
                             <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
                         </div>
                     </section>
-                    <section class="section">
-                        <h4>Stats <span class="section-hint">(aus Soul-Tags abgeleitet)</span></h4>
+                    <section class="section default-collapsed" id="ich-details-section">
+                        <h4>
+                            Körper &amp; Detail-Werte <span class="section-hint">(Form × Material → Tags → Werte)</span>
+                        </h4>
                         <div id="player-stats" aria-live="polite"></div>
                     </section>
-                    <section class="section">
-                        <h4>Emotionen <span class="section-hint">(Farbe = der Bildschirmrand-Schimmer)</span></h4>
-                        <div id="status-emotions"></div>
-                    </section>
-                    <section class="section">
+                    <section class="section default-collapsed">
                         <h4>Eigene Seele formen <span class="section-hint">(custom Avatar)</span></h4>
                         <div id="soul-editor"></div>
                     </section>
@@ -5967,11 +6057,7 @@
                      manueller Rollen-Override für Mehrdeutiges). _renderInventoryEquip, renderRecipeBook,
                      renderPlayerEquipUI füllen sie. -->
                 <div class="inventory-col-recipes">
-                    <h3 class="inventory-col-title">Ausrüstung &amp; Rezepte</h3>
-                    <section class="section">
-                        <h4>Was du trägst <span class="section-hint">(Klick legt ab)</span></h4>
-                        <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
-                    </section>
+                    <h3 class="inventory-col-title">Was ich machen kann</h3>
                     <section class="section">
                         <h4>
                             Rezeptbuch
@@ -7249,6 +7335,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.56.0" defer></script>
+        <script src="anazhRealm.js?v=18.57.0" defer></script>
     </body>
 </html>
