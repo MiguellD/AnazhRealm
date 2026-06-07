@@ -86,6 +86,14 @@ function startSaveServer() {
             return dn ? `.drawer[data-drawer="${dn}"]` : null;
         }, ROOM);
         await new Promise((r) => setTimeout(r, 1200));
+        // PAGE-Modus: das ganze Viewport (Fenster ÜBER der Welt) — so SEHE ich, wie ein
+        // Drawer sitzt (ragt er übers Hauptbild? sind die Ränder bündig?).
+        if (FOCUS === "PAGE") {
+            const out = path.join(ARTIFACTS, `room-${ROOM}-page.png`);
+            await page.screenshot({ path: out, fullPage: false });
+            console.log(`geschrieben: artifacts/room-${ROOM}-page.png (volles Viewport über der Welt)`);
+            return;
+        }
         // FOCUS-Modus: ein lesbarer Screenshot NUR des gewählten Elements (Text-genau).
         if (FOCUS) {
             // erst alle Scroll-Behälter aufklappen, damit nichts abgeschnitten ist.

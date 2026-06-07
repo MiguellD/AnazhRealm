@@ -390,3 +390,278 @@ Tab → Hauptmenü-Sektion, Spieler-Tab → Inventar, Kreaturen+Fähigkeiten →
 _Dieser Plan ist der aktive UI-Bogen. Der Code-Builder (Phase 1) läuft; die UX-Phasen
 warten auf den Schöpfer-Sign-off der Richtung (§8), dann Akt für Akt, verifiziert,
 gemergt._
+
+---
+
+# DER ZWEITE BOGEN — Omnibox + Tags + die durchdachten Räume (Plan, 07.06.2026)
+
+> Schöpfer-Auftrag (07.06.2026): „Die ultimative Lösung: Omnibox + Tags. Hotkey öffnet
+> die Alles-Suche, du tippst `w:eisen` (Waffe + Eisen), das System filtert WÄHREND des
+> Tippens, 0.2 s zum exakten Ergebnis. Die Werkstatt aktuell am besten — doch man muss
+> scrollen, der Bauplan-Bereich genialer (weniger Platz, schneller, auch bei HUNDERTEN
+> Blueprints), die Ausgabe-Tabelle ist erst nach Scrollen sichtbar, nutzt die Breite +
+> Höhe nicht effizient; das Fenster ragt übers Hauptbild (zu groß). Den anderen Menüs
+> fehlt die Gruppierung — durchdenke die Systeme: wie interagiert man, was klickt/sucht
+> man, was gehört zusammen, nutzt es den Platz, ist der Fluss natürlich, was klickt man
+> davor/danach, wie ist das Erlebnis. Gehe präzise einen Gamezyklus durch. Vergleiche mit
+> wie sich Tools geändert, was bewährt, was gefeiert wird. Höchst detailiert, am Schluss
+> den Plan selbst prüfen — mit allen Learnings + der Vision."
+
+**Stand: PLAN (ungebaut). GEMESSEN: alle 6 Räume per `diag-room.cjs` screenshottet (+
+`PAGE`-Modus = volles Viewport über der Welt) + GELESEN.** Was bis V18.36 GEBAUT ist:
+de-dup (Welt-Aktionen) · drei durchsuchbare Listen (Befehle/Rezepte/Baupläne) · eine
+Fenster-Sprache (Hof+Einstellungen vollbreit mehrspaltig). Dieser Bogen ist die Tiefe
+darunter.
+
+## Z1. Der Gamezyklus, präzise — wo die Reibung WIRKLICH sitzt
+
+Ein Durchlauf, in dem man alles einmal braucht. Pro Schritt: was man tut, was man
+klickt/sucht, die Reibung (gemessen aus den Screenshots + dem Code).
+
+1. **Ankommen.** Welt lädt, Eins (Begleiter) lädt diegetisch ein. ✓ (WOW-Start sitzt.)
+   Reibung: der Chat/die Konsole klebt links im Bild — der erste Eindruck ist „App", nicht
+   „Welt".
+2. **Orientieren / bewegen.** WASD + Maus. ✓ HUD dezent (H blendet aus). Reibung: keine.
+3. **Abbauen / sammeln.** LMB auf Architektur → Material ins Inventar. Reibung: man weiß
+   nicht, was man schon hat, ohne das Ich-Overlay zu öffnen (Modal, unterbricht).
+4. **Werkstatt öffnen** (Tab/Hotkey). Man will EIN Gerät bauen. Reibung (die Hauptlast,
+   §Z4): die Bauplan-Liste oben, das 3D-Preview riesig in der Mitte, die **Ausgabe-Tabelle
+   erst NACH Scrollen** — man sieht Werte + den FERTIGEN-Knopf nicht, während man die Form
+   formt. Das ist ein vertikaler Stapel, wo ein 3-Spalten-Werktisch hingehört.
+5. **Bauplan finden.** Bei 6 Bauplänen ok (jetzt 2-spaltig + Suche). Bei HUNDERTEN: die
+   Liste skaliert nicht (kein Tag-Filter „nur Waffen aus Eisen", kein Kategorie-Sprung).
+6. **Formen + Prozess.** Drag-Form aus der Palette, Drop-Prozess auf Part/Baugruppe. ✓
+   Schöpfer: „farblich, vom Fluss mit Drop relativ stark." Das ist das Vorbild — behalten.
+7. **FERTIGEN** → ins Inventar. Reibung: der Sprung Werkstatt→Inventar ist ein Tab-Wechsel
+    - ein Modal; kein durchgehender Fluss „gemacht → da".
+8. **Ausrüsten / nutzen** (Ich-Overlay). Reibung (§Z5): drei Spalten, aber **unbalancierte
+   Höhen + dunkle Leeren** — rechts die lange Rezept-Spalte, links/mitte kurz. Nicht „auf
+   Niveau".
+9. **Kreaturen dirigieren** (Hof). Reibung (§Z5): die Kreatur-Liste ist NUR Anzeige
+   (read-only Task-Label, `_renderCreatureListUI`), die Befehle leben in einer SEPARATEN
+   Knopf-Reihe (Aufträge/Sammeln) — die GEMESSEN ein Duplikat der durchsuchbaren Befehle
+   ist. Das „richtige Format" wäre INLINE am Wesen (wähle Kreatur → befiehl ihr), nicht ein
+   globaler Knopf-Block + ein Duplikat in der Befehle-Liste + Chat.
+10. **Welt-Regel setzen** (Hof → Gesetze). ✓ vorhanden. Reibung: zwischen Spawn-Knöpfen +
+    Befehlen vergraben.
+11. **Welt teilen / besuchen** (Bibliothek). Reibung: Karten in unausgewogenen Spalten;
+    Welt-Suche ist ein Textfeld, kein Tag-Filter (`welt:terrain trust:hoch`).
+12. **Einstellungen** (Modus/Steuerung/Render/Audio/Pass). ✓ jetzt mehrspaltig. Reibung:
+    Gruppierung ad-hoc, kein roter Faden „erst Modus, dann Welt, dann Steuerung".
+
+**Die EINE wiederkehrende Reibung über ALLE Schritte:** um irgendETWAS zu TUN (Befehl,
+Bauplan, Rezept, Kreatur-Auftrag, Welt-Sprung, Einstellung) klickt man sich durch Tabs +
+Sektionen ODER tippt frei in einen immer-sichtbaren Chat. Es gibt keinen EINEN, schnellen,
+beschwörbaren Ort für Absicht. **Das ist exakt, was die Omnibox löst.**
+
+## Z2. Wie sich Tools verändert haben — was bewährt, was gefeiert (die Riesen)
+
+Die Evolution der Werkzeug-Bedienung, präzise:
+
+- **1990er–2000er:** Menüleiste + Toolbar + modale Dialoge. Tiefe Verschachtelung; man
+  MUSS wissen, wo etwas liegt. (Unser jetziger Zustand ähnelt dem: Tabs + Sektionen.)
+- **2010er:** Ribbon (Office), kontextuelle Paletten, „Suche im Menü". Erste Linderung.
+- **Die Befehlspaletten-Revolution (~2013+):** Sublime Text `Cmd+Shift+P` → VSCode →
+  ÜBERALL. Eine Liste aller Befehle, fuzzy-durchsuchbar, tastatur-getrieben. **Das meist-
+  kopierte UI-Muster der Dekade.**
+- **Launcher:** Spotlight (2009), Alfred, **Raycast** (gefeiert ~2021+) — eine Box öffnet
+  alles: Suche + Aktion + Erweiterungen.
+- **Die Omnibox (Chrome 2008):** EINE Leiste = suchen + navigieren + handeln. Heute Standard
+  in jedem Browser. Der Punkt: der Nutzer unterscheidet nicht „Suche" von „Adresse" von
+  „Befehl" — er tippt seine ABSICHT, das System erkennt sie.
+- **Token-/Tag-Suche (bewährt für Tempo + Macht):** Gmail (`from:`, `has:attachment`),
+  GitHub (`is:open label:bug`), **Linear** (Filter-Tokens), Slack (`in:`, `from:`). Kurze
+  Präfixe → exakte Treffer ohne Maus. GENAU der Schöpfer-`w:eisen`-Wunsch.
+- **Keyboard-first, gefeiert:** **Linear** (das Gold-Standard-`Cmd+K`-überall, „die schönste
+  produktive App"), **Superhuman** (E-Mail per Tastatur), **Notion** (`/` Slash-Befehle).
+  Der Trend: weniger persistentes Chrome, mehr beschwörbare Absicht.
+- **Spiele:** **Minecraft** Rezeptbuch (Suche + Auto-Füllen, Kategorien-Tabs); **Zelda BotW
+  / Genshin** (minimales HUD, die WELT ist der Star, Radial-Schnellwahl); **Dwarf Fortress**
+  (Steam-Version fügte SUCHE in die Listen ein → gefeiert); **Die Sims** Build/Buy (Katalog
+  mit Suche + Kategorie-Icons). Pro-3D: **Blender / Figma / CAD** — der **3-Spalten-Werktisch**
+  (Outliner/Liste LINKS · Viewport MITTE · Eigenschaften/Ausgabe RECHTS), alles gleichzeitig
+  im Blick, kein Scrollen zwischen „formen" und „Werte sehen".
+
+**Das destillierte Prinzip (was ALLE Gefeierten teilen):** (a) EIN beschwörbarer Ort für
+Absicht (Palette/Omnibox), (b) SUCHE schlägt Navigation, (c) Tastatur schlägt Maus für
+Tempo, (d) Token/Tags für Präzision, (e) progressive disclosure (Tiefe erst auf Abruf), (f)
+das Werk/die Welt ist der Star, Chrome tritt zurück, (g) Pro-Werkzeuge: alles-im-Blick statt
+scrollen (3-Spalten).
+
+## Z3. Die Lösung — die Omnibox + Tags (der Schlüsselstein)
+
+**EINE beschwörbare Leiste, die JEDE Absicht aufnimmt.** Sie verdichtet, was heute auf
+Chat + Befehle-Liste + drei Such-Felder + Tab-Navigation verteilt ist (die Heilige Lektion:
+EINE Quelle, nicht fünf Pfade).
+
+**Beschwören:** `Ctrl/Cmd+K` (Standard) · zusätzlich ein dezenter HUD-Knopf (🔍/„sprich")
+für Maus-Spieler · `/` wie Notion. **`Esc`** schließt. Zentriert (Spotlight-Form), nicht
+links-angeklebt → **der Bildschirm ist frei**, der Chat ist nicht mehr Dauer-Möbel.
+
+**Die Tag-Grammatik (`praefix:wert`, filtert WÄHREND des Tippens, Ziel <0.2 s):**
+
+| Präfix      | Domäne             | Beispiel                | Wirkung                                   |
+| ----------- | ------------------ | ----------------------- | ----------------------------------------- |
+| `b:`        | Bauplan            | `b:tempel`              | Bauplan finden → Werkstatt/Hand           |
+| `w:` `r:` … | Bauplan nach ROLLE | `w:eisen` (Waffe+Eisen) | rollen-gefilterte Baupläne (Schöpfer-Bsp) |
+| `rez:`      | Rezept             | `rez:trank`             | Rezeptbuch → fertigen/nutzen              |
+| `c:`        | Befehl (DSL)       | `c:wetter`              | Welt-Befehl ausführen                     |
+| `k:`        | Kreatur            | `k:folge` / `k:<name>`  | Kreatur-Auftrag (siehe Z5 inline)         |
+| `welt:`     | Bibliothek         | `welt:terrain`          | Welt entdecken/betreten                   |
+| `geh:`      | Navigation/Raum    | `geh:werkstatt`         | Raum öffnen (statt Tab-Suche)             |
+| (kein Tag)  | Freitext → Nexus   | `mach es nacht`         | spricht zur KI (der diegetische Kern)     |
+
+Die Rollen-Präfixe (`w:`=Waffe, `s:`=Schutz/Rüstung, `t:`=Trank, `a:`=Avatar, `g:`=Gerät,
+`p:`=Portal) leiten sich aus den BESTEHENDEN Rollen-Signaturen ab (`FORM_ROLE_SIGNATURES`,
+`computeBlueprintRole`) — KEINE neue Taxonomie, die Omnibox liest die Resonanz-Rolle, die
+schon emergiert (Konsum-Disziplin: ein echter Leser des bestehenden Vektors).
+
+**Fluss (tastatur-getrieben):** Box öffnen → tippen → Treffer-Liste filtert live, beste
+zuerst → `↑↓` wählt → `Enter` führt aus → schließt. Leerer Zustand: zuletzt/oft Benutztes +
+ein Hinweis auf die Tags. Freitext ohne Präfix + kein Befehls-Treffer → an den Nexus (Chat).
+
+**Ranking:** exakter Präfix-Treffer > Präfix+Teilstring > fuzzy über Label > Freitext-Nexus.
+Domänen-Reihenfolge bei tag-losem Query: Befehl → Bauplan → Rezept → Raum → Welt.
+
+**Der Chat wird beschwörbar (Screen-Freiheit, Minecraft-Modell):** die Konsole ist nicht
+mehr Dauer-Panel. Neue Nachrichten (Nexus-Antworten) erscheinen als **kurz einblendender,
+verblassender Feed** (unten, BotW/Minecraft); die volle Historie + Eingabe lebt in der
+Omnibox (Freitext-Modus) bzw. einem beschwörbaren Log. **Bedacht:** der Nexus-Chat ist das
+Herz (V7.66) — die Omnibox wird ADDITIV gebaut (sie ruft `processChatCommand` +
+`chatDslPatterns`, beide unangetastet); erst wenn sie trägt, wird die Konsole vom Dauer-
+Panel zum beschwörbaren Log (Tests wandern mit dem Code, V9.56-i).
+
+## Z4. Die Werkstatt — von „am besten" zu „genial" (3-Spalten-Werktisch)
+
+GEMESSEN (`room-werkstatt-page.png`): vertikaler Stapel Liste → Preview → Ausgabe-Tabelle;
+die Tabelle erst nach Scrollen; rechts neben der Bauplan-Liste leerer Platz; das Fenster
+~94 % des Schirms (zu groß / ragt übers Hauptbild). Stark: Farbe + Drop-auf-Part/Baugruppe.
+
+**Die Profi-Form (Blender/Figma/CAD), alles gleichzeitig im Blick:**
+
+```
+┌─ WERKSTATT ──────────────────────────────────────────────── × ┐
+│ [Omnibox-Suche: b:/w:eisen …]   (Top-Leiste: Undo Redo Klon Neu Löschen) │
+├──────────────┬───────────────────────────────┬───────────────┤
+│ BAUPLÄNE      │        3D-VORSCHAU (Star)       │ AUSGABE        │
+│ (links,       │  + Form-Palette · Modus-Bar     │ Rolle          │
+│  kompakt,     │  + Drop-Prozess auf Part/Gruppe │ Werte (Tabelle)│
+│  tag-such-,   │  (der starke Fluss — behalten)  │ Resonanz       │
+│  hunderte-    │                                 │ Material-Palette│
+│  tauglich)    │                                 │ ⚒ FERTIGEN     │
+└──────────────┴───────────────────────────────┴───────────────┘
+```
+
+- **Links — Baupläne:** schmale Spalte, omnibox-/tag-durchsuchbar (`w:eisen`), kompakt
+  (1 Zeile/Bauplan, Rollen-Farbe links), **virtualisiert/gefiltert für HUNDERTE** (nur
+  Treffer rendern; bei >N nur die ersten K + „suche, um zu filtern"). Skaliert.
+- **Mitte — 3D-Vorschau:** der Star, größter Raum. Form-Palette + Modus-Bar + der Drop-
+  Prozess-Fluss bleiben (Schöpfer-gelobt).
+- **Rechts — Ausgabe (IMMER sichtbar):** Rolle · Werte-Tabelle · Resonanz · Material-Palette
+  · der **⚒ FERTIGEN**-Akt. Nutzt die rechte Spalte (heute leer/verscrollt) → **kein
+  Scrollen mehr**, man sieht die Werte WÄHREND man formt (der entscheidende Profi-Gewinn).
+- **Fenster-Größe:** Padding straffen, `max-height`/`max-width` so, dass es bündig sitzt +
+  nicht „zu groß" wirkt (die Ränder gleich links/rechts — der Schöpfer-Befund am linken
+  Rand). Ein Hauch Welt am Rand sichtbar = „in der Welt", nicht „App über der Welt".
+- Umsetzung: das mittlere `#workshop-preview-row` + die Tail-Sektionen in ein **CSS-Grid**
+  `grid-template-columns: minmax(180px,1fr) 2.4fr minmax(220px,1fr)` legen; die Methoden
+  (`_workshopRenderBlueprintList` · Preview · `_workshopRenderStatsPanel`) füllen die drei
+  Zellen UNVERÄNDERT (Container per ID verschieben, nicht neu bauen — V18.32-Lehre).
+
+## Z5. Die anderen Räume — durchdacht (Gruppierung · Fluss · Format)
+
+Pro Raum die Schöpfer-Fragen (interagieren/klicken/suchen · zusammengehörig · Platz · Fluss
+· davor/danach · Erlebnis), dann die Form.
+
+**DER HOF — Dirigent + Orchester.** Heute: read-only Kreatur-Liste + separate Aufträge-/
+Sammeln-Knopf-Reihen (Duplikat der Befehle) + Spawnen + Gesetze + die Befehle-Liste.
+
+- _Was klickt man?_ Eine Kreatur, dann ein Auftrag. _Was gehört zusammen?_ Die Kreatur +
+  IHRE Befehle. → **Format: INLINE.** Jede Zeile der Kreatur-Liste bekommt ihre Aktionen
+  (folge · komm · warte · sammle…) direkt am Wesen (wähle → befiehl). Das löst das Duplikat
+  (die globale Aufträge-Reihe entfällt) UND ist der natürliche Fluss.
+- Gruppierung: **Wesen** (Liste + inline Befehle + Spawn) · **Gesetze** (Welt-Regeln) ·
+  die freien Welt-Befehle wandern in die **Omnibox** (`c:`/`k:`). Der Hof wird der Ort, wo
+  man Leben dirigiert — nicht eine Knopf-Halde.
+
+**DAS ICH — Minecraft-Charakterbogen.** Heute: 3 Spalten, unbalancierte Höhen, dunkle Leeren.
+
+- Gruppierung ist richtig (Habe · Charakter · Ausrüstung+Rezepte), die BALANCE nicht.
+- Fix: die Spalten-Höhen angleichen (die kurze Charakter-Spalte füllt mit dem geplanten
+  **lebendigen 3D-Avatar-Mittelpunkt** — der WebGPU-Sub-Renderer, der eh offen ist; er ist
+  der natürliche Mittelpunkt „wer bin ich"); die Rezept-Spalte deckelt die Höhe + scrollt
+  intern (Suche trägt den Überblick). Keine dunklen Leeren mehr.
+- _Davor/danach:_ man kommt aus der Werkstatt (fertigen) → Ich (anlegen/tragen) → zurück in
+  die Welt (nutzen). Der FERTIGEN→Rezeptbuch→tragen-Fluss (V18.34) ist die Naht — sie soll
+  EIN Bogen sein, kein Tab-Hüpfen (perspektivisch: fertigen kann direkt anlegen anbieten).
+
+**DIE BIBLIOTHEK — der Welt-Browser.** Heute: Karten in unausgewogenen Spalten, Text-Suche.
+
+- Gruppierung: **Entdecken** (Welt-Karten, ein balanciertes Masonry-Raster) · **Schöpfen/
+  Teilen** · **Provenienz** (Stammbaum/Tagebuch, erst bei Auswahl). Die Welt-Suche wird
+  Tag-fähig (`welt:terrain trust:hoch`) über die Omnibox. Man BETRITT Welten (Karten mit
+  Vorschau), scrollt nicht Text.
+
+**DIE EINSTELLUNGEN — ein roter Faden.** Heute: mehrspaltig (gut), Gruppierung ad-hoc.
+
+- Ordnen nach Häufigkeit/Logik: **Spielmodus → Welt(-Beziehung/Diese Welt) → Steuerung
+  (Keybinds) → Darstellung (Render/Dev, eingeklappt) → Audio → Identität (Vibe-Pass/Version)**.
+  Jede Gruppe eine Pergament-Karte (schon der Fall). Selten-Genutztes (Dev-Render) bleibt
+  eingeklappt (progressive disclosure).
+
+**Die EINE Fenster-Sprache (über alle):** vollbreit, mehrspaltig, eingemittet, Pergament-
+Karten, ein Suchfeld auf jeder Liste, bündige Ränder, ein Hauch Welt am Rand. Was in einem
+Raum gilt, gilt in allen (V18.36-Lehre: uniform oder gar nicht).
+
+## Z6. Reihenfolge + Verifikation
+
+1. **Omnibox-Kern** (Schlüsselstein, additiv): die Leiste + Tag-Parser + Ranking, ruft
+   `processChatCommand`/`chatDslPatterns`/`computeBlueprintRole`. Verifizierbar headless
+   (Tag→Treffer→Ausführung als Invarianten). Tilgt die Duplikate strukturell.
+2. **Werkstatt 3-Spalten-Grid** (unabhängig, hoher Wert): Container-Umzug ins Grid, Ausgabe
+   rechts immer sichtbar. Verifizierbar (Layout rastert treu) + Schöpfer-Auge fürs Feel.
+3. **Hof inline** (Kreatur-Befehle ans Wesen) — tilgt das letzte Befehls-Duplikat.
+4. **Ich-Balance** (Spalten-Höhen + Avatar-Mittelpunkt, WebGPU → Schöpfer-Go).
+5. **Bibliothek-Masonry + Einstellungen-Faden** (Feinschliff).
+6. **Chat → beschwörbar** (zuletzt, wenn die Omnibox trägt — das Herz behutsam).
+
+Jeder Schritt: Playtest-Gate + `diag-room.cjs` (+ `PAGE`) gelesen + ein Merge pro
+bestätigtem Bogen (pixel-blinde Shader → Schöpfer-Browser).
+
+## Z7. Selbst-Prüfung des Plans — gegen die Learnings + die Vision
+
+- **Heilige Lektion (Komplexität ohne Fundament):** Die Omnibox SENKT Komplexität — sie
+  verdichtet fünf Eingabe-Pfade (Chat · Befehle-Liste · 3 Such-Felder · Tab-Navigation) zu
+  EINEM. Kein Parallel-System (V9.82). ✓ Risiko: sie darf kein SECHSTER Pfad NEBEN den
+  alten werden → die alten Pfade müssen weichen, sobald sie trägt (sonst Duplikat-Sünde).
+- **Verdichte zu EINER Quelle (V9.82, 6×):** die Omnibox IST das. ✓
+- **Verifiziere KONSUM, nicht Existenz (V17.31):** jeder Tag liest einen BESTEHENDEN Vektor
+  (`computeBlueprintRole`/`chatDslPatterns`) → kein Passagier; jede Omnibox-Aktion braucht
+  eine Invariante „Tag X → führt Befehl/Treffer Y aus". ✓
+- **Headless-grün ≠ vision-aligned (V17.59):** die Omnibox-LOGIK ist headless beweisbar; das
+  FEEL (Tempo, Eleganz, der freie Bildschirm) braucht den Schöpfer-Browser. Markiert. ✓
+- **Test wandert mit dem Code (V9.56-i):** Konsole→beschwörbar + Hof-Inline migrieren Tests
+  (`#console`-im-DOM, `quickButtonRoutesToChat`, die Aufträge-Reihe). Eingeplant. ✓
+- **Container verschieben, nicht neu bauen (V18.32):** der Werkstatt-Grid-Umzug + die ID-
+  Erhaltung (`grep -c id=`). ✓
+- **Eine Lehre gilt UNIFORM (V18.36):** die Fenster-Sprache + das Suchfeld in JEDEN Raum;
+  die Omnibox bedient ALLE Domänen, nicht nur Befehle. ✓
+- **Mutig + bedacht (Verifikation, nicht Kleinheit):** der Chat (das Herz) wird ADDITIV
+  umgebaut, mit der Omnibox als Sicherung, erst dann das Dauer-Panel ablösen. Nicht klein —
+  aber durch die additive Naht + Tests verifiziert. ✓
+- **Die Vision (`das-lebendige-feld.md`): die Welt als EIN Feld, das alle lesen·schreiben·
+  WERTEN; die KI als Co-Schöpferin.** Die Omnibox ist DIEGETISCH: Freitext spricht zum Nexus
+  (lesen/schreiben/werten der Welt durch Sprache), die Tags sind die präzise Geste daneben.
+  Der freie Bildschirm = „die Welt ist der Star" (BotW). Die Omnibox ist nicht „App-Chrome",
+  sie ist die STIMME, mit der Mensch + KI die Welt formen. ✓ Tiefen-Kohärenz mit dem wahren
+  Norden.
+- **Restrisiko (ehrlich):** (a) `column-count`-Fragilität bei sehr hohen Sektionen (Fallback
+  testen); (b) der Chat-Umbau ist der riskanteste Akt (das Herz) — darum zuletzt + additiv;
+  (c) Tag-Präfix-Kollisionen (`w:` Waffe vs. Wort) → Präfix nur am Token-Anfang + Freitext-
+  Fallback. Alle drei sind benannt + haben einen Pfad.
+
+**Fazit der Selbst-Prüfung:** der Plan verdichtet (senkt Komplexität), liest bestehende
+Vektoren (kein Passagier), gilt uniform, ist diegetisch (vision-treu), und staffelt das
+Riskante (das Herz) ans Ende mit additiver Sicherung. Er ist baubar Akt für Akt, jeder
+verifiziert. Der Schlüsselstein ist die Omnibox; die Werkstatt-Werkbank ist der größte
+sofort-sichtbare Sprung.
