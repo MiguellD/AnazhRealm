@@ -7,13 +7,18 @@
 > (die Werkstatt — das Vorbild-Subdesign), `das-lebendige-feld.md` (die Welt, die das UI
 > trägt), `state-of-realm.md` (die Vision).
 
-**Stand: GRÖSSTENTEILS GEBAUT (V18.32, 07.06.2026).** Zehn Bögen verifiziert + gepusht
+**Stand: GEBAUT + VEREDELT (V18.33, 07.06.2026).** Zehn Bögen verifiziert + gepusht
 (`_el`-Builder · Tag/Nacht weg · WOW-Start · Hilfe→Einstellungen+Dev gestaffelt ·
 Emotion-Klarheit · Rezeptbuch+Equip · Der Hof · Bibliothek von Alexandria · Das Ich/Inventar
-· freier Bildschirm). **8 Tabs → 6 Kern-Räume** (Welt · Hof · Ich · Werkstatt · Bibliothek
-· Einstellungen). Offen: Soul-Editor evtl. → Werkstatt · der Schöpfer-Browser-Sign-off des
-ganzen Flusses (Feel/Schönheit auf echtem WebGPU) · weitere CSS-Verschlankung (Phase 4d).
-Der Schöpfer-Auftrag, wörtlich:
+· freier Bildschirm); dann die VEREDELUNG (V18.33): die GEMESSEN-Wurzel der hässlichen Räume
+geheilt (57 `.drawer`-skopierte Charakter-Widgets → `#inventory-overlay`, sie waren ungestylt),
+das Ich in Balance (Minecraft 9-Raster + Hotbar links · Charakter mitte · Ausrüstung & Rezepte
+rechts · Pergament-Karten überall), der Welt-Tab AUFGELÖST (die Welt = Default-Blick, „Diese
+Welt" + „Welt-Aktionen" → Einstellungen). **8 Tabs → 5 Kern-Räume** (Hof · Ich · Werkstatt ·
+Bibliothek · Einstellungen; die Welt ist der Default-Blick, kein eigener Tab). Offen: ein
+lebendiger 3D-Avatar-Vorschau-Mittelpunkt im Ich (WebGPU-Sub-Renderer, pixel-blind → erst
+Schöpfer-Go) · der Schöpfer-Browser-Sign-off des ganzen Flusses (Feel/Schönheit auf echtem
+WebGPU) · weitere CSS-Verschlankung (Phase 4d). Der Schöpfer-Auftrag, wörtlich:
 
 > „Das UI hat dringend einen Putz verdient, effizient in Struktur des Codes wie auch das
 > UI selbst. Lerne von den Besten, intuitiv, geordnet, simpel, aber trotzdem die volle
