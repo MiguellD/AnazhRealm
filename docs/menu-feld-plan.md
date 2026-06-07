@@ -109,13 +109,14 @@ Spalten-Balance (kein dunkler Leerraum, V18.33) ist P7/P8.
 
 ## 4. WERKSTATT — feld für feld (der Abschluss, die funktionalen Zonen)
 
-**Stand: GEBAUT (V18.40, Playtest grün) — die vier Zonen stehen** (Farben→links · Mach-Zone „⚒ FERTIGEN"
-rechts · Ausgabe = nur Readout, nutzerfrage-geordnet · Werkzeug-Mode-Bar). **OFFEN (der Polish-Pass, im Plan
-festgehalten, NICHT mehr im jetzigen Code — der Merge-Stand trägt sie als bekannte To-dos):** (1) das
-**Signatur-Feld** in die Mach-Zone ÜBER FERTIGEN, unter ein sauberes **„Werk"-Heading** (statt `stat-label`);
-(2) **Synergie/Wachstum lesbar** (P11 Kontrast); (3) die **rechte Flucht** der Ausgabe (P13, Grid statt
-`column-count`); (4) das **Werkzeug-„?"-Popover** opak + nicht abgeschnitten + z-index (P12). Diese vier sind
-die VORLAGE, wie die anderen Räume es von Anfang an richtig machen (P11–P13, §1.5).
+**Stand: GEBAUT (V18.40+.41, Playtest grün + mit dem Auge verifiziert) — die vier Zonen + der Polish-Pass stehen**
+(Farben→links · Mach-Zone rechts · Ausgabe = nur Readout, nutzerfrage-geordnet · Werkzeug-Mode-Bar). **Polish-Pass
+GEBAUT (V18.41):** (1) das **Signatur-Feld** in der Mach-Zone ÜBER FERTIGEN, unter ein **„Werk"-Heading**
+(Cinzel, kein `stat-label`); (2) **Synergie/Wachstum lesbar** (P11, `--ink-on-dark-soft`); (3) die **rechte Flucht**
+der Ausgabe (P13, `grid(1fr 1fr)`); (4) das **„?"-Popover** opak + body-portaliert + z-index (P12); (5) **die
+Mach-Zone GEPINNT** (`position:sticky` — FERTIGEN war im scrollenden Palette unter der Falz). OFFEN: nur der
+Schöpfer-Browser-Sign-off (GPU-Feel). Diese sind die VORLAGE, wie die anderen Räume es von Anfang an richtig
+machen (P11–P13, §1.5).
 
 Siehe `ui-putz-plan.md` §A (das WARUM). Hier feld-konkret:
 
@@ -175,12 +176,14 @@ Nexus. Sie ist die Heimat aller freien/kreativen Befehle + macht den Bildschirm 
 
 ## 8. Die Bau-Reihenfolge (verifiziert, ein System pro Schritt)
 
-0. **Der geteilte Detail-Hebel ZUERST (P11–P13, §1.5):** EINMAL die `.help-pop` opak + clip-frei + z-index
-   machen, EINE lesbare Sekundär-Text-Farbe, EIN Flucht-Grid-Muster — als geteilte Bausteine, die alle Räume
-   erben (so wiederholt sich der Werkstatt-Schmerz nirgends).
-1. ✅ **Werkstatt-Abschluss GEBAUT (V18.40)** — die Referenz; **+ der Polish-Pass** (Signatur über FERTIGEN ·
-   „Werk"-Heading · Synergie/Wachstum-Kontrast · rechte Flucht · „?"-Popover) als erster Akt, wenn der Code
-   wieder dran ist (er nutzt direkt den Hebel 0).
+0. ✅ **Der geteilte Detail-Hebel GEBAUT (V18.41, P11–P13, §1.5):** `--ink-on-dark`/`--ink-on-dark-soft`
+   (lesbarer Sekundärtext auf dunklem Grund) · `.help-pop` per Body-Portal opak+clip-frei+z-index
+   (`_installHelpPopovers`) · `#workshop-stats-panel` als Flucht-`grid(1fr 1fr)`. Geteilte Bausteine, die alle
+   Räume erben — mit dem Auge verifiziert (`scripts/diag-workshop-ui.cjs`).
+1. ✅ **Werkstatt-Abschluss + Polish-Pass GEBAUT (V18.40+.41)** — die Referenz; der Polish-Pass: „Werk"-Heading ·
+   Signatur in die Mach-Zone über FERTIGEN · Synergie/Wachstum-Kontrast (P11) · rechte Flucht (P13) · „?"-Popover
+   (P12); **+ die Mach-Zone GEPINNT** (`position:sticky` — FERTIGEN war im scrollenden Palette unter der Falz,
+   Schöpfer-Befund, jetzt immer sichtbar). OFFEN: der Schöpfer-Browser-Sign-off (GPU-Feel).
 2. **Omnibox-Kern** (§7) — löst die Hof-Duplikation strukturell, bevor der Hof umgebaut wird.
 3. **Hof** (§2) — inline-Wesen + Gesetze; die Befehle-Liste stirbt (Omnibox trägt).
 4. **Bibliothek** (§5) — Masonry + Andock-Formular eingeklappt; „Diese Welt" zieht aus Einstellungen her.

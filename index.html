@@ -87,6 +87,13 @@
                 --parch-ink: #1a1023;
                 --parch-ink-soft: #3a2e4a;
                 --parch-ink-faded: #5a4a6e;
+                /* P11 (UI-Putz §1.5) — der geteilte Sekundärtext-Hebel: dunkle Panels
+                   (workshop-stats-panel, action-zone, später Hof/Ich/Bibliothek) lasen ihren
+                   Sekundärtext über --parch-ink-soft (#3a2e4a, dunkel) = dunkel-auf-dunkel,
+                   unleserlich (Synergie/Wachstum/Tag-Wert/Domain-Bar). Diese zwei Tokens sind
+                   die EINE lesbare Quelle für Text AUF dunklem Grund — jeder Raum erbt sie. */
+                --ink-on-dark: #e9dcbb;
+                --ink-on-dark-soft: #bda87e;
                 /* Holz */
                 --wood-1: #221830;
                 --wood-2: #150d22;
@@ -2908,19 +2915,26 @@
                 color: var(--parch-1);
                 outline: none;
             }
-            .help-dot .help-pop {
+            /* P12 (UI-Putz §1.5) — die OVERLAY-INTEGRITÄT als geteilter Hebel. Das Popover war
+               (a) clipping-anfällig: der .drawer trägt `transform` (Slide-Animation) UND
+               `overflow:hidden` → er ist der Containing-Block für position:fixed UND clippt
+               absolute/fixed-Kinder. Weder absolute noch fixed entkommt per CSS. Der EINE
+               robuste Weg: das Popover bei Hover/Fokus nach document.body PORTALIEREN (via
+               _installHelpPopovers) — dann sitzt es fixed am Viewport, kein transformierter
+               Vorfahr, kein overflow-Clip. (b) opak: solider Grund + hoher z-index → der
+               dunkle Inhalt (FERTIGEN) schimmert nie durch. Jeder Raum erbt das. */
+            .help-pop {
                 display: none;
-                position: absolute;
-                top: 135%;
-                left: 0;
-                z-index: 40;
+                position: fixed;
+                z-index: 9999;
                 width: max-content;
                 max-width: 300px;
                 padding: 8px 11px;
+                background-color: #d8c69e;
                 background: linear-gradient(180deg, var(--parch-1), var(--parch-2));
                 border: 1px solid var(--brass-2);
                 border-radius: 4px;
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
                 font-family: "IM Fell English", Georgia, serif;
                 font-size: 11px;
                 font-weight: 400;
@@ -2930,16 +2944,10 @@
                 text-align: left;
                 white-space: normal;
                 letter-spacing: 0;
+                pointer-events: none;
             }
-            .help-dot:hover .help-pop,
-            .help-dot:focus .help-pop {
+            .help-pop.help-pop-open {
                 display: block;
-            }
-            /* V18.38 — rechts sitzende „?" öffnen ihr Popover nach LINKS, damit es nicht
-               über den Bildrand läuft (Schöpfer: „Text teils ausserhalb des Bilds"). */
-            .help-dot.dot-right .help-pop {
-                left: auto;
-                right: 0;
             }
             .help-search {
                 width: 100%;
@@ -3950,16 +3958,25 @@
                 color: var(--parch-bg, #ece1c5);
                 line-height: 1.6;
                 min-height: 18px;
-                /* V18.37 — die Ausgabe-Tabelle nutzt die volle Breite (Schöpfer „nutzt die
-                   Breite nicht optimal"): 2 Spalten (CSS-Multi-Column) packen die Label/Wert-
-                   Zeilen → halb so hoch, breit, übersichtlich; FERTIGEN spannt voll als der
-                   prominente Abschluss-Akt. Füllt den roten Bereich, kein Scrollen mehr. */
-                column-count: 2;
+                /* P13 (UI-Putz §1.5) — RASTER-FLUCHT statt column-count: das alte `column-count:2`
+                   floss wie Zeitungs-Spalten → ungleiche Spaltenbreiten, die rechte Flucht driftete
+                   (Schöpfer „die rechte Flucht stimmt nicht"). Ein explizites Grid (1fr 1fr) hält
+                   beide Spalten EXAKT gleich breit → Label-/Wert-Fluchten bündig links UND rechts.
+                   Kurze Label/Wert-Zeilen füllen die zwei Spalten; breite Zeilen (Tags/Werte/
+                   Domains/Synergie/Wachstum) spannen voll. Das ist das geteilte Flucht-Muster. */
+                display: grid;
+                grid-template-columns: 1fr 1fr;
                 column-gap: 30px;
+                row-gap: 3px;
+                align-content: start;
             }
-            #workshop-stats-panel .stat-row {
-                break-inside: avoid;
-                -webkit-column-break-inside: avoid;
+            /* Breite Zeilen (Chip-Reihen + erklärender Text) spannen beide Spalten. */
+            #workshop-stats-panel .workshop-abilities-row,
+            #workshop-stats-panel .workshop-tags-row,
+            #workshop-stats-panel .workshop-domain-row,
+            #workshop-stats-panel .workshop-synergy-row,
+            #workshop-stats-panel .workshop-growth-row {
+                grid-column: 1 / -1;
             }
             /* V18.38 — FERTIGEN kompakt + rechtsbündig (Schöpfer „nutzt die ganze Länge obwohl
                kaum Platz nötig"): die primäre Schluss-Aktion sitzt rechts unten, nicht als
@@ -3982,10 +3999,8 @@
                 flex-wrap: wrap;
                 gap: 5px 10px;
                 align-items: center;
-                margin-bottom: 3px;
-            }
-            #workshop-stats-panel .stat-row:last-child {
                 margin-bottom: 0;
+                min-width: 0;
             }
             /* V18.38 — Apple-mässig geordnet (Schöpfer „chaotisch, nicht applemässig"): das Label
                fixe Breite + rechtsbündig → die Werte starten auf EINER Flucht (ausgerichtete
@@ -4041,7 +4056,7 @@
             }
             #workshop-stats-panel .tag-chip .tag-val {
                 font-family: "JetBrains Mono", monospace;
-                color: var(--parch-ink-soft);
+                color: var(--ink-on-dark-soft); /* P11 — war --parch-ink-soft (dunkel auf dunklem Chip) */
                 font-size: 9px;
                 margin-left: 2px;
             }
@@ -4156,11 +4171,40 @@
                 filter: brightness(1.12);
                 box-shadow: 0 0 12px rgba(212, 150, 70, 0.7);
             }
-            /* Die Mach-Zone: FERTIGEN als prominente, vollbreite Mach-CTA (vertikal gestapelt). */
+            /* Die Mach-Zone (Step 1, UI-Putz §A-1/§1.5): EIN kohärenter „Werk"-Block — ein sauberes
+               Heading, darunter die Signatur (Versiegeln) + FERTIGEN (machen) als die zwei Werk-Akte
+               (P3: eine Zone, eine Aufgabe — der Werk-Akt lebt zusammen, nicht in der Lese-Tabelle). */
             #workshop-action-zone {
+                /* Step 1 Fix (Schöpfer-Befund: „FERTIGEN sehe ich nach dem Klonen nicht") — die
+                   rechte Palette scrollt (max-height + overflow), und mit vielen Werkzeugen (schöpfer
+                   = alle 7 Werkstätten) rutschte die WERK-Zone unter die Falz → die PRIMÄRE Aktion
+                   versteckt (P1/P7). Jetzt ist der Werk-Block am Boden GEPINNT (sticky), immer
+                   sichtbar + erreichbar, egal wie lang die Werkzeug-Liste ist (Blender/Figma: die
+                   primäre Aktion pinnt). Opaker Pergament-Grund + Lift-Schatten → die scrollenden
+                   Werkzeuge verschwinden sauber darunter. */
+                position: sticky;
+                bottom: 0;
+                z-index: 3;
                 margin-top: 8px;
-                padding-top: 8px;
-                border-top: 1px solid var(--brass-3);
+                padding: 8px 4px 4px;
+                border-top: 1px solid var(--brass-2);
+                border-radius: 0 0 4px 4px;
+                background: linear-gradient(180deg, var(--parch-1), var(--parch-2));
+                box-shadow: 0 -7px 12px -6px rgba(20, 8, 0, 0.55);
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            /* Das „Werk"-Heading — ein echtes Heading (Cinzel), nicht ein winziger stat-label. */
+            .workshop-werk-heading {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 1px;
+                text-transform: uppercase;
+                color: var(--brass-1);
+                border-bottom: 1px solid var(--brass-3);
+                padding-bottom: 3px;
             }
             #workshop-action-zone .workshop-fertigen-row {
                 display: flex;
@@ -4182,6 +4226,20 @@
             }
             #workshop-action-zone .workshop-fertigen-station {
                 margin: 0;
+            }
+            /* Die Signatur in der schmalen Mach-Zone: Label + Knopf in einer Zeile, der
+               Status bricht darunter auf volle Breite (P11/P13 — lesbar, nichts quillt). */
+            #workshop-action-zone .workshop-sig-row {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 4px 8px;
+                margin: 0;
+            }
+            #workshop-action-zone .workshop-sig-status {
+                flex: 1 1 100%;
+                font-size: 9px;
+                color: var(--parch-ink-soft); /* die Mach-Zone sitzt auf HELLEM Pergament → dunkler Text */
             }
             .workshop-fertigen-station {
                 margin-left: 8px;
@@ -4211,7 +4269,7 @@
                 border-radius: 2px;
                 font-family: "JetBrains Mono", monospace;
                 font-size: 9px;
-                color: var(--parch-ink);
+                color: var(--ink-on-dark); /* P11 — war --parch-ink (dunkel auf dunkler Bar) */
                 letter-spacing: 0.05em;
             }
             #workshop-stats-panel .workshop-domain-bar.dominant {
@@ -4226,17 +4284,18 @@
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
                 font-size: 10px;
-                color: var(--parch-ink-soft);
+                color: var(--ink-on-dark-soft); /* P11 — war --parch-ink-soft (dunkel auf dunklem Panel = unlesbar) */
                 line-height: 1.4;
             }
             #workshop-stats-panel .workshop-growth-text.manual-override {
-                color: var(--iron-1, #5b3f10);
+                color: #e0a85a; /* P11 — war --iron-1 (fast schwarz auf dunkel); jetzt ein warnendes Amber */
             }
-            /* V8.37 — Bau-Kosten als Daten-Readout (monospace, brass). */
+            /* V8.37 — Bau-Kosten als Daten-Readout (monospace). P11 — der lesbare Sekundär-Ton
+               statt des dunklen Brass (in der Messung war „641× stein" zu blass). */
             #workshop-stats-panel .workshop-cost-text {
                 font-family: "JetBrains Mono", "Courier New", monospace;
                 font-size: 10px;
-                color: var(--brass-1, #d4a373);
+                color: var(--ink-on-dark-soft);
                 line-height: 1.4;
             }
             /* W13 Phase 2 — Bauplan-Signatur-Status im Stats-Panel. */
@@ -4255,9 +4314,11 @@
             #workshop-stats-panel .workshop-sig-status.sig-forged {
                 color: #a04040;
             }
-            #workshop-stats-panel .workshop-sig-status.sig-unsigned {
-                color: var(--parch-ink-soft, #5a3f1d);
-                opacity: 0.7;
+            /* Die Signatur lebt jetzt in der Mach-Zone (helles Pergament) → dunkler Text; die alte
+               opacity:0.7 war zu blass (P11), 0.85 ist gedämpft-aber-lesbar. */
+            #workshop-action-zone .workshop-sig-status.sig-unsigned {
+                color: var(--parch-ink-soft);
+                opacity: 0.85;
             }
             #workshop-stats-panel .workshop-sig-btn {
                 margin-left: 4px;
@@ -6446,6 +6507,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.40.0" defer></script>
+        <script src="anazhRealm.js?v=18.41.0" defer></script>
     </body>
 </html>

@@ -10202,6 +10202,70 @@ class AnazhRealm {
                 }
             });
         }
+        // P12 (UI-Putz §1.5) — der geteilte Overlay-Hebel verdrahtet (einmal, delegiert).
+        this._installHelpPopovers();
+    }
+
+    // P12 (UI-Putz §1.5) — die OVERLAY-INTEGRITÄT für ALLE „?"-Popovers (Werkstatt · Hof ·
+    // Ich · Bibliothek · Einstellungen). Reines CSS reicht nicht: der `.drawer` trägt
+    // `transform` (Slide) + `overflow:hidden` → er ist der Containing-Block für position:fixed
+    // UND clippt jedes absolute/fixed Kind. Der robuste Weg (Figma/Linear/Radix): das Popover
+    // bei Hover/Fokus nach `document.body` PORTALIEREN — dort am Viewport fixed, kein
+    // transformierter Vorfahr, kein Clip; opak + z-index:9999 → nichts schimmert durch.
+    // Delegiert über document → trifft auch später gerenderte „?"-Punkte. Idempotent.
+    _installHelpPopovers() {
+        if (typeof document === "undefined" || this._helpPopWired) return;
+        this._helpPopWired = true;
+        const popFor = (dot) => {
+            // Nach dem Portal ist das Popover kein Kind mehr → die Referenz am Dot halten.
+            if (dot._helpPop && dot._helpPop.isConnected) return dot._helpPop;
+            const pop = dot.querySelector(":scope > .help-pop") || dot._helpPop;
+            if (pop) dot._helpPop = pop;
+            return pop || null;
+        };
+        const show = (dot) => {
+            const pop = popFor(dot);
+            if (!pop) return;
+            if (pop.parentElement !== document.body) document.body.appendChild(pop);
+            pop.classList.add("help-pop-open");
+            // Messen (getBoundingClientRect erzwingt Reflow → echte Maße trotz frisch display:block).
+            const r = dot.getBoundingClientRect();
+            const pr = pop.getBoundingClientRect();
+            const M = 8;
+            // dot-right öffnet rechtsbündig zum Punkt, sonst linksbündig — dann am Rand klemmen.
+            let left = dot.classList.contains("dot-right") ? r.right - pr.width : r.left;
+            left = Math.max(M, Math.min(left, window.innerWidth - pr.width - M));
+            // unter dem Punkt; kein Platz → darüber kippen.
+            let top = r.bottom + 6;
+            if (top + pr.height > window.innerHeight - M) top = Math.max(M, r.top - pr.height - 6);
+            pop.style.left = `${Math.round(left)}px`;
+            pop.style.top = `${Math.round(top)}px`;
+        };
+        const hide = (dot) => {
+            const pop = dot._helpPop;
+            if (pop) pop.classList.remove("help-pop-open");
+        };
+        document.addEventListener("pointerover", (e) => {
+            const t = e.target;
+            const dot = t && t.closest && t.closest(".help-dot");
+            if (dot) show(dot);
+        });
+        document.addEventListener("pointerout", (e) => {
+            const t = e.target;
+            const dot = t && t.closest && t.closest(".help-dot");
+            // Beim Verlassen des Punktes (das Popover lebt in body → kein relatedTarget im Punkt).
+            if (dot && !(e.relatedTarget && dot.contains(e.relatedTarget))) hide(dot);
+        });
+        document.addEventListener("focusin", (e) => {
+            const t = e.target;
+            const dot = t && t.closest && t.closest(".help-dot");
+            if (dot) show(dot);
+        });
+        document.addEventListener("focusout", (e) => {
+            const t = e.target;
+            const dot = t && t.closest && t.closest(".help-dot");
+            if (dot) hide(dot);
+        });
     }
 
     closeAllDrawers() {
@@ -41839,10 +41903,30 @@ class AnazhRealm {
         this._workshopAppendTagsRow(panel, bp);
         this._workshopAppendBuildCostRow(panel, bp); // Preis
         if (!bp.builtIn) this._workshopAppendDomainAnalysis(panel, bp); // Wachstum (nur eigene)
-        if (!bp.builtIn) this._workshopAppendSignatureRow(panel, bp, ws);
-        // S7 (kampf-plan §11.9) — der Fluss verfeinern → ablesen → FERTIGEN; das FERTIGEN ist jetzt
-        // die MACH-Zone rechts (bei Material/Werkzeug), nicht in der Readout-Tabelle (V18.40).
-        this._workshopAppendFertigenRow(az || panel, bp);
+        // Step 1 (UI-Putz §A-1): die MACH-ZONE ist EIN „Werk"-Block — Heading → Signatur
+        // (versiegeln) → FERTIGEN (machen). Die Signatur wandert aus der Lese-Tabelle hierher
+        // (P3: Versiegeln+Machen sind beide Werk-Akte, gehören zusammen; die Tabelle ist nur
+        // Readout). Heading + Signatur erscheinen für jeden EIGENEN Bauplan; FERTIGEN nur, wenn
+        // die Rolle einen Mach-Akt trägt (Station/Portal werden gebaut, nicht gefertigt).
+        const machZone = az || panel;
+        const role = this._displayRole(bp);
+        const canMake = !(role === "workshop-station" || role === "portal" || (role === "soul" && bp.builtIn));
+        if (canMake || !bp.builtIn) {
+            this._workshopAppendWerkHeading(machZone);
+            if (!bp.builtIn) this._workshopAppendSignatureRow(machZone, bp, ws);
+            if (canMake) this._workshopAppendFertigenRow(machZone, bp);
+        }
+    }
+
+    // Step 1 — das „Werk"-Heading der Mach-Zone: ein echtes Heading (Cinzel), nicht der
+    // winzige stat-label, der vorher in der FERTIGEN-Zeile saß (§A-1: kein stat-label fürs
+    // Heading). Es überschreibt den Signatur+FERTIGEN-Block als EINE Werk-Einheit.
+    _workshopAppendWerkHeading(zone) {
+        if (!zone || typeof document === "undefined") return;
+        const h = document.createElement("div");
+        h.className = "workshop-werk-heading";
+        h.textContent = "Werk";
+        zone.appendChild(h);
     }
 
     // S7 (kampf-plan §11.7/§11.9) — DER EINE FLUSS: das FERTIGEN gehört in die Stats-Tabelle (wo die
@@ -41871,10 +41955,8 @@ class AnazhRealm {
                     : "Gerät schmieden (in die Hand)";
         const row = document.createElement("div");
         row.className = "stat-row workshop-fertigen-row";
-        const lab = document.createElement("span");
-        lab.className = "stat-label";
-        lab.textContent = "Werk";
-        row.appendChild(lab);
+        // Step 1 — kein „Werk"-stat-label mehr: das _workshopAppendWerkHeading darüber trägt
+        // den Titel der Mach-Zone (§A-1, keine Doublette).
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "workshop-fertigen";
@@ -42198,7 +42280,7 @@ class AnazhRealm {
             return "☆☆☆";
         };
         const tagRow = document.createElement("div");
-        tagRow.className = "stat-row";
+        tagRow.className = "stat-row workshop-tags-row"; // P13 — die Chip-Reihe spannt beide Grid-Spalten
         const tagLab = document.createElement("span");
         tagLab.className = "stat-label";
         tagLab.textContent = "Tags";
@@ -48084,7 +48166,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.40.0";
+AnazhRealm.VERSION = "18.41.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

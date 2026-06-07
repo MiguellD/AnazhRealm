@@ -745,12 +745,14 @@ einzeln), dann erneut messen/verifizieren, dann Schöpfer-Browser für das GPU-F
     Kante. _Werkstatt: „die rechte Flucht stimmt nicht, davor war's die linke" — `column-count` driftet; ein
     explizites Grid (`grid-template-columns`) mit fixen Label-Breiten hält beide Fluchten._
 
-**Die offenen Werkstatt-Detail-Befunde (V18.40, der Polish-Pass — bewusst NICHT mehr im jetzigen Code, als
-Plan festgehalten):** (a) das **Signatur-Feld** gehört in die Mach-Zone ÜBER den FERTIGEN-Knopf, unter ein
-sauber formatiertes **„Werk"-Heading** (kein `stat-label`); (b) **Synergie/Wachstum** lesbar machen (P11);
-(c) die **rechte Flucht** der Ausgabe (P13, Grid statt column-count); (d) das **„?"-Popover** opak + nicht
-abgeschnitten + z-index (P12); (e) das Werkstatt-„?" ebenso. _Diese fünf sind die Vorlage, wie die anderen
-Menüs es von Anfang an richtig machen._
+**Die Werkstatt-Detail-Befunde — GEBAUT (V18.41, der Polish-Pass), mit dem Auge verifiziert
+(`scripts/diag-workshop-ui.cjs`):** (a) das **Signatur-Feld** in der Mach-Zone ÜBER FERTIGEN, unter ein
+**„Werk"-Heading** (`_workshopAppendWerkHeading`, Cinzel, kein `stat-label`); (b) **Synergie/Wachstum** lesbar
+(`--ink-on-dark-soft`, P11); (c) die **rechte Flucht** der Ausgabe (`grid(1fr 1fr)`, P13); (d) das **„?"-Popover**
+opak + body-portaliert + z-index (P12); (e) das Werkstatt-„?" ebenso (geteilter `.help-pop`-Hebel); (f) **die
+Mach-Zone GEPINNT** (`position:sticky` — FERTIGEN war im scrollenden Palette unter der Falz, Schöpfer-Befund).
+_Diese sind die Vorlage, wie die anderen Menüs es von Anfang an richtig machen. OFFEN: nur der Schöpfer-Browser-
+Sign-off (GPU-Feel)._
 
 **Antwort auf „nutzt das Suchfeld die bestehenden System-Tags?":** JA — die Omnibox + die Bauplan-Suche lesen
 die SCHON vorhandenen Vektoren (`computeBlueprintRole` → Rolle, `computeCompoundTags` → Tags, die Affordanzen/

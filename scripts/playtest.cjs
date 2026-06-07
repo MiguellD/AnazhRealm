@@ -30166,11 +30166,13 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.cloneUnsigned = !!clone && !clone.signature && !clone.authorPubKey;
         // verifyBlueprintSignature ist defensiv.
         out.verifyDefensive = (await r.verifyBlueprintSignature(null)) === "unsigned";
-        // UI: Signatur-Sektion im Werkstatt-Panel.
+        // UI: Signatur-Sektion in der MACH-ZONE (Step 1, V18.41 — die Signatur wanderte aus dem
+        // Readout-Panel in den „Werk"-Block #workshop-action-zone, über FERTIGEN; V9.56-i).
         r.selectBlueprintForEdit("_w13p2");
-        const panel = document.getElementById("workshop-stats-panel");
-        out.uiSigRow = !!panel && !!panel.querySelector(".workshop-sig-row");
-        out.uiSigBtn = !!panel && !!panel.querySelector(".workshop-sig-btn");
+        const machZone =
+            document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
+        out.uiSigRow = !!machZone && !!machZone.querySelector(".workshop-sig-row");
+        out.uiSigBtn = !!machZone && !!machZone.querySelector(".workshop-sig-btn");
         delete r.state.blueprints["_w13p2"];
         delete r.state.blueprints["_w13p2clone"];
         return out;
