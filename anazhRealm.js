@@ -40209,6 +40209,106 @@ class AnazhRealm {
         return prof;
     }
 
+    // Hof-D (hof-plan.md §D.1/§G.5) — der Fokus-Toggle: ein Klick auf die Zeile FOKUSSIERT das Wesen
+    // (wie der Bauplan-Fokus in der Werkstatt) → die volle Spec-Card klappt auf. Die Selektion hängt an
+    // der STABILEN Identität (`prof.id` = netId/name, §G.6), NIE am splice-fragilen Array-Index.
+    _toggleHofFocus(id) {
+        this.state.hofFocusId = this.state.hofFocusId === id ? null : id;
+        this._renderCreatureListUI();
+    }
+
+    _natureLevelClass(val) {
+        return val >= 2.25 ? "lvl-3" : val >= 1.5 ? "lvl-2" : val >= 0.75 ? "lvl-1" : "lvl-0";
+    }
+
+    // Hof-D (hof-plan.md §D.1) — die volle Wesen-Spec-Card (nur beim FOKUSSIERTEN Wesen, §G.5 Skala).
+    // Daten-Viz der GEMESSENEN Vektoren (P15, `_specBar`-Reuse): NATUR (compound-tags) · WERTE (stats) ·
+    // WACHSTUM (Spezialisierungs-Fortschritt). Liest NUR `prof` (der EINE Vektor) — kein neuer Datenpfad.
+    _buildCreatureDetailCard(prof) {
+        const cols = [];
+        // NATUR — die Top-3 Compound-Tags als Balken (0–3, Stufen-Farbe), die Substanz des Wesens.
+        const tagEntries = Object.entries(prof.tags || {})
+            .filter(([, v]) => Number.isFinite(v) && v > 0.01)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3);
+        const naturBars = tagEntries.map(([k, v]) =>
+            this._specBar(k, v / 3, v.toFixed(2), this._natureLevelClass(v), `${k}: ${v.toFixed(2)} / 3`)
+        );
+        cols.push(
+            this._el(
+                "div",
+                { class: "creature-detail-col" },
+                this._el("div", { class: "creature-detail-head", text: "Natur" }),
+                naturBars.length ? naturBars : this._el("div", { class: "creature-detail-empty", text: "—" })
+            )
+        );
+        // WERTE — HP als Balken (cur/max, ehrlich), die übrigen Stats als Chip-Streifen (kein Fake-Maximum).
+        const valBlock = [];
+        if (prof.stats) {
+            const cs = prof.stats;
+            const hpFrac = prof.hpMax > 0 ? prof.hp / prof.hpMax : 0;
+            const hpLvl = hpFrac > 0.66 ? "lvl-2" : hpFrac > 0.33 ? "lvl-1" : "lvl-0";
+            valBlock.push(
+                this._specBar(
+                    "HP",
+                    hpFrac,
+                    `${Math.round(prof.hp)}/${Math.round(prof.hpMax)}`,
+                    hpLvl,
+                    "Lebenspunkte (lebend/max)"
+                )
+            );
+            const fmt = (n) => (Number.isFinite(n) ? n.toFixed(1) : "—");
+            const chips = [
+                ["DMG", cs.damage],
+                ["SPD", cs.speed],
+                ["STA", cs.staminaMax],
+                ["PRC", cs.precision],
+                ["MR", cs.magicResist],
+                ["HR", cs.heatResist],
+            ].map(([lbl, v]) => this._el("span", { class: "creature-detail-chip", text: `${lbl} ${fmt(v)}` }));
+            valBlock.push(this._el("div", { class: "creature-detail-strip" }, chips));
+        }
+        cols.push(
+            this._el(
+                "div",
+                { class: "creature-detail-col" },
+                this._el("div", { class: "creature-detail-head", text: "Werte" }),
+                valBlock.length ? valBlock : this._el("div", { class: "creature-detail-empty", text: "—" })
+            )
+        );
+        // WACHSTUM — die Top-Spezialisierung als Fortschritts-Balken zur nächsten Stufe (das Wesen LERNT).
+        const growBlock = [];
+        const threshold = AnazhRealm.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD || 1;
+        const maxLevel = AnazhRealm.CREATURE_SPECIALIZATION_MAX_LEVEL || 5;
+        for (const s of prof.specs.slice(0, 2)) {
+            const kindLabel = s.kind === "gather" ? "Sammler" : "Bauer";
+            const atMax = s.level >= maxLevel;
+            const into = s.count - s.level * threshold; // Fortschritt in die nächste Stufe
+            const frac = atMax ? 1 : Math.max(0, Math.min(1, into / threshold));
+            const valText = atMax ? `L${s.level} ✦` : `L${s.level} · ${into}/${threshold}`;
+            growBlock.push(
+                this._specBar(
+                    `${kindLabel}·${s.key}`,
+                    frac,
+                    valText,
+                    atMax ? "lvl-3" : "lvl-2",
+                    `${s.count} Erfolge — ${atMax ? "Meisterschaft" : "auf dem Weg zu L" + (s.level + 1)}`
+                )
+            );
+        }
+        cols.push(
+            this._el(
+                "div",
+                { class: "creature-detail-col" },
+                this._el("div", { class: "creature-detail-head", text: "Wachstum" }),
+                growBlock.length
+                    ? growBlock
+                    : this._el("div", { class: "creature-detail-empty", text: "noch keine Geschichte" })
+            )
+        );
+        return this._el("div", { class: "creature-detail" }, cols);
+    }
+
     _renderCreatureListUI() {
         if (typeof document === "undefined") return;
         const list = document.getElementById("creature-list");
@@ -40313,6 +40413,15 @@ class AnazhRealm {
                 drink: "trinkt am Ufer",
             };
             const taskEl = this._el("span", { class: `creature-task ${taskName}`, text: TASK_LABELS[taskName] || "—" });
+            // Hof-D (hof-plan.md §D.1/§G.2) — die STIMMUNG als Glyph, immer sichtbar (kompakt). Ehrlich geerdet:
+            // froh/trübe (BINÄR `creatureEmotions`) × Temperament (neugierig/wachsam/scheu/vertraut aus
+            // `_creatureWariness`+`bond`). Die Resonanz des Wesens auf das Feld + die Bindung (der wahre Norden).
+            const moodSad = prof.emotion === "sad";
+            const moodEl = this._el("span", {
+                class: "creature-mood" + (moodSad ? " mood-sad" : " mood-happy"),
+                text: (moodSad ? "☹ " : "☺ ") + prof.moodLabel,
+                title: `Stimmung: ${prof.moodLabel} — die Resonanz des Wesens auf das Feld + die Bindung`,
+            });
             // V18.46 Hof-A / V18.48 Hof-C (UI-Putz §2, P16 eine Ebene) — ALLE Befehle leben INLINE am Wesen
             // („wähle Wesen → befiehl"), nicht in globalen Knopf-Blöcken (die der NÄCHSTEN Kreatur befahlen —
             // der Spielerperspektiven-Bruch). Die drei arg-freien Kern-Tasks als Knöpfe, die arg-basierten
@@ -40393,18 +40502,36 @@ class AnazhRealm {
                 ),
                 orderSelect
             );
-            const row = this._el(
+            // Hof-D (§G.5 Skala + §G.6 stabile Identität) — die kompakte Zeile (`.creature-row-main`) ist DEFAULT;
+            // ein Klick FOKUSSIERT das Wesen → die volle Spec-Card (`.creature-detail`) klappt darunter auf. So
+            // bleibt die Liste bei N Wesen lesbar + die Render-Last klein (die teure Spec-Card nur fürs Fokus-Wesen).
+            const focused = !!this.state.hofFocusId && prof.id === this.state.hofFocusId;
+            const rowMain = this._el(
                 "div",
-                { class: "creature-row" },
+                {
+                    class: "creature-row-main" + (focused ? " focused" : ""),
+                    title: "Klick: Wesen fokussieren — die volle Spec-Card auf/zu",
+                    on: {
+                        click: () => this._toggleHofFocus(prof.id),
+                    },
+                },
+                this._el("span", { class: "creature-focus-caret", text: focused ? "▾" : "▸" }),
                 nameEl,
                 soulEl,
+                moodEl,
                 specsWrap,
                 equippedWrap,
                 boostsWrap,
                 taskEl,
                 actionsEl
             );
-            if (rowTitle) row.title = rowTitle;
+            if (rowTitle) rowMain.title = rowTitle;
+            const row = this._el(
+                "div",
+                { class: "creature-row" + (focused ? " focused" : "") },
+                rowMain,
+                focused ? this._buildCreatureDetailCard(prof) : null
+            );
             list.appendChild(row);
         }
     }
@@ -48444,7 +48571,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.49.0";
+AnazhRealm.VERSION = "18.50.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

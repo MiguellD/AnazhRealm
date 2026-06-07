@@ -68,17 +68,41 @@ function startSaveServer() {
             if (r.state.creatures[0] && typeof r.assignCreatureTask === "function")
                 r.assignCreatureTask(r.state.creatures[0], "follow_player");
             r._renderCreatureListUI();
+            // Hof-D — das ZWEITE Wesen fokussieren → die volle Spec-Card (Natur/Werte/Wachstum) klappt auf.
+            if (r.state.creatures[1] && typeof r._toggleHofFocus === "function") {
+                const prof = r._creatureProfile(r.state.creatures[1]);
+                r._toggleHofFocus(prof.id);
+            }
             const list = document.getElementById("creature-list");
             const row = list && list.querySelector(".creature-row");
             return {
                 creatures: r.state.creatures.length,
                 rows: list ? list.querySelectorAll(".creature-row").length : 0,
                 inlineBtns: row ? row.querySelectorAll(".creature-action-btn").length : 0,
+                moodGlyphs: list ? list.querySelectorAll(".creature-mood").length : 0,
+                detailCards: list ? list.querySelectorAll(".creature-detail").length : 0,
+                detailBars: list ? list.querySelectorAll(".creature-detail .spec-bar").length : 0,
                 auftraegeGone: !document.getElementById("creature-task-actions"),
             };
         });
         console.log("Hof:", JSON.stringify(info));
         await new Promise((r) => setTimeout(r, 400));
+        const focusState = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            // Re-Fokus auf ein LEBENDES Wesen (die Welt churnt Fauna — das Fokus-Wesen kann despawnen).
+            if (r.state.creatures[1]) {
+                const prof = r._creatureProfile(r.state.creatures[1]);
+                r.state.hofFocusId = prof.id;
+                r._renderCreatureListUI();
+            }
+            const list = document.getElementById("creature-list");
+            return {
+                hofFocusId: r.state.hofFocusId || null,
+                detailCards: list ? list.querySelectorAll(".creature-detail").length : -1,
+                detailBars: list ? list.querySelectorAll(".creature-detail .spec-bar").length : -1,
+            };
+        });
+        console.log("vor Screenshot:", JSON.stringify(focusState));
         const list = await page.$("#creature-list");
         if (list) {
             await list.screenshot({ path: path.join(ARTIFACTS, "hof-creatures.png") });

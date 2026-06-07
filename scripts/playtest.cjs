@@ -25173,9 +25173,25 @@ async function checkBandWelle6HCreatures(ctx) {
             prof.moodLabel.length > 0 &&
             typeof prof.section === "string"
         );
-        // Der Renderer ist ein ECHTER Konsument: der rowTitle (title-Attr) trägt die Profil-moodLabel.
-        const firstRowTitle = (firstRow && firstRow.getAttribute("title")) || "";
+        // Der Renderer ist ein ECHTER Konsument: der rowTitle (title-Attr auf .creature-row-main) trägt die moodLabel.
+        const firstMain = firstRow && firstRow.querySelector(".creature-row-main");
+        const firstRowTitle = (firstMain && firstMain.getAttribute("title")) || "";
         out.rendererConsumesProfile = firstRowTitle.includes("Stimmung") && /froh|trübe/.test(firstRowTitle);
+        // Hof-D (hof-plan.md §D.1/§G.5) — die Stimmung als Glyph (immer sichtbar) + die fokussierbare Spec-Card.
+        out.rowHasMoodGlyph = !!(firstRow && firstRow.querySelector(".creature-mood"));
+        // Default: KEINE Detail-Card (kompakt, §G.5 Skala).
+        out.detailHiddenByDefault = !!(firstRow && !firstRow.querySelector(".creature-detail"));
+        // Fokus-Toggle → die volle Spec-Card (Natur/Werte/Wachstum-Balken) klappt NUR fürs fokussierte Wesen auf.
+        const firstProf = r._creatureProfile(r.state.creatures[0]);
+        r._toggleHofFocus(firstProf.id);
+        const listAfter = document.getElementById("creature-list");
+        const focusedRows = listAfter ? listAfter.querySelectorAll(".creature-row.focused").length : -1;
+        const detailCards = listAfter ? listAfter.querySelectorAll(".creature-detail").length : -1;
+        const detailBars = listAfter ? listAfter.querySelectorAll(".creature-detail .spec-bar").length : 0;
+        out.focusExpandsOneCard = focusedRows === 1 && detailCards === 1 && detailBars > 0;
+        r._toggleHofFocus(firstProf.id); // wieder zu — kein Fokus-Leck in die Folge-Tests
+        const listClosed = document.getElementById("creature-list");
+        out.focusToggleCloses = !!(listClosed && listClosed.querySelectorAll(".creature-detail").length === 0);
         r.assignCreatureTask(sprite, "follow_player");
         const firstRow2 = list && list.querySelector(".creature-row");
         const taskCell = firstRow2 && firstRow2.querySelector(".creature-task");
@@ -25257,6 +25273,19 @@ async function checkBandWelle6HCreatures(ctx) {
         check(
             "Hof-D0 §G.1/V17.31: der Renderer KONSUMIERT das Profil (rowTitle trägt die moodLabel)",
             wave6hP2aResults.rendererConsumesProfile
+        );
+        check("Hof-D §D.1: die Stimmung als Glyph an jeder Zeile (.creature-mood)", wave6hP2aResults.rowHasMoodGlyph);
+        check(
+            "Hof-D §G.5 Skala: default kompakt — keine Detail-Card ohne Fokus",
+            wave6hP2aResults.detailHiddenByDefault
+        );
+        check(
+            "Hof-D §D.1: Fokus klappt GENAU eine volle Spec-Card auf (Natur/Werte/Wachstum-Balken)",
+            wave6hP2aResults.focusExpandsOneCard
+        );
+        check(
+            "Hof-D §G.6: der Fokus-Toggle schließt wieder (stabile Identität, kein Leck)",
+            wave6hP2aResults.focusToggleCloses
         );
         check("Welle 6.H P2A: Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
         check("Welle 6.H P2A: removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);

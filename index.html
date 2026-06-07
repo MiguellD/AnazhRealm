@@ -2441,14 +2441,136 @@
                 padding: 4px 6px;
             }
             .creature-list .creature-row {
-                /* V18.46 Hof-A — die Zeile ist eine Wesen-Spec-Card: Name · Seele · Pills · Task fliessen,
-                   die inline-Befehle (margin-left:auto) sitzen rechts (P16 eine Ebene: wähle Wesen → befiehl). */
+                /* V18.49 Hof-D — die Zeile ist ein KARTEN-Container: oben die kompakte Zeile (.creature-row-main),
+                   beim Fokus klappt die volle Spec-Card (.creature-detail) darunter auf (§G.5 Skala). */
+                border-bottom: 1px dotted var(--parch-line, #b09d7c);
+            }
+            .creature-list .creature-row.focused {
+                background: rgba(198, 154, 74, 0.08);
+            }
+            .creature-list .creature-row-main {
+                /* V18.46 Hof-A — Name · Seele · Stimmung · Pills · Task fliessen, die inline-Befehle
+                   (margin-left:auto) sitzen rechts (P16 eine Ebene: wähle Wesen → befiehl). Klickbar = fokussieren. */
                 display: flex;
                 flex-wrap: wrap;
                 align-items: center;
                 gap: 4px 8px;
                 padding: 4px;
-                border-bottom: 1px dotted var(--parch-line, #b09d7c);
+                cursor: pointer;
+            }
+            .creature-list .creature-row-main:hover {
+                background: rgba(198, 154, 74, 0.06);
+            }
+            .creature-list .creature-focus-caret {
+                font-size: 9px;
+                color: var(--brass-1, #8a6f3e);
+                width: 9px;
+                flex: 0 0 auto;
+            }
+            /* Hof-D — die Stimmung als Glyph (froh/trübe × Temperament). Resonanz auf das Feld + die Bindung. */
+            .creature-list .creature-mood {
+                font-size: 10px;
+                padding: 1px 6px;
+                border-radius: 8px;
+                border: 1px solid var(--brass-2, #6f5a30);
+                white-space: nowrap;
+            }
+            .creature-list .creature-mood.mood-happy {
+                color: #6fae5f;
+                background: rgba(111, 174, 95, 0.1);
+            }
+            .creature-list .creature-mood.mood-sad {
+                color: #c98a6e;
+                background: rgba(201, 138, 110, 0.1);
+            }
+            /* Hof-D — die aufgeklappte Spec-Card: NATUR · WERTE · WACHSTUM als Daten-Viz (P15, _specBar-Reuse). */
+            .creature-list .creature-detail {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 6px 14px;
+                padding: 6px 8px 9px 18px;
+                background: var(--parch-2, #efe3c4);
+            }
+            .creature-list .creature-detail-col {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                min-width: 0;
+            }
+            .creature-list .creature-detail-head {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
+                color: var(--brass-1, #8a6f3e);
+            }
+            .creature-list .creature-detail-empty {
+                font-size: 10px;
+                font-style: italic;
+                color: var(--parch-ink-soft);
+            }
+            .creature-list .creature-detail-strip {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 3px 5px;
+                margin-top: 2px;
+            }
+            .creature-list .creature-detail-chip {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                padding: 1px 5px;
+                border-radius: 3px;
+                background: rgba(120, 80, 30, 0.1);
+                border: 1px solid var(--brass-2, #6f5a30);
+                color: var(--parch-ink);
+            }
+            /* P15 geteilter Hebel — die _specBar-Optik (wie die Werkstatt), hier auf hellem Pergament:
+               die Label/Werte tragen dunklen Pergament-Ton (nicht --ink-on-dark, der gehört auf DUNKLEN Grund). */
+            .creature-list .creature-detail .spec-bar {
+                display: grid;
+                grid-template-columns: 78px 1fr 40px;
+                align-items: center;
+                gap: 6px;
+            }
+            .creature-list .creature-detail .spec-bar-label {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                color: var(--parch-ink);
+                text-align: right;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .creature-list .creature-detail .spec-bar-track {
+                height: 9px;
+                background: rgba(38, 28, 12, 0.34);
+                border: 1px solid rgba(110, 88, 48, 0.55);
+                border-radius: 5px;
+                overflow: hidden;
+            }
+            .creature-list .creature-detail .spec-bar-fill {
+                display: block;
+                height: 100%;
+                border-radius: 5px 0 0 5px;
+                background: var(--brass-1);
+            }
+            .creature-list .creature-detail .spec-bar-fill.lvl-0 {
+                background: #8a7a52;
+            }
+            .creature-list .creature-detail .spec-bar-fill.lvl-1 {
+                background: #c79a5a;
+            }
+            .creature-list .creature-detail .spec-bar-fill.lvl-2 {
+                background: linear-gradient(90deg, #b48c28, #e6c24d);
+            }
+            .creature-list .creature-detail .spec-bar-fill.lvl-3 {
+                background: linear-gradient(90deg, #7a3cb4, #c66bff);
+            }
+            .creature-list .creature-detail .spec-bar-val {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 8.5px;
+                color: var(--parch-ink-soft);
+                text-align: right;
             }
             .creature-list .creature-name {
                 font-weight: 600;
@@ -6869,6 +6991,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.49.0" defer></script>
+        <script src="anazhRealm.js?v=18.50.0" defer></script>
     </body>
 </html>
