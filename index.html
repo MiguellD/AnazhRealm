@@ -1984,6 +1984,36 @@
             .drawer .collapsed > :not(h3) {
                 display: none;
             }
+            /* V18.34 — dasselbe Falt-System im Ich/Inventar (h4-Header statt h3). EINE
+               Mechanik (_initCollapsibleSections), zwei Container — kein zweites System. */
+            #inventory-overlay h4.collapsible-header {
+                cursor: pointer;
+                user-select: none;
+                position: relative;
+                padding-right: 18px;
+            }
+            #inventory-overlay h4.collapsible-header:hover {
+                color: var(--brass-1, #d4a373);
+            }
+            #inventory-overlay h4.collapsible-header::after {
+                content: "▾";
+                position: absolute;
+                right: 2px;
+                top: 0;
+                font-size: 9px;
+                opacity: 0.65;
+                transition: transform 0.15s ease;
+            }
+            #inventory-overlay .collapsed > h4.collapsible-header::after {
+                transform: rotate(-90deg);
+            }
+            /* Erzwungener Falt-Zustand: muss die re-skopierten 2-ID-Widget-Regeln
+               (#inventory-overlay #player-equip etc., display:flex) schlagen — darum !important
+               (ein UI-Zustand sticht die Komponenten-Darstellung; der Drawer braucht es nicht,
+               weil seine Kinder keine 2-ID-Regeln tragen). */
+            #inventory-overlay .collapsed > :not(h4) {
+                display: none !important;
+            }
             .drawer .row {
                 display: flex;
                 justify-content: space-between;
@@ -4859,22 +4889,34 @@
                         <div id="soul-editor"></div>
                     </section>
                 </div>
-                <!-- RECHTS: Ausrüstung & Rezepte — meine Ausrüstung verwalten (tragen ·
-                     wechseln · trinken) + neue Geräte/Rüstung/Tränke fertigen (Rezeptbuch).
-                     renderPlayerEquipUI, _renderInventoryEquip, renderRecipeBook füllen sie. -->
+                <!-- RECHTS: Ausrüstung & Rezepte — der Crafting→Gebrauch-Fluss (wie Minecraft, UI-Putz
+                     V18.34): das REZEPTBUCH ist der EINE Weg, ein Rezept aus der Werkstatt real zu
+                     machen — rollen-gerecht (in die Hand · anlegen · trinken), die Rolle emergiert aus
+                     Form×Material (kein „markieren → wählen"-Zweischritt mehr nötig). „Was du trägst"
+                     zeigt+legt ab. Die player-equip-Fläche ist nur noch die FEIN-Justage (Portal-Ziel,
+                     manueller Rollen-Override für Mehrdeutiges). _renderInventoryEquip, renderRecipeBook,
+                     renderPlayerEquipUI füllen sie. -->
                 <div class="inventory-col-recipes">
                     <h3 class="inventory-col-title">Ausrüstung &amp; Rezepte</h3>
                     <section class="section">
-                        <h4>Was du trägst</h4>
+                        <h4>Was du trägst <span class="section-hint">(Klick legt ab)</span></h4>
                         <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
                     </section>
                     <section class="section">
-                        <h4>Ausrüstung <span class="section-hint">(wechseln · trinken · markieren)</span></h4>
-                        <div id="player-equip"></div>
-                    </section>
-                    <section class="section">
-                        <h4>Rezeptbuch <span class="section-hint">(fertigen → in die Hand / anlegen)</span></h4>
+                        <h4>
+                            Rezeptbuch
+                            <span class="section-hint"
+                                >(aus der Werkstatt → fertigen: in die Hand · anlegen · trinken)</span
+                            >
+                        </h4>
                         <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
+                    </section>
+                    <section class="section default-collapsed" id="equip-advanced-section">
+                        <h4>
+                            Mehr: Wechseln &amp; Markieren
+                            <span class="section-hint">(Dropdowns · Portal-Ziel · Rollen-Override)</span>
+                        </h4>
+                        <div id="player-equip"></div>
                     </section>
                 </div>
             </div>
@@ -6135,6 +6177,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.33.0" defer></script>
+        <script src="anazhRealm.js?v=18.34.0" defer></script>
     </body>
 </html>

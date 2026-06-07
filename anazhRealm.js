@@ -38624,7 +38624,13 @@ class AnazhRealm {
     // GRASP_SPAN_M → Hand, sonst Welt).
     _blueprintUseKind(bp) {
         if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return "place";
-        const role = bp.role;
+        // V18.34 — die EMERGENTE Rolle (Form × Material via _displayRole) entscheidet, nicht der
+        // rohe gespeicherte bp.role: ein selbst entworfener Brustpanzer resoniert „armor" und
+        // erscheint im Rezeptbuch unter „Rüstung", OHNE manuelles Markieren (der Hylomorphismus
+        // statt eines „markieren → dann wählen"-Zweischritts). roleManual/builtIn bleiben Vorrang
+        // (in _displayRole) → ein bewusster Override hält. Das löst den Rezeptbuch-Auto-Gruppen-
+        // Bedarf + macht die alte Markier-Fläche überflüssig.
+        const role = this._displayRole(bp);
         if (role === "armor") return "wear";
         if (role === "soul") return "embody";
         if (role === "consumable") return "drink";
@@ -39529,7 +39535,13 @@ class AnazhRealm {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.textContent =
-            kind === "wear" ? "Anlegen" : kind === "drink" ? "Brauen" : kind === "place" ? "Fertigen" : "In die Hand";
+            kind === "wear"
+                ? "Anlegen"
+                : kind === "drink"
+                  ? "Brauen + Trinken"
+                  : kind === "place"
+                    ? "Fertigen"
+                    : "In die Hand";
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         const free = mode === "schöpfer" || Number.isFinite(bp && bp.forgedPrecision);
         btn.disabled = !free && !check.ok;
@@ -39569,7 +39581,14 @@ class AnazhRealm {
             if (!made.ok) return made;
             return this.equipArmor(name);
         }
-        if (kind === "drink" || kind === "place") {
+        // V18.34 — Trank: brauen + TRINKEN in EINEM Akt (brewConsumable zieht die Zutaten +
+        // wirkt sofort). Das faltet die alte Equip-Drawer-„Konsumables (trinken)"-Fläche ins
+        // Rezeptbuch — ein Klick „Brauen + Trinken", kein zweiter Ort. (Lagern-für-später wäre
+        // ein eigenes Feature; der intuitive Akt ist „mach den Trank + trink ihn".)
+        if (kind === "drink") {
+            return this.brewConsumable(name);
+        }
+        if (kind === "place") {
             const made = this._forgeMaterialAndFreeze(name);
             if (!made.ok) return made;
             this.addToInventory(name, 1);
@@ -43093,11 +43112,21 @@ class AnazhRealm {
         // die Kommunikation zusammentrifft; einklappbare Sektionen halten ihn übersichtlich).
         this._initCollapsibleDrawer("einstellungen", "anazh.settings.collapsed");
         this._initCollapsibleDrawer("kreaturen", "anazh.hof.collapsed");
+        // V18.34 — dasselbe EINE Falt-System auch im Ich/Inventar (kein zweites — V9.82):
+        // die Sektionen tragen h4-Header; „Mehr: Wechseln & Markieren" ist default-collapsed
+        // (der intuitive Pfad ist Was-du-trägst + Rezeptbuch; die Dropdowns sind die Tiefe).
+        this._initCollapsibleSections("#inventory-overlay", "anazh.ich.collapsed", "h4");
     }
 
     _initCollapsibleDrawer(drawerName, storageKey) {
+        // Dünner Wrapper auf den generischen Pfad — ein Drawer, h3-Header (V18.34: das EINE
+        // Falt-System; das Inventar nutzt denselben Pfad mit #inventory-overlay + h4).
+        this._initCollapsibleSections(`.drawer[data-drawer="${drawerName}"]`, storageKey, "h3");
+    }
+
+    _initCollapsibleSections(rootSelector, storageKey, headerSel = "h3") {
         if (typeof document === "undefined") return;
-        const drawer = document.querySelector(`.drawer[data-drawer="${drawerName}"]`);
+        const drawer = document.querySelector(rootSelector);
         if (!drawer) return;
         let stored = {};
         try {
@@ -43107,9 +43136,9 @@ class AnazhRealm {
         }
         const sections = drawer.querySelectorAll("section.section, section.settings-section");
         sections.forEach((sec, i) => {
-            const header = sec.querySelector("h3");
+            const header = sec.querySelector(headerSel);
             if (!header || header.classList.contains("collapsible-header")) return;
-            const key = sec.id || `${drawerName}-sec-${i}`;
+            const key = sec.id || `${rootSelector}-sec-${i}`;
             header.classList.add("collapsible-header");
             header.setAttribute("role", "button");
             header.setAttribute("tabindex", "0");
@@ -47897,7 +47926,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.33.0";
+AnazhRealm.VERSION = "18.34.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

@@ -7,10 +7,14 @@
 > (die Werkstatt — das Vorbild-Subdesign), `das-lebendige-feld.md` (die Welt, die das UI
 > trägt), `state-of-realm.md` (die Vision).
 
-**Stand: GEBAUT + VEREDELT (V18.33, 07.06.2026).** Zehn Bögen verifiziert + gepusht
+**Stand: GEBAUT + VEREDELT (V18.34, 07.06.2026).** Zehn Bögen verifiziert + gepusht
 (`_el`-Builder · Tag/Nacht weg · WOW-Start · Hilfe→Einstellungen+Dev gestaffelt ·
 Emotion-Klarheit · Rezeptbuch+Equip · Der Hof · Bibliothek von Alexandria · Das Ich/Inventar
-· freier Bildschirm); dann die VEREDELUNG (V18.33): die GEMESSEN-Wurzel der hässlichen Räume
+· freier Bildschirm); dann (V18.34) der CRAFTING→INVENTAR-FLUSS vereint: das Rezeptbuch ist der
+EINE Weg von der Werkstatt ins Inventar (emergente Rollen-Klassifikation → Auto-Gruppen ohne
+Markieren · Trank brauen+trinken in einem Akt · die redundanten Equip-Dropdowns in eine
+eingeklappte „Mehr"-Sektion gefaltet, das Falt-System auf das Inventar generalisiert); davor
+die VEREDELUNG (V18.33): die GEMESSEN-Wurzel der hässlichen Räume
 geheilt (57 `.drawer`-skopierte Charakter-Widgets → `#inventory-overlay`, sie waren ungestylt),
 das Ich in Balance (Minecraft 9-Raster + Hotbar links · Charakter mitte · Ausrüstung & Rezepte
 rechts · Pergament-Karten überall), der Welt-Tab AUFGELÖST (die Welt = Default-Blick, „Diese

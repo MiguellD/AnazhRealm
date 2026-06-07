@@ -13,6 +13,8 @@ const puppeteer = require("puppeteer");
 
 const SERVER_JS = path.resolve(process.argv[2] || "save-server.js");
 const ROOM = process.argv[3] || "welt";
+const FOCUS = process.argv[4] || null; // optionaler CSS-Selektor: screenshottet NUR dieses
+// Element, lesbar (deviceScaleFactor 2) — fürs Text-genaue Lesen einer Sektion.
 const SERVER_URL = "http://127.0.0.1:4312/index.html";
 const ARTIFACTS = path.resolve(__dirname, "..", "artifacts");
 
@@ -48,7 +50,8 @@ function startSaveServer() {
         ],
     });
     const page = await browser.newPage();
-    await page.setViewport({ width: 1440, height: 900 });
+    // FOCUS-Modus: höhere Pixel-Dichte → kleiner Text bleibt lesbar (ich SEHE — die Frage ist WIE).
+    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: FOCUS ? 2 : 1 });
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
         await page.evaluate(async () => {
@@ -83,6 +86,30 @@ function startSaveServer() {
             return dn ? `.drawer[data-drawer="${dn}"]` : null;
         }, ROOM);
         await new Promise((r) => setTimeout(r, 1200));
+        // FOCUS-Modus: ein lesbarer Screenshot NUR des gewählten Elements (Text-genau).
+        if (FOCUS) {
+            // erst alle Scroll-Behälter aufklappen, damit nichts abgeschnitten ist.
+            await page.evaluate(() => {
+                for (const el of document.querySelectorAll("*")) {
+                    const cs = getComputedStyle(el);
+                    if (/(auto|scroll)/.test(cs.overflowY) || /(auto|scroll)/.test(cs.overflow)) {
+                        el.style.maxHeight = "none";
+                        el.style.overflow = "visible";
+                    }
+                }
+            });
+            await new Promise((r) => setTimeout(r, 250));
+            const fh = await page.$(FOCUS);
+            const slug = FOCUS.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+            const out = path.join(ARTIFACTS, `room-${ROOM}-focus-${slug}.png`);
+            if (fh) {
+                await fh.screenshot({ path: out });
+                console.log(`geschrieben: artifacts/room-${ROOM}-focus-${slug}.png (lesbar, ${FOCUS})`);
+            } else {
+                console.log(`FOCUS-Selektor nicht gefunden: ${FOCUS}`);
+            }
+            return;
+        }
         const handle = containerSel ? await page.$(containerSel) : null;
         // (1) Das ECHTE Bild — wie der Spieler es sieht, mit allen 60vh-Kappungen +
         // inneren Scrolls (für das Balance-Urteil: sind die Spalten gleich hoch?).
