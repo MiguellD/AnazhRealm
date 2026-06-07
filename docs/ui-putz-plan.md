@@ -677,3 +677,113 @@ Vektoren (kein Passagier), gilt uniform, ist diegetisch (vision-treu), und staff
 Riskante (das Herz) ans Ende mit additiver Sicherung. Er ist baubar Akt für Akt, jeder
 verifiziert. Der Schlüsselstein ist die Omnibox; die Werkstatt-Werkbank ist der größte
 sofort-sichtbare Sprung.
+
+---
+
+# DER WERKSTATT-ABSCHLUSS + DIE DENKMUSTER FÜR ALLE MENÜS (Plan, 07.06.2026)
+
+> Schöpfer: „erstelle einen umfassenden Plan, um das Werkstatt-Fenster abzuschliessen; danach
+> reflektierst du jede Änderung — wieso wir gegangen — und wendest es auf die anderen Menüs an,
+> damit du einen perfekten Plan hast und nachhaltig aus diesem Prozess lernst: WIE du soetwas
+> angehst, welche DENKMUSTER. Die Werkstatt soll uns die Wege für ALLE Menüs zeigen."
+
+**Stand (ehrlich, ~70%):** GEBAUT = dünner Such-Dropdown · grosser Viewer · FORMEN 3×3 · Pille
+unten-links · FERTIGEN kompakt · Klon-Sprung gedeckelt · Chips-Container (resoniert). UNVERIFIZIERT
+/ OFFEN = der Rahmen (in V18.39 ÜBER-BEHAUPTET — meine Überlauf-Diagnose war ein Diag-Fehler, der
+den geschlossenen Drawer mass) · die Mode-Bar (nur getrimmt, nicht neu gedacht) · die Farben-Zone ·
+die Ausgabe-Ordnung · resoniert (nicht mit dem Auge geprüft).
+
+## A. Der Abschluss — die funktionale Zonen-Ordnung (mit dem WARUM je Schritt)
+
+**Das EINE Prinzip, das die Werkstatt lehrt: funktionale Zonen nach dem mentalen Modell des
+Nutzers.** Ein Bauer stellt vier Fragen → vier Zonen:
+
+- „Was füge ich hinzu / wie sieht es aus?" → **LINKS** (Formen + Farben).
+- „Ich forme es." → **MITTE** (Viewer + Manipulations-Werkzeuge).
+- „Woraus + womit + welcher Akt?" → **RECHTS** (Materialien + Werkzeuge + Mach/Verwalt-Aktionen).
+- „Was IST es?" → **UNTEN** (reine Ausgabe).
+
+| Schritt | Änderung                                                                                                                                                                                     | WARUM (das Denkmuster)                                                                                                                                               |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A-1** | Farben → links (unter „Part entfernen")                                                                                                                                                      | Formen + Farben sind beide „was ich hinzufüge / wie es aussieht" → sie gehören ins selbe mentale Bündel. **ZONE NACH MENTALEM MODELL.**                              |
+| **A-2** | Aktionen (Neu/Klonen/Löschen + FERTIGEN) → EINE Aktions-Zone (rechts, im von den Farben freigegebenen Platz, bei Material/Werkzeug = „womit ich mache"); aus Mode-Bar + Ausgabe herausgelöst | Werkzeug (manipulieren) ≠ Aktion (machen/verwalten) ≠ Ausgabe (lesen) — drei Funktionen, drei Orte. **EINE ZONE, EINE AUFGABE.**                                     |
+| **A-3** | Ausgabe-Tabelle → NUR Ausgabe (FERTIGEN raus) → kürzer, einheitlicher, spart Höhe                                                                                                            | Ein Readout liest, es handelt nicht. **EINE ZONE, EINE AUFGABE.**                                                                                                    |
+| **A-4** | Mode-Bar → NUR Werkzeuge (Move/Rotate/Scale/Connect/Snap/Zentrieren; Datei-Aktionen wandern raus)                                                                                            | Die Misch-Leiste war „nicht synergetisch, Luft-Spalte". Eine reine Werkzeug-Leiste hat EINEN Rhythmus. **GRUPPIEREN NACH FUNKTION + VISUELLER RHYTHMUS (Chunking).** |
+| **A-5** | Ausgabe-Reihenfolge nach den Nutzer-Fragen: IDENTITÄT (Rolle·Fähigkeit) → GÜTE (Qualität·Tags) → PREIS (Bau-Kosten) → WACHSTUM (Resonanz·Hinweis, sekundär)                                  | Ein Nutzer fragt in dieser Reihenfolge; Fortgeschrittenes zuletzt. **ORDNE NACH DER NUTZER-FRAGE / ENTSCHEIDUNGS-RELEVANZ (nicht Code-Reihenfolge).**                |
+| **A-6** | Rahmen VERIFIZIEREN (Diag reparieren, das den Drawer wirklich öffnet → Open-State left/right/Überlauf messen)                                                                                | Meine V18.39-Behauptung fusste auf dem geschlossenen Drawer. **MESSEN VOR BEHAUPTEN.**                                                                               |
+| **A-7** | resoniert + Feinheiten mit eigenem Auge (Fokus-Screenshot, lesbar)                                                                                                                           | Nicht pixelblind — richtig rahmen. **VERIFIZIERE MIT DEM AUGE, DAS DU HAST.**                                                                                        |
+
+Reihenfolge: A-6 (messen) + A-7 zuerst (Wahrheit), dann A-1..A-5 (als EIN System-Umbau, nicht
+einzeln), dann erneut messen/verifizieren, dann Schöpfer-Browser für das GPU-Feel.
+
+## B. Die DENKMUSTER, die die Werkstatt destilliert (die „Wege" für alle Menüs)
+
+1. **CONTENT-FIRST** — der primäre Inhalt (Viewer = 90% der Zeit) ist gross, der Star; das Chrome
+   tritt zurück (dünn). _Werkstatt: Viewer max, Picker dünn._
+2. **ZONE NACH MENTALEM MODELL** — was der Nutzer als zusammengehörig DENKT, liegt zusammen.
+   _Formen + Farben links._
+3. **EINE ZONE, EINE AUFGABE** — Eingabe/Aktion getrennt von Ausgabe/Lesen. _Ausgabe = nur Readout._
+4. **GRUPPIEREN NACH FUNKTION + RHYTHMUS** — gleiche Funktion = eine Gruppe, klar getrennt.
+   _Mode-Bar = nur Werkzeuge._
+5. **ORDNE NACH DER NUTZER-FRAGE** — Reihenfolge = Entscheidungs-Relevanz/Häufigkeit. _Ausgabe-Folge._
+6. **PROGRESSIVE DISCLOSURE** — Seltenes beschwörbar, Häufiges sichtbar. _Bauplan-Dropdown; das „?"._
+7. **STABILES LAYOUT** — feste Zonen, interner Scroll, kein Sprung bei Zustandswechsel. _Rechte Palette
+   gedeckelt + scrollt (kein Klon-Sprung)._
+8. **SYMMETRIE + RASTER** — gleiche Insets, konsistente Abstands-Tokens, eingemittet. _Rahmen left/right
+   gleich (left:12/right:12, nie width:calc(100vw−X) → Scrollbar)._
+9. **SUCHEN STATT SCROLLEN** — Listen sind durchsuchbar. _Such-Dropdown._
+10. **MESSEN VOR BEHAUPTEN** — jede Aussage gegen eine verlässliche Messung; Unverifiziertes als solches
+    markieren; GPU-Feel → Schöpfer-Browser. _Die Prozess-Lehre (V18.39: der über-behauptete Rahmen)._
+
+## C. Die Anwendung auf ALLE Menüs (die Werkstatt zeigt den Weg)
+
+Pro Raum: das mentale Modell → die Zonen → die Prinzipien.
+
+**DER HOF (Dirigent + Orchester).** Fragen: „welche Wesen?" „was sollen sie tun?" „welche Gesetze?".
+
+- _Content-first (P1):_ die Wesen-Liste ist der Star.
+- _Eine Zone, eine Aufgabe (P3):_ jedes Wesen + SEINE Befehle INLINE (wähle Wesen → befiehl), statt
+  globaler Knopf-Block + Duplikat in der Befehls-Liste.
+- _Zonen (P2):_ Wesen (Liste + inline) · Gesetze (Welt-Regeln) · die freien Befehle → Omnibox (P6).
+- _Ordne (P5):_ Wesen (häufig) zuerst, Gesetze (selten) sekundär.
+
+**DAS ICH (Charakterbogen).** Fragen: „was habe ich?" „wer bin ich?" „was trage ich?".
+
+- _Content-first (P1):_ der lebendige 3D-Avatar-Mittelpunkt (wer ich bin) als Star (WebGPU-Sub-Renderer).
+- _Zonen (P2):_ Habe (Inventar + Hotbar) · Charakter (Seele/Stats/Emotionen) · Ausrüstung + Rezepte.
+- _Stabil + Symmetrie (P7/P8):_ die Spalten gleich hoch (kein dunkler Leerraum — der V18.33-Befund).
+- _Eine Zone, eine Aufgabe (P3):_ Anlegen (Aktion) getrennt von „was ich trage" (Anzeige).
+
+**DIE BIBLIOTHEK (Welt-Browser).** Fragen: „welche Welten?" „was ist diese?" „wie teilen?".
+
+- _Content-first (P1):_ die Welt-Karten (man BETRITT Welten) als Star, balanciertes Masonry (P8).
+- _Zonen (P2):_ Entdecken · Schöpfen/Teilen · Provenienz (Stammbaum/Tagebuch auf Abruf, P6).
+- _Suchen (P9):_ Welt-Suche, Tag-fähig (`welt:terrain`) über die Omnibox.
+
+**DIE EINSTELLUNGEN (roter Faden).** Fragen nach Häufigkeit.
+
+- _Ordne (P5):_ Spielmodus → Welt → Steuerung → Darstellung → Audio → Identität.
+- _Progressive disclosure (P6):_ Selten-Genutztes (Dev-Render) eingeklappt.
+- _Symmetrie + Raster (P8):_ mehrspaltig, Pergament-Karten, gleiche Insets.
+
+## D. Der PROZESS — wie ich JEDEN Raum angehe (die nachhaltige Methodik, gegen das reaktive Patchen)
+
+1. **ZIEL + Nutzer-Reise** — was tut der Nutzer hier, wie oft, in welcher Reihenfolge? (Die 90%-Regel:
+   wo LEBT er? → das wird der Star.)
+2. **MESSEN** — den Ist-Zustand verlässlich erfassen (gerahmter Screenshot, Rects, Überlauf, Open-State),
+   nicht raten, nicht den nächsten Pixel schieben.
+3. **ZONEN nach mentalem Modell** — gruppiere Zusammengehöriges; trenne die Funktionen
+   (Eingabe / Werkzeug / Aktion / Ausgabe).
+4. **CONTENT-FIRST** — maximiere den primären Inhalt, das Chrome tritt zurück.
+5. **ORDNE nach Nutzer-Frage** — Reihenfolge = Relevanz; Seltenes beschwörbar.
+6. **SYMMETRIE + Raster** — gleiche Insets, konsistente Tokens, eingemittet.
+7. **STABIL** — feste Zonen, interner Scroll, kein Sprung.
+8. **ALS SYSTEM, NICHT ALS PATCH** — das Ganze entwerfen; ein Befund ist ein SIGNAL für das Ziel, keine
+   isolierte TODO.
+9. **VERIFIZIEREN VOR BEHAUPTEN** — jede Aussage gegen die Messung; Unverifiziertes markieren;
+   GPU-Feel → Schöpfer-Browser. (Die Wand gegen den Schwamm.)
+
+**Die Kern-Lehre, die bleibt:** ein Schöpfer-Befund ist nie nur „fix dieses Pixel" — er ist ein SIGNAL
+für ein verletztes PRINZIP. Wer das Prinzip findet + das ganze System danach ordnet, heilt den Befund
+UND die zehn ungenannten Geschwister. Wer nur das Pixel schiebt, gebärt den nächsten Riss (der Schwamm).
+Die Werkstatt war die Schule; diese neun Schritte + zehn Denkmuster sind, was sie uns für JEDEN Raum lehrt.
