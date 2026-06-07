@@ -659,14 +659,71 @@
                 border-bottom: 1px solid var(--brass-3);
                 padding-bottom: 4px;
             }
-            .inventory-col-character .section {
-                margin-bottom: 12px;
-            }
             .inventory-col-character h4 {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 11px;
                 color: var(--parch-ink);
                 margin: 0 0 5px 0;
+            }
+            /* ALLE Inventar-Sektionen als Pergament-Karten (wie die Werkstatt-Panels) —
+               klare Trennung + Hierarchie statt flacher Text-Liste, in allen drei Spalten. */
+            #inventory-overlay .section {
+                background: linear-gradient(180deg, rgba(255, 240, 205, 0.07), rgba(180, 140, 80, 0.05));
+                border: 1px solid var(--brass-3);
+                border-radius: 4px;
+                padding: 8px 10px;
+                margin-bottom: 10px;
+            }
+            #inventory-overlay .inventory-col-recipes h4,
+            #inventory-overlay .inventory-col-items h4 {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                color: var(--parch-ink);
+                margin: 0 0 5px 0;
+            }
+            /* Die Hotbar liegt unter dem (9-breiten) Item-Raster in der breiten Habe-Spalte —
+               als 3×3-Gitter, damit sie die Karte füllt statt als dünne Liste zu hängen. */
+            .inventory-col-items #hotbar-config {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 5px;
+                max-height: none;
+                overflow: visible;
+            }
+            /* Die text-lastigen Tools (Soul-Editor-Bauplanliste, Equip-Dropdowns, Hotbar)
+               kompakt + scrollbar — sie fluten die Spalte nicht (gegen die Text-Wüste).
+               Die .drawer-Regeln greifen im Inventar-Overlay nicht mehr (kein .drawer-
+               Vorfahr) — darum hier das flex-column + max-height. */
+            #soul-editor,
+            #player-equip,
+            #hotbar-config {
+                max-height: 132px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+            /* Stats ist die KERN-Info (man liest sie oft) — etwas mehr Raum als die Tools,
+               aber gekappt + scrollbar, damit die lange Stat/Tag-Liste die Spalte nicht flutet. */
+            #player-stats {
+                max-height: 210px;
+                overflow-y: auto;
+            }
+            /* Modal-Fokus (UI-Putz Veredelung): beim offenen "Ich" dunkelt ein Backdrop die
+               Welt + das HUD; Konsole + Statusbar weichen, das Overlay ist im Fokus. */
+            body.inventory-open::before {
+                content: "";
+                position: fixed;
+                inset: 0;
+                background: rgba(10, 6, 14, 0.5);
+                z-index: 29;
+                pointer-events: none;
+            }
+            body.inventory-open #console,
+            body.inventory-open #statusbar {
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
             }
             .inventory-equip {
                 display: flex;
@@ -1942,20 +1999,20 @@
                 font-size: 11px;
                 font-family: "JetBrains Mono", monospace;
             }
-            .drawer .emotion {
+            #inventory-overlay .emotion {
                 display: flex;
                 align-items: center;
                 gap: 6px;
                 margin-bottom: 4px;
             }
-            .drawer .emotion .name {
+            #inventory-overlay .emotion .name {
                 width: 60px;
                 font-size: 10px;
                 color: var(--parch-ink-soft);
                 text-transform: capitalize;
                 font-family: "IM Fell English", Georgia, serif;
             }
-            .drawer .emotion .bar {
+            #inventory-overlay .emotion .bar {
                 flex: 1;
                 height: 8px;
                 background: rgba(40, 25, 10, 0.18);
@@ -1963,40 +2020,40 @@
                 overflow: hidden;
                 box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
             }
-            .drawer .emotion .bar > div {
+            #inventory-overlay .emotion .bar > div {
                 height: 100%;
                 width: 0%;
                 transition: width 250ms ease-out;
                 box-shadow: 0 0 4px currentColor;
             }
-            .drawer .emotion .value {
+            #inventory-overlay .emotion .value {
                 width: 30px;
                 text-align: right;
                 font-size: 10px;
                 color: var(--parch-ink-faded);
                 font-family: "JetBrains Mono", monospace;
             }
-            .drawer .emotion.joy .bar > div {
+            #inventory-overlay .emotion.joy .bar > div {
                 background: var(--joy);
                 color: var(--joy);
             }
-            .drawer .emotion.awe .bar > div {
+            #inventory-overlay .emotion.awe .bar > div {
                 background: var(--awe);
                 color: var(--awe);
             }
-            .drawer .emotion.sorrow .bar > div {
+            #inventory-overlay .emotion.sorrow .bar > div {
                 background: var(--sorrow);
                 color: var(--sorrow);
             }
-            .drawer .emotion.hope .bar > div {
+            #inventory-overlay .emotion.hope .bar > div {
                 background: var(--hope);
                 color: var(--hope);
             }
-            .drawer .emotion.peace .bar > div {
+            #inventory-overlay .emotion.peace .bar > div {
                 background: var(--peace);
                 color: var(--peace);
             }
-            .drawer .emotion.chaos .bar > div {
+            #inventory-overlay .emotion.chaos .bar > div {
                 background: var(--chaos);
                 color: var(--chaos);
             }
@@ -2820,13 +2877,13 @@
             }
             /* Ring 5: Spieler-Seele. Brass-getintetes <select>, passend zum
            Drawer-Pergament-Look. */
-            .drawer .soul-row {
+            #inventory-overlay .soul-row {
                 display: flex;
                 align-items: center;
                 gap: 10px;
                 margin-bottom: 4px;
             }
-            .drawer .soul-row label {
+            #inventory-overlay .soul-row label {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 11px;
                 letter-spacing: 0.08em;
@@ -2834,7 +2891,7 @@
                 color: var(--parch-ink-soft);
                 min-width: 44px;
             }
-            .drawer .soul-row select {
+            #inventory-overlay .soul-row select {
                 flex: 1;
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
                 color: var(--parch-ink);
@@ -2849,23 +2906,23 @@
                     0 1px 0 rgba(0, 0, 0, 0.2),
                     inset 0 1px 0 rgba(255, 240, 200, 0.4);
             }
-            .drawer .soul-row select:hover {
+            #inventory-overlay .soul-row select:hover {
                 background: linear-gradient(180deg, rgba(255, 245, 210, 0.6), rgba(200, 160, 100, 0.4));
                 border-color: var(--brass-1);
             }
-            .drawer .soul-row select:focus {
+            #inventory-overlay .soul-row select:focus {
                 outline: 1px solid var(--violet-1);
                 outline-offset: 1px;
             }
             /* Ring 6.5 — Hotbar-Belegungs-Editor im Spieler-Drawer */
             /* Welle 6.D Etappe 1 — Stats-Sektion im Spieler-Drawer.
                Etappe 1.5 ergänzt Körper-Teile-Liste oberhalb der Stats. */
-            .drawer #player-stats {
+            #inventory-overlay #player-stats {
                 display: flex;
                 flex-direction: column;
                 gap: 2px;
             }
-            .drawer .body-parts-header {
+            #inventory-overlay .body-parts-header {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 10px;
                 letter-spacing: 0.06em;
@@ -2875,19 +2932,19 @@
                 padding-bottom: 3px;
                 border-bottom: 1px dashed rgba(138, 106, 54, 0.35);
             }
-            .drawer .body-part-row {
+            #inventory-overlay .body-part-row {
                 display: flex;
                 justify-content: space-between;
                 align-items: baseline;
                 padding: 2px 6px;
                 font-size: 11px;
             }
-            .drawer .body-part-label {
+            #inventory-overlay .body-part-label {
                 font-family: "IM Fell English", Georgia, serif;
                 color: var(--parch-ink);
                 font-style: italic;
             }
-            .drawer .body-part-meta {
+            #inventory-overlay .body-part-meta {
                 font-family: "JetBrains Mono", monospace;
                 color: var(--parch-ink-faded);
                 font-size: 9.5px;
@@ -2916,23 +2973,23 @@
                 font-size: 9.5px;
             }
             /* Welle 6.D Etappe 1.7 — Avatar-Editor. */
-            .drawer #soul-editor {
+            #inventory-overlay #soul-editor {
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
             }
-            .drawer .soul-editor-list {
+            #inventory-overlay .soul-editor-list {
                 display: flex;
                 flex-direction: column;
                 gap: 2px;
             }
-            .drawer .soul-editor-empty {
+            #inventory-overlay .soul-editor-empty {
                 font-style: italic;
                 font-size: 11px;
                 color: var(--parch-ink-faded);
                 padding: 4px 0;
             }
-            .drawer .soul-editor-row {
+            #inventory-overlay .soul-editor-row {
                 display: flex;
                 align-items: center;
                 gap: 5px;
@@ -2942,16 +2999,16 @@
                 border-radius: 3px;
                 font-size: 11px;
             }
-            .drawer .soul-editor-name {
+            #inventory-overlay .soul-editor-name {
                 flex: 1;
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
                 color: var(--parch-ink);
             }
-            .drawer .soul-editor-row button,
-            .drawer .soul-editor-actions button,
-            .drawer .soul-editor-add,
-            .drawer .soul-editor-apply-row button {
+            #inventory-overlay .soul-editor-row button,
+            #inventory-overlay .soul-editor-actions button,
+            #inventory-overlay .soul-editor-add,
+            #inventory-overlay .soul-editor-apply-row button {
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
                 color: var(--parch-ink);
                 border: 1px solid var(--brass-2, #b48c50);
@@ -2962,25 +3019,25 @@
                 font-family: "Cinzel", Georgia, serif;
                 letter-spacing: 0.03em;
             }
-            .drawer .soul-editor-row button:hover,
-            .drawer .soul-editor-actions button:hover,
-            .drawer .soul-editor-add:hover,
-            .drawer .soul-editor-apply-row button:hover {
+            #inventory-overlay .soul-editor-row button:hover,
+            #inventory-overlay .soul-editor-actions button:hover,
+            #inventory-overlay .soul-editor-add:hover,
+            #inventory-overlay .soul-editor-apply-row button:hover {
                 background: linear-gradient(180deg, rgba(255, 248, 215, 0.75), rgba(210, 170, 110, 0.55));
             }
-            .drawer .soul-editor-danger {
+            #inventory-overlay .soul-editor-danger {
                 color: #a04040 !important;
                 border-color: #a04040 !important;
             }
-            .drawer .soul-editor-primary {
+            #inventory-overlay .soul-editor-primary {
                 background: linear-gradient(180deg, rgba(200, 180, 230, 0.65), rgba(160, 120, 200, 0.45)) !important;
             }
-            .drawer .soul-editor-actions {
+            #inventory-overlay .soul-editor-actions {
                 display: flex;
                 gap: 4px;
                 flex-wrap: wrap;
             }
-            .drawer .soul-editor-pane {
+            #inventory-overlay .soul-editor-pane {
                 margin-top: 5px;
                 padding: 6px;
                 background: rgba(40, 25, 10, 0.04);
@@ -2990,7 +3047,7 @@
                 flex-direction: column;
                 gap: 5px;
             }
-            .drawer .soul-editor-pane-head {
+            #inventory-overlay .soul-editor-pane-head {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 11px;
                 letter-spacing: 0.05em;
@@ -3043,7 +3100,7 @@
                 border: 1px solid var(--brass-2, #b48c50);
                 border-radius: 2px;
             }
-            .drawer .soul-editor-apply-row {
+            #inventory-overlay .soul-editor-apply-row {
                 display: flex;
                 gap: 4px;
                 margin-top: 4px;
@@ -3091,12 +3148,12 @@
                 background: linear-gradient(180deg, rgba(255, 248, 215, 0.75), rgba(210, 170, 110, 0.55));
             }
             /* Welle 6.D Etappe 3b — Equipment-UI. */
-            .drawer #player-equip {
+            #inventory-overlay #player-equip {
                 display: flex;
                 flex-direction: column;
                 gap: 4px;
             }
-            .drawer .equip-row {
+            #inventory-overlay .equip-row {
                 display: flex;
                 align-items: center;
                 gap: 6px;
@@ -3105,14 +3162,14 @@
                 border: 1px solid rgba(138, 106, 54, 0.4);
                 border-radius: 3px;
             }
-            .drawer .equip-slot-label {
+            #inventory-overlay .equip-slot-label {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 10.5px;
                 color: var(--parch-ink-faded);
                 letter-spacing: 0.04em;
                 min-width: 60px;
             }
-            .drawer .equip-row select {
+            #inventory-overlay .equip-row select {
                 flex: 1;
                 background: rgba(255, 250, 235, 0.7);
                 color: var(--parch-ink);
@@ -3177,7 +3234,7 @@
                 font-size: 10.5px;
                 padding: 2px 4px;
             }
-            .drawer .equip-mark-header {
+            #inventory-overlay .equip-mark-header {
                 font-size: 10px;
                 color: var(--parch-ink-faded);
                 font-family: "Cinzel", Georgia, serif;
@@ -3186,7 +3243,7 @@
                 padding-top: 4px;
                 border-top: 1px dashed rgba(138, 106, 54, 0.35);
             }
-            .drawer .equip-mark-row {
+            #inventory-overlay .equip-mark-row {
                 display: flex;
                 flex-wrap: wrap;
                 align-items: center;
@@ -3194,12 +3251,12 @@
                 padding: 2px 6px;
                 font-size: 10.5px;
             }
-            .drawer .equip-mark-label {
+            #inventory-overlay .equip-mark-label {
                 flex: 1 0 100%;
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
             }
-            .drawer .equip-mark-row button {
+            #inventory-overlay .equip-mark-row button {
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
                 color: var(--parch-ink);
                 border: 1px solid var(--brass-2, #b48c50);
@@ -3209,13 +3266,13 @@
                 border-radius: 2px;
                 font-family: "Cinzel", Georgia, serif;
             }
-            .drawer .equip-empty {
+            #inventory-overlay .equip-empty {
                 font-style: italic;
                 font-size: 10.5px;
                 color: var(--parch-ink-faded);
                 padding: 4px 0;
             }
-            .drawer .stat-row {
+            #inventory-overlay .stat-row {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -3225,17 +3282,17 @@
                 font-family: "JetBrains Mono", monospace;
                 font-size: 11px;
             }
-            .drawer .stat-label {
+            #inventory-overlay .stat-label {
                 color: var(--parch-ink);
                 font-family: "IM Fell English", Georgia, serif;
                 font-size: 11px;
                 font-style: italic;
             }
-            .drawer .stat-value {
+            #inventory-overlay .stat-value {
                 color: var(--parch-ink);
                 font-weight: 600;
             }
-            .drawer .stat-tags {
+            #inventory-overlay .stat-tags {
                 margin-top: 6px;
                 padding: 4px 6px;
                 font-size: 10px;
@@ -3257,13 +3314,13 @@
                 margin-left: 4px;
             }
 
-            .drawer .hotbar-config-row {
+            #inventory-overlay .hotbar-config-row {
                 display: flex;
                 align-items: center;
                 gap: 8px;
                 margin-bottom: 4px;
             }
-            .drawer .hotbar-config-row .num {
+            #inventory-overlay .hotbar-config-row .num {
                 display: inline-block;
                 min-width: 18px;
                 text-align: center;
@@ -3272,7 +3329,7 @@
                 font-weight: 600;
                 font-size: 11px;
             }
-            .drawer .hotbar-config-row select {
+            #inventory-overlay .hotbar-config-row select {
                 flex: 1;
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
                 color: var(--parch-ink);
@@ -3283,7 +3340,7 @@
                 font-size: 11px;
                 cursor: pointer;
             }
-            .drawer .hotbar-config-row select:hover {
+            #inventory-overlay .hotbar-config-row select:hover {
                 border-color: var(--brass-1);
             }
             /* Welle 6.X.2 V8.22 — Werkstatt-Breite exakt Topbar-bündig.
@@ -4762,17 +4819,22 @@
                 </p>
             </div>
             <div class="inventory-body">
+                <!-- LINKS: Habe — die Items + die Hotbar-Schnellslots, beide 9-breit (wie
+                     Minecraft: das Raster + darunter die Belegung der Schnellslots). -->
                 <div class="inventory-col-items">
                     <h3 class="inventory-col-title">Habe</h3>
                     <div id="inventory-grid" class="inventory-grid"></div>
                     <div id="inventory-selected" class="inventory-selected" aria-live="polite">
                         <span class="label">gewählt:</span> <span class="name">—</span>
                     </div>
+                    <section class="section">
+                        <h4>Hotbar <span class="section-hint">(Schnellzugriff 1–9)</span></h4>
+                        <div id="hotbar-config"></div>
+                    </section>
                 </div>
-                <!-- Charakter (UI-Putz: das Spieler-Menü ins Inventar gefaltet — das "Ich" an
-                     EINEM Ort). Die IDs bleiben → playerSoulInitDOM, renderPlayerStatsUI,
-                     initStatusPanel, renderPlayerEquipUI, _renderSoulEditor, _renderHotbarDOM
-                     füllen sie unverändert. -->
+                <!-- MITTE: Charakter — wer ich BIN (Seele · Stats · Emotionen · eigene Seele).
+                     Die IDs bleiben → playerSoulInitDOM, renderPlayerStatsUI, initStatusPanel,
+                     _renderSoulEditor füllen sie unverändert. -->
                 <div class="inventory-col-character">
                     <h3 class="inventory-col-title">Charakter</h3>
                     <section class="section">
@@ -4791,25 +4853,27 @@
                         <div id="status-emotions"></div>
                     </section>
                     <section class="section">
-                        <h4>Ausrüstung <span class="section-hint">(Werkzeug + Rüstung)</span></h4>
+                        <h4>Eigene Seele formen <span class="section-hint">(custom Avatar)</span></h4>
+                        <div id="soul-editor"></div>
+                    </section>
+                </div>
+                <!-- RECHTS: Ausrüstung & Rezepte — meine Ausrüstung verwalten (tragen ·
+                     wechseln · trinken) + neue Geräte/Rüstung/Tränke fertigen (Rezeptbuch).
+                     renderPlayerEquipUI, _renderInventoryEquip, renderRecipeBook füllen sie. -->
+                <div class="inventory-col-recipes">
+                    <h3 class="inventory-col-title">Ausrüstung &amp; Rezepte</h3>
+                    <section class="section">
+                        <h4>Was du trägst</h4>
+                        <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
+                    </section>
+                    <section class="section">
+                        <h4>Ausrüstung <span class="section-hint">(wechseln · trinken · markieren)</span></h4>
                         <div id="player-equip"></div>
                     </section>
                     <section class="section">
-                        <h4>Eigene Seele formen</h4>
-                        <div id="soul-editor"></div>
+                        <h4>Rezeptbuch <span class="section-hint">(fertigen → in die Hand / anlegen)</span></h4>
+                        <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
                     </section>
-                    <section class="section">
-                        <h4>Hotbar-Belegung</h4>
-                        <div id="hotbar-config"></div>
-                    </section>
-                </div>
-                <div class="inventory-col-recipes">
-                    <h3 class="inventory-col-title">Rezeptbuch</h3>
-                    <!-- Was du trägst (Gerät in Hand + Rüstung) — sichtbar, klickbar. -->
-                    <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
-                    <!-- Rezeptbuch (wie Minecraft): was du fertigen kannst, ein Klick
-                         schmiedet aus deinem Material + nimmt es in die Hand / legt es an. -->
-                    <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
                 </div>
             </div>
         </div>

@@ -39622,6 +39622,7 @@ class AnazhRealm {
         if (open) {
             el.removeAttribute("hidden");
             this.state.inventoryOpen = true;
+            document.body.classList.add("inventory-open");
             this.renderInventoryUI();
             // === UX-Konvention wie Minecraft / jedes Survival-Spiel ===
             // Inventar offen → Pointer-Lock raus, damit der Maus-Cursor
@@ -39641,6 +39642,7 @@ class AnazhRealm {
         } else {
             el.setAttribute("hidden", "");
             this.state.inventoryOpen = false;
+            document.body.classList.remove("inventory-open");
             this.state.inventorySelected = null;
             // Bewusst KEIN re-lock — Spieler klickt Canvas um wieder
             // in Blick-Steuerung zu gehen (Minecraft-Konvention).
