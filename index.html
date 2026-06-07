@@ -665,8 +665,11 @@
                 color: var(--parch-ink);
                 margin: 0 0 5px 0;
             }
-            /* ALLE Inventar-Sektionen als Pergament-Karten (wie die Werkstatt-Panels) —
-               klare Trennung + Hierarchie statt flacher Text-Liste, in allen drei Spalten. */
+            /* EINHEIT (UI-Putz V18.33): ALLE Sektionen — in den Drawern UND im Inventar —
+               teilen EINE Pergament-Karten-Sprache (klare Trennung + Hierarchie statt flacher
+               Text-Liste). Eine Quelle, alle Räume gleich (Hof · Werkstatt · Bibliothek ·
+               Einstellungen · das Ich). */
+            .drawer .section,
             #inventory-overlay .section {
                 background: linear-gradient(180deg, rgba(255, 240, 205, 0.07), rgba(180, 140, 80, 0.05));
                 border: 1px solid var(--brass-3);
@@ -1939,9 +1942,8 @@
             .drawer-close:hover {
                 color: #fbe9b8;
             }
-            .drawer .section {
-                margin-bottom: 16px;
-            }
+            /* (V18.33: die flache .drawer .section ist zur geteilten Pergament-Karte
+               geworden — siehe ".drawer .section, #inventory-overlay .section" oben.) */
             .drawer .section:last-child {
                 margin-bottom: 0;
             }
