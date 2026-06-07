@@ -2935,6 +2935,12 @@
             .help-dot:focus .help-pop {
                 display: block;
             }
+            /* V18.38 — rechts sitzende „?" öffnen ihr Popover nach LINKS, damit es nicht
+               über den Bildrand läuft (Schöpfer: „Text teils ausserhalb des Bilds"). */
+            .help-dot.dot-right .help-pop {
+                left: auto;
+                right: 0;
+            }
             .help-search {
                 width: 100%;
                 box-sizing: border-box;
@@ -3445,20 +3451,24 @@
                bleiben (right:12 + left:auto + width:fix). Mit width 100vw-24
                ist linke Kante bei 12px (= Topbar-left). Beim Resize via
                bottom-left-Handle: rechte Kante bleibt fest, linke wandert. */
+            /* V18.38 — left+right:12 statt width:calc(100vw-24) (Schöpfer „links übers Bild,
+               nicht symmetrisch"): `100vw` schliesst die Scrollbar ein → die Drawer waren breiter
+               als der Header (der left:12/right:12 nutzt) → links übergelaufen. Jetzt bündig mit
+               dem Header; bottom:18px gibt den symmetrischen Rahmen unten. */
             .drawer[data-drawer="werkstatt"] {
-                left: auto;
+                left: 12px;
                 right: 12px;
-                width: calc(100vw - 24px);
-                max-height: calc(100vh - 270px);
+                width: auto;
+                max-height: calc(100vh - 134px);
             }
             /* Bibliothek von Alexandria (UI-Putz): die dezentrale Social-Plattform —
                groß wie die Werkstatt, browser/feed-artig. Die Sektionen fließen in
                Spalten (Entdecken · Schöpfen · Provenienz), jede Karte bleibt ganz. */
             .drawer[data-drawer="bibliothek"] {
-                left: auto;
+                left: 12px;
                 right: 12px;
-                width: calc(100vw - 24px);
-                max-height: calc(100vh - 200px);
+                width: auto;
+                max-height: calc(100vh - 134px);
             }
             /* V18.36 — EINE Fenster-Sprache (Schöpfer „keines der Fenster symmetrisch, nicht
                einheitlich"): Hof + Einstellungen waren schmale 300px-Rechtsstreifen mit ewigem
@@ -3466,10 +3476,10 @@
                Werkstatt/Bibliothek — balanciert, weniger Scrollen, dieselbe Form. */
             .drawer[data-drawer="kreaturen"],
             .drawer[data-drawer="einstellungen"] {
-                left: auto;
+                left: 12px;
                 right: 12px;
-                width: calc(100vw - 24px);
-                max-height: calc(100vh - 200px);
+                width: auto;
+                max-height: calc(100vh - 134px);
             }
             .drawer[data-drawer="kreaturen"] .drawer-scroll,
             .drawer[data-drawer="einstellungen"] .drawer-scroll {
@@ -3875,6 +3885,7 @@
                 flex-direction: column;
                 align-items: center;
                 gap: 4px;
+                position: relative;
             }
             #workshop-preview-canvas {
                 display: block;
@@ -3887,7 +3898,7 @@
                    Viewer nimmt den Rest (gross), die Ausgabe bleibt IMMER im Bild. Renderer folgt
                    der echten Rect (`_workshopSyncCanvasSize` → Kamera-Aspect stimmt). */
                 aspect-ratio: 5 / 3;
-                max-height: clamp(300px, calc(100vh - 560px), 520px);
+                max-height: clamp(340px, calc(100vh - 430px), 640px);
                 background: #1a140a;
                 border: 1px solid var(--parch-edge);
                 border-radius: 2px;
@@ -3914,14 +3925,14 @@
             /* Welle 6.B Phase 2 — Manipulator-Modus-Bar (V8.05: über Canvas) */
             #workshop-mode-bar {
                 display: flex;
-                gap: 4px;
+                gap: 3px;
                 margin: 0 0 6px 0;
-                padding: 4px 6px;
+                padding: 4px 5px;
                 background: rgba(255, 235, 190, 0.18);
                 border: 1px solid var(--brass-3);
                 border-radius: 3px;
                 flex-wrap: wrap;
-                justify-content: center;
+                justify-content: flex-start;
                 align-items: center;
             }
             /* V8.05/8.06 — Stats-Panel direkt unter dem Canvas: zeigt emergente
@@ -3965,14 +3976,19 @@
             #workshop-stats-panel .stat-row:last-child {
                 margin-bottom: 0;
             }
+            /* V18.38 — Apple-mässig geordnet (Schöpfer „chaotisch, nicht applemässig"): das Label
+               fixe Breite + rechtsbündig → die Werte starten auf EINER Flucht (ausgerichtete
+               Tabelle statt Flatter-Zeilen). */
             #workshop-stats-panel .stat-label {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 9px;
                 letter-spacing: 0.6px;
                 color: var(--brass-1);
                 text-transform: uppercase;
-                margin-right: 4px;
+                margin-right: 8px;
                 font-weight: 600;
+                flex: 0 0 82px;
+                text-align: right;
             }
             #workshop-stats-panel .tag-chip {
                 display: inline-flex;
@@ -4285,13 +4301,13 @@
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 11px;
                 font-weight: 600;
-                padding: 5px 12px;
+                padding: 5px 9px;
                 background: rgba(40, 25, 10, 0.55);
                 color: var(--parch-bg, #ece1c5);
                 border: 1px solid var(--iron-1);
                 border-radius: 3px;
                 cursor: pointer;
-                letter-spacing: 0.5px;
+                letter-spacing: 0.4px;
                 text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
             }
             .workshop-mode-btn:hover,
@@ -4321,19 +4337,26 @@
                 margin: 0 4px;
                 vertical-align: middle;
             }
+            /* V18.38 — der „Eingebaut"-Hinweis war ein unleserlicher Streifen UNTER dem Canvas
+               (Schöpfer): jetzt eine lesbare Pille, die OBEN auf dem Viewer schwebt (nur bei
+               Built-ins sichtbar) → kein Platz-fressender Streifen, klar lesbar. */
             #workshop-readonly-banner {
-                width: 100%;
-                margin: 2px 0 0 0;
-                padding: 4px 8px;
-                background: linear-gradient(180deg, rgba(180, 130, 70, 0.25), rgba(120, 80, 30, 0.18));
-                border: 1px solid var(--brass-3);
-                border-radius: 2px;
+                position: absolute;
+                top: 14px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 6;
+                padding: 4px 14px;
+                background: rgba(20, 14, 6, 0.9);
+                border: 1px solid var(--brass-2);
+                border-radius: 999px;
                 font-family: "IM Fell English", Georgia, serif;
                 font-size: 11px;
                 font-style: italic;
-                color: var(--parch-ink-faded);
+                color: var(--parch-bg, #ece1c5);
                 text-align: center;
-                box-sizing: border-box;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+                pointer-events: none;
             }
             /* V8.03 — Werkstatt-Layout: Side-Palette + Canvas nebeneinander */
             #workshop-preview-row {
@@ -4347,11 +4370,27 @@
                rendern und Tool-Karten mehr Atem haben. Material-Cards-Grid
                wechselt automatisch auf 3 Spalten dank flex-wrap im Container. */
             #workshop-side-palette {
-                flex: 0 0 115px;
+                flex: 0 0 168px;
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
                 min-width: 0;
+            }
+            /* V18.38 — der Such-Dropdown lebt jetzt in der linken Spalte (schmal): die
+               aufklappende Liste darf BREITER werden als die Spalte (max-content), damit die
+               2-spaltigen Bauplan-Namen lesbar sind. */
+            #workshop-side-palette .workshop-picker {
+                margin: 0;
+                padding: 0;
+                background: none;
+                box-shadow: none;
+                border: none;
+            }
+            #workshop-side-palette #workshop-list {
+                right: auto;
+                width: max-content;
+                min-width: 300px;
+                max-width: 64vw;
             }
             #workshop-side-palette-right {
                 flex: 0 0 200px;
@@ -4378,7 +4417,7 @@
             /* V8.02 Phase 3a — Shape-Palette mit HTML5-Drag (seitlich, eine Spalte) */
             #workshop-shape-palette {
                 display: grid;
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr 1fr;
                 gap: 3px;
             }
             .workshop-shape-card {
@@ -5265,33 +5304,32 @@
         </aside>
         <aside class="drawer" data-drawer="werkstatt" aria-label="Werkstatt-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-            <h2>Werkstatt</h2>
-            <!-- V18.37 — die Bauplan-Wahl ist ~5% der Zeit (90% konstruiert man im Viewer):
-                 ein dünner Such-Balken, die Liste klappt als Dropdown nur beim Tippen/Fokus auf
-                 → null Dauer-Fußabdruck, der Platz gehört dem Viewer + der Ausgabe (Haupt-
-                 Ersparnis kommt aus dem OBEN, nicht aus dem Viewer). Seed der Omnibox. -->
-            <section class="section workshop-picker">
-                <input
-                    type="text"
-                    id="workshop-search"
-                    class="help-search"
-                    placeholder="Bauplan wählen / suchen …  (Klick öffnet die Liste)"
-                    aria-label="Baupläne wählen oder durchsuchen"
-                    autocomplete="off"
-                />
-                <div id="workshop-list"></div>
-            </section>
+            <h2>
+                Werkstatt<span class="help-dot" tabindex="0" role="note" aria-label="Steuerung der 3D-Vorschau"
+                    >?<span class="help-pop"
+                        >Klick: Part wählen · Drag auf Achse: bewegen · Drag ins Leere: orbit · Shift+Drag oder
+                        Mittelmaus: pan · Rad: zoom zum Cursor · W/E/R/C: Modus · G: einrasten</span
+                    ></span
+                >
+            </h2>
+            <!-- V18.38 — die Bauplan-Suche lebt im linken oberen Eck (über den Formen): die Liste
+                 klappt als Dropdown nur bei Fokus auf → null Dauer-Fußabdruck; „3D-Vorschau" als
+                 Überschrift entfällt (das Panel IST die Vorschau), das „?" wandert an den Titel →
+                 alles rutscht hoch, der Viewer wächst (Schöpfer-Methodik). -->
             <section class="section">
-                <h3>
-                    3D-Vorschau<span class="help-dot" tabindex="0" role="note" aria-label="Steuerung der 3D-Vorschau"
-                        >?<span class="help-pop"
-                            >Klick: Part wählen · Drag auf Achse: bewegen · Drag ins Leere: orbit · Shift+Drag oder
-                            Mittelmaus: pan · Rad: zoom zum Cursor · W/E/R/C: Modus · G: einrasten</span
-                        ></span
-                    >
-                </h3>
                 <div id="workshop-preview-row">
                     <aside id="workshop-side-palette" aria-label="Form-Palette">
+                        <section class="section workshop-picker">
+                            <input
+                                type="text"
+                                id="workshop-search"
+                                class="help-search"
+                                placeholder="Bauplan …"
+                                aria-label="Baupläne wählen oder durchsuchen"
+                                autocomplete="off"
+                            />
+                            <div id="workshop-list"></div>
+                        </section>
                         <h4>Formen</h4>
                         <div id="workshop-shape-palette" role="group" aria-label="Form-Palette">
                             <div class="workshop-shape-card" draggable="true" data-shape="box" title="Würfel">
@@ -5444,7 +5482,11 @@
                         <h4>Materialien</h4>
                         <div id="workshop-material-palette" role="group" aria-label="Material-Palette"></div>
                         <h4>
-                            Werkzeuge<span class="help-dot" tabindex="0" role="note" aria-label="Werkzeuge erklärt"
+                            Werkzeuge<span
+                                class="help-dot dot-right"
+                                tabindex="0"
+                                role="note"
+                                aria-label="Werkzeuge erklärt"
                                 >?<span class="help-pop"
                                     >Auf einen Part im 3D ziehen → wendet die Op an. Bearbeitet Material, hebt
                                     Präzision, schärft die Rolle (forging→Werkzeug, alchemy→Trank). Hand = 0.40,
@@ -6343,6 +6385,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.37.0" defer></script>
+        <script src="anazhRealm.js?v=18.38.0" defer></script>
     </body>
 </html>
