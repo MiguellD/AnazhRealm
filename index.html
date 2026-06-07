@@ -2560,166 +2560,101 @@
                 color: #c98a6e;
                 background: rgba(201, 138, 110, 0.1);
             }
-            /* Hof-D — die aufgeklappte Spec-Card: NATUR · WERTE · WACHSTUM als Daten-Viz (P15, _specBar-Reuse). */
-            .creature-detail {
-                display: grid;
-                grid-template-columns: 1fr 1fr 1fr;
-                gap: 6px 14px;
-                padding: 6px 8px 9px 18px;
-                background: var(--parch-2, #efe3c4);
-            }
-            .creature-detail-col {
-                display: flex;
-                flex-direction: column;
-                gap: 3px;
-                min-width: 0;
-            }
-            .creature-detail-head {
-                font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
-                letter-spacing: 0.6px;
-                text-transform: uppercase;
-                color: var(--brass-1, #8a6f3e);
-            }
-            .creature-detail-empty {
-                font-size: 10px;
-                font-style: italic;
-                color: var(--parch-ink-soft);
-            }
-            .creature-detail-strip {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 3px 5px;
-                margin-top: 2px;
-            }
-            .creature-detail-chip {
-                font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
-                padding: 1px 5px;
-                border-radius: 3px;
-                background: rgba(120, 80, 30, 0.1);
-                border: 1px solid var(--brass-2, #6f5a30);
-                color: var(--parch-ink);
-            }
-            /* P15 geteilter Hebel — die _specBar-Optik (wie die Werkstatt), hier auf hellem Pergament:
-               die Label/Werte tragen dunklen Pergament-Ton (nicht --ink-on-dark, der gehört auf DUNKLEN Grund). */
-            .creature-detail .spec-bar {
-                display: grid;
-                grid-template-columns: 78px 1fr 40px;
-                align-items: center;
-                gap: 6px;
-            }
-            .creature-detail .spec-bar-label {
-                font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
-                color: var(--parch-ink);
-                text-align: right;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            .creature-detail .spec-bar-track {
-                height: 9px;
-                background: rgba(38, 28, 12, 0.34);
-                border: 1px solid rgba(110, 88, 48, 0.55);
-                border-radius: 5px;
-                overflow: hidden;
-            }
-            .creature-detail .spec-bar-fill {
-                display: block;
-                height: 100%;
-                border-radius: 5px 0 0 5px;
-                background: var(--brass-1);
-            }
-            .creature-detail .spec-bar-fill.lvl-0 {
-                background: #8a7a52;
-            }
-            .creature-detail .spec-bar-fill.lvl-1 {
-                background: #c79a5a;
-            }
-            .creature-detail .spec-bar-fill.lvl-2 {
-                background: linear-gradient(90deg, #b48c28, #e6c24d);
-            }
-            .creature-detail .spec-bar-fill.lvl-3 {
-                background: linear-gradient(90deg, #7a3cb4, #c66bff);
-            }
-            .creature-detail .spec-bar-val {
-                font-family: "JetBrains Mono", monospace;
-                font-size: 8.5px;
-                color: var(--parch-ink-soft);
-                text-align: right;
-            }
-            .creature-detail-foot {
-                grid-column: 1 / -1;
-                display: flex;
-                justify-content: flex-end;
-                margin-top: 2px;
-            }
-            .creature-detail-dismiss {
-                font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
-                letter-spacing: 0.3px;
-                padding: 2px 8px;
-                background: rgba(150, 60, 50, 0.1);
-                border: 1px solid rgba(170, 90, 70, 0.5);
-                border-radius: 3px;
-                color: #9a4a3a;
-                cursor: pointer;
-            }
-            .creature-detail-dismiss:hover {
-                background: rgba(180, 70, 55, 0.25);
-            }
-            /* V18.54 Hof-Bühne — der STAR: dunkle 3D-Bühne (Viewer-Pendant) + die Spec-Card daneben. */
+            /* V18.55 Hof-Bühne — EIN kohärenter dunkler STAR (Bühne + Spec-Sheet auf demselben dunklen Grund,
+               wie der Werkstatt-Viewer + sein Spec-Sheet): Canvas links, das geteilte .spec-sheet rechts. */
             .hof-stage {
                 display: grid;
                 grid-template-columns: 300px 1fr;
                 gap: 16px;
-                align-items: center;
+                align-items: stretch;
                 margin: 2px 0 14px 0;
                 padding: 12px;
-                background: radial-gradient(ellipse at 30% 20%, rgba(60, 40, 70, 0.18), rgba(40, 28, 16, 0.1));
-                border: 1px solid var(--brass-2, #6f5a30);
-                border-radius: 12px;
+                background: rgba(20, 12, 4, 0.65);
+                border: 1px solid var(--brass-3, #5a4824);
+                border-radius: 10px;
             }
             .hof-stage-canvas {
                 width: 300px;
                 height: 300px;
                 display: block;
+                align-self: center;
                 background: #171019;
-                border: 1px solid var(--brass-1, #8a6f3e);
+                border: 1px solid var(--brass-2, #6f5a30);
                 border-radius: 10px;
                 box-shadow: inset 0 0 48px rgba(0, 0, 0, 0.55);
             }
             .hof-stage-spec {
                 min-width: 0;
-                align-self: center;
-            }
-            .hof-stage-title {
+                align-self: stretch;
                 display: flex;
-                align-items: baseline;
-                flex-wrap: wrap;
-                gap: 4px 10px;
-                margin-bottom: 10px;
+                flex-direction: column;
+                justify-content: center;
             }
-            .hof-stage-name {
+            /* das geteilte Spec-Sheet (.spec-*) erbt hier den dunklen Grund → die light-on-dark-Optik trägt. */
+            .hof-spec-sheet {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                color: var(--parch-bg, #ece1c5);
+                line-height: 1.6;
+            }
+            .hof-spec-sheet .spec-body {
+                gap: 4px 22px;
+            }
+            .hof-spec-sheet .spec-name {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 18px;
                 font-weight: 600;
-                color: var(--parch-ink, #2a2018);
+                color: var(--parch-bg, #ece1c5);
             }
-            .hof-stage-name.soul-sprite {
-                color: #2f8f8f;
+            .hof-spec-sheet .spec-name.soul-sprite {
+                color: #88e1e1;
+                text-shadow: 0 0 5px rgba(136, 225, 225, 0.4);
             }
-            .hof-stage-name.soul-wesen {
-                color: #a8702f;
+            .hof-spec-sheet .spec-name.soul-wesen {
+                color: #e0b07a;
+                text-shadow: 0 0 5px rgba(224, 176, 122, 0.3);
             }
-            .hof-stage-name.soul-geist {
-                color: #4f8a4a;
+            .hof-spec-sheet .spec-name.soul-geist {
+                color: #a8d6a0;
+                text-shadow: 0 0 5px rgba(168, 214, 160, 0.3);
             }
-            .hof-stage-soul {
-                font-family: "JetBrains Mono", monospace;
-                font-size: 11px;
+            .hof-spec-sheet .spec-soul-label {
+                font-size: 10px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
                 color: var(--brass-1, #8a6f3e);
+            }
+            .hof-spec-footer {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 6px;
+                border-top: 1px solid var(--brass-3, #5a4824);
+                padding-top: 7px;
+            }
+            .hof-spec-footer .spec-habe {
+                display: inline-flex;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .spec-dismiss {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.3px;
+                padding: 2px 9px;
+                margin-left: auto;
+                background: rgba(150, 60, 50, 0.16);
+                border: 1px solid rgba(190, 100, 80, 0.5);
+                border-radius: 3px;
+                color: #e79a86;
+                cursor: pointer;
+            }
+            .spec-dismiss:hover {
+                background: rgba(190, 80, 60, 0.32);
             }
             .hof-stage-empty {
                 grid-column: 1 / -1;
@@ -2728,7 +2663,7 @@
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
                 font-size: 13px;
-                color: var(--parch-ink-soft);
+                color: var(--ink-on-dark-soft, #bda87e);
             }
             @media (max-width: 1100px) {
                 .hof-stage {
@@ -4578,7 +4513,7 @@
             }
             /* === V18.44 — DAS SPEC-SHEET === */
             /* Header: Identität (Rolle + Fähigkeit) links, Qualität rechts. */
-            #workshop-stats-panel .spec-header {
+            .spec-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -4587,59 +4522,59 @@
                 padding-bottom: 7px;
                 border-bottom: 1px solid var(--brass-3);
             }
-            #workshop-stats-panel .spec-id {
+            .spec-id {
                 display: flex;
                 align-items: center;
                 gap: 6px;
                 flex-wrap: wrap;
                 min-width: 0;
             }
-            #workshop-stats-panel .spec-role-chip {
+            .spec-role-chip {
                 font-size: 12px;
                 padding: 3px 11px;
                 letter-spacing: 0.6px;
             }
-            #workshop-stats-panel .spec-cap-chip {
+            .spec-cap-chip {
                 font-size: 9.5px;
             }
-            #workshop-stats-panel .spec-quality {
+            .spec-quality {
                 display: inline-flex;
                 align-items: baseline;
                 gap: 6px;
                 flex: 0 0 auto;
             }
-            #workshop-stats-panel .spec-q-label {
+            .spec-q-label {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 9px;
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--brass-1);
             }
-            #workshop-stats-panel .spec-q-stars {
+            .spec-q-stars {
                 color: #ffe066;
                 font-size: 12px;
                 letter-spacing: 1px;
                 text-shadow: 0 0 4px rgba(255, 224, 102, 0.4);
             }
-            #workshop-stats-panel .spec-q-val {
+            .spec-q-val {
                 font-family: "JetBrains Mono", monospace;
                 color: var(--ink-on-dark);
                 font-size: 10px;
             }
             /* Body: zwei Spalten (Material-Profil | Rollen-Resonanz + Werte). */
-            #workshop-stats-panel .spec-body {
+            .spec-body {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 6px 34px;
                 align-items: start;
             }
-            #workshop-stats-panel .spec-col {
+            .spec-col {
                 display: flex;
                 flex-direction: column;
                 gap: 4px;
                 min-width: 0;
             }
-            #workshop-stats-panel .spec-col-head {
+            .spec-col-head {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 9px;
                 letter-spacing: 0.7px;
@@ -4647,23 +4582,23 @@
                 color: var(--brass-1);
                 margin-bottom: 1px;
             }
-            #workshop-stats-panel .spec-col-head-sub {
+            .spec-col-head-sub {
                 margin-top: 4px;
             }
-            #workshop-stats-panel .spec-empty {
+            .spec-empty {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
                 color: var(--ink-on-dark-soft);
                 font-size: 10px;
             }
             /* Die Daten-Viz-Balken: Label | Track(Fill) | Wert auf EINEM Raster. */
-            #workshop-stats-panel .spec-bar {
+            .spec-bar {
                 display: grid;
                 grid-template-columns: 80px 1fr 34px;
                 align-items: center;
                 gap: 8px;
             }
-            #workshop-stats-panel .spec-bar-label {
+            .spec-bar-label {
                 font-family: "JetBrains Mono", monospace;
                 font-size: 9.5px;
                 color: var(--ink-on-dark);
@@ -4672,52 +4607,52 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
-            #workshop-stats-panel .spec-bar-track {
+            .spec-bar-track {
                 height: 9px;
                 background: rgba(0, 0, 0, 0.34);
                 border: 1px solid rgba(184, 138, 80, 0.3);
                 border-radius: 5px;
                 overflow: hidden;
             }
-            #workshop-stats-panel .spec-bar-fill {
+            .spec-bar-fill {
                 display: block;
                 height: 100%;
                 border-radius: 5px 0 0 5px;
                 background: var(--brass-1);
                 transition: width 0.25s ease;
             }
-            #workshop-stats-panel .spec-bar-fill.lvl-0 {
+            .spec-bar-fill.lvl-0 {
                 background: #6a5a3a;
             }
-            #workshop-stats-panel .spec-bar-fill.lvl-1 {
+            .spec-bar-fill.lvl-1 {
                 background: #d4a373;
             }
-            #workshop-stats-panel .spec-bar-fill.lvl-2 {
+            .spec-bar-fill.lvl-2 {
                 background: linear-gradient(90deg, #b48c28, #ffe066);
             }
-            #workshop-stats-panel .spec-bar-fill.lvl-3 {
+            .spec-bar-fill.lvl-3 {
                 background: linear-gradient(90deg, #7a3cb4, #c66bff);
             }
-            #workshop-stats-panel .spec-bar-fill.res {
+            .spec-bar-fill.res {
                 background: linear-gradient(90deg, #6e6a3a, #b9a96a);
             }
-            #workshop-stats-panel .spec-bar-fill.res-top {
+            .spec-bar-fill.res-top {
                 background: linear-gradient(90deg, #b48c28, #ffe066);
                 box-shadow: 0 0 6px rgba(255, 224, 102, 0.4);
             }
-            #workshop-stats-panel .spec-bar-val {
+            .spec-bar-val {
                 font-family: "JetBrains Mono", monospace;
                 font-size: 9px;
                 color: var(--ink-on-dark-soft);
                 text-align: right;
             }
             /* Werte-Chip-Streifen. */
-            #workshop-stats-panel .spec-stat-strip {
+            .spec-stat-strip {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 4px 6px;
             }
-            #workshop-stats-panel .spec-stat-chip {
+            .spec-stat-chip {
                 display: inline-flex;
                 align-items: baseline;
                 gap: 4px;
@@ -4726,18 +4661,18 @@
                 border: 1px solid var(--brass-2);
                 border-radius: 3px;
             }
-            #workshop-stats-panel .spec-stat-name {
+            .spec-stat-name {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 9px;
                 color: var(--ink-on-dark);
                 letter-spacing: 0.3px;
             }
-            #workshop-stats-panel .spec-stat-val {
+            .spec-stat-val {
                 font-family: "JetBrains Mono", monospace;
                 font-size: 10px;
                 color: #ffe6a8;
             }
-            #workshop-stats-panel .spec-stat-fit {
+            .spec-stat-fit {
                 background: rgba(176, 106, 217, 0.22);
                 border-color: var(--violet-1);
                 font-family: "IM Fell English", Georgia, serif;
@@ -4746,7 +4681,7 @@
                 color: var(--ink-on-dark);
             }
             /* Footer: Preis + Wachstum. */
-            #workshop-stats-panel .spec-footer {
+            .spec-footer {
                 display: flex;
                 flex-wrap: wrap;
                 align-items: baseline;
@@ -4754,18 +4689,18 @@
                 padding-top: 7px;
                 border-top: 1px solid var(--brass-3);
             }
-            #workshop-stats-panel .spec-cost,
-            #workshop-stats-panel .spec-growth {
+            .spec-cost,
+            .spec-growth {
                 display: inline-flex;
                 align-items: baseline;
                 gap: 8px;
                 min-width: 0;
             }
-            #workshop-stats-panel .spec-growth {
+            .spec-growth {
                 flex: 1 1 55%;
             }
-            #workshop-stats-panel .spec-cost-label,
-            #workshop-stats-panel .spec-growth-label {
+            .spec-cost-label,
+            .spec-growth-label {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 9px;
                 letter-spacing: 0.6px;
@@ -4773,19 +4708,19 @@
                 color: var(--brass-1);
                 flex: 0 0 auto;
             }
-            #workshop-stats-panel .spec-cost-val {
+            .spec-cost-val {
                 font-family: "JetBrains Mono", monospace;
                 font-size: 10px;
                 color: var(--ink-on-dark-soft);
             }
-            #workshop-stats-panel .spec-growth-text {
+            .spec-growth-text {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
                 font-size: 10px;
                 color: var(--ink-on-dark-soft);
                 line-height: 1.4;
             }
-            #workshop-stats-panel .spec-growth.manual-override .spec-growth-text {
+            .spec-growth.manual-override .spec-growth-text {
                 color: #e0a85a;
             }
             /* V18.38 — FERTIGEN kompakt + rechtsbündig (Schöpfer „nutzt die ganze Länge obwohl
@@ -7282,6 +7217,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.54.0" defer></script>
+        <script src="anazhRealm.js?v=18.55.0" defer></script>
     </body>
 </html>

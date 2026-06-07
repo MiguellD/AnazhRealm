@@ -40482,7 +40482,7 @@ class AnazhRealm {
         this._hofRenderFocusPanel(creature);
     }
 
-    // Die Spec-Card des fokussierten Wesens UNTER der Bühne (Werkstatt-DNA: Bühne + Spec-Sheet darunter).
+    // Die Spec-Card des fokussierten Wesens UNTER/NEBEN der Bühne (Werkstatt-DNA: Bühne + Spec-Sheet).
     _hofRenderFocusPanel(creature) {
         if (typeof document === "undefined") return;
         const host = document.getElementById("hof-stage-spec");
@@ -40497,59 +40497,75 @@ class AnazhRealm {
             );
             return;
         }
-        const prof = this._creatureProfile(creature);
-        host.appendChild(
-            this._el(
-                "div",
-                { class: "hof-stage-title" },
-                this._el("span", { class: "hof-stage-name soul-" + prof.soul, text: prof.name }),
-                this._el("span", { class: "hof-stage-soul", text: prof.soulLabel }),
-                this._el("span", {
-                    class: "creature-mood " + (prof.emotion === "sad" ? "mood-sad" : "mood-happy"),
-                    text: (prof.emotion === "sad" ? "☹ " : "☺ ") + prof.moodLabel,
-                })
-            )
-        );
-        host.appendChild(this._buildCreatureDetailCard(prof));
+        host.appendChild(this._hofBuildSpecSheet(this._creatureProfile(creature)));
     }
 
     _natureLevelClass(val) {
         return val >= 2.25 ? "lvl-3" : val >= 1.5 ? "lvl-2" : val >= 0.75 ? "lvl-1" : "lvl-0";
     }
 
-    // Hof-D (hof-plan.md §D.1) — die volle Wesen-Spec-Card (nur beim FOKUSSIERTEN Wesen, §G.5 Skala).
-    // Daten-Viz der GEMESSENEN Vektoren (P15, `_specBar`-Reuse): NATUR (compound-tags) · WERTE (stats) ·
-    // WACHSTUM (Spezialisierungs-Fortschritt). Liest NUR `prof` (der EINE Vektor) — kein neuer Datenpfad.
-    _buildCreatureDetailCard(prof) {
-        const cols = [];
-        // NATUR — die Top-3 Compound-Tags als Balken (0–3, Stufen-Farbe), die Substanz des Wesens.
-        const tagEntries = Object.entries(prof.tags || {})
-            .filter(([, v]) => Number.isFinite(v) && v > 0.01)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3);
-        const naturBars = tagEntries.map(([k, v]) =>
-            this._specBar(k, v / 3, v.toFixed(2), this._natureLevelClass(v), `${k}: ${v.toFixed(2)} / 3`)
+    // V18.55 — das WESEN-SPEC-SHEET im GETEILTEN Werkstatt-Design (V18.44 `_specRenderHeader/Body/Footer`):
+    // HEADER (Identität: Name + Seele + Stimmung | Bindung-Sterne) → BODY (zwei Spalten: NATUR compound-tags |
+    // WERTE HP-Balken + Stat-Chips + WACHSTUM) → FOOTER (Habe + Verabschieden). Dieselben `.spec-*`-Klassen wie
+    // die Werkstatt (EIN Design-System, viele Leser — die Resonanz-Vereinheitlichung auf die UI) → exzellent +
+    // platz-effizient. Liest NUR `prof` (der EINE Vektor, Konsum V17.31).
+    _hofBuildSpecSheet(prof) {
+        // HEADER — Identität: Name (seelen-gefärbt) + Seele-Label + Stimmung-Chip | Bindung als Qualitäts-Pendant.
+        const idZone = this._el(
+            "div",
+            { class: "spec-id" },
+            this._el("span", { class: "spec-name soul-" + prof.soul, text: prof.name }),
+            this._el("span", { class: "spec-soul-label", text: prof.soulLabel }),
+            this._el("span", {
+                class: "creature-mood " + (prof.emotion === "sad" ? "mood-sad" : "mood-happy"),
+                text: (prof.emotion === "sad" ? "☹ " : "☺ ") + prof.moodLabel,
+            })
         );
-        cols.push(
-            this._el(
-                "div",
-                { class: "creature-detail-col" },
-                this._el("div", { class: "creature-detail-head", text: "Natur" }),
-                naturBars.length ? naturBars : this._el("div", { class: "creature-detail-empty", text: "—" })
+        const bond = Math.max(0, Math.min(1, prof.bond || 0));
+        const b5 = Math.round(bond * 5);
+        const qualZone = this._el(
+            "div",
+            {
+                class: "spec-quality",
+                title: "Bindung — die Beziehung wächst, während das Wesen folgt + nah bleibt (gewichtet Contagion + Verlust).",
+            },
+            this._el("span", { class: "spec-q-label", text: "Bindung" }),
+            this._el("span", { class: "spec-q-stars", text: "★".repeat(b5) + "☆".repeat(5 - b5) }),
+            this._el("span", { class: "spec-q-val", text: bond.toFixed(2) })
+        );
+        const header = this._el("div", { class: "spec-header" }, idZone, qualZone);
+
+        // BODY — links NATUR (Compound-Tags 0–3), rechts WERTE (HP-Balken + Stat-Chips) + WACHSTUM.
+        const tagEntries = Object.entries(prof.tags || {})
+            .filter(([, v]) => Number.isFinite(v) && v > 0.05)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6);
+        const natBars = tagEntries.map(([k, v]) =>
+            this._specBar(
+                k,
+                v / 3,
+                v.toFixed(2),
+                this._natureLevelClass(v),
+                `${k}: ${v.toFixed(2)} (Natur-Resonanz, 0–3)`
             )
         );
-        // WERTE — HP als Balken (cur/max, ehrlich), die übrigen Stats als Chip-Streifen (kein Fake-Maximum).
-        const valBlock = [];
+        const leftCol = this._el(
+            "div",
+            { class: "spec-col" },
+            this._el("div", { class: "spec-col-head", text: "Natur" }),
+            natBars.length ? natBars : this._el("span", { class: "spec-empty", text: "noch keine Substanz" })
+        );
+
+        const rightChildren = [this._el("div", { class: "spec-col-head", text: "Werte" })];
         if (prof.stats) {
             const cs = prof.stats;
             const hpFrac = prof.hpMax > 0 ? prof.hp / prof.hpMax : 0;
-            const hpLvl = hpFrac > 0.66 ? "lvl-2" : hpFrac > 0.33 ? "lvl-1" : "lvl-0";
-            valBlock.push(
+            rightChildren.push(
                 this._specBar(
                     "HP",
                     hpFrac,
                     `${Math.round(prof.hp)}/${Math.round(prof.hpMax)}`,
-                    hpLvl,
+                    hpFrac > 0.66 ? "lvl-2" : hpFrac > 0.33 ? "lvl-1" : "lvl-0",
                     "Lebenspunkte (lebend/max)"
                 )
             );
@@ -40561,53 +40577,57 @@ class AnazhRealm {
                 ["PRC", cs.precision],
                 ["MR", cs.magicResist],
                 ["HR", cs.heatResist],
-            ].map(([lbl, v]) => this._el("span", { class: "creature-detail-chip", text: `${lbl} ${fmt(v)}` }));
-            valBlock.push(this._el("div", { class: "creature-detail-strip" }, chips));
-        }
-        cols.push(
-            this._el(
-                "div",
-                { class: "creature-detail-col" },
-                this._el("div", { class: "creature-detail-head", text: "Werte" }),
-                valBlock.length ? valBlock : this._el("div", { class: "creature-detail-empty", text: "—" })
-            )
-        );
-        // WACHSTUM — die Top-Spezialisierung als Fortschritts-Balken zur nächsten Stufe (das Wesen LERNT).
-        const growBlock = [];
-        const threshold = AnazhRealm.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD || 1;
-        const maxLevel = AnazhRealm.CREATURE_SPECIALIZATION_MAX_LEVEL || 5;
-        for (const s of prof.specs.slice(0, 2)) {
-            const kindLabel = s.kind === "gather" ? "Sammler" : "Bauer";
-            const atMax = s.level >= maxLevel;
-            const into = s.count - s.level * threshold; // Fortschritt in die nächste Stufe
-            const frac = atMax ? 1 : Math.max(0, Math.min(1, into / threshold));
-            const valText = atMax ? `L${s.level} ✦` : `L${s.level} · ${into}/${threshold}`;
-            growBlock.push(
-                this._specBar(
-                    `${kindLabel}·${s.key}`,
-                    frac,
-                    valText,
-                    atMax ? "lvl-3" : "lvl-2",
-                    `${s.count} Erfolge — ${atMax ? "Meisterschaft" : "auf dem Weg zu L" + (s.level + 1)}`
+            ].map(([name, v]) =>
+                this._el(
+                    "span",
+                    { class: "spec-stat-chip" },
+                    this._el("span", { class: "spec-stat-name", text: name }),
+                    this._el("span", { class: "spec-stat-val", text: fmt(v) })
                 )
             );
+            rightChildren.push(this._el("div", { class: "spec-stat-strip" }, ...chips));
         }
-        cols.push(
-            this._el(
-                "div",
-                { class: "creature-detail-col" },
-                this._el("div", { class: "creature-detail-head", text: "Wachstum" }),
-                growBlock.length
-                    ? growBlock
-                    : this._el("div", { class: "creature-detail-empty", text: "noch keine Geschichte" })
-            )
-        );
-        // Hof-G (hof-plan §D.1) — der Abschieds-Akt am fokussierten Wesen (die Beziehung endet würdevoll).
-        const footer = this._el(
+        // WACHSTUM — die Top-Spezialisierung als Fortschritt zur nächsten Stufe (das Wesen LERNT).
+        const threshold = AnazhRealm.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD || 1;
+        const maxLevel = AnazhRealm.CREATURE_SPECIALIZATION_MAX_LEVEL || 5;
+        const grow = (prof.specs || []).slice(0, 2).map((s) => {
+            const atMax = s.level >= maxLevel;
+            const into = s.count - s.level * threshold;
+            return this._specBar(
+                `${s.kind === "gather" ? "Sammler" : "Bauer"}·${s.key}`,
+                atMax ? 1 : Math.max(0, Math.min(1, into / threshold)),
+                atMax ? `L${s.level} ✦` : `L${s.level} · ${into}/${threshold}`,
+                atMax ? "lvl-3" : "lvl-2",
+                `${s.count} Erfolge — ${atMax ? "Meisterschaft" : "auf dem Weg zu L" + (s.level + 1)}`
+            );
+        });
+        rightChildren.push(this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Wachstum" }));
+        if (grow.length) rightChildren.push(...grow);
+        else rightChildren.push(this._el("span", { class: "spec-empty", text: "noch keine Geschichte" }));
+        const body = this._el(
             "div",
-            { class: "creature-detail-foot" },
+            { class: "spec-body" },
+            leftCol,
+            this._el("div", { class: "spec-col" }, ...rightChildren)
+        );
+
+        // FOOTER — die HABE (Werkzeug/Rüstung/Boosts) als Chips + der würdevolle Abschied.
+        const footChildren = [];
+        const habe = [];
+        if (prof.equipped && prof.equipped.tool) habe.push("⚒ " + prof.equipped.tool);
+        if (prof.equipped && prof.equipped.armor) habe.push("⛨ " + prof.equipped.armor);
+        for (const b of prof.boosts || []) if (b && (b.label || b.source)) habe.push("✺ " + (b.label || b.source));
+        if (habe.length)
+            footChildren.push(
+                this._el(
+                    "span",
+                    { class: "spec-habe" },
+                    ...habe.map((h) => this._el("span", { class: "spec-stat-chip", text: h }))
+                )
+            );
+        footChildren.push(
             this._el("button", {
-                class: "creature-detail-dismiss",
+                class: "spec-dismiss",
                 type: "button",
                 text: "✕ Verabschieden",
                 title: `${prof.name} aus der Welt verabschieden`,
@@ -40624,7 +40644,8 @@ class AnazhRealm {
                 },
             })
         );
-        return this._el("div", { class: "creature-detail" }, cols, footer);
+        const footer = this._el("div", { class: "spec-footer hof-spec-footer" }, ...footChildren);
+        return this._el("div", { class: "spec-sheet hof-spec-sheet" }, header, body, footer);
     }
 
     // Hof-F (hof-plan §D.2) — die freundlichen Sektions-Labels (Seele + Spezialisierung).
@@ -48984,7 +49005,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.54.0";
+AnazhRealm.VERSION = "18.55.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

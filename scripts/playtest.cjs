@@ -25283,15 +25283,17 @@ async function checkBandWelle6HCreatures(ctx) {
         out.rowHasMoodGlyph = !!(firstRow && firstRow.querySelector(".creature-mood"));
         // V18.54 Hof-Bühne — die Zeilen sind der schlanke PICKER: NIE eine Detail-Card inline (sie lebt auf der Bühne).
         out.detailNotInRows = !!(firstRow && !firstRow.querySelector(".creature-detail"));
-        // Die Spec-Card des fokussierten (oder ersten) Wesens lebt unter der Bühne (#hof-stage-spec), genau EINE.
+        // V18.55 — die Spec-Card lebt als GETEILTES Werkstatt-Spec-Sheet (.spec-sheet) unter/neben der Bühne.
         const stageSpec = document.getElementById("hof-stage-spec");
         out.stageSpecPresent = !!stageSpec;
         out.stageShowsOneCard =
             !!stageSpec &&
-            stageSpec.querySelectorAll(".creature-detail").length === 1 &&
-            stageSpec.querySelectorAll(".creature-detail .spec-bar").length > 0;
-        out.stageHasTitle = !!(stageSpec && stageSpec.querySelector(".hof-stage-title .hof-stage-name"));
-        out.stageHasDismiss = !!(stageSpec && stageSpec.querySelector(".creature-detail .creature-detail-dismiss"));
+            stageSpec.querySelectorAll(".spec-sheet").length === 1 &&
+            stageSpec.querySelectorAll(".spec-body .spec-bar").length > 0;
+        // Werkstatt-DNA: Header (Name) + zwei-Spalten-Body (Natur | Werte) + Footer (Verabschieden).
+        out.stageHasTitle = !!(stageSpec && stageSpec.querySelector(".spec-header .spec-name"));
+        out.stageHasBody2Col = !!(stageSpec && stageSpec.querySelectorAll(".spec-body .spec-col").length === 2);
+        out.stageHasDismiss = !!(stageSpec && stageSpec.querySelector(".spec-footer .spec-dismiss"));
         // Fokus-Toggle: ein Klick auf ein Wesen fokussiert es (genau EINE Zeile .focused) → es tritt auf die Bühne.
         const firstProf = r._creatureProfile(r.state.creatures[0]);
         r._toggleHofFocus(firstProf.id);
@@ -25300,7 +25302,7 @@ async function checkBandWelle6HCreatures(ctx) {
             !!listAfter &&
             listAfter.querySelectorAll(".creature-row.focused").length === 1 &&
             r.state.hofFocusId === firstProf.id;
-        out.focusUpdatesStage = !!stageSpec && stageSpec.querySelectorAll(".creature-detail").length === 1;
+        out.focusUpdatesStage = !!stageSpec && stageSpec.querySelectorAll(".spec-sheet").length === 1;
         r._toggleHofFocus(firstProf.id); // wieder zu → Fokus zurück auf das erste Wesen (kein Leck)
         out.focusToggleClears = r.state.hofFocusId === null;
         // V18.51 Hof-E (hof-plan §D/§G.7) — die zwei Zonen ORCHESTER | PARTITUR + der integrierte Spawn-Fuß.
@@ -25427,7 +25429,10 @@ async function checkBandWelle6HCreatures(ctx) {
             "V18.54 Hof-Bühne: die Spec-Card des fokussierten Wesens lebt unter der Bühne (#hof-stage-spec, EINE Karte mit Balken)",
             wave6hP2aResults.stageSpecPresent && wave6hP2aResults.stageShowsOneCard
         );
-        check("V18.54 Hof-Bühne: die Bühne trägt den Wesen-Titel (Name+Seele)", wave6hP2aResults.stageHasTitle);
+        check(
+            "V18.55 Hof-Bühne: das Wesen-Spec-Sheet trägt den Header (Name) + Zwei-Spalten-Body (Werkstatt-DNA)",
+            wave6hP2aResults.stageHasTitle && wave6hP2aResults.stageHasBody2Col
+        );
         check(
             "V18.54 Hof-Bühne: die Spec-Card unter der Bühne trägt den Verabschieden-Akt",
             wave6hP2aResults.stageHasDismiss

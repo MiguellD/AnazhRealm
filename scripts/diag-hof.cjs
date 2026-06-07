@@ -109,8 +109,8 @@ function startSaveServer() {
                 rows: list ? list.querySelectorAll(".creature-row").length : 0,
                 inlineBtns: row ? row.querySelectorAll(".creature-action-btn").length : 0,
                 moodGlyphs: list ? list.querySelectorAll(".creature-mood").length : 0,
-                stageSpecCards: spec ? spec.querySelectorAll(".creature-detail").length : -1,
-                stageSpecBars: spec ? spec.querySelectorAll(".creature-detail .spec-bar").length : -1,
+                stageSpecCards: spec ? spec.querySelectorAll(".spec-sheet").length : -1,
+                stageSpecBars: spec ? spec.querySelectorAll(".spec-body .spec-bar").length : -1,
                 stageCanvas: !!document.getElementById("hof-stage-canvas"),
                 sectionChips: document.querySelectorAll("#hof-sections .hof-section-chip").length,
                 hasOrchester: !!document.querySelector(".hof-orchester"),
@@ -136,7 +136,7 @@ function startSaveServer() {
                 hofFocusId: r.state.hofFocusId || null,
                 stageReady: !!(st && st.rendererReady),
                 stageHasPivot: !!(st && st.pivot),
-                stageSpecCards: spec ? spec.querySelectorAll(".creature-detail").length : -1,
+                stageSpecCards: spec ? spec.querySelectorAll(".spec-sheet").length : -1,
             };
         });
         console.log("vor Screenshot:", JSON.stringify(focusState));
