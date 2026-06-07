@@ -10204,6 +10204,8 @@ class AnazhRealm {
         }
         // P12 (UI-Putz §1.5) — der geteilte Overlay-Hebel verdrahtet (einmal, delegiert).
         this._installHelpPopovers();
+        // V18.45 — die Omnibox (Ctrl/Cmd+K): der EINE beschwörbare Ort für jede Absicht.
+        this._installOmnibox();
     }
 
     // P12 (UI-Putz §1.5) — die OVERLAY-INTEGRITÄT für ALLE „?"-Popovers (Werkstatt · Hof ·
@@ -10266,6 +10268,256 @@ class AnazhRealm {
             const dot = t && t.closest && t.closest(".help-dot");
             if (dot) hide(dot);
         });
+    }
+
+    // V18.45 — DIE OMNIBOX (Ctrl/Cmd+K): EIN beschwörbarer Ort für jede Absicht (Spotlight/Linear/Raycast).
+    // ADDITIV — sie ruft NUR bestehende Pfade (processChatCommand · selectBlueprintForEdit · Tab-Klick) +
+    // liest bestehende Vektoren (chatCommandHelp · state.blueprints · _displayRole) → kein Parallel-System,
+    // kein neuer Datenpfad (Heilige Lektion + Konsum V17.31). Tag-Grammatik c/b/w/s/t/a/g/p/geh/welt/k,
+    // Freitext → Nexus. Idempotent.
+    _installOmnibox() {
+        if (typeof document === "undefined" || this._omniboxWired) return;
+        const overlay = document.getElementById("omnibox-overlay");
+        const input = document.getElementById("omnibox-input");
+        const list = document.getElementById("omnibox-results");
+        if (!overlay || !input || !list) return;
+        this._omniboxWired = true;
+        this._omniboxState = { results: [], sel: 0 };
+        const open = () => {
+            overlay.hidden = false;
+            input.value = "";
+            this._omniboxUpdate("");
+            input.focus();
+        };
+        const close = () => {
+            overlay.hidden = true;
+        };
+        this._omniboxOpen = open;
+        this._omniboxClose = close;
+        // Globaler Hotkey Ctrl/Cmd+K (toggle). Esc schließt.
+        window.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+                e.preventDefault();
+                overlay.hidden ? open() : close();
+            } else if (!overlay.hidden && e.key === "Escape") {
+                e.preventDefault();
+                close();
+            }
+        });
+        // Klick auf den Hintergrund schließt.
+        overlay.addEventListener("mousedown", (e) => {
+            if (e.target === overlay) close();
+        });
+        input.addEventListener("input", () => this._omniboxUpdate(input.value));
+        // Tastatur im Feld: ↑↓ wählen, ⏎ ausführen. stopPropagation schirmt die Spiel-Steuerung ab
+        // (sonst liefen WASD beim Tippen). preventDefault nur für die Navigations-Tasten.
+        input.addEventListener("keydown", (e) => {
+            e.stopPropagation();
+            const st = this._omniboxState;
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                st.sel = Math.min(st.sel + 1, st.results.length - 1);
+                this._omniboxHighlight();
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                st.sel = Math.max(st.sel - 1, 0);
+                this._omniboxHighlight();
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                const r = st.results[st.sel];
+                if (r) this._omniboxExecute(r);
+            }
+        });
+    }
+
+    _omniboxUpdate(query) {
+        if (typeof document === "undefined") return;
+        const list = document.getElementById("omnibox-results");
+        if (!list) return;
+        const results = this._omniboxSearch(query);
+        this._omniboxState.results = results;
+        this._omniboxState.sel = 0;
+        list.innerHTML = "";
+        if (!results.length) {
+            list.appendChild(
+                this._el("div", {
+                    class: "omnibox-empty",
+                    text: "Kein Treffer — tippe weiter oder sprich frei zum Nexus.",
+                })
+            );
+            return;
+        }
+        results.forEach((r, i) => {
+            list.appendChild(
+                this._el(
+                    "div",
+                    {
+                        class: "omnibox-item" + (i === 0 ? " sel" : ""),
+                        role: "option",
+                        onClick: () => this._omniboxExecute(r),
+                    },
+                    this._el("span", { class: "omnibox-kind", text: r.kindLabel }),
+                    this._el("span", { class: "omnibox-label", text: r.label }),
+                    r.sub ? this._el("span", { class: "omnibox-sub", text: r.sub }) : null
+                )
+            );
+        });
+    }
+
+    _omniboxHighlight() {
+        if (typeof document === "undefined") return;
+        const list = document.getElementById("omnibox-results");
+        if (!list) return;
+        const items = list.querySelectorAll(".omnibox-item");
+        items.forEach((el, i) => el.classList.toggle("sel", i === this._omniboxState.sel));
+        const sel = items[this._omniboxState.sel];
+        if (sel && sel.scrollIntoView) sel.scrollIntoView({ block: "nearest" });
+    }
+
+    _omniboxExecute(r) {
+        if (!r) return;
+        try {
+            if (typeof r.run === "function") r.run();
+        } catch (e) {
+            this.log(`Omnibox-Fehler: ${e && e.message}`, "ERROR");
+        }
+        if (this._omniboxClose) this._omniboxClose();
+    }
+
+    // Das Herz: parse die Tag-Grammatik, lese die BESTEHENDEN Vektoren, ranke. Liefert
+    // [{kindLabel, label, sub, run}]. Reine Lese-Funktion (headless verifizierbar).
+    _omniboxSearch(query) {
+        const q = (query || "").trim();
+        const m = q.match(/^([a-zäöü]+):\s*(.*)$/i);
+        const prefix = m ? m[1].toLowerCase() : null;
+        const term = (m ? m[2] : q).trim().toLowerCase();
+        const out = [];
+        const LIMIT = 14;
+        const ROLE_PREFIX = {
+            w: ["weapon"],
+            s: ["armor"],
+            t: ["consumable"],
+            a: ["soul"],
+            g: ["tool", "held", "brecher", "weapon"],
+            p: ["portal"],
+        };
+        const addCommands = (t) => {
+            for (const g of this.chatCommandHelp || []) {
+                for (const cmd of g.commands || []) {
+                    if (out.length >= LIMIT) return;
+                    if (!t || cmd.toLowerCase().includes(t))
+                        out.push({
+                            kindLabel: "Befehl",
+                            label: cmd,
+                            sub: g.title,
+                            run: () => this.processChatCommand(cmd),
+                        });
+                }
+            }
+        };
+        const addBlueprints = (t, roles) => {
+            for (const bp of Object.values(this.state.blueprints || {})) {
+                if (out.length >= LIMIT) return;
+                if (!bp || !Array.isArray(bp.parts)) continue;
+                const role = this._displayRole(bp);
+                if (roles && !roles.includes(role)) continue;
+                const name = (bp.label || bp.name || "").toLowerCase();
+                const matchName = !t || name.includes(t);
+                const matchMat = !!t && bp.parts.some((p) => (p.material || "").toLowerCase().includes(t));
+                if (matchName || matchMat) {
+                    const rl = AnazhRealm.ROLE_LABELS[role] || AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
+                    out.push({
+                        kindLabel: rl,
+                        label: bp.label || bp.name,
+                        sub: "Bauplan",
+                        run: () => {
+                            const tab = document.querySelector('[data-tab="werkstatt"]');
+                            if (tab) tab.click();
+                            if (typeof this.selectBlueprintForEdit === "function") this.selectBlueprintForEdit(bp.name);
+                        },
+                    });
+                }
+            }
+        };
+        const ROOMS = [
+            ["werkstatt", "werkstatt", "Werkstatt"],
+            ["hof", "kreaturen", "Hof"],
+            ["kreaturen", "kreaturen", "Hof"],
+            ["ich", "spieler", "Ich"],
+            ["spieler", "spieler", "Ich"],
+            ["bibliothek", "bibliothek", "Bibliothek"],
+            ["einstellungen", "einstellungen", "Einstellungen"],
+        ];
+        const addRooms = (t) => {
+            const seen = new Set();
+            for (const [key, tabName, label] of ROOMS) {
+                if (t && !key.includes(t) && !label.toLowerCase().includes(t)) continue;
+                if (seen.has(tabName)) continue;
+                seen.add(tabName);
+                out.push({
+                    kindLabel: "Raum",
+                    label,
+                    sub: "öffnen",
+                    run: () => {
+                        const el = document.querySelector(`[data-tab="${tabName}"]`);
+                        if (el) el.click();
+                    },
+                });
+            }
+        };
+        const addCreatureTasks = (t) => {
+            const TASKS = [
+                ["folge", "alle folgt mir"],
+                ["komm", "alle folgt mir"],
+                ["warte", "alle warten"],
+                ["erkunde", "alle erkundet"],
+            ];
+            for (const [word, cmd] of TASKS) {
+                if (out.length >= LIMIT) return;
+                if (!t || word.includes(t))
+                    out.push({
+                        kindLabel: "Kreatur",
+                        label: `Alle Wesen: ${word}`,
+                        sub: "Auftrag",
+                        run: () => this.processChatCommand(cmd),
+                    });
+            }
+        };
+        const nexusFallback = () => {
+            if (q)
+                out.push({
+                    kindLabel: "Nexus",
+                    label: `Sprich: „${q}"`,
+                    sub: "zum Nexus",
+                    run: () => this.processChatCommand(q),
+                });
+        };
+
+        if (prefix === "c") addCommands(term);
+        else if (prefix === "b") addBlueprints(term, null);
+        else if (ROLE_PREFIX[prefix]) addBlueprints(term, ROLE_PREFIX[prefix]);
+        else if (prefix === "geh") addRooms(term);
+        else if (prefix === "k") addCreatureTasks(term);
+        else if (prefix === "welt") {
+            out.push({
+                kindLabel: "Bibliothek",
+                label: term ? `Bibliothek — „${term}" suchen` : "Bibliothek öffnen",
+                sub: "Welt",
+                run: () => {
+                    const el = document.querySelector('[data-tab="bibliothek"]');
+                    if (el) el.click();
+                },
+            });
+        } else {
+            // Freitext: über die Domänen ranken (Befehl → Bauplan → Raum), dann der Nexus-Pfad.
+            addCommands(term);
+            addBlueprints(term, null);
+            addRooms(term);
+            nexusFallback();
+        }
+        // Ein präfixierter Query ohne Treffer bietet trotzdem den Nexus an (nichts ist eine Sackgasse).
+        if (prefix && out.length === 0) nexusFallback();
+        return out.slice(0, LIMIT);
     }
 
     closeAllDrawers() {
@@ -48044,7 +48296,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.44.0";
+AnazhRealm.VERSION = "18.45.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

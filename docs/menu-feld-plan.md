@@ -227,7 +227,10 @@ Nexus. Sie ist die Heimat aller freien/kreativen Befehle + macht den Bildschirm 
    `.drawer` erbt: top:70 am Hauptbanner, symmetrisch, max-height-bound, Höhen-Resize)** · **P15 das Spec-Sheet
    (`_specBar`/`_el`, Daten-Viz aus den bestehenden Vektoren)** · P16 eine Ebene · P17 Samen heilen. Mit dem
    Auge verifiziert (`scripts/diag-workshop-ui.cjs`), Playtest grün. OFFEN: nur der Schöpfer-Browser-Sign-off.
-1. **Omnibox-Kern** (§7) — löst die Hof-Duplikation strukturell, bevor der Hof umgebaut wird.
+1. ✅ **Omnibox-Kern GEBAUT (V18.45, §7)** — Ctrl/Cmd+K, Spotlight, Tag-Grammatik c/b/w/s/t/a/g/p/geh/welt/k,
+   Freitext→Nexus; liest die bestehenden Vektoren + ruft `processChatCommand`/`selectBlueprintForEdit` (additiv).
+   10 KONSUM-Invarianten + mit dem Auge verifiziert (`diag-omnibox.cjs`). OFFEN: die alten Pfade ablösen
+   (Hof-Schritt) + Browser-Sign-off.
 2. **Hof** (§2) — inline-Wesen (Spec-Cards, P16) + Gesetze; die Befehle-Liste stirbt (Omnibox trägt).
 3. **Ich** (§3) — der Spec-Sheet-Gewinn (Stats + 6 Emotionen + Seele-Tags als Daten-Viz, `_specBar`-Reuse);
    Klick-Hotbar; Avatar-Mittelpunkt (WebGPU → Schöpfer-Go); Seele-formen → Werkstatt.

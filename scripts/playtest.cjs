@@ -34941,6 +34941,62 @@ async function checkBandCadWorkshop(ctx) {
         check(`V8.00 Resize: evaluate-Fehler — ${resizeResults.error}`, false);
     }
 
+    // ### V18.45 — DIE OMNIBOX (Ctrl/Cmd+K): Tag → Treffer → Ausführung (KONSUM, V17.31) ###
+    const omniResults = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        if (!r) return null;
+        const out = {};
+        try {
+            out.methodsExist = typeof r._installOmnibox === "function" && typeof r._omniboxSearch === "function";
+            // (1) c:wetter → nur Befehls-Treffer, mind. einer enthält „wetter", run ist ausführbar
+            const cmd = r._omniboxSearch("c:wetter");
+            out.cmdAllBefehl =
+                cmd.length > 0 && cmd.every((x) => x.kindLabel === "Befehl" && typeof x.run === "function");
+            out.cmdMatchesWetter = cmd.some((x) => x.label.toLowerCase().includes("wetter"));
+            // (2) w: → rollen-gefilterte Baupläne (alle sub „Bauplan"); ⊆ von b: (Rollen-Filter wirkt)
+            const all = r._omniboxSearch("b:");
+            const weapons = r._omniboxSearch("w:");
+            out.bHasBlueprints = all.length > 0 && all.every((x) => x.sub === "Bauplan");
+            out.wIsRoleFiltered = weapons.every((x) => x.sub === "Bauplan") && weapons.length <= all.length;
+            // (3) geh:werkstatt → ein Raum-Treffer; Ausführung öffnet die Werkstatt (KONSUM)
+            const rooms = r._omniboxSearch("geh:werkstatt");
+            out.gehFindsRoom = rooms.length > 0 && rooms[0].kindLabel === "Raum" && rooms[0].label === "Werkstatt";
+            if (out.gehFindsRoom) {
+                rooms[0].run();
+                out.gehOpensWorkshop = r.state.uiActiveDrawer === "werkstatt";
+                if (typeof r.closeAllDrawers === "function") r.closeAllDrawers();
+            }
+            // (4) Freitext ohne Präfix → der Nexus-Pfad als Fallback (letzter Treffer)
+            const free = r._omniboxSearch("mach es nacht");
+            out.freetextHasNexus = free.some((x) => x.kindLabel === "Nexus" && typeof x.run === "function");
+            // (5) Ctrl+K öffnet das Overlay (behavioral)
+            const overlay = document.getElementById("omnibox-overlay");
+            const before = overlay ? overlay.hidden : true;
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }));
+            out.ctrlKOpens = !!overlay && before === true && overlay.hidden === false;
+            // wieder schließen
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+            out.escCloses = !!overlay && overlay.hidden === true;
+        } catch (err) {
+            out.error = err && err.message;
+        }
+        return out;
+    });
+    if (omniResults && !omniResults.error) {
+        check("V18.45 Omnibox: _installOmnibox + _omniboxSearch existieren", omniResults.methodsExist);
+        check("V18.45 Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
+        check("V18.45 Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
+        check("V18.45 Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);
+        check("V18.45 Omnibox: w: ist rollen-gefiltert (⊆ b:, liest die emergente Rolle)", omniResults.wIsRoleFiltered);
+        check("V18.45 Omnibox: geh:werkstatt findet den Raum", omniResults.gehFindsRoom);
+        check("V18.45 Omnibox: geh:werkstatt ÖFFNET die Werkstatt (KONSUM)", omniResults.gehOpensWorkshop);
+        check("V18.45 Omnibox: Freitext → der Nexus-Pfad als Fallback", omniResults.freetextHasNexus);
+        check("V18.45 Omnibox: Ctrl+K öffnet das Overlay", omniResults.ctrlKOpens);
+        check("V18.45 Omnibox: Esc schließt das Overlay", omniResults.escCloses);
+    } else if (omniResults && omniResults.error) {
+        check(`V18.45 Omnibox: evaluate-Fehler — ${omniResults.error}`, false);
+    }
+
     // ### V8.01 — Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
     const v801Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
