@@ -40,6 +40,31 @@ in die Omnibox. **Das löst ~60 Duplikat-Knöpfe + den Dauer-Chat auf einmal.**
 
 ---
 
+## 1.5 Die DETAIL-LEHREN aus der Werkstatt (P11–P13) — für JEDES Menü von Anfang an
+
+Die letzten Werkstatt-Befunde (V18.40) sind die Vorlage. Drei Querschnitt-Regeln, die in JEDEM Raum
+geprüft werden, BEVOR ich ihn baue (gegen das reaktive Nachbessern):
+
+- **P11 Lesbarkeit/Kontrast.** GEMESSEN-Falle: Synergie/Wachstum + das „?"-Info waren zu blass auf dem
+  dunklen Panel. → In ALLEN Menüs: sekundärer/kursiver/farbiger Text (Hints, Provenienz-Tagebuch in der
+  Bibliothek, die Stat-Erklärungen im Ich, die LLM-Hinweise in den Einstellungen) muss gedämpft-ABER-lesbar
+  sein. Vor jedem Raum: jeden Text-auf-Grund-Kontrast prüfen (Screenshot lesen, nicht annehmen).
+- **P12 Overlay-Integrität.** JEDES Menü hat „?"-Popovers (Werkstatt · Hof-Gesetze · Ich-Stats ·
+  Einstellungen-Render) + Dropdowns (die Omnibox, der Bauplan-Picker, die Bibliothek-Suche). ALLE müssen
+  OPAK + nicht-geclippt (`overflow:hidden`-Vorfahr beachten → ggf. `position:fixed`/Portal) + z-index-korrekt
+  sein. Das Werkstatt-„?" schimmerte durch + schnitt ab — das darf in KEINEM Raum passieren. Die `.help-dot`/
+  `.help-pop`-Klasse (geteilt) EINMAL opak + clip-frei machen → alle Räume erben es.
+- **P13 Raster-Flucht.** Mehrspaltige Räume (Ich 3-Spalten, Hof-Zonen, Bibliothek-Masonry, Einstellungen-
+  Gruppen, die Werkstatt-Ausgabe) fluchten auf EINEM Raster, links UND rechts bündig. `column-count` driftet
+  → wo Werte/Labels fluchten müssen, ein explizites `grid` mit fixen Spalten. Vor jedem Raum: die Kanten messen.
+
+**Der geteilte Hebel:** P11–P13 leben in WIEDERVERWENDETEN Klassen (`.help-pop` opak+clip-frei · eine
+Sekundär-Text-Farbe mit Kontrast · ein Flucht-Grid-Muster). EINMAL richtig → jeder Raum erbt es (die
+`.library-columns`/`.help-search`-Disziplin auf die Detail-Ebene). Das ist „um die Ecke gedacht": die
+Werkstatt-Schmerzen werden zu geteilten Bausteinen, nicht zu pro-Raum-Wiederholungen.
+
+---
+
 ## 2. HOF — feld für feld (Dirigent + Orchester)
 
 **Mentales Modell / Reise:** „welche Wesen habe ich → was sollen sie tun → welche Gesetze gelten".
@@ -83,6 +108,14 @@ Spalten-Balance (kein dunkler Leerraum, V18.33) ist P7/P8.
 ---
 
 ## 4. WERKSTATT — feld für feld (der Abschluss, die funktionalen Zonen)
+
+**Stand: GEBAUT (V18.40, Playtest grün) — die vier Zonen stehen** (Farben→links · Mach-Zone „⚒ FERTIGEN"
+rechts · Ausgabe = nur Readout, nutzerfrage-geordnet · Werkzeug-Mode-Bar). **OFFEN (der Polish-Pass, im Plan
+festgehalten, NICHT mehr im jetzigen Code — der Merge-Stand trägt sie als bekannte To-dos):** (1) das
+**Signatur-Feld** in die Mach-Zone ÜBER FERTIGEN, unter ein sauberes **„Werk"-Heading** (statt `stat-label`);
+(2) **Synergie/Wachstum lesbar** (P11 Kontrast); (3) die **rechte Flucht** der Ausgabe (P13, Grid statt
+`column-count`); (4) das **Werkzeug-„?"-Popover** opak + nicht abgeschnitten + z-index (P12). Diese vier sind
+die VORLAGE, wie die anderen Räume es von Anfang an richtig machen (P11–P13, §1.5).
 
 Siehe `ui-putz-plan.md` §A (das WARUM). Hier feld-konkret:
 
@@ -142,12 +175,20 @@ Nexus. Sie ist die Heimat aller freien/kreativen Befehle + macht den Bildschirm 
 
 ## 8. Die Bau-Reihenfolge (verifiziert, ein System pro Schritt)
 
-1. **Werkstatt-Abschluss** (§4 + ui-putz §A) — die Referenz des Zonen-Systems; messen→bauen→verifizieren.
+0. **Der geteilte Detail-Hebel ZUERST (P11–P13, §1.5):** EINMAL die `.help-pop` opak + clip-frei + z-index
+   machen, EINE lesbare Sekundär-Text-Farbe, EIN Flucht-Grid-Muster — als geteilte Bausteine, die alle Räume
+   erben (so wiederholt sich der Werkstatt-Schmerz nirgends).
+1. ✅ **Werkstatt-Abschluss GEBAUT (V18.40)** — die Referenz; **+ der Polish-Pass** (Signatur über FERTIGEN ·
+   „Werk"-Heading · Synergie/Wachstum-Kontrast · rechte Flucht · „?"-Popover) als erster Akt, wenn der Code
+   wieder dran ist (er nutzt direkt den Hebel 0).
 2. **Omnibox-Kern** (§7) — löst die Hof-Duplikation strukturell, bevor der Hof umgebaut wird.
 3. **Hof** (§2) — inline-Wesen + Gesetze; die Befehle-Liste stirbt (Omnibox trägt).
 4. **Bibliothek** (§5) — Masonry + Andock-Formular eingeklappt; „Diese Welt" zieht aus Einstellungen her.
 5. **Einstellungen** (§6) — die 6 Gruppen ordnen; das Welt-teilen-Duplikat raus.
 6. **Ich** (§3) — Klick-Hotbar, Avatar-Mittelpunkt (WebGPU → Schöpfer-Go), Seele-formen → Werkstatt.
+
+Jeder Raum durchläuft VOR dem Bauen den P11–P13-Check (Kontrast · Overlay · Flucht messen), damit die
+Werkstatt-Detail-Lehren nie wieder als Befund zurückkommen.
 
 Jeder Schritt: **messen → als System bauen → verifizieren (Behauptung zuletzt) → Schöpfer-Browser
 fürs GPU-Feel.** Kein reaktives Patchen.

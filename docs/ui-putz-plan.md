@@ -734,6 +734,28 @@ einzeln), dann erneut messen/verifizieren, dann Schöpfer-Browser für das GPU-F
 9. **SUCHEN STATT SCROLLEN** — Listen sind durchsuchbar. _Such-Dropdown._
 10. **MESSEN VOR BEHAUPTEN** — jede Aussage gegen eine verlässliche Messung; Unverifiziertes als solches
     markieren; GPU-Feel → Schöpfer-Browser. _Die Prozess-Lehre (V18.39: der über-behauptete Rahmen)._
+11. **LESBARKEIT / KONTRAST** — JEDER Text hat ausreichend Kontrast auf SEINEM Grund; sekundär ≠ unsichtbar.
+    Kursiver/farbiger/„faded" Text auf dunklem Panel ist die Falle. _Werkstatt V18.40: Synergie + Wachstum +
+    die „?"-Info waren GEMESSEN unleserlich (zu blass)._ → Sekundär-Text: gedämpft, aber lesbar (Kontrast ≥ WCAG-AA-nah).
+12. **OVERLAY-INTEGRITÄT** — Popovers/Tooltips/Dropdowns sind (a) OPAK (solider Grund, nie semi-transparent →
+    der dunkle Inhalt schimmert durch = unleserlich), (b) NICHT geclippt (kein `overflow:hidden`-Vorfahr
+    schneidet sie ab; ggf. `position:fixed`/Portal), (c) korrekt z-geschichtet (ÜBER allem). _Werkstatt V18.40:
+    das Werkzeug-„?"-Popover war transparent + abgeschnitten + das FERTIGEN schimmerte durch — alle drei._
+13. **RASTER-FLUCHT** — Spalten + Werte fluchten auf EINEM Raster, LINKS und RECHTS bündig; keine wandernde
+    Kante. _Werkstatt: „die rechte Flucht stimmt nicht, davor war's die linke" — `column-count` driftet; ein
+    explizites Grid (`grid-template-columns`) mit fixen Label-Breiten hält beide Fluchten._
+
+**Die offenen Werkstatt-Detail-Befunde (V18.40, der Polish-Pass — bewusst NICHT mehr im jetzigen Code, als
+Plan festgehalten):** (a) das **Signatur-Feld** gehört in die Mach-Zone ÜBER den FERTIGEN-Knopf, unter ein
+sauber formatiertes **„Werk"-Heading** (kein `stat-label`); (b) **Synergie/Wachstum** lesbar machen (P11);
+(c) die **rechte Flucht** der Ausgabe (P13, Grid statt column-count); (d) das **„?"-Popover** opak + nicht
+abgeschnitten + z-index (P12); (e) das Werkstatt-„?" ebenso. _Diese fünf sind die Vorlage, wie die anderen
+Menüs es von Anfang an richtig machen._
+
+**Antwort auf „nutzt das Suchfeld die bestehenden System-Tags?":** JA — die Omnibox + die Bauplan-Suche lesen
+die SCHON vorhandenen Vektoren (`computeBlueprintRole` → Rolle, `computeCompoundTags` → Tags, die Affordanzen/
+Fähigkeiten, die Synergie), KEINE neue Taxonomie (Konsum-Disziplin V17.31: ein echter Leser des bestehenden
+Vektors, kein Passagier). `w:eisen` filtert über die emergente Rolle × das Material-Tag.
 
 ## C. Die Anwendung auf ALLE Menüs (die Werkstatt zeigt den Weg)
 
