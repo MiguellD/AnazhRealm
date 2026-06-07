@@ -744,15 +744,34 @@ einzeln), dann erneut messen/verifizieren, dann Schöpfer-Browser für das GPU-F
 13. **RASTER-FLUCHT** — Spalten + Werte fluchten auf EINEM Raster, LINKS und RECHTS bündig; keine wandernde
     Kante. _Werkstatt: „die rechte Flucht stimmt nicht, davor war's die linke" — `column-count` driftet; ein
     explizites Grid (`grid-template-columns`) mit fixen Label-Breiten hält beide Fluchten._
+14. **EINE FENSTER-SPRACHE / DER GETEILTE RAHMEN** — jeder Raum IST ein `.drawer` + erbt den Rahmen GRATIS:
+    am Hauptbanner angesetzt (`top:70`, deckt den Statusbar beim Öffnen), symmetrisch (`left:12;right:12`),
+    viewport-bound (`max-height:calc(100vh−84px)`, kein Überlauf), Inhalt im `.drawer-scroll`, ein HÖHEN-only
+    Resize-Griff. _Kein Raum baut eigene Rahmen-CSS. Bei „Rahmen falsch": ZUERST `getAttribute('style')` messen
+    (Legacy-Inline schlägt jede Regel) + Rects NACH der Transition (V18.42/.43)._
+15. **VEKTOR ALS DATEN-VIZ (das Spec-Sheet)** — wo das System schon einen reichen Vektor liefert (Tags ·
+    Rollen-Resonanz · Stats · Emotionen · Aura), lies ihn als gestaltete Daten-Viz (Balken/Hierarchie/Finger-
+    abdruck), NICHT als flache Label/Wert-Tabelle. Header (Identität) → Body (Fingerabdruck in Balken) → Footer
+    (sekundär). `_specBar` + die `.spec-*`-Klassen sind WIEDERVERWENDBAR. _Werkstatt V18.44; nutzt computeCompoundTags/
+    _blueprintRoleSpectrum/_blueprintAbilityStats — Konsum, kein neuer Pfad._
+16. **EINE EBENE, KEIN SCROLL-DURCHLAUF** — gleichwertige Dinge in EINEN Fluss auf EINE Ebene; ein Sticky/Footer,
+    hinter dem Inhalt durchscrollt, ist KEINE Synergie. _Werkstatt V18.42: die WERK-Zone als 3. Sektion im Fluss,
+    nicht als abgetrennter Footer._
+17. **SAMEN HEILEN, NICHT SCHNEIDEN** — eine User-Fähigkeit (Resize, ein Akt) nimmt man nicht weg; man gibt
+    ihre FUNKTION symmetrie-treu zurück. Und ein Präsentations-Rewrite ERSETZT die alten Render-Helfer (löschen,
+    kein Parallel-Pfad). _Werkstatt V18.43 (Resize→Höhen-Griff) + V18.44 (~430 Z. alte Helfer raus)._
 
-**Die Werkstatt-Detail-Befunde — GEBAUT (V18.41, der Polish-Pass), mit dem Auge verifiziert
+**Die Werkstatt-Detail-Befunde — GEBAUT (V18.41–44, mit dem Auge verifiziert
 (`scripts/diag-workshop-ui.cjs`):** (a) das **Signatur-Feld** in der Mach-Zone ÜBER FERTIGEN, unter ein
 **„Werk"-Heading** (`_workshopAppendWerkHeading`, Cinzel, kein `stat-label`); (b) **Synergie/Wachstum** lesbar
 (`--ink-on-dark-soft`, P11); (c) die **rechte Flucht** der Ausgabe (`grid(1fr 1fr)`, P13); (d) das **„?"-Popover**
-opak + body-portaliert + z-index (P12); (e) das Werkstatt-„?" ebenso (geteilter `.help-pop`-Hebel); (f) **die
-Mach-Zone GEPINNT** (`position:sticky` — FERTIGEN war im scrollenden Palette unter der Falz, Schöpfer-Befund).
-_Diese sind die Vorlage, wie die anderen Menüs es von Anfang an richtig machen. OFFEN: nur der Schöpfer-Browser-
-Sign-off (GPU-Feel)._
+opak + body-portaliert + z-index (P12); (e) das Werkstatt-„?" ebenso (geteilter `.help-pop`-Hebel); (f) die
+Mach-Zone als 3. Sektion auf EINER Ebene (P16, V18.42, kein Scroll-Durchlauf); (g) der **Rahmen am Hauptbanner**
++ Viewer +10% + Höhen-Resize (P14/P17, V18.43); (h) **die Ausgabe als PROFI-SPEC-SHEET** (P15, V18.44): Header
+(Rolle+Fähigkeit·Qualität) → Body (Material-Profil-Tags + Rollen-Resonanz als Daten-Viz-Balken + Werte) → Footer
+(Kosten·Wachstum), die alten ~430 Z. Tabellen-Helfer ersetzt+gelöscht.
+_Diese sind die Vorlage + die geteilten Bausteine, die alle anderen Menüs erben (P11–P17). OFFEN: nur der
+Schöpfer-Browser-Sign-off (GPU-Feel)._
 
 **Antwort auf „nutzt das Suchfeld die bestehenden System-Tags?":** JA — die Omnibox + die Bauplan-Suche lesen
 die SCHON vorhandenen Vektoren (`computeBlueprintRole` → Rolle, `computeCompoundTags` → Tags, die Affordanzen/
@@ -770,25 +789,34 @@ Pro Raum: das mentale Modell → die Zonen → die Prinzipien.
   globaler Knopf-Block + Duplikat in der Befehls-Liste.
 - _Zonen (P2):_ Wesen (Liste + inline) · Gesetze (Welt-Regeln) · die freien Befehle → Omnibox (P6).
 - _Ordne (P5):_ Wesen (häufig) zuerst, Gesetze (selten) sekundär.
+- _Rahmen erbt (P14) · eine Ebene (P16):_ jede Wesen-Zeile eine Spec-Card, Befehle inline auf DERSELBEN
+  Zeile. _Vektor-als-Viz (P15):_ das Wesen trägt einen Vektor (Tags/Task/Aura) → ein dünner Stimmungs-Balken
+  statt eines rohen Worts (`_specBar`-Reuse).
 
 **DAS ICH (Charakterbogen).** Fragen: „was habe ich?" „wer bin ich?" „was trage ich?".
 
 - _Content-first (P1):_ der lebendige 3D-Avatar-Mittelpunkt (wer ich bin) als Star (WebGPU-Sub-Renderer).
 - _Zonen (P2):_ Habe (Inventar + Hotbar) · Charakter (Seele/Stats/Emotionen) · Ausrüstung + Rezepte.
+- _Vektor-als-Viz (P15) — der größte Gewinn:_ die Charakter-Zone als **Spec-Sheet** (`_specRender*`/`_specBar`-
+  Reuse): Stats als Balken, die **6 Emotionen als farbcodierte Balken** (feste Palette `--joy/--awe/…` →
+  perfekt; heilt die Aura/Emotion-Klarheit, §8.A), die Seele-Tags als Profil-Fingerabdruck.
 - _Stabil + Symmetrie (P7/P8):_ die Spalten gleich hoch (kein dunkler Leerraum — der V18.33-Befund).
-- _Eine Zone, eine Aufgabe (P3):_ Anlegen (Aktion) getrennt von „was ich trage" (Anzeige).
+- _Eine Zone, eine Aufgabe (P3):_ Anlegen (Aktion) getrennt von „was ich trage" (Anzeige). _Rahmen erbt (P14)._
 
 **DIE BIBLIOTHEK (Welt-Browser).** Fragen: „welche Welten?" „was ist diese?" „wie teilen?".
 
 - _Content-first (P1):_ die Welt-Karten (man BETRITT Welten) als Star, balanciertes Masonry (P8).
 - _Zonen (P2):_ Entdecken · Schöpfen/Teilen · Provenienz (Stammbaum/Tagebuch auf Abruf, P6).
 - _Suchen (P9):_ Welt-Suche, Tag-fähig (`welt:terrain`) über die Omnibox.
+- _Vektor-als-Viz (P15) · eine Ebene (P16):_ jede Welt-Karte eine Spec-Card (Trust/Provenienz/Tags als
+  Daten-Viz, Akte inline). _Rahmen erbt (P14) · Overlays portaliert (P12)._
 
 **DIE EINSTELLUNGEN (roter Faden).** Fragen nach Häufigkeit.
 
 - _Ordne (P5):_ Spielmodus → Welt → Steuerung → Darstellung → Audio → Identität.
-- _Progressive disclosure (P6):_ Selten-Genutztes (Dev-Render) eingeklappt.
-- _Symmetrie + Raster (P8):_ mehrspaltig, Pergament-Karten, gleiche Insets.
+- _Progressive disclosure (P6):_ Selten-Genutztes (Dev-Render) eingeklappt; Hinweise als `.help-pop` (P12).
+- _Symmetrie + Raster (P8) · Rahmen erbt (P14):_ mehrspaltig, Pergament-Karten, gleiche Insets; die Slider
+  sind schon Daten-Viz, Werte lesbar auf ihrem Grund (P11).
 
 ## D. Der PROZESS — wie ich JEDEN Raum angehe (die nachhaltige Methodik, gegen das reaktive Patchen)
 
