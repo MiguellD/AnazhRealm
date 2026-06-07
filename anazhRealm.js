@@ -40262,6 +40262,9 @@ class AnazhRealm {
             hp: null,
             hpMax: null,
             specs: [],
+            specCount: 0,
+            memory: [],
+            memoryCount: 0,
             task: null,
             taskName: "—",
             taskArgs: {},
@@ -40284,11 +40287,20 @@ class AnazhRealm {
             /* stats optional */
         }
         try {
-            if (typeof this._creatureTopSpecializations === "function")
-                prof.specs = this._creatureTopSpecializations(creature, 3) || [];
+            if (typeof this._creatureTopSpecializations === "function") {
+                // ALLE Spezialisierungen einmal holen → specs (Top-3) + die GESAMT-Zahl (für „+N weitere"-Overflow).
+                const allSpecs = this._creatureTopSpecializations(creature, 99) || [];
+                prof.specs = allSpecs.slice(0, 3);
+                prof.specCount = allSpecs.length;
+            }
         } catch {
             /* specs optional */
         }
+        // Die GESCHICHTE (V18.56) — die erinnerten Taten des Wesens (ud.memory, cap CREATURE_MEMORY_CAP):
+        // die Spec-Card liest die jüngste Tat + die Gesamtzahl (so wird das Wachsen der Geschichte sichtbar,
+        // graceful gekappt — kein Overflow). Reaktiv, read-only (kein neuer Datenpfad, Konsum V17.31).
+        prof.memory = Array.isArray(ud.memory) ? ud.memory : [];
+        prof.memoryCount = prof.memory.length;
         try {
             const task = this._getCreatureTask(creature);
             if (task) {
@@ -40535,62 +40547,91 @@ class AnazhRealm {
         );
         const header = this._el("div", { class: "spec-header" }, idZone, qualZone);
 
-        // BODY — links NATUR (Compound-Tags 0–3), rechts WERTE (HP-Balken + Stat-Chips) + WACHSTUM.
+        // BODY — links WERTE (das, was ein lebendes Wesen INTERESSANT macht: HP/Schaden/Tempo … als Balken,
+        // PRIMÄR), rechts NATUR (die Substanz, aus der die Werte EMERGIEREN — sekundär). Schöpfer-Befund:
+        // „bei der Kreatur ist Damage etc. interessanter als Resonanz" — die Capabilities führen, die Tags folgen.
+        const fracLvl = (f) => (f > 0.66 ? "lvl-2" : f > 0.33 ? "lvl-1" : "lvl-0");
+        const werteChildren = [this._el("div", { class: "spec-col-head", text: "Werte" })];
+        if (prof.stats) {
+            const cs = prof.stats;
+            const hpFrac = prof.hpMax > 0 ? prof.hp / prof.hpMax : 0;
+            werteChildren.push(
+                this._specBar(
+                    "HP",
+                    hpFrac,
+                    `${Math.round(prof.hp)}/${Math.round(prof.hpMax)}`,
+                    fracLvl(hpFrac),
+                    "Lebenspunkte (lebend/max)"
+                )
+            );
+            // Die Kombat-/Aktions-Werte als Balken — der Anteil füllt gegen eine GEMESSENE Referenz (die
+            // Formel-Decke aus STAT_FROM_TAGS, weiche Skala), die echte Zahl steht im Label (ehrlich, V17.31).
+            const statBars = [
+                ["Schaden", cs.damage, 25, "Schaden pro Schlag (härte+dichte)"],
+                ["Tempo", cs.speed, 14, "Bewegungstempo (leicht+magieleitung)"],
+                ["Ausdauer", cs.staminaMax, 200, "max. Ausdauer (leicht+wärmeleitung)"],
+                ["Abwehr", cs.defense, 14, "physische Abwehr (dichte+härte)"],
+                ["Präzision", cs.precision, 1, "Präzision (magieleitung+zähigkeit)"],
+            ];
+            for (const [label, v, ref, title] of statBars) {
+                if (!Number.isFinite(v)) continue;
+                werteChildren.push(
+                    this._specBar(label, v / ref, v.toFixed(1), fracLvl(v / ref), `${title}: ${v.toFixed(2)}`)
+                );
+            }
+            // Elementar-Resists als kompakter Chip-Streifen (klein, sekundär).
+            const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : "—");
+            werteChildren.push(
+                this._el(
+                    "div",
+                    { class: "spec-stat-strip" },
+                    this._el(
+                        "span",
+                        { class: "spec-stat-chip", title: "Magie-Resistenz" },
+                        this._el("span", { class: "spec-stat-name", text: "MR" }),
+                        this._el("span", { class: "spec-stat-val", text: fmt(cs.magicResist) })
+                    ),
+                    this._el(
+                        "span",
+                        { class: "spec-stat-chip", title: "Hitze-Resistenz" },
+                        this._el("span", { class: "spec-stat-name", text: "HR" }),
+                        this._el("span", { class: "spec-stat-val", text: fmt(cs.heatResist) })
+                    )
+                )
+            );
+        } else {
+            werteChildren.push(this._el("span", { class: "spec-empty", text: "Werte werden berechnet …" }));
+        }
+        const leftCol = this._el("div", { class: "spec-col" }, ...werteChildren);
+
+        // NATUR (sekundär) — die Compound-Tags als Balken (0–3): die Substanz, aus der die Werte emergieren.
         const tagEntries = Object.entries(prof.tags || {})
             .filter(([, v]) => Number.isFinite(v) && v > 0.05)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 6);
+            .slice(0, 5);
         const natBars = tagEntries.map(([k, v]) =>
             this._specBar(
                 k,
                 v / 3,
                 v.toFixed(2),
                 this._natureLevelClass(v),
-                `${k}: ${v.toFixed(2)} (Natur-Resonanz, 0–3)`
+                `${k}: ${v.toFixed(2)} (Natur, 0–3 — speist die Werte)`
             )
         );
-        const leftCol = this._el(
-            "div",
-            { class: "spec-col" },
-            this._el("div", { class: "spec-col-head", text: "Natur" }),
-            natBars.length ? natBars : this._el("span", { class: "spec-empty", text: "noch keine Substanz" })
+        const rightChildren = [this._el("div", { class: "spec-col-head", text: "Natur" })];
+        rightChildren.push(
+            ...(natBars.length ? natBars : [this._el("span", { class: "spec-empty", text: "noch keine Substanz" })])
         );
+        const rightCol = this._el("div", { class: "spec-col" }, ...rightChildren);
+        const body = this._el("div", { class: "spec-body" }, leftCol, rightCol);
 
-        const rightChildren = [this._el("div", { class: "spec-col-head", text: "Werte" })];
-        if (prof.stats) {
-            const cs = prof.stats;
-            const hpFrac = prof.hpMax > 0 ? prof.hp / prof.hpMax : 0;
-            rightChildren.push(
-                this._specBar(
-                    "HP",
-                    hpFrac,
-                    `${Math.round(prof.hp)}/${Math.round(prof.hpMax)}`,
-                    hpFrac > 0.66 ? "lvl-2" : hpFrac > 0.33 ? "lvl-1" : "lvl-0",
-                    "Lebenspunkte (lebend/max)"
-                )
-            );
-            const fmt = (n) => (Number.isFinite(n) ? n.toFixed(1) : "—");
-            const chips = [
-                ["DMG", cs.damage],
-                ["SPD", cs.speed],
-                ["STA", cs.staminaMax],
-                ["PRC", cs.precision],
-                ["MR", cs.magicResist],
-                ["HR", cs.heatResist],
-            ].map(([name, v]) =>
-                this._el(
-                    "span",
-                    { class: "spec-stat-chip" },
-                    this._el("span", { class: "spec-stat-name", text: name }),
-                    this._el("span", { class: "spec-stat-val", text: fmt(v) })
-                )
-            );
-            rightChildren.push(this._el("div", { class: "spec-stat-strip" }, ...chips));
-        }
-        // WACHSTUM — die Top-Spezialisierung als Fortschritt zur nächsten Stufe (das Wesen LERNT).
+        // WACHSTUM & GESCHICHTE (volle Breite) — das Wesen LERNT + ERINNERT (Schöpfer-Befund „wie füllen sich die
+        // Felder, overflow wenn Charaktere Geschichten speichern?"): die Top-3 Skills als Fortschritt + „+N weitere"
+        // (Overflow gekappt) + die jüngste Tat aus ud.memory + die Gesamtzahl der Erinnerungen (graceful, kein Overflow).
         const threshold = AnazhRealm.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD || 1;
         const maxLevel = AnazhRealm.CREATURE_SPECIALIZATION_MAX_LEVEL || 5;
-        const grow = (prof.specs || []).slice(0, 2).map((s) => {
+        const growChildren = [this._el("div", { class: "spec-col-head", text: "Wachstum & Geschichte" })];
+        const grow = (prof.specs || []).slice(0, 3).map((s) => {
             const atMax = s.level >= maxLevel;
             const into = s.count - s.level * threshold;
             return this._specBar(
@@ -40601,15 +40642,33 @@ class AnazhRealm {
                 `${s.count} Erfolge — ${atMax ? "Meisterschaft" : "auf dem Weg zu L" + (s.level + 1)}`
             );
         });
-        rightChildren.push(this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Wachstum" }));
-        if (grow.length) rightChildren.push(...grow);
-        else rightChildren.push(this._el("span", { class: "spec-empty", text: "noch keine Geschichte" }));
-        const body = this._el(
-            "div",
-            { class: "spec-body" },
-            leftCol,
-            this._el("div", { class: "spec-col" }, ...rightChildren)
-        );
+        if (grow.length) {
+            growChildren.push(...grow);
+            if (prof.specCount > grow.length)
+                growChildren.push(
+                    this._el("div", {
+                        class: "spec-grow-more",
+                        text: `+ ${prof.specCount - grow.length} weitere Fertigkeiten`,
+                    })
+                );
+        }
+        // Die jüngste Tat (Geschichte) — formatiert + die Gesamtzahl der Erinnerungen.
+        const deed = this._creatureLatestDeed(prof);
+        if (deed)
+            growChildren.push(
+                this._el(
+                    "div",
+                    {
+                        class: "spec-deed",
+                        title: `${prof.memoryCount} Erinnerungen (gekappt auf das Lebens-Gedächtnis)`,
+                    },
+                    this._el("span", { class: "spec-deed-label", text: "Geschichte" }),
+                    this._el("span", { class: "spec-deed-text", text: deed })
+                )
+            );
+        else if (!grow.length)
+            growChildren.push(this._el("span", { class: "spec-empty", text: "noch keine Geschichte" }));
+        const growth = this._el("div", { class: "spec-growth-zone" }, ...growChildren);
 
         // FOOTER — die HABE (Werkzeug/Rüstung/Boosts) als Chips + der würdevolle Abschied.
         const footChildren = [];
@@ -40645,7 +40704,53 @@ class AnazhRealm {
             })
         );
         const footer = this._el("div", { class: "spec-footer hof-spec-footer" }, ...footChildren);
-        return this._el("div", { class: "spec-sheet hof-spec-sheet" }, header, body, footer);
+        return this._el("div", { class: "spec-sheet hof-spec-sheet" }, header, body, growth, footer);
+    }
+
+    // V18.56 — die jüngste Tat eines Wesens, menschen-lesbar (aus ud.memory). Macht die wachsende GESCHICHTE
+    // sichtbar (Schöpfer-Befund), graceful + gekappt. Liest nur `prof.memory` (read-only, Konsum V17.31).
+    _creatureLatestDeed(prof) {
+        const mem = prof.memory || [];
+        if (!mem.length) return "";
+        const e = mem[mem.length - 1];
+        if (!e || !e.type) return "";
+        const c = e.content || {};
+        let what;
+        switch (e.type) {
+            case "gathered":
+                what = `sammelte ${c.material || c.blueprintName || "etwas"}`;
+                break;
+            case "_no_material":
+                what = `fand kein ${c.material || "Material"}`;
+                break;
+            case "spoke_proactive":
+            case "spoken":
+                what = "sprach zu dir";
+                break;
+            case "proposed_action":
+                what = "schlug eine Tat vor";
+                break;
+            case "proposal_blocked":
+                what = "ein Vorschlag wurde geblockt";
+                break;
+            case "rejected_action":
+                what = "ein Vorschlag wurde verworfen";
+                break;
+            default:
+                what = String(e.type).replace(/_/g, " ");
+        }
+        // relative Zeit (at = Date.now())
+        let ago = "";
+        if (Number.isFinite(e.at)) {
+            const s = Math.max(0, Math.round((Date.now() - e.at) / 1000));
+            ago =
+                s < 60
+                    ? ` · vor ${s}s`
+                    : s < 3600
+                      ? ` · vor ${Math.round(s / 60)}m`
+                      : ` · vor ${Math.round(s / 3600)}h`;
+        }
+        return `${what}${ago}`;
     }
 
     // Hof-F (hof-plan §D.2) — die freundlichen Sektions-Labels (Seele + Spezialisierung).
@@ -49005,7 +49110,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.55.0";
+AnazhRealm.VERSION = "18.56.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

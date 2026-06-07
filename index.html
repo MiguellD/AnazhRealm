@@ -2627,6 +2627,38 @@
                 text-transform: uppercase;
                 color: var(--brass-1, #8a6f3e);
             }
+            /* V18.56 — die WACHSTUM-&-GESCHICHTE-Zone (das Lernen + Erinnern des Wesens). */
+            .hof-spec-sheet .spec-growth-zone {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            .hof-spec-sheet .spec-grow-more {
+                font-size: 9px;
+                font-style: italic;
+                color: var(--ink-on-dark-soft, #bda87e);
+                padding-left: 2px;
+            }
+            .hof-spec-sheet .spec-deed {
+                display: flex;
+                align-items: baseline;
+                gap: 8px;
+                margin-top: 2px;
+            }
+            .hof-spec-sheet .spec-deed-label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
+                color: var(--brass-1, #8a6f3e);
+                flex: 0 0 auto;
+            }
+            .hof-spec-sheet .spec-deed-text {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 11px;
+                color: var(--parch-bg, #ece1c5);
+            }
             .hof-spec-footer {
                 display: flex;
                 align-items: center;
@@ -7217,6 +7249,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.55.0" defer></script>
+        <script src="anazhRealm.js?v=18.56.0" defer></script>
     </body>
 </html>

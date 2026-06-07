@@ -68,9 +68,16 @@ function startSaveServer() {
             if (r.state.creatures[0] && typeof r.assignCreatureTask === "function")
                 r.assignCreatureTask(r.state.creatures[0], "follow_player");
             r._renderCreatureListUI();
-            // Hof-D — das ZWEITE Wesen fokussieren → die volle Spec-Card (Natur/Werte/Wachstum) klappt auf.
+            // Hof-D — das ZWEITE Wesen fokussieren → die volle Spec-Card (Werte/Natur/Wachstum+Geschichte).
             if (r.state.creatures[1] && typeof r._toggleHofFocus === "function") {
-                const prof = r._creatureProfile(r.state.creatures[1]);
+                const c1 = r.state.creatures[1];
+                // ihm eine kleine Geschichte + Skills geben, damit Wachstum & Geschichte sichtbar werden.
+                if (typeof r._creatureRemember === "function") {
+                    for (let k = 0; k < 4; k++) r._creatureRemember(c1, "gathered", { material: "holz" });
+                    for (let k = 0; k < 2; k++) r._creatureRemember(c1, "gathered", { material: "stein" });
+                    r._creatureRemember(c1, "spoke_proactive", { said: "Hallo" });
+                }
+                const prof = r._creatureProfile(c1);
                 r._toggleHofFocus(prof.id);
             }
             // Hof-Partitur — eine eigene Regel + mehrere Nexus-Experimente (mit Werten) → die zwei Gruppen sichtbar.
