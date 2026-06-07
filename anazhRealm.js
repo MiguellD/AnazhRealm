@@ -9978,56 +9978,9 @@ class AnazhRealm {
         this._wireCmdDelegation("creature-actions");
         this._wireCmdDelegation("architecture-actions");
 
-        // Hilfe-Drawer: Befehl-Liste aus chatCommandHelp generieren. Der
-        // Hilfe-Drawer ist einer der sechs Tabs; Anzeige + Schließen läuft
-        // über das Tab-/Drawer-System (siehe initTopbar). Hier nur die
-        // Befehlsliste und der Klick-Delegate.
-        const helpList = document.getElementById("help-list");
-        if (helpList) {
-            for (const group of this.chatCommandHelp) {
-                const h = document.createElement("h3");
-                h.textContent = group.title;
-                helpList.appendChild(h);
-                for (const cmd of group.commands) {
-                    const btn = document.createElement("button");
-                    btn.type = "button";
-                    btn.className = "cmd";
-                    btn.textContent = cmd;
-                    btn.setAttribute("data-cmd", cmd);
-                    helpList.appendChild(btn);
-                }
-            }
-            // V9.44-e — der help-list-Delegate schliesst zusätzlich die Drawer.
-            this._wireCmdDelegation("help-list", true);
-        }
-        // V18.35 — die Befehle durchSUCHEN statt scrollen (Schöpfer „ewig lange Listen,
-        // schwer Überblick"): ein Live-Filter über die Befehl-Knöpfe; leere Gruppen-Header
-        // (h3) verschwinden mit. EIN Ort für alle Befehle (die duplizierten Welt-Aktionen
-        // sind hier aufgelöst). Der Befehls-Lauf bleibt der EINE data-cmd-Pfad.
-        const helpSearch = document.getElementById("help-search");
-        if (helpList && helpSearch) {
-            const applyFilter = () => {
-                const q = helpSearch.value.trim().toLowerCase();
-                let lastHeader = null;
-                let headerHasVisible = false;
-                const finishGroup = () => {
-                    if (lastHeader) lastHeader.style.display = headerHasVisible ? "" : "none";
-                };
-                for (const node of helpList.children) {
-                    if (node.tagName === "H3") {
-                        finishGroup();
-                        lastHeader = node;
-                        headerHasVisible = false;
-                        continue;
-                    }
-                    const match = !q || (node.textContent || "").toLowerCase().includes(q);
-                    node.style.display = match ? "" : "none";
-                    if (match) headerHasVisible = true;
-                }
-                finishGroup();
-            };
-            helpSearch.addEventListener("input", applyFilter);
-        }
+        // V18.51 Hof-G — die alte Hilfe-Befehlsliste (#help-list / #help-search) ist seit V18.47 aus dem DOM
+        // (die Omnibox `c:` trägt ALLE Befehle durchsuchbar an EINEM Ort). Die ehemals durch `if(helpList)`
+        // inert gewordene Fill-/Filter-JS ist hier ERSATZLOS geschnitten (kein Parallel-Pfad mehr).
         // V18.35 — dieselbe Such-Geste fürs Rezeptbuch (Schöpfer „schwer bei vielen Rezepten
         // den Überblick"): der Filter lebt in _applyRecipeFilter (re-applied nach jedem Render).
         const recipeSearch = document.getElementById("recipe-search");
@@ -14124,9 +14077,12 @@ class AnazhRealm {
         return null;
     }
 
-    assignTaskToAllCreatures(taskName, args = {}) {
+    assignTaskToAllCreatures(taskName, args = {}, filterFn = null) {
+        // Hof-F (hof-plan §D.2/§G.4) — der optionale `filterFn` ist das Gruppen-Dirigat: die Sektions-Befehle
+        // im Hof rufen DENSELBEN Pfad wie die Omnibox `k:`/der Chat (kein Parallel-System), nur gefiltert.
         let count = 0;
         for (const c of this.state.creatures) {
+            if (filterFn && !filterFn(c)) continue;
             if (this.assignCreatureTask(c, taskName, args)) count++;
         }
         return count;
@@ -40306,7 +40262,103 @@ class AnazhRealm {
                     : this._el("div", { class: "creature-detail-empty", text: "noch keine Geschichte" })
             )
         );
-        return this._el("div", { class: "creature-detail" }, cols);
+        // Hof-G (hof-plan §D.1) — der Abschieds-Akt am fokussierten Wesen (die Beziehung endet würdevoll).
+        const footer = this._el(
+            "div",
+            { class: "creature-detail-foot" },
+            this._el("button", {
+                class: "creature-detail-dismiss",
+                type: "button",
+                text: "✕ Verabschieden",
+                title: `${prof.name} aus der Welt verabschieden`,
+                on: {
+                    click: (e) => {
+                        e.stopPropagation();
+                        if (prof.creature && typeof this.removeCreature === "function") {
+                            this.removeCreature(prof.creature);
+                            this.state.creatures = (this.state.creatures || []).filter((c) => c !== prof.creature);
+                            if (this.state.hofFocusId === prof.id) this.state.hofFocusId = null;
+                            this._renderCreatureListUI();
+                        }
+                    },
+                },
+            })
+        );
+        return this._el("div", { class: "creature-detail" }, cols, footer);
+    }
+
+    // Hof-F (hof-plan §D.2) — die freundlichen Sektions-Labels (Seele + Spezialisierung).
+    static get HOF_SECTION_LABELS() {
+        return { sprite: "Sprites", wesen: "Wesen", geist: "Geister", gather: "Sammler", build: "Bauer" };
+    }
+
+    // Hof-F (hof-plan §D.2/§G.4) — die Sektions-Leiste (Gruppen-Dirigat): Chips aus den LEBENDEN Profilen
+    // (Seele/Spezialisierung) + die Befehlsleiste, die zur GANZEN Sektion spricht (DENSELBE assignTaskTo…).
+    _renderHofSections() {
+        if (typeof document === "undefined") return;
+        const host = document.getElementById("hof-sections");
+        if (!host) return;
+        host.innerHTML = "";
+        const creatures = this.state.creatures || [];
+        const labels = AnazhRealm.HOF_SECTION_LABELS;
+        const counts = new Map();
+        for (const c of creatures) {
+            const sec = this._creatureProfile(c).section;
+            counts.set(sec, (counts.get(sec) || 0) + 1);
+        }
+        const active = this.state.hofSection || "alle";
+        const chips = [["alle", "Alle", creatures.length]];
+        for (const [sec, n] of counts) chips.push([sec, labels[sec] || sec, n]);
+        for (const [sec, label, n] of chips) {
+            host.appendChild(
+                this._el(
+                    "button",
+                    {
+                        class: "hof-section-chip" + (sec === active ? " active" : ""),
+                        type: "button",
+                        on: {
+                            click: () => {
+                                this.state.hofSection = sec;
+                                this._renderCreatureListUI();
+                            },
+                        },
+                    },
+                    this._el("span", { text: label }),
+                    this._el("span", { class: "hof-section-count", text: String(n) })
+                )
+            );
+        }
+        // Die Befehlsleiste — nur wenn eine echte Sektion gewählt ist (zur GANZEN Sektion sprechen).
+        const cmdHost = document.getElementById("hof-section-cmd");
+        if (!cmdHost) return;
+        cmdHost.innerHTML = "";
+        if (active === "alle") {
+            cmdHost.hidden = true;
+            return;
+        }
+        cmdHost.hidden = false;
+        cmdHost.appendChild(
+            this._el("span", { class: "hof-section-cmd-label", text: `Alle ${labels[active] || active}:` })
+        );
+        for (const [lbl, task] of [
+            ["Folge", "follow_player"],
+            ["Warte", "wait"],
+            ["Streift", "wander"],
+        ]) {
+            cmdHost.appendChild(
+                this._el("button", {
+                    class: "creature-action-btn",
+                    type: "button",
+                    text: lbl,
+                    on: {
+                        click: () => {
+                            this.assignTaskToAllCreatures(task, {}, (c) => this._creatureProfile(c).section === active);
+                            this._renderCreatureListUI();
+                        },
+                    },
+                })
+            );
+        }
     }
 
     _renderCreatureListUI() {
@@ -40314,9 +40366,31 @@ class AnazhRealm {
         const list = document.getElementById("creature-list");
         if (!list) return;
         list.innerHTML = "";
-        const creatures = this.state.creatures || [];
+        this._renderHofSections();
+        const allCreatures = this.state.creatures || [];
+        // Hof-E/§G.9 — der einladende Leer-Zustand (das Spawnen als Held des leeren Hofes).
+        if (allCreatures.length === 0) {
+            this.state.hofSection = "alle";
+            list.appendChild(
+                this._el("div", {
+                    class: "hof-empty",
+                    text: "Dein Hof ist still. ✦ Rufe dein erstes Wesen — wähle eine Form unten und drücke +1.",
+                })
+            );
+            return;
+        }
+        // Hof-F — die Sektion filtert, welche Wesen die Liste zeigt (das Dirigat zur Gruppe).
+        const active = this.state.hofSection || "alle";
+        const labels = AnazhRealm.HOF_SECTION_LABELS;
+        const creatures =
+            active === "alle" ? allCreatures : allCreatures.filter((c) => this._creatureProfile(c).section === active);
         if (creatures.length === 0) {
-            list.textContent = "—";
+            list.appendChild(
+                this._el("div", {
+                    class: "hof-empty",
+                    text: `Keine „${labels[active] || active}" mehr im Hof. Wähle „Alle" oben.`,
+                })
+            );
             return;
         }
         for (const c of creatures) {
@@ -48571,7 +48645,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.50.0";
+AnazhRealm.VERSION = "18.51.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

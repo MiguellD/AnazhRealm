@@ -11,12 +11,14 @@
 > vertiefe den Plan für den Hof, damit er das gleiche Level erhält wie die Werkstatt. Vollständig.
 > Lessons, IPERKA. Keine halben Sachen."
 
-**Stand: PLAN (tief, ungebaut über das Befehls-System hinaus).** GEBAUT bis V18.48: Hof-A (inline-Task-
-Knöpfe am Wesen) · Hof-B (die ~60-Befehle-Liste → Omnibox) · Hof-C (gather/build als „Auftrag ▾"-Select
-am Wesen; die globalen „nächste-Kreatur"-Dropdowns aufgelöst). **EHRLICH (Schöpfer-Befund, richtig): das
-war der Befehls-Pfad — der Hof hat noch NICHT die Werkstatt-TIEFE** (kein content-first Star, keine
-Spec-Card-Daten-Viz, keine durchdachten Zonen, die Spielerperspektive nur halb eingenommen). Dieser Plan
-ist die volle Tiefe — die Saat (die reichen Wesen-Vektoren) zum Blühen bringen.
+**Stand: GEBAUT — der Hof ist abgeschlossen (Werkstatt-Niveau), Browser-Sign-off offen.** Hof-A/B/C (V18.46–.48,
+Befehls-Fundament) · **Hof-D0** (V18.49 `_creatureProfile` — EIN Vektor, viele Leser) · **Hof-D** (V18.50 die
+fokussierbare Wesen-Spec-Card: Stimmung-Glyph + Natur/Werte/Wachstum) · **Hof-E** (V18.51 die zwei Zonen
+ORCHESTER|PARTITUR + integrierter Spawn-Fuß + Leer-Zustand) · **Hof-F** (V18.51 die Sektions-Leiste, Gruppen-
+Dirigat über `assignTaskToAllCreatures(…, filterFn)`) · **Hof-G** (V18.51 der Verabschieden-Akt + die inerte
+help-list-JS geschnitten). Mit dem Auge verifiziert (`diag-hof.cjs`). OFFEN als Vision-Faden (Hof-G+): die
+3D-Befehls-Geste (Klick in die Welt „geh dahin", §G.7) + verkörpern (die kampf-plan-§11-Avatar-Achse) + der
+Schöpfer-Browser-Sign-off (Feel/GPU). Der Plan unten bleibt als Referenz, wie der Raum gewachsen ist.
 
 ---
 
@@ -210,20 +212,20 @@ Regel-Erklärungen.
 Jede Welle: **messen (Screenshot lesen) → als System bauen → mit dem Auge + Playtest verifizieren → ein
 Bogen.** Reihenfolge nach Wert + Abhängigkeit (**geschärft in §G.10 — die finale Reihenfolge dort**):
 
-0. **Hof-D0 — `_creatureProfile(creature)` + stabile Selektion (§G.1/G.6), das Fundament.** EIN Lese-Vektor,
-   den alle Wesen-Leser teilen (der Werkstatt-Twist); der Fokus/die Selektion an einer STABILEN Identität
-   (nicht am Array-Index). Vorbedingung der Spec-Card.
-1. **Hof-D — die WESEN-SPEC-CARD (§D.1+§G.5), der Kern.** Die Zeile DEFAULT KOMPAKT (Glyph + Mini-Natur-Balken
-   + inline-Aktionen); die VOLLE Spec-Card (Natur/Werte/Wachstum/Habe via `_specBar`) klappt NUR beim
-   fokussierten Wesen auf + Aura-Ping. Stimmung GEMESSEN geerdet (§G.2: froh/trübe + wariness/bond).
-   _Der größte Tiefen-Sprung (wie V18.44 für die Werkstatt)._
-2. **Hof-E — die ZWEI ZONEN (§D, content-first).** Vom 3-Spalten-`column-count` zum Grid ORCHESTER (Star,
-   wide) | PARTITUR. Spawnen ins Orchester integriert; der Welt-Schalter raus. Die Gesetze als würdevolle
-   Partitur-Zone.
-3. **Hof-F — die SEKTIONEN (§D.2), das Gruppen-Dirigat.** Sektions-Leiste (Seele/Spezialisierung) → Befehl
-   an die Sektion; die „alle"-Geste sichtbar + verfeinert.
-4. **Hof-G — die TIEFE blühen:** Wachstums-Geschichte (ud.memory), [verkörpern]/[verabschieden], der Nexus
-   als sichtbarer Ko-Dirigent, perspektivisch die 3D-Befehls-Geste. + die inerte help-list-JS schneiden.
+0. **Hof-D0 ✅ (V18.49) — `_creatureProfile(creature)` + stabile Selektion (§G.1/G.6), das Fundament.** EIN
+   Lese-Vektor, den alle Wesen-Leser teilen (der Werkstatt-Twist); der Fokus an `prof.id`=netId (nicht am Index).
+1. **Hof-D ✅ (V18.50) — die WESEN-SPEC-CARD (§D.1+§G.5), der Kern.** Die Zeile DEFAULT KOMPAKT (Mood-Glyph +
+   inline-Aktionen); die VOLLE Spec-Card (Natur/Werte/Wachstum via `_specBar`) klappt NUR beim fokussierten
+   Wesen auf. Stimmung GEMESSEN geerdet (§G.2: froh/trübe + wariness/bond). _Der größte Tiefen-Sprung._
+2. **Hof-E ✅ (V18.51) — die ZWEI ZONEN (§D, content-first).** Vom 3-Spalten-`column-count` zum Grid ORCHESTER
+   (Star, wide) | PARTITUR. Spawnen ins Orchester integriert (Welt-Schalter als kleine Welt-Zeile); die Gesetze
+   + der Nexus als würdevolle Partitur-Zone; der einladende Leer-Zustand (§G.9).
+3. **Hof-F ✅ (V18.51) — die SEKTIONEN (§D.2), das Gruppen-Dirigat.** Sektions-Leiste (Seele/Spezialisierung +
+   Count) → die Liste filtert + die Befehlsleiste spricht zur GANZEN Sektion (`assignTaskToAllCreatures` +
+   `filterFn`, derselbe Pfad wie `k:`).
+4. **Hof-G ✅ (V18.51, Kern) — der Abschied + Aufräumen:** [verabschieden] an der fokussierten Karte
+   (`removeCreature`) + die inerte help-list-JS geschnitten. OFFEN als Vision-Faden (Hof-G+): Wachstums-
+   Geschichte (ud.memory), [verkörpern] (Avatar-Achse), die perspektivische 3D-Befehls-Geste.
 5. **Schöpfer-Browser-Sign-off** (Feel/GPU) + EIN Merge des Hof-Bogens.
 
 (Wie bei der Werkstatt: die frühen Wellen (Hof-A/B/C) waren das Befehls-Fundament; Hof-D–G sind die Tiefe.)

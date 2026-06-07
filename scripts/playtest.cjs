@@ -25189,9 +25189,43 @@ async function checkBandWelle6HCreatures(ctx) {
         const detailCards = listAfter ? listAfter.querySelectorAll(".creature-detail").length : -1;
         const detailBars = listAfter ? listAfter.querySelectorAll(".creature-detail .spec-bar").length : 0;
         out.focusExpandsOneCard = focusedRows === 1 && detailCards === 1 && detailBars > 0;
+        // Hof-G — der Abschieds-Akt am fokussierten Wesen (Verabschieden = removeCreature, würdevoll).
+        out.focusHasDismiss = !!(listAfter && listAfter.querySelector(".creature-detail .creature-detail-dismiss"));
         r._toggleHofFocus(firstProf.id); // wieder zu — kein Fokus-Leck in die Folge-Tests
         const listClosed = document.getElementById("creature-list");
         out.focusToggleCloses = !!(listClosed && listClosed.querySelectorAll(".creature-detail").length === 0);
+        // V18.51 Hof-E (hof-plan §D/§G.7) — die zwei Zonen ORCHESTER | PARTITUR + der integrierte Spawn-Fuß.
+        out.hasOrchesterZone = !!document.querySelector(".hof-orchester");
+        out.hasPartiturZone = !!document.querySelector(".hof-partitur");
+        out.partiturHoldsLaws = !!(
+            document.querySelector(".hof-partitur #status-worldrules") &&
+            document.querySelector(".hof-partitur #status-abilities")
+        );
+        out.spawnFootInOrchester = !!document.querySelector(".hof-orchester .hof-spawn #creature-soul-select");
+        // V18.51 Hof-F (hof-plan §D.2/§G.4) — die Sektions-Leiste (Gruppen-Dirigat).
+        const secHost = document.getElementById("hof-sections");
+        out.sectionChipsRender = !!(secHost && secHost.querySelectorAll(".hof-section-chip").length >= 1);
+        const alleChip = secHost && secHost.querySelector(".hof-section-chip");
+        out.firstSectionIsAlle = !!(alleChip && /Alle/.test(alleChip.textContent));
+        // Eine ECHTE Sektion (die zweite Chip, nicht „Alle") wählen → Liste filtert + die Befehlsleiste erscheint.
+        const realChip = secHost && secHost.querySelectorAll(".hof-section-chip")[1];
+        if (realChip) realChip.click();
+        const cmdBar = document.getElementById("hof-section-cmd");
+        out.sectionSelectShowsCmd = !!(cmdBar && !cmdBar.hidden && cmdBar.querySelector(".creature-action-btn"));
+        out.sectionFiltersList = !!(
+            r.state.hofSection &&
+            r.state.hofSection !== "alle" &&
+            document.querySelectorAll("#creature-list .creature-row").length <= r.state.creatures.length
+        );
+        // Der Sektions-Befehl ruft DENSELBEN Pfad (assignTaskToAllCreatures, gefiltert) — ein echter Konsument.
+        const cmdBtn = cmdBar && cmdBar.querySelector(".creature-action-btn");
+        const secBefore = r.state.hofSection;
+        if (cmdBtn) cmdBtn.click();
+        out.sectionCmdAssignsTask = r.state.creatures
+            .filter((c) => r._creatureProfile(c).section === secBefore)
+            .every((c) => r._getCreatureTask(c).name === "follow_player");
+        r.state.hofSection = "alle"; // zurücksetzen — kein Filter-Leck in die Folge-Tests
+        r._renderCreatureListUI();
         r.assignCreatureTask(sprite, "follow_player");
         const firstRow2 = list && list.querySelector(".creature-row");
         const taskCell = firstRow2 && firstRow2.querySelector(".creature-task");
@@ -25203,7 +25237,8 @@ async function checkBandWelle6HCreatures(ctx) {
         out.sceneAfterRemove = !r.state.scene.children.includes(sprite);
         r.clearCreatures();
         r._renderCreatureListUI();
-        out.emptyListDash = list && list.textContent === "—";
+        // V18.51 Hof-E/§G.9 — der leere Hof zeigt den einladenden Onboarding-Zustand (kein kahles „—").
+        out.emptyShowsOnboarding = !!(list && list.querySelector(".hof-empty"));
         // Cleanup für nachfolgende Tests (Ring 3 V2 peace,
         // UI Run-Button): brauchen Kreaturen-Population.
         r.spawnCreatures(10);
@@ -25287,9 +25322,34 @@ async function checkBandWelle6HCreatures(ctx) {
             "Hof-D §G.6: der Fokus-Toggle schließt wieder (stabile Identität, kein Leck)",
             wave6hP2aResults.focusToggleCloses
         );
+        check("Hof-G §D.1: die fokussierte Spec-Card trägt den Verabschieden-Akt", wave6hP2aResults.focusHasDismiss);
         check("Welle 6.H P2A: Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
         check("Welle 6.H P2A: removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);
-        check("Welle 6.H P2A: Leere Liste zeigt '—'", wave6hP2aResults.emptyListDash);
+        check(
+            "V18.51 Hof-E/§G.9: leerer Hof zeigt den Onboarding-Zustand (.hof-empty, kein kahles '—')",
+            wave6hP2aResults.emptyShowsOnboarding
+        );
+        check(
+            "V18.51 Hof-E §D: zwei Zonen — ORCHESTER + PARTITUR existieren",
+            wave6hP2aResults.hasOrchesterZone && wave6hP2aResults.hasPartiturZone
+        );
+        check(
+            "V18.51 Hof-E §D.4: die PARTITUR trägt die Gesetze + den Nexus (worldrules + abilities)",
+            wave6hP2aResults.partiturHoldsLaws
+        );
+        check("V18.51 Hof-E §D.3: der Spawn-Fuß ist ins ORCHESTER integriert", wave6hP2aResults.spawnFootInOrchester);
+        check(
+            "V18.51 Hof-F §D.2: die Sektions-Leiste rendert Chips (Alle zuerst)",
+            wave6hP2aResults.sectionChipsRender && wave6hP2aResults.firstSectionIsAlle
+        );
+        check(
+            "V18.51 Hof-F: eine Sektion wählen filtert die Liste + zeigt die Befehlsleiste",
+            wave6hP2aResults.sectionSelectShowsCmd && wave6hP2aResults.sectionFiltersList
+        );
+        check(
+            "V18.51 Hof-F/§G.4: der Sektions-Befehl ruft DENSELBEN assignTaskToAllCreatures (gefiltert)",
+            wave6hP2aResults.sectionCmdAssignsTask
+        );
     }
 
     // ### Welle 6.H Phase 2B.1 — Kreaturen sammeln + erinnern ###
@@ -33342,8 +33402,10 @@ async function checkBandWelle6HCreatureStats(ctx) {
         const rows = listEl ? listEl.querySelectorAll(".creature-row") : [];
         let rowsWithTitle = 0;
         for (const row of rows) {
-            if (row.title && /HP\s+\d/.test(row.title) && /SPD\s+\d/.test(row.title) && /DMG\s+\d/.test(row.title))
-                rowsWithTitle++;
+            // V18.51 Hof-E (V9.56-i) — der Stats-title sitzt jetzt auf der kompakten Zeile (.creature-row-main).
+            const main = row.querySelector(".creature-row-main");
+            const t = (main && main.title) || "";
+            if (t && /HP\s+\d/.test(t) && /SPD\s+\d/.test(t) && /DMG\s+\d/.test(t)) rowsWithTitle++;
         }
         out.uiRowsHaveStatsTitle = rowsWithTitle === rows.length && rows.length > 0;
 

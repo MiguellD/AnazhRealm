@@ -2572,6 +2572,26 @@
                 color: var(--parch-ink-soft);
                 text-align: right;
             }
+            .creature-list .creature-detail-foot {
+                grid-column: 1 / -1;
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 2px;
+            }
+            .creature-list .creature-detail-dismiss {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.3px;
+                padding: 2px 8px;
+                background: rgba(150, 60, 50, 0.1);
+                border: 1px solid rgba(170, 90, 70, 0.5);
+                border-radius: 3px;
+                color: #9a4a3a;
+                cursor: pointer;
+            }
+            .creature-list .creature-detail-dismiss:hover {
+                background: rgba(180, 70, 55, 0.25);
+            }
             .creature-list .creature-name {
                 font-weight: 600;
             }
@@ -3813,12 +3833,10 @@
                 width: auto;
                 max-height: calc(100vh - 84px);
             }
-            .drawer[data-drawer="kreaturen"] .drawer-scroll,
             .drawer[data-drawer="einstellungen"] .drawer-scroll {
                 column-count: 3;
                 column-gap: 20px;
             }
-            .drawer[data-drawer="kreaturen"] .drawer-scroll > .section,
             .drawer[data-drawer="einstellungen"] .drawer-scroll > .section {
                 break-inside: avoid;
                 -webkit-column-break-inside: avoid;
@@ -3827,10 +3845,130 @@
                 margin: 0 0 18px 0;
             }
             @media (max-width: 1100px) {
-                .drawer[data-drawer="kreaturen"] .drawer-scroll,
                 .drawer[data-drawer="einstellungen"] .drawer-scroll {
                     column-count: 2;
                 }
+            }
+            /* V18.51 Hof-E — ZWEI ZONEN (ORCHESTER Star, wide | PARTITUR), content-first nach dem
+               Dirigenten-Modell (statt des gleichrangigen 3-Spalten-Stapels). */
+            .drawer[data-drawer="kreaturen"] .drawer-scroll {
+                display: grid;
+                grid-template-columns: 1.7fr 1fr;
+                gap: 0 22px;
+                align-items: start;
+            }
+            .drawer[data-drawer="kreaturen"] .drawer-scroll > .section {
+                margin: 0 0 6px 0;
+            }
+            @media (max-width: 1000px) {
+                .drawer[data-drawer="kreaturen"] .drawer-scroll {
+                    grid-template-columns: 1fr;
+                }
+            }
+            .hof-orchester h3,
+            .hof-partitur h3 {
+                font-size: 16px;
+            }
+            .hof-subhead {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                letter-spacing: 0.5px;
+                color: var(--brass-1, #8a6f3e);
+                margin: 16px 0 2px 0;
+            }
+            /* Hof-F — die Sektions-Leiste (Gruppen-Dirigat). */
+            .hof-sections {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                margin: 4px 0 6px 0;
+            }
+            .hof-section-chip {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.3px;
+                padding: 2px 9px;
+                background: rgba(120, 80, 30, 0.1);
+                border: 1px solid var(--brass-2, #6f5a30);
+                border-radius: 11px;
+                color: var(--parch-ink);
+                cursor: pointer;
+                transition: background 0.12s ease;
+            }
+            .hof-section-chip:hover {
+                background: rgba(198, 154, 74, 0.22);
+            }
+            .hof-section-chip.active {
+                background: rgba(198, 154, 74, 0.4);
+                border-color: var(--brass-1, #8a6f3e);
+                font-weight: 600;
+            }
+            .hof-section-chip .hof-section-count {
+                opacity: 0.65;
+                margin-left: 3px;
+            }
+            .hof-section-cmd {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 6px;
+                margin: 0 0 7px 0;
+                padding: 5px 8px;
+                background: rgba(198, 154, 74, 0.1);
+                border: 1px solid var(--brass-2, #6f5a30);
+                border-radius: 6px;
+            }
+            .hof-section-cmd .hof-section-cmd-label {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 12px;
+                color: var(--parch-ink);
+            }
+            /* Hof-E — der Spawn-Fuß (ein neues Orchester-Mitglied rufen). */
+            .hof-spawn {
+                margin-top: 10px;
+                padding-top: 9px;
+                border-top: 1px solid var(--parch-line, #b09d7c);
+            }
+            .hof-spawn-title {
+                display: block;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                letter-spacing: 0.4px;
+                color: var(--brass-1, #8a6f3e);
+                margin-bottom: 5px;
+            }
+            .hof-spawn-row {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 6px;
+            }
+            .hof-spawn-row select {
+                flex: 1 1 auto;
+                min-width: 120px;
+            }
+            .hof-spawn-world {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 6px;
+                margin-top: 7px;
+            }
+            .hof-spawn-world-label {
+                font-size: 11px;
+                color: var(--parch-ink-soft);
+            }
+            /* Hof-E/§G.9 — der einladende Leer-Zustand (das Spawnen als Held). */
+            .hof-empty {
+                padding: 14px 12px;
+                text-align: center;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 13px;
+                color: var(--parch-ink-soft);
+                border: 1px dashed var(--brass-2, #6f5a30);
+                border-radius: 8px;
             }
             .library-intro {
                 font-family: "IM Fell English", Georgia, serif;
@@ -5843,60 +5981,56 @@
         <aside class="drawer" data-drawer="kreaturen" aria-label="Kreaturen-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
             <h2>Der Hof</h2>
-            <!-- V18.46 Hof-A (UI-Putz §2) — die globale „Aufträge an Kreaturen"-Knopfreihe ist AUFGELÖST:
-                 die Befehle leben jetzt INLINE am Wesen (Zone „Wesen", _renderCreatureListUI, P16 eine Ebene)
-                 + in der Omnibox (`k:`, Ctrl+K). Das war die Trennung Wesen↔Befehl + ein Duplikat. -->
-            <!-- V18.48 Hof-C (UI-Putz §2) — die globalen „Sammeln"/„Bauen lassen"-Dropdowns sind AUFGELÖST:
-                 sie befahlen der NÄCHSTEN Kreatur (Spielerperspektiven-Bruch). Jetzt befiehlt der „Auftrag ▾"-
-                 Select INLINE am gewählten Wesen (Zone „Wesen", _renderCreatureListUI: Sammle Material / Baue
-                 Bauplan) — „wähle Wesen → befiehl". -->
-            <section class="section">
-                <h3>Spawnen</h3>
-                <div class="soul-row">
-                    <label for="creature-soul-select">Form</label>
-                    <select id="creature-soul-select" aria-label="Kreatur-Seele wählen">
-                        <option value="">Zufällig</option>
-                        <option value="sprite">Sprite (Magie · Quarz)</option>
-                        <option value="wesen">Wesen (Solid · Stein+Holz)</option>
-                        <option value="geist">Geist (Ätherisch · Laub+Leder)</option>
-                    </select>
-                </div>
-                <div class="actions" id="creature-actions">
-                    <button type="button" data-creature-spawn="1">+1</button>
-                    <button type="button" data-creature-spawn="5">+5</button>
-                    <button type="button" data-creature-spawn="10">+10</button>
-                    <button type="button" data-cmd="Kreaturen aktivieren">Sichtbar</button>
-                    <button type="button" data-cmd="Kreaturen deaktivieren">Verbergen</button>
-                </div>
-            </section>
-            <section class="section">
-                <h3>Wesen in der Welt</h3>
+            <!-- V18.51 Hof-E (UI-Putz §2, hof-plan §D/§G.7) — ZWEI ZONEN nach dem mentalen Modell des Dirigenten:
+                 DAS ORCHESTER (Star, content-first: die Wesen + ihr Spawn + das Gruppen-Dirigat) | DIE PARTITUR
+                 (die stehenden Gesetze + der Nexus als Ko-Dirigent). Ersetzt den gleichrangigen 3-Spalten-Stapel. -->
+            <section class="section hof-orchester">
+                <h3>Das Orchester</h3>
                 <p class="drawer-hint">
-                    Identität ist ein Name (Vision §1.1 — Co-Schöpfer-Beziehung). Tag-Profil emergiert aus Form ×
-                    Material — eine Sprite ist magie-leitend, ein Wesen dichte/lebendig, ein Geist ätherisch.
+                    Deine Wesen — klick eines an für seine volle Natur, Werte + Wachstum; befiehl ihm inline. Wähle eine
+                    Sektion, um zur ganzen Gruppe zu sprechen.
                 </p>
+                <!-- V18.51 Hof-F — die Sektions-Leiste (Gruppen-Dirigat): wähle [Alle]/[Geister]/[Sammler]/…
+                     → die Liste filtert + die Befehle gelten der GANZEN Sektion (assignTaskToAllCreatures gefiltert). -->
+                <div id="hof-sections" class="hof-sections" aria-label="Sektionen"></div>
+                <div id="hof-section-cmd" class="hof-section-cmd" hidden></div>
                 <div id="creature-list" class="creature-list" aria-live="polite">—</div>
+                <!-- Hof-E §D.3 — das Spawnen integriert (ein neues Mitglied gehört zum Orchester). -->
+                <div class="hof-spawn">
+                    <span class="hof-spawn-title">✦ Ein neues Wesen rufen</span>
+                    <div class="hof-spawn-row">
+                        <select id="creature-soul-select" aria-label="Kreatur-Seele wählen">
+                            <option value="">Zufällig</option>
+                            <option value="sprite">Sprite (Magie · Quarz)</option>
+                            <option value="wesen">Wesen (Solid · Stein+Holz)</option>
+                            <option value="geist">Geist (Ätherisch · Laub+Leder)</option>
+                        </select>
+                        <button type="button" data-creature-spawn="1">+1</button>
+                        <button type="button" data-creature-spawn="5">+5</button>
+                        <button type="button" data-creature-spawn="10">+10</button>
+                    </div>
+                    <div class="hof-spawn-world">
+                        <span class="hof-spawn-world-label">Alle Wesen in der Welt:</span>
+                        <button type="button" data-cmd="Kreaturen aktivieren">Sichtbar</button>
+                        <button type="button" data-cmd="Kreaturen deaktivieren">Verbergen</button>
+                    </div>
+                </div>
             </section>
-            <!-- Der Hof vereint die Kommunikation: die Kreaturen folgen (oben), der Nexus
-                 dirigiert (Fähigkeiten + Gesetze), der Spieler spricht (die Befehle). -->
-            <section class="section" id="faehigkeiten-abilities">
-                <h3>Fähigkeiten · der Nexus komponiert</h3>
-                <p class="drawer-hint">Benannte Gesten — ▶ wirkt sie einmal.</p>
-                <div id="status-abilities"></div>
-            </section>
-            <section class="section" id="faehigkeiten-gesetze">
-                <h3>Gesetze · Welt-Regeln</h3>
+            <section class="section hof-partitur">
+                <h3>Die Partitur</h3>
                 <p class="drawer-hint">
-                    Stehende „wann immer X, dann Y" — sie feuern von selbst. Im Chat: „wann immer es regnet, dann setze
-                    wetter sunny".
+                    Die stehenden Gesetze, die das ganze Feld formen — „wann immer X, dann Y". Sie feuern von selbst. Im
+                    Chat/der Omnibox: „wann immer es regnet, dann setze wetter sunny".
                 </p>
                 <div id="status-worldrules"></div>
+                <h4 class="hof-subhead">Der Nexus komponiert</h4>
+                <p class="drawer-hint">
+                    Benannte Gesten — ▶ wirkt sie einmal. Mensch + KI an EINEM Pult (Ko-Dirigent).
+                </p>
+                <div id="status-abilities"></div>
             </section>
             <!-- V18.47 Hof-B (UI-Putz §2) — die „Befehle · die Sprache des Hofes"-Liste (~60 Knöpfe) ist
-                 AUFGELÖST: die Omnibox (⌕ Suche / Ctrl+K, `c:`) trägt ALLE Befehle durchsuchbar an EINEM Ort.
-                 Das war die GEMESSENE Kern-Duplikation des Plans. Die kontextuellen Akte leben inline (Wesen),
-                 die freien/kreativen Welt-Akte spricht man in die Omnibox. (Die help-list/-search-Init ist durch
-                 ihren `if(helpList)`-Guard inert, da das Element fort ist.) -->
+                 AUFGELÖST: die Omnibox (⌕ Suche / Ctrl+K, `c:`) trägt ALLE Befehle durchsuchbar an EINEM Ort. -->
         </aside>
         <aside class="drawer" data-drawer="werkstatt" aria-label="Werkstatt-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
@@ -6991,6 +7125,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.50.0" defer></script>
+        <script src="anazhRealm.js?v=18.51.0" defer></script>
     </body>
 </html>

@@ -82,7 +82,10 @@ function startSaveServer() {
                 moodGlyphs: list ? list.querySelectorAll(".creature-mood").length : 0,
                 detailCards: list ? list.querySelectorAll(".creature-detail").length : 0,
                 detailBars: list ? list.querySelectorAll(".creature-detail .spec-bar").length : 0,
-                auftraegeGone: !document.getElementById("creature-task-actions"),
+                sectionChips: document.querySelectorAll("#hof-sections .hof-section-chip").length,
+                hasOrchester: !!document.querySelector(".hof-orchester"),
+                hasPartitur: !!document.querySelector(".hof-partitur"),
+                hasSpawnFoot: !!document.querySelector(".hof-spawn"),
             };
         });
         console.log("Hof:", JSON.stringify(info));
@@ -103,9 +106,9 @@ function startSaveServer() {
             };
         });
         console.log("vor Screenshot:", JSON.stringify(focusState));
-        const list = await page.$("#creature-list");
-        if (list) {
-            await list.screenshot({ path: path.join(ARTIFACTS, "hof-creatures.png") });
+        const drawer = await page.$('.drawer[data-drawer="kreaturen"]');
+        if (drawer) {
+            await drawer.screenshot({ path: path.join(ARTIFACTS, "hof-creatures.png") });
             console.log("geschrieben: hof-creatures.png");
         }
     } finally {
