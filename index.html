@@ -3131,6 +3131,14 @@
                 color: var(--parch-ink-soft);
                 text-align: center;
             }
+            /* V18.47 — der Omnibox-Maus-Trigger in der Topbar: brass-getönt, als Such-Affordanz erkennbar. */
+            .omnibox-trigger {
+                color: var(--brass-1);
+                letter-spacing: 0.04em;
+            }
+            .omnibox-trigger:hover {
+                color: #f3e2b6;
+            }
             .help-search {
                 width: 100%;
                 box-sizing: border-box;
@@ -5620,6 +5628,18 @@
                     <button class="tab" type="button" data-tab="einstellungen" role="tab">Einstellungen</button>
                 </nav>
                 <div class="topbar-toggles">
+                    <!-- V18.47 — der Omnibox-Maus-Trigger (Ctrl+K war nur Tastatur): EIN sichtbarer Knopf
+                         öffnet die Alles-Suche → Maus-Parität für den Schlüsselstein + Vorbedingung, die
+                         Befehls-Listen zu retiren, ohne Maus-Spieler abzuschneiden. -->
+                    <button
+                        id="omnibox-trigger"
+                        class="latch omnibox-trigger"
+                        type="button"
+                        aria-label="Suche öffnen (Strg+K)"
+                        title="Alles-Suche · Befehle · Baupläne · Räume (Strg/Cmd+K)"
+                    >
+                        ⌕ Suche
+                    </button>
                     <button id="grok-voice-toggle" class="latch" type="button" aria-pressed="false" hidden>
                         Stimme: aus
                     </button>
@@ -5786,21 +5806,11 @@
                 </p>
                 <div id="status-worldrules"></div>
             </section>
-            <section class="section" id="help-section">
-                <h3>Befehle · die Sprache des Hofes</h3>
-                <p class="drawer-hint">
-                    Such + klick — oder tippe es in den Chat. Hier leben ALLE Befehle (auch die alten Welt-Aktionen);
-                    ein Ort, kein Duplikat.
-                </p>
-                <input
-                    type="text"
-                    id="help-search"
-                    class="help-search"
-                    placeholder="Befehl suchen … (z. B. wetter, heile, folge, baue)"
-                    aria-label="Befehle durchsuchen"
-                />
-                <div id="help-list"></div>
-            </section>
+            <!-- V18.47 Hof-B (UI-Putz §2) — die „Befehle · die Sprache des Hofes"-Liste (~60 Knöpfe) ist
+                 AUFGELÖST: die Omnibox (⌕ Suche / Ctrl+K, `c:`) trägt ALLE Befehle durchsuchbar an EINEM Ort.
+                 Das war die GEMESSENE Kern-Duplikation des Plans. Die kontextuellen Akte leben inline (Wesen),
+                 die freien/kreativen Welt-Akte spricht man in die Omnibox. (Die help-list/-search-Init ist durch
+                 ihren `if(helpList)`-Guard inert, da das Element fort ist.) -->
         </aside>
         <aside class="drawer" data-drawer="werkstatt" aria-label="Werkstatt-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
@@ -6895,6 +6905,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.46.0" defer></script>
+        <script src="anazhRealm.js?v=18.47.0" defer></script>
     </body>
 </html>

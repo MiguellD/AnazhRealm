@@ -231,7 +231,10 @@ Nexus. Sie ist die Heimat aller freien/kreativen Befehle + macht den Bildschirm 
    Freitext→Nexus; liest die bestehenden Vektoren + ruft `processChatCommand`/`selectBlueprintForEdit` (additiv).
    10 KONSUM-Invarianten + mit dem Auge verifiziert (`diag-omnibox.cjs`). OFFEN: die alten Pfade ablösen
    (Hof-Schritt) + Browser-Sign-off.
-2. **Hof** (§2) — inline-Wesen (Spec-Cards, P16) + Gesetze; die Befehle-Liste stirbt (Omnibox trägt).
+2. ✅ **Hof GEBAUT (V18.46+.47, §2)** — Hof-A: inline-Befehle am Wesen ([Folge][Warte][Streift], P16);
+   Hof-B: die globale Aufträge-Reihe + die ~60-Knopf-„Befehle"-Liste aufgelöst → die Omnibox trägt sie
+   (⌕ Suche-Trigger in der Topbar = Maus-Parität). Tests mitgewandert, Playtest + Auge grün. (Gesetze-Zone
+   + Sammeln/Bauen-inline + die inerte help-list-JS = kleine Folge-Politur.)
 3. **Ich** (§3) — der Spec-Sheet-Gewinn (Stats + 6 Emotionen + Seele-Tags als Daten-Viz, `_specBar`-Reuse);
    Klick-Hotbar; Avatar-Mittelpunkt (WebGPU → Schöpfer-Go); Seele-formen → Werkstatt.
 4. **Bibliothek** (§5) — Masonry-Spec-Cards + Andock-Formular eingeklappt; „Diese Welt" zieht aus Einstellungen.

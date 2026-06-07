@@ -34974,6 +34974,14 @@ async function checkBandCadWorkshop(ctx) {
             // wieder schließen
             window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
             out.escCloses = !!overlay && overlay.hidden === true;
+            // (6) V18.47 — der Maus-Trigger in der Topbar öffnet das Overlay (Maus-Parität)
+            const trigger = document.getElementById("omnibox-trigger");
+            if (trigger && overlay) {
+                trigger.click();
+                out.triggerOpens = overlay.hidden === false;
+                window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+            }
+            out.triggerExists = !!trigger;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -34990,6 +34998,8 @@ async function checkBandCadWorkshop(ctx) {
         check("V18.45 Omnibox: Freitext → der Nexus-Pfad als Fallback", omniResults.freetextHasNexus);
         check("V18.45 Omnibox: Ctrl+K öffnet das Overlay", omniResults.ctrlKOpens);
         check("V18.45 Omnibox: Esc schließt das Overlay", omniResults.escCloses);
+        check("V18.47 Omnibox: der Maus-Trigger in der Topbar existiert (⌕ Suche)", omniResults.triggerExists);
+        check("V18.47 Omnibox: der Maus-Trigger öffnet das Overlay (Maus-Parität)", omniResults.triggerOpens);
     } else if (omniResults && omniResults.error) {
         check(`V18.45 Omnibox: evaluate-Fehler — ${omniResults.error}`, false);
     }
@@ -38787,65 +38797,28 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (!r) return null;
         const out = {};
 
-        // (a) UI-Putz V18.35: die duplizierten Welt-Aktionen sind WEG — die Welt-Befehle leben
-        // im EINEN durchsuchbaren Befehls-Ort (Hof → Befehle). Kein #quick-actions mehr.
+        // (a) UI-Putz V18.47: die ~60-Befehle-Liste (#help-section) UND die alten Welt-Aktionen
+        // (#quick-actions) sind AUFGELÖST — die Omnibox (⌕ Suche / Ctrl+K, `c:`) trägt ALLE Befehle
+        // durchsuchbar an EINEM Ort (die GEMESSENE Kern-Duplikation des Plans, gelöst). Die Befehls-
+        // Such-/Ausführungs-Pfade prüft das V18.45-Omnibox-Band; hier nur: die Listen sind WEG + die
+        // Omnibox trägt die Befehle + die Hof-Drawer-Mechanik bleibt.
         out.quickActionsGone = !document.getElementById("quick-actions");
-        const helpListEl = document.getElementById("help-list");
-        const helpCmds = helpListEl ? [...helpListEl.querySelectorAll("button.cmd")] : [];
-        out.weltCmdsInBefehle =
-            helpCmds.some((b) => /heile welt/i.test(b.textContent || "")) &&
-            helpCmds.some((b) => /wetter/i.test(b.textContent || ""));
-        // (a2) die Befehle sind DURCHSUCHBAR (search-not-scroll) — Filter blendet Nicht-Treffer aus.
-        const helpSearch = document.getElementById("help-search");
-        out.helpSearchExists = !!helpSearch;
-        if (helpSearch) {
-            helpSearch.value = "wetter";
-            helpSearch.dispatchEvent(new Event("input", { bubbles: true }));
-            const visible = helpCmds.filter((b) => b.style.display !== "none");
-            out.searchFilters =
-                visible.length > 0 &&
-                visible.length < helpCmds.length &&
-                visible.every((b) => /wetter/i.test(b.textContent || ""));
-            helpSearch.value = "";
-            helpSearch.dispatchEvent(new Event("input", { bubbles: true }));
+        out.helpSectionGone = !document.getElementById("help-section");
+        try {
+            const omniCmds = r._omniboxSearch("c:wetter");
+            out.omniboxCarriesCommands = omniCmds.length > 0 && omniCmds.some((x) => /wetter/i.test(x.label));
+        } catch {
+            out.omniboxCarriesCommands = false;
         }
 
-        // (b) Klick auf einen Befehl im Hof feuert processChatCommand (der EINE data-cmd-Pfad)
-        r.state.weather = "sunny";
-        const rainyBtn = helpCmds.find((b) => /setze wetter rainy/i.test(b.getAttribute("data-cmd") || ""));
-        if (rainyBtn) rainyBtn.click();
-        out.quickButtonRoutesToChat = r.state.weather === "rainy";
-
-        // (c) Die Befehle (Hilfe) leben jetzt im HOF (UI-Putz: der Ort, an dem die
-        // Kommunikation zusammentrifft — Kreaturen folgen, Nexus dirigiert, Spieler spricht).
+        // (c) Die Drawer-Mechanik (Tab öffnet, andere schließen, Close-Button) — am Hof geprüft.
         const hofDrawer = document.querySelector('.drawer[data-drawer="kreaturen"]');
         out.hilfeDrawerInitiallyHidden = hofDrawer && hofDrawer.hidden === true;
-
-        // (d) Klick auf den Hof-Tab öffnet den Drawer (mit der Befehle-Sektion)
         const hofTab = document.querySelector('#topbar .tab[data-tab="kreaturen"]');
         if (hofTab) hofTab.click();
         out.hilfeDrawerOpensOnTab = hofDrawer && hofDrawer.hidden === false;
-        out.helpSectionInSettings = !!(hofDrawer && hofDrawer.querySelector("#help-section"));
-
-        // Andere Drawer sind versteckt, wenn ein Tab aktiv ist (UI-Putz: der Welt-Drawer ist
-        // aufgelöst → wir prüfen den Einstellungen-Drawer als den "anderen").
         const settingsDrawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
         out.otherDrawersHidden = settingsDrawer && settingsDrawer.hidden === true;
-
-        // (e) Die Befehle-Liste enthält Buttons (aus chatDslPatterns generiert)
-        const helpButtons = document.querySelectorAll("#help-list button.cmd");
-        out.helpButtonCount = helpButtons.length;
-        out.helpHasButtons = helpButtons.length >= 10;
-
-        // (f) Klick auf einen Befehl führt ihn aus + schließt den Drawer.
-        r.state.weather = "sunny";
-        const rainyHelp = Array.from(helpButtons).find((b) => b.getAttribute("data-cmd") === "setze wetter rainy");
-        if (rainyHelp) rainyHelp.click();
-        out.helpClickExecutes = r.state.weather === "rainy";
-        out.helpClickClosesDrawer = hofDrawer && hofDrawer.hidden === true;
-
-        // (g) Drawer wieder öffnen, dann Close-Button schließt
-        if (hofTab) hofTab.click();
         const closeBtn = hofDrawer ? hofDrawer.querySelector("[data-drawer-close]") : null;
         if (closeBtn) closeBtn.click();
         out.closeButtonHidesDrawer = hofDrawer && hofDrawer.hidden === true;
@@ -38868,26 +38841,16 @@ async function checkBandEarlyRingsAndUi(ctx) {
             uiActionsResults.quickActionsGone
         );
         check(
-            "UI-Putz V18.35: die Welt-Befehle leben im EINEN Befehls-Ort (Hof → Befehle)",
-            uiActionsResults.weltCmdsInBefehle
+            "V18.47 Hof-B: die ~60-Befehle-Liste ist aufgelöst (kein #help-section, die Omnibox trägt)",
+            uiActionsResults.helpSectionGone
         );
-        check("UI-Putz V18.35: die Befehle sind durchsuchbar (#help-search)", uiActionsResults.helpSearchExists);
         check(
-            "UI-Putz V18.35: die Such-Filterung blendet Nicht-Treffer aus (search-not-scroll)",
-            uiActionsResults.searchFilters
+            "V18.47 Hof-B: die Omnibox trägt die Befehle (c:wetter → Treffer; die EINE Quelle)",
+            uiActionsResults.omniboxCarriesCommands
         );
-        check("UI V2: Befehl-Klick im Hof routet durch processChatCommand", uiActionsResults.quickButtonRoutesToChat);
-        check("UI V2: Hof-Drawer (mit Befehle-Sektion) initial versteckt", uiActionsResults.hilfeDrawerInitiallyHidden);
+        check("UI V2: Hof-Drawer initial versteckt", uiActionsResults.hilfeDrawerInitiallyHidden);
         check("UI V2: Hof-Tab öffnet den Drawer", uiActionsResults.hilfeDrawerOpensOnTab);
-        check("UI-Putz: die Befehle-Sektion (DSL) lebt im Hof", uiActionsResults.helpSectionInSettings);
         check("UI V2: andere Drawer werden versteckt wenn neuer Tab aktiv", uiActionsResults.otherDrawersHidden);
-        check(
-            "UI V2: Hilfe-Liste enthält Befehl-Buttons (≥10)",
-            uiActionsResults.helpHasButtons,
-            `count=${uiActionsResults.helpButtonCount}`
-        );
-        check("UI V2: Klick auf Befehl führt aus", uiActionsResults.helpClickExecutes);
-        check("UI V2: Klick auf Befehl schließt den Drawer automatisch", uiActionsResults.helpClickClosesDrawer);
         check("UI V2: Drawer-Close-Button schließt Drawer", uiActionsResults.closeButtonHidesDrawer);
     }
 

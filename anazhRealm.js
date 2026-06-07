@@ -10308,6 +10308,9 @@ class AnazhRealm {
         overlay.addEventListener("mousedown", (e) => {
             if (e.target === overlay) close();
         });
+        // V18.47 — der sichtbare Maus-Trigger in der Topbar (Ctrl+K war nur Tastatur).
+        const trigger = document.getElementById("omnibox-trigger");
+        if (trigger) trigger.addEventListener("click", () => (overlay.hidden ? open() : close()));
         input.addEventListener("input", () => this._omniboxUpdate(input.value));
         // Tastatur im Feld: ↑↓ wählen, ⏎ ausführen. stopPropagation schirmt die Spiel-Steuerung ab
         // (sonst liefen WASD beim Tippen). preventDefault nur für die Navigations-Tasten.
@@ -48323,7 +48326,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.46.0";
+AnazhRealm.VERSION = "18.47.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
