@@ -3961,10 +3961,21 @@
                 break-inside: avoid;
                 -webkit-column-break-inside: avoid;
             }
+            /* V18.38 — FERTIGEN kompakt + rechtsbündig (Schöpfer „nutzt die ganze Länge obwohl
+               kaum Platz nötig"): die primäre Schluss-Aktion sitzt rechts unten, nicht als
+               sprawling Vollband. Label „Werk" + Station-Hinweis links daneben. */
             #workshop-stats-panel .workshop-fertigen-row {
                 column-span: all;
                 -webkit-column-span: all;
-                margin-top: 6px;
+                margin-top: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 10px;
+            }
+            #workshop-stats-panel .workshop-fertigen-row .stat-label {
+                flex: 0 0 auto;
+                margin-right: auto;
             }
             #workshop-stats-panel .stat-row {
                 display: flex;
@@ -3989,6 +4000,16 @@
                 font-weight: 600;
                 flex: 0 0 82px;
                 text-align: right;
+            }
+            /* V18.38 — die Chips fluchten: ein Flex-Container nach dem Label → ALLE Chips
+               (auch umgebrochene) starten an EINER Kante, nicht der 5. unter dem Label. */
+            #workshop-stats-panel .stat-chips {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px 6px;
+                flex: 1 1 0;
+                min-width: 0;
+                align-items: center;
             }
             #workshop-stats-panel .tag-chip {
                 display: inline-flex;
@@ -4334,7 +4355,7 @@
                 width: 1px;
                 height: 20px;
                 background: var(--brass-3);
-                margin: 0 4px;
+                margin: 0;
                 vertical-align: middle;
             }
             /* V18.38 — der „Eingebaut"-Hinweis war ein unleserlicher Streifen UNTER dem Canvas
@@ -4342,9 +4363,8 @@
                Built-ins sichtbar) → kein Platz-fressender Streifen, klar lesbar. */
             #workshop-readonly-banner {
                 position: absolute;
-                top: 14px;
-                left: 50%;
-                transform: translateX(-50%);
+                bottom: 12px;
+                left: 12px;
                 z-index: 6;
                 padding: 4px 14px;
                 background: rgba(20, 14, 6, 0.9);
@@ -4398,6 +4418,11 @@
                 flex-direction: column;
                 gap: 6px;
                 min-width: 0;
+                /* V18.38 — auf die Viewer-Höhe gedeckelt + intern scrollend: beim Klonen
+                   erscheinen die Werkzeuge → die Spalte wuchs + schob die Ausgabe runter (Lücke).
+                   Jetzt bleibt die Zeilenhöhe = Viewer, die Palette scrollt → kein Sprung. */
+                max-height: clamp(340px, calc(100vh - 430px), 640px);
+                overflow-y: auto;
             }
             #workshop-side-palette h4,
             #workshop-side-palette-right h4 {
@@ -4417,7 +4442,7 @@
             /* V8.02 Phase 3a — Shape-Palette mit HTML5-Drag (seitlich, eine Spalte) */
             #workshop-shape-palette {
                 display: grid;
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 1fr 1fr 1fr;
                 gap: 3px;
             }
             .workshop-shape-card {
@@ -6385,6 +6410,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.38.0" defer></script>
+        <script src="anazhRealm.js?v=18.39.0" defer></script>
     </body>
 </html>

@@ -41996,17 +41996,20 @@ class AnazhRealm {
             capLab.className = "stat-label";
             capLab.textContent = "Fähigkeit";
             capRow.appendChild(capLab);
+            const capChips = document.createElement("div");
+            capChips.className = "stat-chips";
+            capRow.appendChild(capChips);
             for (const c of caps) {
                 const chip = document.createElement("span");
                 chip.className = "affordance-chip capability-chip";
                 chip.textContent = "✦ " + c;
-                capRow.appendChild(chip);
+                capChips.appendChild(chip);
             }
             for (const a of affLabels) {
                 const chip = document.createElement("span");
                 chip.className = "affordance-chip affordance-active-chip";
                 chip.textContent = "✦ " + a;
-                capRow.appendChild(chip);
+                capChips.appendChild(chip);
             }
             panel.appendChild(capRow);
         }
@@ -42195,6 +42198,11 @@ class AnazhRealm {
         tagLab.className = "stat-label";
         tagLab.textContent = "Tags";
         tagRow.appendChild(tagLab);
+        // V18.38 — die Chips in EINEN Flex-Container (Schöpfer „resoniert falscher Einzug"):
+        // sonst bricht der 5. Chip auf x=0 unter das Label statt in Flucht mit den anderen.
+        const tagChips = document.createElement("div");
+        tagChips.className = "stat-chips";
+        tagRow.appendChild(tagChips);
         for (const e of tagEntries) {
             const chip = document.createElement("span");
             chip.className = "tag-chip";
@@ -42216,7 +42224,7 @@ class AnazhRealm {
             chip.appendChild(starEl);
             chip.appendChild(nameEl);
             chip.appendChild(valEl);
-            tagRow.appendChild(chip);
+            tagChips.appendChild(chip);
         }
         panel.appendChild(tagRow);
     }
@@ -48071,7 +48079,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.38.0";
+AnazhRealm.VERSION = "18.39.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
