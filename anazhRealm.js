@@ -10854,42 +10854,19 @@ class AnazhRealm {
         return `⚡ aktiv · ${fires}×`;
     }
 
-    renderWorldRulesList() {
-        const r = this._statusRefs;
-        if (!r || !r.worldrules) return;
-        const now = performance.now() / 1000;
-        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
-        // Favoriten (angepinnt) zuerst, dann stabil nach id.
-        const rules = (this.state.worldRules || [])
-            .slice()
-            .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.id - b.id);
-        const signature =
-            rules.length +
-            ":" +
-            mode +
-            ":" +
-            rules
-                .map(
-                    (x) =>
-                        `${x.id}:${x.source || "?"}:${x.pinned ? "p" : "_"}:${x.disabled ? "x" : "_"}:${
-                            // V17.41 — der LIVE-Aktivitäts-Faden in der Signatur → die
-                            // Row re-rendert, wenn ein Gesetz feuert/verstummt (der Puls).
-                            this._worldRuleActivityLabel(x, now)
-                        }:${this._worldRuleStatusLabel(x, now)}`
-                )
-                .join("|");
-        if (signature === r.worldrulesSignature) return;
-        r.worldrulesSignature = signature;
-        const container = r.worldrules;
-        container.innerHTML = "";
-        if (rules.length === 0) {
-            const empty = document.createElement("div");
-            empty.className = "ability-empty";
-            empty.textContent = 'Noch keine Gesetze. Sag z. B. „wann immer es regnet, dann setze wetter sunny".';
-            container.appendChild(empty);
-            return;
-        }
-        const mkBtn = (rule, label, attr, aria) => {
+    // V18.52 Hof-Partitur — EINE Regel-Karte (wiederverwendet in beiden Gruppen). Der gelernte WERT
+    // (`rule.value`, V17.43) wird endlich GELESEN: ein Chip an ephemeren Nexus-Regeln (Konsum V17.31).
+    _buildWorldRuleRow(rule, now, mode) {
+        const src =
+            rule.source === "human"
+                ? "human"
+                : rule.source === "nexus"
+                  ? "nexus"
+                  : rule.source && rule.source.startsWith("llm")
+                    ? "llm"
+                    : "unknown";
+        const permanent = rule.ttlSec == null; // Mensch-Regel ODER adoptierte (gepinnte) Nexus-Regel
+        const mkBtn = (label, attr, aria) => {
             const b = document.createElement("button");
             b.type = "button";
             b.textContent = label;
@@ -10897,64 +10874,138 @@ class AnazhRealm {
             b.setAttribute("aria-label", aria);
             return b;
         };
-        for (const rule of rules) {
-            const src =
-                rule.source === "human"
-                    ? "human"
-                    : rule.source === "nexus"
-                      ? "nexus"
-                      : rule.source && rule.source.startsWith("llm")
-                        ? "llm"
-                        : "unknown";
-            const permanent = rule.ttlSec == null; // Mensch-Regel ODER adoptierte Nexus-Regel
-            const row = document.createElement("div");
-            row.className = `ability-row source-${src}` + (rule.disabled ? " rule-disabled" : "");
-            const head = document.createElement("div");
-            head.className = "ability-head";
-            const name = document.createElement("span");
-            const activity = this._worldRuleActivityLabel(rule, now);
-            // V17.41 — „⚡ feuert" pulst (CSS .rule-firing), der Spieler SIEHT die Wirkung.
-            name.className = "name" + (activity === "⚡ feuert" ? " rule-firing" : "");
-            name.textContent = activity;
-            const source = document.createElement("span");
-            source.className = "source";
-            source.textContent =
-                (src === "human" ? "du" : src === "nexus" ? "Nexus" : src === "llm" ? "Grok" : rule.source) +
-                (rule.pinned ? " ★" : "");
-            const status = document.createElement("span");
-            status.className = "rule-status" + (permanent ? " perma" : "");
-            status.textContent = this._worldRuleStatusLabel(rule, now);
-            head.appendChild(name);
-            head.appendChild(source);
-            head.appendChild(status);
-            // Permanente Regeln (eigen/adoptiert): Favorit · Pause · Vergessen.
-            // Ephemere Nexus-Regel: „behalten" (adoptieren) + im Schöpfer-Modus
-            // „verwerfen" (die Welt gehorcht dem Schöpfer; sonst verfällt sie selbst).
-            if (permanent) {
-                head.appendChild(mkBtn(rule, rule.pinned ? "★" : "☆", "data-pin-rule", "Favorit"));
-                head.appendChild(
-                    mkBtn(
-                        rule,
-                        rule.disabled ? "▶" : "⏸",
-                        "data-toggle-rule",
-                        rule.disabled ? "Gesetz aktivieren" : "Gesetz pausieren"
-                    )
-                );
-                head.appendChild(mkBtn(rule, "✕", "data-forget-rule", "Gesetz vergessen"));
-            } else {
-                head.appendChild(mkBtn(rule, "📌", "data-pin-rule", "Gesetz behalten (wird permanent)"));
-                if (mode === "schöpfer") head.appendChild(mkBtn(rule, "✕", "data-forget-rule", "Gesetz verwerfen"));
+        const row = document.createElement("div");
+        row.className = `ability-row source-${src}` + (rule.disabled ? " rule-disabled" : "");
+        const head = document.createElement("div");
+        head.className = "ability-head";
+        const name = document.createElement("span");
+        const activity = this._worldRuleActivityLabel(rule, now);
+        name.className = "name" + (activity === "⚡ feuert" ? " rule-firing" : "");
+        name.textContent = activity;
+        const source = document.createElement("span");
+        source.className = "source";
+        source.textContent =
+            (src === "human" ? "du" : src === "nexus" ? "Nexus" : src === "llm" ? "Grok" : rule.source) +
+            (rule.pinned ? " ★" : "");
+        const status = document.createElement("span");
+        status.className = "rule-status" + (permanent ? " perma" : "");
+        status.textContent = this._worldRuleStatusLabel(rule, now);
+        head.appendChild(name);
+        head.appendChild(source);
+        head.appendChild(status);
+        // Der gelernte WERT — nur an ephemeren Experimenten (die permanenten sind bereits adoptiert).
+        if (!permanent) {
+            const v = rule.value || 0;
+            const chip = document.createElement("span");
+            chip.className = "rule-value-chip " + (v > 0.05 ? "val-pos" : v < -0.05 ? "val-neg" : "val-neu");
+            chip.textContent = (v >= 0 ? "+" : "") + v.toFixed(2);
+            chip.title =
+                "Gelernter Wert (struktureller δ am Ort der Regel) — die wertvollsten überleben + werden adoptierbar.";
+            head.appendChild(chip);
+        }
+        if (permanent) {
+            head.appendChild(mkBtn(rule.pinned ? "★" : "☆", "data-pin-rule", "Favorit"));
+            head.appendChild(
+                mkBtn(
+                    rule.disabled ? "▶" : "⏸",
+                    "data-toggle-rule",
+                    rule.disabled ? "Gesetz aktivieren" : "Gesetz pausieren"
+                )
+            );
+            head.appendChild(mkBtn("✕", "data-forget-rule", "Gesetz vergessen"));
+        } else {
+            head.appendChild(mkBtn("📌", "data-pin-rule", "Gesetz behalten (wird permanent)"));
+            if (mode === "schöpfer") head.appendChild(mkBtn("✕", "data-forget-rule", "Gesetz verwerfen"));
+        }
+        row.appendChild(head);
+        const desc = document.createElement("div");
+        desc.className = "ability-desc";
+        try {
+            desc.textContent = this.describeProgram(["rule", rule.cond, rule.effect]);
+        } catch {
+            desc.textContent = "eine Welt-Regel";
+        }
+        row.appendChild(desc);
+        return row;
+    }
+
+    renderWorldRulesList() {
+        const r = this._statusRefs;
+        if (!r || !r.worldrules) return;
+        const now = performance.now() / 1000;
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        const all = this.state.worldRules || [];
+        // Hof-Partitur (hof-plan §D.4) — ZWEI Gruppen statt einer flachen 64er-Liste (Schöpfer-Befund
+        // „nach ein paar Sekunden unübersichtlich"): DEINE Gesetze (Mensch + adoptiert, stabil, oben) ↔
+        // DER NEXUS ERPROBT (ephemer, nach dem gelernten WERT sortiert, nur die Top-N gezeigt — die
+        // churnenden Experimente begraben nicht mehr die wenigen, die DIR gehören).
+        const yours = all
+            .filter((x) => x.source === "human" || x.pinned)
+            .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.id - b.id);
+        const nexus = all
+            .filter((x) => !(x.source === "human" || x.pinned))
+            .sort((a, b) => (b.value || 0) - (a.value || 0) || (b.fires || 0) - (a.fires || 0) || a.id - b.id);
+        const NEXUS_SHOWN = 5;
+        const expanded = !!this.state.hofNexusExpanded;
+        const nexusShown = expanded ? nexus : nexus.slice(0, NEXUS_SHOWN);
+        const nexusHidden = nexus.length - nexusShown.length;
+        // Signatur = die GEZEIGTE Komposition + ihr Live-Puls (re-rendert, wenn sich Reihenfolge/Status/Wert ändert).
+        const sigOf = (x) =>
+            `${x.id}:${x.pinned ? "p" : "_"}:${x.disabled ? "x" : "_"}:${(x.value || 0).toFixed(1)}:` +
+            `${this._worldRuleActivityLabel(x, now)}:${this._worldRuleStatusLabel(x, now)}`;
+        const signature = `${mode}|${expanded ? "E" : "C"}|Y:${yours.map(sigOf).join(",")}|N:${nexusShown.map(sigOf).join(",")}|h:${nexusHidden}`;
+        if (signature === r.worldrulesSignature) return;
+        r.worldrulesSignature = signature;
+        const container = r.worldrules;
+        container.innerHTML = "";
+        if (all.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "ability-empty";
+            empty.textContent = 'Noch keine Gesetze. Sag z. B. „wann immer es regnet, dann setze wetter sunny".';
+            container.appendChild(empty);
+            return;
+        }
+        // Gruppe 1 — DEINE GESETZE (stabil, manipulierbar, oben).
+        const yourHead = document.createElement("div");
+        yourHead.className = "worldrule-group-head";
+        yourHead.textContent = `Deine Gesetze · ${yours.length}`;
+        container.appendChild(yourHead);
+        if (yours.length === 0) {
+            const hint = document.createElement("div");
+            hint.className = "ability-empty";
+            hint.textContent = "Noch keine eigenen — sprich eine Regel, oder 📌 adoptiere ein Nexus-Experiment.";
+            container.appendChild(hint);
+        } else {
+            for (const rule of yours) container.appendChild(this._buildWorldRuleRow(rule, now, mode));
+        }
+        // Gruppe 2 — DER NEXUS ERPROBT (ephemer, wert-sortiert, Top-N + Auf-/Zuklappen).
+        if (nexus.length > 0) {
+            const nexHead = document.createElement("div");
+            nexHead.className = "worldrule-group-head nexus";
+            const lbl = document.createElement("span");
+            lbl.textContent =
+                `Der Nexus erprobt · ${nexus.length}` +
+                (expanded || nexusHidden === 0 ? "" : ` (die wertvollsten ${nexusShown.length})`);
+            nexHead.appendChild(lbl);
+            if (nexus.length > NEXUS_SHOWN) {
+                const toggle = document.createElement("button");
+                toggle.type = "button";
+                toggle.className = "worldrule-toggle";
+                toggle.textContent = expanded ? "▾ weniger" : `▸ alle ${nexus.length}`;
+                toggle.addEventListener("click", () => {
+                    this.state.hofNexusExpanded = !expanded;
+                    this.renderWorldRulesList();
+                });
+                nexHead.appendChild(toggle);
             }
-            row.appendChild(head);
-            const desc = document.createElement("div");
-            desc.className = "ability-desc";
-            try {
-                desc.textContent = this.describeProgram(["rule", rule.cond, rule.effect]);
-            } catch {
-                desc.textContent = "eine Welt-Regel";
+            container.appendChild(nexHead);
+            for (const rule of nexusShown) container.appendChild(this._buildWorldRuleRow(rule, now, mode));
+            if (nexusHidden > 0) {
+                const more = document.createElement("div");
+                more.className = "worldrule-more";
+                more.textContent = `+ ${nexusHidden} weitere mit geringerem Wert`;
+                container.appendChild(more);
             }
-            row.appendChild(desc);
-            container.appendChild(row);
         }
     }
 
@@ -48645,7 +48696,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.51.0";
+AnazhRealm.VERSION = "18.52.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

@@ -2320,6 +2320,72 @@
                 font-style: italic;
                 font-family: "IM Fell English", Georgia, serif;
             }
+            /* V18.52 Hof-Partitur — die ZWEI Gruppen (Deine Gesetze | Der Nexus erprobt) + der Wert-Chip,
+               damit die churnenden Nexus-Experimente die wenigen eigenen Gesetze nicht mehr begraben. */
+            .drawer .worldrule-group-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 6px;
+                margin: 10px 0 4px 0;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
+                color: var(--brass-1, #8a6f3e);
+                border-bottom: 1px solid rgba(138, 106, 54, 0.3);
+                padding-bottom: 2px;
+            }
+            .drawer .worldrule-group-head:first-child {
+                margin-top: 0;
+            }
+            .drawer .worldrule-group-head.nexus {
+                color: var(--violet-1, #9a6fc0);
+            }
+            .drawer .worldrule-toggle {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.3px;
+                padding: 1px 7px;
+                background: rgba(120, 80, 30, 0.1);
+                border: 1px solid var(--brass-2, #6f5a30);
+                border-radius: 9px;
+                color: var(--parch-ink);
+                cursor: pointer;
+                text-transform: none;
+            }
+            .drawer .worldrule-toggle:hover {
+                background: rgba(198, 154, 74, 0.22);
+            }
+            .drawer .worldrule-more {
+                font-size: 10px;
+                font-style: italic;
+                color: var(--parch-ink-faded);
+                font-family: "IM Fell English", Georgia, serif;
+                padding: 2px 0 0 4px;
+                opacity: 0.8;
+            }
+            .drawer .ability-row .rule-value-chip {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                padding: 0 5px;
+                border-radius: 6px;
+                white-space: nowrap;
+                border: 1px solid rgba(138, 106, 54, 0.4);
+            }
+            .drawer .ability-row .rule-value-chip.val-pos {
+                color: #2e6b3a;
+                border-color: #4f8a5a;
+                background: rgba(120, 190, 130, 0.16);
+            }
+            .drawer .ability-row .rule-value-chip.val-neg {
+                color: #9a4a3a;
+                border-color: rgba(170, 90, 70, 0.5);
+                background: rgba(180, 80, 60, 0.12);
+            }
+            .drawer .ability-row .rule-value-chip.val-neu {
+                color: var(--parch-ink-faded);
+            }
             /* V17.39 — Gesetze-Persistenz-Badge + pausiert-Stil. Der Schöpfer sieht
                auf einen Blick, ob ein Gesetz bleibt (permanent) oder verfällt. */
             .drawer .ability-row .rule-status {
@@ -7125,6 +7191,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.51.0" defer></script>
+        <script src="anazhRealm.js?v=18.52.0" defer></script>
     </body>
 </html>

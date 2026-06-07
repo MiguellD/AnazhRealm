@@ -73,6 +73,21 @@ function startSaveServer() {
                 const prof = r._creatureProfile(r.state.creatures[1]);
                 r._toggleHofFocus(prof.id);
             }
+            // Hof-Partitur — eine eigene Regel + mehrere Nexus-Experimente (mit Werten) → die zwei Gruppen sichtbar.
+            r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"]], { source: "human" });
+            for (let i = 0; i < 7; i++)
+                r.dslRun(["rule", ["random_chance", 0.1 + i * 0.05], ["weather", "rainy"], { ttlSec: 60 }], {
+                    source: "nexus",
+                });
+            r.state.worldRules
+                .filter((x) => x.source === "nexus")
+                .forEach((x, i) => {
+                    x.value = (i - 2) * 0.18;
+                    x.fires = i;
+                    if (i % 2) x.lastFired = performance.now() / 1000;
+                });
+            r._statusRefs.worldrulesSignature = "";
+            r.renderWorldRulesList();
             const list = document.getElementById("creature-list");
             const row = list && list.querySelector(".creature-row");
             return {

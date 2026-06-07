@@ -2183,6 +2183,36 @@ async function checkBandV1737RulesUI(ctx) {
         out.collapsibleHeaders =
             secs.length >= 2 && Array.from(secs).every((s) => s.querySelector("h3.collapsible-header"));
 
+        // V18.52 Hof-Partitur — ZWEI Gruppen (Deine Gesetze | Der Nexus erprobt), Nexus nach gelerntem
+        // WERT sortiert + auf Top-5 gekappt, mit Wert-Chip (der value-Vektor wird endlich gelesen, V17.31).
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"]], { source: "human" });
+        // Distinkte Bedingung je Regel → distinkte Dedup-Signatur (sonst kollabieren identische zu EINER).
+        for (let i = 0; i < 8; i++)
+            r.dslRun(["rule", ["random_chance", 0.1 + i * 0.05], ["weather", "rainy"], { ttlSec: 60 }], {
+                source: "nexus",
+            });
+        const nx = r.state.worldRules.filter((x) => x.source === "nexus");
+        nx.forEach((x, i) => {
+            x.value = i * 0.1;
+        }); // der letzte (0.70) ist der wertvollste
+        r.state.hofNexusExpanded = false;
+        forceRender();
+        const heads = host.querySelectorAll(".worldrule-group-head");
+        out.twoGroups =
+            heads.length === 2 &&
+            /Deine Gesetze/.test(heads[0].textContent) &&
+            /Nexus erprobt/.test(heads[1].textContent);
+        const nexusRows = host.querySelectorAll(".ability-row.source-nexus");
+        out.nexusCappedTopN = nexusRows.length === 5 && nx.length === 8;
+        out.nexusHasMoreLine = /\+\s*3\s*weitere/.test(host.textContent);
+        const firstNexusChip = nexusRows[0] && nexusRows[0].querySelector(".rule-value-chip");
+        out.nexusValueChipSorted = !!firstNexusChip && /\+0\.70/.test(firstNexusChip.textContent);
+        r.state.hofNexusExpanded = true;
+        forceRender();
+        out.expandShowsAll = host.querySelectorAll(".ability-row.source-nexus").length === 8;
+        r.state.hofNexusExpanded = false;
+
         // restore
         r.state.worldRules = savedRules;
         r._statusRefs.worldrulesSignature = "";
@@ -2193,6 +2223,16 @@ async function checkBandV1737RulesUI(ctx) {
         "V17.37 Gesetze-UI: #status-worldrules existiert im Faehigkeiten-Drawer + ist als Status-Ref verdrahtet",
         res.domHost
     );
+    check("V18.52 Hof-Partitur: zwei Gruppen (Deine Gesetze | Der Nexus erprobt)", res.twoGroups);
+    check(
+        "V18.52 Hof-Partitur: die Nexus-Experimente auf Top-5 gekappt + '+N weitere'-Zeile",
+        res.nexusCappedTopN && res.nexusHasMoreLine
+    );
+    check(
+        "V18.52 Hof-Partitur: Nexus nach gelerntem Wert sortiert + Wert-Chip (V17.31 Konsum)",
+        res.nexusValueChipSorted
+    );
+    check("V18.52 Hof-Partitur: 'alle'-Toggle zeigt alle Nexus-Experimente", res.expandShowsAll);
     check(
         "V17.37 Gesetze-UI: renderWorldRulesList + _initCollapsibleDrawer existieren",
         res.renderWired && res.collapsibleWired
