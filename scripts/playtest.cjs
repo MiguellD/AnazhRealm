@@ -25155,6 +25155,27 @@ async function checkBandWelle6HCreatures(ctx) {
             firstRow.querySelector(".creature-name") &&
             firstRow.querySelector(".creature-soul") &&
             firstRow.querySelector(".creature-task");
+        // Hof-D0 (hof-plan.md §G.1) — der EINE Wesen-Lese-Vektor (_creatureProfile), den alle Hof-Leser teilen.
+        // KONSUM (V17.31): er bündelt GEMESSENE Vektoren (tags/stats/specs/task/emotion/wariness/bond/id) UND
+        // der Renderer LIEST ihn (der rowTitle trägt jetzt die `moodLabel` aus dem Profil → echter Konsument).
+        out.hasCreatureProfileFn = typeof r._creatureProfile === "function";
+        const prof = out.hasCreatureProfileFn ? r._creatureProfile(sprite) : null;
+        out.profileBundlesVectors = !!(
+            prof &&
+            prof.id && // stabile Identität (netId/name), nicht der Array-Index (§G.6)
+            typeof prof.tags === "object" &&
+            prof.stats &&
+            Number.isFinite(prof.stats.hpMax) &&
+            Array.isArray(prof.specs) &&
+            (prof.emotion === "happy" || prof.emotion === "sad") && // BINÄR, ehrlich geerdet (§G.2)
+            Number.isFinite(prof.wariness) &&
+            typeof prof.moodLabel === "string" &&
+            prof.moodLabel.length > 0 &&
+            typeof prof.section === "string"
+        );
+        // Der Renderer ist ein ECHTER Konsument: der rowTitle (title-Attr) trägt die Profil-moodLabel.
+        const firstRowTitle = (firstRow && firstRow.getAttribute("title")) || "";
+        out.rendererConsumesProfile = firstRowTitle.includes("Stimmung") && /froh|trübe/.test(firstRowTitle);
         r.assignCreatureTask(sprite, "follow_player");
         const firstRow2 = list && list.querySelector(".creature-row");
         const taskCell = firstRow2 && firstRow2.querySelector(".creature-task");
@@ -25224,6 +25245,18 @@ async function checkBandWelle6HCreatures(ctx) {
         check(
             "Welle 6.H P2A: Zeile hat .creature-name + .creature-soul + .creature-task",
             wave6hP2aResults.rowHasNameSoulTask
+        );
+        check(
+            "Hof-D0 §G.1: _creatureProfile existiert (EIN Vektor, viele Leser)",
+            wave6hP2aResults.hasCreatureProfileFn
+        );
+        check(
+            "Hof-D0 §G.1: _creatureProfile bündelt die gemessenen Vektoren (tags/stats/specs/emotion/wariness/mood/id)",
+            wave6hP2aResults.profileBundlesVectors
+        );
+        check(
+            "Hof-D0 §G.1/V17.31: der Renderer KONSUMIERT das Profil (rowTitle trägt die moodLabel)",
+            wave6hP2aResults.rendererConsumesProfile
         );
         check("Welle 6.H P2A: Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
         check("Welle 6.H P2A: removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);

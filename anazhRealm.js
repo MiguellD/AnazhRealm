@@ -40130,6 +40130,85 @@ class AnazhRealm {
         this._renderCreatureListUI();
     }
 
+    // Hof-D0 (UI-Putz, hof-plan.md §G.1) — DER EINE Wesen-Lese-Vektor, den alle Hof-Leser teilen
+    // (die Spec-Card · die Sektions-Gruppierung · der Sortier-Schlüssel · die Stimmungs-Glyphen). Das
+    // ist das Werkstatt-`_blueprintProductVector`-Muster (Resonanz-Vereinheitlichung V17.67) auf den Hof
+    // angewandt: NICHT N Lookups in der Render-Funktion, sondern EIN Profil, viele Leser. KONSUM-ehrlich
+    // (V17.31) — jedes Feld liest einen GEMESSENEN Vektor, keine Erfindung. Reaktiv, nicht persistiert.
+    _creatureProfile(creature) {
+        const ud = (creature && creature.userData) || {};
+        const prof = {
+            creature,
+            id: ud.netId || ud.name || null, // STABILE Identität (§G.6) — nie der splice-fragile Array-Index
+            name: ud.name || "?",
+            soul: typeof ud.soul === "string" ? ud.soul : "",
+            soulLabel:
+                (ud.soul && AnazhRealm.CREATURE_SOULS[ud.soul] && AnazhRealm.CREATURE_SOULS[ud.soul].label) || "—",
+            bond: Number.isFinite(ud.bond) ? ud.bond : 0,
+            equipped: ud.equipped || {},
+            boosts: Array.isArray(ud.boosts) ? ud.boosts : [],
+            tags: {},
+            stats: null,
+            hp: null,
+            hpMax: null,
+            specs: [],
+            task: null,
+            taskName: "—",
+            taskArgs: {},
+            emotion: "happy", // BINÄR (gemessen) — happy/sad, wetter-/task-getrieben
+            wariness: 0, // KONTINUIERLICH (gemessen) — Scheu/Mut aus player.emotions + tags + bond + mode
+            moodLabel: "",
+            section: "",
+        };
+        try {
+            prof.tags = this.computeCreatureCompoundTags(creature) || {};
+        } catch {
+            /* tags optional */
+        }
+        try {
+            const cs = this.computeCreatureStats(creature).stats;
+            prof.stats = cs;
+            prof.hpMax = cs.hpMax;
+            prof.hp = Number.isFinite(ud.hp) ? ud.hp : cs.hpMax;
+        } catch {
+            /* stats optional */
+        }
+        try {
+            if (typeof this._creatureTopSpecializations === "function")
+                prof.specs = this._creatureTopSpecializations(creature, 3) || [];
+        } catch {
+            /* specs optional */
+        }
+        try {
+            const task = this._getCreatureTask(creature);
+            if (task) {
+                prof.task = task;
+                prof.taskName = task.name || "—";
+                prof.taskArgs = task.args || {};
+            }
+        } catch {
+            /* task optional */
+        }
+        // Stimmung: das BINÄRE Feld (gemessen) — der Index ist der EINZIGE Ort, an dem wir ihn brauchen.
+        const idx = (this.state.creatures || []).indexOf(creature);
+        if (idx >= 0 && Array.isArray(this.state.creatureEmotions))
+            prof.emotion = this.state.creatureEmotions[idx] || "happy";
+        // Die REICHERE, gemessene zweite Lesart (§G.2) — kontinuierliches Scheu/Mut.
+        try {
+            if (typeof this._creatureWariness === "function") prof.wariness = this._creatureWariness(creature) || 0;
+        } catch {
+            /* wariness optional */
+        }
+        // Mood-Label aus beiden Quellen (froh/trübe × neugierig/wachsam/scheu) — ehrlich geerdet.
+        const w = prof.wariness;
+        const temper = w > 0.5 ? "scheu" : w > 0.15 ? "wachsam" : prof.bond > 0.4 ? "vertraut" : "neugierig";
+        prof.moodLabel = (prof.emotion === "sad" ? "trübe" : "froh") + " · " + temper;
+        // Sektion (§D.2/§F) — Seele + dominante Spezialisierung, für das Gruppen-Dirigat.
+        const topSpec = prof.specs[0];
+        prof.section = prof.soul || (topSpec ? topSpec.kind : "wesen");
+        return prof;
+    }
+
     _renderCreatureListUI() {
         if (typeof document === "undefined") return;
         const list = document.getElementById("creature-list");
@@ -40142,31 +40221,28 @@ class AnazhRealm {
         }
         for (const c of creatures) {
             const ud = c.userData || {};
-            // Welle 6.H Phase 2F.1 — Stats als Hover-Tooltip auf der Row.
-            // Sichtbar machen ohne UI zu fluten: kompakt im title-Attribut.
+            // Hof-D0 (hof-plan.md §G.1) — EIN Profil, viele Leser. Statt N Inline-Lookups (Stats/Soul/
+            // Specs/Task) liest die Zeile den EINEN `_creatureProfile`-Vektor (Verdichtung V9.82 + KONSUM
+            // V17.31 — die Spec-Card, die Sektionen + die Sortierung teilen denselben Vektor in Hof-D/F).
+            const prof = this._creatureProfile(c);
+            // Welle 6.H Phase 2F.1 — Stats als Hover-Tooltip auf der Row (jetzt aus dem Profil-Vektor).
             let rowTitle = "";
-            if (typeof this.computeCreatureStats === "function") {
-                try {
-                    const cs = this.computeCreatureStats(c).stats;
-                    const fmt = (n) => (Number.isFinite(n) ? n.toFixed(1) : "—");
-                    // V17.53 Kampf C — die LEBENDE HP (cur/max) sichtbar machen (der hp-Konsument).
-                    const curHp = Number.isFinite(ud.hp) ? ud.hp : cs.hpMax;
-                    rowTitle =
-                        `HP ${fmt(curHp)}/${fmt(cs.hpMax)} · DMG ${fmt(cs.damage)} · SPD ${fmt(cs.speed)} · ` +
-                        `JMP ${fmt(cs.jumpPower)} · STA ${fmt(cs.staminaMax)} · ` +
-                        `PRC ${fmt(cs.precision)} · MR ${fmt(cs.magicResist)} · HR ${fmt(cs.heatResist)}`;
-                } catch {
-                    /* Stats-Render darf nie hart blockieren */
-                }
+            if (prof.stats) {
+                const cs = prof.stats;
+                const fmt = (n) => (Number.isFinite(n) ? n.toFixed(1) : "—");
+                rowTitle =
+                    `HP ${fmt(prof.hp)}/${fmt(prof.hpMax)} · DMG ${fmt(cs.damage)} · SPD ${fmt(cs.speed)} · ` +
+                    `JMP ${fmt(cs.jumpPower)} · STA ${fmt(cs.staminaMax)} · ` +
+                    `PRC ${fmt(cs.precision)} · MR ${fmt(cs.magicResist)} · HR ${fmt(cs.heatResist)} · ` +
+                    `Stimmung ${prof.moodLabel}`;
             }
             // Welle 6.H Phase 2E V1.1 — Soul-Klasse für farbige Identität (cyan=Sprite-
             // Magie, brass=Wesen-erdig, grün=Geist-ätherisch).
-            const soulForClass = typeof ud.soul === "string" && ud.soul.length > 0 ? ` soul-${ud.soul}` : "";
-            const nameEl = this._el("span", { class: "creature-name" + soulForClass, text: ud.name || "?" });
-            const soulLabel = ud.soul && AnazhRealm.CREATURE_SOULS[ud.soul] && AnazhRealm.CREATURE_SOULS[ud.soul].label;
-            const soulEl = this._el("span", { class: "creature-soul", text: soulLabel || "—" });
-            // Welle 6.H Phase 2D — Spezialisierungs-Pills (Top-2): „Sammler·material·L3"/„Bauer·blueprint·L2".
-            const specs = this._creatureTopSpecializations(c, 2);
+            const soulForClass = prof.soul.length > 0 ? ` soul-${prof.soul}` : "";
+            const nameEl = this._el("span", { class: "creature-name" + soulForClass, text: prof.name });
+            const soulEl = this._el("span", { class: "creature-soul", text: prof.soulLabel });
+            // Welle 6.H Phase 2D — Spezialisierungs-Pills (Top-2 aus dem Profil): „Sammler·material·L3".
+            const specs = prof.specs.slice(0, 2);
             const specsWrap =
                 specs.length > 0
                     ? this._el(
@@ -40181,8 +40257,8 @@ class AnazhRealm {
                           )
                       )
                     : null;
-            // Welle 6.H Phase 2F.2 — Equipped-Pills (Werkzeug + Rüstung wenn ausgerüstet).
-            const equipped = ud.equipped || {};
+            // Welle 6.H Phase 2F.2 — Equipped-Pills (Werkzeug + Rüstung wenn ausgerüstet, aus dem Profil).
+            const equipped = prof.equipped;
             const equippedWrap =
                 equipped.tool || equipped.armor
                     ? this._el(
@@ -40205,7 +40281,7 @@ class AnazhRealm {
                       )
                     : null;
             // Welle 6.H Phase 2F.3 — Boost-Pills (aktive Konsumable-Boosts + Restzeit, tagDelta im Tooltip).
-            const boostList = ud.boosts || [];
+            const boostList = prof.boosts;
             let boostsWrap = null;
             if (Array.isArray(boostList) && boostList.length > 0) {
                 const nowSec = performance.now() / 1000;
@@ -40226,9 +40302,8 @@ class AnazhRealm {
                 }
                 if (pills.length > 0) boostsWrap = this._el("span", { class: "creature-boosts" }, pills);
             }
-            const task = this._getCreatureTask(c);
-            const taskName = task ? task.name : "—";
-            const taskArgs = (task && task.args) || {};
+            const taskName = prof.taskName;
+            const taskArgs = prof.taskArgs;
             const TASK_LABELS = {
                 follow_player: "folgt",
                 wait: "wartet",
@@ -48369,7 +48444,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.48.0";
+AnazhRealm.VERSION = "18.49.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
