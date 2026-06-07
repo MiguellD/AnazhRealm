@@ -29,11 +29,16 @@ function startServer() {
             while ((!window.anazhRealm || !window.anazhRealm.state) && performance.now() < dl)
                 await new Promise((r) => setTimeout(r, 50));
         });
-        const out = await page.evaluate(() => {
+        // Öffnen + Klonen ZUERST, dann die Drawer-Transition (0.32s) abwarten — sonst misst man
+        // den Drawer MID-SLIDE (translateX 110%, off-screen) → falscher Überlauf (V18.39-Lehre).
+        await page.evaluate(() => {
             const r = window.anazhRealm;
             document.querySelector('#topbar [data-tab="werkstatt"]').click();
             r.cloneBlueprint("village", "diag_frame");
             r.selectBlueprintForEdit("diag_frame");
+        });
+        await new Promise((r) => setTimeout(r, 700));
+        const out = await page.evaluate(() => {
             const vw = window.innerWidth,
                 vh = window.innerHeight;
             const rect = (sel) => {
@@ -73,7 +78,6 @@ function startServer() {
                 stats: rect("#workshop-stats-panel"),
             };
         });
-        await new Promise((r) => setTimeout(r, 700)); // Drawer-Transition abwarten (sonst mid-slide)
         console.log(JSON.stringify(out, null, 1));
         // gap viewer-wrapper bottom -> stats top
         if (out.wrapper && out.stats)
