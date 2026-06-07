@@ -89,6 +89,12 @@ Rahmen (P14, erbt) · Vektor-als-Viz (P15) · eine Ebene (P16) · Samen heilen (
 
 ## 2. HOF — feld für feld (Dirigent + Orchester)
 
+> **Der TIEFE Hof-Plan (auf Werkstatt-Niveau) lebt in `docs/hof-plan.md`** — die Reflexion des Werkstatt-
+> Pfads, der Gamezyklus Knopf-für-Knopf, die Vision (Dirigent+Orchester, von den Großen gelernt), die
+> Wesen-Spec-Card aus den reichen Vektoren (Stimmung/Natur/Werte/Wachstum), die Sektionen, die Partitur,
+> die Wellen Hof-D–G. Diese Sektion hier ist die Feld-Inventur; jenes Doc die Tiefe. GEBAUT bis V18.48:
+> Hof-A (inline-Tasks) · Hof-B (Liste→Omnibox) · Hof-C (gather/build am Wesen). OFFEN: Hof-D–G (die Tiefe).
+
 **Mentales Modell / Reise:** „welche Wesen habe ich → was sollen sie tun → welche Gesetze gelten".
 Der Spieler dirigiert Leben. **Content-first = die Wesen-Liste.**
 
