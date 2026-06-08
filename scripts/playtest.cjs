@@ -40465,10 +40465,10 @@ async function checkBandRing6Workshop(ctx) {
         const slot5LabelAfter = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
         out.clearedDomShowsEmpty = slot5LabelAfter && slot5LabelAfter.textContent === "—";
 
-        // Hotbar-Config-Drawer hat 9 Reihen
+        // V18.59 — die Ich-Hotbar ist jetzt eine VISUELLE 9-Slot-Reihe (Minecraft-vereint), nicht mehr 9 Dropdowns.
         const config = document.getElementById("hotbar-config");
         out.hotbarConfigInDom = !!config;
-        out.hotbarConfigHasNineRows = config && config.querySelectorAll(".hotbar-config-row").length === 9;
+        out.hotbarConfigHasNineRows = config && config.querySelectorAll(".hotbar-slot").length === 9;
 
         // Save-Roundtrip
         r.setHotbarSlot(7, "temple");
@@ -40527,7 +40527,7 @@ async function checkBandRing6Workshop(ctx) {
         check("Ring 6.5: setHotbarSlot(idx, null) leert den Slot", ring65Results.clearedSlotIsNull);
         check("Ring 6.5: Leerer Slot zeigt — als Label", ring65Results.clearedDomShowsEmpty);
         check("Ring 6.5: #hotbar-config-Container im Spieler-Drawer", ring65Results.hotbarConfigInDom);
-        check("Ring 6.5: Hotbar-Config hat 9 Reihen", ring65Results.hotbarConfigHasNineRows);
+        check("V18.59: die Ich-Hotbar ist eine visuelle 9-Slot-Reihe (Minecraft-vereint, kein Dropdown)", ring65Results.hotbarConfigHasNineRows);
         check("Ring 6.5: saveState persistiert Hotbar", ring65Results.saveContainsHotbar);
         check("Ring 6.5: loadState rekonstruiert Hotbar", ring65Results.loadRestoresHotbar);
     }

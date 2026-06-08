@@ -39720,7 +39720,15 @@ class AnazhRealm {
     _renderHotbarDOM() {
         if (typeof document === "undefined") return;
         const bar = document.getElementById("hotbar");
-        if (!bar) return;
+        if (bar) this._renderHotbarInto(bar);
+        this._updateHotbarHighlight();
+        this._renderHotbarConfigDOM();
+    }
+
+    // V18.59 — EINE Hotbar-Render-Quelle (verdichte V9.82), zwei Mounts: der HUD `#hotbar` + die VISUELLE
+    // Hotbar im Ich-Overlay (`#hotbar-config`, früher clunky Dropdowns). Beide tragen dieselben `.hotbar-slot`s
+    // mit dem Klick-Fluss (Item gewählt → Slot zuweisen, sonst Bau-Modus) + Drag&Drop.
+    _renderHotbarInto(bar) {
         bar.innerHTML = "";
         for (let i = 0; i < 9; i++) {
             const name = this.state.hotbar[i];
@@ -39737,7 +39745,6 @@ class AnazhRealm {
                 const bp = this.state.blueprints[name];
                 label.textContent = bp.label || name;
                 slot.classList.add("filled");
-                // V8.38 — Material-Bedarf als Hover-Tooltip.
                 slot.title = this._blueprintCostTooltip(name);
             } else {
                 label.textContent = "—";
@@ -39745,19 +39752,12 @@ class AnazhRealm {
             slot.appendChild(num);
             slot.appendChild(label);
             slot.addEventListener("click", () => {
-                // Welle 6.C1: wenn ein Inventar-Bauplan gewählt ist, weist
-                // der Hotbar-Klick ihn diesem Slot zu (Assign-Path). Sonst
-                // wird der Hotbar-Slot wie üblich aktiviert (Bau-Modus an).
                 if (this.state.inventorySelected) {
                     this.tryAssignFromInventoryToHotbar(i);
                 } else {
                     this.selectHotbarSlot(i);
                 }
             });
-            // Welle 6.C1+ Drag&Drop. Gefüllter Hotbar-Slot ist Drag-Source,
-            // jeder Hotbar-Slot ist Drop-Target. Im Drag-Modus wird der
-            // selectHotbarSlot-Pfad nicht ausgelöst (Browser triggert keinen
-            // Click bei Drag-Release).
             slot.draggable = !!name;
             slot.addEventListener("dragstart", (ev) => this._onSlotDragStart(ev, "hot", i));
             slot.addEventListener("dragend", (ev) => this._onSlotDragEnd(ev));
@@ -39766,8 +39766,6 @@ class AnazhRealm {
             slot.addEventListener("drop", (ev) => this._onSlotDrop(ev, "hot", i));
             bar.appendChild(slot);
         }
-        this._updateHotbarHighlight();
-        this._renderHotbarConfigDOM();
     }
 
     // === Welle 6.C1 — Inventar-Overlay Render + UI-Wiring ===
@@ -40906,18 +40904,22 @@ class AnazhRealm {
         return this._el("div", { class: "spec-sheet hof-spec-sheet" }, header, body, footer);
     }
 
-    // Die REISE (ich-plan §D.2) — die Meilensteine + jüngsten Taten aus dem worldJournal, gekappt + „+N"
-    // (Overflow gehandhabt, V18.56-Echo). Jüngste oben, mit relativer Zeit.
+    // Die REISE (ich-plan §D.2) — MEINE Reise, nicht das rohe Welt-Log (Schöpfer-Befund „macht das Weltjournal
+    // im Ich Sinn?"): das worldJournal mischt meine Taten (erwachen/erschaffen/werden/Gesetz/Bindung) mit
+    // ambienten Welt-Ereignissen (erster Regen, erste Kreatur). Das Selbst-Porträt zeigt nur MEINE journey-Typen;
+    // die ambiente Welt-Chronik gehört zur Welt/Bibliothek. Gekappt + „+N" (Overflow, V18.56).
     _ichBuildReise(prof) {
-        const entries = (prof.journal || []).slice(-6).reverse();
+        const SELF_TYPES = new Set(["genesis", "growth", "soul", "rule", "relationship"]);
+        const mine = (prof.journal || []).filter((e) => e && SELF_TYPES.has(e.type));
+        const entries = mine.slice(-6).reverse();
         const zone = this._el(
             "div",
             { class: "ich-reise-zone" },
-            this._el("div", { class: "spec-col-head", text: "Reise · die Welt erinnert sich" })
+            this._el("div", { class: "spec-col-head", text: "Meine Reise · was ich erlebt + erschaffen habe" })
         );
         if (!entries.length) {
             zone.appendChild(
-                this._el("span", { class: "spec-empty", text: "Noch keine Geschichte — geh hinaus + erlebe." })
+                this._el("span", { class: "spec-empty", text: "Noch keine eigenen Taten — erwache, erschaffe, werde." })
             );
             return zone;
         }
@@ -40937,10 +40939,9 @@ class AnazhRealm {
                 )
             );
         }
-        const total = (prof.journal || []).length;
-        if (total > entries.length)
+        if (mine.length > entries.length)
             zone.appendChild(
-                this._el("div", { class: "spec-grow-more", text: `+ ${total - entries.length} ältere Einträge` })
+                this._el("div", { class: "spec-grow-more", text: `+ ${mine.length - entries.length} ältere Taten` })
             );
         return zone;
     }
@@ -41628,38 +41629,13 @@ class AnazhRealm {
     // Hotbar-Belegung im Spieler-Drawer: 9 Reihen mit Slot-Nummer + Dropdown.
     // Wird aufgerufen, wenn der Spieler-Drawer geöffnet wird (oder beim Init,
     // dann ist's idempotent).
+    // V18.59 — die Ich-Overlay-Hotbar ist jetzt eine VISUELLE 9-Slot-Reihe (Minecraft-vereint mit dem Inventar:
+    // Item klicken → Hotbar-Slot klicken weist zu), nicht mehr 9 clunky Dropdowns (V17.20: ersetzt durch Besseres).
     _renderHotbarConfigDOM() {
         if (typeof document === "undefined") return;
         const container = document.getElementById("hotbar-config");
         if (!container) return;
-        container.innerHTML = "";
-        const blueprintNames = Object.keys(this.state.blueprints || {});
-        for (let i = 0; i < 9; i++) {
-            const row = document.createElement("div");
-            row.className = "hotbar-config-row";
-            const num = document.createElement("span");
-            num.className = "num";
-            num.textContent = String(i + 1);
-            const sel = document.createElement("select");
-            sel.setAttribute("data-slot", String(i));
-            const emptyOpt = document.createElement("option");
-            emptyOpt.value = "";
-            emptyOpt.textContent = "— leer —";
-            sel.appendChild(emptyOpt);
-            for (const name of blueprintNames) {
-                const opt = document.createElement("option");
-                opt.value = name;
-                opt.textContent = this.state.blueprints[name].label || name;
-                sel.appendChild(opt);
-            }
-            sel.value = this.state.hotbar[i] || "";
-            sel.addEventListener("change", () => {
-                this.setHotbarSlot(i, sel.value || null);
-            });
-            row.appendChild(num);
-            row.appendChild(sel);
-            container.appendChild(row);
-        }
+        this._renderHotbarInto(container);
     }
 
     // ### Ring 6.6 — Werkstatt: Bauplan-Editor ###
@@ -49461,7 +49437,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.58.0";
+AnazhRealm.VERSION = "18.59.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

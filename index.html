@@ -650,7 +650,7 @@
                WER ICH BIN (Star, wide) | WAS ICH HABE  ·  WAS ICH MACHEN KANN (volle Breite unten). */
             .inventory-body {
                 display: grid;
-                grid-template-columns: minmax(0, 1.7fr) 320px;
+                grid-template-columns: minmax(0, 1.3fr) minmax(380px, 1fr);
                 grid-template-areas: "selbst habe" "werk werk";
                 gap: 16px 18px;
                 align-items: start;
@@ -711,14 +711,28 @@
                 color: var(--parch-ink);
                 margin: 0 0 5px 0;
             }
-            /* Die Hotbar liegt unter dem (9-breiten) Item-Raster in der breiten Habe-Spalte —
-               als 3×3-Gitter, damit sie die Karte füllt statt als dünne Liste zu hängen. */
+            /* V18.59 — die Hotbar ist eine VISUELLE 9-Slot-Reihe DIREKT unter dem 9-breiten Item-Raster
+               (Minecraft-vereint: dieselbe Spaltenbreite, die Slots fluchten Spalte-für-Spalte). */
             .inventory-col-items #hotbar-config {
                 display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 5px;
+                grid-template-columns: repeat(9, minmax(0, 1fr));
+                gap: 4px;
                 max-height: none;
                 overflow: visible;
+            }
+            #inventory-overlay #hotbar-config .hotbar-slot {
+                width: auto;
+                height: auto;
+                aspect-ratio: 1 / 1;
+                padding: 2px;
+                justify-content: center;
+                gap: 1px;
+            }
+            #inventory-overlay #hotbar-config .hotbar-slot .label {
+                font-size: 7.5px;
+                line-height: 1.05;
+                max-height: 2.1em;
+                overflow: hidden;
             }
             /* Die text-lastigen Tools (Soul-Editor-Bauplanliste, Equip-Dropdowns, Hotbar)
                kompakt + scrollbar — sie fluten die Spalte nicht (gegen die Text-Wüste).
@@ -864,6 +878,23 @@
                 grid-template-columns: repeat(9, 64px);
                 grid-auto-rows: 56px;
                 gap: 6px;
+            }
+            /* V18.59 — im Ich-Overlay füllen die 9 Spalten die (begrenzte) Habe-Spalte: flexible, quadratische
+               Slots, die Hotbar fluchtet darunter (Minecraft-Einheit), statt 64px-fix über die Spalte zu quellen. */
+            #inventory-overlay .inventory-grid {
+                grid-template-columns: repeat(9, minmax(0, 1fr));
+                grid-auto-rows: auto;
+                gap: 4px;
+            }
+            #inventory-overlay .inventory-slot {
+                width: auto;
+                height: auto;
+                aspect-ratio: 1 / 1;
+                padding: 2px;
+                font-size: 8px;
+            }
+            #inventory-overlay .inventory-slot .slot-glyph {
+                font-size: 14px;
             }
             .inventory-slot {
                 position: relative;
@@ -7346,6 +7377,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.58.0" defer></script>
+        <script src="anazhRealm.js?v=18.59.0" defer></script>
     </body>
 </html>

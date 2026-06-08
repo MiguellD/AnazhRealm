@@ -68,6 +68,12 @@ function startSaveServer() {
                 r.journalAppend("architecture", "Das erste Bauwerk entstand: Turm.");
                 r.journalAppend("weather", "Der erste Regen begann.");
             }
+            // ein paar Items + Hotbar-Belegung, damit Inventar + Hotbar gefüllt sichtbar sind
+            if (Array.isArray(r.state.player.inventory)) {
+                r.state.player.inventory[0] = { blueprintName: "kristall_geode", count: 3 };
+                r.state.player.inventory[1] = { blueprintName: "baum_eiche", count: 5 };
+                r.state.player.inventory[2] = { blueprintName: "stein_block", count: 12 };
+            }
             r.toggleInventoryOverlay(true);
             const spec = document.getElementById("ich-stage-spec");
             const emo = document.getElementById("status-emotions");
