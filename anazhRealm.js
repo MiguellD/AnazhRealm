@@ -29590,11 +29590,43 @@ class AnazhRealm {
         const list = document.getElementById("library-list");
         if (!list) return;
         list.innerHTML = "";
-        for (const item of this._feedItems()) list.appendChild(this._feedItemCard(item));
+        let items = this._feedItems();
+        // V18.74 — sort-by-rating: „Bestbewertet" reiht die höchst-gewerteten Items nach oben (stabil).
+        if (this.state.feedSort === "rating")
+            items = items
+                .map((it, i) => [it, i])
+                .sort((a, b) => (b[0].rating || 0) - (a[0].rating || 0) || a[1] - b[1])
+                .map((p) => p[0]);
+        for (const item of items) list.appendChild(this._feedItemCard(item));
         this._renderFeedKindChips();
+        this._renderFeedSort();
         this._renderFeedTrends();
         this._renderActiveWorldIsland();
         this._applyLibraryFilter();
+    }
+
+    // V18.74 — die Sortier-Chips (Neueste | Bestbewertet) im Kuratieren-Rail; treiben den Strom.
+    _renderFeedSort() {
+        if (typeof document === "undefined") return;
+        const host = document.getElementById("feed-sort");
+        if (!host) return;
+        host.innerHTML = "";
+        const active = this.state.feedSort === "rating" ? "rating" : "neueste";
+        for (const [k, label] of [
+            ["neueste", "Neueste"],
+            ["rating", "★ Bewertung"],
+        ]) {
+            const chip = this._el("button", {
+                class: "feed-kind-chip" + (k === active ? " active" : ""),
+                type: "button",
+                text: label,
+            });
+            chip.addEventListener("click", () => {
+                this.state.feedSort = k === "rating" ? "rating" : "neueste";
+                this.renderLibraryUI();
+            });
+            host.appendChild(chip);
+        }
     }
 
     // Das "Diese Welt"-Eiland (bibliothek-plan §D.5, das Ich-Selbst-Eiland-Muster auf die aktive Welt) —
@@ -29765,8 +29797,57 @@ class AnazhRealm {
         else card = this._feedCreatureCard(item);
         card.dataset.kind = item.kind;
         if (!card.dataset.search) card.dataset.search = item.search || "";
+        card.insertBefore(this._feedCover(item), card.firstChild); // die Vorschau (ein simples Cover-Bild) oben
         card.appendChild(this._feedRatingBar(item));
         return card;
+    }
+
+    // V18.74 — eine simple VORSCHAU ("quasi ein Bild") pro Karte: ein farbiges Cover-Band, deterministisch
+    // aus der Identität (kein schwerer 3D-Render). Rezepte tragen die Rollen-Farbe, Welten/Wesen einen
+    // stabilen Farbton aus dem Identitäts-Hash + ein Art-Glyph. Gibt dem Feed visuelle Variation.
+    _feedHueFrom(str) {
+        let h = 2166136261;
+        const s = String(str || "");
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        return (h >>> 0) % 360;
+    }
+    _feedCover(item) {
+        const glyphMap = {
+            architecture: "⌂",
+            tool: "⚒",
+            weapon: "⚔",
+            armor: "⛨",
+            consumable: "⚗",
+            soul: "✦",
+            machine: "⚙",
+            portal: "◎",
+        };
+        let base, glyph, label;
+        if (item.kind === "recipe") {
+            const colors = AnazhRealm.BLUEPRINT_ROLE_COLORS || {};
+            base = colors[item.prof.role] || `hsl(${this._feedHueFrom(item.id)}, 45%, 42%)`;
+            glyph = glyphMap[item.prof.role] || "⬢";
+            label = "Rezept";
+        } else if (item.kind === "creature") {
+            base = `hsl(${this._feedHueFrom(item.prof.soul || item.id)}, 42%, 46%)`;
+            glyph = "✦";
+            label = "Wesen";
+        } else {
+            base = `hsl(${this._feedHueFrom(item.id)}, 46%, 42%)`;
+            glyph = "◈";
+            label = "Welt";
+        }
+        const cover = this._el(
+            "div",
+            { class: "feed-cover feed-cover-" + item.kind },
+            this._el("span", { class: "feed-cover-glyph", text: glyph }),
+            this._el("span", { class: "feed-cover-label", text: label })
+        );
+        cover.style.background = `linear-gradient(135deg, ${base}, rgba(10, 6, 2, 0.8))`;
+        return cover;
     }
 
     _feedRecipeCard(item) {
@@ -49585,7 +49666,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.73.0";
+AnazhRealm.VERSION = "18.74.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

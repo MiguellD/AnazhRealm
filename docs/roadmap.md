@@ -124,7 +124,14 @@ GEBAUT V17.92–.118; `docs/lod-kaskade-plan.md` für die Kaskade):
 
 ### ⭐ SOCIAL-PLATTFORM / FEED — das MESH-SOZIALE BEWERTEN (Backlog, Schöpfer-Wunsch 08.06.2026 „unbedingt das andere in den Backlog")
 
-Der zentrale Feed (V18.70 — Welten · Rezepte · Wesen scrollen + BEWERTEN, 3 Spalten) trägt das WERTEN heute **lokal** (`state.feedRatings`, deine Sterne, persistent). Der nächste, größere Bogen: das **Bewerten über das Peer-Mesh aggregieren** — echte „Likes" anderer Spieler, dezentral (kein Konzern). Der Weg ist GEMESSEN schon da (W16-Welt-Katalog): Bewertungen über den `soul`-Kanal annoncieren (wie die `customWorlds`-Annonce), ed25519-signiert mit dem Vibe-Pass (gegen Manipulation — eine Stimme pro Identität), der Feed zeigt dann „★ N Schöpfer schätzen das" + sortiert „Bestbewertet" netzweit statt nur lokal. Mehrstufig (Annonce · Verifikation · Anti-Sybil · Aggregat-Anzeige) → eine eigene Welle, NACH dem lokalen Feed-Sign-off. Verwandt: der Feed-Inhalt könnte um PEER-Welten (aus dem Mesh-Katalog) + geteilte Rezepte wachsen (das „public" wörtlich). Das ist das WERTEN-Verb (`docs/das-lebendige-feld.md`) auf die soziale Schicht gehoben.
+Der zentrale Feed (V18.70–.74 — Welten · Rezepte · Wesen scrollen + BEWERTEN, 3 Spalten, Tabs Für-dich/Mesh, Vorschau-Cover, sort-by-rating) trägt das WERTEN heute **lokal** (`state.feedRatings`, deine Sterne, persistent). Der nächste, größere Bogen: die **echte soziale Schicht übers Peer-Mesh** (Schöpfer-Fragen 08.06.: „Kommentare · Leute adden · Chatten · Lesezeichen · sort by rating?" — sort ✅ V18.74 lokal):
+
+- **Bewerten aggregieren** — echte „Likes" anderer Spieler, dezentral. Der Weg ist GEMESSEN schon da (W16-Welt-Katalog): Bewertungen über den `soul`-Kanal annoncieren (wie die `customWorlds`-Annonce), ed25519-signiert mit dem Vibe-Pass (gegen Sybil — eine Stimme pro Identität); der Feed zeigt „★ N Schöpfer schätzen das" + „Bestbewertet" netzweit.
+- **Lesezeichen** — lokal-first machbar (wie die Wertung: ein `state.feedBookmarks`-Toggle pro Item + ein „Gemerkt"-Filter); eine kleine eigene Welle.
+- **Folgen (Leute adden)** — einem Schöpfer/Peer folgen (über die Vibe-Pass-Identität); die „Aus dem Mesh"-Tab wird ein echter Folge-Feed.
+- **Kommentare + Chat** — die tiefste Schicht: braucht Persistenz + den P2P-Transport (signaling/Mesh) + Moderation; ein mehrstufiger Bogen.
+
+Reihenfolge: lokale Quick-Wins (Lesezeichen) → Mesh-Aggregation (Likes) → Folgen → Kommentare/Chat. Das ist das WERTEN-Verb (`docs/das-lebendige-feld.md`) auf die soziale Schicht gehoben — der Feed-Inhalt wächst dann um echte PEER-Welten/Rezepte (das „public" wörtlich).
 
 ### ⭐ AKTIVER AUDIT-STAND + DIE REIHENFOLGE (Schöpfer-Audit 04.06.2026)
 

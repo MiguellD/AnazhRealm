@@ -30944,6 +30944,25 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         r.state.feedKind = "alle";
         r._applyLibraryFilter();
         out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 4;
+        // V18.74 — jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
+        out.feedCovers =
+            !!stream.querySelector(".library-card[data-kind='world'] .feed-cover .feed-cover-glyph") &&
+            !!stream.querySelector(".feed-recipe .feed-cover") &&
+            (!hasCreatures || !!stream.querySelector(".feed-creature .feed-cover"));
+        // V18.74 — die Sortier-Chips (Neueste | Bewertung) + sort-by-rating WIRKT (ein 5★-Item steigt nach oben).
+        out.feedSortChips = document.querySelectorAll("#feed-sort .feed-kind-chip").length === 2;
+        const aRecipe = Object.values(r.state.blueprints).find((b) => b && !b.instanced && b.role !== "portal");
+        if (aRecipe) {
+            r._setFeedRating("recipe:" + aRecipe.name, 0);
+            r._setFeedRating("recipe:" + aRecipe.name, 5);
+            r.state.feedSort = "rating";
+            r.renderLibraryUI();
+            const firstBar = document.querySelector("#library-list .library-card .feed-rating, #library-list .feed-card .feed-rating");
+            out.feedSortWorks = !!firstBar && Number(firstBar.dataset.rating) === 5;
+            r._setFeedRating("recipe:" + aRecipe.name, 5); // Toggle zurück → 0 (sauber)
+            r.state.feedSort = "neueste";
+            r.renderLibraryUI();
+        }
         // Bestbewertet spiegelt eine Wertung zurück (das WERTEN sichtbar).
         r._setFeedRating("world:fluid", 5);
         r._renderFeedTrends();
@@ -31054,6 +31073,9 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Feed: das WERTEN wirkt — setzen + lesen + Toggle (das dritte Verb, lokal)", w14Results.feedRatingWorks);
         check("Feed: der Kind-Filter TREIBT den Strom (nur Rezepte sichtbar)", w14Results.feedKindFilter);
         check("Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen)", w14Results.feedKindChips);
+        check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
+        check("Feed: die Sortier-Chips (Neueste | Bewertung) sind da (V18.74)", w14Results.feedSortChips);
+        check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
         check("Feed: Bestbewertet spiegelt eine Wertung zurück", w14Results.feedTrends);
         check("Bib-D: die Suche TREIBT den Feed (kein toter Knopf, V18.65)", w14Results.searchDrivesGrid);
         check("Bib-D: die Suche leeren zeigt alle Karten wieder", w14Results.searchClearsClean);
