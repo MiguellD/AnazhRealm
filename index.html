@@ -620,10 +620,16 @@
            getintet, aktiver Slot mit Violet-Glow markiert. */
             /* === Welle 6.C1 — Hylomorphismus-Inventar Overlay === */
             #inventory-overlay {
+                /* V18.66 Ich-J0 (ich-plan §J #1) — das Ich übernimmt die DRAWER-FENSTER-SPRACHE
+                   (Schöpfer „taucht anders auf als Werkstatt/Hof"): oben verankert + vollbreit
+                   (top:70 · left/right:12) statt zentriertes Modal, der EINE Eisen/Messing-Inset-Ring-
+                   Rahmen statt des schlichten 2-px-Randes. Die Modal-Verdunklung + der Pointer-Unlock
+                   (toggleInventoryOverlay) bleiben — korrektes Inventar-Verhalten (Minecraft). */
                 position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
+                top: 70px;
+                left: 12px;
+                right: 12px;
+                width: auto;
                 z-index: 30;
                 /* V18.58 — das Ich teilt die PERGAMENT-Sprache der Drawer (Werkstatt/Hof): heller Grund, EINE
                    dunkle Bühnen-Insel. Vorher war der Overlay-Grund dunkel — aber die Inhalte (Slots/Emotion/
@@ -637,63 +643,158 @@
                     radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
                     linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
                 background-blend-mode: normal, normal, normal, normal, normal, multiply, normal;
-                border: 2px solid var(--brass-2);
                 border-radius: 12px;
-                padding: 18px 22px 14px;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+                /* der geteilte Drawer-Rahmen (1:1 aus .drawer) — Eisen/Messing-Inset-Ringe. */
+                box-shadow:
+                    var(--shadow-deep),
+                    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 5px var(--iron-1),
+                    inset 0 0 0 6px rgba(0, 0, 0, 0.55),
+                    inset 0 0 0 8px var(--brass-3),
+                    inset 0 0 0 9px rgba(0, 0, 0, 0.4);
+                padding: 24px 20px 18px 20px;
                 font-family: "Cinzel", Georgia, serif;
                 color: var(--parch-ink);
                 /* V18.64 — das Fenster passt IMMER in den Viewport (wie die Drawer): flex-Spalte mit
-                   max-height; der Header bleibt fest, der Body trägt die drei Zonen, jede Zone scrollt
+                   max-height; der Header bleibt fest, der Body trägt die Zonen, jede Zone scrollt
                    nur INNEN bei Bedarf (wie die Werkstatt-Palette) — das Fenster läuft nie über den Rand. */
                 display: flex;
                 flex-direction: column;
                 box-sizing: border-box;
-                width: 1340px;
-                max-width: 96vw;
-                max-height: calc(100vh - 24px);
+                max-height: calc(100vh - 84px);
                 overflow: hidden;
             }
-            /* V18.64 Ich-Bogen — drei Zonen als TALL columns nebeneinander (das Hof/Werkstatt-Modell:
-               full-height Spalten, nicht eine gequetschte Boden-Reihe): WER ICH BIN (Star) · WAS ICH HABE ·
-               WAS ICH MACHEN KANN. Der Body füllt die Fenster-Höhe (flex:1, min-height:0), jede Zone scrollt
-               nur INNEN bei Bedarf — das Rezeptbuch bekommt die VOLLE Höhe (wie die Werkstatt-Palette), kein
-               30vh-Streifen mehr; das Fenster läuft nie über. */
+            /* die Inhalte sitzen über den Inset-Ring-Schatten-Schichten (wie .drawer > *). */
+            #inventory-overlay > * {
+                position: relative;
+                z-index: 1;
+            }
+            /* V18.66 Ich-J1 (ich-plan §J) — die WERKSTATT-ZONEN-TOPOLOGIE: der Body ist eine SPALTE aus
+               der VORSCHAU-REIHE (oben) + dem vollbreiten READOUT (unten) — exakt das #workshop-preview-row
+               + #workshop-stats-panel-Muster. Vorher waren es drei gequetschte gleichrangige Spalten →
+               das Spec-Sheet neben dem Avatar zerdrückt (Schöpfer „Stats geschnitten"). */
             .inventory-body {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                flex: 1 1 auto;
+                min-height: 0;
+            }
+            /* die VORSCHAU-REIHE: HABE | der Avatar-VIEWER (Star) | WERK — die flankierenden Paletten
+               + der mittige Star (wie die Werkstatt: Palette | Viewer | Palette). */
+            .ich-preview-row {
                 display: grid;
-                grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.9fr) minmax(280px, 1.05fr);
-                grid-template-areas: "selbst habe werk";
-                gap: 16px 18px;
+                grid-template-columns: minmax(240px, 1fr) minmax(300px, 1.05fr) minmax(260px, 1fr);
+                grid-template-areas: "habe viewer werk";
+                gap: 14px 16px;
                 flex: 1 1 auto;
                 min-height: 0;
                 align-items: stretch;
-            }
-            .inventory-col-character {
-                grid-area: selbst;
-                min-height: 0;
-                overflow-y: auto;
             }
             .inventory-col-items {
                 grid-area: habe;
                 min-height: 0;
                 overflow-y: auto;
             }
+            .inventory-col-character {
+                grid-area: viewer;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
             .inventory-col-recipes {
                 grid-area: werk;
                 min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+            /* das Rezeptbuch scrollt INNEN (volle Spaltenhöhe, wie die Werkstatt-Palette). */
+            .inventory-col-recipes #inventory-recipes {
+                flex: 1 1 auto;
+                min-height: 0;
                 overflow-y: auto;
+                margin-top: 6px;
             }
             @media (max-width: 1100px) {
-                .inventory-body {
+                .ich-preview-row {
                     grid-template-columns: 1fr 1fr;
-                    grid-template-areas: "selbst habe" "werk werk";
+                    grid-template-areas: "viewer habe" "werk werk";
                 }
             }
             @media (max-width: 760px) {
-                .inventory-body {
+                .ich-preview-row {
                     grid-template-columns: 1fr;
-                    grid-template-areas: "selbst" "habe" "werk";
+                    grid-template-areas: "viewer" "habe" "werk";
                 }
+            }
+            /* der SELBST-READOUT — der dunkle vollbreite Star-Boden (V18.55: Avatar + Readout = EIN
+               dunkler Star), 1:1 wie #workshop-stats-panel unter dem Viewer. Links das Spec-Sheet
+               (Verfassung·Werte·Natur, light-on-dark), rechts die Vitalzeichen (Emotion + Was du trägst).
+               Hier haben die Werte VOLLE Breite → nicht mehr geschnitten. */
+            .ich-readout {
+                flex: 0 0 auto;
+                display: grid;
+                grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+                gap: 14px 18px;
+                padding: 12px 14px;
+                background: rgba(20, 12, 4, 0.65);
+                border: 1px solid var(--brass-3);
+                border-radius: 10px;
+                max-height: 40vh;
+                overflow-y: auto;
+            }
+            .ich-readout-side {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                min-width: 0;
+            }
+            /* light-on-dark im Readout (V18.41-Tokens, V18.58-Falle vermeiden: dunkler Text auf dunklem
+               Grund). Das Spec-Sheet (.hof-spec-sheet) ist schon light-on-dark; Emotion + „Was du trägst"
+               tragen Pergament-Dunkeltext → hier auf den dunklen Readout-Grund umstellen. */
+            .ich-readout h4 {
+                color: var(--ink-on-dark);
+            }
+            .ich-readout .section {
+                background: rgba(255, 240, 205, 0.04);
+            }
+            .ich-readout .emotion .name {
+                color: var(--ink-on-dark-soft);
+            }
+            .ich-readout .emotion .value {
+                color: var(--ink-on-dark);
+            }
+            .ich-readout .equip-slot .equip-name {
+                color: var(--ink-on-dark);
+            }
+            .ich-readout .equip-slot .equip-kind {
+                color: var(--ink-on-dark-soft);
+            }
+            @media (max-width: 760px) {
+                .ich-readout {
+                    grid-template-columns: 1fr;
+                    max-height: none;
+                }
+            }
+            /* die ICH-BÜHNE — der Avatar-VIEWER als Star (dunkle Insel, der Canvas zentriert + maximiert);
+               anders als die Hof-Bühne (Canvas + Spec nebeneinander) trägt sie NUR den Avatar — das Spec
+               wandert in den Readout darunter (J1). */
+            .ich-stage {
+                flex: 1 1 auto;
+                min-height: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 10px;
+                background: rgba(20, 12, 4, 0.65);
+                border: 1px solid var(--brass-3);
+                border-radius: 10px;
+            }
+            .ich-stage .hof-stage-canvas {
+                width: 100%;
+                height: auto;
+                max-width: 340px;
+                aspect-ratio: 1 / 1;
             }
             .inventory-col-title {
                 font-family: "Cinzel", Georgia, serif;
@@ -6146,68 +6247,75 @@
         <!-- Welle 6.C1 — Hylomorphismus-Inventar (Tab-Toggle). 27 Slots in
              3×9-Grid. Jeder Slot trägt Tag-Profile bei Hover als Glow + Audio. -->
         <div id="inventory-overlay" role="dialog" aria-label="Dein Ich" aria-modal="false" hidden>
-            <!-- V18.65 — EINE Selbst-Suche treibt das ganze Ich (das Werkstatt-Loop search→Treffer→Akt, auf
-                 das Selbst angewandt): tippe „stein"/„panzer" → die HABE dimmt Nicht-Treffer, das REZEPTBUCH
-                 filtert; jeder Treffer ist klickbar (Slot wählen · Rezept fertigen). Eine Suche, kein toter
-                 Omnibox-Knopf, kein zweites Feld. Chrome komprimiert (wie die Werkstatt: Affordanz + Tooltip
-                 statt Absatz pro Sektion). -->
+            <!-- V18.66 Ich-J1 (ich-plan §J) — die WERKSTATT-ZONEN-TOPOLOGIE auf das Selbst: eine
+                 Vorschau-Reihe (HABE | der Avatar-VIEWER als Star | WERK) + darunter VOLLBREIT der
+                 Selbst-READOUT (Verfassung·Werte·Natur·Emotion·Was du trägst) — wie die Ausgabetabelle
+                 #workshop-stats-panel unter dem Werkstatt-Viewer. Der Avatar + der dunkle Readout bilden
+                 EINEN kohärenten Star (V18.55). Die Suche lebt schmal im WERK-Kopf (wie #workshop-search),
+                 nicht mehr vollbreit im Header (Schöpfer: „läuft in die ‚Was ich machen kann'-Spalte"). -->
             <div class="inventory-header">
                 <h2>Dein Ich</h2>
-                <input
-                    type="text"
-                    id="ich-search"
-                    class="ich-search"
-                    placeholder="Durchsuche dein Ich … (Item, Material oder Rezept)"
-                    aria-label="Dein Ich durchsuchen"
-                    autocomplete="off"
-                />
             </div>
             <div class="inventory-body">
-                <div class="inventory-col-items">
-                    <h3 class="inventory-col-title">Was ich habe</h3>
-                    <div id="inventory-grid" class="inventory-grid"></div>
-                    <div id="inventory-selected" class="inventory-selected" aria-live="polite">
-                        <span class="label">gewählt:</span> <span class="name">—</span>
+                <div class="ich-preview-row">
+                    <div class="inventory-col-items">
+                        <h3 class="inventory-col-title">Was ich habe</h3>
+                        <div id="inventory-grid" class="inventory-grid"></div>
+                        <div id="inventory-selected" class="inventory-selected" aria-live="polite">
+                            <span class="label">gewählt:</span> <span class="name">—</span>
+                        </div>
+                        <section class="section">
+                            <h4>Hotbar</h4>
+                            <div id="hotbar-config"></div>
+                        </section>
                     </div>
-                    <section class="section">
-                        <h4>Hotbar</h4>
-                        <div id="hotbar-config"></div>
-                    </section>
-                    <section class="section">
-                        <h4>Was du trägst</h4>
-                        <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
-                        <details id="equip-advanced-section" class="ich-equip-more">
-                            <summary>Mehr: Wechseln &amp; Markieren</summary>
-                            <div id="player-equip"></div>
-                        </details>
-                    </section>
+                    <div class="inventory-col-character">
+                        <h3 class="inventory-col-title">Wer ich bin</h3>
+                        <div class="ich-soul-bar">
+                            <label for="player-soul-select">Körper</label>
+                            <select
+                                id="player-soul-select"
+                                aria-label="Spieler-Seele wählen"
+                                title="Wähle deinen Körper. Einen neuen formst du in der Werkstatt („Körper holen")."
+                            ></select>
+                        </div>
+                        <div class="ich-stage">
+                            <canvas
+                                id="ich-stage-canvas"
+                                class="hof-stage-canvas"
+                                aria-label="Bühne — dein Avatar"
+                            ></canvas>
+                        </div>
+                    </div>
+                    <div class="inventory-col-recipes">
+                        <h3 class="inventory-col-title">Was ich machen kann</h3>
+                        <input
+                            type="text"
+                            id="ich-search"
+                            class="ich-search"
+                            placeholder="Durchsuche … (Item, Material, Rezept)"
+                            aria-label="Dein Ich durchsuchen"
+                            autocomplete="off"
+                        />
+                        <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
+                    </div>
                 </div>
-                <div class="inventory-col-character">
-                    <h3 class="inventory-col-title">Wer ich bin</h3>
-                    <div class="ich-soul-bar">
-                        <label for="player-soul-select">Körper</label>
-                        <select
-                            id="player-soul-select"
-                            aria-label="Spieler-Seele wählen"
-                            title="Wähle deinen Körper. Einen neuen formst du in der Werkstatt („Körper holen")."
-                        ></select>
+                <div class="ich-readout">
+                    <div id="ich-stage-spec" class="hof-stage-spec"></div>
+                    <div class="ich-readout-side">
+                        <section class="section ich-emotion-section">
+                            <h4 title="Wie du die Welt WERTEST — färbt den Bildschirmrand.">Emotion</h4>
+                            <div id="status-emotions"></div>
+                        </section>
+                        <section class="section ich-worn-section">
+                            <h4>Was du trägst</h4>
+                            <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
+                            <details id="equip-advanced-section" class="ich-equip-more">
+                                <summary>Mehr: Wechseln &amp; Markieren</summary>
+                                <div id="player-equip"></div>
+                            </details>
+                        </section>
                     </div>
-                    <div class="hof-stage ich-stage">
-                        <canvas
-                            id="ich-stage-canvas"
-                            class="hof-stage-canvas"
-                            aria-label="Bühne — dein Avatar"
-                        ></canvas>
-                        <div id="ich-stage-spec" class="hof-stage-spec"></div>
-                    </div>
-                    <section class="section ich-emotion-section">
-                        <h4 title="Wie du die Welt WERTEST — färbt den Bildschirmrand.">Emotion</h4>
-                        <div id="status-emotions"></div>
-                    </section>
-                </div>
-                <div class="inventory-col-recipes">
-                    <h3 class="inventory-col-title">Was ich machen kann</h3>
-                    <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
                 </div>
             </div>
         </div>
@@ -7481,6 +7589,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.65.0" defer></script>
+        <script src="anazhRealm.js?v=18.66.0" defer></script>
     </body>
 </html>

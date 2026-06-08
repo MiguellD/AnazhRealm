@@ -46739,19 +46739,19 @@ class AnazhRealm {
         const container = document.getElementById("player-equip");
         if (!container) return;
         container.innerHTML = "";
+        // V18.66 Ich-J2 (ich-plan §J #3) — die „In der Hand"-Zeile ist GESCHNITTEN (Parallel-Pfad zur
+        // Hotbar, V9.82; Schöpfer „wieso wechseln, wenn ich's in der Hand wechseln kann?"): das gehaltene
+        // Gerät wechselt man in der HAND (Hotbar → wieldBlueprint) + über das Rezeptbuch („In die Hand" →
+        // wieldBlueprint, frei wenn geschmiedet — GEMESSEN). Die Rüstung-Zeile BLEIBT: sie ist der FREIE
+        // Wechsel-Pfad für eine besessene (geschmiedete) Rüstung (wearArmor), während das Rezept-„Anlegen"
+        // die Zutaten neu zieht (GEMESSEN _forgeMaterialAndFreeze → _makeCostGate) — also kein Duplikat.
         this._equipAppendDrawerHint(container);
         const equipped = (this.state.player && this.state.player.equipped) || { held: null, armor: null };
-        // V17.57 W2-B — EINE „in der Hand"-Zeile (Werkzeug + Waffe verschmolzen, kein Rollen-Schloss).
-        this._equipAppendHeldRow(container, equipped);
         const { armorBlueprints, candidateBlueprints } = this._equipPartitionEquipBlueprints();
         this._equipAppendArmorRow(container, equipped, armorBlueprints);
         this._equipAppendMarkSection(container, candidateBlueprints);
         this._equipAppendConsumablesSection(container);
-        const blu = this.state.blueprints || {};
-        const anyHoldable = Object.keys(blu).some(
-            (n) => blu[n] && !blu[n].builtIn && Array.isArray(blu[n].parts) && blu[n].parts.length
-        );
-        if (!anyHoldable && armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
+        if (armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
             this._equipAppendEmptyHint(container);
         }
     }
@@ -46763,76 +46763,9 @@ class AnazhRealm {
         const equipHint = document.createElement("div");
         equipHint.className = "drawer-hint";
         equipHint.textContent =
-            "Rüstung anziehen: einen eigenen Bauplan unten als Rüstung markieren — dann oben im Dropdown wählen.";
+            "Geräte wechselst du in der Hand (Hotbar) oder im Rezeptbuch (In die Hand). Hier: eine besessene " +
+            "Rüstung frei tragen (Dropdown) + einen eigenen Bauplan umwidmen (Rüstung · Konsumabel · Portal).";
         container.appendChild(equipHint);
-    }
-
-    // V17.57 W2-B — die EINE „in der Hand"-Zeile: jeder eigene Bauplan ist haltbar (kein Rollen-
-    // Schloss). Das gehaltene Gerät schlägt + gräbt + schneidet; sein Profil (W2) bestimmt, was es
-    // gut kann — die UI liest die Affordanz ab („Klinge"/„Brecher") + zeigt Wucht/Schärfe.
-    _equipAppendHeldRow(container, equipped) {
-        const row = document.createElement("div");
-        row.className = "equip-row";
-        const label = document.createElement("span");
-        label.className = "equip-slot-label";
-        label.textContent = "In der Hand";
-        row.appendChild(label);
-        const sel = document.createElement("select");
-        sel.title = "Das gehaltene Gerät — die Form bestimmt, ob es schneidet oder wuchtet";
-        const none = document.createElement("option");
-        none.value = "";
-        none.textContent = "— leer (Faust) —";
-        sel.appendChild(none);
-        const blu = this.state.blueprints || {};
-        // V17.74 Welle 1b — die GEBRAUCHS-Fläche listet eigene Baupläne (wie bisher) UND built-in
-        // greifbare Geräte (die V17.72-Bibliothek, z.B. geraet_spitzhacke) — nicht mehr nur `!builtIn`,
-        // sonst bleibt die craftbare Saat unsichtbar. Built-in-Strukturen (Dorf) bleiben draußen (place).
-        const names = Object.keys(blu).filter(
-            (n) =>
-                blu[n] &&
-                Array.isArray(blu[n].parts) &&
-                blu[n].parts.length &&
-                (!blu[n].builtIn || this._blueprintUseKind(blu[n]) === "hold")
-        );
-        names.sort();
-        for (const name of names) {
-            const opt = document.createElement("option");
-            opt.value = name;
-            opt.textContent = `${blu[name].label || name} · ${this._implementAffordanceLabel(blu[name])}${this._makeActCostSuffix(name)}`;
-            opt.title = this._blueprintCostTooltip(name);
-            if (equipped.held === name) opt.selected = true;
-            sel.appendChild(opt);
-        }
-        sel.addEventListener("change", () => {
-            // S3-B — der Spieler-Pfad geht durch wieldBlueprint: ein ungeschmiedetes Gerät wird hier
-            // GESCHMIEDET (zahlt im pfad/frieden), ein geschmiedetes frei in die Hand genommen.
-            const result = this.wieldBlueprint(sel.value || null);
-            if (!result.ok) {
-                if (result.reason === "not_enough_material") {
-                    const missingStr = Object.entries(result.missing || {})
-                        .map(([m, n]) => `${n}× ${m}`)
-                        .join(", ");
-                    this.log(`Schmieden nötig — fehlt: ${missingStr || "Material"} (⚒ in der Werkstatt).`, "ERROR");
-                } else {
-                    this.log(`In die Hand fehlgeschlagen: ${result.reason}`, "ERROR");
-                }
-            } else if (!result.free && result.forgedPrecision != null) {
-                this.log(
-                    `Geschmiedet + in der Hand: „${this.state.blueprints[sel.value]?.label || sel.value}".`,
-                    "INFO"
-                );
-            }
-            this.renderPlayerEquipUI();
-        });
-        row.appendChild(sel);
-        if (equipped.held && blu[equipped.held]) {
-            const prof = this._implementProfileForBlueprint(blu[equipped.held]);
-            const read = document.createElement("span");
-            read.className = "equip-readout";
-            read.textContent = `Wucht ${prof.minePower.toFixed(1)} · Schärfe ${prof.cutPower.toFixed(1)}`;
-            row.appendChild(read);
-        }
-        container.appendChild(row);
     }
 
     // W12 Phase 2 — JEDER eigene Nicht-Rüstung-Bauplan ist Markier-Kandidat,
@@ -46968,50 +46901,19 @@ class AnazhRealm {
         }
     }
 
-    // Konsumables-Liste mit „Trinken"-Button — eigene Baupläne mit
-    // role:"consumable" + alle DSL-Tabellen-Konsumables.
+    // V18.66 Ich-J3 (ich-plan §J #4) — das TRINKEN lebt sichtbar im REZEPTBUCH (die „Trank"-Gruppe,
+    // „Brauen + Trinken", WERK-Spalte — der EINE Brau-+-Trink-Ort wie die Werkstatt, nach J1 prominent).
+    // Hier NUR noch die DSL-TABELLEN-Konsumables (kein Bauplan → nicht im Rezeptbuch) — so ist das Trinken
+    // nicht mehr doppelt + versteckt (Schöpfer „das Trinken komisch, versteckt, von den Riesen lernen": der
+    // Riesen-Weg ist EIN sichtbarer Ort, kein Duplikat in einem Aufklapp). Die Trank-Baupläne (role:consumable)
+    // sind via renderRecipeBook (kind=drink) erreichbar — kein Parallel-Pfad mehr (V9.82).
     _equipAppendConsumablesSection(container) {
-        const consumableBps = [];
-        for (const name of Object.keys(this.state.blueprints || {})) {
-            const bp = this.state.blueprints[name];
-            if (bp && bp.role === "consumable") consumableBps.push(name);
-        }
         const tableConsumables = Object.keys(this.state.consumables || {});
-        if (consumableBps.length === 0 && tableConsumables.length === 0) return;
+        if (tableConsumables.length === 0) return;
         const consumableHeader = document.createElement("div");
         consumableHeader.className = "equip-mark-header";
-        consumableHeader.textContent = "Konsumables (trinken):";
+        consumableHeader.textContent = "Schnell-Trünke (Tabelle):";
         container.appendChild(consumableHeader);
-        for (const name of consumableBps) {
-            const bp = this.state.blueprints[name];
-            const row = document.createElement("div");
-            row.className = "equip-mark-row";
-            const label = document.createElement("span");
-            label.className = "equip-mark-label";
-            const meta = bp.consumableMeta || {};
-            label.textContent = `${bp.label || name} (${meta.durationSeconds || 30} s, ×${meta.scale || 0.2})`;
-            row.appendChild(label);
-            const drinkBtn = document.createElement("button");
-            drinkBtn.type = "button";
-            drinkBtn.textContent = "Brauen + Trinken";
-            drinkBtn.title = "Brauen zieht die Zutaten (die Material-Kosten, pfad/frieden), dann wirkt der Trank.";
-            drinkBtn.addEventListener("click", () => {
-                // S6 — der Spieler-Pfad geht durch brewConsumable: brauen zieht die Zutaten, dann wirkt der Trank.
-                const result = this.brewConsumable(name);
-                if (!result.ok) {
-                    if (result.reason === "not_enough_material") {
-                        const missingStr = Object.entries(result.missing || {})
-                            .map(([m, n]) => `${n}× ${m}`)
-                            .join(", ");
-                        this.log(`Brauen — fehlt an Zutaten: ${missingStr || "Material"} (ernten).`, "ERROR");
-                    } else {
-                        this.log(`Brauen fehlgeschlagen: ${result.reason}`, "ERROR");
-                    }
-                }
-            });
-            row.appendChild(drinkBtn);
-            container.appendChild(row);
-        }
         for (const name of tableConsumables) {
             const c = this.state.consumables[name];
             const row = document.createElement("div");
@@ -49151,7 +49053,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.65.0";
+AnazhRealm.VERSION = "18.66.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

@@ -84,7 +84,7 @@ function startSaveServer() {
                 specBars: spec ? spec.querySelectorAll(".spec-body .spec-bar").length : -1,
                 emotionRows: emo ? emo.querySelectorAll(".emotion").length : -1,
                 reiseRows: document.querySelectorAll("#ich-reise .ich-reise-row").length,
-                habe: !!document.querySelector(".inventory-col-items #inventory-equip"),
+                habe: !!document.querySelector(".ich-readout #inventory-equip"),
                 soul: r.state.player.soul,
             };
         });

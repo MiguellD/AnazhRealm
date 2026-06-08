@@ -10,7 +10,11 @@
 > Schöpfer-Auftrag (07.06.2026): „Weiter geht's, formuliere die Pläne für Ich detailliert aus, aus all dem
 > du gelernt hast — zwei Menüs, viel gelernt. Wie sieht das nächste aus, jedes Detail klar?"
 
-**Stand: DER ICH-BOGEN VOLLENDET (V18.61–.63, Ich-F–I GEBAUT + verifiziert).** Der VERORTUNGS-Fehler des
+**Stand: DER ICH-PUTZ-BOGEN J0–J3 GEBAUT (V18.66) — die WERKSTATT-TOPOLOGIE übernommen (§J).** Der zweite
+Schöpfer-Browser-Sign-off (nach V18.65) fand 6 Befunde mit EINER Wurzel: das Ich trug das Vokabular der Räume,
+nicht ihre Zonen-Topologie. Geheilt in §J (J0 Fenster-Sprache · J1 Star-Viewer + Readout-darunter · J2
+Equip-Verdichtung · J3 Trinken entdoppelt); alle Playtests grün, mit dem Auge gefahren. OFFEN: der GPU-Avatar-
+Sign-off + EIN Merge. **Darunter: DER ICH-BOGEN (V18.61–.63, Ich-F–I GEBAUT + verifiziert).** Der VERORTUNGS-Fehler des
 §H-Audits ist geheilt — das „Ich" ist NUR noch das Selbst, das ich BIN (es liest + wählt, es erschafft +
 erzählt nicht): **Ich-F** (V18.61) die Reise→Hof (H.1), Soul-Select in den Header (H.2), die doppelte
 Körper-Liste + `renderPlayerStatsUI` geschnitten (H.3), Rollen-Override in „Was du trägst" (H.6); **Ich-G**
@@ -431,3 +435,118 @@ Verortung (H.1 Journal→Welt, H.4 Schöpfung→Werkstatt) ✓ · schneide, was 
 (H.7 die Bühne folgt dem Zustand) ✓ · der wahre Norden (das Journal ist die Welt-Stimme, `das-lebendige-feld`)
 ✓. **Der Kern-Fehler war ein Verortungs-Fehler:** ich hatte Schöpfung (Seele) + Welt-Stimme (Journal) ins
 Selbst gelegt; das „Ich" liest + wählt nur, es erschafft + erzählt nicht.
+
+---
+
+## §J — Der Ich-PUTZ-Bogen (Schöpfer-Browser-Sign-off 08.06.2026): die TOPOLOGIE wirklich übernehmen
+
+> Schöpfer-Befund (nach V18.65, mit dem Auge, 6 Punkte): „(1) das Menü ist ANDERS formatiert als Werkstatt/Hof,
+> taucht anders im Bildschirm auf. (2) die Stats im Voranzeige-Fenster KOMPLETT GESCHNITTEN, keine Profi-Arbeit.
+> (3) ‚Was du trägst' → ‚Mehr' teils unsynergetisch, Funktionen unnötig — wieso WECHSELN, wenn ich's in der HAND
+> wechseln kann? (4) das Trinken komisch, unintuitiv, versteckt — von den Riesen lernen. (5) ‚Durchsuche dein
+> Ich' über die GANZE Breite, fast überdeckend, direkt in die ‚Was ich machen kann'-Spalte. (6) ‚Was du trägst'
+> könnte direkt UNTER den Viewer — bessere Synergie dort, wie die AUSGABETABELLE in der Werkstatt." Plus:
+> „analysiere, wie wir iteriert haben, was das Ergebnis war, wieso — siehst du die Vollendung? Das ist ein
+> Leitfaden, die Spitze des Eisbergs."
+
+**Die EINE Wurzel (GEMESSEN — Screenshots `artifacts/ich.png` vs `room-werkstatt.png`/`hof-creatures.png` + der
+Code):** das Ich hat das VOKABULAR der Werkstatt/des Hofes übernommen (`.spec-*`-Sheet, die Bühne, die geteilten
+Klassen) — aber NICHT ihre **ZONEN-TOPOLOGIE**. Die Referenz-Räume sind **content-first STAR + Readout-UNTER-dem-
+Viewer + flankierende Paletten**; das Ich ordnete alles in DREI gequetschte gleichrangige Spalten. Daraus fallen
+ALLE sechs Befunde als Symptome EINER Wurzel:
+
+- **GEMESSEN #2 (Stats geschnitten):** `.ich-stage` erbt `.hof-stage { grid-template-columns: 300px 1fr }` — im
+  Hof sitzt das in einer WEITEN Zone (DAS ORCHESTER ~62 % eines vollbreiten Drawers → Spec ~240 px+). Im Ich
+  steckt dieselbe Bühne+Spec in der „selbst"-Spalte (`minmax(0,1.15fr)` eines 1340-px-3-Spalten-Grids ≈ 480 px) →
+  Canvas 300 px + Spec ~140 px → das WERTE|NATUR-Zwei-Spalten-Sheet ist zerdrückt. **Die Stats gehören nicht NEBEN
+  den Avatar, sondern UNTER ihn** (volle Readout-Breite — exakt die `#workshop-stats-panel`-Form: ein vollbreiter
+  Abschnitt unter `#workshop-preview-row`).
+- **GEMESSEN #6 (Was du trägst unter den Viewer):** der Schöpfer benennt die Heilung selbst — die Ausgabetabelle
+  der Werkstatt sitzt UNTER dem Viewer. Das Ich-Pendant: der Selbst-Readout (Werte · Natur · Emotion · Was du
+  trägst) UNTER der Bühne.
+- **GEMESSEN #5 (Suche zu breit):** `#ich-search` lebt im `.inventory-header` → volle Overlay-Breite, läuft in
+  die Rezept-Spalte. Die Werkstatt-Parität ist das schmale `#workshop-search` („Bauplan …") IN seiner Palette.
+- **GEMESSEN #1 (anders formatiert):** das Overlay ist ein ZENTRIERTES Modal (`position:fixed; top/left:50%;
+  translate(-50%,-50%)`, schlichter 2-px-Messing-Rand, runde Ecken), die Räume sind oben-verankerte VOLLBREITE
+  Drawer (`top:70; left:12; right:12`, der Eisen/Messing-Inset-Ring-Rahmen). → es „taucht anders auf".
+- **GEMESSEN #3 (Wechseln unnötig):** `#player-equip` (`_equipAppendHeldRow`) trägt einen „In der Hand"-DROPDOWN
+  — ein PARALLEL-Pfad (V9.82) zur Hotbar (Slot wählen → `wieldBlueprint` → in die Hand, V17.74). Der Schöpfer hat
+  recht: man wechselt in der HAND, nicht im Dropdown.
+- **GEMESSEN #4 (Trinken versteckt):** der Trank ist nur eine „Brauen + Trinken"-Zeile tief im Rezeptbuch
+  (`_recipeRow` kind=drink, rechte Spalte) — kein Hand-/Hotbar-Akt wie bei den Riesen (Minecraft: in die Hand →
+  benutzen).
+
+**Die Meta-Lehre (V18.40 erneut, jetzt am Ich):** ein Schöpfer-Befund ist ein SIGNAL für ein verletztes PRINZIP,
+keine isolierte TODO. Sechs Befunde, EINE Wurzel: die Zonen-Topologie wurde dem Namen nach geliehen, nicht der
+Struktur nach. Die Vollendung ist NICHT sechs Pflaster — es ist EINE Re-Architektur auf das bewährte Werkstatt-
+Zonen-Modell, aus dem die sechs als Konsequenz fallen.
+
+### §J.1 — Die Vollendungs-Form: das Werkstatt-Zonen-Modell auf das Selbst
+
+Die Werkstatt ist die REFERENZ (`#workshop-preview-row` = Palette | VIEWER | Palette; darunter vollbreit
+`#workshop-stats-panel` = der Readout). Das Ich spiegelt sie EXAKT — der Avatar ist der Viewer, der Selbst-Readout
+die Ausgabetabelle:
+
+```
+┌─ DEIN ICH (Drawer-Sprache: oben verankert, vollbreit, Eisen/Messing-Rahmen) ────── × ┐
+│ ┌── WAS ICH HABE ──┐ ┌──────── WER ICH BIN (STAR) ────────┐ ┌── WAS ICH MACHEN KANN ─┐│
+│ │ Inventar (9×N)   │ │   Name · [Körper ▾]                 │ │ [⌕ Bauplan …] (schmal) ││
+│ │ Hotbar 1–9       │ │   ┌─ Bühne (Avatar 3D, switcht) ─┐  │ │ Rezeptbuch (Werkstatt- ││
+│ │ (drag/klick =    │ │   │      der Star, maximiert     │  │ │  einheitlich; In d.Hand·││
+│ │  in die Hand)    │ │   └──────────────────────────────┘  │ │  Anlegen·Trinken)      ││
+│ └──────────────────┘ └─────────────────────────────────────┘ └────────────────────────┘│
+│ ── DER SELBST-READOUT (vollbreit UNTER der Bühne, wie #workshop-stats-panel) ──────────│
+│  Verfassung★ │ WERTE (Balken, equip-gefaltet) │ NATUR (Balken) │ EMOTION (6-Achsen) │   │
+│  WAS DU TRÄGST: ⚒ <Gerät>  ⛨ <Rüstung>  ✺ <Boost>   (Klick legt ab)                    │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+Der Avatar wird der STAR (maximiert, mittig, wie der Werkstatt-Viewer); der Readout (Verfassung · Werte · Natur ·
+Emotion · Was du trägst) liegt VOLLBREIT darunter — die Stats haben Raum (nicht mehr geschnitten), „Was du
+trägst" sitzt synergetisch unter dem Viewer, die Emotion bleibt die Herz-Signatur. Die HABE (Inventar+Hotbar)
+links, das WERK (Rezeptbuch + die schmale Suche) rechts — die zwei flankierenden Paletten.
+
+### §J — Die Wellen (jede misst mit `diag-ich` + dem Auge, content-first, keine halben Sachen)
+
+**STAND: J0–J3 GEBAUT + verifiziert (V18.66, alle Playtests grün, mit dem Auge gefahren). OFFEN: der
+Schöpfer-Browser-Sign-off (GPU-Avatar-Feel) + EIN Merge.** Die „von-den-Riesen"-Trank-Erfahrung (gehaltener
+Trank → aus der Hand trinken) ist als eigener Faden offen (S6-B-Flora-Ökonomie, stored potions) — J3 heilte die
+ERREICHBARKEIT (entdoppelt + im sichtbaren Rezeptbuch), nicht das Lager-Modell.
+
+0. **Ich-J0 — die FENSTER-SPRACHE (#1): ✅ GEBAUT (V18.66).** das `#inventory-overlay` übernimmt die Drawer-Verankerung +
+   den Rahmen (`top:70; left:12; right:12; width:auto`, der Eisen/Messing-Inset-Ring statt des 2-px-Randes);
+   die Modal-Verdunklung + Pointer-Unlock bleiben (korrektes Inventar-Verhalten, Minecraft). MISS: `diag-ich`
+   vs `room-werkstatt` — taucht es jetzt gleich auf? Risiko-arm, sofort spürbar.
+1. **Ich-J1 — die ZONEN-RE-ARCHITEKTUR (der Kern, #2/#5/#6): ✅ GEBAUT (V18.66).** `.inventory-body` von „3 gleiche Spalten" auf
+   das Werkstatt-Modell — eine `ich-preview-row` (HABE | Bühne-VIEWER | WERK) + ein vollbreiter `ich-readout`
+   darunter (Verfassung · WERTE|NATUR · EMOTION · WAS DU TRÄGST). Die `.ich-stage` löst `grid-template-columns:
+   300px 1fr` auf (der Canvas IST der Viewer; das `#ich-stage-spec` wandert in den Readout → nicht mehr
+   geschnitten). Die `#ich-search` wandert als schmales Feld in den WERK-Spaltenkopf (Werkstatt-Parität). Der
+   GRÖSSTE Tiefen-Sprung — das `#workshop-stats-panel`-Muster 1:1.
+2. **Ich-J2 — „Was du trägst" + Equip-Verdichtung (#3): ✅ GEBAUT (V18.66).** der `#player-equip`-„In der
+   Hand"-Dropdown (`_equipAppendHeldRow`) GESCHNITTEN (Parallel-Pfad zur Hotbar, V9.82) — Wechseln in der HAND
+   (Hotbar) + „In die Hand" im Rezept sind die EINEN ehrlichen Pfade (beide GEMESSEN frei via `wieldBlueprint`).
+   **GEMESSENE Korrektur am Plan:** die Rüstung-Zeile BLEIBT — sie ist der FREIE Wechsel einer besessenen
+   (geschmiedeten) Rüstung (`wearArmor`), während das Rezept-„Anlegen" über `_makeCostGate` die Zutaten neu
+   zieht → KEIN Duplikat (der Plan „beide Dropdowns schneiden" wäre ein Re-Cost-Regress gewesen). „Was du
+   trägst" bleibt der saubere Readout (Gerät/Rüstung-Chips, Klick legt ab) im Selbst-Readout.
+3. **Ich-J3 — das TRINKEN entdoppelt (#4, von den Riesen): ✅ GEBAUT (V18.66).** die Trank-BAUPLÄNE leben im
+   REZEPTBUCH (die „Trank"-Gruppe, „Brauen + Trinken", WERK-Spalte — nach J1 prominent sichtbar, der EINE
+   Brau-+-Trink-Ort wie die Werkstatt); die Equip-Konsumables-Sektion trägt nur noch die DSL-TABELLEN-Trünke
+   (kein Bauplan → nicht im Rezeptbuch) → das Trinken ist nicht mehr doppelt + versteckt. **EHRLICH:** das ist
+   die ERREICHBARKEIT (der Riesen-Weg = EIN sichtbarer Ort, kein Duplikat); die volle Minecraft-Erfahrung (einen
+   gehaltenen/besessenen Trank aus der Hand trinken) braucht das STORED-POTION-Modell = die S6-B-Flora-Ökonomie
+   (erntbare Zutaten + Lager), ein eigener tieferer Faden.
+4. **Schöpfer-Browser-Sign-off** (Feel/GPU der Bühne + die neue Topologie) + EIN Merge des Ich-Putz-Bogens. ← OFFEN
+
+**Reihenfolge-Logik:** J0 (Rahmen, sofort „gehört zur Familie") → J1 (die Topologie, der Kern — heilt #2/#5/#6
+in EINEM Zug) → J2 (Equip-Verdichtung) → J3 (Trinken). J1 ist der größte; J0 davor, weil er risiko-arm den
+ersten „es ist wie die Werkstatt"-Eindruck setzt, gegen den J1 dann misst.
+
+**Selbst-Prüfung gegen die Lehren:** Verdichte zu EINER Quelle (J2 Equip-Pfad, J1 das `#workshop-stats-panel`-
+Muster geteilt) ✓ · schneide, was tiefer ersetzt wurde (J2 der Hand-Dropdown ← Hotbar) ✓ · geteiltes Design-
+System, ich-gerechter Inhalt (J1 die Werkstatt-Topologie, der Selbst-Readout) ✓ · von den Riesen lernen (J3
+Minecraft-Trinken) ✓ · MISS vor dem Behaupten (jede Welle `diag-ich` + Auge; Render-Feel = Schöpfer-Browser) ✓ ·
+ein Befund = ein verletztes Prinzip, kein Pflaster (EINE Wurzel: Topologie statt Vokabular) ✓. **Der Kern-Fehler
+war ein Topologie-Fehler:** das Vokabular der Räume geliehen, ihre Zonen-Struktur nicht — die Vollendung ist, den
+Avatar zum STAR zu machen und den Selbst-Readout unter ihn zu legen, wie die Werkstatt es vormacht.

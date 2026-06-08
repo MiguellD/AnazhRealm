@@ -4142,8 +4142,11 @@ async function checkBandV1757HeldSlot(ctx) {
         const snap = r.buildStateSnapshot();
         out.snapHasHeld = snap.playerEquipped && snap.playerEquipped.held === wName;
 
-        // (8) UI: EINE „in der Hand"-Zeile (die getrennte Waffen-Zeile ist weg)
-        out.heldRowExists = typeof r._equipAppendHeldRow === "function";
+        // (8) UI: kein Rollen-Schloss — der gehaltene Bauplan geht durch den EINEN merged Pfad (wieldBlueprint),
+        // keine getrennte Waffen-Zeile. V18.66 Ich-J2: der „In der Hand"-DROPDOWN ist geschnitten (Parallel-Pfad
+        // zur Hotbar); das Wechseln läuft in der Hand (Hotbar) + Rezeptbuch (wieldBlueprint). Test wandert mit.
+        out.heldDropdownCut = typeof r._equipAppendHeldRow !== "function";
+        out.wieldMergedPath = typeof r.wieldBlueprint === "function";
         out.noWeaponRow = typeof r._equipAppendWeaponRow !== "function";
 
         // cleanup
@@ -4176,8 +4179,8 @@ async function checkBandV1757HeldSlot(ctx) {
     );
     check("V17.57 W2-B: Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
     check(
-        "V17.57 W2-B: die UI hat EINE in-der-Hand-Zeile (die getrennte Waffen-Zeile ist weg)",
-        res.heldRowExists && res.noWeaponRow
+        "V18.66 Ich-J2: kein Rollen-Schloss — der EINE merged Halte-Pfad (wieldBlueprint), keine Waffen-Zeile; der redundante In-der-Hand-Dropdown ist geschnitten",
+        res.wieldMergedPath && res.noWeaponRow && res.heldDropdownCut
     );
 }
 
@@ -6209,13 +6212,15 @@ async function checkBandV1774UseByRole(ctx) {
         out.structureToPhantom = bm.active === true && !!bm.phantomMesh;
         r._clearBuildMode(); // das Test-Phantom abräumen
 
-        // (5) BUG a — die Ausrüstung-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät
+        // (5) BUG a — die Ausrüstungs-/Rezept-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät.
+        // V18.66 Ich-J2 — der „In der Hand"-Dropdown ist geschnitten; das Gerät (Spitzhacke) ist über das
+        // REZEPTBUCH erreichbar („In die Hand" → wieldBlueprint, frei wenn geschmiedet). KONSUM wandert mit (V9.56-i).
         const part = r._equipPartitionEquipBlueprints();
         out.armorListed = part.armorBlueprints.includes("ruestung_brustpanzer");
         if (typeof r.renderPlayerEquipUI === "function") r.renderPlayerEquipUI();
-        const equipSels = document.querySelectorAll("#player-equip select");
-        out.heldDeviceListed = [...equipSels].some((sel) =>
-            [...sel.options].some((o) => o.value === "geraet_spitzhacke")
+        if (typeof r.renderRecipeBook === "function") r.renderRecipeBook();
+        out.heldDeviceListed = [...document.querySelectorAll("#inventory-recipes .recipe-row")].some((row) =>
+            /spitzhacke/i.test(row.textContent || "")
         );
 
         // (6) BUG b — die Seele-Select listet den built-in Bauplan-Avatar + Verkörpern registriert ihn
@@ -23966,11 +23971,15 @@ async function checkBandVoxelP3AndInventory(ctx) {
             const h = document.getElementById("hof-chronik");
             return !!(h && h.childNodes.length > 0);
         })();
-        // die drei Zonen + „Was du trägst" wandert in die Habe-Zone
+        // V18.66 Ich-J1 — die WERKSTATT-TOPOLOGIE: die Vorschau-Reihe (HABE-Grid | Avatar-VIEWER | WERK-
+        // Rezepte) + der vollbreite READOUT darunter (das Spec-Sheet + „Was du trägst", wie die Ausgabe-
+        // tabelle der Werkstatt). Das Spec-Sheet + Equip wandern aus den Spalten in den Readout (V9.56-i).
         out.ichThreeZones = !!(
-            document.querySelector(".inventory-col-character #ich-stage-spec") &&
-            document.querySelector(".inventory-col-items #inventory-equip") &&
-            document.querySelector(".inventory-col-recipes #inventory-recipes")
+            document.querySelector(".ich-preview-row .inventory-col-items #inventory-grid") &&
+            document.querySelector(".ich-preview-row .inventory-col-character #ich-stage-canvas") &&
+            document.querySelector(".ich-preview-row .inventory-col-recipes #inventory-recipes") &&
+            document.querySelector(".ich-readout #ich-stage-spec") &&
+            document.querySelector(".ich-readout #inventory-equip")
         );
         // V18.62 Ich-H — der Soul-Select wandert in den Header (Körper-Bar), keine separate Seele-Sektion;
         // ein Hinweis zeigt auf die Werkstatt; der Ich-Soul-Editor ist weg.
@@ -24017,23 +24026,30 @@ async function checkBandVoxelP3AndInventory(ctx) {
                 visibleRows() === before && filled.every((el) => !el.classList.contains("search-dim"));
         })();
         // V18.64 — das Fenster PASST in den Viewport (kein Über-den-Rand, die wiederholte Falle): das
-        // Overlay liegt vollständig innerhalb [0, vh] (max-height + box-sizing:border-box). UND die drei
-        // Zonen sind TALL columns nebeneinander (gleicher Top, ähnliche Höhe — nicht das Rezeptbuch als
-        // gequetschter 30vh-Boden-Streifen wie vor V18.64).
+        // Overlay liegt vollständig innerhalb [0, vh] (max-height + box-sizing:border-box).
+        // V18.66 Ich-J1 — die WERKSTATT-TOPOLOGIE GEMESSEN: (a) die drei Vorschau-Paletten (HABE | VIEWER |
+        // WERK) sind nebeneinander (gleicher Top); (b) der READOUT sitzt UNTER der Vorschau-Reihe (sein Top
+        // ≥ Boden des Viewers) — wie #workshop-stats-panel unter dem Viewer, nicht neben ihm gequetscht.
         {
             const ov = document.getElementById("inventory-overlay");
             const ob = ov ? ov.getBoundingClientRect() : null;
             out.ichOverlayFitsViewport = !!(ob && ob.top >= -1 && ob.bottom <= window.innerHeight + 1);
-            const ch = document.querySelector(".inventory-col-character");
-            const rc = document.querySelector(".inventory-col-recipes");
-            if (ch && rc) {
+            const items = document.querySelector(".ich-preview-row .inventory-col-items");
+            const ch = document.querySelector(".ich-preview-row .inventory-col-character");
+            const rc = document.querySelector(".ich-preview-row .inventory-col-recipes");
+            const readout = document.querySelector(".ich-readout");
+            if (items && ch && rc) {
+                const ib = items.getBoundingClientRect();
                 const cb = ch.getBoundingClientRect();
                 const rb = rc.getBoundingClientRect();
-                // gleiche Reihe (Top-Differenz klein) + das Rezeptbuch ist eine VOLLE Spalte (≥ 70% der
-                // Charakter-Spalten-Höhe), kein Boden-Streifen.
-                out.ichZonesSideBySide = Math.abs(cb.top - rb.top) < 24 && rb.height >= cb.height * 0.7;
+                // alle drei Paletten in EINER Reihe (Top-Differenz klein).
+                out.ichZonesSideBySide =
+                    Math.abs(ib.top - cb.top) < 24 && Math.abs(cb.top - rb.top) < 24;
+                // der Readout liegt UNTER der Vorschau-Reihe (der Topologie-Kern: Readout unter dem Viewer).
+                out.ichReadoutUnderViewer = !!(readout && readout.getBoundingClientRect().top >= cb.bottom - 24);
             } else {
                 out.ichZonesSideBySide = false;
+                out.ichReadoutUnderViewer = false;
             }
         }
 
@@ -24086,8 +24102,12 @@ async function checkBandVoxelP3AndInventory(ctx) {
             wave6c1Results.ichHasNoReise && wave6c1Results.hofChronikInDom && wave6c1Results.hofChronikRenders
         );
         check(
-            "V18.57 Ich: drei Zonen — WER ICH BIN (Spec) · WAS ICH HABE (Was du trägst) · WAS ICH MACHEN KANN (Rezepte)",
+            "V18.66 Ich-J1: die Werkstatt-Topologie — Vorschau-Reihe (HABE-Grid|Avatar-VIEWER|WERK-Rezepte) + Readout (Spec+Was du trägst)",
             wave6c1Results.ichThreeZones
+        );
+        check(
+            "V18.66 Ich-J1: der Selbst-Readout sitzt UNTER der Vorschau-Reihe (wie #workshop-stats-panel unter dem Viewer)",
+            wave6c1Results.ichReadoutUnderViewer
         );
         check(
             "V18.62 Ich-H: der Soul-Select sitzt im Header (Körper-Bar) + ein Hinweis zeigt auf die Werkstatt",
@@ -24114,7 +24134,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             wave6c1Results.ichOverlayFitsViewport
         );
         check(
-            "V18.64 Ich: die drei Zonen sind TALL columns nebeneinander (Rezeptbuch = volle Spalte, kein Boden-Streifen)",
+            "V18.66 Ich-J1: die drei Vorschau-Paletten (HABE|VIEWER|WERK) sind nebeneinander (gleiche Reihe)",
             wave6c1Results.ichZonesSideBySide
         );
         check("Welle 6.C1: addToInventory legt Eintrag in ersten leeren Slot", wave6c1Results.slot0HasBaum);
@@ -29294,10 +29314,11 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             }
         }
 
-        // Equip-Hinweis im Spieler-Drawer.
+        // Equip-Hinweis im Spieler-Drawer. V18.66 Ich-J2 — der Hinweis nennt die neuen Wege (Hand/Hotbar +
+        // Rezeptbuch fürs Wechseln; hier Rüstung-Wechsel + Umwidmen). Test wandert mit (V9.56-i).
         r.renderPlayerEquipUI();
         const eq = document.getElementById("player-equip");
-        out.equipHint = !!eq && /Rüstung anziehen/.test(eq.textContent || "");
+        out.equipHint = !!eq && /Rüstung/.test(eq.textContent || "") && /Hotbar|Rezeptbuch/.test(eq.textContent || "");
 
         return out;
     });
@@ -29313,7 +29334,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.39: Rollen-Chip leuchtet in der Rollen-Farbe", v839Results.roleChipGlow);
         check("V8.39: Werkstatt-Stats-Panel zeigt eine Qualität-Zeile", v839Results.qualityRow);
         check("V8.39: Bauplan-Liste-Zeile leuchtet in der Rollen-Farbe", v839Results.listRowGlow);
-        check("V8.39: Spieler-Drawer zeigt den Rüstung-Equip-Hinweis", v839Results.equipHint);
+        check("V18.66 Ich-J2: der Equip-Hinweis nennt die Wechsel-Wege (Hand/Hotbar/Rezeptbuch) + Rüstung", v839Results.equipHint);
     } else {
         check("V8.39: Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
     }
