@@ -4846,6 +4846,52 @@
                 gap: 5px;
                 flex-wrap: wrap;
             }
+            /* V18.75 — der geteilte 3D-VORSCHAU-Bereich links (EIN Renderer, das Hof-Bühnen-Muster). */
+            .feed-preview-panel {
+                margin-top: 14px;
+                background: rgba(255, 245, 220, 0.4);
+                border: 1px solid var(--brass-3, #5a4824);
+                border-radius: 6px;
+                padding: 9px 11px;
+            }
+            .feed-preview-stage {
+                position: relative;
+                margin-top: 6px;
+                border-radius: 5px;
+                overflow: hidden;
+                border: 1px solid var(--brass-3, #5a4824);
+                background: #14110a;
+                box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
+            }
+            .feed-preview-canvas {
+                display: block;
+                width: 100%;
+                height: 184px;
+            }
+            .feed-preview-hint {
+                position: absolute;
+                inset: 0;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                padding: 14px;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 11px;
+                line-height: 1.5;
+                color: var(--ink-on-dark-soft, #c8b48a);
+                background: rgba(20, 17, 10, 0.72);
+            }
+            /* nur zeigen, wenn NICHT [hidden] — sonst überstimmt display:flex das hidden-Attribut. */
+            .feed-preview-hint:not([hidden]) {
+                display: flex;
+            }
+            /* die fokussierte (in der Vorschau gezeigte) Karte hervorheben. */
+            .feed-stream > .is-previewing {
+                box-shadow:
+                    0 0 0 2px var(--brass-1, #b88a50),
+                    0 0 16px rgba(255, 224, 102, 0.25);
+            }
             /* LINKS — das "Diese Welt"-Eiland (content-reich, das Ich-Selbst-Eiland-Muster) +
                die Erschaffen-Werkzeuge (kompakt eingeklappt darunter). */
             .feed-self {
@@ -7714,6 +7760,17 @@
                             </div>
                         </div>
                     </section>
+                    <!-- V18.75 — der geteilte 3D-VORSCHAU-Bereich (das Hof-Bühnen-Muster): EIN WebGPU-Renderer,
+                         klick eine Rezept-/Wesen-Karte → ihr echtes Modell dreht sich hier (kein Renderer pro Karte). -->
+                    <section class="feed-preview-panel">
+                        <h4 class="feed-curate-head">Vorschau</h4>
+                        <div class="feed-preview-stage">
+                            <canvas id="feed-preview-canvas" class="feed-preview-canvas" aria-label="3D-Vorschau"></canvas>
+                            <div id="feed-preview-hint" class="feed-preview-hint">
+                                Klick eine Rezept- oder Wesen-Karte für die 3D-Vorschau.
+                            </div>
+                        </div>
+                    </section>
                 </aside>
             </div>
         </aside>
@@ -8436,6 +8493,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.74.0" defer></script>
+        <script src="anazhRealm.js?v=18.75.0" defer></script>
     </body>
 </html>

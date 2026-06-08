@@ -10127,6 +10127,9 @@ class AnazhRealm {
         if (typeof this._hofHandleDrawerChange === "function") {
             this._hofHandleDrawerChange(name);
         }
+        if (typeof this._feedHandleDrawerChange === "function") {
+            this._feedHandleDrawerChange(name);
+        }
     }
 
     // closeAllDrawers schließt alle (für Help-Klick + ESC).
@@ -10194,6 +10197,9 @@ class AnazhRealm {
                 }
                 if (typeof this._hofHandleDrawerChange === "function") {
                     this._hofHandleDrawerChange(name);
+                }
+                if (typeof this._feedHandleDrawerChange === "function") {
+                    this._feedHandleDrawerChange(name);
                 }
             });
         }
@@ -10558,6 +10564,9 @@ class AnazhRealm {
         }
         if (typeof this._hofHandleDrawerChange === "function") {
             this._hofHandleDrawerChange(null);
+        }
+        if (typeof this._feedHandleDrawerChange === "function") {
+            this._feedHandleDrawerChange(null);
         }
     }
 
@@ -29799,6 +29808,13 @@ class AnazhRealm {
         if (!card.dataset.search) card.dataset.search = item.search || "";
         card.insertBefore(this._feedCover(item), card.firstChild); // die Vorschau (ein simples Cover-Bild) oben
         card.appendChild(this._feedRatingBar(item));
+        // V18.75 — Klick auf den Karten-Körper (nicht auf einen Akt/Stern) stellt das echte 3D-Modell in
+        // den geteilten Vorschau-Bereich links (das Hof-Bühnen-Muster — EIN Renderer, das Fokussierte tritt auf).
+        card.addEventListener("click", (e) => {
+            if (e.target.closest("button") || e.target.closest(".feed-rating") || e.target.closest("a")) return;
+            this._feedFocus(item, card);
+        });
+        if (item.id === this.state.feedFocusId) card.classList.add("is-previewing");
         return card;
     }
 
@@ -29848,6 +29864,173 @@ class AnazhRealm {
         );
         cover.style.background = `linear-gradient(135deg, ${base}, rgba(10, 6, 2, 0.8))`;
         return cover;
+    }
+
+    // === V18.75 — der geteilte 3D-VORSCHAU-Bereich (das Hof-Bühnen-Muster auf den Feed) ===
+    // EINE WebGPU-Bühne (kein Renderer-pro-Karte — 31 Renderer killen die GPU); klick eine Rezept-/Wesen-
+    // Karte → ihr ECHTES Modell (`_buildFromBlueprint` / `_buildCreatureGroup`, reuse) tritt auf + dreht sich.
+    // Welten haben kein Einzel-Modell (sie sind eine ganze Szene) → der Hinweis bleibt. GPU-Feel pixel-blind.
+    _feedFocus(item, card) {
+        if (typeof document === "undefined") return;
+        const list = document.getElementById("library-list");
+        if (list) for (const c of list.querySelectorAll(".is-previewing")) c.classList.remove("is-previewing");
+        if (card) card.classList.add("is-previewing");
+        this.state.feedFocusId = item ? item.id : null;
+        this._feedEnsurePreview();
+        this._feedPreviewShow(item);
+    }
+    _feedEnsurePreview() {
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        if (this.state.feedPreview) return this.state.feedPreview;
+        const canvas = document.getElementById("feed-preview-canvas");
+        if (!canvas) return null;
+        const w = 244;
+        const h = 184;
+        canvas.width = w;
+        canvas.height = h;
+        let renderer;
+        try {
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+        } catch (err) {
+            this.log(`Feed-Vorschau: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
+            return null;
+        }
+        renderer.stencil = false; // wie die Hof-Bühne (V10.0-j.b)
+        renderer.setSize(w, h, false);
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setClearColor(0x14110a, 1);
+        const scene = new THREE.Scene();
+        scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+        const key = new THREE.DirectionalLight(0xffe8c2, 0.95);
+        key.position.set(4, 6, 5);
+        scene.add(key);
+        const fill = new THREE.DirectionalLight(0x88aaff, 0.4);
+        fill.position.set(-4, -1, -3);
+        scene.add(fill);
+        const camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 200);
+        camera.position.set(0, 0.12, 4.2);
+        camera.lookAt(0, 0, 0);
+        const stage = {
+            canvas,
+            renderer,
+            scene,
+            camera,
+            pivot: null,
+            key: null,
+            yaw: 0.5,
+            rafId: null,
+            active: false,
+            rendererReady: false,
+        };
+        this.state.feedPreview = stage;
+        try {
+            renderer
+                .init()
+                .then(() => {
+                    stage.rendererReady = true;
+                    if (stage.active) this._feedPreviewStartRAF();
+                })
+                .catch((err) => this.log(`Feed-Vorschau init: ${err && err.message}`, "ERROR"));
+        } catch (err) {
+            this.log(`Feed-Vorschau init-Start: ${err && err.message}`, "ERROR");
+        }
+        return stage;
+    }
+    _feedPreviewShow(item) {
+        const stage = this.state.feedPreview;
+        if (!stage) return;
+        const key = item ? item.id : null;
+        if (stage.key === key) return;
+        if (stage.pivot) {
+            stage.scene.remove(stage.pivot);
+            stage.pivot.traverse((obj) => {
+                if (obj.isMesh || obj.isLine) {
+                    if (obj.geometry) this._queueDispose(obj.geometry);
+                    if (obj.material) {
+                        if (Array.isArray(obj.material)) obj.material.forEach((m) => this._queueDispose(m));
+                        else this._queueDispose(obj.material);
+                    }
+                }
+            });
+            stage.pivot = null;
+        }
+        stage.key = key;
+        const hint = document.getElementById("feed-preview-hint");
+        let group = null;
+        try {
+            if (item && item.kind === "recipe") group = this._buildFromBlueprint(item.prof.bp, 0);
+            else if (item && item.kind === "creature") group = this._buildCreatureGroup(item.prof.soul);
+        } catch (_e) {
+            group = null;
+        }
+        if (!group || !group.children || !group.children.length) {
+            if (hint) {
+                hint.textContent =
+                    item && item.kind === "world"
+                        ? "Welten sind eine ganze Szene — betritt sie durch das Tor."
+                        : "Klick eine Rezept- oder Wesen-Karte für die 3D-Vorschau.";
+                hint.hidden = false;
+            }
+            return;
+        }
+        if (hint) hint.hidden = true;
+        const box = new THREE.Box3().setFromObject(group);
+        const center = box.getCenter(new THREE.Vector3());
+        const dim = box.getSize(new THREE.Vector3());
+        group.position.sub(center);
+        const maxDim = Math.max(dim.x, dim.y, dim.z) || 1;
+        group.scale.setScalar(2.6 / maxDim);
+        const pivot = new THREE.Group();
+        pivot.add(group);
+        stage.scene.add(pivot);
+        stage.pivot = pivot;
+    }
+    _feedPreviewStartRAF() {
+        const stage = this.state.feedPreview;
+        if (!stage || stage.rafId !== null || !stage.rendererReady) return;
+        const tick = () => {
+            const s = this.state.feedPreview;
+            if (!s || !s.active) {
+                if (s) s.rafId = null;
+                return;
+            }
+            if (s.pivot) {
+                s.yaw += 0.008;
+                s.pivot.rotation.y = s.yaw;
+            }
+            if (s.rendererReady) {
+                const rr = s.renderer.render(s.scene, s.camera);
+                if (rr && typeof rr.catch === "function")
+                    rr.catch((e) => this.log(`Feed-Vorschau-Render: ${e && e.message}`, "INFO"));
+            }
+            s.rafId = requestAnimationFrame(tick);
+        };
+        stage.rafId = requestAnimationFrame(tick);
+    }
+    _feedPreviewStopRAF() {
+        const stage = this.state.feedPreview;
+        if (stage && stage.rafId !== null) {
+            cancelAnimationFrame(stage.rafId);
+            stage.rafId = null;
+        }
+    }
+    // Tab-Wechsel-Hook (Zwilling zu `_hofHandleDrawerChange`): die Vorschau-Bühne lebt nur bei offener Bibliothek.
+    _feedHandleDrawerChange(name) {
+        const stage = this.state.feedPreview;
+        if (name === "bibliothek") {
+            const s = this._feedEnsurePreview();
+            if (!s) return;
+            s.active = true;
+            // das zuletzt fokussierte Item wieder auftreten lassen (Restore über Re-Open).
+            if (this.state.feedFocusId) {
+                const it = this._feedItems().find((x) => x.id === this.state.feedFocusId);
+                if (it) this._feedPreviewShow(it);
+            }
+            this._feedPreviewStartRAF();
+        } else if (stage) {
+            stage.active = false;
+            this._feedPreviewStopRAF();
+        }
     }
 
     _feedRecipeCard(item) {
@@ -49666,7 +49849,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.74.0";
+AnazhRealm.VERSION = "18.75.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

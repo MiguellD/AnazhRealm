@@ -30963,6 +30963,21 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             r.state.feedSort = "neueste";
             r.renderLibraryUI();
         }
+        // V18.75 — der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
+        out.feedPreviewPanel =
+            !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas") &&
+            typeof r._feedFocus === "function" &&
+            typeof r._feedEnsurePreview === "function" &&
+            typeof r._feedPreviewShow === "function";
+        const recForFocus = r._feedItems().find((x) => x.kind === "recipe");
+        if (recForFocus) {
+            const recCard = stream.querySelector(".feed-recipe");
+            r._feedFocus(recForFocus, recCard);
+            out.feedPreviewFocus =
+                r.state.feedFocusId === recForFocus.id && !!recCard && recCard.classList.contains("is-previewing");
+            // die Bühne idle lassen (kein RAF läuft ohne Drawer-Öffnen); Fokus zurücksetzen für spätere Bands.
+            r.state.feedFocusId = null;
+        }
         // Bestbewertet spiegelt eine Wertung zurück (das WERTEN sichtbar).
         r._setFeedRating("world:fluid", 5);
         r._renderFeedTrends();
@@ -31076,6 +31091,8 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
         check("Feed: die Sortier-Chips (Neueste | Bewertung) sind da (V18.74)", w14Results.feedSortChips);
         check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
+        check("Feed: der geteilte 3D-Vorschau-Bereich (Canvas + Methoden) ist da (V18.75)", w14Results.feedPreviewPanel);
+        check("Feed: Klick auf eine Karte fokussiert sie für die Vorschau (V18.75)", w14Results.feedPreviewFocus);
         check("Feed: Bestbewertet spiegelt eine Wertung zurück", w14Results.feedTrends);
         check("Bib-D: die Suche TREIBT den Feed (kein toter Knopf, V18.65)", w14Results.searchDrivesGrid);
         check("Bib-D: die Suche leeren zeigt alle Karten wieder", w14Results.searchClearsClean);
