@@ -10,11 +10,15 @@
 > Schöpfer-Auftrag (07.06.2026): „Weiter geht's, formuliere die Pläne für Ich detailliert aus, aus all dem
 > du gelernt hast — zwei Menüs, viel gelernt. Wie sieht das nächste aus, jedes Detail klar?"
 
-**Stand: GEBAUT (V18.57–.60, Ich-A0–D + Pergament/Hotbar/Drag-Politur) — ABER der Schöpfer-Audit 08.06. (§H)
-fand einen VERORTUNGS-Fehler:** ich hatte Schöpfung (Seele klonen/formen) + die Welt-Stimme (das Journal) ins
-Selbst gelegt + Doubletten (doppelte Körper-Liste, getrennter Rollen-Override, eigenes Rezeptbuch). Das „Ich"
-ist NUR das Selbst, das ich BIN — es liest + wählt, es erschafft + erzählt nicht. **Die Synergie-Kontrolle +
-der saubere Plan stehen unten in §H + §I (die Wellen Ich-F–I).** Verifiziert mit dem Auge (`diag-ich.cjs`).
+**Stand: DER ICH-BOGEN VOLLENDET (V18.61–.63, Ich-F–I GEBAUT + verifiziert).** Der VERORTUNGS-Fehler des
+§H-Audits ist geheilt — das „Ich" ist NUR noch das Selbst, das ich BIN (es liest + wählt, es erschafft +
+erzählt nicht): **Ich-F** (V18.61) die Reise→Hof (H.1), Soul-Select in den Header (H.2), die doppelte
+Körper-Liste + `renderPlayerStatsUI` geschnitten (H.3), Rollen-Override in „Was du trägst" (H.6); **Ich-G**
+(V18.61) die Bühne switcht live + `def.build()` (H.7); **Ich-H** (V18.62) die Seelen-Quelle vereint —
+`soulToBlueprint`-Brücke + Werkstatt-„Körper holen", der Ich-Soul-Editor geschnitten (H.4, die Seele IST ein
+Bauplan); **Ich-I** (V18.63) Rezeptbuch trägt die geteilte Rollen-Farbe + Omnibox-Trigger im Ich (H.5). Alle
+Playtests grün, mit dem Auge verifiziert (`diag-ich`/`diag-hof`). **OFFEN: der Schöpfer-Browser-Sign-off
+(GPU-Feel) + EIN Merge des Ich-Bogens.** (Die Synergie-Kontrolle + der ausgeführte Plan stehen in §H + §I.)
 
 **Historie: PLAN (tief, ungebaut).** Die Werkstatt (Referenz, V18.32–.44) und der Hof (V18.46–.56) sind RUND —
 aus beiden ist die Form gelernt. Das „Ich" ist heute ein 3-Spalten-Overlay (Habe · Charakter · Ausrüstung &
