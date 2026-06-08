@@ -9,10 +9,18 @@
 > Schöpfer-Auftrag (08.06.2026): „können wir die offenen 2 Menüs ausdefinieren, ausplanen, mit dem
 > Gelernten, der 3 erstellten?"
 
-**Stand: PLAN (tief, ungebaut).** Die Werkstatt, der Hof und das Ich sind RUND. Die Einstellungen sind heute
-**14 ad-hoc Sektionen in einer 3-Spalten-Säule** (GEMESSEN, §G): Spieler-Settings + ~20 Entwickler-Render-
-Regler durcheinander, „Diese Welt teilen" DOPPELT (auch Bibliothek). Dieser Plan ordnet sie — **und nutzt die
-WICHTIGSTE Lehre der drei Räume mit ihrer schärfsten Nuance.**
+**Stand: GEBAUT (V18.78, 08.06.2026) — der UI-Putz-Bogen ist RUND (alle sechs Räume).** Set-A (die 6 Gruppen
+nach Häufigkeit, `.settings-group`-Karten unter Cinzel-Labels auf dem masonry-Flucht-Raster) · Set-B (die ~20
+Dev-Render-Regler + die alte „Tuning"-Sektion → EINE eingeklappte „Render-Feinschliff"-Karte mit vier Sub-
+Bändern Cel/Wasser/Schatten/Emotion) · Set-C (das „Welt teilen/empfangen" → Bibliothek verortet, hier nur ein
+kursiver Verweis-Knopf + der reine Datei-Export/-Import). Reine Ordnungs-Welle (kein neuer Datenpfad, alle
+Sektion-IDs + Slider-Wiring bewahrt, der Bau ein Zeilen-Anker-Splice). Playtest grün + mit dem Auge verifiziert
+(`diag-room einstellungen` Page-Shot + aufgeklappter Render-Band-Shot). OFFEN: nur der Schöpfer-Browser-Sign-off
+des GPU-Feels. — Der Plan unten ist die DESIGN-WAHRHEIT (was gebaut wurde).
+
+**Ausgangslage (GEMESSEN, §G):** die Einstellungen waren **14 ad-hoc Sektionen in einer 3-Spalten-Säule**:
+Spieler-Settings + ~20 Entwickler-Render-Regler durcheinander, „Diese Welt teilen" scheinbar doppelt. Dieser
+Plan ordnet sie — **und nutzt die WICHTIGSTE Lehre der drei Räume mit ihrer schärfsten Nuance.**
 
 ---
 

@@ -7,13 +7,15 @@
 > (die Werkstatt — das Vorbild-Subdesign), `das-lebendige-feld.md` (die Welt, die das UI
 > trägt), `state-of-realm.md` (die Vision).
 
-**Stand: DREI KERN-RÄUME AUF TIEFE GEBAUT (V18.68, 08.06.2026) — die WERKSTATT (Referenz, V18.41–.44) ·
-DER HOF (V18.46–.56) · DAS ICH (V18.57–.68).** Aus den drei ist das Design-System destilliert (s. §1.5 + die
-dedizierten Pläne `hof-plan.md`, `ich-plan.md`): das geteilte `.spec-*`-Sheet, die dunkle Bühnen-/Insel-DNA,
-`_xProfile` (ein Lese-Vektor, viele Leser), die Daten-Viz aus den gemessenen Vektoren, der geteilte Hebel
-P11–P17, die Omnibox (V18.45, Ctrl+K — die ~60-Befehle-Duplikation gelöst). **OFFEN: die zwei letzten Räume —
-BIBLIOTHEK + EINSTELLUNGEN** (dedizierte Pläne `bibliothek-plan.md` + `einstellungen-plan.md`, V18.68); danach
-der Schöpfer-Browser-Sign-off des ganzen Flusses (GPU-Feel) + EIN Merge. **Die HART erkauften Lehren der drei
+**Stand: ALLE SECHS KERN-RÄUME GEBAUT (V18.78, 08.06.2026) — der UI-Putz-Bogen ist RUND.** Die WERKSTATT
+(Referenz, V18.41–.44) · DER HOF (V18.46–.56) · DAS ICH (V18.57–.68) · die BIBLIOTHEK/der FEED (V18.69–.77) ·
+die EINSTELLUNGEN (V18.78). Aus den Räumen ist das Design-System destilliert (s. §1.5 + die dedizierten Pläne
+`hof-plan.md`, `ich-plan.md`, `bibliothek-plan.md`, `einstellungen-plan.md`): das geteilte `.spec-*`-Sheet, die
+dunkle Bühnen-/Insel-DNA, `_xProfile` (ein Lese-Vektor, viele Leser), die Daten-Viz aus den gemessenen Vektoren,
+der geteilte Hebel P11–P17, die Omnibox (V18.45, Ctrl+K — die ~60-Befehle-Duplikation gelöst). **Die schärfste
+Nuance (Einstellungen, V18.78): NICHT jeder Raum hat einen content-Star — ein UTILITY-Raum bekommt ORDNUNG nach
+Häufigkeit + progressive disclosure, keinen erfundenen Star. OFFEN: der Schöpfer-Browser-Sign-off des ganzen
+Flusses (GPU-Feel) + EIN Merge** + der große soziale Bogen (Backlog). **Die HART erkauften Lehren der drei
 Räume (über `ich-plan.md` §J hinaus, gelten für die zwei offenen):** (a) **„auf X-Niveau" = den ZWECK des Raums
 in die Mitte stellen, nicht die Topologie des Referenz-Raums kopieren** (Werkstatt viewer-zentral=erschaffen ·
 Hof orchester-zentral=dirigieren · Ich habe-zentral=verwalten → Bibliothek karten-zentral=entdecken/betreten ·

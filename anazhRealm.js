@@ -26455,18 +26455,16 @@ class AnazhRealm {
     // jeden gültigen Snapshot.
 
     initWorldInfoUI() {
-        const exportBtn = document.getElementById("world-export");
-        const importBtn = document.getElementById("world-import");
-        if (exportBtn) {
-            exportBtn.addEventListener("click", () => {
-                const m = this.state.worldMeta || {};
-                const slug = (m.slug || "welt").replace(/[^a-z0-9_-]/gi, "");
-                this.triggerStateDownload(this.buildStateSnapshot(), `anazh-realm-${slug}.json`);
-                this.journalAppend("share", `Ich wurde als Datei nach außen getragen.`);
+        // UI-Putz V18.78 (einstellungen-plan §D.3) — „Welt teilen/empfangen" lebt jetzt in der
+        // BIBLIOTHEK (das soziale Zuhause: per-Karte Teilen/Signieren + „Empfangen"). Hier nur ein
+        // Verweis-Knopf dorthin; der reine Datei-Export/-Import bleibt über „Export…"/„Datei…" in
+        // der Speicher-Gruppe erreichbar (kein Funktions-Verlust, P17).
+        const shareRef = document.getElementById("world-share-ref");
+        if (shareRef) {
+            shareRef.addEventListener("click", () => {
+                const tab = document.querySelector('[data-tab="bibliothek"]');
+                if (tab) tab.click();
             });
-        }
-        if (importBtn) {
-            importBtn.addEventListener("click", () => this.openStateFilePicker());
         }
         // Ring 8: Welt-Picker. „Neue Welt" öffnet einen Inline-Dialog für slug
         // + Person-Übernahme. Die Liste anderer Welten wird in updateWorldInfo
@@ -49850,7 +49848,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.77.0";
+AnazhRealm.VERSION = "18.78.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

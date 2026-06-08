@@ -247,8 +247,11 @@ Nexus. Sie ist die Heimat aller freien/kreativen Befehle + macht den Bildschirm 
 4. **Bibliothek** (§5 + `bibliothek-plan.md`) — karten-zentral (man BETRITT Welten): das Welt-Karten-Raster der
    Star, `_worldProfile` als Spec-Card-Vektor, die Formulare (Übersetzer/Andocken) eingeklappt; „Diese Welt"
    zieht aus Einstellungen herein.
-5. **Einstellungen** (§6 + `einstellungen-plan.md`) — nach Häufigkeit geordnet (Modus·Speicher vorne, die ~18
-   Dev-Regler in einen eingeklappten „Feinschliff"); das Welt-teilen-Duplikat → Bibliothek.
+5. ✅ **Einstellungen GEBAUT (V18.78, §6 + `einstellungen-plan.md`)** — die geordnete Werkbank: 6 Häufigkeits-
+   Gruppen unter Cinzel-Labels (Modus·Speicher vorne), die ~20 Dev-Render-Regler + die alte „Tuning"-Sektion in
+   EINER eingeklappten „Render-Feinschliff"-Karte mit 4 Sub-Bändern (Cel/Wasser/Schatten/Emotion); das Welt-
+   teilen → Bibliothek verortet (Verweis-Knopf). Ein UTILITY-Raum (kein Star). Playtest grün + Auge verifiziert.
+   **→ der UI-Putz-Bogen ist RUND (alle 6 Räume gebaut); OFFEN nur der Schöpfer-Browser-Sign-off + Merge.**
 
 (Reihenfolge-Logik: die drei reichsten Räume (Werkstatt·Hof·Ich) zuerst — dort lebt der Spec-Sheet-Reuse +
 die Bühnen-DNA. Bibliothek + Einstellungen erben den ganzen geteilten Hebel.) Jeder Raum erbt P11–P14 GRATIS (geteilte Bausteine) + wendet P15–P17 an; VOR dem Bauen der

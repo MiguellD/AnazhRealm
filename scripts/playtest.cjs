@@ -7845,8 +7845,13 @@ async function checkBandWaves1to3(ctx) {
         out.hasGrokSpeakFromJournal = typeof r.grokSpeakFromJournal === "function";
         // F — Welt-Info-UI im DOM
         out.worldInfoInDom = !!document.getElementById("world-info");
-        out.worldExportInDom = !!document.getElementById("world-export");
-        out.worldImportInDom = !!document.getElementById("world-import");
+        // UI-Putz V18.78 (einstellungen-plan §D.3) — „Welt teilen/empfangen" ist in die BIBLIOTHEK
+        // verortet (das soziale Zuhause); hier bleibt der Verweis-Knopf + der reine Datei-Export/
+        // -Import (Export…/Datei… in der Speicher-Gruppe). Der Test wandert mit (V9.56-i): er prüft
+        // die Verortung (Verweis da) UND dass keine Funktion verloren ging (Datei-Export/-Import da).
+        out.worldShareRefInDom = !!document.getElementById("world-share-ref");
+        out.worldFileExportInDom = !!document.getElementById("action-export-state");
+        out.worldFileImportInDom = !!document.querySelector('#save-actions [data-cmd="Lade Datei"]');
         // F — updateWorldInfo füllt slug
         r.updateWorldInfo();
         const infoText = document.getElementById("world-info").textContent;
@@ -7907,8 +7912,10 @@ async function checkBandWaves1to3(ctx) {
         check("Welle 3 E: grokSpeakFromJournal-Funktion existiert", wave3Results.hasGrokSpeakFromJournal);
         check("Welle 3 F: #world-info im DOM", wave3Results.worldInfoInDom);
         check(
-            "Welle 3 F: Welt-Export-/Import-Buttons im DOM",
-            wave3Results.worldExportInDom && wave3Results.worldImportInDom
+            "Welle 3 F: Welt-Teilen verortet (Verweis Bibliothek) + Datei-Export/-Import erreichbar",
+            wave3Results.worldShareRefInDom &&
+                wave3Results.worldFileExportInDom &&
+                wave3Results.worldFileImportInDom
         );
         check("Welle 3 F: Welt-Info zeigt slug", wave3Results.worldInfoShowsSlug);
         check("Welle 3 F: Welt-Info zeigt Alter in Tagen", wave3Results.worldInfoShowsAge);
