@@ -896,6 +896,17 @@
             #inventory-overlay .inventory-slot .slot-glyph {
                 font-size: 14px;
             }
+            /* V18.60 — die Drag&Drop-Affordanz SICHTBAR machen (Schöpfer „in der Werkstatt vieles per Drag,
+               hier viele Klicks"): ein gefüllter Slot zeigt den Greif-Cursor → der Spieler SIEHT, dass er
+               ziehen kann (Klick bleibt als Alternative). Das Ziehen existierte längst, war nur unsichtbar. */
+            #inventory-overlay .inventory-slot[draggable="true"],
+            #inventory-overlay .hotbar-slot.filled {
+                cursor: grab;
+            }
+            #inventory-overlay .inventory-slot.dragging,
+            #inventory-overlay .hotbar-slot.dragging {
+                cursor: grabbing;
+            }
             .inventory-slot {
                 position: relative;
                 display: flex;
@@ -6035,6 +6046,7 @@
                      Minecraft: das Raster + darunter die Belegung der Schnellslots). -->
                 <div class="inventory-col-items">
                     <h3 class="inventory-col-title">Was ich habe</h3>
+                    <p class="inventory-hint">Ziehen oder klicken: ein Item auf einen Hotbar-Slot legen.</p>
                     <div id="inventory-grid" class="inventory-grid"></div>
                     <div id="inventory-selected" class="inventory-selected" aria-live="polite">
                         <span class="label">gewählt:</span> <span class="name">—</span>
@@ -7377,6 +7389,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.59.0" defer></script>
+        <script src="anazhRealm.js?v=18.60.0" defer></script>
     </body>
 </html>

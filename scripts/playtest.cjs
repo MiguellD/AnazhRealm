@@ -23909,6 +23909,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const slot1 = document.querySelector('#inventory-grid [data-inv-slot="1"]');
         out.geodeHasMagieClass = slot0 && slot0.classList.contains("tag-magieleitung");
         out.baumHasLebendigClass = slot1 && slot1.classList.contains("tag-lebendig");
+        // V18.60 — die Drag&Drop-Affordanz: ein gefüllter Inventar-Slot ist ziehbar (Spielerperspektive,
+        // Werkstatt-artige Direkt-Manipulation; das Ziehen inv→hotbar existiert via _onSlotDrop).
+        out.filledSlotDraggable = !!(slot0 && slot0.getAttribute("draggable") === "true");
         // baum_eiche hat laub → brennbar 0.85 hoch
         out.baumHasBrennendClass = slot1 && slot1.classList.contains("tag-brennend");
 
@@ -24019,6 +24022,10 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1: Overlay initial versteckt", wave6c1Results.initiallyHidden);
         check("Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay", wave6c1Results.overlayVisibleAfterToggle);
         check("Welle 6.C1: Grid rendert 27 Slot-Elemente", wave6c1Results.gridRendered27);
+        check(
+            "V18.60 Ich: gefüllter Inventar-Slot ist ziehbar (Drag&Drop inv→Hotbar, Spielerperspektive)",
+            wave6c1Results.filledSlotDraggable
+        );
         check("Welle 6.C1: kristall_geode-Slot bekommt tag-magieleitung Klasse", wave6c1Results.geodeHasMagieClass);
         check("Welle 6.C1: baum_eiche-Slot bekommt tag-lebendig Klasse", wave6c1Results.baumHasLebendigClass);
         check("Welle 6.C1: baum_eiche-Slot bekommt tag-brennend Klasse (laub)", wave6c1Results.baumHasBrennendClass);
@@ -40527,7 +40534,10 @@ async function checkBandRing6Workshop(ctx) {
         check("Ring 6.5: setHotbarSlot(idx, null) leert den Slot", ring65Results.clearedSlotIsNull);
         check("Ring 6.5: Leerer Slot zeigt — als Label", ring65Results.clearedDomShowsEmpty);
         check("Ring 6.5: #hotbar-config-Container im Spieler-Drawer", ring65Results.hotbarConfigInDom);
-        check("V18.59: die Ich-Hotbar ist eine visuelle 9-Slot-Reihe (Minecraft-vereint, kein Dropdown)", ring65Results.hotbarConfigHasNineRows);
+        check(
+            "V18.59: die Ich-Hotbar ist eine visuelle 9-Slot-Reihe (Minecraft-vereint, kein Dropdown)",
+            ring65Results.hotbarConfigHasNineRows
+        );
         check("Ring 6.5: saveState persistiert Hotbar", ring65Results.saveContainsHotbar);
         check("Ring 6.5: loadState rekonstruiert Hotbar", ring65Results.loadRestoresHotbar);
     }
