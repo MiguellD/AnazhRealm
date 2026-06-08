@@ -30305,41 +30305,26 @@ class AnazhRealm {
         return this._el("div", { class: "spec-header" }, idZone, trustZone);
     }
 
-    // BODY — zwei Spalten: VOKABULAR (die „Natur" der Welt = ihre DSL-Wörter) | NETZ & VERTRAUEN
-    // (Multiplayer/Server-Chip + das async Signatur-Siegel). Daten-Viz des GEMESSENEN Vektors (P15).
+    // BODY — EINE kompakte Meta-Zeile (V18.77): das DSL-Vokabular (die „Natur" der Welt) + die
+    // Multiplayer-Abweichung + das async Signatur-Siegel. Profi-leicht (Feed-Card), kein Datenblatt.
     _libraryCardBody(prof, sigSeal) {
-        const vocChildren = [this._el("div", { class: "spec-col-head", text: "Vokabular" })];
+        // V18.77 — Profi-Lightening: EINE kompakte Meta-Zeile statt zwei beschrifteter Spalten. Die
+        // „VOKABULAR"/„NETZ & VERTRAUEN"-Form-Labels machten die Karte zum Datenblatt; ein Feed-Card
+        // zeigt nur die Signale, die zählen (DSL-Vokabular · nur Multiplayer-Abweichung · Signatur subtil).
+        const meta = this._el("div", { class: "lib-card-meta" });
         if (prof.hasDsl)
-            vocChildren.push(
-                this._el(
-                    "div",
-                    { class: "lib-dsl-strip" },
-                    ...prof.dsl.map((op) => this._el("span", { class: "library-dsl-word", text: op }))
-                )
-            );
-        else vocChildren.push(this._el("span", { class: "spec-empty", text: "kein DSL-Vokabular" }));
-        const netChildren = [
-            this._el("div", { class: "spec-col-head", text: "Netz & Vertrauen" }),
-            this._el(
-                "div",
-                { class: "spec-stat-strip" },
+            for (const op of prof.dsl) meta.appendChild(this._el("span", { class: "library-dsl-word", text: op }));
+        else meta.appendChild(this._el("span", { class: "spec-empty", text: "kein DSL-Vokabular" }));
+        // Einzelwelt ist der Default → nicht zeigen (Profi: nur die Abweichung signalisieren).
+        if (prof.multiplayer)
+            meta.appendChild(
                 this._el("span", {
-                    class: "spec-stat-chip",
-                    text: prof.multiplayer
-                        ? prof.serverMode === "js-compute"
-                            ? "Multiplayer · JS-Compute"
-                            : "Multiplayer"
-                        : "Einzelwelt",
+                    class: "lib-net-badge",
+                    text: prof.serverMode === "js-compute" ? "Multiplayer · JS-Compute" : "Multiplayer",
                 })
-            ),
-            sigSeal,
-        ];
-        return this._el(
-            "div",
-            { class: "spec-body" },
-            this._el("div", { class: "spec-col" }, ...vocChildren),
-            this._el("div", { class: "spec-col" }, ...netChildren)
-        );
+            );
+        meta.appendChild(sigSeal);
+        return this._el("div", { class: "spec-body lib-card-body" }, meta);
     }
 
     // FOOTER — der prominente BETRETEN-Akt (Portal holen / Welt aufbauen / neu aufbauen) + Status,
@@ -49865,7 +49850,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.76.0";
+AnazhRealm.VERSION = "18.77.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

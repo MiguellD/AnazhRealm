@@ -3513,9 +3513,34 @@
             }
             .lib-spec-sheet .spec-name.lib-card-name {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 13px;
+                font-size: 15.5px;
                 font-weight: bold;
+                letter-spacing: 0.3px;
                 color: var(--parch-bg, #ece1c5);
+            }
+            /* V18.77 — Profi-Lightening: EINE Meta-Zeile (DSL + nur die Multiplayer-Abweichung + Signatur). */
+            .lib-spec-sheet .spec-body.lib-card-body {
+                display: block;
+            }
+            .lib-card-meta {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 5px 7px;
+            }
+            .lib-net-badge {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 8.5px;
+                padding: 1px 7px;
+                border-radius: 8px;
+                background: rgba(255, 224, 102, 0.14);
+                color: #ffe6a8;
+                border: 1px solid var(--brass-2, #8a6322);
+            }
+            .lib-card-meta .lib-sig-seal {
+                margin-left: auto;
+                font-size: 8.5px;
+                opacity: 0.82;
             }
             /* Stufe + Herkunfts-/Multiplayer-Marken auf dunklem Grund. */
             .lib-stage {
@@ -3662,15 +3687,23 @@
                 padding-top: 6px;
                 border-top: 1px dotted rgba(184, 140, 80, 0.3);
             }
+            /* V18.77 — Signieren/Teilen sind SEKUNDÄR (man signiert/teilt selten beim Browsen): als dezente
+               Text-Links statt prominenter Knöpfe, damit BETRETEN der eine klare Akt bleibt (Profi-Hierarchie). */
             .lib-spec-sheet .library-sig-btn {
-                background: rgba(255, 235, 190, 0.1);
-                color: var(--ink-on-dark, #ece1c5);
-                border: 1px solid var(--brass-2, #8a6322);
-                padding: 2px 9px;
+                background: transparent;
+                color: var(--ink-on-dark-soft, #c8b48a);
+                border: none;
+                padding: 2px 4px;
                 font-size: 9.5px;
                 cursor: pointer;
                 border-radius: 2px;
-                font-family: "Cinzel", Georgia, serif;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                text-decoration: underline;
+                text-decoration-color: rgba(184, 140, 80, 0.5);
+            }
+            .lib-spec-sheet .library-sig-btn:hover {
+                color: #ffe6a8;
             }
             .lib-spec-sheet .library-sig-btn:disabled {
                 opacity: 0.45;
@@ -4805,21 +4838,22 @@
                 width: 100%;
                 box-sizing: border-box;
             }
-            /* die VORSCHAU — ein farbiges Cover-Band oben auf jeder Karte (deterministisch aus der Identität). */
+            /* V18.77 — die VORSCHAU prominenter (das Visuelle führt, Profi-Editorial-Card): ein höheres
+               Cover-Band oben auf jeder Karte (deterministisch aus der Identität), grosser Art-Glyph. */
             .feed-cover {
-                height: 42px;
-                margin: -9px -11px 9px;
+                height: 58px;
+                margin: -9px -11px 10px;
                 border-radius: 5px 5px 0 0;
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 0 12px;
-                box-shadow: inset 0 -10px 16px rgba(0, 0, 0, 0.28);
+                gap: 10px;
+                padding: 0 13px;
+                box-shadow: inset 0 -14px 22px rgba(0, 0, 0, 0.32);
             }
             .feed-cover-glyph {
-                font-size: 19px;
-                color: rgba(255, 245, 220, 0.92);
-                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+                font-size: 26px;
+                color: rgba(255, 245, 220, 0.94);
+                text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
             }
             .feed-cover-label {
                 font-family: "Cinzel", Georgia, serif;
@@ -8497,6 +8531,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.76.0" defer></script>
+        <script src="anazhRealm.js?v=18.77.0" defer></script>
     </body>
 </html>

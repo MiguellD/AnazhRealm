@@ -30858,6 +30858,13 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!fluidCard.querySelector(".lib-trust-seal") &&
             !!fluidCard.querySelector(".spec-body") &&
             !!fluidCard.querySelector(".spec-footer .library-get");
+        // V18.77 — Profi-Lightening: der Body ist EINE kompakte Meta-Zeile (DSL-Vokabular + Signatur),
+        // KEIN beschriftetes Zwei-Spalten-Datenblatt mehr (die `.spec-col-head`-Form-Labels sind weg).
+        out.cardLightened =
+            !!fluidCard &&
+            !!fluidCard.querySelector(".lib-card-body .lib-card-meta") &&
+            !!fluidCard.querySelector(".lib-card-meta .library-dsl-word") &&
+            !fluidCard.querySelector(".lib-card-body .spec-col-head");
         // === Feed (die Social-Media-Plattform, V18.70) — 3 Spalten, der vereinte Feed, das WERTEN ===
         const libDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
         const feedLayout = libDrawer && libDrawer.querySelector(".feed-layout");
@@ -31076,6 +31083,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Bib-A0: _worldProfile existiert", w14Results.worldProfileExists);
         check("Bib-A0: _worldProfile bündelt den Welt-Vektor (id/label/dsl/trust/searchText)", w14Results.worldProfileBundles);
         check("Bib-A: die Karte ist eine Welt-Spec-Card (.spec-header + Trust-Siegel + Betreten-Akt)", w14Results.cardIsSpecCard);
+        check("V18.77: die Karte ist Profi-leicht — EINE Meta-Zeile (DSL), keine Datenblatt-Spalten-Labels", w14Results.cardLightened);
         check("Feed: 3 Spalten — 'Diese Welt' links | Feed Mitte | Schöpfen+Kuratieren rechts", w14Results.feedThreeCol);
         check("Feed: das #library-list ist der Feed-Strom in der Mitte", w14Results.feedCenterHoldsStream);
         check("Feed: die Tabs (Für dich | Aus dem Mesh) im Hauptthread, der Katalog im Mesh-Panel (V18.73)", w14Results.feedTabs);
