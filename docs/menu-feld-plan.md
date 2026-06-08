@@ -237,17 +237,21 @@ Nexus. Sie ist die Heimat aller freien/kreativen Befehle + macht den Bildschirm 
    Freitext→Nexus; liest die bestehenden Vektoren + ruft `processChatCommand`/`selectBlueprintForEdit` (additiv).
    10 KONSUM-Invarianten + mit dem Auge verifiziert (`diag-omnibox.cjs`). OFFEN: die alten Pfade ablösen
    (Hof-Schritt) + Browser-Sign-off.
-2. ✅ **Hof GEBAUT (V18.46+.47, §2)** — Hof-A: inline-Befehle am Wesen ([Folge][Warte][Streift], P16);
-   Hof-B: die globale Aufträge-Reihe + die ~60-Knopf-„Befehle"-Liste aufgelöst → die Omnibox trägt sie
-   (⌕ Suche-Trigger in der Topbar = Maus-Parität). Tests mitgewandert, Playtest + Auge grün. (Gesetze-Zone
-   + Sammeln/Bauen-inline + die inerte help-list-JS = kleine Folge-Politur.)
-3. **Ich** (§3) — der Spec-Sheet-Gewinn (Stats + 6 Emotionen + Seele-Tags als Daten-Viz, `_specBar`-Reuse);
-   Klick-Hotbar; Avatar-Mittelpunkt (WebGPU → Schöpfer-Go); Seele-formen → Werkstatt.
-4. **Bibliothek** (§5) — Masonry-Spec-Cards + Andock-Formular eingeklappt; „Diese Welt" zieht aus Einstellungen.
-5. **Einstellungen** (§6) — die 6 Gruppen ordnen; das Welt-teilen-Duplikat raus.
+2. ✅ **Hof AUF TIEFE GEBAUT (V18.46–.56, §2 + `hof-plan.md`)** — inline-Befehle am Wesen · Liste→Omnibox ·
+   `_creatureProfile` (ein Lese-Vektor) · die Wesen-Spec-Card (Daten-Viz, fokussierbar) · die Hof-BÜHNE (der
+   Star) · das geteilte Spec-Sheet · zwei Zonen (Orchester | Partitur) · Gruppen-Dirigat. Auge + Playtest grün.
+3. ✅ **Ich AUF TIEFE GEBAUT (V18.57–.68, §3 + `ich-plan.md`)** — `_selfProfile` · das Selbst-Spec-Sheet · die
+   6-Achsen-Emotion · die Selbst-Bühne · die Verortung geheilt (Journal→Hof, Seele→Werkstatt) · der Ich-Putz-
+   Bogen J0–J6 (Werkstatt-Topologie → Korrektur „das Ich ist habe-zentral" → die Statsbar gehört UNTEN). Drei
+   Anläufe (J1→J5→J6) — die Lehre: räumliche Schöpfer-Worte wörtlich nehmen + VOLLBILD messen.
+4. **Bibliothek** (§5 + `bibliothek-plan.md`) — karten-zentral (man BETRITT Welten): das Welt-Karten-Raster der
+   Star, `_worldProfile` als Spec-Card-Vektor, die Formulare (Übersetzer/Andocken) eingeklappt; „Diese Welt"
+   zieht aus Einstellungen herein.
+5. **Einstellungen** (§6 + `einstellungen-plan.md`) — nach Häufigkeit geordnet (Modus·Speicher vorne, die ~18
+   Dev-Regler in einen eingeklappten „Feinschliff"); das Welt-teilen-Duplikat → Bibliothek.
 
-(Ich vor Bibliothek/Einstellungen vorgezogen: der Spec-Sheet-Reuse ist dort der größte Synergie-Gewinn + frisch
-aus der Werkstatt.) Jeder Raum erbt P11–P14 GRATIS (geteilte Bausteine) + wendet P15–P17 an; VOR dem Bauen der
+(Reihenfolge-Logik: die drei reichsten Räume (Werkstatt·Hof·Ich) zuerst — dort lebt der Spec-Sheet-Reuse +
+die Bühnen-DNA. Bibliothek + Einstellungen erben den ganzen geteilten Hebel.) Jeder Raum erbt P11–P14 GRATIS (geteilte Bausteine) + wendet P15–P17 an; VOR dem Bauen der
 Check: Grund · Overlay · Flucht · Rahmen · Vektor-als-Viz · eine Ebene · Samen (im Screenshot messen).
 
 Jeder Schritt: **messen → als System bauen → verifizieren (Behauptung zuletzt) → Schöpfer-Browser

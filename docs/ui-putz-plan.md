@@ -7,22 +7,23 @@
 > (die Werkstatt — das Vorbild-Subdesign), `das-lebendige-feld.md` (die Welt, die das UI
 > trägt), `state-of-realm.md` (die Vision).
 
-**Stand: GEBAUT + VEREDELT (V18.34, 07.06.2026).** Zehn Bögen verifiziert + gepusht
-(`_el`-Builder · Tag/Nacht weg · WOW-Start · Hilfe→Einstellungen+Dev gestaffelt ·
-Emotion-Klarheit · Rezeptbuch+Equip · Der Hof · Bibliothek von Alexandria · Das Ich/Inventar
-· freier Bildschirm); dann (V18.34) der CRAFTING→INVENTAR-FLUSS vereint: das Rezeptbuch ist der
-EINE Weg von der Werkstatt ins Inventar (emergente Rollen-Klassifikation → Auto-Gruppen ohne
-Markieren · Trank brauen+trinken in einem Akt · die redundanten Equip-Dropdowns in eine
-eingeklappte „Mehr"-Sektion gefaltet, das Falt-System auf das Inventar generalisiert); davor
-die VEREDELUNG (V18.33): die GEMESSEN-Wurzel der hässlichen Räume
-geheilt (57 `.drawer`-skopierte Charakter-Widgets → `#inventory-overlay`, sie waren ungestylt),
-das Ich in Balance (Minecraft 9-Raster + Hotbar links · Charakter mitte · Ausrüstung & Rezepte
-rechts · Pergament-Karten überall), der Welt-Tab AUFGELÖST (die Welt = Default-Blick, „Diese
-Welt" + „Welt-Aktionen" → Einstellungen). **8 Tabs → 5 Kern-Räume** (Hof · Ich · Werkstatt ·
-Bibliothek · Einstellungen; die Welt ist der Default-Blick, kein eigener Tab). Offen: ein
-lebendiger 3D-Avatar-Vorschau-Mittelpunkt im Ich (WebGPU-Sub-Renderer, pixel-blind → erst
-Schöpfer-Go) · der Schöpfer-Browser-Sign-off des ganzen Flusses (Feel/Schönheit auf echtem
-WebGPU) · weitere CSS-Verschlankung (Phase 4d). Der Schöpfer-Auftrag, wörtlich:
+**Stand: DREI KERN-RÄUME AUF TIEFE GEBAUT (V18.68, 08.06.2026) — die WERKSTATT (Referenz, V18.41–.44) ·
+DER HOF (V18.46–.56) · DAS ICH (V18.57–.68).** Aus den drei ist das Design-System destilliert (s. §1.5 + die
+dedizierten Pläne `hof-plan.md`, `ich-plan.md`): das geteilte `.spec-*`-Sheet, die dunkle Bühnen-/Insel-DNA,
+`_xProfile` (ein Lese-Vektor, viele Leser), die Daten-Viz aus den gemessenen Vektoren, der geteilte Hebel
+P11–P17, die Omnibox (V18.45, Ctrl+K — die ~60-Befehle-Duplikation gelöst). **OFFEN: die zwei letzten Räume —
+BIBLIOTHEK + EINSTELLUNGEN** (dedizierte Pläne `bibliothek-plan.md` + `einstellungen-plan.md`, V18.68); danach
+der Schöpfer-Browser-Sign-off des ganzen Flusses (GPU-Feel) + EIN Merge. **Die HART erkauften Lehren der drei
+Räume (über `ich-plan.md` §J hinaus, gelten für die zwei offenen):** (a) **„auf X-Niveau" = den ZWECK des Raums
+in die Mitte stellen, nicht die Topologie des Referenz-Raums kopieren** (Werkstatt viewer-zentral=erschaffen ·
+Hof orchester-zentral=dirigieren · Ich habe-zentral=verwalten → Bibliothek karten-zentral=entdecken/betreten ·
+Einstellungen … nach Häufigkeit, kein Star). (b) **die RÄUMLICHEN Schöpfer-Worte WÖRTLICH nehmen** („unten" =
+eine vollbreite Band UNTEN, nicht „weiter unten in der Spalte"); ein eingekreistes Element einer früheren
+Version = GENAU DAS erhalten. (c) **VOLLBILD messen** (nicht nur den Overlay-Ausschnitt) + Zone-für-Zone gegen
+die Worte lesen, BEVOR „verifiziert" fällt. (d) **KONSUM vor Existenz** — jede Daten-Viz liest einen GEMESSENEN
+Vektor. (e) **content-first + Skala/Overflow von Anfang an.** Frühere Veredelung (V18.33): die 57 ungestylten
+`.drawer`-Widgets → `#inventory-overlay` geheilt, **8 Tabs → 5 Kern-Räume** (Hof · Ich · Werkstatt · Bibliothek ·
+Einstellungen; die Welt ist der Default-Blick). Der Schöpfer-Auftrag, wörtlich:
 
 > „Das UI hat dringend einen Putz verdient, effizient in Struktur des Codes wie auch das
 > UI selbst. Lerne von den Besten, intuitiv, geordnet, simpel, aber trotzdem die volle
