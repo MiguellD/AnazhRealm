@@ -30833,6 +30833,58 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const fluidCard = Array.from(cards).find((c) => /Strom-Welt/.test(c.textContent));
         out.cardShowsDsl =
             !!fluidCard && /sturm/.test(fluidCard.textContent) && /übersetzt/.test(fluidCard.textContent);
+        // === Bib-A0/A/B/D (bibliothek-plan) — der Welt-Browser auf Werkstatt-/Hof-/Ich-Niveau ===
+        // Bib-A0: _worldProfile bündelt den GEMESSENEN Welt-Vektor (EIN Vektor, viele Leser; KONSUM V17.31).
+        out.worldProfileExists = typeof r._worldProfile === "function";
+        const wpRef = REG.fluid;
+        const wp = r._worldProfile(wpRef);
+        out.worldProfileBundles =
+            !!wp &&
+            wp.id === "fluid" &&
+            wp.label === wpRef.label &&
+            Array.isArray(wp.dsl) &&
+            (wp.trust === "trusted" || wp.trust === "sandboxed") &&
+            typeof wp.searchText === "string" &&
+            wp.searchText.includes("sturm");
+        // Bib-A: die Karte ist eine WELT-SPEC-CARD (geteiltes .spec-*-Design + Trust-Siegel + Betreten-Akt).
+        out.cardIsSpecCard =
+            !!fluidCard &&
+            fluidCard.classList.contains("lib-spec-sheet") &&
+            !!fluidCard.querySelector(".spec-header") &&
+            !!fluidCard.querySelector(".lib-trust-seal") &&
+            !!fluidCard.querySelector(".spec-body") &&
+            !!fluidCard.querySelector(".spec-footer .library-get");
+        // Bib-B: content-first — der Karten-Star hält das #library-list + liegt VOR der eingeklappten
+        // Schöpfen-Zone; die Formulare recedieren in <details class="library-create"> (progressive disclosure).
+        const libDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
+        const libStar = libDrawer && libDrawer.querySelector(".library-star");
+        const libCreate = libDrawer && libDrawer.querySelector("details.library-create");
+        out.starHoldsList = !!libStar && !!libStar.querySelector("#library-list");
+        out.createCollapsed =
+            !!libCreate &&
+            !libCreate.open &&
+            !!libCreate.querySelector("#translator-input") &&
+            !!libCreate.querySelector("#vendor-id");
+        out.starBeforeCreate =
+            !!libStar &&
+            !!libCreate &&
+            !!(libStar.compareDocumentPosition(libCreate) & Node.DOCUMENT_POSITION_FOLLOWING);
+        out.searchInHead = !!(libDrawer && libDrawer.querySelector(".library-head #library-search"));
+        // Bib-D / V18.65: die Suche TREIBT das Raster (KONSUM auf Feature-Ebene — kein toter Knopf).
+        const libSearch = document.getElementById("library-search");
+        if (libSearch) {
+            libSearch.value = "strom";
+            r._applyLibraryFilter();
+            const allCards = Array.from(document.querySelectorAll("#library-list .library-card"));
+            const shown = allCards.filter((c) => c.style.display !== "none");
+            out.searchDrivesGrid =
+                shown.length >= 1 && shown.length < allCards.length && shown.every((c) => /strom/i.test(c.textContent));
+            libSearch.value = "";
+            r._applyLibraryFilter();
+            out.searchClearsClean = Array.from(document.querySelectorAll("#library-list .library-card")).every(
+                (c) => c.style.display !== "none"
+            );
+        }
         // obtainPortalForWorld: klont welt_portal, richtet, legt ins Inventar.
         const res1 = r.obtainPortalForWorld("fluid");
         out.obtainOk = res1.ok === true && res1.blueprint === "portal_fluid";
@@ -30897,6 +30949,15 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
         check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
         check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
+        check("Bib-A0: _worldProfile existiert", w14Results.worldProfileExists);
+        check("Bib-A0: _worldProfile bündelt den Welt-Vektor (id/label/dsl/trust/searchText)", w14Results.worldProfileBundles);
+        check("Bib-A: die Karte ist eine Welt-Spec-Card (.spec-header + Trust-Siegel + Betreten-Akt)", w14Results.cardIsSpecCard);
+        check("Bib-B: der Karten-Star hält das #library-list", w14Results.starHoldsList);
+        check("Bib-B: die Formulare recedieren in die eingeklappte Schöpfen-Zone", w14Results.createCollapsed);
+        check("Bib-B: der Star liegt VOR der Schöpfen-Zone (content-first, J6)", w14Results.starBeforeCreate);
+        check("Bib-B: die Selbst-Suche sitzt im Kopf", w14Results.searchInHead);
+        check("Bib-D: die Suche TREIBT das Karten-Raster (kein toter Knopf, V18.65)", w14Results.searchDrivesGrid);
+        check("Bib-D: die Suche leeren zeigt alle Karten wieder", w14Results.searchClearsClean);
         check("W14 P1: obtainPortalForWorld liefert ok + portal_fluid", w14Results.obtainOk);
         check("W14 P1: der geholte Bauplan trägt role:portal + ist eigen (nicht built-in)", w14Results.bpIsPortal);
         check("W14 P1: der geholte Bauplan ist auf die Strom-Welt gerichtet", w14Results.bpAimedAtFluid);

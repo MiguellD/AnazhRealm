@@ -11,7 +11,16 @@
 > Schöpfer-Auftrag (08.06.2026): „können wir die offenen 2 Menüs ausdefinieren, ausplanen, mit dem
 > Gelernten, der 3 erstellten?"
 
-**Stand: PLAN (tief, ungebaut).** Die Werkstatt (Referenz, V18.41–.44), der Hof (V18.46–.56) und das Ich
+**Stand: GEBAUT Bib-A0 + Bib-A + Bib-B + die Bib-D-Suche (V18.69).** `_worldProfile` (der EINE Welt-Lese-Vektor,
+KONSUM bewiesen) · die WELT-SPEC-CARD (`_libraryBuildCard` → das geteilte `.spec-*`-Design: Name + Stufe + Trust-Siegel
+im Header · Vokabular | Netz & Vertrauen + Signatur-Siegel im Body · BETRETEN + Signieren/Teilen im Footer; eine dunkle
+Spec-Insel pro Welt) · content-first ZONEN (das Karten-Raster ist der STAR vollbreit, die Formulare recedieren in die
+eingeklappte `<details class="library-create">`, die Selbst-Suche im Kopf) · die Suche TREIBT das Raster (`_applyLibraryFilter`,
+der J5-Loop WIRKT — V18.65, kein toter Knopf). Mit dem Auge verifiziert (`diag-room bibliothek` + Page-Shot) + 9 Playtest-
+Invarianten grün. **OFFEN: Bib-C (die FOKUS-Welt + Stammbaum/Tagebuch an die Welt heften, §D.2) · Bib-D-Rest (Omnibox `welt:`
++ „Diese Welt" aus den Einstellungen herein, §D.4/§D.5) · Schöpfer-Browser-Sign-off (GPU-Feel) + Merge.**
+
+Darunter (Plan-Ursprung): Die Werkstatt (Referenz, V18.41–.44), der Hof (V18.46–.56) und das Ich
 (V18.57–.68) sind RUND — aus allen drei ist die Form gelernt. Die Bibliothek ist heute ein FORMULAR-zuerst
 Raster (der KI-Übersetzer + das Andock-Formular oben, die Welt-Karten darunter gequetscht) — die genaue
 Umkehrung von content-first. Dieser Plan hebt sie auf Niveau — **und nutzt, dass eine Welt einen REICHEN

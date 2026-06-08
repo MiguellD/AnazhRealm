@@ -3340,10 +3340,11 @@
                eine Karte (Label + Beschreibung + DSL-Vokabular + Stufen-Marke
                + „Portal holen"). Stil mirror't die Drawer-Pergament-Sprache. */
             .library-list {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+                gap: 12px;
                 padding: 4px 2px;
+                align-items: start;
             }
             .library-card {
                 border: 1px solid var(--brass-2, #8a6322);
@@ -3485,6 +3486,191 @@
                 color: var(--parch-ink-faded, #7b5a2e);
                 font-style: italic;
                 opacity: 0.85;
+            }
+            /* === Bib-A (bibliothek-plan §D.1/§D.6) — die WELT-SPEC-CARD === */
+            /* Eine dunkle Spec-Insel (wie der Werkstatt-/Hof-/Ich-Star) auf dem hellen
+               Pergament-Raster; die geteilten .spec-*-Zonen tragen die light-on-dark-Optik,
+               die Karte gibt den dunklen Grund (V18.58 — „auf welchem Grund sitzt der Text?"). */
+            .lib-spec-sheet {
+                background: rgba(20, 12, 4, 0.66);
+                border: 1px solid var(--brass-3, #5a4824);
+                border-radius: 6px;
+                padding: 9px 11px;
+                color: var(--parch-bg, #ece1c5);
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                line-height: 1.6;
+                display: flex;
+                flex-direction: column;
+                gap: 7px;
+            }
+            .lib-spec-sheet .spec-body {
+                gap: 4px 18px;
+            }
+            .lib-spec-sheet .spec-name.lib-card-name {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 13px;
+                font-weight: bold;
+                color: var(--parch-bg, #ece1c5);
+            }
+            /* Stufe + Herkunfts-/Multiplayer-Marken auf dunklem Grund. */
+            .lib-stage {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 8.5px;
+                letter-spacing: 0.04em;
+                padding: 1px 6px;
+                border-radius: 8px;
+                background: rgba(67, 201, 138, 0.2);
+                color: #7fe0b0;
+                border: 1px solid rgba(67, 201, 138, 0.45);
+            }
+            .lib-stage.stage-ausgestellt {
+                background: rgba(180, 168, 150, 0.16);
+                color: var(--ink-on-dark-soft, #c8b48a);
+                border-color: rgba(180, 168, 150, 0.4);
+            }
+            .lib-spec-sheet .library-vendored-mark,
+            .lib-spec-sheet .library-translated-mark,
+            .lib-spec-sheet .library-imported-mark,
+            .lib-spec-sheet .library-mp-mark {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 8.5px;
+                letter-spacing: 0.04em;
+                padding: 1px 6px;
+                border-radius: 8px;
+            }
+            .lib-spec-sheet .library-vendored-mark {
+                background: rgba(67, 201, 138, 0.18);
+                color: #7fe0b0;
+                border: 1px solid rgba(67, 201, 138, 0.42);
+            }
+            .lib-spec-sheet .library-translated-mark {
+                background: rgba(176, 106, 217, 0.2);
+                color: #d9a8ff;
+                border: 1px solid rgba(176, 106, 217, 0.45);
+            }
+            .lib-spec-sheet .library-imported-mark {
+                background: rgba(106, 143, 200, 0.22);
+                color: #9fbef0;
+                border: 1px solid rgba(106, 143, 200, 0.5);
+            }
+            .lib-spec-sheet .library-mp-mark {
+                background: rgba(255, 224, 102, 0.16);
+                color: #ffe6a8;
+                border: 1px solid rgba(255, 224, 102, 0.4);
+            }
+            /* TRUST-Siegel — das Qualitäts-Pendant (führt die Karte, §G.2). */
+            .lib-trust-seal {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.4px;
+                padding: 2px 9px;
+                border-radius: 3px;
+                white-space: nowrap;
+            }
+            .lib-trust-seal.trust-trusted {
+                color: #ffe6a8;
+                background: rgba(255, 224, 102, 0.14);
+                border: 1px solid var(--brass-2, #8a6322);
+                text-shadow: 0 0 5px rgba(255, 224, 102, 0.35);
+            }
+            .lib-trust-seal.trust-sandboxed {
+                color: #9fbef0;
+                background: rgba(106, 143, 200, 0.16);
+                border: 1px solid rgba(106, 143, 200, 0.5);
+            }
+            .lib-card-desc {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 11px;
+                color: var(--ink-on-dark-soft, #c8b48a);
+                margin: -2px 0 0;
+            }
+            .lib-dsl-strip {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 3px;
+            }
+            .lib-spec-sheet .library-dsl-word {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                padding: 1px 5px;
+                border-radius: 2px;
+                background: rgba(255, 235, 190, 0.12);
+                color: var(--ink-on-dark, #ece1c5);
+            }
+            .lib-sig-seal {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                color: var(--ink-on-dark-soft, #c8b48a);
+            }
+            .lib-sig-seal.sig-valid {
+                color: #7fe0b0;
+            }
+            .lib-sig-seal.sig-modified {
+                color: #e0bd6a;
+            }
+            .lib-sig-seal.sig-forged {
+                color: #e88a8a;
+            }
+            .lib-sig-seal.sig-unsigned {
+                color: var(--ink-on-dark-soft, #c8b48a);
+                opacity: 0.8;
+            }
+            /* FOOTER — der Betreten-Akt prominent, die Sig-Zeile darunter. */
+            .lib-spec-footer {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 7px;
+            }
+            .lib-card-acts {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .lib-spec-sheet .library-get {
+                background: linear-gradient(180deg, rgba(255, 224, 102, 0.22), rgba(184, 140, 40, 0.2));
+                color: #ffe6a8;
+                border: 1px solid var(--brass-2, #8a6322);
+                padding: 4px 15px;
+                font-size: 11px;
+                cursor: pointer;
+                border-radius: 3px;
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.4px;
+            }
+            .lib-spec-sheet .library-get:hover {
+                background: linear-gradient(180deg, rgba(255, 235, 150, 0.32), rgba(200, 160, 60, 0.28));
+            }
+            .lib-spec-sheet .library-get:disabled {
+                opacity: 0.5;
+                cursor: default;
+            }
+            .lib-spec-sheet .library-status {
+                color: #7fe0b0;
+            }
+            .lib-spec-sheet .library-status.library-unreachable {
+                color: var(--ink-on-dark-soft, #c8b48a);
+            }
+            .lib-spec-sheet .library-sig-row {
+                margin: 0;
+                padding-top: 6px;
+                border-top: 1px dotted rgba(184, 140, 80, 0.3);
+            }
+            .lib-spec-sheet .library-sig-btn {
+                background: rgba(255, 235, 190, 0.1);
+                color: var(--ink-on-dark, #ece1c5);
+                border: 1px solid var(--brass-2, #8a6322);
+                padding: 2px 9px;
+                font-size: 9.5px;
+                cursor: pointer;
+                border-radius: 2px;
+                font-family: "Cinzel", Georgia, serif;
+            }
+            .lib-spec-sheet .library-sig-btn:disabled {
+                opacity: 0.45;
+                cursor: default;
             }
             /* W15 Phase 1 — Auto-Vendor: die „Welt andocken"-Sektion + die
                „angedockt"-Karte. Tor-Grün (#43c98a) wie die Portal-Rolle —
@@ -4485,6 +4671,78 @@
                 font-size: 13px;
                 color: var(--parch-ink-soft);
                 margin: 0 0 12px 0;
+            }
+            /* === Bib-B (bibliothek-plan §D) — content-first Zonen === */
+            /* Kopf: die Selbst-Suche (treibt das Karten-Filter, J5-Loop) + Welt-empfangen. */
+            .library-head {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                margin-bottom: 14px;
+            }
+            .library-search {
+                flex: 1;
+                min-width: 0;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 12px;
+                padding: 7px 12px;
+                background: rgba(255, 245, 220, 0.5);
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 4px;
+                color: var(--parch-ink, #2b1a08);
+            }
+            .library-search::placeholder {
+                color: var(--parch-ink-faded, #7b5a2e);
+            }
+            .library-import-btn {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                padding: 6px 13px;
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+                color: var(--parch-ink, #2b1a08);
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 3px;
+                cursor: pointer;
+                white-space: nowrap;
+            }
+            /* der STAR — das Welt-Karten-Raster, vollbreit, ohne Sektions-Kopf. */
+            .library-star {
+                margin: 0 0 16px 0;
+            }
+            .library-empty {
+                grid-column: 1 / -1;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                color: var(--parch-ink-soft, #5a3f1d);
+                padding: 14px 4px;
+            }
+            /* die eingeklappte „Schöpfen & Andocken"-Zone (selten → progressive disclosure). */
+            .library-create {
+                border-top: 1px solid var(--brass-3, #5a4824);
+                padding-top: 8px;
+            }
+            .library-create-summary {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                letter-spacing: 0.3px;
+                color: var(--parch-ink, #2b1a08);
+                cursor: pointer;
+                padding: 6px 2px;
+                list-style: none;
+                user-select: none;
+            }
+            .library-create-summary::-webkit-details-marker {
+                display: none;
+            }
+            .library-create-summary::before {
+                content: "▸ ";
+                color: var(--brass-1, #b88a50);
+            }
+            .library-create[open] .library-create-summary::before {
+                content: "▾ ";
+            }
+            .library-create-body {
+                margin-top: 12px;
             }
             .library-columns {
                 column-count: 3;
@@ -6783,7 +7041,30 @@
                 Entdecke + betritt die Welten des Ultiversums, schöpfe + teile die eigenen — souverän über deinen
                 Vibe-Pass, peer-to-peer durchs Mesh. Kein Konzern dazwischen.
             </p>
-            <div class="library-columns">
+            <!-- Bib-B (bibliothek-plan §D/§D.3) — content-first: das Welt-Karten-Raster ist der STAR
+                 (der Zweck = Welten ENTDECKEN + BETRETEN, J6); die Formulare (übersetzen/andocken/
+                 verwalten/Provenienz) recedieren in die eingeklappte „Schöpfen & Andocken"-Zone. -->
+            <div class="library-body">
+                <div class="library-head">
+                    <input
+                        type="text"
+                        id="library-search"
+                        class="library-search"
+                        placeholder="⌕ Welt suchen — Name · Vokabular · signiert · sandbox"
+                        aria-label="Welten durchsuchen"
+                        autocomplete="off"
+                    />
+                    <button type="button" id="library-import" class="library-import-btn">Welt empfangen…</button>
+                </div>
+                <input type="file" id="library-import-input" accept="application/json,.json" hidden />
+                <section class="section library-star">
+                    <div id="library-list" class="library-list" aria-live="polite">—</div>
+                </section>
+                <details class="library-create">
+                    <summary class="library-create-summary">
+                        Schöpfen &amp; Andocken — eine fremde Welt übersetzen, andocken, verwalten · Provenienz
+                    </summary>
+                    <div class="library-create-body library-columns">
                 <!-- KI-Übersetzer Phase 1 — eine fremde Welt beschreiben, die KI
                  übersetzt sie in ein Portal-Manifest. _runTranslator füllt
                  #translator-review; acceptTranslatedManifest committet. -->
@@ -6893,24 +7174,10 @@
                     <div id="mesh-world-catalog" class="mesh-catalog" aria-live="polite"></div>
                     <div id="mesh-world-status" class="vendor-status" aria-live="polite"></div>
                 </section>
-                <section class="section">
-                    <h3>Welten <span class="section-hint">(durch ein Tor erreichbar)</span></h3>
-                    <p class="drawer-hint">
-                        Andere Welten, betretbar durch ein Portal. „Portal holen" legt einen Tor-Bauplan in dein
-                        Inventar — platziere ihn über die Hotbar in deiner Welt und geh per E-Taste hindurch. „Teilen…"
-                        exportiert das signierte Manifest einer Welt; „Welt empfangen…" liest ein fremdes Manifest ein —
-                        so wächst die Bibliothek (W14 Phase 3).
-                    </p>
-                    <!-- W14 Phase 3 — fremde Welt-Manifeste empfangen. Versteckter
-                     Datei-Picker, vom „Welt empfangen"-Knopf ausgelöst. -->
-                    <div class="actions">
-                        <button type="button" id="library-import">Welt empfangen…</button>
-                    </div>
-                    <input type="file" id="library-import-input" accept="application/json,.json" hidden />
-                    <div id="library-list" class="library-list" aria-live="polite">—</div>
-                </section>
                 <!-- Migriert vom Welt-Menü (UI-Putz): Provenienz + Geschichte gehören in die
-                 Bibliothek — woher eine Welt stammt, was sie erlebt hat, ihre Schwestern. -->
+                 Bibliothek — woher eine Welt stammt, was sie erlebt hat, ihre Schwestern.
+                 Bib-C wird Stammbaum + Tagebuch an die FOKUS-Welt heften; vorerst recedieren sie
+                 hier in der eingeklappten Schöpfen-Zone. -->
                 <section class="section" id="world-picker-section">
                     <h3>Andere Welten <span class="section-hint">(reisen + Rezepte holen)</span></h3>
                     <div id="world-picker-list" class="drawer-hint" aria-live="polite">
@@ -6932,6 +7199,8 @@
                     <div id="world-journal-count" class="journal-count">—</div>
                     <div id="world-journal-list" class="journal-list" aria-live="polite"></div>
                 </section>
+                    </div>
+                </details>
             </div>
         </aside>
         <aside class="drawer" data-drawer="einstellungen" aria-label="Einstellungen-Panel" hidden>
@@ -7653,6 +7922,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.68.0" defer></script>
+        <script src="anazhRealm.js?v=18.69.0" defer></script>
     </body>
 </html>

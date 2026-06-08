@@ -25658,6 +25658,79 @@ class AnazhRealm {
         return out;
     }
 
+    // Bib-A0 (bibliothek-plan.md §D.0/§G.1) — EIN Welt-Lese-Vektor, viele Leser (das
+    // `_creatureProfile`/`_selfProfile`-Muster auf eine Welt). Bündelt die GEMESSENEN
+    // Welt-Felder (§G.1): Identität · Trust · Multiplayer/Server · DSL · Stufe · Herkunft ·
+    // Signatur-Präsenz, plus einen Such-Index (Bib-D, das Ich-§J5-Loop). Ein Vektor, viele
+    // Leser (die Spec-Card · der Such-Filter · die Sortierung · der Fokus). KONSUM-ehrlich,
+    // read-only — alle Achsen sind reale customWorlds/WORLD_REGISTRY-Felder, kein erfundenes.
+    _worldProfile(world) {
+        const w = world || {};
+        const id = String(w.id || "");
+        const isImported = !!(this.state.customWorlds && this.state.customWorlds[id]);
+        const dsl = Array.isArray(w.dsl) ? w.dsl : [];
+        const prof = {
+            world: w,
+            id,
+            label: w.label || id || "?",
+            desc: typeof w.desc === "string" ? w.desc : "",
+            worldPath: w.world || "",
+            dsl,
+            hasDsl: dsl.length > 0,
+            trust: w.trust === "sandboxed" ? "sandboxed" : "trusted",
+            multiplayer: w.multiplayer === true,
+            serverMode: w.serverMode === "js-compute" ? "js-compute" : "relay",
+            imported: isImported,
+            translated: isImported && w.translated === true,
+            vendored: isImported && w.vendored === true,
+            scene: w.scene || null,
+            reachable: w.reachable !== false,
+            importedAt: Number.isFinite(w.importedAt) ? w.importedAt : 0,
+            authorPubKey: typeof w.authorPubKey === "string" ? w.authorPubKey : "",
+            signature: typeof w.signature === "string" ? w.signature : "",
+        };
+        // Stufe — wie heute (hasDsl → „übersetzt", sonst „ausgestellt"); die Marke „nativ"
+        // emergiert erst beim Betreten (W12 P3).
+        prof.stage = prof.hasDsl ? "übersetzt" : "ausgestellt";
+        prof.stageTitle = prof.hasDsl
+            ? "Diese Welt versteht ein DSL-Vokabular (Stufe übersetzt). Beim Betreten kann sie es nativ bestätigen."
+            : "Diese Welt ist spielbar, aber stumm gegenüber der DSL.";
+        // Herkunfts-Marke — die Klassen-Hooks bleiben (.library-vendored-/translated-/imported-mark, Tests).
+        if (prof.vendored) {
+            prof.origin = "angedockt";
+            prof.originClass = "library-vendored-mark";
+            prof.originTitle =
+                "Diese Welt dockte über den Auto-Vendor an — ihr Bündel liegt in worlds/, sie läuft sandgesichert (W15 Phase 1).";
+        } else if (prof.translated) {
+            prof.origin = "KI-übersetzt";
+            prof.originClass = "library-translated-mark";
+            prof.originTitle =
+                "Diese Welt übersetzte der KI-Übersetzer aus einer Beschreibung in ein Portal-Manifest (Phase 1).";
+        } else if (prof.imported) {
+            prof.origin = "empfangen";
+            prof.originClass = "library-imported-mark";
+            prof.originTitle = "Diese Welt kam als signiertes Manifest in deine Bibliothek (W14 Phase 3).";
+        } else {
+            prof.origin = "";
+            prof.originClass = "";
+            prof.originTitle = "";
+        }
+        // Such-Index — Name · Vokabular · Trust/Signatur/Netz-Schlagworte (treibt das Bib-D-Filter).
+        prof.searchText = [
+            prof.label,
+            prof.desc,
+            dsl.join(" "),
+            prof.trust === "sandboxed" ? "sandbox sandboxed" : "vertraut trusted",
+            prof.multiplayer ? "multiplayer" : "einzelwelt",
+            prof.serverMode === "js-compute" ? "js-compute" : "",
+            prof.signature ? "signiert signed" : "unsigniert",
+            prof.origin,
+        ]
+            .join(" ")
+            .toLowerCase();
+        return prof;
+    }
+
     // Lädt die importierten Welten aus dem GLOBALEN localStorage-Schlüssel.
     // Defensiv: jeder Eintrag läuft durch _sanitizeImportedManifest — ein
     // korruptes Manifest wird verworfen, nie ein Wurf.
@@ -29512,145 +29585,203 @@ class AnazhRealm {
         for (const w of this._libraryWorlds()) {
             list.appendChild(this._libraryBuildCard(w));
         }
+        // das aktive Such-Filter nach dem Render erneut anwenden (es überlebt ein Re-Render).
+        this._applyLibraryFilter();
     }
 
-    // Eine Bibliothek-Karte: Head · Desc · DSL · Actions+Status · Sig-Row.
-    // KI-Übersetzer P1 — eine übersetzte Welt ist ein customWorld mit
-    // translated-Marke; W15 P1 — eine vendorte Welt ist ein customWorld,
-    // dessen Bündel der Auto-Vendor nach worlds/<id>/ schrieb.
+    // Bib-D (bibliothek-plan §D.4, das Ich-§J5-Loop) — die Selbst-Suche TREIBT das Karten-Raster:
+    // tippen filtert die Welt-Karten über den `_worldProfile`-Such-Index (Name · Vokabular · Trust ·
+    // Signatur · Netz). Kein toter Knopf (V18.65, KONSUM auf Feature-Ebene) — der Loop WIRKT.
+    _applyLibraryFilter() {
+        if (typeof document === "undefined") return;
+        const list = document.getElementById("library-list");
+        if (!list) return;
+        const input = document.getElementById("library-search");
+        const q = (input && input.value ? input.value : "").trim().toLowerCase();
+        let shown = 0;
+        for (const card of list.querySelectorAll(".library-card")) {
+            const hay = card.dataset.search || "";
+            const match = !q || hay.includes(q);
+            card.style.display = match ? "" : "none";
+            if (match) shown++;
+        }
+        let empty = list.querySelector(".library-empty");
+        if (q && shown === 0) {
+            if (!empty) {
+                empty = this._el("div", { class: "library-empty" });
+                list.appendChild(empty);
+            }
+            empty.textContent = `Keine Welt passt zu „${q}".`;
+            empty.style.display = "";
+        } else if (empty) {
+            empty.style.display = "none";
+        }
+    }
+
+    // Bib-A (bibliothek-plan.md §D.1) — eine Bibliothek-Karte ist eine WELT-SPEC-CARD im
+    // GETEILTEN `.spec-*`-Design (Werkstatt-/Hof-/Ich-DNA): HEADER (Name + Stufe + Herkunft |
+    // TRUST-Siegel als Qualitäts-Pendant) → BODY (Vokabular = DSL-Chips | Netz & Vertrauen =
+    // Multiplayer/Server + Signatur-Siegel) → FOOTER (der prominente BETRETEN-Akt + Signieren/
+    // Teilen). Liest den EINEN `_worldProfile`-Vektor (Konsum V17.31). Die Struktur-Marken
+    // (.library-card/.library-*-mark/.library-get/-build/-rebuild/.library-sig-*) bleiben
+    // erhalten — die Tests wandern per Erhalt mit (V9.56-i).
     _libraryBuildCard(w) {
-        const isImported = !!(this.state.customWorlds && this.state.customWorlds[w.id]);
-        const isTranslated = isImported && w.translated === true;
-        const isVendored = isImported && w.vendored === true;
-        const hasDsl = Array.isArray(w.dsl) && w.dsl.length > 0;
-        const card = document.createElement("div");
-        card.className =
-            "library-card" +
-            (isVendored
-                ? " library-card-vendored"
-                : isTranslated
-                  ? " library-card-translated"
-                  : isImported
-                    ? " library-card-imported"
-                    : "");
-        card.appendChild(this._libraryBuildCardHead(w, isImported, isTranslated, isVendored, hasDsl));
-        const desc = document.createElement("div");
-        desc.className = "library-desc";
-        desc.textContent = w.desc || "";
-        card.appendChild(desc);
-        card.appendChild(this._libraryBuildDslWrap(w, hasDsl));
-        this._libraryAppendActionsAndStatus(card, w, isTranslated, isImported);
-        this._libraryAppendSigRow(card, w, isImported);
+        const prof = this._worldProfile(w);
+        const card = this._el("div", {
+            class:
+                "library-card lib-spec-sheet spec-sheet" +
+                (prof.vendored
+                    ? " library-card-vendored"
+                    : prof.translated
+                      ? " library-card-translated"
+                      : prof.imported
+                        ? " library-card-imported"
+                        : ""),
+            data: { worldId: prof.id, search: prof.searchText },
+        });
+        // Signatur-Siegel (Body) + Signieren/Teilen (Footer) teilen EINE async Verifikation.
+        const sigSeal = this._el("span", { class: "lib-sig-seal", text: "prüfe …" });
+        const sigBtn = this._el("button", {
+            class: "library-sig-btn",
+            type: "button",
+            text: "Signieren",
+            disabled: true,
+        });
+        const exportBtn = this._el("button", {
+            class: "library-sig-btn library-export-btn",
+            type: "button",
+            text: "Teilen…",
+            disabled: true,
+        });
+        card.appendChild(this._libraryCardHeader(prof));
+        if (prof.desc) card.appendChild(this._el("div", { class: "lib-card-desc", text: prof.desc }));
+        card.appendChild(this._libraryCardBody(prof, sigSeal));
+        card.appendChild(this._libraryCardFooter(prof, sigBtn, exportBtn));
+        this._libraryWireSig(prof, sigSeal, sigBtn, exportBtn);
         return card;
     }
 
-    // Karten-Kopf: Name + Stufen-Marke (übersetzt/ausgestellt — die Stufe
-    // „nativ" emergiert erst beim Betreten, W12 P3) + Herkunfts-Marke
-    // (angedockt/KI-übersetzt/empfangen) + Multiplayer-Marke (W17, ggf.
-    // JS-Compute-Variante aus W17 B-JS-Compute).
-    _libraryBuildCardHead(w, isImported, isTranslated, isVendored, hasDsl) {
-        const head = document.createElement("div");
-        head.className = "library-card-head";
-        const name = document.createElement("span");
-        name.className = "library-card-name";
-        name.textContent = w.label;
-        head.appendChild(name);
-        const stage = document.createElement("span");
-        stage.className = "library-stage" + (hasDsl ? "" : " stage-ausgestellt");
-        stage.textContent = hasDsl ? "übersetzt" : "ausgestellt";
-        stage.title = hasDsl
-            ? "Diese Welt versteht ein DSL-Vokabular (Stufe übersetzt). Beim Betreten kann sie es nativ bestätigen."
-            : "Diese Welt ist spielbar, aber stumm gegenüber der DSL.";
-        head.appendChild(stage);
-        if (isVendored) {
-            const vm = document.createElement("span");
-            vm.className = "library-vendored-mark";
-            vm.textContent = "angedockt";
-            vm.title =
-                "Diese Welt dockte über den Auto-Vendor an — ihr Bündel liegt in worlds/, sie läuft sandgesichert (W15 Phase 1).";
-            head.appendChild(vm);
-        } else if (isTranslated) {
-            const tr = document.createElement("span");
-            tr.className = "library-translated-mark";
-            tr.textContent = "KI-übersetzt";
-            tr.title =
-                "Diese Welt übersetzte der KI-Übersetzer aus einer Beschreibung in ein Portal-Manifest (Phase 1).";
-            head.appendChild(tr);
-        } else if (isImported) {
-            const imp = document.createElement("span");
-            imp.className = "library-imported-mark";
-            imp.textContent = "empfangen";
-            imp.title = "Diese Welt kam als signiertes Manifest in deine Bibliothek (W14 Phase 3).";
-            head.appendChild(imp);
+    // HEADER — Identität (Name + Stufe + Herkunfts-/Multiplayer-Marke) | TRUST-Siegel rechts
+    // (die wichtigste Eigenschaft einer FREMDEN Welt — wie die Qualität die Werkstatt führt, §G.2).
+    _libraryCardHeader(prof) {
+        const idZone = this._el(
+            "div",
+            { class: "spec-id" },
+            this._el("span", { class: "spec-name lib-card-name", text: prof.label }),
+            this._el("span", {
+                class: "lib-stage" + (prof.hasDsl ? "" : " stage-ausgestellt"),
+                text: prof.stage,
+                title: prof.stageTitle,
+            })
+        );
+        if (prof.origin)
+            idZone.appendChild(
+                this._el("span", { class: prof.originClass, text: prof.origin, title: prof.originTitle })
+            );
+        if (prof.multiplayer) {
+            const jsCompute = prof.serverMode === "js-compute";
+            idZone.appendChild(
+                this._el("span", {
+                    class: "library-mp-mark",
+                    text: jsCompute ? "Multiplayer · JS-Compute" : "Multiplayer",
+                    title: jsCompute
+                        ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS (W17 — B-JS-Compute)."
+                        : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten (W17 — Gruppen-Portal).",
+                })
+            );
         }
-        if (w.multiplayer === true) {
-            const mp = document.createElement("span");
-            mp.className = "library-mp-mark";
-            const jsCompute = w.serverMode === "js-compute";
-            mp.textContent = jsCompute ? "Multiplayer · JS-Compute" : "Multiplayer";
-            mp.title = jsCompute
-                ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS (W17 — B-JS-Compute)."
-                : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten (W17 — Gruppen-Portal).";
-            head.appendChild(mp);
-        }
-        return head;
+        const trusted = prof.trust === "trusted";
+        const trustZone = this._el(
+            "div",
+            {
+                class: "spec-quality lib-trust",
+                title: trusted
+                    ? "Vertraute Welt — eine Built-in- oder eigene Welt; sie läuft im selben Kontext."
+                    : "Sandgesichert — eine fremde, ungeprüfte Welt läuft null-origin (kann AnazhRealm nicht berühren). Irreversibel.",
+            },
+            this._el("span", { class: "spec-q-label", text: "Vertrauen" }),
+            this._el("span", {
+                class: "lib-trust-seal " + (trusted ? "trust-trusted" : "trust-sandboxed"),
+                text: trusted ? "✓ vertraut" : "⛨ Sandbox",
+            })
+        );
+        return this._el("div", { class: "spec-header" }, idZone, trustZone);
     }
 
-    _libraryBuildDslWrap(w, hasDsl) {
-        const dslWrap = document.createElement("div");
-        dslWrap.className = "library-dsl";
-        if (hasDsl) {
-            for (const op of w.dsl) {
-                const chip = document.createElement("span");
-                chip.className = "library-dsl-word";
-                chip.textContent = op;
-                dslWrap.appendChild(chip);
-            }
-        } else {
-            const none = document.createElement("span");
-            none.className = "library-dsl-empty";
-            none.textContent = "kein DSL-Vokabular";
-            dslWrap.appendChild(none);
-        }
-        return dslWrap;
+    // BODY — zwei Spalten: VOKABULAR (die „Natur" der Welt = ihre DSL-Wörter) | NETZ & VERTRAUEN
+    // (Multiplayer/Server-Chip + das async Signatur-Siegel). Daten-Viz des GEMESSENEN Vektors (P15).
+    _libraryCardBody(prof, sigSeal) {
+        const vocChildren = [this._el("div", { class: "spec-col-head", text: "Vokabular" })];
+        if (prof.hasDsl)
+            vocChildren.push(
+                this._el(
+                    "div",
+                    { class: "lib-dsl-strip" },
+                    ...prof.dsl.map((op) => this._el("span", { class: "library-dsl-word", text: op }))
+                )
+            );
+        else vocChildren.push(this._el("span", { class: "spec-empty", text: "kein DSL-Vokabular" }));
+        const netChildren = [
+            this._el("div", { class: "spec-col-head", text: "Netz & Vertrauen" }),
+            this._el(
+                "div",
+                { class: "spec-stat-strip" },
+                this._el("span", {
+                    class: "spec-stat-chip",
+                    text: prof.multiplayer
+                        ? prof.serverMode === "js-compute"
+                            ? "Multiplayer · JS-Compute"
+                            : "Multiplayer"
+                        : "Einzelwelt",
+                })
+            ),
+            sigSeal,
+        ];
+        return this._el(
+            "div",
+            { class: "spec-body" },
+            this._el("div", { class: "spec-col" }, ...vocChildren),
+            this._el("div", { class: "spec-col" }, ...netChildren)
+        );
     }
 
-    // KI-Übersetzer P2 — drei Zustände: eine übersetzte Welt OHNE Szene
-    // braucht „Welt aufbauen"; mit Szene ist sie betretbar (+ „neu aufbauen");
-    // eine empfangene Welt ohne erreichbare Dateien bleibt browsbar, nicht
-    // betretbar. `status` ist ein Span, den die Button-Handler beschreiben —
-    // er wird am Ende an die Karte angehängt.
-    _libraryAppendActionsAndStatus(card, w, isTranslated, isImported) {
-        const worldId = w.id;
-        const needsScene = isTranslated && !w.scene;
-        const isTranslatedWithScene = isTranslated && !!w.scene;
-        const unreachable = isImported && w.reachable === false;
-        const status = document.createElement("span");
-        status.className = "library-status";
+    // FOOTER — der prominente BETRETEN-Akt (Portal holen / Welt aufbauen / neu aufbauen) + Status,
+    // darunter die Signatur-Akte (Signieren / Teilen). Die Akt-Methoden + Klassen bleiben (Tests):
+    // .library-get (Betreten), .library-build (aufbauen), .library-rebuild (neu), .library-sig-*.
+    _libraryCardFooter(prof, sigBtn, exportBtn) {
+        const worldId = prof.id;
+        const needsScene = prof.translated && !prof.scene;
+        const isTranslatedWithScene = prof.translated && !!prof.scene;
+        const unreachable = prof.imported && prof.reachable === false;
+        const status = this._el("span", { class: "library-status" });
+        const acts = this._el("div", { class: "lib-card-acts" });
         if (needsScene) {
-            const buildBtn = document.createElement("button");
-            buildBtn.type = "button";
-            buildBtn.className = "library-get library-build";
-            buildBtn.textContent = "Welt aufbauen";
-            buildBtn.title =
-                "Die KI gibt dieser übersetzten Welt eine deklarative Szene — danach führt ihr Portal hindurch.";
+            const buildBtn = this._el("button", {
+                class: "library-get library-build",
+                type: "button",
+                text: "Welt aufbauen",
+                title: "Die KI gibt dieser übersetzten Welt eine deklarative Szene — danach führt ihr Portal hindurch.",
+            });
             buildBtn.addEventListener("click", () => this._runWorldBuild(worldId, buildBtn, status));
-            card.appendChild(buildBtn);
+            acts.appendChild(buildBtn);
         } else if (unreachable) {
-            const getBtn = document.createElement("button");
-            getBtn.type = "button";
-            getBtn.className = "library-get";
-            getBtn.textContent = "Portal holen";
-            getBtn.disabled = true;
-            getBtn.title = "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.";
+            const getBtn = this._el("button", {
+                class: "library-get",
+                type: "button",
+                text: "Betreten",
+                disabled: true,
+                title: "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.",
+            });
             status.textContent = "Welt-Dateien nicht verfügbar";
             status.className = "library-status library-unreachable";
-            card.appendChild(getBtn);
+            acts.appendChild(getBtn);
         } else {
-            const getBtn = document.createElement("button");
-            getBtn.type = "button";
-            getBtn.className = "library-get";
-            getBtn.textContent = "Portal holen";
+            const getBtn = this._el("button", {
+                class: "library-get",
+                type: "button",
+                text: "Betreten",
+                title: "Portal holen — legt ein Tor ins Inventar; platziere es über die Hotbar + geh per E-Taste hindurch.",
+            });
             getBtn.addEventListener("click", () => {
                 const res = this.obtainPortalForWorld(worldId);
                 if (res.ok) {
@@ -29661,47 +29792,32 @@ class AnazhRealm {
                     this.log(`obtainPortalForWorld: ${res.reason}`, "ERROR");
                 }
             });
-            card.appendChild(getBtn);
-            // Eine aufgebaute übersetzte Welt darf neu aufgebaut werden —
-            // eine frische Szene zur selben Identität.
+            acts.appendChild(getBtn);
+            // Eine aufgebaute übersetzte Welt darf neu aufgebaut werden — frische Szene, selbe Identität.
             if (isTranslatedWithScene) {
-                const rebuildBtn = document.createElement("button");
-                rebuildBtn.type = "button";
-                rebuildBtn.className = "library-sig-btn library-rebuild";
-                rebuildBtn.textContent = "neu aufbauen";
-                rebuildBtn.title = "Die KI baut eine neue Szene für diese Welt.";
+                const rebuildBtn = this._el("button", {
+                    class: "library-sig-btn library-rebuild",
+                    type: "button",
+                    text: "neu aufbauen",
+                    title: "Die KI baut eine neue Szene für diese Welt.",
+                });
                 rebuildBtn.addEventListener("click", () => this._runWorldBuild(worldId, rebuildBtn, status));
-                card.appendChild(rebuildBtn);
+                acts.appendChild(rebuildBtn);
             }
         }
-        card.appendChild(status);
+        acts.appendChild(status);
+        const sigRow = this._el("div", { class: "library-sig-row" });
+        if (!prof.imported) sigRow.appendChild(sigBtn);
+        sigRow.appendChild(exportBtn);
+        return this._el("div", { class: "spec-footer lib-spec-footer" }, acts, sigRow);
     }
 
-    // W14 P2/P3 — Signatur-Zeile. Built-in-Welten signiert der Spieler
-    // selbst (signWorld); importierte tragen die Signatur ihres Autors
-    // schon. „Teilen" exportiert das signierte Manifest — so reist die
-    // Provenienz zwischen Spielern (W14 P3). Die `refreshSig`-Closure
-    // läuft async (verifyWorldSignature ist eine Promise) und wird auch
-    // nach jedem Sign-Klick wieder gerufen.
-    _libraryAppendSigRow(card, w, isImported) {
-        const worldId = w.id;
-        const sigRow = document.createElement("div");
-        sigRow.className = "library-sig-row";
-        const sigStatus = document.createElement("span");
-        sigStatus.className = "library-sig-status";
-        sigStatus.textContent = "prüfe …";
-        sigRow.appendChild(sigStatus);
-        const sigBtn = document.createElement("button");
-        sigBtn.type = "button";
-        sigBtn.className = "library-sig-btn";
-        sigBtn.textContent = "Signieren";
-        sigBtn.disabled = true;
-        const exportBtn = document.createElement("button");
-        exportBtn.type = "button";
-        exportBtn.className = "library-sig-btn library-export-btn";
-        exportBtn.textContent = "Teilen…";
-        exportBtn.disabled = true;
-        const refreshSig = () => {
+    // Die EINE async Signatur-Verifikation (verifyWorldSignature) — beschreibt das Body-Siegel +
+    // schaltet die Footer-Knöpfe. Built-in/eigene signiert der Spieler (signWorld); importierte
+    // tragen die Autor-Signatur schon. „Teilen" exportiert das signierte Manifest (W14 P3).
+    _libraryWireSig(prof, seal, sigBtn, exportBtn) {
+        const worldId = prof.id;
+        const refresh = () => {
             const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
             this.verifyWorldSignature(worldId).then((st) => {
                 const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
@@ -29711,46 +29827,41 @@ class AnazhRealm {
                 if (st === "valid") {
                     const who =
                         sig && sig.authorPubKey === myKey ? "dir" : this._vibeFingerprint(sig && sig.authorPubKey);
-                    sigStatus.textContent = `✓ signiert von ${who}`;
-                    sigStatus.className = "library-sig-status sig-valid";
-                    if (sig) sigStatus.title = "ed25519:" + sig.authorPubKey;
+                    seal.textContent = `✓ signiert von ${who}`;
+                    seal.className = "lib-sig-seal sig-valid";
+                    if (sig) seal.title = "ed25519:" + sig.authorPubKey;
                     sigBtn.textContent = "Neu signieren";
                 } else if (st === "modified") {
-                    sigStatus.textContent = "geändert — neu signieren";
-                    sigStatus.className = "library-sig-status sig-modified";
+                    seal.textContent = "geändert — neu signieren";
+                    seal.className = "lib-sig-seal sig-modified";
                     sigBtn.textContent = "Neu signieren";
                 } else if (st === "forged") {
-                    sigStatus.textContent = "⚠ Signatur ungültig";
-                    sigStatus.className = "library-sig-status sig-forged";
+                    seal.textContent = "⚠ Signatur ungültig";
+                    seal.className = "lib-sig-seal sig-forged";
                     sigBtn.textContent = "Neu signieren";
                 } else {
-                    sigStatus.textContent = "nicht signiert";
-                    sigStatus.className = "library-sig-status sig-unsigned";
+                    seal.textContent = "nicht signiert";
+                    seal.className = "lib-sig-seal sig-unsigned";
                     sigBtn.textContent = "Signieren";
                 }
                 exportBtn.disabled = st === "unsigned";
-                sigBtn.disabled = isImported || !vpReady;
-                if (!isImported && !vpReady) {
-                    sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
-                }
+                sigBtn.disabled = prof.imported || !vpReady;
+                if (!prof.imported && !vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
             });
         };
         sigBtn.addEventListener("click", async () => {
             sigBtn.disabled = true;
             const res = await this.signWorld(worldId);
-            if (res.ok) this.log(`Bibliothek: ${w.label} mit dem Vibe-Pass signiert.`, "INFO");
+            if (res.ok) this.log(`Bibliothek: ${prof.label} mit dem Vibe-Pass signiert.`, "INFO");
             else this.log(`signWorld: ${res.reason}`, "ERROR");
-            refreshSig();
+            refresh();
         });
         exportBtn.addEventListener("click", () => {
             const res = this.exportWorldManifest(worldId);
-            if (res.ok) this.log(`Bibliothek: Manifest der ${w.label} exportiert.`, "INFO");
+            if (res.ok) this.log(`Bibliothek: Manifest der ${prof.label} exportiert.`, "INFO");
             else this.log(`exportWorldManifest: ${res.reason}`, "ERROR");
         });
-        if (!isImported) sigRow.appendChild(sigBtn);
-        sigRow.appendChild(exportBtn);
-        card.appendChild(sigRow);
-        refreshSig();
+        refresh();
     }
 
     // W14 Phase 1 — Bibliothek-Drawer aufsetzen. Phase 3: der „Welt
@@ -29776,6 +29887,12 @@ class AnazhRealm {
                 const f = e.target && e.target.files && e.target.files[0];
                 if (f) this._handleWorldManifestFile(f);
             });
+        }
+        // Bib-D — die Selbst-Suche treibt das Karten-Raster (J5-Loop, der Loop WIRKT).
+        const search = document.getElementById("library-search");
+        if (search && search.dataset.libWired !== "1") {
+            search.dataset.libWired = "1";
+            search.addEventListener("input", () => this._applyLibraryFilter());
         }
         this.renderLibraryUI();
     }
@@ -49114,7 +49231,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.68.0";
+AnazhRealm.VERSION = "18.69.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
