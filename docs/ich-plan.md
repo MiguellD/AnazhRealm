@@ -10,12 +10,11 @@
 > Schöpfer-Auftrag (07.06.2026): „Weiter geht's, formuliere die Pläne für Ich detailliert aus, aus all dem
 > du gelernt hast — zwei Menüs, viel gelernt. Wie sieht das nächste aus, jedes Detail klar?"
 
-**Stand: GEBAUT (V18.57, Ich-A0–D) — das „Ich" erreicht das Werkstatt-/Hof-Niveau.** `_selfProfile` (A0) ·
-das geteilte Selbst-Spec-Sheet (A, WERTE führen) · die 6-Achsen-EMOTION als Herz-Signatur (B) · die
-Selbst-Bühne (C, Avatar-3D-Star) · die REISE aus dem worldJournal (D) · die drei Zonen (WER ICH BIN · WAS
-ICH HABE · WAS ICH MACHEN KANN). Mit dem Auge verifiziert (`diag-ich.cjs`). OFFEN: Ich-E (Soul-Editor in die
-Bühne integriert · die Emotion→Welt-Schleife sichtbar machen) + der Schöpfer-Browser-Sign-off (GPU-Optik des
-Avatars + die Emotion-Farben). Der Plan unten bleibt als Referenz, wie der Raum gewachsen ist.
+**Stand: GEBAUT (V18.57–.60, Ich-A0–D + Pergament/Hotbar/Drag-Politur) — ABER der Schöpfer-Audit 08.06. (§H)
+fand einen VERORTUNGS-Fehler:** ich hatte Schöpfung (Seele klonen/formen) + die Welt-Stimme (das Journal) ins
+Selbst gelegt + Doubletten (doppelte Körper-Liste, getrennter Rollen-Override, eigenes Rezeptbuch). Das „Ich"
+ist NUR das Selbst, das ich BIN — es liest + wählt, es erschafft + erzählt nicht. **Die Synergie-Kontrolle +
+der saubere Plan stehen unten in §H + §I (die Wellen Ich-F–I).** Verifiziert mit dem Auge (`diag-ich.cjs`).
 
 **Historie: PLAN (tief, ungebaut).** Die Werkstatt (Referenz, V18.32–.44) und der Hof (V18.46–.56) sind RUND —
 aus beiden ist die Form gelernt. Das „Ich" ist heute ein 3-Spalten-Overlay (Habe · Charakter · Ausrüstung &
@@ -293,3 +292,133 @@ Die §G.2-Disziplin (nicht skizzieren, was man nicht gemessen hat). Die Ich-Vekt
 **LEHRE (vorab, aus dem Hof-§G.2):** die KONSUM-Disziplin gilt schon im PLAN — die Emotion-Prominenz ist hier
 GEMESSEN gerechtfertigt (6-achsig), die Reise GEMESSEN vorhanden (Journal); kein skizziertes Feld ohne Vektor.
 MISS (G.6 Vigor), dann zeichne.
+
+---
+
+## §H — Die Synergie-Kontrolle (Schöpfer-Audit 08.06.2026): das „Ich" auf seinen WAHREN Kern schärfen
+
+> Schöpfer-Befund (nach V18.60, mit dem Auge): „kurz reflektieren — gehört das Journal nicht in den Hof (das
+> ist der Nexus, die Welt die spricht, nicht ich)? Die Seelen-Auswahl + die Körper-Details + das Seele-
+> klonen + das Rezeptbuch + der Rollen-Override scheinen doppelt/unsynergetisch; im Previewer switcht der
+> Avatar nicht. Analysiere die Lage, prüfe das Gelernte, stelle einen sauberen Plan zusammen."
+
+**Die Wurzel-Erkenntnis (das mentale Modell, das ich verfehlt hatte):** das „Ich" ist NUR das Selbst, das ich
+JETZT BIN — mein Körper (den ich WÄHLE), meine Werte, meine Emotion, meine Habe, was ich machen kann. Es ist
+KEIN Schöpfungs-Ort (Seelen ERSCHAFFEN = Werkstatt) und KEIN Chronik-Ort (die Welt/der Nexus ERZÄHLT = Hof).
+Ich hatte ins „Ich" Dinge gelegt, die anderen Räumen gehören → Doubletten + fehlende Synergie. Die Heilung ist
+Verdichtung (V9.82) + ehrliche Verortung: jeder Akt in SEINEM Raum, das „Ich" liest + wählt nur.
+
+### H.1 — Die REISE/das Journal gehört NICHT ins Ich (es ist die Welt-Stimme)
+**Befund (richtig):** „die Reise · was ich erlebt + erschaffen habe — das ist der Nexus, die Welt die spricht,
+nicht ich." **GEMESSEN:** das `worldJournal` ist die WELT-Chronik (`journalAppend` schreibt genesis/creatures/
+weather/growth/soul/rule — die Welt erzählt, auch über mich). Selbst „meine" Taten sind welt-NARRIERT.
+**Lehre (`das-lebendige-feld`):** das Feld/die Welt WERTET + erinnert; das ist die Nexus/Welt-Schicht, nicht
+das Selbst. **Heilung:** die Reise/das Journal WANDERT aus dem Ich → in den **Hof** (die Welt-Stimme, neben
+der Partitur/dem Nexus) ODER die **Bibliothek** (die Welt-Chronik). Das „Ich" trägt KEIN Journal mehr. (Der
+V18.59-„Meine Reise"-Filter war ein halber Schritt — die Wurzel ist: das Journal ist gar nicht das Selbst.)
+
+### H.2 — Die Seelen-AUSWAHL gehört in den Header, neben den Körper (nicht doppelt)
+**Befund:** „die Auswahl der Seele ein separates Feld — das könnte direkt neben dem Namen stehen, wo der
+Körper ist; nicht alles doppelt." **GEMESSEN:** heute getrennt — die Bühne (Körper) + ein eigener „Seele/
+Form"-Select weiter unten. **Lehre (P2 Zonen, V9.82):** wähle dort, wo du siehst. **Heilung:** der Soul-
+Select wandert in die SELBST-BÜHNE/den Header (neben Name + Avatar) — du siehst den Körper + wählst ihn am
+selben Ort. Die separate „Seele"-Sektion fällt weg.
+
+### H.3 — Die KÖRPER-DETAILS sind doppelt (das Spec-Sheet oben IST die Übersicht)
+**Befund:** „Körperdetails unten versteckt in einer Liste — ist dafür nicht die Übersicht oben?" **GEMESSEN:**
+das klappbare „Körper & Detail-Werte" (das alte flache `renderPlayerStatsUI` mit Body-Parts + Stat-Liste)
+dupliziert das Spec-Sheet (WERTE-Balken + NATUR). **Lehre (V17.20 schneide, was tiefer ersetzt wurde; V18.44):**
+die flache Liste ist durch das Daten-Viz-Spec-Sheet ERSETZT. **Heilung:** die „Körper & Detail-Werte"-Sektion
++ `renderPlayerStatsUI` ERSATZLOS entfernen; die Body-Parts (Form × Material) — falls wertvoll — als kleine
+Lese-Zeile ins Spec-Sheet falten (nicht als zweite Liste). Eine Übersicht, nicht zwei.
+
+### H.4 — Seele KLONEN/ERSCHAFFEN gehört in die Werkstatt (die Seele IST ein Bauplan) — der Synergie-Kern
+**Befund (der tiefste):** „aktuelle Seele klonen / neue leere Seele ist unnötig — in der Werkstatt klone ich
+schon Baupläne, dasselbe sollte für die Seele gelten. Im Ich wähle ich NUR den Körper. Der Fehler: einige
+Avatare tauchen nicht in der Werkstatt auf — ein Pfad ohne Synergie." **GEMESSEN — die Wurzel ist eine
+DREIFACH-Quelle für Seelen (genau die V9.82-Sünde):** (1) `playerSoulDefs` (built-in human/phoenix/dragon,
+hartcodiert, KEINE Baupläne) · (2) `state.customSouls` (via `define_soul` / die Ich-Soul-Editor) · (3)
+Baupläne mit `role:"soul"` in der Werkstatt (`embodyBlueprint`/`forgeAvatar`/`applyBlueprintAsSoul` → schreibt
+`customSouls`). Drei Pfade, nie vereint → „manche Avatare fehlen in der Werkstatt" (die built-ins + die Ich-
+definierten sind keine Werkstatt-Baupläne). **Lehre (V9.82 verdichte zu EINER Quelle + kampf-plan §11: der
+Avatar IST ein Bauplan mit role soul, geformt in der Werkstatt):** Seelen-SCHÖPFUNG = Werkstatt (klonen/
+formen wie jeder Bauplan), das „Ich" ist nur der LESER/Wähler. **Heilung (ein eigener Synergie-Bogen):** der
+Ich-Soul-Editor (`#soul-editor`, klonen/neu) wird ENTFERNT; die Seelen-Schöpfung lebt in der Werkstatt (der
+S5-Avatar-Mach-Akt existiert schon); die DREI Quellen vereinen sich, sodass JEDE Seele (built-in + custom +
+Werkstatt-Bauplan) (a) in der Werkstatt klon-/formbar ist UND (b) im Ich-Soul-Select erscheint. Das ist der
+GRÖSSTE Synergie-Schritt (+ heilt „Avatare fehlen in der Werkstatt"). Die built-ins als Werkstatt-Baupläne zu
+spiegeln (oder den Select aus allen drei Quellen EINHEITLICH zu speisen) ist der Kern.
+
+### H.5 — Das REZEPTBUCH + die OMNIBOX einheitlich mit der Werkstatt
+**Befund:** „das Rezeptbuch sollte gleich sein wie in der Werkstatt (einheitlich), und die Omnibox auch hier."
+**GEMESSEN:** das Ich-Rezeptbuch (`renderRecipeBook`, gruppiert hold/wear/drink/place + fertigen) ist ein
+eigener Pfad neben der Werkstatt-Bauplan-Liste; die Omnibox (Ctrl+K, `b:`/`w:`…) ist global, aber im Ich nicht
+beworben. **Lehre (V18.55 EIN Design-System, viele Leser):** dieselbe Bauplan-/Rezept-Darstellung in beiden
+Räumen. **Heilung:** das Rezept-/Bauplan-Listen-Rendering als GETEILTE Quelle (wie das `.spec-*`-Sheet) — das
+Ich + die Werkstatt zeigen Baupläne identisch; die Omnibox im Ich sichtbar machen (der ⌕-Trigger / `b:`).
+(Maß-Disziplin: zuerst prüfen, wie nah `renderRecipeBook` + die Werkstatt-Liste schon sind — verdichten, nicht
+ein drittes bauen.)
+
+### H.6 — „Mehr: Wechseln & Markieren" gehört in „Was du trägst" (nicht als Fremdkörper)
+**Befund:** „der Rollen-Override unten gehört zusammen mit ‚Was du trägst'." **GEMESSEN:** `#player-equip`
+(Wechsel-Dropdowns · Portal-Ziel · Rollen-Override) ist eine separate klappbare Sektion, getrennt vom
+`#inventory-equip` („Was du trägst"). **Lehre (P2 Zonen-Kohäsion):** was zusammen gehört (was ich trage +
+wie ich es feinjustiere) lebt zusammen. **Heilung:** `#player-equip` in die „Was du trägst"-Sektion falten
+(als deren Detail-/Feinjustage-Aufklapp), kein separater Block.
+
+### H.7 — Der Previewer switcht nicht beim Seelen-Wechsel (+ „immer ein Block")
+**Befund:** „im Previewer erscheint immer ein Block, switcht nicht beim Ändern des Avatars." **GEMESSEN — die
+Wurzel:** der Soul-Select-`change` (playerSoulInitDOM) ruft `applyPlayerSoul(v)` (re-baut den WELT-Mesh +
+recompute), aber NIE `_ichStageShow`/`_ichRefreshStage` → die Ich-Bühne bleibt auf dem Initial-Avatar stehen.
+Plus: „ein Block" = der human-Avatar aus bodyParts (Box-Torso) wirkt blockig. **Lehre (V17.31 KONSUM — die
+Anzeige muss dem Zustand folgen):** ein Zustands-Wechsel (Seele) MUSS die Bühne aktualisieren. **Heilung:** der
+Soul-Wechsel (+ ein in der Werkstatt geformter Avatar) ruft `_ichStageShow(neueSeele)` → die Bühne switcht
+live; ein `_ichRefreshStage()` an `applyPlayerSoul` gehängt (wenn das Overlay offen ist). Die „Block"-Optik
+ist Folge der bodyParts-Geometrie — mit der echten Avatar-Form (built-in `build()` statt nur bodyParts) prüfen.
+
+---
+
+## §I — Die neue Ich-Form (verdichtet auf den wahren Kern) + die Wellen
+
+**Das „Ich" = nur das Selbst, das ich BIN.** Drei Zonen, alles Fremde ausgezogen:
+
+```
+┌─ DEIN ICH (helles Pergament) ───────────────────────────────────────────── × ┐
+│ WER ICH BIN (Star)                                │ WAS ICH HABE              │
+│ ┌─ Bühne (Avatar 3D, switcht live) ─┐  Name·[Seele▾]│  Inventar (9×N)          │
+│ │   + Seele-Auswahl IM Header        │  Verfassung★ │  Hotbar 1–9 (drag/klick) │
+│ └────────────────────────────────────┘  WERTE|NATUR │  Was du trägst           │
+│  EMOTION (6-Achsen, live) — die Herz-Signatur        │   └ Wechseln/Markieren   │
+│  (KEIN Journal — das ist die Welt-Stimme → Hof)      │     (eingefaltet)        │
+│ ─────────────────────────────────────────────────────┴──────────────────────│
+│ WAS ICH MACHEN KANN: Rezeptbuch (EINHEITLICH wie Werkstatt) + Omnibox (⌕/Ctrl+K)│
+└────────────────────────────────────────────────────────────────────────────────┘
+```
+
+Ausgezogen aus dem Ich: das **Journal/Reise** (→ Hof/Bibliothek, H.1) · der **Soul-Editor klonen/neu** (→
+Werkstatt, H.4) · die **doppelte Körper-Detail-Liste** (→ ersetzt durch das Spec-Sheet, H.3).
+
+**Die Wellen (jede misst + verifiziert, content-first, keine halben Sachen):**
+
+1. **Ich-F — die Verdichtung (Fremdes ausziehen):** das Journal/die Reise aus dem Ich entfernen (+ in den Hof
+   einsetzen, H.1) · die „Körper & Detail-Werte"-Liste + `renderPlayerStatsUI` schneiden (H.3) · den Soul-
+   Select in den Header neben Name/Bühne ziehen (H.2) · „Mehr: Wechseln & Markieren" in „Was du trägst" falten
+   (H.6). Reine Verdichtung → das Ich wird schlank + ehrlich.
+2. **Ich-G — der Previewer switcht (H.7):** `_ichRefreshStage()` an den Soul-Wechsel hängen (Overlay offen →
+   die Bühne baut die neue Seele live); die echte Avatar-Form prüfen (build() vs bodyParts).
+3. **Ich-H — die Seelen-Quelle vereinen (H.4, der Synergie-Kern, eigener Bogen):** EINE Seelen-Quelle —
+   built-in + custom + Werkstatt-Bauplan `role:"soul"` vereint; Seelen klont/formt man in der Werkstatt (wie
+   Baupläne), das Ich-Soul-Select speist sich aus der EINEN Quelle; „Avatare fehlen in der Werkstatt" geheilt.
+4. **Ich-I — Rezeptbuch + Omnibox einheitlich (H.5):** das Bauplan-/Rezept-Rendering als geteilte Quelle (Ich
+   ≡ Werkstatt); die Omnibox im Ich sichtbar.
+5. **Schöpfer-Browser-Sign-off** + EIN Merge des Ich-Bogens.
+
+**Reihenfolge-Logik:** Ich-F (Verdichtung, sofort spürbar + risikoarm) → Ich-G (der sichtbare Bühnen-Bug) →
+Ich-H (der tiefe Seelen-Synergie-Bogen, GEMESSEN die Dreifach-Quelle) → Ich-I (die Rezept/Omnibox-Einheit).
+Ich-H ist der größte (berührt die Seelen-Architektur) — eigener Bogen mit voller Verifikation.
+
+**Selbst-Prüfung gegen die Lehren:** Verdichte zu EINER Quelle (H.4 Seelen, H.5 Rezept) ✓ · ehrliche
+Verortung (H.1 Journal→Welt, H.4 Schöpfung→Werkstatt) ✓ · schneide, was tiefer ersetzt wurde (H.3) ✓ · KONSUM
+(H.7 die Bühne folgt dem Zustand) ✓ · der wahre Norden (das Journal ist die Welt-Stimme, `das-lebendige-feld`)
+✓. **Der Kern-Fehler war ein Verortungs-Fehler:** ich hatte Schöpfung (Seele) + Welt-Stimme (Journal) ins
+Selbst gelegt; das „Ich" liest + wählt nur, es erschafft + erzählt nicht.
