@@ -29593,7 +29593,52 @@ class AnazhRealm {
         for (const item of this._feedItems()) list.appendChild(this._feedItemCard(item));
         this._renderFeedKindChips();
         this._renderFeedTrends();
+        this._renderActiveWorldIsland();
         this._applyLibraryFilter();
+    }
+
+    // Das "Diese Welt"-Eiland (bibliothek-plan §D.5, das Ich-Selbst-Eiland-Muster auf die aktive Welt) —
+    // die Identität der AKTIVEN Welt (Name + DIESE-WELT-Marke + Trust + ein knapper Bestand). Die
+    // Provenienz-Samen (Stammbaum + Tagebuch) füllen die BESTEHENDEN Renderer (_renderWorldLineage +
+    // renderWorldJournal) in die ins Eiland gewanderten #world-lineage/#world-journal-Elemente — kein
+    // Parallel-Pfad (V9.82); die Samen blühen jetzt content-reich an der Welt statt verstreut.
+    _renderActiveWorldIsland() {
+        if (typeof document === "undefined") return;
+        const host = document.getElementById("feed-active-ident");
+        if (host) {
+            const m = this.state.worldMeta || {};
+            const name = m.slug || "(noch namenlos)";
+            const archCount = (this.state.architectures || []).length;
+            const bpCount = Object.keys(this.state.blueprints || {}).length;
+            const creatureCount = (this.state.creatures || []).length;
+            host.innerHTML = "";
+            host.appendChild(
+                this._el(
+                    "div",
+                    { class: "spec-header" },
+                    this._el(
+                        "div",
+                        { class: "spec-id" },
+                        this._el("span", { class: "spec-name lib-card-name", text: name }),
+                        this._el("span", { class: "feed-self-badge", text: "Diese Welt" })
+                    ),
+                    this._el("span", {
+                        class: "lib-trust-seal trust-trusted",
+                        text: "✓ deine",
+                        title: "Deine eigene Welt — du gestaltest + teilst sie souverän (Vibe-Pass).",
+                    })
+                )
+            );
+            host.appendChild(
+                this._el("div", {
+                    class: "feed-self-stats",
+                    text: `${archCount} Bauwerke · ${bpCount} Baupläne · ${creatureCount} Wesen`,
+                })
+            );
+        }
+        // die Provenienz-Samen füllen die bestehenden Renderer (jetzt im Eiland-Kontext).
+        if (typeof this._renderWorldLineage === "function") this._renderWorldLineage();
+        if (typeof this.renderWorldJournal === "function") this.renderWorldJournal();
     }
 
     // Bib-D + Feed (das Ich-§J5-Loop) — die Selbst-Suche UND der Kind-Filter TREIBEN den Feed-Strom:
@@ -49503,7 +49548,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.70.0";
+AnazhRealm.VERSION = "18.71.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

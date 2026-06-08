@@ -10154,7 +10154,9 @@ async function checkBandRing9to10(ctx) {
         out.fusionStrategyRadios = document.querySelectorAll('input[name="fusion-strategy"]').length === 3;
         out.fusionParentBSelectInDom = !!document.getElementById("world-fusion-parent-b");
         out.fusionOpenBtnInDom = !!document.getElementById("world-fuse-open");
-        out.lineageSectionInDom = !!document.getElementById("world-lineage-section");
+        // Bib (V18.71): der Stammbaum-Samen blüht jetzt im "Diese Welt"-Eiland (.feed-self), nicht mehr
+        // in einer eigenen #world-lineage-section (die wanderte ins Eiland; V9.56-i — Test wandert mit).
+        out.lineageSectionInDom = !!document.querySelector(".feed-self #world-lineage");
         out.lineageDivInDom = !!document.getElementById("world-lineage");
         out.fusionStrategiesArray =
             Array.isArray(AnazhRealm.FUSION_STRATEGIES) && AnazhRealm.FUSION_STRATEGIES.length === 3;
@@ -10382,7 +10384,7 @@ async function checkBandRing9to10(ctx) {
         check("Ring 10: Eltern-B-Dropdown im DOM", ring10Results.fusionParentBSelectInDom);
         check("Ring 10: 'Verschmelzen…'-Button im DOM (Bibliothek)", ring10Results.fusionOpenBtnInDom);
         check(
-            "Ring 10: Stammbaum-Sektion im DOM (UI-Putz: jetzt in der Bibliothek)",
+            "Ring 10: Stammbaum-Samen blüht im 'Diese Welt'-Eiland (.feed-self, V18.71)",
             ring10Results.lineageSectionInDom
         );
         check("Ring 10: AnazhRealm.FUSION_STRATEGIES (3)", ring10Results.fusionStrategiesArray);
@@ -30871,6 +30873,16 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !libCreate.open &&
             !!libCreate.querySelector("#translator-input") &&
             !!libCreate.querySelector("#vendor-id");
+        // V18.71: das "Diese Welt"-Eiland (das Ich-Selbst-Eiland-Muster) — Identität + die geblühten
+        // Provenienz-Samen (Stammbaum + Tagebuch) leben content-reich in der linken Spalte.
+        const feedSelf = feedLeft && feedLeft.querySelector(".feed-self");
+        r._renderActiveWorldIsland();
+        out.feedSelfIsland =
+            !!feedSelf &&
+            !!feedSelf.querySelector("#feed-active-ident .feed-self-badge") &&
+            !!feedSelf.querySelector("#world-lineage") &&
+            !!feedSelf.querySelector("#world-journal-list") &&
+            /Diese Welt|noch namenlos|.+/.test(feedSelf.querySelector("#feed-active-ident").textContent || "");
         // Feed-A0: _feedItems vereint Welten + Rezepte + Wesen (jedes liest seinen Vektor + seine Wertung).
         const fi = typeof r._feedItems === "function" ? r._feedItems() : [];
         const fkinds = new Set(fi.map((it) => it.kind));
@@ -30997,6 +31009,10 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Feed: 3 Spalten — Werkzeuge links | Feed Mitte | Kuratieren rechts", w14Results.feedThreeCol);
         check("Feed: das #library-list ist der Feed-Strom in der Mitte", w14Results.feedCenterHoldsStream);
         check("Feed: die Schöpfen-Werkzeuge sind links eingeklappt", w14Results.createCollapsed);
+        check(
+            "Feed: das 'Diese Welt'-Eiland blüht links (Identität + Stammbaum + Tagebuch, V18.71)",
+            w14Results.feedSelfIsland
+        );
         check("Feed: die Suche sitzt im Feed-Kopf", w14Results.searchInHead);
         check("Feed-A0: _feedItems vereint Welten + Rezepte + Wesen", w14Results.feedHasAllKinds);
         check("Feed-A0: jedes Feed-Item trägt id + Vektor + Wertung", w14Results.feedItemsBundle);

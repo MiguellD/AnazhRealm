@@ -11,6 +11,14 @@
 > Schöpfer-Auftrag (08.06.2026): „können wir die offenen 2 Menüs ausdefinieren, ausplanen, mit dem
 > Gelernten, der 3 erstellten?"
 
+**Stand: GEBAUT — die Social-Media-Plattform (V18.69 → .71).** V18.70: der zentrale FEED (3 Spalten · Welten+Rezepte+Wesen
+in EINEM Strom, jedes Item liest seinen Vektor · das WERTEN = lokale Sterne, das dritte Verb · Kind-Filter + Bestbewertet ·
+das Mesh-soziale Bewerten in den Backlog). V18.71: die linke Spalte VOLLENDET — das **„Diese Welt"-EILAND** (`_renderActiveWorldIsland`,
+das Ich-Selbst-Eiland-Muster auf die aktive Welt): Identität + Trust + **STAMMBAUM + TAGEBUCH blühen** content-reich (die §D.2/§D.5-
+Provenienz-Samen an der Welt geblüht, über die bestehenden Renderer — kein Parallel-Pfad), die Erschaffen-Werkzeuge eingeklappt
+darunter. **OFFEN: sort-by-rating im Strom · „Diese Welt" auch als hervorgehobene Feed-Karte · die Erschaffen-Werkzeuge als
+per-Tool-Akkordeon · das Mesh-soziale Bewerten (Backlog) · Schöpfer-Browser-Sign-off (GPU-Galerie-Feel) + Merge.** Darunter (Verlauf):
+
 **Stand: GEBAUT Bib-A0 + Bib-A + Bib-B + die Bib-D-Suche (V18.69).** `_worldProfile` (der EINE Welt-Lese-Vektor,
 KONSUM bewiesen) · die WELT-SPEC-CARD (`_libraryBuildCard` → das geteilte `.spec-*`-Design: Name + Stufe + Trust-Siegel
 im Header · Vokabular | Netz & Vertrauen + Signatur-Siegel im Body · BETRETEN + Signieren/Teilen im Footer; eine dunkle

@@ -4794,20 +4794,134 @@
                 max-width: 720px;
                 margin: 0 auto;
             }
-            /* LINKS — die Schöpfen-Werkzeuge als kompakter Pergament-Panel (eingeklappt, expand zum Schöpfen). */
-            .feed-left.library-create {
+            /* LINKS — das "Diese Welt"-Eiland (content-reich, das Ich-Selbst-Eiland-Muster) +
+               die Erschaffen-Werkzeuge (kompakt eingeklappt darunter). */
+            .feed-self {
+                margin-bottom: 14px;
+            }
+            .feed-self-card {
+                gap: 0;
+            }
+            .feed-self-ident {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            .feed-self-badge {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 8px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
+                padding: 1px 7px;
+                border-radius: 8px;
+                background: rgba(255, 224, 102, 0.16);
+                color: #ffe6a8;
+                border: 1px solid var(--brass-2, #8a6322);
+            }
+            .feed-self-stats {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                color: var(--ink-on-dark-soft, #c8b48a);
+                margin: 6px 0 0;
+            }
+            .feed-self-prov {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                margin-top: 9px;
+                padding-top: 9px;
+                border-top: 1px dotted rgba(184, 140, 80, 0.3);
+            }
+            .feed-prov-block {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .feed-prov-list {
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 11px;
+                font-style: italic;
+                color: var(--ink-on-dark-soft, #c8b48a);
+                line-height: 1.5;
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            .feed-prov-list .lineage-entry {
+                font-style: normal;
+                display: flex;
+                align-items: baseline;
+                gap: 5px;
+                flex-wrap: wrap;
+            }
+            .feed-prov-list .lineage-link {
+                background: rgba(255, 235, 190, 0.1);
+                color: #ffe6a8;
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 2px;
+                padding: 1px 7px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                cursor: pointer;
+            }
+            .feed-journal {
+                max-height: 176px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .feed-journal .journal-entry {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: baseline;
+                gap: 5px;
+                font-size: 10px;
+                color: var(--ink-on-dark, #ece1c5);
+                line-height: 1.4;
+            }
+            .feed-journal .journal-type {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 8px;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                padding: 0 5px;
+                border-radius: 6px;
+                background: rgba(176, 106, 217, 0.2);
+                color: #d9a8ff;
+            }
+            .feed-journal .journal-age {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 8.5px;
+                color: var(--ink-on-dark-soft, #c8b48a);
+            }
+            .feed-journal .journal-empty {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 10px;
+                color: var(--ink-on-dark-soft, #c8b48a);
+            }
+            #world-journal-count.journal-count {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 8px;
+                color: var(--ink-on-dark-soft, #c8b48a);
+                text-transform: none;
+                letter-spacing: 0;
+            }
+            .feed-create.library-create {
                 border: 1px solid var(--brass-3, #5a4824);
                 border-radius: 6px;
-                padding: 8px 10px;
-                border-top: 1px solid var(--brass-3, #5a4824);
+                padding: 7px 10px;
             }
-            .feed-left .library-create-body {
-                margin-top: 10px;
-                max-height: 60vh;
-                overflow-y: auto;
+            .feed-create .library-create-summary {
+                margin: 0;
+                padding: 2px 0;
             }
-            .feed-left .library-columns {
+            .feed-create .library-create-body {
                 column-count: 1;
+                margin-top: 8px;
+                max-height: 56vh;
+                overflow-y: auto;
             }
             /* RECHTS — die Kuratier-Inseln (Filter + Bestbewertet). */
             .feed-curate {
@@ -7252,11 +7366,33 @@
                     <button type="button" id="library-import" class="library-import-btn">Welt empfangen…</button>
                     <input type="file" id="library-import-input" accept="application/json,.json" hidden />
                 </aside>
-                <details class="library-create feed-left">
-                    <summary class="library-create-summary">
-                        Schöpfen &amp; Andocken — eine fremde Welt übersetzen, andocken, verwalten · Provenienz
-                    </summary>
-                    <div class="library-create-body library-columns">
+                <aside class="feed-left">
+                    <!-- "Diese Welt" — das Welt-Eiland (das Ich-Selbst-Eiland-Muster auf die aktive Welt):
+                         Identität + Trust + Stammbaum + Tagebuch. Die Provenienz-Samen blühen HIER an der
+                         Welt (statt verstreut in der eingeklappten Zone). _renderActiveWorldIsland füllt die
+                         Identität; _renderWorldLineage + renderWorldJournal füllen die gewanderten Samen. -->
+                    <section class="feed-self">
+                        <div class="lib-spec-sheet spec-sheet feed-self-card">
+                            <div id="feed-active-ident" class="feed-self-ident">—</div>
+                            <div class="feed-self-prov">
+                                <div class="feed-prov-block">
+                                    <div class="spec-col-head">Stammbaum</div>
+                                    <div id="world-lineage" class="feed-prov-list" aria-live="polite">
+                                        Diese Welt ist eigenständig — keine Eltern-Welten.
+                                    </div>
+                                </div>
+                                <div class="feed-prov-block">
+                                    <div class="spec-col-head">
+                                        Tagebuch <span id="world-journal-count" class="journal-count">—</span>
+                                    </div>
+                                    <div id="world-journal-list" class="journal-list feed-journal" aria-live="polite"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <details class="library-create feed-create">
+                        <summary class="library-create-summary">✦ Erschaffen &amp; Andocken</summary>
+                        <div class="library-create-body">
                 <!-- KI-Übersetzer Phase 1 — eine fremde Welt beschreiben, die KI
                  übersetzt sie in ein Portal-Manifest. _runTranslator füllt
                  #translator-review; acceptTranslatedManifest committet. -->
@@ -7380,19 +7516,9 @@
                         <button type="button" id="world-fuse-open">Verschmelzen…</button>
                     </div>
                 </section>
-                <section class="section" id="world-lineage-section">
-                    <h3>Stammbaum <span class="section-hint">(Provenienz — wer aus wem)</span></h3>
-                    <div id="world-lineage" class="drawer-hint" aria-live="polite">
-                        Diese Welt ist eigenständig — keine Eltern-Welten.
-                    </div>
-                </section>
-                <section class="section" id="world-journal-section">
-                    <h3>Tagebuch <span class="section-hint">(die Geschichte dieser Welt)</span></h3>
-                    <div id="world-journal-count" class="journal-count">—</div>
-                    <div id="world-journal-list" class="journal-list" aria-live="polite"></div>
-                </section>
-                    </div>
-                </details>
+                        </div>
+                    </details>
+                </aside>
             </div>
         </aside>
         <aside class="drawer" data-drawer="einstellungen" aria-label="Einstellungen-Panel" hidden>
@@ -8114,6 +8240,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.70.0" defer></script>
+        <script src="anazhRealm.js?v=18.71.0" defer></script>
     </body>
 </html>
