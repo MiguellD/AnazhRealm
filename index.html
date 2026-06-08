@@ -1997,6 +1997,10 @@
                 right: 12px;
                 width: 300px;
                 max-height: calc(100vh - 84px);
+                /* V18.76 — box-sizing:border-box, sonst überläuft das max-height um padding (24+18=42px) →
+                   der Drawer war 858 statt 816, ragte unten aus dem Bild + der Resize-Griff war unerreichbar
+                   (GEMESSEN; die V18.64-Ich-Lehre, nie auf die Drawer angewandt). */
+                box-sizing: border-box;
                 /* V8.01 — overflow:hidden am Container, scroll im inneren
                    .drawer-scroll-Wrapper (via JS bei Init). So bleiben
                    Background + Border + Resize-Handle + h2 + close-button
@@ -8493,6 +8497,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.75.0" defer></script>
+        <script src="anazhRealm.js?v=18.76.0" defer></script>
     </body>
 </html>

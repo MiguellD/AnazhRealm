@@ -30978,6 +30978,16 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             // die Bühne idle lassen (kein RAF läuft ohne Drawer-Öffnen); Fokus zurücksetzen für spätere Bands.
             r.state.feedFocusId = null;
         }
+        // V18.76 — der Drawer-Fit: box-sizing:border-box, sonst überläuft das max-height um padding (die V18.64-
+        // Wurzel, GEMESSEN: der Drawer war 858 statt 816 → ragte unten aus dem Bild + der Resize-Griff unerreichbar).
+        const bibDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
+        out.drawerBoxSizing = !!bibDrawer && getComputedStyle(bibDrawer).boxSizing === "border-box";
+        // V18.76 — die Omnibox `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, §D.4-Konsistenz).
+        const omniWelt = typeof r._omniboxSearch === "function" ? r._omniboxSearch("welt:") : [];
+        out.omniboxWelt =
+            Array.isArray(omniWelt) &&
+            omniWelt.length >= 1 &&
+            omniWelt.some((e) => /Welt/.test(e.kindLabel) && e.label && typeof e.run === "function");
         // Bestbewertet spiegelt eine Wertung zurück (das WERTEN sichtbar).
         r._setFeedRating("world:fluid", 5);
         r._renderFeedTrends();
@@ -31093,6 +31103,8 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
         check("Feed: der geteilte 3D-Vorschau-Bereich (Canvas + Methoden) ist da (V18.75)", w14Results.feedPreviewPanel);
         check("Feed: Klick auf eine Karte fokussiert sie für die Vorschau (V18.75)", w14Results.feedPreviewFocus);
+        check("Drawer: box-sizing:border-box — der Drawer passt in den Viewport (kein Überlauf, V18.76)", w14Results.drawerBoxSizing);
+        check("Omnibox: `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, V18.76)", w14Results.omniboxWelt);
         check("Feed: Bestbewertet spiegelt eine Wertung zurück", w14Results.feedTrends);
         check("Bib-D: die Suche TREIBT den Feed (kein toter Knopf, V18.65)", w14Results.searchDrivesGrid);
         check("Bib-D: die Suche leeren zeigt alle Karten wieder", w14Results.searchClearsClean);

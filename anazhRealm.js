@@ -10445,6 +10445,30 @@ class AnazhRealm {
                 }
             }
         };
+        // V18.76 — `welt:` surfaced die einzelnen WELTEN (wie `b:` die Baupläne) — die Konsistenz-Lücke
+        // vs. den 3 Räumen (bibliothek-plan §D.4): jede Welt liest ihren `_worldProfile`-Such-Index;
+        // ein Treffer öffnet die Bibliothek + treibt die Selbst-Suche auf den Namen (der J5-Loop).
+        const addWorlds = (t) => {
+            for (const w of this._libraryWorlds()) {
+                if (out.length >= LIMIT) return;
+                const p = this._worldProfile(w);
+                if (t && !p.searchText.includes(t)) continue;
+                out.push({
+                    kindLabel: p.trust === "sandboxed" ? "Sandbox-Welt" : "Welt",
+                    label: p.label,
+                    sub: p.hasDsl ? p.dsl.slice(0, 3).join(" ") : "Welt",
+                    run: () => {
+                        const tab = document.querySelector('[data-tab="bibliothek"]');
+                        if (tab) tab.click();
+                        const search = document.getElementById("library-search");
+                        if (search) {
+                            search.value = p.label;
+                            if (typeof this._applyLibraryFilter === "function") this._applyLibraryFilter();
+                        }
+                    },
+                });
+            }
+        };
         const ROOMS = [
             ["werkstatt", "werkstatt", "Werkstatt"],
             ["hof", "kreaturen", "Hof"],
@@ -10504,20 +10528,12 @@ class AnazhRealm {
         else if (ROLE_PREFIX[prefix]) addBlueprints(term, ROLE_PREFIX[prefix]);
         else if (prefix === "geh") addRooms(term);
         else if (prefix === "k") addCreatureTasks(term);
-        else if (prefix === "welt") {
-            out.push({
-                kindLabel: "Bibliothek",
-                label: term ? `Bibliothek — „${term}" suchen` : "Bibliothek öffnen",
-                sub: "Welt",
-                run: () => {
-                    const el = document.querySelector('[data-tab="bibliothek"]');
-                    if (el) el.click();
-                },
-            });
-        } else {
-            // Freitext: über die Domänen ranken (Befehl → Bauplan → Raum), dann der Nexus-Pfad.
+        else if (prefix === "welt") addWorlds(term);
+        else {
+            // Freitext: über die Domänen ranken (Befehl → Bauplan → Welt → Raum), dann der Nexus-Pfad.
             addCommands(term);
             addBlueprints(term, null);
+            addWorlds(term);
             addRooms(term);
             nexusFallback();
         }
@@ -49849,7 +49865,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.75.0";
+AnazhRealm.VERSION = "18.76.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
