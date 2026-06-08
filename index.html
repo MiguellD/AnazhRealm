@@ -331,6 +331,39 @@
             #console.collapsed {
                 bottom: auto;
                 top: 116px;
+                width: 340px;
+            }
+            /* V18.82 — DER FADING-FEED (der freie Bildschirm, BotW/Minecraft): default ist die Konsole
+               eingeklappt → ein schlankes Chat-Widget (Header · Feed · Eingabe). Neue Nachrichten
+               erscheinen hier kurz + verblassen, ohne den Bildschirm zu blocken. Beim Entfalten zeigt
+               die volle Historie (#console-body) → der Feed weicht. */
+            #chat-feed {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                padding: 6px 12px 2px;
+                max-height: 30vh;
+                overflow: hidden;
+                pointer-events: none;
+                font-size: 12px;
+                line-height: 1.35;
+            }
+            #console:not(.collapsed) #chat-feed {
+                display: none;
+            }
+            #chat-feed:empty {
+                padding: 0;
+            }
+            .chat-feed-line {
+                opacity: 1;
+                transform: translateY(0);
+                transition:
+                    opacity 0.7s ease,
+                    transform 0.7s ease;
+            }
+            .chat-feed-line.chat-feed-out {
+                opacity: 0;
+                transform: translateY(-4px);
             }
             /* Der freie Bildschirm (UI-Putz): H blendet das HUD aus — beim Spielen gehört
                der Bildschirm der Welt (BotW/Genshin). Alles verblasst sanft + wird
@@ -8595,6 +8628,12 @@
                     <div id="log" hidden></div>
                 </div>
             </div>
+            <!-- V18.82 — der FADING-FEED (der freie Bildschirm, BotW/Minecraft-Modell): die Konsole
+                 ist default eingeklappt; neue Nexus-/Wesen-Nachrichten erscheinen hier kurz + verblassen,
+                 ohne den Bildschirm zu blocken. Ein MutationObserver spiegelt jede neue #chat-output-Zeile
+                 herein (der EINE Hook für alle ~17 Append-Quellen). Beim Entfalten zeigt die volle
+                 Historie (#console-body) → der Feed weicht. -->
+            <div id="chat-feed" aria-live="polite"></div>
             <div id="console-footer">
                 <input type="text" id="chat-input" placeholder="sprich, und die Welt antwortet …" />
             </div>
@@ -8787,6 +8826,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.81.0" defer></script>
+        <script src="anazhRealm.js?v=18.82.0" defer></script>
     </body>
 </html>

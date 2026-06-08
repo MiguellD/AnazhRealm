@@ -10078,7 +10078,10 @@ class AnazhRealm {
                 return null;
             }
         })();
-        setCollapsed(stored === "collapsed");
+        // V18.82 — default EINGEKLAPPT (der freie Bildschirm, BotW/Minecraft): die Konsole ist
+        // ein schlankes Chat-Widget, bis der Spieler die Historie aufruft. Nur wenn er sie
+        // explizit „open" gemerkt hat, bleibt sie offen.
+        setCollapsed(stored !== "open");
         toggle.addEventListener("click", () => {
             const next = !panel.classList.contains("collapsed");
             setCollapsed(next);
@@ -10088,6 +10091,41 @@ class AnazhRealm {
                 /* Persistenz best-effort. */
             }
         });
+        this._installChatFeed();
+    }
+
+    // V18.82 — der FADING-FEED: ein MutationObserver auf #chat-output spiegelt JEDE neue Zeile
+    // (von allen ~17 Append-Quellen) in #chat-feed → sie erscheint kurz + verblasst (BotW/
+    // Minecraft). So sieht der Spieler neue Nexus-/Wesen-Worte, ohne dass die Konsole den
+    // Bildschirm blockt; die volle Historie ist einen Klick (Entfalten) entfernt.
+    _installChatFeed() {
+        if (typeof document === "undefined" || typeof window === "undefined" || !window.MutationObserver) return;
+        if (this._chatFeedWired) return;
+        const out = document.getElementById("chat-output");
+        const feed = document.getElementById("chat-feed");
+        if (!out || !feed) return;
+        this._chatFeedWired = true;
+        const FADE_MS = 8200;
+        const obs = new window.MutationObserver((muts) => {
+            for (const m of muts) {
+                for (const node of m.addedNodes) {
+                    if (!node || node.nodeType !== 1) continue;
+                    const clone = node.cloneNode(true);
+                    clone.classList.add("chat-feed-line");
+                    feed.appendChild(clone);
+                    const t1 = setTimeout(() => clone.classList.add("chat-feed-out"), FADE_MS - 700);
+                    const t2 = setTimeout(() => clone.remove(), FADE_MS);
+                    clone._feedTimers = [t1, t2];
+                    // nur die letzten ~5 zeigen (der Feed ist ein flüchtiger Blick, keine Historie).
+                    while (feed.children.length > 5) {
+                        const old = feed.firstChild;
+                        if (old._feedTimers) old._feedTimers.forEach(clearTimeout);
+                        old.remove();
+                    }
+                }
+            }
+        });
+        obs.observe(out, { childList: true });
     }
 
     // Tab-System: ein Tab je Drawer. activeTab-Klasse auf dem Knopf,
@@ -49867,7 +49905,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.81.0";
+AnazhRealm.VERSION = "18.82.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

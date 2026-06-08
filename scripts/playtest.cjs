@@ -39804,20 +39804,26 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.logInside = panel && panel.querySelector("#log") !== null;
         out.chatInputInside = panel && panel.querySelector("#chat-input") !== null;
 
+        // V18.82 — der FADING-FEED (der freie Bildschirm): die Konsole startet jetzt EINGEKLAPPT
+        // (ein schlankes Chat-Widget), neue Nachrichten verblassen im #chat-feed. Der Test wandert
+        // mit (V9.56-i): die Toggle-Kette ist umgekehrt (collapsed → klick → open → klick → collapsed).
+        out.chatFeedInside = panel && panel.querySelector("#chat-feed") !== null;
+        out.feedWired = !!(window.anazhRealm && window.anazhRealm._chatFeedWired);
+
         // Collapse-Toggle
         const toggle = document.getElementById("console-collapse");
         out.toggleInDom = !!toggle;
-        out.initiallyOpen = panel && !panel.classList.contains("collapsed");
+        out.initiallyCollapsed = panel && panel.classList.contains("collapsed");
 
         if (toggle) toggle.click();
-        out.afterFirstClickCollapsed = panel && panel.classList.contains("collapsed");
-        out.toggleLabelChanged = toggle && toggle.textContent === "+";
+        out.afterFirstClickOpen = panel && !panel.classList.contains("collapsed");
+        out.toggleLabelChanged = toggle && toggle.textContent === "−";
 
         if (toggle) toggle.click();
-        out.afterSecondClickOpen = panel && !panel.classList.contains("collapsed");
+        out.afterSecondClickCollapsed = panel && panel.classList.contains("collapsed");
 
-        // Persistenz: localStorage hat Wahl
-        out.localStorageOpen = localStorage.getItem("anazhRealmConsole") === "open";
+        // Persistenz: localStorage hat die Wahl (nach zwei Klicks: open → collapsed)
+        out.localStoragePersists = localStorage.getItem("anazhRealmConsole") === "collapsed";
 
         return out;
     });
@@ -39835,11 +39841,13 @@ async function checkBandEarlyRingsAndUi(ctx) {
             consoleResults.chatOutputInside && consoleResults.logInside && consoleResults.chatInputInside
         );
         check("UI V2: Collapse-Toggle vorhanden", consoleResults.toggleInDom);
-        check("UI V2: Konsole startet aufgeklappt", consoleResults.initiallyOpen);
-        check("UI V2: Erster Klick klappt ein", consoleResults.afterFirstClickCollapsed);
-        check("UI V2: Toggle-Label wechselt zu '+'", consoleResults.toggleLabelChanged);
-        check("UI V2: Zweiter Klick klappt wieder auf", consoleResults.afterSecondClickOpen);
-        check("UI V2: Konsole-Status in localStorage persistiert", consoleResults.localStorageOpen);
+        check("UI V2: #chat-feed (Fading-Feed) in der Konsole", consoleResults.chatFeedInside);
+        check("UI V2: der Fading-Feed-Observer ist verdrahtet (_chatFeedWired)", consoleResults.feedWired);
+        check("UI V2: Konsole startet EINGEKLAPPT (der freie Bildschirm, V18.82)", consoleResults.initiallyCollapsed);
+        check("UI V2: Erster Klick entfaltet", consoleResults.afterFirstClickOpen);
+        check("UI V2: Toggle-Label wechselt zu '−'", consoleResults.toggleLabelChanged);
+        check("UI V2: Zweiter Klick klappt wieder ein", consoleResults.afterSecondClickCollapsed);
+        check("UI V2: Konsole-Status in localStorage persistiert", consoleResults.localStoragePersists);
     }
 }
 
