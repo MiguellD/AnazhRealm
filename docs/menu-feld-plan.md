@@ -70,6 +70,13 @@ destilliert, die JEDER Raum erbt — sie sind GEBAUT, kein neuer Aufwand pro Rau
   Hierarchie, Fingerabdruck) statt als flache Label/Wert-Tabelle. Header (Identität) → Body (der Fingerabdruck
   in Balken) → Footer (sekundär). `_specBar(label, frac, val, levelClass)` + die `.spec-*`-Klassen sind
   WIEDERVERWENDBAR (Ich-Stats/Emotionen, Hof-Wesen-Profil, Bibliothek-Welt-Tags).
+- **P18 Form-Controls — der geteilte Theme-Hebel (GEBAUT V18.81):** EINE `.drawer`/`#inventory-overlay`-Regel
+  themt ALLE nativen Controls — `input[text/password/search/number]` · `select` · `textarea` → Pergament-Feld
+  (`rgba(247,238,216)`) · Messing-Rahmen · Ink · JetBrains-Mono · Fokus-Glow; `select` bekommt `appearance:none`
+  + ein Messing-Chevron, die Checkbox `accent-color:brass`. **Disziplin: NIE pro Raum ein Input/Select stylen —
+  das native OS-Chrome (weisses Input · blaue Checkbox · OS-Dropdown-Pfeil) ist der „2001-XP"-Stilbruch; jeder
+  neue Raum erbt P18 GRATIS.** Ein „weisses Feld"-Befund = ein Control, das die geteilte Regel (noch) nicht
+  greift (zu spezifischer Kontext-Override ODER ein neuer Control-Typ) — die Regel weiten, nicht patchen.
 
 **B — die DENKMUSTER (das WIE):**
 
