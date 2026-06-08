@@ -16,8 +16,11 @@ in EINEM Strom, jedes Item liest seinen Vektor · das WERTEN = lokale Sterne, da
 das Mesh-soziale Bewerten in den Backlog). V18.71: die linke Spalte — das **„Diese Welt"-EILAND** (`_renderActiveWorldIsland`,
 das Ich-Selbst-Eiland-Muster auf die aktive Welt): Identität + Trust + **STAMMBAUM + TAGEBUCH blühen** content-reich (die §D.2/§D.5-
 Provenienz-Samen an der Welt geblüht, über die bestehenden Renderer — kein Parallel-Pfad). V18.72: die Erschaffen-Werkzeuge
-AUSGEARBEITET — ein **Akkordeon klarer Werkzeug-Einträge** (`.feed-tool`: Glyph · Name · Zweck, eines offen zur Zeit) statt
-des Wall-of-Forms, die verbosen Hints verdichtet. Die linke Spalte ist damit vollständig (Eiland + Erschaffen-Akkordeon). **OFFEN: sort-by-rating im Strom · „Diese Welt" auch als hervorgehobene Feed-Karte · die Erschaffen-Werkzeuge als
+AUSGEARBEITET — ein **Akkordeon klarer Werkzeug-Einträge** (`.feed-tool`: Glyph · Name · Zweck, eines offen zur Zeit).
+V18.73: die IA AUF X-NIVEAU (Schöpfer-Alignment „es ist keine Todo, es ist Alignment damit es perfekt wird") — **Center-Tabs
+„Für dich | Aus dem Mesh"** (der Welt-Katalog wird eine Feed-QUELLE im Hauptthread, nicht ein Seiten-Tool), **Schöpfen & Andocken
+→ RECHTS** (mit Empfangen vereint: der 3er-Block Neue/Verschmelzen/Empfangen prominent, Übersetzen/Andocken als Akkordeon),
+das **Tagebuch eingeklappt** (Chronik im Hof), die linke Spalte nur noch „Diese Welt". `_setFeedTab` schaltet die Tabs (GEMESSEN). **OFFEN: sort-by-rating im Strom · „Diese Welt" auch als hervorgehobene Feed-Karte · die Erschaffen-Werkzeuge als
 per-Tool-Akkordeon · das Mesh-soziale Bewerten (Backlog) · Schöpfer-Browser-Sign-off (GPU-Galerie-Feel) + Merge.** Darunter (Verlauf):
 
 **Stand: GEBAUT Bib-A0 + Bib-A + Bib-B + die Bib-D-Suche (V18.69).** `_worldProfile` (der EINE Welt-Lese-Vektor,

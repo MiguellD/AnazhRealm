@@ -9775,7 +9775,9 @@ async function checkBandRing8(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.pickerSectionInDom = !!document.getElementById("world-picker-section");
+        // V18.73: die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
+        // die eigene #world-picker-section entfiel — der Picker lebt als #world-picker-list (V9.56-i).
+        out.pickerSectionInDom = !!document.querySelector(".feed-schoepfen #world-picker-list");
         out.pickerListInDom = !!document.getElementById("world-picker-list");
         out.newWorldBtnInDom = !!document.getElementById("world-new");
         // Rendern mit zwei Test-Welten und prüfen, dass UI sie zeigt
@@ -9812,7 +9814,7 @@ async function checkBandRing8(ctx) {
             (ring8UiResults && ring8UiResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 8 UI: #world-picker-section im DOM", ring8UiResults.pickerSectionInDom);
+        check("Ring 8 UI: der Welt-Picker lebt im rechten Schöpfen-Block (V18.73)", ring8UiResults.pickerSectionInDom);
         check("Ring 8 UI: #world-picker-list im DOM", ring8UiResults.pickerListInDom);
         check("Ring 8 UI: #world-new Button im DOM", ring8UiResults.newWorldBtnInDom);
         check("Ring 8 UI: Picker rendert andere Welten als Zeilen", ring8UiResults.pickerRendersOthers);
@@ -30865,16 +30867,17 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.feedThreeCol = !!feedLayout && !!feedLeft && !!feedCenter && !!feedRight;
         out.feedCenterHoldsStream = !!feedCenter && !!feedCenter.querySelector("#library-list");
         out.searchInHead = !!(feedCenter && feedCenter.querySelector(".library-head #library-search"));
-        const libCreate =
-            feedLeft &&
-            (feedLeft.matches("details.library-create") ? feedLeft : feedLeft.querySelector("details.library-create"));
-        out.createCollapsed =
-            !!libCreate &&
-            !libCreate.open &&
-            !!libCreate.querySelector("#translator-input") &&
-            !!libCreate.querySelector("#vendor-id");
-        // V18.71: das "Diese Welt"-Eiland (das Ich-Selbst-Eiland-Muster) — Identität + die geblühten
-        // Provenienz-Samen (Stammbaum + Tagebuch) leben content-reich in der linken Spalte.
+        // V18.73 — die Schöpf-Werkzeuge leben jetzt RECHTS (Schöpfen & Andocken), mit Empfangen vereint;
+        // die Welt-Katalog-Quelle im Hauptthread als Tab (X-Muster); das Tagebuch eingeklappt (Chronik im Hof).
+        const schoepfen = feedRight && feedRight.querySelector(".feed-schoepfen");
+        out.schoepfenRight =
+            !!schoepfen &&
+            !!schoepfen.querySelector("#translator-input") &&
+            !!schoepfen.querySelector("#vendor-id") &&
+            !!schoepfen.querySelector(".feed-3block #world-new") &&
+            !!schoepfen.querySelector(".feed-3block #world-fuse-open") &&
+            !!schoepfen.querySelector(".feed-3block #library-import");
+        // V18.71: das "Diese Welt"-Eiland — Identität + die Provenienz-Samen (Stammbaum + Tagebuch) links.
         const feedSelf = feedLeft && feedLeft.querySelector(".feed-self");
         r._renderActiveWorldIsland();
         out.feedSelfIsland =
@@ -30883,15 +30886,29 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!feedSelf.querySelector("#world-lineage") &&
             !!feedSelf.querySelector("#world-journal-list") &&
             /Diese Welt|noch namenlos|.+/.test(feedSelf.querySelector("#feed-active-ident").textContent || "");
-        // V18.72: die Erschaffen-Werkzeuge sind AUSGEARBEITET — ein Akkordeon klarer Werkzeug-Einträge
-        // (jedes .feed-tool mit Glyph+Name+Zweck), die Formulare bewahrt (kein Wall-of-Forms mehr).
-        const feedTools = libCreate ? libCreate.querySelectorAll(".feed-tool") : [];
+        // das Tagebuch ist eingeklappt (progressive disclosure; die Welt-Chronik lebt im Hof).
+        const tagebuch = feedSelf && feedSelf.querySelector("details.feed-tagebuch");
+        out.tagebuchCollapsed = !!tagebuch && !tagebuch.open && !!tagebuch.querySelector("#world-journal-list");
+        // V18.72/.73: die fremde-Welt-Werkzeuge als Akkordeon (Glyph+Name+Zweck), die Formulare bewahrt.
+        const feedTools = schoepfen ? schoepfen.querySelectorAll(".feed-tool") : [];
         out.feedToolsAccordion =
-            feedTools.length >= 4 &&
-            Array.from(feedTools).every((t) => !!t.querySelector(".feed-tool-head .feed-tool-name")) &&
-            !!libCreate.querySelector(".feed-tool #translator-input") &&
-            !!libCreate.querySelector(".feed-tool #vendor-id") &&
-            !!libCreate.querySelector(".feed-tool #world-new");
+            feedTools.length >= 2 &&
+            Array.from(feedTools).every((t) => !!t.querySelector(".feed-tool-head .feed-tool-name"));
+        // V18.73: die Feed-Tabs (Für dich | Aus dem Mesh) im Hauptthread; der Welt-Katalog im Mesh-Panel.
+        const feedTabEls = feedCenter ? feedCenter.querySelectorAll(".feed-tabs .feed-tab") : [];
+        const meshPanel = feedCenter && feedCenter.querySelector("#feed-mesh-panel");
+        out.feedTabs =
+            feedTabEls.length === 2 &&
+            !!meshPanel &&
+            !!meshPanel.querySelector("#mesh-world-catalog") &&
+            !!feedCenter.querySelector("#feed-foryou-panel #library-list");
+        // das Tab-Schalten WIRKT: mesh → foryou-Panel versteckt + mesh-Panel sichtbar; zurück sauber.
+        r._setFeedTab("mesh");
+        const meshOn =
+            !!meshPanel && meshPanel.hidden === false && document.getElementById("feed-foryou-panel").hidden === true;
+        r._setFeedTab("foryou");
+        const foryouOn = document.getElementById("feed-foryou-panel").hidden === false && meshPanel.hidden === true;
+        out.feedTabsWork = meshOn && foryouOn;
         // Feed-A0: _feedItems vereint Welten + Rezepte + Wesen (jedes liest seinen Vektor + seine Wertung).
         const fi = typeof r._feedItems === "function" ? r._feedItems() : [];
         const fkinds = new Set(fi.map((it) => it.kind));
@@ -31015,15 +31032,18 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Bib-A0: _worldProfile existiert", w14Results.worldProfileExists);
         check("Bib-A0: _worldProfile bündelt den Welt-Vektor (id/label/dsl/trust/searchText)", w14Results.worldProfileBundles);
         check("Bib-A: die Karte ist eine Welt-Spec-Card (.spec-header + Trust-Siegel + Betreten-Akt)", w14Results.cardIsSpecCard);
-        check("Feed: 3 Spalten — Werkzeuge links | Feed Mitte | Kuratieren rechts", w14Results.feedThreeCol);
+        check("Feed: 3 Spalten — 'Diese Welt' links | Feed Mitte | Schöpfen+Kuratieren rechts", w14Results.feedThreeCol);
         check("Feed: das #library-list ist der Feed-Strom in der Mitte", w14Results.feedCenterHoldsStream);
-        check("Feed: die Schöpfen-Werkzeuge sind links eingeklappt", w14Results.createCollapsed);
+        check("Feed: die Tabs (Für dich | Aus dem Mesh) im Hauptthread, der Katalog im Mesh-Panel (V18.73)", w14Results.feedTabs);
+        check("Feed: das Tab-Schalten WIRKT — Für dich ↔ Aus dem Mesh (V18.73)", w14Results.feedTabsWork);
+        check("Feed: Schöpfen & Andocken liegt RECHTS (Übersetzen+Andocken + 3er-Block Neue/Verschmelzen/Empfangen)", w14Results.schoepfenRight);
         check(
             "Feed: das 'Diese Welt'-Eiland blüht links (Identität + Stammbaum + Tagebuch, V18.71)",
             w14Results.feedSelfIsland
         );
+        check("Feed: das Tagebuch ist eingeklappt (Chronik im Hof, V18.73)", w14Results.tagebuchCollapsed);
         check(
-            "Feed: die Erschaffen-Werkzeuge sind ein klares Akkordeon (4 Werkzeug-Einträge, V18.72)",
+            "Feed: die fremde-Welt-Werkzeuge sind ein klares Akkordeon (Glyph+Name, V18.72/.73)",
             w14Results.feedToolsAccordion
         );
         check("Feed: die Suche sitzt im Feed-Kopf", w14Results.searchInHead);

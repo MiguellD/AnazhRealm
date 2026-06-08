@@ -4908,20 +4908,101 @@
                 text-transform: none;
                 letter-spacing: 0;
             }
-            .feed-create.library-create {
-                border: 1px solid var(--brass-3, #5a4824);
-                border-radius: 6px;
-                padding: 7px 10px;
+            /* V18.73 — die Feed-TABS (X-Muster: Für dich | Aus dem Mesh) im Hauptthread; der Welt-Katalog
+               (Peer-Welten) ist jetzt eine zweite Feed-Quelle, kein Seiten-Tool mehr. */
+            .feed-tabs {
+                display: flex;
+                gap: 2px;
+                border-bottom: 1px solid var(--brass-3, #5a4824);
+                margin-bottom: 10px;
             }
-            .feed-create .library-create-summary {
-                margin: 0;
-                padding: 2px 0;
+            .feed-tab {
+                flex: 1;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 13px;
+                letter-spacing: 0.4px;
+                padding: 8px 4px 9px;
+                background: transparent;
+                color: var(--parch-ink-faded, #7b5a2e);
+                border: none;
+                border-bottom: 2px solid transparent;
+                cursor: pointer;
             }
-            .feed-create .library-create-body {
-                column-count: 1;
-                margin-top: 8px;
-                max-height: 56vh;
-                overflow-y: auto;
+            .feed-tab:hover {
+                color: var(--parch-ink, #2b1a08);
+            }
+            .feed-tab.active {
+                color: var(--parch-ink, #2b1a08);
+                border-bottom-color: var(--brass-1, #b88a50);
+                font-weight: bold;
+            }
+            .feed-panel-hint {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 12px;
+                color: var(--parch-ink-soft, #5a3f1d);
+                margin: 0 0 12px;
+                max-width: 600px;
+            }
+            /* RECHTS — der Schöpfen-Block: die häufigen 1-Klick-Akte (3er-Block) prominent, die fremde-Welt-
+               Power-Werkzeuge als Akkordeon darunter (progressive disclosure). */
+            .feed-3block {
+                display: flex;
+                gap: 6px;
+                margin-bottom: 8px;
+            }
+            .feed-3btn {
+                flex: 1;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10.5px;
+                letter-spacing: 0.2px;
+                padding: 7px 4px;
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
+                color: var(--parch-ink, #2b1a08);
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 3px;
+                cursor: pointer;
+                white-space: nowrap;
+            }
+            .feed-3btn:hover {
+                background: linear-gradient(180deg, rgba(255, 245, 210, 0.7), rgba(200, 160, 100, 0.45));
+            }
+            .feed-picker-list {
+                font-size: 11px;
+                margin-bottom: 6px;
+            }
+            .feed-tool-group-label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
+                color: var(--brass-1, #b88a50);
+                border-top: 1px dotted rgba(138, 106, 54, 0.3);
+                padding-top: 8px;
+                margin: 6px 0 6px;
+            }
+            /* das Tagebuch eingeklappt im "Diese Welt"-Eiland (es lebt als Chronik im Hof). */
+            .feed-tagebuch-head {
+                display: flex;
+                align-items: baseline;
+                gap: 6px;
+                cursor: pointer;
+                list-style: none;
+                user-select: none;
+            }
+            .feed-tagebuch-head::-webkit-details-marker {
+                display: none;
+            }
+            .feed-tagebuch-head::before {
+                content: "▸";
+                color: var(--brass-1, #b88a50);
+                font-size: 9px;
+            }
+            .feed-tagebuch[open] .feed-tagebuch-head::before {
+                content: "▾";
+            }
+            .feed-tagebuch .feed-journal {
+                margin-top: 6px;
             }
             /* die Erschaffen-Werkzeuge — ein Akkordeon klarer Werkzeug-Einträge (Glyph · Name · Zweck),
                eines offen zur Zeit (die Werkstatt-/Hof-Verdichtung: ein Fokus statt Wall-of-Forms). */
@@ -7402,19 +7483,144 @@
                  KURATIEREN rechts (Filter + Bestbewertet). Der Feed liest die bestehenden Vektoren. -->
             <div class="feed-layout">
                 <main class="feed-center">
+                    <div class="feed-tabs" role="tablist">
+                        <button type="button" class="feed-tab active" data-feed-tab="foryou" role="tab">Für dich</button>
+                        <button type="button" class="feed-tab" data-feed-tab="mesh" role="tab">Aus dem Mesh</button>
+                    </div>
                     <div class="library-head">
                         <input
                             type="text"
                             id="library-search"
                             class="library-search"
-                            placeholder="⌕ Suchen — Welten · Rezepte · Wesen · Vokabular · signiert"
+                            placeholder="⌕ Suchen — Welten · Rezepte · Wesen · Vokabular"
                             aria-label="Den Feed durchsuchen"
                             autocomplete="off"
                         />
                     </div>
-                    <div id="library-list" class="library-list feed-stream" aria-live="polite">—</div>
+                    <div id="feed-foryou-panel" class="feed-panel">
+                        <div id="library-list" class="library-list feed-stream" aria-live="polite">—</div>
+                    </div>
+                    <!-- W16 — der Welt-Katalog (Peer-Welten) lebt jetzt im HAUPTTHREAD als zweite Feed-Quelle
+                         (X-Muster: Für dich | Aus dem Mesh). _renderMeshWorldCatalog rendert hierhin. -->
+                    <div id="feed-mesh-panel" class="feed-panel" hidden>
+                        <p class="feed-panel-hint">
+                            Welten deiner Mitspieler im selben Mesh-Raum — peer-to-peer holen, kein GitHub nötig.
+                            „✓ vorhanden" heißt: du hast sie schon. Braucht eine stehende Mesh-Verbindung (Multi-User).
+                        </p>
+                        <div id="mesh-world-catalog" class="mesh-catalog" aria-live="polite"></div>
+                        <div id="mesh-world-status" class="vendor-status" aria-live="polite"></div>
+                    </div>
                 </main>
                 <aside class="feed-right">
+                    <!-- SCHÖPFEN & ANDOCKEN — die häufigen 1-Klick-Welt-Akte oben (Neue · Verschmelzen ·
+                         Empfangen), die fremde-Welt-Power-Werkzeuge (Übersetzen · Andocken) als Akkordeon darunter
+                         (progressive disclosure). Vom linken Seiten-Klumpen hierher gezogen (mit Empfangen vereint). -->
+                    <div class="feed-curate feed-schoepfen">
+                        <h4 class="feed-curate-head">✦ Schöpfen &amp; Andocken</h4>
+                        <div class="feed-3block">
+                            <button type="button" id="world-new" class="feed-3btn">＋ Neue Welt</button>
+                            <button type="button" id="world-fuse-open" class="feed-3btn">⧉ Verschmelzen</button>
+                            <button type="button" id="library-import" class="feed-3btn">↓ Empfangen</button>
+                        </div>
+                        <div id="world-picker-list" class="feed-picker-list drawer-hint" aria-live="polite">
+                            Nur diese eine Welt im Speicher.
+                        </div>
+                        <input type="file" id="library-import-input" accept="application/json,.json" hidden />
+                        <div class="feed-tool-group-label">Fremde Welt einbinden</div>
+                        <details class="feed-tool">
+                            <summary class="feed-tool-head">
+                                <span class="feed-tool-glyph">✶</span>
+                                <span class="feed-tool-name">Welt übersetzen</span>
+                                <span class="feed-tool-sub">fremde Welt → Manifest</span>
+                            </summary>
+                            <div class="feed-tool-body">
+                                <p class="feed-tool-hint">
+                                    Beschreibe eine fremde Vibecode-Welt — die KI macht ein Portal-Manifest. Browsbar,
+                                    noch nicht betretbar (Engine-Dateien folgen). Braucht eine aktive KI (Einstellungen).
+                                </p>
+                                <textarea
+                                    id="translator-input"
+                                    class="translator-input"
+                                    rows="4"
+                                    placeholder="z. B.: Eine Voxel-Sandbox mit Tag-Nacht-Zyklus, Wetter und Block-Bauen…"
+                                ></textarea>
+                                <div class="actions">
+                                    <button type="button" id="translator-run">Übersetzen</button>
+                                </div>
+                                <div id="translator-status" class="translator-status" aria-live="polite"></div>
+                                <div id="translator-review" class="translator-review" hidden></div>
+                            </div>
+                        </details>
+                        <details class="feed-tool">
+                            <summary class="feed-tool-head">
+                                <span class="feed-tool-glyph">⚓</span>
+                                <span class="feed-tool-name">Welt andocken</span>
+                                <span class="feed-tool-sub">fremdes Bündel → Bibliothek</span>
+                            </summary>
+                            <div class="feed-tool-body">
+                                <p class="feed-tool-hint">
+                                    Eine fremde, geschlossene Welt aus einem Ordner ODER GitHub-Repo. Läuft sandgesichert
+                                    (null-origin) — die fremde Engine kann AnazhRealm nicht berühren. Braucht npm start.
+                                </p>
+                                <div class="vendor-form">
+                                    <input
+                                        type="text"
+                                        id="vendor-id"
+                                        class="translator-edit"
+                                        maxlength="40"
+                                        placeholder="welt-id (a-z 0-9 - _)"
+                                    />
+                                    <input
+                                        type="text"
+                                        id="vendor-label"
+                                        class="translator-edit"
+                                        maxlength="60"
+                                        placeholder="Name der Welt"
+                                    />
+                                    <input
+                                        type="text"
+                                        id="vendor-desc"
+                                        class="translator-edit"
+                                        maxlength="200"
+                                        placeholder="kurze Beschreibung (optional)"
+                                    />
+                                    <input
+                                        type="text"
+                                        id="vendor-dsl"
+                                        class="translator-edit"
+                                        maxlength="200"
+                                        placeholder="DSL-Vokabular, kommagetrennt (optional)"
+                                    />
+                                    <label class="vendor-mp-row">
+                                        <input type="checkbox" id="vendor-multiplayer" />
+                                        Multiplayer-Welt (eine Gruppe tritt gemeinsam durch ein Tor)
+                                    </label>
+                                    <label class="vendor-mp-row">
+                                        <input type="checkbox" id="vendor-js-compute" />
+                                        JS-Compute-Welt (ein Peer wird Compute-Host — impliziert Multiplayer)
+                                    </label>
+                                </div>
+                                <input type="file" id="vendor-files" webkitdirectory multiple hidden />
+                                <div class="actions">
+                                    <button type="button" id="vendor-pick">Ordner wählen…</button>
+                                    <button type="button" id="vendor-dock">Andocken</button>
+                                </div>
+                                <div class="vendor-form vendor-repo-row">
+                                    <input
+                                        type="text"
+                                        id="vendor-repo"
+                                        class="translator-edit"
+                                        maxlength="200"
+                                        placeholder="oder GitHub-URL: https://github.com/owner/repo"
+                                    />
+                                </div>
+                                <div class="actions">
+                                    <button type="button" id="vendor-repo-dock">Aus GitHub holen</button>
+                                </div>
+                                <div id="vendor-status" class="vendor-status" aria-live="polite"></div>
+                            </div>
+                        </details>
+                    </div>
                     <div class="feed-curate">
                         <h4 class="feed-curate-head">Filter</h4>
                         <div id="feed-kinds" class="feed-kinds" aria-label="Nach Art filtern"></div>
@@ -7423,8 +7629,6 @@
                         <h4 class="feed-curate-head">Bestbewertet</h4>
                         <div id="feed-trends" class="feed-trends" aria-live="polite"></div>
                     </div>
-                    <button type="button" id="library-import" class="library-import-btn">Welt empfangen…</button>
-                    <input type="file" id="library-import-input" accept="application/json,.json" hidden />
                 </aside>
                 <aside class="feed-left">
                     <!-- "Diese Welt" — das Welt-Eiland (das Ich-Selbst-Eiland-Muster auf die aktive Welt):
@@ -7441,157 +7645,16 @@
                                         Diese Welt ist eigenständig — keine Eltern-Welten.
                                     </div>
                                 </div>
-                                <div class="feed-prov-block">
-                                    <div class="spec-col-head">
-                                        Tagebuch <span id="world-journal-count" class="journal-count">—</span>
-                                    </div>
+                                <details class="feed-tagebuch feed-prov-block">
+                                    <summary class="feed-tagebuch-head">
+                                        <span class="spec-col-head">Tagebuch</span>
+                                        <span id="world-journal-count" class="journal-count">—</span>
+                                    </summary>
                                     <div id="world-journal-list" class="journal-list feed-journal" aria-live="polite"></div>
-                                </div>
+                                </details>
                             </div>
                         </div>
                     </section>
-                    <details class="library-create feed-create">
-                        <summary class="library-create-summary">✦ Erschaffen &amp; Andocken</summary>
-                        <div class="library-create-body">
-                <!-- KI-Übersetzer Phase 1 — eine fremde Welt beschreiben, die KI
-                 übersetzt sie in ein Portal-Manifest. _runTranslator füllt
-                 #translator-review; acceptTranslatedManifest committet. -->
-                <details class="feed-tool">
-                    <summary class="feed-tool-head">
-                        <span class="feed-tool-glyph">✶</span>
-                        <span class="feed-tool-name">Welt übersetzen</span>
-                        <span class="feed-tool-sub">fremde Welt → Manifest</span>
-                    </summary>
-                    <div class="feed-tool-body">
-                        <p class="feed-tool-hint">
-                            Beschreibe eine fremde Vibecode-Welt — die KI macht ein Portal-Manifest. Browsbar, noch nicht
-                            betretbar (Engine-Dateien folgen). Braucht eine aktive KI (Einstellungen).
-                        </p>
-                        <textarea
-                            id="translator-input"
-                            class="translator-input"
-                            rows="4"
-                            placeholder="z. B.: Eine Voxel-Sandbox mit Tag-Nacht-Zyklus, Wetter und Block-Bauen…"
-                        ></textarea>
-                        <div class="actions">
-                            <button type="button" id="translator-run">Übersetzen</button>
-                        </div>
-                        <div id="translator-status" class="translator-status" aria-live="polite"></div>
-                        <div id="translator-review" class="translator-review" hidden></div>
-                    </div>
-                </details>
-                <!-- W15 Phase 1 — Auto-Vendor: ein lokales Welt-Bündel andocken.
-                 Der save-server schreibt es nach worlds/<id>/, die Welt wird
-                 ein sandgesicherter Bibliothek-Eintrag. _runVendorDock. -->
-                <details class="feed-tool">
-                    <summary class="feed-tool-head">
-                        <span class="feed-tool-glyph">⚓</span>
-                        <span class="feed-tool-name">Welt andocken</span>
-                        <span class="feed-tool-sub">fremdes Bündel → Bibliothek</span>
-                    </summary>
-                    <div class="feed-tool-body">
-                        <p class="feed-tool-hint">
-                            Eine fremde, in sich geschlossene Welt aus einem Ordner ODER GitHub-Repo. Läuft sandgesichert
-                            (null-origin) — die fremde Engine kann AnazhRealm nicht berühren. Braucht npm start.
-                        </p>
-                        <div class="vendor-form">
-                        <input
-                            type="text"
-                            id="vendor-id"
-                            class="translator-edit"
-                            maxlength="40"
-                            placeholder="welt-id (a-z 0-9 - _)"
-                        />
-                        <input
-                            type="text"
-                            id="vendor-label"
-                            class="translator-edit"
-                            maxlength="60"
-                            placeholder="Name der Welt"
-                        />
-                        <input
-                            type="text"
-                            id="vendor-desc"
-                            class="translator-edit"
-                            maxlength="200"
-                            placeholder="kurze Beschreibung (optional)"
-                        />
-                        <input
-                            type="text"
-                            id="vendor-dsl"
-                            class="translator-edit"
-                            maxlength="200"
-                            placeholder="DSL-Vokabular, kommagetrennt (optional)"
-                        />
-                        <label class="vendor-mp-row">
-                            <input type="checkbox" id="vendor-multiplayer" />
-                            Multiplayer-Welt (eine Gruppe tritt gemeinsam durch ein Tor)
-                        </label>
-                        <label class="vendor-mp-row">
-                            <input type="checkbox" id="vendor-js-compute" />
-                            JS-Compute-Welt (ein Peer wird Compute-Host — impliziert Multiplayer)
-                        </label>
-                    </div>
-                    <input type="file" id="vendor-files" webkitdirectory multiple hidden />
-                    <div class="actions">
-                        <button type="button" id="vendor-pick">Ordner wählen…</button>
-                        <button type="button" id="vendor-dock">Andocken</button>
-                    </div>
-                    <!-- W15 Phase 2 — der GitHub-Fetch: eine Repo-URL statt eines
-                     Ordners; der save-server holt die Dateien selbst. -->
-                    <div class="vendor-form vendor-repo-row">
-                        <input
-                            type="text"
-                            id="vendor-repo"
-                            class="translator-edit"
-                            maxlength="200"
-                            placeholder="oder GitHub-URL: https://github.com/owner/repo"
-                        />
-                    </div>
-                    <div class="actions">
-                        <button type="button" id="vendor-repo-dock">Aus GitHub holen</button>
-                    </div>
-                        <div id="vendor-status" class="vendor-status" aria-live="polite"></div>
-                    </div>
-                </details>
-                <!-- W16 Phase 2 — Welt-Katalog: _renderMeshWorldCatalog; requestWorldBundleFromPeer. -->
-                <details class="feed-tool">
-                    <summary class="feed-tool-head">
-                        <span class="feed-tool-glyph">☷</span>
-                        <span class="feed-tool-name">Welt-Katalog</span>
-                        <span class="feed-tool-sub">Welten der Mitspieler · übers Mesh</span>
-                    </summary>
-                    <div class="feed-tool-body">
-                        <p class="feed-tool-hint">
-                            Welten deiner Mitspieler peer-to-peer holen — kein GitHub nötig, läuft sandgesichert.
-                            Braucht eine stehende Mesh-Verbindung (Multi-User-Drawer).
-                        </p>
-                        <div id="mesh-world-catalog" class="mesh-catalog" aria-live="polite"></div>
-                        <div id="mesh-world-status" class="vendor-status" aria-live="polite"></div>
-                    </div>
-                </details>
-                <!-- Migriert vom Welt-Menü (UI-Putz): Provenienz + Geschichte gehören in die
-                 Bibliothek — woher eine Welt stammt, was sie erlebt hat, ihre Schwestern.
-                 Bib-C wird Stammbaum + Tagebuch an die FOKUS-Welt heften; vorerst recedieren sie
-                 hier in der eingeklappten Schöpfen-Zone. -->
-                <details class="feed-tool" id="world-picker-section">
-                    <summary class="feed-tool-head">
-                        <span class="feed-tool-glyph">✧</span>
-                        <span class="feed-tool-name">Andere Welten</span>
-                        <span class="feed-tool-sub">reisen · neue Welt · verschmelzen</span>
-                    </summary>
-                    <div class="feed-tool-body">
-                        <div id="world-picker-list" class="drawer-hint" aria-live="polite">
-                            Nur diese eine Welt im Speicher.
-                        </div>
-                        <div class="actions">
-                            <button type="button" id="world-new">Neue Welt…</button>
-                            <button type="button" id="world-fuse-open">Verschmelzen…</button>
-                        </div>
-                    </div>
-                </details>
-                        </div>
-                    </details>
                 </aside>
             </div>
         </aside>
@@ -8314,6 +8377,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.72.0" defer></script>
+        <script src="anazhRealm.js?v=18.73.0" defer></script>
     </body>
 </html>

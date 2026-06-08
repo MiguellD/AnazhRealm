@@ -30211,9 +30211,9 @@ class AnazhRealm {
             search.dataset.libWired = "1";
             search.addEventListener("input", () => this._applyLibraryFilter());
         }
-        // V18.72 — die Erschaffen-Werkzeuge als Akkordeon: eines öffnen schliesst die Geschwister
-        // (EIN Fokus, statt eines Wall-of-Forms; die Werkstatt-/Hof-Verdichtung auf die Schöpfen-Zone).
-        const feedTools = document.querySelectorAll(".feed-create .feed-tool");
+        // V18.72/.73 — die fremde-Welt-Werkzeuge (rechts in der Schöpfen-Zone) als Akkordeon: eines
+        // öffnen schliesst die Geschwister (EIN Fokus statt Wall-of-Forms; die Werkstatt-/Hof-Verdichtung).
+        const feedTools = document.querySelectorAll(".feed-schoepfen .feed-tool");
         feedTools.forEach((d) => {
             if (d.dataset.accWired === "1") return;
             d.dataset.accWired = "1";
@@ -30224,7 +30224,31 @@ class AnazhRealm {
                     });
             });
         });
+        // V18.73 — die Feed-Tabs (Für dich | Aus dem Mesh): der Welt-Katalog (Peer-Welten) lebt im
+        // Hauptthread als zweite Feed-Quelle (X-Muster), nicht in einem Seiten-Tool.
+        const feedTabs = document.querySelectorAll(".feed-tabs .feed-tab");
+        feedTabs.forEach((b) => {
+            if (b.dataset.tabWired === "1") return;
+            b.dataset.tabWired = "1";
+            b.addEventListener("click", () => this._setFeedTab(b.dataset.feedTab));
+        });
         this.renderLibraryUI();
+    }
+
+    // V18.73 — der Feed-Tab-Wechsel (Für dich = der Strom · Aus dem Mesh = der Peer-Welt-Katalog).
+    // Die Welt-Katalog-Quelle ist jetzt eine Feed-Quelle im Hauptthread (X-Muster Public/Following).
+    _setFeedTab(tab) {
+        if (typeof document === "undefined") return;
+        const which = tab === "mesh" ? "mesh" : "foryou";
+        this.state.feedTab = which;
+        for (const b of document.querySelectorAll(".feed-tabs .feed-tab"))
+            b.classList.toggle("active", b.dataset.feedTab === which);
+        const foryou = document.getElementById("feed-foryou-panel");
+        const mesh = document.getElementById("feed-mesh-panel");
+        if (foryou) foryou.hidden = which !== "foryou";
+        if (mesh) mesh.hidden = which !== "mesh";
+        // der Mesh-Katalog rendert frisch beim Öffnen (er lebt vom Mesh-Zustand, nicht vom Feed).
+        if (which === "mesh" && typeof this._renderMeshWorldCatalog === "function") this._renderMeshWorldCatalog();
     }
 
     // W14 Phase 3 — eine Welt-Manifest-Datei einlesen → importWorldManifest.
@@ -49561,7 +49585,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.72.0";
+AnazhRealm.VERSION = "18.73.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
