@@ -669,18 +669,19 @@
                 position: relative;
                 z-index: 1;
             }
-            /* V18.67 Ich-J5 (Schöpfer-Korrektur) — das Ich ist NICHT die Werkstatt: der Viewer ist hier INFO,
-               nicht der Star; der ZENTRALE Nutzen ist die HABE (Inventar/Hotbar). Drei Spalten nach dem WAHREN
-               mentalen Modell: LINKS WER ICH BIN (Selbst-Insel) · MITTE WAS ICH HABE (zentral) · RECHTS WERK. */
+            /* V18.68 Ich-J6 (Schöpfer-Korrektur²) — „unten durch all die Statistiken" = eine vollbreite
+               STATSBAR UNTEN (wie V18.66), nicht in die linke Spalte gequetscht (mein J5-Fehler). Der Body:
+               die drei Spalten (SELF | HABE | WERK) oben + die STATSBAR vollbreit darunter. */
             .inventory-body {
                 display: flex;
                 flex-direction: column;
+                gap: 12px;
                 flex: 1 1 auto;
                 min-height: 0;
             }
             .ich-cols {
                 display: grid;
-                grid-template-columns: minmax(300px, 1fr) minmax(360px, 1.15fr) minmax(280px, 0.9fr);
+                grid-template-columns: minmax(280px, 0.9fr) minmax(380px, 1.2fr) minmax(280px, 0.95fr);
                 grid-template-areas: "self habe werk";
                 gap: 14px 16px;
                 flex: 1 1 auto;
@@ -693,6 +694,7 @@
                 overflow-y: auto;
                 display: flex;
                 flex-direction: column;
+                gap: 8px;
             }
             .inventory-col-items {
                 grid-area: habe;
@@ -724,10 +726,10 @@
                     grid-template-areas: "habe" "self" "werk";
                 }
             }
-            /* die SELBST-INSEL (links oben): EIN dunkler Block (V18.55 „ein dunkler Star") — der kleine
-               3D-Viewer (INFO) · darunter „Was du trägst" (ohne Überschrift) · darunter all die Statistiken
-               (Verfassung·Werte·Natur·Emotion). Wer ich bin + was ich trage + meine Werte, vertikal gestapelt. */
+            /* die SELBST-INSEL (links oben): EIN dunkler Block — der kleine INFO-Viewer + „Was du trägst"
+               darunter (wer ich bin + was ich trage). Die STATISTIKEN leben in der STATSBAR unten, nicht hier. */
             .ich-self {
+                flex: 0 0 auto;
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
@@ -749,48 +751,11 @@
             .ich-self .ich-stage .hof-stage-canvas {
                 width: 100%;
                 height: auto;
-                max-width: 210px;
+                max-width: 200px;
                 aspect-ratio: 1 / 1;
                 background: transparent;
                 border: none;
                 box-shadow: none;
-            }
-            /* die Statistiken in der schmalen Selbst-Spalte: EINSPALTIG gestapelt (Werte dann Natur),
-               nicht das 2-Spalten-Werkstatt-Layout — flüssig untereinander, wie der Schöpfer es will. */
-            .ich-self .hof-spec-sheet .spec-body {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            .ich-self .hof-spec-sheet .spec-col {
-                min-width: 0;
-            }
-            .ich-emotion-block {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            }
-            .ich-emotion-block h4 {
-                margin: 2px 0 2px 0;
-                font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
-                letter-spacing: 0.6px;
-                text-transform: uppercase;
-                color: var(--brass-1);
-                border-bottom: 1px solid var(--parch-edge);
-                padding-bottom: 2px;
-            }
-            /* light-on-dark in der Selbst-Insel (V18.41-Tokens, V18.58-Falle: kein dunkler Text auf dunklem
-               Grund). Das Spec-Sheet ist schon light-on-dark; Emotion + „Was du trägst" tragen Pergament-
-               Dunkeltext → hier auf den dunklen Insel-Grund umstellen. */
-            .ich-self h4 {
-                color: var(--ink-on-dark);
-            }
-            .ich-self .emotion .name {
-                color: var(--ink-on-dark-soft);
-            }
-            .ich-self .emotion .value {
-                color: var(--ink-on-dark);
             }
             .ich-self .equip-slot .equip-name {
                 color: var(--ink-on-dark);
@@ -798,9 +763,58 @@
             .ich-self .equip-slot .equip-kind {
                 color: var(--ink-on-dark-soft);
             }
-            /* die getragenen Slots direkt unter dem Viewer — kompakt, kein margin-bottom-Sprung. */
             .ich-self .inventory-equip {
                 margin-bottom: 0;
+            }
+            /* DIE STATSBAR — vollbreit unten (Schöpfer „unten durch all die Statistiken"): das Spec-Sheet
+               (Verfassung · WERTE | NATUR, 2-spaltig wie die Werkstatt-Ausgabe) + die EMOTION, light-on-dark. */
+            .ich-readout {
+                flex: 0 0 auto;
+                display: grid;
+                grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+                gap: 14px 24px;
+                padding: 12px 16px;
+                background: rgba(20, 12, 4, 0.65);
+                border: 1px solid var(--brass-3);
+                border-radius: 10px;
+                max-height: 34vh;
+                overflow-y: auto;
+            }
+            .ich-readout-side {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                min-width: 0;
+            }
+            .ich-readout h4 {
+                color: var(--ink-on-dark);
+            }
+            .ich-readout .emotion .name {
+                color: var(--ink-on-dark-soft);
+            }
+            .ich-readout .emotion .value {
+                color: var(--ink-on-dark);
+            }
+            @media (max-width: 760px) {
+                .ich-readout {
+                    grid-template-columns: 1fr;
+                    max-height: none;
+                }
+            }
+            .ich-emotion-block {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .ich-emotion-block h4 {
+                margin: 0 0 2px 0;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
+                color: var(--ink-on-dark);
+                border-bottom: 1px solid var(--brass-3);
+                padding-bottom: 2px;
             }
             /* die aktiven Boost-Chips (Was du trägst → was wirkt JETZT, wie wenn der Nexus feuert). */
             .ich-boosts {
@@ -6295,11 +6309,11 @@
         <!-- Welle 6.C1 — Hylomorphismus-Inventar (Tab-Toggle). 27 Slots in
              3×9-Grid. Jeder Slot trägt Tag-Profile bei Hover als Glow + Audio. -->
         <div id="inventory-overlay" role="dialog" aria-label="Dein Ich" aria-modal="false" hidden>
-            <!-- V18.67 Ich-J5 (Schöpfer-Korrektur: das Ich ist NICHT die Werkstatt — der Viewer ist hier INFO,
-                 nicht der Star; der zentrale Nutzen ist die HABE). Drei Spalten nach dem WAHREN mentalen Modell:
-                 LINKS WER ICH BIN (Körper-Wahl ÜBER dem kleinen 3D-Viewer · darunter „Was du trägst" ohne
-                 Überschrift · darunter all die Statistiken) — eine vertikale Selbst-Insel oben links. MITTE WAS
-                 ICH HABE (Inventar + Hotbar = der zentrale Nutzen). RECHTS WAS ICH MACHEN KANN (Suche + Rezepte). -->
+            <!-- V18.68 Ich-J6 (Schöpfer-Korrektur²): „unten durch all die Statistiken" = eine vollbreite
+                 STATSBAR unten (wie V18.66), NICHT in die linke Spalte gequetscht. Das WAHRE Modell:
+                 OBEN-LINKS WER ICH BIN (Körper-Wahl · kleiner Viewer · „Was du trägst" darunter) · MITTE
+                 WAS ICH HABE (Inventar/Hotbar, zentral) · RECHTS Rezepte · UNTEN die STATSBAR vollbreit
+                 (Verfassung · WERTE | NATUR · EMOTION). -->
             <div class="inventory-header">
                 <h2>Dein Ich</h2>
             </div>
@@ -6326,11 +6340,6 @@
                             <!-- „Was du trägst" — KEINE Überschrift, direkt unter dem Viewer (Schöpfer):
                                  wer ich bin (Avatar) + was ich trage zusammen. -->
                             <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
-                            <div id="ich-stage-spec" class="hof-stage-spec"></div>
-                            <div class="ich-emotion-block">
-                                <h4 title="Wie du die Welt WERTEST — färbt den Bildschirmrand.">Emotion</h4>
-                                <div id="status-emotions"></div>
-                            </div>
                         </div>
                         <details id="equip-advanced-section" class="ich-equip-more">
                             <summary>⚙ Bauplan umwidmen (Rüstung · Konsumabel · Portal)</summary>
@@ -6359,6 +6368,17 @@
                             autocomplete="off"
                         />
                         <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
+                    </div>
+                </div>
+                <!-- DIE STATSBAR — vollbreit unten (Schöpfer „unten durch all die Statistiken"):
+                     das Spec-Sheet (Verfassung · WERTE | NATUR) + die EMOTION, light-on-dark. -->
+                <div class="ich-readout">
+                    <div id="ich-stage-spec" class="hof-stage-spec"></div>
+                    <div class="ich-readout-side">
+                        <div class="ich-emotion-block">
+                            <h4 title="Wie du die Welt WERTEST — färbt den Bildschirmrand.">Emotion</h4>
+                            <div id="status-emotions"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -7633,6 +7653,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.67.0" defer></script>
+        <script src="anazhRealm.js?v=18.68.0" defer></script>
     </body>
 </html>

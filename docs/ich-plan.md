@@ -508,8 +508,16 @@ links, das WERK (Rezeptbuch + die schmale Suche) rechts — die zwei flankierend
 
 ### §J — Die Wellen (jede misst mit `diag-ich` + dem Auge, content-first, keine halben Sachen)
 
-**STAND: J0–J3 GEBAUT (V18.66) + J5 die TOPOLOGIE-KORREKTUR (V18.67) — alle Playtests grün, mit dem Auge
-gefahren. OFFEN: der Schöpfer-Browser-Sign-off (GPU-Avatar-Feel) + EIN Merge.**
+**STAND: J0–J3 (V18.66) + J5 (V18.67) + J6 (V18.68) GEBAUT — alle Playtests grün, mit dem Auge gefahren.
+OFFEN: der Schöpfer-Browser-Sign-off (GPU-Avatar-Feel) + EIN Merge.**
+
+**Ich-J6 — die STATSBAR gehört UNTEN (Schöpfer-Browser von V18.67: „wieso die statsbar jetzt weg?", mit einem
+rot eingekreisten V18.66-Screenshot):** mein J5 las „unten durch all die Statistiken" als „in die linke Spalte
+gequetscht" und entfernte die vollbreite Stats-Band. WAHRES Modell (V18.68): OBEN drei Spalten (SELF: Körper·
+Viewer·Was-du-trägst | HABE zentral | WERK) + UNTEN die STATSBAR vollbreit (`.ich-readout`: Verfassung·WERTE|
+NATUR·EMOTION). **LEHRE: die räumlichen Schöpfer-Worte WÖRTLICH nehmen („unten" = Band unten, nicht „weiter unten
+in der Spalte"); kreist der Schöpfer ein Element einer früheren Version ein, will er genau DAS erhalten; ein
+Layout VOLLBILD prüfen (nicht nur den Overlay-Ausschnitt), BEVOR „verifiziert" fällt.**
 
 **Ich-J5 — die TOPOLOGIE-KORREKTUR (Schöpfer-Browser von V18.66: „reroll, absolut nicht besser"):** mein J1
 spiegelte die Werkstatt-Topologie LITERAL (Viewer als zentralen Star + Readout vollbreit darunter) — der Schöpfer

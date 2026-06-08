@@ -23977,12 +23977,16 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // V18.67 Ich-J5 — das WAHRE Modell (Schöpfer-Korrektur): der Viewer ist INFO, nicht der Star. LINKS
         // die SELBST-INSEL (.ich-self: Viewer · Was du trägst · Spec · Emotion vertikal), MITTE WAS ICH HABE
         // (Inventar/Hotbar = zentraler Nutzen), RECHTS WERK. Das Spec + Equip leben in der Selbst-Insel (links).
+        // V18.68 Ich-J6 (Schöpfer-Korrektur²): „unten durch all die Statistiken" = eine vollbreite STATSBAR
+        // (.ich-readout) UNTER den drei Spalten. LINKS die Selbst-Insel (.ich-self: Viewer + Was du trägst),
+        // MITTE Inventar (zentral), RECHTS Rezepte; die Stats (Spec) + Emotion in der STATSBAR unten.
         out.ichThreeZones = !!(
             document.querySelector(".ich-cols .inventory-col-items #inventory-grid") &&
             document.querySelector(".ich-cols .inventory-col-character .ich-self #ich-stage-canvas") &&
+            document.querySelector(".ich-cols .inventory-col-character .ich-self #inventory-equip") &&
             document.querySelector(".ich-cols .inventory-col-recipes #inventory-recipes") &&
-            document.querySelector(".inventory-col-character .ich-self #ich-stage-spec") &&
-            document.querySelector(".inventory-col-character .ich-self #inventory-equip")
+            document.querySelector(".ich-readout #ich-stage-spec") &&
+            document.querySelector(".ich-readout #status-emotions")
         );
         // V18.62 Ich-H — der Soul-Select wandert in den Header (Körper-Bar), keine separate Seele-Sektion;
         // ein Hinweis zeigt auf die Werkstatt; der Ich-Soul-Editor ist weg.
@@ -24030,9 +24034,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
         })();
         // V18.64 — das Fenster PASST in den Viewport (kein Über-den-Rand, die wiederholte Falle): das
         // Overlay liegt vollständig innerhalb [0, vh] (max-height + box-sizing:border-box).
-        // V18.67 Ich-J5 GEMESSEN (Schöpfer-Modell): (a) die drei Spalten (SELF | HABE | WERK) nebeneinander
-        // (gleicher Top); (b) in der Selbst-Insel sitzt „Was du trägst" (#inventory-equip) UNTER dem Viewer
-        // (#ich-stage-canvas) und das Spec darunter — wer ich bin + was ich trage + Werte, vertikal gestapelt.
+        // V18.68 Ich-J6 GEMESSEN (Schöpfer-Modell²): (a) die drei Spalten (SELF | HABE | WERK) nebeneinander;
+        // (b) in der Selbst-Insel sitzt „Was du trägst" (#inventory-equip) UNTER dem Viewer; (c) die STATSBAR
+        // (.ich-readout) liegt VOLLBREIT UNTER den Spalten („unten durch all die Statistiken", wie V18.66).
         {
             const ov = document.getElementById("inventory-overlay");
             const ob = ov ? ov.getBoundingClientRect() : null;
@@ -24040,27 +24044,30 @@ async function checkBandVoxelP3AndInventory(ctx) {
             const ch = document.querySelector(".ich-cols .inventory-col-character");
             const items = document.querySelector(".ich-cols .inventory-col-items");
             const rc = document.querySelector(".ich-cols .inventory-col-recipes");
+            const cols = document.querySelector(".ich-cols");
             const canvas = document.querySelector(".ich-self #ich-stage-canvas");
             const worn = document.querySelector(".ich-self #inventory-equip");
-            const spec = document.querySelector(".ich-self #ich-stage-spec");
+            const statsbar = document.querySelector(".ich-readout");
             if (ch && items && rc) {
                 const cb = ch.getBoundingClientRect();
                 const ib = items.getBoundingClientRect();
                 const rb = rc.getBoundingClientRect();
                 // alle drei Spalten in EINER Reihe (Top-Differenz klein).
                 out.ichZonesSideBySide = Math.abs(cb.top - ib.top) < 24 && Math.abs(ib.top - rb.top) < 24;
-                // „Was du trägst" liegt UNTER dem Viewer, das Spec darunter (der Selbst-Stapel).
-                if (canvas && worn && spec) {
-                    const cvb = canvas.getBoundingClientRect();
-                    const wb = worn.getBoundingClientRect();
-                    const sb = spec.getBoundingClientRect();
-                    out.ichWornUnderViewer = wb.top >= cvb.bottom - 24 && sb.top >= wb.top - 4;
-                } else {
-                    out.ichWornUnderViewer = false;
-                }
+                // „Was du trägst" liegt UNTER dem Viewer (in der Selbst-Insel).
+                out.ichWornUnderViewer =
+                    !!(canvas && worn) && worn.getBoundingClientRect().top >= canvas.getBoundingClientRect().bottom - 24;
+                // die STATSBAR liegt VOLLBREIT UNTER den Spalten (der Schöpfer-Kern: unten, nicht links gequetscht).
+                out.ichStatsbarBelowCols = !!(
+                    statsbar &&
+                    cols &&
+                    statsbar.getBoundingClientRect().top >= cols.getBoundingClientRect().bottom - 24 &&
+                    statsbar.getBoundingClientRect().width > cb.width * 1.5
+                );
             } else {
                 out.ichZonesSideBySide = false;
                 out.ichWornUnderViewer = false;
+                out.ichStatsbarBelowCols = false;
             }
         }
 
@@ -24113,12 +24120,16 @@ async function checkBandVoxelP3AndInventory(ctx) {
             wave6c1Results.ichHasNoReise && wave6c1Results.hofChronikInDom && wave6c1Results.hofChronikRenders
         );
         check(
-            "V18.67 Ich-J5: drei Spalten — SELF (Viewer+Worn+Spec) | HABE (Inventar zentral) | WERK (Rezepte)",
+            "V18.68 Ich-J6: SELF (Viewer+Worn) | HABE (Inventar zentral) | WERK (Rezepte) + STATSBAR (Spec+Emotion) unten",
             wave6c1Results.ichThreeZones
         );
         check(
-            "V18.67 Ich-J5: in der Selbst-Insel sitzt Was-du-trägst UNTER dem Viewer + das Spec darunter (der Selbst-Stapel)",
+            "V18.68 Ich-J6: Was-du-trägst sitzt UNTER dem Viewer in der Selbst-Insel",
             wave6c1Results.ichWornUnderViewer
+        );
+        check(
+            "V18.68 Ich-J6: die STATSBAR (Verfassung·Werte·Natur·Emotion) liegt VOLLBREIT UNTER den Spalten (unten, nicht links gequetscht)",
+            wave6c1Results.ichStatsbarBelowCols
         );
         check(
             "V18.62 Ich-H: der Soul-Select sitzt im Header (Körper-Bar) + ein Hinweis zeigt auf die Werkstatt",
@@ -24145,7 +24156,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             wave6c1Results.ichOverlayFitsViewport
         );
         check(
-            "V18.67 Ich-J5: die drei Spalten (SELF|HABE|WERK) sind nebeneinander (gleiche Reihe)",
+            "V18.68 Ich-J6: die drei Spalten (SELF|HABE|WERK) sind nebeneinander (gleiche Reihe)",
             wave6c1Results.ichZonesSideBySide
         );
         check("Welle 6.C1: addToInventory legt Eintrag in ersten leeren Slot", wave6c1Results.slot0HasBaum);
