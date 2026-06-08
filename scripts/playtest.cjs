@@ -16432,23 +16432,32 @@ async function checkBandWelle6DSoul(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasRenderMethod = typeof r.renderSoulEditorUI === "function";
+        // V18.62 Ich-H — der Ich-Soul-Editor ist geschnitten; die Seelen-Schöpfung lebt in der Werkstatt
+        // (die Seele IST ein Bauplan, soulToBlueprint + „Körper holen"). Die customSoul-CRUD bleibt als
+        // Datenschicht (define_soul + die Brücke lesen sie).
+        out.hasSoulToBlueprint = typeof r.soulToBlueprint === "function";
         out.hasCloneMethod = typeof r.cloneSoulToCustom === "function";
         out.hasDeleteMethod = typeof r.deleteCustomSoul === "function";
         out.hasAddPartMethod = typeof r.addPartToCustomSoul === "function";
         out.hasUpdatePartMethod = typeof r.updatePartInCustomSoul === "function";
         out.hasRemovePartMethod = typeof r.removePartFromCustomSoul === "function";
-        // DOM-Container
-        out.editorInDom = !!document.getElementById("soul-editor");
+        // Der parallele Ich-Soul-Editor existiert NICHT mehr (in die Werkstatt gewandert)
+        out.ichSoulEditorGone = !document.getElementById("soul-editor");
 
-        // Empty state
+        // Die BRÜCKE: eine Built-in-Seele als role:soul-Bauplan in die Werkstatt holen (Avatare-in-Werkstatt)
         r.state.customSouls = {};
-        r.renderSoulEditorUI();
-        const editor1 = document.getElementById("soul-editor");
-        out.emptyStateRendered = !!(editor1 && editor1.querySelector(".soul-editor-empty"));
-        out.hasCloneActionBtn = !!editor1.querySelector(".soul-editor-actions button");
+        const s2b = r.soulToBlueprint("human");
+        out.s2bOk = !!(s2b && s2b.ok);
+        const s2bBp = s2b && s2b.ok ? r.state.blueprints[s2b.name] : null;
+        out.s2bIsSoulRole = !!(
+            s2bBp &&
+            s2bBp.role === "soul" &&
+            Array.isArray(s2bBp.parts) &&
+            s2bBp.parts.length === 4
+        );
+        if (s2b && s2b.ok) r.deleteBlueprint(s2b.name);
 
-        // Klonen aus aktiver Seele
+        // Klonen aus aktiver Seele (die customSoul-Datenschicht bleibt)
         const savedSoul = r.state.player.soul;
         r.state.player.soul = "human";
         const cloneResult = r.cloneSoulToCustom("human", "test_clone_a");
@@ -16457,15 +16466,6 @@ async function checkBandWelle6DSoul(ctx) {
             r.state.customSouls.test_clone_a &&
             Array.isArray(r.state.customSouls.test_clone_a.bodyParts) &&
             r.state.customSouls.test_clone_a.bodyParts.length === 4;
-
-        // Editor zeigt jetzt die Custom-Seele
-        r.state.soulEditor = { editingName: "test_clone_a" };
-        r.renderSoulEditorUI();
-        const editor2 = document.getElementById("soul-editor");
-        out.customRowRendered = !!editor2.querySelector(".soul-editor-row");
-        out.editorPaneRendered = !!editor2.querySelector(".soul-editor-pane");
-        out.partRowsCount = editor2.querySelectorAll(".soul-part-row").length;
-        out.editorHasShapeSelect = !!editor2.querySelector(".soul-part-row select");
 
         // Add part
         const beforeParts = r.state.customSouls.test_clone_a.bodyParts.length;
@@ -16517,21 +16517,26 @@ async function checkBandWelle6DSoul(ctx) {
     });
 
     if (wave6d17Results && !wave6d17Results.error) {
-        check("Welle 6.D Etappe 1.7: renderSoulEditorUI-Methode existiert", wave6d17Results.hasRenderMethod);
+        check(
+            "V18.62 Ich-H: soulToBlueprint-Brücke existiert (Seele → Werkstatt-Bauplan)",
+            wave6d17Results.hasSoulToBlueprint
+        );
         check("Welle 6.D Etappe 1.7: cloneSoulToCustom-Methode existiert", wave6d17Results.hasCloneMethod);
         check("Welle 6.D Etappe 1.7: deleteCustomSoul-Methode existiert", wave6d17Results.hasDeleteMethod);
         check("Welle 6.D Etappe 1.7: addPartToCustomSoul-Methode existiert", wave6d17Results.hasAddPartMethod);
         check("Welle 6.D Etappe 1.7: updatePartInCustomSoul-Methode existiert", wave6d17Results.hasUpdatePartMethod);
         check("Welle 6.D Etappe 1.7: removePartFromCustomSoul-Methode existiert", wave6d17Results.hasRemovePartMethod);
-        check("Welle 6.D Etappe 1.7: #soul-editor im DOM (Spieler-Drawer)", wave6d17Results.editorInDom);
-        check("Welle 6.D Etappe 1.7: Empty-State zeigt Hinweis-Text", wave6d17Results.emptyStateRendered);
-        check("Welle 6.D Etappe 1.7: Klonen/Neu-Action-Buttons vorhanden", wave6d17Results.hasCloneActionBtn);
+        check(
+            "V18.62 Ich-H: der parallele Ich-Soul-Editor ist geschnitten (Schöpfung in der Werkstatt)",
+            wave6d17Results.ichSoulEditorGone
+        );
+        check("V18.62 Ich-H: soulToBlueprint holt einen Built-in-Körper in die Werkstatt (ok)", wave6d17Results.s2bOk);
+        check(
+            "V18.62 Ich-H: der geholte Körper ist ein role:soul-Bauplan mit allen 4 Teilen (Avatare-in-Werkstatt)",
+            wave6d17Results.s2bIsSoulRole
+        );
         check("Welle 6.D Etappe 1.7: Klonen aus aktiver Seele liefert ok", wave6d17Results.cloneReturnsOk);
         check("Welle 6.D Etappe 1.7: Klon hat alle 4 Body-Parts vom Mensch", wave6d17Results.cloneHasBodyParts);
-        check("Welle 6.D Etappe 1.7: Custom-Row im Editor gerendert", wave6d17Results.customRowRendered);
-        check("Welle 6.D Etappe 1.7: Editor-Pane mit Parts gerendert", wave6d17Results.editorPaneRendered);
-        check("Welle 6.D Etappe 1.7: 4 Part-Rows im Editor", wave6d17Results.partRowsCount === 4);
-        check("Welle 6.D Etappe 1.7: Shape-Select vorhanden", wave6d17Results.editorHasShapeSelect);
         check(
             "Welle 6.D Etappe 1.7: addPartToCustomSoul fügt Part hinzu",
             wave6d17Results.addReturnsOk && wave6d17Results.addedPart
@@ -37723,11 +37728,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             out.cloneBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-clone-btn"));
             out.newBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-new-btn"));
             out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
-            // V17.91 — die Mode-Bar trägt jetzt 11 Buttons: 4 Modi (Move/Rotate/Scale/Connect) + Snap +
-            // Zentrieren + Undo + Redo + Klonen + Neu + Löschen (Undo/Redo/Löschen aus dem entfernten Detail-
-            // Editor hoch-migriert).
+            // V17.91 — die Mode-Bar trägt 4 Modi (Move/Rotate/Scale/Connect) + Snap + Zentrieren + Undo +
+            // Redo + Klonen + Neu + Löschen. V18.62 Ich-H — + „Körper holen" (Seele→Bauplan-Brücke) = 12.
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
-            out.sevenButtonsInBar = allBtns === 11;
+            out.sevenButtonsInBar = allBtns === 12;
 
             // Methode existiert
             out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
@@ -37784,7 +37788,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
         );
         check(
-            "V8.06/V17.91: Mode-Bar hat 11 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + Klonen + Neu + Löschen)",
+            "V8.06/V17.91/V18.62: Mode-Bar hat 12 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + Klonen + Neu + Körper holen + Löschen)",
             v806Results.sevenButtonsInBar
         );
         check(

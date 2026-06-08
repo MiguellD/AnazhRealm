@@ -2642,7 +2642,6 @@ class AnazhRealm {
                     // UI-Dropdown + Editor neu rendern, damit die neue Seele
                     // sofort wählbar + editierbar ist.
                     if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
-                    if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
                 }
             },
             // Welle 4 Phase 1 — Schöpfer-Werkzeug für Materialien. Tags werden
@@ -28818,7 +28817,6 @@ class AnazhRealm {
             this.applyPlayerSoul("human");
         }
         if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
-        if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
         return { ok: true };
     }
 
@@ -28869,7 +28867,6 @@ class AnazhRealm {
             // applyPlayerSoul re-baut Mesh + ruft recomputePlayerStats.
             this.applyPlayerSoul(soulName);
         }
-        if (typeof this.renderSoulEditorUI === "function") this.renderSoulEditorUI();
     }
 
     // Welle 6.D Etappe 3b V3 (Schöpfer-Feedback 13.05.2026) — Player-Aura
@@ -32503,6 +32500,45 @@ class AnazhRealm {
     // Seele macht. Der Avatar ist KEINE Ausnahme (Schöpfer-Korrektur): einen Körper formen kostet (derselbe
     // WERK-Kern wie Gerät/Rüstung — Material + Präzision-Snapshot + Affekt), eine fertige Seele TRAGEN ist
     // frei. Verlangt role:"soul"; dann den Körper erschaffen + verkörpern (applyPlayerSoulFromBlueprint).
+    // V18.62 Ich-H (ich-plan §H.4) — die BRÜCKE: eine Seele (Built-in ODER Custom) als role:"soul"-Bauplan
+    // in die Werkstatt holen. Die Seele IST ein Bauplan (kampf-plan §11) — diese Brücke macht JEDEN Avatar
+    // (auch die Starter-Seelen + die im Ich/Chat definierten) in der Werkstatt klon-/form-/fertigbar; heilt
+    // „einige Avatare tauchen nicht in der Werkstatt auf" (die Dreifach-Quelle wird über EINEN Bauplan-Pfad
+    // lesbar). Der Ich-Soul-Editor entfällt damit — die Schöpfung lebt in der Werkstatt (wie jeder Bauplan).
+    soulToBlueprint(soulName, newName) {
+        const def = typeof this._getSoulDef === "function" ? this._getSoulDef(soulName) : null;
+        if (!def || !Array.isArray(def.bodyParts) || !def.bodyParts.length)
+            return { ok: false, reason: "soul_unknown" };
+        const base =
+            typeof newName === "string" && newName.trim()
+                ? newName.trim()
+                : `koerper_${(def.label || soulName || "seele")
+                      .toString()
+                      .toLowerCase()
+                      .replace(/[^a-z0-9_]+/g, "_")}`;
+        let name = base;
+        let n = 2;
+        while (this.state.blueprints[name]) name = `${base}_${n++}`;
+        if (!this.createBlueprint(name, def.label ? `${def.label} (Körper)` : name))
+            return { ok: false, reason: "create_failed" };
+        for (const part of def.bodyParts) {
+            this.addPartToBlueprint(name, {
+                shape: part.shape,
+                material: part.material,
+                size: part.size ? { ...part.size } : { x: 0.5, y: 0.5, z: 0.5 },
+                position: part.position ? { ...part.position } : { x: 0, y: 1, z: 0 },
+                rotation: part.rotation ? { ...part.rotation } : { x: 0, y: 0, z: 0 },
+                label: part.label || part.shape,
+            });
+        }
+        const bp = this.state.blueprints[name];
+        if (bp) {
+            bp.role = "soul";
+            bp.roleManual = true;
+        }
+        return { ok: true, name };
+    }
+
     forgeAvatar(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
@@ -43794,6 +43830,21 @@ class AnazhRealm {
                 if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
             });
         }
+        // V18.62 Ich-H (H.4) — „Körper holen": den aktuellen Avatar (Seele) als Bauplan in die Werkstatt
+        // bringen (die Brücke soulToBlueprint), dann den Werkstatt-Fluss (klonen/formen/fertigen) übernimmt.
+        const importSoulBtn = document.getElementById("workshop-import-soul-btn");
+        if (importSoulBtn) {
+            importSoulBtn.addEventListener("click", () => {
+                const soulName = (this.state.player && this.state.player.soul) || "human";
+                const res = this.soulToBlueprint(soulName);
+                if (res.ok) {
+                    this.selectBlueprintForEdit(res.name);
+                    this.log(`Körper '${soulName}' als Bauplan '${res.name}' geholt — hier klonen + formen.`, "INFO");
+                } else {
+                    this.log(`Körper holen fehlgeschlagen: ${res.reason}`, "INFO");
+                }
+            });
+        }
         // V17.91 — Undo/Redo + Löschen hoch in die Top-Leiste (wo der Schöpfer sie sucht), aus dem
         // alten versteckten Detail-Editor migriert. Der disabled-Zustand pflegt _workshopUpdateTopBarState.
         const undoBtn = document.getElementById("workshop-undo-btn");
@@ -46635,8 +46686,8 @@ class AnazhRealm {
         }
         // V18.61 Ich-F (H.3) — die flache Stats-Liste (#player-stats) ist durch das
         // Daten-Viz-Spec-Sheet (_ichBuildSpecSheet) ersetzt; renderPlayerStatsUI geschnitten.
-        // Welle 6.D Etappe 1.7 — Avatar-Editor im Drawer initial rendern.
-        this.renderSoulEditorUI();
+        // V18.62 Ich-H (H.4) — der Ich-Soul-Editor ist geschnitten; die Seelen-Schöpfung lebt in der
+        // Werkstatt (soulToBlueprint + „Körper holen"), das Ich ist nur noch der Wähler.
         // Welle 6.D Etappe 3b — Equipment-Sektion initial rendern.
         if (typeof this.renderPlayerEquipUI === "function") this.renderPlayerEquipUI();
     }
@@ -46952,259 +47003,6 @@ class AnazhRealm {
         hint.textContent =
             "Noch keine Ausrüstung. Baue einen Bauplan in der Werkstatt und markier ihn dort als Werkzeug, oder hier als Rüstung.";
         container.appendChild(hint);
-    }
-
-    // Welle 6.D Etappe 1.7 — Voller Avatar-Editor im Spieler-Drawer.
-    //
-    // Drei Bereiche:
-    //   1. Liste der eigenen Seelen mit "Werde diese Seele" + "Löschen"
-    //   2. "Neue Seele aus aktueller klonen" + "Leere Seele anlegen"
-    //   3. Inline-Editor für die ausgewählte (oder aktive Custom-) Seele mit
-    //      Parts-Liste (Shape-Dropdown, Material-Dropdown, Position xyz,
-    //      Size xyz, Löschen) + "Part hinzufügen"
-    //
-    // Daten leben in `state.customSouls`. Mutationen über die in Etappe 1.7
-    // angelegten Methoden (`addPartToCustomSoul`, `updatePartInCustomSoul`,
-    // `removePartFromCustomSoul`, `cloneSoulToCustom`, `deleteCustomSoul`),
-    // damit Validierung + UI-Refresh + Mesh-Rebuild zentral bleiben.
-    renderSoulEditorUI() {
-        if (typeof document === "undefined") return;
-        const container = document.getElementById("soul-editor");
-        if (!container) return;
-        container.innerHTML = "";
-        if (!this.state.soulEditor) this.state.soulEditor = { editingName: null };
-        const customs = this.state.customSouls || {};
-        this._soulEditorAppendCustomList(container, customs);
-        this._soulEditorAppendActions(container, customs);
-        const editingName = this.state.soulEditor.editingName;
-        const editing = editingName && customs[editingName];
-        if (editing) this._soulEditorAppendEditorPane(container, editingName, editing);
-    }
-
-    // Section 1 — Liste der eigenen Seelen mit „Werde" + „Bearbeiten" + „Löschen".
-    _soulEditorAppendCustomList(container, customs) {
-        const customNames = Object.keys(customs);
-        const customList = document.createElement("div");
-        customList.className = "soul-editor-list";
-        if (customNames.length === 0) {
-            const empty = document.createElement("div");
-            empty.className = "soul-editor-empty";
-            empty.textContent = "Du hast noch keine eigene Seele geformt.";
-            customList.appendChild(empty);
-        } else {
-            for (const name of customNames) {
-                const row = document.createElement("div");
-                row.className = "soul-editor-row";
-                const label = document.createElement("span");
-                label.className = "soul-editor-name";
-                label.textContent = customs[name].label + (this.state.player.soul === name ? " (aktiv)" : "");
-                row.appendChild(label);
-                const becomeBtn = document.createElement("button");
-                becomeBtn.type = "button";
-                becomeBtn.textContent = "Werde";
-                becomeBtn.title = `Wechsle zur Seele „${customs[name].label}"`;
-                becomeBtn.addEventListener("click", () => this.applyPlayerSoul(name));
-                row.appendChild(becomeBtn);
-                const editBtn = document.createElement("button");
-                editBtn.type = "button";
-                editBtn.textContent = "Bearbeiten";
-                editBtn.addEventListener("click", () => {
-                    this.state.soulEditor.editingName = name;
-                    this.renderSoulEditorUI();
-                });
-                row.appendChild(editBtn);
-                const delBtn = document.createElement("button");
-                delBtn.type = "button";
-                delBtn.textContent = "✕";
-                delBtn.title = `Lösche „${customs[name].label}"`;
-                delBtn.className = "soul-editor-danger";
-                delBtn.addEventListener("click", () => {
-                    const fn = typeof window !== "undefined" ? window.confirm : null;
-                    if (!fn || fn(`Seele „${customs[name].label}" löschen?`)) {
-                        this.deleteCustomSoul(name);
-                    }
-                });
-                row.appendChild(delBtn);
-                customList.appendChild(row);
-            }
-        }
-        container.appendChild(customList);
-    }
-
-    // Section 2 — aktuelle Seele klonen oder leere Seele neu anlegen.
-    _soulEditorAppendActions(container, customs) {
-        const actions = document.createElement("div");
-        actions.className = "soul-editor-actions";
-        const cloneBtn = document.createElement("button");
-        cloneBtn.type = "button";
-        cloneBtn.textContent = "Aktuelle Seele klonen";
-        cloneBtn.addEventListener("click", () => {
-            const source = this.state.player.soul || "human";
-            const base = `${source}_${Object.keys(customs).length + 1}`;
-            const result = this.cloneSoulToCustom(source, base);
-            if (result.ok) {
-                this.state.soulEditor.editingName = result.name;
-                if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
-                this.renderSoulEditorUI();
-            } else {
-                this.log(`Soul-Clone fehlgeschlagen: ${result.reason}`, "ERROR");
-            }
-        });
-        actions.appendChild(cloneBtn);
-        const newBtn = document.createElement("button");
-        newBtn.type = "button";
-        newBtn.textContent = "Neue leere Seele";
-        newBtn.addEventListener("click", () => {
-            const base = `neue_seele_${Object.keys(customs).length + 1}`;
-            // Eine Seele braucht mindestens einen Körper-Teil; geben wir ein
-            // sinnvolles Start-Teil aus fleisch vor (Standard-Default-Material).
-            const startPart = {
-                shape: "box",
-                material: "fleisch",
-                position: { x: 0, y: 0, z: 0 },
-                size: { x: 0.5, y: 1.0, z: 0.4 },
-                label: "Torso",
-            };
-            const result = this.createOrUpdateSoulFromDsl(base, [startPart]);
-            if (result.ok) {
-                this.state.soulEditor.editingName = result.name;
-                if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
-                this.renderSoulEditorUI();
-            } else {
-                this.log(`Soul-Erstellung fehlgeschlagen: ${result.reason}`, "ERROR");
-            }
-        });
-        actions.appendChild(newBtn);
-        container.appendChild(actions);
-    }
-
-    // Section 3 — Inline-Editor: Pane-Head · Parts-Liste · Add-Part · Apply/Close.
-    _soulEditorAppendEditorPane(container, editingName, editing) {
-        const editor = document.createElement("div");
-        editor.className = "soul-editor-pane";
-        const head = document.createElement("div");
-        head.className = "soul-editor-pane-head";
-        head.textContent = `Edit: ${editing.label}`;
-        editor.appendChild(head);
-        const partList = document.createElement("div");
-        partList.className = "soul-part-list";
-        const shapes = ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus", "helix"];
-        const materials = Object.keys(this.state.materials || {});
-        editing.bodyParts.forEach((part, idx) => {
-            partList.appendChild(this._soulEditorBuildPartRow(part, idx, editingName, shapes, materials));
-        });
-        editor.appendChild(partList);
-        const addPartBtn = document.createElement("button");
-        addPartBtn.type = "button";
-        addPartBtn.textContent = "+ Teil hinzufügen";
-        addPartBtn.className = "soul-editor-add";
-        addPartBtn.addEventListener("click", () => {
-            this.addPartToCustomSoul(editingName, {
-                shape: "sphere",
-                material: "fleisch",
-                position: { x: 0, y: 0.5, z: 0 },
-                size: { x: 0.3, y: 0.3, z: 0.3 },
-                label: "Neuer Teil",
-            });
-        });
-        editor.appendChild(addPartBtn);
-        const applyRow = document.createElement("div");
-        applyRow.className = "soul-editor-apply-row";
-        const becomeNow = document.createElement("button");
-        becomeNow.type = "button";
-        becomeNow.textContent = "Werde diese Seele";
-        becomeNow.className = "soul-editor-primary";
-        becomeNow.addEventListener("click", () => this.applyPlayerSoul(editingName));
-        applyRow.appendChild(becomeNow);
-        const closeEdit = document.createElement("button");
-        closeEdit.type = "button";
-        closeEdit.textContent = "Editor schließen";
-        closeEdit.addEventListener("click", () => {
-            this.state.soulEditor.editingName = null;
-            this.renderSoulEditorUI();
-        });
-        applyRow.appendChild(closeEdit);
-        editor.appendChild(applyRow);
-        container.appendChild(editor);
-    }
-
-    // Eine Part-Zeile im Inline-Editor: Index · Shape · Material · Pos x/y/z ·
-    // Größe x/y/z · ✕. Die makeNumberInput-Closure bleibt lokal — sie capturet
-    // editingName + idx + part + this; sechs Aufrufe pro Zeile.
-    _soulEditorBuildPartRow(part, idx, editingName, shapes, materials) {
-        const partRow = document.createElement("div");
-        partRow.className = "soul-part-row";
-        const indexLabel = document.createElement("span");
-        indexLabel.className = "soul-part-idx";
-        indexLabel.textContent = `#${idx + 1}`;
-        partRow.appendChild(indexLabel);
-        const shapeSel = document.createElement("select");
-        shapeSel.title = "Form";
-        for (const s of shapes) {
-            const opt = document.createElement("option");
-            opt.value = s;
-            opt.textContent = s;
-            if (s === part.shape) opt.selected = true;
-            shapeSel.appendChild(opt);
-        }
-        shapeSel.addEventListener("change", () => {
-            this.updatePartInCustomSoul(editingName, idx, { shape: shapeSel.value });
-        });
-        partRow.appendChild(shapeSel);
-        const matSel = document.createElement("select");
-        matSel.title = "Material";
-        for (const m of materials) {
-            const opt = document.createElement("option");
-            opt.value = m;
-            opt.textContent = this.state.materials[m].label || m;
-            if (m === part.material) opt.selected = true;
-            matSel.appendChild(opt);
-        }
-        matSel.addEventListener("change", () => {
-            this.updatePartInCustomSoul(editingName, idx, { material: matSel.value });
-        });
-        partRow.appendChild(matSel);
-        const makeNumberInput = (val, axis, kind) => {
-            const inp = document.createElement("input");
-            inp.type = "number";
-            inp.step = "0.05";
-            inp.value = Number(val || 0).toFixed(2);
-            inp.className = "soul-part-num";
-            inp.title = `${kind} ${axis}`;
-            inp.addEventListener("change", () => {
-                const next = Number(inp.value);
-                const field = kind === "pos" ? "position" : "size";
-                const current = part[field] || { x: 0, y: 0, z: 0 };
-                this.updatePartInCustomSoul(editingName, idx, {
-                    [field]: { ...current, [axis]: next },
-                });
-            });
-            return inp;
-        };
-        const posGrp = document.createElement("span");
-        posGrp.className = "soul-part-group";
-        posGrp.title = "Position x/y/z";
-        posGrp.appendChild(document.createTextNode("Pos"));
-        posGrp.appendChild(makeNumberInput(part.position && part.position.x, "x", "pos"));
-        posGrp.appendChild(makeNumberInput(part.position && part.position.y, "y", "pos"));
-        posGrp.appendChild(makeNumberInput(part.position && part.position.z, "z", "pos"));
-        partRow.appendChild(posGrp);
-        const sizeGrp = document.createElement("span");
-        sizeGrp.className = "soul-part-group";
-        sizeGrp.title = "Größe x/y/z";
-        sizeGrp.appendChild(document.createTextNode("Größe"));
-        sizeGrp.appendChild(makeNumberInput(part.size && part.size.x, "x", "size"));
-        sizeGrp.appendChild(makeNumberInput(part.size && part.size.y, "y", "size"));
-        sizeGrp.appendChild(makeNumberInput(part.size && part.size.z, "z", "size"));
-        partRow.appendChild(sizeGrp);
-        const rmBtn = document.createElement("button");
-        rmBtn.type = "button";
-        rmBtn.textContent = "✕";
-        rmBtn.className = "soul-editor-danger";
-        rmBtn.title = "Teil entfernen";
-        rmBtn.addEventListener("click", () => this.removePartFromCustomSoul(editingName, idx));
-        partRow.appendChild(rmBtn);
-        return partRow;
     }
 
     // Welle 6.D Etappe 1.6 — Soul-Select neu befüllen (Built-ins + Custom).
@@ -49318,7 +49116,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.61.0";
+AnazhRealm.VERSION = "18.62.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

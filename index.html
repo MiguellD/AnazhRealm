@@ -2831,6 +2831,14 @@
                 outline: 1px solid var(--violet-1);
                 outline-offset: 1px;
             }
+            .ich-soul-hint {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 10px;
+                color: var(--parch-ink-faded);
+                margin: 0 0 6px 0;
+                line-height: 1.3;
+            }
             /* V18.61 Ich-F (H.6) — „Mehr: Wechseln & Markieren" als Aufklapp innerhalb „Was du trägst". */
             details.ich-equip-more {
                 margin-top: 6px;
@@ -6146,6 +6154,10 @@
                         <label for="player-soul-select">Körper</label>
                         <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
                     </div>
+                    <p class="ich-soul-hint">
+                        Einen neuen Körper FORMST du in der Werkstatt („Körper holen" → klonen + formen) — hier
+                        wählst du nur, wer du bist.
+                    </p>
                     <div class="hof-stage ich-stage">
                         <canvas
                             id="ich-stage-canvas"
@@ -6161,12 +6173,9 @@
                         </h4>
                         <div id="status-emotions"></div>
                     </section>
-                    <!-- V18.61 Ich-F — die Seelen-SCHÖPFUNG (klonen/formen) wandert in die Werkstatt (H.4 /
-                         Ich-H, der Synergie-Bogen); bis dahin bleibt der Editor hier (klappbar). -->
-                    <section class="section default-collapsed">
-                        <h4>Eigene Seele formen <span class="section-hint">(custom Avatar)</span></h4>
-                        <div id="soul-editor"></div>
-                    </section>
+                    <!-- V18.62 Ich-H (H.4) — die Seelen-SCHÖPFUNG (klonen/formen/Teile) lebt jetzt VOLL in der
+                         Werkstatt (die Seele IST ein Bauplan, soulToBlueprint + „Körper holen"); der parallele
+                         Ich-Soul-Editor ist ERSATZLOS geschnitten — das Ich ist nur noch der Wähler. -->
                 </div>
                 <!-- RECHTS: Ausrüstung & Rezepte — der Crafting→Gebrauch-Fluss (wie Minecraft, UI-Putz
                      V18.34): das REZEPTBUCH ist der EINE Weg, ein Rezept aus der Werkstatt real zu
@@ -6528,6 +6537,17 @@
                                 title="Neuer leerer Bauplan"
                             >
                                 Neu
+                            </button>
+                            <!-- V18.62 Ich-H (H.4) — die Seele IST ein Bauplan: den AKTUELLEN Körper
+                                 (Built-in/Custom-Seele) als role:soul-Bauplan in die Werkstatt holen →
+                                 klonen/formen/fertigen wie jeden Bauplan. Heilt „Avatare fehlen". -->
+                            <button
+                                type="button"
+                                id="workshop-import-soul-btn"
+                                class="workshop-action-btn"
+                                title="Den aktuellen Körper (deine Seele) als Bauplan holen — hier klonen + formen"
+                            >
+                                Körper holen
                             </button>
                             <button
                                 type="button"
@@ -7455,6 +7475,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.61.0" defer></script>
+        <script src="anazhRealm.js?v=18.62.0" defer></script>
     </body>
 </html>
