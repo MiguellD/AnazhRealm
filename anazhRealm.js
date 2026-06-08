@@ -30211,6 +30211,19 @@ class AnazhRealm {
             search.dataset.libWired = "1";
             search.addEventListener("input", () => this._applyLibraryFilter());
         }
+        // V18.72 — die Erschaffen-Werkzeuge als Akkordeon: eines öffnen schliesst die Geschwister
+        // (EIN Fokus, statt eines Wall-of-Forms; die Werkstatt-/Hof-Verdichtung auf die Schöpfen-Zone).
+        const feedTools = document.querySelectorAll(".feed-create .feed-tool");
+        feedTools.forEach((d) => {
+            if (d.dataset.accWired === "1") return;
+            d.dataset.accWired = "1";
+            d.addEventListener("toggle", () => {
+                if (d.open)
+                    feedTools.forEach((o) => {
+                        if (o !== d) o.open = false;
+                    });
+            });
+        });
         this.renderLibraryUI();
     }
 
@@ -49548,7 +49561,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.71.0";
+AnazhRealm.VERSION = "18.72.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

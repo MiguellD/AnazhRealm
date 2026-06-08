@@ -4923,6 +4923,66 @@
                 max-height: 56vh;
                 overflow-y: auto;
             }
+            /* die Erschaffen-Werkzeuge — ein Akkordeon klarer Werkzeug-Einträge (Glyph · Name · Zweck),
+               eines offen zur Zeit (die Werkstatt-/Hof-Verdichtung: ein Fokus statt Wall-of-Forms). */
+            .feed-tool {
+                border: 1px solid var(--brass-3, #5a4824);
+                border-radius: 4px;
+                margin-bottom: 6px;
+                background: rgba(255, 245, 220, 0.28);
+            }
+            .feed-tool[open] {
+                background: rgba(255, 245, 220, 0.5);
+                box-shadow: inset 0 0 0 1px var(--brass-2, #8a6322);
+            }
+            .feed-tool-head {
+                display: flex;
+                align-items: baseline;
+                gap: 7px;
+                padding: 6px 9px;
+                cursor: pointer;
+                list-style: none;
+                user-select: none;
+            }
+            .feed-tool-head::-webkit-details-marker {
+                display: none;
+            }
+            .feed-tool-glyph {
+                color: var(--brass-1, #b88a50);
+                font-size: 13px;
+                width: 15px;
+                text-align: center;
+                flex: 0 0 auto;
+            }
+            .feed-tool[open] .feed-tool-glyph {
+                color: #b48c28;
+            }
+            .feed-tool-name {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                font-weight: bold;
+                color: var(--parch-ink, #2b1a08);
+            }
+            .feed-tool-sub {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 9.5px;
+                color: var(--parch-ink-faded, #7b5a2e);
+                margin-left: auto;
+                text-align: right;
+            }
+            .feed-tool-body {
+                padding: 2px 9px 9px;
+                border-top: 1px dotted rgba(138, 106, 54, 0.3);
+            }
+            .feed-tool-hint {
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 10.5px;
+                font-style: italic;
+                color: var(--parch-ink-soft, #5a3f1d);
+                margin: 7px 0 8px;
+                line-height: 1.45;
+            }
             /* RECHTS — die Kuratier-Inseln (Filter + Bestbewertet). */
             .feed-curate {
                 background: rgba(255, 245, 220, 0.4);
@@ -7396,39 +7456,45 @@
                 <!-- KI-Übersetzer Phase 1 — eine fremde Welt beschreiben, die KI
                  übersetzt sie in ein Portal-Manifest. _runTranslator füllt
                  #translator-review; acceptTranslatedManifest committet. -->
-                <section class="section">
-                    <h3>KI-Übersetzer <span class="section-hint">(fremde Welt → Manifest)</span></h3>
-                    <p class="drawer-hint">
-                        Beschreibe eine fremde Vibecode-Welt — ein Three.js-Projekt, eine Engine, ein Repo. Die KI
-                        übersetzt sie in ein Portal-Manifest und trägt sie als Eintrag in deine Bibliothek. Ein
-                        übersetzter Eintrag ist browsbar, noch nicht betretbar — seine Engine-Dateien werden in einer
-                        späteren Phase vendort. Braucht eine aktive KI (Einstellungen-Drawer).
-                    </p>
-                    <textarea
-                        id="translator-input"
-                        class="translator-input"
-                        rows="4"
-                        placeholder="z. B.: Eine Voxel-Sandbox mit Tag-Nacht-Zyklus, Wetter und Block-Bauen. Three.js, prozedurale Chunks, ein umherstreifender Spieler."
-                    ></textarea>
-                    <div class="actions">
-                        <button type="button" id="translator-run">Übersetzen</button>
+                <details class="feed-tool">
+                    <summary class="feed-tool-head">
+                        <span class="feed-tool-glyph">✶</span>
+                        <span class="feed-tool-name">Welt übersetzen</span>
+                        <span class="feed-tool-sub">fremde Welt → Manifest</span>
+                    </summary>
+                    <div class="feed-tool-body">
+                        <p class="feed-tool-hint">
+                            Beschreibe eine fremde Vibecode-Welt — die KI macht ein Portal-Manifest. Browsbar, noch nicht
+                            betretbar (Engine-Dateien folgen). Braucht eine aktive KI (Einstellungen).
+                        </p>
+                        <textarea
+                            id="translator-input"
+                            class="translator-input"
+                            rows="4"
+                            placeholder="z. B.: Eine Voxel-Sandbox mit Tag-Nacht-Zyklus, Wetter und Block-Bauen…"
+                        ></textarea>
+                        <div class="actions">
+                            <button type="button" id="translator-run">Übersetzen</button>
+                        </div>
+                        <div id="translator-status" class="translator-status" aria-live="polite"></div>
+                        <div id="translator-review" class="translator-review" hidden></div>
                     </div>
-                    <div id="translator-status" class="translator-status" aria-live="polite"></div>
-                    <div id="translator-review" class="translator-review" hidden></div>
-                </section>
+                </details>
                 <!-- W15 Phase 1 — Auto-Vendor: ein lokales Welt-Bündel andocken.
                  Der save-server schreibt es nach worlds/<id>/, die Welt wird
                  ein sandgesicherter Bibliothek-Eintrag. _runVendorDock. -->
-                <section class="section">
-                    <h3>Welt andocken <span class="section-hint">(fremdes Bündel → Bibliothek)</span></h3>
-                    <p class="drawer-hint">
-                        Dockt eine fremde, in sich geschlossene Welt an — aus einem lokalen Ordner ODER direkt aus einem
-                        GitHub-Repo. Gib ihr eine id und einen Namen; der lokale save-server schreibt sie nach
-                        worlds/&lt;id&gt;/, danach steht sie unten in den „Welten" und ist durch ein Portal betretbar.
-                        Sie läuft sandgesichert (null-origin): eine fremde Engine läuft voll, kann AnazhRealm aber nicht
-                        berühren. Braucht die lokale Dev-Umgebung (npm start) — committet bleibt die Welt für alle.
-                    </p>
-                    <div class="vendor-form">
+                <details class="feed-tool">
+                    <summary class="feed-tool-head">
+                        <span class="feed-tool-glyph">⚓</span>
+                        <span class="feed-tool-name">Welt andocken</span>
+                        <span class="feed-tool-sub">fremdes Bündel → Bibliothek</span>
+                    </summary>
+                    <div class="feed-tool-body">
+                        <p class="feed-tool-hint">
+                            Eine fremde, in sich geschlossene Welt aus einem Ordner ODER GitHub-Repo. Läuft sandgesichert
+                            (null-origin) — die fremde Engine kann AnazhRealm nicht berühren. Braucht npm start.
+                        </p>
+                        <div class="vendor-form">
                         <input
                             type="text"
                             id="vendor-id"
@@ -7485,37 +7551,45 @@
                     <div class="actions">
                         <button type="button" id="vendor-repo-dock">Aus GitHub holen</button>
                     </div>
-                    <div id="vendor-status" class="vendor-status" aria-live="polite"></div>
-                </section>
-                <!-- W16 Phase 2 — Welt-Katalog: jeder Mesh-Mitspieler annonciert
-                 seine vendorten Welten (über den soul-Kanal); „Holen" lädt
-                 das Bündel peer-to-peer in die Bibliothek. _renderMeshWorld-
-                 Catalog rendert, requestWorldBundleFromPeer trägt es. -->
-                <section class="section">
-                    <h3>Welt-Katalog der Mitspieler <span class="section-hint">(über das Mesh)</span></h3>
-                    <p class="drawer-hint">
-                        Welten, die deine Mitspieler im selben Mesh-Raum vendort haben — „Holen" lädt ihr Bündel
-                        peer-to-peer in deine Bibliothek, du brauchst kein GitHub-Repo. Eine geholte Welt läuft
-                        sandgesichert wie jede vendorte Welt. „✓ vorhanden" heißt: du hast diese Welt schon (erkannt am
-                        Content-Hash). Braucht eine stehende Mesh-Verbindung (Multi-User-Drawer).
-                    </p>
-                    <div id="mesh-world-catalog" class="mesh-catalog" aria-live="polite"></div>
-                    <div id="mesh-world-status" class="vendor-status" aria-live="polite"></div>
-                </section>
+                        <div id="vendor-status" class="vendor-status" aria-live="polite"></div>
+                    </div>
+                </details>
+                <!-- W16 Phase 2 — Welt-Katalog: _renderMeshWorldCatalog; requestWorldBundleFromPeer. -->
+                <details class="feed-tool">
+                    <summary class="feed-tool-head">
+                        <span class="feed-tool-glyph">☷</span>
+                        <span class="feed-tool-name">Welt-Katalog</span>
+                        <span class="feed-tool-sub">Welten der Mitspieler · übers Mesh</span>
+                    </summary>
+                    <div class="feed-tool-body">
+                        <p class="feed-tool-hint">
+                            Welten deiner Mitspieler peer-to-peer holen — kein GitHub nötig, läuft sandgesichert.
+                            Braucht eine stehende Mesh-Verbindung (Multi-User-Drawer).
+                        </p>
+                        <div id="mesh-world-catalog" class="mesh-catalog" aria-live="polite"></div>
+                        <div id="mesh-world-status" class="vendor-status" aria-live="polite"></div>
+                    </div>
+                </details>
                 <!-- Migriert vom Welt-Menü (UI-Putz): Provenienz + Geschichte gehören in die
                  Bibliothek — woher eine Welt stammt, was sie erlebt hat, ihre Schwestern.
                  Bib-C wird Stammbaum + Tagebuch an die FOKUS-Welt heften; vorerst recedieren sie
                  hier in der eingeklappten Schöpfen-Zone. -->
-                <section class="section" id="world-picker-section">
-                    <h3>Andere Welten <span class="section-hint">(reisen + Rezepte holen)</span></h3>
-                    <div id="world-picker-list" class="drawer-hint" aria-live="polite">
-                        Nur diese eine Welt im Speicher.
+                <details class="feed-tool" id="world-picker-section">
+                    <summary class="feed-tool-head">
+                        <span class="feed-tool-glyph">✧</span>
+                        <span class="feed-tool-name">Andere Welten</span>
+                        <span class="feed-tool-sub">reisen · neue Welt · verschmelzen</span>
+                    </summary>
+                    <div class="feed-tool-body">
+                        <div id="world-picker-list" class="drawer-hint" aria-live="polite">
+                            Nur diese eine Welt im Speicher.
+                        </div>
+                        <div class="actions">
+                            <button type="button" id="world-new">Neue Welt…</button>
+                            <button type="button" id="world-fuse-open">Verschmelzen…</button>
+                        </div>
                     </div>
-                    <div class="actions">
-                        <button type="button" id="world-new">Neue Welt…</button>
-                        <button type="button" id="world-fuse-open">Verschmelzen…</button>
-                    </div>
-                </section>
+                </details>
                         </div>
                     </details>
                 </aside>
@@ -8240,6 +8314,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.71.0" defer></script>
+        <script src="anazhRealm.js?v=18.72.0" defer></script>
     </body>
 </html>

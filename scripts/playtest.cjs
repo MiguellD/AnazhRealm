@@ -30883,6 +30883,15 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!feedSelf.querySelector("#world-lineage") &&
             !!feedSelf.querySelector("#world-journal-list") &&
             /Diese Welt|noch namenlos|.+/.test(feedSelf.querySelector("#feed-active-ident").textContent || "");
+        // V18.72: die Erschaffen-Werkzeuge sind AUSGEARBEITET — ein Akkordeon klarer Werkzeug-Einträge
+        // (jedes .feed-tool mit Glyph+Name+Zweck), die Formulare bewahrt (kein Wall-of-Forms mehr).
+        const feedTools = libCreate ? libCreate.querySelectorAll(".feed-tool") : [];
+        out.feedToolsAccordion =
+            feedTools.length >= 4 &&
+            Array.from(feedTools).every((t) => !!t.querySelector(".feed-tool-head .feed-tool-name")) &&
+            !!libCreate.querySelector(".feed-tool #translator-input") &&
+            !!libCreate.querySelector(".feed-tool #vendor-id") &&
+            !!libCreate.querySelector(".feed-tool #world-new");
         // Feed-A0: _feedItems vereint Welten + Rezepte + Wesen (jedes liest seinen Vektor + seine Wertung).
         const fi = typeof r._feedItems === "function" ? r._feedItems() : [];
         const fkinds = new Set(fi.map((it) => it.kind));
@@ -31012,6 +31021,10 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check(
             "Feed: das 'Diese Welt'-Eiland blüht links (Identität + Stammbaum + Tagebuch, V18.71)",
             w14Results.feedSelfIsland
+        );
+        check(
+            "Feed: die Erschaffen-Werkzeuge sind ein klares Akkordeon (4 Werkzeug-Einträge, V18.72)",
+            w14Results.feedToolsAccordion
         );
         check("Feed: die Suche sitzt im Feed-Kopf", w14Results.searchInHead);
         check("Feed-A0: _feedItems vereint Welten + Rezepte + Wesen", w14Results.feedHasAllKinds);
