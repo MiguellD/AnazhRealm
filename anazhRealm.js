@@ -39992,40 +39992,99 @@ class AnazhRealm {
         this.renderRecipeBook();
     }
 
-    // Was du trägst — Gerät in der Hand + Rüstung, sichtbar + klickbar (Klick legt ab).
-    // Heilt "man sieht nicht mal, was getragen wird" (die 🔴-Erreichbarkeits-Lücke).
+    // Was du trägst — Gerät in der Hand + Rüstung, sichtbar + klickbar (Klick legt ab). V18.67 Ich-J5:
+    // direkt unter dem Viewer (ohne Überschrift), die Rüstung mit eingebautem Wechsel (Select IM Slot, kein
+    // „Mehr"-Aufklappen), + die aktiven BOOSTS als Chips (was JETZT wirkt — wie wenn der Nexus feuert).
     _renderInventoryEquip() {
         const host = document.getElementById("inventory-equip");
         if (!host) return;
         host.innerHTML = "";
         const eq = (this.state.player && this.state.player.equipped) || { held: null, armor: null };
         const bps = this.state.blueprints || {};
-        const slots = [
-            { kind: "In der Hand", name: eq.held, clear: () => this.equipHeld(null) },
-            { kind: "Rüstung", name: eq.armor, clear: () => this.equipArmor(null) },
-        ];
-        for (const s of slots) {
-            const bp = s.name && bps[s.name];
+        // (1) In der Hand — Klick legt ab; GEWECHSELT wird in der Hand über die Hotbar (J2).
+        {
+            const bp = eq.held && bps[eq.held];
             const el = document.createElement("div");
             el.className = "equip-slot";
-            const k = document.createElement("span");
-            k.className = "equip-kind";
-            k.textContent = s.kind;
-            const nm = document.createElement("span");
-            nm.className = "equip-name";
-            nm.textContent = s.name ? (bp && bp.label) || s.name : "— leer —";
-            el.appendChild(k);
-            el.appendChild(nm);
-            if (s.name) {
-                el.title = "Klick → ablegen";
+            el.appendChild(this._el("span", { class: "equip-kind", text: "In der Hand" }));
+            el.appendChild(
+                this._el("span", {
+                    class: "equip-name",
+                    text: eq.held ? (bp && bp.label) || eq.held : "— leer (Faust) —",
+                })
+            );
+            if (eq.held) {
+                el.title = "Klick → ablegen · Wechseln über die Hotbar";
                 el.addEventListener("click", () => {
-                    s.clear();
+                    this.equipHeld(null);
                     this._renderInventoryEquip();
                     this.renderRecipeBook();
                 });
             }
             host.appendChild(el);
         }
+        // (2) Rüstung — Wechsel IM Slot: ein Select über die besessenen Rüstungen (wearArmor, frei wenn
+        //     geschmiedet) statt eines versteckten „Mehr"-Dropdowns (Schöpfer „wieso aufklappen").
+        {
+            const { armorBlueprints } = this._equipPartitionEquipBlueprints();
+            const el = document.createElement("div");
+            el.className = "equip-slot";
+            el.appendChild(this._el("span", { class: "equip-kind", text: "Rüstung" }));
+            if (armorBlueprints.length) {
+                const sel = document.createElement("select");
+                sel.className = "equip-slot-select";
+                sel.title = "Rüstung wechseln (frei, wenn schon geschmiedet)";
+                sel.appendChild(this._el("option", { value: "", text: "— keine —" }));
+                for (const name of armorBlueprints) {
+                    const opt = this._el("option", { value: name, text: (bps[name] && bps[name].label) || name });
+                    if (eq.armor === name) opt.selected = true;
+                    sel.appendChild(opt);
+                }
+                sel.addEventListener("change", () => {
+                    const res = this.wearArmor(sel.value || null);
+                    if (!res.ok && res.reason === "not_enough_material") {
+                        const miss = Object.entries(res.missing || {})
+                            .map(([m, n]) => `${n}× ${m}`)
+                            .join(", ");
+                        this.log(`Rüstung weben nötig — fehlt: ${miss || "Material"} (⚒ in der Werkstatt).`, "ERROR");
+                    }
+                    this._renderInventoryEquip();
+                    this.renderRecipeBook();
+                });
+                el.appendChild(sel);
+            } else {
+                el.appendChild(
+                    this._el("span", {
+                        class: "equip-name",
+                        text: eq.armor ? (bps[eq.armor] && bps[eq.armor].label) || eq.armor : "— leer —",
+                    })
+                );
+            }
+            host.appendChild(el);
+        }
+        // (3) Aktive Boosts — was JETZT wirkt (wie wenn der Nexus feuert), Schöpfer-Wunsch.
+        this._renderEquipBoosts(host);
+    }
+
+    // V18.67 Ich-J5 — die aktiven Boost-Effekte als Chips (✺ Name (Restzeit)). Liest player.boosts
+    // ({source, tagDelta, expiresAt, label}, expiresAt in performance.now()/1000) — ein echter Leser
+    // des Boost-Vektors (KONSUM, V17.31), kein erfundenes Feld.
+    _renderEquipBoosts(host) {
+        const boosts = this.state.player && Array.isArray(this.state.player.boosts) ? this.state.player.boosts : [];
+        const nowSec = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+        const active = boosts.filter((b) => b && b.expiresAt > nowSec);
+        const row = this._el("div", { class: "ich-boosts" });
+        if (!active.length) {
+            row.appendChild(this._el("span", { class: "ich-boosts-empty", text: "keine aktiven Boosts" }));
+        } else {
+            for (const b of active) {
+                const rest = Math.max(0, Math.round(b.expiresAt - nowSec));
+                row.appendChild(
+                    this._el("span", { class: "ich-boost-chip", text: `✺ ${b.label || b.source} (${rest}s)` })
+                );
+            }
+        }
+        host.appendChild(row);
     }
 
     // Das Rezeptbuch (wie Minecraft): die craftbaren Baupläne, gruppiert nach Verwendung,
@@ -41117,7 +41176,9 @@ class AnazhRealm {
         const dim = box.getSize(new THREE.Vector3());
         group.position.sub(center);
         const maxDim = Math.max(dim.x, dim.y, dim.z) || 1;
-        group.scale.setScalar(3.0 / maxDim);
+        // V18.67 Ich-J5 — der Viewer ist INFO (kein Star): den Avatar mit Rand framen (2.4 statt 3.0),
+        // damit er als Porträt sitzt + nicht den ganzen kleinen Viewer füllt.
+        group.scale.setScalar(2.4 / maxDim);
         const pivot = new THREE.Group();
         pivot.add(group);
         stage.scene.add(pivot);
@@ -46745,26 +46806,26 @@ class AnazhRealm {
         // wieldBlueprint, frei wenn geschmiedet — GEMESSEN). Die Rüstung-Zeile BLEIBT: sie ist der FREIE
         // Wechsel-Pfad für eine besessene (geschmiedete) Rüstung (wearArmor), während das Rezept-„Anlegen"
         // die Zutaten neu zieht (GEMESSEN _forgeMaterialAndFreeze → _makeCostGate) — also kein Duplikat.
+        // V18.67 Ich-J5 — der Rüstung-WECHSEL lebt jetzt IM Slot („Was du trägst", _renderInventoryEquip);
+        // #player-equip ist nur noch das UMWIDMEN (Intent-Override: einen Bauplan zur Rüstung/zum Konsumabel/
+        // Portal erklären) — EIN klarer Zweck statt eines Sammelsuriums (Schöpfer „das Aufklappen traurig").
         this._equipAppendDrawerHint(container);
-        const equipped = (this.state.player && this.state.player.equipped) || { held: null, armor: null };
-        const { armorBlueprints, candidateBlueprints } = this._equipPartitionEquipBlueprints();
-        this._equipAppendArmorRow(container, equipped, armorBlueprints);
+        const { candidateBlueprints } = this._equipPartitionEquipBlueprints();
         this._equipAppendMarkSection(container, candidateBlueprints);
         this._equipAppendConsumablesSection(container);
-        if (armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
+        if (candidateBlueprints.length === 0 && !container.querySelector(".equip-mark-row")) {
             this._equipAppendEmptyHint(container);
         }
     }
 
-    // V8.39 — Equip-Hinweis (Schöpfer-Browser-Test „Rüstung anziehen?"):
-    // Rüstung ist 2-stufig — eigenen Bauplan unten als „Rüstung" markieren,
-    // dann oben im Dropdown wählen.
+    // V18.67 Ich-J5 — der Hinweis erklärt das UMWIDMEN (das Tragen/Wechseln lebt in „Was du trägst" +
+    // der Hotbar). Behält „Rüstung" + „Hotbar" als Keywords (der Wechsel-Wege-Test).
     _equipAppendDrawerHint(container) {
         const equipHint = document.createElement("div");
         equipHint.className = "drawer-hint";
         equipHint.textContent =
-            "Geräte wechselst du in der Hand (Hotbar) oder im Rezeptbuch (In die Hand). Hier: eine besessene " +
-            "Rüstung frei tragen (Dropdown) + einen eigenen Bauplan umwidmen (Rüstung · Konsumabel · Portal).";
+            "Umwidmen: einem eigenen Bauplan eine Rolle geben (Rüstung · Konsumabel · Portal). " +
+            "Tragen + Wechseln läuft über Was du trägst (Rüstung-Wechsel im Slot) + die Hotbar (in der Hand).";
         container.appendChild(equipHint);
     }
 
@@ -49053,7 +49114,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.66.0";
+AnazhRealm.VERSION = "18.67.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

@@ -41,7 +41,7 @@ function startSaveServer() {
         ],
     });
     const page = await browser.newPage();
-    await page.setViewport({ width: 1440, height: 980, deviceScaleFactor: 2 });
+    await page.setViewport({ width: 1600, height: 900, deviceScaleFactor: 2 });
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
         await page.evaluate(async () => {
@@ -84,7 +84,7 @@ function startSaveServer() {
                 specBars: spec ? spec.querySelectorAll(".spec-body .spec-bar").length : -1,
                 emotionRows: emo ? emo.querySelectorAll(".emotion").length : -1,
                 reiseRows: document.querySelectorAll("#ich-reise .ich-reise-row").length,
-                habe: !!document.querySelector(".ich-readout #inventory-equip"),
+                habe: !!document.querySelector(".ich-self #inventory-equip"),
                 soul: r.state.player.soul,
             };
         });

@@ -508,8 +508,22 @@ links, das WERK (Rezeptbuch + die schmale Suche) rechts — die zwei flankierend
 
 ### §J — Die Wellen (jede misst mit `diag-ich` + dem Auge, content-first, keine halben Sachen)
 
-**STAND: J0–J3 GEBAUT + verifiziert (V18.66, alle Playtests grün, mit dem Auge gefahren). OFFEN: der
-Schöpfer-Browser-Sign-off (GPU-Avatar-Feel) + EIN Merge.** Die „von-den-Riesen"-Trank-Erfahrung (gehaltener
+**STAND: J0–J3 GEBAUT (V18.66) + J5 die TOPOLOGIE-KORREKTUR (V18.67) — alle Playtests grün, mit dem Auge
+gefahren. OFFEN: der Schöpfer-Browser-Sign-off (GPU-Avatar-Feel) + EIN Merge.**
+
+**Ich-J5 — die TOPOLOGIE-KORREKTUR (Schöpfer-Browser von V18.66: „reroll, absolut nicht besser"):** mein J1
+spiegelte die Werkstatt-Topologie LITERAL (Viewer als zentralen Star + Readout vollbreit darunter) — der Schöpfer
+sah einen bildschirm-füllenden zentralen Avatar-Block. WURZEL: das Ich hat einen ANDEREN Zweck als die Werkstatt.
+Die Werkstatt ist viewer-zentral (man ERSCHAFFT), das Ich ist HABE-zentral (man VERWALTET). Das WAHRE Modell
+(GEBAUT V18.67): **LINKS WER ICH BIN** (vertikale Selbst-Insel `.ich-self`: Körper-Wahl ÜBER dem kleinen INFO-
+Viewer · „Was du trägst" OHNE Überschrift darunter · darunter Verfassung·WERTE·NATUR·EMOTION) · **MITTE WAS ICH
+HABE** (Inventar/Hotbar = zentral) · **RECHTS** Suche+Rezepte. Plus: aktive Boost-Chips in „Was du trägst"
+(`_renderEquipBoosts`), der Rüstung-Wechsel IM Slot (`wearArmor`) statt im traurigen „Mehr", `#player-equip` nur
+noch das Umwidmen. **LEHRE (verschärft §A): „auf X-Niveau" heißt den ZWECK des eigenen Raums in die Mitte stellen
+— das Referenz-Muster wird ANGEWANDT, nicht abgepaust; was der Spieler hier PRIMÄR tut (verwalten → Inventar),
+gehört in die Mitte, nicht der geliehene Star.**
+
+Die „von-den-Riesen"-Trank-Erfahrung (gehaltener
 Trank → aus der Hand trinken) ist als eigener Faden offen (S6-B-Flora-Ökonomie, stored potions) — J3 heilte die
 ERREICHBARKEIT (entdoppelt + im sichtbaren Rezeptbuch), nicht das Lager-Modell.
 

@@ -669,38 +669,35 @@
                 position: relative;
                 z-index: 1;
             }
-            /* V18.66 Ich-J1 (ich-plan §J) — die WERKSTATT-ZONEN-TOPOLOGIE: der Body ist eine SPALTE aus
-               der VORSCHAU-REIHE (oben) + dem vollbreiten READOUT (unten) — exakt das #workshop-preview-row
-               + #workshop-stats-panel-Muster. Vorher waren es drei gequetschte gleichrangige Spalten →
-               das Spec-Sheet neben dem Avatar zerdrückt (Schöpfer „Stats geschnitten"). */
+            /* V18.67 Ich-J5 (Schöpfer-Korrektur) — das Ich ist NICHT die Werkstatt: der Viewer ist hier INFO,
+               nicht der Star; der ZENTRALE Nutzen ist die HABE (Inventar/Hotbar). Drei Spalten nach dem WAHREN
+               mentalen Modell: LINKS WER ICH BIN (Selbst-Insel) · MITTE WAS ICH HABE (zentral) · RECHTS WERK. */
             .inventory-body {
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
                 flex: 1 1 auto;
                 min-height: 0;
             }
-            /* die VORSCHAU-REIHE: HABE | der Avatar-VIEWER (Star) | WERK — die flankierenden Paletten
-               + der mittige Star (wie die Werkstatt: Palette | Viewer | Palette). */
-            .ich-preview-row {
+            .ich-cols {
                 display: grid;
-                grid-template-columns: minmax(240px, 1fr) minmax(300px, 1.05fr) minmax(260px, 1fr);
-                grid-template-areas: "habe viewer werk";
+                grid-template-columns: minmax(300px, 1fr) minmax(360px, 1.15fr) minmax(280px, 0.9fr);
+                grid-template-areas: "self habe werk";
                 gap: 14px 16px;
                 flex: 1 1 auto;
                 min-height: 0;
                 align-items: stretch;
             }
+            .inventory-col-character {
+                grid-area: self;
+                min-height: 0;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+            }
             .inventory-col-items {
                 grid-area: habe;
                 min-height: 0;
                 overflow-y: auto;
-            }
-            .inventory-col-character {
-                grid-area: viewer;
-                min-height: 0;
-                display: flex;
-                flex-direction: column;
             }
             .inventory-col-recipes {
                 grid-area: werk;
@@ -716,85 +713,114 @@
                 margin-top: 6px;
             }
             @media (max-width: 1100px) {
-                .ich-preview-row {
+                .ich-cols {
                     grid-template-columns: 1fr 1fr;
-                    grid-template-areas: "viewer habe" "werk werk";
+                    grid-template-areas: "self habe" "werk werk";
                 }
             }
             @media (max-width: 760px) {
-                .ich-preview-row {
+                .ich-cols {
                     grid-template-columns: 1fr;
-                    grid-template-areas: "viewer" "habe" "werk";
+                    grid-template-areas: "habe" "self" "werk";
                 }
             }
-            /* der SELBST-READOUT — der dunkle vollbreite Star-Boden (V18.55: Avatar + Readout = EIN
-               dunkler Star), 1:1 wie #workshop-stats-panel unter dem Viewer. Links das Spec-Sheet
-               (Verfassung·Werte·Natur, light-on-dark), rechts die Vitalzeichen (Emotion + Was du trägst).
-               Hier haben die Werte VOLLE Breite → nicht mehr geschnitten. */
-            .ich-readout {
-                flex: 0 0 auto;
-                display: grid;
-                grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-                gap: 14px 18px;
-                padding: 12px 14px;
-                background: rgba(20, 12, 4, 0.65);
-                border: 1px solid var(--brass-3);
-                border-radius: 10px;
-                max-height: 40vh;
-                overflow-y: auto;
-            }
-            .ich-readout-side {
+            /* die SELBST-INSEL (links oben): EIN dunkler Block (V18.55 „ein dunkler Star") — der kleine
+               3D-Viewer (INFO) · darunter „Was du trägst" (ohne Überschrift) · darunter all die Statistiken
+               (Verfassung·Werte·Natur·Emotion). Wer ich bin + was ich trage + meine Werte, vertikal gestapelt. */
+            .ich-self {
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
-                min-width: 0;
-            }
-            /* light-on-dark im Readout (V18.41-Tokens, V18.58-Falle vermeiden: dunkler Text auf dunklem
-               Grund). Das Spec-Sheet (.hof-spec-sheet) ist schon light-on-dark; Emotion + „Was du trägst"
-               tragen Pergament-Dunkeltext → hier auf den dunklen Readout-Grund umstellen. */
-            .ich-readout h4 {
-                color: var(--ink-on-dark);
-            }
-            .ich-readout .section {
-                background: rgba(255, 240, 205, 0.04);
-            }
-            .ich-readout .emotion .name {
-                color: var(--ink-on-dark-soft);
-            }
-            .ich-readout .emotion .value {
-                color: var(--ink-on-dark);
-            }
-            .ich-readout .equip-slot .equip-name {
-                color: var(--ink-on-dark);
-            }
-            .ich-readout .equip-slot .equip-kind {
-                color: var(--ink-on-dark-soft);
-            }
-            @media (max-width: 760px) {
-                .ich-readout {
-                    grid-template-columns: 1fr;
-                    max-height: none;
-                }
-            }
-            /* die ICH-BÜHNE — der Avatar-VIEWER als Star (dunkle Insel, der Canvas zentriert + maximiert);
-               anders als die Hof-Bühne (Canvas + Spec nebeneinander) trägt sie NUR den Avatar — das Spec
-               wandert in den Readout darunter (J1). */
-            .ich-stage {
-                flex: 1 1 auto;
-                min-height: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 10px;
+                padding: 12px;
                 background: rgba(20, 12, 4, 0.65);
                 border: 1px solid var(--brass-3);
                 border-radius: 10px;
             }
-            .ich-stage .hof-stage-canvas {
+            .ich-self .ich-stage {
+                flex: 0 0 auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #171019;
+                border: 1px solid var(--brass-2);
+                border-radius: 8px;
+                box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.55);
+            }
+            .ich-self .ich-stage .hof-stage-canvas {
                 width: 100%;
                 height: auto;
-                max-width: 340px;
+                max-width: 210px;
                 aspect-ratio: 1 / 1;
+                background: transparent;
+                border: none;
+                box-shadow: none;
+            }
+            /* die Statistiken in der schmalen Selbst-Spalte: EINSPALTIG gestapelt (Werte dann Natur),
+               nicht das 2-Spalten-Werkstatt-Layout — flüssig untereinander, wie der Schöpfer es will. */
+            .ich-self .hof-spec-sheet .spec-body {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .ich-self .hof-spec-sheet .spec-col {
+                min-width: 0;
+            }
+            .ich-emotion-block {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .ich-emotion-block h4 {
+                margin: 2px 0 2px 0;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.6px;
+                text-transform: uppercase;
+                color: var(--brass-1);
+                border-bottom: 1px solid var(--parch-edge);
+                padding-bottom: 2px;
+            }
+            /* light-on-dark in der Selbst-Insel (V18.41-Tokens, V18.58-Falle: kein dunkler Text auf dunklem
+               Grund). Das Spec-Sheet ist schon light-on-dark; Emotion + „Was du trägst" tragen Pergament-
+               Dunkeltext → hier auf den dunklen Insel-Grund umstellen. */
+            .ich-self h4 {
+                color: var(--ink-on-dark);
+            }
+            .ich-self .emotion .name {
+                color: var(--ink-on-dark-soft);
+            }
+            .ich-self .emotion .value {
+                color: var(--ink-on-dark);
+            }
+            .ich-self .equip-slot .equip-name {
+                color: var(--ink-on-dark);
+            }
+            .ich-self .equip-slot .equip-kind {
+                color: var(--ink-on-dark-soft);
+            }
+            /* die getragenen Slots direkt unter dem Viewer — kompakt, kein margin-bottom-Sprung. */
+            .ich-self .inventory-equip {
+                margin-bottom: 0;
+            }
+            /* die aktiven Boost-Chips (Was du trägst → was wirkt JETZT, wie wenn der Nexus feuert). */
+            .ich-boosts {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .ich-boost-chip {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                padding: 2px 7px;
+                border-radius: 10px;
+                background: rgba(198, 154, 217, 0.18);
+                border: 1px solid rgba(198, 154, 217, 0.5);
+                color: #e7d2f0;
+            }
+            .ich-boosts-empty {
+                font-size: 9px;
+                font-style: italic;
+                color: var(--ink-on-dark-soft);
             }
             .inventory-col-title {
                 font-family: "Cinzel", Georgia, serif;
@@ -891,11 +917,13 @@
             }
             .inventory-equip {
                 display: flex;
+                flex-wrap: wrap;
                 gap: 8px;
                 margin-bottom: 12px;
             }
             .inventory-equip .equip-slot {
-                flex: 1;
+                flex: 1 1 40%;
+                min-width: 0;
                 display: flex;
                 flex-direction: column;
                 gap: 2px;
@@ -917,6 +945,26 @@
             }
             .inventory-equip .equip-slot:hover {
                 border-color: var(--brass-1);
+            }
+            /* V18.67 Ich-J5 — der Rüstung-Wechsel-Select IM Slot (light-on-dark in der Selbst-Insel). */
+            .inventory-equip .equip-slot-select {
+                width: 100%;
+                box-sizing: border-box;
+                margin-top: 1px;
+                padding: 2px 4px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                color: var(--ink-on-dark);
+                background: rgba(40, 26, 12, 0.7);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+                cursor: pointer;
+            }
+            /* die Boost-Chips füllen eine eigene Reihe unter den Slots (flex-wrap). */
+            .inventory-equip .ich-boosts {
+                flex-basis: 100%;
+                width: 100%;
+                margin-top: 2px;
             }
             .inventory-recipes-title {
                 font-family: "Cinzel", Georgia, serif;
@@ -6247,28 +6295,16 @@
         <!-- Welle 6.C1 — Hylomorphismus-Inventar (Tab-Toggle). 27 Slots in
              3×9-Grid. Jeder Slot trägt Tag-Profile bei Hover als Glow + Audio. -->
         <div id="inventory-overlay" role="dialog" aria-label="Dein Ich" aria-modal="false" hidden>
-            <!-- V18.66 Ich-J1 (ich-plan §J) — die WERKSTATT-ZONEN-TOPOLOGIE auf das Selbst: eine
-                 Vorschau-Reihe (HABE | der Avatar-VIEWER als Star | WERK) + darunter VOLLBREIT der
-                 Selbst-READOUT (Verfassung·Werte·Natur·Emotion·Was du trägst) — wie die Ausgabetabelle
-                 #workshop-stats-panel unter dem Werkstatt-Viewer. Der Avatar + der dunkle Readout bilden
-                 EINEN kohärenten Star (V18.55). Die Suche lebt schmal im WERK-Kopf (wie #workshop-search),
-                 nicht mehr vollbreit im Header (Schöpfer: „läuft in die ‚Was ich machen kann'-Spalte"). -->
+            <!-- V18.67 Ich-J5 (Schöpfer-Korrektur: das Ich ist NICHT die Werkstatt — der Viewer ist hier INFO,
+                 nicht der Star; der zentrale Nutzen ist die HABE). Drei Spalten nach dem WAHREN mentalen Modell:
+                 LINKS WER ICH BIN (Körper-Wahl ÜBER dem kleinen 3D-Viewer · darunter „Was du trägst" ohne
+                 Überschrift · darunter all die Statistiken) — eine vertikale Selbst-Insel oben links. MITTE WAS
+                 ICH HABE (Inventar + Hotbar = der zentrale Nutzen). RECHTS WAS ICH MACHEN KANN (Suche + Rezepte). -->
             <div class="inventory-header">
                 <h2>Dein Ich</h2>
             </div>
             <div class="inventory-body">
-                <div class="ich-preview-row">
-                    <div class="inventory-col-items">
-                        <h3 class="inventory-col-title">Was ich habe</h3>
-                        <div id="inventory-grid" class="inventory-grid"></div>
-                        <div id="inventory-selected" class="inventory-selected" aria-live="polite">
-                            <span class="label">gewählt:</span> <span class="name">—</span>
-                        </div>
-                        <section class="section">
-                            <h4>Hotbar</h4>
-                            <div id="hotbar-config"></div>
-                        </section>
-                    </div>
+                <div class="ich-cols">
                     <div class="inventory-col-character">
                         <h3 class="inventory-col-title">Wer ich bin</h3>
                         <div class="ich-soul-bar">
@@ -6279,13 +6315,38 @@
                                 title="Wähle deinen Körper. Einen neuen formst du in der Werkstatt („Körper holen")."
                             ></select>
                         </div>
-                        <div class="ich-stage">
-                            <canvas
-                                id="ich-stage-canvas"
-                                class="hof-stage-canvas"
-                                aria-label="Bühne — dein Avatar"
-                            ></canvas>
+                        <div class="ich-self">
+                            <div class="ich-stage">
+                                <canvas
+                                    id="ich-stage-canvas"
+                                    class="hof-stage-canvas"
+                                    aria-label="Bühne — dein Avatar"
+                                ></canvas>
+                            </div>
+                            <!-- „Was du trägst" — KEINE Überschrift, direkt unter dem Viewer (Schöpfer):
+                                 wer ich bin (Avatar) + was ich trage zusammen. -->
+                            <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
+                            <div id="ich-stage-spec" class="hof-stage-spec"></div>
+                            <div class="ich-emotion-block">
+                                <h4 title="Wie du die Welt WERTEST — färbt den Bildschirmrand.">Emotion</h4>
+                                <div id="status-emotions"></div>
+                            </div>
                         </div>
+                        <details id="equip-advanced-section" class="ich-equip-more">
+                            <summary>⚙ Bauplan umwidmen (Rüstung · Konsumabel · Portal)</summary>
+                            <div id="player-equip"></div>
+                        </details>
+                    </div>
+                    <div class="inventory-col-items">
+                        <h3 class="inventory-col-title">Was ich habe</h3>
+                        <div id="inventory-grid" class="inventory-grid"></div>
+                        <div id="inventory-selected" class="inventory-selected" aria-live="polite">
+                            <span class="label">gewählt:</span> <span class="name">—</span>
+                        </div>
+                        <section class="section">
+                            <h4>Hotbar</h4>
+                            <div id="hotbar-config"></div>
+                        </section>
                     </div>
                     <div class="inventory-col-recipes">
                         <h3 class="inventory-col-title">Was ich machen kann</h3>
@@ -6298,23 +6359,6 @@
                             autocomplete="off"
                         />
                         <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
-                    </div>
-                </div>
-                <div class="ich-readout">
-                    <div id="ich-stage-spec" class="hof-stage-spec"></div>
-                    <div class="ich-readout-side">
-                        <section class="section ich-emotion-section">
-                            <h4 title="Wie du die Welt WERTEST — färbt den Bildschirmrand.">Emotion</h4>
-                            <div id="status-emotions"></div>
-                        </section>
-                        <section class="section ich-worn-section">
-                            <h4>Was du trägst</h4>
-                            <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
-                            <details id="equip-advanced-section" class="ich-equip-more">
-                                <summary>Mehr: Wechseln &amp; Markieren</summary>
-                                <div id="player-equip"></div>
-                            </details>
-                        </section>
                     </div>
                 </div>
             </div>
@@ -7589,6 +7633,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.66.0" defer></script>
+        <script src="anazhRealm.js?v=18.67.0" defer></script>
     </body>
 </html>

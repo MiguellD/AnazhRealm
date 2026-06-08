@@ -23974,12 +23974,15 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // V18.66 Ich-J1 — die WERKSTATT-TOPOLOGIE: die Vorschau-Reihe (HABE-Grid | Avatar-VIEWER | WERK-
         // Rezepte) + der vollbreite READOUT darunter (das Spec-Sheet + „Was du trägst", wie die Ausgabe-
         // tabelle der Werkstatt). Das Spec-Sheet + Equip wandern aus den Spalten in den Readout (V9.56-i).
+        // V18.67 Ich-J5 — das WAHRE Modell (Schöpfer-Korrektur): der Viewer ist INFO, nicht der Star. LINKS
+        // die SELBST-INSEL (.ich-self: Viewer · Was du trägst · Spec · Emotion vertikal), MITTE WAS ICH HABE
+        // (Inventar/Hotbar = zentraler Nutzen), RECHTS WERK. Das Spec + Equip leben in der Selbst-Insel (links).
         out.ichThreeZones = !!(
-            document.querySelector(".ich-preview-row .inventory-col-items #inventory-grid") &&
-            document.querySelector(".ich-preview-row .inventory-col-character #ich-stage-canvas") &&
-            document.querySelector(".ich-preview-row .inventory-col-recipes #inventory-recipes") &&
-            document.querySelector(".ich-readout #ich-stage-spec") &&
-            document.querySelector(".ich-readout #inventory-equip")
+            document.querySelector(".ich-cols .inventory-col-items #inventory-grid") &&
+            document.querySelector(".ich-cols .inventory-col-character .ich-self #ich-stage-canvas") &&
+            document.querySelector(".ich-cols .inventory-col-recipes #inventory-recipes") &&
+            document.querySelector(".inventory-col-character .ich-self #ich-stage-spec") &&
+            document.querySelector(".inventory-col-character .ich-self #inventory-equip")
         );
         // V18.62 Ich-H — der Soul-Select wandert in den Header (Körper-Bar), keine separate Seele-Sektion;
         // ein Hinweis zeigt auf die Werkstatt; der Ich-Soul-Editor ist weg.
@@ -24027,29 +24030,37 @@ async function checkBandVoxelP3AndInventory(ctx) {
         })();
         // V18.64 — das Fenster PASST in den Viewport (kein Über-den-Rand, die wiederholte Falle): das
         // Overlay liegt vollständig innerhalb [0, vh] (max-height + box-sizing:border-box).
-        // V18.66 Ich-J1 — die WERKSTATT-TOPOLOGIE GEMESSEN: (a) die drei Vorschau-Paletten (HABE | VIEWER |
-        // WERK) sind nebeneinander (gleicher Top); (b) der READOUT sitzt UNTER der Vorschau-Reihe (sein Top
-        // ≥ Boden des Viewers) — wie #workshop-stats-panel unter dem Viewer, nicht neben ihm gequetscht.
+        // V18.67 Ich-J5 GEMESSEN (Schöpfer-Modell): (a) die drei Spalten (SELF | HABE | WERK) nebeneinander
+        // (gleicher Top); (b) in der Selbst-Insel sitzt „Was du trägst" (#inventory-equip) UNTER dem Viewer
+        // (#ich-stage-canvas) und das Spec darunter — wer ich bin + was ich trage + Werte, vertikal gestapelt.
         {
             const ov = document.getElementById("inventory-overlay");
             const ob = ov ? ov.getBoundingClientRect() : null;
             out.ichOverlayFitsViewport = !!(ob && ob.top >= -1 && ob.bottom <= window.innerHeight + 1);
-            const items = document.querySelector(".ich-preview-row .inventory-col-items");
-            const ch = document.querySelector(".ich-preview-row .inventory-col-character");
-            const rc = document.querySelector(".ich-preview-row .inventory-col-recipes");
-            const readout = document.querySelector(".ich-readout");
-            if (items && ch && rc) {
-                const ib = items.getBoundingClientRect();
+            const ch = document.querySelector(".ich-cols .inventory-col-character");
+            const items = document.querySelector(".ich-cols .inventory-col-items");
+            const rc = document.querySelector(".ich-cols .inventory-col-recipes");
+            const canvas = document.querySelector(".ich-self #ich-stage-canvas");
+            const worn = document.querySelector(".ich-self #inventory-equip");
+            const spec = document.querySelector(".ich-self #ich-stage-spec");
+            if (ch && items && rc) {
                 const cb = ch.getBoundingClientRect();
+                const ib = items.getBoundingClientRect();
                 const rb = rc.getBoundingClientRect();
-                // alle drei Paletten in EINER Reihe (Top-Differenz klein).
-                out.ichZonesSideBySide =
-                    Math.abs(ib.top - cb.top) < 24 && Math.abs(cb.top - rb.top) < 24;
-                // der Readout liegt UNTER der Vorschau-Reihe (der Topologie-Kern: Readout unter dem Viewer).
-                out.ichReadoutUnderViewer = !!(readout && readout.getBoundingClientRect().top >= cb.bottom - 24);
+                // alle drei Spalten in EINER Reihe (Top-Differenz klein).
+                out.ichZonesSideBySide = Math.abs(cb.top - ib.top) < 24 && Math.abs(ib.top - rb.top) < 24;
+                // „Was du trägst" liegt UNTER dem Viewer, das Spec darunter (der Selbst-Stapel).
+                if (canvas && worn && spec) {
+                    const cvb = canvas.getBoundingClientRect();
+                    const wb = worn.getBoundingClientRect();
+                    const sb = spec.getBoundingClientRect();
+                    out.ichWornUnderViewer = wb.top >= cvb.bottom - 24 && sb.top >= wb.top - 4;
+                } else {
+                    out.ichWornUnderViewer = false;
+                }
             } else {
                 out.ichZonesSideBySide = false;
-                out.ichReadoutUnderViewer = false;
+                out.ichWornUnderViewer = false;
             }
         }
 
@@ -24102,12 +24113,12 @@ async function checkBandVoxelP3AndInventory(ctx) {
             wave6c1Results.ichHasNoReise && wave6c1Results.hofChronikInDom && wave6c1Results.hofChronikRenders
         );
         check(
-            "V18.66 Ich-J1: die Werkstatt-Topologie — Vorschau-Reihe (HABE-Grid|Avatar-VIEWER|WERK-Rezepte) + Readout (Spec+Was du trägst)",
+            "V18.67 Ich-J5: drei Spalten — SELF (Viewer+Worn+Spec) | HABE (Inventar zentral) | WERK (Rezepte)",
             wave6c1Results.ichThreeZones
         );
         check(
-            "V18.66 Ich-J1: der Selbst-Readout sitzt UNTER der Vorschau-Reihe (wie #workshop-stats-panel unter dem Viewer)",
-            wave6c1Results.ichReadoutUnderViewer
+            "V18.67 Ich-J5: in der Selbst-Insel sitzt Was-du-trägst UNTER dem Viewer + das Spec darunter (der Selbst-Stapel)",
+            wave6c1Results.ichWornUnderViewer
         );
         check(
             "V18.62 Ich-H: der Soul-Select sitzt im Header (Körper-Bar) + ein Hinweis zeigt auf die Werkstatt",
@@ -24134,7 +24145,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             wave6c1Results.ichOverlayFitsViewport
         );
         check(
-            "V18.66 Ich-J1: die drei Vorschau-Paletten (HABE|VIEWER|WERK) sind nebeneinander (gleiche Reihe)",
+            "V18.67 Ich-J5: die drei Spalten (SELF|HABE|WERK) sind nebeneinander (gleiche Reihe)",
             wave6c1Results.ichZonesSideBySide
         );
         check("Welle 6.C1: addToInventory legt Eintrag in ersten leeren Slot", wave6c1Results.slot0HasBaum);
