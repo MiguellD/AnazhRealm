@@ -9,14 +9,24 @@
 > Schöpfer-Auftrag (08.06.2026): „können wir die offenen 2 Menüs ausdefinieren, ausplanen, mit dem
 > Gelernten, der 3 erstellten?"
 
-**Stand: GEBAUT (V18.78, 08.06.2026) — der UI-Putz-Bogen ist RUND (alle sechs Räume).** Set-A (die 6 Gruppen
-nach Häufigkeit, `.settings-group`-Karten unter Cinzel-Labels auf dem masonry-Flucht-Raster) · Set-B (die ~20
-Dev-Render-Regler + die alte „Tuning"-Sektion → EINE eingeklappte „Render-Feinschliff"-Karte mit vier Sub-
-Bändern Cel/Wasser/Schatten/Emotion) · Set-C (das „Welt teilen/empfangen" → Bibliothek verortet, hier nur ein
-kursiver Verweis-Knopf + der reine Datei-Export/-Import). Reine Ordnungs-Welle (kein neuer Datenpfad, alle
-Sektion-IDs + Slider-Wiring bewahrt, der Bau ein Zeilen-Anker-Splice). Playtest grün + mit dem Auge verifiziert
-(`diag-room einstellungen` Page-Shot + aufgeklappter Render-Band-Shot). OFFEN: nur der Schöpfer-Browser-Sign-off
-des GPU-Feels. — Der Plan unten ist die DESIGN-WAHRHEIT (was gebaut wurde).
+**Stand: GEBAUT + VERFEINERT (V18.78 → V18.79, 08.06.2026) — der UI-Putz-Bogen ist RUND.** V18.78: Set-A (die
+Gruppen nach Häufigkeit, `.settings-group`-Karten auf dem masonry-Flucht-Raster) · Set-B (die ~20 Dev-Render-
+Regler + die alte „Tuning"-Sektion → EINE eingeklappte „Render-Feinschliff"-Karte mit vier Sub-Bändern
+Cel/Wasser/Schatten/Emotion).
+
+**V18.79 — DER PROFI-SCHNITT (Schöpfer: „diese welt kann raus" · „laden/datei — haben wir das nicht in der
+Bibliothek?" · „fischer, verglichen mit den profis?"):** die GANZE „Welt & Speicher"-Gruppe ist aus den
+Einstellungen GELÖST. Set-C (V18.78) hatte nur die offensichtlichen Knöpfe verortet (`world-export/import`) und
+`Datei…`/`Export…`/„Diese Welt" als „bleibt hier" gelassen — aber GEMESSEN sind das DIESELBE Fähigkeit
+(Snapshot-Import/-Export = Welt-Verwaltung), und Autosave (10 s) macht „Speichern/Laden" redundant. Die
+PROFI-Trennung (Minecraft: Options trägt KEINE Saves — sie leben im Worlds-Screen): **Einstellungen = REINE
+PRÄFERENZEN (5 Gruppen: Spielmodus · Steuerung · Ton & Sicht · Identität & Begleiter · Render-Feinschliff); der
+Welt-Lebenszyklus [speichern·laden·import·export·teilen] lebt GANZ im Welt-Manager (= die Bibliothek).** Ohne
+Verlust (P17): das Bibliothek-„Empfangen" nimmt jetzt Snapshot ODER Manifest (Typ aus der Form erkannt), „Welt-
+Datei exportieren" lebt in der „Diese Welt"-Insel (id `action-export-state` wiederverwendet), die Host/Guest-
+Banner zogen in die Multi-User-Sektion. Tests gewandert (V9.56-i), Playtest grün, mit dem Auge verifiziert.
+OFFEN: nur der Schöpfer-Browser-Sign-off des GPU-Feels. — Der Plan unten ist die DESIGN-WAHRHEIT; §D.3 trägt die
+volle Profi-Begründung der Verortung.
 
 **Ausgangslage (GEMESSEN, §G):** die Einstellungen waren **14 ad-hoc Sektionen in einer 3-Spalten-Säule**:
 Spieler-Settings + ~20 Entwickler-Render-Regler durcheinander, „Diese Welt teilen" scheinbar doppelt. Dieser

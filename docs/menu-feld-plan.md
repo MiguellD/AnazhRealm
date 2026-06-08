@@ -29,7 +29,7 @@ Die GEMESSENE Triplizierung. Jeder Befehl bekommt EINE Heimat; die Duplikate lö
 | baue dorf/tempel · pflanze baum · setze insel · rufe ufo · grabe loch | Hof Befehle (Bauwerke) + Chat                                      | **Omnibox `b:`/`c:`** (kreative Welt-Akte = gesprochen, kein Dauer-Knopf) | P6 progressive disclosure |
 | setze wetter · heile welt · terrain · sprungkraft · sternenhimmel     | Hof Befehle (Welt-Effekte) + Chat                                  | **Omnibox `c:`**                                                          | P6                        |
 | kreaturen aktiv/deaktiv                                               | Hof: Spawnen **UND** Befehle                                       | **Hof → Spawnen** (Kontext) + Omnibox `c:`                                | P3                        |
-| speichere/lade Zustand · lade Datei                                   | Hof Befehle (System) **UND** Einstellungen (Speicher)              | **Einstellungen → Speicher** + Omnibox `c:`                               | P2                        |
+| speichere/lade Zustand · lade Datei                                   | Hof Befehle (System) **UND** Einstellungen (Speicher)              | **Bibliothek (Welt-Manager)** + Autosave (10 s) + Chat `c:` (V18.79)      | P2 + Profi-Trennung       |
 | Welt teilen/empfangen                                                 | Einstellungen („Diese Welt") **UND** Bibliothek                    | **Bibliothek** (das soziale Zuhause)                                      | P2                        |
 | rüste werkzeug/rüstung/waffe                                          | Hof Befehle + Chat                                                 | **Ich → Ausrüstung** + Omnibox `c:`                                       | P2                        |
 
@@ -202,8 +202,8 @@ aber-lesbar (P11 `--ink-on-dark*`).
 | Sektion(en) heute                                                  | → Gruppe / Reihenfolge                                 | Prinzip                                            |
 | ------------------------------------------------------------------ | ------------------------------------------------------ | -------------------------------------------------- |
 | Welt-Beziehung (3 Radios: frieden/pfad/schöpfer)                   | **1. Spielmodus** (zuerst — die wichtigste Wahl)       | P5 ordne nach Relevanz                             |
-| Diese Welt (teilen/empfangen)                                      | **→ Bibliothek** (Duplikat raus); hier nur ein Verweis | P2 + Heilige Lektion                               |
-| Speicher (Speichere/Lade/Export)                                   | **2. Welt & Speicher**                                 | P5                                                 |
+| Diese Welt (teilen/empfangen)                                      | **→ Bibliothek** (ganz raus, V18.79); Insel ist die Heimat | P2 + Heilige Lektion                          |
+| Speicher (Speichere/Lade/Datei/Export)                             | **→ Bibliothek (Welt-Manager) + Autosave** (V18.79: ganz raus aus den Einstellungen — Welt-Verwaltung ≠ Präferenz) | P2 + Profi-Trennung |
 | Tastenbelegung (11 Keybinds + Reset)                               | **3. Steuerung**                                       | P5                                                 |
 | Lautstärke+Sicht · Kreaturen-Stimmen · Logbuch                     | **4. Ton & Sicht**                                     | P2                                                 |
 | Tag-Nacht-Zyklus                                                   | **4. Ton & Sicht** (Welt-Darstellung)                  | P2                                                 |

@@ -26455,17 +26455,12 @@ class AnazhRealm {
     // jeden gültigen Snapshot.
 
     initWorldInfoUI() {
-        // UI-Putz V18.78 (einstellungen-plan §D.3) — „Welt teilen/empfangen" lebt jetzt in der
-        // BIBLIOTHEK (das soziale Zuhause: per-Karte Teilen/Signieren + „Empfangen"). Hier nur ein
-        // Verweis-Knopf dorthin; der reine Datei-Export/-Import bleibt über „Export…"/„Datei…" in
-        // der Speicher-Gruppe erreichbar (kein Funktions-Verlust, P17).
-        const shareRef = document.getElementById("world-share-ref");
-        if (shareRef) {
-            shareRef.addEventListener("click", () => {
-                const tab = document.querySelector('[data-tab="bibliothek"]');
-                if (tab) tab.click();
-            });
-        }
+        // V18.79 — die Welt-VERWALTUNG lebt ganz im Welt-Manager (Bibliothek): „Welt empfangen"
+        // (Snapshot ODER Manifest) · „Welt-Datei exportieren" an der aktiven Welt · per-Karte
+        // Teilen/Signieren. Die Einstellungen tragen keine Welt-Akte mehr (reine Präferenzen, Profi-
+        // Struktur: Settings = Präferenzen, der Welt-Manager = Welt-Lebenszyklus). Persistenz läuft
+        // automatisch (Autosave alle 10 s); die Chat-Befehle „Speichere/Lade Zustand"/„Lade Datei"
+        // bleiben für Power-User.
         // Ring 8: Welt-Picker. „Neue Welt" öffnet einen Inline-Dialog für slug
         // + Person-Übernahme. Die Liste anderer Welten wird in updateWorldInfo
         // gerendert; pro Eintrag ein „wechseln"-Button + „löschen"-Button.
@@ -26651,25 +26646,33 @@ class AnazhRealm {
     }
 
     updateWorldInfo() {
+        // V18.79 — die alte Einstellungen-„Diese Welt"-Box (#world-info) ist entfernt; die aktive
+        // Welt lebt jetzt als Insel in der BIBLIOTHEK (_renderActiveWorldIsland — der Welt-Manager).
+        // updateWorldInfo bleibt der EINE Refresh-Takt für ALLE Welt-Anzeigen: die Insel · Stammbaum ·
+        // Tagebuch · Picker · die Multiplayer-Banner laufen IMMER. Der #world-info-Schreib-Teil läuft
+        // nur, falls das Element noch existiert (backward-safe; kein early-return mehr, der die
+        // Bibliothek-Renders verschluckt — die V18.78-Kopplung ist damit aufgelöst).
         const info = document.getElementById("world-info");
-        if (!info) return;
-        const m = this.state.worldMeta || {};
-        const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
-        const parents = Array.isArray(m.parentWorlds) ? m.parentWorlds.length : 0;
-        const idShort = (m.worldId || "?").slice(0, 8);
-        const archCount = (this.state.architectures || []).length;
-        const bpCount = Object.keys(this.state.blueprints || {}).length;
-        const journalCount = (this.state.worldJournal && this.state.worldJournal.entries.length) || 0;
-        info.innerHTML = "";
-        const line1 = document.createElement("div");
-        line1.textContent = `Name: ${m.slug || "(noch namenlos)"}  |  ID: ${idShort}…`;
-        const line2 = document.createElement("div");
-        line2.textContent = `Alter: ${ageDays} Tag${ageDays === 1 ? "" : "e"}  |  Eltern-Welten: ${parents}`;
-        const line3 = document.createElement("div");
-        line3.textContent = `Inventar: ${archCount} Bauwerke, ${bpCount} Baupläne, ${journalCount} Erinnerungen`;
-        info.appendChild(line1);
-        info.appendChild(line2);
-        info.appendChild(line3);
+        if (info) {
+            const m = this.state.worldMeta || {};
+            const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
+            const parents = Array.isArray(m.parentWorlds) ? m.parentWorlds.length : 0;
+            const idShort = (m.worldId || "?").slice(0, 8);
+            const archCount = (this.state.architectures || []).length;
+            const bpCount = Object.keys(this.state.blueprints || {}).length;
+            const journalCount = (this.state.worldJournal && this.state.worldJournal.entries.length) || 0;
+            info.innerHTML = "";
+            const line1 = document.createElement("div");
+            line1.textContent = `Name: ${m.slug || "(noch namenlos)"}  |  ID: ${idShort}…`;
+            const line2 = document.createElement("div");
+            line2.textContent = `Alter: ${ageDays} Tag${ageDays === 1 ? "" : "e"}  |  Eltern-Welten: ${parents}`;
+            const line3 = document.createElement("div");
+            line3.textContent = `Inventar: ${archCount} Bauwerke, ${bpCount} Baupläne, ${journalCount} Erinnerungen`;
+            info.appendChild(line1);
+            info.appendChild(line2);
+            info.appendChild(line3);
+        }
+        this._renderActiveWorldIsland();
         this.renderWorldJournal();
         this._renderWorldPicker();
         this._renderWorldLineage();
@@ -30524,6 +30527,15 @@ class AnazhRealm {
                 parsed = JSON.parse(reader.result);
             } catch (e) {
                 this.log(`Welt-Import fehlgeschlagen (${file.name}): ${e && e.message}`, "ERROR");
+                return;
+            }
+            // V18.79 — der EINE „Welt empfangen"-Eingang nimmt BEIDE Datei-Arten (der Welt-Manager
+            // ist die eine Heimat, statt eines getrennten „Datei…"-Pfads in den Einstellungen): ein
+            // AnazhRealm-State-Snapshot (trägt das `worldMeta`-Objekt → das Welt-Tor: ersetzen ·
+            // daneben · verschmelzen) ODER ein fremdes Welt-Manifest (→ andocken). Der Typ wird aus
+            // der Form erkannt; der Spieler muss nicht wissen, welche Art seine Datei ist.
+            if (parsed && typeof parsed === "object" && parsed.worldMeta && typeof parsed.worldMeta === "object") {
+                this._openWeltTorDialog(parsed, file);
                 return;
             }
             this.importWorldManifest(parsed).then((res) => {
@@ -49848,7 +49860,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.78.0";
+AnazhRealm.VERSION = "18.79.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

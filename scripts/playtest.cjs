@@ -7843,20 +7843,23 @@ async function checkBandWaves1to3(ctx) {
             Array.isArray(r.state.grok.pool.emotionShift) && r.state.grok.pool.emotionShift.length > 0;
         // E — grokSpeakFromJournal existiert
         out.hasGrokSpeakFromJournal = typeof r.grokSpeakFromJournal === "function";
-        // F — Welt-Info-UI im DOM
-        out.worldInfoInDom = !!document.getElementById("world-info");
-        // UI-Putz V18.78 (einstellungen-plan §D.3) — „Welt teilen/empfangen" ist in die BIBLIOTHEK
-        // verortet (das soziale Zuhause); hier bleibt der Verweis-Knopf + der reine Datei-Export/
-        // -Import (Export…/Datei… in der Speicher-Gruppe). Der Test wandert mit (V9.56-i): er prüft
-        // die Verortung (Verweis da) UND dass keine Funktion verloren ging (Datei-Export/-Import da).
-        out.worldShareRefInDom = !!document.getElementById("world-share-ref");
-        out.worldFileExportInDom = !!document.getElementById("action-export-state");
-        out.worldFileImportInDom = !!document.querySelector('#save-actions [data-cmd="Lade Datei"]');
-        // F — updateWorldInfo füllt slug
+        // F — die aktive Welt lebt jetzt als Insel in der BIBLIOTHEK (der Welt-Manager); die
+        // Einstellungen tragen keine Welt-Akte mehr (V18.79, Profi-Struktur). Die alte
+        // #world-info-Box ist entfernt → die „Diese Welt"-Insel (#feed-active-ident) ist die Heimat.
+        out.activeWorldIslandInDom = !!document.getElementById("feed-active-ident");
+        // die Welt-VERWALTUNG (rein/raus) lebt im Welt-Manager: „Empfangen" (Snapshot ODER Manifest)
+        // + „Welt-Datei exportieren" (in der Insel, id action-export-state wiederverwendet). Der Test
+        // wandert mit (V9.56-i): er prüft die Verortung, nicht den alten Ort.
+        out.worldImportInBibliothek = !!document.getElementById("library-import");
+        out.worldExportInBibliothek = !!document.getElementById("action-export-state");
+        // KONSUM: der EINE Empfangen-Eingang nimmt BEIDE Datei-Arten (Snapshot → Welt-Tor, Manifest
+        // → andocken) — der Handler routet beide Pfade.
+        const himfSrc = r._handleWorldManifestFile.toString();
+        out.importUnified = himfSrc.includes("_openWeltTorDialog") && himfSrc.includes("importWorldManifest");
+        // F — updateWorldInfo treibt jetzt die Insel (kein #world-info mehr); sie zeigt den slug
         r.updateWorldInfo();
-        const infoText = document.getElementById("world-info").textContent;
-        out.worldInfoShowsSlug = infoText.includes(r.state.worldMeta.slug);
-        out.worldInfoShowsAge = /Alter:\s*\d+/.test(infoText);
+        const islandText = (document.getElementById("feed-active-ident") || {}).textContent || "";
+        out.worldInfoShowsSlug = islandText.includes(r.state.worldMeta.slug);
         // Tagebuch: List-DOM + Count + Erinnerungs-Zeile
         out.journalListInDom = !!document.getElementById("world-journal-list");
         out.journalCountInDom = !!document.getElementById("world-journal-count");
@@ -7910,15 +7913,13 @@ async function checkBandWaves1to3(ctx) {
         check("Welle 3 E: journalEvent-Pool gefüllt", wave3Results.hasJournalEventPool);
         check("Welle 3 E: emotionShift-Pool gefüllt", wave3Results.hasEmotionShiftPool);
         check("Welle 3 E: grokSpeakFromJournal-Funktion existiert", wave3Results.hasGrokSpeakFromJournal);
-        check("Welle 3 F: #world-info im DOM", wave3Results.worldInfoInDom);
+        check("Welle 3 F: Diese-Welt-Insel (#feed-active-ident) im DOM", wave3Results.activeWorldIslandInDom);
         check(
-            "Welle 3 F: Welt-Teilen verortet (Verweis Bibliothek) + Datei-Export/-Import erreichbar",
-            wave3Results.worldShareRefInDom &&
-                wave3Results.worldFileExportInDom &&
-                wave3Results.worldFileImportInDom
+            "Welle 3 F: Welt-Verwaltung im Welt-Manager (Bibliothek: Empfangen + Welt-Datei-Export)",
+            wave3Results.worldImportInBibliothek && wave3Results.worldExportInBibliothek
         );
-        check("Welle 3 F: Welt-Info zeigt slug", wave3Results.worldInfoShowsSlug);
-        check("Welle 3 F: Welt-Info zeigt Alter in Tagen", wave3Results.worldInfoShowsAge);
+        check("Welle 3 F: Empfangen nimmt Snapshot UND Manifest (vereinter Eingang)", wave3Results.importUnified);
+        check("Welle 3 F: Diese-Welt-Insel zeigt slug", wave3Results.worldInfoShowsSlug);
         check("Welle 3 F: triggerStateDownload nutzt suggestedName", wave3Results.downloadCustomName);
         check("Tagebuch: #world-journal-list im DOM", wave3Results.journalListInDom);
         check("Tagebuch: #world-journal-count im DOM", wave3Results.journalCountInDom);
@@ -29071,7 +29072,11 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             r._initCollapsibleSettings(); // idempotent
             const drawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
             const headers = drawer ? drawer.querySelectorAll("h3.collapsible-header") : [];
-            out.collapsibleHeaders = headers.length >= 12;
+            // V18.79 — die Welt-VERWALTUNG (Speicher + Diese Welt = 2 Sektionen) zog in den
+            // Welt-Manager (Bibliothek); die Einstellungen tragen jetzt 11 Präferenz-Sektionen
+            // in 5 Gruppen (vorher 13). Der Test wandert mit (V9.56-i): die Schwelle folgt der
+            // neuen Wahrheit (≥11), die Falt-MECHANIK (collapseToggles unten) bleibt der Beweis.
+            out.collapsibleHeaders = headers.length >= 11;
             if (headers.length > 0) {
                 const sec = headers[0].closest("section");
                 const before = sec.classList.contains("collapsed");

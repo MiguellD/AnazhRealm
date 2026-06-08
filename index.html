@@ -4997,6 +4997,26 @@
                 color: var(--ink-on-dark-soft, #c8b48a);
                 margin: 6px 0 0;
             }
+            /* V18.79 — die Welt-Verwaltung im Welt-Manager: ein dezenter Akt an der aktiven Welt
+               (Welt-Datei exportieren). Das Empfangen lebt oben in „Schöpfen & Andocken". */
+            .feed-self-actions {
+                margin: 8px 0 0;
+            }
+            .feed-self-act {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.4px;
+                padding: 4px 9px;
+                color: var(--ink-on-dark, #e8dcc0);
+                background: rgba(255, 224, 102, 0.08);
+                border: 1px solid var(--brass-3, #5a4422);
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .feed-self-act:hover {
+                background: rgba(255, 224, 102, 0.16);
+                border-color: var(--brass-2, #8a6322);
+            }
             .feed-self-prov {
                 display: flex;
                 flex-direction: column;
@@ -7696,7 +7716,14 @@
                         <div class="feed-3block">
                             <button type="button" id="world-new" class="feed-3btn">Neue Welt</button>
                             <button type="button" id="world-fuse-open" class="feed-3btn">Verschmelzen</button>
-                            <button type="button" id="library-import" class="feed-3btn">Empfangen</button>
+                            <button
+                                type="button"
+                                id="library-import"
+                                class="feed-3btn"
+                                title="Eine Welt-Datei einlesen — ein AnazhRealm-Snapshot (öffnet das Welt-Tor: ersetzen · daneben · verschmelzen) ODER ein fremdes Welt-Manifest (andocken). Der Typ wird automatisch erkannt."
+                            >
+                                Empfangen
+                            </button>
                         </div>
                         <div id="world-picker-list" class="feed-picker-list drawer-hint" aria-live="polite">
                             Nur diese eine Welt im Speicher.
@@ -7818,6 +7845,15 @@
                     <section class="feed-self">
                         <div class="lib-spec-sheet spec-sheet feed-self-card">
                             <div id="feed-active-ident" class="feed-self-ident">—</div>
+                            <!-- V18.79 — die Welt-VERWALTUNG lebt jetzt ganz im Welt-Manager (Profi-
+                                 Struktur: Einstellungen = Präferenzen, die Bibliothek = der Welt-Manager).
+                                 Die aktive Welt als Datei sichern; das Empfangen (oben) nimmt Snapshot UND
+                                 Manifest. Das Speichern selbst läuft automatisch (Autosave alle 10 s). -->
+                            <div class="feed-self-actions">
+                                <button type="button" id="action-export-state" class="feed-self-act">
+                                    ⬇ Welt-Datei exportieren
+                                </button>
+                            </div>
                             <div class="feed-self-prov">
                                 <div class="feed-prov-block">
                                     <div class="spec-col-head">Stammbaum</div>
@@ -7887,40 +7923,9 @@
                 </section>
             </div>
 
-            <!-- GRUPPE 2 — WELT & SPEICHER (häufig, sicherheitsrelevant, §B.2) -->
+            <!-- GRUPPE 2 — STEUERUNG (einmal eingestellt, §B.3) -->
             <div class="settings-group">
-                <div class="settings-grouplabel">2 · Welt &amp; Speicher</div>
-                <section class="section">
-                    <h3>Speicher</h3>
-                    <div class="actions" id="save-actions">
-                        <button type="button" data-cmd="Speichere Zustand">Speichern</button>
-                        <button type="button" data-cmd="Lade Zustand">Laden</button>
-                        <button type="button" data-cmd="Lade Datei">Datei…</button>
-                        <button type="button" id="action-export-state">Export…</button>
-                    </div>
-                </section>
-                <!-- UI-Putz V18.78 (§D.3) — das „Diese Welt teilen/empfangen" lebt jetzt in der
-                     BIBLIOTHEK (das soziale Zuhause: per-Karte Teilen/Signieren + „Empfangen").
-                     Hier bleibt die Welt-IDENTITÄT als Kontext (welche Welt speichere ich?) +
-                     EIN Verweis-Knopf dorthin. Die IDs (#world-info + Banner) bleiben →
-                     updateWorldInfo treibt unverändert auch die Bibliothek-Renders. -->
-                <section class="section" id="world-info-section">
-                    <h3>Diese Welt</h3>
-                    <div id="world-info" class="drawer-hint" aria-live="polite">…</div>
-                    <!-- Ring 11.5: Host-/Guest-Banner. Sichtbar nur in einer Multiplayer-Rolle. -->
-                    <div id="world-host-banner" class="drawer-hint" hidden></div>
-                    <div id="world-guest-banner" class="drawer-hint" hidden></div>
-                    <div class="actions">
-                        <button type="button" id="world-share-ref" class="settings-ref-btn">
-                            ↪ Welt teilen &amp; empfangen — in der Bibliothek
-                        </button>
-                    </div>
-                </section>
-            </div>
-
-            <!-- GRUPPE 3 — STEUERUNG (einmal eingestellt, §B.3) -->
-            <div class="settings-group">
-                <div class="settings-grouplabel">3 · Steuerung</div>
+                <div class="settings-grouplabel">2 · Steuerung</div>
                 <!-- Welle 6.C3 — Tastenbelegung. Sechs Aktionen rebindable; Defaults
                      sind Minecraft-Konvention (LMB abbauen / RMB platzieren). 1-9
                      (Hotbar-Slots) und WASD (Bewegung) bleiben hardcoded. -->
@@ -7951,9 +7956,9 @@
                 </section>
             </div>
 
-            <!-- GRUPPE 4 — TON & SICHT (die spürbare Welt-Darstellung, §B.4) -->
+            <!-- GRUPPE 3 — TON & SICHT (die spürbare Welt-Darstellung, §B.4) -->
             <div class="settings-group">
-                <div class="settings-grouplabel">4 · Ton &amp; Sicht</div>
+                <div class="settings-grouplabel">3 · Ton &amp; Sicht</div>
                 <!-- Welle 6.X.4 D2 — Lautstärke (Master/Pings/Stimme) + Sicht-Ring. Persistenz
                      in localStorage; Master + Pings wirken live, Render-Distanz greift im Tick. -->
                 <section class="section" id="sliders-section">
@@ -8018,9 +8023,9 @@
                 </section>
             </div>
 
-            <!-- GRUPPE 5 — IDENTITÄT & BEGLEITER (die einmalige Einrichtung, §B.5) -->
+            <!-- GRUPPE 4 — IDENTITÄT & BEGLEITER (die einmalige Einrichtung, §B.5) -->
             <div class="settings-group">
-                <div class="settings-grouplabel">5 · Identität &amp; Begleiter</div>
+                <div class="settings-grouplabel">4 · Identität &amp; Begleiter</div>
                 <!-- Welle 6.X.4 F1 — Begleiter + Spieler-Name (im LLM-System-Prompt referenziert). -->
                 <section class="section" id="identity-section">
                     <h3>Begleiter + Avatar</h3>
@@ -8200,6 +8205,12 @@
                         </button>
                     </div>
                     <div id="p2p-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
+                    <!-- Ring 11.5: Host-/Guest-Banner (V18.79 von der entfernten „Diese Welt"-Sektion
+                         hierher — sie gehören zur Multiplayer-Rolle: der Host sieht hier seinen
+                         Einladungs-Code, sobald er aktiviert). _renderHostBanner/_renderGuestBanner
+                         finden sie per id, egal wo. Sichtbar nur in einer Multiplayer-Rolle. -->
+                    <div id="world-host-banner" class="drawer-hint" hidden></div>
+                    <div id="world-guest-banner" class="drawer-hint" hidden></div>
                     <!-- W7 Phase 4 — Public-Lobby: Raum veröffentlichen + andere browsen. -->
                     <div id="p2p-lobby" class="p2p-lobby">
                         <h4>Öffentliche Lobby <span class="section-hint">(W7 Phase 4)</span></h4>
@@ -8223,13 +8234,13 @@
                 </section>
             </div>
 
-            <!-- GRUPPE 6 — RENDER-FEINSCHLIFF (Dev): EINE eingeklappte Karte mit ALLEN ~20 pixel-
+            <!-- GRUPPE 5 — RENDER-FEINSCHLIFF (Dev): EINE eingeklappte Karte mit ALLEN ~20 pixel-
                  blinden Reglern (Atmosphäre + Wasser + Schatten + Emotion-Tuning), in Sub-Bänder
                  gruppiert (§D.1.6 + Set-B). V18.78 — die alte separate „Tuning (Emotionen)"-Sektion
                  ist hier eingefaltet; kein Regler verloren (V17.20). Der Spieler sieht sie nie, der
                  Justierer findet sie an EINEM Ort. -->
             <div class="settings-group">
-                <div class="settings-grouplabel">6 · Render-Feinschliff (Dev)</div>
+                <div class="settings-grouplabel">5 · Render-Feinschliff (Dev)</div>
                 <section class="section default-collapsed" id="atmosphere-section">
                     <h3>Render-Feinschliff <span class="section-hint">(für Entwickler)</span></h3>
                     <p class="drawer-hint">
@@ -8609,6 +8620,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.78.0" defer></script>
+        <script src="anazhRealm.js?v=18.79.0" defer></script>
     </body>
 </html>
