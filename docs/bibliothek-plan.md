@@ -11,7 +11,7 @@
 > Schöpfer-Auftrag (08.06.2026): „können wir die offenen 2 Menüs ausdefinieren, ausplanen, mit dem
 > Gelernten, der 3 erstellten?"
 
-**Stand: GEBAUT — die Social-Media-Plattform (V18.69 → .71).** V18.70: der zentrale FEED (3 Spalten · Welten+Rezepte+Wesen
+**Stand: GEBAUT — die Social-Media-Plattform (V18.69 → .77; die Wave-für-Wave-Details in `docs/handover.md`).** V18.70: der zentrale FEED (3 Spalten · Welten+Rezepte+Wesen
 in EINEM Strom, jedes Item liest seinen Vektor · das WERTEN = lokale Sterne, das dritte Verb · Kind-Filter + Bestbewertet ·
 das Mesh-soziale Bewerten in den Backlog). V18.71: die linke Spalte — das **„Diese Welt"-EILAND** (`_renderActiveWorldIsland`,
 das Ich-Selbst-Eiland-Muster auf die aktive Welt): Identität + Trust + **STAMMBAUM + TAGEBUCH blühen** content-reich (die §D.2/§D.5-
@@ -20,8 +20,7 @@ AUSGEARBEITET — ein **Akkordeon klarer Werkzeug-Einträge** (`.feed-tool`: Gly
 V18.73: die IA AUF X-NIVEAU (Schöpfer-Alignment „es ist keine Todo, es ist Alignment damit es perfekt wird") — **Center-Tabs
 „Für dich | Aus dem Mesh"** (der Welt-Katalog wird eine Feed-QUELLE im Hauptthread, nicht ein Seiten-Tool), **Schöpfen & Andocken
 → RECHTS** (mit Empfangen vereint: der 3er-Block Neue/Verschmelzen/Empfangen prominent, Übersetzen/Andocken als Akkordeon),
-das **Tagebuch eingeklappt** (Chronik im Hof), die linke Spalte nur noch „Diese Welt". `_setFeedTab` schaltet die Tabs (GEMESSEN). **OFFEN: sort-by-rating im Strom · „Diese Welt" auch als hervorgehobene Feed-Karte · die Erschaffen-Werkzeuge als
-per-Tool-Akkordeon · das Mesh-soziale Bewerten (Backlog) · Schöpfer-Browser-Sign-off (GPU-Galerie-Feel) + Merge.** Darunter (Verlauf):
+das **Tagebuch eingeklappt** (Chronik im Hof), die linke Spalte nur noch „Diese Welt". `_setFeedTab` schaltet die Tabs (GEMESSEN). **V18.74:** Feed-Politur — Farb-Vorschau-Cover pro Karte (`_feedCover`) · gleiche Kartenbreite (`align-items:stretch`, die Klassen-Kollisions-Wurzel) · Empfangen-Overflow geheilt (`grid 1fr×3`) · **sort-by-rating** (Sortier-Chips). **V18.75:** der geteilte **3D-VORSCHAU-Bereich** (`_feedEnsurePreview` — das Hof-Bühnen-Muster: klick eine Karte → ihr echtes Modell dreht sich, `_buildFromBlueprint`/`_buildCreatureGroup` reuse). **V18.76:** der **Drawer-FIT** (`box-sizing:border-box` → kein Überlauf, der Resize-Griff erreichbar, ALLE Drawer) + die Omnibox-`welt:` surfaced Welten. **V18.77:** **Profi-leichte Feed-Cards** (`_libraryCardBody` → EINE Meta-Zeile statt Datenblatt-Spalten; das Cover führt; der Titel größer; Sekundär-Akte als Text-Links). **OFFEN: Einstellungen (der letzte UI-Raum, `einstellungen-plan.md`) · das Mesh-soziale Bewerten + Folgen/Chat/Lesezeichen (Backlog `roadmap.md`) · echte Bild-Vorschau PRO Karte (statisches Thumbnail, GPU-Bogen) · die „Für dich"-Reihung als Algorithmus · Schöpfer-Browser-Sign-off (GPU-Galerie-Feel).** Darunter (Verlauf):
 
 **Stand: GEBAUT Bib-A0 + Bib-A + Bib-B + die Bib-D-Suche (V18.69).** `_worldProfile` (der EINE Welt-Lese-Vektor,
 KONSUM bewiesen) · die WELT-SPEC-CARD (`_libraryBuildCard` → das geteilte `.spec-*`-Design: Name + Stufe + Trust-Siegel

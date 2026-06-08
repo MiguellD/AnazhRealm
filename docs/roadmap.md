@@ -122,9 +122,13 @@ GEBAUT V17.92–.118; `docs/lod-kaskade-plan.md` für die Kaskade):
 
 ## OFFENE FÄDEN — der Gesamt-Backlog (Detail-Referenz; die geordnete Reihenfolge steht oben „⭐ DER PLAN VORWÄRTS")
 
+### ⭐ UI-PUTZ-BOGEN — die 6 Kern-Räume (V18.32–.77, der parallele UI-Bogen)
+
+Parallel zum Wasser-Entscheid lief der UI-Putz-Bogen: 8 flache Tabs → 6 Kern-Räume auf dem Werkstatt-Designsystem (geteiltes `.spec-*`-Spec-Sheet · dunkle Insel/Bühne · funktionale Paletten · die **Omnibox** Ctrl+K als Schlüsselstein, löst die gemessene ~60-Knopf-Duplikation strukturell). **VIER Räume vertieft + (headless) verifiziert:** Werkstatt (die REFERENZ) · **Hof** (Dirigent+Orchester, V18.46–.56) · **Ich** (Selbst-Porträt, V18.57–.68) · **Bibliothek → der zentrale Feed** (V18.69–.77). **OFFEN: Einstellungen** — der letzte UI-Raum (Plan `docs/einstellungen-plan.md`: eine Utility-Ordnung nach Häufigkeit, die ~18 Dev-Regler eingeklappt). Daneben offen: der Schöpfer-Browser-Sign-off des GPU-Galerie-Feels (pixel-blind headless) + der soziale Bogen (unten). Die Raum-Pläne: `docs/hof-plan.md` · `docs/ich-plan.md` · `docs/bibliothek-plan.md` · `docs/einstellungen-plan.md`; die Prinzipien + die Feld-für-Feld-Inventur in `docs/ui-putz-plan.md` + `docs/menu-feld-plan.md`.
+
 ### ⭐ SOCIAL-PLATTFORM / FEED — das MESH-SOZIALE BEWERTEN (Backlog, Schöpfer-Wunsch 08.06.2026 „unbedingt das andere in den Backlog")
 
-Der zentrale Feed (V18.70–.74 — Welten · Rezepte · Wesen scrollen + BEWERTEN, 3 Spalten, Tabs Für-dich/Mesh, Vorschau-Cover, sort-by-rating) trägt das WERTEN heute **lokal** (`state.feedRatings`, deine Sterne, persistent). Der nächste, größere Bogen: die **echte soziale Schicht übers Peer-Mesh** (Schöpfer-Fragen 08.06.: „Kommentare · Leute adden · Chatten · Lesezeichen · sort by rating?" — sort ✅ V18.74 lokal):
+Der zentrale Feed (V18.70–.77 — Welten · Rezepte · Wesen scrollen + BEWERTEN; 3 Spalten + Tabs Für-dich/Mesh + „Diese Welt"-Eiland + ein geteilter 3D-Vorschau-Bereich (V18.75, klick eine Karte → ihr echtes Modell dreht sich) + sort-by-rating + Profi-leichte Feed-Cards (V18.77, cover-geführt statt Datenblatt)) trägt das WERTEN heute **lokal** (`state.feedRatings`, deine Sterne, persistent). Der nächste, größere Bogen: die **echte soziale Schicht übers Peer-Mesh** (Schöpfer-Fragen 08.06.: „Kommentare · Leute adden · Chatten · Lesezeichen · sort by rating?" — sort ✅ V18.74 lokal):
 
 - **Bewerten aggregieren** — echte „Likes" anderer Spieler, dezentral. Der Weg ist GEMESSEN schon da (W16-Welt-Katalog): Bewertungen über den `soul`-Kanal annoncieren (wie die `customWorlds`-Annonce), ed25519-signiert mit dem Vibe-Pass (gegen Sybil — eine Stimme pro Identität); der Feed zeigt „★ N Schöpfer schätzen das" + „Bestbewertet" netzweit.
 - **Lesezeichen** — lokal-first machbar (wie die Wertung: ein `state.feedBookmarks`-Toggle pro Item + ein „Gemerkt"-Filter); eine kleine eigene Welle.
