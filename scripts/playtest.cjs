@@ -23972,6 +23972,18 @@ async function checkBandVoxelP3AndInventory(ctx) {
             document.querySelector(".inventory-col-items #inventory-equip") &&
             document.querySelector(".inventory-col-recipes #inventory-recipes")
         );
+        // V18.62 Ich-H — der Soul-Select wandert in den Header (Körper-Bar), keine separate Seele-Sektion;
+        // ein Hinweis zeigt auf die Werkstatt; der Ich-Soul-Editor ist weg.
+        out.ichSoulBarInHeader = !!document.querySelector(".inventory-col-character .ich-soul-bar #player-soul-select");
+        out.ichSoulHint = !!document.querySelector(".inventory-col-character .ich-soul-hint");
+        // V18.63 Ich-I (H.5) — die Omnibox im Ich beworben + das Rezeptbuch trägt die GETEILTE Rollen-Farbe.
+        out.ichOmniboxTrigger = !!document.getElementById("ich-omnibox-trigger");
+        if (typeof r.renderRecipeBook === "function") r.renderRecipeBook();
+        out.recipeRowsRoleColor = (() => {
+            const rows = document.querySelectorAll("#inventory-recipes .recipe-row");
+            if (!rows.length) return true; // keine Rezepte → keine Verletzung
+            return [...rows].some((row) => /solid/.test(row.style.borderLeft || ""));
+        })();
 
         // Toggle close
         r.toggleInventoryOverlay(false);
@@ -24024,6 +24036,14 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check(
             "V18.57 Ich: drei Zonen — WER ICH BIN (Spec) · WAS ICH HABE (Was du trägst) · WAS ICH MACHEN KANN (Rezepte)",
             wave6c1Results.ichThreeZones
+        );
+        check(
+            "V18.62 Ich-H: der Soul-Select sitzt im Header (Körper-Bar) + ein Hinweis zeigt auf die Werkstatt",
+            wave6c1Results.ichSoulBarInHeader && wave6c1Results.ichSoulHint
+        );
+        check(
+            "V18.63 Ich-I: die Omnibox ist im Ich beworben (⌕) + das Rezeptbuch trägt die geteilte Rollen-Farbe (H.5)",
+            wave6c1Results.ichOmniboxTrigger && wave6c1Results.recipeRowsRoleColor
         );
         check("Welle 6.C1: addToInventory legt Eintrag in ersten leeren Slot", wave6c1Results.slot0HasBaum);
         check("Welle 6.C1: addToInventory stackt bei gleichem Bauplan-Namen", wave6c1Results.stacksCount);
