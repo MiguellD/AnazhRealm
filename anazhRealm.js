@@ -28656,7 +28656,6 @@ class AnazhRealm {
         }
         // UI 1×/s refreshen, damit die Boost-Restzeit sichtbar tickt — auch
         // wenn sich an Boost-Bestand selbst nichts geändert hat (Counter läuft).
-        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
     }
 
     // Welle 6.D Etappe 3a — Schaden zufügen. Quellen: DSL-Op `damage`,
@@ -28694,7 +28693,6 @@ class AnazhRealm {
             "INFO"
         );
         if (hp <= 0) this.triggerPhoenixDeath(source);
-        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
         return true;
     }
 
@@ -28735,7 +28733,6 @@ class AnazhRealm {
             }
         );
         this.log(`Phönix-Wandlung: ${oldSoul} → phoenix (${source || "Tod"})`, "INFO");
-        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
     }
 
     // 1×/s tick: prüft, ob die Wandlung abgelaufen ist; während der Wandlung
@@ -32621,6 +32618,9 @@ class AnazhRealm {
         // Körper + sein heldMesh-Kind wurden oben disposed); liest equipped.held — deckt damit auch
         // den Restore (init() ruft applyPlayerSoul nach Mesh-Bau erneut, wenn equipped.held gesetzt ist).
         this._refreshHeldMesh();
+        // V18.61 Ich-G (ich-plan §H.7) — wenn das Ich offen ist, switcht die SELBST-BÜHNE live auf den
+        // neuen Körper + das Spec-Sheet aktualisiert (vorher blieb die Bühne auf dem Initial-Avatar stehen).
+        if (this.state.inventoryOpen && typeof this._ichRefreshStage === "function") this._ichRefreshStage();
         // Ring 11 V3 — Soul-Sync: Mitspieler über den Seelen-Wechsel
         // informieren, damit ihr Renderer den neuen Avatar baut.
         if (this.state.p2p && this.state.p2p.enabled) this._p2pBroadcastSoul();
@@ -32772,7 +32772,6 @@ class AnazhRealm {
         this.state.player.staminaMax = computed.stats.staminaMax;
         this.state.player.stamina = computed.stats.staminaMax;
         // UI-Render anstoßen, falls Spieler-Drawer offen ist.
-        if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
         return computed;
     }
 
@@ -40477,6 +40476,7 @@ class AnazhRealm {
             if (!s) return;
             s.active = true;
             this._hofRefreshFocus();
+            if (typeof this._renderHofChronik === "function") this._renderHofChronik();
             this._hofStartRAF();
         } else if (stage) {
             stage.active = false;
@@ -40780,16 +40780,14 @@ class AnazhRealm {
             equipped: p.equipped || {},
             boosts: Array.isArray(p.boosts) ? p.boosts : [],
             bodyParts: (def && def.bodyParts) || [],
-            journal:
-                this.state.worldJournal && Array.isArray(this.state.worldJournal.entries)
-                    ? this.state.worldJournal.entries
-                    : [],
+            // V18.61 Ich-F (H.1) — KEIN journal mehr: die Chronik der Welt ist die Welt-Stimme (Hof),
+            // nicht das Selbst; _renderHofChronik liest worldJournal direkt (kein Passagier-Feld hier).
         };
     }
 
     // Ich-A (ich-plan §D.2) — das SELBST-SPEC-SHEET im GETEILTEN Werkstatt-/Hof-Design (`.spec-*`): HEADER
     // (Name + Seele + Modus | Vigor-Sterne) → BODY (WERTE führen, equip-gefaltet | NATUR sekundär) → FOOTER
-    // (Habe). Die EMOTION + die REISE leben als eigene Zonen darunter (live bzw. §D.2-Reise) — s. _ichRenderSpecSheet.
+    // (Habe). Die EMOTION lebt als eigene live-Zone darunter; die Chronik/Reise wanderte in den Hof (V18.61, H.1).
     _ichBuildSpecSheet(prof) {
         const fracLvl = (f) => (f > 0.66 ? "lvl-2" : f > 0.33 ? "lvl-1" : "lvl-0");
         // HEADER — Identität: Name (seelen-gefärbt) + Seele + Modus-Chip | Vigor (HP-Anteil) als Sterne.
@@ -40904,24 +40902,21 @@ class AnazhRealm {
         return this._el("div", { class: "spec-sheet hof-spec-sheet" }, header, body, footer);
     }
 
-    // Die REISE (ich-plan §D.2) — MEINE Reise, nicht das rohe Welt-Log (Schöpfer-Befund „macht das Weltjournal
-    // im Ich Sinn?"): das worldJournal mischt meine Taten (erwachen/erschaffen/werden/Gesetz/Bindung) mit
-    // ambienten Welt-Ereignissen (erster Regen, erste Kreatur). Das Selbst-Porträt zeigt nur MEINE journey-Typen;
-    // die ambiente Welt-Chronik gehört zur Welt/Bibliothek. Gekappt + „+N" (Overflow, V18.56).
-    _ichBuildReise(prof) {
-        const SELF_TYPES = new Set(["genesis", "growth", "soul", "rule", "relationship"]);
-        const mine = (prof.journal || []).filter((e) => e && SELF_TYPES.has(e.type));
-        const entries = mine.slice(-6).reverse();
-        const zone = this._el(
-            "div",
-            { class: "ich-reise-zone" },
-            this._el("div", { class: "spec-col-head", text: "Meine Reise · was ich erlebt + erschaffen habe" })
-        );
+    // V18.61 Ich-F (ich-plan §H.1) — die CHRONIK gehört in den HOF (die Welt-Stimme/der Nexus erzählt, nicht
+    // das Selbst): das worldJournal lebt jetzt in der Partitur des Hofes, nicht im Ich. Newest first, gekappt + „+N".
+    _renderHofChronik() {
+        if (typeof document === "undefined") return;
+        const host = document.getElementById("hof-chronik");
+        if (!host) return;
+        host.innerHTML = "";
+        const all =
+            this.state.worldJournal && Array.isArray(this.state.worldJournal.entries)
+                ? this.state.worldJournal.entries
+                : [];
+        const entries = all.slice(-6).reverse();
         if (!entries.length) {
-            zone.appendChild(
-                this._el("span", { class: "spec-empty", text: "Noch keine eigenen Taten — erwache, erschaffe, werde." })
-            );
-            return zone;
+            host.appendChild(this._el("span", { class: "ability-empty", text: "Die Welt hat noch nichts erlebt." }));
+            return;
         }
         const now = Date.now();
         for (const e of entries) {
@@ -40930,38 +40925,29 @@ class AnazhRealm {
                 const s = Math.max(0, Math.round((now - e.at) / 1000));
                 ago = s < 60 ? `vor ${s}s` : s < 3600 ? `vor ${Math.round(s / 60)}m` : `vor ${Math.round(s / 3600)}h`;
             }
-            zone.appendChild(
+            host.appendChild(
                 this._el(
                     "div",
-                    { class: "ich-reise-row" },
-                    this._el("span", { class: "ich-reise-text", text: e.text || "—" }),
-                    this._el("span", { class: "ich-reise-when", text: ago })
+                    { class: "chronik-row" },
+                    this._el("span", { class: "chronik-text", text: e.text || "—" }),
+                    this._el("span", { class: "chronik-when", text: ago })
                 )
             );
         }
-        if (mine.length > entries.length)
-            zone.appendChild(
-                this._el("div", { class: "spec-grow-more", text: `+ ${mine.length - entries.length} ältere Taten` })
+        if (all.length > entries.length)
+            host.appendChild(
+                this._el("div", { class: "chronik-more", text: `+ ${all.length - entries.length} ältere Einträge` })
             );
-        return zone;
     }
 
-    // Rendert das Selbst-Spec-Sheet + die Reise in ihre Mounts (die EMOTION lebt live in #status-emotions,
-    // wird NICHT hier gewiped — der per-Frame-updateStatusPanel hält sie aktuell).
+    // Rendert das Selbst-Spec-Sheet in seinen Mount (die EMOTION lebt live in #status-emotions, wird NICHT hier
+    // gewiped — der per-Frame-updateStatusPanel hält sie aktuell). Die CHRONIK lebt seit V18.61 im Hof (§H.1).
     _ichRenderSpecSheet() {
         if (typeof document === "undefined") return;
         const specMount = document.getElementById("ich-stage-spec");
-        const reiseMount = document.getElementById("ich-reise");
-        if (!specMount && !reiseMount) return;
-        const prof = this._selfProfile();
-        if (specMount) {
-            specMount.innerHTML = "";
-            specMount.appendChild(this._ichBuildSpecSheet(prof));
-        }
-        if (reiseMount) {
-            reiseMount.innerHTML = "";
-            reiseMount.appendChild(this._ichBuildReise(prof));
-        }
+        if (!specMount) return;
+        specMount.innerHTML = "";
+        specMount.appendChild(this._ichBuildSpecSheet(this._selfProfile()));
     }
 
     // Ich-C (ich-plan §D.1) — die SELBST-BÜHNE (der Avatar-3D-Star, Zwilling zur Hof-Bühne V18.54).
@@ -41022,7 +41008,7 @@ class AnazhRealm {
         return stage;
     }
 
-    _ichStageShow(soul, bodyParts) {
+    _ichStageShow(soul) {
         const stage = this.state.ichStage;
         if (!stage) return;
         if (stage.pivot && stage.soul === soul) return;
@@ -41040,8 +41026,20 @@ class AnazhRealm {
             stage.pivot = null;
         }
         stage.soul = soul || null;
-        if (!Array.isArray(bodyParts) || !bodyParts.length) return;
-        const group = this._buildFromBlueprint({ name: `self_${soul}`, parts: bodyParts });
+        if (!soul) return;
+        // V18.61 Ich-G — die ECHTE Avatar-Form: ein Built-in nutzt seinen `build()` (Mensch/Phönix/Drache mit
+        // Gliedern), eine Custom-Seele die bodyParts (kein generischer „Block" mehr).
+        const def = this._getSoulDef(soul);
+        let group = null;
+        if (def && typeof def.build === "function") {
+            try {
+                group = def.build();
+            } catch {
+                group = null;
+            }
+        }
+        if (!group && def && Array.isArray(def.bodyParts) && def.bodyParts.length)
+            group = this._buildFromBlueprint({ name: `self_${soul}`, parts: def.bodyParts });
         if (!group) return;
         const box = new THREE.Box3().setFromObject(group);
         const center = box.getCenter(new THREE.Vector3());
@@ -41095,14 +41093,19 @@ class AnazhRealm {
             const stage = this._ichEnsureStage();
             if (stage) {
                 stage.active = true;
-                const prof = this._selfProfile();
-                this._ichStageShow(prof.soul, prof.bodyParts);
+                this._ichStageShow((this.state.player && this.state.player.soul) || "human");
                 this._ichStartRAF();
             }
         } else if (this.state.ichStage) {
             this.state.ichStage.active = false;
             this._ichStopRAF();
         }
+    }
+
+    // Ich-G — die Bühne + das Spec-Sheet auf den AKTUELLEN Körper aktualisieren (nach einem Seelen-Wechsel).
+    _ichRefreshStage() {
+        this._ichRenderSpecSheet();
+        if (this.state.ichStage) this._ichStageShow((this.state.player && this.state.player.soul) || "human");
     }
 
     // Hof-F (hof-plan §D.2) — die freundlichen Sektions-Labels (Seele + Spezialisierung).
@@ -46630,10 +46633,8 @@ class AnazhRealm {
             const cur = this._getSoulDef(this.state.player.soul || "human");
             status.textContent = (cur && cur.label) || "—";
         }
-        // Welle 6.D Etappe 1 — initiale Stats-UI rendern, falls #player-stats
-        // schon im DOM ist (HTML statisch vorgegeben). Update läuft danach bei
-        // jedem applyPlayerSoul → recomputePlayerStats.
-        this.renderPlayerStatsUI();
+        // V18.61 Ich-F (H.3) — die flache Stats-Liste (#player-stats) ist durch das
+        // Daten-Viz-Spec-Sheet (_ichBuildSpecSheet) ersetzt; renderPlayerStatsUI geschnitten.
         // Welle 6.D Etappe 1.7 — Avatar-Editor im Drawer initial rendern.
         this.renderSoulEditorUI();
         // Welle 6.D Etappe 3b — Equipment-Sektion initial rendern.
@@ -46736,7 +46737,6 @@ class AnazhRealm {
                 );
             }
             this.renderPlayerEquipUI();
-            if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
         });
         row.appendChild(sel);
         if (equipped.held && blu[equipped.held]) {
@@ -46812,7 +46812,6 @@ class AnazhRealm {
                 this.log(`Gewebt + getragen: „${this.state.blueprints[v]?.label || v}".`, "INFO");
             }
             this.renderPlayerEquipUI();
-            if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
         });
         armorRow.appendChild(armorSel);
         container.appendChild(armorRow);
@@ -46923,7 +46922,6 @@ class AnazhRealm {
                         this.log(`Brauen fehlgeschlagen: ${result.reason}`, "ERROR");
                     }
                 }
-                if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
             });
             row.appendChild(drinkBtn);
             container.appendChild(row);
@@ -46942,7 +46940,6 @@ class AnazhRealm {
             drinkBtn.addEventListener("click", () => {
                 const result = this.activateConsumable(name);
                 if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
-                if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
             });
             row.appendChild(drinkBtn);
             container.appendChild(row);
@@ -47312,122 +47309,6 @@ class AnazhRealm {
             this._el("span", { class: labelCls, text: label }),
             this._el("span", { class: valCls, text: value })
         );
-    }
-
-    renderPlayerStatsUI() {
-        if (typeof document === "undefined") return;
-        const container = document.getElementById("player-stats");
-        if (!container) return;
-        const stats = (this.state.player && this.state.player.stats) || null;
-        const tags = (this.state.player && this.state.player.statTags) || null;
-        container.innerHTML = "";
-        if (!stats) {
-            container.appendChild(
-                this._el("div", { class: "stats-empty", text: "Stats werden berechnet, wenn die Seele gewählt ist." })
-            );
-            return;
-        }
-        // Welle 6.D Etappe 1.5 — Körper-Teile-Liste oben, dann Stats darunter.
-        // Damit der Schöpfer SIEHT, woraus seine Seele besteht und wie ihre
-        // Stats daraus entstehen (Form × Material → Compound-Tags → Stats).
-        const soulName = (this.state.player && this.state.player.soul) || "human";
-        const soul = this.playerSoulDefs[soulName];
-        if (soul && Array.isArray(soul.bodyParts) && soul.bodyParts.length > 0) {
-            container.appendChild(
-                this._el("div", { class: "body-parts-header", text: "Körper-Teile (Form × Material → Tags)" })
-            );
-            for (const part of soul.bodyParts) {
-                container.appendChild(
-                    this._kvRow(
-                        "body-part-row",
-                        part.label || part.shape,
-                        `${part.shape} · ${part.material}`,
-                        "body-part-label",
-                        "body-part-meta"
-                    )
-                );
-            }
-            container.appendChild(this._el("div", { class: "stats-divider" }));
-        }
-        const rows = [
-            { key: "hpMax", label: "Lebenskraft", fmt: (v) => Math.round(v) },
-            { key: "damage", label: "Schaden", fmt: (v) => v.toFixed(1) },
-            { key: "knockback", label: "Rückschlag", fmt: (v) => v.toFixed(1) },
-            { key: "attackSpeed", label: "Angriffstempo", fmt: (v) => v.toFixed(2) },
-            { key: "speed", label: "Lauf-Geschwindigkeit", fmt: (v) => v.toFixed(2) },
-            { key: "jumpPower", label: "Sprungkraft", fmt: (v) => v.toFixed(2) },
-            { key: "staminaMax", label: "Ausdauer", fmt: (v) => Math.round(v) },
-            { key: "precision", label: "Präzision", fmt: (v) => v.toFixed(2) },
-            { key: "defense", label: "Verteidigung", fmt: (v) => v.toFixed(1) },
-            { key: "magicResist", label: "Magie-Resistenz", fmt: (v) => v.toFixed(2) },
-            { key: "heatResist", label: "Hitze-Resistenz", fmt: (v) => v.toFixed(2) },
-        ];
-        for (const row of rows) {
-            container.appendChild(this._kvRow("stat-row", row.label, row.fmt(stats[row.key] || 0)));
-        }
-        // Tag-Profil dezent unten — die drei dominantesten Achsen zeigen.
-        if (tags) {
-            const sorted = Object.keys(tags)
-                .map((k) => ({ k, v: tags[k] }))
-                .sort((a, b) => b.v - a.v)
-                .slice(0, 3);
-            container.appendChild(
-                this._el("div", {
-                    class: "stat-tags",
-                    text: "Stark: " + sorted.map((s) => `${s.k} ${s.v.toFixed(2)}`).join(" · "),
-                })
-            );
-        }
-        // Welle 6.X.1 A3 — Equipped-Anzeige (Audit 17.05.2026): bisher war
-        // unsichtbar OB überhaupt ein Werkzeug/Rüstung ausgerüstet ist.
-        // Spieler musste in den Spieler-Drawer scrollen und Dropdown lesen.
-        // Stats-Panel zeigt jetzt direkt unter den Werten was getragen wird.
-        const equipped = (this.state.player && this.state.player.equipped) || {};
-        if (equipped.held || equipped.armor) {
-            container.appendChild(this._el("div", { class: "stats-divider" }));
-            if (equipped.armor) {
-                const armorBp = (this.state.blueprints && this.state.blueprints[equipped.armor]) || null;
-                container.appendChild(this._kvRow("stat-row", "Rüstung", (armorBp && armorBp.label) || equipped.armor));
-            }
-            // V17.57 W2-B — das EINE gehaltene Gerät + seine abgelesene Affordanz („Klinge"/„Brecher").
-            if (equipped.held) {
-                const heldBp = (this.state.blueprints && this.state.blueprints[equipped.held]) || null;
-                const aff = heldBp ? this._implementAffordanceLabel(heldBp) : "";
-                container.appendChild(
-                    this._kvRow(
-                        "stat-row",
-                        "In der Hand",
-                        ((heldBp && heldBp.label) || equipped.held) + (aff ? ` (${aff})` : "")
-                    )
-                );
-            }
-        }
-        // Welle 6.D Etappe 2 — Aktive Boosts unten anzeigen. Label + Tag-Delta
-        // links, Restzeit rechts. Wenn keine aktiv: nichts (clean state).
-        const boosts = (this.state.player && this.state.player.boosts) || [];
-        if (Array.isArray(boosts) && boosts.length > 0) {
-            const now = performance.now() / 1000;
-            const active = boosts.filter((b) => b.expiresAt > now);
-            if (active.length > 0) {
-                container.appendChild(this._el("div", { class: "stats-divider" }));
-                container.appendChild(this._el("div", { class: "body-parts-header", text: "Aktive Boosts" }));
-                for (const b of active) {
-                    const tagSummary = Object.keys(b.tagDelta || {})
-                        .map((t) => `+${b.tagDelta[t].toFixed(2)} ${t}`)
-                        .join(", ");
-                    const rem = Math.max(0, b.expiresAt - now);
-                    container.appendChild(
-                        this._kvRow(
-                            "boost-row",
-                            `${b.label} · ${tagSummary}`,
-                            `${rem.toFixed(0)} s`,
-                            "boost-label",
-                            "boost-remaining"
-                        )
-                    );
-                }
-            }
-        }
     }
 
     async init() {
@@ -49437,7 +49318,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.60.0";
+AnazhRealm.VERSION = "18.61.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

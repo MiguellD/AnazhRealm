@@ -2791,20 +2791,84 @@
             .ich-emotion-section #status-emotions {
                 margin-top: 2px;
             }
-            #ich-reise .ich-reise-zone {
+            /* V18.61 Ich-F (H.2) — die Soul-Bar im Header der „Wer ich bin"-Zone: Körper-Auswahl
+               direkt über der Bühne (du siehst den Avatar UND wählst ihn am selben Ort). */
+            .ich-soul-bar {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin: 2px 0 6px 0;
+            }
+            .ich-soul-bar label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--brass-1, #8a6f3e);
+                flex: 0 0 auto;
+            }
+            .ich-soul-bar select {
+                flex: 1 1 auto;
+                min-width: 0;
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
+                color: var(--parch-ink);
+                border: 1px solid var(--brass-2);
+                border-radius: 3px;
+                padding: 5px 8px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                letter-spacing: 0.04em;
+                cursor: pointer;
+                box-shadow:
+                    0 1px 0 rgba(0, 0, 0, 0.2),
+                    inset 0 1px 0 rgba(255, 240, 200, 0.4);
+            }
+            .ich-soul-bar select:hover {
+                background: linear-gradient(180deg, rgba(255, 245, 210, 0.6), rgba(200, 160, 100, 0.4));
+                border-color: var(--brass-1);
+            }
+            .ich-soul-bar select:focus {
+                outline: 1px solid var(--violet-1);
+                outline-offset: 1px;
+            }
+            /* V18.61 Ich-F (H.6) — „Mehr: Wechseln & Markieren" als Aufklapp innerhalb „Was du trägst". */
+            details.ich-equip-more {
+                margin-top: 6px;
+            }
+            details.ich-equip-more > summary {
+                cursor: pointer;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.3px;
+                color: var(--brass-1, #8a6f3e);
+                list-style: none;
+                padding: 2px 0;
+            }
+            details.ich-equip-more > summary::-webkit-details-marker {
+                display: none;
+            }
+            details.ich-equip-more > summary::before {
+                content: "▸ ";
+                font-size: 9px;
+            }
+            details.ich-equip-more[open] > summary::before {
+                content: "▾ ";
+            }
+            /* V18.61 Ich-F (H.1) — die CHRONIK DER WELT im Hof (das worldJournal als Welt-Stimme). */
+            #hof-chronik {
                 display: flex;
                 flex-direction: column;
                 gap: 2px;
-                margin: 8px 0 4px 0;
+                margin: 4px 0 2px 0;
             }
-            #ich-reise .ich-reise-row {
+            #hof-chronik .chronik-row {
                 display: flex;
                 align-items: baseline;
                 justify-content: space-between;
                 gap: 8px;
                 font-size: 11px;
             }
-            #ich-reise .ich-reise-text {
+            #hof-chronik .chronik-text {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
                 color: var(--parch-ink);
@@ -2812,20 +2876,17 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
-            #ich-reise .ich-reise-when {
+            #hof-chronik .chronik-when {
                 font-family: "JetBrains Mono", monospace;
                 font-size: 9px;
-                color: var(--parch-ink-soft);
+                color: var(--parch-ink-faded);
                 flex: 0 0 auto;
             }
-            #ich-reise .spec-col-head {
-                color: var(--brass-1, #8a6f3e);
-            }
-            #ich-reise .spec-grow-more,
-            #ich-reise .spec-empty {
-                color: var(--parch-ink-soft);
+            #hof-chronik .chronik-more {
                 font-size: 10px;
                 font-style: italic;
+                color: var(--parch-ink-faded);
+                margin-top: 2px;
             }
             .creature-list .creature-name {
                 font-weight: 600;
@@ -6055,10 +6116,19 @@
                         <h4>Hotbar <span class="section-hint">(Schnellzugriff 1–9)</span></h4>
                         <div id="hotbar-config"></div>
                     </section>
-                    <!-- V18.57 — „Was du trägst" gehört zur HABE (es faltet die Werte des Selbst). -->
+                    <!-- V18.57 — „Was du trägst" gehört zur HABE (es faltet die Werte des Selbst).
+                         V18.61 Ich-F (H.6) — die Fein-Justage (Wechseln/Markieren/Rollen-Override) lebt
+                         HIER als Aufklapp derselben Sektion (kein Fremdkörper in „Was ich machen kann"). -->
                     <section class="section">
                         <h4>Was du trägst <span class="section-hint">(Klick legt ab · formt deine Werte)</span></h4>
                         <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
+                        <details id="equip-advanced-section" class="ich-equip-more">
+                            <summary>
+                                Mehr: Wechseln &amp; Markieren
+                                <span class="section-hint">(Dropdowns · Portal-Ziel · Rollen-Override)</span>
+                            </summary>
+                            <div id="player-equip"></div>
+                        </details>
                     </section>
                 </div>
                 <!-- MITTE: Charakter — wer ich BIN (Seele · Stats · Emotionen · eigene Seele).
@@ -6069,6 +6139,13 @@
                      die reiche 6-Achsen-EMOTION (live) + die REISE (Journal); Seele/Körper/Avatar klappbar. -->
                 <div class="inventory-col-character">
                     <h3 class="inventory-col-title">Wer ich bin</h3>
+                    <!-- V18.61 Ich-F (H.2) — der Soul-Select gehört in den Header, neben den Körper:
+                         du siehst den Avatar auf der Bühne UND wählst ihn am selben Ort (kein doppeltes
+                         „Seele"-Feld). Die Schöpfung neuer Seelen lebt in der Werkstatt (H.4 / Ich-H). -->
+                    <div class="ich-soul-bar">
+                        <label for="player-soul-select">Körper</label>
+                        <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
+                    </div>
                     <div class="hof-stage ich-stage">
                         <canvas
                             id="ich-stage-canvas"
@@ -6084,20 +6161,8 @@
                         </h4>
                         <div id="status-emotions"></div>
                     </section>
-                    <div id="ich-reise"></div>
-                    <section class="section">
-                        <h4>Seele</h4>
-                        <div class="soul-row">
-                            <label for="player-soul-select">Form</label>
-                            <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
-                        </div>
-                    </section>
-                    <section class="section default-collapsed" id="ich-details-section">
-                        <h4>
-                            Körper &amp; Detail-Werte <span class="section-hint">(Form × Material → Tags → Werte)</span>
-                        </h4>
-                        <div id="player-stats" aria-live="polite"></div>
-                    </section>
+                    <!-- V18.61 Ich-F — die Seelen-SCHÖPFUNG (klonen/formen) wandert in die Werkstatt (H.4 /
+                         Ich-H, der Synergie-Bogen); bis dahin bleibt der Editor hier (klappbar). -->
                     <section class="section default-collapsed">
                         <h4>Eigene Seele formen <span class="section-hint">(custom Avatar)</span></h4>
                         <div id="soul-editor"></div>
@@ -6127,13 +6192,6 @@
                             aria-label="Rezepte durchsuchen"
                         />
                         <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
-                    </section>
-                    <section class="section default-collapsed" id="equip-advanced-section">
-                        <h4>
-                            Mehr: Wechseln &amp; Markieren
-                            <span class="section-hint">(Dropdowns · Portal-Ziel · Rollen-Override)</span>
-                        </h4>
-                        <div id="player-equip"></div>
                     </section>
                 </div>
             </div>
@@ -6292,6 +6350,14 @@
                     Benannte Gesten — ▶ wirkt sie einmal. Mensch + KI an EINEM Pult (Ko-Dirigent).
                 </p>
                 <div id="status-abilities"></div>
+                <!-- V18.61 Ich-F (H.1) — die CHRONIK DER WELT: das worldJournal ist die Welt-Stimme (sie
+                     erzählt genesis/creatures/weather/growth/soul/rule — auch über mich), nicht das Selbst;
+                     sie gehört in den Hof (neben den Nexus), nicht ins Ich. _renderHofChronik füllt sie. -->
+                <h4 class="hof-subhead">Chronik der Welt</h4>
+                <p class="drawer-hint">
+                    Die Reise des Reichs — was geschah + erschaffen wurde. Die Welt erinnert.
+                </p>
+                <div id="hof-chronik"></div>
             </section>
             <!-- V18.47 Hof-B (UI-Putz §2) — die „Befehle · die Sprache des Hofes"-Liste (~60 Knöpfe) ist
                  AUFGELÖST: die Omnibox (⌕ Suche / Ctrl+K, `c:`) trägt ALLE Befehle durchsuchbar an EINEM Ort. -->
@@ -7389,6 +7455,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.60.0" defer></script>
+        <script src="anazhRealm.js?v=18.61.0" defer></script>
     </body>
 </html>

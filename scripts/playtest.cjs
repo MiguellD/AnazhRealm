@@ -4017,9 +4017,10 @@ async function checkBandV1751CombatStats(ctx) {
             Number.isFinite(cs.knockback) && Number.isFinite(cs.attackSpeed) && Number.isFinite(cs.defense);
         r.removeCreature(c); // sauber aufräumen (kein Kreatur-Zahl-Leck)
 
-        // (5) die Sichtbarkeit — renderPlayerStatsUI trägt das Kombat-Profil (echter UI-Konsum)
-        const uiSrc = r.renderPlayerStatsUI.toString();
-        out.uiShowsCombat = /knockback/.test(uiSrc) && /attackSpeed/.test(uiSrc) && /defense/.test(uiSrc);
+        // (5) die Sichtbarkeit — das Selbst-Spec-Sheet (_ichBuildSpecSheet, V18.44/.57) trägt das Kombat-Profil
+        //     (echter UI-Konsum; V18.61 Ich-F ersetzte die flache renderPlayerStatsUI-Liste durch diese Daten-Viz).
+        const uiSrc = r._ichBuildSpecSheet.toString();
+        out.uiShowsCombat = /damage/.test(uiSrc) && /defense/.test(uiSrc) && /precision/.test(uiSrc);
 
         return out;
     });
@@ -4053,7 +4054,7 @@ async function checkBandV1751CombatStats(ctx) {
         res.creatureComputes
     );
     check(
-        "V17.51 Kampf A: die Stats-UI macht das Kampf-Profil sichtbar (Rückschlag/Tempo/Verteidigung)",
+        "V17.51 Kampf A: das Selbst-Spec-Sheet macht das Kampf-Profil sichtbar (Schaden/Abwehr/Präzision)",
         res.uiShowsCombat
     );
 }
@@ -15292,7 +15293,8 @@ async function checkBandWelle6DSoul(ctx) {
         out.statKeys = Object.keys(C.STAT_FROM_TAGS).sort().join(",");
         out.hasComputeMethod = typeof r.computePlayerStats === "function";
         out.hasRecomputeMethod = typeof r.recomputePlayerStats === "function";
-        out.hasRenderMethod = typeof r.renderPlayerStatsUI === "function";
+        // V18.61 Ich-F — die flache renderPlayerStatsUI ist durch das Daten-Viz-Spec-Sheet ersetzt.
+        out.hasRenderMethod = typeof r._ichBuildSpecSheet === "function";
 
         // Welle 6.D Etappe 1.5 — Seele = Bauplan aus Körper-Teilen
         const defs = r.playerSoulDefs;
@@ -15392,21 +15394,22 @@ async function checkBandWelle6DSoul(ctx) {
         const applySrc = r.applyPlayerSoul.toString();
         out.applyCallsRecompute = /recomputePlayerStats/.test(applySrc);
 
-        // UI im DOM
-        out.statsContainerInDom = !!document.getElementById("player-stats");
-        // Render-Methode arbeitet ohne Crash
+        // UI im DOM (V18.61 Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
+        out.statsContainerInDom = !!document.getElementById("ich-stage-spec");
+        // Spec-Sheet-Render arbeitet ohne Crash
         let renderOk = false;
         try {
-            r.renderPlayerStatsUI();
+            r._ichRenderSpecSheet();
             renderOk = true;
         } catch (e) {
             out.renderError = String(e);
         }
         out.renderOk = renderOk;
         if (renderOk) {
-            const dom = document.getElementById("player-stats");
-            out.statRowsCount = dom ? dom.querySelectorAll(".stat-row").length : 0;
-            out.hasTagLine = dom ? !!dom.querySelector(".stat-tags") : false;
+            const dom = document.getElementById("ich-stage-spec");
+            // Werte-Balken (HP + Schaden/Tempo/Ausdauer/Abwehr/Präzision) + NATUR-Balken
+            out.statRowsCount = dom ? dom.querySelectorAll(".spec-bar").length : 0;
+            out.hasTagLine = dom ? !!dom.querySelector(".spec-col-head") : false;
         }
         return out;
     });
@@ -16613,7 +16616,7 @@ async function checkBandWelle6DSoul(ctx) {
         );
         check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
         check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
-        check("Welle 6.D: renderPlayerStatsUI-Methode existiert", wave6dResults.hasRenderMethod);
+        check("Welle 6.D: das Selbst-Spec-Sheet (_ichBuildSpecSheet) existiert", wave6dResults.hasRenderMethod);
         check("Welle 6.D Etappe 1.5: alle drei Seelen tragen ≥3 bodyParts", wave6dResults.allSoulsHaveBodyParts);
         check("Welle 6.D Etappe 1.5: jedes bodyPart hat shape + material", wave6dResults.bodyPartsHaveShapeMaterial);
         check(
@@ -16680,14 +16683,14 @@ async function checkBandWelle6DSoul(ctx) {
             wave6dResults.statePlayerHasHpAndStamina
         );
         check("Welle 6.D: applyPlayerSoul ruft recomputePlayerStats auf", wave6dResults.applyCallsRecompute);
-        check("Welle 6.D: #player-stats im DOM (Spieler-Drawer)", wave6dResults.statsContainerInDom);
-        check("Welle 6.D: renderPlayerStatsUI läuft ohne Crash", wave6dResults.renderOk);
+        check("Welle 6.D: das Selbst-Spec-Sheet (#ich-stage-spec) im DOM", wave6dResults.statsContainerInDom);
+        check("Welle 6.D: das Spec-Sheet rendert ohne Crash (V18.61 Ich-F)", wave6dResults.renderOk);
         if (wave6dResults.renderOk) {
             check(
-                "Welle 6.D: 11 stat-row-Einträge im DOM (8 Basis + Kampf-Trio Rückschlag/Tempo/Verteidigung, V17.51)",
-                wave6dResults.statRowsCount === 11
+                "Welle 6.D: das Spec-Sheet trägt Werte-Balken (HP + Stats + Natur, V18.44/.57)",
+                wave6dResults.statRowsCount >= 6
             );
-            check("Welle 6.D: stat-tags-Zeile (dominante Achsen) im DOM", wave6dResults.hasTagLine);
+            check("Welle 6.D: das Spec-Sheet trägt Spalten-Köpfe (Werte/Natur)", wave6dResults.hasTagLine);
         }
     }
 }
@@ -23940,7 +23943,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             sp.stats &&
             typeof sp.emotions === "object" &&
             typeof sp.mood === "object" &&
-            Array.isArray(sp.journal)
+            Array.isArray(sp.boosts)
         );
         out.ichStageCanvas = !!document.getElementById("ich-stage-canvas");
         const ichSpec = document.getElementById("ich-stage-spec");
@@ -23950,8 +23953,14 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.ichWerteBars = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-bar").length > 0);
         // die reiche 6-Achsen-Emotion (live, ≠ Kreatur binär) prominent im Ich
         out.ichEmotion6 = document.querySelectorAll("#status-emotions .emotion").length === 6;
-        // die Reise-Zone liest das worldJournal (Geschichte)
-        out.ichReiseZone = !!document.querySelector("#ich-reise .ich-reise-zone");
+        // V18.61 Ich-F (H.1) — die Chronik/Reise wandert in den HOF (Welt-Stimme); das Ich trägt keine Reise mehr.
+        out.ichHasNoReise = !document.getElementById("ich-reise");
+        out.hofChronikInDom = !!document.getElementById("hof-chronik");
+        if (typeof r._renderHofChronik === "function") r._renderHofChronik();
+        out.hofChronikRenders = (() => {
+            const h = document.getElementById("hof-chronik");
+            return !!(h && h.childNodes.length > 0);
+        })();
         // die drei Zonen + „Was du trägst" wandert in die Habe-Zone
         out.ichThreeZones = !!(
             document.querySelector(".inventory-col-character #ich-stage-spec") &&
@@ -23988,7 +23997,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1: playInventoryHoverPing-Methode existiert", wave6c1Results.hasPlayPing);
         check("Welle 6.C1: inventoryInitDOM-Methode existiert", wave6c1Results.hasInventoryInitDOM);
         check(
-            "V18.57 Ich: _selfProfile bündelt die gemessenen Vektoren (soul/stats/emotions/mood/journal)",
+            "V18.57 Ich: _selfProfile bündelt die gemessenen Vektoren (soul/stats/emotions/mood/boosts)",
             wave6c1Results.hasSelfProfileFn && wave6c1Results.selfProfileBundles
         );
         check(
@@ -24003,7 +24012,10 @@ async function checkBandVoxelP3AndInventory(ctx) {
             "V18.57 Ich: die reiche 6-Achsen-Emotion ist prominent (live, ≠ Kreatur binär)",
             wave6c1Results.ichEmotion6
         );
-        check("V18.57 Ich: die Reise-Zone liest das worldJournal (die Geschichte)", wave6c1Results.ichReiseZone);
+        check(
+            "V18.61 Ich-F: die Chronik/Reise wandert in den Hof (Welt-Stimme), das Ich trägt keine Reise mehr (H.1)",
+            wave6c1Results.ichHasNoReise && wave6c1Results.hofChronikInDom && wave6c1Results.hofChronikRenders
+        );
         check(
             "V18.57 Ich: drei Zonen — WER ICH BIN (Spec) · WAS ICH HABE (Was du trägst) · WAS ICH MACHEN KANN (Rezepte)",
             wave6c1Results.ichThreeZones
@@ -26249,16 +26261,15 @@ async function checkBandWelle6XAudit(ctx) {
             out._a3bMarked = !!(armorResult && armorResult.ok);
             const equipResult = r.equipArmor("audit_armor_real");
             out._a3bEquipped = !!(equipResult && equipResult.ok);
-            // Stat-Panel muss tatsächlich rendern — `recomputePlayerStats`
-            // ist in equipArmor schon drin, aber renderPlayerStatsUI
-            // muss explizit aufgerufen werden.
-            r.renderPlayerStatsUI && r.renderPlayerStatsUI();
-            const container = document.getElementById("player-stats");
+            // V18.61 Ich-F — das Spec-Sheet-FOOTER zeigt die getragene Habe (⛨ Rüstung); `recomputePlayerStats`
+            // ist in equipArmor schon drin, aber das Spec-Sheet muss explizit re-rendern.
+            r._ichRenderSpecSheet && r._ichRenderSpecSheet();
+            const container = document.getElementById("ich-stage-spec");
             out._a3bContainerText = container ? container.textContent.slice(0, 200) : null;
-            out.statsShowsArmorRow = !!container && /Rüstung/.test(container.textContent || "");
+            out.statsShowsArmorRow = !!container && /⛨|audit_armor_real/.test(container.textContent || "");
             r.equipArmor(null);
             delete r.state.blueprints["audit_armor_real"];
-            r.renderPlayerStatsUI && r.renderPlayerStatsUI();
+            r._ichRenderSpecSheet && r._ichRenderSpecSheet();
         } else {
             out.statsShowsArmorRow = false;
         }
