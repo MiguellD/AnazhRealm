@@ -2853,33 +2853,33 @@
                 outline: 1px solid var(--violet-1);
                 outline-offset: 1px;
             }
-            .ich-soul-hint {
-                font-family: "IM Fell English", Georgia, serif;
-                font-style: italic;
-                font-size: 10px;
-                color: var(--parch-ink-faded);
-                margin: 0 0 6px 0;
-                line-height: 1.3;
-            }
-            /* V18.63 Ich-I — der Omnibox-Trigger im Ich (die EINE Such-Sprache, einheitlich wie die Werkstatt). */
-            .ich-omnibox-trigger {
-                display: block;
+            /* V18.65 — DIE EINE Selbst-Suche im Header (treibt Habe + Rezeptbuch, das Werkstatt-Loop). */
+            #inventory-overlay .ich-search {
                 width: 100%;
-                margin: 0 0 8px 0;
-                padding: 6px 10px;
+                box-sizing: border-box;
+                margin: 2px 0 0 0;
+                padding: 7px 12px;
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
                 color: var(--parch-ink);
                 border: 1px solid var(--brass-2);
                 border-radius: 3px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
-                letter-spacing: 0.06em;
-                text-align: left;
-                cursor: pointer;
+                font-size: 12px;
+                letter-spacing: 0.04em;
             }
-            .ich-omnibox-trigger:hover {
-                background: linear-gradient(180deg, rgba(255, 245, 210, 0.6), rgba(200, 160, 100, 0.4));
+            #inventory-overlay .ich-search:focus {
+                outline: 1px solid var(--violet-1);
+                outline-offset: 1px;
                 border-color: var(--brass-1);
+            }
+            #inventory-overlay .ich-search::placeholder {
+                color: var(--parch-ink-faded);
+                font-style: italic;
+            }
+            /* Nicht-Treffer der Selbst-Suche: ausgegraut (der Treffer bleibt klar + klickbar). */
+            #inventory-overlay .inventory-slot.search-dim {
+                opacity: 0.18;
+                filter: grayscale(0.6);
             }
             /* V18.61 Ich-F (H.6) — „Mehr: Wechseln & Markieren" als Aufklapp innerhalb „Was du trägst". */
             details.ich-equip-more {
@@ -6146,60 +6146,52 @@
         <!-- Welle 6.C1 — Hylomorphismus-Inventar (Tab-Toggle). 27 Slots in
              3×9-Grid. Jeder Slot trägt Tag-Profile bei Hover als Glow + Audio. -->
         <div id="inventory-overlay" role="dialog" aria-label="Dein Ich" aria-modal="false" hidden>
+            <!-- V18.65 — EINE Selbst-Suche treibt das ganze Ich (das Werkstatt-Loop search→Treffer→Akt, auf
+                 das Selbst angewandt): tippe „stein"/„panzer" → die HABE dimmt Nicht-Treffer, das REZEPTBUCH
+                 filtert; jeder Treffer ist klickbar (Slot wählen · Rezept fertigen). Eine Suche, kein toter
+                 Omnibox-Knopf, kein zweites Feld. Chrome komprimiert (wie die Werkstatt: Affordanz + Tooltip
+                 statt Absatz pro Sektion). -->
             <div class="inventory-header">
                 <h2>Dein Ich</h2>
-                <p class="inventory-hint">
-                    Tab schließt · deine Habe, dein Charakter + dein Rezeptbuch — alles an einem Ort (wie Minecraft)
-                </p>
+                <input
+                    type="text"
+                    id="ich-search"
+                    class="ich-search"
+                    placeholder="Durchsuche dein Ich … (Item, Material oder Rezept)"
+                    aria-label="Dein Ich durchsuchen"
+                    autocomplete="off"
+                />
             </div>
             <div class="inventory-body">
-                <!-- LINKS: Habe — die Items + die Hotbar-Schnellslots, beide 9-breit (wie
-                     Minecraft: das Raster + darunter die Belegung der Schnellslots). -->
                 <div class="inventory-col-items">
                     <h3 class="inventory-col-title">Was ich habe</h3>
-                    <p class="inventory-hint">Ziehen oder klicken: ein Item auf einen Hotbar-Slot legen.</p>
                     <div id="inventory-grid" class="inventory-grid"></div>
                     <div id="inventory-selected" class="inventory-selected" aria-live="polite">
                         <span class="label">gewählt:</span> <span class="name">—</span>
                     </div>
                     <section class="section">
-                        <h4>Hotbar <span class="section-hint">(Schnellzugriff 1–9)</span></h4>
+                        <h4>Hotbar</h4>
                         <div id="hotbar-config"></div>
                     </section>
-                    <!-- V18.57 — „Was du trägst" gehört zur HABE (es faltet die Werte des Selbst).
-                         V18.61 Ich-F (H.6) — die Fein-Justage (Wechseln/Markieren/Rollen-Override) lebt
-                         HIER als Aufklapp derselben Sektion (kein Fremdkörper in „Was ich machen kann"). -->
                     <section class="section">
-                        <h4>Was du trägst <span class="section-hint">(Klick legt ab · formt deine Werte)</span></h4>
+                        <h4>Was du trägst</h4>
                         <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
                         <details id="equip-advanced-section" class="ich-equip-more">
-                            <summary>
-                                Mehr: Wechseln &amp; Markieren
-                                <span class="section-hint">(Dropdowns · Portal-Ziel · Rollen-Override)</span>
-                            </summary>
+                            <summary>Mehr: Wechseln &amp; Markieren</summary>
                             <div id="player-equip"></div>
                         </details>
                     </section>
                 </div>
-                <!-- MITTE: Charakter — wer ich BIN (Seele · Stats · Emotionen · eigene Seele).
-                     Die IDs bleiben → playerSoulInitDOM, renderPlayerStatsUI, initStatusPanel,
-                     _renderSoulEditor füllen sie unverändert. -->
-                <!-- V18.57 Ich-Bogen — „WER ICH BIN" (das Werkstatt-/Hof-Muster auf das Selbst): die
-                     SELBST-BÜHNE (Avatar-3D-Star) + das geteilte Spec-Sheet (Werte führen | Natur), darunter
-                     die reiche 6-Achsen-EMOTION (live) + die REISE (Journal); Seele/Körper/Avatar klappbar. -->
                 <div class="inventory-col-character">
                     <h3 class="inventory-col-title">Wer ich bin</h3>
-                    <!-- V18.61 Ich-F (H.2) — der Soul-Select gehört in den Header, neben den Körper:
-                         du siehst den Avatar auf der Bühne UND wählst ihn am selben Ort (kein doppeltes
-                         „Seele"-Feld). Die Schöpfung neuer Seelen lebt in der Werkstatt (H.4 / Ich-H). -->
                     <div class="ich-soul-bar">
                         <label for="player-soul-select">Körper</label>
-                        <select id="player-soul-select" aria-label="Spieler-Seele wählen"></select>
+                        <select
+                            id="player-soul-select"
+                            aria-label="Spieler-Seele wählen"
+                            title="Wähle deinen Körper. Einen neuen formst du in der Werkstatt („Körper holen")."
+                        ></select>
                     </div>
-                    <p class="ich-soul-hint">
-                        Einen neuen Körper FORMST du in der Werkstatt („Körper holen" → klonen + formen) — hier
-                        wählst du nur, wer du bist.
-                    </p>
                     <div class="hof-stage ich-stage">
                         <canvas
                             id="ich-stage-canvas"
@@ -6209,51 +6201,13 @@
                         <div id="ich-stage-spec" class="hof-stage-spec"></div>
                     </div>
                     <section class="section ich-emotion-section">
-                        <h4>
-                            Emotion
-                            <span class="section-hint">(wie du die Welt WERTEST · färbt den Bildschirmrand)</span>
-                        </h4>
+                        <h4 title="Wie du die Welt WERTEST — färbt den Bildschirmrand.">Emotion</h4>
                         <div id="status-emotions"></div>
                     </section>
-                    <!-- V18.62 Ich-H (H.4) — die Seelen-SCHÖPFUNG (klonen/formen/Teile) lebt jetzt VOLL in der
-                         Werkstatt (die Seele IST ein Bauplan, soulToBlueprint + „Körper holen"); der parallele
-                         Ich-Soul-Editor ist ERSATZLOS geschnitten — das Ich ist nur noch der Wähler. -->
                 </div>
-                <!-- RECHTS: Ausrüstung & Rezepte — der Crafting→Gebrauch-Fluss (wie Minecraft, UI-Putz
-                     V18.34): das REZEPTBUCH ist der EINE Weg, ein Rezept aus der Werkstatt real zu
-                     machen — rollen-gerecht (in die Hand · anlegen · trinken), die Rolle emergiert aus
-                     Form×Material (kein „markieren → wählen"-Zweischritt mehr nötig). „Was du trägst"
-                     zeigt+legt ab. Die player-equip-Fläche ist nur noch die FEIN-Justage (Portal-Ziel,
-                     manueller Rollen-Override für Mehrdeutiges). _renderInventoryEquip, renderRecipeBook,
-                     renderPlayerEquipUI füllen sie. -->
                 <div class="inventory-col-recipes">
                     <h3 class="inventory-col-title">Was ich machen kann</h3>
-                    <!-- V18.63 Ich-I (H.5) — die OMNIBOX auch hier sichtbar (die EINE Such-Sprache, wie in
-                         der Werkstatt): ⌕ öffnet die Alles-Suche (Befehle · Baupläne · Räume · Kreaturen). -->
-                    <button
-                        type="button"
-                        id="ich-omnibox-trigger"
-                        class="ich-omnibox-trigger"
-                        title="Alles-Suche · Befehle · Baupläne · Räume (Strg/Cmd+K)"
-                    >
-                        ⌕ Alles suchen (Strg+K)
-                    </button>
-                    <section class="section">
-                        <h4>
-                            Rezeptbuch
-                            <span class="section-hint"
-                                >(aus der Werkstatt → fertigen: in die Hand · anlegen · trinken)</span
-                            >
-                        </h4>
-                        <input
-                            type="text"
-                            id="recipe-search"
-                            class="help-search"
-                            placeholder="Rezept suchen … (z. B. spitzhacke, panzer, trank)"
-                            aria-label="Rezepte durchsuchen"
-                        />
-                        <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
-                    </section>
+                    <div id="inventory-recipes" class="inventory-recipes" aria-live="polite"></div>
                 </div>
             </div>
         </div>
@@ -7527,6 +7481,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.64.0" defer></script>
+        <script src="anazhRealm.js?v=18.65.0" defer></script>
     </body>
 </html>

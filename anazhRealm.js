@@ -10016,11 +10016,12 @@ class AnazhRealm {
         // V18.51 Hof-G — die alte Hilfe-Befehlsliste (#help-list / #help-search) ist seit V18.47 aus dem DOM
         // (die Omnibox `c:` trägt ALLE Befehle durchsuchbar an EINEM Ort). Die ehemals durch `if(helpList)`
         // inert gewordene Fill-/Filter-JS ist hier ERSATZLOS geschnitten (kein Parallel-Pfad mehr).
-        // V18.35 — dieselbe Such-Geste fürs Rezeptbuch (Schöpfer „schwer bei vielen Rezepten
-        // den Überblick"): der Filter lebt in _applyRecipeFilter (re-applied nach jedem Render).
-        const recipeSearch = document.getElementById("recipe-search");
-        if (recipeSearch) {
-            recipeSearch.addEventListener("input", () => this._applyRecipeFilter());
+        // V18.65 — DIE EINE Selbst-Suche treibt das ganze Ich (das Werkstatt-Loop search→Treffer→Akt):
+        // tippe → das Rezeptbuch filtert UND die Habe dimmt Nicht-Treffer; jeder Treffer bleibt klickbar
+        // (Slot wählen · Rezept fertigen). _applyIchFilter ist die EINE Quelle, re-applied nach jedem Render.
+        const ichSearch = document.getElementById("ich-search");
+        if (ichSearch) {
+            ichSearch.addEventListener("input", () => this._applyIchFilter());
         }
         // V18.36/37 — die Werkstatt-Baupläne als Such-Dropdown (Spielersicht: ~5% wählen,
         // ~90% im Viewer): der Such-Balken ist dünn, die Liste klappt nur bei Fokus/Tippen auf.
@@ -10302,13 +10303,11 @@ class AnazhRealm {
         overlay.addEventListener("mousedown", (e) => {
             if (e.target === overlay) close();
         });
-        // V18.47 — der sichtbare Maus-Trigger in der Topbar (Ctrl+K war nur Tastatur).
+        // V18.47 — der sichtbare Maus-Trigger in der Topbar (Ctrl+K war nur Tastatur). Die GLOBALE Omnibox
+        // (Befehle/Räume/Baupläne) bleibt hier; das ICH hat seit V18.65 seine EIGENE Selbst-Suche (#ich-search,
+        // treibt Habe + Rezeptbuch) statt eines toten Knopfes auf die globale Omnibox (der war die Nullnummer).
         const trigger = document.getElementById("omnibox-trigger");
         if (trigger) trigger.addEventListener("click", () => (overlay.hidden ? open() : close()));
-        // V18.63 Ich-I (H.5) — die Omnibox auch im Ich beworben (die EINE Such-Sprache, einheitlich wie
-        // die Werkstatt): der ⌕-Knopf in „Was ich machen kann" öffnet denselben Spotlight (kein zweiter Pfad).
-        const ichTrigger = document.getElementById("ich-omnibox-trigger");
-        if (ichTrigger) ichTrigger.addEventListener("click", () => (overlay.hidden ? open() : close()));
         input.addEventListener("input", () => this._omniboxUpdate(input.value));
         // Tastatur im Feld: ↑↓ wählen, ⏎ ausführen. stopPropagation schirmt die Spiel-Steuerung ab
         // (sonst liefen WASD beim Tippen). preventDefault nur für die Navigations-Tasten.
@@ -39956,6 +39955,14 @@ class AnazhRealm {
             if (selectedName && slot.blueprintName === selectedName) {
                 el.classList.add("selected");
             }
+            // V18.65 — der Such-Heuhaufen für die EINE Selbst-Suche (#ich-search dimmt Nicht-Treffer-Slots):
+            // Name + Material/Bauplan-Name + emergente Rolle → „stein"/„panzer"/„bauwerk" surft die Habe.
+            {
+                let hay = label.textContent || "";
+                if (isMaterialSlot) hay += " " + (slot.material || "") + " rohmaterial";
+                else if (bp) hay += " " + (slot.blueprintName || "") + " " + (bp.role || "");
+                el.setAttribute("data-search", hay.toLowerCase());
+            }
             el.addEventListener("click", () => this.selectInventorySlot(i));
             // Drag-Source: gefüllter Inventar-Slot kann gegriffen werden.
             el.draggable = true;
@@ -40054,37 +40061,53 @@ class AnazhRealm {
             empty.textContent = "Noch keine craftbaren Baupläne — entwirf eines in der Werkstatt.";
             host.appendChild(empty);
         }
-        // V18.35 — den aktuellen Such-Filter nach dem Neu-Aufbau wieder anwenden (die Zeilen
-        // werden bei jedem Render neu erzeugt; das Such-Feld lebt ausserhalb + bleibt).
-        this._applyRecipeFilter();
+        // V18.65 — den aktuellen Selbst-Such-Filter nach dem Neu-Aufbau wieder anwenden (die Zeilen werden
+        // bei jedem Render neu erzeugt; das Such-Feld #ich-search lebt im Header + bleibt).
+        this._applyIchFilter();
     }
 
-    // Rezept-Suche (search-not-scroll, wie die Hof-Befehle): blendet Nicht-Treffer aus,
-    // leere Gruppen-Labels (.recipe-group) verschwinden mit. EIN Überblick statt langer Liste.
-    _applyRecipeFilter() {
+    // V18.65 — DIE EINE Selbst-Suche (das Werkstatt-Loop search→Treffer auf das ganze Ich): EIN Feld
+    // (#ich-search) filtert das REZEPTBUCH (Nicht-Treffer-Zeilen + leere Gruppen aus) UND dimmt in der HABE
+    // die Nicht-Treffer-Slots — so surft eine Suche „was ich habe + was ich machen kann", jeder Treffer
+    // bleibt klickbar (Slot wählen · Rezept fertigen). Eine Quelle, viele Leser (kein zweites Suchfeld).
+    _applyIchFilter() {
         if (typeof document === "undefined") return;
+        const search = document.getElementById("ich-search");
+        const q = search ? search.value.trim().toLowerCase() : "";
+        // (1) Rezeptbuch filtern (leere Gruppen-Labels verschwinden mit).
         const host = document.getElementById("inventory-recipes");
-        const search = document.getElementById("recipe-search");
-        if (!host || !search) return;
-        const q = search.value.trim().toLowerCase();
-        let lastGroup = null;
-        let groupHasVisible = false;
-        const finishGroup = () => {
-            if (lastGroup) lastGroup.style.display = groupHasVisible ? "" : "none";
-        };
-        for (const node of host.children) {
-            if (node.classList.contains("recipe-group")) {
-                finishGroup();
-                lastGroup = node;
-                groupHasVisible = false;
-                continue;
+        if (host) {
+            let lastGroup = null;
+            let groupHasVisible = false;
+            const finishGroup = () => {
+                if (lastGroup) lastGroup.style.display = groupHasVisible ? "" : "none";
+            };
+            for (const node of host.children) {
+                if (node.classList.contains("recipe-group")) {
+                    finishGroup();
+                    lastGroup = node;
+                    groupHasVisible = false;
+                    continue;
+                }
+                if (!node.classList.contains("recipe-row")) continue;
+                const match = !q || (node.textContent || "").toLowerCase().includes(q);
+                node.style.display = match ? "" : "none";
+                if (match) groupHasVisible = true;
             }
-            if (!node.classList.contains("recipe-row")) continue;
-            const match = !q || (node.textContent || "").toLowerCase().includes(q);
-            node.style.display = match ? "" : "none";
-            if (match) groupHasVisible = true;
+            finishGroup();
         }
-        finishGroup();
+        // (2) Habe dimmen: Nicht-Treffer-Slots ausgrauen (search→Treffer, das Werkstatt-Loop auf die Habe).
+        const grid = document.getElementById("inventory-grid");
+        if (grid) {
+            for (const el of grid.children) {
+                if (!q) {
+                    el.classList.remove("search-dim");
+                    continue;
+                }
+                const hay = (el.getAttribute("data-search") || "").toLowerCase();
+                el.classList.toggle("search-dim", !hay.includes(q));
+            }
+        }
     }
 
     _recipeRow(name, kind) {
@@ -49128,7 +49151,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.64.0";
+AnazhRealm.VERSION = "18.65.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

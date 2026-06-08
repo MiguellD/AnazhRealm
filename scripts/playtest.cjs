@@ -23975,14 +23975,46 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // V18.62 Ich-H — der Soul-Select wandert in den Header (Körper-Bar), keine separate Seele-Sektion;
         // ein Hinweis zeigt auf die Werkstatt; der Ich-Soul-Editor ist weg.
         out.ichSoulBarInHeader = !!document.querySelector(".inventory-col-character .ich-soul-bar #player-soul-select");
-        out.ichSoulHint = !!document.querySelector(".inventory-col-character .ich-soul-hint");
-        // V18.63 Ich-I (H.5) — die Omnibox im Ich beworben + das Rezeptbuch trägt die GETEILTE Rollen-Farbe.
-        out.ichOmniboxTrigger = !!document.getElementById("ich-omnibox-trigger");
+        // V18.65 — der Werkstatt-Hinweis lebt jetzt als Tooltip am Select (Chrome komprimiert, kein Absatz).
+        out.ichSoulHint = (() => {
+            const sel = document.getElementById("player-soul-select");
+            return !!(sel && /werkstatt/i.test(sel.getAttribute("title") || ""));
+        })();
+        // V18.65 — die EINE Selbst-Suche TREIBT das Ich (das Werkstatt-Loop search→Treffer, kein toter
+        // Omnibox-Knopf): tippen filtert das Rezeptbuch UND dimmt Nicht-Treffer in der Habe; leer = alles
+        // wieder sichtbar. KONSUM-Test: nicht „Knopf existiert", sondern „die Suche wirkt beobachtbar".
         if (typeof r.renderRecipeBook === "function") r.renderRecipeBook();
         out.recipeRowsRoleColor = (() => {
             const rows = document.querySelectorAll("#inventory-recipes .recipe-row");
             if (!rows.length) return true; // keine Rezepte → keine Verletzung
             return [...rows].some((row) => /solid/.test(row.style.borderLeft || ""));
+        })();
+        out.ichSearchExists = !!document.getElementById("ich-search");
+        out.ichNoDeadOmniboxButton = !document.getElementById("ich-omnibox-trigger");
+        (() => {
+            const s = document.getElementById("ich-search");
+            const host = document.getElementById("inventory-recipes");
+            const grid = document.getElementById("inventory-grid");
+            if (!s || !host || !grid) {
+                out.ichSearchDrivesRecipes = false;
+                out.ichSearchDrivesInventory = false;
+                out.ichSearchClears = false;
+                return;
+            }
+            const visibleRows = () =>
+                [...host.querySelectorAll(".recipe-row")].filter((r2) => r2.style.display !== "none").length;
+            const filled = [...grid.querySelectorAll(".inventory-slot[data-search]")];
+            const before = visibleRows();
+            s.value = "zzzznomatchxyz";
+            r._applyIchFilter();
+            // ein nicht-matchender Begriff blendet ALLE Rezept-Treffer aus + dimmt ALLE gefüllten Slots
+            out.ichSearchDrivesRecipes = before > 0 && visibleRows() === 0;
+            out.ichSearchDrivesInventory =
+                filled.length === 0 || filled.every((el) => el.classList.contains("search-dim"));
+            s.value = "";
+            r._applyIchFilter();
+            out.ichSearchClears =
+                visibleRows() === before && filled.every((el) => !el.classList.contains("search-dim"));
         })();
         // V18.64 — das Fenster PASST in den Viewport (kein Über-den-Rand, die wiederholte Falle): das
         // Overlay liegt vollständig innerhalb [0, vh] (max-height + box-sizing:border-box). UND die drei
@@ -24062,8 +24094,20 @@ async function checkBandVoxelP3AndInventory(ctx) {
             wave6c1Results.ichSoulBarInHeader && wave6c1Results.ichSoulHint
         );
         check(
-            "V18.63 Ich-I: die Omnibox ist im Ich beworben (⌕) + das Rezeptbuch trägt die geteilte Rollen-Farbe (H.5)",
-            wave6c1Results.ichOmniboxTrigger && wave6c1Results.recipeRowsRoleColor
+            "V18.65 Ich: EINE Selbst-Suche im Header (kein toter Omnibox-Knopf mehr)",
+            wave6c1Results.ichSearchExists && wave6c1Results.ichNoDeadOmniboxButton
+        );
+        check(
+            "V18.65 Ich: die Selbst-Suche TREIBT das Rezeptbuch (tippen → Nicht-Treffer aus, das Werkstatt-Loop)",
+            wave6c1Results.ichSearchDrivesRecipes
+        );
+        check(
+            "V18.65 Ich: die Selbst-Suche dimmt Nicht-Treffer in der Habe + räumt sauber (leer = alles sichtbar)",
+            wave6c1Results.ichSearchDrivesInventory && wave6c1Results.ichSearchClears
+        );
+        check(
+            "V18.63 Ich-I: das Rezeptbuch trägt die geteilte Rollen-Farbe wie die Werkstatt (H.5)",
+            wave6c1Results.recipeRowsRoleColor
         );
         check(
             "V18.64 Ich: das Fenster passt VOLLSTÄNDIG in den Viewport (kein Über-den-Rand)",
