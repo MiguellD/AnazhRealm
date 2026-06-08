@@ -10633,10 +10633,10 @@ class AnazhRealm {
     installResizeHandles() {
         if (typeof document === "undefined") return;
         const consoleEl = document.getElementById("console");
-        // V8.17 — Schöpfer-Korrektur: Resize-Handle der Konsole soll unten-
-        // rechts sein (nicht oben-rechts wie V8.15). Konsole sitzt jetzt
-        // mit bottom 150px über der HUD, unten-rechts ist sichtbar + intuitiv.
-        if (consoleEl) this._installResizeHandle(consoleEl, "br");
+        // V18.83 — die Konsole sitzt jetzt UNTEN-LINKS, bottom-verankert (Game-Konvention).
+        // Der „tr"-Griff (oben-rechts) wächst nach OBEN + behält den bottom-Anker — die Historie
+        // wächst nach oben aus dem Eingabe-Feld, wie ein echter Chat.
+        if (consoleEl) this._installResizeHandle(consoleEl, "tr");
         const drawers = document.querySelectorAll(".drawer[data-drawer]");
         // V18.42/.43 — die V18-Drawer folgen der EINEN Fenster-Sprache (CSS-bounded symmetrisch:
         // left:12;right:12;width:auto). Der alte bl-Griff änderte die BREITE inline → brach die
@@ -10700,9 +10700,9 @@ class AnazhRealm {
                 if (saved && typeof saved.height === "number" && saved.height > 0) {
                     container.style.height = `${saved.height}px`;
                     container.style.maxHeight = "none";
-                    // Konsole hat default `bottom:16px`; mit explizitem height
-                    // muss bottom auf auto damit height wirkt.
-                    if (container.id === "console") {
+                    // V18.83 — bei „tr" (Konsole, bottom-verankert, wächst nach oben) BLEIBT der
+                    // bottom-Anker; nur die alte top-verankerte br/bl-Variante bräuchte bottom:auto.
+                    if (container.id === "console" && (corner === "br" || corner === "bl")) {
                         container.style.bottom = "auto";
                     }
                 }
@@ -49905,7 +49905,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.82.0";
+AnazhRealm.VERSION = "18.83.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

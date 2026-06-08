@@ -251,14 +251,16 @@
 
             #console {
                 position: absolute;
-                top: 116px;
-                /* Welle 6.X.2 V8.15 — bottom-Offset von 16 → 150 px damit die
-                   Konsole nicht mit Hotbar (y 18..74) + Stats-HUD (y 88..130)
-                   überlappt. Spieler hatte vorher Chat unter den Hotbar-Slots.
-                   Resize-Handle (jetzt top-right) erlaubt Wachstum nach rechts. */
-                bottom: 150px;
+                /* V18.83 (Schöpfer „wie machen es die Profis, wo damit er nicht stört?") — der Chat
+                   sitzt UNTEN-LINKS (die Game-Konvention: Minecraft · LoL · Fortnite · MMORPGs). Das
+                   ist die periphere Ecke (Mitte = Action, unten-Mitte = Hotbar); der Chat stört dort
+                   nicht. Bottom-verankert, wächst nach OBEN (max-height); der „tr"-Resize-Griff
+                   (oben-rechts) wächst nach oben + behält den Anker. */
+                top: auto;
+                bottom: 16px;
                 left: 16px;
-                width: 420px;
+                width: 360px;
+                max-height: 50vh;
                 display: flex;
                 flex-direction: column;
                 background: rgba(20, 12, 5, 0.62);
@@ -329,9 +331,8 @@
                 display: none;
             }
             #console.collapsed {
-                bottom: auto;
-                top: 116px;
                 width: 340px;
+                max-height: 38vh;
             }
             /* V18.82 — DER FADING-FEED (der freie Bildschirm, BotW/Minecraft): default ist die Konsole
                eingeklappt → ein schlankes Chat-Widget (Header · Feed · Eingabe). Neue Nachrichten
@@ -8826,6 +8827,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.82.0" defer></script>
+        <script src="anazhRealm.js?v=18.83.0" defer></script>
     </body>
 </html>

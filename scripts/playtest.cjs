@@ -35555,7 +35555,9 @@ async function checkBandCadWorkshop(ctx) {
             // top-right statt bottom-right (unten verdeckt von
             // Hotbar + Stats-HUD).
             const consoleEl = document.getElementById("console");
-            out.consoleHasHandle = !!(consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-br"));
+            // V18.83 — die Konsole sitzt jetzt UNTEN-LINKS (bottom-verankert); der Resize-Griff ist
+            // „tr" (oben-rechts, wächst nach oben), nicht mehr „br". Der Test wandert mit (V9.56-i).
+            out.consoleHasHandle = !!(consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-tr"));
             // V18.43 — die V18-Drawer tragen einen HÖHEN-only Griff (.resize-b), NICHT den alten
             // breiten-brechenden .resize-bl (der die left/right-Symmetrie zerstörte). Heilung statt
             // Schnitt (Schöpfer „Samen geschnitten"): anpassbar bleiben, Symmetrie wahren.
@@ -35608,7 +35610,7 @@ async function checkBandCadWorkshop(ctx) {
             resizeResults.hasInstallMethod && resizeResults.hasInternalMethod
         );
         check(
-            "V8.00/V8.17 Resize: Konsole hat .resize-br Handle (unten-rechts, Schöpfer-Korrektur)",
+            "V18.83 Resize: Konsole hat .resize-tr Handle (oben-rechts, wächst nach oben; bottom-verankert)",
             resizeResults.consoleHasHandle
         );
         check(
