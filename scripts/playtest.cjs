@@ -23984,6 +23984,26 @@ async function checkBandVoxelP3AndInventory(ctx) {
             if (!rows.length) return true; // keine Rezepte → keine Verletzung
             return [...rows].some((row) => /solid/.test(row.style.borderLeft || ""));
         })();
+        // V18.64 — das Fenster PASST in den Viewport (kein Über-den-Rand, die wiederholte Falle): das
+        // Overlay liegt vollständig innerhalb [0, vh] (max-height + box-sizing:border-box). UND die drei
+        // Zonen sind TALL columns nebeneinander (gleicher Top, ähnliche Höhe — nicht das Rezeptbuch als
+        // gequetschter 30vh-Boden-Streifen wie vor V18.64).
+        {
+            const ov = document.getElementById("inventory-overlay");
+            const ob = ov ? ov.getBoundingClientRect() : null;
+            out.ichOverlayFitsViewport = !!(ob && ob.top >= -1 && ob.bottom <= window.innerHeight + 1);
+            const ch = document.querySelector(".inventory-col-character");
+            const rc = document.querySelector(".inventory-col-recipes");
+            if (ch && rc) {
+                const cb = ch.getBoundingClientRect();
+                const rb = rc.getBoundingClientRect();
+                // gleiche Reihe (Top-Differenz klein) + das Rezeptbuch ist eine VOLLE Spalte (≥ 70% der
+                // Charakter-Spalten-Höhe), kein Boden-Streifen.
+                out.ichZonesSideBySide = Math.abs(cb.top - rb.top) < 24 && rb.height >= cb.height * 0.7;
+            } else {
+                out.ichZonesSideBySide = false;
+            }
+        }
 
         // Toggle close
         r.toggleInventoryOverlay(false);
@@ -24044,6 +24064,14 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check(
             "V18.63 Ich-I: die Omnibox ist im Ich beworben (⌕) + das Rezeptbuch trägt die geteilte Rollen-Farbe (H.5)",
             wave6c1Results.ichOmniboxTrigger && wave6c1Results.recipeRowsRoleColor
+        );
+        check(
+            "V18.64 Ich: das Fenster passt VOLLSTÄNDIG in den Viewport (kein Über-den-Rand)",
+            wave6c1Results.ichOverlayFitsViewport
+        );
+        check(
+            "V18.64 Ich: die drei Zonen sind TALL columns nebeneinander (Rezeptbuch = volle Spalte, kein Boden-Streifen)",
+            wave6c1Results.ichZonesSideBySide
         );
         check("Welle 6.C1: addToInventory legt Eintrag in ersten leeren Slot", wave6c1Results.slot0HasBaum);
         check("Welle 6.C1: addToInventory stackt bei gleichem Bauplan-Namen", wave6c1Results.stacksCount);

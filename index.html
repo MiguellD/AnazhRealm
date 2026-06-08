@@ -643,34 +643,53 @@
                 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
                 font-family: "Cinzel", Georgia, serif;
                 color: var(--parch-ink);
-                width: 1080px;
-                max-width: 94vw;
+                /* V18.64 — das Fenster passt IMMER in den Viewport (wie die Drawer): flex-Spalte mit
+                   max-height; der Header bleibt fest, der Body trägt die drei Zonen, jede Zone scrollt
+                   nur INNEN bei Bedarf (wie die Werkstatt-Palette) — das Fenster läuft nie über den Rand. */
+                display: flex;
+                flex-direction: column;
+                box-sizing: border-box;
+                width: 1340px;
+                max-width: 96vw;
+                max-height: calc(100vh - 24px);
+                overflow: hidden;
             }
-            /* V18.57 Ich-Bogen — drei Zonen nach dem mentalen Modell des Selbst (wie Werkstatt/Hof):
-               WER ICH BIN (Star, wide) | WAS ICH HABE  ·  WAS ICH MACHEN KANN (volle Breite unten). */
+            /* V18.64 Ich-Bogen — drei Zonen als TALL columns nebeneinander (das Hof/Werkstatt-Modell:
+               full-height Spalten, nicht eine gequetschte Boden-Reihe): WER ICH BIN (Star) · WAS ICH HABE ·
+               WAS ICH MACHEN KANN. Der Body füllt die Fenster-Höhe (flex:1, min-height:0), jede Zone scrollt
+               nur INNEN bei Bedarf — das Rezeptbuch bekommt die VOLLE Höhe (wie die Werkstatt-Palette), kein
+               30vh-Streifen mehr; das Fenster läuft nie über. */
             .inventory-body {
                 display: grid;
-                grid-template-columns: minmax(0, 1.3fr) minmax(380px, 1fr);
-                grid-template-areas: "selbst habe" "werk werk";
+                grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.9fr) minmax(280px, 1.05fr);
+                grid-template-areas: "selbst habe werk";
                 gap: 16px 18px;
-                align-items: start;
+                flex: 1 1 auto;
+                min-height: 0;
+                align-items: stretch;
             }
             .inventory-col-character {
                 grid-area: selbst;
-                max-height: 64vh;
+                min-height: 0;
                 overflow-y: auto;
             }
             .inventory-col-items {
                 grid-area: habe;
-                max-height: 64vh;
+                min-height: 0;
                 overflow-y: auto;
             }
             .inventory-col-recipes {
                 grid-area: werk;
-                max-height: 30vh;
+                min-height: 0;
                 overflow-y: auto;
             }
-            @media (max-width: 900px) {
+            @media (max-width: 1100px) {
+                .inventory-body {
+                    grid-template-columns: 1fr 1fr;
+                    grid-template-areas: "selbst habe" "werk werk";
+                }
+            }
+            @media (max-width: 760px) {
                 .inventory-body {
                     grid-template-columns: 1fr;
                     grid-template-areas: "selbst" "habe" "werk";
@@ -861,6 +880,9 @@
             }
             #inventory-overlay[hidden] {
                 display: none;
+            }
+            #inventory-overlay .inventory-header {
+                flex: 0 0 auto;
             }
             #inventory-overlay .inventory-header h2 {
                 margin: 0 0 4px;
@@ -7505,6 +7527,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.63.0" defer></script>
+        <script src="anazhRealm.js?v=18.64.0" defer></script>
     </body>
 </html>

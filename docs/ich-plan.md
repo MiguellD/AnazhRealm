@@ -17,7 +17,12 @@ Körper-Liste + `renderPlayerStatsUI` geschnitten (H.3), Rollen-Override in „W
 (V18.61) die Bühne switcht live + `def.build()` (H.7); **Ich-H** (V18.62) die Seelen-Quelle vereint —
 `soulToBlueprint`-Brücke + Werkstatt-„Körper holen", der Ich-Soul-Editor geschnitten (H.4, die Seele IST ein
 Bauplan); **Ich-I** (V18.63) Rezeptbuch trägt die geteilte Rollen-Farbe + Omnibox-Trigger im Ich (H.5). Alle
-Playtests grün, mit dem Auge verifiziert (`diag-ich`/`diag-hof`). **OFFEN: der Schöpfer-Browser-Sign-off
+Playtests grün, mit dem Auge verifiziert (`diag-ich`/`diag-hof`). **V18.64 — die VISUELLE EINPASSUNG (Schöpfer
+„Fenster geht über den Bildschirm, Rezeptbuch nicht wie in der Werkstatt; MISS die Geometrie, werde ein
+Fischer"):** GEMESSEN das Overlay lief aus dem Viewport (zentriert ohne `max-height`) + das Rezeptbuch war ein
+gequetschter 30vh-Boden-Streifen → Heilung: `max-height:calc(100vh−24px)` + `box-sizing:border-box` + drei TALL
+columns nebeneinander (`"selbst habe werk"`), das Rezeptbuch volle Spaltenhöhe wie die Werkstatt-Palette; als
+Invarianten encoded (`ichOverlayFitsViewport`/`ichZonesSideBySide`). **OFFEN: der Schöpfer-Browser-Sign-off
 (GPU-Feel) + EIN Merge des Ich-Bogens.** (Die Synergie-Kontrolle + der ausgeführte Plan stehen in §H + §I.)
 
 **Historie: PLAN (tief, ungebaut).** Die Werkstatt (Referenz, V18.32–.44) und der Hof (V18.46–.56) sind RUND —
