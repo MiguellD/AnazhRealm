@@ -45562,8 +45562,15 @@ class AnazhRealm {
                     /* quota / private mode → silent */
                 }
             };
-            header.addEventListener("click", toggle);
+            // V18.80 — ein Klick/Tasten-Druck auf ein „?"-Help-Dot IM Header faltet NICHT (es
+            // zeigt nur den P12-Hinweis; der Hinweis lebt jetzt im Header statt als Textwand).
+            const onHelpDot = (event) => !!(event.target && event.target.closest && event.target.closest(".help-dot"));
+            header.addEventListener("click", (event) => {
+                if (onHelpDot(event)) return;
+                toggle();
+            });
             header.addEventListener("keydown", (event) => {
+                if (onHelpDot(event)) return;
                 if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
                     toggle();
@@ -49860,7 +49867,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.79.0";
+AnazhRealm.VERSION = "18.80.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

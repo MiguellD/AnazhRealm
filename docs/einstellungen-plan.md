@@ -9,8 +9,22 @@
 > Schöpfer-Auftrag (08.06.2026): „können wir die offenen 2 Menüs ausdefinieren, ausplanen, mit dem
 > Gelernten, der 3 erstellten?"
 
-**Stand: GEBAUT + VERFEINERT (V18.78 → V18.79, 08.06.2026) — der UI-Putz-Bogen ist RUND.** V18.78: Set-A (die
-Gruppen nach Häufigkeit, `.settings-group`-Karten auf dem masonry-Flucht-Raster) · Set-B (die ~20 Dev-Render-
+**Stand: GEBAUT + VERFEINERT (V18.78 → V18.80, 08.06.2026) — der UI-Putz-Bogen ist RUND.**
+
+**V18.80 — DAS DENKEN DES SPIELERS, KOMPONENTENWEISE (Schöpfer: „die Reorganisation war super, doch bei
+Einstellungen rutschen Dinge hoch und runter; die Einzelkomponenten nicht aus Spielersicht überdacht"):** die
+Makro-Ordnung (Gruppen) saß, aber die MIKRO-Tiefe fehlte. **(A)** der `column-count`-Masonry rebalancierte beim
+Auf-/Zuklappen die GANZE Gruppen-Verteilung → Gruppen teleportierten quer (das „Rutschen") → ersetzt durch DREI
+feste `.settings-col`-Flex-Spalten (A: Modus+Steuerung · B: Ton&Sicht · C: Identität+Render): Auf-/Zuklappen
+wirkt nur lokal in seiner Spalte (GEMESSEN Δ=0 quer). **(B)** der Spielmodus als klare WAHL-KARTEN (Name +
+Essenz inline, die gewählte hervorgehoben) statt winziger Radios + Textwand. **(C)** jede Sektion-Textwand →
+P12-Help-Pop am „?" (`_installHelpPopovers`) — der Default zeigt die Controls, die Erklärung ist einen Hover
+entfernt (GEMESSEN: 0 Textwände, 14 Help-Dots); der Falt-Klick ignoriert das „?". LEHRE: die Makro-Ordnung ist
+nur die Hälfte — das Layout muss STABIL auf Interaktion sein, die wichtigste Wahl klar präsentiert, die
+Erklärungen on-demand; MISS die Interaktion, nicht nur das Stand-Bild.
+
+V18.78: Set-A (die
+Gruppen nach Häufigkeit, `.settings-group`-Karten, jetzt in stabilen Flex-Spalten) · Set-B (die ~20 Dev-Render-
 Regler + die alte „Tuning"-Sektion → EINE eingeklappte „Render-Feinschliff"-Karte mit vier Sub-Bändern
 Cel/Wasser/Schatten/Emotion).
 

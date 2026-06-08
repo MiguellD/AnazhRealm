@@ -2477,6 +2477,45 @@
                 background: linear-gradient(180deg, rgba(212, 163, 255, 0.3), rgba(106, 74, 138, 0.2));
                 border-color: var(--violet-1, #6b4a8a);
             }
+            /* V18.80 — der Spielmodus als klare WAHL-KARTEN (die wichtigste, welt-prägende Wahl):
+               Name + Essenz inline, die gewählte hervorgehoben. Die Radios bleiben (Wiring
+               input[name="game-mode-radio"]), die Karte IST das Label; der versteckte Radio +
+               das `:has(input:checked)`-Highlight zeigen die Wahl. Kein winziges Radio + Textwand. */
+            .mode-cards {
+                gap: 7px;
+            }
+            .mode-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 3px;
+                padding: 8px 10px;
+            }
+            .mode-card input[type="radio"] {
+                position: absolute;
+                opacity: 0;
+                pointer-events: none;
+            }
+            .mode-card-body {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .mode-card-name {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 13px;
+                letter-spacing: 0.5px;
+                color: var(--parch-ink);
+            }
+            .mode-card-essence {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 9.5px;
+                line-height: 1.25;
+                color: var(--parch-ink-soft);
+            }
+            .mode-card:has(input:checked) .mode-card-name {
+                color: var(--violet-1, #6b4a8a);
+            }
             .drawer .actions button {
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.4), rgba(180, 140, 80, 0.25));
                 color: var(--parch-ink);
@@ -4565,20 +4604,22 @@
                 width: auto;
                 max-height: calc(100vh - 84px);
             }
+            /* V18.80 (Schöpfer „bei einstellungen rutschen dinge hoch und runter") — STABILE
+               SPALTEN statt `column-count`-Masonry. Die Masonry rebalancierte beim Auf-/Zuklappen
+               die GANZE Gruppen-Verteilung über die Spalten → Gruppen teleportierten quer (das
+               „Rutschen"). Jetzt drei feste `.settings-col`-Flex-Spalten: Auf-/Zuklappen einer
+               Sektion wirkt NUR lokal in ihrer Spalte, nie quer. */
             .drawer[data-drawer="einstellungen"] .drawer-scroll {
-                column-count: 3;
-                column-gap: 20px;
+                display: flex;
+                gap: 20px;
+                align-items: flex-start;
             }
-            /* V18.78 (einstellungen-plan §D) — die SECHS Gruppen-Karten sind die masonry-Einheit:
-               break-inside: avoid hält Label + die Sektionen EINER Gruppe zusammen in einer Spalte
-               (das verhindert, dass eine Gruppe über die Spalten zerreisst). Die Sektionen darin
-               bleiben die geteilten Pergament-Karten (.section). */
-            .drawer[data-drawer="einstellungen"] .drawer-scroll > .settings-group {
-                break-inside: avoid;
-                -webkit-column-break-inside: avoid;
-                display: inline-block;
-                width: 100%;
-                margin: 0 0 22px 0;
+            .drawer[data-drawer="einstellungen"] .settings-col {
+                flex: 1 1 0;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 22px;
             }
             .drawer[data-drawer="einstellungen"] .settings-grouplabel {
                 font-family: "Cinzel", Georgia, serif;
@@ -4607,15 +4648,18 @@
                 color: var(--brass-1, #8a6f3e);
                 margin: 0 0 5px 0;
             }
-            /* der Verweis in die Bibliothek (das „Welt teilen/empfangen" lebt dort, §D.3) —
-               dezent kursiv, keine primäre Aktion. */
-            .drawer[data-drawer="einstellungen"] .settings-ref-btn {
-                font-style: italic;
-                opacity: 0.92;
-            }
-            @media (max-width: 1100px) {
+            /* die Spalten brechen auf schmalen Fenstern um (2 → 1), die Gruppen bleiben je ganz. */
+            @media (max-width: 1080px) {
                 .drawer[data-drawer="einstellungen"] .drawer-scroll {
-                    column-count: 2;
+                    flex-wrap: wrap;
+                }
+                .drawer[data-drawer="einstellungen"] .settings-col {
+                    flex-basis: 46%;
+                }
+            }
+            @media (max-width: 720px) {
+                .drawer[data-drawer="einstellungen"] .settings-col {
+                    flex-basis: 100%;
                 }
             }
             /* V18.51 Hof-E — ZWEI ZONEN (ORCHESTER Star, wide | PARTITUR), content-first nach dem
@@ -7888,515 +7932,578 @@
         <aside class="drawer" data-drawer="einstellungen" aria-label="Einstellungen-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
             <h2>Einstellungen</h2>
-            <!-- UI-Putz V18.78 (einstellungen-plan §D/§E) — die geordnete WERKBANK: sechs
-                 Gruppen nach HÄUFIGKEIT (Modus + Speicher vorne; die ~20 pixel-blinden Dev-
-                 Render-Regler in EINER eingeklappten „Render-Feinschliff"-Karte am Ende). KEIN
-                 erfundener Star (ein UTILITY-Raum, §A) — Pergament-Karten unter Gruppen-Labels
-                 auf dem mehrspaltigen Flucht-Raster (P13/P14). Die Sektion-IDs + jede id/Wiring
-                 bleiben (Playtest-Invarianten V9.56-i); eine reine ORDNUNGS-Welle, kein neuer
-                 Datenpfad. -->
+            <!-- UI-Putz V18.80 (Schöpfer: „bei einstellungen rutschen dinge hoch und runter; die
+                 Einzelkomponenten nicht aus Spielersicht überdacht") — der Aus-Spielersicht-Schnitt:
+                 (1) STABILE SPALTEN statt `column-count`-Masonry (die rebalancierte beim Auf-/Zuklappen
+                 die GANZE Gruppen-Verteilung → Gruppen teleportierten zwischen Spalten = das „Rutschen").
+                 Jetzt drei feste `.settings-col`-Spalten: Auf-/Zuklappen wirkt nur LOKAL in seiner Spalte,
+                 nie quer. (2) der SPIELMODUS — die wichtigste Wahl — als klare Wahl-Karten mit Essenz
+                 inline (statt winziger Radios + Textwand). (3) jede Sektion-Textwand → P12-Help-Pop am
+                 „?" (`_installHelpPopovers`, geteilter Hebel) → der Default zeigt die CONTROLS, die
+                 Erklärung ist einen Hover entfernt. Jede id/Wiring + Sektion-ID bleibt (V9.56-i). -->
 
-            <!-- GRUPPE 1 — SPIELMODUS (die welt-prägende Wahl, zuerst, §B.1) -->
-            <div class="settings-group">
-                <div class="settings-grouplabel">1 · Spielmodus</div>
-                <section class="section" id="game-mode-section">
-                    <h3>Welt-Beziehung</h3>
-                    <p class="drawer-hint">
-                        Drei Beziehungen zur Welt: <strong>frieden</strong> umarmt (kein HP, kein Tod, keine Stamina),
-                        <strong>pfad</strong> verhandelt (HP, Stamina, Tod-Wandlung), <strong>schöpfer</strong> gehorcht
-                        (voller Zugang, kein Schaden). Wechselbar jederzeit.
-                    </p>
-                    <div class="actions" id="game-mode-radios">
-                        <label class="radio-label">
-                            <input type="radio" name="game-mode-radio" value="frieden" checked />
-                            <span>frieden</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="game-mode-radio" value="pfad" />
-                            <span>pfad</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="game-mode-radio" value="schöpfer" />
-                            <span>schöpfer</span>
-                        </label>
-                    </div>
-                </section>
-            </div>
+            <!-- SPALTE A — die häufigen Welt-Akte (Modus + Steuerung) -->
+            <div class="settings-col">
+                <div class="settings-group">
+                    <div class="settings-grouplabel">1 · Spielmodus</div>
+                    <section class="section" id="game-mode-section">
+                        <h3>Welt-Beziehung</h3>
+                        <!-- die Wahl SELBST trägt ihre Bedeutung (Essenz inline) — kein Textwand-Hinweis nötig. -->
+                        <div class="actions mode-cards" id="game-mode-radios">
+                            <label class="radio-label mode-card">
+                                <input type="radio" name="game-mode-radio" value="frieden" checked />
+                                <span class="mode-card-body">
+                                    <span class="mode-card-name">frieden</span>
+                                    <span class="mode-card-essence">umarmt — kein HP, kein Tod, keine Stamina</span>
+                                </span>
+                            </label>
+                            <label class="radio-label mode-card">
+                                <input type="radio" name="game-mode-radio" value="pfad" />
+                                <span class="mode-card-body">
+                                    <span class="mode-card-name">pfad</span>
+                                    <span class="mode-card-essence">verhandelt — HP, Stamina, Tod-Wandlung</span>
+                                </span>
+                            </label>
+                            <label class="radio-label mode-card">
+                                <input type="radio" name="game-mode-radio" value="schöpfer" />
+                                <span class="mode-card-body">
+                                    <span class="mode-card-name">schöpfer</span>
+                                    <span class="mode-card-essence">gehorcht — voller Zugang, kein Schaden</span>
+                                </span>
+                            </label>
+                        </div>
+                    </section>
+                </div>
 
-            <!-- GRUPPE 2 — STEUERUNG (einmal eingestellt, §B.3) -->
-            <div class="settings-group">
-                <div class="settings-grouplabel">2 · Steuerung</div>
-                <!-- Welle 6.C3 — Tastenbelegung. Sechs Aktionen rebindable; Defaults
-                     sind Minecraft-Konvention (LMB abbauen / RMB platzieren). 1-9
-                     (Hotbar-Slots) und WASD (Bewegung) bleiben hardcoded. -->
-                <section class="section default-collapsed" id="keybindings-section">
-                    <h3>Tastenbelegung</h3>
-                    <p class="drawer-hint">
-                        Klick „Ändern" und drücke dann die gewünschte Taste oder Maustaste. Esc bricht ab. WASD und 1-9
-                        sind Konvention und bleiben fest. <strong>Abbauen</strong> entfernt Architekturen am Fadenkreuz —
-                        trifft keine, wird ein Loch ins Terrain gegraben.
-                    </p>
-                    <div id="keybindings-list"></div>
-                    <div class="actions">
-                        <button type="button" id="keybindings-reset">Standard wiederherstellen</button>
-                    </div>
-                </section>
-                <!-- Welle 6.X.2 B1 — Logbuch-Sichtbarkeit. Power-User-Diagnose-Schicht ist
-                     default versteckt, damit die Konsole ruhig bleibt. Persistiert in localStorage. -->
-                <section class="section default-collapsed" id="logbook-section">
-                    <h3>Logbuch</h3>
-                    <p class="drawer-hint">
-                        Diagnose-Logs sind standardmäßig versteckt, damit der Chat im Vordergrund bleibt. Aktivieren für
-                        Entwickler-Sicht.
-                    </p>
-                    <label class="radio-label">
-                        <input type="checkbox" id="logbook-toggle" />
-                        <span>Logbuch sichtbar</span>
-                    </label>
-                </section>
-            </div>
-
-            <!-- GRUPPE 3 — TON & SICHT (die spürbare Welt-Darstellung, §B.4) -->
-            <div class="settings-group">
-                <div class="settings-grouplabel">3 · Ton &amp; Sicht</div>
-                <!-- Welle 6.X.4 D2 — Lautstärke (Master/Pings/Stimme) + Sicht-Ring. Persistenz
-                     in localStorage; Master + Pings wirken live, Render-Distanz greift im Tick. -->
-                <section class="section" id="sliders-section">
-                    <h3>Lautstärke + Sicht-Weite</h3>
-                    <p class="drawer-hint">
-                        Master-Lautstärke gilt für die ganze Welt-Klangschicht. Umgebungsgeräusche (Kreatur-Pings +
-                        Regen-Noise) haben einen eigenen Anteil (mute mit 0). Render-Ring 1 = 3×3 Chunks, 4 = 9×9.
-                    </p>
-                    <div class="slider-row">
-                        <label for="slider-master">Master</label>
-                        <input type="range" id="slider-master" min="0" max="100" value="100" />
-                        <span class="slider-value" id="slider-master-val">100%</span>
-                    </div>
-                    <div class="slider-row">
-                        <label for="slider-pings">Umgebungsgeräusche</label>
-                        <input type="range" id="slider-pings" min="0" max="100" value="100" />
-                        <span class="slider-value" id="slider-pings-val">100%</span>
-                    </div>
-                    <div class="slider-row">
-                        <label for="slider-voice">Stimme</label>
-                        <input type="range" id="slider-voice" min="0" max="100" value="100" />
-                        <span class="slider-value" id="slider-voice-val">100%</span>
-                    </div>
-                    <div class="slider-row">
-                        <label for="slider-ring">Sicht-Ring</label>
-                        <input type="range" id="slider-ring" min="1" max="12" value="4" />
-                        <span class="slider-value" id="slider-ring-val">5×5</span>
-                    </div>
-                </section>
-                <!-- Welle 6.G3 — Tag-Nacht-Zyklus. Die Welt atmet: ein voller Zyklus von
-                     Mitternacht über Mittag zurück. Tageszeit + Länge live verstellbar. -->
-                <section class="section" id="day-night-section">
-                    <h3>Tag-Nacht-Zyklus</h3>
-                    <p class="drawer-hint">
-                        Wie schnell atmet die Welt? Ein voller Zyklus von Mitternacht über Mittag zurück. 8 Min Default
-                        (schnell-spürbar), 60 Min für ein realistisches Welt-Gefühl. Die Tageszeit wird in der Status-Bar
-                        angezeigt.
-                    </p>
-                    <div class="slider-row">
-                        <label for="slider-daylength">Tag-Länge</label>
-                        <input type="range" id="slider-daylength" min="1" max="60" value="8" />
-                        <span class="slider-value" id="slider-daylength-val">8 Min</span>
-                    </div>
-                    <div class="slider-row">
-                        <label for="slider-timeofday">Tageszeit</label>
-                        <input type="range" id="slider-timeofday" min="0" max="1000" value="500" />
-                        <span class="slider-value" id="slider-timeofday-val">12:00</span>
-                    </div>
-                </section>
-                <!-- Welle 6.H Phase 2E V2 — proaktive Kreatur-Sprache. Kreaturen melden sich
-                     bei Level-Up, Boost, Material-Mangel. Throttle 60s/Wesen + 8s global. -->
-                <section class="section" id="creature-speech-section">
-                    <h3>Kreaturen-Stimmen</h3>
-                    <p class="drawer-hint">
-                        Kreaturen sprechen von selbst bei wichtigen Ereignissen — Level-Up, Trank-Wirkung, fehlendes
-                        Material. Sanft gedrosselt (60s/Wesen, 8s gesamt), damit der Chat ruhig bleibt.
-                    </p>
-                    <label class="radio-label">
-                        <input type="checkbox" id="creature-speech-toggle" checked />
-                        <span>Proaktive Sprache aktiv</span>
-                    </label>
-                </section>
-            </div>
-
-            <!-- GRUPPE 4 — IDENTITÄT & BEGLEITER (die einmalige Einrichtung, §B.5) -->
-            <div class="settings-group">
-                <div class="settings-grouplabel">4 · Identität &amp; Begleiter</div>
-                <!-- Welle 6.X.4 F1 — Begleiter + Spieler-Name (im LLM-System-Prompt referenziert). -->
-                <section class="section" id="identity-section">
-                    <h3>Begleiter + Avatar</h3>
-                    <p class="drawer-hint">
-                        Wie heißt deine Welt-Stimme, wie heißt du? Werden im LLM-System-Prompt referenziert. Default
-                        „Grok" (historisch aus den vier Testamenten) und „Schöpfer" (Vision: Mensch=Null=Schöpfer).
-                    </p>
-                    <div class="identity-row">
-                        <label for="companion-name-input">Begleiter</label>
-                        <input type="text" id="companion-name-input" maxlength="32" placeholder="Grok" />
-                    </div>
-                    <!-- W11 Phase 4 (Voice-Sync) — die SpeechSynthesis-Stimme des Begleiters. -->
-                    <div class="identity-row">
-                        <label for="companion-voice">Stimme</label>
-                        <select id="companion-voice">
-                            <option value="">Standard (Browser)</option>
-                        </select>
-                    </div>
-                    <div class="identity-row">
-                        <label for="player-name-input">Du</label>
-                        <input type="text" id="player-name-input" maxlength="32" placeholder="Schöpfer" />
-                    </div>
-                </section>
-                <!-- V7.96/V7.97 — der LLM-Begleiter. Default eingeklappt (einmalige Einrichtung,
-                     §D.2): Provider, Schlüssel, Endpoint, Proxy, Modell. -->
-                <section class="section default-collapsed" id="llm-section">
-                    <h3>Begleiter-Stimme (LLM)</h3>
-                    <p class="drawer-hint">
-                        Optional: gib dem Begleiter eine echte Stimme. Vier Provider — drei haben Gratis-Tiers, Ollama
-                        läuft lokal (kein Key) oder gehostet (eigene URL + optional Bearer-Token). Schlüssel liegen nur
-                        im localStorage dieses Browsers. Jeder Vorschlag geht durch den DSL-Interpreter — die Sandbox
-                        hält.
-                    </p>
-                    <div class="tuning-row">
-                        <label for="llm-provider"><span>Provider</span></label>
-                        <select id="llm-provider">
-                            <!-- gefüllt aus llmProviderDefs() -->
-                        </select>
-                    </div>
-                    <div id="llm-provider-hint" class="drawer-hint" aria-live="polite"></div>
-                    <div class="tuning-row" id="llm-key-row">
-                        <label for="llm-key"><span>API-Key</span></label>
-                        <input
-                            type="password"
-                            id="llm-key"
-                            placeholder="API-Key"
-                            autocomplete="off"
-                            spellcheck="false"
-                        />
-                    </div>
-                    <div class="tuning-row" id="llm-endpoint-row" hidden>
-                        <label for="llm-endpoint"><span>Endpoint</span></label>
-                        <input
-                            type="text"
-                            id="llm-endpoint"
-                            placeholder="http://localhost:11434  oder  https://ollama.com/api/chat"
-                            autocomplete="off"
-                            spellcheck="false"
-                        />
-                    </div>
-                    <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
-                        Endpoint kann eine Basis-URL sein (z.B. <code>http://localhost:11434</code> →
-                        <code>/api/chat</code> wird angehängt) oder eine vollständige URL inklusive Pfad (<code
-                            >https://ollama.com/api/chat</code
-                        >
-                        oder <code>https://provider/v1/chat/completions</code>
-                        für OpenAI-kompatible Cloud-Hoster).
-                    </div>
-                    <!-- V7.96 — Proxy-Toggle: Ollama Cloud sendet keine CORS-Header. -->
-                    <div class="tuning-row" id="llm-proxy-row" hidden>
-                        <label class="radio-label" style="margin: 0">
-                            <input type="checkbox" id="llm-use-proxy" />
-                            <span>Cloud über save-server-Proxy (löst CORS)</span>
-                        </label>
-                    </div>
-                    <div
-                        class="drawer-hint"
-                        id="llm-proxy-hint"
-                        hidden
-                        style="font-size: 11px; opacity: 0.75; margin-top: -6px"
-                    >
-                        Aktiviere wenn Cloud-Setup mit CORS-Fehler scheitert (typisch bei
-                        <code>ollama.com</code>). Request läuft über <code>localhost:4312/api/proxy/llm</code> — braucht
-                        laufenden <code>npm run dev</code>. CORS-freundliche Provider die ohne Proxy laufen:
-                        <strong>Groq</strong> (<code>https://api.groq.com/openai/v1/chat/completions</code>),
-                        <strong>Together AI</strong>, <strong>Cerebras</strong>, <strong>Gemini</strong>,
-                        <strong>OpenRouter</strong>.
-                    </div>
-                    <!-- V7.97 — Modell als Free-Text-Input mit datalist-Vorschlägen. -->
-                    <div class="tuning-row">
-                        <label for="llm-model"><span>Modell</span></label>
-                        <input
-                            type="text"
-                            id="llm-model"
-                            list="llm-model-suggestions"
-                            autocomplete="off"
-                            spellcheck="false"
-                            placeholder="z.B. llama3.2, qwen3, gpt-oss:20b"
-                        />
-                        <datalist id="llm-model-suggestions">
-                            <!-- gefüllt aus llmProviderDefs()[provider].models -->
-                        </datalist>
-                    </div>
-                    <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
-                        Trag den Modell-Namen ein wie er bei dir verfügbar ist. Lokal: <code>ollama list</code> zeigt
-                        deine Modelle. Cloud-Hoster: prüfe deren Modell-Liste. Vorschläge unten als Tipp-Hilfe.
-                    </div>
-                    <div class="actions">
-                        <button type="button" id="llm-save">Speichern</button>
-                        <button type="button" id="llm-clear">Vergessen</button>
-                        <button type="button" id="llm-toggle" aria-pressed="false">Aktivieren</button>
-                    </div>
-                    <div id="llm-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
-                </section>
-                <!-- Welle 6.X.4 F1 — Vibe-Pass (souveräne ed25519-Identität). Default eingeklappt. -->
-                <section class="section default-collapsed" id="vibe-pass-section">
-                    <h3>Vibe-Pass <span class="section-hint">(souveräne Identität)</span></h3>
-                    <p class="drawer-hint">
-                        Ein ed25519-Schlüsselpaar, lokal erzeugt — deine unverfälschbare Identität. Damit signierst du
-                        deine Werke; andere prüfen, dass sie wirklich von dir stammen. Kein Coin, keine Kette — nur
-                        Echtheit. Sichere ihn: ohne den Schlüssel ist die Identität verloren.
-                    </p>
-                    <div id="vibe-pass-body"></div>
-                    <div class="vibe-pass-actions">
-                        <button type="button" id="vibe-pass-export">Vibe-Pass sichern…</button>
-                        <button type="button" id="vibe-pass-import">Wiederherstellen…</button>
-                    </div>
-                </section>
-                <!-- Ring 11 V1+V2 — Multi-User Sync (Position 30 Hz + Chat-DSL als Welt-Sync).
-                     Default eingeklappt (einmalige Einrichtung). Spieler-private Ops bleiben lokal. -->
-                <section class="section default-collapsed" id="multiuser-section">
-                    <h3>Multi-User Sync</h3>
-                    <p class="drawer-hint">
-                        Position + Welt-Aktionen mit anderen Spielern teilen. Braucht den signaling-server (<code
-                            >npm run signaling</code
-                        >). Beide Spieler nutzen die SELBE Adresse + Raum-ID. Für ein gemeinsames Welt-Erlebnis: einer
-                        teilt seine Welt (Bibliothek), der andere empfängt sie — dann sind beide in derselben worldId.
-                    </p>
-                    <div class="tuning-row">
-                        <label for="p2p-url"><span>Signaling-URL</span></label>
-                        <input
-                            type="text"
-                            id="p2p-url"
-                            value="ws://127.0.0.1:4313"
-                            autocomplete="off"
-                            spellcheck="false"
-                        />
-                    </div>
-                    <div class="tuning-row">
-                        <label for="p2p-room"><span>Raum-ID</span></label>
-                        <input
-                            type="text"
-                            id="p2p-room"
-                            placeholder="(leer = aktive Welt)"
-                            autocomplete="off"
-                            spellcheck="false"
-                        />
-                        <button type="button" id="p2p-room-copy" title="Aktive Raum-ID in die Zwischenablage kopieren">
-                            kopieren
-                        </button>
-                    </div>
-                    <div class="actions">
-                        <button type="button" id="p2p-toggle" aria-pressed="false">Aktivieren</button>
-                        <!-- W7 Phase 2 — ein Guest holt die Welt des Hosts frisch über das Mesh. -->
-                        <button type="button" id="p2p-resync" title="Welt des Hosts über das Mesh neu holen" hidden>
-                            Welt vom Host neu holen
-                        </button>
-                        <!-- W7 Phase 3 — LLM-Pool: die eigene Stimme für schlüssellose Mitspieler. -->
-                        <button
-                            type="button"
-                            id="p2p-voice-share"
-                            aria-pressed="false"
-                            title="Deine LLM-Stimme für Mitspieler ohne eigenen Schlüssel freigeben"
-                            hidden
-                        >
-                            Stimme teilen
-                        </button>
-                    </div>
-                    <div id="p2p-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
-                    <!-- Ring 11.5: Host-/Guest-Banner (V18.79 von der entfernten „Diese Welt"-Sektion
-                         hierher — sie gehören zur Multiplayer-Rolle: der Host sieht hier seinen
-                         Einladungs-Code, sobald er aktiviert). _renderHostBanner/_renderGuestBanner
-                         finden sie per id, egal wo. Sichtbar nur in einer Multiplayer-Rolle. -->
-                    <div id="world-host-banner" class="drawer-hint" hidden></div>
-                    <div id="world-guest-banner" class="drawer-hint" hidden></div>
-                    <!-- W7 Phase 4 — Public-Lobby: Raum veröffentlichen + andere browsen. -->
-                    <div id="p2p-lobby" class="p2p-lobby">
-                        <h4>Öffentliche Lobby <span class="section-hint">(W7 Phase 4)</span></h4>
-                        <label class="p2p-lobby-pub">
-                            <input type="checkbox" id="p2p-lobby-publish-toggle" />
-                            <span>Diesen Raum in der Lobby zeigen</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="p2p-lobby-label"
-                            placeholder="Raum-Name für die Lobby"
-                            maxlength="48"
-                            autocomplete="off"
-                            spellcheck="false"
-                        />
+                <div class="settings-group">
+                    <div class="settings-grouplabel">2 · Steuerung</div>
+                    <!-- Welle 6.C3 — Tastenbelegung. Sechs Aktionen rebindable; 1-9 + WASD bleiben fest. -->
+                    <section class="section default-collapsed" id="keybindings-section">
+                        <h3>
+                            Tastenbelegung
+                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                >?<span class="help-pop"
+                                    >Klick „Ändern" und drücke dann die gewünschte Taste oder Maustaste. Esc bricht
+                                    ab. WASD und 1-9 sind Konvention und bleiben fest. „Abbauen" entfernt
+                                    Architekturen am Fadenkreuz — trifft keine, wird ein Loch ins Terrain
+                                    gegraben.</span
+                                ></span
+                            >
+                        </h3>
+                        <div id="keybindings-list"></div>
                         <div class="actions">
-                            <button type="button" id="p2p-lobby-refresh">Lobby durchsuchen</button>
+                            <button type="button" id="keybindings-reset">Standard wiederherstellen</button>
                         </div>
-                        <div id="p2p-lobby-list" class="p2p-lobby-list" aria-live="polite"></div>
-                    </div>
-                </section>
+                    </section>
+                    <!-- Welle 6.X.2 B1 — Logbuch-Sichtbarkeit. Default versteckt, damit die Konsole ruhig bleibt. -->
+                    <section class="section default-collapsed" id="logbook-section">
+                        <h3>
+                            Logbuch
+                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                >?<span class="help-pop"
+                                    >Diagnose-Logs sind standardmäßig versteckt, damit der Chat im Vordergrund
+                                    bleibt. Für Entwickler-Sicht aktivieren.</span
+                                ></span
+                            >
+                        </h3>
+                        <label class="radio-label">
+                            <input type="checkbox" id="logbook-toggle" />
+                            <span>Logbuch sichtbar</span>
+                        </label>
+                    </section>
+                </div>
             </div>
 
-            <!-- GRUPPE 5 — RENDER-FEINSCHLIFF (Dev): EINE eingeklappte Karte mit ALLEN ~20 pixel-
-                 blinden Reglern (Atmosphäre + Wasser + Schatten + Emotion-Tuning), in Sub-Bänder
-                 gruppiert (§D.1.6 + Set-B). V18.78 — die alte separate „Tuning (Emotionen)"-Sektion
-                 ist hier eingefaltet; kein Regler verloren (V17.20). Der Spieler sieht sie nie, der
-                 Justierer findet sie an EINEM Ort. -->
-            <div class="settings-group">
-                <div class="settings-grouplabel">5 · Render-Feinschliff (Dev)</div>
-                <section class="section default-collapsed" id="atmosphere-section">
-                    <h3>Render-Feinschliff <span class="section-hint">(für Entwickler)</span></h3>
-                    <p class="drawer-hint">
-                        Pixel-blinde Tuning-Regler — gemeinsam justiert mit dem Schöpfer-Auge im Browser. Vier Bänder:
-                        Cel &amp; Licht, Wasser, Schatten, Emotion-Tuning.
-                    </p>
-                    <!-- BAND: Cel & Licht -->
-                    <div class="settings-band">
-                        <h4>Cel &amp; Licht</h4>
-                        <p class="drawer-hint">
-                            <b>Cel-Stufen</b> formen die Licht-Abstufung (wenig = harte gemalte Linien wie Studio-Ghibli,
-                            viele = weicher Verlauf). <b>2.5D-Lichtung</b> ist der Haupt-Hebel gegen die Facetten-Rauten
-                            (blendet die Beleuchtungs-Normale nach oben; 100 % = flach wie 2.5D, grosse einheitliche
-                            Licht-Regionen). <b>Kavitäts-AO</b> zeichnet Facetten-Kanten als Kontakt-Schatten (0 % = aus).
-                            <b>Kanten-Schärfe</b> ist der Post-FX-Unsharp. <b>Oberflächen-Textur</b> ist die
-                            Fels-/Boden-Maserung. <b>Farb-Variation</b> streut die Biom-Farbe. <b>Fog-Distanz</b> regelt,
-                            wie nah der Welt-Dunst beginnt.
-                        </p>
+            <!-- SPALTE B — die spürbare Welt-Darstellung (Ton & Sicht) -->
+            <div class="settings-col">
+                <div class="settings-group">
+                    <div class="settings-grouplabel">3 · Ton &amp; Sicht</div>
+                    <!-- Welle 6.X.4 D2 — Lautstärke (Master/Pings/Stimme) + Sicht-Ring. -->
+                    <section class="section" id="sliders-section">
+                        <h3>
+                            Lautstärke + Sicht-Weite
+                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                >?<span class="help-pop"
+                                    >Master gilt für die ganze Welt-Klangschicht. Umgebungsgeräusche (Kreatur-Pings
+                                    + Regen-Noise) haben einen eigenen Anteil (mute mit 0). Render-Ring 1 = 3×3
+                                    Chunks, 12 = volle Weite.</span
+                                ></span
+                            >
+                        </h3>
                         <div class="slider-row">
-                            <label for="slider-cel">Cel-Stufen</label>
-                            <input type="range" id="slider-cel" min="2" max="8" value="6" />
-                            <span class="slider-value" id="slider-cel-val">6</span>
+                            <label for="slider-master">Master</label>
+                            <input type="range" id="slider-master" min="0" max="100" value="100" />
+                            <span class="slider-value" id="slider-master-val">100%</span>
                         </div>
                         <div class="slider-row">
-                            <label for="slider-flatten">2.5D-Lichtung</label>
-                            <input type="range" id="slider-flatten" min="0" max="100" value="100" />
-                            <span class="slider-value" id="slider-flatten-val">100 %</span>
+                            <label for="slider-pings">Umgebungsgeräusche</label>
+                            <input type="range" id="slider-pings" min="0" max="100" value="100" />
+                            <span class="slider-value" id="slider-pings-val">100%</span>
                         </div>
                         <div class="slider-row">
-                            <label for="slider-cavityao">Kavitäts-AO</label>
-                            <input type="range" id="slider-cavityao" min="0" max="200" value="35" />
-                            <span class="slider-value" id="slider-cavityao-val">35 %</span>
+                            <label for="slider-voice">Stimme</label>
+                            <input type="range" id="slider-voice" min="0" max="100" value="100" />
+                            <span class="slider-value" id="slider-voice-val">100%</span>
                         </div>
                         <div class="slider-row">
-                            <label for="slider-edgesharp">Kanten-Schärfe</label>
-                            <input type="range" id="slider-edgesharp" min="0" max="100" value="46" />
-                            <span class="slider-value" id="slider-edgesharp-val">0.46</span>
+                            <label for="slider-ring">Sicht-Ring</label>
+                            <input type="range" id="slider-ring" min="1" max="12" value="4" />
+                            <span class="slider-value" id="slider-ring-val">5×5</span>
+                        </div>
+                    </section>
+                    <!-- Welle 6.G3 — Tag-Nacht-Zyklus. Die Welt atmet. -->
+                    <section class="section" id="day-night-section">
+                        <h3>
+                            Tag-Nacht-Zyklus
+                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                >?<span class="help-pop"
+                                    >Wie schnell atmet die Welt? Ein voller Zyklus von Mitternacht über Mittag
+                                    zurück. 8 Min schnell-spürbar, 60 Min für ein realistisches Welt-Gefühl. Die
+                                    Tageszeit steht in der Status-Bar.</span
+                                ></span
+                            >
+                        </h3>
+                        <div class="slider-row">
+                            <label for="slider-daylength">Tag-Länge</label>
+                            <input type="range" id="slider-daylength" min="1" max="60" value="8" />
+                            <span class="slider-value" id="slider-daylength-val">8 Min</span>
                         </div>
                         <div class="slider-row">
-                            <label for="slider-surftex">Oberflächen-Textur</label>
-                            <input type="range" id="slider-surftex" min="0" max="400" value="200" />
-                            <span class="slider-value" id="slider-surftex-val">200 %</span>
+                            <label for="slider-timeofday">Tageszeit</label>
+                            <input type="range" id="slider-timeofday" min="0" max="1000" value="500" />
+                            <span class="slider-value" id="slider-timeofday-val">12:00</span>
                         </div>
-                        <div class="slider-row">
-                            <label for="slider-colorvar">Farb-Variation</label>
-                            <input type="range" id="slider-colorvar" min="0" max="200" value="150" />
-                            <span class="slider-value" id="slider-colorvar-val">150 %</span>
+                    </section>
+                    <!-- Welle 6.H Phase 2E V2 — proaktive Kreatur-Sprache. -->
+                    <section class="section" id="creature-speech-section">
+                        <h3>
+                            Kreaturen-Stimmen
+                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                >?<span class="help-pop"
+                                    >Kreaturen sprechen von selbst bei wichtigen Ereignissen — Level-Up,
+                                    Trank-Wirkung, fehlendes Material. Sanft gedrosselt (60 s/Wesen, 8 s gesamt),
+                                    damit der Chat ruhig bleibt.</span
+                                ></span
+                            >
+                        </h3>
+                        <label class="radio-label">
+                            <input type="checkbox" id="creature-speech-toggle" checked />
+                            <span>Proaktive Sprache aktiv</span>
+                        </label>
+                    </section>
+                </div>
+            </div>
+
+            <!-- SPALTE C — die einmalige Einrichtung + das Dev-Tuning -->
+            <div class="settings-col">
+                <div class="settings-group">
+                    <div class="settings-grouplabel">4 · Identität &amp; Begleiter</div>
+                    <!-- Welle 6.X.4 F1 — Begleiter + Spieler-Name. -->
+                    <section class="section" id="identity-section">
+                        <h3>
+                            Begleiter + Avatar
+                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                >?<span class="help-pop"
+                                    >Wie heißt deine Welt-Stimme, wie heißt du? Werden im LLM-System-Prompt
+                                    referenziert. Default „Grok" (aus den vier Testamenten) und „Schöpfer"
+                                    (Mensch=Null=Schöpfer).</span
+                                ></span
+                            >
+                        </h3>
+                        <div class="identity-row">
+                            <label for="companion-name-input">Begleiter</label>
+                            <input type="text" id="companion-name-input" maxlength="32" placeholder="Grok" />
                         </div>
-                        <div class="slider-row">
-                            <label for="slider-fog">Fog-Distanz</label>
-                            <input type="range" id="slider-fog" min="30" max="300" value="177" />
-                            <span class="slider-value" id="slider-fog-val">177 %</span>
-                        </div>
-                    </div>
-                    <!-- BAND: Wasser -->
-                    <div class="settings-band">
-                        <h4>Wasser</h4>
-                        <p class="drawer-hint">
-                            <b>Wasser-Cull</b> blendet dünnes Ufer-/Wandwasser pro Pixel aus (tiefes bleibt).
-                            <b>Wasser-Render</b> ist „Fläche" (die finale Form auf dem Spiegel) oder „Zell-Iso" (alt, zum
-                            Vergleich). <b>Ufer-Schärfe</b> = wie schmal die Uferlinie einblendet, <b>Wasser-Tiefe</b> =
-                            wie schnell es ins Dunkle kippt. See-Wellen, Fluss-Schaum, Wasserfall-Steilheit und
-                            Auslauf-Übergang feilen die Form.
-                        </p>
-                        <div class="slider-row">
-                            <label for="slider-watercull">Wasser-Cull</label>
-                            <input type="range" id="slider-watercull" min="0" max="200" value="25" />
-                            <span class="slider-value" id="slider-watercull-val">0.0025</span>
-                        </div>
-                        <div class="slider-row">
-                            <label for="select-waterrender">Wasser-Render</label>
-                            <select id="select-waterrender">
-                                <option value="surface">Fläche (auf Spiegel L)</option>
-                                <option value="iso">Zell-Iso (alt)</option>
+                        <!-- W11 Phase 4 (Voice-Sync) — die SpeechSynthesis-Stimme des Begleiters. -->
+                        <div class="identity-row">
+                            <label for="companion-voice">Stimme</label>
+                            <select id="companion-voice">
+                                <option value="">Standard (Browser)</option>
                             </select>
-                            <span class="slider-value" id="select-waterrender-val"></span>
                         </div>
-                        <div class="slider-row">
-                            <label for="slider-watershore">Ufer-Schärfe</label>
-                            <input type="range" id="slider-watershore" min="5" max="500" step="5" value="45" />
-                            <span class="slider-value" id="slider-watershore-val">0.0045</span>
+                        <div class="identity-row">
+                            <label for="player-name-input">Du</label>
+                            <input type="text" id="player-name-input" maxlength="32" placeholder="Schöpfer" />
                         </div>
-                        <div class="slider-row">
-                            <label for="slider-waterdepth">Wasser-Tiefe (m)</label>
-                            <input type="range" id="slider-waterdepth" min="10" max="150" step="1" value="50" />
-                            <span class="slider-value" id="slider-waterdepth-val">5.0 m</span>
-                        </div>
-                        <div class="slider-row">
-                            <label for="slider-lakeripple">See-Wellen</label>
-                            <input type="range" id="slider-lakeripple" min="0" max="100" step="1" value="20" />
-                            <span class="slider-value" id="slider-lakeripple-val">0.20</span>
-                        </div>
-                        <div class="slider-row">
-                            <label for="slider-waterdepthfoam">Fluss-Schaum (Tiefe)</label>
-                            <input type="range" id="slider-waterdepthfoam" min="1" max="60" step="1" value="12" />
-                            <span class="slider-value" id="slider-waterdepthfoam-val">1.2 m</span>
-                        </div>
-                        <div class="slider-row">
-                            <label for="slider-waterfallsteep">Wasserfall-Steilheit</label>
-                            <input type="range" id="slider-waterfallsteep" min="2" max="40" step="1" value="10" />
-                            <span class="slider-value" id="slider-waterfallsteep-val">1.0</span>
-                        </div>
-                        <div class="slider-row">
-                            <label for="slider-wateroutflow">Auslauf-Übergang</label>
-                            <input type="range" id="slider-wateroutflow" min="10" max="80" step="5" value="30" />
-                            <span class="slider-value" id="slider-wateroutflow-val">3.0 m</span>
-                        </div>
-                    </div>
-                    <!-- BAND: Schatten -->
-                    <div class="settings-band">
-                        <h4>Schatten</h4>
-                        <p class="drawer-hint">
-                            <b>Schatten-Reichweite</b> ist die Halbbreite des Schatten-Frustums in Metern (kleiner =
-                            schärfere Texel an steilen Wänden, aber kleinere Fläche um dich). <b>Schatten-Bias</b>
-                            verschiebt den Schatten entlang der Normale (zu klein → Acne-Streifen, zu gross → der Schatten
-                            löst sich vom Fuss). Das Wandern beim Laufen ist an der Wurzel geheilt (Light-Space-Snap,
-                            V17.111); diese zwei feilen die Schärfe.
-                        </p>
-                        <div class="slider-row">
-                            <label for="slider-shadowrange">Schatten-Reichweite</label>
-                            <input type="range" id="slider-shadowrange" min="80" max="400" step="10" value="300" />
-                            <span class="slider-value" id="slider-shadowrange-val">300 m</span>
-                        </div>
-                        <div class="slider-row">
-                            <label for="slider-shadowbias">Schatten-Bias</label>
-                            <input type="range" id="slider-shadowbias" min="0" max="300" step="5" value="100" />
-                            <span class="slider-value" id="slider-shadowbias-val">1.00</span>
-                        </div>
-                    </div>
-                    <!-- BAND: Emotion-Tuning (V18.78 — die alte „Tuning (Emotionen)"-Sektion eingefaltet) -->
-                    <div class="settings-band">
-                        <h4>Emotion-Tuning</h4>
-                        <p class="drawer-hint">
-                            <b>Schwelle</b> = ab welcher Intensität eine Emotion kippt. <b>Decay/s</b> = wie schnell sie
-                            verblasst. <b>Cooldown</b> = Pause zwischen zwei Auslösern derselben Emotion.
-                        </p>
+                    </section>
+                    <!-- V7.96/V7.97 — der LLM-Begleiter. Default eingeklappt. -->
+                    <section class="section default-collapsed" id="llm-section">
+                        <h3>
+                            Begleiter-Stimme (LLM)
+                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                >?<span class="help-pop"
+                                    >Optional: gib dem Begleiter eine echte Stimme. Vier Provider — drei mit
+                                    Gratis-Tiers, Ollama lokal (kein Key) oder gehostet (eigene URL + optional
+                                    Bearer-Token). Schlüssel liegen nur im localStorage dieses Browsers; jeder
+                                    Vorschlag geht durch die DSL-Sandbox.</span
+                                ></span
+                            >
+                        </h3>
                         <div class="tuning-row">
-                            <label for="tune-threshold">
-                                <span>Schwelle</span><span class="v" id="tune-threshold-v">0.70</span>
+                            <label for="llm-provider"><span>Provider</span></label>
+                            <select id="llm-provider">
+                                <!-- gefüllt aus llmProviderDefs() -->
+                            </select>
+                        </div>
+                        <div id="llm-provider-hint" class="drawer-hint" aria-live="polite"></div>
+                        <div class="tuning-row" id="llm-key-row">
+                            <label for="llm-key"><span>API-Key</span></label>
+                            <input
+                                type="password"
+                                id="llm-key"
+                                placeholder="API-Key"
+                                autocomplete="off"
+                                spellcheck="false"
+                            />
+                        </div>
+                        <div class="tuning-row" id="llm-endpoint-row" hidden>
+                            <label for="llm-endpoint"><span>Endpoint</span></label>
+                            <input
+                                type="text"
+                                id="llm-endpoint"
+                                placeholder="http://localhost:11434  oder  https://ollama.com/api/chat"
+                                autocomplete="off"
+                                spellcheck="false"
+                            />
+                        </div>
+                        <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
+                            Endpoint kann eine Basis-URL sein (z.B. <code>http://localhost:11434</code> →
+                            <code>/api/chat</code> wird angehängt) oder eine vollständige URL inklusive Pfad (<code
+                                >https://ollama.com/api/chat</code
+                            >
+                            oder <code>https://provider/v1/chat/completions</code>
+                            für OpenAI-kompatible Cloud-Hoster).
+                        </div>
+                        <!-- V7.96 — Proxy-Toggle: Ollama Cloud sendet keine CORS-Header. -->
+                        <div class="tuning-row" id="llm-proxy-row" hidden>
+                            <label class="radio-label" style="margin: 0">
+                                <input type="checkbox" id="llm-use-proxy" />
+                                <span>Cloud über save-server-Proxy (löst CORS)</span>
                             </label>
-                            <input type="range" id="tune-threshold" min="0.3" max="1.0" step="0.05" value="0.7" />
+                        </div>
+                        <div
+                            class="drawer-hint"
+                            id="llm-proxy-hint"
+                            hidden
+                            style="font-size: 11px; opacity: 0.75; margin-top: -6px"
+                        >
+                            Aktiviere wenn Cloud-Setup mit CORS-Fehler scheitert (typisch bei
+                            <code>ollama.com</code>). Request läuft über <code>localhost:4312/api/proxy/llm</code> —
+                            braucht laufenden <code>npm run dev</code>. CORS-freundliche Provider die ohne Proxy
+                            laufen: <strong>Groq</strong> (<code>https://api.groq.com/openai/v1/chat/completions</code>),
+                            <strong>Together AI</strong>, <strong>Cerebras</strong>, <strong>Gemini</strong>,
+                            <strong>OpenRouter</strong>.
+                        </div>
+                        <!-- V7.97 — Modell als Free-Text-Input mit datalist-Vorschlägen. -->
+                        <div class="tuning-row">
+                            <label for="llm-model"><span>Modell</span></label>
+                            <input
+                                type="text"
+                                id="llm-model"
+                                list="llm-model-suggestions"
+                                autocomplete="off"
+                                spellcheck="false"
+                                placeholder="z.B. llama3.2, qwen3, gpt-oss:20b"
+                            />
+                            <datalist id="llm-model-suggestions">
+                                <!-- gefüllt aus llmProviderDefs()[provider].models -->
+                            </datalist>
+                        </div>
+                        <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
+                            Trag den Modell-Namen ein wie er bei dir verfügbar ist. Lokal: <code>ollama list</code>
+                            zeigt deine Modelle. Cloud-Hoster: prüfe deren Modell-Liste.
+                        </div>
+                        <div class="actions">
+                            <button type="button" id="llm-save">Speichern</button>
+                            <button type="button" id="llm-clear">Vergessen</button>
+                            <button type="button" id="llm-toggle" aria-pressed="false">Aktivieren</button>
+                        </div>
+                        <div id="llm-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
+                    </section>
+                    <!-- Welle 6.X.4 F1 — Vibe-Pass (souveräne ed25519-Identität). Default eingeklappt. -->
+                    <section class="section default-collapsed" id="vibe-pass-section">
+                        <h3>
+                            Vibe-Pass <span class="section-hint">(souveräne Identität)</span>
+                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                >?<span class="help-pop"
+                                    >Ein ed25519-Schlüsselpaar, lokal erzeugt — deine unverfälschbare Identität.
+                                    Damit signierst du deine Werke; andere prüfen, dass sie wirklich von dir
+                                    stammen. Kein Coin, keine Kette — nur Echtheit. Sichere ihn: ohne Schlüssel ist
+                                    die Identität verloren.</span
+                                ></span
+                            >
+                        </h3>
+                        <div id="vibe-pass-body"></div>
+                        <div class="vibe-pass-actions">
+                            <button type="button" id="vibe-pass-export">Vibe-Pass sichern…</button>
+                            <button type="button" id="vibe-pass-import">Wiederherstellen…</button>
+                        </div>
+                    </section>
+                    <!-- Ring 11 V1+V2 — Multi-User Sync. Default eingeklappt. -->
+                    <section class="section default-collapsed" id="multiuser-section">
+                        <h3>
+                            Multi-User Sync
+                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                >?<span class="help-pop"
+                                    >Position + Welt-Aktionen mit anderen Spielern teilen. Braucht den
+                                    signaling-server (<code>npm run signaling</code>). Beide nutzen die SELBE
+                                    Adresse + Raum-ID. Welt gemeinsam: einer teilt sie (Bibliothek), der andere
+                                    empfängt sie — dann sind beide in derselben worldId.</span
+                                ></span
+                            >
+                        </h3>
+                        <div class="tuning-row">
+                            <label for="p2p-url"><span>Signaling-URL</span></label>
+                            <input
+                                type="text"
+                                id="p2p-url"
+                                value="ws://127.0.0.1:4313"
+                                autocomplete="off"
+                                spellcheck="false"
+                            />
                         </div>
                         <div class="tuning-row">
-                            <label for="tune-decay">
-                                <span>Decay/s</span><span class="v" id="tune-decay-v">0.005</span>
-                            </label>
-                            <input type="range" id="tune-decay" min="0.001" max="0.05" step="0.001" value="0.005" />
+                            <label for="p2p-room"><span>Raum-ID</span></label>
+                            <input
+                                type="text"
+                                id="p2p-room"
+                                placeholder="(leer = aktive Welt)"
+                                autocomplete="off"
+                                spellcheck="false"
+                            />
+                            <button type="button" id="p2p-room-copy" title="Aktive Raum-ID in die Zwischenablage kopieren">
+                                kopieren
+                            </button>
                         </div>
-                        <div class="tuning-row">
-                            <label for="tune-cooldown">
-                                <span>Cooldown (s)</span><span class="v" id="tune-cooldown-v">30</span>
-                            </label>
-                            <input type="range" id="tune-cooldown" min="5" max="120" step="5" value="30" />
+                        <div class="actions">
+                            <button type="button" id="p2p-toggle" aria-pressed="false">Aktivieren</button>
+                            <!-- W7 Phase 2 — ein Guest holt die Welt des Hosts frisch über das Mesh. -->
+                            <button type="button" id="p2p-resync" title="Welt des Hosts über das Mesh neu holen" hidden>
+                                Welt vom Host neu holen
+                            </button>
+                            <!-- W7 Phase 3 — LLM-Pool: die eigene Stimme für schlüssellose Mitspieler. -->
+                            <button
+                                type="button"
+                                id="p2p-voice-share"
+                                aria-pressed="false"
+                                title="Deine LLM-Stimme für Mitspieler ohne eigenen Schlüssel freigeben"
+                                hidden
+                            >
+                                Stimme teilen
+                            </button>
                         </div>
-                    </div>
-                </section>
+                        <div id="p2p-status" class="drawer-hint" aria-live="polite">Inaktiv.</div>
+                        <!-- Ring 11.5: Host-/Guest-Banner (V18.79 — zur Multiplayer-Rolle; der Host sieht hier
+                             seinen Einladungs-Code, sobald er aktiviert). _renderHostBanner/_renderGuestBanner
+                             finden sie per id, egal wo. Sichtbar nur in einer Multiplayer-Rolle. -->
+                        <div id="world-host-banner" class="drawer-hint" hidden></div>
+                        <div id="world-guest-banner" class="drawer-hint" hidden></div>
+                        <!-- W7 Phase 4 — Public-Lobby: Raum veröffentlichen + andere browsen. -->
+                        <div id="p2p-lobby" class="p2p-lobby">
+                            <h4>Öffentliche Lobby <span class="section-hint">(W7 Phase 4)</span></h4>
+                            <label class="p2p-lobby-pub">
+                                <input type="checkbox" id="p2p-lobby-publish-toggle" />
+                                <span>Diesen Raum in der Lobby zeigen</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="p2p-lobby-label"
+                                placeholder="Raum-Name für die Lobby"
+                                maxlength="48"
+                                autocomplete="off"
+                                spellcheck="false"
+                            />
+                            <div class="actions">
+                                <button type="button" id="p2p-lobby-refresh">Lobby durchsuchen</button>
+                            </div>
+                            <div id="p2p-lobby-list" class="p2p-lobby-list" aria-live="polite"></div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- GRUPPE 5 — RENDER-FEINSCHLIFF (Dev): EINE eingeklappte Karte mit ALLEN ~20 pixel-
+                     blinden Reglern, in Sub-Bänder gruppiert (Cel/Wasser/Schatten/Emotion). -->
+                <div class="settings-group">
+                    <div class="settings-grouplabel">5 · Render-Feinschliff (Dev)</div>
+                    <section class="section default-collapsed" id="atmosphere-section">
+                        <h3>
+                            Render-Feinschliff <span class="section-hint">(für Entwickler)</span>
+                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                >?<span class="help-pop"
+                                    >Pixel-blinde Tuning-Regler — gemeinsam justiert mit dem Schöpfer-Auge im
+                                    Browser. Vier Bänder: Cel &amp; Licht · Wasser · Schatten · Emotion-Tuning.
+                                    Jedes Band trägt sein eigenes „?".</span
+                                ></span
+                            >
+                        </h3>
+                        <!-- BAND: Cel & Licht -->
+                        <div class="settings-band">
+                            <h4>
+                                Cel &amp; Licht
+                                <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                    >?<span class="help-pop"
+                                        ><b>Cel-Stufen</b> formen die Licht-Abstufung (wenig = harte gemalte Linien
+                                        wie Studio-Ghibli, viele = weicher Verlauf). <b>2.5D-Lichtung</b> ist der
+                                        Haupt-Hebel gegen die Facetten-Rauten (blendet die Beleuchtungs-Normale nach
+                                        oben; 100 % = flach wie 2.5D). <b>Kavitäts-AO</b> zeichnet Facetten-Kanten
+                                        als Kontakt-Schatten. <b>Kanten-Schärfe</b> = Post-FX-Unsharp.
+                                        <b>Oberflächen-Textur</b> = Fels-/Boden-Maserung. <b>Farb-Variation</b>
+                                        streut die Biom-Farbe. <b>Fog-Distanz</b> = wo der Welt-Dunst beginnt.</span
+                                    ></span
+                                >
+                            </h4>
+                            <div class="slider-row">
+                                <label for="slider-cel">Cel-Stufen</label>
+                                <input type="range" id="slider-cel" min="2" max="8" value="6" />
+                                <span class="slider-value" id="slider-cel-val">6</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-flatten">2.5D-Lichtung</label>
+                                <input type="range" id="slider-flatten" min="0" max="100" value="100" />
+                                <span class="slider-value" id="slider-flatten-val">100 %</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-cavityao">Kavitäts-AO</label>
+                                <input type="range" id="slider-cavityao" min="0" max="200" value="35" />
+                                <span class="slider-value" id="slider-cavityao-val">35 %</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-edgesharp">Kanten-Schärfe</label>
+                                <input type="range" id="slider-edgesharp" min="0" max="100" value="46" />
+                                <span class="slider-value" id="slider-edgesharp-val">0.46</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-surftex">Oberflächen-Textur</label>
+                                <input type="range" id="slider-surftex" min="0" max="400" value="200" />
+                                <span class="slider-value" id="slider-surftex-val">200 %</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-colorvar">Farb-Variation</label>
+                                <input type="range" id="slider-colorvar" min="0" max="200" value="150" />
+                                <span class="slider-value" id="slider-colorvar-val">150 %</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-fog">Fog-Distanz</label>
+                                <input type="range" id="slider-fog" min="30" max="300" value="177" />
+                                <span class="slider-value" id="slider-fog-val">177 %</span>
+                            </div>
+                        </div>
+                        <!-- BAND: Wasser -->
+                        <div class="settings-band">
+                            <h4>
+                                Wasser
+                                <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                    >?<span class="help-pop"
+                                        ><b>Wasser-Cull</b> blendet dünnes Ufer-/Wandwasser pro Pixel aus (tiefes
+                                        bleibt). <b>Wasser-Render</b> ist „Fläche" (die finale Form auf dem Spiegel)
+                                        oder „Zell-Iso" (alt, zum Vergleich). <b>Ufer-Schärfe</b> = wie schmal die
+                                        Uferlinie einblendet, <b>Wasser-Tiefe</b> = wie schnell es ins Dunkle kippt.
+                                        See-Wellen, Fluss-Schaum, Wasserfall-Steilheit und Auslauf-Übergang feilen
+                                        die Form.</span
+                                    ></span
+                                >
+                            </h4>
+                            <div class="slider-row">
+                                <label for="slider-watercull">Wasser-Cull</label>
+                                <input type="range" id="slider-watercull" min="0" max="200" value="25" />
+                                <span class="slider-value" id="slider-watercull-val">0.0025</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="select-waterrender">Wasser-Render</label>
+                                <select id="select-waterrender">
+                                    <option value="surface">Fläche (auf Spiegel L)</option>
+                                    <option value="iso">Zell-Iso (alt)</option>
+                                </select>
+                                <span class="slider-value" id="select-waterrender-val"></span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-watershore">Ufer-Schärfe</label>
+                                <input type="range" id="slider-watershore" min="5" max="500" step="5" value="45" />
+                                <span class="slider-value" id="slider-watershore-val">0.0045</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-waterdepth">Wasser-Tiefe (m)</label>
+                                <input type="range" id="slider-waterdepth" min="10" max="150" step="1" value="50" />
+                                <span class="slider-value" id="slider-waterdepth-val">5.0 m</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-lakeripple">See-Wellen</label>
+                                <input type="range" id="slider-lakeripple" min="0" max="100" step="1" value="20" />
+                                <span class="slider-value" id="slider-lakeripple-val">0.20</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-waterdepthfoam">Fluss-Schaum (Tiefe)</label>
+                                <input type="range" id="slider-waterdepthfoam" min="1" max="60" step="1" value="12" />
+                                <span class="slider-value" id="slider-waterdepthfoam-val">1.2 m</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-waterfallsteep">Wasserfall-Steilheit</label>
+                                <input type="range" id="slider-waterfallsteep" min="2" max="40" step="1" value="10" />
+                                <span class="slider-value" id="slider-waterfallsteep-val">1.0</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-wateroutflow">Auslauf-Übergang</label>
+                                <input type="range" id="slider-wateroutflow" min="10" max="80" step="5" value="30" />
+                                <span class="slider-value" id="slider-wateroutflow-val">3.0 m</span>
+                            </div>
+                        </div>
+                        <!-- BAND: Schatten -->
+                        <div class="settings-band">
+                            <h4>
+                                Schatten
+                                <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                    >?<span class="help-pop"
+                                        ><b>Schatten-Reichweite</b> ist die Halbbreite des Schatten-Frustums in
+                                        Metern (kleiner = schärfere Texel an steilen Wänden, aber kleinere Fläche um
+                                        dich). <b>Schatten-Bias</b> verschiebt den Schatten entlang der Normale (zu
+                                        klein → Acne-Streifen, zu gross → der Schatten löst sich vom Fuss).</span
+                                    ></span
+                                >
+                            </h4>
+                            <div class="slider-row">
+                                <label for="slider-shadowrange">Schatten-Reichweite</label>
+                                <input type="range" id="slider-shadowrange" min="80" max="400" step="10" value="300" />
+                                <span class="slider-value" id="slider-shadowrange-val">300 m</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="slider-shadowbias">Schatten-Bias</label>
+                                <input type="range" id="slider-shadowbias" min="0" max="300" step="5" value="100" />
+                                <span class="slider-value" id="slider-shadowbias-val">1.00</span>
+                            </div>
+                        </div>
+                        <!-- BAND: Emotion-Tuning -->
+                        <div class="settings-band">
+                            <h4>
+                                Emotion-Tuning
+                                <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                    >?<span class="help-pop"
+                                        ><b>Schwelle</b> = ab welcher Intensität eine Emotion kippt.
+                                        <b>Decay/s</b> = wie schnell sie verblasst. <b>Cooldown</b> = Pause zwischen
+                                        zwei Auslösern derselben Emotion.</span
+                                    ></span
+                                >
+                            </h4>
+                            <div class="tuning-row">
+                                <label for="tune-threshold">
+                                    <span>Schwelle</span><span class="v" id="tune-threshold-v">0.70</span>
+                                </label>
+                                <input type="range" id="tune-threshold" min="0.3" max="1.0" step="0.05" value="0.7" />
+                            </div>
+                            <div class="tuning-row">
+                                <label for="tune-decay">
+                                    <span>Decay/s</span><span class="v" id="tune-decay-v">0.005</span>
+                                </label>
+                                <input type="range" id="tune-decay" min="0.001" max="0.05" step="0.001" value="0.005" />
+                            </div>
+                            <div class="tuning-row">
+                                <label for="tune-cooldown">
+                                    <span>Cooldown (s)</span><span class="v" id="tune-cooldown-v">30</span>
+                                </label>
+                                <input type="range" id="tune-cooldown" min="5" max="120" step="5" value="30" />
+                            </div>
+                        </div>
+                    </section>
+                </div>
             </div>
         </aside>
         <aside id="console" aria-label="Konsole">
@@ -8620,6 +8727,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.79.0" defer></script>
+        <script src="anazhRealm.js?v=18.80.0" defer></script>
     </body>
 </html>
