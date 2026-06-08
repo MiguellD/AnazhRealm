@@ -29577,45 +29577,317 @@ class AnazhRealm {
     // und „Portal holen". Phase 3: importierte Welten tragen eine „empfangen"-
     // Marke; eine importierte Welt ohne erreichbare Dateien ist browsbar,
     // aber nicht betretbar (der KI-Übersetzer müsste sie erst vendorn).
+    // === Feed (die Social-Media-Plattform — Schöpfer-Auftrag 08.06.: „ein zentraler Feed wie X/
+    // Facebook, durch public Welten · Rezepte · Wesen scrollen + BEWERTEN; links/rechts die Werkzeuge") ===
+    // Der synergetische Kern: EIN Feed-Item-Modell, viele Quellen — jedes Item liest seinen bestehenden
+    // Vektor (_worldProfile / _recipeProfile / _creatureProfile; die Resonanz-Vereinheitlichung auf den
+    // Feed). Das BEWERTEN ist das dritte Verb des Feldes (lesen·schreiben·WERTEN); lokal zuerst, die
+    // Mesh-Aggregation echter Peer-„Likes" ist der Roadmap-Backlog. `renderLibraryUI` ist jetzt der
+    // Feed-Renderer (das #library-list bleibt der Feed-Strom — Legacy-ID + Test-Hook; Welt-Items tragen
+    // weiter `.library-card`, Rezept/Wesen-Items `.feed-card`).
     renderLibraryUI() {
         if (typeof document === "undefined") return;
         const list = document.getElementById("library-list");
         if (!list) return;
         list.innerHTML = "";
-        for (const w of this._libraryWorlds()) {
-            list.appendChild(this._libraryBuildCard(w));
-        }
-        // das aktive Such-Filter nach dem Render erneut anwenden (es überlebt ein Re-Render).
+        for (const item of this._feedItems()) list.appendChild(this._feedItemCard(item));
+        this._renderFeedKindChips();
+        this._renderFeedTrends();
         this._applyLibraryFilter();
     }
 
-    // Bib-D (bibliothek-plan §D.4, das Ich-§J5-Loop) — die Selbst-Suche TREIBT das Karten-Raster:
-    // tippen filtert die Welt-Karten über den `_worldProfile`-Such-Index (Name · Vokabular · Trust ·
-    // Signatur · Netz). Kein toter Knopf (V18.65, KONSUM auf Feature-Ebene) — der Loop WIRKT.
+    // Bib-D + Feed (das Ich-§J5-Loop) — die Selbst-Suche UND der Kind-Filter TREIBEN den Feed-Strom:
+    // tippen filtert über den Item-Such-Index, die Kind-Chips über `data-kind`. Kein toter Knopf (V18.65).
     _applyLibraryFilter() {
         if (typeof document === "undefined") return;
         const list = document.getElementById("library-list");
         if (!list) return;
         const input = document.getElementById("library-search");
         const q = (input && input.value ? input.value : "").trim().toLowerCase();
+        const kind = this.state.feedKind || "alle";
         let shown = 0;
-        for (const card of list.querySelectorAll(".library-card")) {
+        for (const card of list.querySelectorAll(".library-card, .feed-card")) {
             const hay = card.dataset.search || "";
-            const match = !q || hay.includes(q);
+            const kindOk = kind === "alle" || card.dataset.kind === kind;
+            const match = kindOk && (!q || hay.includes(q));
             card.style.display = match ? "" : "none";
             if (match) shown++;
         }
         let empty = list.querySelector(".library-empty");
-        if (q && shown === 0) {
+        if (shown === 0 && (q || kind !== "alle")) {
             if (!empty) {
                 empty = this._el("div", { class: "library-empty" });
                 list.appendChild(empty);
             }
-            empty.textContent = `Keine Welt passt zu „${q}".`;
+            empty.textContent = q ? `Nichts passt zu „${q}".` : "Nichts in dieser Kategorie.";
             empty.style.display = "";
         } else if (empty) {
             empty.style.display = "none";
         }
+    }
+
+    // Das WERTEN — die lokale Bewertung (das dritte Verb des Feldes), persistent im globalen
+    // localStorage (wie customWorlds). 0–5 Sterne; Klick auf den aktuellen Wert löscht (Toggle).
+    _loadFeedRatings() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.feedRatings") : null;
+            const parsed = raw ? JSON.parse(raw) : null;
+            return parsed && typeof parsed === "object" ? parsed : {};
+        } catch {
+            return {};
+        }
+    }
+    _saveFeedRatings() {
+        try {
+            if (typeof localStorage !== "undefined")
+                localStorage.setItem("anazh.feedRatings", JSON.stringify(this.state.feedRatings || {}));
+        } catch (e) {
+            this.log(`feedRatings-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+    _feedRating(id) {
+        if (!this.state.feedRatings) this.state.feedRatings = this._loadFeedRatings();
+        const v = this.state.feedRatings[id];
+        return Number.isFinite(v) ? v : 0;
+    }
+    _setFeedRating(id, stars) {
+        if (!this.state.feedRatings) this.state.feedRatings = this._loadFeedRatings();
+        const s = Math.max(0, Math.min(5, Math.round(stars)));
+        this.state.feedRatings[id] = this.state.feedRatings[id] === s ? 0 : s; // Toggle — kein erzwungenes Werten
+        this._saveFeedRatings();
+        return this.state.feedRatings[id];
+    }
+
+    // Ein Bauplan-Lese-Vektor (das _worldProfile/_creatureProfile-Muster auf ein Rezept). KONSUM-ehrlich.
+    _recipeProfile(bp) {
+        let tags = {};
+        try {
+            tags = this.computeCompoundTags(bp) || {};
+        } catch {
+            /* tags optional */
+        }
+        const topTags = Object.entries(tags)
+            .filter(([, v]) => Number.isFinite(v) && v > 0.05)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([k]) => k);
+        const role = typeof this._displayRole === "function" ? this._displayRole(bp) : bp.role || "";
+        const colors = AnazhRealm.BLUEPRINT_ROLE_COLORS || {};
+        return {
+            bp,
+            name: bp.name,
+            label: bp.label || bp.name,
+            builtIn: !!bp.builtIn,
+            role,
+            roleColor: colors[role] || null,
+            topTags,
+            searchText: [bp.label || bp.name, role, topTags.join(" "), "rezept bauplan"].join(" ").toLowerCase(),
+        };
+    }
+
+    // Der EINE Feed-Strom: Welten + Rezepte + Wesen, jedes Item liest seinen Vektor + seine Wertung.
+    _feedItems() {
+        const items = [];
+        for (const w of this._libraryWorlds()) {
+            const p = this._worldProfile(w);
+            items.push({ kind: "world", id: "world:" + p.id, label: p.label, prof: p, search: p.searchText });
+        }
+        for (const bp of Object.values(this.state.blueprints || {})) {
+            if (!bp || bp.instanced || bp.role === "portal") continue; // Portale = Welten; instanced = Worldgen-Litter
+            const p = this._recipeProfile(bp);
+            items.push({ kind: "recipe", id: "recipe:" + bp.name, label: p.label, prof: p, search: p.searchText });
+        }
+        for (const c of this.state.creatures || []) {
+            const p = this._creatureProfile(c);
+            items.push({
+                kind: "creature",
+                id: "creature:" + (p.id || p.name),
+                label: p.name,
+                prof: p,
+                search: (p.name + " " + p.soulLabel + " " + p.moodLabel + " wesen kreatur").toLowerCase(),
+            });
+        }
+        for (const it of items) it.rating = this._feedRating(it.id);
+        return items;
+    }
+
+    // Eine Feed-Karte — dispatcht nach Art; Welt = die Welt-Spec-Card (reuse), Rezept/Wesen kompakt.
+    // Jede Karte trägt die Bewertung (das WERTEN) + die Art-Marken (data-kind, für den Kind-Filter).
+    _feedItemCard(item) {
+        let card;
+        if (item.kind === "world") card = this._libraryBuildCard(item.prof.world);
+        else if (item.kind === "recipe") card = this._feedRecipeCard(item);
+        else card = this._feedCreatureCard(item);
+        card.dataset.kind = item.kind;
+        if (!card.dataset.search) card.dataset.search = item.search || "";
+        card.appendChild(this._feedRatingBar(item));
+        return card;
+    }
+
+    _feedRecipeCard(item) {
+        const p = item.prof;
+        const roleChip = this._el("span", { class: "feed-role-chip", text: p.role || "Rezept" });
+        if (p.roleColor) {
+            roleChip.style.borderColor = p.roleColor;
+            roleChip.style.color = p.roleColor;
+        }
+        const header = this._el(
+            "div",
+            { class: "spec-header" },
+            this._el("div", { class: "spec-id" }, this._el("span", { class: "spec-name", text: p.label }), roleChip),
+            this._el("span", { class: "feed-kind-badge kind-recipe", text: "Rezept" })
+        );
+        const body = this._el(
+            "div",
+            { class: "feed-card-body" },
+            this._el(
+                "div",
+                { class: "spec-stat-strip" },
+                ...(p.topTags.length
+                    ? p.topTags.map((k) => this._el("span", { class: "spec-stat-chip", text: k }))
+                    : [this._el("span", { class: "spec-empty", text: "schlichte Materie" })])
+            )
+        );
+        const openBtn = this._el("button", {
+            class: "library-get",
+            type: "button",
+            text: "In die Werkstatt",
+            title: "Den Bauplan in der Werkstatt öffnen + verfeinern.",
+        });
+        openBtn.addEventListener("click", () => {
+            if (typeof this.selectBlueprintForEdit === "function") this.selectBlueprintForEdit(p.name);
+            if (typeof this.toggleDrawer === "function") this.toggleDrawer("werkstatt");
+        });
+        const footer = this._el(
+            "div",
+            { class: "spec-footer lib-spec-footer" },
+            this._el("div", { class: "lib-card-acts" }, openBtn)
+        );
+        return this._el("div", { class: "feed-card lib-spec-sheet spec-sheet feed-recipe" }, header, body, footer);
+    }
+
+    _feedCreatureCard(item) {
+        const p = item.prof;
+        const header = this._el(
+            "div",
+            { class: "spec-header" },
+            this._el(
+                "div",
+                { class: "spec-id" },
+                this._el("span", { class: "spec-name soul-" + p.soul, text: p.name }),
+                this._el("span", { class: "spec-soul-label", text: p.soulLabel })
+            ),
+            this._el("span", { class: "feed-kind-badge kind-creature", text: "Wesen" })
+        );
+        const body = this._el(
+            "div",
+            { class: "feed-card-body" },
+            this._el("span", {
+                class: "creature-mood " + (p.emotion === "sad" ? "mood-sad" : "mood-happy"),
+                text: (p.emotion === "sad" ? "☹ " : "☺ ") + p.moodLabel,
+            })
+        );
+        const visitBtn = this._el("button", {
+            class: "library-get",
+            type: "button",
+            text: "Zum Hof",
+            title: p.name + " im Hof aufsuchen.",
+        });
+        visitBtn.addEventListener("click", () => {
+            this.state.hofFocusId = p.id;
+            if (typeof this.toggleDrawer === "function") this.toggleDrawer("kreaturen");
+            if (typeof this._hofRefreshFocus === "function") this._hofRefreshFocus();
+        });
+        const footer = this._el(
+            "div",
+            { class: "spec-footer lib-spec-footer" },
+            this._el("div", { class: "lib-card-acts" }, visitBtn)
+        );
+        return this._el("div", { class: "feed-card lib-spec-sheet spec-sheet feed-creature" }, header, body, footer);
+    }
+
+    // Das WERTEN-Steuerelement — 5 Sterne, klickbar (lokal). Re-Klick aktualisiert NUR diese Sterne
+    // (kein Feed-Rebuild) + frischt die „Bestbewertet"-Liste rechts.
+    _feedRatingBar(item) {
+        const bar = this._el("div", { class: "feed-rating", title: "Bewerten — deine Wertung (lokal gespeichert)" });
+        const stars = [];
+        const paint = (val) => {
+            for (let i = 0; i < 5; i++) stars[i].textContent = i < val ? "★" : "☆";
+            bar.dataset.rating = String(val);
+        };
+        for (let i = 0; i < 5; i++) {
+            const star = this._el("span", { class: "feed-star", text: "☆" });
+            star.addEventListener("click", (e) => {
+                e.stopPropagation();
+                paint(this._setFeedRating(item.id, i + 1));
+                this._renderFeedTrends();
+            });
+            stars.push(star);
+            bar.appendChild(star);
+        }
+        paint(item.rating || 0);
+        return bar;
+    }
+
+    // Die Kind-Filter-Chips (rechts/oben) — Alle · Welten · Rezepte · Wesen, mit Anzahl.
+    _renderFeedKindChips() {
+        if (typeof document === "undefined") return;
+        const host = document.getElementById("feed-kinds");
+        if (!host) return;
+        host.innerHTML = "";
+        const counts = { world: 0, recipe: 0, creature: 0 };
+        for (const it of this._feedItems()) counts[it.kind]++;
+        const total = counts.world + counts.recipe + counts.creature;
+        const active = this.state.feedKind || "alle";
+        const kinds = [
+            ["alle", "Alle", total],
+            ["world", "Welten", counts.world],
+            ["recipe", "Rezepte", counts.recipe],
+            ["creature", "Wesen", counts.creature],
+        ];
+        for (const [k, label, n] of kinds) {
+            const chip = this._el("button", {
+                class: "feed-kind-chip" + (k === active ? " active" : ""),
+                type: "button",
+                text: `${label} · ${n}`,
+            });
+            chip.addEventListener("click", () => {
+                this.state.feedKind = k;
+                this._renderFeedKindChips();
+                this._applyLibraryFilter();
+            });
+            host.appendChild(chip);
+        }
+    }
+
+    // „Bestbewertet" (rechts) — die lokal höchst-gewerteten Items (das WERTEN sichtbar zurück).
+    _renderFeedTrends() {
+        if (typeof document === "undefined") return;
+        const host = document.getElementById("feed-trends");
+        if (!host) return;
+        host.innerHTML = "";
+        const top = this._feedItems()
+            .filter((it) => it.rating > 0)
+            .sort((a, b) => b.rating - a.rating)
+            .slice(0, 5);
+        if (!top.length) {
+            host.appendChild(
+                this._el("div", {
+                    class: "drawer-hint",
+                    text: "Noch nichts bewertet — vergib Sterne, deine Favoriten erscheinen hier.",
+                })
+            );
+            return;
+        }
+        for (const it of top)
+            host.appendChild(
+                this._el(
+                    "div",
+                    { class: "feed-trend-row" },
+                    this._el("span", { class: "feed-trend-stars", text: "★".repeat(it.rating) }),
+                    this._el("span", { class: "feed-trend-label", text: it.label })
+                )
+            );
     }
 
     // Bib-A (bibliothek-plan.md §D.1) — eine Bibliothek-Karte ist eine WELT-SPEC-CARD im
@@ -49231,7 +49503,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.69.0";
+AnazhRealm.VERSION = "18.70.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

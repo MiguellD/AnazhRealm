@@ -4744,6 +4744,185 @@
             .library-create-body {
                 margin-top: 12px;
             }
+            /* === Der FEED (die Social-Media-Plattform) — 3 Spalten: Werkzeuge | Feed | Kuratieren === */
+            .feed-layout {
+                display: grid;
+                grid-template-columns: 264px minmax(0, 1fr) 288px;
+                gap: 18px;
+                align-items: start;
+            }
+            .feed-left {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            .feed-center {
+                grid-column: 2;
+                grid-row: 1;
+                min-width: 0;
+            }
+            .feed-right {
+                grid-column: 3;
+                grid-row: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+            }
+            /* die Werkzeug-Spalten bleiben STICKY, während der Feed scrollt (X/FB-Gefühl). */
+            .feed-left,
+            .feed-right {
+                position: sticky;
+                top: 2px;
+                align-self: start;
+            }
+            @media (max-width: 1080px) {
+                .feed-layout {
+                    grid-template-columns: 1fr;
+                }
+                .feed-left,
+                .feed-center,
+                .feed-right {
+                    grid-column: 1;
+                    grid-row: auto;
+                    position: static;
+                }
+            }
+            /* der zentrale Feed-Strom — eine scrollbare Spalte, lesbar gekappt + zentriert (X/FB-Feel). */
+            .feed-stream {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                max-width: 720px;
+                margin: 0 auto;
+            }
+            /* LINKS — die Schöpfen-Werkzeuge als kompakter Pergament-Panel (eingeklappt, expand zum Schöpfen). */
+            .feed-left.library-create {
+                border: 1px solid var(--brass-3, #5a4824);
+                border-radius: 6px;
+                padding: 8px 10px;
+                border-top: 1px solid var(--brass-3, #5a4824);
+            }
+            .feed-left .library-create-body {
+                margin-top: 10px;
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+            .feed-left .library-columns {
+                column-count: 1;
+            }
+            /* RECHTS — die Kuratier-Inseln (Filter + Bestbewertet). */
+            .feed-curate {
+                background: rgba(255, 245, 220, 0.4);
+                border: 1px solid var(--brass-3, #5a4824);
+                border-radius: 6px;
+                padding: 9px 11px;
+            }
+            .feed-curate-head {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+                color: var(--brass-1, #b88a50);
+                margin: 0 0 8px 0;
+            }
+            .feed-kinds {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .feed-kind-chip {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                padding: 3px 10px;
+                border-radius: 12px;
+                background: rgba(255, 235, 190, 0.4);
+                color: var(--parch-ink, #2b1a08);
+                border: 1px solid var(--brass-2, #8a6322);
+                cursor: pointer;
+            }
+            .feed-kind-chip.active {
+                background: linear-gradient(180deg, #b48c28, #8a6322);
+                color: #fff3d6;
+                border-color: var(--brass-1, #b88a50);
+                box-shadow: 0 0 6px rgba(255, 224, 102, 0.3);
+            }
+            .feed-trends {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .feed-trend-row {
+                display: flex;
+                align-items: baseline;
+                gap: 8px;
+                min-width: 0;
+            }
+            .feed-trend-stars {
+                color: #e0a93a;
+                font-size: 11px;
+                letter-spacing: 1px;
+                white-space: nowrap;
+            }
+            .feed-trend-label {
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 12px;
+                color: var(--parch-ink, #2b1a08);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            /* Die Rezept-/Wesen-Feed-Karten — erben die dunkle .lib-spec-sheet-Insel; kompakt. */
+            .feed-card-body {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                align-items: center;
+            }
+            .feed-role-chip {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                letter-spacing: 0.4px;
+                padding: 2px 9px;
+                border-radius: 3px;
+                border: 1px solid var(--brass-2, #8a6322);
+                color: #ffe6a8;
+            }
+            .feed-kind-badge {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 8.5px;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                padding: 1px 7px;
+                border-radius: 8px;
+            }
+            .feed-kind-badge.kind-recipe {
+                background: rgba(67, 201, 138, 0.18);
+                color: #7fe0b0;
+                border: 1px solid rgba(67, 201, 138, 0.42);
+            }
+            .feed-kind-badge.kind-creature {
+                background: rgba(176, 106, 217, 0.2);
+                color: #d9a8ff;
+                border: 1px solid rgba(176, 106, 217, 0.45);
+            }
+            /* Das WERTEN — die Sterne-Reihe an jeder Feed-Karte. */
+            .feed-rating {
+                display: flex;
+                gap: 2px;
+                margin-top: 7px;
+                padding-top: 7px;
+                border-top: 1px dotted rgba(184, 140, 80, 0.3);
+            }
+            .feed-star {
+                color: #e0a93a;
+                font-size: 15px;
+                line-height: 1;
+                cursor: pointer;
+                transition: transform 0.1s ease;
+            }
+            .feed-star:hover {
+                transform: scale(1.2);
+                text-shadow: 0 0 6px rgba(224, 169, 58, 0.6);
+            }
             .library-columns {
                 column-count: 3;
                 column-gap: 20px;
@@ -7044,23 +7223,36 @@
             <!-- Bib-B (bibliothek-plan §D/§D.3) — content-first: das Welt-Karten-Raster ist der STAR
                  (der Zweck = Welten ENTDECKEN + BETRETEN, J6); die Formulare (übersetzen/andocken/
                  verwalten/Provenienz) recedieren in die eingeklappte „Schöpfen & Andocken"-Zone. -->
-            <div class="library-body">
-                <div class="library-head">
-                    <input
-                        type="text"
-                        id="library-search"
-                        class="library-search"
-                        placeholder="⌕ Welt suchen — Name · Vokabular · signiert · sandbox"
-                        aria-label="Welten durchsuchen"
-                        autocomplete="off"
-                    />
+            <!-- Feed (die Social-Media-Plattform) — 3 Spalten: WERKZEUGE links (Schöpfen & Andocken) |
+                 der zentrale FEED in der Mitte (Welten · Rezepte · Wesen scrollen + BEWERTEN) |
+                 KURATIEREN rechts (Filter + Bestbewertet). Der Feed liest die bestehenden Vektoren. -->
+            <div class="feed-layout">
+                <main class="feed-center">
+                    <div class="library-head">
+                        <input
+                            type="text"
+                            id="library-search"
+                            class="library-search"
+                            placeholder="⌕ Suchen — Welten · Rezepte · Wesen · Vokabular · signiert"
+                            aria-label="Den Feed durchsuchen"
+                            autocomplete="off"
+                        />
+                    </div>
+                    <div id="library-list" class="library-list feed-stream" aria-live="polite">—</div>
+                </main>
+                <aside class="feed-right">
+                    <div class="feed-curate">
+                        <h4 class="feed-curate-head">Filter</h4>
+                        <div id="feed-kinds" class="feed-kinds" aria-label="Nach Art filtern"></div>
+                    </div>
+                    <div class="feed-curate">
+                        <h4 class="feed-curate-head">Bestbewertet</h4>
+                        <div id="feed-trends" class="feed-trends" aria-live="polite"></div>
+                    </div>
                     <button type="button" id="library-import" class="library-import-btn">Welt empfangen…</button>
-                </div>
-                <input type="file" id="library-import-input" accept="application/json,.json" hidden />
-                <section class="section library-star">
-                    <div id="library-list" class="library-list" aria-live="polite">—</div>
-                </section>
-                <details class="library-create">
+                    <input type="file" id="library-import-input" accept="application/json,.json" hidden />
+                </aside>
+                <details class="library-create feed-left">
                     <summary class="library-create-summary">
                         Schöpfen &amp; Andocken — eine fremde Welt übersetzen, andocken, verwalten · Provenienz
                     </summary>
@@ -7922,6 +8114,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.69.0" defer></script>
+        <script src="anazhRealm.js?v=18.70.0" defer></script>
     </body>
 </html>

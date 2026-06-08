@@ -30854,23 +30854,65 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!fluidCard.querySelector(".lib-trust-seal") &&
             !!fluidCard.querySelector(".spec-body") &&
             !!fluidCard.querySelector(".spec-footer .library-get");
-        // Bib-B: content-first — der Karten-Star hält das #library-list + liegt VOR der eingeklappten
-        // Schöpfen-Zone; die Formulare recedieren in <details class="library-create"> (progressive disclosure).
+        // === Feed (die Social-Media-Plattform, V18.70) — 3 Spalten, der vereinte Feed, das WERTEN ===
         const libDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
-        const libStar = libDrawer && libDrawer.querySelector(".library-star");
-        const libCreate = libDrawer && libDrawer.querySelector("details.library-create");
-        out.starHoldsList = !!libStar && !!libStar.querySelector("#library-list");
+        const feedLayout = libDrawer && libDrawer.querySelector(".feed-layout");
+        const feedLeft = feedLayout && feedLayout.querySelector(".feed-left");
+        const feedCenter = feedLayout && feedLayout.querySelector(".feed-center");
+        const feedRight = feedLayout && feedLayout.querySelector(".feed-right");
+        out.feedThreeCol = !!feedLayout && !!feedLeft && !!feedCenter && !!feedRight;
+        out.feedCenterHoldsStream = !!feedCenter && !!feedCenter.querySelector("#library-list");
+        out.searchInHead = !!(feedCenter && feedCenter.querySelector(".library-head #library-search"));
+        const libCreate =
+            feedLeft &&
+            (feedLeft.matches("details.library-create") ? feedLeft : feedLeft.querySelector("details.library-create"));
         out.createCollapsed =
             !!libCreate &&
             !libCreate.open &&
             !!libCreate.querySelector("#translator-input") &&
             !!libCreate.querySelector("#vendor-id");
-        out.starBeforeCreate =
-            !!libStar &&
-            !!libCreate &&
-            !!(libStar.compareDocumentPosition(libCreate) & Node.DOCUMENT_POSITION_FOLLOWING);
-        out.searchInHead = !!(libDrawer && libDrawer.querySelector(".library-head #library-search"));
-        // Bib-D / V18.65: die Suche TREIBT das Raster (KONSUM auf Feature-Ebene — kein toter Knopf).
+        // Feed-A0: _feedItems vereint Welten + Rezepte + Wesen (jedes liest seinen Vektor + seine Wertung).
+        const fi = typeof r._feedItems === "function" ? r._feedItems() : [];
+        const fkinds = new Set(fi.map((it) => it.kind));
+        const hasCreatures = (r.state.creatures || []).length > 0;
+        out.feedHasAllKinds = fkinds.has("world") && fkinds.has("recipe") && (!hasCreatures || fkinds.has("creature"));
+        out.feedItemsBundle = fi.length >= 3 && fi.every((it) => it.id && it.prof && typeof it.rating === "number");
+        // Feed-A: der Strom rendert die Arten (Welt=.library-card, Rezept=.feed-recipe, Wesen=.feed-creature).
+        const stream = document.getElementById("library-list");
+        out.feedRendersKinds =
+            !!stream &&
+            !!stream.querySelector(".library-card[data-kind='world']") &&
+            !!stream.querySelector(".feed-recipe[data-kind='recipe']") &&
+            (!hasCreatures || !!stream.querySelector(".feed-creature[data-kind='creature']"));
+        // jede Feed-Karte trägt das WERTEN (5 Sterne).
+        const anyCard = stream && stream.querySelector(".library-card, .feed-card");
+        const ratingBar = anyCard && anyCard.querySelector(".feed-rating");
+        out.feedRatingBars = !!ratingBar && ratingBar.querySelectorAll(".feed-star").length === 5;
+        // das WERTEN wirkt: setzen + lesen + Toggle (das dritte Verb des Feldes, lokal).
+        r._setFeedRating("world:fluid", 0); // reset
+        r._setFeedRating("world:fluid", 4);
+        const set4 = r._feedRating("world:fluid") === 4;
+        r._setFeedRating("world:fluid", 4); // Toggle → 0
+        out.feedRatingWorks = set4 && r._feedRating("world:fluid") === 0;
+        // der Kind-Chip TREIBT den Strom (nur Rezepte sichtbar, Welten verborgen).
+        r.state.feedKind = "recipe";
+        r._applyLibraryFilter();
+        const recCards = Array.from(stream.querySelectorAll(".feed-recipe"));
+        const wCards = Array.from(stream.querySelectorAll(".library-card[data-kind='world']"));
+        out.feedKindFilter =
+            recCards.length > 0 &&
+            recCards.every((c) => c.style.display !== "none") &&
+            wCards.every((c) => c.style.display === "none");
+        r.state.feedKind = "alle";
+        r._applyLibraryFilter();
+        out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 4;
+        // Bestbewertet spiegelt eine Wertung zurück (das WERTEN sichtbar).
+        r._setFeedRating("world:fluid", 5);
+        r._renderFeedTrends();
+        out.feedTrends = !!document.querySelector("#feed-trends .feed-trend-row");
+        r._setFeedRating("world:fluid", 5); // Toggle zurück → sauber
+        r._renderFeedTrends();
+        // Bib-D / V18.65: die Suche TREIBT den Feed (KONSUM auf Feature-Ebene — kein toter Knopf).
         const libSearch = document.getElementById("library-search");
         if (libSearch) {
             libSearch.value = "strom";
@@ -30952,11 +30994,19 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Bib-A0: _worldProfile existiert", w14Results.worldProfileExists);
         check("Bib-A0: _worldProfile bündelt den Welt-Vektor (id/label/dsl/trust/searchText)", w14Results.worldProfileBundles);
         check("Bib-A: die Karte ist eine Welt-Spec-Card (.spec-header + Trust-Siegel + Betreten-Akt)", w14Results.cardIsSpecCard);
-        check("Bib-B: der Karten-Star hält das #library-list", w14Results.starHoldsList);
-        check("Bib-B: die Formulare recedieren in die eingeklappte Schöpfen-Zone", w14Results.createCollapsed);
-        check("Bib-B: der Star liegt VOR der Schöpfen-Zone (content-first, J6)", w14Results.starBeforeCreate);
-        check("Bib-B: die Selbst-Suche sitzt im Kopf", w14Results.searchInHead);
-        check("Bib-D: die Suche TREIBT das Karten-Raster (kein toter Knopf, V18.65)", w14Results.searchDrivesGrid);
+        check("Feed: 3 Spalten — Werkzeuge links | Feed Mitte | Kuratieren rechts", w14Results.feedThreeCol);
+        check("Feed: das #library-list ist der Feed-Strom in der Mitte", w14Results.feedCenterHoldsStream);
+        check("Feed: die Schöpfen-Werkzeuge sind links eingeklappt", w14Results.createCollapsed);
+        check("Feed: die Suche sitzt im Feed-Kopf", w14Results.searchInHead);
+        check("Feed-A0: _feedItems vereint Welten + Rezepte + Wesen", w14Results.feedHasAllKinds);
+        check("Feed-A0: jedes Feed-Item trägt id + Vektor + Wertung", w14Results.feedItemsBundle);
+        check("Feed-A: der Strom rendert alle drei Arten als Karten", w14Results.feedRendersKinds);
+        check("Feed: jede Karte trägt das WERTEN (5 Sterne)", w14Results.feedRatingBars);
+        check("Feed: das WERTEN wirkt — setzen + lesen + Toggle (das dritte Verb, lokal)", w14Results.feedRatingWorks);
+        check("Feed: der Kind-Filter TREIBT den Strom (nur Rezepte sichtbar)", w14Results.feedKindFilter);
+        check("Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen)", w14Results.feedKindChips);
+        check("Feed: Bestbewertet spiegelt eine Wertung zurück", w14Results.feedTrends);
+        check("Bib-D: die Suche TREIBT den Feed (kein toter Knopf, V18.65)", w14Results.searchDrivesGrid);
         check("Bib-D: die Suche leeren zeigt alle Karten wieder", w14Results.searchClearsClean);
         check("W14 P1: obtainPortalForWorld liefert ok + portal_fluid", w14Results.obtainOk);
         check("W14 P1: der geholte Bauplan trägt role:portal + ist eigen (nicht built-in)", w14Results.bpIsPortal);
