@@ -16,6 +16,23 @@
 > PIXEL-BLIND headless. Der Schöpfer-Browser ist die EINZIGE Wahrheit. NIE 2+ pixel-blinde
 > Wellen stapeln ohne sein Auge dazwischen. NIE „wir habens" sagen, was nicht browser-bestätigt
 > ist. Ein bestätigter Bogen wird GEMERGT, bevor der nächste beginnt.
+>
+> **UPDATE V18.87 (09.06.2026) — DIE WURZEL DES FALTENS + DER SEE/FLUSS-VERMISCHUNG GEFIXT (nicht das
+> Pendel).** Schöpfer-Rüge gegen mein 3-Modelle-Vorschlagen („eigene Welle / Browser loop" = ohne Mut;
+> „verstehe die Pipeline mit JEDER Schnittstelle, baue Rückgrat"). GEMESSEN (`scripts/diag-water-fold`):
+> **(1) das Mesh-Falten (Ebene B) war der V18.31-Auslauf** (der per-Vertex Density-Scan in Schicht 4, der
+> flaches Wasser dem bumpigen Terrain folgen liess) — bewiesen über 3 Konfigurationen (inkl. ein
+> Fehlversuch: den smoothstep-Blend raus → Falten STIEG 1.3%→3.4% = das Terrain-FOLGEN selbst faltet;
+> den Scan ganz raus → 0.3%). ENTFERNT: `surfY = L + caDelta`. **(2) der Auslauf war nur ein Symptom des
+> `max(rim/body, river)` in Schicht 2** (`_atlasWaterLevelAt`): der `max` vermischte See-flach mit
+> Fluss-Abfall → Seen beulen wo Flüsse durch (die „See/Fluss-Verwechslung") + der Auslauf schwebt am
+> flachen Rim (= warum das Auslauf-Pflaster nötig schien). ERSETZT durch eine KLASSIFIKATION (See/Ozean
+> FLACH = Conduit V9.46; Fluss/Auslauf = terrain-folgende macro-Profile, gewinnt absteigend), main +
+> Worker bit-identisch. Falten 1.3%→0.6% (Rest = legitime Fluss-Abfälle), Grenz-Step 0% (L nahtfrei),
+> Playtest grün. **Das §6-„Option B vs A"-Framing ist damit überholt für das FALTEN/die VERMISCHUNG** —
+> die waren KEINE Dynamik-Frage (Ebene A), sondern zwei Mesh/L-Feld-Wurzeln (Ebene B), an der Wurzel
+> gefixt. OFFEN bleibt Ebene A (echtes Nachfliessen, T4b-CA ist die Saat) + die „leeren kleinen Seen"
+> (Schicht 3, Flood-Seed/Rim-Domäne). Das FEEL = Schöpfer-Browser-Auge.
 
 ---
 
