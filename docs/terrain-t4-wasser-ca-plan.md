@@ -65,10 +65,21 @@ sucht sein Niveau). **Das ist die EINE fehlende Sache — eine ARCHITEKTUR, kein
 - **T4a-4 — die PHYSIK liest das Level** (`_playerWaterContext` nutzt das CA-Level statt der binären Zelle)
   → Auftrieb folgt dem echten Wasserstand. Headless-Physik-Probe. **OFFEN (W-B).**
 - **T4b — der RENDER. HYBRID GEBAUT ✓ (V18.84):** das Surface-Mesh liest den LIVE-Delta
-  (`surfY = L + _caWaterTopDelta`, Clamp −14..+4; im Ruhe-Zustand exakt die statische `L`). Die
-  VOLLE Form (Höhe aus den ZELL-OBERKANTEN, das frozen `L` stirbt als Render-Quelle — wasser-plan
-  §0 W-A) ist der nächste Bau → Regel #0, A/B-Browser-Loop, Merge. **Dort heilt auch Ebene B (das
-  Mesh-Falten): ein Zell-Top pro Spalte springt nicht wie das Multi-Segment-`L` → keine Faltung.**
+  (`surfY = L + _caWaterTopDelta`, Clamp −14..+4; im Ruhe-Zustand exakt die statische `L`).
+- **W-A — das ZELL-OBERKANTEN-SHEET. GEBAUT ✓ (V18.89, A/B-Modus "cells"):**
+  `_buildVoxelChunkWaterCellSheet` — die Render-DOMÄNE kommt aus den ZELLEN (+1-Zell-Anker-Ring,
+  der UNTER das Terrain taucht; MIN der 4 Nachbar-Böden — das MAX griffe an Klippen die Wand),
+  die RUHE-Höhe ist sub-zellig `L` (Flood = „gefüllt bis L" → Bett gefüllt, die V18.87-Lehre),
+  der LIVE-CA-Delta obendrauf (`_caColumnScan` — EIN Spalten-Kern, zwei Leser), wet-only-Glätten
+  (PAD=3, naht-symmetrisch per Konstruktion). **GEMESSEN (`diag-water-cellsheet`, exit 0):**
+  Parität Ø 0.003 m (>1 m: 0.03 % = die ALTE Flood-vs-Atlas-Lücke T7d, das Sheet rendert die
+  Zell-Wahrheit treu) · Naht max Δy = 0 über 451 geteilte Grenz-Positionen · Anker 98.8 % unter
+  Terrain · A/B-Screenshots `artifacts/water-ab-{surface,cells}.png` — der L-Film schnitt am
+  Mess-Ort PHANTOM-Platten durchs Dorf, das Sheet zeigt Wasser nur wo Zellen Wasser TRAGEN.
+  Default bleibt "surface" — **der Schöpfer-Browser-A/B (Einstellungen → Wasser-Render →
+  „Zell-Sheet (W-A, neu)") ist das Merge-Gate.** OFFEN (W-C): Anker an ÜBERHÄNGEN (11/955 —
+  erster SOLID UNTER dem Wasser-Dach statt von oben) · konvexer Quer-Droop am Ufer (heute
+  Glätten+Tauch-Ring) · Wasserfall-Plane-Überlapp im cells-Modus prüfen.
 
 ## 6 · DIE VIER GEMESSENEN W-B-BEFUNDE (Code-Audit 09.06.2026 — vor W-B heilen/entscheiden)
 

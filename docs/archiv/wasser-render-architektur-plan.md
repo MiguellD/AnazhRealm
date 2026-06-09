@@ -89,10 +89,13 @@
   Detail, das den Unterschied macht (der konvexe Querschnitt, den der Schöpfer seit V18.27 will).
 
 ### Der PFAD (klein, beweisbar, Schöpfer-Auge bei JEDEM Schritt — die V18.87-Lehre)
-1. **W-A (zuerst, das kleinste beweisbare Stück):** das Oberflächen-Sheet aus den ZELL-OBERKANTEN
-   bauen (statt dem frozen `L`) + glätten + konvex — STATISCH (kein Automat) an einem See. A/B im
-   Browser gegen den `L`-Film. Beweist: keine komischen Kanten, keine Blockigkeit, kein Klettern, das
-   Bett gefüllt — BEVOR der Automat dazukommt.
+1. **W-A — GEBAUT ✓ (V18.89, der A/B-Modus "cells"; Default bleibt "surface" bis zum
+   Schöpfer-Sign-off):** `_buildVoxelChunkWaterCellSheet` — Domäne aus den ZELLEN + 1-Zell-
+   Anker-Ring (taucht unter das Terrain), Ruhe-Höhe sub-zellig `L` (Bett gefüllt), Live-CA-Delta,
+   wet-only-Glätten (PAD=3). GEMESSEN `diag-water-cellsheet` (exit 0): Parität Ø 0.003 m · Naht
+   Δy=0 · Anker 98.8 % unter Terrain · A/B-Bilder `artifacts/water-ab-{surface,cells}.png` (der
+   L-Film schnitt Phantom-Platten durchs Dorf — das Sheet zeigt Wasser nur, wo Zellen es TRAGEN).
+   **Browser-A/B: Einstellungen → Wasser-Render → „Zell-Sheet (W-A, neu)" — das Merge-Gate.**
 2. **W-B:** den Automaten (`_tickWaterCA`) in die Welt verdrahten (T4a-2..4: Welt-Zellen + cross-chunk-
    wake + Physik) → das Sheet wächst mit dem Live-Volumen → es fliesst nach.
 3. **W-C:** die konvexe Ufer-Verankerung + die Naht-Glättung verfeinern, Wasserfälle an echten Klippen.
