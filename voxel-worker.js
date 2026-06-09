@@ -605,6 +605,13 @@ const EDGES = [
     [6, 7],
 ];
 
+// T3 (Terrain-Kohärenz-Plan §4 — Manifold Dual Contouring): die Schärfe-Regler. MÜSSEN
+// bit-identisch zu `AnazhRealm.DC_LAMBDA`/`DC_SHARP_MOVE2` (Main) sein — Determinismus-Wand:
+// Worker- + Main-gebaute Chunks teilen den Seed → ihre Boundary-Vertices müssen koinzident
+// bleiben (V9.42-b). Bei einer Änderung BEIDE Stellen gleichschalten.
+const DC_LAMBDA = 0.1;
+const DC_SHARP_MOVE2 = 0.04;
+
 function extractSurfaceVertices(density, ox, oy, oz, dimX, dimY, dimZ, step) {
     const Nx = dimX + 1;
     const Ny = dimY + 1;
@@ -614,6 +621,8 @@ function extractSurfaceVertices(density, ox, oy, oz, dimX, dimY, dimZ, step) {
     const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
     const positions = [];
     const vertCells = [];
+    const sharp = []; // T3 — pro Vertex: 1, wenn das QEF eine echte FEATURE-Ecke fand
+    const LAMBDA = DC_LAMBDA;
     for (let k = 0; k < dimZ; k++) {
         for (let j = 0; j < dimY; j++) {
             for (let i = 0; i < dimX; i++) {
@@ -627,10 +636,20 @@ function extractSurfaceVertices(density, ox, oy, oz, dimX, dimY, dimZ, step) {
                     if (solid(corner[c])) mask |= 1 << c;
                 }
                 if (mask === 0 || mask === 0xff) continue;
+                // Mass-Point + QEF-Akkumulation (Dual Contouring) — identisch zum Main-Mirror.
                 let vx = 0;
                 let vy = 0;
                 let vz = 0;
                 let count = 0;
+                let a00 = 0,
+                    a01 = 0,
+                    a02 = 0,
+                    a11 = 0,
+                    a12 = 0,
+                    a22 = 0;
+                let b0 = 0,
+                    b1 = 0,
+                    b2 = 0;
                 for (const [a, b] of EDGES) {
                     if (solid(corner[a]) === solid(corner[b])) continue;
                     const da = corner[a];
@@ -643,20 +662,91 @@ function extractSurfaceVertices(density, ox, oy, oz, dimX, dimY, dimZ, step) {
                     const bx = b & 1;
                     const by = (b >> 1) & 1;
                     const bz = (b >> 2) & 1;
-                    vx += ax + (bx - ax) * t;
-                    vy += ay + (by - ay) * t;
-                    vz += az + (bz - az) * t;
+                    const px = ax + (bx - ax) * t;
+                    const py = ay + (by - ay) * t;
+                    const pz = az + (bz - az) * t;
+                    vx += px;
+                    vy += py;
+                    vz += pz;
                     count++;
+                    let gx =
+                        (corner[1] - corner[0]) * (1 - py) * (1 - pz) +
+                        (corner[3] - corner[2]) * py * (1 - pz) +
+                        (corner[5] - corner[4]) * (1 - py) * pz +
+                        (corner[7] - corner[6]) * py * pz;
+                    let gy =
+                        (corner[2] - corner[0]) * (1 - px) * (1 - pz) +
+                        (corner[3] - corner[1]) * px * (1 - pz) +
+                        (corner[6] - corner[4]) * (1 - px) * pz +
+                        (corner[7] - corner[5]) * px * pz;
+                    let gz =
+                        (corner[4] - corner[0]) * (1 - px) * (1 - py) +
+                        (corner[5] - corner[1]) * px * (1 - py) +
+                        (corner[6] - corner[2]) * (1 - px) * py +
+                        (corner[7] - corner[3]) * px * py;
+                    const glen = Math.sqrt(gx * gx + gy * gy + gz * gz);
+                    if (glen < 1e-9) continue;
+                    gx /= glen;
+                    gy /= glen;
+                    gz /= glen;
+                    const d = gx * px + gy * py + gz * pz;
+                    a00 += gx * gx;
+                    a01 += gx * gy;
+                    a02 += gx * gz;
+                    a11 += gy * gy;
+                    a12 += gy * gz;
+                    a22 += gz * gz;
+                    b0 += gx * d;
+                    b1 += gy * d;
+                    b2 += gz * d;
                 }
                 if (count === 0) continue;
                 const s = 1 / count;
+                const cx = vx * s,
+                    cy = vy * s,
+                    cz = vz * s;
+                a00 += LAMBDA;
+                a11 += LAMBDA;
+                a22 += LAMBDA;
+                b0 += LAMBDA * cx;
+                b1 += LAMBDA * cy;
+                b2 += LAMBDA * cz;
+                let fx = cx,
+                    fy = cy,
+                    fz = cz,
+                    isSharp = 0;
+                const det =
+                    a00 * (a11 * a22 - a12 * a12) - a01 * (a01 * a22 - a12 * a02) + a02 * (a01 * a12 - a11 * a02);
+                if (Math.abs(det) > 1e-9) {
+                    const inv = 1 / det;
+                    const m00 = a11 * a22 - a12 * a12,
+                        m01 = a02 * a12 - a01 * a22,
+                        m02 = a01 * a12 - a02 * a11;
+                    const m11 = a00 * a22 - a02 * a02,
+                        m12 = a01 * a02 - a00 * a12;
+                    const m22 = a00 * a11 - a01 * a01;
+                    fx = (m00 * b0 + m01 * b1 + m02 * b2) * inv;
+                    fy = (m01 * b0 + m11 * b1 + m12 * b2) * inv;
+                    fz = (m02 * b0 + m12 * b1 + m22 * b2) * inv;
+                    if (fx < 0) fx = 0;
+                    else if (fx > 1) fx = 1;
+                    if (fy < 0) fy = 0;
+                    else if (fy > 1) fy = 1;
+                    if (fz < 0) fz = 0;
+                    else if (fz > 1) fz = 1;
+                    const dxm = fx - cx,
+                        dym = fy - cy,
+                        dzm = fz - cz;
+                    if (dxm * dxm + dym * dym + dzm * dzm > DC_SHARP_MOVE2) isSharp = 1;
+                }
                 cellVert[ci(i, j, k)] = positions.length / 3;
                 vertCells.push(i, j, k);
-                positions.push(ox + (i + vx * s) * step, oy + (j + vy * s) * step, oz + (k + vz * s) * step);
+                sharp.push(isSharp);
+                positions.push(ox + (i + fx) * step, oy + (j + fy) * step, oz + (k + fz) * step);
             }
         }
     }
-    return { positions, vertCells, cellVert };
+    return { positions, vertCells, cellVert, sharp };
 }
 
 function emitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
@@ -698,7 +788,7 @@ function emitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
     return indices;
 }
 
-function laplacianSmoothPositions(positions, indices, iterations = 1) {
+function laplacianSmoothPositions(positions, indices, iterations = 1, sharp = null) {
     if (indices.length < 3) return;
     const vertCount = positions.length / 3;
     const neighborSets = new Array(vertCount);
@@ -720,7 +810,8 @@ function laplacianSmoothPositions(positions, indices, iterations = 1) {
         for (let v = 0; v < vertCount; v++) {
             const nbrs = neighborSets[v];
             const cnt = nbrs.size;
-            if (cnt === 0) {
+            // T3 — feature-bewusst: scharfe QEF-Vertices bleiben UNgesmootht (identisch zum Main).
+            if (cnt === 0 || (sharp && sharp[v])) {
                 smoothed[v * 3] = positions[v * 3];
                 smoothed[v * 3 + 1] = positions[v * 3 + 1];
                 smoothed[v * 3 + 2] = positions[v * 3 + 2];
@@ -1231,7 +1322,7 @@ function buildChunkMesh(cx, cz, lod) {
         }
     }
     // Surface-Nets-Mesh aufbauen.
-    const { positions, vertCells, cellVert } = extractSurfaceVertices(
+    const { positions, vertCells, cellVert, sharp } = extractSurfaceVertices(
         density,
         sampleOx,
         oy,
@@ -1243,7 +1334,7 @@ function buildChunkMesh(cx, cz, lod) {
     );
     if (positions.length === 0) return { empty: true };
     const indices = emitQuadIndices(density, cellVert, sampleDimX, sampleDimY, sampleDimZ);
-    laplacianSmoothPositions(positions, indices);
+    laplacianSmoothPositions(positions, indices, 1, sharp);
     cropPad(positions, indices, vertCells, sampleDimX, sampleDimZ, 1);
     if (positions.length === 0) return { empty: true };
     const normals = gradientNormals(positions, density, sampleOx, oy, sampleOz, step, Nx, Ny, Nz);

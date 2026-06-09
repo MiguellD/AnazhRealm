@@ -288,17 +288,30 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
   Schimmer) auf echter WebGPU — die GEOMETRIE ist bewiesen, die Shader-Feinheit ist der Sign-off. Plus:
   Stable-LOD-Hysterese gegen LOD-Flicker (eigener kleiner Faden) · fernes Wasser-LOD (U2, separat).
 
-### T3 — Substanz-Kohärenz: der kantige Mesher (Manifold Dual Contouring) (Risiko: hoch · die Vision)
-- **Ziel.** Kantiges, nicht-blobiges Terrain — scharfe Canyons, kantige Felsen, das Minecraft schlägt.
-- **Mechanik.** `_voxelExtractSurfaceVertices`: Vertex-Mittelung → **QEF-Minimum** über die Hermite-Daten
-  (Edge-Normalen, die der Gradient schon liefert); Manifold-Variante (Schaefer/Ju) gegen Self-Intersection;
-  Laplacian feature-aware (Kanten erhalten). **Worker-Mirror bit-identisch** (Determinismus-Wand).
-- **Schnittstellen.** `_voxelExtractSurfaceVertices` :18352, `_voxelLaplacianSmoothPositions` :18478,
-  `voxel-worker.js` Mesher-Mirror, BVH (folgt automatisch).
-- **Risiko.** hoch — DC kann non-manifold/self-intersecting werden; Determinismus-Drift Worker↔Main.
-  Mitigation: Manifold-DC + `checkBandWellePerf3cWorkerFoundation` + ein `diag-mesh-sharpness.cjs`
-  (Kanten-Winkel-Verteilung) + Browser-Sign-off (pixel-blind).
-- **Sign-off.** Der Schöpfer sieht kantige Felsen/Canyons, die Naht bleibt kohärent, FPS hält.
+### T3 — Substanz-Kohärenz: der kantige Mesher (Dual Contouring QEF) — **GEBAUT ✓ (Foundation)**
+- **Ziel.** Kantiges, nicht-blobiges Terrain — scharfe Canyons, kantige Felsen.
+- **GEBAUT (09.06.2026, beide Mesher bit-identisch):** `_voxelExtractSurfaceVertices` (main) +
+  `extractSurfaceVertices` (`voxel-worker.js`) setzen den Vertex ans **QEF-Minimum** über die Hermite-
+  Normalen (= der analytische Trilinear-Gradient des Dichtefeldes an jeder Kanten-Kreuzung) statt ins
+  Mittel; Mass-Point-Regularisierung (`DC_LAMBDA`) + Cramer-3×3-Solve + Zell-Clamp gegen Self-Intersection;
+  der Laplacian ist **feature-bewusst** (`sharp`-Flag pro Vertex: das QEF zog ihn spürbar vom Mittel weg
+  → der Laplacian verschont ihn, sonst rundet er die Kante wieder). `DC_LAMBDA`/`DC_SHARP_MOVE2` sind in
+  BEIDEN Dateien gespiegelt (Determinismus-Wand).
+- **VERIFIZIERT:** **V9.42-b-Naht-Test grün — 288 Vertices teilen identische Position zwischen 9 Nachbar-
+  Chunks** (Worker- + Main-QEF koinzident = die Determinismus-Wand hält, das QEF ist bit-identisch); Playtest
+  +4 T3-Source-Probes grün, `Alle Invarianten OK`. `diag-mesh-sharpness` (Dieder-Winkel-Verteilung) +
+  `diag-terrain-shot`: das Terrain rendert kohärent, keine Artefakte, keine Noise-Verstärkung.
+- **EHRLICHER BEFUND (gemessen, der Fischer):** auf der AKTUELLEN Welt ist der Effekt **subtil** — sharp >45°
+  24.4 %→26.8 %, mittlerer Dieder 40.5°→42.95°. WARUM: die Welt ist GEMESSEN smooth-noisy (rollende Hügel +
+  ±12-m-Roughness = glatte Noise, KAUM echte Dichte-Ecken); das QEF ist auf der glatten Fläche ill-
+  konditioniert → es fällt korrekt auf den Mass-Point zurück (es sharpt NUR echte Feature-Ecken, verstärkt
+  die Noise NICHT). Das „blobige Gefühl" ist GEMESSEN grossteils **Facetten-SHADING** (V17.107, schon
+  geheilt) + smooth-noise, NICHT gerundete Geometrie-Ecken. → **T3 ist die FOUNDATION: der Mesher ist jetzt
+  SCHARF-FÄHIG; die dramatische Schärfe entsteht mit T5 (Canyons = echte Dichte-Features), die der DC dann
+  AUTOMATISCH kantig rendert.** `DC_LAMBDA` browser-tunbar (kleiner = schärfer, Re-Mesh nötig).
+- **Schnittstellen (real):** `_voxelExtractSurfaceVertices` + `_voxelLaplacianSmoothPositions` (+ `sharp`-
+  Faden durch `_voxelChunkGeometry`), Worker-Mirror, `DC_LAMBDA`/`DC_SHARP_MOVE2` (static + Worker-const).
+- **Sign-off (Schöpfer-Auge):** auf echter WebGPU — kohärent, FPS hält (die Schärfe selbst ist subtil bis T5).
 
 ### T4 — Wasser-Kohärenz: der zelluläre Automat (Phase 1 — Wasser fließt) (Risiko: hoch · die Krönung)
 - **Ziel.** Wasser fließt dynamisch nach wie Minecraft; ein Carve neben Wasser → es strömt hinein.
@@ -330,7 +343,7 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
 | T0 | `diag-chunk-seam` (GEBAUT, GEMESSEN) | — | **OFFEN**: welche Naht stört im Auge mehr |
 | T1 | `diag-chunk-seam` C (footprint in-edit) + 4 Playtest-Inv. **GRÜN** | — | **OFFEN**: keine Abbau-Naht im Auge |
 | T2 | `diag-chunk-seam` D (Grenz-Zeile 98 % auf grober Fläche) + 5 Playtest-Inv. **GRÜN** | render-only (kein Mirror) | **OFFEN**: kein Pop/Schimmer im Auge |
-| T3 | `diag-mesh-sharpness` (Kanten-Winkel) + `checkBandWellePerf3cWorkerFoundation` | **bit-identisch** | kantige Felsen, FPS |
+| T3 | `diag-mesh-sharpness` (Dieder-Winkel) + **V9.42-b 288 geteilt** + 4 Playtest-Inv. **GRÜN** | **bit-identisch (Worker-Mirror)** | kohärent; volle Schärfe ab T5 |
 | T4 | `diag-water-flow` + `diag-water-fill` | Seed-deterministisch ODER reaktiv | Wasser fließt in den Kanal |
 | T5 | `diag-harmony` (Bleed=0) + `diag-caverns` | Worldgen-frozen | Canyons, Eingänge |
 

@@ -20614,6 +20614,16 @@ async function checkBandWelleC3CellularReaction(ctx) {
         out.t2HasMorphAttrs = t2HasAttrs;
         out.t2ChunksWithMorph = t2ChunksWithMorph;
 
+        // T3 (Terrain-Kohärenz-Plan §4 — Manifold Dual Contouring): der Mesher setzt den Vertex
+        // ans QEF-Minimum (scharf) statt ins Mittel (blobig); der Laplacian ist feature-bewusst
+        // (verschont scharfe Vertices). Determinismus (Worker bit-identisch) deckt V9.42-b ab
+        // (288 geteilte Naht-Vertices = Worker- + Main-QEF koinzident). Hier: Source-Probes.
+        const exSrc = r._voxelExtractSurfaceVertices.toString();
+        out.t3QefMesher = /a00 \+= gx \* gx/.test(exSrc) && /Cramer|m00 \* b0/.test(exSrc);
+        out.t3ExtractReturnsSharp = /vertCells, cellVert, sharp/.test(exSrc);
+        out.t3FeatureAwareLaplacian = /sharp && sharp\[v\]/.test(r._voxelLaplacianSmoothPositions.toString());
+        out.t3DcConstants = Number.isFinite(r.constructor.DC_LAMBDA) && Number.isFinite(r.constructor.DC_SHARP_MOVE2);
+
         // 6) Source-Probes: spawnArchitecture + removeArchitecture rufen
         // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
         out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.spawnArchitecture.toString());
@@ -20713,6 +20723,21 @@ async function checkBandWelleC3CellularReaction(ctx) {
         "T2 (Cross-LOD-Geomorph): der Geomorph feuert an Cross-LOD-Grenzen (>=1 Chunk hasMorph)",
         res.t2ChunksWithMorph >= 1,
         `chunksWithMorph=${res.t2ChunksWithMorph}`
+    );
+    // T3 (Terrain-Kohärenz-Plan §4): der kantige Mesher (Dual Contouring QEF). Die Determinismus-
+    // Sicherheit (Worker-QEF == Main-QEF) trägt der V9.42-b-Naht-Test (288 geteilte Vertices).
+    check("T3 (Dual Contouring): der Mesher setzt den Vertex ans QEF-Minimum (Source-Probe)", res.t3QefMesher);
+    check(
+        "T3 (Dual Contouring): _voxelExtractSurfaceVertices liefert die sharp-Flags (Source-Probe)",
+        res.t3ExtractReturnsSharp
+    );
+    check(
+        "T3 (Dual Contouring): der Laplacian ist feature-bewusst (verschont scharfe Vertices)",
+        res.t3FeatureAwareLaplacian
+    );
+    check(
+        "T3 (Dual Contouring): DC_LAMBDA + DC_SHARP_MOVE2 Konstanten existieren (Worker-gespiegelt)",
+        res.t3DcConstants
     );
 }
 

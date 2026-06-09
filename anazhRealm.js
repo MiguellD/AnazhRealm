@@ -18266,7 +18266,7 @@ class AnazhRealm {
         // Density-Sample-Schleife (~90k `_terrainDensityAt`-Calls) nur einmal
         // pro Chunk-Build ausgeführt, nicht zweimal.
         const density = preDensity || this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
-        const { positions, vertCells, cellVert } = this._voxelExtractSurfaceVertices(
+        const { positions, vertCells, cellVert, sharp } = this._voxelExtractSurfaceVertices(
             density,
             ox,
             oy,
@@ -18278,7 +18278,7 @@ class AnazhRealm {
         );
         if (positions.length === 0) return null;
         const indices = this._voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ);
-        this._voxelLaplacianSmoothPositions(positions, indices, smoothIters);
+        this._voxelLaplacianSmoothPositions(positions, indices, smoothIters, sharp);
         this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin);
         if (positions.length === 0) return null;
         // V9.85 Perf-2.d — Gradient-Normals nutzen das geteilte preDensity-
@@ -18383,6 +18383,11 @@ class AnazhRealm {
         const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
         const positions = [];
         const vertCells = [];
+        const sharp = []; // T3 — pro Vertex: 1, wenn das QEF eine echte FEATURE-Ecke fand (scharf)
+        // T3 (Manifold Dual Contouring): LAMBDA regularisiert das QEF Richtung Mass-Point (=der
+        // alte Surface-Nets-Mittel-Vertex). Klein → scharf (QEF dominiert, Feature-Ecken); gross →
+        // glatt (Mass-Point). Browser-justierbar; das Clamp auf die Zelle bannt Self-Intersection.
+        const LAMBDA = AnazhRealm.DC_LAMBDA;
         for (let k = 0; k < dimZ; k++) {
             for (let j = 0; j < dimY; j++) {
                 for (let i = 0; i < dimX; i++) {
@@ -18396,10 +18401,23 @@ class AnazhRealm {
                         if (solid(corner[c])) mask |= 1 << c;
                     }
                     if (mask === 0 || mask === 0xff) continue;
+                    // Mass-Point (Mittel der Kanten-Kreuzungen) + QEF-Akkumulation (Dual
+                    // Contouring): jede Kreuzung p_i mit ihrer Hermite-Normale n_i (= der
+                    // analytische Trilinear-Gradient des Dichtefeldes an p_i) spannt eine Ebene
+                    // n_i·(x−p_i)=0; das Minimum von Σ(n_i·(x−p_i))² sitzt am FEATURE-Eckpunkt.
                     let vx = 0;
                     let vy = 0;
                     let vz = 0;
                     let count = 0;
+                    let a00 = 0,
+                        a01 = 0,
+                        a02 = 0,
+                        a11 = 0,
+                        a12 = 0,
+                        a22 = 0;
+                    let b0 = 0,
+                        b1 = 0,
+                        b2 = 0;
                     for (const [a, b] of EDGES) {
                         if (solid(corner[a]) === solid(corner[b])) continue;
                         const da = corner[a];
@@ -18412,20 +18430,95 @@ class AnazhRealm {
                         const bx = b & 1;
                         const by = (b >> 1) & 1;
                         const bz = (b >> 2) & 1;
-                        vx += ax + (bx - ax) * t;
-                        vy += ay + (by - ay) * t;
-                        vz += az + (bz - az) * t;
+                        const px = ax + (bx - ax) * t;
+                        const py = ay + (by - ay) * t;
+                        const pz = az + (bz - az) * t;
+                        vx += px;
+                        vy += py;
+                        vz += pz;
                         count++;
+                        // analytischer Trilinear-Gradient an (px,py,pz) aus den 8 Ecken
+                        let gx =
+                            (corner[1] - corner[0]) * (1 - py) * (1 - pz) +
+                            (corner[3] - corner[2]) * py * (1 - pz) +
+                            (corner[5] - corner[4]) * (1 - py) * pz +
+                            (corner[7] - corner[6]) * py * pz;
+                        let gy =
+                            (corner[2] - corner[0]) * (1 - px) * (1 - pz) +
+                            (corner[3] - corner[1]) * px * (1 - pz) +
+                            (corner[6] - corner[4]) * (1 - px) * pz +
+                            (corner[7] - corner[5]) * px * pz;
+                        let gz =
+                            (corner[4] - corner[0]) * (1 - px) * (1 - py) +
+                            (corner[5] - corner[1]) * px * (1 - py) +
+                            (corner[6] - corner[2]) * (1 - px) * py +
+                            (corner[7] - corner[3]) * px * py;
+                        const glen = Math.sqrt(gx * gx + gy * gy + gz * gz);
+                        if (glen < 1e-9) continue; // flacher Punkt → nur Mass-Point
+                        gx /= glen;
+                        gy /= glen;
+                        gz /= glen;
+                        const d = gx * px + gy * py + gz * pz;
+                        a00 += gx * gx;
+                        a01 += gx * gy;
+                        a02 += gx * gz;
+                        a11 += gy * gy;
+                        a12 += gy * gz;
+                        a22 += gz * gz;
+                        b0 += gx * d;
+                        b1 += gy * d;
+                        b2 += gz * d;
                     }
                     if (count === 0) continue;
                     const s = 1 / count;
+                    const cx = vx * s,
+                        cy = vy * s,
+                        cz = vz * s; // Mass-Point (= der alte Surface-Nets-Vertex)
+                    // QEF + Mass-Point-Regularisierung (λ), dann 3×3 via Cramer (deterministisch)
+                    a00 += LAMBDA;
+                    a11 += LAMBDA;
+                    a22 += LAMBDA;
+                    b0 += LAMBDA * cx;
+                    b1 += LAMBDA * cy;
+                    b2 += LAMBDA * cz;
+                    let fx = cx,
+                        fy = cy,
+                        fz = cz,
+                        isSharp = 0;
+                    const det =
+                        a00 * (a11 * a22 - a12 * a12) - a01 * (a01 * a22 - a12 * a02) + a02 * (a01 * a12 - a11 * a02);
+                    if (Math.abs(det) > 1e-9) {
+                        const inv = 1 / det;
+                        const m00 = a11 * a22 - a12 * a12,
+                            m01 = a02 * a12 - a01 * a22,
+                            m02 = a01 * a12 - a02 * a11;
+                        const m11 = a00 * a22 - a02 * a02,
+                            m12 = a01 * a02 - a00 * a12;
+                        const m22 = a00 * a11 - a01 * a01;
+                        fx = (m00 * b0 + m01 * b1 + m02 * b2) * inv;
+                        fy = (m01 * b0 + m11 * b1 + m12 * b2) * inv;
+                        fz = (m02 * b0 + m12 * b1 + m22 * b2) * inv;
+                        if (fx < 0) fx = 0;
+                        else if (fx > 1) fx = 1;
+                        if (fy < 0) fy = 0;
+                        else if (fy > 1) fy = 1;
+                        if (fz < 0) fz = 0;
+                        else if (fz > 1) fz = 1;
+                        // „scharf" = das QEF zog den Vertex spürbar vom Mass-Point weg (ein echtes
+                        // Feature, kein flaches Mittel) → der feature-bewusste Laplacian verschont ihn.
+                        const dxm = fx - cx,
+                            dym = fy - cy,
+                            dzm = fz - cz;
+                        if (dxm * dxm + dym * dym + dzm * dzm > AnazhRealm.DC_SHARP_MOVE2) isSharp = 1;
+                    }
                     cellVert[ci(i, j, k)] = positions.length / 3;
                     vertCells.push(i, j, k);
-                    positions.push(ox + (i + vx * s) * step, oy + (j + vy * s) * step, oz + (k + vz * s) * step);
+                    sharp.push(isSharp);
+                    positions.push(ox + (i + fx) * step, oy + (j + fy) * step, oz + (k + fz) * step);
                 }
             }
         }
-        return { positions, vertCells, cellVert };
+        return { positions, vertCells, cellVert, sharp };
     }
 
     // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad. V9.41
@@ -18485,7 +18578,7 @@ class AnazhRealm {
     // V9.42-b-Seam-Test fängt es). Heute nutzen ALLE Pfade 1 (cropMargin 1). Mehr
     // Geometrie-Glättung gegen die Trapeze braucht einen breiteren pad im GETEILTEN
     // Density-Grid (auch von den Wasser-Cells indiziert) → ein eigener Bogen.
-    _voxelLaplacianSmoothPositions(positions, indices, iterations = 1) {
+    _voxelLaplacianSmoothPositions(positions, indices, iterations = 1, sharp = null) {
         if (indices.length < 3) return;
         const vertCount = positions.length / 3;
         const neighborSets = new Array(vertCount);
@@ -18507,7 +18600,9 @@ class AnazhRealm {
             for (let v = 0; v < vertCount; v++) {
                 const nbrs = neighborSets[v];
                 const cnt = nbrs.size;
-                if (cnt === 0) {
+                // T3 — feature-bewusst: ein scharfer QEF-Vertex (Feature-Ecke) bleibt UNgesmootht,
+                // sonst rundet der Laplacian die Kante wieder weg (er fügte vor T3 die Blobigkeit zu).
+                if (cnt === 0 || (sharp && sharp[v])) {
                     smoothed[v * 3] = positions[v * 3];
                     smoothed[v * 3 + 1] = positions[v * 3 + 1];
                     smoothed[v * 3 + 2] = positions[v * 3 + 2];
@@ -19017,6 +19112,19 @@ class AnazhRealm {
     // der Materialfarbe, hebt Stein/Eisen nachts über Schwarz). Browser-justierbar.
     static get STRUCTURE_EMISSIVE() {
         return Object.freeze({ intensity: 0.07 });
+    }
+
+    // T3 (Terrain-Kohärenz-Plan §4 — Manifold Dual Contouring): die Schärfe-Regler des Meshers.
+    // MÜSSEN bit-identisch zum `voxel-worker.js`-Mirror sein (Determinismus-Wand: Worker- und
+    // Main-gebaute Chunks teilen den Seed → ihre Boundary-Vertices müssen koinzident bleiben,
+    // V9.42-b). DC_LAMBDA: QEF→Mass-Point-Regularisierung (klein=scharf, gross=glatt). DC_SHARP_
+    // MOVE2: ab welcher (Mass-Point→QEF)-Verschiebung² ein Vertex als „Feature" gilt (→ der
+    // feature-bewusste Laplacian verschont ihn). Browser-justierbar (Re-Mesh nötig).
+    static get DC_LAMBDA() {
+        return 0.1;
+    }
+    static get DC_SHARP_MOVE2() {
+        return 0.04;
     }
 
     // Welle D — die Kavitäts-AO (V15.2/V17.14) zeichnet Surface-Nets-Facetten-
