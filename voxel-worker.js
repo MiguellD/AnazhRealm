@@ -190,8 +190,14 @@ function terrainDensityAt(x, y, z) {
     if (!state.noise) return 0;
     const surf = terrainMacroSurfaceY(x, z, true);
     let d = surf - y;
-    d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7;
-    d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5;
+    // T6c (mirror) — WEITE FELDER: Roughness regional unterdrücken (mtnR, λ~2000 m). Bit-identisch zur Main.
+    const eroR = state.noise.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
+    let mtnR = 1 - eroR;
+    if (mtnR < 0) mtnR = 0;
+    mtnR *= mtnR;
+    const roughScale = 0.16 + 0.84 * mtnR;
+    d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * roughScale;
+    d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * roughScale;
     // Höhlen-Ridged-Hülle.
     const base = state.baseHeight || 0;
     const caveFloor = clamp01((y - (base - 28)) / 8);
@@ -208,6 +214,10 @@ function terrainDensityAt(x, y, z) {
         const cavern = state.noise.noise3D(x * 0.013, y * 0.018, z * 0.013);
         const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
         d -= cavernCarve * caveEnv * 46;
+        // T6d (mirror) — MÄCHTIGE HALLEN (λ~220 m, Schwelle 0.5, carve 72). Bit-identisch zur Main.
+        const hall = state.noise.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
+        const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
+        d -= hallCarve * caveEnv * 72;
     }
     // Hydrosphäre-Carve + See-Becken (nur wenn ready + nicht hydroComputing).
     const hydro = state.hydrosphere;
@@ -279,6 +289,23 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
     const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4 (mirror)
     let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
+    // === T6 (mirror) — DAS DRAMA auf kontinentaler Skala. MUSS bit-identisch zum Main-Thread
+    // `_terrainMacroSurfaceY` sein (Determinismus-/Naht-Wand V9.42-b). ===
+    // T6a (mirror) — GIGANTISCHE CANYONS (λ~960-m-Ravine × sparse λ~3300-m-Maske, bis ~150 m tief, Floor base-65).
+    const canyonRegion = Math.max(0, Math.min(1, (n.noise2D(wx * 0.0003 + 61.1, wz * 0.0003 - 28.7) - 0.3) / 0.18));
+    if (canyonRegion > 0.001) {
+        const cR = 1 - Math.abs(n.noise2D(wx * 0.00105 + 8.3, wz * 0.00105 - 14.9));
+        const cProfile = Math.max(0, (cR - 0.6) / 0.4);
+        withoutTarn -= cProfile * cProfile * canyonRegion * 150;
+        const cFloor = base - 65;
+        if (withoutTarn < cFloor) withoutTarn = cFloor;
+    }
+    // T6b (mirror) — KRASSE KONTRASTE (Mesa-Terracing, ~26-m-Stufen in sparse λ~2900-m-Regionen).
+    const mesaRegion = Math.max(0, Math.min(1, (n.noise2D(wx * 0.00034 + 13.7, wz * 0.00034 + 47.3) - 0.45) / 0.13));
+    if (mesaRegion > 0.001) {
+        const stepH = 26;
+        withoutTarn += (Math.round(withoutTarn / stepH) * stepH - withoutTarn) * mesaRegion;
+    }
     // V14.6 (mirror): sanftes Decken-Limit — cont0 hebt die Surface fern vom
     // Ursprung bis ~235 m über die Voxel-Decke → Löcher. tanh-Clamp komprimiert
     // hohe Surfaces (>110 m) asymptotisch gegen 136 m. MUSS bit-identisch zum

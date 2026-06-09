@@ -17896,6 +17896,32 @@ class AnazhRealm {
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
         let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        // === T6 (DIE GIGANTISCHE WELT) — das Drama auf KONTINENTALER Skala (V14-Dimensionen geehrt:
+        // die Features sind λ1000–7000 m, das Drama auch — NICHT λ33 wie mein T5-Fehler). MUSS
+        // bit-identisch im Worker-Mirror (Determinismus-/Naht-Wand). ===
+        // T6a — GIGANTISCHE CANYONS: ein ridged Ravine-System (λ~960 m, scharfe V-Täler über `1−|noise|`)
+        // × einer sparse Region-Maske (λ~3300 m) carvt MÄCHTIGE Schluchten (bis ~150 m) ins kontinentale
+        // Terrain — ein EIGENES System, nicht das λ33-m-Höhlen-Netz. Floor base-65 (in der Chunk-Decke
+        // base-90 → kein Loch). Der DC (T3) rendert die scharfen Wände → endlich sichtbar kantig.
+        const canyonRegion = Math.max(0, Math.min(1, (n.noise2D(wx * 0.0003 + 61.1, wz * 0.0003 - 28.7) - 0.3) / 0.18));
+        if (canyonRegion > 0.001) {
+            const cR = 1 - Math.abs(n.noise2D(wx * 0.00105 + 8.3, wz * 0.00105 - 14.9));
+            const cProfile = Math.max(0, (cR - 0.6) / 0.4); // scharfe V-Schlucht (oberste ~40 % des Grats)
+            withoutTarn -= cProfile * cProfile * canyonRegion * 150; // quadratisch = scharfe Sohle
+            const cFloor = base - 65;
+            if (withoutTarn < cFloor) withoutTarn = cFloor;
+        }
+        // T6b — KRASSE KONTRASTE: in Mesa-Regionen (sparse, λ~2900 m) die Surface auf ~26-m-Stufen
+        // QUANTISIEREN → flache Mesa-Tops + SENKRECHTE Steilwände (der DC rendert sie rasiermesser-
+        // scharf), statt überall glatte Hänge. Das sind die „krassen Kontraste".
+        const mesaRegion = Math.max(
+            0,
+            Math.min(1, (n.noise2D(wx * 0.00034 + 13.7, wz * 0.00034 + 47.3) - 0.45) / 0.13)
+        );
+        if (mesaRegion > 0.001) {
+            const stepH = 26;
+            withoutTarn += (Math.round(withoutTarn / stepH) * stepH - withoutTarn) * mesaRegion;
+        }
         // V14.6 — sanftes Decken-Limit (Schöpfer-Befund „nach einiger Zeit in
         // eine Richtung zerfällt die Welt"). Die kontinentale Basis cont0
         // (λ~7100 m) hebt die Surface fern vom Ursprung bis ~235 m (gemessen
@@ -17989,8 +18015,18 @@ class AnazhRealm {
         // kleine Überhänge, das grobe grosse Wölbungen. V9.18 hatte das feine
         // Band entfernt → die Berge wurden flache Hügel ohne Überhänge; V9.19
         // stellt beide V9.17-Bänder wieder her (der Schöpfer-Befund).
-        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7;
-        d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5;
+        // T6c — WEITE FELDER: die ±12-m-Roughness REGIONAL unterdrücken. `mtnR` (Ruggedness, DIESELBE
+        // Formel + Frequenz wie `_terrainMacroSurfaceY`s `mtn`, λ~2000 m): Tiefland → ~0, Hochgebirge → ~1.
+        // Die Roughness skaliert (0.16 + 0.84·mtnR) → flache Ebenen werden WIRKLICH flach (±~2 m statt
+        // ±12 m), Gebirge bleiben körnig. Der grösste Hebel für „weite Felder" — die V14-Regionen sind
+        // schon da, nur die uniforme Roughness erdrückte sie. MUSS bit-identisch im Worker.
+        const eroR = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
+        let mtnR = 1 - eroR;
+        if (mtnR < 0) mtnR = 0;
+        mtnR *= mtnR;
+        const roughScale = 0.16 + 0.84 * mtnR;
+        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * roughScale;
+        d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * roughScale;
         // Wurm-Höhlen — EIN ridged-Noise-Feld (`1 − |noise|`): sein Grat folgt
         // der Noise-Nullfläche, einer ZUSAMMENHÄNGENDEN gewundenen Höhlen-
         // Ebene. Carve dort, wo der Grat eine Schwelle übersteigt → begehbare,
@@ -18029,6 +18065,15 @@ class AnazhRealm {
             const cavern = n.noise3D(x * 0.013, y * 0.018, z * 0.013);
             const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
             d -= cavernCarve * caveEnv * 46;
+            // T6d — MÄCHTIGE HALLEN: ein nieder-frequentes Kavernen-Feld (λ~220 m horiz., ~165 m
+            // vert., freq 0.0045/0.006) carvt GIGANTISCHE begehbare Räume, wo das λ77-Feld nur mittlere
+            // Hallen fand. Sparse (Schwelle 0.5 → die oberen ~25 %) → vereinzelte Kathedralen-Hohlräume,
+            // von den Tunneln verbunden. Gegated durch DASSELBE caveEnv → in T5-Canyon-Regionen (die
+            // Decke gehoben) brechen sie zur Oberfläche = die gigantischen Unterwelt-Eingänge. MUSS
+            // bit-identisch im Worker (Determinismus-/Naht-Schutz).
+            const hall = n.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
+            const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
+            d -= hallCarve * caveEnv * 72;
         }
         // V9.43-d / V9.45-b — der Hydrosphären-Carve. (1) Fluss-Kanäle senken
         // die Dichte → echte Rinnen mit Ufern. (2) See-Becken werden zu einem
@@ -20213,6 +20258,9 @@ class AnazhRealm {
             const ci0 = Math.floor((wx - ox) / step0);
             const ck0 = Math.floor((wz - oz) / step0);
             const depthM = colDepthAt(ci0, ck0);
+            // T4b — die Fläche FOLGT dem LIVE CA-Level (0 im Ruhe-Zustand → bit-identisch zur statischen
+            // `L`; nach einem Carve senkt/hebt sie sich → das Wasser fliesst sichtbar). S. `_caWaterTopDelta`.
+            const caDelta = this._caWaterTopDelta(cx, cz, ci0, ck0);
             // V18.31 — DAS AUSLAUF-WASSER FOLGT DEM TERRAIN (Bodenkontakt) statt als flache
             // L-Platte unter den Boden zu tauchen. Schöpfer-Befund (Browser, nach V18.30): „es
             // hebt einfach das vertikale Element, verliert den Kontakt zum Boden — das ist noch
@@ -20229,7 +20277,7 @@ class AnazhRealm {
             // „Mesh-Elemente bis zum Boden"-Idee des Schöpfers, ohne neue Geometrie — die
             // bestehende Über-Deckungs-Fläche FOLGT jetzt dem Terrain, statt darüber zu schweben.
             // Dünnes Ufer (thickness ≤ thinBand) bleibt FLACH bei L (See füllt bis ans Ufer, V18.26).
-            let surfY = L;
+            let surfY = L + caDelta;
             if (depthM < step0) {
                 // Die Boden-Höhe `tY` MUSS das GERENDERTE Terrain treffen — sonst schwebt das
                 // Wasser sichtbar (der „verliert Kontakt"-Befund). `colTerrainY` (die Zell-Oberkante)
@@ -39419,6 +39467,13 @@ class AnazhRealm {
                 }
             }
         }
+        // T4b — die bewegten Chunks neu rendern: das Surface-Mesh liest das LIVE-Level (caDelta) → das
+        // Wasser fliesst sichtbar. Budgetiert über die bestehende `pendingWaterIso`-Queue (4/Frame) → kein
+        // Spike. Nur bei echter Bewegung (kein Rebuild im Ruhe-Zustand → kein Render-Wandel ohne Carve).
+        if (total > 0.05) {
+            if (!this.state.pendingWaterIso) this.state.pendingWaterIso = new Set();
+            for (const a of active) if (a.moved > 0.05) this.state.pendingWaterIso.add(a.key);
+        }
         for (const a of active) if (a.moved < SETTLE) activeSet.delete(a.key);
         return total;
     }
@@ -39446,6 +39501,51 @@ class AnazhRealm {
             }
         }
         return xfer;
+    }
+
+    // T4b (terrain-t4-wasser-ca-plan §3) — die LIVE-Korrektur der Wasser-Oberfläche pro Spalte aus dem
+    // CA-Level. Liefert die HÖHEN-DIFFERENZ (Meter, relativ) zwischen dem LIVE-Spiegel (höchste Zelle mit
+    // Level > 0.5 + Füllgrad) und dem FLOOD-Ruhe-Spiegel (höchste WATER-Zelle). Im Ruhe-Zustand sind beide
+    // gleich (der Flood seedet jede WATER-Zelle auf 1.0) → caDelta == 0 → die Render-Fläche ist EXAKT die
+    // statische `L` (kein Render-Wandel, keine Spirale). NUR wo `waterLevelCells` einen Eintrag trägt (ein
+    // aktiv getickter Chunk nach einem Carve) UND die Spalte abweicht, weicht caDelta von 0 ab → das Wasser
+    // fliesst SICHTBAR. Render-only, lokal-reaktiv (kein Worker-Mirror, kein Determinismus-Effekt).
+    _caWaterTopDelta(cx, cz, ci, ck) {
+        const map = this.state.waterLevelCells;
+        if (!map || map.size === 0) return 0;
+        const level = map.get(`${cx},${cz}`);
+        if (!level) return 0;
+        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
+        if (!entry || !entry.waterCells) return 0;
+        const cfg = this._voxelChunkConfig(0);
+        const dim = cfg.dim,
+            dimY = cfg.dimY,
+            step = cfg.step;
+        if (ci < 0 || ck < 0 || ci >= dim || ck >= dim) return 0;
+        const cells = entry.waterCells;
+        const dimSq = dim * dim;
+        const colBase = ci + ck * dim;
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
+        // Flood-Top (Ruhe): höchste WATER-Zelle. Live-Top: höchste nicht-solide Zelle mit Level > 0.5.
+        let floodTopJ = -1,
+            liveTopJ = -1,
+            liveFrac = 0;
+        for (let j = dimY - 1; j >= 0; j--) {
+            const idx = colBase + j * dimSq;
+            if (floodTopJ < 0 && cells[idx] === WATER) floodTopJ = j;
+            if (liveTopJ < 0 && cells[idx] !== SOLID && level[idx] > 0.5) {
+                liveTopJ = j;
+                liveFrac = level[idx];
+            }
+            if (floodTopJ >= 0 && liveTopJ >= 0) break;
+        }
+        if (floodTopJ < 0) return 0; // kein Body-Wasser in dieser Spalte → `L` führt
+        const floodTopY = (floodTopJ + 1) * step; // Oberkante der Flood-Säule (relativ zu oy)
+        const liveTopY = liveTopJ < 0 ? 0 : (liveTopJ + liveFrac) * step;
+        const delta = liveTopY - floodTopY; // ≈ 0 im Ruhe-Zustand
+        if (delta > -0.05 && delta < 0.05) return 0; // Rest-Rauschen ignorieren = exakte Ruhe
+        return Math.max(-14, Math.min(4, delta));
     }
 
     // Welle A — die Gras-Queue synchron leeren (Test-Naht, Spiegel von
@@ -50549,7 +50649,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.83.0";
+AnazhRealm.VERSION = "18.84.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

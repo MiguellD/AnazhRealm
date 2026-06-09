@@ -506,3 +506,33 @@ grosse dramatische Struktur auf der RICHTIGEN Skala. Jede Sub-Phase eine bewiese
 3. **Determinismus-Wand heilig** — jede Density-Änderung Worker-gespiegelt, V9.42-b grün.
 4. **Das Auge ist die Wahrheit** — die Geometrie ist headless beweisbar, aber das FEEL/Mass ist der Schöpfer-Browser.
 5. **Nicht zum Claim rennen** — innehalten, repräsentativ prüfen, DANN sagen „es trägt". Momentum ≠ Rigor überspringen.
+
+### GEBAUT + GEMESSEN (09.06. — der §9-Plan „in einem schlag" gezogen)
+
+**T4b + T6a–d alle GEBAUT, Worker-gespiegelt, gemessen — die Disziplin oben angewandt:**
+
+- **T6a (Canyons)** `_terrainMacroSurfaceY` + `voxel-worker.js`: ridged Ravine λ~960 m × sparse Region-Maske
+  λ~3300 m, bis ~150 m tief, Floor base−65 (in der Decke base−90 → kein Loch).
+- **T6b (Kontraste)** Mesa-Terracing ~26-m-Stufen in sparse λ~2900-m-Regionen → senkrechte Wände (DC rendert sie scharf).
+- **T6c (Felder)** `_terrainBaseDensityAt` + Worker: `roughScale = 0.16 + 0.84·mtnR` (mtnR = die `_terrainMacroSurfaceY`-Ruggedness,
+  λ~2000 m) → flache Regionen ±~2 m statt ±12 m. Der billigste grösste Hebel (die V14-Regionen waren da, die Roughness erdrückte sie).
+- **T6d (Höhlen)** λ~220 m cavern (freq 0.0045/0.006), carve 72, Schwelle 0.5, gegated durch dasselbe caveEnv → in
+  T5-Canyon-Regionen (Decke gehoben) brechen sie zur Oberfläche.
+- **T4b (Wasser-Render)** `_caWaterTopDelta(cx,cz,ci,ck)` = live-Top − flood-Top; in `_buildVoxelChunkWaterSurfaceMesh`
+  als `surfY = L + caDelta`. **Im Ruhe-Zustand EXAKT 0** (`waterLevelCells` leer → die statische `L` unverändert, kein
+  Render-Wandel/keine Spirale); nach einem Carve weicht es ab → das Wasser fliesst sichtbar. `_tickWorldWaterCA`
+  re-enqueued die bewegten Chunks budgetiert (`pendingWaterIso`, 4/Frame).
+
+**Messung (`scripts/diag-terrain-drama.cjs` · `diag-t6-determinism.cjs` · `diag-terrain-vista.cjs`):**
+an 5 Orten (inkl. Schöpfer-250) Relief 88–235 m · Felder 12–48 % flach · Steilkanten 100–510 · tiefste Schlucht bis 83 m ·
+Höhlen brechen durch 20.7 % · **Determinismus 0/6885 Worker↔Main-Mismatches** (die Wand hält) · die Vistas zeigen tiefe
+Cleft/scharfe Grate/gewaltige Massive (NICHT blobig, kein Loch/keine Falte) · **Playtest `Alle Invarianten OK`** · lint/format grün.
+
+**OFFEN (der Schöpfer-Browser, echte WebGPU):** das FEEL (sind die Canyons MÄCHTIG genug? fliesst das Wasser sichtbar nach
+einem Carve?) + EIN Merge · T4a-4 (Physik liest das CA-Level) · die graue/flache Wasser-OPTIK (= `hydroSurfaceMaterial`-Shader,
+NICHT T4b — eine eigene Shader-Welle, GPU-Auge).
+
+**Vista-Tooling-Lehre (gemessen):** ein ferner Screenshot im Headless braucht drei Fixes — der Physik-Body resettet auf (0,0)
+(playerMesh direkt setzen + force-sync den Ring statt auf die async-Streaming-Maschinerie zu warten); der rAF-Hintergrund-Loop
+PRUNED die ferne Region zwischen zwei `page.evaluate`-Calls → `renderer.setAnimationLoop(null)` + Build/Sichtbarkeit/Render in
+EINEM evaluate.
