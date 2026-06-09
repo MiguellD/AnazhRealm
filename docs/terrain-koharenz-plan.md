@@ -673,3 +673,78 @@ es die Profis, was fehlt?" — GEMESSEN (`diag-chunk-seam`), nicht behauptet.
 - **N3 — Stabiles LOD:** grösserer LOD0-Ring (die Grenze weiter weg) + Hysterese (kein Pop) — der billigste sichtbare Hebel.
 - **DISZIPLIN: jede Heilung am SETTLED, AUGENHÖHEN-Schöpfer-Auge (`diag-settled-view`) + `diag-chunk-seam`, kein
   Cherry-Pick der Grenz-Zeile mehr — die VOLLE Übergangs-Zone messen.**
+
+---
+
+## 12 · DER LETZTE BROCKEN — die Naht watertight (das Fundament, das ALLES trägt) · zoomed out
+
+> **Der Schöpfer-Reframe (09.06., der den Bogen klärte):** das Wasser ist nur ein SYMPTOM der Naht.
+> Die ursprüngliche These war richtig — **die Naht ZUERST, dann das Wasser** („niemals Wasser vor der
+> Naht"). Ich bin am Fundament vorbeigerannt (T2 war ein render-only Halbfix, cherry-picked) und baute
+> Wasser+Drama+Band auf eine halb-kohärente Grenze. Dieser Brocken kehrt zum Fundament zurück + schliesst
+> es GANZ. Danach ist das Wasser strukturell nahtlos; was bleibt, ist sein AUSSEHEN (Shader, dein Auge).
+
+### 12.1 · Das grosse Ganze — was auf der Naht steht (alles)
+```
+DIE NAHT (kohärente Chunk-Grenze · ALLE LODs · watertight · Render + Kollision)
+   ├── Terrain-Render      (blobig/Naht ← same-LOD ~50% + cross-LOD 0%)
+   ├── Terrain-KOLLISION   (Durchfallen/Durchsehen ← BVH am un-gemorphten Mesh)
+   ├── WASSER-Render       (Fläche/Iso PRO CHUNK → erbt die Naht ← T7d Naht-Abfall)
+   ├── WASSER-Reaktivität  (CA-cross-chunk-wake braucht kohärente Nachbarn ← DARUM Naht zuerst)
+   ├── Edit                (Ganz-Chunk-Reset ← kein Sub-Region-Mesh)
+   └── LOD-Wechsel         (Pop/Höhen-Versatz ← Ganz-Chunk-Swap + Geomorph-Timing)
+```
+Das DRAMA + BAND + LÖCHER (T5–T8) sind die DICHTE — unabhängig von der Naht, FERTIG. Dieser Brocken ist
+NUR die Naht. Schliesse sie → alles oben folgt.
+
+### 12.2 · Die drei Naht-Wurzeln (GEMESSEN → Heilung → Ziel)
+- **N3 · stabiles LOD (ZUERST, der billigste grösste Hebel).** Heute: LOD0-Ring 3×3 → die Cross-LOD-Grenze
+  sitzt ~50 m vom Spieler (sichtbar, wandert, popt). Heilung: grösserer LOD0-Ring (5×5/7×7) + **Hysterese**
+  (ein Chunk wechselt LOD erst bei klarem Distanz-Überschritt, nicht am Grat → kein Hin-und-Her-Pop). Wirkung:
+  die Grenze schiebt auf ~100–150 m → Fog-verdeckt + selten. **Synergie: macht N1 leichter (weniger/fernere
+  Grenzen zu schliessen).** MESSEN: FPS-Kosten (`diag-warmup-speed`/Playtest-FPS) + die Grenz-Distanz.
+- **N1 · Cross-LOD watertight (Render + KOLLISION).** Heute: der Geomorph (T2) ist render-only + schliesst
+  nur die exakte Grenz-ZEILE (98.7 %), die ganze Zone nur 57.2 % (⌀0.738 m, max 9.67 m). Heilung
+  (Geomorph-VOLLENDUNG, baut auf T2 — kein Rewrite, die Heilige Lektion): **(a)** das Morph-Gewicht deckt die
+  GANZE Übergangs-Zone (das Gewicht rampt von 1 an der Grenze auf 0 am INNEREN Zonen-Rand, ~2 grobe Zellen
+  tief — nicht nur die Zeile) → Render-Spalt 57 %→~100 %; **(b)** die KOLLISION teilt die Kohärenz: die BVH
+  wird aus der GEMORPHTEN Geometrie gebaut (main-only, nach dem Worker-Build → Determinismus unberührt) →
+  kein Durchsehen/Durchfallen. MESSEN: `diag-chunk-seam` B/D (0 sichtbare >1-m-Spalten) + ein NEUER
+  Kollisions-Check (BVH-Vertex == gemorphter Render-Vertex). **Alternative Transvoxel (Lengyel, watertight
+  Transition-Cells) NUR falls der Geomorph an Höhlen-Topologie-Grenzen versagt — das mildert N3 (Grenze in
+  simplem Terrain) bereits.**
+- **N2 · Sub-Region-Edit.** Heute: ein Block setzen re-meshet den GANZEN Chunk (`_rebuildVoxelChunk`) → das
+  „Reset". (Klarstellung: Sub-Region-MESH war IMMER Backlog [V13.9]; wir hatten nur Sub-Region-DICHTE
+  [V12.0-perf.b] — nichts ging verloren, es wurde nie gebaut.) Heilung: der Edit re-meshet nur die von der
+  Schnitz-Kugel berührten ZELLEN (die Edit-Bounding-Box), splict sie in die bestehende Chunk-Geometrie →
+  kein Ganz-Chunk-Swap. MESSEN: der Edit berührt nur die Sub-Region (Vertex-Delta lokal).
+
+### 12.3 · Das Wasser teilt die Naht (die Synergie · der Wasser↔Fluss-Übergang)
+Das Wasser-Mesh ist schon LOD0-uniform (keine eigene Cross-LOD-Naht) — es sitzt auf dem jetzt-kohärenten
+Terrain. Seine STRUKTURELLEN Risse SIND die Naht, die durchscheint:
+- **T7d (See↔Fluss-Naht, vertikaler Abfall an der Chunkgrenze):** das `L`-Feld (Wasserspiegel) muss eine
+  reine, an der Grenze GETEILTE (x,z)-Funktion sein (V18.22 eine-Skala) → kein Vertex-Sprung. Der
+  **Übergang Wasser→Fluss:** der Fluss fliesst durch den See HINDURCH (V9.46-Conduit), das Seebecken
+  floodet von der durchfliessenden Quelle (kein leeres Becken), das `L` ist über See+Fluss kontinuierlich
+  → der Übergang ist ein glatter Spiegel, kein Stufen-Abfall.
+- **T7c (Fluss-Edit-Löcher):** der Edit re-enqueued die Wasser-Fläche der 8 Nachbarn (V18.0) — durch N2
+  (lokalisiert) + ein Sync-Drain heilt der Carve am Fluss ohne Loch.
+→ **Beide fallen weg, wenn die Naht (N1) + das `L`-Feld kohärent sind.**
+
+### 12.4 · Was DANACH bleibt (die Blüten — NICHT dieser Brocken)
+Das Wasser-AUSSEHEN (grau/flach = `hydroSurfaceMaterial`-Shader · Tiefen-Farbe · Schaum) — dein Auge.
+Das LOD-Kaskaden-Polish (U4 Deko-Distanz · U5 Schatten-CSM · U6 Clipmap — Perf, nicht Naht,
+`archiv/lod-kaskade-plan.md`). Der Spawn-in-Höhle (Spawn-Höhe über die T6d-Kaverne heben).
+
+### 12.5 · Die Verifikation (ALLES geprüft) + die Reihenfolge
+1. **N3** → Playtest-FPS + Grenz-Distanz gemessen (tragbar?).
+2. **N1** → `diag-chunk-seam` B/D = 0 sichtbare Spalten + Kollisions-Check konsistent · Determinismus 0/6885
+   (Worker-Mirror, falls die Geometrie berührt) · `diag-settled-view` an einem LOD-Übergang (mit dem Auge: kein Spalt).
+3. **N2** → der Edit berührt nur die Sub-Region · Playtest grün.
+4. **T7d/T7c** → `diag-water-*` (kein vertikaler `L`-Abfall, kein Fluss-Edit-Loch) + dein Browser-Auge.
+5. Jeder Schritt: Worker-gespiegelt (Determinismus heilig) · gemessen · browser-validiert · EIN Merge pro
+   bestätigtem Schritt.
+
+**DISZIPLIN (der ganze Brocken):** nicht durch Details blind werden — die NAHT ist die Wurzel, das Wasser
+das Symptom, das Aussehen die Blüte. In DIESER Reihenfolge. Kein Cherry-Pick der Grenz-Zeile mehr — die
+VOLLE Übergangs-Zone + die Kollision messen.
