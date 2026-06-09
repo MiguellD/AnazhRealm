@@ -190,12 +190,25 @@ function terrainDensityAt(x, y, z) {
     if (!state.noise) return 0;
     const surf = terrainMacroSurfaceY(x, z, true);
     let d = surf - y;
-    d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7;
-    d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5;
+    // T6c (mirror) — WEITE FELDER: Roughness regional unterdrücken (mtnR, λ~2000 m). Bit-identisch zur Main.
+    const eroR = state.noise.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
+    let mtnR = 1 - eroR;
+    if (mtnR < 0) mtnR = 0;
+    mtnR *= mtnR;
+    const roughScale = 0.16 + 0.84 * mtnR;
+    d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * roughScale;
+    d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * roughScale;
     // Höhlen-Ridged-Hülle.
     const base = state.baseHeight || 0;
     const caveFloor = clamp01((y - (base - 28)) / 8);
-    const caveCeil = clamp01((surf - 16 - y) / 8); // V14.4-Harmonie (mirror): surf-6→surf-16
+    // T5 (G3, mirror) — die CANYON-MASKE öffnet die Höhlen-Decke selektiv → Canyons zur Oberfläche.
+    // Bit-identisch zur Main (Determinismus-/Naht-Wand): n.noise2D, freq 0.0065, Offset 41.7/-18.3.
+    const canyonOpen = clamp01((state.noise.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18);
+    // T7b-ii (mirror) — Aquifer-Gate: unter dem Meeresspiegel hält die Höhlen-Decke −24 m Abstand zum Boden
+    // + kein canyonOpen → kein Meeres-Abfluss. Bit-identisch zur Main.
+    const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
+    const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+    const caveCeil = clamp01((surf + ceilOffset - y) / 8);
     const caveEnv = caveFloor * caveCeil;
     if (caveEnv > 0) {
         const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
@@ -205,6 +218,10 @@ function terrainDensityAt(x, y, z) {
         const cavern = state.noise.noise3D(x * 0.013, y * 0.018, z * 0.013);
         const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
         d -= cavernCarve * caveEnv * 46;
+        // T6d (mirror) — MÄCHTIGE HALLEN (λ~220 m, Schwelle 0.5, carve 72). Bit-identisch zur Main.
+        const hall = state.noise.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
+        const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
+        d -= hallCarve * caveEnv * 72;
     }
     // Hydrosphäre-Carve + See-Becken (nur wenn ready + nicht hydroComputing).
     const hydro = state.hydrosphere;
@@ -276,12 +293,44 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
     const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4 (mirror)
     let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
-    // V14.6 (mirror): sanftes Decken-Limit — cont0 hebt die Surface fern vom
-    // Ursprung bis ~235 m über die Voxel-Decke → Löcher. tanh-Clamp komprimiert
-    // hohe Surfaces (>110 m) asymptotisch gegen 136 m. MUSS bit-identisch zum
-    // Main-Thread `_terrainMacroSurfaceY` sein (Naht-/Determinismus-Schutz).
-    // Welle F (mirror): Deckel 110/136 → 225/~245 (Hülle wuchs auf Decke +270).
-    if (withoutTarn > 225) withoutTarn = 225 + 20 * Math.tanh((withoutTarn - 225) / 20);
+    // === T6 (mirror) — DAS DRAMA auf kontinentaler Skala. MUSS bit-identisch zum Main-Thread
+    // `_terrainMacroSurfaceY` sein (Determinismus-/Naht-Wand V9.42-b). ===
+    // T6a (mirror) — GIGANTISCHE CANYONS (λ~960-m-Ravine × sparse λ~3300-m-Maske, bis ~150 m tief, Floor base-65).
+    const canyonRegion = Math.max(0, Math.min(1, (n.noise2D(wx * 0.0003 + 61.1, wz * 0.0003 - 28.7) - 0.3) / 0.18));
+    if (canyonRegion > 0.001) {
+        const cR = 1 - Math.abs(n.noise2D(wx * 0.00105 + 8.3, wz * 0.00105 - 14.9));
+        const cProfile = Math.max(0, (cR - 0.6) / 0.4);
+        withoutTarn -= cProfile * cProfile * canyonRegion * 150;
+        const cFloor = base - 65;
+        if (withoutTarn < cFloor) withoutTarn = cFloor;
+    }
+    // T7a (mirror) — slope-gated SMOOTH terrace (Tafelberge ohne Treppe auf den Flanken). Bit-identisch zur Main.
+    const mesaRegion = Math.max(0, Math.min(1, (n.noise2D(wx * 0.00034 + 13.7, wz * 0.00034 + 47.3) - 0.45) / 0.13));
+    if (mesaRegion > 0.001) {
+        const sm = (sx, sz) => {
+            const cB = n.noise2D(sx * 0.00014 + 7.2, sz * 0.00014 + 3.8);
+            return Math.max(0, cB) * 130 + cB * 15 + n.noise2D(sx * 0.00088, sz * 0.00088) * 45;
+        };
+        const gd = 7;
+        const dhx = sm(wx + gd, wz) - sm(wx - gd, wz);
+        const dhz = sm(wx, wz + gd) - sm(wx, wz - gd);
+        const slope = Math.sqrt(dhx * dhx + dhz * dhz) / (2 * gd);
+        let flat = 1 - Math.min(1, slope / 0.35);
+        flat = flat * flat * (3 - 2 * flat);
+        const strength = mesaRegion * flat;
+        if (strength > 0.001) {
+            const stepH = 26;
+            const f = withoutTarn / stepH;
+            const fl = Math.floor(f);
+            const t = f - fl;
+            const shaped = t * t * t * (t * (t * 6 - 15) + 10);
+            const terraced = (fl + shaped) * stepH;
+            withoutTarn += (terraced - withoutTarn) * strength;
+        }
+    }
+    // T8 (mirror) — der Mountain-Cap FÄLLT (Berge un-gecappt, Decke +282.6); nur ein hoher Sicherheits-
+    // Backstop bei 255 (Asymptote ~267) bleibt. Bit-identisch zum Main `_terrainMacroSurfaceY`.
+    if (withoutTarn > 255) withoutTarn = 255 + 12 * Math.tanh((withoutTarn - 255) / 12);
     const waterRefSub = Number.isFinite(state.waterLevel) ? state.waterLevel : base + 4;
     const depthBelow = waterRefSub - withoutTarn;
     let withoutTarnFinal = withoutTarn;
@@ -295,6 +344,11 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
         const subC = n.noise2D(x * 0.062 - 17, z * 0.062 + 8) * 1.0;
         withoutTarnFinal += slopeDrop + (subA + subRidge + subC) * subMask;
     }
+    // T8 (mirror) — der unsichtbare Tiefsee-Abgrund sanft geklammert (Asymptote base−120, Band-Boden −135).
+    // Bit-identisch zum Main `_terrainMacroSurfaceY`.
+    const abyssClamp = base - 112;
+    if (withoutTarnFinal < abyssClamp)
+        withoutTarnFinal = abyssClamp - 8 * Math.tanh((abyssClamp - withoutTarnFinal) / 8);
     const td = tarnDeltaAt(x, z);
     if (td === 0) return withoutTarnFinal;
     const waterRef = Number.isFinite(state.waterLevel) ? state.waterLevel : base + 4;
@@ -424,15 +478,14 @@ function clamp01(v) {
 const CELL_STATE = { AIR: 0, WATER: 1, SOLID: 2 };
 
 function voxelChunkConfig(lod) {
-    // Welle F (mirror): dimY 68→100 / 136→200 — gewaltige Berge (Decke base+270),
-    // der Band-Skip in computeDensityGrid hält die Kosten. Vertikal-Span 360 m.
-    // Welle E (E1, mirror): die LOD-PYRAMIDE — LOD2/LOD3 für die fernen
-    // Ringe (dim·step = 43.2 m horizontal, dimY·step = 360 m vertikal, beide
-    // LOD-invariant). MUSS bit-identisch zum Main-`_voxelChunkConfig` bleiben.
-    if ((lod | 0) >= 3) return { dim: 3, step: 14.4, span: 43.2, dimY: 25, floorDrop: 90, lod: 3 };
-    if ((lod | 0) >= 2) return { dim: 6, step: 7.2, span: 43.2, dimY: 50, floorDrop: 90, lod: 2 };
-    if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 100, floorDrop: 90, lod: 1 };
-    return { dim: 24, step: 1.8, span: 43.2, dimY: 200, floorDrop: 90, lod: 0 };
+    // T8 (mirror) — DAS WEITE BAND: floorDrop 90→135, dimY 200→232 (Decke base+282.6, Tiefsee-Abgrund
+    // gefasst). Vertikal-Span 232·1.8 = 116·3.6 = 58·7.2 = 29·14.4 = 417.6 m (LOD-invariant). Der Band-Skip
+    // in computeDensityGrid hält die Kosten. MUSS bit-identisch zum Main-`_voxelChunkConfig` bleiben
+    // (Determinismus-Wand: Worker-Mesh/Cells == Main).
+    if ((lod | 0) >= 3) return { dim: 3, step: 14.4, span: 43.2, dimY: 29, floorDrop: 135, lod: 3 };
+    if ((lod | 0) >= 2) return { dim: 6, step: 7.2, span: 43.2, dimY: 58, floorDrop: 135, lod: 2 };
+    if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 116, floorDrop: 135, lod: 1 };
+    return { dim: 24, step: 1.8, span: 43.2, dimY: 232, floorDrop: 135, lod: 0 };
 }
 
 // Lazy-Init der 5 worldField-Noises (separate Seeds für unkorrelierte Kanäle).
@@ -605,6 +658,13 @@ const EDGES = [
     [6, 7],
 ];
 
+// T3 (Terrain-Kohärenz-Plan §4 — Manifold Dual Contouring): die Schärfe-Regler. MÜSSEN
+// bit-identisch zu `AnazhRealm.DC_LAMBDA`/`DC_SHARP_MOVE2` (Main) sein — Determinismus-Wand:
+// Worker- + Main-gebaute Chunks teilen den Seed → ihre Boundary-Vertices müssen koinzident
+// bleiben (V9.42-b). Bei einer Änderung BEIDE Stellen gleichschalten.
+const DC_LAMBDA = 0.1;
+const DC_SHARP_MOVE2 = 0.04;
+
 function extractSurfaceVertices(density, ox, oy, oz, dimX, dimY, dimZ, step) {
     const Nx = dimX + 1;
     const Ny = dimY + 1;
@@ -614,6 +674,8 @@ function extractSurfaceVertices(density, ox, oy, oz, dimX, dimY, dimZ, step) {
     const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
     const positions = [];
     const vertCells = [];
+    const sharp = []; // T3 — pro Vertex: 1, wenn das QEF eine echte FEATURE-Ecke fand
+    const LAMBDA = DC_LAMBDA;
     for (let k = 0; k < dimZ; k++) {
         for (let j = 0; j < dimY; j++) {
             for (let i = 0; i < dimX; i++) {
@@ -627,10 +689,20 @@ function extractSurfaceVertices(density, ox, oy, oz, dimX, dimY, dimZ, step) {
                     if (solid(corner[c])) mask |= 1 << c;
                 }
                 if (mask === 0 || mask === 0xff) continue;
+                // Mass-Point + QEF-Akkumulation (Dual Contouring) — identisch zum Main-Mirror.
                 let vx = 0;
                 let vy = 0;
                 let vz = 0;
                 let count = 0;
+                let a00 = 0,
+                    a01 = 0,
+                    a02 = 0,
+                    a11 = 0,
+                    a12 = 0,
+                    a22 = 0;
+                let b0 = 0,
+                    b1 = 0,
+                    b2 = 0;
                 for (const [a, b] of EDGES) {
                     if (solid(corner[a]) === solid(corner[b])) continue;
                     const da = corner[a];
@@ -643,20 +715,91 @@ function extractSurfaceVertices(density, ox, oy, oz, dimX, dimY, dimZ, step) {
                     const bx = b & 1;
                     const by = (b >> 1) & 1;
                     const bz = (b >> 2) & 1;
-                    vx += ax + (bx - ax) * t;
-                    vy += ay + (by - ay) * t;
-                    vz += az + (bz - az) * t;
+                    const px = ax + (bx - ax) * t;
+                    const py = ay + (by - ay) * t;
+                    const pz = az + (bz - az) * t;
+                    vx += px;
+                    vy += py;
+                    vz += pz;
                     count++;
+                    let gx =
+                        (corner[1] - corner[0]) * (1 - py) * (1 - pz) +
+                        (corner[3] - corner[2]) * py * (1 - pz) +
+                        (corner[5] - corner[4]) * (1 - py) * pz +
+                        (corner[7] - corner[6]) * py * pz;
+                    let gy =
+                        (corner[2] - corner[0]) * (1 - px) * (1 - pz) +
+                        (corner[3] - corner[1]) * px * (1 - pz) +
+                        (corner[6] - corner[4]) * (1 - px) * pz +
+                        (corner[7] - corner[5]) * px * pz;
+                    let gz =
+                        (corner[4] - corner[0]) * (1 - px) * (1 - py) +
+                        (corner[5] - corner[1]) * px * (1 - py) +
+                        (corner[6] - corner[2]) * (1 - px) * py +
+                        (corner[7] - corner[3]) * px * py;
+                    const glen = Math.sqrt(gx * gx + gy * gy + gz * gz);
+                    if (glen < 1e-9) continue;
+                    gx /= glen;
+                    gy /= glen;
+                    gz /= glen;
+                    const d = gx * px + gy * py + gz * pz;
+                    a00 += gx * gx;
+                    a01 += gx * gy;
+                    a02 += gx * gz;
+                    a11 += gy * gy;
+                    a12 += gy * gz;
+                    a22 += gz * gz;
+                    b0 += gx * d;
+                    b1 += gy * d;
+                    b2 += gz * d;
                 }
                 if (count === 0) continue;
                 const s = 1 / count;
+                const cx = vx * s,
+                    cy = vy * s,
+                    cz = vz * s;
+                a00 += LAMBDA;
+                a11 += LAMBDA;
+                a22 += LAMBDA;
+                b0 += LAMBDA * cx;
+                b1 += LAMBDA * cy;
+                b2 += LAMBDA * cz;
+                let fx = cx,
+                    fy = cy,
+                    fz = cz,
+                    isSharp = 0;
+                const det =
+                    a00 * (a11 * a22 - a12 * a12) - a01 * (a01 * a22 - a12 * a02) + a02 * (a01 * a12 - a11 * a02);
+                if (Math.abs(det) > 1e-9) {
+                    const inv = 1 / det;
+                    const m00 = a11 * a22 - a12 * a12,
+                        m01 = a02 * a12 - a01 * a22,
+                        m02 = a01 * a12 - a02 * a11;
+                    const m11 = a00 * a22 - a02 * a02,
+                        m12 = a01 * a02 - a00 * a12;
+                    const m22 = a00 * a11 - a01 * a01;
+                    fx = (m00 * b0 + m01 * b1 + m02 * b2) * inv;
+                    fy = (m01 * b0 + m11 * b1 + m12 * b2) * inv;
+                    fz = (m02 * b0 + m12 * b1 + m22 * b2) * inv;
+                    if (fx < 0) fx = 0;
+                    else if (fx > 1) fx = 1;
+                    if (fy < 0) fy = 0;
+                    else if (fy > 1) fy = 1;
+                    if (fz < 0) fz = 0;
+                    else if (fz > 1) fz = 1;
+                    const dxm = fx - cx,
+                        dym = fy - cy,
+                        dzm = fz - cz;
+                    if (dxm * dxm + dym * dym + dzm * dzm > DC_SHARP_MOVE2) isSharp = 1;
+                }
                 cellVert[ci(i, j, k)] = positions.length / 3;
                 vertCells.push(i, j, k);
-                positions.push(ox + (i + vx * s) * step, oy + (j + vy * s) * step, oz + (k + vz * s) * step);
+                sharp.push(isSharp);
+                positions.push(ox + (i + fx) * step, oy + (j + fy) * step, oz + (k + fz) * step);
             }
         }
     }
-    return { positions, vertCells, cellVert };
+    return { positions, vertCells, cellVert, sharp };
 }
 
 function emitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
@@ -698,7 +841,7 @@ function emitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
     return indices;
 }
 
-function laplacianSmoothPositions(positions, indices, iterations = 1) {
+function laplacianSmoothPositions(positions, indices, iterations = 1, sharp = null) {
     if (indices.length < 3) return;
     const vertCount = positions.length / 3;
     const neighborSets = new Array(vertCount);
@@ -720,7 +863,8 @@ function laplacianSmoothPositions(positions, indices, iterations = 1) {
         for (let v = 0; v < vertCount; v++) {
             const nbrs = neighborSets[v];
             const cnt = nbrs.size;
-            if (cnt === 0) {
+            // T3 — feature-bewusst: scharfe QEF-Vertices bleiben UNgesmootht (identisch zum Main).
+            if (cnt === 0 || (sharp && sharp[v])) {
                 smoothed[v * 3] = positions[v * 3];
                 smoothed[v * 3 + 1] = positions[v * 3 + 1];
                 smoothed[v * 3 + 2] = positions[v * 3 + 2];
@@ -1231,7 +1375,7 @@ function buildChunkMesh(cx, cz, lod) {
         }
     }
     // Surface-Nets-Mesh aufbauen.
-    const { positions, vertCells, cellVert } = extractSurfaceVertices(
+    const { positions, vertCells, cellVert, sharp } = extractSurfaceVertices(
         density,
         sampleOx,
         oy,
@@ -1243,7 +1387,7 @@ function buildChunkMesh(cx, cz, lod) {
     );
     if (positions.length === 0) return { empty: true };
     const indices = emitQuadIndices(density, cellVert, sampleDimX, sampleDimY, sampleDimZ);
-    laplacianSmoothPositions(positions, indices);
+    laplacianSmoothPositions(positions, indices, 1, sharp);
     cropPad(positions, indices, vertCells, sampleDimX, sampleDimZ, 1);
     if (positions.length === 0) return { empty: true };
     const normals = gradientNormals(positions, density, sampleOx, oy, sampleOz, step, Nx, Ny, Nz);

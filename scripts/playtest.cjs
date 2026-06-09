@@ -18293,7 +18293,7 @@ async function checkBandVoxelTerrainCore(ctx) {
 
             // Welle E (E1/E2) — die LOD-Pyramide. Der Warmup läuft bei Ring 4 →
             // er erreicht LOD2/LOD3 (r≥9) NIE; darum hier explizit prüfen:
-            // (a) Config LOD-invariant (dim·step=43.2, dimY·step=360),
+            // (a) Config LOD-invariant (dim·step=43.2, dimY·step=417.6 seit T8 — das weite Band),
             // (b) Zuweisung additiv (r≤8 wie alt: r2-8→LOD1; neu r9-10→2, r≥11→3),
             // (c) ein LOD2- + LOD3-Chunk meshet ohne Crash (dim 6/3 ist sehr grob —
             //     der Surface-Nets-Mesher + pad/crop muss es tragen).
@@ -18302,10 +18302,10 @@ async function checkBandVoxelTerrainCore(ctx) {
             out.lodPyramidConfig =
                 cL2.dim === 6 &&
                 Math.abs(cL2.dim * cL2.step - 43.2) < 1e-6 &&
-                Math.abs(cL2.dimY * cL2.step - 360) < 1e-6 &&
+                Math.abs(cL2.dimY * cL2.step - 417.6) < 1e-6 &&
                 cL3.dim === 3 &&
                 Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
-                Math.abs(cL3.dimY * cL3.step - 360) < 1e-6;
+                Math.abs(cL3.dimY * cL3.step - 417.6) < 1e-6;
             const lf = (rr) => r._voxelChunkLodFor(rr, 0, 0, 0);
             out.lodPyramidBands =
                 lf(0) === 0 &&
@@ -18409,7 +18409,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.voxelSkirt
         );
         check(
-            "Welle E (E1): die LOD-Pyramide-Config ist LOD-invariant (LOD2 dim6/step7.2, LOD3 dim3/step14.4; span 43.2 m / 360 m)",
+            "Welle E (E1): die LOD-Pyramide-Config ist LOD-invariant (LOD2 dim6/step7.2, LOD3 dim3/step14.4; span 43.2 m / 417.6 m)",
             voxelP2bResults.lodPyramidConfig
         );
         check(
@@ -20537,6 +20537,126 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 r.state.worldMeta.voxelEdits.pop();
             }
         }
+        // T1 (Terrain-Kohärenz-Plan §4 — zeitliche Kohärenz): der Edit-FOOTPRINT heilt
+        // SYNCHRON im Edit-Call (kein async-Fenster), die SKIRT-Nachbarn bleiben async
+        // (footprint-only sync → kein Edit-Spike). GEMESSEN (`diag-chunk-seam`): vor T1
+        // heilte der Grenz-Nachbar erst @Frame 3 → ~2 Frames sichtbare Abbau-Naht.
+        // Probe: ein gestreamter Chunk, carve in seiner Mitte (r=3 → Footprint = nur er),
+        // dann MUSS sein Mesh neu sein OHNE `_drainDirtyVoxelChunks`; das Dirty-Set trägt
+        // danach noch die (ungesyncten) Skirt-Nachbarn.
+        out.t1FootprintSync = "no-streamed-chunk";
+        out.t1SkirtStaysAsync = false;
+        {
+            let t1Cx = null,
+                t1Cz = null,
+                t1Before = null,
+                t1My = null;
+            // den gestreamten Chunk am nächsten zum Ursprung (interior → 8 Skirt-Nachbarn da)
+            let bestD = Infinity;
+            for (const [key, e] of r.state.voxelChunks) {
+                if (!e || e.empty || !e.mesh || !e.mesh.geometry) continue;
+                const [kx, kz] = key.split(",").map(Number);
+                const mx = kx * span + span / 2,
+                    mz = kz * span + span / 2;
+                const my = r._voxelSurfaceY ? r._voxelSurfaceY(mx, mz) : null;
+                if (!Number.isFinite(my)) continue;
+                const d = Math.abs(kx) + Math.abs(kz);
+                if (d < bestD) {
+                    bestD = d;
+                    t1Cx = kx;
+                    t1Cz = kz;
+                    t1Before = e.mesh.uuid;
+                    t1My = my;
+                }
+            }
+            if (t1Cx !== null) {
+                const mx = t1Cx * span + span / 2,
+                    mz = t1Cz * span + span / 2;
+                if (r.state.dirtyVoxelChunks) r.state.dirtyVoxelChunks.clear();
+                r._addVoxelEdit(mx, t1My, mz, 3, "carve"); // KEIN Drain — T1 muss in-edit heilen
+                const afterEntry = r.state.voxelChunks.get(`${t1Cx},${t1Cz}`);
+                const afterUuid = afterEntry && afterEntry.mesh ? afterEntry.mesh.uuid : null;
+                out.t1FootprintSync = afterUuid && afterUuid !== t1Before ? "synced" : "stale";
+                // die Skirt-Nachbarn bleiben im Dirty-Set (nicht gesynct = kein Spike)
+                out.t1SkirtStaysAsync = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > 0);
+                // Cleanup: den Test-Edit zurücknehmen + die Skirt drainen
+                if (r.state.worldMeta && Array.isArray(r.state.worldMeta.voxelEdits))
+                    r.state.worldMeta.voxelEdits.pop();
+                if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+            }
+        }
+        // T1 Source-Probes (V9.56-i): der Edit-Pfad ruft den Footprint-Sync, der forceSync nutzt.
+        out.t1AddEditCallsSync = /_syncRebuildEditFootprint/.test(r._addVoxelEdit.toString());
+        out.t1SyncUsesForceSync =
+            typeof r._syncRebuildEditFootprint === "function" &&
+            /forceSync:\s*true/.test(r._syncRebuildEditFootprint.toString());
+
+        // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): die feinen Boundary-Vertices an
+        // einer LOD0↔LOD1-Grenze auf die GROBE Nachbar-Oberfläche ziehen → die T-junction
+        // schliesst (render-only, `geomorph`-Uniform; GEMESSEN diag-chunk-seam D: Grenz-Zeile
+        // 98 % auf der groben Fläche). Hier: kein Material-Fehler (positionNode kompiliert), die
+        // Morph-Attribute existieren auf JEDER Terrain-Geometrie (WebGPU-strikt), der Finalize
+        // ruft den Geomorph, und er FEUERT (≥1 Chunk hasMorph an einer Cross-LOD-Grenze).
+        out.t2NoMorphError = !window.__terrainMorphError;
+        out.t2GeomorphMethod = typeof r._applyCrossLodGeomorph === "function";
+        out.t2FinalizeCallsMorph = /_applyCrossLodGeomorph/.test(r._finalizeVoxelChunkBuild.toString());
+        out.t2MaterialHasMorph = /positionNode\s*=/.test(r._buildToonNodeMaterial.toString());
+        let t2HasAttrs = false,
+            t2ChunksWithMorph = 0;
+        if (r.state.voxelChunks) {
+            for (const [, e] of r.state.voxelChunks) {
+                if (!e || e.empty || !e.mesh || !e.mesh.geometry) continue;
+                const g = e.mesh.geometry;
+                if (g.attributes.aMorphTarget && g.attributes.aMorphWeight) t2HasAttrs = true;
+                if (e.hasMorph) t2ChunksWithMorph++;
+            }
+        }
+        out.t2HasMorphAttrs = t2HasAttrs;
+        out.t2ChunksWithMorph = t2ChunksWithMorph;
+
+        // T3 (Terrain-Kohärenz-Plan §4 — Manifold Dual Contouring): der Mesher setzt den Vertex
+        // ans QEF-Minimum (scharf) statt ins Mittel (blobig); der Laplacian ist feature-bewusst
+        // (verschont scharfe Vertices). Determinismus (Worker bit-identisch) deckt V9.42-b ab
+        // (288 geteilte Naht-Vertices = Worker- + Main-QEF koinzident). Hier: Source-Probes.
+        const exSrc = r._voxelExtractSurfaceVertices.toString();
+        out.t3QefMesher = /a00 \+= gx \* gx/.test(exSrc) && /Cramer|m00 \* b0/.test(exSrc);
+        out.t3ExtractReturnsSharp = /vertCells, cellVert, sharp/.test(exSrc);
+        out.t3FeatureAwareLaplacian = /sharp && sharp\[v\]/.test(r._voxelLaplacianSmoothPositions.toString());
+        out.t3DcConstants = Number.isFinite(r.constructor.DC_LAMBDA) && Number.isFinite(r.constructor.DC_SHARP_MOVE2);
+
+        // T4 (terrain-t4-wasser-ca-plan §3 — der Wasser-Automat-KERN): `_tickWaterCA` ist die
+        // reine Fluss-Funktion (Level pro Zelle). Die zwei fundamentalen Garantien eines Fluid-
+        // Automaten, behavioral + deterministisch: ERHALTUNG (Σ Wasser konstant) + FLUSS (ein Blob
+        // fällt). Voller Beweis (Gravität + Niveau-suchen + Erhaltung): `diag-water-flow-ca.cjs`.
+        out.t4HasTickCA = typeof r._tickWaterCA === "function";
+        if (out.t4HasTickCA) {
+            const SOLID = r.constructor.CELL_STATE.SOLID;
+            const d = 4,
+                dy = 10;
+            const cells = new Uint8Array(d * d * dy); // AIR=0 default
+            for (let c = 0; c < d * d; c++) cells[c] = SOLID; // Boden j=0
+            const level = new Float64Array(d * d * dy);
+            level[8 * d * d + 5] = 1.0; // ein Blob hoch oben
+            let s0 = 0;
+            for (let n = 0; n < level.length; n++) s0 += level[n];
+            for (let t = 0; t < 40; t++) r._tickWaterCA(level, cells, d, dy);
+            let s1 = 0,
+                cw = 0;
+            for (let j = 0; j < dy; j++)
+                for (let c = 0; c < d * d; c++) {
+                    const v = level[j * d * d + c];
+                    s1 += v;
+                    cw += v * j;
+                }
+            out.t4Conserves = Math.abs(s1 - s0) < 1e-4;
+            out.t4Flows = (s1 > 0 ? cw / s1 : 99) < 8 - 1; // Schwerpunkt fiel von j=8
+        }
+        // T4a-2 — der Automat ist in die WELT verdrahtet: reaktive Level-Schicht + Welt-Tick +
+        // cross-chunk-wake, der Carve weckt die Region. Voller Welt-Beweis: `diag-water-world-flow`.
+        out.t4HasWorldTick = typeof r._tickWorldWaterCA === "function" && typeof r._wakeWaterCA === "function";
+        out.t4CarveWakesCA = /_wakeWaterCA/.test(r._addVoxelEdit.toString());
+        out.t4ExchangesBoundary = typeof r._exchangeWaterBoundary === "function";
+
         // 6) Source-Probes: spawnArchitecture + removeArchitecture rufen
         // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
         out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.spawnArchitecture.toString());
@@ -20601,6 +20721,67 @@ async function checkBandWelleC3CellularReaction(ctx) {
     }
     check("Welle C.3 V9.74: spawnArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.spawnTriggersRemesh);
     check("Welle C.3 V9.74: removeArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.removeTriggersRemesh);
+    // T1 (Terrain-Kohärenz-Plan §4): die zeitliche Naht — der Edit-Footprint heilt synchron.
+    if (res.t1FootprintSync !== "no-streamed-chunk") {
+        check(
+            "T1 (Terrain-Kohärenz): der Edit-FOOTPRINT heilt SYNCHRON im Edit-Call (kein async-Fenster)",
+            res.t1FootprintSync === "synced",
+            `footprint=${res.t1FootprintSync}`
+        );
+        check(
+            "T1 (Terrain-Kohärenz): die SKIRT-Nachbarn bleiben async (footprint-only sync → kein Edit-Spike)",
+            res.t1SkirtStaysAsync
+        );
+    }
+    check("T1 (Terrain-Kohärenz): _addVoxelEdit ruft _syncRebuildEditFootprint (Source-Probe)", res.t1AddEditCallsSync);
+    check(
+        "T1 (Terrain-Kohärenz): _syncRebuildEditFootprint baut den Footprint forceSync (Source-Probe)",
+        res.t1SyncUsesForceSync
+    );
+    // T2 (Terrain-Kohärenz-Plan §4): der Cross-LOD-Geomorph — die räumliche Naht.
+    check("T2 (Cross-LOD-Geomorph): kein Material-Morph-Fehler (positionNode kompiliert)", res.t2NoMorphError);
+    check(
+        "T2 (Cross-LOD-Geomorph): jede Terrain-Geometrie trägt aMorphTarget+aMorphWeight (WebGPU-strikt)",
+        res.t2HasMorphAttrs
+    );
+    check(
+        "T2 (Cross-LOD-Geomorph): _buildToonNodeMaterial setzt den positionNode-Morph (Source-Probe)",
+        res.t2MaterialHasMorph
+    );
+    check(
+        "T2 (Cross-LOD-Geomorph): _finalizeVoxelChunkBuild ruft _applyCrossLodGeomorph (Source-Probe)",
+        res.t2FinalizeCallsMorph
+    );
+    check(
+        "T2 (Cross-LOD-Geomorph): der Geomorph feuert an Cross-LOD-Grenzen (>=1 Chunk hasMorph)",
+        res.t2ChunksWithMorph >= 1,
+        `chunksWithMorph=${res.t2ChunksWithMorph}`
+    );
+    // T3 (Terrain-Kohärenz-Plan §4): der kantige Mesher (Dual Contouring QEF). Die Determinismus-
+    // Sicherheit (Worker-QEF == Main-QEF) trägt der V9.42-b-Naht-Test (288 geteilte Vertices).
+    check("T3 (Dual Contouring): der Mesher setzt den Vertex ans QEF-Minimum (Source-Probe)", res.t3QefMesher);
+    check(
+        "T3 (Dual Contouring): _voxelExtractSurfaceVertices liefert die sharp-Flags (Source-Probe)",
+        res.t3ExtractReturnsSharp
+    );
+    check(
+        "T3 (Dual Contouring): der Laplacian ist feature-bewusst (verschont scharfe Vertices)",
+        res.t3FeatureAwareLaplacian
+    );
+    check(
+        "T3 (Dual Contouring): DC_LAMBDA + DC_SHARP_MOVE2 Konstanten existieren (Worker-gespiegelt)",
+        res.t3DcConstants
+    );
+    // T4 (terrain-t4-wasser-ca-plan §3): der Wasser-Automat-Kern — Wasser fliesst (Option A).
+    check("T4 (Wasser-CA): _tickWaterCA existiert (der Fluss-Automat-Kern)", res.t4HasTickCA);
+    if (res.t4HasTickCA) {
+        check("T4 (Wasser-CA): der Automat ERHÄLT das Wasser exakt (Σ konstant)", res.t4Conserves);
+        check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
+    }
+    // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
+    check("T4a-2 (Wasser-CA): _tickWorldWaterCA + _wakeWaterCA existieren (Welt-Verdrahtung)", res.t4HasWorldTick);
+    check("T4a-2 (Wasser-CA): _exchangeWaterBoundary existiert (cross-chunk-wake)", res.t4ExchangesBoundary);
+    check("T4a-2 (Wasser-CA): ein Carve WECKT den Automaten (Wasser strömt nach)", res.t4CarveWakesCA);
 }
 
 // V9.88 (Welle Perf-3.b — Distance-LOD): empirischer Beweis dass ferne
@@ -20688,15 +20869,15 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         return;
     }
     check(
-        "Welle F: LOD 0 Config (dim=24, step=1.8, dimY=200 — gewaltige Berge, Band-Skip)",
-        res.lod0Dim === 24 && Math.abs(res.lod0Step - 1.8) < 0.001 && res.lod0DimY === 200
+        "Welle F / T8: LOD 0 Config (dim=24, step=1.8, dimY=232 — das weite Band, Band-Skip)",
+        res.lod0Dim === 24 && Math.abs(res.lod0Step - 1.8) < 0.001 && res.lod0DimY === 232
     );
     check(
-        "Welle F: LOD 1 Config (dim=12, step=3.6, dimY=100) — Vertikal-Span 360 m LOD-invariant",
-        res.lod1Dim === 12 && Math.abs(res.lod1Step - 3.6) < 0.001 && res.lod1DimY === 100
+        "Welle F / T8: LOD 1 Config (dim=12, step=3.6, dimY=116) — Vertikal-Span 417.6 m LOD-invariant",
+        res.lod1Dim === 12 && Math.abs(res.lod1Step - 3.6) < 0.001 && res.lod1DimY === 116
     );
     check("Welle Perf-3.b V9.88: span invariant über LOD (43.2 m, Chunks world-aligned)", res.spanInvariant);
-    check("Welle Perf-3.b V9.88 / V14.6: vertikaler Range invariant (dimY·step = 244.8 m)", res.verticalRangeInvariant);
+    check("Welle Perf-3.b V9.88 / T8: vertikaler Range invariant (dimY·step = 417.6 m)", res.verticalRangeInvariant);
     check(
         "Welle Perf-3.b V9.88: LOD 1 hat 8× weniger Cells als LOD 0",
         res.lod1CellsLess && Math.abs(res.cellsRatio - 8) < 0.01,
@@ -22054,8 +22235,8 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const cfg0 = r._voxelChunkConfig(0);
-        out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // V14.6: 24·24·136 = 78336
-        // Empirisch: alle Chunks mit waterCells haben gleiche Länge (78336)
+        out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // T8: 24·24·232 = 133632
+        // Empirisch: alle Chunks mit waterCells haben gleiche Länge (133632)
         // egal welcher Terrain-LOD.
         let totalWithCells = 0;
         let lod0WithCells = 0;
@@ -22092,7 +22273,7 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         return;
     }
     check(
-        "Welle V9.93: Wasser-Cells alle gleich-lang (LOD 0 = 78336, V14.6) — naht-frei per Konstruktion",
+        "Welle V9.93: Wasser-Cells alle gleich-lang (LOD 0 = 133632, T8) — naht-frei per Konstruktion",
         res.allCellsAreLod0,
         `expected=${res.expectedCellLen}, firstMismatch=${res.firstMismatchLen}, total=${res.totalWithCells}`
     );
@@ -24068,7 +24249,8 @@ async function checkBandVoxelP3AndInventory(ctx) {
                 out.ichZonesSideBySide = Math.abs(cb.top - ib.top) < 24 && Math.abs(ib.top - rb.top) < 24;
                 // „Was du trägst" liegt UNTER dem Viewer (in der Selbst-Insel).
                 out.ichWornUnderViewer =
-                    !!(canvas && worn) && worn.getBoundingClientRect().top >= canvas.getBoundingClientRect().bottom - 24;
+                    !!(canvas && worn) &&
+                    worn.getBoundingClientRect().top >= canvas.getBoundingClientRect().bottom - 24;
                 // die STATSBAR liegt VOLLBREIT UNTER den Spalten (der Schöpfer-Kern: unten, nicht links gequetscht).
                 out.ichStatsbarBelowCols = !!(
                     statsbar &&
@@ -29372,7 +29554,10 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.39: Rollen-Chip leuchtet in der Rollen-Farbe", v839Results.roleChipGlow);
         check("V8.39: Werkstatt-Stats-Panel zeigt eine Qualität-Zeile", v839Results.qualityRow);
         check("V8.39: Bauplan-Liste-Zeile leuchtet in der Rollen-Farbe", v839Results.listRowGlow);
-        check("V18.66 Ich-J2: der Equip-Hinweis nennt die Wechsel-Wege (Hand/Hotbar/Rezeptbuch) + Rüstung", v839Results.equipHint);
+        check(
+            "V18.66 Ich-J2: der Equip-Hinweis nennt die Wechsel-Wege (Hand/Hotbar/Rezeptbuch) + Rüstung",
+            v839Results.equipHint
+        );
     } else {
         check("V8.39: Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
     }
@@ -30976,7 +31161,9 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             r._setFeedRating("recipe:" + aRecipe.name, 5);
             r.state.feedSort = "rating";
             r.renderLibraryUI();
-            const firstBar = document.querySelector("#library-list .library-card .feed-rating, #library-list .feed-card .feed-rating");
+            const firstBar = document.querySelector(
+                "#library-list .library-card .feed-rating, #library-list .feed-card .feed-rating"
+            );
             out.feedSortWorks = !!firstBar && Number(firstBar.dataset.rating) === 5;
             r._setFeedRating("recipe:" + aRecipe.name, 5); // Toggle zurück → 0 (sauber)
             r.state.feedSort = "neueste";
@@ -31093,14 +31280,32 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
         check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
         check("Bib-A0: _worldProfile existiert", w14Results.worldProfileExists);
-        check("Bib-A0: _worldProfile bündelt den Welt-Vektor (id/label/dsl/trust/searchText)", w14Results.worldProfileBundles);
-        check("Bib-A: die Karte ist eine Welt-Spec-Card (.spec-header + Trust-Siegel + Betreten-Akt)", w14Results.cardIsSpecCard);
-        check("V18.77: die Karte ist Profi-leicht — EINE Meta-Zeile (DSL), keine Datenblatt-Spalten-Labels", w14Results.cardLightened);
-        check("Feed: 3 Spalten — 'Diese Welt' links | Feed Mitte | Schöpfen+Kuratieren rechts", w14Results.feedThreeCol);
+        check(
+            "Bib-A0: _worldProfile bündelt den Welt-Vektor (id/label/dsl/trust/searchText)",
+            w14Results.worldProfileBundles
+        );
+        check(
+            "Bib-A: die Karte ist eine Welt-Spec-Card (.spec-header + Trust-Siegel + Betreten-Akt)",
+            w14Results.cardIsSpecCard
+        );
+        check(
+            "V18.77: die Karte ist Profi-leicht — EINE Meta-Zeile (DSL), keine Datenblatt-Spalten-Labels",
+            w14Results.cardLightened
+        );
+        check(
+            "Feed: 3 Spalten — 'Diese Welt' links | Feed Mitte | Schöpfen+Kuratieren rechts",
+            w14Results.feedThreeCol
+        );
         check("Feed: das #library-list ist der Feed-Strom in der Mitte", w14Results.feedCenterHoldsStream);
-        check("Feed: die Tabs (Für dich | Aus dem Mesh) im Hauptthread, der Katalog im Mesh-Panel (V18.73)", w14Results.feedTabs);
+        check(
+            "Feed: die Tabs (Für dich | Aus dem Mesh) im Hauptthread, der Katalog im Mesh-Panel (V18.73)",
+            w14Results.feedTabs
+        );
         check("Feed: das Tab-Schalten WIRKT — Für dich ↔ Aus dem Mesh (V18.73)", w14Results.feedTabsWork);
-        check("Feed: Schöpfen & Andocken liegt RECHTS (Übersetzen+Andocken + 3er-Block Neue/Verschmelzen/Empfangen)", w14Results.schoepfenRight);
+        check(
+            "Feed: Schöpfen & Andocken liegt RECHTS (Übersetzen+Andocken + 3er-Block Neue/Verschmelzen/Empfangen)",
+            w14Results.schoepfenRight
+        );
         check(
             "Feed: das 'Diese Welt'-Eiland blüht links (Identität + Stammbaum + Tagebuch, V18.71)",
             w14Results.feedSelfIsland
@@ -31121,9 +31326,15 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
         check("Feed: die Sortier-Chips (Neueste | Bewertung) sind da (V18.74)", w14Results.feedSortChips);
         check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
-        check("Feed: der geteilte 3D-Vorschau-Bereich (Canvas + Methoden) ist da (V18.75)", w14Results.feedPreviewPanel);
+        check(
+            "Feed: der geteilte 3D-Vorschau-Bereich (Canvas + Methoden) ist da (V18.75)",
+            w14Results.feedPreviewPanel
+        );
         check("Feed: Klick auf eine Karte fokussiert sie für die Vorschau (V18.75)", w14Results.feedPreviewFocus);
-        check("Drawer: box-sizing:border-box — der Drawer passt in den Viewport (kein Überlauf, V18.76)", w14Results.drawerBoxSizing);
+        check(
+            "Drawer: box-sizing:border-box — der Drawer passt in den Viewport (kein Überlauf, V18.76)",
+            w14Results.drawerBoxSizing
+        );
         check("Omnibox: `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, V18.76)", w14Results.omniboxWelt);
         check("Feed: Bestbewertet spiegelt eine Wertung zurück", w14Results.feedTrends);
         check("Bib-D: die Suche TREIBT den Feed (kein toter Knopf, V18.65)", w14Results.searchDrivesGrid);

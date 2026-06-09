@@ -17896,6 +17896,55 @@ class AnazhRealm {
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
         let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        // === T6 (DIE GIGANTISCHE WELT) — das Drama auf KONTINENTALER Skala (V14-Dimensionen geehrt:
+        // die Features sind λ1000–7000 m, das Drama auch — NICHT λ33 wie mein T5-Fehler). MUSS
+        // bit-identisch im Worker-Mirror (Determinismus-/Naht-Wand). ===
+        // T6a — GIGANTISCHE CANYONS: ein ridged Ravine-System (λ~960 m, scharfe V-Täler über `1−|noise|`)
+        // × einer sparse Region-Maske (λ~3300 m) carvt MÄCHTIGE Schluchten (bis ~150 m) ins kontinentale
+        // Terrain — ein EIGENES System, nicht das λ33-m-Höhlen-Netz. Floor base-65 (in der Chunk-Decke
+        // base-90 → kein Loch). Der DC (T3) rendert die scharfen Wände → endlich sichtbar kantig.
+        const canyonRegion = Math.max(0, Math.min(1, (n.noise2D(wx * 0.0003 + 61.1, wz * 0.0003 - 28.7) - 0.3) / 0.18));
+        if (canyonRegion > 0.001) {
+            const cR = 1 - Math.abs(n.noise2D(wx * 0.00105 + 8.3, wz * 0.00105 - 14.9));
+            const cProfile = Math.max(0, (cR - 0.6) / 0.4); // scharfe V-Schlucht (oberste ~40 % des Grats)
+            withoutTarn -= cProfile * cProfile * canyonRegion * 150; // quadratisch = scharfe Sohle
+            const cFloor = base - 65;
+            if (withoutTarn < cFloor) withoutTarn = cFloor;
+        }
+        // T7a (terrain-koharenz-plan §10) — KRASSE KONTRASTE als SLOPE-GATED SMOOTH TERRACE (der Profi-Weg,
+        // Houdini/World Creator): das alte T6b quantisierte die Höhe HART (`round(h/26)·26`) → auf STEILEN
+        // Flanken stapelten sich die 26-m-Stufen zur „Ziehharmonika" (Schöpfer-Screenshots). Heilung: (1) nur
+        // wo der Hang FLACH ist terrassieren (Plateau-Top → Tafelberg; steile Flanke → glatt bleiben), (2)
+        // GERUNDETE Stufen (smootherstep statt round → C1-stetig, keine Rasiermesser-Wand). MUSS bit-identisch
+        // im Worker (Determinismus-/Naht-Wand).
+        const mesaRegion = Math.max(
+            0,
+            Math.min(1, (n.noise2D(wx * 0.00034 + 13.7, wz * 0.00034 + 47.3) - 0.45) / 0.13)
+        );
+        if (mesaRegion > 0.001) {
+            // Flatness aus dem Gradienten der DOMINANTEN glatten Struktur (cont0 λ7100 + tect λ1136; die
+            // gewarpten wx/wz als Basis — der Warp variiert langsam, für ein Steilheits-GATE genügt das).
+            const sm = (sx, sz) => {
+                const cB = n.noise2D(sx * 0.00014 + 7.2, sz * 0.00014 + 3.8);
+                return Math.max(0, cB) * 130 + cB * 15 + n.noise2D(sx * 0.00088, sz * 0.00088) * 45;
+            };
+            const gd = 7;
+            const dhx = sm(wx + gd, wz) - sm(wx - gd, wz);
+            const dhz = sm(wx, wz + gd) - sm(wx, wz - gd);
+            const slope = Math.sqrt(dhx * dhx + dhz * dhz) / (2 * gd); // m/m
+            let flat = 1 - Math.min(1, slope / 0.35); // Hang > ~19° → kein Terrace (glatt)
+            flat = flat * flat * (3 - 2 * flat); // smoothstep
+            const strength = mesaRegion * flat;
+            if (strength > 0.001) {
+                const stepH = 26;
+                const f = withoutTarn / stepH;
+                const fl = Math.floor(f);
+                const t = f - fl;
+                const shaped = t * t * t * (t * (t * 6 - 15) + 10); // smootherstep → flaches Shelf + gerundete Kante
+                const terraced = (fl + shaped) * stepH;
+                withoutTarn += (terraced - withoutTarn) * strength;
+            }
+        }
         // V14.6 — sanftes Decken-Limit (Schöpfer-Befund „nach einiger Zeit in
         // eine Richtung zerfällt die Welt"). Die kontinentale Basis cont0
         // (λ~7100 m) hebt die Surface fern vom Ursprung bis ~235 m (gemessen
@@ -17910,12 +17959,14 @@ class AnazhRealm {
         // Kompression ist sanft (126 m → 124 m). Der Clamp greift VOR dem
         // Sub-Ozean-/Tarn-Block (beide senken nur niedrige Surfaces → unberührt).
         // MUSS bit-identisch im Worker (`voxel-worker.js`, Naht-Schutz).
-        // Welle F — der Deckel hochgezogen (110/Asymptote 136 → 225/Asymptote
-        // ~245): die Hülle wuchs auf Decke base+270 m, also dürfen die Berge
-        // GEWALTIG werden (~235 m statt 136). Der weiche Cap bei 225 ist nur noch
-        // ein Sicherheits-Backstop gegen einen seltenen Ausreißer > Decke (245 +
-        // Roughness 12 = 257 < 270). MUSS bit-identisch im Worker (Naht-Schutz).
-        if (withoutTarn > 225) withoutTarn = 225 + 20 * Math.tanh((withoutTarn - 225) / 20);
+        // T8 (terrain-koharenz-plan §10) — der Mountain-Cap FÄLLT (die SICHTBAREN Berge sind un-gecappt).
+        // GEMESSEN (un-geklammert ±8 km): der Gipfel erreicht +247 m, die Decke ist jetzt +282.6 (T8-Band)
+        // → die Berge tragen ihre volle natürliche Höhe, kein Deckel mehr (der V14.6-Clamp bei 225 biss
+        // 0.12 % der Samples + komprimierte 247→241 = ein sichtbarer Deckel). Es bleibt nur ein SEHR hoher
+        // SICHERHEITS-Backstop bei 255 (Asymptote ~267, +Roughness 12 = 279 < Decke 282.6) gegen einen
+        // seltenen Noise-Ausreißer über die Decke — er biss bei den ±8-km-Messungen (max 247) NIE, ist also
+        // unsichtbar, KEIN Cap. MUSS bit-identisch im Worker (Determinismus-/Naht-Wand).
+        if (withoutTarn > 255) withoutTarn = 255 + 12 * Math.tanh((withoutTarn - 255) / 12);
         // V9.60-c.2 — Riesen-Lehre vertieft: Continental Slope + Mid-Ocean
         // Ridge + tiefen-skalierte Variation. Schöpfer-Befund nach V9.60-c.1:
         // "see und meere immernoch sehr flach, nicht natürlich". Vor-Versuch
@@ -17945,6 +17996,15 @@ class AnazhRealm {
             const subC = n.noise2D(x * 0.062 - 17, z * 0.062 + 8) * 1.0;
             withoutTarnFinal += slopeDrop + (subA + subRidge + subC) * subMask;
         }
+        // T8 (terrain-koharenz-plan §10) — der UNSICHTBARE Tiefsee-Abgrund wird sanft geklammert (der
+        // Minecraft-Welt-Boden). GEMESSEN: der Sub-Ozean-Block reicht bis ~−117 m (±8 km) bzw. ~−144 m
+        // theoretisch fern → er bräche den Chunk-Boden (−135). Der Boden eines Ozeans liegt tief unter
+        // Wasser → man SIEHT ihn nie (Fog/Tiefe), darum ist ein sanfter Clamp hier KEIN sichtbarer Deckel
+        // (anders als der Mountain-Cap). Asymptote base−120 → der Band-Boden −135 umfasst ihn mit Marge
+        // (auch nach der ±2-m-Ozean-Roughness). MUSS bit-identisch im Worker (Determinismus-/Naht-Wand).
+        const abyssClamp = base - 112;
+        if (withoutTarnFinal < abyssClamp)
+            withoutTarnFinal = abyssClamp - 8 * Math.tanh((abyssClamp - withoutTarnFinal) / 8);
         // V9.51 — `_tarnDeltaAt` addiert die Bergsee-Mulden (0, solange
         // `state.tarns` leer — `_hydroSeedTarns` sampelt dann tarn-frei).
         // KRITISCH: der Bowl-Boden wird auf waterLevel+1 geklemmt, sonst
@@ -17989,8 +18049,18 @@ class AnazhRealm {
         // kleine Überhänge, das grobe grosse Wölbungen. V9.18 hatte das feine
         // Band entfernt → die Berge wurden flache Hügel ohne Überhänge; V9.19
         // stellt beide V9.17-Bänder wieder her (der Schöpfer-Befund).
-        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7;
-        d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5;
+        // T6c — WEITE FELDER: die ±12-m-Roughness REGIONAL unterdrücken. `mtnR` (Ruggedness, DIESELBE
+        // Formel + Frequenz wie `_terrainMacroSurfaceY`s `mtn`, λ~2000 m): Tiefland → ~0, Hochgebirge → ~1.
+        // Die Roughness skaliert (0.16 + 0.84·mtnR) → flache Ebenen werden WIRKLICH flach (±~2 m statt
+        // ±12 m), Gebirge bleiben körnig. Der grösste Hebel für „weite Felder" — die V14-Regionen sind
+        // schon da, nur die uniforme Roughness erdrückte sie. MUSS bit-identisch im Worker.
+        const eroR = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
+        let mtnR = 1 - eroR;
+        if (mtnR < 0) mtnR = 0;
+        mtnR *= mtnR;
+        const roughScale = 0.16 + 0.84 * mtnR;
+        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * roughScale;
+        d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * roughScale;
         // Wurm-Höhlen — EIN ridged-Noise-Feld (`1 − |noise|`): sein Grat folgt
         // der Noise-Nullfläche, einer ZUSAMMENHÄNGENDEN gewundenen Höhlen-
         // Ebene. Carve dort, wo der Grat eine Schwelle übersteigt → begehbare,
@@ -18005,7 +18075,22 @@ class AnazhRealm {
         // die die 3D-Roughness (±12 m) auf surf-12 drücken kann → die Höhle brach
         // durch (Löcher + höhenversetzte Kanten). surf-16 hält sie sicher darunter
         // (Schöpfer-Befund „chunkfehler, löcher, wasser unter der oberfläche").
-        const caveCeil = Math.max(0, Math.min(1, (surf - 16 - y) / 8));
+        // T5 (G3 — die Belohnung): die CANYON-MASKE öffnet die Höhlen-Decke SELEKTIV. Wo die nieder-
+        // frequente 2D-Maske hoch ist, hebt sich die Decke (surf-16 → bis surf+8) → die Höhlen-Noise
+        // carvt zur Oberfläche = sichtbare Canyons/Ravines/Eingänge in die Unterwelt. Möglich + sauber,
+        // WEIL der Bogen davor steht: T3 (DC) rendert die scharfen Wände, T1/T2 halten die Grenze
+        // kohärent (kein Naht-Loch), T4 trägt die 3D-Wasser-Wahrheit (kein Bleed). Sparse (Maske ×
+        // Höhlen-Noise-Sparsity) → vereinzelte Schluchten, der Rest der Welt unverändert. Worldgen
+        // (Determinismus-Bruch — die Welt formt sich neu) → MUSS bit-identisch im Worker-Mirror.
+        const canyonOpen = Math.max(0, Math.min(1, (n.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18));
+        // T7b-ii (Aquifer-Gate, terrain-koharenz-plan §10): unter einem Wasserkörper (Ozean — der Meeresboden
+        // `surf` liegt unter dem Meeresspiegel) hält die Höhlen-Decke einen SICHEREN Abstand zum Boden (−24 m)
+        // + KEIN canyonOpen-Lift → eine Höhle bricht den Meeresboden NICHT auf (kein Abfluss; Minecraft-Prinzip:
+        // Höhlen unter dem Meeresspiegel sind kontrolliert/geflutet, kein Leck). GEMESSEN: 6 % der Ozean-Spalten
+        // hatten einen Durchbruch (T6d carve 72) → das Meer floss ab. MUSS bit-identisch im Worker.
+        const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
+        const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+        const caveCeil = Math.max(0, Math.min(1, (surf + ceilOffset - y) / 8));
         const caveEnv = caveFloor * caveCeil;
         if (caveEnv > 0) {
             const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
@@ -18021,6 +18106,15 @@ class AnazhRealm {
             const cavern = n.noise3D(x * 0.013, y * 0.018, z * 0.013);
             const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
             d -= cavernCarve * caveEnv * 46;
+            // T6d — MÄCHTIGE HALLEN: ein nieder-frequentes Kavernen-Feld (λ~220 m horiz., ~165 m
+            // vert., freq 0.0045/0.006) carvt GIGANTISCHE begehbare Räume, wo das λ77-Feld nur mittlere
+            // Hallen fand. Sparse (Schwelle 0.5 → die oberen ~25 %) → vereinzelte Kathedralen-Hohlräume,
+            // von den Tunneln verbunden. Gegated durch DASSELBE caveEnv → in T5-Canyon-Regionen (die
+            // Decke gehoben) brechen sie zur Oberfläche = die gigantischen Unterwelt-Eingänge. MUSS
+            // bit-identisch im Worker (Determinismus-/Naht-Schutz).
+            const hall = n.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
+            const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
+            d -= hallCarve * caveEnv * 72;
         }
         // V9.43-d / V9.45-b — der Hydrosphären-Carve. (1) Fluss-Kanäle senken
         // die Dichte → echte Rinnen mit Ufern. (2) See-Becken werden zu einem
@@ -18266,7 +18360,7 @@ class AnazhRealm {
         // Density-Sample-Schleife (~90k `_terrainDensityAt`-Calls) nur einmal
         // pro Chunk-Build ausgeführt, nicht zweimal.
         const density = preDensity || this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
-        const { positions, vertCells, cellVert } = this._voxelExtractSurfaceVertices(
+        const { positions, vertCells, cellVert, sharp } = this._voxelExtractSurfaceVertices(
             density,
             ox,
             oy,
@@ -18278,7 +18372,7 @@ class AnazhRealm {
         );
         if (positions.length === 0) return null;
         const indices = this._voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ);
-        this._voxelLaplacianSmoothPositions(positions, indices, smoothIters);
+        this._voxelLaplacianSmoothPositions(positions, indices, smoothIters, sharp);
         this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin);
         if (positions.length === 0) return null;
         // V9.85 Perf-2.d — Gradient-Normals nutzen das geteilte preDensity-
@@ -18295,6 +18389,16 @@ class AnazhRealm {
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         if (indices.length > 0) geom.setIndex(indices);
         geom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+        // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): JEDE Terrain-Geometrie trägt die
+        // Morph-Attribute. WebGPU-Strikt (V10.0-g.1): ein NodeMaterial-`attribute()` MUSS auf
+        // JEDEM Mesh existieren, sonst Pipeline-Crash → darum ZENTRAL hier, nie per-Caller. Default
+        // = Identität (Ziel = Position, Gewicht 0 → KEIN Morph) → bit-identische Optik, bis
+        // `_applyCrossLodGeomorph` an einer Cross-LOD-Grenze die Boundary-Vertices auf die GROBE
+        // Nachbar-Oberfläche zieht (T0 GEMESSEN: 0 % geteilte Vertices, ~21 % sichtbare Spalten).
+        // Render-only: die Geometrie-Position bleibt für Physik/Determinismus/Naht-Test unberührt
+        // — der Morph lebt allein im Vertex-Shader (`positionNode`), main-only (kein Worker-Mirror).
+        geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
+        geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
         return geom;
     }
 
@@ -18373,6 +18477,11 @@ class AnazhRealm {
         const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
         const positions = [];
         const vertCells = [];
+        const sharp = []; // T3 — pro Vertex: 1, wenn das QEF eine echte FEATURE-Ecke fand (scharf)
+        // T3 (Manifold Dual Contouring): LAMBDA regularisiert das QEF Richtung Mass-Point (=der
+        // alte Surface-Nets-Mittel-Vertex). Klein → scharf (QEF dominiert, Feature-Ecken); gross →
+        // glatt (Mass-Point). Browser-justierbar; das Clamp auf die Zelle bannt Self-Intersection.
+        const LAMBDA = AnazhRealm.DC_LAMBDA;
         for (let k = 0; k < dimZ; k++) {
             for (let j = 0; j < dimY; j++) {
                 for (let i = 0; i < dimX; i++) {
@@ -18386,10 +18495,23 @@ class AnazhRealm {
                         if (solid(corner[c])) mask |= 1 << c;
                     }
                     if (mask === 0 || mask === 0xff) continue;
+                    // Mass-Point (Mittel der Kanten-Kreuzungen) + QEF-Akkumulation (Dual
+                    // Contouring): jede Kreuzung p_i mit ihrer Hermite-Normale n_i (= der
+                    // analytische Trilinear-Gradient des Dichtefeldes an p_i) spannt eine Ebene
+                    // n_i·(x−p_i)=0; das Minimum von Σ(n_i·(x−p_i))² sitzt am FEATURE-Eckpunkt.
                     let vx = 0;
                     let vy = 0;
                     let vz = 0;
                     let count = 0;
+                    let a00 = 0,
+                        a01 = 0,
+                        a02 = 0,
+                        a11 = 0,
+                        a12 = 0,
+                        a22 = 0;
+                    let b0 = 0,
+                        b1 = 0,
+                        b2 = 0;
                     for (const [a, b] of EDGES) {
                         if (solid(corner[a]) === solid(corner[b])) continue;
                         const da = corner[a];
@@ -18402,20 +18524,95 @@ class AnazhRealm {
                         const bx = b & 1;
                         const by = (b >> 1) & 1;
                         const bz = (b >> 2) & 1;
-                        vx += ax + (bx - ax) * t;
-                        vy += ay + (by - ay) * t;
-                        vz += az + (bz - az) * t;
+                        const px = ax + (bx - ax) * t;
+                        const py = ay + (by - ay) * t;
+                        const pz = az + (bz - az) * t;
+                        vx += px;
+                        vy += py;
+                        vz += pz;
                         count++;
+                        // analytischer Trilinear-Gradient an (px,py,pz) aus den 8 Ecken
+                        let gx =
+                            (corner[1] - corner[0]) * (1 - py) * (1 - pz) +
+                            (corner[3] - corner[2]) * py * (1 - pz) +
+                            (corner[5] - corner[4]) * (1 - py) * pz +
+                            (corner[7] - corner[6]) * py * pz;
+                        let gy =
+                            (corner[2] - corner[0]) * (1 - px) * (1 - pz) +
+                            (corner[3] - corner[1]) * px * (1 - pz) +
+                            (corner[6] - corner[4]) * (1 - px) * pz +
+                            (corner[7] - corner[5]) * px * pz;
+                        let gz =
+                            (corner[4] - corner[0]) * (1 - px) * (1 - py) +
+                            (corner[5] - corner[1]) * px * (1 - py) +
+                            (corner[6] - corner[2]) * (1 - px) * py +
+                            (corner[7] - corner[3]) * px * py;
+                        const glen = Math.sqrt(gx * gx + gy * gy + gz * gz);
+                        if (glen < 1e-9) continue; // flacher Punkt → nur Mass-Point
+                        gx /= glen;
+                        gy /= glen;
+                        gz /= glen;
+                        const d = gx * px + gy * py + gz * pz;
+                        a00 += gx * gx;
+                        a01 += gx * gy;
+                        a02 += gx * gz;
+                        a11 += gy * gy;
+                        a12 += gy * gz;
+                        a22 += gz * gz;
+                        b0 += gx * d;
+                        b1 += gy * d;
+                        b2 += gz * d;
                     }
                     if (count === 0) continue;
                     const s = 1 / count;
+                    const cx = vx * s,
+                        cy = vy * s,
+                        cz = vz * s; // Mass-Point (= der alte Surface-Nets-Vertex)
+                    // QEF + Mass-Point-Regularisierung (λ), dann 3×3 via Cramer (deterministisch)
+                    a00 += LAMBDA;
+                    a11 += LAMBDA;
+                    a22 += LAMBDA;
+                    b0 += LAMBDA * cx;
+                    b1 += LAMBDA * cy;
+                    b2 += LAMBDA * cz;
+                    let fx = cx,
+                        fy = cy,
+                        fz = cz,
+                        isSharp = 0;
+                    const det =
+                        a00 * (a11 * a22 - a12 * a12) - a01 * (a01 * a22 - a12 * a02) + a02 * (a01 * a12 - a11 * a02);
+                    if (Math.abs(det) > 1e-9) {
+                        const inv = 1 / det;
+                        const m00 = a11 * a22 - a12 * a12,
+                            m01 = a02 * a12 - a01 * a22,
+                            m02 = a01 * a12 - a02 * a11;
+                        const m11 = a00 * a22 - a02 * a02,
+                            m12 = a01 * a02 - a00 * a12;
+                        const m22 = a00 * a11 - a01 * a01;
+                        fx = (m00 * b0 + m01 * b1 + m02 * b2) * inv;
+                        fy = (m01 * b0 + m11 * b1 + m12 * b2) * inv;
+                        fz = (m02 * b0 + m12 * b1 + m22 * b2) * inv;
+                        if (fx < 0) fx = 0;
+                        else if (fx > 1) fx = 1;
+                        if (fy < 0) fy = 0;
+                        else if (fy > 1) fy = 1;
+                        if (fz < 0) fz = 0;
+                        else if (fz > 1) fz = 1;
+                        // „scharf" = das QEF zog den Vertex spürbar vom Mass-Point weg (ein echtes
+                        // Feature, kein flaches Mittel) → der feature-bewusste Laplacian verschont ihn.
+                        const dxm = fx - cx,
+                            dym = fy - cy,
+                            dzm = fz - cz;
+                        if (dxm * dxm + dym * dym + dzm * dzm > AnazhRealm.DC_SHARP_MOVE2) isSharp = 1;
+                    }
                     cellVert[ci(i, j, k)] = positions.length / 3;
                     vertCells.push(i, j, k);
-                    positions.push(ox + (i + vx * s) * step, oy + (j + vy * s) * step, oz + (k + vz * s) * step);
+                    sharp.push(isSharp);
+                    positions.push(ox + (i + fx) * step, oy + (j + fy) * step, oz + (k + fz) * step);
                 }
             }
         }
-        return { positions, vertCells, cellVert };
+        return { positions, vertCells, cellVert, sharp };
     }
 
     // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad. V9.41
@@ -18475,7 +18672,7 @@ class AnazhRealm {
     // V9.42-b-Seam-Test fängt es). Heute nutzen ALLE Pfade 1 (cropMargin 1). Mehr
     // Geometrie-Glättung gegen die Trapeze braucht einen breiteren pad im GETEILTEN
     // Density-Grid (auch von den Wasser-Cells indiziert) → ein eigener Bogen.
-    _voxelLaplacianSmoothPositions(positions, indices, iterations = 1) {
+    _voxelLaplacianSmoothPositions(positions, indices, iterations = 1, sharp = null) {
         if (indices.length < 3) return;
         const vertCount = positions.length / 3;
         const neighborSets = new Array(vertCount);
@@ -18497,7 +18694,9 @@ class AnazhRealm {
             for (let v = 0; v < vertCount; v++) {
                 const nbrs = neighborSets[v];
                 const cnt = nbrs.size;
-                if (cnt === 0) {
+                // T3 — feature-bewusst: ein scharfer QEF-Vertex (Feature-Ecke) bleibt UNgesmootht,
+                // sonst rundet der Laplacian die Kante wieder weg (er fügte vor T3 die Blobigkeit zu).
+                if (cnt === 0 || (sharp && sharp[v])) {
                     smoothed[v * 3] = positions[v * 3];
                     smoothed[v * 3 + 1] = positions[v * 3 + 1];
                     smoothed[v * 3 + 2] = positions[v * 3 + 2];
@@ -18864,24 +19063,30 @@ class AnazhRealm {
         // jede gröbere Stufe hat 4× weniger Cells als die vorige. Der Band-Skip
         // (`_voxelSampleDensityGrid`) sampelt nur das Oberflächen-Band → die
         // hohe Hülle ist billig. LOD2/LOD3 sind die FERNEN Ringe (E1).
+        // T8 (terrain-koharenz-plan §10) — DAS WEITE BAND: das feste, AUSGERICHTETE Vertikal-Gitter
+        // (kein per-Chunk-`oy` — das bräche die Gitter-Ausrichtung → neue Nähte, würde T0–T3 untergraben;
+        // der Minecraft-Profi-Weg ist ein FESTES Gitter + Leer-Sektion-Skip = unser Band-Skip-Sampler).
+        // GEMESSEN (un-geklammerte Surface ±8 km): +247 m Gipfel, −117..−144 m Tiefsee-Abgrund. Das Band
+        // umfasst jetzt floorDrop 135 .. Decke +282.6 (span 417.6 m, LOD-invariant): die SICHTBAREN Berge
+        // sind un-gecappt (der Mountain-Clamp fällt), der UNSICHTBARE Tiefsee-Abgrund wird sanft geklammert
+        // (Minecraft-Welt-Boden — man sieht ihn nie unter Wasser). Der Band-Skip hält die Kosten trotz +16 % Hülle.
         if (lod >= 3) {
-            // LOD 3 — step 14.4, dim 3 (64× weniger Cells als LOD0). Fernster Ring.
-            return { dim: 3, step: 14.4, span: 43.2, ringRadius, dimY: 25, floorDrop: 90, lod: 3 };
+            // LOD 3 — step 14.4, dim 3 (64× weniger Cells als LOD0). Fernster Ring. span 29·14.4 = 417.6.
+            return { dim: 3, step: 14.4, span: 43.2, ringRadius, dimY: 29, floorDrop: 135, lod: 3 };
         }
         if (lod >= 2) {
-            // LOD 2 — step 7.2, dim 6 (16× weniger Cells als LOD0).
-            return { dim: 6, step: 7.2, span: 43.2, ringRadius, dimY: 50, floorDrop: 90, lod: 2 };
+            // LOD 2 — step 7.2, dim 6 (16× weniger Cells als LOD0). span 58·7.2 = 417.6.
+            return { dim: 6, step: 7.2, span: 43.2, ringRadius, dimY: 58, floorDrop: 135, lod: 2 };
         }
         if (lod >= 1) {
-            // LOD 1 — Half-Resolution (8× weniger Cells). dimY 68→100 (Welle F:
-            // gewaltige Berge — die Hülle wuchs, der Band-Skip hält die Kosten).
-            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 100, floorDrop: 90, lod: 1 };
+            // LOD 1 — Half-Resolution (8× weniger Cells). span 116·3.6 = 417.6.
+            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 116, floorDrop: 135, lod: 1 };
         }
-        // LOD 0 — Full-Resolution. Welle F: dimY 136→200 (Decke base+270 m, für
-        // den uncapped cont0-Gipfel ~+235 m); der Band-Skip (`_voxelSampleDensity
-        // Grid`) sampelt NUR die Ebenen um die Oberfläche → trotz höherer Hülle
-        // billiger als zuvor. Vertikal-Span 200·1.8 = 100·3.6 = 360 m (LOD-invariant).
-        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 200, floorDrop: 90, lod: 0 };
+        // LOD 0 — Full-Resolution. T8: dimY 200→232, floorDrop 90→135 → Band base−135 .. base+282.6.
+        // Der Band-Skip (`_voxelSampleDensityGrid`) sampelt NUR die Ebenen um die Oberfläche → die höhere
+        // Hülle kostet fast nichts in Compute (nur die Array-Allokation). Vertikal-Span 232·1.8 = 116·3.6 =
+        // 58·7.2 = 29·14.4 = 417.6 m (LOD-invariant — die Wasser-Zellen/Cross-Chunk-Logik bleiben ausgerichtet).
+        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 232, floorDrop: 135, lod: 0 };
     }
 
     // ===== DIE DETAIL-KASKADE (V17.114, U1) — die EINE Distanz-Quelle ========
@@ -19007,6 +19212,19 @@ class AnazhRealm {
     // der Materialfarbe, hebt Stein/Eisen nachts über Schwarz). Browser-justierbar.
     static get STRUCTURE_EMISSIVE() {
         return Object.freeze({ intensity: 0.07 });
+    }
+
+    // T3 (Terrain-Kohärenz-Plan §4 — Manifold Dual Contouring): die Schärfe-Regler des Meshers.
+    // MÜSSEN bit-identisch zum `voxel-worker.js`-Mirror sein (Determinismus-Wand: Worker- und
+    // Main-gebaute Chunks teilen den Seed → ihre Boundary-Vertices müssen koinzident bleiben,
+    // V9.42-b). DC_LAMBDA: QEF→Mass-Point-Regularisierung (klein=scharf, gross=glatt). DC_SHARP_
+    // MOVE2: ab welcher (Mass-Point→QEF)-Verschiebung² ein Vertex als „Feature" gilt (→ der
+    // feature-bewusste Laplacian verschont ihn). Browser-justierbar (Re-Mesh nötig).
+    static get DC_LAMBDA() {
+        return 0.1;
+    }
+    static get DC_SHARP_MOVE2() {
+        return 0.04;
     }
 
     // Welle D — die Kavitäts-AO (V15.2/V17.14) zeichnet Surface-Nets-Facetten-
@@ -20087,6 +20305,9 @@ class AnazhRealm {
             const ci0 = Math.floor((wx - ox) / step0);
             const ck0 = Math.floor((wz - oz) / step0);
             const depthM = colDepthAt(ci0, ck0);
+            // T4b — die Fläche FOLGT dem LIVE CA-Level (0 im Ruhe-Zustand → bit-identisch zur statischen
+            // `L`; nach einem Carve senkt/hebt sie sich → das Wasser fliesst sichtbar). S. `_caWaterTopDelta`.
+            const caDelta = this._caWaterTopDelta(cx, cz, ci0, ck0);
             // V18.31 — DAS AUSLAUF-WASSER FOLGT DEM TERRAIN (Bodenkontakt) statt als flache
             // L-Platte unter den Boden zu tauchen. Schöpfer-Befund (Browser, nach V18.30): „es
             // hebt einfach das vertikale Element, verliert den Kontakt zum Boden — das ist noch
@@ -20103,7 +20324,7 @@ class AnazhRealm {
             // „Mesh-Elemente bis zum Boden"-Idee des Schöpfers, ohne neue Geometrie — die
             // bestehende Über-Deckungs-Fläche FOLGT jetzt dem Terrain, statt darüber zu schweben.
             // Dünnes Ufer (thickness ≤ thinBand) bleibt FLACH bei L (See füllt bis ans Ufer, V18.26).
-            let surfY = L;
+            let surfY = L + caDelta;
             if (depthM < step0) {
                 // Die Boden-Höhe `tY` MUSS das GERENDERTE Terrain treffen — sonst schwebt das
                 // Wasser sichtbar (der „verliert Kontakt"-Befund). `colTerrainY` (die Zell-Oberkante)
@@ -20337,6 +20558,15 @@ class AnazhRealm {
                     ? this.state.atmosphere.colorVar
                     : 1.0
             ),
+            // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph, live-tunbar): wie stark die
+            // Boundary-Vertices eines feinen Chunks an die GROBE Nachbar-Oberfläche gezogen werden
+            // (1 = voll = die Naht schliesst, 0 = aus = die rohe T-junction). Der Schöpfer dreht im
+            // Browser:  anazhRealm.state.atmoUniforms.geomorph.value = 0   (Naht sichtbar zum Vergleich)
+            geomorph: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.geomorph)
+                    ? this.state.atmosphere.geomorph
+                    : 1.0
+            ),
         };
         // V17.114 U1 — die §2-Synergie: der Aerial-Schleier koppelt an die
         // Kaskaden-Kante (der Dunst wandert mit dem Sicht-Ring).
@@ -20544,6 +20774,28 @@ class AnazhRealm {
                 }
             } catch (_e) {
                 if (typeof window !== "undefined") window.__terrainNormalError = String((_e && _e.message) || _e);
+            }
+            // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): die Boundary-Vertices eines
+            // feinen Chunks an einer Cross-LOD-Grenze auf die GROBE Nachbar-Oberfläche ziehen
+            // (`_applyCrossLodGeomorph` setzt aMorphTarget = nächster grober Boundary-Vertex,
+            // aMorphWeight = 1 auf der Grenz-Zeile, 0 im Inneren). Im Vertex-Shader:
+            //   position = positionLocal + (target − positionLocal) · (geomorph · weight)
+            // → bei geomorph=1 schmiegt sich die feine Naht-Zeile EXAKT an die grobe Kante an
+            // (T0: 0 % geteilt → die feinen Boundary-Vertices kollabieren auf die groben =
+            // dieselbe Polylinie = keine T-junction). Render-only: die Position-Attribute (Physik/
+            // Determinismus/Naht-Test) bleiben unberührt — der Morph lebt nur hier. try/catch +
+            // Marker (V17.12): fällt sauber auf un-gemorpht zurück, nie ein kaputtes Material.
+            try {
+                const _Tm = THREE.TSL;
+                const _aum = this.state.atmoUniforms;
+                if (_Tm && _Tm.attribute && _Tm.positionLocal && _aum && _aum.geomorph) {
+                    const _tgt = _Tm.attribute("aMorphTarget", "vec3");
+                    const _w = _Tm.attribute("aMorphWeight", "float");
+                    const _f = _aum.geomorph.mul(_w);
+                    mat.positionNode = _Tm.positionLocal.add(_tgt.sub(_Tm.positionLocal).mul(_f));
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__terrainMorphError = String((_e && _e.message) || _e);
             }
         }
 
@@ -21063,7 +21315,242 @@ class AnazhRealm {
             if (nb && nb.waterCells) this._enqueueWaterIso(nx, nz);
         }
         this._populateVoxelChunkVegetation(cx, cz);
+        // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): diesen Chunk an seine GROBEN
+        // Nachbarn anschmiegen + die 4 Achsen-Nachbarn neu morphen (ein FEINER Nachbar, der auf
+        // DIESEN als groben Nachbarn wartete, schliesst jetzt seine Naht — das V13.13.2-Muster
+        // „re-process die Nachbarn bei Ankunft", analog zum Wasser-Iso). Main-only, render-only.
+        this._applyCrossLodGeomorph(cx, cz);
+        this._applyCrossLodGeomorph(cx + 1, cz);
+        this._applyCrossLodGeomorph(cx - 1, cz);
+        this._applyCrossLodGeomorph(cx, cz + 1);
+        this._applyCrossLodGeomorph(cx, cz - 1);
         return entry;
+    }
+
+    // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): zieht die Boundary-Vertices DIESES
+    // Chunks an die GROBE Oberfläche jedes COARSER (höher-LOD) Achsen-Nachbarn. Die feine Naht-
+    // Zeile kollabiert auf die NÄCHSTEN groben Vertices (dieselbe Polylinie wie die grobe Kante)
+    // → die T-junction schliesst (T0 GEMESSEN: Cross-LOD = 0 % geteilte Vertices, ~21 % sichtbare
+    // Spalten). Render-only: setzt NUR aMorphTarget/aMorphWeight; die Position-Attribute (Physik,
+    // Determinismus, Naht-Test, BVH) bleiben unberührt — der Shader morpht via `geomorph`-Uniform.
+    // Main-only: liest die Nachbar-MESHES (leben nur auf dem Main-Thread; der Worker mesht isoliert)
+    // — wie der Wasser-Iso-OOB-Ring (V13.13.2). `entry.hasMorph` ist der Fast-Path-Marker: ein
+    // Chunk ohne Cross-LOD-Grenze + ohne alten Morph kehrt sofort zurück (der Normalfall). Ein
+    // Re-Mesh baut frische Identitäts-Attribute (`_voxelChunkGeometry`) → kein staler Morph.
+    _applyCrossLodGeomorph(cx, cz) {
+        if (!this.state.voxelChunks) return;
+        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
+        if (!entry || entry.empty || !entry.mesh || !entry.mesh.geometry) return;
+        const geom = entry.mesh.geometry;
+        const pos = geom.attributes.position;
+        const tgtAttr = geom.attributes.aMorphTarget;
+        const wAttr = geom.attributes.aMorphWeight;
+        if (!pos || !tgtAttr || !wAttr) return;
+        const myLod = Number.isFinite(entry.lod) ? entry.lod : 0;
+        const cfg = this._voxelChunkConfig(myLod);
+        const span = cfg.span;
+        const fineStep = cfg.step;
+        // die GROBEREN, gebauten Achsen-Nachbarn sammeln
+        const coarseFaces = [];
+        for (const [dx, dz] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+        ]) {
+            const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
+            if (!nb || nb.empty || !nb.mesh || !nb.mesh.geometry) continue;
+            const nbLod = Number.isFinite(nb.lod) ? nb.lod : 0;
+            if (nbLod <= myLod) continue; // nur an einen GROBEREN Nachbarn anschmiegen
+            coarseFaces.push({ dx, dz, nbGeom: nb.mesh.geometry, nbLod });
+        }
+        // Fast-Path: keine Cross-LOD-Grenze UND kein alter Morph → nichts zu tun (Normalfall)
+        if (coarseFaces.length === 0 && !entry.hasMorph) return;
+        const n = pos.count;
+        const tArr = tgtAttr.array;
+        const wArr = wAttr.array;
+        // Basis = Identität (un-morpht)
+        for (let v = 0; v < n; v++) {
+            tArr[v * 3] = pos.getX(v);
+            tArr[v * 3 + 1] = pos.getY(v);
+            tArr[v * 3 + 2] = pos.getZ(v);
+            wArr[v] = 0;
+        }
+        let touched = false;
+        const bestDist = coarseFaces.length ? new Float32Array(n).fill(Infinity) : null;
+        const cp = [0, 0, 0]; // Scratch für den nächsten Punkt auf einem Dreieck
+        for (const face of coarseFaces) {
+            const nbGeom = face.nbGeom;
+            const nbPos = nbGeom.attributes.position;
+            const nbIdx = nbGeom.index ? nbGeom.index.array : null;
+            if (!nbPos || !nbIdx) continue;
+            const coarseStep = this._voxelChunkConfig(face.nbLod).step;
+            const axis = face.dx !== 0 ? 0 : 2; // 0 = x-Ebene, 2 = z-Ebene
+            const plane =
+                face.dx === 1
+                    ? (cx + 1) * span
+                    : face.dx === -1
+                      ? cx * span
+                      : face.dz === 1
+                        ? (cz + 1) * span
+                        : cz * span;
+            // die groben Boundary-DREIECKE (mind. ein Vertex nahe der Ebene) als flaches Array —
+            // der Morph zieht die feine Naht-Zeile auf die grobe OBERFLÄCHE (Punkt→Dreieck), NICHT
+            // auf den nächsten groben VERTEX (der ist sparse + 3D-nearest greift die falsche
+            // Branche/Höhle, GEMESSEN diag-chunk-seam D: nearest-vertex liess ⌀11 m Spalt). Auf der
+            // Fläche liegen = die Oberflächen treffen sich = kein geometrischer Riss.
+            const tris = [];
+            const bnd = coarseStep * 1.5;
+            for (let t = 0; t < nbIdx.length; t += 3) {
+                const i0 = nbIdx[t],
+                    i1 = nbIdx[t + 1],
+                    i2 = nbIdx[t + 2];
+                const a0 = axis === 0 ? nbPos.getX(i0) : nbPos.getZ(i0);
+                const a1 = axis === 0 ? nbPos.getX(i1) : nbPos.getZ(i1);
+                const a2 = axis === 0 ? nbPos.getX(i2) : nbPos.getZ(i2);
+                if (Math.abs(a0 - plane) > bnd && Math.abs(a1 - plane) > bnd && Math.abs(a2 - plane) > bnd) continue;
+                tris.push(
+                    nbPos.getX(i0),
+                    nbPos.getY(i0),
+                    nbPos.getZ(i0),
+                    nbPos.getX(i1),
+                    nbPos.getY(i1),
+                    nbPos.getZ(i1),
+                    nbPos.getX(i2),
+                    nbPos.getY(i2),
+                    nbPos.getZ(i2)
+                );
+            }
+            if (tris.length === 0) continue;
+            // die Grenz-ZEILE (dPlane < flat) morpht VOLL (w=1 → exakt auf die grobe Fläche, die
+            // Naht schliesst); danach ein Falloff bis morphBand (sanfte Rampe ins Innere, kein
+            // interner Sprung). flat deckt die Surface-Nets-Offset-Streuung der Grenz-Vertices
+            // (~fineStep/2) ab — sonst morphen sie nur 67 % (GEMESSEN: Grenz-Zeile nur 86 % auf
+            // Fläche statt ~100 %, der Rest-Spalt 0.17 m).
+            const flat = fineStep * 0.7;
+            const morphBand = fineStep * 2.0;
+            for (let v = 0; v < n; v++) {
+                const px = pos.getX(v),
+                    py = pos.getY(v),
+                    pz = pos.getZ(v);
+                const dPlane = Math.abs((axis === 0 ? px : pz) - plane);
+                if (dPlane > morphBand) continue;
+                let bd = Infinity,
+                    bx = px,
+                    by = py,
+                    bz = pz;
+                for (let t = 0; t < tris.length; t += 9) {
+                    this._closestPtTri(px, py, pz, tris, t, cp);
+                    const ddx = px - cp[0],
+                        ddy = py - cp[1],
+                        ddz = pz - cp[2];
+                    const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+                    if (d2 < bd) {
+                        bd = d2;
+                        bx = cp[0];
+                        by = cp[1];
+                        bz = cp[2];
+                    }
+                }
+                const d3 = Math.sqrt(bd);
+                if (d3 >= bestDist[v]) continue; // ein näheres Face gewann diesen Vertex schon
+                bestDist[v] = d3;
+                tArr[v * 3] = bx;
+                tArr[v * 3 + 1] = by;
+                tArr[v * 3 + 2] = bz;
+                // Gewicht: 1 in der Grenz-Zeile (dPlane ≤ flat) → linear auf 0 bei morphBand
+                wArr[v] = Math.max(0, Math.min(1, (morphBand - dPlane) / (morphBand - flat)));
+                touched = true;
+            }
+        }
+        entry.hasMorph = touched;
+        tgtAttr.needsUpdate = true;
+        wAttr.needsUpdate = true;
+    }
+
+    // Nächster Punkt auf dem Dreieck (T[t..t+8] = A,B,C) zu P → out[0..2] (Ericson, RTCD §5.1.5).
+    // Voronoi-Regionen: Ecke A/B/C, Kante AB/AC/BC, oder Innen-Projektion. Für den T2-Geomorph
+    // (die feine Naht-Zeile auf die grobe OBERFLÄCHE ziehen) — robust gegen die mehrwertige
+    // Surface-Nets-Fläche (im Gegensatz zum nächsten Vertex, der die falsche Branche greift).
+    _closestPtTri(px, py, pz, T, t, out) {
+        const ax = T[t],
+            ay = T[t + 1],
+            az = T[t + 2];
+        const bx = T[t + 3],
+            by = T[t + 4],
+            bz = T[t + 5];
+        const cx = T[t + 6],
+            cy = T[t + 7],
+            cz = T[t + 8];
+        const abx = bx - ax,
+            aby = by - ay,
+            abz = bz - az;
+        const acx = cx - ax,
+            acy = cy - ay,
+            acz = cz - az;
+        const apx = px - ax,
+            apy = py - ay,
+            apz = pz - az;
+        const d1 = abx * apx + aby * apy + abz * apz;
+        const d2 = acx * apx + acy * apy + acz * apz;
+        if (d1 <= 0 && d2 <= 0) {
+            out[0] = ax;
+            out[1] = ay;
+            out[2] = az;
+            return;
+        }
+        const bpx = px - bx,
+            bpy = py - by,
+            bpz = pz - bz;
+        const d3 = abx * bpx + aby * bpy + abz * bpz;
+        const d4 = acx * bpx + acy * bpy + acz * bpz;
+        if (d3 >= 0 && d4 <= d3) {
+            out[0] = bx;
+            out[1] = by;
+            out[2] = bz;
+            return;
+        }
+        const vc = d1 * d4 - d3 * d2;
+        if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+            const v = d1 / (d1 - d3);
+            out[0] = ax + abx * v;
+            out[1] = ay + aby * v;
+            out[2] = az + abz * v;
+            return;
+        }
+        const cpx = px - cx,
+            cpy = py - cy,
+            cpz = pz - cz;
+        const d5 = abx * cpx + aby * cpy + abz * cpz;
+        const d6 = acx * cpx + acy * cpy + acz * cpz;
+        if (d6 >= 0 && d5 <= d6) {
+            out[0] = cx;
+            out[1] = cy;
+            out[2] = cz;
+            return;
+        }
+        const vb = d5 * d2 - d1 * d6;
+        if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+            const w = d2 / (d2 - d6);
+            out[0] = ax + acx * w;
+            out[1] = ay + acy * w;
+            out[2] = az + acz * w;
+            return;
+        }
+        const va = d3 * d6 - d5 * d4;
+        if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+            const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
+            out[0] = bx + (cx - bx) * w;
+            out[1] = by + (cy - by) * w;
+            out[2] = bz + (cz - bz) * w;
+            return;
+        }
+        const denom = 1 / (va + vb + vc);
+        const v = vb * denom,
+            w = vc * denom;
+        out[0] = ax + abx * v + acx * w;
+        out[1] = ay + aby * v + acy * w;
+        out[2] = az + abz * v + acz * w;
     }
 
     // V12.0-perf.a — Fail/Empty/Finalize-Abschluss des Rebuild-Pfads. Bei
@@ -24518,6 +25005,27 @@ class AnazhRealm {
             for (let fcz = fcz0; fcz <= fcz1; fcz++) this.state.grassDirtyChunks.add(`${fcx},${fcz}`);
         }
         this._remeshVoxelChunksAround(x, z, radius);
+        // T1 (Terrain-Kohärenz-Plan §4 — zeitliche Naht): die direkt berührten FOOTPRINT-
+        // Chunks SYNCHRON im Edit-Frame heilen, statt sie über `_tickDirtyVoxelChunks`
+        // (1/Frame) zu verteilen. T0 GEMESSEN (`diag-chunk-seam`): ein Grenz-Carve ließ den
+        // Spieler-Chunk @Frame 1, den Grenz-Nachbarn erst @Frame 3 heilen → ~2 Frames sichtbare
+        // Abbau-Naht (halber Krater hier, solider Boden dort). Der Carve verändert die
+        // Oberfläche NUR im Footprint (skirt=0 = die Chunks, die die Schnitz-Kugel wirklich
+        // berührt) → diese gemeinsam sync = der ganze Krater erscheint in EINEM Frame. Die
+        // SKIRT-Nachbarn (V9.86-Pad-Überlapp) behalten ihre unveränderte Oberfläche (nur das
+        // 1-Zell-Density-Pad sah die Kugel-Kante → sub-cell, imperzeptibel) → sie bleiben
+        // ASYNC (kein Edit-Cluster-Spike, die V9.40-c-Lehre gewahrt: nur ≤Footprint sync).
+        this._syncRebuildEditFootprint(x, z, radius);
+        // T4a-2 — den Wasser-Automaten in der Carve-Region + 1-Ring WECKEN: die Zellen änderten sich
+        // (neuer Raum geöffnet/verfüllt) → das Wasser strömt nach (active-cell, settled danach inaktiv).
+        {
+            const { span } = this._voxelChunkConfig();
+            const minCX = Math.floor((x - radius) / span) - 1;
+            const maxCX = Math.floor((x + radius) / span) + 1;
+            const minCZ = Math.floor((z - radius) / span) - 1;
+            const maxCZ = Math.floor((z + radius) / span) + 1;
+            for (let cx = minCX; cx <= maxCX; cx++) for (let cz = minCZ; cz <= maxCZ; cz++) this._wakeWaterCA(cx, cz);
+        }
         if (typeof this.saveState === "function") this.saveState();
         return true;
     }
@@ -24623,6 +25131,39 @@ class AnazhRealm {
                 if (this.state.voxelChunks.has(key)) {
                     this.state.dirtyVoxelChunks.add(key);
                 }
+            }
+        }
+    }
+
+    // T1 (Terrain-Kohärenz-Plan §4 — zeitliche Kohärenz): heilt die direkt vom Edit
+    // berührten FOOTPRINT-Chunks (skirt=0 = die Chunks, die die Schnitz-/Aufschütt-Kugel
+    // wirklich überdeckt) SYNCHRON im selben Frame, in dem der Edit passiert. Das schließt
+    // das von T0 gemessene async-Fenster (~2 Frames, in denen der Spieler-Chunk schon den
+    // halben Krater zeigt, der Grenz-Nachbar aber noch solide ist = die sichtbare Abbau-Naht).
+    // Der Build-Pfad ist derselbe wie `_drainDirtyVoxelChunks` (forceSync → dispose-before-
+    // build, kein Loch, Wasser-Iso sync via `_finalizeVoxelChunkBuild(syncWater=true)`, BVH
+    // sync → kein Durchfall-Gap, V17.28), nur auf die Footprint-Teilmenge beschränkt. Die
+    // SKIRT-Nachbarn bleiben im Dirty-Set (async über `_tickDirtyVoxelChunks`) — ihre Oberfläche
+    // ist unverändert (nur das V9.86-Density-Pad sah die Kugel-Kante, sub-cell) → kein Spike
+    // (die V9.40-c-„Ruckeln bei häufigen Edits"-Lehre gewahrt: nur ≤Footprint sync, nicht +Skirt).
+    // Der Footprint-Rebuild ist billig (~2 ms/Chunk via V12.0-perf.b Base-Density-Cache, die
+    // nahen Chunks sind gecacht) → 2–4 Chunks ≈ sub-Frame.
+    _syncRebuildEditFootprint(x, z, r) {
+        if (!this.state.voxelChunks || this.state.voxelChunks.size === 0) return;
+        if (!this.state.dirtyVoxelChunks) return;
+        const { span } = this._voxelChunkConfig();
+        const minCX = Math.floor((x - r) / span);
+        const maxCX = Math.floor((x + r) / span);
+        const minCZ = Math.floor((z - r) / span);
+        const maxCZ = Math.floor((z + r) / span);
+        for (let cx = minCX; cx <= maxCX; cx++) {
+            for (let cz = minCZ; cz <= maxCZ; cz++) {
+                const key = `${cx},${cz}`;
+                if (!this.state.voxelChunks.has(key)) continue;
+                // aus dem Dirty-Set nehmen (wir bauen ihn JETZT) + sync rebuilden. Bei Fail
+                // (OOM) re-markiert `_completeVoxelRebuild` ihn dirty → der async-Tick versucht's.
+                this.state.dirtyVoxelChunks.delete(key);
+                this._rebuildVoxelChunk(cx, cz, null, { forceSync: true });
             }
         }
     }
@@ -38807,6 +39348,253 @@ class AnazhRealm {
         return built;
     }
 
+    // T4 (Terrain-t4-wasser-ca-plan §3 — der KERN des Fluss-Automaten): EIN deterministischer Tick
+    // des zellulären Wasser-Automaten über einem Level-Feld (`level[idx]` ∈ [0,1] = Füllgrad pro
+    // Zelle) + dem Zell-Zustand (`cells[idx]`, SOLID blockt). Zwei Pässe, conservation-erhaltend:
+    //   (1) GRAVITÄT (top-down, in-place — kaskadiert korrekt): Wasser fällt in die Zelle DARUNTER,
+    //       solange die Kapazität (1−level) hat + nicht SOLID ist.
+    //   (2) LATERAL/Niveau-suchen (Delta-Puffer, symmetrisch = conservation): jedes Paar (+i, +k)
+    //       gleicht sich Richtung Mittel aus (Rate < 0.5 für Stabilität) — Wasser sucht sein Niveau.
+    // PURE über die Arrays (kein State, kein Render) → vollständig headless beweisbar (Erhaltung +
+    // Fluss). Der Tick ist die reaktive Schicht (lokal, nicht persistiert, kein Worker-Mirror — wie
+    // `_lifeOverlayAt`/`_tickWorldRules`). Liefert die Zahl der bewegten Zellen (für active-cell-only).
+    _tickWaterCA(level, cells, dim, dimY, rate = 0.25, deltaScratch = null) {
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
+        const dimSq = dim * dim;
+        const EPS = 1e-4;
+        // `moved` = die MAGNITUDE des bewegten Wassers (nicht Zell-Zahl) → der active-cell-Settle
+        // greift, wenn die Lache wirklich ruht (Zell-Zahl bliebe bei langsamem Ausgleich ewig hoch).
+        let moved = 0;
+        // (1) GRAVITÄT — von oben nach unten, damit eine Säule in einem Tick durchkaskadiert.
+        for (let j = dimY - 1; j >= 1; j--) {
+            const baseJ = j * dimSq;
+            const belowJ = (j - 1) * dimSq;
+            for (let c = 0; c < dimSq; c++) {
+                const here = baseJ + c;
+                const lv = level[here];
+                if (lv <= EPS || cells[here] === SOLID) continue;
+                const below = belowJ + c;
+                if (cells[below] === SOLID) continue;
+                const cap = 1 - level[below];
+                if (cap <= EPS) continue;
+                const flow = lv < cap ? lv : cap;
+                level[here] = lv - flow;
+                level[below] += flow;
+                moved += flow;
+            }
+        }
+        // (2) LATERAL — Niveau suchen. Delta-Puffer: jedes (+i)- und (+k)-Paar EINMAL, symmetrischer
+        // Transfer (was hier abfliesst, kommt dort an) → exakte Erhaltung, deterministisch.
+        // Scratch wiederverwenden (Welt-Tick = viele Chunks/Frame → keine Allokations-Churn).
+        let delta = deltaScratch;
+        if (delta && delta.length >= level.length) delta.fill(0, 0, level.length);
+        else delta = new Float64Array(level.length);
+        for (let j = 0; j < dimY; j++) {
+            const baseJ = j * dimSq;
+            for (let k = 0; k < dim; k++) {
+                const baseK = k * dim;
+                for (let i = 0; i < dim; i++) {
+                    const here = baseJ + baseK + i;
+                    if (cells[here] === SOLID) continue;
+                    const lv = level[here] + delta[here];
+                    // +i-Nachbar
+                    if (i + 1 < dim) {
+                        const nb = here + 1;
+                        if (cells[nb] !== SOLID) {
+                            const diff = lv - (level[nb] + delta[nb]);
+                            if (diff > EPS || diff < -EPS) {
+                                const t = diff * rate;
+                                delta[here] -= t;
+                                delta[nb] += t;
+                                moved += t > 0 ? t : -t;
+                            }
+                        }
+                    }
+                    // +k-Nachbar
+                    if (k + 1 < dim) {
+                        const nb = here + dim;
+                        if (cells[nb] !== SOLID) {
+                            const diff = lv - (level[nb] + delta[nb]);
+                            if (diff > EPS || diff < -EPS) {
+                                const t = diff * rate;
+                                delta[here] -= t;
+                                delta[nb] += t;
+                                moved += t > 0 ? t : -t;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (let n = 0; n < level.length; n++) {
+            const v = level[n] + delta[n];
+            level[n] = v < 0 ? 0 : v > 1 ? 1 : v;
+        }
+        return moved;
+    }
+
+    // T4a-2 (terrain-t4-wasser-ca-plan §3) — die REAKTIVE Wasser-Level-Schicht in der WELT.
+    // `state.waterLevelCells` ("cx,cz" → Float32Array) lebt SEPARAT von den Chunk-Entries → sie
+    // überlebt einen Carve-Rebuild (wie das Life-Overlay V17.27), lokal-reaktiv (nicht persistiert,
+    // kein Worker-Mirror — die Determinismus-Wand bleibt unangetastet). Seed aus der statischen Flood
+    // (das Ruhe-Gleichgewicht); danach autonom — der CA nutzt das LEVEL + die SOLID-Maske der Zellen.
+    _seedWaterLevel(cells) {
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        const level = new Float32Array(cells.length);
+        for (let i = 0; i < cells.length; i++) if (cells[i] === WATER) level[i] = 1.0;
+        return level;
+    }
+
+    // Der active-cell-Kern: ein Chunk tickt NUR, wenn er „aktiv" ist (frisch perturbiert). Der Carve
+    // weckt seine Region → das Wasser strömt in den neuen Raum; ein Fluss über die Grenze weckt den
+    // Nachbarn (cross-chunk-wake). Settled Chunks fallen raus (kein Voll-Sweep → 30→1100 FPS, §2.3).
+    _wakeWaterCA(cx, cz) {
+        if (!this.state.waterCAActive) this.state.waterCAActive = new Set();
+        this.state.waterCAActive.add(`${cx},${cz}`);
+    }
+
+    // T4a-2/3 — EIN Welt-Tick des Wasser-Automaten über die AKTIVEN LOD0-Chunks. Lokal-reaktiv,
+    // budgetiert (settled → inaktiv). Der cross-chunk-wake ist möglich, WEIL T1/T2 die Grenze
+    // kohärent machten (eine konsistente Nachbar-Zell-Wahrheit — die These des ganzen Bogens).
+    _tickWorldWaterCA() {
+        const activeSet = this.state.waterCAActive;
+        if (!activeSet || activeSet.size === 0 || !this.state.voxelChunks) return 0;
+        if (!this.state.waterLevelCells) this.state.waterLevelCells = new Map();
+        const cfg = this._voxelChunkConfig(0);
+        const dim = cfg.dim,
+            dimY = cfg.dimY;
+        const need = dim * dim * dimY;
+        if (!this.state.waterCAScratch || this.state.waterCAScratch.length < need)
+            this.state.waterCAScratch = new Float64Array(need);
+        const scratch = this.state.waterCAScratch;
+        const SETTLE = 0.25; // bewegte MAGNITUDE < SETTLE → der Chunk ruht, raus aus active (active-cell)
+        const levelOf = (key, entry) => {
+            let lv = this.state.waterLevelCells.get(key);
+            if (!lv) {
+                lv = this._seedWaterLevel(entry.waterCells);
+                this.state.waterLevelCells.set(key, lv);
+            }
+            return lv;
+        };
+        const active = [];
+        for (const key of [...activeSet]) {
+            const entry = this.state.voxelChunks.get(key);
+            if (!entry || entry.empty || !entry.waterCells || (Number.isFinite(entry.lod) && entry.lod !== 0)) {
+                activeSet.delete(key);
+                continue;
+            }
+            const comma = key.indexOf(",");
+            active.push({
+                cx: parseInt(key.slice(0, comma), 10),
+                cz: parseInt(key.slice(comma + 1), 10),
+                key,
+                level: levelOf(key, entry),
+                cells: entry.waterCells,
+            });
+        }
+        let total = 0;
+        for (const a of active) {
+            a.moved = this._tickWaterCA(a.level, a.cells, dim, dimY, 0.25, scratch);
+            total += a.moved;
+        }
+        // cross-chunk-wake: Level über die +x/+z-Grenzen austauschen; ein Transfer weckt den Nachbarn.
+        for (const a of active) {
+            for (const [dx, dz] of [
+                [1, 0],
+                [0, 1],
+            ]) {
+                const nkey = `${a.cx + dx},${a.cz + dz}`;
+                const nb = this.state.voxelChunks.get(nkey);
+                if (!nb || nb.empty || !nb.waterCells || (Number.isFinite(nb.lod) && nb.lod !== 0)) continue;
+                const bLevel = levelOf(nkey, nb);
+                const xfer = this._exchangeWaterBoundary(a.level, a.cells, bLevel, nb.waterCells, dx, dim, dimY);
+                if (xfer > 0.01) {
+                    this._wakeWaterCA(a.cx + dx, a.cz + dz);
+                    a.moved += xfer;
+                }
+            }
+        }
+        // T4b — die bewegten Chunks neu rendern: das Surface-Mesh liest das LIVE-Level (caDelta) → das
+        // Wasser fliesst sichtbar. Budgetiert über die bestehende `pendingWaterIso`-Queue (4/Frame) → kein
+        // Spike. Nur bei echter Bewegung (kein Rebuild im Ruhe-Zustand → kein Render-Wandel ohne Carve).
+        if (total > 0.05) {
+            if (!this.state.pendingWaterIso) this.state.pendingWaterIso = new Set();
+            for (const a of active) if (a.moved > 0.05) this.state.pendingWaterIso.add(a.key);
+        }
+        for (const a of active) if (a.moved < SETTLE) activeSet.delete(a.key);
+        return total;
+    }
+
+    // Level-Austausch über die gemeinsame Chunk-Grenze (die lateral-Regel über die Naht, symmetrisch
+    // = Erhaltung). dx=1: A.i=dim-1 ↔ B.i=0; dz=1: A.k=dim-1 ↔ B.k=0. Liefert die übertragene Menge.
+    _exchangeWaterBoundary(aLevel, aCells, bLevel, bCells, dx, dim, dimY) {
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
+        const dimSq = dim * dim;
+        const rate = 0.25;
+        let xfer = 0;
+        for (let j = 0; j < dimY; j++) {
+            const baseJ = j * dimSq;
+            for (let s = 0; s < dim; s++) {
+                const aIdx = dx === 1 ? baseJ + s * dim + (dim - 1) : baseJ + (dim - 1) * dim + s;
+                const bIdx = dx === 1 ? baseJ + s * dim : baseJ + s;
+                if (aCells[aIdx] === SOLID || bCells[bIdx] === SOLID) continue;
+                const diff = aLevel[aIdx] - bLevel[bIdx];
+                if (diff > 1e-4 || diff < -1e-4) {
+                    const t = diff * rate;
+                    aLevel[aIdx] -= t;
+                    bLevel[bIdx] += t;
+                    xfer += t > 0 ? t : -t;
+                }
+            }
+        }
+        return xfer;
+    }
+
+    // T4b (terrain-t4-wasser-ca-plan §3) — die LIVE-Korrektur der Wasser-Oberfläche pro Spalte aus dem
+    // CA-Level. Liefert die HÖHEN-DIFFERENZ (Meter, relativ) zwischen dem LIVE-Spiegel (höchste Zelle mit
+    // Level > 0.5 + Füllgrad) und dem FLOOD-Ruhe-Spiegel (höchste WATER-Zelle). Im Ruhe-Zustand sind beide
+    // gleich (der Flood seedet jede WATER-Zelle auf 1.0) → caDelta == 0 → die Render-Fläche ist EXAKT die
+    // statische `L` (kein Render-Wandel, keine Spirale). NUR wo `waterLevelCells` einen Eintrag trägt (ein
+    // aktiv getickter Chunk nach einem Carve) UND die Spalte abweicht, weicht caDelta von 0 ab → das Wasser
+    // fliesst SICHTBAR. Render-only, lokal-reaktiv (kein Worker-Mirror, kein Determinismus-Effekt).
+    _caWaterTopDelta(cx, cz, ci, ck) {
+        const map = this.state.waterLevelCells;
+        if (!map || map.size === 0) return 0;
+        const level = map.get(`${cx},${cz}`);
+        if (!level) return 0;
+        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
+        if (!entry || !entry.waterCells) return 0;
+        const cfg = this._voxelChunkConfig(0);
+        const dim = cfg.dim,
+            dimY = cfg.dimY,
+            step = cfg.step;
+        if (ci < 0 || ck < 0 || ci >= dim || ck >= dim) return 0;
+        const cells = entry.waterCells;
+        const dimSq = dim * dim;
+        const colBase = ci + ck * dim;
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
+        // Flood-Top (Ruhe): höchste WATER-Zelle. Live-Top: höchste nicht-solide Zelle mit Level > 0.5.
+        let floodTopJ = -1,
+            liveTopJ = -1,
+            liveFrac = 0;
+        for (let j = dimY - 1; j >= 0; j--) {
+            const idx = colBase + j * dimSq;
+            if (floodTopJ < 0 && cells[idx] === WATER) floodTopJ = j;
+            if (liveTopJ < 0 && cells[idx] !== SOLID && level[idx] > 0.5) {
+                liveTopJ = j;
+                liveFrac = level[idx];
+            }
+            if (floodTopJ >= 0 && liveTopJ >= 0) break;
+        }
+        if (floodTopJ < 0) return 0; // kein Body-Wasser in dieser Spalte → `L` führt
+        const floodTopY = (floodTopJ + 1) * step; // Oberkante der Flood-Säule (relativ zu oy)
+        const liveTopY = liveTopJ < 0 ? 0 : (liveTopJ + liveFrac) * step;
+        const delta = liveTopY - floodTopY; // ≈ 0 im Ruhe-Zustand
+        if (delta > -0.05 && delta < 0.05) return 0; // Rest-Rauschen ignorieren = exakte Ruhe
+        return Math.max(-14, Math.min(4, delta));
+    }
+
     // Welle A — die Gras-Queue synchron leeren (Test-Naht, Spiegel von
     // `_drainPendingWaterIso`): das Gras ist seit Welle A deferred, die Tests
     // brauchen es sofort nach einem Drain/Streaming.
@@ -49269,6 +50057,9 @@ class AnazhRealm {
         // V12.0-perf.h — Wasser-Iso deferred bauen (≤2/Frame), der schwerste
         // Main-Thread-Streaming-Posten verteilt statt im Chunk-Finalize-Frame.
         this._tickPendingWaterIso(4);
+        // T4a-2 — der Wasser-Automat tickt die AKTIVEN Chunks (active-cell-only → kostenlos, wenn
+        // kein Wasser perturbiert ist; ein Carve weckt seine Region → das Wasser strömt nach).
+        this._tickWorldWaterCA();
         // V17.1 — Klein-Vegetation deferred streuen (≤2/Frame, nahe zuerst):
         // der Surface-Scan pro Zelle ist aus dem Streaming-Frame verlagert. NUR
         // wenn das Streaming diesen Frame NICHTS baute (Ring gesetzt) → Terrain
@@ -49905,7 +50696,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.83.0";
+AnazhRealm.VERSION = "18.85.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
