@@ -338,10 +338,21 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
   `diag-water-flow.cjs` + `diag-water-fill.cjs` (existieren), Browser-Loop, Merge pro Sub-Schritt.
 - **Sign-off.** Der Schöpfer gräbt einen Kanal → das Wasser fließt sichtbar hinein und sucht sein Niveau.
 
-### T5 (Folge) — G3: Höhleneingänge + Canyons (Risiko: mittel · die Belohnung)
-- Auf dem kantigen Mesher (T3) + der kohärenten Grenze (T1/T2) + der Wasser-Wahrheit (T4): die
-  `surf−16`-Höhlendecke selektiv öffnen → sichtbare Eingänge + vertikale Ravines, **ohne** Wasser-Bleed
-  (T4 trägt die 3D-Wahrheit). Worldgen + Determinismus-Bruch → eigener Sign-off.
+### T5 (Folge) — G3: Höhleneingänge + Canyons (die Belohnung) — **GEBAUT ✓**
+- **GEBAUT (09.06.2026, beide Density-Mirror bit-identisch):** die CANYON-MASKE (`canyonOpen`, eine nieder-
+  frequente 2D-Noise, `n.noise2D` freq 0.0065) öffnet die `surf−16`-Höhlendecke SELEKTIV — wo die Maske hoch
+  ist, hebt sich die Decke (bis surf+8) → die bestehende Höhlen-Noise carvt zur Oberfläche = sichtbare
+  Canyons/Ravines/Pit-Eingänge in die Unterwelt. Sparse (Maske × Höhlen-Noise-Sparsity → vereinzelte
+  Schluchten, der Rest rollende Hügel — GESEHEN `diag-terrain-shot`: links grüne Hügel, rechts ein
+  dramatisches Canyon-Feld). MUSS bit-identisch im Worker (`voxel-worker.js`).
+- **DIE SYNERGIE EINGELÖST:** die Canyons sind SAUBER, WEIL der Bogen davor steht — T3 (DC) rendert die
+  scharfen Wände (endlich echte Dichte-Features statt smooth-noise), T1/T2 halten die Grenze kohärent (kein
+  V14.5-Naht-Loch), T4 trägt die 3D-Wasser-Wahrheit (kein Bleed in die offenen Höhlen).
+- **VERIFIZIERT:** **V9.42-b-Naht 295 Vertices geteilt** (Worker==Main bit-identisch nach dem Density-Umbau =
+  Determinismus-Wand hält) · keine `Chunk-Generation-Fehler` · keine `Boden fehlt`-Death-Spiral · Dreiecke
+  +23 % (die Canyons carven echte Oberfläche) · `Alle Invarianten OK`. **GESEHEN:** dramatische, kohärente
+  Canyons — kein zerbrochenes Mesh (die V14.5-Probleme sind durch T1–T4 geheilt).
+- **Tunbar:** die Maske-Schwelle (0.52) + der Öffnungs-Grad (×24) steuern Häufigkeit/Tiefe der Schluchten.
 
 ---
 
@@ -354,7 +365,7 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
 | T2 | `diag-chunk-seam` D (Grenz-Zeile 98 % auf grober Fläche) + 5 Playtest-Inv. **GRÜN** | render-only (kein Mirror) | **OFFEN**: kein Pop/Schimmer im Auge |
 | T3 | `diag-mesh-sharpness` (Dieder-Winkel) + **V9.42-b 288 geteilt** + 4 Playtest-Inv. **GRÜN** | **bit-identisch (Worker-Mirror)** | kohärent; volle Schärfe ab T5 |
 | T4 | KERN: `diag-water-flow-ca` (Erhaltung+Fluss) **GRÜN** + 3 Inv. · Welt+Render offen | lokal-reaktiv (kein Mirror) | Wasser fließt in den Kanal (T4b) |
-| T5 | `diag-harmony` (Bleed=0) + `diag-caverns` | Worldgen-frozen | Canyons, Eingänge |
+| T5 | `diag-terrain-shot` (Canyons GESEHEN) + **V9.42-b 295 geteilt** + Inv. **GRÜN** | **bit-identisch (Worker)** | dramatische Canyons, sauber |
 
 **Die EINE harte Wand über allem:** `npm run playtest` „Alle Invarianten OK" + die Determinismus-Wand
 bit-identisch nach JEDER Phase. Pixel-blinde Phasen (T2/T3/T4/T5) gehen NICHT in einen Merge ohne

@@ -18005,7 +18005,15 @@ class AnazhRealm {
         // die die 3D-Roughness (±12 m) auf surf-12 drücken kann → die Höhle brach
         // durch (Löcher + höhenversetzte Kanten). surf-16 hält sie sicher darunter
         // (Schöpfer-Befund „chunkfehler, löcher, wasser unter der oberfläche").
-        const caveCeil = Math.max(0, Math.min(1, (surf - 16 - y) / 8));
+        // T5 (G3 — die Belohnung): die CANYON-MASKE öffnet die Höhlen-Decke SELEKTIV. Wo die nieder-
+        // frequente 2D-Maske hoch ist, hebt sich die Decke (surf-16 → bis surf+8) → die Höhlen-Noise
+        // carvt zur Oberfläche = sichtbare Canyons/Ravines/Eingänge in die Unterwelt. Möglich + sauber,
+        // WEIL der Bogen davor steht: T3 (DC) rendert die scharfen Wände, T1/T2 halten die Grenze
+        // kohärent (kein Naht-Loch), T4 trägt die 3D-Wasser-Wahrheit (kein Bleed). Sparse (Maske ×
+        // Höhlen-Noise-Sparsity) → vereinzelte Schluchten, der Rest der Welt unverändert. Worldgen
+        // (Determinismus-Bruch — die Welt formt sich neu) → MUSS bit-identisch im Worker-Mirror.
+        const canyonOpen = Math.max(0, Math.min(1, (n.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18));
+        const caveCeil = Math.max(0, Math.min(1, (surf - 16 + canyonOpen * 24 - y) / 8));
         const caveEnv = caveFloor * caveCeil;
         if (caveEnv > 0) {
             const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));

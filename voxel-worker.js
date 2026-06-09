@@ -195,7 +195,10 @@ function terrainDensityAt(x, y, z) {
     // Höhlen-Ridged-Hülle.
     const base = state.baseHeight || 0;
     const caveFloor = clamp01((y - (base - 28)) / 8);
-    const caveCeil = clamp01((surf - 16 - y) / 8); // V14.4-Harmonie (mirror): surf-6→surf-16
+    // T5 (G3, mirror) — die CANYON-MASKE öffnet die Höhlen-Decke selektiv → Canyons zur Oberfläche.
+    // Bit-identisch zur Main (Determinismus-/Naht-Wand): n.noise2D, freq 0.0065, Offset 41.7/-18.3.
+    const canyonOpen = clamp01((state.noise.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18);
+    const caveCeil = clamp01((surf - 16 + canyonOpen * 24 - y) / 8);
     const caveEnv = caveFloor * caveCeil;
     if (caveEnv > 0) {
         const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
