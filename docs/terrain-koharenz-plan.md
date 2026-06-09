@@ -313,7 +313,16 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
   Faden durch `_voxelChunkGeometry`), Worker-Mirror, `DC_LAMBDA`/`DC_SHARP_MOVE2` (static + Worker-const).
 - **Sign-off (Schöpfer-Auge):** auf echter WebGPU — kohärent, FPS hält (die Schärfe selbst ist subtil bis T5).
 
-### T4 — Wasser-Kohärenz: der zelluläre Automat (Phase 1 — Wasser fließt) (Risiko: hoch · die Krönung)
+### T4 — Wasser-Kohärenz: der zelluläre Automat (Wasser fließt) (Risiko: hoch · die Krönung) — **ENTRIEGELT, KERN GEBAUT**
+- **→ DETAIL-PLAN: `docs/terrain-t4-wasser-ca-plan.md`** (der volle Bogen + die getroffenen Entscheidungen:
+  lokal-reaktiv wie Wetter · Level-pro-Zelle über der Flood · active-cell · T4a-Zellen/T4b-Render-Split).
+- **KERN GEBAUT + BEWIESEN (09.06.2026, T4a-1):** `_tickWaterCA(level, cells, dim, dimY)` — eine REINE,
+  deterministische Tick-Funktion des Fluss-Automaten (Gravität top-down + lateral Niveau-suchen, Delta-
+  Puffer = exakte Erhaltung). **VERIFIZIERT (`diag-water-flow-ca`, headless GEOMETRIE/Zustand): ERHALTUNG
+  exakt (Σ Wasser konstant) UND FLUSS (ein Blob fällt zum Boden · eine 5er-Säule spreizt zur Lache,
+  Grundfläche 1→64).** 3 Playtest-Invarianten grün. **Die Wurzel ‚Wasser fliesst nicht nach‘ (wasser-plan
+  §3) ist im MODELL gelöst.** Noch NICHT in die Welt verdrahtet (T4a-2..4: Welt-Zellen + cross-chunk-wake
+  + Physik) + Render (T4b, Browser, Regel #0) — die nächsten verifizierten Schritte.
 - **Ziel.** Wasser fließt dynamisch nach wie Minecraft; ein Carve neben Wasser → es strömt hinein.
 - **Mechanik.** `_buildVoxelChunkWaterCells` → CA: pro Zelle Level (0–N) + Flow-Vektor; Tick-Regeln
   (bergab-Priorität, lateral spreizen, Niveau suchen); nur **aktive/dirty** Zellen ticken (active-cell-
@@ -344,7 +353,7 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
 | T1 | `diag-chunk-seam` C (footprint in-edit) + 4 Playtest-Inv. **GRÜN** | — | **OFFEN**: keine Abbau-Naht im Auge |
 | T2 | `diag-chunk-seam` D (Grenz-Zeile 98 % auf grober Fläche) + 5 Playtest-Inv. **GRÜN** | render-only (kein Mirror) | **OFFEN**: kein Pop/Schimmer im Auge |
 | T3 | `diag-mesh-sharpness` (Dieder-Winkel) + **V9.42-b 288 geteilt** + 4 Playtest-Inv. **GRÜN** | **bit-identisch (Worker-Mirror)** | kohärent; volle Schärfe ab T5 |
-| T4 | `diag-water-flow` + `diag-water-fill` | Seed-deterministisch ODER reaktiv | Wasser fließt in den Kanal |
+| T4 | KERN: `diag-water-flow-ca` (Erhaltung+Fluss) **GRÜN** + 3 Inv. · Welt+Render offen | lokal-reaktiv (kein Mirror) | Wasser fließt in den Kanal (T4b) |
 | T5 | `diag-harmony` (Bleed=0) + `diag-caverns` | Worldgen-frozen | Canyons, Eingänge |
 
 **Die EINE harte Wand über allem:** `npm run playtest` „Alle Invarianten OK" + die Determinismus-Wand

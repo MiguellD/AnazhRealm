@@ -20624,6 +20624,34 @@ async function checkBandWelleC3CellularReaction(ctx) {
         out.t3FeatureAwareLaplacian = /sharp && sharp\[v\]/.test(r._voxelLaplacianSmoothPositions.toString());
         out.t3DcConstants = Number.isFinite(r.constructor.DC_LAMBDA) && Number.isFinite(r.constructor.DC_SHARP_MOVE2);
 
+        // T4 (terrain-t4-wasser-ca-plan §3 — der Wasser-Automat-KERN): `_tickWaterCA` ist die
+        // reine Fluss-Funktion (Level pro Zelle). Die zwei fundamentalen Garantien eines Fluid-
+        // Automaten, behavioral + deterministisch: ERHALTUNG (Σ Wasser konstant) + FLUSS (ein Blob
+        // fällt). Voller Beweis (Gravität + Niveau-suchen + Erhaltung): `diag-water-flow-ca.cjs`.
+        out.t4HasTickCA = typeof r._tickWaterCA === "function";
+        if (out.t4HasTickCA) {
+            const SOLID = r.constructor.CELL_STATE.SOLID;
+            const d = 4,
+                dy = 10;
+            const cells = new Uint8Array(d * d * dy); // AIR=0 default
+            for (let c = 0; c < d * d; c++) cells[c] = SOLID; // Boden j=0
+            const level = new Float64Array(d * d * dy);
+            level[8 * d * d + 5] = 1.0; // ein Blob hoch oben
+            let s0 = 0;
+            for (let n = 0; n < level.length; n++) s0 += level[n];
+            for (let t = 0; t < 40; t++) r._tickWaterCA(level, cells, d, dy);
+            let s1 = 0,
+                cw = 0;
+            for (let j = 0; j < dy; j++)
+                for (let c = 0; c < d * d; c++) {
+                    const v = level[j * d * d + c];
+                    s1 += v;
+                    cw += v * j;
+                }
+            out.t4Conserves = Math.abs(s1 - s0) < 1e-4;
+            out.t4Flows = (s1 > 0 ? cw / s1 : 99) < 8 - 1; // Schwerpunkt fiel von j=8
+        }
+
         // 6) Source-Probes: spawnArchitecture + removeArchitecture rufen
         // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
         out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.spawnArchitecture.toString());
@@ -20739,6 +20767,12 @@ async function checkBandWelleC3CellularReaction(ctx) {
         "T3 (Dual Contouring): DC_LAMBDA + DC_SHARP_MOVE2 Konstanten existieren (Worker-gespiegelt)",
         res.t3DcConstants
     );
+    // T4 (terrain-t4-wasser-ca-plan §3): der Wasser-Automat-Kern — Wasser fliesst (Option A).
+    check("T4 (Wasser-CA): _tickWaterCA existiert (der Fluss-Automat-Kern)", res.t4HasTickCA);
+    if (res.t4HasTickCA) {
+        check("T4 (Wasser-CA): der Automat ERHÄLT das Wasser exakt (Σ konstant)", res.t4Conserves);
+        check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
+    }
 }
 
 // V9.88 (Welle Perf-3.b — Distance-LOD): empirischer Beweis dass ferne

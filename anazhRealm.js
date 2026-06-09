@@ -39235,6 +39235,86 @@ class AnazhRealm {
         return built;
     }
 
+    // T4 (Terrain-t4-wasser-ca-plan §3 — der KERN des Fluss-Automaten): EIN deterministischer Tick
+    // des zellulären Wasser-Automaten über einem Level-Feld (`level[idx]` ∈ [0,1] = Füllgrad pro
+    // Zelle) + dem Zell-Zustand (`cells[idx]`, SOLID blockt). Zwei Pässe, conservation-erhaltend:
+    //   (1) GRAVITÄT (top-down, in-place — kaskadiert korrekt): Wasser fällt in die Zelle DARUNTER,
+    //       solange die Kapazität (1−level) hat + nicht SOLID ist.
+    //   (2) LATERAL/Niveau-suchen (Delta-Puffer, symmetrisch = conservation): jedes Paar (+i, +k)
+    //       gleicht sich Richtung Mittel aus (Rate < 0.5 für Stabilität) — Wasser sucht sein Niveau.
+    // PURE über die Arrays (kein State, kein Render) → vollständig headless beweisbar (Erhaltung +
+    // Fluss). Der Tick ist die reaktive Schicht (lokal, nicht persistiert, kein Worker-Mirror — wie
+    // `_lifeOverlayAt`/`_tickWorldRules`). Liefert die Zahl der bewegten Zellen (für active-cell-only).
+    _tickWaterCA(level, cells, dim, dimY, rate = 0.25) {
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
+        const dimSq = dim * dim;
+        const EPS = 1e-4;
+        let moved = 0;
+        // (1) GRAVITÄT — von oben nach unten, damit eine Säule in einem Tick durchkaskadiert.
+        for (let j = dimY - 1; j >= 1; j--) {
+            const baseJ = j * dimSq;
+            const belowJ = (j - 1) * dimSq;
+            for (let c = 0; c < dimSq; c++) {
+                const here = baseJ + c;
+                const lv = level[here];
+                if (lv <= EPS || cells[here] === SOLID) continue;
+                const below = belowJ + c;
+                if (cells[below] === SOLID) continue;
+                const cap = 1 - level[below];
+                if (cap <= EPS) continue;
+                const flow = lv < cap ? lv : cap;
+                level[here] = lv - flow;
+                level[below] += flow;
+                moved++;
+            }
+        }
+        // (2) LATERAL — Niveau suchen. Delta-Puffer: jedes (+i)- und (+k)-Paar EINMAL, symmetrischer
+        // Transfer (was hier abfliesst, kommt dort an) → exakte Erhaltung, deterministisch.
+        const delta = new Float64Array(level.length);
+        for (let j = 0; j < dimY; j++) {
+            const baseJ = j * dimSq;
+            for (let k = 0; k < dim; k++) {
+                const baseK = k * dim;
+                for (let i = 0; i < dim; i++) {
+                    const here = baseJ + baseK + i;
+                    if (cells[here] === SOLID) continue;
+                    const lv = level[here] + delta[here];
+                    // +i-Nachbar
+                    if (i + 1 < dim) {
+                        const nb = here + 1;
+                        if (cells[nb] !== SOLID) {
+                            const diff = lv - (level[nb] + delta[nb]);
+                            if (diff > EPS || diff < -EPS) {
+                                const t = diff * rate;
+                                delta[here] -= t;
+                                delta[nb] += t;
+                                if (diff > EPS) moved++;
+                            }
+                        }
+                    }
+                    // +k-Nachbar
+                    if (k + 1 < dim) {
+                        const nb = here + dim;
+                        if (cells[nb] !== SOLID) {
+                            const diff = lv - (level[nb] + delta[nb]);
+                            if (diff > EPS || diff < -EPS) {
+                                const t = diff * rate;
+                                delta[here] -= t;
+                                delta[nb] += t;
+                                if (diff > EPS) moved++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (let n = 0; n < level.length; n++) {
+            const v = level[n] + delta[n];
+            level[n] = v < 0 ? 0 : v > 1 ? 1 : v;
+        }
+        return moved;
+    }
+
     // Welle A — die Gras-Queue synchron leeren (Test-Naht, Spiegel von
     // `_drainPendingWaterIso`): das Gras ist seit Welle A deferred, die Tests
     // brauchen es sofort nach einem Drain/Streaming.
