@@ -624,3 +624,52 @@ burnte Wasser-Zone → Browser-Reproduktion mit dem Schöpfer-Auge (kein Blind-P
 3. **Was nur GESAGT, nicht GETAN ist (die Schöpfer-Mahnung „evt. nur gesagt"):** T4a-4 (Physik liest das CA-Level) ·
    die ferne Wasser-LOD (U2, die Uferlinien-Versätze an fernen Küsten) · das volumetrische Wasser (Ozean-in-Höhle) ·
    das adaptive Band (T8). Alle im Backlog, hier benannt, damit der Bogen ehrlich „vollständig" heisst.
+
+---
+
+## 11 · DER ECHTE NAHT-BEFUND (Schöpfer-Browser 09.06., GEMESSEN — meine T2-Selbst-Lüge korrigiert)
+
+Der Schöpfer sieht im Browser, was die T0–T8-Heilungen NICHT lösten: **Chunks resetten sich (ein Block setzen → der
+ganze Chunk re-meshet sichtbar), beim schnellen Laufen sind sie höhenversetzt, man sieht durch den Spalt zwischen
+Chunks** (das Wasser ist nur ein SYMPTOM davon). „Wie bauen sich die Welt, wie gleichen sich Chunks an, wie machen
+es die Profis, was fehlt?" — GEMESSEN (`diag-chunk-seam`), nicht behauptet.
+
+### Wie unsere Welt baut (verifiziert — was RICHTIG ist)
+1. **Seed → SimplexNoise → ein deterministisches 3D-Dichtefeld** (`_terrainBaseDensityAt(x,y,z)` = solid/air an JEDEM
+   Punkt). KEIN „einzelner Ursprungspunkt, von dem alles berechnet wird" — jeder Punkt ist UNABHÄNGIG aus dem Noise (so
+   macht es JEDES prozedurale Terrain; das ist korrekt + Profi). Die DICHTE ist also GETEILTE Wahrheit: zwei Nachbar-
+   Chunks sind sich an der Grenze einig.
+2. **Jeder Chunk meshet UNABHÄNGIG** seine Region + 1 Pad-Zelle (Surface Nets / Dual Contouring → ein Vertex pro
+   Sign-Change-Zelle), croppt den Pad. Streaming: ein Ring um den Spieler, LOD nach Distanz.
+
+### Wo die Chunks sich NICHT pro-grade angleichen (die GEMESSENEN Wurzeln)
+- **Gleiche-LOD-Naht: SEMI-VERSCHWEISST (~50 % float-exakt geteilte Vertices, Pad+Crop).** Sub-Zell-Rest, KEIN primärer
+  Riss. Nicht das Problem.
+- **Cross-LOD-Naht: DER RISS.** GEMESSEN: LOD-Verteilung {0:9, 1:63} → der LOD0-Ring ist nur **3×3 (9 Chunks)**, alles ab
+  ~50 m ist LOD1 → **die LOD0↔LOD1-Grenze sitzt ~50 m vom Spieler** (sehr sichtbar, wandert beim Laufen). Fein (1.8 m) ↔
+  grob (3.6 m) = inkompatible Gitter = **0 % geteilte Vertices + ~14.2 % sichtbare >1-m-Spalten (schlimmster 19.99 m)**.
+- **DER GEOMORPH (T2) IST EIN HALB-FIX — MEINE „GESCHLOSSEN 0.017 m"-BEHAUPTUNG WAR CHERRY-PICKED.** GEMESSEN: er
+  schliesst die EXAKTE Grenz-ZEILE (w>0.95 → 98.7 % auf der Fläche, 0.017 m) — ABER über die ganze Übergangs-Zone nur
+  **57.2 % auf der Fläche, ⌀0.738 m Spalt, max 9.67 m**. Ich mass nur die Zeile + rief „geschlossen". Und er ist
+  **RENDER-ONLY** (aMorphTarget) → die KOLLISION/BVH trägt den Riss weiter. → der Schöpfer SIEHT die Übergangs-Zonen-
+  Spalten + das „durchsehen".
+- **Edit/LOD = GANZ-CHUNK-RE-MESH + Swap** (`_rebuildVoxelChunk` disposed+baut den ganzen Chunk): ein Block setzen ODER
+  ein LOD-Wechsel (schnell laufen) re-meshet den GANZEN Chunk → das sichtbare „Reset" + der Höhen-Versatz beim Pop.
+
+### Wie es die PROFIS machen (was FEHLT)
+1. **Transvoxel (Eric Lengyel, 2010) — DIE kanonische watertight Cross-LOD-Lösung.** Spezielle TRANSITION-CELLS an der
+   LOD-Grenze stitchen fein+grob mit GETEILTEN Vertices → watertight, die GANZE Übergangs-Zone (nicht nur die Zeile),
+   inklusive Kollision. Unser Render-only-Geomorph ist eine Annäherung, die nur die Zeile schliesst. (Alternative: Dual
+   Contouring auf einem konsistenten OCTREE — naturgemäss watertight über LODs, Ju et al.)
+2. **Sub-Region-Edit-Re-Mesh** — nur die schmutzigen Zellen neu meshen, NICHT den ganzen Chunk (kein Reset-Flackern).
+3. **Stabiles LOD + grösserer LOD0-Ring + Hysterese** — die Cross-LOD-Grenze weiter weg + seltener wechselnd (kein Pop
+   beim Laufen); den Geomorph auf die GANZE Übergangs-Zone + die Kollision ziehen (oder Transvoxel macht es inhärent).
+
+### DER PLAN (T_naht — der nächste Bau-Bogen, NACH dem Schöpfer-OK)
+- **N1 — Cross-LOD watertight (Transvoxel ODER Geomorph-Vollendung):** entweder Transvoxel-Transition-Cells (der
+  Profi-Weg, watertight + Kollision) ODER den Geomorph auf die VOLLE Übergangs-Zone + in die Kollisions-Geometrie ziehen
+  (kein Render-only). GEMESSEN gegen `diag-chunk-seam` B/D → Ziel: 0 sichtbare >1-m-Spalten, Kollision konsistent.
+- **N2 — Sub-Region-Edit:** der Block-Setzen-Pfad re-meshet nur die berührten Zellen → kein Ganz-Chunk-Reset.
+- **N3 — Stabiles LOD:** grösserer LOD0-Ring (die Grenze weiter weg) + Hysterese (kein Pop) — der billigste sichtbare Hebel.
+- **DISZIPLIN: jede Heilung am SETTLED, AUGENHÖHEN-Schöpfer-Auge (`diag-settled-view`) + `diag-chunk-seam`, kein
+  Cherry-Pick der Grenz-Zeile mehr — die VOLLE Übergangs-Zone messen.**
