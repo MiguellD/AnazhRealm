@@ -165,3 +165,26 @@ wake, T3 (kantiger Mesher) trägt die scharfen Kanäle, durch die das Wasser fli
 - **Merge pro bestätigtem Schritt** (Regel #0) — kein 30-Wellen-Stapel mehr.
 - **Performance:** active-cell-only + Budget/Frame; das CA-Level ist eine reaktive Schicht (bounded, sparse,
   lazy-decay wo ruhig), kein Voll-Sweep — das V17.27-Overlay-Muster.
+
+## 7 · DIE OFFENE FLOW-REGEL-ENTSCHEIDUNG (Schöpfer — nach dem V18.92-Badewannen-Befund)
+
+**GEMESSEN (V18.92, frische Welt, `diag-water-cellsheet` mit 4000-Tick-Vorlauf):** „Wake-on-Stream"
+(jeder einstreamende Wasser-Chunk weckt den CA — der Versuch, „die Ausbreitung des Flusses zu
+integrieren") FLUTET die Welt: unendliche Quellen (Pin) in einer GESCHLOSSENEN Domäne — der
+LOD-Ring-Rand ist ein unsichtbarer DAMM (der CA tickt nur LOD0) — poolte 12.5 m Wasser ÜBER `L`,
+1409 live-Spalten OHNE einen Carve. Das ist korrekte Hydraulik (infinite Springs + Becken = es
+füllt sich bis zur Quell-Höhe) und falsches Spiel. **DARUM hat Minecraft Fluss-DISTANZ-Regeln
+statt purer Hydraulik.** ZURÜCKGENOMMEN — der CA bleibt CARVE-getrieben (die Spieler-Aufmerksamkeit
+ist die natürliche Grenze; genau diese Ausbreitung fand der Schöpfer „genial").
+
+**Die welt-weite lebendige Fluss-Dynamik braucht EINE dieser Regeln (Schöpfer-Entscheid):**
+
+1. **Distanz-Decay (der Minecraft-Weg, EMPFEHLUNG):** jeder Lateral-Transfer verliert einen
+   kleinen Anteil (Dissipation) → Wasser DÜNNT mit der Entfernung von der Quelle, Pooling fern
+   der Quelle stirbt geometrisch ab; die Carve-Füllung nahe der Quelle bleibt voll.
+   Nicht-konservativ (bewusst, wie das Minecraft-Despawn). Eigene messbare Welle, Browser-A/B
+   am Canyon.
+2. **Emissions-Budget pro Quelle:** der Pin speist nur mit Rate ≤ r/Tick — verlangsamt das
+   Pooling stark, beendet es aber nicht (schwächer als 1).
+3. **Beim Carve-getriebenen Modell bleiben** (der heutige Stand): die Welt-Substanz ruht, bis
+   der Spieler eingreift; das volle „Flüsse leben von allein" wartet auf Regel 1.

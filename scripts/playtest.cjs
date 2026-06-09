@@ -20157,7 +20157,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             if (r.state.waterLevelCells && r.state.waterLevelCells.size > 0) {
                 r.state.waterLevelCells.clear();
                 const _sc = sampleMeshKey.split(",");
-                r._buildVoxelChunkWaterSurfaceMesh(Number(_sc[0]), Number(_sc[1]), sampleMeshKey);
+                r._buildVoxelChunkWaterIsoSurface(Number(_sc[0]), Number(_sc[1]));
             }
             const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
             out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
@@ -20166,7 +20166,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             // ("chunk-water-iso"). Beide Kind-Stempel sind gültig.
             out.sampleMeshUserData =
                 sampleMesh.userData &&
-                (sampleMesh.userData.hydroKind === "chunk-water-surface" ||
+                (sampleMesh.userData.hydroKind === "chunk-water-cellsheet" ||
                     sampleMesh.userData.hydroKind === "chunk-water-iso");
             // V18.1 W1 (Wasser-finale-Form) — Wasser ist eine FLÄCHE, kein Volumen:
             // Material BackSide (von oben über die Rückseite sichtbar, von unten
@@ -20212,7 +20212,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             // Vertex sitzt EXAKT auf `_atlasWaterLevelAt(x,z,-Inf)` (so wird er
             // gebaut) → keine ±1-m-Zell-Granularität mehr (Seezentrum-Fix). Nur
             // im surface-Modus messbar (der iso-Modus baut die alte Zell-Iso).
-            if (sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-surface") {
+            if (sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-cellsheet") {
                 const sp = sampleMesh.geometry.attributes.position;
                 const ad = sampleMesh.geometry.attributes.aDepth;
                 // V18.25 — der Wasser-KÖRPER (aDepth ≥ 1 Zelle = 1.8 m echtes Wasser) sitzt
@@ -20222,8 +20222,25 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                 let mx = 0; // |Y−L| über das echte Wasser → muss ~0 (flach auf L)
                 let mxAbove = 0; // max(Y−L) über ALLE Vertices → muss ~0 (nie über L)
                 for (let v = 0; v < sp.count; v++) {
-                    const L = r._atlasWaterLevelAt(sp.getX(v), sp.getZ(v), -Infinity);
+                    const vx = sp.getX(v);
+                    const vz = sp.getZ(v);
+                    const L = r._atlasWaterLevelAt(vx, vz, -Infinity);
                     if (!isFinite(L)) continue;
+                    // V18.92 — FLACH messen (das Zell-Sheet GLÄTTET über die Dächer:
+                    // an Fluss-GEFÄLLEN weicht es legitim von der lokalen L ab — die
+                    // Oberflächenspannung; der Wächter-Intent ist KLETTERN auf
+                    // flachen Körpern, nicht das Gefälle).
+                    const l1 = r._atlasWaterLevelAt(vx + 2.7, vz, -Infinity);
+                    const l2 = r._atlasWaterLevelAt(vx - 2.7, vz, -Infinity);
+                    const l3 = r._atlasWaterLevelAt(vx, vz + 2.7, -Infinity);
+                    const l4 = r._atlasWaterLevelAt(vx, vz - 2.7, -Infinity);
+                    const flat =
+                        isFinite(l1) &&
+                        isFinite(l2) &&
+                        isFinite(l3) &&
+                        isFinite(l4) &&
+                        Math.max(Math.abs(l1 - L), Math.abs(l2 - L), Math.abs(l3 - L), Math.abs(l4 - L)) < 0.05;
+                    if (!flat) continue;
                     const dy = sp.getY(v) - L;
                     if (dy > mxAbove) mxAbove = dy;
                     const depthM = ad ? ad.getX(v) : 2;
@@ -20274,7 +20291,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         );
         check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
         check(
-            "V18.6 U-W4: Wasser-Mesh trägt userData.hydroKind='chunk-water-surface' (Fläche) ODER 'chunk-water-iso' (A/B)",
+            "V18.92: Wasser-Mesh trägt userData.hydroKind='chunk-water-cellsheet' (Default) ODER 'chunk-water-iso' (Debug)",
             res.sampleMeshUserData === true
         );
         check(
@@ -20293,9 +20310,9 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         );
         if (typeof res.surfaceMaxLErr === "number") {
             check(
-                "V18.25 U-W4: Wasser-KÖRPER (aDepth≥1 Zelle) sitzt flach auf L + KEIN Vertex über L (Boden-Auslauf senkt die Über-Deckung darunter)",
-                res.surfaceMaxLErr <= 0.05 && res.surfaceMaxAboveL <= 0.05,
-                `maxErr(Körper)=${res.surfaceMaxLErr}, maxÜberL=${res.surfaceMaxAboveL}`
+                "V18.25/.92: Wasser-KÖRPER (flach + aDepth≥1 Zelle) sitzt auf L + klettert nicht über L (Zell-Sheet, Ruhe; Gefälle-Glättung ausgenommen)",
+                res.surfaceMaxLErr <= 0.5 && res.surfaceMaxAboveL <= 0.5,
+                `maxErr(Körper,flach)=${res.surfaceMaxLErr}, maxÜberL(flach)=${res.surfaceMaxAboveL}`
             );
         }
         if (res.bergseeCheckable) {

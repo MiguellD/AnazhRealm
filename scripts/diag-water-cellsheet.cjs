@@ -56,6 +56,14 @@ const server = http.createServer((req, res) => {
         ],
     });
     const page = await browser.newPage();
+    // Frische Welt pro Lauf (DETERMINISMUS): die Diag CARVT + saveState → ohne
+    // Clear akkumuliert localStorage die Gräben über Läufe (GEMESSEN: 687→1406
+    // live-Spalten) — die Messung würde ihre eigene Vergangenheit messen.
+    await page.evaluateOnNewDocument(() => {
+        try {
+            localStorage.clear();
+        } catch (_e) {}
+    });
     await page.setViewport({ width: 1600, height: 900 });
     const pageErrors = [];
     page.on("pageerror", (e) => {
@@ -441,11 +449,10 @@ const server = http.createServer((req, res) => {
             console.log(`${file.padEnd(28)} Modus=${mode}  ${meta.err ? "⚠ " + meta.err : "✓"}`);
         };
         console.log(
-            `\nA/B-Spot: Ufer (${spot.sx},${spot.sz}) → Wasser @y≈${spot.wy} (${spot.n} Verts, ${spot.dist} m vom Spawn), Blick yaw=${spot.yawDeg}°`
+            `\nAugen-Spot: Ufer (${spot.sx},${spot.sz}) → Wasser @y≈${spot.wy} (${spot.n} Verts, ${spot.dist} m vom Spawn), Blick yaw=${spot.yawDeg}°`
         );
-        await shoot("water-ab-surface.png", "surface", spot.yawDeg);
+        // V18.92 — der L-Film ("surface") ist entfernt; das Zell-Sheet ist der Default.
         await shoot("water-ab-cells.png", "cells", spot.yawDeg);
-        await page.evaluate(() => window.anazhRealm.setWaterRenderMode("surface"));
     }
 
     await browser.close();
@@ -478,7 +485,7 @@ const server = http.createServer((req, res) => {
         console.log(`LIVE-DOMÄNE: SKIP (${live && live.err})`);
     }
     console.log(`Page-Errors: ${pageErrors.length}`);
-    console.log("\nA/B-Bilder: artifacts/water-ab-surface.png vs artifacts/water-ab-cells.png\n");
+    console.log("\nAugen-Bild: artifacts/water-ab-cells.png (V18.92 — der L-Film ist Geschichte)\n");
 
     const liveOk = !live || live.err ? true : live.liveCols > 0 && live.covered / live.liveCols >= 0.6;
     const ok =

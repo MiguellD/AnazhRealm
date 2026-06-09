@@ -52,6 +52,14 @@ const server = http.createServer((req, res) => {
         ],
     });
     const page = await browser.newPage();
+    // Frische Welt pro Lauf (DETERMINISMUS): die Diag CARVT + saveState → ohne
+    // Clear akkumuliert localStorage die Gräben über Läufe (GEMESSEN: 687→1406
+    // live-Spalten) — die Messung würde ihre eigene Vergangenheit messen.
+    await page.evaluateOnNewDocument(() => {
+        try {
+            localStorage.clear();
+        } catch (_e) {}
+    });
     const pageErrors = [];
     page.on("pageerror", (e) => {
         pageErrors.push((e.stack || e.message).split("\n")[0]);
