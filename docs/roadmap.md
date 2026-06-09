@@ -28,24 +28,30 @@ der soziale Bogen und die offenen Render-Sign-offs.
 
 ## §3 · Der Plan vorwärts — die Reihenfolge
 
-**⭐ Die tiefere Wurzel (Schöpfer-Befund 09.06.2026, gemessen):** Phase 1+2 teilen EINE Wurzel — die
-**Chunk-Naht** (independent gebaute Chunks, deren Ränder nur approximativ + verspätet zusammenfinden).
-Blobiges Terrain · Edit-/LOD-Naht · die Wasser-Naht (30 Wellen) · „Wasser fließt nicht" sind **fünf
-Symptome davon**. Der vereinte Architektur-Bogen, der sie an der Wurzel heilt, ist
-**`docs/terrain-koharenz-plan.md`** (DIE EINE GRENZE — IPERKA, alle Schnittstellen, die These geprüft;
-von den Größten: Dual Contouring · Stable-LOD/Geomorph · Wasser-CA). Die physikalische Kette:
-**`Naht-Kohärenz (T1–T2) → {kantiges Terrain T3 · Wasser-CA T4} → G3-Canyons T5`** — niemals Wasser vor
-der Naht (das war die Spirale).
+**⭐ Die EINE Wurzel — die Chunk-Naht (Schöpfer-Befund 09.06.2026, gemessen):** blobiges Terrain ·
+Edit-/LOD-Naht · die Wasser-Naht (30 Wellen) · „Wasser fließt nicht" sind **fünf Symptome EINER Wurzel**:
+independent gebaute Chunks, deren Ränder nur approximativ + verspätet zusammenfinden. Der vereinte
+Bogen ist **`docs/terrain-koharenz-plan.md`** (DIE EINE GRENZE).
 
-**Phase 1 — Wasser: echte Fluid-Dynamik ⭐** Die Wurzel: Wasser ist ein statisches Höhenfeld `L`,
-fließt nie nach (kein Automat). Ziel: ein zellbasierter Automat (Level 0–7) über `entry.waterCells` —
-Wasser fließt nach wie Minecraft, der Render speist sich aus den Fluid-Zellen (heilt auch das Mesh-
-Falten). Eigener Plan zuerst (Tick-Budget · Determinismus · frozen↔live · Persistenz). Detail:
-`archiv/wasser-render-architektur-plan.md` + `archiv/hydrosphere.md`.
+**GEBAUT + GEMESSEN + Playtest-grün (T0–T8, alle Worker-gespiegelt, Determinismus 0/6885):** T0–T3 die
+kohärente Grenze (T1 zeitlich · T2 Cross-LOD-Geomorph · T3 Dual-Contouring-QEF) · **T4 der Wasser-CA**
+(zellbasierter Automat über `waterCells`, fließt im Modell+Welt, Render folgt dem Live-Level — die
+30-Wellen-Wurzel „fließt nicht" ist GELÖST) · T5–T7a das kontinentale Drama (Canyons bis 83 m · weite
+Felder · Mesa-Terrassen slope-gated · Hallen) · T7b-ii+T8 das weite Band + die Löcher geheilt (Boden 0 ·
+Meer-Aquifer 0 · Mesa-Treppe 0 %).
 
-**Phase 2 — das Fundament sauber schließen** H3 (ferne Binnengewässer) → G3 (Höhleneingänge +
-Canyons, braucht H3) → LOD vollenden (U2/U4/U5/U6 + E4-Stitching) → Render-Sign-offs (R1/R2/R3/R5).
-Detail: `archiv/lod-kaskade-plan.md`.
+**⭐ AKTIV — die LOD/Naht-VOLLENDUNG (derselbe Kohärenz-Bogen, §11):** der Schöpfer-Browser zeigt nach
+T0–T8: Chunks resetten/höhenversetzt/Spalt-durchsehen (das Wasser nur das Symptom). GEMESSEN
+(`diag-chunk-seam`): die **Cross-LOD-T-junction ist der Riss** (LOD0-Ring nur 3×3 → Grenze ~50 m · 0 %
+geteilt · ~14.2 % sichtbare >1-m-Spalten); der Geomorph (T2) ist ein RENDER-ONLY-Halbfix (schliesst nur
+die Grenz-Zeile, Kollision gappt) + Edit/LOD re-meshet den GANZEN Chunk (das „Reset"). **Der Plan:
+N1 Cross-LOD watertight (Transvoxel [Lengyel] ODER Geomorph→Kollision+volle Zone) · N2 Sub-Region-Edit ·
+N3 stabiles LOD (grösserer LOD0-Ring + Hysterese).** (Subsumiert das alte „E4-Stitching".)
+
+**Phase 2 — das Fundament sauber schließen (nach der Naht-Vollendung)** H3 (ferne Binnengewässer) → G3
+(weitere Höhleneingänge) → LOD-Kaskade-Rest (U2 Wasser-LOD · U4/U5/U6) → Render-Sign-offs (R1/R2/R3/R5) ·
+das Wasser-RENDER T7c/T7d (Fluss-Edit-Löcher + lake/river-Naht, burnte Zone, Schöpfer-Auge) · der Spawn
+liegt in einer T6d-Kaverne (Spawn-Höhe heben). Detail: `archiv/lod-kaskade-plan.md`.
 
 **Phase 3 — die Seele** Crafting-Schluss (S6-B/S9/S11/S7-C) · **Phase E** (Bedrohung/Furcht — der
 letzte Emotion-Kern-Konsument) · Mana-Symmetrie · Emotion→Regel-Emergenz · **Nexus-Lern-Vereinheit-
@@ -62,8 +68,10 @@ lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendig
 `aFlow`-Foam-Strähnen · Wasserfall-Plane (bleibt/raus?) · aufgestaute Hoch-Becken (über `L`, brauchen
 Zellen) · Unterwasser-Decken-Pass (V18.3 B5) · Kapillar/Stempel an Gebäuden.
 
-**Terrain/Fundament** — H3 ferne Seen/Flüsse (Region mitwandern) · G3 Höhleneingänge + Canyons (braucht
-H3) · E4 echtes Cross-LOD-Stitching/Geomorph · Haupt-Fog an die Ring-Kante koppeln (heute separat).
+**Terrain/Naht (⭐ AKTIV, §11)** — N1 Cross-LOD watertight (Transvoxel ODER Geomorph→Kollision+volle Zone,
+ersetzt das alte „E4-Stitching") · N2 Sub-Region-Edit (kein Ganz-Chunk-Reset) · N3 stabiles LOD (grösserer
+LOD0-Ring + Hysterese) · Spawn-Höhe über die T6d-Kaverne. Danach: H3 ferne Seen/Flüsse (Region mitwandern) ·
+Haupt-Fog an die Ring-Kante koppeln (heute separat).
 
 **LOD/Render** — U2 Wasser-LOD (heute fest LOD0) · U4 Deko-Distanz/Dichte/Impostor · U5 Schatten-CSM ·
 U6 Clipmap (Draw-Call-Hebel) · R1 Schatten-Snap (gebaut, Sign-off offen) · R2 Normale in Geometrie
