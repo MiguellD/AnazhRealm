@@ -536,3 +536,72 @@ NICHT T4b — eine eigene Shader-Welle, GPU-Auge).
 (playerMesh direkt setzen + force-sync den Ring statt auf die async-Streaming-Maschinerie zu warten); der rAF-Hintergrund-Loop
 PRUNED die ferne Region zwischen zwei `page.evaluate`-Calls → `renderer.setAnimationLoop(null)` + Build/Sichtbarkeit/Render in
 EINEM evaluate.
+
+---
+
+## 10 · T7 — DEN BOGEN VOLLENDEN: die fünf Schnittstellen-Lücken (Schöpfer-Browser 09.06., gemessen + die Profi-Lösung)
+
+Der Schöpfer-Browser auf echter WebGPU: das Terrain ist **grundsätzlich genial** (der Canyon mit dem Fluss zwischen
+zwei Steilwänden ist die eingelöste Vision — gesehen). Aber FÜNF Schnittstellen tragen noch ein Detail nicht, das die
+Profis gelöst haben. **GEMESSEN (`scripts/diag-terrain-issues.cjs`), nicht geraten — das ist Alignment, kein TODO.**
+
+### T7a — die Mesa-Terrassen ohne Treppen-Artefakt (slope-gated smooth terrace)
+- **Befund (Screenshots „stacked thin layers / accordion" + `diag-terrain-issues` B):** das naive Höhen-Quantisieren der
+  T6b (`withoutTarn += (round(h/26)·26 − h)·mesaRegion`) erzeugt auf STEILEN Flanken eine dichte Treppe (gemessen: die
+  Density bleibt meist sauber [⌀1.45 Übergänge/Spalte], aber wo der cont0-Hang steil durch viele 26-m-Bänder läuft,
+  stapeln sich die Stufen zur „Ziehharmonika" — das `cliffPct` konzentriert sich dort).
+- **Profi (Houdini HeightField Terrace · World Creator · die Recherche):** EIN globaler `fade` + **slope-gate** —
+  terrassiere NUR, wo der Hang flach genug ist (das Mesa-PLATEAU), mit einem **smoothstep INNERHALB jeder Stufe**
+  (gerundete Terrassen-Kante statt Rasiermesser-Wand). `terraced = lerp(continuous, quantized, flatness·mesaRegion)`;
+  `flatness` aus dem lokalen Surface-Gradienten (steil → 0 → der Hang bleibt glatt; flach → 1 → flach-gedecktes Plateau).
+  → die gewollte Landform (Tafelberge) OHNE die Treppe auf den Flanken. Worker-gespiegelt, Determinismus.
+
+### T7b — die Höhlen lassen MEER + BODEN heil (der Aquifer-Gedanke + der Boden-Clamp)
+- **Befund (`diag-terrain-issues` A + C):** **(i)** der Tiefsee-Abgrund (Sub-Ozean-Block V9.60-c.2) reicht bis **−107 m**,
+  UNTER dem Chunk-Boden (−90) → in der tiefsten Tiefsee (1.2 %) wird der Meeresboden nicht gerendert = **Löcher nach unten**.
+  **(ii)** **6 %** der Ozean-Spalten haben eine Höhle/Kaverne, die den Meeresboden durchbricht (T6d carve 72 + canyonOpen
+  unter Wasser), bis 16 m tief → **das Meer hat einen Abfluss** = die „Löcher im Meer".
+- **Profi (Minecraft 1.18 Aquifer — „alle noise caves zwischen Y31 und Meeresspiegel sind GEFLUTET"):** eine Höhle unter
+  dem Meeresspiegel ist Wasser, kein Loch. Zwei Heilungen, beide Worker-gespiegelt:
+  - **(i) ein tanh-FLOOR-Clamp** (symmetrisch zum V14.6-Decken-Clamp), NACH dem Sub-Ozean-Block in `_terrainMacroSurfaceY`
+    → der Meeresboden bleibt im Band (≥ ~−82) → kein Loch nach unten. (Der Ozean ist eh unter Wasser verborgen → ein
+    sanft geklammter Abgrund ist unsichtbar; die proportionierte Heilung, wie der Decken-Clamp.)
+  - **(ii) die Höhlen-Decke `caveCeil` hält unter einem Wasserkörper SICHEREN Abstand zum Meeresboden** — KEIN
+    canyonOpen-Lift unter dem Meeresspiegel + die Decke ≥ N m unter dem Boden (das vorhandene `caveDry`/Aquifer-Gate
+    schärfen) → der Meeresboden bleibt solide, kein Abfluss. (Der „Ozean stürzt in die Höhle"-Effekt ist Minecraft-cool,
+    aber unser statischer `L`-Plane-Render kann ihn noch nicht zeigen — das ist die Volumetrik-Zukunft, nicht dieser Bogen.)
+
+### T7c — der Edit heilt wie Wasser (kein Loch nach dem Fluss-Carve)
+- **Befund (Schöpfer):** beim Abbauen UM einen Fluss bleiben komische Löcher, das Netz korrigiert sich nicht sauber.
+- **Wurzel (Code-Audit):** `_addVoxelEdit` → `_syncRebuildEditFootprint` baut die FOOTPRINT-Chunks sync + weckt den CA im
+  Footprint+1-Ring (T1/T4b). ABER die Wasser-Iso/Surface eines Nachbarn LIEST die 8 Nachbar-Zellen (`colDepthAt`,
+  V13.13.2) — re-enqueued der Edit die 8 Nachbar-WASSER-Meshes? Die V18.0-Lehre: „wer N Nachbarn LIEST, MUSS N
+  re-enqueuen (4-vs-8)". Verdacht: der Footprint-Rebuild deckt die Terrain-Naht, aber der Fluss-Surface-Mesh der
+  Skirt-Nachbarn bleibt stale → das Loch am Ufer. **Heilung:** der Edit re-enqueued die Wasser-Surface der 8 Footprint-
+  Nachbarn (`pendingWaterIso`) + drained sie. **Measure-first:** ein `diag-edit-heal` carvt am Fluss + prüft die
+  Nachbar-Wasser-Meshes auf Loch/Stale (headless GEOMETRIE).
+
+### T7d — Seen + Flüsse: EIN Spiegel an der Naht (kein vertikaler Abfall, kein leeres Becken)
+- **Befund (Schöpfer):** ein Chunk mit einem leeren Seebecken, durch das ein Fluss fliesst, und an der Chunkgrenze ein
+  vertikaler Abfall.
+- **Wurzel (zwei Fäden):** **(a)** das Seebecken floodet nicht voll (der Flood-Seed erreicht es nicht → leer), obwohl ein
+  Fluss hindurchfliesst (V9.46 „Flüsse fliessen durch Seen HINDURCH" — die Conduit-Logik); **(b)** das `L`-Feld (See-
+  Spiegel vs Fluss-Gefälle) springt an der Chunkgrenze → der vertikale Abfall (die V18.22-Klasse: eine pure (x,z)-`L`-
+  Fläche ist naht-frei NUR an geteilten Vertices/einer LOD-Skala + der Naht-Dilation V18.28).
+- **Profi:** EIN `L`-Spiegel pro Wasserkörper; der See floodet vom durchfliessenden Fluss (die Quelle wandert durch das
+  Becken); die Naht teilt den Vertex (V18.22/.28 bestätigen). **Measure-first:** ein `diag-lake-river-seam` findet
+  Becken, deren Flood-Füllung < ihr `L` ist (leer) + Chunkgrenzen, wo `L` vertikal springt.
+
+### Die Disziplin (T7) + die OFFENE Vision (ehrlich)
+1. Jede Heilung **Worker-gespiegelt** (Determinismus heilig, V9.42-b grün), **repräsentativ gemessen**
+   (`diag-terrain-issues` → alle vier Ampeln grün), **browser-validiert** (das FEEL ist das Schöpfer-Auge).
+2. **EHRLICH zum „adaptiven Band" (Schöpfer-Frage „wie ein Profi"):** der V14.6-Mountain-Fix war ein **CLAMP (Deckel)**,
+   KEIN echtes adaptives Band — die CLAUDE.md sagt das ehrlich. Der T7b-Floor-Clamp ist dieselbe proportionierte
+   Technik (heilt die Löcher JETZT). Die **nachhaltige Profi-Lösung** ist das **adaptive vertikale Chunk-Band** (Minecraft
+   sub-chunk: `oy`/`dimY` per-chunk aus dem lokalen Surface-Min/Max statt fest base−90..+270) → BEIDE Caps (Decke 245 +
+   Boden-Clamp) fallen, Berge + Canyons + Tiefsee werden beliebig gewaltig, kein Loch, kein Cap. Die Infrastruktur (der
+   Band-Skip-Sampler `_voxelSampleDensityGrid`) steht schon. **Das ist ein eigener Struktur-Bogen (T8) — die Vision-Uncap,
+   nach den T7-Heilungen; ich empfehle T7 (proportioniert, vollendet den Bogen sauber) ZUERST, dann T8 als die Weitung.**
+3. **Was nur GESAGT, nicht GETAN ist (die Schöpfer-Mahnung „evt. nur gesagt"):** T4a-4 (Physik liest das CA-Level) ·
+   die ferne Wasser-LOD (U2, die Uferlinien-Versätze an fernen Küsten) · das volumetrische Wasser (Ozean-in-Höhle) ·
+   das adaptive Band (T8). Alle im Backlog, hier benannt, damit der Bogen ehrlich „vollständig" heisst.
