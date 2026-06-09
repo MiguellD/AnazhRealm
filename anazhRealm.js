@@ -17911,16 +17911,39 @@ class AnazhRealm {
             const cFloor = base - 65;
             if (withoutTarn < cFloor) withoutTarn = cFloor;
         }
-        // T6b — KRASSE KONTRASTE: in Mesa-Regionen (sparse, λ~2900 m) die Surface auf ~26-m-Stufen
-        // QUANTISIEREN → flache Mesa-Tops + SENKRECHTE Steilwände (der DC rendert sie rasiermesser-
-        // scharf), statt überall glatte Hänge. Das sind die „krassen Kontraste".
+        // T7a (terrain-koharenz-plan §10) — KRASSE KONTRASTE als SLOPE-GATED SMOOTH TERRACE (der Profi-Weg,
+        // Houdini/World Creator): das alte T6b quantisierte die Höhe HART (`round(h/26)·26`) → auf STEILEN
+        // Flanken stapelten sich die 26-m-Stufen zur „Ziehharmonika" (Schöpfer-Screenshots). Heilung: (1) nur
+        // wo der Hang FLACH ist terrassieren (Plateau-Top → Tafelberg; steile Flanke → glatt bleiben), (2)
+        // GERUNDETE Stufen (smootherstep statt round → C1-stetig, keine Rasiermesser-Wand). MUSS bit-identisch
+        // im Worker (Determinismus-/Naht-Wand).
         const mesaRegion = Math.max(
             0,
             Math.min(1, (n.noise2D(wx * 0.00034 + 13.7, wz * 0.00034 + 47.3) - 0.45) / 0.13)
         );
         if (mesaRegion > 0.001) {
-            const stepH = 26;
-            withoutTarn += (Math.round(withoutTarn / stepH) * stepH - withoutTarn) * mesaRegion;
+            // Flatness aus dem Gradienten der DOMINANTEN glatten Struktur (cont0 λ7100 + tect λ1136; die
+            // gewarpten wx/wz als Basis — der Warp variiert langsam, für ein Steilheits-GATE genügt das).
+            const sm = (sx, sz) => {
+                const cB = n.noise2D(sx * 0.00014 + 7.2, sz * 0.00014 + 3.8);
+                return Math.max(0, cB) * 130 + cB * 15 + n.noise2D(sx * 0.00088, sz * 0.00088) * 45;
+            };
+            const gd = 7;
+            const dhx = sm(wx + gd, wz) - sm(wx - gd, wz);
+            const dhz = sm(wx, wz + gd) - sm(wx, wz - gd);
+            const slope = Math.sqrt(dhx * dhx + dhz * dhz) / (2 * gd); // m/m
+            let flat = 1 - Math.min(1, slope / 0.35); // Hang > ~19° → kein Terrace (glatt)
+            flat = flat * flat * (3 - 2 * flat); // smoothstep
+            const strength = mesaRegion * flat;
+            if (strength > 0.001) {
+                const stepH = 26;
+                const f = withoutTarn / stepH;
+                const fl = Math.floor(f);
+                const t = f - fl;
+                const shaped = t * t * t * (t * (t * 6 - 15) + 10); // smootherstep → flaches Shelf + gerundete Kante
+                const terraced = (fl + shaped) * stepH;
+                withoutTarn += (terraced - withoutTarn) * strength;
+            }
         }
         // V14.6 — sanftes Decken-Limit (Schöpfer-Befund „nach einiger Zeit in
         // eine Richtung zerfällt die Welt"). Die kontinentale Basis cont0
@@ -17936,12 +17959,14 @@ class AnazhRealm {
         // Kompression ist sanft (126 m → 124 m). Der Clamp greift VOR dem
         // Sub-Ozean-/Tarn-Block (beide senken nur niedrige Surfaces → unberührt).
         // MUSS bit-identisch im Worker (`voxel-worker.js`, Naht-Schutz).
-        // Welle F — der Deckel hochgezogen (110/Asymptote 136 → 225/Asymptote
-        // ~245): die Hülle wuchs auf Decke base+270 m, also dürfen die Berge
-        // GEWALTIG werden (~235 m statt 136). Der weiche Cap bei 225 ist nur noch
-        // ein Sicherheits-Backstop gegen einen seltenen Ausreißer > Decke (245 +
-        // Roughness 12 = 257 < 270). MUSS bit-identisch im Worker (Naht-Schutz).
-        if (withoutTarn > 225) withoutTarn = 225 + 20 * Math.tanh((withoutTarn - 225) / 20);
+        // T8 (terrain-koharenz-plan §10) — der Mountain-Cap FÄLLT (die SICHTBAREN Berge sind un-gecappt).
+        // GEMESSEN (un-geklammert ±8 km): der Gipfel erreicht +247 m, die Decke ist jetzt +282.6 (T8-Band)
+        // → die Berge tragen ihre volle natürliche Höhe, kein Deckel mehr (der V14.6-Clamp bei 225 biss
+        // 0.12 % der Samples + komprimierte 247→241 = ein sichtbarer Deckel). Es bleibt nur ein SEHR hoher
+        // SICHERHEITS-Backstop bei 255 (Asymptote ~267, +Roughness 12 = 279 < Decke 282.6) gegen einen
+        // seltenen Noise-Ausreißer über die Decke — er biss bei den ±8-km-Messungen (max 247) NIE, ist also
+        // unsichtbar, KEIN Cap. MUSS bit-identisch im Worker (Determinismus-/Naht-Wand).
+        if (withoutTarn > 255) withoutTarn = 255 + 12 * Math.tanh((withoutTarn - 255) / 12);
         // V9.60-c.2 — Riesen-Lehre vertieft: Continental Slope + Mid-Ocean
         // Ridge + tiefen-skalierte Variation. Schöpfer-Befund nach V9.60-c.1:
         // "see und meere immernoch sehr flach, nicht natürlich". Vor-Versuch
@@ -17971,6 +17996,15 @@ class AnazhRealm {
             const subC = n.noise2D(x * 0.062 - 17, z * 0.062 + 8) * 1.0;
             withoutTarnFinal += slopeDrop + (subA + subRidge + subC) * subMask;
         }
+        // T8 (terrain-koharenz-plan §10) — der UNSICHTBARE Tiefsee-Abgrund wird sanft geklammert (der
+        // Minecraft-Welt-Boden). GEMESSEN: der Sub-Ozean-Block reicht bis ~−117 m (±8 km) bzw. ~−144 m
+        // theoretisch fern → er bräche den Chunk-Boden (−135). Der Boden eines Ozeans liegt tief unter
+        // Wasser → man SIEHT ihn nie (Fog/Tiefe), darum ist ein sanfter Clamp hier KEIN sichtbarer Deckel
+        // (anders als der Mountain-Cap). Asymptote base−120 → der Band-Boden −135 umfasst ihn mit Marge
+        // (auch nach der ±2-m-Ozean-Roughness). MUSS bit-identisch im Worker (Determinismus-/Naht-Wand).
+        const abyssClamp = base - 112;
+        if (withoutTarnFinal < abyssClamp)
+            withoutTarnFinal = abyssClamp - 8 * Math.tanh((abyssClamp - withoutTarnFinal) / 8);
         // V9.51 — `_tarnDeltaAt` addiert die Bergsee-Mulden (0, solange
         // `state.tarns` leer — `_hydroSeedTarns` sampelt dann tarn-frei).
         // KRITISCH: der Bowl-Boden wird auf waterLevel+1 geklemmt, sonst
@@ -18049,7 +18083,14 @@ class AnazhRealm {
         // Höhlen-Noise-Sparsity) → vereinzelte Schluchten, der Rest der Welt unverändert. Worldgen
         // (Determinismus-Bruch — die Welt formt sich neu) → MUSS bit-identisch im Worker-Mirror.
         const canyonOpen = Math.max(0, Math.min(1, (n.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18));
-        const caveCeil = Math.max(0, Math.min(1, (surf - 16 + canyonOpen * 24 - y) / 8));
+        // T7b-ii (Aquifer-Gate, terrain-koharenz-plan §10): unter einem Wasserkörper (Ozean — der Meeresboden
+        // `surf` liegt unter dem Meeresspiegel) hält die Höhlen-Decke einen SICHEREN Abstand zum Boden (−24 m)
+        // + KEIN canyonOpen-Lift → eine Höhle bricht den Meeresboden NICHT auf (kein Abfluss; Minecraft-Prinzip:
+        // Höhlen unter dem Meeresspiegel sind kontrolliert/geflutet, kein Leck). GEMESSEN: 6 % der Ozean-Spalten
+        // hatten einen Durchbruch (T6d carve 72) → das Meer floss ab. MUSS bit-identisch im Worker.
+        const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
+        const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+        const caveCeil = Math.max(0, Math.min(1, (surf + ceilOffset - y) / 8));
         const caveEnv = caveFloor * caveCeil;
         if (caveEnv > 0) {
             const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
@@ -19022,24 +19063,30 @@ class AnazhRealm {
         // jede gröbere Stufe hat 4× weniger Cells als die vorige. Der Band-Skip
         // (`_voxelSampleDensityGrid`) sampelt nur das Oberflächen-Band → die
         // hohe Hülle ist billig. LOD2/LOD3 sind die FERNEN Ringe (E1).
+        // T8 (terrain-koharenz-plan §10) — DAS WEITE BAND: das feste, AUSGERICHTETE Vertikal-Gitter
+        // (kein per-Chunk-`oy` — das bräche die Gitter-Ausrichtung → neue Nähte, würde T0–T3 untergraben;
+        // der Minecraft-Profi-Weg ist ein FESTES Gitter + Leer-Sektion-Skip = unser Band-Skip-Sampler).
+        // GEMESSEN (un-geklammerte Surface ±8 km): +247 m Gipfel, −117..−144 m Tiefsee-Abgrund. Das Band
+        // umfasst jetzt floorDrop 135 .. Decke +282.6 (span 417.6 m, LOD-invariant): die SICHTBAREN Berge
+        // sind un-gecappt (der Mountain-Clamp fällt), der UNSICHTBARE Tiefsee-Abgrund wird sanft geklammert
+        // (Minecraft-Welt-Boden — man sieht ihn nie unter Wasser). Der Band-Skip hält die Kosten trotz +16 % Hülle.
         if (lod >= 3) {
-            // LOD 3 — step 14.4, dim 3 (64× weniger Cells als LOD0). Fernster Ring.
-            return { dim: 3, step: 14.4, span: 43.2, ringRadius, dimY: 25, floorDrop: 90, lod: 3 };
+            // LOD 3 — step 14.4, dim 3 (64× weniger Cells als LOD0). Fernster Ring. span 29·14.4 = 417.6.
+            return { dim: 3, step: 14.4, span: 43.2, ringRadius, dimY: 29, floorDrop: 135, lod: 3 };
         }
         if (lod >= 2) {
-            // LOD 2 — step 7.2, dim 6 (16× weniger Cells als LOD0).
-            return { dim: 6, step: 7.2, span: 43.2, ringRadius, dimY: 50, floorDrop: 90, lod: 2 };
+            // LOD 2 — step 7.2, dim 6 (16× weniger Cells als LOD0). span 58·7.2 = 417.6.
+            return { dim: 6, step: 7.2, span: 43.2, ringRadius, dimY: 58, floorDrop: 135, lod: 2 };
         }
         if (lod >= 1) {
-            // LOD 1 — Half-Resolution (8× weniger Cells). dimY 68→100 (Welle F:
-            // gewaltige Berge — die Hülle wuchs, der Band-Skip hält die Kosten).
-            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 100, floorDrop: 90, lod: 1 };
+            // LOD 1 — Half-Resolution (8× weniger Cells). span 116·3.6 = 417.6.
+            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 116, floorDrop: 135, lod: 1 };
         }
-        // LOD 0 — Full-Resolution. Welle F: dimY 136→200 (Decke base+270 m, für
-        // den uncapped cont0-Gipfel ~+235 m); der Band-Skip (`_voxelSampleDensity
-        // Grid`) sampelt NUR die Ebenen um die Oberfläche → trotz höherer Hülle
-        // billiger als zuvor. Vertikal-Span 200·1.8 = 100·3.6 = 360 m (LOD-invariant).
-        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 200, floorDrop: 90, lod: 0 };
+        // LOD 0 — Full-Resolution. T8: dimY 200→232, floorDrop 90→135 → Band base−135 .. base+282.6.
+        // Der Band-Skip (`_voxelSampleDensityGrid`) sampelt NUR die Ebenen um die Oberfläche → die höhere
+        // Hülle kostet fast nichts in Compute (nur die Array-Allokation). Vertikal-Span 232·1.8 = 116·3.6 =
+        // 58·7.2 = 29·14.4 = 417.6 m (LOD-invariant — die Wasser-Zellen/Cross-Chunk-Logik bleiben ausgerichtet).
+        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 232, floorDrop: 135, lod: 0 };
     }
 
     // ===== DIE DETAIL-KASKADE (V17.114, U1) — die EINE Distanz-Quelle ========
@@ -50649,7 +50696,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.84.0";
+AnazhRealm.VERSION = "18.85.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

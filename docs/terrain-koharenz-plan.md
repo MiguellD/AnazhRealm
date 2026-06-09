@@ -592,6 +592,25 @@ Profis gelöst haben. **GEMESSEN (`scripts/diag-terrain-issues.cjs`), nicht gera
   Becken); die Naht teilt den Vertex (V18.22/.28 bestätigen). **Measure-first:** ein `diag-lake-river-seam` findet
   Becken, deren Flood-Füllung < ihr `L` ist (leer) + Chunkgrenzen, wo `L` vertikal springt.
 
+### GEBAUT + GEMESSEN (09.06. — „T7+T8 in einem", Schöpfer-Wahl)
+
+**T8 + T7a + T7b-ii GEBAUT, Worker-gespiegelt, alle drei Mess-Achsen grün:**
+- **T8 (das weite Band)** `_voxelChunkConfig` (main) + `voxelChunkConfig` (worker): floorDrop 90→135, dimY 200→232
+  (LOD1/2/3: 116/58/29), span 360→417.6 m, Band base−135..+282.6. Der Mountain-Cap (225) fiel → Sicherheits-Backstop
+  255 (un-gecappt, GEMESSEN Gipfel +247); der Tiefsee-Abgrund sanft geklammert (Asymptote base−120, unsichtbar).
+- **T7a (slope-gated smooth terrace)** `_terrainMacroSurfaceY` + worker: Flatness-Gate aus dem cont0+tect-Gradienten +
+  smootherstep-Stufen → Tafelberge ohne Treppe auf den Flanken.
+- **T7b-ii (Aquifer-Gate)** `_terrainBaseDensityAt` + worker: unter dem Meeresspiegel Höhlen-Decke −24 m + kein canyonOpen.
+
+**Messung:** `diag-terrain-issues` Boden-/Decken-Durchbruch 0 (war 10) · Mesa-Steilkanten 0 % (war 5.2 %) · Meer-Abfluss 0
+(war 6 %) · `diag-t6-determinism` 0/6885 Worker↔Main-Mismatches · `diag-terrain-drama` Relief 88–233 m / Canyons 83 m /
+Höhlen 19.4 % (Drama überlebt) · Playtest `Alle Invarianten OK`. **LEHRE: der Band lebt in ZWEI Config-Mirrors (main +
+worker) — beim Ändern BEIDE + die Config-Test-Baselines (GEMESSEN: der Worker baute 115200-Zellen [alt] gegen Main
+133632 [neu] → 10 Determinismus-Tests rot, bis der Worker-Mirror nachzog).**
+
+**OFFEN (T7c + T7d — Wasser-RENDER, der Schöpfer-Browser):** der river-edit-Heal + der lake/river-Naht-Spiegel sind die
+burnte Wasser-Zone → Browser-Reproduktion mit dem Schöpfer-Auge (kein Blind-Patch, die Wasser-Render-Disziplin).
+
 ### Die Disziplin (T7) + die OFFENE Vision (ehrlich)
 1. Jede Heilung **Worker-gespiegelt** (Determinismus heilig, V9.42-b grün), **repräsentativ gemessen**
    (`diag-terrain-issues` → alle vier Ampeln grün), **browser-validiert** (das FEEL ist das Schöpfer-Auge).

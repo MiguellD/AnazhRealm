@@ -155,16 +155,18 @@ const server = http.createServer((req, res) => {
                 const sy = r._terrainMacroSurfaceY(gx, gz);
                 if (sy >= waterLevel - 1) continue; // kein Ozean hier
                 oceanCols++;
-                // Meeresboden = höchste solide Zelle ab waterLevel abwärts.
+                // Meeresboden = höchste solide Zelle ab waterLevel abwärts. Tief scannen (bis sy-30): ein
+                // rauer Meeresboden kann real bis ~sy-12 unter die Makro-Surface tauchen — das ist KEIN Loch
+                // (der Boden ist da, nur tiefer), erst gar-kein-Boden bis sy-30 wäre ein echtes Leck.
                 let floorY = null;
-                for (let y = waterLevel; y >= sy - 4; y -= 0.9) {
+                for (let y = waterLevel; y >= sy - 30; y -= 0.9) {
                     if (r._terrainBaseDensityAt(gx, y, gz) > 0) {
                         floorY = y;
                         break;
                     }
                 }
                 if (floorY === null) {
-                    // gar kein Boden bis sy-4 → ein echtes Loch (Wasser fällt durch).
+                    // gar kein Boden bis sy-30 → ein echtes Loch (Wasser fällt durch).
                     oceanHoles++;
                     continue;
                 }

@@ -18293,7 +18293,7 @@ async function checkBandVoxelTerrainCore(ctx) {
 
             // Welle E (E1/E2) — die LOD-Pyramide. Der Warmup läuft bei Ring 4 →
             // er erreicht LOD2/LOD3 (r≥9) NIE; darum hier explizit prüfen:
-            // (a) Config LOD-invariant (dim·step=43.2, dimY·step=360),
+            // (a) Config LOD-invariant (dim·step=43.2, dimY·step=417.6 seit T8 — das weite Band),
             // (b) Zuweisung additiv (r≤8 wie alt: r2-8→LOD1; neu r9-10→2, r≥11→3),
             // (c) ein LOD2- + LOD3-Chunk meshet ohne Crash (dim 6/3 ist sehr grob —
             //     der Surface-Nets-Mesher + pad/crop muss es tragen).
@@ -18302,10 +18302,10 @@ async function checkBandVoxelTerrainCore(ctx) {
             out.lodPyramidConfig =
                 cL2.dim === 6 &&
                 Math.abs(cL2.dim * cL2.step - 43.2) < 1e-6 &&
-                Math.abs(cL2.dimY * cL2.step - 360) < 1e-6 &&
+                Math.abs(cL2.dimY * cL2.step - 417.6) < 1e-6 &&
                 cL3.dim === 3 &&
                 Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
-                Math.abs(cL3.dimY * cL3.step - 360) < 1e-6;
+                Math.abs(cL3.dimY * cL3.step - 417.6) < 1e-6;
             const lf = (rr) => r._voxelChunkLodFor(rr, 0, 0, 0);
             out.lodPyramidBands =
                 lf(0) === 0 &&
@@ -18409,7 +18409,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.voxelSkirt
         );
         check(
-            "Welle E (E1): die LOD-Pyramide-Config ist LOD-invariant (LOD2 dim6/step7.2, LOD3 dim3/step14.4; span 43.2 m / 360 m)",
+            "Welle E (E1): die LOD-Pyramide-Config ist LOD-invariant (LOD2 dim6/step7.2, LOD3 dim3/step14.4; span 43.2 m / 417.6 m)",
             voxelP2bResults.lodPyramidConfig
         );
         check(
@@ -20869,15 +20869,15 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         return;
     }
     check(
-        "Welle F: LOD 0 Config (dim=24, step=1.8, dimY=200 — gewaltige Berge, Band-Skip)",
-        res.lod0Dim === 24 && Math.abs(res.lod0Step - 1.8) < 0.001 && res.lod0DimY === 200
+        "Welle F / T8: LOD 0 Config (dim=24, step=1.8, dimY=232 — das weite Band, Band-Skip)",
+        res.lod0Dim === 24 && Math.abs(res.lod0Step - 1.8) < 0.001 && res.lod0DimY === 232
     );
     check(
-        "Welle F: LOD 1 Config (dim=12, step=3.6, dimY=100) — Vertikal-Span 360 m LOD-invariant",
-        res.lod1Dim === 12 && Math.abs(res.lod1Step - 3.6) < 0.001 && res.lod1DimY === 100
+        "Welle F / T8: LOD 1 Config (dim=12, step=3.6, dimY=116) — Vertikal-Span 417.6 m LOD-invariant",
+        res.lod1Dim === 12 && Math.abs(res.lod1Step - 3.6) < 0.001 && res.lod1DimY === 116
     );
     check("Welle Perf-3.b V9.88: span invariant über LOD (43.2 m, Chunks world-aligned)", res.spanInvariant);
-    check("Welle Perf-3.b V9.88 / V14.6: vertikaler Range invariant (dimY·step = 244.8 m)", res.verticalRangeInvariant);
+    check("Welle Perf-3.b V9.88 / T8: vertikaler Range invariant (dimY·step = 417.6 m)", res.verticalRangeInvariant);
     check(
         "Welle Perf-3.b V9.88: LOD 1 hat 8× weniger Cells als LOD 0",
         res.lod1CellsLess && Math.abs(res.cellsRatio - 8) < 0.01,
@@ -22235,8 +22235,8 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const cfg0 = r._voxelChunkConfig(0);
-        out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // V14.6: 24·24·136 = 78336
-        // Empirisch: alle Chunks mit waterCells haben gleiche Länge (78336)
+        out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // T8: 24·24·232 = 133632
+        // Empirisch: alle Chunks mit waterCells haben gleiche Länge (133632)
         // egal welcher Terrain-LOD.
         let totalWithCells = 0;
         let lod0WithCells = 0;
@@ -22273,7 +22273,7 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         return;
     }
     check(
-        "Welle V9.93: Wasser-Cells alle gleich-lang (LOD 0 = 78336, V14.6) — naht-frei per Konstruktion",
+        "Welle V9.93: Wasser-Cells alle gleich-lang (LOD 0 = 133632, T8) — naht-frei per Konstruktion",
         res.allCellsAreLod0,
         `expected=${res.expectedCellLen}, firstMismatch=${res.firstMismatchLen}, total=${res.totalWithCells}`
     );

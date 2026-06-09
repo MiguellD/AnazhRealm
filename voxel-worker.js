@@ -204,7 +204,11 @@ function terrainDensityAt(x, y, z) {
     // T5 (G3, mirror) — die CANYON-MASKE öffnet die Höhlen-Decke selektiv → Canyons zur Oberfläche.
     // Bit-identisch zur Main (Determinismus-/Naht-Wand): n.noise2D, freq 0.0065, Offset 41.7/-18.3.
     const canyonOpen = clamp01((state.noise.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18);
-    const caveCeil = clamp01((surf - 16 + canyonOpen * 24 - y) / 8);
+    // T7b-ii (mirror) — Aquifer-Gate: unter dem Meeresspiegel hält die Höhlen-Decke −24 m Abstand zum Boden
+    // + kein canyonOpen → kein Meeres-Abfluss. Bit-identisch zur Main.
+    const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
+    const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+    const caveCeil = clamp01((surf + ceilOffset - y) / 8);
     const caveEnv = caveFloor * caveCeil;
     if (caveEnv > 0) {
         const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
@@ -300,18 +304,33 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
         const cFloor = base - 65;
         if (withoutTarn < cFloor) withoutTarn = cFloor;
     }
-    // T6b (mirror) — KRASSE KONTRASTE (Mesa-Terracing, ~26-m-Stufen in sparse λ~2900-m-Regionen).
+    // T7a (mirror) — slope-gated SMOOTH terrace (Tafelberge ohne Treppe auf den Flanken). Bit-identisch zur Main.
     const mesaRegion = Math.max(0, Math.min(1, (n.noise2D(wx * 0.00034 + 13.7, wz * 0.00034 + 47.3) - 0.45) / 0.13));
     if (mesaRegion > 0.001) {
-        const stepH = 26;
-        withoutTarn += (Math.round(withoutTarn / stepH) * stepH - withoutTarn) * mesaRegion;
+        const sm = (sx, sz) => {
+            const cB = n.noise2D(sx * 0.00014 + 7.2, sz * 0.00014 + 3.8);
+            return Math.max(0, cB) * 130 + cB * 15 + n.noise2D(sx * 0.00088, sz * 0.00088) * 45;
+        };
+        const gd = 7;
+        const dhx = sm(wx + gd, wz) - sm(wx - gd, wz);
+        const dhz = sm(wx, wz + gd) - sm(wx, wz - gd);
+        const slope = Math.sqrt(dhx * dhx + dhz * dhz) / (2 * gd);
+        let flat = 1 - Math.min(1, slope / 0.35);
+        flat = flat * flat * (3 - 2 * flat);
+        const strength = mesaRegion * flat;
+        if (strength > 0.001) {
+            const stepH = 26;
+            const f = withoutTarn / stepH;
+            const fl = Math.floor(f);
+            const t = f - fl;
+            const shaped = t * t * t * (t * (t * 6 - 15) + 10);
+            const terraced = (fl + shaped) * stepH;
+            withoutTarn += (terraced - withoutTarn) * strength;
+        }
     }
-    // V14.6 (mirror): sanftes Decken-Limit — cont0 hebt die Surface fern vom
-    // Ursprung bis ~235 m über die Voxel-Decke → Löcher. tanh-Clamp komprimiert
-    // hohe Surfaces (>110 m) asymptotisch gegen 136 m. MUSS bit-identisch zum
-    // Main-Thread `_terrainMacroSurfaceY` sein (Naht-/Determinismus-Schutz).
-    // Welle F (mirror): Deckel 110/136 → 225/~245 (Hülle wuchs auf Decke +270).
-    if (withoutTarn > 225) withoutTarn = 225 + 20 * Math.tanh((withoutTarn - 225) / 20);
+    // T8 (mirror) — der Mountain-Cap FÄLLT (Berge un-gecappt, Decke +282.6); nur ein hoher Sicherheits-
+    // Backstop bei 255 (Asymptote ~267) bleibt. Bit-identisch zum Main `_terrainMacroSurfaceY`.
+    if (withoutTarn > 255) withoutTarn = 255 + 12 * Math.tanh((withoutTarn - 255) / 12);
     const waterRefSub = Number.isFinite(state.waterLevel) ? state.waterLevel : base + 4;
     const depthBelow = waterRefSub - withoutTarn;
     let withoutTarnFinal = withoutTarn;
@@ -325,6 +344,11 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
         const subC = n.noise2D(x * 0.062 - 17, z * 0.062 + 8) * 1.0;
         withoutTarnFinal += slopeDrop + (subA + subRidge + subC) * subMask;
     }
+    // T8 (mirror) — der unsichtbare Tiefsee-Abgrund sanft geklammert (Asymptote base−120, Band-Boden −135).
+    // Bit-identisch zum Main `_terrainMacroSurfaceY`.
+    const abyssClamp = base - 112;
+    if (withoutTarnFinal < abyssClamp)
+        withoutTarnFinal = abyssClamp - 8 * Math.tanh((abyssClamp - withoutTarnFinal) / 8);
     const td = tarnDeltaAt(x, z);
     if (td === 0) return withoutTarnFinal;
     const waterRef = Number.isFinite(state.waterLevel) ? state.waterLevel : base + 4;
@@ -454,15 +478,14 @@ function clamp01(v) {
 const CELL_STATE = { AIR: 0, WATER: 1, SOLID: 2 };
 
 function voxelChunkConfig(lod) {
-    // Welle F (mirror): dimY 68→100 / 136→200 — gewaltige Berge (Decke base+270),
-    // der Band-Skip in computeDensityGrid hält die Kosten. Vertikal-Span 360 m.
-    // Welle E (E1, mirror): die LOD-PYRAMIDE — LOD2/LOD3 für die fernen
-    // Ringe (dim·step = 43.2 m horizontal, dimY·step = 360 m vertikal, beide
-    // LOD-invariant). MUSS bit-identisch zum Main-`_voxelChunkConfig` bleiben.
-    if ((lod | 0) >= 3) return { dim: 3, step: 14.4, span: 43.2, dimY: 25, floorDrop: 90, lod: 3 };
-    if ((lod | 0) >= 2) return { dim: 6, step: 7.2, span: 43.2, dimY: 50, floorDrop: 90, lod: 2 };
-    if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 100, floorDrop: 90, lod: 1 };
-    return { dim: 24, step: 1.8, span: 43.2, dimY: 200, floorDrop: 90, lod: 0 };
+    // T8 (mirror) — DAS WEITE BAND: floorDrop 90→135, dimY 200→232 (Decke base+282.6, Tiefsee-Abgrund
+    // gefasst). Vertikal-Span 232·1.8 = 116·3.6 = 58·7.2 = 29·14.4 = 417.6 m (LOD-invariant). Der Band-Skip
+    // in computeDensityGrid hält die Kosten. MUSS bit-identisch zum Main-`_voxelChunkConfig` bleiben
+    // (Determinismus-Wand: Worker-Mesh/Cells == Main).
+    if ((lod | 0) >= 3) return { dim: 3, step: 14.4, span: 43.2, dimY: 29, floorDrop: 135, lod: 3 };
+    if ((lod | 0) >= 2) return { dim: 6, step: 7.2, span: 43.2, dimY: 58, floorDrop: 135, lod: 2 };
+    if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 116, floorDrop: 135, lod: 1 };
+    return { dim: 24, step: 1.8, span: 43.2, dimY: 232, floorDrop: 135, lod: 0 };
 }
 
 // Lazy-Init der 5 worldField-Noises (separate Seeds für unkorrelierte Kanäle).
