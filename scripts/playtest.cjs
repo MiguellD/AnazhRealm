@@ -20537,6 +20537,60 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 r.state.worldMeta.voxelEdits.pop();
             }
         }
+        // T1 (Terrain-Kohärenz-Plan §4 — zeitliche Kohärenz): der Edit-FOOTPRINT heilt
+        // SYNCHRON im Edit-Call (kein async-Fenster), die SKIRT-Nachbarn bleiben async
+        // (footprint-only sync → kein Edit-Spike). GEMESSEN (`diag-chunk-seam`): vor T1
+        // heilte der Grenz-Nachbar erst @Frame 3 → ~2 Frames sichtbare Abbau-Naht.
+        // Probe: ein gestreamter Chunk, carve in seiner Mitte (r=3 → Footprint = nur er),
+        // dann MUSS sein Mesh neu sein OHNE `_drainDirtyVoxelChunks`; das Dirty-Set trägt
+        // danach noch die (ungesyncten) Skirt-Nachbarn.
+        out.t1FootprintSync = "no-streamed-chunk";
+        out.t1SkirtStaysAsync = false;
+        {
+            let t1Cx = null,
+                t1Cz = null,
+                t1Before = null,
+                t1My = null;
+            // den gestreamten Chunk am nächsten zum Ursprung (interior → 8 Skirt-Nachbarn da)
+            let bestD = Infinity;
+            for (const [key, e] of r.state.voxelChunks) {
+                if (!e || e.empty || !e.mesh || !e.mesh.geometry) continue;
+                const [kx, kz] = key.split(",").map(Number);
+                const mx = kx * span + span / 2,
+                    mz = kz * span + span / 2;
+                const my = r._voxelSurfaceY ? r._voxelSurfaceY(mx, mz) : null;
+                if (!Number.isFinite(my)) continue;
+                const d = Math.abs(kx) + Math.abs(kz);
+                if (d < bestD) {
+                    bestD = d;
+                    t1Cx = kx;
+                    t1Cz = kz;
+                    t1Before = e.mesh.uuid;
+                    t1My = my;
+                }
+            }
+            if (t1Cx !== null) {
+                const mx = t1Cx * span + span / 2,
+                    mz = t1Cz * span + span / 2;
+                if (r.state.dirtyVoxelChunks) r.state.dirtyVoxelChunks.clear();
+                r._addVoxelEdit(mx, t1My, mz, 3, "carve"); // KEIN Drain — T1 muss in-edit heilen
+                const afterEntry = r.state.voxelChunks.get(`${t1Cx},${t1Cz}`);
+                const afterUuid = afterEntry && afterEntry.mesh ? afterEntry.mesh.uuid : null;
+                out.t1FootprintSync = afterUuid && afterUuid !== t1Before ? "synced" : "stale";
+                // die Skirt-Nachbarn bleiben im Dirty-Set (nicht gesynct = kein Spike)
+                out.t1SkirtStaysAsync = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > 0);
+                // Cleanup: den Test-Edit zurücknehmen + die Skirt drainen
+                if (r.state.worldMeta && Array.isArray(r.state.worldMeta.voxelEdits))
+                    r.state.worldMeta.voxelEdits.pop();
+                if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+            }
+        }
+        // T1 Source-Probes (V9.56-i): der Edit-Pfad ruft den Footprint-Sync, der forceSync nutzt.
+        out.t1AddEditCallsSync = /_syncRebuildEditFootprint/.test(r._addVoxelEdit.toString());
+        out.t1SyncUsesForceSync =
+            typeof r._syncRebuildEditFootprint === "function" &&
+            /forceSync:\s*true/.test(r._syncRebuildEditFootprint.toString());
+
         // 6) Source-Probes: spawnArchitecture + removeArchitecture rufen
         // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
         out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.spawnArchitecture.toString());
@@ -20601,6 +20655,23 @@ async function checkBandWelleC3CellularReaction(ctx) {
     }
     check("Welle C.3 V9.74: spawnArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.spawnTriggersRemesh);
     check("Welle C.3 V9.74: removeArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.removeTriggersRemesh);
+    // T1 (Terrain-Kohärenz-Plan §4): die zeitliche Naht — der Edit-Footprint heilt synchron.
+    if (res.t1FootprintSync !== "no-streamed-chunk") {
+        check(
+            "T1 (Terrain-Kohärenz): der Edit-FOOTPRINT heilt SYNCHRON im Edit-Call (kein async-Fenster)",
+            res.t1FootprintSync === "synced",
+            `footprint=${res.t1FootprintSync}`
+        );
+        check(
+            "T1 (Terrain-Kohärenz): die SKIRT-Nachbarn bleiben async (footprint-only sync → kein Edit-Spike)",
+            res.t1SkirtStaysAsync
+        );
+    }
+    check("T1 (Terrain-Kohärenz): _addVoxelEdit ruft _syncRebuildEditFootprint (Source-Probe)", res.t1AddEditCallsSync);
+    check(
+        "T1 (Terrain-Kohärenz): _syncRebuildEditFootprint baut den Footprint forceSync (Source-Probe)",
+        res.t1SyncUsesForceSync
+    );
 }
 
 // V9.88 (Welle Perf-3.b — Distance-LOD): empirischer Beweis dass ferne
@@ -24068,7 +24139,8 @@ async function checkBandVoxelP3AndInventory(ctx) {
                 out.ichZonesSideBySide = Math.abs(cb.top - ib.top) < 24 && Math.abs(ib.top - rb.top) < 24;
                 // „Was du trägst" liegt UNTER dem Viewer (in der Selbst-Insel).
                 out.ichWornUnderViewer =
-                    !!(canvas && worn) && worn.getBoundingClientRect().top >= canvas.getBoundingClientRect().bottom - 24;
+                    !!(canvas && worn) &&
+                    worn.getBoundingClientRect().top >= canvas.getBoundingClientRect().bottom - 24;
                 // die STATSBAR liegt VOLLBREIT UNTER den Spalten (der Schöpfer-Kern: unten, nicht links gequetscht).
                 out.ichStatsbarBelowCols = !!(
                     statsbar &&
@@ -29372,7 +29444,10 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.39: Rollen-Chip leuchtet in der Rollen-Farbe", v839Results.roleChipGlow);
         check("V8.39: Werkstatt-Stats-Panel zeigt eine Qualität-Zeile", v839Results.qualityRow);
         check("V8.39: Bauplan-Liste-Zeile leuchtet in der Rollen-Farbe", v839Results.listRowGlow);
-        check("V18.66 Ich-J2: der Equip-Hinweis nennt die Wechsel-Wege (Hand/Hotbar/Rezeptbuch) + Rüstung", v839Results.equipHint);
+        check(
+            "V18.66 Ich-J2: der Equip-Hinweis nennt die Wechsel-Wege (Hand/Hotbar/Rezeptbuch) + Rüstung",
+            v839Results.equipHint
+        );
     } else {
         check("V8.39: Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
     }
@@ -30976,7 +31051,9 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             r._setFeedRating("recipe:" + aRecipe.name, 5);
             r.state.feedSort = "rating";
             r.renderLibraryUI();
-            const firstBar = document.querySelector("#library-list .library-card .feed-rating, #library-list .feed-card .feed-rating");
+            const firstBar = document.querySelector(
+                "#library-list .library-card .feed-rating, #library-list .feed-card .feed-rating"
+            );
             out.feedSortWorks = !!firstBar && Number(firstBar.dataset.rating) === 5;
             r._setFeedRating("recipe:" + aRecipe.name, 5); // Toggle zurück → 0 (sauber)
             r.state.feedSort = "neueste";
@@ -31093,14 +31170,32 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
         check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
         check("Bib-A0: _worldProfile existiert", w14Results.worldProfileExists);
-        check("Bib-A0: _worldProfile bündelt den Welt-Vektor (id/label/dsl/trust/searchText)", w14Results.worldProfileBundles);
-        check("Bib-A: die Karte ist eine Welt-Spec-Card (.spec-header + Trust-Siegel + Betreten-Akt)", w14Results.cardIsSpecCard);
-        check("V18.77: die Karte ist Profi-leicht — EINE Meta-Zeile (DSL), keine Datenblatt-Spalten-Labels", w14Results.cardLightened);
-        check("Feed: 3 Spalten — 'Diese Welt' links | Feed Mitte | Schöpfen+Kuratieren rechts", w14Results.feedThreeCol);
+        check(
+            "Bib-A0: _worldProfile bündelt den Welt-Vektor (id/label/dsl/trust/searchText)",
+            w14Results.worldProfileBundles
+        );
+        check(
+            "Bib-A: die Karte ist eine Welt-Spec-Card (.spec-header + Trust-Siegel + Betreten-Akt)",
+            w14Results.cardIsSpecCard
+        );
+        check(
+            "V18.77: die Karte ist Profi-leicht — EINE Meta-Zeile (DSL), keine Datenblatt-Spalten-Labels",
+            w14Results.cardLightened
+        );
+        check(
+            "Feed: 3 Spalten — 'Diese Welt' links | Feed Mitte | Schöpfen+Kuratieren rechts",
+            w14Results.feedThreeCol
+        );
         check("Feed: das #library-list ist der Feed-Strom in der Mitte", w14Results.feedCenterHoldsStream);
-        check("Feed: die Tabs (Für dich | Aus dem Mesh) im Hauptthread, der Katalog im Mesh-Panel (V18.73)", w14Results.feedTabs);
+        check(
+            "Feed: die Tabs (Für dich | Aus dem Mesh) im Hauptthread, der Katalog im Mesh-Panel (V18.73)",
+            w14Results.feedTabs
+        );
         check("Feed: das Tab-Schalten WIRKT — Für dich ↔ Aus dem Mesh (V18.73)", w14Results.feedTabsWork);
-        check("Feed: Schöpfen & Andocken liegt RECHTS (Übersetzen+Andocken + 3er-Block Neue/Verschmelzen/Empfangen)", w14Results.schoepfenRight);
+        check(
+            "Feed: Schöpfen & Andocken liegt RECHTS (Übersetzen+Andocken + 3er-Block Neue/Verschmelzen/Empfangen)",
+            w14Results.schoepfenRight
+        );
         check(
             "Feed: das 'Diese Welt'-Eiland blüht links (Identität + Stammbaum + Tagebuch, V18.71)",
             w14Results.feedSelfIsland
@@ -31121,9 +31216,15 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
         check("Feed: die Sortier-Chips (Neueste | Bewertung) sind da (V18.74)", w14Results.feedSortChips);
         check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
-        check("Feed: der geteilte 3D-Vorschau-Bereich (Canvas + Methoden) ist da (V18.75)", w14Results.feedPreviewPanel);
+        check(
+            "Feed: der geteilte 3D-Vorschau-Bereich (Canvas + Methoden) ist da (V18.75)",
+            w14Results.feedPreviewPanel
+        );
         check("Feed: Klick auf eine Karte fokussiert sie für die Vorschau (V18.75)", w14Results.feedPreviewFocus);
-        check("Drawer: box-sizing:border-box — der Drawer passt in den Viewport (kein Überlauf, V18.76)", w14Results.drawerBoxSizing);
+        check(
+            "Drawer: box-sizing:border-box — der Drawer passt in den Viewport (kein Überlauf, V18.76)",
+            w14Results.drawerBoxSizing
+        );
         check("Omnibox: `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, V18.76)", w14Results.omniboxWelt);
         check("Feed: Bestbewertet spiegelt eine Wertung zurück", w14Results.feedTrends);
         check("Bib-D: die Suche TREIBT den Feed (kein toter Knopf, V18.65)", w14Results.searchDrivesGrid);

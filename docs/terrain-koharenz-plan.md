@@ -246,14 +246,21 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
 - **Sign-off (OFFEN, Schöpfer-Auge):** welches Symptom stört im Browser mehr (die ~2-Frame-Abbau-Naht
   oder die Cross-LOD-LOD-Naht beim Heranstreamen) → bestätigt T1-zuerst oder priorisiert um.
 
-### T1 — Zeitliche Kohärenz: der synchrone Nachbar-Heal (Risiko: niedrig)
+### T1 — Zeitliche Kohärenz: der synchrone Footprint-Heal (Risiko: niedrig) — **GEBAUT ✓**
 - **Ziel.** Beim Abbauen heilt die Naht im SELBEN Frame — kein stale Nachbar mehr.
-- **Mechanik.** `_remeshVoxelChunksAround`/`_tickDirtyVoxelChunks`: die *berührten* Nachbarn (footprint+1)
-  synchron im Edit-Frame bauen (sie sind nah → das FPS-Budget trägt es; ferne bleiben async). Der
-  Wasser-Iso-Heal der berührten Nachbarn ebenso sync (statt `_tickPendingWaterIso`-Queue).
-- **Schnittstellen.** `_remeshVoxelChunksAround` :24612, `_tickDirtyVoxelChunks` :24638, `_finalizeVoxelChunkBuild` :20976.
-- **Risiko.** Edit-Cluster-Spike (mehrere Chunks sync). Mitigation: nur die *direkt berührten* (≤9), gemessen.
-- **Sign-off.** Beim Abbauen an einer Chunk-Grenze: keine sichtbare Trennung mehr (Browser).
+- **GEBAUT (09.06.2026):** `_addVoxelEdit` ruft nach `_remeshVoxelChunksAround` ein neues
+  `_syncRebuildEditFootprint(x,z,r)` — es baut die **FOOTPRINT-Chunks** (skirt=0 = die Chunks, die die
+  Schnitz-/Aufschütt-Kugel wirklich überdeckt) SYNCHRON im Edit-Frame (forceSync → dispose-before-build,
+  Wasser-Iso sync via `_finalizeVoxelChunkBuild(syncWater=true)`, BVH sync → kein Durchfall-Gap). Die
+  **SKIRT-Nachbarn bleiben im Dirty-Set (async)** — ihre Oberfläche ist unverändert (nur das V9.86-Density-
+  Pad sah die Kugel-Kante, sub-cell) → kein Edit-Spike (die V9.40-c-Lehre gewahrt: nur ≤Footprint sync).
+- **VERIFIZIERT:** `diag-chunk-seam` C-Messung — der Grenz-Carve heilt jetzt Spieler-Chunk UND Grenz-Nachbar
+  **beide IM Edit-Call (Frame 0)** (vorher: Nachbar @Frame 3 = ~2 Frames Naht); 10 Skirt-Chunks async,
+  imperzeptibel. Playtest: 4 neue Invarianten grün (footprint=synced · Skirt async · 2 Source-Probes).
+- **Schnittstellen (real):** `_addVoxelEdit` :24520, neu `_syncRebuildEditFootprint` (nach `_remeshVoxelChunksAround`).
+- **Risiko (gemessen mild).** Footprint = 2–4 Chunks à ~2 ms (V12.0-perf.b Base-Density-Cache) ≈ sub-Frame;
+  der Skirt bleibt async → kein Cluster-Spike.
+- **Sign-off (OFFEN, Schöpfer-Auge):** beim Abbauen an einer Chunk-Grenze — keine sichtbare Trennung mehr.
 
 ### T2 — Räumliche Kohärenz: Stable-LOD + Geomorph (Risiko: mittel · pixel-blind)
 - **Ziel.** Die LOD-Naht verschwindet strukturell (E4) → das Wasser darf seinen LOD0-Zwang ablegen (U2).
@@ -303,7 +310,7 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
 | Phase | Headless-Diag (Wand) | Determinismus | Browser-Sign-off (Pixel) |
 |---|---|---|---|
 | T0 | `diag-chunk-seam` (GEBAUT, GEMESSEN) | — | **OFFEN**: welche Naht stört im Auge mehr |
-| T1 | Nachbar im Edit-Frame gebaut (Frame-Count) | — | keine Abbau-Naht |
+| T1 | `diag-chunk-seam` C (footprint in-edit) + 4 Playtest-Inv. **GRÜN** | — | **OFFEN**: keine Abbau-Naht im Auge |
 | T2 | `diag-water-lod-seam` (Vertex-Abstand) | LOD derived | keine LOD-Naht, kein Pop |
 | T3 | `diag-mesh-sharpness` (Kanten-Winkel) + `checkBandWellePerf3cWorkerFoundation` | **bit-identisch** | kantige Felsen, FPS |
 | T4 | `diag-water-flow` + `diag-water-fill` | Seed-deterministisch ODER reaktiv | Wasser fließt in den Kanal |

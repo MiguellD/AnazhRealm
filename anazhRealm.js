@@ -24518,6 +24518,17 @@ class AnazhRealm {
             for (let fcz = fcz0; fcz <= fcz1; fcz++) this.state.grassDirtyChunks.add(`${fcx},${fcz}`);
         }
         this._remeshVoxelChunksAround(x, z, radius);
+        // T1 (Terrain-Kohärenz-Plan §4 — zeitliche Naht): die direkt berührten FOOTPRINT-
+        // Chunks SYNCHRON im Edit-Frame heilen, statt sie über `_tickDirtyVoxelChunks`
+        // (1/Frame) zu verteilen. T0 GEMESSEN (`diag-chunk-seam`): ein Grenz-Carve ließ den
+        // Spieler-Chunk @Frame 1, den Grenz-Nachbarn erst @Frame 3 heilen → ~2 Frames sichtbare
+        // Abbau-Naht (halber Krater hier, solider Boden dort). Der Carve verändert die
+        // Oberfläche NUR im Footprint (skirt=0 = die Chunks, die die Schnitz-Kugel wirklich
+        // berührt) → diese gemeinsam sync = der ganze Krater erscheint in EINEM Frame. Die
+        // SKIRT-Nachbarn (V9.86-Pad-Überlapp) behalten ihre unveränderte Oberfläche (nur das
+        // 1-Zell-Density-Pad sah die Kugel-Kante → sub-cell, imperzeptibel) → sie bleiben
+        // ASYNC (kein Edit-Cluster-Spike, die V9.40-c-Lehre gewahrt: nur ≤Footprint sync).
+        this._syncRebuildEditFootprint(x, z, radius);
         if (typeof this.saveState === "function") this.saveState();
         return true;
     }
@@ -24623,6 +24634,39 @@ class AnazhRealm {
                 if (this.state.voxelChunks.has(key)) {
                     this.state.dirtyVoxelChunks.add(key);
                 }
+            }
+        }
+    }
+
+    // T1 (Terrain-Kohärenz-Plan §4 — zeitliche Kohärenz): heilt die direkt vom Edit
+    // berührten FOOTPRINT-Chunks (skirt=0 = die Chunks, die die Schnitz-/Aufschütt-Kugel
+    // wirklich überdeckt) SYNCHRON im selben Frame, in dem der Edit passiert. Das schließt
+    // das von T0 gemessene async-Fenster (~2 Frames, in denen der Spieler-Chunk schon den
+    // halben Krater zeigt, der Grenz-Nachbar aber noch solide ist = die sichtbare Abbau-Naht).
+    // Der Build-Pfad ist derselbe wie `_drainDirtyVoxelChunks` (forceSync → dispose-before-
+    // build, kein Loch, Wasser-Iso sync via `_finalizeVoxelChunkBuild(syncWater=true)`, BVH
+    // sync → kein Durchfall-Gap, V17.28), nur auf die Footprint-Teilmenge beschränkt. Die
+    // SKIRT-Nachbarn bleiben im Dirty-Set (async über `_tickDirtyVoxelChunks`) — ihre Oberfläche
+    // ist unverändert (nur das V9.86-Density-Pad sah die Kugel-Kante, sub-cell) → kein Spike
+    // (die V9.40-c-„Ruckeln bei häufigen Edits"-Lehre gewahrt: nur ≤Footprint sync, nicht +Skirt).
+    // Der Footprint-Rebuild ist billig (~2 ms/Chunk via V12.0-perf.b Base-Density-Cache, die
+    // nahen Chunks sind gecacht) → 2–4 Chunks ≈ sub-Frame.
+    _syncRebuildEditFootprint(x, z, r) {
+        if (!this.state.voxelChunks || this.state.voxelChunks.size === 0) return;
+        if (!this.state.dirtyVoxelChunks) return;
+        const { span } = this._voxelChunkConfig();
+        const minCX = Math.floor((x - r) / span);
+        const maxCX = Math.floor((x + r) / span);
+        const minCZ = Math.floor((z - r) / span);
+        const maxCZ = Math.floor((z + r) / span);
+        for (let cx = minCX; cx <= maxCX; cx++) {
+            for (let cz = minCZ; cz <= maxCZ; cz++) {
+                const key = `${cx},${cz}`;
+                if (!this.state.voxelChunks.has(key)) continue;
+                // aus dem Dirty-Set nehmen (wir bauen ihn JETZT) + sync rebuilden. Bei Fail
+                // (OOM) re-markiert `_completeVoxelRebuild` ihn dirty → der async-Tick versucht's.
+                this.state.dirtyVoxelChunks.delete(key);
+                this._rebuildVoxelChunk(cx, cz, null, { forceSync: true });
             }
         }
     }

@@ -365,21 +365,38 @@ const server = http.createServer((req, res) => {
         }
         const cy0 = r._voxelSurfaceY(cx0, cz0);
 
-        const before = (key) => {
+        const uuidOf = (key) => {
             const e = s.voxelChunks.get(key);
             return e && e.mesh ? e.mesh.uuid : null;
         };
 
-        // sauberes Dirty-Set
-        if (s.dirtyVoxelChunks) s.dirtyVoxelChunks.clear();
-
-        // --- ASYNC-Lauf: Carve, dann 1 Chunk/Frame heilen, Heal-Frame pro Chunk zählen ---
-        r.carveVoxelSphere(cx0, cy0, cz0, 3.5);
-        const dirtyKeys = s.dirtyVoxelChunks ? [...s.dirtyVoxelChunks] : [];
+        // UUID-Snapshot einer 5×5-Region um den Spieler-Chunk VOR dem Carve → so trennen wir,
+        // welche Chunks WÄHREND des Carve-Calls heilen (T1 in-edit-sync = „Frame 0") von denen,
+        // die über `_tickDirtyVoxelChunks` async nachkommen (die Skirt-Nachbarn).
+        const region = [];
+        for (let cx = pcx - 2; cx <= pcx + 2; cx++)
+            for (let cz = pcz - 2; cz <= pcz + 2; cz++) {
+                const key = `${cx},${cz}`;
+                if (s.voxelChunks.has(key)) region.push(key);
+            }
         const beforeUuid = {};
-        for (const key of dirtyKeys) beforeUuid[key] = before(key);
+        for (const key of region) beforeUuid[key] = uuidOf(key);
         const nbKey = `${nb.cx},${nb.cz}`;
         const pKey = `${pcx},${pcz}`;
+
+        // sauberes Dirty-Set, dann Carve (der Edit-Call selbst heilt nach T1 den Footprint sync)
+        if (s.dirtyVoxelChunks) s.dirtyVoxelChunks.clear();
+        r.carveVoxelSphere(cx0, cy0, cz0, 3.5);
+
+        // T1-MASS: welche Chunks heilten IM Edit-Call (uuid schon geändert, BEVOR ein Tick lief)?
+        const inEdit = [];
+        for (const key of region) {
+            const u = uuidOf(key);
+            if (u && u !== beforeUuid[key]) inEdit.push(key);
+        }
+        const dirtyAfterCarve = s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0;
+
+        // die restlichen (Skirt) async über die Ticks heilen + Heal-Frame zählen
         const healFrame = {};
         let frames = 0;
         const MAXF = 120;
@@ -388,19 +405,18 @@ const server = http.createServer((req, res) => {
             try {
                 r._gameLoopTick(performance.now());
             } catch (_e) {}
-            for (const key of dirtyKeys) {
-                if (healFrame[key]) continue;
-                const e = s.voxelChunks.get(key);
-                const u = e && e.mesh ? e.mesh.uuid : null;
+            for (const key of region) {
+                if (healFrame[key] || inEdit.includes(key)) continue;
+                const u = uuidOf(key);
                 if (u && u !== beforeUuid[key]) healFrame[key] = frames;
             }
             await new Promise((res) => setTimeout(res, 0));
         }
-        const kNeighbor = healFrame[nbKey] || null;
-        const kPlayer = healFrame[pKey] || null;
-        const kFull = Object.values(healFrame).reduce((m, v) => Math.max(m, v), 0);
+        const nbInEdit = inEdit.includes(nbKey);
+        const pInEdit = inEdit.includes(pKey);
+        const asyncFrames = Object.values(healFrame).reduce((m, v) => Math.max(m, v), 0);
 
-        // --- SYNC-Lauf (T1-Ziel): zweiter Carve, dann EIN Drain → 0 Frames Stale ---
+        // --- SYNC-Drain-Referenz: ein Drain heilt jeden Rest in EINEM Schritt (die T1-Maschinerie) ---
         if (s.dirtyVoxelChunks) s.dirtyVoxelChunks.clear();
         const cz1 = dcx !== 0 ? (pcz + 0.5) * span : cz0; // leicht versetzt, frischer Edit
         r.carveVoxelSphere(cx0, cy0 + 0.2, cz1, 3.5);
@@ -409,14 +425,15 @@ const server = http.createServer((req, res) => {
         const dirtyAfterDrain = s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0;
 
         return {
-            player: `${pcx},${pcz}`,
+            player: pKey,
             neighbor: nbKey,
             carveAt: { x: +cx0.toFixed(1), y: +cy0.toFixed(1), z: +cz0.toFixed(1) },
-            dirtyCount: dirtyKeys.length,
-            kNeighbor,
-            kPlayer,
-            kFull,
-            framesToHealAll: frames,
+            inEditCount: inEdit.length,
+            inEdit: inEdit.slice().sort(),
+            nbInEdit,
+            pInEdit,
+            dirtyAfterCarve,
+            asyncFrames,
             healFrames: Object.fromEntries(Object.entries(healFrame).sort((a, b) => a[1] - b[1])),
             sync: { dirtyBeforeDrain, built, dirtyAfterDrain },
         };
@@ -472,48 +489,47 @@ const server = http.createServer((req, res) => {
         );
     }
 
-    console.log("── C · ZEITLICH (das async-Fenster beim Abbauen) ──");
+    console.log("── C · ZEITLICH (das Abbau-Fenster) — nach T1: heilt der Footprint IM Edit-Call? ──");
     if (temporal.err) {
         console.log(`   SKIP: ${temporal.err}\n`);
     } else {
         console.log(
             `   Carve an der Grenze Spieler-Chunk ${temporal.player} ↔ Nachbar ${temporal.neighbor}  @(${temporal.carveAt.x}, ${temporal.carveAt.y}, ${temporal.carveAt.z})`
         );
-        console.log(`   markierte dirty Chunks: ${temporal.dirtyCount}`);
         console.log(
-            `   Spieler-Chunk heilt @Frame ${temporal.kPlayer}   ·   GRENZ-NACHBAR heilt @Frame ${temporal.kNeighbor}   ·   alle geheilt @Frame ${temporal.kFull}`
+            `   IM EDIT-CALL synchron geheilt (T1): ${temporal.inEditCount} Chunk(s)  →  ${JSON.stringify(temporal.inEdit)}`
         );
         console.log(
-            `   → die Abbau-Naht (Spieler-Chunk neu, Nachbar alt) ist ${temporal.kNeighbor != null ? temporal.kNeighbor - (temporal.kPlayer || 1) : "?"} Frame(s) sichtbar (async, 1 Chunk/Frame).`
+            `   Spieler-Chunk in-edit: ${temporal.pInEdit ? "JA (Frame 0)" : "NEIN"}   ·   GRENZ-NACHBAR in-edit: ${temporal.nbInEdit ? "JA (Frame 0)" : "NEIN — async @Frame " + (temporal.healFrames[temporal.neighbor] || "?")}`
         );
-        console.log(`   Heal-Reihenfolge (Frame): ${JSON.stringify(temporal.healFrames)}`);
         console.log(
-            `   SYNC-Alternative (T1-Ziel): Carve → ${temporal.sync.dirtyBeforeDrain} dirty → EIN Drain baut ${temporal.sync.built} Chunks SYNCHRON → ${temporal.sync.dirtyAfterDrain} dirty übrig.`
+            `   verbleibend async (Skirt, Oberfläche unverändert): ${temporal.dirtyAfterCarve} dirty → über ${temporal.asyncFrames} Frame(s) (sub-cell, imperzeptibel)`
         );
-        console.log(`   → mit synchronem Nachbar-Heal: 0 Frames Stale (kein sichtbares Fenster).\n`);
+        const t1ok = temporal.pInEdit && temporal.nbInEdit;
+        console.log(
+            `   → ${t1ok ? "T1 WIRKT: Spieler-Chunk UND Grenz-Nachbar heilen im SELBEN Frame (der Carve) → KEINE sichtbare Abbau-Naht mehr (0 Frames stale)." : "T1 GREIFT NICHT vollständig: der Grenz-Nachbar heilt noch async — Footprint-Bereich prüfen."}`
+        );
+        console.log(
+            `   SYNC-Drain-Referenz (die T1-Maschinerie): Carve → ${temporal.sync.dirtyBeforeDrain} dirty → EIN Drain baut ${temporal.sync.built} SYNCHRON → ${temporal.sync.dirtyAfterDrain} übrig.\n`
+        );
     }
 
     // Empfehlung (die Zahlen führen, §6 „Miss zuerst")
-    console.log("── EMPFEHLUNG (T0-Sign-off: T1 zeitlich vs T2 räumlich) ──");
-    const tempSeam = temporal.err ? 0 : (temporal.kNeighbor || 0) - (temporal.kPlayer || 1);
+    console.log("── BEFUND (T1 gebaut · T2 als nächstes) ──");
+    const t1ok = !temporal.err && temporal.pInEdit && temporal.nbInEdit;
     const lodGap = spatial.cross.pairs ? +(spatial.cross.gap1Pct * (1 - spatial.cross.occlPct / 100)).toFixed(1) : 0;
     if (sameWelded) {
         console.log(
-            "   • Die gleiche-LOD-Grenze ist STRUKTURELL SEMI-VERSCHWEISST (~50% float-exakt geteilt, vs Cross-LOD 0%) → kein primärer sichtbarer Riss; KEINE eigene Arbeit nötig."
+            "   • A · gleiche-LOD-Grenze: STRUKTURELL SEMI-VERSCHWEISST (~50% float-exakt geteilt vs Cross-LOD 0%) → kein primärer sichtbarer Riss; KEINE eigene Arbeit nötig."
         );
     } else {
-        console.log(
-            "   • Die gleiche-LOD-Grenze teilt unerwartet WENIG → der Schöpfer-Browser muss prüfen (sonst vor T1/T2 verstehen)."
-        );
+        console.log("   • A · gleiche-LOD-Grenze teilt unerwartet WENIG → der Schöpfer-Browser muss prüfen.");
     }
     console.log(
-        `   • Die zwei STRUKTURELLEN Nähte: (1) Cross-LOD-T-junction [0% geteilt, ~${lodGap}% sichtbare >1-m-Spalten → T2 Stable-LOD+Geomorph] und (2) das async-Abbau-Fenster [${tempSeam} Frame(s) stale → T1 synchroner Nachbar-Heal].`
+        `   • C · zeitliche Naht (T1): ${t1ok ? "GEHEILT — Footprint (Spieler-Chunk + Grenz-Nachbar) heilt synchron im Edit-Frame, 0 Frames stale." : "noch offen — der Footprint heilt nicht vollständig in-edit."}`
     );
     console.log(
-        "   • Empfehlung der Zahlen: T1 (zeitlich) ist der KLEINSTE, risikoärmste Schritt (1 Chunk/Frame → sync; gemessen 0-Frame-Heal über den Drain-Pfad, der schon existiert) und testet die These praktisch — die §6-Reihenfolge (T1 zuerst) bestätigt sich. T2 (Cross-LOD) ist der größere, pixel-blinde Bogen."
-    );
-    console.log(
-        `   • Der Schöpfer wählt die Reihenfolge am AUGE (welches Symptom stört mehr); die Zahlen oben sind die Grundlage.\n`
+        `   • B · Cross-LOD-T-junction: 0% geteilt, ~${lodGap}% sichtbare >1-m-Spalten → der nächste Bogen ist **T2 (Stable-LOD+Geomorph)**, pixel-blind → Schöpfer-Auge vor Merge.`
     );
 
     if (!spatial.chunks) {
