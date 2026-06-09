@@ -24913,6 +24913,16 @@ class AnazhRealm {
         // 1-Zell-Density-Pad sah die Kugel-Kante → sub-cell, imperzeptibel) → sie bleiben
         // ASYNC (kein Edit-Cluster-Spike, die V9.40-c-Lehre gewahrt: nur ≤Footprint sync).
         this._syncRebuildEditFootprint(x, z, radius);
+        // T4a-2 — den Wasser-Automaten in der Carve-Region + 1-Ring WECKEN: die Zellen änderten sich
+        // (neuer Raum geöffnet/verfüllt) → das Wasser strömt nach (active-cell, settled danach inaktiv).
+        {
+            const { span } = this._voxelChunkConfig();
+            const minCX = Math.floor((x - radius) / span) - 1;
+            const maxCX = Math.floor((x + radius) / span) + 1;
+            const minCZ = Math.floor((z - radius) / span) - 1;
+            const maxCZ = Math.floor((z + radius) / span) + 1;
+            for (let cx = minCX; cx <= maxCX; cx++) for (let cz = minCZ; cz <= maxCZ; cz++) this._wakeWaterCA(cx, cz);
+        }
         if (typeof this.saveState === "function") this.saveState();
         return true;
     }
@@ -39245,10 +39255,12 @@ class AnazhRealm {
     // PURE über die Arrays (kein State, kein Render) → vollständig headless beweisbar (Erhaltung +
     // Fluss). Der Tick ist die reaktive Schicht (lokal, nicht persistiert, kein Worker-Mirror — wie
     // `_lifeOverlayAt`/`_tickWorldRules`). Liefert die Zahl der bewegten Zellen (für active-cell-only).
-    _tickWaterCA(level, cells, dim, dimY, rate = 0.25) {
+    _tickWaterCA(level, cells, dim, dimY, rate = 0.25, deltaScratch = null) {
         const SOLID = AnazhRealm.CELL_STATE.SOLID;
         const dimSq = dim * dim;
         const EPS = 1e-4;
+        // `moved` = die MAGNITUDE des bewegten Wassers (nicht Zell-Zahl) → der active-cell-Settle
+        // greift, wenn die Lache wirklich ruht (Zell-Zahl bliebe bei langsamem Ausgleich ewig hoch).
         let moved = 0;
         // (1) GRAVITÄT — von oben nach unten, damit eine Säule in einem Tick durchkaskadiert.
         for (let j = dimY - 1; j >= 1; j--) {
@@ -39265,12 +39277,15 @@ class AnazhRealm {
                 const flow = lv < cap ? lv : cap;
                 level[here] = lv - flow;
                 level[below] += flow;
-                moved++;
+                moved += flow;
             }
         }
         // (2) LATERAL — Niveau suchen. Delta-Puffer: jedes (+i)- und (+k)-Paar EINMAL, symmetrischer
         // Transfer (was hier abfliesst, kommt dort an) → exakte Erhaltung, deterministisch.
-        const delta = new Float64Array(level.length);
+        // Scratch wiederverwenden (Welt-Tick = viele Chunks/Frame → keine Allokations-Churn).
+        let delta = deltaScratch;
+        if (delta && delta.length >= level.length) delta.fill(0, 0, level.length);
+        else delta = new Float64Array(level.length);
         for (let j = 0; j < dimY; j++) {
             const baseJ = j * dimSq;
             for (let k = 0; k < dim; k++) {
@@ -39288,7 +39303,7 @@ class AnazhRealm {
                                 const t = diff * rate;
                                 delta[here] -= t;
                                 delta[nb] += t;
-                                if (diff > EPS) moved++;
+                                moved += t > 0 ? t : -t;
                             }
                         }
                     }
@@ -39301,7 +39316,7 @@ class AnazhRealm {
                                 const t = diff * rate;
                                 delta[here] -= t;
                                 delta[nb] += t;
-                                if (diff > EPS) moved++;
+                                moved += t > 0 ? t : -t;
                             }
                         }
                     }
@@ -39313,6 +39328,116 @@ class AnazhRealm {
             level[n] = v < 0 ? 0 : v > 1 ? 1 : v;
         }
         return moved;
+    }
+
+    // T4a-2 (terrain-t4-wasser-ca-plan §3) — die REAKTIVE Wasser-Level-Schicht in der WELT.
+    // `state.waterLevelCells` ("cx,cz" → Float32Array) lebt SEPARAT von den Chunk-Entries → sie
+    // überlebt einen Carve-Rebuild (wie das Life-Overlay V17.27), lokal-reaktiv (nicht persistiert,
+    // kein Worker-Mirror — die Determinismus-Wand bleibt unangetastet). Seed aus der statischen Flood
+    // (das Ruhe-Gleichgewicht); danach autonom — der CA nutzt das LEVEL + die SOLID-Maske der Zellen.
+    _seedWaterLevel(cells) {
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        const level = new Float32Array(cells.length);
+        for (let i = 0; i < cells.length; i++) if (cells[i] === WATER) level[i] = 1.0;
+        return level;
+    }
+
+    // Der active-cell-Kern: ein Chunk tickt NUR, wenn er „aktiv" ist (frisch perturbiert). Der Carve
+    // weckt seine Region → das Wasser strömt in den neuen Raum; ein Fluss über die Grenze weckt den
+    // Nachbarn (cross-chunk-wake). Settled Chunks fallen raus (kein Voll-Sweep → 30→1100 FPS, §2.3).
+    _wakeWaterCA(cx, cz) {
+        if (!this.state.waterCAActive) this.state.waterCAActive = new Set();
+        this.state.waterCAActive.add(`${cx},${cz}`);
+    }
+
+    // T4a-2/3 — EIN Welt-Tick des Wasser-Automaten über die AKTIVEN LOD0-Chunks. Lokal-reaktiv,
+    // budgetiert (settled → inaktiv). Der cross-chunk-wake ist möglich, WEIL T1/T2 die Grenze
+    // kohärent machten (eine konsistente Nachbar-Zell-Wahrheit — die These des ganzen Bogens).
+    _tickWorldWaterCA() {
+        const activeSet = this.state.waterCAActive;
+        if (!activeSet || activeSet.size === 0 || !this.state.voxelChunks) return 0;
+        if (!this.state.waterLevelCells) this.state.waterLevelCells = new Map();
+        const cfg = this._voxelChunkConfig(0);
+        const dim = cfg.dim,
+            dimY = cfg.dimY;
+        const need = dim * dim * dimY;
+        if (!this.state.waterCAScratch || this.state.waterCAScratch.length < need)
+            this.state.waterCAScratch = new Float64Array(need);
+        const scratch = this.state.waterCAScratch;
+        const SETTLE = 0.25; // bewegte MAGNITUDE < SETTLE → der Chunk ruht, raus aus active (active-cell)
+        const levelOf = (key, entry) => {
+            let lv = this.state.waterLevelCells.get(key);
+            if (!lv) {
+                lv = this._seedWaterLevel(entry.waterCells);
+                this.state.waterLevelCells.set(key, lv);
+            }
+            return lv;
+        };
+        const active = [];
+        for (const key of [...activeSet]) {
+            const entry = this.state.voxelChunks.get(key);
+            if (!entry || entry.empty || !entry.waterCells || (Number.isFinite(entry.lod) && entry.lod !== 0)) {
+                activeSet.delete(key);
+                continue;
+            }
+            const comma = key.indexOf(",");
+            active.push({
+                cx: parseInt(key.slice(0, comma), 10),
+                cz: parseInt(key.slice(comma + 1), 10),
+                key,
+                level: levelOf(key, entry),
+                cells: entry.waterCells,
+            });
+        }
+        let total = 0;
+        for (const a of active) {
+            a.moved = this._tickWaterCA(a.level, a.cells, dim, dimY, 0.25, scratch);
+            total += a.moved;
+        }
+        // cross-chunk-wake: Level über die +x/+z-Grenzen austauschen; ein Transfer weckt den Nachbarn.
+        for (const a of active) {
+            for (const [dx, dz] of [
+                [1, 0],
+                [0, 1],
+            ]) {
+                const nkey = `${a.cx + dx},${a.cz + dz}`;
+                const nb = this.state.voxelChunks.get(nkey);
+                if (!nb || nb.empty || !nb.waterCells || (Number.isFinite(nb.lod) && nb.lod !== 0)) continue;
+                const bLevel = levelOf(nkey, nb);
+                const xfer = this._exchangeWaterBoundary(a.level, a.cells, bLevel, nb.waterCells, dx, dim, dimY);
+                if (xfer > 0.01) {
+                    this._wakeWaterCA(a.cx + dx, a.cz + dz);
+                    a.moved += xfer;
+                }
+            }
+        }
+        for (const a of active) if (a.moved < SETTLE) activeSet.delete(a.key);
+        return total;
+    }
+
+    // Level-Austausch über die gemeinsame Chunk-Grenze (die lateral-Regel über die Naht, symmetrisch
+    // = Erhaltung). dx=1: A.i=dim-1 ↔ B.i=0; dz=1: A.k=dim-1 ↔ B.k=0. Liefert die übertragene Menge.
+    _exchangeWaterBoundary(aLevel, aCells, bLevel, bCells, dx, dim, dimY) {
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
+        const dimSq = dim * dim;
+        const rate = 0.25;
+        let xfer = 0;
+        for (let j = 0; j < dimY; j++) {
+            const baseJ = j * dimSq;
+            for (let s = 0; s < dim; s++) {
+                const aIdx = dx === 1 ? baseJ + s * dim + (dim - 1) : baseJ + (dim - 1) * dim + s;
+                const bIdx = dx === 1 ? baseJ + s * dim : baseJ + s;
+                if (aCells[aIdx] === SOLID || bCells[bIdx] === SOLID) continue;
+                const diff = aLevel[aIdx] - bLevel[bIdx];
+                if (diff > 1e-4 || diff < -1e-4) {
+                    const t = diff * rate;
+                    aLevel[aIdx] -= t;
+                    bLevel[bIdx] += t;
+                    xfer += t > 0 ? t : -t;
+                }
+            }
+        }
+        return xfer;
     }
 
     // Welle A — die Gras-Queue synchron leeren (Test-Naht, Spiegel von
@@ -49777,6 +49902,9 @@ class AnazhRealm {
         // V12.0-perf.h — Wasser-Iso deferred bauen (≤2/Frame), der schwerste
         // Main-Thread-Streaming-Posten verteilt statt im Chunk-Finalize-Frame.
         this._tickPendingWaterIso(4);
+        // T4a-2 — der Wasser-Automat tickt die AKTIVEN Chunks (active-cell-only → kostenlos, wenn
+        // kein Wasser perturbiert ist; ein Carve weckt seine Region → das Wasser strömt nach).
+        this._tickWorldWaterCA();
         // V17.1 — Klein-Vegetation deferred streuen (≤2/Frame, nahe zuerst):
         // der Surface-Scan pro Zelle ist aus dem Streaming-Frame verlagert. NUR
         // wenn das Streaming diesen Frame NICHTS baute (Ring gesetzt) → Terrain

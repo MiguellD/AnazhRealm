@@ -52,15 +52,16 @@ sucht sein Niveau). **Das ist die EINE fehlende Sache — eine ARCHITEKTUR, kein
 
 ## 3 · DER VERIFIZIERBARE PFAD (klein, gemessen, merge pro Schritt — die Anti-Spirale)
 
-- **T4a-1 — das Level-Feld + die GRAVITÄT (Wasser fällt).** `entry.waterLevel` (seed aus der Flood);
-  `_tickWaterCA`: pro aktiver WATER-Zelle, wenn die Zelle DARUNTER nicht voll/solide ist, fliesst Level nach
-  unten. **Headless-Beweis (`diag-water-flow-ca.cjs`, neu): carve ein Loch UNTER einem Wasser-Körper → tick
-  → das Level fällt oben, steigt unten** (vorher: statisch, kein Fluss). Lokal-reaktiv, kein Render nötig.
-- **T4a-2 — LATERAL + Niveau suchen.** Wasser spreizt zu niedriger-gefüllten Nachbarn (gleiche/abwärts),
-  sucht sein Niveau. Beweis: ein umgegrabener Kanal NEBEN Wasser → das Level strömt hinein + gleicht sich aus.
-- **T4a-3 — CROSS-CHUNK-WAKE.** Ein Level-Update an der Chunk-Grenze weckt die Nachbar-Chunk-Zellen
-  (möglich, WEIL T1/T2 die Grenze kohärent machten — die Nachbar-Zell-Wahrheit ist jetzt konsistent). Beweis:
-  Fluss über eine Chunk-Grenze (das Level propagiert nahtlos in den Nachbarn).
+- **T4a-1 — der Automat-KERN (Gravität + Niveau-suchen + Erhaltung). GEBAUT ✓.** `_tickWaterCA(level,
+  cells, dim, dimY)` — reine, deterministische Tick-Funktion (Gravität top-down + lateral Niveau-suchen,
+  Delta-Puffer = exakte Erhaltung; `moved` = bewegte MAGNITUDE für den Settle). **`diag-water-flow-ca` GRÜN:
+  ERHALTUNG exakt + FLUSS (Blob fällt · 5er-Säule spreizt zur Lache 1→64).** 3 Playtest-Inv.
+- **T4a-2 — der Automat in die WELT verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake). GEBAUT ✓.**
+  `state.waterLevelCells` (lokal-reaktiv, überlebt Rebuilds); `_tickWorldWaterCA` (active-cell-only, Settle
+  via Magnitude → ruht); `_exchangeWaterBoundary` (Level über die +x/+z-Naht — der **cross-chunk-wake**,
+  möglich WEIL T1/T2 die Grenze kohärent machten); `_addVoxelEdit` WECKT die Carve-Region. **`diag-water-
+  world-flow` GRÜN: ERHALTUNG exakt (Σ A+B konstant) · Wasser fliesst über die Chunk-GRENZE (B erhielt 2.7) ·
+  active-Set settled auf 0.** 3 Playtest-Inv. Im Game-Loop getickt (kostenlos wenn nichts perturbiert).
 - **T4a-4 — die PHYSIK liest das Level** (`_playerWaterContext` nutzt das CA-Level statt der binären Zelle)
   → Auftrieb folgt dem echten Wasserstand. Headless-Physik-Probe.
 - **T4b — der RENDER** (das Surface-Mesh aus dem CA-Level; das gefaltete `L`-Mesh stirbt, weil das Level

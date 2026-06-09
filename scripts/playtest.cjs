@@ -20651,6 +20651,11 @@ async function checkBandWelleC3CellularReaction(ctx) {
             out.t4Conserves = Math.abs(s1 - s0) < 1e-4;
             out.t4Flows = (s1 > 0 ? cw / s1 : 99) < 8 - 1; // Schwerpunkt fiel von j=8
         }
+        // T4a-2 — der Automat ist in die WELT verdrahtet: reaktive Level-Schicht + Welt-Tick +
+        // cross-chunk-wake, der Carve weckt die Region. Voller Welt-Beweis: `diag-water-world-flow`.
+        out.t4HasWorldTick = typeof r._tickWorldWaterCA === "function" && typeof r._wakeWaterCA === "function";
+        out.t4CarveWakesCA = /_wakeWaterCA/.test(r._addVoxelEdit.toString());
+        out.t4ExchangesBoundary = typeof r._exchangeWaterBoundary === "function";
 
         // 6) Source-Probes: spawnArchitecture + removeArchitecture rufen
         // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
@@ -20773,6 +20778,10 @@ async function checkBandWelleC3CellularReaction(ctx) {
         check("T4 (Wasser-CA): der Automat ERHÄLT das Wasser exakt (Σ konstant)", res.t4Conserves);
         check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
     }
+    // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
+    check("T4a-2 (Wasser-CA): _tickWorldWaterCA + _wakeWaterCA existieren (Welt-Verdrahtung)", res.t4HasWorldTick);
+    check("T4a-2 (Wasser-CA): _exchangeWaterBoundary existiert (cross-chunk-wake)", res.t4ExchangesBoundary);
+    check("T4a-2 (Wasser-CA): ein Carve WECKT den Automaten (Wasser strömt nach)", res.t4CarveWakesCA);
 }
 
 // V9.88 (Welle Perf-3.b — Distance-LOD): empirischer Beweis dass ferne
