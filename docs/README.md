@@ -1,65 +1,50 @@
-# docs/ — die Landkarte aller Dokumente
+# docs/ — die Landkarte
 
-**Dies ist die EINE kanonische Doc-Landkarte.** `README.md` (Projekt-Wurzel) und der
-`CLAUDE.md`-Kopf zeigen hierher, statt die Liste zu duplizieren. Wer ein Dokument
-sucht, findet hier die Route — nach Zeit-Ebene des Wissens geordnet.
-
-Drei Heimaten für drei Zeit-Ebenen (die Doku-Disziplin):
-
-- **JETZT** — was gilt: Stand, Gotchas, Konventionen → `CLAUDE.md` (auto-geladen).
-- **DIE CHRONIK** — die volle Wellen-Historie → `docs/handover.md`.
-- **DER PLAN** — was vorwärts kommt → `docs/roadmap.md`.
+**Vier lebende Texte tragen das JETZT, das WOHIN und den WEG.** Alles Detail — die volle Chronik, die
+fertigen Pläne, die schlafenden Bau-Pläne, die Referenzen — lebt in der **Bibliothek** (`docs/archiv/`),
+durchsuchbar. Das Prinzip: *der aktive Tisch trägt nur die nächste Tat; ein Bogen erwacht → sein Plan
+kommt aus der Bibliothek auf den Tisch; er vollendet → zurück ins Archiv.* So wird der Hauptraum nie
+wieder zur Halde.
 
 ---
 
-## Tier 0 — die Einstiege (hier anfangen)
+## Die lebenden Säulen (immer aktuell gepflegt)
 
-| Datei | Was | Wann lesen |
+| Datei | Ebene | Was |
 |---|---|---|
-| **`CLAUDE.md`** | Projektgedächtnis — kompakter JETZT-Stand + die quer-schneidenden Gotchas. Wird bei jeder Session auto-geladen. | Immer zuerst (passiert automatisch). |
-| **`docs/handover.md`** | **Die Chronik + Erstorientierung** — der Start-Kopf (heilige Gesetze, Rhythmus, bewährte Muster) + die volle Wellen-Historie (jüngste oben) + das Gotcha-Vollarchiv. | Beim Erwachen den Start-Kopf; die Chronik bei Bedarf durchsuchen. |
-| **`README.md`** (Wurzel) | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion. | Für den ersten Blick aufs Projekt. |
+| **`CLAUDE.md`** (Wurzel) | **JETZT** | Stand · die quer-schneidenden Gotchas · Konventionen · Doc-Map. Auto-geladen bei jeder Session. |
+| **`docs/state-of-realm.md`** | **WOHIN** | Die Vision — die Pfeiler aus den Testamenten, die Heilige Lektion, die Stand-vs-Vision-Matrix, das Welten-Ultiversum. |
+| **`docs/das-lebendige-feld.md`** | **DER WAHRE NORDEN** | Der operative Vision-Anker: die Welt als EIN Feld, das alle lesen · schreiben · WERTEN — wie es GEMESSEN im Code lebt + der Vektor vorwärts. **ZUERST** vor Arbeit an lebendiger Welt / Emotion / Nexus / DSL / Kreaturen. |
+| **`docs/roadmap.md`** | **DER WEG** | Der Plan vorwärts (3 Phasen) · die offene-Fäden-Karte · die Vergangenheit stichwortmäßig · die Disziplin. |
+| **`README.md`** (Wurzel) | **DIE TÜR** | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion. |
 
-## Tier 1 — die lebendigen Anker (immer aktuell gepflegt)
+---
 
-| Datei | Was | Wann lesen |
+## Die Bibliothek (`docs/archiv/`) — ZUERST lesen, wenn du an X arbeitest
+
+**Schlafende aktive Pläne** — kommen auf den Tisch, wenn ihr Bogen dran ist:
+
+| Datei | Was | Trigger |
 |---|---|---|
-| **`docs/state-of-realm.md`** | **Die Vision** — die fünf Pfeiler aus den Testamenten, die Heilige Lektion, die Stand-vs-Vision-Matrix. | Bei „wohin will das Projekt?" / Zweifel an der Richtung (§2). |
-| **`docs/roadmap.md`** | **Der Plan vorwärts** — oben der reconciled `OFFENE FÄDEN`-Backlog (A Crafting · B Kampf · C Fundament · D Vision), darunter die Ring-Struktur + Detail-Chronik. | Bei „was kommt als Nächstes?". |
-| **`docs/das-lebendige-feld.md`** | **DER WAHRE NORDEN** — die Welt als EIN lebendiges Feld, das alle lesen · schreiben · WERTEN. Die ewige Vision, wie sie GEMESSEN im Code verkörpert ist (die drei Verben stehen), + der Vektor, der noch vorwärts zeigt. | **ZUERST** vor jeder Arbeit an „lebendiger Welt / Emotion / Nexus / DSL / Kreaturen". |
+| `archiv/wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, das statische `L`, der Fluid-Plan) | Wasser · Fluss · See · Wasserfall · Naht · Render · Dynamik |
+| `archiv/lod-kaskade-plan.md` | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter) | LOD · Streaming · Sicht-Ring · Schatten-CSM · Deko-Distanz · Draw-Calls |
+| `archiv/kampf-plan.md` | Crafting/Kampf §11 (Schöpfungs-Fluss, Resonanz, S6-B/S9/S11/Phase E) | Kampf · Waffe · Werkzeug · Rüstung · Trank · Avatar · Werkstatt · Crafting |
+| `archiv/world-portal-w18-plan.md` | W18 — in fremden Welten leben (Ko-Präsenz) | Portal-Ko-Präsenz · fremde Welten |
 
-## Tier 2 — die aktiven Pläne (laufende Bögen)
+**Referenz** — Nachschlagewerke:
 
-| Datei | Was | Wann lesen |
-|---|---|---|
-| **`docs/kampf-plan.md`** | **DER AKTIVE CRAFTING-/KAMPF-BOGEN** — Kampf + Interaktion + der vereinte Schöpfungs-Fluss + die Resonanz-Vereinheitlichung (§11). Kern-Loop + W1–W3 + S1–S11 + R1–R3/S10 GEBAUT; offen: Browser-Audit · **Phase E (Bedrohung/Furcht)** · S6-B (erntbare Flora) · S9 · S11 · S7-C. | **ZUERST** vor jeder Arbeit an „Kampf / Waffen / Werkzeug / Rüstung / Trank / Avatar / Abbauen / Werkstatt / Schmieden / Crafting / Bauplan-Teilen". |
-| **`docs/wasser-render-architektur-plan.md`** | **DIE EINE WASSER-WAHRHEIT (V18.31)** — der volle Bogen end-to-end (6 Schichten), das statische Höhenfeld `L` vs. die geplante Fluid-Dynamik (Phase 1.5), alle offenen Render-Punkte, die Schöpfer-Entscheidung (C gemergt · A = der Weg vorwärts). | **ZUERST** vor jeder Wasser-Arbeit (Render · Dynamik · Fluss · See · Wasserfall · Naht). |
-| **`docs/ui-putz-plan.md`** | **DER UI-PUTZ** — die Bedien-Oberfläche neu geordnet (Code + UX): der `_el`-DOM-Builder · Bedeutungs-Gruppierung statt 8 flacher Tabs · Kreaturen+Fähigkeiten (Dirigent+Orchester) · Ausrüstung/Fertigen/Inventar erreichbar · Nacht als EINER Stil · der freie Bildschirm. Apple-Klarheit + antike Schönheit + Lebendigkeit. | **ZUERST** vor jeder Arbeit am UI / HUD / Drawer / Tab / Inventar / Ausrüstung / Theme / Erreichbarkeit. |
-| **`docs/hof-plan.md`** | **DER TIEFE HOF-PLAN** (auf Werkstatt-Niveau) — Dirigent+Orchester: der Werkstatt-Pfad gespiegelt · der Gamezyklus Knopf-für-Knopf · die Wesen-Spec-Card aus den reichen Vektoren (Stimmung/Natur/Werte/Wachstum) · Sektionen · die Partitur (Gesetze + Nexus als Ko-Dirigent) · die Bühne (Wesen-Viewer) · die Wellen Hof-D–G. GEBAUT (V18.46–.56): A–G + Bühne + geteiltes Spec-Sheet. | **ZUERST** vor jeder Arbeit am Hof / Kreaturen / Dirigieren / Wesen-Zeilen / Gesetze / Kreatur-Spawn-UI. |
-| **`docs/ich-plan.md`** | **DER TIEFE ICH-PLAN** (auf Werkstatt-/Hof-Niveau) — das Selbst-Porträt: die Selbst-Bühne (Avatar-3D-Star) · das geteilte Selbst-Spec-Sheet (WERTE führen, equip-gefaltet) · die reiche 6-Achsen-EMOTION + Mood als Herz-Signatur · die REISE (Journal, gekappt) · Habe/Hotbar/Ausrüstung · Rezeptbuch · die Wellen Ich-A0–E + §J der Ich-Putz-Bogen J0–J6. GEBAUT (V18.57–.68): Selbst-Spec-Sheet · Bühne · Verortung geheilt · die Werkstatt-Topologie → habe-zentral korrigiert → die Statsbar unten. | **ZUERST** vor jeder Arbeit am „Ich" / Inventar / Charakter / Spieler-Stats / Emotionen / Rezeptbuch / eigener Seele (Avatar) / Ausrüstung. |
-| **`docs/bibliothek-plan.md`** | **DER TIEFE BIBLIOTHEK-PLAN** (auf Werkstatt-/Hof-/Ich-Niveau) — karten-zentral (man BETRITT Welten): das Welt-Karten-Raster der Star · `_worldProfile` als Spec-Card-Vektor (Trust·Provenienz·DSL·Signatur·Stammbaum) · die Formulare (Übersetzer/Andocken) eingeklappt · „Diese Welt"-Eiland links. GEBAUT (V18.69–.77): der zentrale FEED — Welten·Rezepte·Wesen scrollen + BEWERTEN, 3 Spalten + Tabs + 3D-Vorschau-Bereich + Profi-leichte Feed-Cards. | **ZUERST** vor jeder Arbeit an der Bibliothek / Welt-Teilen / Welt-Karten / Andocken / Signieren / Provenienz / Welt-Browser. |
-| **`docs/einstellungen-plan.md`** | **DER TIEFE EINSTELLUNGEN-PLAN** — eine UTILITY-Ordnung (kein Star): nach Häufigkeit geordnet (Modus·Speicher vorne, die ~18 Dev-Regler im eingeklappten „Feinschliff") · das Welt-teilen-Duplikat → Bibliothek · Apple-System-Settings-Klarheit. PLAN. | **ZUERST** vor jeder Arbeit an den Einstellungen / Reglern / Speicher / Tastenbelegung / Begleiter/LLM / Multi-User / Render-Tuning. |
-| **`docs/lod-kaskade-plan.md`** | **DIE VEREINTE DETAIL-KASKADE** — eine kamera-relative Distanz, sechs Gesichter (Farbe·Geometrie·Licht·Leben·Draw-Calls). U1 ✅ + U3 ✅ gebaut; offen: U2 (Wasser-LOD) · U4 (Deko/Impostor) · U5 (Schatten-CSM) · U6 (Clipmap). | **ZUERST** vor LOD / Streaming / Sicht-Ring / Wasser-Ferne / Schatten-CSM / Deko-Distanz / Draw-Calls / Kreatur-Perf. |
-| **`docs/world-portal-w18-plan.md`** | **W18 — in fremden Welten LEBEN** (Ko-Präsenz-Injektion in Single-Player-Fremdwelten, die Input-Brücke, das Leben/Swappen). Stufe 0/1 ✅ (W12–W17); Stufe 2–4 ungebaut. | **ZUERST** vor jeder W18-/Portal-Ko-Präsenz-Arbeit. |
+| Datei | Was |
+|---|---|
+| `archiv/hydrosphere.md` | Wasser-Daten-Modell — die frozen Schichten (Drainage-Netz + Zell-Wasser, der V13-Schnitt). |
+| `archiv/crafting-konzept.md` | Das Hylomorphismus-Substrat — Bausteine · Operationen · Compounds · räumliche Prinzipien. |
+| `archiv/aktivierungsmatrix.md` | Die Form-Tag-Aktivierungs-Matrix (9×10) — Quellcode für `FORM_TAG_ACTIVATION`. |
+| `archiv/world-portal.md` | W12-Vision-Anker — das Tor zu anderen Vibecode-Welten. |
 
-## Tier 3 — die Referenz (stabil, zum Nachschlagen)
+**Die Chronik + die vollendeten Bögen** — die Vergangenheit:
 
-| Datei | Was | Wann lesen |
-|---|---|---|
-| **`docs/crafting-konzept.md`** | Das Hylomorphismus-Substrat — Bausteine, Operationen, Compounds, räumliche Prinzipien. Die Grundlage, auf der die Resonanz-Vereinheitlichung baut. | Bei Material/Form/Tag/Compound-Fragen. |
-| **`docs/aktivierungsmatrix.md`** | Die Form-Tag-Aktivierungs-Matrix v2 (9 × 10) — der Quellcode für `AnazhRealm.FORM_TAG_ACTIVATION`. | Wenn eine Form × Material → Tag-Frage exakt sein muss. |
-| **`docs/hydrosphere.md`** | **Wasser-Design (die frozen Schichten)** — das Drainage-Netz + das Voxel-Cell-Wasser (Algorithmus, Datenstrukturen, der V13-Wellen-Schnitt). Die FROZEN Schichten 1–2 (Hydrosphäre-Netz + Spiegel-Feld `L`); die RENDER-Wahrheit + der Weg vorwärts leben jetzt in `wasser-render-architektur-plan.md` (Tier 2). | Beim Drainage-Netz-Modell (Seen/Flüsse/Erosion). |
-| **`docs/world-portal.md`** | **W12-Vision-Anker** — AnazhRealm als Tor zu anderen Vibecode-Welten („Bibliothek von Alexandria"). | Vor einer Welle 12+ / Fremd-Engine-Arbeit. |
-
-## Tier 4 — das Archiv (abgeschlossen, reine Referenz)
-
-`docs/archiv/` — fertige Designs, vollendete Arc-Pläne, Audit-Schnappschüsse. **Wird
-nicht mehr gepflegt** (der Stand, an dem das Dokument entstand). Eigener, nach Bögen
-gruppierter Index in **`docs/archiv/README.md`** — dort liegen u.a. die VOLLENDETEN
-Arc-Pläne (DSL-Weltregeln · lebendige Wertung · Emotion-Kern · der Render-/Tiefe-Bogen ·
-**die Resonanz-Vereinheitlichung** [V17.80–.85] · **der Tiefe-Fundament-Bogen** [A–J, V17.92–.118] ·
-**die Wasser-finale-Form** [V18.6, subsumiert]) + die Hygiene-Bögen + die System-Audits +
-die ungekürzte `learnings.md`.
+- `archiv/handover.md` — die volle **Wellen-Chronik** (jüngste oben) + das **Gotcha-Vollarchiv** (~290 Stolperdrähte; CLAUDE.md trägt die kuratierte Teilmenge).
+- `archiv/roadmap-chronik-bis-v18.83.md` — der alte Detail-Backlog (Ringe, Wellen A–X), als Snapshot bewahrt.
+- `archiv/README.md` — der nach Bögen gruppierte Index: **UI-Putz-Bogen** · Resonanz-Vereinheitlichung · DSL-Weltregeln · lebendige Wertung · Emotion-Kern · Tiefe-Fundament · Render/Tiefe · Wasser-finale-Form · Hygiene-Bögen · System-Audits · die ungekürzte `learnings.md`.
 
 ---
 
@@ -68,18 +53,16 @@ die ungekürzte `learnings.md`.
 | Datei | Was |
 |---|---|
 | `vendor/README.md` | Vendor-Libs (Three.js r184 / Ammo / simplex-noise) — Versionen + Update-Befehl. |
-| `.claude/commands/audit.md` | Der `/audit`-Slash-Befehl (umfassende Code-Prüfung). |
+| `.claude/commands/audit.md` | Der `/audit`-Slash-Befehl. |
 | `.github/workflows/check.yml` | CI — zwei Jobs (statische Checks + Playtest-Gate). |
 
 ## Doku-Disziplin (für den nächsten Agenten)
 
-- Pro Welle → **ein Commit** + **ein `handover.md`-Eintrag oben**. Gilt eine Lehre
-  DAUERHAFT → **eine kuratierte Zeile in `CLAUDE.md/Wichtige Gotchas`**.
-- Der erzählerische Wellen-Bericht lebt NIE in der auto-geladenen `CLAUDE.md` (sonst
-  wächst sie zur Halde — die Heilige Lektion eine Schicht höher).
-- Fertige Designs + Audit-Snapshots wandern nach `docs/archiv/` (verschieben, nicht
-  löschen) + werden in `docs/archiv/README.md` indexiert.
-- **Diese Landkarte ist die EINE Quelle** — wer eine Doc hinzufügt/archiviert,
-  pflegt sie hier (nicht eine zweite Liste in `README.md`/`CLAUDE.md` anlegen).
-- Doc-Sync ist eine Grep-Aufgabe: vor jedem Commit
-  `grep -rn "<alte-Version>" docs/*.md CLAUDE.md README.md` und jeden Treffer heilen.
+- **Der Tisch bleibt schlank:** ein fertiger Plan wandert sofort in die Bibliothek (`git mv` nach
+  `archiv/`, verschieben nicht löschen) + bekommt eine Zeile in `archiv/README.md`.
+- Pro Welle → **ein Commit** + **ein `archiv/handover.md`-Eintrag oben**. Gilt eine Lehre DAUERHAFT
+  → **eine kuratierte Zeile in `CLAUDE.md / Wichtige Gotchas`**.
+- Der erzählerische Wellen-Bericht lebt NIE in der auto-geladenen `CLAUDE.md` (sonst Halde).
+- **Diese Landkarte ist die EINE Quelle** — wer eine Doc verschiebt, pflegt sie hier + leitet die
+  Verweise in `CLAUDE.md` mit um (Doc-Sync ist eine Grep-Aufgabe:
+  `grep -rn "<name>\.md" CLAUDE.md docs/*.md`).

@@ -254,7 +254,7 @@ gegen frozen Signaturen teilen ihn: Rolle (`computeBlueprintRole`/`ROLE_SIGNATUR
 Werkstatt-Domäne (`_computeWorkshopDomain`), Werkzeug-Op (`_computeToolOpFromForm`),
 Rollen-Fit (`_blueprintRoleFit`). „Ein Produkt-Vektor, viele Leser" — kein Whitelist,
 kein Flag (außer den GEMESSEN-nicht-emergenten Intent-Overrides). Details:
-`docs/kampf-plan.md` §11 + `docs/archiv/resonanz-system.md`.
+`docs/archiv/kampf-plan.md` §11 + `docs/archiv/resonanz-system.md`.
 
 ---
 
@@ -289,11 +289,11 @@ VORWÄRTS"; hier der Vektor, gruppiert nach Dimension:
   Minecraft; ein Carve daneben → das Wasser strömt sichtbar hinein). Eigener Plan-Doc,
   Browser-Loop, Merge pro Schritt (`docs/roadmap.md` Phase 1.5 + `wasser-render-…-plan.md`).
 - Fundament-Reste: H3-Seen/Flüsse jenseits ±1024 m · G3 Höhleneingänge/Canyons · die
-  LOD-Kaskade vollenden (`docs/lod-kaskade-plan.md` U2/U4/U5/U6).
+  LOD-Kaskade vollenden (`docs/archiv/lod-kaskade-plan.md` U2/U4/U5/U6).
 
 **Die Seele (wenn das Fundament trägt):**
 
-- **Phase E — Bedrohung/Furcht** (`docs/kampf-plan.md`). Der Emotion-Kern hat den
+- **Phase E — Bedrohung/Furcht** (`docs/archiv/kampf-plan.md`). Der Emotion-Kern hat den
   W5-Affekt (Furcht/Triumph), aber NOCH KEINEN Konsumenten für aggressive Kreaturen — sie
   fliehen, schlagen nie zurück (explizit als Phase E markiert). Das ist der LETZTE fehlende
   Konsument des Affekts und die game-design-schwerste Phase.
@@ -309,7 +309,7 @@ VORWÄRTS"; hier der Vektor, gruppiert nach Dimension:
 - **Die KI als vollwertige Co-Schöpferin.** Das LLM schreibt schon Regeln (`source:"llm"`),
   aber opt-in. Der Vektor: die KI tiefer in den Kreis weben (sie liest das gewertete Feld,
   schlägt Regeln vor, lernt aus dem δ) — die Symbiose-Hälfte von Pfeiler 1 vollenden.
-- **W18 — in fremden Welten LEBEN** (`docs/world-portal-w18-plan.md`): Ko-Präsenz-Injektion
+- **W18 — in fremden Welten LEBEN** (`docs/archiv/world-portal-w18-plan.md`): Ko-Präsenz-Injektion
   in Single-Player-Fremdwelten — der nächste große Vision-Bogen jenseits des eigenen Kerns.
 
 ---

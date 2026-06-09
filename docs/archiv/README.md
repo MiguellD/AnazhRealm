@@ -1,15 +1,59 @@
-# docs/archiv — Abgeschlossene Dokumente (nach Bögen gruppiert)
+# docs/archiv — die Bibliothek (nach Bögen gruppiert)
 
-Hier liegen Dokumente, die ihren Zweck erfüllt haben: **fertige Designs**,
-**vollendete Arc-Pläne** und **Audit-Schnappschüsse**. Sie werden **nicht mehr
-gepflegt** — sie sind reine Referenz auf den Stand, an dem sie entstanden. (Sie
-bleiben physisch getrennt, weil die Chronik in `docs/handover.md` sie je Welle
-beim Namen nennt — ein historischer Link, den ein Merge brechen würde.)
+Hier liegt **alles Detail, das nicht auf dem aktiven Tisch sein muss** — durchsuchbar,
+„weißt du ja wo". Drei Arten:
 
-Wer den *aktuellen* Stand sucht: die kanonische Landkarte in **`docs/README.md`** →
-`CLAUDE.md` (JETZT-Stand + Gotchas), `docs/handover.md` (Chronik + Start),
-`docs/state-of-realm.md` (Vision), `docs/roadmap.md` (Plan), `docs/das-lebendige-feld.md`
-(der wahre Norden).
+1. **Schlafende aktive Pläne** — Bau-Pläne, deren Bogen noch nicht dran ist; sie kommen
+   auf den Tisch, wenn er erwacht, und werden DANN gepflegt (nicht „tot").
+2. **Referenz** — stabile Nachschlagewerke (Daten-Modelle, Substrate, Matrizen).
+3. **Die Chronik + die vollendeten Bögen** — reine Geschichte, **nicht mehr gepflegt**
+   (der Stand, an dem das Dokument entstand).
+
+Der aktuelle Stand + die Route: die kanonische Landkarte in **`docs/README.md`** →
+`CLAUDE.md` (JETZT + Gotchas), `docs/state-of-realm.md` (Vision),
+`docs/das-lebendige-feld.md` (der wahre Norden), `docs/roadmap.md` (der Weg).
+
+---
+
+## Schlafende aktive Pläne (kommen auf den Tisch, wenn ihr Bogen dran ist)
+
+| Datei | Was | Stand |
+|---|---|---|
+| `wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, das statische `L`, der Fluid-Dynamik-Plan = Phase 1) | **AKTIV** — der nächste große Bogen |
+| `lod-kaskade-plan.md` | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter) | **AKTIV** — U1+U3 gebaut, U2/U4/U5/U6 offen |
+| `kampf-plan.md` | Crafting/Kampf §11 — Schöpfungs-Fluss + Resonanz | **AKTIV** — Kern gebaut, S6-B/S9/S11/Phase E offen |
+| `world-portal-w18-plan.md` | W18 — in fremden Welten leben (Ko-Präsenz) | **GEPLANT** — Stufe 0/1 ✅ (W12–17), Stufe 2–4 offen |
+
+## Referenz (Nachschlagewerke)
+
+| Datei | Was |
+|---|---|
+| `hydrosphere.md` | Wasser-Daten-Modell — die frozen Schichten (Drainage-Netz + Voxel-Zell-Wasser, der V13-Schnitt). |
+| `crafting-konzept.md` | Das Hylomorphismus-Substrat — Bausteine · Operationen · Compounds · räumliche Prinzipien. |
+| `aktivierungsmatrix.md` | Die Form-Tag-Aktivierungs-Matrix v2 (9×10) — Quellcode für `FORM_TAG_ACTIVATION`. |
+| `world-portal.md` | W12-Vision-Anker — AnazhRealm als Tor zu anderen Vibecode-Welten. |
+
+## Die Chronik (die volle Vergangenheit)
+
+| Datei | Was |
+|---|---|
+| `handover.md` | Die **Wellen-Chronik** (jüngste oben) + die Erst-Orientierung + das **Gotcha-Vollarchiv** (~290 Stolperdrähte; `CLAUDE.md` trägt die kuratierte Teilmenge). |
+| `roadmap-chronik-bis-v18.83.md` | Der alte Detail-Backlog (Ringe 0–11, Wellen A–X) — als Snapshot bewahrt, von der schlanken `docs/roadmap.md` abgelöst. |
+
+## Bogen: Der UI-Putz — die 6 Kern-Räume + das freie HUD (V18.32–.83) — VOLLENDET
+
+8 flache Tabs → 6 Kern-Räume auf dem Werkstatt-Designsystem (geteiltes Spec-Sheet · dunkle
+Bühne · Omnibox Ctrl+K · der freie Bildschirm). Die Werkstatt ist die Referenz; die vier
+Raum-Detailpläne + die zwei Überbau-Pläne sind durch.
+
+| Datei | Was | Stand |
+|---|---|---|
+| `ui-putz-plan.md` | Die UI-Prinzipien (die 10 Denkmuster + der 9-Schritt-Prozess) + die Werkstatt-Referenz | **VOLLENDET**; die dauerhafte Lehre lebt in `CLAUDE.md` |
+| `menu-feld-plan.md` | Die gemessene Feld-für-Feld-Inventur jedes Raums (wohin jeder Knopf gehört) | **VOLLENDET** |
+| `hof-plan.md` | Der Hof — Dirigent+Orchester (Wesen-Spec-Card · Partitur · Bühne) | **GEBAUT** (V18.46–.56) |
+| `ich-plan.md` | Das Ich — das Selbst-Porträt (Selbst-Spec-Sheet · 6-Achsen-Emotion · Reise) | **GEBAUT** (V18.57–.68) |
+| `bibliothek-plan.md` | Die Bibliothek — der zentrale Feed (Welten·Rezepte·Wesen + BEWERTEN) | **GEBAUT** (V18.69–.77) |
+| `einstellungen-plan.md` | Die Einstellungen — eine Utility-Ordnung (Präferenzen, kein Star) | **GEBAUT** (V18.78–.81) |
 
 ---
 
