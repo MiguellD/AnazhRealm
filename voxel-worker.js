@@ -593,6 +593,7 @@ function waterLevelAt(x, z) {
 function atlasWaterLevelAt(x, z, terrainTopY) {
     let level = -Infinity;
     let inRegion = false;
+    let isBody = false; // V18.87 — Mirror: See/Ozean-Körper (flacher Spiegel)
     const h = state.hydrosphere;
     if (h && h.ready && h.water && h.water.waterKind) {
         const dim = h.dim;
@@ -605,6 +606,7 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
             const wY = h.water.waterY;
             const here = wK[ci + cj * dim];
             if (here === 1 || here === 2) {
+                isBody = true;
                 level = wY[ci + cj * dim];
             } else {
                 let rim = -Infinity;
@@ -634,8 +636,13 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
         const waterLevel = typeof state.waterLevel === "number" ? state.waterLevel : 0;
         level = waterLevel;
     }
-    const river = hydroRiverAt(x, z);
-    if (river && river.surfaceY > level) level = river.surfaceY;
+    // V18.87 — Mirror der See/Fluss-Klassifikation (siehe `_atlasWaterLevelAt`): ein
+    // See/Ozean ist FLACH (Conduit, V9.46), ein Fluss/Auslauf trägt seine descending
+    // Profile (gewinnt, kein Rim-Schweben). Muss bit-identisch zum Main (Determinismus).
+    if (!isBody) {
+        const river = hydroRiverAt(x, z);
+        if (river) level = river.surfaceY;
+    }
     return level;
 }
 
