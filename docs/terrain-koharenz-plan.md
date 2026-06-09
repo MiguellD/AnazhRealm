@@ -698,11 +698,23 @@ Das DRAMA + BAND + LÖCHER (T5–T8) sind die DICHTE — unabhängig von der Nah
 NUR die Naht. Schliesse sie → alles oben folgt.
 
 ### 12.2 · Die drei Naht-Wurzeln (GEMESSEN → Heilung → Ziel)
-- **N3 · stabiles LOD (ZUERST, der billigste grösste Hebel).** Heute: LOD0-Ring 3×3 → die Cross-LOD-Grenze
-  sitzt ~50 m vom Spieler (sichtbar, wandert, popt). Heilung: grösserer LOD0-Ring (5×5/7×7) + **Hysterese**
-  (ein Chunk wechselt LOD erst bei klarem Distanz-Überschritt, nicht am Grat → kein Hin-und-Her-Pop). Wirkung:
-  die Grenze schiebt auf ~100–150 m → Fog-verdeckt + selten. **Synergie: macht N1 leichter (weniger/fernere
-  Grenzen zu schliessen).** MESSEN: FPS-Kosten (`diag-warmup-speed`/Playtest-FPS) + die Grenz-Distanz.
+- **N3 · stabiles LOD — GEBAUT ✓ (V18.86, 09.06.2026).** War: LOD0-Ring 3×3 (`maxRing 1`) → die Cross-LOD-
+  Grenze ~50 m vom Spieler (sichtbar, wandert, popt). **GEBAUT:** **(a)** `DETAIL_CASCADE` Band 0 `maxRing 1→2`
+  → LOD0-Ring **5×5** → die Grenze schiebt auf **~100 m** (Fog). **(b)** `LOD_HYSTERESIS_RINGS=1` +
+  `_voxelChunkLodFor(…, currentLod)` — ein bestehender Chunk VERFEINERT sofort, VERGRÖBERT erst, wenn r die
+  Band-Grenze um 1 Ring klar überschreitet → Deadband, **kein Flip-Flop-Pop** am Grat (LOD ist derived/render →
+  Determinismus unberührt; main-only). **GEMESSEN (`diag-chunk-seam`):** LOD-Verteilung 9 LOD0 → **25 LOD0**,
+  der schlimmste Cross-LOD-Spalt wandert von `1,1↔2,1` (r1↔2, ~50 m) nach `0,-3↔0,-2` (r2↔3, ~100 m); Geomorph-
+  Grenz-Zeile 100 % auf Fläche. **Kosten (`diag-lod-pyramid`):** +16 LOD0-Chunks (~1.45× Terrain-Tris im Ring 4,
+  +29 % Build-Sampling) — der Build amortisiert; der **Render-FPS** ist pixel-blind → Schöpfer-Auge. Playtest
+  `Alle Invarianten OK` (4 Invarianten migriert: `lodPyramidBands`/`bandLods` r≤2→0 r3→1, `lodMidRing`,
+  `lodHysteresis`). **NEBENBEFUND (gemessen `diag-n3-water-abovel`):** der LOD-Reorder verschob die Map-
+  Reihenfolge → der order-abhängige `sampleMesh` des V18.25-Wasser-Wächters griff einen Chunk mit aktivem T4b-
+  `caDelta` (Wasser fliesst nach einem Carve bis +4 m über L, surfY = L + caDelta) → der alte Wächter „NIE über L"
+  ist mit T4b INKOMPATIBEL (er ist älter). Der LOD-Reorder baut KEINEN Vertex über L (clean Δ=0, nach Carve
+  Δ=3.6 m). Geheilt im TEST (V17.32 — den statischen Intent testen): das CA vor der V18.25-Static-Prüfung leeren
+  + die sampleMesh frisch bauen (caDelta=0). **Sign-off (OFFEN, Schöpfer-Auge):** beim schnellen Laufen kein Pop +
+  FPS tragbar.
 - **N1 · Cross-LOD watertight (Render + KOLLISION).** Heute: der Geomorph (T2) ist render-only + schliesst
   nur die exakte Grenz-ZEILE (98.7 %), die ganze Zone nur 57.2 % (⌀0.738 m, max 9.67 m). Heilung
   (Geomorph-VOLLENDUNG, baut auf T2 — kein Rewrite, die Heilige Lektion): **(a)** das Morph-Gewicht deckt die

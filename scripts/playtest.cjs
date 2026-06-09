@@ -18307,10 +18307,13 @@ async function checkBandVoxelTerrainCore(ctx) {
                 Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
                 Math.abs(cL3.dimY * cL3.step - 417.6) < 1e-6;
             const lf = (rr) => r._voxelChunkLodFor(rr, 0, 0, 0);
+            // N3 (Naht §12): der LOD0-Ring ist 5×5 (maxRing 2) → die Cross-LOD-Grenze
+            // sitzt jetzt bei r=2→3 (~100 m), nicht mehr r=1→2 (~50 m).
             out.lodPyramidBands =
                 lf(0) === 0 &&
                 lf(1) === 0 &&
-                lf(2) === 1 &&
+                lf(2) === 0 &&
+                lf(3) === 1 &&
                 lf(8) === 1 &&
                 lf(9) === 2 &&
                 lf(10) === 2 &&
@@ -18341,7 +18344,8 @@ async function checkBandVoxelTerrainCore(ctx) {
                 out.bandLods =
                     b(0).lod === 0 &&
                     b(1).lod === 0 &&
-                    b(2).lod === 1 &&
+                    b(2).lod === 0 &&
+                    b(3).lod === 1 &&
                     b(8).lod === 1 &&
                     b(9).lod === 2 &&
                     b(10).lod === 2 &&
@@ -18349,6 +18353,19 @@ async function checkBandVoxelTerrainCore(ctx) {
                     b(99).lod === 3;
                 out.lodReadsBand =
                     r._voxelChunkLodFor(0, 0, 0, 0) === b(0).lod && r._voxelChunkLodFor(9, 0, 0, 0) === b(9).lod;
+                // N3 — die LOD-Hysterese: ein bestehender Chunk hält seine feinere
+                // LOD im Deadband (r bis Band-Grenze + LOD_HYSTERESIS_RINGS), aber
+                // VERFEINERT sofort. Beweis am Grat LOD0(maxRing2)↔LOD1:
+                //   r=3, currentLod=0 → bleibt 0 (Deadband: 3 ≤ 2+1) — kein Vergröbern-Pop
+                //   r=4, currentLod=0 → wird 1 (klar über 2+1) — vergröbert endlich
+                //   r=2, currentLod=1 → wird 0 (Verfeinern greift sofort)
+                //   ohne currentLod → reine Band-LOD (lf(3)===1, unverändert)
+                out.lodHysteresis =
+                    r._voxelChunkLodFor(3, 0, 0, 0, 0) === 0 &&
+                    r._voxelChunkLodFor(4, 0, 0, 0, 0) === 1 &&
+                    r._voxelChunkLodFor(2, 0, 0, 0, 1) === 0 &&
+                    r._voxelChunkLodFor(3, 0, 0, 0) === 1 &&
+                    typeof r.constructor.LOD_HYSTERESIS_RINGS === "number";
                 out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
                 // §2-Synergie: hazeFar = max(350, ring × 43.2). Ring 12 → 518 (>Floor),
                 // Ring 4 → 350 (Floor = geliebte Sicht unverändert).
@@ -18413,7 +18430,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.lodPyramidConfig
         );
         check(
-            "Welle E (E1): die LOD-Zuweisung ist ADDITIV (r≤8 wie alt: r2-8→LOD1; neue ferne Ringe r9-10→LOD2, r≥11→LOD3)",
+            "N3 (Naht §12): LOD0-Ring 5×5 (r≤2→0, r3-8→1, r9-10→2, r≥11→3) — die Cross-LOD-Grenze in den Fog",
             voxelP2bResults.lodPyramidBands
         );
         check(
@@ -18425,13 +18442,14 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.detailBandFn === true
         );
         if (voxelP2bResults.detailBandFn) {
-            check(
-                "V17.114 U1: Kaskaden-Bänder byte-identisch (r≤1→0, r2-8→1, r9-10→2, r≥11→3)",
-                voxelP2bResults.bandLods === true
-            );
+            check("N3 (Naht §12): Kaskaden-Bänder (r≤2→0, r3-8→1, r9-10→2, r≥11→3)", voxelP2bResults.bandLods === true);
             check(
                 "V17.114 U1: _voxelChunkLodFor liest die Kaskade (kein Parallel-Pfad)",
                 voxelP2bResults.lodReadsBand === true
+            );
+            check(
+                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst im Deadband (r > Band-Grenze + LOD_HYSTERESIS_RINGS) → kein Flip-Flop-Pop am Grat",
+                voxelP2bResults.lodHysteresis === true
             );
             check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
             check(
@@ -20125,6 +20143,22 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         // 8) Material-Probe: Mesh nutzt das geteilte hydroSurfaceMaterial
         // (NICHT eigener Shader).
         if (sampleMeshKey) {
+            // N3/T4b (V17.32 — den Test DETERMINISTISCH machen): V18.25 (U-W4 unten)
+            // prüft die STATISCHE Wasser-Form (flach auf L, kein Bank-Klettern). T4b
+            // (V18.84) erlaubt dynamisches caDelta — Wasser fliesst nach einem Carve
+            // bis +4 m über L (surfY = L + caDelta, _caWaterTopDelta). Ein früheres
+            // Carve-Band hinterlässt caDelta in waterLevelCells; der order-abhängige
+            // sampleMesh (erster Wasser-Chunk in Map-Reihenfolge) griff es, nachdem
+            // der N3-LOD-Reorder die Map-Reihenfolge verschob. GEMESSEN (scripts/
+            // diag-n3-water-abovel): sauber Δ=0, NACH einem Carve Δ=3.6 m → der LOD-
+            // Reorder baut KEINEN Vertex über L, es ist die T4b-Inkompatibilität des
+            // alten Wächters. Fürs STATISCHE Kriterium das CA leeren + die sampleMesh
+            // frisch bauen (caDelta=0) — testet die V18.25-Intent, nicht den Live-Fluss.
+            if (r.state.waterLevelCells && r.state.waterLevelCells.size > 0) {
+                r.state.waterLevelCells.clear();
+                const _sc = sampleMeshKey.split(",");
+                r._buildVoxelChunkWaterSurfaceMesh(Number(_sc[0]), Number(_sc[1]), sampleMeshKey);
+            }
             const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
             out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
             // V18.6 U-W4 — der Default-Render ist die Höhenfeld-FLÄCHE ("chunk-
@@ -20814,7 +20848,8 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         if (out.hasLodHelper) {
             out.lodNear = r._voxelChunkLodFor(0, 0, 0, 0); // r=0 → LOD 0
             out.lodAdjacent = r._voxelChunkLodFor(1, 0, 0, 0); // r=1 → LOD 0
-            out.lodFar = r._voxelChunkLodFor(2, 0, 0, 0); // r=2 → LOD 1
+            out.lodMidRing = r._voxelChunkLodFor(2, 0, 0, 0); // r=2 → LOD 0 (N3: LOD0-Ring 5×5)
+            out.lodFar = r._voxelChunkLodFor(3, 0, 0, 0); // r=3 → LOD 1 (N3: Grenze bei r=3)
             out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 1
         }
         // 3) Empirisch: ein streaming-aktiver Chunk hat `entry.lod`
@@ -20887,7 +20922,8 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
     if (res.hasLodHelper) {
         check("Welle Perf-3.b V9.88: r=0 (Player-Chunk) → LOD 0", res.lodNear === 0);
         check("Welle Perf-3.b V9.88: r=1 (Nachbar-Chunk) → LOD 0", res.lodAdjacent === 0);
-        check("Welle Perf-3.b V9.88: r=2 (ferner Chunk) → LOD 1", res.lodFar === 1);
+        check("N3 (Naht §12): r=2 (LOD0-Ring 5×5) → LOD 0", res.lodMidRing === 0);
+        check("N3 (Naht §12): r=3 (jenseits des LOD0-Rings) → LOD 1", res.lodFar === 1);
         check("Welle Perf-3.b V9.88: r=4 (sehr ferner Chunk) → LOD 1", res.lodVeryFar === 1);
     }
     check("Welle Perf-3.b V9.88: ≥1 LOD-0-Chunk gestreamt (Nahbereich)", res.lod0Count >= 1);
