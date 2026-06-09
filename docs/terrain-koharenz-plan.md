@@ -219,9 +219,32 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
 ### T0 — MESSEN: welche Naht dominiert? (die These empirisch härten · Risiko: keiner)
 - **Ziel.** Bevor irgendein Umbau: trennen, ob das sichtbare Abbau-/Lade-Symptom die *zeitliche* (async)
   oder *räumliche* (LOD/blobig) Naht ist — die „miss zuerst"-Lehre (kostete den main-Stand).
-- **Mechanik.** `scripts/diag-chunk-seam.cjs`: (a) Edit + Nachbarn synchron rebuilden vs. async →
-  Screenshot-Vergleich; (b) Vertex-Position-Delta an geteilten Rändern messen (gleiche LOD vs Cross-LOD).
-- **Sign-off.** Der Schöpfer bestätigt: welches Symptom wiegt schwerer → priorisiert T1 vs T2.
+- **Mechanik.** `scripts/diag-chunk-seam.cjs` (GEBAUT): (A) gleiche-LOD-Naht — EXAKT-geteilte Vertices,
+  gebinnt nach Abstand zur Grenz-Ebene; (B) Cross-LOD-Naht — dasselbe + Punkt→grobe-Oberfläche-Spalt der
+  feinen Naht-Vertices, okkludiert vs. sichtbar getrennt; (C) zeitlich — Carve an der Grenze, Frames bis
+  der Nachbar heilt (async) vs. der Sync-Drain (0 Frames). *Mess-Disziplin (V13.0): drei Vertex-/Profil-
+  Matchings verworfen, weil sie auf der MEHRWERTIGEN Surface-Nets-Fläche (Höhlen/Klippen/Wände) Schein-
+  Spalte von 50+ m erzeugten — das band-UNABHÄNGIGE, dispositive Maß ist die EXAKT-geteilte-Vertex-Quote.*
+- **GEMESSEN (09.06.2026, Spawn-Region, ringRadius 4):**
+  - **(A) gleiche LOD — STRUKTURELL SEMI-VERSCHWEISST, KEIN primärer Riss.** ~50 % der Naht-Vertices sind
+    float-EXAKT koinzident (der Pad+Crop-Overlap V9.79 + Determinismus), stabil über alle Abstands-Bins.
+    → die §1.2/§0-Formulierung „KEINE geteilten Vertices" ist DESIGN-wahr (jeder Chunk mesht unabhängig),
+    aber der Overlap+Determinismus erzeugt ~50 % KOINZIDENTE Vertices → die Wette zahlt weit mehr als
+    gefürchtet. (Der Rest-Proxy Punkt→Fläche ist headless-unreliabel — kein „Terrain-Löcher"-Befund in
+    30 Wellen → kein primärer sichtbarer Riss; Schöpfer-Auge bestätigt final.)
+  - **(B) Cross-LOD — der STRUKTURELLE räumliche Riss.** 0 % geteilte Vertices über ALLE Abstände (fein
+    step 1.8 / grob step 3.6 = fundamental inkompatible Gitter) + ~21 % der feinen Naht-Vertices klaffen
+    sichtbar (>1 m, nicht okkludiert) von der groben Oberfläche. → **T2 (Stable-LOD+Geomorph) ist der
+    echte räumliche Bogen.**
+  - **(C) zeitlich — das async-Abbau-Fenster, klein + fixbar.** Ein Grenz-Carve markiert ~12 Chunks dirty;
+    der Spieler-Chunk heilt @Frame 1, der Grenz-Nachbar @Frame 3 → **~2 Frame(s) sichtbare Abbau-Naht**
+    (1 Chunk/Frame). Der bereits existierende Sync-Drain (`_drainDirtyVoxelChunks`) baut alle 12 in EINEM
+    Schritt → **0 Frames stale** = das T1-Ziel ist erreichbar, der Pfad existiert großteils.
+- **Fazit / Empfehlung der Zahlen:** die §6-Reihenfolge bestätigt sich — **T1 zuerst** (kleinster, risiko-
+  ärmster Schritt, testet die These praktisch, 0-Frame-Heal über den vorhandenen Drain-Pfad), dann **T2**
+  (Cross-LOD, der größere pixel-blinde Bogen). Die gleiche-LOD-Naht braucht KEINE eigene Arbeit.
+- **Sign-off (OFFEN, Schöpfer-Auge):** welches Symptom stört im Browser mehr (die ~2-Frame-Abbau-Naht
+  oder die Cross-LOD-LOD-Naht beim Heranstreamen) → bestätigt T1-zuerst oder priorisiert um.
 
 ### T1 — Zeitliche Kohärenz: der synchrone Nachbar-Heal (Risiko: niedrig)
 - **Ziel.** Beim Abbauen heilt die Naht im SELBEN Frame — kein stale Nachbar mehr.
@@ -279,7 +302,7 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
 
 | Phase | Headless-Diag (Wand) | Determinismus | Browser-Sign-off (Pixel) |
 |---|---|---|---|
-| T0 | `diag-chunk-seam` (zeitlich vs räumlich) | — | welche Naht wiegt schwerer |
+| T0 | `diag-chunk-seam` (GEBAUT, GEMESSEN) | — | **OFFEN**: welche Naht stört im Auge mehr |
 | T1 | Nachbar im Edit-Frame gebaut (Frame-Count) | — | keine Abbau-Naht |
 | T2 | `diag-water-lod-seam` (Vertex-Abstand) | LOD derived | keine LOD-Naht, kein Pop |
 | T3 | `diag-mesh-sharpness` (Kanten-Winkel) + `checkBandWellePerf3cWorkerFoundation` | **bit-identisch** | kantige Felsen, FPS |
