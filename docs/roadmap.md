@@ -188,6 +188,11 @@ nicht im Gate) · IndexedDB-Persistenz (statt localStorage).
    Wurzel woanders liegt.
 6. **Merge-Rhythmus** — ein validierter Bogen = ein Merge. **Der Tisch bleibt schlank** (ein fertiger
    Plan wandert sofort in die Bibliothek).
+7. **Read-as-stranger VOR jeder Präsentation** (V18.3, verallgemeinert 09.06.) — bevor ein Plan, eine
+   Analyse, ein „fertig" den Schöpfer erreicht, lies es feindlich, als wäre es von einem Fremden:
+   *wirklich gemessen oder behauptet? aktuellster Stand oder nur die Klassiker? Hypothese als Hypothese
+   markiert? Samen/Fäden verwoben oder vergessen?* Der Selbst-Review ist mein Reflex, nicht die Frage des
+   Schöpfers — er fand schon einen geshippten Bug (V18.3) UND einen zu selbstsicheren Plan (09.06.).
 
 ## §10 · Versions-Konvention
 
