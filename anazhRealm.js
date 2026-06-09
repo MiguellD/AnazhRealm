@@ -314,6 +314,12 @@ class AnazhRealm {
                 waterDepthFoam: 5.0, // V18.14 M1 — Schaum nur bis dieser ECHTEN Tiefe (m); kleiner = weniger Fluss-Schaum
                 waterLakeRipple: 0.65, // V18.17 Phase 3 — See-Wellen-Floor SICHTBAR (0 = flach, 1 = wie Ozean)
                 waterfallSteep: 4.0, // V18.14 M3 — Wasserfall-Plane nur ab dieser Terrain-Steilheit (Drop/Lauf); grösser = nur echte Wände
+                // V18.31 — der AUSLAUF-ÜBERGANG: die Breite des Ufer→Boden-Übergangs, über die
+                // sich das Auslauf-Wasser von der flachen L-Fläche auf das terrain-folgende Bett
+                // (Bodenkontakt, V18.31) legt. Klein = scharfer Kontakt (das Wasser erreicht schnell
+                // den Boden, fliesst sauber hinein), gross = sanfter (schwebt im Übergang länger). War
+                // bis V18.30 die "Auslauf-Breite" der alten Versteck-Logik (gross = flacher).
+                waterOutflowSlope: 3.0,
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
                 shadowRange: 300, // Frustum-Halbbreite m (kleiner = schärfer)
@@ -20241,6 +20247,12 @@ class AnazhRealm {
         const step0 = cfg0.step;
         const dimY0 = cfg0.dimY;
         const dq0 = dim0 * dim0;
+        // V18.31 — der browser-justierbare Auslauf-Übergang (Default 3.0). EINMAL pro Mesh-Build
+        // gelesen (nicht pro Vertex). Klein = scharfer Bodenkontakt, gross = sanfter Übergang.
+        const outflowSlope =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
+                ? this.state.atmosphere.waterOutflowSlope
+                : 6.0;
         // V18.16 — KEINE Zell-Maske auf der Geometrie (der Profi-Weg, V18.10 bestätigt):
         // die Fläche bleibt grosszügig auf der `L`-Domäne (~16 m über die Uferlinie), die
         // SICHTBARKEIT trägt der Tiefen-Shader PRO PIXEL aus der echten Meter-Tiefe `aDepth`
@@ -20327,11 +20339,48 @@ class AnazhRealm {
             // „Mesh-Elemente bis zum Boden"-Idee des Schöpfers, ohne neue Geometrie — die
             // bestehende Über-Deckungs-Fläche FOLGT jetzt dem Terrain, statt darüber zu schweben.
             // Dünnes Ufer (thickness ≤ thinBand) bleibt FLACH bei L (See füllt bis ans Ufer, V18.26).
-            // V18.87-MESS-A (c): den Auslauf-Scan ENTFERNT — surfY = L + caDelta. Das L-Feld ist
-            // schon glatt (See flach + Fluss = glatte macro-River-Profile + Rim flach); der Auslauf-
-            // Terrain-Folge-Scan war der Falt-Erzeuger (er liess das flache See-Wasser dem bumpigen
-            // Terrain folgen). MESSUNG, ob das Falten dadurch fällt.
-            const surfY = L + caDelta;
+            let surfY = L + caDelta;
+            if (depthM < step0) {
+                // Die Boden-Höhe `tY` MUSS das GERENDERTE Terrain treffen — sonst schwebt das
+                // Wasser sichtbar (der „verliert Kontakt"-Befund). `colTerrainY` (die Zell-Oberkante)
+                // verfehlt die echte Mesh-Iso um bis ±step0/2 (1.8-m-Treppe) → das Restschweben; eine
+                // 5er-Glättung half NICHT (sie mittelt an Kanten HOCH → schwebt über der tieferen
+                // Seite). Stattdessen: ein kurzer Density-Iso-Scan ab knapp über L abwärts
+                // (`_terrainDensityAt`, pure (x,z,y) → naht-frei, glatt, EXAKT die Mesh-Oberfläche).
+                // Im Auslauf liegt die Oberfläche knapp unter L → wenige 1-m-Schritte = billig (das
+                // teure `_voxelSurfaceY` scannt von der Decke = ~150 m unnötig; hier nur ~max 34 m).
+                let tY = -Infinity;
+                let prevY = L + 2;
+                let prevD = this._terrainDensityAt(wx, prevY, wz);
+                for (let yy = L + 1; yy >= L - 32; yy -= 1.0) {
+                    const d = this._terrainDensityAt(wx, yy, wz);
+                    if (d > 0) {
+                        // EXAKTE Iso-Höhe (Density=0) zwischen dem letzten AIR (prevD≤0) und diesem
+                        // SOLID linear interpoliert → kontinuierlich (KEINE 1-m-Scan-Stufen → die
+                        // künstliche Treppen-Neigung fällt weg, das Wasser folgt dem Terrain glatt).
+                        tY = prevD <= 0 ? prevY + (yy - prevY) * (prevD / (prevD - d)) : yy;
+                        break;
+                    }
+                    prevY = yy;
+                    prevD = d;
+                }
+                // Fallback, wo der 34-m-Scan kein Terrain trifft (sehr dicke Über-Deckung):
+                // das glatte Makro-Terrain (selten → bezahlbar).
+                if (tY === -Infinity) tY = this._terrainMacroSurfaceY(wx, wz);
+                if (tY > -Infinity && tY < L) {
+                    const thickness = L - tY;
+                    const thinBand = 2.5;
+                    // V18.31 — `skirt`: die dünne Wasserschicht ÜBER dem Boden (Kontakt, sichtbar);
+                    // der Tiefen-Shader fadet sie → durchscheinendes, fliessendes Wasser. `outflowSlope`
+                    // (Regler) = die Breite des Ufer→Boden-Übergangs: klein = das Wasser erreicht
+                    // schnell den Boden (scharfer Kontakt), gross = sanfter (schwebt im Übergang länger).
+                    const skirt = 0.6;
+                    const u = Math.max(0, Math.min(1, (thickness - thinBand) / outflowSlope));
+                    const s = u * u * (3 - 2 * u); // smoothstep
+                    const followY = Math.min(L, tY + skirt); // das Wasser AUF dem Boden (Kontakt)
+                    surfY = L + (followY - L) * s; // s=0→L (Ufer flach), s=1→Boden+skirt (Kontakt, nie schwebend)
+                }
+            }
             const id = positions.length / 3;
             positions.push(wx, surfY, wz);
             // aWave: 1 = Ozean (Spiegel ≈ Meereshöhe) → Gerstner-Wellen; 0 = See/Fluss
@@ -21962,7 +22011,6 @@ class AnazhRealm {
     _atlasWaterLevelAt(x, z, terrainTopY) {
         let level = -Infinity;
         let inRegion = false;
-        let isBody = false; // V18.87 — diese (x,z) ist ein See/Ozean-Körper (flacher Spiegel)
         const h = this.state.hydrosphere;
         if (h && h.ready && h.water && h.water.waterKind) {
             const dim = h.dim;
@@ -21975,7 +22023,6 @@ class AnazhRealm {
                 const wY = h.water.waterY;
                 const here = wK[ci + cj * dim];
                 if (here === 1 || here === 2) {
-                    isBody = true;
                     // echter Wasser-Körper an dieser Spalte — voller Spiegel.
                     level = wY[ci + cj * dim];
                 } else {
@@ -22021,17 +22068,8 @@ class AnazhRealm {
             const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
             level = waterLevel;
         }
-        // V18.87 — DIE SEE/FLUSS-KLASSIFIKATION (Schöpfer „scheinen nicht zu wissen ob See
-        // oder Fluss"): statt `max(rim/body, river)` (das See-flach mit Fluss-Abfall vermischt
-        // → Seen beulen wo Flüsse durch + der Auslauf schwebt am flachen Rim). Ein See/Ozean
-        // (`isBody`) ist FLACH — der Fluss fliesst als Conduit hindurch (V9.46), keine Profil-
-        // Beule. Ein Fluss/Auslauf AUSSERHALB eines Body trägt seine terrain-folgende Profile,
-        // die GEWINNT (auch absteigend) → der Auslauf folgt dem Tal nach unten, statt am flachen
-        // Rim zu schweben (= warum der V18.31-Auslauf-Pflaster nötig schien — jetzt an der Wurzel).
-        if (!isBody) {
-            const river = this._hydroRiverAt(x, z);
-            if (river) level = river.surfaceY;
-        }
+        const river = this._hydroRiverAt(x, z);
+        if (river && river.surfaceY > level) level = river.surfaceY;
         return level;
     }
 
@@ -25524,6 +25562,11 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterfallSteep)
                         ? this.state.atmosphere.waterfallSteep
                         : 1.0,
+                // V18.31 — der Auslauf-Übergang persistieren.
+                waterOutflowSlope:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
+                        ? this.state.atmosphere.waterOutflowSlope
+                        : 3.0,
                 // J4-Regler: Kavitäts-AO-Stärke (0..1) + Kanten-Schärfe (Post-FX local-contrast, 0..1).
                 cavityAO:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
@@ -27733,6 +27776,12 @@ class AnazhRealm {
             if (Number.isFinite(df)) this.state.atmosphere.waterDepthFoam = Math.max(0.1, Math.min(6.0, df));
             const ws = Number(state.atmosphere.waterfallSteep);
             if (Number.isFinite(ws)) this.state.atmosphere.waterfallSteep = Math.max(0.2, Math.min(4.0, ws));
+            // V18.31 — der Auslauf-Übergang (vor dem Mesh-Bau setzen). Die Semantik kehrte sich
+            // um (war "Breite/flacher" für die V18.30-Versteck-Logik, jetzt "Ufer→Boden-Übergang"
+            // für den Bodenkontakt; klein = scharfer Kontakt) → ein alter, für "flacher" hoch-
+            // gedrehter Wert (>8) self-healt auf den neuen Kontakt-Default; neue Tunings (1-8) bleiben.
+            const wos = Number(state.atmosphere.waterOutflowSlope);
+            if (Number.isFinite(wos)) this.state.atmosphere.waterOutflowSlope = wos > 8 ? 3.0 : Math.max(1.0, wos);
             // J4-Regler (default 1.0 / 0.5 = unverändert) + an die Uniforms pushen,
             // falls sie schon erzeugt sind (sonst liest `_ensure*` sie beim Bau).
             const ao = Number(state.atmosphere.cavityAO);
@@ -38919,6 +38968,27 @@ class AnazhRealm {
         return m;
     }
 
+    // V18.31 — der AUSLAUF-ÜBERGANG (Boden-folgender Auslauf V18.31): die Breite des Ufer→
+    // Boden-Übergangs, über die sich das Auslauf-Wasser von L auf das terrain-folgende Bett
+    // (Bodenkontakt) legt. Klein = scharfer Kontakt (fliesst schnell sauber in den Boden),
+    // gross = sanfter (schwebt im Übergang länger). GEOMETRIE-Parameter (Vertex-Y im Surface-
+    // Mesh, kein Shader-Uniform) → re-enqueued alle Wasser-tragenden Chunks (wie
+    // setWaterRenderMode); die Zellen/Physik bleiben unberührt (render-only).
+    setWaterOutflowSlope(v) {
+        const m = Math.max(1.0, Math.min(8.0, Number(v) || 3.0));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.waterOutflowSlope = m;
+        if (this.state.voxelChunks) {
+            for (const [key, e] of this.state.voxelChunks) {
+                if (!e || !e.waterCells) continue;
+                const comma = key.indexOf(",");
+                this._enqueueWaterIso(parseInt(key.slice(0, comma), 10), parseInt(key.slice(comma + 1), 10));
+            }
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // WELLE J4-Regler — die Kavitäts-AO-Stärke (0 = aus … 1 = voll). Die
     // `fwidth(normalWorld)`-AO zeichnet jede Surface-Nets-Facetten-Kante als
     // Linie (screen-space → flackert beim Laufen) — der Haupt-Verdacht für die
@@ -47895,6 +47965,22 @@ class AnazhRealm {
                 if (wfsVal) wfsVal.textContent = v.toFixed(1);
             });
         }
+        // V18.31 — Auslauf-Übergang: die Breite des Ufer→Boden-Übergangs (das Wasser folgt
+        // dem Boden). Klein = scharfer Kontakt (fliesst sauber in den Boden), gross = sanfter.
+        const wosS = document.getElementById("slider-wateroutflow");
+        const wosVal = document.getElementById("slider-wateroutflow-val");
+        if (wosS) {
+            const o0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
+                    ? this.state.atmosphere.waterOutflowSlope
+                    : 3.0;
+            wosS.value = String(Math.round(o0 * 10));
+            if (wosVal) wosVal.textContent = o0.toFixed(1) + " m";
+            wosS.addEventListener("input", () => {
+                const v = this.setWaterOutflowSlope(parseInt(wosS.value, 10) / 10);
+                if (wosVal) wosVal.textContent = v.toFixed(1) + " m";
+            });
+        }
         // V17.109 — die 2.5D-Lichtung (0..100 % → terrainFlatten 0..1). Der HAUPT-
         // Hebel gegen die Facetten-Rauten (blendet die Shading-Normale zur Up-Achse).
         const tfS = document.getElementById("slider-flatten");
@@ -50629,7 +50715,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.87.0";
+AnazhRealm.VERSION = "18.86.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
