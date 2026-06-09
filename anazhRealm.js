@@ -18295,6 +18295,16 @@ class AnazhRealm {
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         if (indices.length > 0) geom.setIndex(indices);
         geom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+        // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): JEDE Terrain-Geometrie trägt die
+        // Morph-Attribute. WebGPU-Strikt (V10.0-g.1): ein NodeMaterial-`attribute()` MUSS auf
+        // JEDEM Mesh existieren, sonst Pipeline-Crash → darum ZENTRAL hier, nie per-Caller. Default
+        // = Identität (Ziel = Position, Gewicht 0 → KEIN Morph) → bit-identische Optik, bis
+        // `_applyCrossLodGeomorph` an einer Cross-LOD-Grenze die Boundary-Vertices auf die GROBE
+        // Nachbar-Oberfläche zieht (T0 GEMESSEN: 0 % geteilte Vertices, ~21 % sichtbare Spalten).
+        // Render-only: die Geometrie-Position bleibt für Physik/Determinismus/Naht-Test unberührt
+        // — der Morph lebt allein im Vertex-Shader (`positionNode`), main-only (kein Worker-Mirror).
+        geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
+        geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
         return geom;
     }
 
@@ -20337,6 +20347,15 @@ class AnazhRealm {
                     ? this.state.atmosphere.colorVar
                     : 1.0
             ),
+            // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph, live-tunbar): wie stark die
+            // Boundary-Vertices eines feinen Chunks an die GROBE Nachbar-Oberfläche gezogen werden
+            // (1 = voll = die Naht schliesst, 0 = aus = die rohe T-junction). Der Schöpfer dreht im
+            // Browser:  anazhRealm.state.atmoUniforms.geomorph.value = 0   (Naht sichtbar zum Vergleich)
+            geomorph: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.geomorph)
+                    ? this.state.atmosphere.geomorph
+                    : 1.0
+            ),
         };
         // V17.114 U1 — die §2-Synergie: der Aerial-Schleier koppelt an die
         // Kaskaden-Kante (der Dunst wandert mit dem Sicht-Ring).
@@ -20544,6 +20563,28 @@ class AnazhRealm {
                 }
             } catch (_e) {
                 if (typeof window !== "undefined") window.__terrainNormalError = String((_e && _e.message) || _e);
+            }
+            // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): die Boundary-Vertices eines
+            // feinen Chunks an einer Cross-LOD-Grenze auf die GROBE Nachbar-Oberfläche ziehen
+            // (`_applyCrossLodGeomorph` setzt aMorphTarget = nächster grober Boundary-Vertex,
+            // aMorphWeight = 1 auf der Grenz-Zeile, 0 im Inneren). Im Vertex-Shader:
+            //   position = positionLocal + (target − positionLocal) · (geomorph · weight)
+            // → bei geomorph=1 schmiegt sich die feine Naht-Zeile EXAKT an die grobe Kante an
+            // (T0: 0 % geteilt → die feinen Boundary-Vertices kollabieren auf die groben =
+            // dieselbe Polylinie = keine T-junction). Render-only: die Position-Attribute (Physik/
+            // Determinismus/Naht-Test) bleiben unberührt — der Morph lebt nur hier. try/catch +
+            // Marker (V17.12): fällt sauber auf un-gemorpht zurück, nie ein kaputtes Material.
+            try {
+                const _Tm = THREE.TSL;
+                const _aum = this.state.atmoUniforms;
+                if (_Tm && _Tm.attribute && _Tm.positionLocal && _aum && _aum.geomorph) {
+                    const _tgt = _Tm.attribute("aMorphTarget", "vec3");
+                    const _w = _Tm.attribute("aMorphWeight", "float");
+                    const _f = _aum.geomorph.mul(_w);
+                    mat.positionNode = _Tm.positionLocal.add(_tgt.sub(_Tm.positionLocal).mul(_f));
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__terrainMorphError = String((_e && _e.message) || _e);
             }
         }
 
@@ -21063,7 +21104,242 @@ class AnazhRealm {
             if (nb && nb.waterCells) this._enqueueWaterIso(nx, nz);
         }
         this._populateVoxelChunkVegetation(cx, cz);
+        // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): diesen Chunk an seine GROBEN
+        // Nachbarn anschmiegen + die 4 Achsen-Nachbarn neu morphen (ein FEINER Nachbar, der auf
+        // DIESEN als groben Nachbarn wartete, schliesst jetzt seine Naht — das V13.13.2-Muster
+        // „re-process die Nachbarn bei Ankunft", analog zum Wasser-Iso). Main-only, render-only.
+        this._applyCrossLodGeomorph(cx, cz);
+        this._applyCrossLodGeomorph(cx + 1, cz);
+        this._applyCrossLodGeomorph(cx - 1, cz);
+        this._applyCrossLodGeomorph(cx, cz + 1);
+        this._applyCrossLodGeomorph(cx, cz - 1);
         return entry;
+    }
+
+    // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): zieht die Boundary-Vertices DIESES
+    // Chunks an die GROBE Oberfläche jedes COARSER (höher-LOD) Achsen-Nachbarn. Die feine Naht-
+    // Zeile kollabiert auf die NÄCHSTEN groben Vertices (dieselbe Polylinie wie die grobe Kante)
+    // → die T-junction schliesst (T0 GEMESSEN: Cross-LOD = 0 % geteilte Vertices, ~21 % sichtbare
+    // Spalten). Render-only: setzt NUR aMorphTarget/aMorphWeight; die Position-Attribute (Physik,
+    // Determinismus, Naht-Test, BVH) bleiben unberührt — der Shader morpht via `geomorph`-Uniform.
+    // Main-only: liest die Nachbar-MESHES (leben nur auf dem Main-Thread; der Worker mesht isoliert)
+    // — wie der Wasser-Iso-OOB-Ring (V13.13.2). `entry.hasMorph` ist der Fast-Path-Marker: ein
+    // Chunk ohne Cross-LOD-Grenze + ohne alten Morph kehrt sofort zurück (der Normalfall). Ein
+    // Re-Mesh baut frische Identitäts-Attribute (`_voxelChunkGeometry`) → kein staler Morph.
+    _applyCrossLodGeomorph(cx, cz) {
+        if (!this.state.voxelChunks) return;
+        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
+        if (!entry || entry.empty || !entry.mesh || !entry.mesh.geometry) return;
+        const geom = entry.mesh.geometry;
+        const pos = geom.attributes.position;
+        const tgtAttr = geom.attributes.aMorphTarget;
+        const wAttr = geom.attributes.aMorphWeight;
+        if (!pos || !tgtAttr || !wAttr) return;
+        const myLod = Number.isFinite(entry.lod) ? entry.lod : 0;
+        const cfg = this._voxelChunkConfig(myLod);
+        const span = cfg.span;
+        const fineStep = cfg.step;
+        // die GROBEREN, gebauten Achsen-Nachbarn sammeln
+        const coarseFaces = [];
+        for (const [dx, dz] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+        ]) {
+            const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
+            if (!nb || nb.empty || !nb.mesh || !nb.mesh.geometry) continue;
+            const nbLod = Number.isFinite(nb.lod) ? nb.lod : 0;
+            if (nbLod <= myLod) continue; // nur an einen GROBEREN Nachbarn anschmiegen
+            coarseFaces.push({ dx, dz, nbGeom: nb.mesh.geometry, nbLod });
+        }
+        // Fast-Path: keine Cross-LOD-Grenze UND kein alter Morph → nichts zu tun (Normalfall)
+        if (coarseFaces.length === 0 && !entry.hasMorph) return;
+        const n = pos.count;
+        const tArr = tgtAttr.array;
+        const wArr = wAttr.array;
+        // Basis = Identität (un-morpht)
+        for (let v = 0; v < n; v++) {
+            tArr[v * 3] = pos.getX(v);
+            tArr[v * 3 + 1] = pos.getY(v);
+            tArr[v * 3 + 2] = pos.getZ(v);
+            wArr[v] = 0;
+        }
+        let touched = false;
+        const bestDist = coarseFaces.length ? new Float32Array(n).fill(Infinity) : null;
+        const cp = [0, 0, 0]; // Scratch für den nächsten Punkt auf einem Dreieck
+        for (const face of coarseFaces) {
+            const nbGeom = face.nbGeom;
+            const nbPos = nbGeom.attributes.position;
+            const nbIdx = nbGeom.index ? nbGeom.index.array : null;
+            if (!nbPos || !nbIdx) continue;
+            const coarseStep = this._voxelChunkConfig(face.nbLod).step;
+            const axis = face.dx !== 0 ? 0 : 2; // 0 = x-Ebene, 2 = z-Ebene
+            const plane =
+                face.dx === 1
+                    ? (cx + 1) * span
+                    : face.dx === -1
+                      ? cx * span
+                      : face.dz === 1
+                        ? (cz + 1) * span
+                        : cz * span;
+            // die groben Boundary-DREIECKE (mind. ein Vertex nahe der Ebene) als flaches Array —
+            // der Morph zieht die feine Naht-Zeile auf die grobe OBERFLÄCHE (Punkt→Dreieck), NICHT
+            // auf den nächsten groben VERTEX (der ist sparse + 3D-nearest greift die falsche
+            // Branche/Höhle, GEMESSEN diag-chunk-seam D: nearest-vertex liess ⌀11 m Spalt). Auf der
+            // Fläche liegen = die Oberflächen treffen sich = kein geometrischer Riss.
+            const tris = [];
+            const bnd = coarseStep * 1.5;
+            for (let t = 0; t < nbIdx.length; t += 3) {
+                const i0 = nbIdx[t],
+                    i1 = nbIdx[t + 1],
+                    i2 = nbIdx[t + 2];
+                const a0 = axis === 0 ? nbPos.getX(i0) : nbPos.getZ(i0);
+                const a1 = axis === 0 ? nbPos.getX(i1) : nbPos.getZ(i1);
+                const a2 = axis === 0 ? nbPos.getX(i2) : nbPos.getZ(i2);
+                if (Math.abs(a0 - plane) > bnd && Math.abs(a1 - plane) > bnd && Math.abs(a2 - plane) > bnd) continue;
+                tris.push(
+                    nbPos.getX(i0),
+                    nbPos.getY(i0),
+                    nbPos.getZ(i0),
+                    nbPos.getX(i1),
+                    nbPos.getY(i1),
+                    nbPos.getZ(i1),
+                    nbPos.getX(i2),
+                    nbPos.getY(i2),
+                    nbPos.getZ(i2)
+                );
+            }
+            if (tris.length === 0) continue;
+            // die Grenz-ZEILE (dPlane < flat) morpht VOLL (w=1 → exakt auf die grobe Fläche, die
+            // Naht schliesst); danach ein Falloff bis morphBand (sanfte Rampe ins Innere, kein
+            // interner Sprung). flat deckt die Surface-Nets-Offset-Streuung der Grenz-Vertices
+            // (~fineStep/2) ab — sonst morphen sie nur 67 % (GEMESSEN: Grenz-Zeile nur 86 % auf
+            // Fläche statt ~100 %, der Rest-Spalt 0.17 m).
+            const flat = fineStep * 0.7;
+            const morphBand = fineStep * 2.0;
+            for (let v = 0; v < n; v++) {
+                const px = pos.getX(v),
+                    py = pos.getY(v),
+                    pz = pos.getZ(v);
+                const dPlane = Math.abs((axis === 0 ? px : pz) - plane);
+                if (dPlane > morphBand) continue;
+                let bd = Infinity,
+                    bx = px,
+                    by = py,
+                    bz = pz;
+                for (let t = 0; t < tris.length; t += 9) {
+                    this._closestPtTri(px, py, pz, tris, t, cp);
+                    const ddx = px - cp[0],
+                        ddy = py - cp[1],
+                        ddz = pz - cp[2];
+                    const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+                    if (d2 < bd) {
+                        bd = d2;
+                        bx = cp[0];
+                        by = cp[1];
+                        bz = cp[2];
+                    }
+                }
+                const d3 = Math.sqrt(bd);
+                if (d3 >= bestDist[v]) continue; // ein näheres Face gewann diesen Vertex schon
+                bestDist[v] = d3;
+                tArr[v * 3] = bx;
+                tArr[v * 3 + 1] = by;
+                tArr[v * 3 + 2] = bz;
+                // Gewicht: 1 in der Grenz-Zeile (dPlane ≤ flat) → linear auf 0 bei morphBand
+                wArr[v] = Math.max(0, Math.min(1, (morphBand - dPlane) / (morphBand - flat)));
+                touched = true;
+            }
+        }
+        entry.hasMorph = touched;
+        tgtAttr.needsUpdate = true;
+        wAttr.needsUpdate = true;
+    }
+
+    // Nächster Punkt auf dem Dreieck (T[t..t+8] = A,B,C) zu P → out[0..2] (Ericson, RTCD §5.1.5).
+    // Voronoi-Regionen: Ecke A/B/C, Kante AB/AC/BC, oder Innen-Projektion. Für den T2-Geomorph
+    // (die feine Naht-Zeile auf die grobe OBERFLÄCHE ziehen) — robust gegen die mehrwertige
+    // Surface-Nets-Fläche (im Gegensatz zum nächsten Vertex, der die falsche Branche greift).
+    _closestPtTri(px, py, pz, T, t, out) {
+        const ax = T[t],
+            ay = T[t + 1],
+            az = T[t + 2];
+        const bx = T[t + 3],
+            by = T[t + 4],
+            bz = T[t + 5];
+        const cx = T[t + 6],
+            cy = T[t + 7],
+            cz = T[t + 8];
+        const abx = bx - ax,
+            aby = by - ay,
+            abz = bz - az;
+        const acx = cx - ax,
+            acy = cy - ay,
+            acz = cz - az;
+        const apx = px - ax,
+            apy = py - ay,
+            apz = pz - az;
+        const d1 = abx * apx + aby * apy + abz * apz;
+        const d2 = acx * apx + acy * apy + acz * apz;
+        if (d1 <= 0 && d2 <= 0) {
+            out[0] = ax;
+            out[1] = ay;
+            out[2] = az;
+            return;
+        }
+        const bpx = px - bx,
+            bpy = py - by,
+            bpz = pz - bz;
+        const d3 = abx * bpx + aby * bpy + abz * bpz;
+        const d4 = acx * bpx + acy * bpy + acz * bpz;
+        if (d3 >= 0 && d4 <= d3) {
+            out[0] = bx;
+            out[1] = by;
+            out[2] = bz;
+            return;
+        }
+        const vc = d1 * d4 - d3 * d2;
+        if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+            const v = d1 / (d1 - d3);
+            out[0] = ax + abx * v;
+            out[1] = ay + aby * v;
+            out[2] = az + abz * v;
+            return;
+        }
+        const cpx = px - cx,
+            cpy = py - cy,
+            cpz = pz - cz;
+        const d5 = abx * cpx + aby * cpy + abz * cpz;
+        const d6 = acx * cpx + acy * cpy + acz * cpz;
+        if (d6 >= 0 && d5 <= d6) {
+            out[0] = cx;
+            out[1] = cy;
+            out[2] = cz;
+            return;
+        }
+        const vb = d5 * d2 - d1 * d6;
+        if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+            const w = d2 / (d2 - d6);
+            out[0] = ax + acx * w;
+            out[1] = ay + acy * w;
+            out[2] = az + acz * w;
+            return;
+        }
+        const va = d3 * d6 - d5 * d4;
+        if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+            const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
+            out[0] = bx + (cx - bx) * w;
+            out[1] = by + (cy - by) * w;
+            out[2] = bz + (cz - bz) * w;
+            return;
+        }
+        const denom = 1 / (va + vb + vc);
+        const v = vb * denom,
+            w = vc * denom;
+        out[0] = ax + abx * v + acx * w;
+        out[1] = ay + aby * v + acy * w;
+        out[2] = az + abz * v + acz * w;
     }
 
     // V12.0-perf.a — Fail/Empty/Finalize-Abschluss des Rebuild-Pfads. Bei

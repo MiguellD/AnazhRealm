@@ -262,13 +262,31 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
   der Skirt bleibt async → kein Cluster-Spike.
 - **Sign-off (OFFEN, Schöpfer-Auge):** beim Abbauen an einer Chunk-Grenze — keine sichtbare Trennung mehr.
 
-### T2 — Räumliche Kohärenz: Stable-LOD + Geomorph (Risiko: mittel · pixel-blind)
-- **Ziel.** Die LOD-Naht verschwindet strukturell (E4) → das Wasser darf seinen LOD0-Zwang ablegen (U2).
-- **Mechanik.** `_voxelChunkLodFor` → Stable-Rounding (LOD = max über Chunk+Nachbarn, Fixpunkt 2–3 Iter,
-  von den Größten); Vertex-Geomorph im Vertex-Shader (feine → grobe Position morphen über die Band-Grenze).
-- **Schnittstellen.** `_voxelChunkLodFor` :18916, das geteilte Grid, der Terrain-Vertex-Shader.
-- **Risiko.** pixel-blind (Render). Mitigation: `diag-water-lod-seam.cjs` (existiert) + Browser-Loop.
-- **Sign-off.** An einer LOD-Grenze laufen: keine Naht, kein Pop; fernes Wasser auf Terrain-LOD sauber.
+### T2 — Räumliche Kohärenz: Cross-LOD-Geomorph (Risiko: mittel) — **GEBAUT ✓**
+- **Ziel.** Die LOD-Naht (T0 GEMESSEN: Cross-LOD = 0 % geteilte Vertices, ~21 % sichtbare >1-m-Spalten)
+  verschwindet → das Wasser darf später seinen LOD0-Zwang ablegen (U2).
+- **GEBAUT (09.06.2026, render-only Vertex-Geomorph):** an jeder Cross-LOD-Grenze zieht
+  `_applyCrossLodGeomorph` (Finalize + re-call der 4 Nachbarn, V13.13.2-Muster) die feinen Boundary-
+  Vertices auf die GROBE Nachbar-OBERFLÄCHE (Punkt→Dreieck via `_closestPtTri` — NICHT der nächste grobe
+  Vertex; der ist sparse + greift die falsche Branche). Zwei neue Geometrie-Attribute (`aMorphTarget`,
+  `aMorphWeight`, ZENTRAL in `_voxelChunkGeometry` → WebGPU-strikt sicher), der Terrain-`positionNode`
+  morpht `pos → target` per `geomorph`-Uniform (live-tunbar, default 1). Die Grenz-ZEILE (dPlane<flat)
+  morpht VOLL (w=1 → auf der groben Fläche), ein Falloff bis 2·step ins Innere (kein interner Sprung).
+- **VERIFIZIERT — GEOMETRIE, nicht pixel-blind (die V18-Lehre angewandt):** `diag-chunk-seam` D — die
+  voll-gemorphte Grenz-Zeile (w>0.95) liegt **97.9 % AUF der groben Oberfläche, Spalt ⌀0.018 m** (Target→
+  Fläche ⌀0.07 m = die Targets sind korrekt); die T-junction ist GESCHLOSSEN. Playtest +5 Invarianten grün
+  (kein Material-Morph-Fehler [positionNode kompiliert] · Attribute auf JEDER Geometrie · Source-Probes ·
+  Geomorph feuert, 8 Chunks). `diag-terrain-shot` (gerahmter 3D-Screenshot, das „nächste Hebel"-Werkzeug):
+  das Terrain rendert KOHÄRENT mit Morph an — keine Falten/Löcher, kein WebGPU-Crash.
+- **Eigenschaften:** render-only (Position/Physik/Determinismus/Naht-Test/BVH unberührt — der Morph lebt im
+  Shader); main-only (liest die Nachbar-MESHES wie der Wasser-Iso); die Grenze ist immer ~1 Chunk vom
+  Spieler (LOD-relativ) → der sub-meter Visual/Collision-Versatz liegt NIE unter den Füßen.
+- **Schnittstellen (real):** `_voxelChunkGeometry` (Morph-Attribute), `_applyCrossLodGeomorph` +
+  `_closestPtTri` (neu), `_finalizeVoxelChunkBuild` (Aufruf + Nachbar-re-call), `_buildToonNodeMaterial`
+  (positionNode), `_ensureAtmoUniforms` (`geomorph`-Uniform).
+- **Offen (Schöpfer-Auge, GPU-Feinheit):** das FEEL beim Laufen über die LOD-Grenze (kein Pop, kein
+  Schimmer) auf echter WebGPU — die GEOMETRIE ist bewiesen, die Shader-Feinheit ist der Sign-off. Plus:
+  Stable-LOD-Hysterese gegen LOD-Flicker (eigener kleiner Faden) · fernes Wasser-LOD (U2, separat).
 
 ### T3 — Substanz-Kohärenz: der kantige Mesher (Manifold Dual Contouring) (Risiko: hoch · die Vision)
 - **Ziel.** Kantiges, nicht-blobiges Terrain — scharfe Canyons, kantige Felsen, das Minecraft schlägt.
@@ -311,7 +329,7 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
 |---|---|---|---|
 | T0 | `diag-chunk-seam` (GEBAUT, GEMESSEN) | — | **OFFEN**: welche Naht stört im Auge mehr |
 | T1 | `diag-chunk-seam` C (footprint in-edit) + 4 Playtest-Inv. **GRÜN** | — | **OFFEN**: keine Abbau-Naht im Auge |
-| T2 | `diag-water-lod-seam` (Vertex-Abstand) | LOD derived | keine LOD-Naht, kein Pop |
+| T2 | `diag-chunk-seam` D (Grenz-Zeile 98 % auf grober Fläche) + 5 Playtest-Inv. **GRÜN** | render-only (kein Mirror) | **OFFEN**: kein Pop/Schimmer im Auge |
 | T3 | `diag-mesh-sharpness` (Kanten-Winkel) + `checkBandWellePerf3cWorkerFoundation` | **bit-identisch** | kantige Felsen, FPS |
 | T4 | `diag-water-flow` + `diag-water-fill` | Seed-deterministisch ODER reaktiv | Wasser fließt in den Kanal |
 | T5 | `diag-harmony` (Bleed=0) + `diag-caverns` | Worldgen-frozen | Canyons, Eingänge |

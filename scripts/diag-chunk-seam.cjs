@@ -318,6 +318,223 @@ const server = http.createServer((req, res) => {
         return { chunks: chunks.size, lodHist, bins: BINS, same: summ(cls.same), cross: summ(cls.cross) };
     });
 
+    // ===== MESSUNG D — der T2-GEOMORPH: schliesst die Cross-LOD-Naht? =====
+    // Beweis (nicht pixel-blind — reine GEOMETRIE): an jeder LOD0↔LOD1-Grenze ziehen die
+    // aMorphTarget/aMorphWeight-Attribute (`_applyCrossLodGeomorph`) die feinen Boundary-Vertices
+    // bei geomorph=1 auf die GROBEN Nachbar-Vertices. Wir rechnen die GEMORPHTE Position
+    // (pos + weight·(target−pos)) und prüfen: liegt sie EXAKT auf einem groben Nachbar-Vertex?
+    // Vorher (roh, T0): 0 % geteilt, ~2.8 m Spalt. Nachher (gemorpht): die Naht-Vertices sind
+    // koinzident mit den groben → die T-junction ist zu.
+    const morph = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        const span = r._voxelChunkConfig(0).span;
+        // STALE-TEST: den Geomorph für ALLE Chunks FRISCH gegen die JETZT gestreamten Nachbar-
+        // Meshes rechnen (falls ein Nachbar nach dem Finalize-Morph re-meshte = stale Target).
+        for (const [key, entry] of s.voxelChunks) {
+            if (!entry || entry.empty || !entry.mesh) continue;
+            const [cx, cz] = key.split(",").map(Number);
+            r._applyCrossLodGeomorph(cx, cz);
+        }
+        const chunks = new Map();
+        for (const [key, entry] of s.voxelChunks) {
+            if (!entry || entry.empty || !entry.mesh || !entry.mesh.geometry) continue;
+            const g = entry.mesh.geometry;
+            const pos = g.attributes.position;
+            if (!pos || pos.count === 0) continue;
+            const [cx, cz] = key.split(",").map(Number);
+            const lod = Number.isFinite(entry.lod) ? entry.lod : 0;
+            chunks.set(key, {
+                cx,
+                cz,
+                lod,
+                pos,
+                idx: g.index ? g.index.array : null,
+                tgt: g.attributes.aMorphTarget,
+                w: g.attributes.aMorphWeight,
+            });
+        }
+        // Punkt→Dreieck-Distanz² (das EHRLICHE Naht-Maß auf der mehrwertigen Fläche, wie Messung B)
+        const ptTri2 = (px, py, pz, T) => {
+            const ax = T[0],
+                ay = T[1],
+                az = T[2],
+                bx = T[3],
+                by = T[4],
+                bz = T[5],
+                cx = T[6],
+                cy = T[7],
+                cz = T[8];
+            const abx = bx - ax,
+                aby = by - ay,
+                abz = bz - az,
+                acx = cx - ax,
+                acy = cy - ay,
+                acz = cz - az;
+            const apx = px - ax,
+                apy = py - ay,
+                apz = pz - az;
+            const d1 = abx * apx + aby * apy + abz * apz,
+                d2 = acx * apx + acy * apy + acz * apz;
+            if (d1 <= 0 && d2 <= 0) return apx * apx + apy * apy + apz * apz;
+            const bpx = px - bx,
+                bpy = py - by,
+                bpz = pz - bz;
+            const d3 = abx * bpx + aby * bpy + abz * bpz,
+                d4 = acx * bpx + acy * bpy + acz * bpz;
+            if (d3 >= 0 && d4 <= d3) return bpx * bpx + bpy * bpy + bpz * bpz;
+            const vc = d1 * d4 - d3 * d2;
+            if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+                const v = d1 / (d1 - d3);
+                const ex = apx - abx * v,
+                    ey = apy - aby * v,
+                    ez = apz - abz * v;
+                return ex * ex + ey * ey + ez * ez;
+            }
+            const cpx = px - cx,
+                cpy = py - cy,
+                cpz = pz - cz;
+            const d5 = abx * cpx + aby * cpy + abz * cpz,
+                d6 = acx * cpx + acy * cpy + acz * cpz;
+            if (d6 >= 0 && d5 <= d6) return cpx * cpx + cpy * cpy + cpz * cpz;
+            const vb = d5 * d2 - d1 * d6;
+            if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+                const w = d2 / (d2 - d6);
+                const ex = apx - acx * w,
+                    ey = apy - acy * w,
+                    ez = apz - acz * w;
+                return ex * ex + ey * ey + ez * ez;
+            }
+            const va = d3 * d6 - d5 * d4;
+            if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+                const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
+                const ex = bpx + (cx - bx) * w,
+                    ey = bpy + (cy - by) * w,
+                    ez = bpz + (cz - bz) * w;
+                return ex * ex + ey * ey + ez * ez;
+            }
+            const den = 1 / (va + vb + vc),
+                v = vb * den,
+                w = vc * den;
+            const ex = apx - (abx * v + acx * w),
+                ey = apy - (aby * v + acy * w),
+                ez = apz - (abz * v + acz * w);
+            return ex * ex + ey * ey + ez * ez;
+        };
+        const surfGap = (px, py, pz, tris) => {
+            let bd = Infinity;
+            for (let t = 0; t < tris.length; t += 9) {
+                const d2 = ptTri2(px, py, pz, tris.slice(t, t + 9));
+                if (d2 < bd) bd = d2;
+            }
+            return Math.sqrt(bd);
+        };
+        let crossPairs = 0,
+            morphedVerts = 0,
+            onSurfRaw = 0,
+            onSurfMorphed = 0,
+            sumRawGap = 0,
+            sumMorphGap = 0,
+            maxMorphGap = 0,
+            chunksWithMorph = 0;
+        let sumW = 0,
+            hiW = 0,
+            hiWonSurf = 0,
+            hiWsumGap = 0,
+            sumTgtGap = 0; // w>0.7 = Grenz-Zeile; tgtGap = Target→Fläche
+        for (const [, A] of chunks) {
+            // KOMBINIERTE grobe Boundary-Dreiecke ALLER coarseren Nachbarn von A (sonst paart ein
+            // Korner-Vertex, der zum +x-Nachbarn gemorpht wurde, fälschlich mit dem +z-Nachbarn).
+            const tris = [];
+            let hasCoarse = false;
+            for (const [dx, dz] of [
+                [1, 0],
+                [-1, 0],
+                [0, 1],
+                [0, -1],
+            ]) {
+                const B = chunks.get(`${A.cx + dx},${A.cz + dz}`);
+                if (!B || B.lod <= A.lod || !B.idx) continue;
+                hasCoarse = true;
+                crossPairs++;
+                const axis = dx !== 0 ? 0 : 2;
+                const plane =
+                    dx === 1 ? (A.cx + 1) * span : dx === -1 ? A.cx * span : dz === 1 ? (A.cz + 1) * span : A.cz * span;
+                const bnd = r._voxelChunkConfig(B.lod).step * 1.5;
+                for (let t = 0; t < B.idx.length; t += 3) {
+                    const i0 = B.idx[t],
+                        i1 = B.idx[t + 1],
+                        i2 = B.idx[t + 2];
+                    const a0 = axis === 0 ? B.pos.getX(i0) : B.pos.getZ(i0);
+                    const a1 = axis === 0 ? B.pos.getX(i1) : B.pos.getZ(i1);
+                    const a2 = axis === 0 ? B.pos.getX(i2) : B.pos.getZ(i2);
+                    if (Math.abs(a0 - plane) > bnd && Math.abs(a1 - plane) > bnd && Math.abs(a2 - plane) > bnd)
+                        continue;
+                    tris.push(
+                        B.pos.getX(i0),
+                        B.pos.getY(i0),
+                        B.pos.getZ(i0),
+                        B.pos.getX(i1),
+                        B.pos.getY(i1),
+                        B.pos.getZ(i1),
+                        B.pos.getX(i2),
+                        B.pos.getY(i2),
+                        B.pos.getZ(i2)
+                    );
+                }
+            }
+            if (!hasCoarse || !tris.length || !A.tgt || !A.w) continue;
+            let anyMorph = false;
+            for (let v = 0; v < A.pos.count; v++) {
+                const w = A.w.getX(v);
+                if (w <= 0.01) continue; // nur gemorphte Boundary-Vertices
+                morphedVerts++;
+                anyMorph = true;
+                const px = A.pos.getX(v),
+                    py = A.pos.getY(v),
+                    pz = A.pos.getZ(v);
+                const tx = A.tgt.getX(v),
+                    ty = A.tgt.getY(v),
+                    tz = A.tgt.getZ(v);
+                const mx = px + (tx - px) * w,
+                    my = py + (ty - py) * w,
+                    mz = pz + (tz - pz) * w;
+                const rawGap = surfGap(px, py, pz, tris);
+                const tgtGap = surfGap(tx, ty, tz, tris); // Target→grobe Fläche (soll ~0, wenn der Morph korrekt ist)
+                const morphGap = surfGap(mx, my, mz, tris);
+                sumRawGap += rawGap;
+                sumTgtGap += tgtGap;
+                sumMorphGap += morphGap;
+                sumW += w;
+                if (morphGap > maxMorphGap) maxMorphGap = morphGap;
+                if (rawGap < 0.3) onSurfRaw++;
+                if (morphGap < 0.3) onSurfMorphed++;
+                if (w > 0.95) {
+                    hiW++;
+                    hiWsumGap += morphGap;
+                    if (morphGap < 0.3) hiWonSurf++;
+                }
+            }
+            if (anyMorph) chunksWithMorph++;
+        }
+        return {
+            crossPairs,
+            chunksWithMorph,
+            morphedVerts,
+            onSurfRawPct: morphedVerts ? +((100 * onSurfRaw) / morphedVerts).toFixed(1) : 0,
+            onSurfMorphedPct: morphedVerts ? +((100 * onSurfMorphed) / morphedVerts).toFixed(1) : 0,
+            meanRawGap: morphedVerts ? +(sumRawGap / morphedVerts).toFixed(3) : 0,
+            meanMorphGap: morphedVerts ? +(sumMorphGap / morphedVerts).toFixed(3) : 0,
+            maxMorphGap: +maxMorphGap.toFixed(3),
+            meanW: morphedVerts ? +(sumW / morphedVerts).toFixed(3) : 0,
+            meanTgtGap: morphedVerts ? +(sumTgtGap / morphedVerts).toFixed(3) : 0,
+            hiW,
+            hiWonSurfPct: hiW ? +((100 * hiWonSurf) / hiW).toFixed(1) : 0,
+            hiWmeanGap: hiW ? +(hiWsumGap / hiW).toFixed(3) : 0,
+            morphError: window.__terrainMorphError || null,
+        };
+    });
+
     // ===== MESSUNG C — die ZEITLICHE Naht (async-Fenster beim Carve) =====
     const temporal = await page.evaluate(async () => {
         const r = window.anazhRealm;
@@ -486,6 +703,36 @@ const server = http.createServer((req, res) => {
         if (Bc.worst) console.log(`   schlimmster Spalt: ${Bc.worst.at}  ${Bc.worst.d3} m @y ${Bc.worst.ay}`);
         console.log(
             `   → die Cross-LOD-Naht ist STRUKTURELL: 0% geteilte Vertices (fundamental inkompatible Gitter) + ~${bVisGap}% sichtbare >1-m-Spalten an der Oberfläche → ein echter LOD-Riss → T2 Stable-LOD+Geomorph\n`
+        );
+    }
+
+    console.log("── D · T2-GEOMORPH — schliesst der Morph die Cross-LOD-Naht? ──");
+    if (morph.morphError) console.log(`   ⚠ Morph-Material-Fehler: ${morph.morphError}`);
+    if (morph.crossPairs === 0) {
+        console.log("   (keine Cross-LOD-Grenze gestreamt)\n");
+    } else if (morph.morphedVerts === 0) {
+        console.log(
+            `   ⚠ KEINE gemorphten Boundary-Vertices (${morph.chunksWithMorph} Chunks, ${morph.crossPairs} Cross-LOD-Faces) — _applyCrossLodGeomorph greift nicht?\n`
+        );
+    } else {
+        console.log(
+            `   gemorphte Boundary-Vertices: ${morph.morphedVerts} (über ${morph.chunksWithMorph} feine Grenz-Chunks, ${morph.crossPairs} Cross-LOD-Faces)`
+        );
+        console.log(
+            `   liegen AUF der groben Oberfläche (<0.3 m):  ROH ${morph.onSurfRawPct}%  →  GEMORPHT ${morph.onSurfMorphedPct}%`
+        );
+        console.log(
+            `   Punkt→grobe-Fläche-Spalt:  ROH ⌀${morph.meanRawGap} m  →  GEMORPHT ⌀${morph.meanMorphGap} m (max ${morph.maxMorphGap} m)`
+        );
+        console.log(
+            `   [Diag] mittl. Gewicht ${morph.meanW}  ·  TARGET→Fläche ⌀${morph.meanTgtGap} m (soll ~0!)  ·  Grenz-ZEILE (w>0.95, n${morph.hiW}): ${morph.hiWonSurfPct}% auf Fläche, ⌀${morph.hiWmeanGap} m`
+        );
+        // Das Naht-Kriterium ist die GRENZ-ZEILE (w>0.7, die Vertices AUF der Grenz-Ebene) — sie
+        // muss auf der groben Fläche liegen; die Falloff-Vertices (w<0.7) sind die INNERE Rampe
+        // (sollen NICHT voll morphen, sonst entstünde ein interner Sprung).
+        const t2ok = morph.hiWonSurfPct >= 95 && morph.hiWmeanGap < 0.2 && morph.meanTgtGap < 0.15;
+        console.log(
+            `   → ${t2ok ? "T2 WIRKT: die Grenz-Zeile liegt AUF der groben Oberfläche → die Cross-LOD-T-junction ist GESCHLOSSEN (GEOMETRIE, headless beweisbar — nicht pixel-blind)." : "T2 unvollständig: die Grenz-Zeile schmiegt sich noch nicht voll an — _applyCrossLodGeomorph prüfen."}\n`
         );
     }
 

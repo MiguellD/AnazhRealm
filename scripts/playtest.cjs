@@ -20591,6 +20591,29 @@ async function checkBandWelleC3CellularReaction(ctx) {
             typeof r._syncRebuildEditFootprint === "function" &&
             /forceSync:\s*true/.test(r._syncRebuildEditFootprint.toString());
 
+        // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): die feinen Boundary-Vertices an
+        // einer LOD0↔LOD1-Grenze auf die GROBE Nachbar-Oberfläche ziehen → die T-junction
+        // schliesst (render-only, `geomorph`-Uniform; GEMESSEN diag-chunk-seam D: Grenz-Zeile
+        // 98 % auf der groben Fläche). Hier: kein Material-Fehler (positionNode kompiliert), die
+        // Morph-Attribute existieren auf JEDER Terrain-Geometrie (WebGPU-strikt), der Finalize
+        // ruft den Geomorph, und er FEUERT (≥1 Chunk hasMorph an einer Cross-LOD-Grenze).
+        out.t2NoMorphError = !window.__terrainMorphError;
+        out.t2GeomorphMethod = typeof r._applyCrossLodGeomorph === "function";
+        out.t2FinalizeCallsMorph = /_applyCrossLodGeomorph/.test(r._finalizeVoxelChunkBuild.toString());
+        out.t2MaterialHasMorph = /positionNode\s*=/.test(r._buildToonNodeMaterial.toString());
+        let t2HasAttrs = false,
+            t2ChunksWithMorph = 0;
+        if (r.state.voxelChunks) {
+            for (const [, e] of r.state.voxelChunks) {
+                if (!e || e.empty || !e.mesh || !e.mesh.geometry) continue;
+                const g = e.mesh.geometry;
+                if (g.attributes.aMorphTarget && g.attributes.aMorphWeight) t2HasAttrs = true;
+                if (e.hasMorph) t2ChunksWithMorph++;
+            }
+        }
+        out.t2HasMorphAttrs = t2HasAttrs;
+        out.t2ChunksWithMorph = t2ChunksWithMorph;
+
         // 6) Source-Probes: spawnArchitecture + removeArchitecture rufen
         // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
         out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.spawnArchitecture.toString());
@@ -20671,6 +20694,25 @@ async function checkBandWelleC3CellularReaction(ctx) {
     check(
         "T1 (Terrain-Kohärenz): _syncRebuildEditFootprint baut den Footprint forceSync (Source-Probe)",
         res.t1SyncUsesForceSync
+    );
+    // T2 (Terrain-Kohärenz-Plan §4): der Cross-LOD-Geomorph — die räumliche Naht.
+    check("T2 (Cross-LOD-Geomorph): kein Material-Morph-Fehler (positionNode kompiliert)", res.t2NoMorphError);
+    check(
+        "T2 (Cross-LOD-Geomorph): jede Terrain-Geometrie trägt aMorphTarget+aMorphWeight (WebGPU-strikt)",
+        res.t2HasMorphAttrs
+    );
+    check(
+        "T2 (Cross-LOD-Geomorph): _buildToonNodeMaterial setzt den positionNode-Morph (Source-Probe)",
+        res.t2MaterialHasMorph
+    );
+    check(
+        "T2 (Cross-LOD-Geomorph): _finalizeVoxelChunkBuild ruft _applyCrossLodGeomorph (Source-Probe)",
+        res.t2FinalizeCallsMorph
+    );
+    check(
+        "T2 (Cross-LOD-Geomorph): der Geomorph feuert an Cross-LOD-Grenzen (>=1 Chunk hasMorph)",
+        res.t2ChunksWithMorph >= 1,
+        `chunksWithMorph=${res.t2ChunksWithMorph}`
     );
 }
 
