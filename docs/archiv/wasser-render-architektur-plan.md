@@ -96,9 +96,13 @@
    Δy=0 · Anker 98.8 % unter Terrain · A/B-Bilder `artifacts/water-ab-{surface,cells}.png` (der
    L-Film schnitt Phantom-Platten durchs Dorf — das Sheet zeigt Wasser nur, wo Zellen es TRAGEN).
    **Browser-A/B: Einstellungen → Wasser-Render → „Zell-Sheet (W-A, neu)" — das Merge-Gate.**
-2. **W-B:** den Automaten (`_tickWaterCA`) in die Welt verdrahten (T4a-2..4: Welt-Zellen + cross-chunk-
-   wake + Physik) → das Sheet wächst mit dem Live-Volumen → es fliesst nach.
-3. **W-C:** die konvexe Ufer-Verankerung + die Naht-Glättung verfeinern, Wasserfälle an echten Klippen.
+2. **W-B — KERN GEBAUT ✓ (V18.90, `diag-water-sources` exit 0):** der CA ist die FÜLL-WAHRHEIT —
+   Quellen-Pin (Atlas-Wasser = unendliche Reservoirs, der See entleert sich nicht) + Pre-Carve-Seed
+   (Nachfliessen deterministisch sichtbar, Carve 0→1.0) + Receiver-Support (Lateral nur in gestützte
+   Empfänger — die Minecraft-Fluss-Regel-Einsicht; Carve füllt Schicht für Schicht) + Physik liest
+   das Live-Level (T4a-4) + y-Band (bit-identisch, 8–13×). Detail: `terrain-t4-wasser-ca-plan` §3+§6.
+3. **W-C:** die konvexe Ufer-Verankerung + Überhang-Anker + Wasserfall-Plane-Überlapp +
+   Schelf-Konsolidierung (Flood-Gates vs CA), Wasserfälle an echten Klippen.
 
 **DIE V18.87-LEHRE (Regel #0, hart gelernt):** für den Wasser-RENDER ist die headless-Falten-/Glätte-
 Metrik UNVOLLSTÄNDIG — sie misst die Oberflächen-Glätte, NICHT die FÜLLUNG/Natürlichkeit des Bettes.

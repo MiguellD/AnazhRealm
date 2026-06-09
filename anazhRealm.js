@@ -23455,14 +23455,24 @@ class AnazhRealm {
         const k = Math.floor((z - cz * span) / step);
         if (i < 0 || k < 0 || i >= dim || k >= dim) return null;
         const WATER = AnazhRealm.CELL_STATE.WATER;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
         const colBase = i + k * dim;
-        const cellJ = (j) => cells[colBase + j * dim * dim];
+        const dimSq = dim * dim;
+        // W-B (V18.90, T4a-4) — wo ein LIVE-CA-Level existiert, führt ES die Wasser-
+        // Wahrheit (eine Zelle trägt ab Level > 0.5): der Auftrieb folgt dem NACHFLIESSENDEN
+        // Wasser statt der instant re-geflooteten Zelle — sonst schwimmt man in einem
+        // sichtbar noch leeren Carve-Loch (Render + Physik lesen dieselbe Live-Schicht).
+        // Ohne Level-Eintrag: die statische Zell-Wahrheit (unverändert).
+        const lvl = this.state.waterLevelCells ? this.state.waterLevelCells.get(`${cx},${cz}`) : null;
+        const isWaterJ = lvl
+            ? (j) => cells[colBase + j * dimSq] !== SOLID && lvl[colBase + j * dimSq] > 0.5
+            : (j) => cells[colBase + j * dimSq] === WATER;
         // Körper-Spanne Füße..Kopf: eine Wasserzelle darin → im Wasser.
         const jFeet = Math.max(0, Math.floor((yFeet - oy) / step));
         const jHead = Math.min(dimY - 1, Math.floor((yFeet + 1.8 - oy) / step));
         let bodyWaterJ = -1;
         for (let j = jFeet; j <= jHead; j++) {
-            if (cellJ(j) === WATER) {
+            if (isWaterJ(j)) {
                 bodyWaterJ = j;
                 break;
             }
@@ -23470,7 +23480,7 @@ class AnazhRealm {
         if (bodyWaterJ < 0) return { submerged: false, surfaceY: null };
         // Aufwärts bis zum Spiegel DIESES Wasserkörpers (erste Nicht-Wasser-Zelle).
         let topJ = bodyWaterJ;
-        while (topJ + 1 < dimY && cellJ(topJ + 1) === WATER) topJ++;
+        while (topJ + 1 < dimY && isWaterJ(topJ + 1)) topJ++;
         const surfaceY = oy + (topJ + 1) * step; // Oberkante der obersten Wasserzelle
         return { submerged: true, surfaceY };
     }
@@ -25150,8 +25160,11 @@ class AnazhRealm {
         // sparse"). Lokal-reaktiv wie Wetter: der Re-Stream seedet aus der Flood neu.
         // NICHT in `_disposeVoxelChunk` (der Edit-Rebuild ruft das vor dem Build —
         // das Level MUSS den Carve-Rebuild überleben, damit das Wasser nachfließt).
+        // V18.90 (W-B): die Quell-Spalten + das y-Band fallen mit.
         if (this.state.waterLevelCells) for (const key of drop) this.state.waterLevelCells.delete(key);
         if (this.state.waterCAActive) for (const key of drop) this.state.waterCAActive.delete(key);
+        if (this.state.waterSourceCols) for (const key of drop) this.state.waterSourceCols.delete(key);
+        if (this.state.waterCABand) for (const key of drop) this.state.waterCABand.delete(key);
     }
 
     // Streamt den Voxel-Chunk-Ring um den Spieler. V9.85 Perf-2.a — Frame-
@@ -25297,6 +25310,9 @@ class AnazhRealm {
         for (let fcx = fcx0; fcx <= fcx1; fcx++) {
             for (let fcz = fcz0; fcz <= fcz1; fcz++) this.state.grassDirtyChunks.add(`${fcx},${fcz}`);
         }
+        // W-B (V18.90) — die CA-Level der Edit-Region VOR dem Rebuild aus den PRE-Carve-
+        // Zellen seeden → das Nachfließen ist deterministisch sichtbar (s. Methoden-Doku).
+        this._preSeedWaterCAForEdit(x, z, radius);
         this._remeshVoxelChunksAround(x, z, radius);
         // T1 (Terrain-Kohärenz-Plan §4 — zeitliche Naht): die direkt berührten FOOTPRINT-
         // Chunks SYNCHRON im Edit-Frame heilen, statt sie über `_tickDirtyVoxelChunks`
@@ -25321,6 +25337,26 @@ class AnazhRealm {
         }
         if (typeof this.saveState === "function") this.saveState();
         return true;
+    }
+
+    // W-B (V18.90, T4-Plan §6) — der PRE-CARVE-SEED: die CA-Level-Einträge der Edit-Region
+    // werden VOR dem Rebuild aus den PRE-Carve-Zellen geseedet. Damit ist das Nachfließen
+    // DETERMINISTISCH sichtbar: der Re-Flood füllt die Zellen unter `L` instant (die statische
+    // Wahrheit), aber das LIVE-Level hält die Ruhe von DAVOR fest → der CA füllt den neuen
+    // Raum über Ticks, caDelta/liveTop rendern den Verzug. Vorher war das timing-abhängig
+    // (sync-gebauter Spieler-Chunk: der Tick seedete NACH dem Re-Flood = instant voll =
+    // unsichtbar; nur async-Nachbarn flossen sichtbar). Der Aufrufer (`_addVoxelEdit`) ruft
+    // das VOR `_remeshVoxelChunksAround`/`_syncRebuildEditFootprint`.
+    _preSeedWaterCAForEdit(x, z, radius) {
+        if (!this.state.voxelChunks) return;
+        const { span } = this._voxelChunkConfig();
+        const minCX = Math.floor((x - radius) / span) - 1;
+        const maxCX = Math.floor((x + radius) / span) + 1;
+        const minCZ = Math.floor((z - radius) / span) - 1;
+        const maxCZ = Math.floor((z + radius) / span) + 1;
+        for (let cx = minCX; cx <= maxCX; cx++) {
+            for (let cz = minCZ; cz <= maxCZ; cz++) this._ensureWaterCALevel(cx, cz);
+        }
     }
 
     carveVoxelSphere(x, y, z, r) {
@@ -39654,15 +39690,34 @@ class AnazhRealm {
     // PURE über die Arrays (kein State, kein Render) → vollständig headless beweisbar (Erhaltung +
     // Fluss). Der Tick ist die reaktive Schicht (lokal, nicht persistiert, kein Worker-Mirror — wie
     // `_lifeOverlayAt`/`_tickWorldRules`). Liefert die Zahl der bewegten Zellen (für active-cell-only).
-    _tickWaterCA(level, cells, dim, dimY, rate = 0.25, deltaScratch = null) {
+    _tickWaterCA(level, cells, dim, dimY, rate = 0.25, deltaScratch = null, band = null) {
         const SOLID = AnazhRealm.CELL_STATE.SOLID;
         const dimSq = dim * dim;
         const EPS = 1e-4;
         // `moved` = die MAGNITUDE des bewegten Wassers (nicht Zell-Zahl) → der active-cell-Settle
         // greift, wenn die Lache wirklich ruht (Zell-Zahl bliebe bei langsamem Ausgleich ewig hoch).
         let moved = 0;
+        // W-B (V18.90, T4-Plan §6.4) — das y-BAND: Wasser belegt ~das Hydro-Band, nie die volle
+        // 232er-Säule → der Tick läuft nur über die belegten Zeilen [band.jMin .. band.jMax].
+        // SEMANTIK-IDENTISCH zum Voll-Sweep (Invariante: ausserhalb des Bands ist level 0):
+        // die Gravitations-KASKADE folgt `gMin` dynamisch nach unten (eine fallende Säule
+        // durchfällt weiter in EINEM Tick), das Band wird am Ende aus dem Ist-Zustand NEU
+        // gemessen (selbst-korrigierend). `band = null` = Voll-Sweep (erster Tick nach Seed).
+        const jHi = band ? Math.min(dimY - 1, band.jMax) : dimY - 1;
+        const jLo = band ? Math.max(0, band.jMin) : 0;
+        if (jHi < jLo) {
+            if (band) {
+                band.jMin = dimY;
+                band.jMax = -1;
+            }
+            return 0;
+        }
         // (1) GRAVITÄT — von oben nach unten, damit eine Säule in einem Tick durchkaskadiert.
-        for (let j = dimY - 1; j >= 1; j--) {
+        // `gMin` = tiefste Zeile, in die Wasser fiel: der Loop folgt der Kaskade unter das
+        // Band (break, sobald keine Kaskade tiefer reicht) — exakt wie der Voll-Sweep.
+        let gMin = Math.max(1, jLo);
+        for (let j = jHi; j >= 1; j--) {
+            if (j < gMin) break;
             const baseJ = j * dimSq;
             const belowJ = (j - 1) * dimSq;
             for (let c = 0; c < dimSq; c++) {
@@ -39677,15 +39732,31 @@ class AnazhRealm {
                 level[here] = lv - flow;
                 level[below] += flow;
                 moved += flow;
+                if (j - 1 < gMin) gMin = j - 1;
             }
         }
         // (2) LATERAL — Niveau suchen. Delta-Puffer: jedes (+i)- und (+k)-Paar EINMAL, symmetrischer
         // Transfer (was hier abfliesst, kommt dort an) → exakte Erhaltung, deterministisch.
         // Scratch wiederverwenden (Welt-Tick = viele Chunks/Frame → keine Allokations-Churn).
+        // Nur die belegten Zeilen [rowLo..jHi] (inkl. dessen, was die Gravitation eben
+        // tiefer trug) — der Scratch wird NUR in diesem Fenster genullt (darunter ist er
+        // stale vom vorigen Chunk → nie lesen).
+        const rowLo = Math.max(0, Math.min(jLo, gMin));
+        const winLo = rowLo * dimSq;
+        const winHi = (jHi + 1) * dimSq;
         let delta = deltaScratch;
-        if (delta && delta.length >= level.length) delta.fill(0, 0, level.length);
+        if (delta && delta.length >= level.length) delta.fill(0, winLo, winHi);
         else delta = new Float64Array(level.length);
-        for (let j = 0; j < dimY; j++) {
+        // W-B (V18.90) — RECEIVER-SUPPORT: ein Lateral-Transfer braucht einen GESTÜTZTEN
+        // Empfänger (darunter SOLID oder ≥0.9 gefüllt; j=0 = Weltboden zählt gestützt).
+        // Wasser schiebt sich nicht seitwärts in die freie Luft — es fällt zuerst
+        // (Gravitation). OHNE die Regel diffundiert die OBERSTE Schicht jedes ruhenden
+        // Körpers ewig in die Ufer-Luft (GEMESSEN: der Quellen-Pin fand jede Runde
+        // neu zu füllen → der Chunk settled NIE = Dauer-Leck + Dauer-Aktivität; genau
+        // darum hat Minecraft Fluss-REGELN statt purer Diffusion). Ein Carve füllt
+        // damit SCHICHT FÜR SCHICHT von unten — wie echtes Wasser.
+        const SUPPORT = 0.9;
+        for (let j = rowLo; j <= jHi; j++) {
             const baseJ = j * dimSq;
             for (let k = 0; k < dim; k++) {
                 const baseK = k * dim;
@@ -39699,10 +39770,13 @@ class AnazhRealm {
                         if (cells[nb] !== SOLID) {
                             const diff = lv - (level[nb] + delta[nb]);
                             if (diff > EPS || diff < -EPS) {
-                                const t = diff * rate;
-                                delta[here] -= t;
-                                delta[nb] += t;
-                                moved += t > 0 ? t : -t;
+                                const recvBelow = (diff > 0 ? nb : here) - dimSq;
+                                if (recvBelow < 0 || cells[recvBelow] === SOLID || level[recvBelow] >= SUPPORT) {
+                                    const t = diff * rate;
+                                    delta[here] -= t;
+                                    delta[nb] += t;
+                                    moved += t > 0 ? t : -t;
+                                }
                             }
                         }
                     }
@@ -39712,19 +39786,35 @@ class AnazhRealm {
                         if (cells[nb] !== SOLID) {
                             const diff = lv - (level[nb] + delta[nb]);
                             if (diff > EPS || diff < -EPS) {
-                                const t = diff * rate;
-                                delta[here] -= t;
-                                delta[nb] += t;
-                                moved += t > 0 ? t : -t;
+                                const recvBelow = (diff > 0 ? nb : here) - dimSq;
+                                if (recvBelow < 0 || cells[recvBelow] === SOLID || level[recvBelow] >= SUPPORT) {
+                                    const t = diff * rate;
+                                    delta[here] -= t;
+                                    delta[nb] += t;
+                                    moved += t > 0 ? t : -t;
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        for (let n = 0; n < level.length; n++) {
+        // Anwenden + das Band aus dem IST neu messen (Zeilen mit Wasser > EPS).
+        let nMin = dimY;
+        let nMax = -1;
+        for (let n = winLo; n < winHi; n++) {
             const v = level[n] + delta[n];
-            level[n] = v < 0 ? 0 : v > 1 ? 1 : v;
+            const c = v < 0 ? 0 : v > 1 ? 1 : v;
+            level[n] = c;
+            if (c > EPS) {
+                const j = (n / dimSq) | 0;
+                if (j < nMin) nMin = j;
+                if (j > nMax) nMax = j;
+            }
+        }
+        if (band) {
+            band.jMin = nMin;
+            band.jMax = nMax;
         }
         return moved;
     }
@@ -39739,6 +39829,53 @@ class AnazhRealm {
         const level = new Float32Array(cells.length);
         for (let i = 0; i < cells.length; i++) if (cells[i] === WATER) level[i] = 1.0;
         return level;
+    }
+
+    // W-B (V18.90, T4-Plan §6) — EIN Seed-Eingang für die CA-Level-Schicht (V9.82: kein
+    // Parallel-Pfad): seedet den Level-Eintrag aus den AKTUELLEN Zellen + markiert einmalig
+    // die QUELL-Spalten (der frozen Atlas kennt sie als Wasser — See/Fluss/Ozean, +Inf-Probe
+    // unterdrückt den Rim) + legt das y-Band an (voll → der erste Tick misst es). Der EDIT-
+    // Pfad ruft das VOR dem Carve-Rebuild → der Eintrag hält die PRE-Carve-Ruhe fest, und
+    // das Nachfließen ist DETERMINISTISCH sichtbar (vorher timing-abhängig: seedete der Tick
+    // erst NACH dem sync-Re-Flood, war die Füllung instant = unsichtbar).
+    _ensureWaterCALevel(cx, cz) {
+        const key = `${cx},${cz}`;
+        const entry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
+        if (!entry || entry.empty || !entry.waterCells || (Number.isFinite(entry.lod) && entry.lod !== 0)) return null;
+        if (!this.state.waterLevelCells) this.state.waterLevelCells = new Map();
+        if (!this.state.waterCABand) this.state.waterCABand = new Map();
+        let lv = this.state.waterLevelCells.get(key);
+        if (!lv) {
+            lv = this._seedWaterLevel(entry.waterCells);
+            this.state.waterLevelCells.set(key, lv);
+            // Frischer Seed → das Band VOLL resetten (ein stale Band aus einer früheren
+            // Level-Epoche würde das frische Wasser band-unsichtbar machen).
+            const cfg = this._voxelChunkConfig(0);
+            this.state.waterCABand.set(key, { jMin: 0, jMax: cfg.dimY - 1 });
+        } else if (!this.state.waterCABand.has(key)) {
+            const cfg = this._voxelChunkConfig(0);
+            this.state.waterCABand.set(key, { jMin: 0, jMax: cfg.dimY - 1 });
+        }
+        // Quell-Spalten (einmalig pro Eintrag, 576 Atlas-Probes): unendliches Reservoir
+        // (Minecraft-Source-Semantik) — der Pin im Welt-Tick füllt ihre WATER-Zellen nach.
+        if (!this.state.waterSourceCols) this.state.waterSourceCols = new Map();
+        if (!this.state.waterSourceCols.has(key)) {
+            const cfg = this._voxelChunkConfig(0);
+            const src = new Uint8Array(cfg.dim * cfg.dim);
+            const ox = cx * cfg.span;
+            const oz = cz * cfg.span;
+            for (let k = 0; k < cfg.dim; k++) {
+                for (let i = 0; i < cfg.dim; i++) {
+                    if (
+                        this._atlasWaterLevelAt(ox + (i + 0.5) * cfg.step, oz + (k + 0.5) * cfg.step, Infinity) >
+                        -Infinity
+                    )
+                        src[i + k * cfg.dim] = 1;
+                }
+            }
+            this.state.waterSourceCols.set(key, src);
+        }
+        return lv;
     }
 
     // Der active-cell-Kern: ein Chunk tickt NUR, wenn er „aktiv" ist (frisch perturbiert). Der Carve
@@ -39764,14 +39901,10 @@ class AnazhRealm {
             this.state.waterCAScratch = new Float64Array(need);
         const scratch = this.state.waterCAScratch;
         const SETTLE = 0.25; // bewegte MAGNITUDE < SETTLE → der Chunk ruht, raus aus active (active-cell)
-        const levelOf = (key, entry) => {
-            let lv = this.state.waterLevelCells.get(key);
-            if (!lv) {
-                lv = this._seedWaterLevel(entry.waterCells);
-                this.state.waterLevelCells.set(key, lv);
-            }
-            return lv;
-        };
+        const dimSq = dim * dim;
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        const bandMap = this.state.waterCABand || (this.state.waterCABand = new Map());
+        const srcMap = this.state.waterSourceCols;
         const active = [];
         for (const key of [...activeSet]) {
             const entry = this.state.voxelChunks.get(key);
@@ -39780,17 +39913,48 @@ class AnazhRealm {
                 continue;
             }
             const comma = key.indexOf(",");
-            active.push({
-                cx: parseInt(key.slice(0, comma), 10),
-                cz: parseInt(key.slice(comma + 1), 10),
-                key,
-                level: levelOf(key, entry),
-                cells: entry.waterCells,
-            });
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            // W-B — EIN Seed-Eingang (`_ensureWaterCALevel`): Level + Quell-Spalten + y-Band.
+            const lv = this._ensureWaterCALevel(cx, cz);
+            if (!lv) {
+                activeSet.delete(key);
+                continue;
+            }
+            active.push({ cx, cz, key, level: lv, cells: entry.waterCells, band: bandMap.get(key) });
         }
         let total = 0;
         for (const a of active) {
-            a.moved = this._tickWaterCA(a.level, a.cells, dim, dimY, 0.25, scratch);
+            // W-B (V18.90, T4-Plan §6) — der QUELLEN-PIN: Spalten, die der frozen Atlas als
+            // Wasser kennt (See/Fluss/Ozean), sind unendliche Reservoirs (Minecraft-Source-
+            // Semantik): ihre WATER-Zellen werden pro Tick zur Flood-Ruhe aufgefüllt → ein
+            // See ENTLEERT sich nicht in einen gegrabenen Kanal (er speist nach, bis der
+            // Kanal sein Niveau trägt). Die Erhaltung gilt überall sonst — die Quelle ist
+            // die EINE bewusste, dokumentierte Nicht-Erhaltung. Der Pin zählt als Bewegung
+            // → der Chunk bleibt aktiv, solange er nachspeist; versiegt der Abfluss,
+            // settled er. Pin VOR dem Tick (die Schwerkraft/Lateral verteilen frisch).
+            const src = srcMap ? srcMap.get(a.key) : null;
+            let pinned = 0;
+            if (src) {
+                const cells = a.cells;
+                const level = a.level;
+                const band = a.band;
+                for (let c = 0; c < dimSq; c++) {
+                    if (!src[c]) continue;
+                    for (let j = 0; j < dimY; j++) {
+                        const idx = c + j * dimSq;
+                        if (cells[idx] === WATER && level[idx] < 1) {
+                            pinned += 1 - level[idx];
+                            level[idx] = 1;
+                            if (band) {
+                                if (j < band.jMin) band.jMin = j;
+                                if (j > band.jMax) band.jMax = j;
+                            }
+                        }
+                    }
+                }
+            }
+            a.moved = pinned + this._tickWaterCA(a.level, a.cells, dim, dimY, 0.25, scratch, a.band);
             total += a.moved;
         }
         // cross-chunk-wake: Level über die +x/+z-Grenzen austauschen; ein Transfer weckt den Nachbarn.
@@ -39802,11 +39966,20 @@ class AnazhRealm {
                 const nkey = `${a.cx + dx},${a.cz + dz}`;
                 const nb = this.state.voxelChunks.get(nkey);
                 if (!nb || nb.empty || !nb.waterCells || (Number.isFinite(nb.lod) && nb.lod !== 0)) continue;
-                const bLevel = levelOf(nkey, nb);
-                const xfer = this._exchangeWaterBoundary(a.level, a.cells, bLevel, nb.waterCells, dx, dim, dimY);
+                const bLevel = this._ensureWaterCALevel(a.cx + dx, a.cz + dz);
+                if (!bLevel) continue;
+                const touch = { jMin: dimY, jMax: -1 };
+                const xfer = this._exchangeWaterBoundary(a.level, a.cells, bLevel, nb.waterCells, dx, dim, dimY, touch);
                 if (xfer > 0.01) {
                     this._wakeWaterCA(a.cx + dx, a.cz + dz);
                     a.moved += xfer;
+                    // W-B — beide y-Bänder um die WIRKLICH berührten Zeilen weiten.
+                    const nbBand = bandMap.get(nkey);
+                    for (const b of [a.band, nbBand]) {
+                        if (!b) continue;
+                        if (touch.jMin < b.jMin) b.jMin = touch.jMin;
+                        if (touch.jMax > b.jMax) b.jMax = touch.jMax;
+                    }
                 }
             }
             // V18.88 (T4-Plan §6.3) — ISOTROPIE: auch mit INAKTIVEN −x/−z-Nachbarn
@@ -39824,8 +39997,10 @@ class AnazhRealm {
                 if (activeSet.has(wkey)) continue;
                 const nb = this.state.voxelChunks.get(wkey);
                 if (!nb || nb.empty || !nb.waterCells || (Number.isFinite(nb.lod) && nb.lod !== 0)) continue;
-                const wLevel = levelOf(wkey, nb);
+                const wLevel = this._ensureWaterCALevel(wx, wz);
+                if (!wLevel) continue;
                 // Der Nachbar ist die A-Seite des Paars (sein fernes i/k=dim−1 ↔ unser 0).
+                const touch = { jMin: dimY, jMax: -1 };
                 const xfer = this._exchangeWaterBoundary(
                     wLevel,
                     nb.waterCells,
@@ -39833,11 +40008,18 @@ class AnazhRealm {
                     a.cells,
                     dx === -1 ? 1 : 0,
                     dim,
-                    dimY
+                    dimY,
+                    touch
                 );
                 if (xfer > 0.01) {
                     this._wakeWaterCA(wx, wz);
                     a.moved += xfer;
+                    const nbBand = bandMap.get(wkey);
+                    for (const b of [a.band, nbBand]) {
+                        if (!b) continue;
+                        if (touch.jMin < b.jMin) b.jMin = touch.jMin;
+                        if (touch.jMax > b.jMax) b.jMax = touch.jMax;
+                    }
                 }
             }
         }
@@ -39869,11 +40051,16 @@ class AnazhRealm {
 
     // Level-Austausch über die gemeinsame Chunk-Grenze (die lateral-Regel über die Naht, symmetrisch
     // = Erhaltung). dx=1: A.i=dim-1 ↔ B.i=0; dz=1: A.k=dim-1 ↔ B.k=0. Liefert die übertragene Menge.
-    _exchangeWaterBoundary(aLevel, aCells, bLevel, bCells, dx, dim, dimY) {
+    // W-B (V18.90) — `touch` (optional, {jMin,jMax}) wird auf die WIRKLICH berührten Zeilen
+    // geweitet: der Aufrufer weitet damit die y-Bänder BEIDER Chunks (eine Band-Union der
+    // alten Bänder reicht NICHT — ein externer Level-Write [Test/Seed] kann Zeilen ausserhalb
+    // beider Bänder tragen, die der Tausch dann berührt → Wasser würde band-unsichtbar).
+    _exchangeWaterBoundary(aLevel, aCells, bLevel, bCells, dx, dim, dimY, touch = null) {
         const SOLID = AnazhRealm.CELL_STATE.SOLID;
         const dimSq = dim * dim;
         const rate = 0.25;
         let xfer = 0;
+        const SUPPORT = 0.9; // W-B — dieselbe Receiver-Support-Regel wie der Lateral-Pass
         for (let j = 0; j < dimY; j++) {
             const baseJ = j * dimSq;
             for (let s = 0; s < dim; s++) {
@@ -39882,10 +40069,19 @@ class AnazhRealm {
                 if (aCells[aIdx] === SOLID || bCells[bIdx] === SOLID) continue;
                 const diff = aLevel[aIdx] - bLevel[bIdx];
                 if (diff > 1e-4 || diff < -1e-4) {
+                    // Empfänger gestützt? (darunter SOLID oder ≥0.9; j=0 = Weltboden)
+                    const rcCells = diff > 0 ? bCells : aCells;
+                    const rcLevel = diff > 0 ? bLevel : aLevel;
+                    const rcBelow = (diff > 0 ? bIdx : aIdx) - dimSq;
+                    if (rcBelow >= 0 && rcCells[rcBelow] !== SOLID && rcLevel[rcBelow] < SUPPORT) continue;
                     const t = diff * rate;
                     aLevel[aIdx] -= t;
                     bLevel[bIdx] += t;
                     xfer += t > 0 ? t : -t;
+                    if (touch) {
+                        if (j < touch.jMin) touch.jMin = j;
+                        if (j > touch.jMax) touch.jMax = j;
+                    }
                 }
             }
         }
@@ -51071,7 +51267,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.89.0";
+AnazhRealm.VERSION = "18.90.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

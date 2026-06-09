@@ -190,6 +190,13 @@ const server = http.createServer((req, res) => {
         for (let j = 1; j <= 6; j++) levelB2[j * dimSq + kMid + 0] = 1.0;
         s.waterLevelCells.set(aKey, levelA2);
         s.waterLevelCells.set(bKey, levelB2);
+        // V18.90 — ein MANUELLER Level-Write braucht ein frisches y-Band (Test-Hygiene;
+        // das stale Band aus Test 1 würde die neuen Zeilen sonst band-unsichtbar machen —
+        // organisch heilt das der touch-Widen, der Test bleibt deterministisch).
+        if (s.waterCABand) {
+            s.waterCABand.set(aKey, { jMin: 0, jMax: dimY - 1 });
+            s.waterCABand.set(bKey, { jMin: 0, jMax: dimY - 1 });
+        }
         r._wakeWaterCA(bKey.split(",")[0] | 0, bKey.split(",")[1] | 0);
         for (let t = 0; t < 40; t++) r._tickWorldWaterCA();
         const westGain = sum(s.waterLevelCells.get(aKey));
@@ -201,6 +208,8 @@ const server = http.createServer((req, res) => {
         for (const [we, orig] of wallOrig) we.waterCells = orig;
         s.waterLevelCells.clear();
         if (s.waterCAActive) s.waterCAActive.clear();
+        if (s.waterCABand) s.waterCABand.clear();
+        if (s.waterSourceCols) s.waterSourceCols.clear();
 
         return {
             aKey,

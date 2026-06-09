@@ -62,8 +62,34 @@ sucht sein Niveau). **Das ist die EINE fehlende Sache — eine ARCHITEKTUR, kein
   möglich WEIL T1/T2 die Grenze kohärent machten); `_addVoxelEdit` WECKT die Carve-Region. **`diag-water-
   world-flow` GRÜN: ERHALTUNG exakt (Σ A+B konstant) · Wasser fliesst über die Chunk-GRENZE (B erhielt 2.7) ·
   active-Set settled auf 0.** 3 Playtest-Inv. Im Game-Loop getickt (kostenlos wenn nichts perturbiert).
-- **T4a-4 — die PHYSIK liest das Level** (`_playerWaterContext` nutzt das CA-Level statt der binären Zelle)
-  → Auftrieb folgt dem echten Wasserstand. Headless-Physik-Probe. **OFFEN (W-B).**
+- **T4a-4 — die PHYSIK liest das Level. GEBAUT ✓ (V18.90):** `_playerWaterContext` — wo ein
+  Live-Level existiert, trägt eine Zelle ab Level > 0.5 (Render + Physik lesen DIESELBE
+  Live-Schicht → kein Schwimmen im sichtbar leeren Carve-Loch); ohne Eintrag die statische
+  Zell-Wahrheit (unverändert).
+- **W-B-KERN — der CA als FÜLL-WAHRHEIT. GEBAUT ✓ (V18.90, `diag-water-sources` exit 0):**
+  **(a) PRE-CARVE-SEED** (`_preSeedWaterCAForEdit` in `_addVoxelEdit`, VOR dem Rebuild): die
+  Level-Einträge halten die PRE-Carve-Ruhe fest → das Nachfließen ist DETERMINISTISCH sichtbar
+  (GEMESSEN: neuer Carve-Raum Füllung 0 → 1.0 über Ticks; vorher timing-abhängig instant).
+  **(b) QUELLEN-PIN** (`_ensureWaterCALevel` markiert Atlas-Wasser-Spalten [+Inf-Probe, 576/Chunk];
+  der Welt-Tick füllt ihre WATER-Zellen pro Tick zur Flood-Ruhe): unendliche Reservoirs
+  (Minecraft-Source-Semantik) — der See ENTLEERT sich nicht in einen Kanal (GEMESSEN: Quell-Mittel
+  ≥0.97 unter Dauerabfluss, See-Zellen 0.98 voll nach Carve+240 Ticks). Die EINE bewusste
+  Nicht-Erhaltung; überall sonst bleibt der Kern erhaltungs-exakt (Σ 6→6).
+  **(c) RECEIVER-SUPPORT** (die semantische Wurzel-Erkenntnis): ein Lateral-Transfer braucht
+  einen GESTÜTZTEN Empfänger (darunter SOLID oder ≥0.9) — Wasser schiebt sich nicht seitwärts
+  in die freie Luft, es fällt zuerst. OHNE die Regel diffundiert die OBERSTE Schicht jedes
+  ruhenden Körpers ewig in die Ufer-Luft (GEMESSEN: der Pin fand jede Runde neu zu füllen →
+  nie settled = Dauer-Leck; DARUM hat Minecraft Fluss-REGELN statt purer Diffusion). Ein Carve
+  füllt jetzt SCHICHT für SCHICHT von unten. NEBENEFFEKT (gewollt): der CA füllt die
+  Flood-Schelf-Lücken unter `L` (die T7d-Klasse) beim Wecken nach — Betten werden VOLLER;
+  der Settle-Tail der Schelf-Konvergenz ist asymptotisch (W-C-Notiz: Flood-Gates vs CA-Schelf
+  konsolidieren). **(d) y-BAND** (§6.4): der Tick läuft nur über die belegten Zeilen
+  (Gravitations-Kaskade folgt dynamisch, Band selbst-messend, exchange-touch-geweitet) —
+  GEMESSEN BIT-IDENTISCH zum Voll-Sweep bei **8–13×** Tempo.
+  **AUFGELÖSTE §6-ENTSCHEIDUNG:** „Flood → Seed-only" heißt NICHT, den Zell-Flood zu entkernen —
+  die Flood bleibt das deterministische RUHE-Substrat (Zellen/Worker unberührt); das LIVE-Level
+  FÜHRT, wo es existiert (Render liveTop + Physik + Pre-Seed garantiert den sichtbaren Verzug),
+  die Quellen speisen es. Damit ist „fliesst nach wie Minecraft" im Modell VOLL da.
 - **T4b — der RENDER. HYBRID GEBAUT ✓ (V18.84):** das Surface-Mesh liest den LIVE-Delta
   (`surfY = L + _caWaterTopDelta`, Clamp −14..+4; im Ruhe-Zustand exakt die statische `L`).
 - **W-A — das ZELL-OBERKANTEN-SHEET. GEBAUT ✓ (V18.89, A/B-Modus "cells"):**
