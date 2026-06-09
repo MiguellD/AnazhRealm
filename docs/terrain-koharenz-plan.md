@@ -108,6 +108,34 @@ ist KEIN Urknall — es ist ein chirurgischer Schnitt am Vertex-Platzierer. Die 
 - **Die Meta-Narbe:** alle waren Pflaster *an der Naht*, während die Wurzel (Isolation) nie berührt
   wurde. **Dieser Plan berührt die Wurzel — darum darf er groß sein, aber jede Phase wird bewiesen.**
 
+### 1.7 Der AKTUELLSTE Stand (2021–2024) — geprüft, nicht bei den Klassikern stehengeblieben
+
+Die §1.5-Klassiker (Transvoxel 2009 · DC 2002 · Surface Nets 1998) sind das Fundament — der
+*read-as-stranger*-Selbst-Review (Schöpfer-Frage 09.06.) verlangte den HEUTIGEN Stand. Geprüft:
+- **Teardown / Gustafsson (der moderne Voxel-Meister):** *„There are no triangles in this game"* —
+  Raymarching; die nächste Engine (2024) **Hardware-Raytracing** (intersection shaders, unlimited world,
+  sharp shadows, kein light-leak). **Der absolute Gipfel ist MESH-FREI.** → bewusste Grenze (§3): wir leben
+  auf Three.js' Mesh-Pipeline; mesh-frei wäre ein eigener Render-Bogen (WebGPU-Raymarching), NICHT dieser
+  Plan. Ehrlich benannt, kein Selbstbetrug, dass DC „der Gipfel" sei.
+- **Nanite / Aokana (GPU-Driven Voxel for Open World, arxiv 2024):** Cluster-LOD mit nahtlosen Übergängen
+  (das Geomorph-Prinzip, AAA-bestätigt). **WARNUNG, gemessen relevant:** *„viele diskontinuierliche Voxel →
+  viele disconnected Cluster, schwer zu mergen, schlechte Geometrie"* → das **Risiko genau für T5 (große
+  Höhlen/Canyons)**. Tröstlich: unser festes Chunk-Grid + Stable-LOD ist bei Hohlräumen ROBUSTER als
+  Cluster-LOD — hier sind wir nicht rückständig, sondern besser positioniert.
+- **GPU Dual Contouring (Tuntenfisch, destructible terrain):** DC läuft heute real auf der GPU → **härtet
+  T3** (DC ist machbar, nicht nur Theorie).
+- **Vertex Pooling (Nick McDonald 2021):** memory-freundliche nahtlose LOD für viele kleine Chunk-Meshes →
+  ein Effizienz-Faden für T2.
+- **FLIP/PIC (SIGGRAPH 2023, GPU-Flüssigkeit):** der Stand für FREIE Flüssigkeit (Spritzer/Wellen/Partikel).
+  **Bewusst NICHT gewählt (§3):** unser Ziel ist *„fließt nach, sucht sein Niveau"* (Minecraft) → ein
+  zellulärer Automat ist richtig + Größenordnungen billiger auf streamendem Open-World-Voxel. FLIP/PIC wäre
+  Overkill = die Heilige-Lektion-Sünde (Komplexität ohne Fundament).
+
+**Fazit des aktuellen Stands:** der Plan ist architektonisch BESTÄTIGT (DC kantig · Geomorph/Stable-LOD
+nahtlos · CA fließend — die Profi-Wege von heute gehen denselben Pfad). Zwei ehrliche Schärfungen: (1) der
+absolute Gipfel ist mesh-frei (Raytracing) — unsere Mesh-Wahl ist bewusst, nicht naiv; (2) Cluster-LOD
+(Nanite) scheitert an Höhlen — unser festes Chunk-Grid ist HIER die robustere Wahl.
+
 ---
 
 ## 2 · P — PLANEN (der Lösungsweg)
@@ -173,11 +201,20 @@ lokal-reaktiv (nicht im Welt-Snapshot), die Wahl ist eine T4-Architektur-Frage (
   statt dessen).
 - **Diskret/blocky** (A): würfelig; widerspricht „Minecraft in den Schatten stellen". (Aber das CA-
   *Wasser*-Modell von Minecraft übernehmen wir — T4.)
+- **Mesh-frei (Raymarching/Raytracing, Teardown — der absolute Gipfel):** unlimited world, mesh-los, keine
+  Naht per Definition. **Verworfen für JETZT (bewusst, nicht naiv):** unsere Render-Pipeline ist Three.js-
+  Mesh (WebGPU); ein Raymarching-Renderer ist ein eigener großer Render-Bogen, kein Terrain-Plan. Notiert
+  als der mögliche Fern-Horizont — wenn wir je den Renderer selbst neu denken.
 - **Weiter pixel-blind am Wasser-Mesh tweaken:** das war die Spirale (Narben §1.6).
 
 ---
 
 ## 4 · R — REALISIEREN (die Phasen — jede: Ziel · Mechanik · Schnittstellen · Risiko · Sign-off)
+
+**Ehrlich (read-as-stranger):** Die DIAGNOSE (§0–1) ist *gemessen*. Die LÖSUNGEN (T1–T5) sind *begründete
+Hypothesen*, KEINE bewiesenen Wahrheiten — jede trägt ihre eigene Mess-Wand (§5) + ihren Browser-Sign-off,
+BEVOR sie als wahr gilt. Kein Schritt wird gebaut, weil der Plan ihn behauptet — nur, weil seine Messung
+ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigieren.
 
 ### T0 — MESSEN: welche Naht dominiert? (die These empirisch härten · Risiko: keiner)
 - **Ziel.** Bevor irgendein Umbau: trennen, ob das sichtbare Abbau-/Lade-Symptom die *zeitliche* (async)
@@ -262,6 +299,12 @@ LOD) → T3 (kantig) → T4 (Wasser-CA) → T5 (G3)`. **Die Grenze zuerst (T0–
 T4 Wasser, T5 Canyons).** T3/T4 sind tauschbar (Schöpfer-Wahl), aber beide bauen auf der kohärenten Grenze —
 **niemals T4 (Wasser) vor T1/T2 (Grenze):** das wäre die Spirale von vorn (Narben §1.6).
 
+**Orthogonale Fäden (berühren die Naht NICHT — eigene roadmap-Punkte, hier bewusst ausgegrenzt):** U4
+(Deko/Impostor) · U5 (Schatten-CSM) · U6 (Clipmap) lesen dieselbe LOD-Kaskade, aber nicht die Naht —
+getrennte Bögen. **H3** (ferne Binnengewässer jenseits ±1024 m) ist eine Worldgen-REGION-Grenze, nicht die
+Chunk-Naht — verwandt mit T4 (das CA müsste die mitwandernde Region tragen), aber ein eigener Faden. Diese
+NICHT in diesen Bogen ziehen (Scope-Disziplin — der Plan heilt die Grenze, nicht alles).
+
 **Die Disziplin (gegen die Wiederholung der Spirale):**
 1. **Regel #0** — jede pixel-blinde Phase browser-bestätigt + gemergt, bevor die nächste beginnt.
 2. **Eine verworfene Architektur nicht wieder anfassen** (Narben §1.6) — kein flacher Fluss, keine Zell-Maske.
@@ -276,6 +319,10 @@ wirklich *fließt* — über die Grenzen, in die Kanäle, sein Niveau suchend. N
 scharfer Geometrie, die Minecraft nie hatte.** Das ist, was dem Terrain gerecht wird.
 
 ## Quellen (die Riesen)
-Transvoxel/Lengyel (LOD-Transition) · Dual Contouring of Hermite Data (Ju et al., QEF/Kanten) · Manifold
-Dual Contouring (Schaefer/Ju, gegen Self-Intersection) · Nick Gildea (DC-Seams-Praxis) · 0fps (blocky-LOD,
+**Fundament:** Transvoxel/Lengyel (LOD-Transition) · Dual Contouring of Hermite Data (Ju et al., QEF) ·
+Manifold DC (Schaefer/Ju, gegen Self-Intersection) · Nick Gildea (DC-Seams-Praxis) · 0fps (blocky-LOD,
 Geomorph) · Minecraft/DwarfCorp (CA-Wasser, active-cells, cross-chunk-wake).
+**Aktueller Stand 2021–2024 (read-as-stranger-Review 09.06.):** Teardown/Gustafsson (mesh-frei, Raymarching
+→ HW-Raytracing — der Gipfel) · Nanite + **Aokana** (GPU-Driven Voxel for Open World, arxiv 2505.02017 —
+Cluster-LOD + das Höhlen-Disconnect-Problem) · Tuntenfisch (GPU-Dual-Contouring, destructible) · Nick
+McDonald (Vertex Pooling) · SIGGRAPH 2023 (GPU-FLIP/PIC — bewusst NICHT gewählt, freie Flüssigkeit ≠ unser Ziel).
