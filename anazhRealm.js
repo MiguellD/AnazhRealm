@@ -20515,7 +20515,12 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
-        if (!this._voxelChunkHasAnyWater(cx, cz)) {
+        // V18.91 — das Gate kennt das LIVE-Wasser: ein Chunk OHNE Atlas-Wasser kann
+        // trotzdem CA-Wasser TRAGEN (die Ausbreitung über die Grenze — Schöpfer-Befund
+        // „die Oberfläche geht nicht mit"). Hat er einen Level-Eintrag, entscheidet
+        // der Spalten-Scan, nicht der Atlas.
+        const levelMap = this.state.waterLevelCells;
+        if (!this._voxelChunkHasAnyWater(cx, cz) && !(levelMap && levelMap.has(key))) {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
@@ -20530,10 +20535,18 @@ class AnazhRealm {
         const oy = (this.state.terrainBaseHeight || 0) - cfg0.floorDrop;
         const dimSq = dim * dim;
         const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        const levelMap = this.state.waterLevelCells;
-        // Spalten-Grid mit PAD=3: die Vertices konsumieren die Spalten −1..dim; zwei
-        // Glätt-Pässe (Radius 1) brauchen rohe Daten bis ±2 darüber hinaus → ±3.
-        const PAD = 3;
+        // V18.91 — OBERFLÄCHENSPANNUNG (Schöpfer: „nicht geknäulte Alufolie — das
+        // Terrain-Sheet ist deutlich glatter"): VIER Glätt-Pässe (Radius 1) statt zwei,
+        // browser-justierbar (0..6, der Schöpfer dirigiert die Spannung live):
+        //   anazhRealm.state.atmosphere.waterSheetSmooth = 6  (+ Modus neu wählen → re-mesh)
+        // PAD = Pässe + 1 (die Abhängigkeits-Kegel der konsumierten Spalten −1..dim
+        // bleiben voll im Grid → naht-symmetrisch EXAKT, wie GEMESSEN Δy=0).
+        const smoothRaw =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterSheetSmooth)
+                ? Math.round(this.state.atmosphere.waterSheetSmooth)
+                : 4;
+        const SMOOTH_PASSES = Math.max(0, Math.min(6, smoothRaw));
+        const PAD = SMOOTH_PASSES + 1;
         const GW = dim + 2 * PAD;
         const topG = new Float64Array(GW * GW).fill(NaN); // NaN = trocken
         const solidG = new Float64Array(GW * GW); // Boden-Anker (Unterkante der höchsten SOLID-Zelle)
@@ -20578,7 +20591,17 @@ class AnazhRealm {
                 const level = levelMap ? levelMap.get(srcKey) : undefined;
                 const sc = this._caColumnScan(src, level, li + lk * dim, dimSq, dimY);
                 solidG[gi] = sc.solidTopJ >= 0 ? oy + sc.solidTopJ * step : oy;
-                if (sc.floodTopJ < 0) continue; // trocken (topG bleibt NaN)
+                // V18.91 — LIVE-ONLY-Spalten sind NASS (Schöpfer: „die Oberfläche geht
+                // nicht mit"): Wasser, das der CA in flood-trockene Spalten trug (die
+                // Ausbreitung), rendert ab Level > 0.5 — Top = Live-Dach (sub-zellig
+                // via liveFrac), kein L-Anker (es IST jenseits der statischen Domäne).
+                if (sc.floodTopJ < 0) {
+                    if (level && sc.liveTopJ >= 0) {
+                        topG[gi] = oy + (sc.liveTopJ + sc.liveFrac) * step;
+                        depthG[gi] = Math.max(0, (sc.liveTopJ - sc.solidTopJ) * step);
+                    }
+                    continue; // sonst trocken (topG bleibt NaN)
+                }
                 const faceY = oy + (sc.floodTopJ + 1) * step; // Zell-Dach (quantisiert)
                 // RUHE: sub-zellig der Body-Spiegel `L` (die Flood ist „gefüllt bis L");
                 // clamp auf ±1 Zelle um das Dach (Schutz gegen Atlas/Zell-Drift).
@@ -20598,11 +20621,12 @@ class AnazhRealm {
                 depthG[gi] = Math.max(0, (sc.floodTopJ - sc.solidTopJ) * step);
             }
         }
-        // Wet-only-Glätten (2 Pässe, Radius 1): nimmt die 1.8-m-Treppen der Dächer,
-        // ohne das Ufer zum Trockenen zu ziehen (trocken bleibt trocken/NaN).
+        // Wet-only-Glätten (SMOOTH_PASSES × Radius 1 — die Oberflächenspannung): nimmt
+        // die 1.8-m-Treppen + die CA-Stufen-Fronten, ohne das Ufer zum Trockenen zu
+        // ziehen (trocken bleibt trocken/NaN).
         let cur = topG;
         let buf = new Float64Array(GW * GW);
-        for (let pass = 0; pass < 2; pass++) {
+        for (let pass = 0; pass < SMOOTH_PASSES; pass++) {
             buf.fill(NaN);
             for (let g = 0; g < GW * GW; g++) {
                 if (Number.isNaN(cur[g])) continue;
@@ -51267,7 +51291,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.90.0";
+AnazhRealm.VERSION = "18.91.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

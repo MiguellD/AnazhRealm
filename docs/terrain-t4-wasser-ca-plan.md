@@ -90,6 +90,15 @@ sucht sein Niveau). **Das ist die EINE fehlende Sache — eine ARCHITEKTUR, kein
   die Flood bleibt das deterministische RUHE-Substrat (Zellen/Worker unberührt); das LIVE-Level
   FÜHRT, wo es existiert (Render liveTop + Physik + Pre-Seed garantiert den sichtbaren Verzug),
   die Quellen speisen es. Damit ist „fliesst nach wie Minecraft" im Modell VOLL da.
+- **V18.91 — DIE OBERFLÄCHE GEHT MIT (Schöpfer-Browser-Befunde am Canyon):** live-only-Spalten
+  (CA-Wasser ohne Flood — die Ausbreitung) rendern im Zell-Sheet (Top = Live-Dach sub-zellig;
+  das Gate akzeptiert Level-Einträge auch ohne Atlas-Wasser → die Ausbreitung über Chunk-Grenzen
+  in trockene Chunks ist sichtbar). GEMESSEN: 477/477 live-only-Spalten gedeckt. Plus
+  OBERFLÄCHENSPANNUNG: 4 Glätt-Pässe (browser-justierbar 0..6 via `atmosphere.waterSheetSmooth`),
+  Naht bleibt EXAKT (PAD=Pässe+1). **Der „Schlauch"-Befund ist korrekt:** Flüsse sind heute
+  parametrische Bänder des frozen Netzes (D8-Kurse × Breiten-Profil; Zuflüsse existieren, aber
+  als feste Ribbons) — das organische Wachsen („wie ein Baum") = Quellen-only + CA-Transport
+  entlang des Bettes = der nächste tiefe Bogen (Phase A-tief), für den W-B die Vorstufen baute.
 - **T4b — der RENDER. HYBRID GEBAUT ✓ (V18.84):** das Surface-Mesh liest den LIVE-Delta
   (`surfY = L + _caWaterTopDelta`, Clamp −14..+4; im Ruhe-Zustand exakt die statische `L`).
 - **W-A — das ZELL-OBERKANTEN-SHEET. GEBAUT ✓ (V18.89, A/B-Modus "cells"):**

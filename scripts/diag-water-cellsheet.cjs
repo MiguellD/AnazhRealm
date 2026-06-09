@@ -213,6 +213,115 @@ const server = http.createServer((req, res) => {
         };
     });
 
+    // PHASE 2.5 — LIVE-DOMÄNE (V18.91, Schöpfer-Befund „die Oberfläche geht nicht mit"):
+    // ein Graben vom Ufer hinaus über die Flood-Domäne (>16-m-Rim) → der CA trägt Wasser
+    // in flood-trockene Spalten (live-only) → das Sheet MUSS sie rendern.
+    const live = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        const cfg = r._voxelChunkConfig(0);
+        const dim = cfg.dim,
+            dimY = cfg.dimY,
+            step = cfg.step,
+            span = cfg.span;
+        const dimSq = dim * dim;
+        const WATER = r.constructor.CELL_STATE.WATER;
+        const oy = (s.terrainBaseHeight || 0) - cfg.floorDrop;
+        // Ufer-Kandidat (wie diag-water-sources): WATER-Spalte mit trockenem 4-Nachbarn.
+        let pick = null;
+        for (const [key, e] of s.voxelChunks) {
+            if (!e || e.empty || !e.waterCells || (Number.isFinite(e.lod) && e.lod !== 0)) continue;
+            const [cx, cz] = key.split(",").map(Number);
+            const cells = e.waterCells;
+            for (let k = 4; k < dim - 4 && !pick; k++) {
+                for (let i = 4; i < dim - 4 && !pick; i++) {
+                    const col = i + k * dim;
+                    let topW = -1;
+                    for (let j = dimY - 1; j >= 0; j--)
+                        if (cells[col + j * dimSq] === WATER) {
+                            topW = j;
+                            break;
+                        }
+                    if (topW < 3) continue;
+                    for (const [di, dk] of [
+                        [1, 0],
+                        [-1, 0],
+                        [0, 1],
+                        [0, -1],
+                    ]) {
+                        const nc = i + di + (k + dk) * dim;
+                        let nWet = false;
+                        for (let j = 0; j < dimY; j++)
+                            if (cells[nc + j * dimSq] === WATER) {
+                                nWet = true;
+                                break;
+                            }
+                        if (!nWet) {
+                            pick = { key, cx, cz, i, k, di, dk, topW };
+                            break;
+                        }
+                    }
+                }
+            }
+            if (pick) break;
+        }
+        if (!pick) return { err: "kein Ufer-Kandidat" };
+        // Graben: 3 Kugeln vom Ufer hinaus (4/10/16 m — das Ende liegt jenseits des 16-m-Rims).
+        const bx = pick.cx * span + (pick.i + 0.5) * step;
+        const bz = pick.cz * span + (pick.k + 0.5) * step;
+        const cy = oy + (pick.topW - 0.5) * step;
+        for (const dist of [4, 10, 16]) {
+            r.carveVoxelSphere(bx + pick.di * dist, cy, bz + pick.dk * dist, 2.6);
+        }
+        for (let t = 0; t < 160; t++) r._tickWorldWaterCA();
+        // live-only-Spalten im 3×3 um den Pick sammeln + Sheet-Deckung prüfen.
+        const liveCols = [];
+        const meshes = [];
+        for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const kk = `${pick.cx + dx},${pick.cz + dz}`;
+                const e = s.voxelChunks.get(kk);
+                const lv = s.waterLevelCells.get(kk);
+                if (!e || !e.waterCells) continue;
+                if (lv) {
+                    for (let c = 0; c < dimSq; c++) {
+                        let flood = false,
+                            liveJ = -1;
+                        for (let j = dimY - 1; j >= 0; j--) {
+                            const idx = c + j * dimSq;
+                            if (e.waterCells[idx] === WATER) {
+                                flood = true;
+                                break;
+                            }
+                            if (liveJ < 0 && lv[idx] > 0.5) liveJ = j;
+                        }
+                        if (!flood && liveJ >= 0) {
+                            liveCols.push({
+                                x: (pick.cx + dx) * span + (c % dim) * step + 0.5 * step,
+                                z: (pick.cz + dz) * span + ((c / dim) | 0) * step + 0.5 * step,
+                            });
+                        }
+                    }
+                }
+                const m = r._buildVoxelChunkWaterCellSheet(pick.cx + dx, pick.cz + dz, kk);
+                if (m) meshes.push(m);
+            }
+        }
+        let covered = 0;
+        for (const col of liveCols) {
+            let hit = false;
+            for (const m of meshes) {
+                const pos = m.geometry.getAttribute("position");
+                for (let v = 0; v < pos.count && !hit; v++) {
+                    if (Math.abs(pos.getX(v) - col.x) <= step && Math.abs(pos.getZ(v) - col.z) <= step) hit = true;
+                }
+                if (hit) break;
+            }
+            if (hit) covered++;
+        }
+        return { liveCols: liveCols.length, covered, key: pick.key };
+    });
+
     // PHASE 3 — A/B-Screenshots aus DERSELBEN Kamera am größten nahen Wasser.
     fs.mkdirSync(ART, { recursive: true });
     const spot = await page.evaluate(() => {
@@ -361,15 +470,24 @@ const server = http.createServer((req, res) => {
     console.log(
         `ANKER (${out.anchorN} Ring-Vertices): über Terrain = ${out.anchorAbove} (worst +${out.anchorWorst} m)   (${out.anchorAbove / Math.max(1, out.anchorN) < 0.05 ? "✓ Kante taucht ein" : "✗ Kante schwebt!"})`
     );
+    if (live && !live.err) {
+        console.log(
+            `LIVE-DOMÄNE (V18.91, Graben über den Rim @${live.key}): ${live.liveCols} live-only-Spalten · vom Sheet gedeckt: ${live.covered}   (${live.liveCols > 0 && live.covered / live.liveCols >= 0.6 ? "✓ die Oberfläche geht mit" : "✗ Ausbreitung unsichtbar!"})`
+        );
+    } else {
+        console.log(`LIVE-DOMÄNE: SKIP (${live && live.err})`);
+    }
     console.log(`Page-Errors: ${pageErrors.length}`);
     console.log("\nA/B-Bilder: artifacts/water-ab-surface.png vs artifacts/water-ab-cells.png\n");
 
+    const liveOk = !live || live.err ? true : live.liveCols > 0 && live.covered / live.liveCols >= 0.6;
     const ok =
         out.sheets > 0 &&
         out.parMean <= 0.1 &&
         parPct <= 1 &&
         out.seamMax < 0.001 &&
         out.anchorAbove / Math.max(1, out.anchorN) < 0.05 &&
+        liveOk &&
         pageErrors.length === 0;
     process.exit(ok ? 0 : 1);
 })();
