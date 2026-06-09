@@ -63,10 +63,45 @@ sucht sein Niveau). **Das ist die EINE fehlende Sache — eine ARCHITEKTUR, kein
   world-flow` GRÜN: ERHALTUNG exakt (Σ A+B konstant) · Wasser fliesst über die Chunk-GRENZE (B erhielt 2.7) ·
   active-Set settled auf 0.** 3 Playtest-Inv. Im Game-Loop getickt (kostenlos wenn nichts perturbiert).
 - **T4a-4 — die PHYSIK liest das Level** (`_playerWaterContext` nutzt das CA-Level statt der binären Zelle)
-  → Auftrieb folgt dem echten Wasserstand. Headless-Physik-Probe.
-- **T4b — der RENDER** (das Surface-Mesh aus dem CA-Level; das gefaltete `L`-Mesh stirbt, weil das Level
-  jetzt die Wahrheit ist) → Regel #0, Browser-Loop, Merge. **Hier heilt auch Ebene B (das Mesh-Falten):
-  ein CA-Level pro Zelle springt nicht wie das Multi-Segment-`L` → keine Faltung.**
+  → Auftrieb folgt dem echten Wasserstand. Headless-Physik-Probe. **OFFEN (W-B).**
+- **T4b — der RENDER. HYBRID GEBAUT ✓ (V18.84):** das Surface-Mesh liest den LIVE-Delta
+  (`surfY = L + _caWaterTopDelta`, Clamp −14..+4; im Ruhe-Zustand exakt die statische `L`). Die
+  VOLLE Form (Höhe aus den ZELL-OBERKANTEN, das frozen `L` stirbt als Render-Quelle — wasser-plan
+  §0 W-A) ist der nächste Bau → Regel #0, A/B-Browser-Loop, Merge. **Dort heilt auch Ebene B (das
+  Mesh-Falten): ein Zell-Top pro Spalte springt nicht wie das Multi-Segment-`L` → keine Faltung.**
+
+## 6 · DIE VIER GEMESSENEN W-B-BEFUNDE (Code-Audit 09.06.2026 — vor W-B heilen/entscheiden)
+
+1. **`state.waterLevelCells` ist UNBOUNDED** — kein Prune/Decay nirgends; jeder je geweckte Chunk
+   hält für immer ein Float32Array (24·24·232 ≈ **534 KB**). Verletzt die eigene §5-Wand („bounded,
+   sparse, lazy-decay") + V17.27. **Heilung: Prune in `_pruneDistantVoxelChunks`** (Chunk fällt aus
+   dem Ring → Level-Eintrag + active-Key fallen mit; Re-Stream seedet aus der Flood neu —
+   konsistent mit „lokal-reaktiv wie Wetter"). ✓ GEBAUT (V18.88).
+2. **`_caWaterTopDelta`-FERNKANTE bricht die V18.18-Lehre** — der Guard gab für `ci >= dim` 0
+   zurück → der ferne Rand-Vertex rendert STATISCH, während der Nachbar an derselben Welt-Position
+   seinen Live-Delta rendert → transienter Höhen-Riss an jeder Chunk-Grenze, solange Wasser fließt.
+   **Heilung: Nachbar-Redirect** (das `colDepthAt`-Muster) + die V18.0-Folge: ein bewegter Chunk
+   re-enqueued AUCH die drei Leser-Nachbarn (−x · −z · −x−z), „wer N Nachbarn liest, re-enqueued N".
+   ✓ GEBAUT (V18.88).
+3. **+x/+z-ASYMMETRIE der Ausbreitung** — `_tickWorldWaterCA` tauschte nur über die +x/+z-Grenzen
+   AKTIVER Chunks: ist der West/Nord-Nachbar inaktiv, wird das Grenz-Paar NIE ausgeführt → Wasser
+   propagiert über den initialen Wake-Ring hinaus nur nach Ost/Süd (die V13.3-Isotropie-Klasse).
+   **Heilung: aktive Chunks tauschen auch mit INAKTIVEN −x/−z-Nachbarn** (ist der Nachbar aktiv,
+   führt ER das Paar als sein +x/+z — keine Doppel-Ausführung). ✓ GEBAUT (V18.88).
+4. **„active-cell-only" ist active-CHUNK-Vollsweep** — pro aktivem Chunk tickt der CA ALLE
+   133.632 Zellen inkl. der vollen dimY=232-Säule (überwiegend Luft; das `hydroBand`-Wissen
+   ungenutzt). Für Carve-Reaktivität ok (settled schnell); für Phase A (weiträumige Flüsse)
+   skaliert es nicht. **W-B-Arbeit: y-Band-Limit pro Chunk (min/max belegtes j ± 1) und/oder echte
+   active-cell-Listen.** OFFEN.
+
+**Plus die EINE W-B-Architektur-Entscheidung (heute implizit + timing-abhängig):** der statische
+Re-Flood füllt einen Carve UNTER `L` weiterhin INSTANT (beim sync gebauten Footprint-Chunk seedet
+der CA aus den schon-vollen Zellen → kein sichtbares Fließen dort); sichtbares Nachfließen entsteht
+v. a. AUSSERHALB der `L`-Domäne (+4-m-Befund) + bei async-Nachbarn (Seed vor Rebuild). **W-B muss
+entscheiden: die Flood wird SEED-ONLY (Erst-Zustand), der CA der einzige Füller — und dann braucht
+es QUELLEN/SENKEN-Semantik (das frozen Hydro-Netz als Quell-Emitter, der Ozean unendlich; Minecraft:
+Source-Blocks), sonst entleert ein gegrabener Abfluss per Erhaltung den See.** Nicht benennen =
+der Keim der nächsten Spirale.
 
 ## 4 · DIE SYNERGIE (warum das den Samen nährt — das lebendige Feld)
 

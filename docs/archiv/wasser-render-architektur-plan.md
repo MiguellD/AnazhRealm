@@ -12,10 +12,13 @@
 > die Schicht-Analyse (vormals hier, V18.17) + die Geometrie-Wahrheit „Fläche auf `L`"
 > (`docs/archiv/wasser-finale-form-plan.md`, V18.6 — jetzt HISTORIE). **Vor JEDER Wasser-Arbeit ZUERST lesen.**
 >
-> **Regel über allem (Regel #0, mehrfach benannt + mehrfach verletzt):** Wasser-RENDER ist
-> PIXEL-BLIND headless. Der Schöpfer-Browser ist die EINZIGE Wahrheit. NIE 2+ pixel-blinde
-> Wellen stapeln ohne sein Auge dazwischen. NIE „wir habens" sagen, was nicht browser-bestätigt
-> ist. Ein bestätigter Bogen wird GEMERGT, bevor der nächste beginnt.
+> **Regel über allem (Regel #0 — PRÄZISIERT 09.06.2026, s. roadmap §1):** Keine Proxy-METRIK
+> entscheidet einen Wasser-Look-Befund — AUGEN entscheiden. Meine swiftshader-Screenshots sind
+> TREU (Schöpfer-Korrektur, dreimal bestätigt) — mit der richtigen Methodik (settled · Augenhöhe ·
+> nah · A/B alt-vs-neu) prüft MEIN Auge jede Welle; eine headless-ZAHL kann die Substanz verfehlen
+> (V18.87: Glätte gemessen, Füllung verloren). Das SCHÖPFER-Auge bleibt das MERGE-Gate. NIE 2+
+> Look-Wellen stapeln ohne sein Auge. NIE „wir habens" sagen, was nicht browser-bestätigt ist.
+> Ein bestätigter Bogen wird GEMERGT, bevor der nächste beginnt.
 
 ---
 
@@ -52,7 +55,13 @@
    - **Keine komischen Kanten** — das Sheet endet, wo das Volumen endet (am Boden), nicht als freie
      Platte. Die KONVEXITÄT senkt es sanft zum Ufer → es „sichert sich in den Boden" = die
      Wasserspannung, rein GEOMETRISCH (kein Shader — der Schöpfer-Korrektur: „absolut nichts mit dem
-     Shader zu tun").
+     Shader zu tun"). **PRÄZISIERUNG (gegen die dokumentierte V18.8-Falle): EINTAUCHEN ≠ KLIPPEN.**
+     Die Verankerung heißt: die Mesh-KANTE taucht UNTER das Terrain (versteckt im Boden) — sie heißt
+     NICHT, eine Geometrie-Kante an die sichtbare Wasserlinie zu legen (das war die V18.8-Zell-Maske
+     → Sägezahn, revertiert). Die SICHTBARE Uferlinie bleibt der emergente Terrain-Schnitt + der
+     per-Pixel-Tiefen-Saum (V13.5 `waterThick` — gilt WEITER, er trägt das dünne Wasser). Geometrie
+     ankert die KANTE, der Shader zeichnet das UFER — kein Widerspruch zu V13.4/V18.10, sondern die
+     Auflösung.
    - **Keine Blockigkeit** — das Glätten über die Spalten nimmt die 1.8-m-Treppen weg (wie das
      Terrain-Sheet die Dichte interpoliert).
    - **Kein Klettern** — es ist ein HÖHENFELD über die Säulen-OBERKANTEN, nicht die volle Zell-Iso-
@@ -62,10 +71,18 @@
    DYNAMISCHES Volumen statt eines statischen Dichtefelds. Das Volumen trägt Wahrheit + Fluss, das
    Sheet trägt die glatte, gespannte, geankerte Oberfläche.
 
-### Die echte Arbeit (ehrlich, kein Über-Versprechen)
-- **Das dynamische Volumen (der Automat)** ist das grosse Stück: die Zellen suchen ihr Niveau +
-  propagieren über Chunkgrenzen (cross-chunk-wake), deterministisch (worker-gespiegelt), budgetiert
-  (active-cell-only). `_tickWaterCA` ist die Saat; die Welt-Verdrahtung (T4a-2..4) ist die Arbeit.
+### Die echte Arbeit (ehrlich, kein Über-Versprechen — Stand korrigiert 09.06.)
+- **Das dynamische Volumen (der Automat)**: Kern + Welt-Verdrahtung sind GEBAUT (T4a-1/-2 +
+  T4b-Hybrid, V18.84–.86 — `_tickWorldWaterCA` active-chunk + cross-chunk-wake + `caDelta` im
+  Render). **KORREKTUR eines Widerspruchs in der ersten Fassung dieser Sektion:** der CA ist
+  **LOKAL-REAKTIV** (T4-Plan §2.1 — KEIN Worker-Mirror, nicht persistiert, nicht im
+  Determinismus-Test; das Wetter/Life-Overlay-Muster; die statische Flood bleibt der
+  seed-deterministische Boden). Die frühere Formulierung „deterministisch (worker-gespiegelt)"
+  war FALSCH — wer dem folgt, reißt die Determinismus-Wand für eine reaktive Schicht auf.
+  Die ECHTE Rest-Arbeit (W-B): der CA wird die EINZIGE Füll-Wahrheit (Flood → Seed-only) +
+  Quellen/Senken-Semantik + die vier GEMESSENEN Befunde (T4-Plan §6: Level-Map unbounded ·
+  caDelta-Fernkante · +x/+z-Asymmetrie · Voll-Sweep statt active-cell) + T4a-4 (Physik liest
+  das Level).
 - **Das Glätten über die Naht** liest die Nachbar-Spalten — exakt das Pad/Crop-Muster, das das Terrain
   nahtlos macht (V9.79). Übertragbar.
 - **Die konvexe Verankerung am Ufer** (wo das Sheet sanft auf den steigenden Boden trifft) ist das
@@ -129,6 +146,11 @@ Rest ist reaktiv pro Chunk:
 ---
 
 ## 3. DIE FUNDAMENTALE WAHRHEIT (der „volle Bogen", den ich übersah)
+
+> **STATUS-NOTIZ (09.06.2026): §3 beschreibt den V18.31-Stand — seit V18.84–.86 EXISTIERT der
+> CA-Kern (T4, s. §0 + `docs/terrain-t4-wasser-ca-plan.md`); der Hybrid fließt nach Carves.
+> §3 bleibt als Analyse des statischen Modells, das W-B ablöst — die Sätze unten gelten für
+> das frozen-`L`-Fundament, nicht mehr für den Gesamt-Stand.**
 
 **Das Wasser ist ein STATISCHES 2.5D-HÖHENFELD `L` + eine reaktive Zell-FÜLLUNG bis `L`. Es gibt
 NIRGENDS eine Fluid-Dynamik. Wasser FLIESST NIE NACH.**

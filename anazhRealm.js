@@ -20110,9 +20110,11 @@ class AnazhRealm {
     // Naht-frei PER KONSTRUKTION: `L` ist ein geteiltes kontinuierliches Feld →
     // zwei Nachbar-Chunks berechnen an der gemeinsamen Kante DENSELBEN `L` → die
     // Vertices fallen zusammen (kein Smoothing, kein OOB-Iso, keine Zell-
-    // Granularität). Darum reitet die Fläche die TERRAIN-LOD gefahrlos (das war
-    // W2s Ziel — bei der Zell-Iso scheiterte es an der Höhen-Verschiebung der
-    // Vergröberung [DH #606]; auf `L` gibt es nichts zu verschieben).
+    // Granularität). ABER nur an GETEILTEN Vertices — die ursprüngliche Annahme
+    // „darum reitet die Fläche die Terrain-LOD gefahrlos" war FALSCH (V18.22,
+    // GEMESSEN `diag-water-lod-seam`): bei gemischter Auflösung teilen die
+    // Chunks keine Vertices → T-junction-Riss. Darum baut die Fläche IMMER auf
+    // LOD0 (s. den V18.22-Block unten — die V9.93-Eine-Skala-Lehre).
     //
     // Einseitige Oberseite: die Wicklung gibt der Oberseite eine -Y-Normale →
     // über die RÜCKSEITE sichtbar (das geteilte `hydroSurfaceMaterial` ist
@@ -24878,6 +24880,13 @@ class AnazhRealm {
                 this.state.voxelBaseDensityCache.delete(`${cx},${cz},1`);
             }
         }
+        // V18.88 (T4-Plan §6.1) — die CA-Level-Schicht fällt MIT dem Chunk aus dem
+        // Ring (~534 KB Float32 pro Eintrag, sonst unbounded — die §5-Wand „bounded,
+        // sparse"). Lokal-reaktiv wie Wetter: der Re-Stream seedet aus der Flood neu.
+        // NICHT in `_disposeVoxelChunk` (der Edit-Rebuild ruft das vor dem Build —
+        // das Level MUSS den Carve-Rebuild überleben, damit das Wasser nachfließt).
+        if (this.state.waterLevelCells) for (const key of drop) this.state.waterLevelCells.delete(key);
+        if (this.state.waterCAActive) for (const key of drop) this.state.waterCAActive.delete(key);
     }
 
     // Streamt den Voxel-Chunk-Ring um den Spieler. V9.85 Perf-2.a — Frame-
@@ -39532,13 +39541,59 @@ class AnazhRealm {
                     a.moved += xfer;
                 }
             }
+            // V18.88 (T4-Plan §6.3) — ISOTROPIE: auch mit INAKTIVEN −x/−z-Nachbarn
+            // tauschen (der inaktive West/Nord-Nachbar führt sein +x/+z nie aus →
+            // das Grenz-Paar lief sonst NIE → Wasser propagierte über den Wake-Ring
+            // hinaus nur nach Ost/Süd, die V13.3-Isotropie-Klasse). Ist der Nachbar
+            // AKTIV, führt ER das Paar als sein +x/+z aus (kein Doppel-Tausch).
+            for (const [dx, dz] of [
+                [-1, 0],
+                [0, -1],
+            ]) {
+                const wx = a.cx + dx,
+                    wz = a.cz + dz;
+                const wkey = `${wx},${wz}`;
+                if (activeSet.has(wkey)) continue;
+                const nb = this.state.voxelChunks.get(wkey);
+                if (!nb || nb.empty || !nb.waterCells || (Number.isFinite(nb.lod) && nb.lod !== 0)) continue;
+                const wLevel = levelOf(wkey, nb);
+                // Der Nachbar ist die A-Seite des Paars (sein fernes i/k=dim−1 ↔ unser 0).
+                const xfer = this._exchangeWaterBoundary(
+                    wLevel,
+                    nb.waterCells,
+                    a.level,
+                    a.cells,
+                    dx === -1 ? 1 : 0,
+                    dim,
+                    dimY
+                );
+                if (xfer > 0.01) {
+                    this._wakeWaterCA(wx, wz);
+                    a.moved += xfer;
+                }
+            }
         }
         // T4b — die bewegten Chunks neu rendern: das Surface-Mesh liest das LIVE-Level (caDelta) → das
         // Wasser fliesst sichtbar. Budgetiert über die bestehende `pendingWaterIso`-Queue (4/Frame) → kein
         // Spike. Nur bei echter Bewegung (kein Rebuild im Ruhe-Zustand → kein Render-Wandel ohne Carve).
+        // V18.88 (T4-Plan §6.2) — „wer N Nachbarn liest, re-enqueued N" (V18.0): der ferne Rand-Vertex
+        // eines Chunks liest jetzt die NACHBAR-Spalte (+x/+z) → ein bewegter Chunk re-enqueued AUCH die
+        // drei LESER-Nachbarn (−x · −z · −x−z), deren Fernkante seine Spalten rendert.
         if (total > 0.05) {
             if (!this.state.pendingWaterIso) this.state.pendingWaterIso = new Set();
-            for (const a of active) if (a.moved > 0.05) this.state.pendingWaterIso.add(a.key);
+            for (const a of active) {
+                if (a.moved <= 0.05) continue;
+                this.state.pendingWaterIso.add(a.key);
+                for (const [rx, rz] of [
+                    [-1, 0],
+                    [0, -1],
+                    [-1, -1],
+                ]) {
+                    const rkey = `${a.cx + rx},${a.cz + rz}`;
+                    const re = this.state.voxelChunks.get(rkey);
+                    if (re && re.waterCells) this.state.pendingWaterIso.add(rkey);
+                }
+            }
         }
         for (const a of active) if (a.moved < SETTLE) activeSet.delete(a.key);
         return total;
@@ -39579,39 +39634,72 @@ class AnazhRealm {
     _caWaterTopDelta(cx, cz, ci, ck) {
         const map = this.state.waterLevelCells;
         if (!map || map.size === 0) return 0;
-        const level = map.get(`${cx},${cz}`);
-        if (!level) return 0;
-        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
-        if (!entry || !entry.waterCells) return 0;
         const cfg = this._voxelChunkConfig(0);
         const dim = cfg.dim,
             dimY = cfg.dimY,
             step = cfg.step;
-        if (ci < 0 || ck < 0 || ci >= dim || ck >= dim) return 0;
-        const cells = entry.waterCells;
-        const dimSq = dim * dim;
-        const colBase = ci + ck * dim;
-        const WATER = AnazhRealm.CELL_STATE.WATER;
-        const SOLID = AnazhRealm.CELL_STATE.SOLID;
-        // Flood-Top (Ruhe): höchste WATER-Zelle. Live-Top: höchste nicht-solide Zelle mit Level > 0.5.
-        let floodTopJ = -1,
-            liveTopJ = -1,
-            liveFrac = 0;
-        for (let j = dimY - 1; j >= 0; j--) {
-            const idx = colBase + j * dimSq;
-            if (floodTopJ < 0 && cells[idx] === WATER) floodTopJ = j;
-            if (liveTopJ < 0 && cells[idx] !== SOLID && level[idx] > 0.5) {
-                liveTopJ = j;
-                liveFrac = level[idx];
-            }
-            if (floodTopJ >= 0 && liveTopJ >= 0) break;
+        // V18.88 (T4-Plan §6.2) — NACHBAR-REDIRECT am Chunk-Rand (das V18.18-
+        // `colDepthAt`-Muster): der ferne Rand-Vertex (ci=dim / ck=dim) liest die
+        // Spalte des NACHBARN — exakt den Wert, den dessen Nah-Kante (sein ci=0)
+        // liest → beide Chunks rendern an der geteilten Welt-Position DENSELBEN
+        // Live-Spiegel. Vorher gab der Guard 0 zurück → der ferne Rand blieb
+        // STATISCH, während der Nachbar floss = transienter Höhen-Riss an jeder
+        // Grenze, solange Wasser fließt. Nachbar ohne Level-Eintrag → 0 = exakt,
+        // was der Nachbar selbst rendert (konsistent per Konstruktion).
+        if (ci >= dim) {
+            cx += 1;
+            ci -= dim;
+        } else if (ci < 0) {
+            cx -= 1;
+            ci += dim;
         }
-        if (floodTopJ < 0) return 0; // kein Body-Wasser in dieser Spalte → `L` führt
-        const floodTopY = (floodTopJ + 1) * step; // Oberkante der Flood-Säule (relativ zu oy)
-        const liveTopY = liveTopJ < 0 ? 0 : (liveTopJ + liveFrac) * step;
+        if (ck >= dim) {
+            cz += 1;
+            ck -= dim;
+        } else if (ck < 0) {
+            cz -= 1;
+            ck += dim;
+        }
+        if (ci < 0 || ck < 0 || ci >= dim || ck >= dim) return 0;
+        const level = map.get(`${cx},${cz}`);
+        if (!level) return 0;
+        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
+        if (!entry || !entry.waterCells) return 0;
+        const sc = this._caColumnScan(entry.waterCells, level, ci + ck * dim, dim * dim, dimY);
+        if (sc.floodTopJ < 0) return 0; // kein Body-Wasser in dieser Spalte → `L` führt
+        const floodTopY = (sc.floodTopJ + 1) * step; // Oberkante der Flood-Säule (relativ zu oy)
+        const liveTopY = sc.liveTopJ < 0 ? 0 : (sc.liveTopJ + sc.liveFrac) * step;
         const delta = liveTopY - floodTopY; // ≈ 0 im Ruhe-Zustand
         if (delta > -0.05 && delta < 0.05) return 0; // Rest-Rauschen ignorieren = exakte Ruhe
         return Math.max(-14, Math.min(4, delta));
+    }
+
+    // V18.89 (W-A) — EIN Spalten-Scan-Kern, ZWEI Leser (V9.82: kein Parallel-Pfad):
+    // `_caWaterTopDelta` (surface-Modus, Live-Delta) + `_buildVoxelChunkWaterCellSheet`
+    // (cells-Modus, absolute Dächer + Anker). Top-down über EINE Spalte: die höchste
+    // WATER-Zelle (Flood-Ruhe), die höchste nicht-solide Zelle mit Live-Level > 0.5
+    // (CA, nur wenn `level` da), die höchste SOLID-Zelle (der Boden-Anker; per
+    // V13.12-Vertikal-offen liegt sie immer UNTER dem Wasser der Spalte).
+    _caColumnScan(cells, level, colBase, dimSq, dimY) {
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
+        const wantLive = !!level;
+        let floodTopJ = -1,
+            liveTopJ = -1,
+            liveFrac = 0,
+            solidTopJ = -1;
+        for (let j = dimY - 1; j >= 0; j--) {
+            const idx = colBase + j * dimSq;
+            const c = cells[idx];
+            if (floodTopJ < 0 && c === WATER) floodTopJ = j;
+            if (solidTopJ < 0 && c === SOLID) solidTopJ = j;
+            if (wantLive && liveTopJ < 0 && c !== SOLID && level[idx] > 0.5) {
+                liveTopJ = j;
+                liveFrac = level[idx];
+            }
+            if (floodTopJ >= 0 && solidTopJ >= 0 && (!wantLive || liveTopJ >= 0)) break;
+        }
+        return { floodTopJ, liveTopJ, liveFrac, solidTopJ };
     }
 
     // Welle A — die Gras-Queue synchron leeren (Test-Naht, Spiegel von
@@ -50715,7 +50803,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.86.0";
+AnazhRealm.VERSION = "18.88.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

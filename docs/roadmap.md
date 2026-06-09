@@ -10,19 +10,27 @@
 
 ---
 
-## §1 · Regel #0 — die eine Wahrheit (über allem)
+## §1 · Regel #0 — die eine Wahrheit (über allem) · präzisiert 09.06.2026
 
-**Render · Wasser · Schatten · Hand-Optik sind PIXEL-BLIND headless.** Der Schöpfer-Browser ist die
-einzige Wahrheit. Nie 2+ pixel-blinde Wellen tief ohne sein Auge dazwischen; ein bestätigter Bogen
-wird gemergt, bevor der nächste beginnt.
+**Keine Proxy-METRIK entscheidet einen Look-Befund — AUGEN entscheiden.** Die alte Form („Render ist
+pixel-blind headless") war FALSCH (Schöpfer-Korrektur 09.06., dreimal bestätigt): meine
+swiftshader-Screenshots sind TREU — mit der richtigen Methodik (settled · Augenhöhe · nah · A/B
+alt-vs-neu, `diag-settled-view`) prüft MEIN Auge jede Welle selbst. Was lügen kann, ist eine
+headless-ZAHL (Falten-%, Neigung — V18.87: Glätte gemessen, Füllung verloren). Das SCHÖPFER-Auge
+bleibt das MERGE-Gate (echtes WebGPU-FPS/Feel; er ist der Schöpfer): nie 2+ Look-Wellen stapeln
+ohne sein Auge, ein bestätigter Bogen wird gemergt, bevor der nächste beginnt. Mein Auge pro
+Welle, sein Auge pro Merge — Regel #0 ist ein Werkzeug, keine Bremse.
 
 ## §2 · Wo wir stehen
 
 Das **Fundament steht**: Voxel-Terrain mit echten Höhlen · Stream-Power-Erosion · das Wasser-
-*Datenmodell* (3D-Zellen, Physik, Reaktivität, globaler Ozean) · das Rückgrat der LOD-Kaskade (U1+U3) ·
-das lebendige Feld (lesen·schreiben·werten) + Emotion-Kern · die Crafting-Resonanz · der UI-Putz-Bogen.
-Was fehlt: **eine** große Sache — die Wasser-*Dynamik* — plus die Fundament-Reste, die LOD-Vollendung,
-der soziale Bogen und die offenen Render-Sign-offs.
+*Datenmodell* (3D-Zellen, Physik, Reaktivität, globaler Ozean) **+ der Wasser-CA-KERN** (T4,
+V18.84–.86: `_tickWaterCA` fließt im Modell+Welt, Render-Hybrid `surfY = L + caDelta`) · das
+Rückgrat der LOD-Kaskade (U1+U3, N3) · das lebendige Feld (lesen·schreiben·werten) + Emotion-Kern ·
+die Crafting-Resonanz · der UI-Putz-Bogen. Was fehlt: **eine** große Sache — die Wasser-
+**Render/Dynamik-VEREINIGUNG** (wasser-plan §0: W-A Zell-Oberkanten-Sheet · W-B der CA als einzige
+Füll-Wahrheit + Quellen/Senken · W-C Ufer-Verankerung) — plus N2 (Sub-Region-Edit), die
+Fundament-Reste, der soziale Bogen und die offenen Render-Sign-offs.
 
 ---
 
@@ -111,8 +119,12 @@ nicht im Gate) · IndexedDB-Persistenz (statt localStorage).
   revertiert V18.27. ZWEIMAL dieselbe verworfene Architektur. Nicht ein drittes Mal.**
 - Fluss-Anheben (V18.19) → revertiert V18.20, Bank-Sägezahn.
 - Auslauf-Übergang-Regler / Dichte-Scan-skirt (V18.25/.30/.31) → Pflaster, verschlimmerte das Falten.
-- Boundary-Face-Wasser-Mesh statt Surface-Nets (V13.2) → V13.6 FALSCH, flach/gappy (Wasser teilt den
-  Iso-Mesher des Bodens — das ist die Synergie).
+- Boundary-Face-Wasser-Mesh statt Surface-Nets (V13.2) → flach/gappy. **ABER: auch V13.6s
+  Gegen-These („Wasser teilt den Iso-Mesher des Bodens = die Synergie") ist ÜBERHOLT** — die
+  geschlossene Zell-Iso-Hülle war GEMESSEN selbst eine Wurzel (V18.1: sichtbare Unterseiten/Seiten
+  = DH #424/#503; §0-Kanon: klettert/blockig/Zentrum-Delle). Der überlebende Kern von V13.6:
+  EINE Skala + die Zellen als Wahrheit + das Glätten-PRINZIP — der Render ist ein
+  Oberflächen-SHEET (wasser-plan §0), kein geteilter Volumen-Mesher.
 - 3D-GPU-Fluid-Sim → als „falsches Werkzeug" markiert (Heilige-Lektion-Sünde; der gewählte Weg ist ein
   *zellulärer Automat*, nicht eine GPU-Sim).
 
@@ -182,7 +194,8 @@ nicht im Gate) · IndexedDB-Persistenz (statt localStorage).
 - **Das lebendige Feld** (V17.21–.50) — lesen·schreiben·werten + Emotion-Kern · **DSL-Weltregeln** (V17.33–.40)
 - **Crafting/Resonanz** (V17.59–.85) — ein Produkt-Vektor, viele Leser
 - **Tiefe-Fundament** (V17.92–.118) — Ruckel·Schwimm·Trapeze·effiziente Höhe·Kavernen·Aquifer·Render-Harmonie·H3-Ozean·Worker
-- **Wasser-Render** (V18.0–.31) — die Fläche-auf-`L` (das *statische* Modell; die Dynamik ist Phase 1)
+- **Wasser-Render** (V18.0–.31) — die Fläche-auf-`L` (statisch) · **Wasser-CA T4** (V18.84–.86,
+  Modell+Welt+Render-Hybrid; die VEREINIGUNG W-A/B/C ist Phase 1)
 - **UI-Putz-Bogen** (V18.32–.83) — 8 Tabs → 6 Räume · Omnibox · der freie Bildschirm
 
 ## §9 · Die operative Disziplin

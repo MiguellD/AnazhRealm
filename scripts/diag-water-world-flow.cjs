@@ -124,6 +124,30 @@ const server = http.createServer((req, res) => {
         }
         A.waterCells = cellsA;
         B.waterCells = cellsB;
+        // V18.88 — das System SCHLIESSEN (Test wandert mit dem Code, V9.56-i): seit der
+        // Isotropie-Heilung (T4-Plan §6.3) tauscht ein aktiver Chunk über ALLE vier Grenzen —
+        // die Außen-Nachbarn tragen NATUR-Wasser (Flood-Seed 1.0) und strömten in das
+        // synthetische A/B-Paar ein (die alte Messung nahm ein offenes System als geschlossen).
+        // SOLID-Wände auf den 6 Außen-Nachbarn → kein Tausch über den Paar-Rand, Σ A+B exakt.
+        const [acx, acz] = aKey.split(",").map(Number);
+        const outer = [
+            [acx - 1, acz],
+            [acx, acz - 1],
+            [acx, acz + 1],
+            [acx + 2, acz],
+            [acx + 1, acz - 1],
+            [acx + 1, acz + 1],
+        ];
+        const wallOrig = [];
+        const wall = new Uint8Array(dimSq * dimY).fill(SOLID);
+        for (const [wx, wz] of outer) {
+            const wk = `${wx},${wz}`;
+            const we = s.voxelChunks.get(wk);
+            if (we && we.waterCells) {
+                wallOrig.push([we, we.waterCells]);
+                we.waterCells = wall;
+            }
+        }
         // Level: eine hohe Säule an A's +x-RAND (i=dim-1, Mitte k), j=1..6; B leer.
         const levelA = new Float32Array(dimSq * dimY);
         const levelB = new Float32Array(dimSq * dimY);
@@ -156,11 +180,26 @@ const server = http.createServer((req, res) => {
         for (let j = 0; j < dimY; j++) colA1 += la[j * dimSq + kMid + (dim - 1)];
         const activeAfter = s.waterCAActive ? s.waterCAActive.size : -1;
 
+        // TEST 2 — ISOTROPIE (T4-Plan §6.3): Säule an B's −x-RAND (i=0), NUR B geweckt →
+        // das Wasser MUSS in den INAKTIVEN West-Nachbarn A fließen (vor der V18.88-Heilung
+        // lief das Grenz-Paar nie: B schaute nicht nach −x, das inaktive A tickte nicht →
+        // Ausbreitung über den Wake-Ring hinaus nur nach Ost/Süd, die V13.3-Isotropie-Klasse).
+        if (s.waterCAActive) s.waterCAActive.clear();
+        const levelA2 = new Float32Array(dimSq * dimY);
+        const levelB2 = new Float32Array(dimSq * dimY);
+        for (let j = 1; j <= 6; j++) levelB2[j * dimSq + kMid + 0] = 1.0;
+        s.waterLevelCells.set(aKey, levelA2);
+        s.waterLevelCells.set(bKey, levelB2);
+        r._wakeWaterCA(bKey.split(",")[0] | 0, bKey.split(",")[1] | 0);
+        for (let t = 0; t < 40; t++) r._tickWorldWaterCA();
+        const westGain = sum(s.waterLevelCells.get(aKey));
+        const westCons = sum(s.waterLevelCells.get(aKey)) + sum(s.waterLevelCells.get(bKey));
+
         // Originale wiederherstellen
         A.waterCells = aOrig;
         B.waterCells = bOrig;
-        s.waterLevelCells.delete(aKey);
-        s.waterLevelCells.delete(bKey);
+        for (const [we, orig] of wallOrig) we.waterCells = orig;
+        s.waterLevelCells.clear();
         if (s.waterCAActive) s.waterCAActive.clear();
 
         return {
@@ -175,6 +214,8 @@ const server = http.createServer((req, res) => {
             col1: +colA1.toFixed(3),
             ticks,
             activeAfter,
+            westGain: +westGain.toFixed(3),
+            westCons: +westCons.toFixed(5),
         };
     });
 
@@ -197,13 +238,17 @@ const server = http.createServer((req, res) => {
         `A's Rand-Säule: ${out.col0} → ${out.col1}   (abgeflossen/gespreizt: ${out.col1 < out.col0 - 1 ? "✓" : "✗"})`
     );
     console.log(
-        `active-Set nach dem Settle: ${out.activeAfter} Chunks   (active-cell ruht: ${out.activeAfter === 0 ? "✓" : "○ noch aktiv"})\n`
+        `active-Set nach dem Settle: ${out.activeAfter} Chunks   (active-cell ruht: ${out.activeAfter === 0 ? "✓" : "○ noch aktiv"})`
+    );
+    console.log(
+        `ISOTROPIE (V18.88): B aktiv, A inaktiv-WESTLICH → A erhielt ${out.westGain} (Σ ${out.westCons})   (${out.westGain > 0.1 ? "✓ fliesst auch nach Westen" : "✗ West-Ausbreitung blockiert"})\n`
     );
 
     const consOk = Math.abs(out.sum1 - out.sum0) < 1e-3;
     const crossOk = out.sumB1 > 0.1;
     const flowOk = out.col1 < out.col0 - 1;
-    if (consOk && crossOk && flowOk) {
+    const isoOk = out.westGain > 0.1 && Math.abs(out.westCons - 6) < 1e-3;
+    if (consOk && crossOk && flowOk && isoOk) {
         console.log(
             "GRÜN — der Welt-Automat ERHÄLT das Wasser, es FLIESST über die Chunk-GRENZE (cross-chunk-wake) + sucht sein Niveau."
         );
@@ -213,7 +258,7 @@ const server = http.createServer((req, res) => {
         process.exit(0);
     } else {
         console.log(
-            `ROT — Erhaltung ${consOk ? "ok" : "GEBROCHEN"}, cross-chunk ${crossOk ? "ok" : "FEHLT"}, Fluss ${flowOk ? "ok" : "FEHLT"}.\n`
+            `ROT — Erhaltung ${consOk ? "ok" : "GEBROCHEN"}, cross-chunk ${crossOk ? "ok" : "FEHLT"}, Fluss ${flowOk ? "ok" : "FEHLT"}, Isotropie ${isoOk ? "ok" : "FEHLT"}.\n`
         );
         process.exit(1);
     }
