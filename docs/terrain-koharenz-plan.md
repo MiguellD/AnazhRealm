@@ -698,21 +698,42 @@ Das DRAMA + BAND + LÖCHER (T5–T8) sind die DICHTE — unabhängig von der Nah
 NUR die Naht. Schliesse sie → alles oben folgt.
 
 ### 12.2 · Die drei Naht-Wurzeln (GEMESSEN → Heilung → Ziel)
-- **N3 · stabiles LOD (ZUERST, der billigste grösste Hebel).** Heute: LOD0-Ring 3×3 → die Cross-LOD-Grenze
-  sitzt ~50 m vom Spieler (sichtbar, wandert, popt). Heilung: grösserer LOD0-Ring (5×5/7×7) + **Hysterese**
-  (ein Chunk wechselt LOD erst bei klarem Distanz-Überschritt, nicht am Grat → kein Hin-und-Her-Pop). Wirkung:
-  die Grenze schiebt auf ~100–150 m → Fog-verdeckt + selten. **Synergie: macht N1 leichter (weniger/fernere
-  Grenzen zu schliessen).** MESSEN: FPS-Kosten (`diag-warmup-speed`/Playtest-FPS) + die Grenz-Distanz.
-- **N1 · Cross-LOD watertight (Render + KOLLISION).** Heute: der Geomorph (T2) ist render-only + schliesst
-  nur die exakte Grenz-ZEILE (98.7 %), die ganze Zone nur 57.2 % (⌀0.738 m, max 9.67 m). Heilung
-  (Geomorph-VOLLENDUNG, baut auf T2 — kein Rewrite, die Heilige Lektion): **(a)** das Morph-Gewicht deckt die
-  GANZE Übergangs-Zone (das Gewicht rampt von 1 an der Grenze auf 0 am INNEREN Zonen-Rand, ~2 grobe Zellen
-  tief — nicht nur die Zeile) → Render-Spalt 57 %→~100 %; **(b)** die KOLLISION teilt die Kohärenz: die BVH
-  wird aus der GEMORPHTEN Geometrie gebaut (main-only, nach dem Worker-Build → Determinismus unberührt) →
-  kein Durchsehen/Durchfallen. MESSEN: `diag-chunk-seam` B/D (0 sichtbare >1-m-Spalten) + ein NEUER
-  Kollisions-Check (BVH-Vertex == gemorphter Render-Vertex). **Alternative Transvoxel (Lengyel, watertight
-  Transition-Cells) NUR falls der Geomorph an Höhlen-Topologie-Grenzen versagt — das mildert N3 (Grenze in
-  simplem Terrain) bereits.**
+- **N3 · stabiles LOD — GEBAUT ✓ (V18.86, 09.06.2026).** War: LOD0-Ring 3×3 (`maxRing 1`) → die Cross-LOD-
+  Grenze ~50 m vom Spieler (sichtbar, wandert, popt). **GEBAUT:** **(a)** `DETAIL_CASCADE` Band 0 `maxRing 1→2`
+  → LOD0-Ring **5×5** → die Grenze schiebt auf **~100 m** (Fog). **(b)** `LOD_HYSTERESIS_RINGS=1` +
+  `_voxelChunkLodFor(…, currentLod)` — ein bestehender Chunk VERFEINERT sofort, VERGRÖBERT erst, wenn r die
+  Band-Grenze um 1 Ring klar überschreitet → Deadband, **kein Flip-Flop-Pop** am Grat (LOD ist derived/render →
+  Determinismus unberührt; main-only). **GEMESSEN (`diag-chunk-seam`):** LOD-Verteilung 9 LOD0 → **25 LOD0**,
+  der schlimmste Cross-LOD-Spalt wandert von `1,1↔2,1` (r1↔2, ~50 m) nach `0,-3↔0,-2` (r2↔3, ~100 m); Geomorph-
+  Grenz-Zeile 100 % auf Fläche. **Kosten (`diag-lod-pyramid`):** +16 LOD0-Chunks (~1.45× Terrain-Tris im Ring 4,
+  +29 % Build-Sampling) — der Build amortisiert; der **Render-FPS** ist pixel-blind → Schöpfer-Auge. Playtest
+  `Alle Invarianten OK` (4 Invarianten migriert: `lodPyramidBands`/`bandLods` r≤2→0 r3→1, `lodMidRing`,
+  `lodHysteresis`). **NEBENBEFUND (gemessen `diag-n3-water-abovel`):** der LOD-Reorder verschob die Map-
+  Reihenfolge → der order-abhängige `sampleMesh` des V18.25-Wasser-Wächters griff einen Chunk mit aktivem T4b-
+  `caDelta` (Wasser fliesst nach einem Carve bis +4 m über L, surfY = L + caDelta) → der alte Wächter „NIE über L"
+  ist mit T4b INKOMPATIBEL (er ist älter). Der LOD-Reorder baut KEINEN Vertex über L (clean Δ=0, nach Carve
+  Δ=3.6 m). Geheilt im TEST (V17.32 — den statischen Intent testen): das CA vor der V18.25-Static-Prüfung leeren
+  + die sampleMesh frisch bauen (caDelta=0). **Sign-off (OFFEN, Schöpfer-Auge):** beim schnellen Laufen kein Pop +
+  FPS tragbar.
+- **N1 · Cross-LOD watertight (Render + KOLLISION) — nach N3 GEMESSEN refiniert (V18.86):** zwei der drei
+  Annahmen sind nach dem N3-Bau überholt:
+  - **(b) KOLLISION ist MOOT — kein Bau nötig (GEMESSEN).** Die Annahme war „die BVH trägt den Naht-Riss". Aber
+    die Cross-LOD-Grenze sitzt nach N3 bei **r=2↔3**, und die BVH ist NUR bei **r≤1** eager (`_voxelChunkLazyBVHFor`
+    → lazy ab r≥2). Ein morphender Chunk hat also GAR KEINE BVH; ein Chunk bekommt seine BVH erst, wenn er auf
+    r≤1 verfeinert — dort ist er un-gemorphtes LOD0 (kein coarser Nachbar). → Render-Morph und Kollision stimmen
+    nie in einer relevanten Weise überein-NICHT: der Spieler/eine Kreatur steht nie auf einem gemorphten Cross-LOD-
+    Chunk (er ist immer ≥2 Chunks weg + verfeinert vor dem Erreichen). „Visual = Collision per Konstruktion" hält
+    bei r≤1 (beide un-gemorpht). **kein Durchfallen an der Cross-LOD-Naht.**
+  - **(a) RENDER: die Grenz-ZEILE schliesst schon 100 %** (GEMESSEN `diag-chunk-seam` D nach N3: w>0.95 → 100 %
+    auf der groben Fläche, ⌀0 m) = die fine Kante trifft die grobe Oberfläche = KEIN Loch an der Naht. Die „ganze
+    Zone 58 %" ist der FALLOFF (die Rampe zurück zur feinen Auflösung) — KEIN Loch, sondern beabsichtigt; ein
+    Morph der GANZEN Zone auf die grobe Fläche würde alle feine Detail an JEDER LOD-Grenze flachdrücken (schlechter).
+    Der echte Rest-Riss sind die **Cliff-OUTLIER** (max-Morph-Spalt ~9.67 m, GEMESSEN): an einer Steilwand/einem
+    Canyon (T6) divergieren feine + grobe Fläche vertikal → der Geomorph (Punkt→grobe-Fläche) kann den fine
+    Boundary-Vertex nicht auf die grobe Wand ziehen (die grobe Fläche ist dort gar nicht). Das ist die FUNDAMENTALE
+    Geomorph-Grenze an Cliffs → nur **Transvoxel (Lengyel, watertight Transition-Cells)** löst es voll. Nach N3
+    sitzt die Grenze im Fog (~100 m) → die Cliff-Outlier sind fog-gemildert. → **N1 ist „so watertight wie der
+    Geomorph erlaubt + fog-gemildert"; die volle Cliff-Heilung ist Transvoxel (eigener Bogen, nach Schöpfer-Wahl).**
 - **N2 · Sub-Region-Edit.** Heute: ein Block setzen re-meshet den GANZEN Chunk (`_rebuildVoxelChunk`) → das
   „Reset". (Klarstellung: Sub-Region-MESH war IMMER Backlog [V13.9]; wir hatten nur Sub-Region-DICHTE
   [V12.0-perf.b] — nichts ging verloren, es wurde nie gebaut.) Heilung: der Edit re-meshet nur die von der
@@ -737,10 +758,15 @@ Das LOD-Kaskaden-Polish (U4 Deko-Distanz · U5 Schatten-CSM · U6 Clipmap — Pe
 `archiv/lod-kaskade-plan.md`). Der Spawn-in-Höhle (Spawn-Höhe über die T6d-Kaverne heben).
 
 ### 12.5 · Die Verifikation (ALLES geprüft) + die Reihenfolge
-1. **N3** → Playtest-FPS + Grenz-Distanz gemessen (tragbar?).
-2. **N1** → `diag-chunk-seam` B/D = 0 sichtbare Spalten + Kollisions-Check konsistent · Determinismus 0/6885
-   (Worker-Mirror, falls die Geometrie berührt) · `diag-settled-view` an einem LOD-Übergang (mit dem Auge: kein Spalt).
-3. **N2** → der Edit berührt nur die Sub-Region · Playtest grün.
+1. **N3 — GEBAUT ✓ (V18.86)** → GEMESSEN `diag-chunk-seam`: LOD0-Ring 5×5, die Grenze r1↔2 → r2↔3 (~100 m);
+   Hysterese-Deadband (kein Flip-Flop); Playtest `Alle Invarianten OK`; Determinismus unberührt (LOD ist
+   derived, `voxel-worker.js` unangetastet). OFFEN: **Schöpfer-Browser** — beim schnellen Laufen kein Pop + FPS tragbar.
+2. **N1 — GEMESSEN refiniert (V18.86), kein Bau nötig** → (b) Kollision MOOT (die Cross-LOD-Grenze liegt in der
+   Lazy-BVH-Zone r≥2, morphende Chunks haben keine BVH) · (a) die Render-Grenz-Zeile schliesst schon 100 %
+   (`diag-chunk-seam` D), die ganze Zone ist der beabsichtigte Falloff; der echte Rest-Riss sind die Cliff-Outlier
+   (Geomorph-Grenze an Steilwänden) → **Transvoxel** ist die volle Heilung (eigener Bogen, nach N3-Fog gemildert).
+3. **N2** → der Edit berührt nur die Sub-Region · Playtest grün. (Der grosse Bau: Surface-Nets-Sub-Region-Splice,
+   V13.9-Backlog — eigener fokussierter Bogen, KEIN Render-only-Pflaster.)
 4. **T7d/T7c** → `diag-water-*` (kein vertikaler `L`-Abfall, kein Fluss-Edit-Loch) + dein Browser-Auge.
 5. Jeder Schritt: Worker-gespiegelt (Determinismus heilig) · gemessen · browser-validiert · EIN Merge pro
    bestätigtem Schritt.

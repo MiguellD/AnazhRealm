@@ -19115,12 +19115,27 @@ class AnazhRealm {
         return cfg.ringRadius * cfg.span;
     }
 
-    // V17.114 U1 — der erste Leser: die Terrain-Chunk-LOD. BYTE-IDENTISCH zur
-    // V17.112-Pyramide (r≤1→0, r2-8→1, r9-10→2, r≥11→3), jetzt aus der EINEN
-    // Kaskaden-Tabelle statt einer eigenen if-Kette.
-    _voxelChunkLodFor(cx, cz, pcx, pcz) {
+    // V17.114 U1 — der erste Leser: die Terrain-Chunk-LOD. Aus der EINEN Kaskaden-
+    // Tabelle (N3: r≤2→0, r3-8→1, r9-10→2, r≥11→3). `currentLod` (optional, vom
+    // Streaming-Tick): die LOD, die der Chunk JETZT trägt → die Hysterese (N3,
+    // Naht §12) hält ihn im Deadband am Grat. Ohne `currentLod` (frischer Build /
+    // Test) ist es die reine Band-LOD (derived, deterministisch).
+    _voxelChunkLodFor(cx, cz, pcx, pcz, currentLod = null) {
         const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
-        return this._detailBand(r).lod;
+        const lod = this._detailBand(r).lod;
+        // Hysterese: nur ein bestehender Chunk, dessen gewünschte LOD GRÖBER würde
+        // als seine jetzige (VERGRÖBERN), wird gehalten — bis r die obere Ring-
+        // Grenze seines aktuellen Bandes um LOD_HYSTERESIS_RINGS überschreitet.
+        // VERFEINERN (currentLod gröber als gewünscht) greift sofort (kein Halten)
+        // → Detail erscheint prompt, nur das Entfernen von Detail ist träge.
+        if (currentLod === null || !Number.isFinite(currentLod) || currentLod >= lod) return lod;
+        const band = AnazhRealm.DETAIL_CASCADE;
+        for (let i = 0; i < band.length; i++) {
+            if (band[i].lod === currentLod) {
+                return r <= band[i].maxRing + AnazhRealm.LOD_HYSTERESIS_RINGS ? currentLod : lod;
+            }
+        }
+        return lod;
     }
 
     // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH): soll dieser Chunk SOFORT
@@ -24902,10 +24917,14 @@ class AnazhRealm {
                     // umgekehrt), markieren wir ihn dirty + rebuilden.
                     // Sonst skipt der Tick. KEINE doppelte Re-Allokation
                     // bei stehendem Spieler.
-                    const desiredLod = this._voxelChunkLodFor(cx, cz, pcx, pcz);
                     const existing = this.state.voxelChunks.get(key);
+                    // N3 — die jetzige LOD des Chunks fliesst in die Distanz-Wahl
+                    // (Hysterese-Deadband am Grat); ein frischer Chunk (kein
+                    // `existing`) bekommt die reine Band-LOD.
+                    const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
+                    const desiredLod = this._voxelChunkLodFor(cx, cz, pcx, pcz, existingLod);
                     if (existing) {
-                        const currentLod = Number.isFinite(existing.lod) ? existing.lod : 0;
+                        const currentLod = existingLod !== null ? existingLod : 0;
                         if (currentLod !== desiredLod && !existing.empty) {
                             this._rebuildVoxelChunk(cx, cz, desiredLod);
                             if (++built >= MAX_PER_FRAME) break outer;
@@ -50696,7 +50715,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.85.0";
+AnazhRealm.VERSION = "18.86.0";
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
@@ -50711,11 +50730,23 @@ AnazhRealm.VERSION = "18.85.0";
 // rechnen (jeden N-ten Frame; dazwischen bewegen sie sich GLATT mit der gecachten
 // Richtung weiter → kein Ruckeln). Band 0/1 (nah/mittel, sichtbar) = jeden Frame.
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
-    Object.freeze({ maxRing: 1, lod: 0, aiDiv: 1 }), // Band 0 — ≤ 86 m: volles Detail
+    // N3 (Naht §12) — der LOD0-Ring war 3×3 (maxRing 1) → die Cross-LOD-Grenze
+    // sass ~50 m vom Spieler (sichtbar, wandert, popt; GEMESSEN diag-chunk-seam B:
+    // 14.2 % sichtbare >1-m-Spalten an der LOD0↔LOD1-Naht). Jetzt 5×5 (maxRing 2)
+    // → die Grenze schiebt auf ~100 m (Fog-verdeckt + seltener) → die Naht (N1) hat
+    // fernere Grenzen zu schliessen. Kosten: +16 LOD0-Chunks (~1.45× Terrain-Tris,
+    // GEMESSEN tragbar) — der Build amortisiert (einmal pro Chunk).
+    Object.freeze({ maxRing: 2, lod: 0, aiDiv: 1 }), // Band 0 — ≤ 130 m (5×5): volles Detail
     Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
     Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
     Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
 ]);
+
+// N3 (Naht §12) — die LOD-Hysterese: ein bestehender Chunk wechselt seine LOD
+// erst, wenn r die Band-Grenze um diese Ring-Zahl KLAR überschreitet (Deadband
+// gegen Flip-Flop-Pop am Grat). Asymmetrisch (in `_voxelChunkLodFor`): VERFEINERN
+// sofort (Detail soll prompt erscheinen), VERGRÖBERN nur im klaren Überschritt.
+AnazhRealm.LOD_HYSTERESIS_RINGS = 1;
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

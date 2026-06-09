@@ -12,18 +12,20 @@
  *       die „ein paar mehr Ringe" bei hoher FPS ermöglicht.
  */
 
-// dim (horizontale Auflösung) + dimY pro LOD — Spiegel von _voxelChunkConfig.
+// dim (horizontale Auflösung) + dimY pro LOD — Spiegel von _voxelChunkConfig
+// (dimY nach T8: 232/116/58/29).
 const DIM = { 0: 24, 1: 12, 2: 6, 3: 3 };
-const DIMY = { 0: 200, 1: 100, 2: 50, 3: 25 };
+const DIMY = { 0: 232, 1: 116, 2: 58, 3: 29 };
 // Mesh-Kosten-Proxy: Oberflächen-Vertices ≈ dim² (1 Vertex pro Surface-Cell-
 // Säule). Build-Kosten-Proxy: Grid-Vertices (dim+1)²·(dimY+1) (das gesampelte
 // Density-Grid; der Band-Skip reduziert das real noch, aber das Verhältnis hält).
 const surfVerts = (lod) => (DIM[lod] + 1) * (DIM[lod] + 1);
 const gridVerts = (lod) => (DIM[lod] + 1) * (DIM[lod] + 1) * (DIMY[lod] + 1);
 
-// Die NEUE LOD-Pyramide (Spiegel von _voxelChunkLodFor).
-const lodNew = (r) => (r >= 11 ? 3 : r >= 9 ? 2 : r >= 2 ? 1 : 0);
-// Die ALTE Zuweisung (r >= 2 ? 1 : 0) + eine naive „alles fern = LOD1"-Variante.
+// Die AKTUELLE LOD-Pyramide (Spiegel von _voxelChunkLodFor, N3: LOD0-Ring 5×5).
+const lodNew = (r) => (r >= 11 ? 3 : r >= 9 ? 2 : r >= 3 ? 1 : 0);
+// Die VOR-N3-Pyramide (LOD0 nur 3×3: r≥2→LOD1) — der Vergleich misst jetzt N3s
+// LOD0-Ring-Kosten (+16 LOD0-Chunks für die Cross-LOD-Grenze in den Fog).
 const lodOld = (r) => (r >= 2 ? 1 : 0);
 
 function tally(ringRadius, lodFn) {
@@ -63,8 +65,12 @@ const r8new = tally(8, lodNew);
 const r12new = tally(12, lodNew);
 const r12naive = tally(12, lodOld); // ring 12, aber ohne Pyramide (alles fern = LOD1)
 
-console.log("           Konfiguration       | Chunks (Verteilung)              | Mesh-Kosten   | Build-Kosten | Weitsicht");
-console.log("  -------------------------------+----------------------------------+---------------+--------------+----------");
+console.log(
+    "           Konfiguration       | Chunks (Verteilung)              | Mesh-Kosten   | Build-Kosten | Weitsicht"
+);
+console.log(
+    "  -------------------------------+----------------------------------+---------------+--------------+----------"
+);
 show("ring 8  ALT (= aktuell)", r8old);
 show("ring 8  NEU (Pyramide)", r8new);
 show("ring 12 NEU (Pyramide)", r12new);

@@ -19,6 +19,76 @@
 
 ---
 
+## 0. DIE ARCHITEKTUR VORWÄRTS — das dynamische Volumen + das geglättete konvexe Oberflächen-Sheet (Schöpfer-Vision 09.06.2026)
+
+> **Diese Sektion ist der KANON für jede künftige Wasser-Arbeit. Sie ersetzt das frozen-`L`-Film-Modell
+> als das Ziel.** Sie entstand aus der Schöpfer-Intuition (09.06.), nachdem zwei Render-Wege GEMESSEN +
+> browser-geprüft scheiterten: der `L`-Film (V18.6/.85 — facettiert, „komische Kanten", entleert sich)
+> UND die Zell-Iso (klettert Strukturen hoch, blockig, Zentrum-Delle in grossen Seen).
+
+### Warum BEIDE alten Render-Wege scheitern (gemessen + browser-bestätigt)
+- **Das Terrain ist sauber, weil sein Dichtefeld KONTINUIERLICH-signiert ist** (fest>0/luft<0): ein
+  glatter, interpolierter, eindeutiger, geschlossener Nulldurchgang. Eine Frage, eine Antwort, keine
+  Domänen-Kante, voll dynamisch (Edit → Feld-Delta → re-mesh).
+- **Der `L`-Film** (`_buildVoxelChunkWaterSurfaceMesh`) ist eine FLACHE Platte auf einem FROZEN
+  Worldgen-Spiegel → (a) „komische Kanten": er endet als harte Domänen-Grenze in der Luft, unabhängig
+  vom Wasser darunter; (b) fliesst nicht: der Spiegel ist eingefroren; (c) das flache Bett „entleert
+  sich" (dünnes Wasser fadet, statt das Bett zu zeigen). Die V18.31-Auslauf-Pflaster (Geometrie folgt
+  dem Terrain) falteten; mein V18.87 (Auslauf raus) leerte die Betten — beide am falschen Ende.
+- **Die Zell-Iso** (`_buildVoxelChunkWaterIsoSurface`) ist eine Surface-Nets-Iso über DISKRET-TERNÄREN
+  Zellen (AIR/WATER/SOLID) → (a) „klettert hoch": das Wasser ist ein Volumen, sein Rand ist auch
+  water-SOLID (die Seiten an Strukturen), die Iso unterdrückt sie unvollständig; (b) blockig/Zentrum-
+  Delle: binäre Zellen haben keinen glatten Nulldurchgang wie die stetige Dichte → 1.8-m-Treppen, über
+  Unterwasser-Hügeln sackt die Oberkante ab. Ternär + diskret = mehrdeutig + blockig.
+
+### DIE VISION (Schöpfer) — drei Schichten, eine Architektur
+1. **Der BODEN = ein Sheet** (die Terrain-Iso über dem Dichtefeld). Stetig, geschlossen, nahtlos.
+2. **Das WASSER = ein Volumenkörper dazwischen** (die Flood-Zellen). DIESE Schicht trägt das FLIESSEN:
+   man aktualisiert das Iso-Feld (die Zellen, ein Automat) → das Wasser bewegt sich. NICHT das Sheet
+   bewegen — das VOLUMEN. (Das Modell `_tickWaterCA` [T4a] ist gebaut: Erhaltung + Fluss bewiesen.)
+3. **Die OBERFLÄCHE = ein glättendes, KONVEXES Sheet über dem Volumen** — die Höhe kommt aus den
+   ZELLEN (die Oberkante der Wasser-Säule pro Spalte), NICHT aus dem frozen `L`. Dann:
+   - **Es fliesst** — die Zellen ändern sich (der Automat), das Sheet wächst mit.
+   - **Keine komischen Kanten** — das Sheet endet, wo das Volumen endet (am Boden), nicht als freie
+     Platte. Die KONVEXITÄT senkt es sanft zum Ufer → es „sichert sich in den Boden" = die
+     Wasserspannung, rein GEOMETRISCH (kein Shader — der Schöpfer-Korrektur: „absolut nichts mit dem
+     Shader zu tun").
+   - **Keine Blockigkeit** — das Glätten über die Spalten nimmt die 1.8-m-Treppen weg (wie das
+     Terrain-Sheet die Dichte interpoliert).
+   - **Kein Klettern** — es ist ein HÖHENFELD über die Säulen-OBERKANTEN, nicht die volle Zell-Iso-
+     Hülle (die die vertikalen water-solid-Seiten rendert) → nur das Dach, geglättet.
+
+   Das macht das Wasser dem Terrain ähnlich: beide ein Sheet, nur trägt das Wasser-Sheet ein
+   DYNAMISCHES Volumen statt eines statischen Dichtefelds. Das Volumen trägt Wahrheit + Fluss, das
+   Sheet trägt die glatte, gespannte, geankerte Oberfläche.
+
+### Die echte Arbeit (ehrlich, kein Über-Versprechen)
+- **Das dynamische Volumen (der Automat)** ist das grosse Stück: die Zellen suchen ihr Niveau +
+  propagieren über Chunkgrenzen (cross-chunk-wake), deterministisch (worker-gespiegelt), budgetiert
+  (active-cell-only). `_tickWaterCA` ist die Saat; die Welt-Verdrahtung (T4a-2..4) ist die Arbeit.
+- **Das Glätten über die Naht** liest die Nachbar-Spalten — exakt das Pad/Crop-Muster, das das Terrain
+  nahtlos macht (V9.79). Übertragbar.
+- **Die konvexe Verankerung am Ufer** (wo das Sheet sanft auf den steigenden Boden trifft) ist das
+  Detail, das den Unterschied macht (der konvexe Querschnitt, den der Schöpfer seit V18.27 will).
+
+### Der PFAD (klein, beweisbar, Schöpfer-Auge bei JEDEM Schritt — die V18.87-Lehre)
+1. **W-A (zuerst, das kleinste beweisbare Stück):** das Oberflächen-Sheet aus den ZELL-OBERKANTEN
+   bauen (statt dem frozen `L`) + glätten + konvex — STATISCH (kein Automat) an einem See. A/B im
+   Browser gegen den `L`-Film. Beweist: keine komischen Kanten, keine Blockigkeit, kein Klettern, das
+   Bett gefüllt — BEVOR der Automat dazukommt.
+2. **W-B:** den Automaten (`_tickWaterCA`) in die Welt verdrahten (T4a-2..4: Welt-Zellen + cross-chunk-
+   wake + Physik) → das Sheet wächst mit dem Live-Volumen → es fliesst nach.
+3. **W-C:** die konvexe Ufer-Verankerung + die Naht-Glättung verfeinern, Wasserfälle an echten Klippen.
+
+**DIE V18.87-LEHRE (Regel #0, hart gelernt):** für den Wasser-RENDER ist die headless-Falten-/Glätte-
+Metrik UNVOLLSTÄNDIG — sie misst die Oberflächen-Glätte, NICHT die FÜLLUNG/Natürlichkeit des Bettes.
+Ich entfernte den Auslauf (Falten 1.3%→0.6% GEMESSEN) + nannte es „besser" — der Schöpfer-Browser sagte
+das Gegenteil (die Betten leerten sich), revertiert. KEIN headless-Wasser-Render-Claim mehr; jeder
+Schritt ist ein A/B-Browser-Vergleich (alt vs neu), das Schöpfer-Auge ist die EINZIGE Wahrheit, ein
+bestätigter Schritt wird gemergt, bevor der nächste beginnt.
+
+---
+
 ## 1. Die ehrliche Lage (das Chaos, gemessen)
 
 - **41 Commits seit `main`** (V17.117 → V18.31), davon **~30 reine Wasser-Render-Wellen** (V18.0–V18.31).
