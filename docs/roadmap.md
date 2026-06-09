@@ -28,7 +28,14 @@ der soziale Bogen und die offenen Render-Sign-offs.
 
 ## §3 · Der Plan vorwärts — die Reihenfolge
 
-Die physikalische Kette diktiert sie: `Wasser-Fluid → H3 → G3`, `sauberes Wasser → U2`.
+**⭐ Die tiefere Wurzel (Schöpfer-Befund 09.06.2026, gemessen):** Phase 1+2 teilen EINE Wurzel — die
+**Chunk-Naht** (independent gebaute Chunks, deren Ränder nur approximativ + verspätet zusammenfinden).
+Blobiges Terrain · Edit-/LOD-Naht · die Wasser-Naht (30 Wellen) · „Wasser fließt nicht" sind **fünf
+Symptome davon**. Der vereinte Architektur-Bogen, der sie an der Wurzel heilt, ist
+**`docs/terrain-koharenz-plan.md`** (DIE EINE GRENZE — IPERKA, alle Schnittstellen, die These geprüft;
+von den Größten: Dual Contouring · Stable-LOD/Geomorph · Wasser-CA). Die physikalische Kette:
+**`Naht-Kohärenz (T1–T2) → {kantiges Terrain T3 · Wasser-CA T4} → G3-Canyons T5`** — niemals Wasser vor
+der Naht (das war die Spirale).
 
 **Phase 1 — Wasser: echte Fluid-Dynamik ⭐** Die Wurzel: Wasser ist ein statisches Höhenfeld `L`,
 fließt nie nach (kein Automat). Ziel: ein zellbasierter Automat (Level 0–7) über `entry.waterCells` —

@@ -1,0 +1,281 @@
+# Terrain-Kohärenz-Plan — DIE EINE GRENZE
+
+> **Status:** AKTIVER PLAN (09.06.2026, Schöpfer-Auftrag „ein Plan, der dem Terrain gerecht wird —
+> kein Pflaster, ans Eingemachte, alle Schnittstellen, hält die These stand"). Der Bogen, der die
+> Wasser-Spirale (V18.0–.31, 30 Wellen) an ihrer wahren Wurzel heilt.
+>
+> **Vor Arbeit an Terrain-Mesh / Chunk-Naht / LOD-Stitching / Wasser-Dynamik / Höhlen-Eingängen /
+> Canyons ZUERST lesen.** Wenn dieser Bogen vollendet ist → ins Archiv, die roadmap trägt die Essenz.
+>
+> **Regel #0 (über allem):** Render · Wasser · Naht sind PIXEL-BLIND headless. Der Schöpfer-Browser
+> ist die einzige Wahrheit. Jede Phase wird browser-bestätigt + gemergt, bevor die nächste beginnt.
+> KEIN 30-Wellen-Stapel mehr.
+
+---
+
+## 0 · DIE THESE (geprüft — hält sie stand?)
+
+**Die These (Schöpfer, 09.06.2026):** *„Wenn die Chunk-Nähte nicht eine Sprache sprechen, synergetisch
+eins werden, können wir das Wasser nie leiten — genau an diesen Grenzen hat auch das Wasser Probleme,
+die wir über viele Läufe zu optimieren versuchten. Das Problem steckt tiefer als wir je schauten."*
+
+**Gemessen bestätigt (2 Code-Audits + Recherche, 09.06.):** Jeder Chunk ist eine **independente Insel** —
+er baut sein Mesh allein, klassifiziert sein Wasser allein, wird async gebaut, und seine Ränder finden
+nur *approximativ* (über Determinismus) und *verspätet* (über eine async-Queue) zu den Nachbarn. **Die
+Naht ist eine nachträgliche Reparatur, kein struktureller Teil des Designs.**
+
+**Der Stress-Test (hält die These stand?):**
+
+| Gegenargument | Antwort | These |
+|---|---|---|
+| „Blobig ist die Cel-Beleuchtung, nicht die Geometrie" (V17.107) | Die *Trapeze* sind Cel-Render (separates Thema). Aber „blobig/rund, keine Kanten" IST die Geometrie — Surface Nets *mittelt* (kein QEF). | hält (Mesher) |
+| „Edit-Naht und LOD-Naht sind verschiedene Mechanismen" | Stimmt — zwei Achsen (zeitlich · räumlich). Aber **eine Krankheit: Isolation.** Beide entstehen, weil der Chunk allein behandelt wird. | hält (präzisiert) |
+| „Wasser-fließt-nicht ist ein fehlendes CA, nicht die Naht" | Stimmt, das CA fehlt. **Aber:** ein CA mit cross-chunk-wake braucht eine *konsistente Nachbar-Zell-Wahrheit* — über eine inkohärente Grenze kann kein Wasser fließen. Die Naht ist die **Vorbedingung**. | hält (Vorbedingung) |
+
+**Verfeinerung der These (ehrlich):** Es sind **zwei verbundene Wurzeln, eine Krankheit:**
+- **Der MESHER** (Surface Nets, isolierte Vertex-Mittelung) → *blobig* + *schwache räumliche Naht*.
+- **Die PIPELINE** (independent + async + per-Chunk-Wasser) → *zeitliche Naht* + *Wasser-per-Chunk*.
+
+Beide sind dasselbe: **der Chunk ist eine Insel.** Die Heilung ist **Kohärenz an der Grenze** — den
+Chunk zu einem *Fenster auf ein konsistentes Feld* machen, nicht zu einer isolierten Insel.
+
+---
+
+## 1 · I — INFORMIEREN (die gemessene Wahrheit)
+
+### 1.1 Fünf Symptome, eine Wurzel
+
+| Symptom | direkte Ursache (file:line) | Achse |
+|---|---|---|
+| Blobiges Terrain | Surface-Nets-Mittelung (`_voxelExtractSurfaceVertices` :18352) + Laplacian λ=0.5 (:18494) | Mesher |
+| Naht beim Abbauen | async Nachbar-Rebuild (`_tickDirtyVoxelChunks` 1/Frame :24638), Fenster N→N+k | zeitlich |
+| Naht beim LOD-Laden | KEIN Cross-LOD-Stitching, nur Fog-Tarnung (:18851); Vertex-Mismatch step-abhängig | räumlich |
+| Wasser-Naht (30 Wellen) | per-Chunk-Klassifikation + `colDepthAt`-Fallback (:20030) + `cellClass`-OOB (:19648) | erbt beide |
+| Wasser fließt nicht | statisches Höhenfeld `L`, kein zellulärer Automat | Vorbedingung |
+
+### 1.2 Strukturell — die Naht ist APPROXIMATIV, nicht EINS
+
+- Jeder Chunk sampelt sein **eigenes** Density-Grid (`(dim+4)×(dimY+1)×(dim+4)`, geteilt Boden+Wasser, :20788),
+  mesht **eigene** Surface-Nets-Iso, glättet mit **eigenen** Nachbarn (Laplacian 1 Iteration, λ=0.5,
+  Einfluss-Radius 1 Zelle → Pad 1 Zelle :18472), croppt den Pad (`cropMargin=1` :18529).
+- **KEINE geteilten Vertices.** Naht-Freiheit = *Wette auf Determinismus*: zwei Chunks mit demselben
+  Sampler (`_terrainDensityAt`, pure (x,z,y)) *hoffen* auf identische Ränder (bis Float32).
+- **Surface Nets = Dual Contouring OHNE die QEF** → es kann keine scharfe Kante tragen (mittelt die
+  Kanten-Schnittpunkte). Das ist die strukturelle Ursache von „blobig".
+
+### 1.3 Zeitlich — die Naht ist ein FENSTER
+
+```
+Frame N:    carve → Spieler-Chunk SYNC rebuild + finalize → 8 Nachbarn re-enqueued (deferred)
+Frame N→N+k: Skirt-Nachbarn async-pending, ALTES Mesh sichtbar  ← die Naht beim Abbauen
+Frame N+k:  async-Terrain-Build fertig → atomic swap → Terrain-Naht heilt
+Frame N+m:  _tickPendingWaterIso (≤4/Frame :38748) erreicht Nachbarn → Wasser-Naht heilt (m>k)
+```
+Agent-Befund wörtlich: *„Keines der Pflaster heilt die Kernwurzel: Nachbarn bauen sich nicht im selben
+Frame."* Pad+Crop heilt nur Vertex-Jitter; V18.1 (8-Nachbar), V18.18 (`colDepthAt`), V9.93 (LOD0-Zwang)
+heilen Symptome — das **Timing-Fenster bleibt**.
+
+### 1.4 Die Konstanten (gemessen, `_voxelChunkConfig` :18858)
+
+| LOD | dim | step (m) | span (m) | dimY | Pad-Grid | aktiv bei Ring r |
+|---|---|---|---|---|---|---|
+| 0 | 24 | 1.8 | 43.2 | 200 | dim+4=28 | r ≤ 1 |
+| 1 | 12 | 3.6 | 43.2 | 100 | 16 | r 2–8 |
+| 2 | 6 | 7.2 | 43.2 | 50 | 10 | r 9–10 |
+| 3 | 3 | 14.4 | 43.2 | 25 | 7 | r ≥ 11 |
+
+`span = dim·step = 43.2 m` (LOD-invariant) · `oy = base − floorDrop(90)` · cropMargin=1 · smoothIters=1.
+**Constraint:** mehr Smoothing braucht breiteren Pad → bricht die Wasser-Cell-Indizierung (dim+4 geteilt,
+V17.103 — eigener Mehr-Konsumenten-Umbau).
+
+### 1.5 Von den Größten — die drei Sprachen für die Grenze (Recherche 09.06.)
+
+| Sprache | Naht | Kantig? | Wasser | Preis |
+|---|---|---|---|---|
+| **Diskret** (Minecraft) | trivial (Blöcke teilen Kanten exakt) | würfelig | CA + cross-chunk-wake (active cells: 30→1100 FPS) | zu simpel für „Minecraft schlagen" |
+| **Dual Contouring + Octree** | strukturell (geteilte Leaf-Nodes) | **scharf (QEF/Hermite)** | — | Seam-Octree-Hölle: non-manifold + self-intersection (*„none solve both simultaneously"*) |
+| **Stable-LOD + Geomorph** | naht-frei (Fixpunkt-LOD + Vertex-Morph) | erbt vom Mesher | — | leicht; löst Naht, nicht Kantigkeit |
+
+**Schlüssel-Erkenntnis:** Surface Nets → DC ist eine **Erweiterung des Vertex-Schritts** (Mittelung →
+QEF-Minimum), und die Gradienten/Normalen werden **bereits berechnet** (für die Shading-Normalen). Das
+ist KEIN Urknall — es ist ein chirurgischer Schnitt am Vertex-Platzierer. Die berüchtigte DC-Octree-
+*Seam* umgeht man mit Stable-LOD+Geomorph (statt Seam-Octree).
+
+### 1.6 Die Narben (roadmap §5 — was schon verworfen wurde, nicht wiederholen)
+
+- Fluss-Querschnitt flach (V18.12→V18.26, **zweimal**) · Zell-Maske auf die Fläche (V18.8, Sägezahn) ·
+  Auslauf-skirt (V18.25/.30/.31, Pflaster) · Boundary-Face-Mesh statt Surface-Nets (V13.2, flach/gappy).
+- **Die Meta-Narbe:** alle waren Pflaster *an der Naht*, während die Wurzel (Isolation) nie berührt
+  wurde. **Dieser Plan berührt die Wurzel — darum darf er groß sein, aber jede Phase wird bewiesen.**
+
+---
+
+## 2 · P — PLANEN (der Lösungsweg)
+
+### 2.1 Der gewählte Weg: KOHÄRENZ AN DER GRENZE (mutig, aber inkrementell)
+
+Nicht ein Mesher-Tausch *oder* ein Wasser-Tausch — die EINE Krankheit (Isolation) auf **vier Schichten**
+heilen, jede eine browser-validierte Phase. Das Density-Feld ist *schon* global+deterministisch — wir
+machen den Chunk zum *Fenster* darauf statt zur Insel:
+
+1. **Zeitliche Kohärenz** — bei Edit bauen die berührten Nachbarn **synchron** mit (kein async-Fenster).
+2. **Räumliche Kohärenz** — Stable-LOD-Rounding + Geomorphing → die LOD-Naht verschwindet strukturell.
+3. **Substanz-Kohärenz (kantig)** — Surface Nets → **Manifold Dual Contouring** (QEF) → scharfe Kanten,
+   Canyons, kantige Felsen. Die Grenze bleibt kohärent unter der neuen Geometrie (der Härte-Test).
+4. **Wasser-Kohärenz (Phase 1)** — statisches `L` → **zellulärer Automat** (Level + Flow, cross-chunk-
+   wake) auf der nun-kohärenten Grenze. Wasser fließt nach wie Minecraft.
+
+Dann ist **G3** (Höhleneingänge + Canyons) natürliche Folge: die `surf−16`-Decke öffnen, jetzt wo die
+Grenze kein Wasser-Bleed mehr leakt und der Mesher Kanten trägt.
+
+### 2.2 ALLE Schnittstellen (was jede tut · was sich ändert · Determinismus-Constraint)
+
+| Schnittstelle (file:line) | tut heute | Plan-Änderung | Phase | bit-identisch? |
+|---|---|---|---|---|
+| `_voxelExtractSurfaceVertices` :18352 | Vertex = Mittel der Kanten-Iso | → QEF-Minimum (Hermite) | T3 | JA (Worker-Mirror) |
+| `_voxelLaplacianSmoothPositions` :18478 | λ=0.5, 1 Iter (rundet Kanten) | → reduziert/feature-aware (Kanten erhalten) | T3 | JA |
+| geteiltes Density-Grid (dim+4) :20788 | Boden+Wasser teilen Grid | bleibt die EINE Wahrheit; ggf. breiterer Pad (Cell-Index mit-ziehen, V17.103) | T2/T3 | JA |
+| `_voxelChunkConfig` :18858 | dim/step/dimY pro LOD | unverändert (span 43.2 invariant) | — | JA |
+| `_voxelChunkLodFor` :18916 | LOD aus `_detailBand(r)` | → Stable-Rounding (max über Nachbarn, Fixpunkt) | T2 | derived |
+| `_remeshVoxelChunksAround` :24612 | markiert Footprint+skirt dirty | → markiert + triggert **sync** für berührte Nachbarn | T1 | — |
+| `_tickDirtyVoxelChunks` :24638 | 1 dirty/Frame (async) | Edit-Nachbarn sync im Edit-Frame; ferne bleiben async | T1 | — |
+| `_finalizeVoxelChunkBuild` :20976 | re-enqueued 8 Nachbarn (deferred) | bei Edit: synchroner Heal-Pass statt Queue | T1 | — |
+| `_tickPendingWaterIso` :38748 | 4 Wasser-Iso/Frame | Edit-Wasser-Nachbarn sync; Streaming bleibt budgetiert | T1/T4 | — |
+| `_buildVoxelChunkWaterCells` :19167 | BFS-Flood bis frozen `L` | → CA-Zustand (Level 0–N + Flow), liest Nachbar-Cells | T4 | JA (Worker) |
+| `_buildVoxelChunkWaterIsoSurface` / `…SurfaceMesh` :19587/:19899 | Wasser-Mesh aus `L`/Cells | → speist sich aus CA-Cells; LOD0-Zwang fällt (T2 löst Naht) | T4 (U2) | main-only |
+| `cellClass` OOB :19648 · `colDepthAt` :20030 | per-Chunk Nachbar-Lese-Heuristik | → liest die kohärente geteilte Grenz-Wahrheit | T1/T2 | — |
+| BVH-Kollision (`_buildStaticTriMeshCollision` :37363) | Mesh = Kollision per Konstruktion | folgt dem neuen Mesher automatisch (Visual=Collision) | T3 | — |
+| **Determinismus-Wand** `checkBandWellePerf3cWorkerFoundation` :21228 | Worker-Grid bit-identisch zu Main | **UNANTASTBAR** — jeder Mesher/Wasser-Umbau spiegelt im Worker, Test bewacht | alle | **HEILIG** |
+
+### 2.3 Die Determinismus-Wand (die heilige Grenze des Plans)
+
+Multi-User-Welten teilen einen Seed; Worker + Main + (jeder Peer) MÜSSEN bit-identische Geometrie +
+Wasser-Zellen erzeugen. **Jede Phase, die den Mesher oder die Wasser-Klassifikation ändert, ändert
+`voxel-worker.js` im selben Schritt** und hält `checkBandWellePerf3cWorkerFoundation` grün. Der
+CA-Wasser-Tick (T4) ist *reaktiv* (wie Wetter) — er läuft deterministisch aus Seed+Edits ODER bleibt
+lokal-reaktiv (nicht im Welt-Snapshot), die Wahl ist eine T4-Architektur-Frage (siehe T4).
+
+---
+
+## 3 · E — ENTSCHEIDEN (die Wahl + Begründung)
+
+**Gewählt: Kohärenz an der Grenze (§2.1), vier Phasen.** Begründung:
+- **Mutig (ans Eingemachte):** berührt die Wurzel — neuer Vertex-Platzierer (DC) + neue Wasser-Sim (CA) +
+  strukturelle Naht. Kein Pflaster.
+- **Aber inkrementell (Heilige Lektion treu):** jede Schicht baut auf der vorigen, jede ist eine eigene
+  browser-validierte + gemergte Phase. DC ist eine *Erweiterung* von Surface Nets (QEF im Vertex-Schritt),
+  kein Rewrite. Die LOD-Naht via Stable-LOD+Geomorph umgeht die DC-Seam-Hölle.
+- **Synergetisch:** EINE Heilung (Kohärenz) löst fünf Symptome + entriegelt G3 + U2.
+
+**Verworfen:**
+- **Reine DC-Octree-Seam** (B): die Recherche ist eindeutig — non-manifold + self-intersection sind
+  ungelöste offene Probleme. Wir nehmen DCs *Kanten* (QEF), aber NICHT seine Octree-Seam (Stable-LOD
+  statt dessen).
+- **Diskret/blocky** (A): würfelig; widerspricht „Minecraft in den Schatten stellen". (Aber das CA-
+  *Wasser*-Modell von Minecraft übernehmen wir — T4.)
+- **Weiter pixel-blind am Wasser-Mesh tweaken:** das war die Spirale (Narben §1.6).
+
+---
+
+## 4 · R — REALISIEREN (die Phasen — jede: Ziel · Mechanik · Schnittstellen · Risiko · Sign-off)
+
+### T0 — MESSEN: welche Naht dominiert? (die These empirisch härten · Risiko: keiner)
+- **Ziel.** Bevor irgendein Umbau: trennen, ob das sichtbare Abbau-/Lade-Symptom die *zeitliche* (async)
+  oder *räumliche* (LOD/blobig) Naht ist — die „miss zuerst"-Lehre (kostete den main-Stand).
+- **Mechanik.** `scripts/diag-chunk-seam.cjs`: (a) Edit + Nachbarn synchron rebuilden vs. async →
+  Screenshot-Vergleich; (b) Vertex-Position-Delta an geteilten Rändern messen (gleiche LOD vs Cross-LOD).
+- **Sign-off.** Der Schöpfer bestätigt: welches Symptom wiegt schwerer → priorisiert T1 vs T2.
+
+### T1 — Zeitliche Kohärenz: der synchrone Nachbar-Heal (Risiko: niedrig)
+- **Ziel.** Beim Abbauen heilt die Naht im SELBEN Frame — kein stale Nachbar mehr.
+- **Mechanik.** `_remeshVoxelChunksAround`/`_tickDirtyVoxelChunks`: die *berührten* Nachbarn (footprint+1)
+  synchron im Edit-Frame bauen (sie sind nah → das FPS-Budget trägt es; ferne bleiben async). Der
+  Wasser-Iso-Heal der berührten Nachbarn ebenso sync (statt `_tickPendingWaterIso`-Queue).
+- **Schnittstellen.** `_remeshVoxelChunksAround` :24612, `_tickDirtyVoxelChunks` :24638, `_finalizeVoxelChunkBuild` :20976.
+- **Risiko.** Edit-Cluster-Spike (mehrere Chunks sync). Mitigation: nur die *direkt berührten* (≤9), gemessen.
+- **Sign-off.** Beim Abbauen an einer Chunk-Grenze: keine sichtbare Trennung mehr (Browser).
+
+### T2 — Räumliche Kohärenz: Stable-LOD + Geomorph (Risiko: mittel · pixel-blind)
+- **Ziel.** Die LOD-Naht verschwindet strukturell (E4) → das Wasser darf seinen LOD0-Zwang ablegen (U2).
+- **Mechanik.** `_voxelChunkLodFor` → Stable-Rounding (LOD = max über Chunk+Nachbarn, Fixpunkt 2–3 Iter,
+  von den Größten); Vertex-Geomorph im Vertex-Shader (feine → grobe Position morphen über die Band-Grenze).
+- **Schnittstellen.** `_voxelChunkLodFor` :18916, das geteilte Grid, der Terrain-Vertex-Shader.
+- **Risiko.** pixel-blind (Render). Mitigation: `diag-water-lod-seam.cjs` (existiert) + Browser-Loop.
+- **Sign-off.** An einer LOD-Grenze laufen: keine Naht, kein Pop; fernes Wasser auf Terrain-LOD sauber.
+
+### T3 — Substanz-Kohärenz: der kantige Mesher (Manifold Dual Contouring) (Risiko: hoch · die Vision)
+- **Ziel.** Kantiges, nicht-blobiges Terrain — scharfe Canyons, kantige Felsen, das Minecraft schlägt.
+- **Mechanik.** `_voxelExtractSurfaceVertices`: Vertex-Mittelung → **QEF-Minimum** über die Hermite-Daten
+  (Edge-Normalen, die der Gradient schon liefert); Manifold-Variante (Schaefer/Ju) gegen Self-Intersection;
+  Laplacian feature-aware (Kanten erhalten). **Worker-Mirror bit-identisch** (Determinismus-Wand).
+- **Schnittstellen.** `_voxelExtractSurfaceVertices` :18352, `_voxelLaplacianSmoothPositions` :18478,
+  `voxel-worker.js` Mesher-Mirror, BVH (folgt automatisch).
+- **Risiko.** hoch — DC kann non-manifold/self-intersecting werden; Determinismus-Drift Worker↔Main.
+  Mitigation: Manifold-DC + `checkBandWellePerf3cWorkerFoundation` + ein `diag-mesh-sharpness.cjs`
+  (Kanten-Winkel-Verteilung) + Browser-Sign-off (pixel-blind).
+- **Sign-off.** Der Schöpfer sieht kantige Felsen/Canyons, die Naht bleibt kohärent, FPS hält.
+
+### T4 — Wasser-Kohärenz: der zelluläre Automat (Phase 1 — Wasser fließt) (Risiko: hoch · die Krönung)
+- **Ziel.** Wasser fließt dynamisch nach wie Minecraft; ein Carve neben Wasser → es strömt hinein.
+- **Mechanik.** `_buildVoxelChunkWaterCells` → CA: pro Zelle Level (0–N) + Flow-Vektor; Tick-Regeln
+  (bergab-Priorität, lateral spreizen, Niveau suchen); nur **aktive/dirty** Zellen ticken (active-cell-
+  only: 30→1100 FPS bei den Großen); an der Grenze **weckt** ein Update den Nachbar-Chunk (dirty-mark) —
+  möglich, WEIL T1/T2 die Grenze kohärent machten. Der Render speist sich aus den CA-Cells (kein
+  statisches `L`; das löst auch das Mesh-Falten von Ebene B).
+- **Schnittstellen.** `_buildVoxelChunkWaterCells` :19167 (+ Worker-Mirror), das Wasser-Mesh :19899,
+  `_playerWaterContext` (Physik liest die Cells), ein neuer `_tickWaterCA`.
+- **Architektur-Frage (vor dem Bau zu klären):** Determinismus für Multi-User — läuft das CA
+  deterministisch aus Seed+Edits (im Snapshot, peer-konsistent) ODER lokal-reaktiv (wie Wetter, nicht
+  persistiert)? Tick-Budget auf streamendem Open-World. Persistenz (überlebt der Fluss-Zustand Reload?).
+- **Risiko.** hoch — Sim-Architektur + Determinismus + Performance. Mitigation: eigener T4-Detail-Plan,
+  `diag-water-flow.cjs` + `diag-water-fill.cjs` (existieren), Browser-Loop, Merge pro Sub-Schritt.
+- **Sign-off.** Der Schöpfer gräbt einen Kanal → das Wasser fließt sichtbar hinein und sucht sein Niveau.
+
+### T5 (Folge) — G3: Höhleneingänge + Canyons (Risiko: mittel · die Belohnung)
+- Auf dem kantigen Mesher (T3) + der kohärenten Grenze (T1/T2) + der Wasser-Wahrheit (T4): die
+  `surf−16`-Höhlendecke selektiv öffnen → sichtbare Eingänge + vertikale Ravines, **ohne** Wasser-Bleed
+  (T4 trägt die 3D-Wahrheit). Worldgen + Determinismus-Bruch → eigener Sign-off.
+
+---
+
+## 5 · K — KONTROLLIEREN (Mess- & Verifikations-Kriterien)
+
+| Phase | Headless-Diag (Wand) | Determinismus | Browser-Sign-off (Pixel) |
+|---|---|---|---|
+| T0 | `diag-chunk-seam` (zeitlich vs räumlich) | — | welche Naht wiegt schwerer |
+| T1 | Nachbar im Edit-Frame gebaut (Frame-Count) | — | keine Abbau-Naht |
+| T2 | `diag-water-lod-seam` (Vertex-Abstand) | LOD derived | keine LOD-Naht, kein Pop |
+| T3 | `diag-mesh-sharpness` (Kanten-Winkel) + `checkBandWellePerf3cWorkerFoundation` | **bit-identisch** | kantige Felsen, FPS |
+| T4 | `diag-water-flow` + `diag-water-fill` | Seed-deterministisch ODER reaktiv | Wasser fließt in den Kanal |
+| T5 | `diag-harmony` (Bleed=0) + `diag-caverns` | Worldgen-frozen | Canyons, Eingänge |
+
+**Die EINE harte Wand über allem:** `npm run playtest` „Alle Invarianten OK" + die Determinismus-Wand
+bit-identisch nach JEDER Phase. Pixel-blinde Phasen (T2/T3/T4/T5) gehen NICHT in einen Merge ohne
+Schöpfer-Auge (Regel #0).
+
+---
+
+## 6 · A — AUSWERTEN (Reihenfolge, Disziplin, die Vision)
+
+**Reihenfolge-Logik:** `T0 (messen) → T1 (zeitlich, kleinster, testet die These praktisch) → T2 (räumlich/
+LOD) → T3 (kantig) → T4 (Wasser-CA) → T5 (G3)`. **Die Grenze zuerst (T0–T2), dann die Belohnung (T3 kantig,
+T4 Wasser, T5 Canyons).** T3/T4 sind tauschbar (Schöpfer-Wahl), aber beide bauen auf der kohärenten Grenze —
+**niemals T4 (Wasser) vor T1/T2 (Grenze):** das wäre die Spirale von vorn (Narben §1.6).
+
+**Die Disziplin (gegen die Wiederholung der Spirale):**
+1. **Regel #0** — jede pixel-blinde Phase browser-bestätigt + gemergt, bevor die nächste beginnt.
+2. **Eine verworfene Architektur nicht wieder anfassen** (Narben §1.6) — kein flacher Fluss, keine Zell-Maske.
+3. **Determinismus-Wand heilig** — Worker bit-identisch nach jeder Mesher/Wasser-Phase.
+4. **Miss zuerst** — T0 vor dem ersten Umbau; jeder Reproducer mit Output-Lesen *vor* dem Fix.
+5. **Keine halben Schritte** (V17.30) — ist eine Phase dran, baue ihr ganzes Subsystem an die Wurzel.
+
+**Die Vision (wofür):** ein Terrain, dessen Chunks EINE Sprache sprechen — kohärent über Edit, über LOD,
+über die Grenze. Kantige Canyons, große begehbare Höhlen, Eingänge in die Unterwelt, und Wasser, das
+wirklich *fließt* — über die Grenzen, in die Kanäle, sein Niveau suchend. Nicht Minecraft nachgebaut:
+**Minecraft an seiner eigenen Stärke (kohärente Welt + fließendes Wasser) übertroffen, mit der Schönheit
+scharfer Geometrie, die Minecraft nie hatte.** Das ist, was dem Terrain gerecht wird.
+
+## Quellen (die Riesen)
+Transvoxel/Lengyel (LOD-Transition) · Dual Contouring of Hermite Data (Ju et al., QEF/Kanten) · Manifold
+Dual Contouring (Schaefer/Ju, gegen Self-Intersection) · Nick Gildea (DC-Seams-Praxis) · 0fps (blocky-LOD,
+Geomorph) · Minecraft/DwarfCorp (CA-Wasser, active-cells, cross-chunk-wake).

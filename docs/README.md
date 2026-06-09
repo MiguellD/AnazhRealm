@@ -18,6 +18,10 @@ wieder zur Halde.
 | **`docs/roadmap.md`** | **DER WEG** | Der Plan vorwärts (3 Phasen) · die offene-Fäden-Karte · die Vergangenheit stichwortmäßig · die Disziplin. |
 | **`README.md`** (Wurzel) | **DIE TÜR** | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion. |
 
+**Auf dem Tisch — der aktive Bau-Plan:** `docs/terrain-koharenz-plan.md` (DIE EINE GRENZE — kohärentes,
+kantiges Terrain + leitbares Wasser; die Chunk-Naht-Wurzel, IPERKA, alle Schnittstellen). Wandert ins
+Archiv, wenn der Bogen vollendet ist.
+
 ---
 
 ## Die Bibliothek (`docs/archiv/`) — ZUERST lesen, wenn du an X arbeitest
