@@ -116,6 +116,16 @@ const server = http.createServer((req, res) => {
         const cfg = r._voxelChunkConfig(0);
         const span = cfg.span;
         r.setWaterRenderMode("cells");
+        // V18.93 — Wake-on-Stream lebt: für die RUHE-Messung erst settlen lassen
+        // (konvergiert jetzt, dank Spiegel-Kappe + Distanz-Decay), dann frisch meshen —
+        // sonst stammen Nachbar-Meshes aus verschiedenen CA-Ticks (transiente mm-Naht).
+        let settleTicks = 0;
+        for (let t = 0; t < 6000; t++) {
+            r._tickWorldWaterCA();
+            settleTicks++;
+            if (!s.waterCAActive || s.waterCAActive.size === 0) break;
+        }
+        const settleActive = s.waterCAActive ? s.waterCAActive.size : -1;
         r._drainPendingWaterIso && r._drainPendingWaterIso();
         const sheets = [];
         for (const [key, mesh] of s.voxelChunkWaterIso) {
@@ -132,7 +142,7 @@ const server = http.createServer((req, res) => {
             anchorAbove = 0,
             anchorWorst = -Infinity;
         // NAHT — geteilte Grenz-Positionen über Mesh-Grenzen hinweg.
-        const boundary = new Map(); // "x,z" → {min, max, meshes}
+        const boundary = new Map(); // "x,z" → {min, max, keys}
         const EPS = 0.01;
         for (const [, mesh] of sheets) {
             const pos = mesh.geometry.getAttribute("position");
@@ -189,20 +199,26 @@ const server = http.createServer((req, res) => {
                 const onZ = Math.abs(z / span - Math.round(z / span)) * span < EPS;
                 if (onX || onZ) {
                     const k2 = `${x.toFixed(2)},${z.toFixed(2)}`;
-                    const e = boundary.get(k2) || { min: Infinity, max: -Infinity, n: 0 };
+                    const e = boundary.get(k2) || { min: Infinity, max: -Infinity, n: 0, keys: [] };
                     e.min = Math.min(e.min, y);
                     e.max = Math.max(e.max, y);
                     e.n++;
+                    if (e.keys.length < 4)
+                        e.keys.push(`${mesh.userData.voxelChunkX},${mesh.userData.voxelChunkZ}@${y.toFixed(3)}`);
                     boundary.set(k2, e);
                 }
             }
         }
         let seamMax = 0,
-            seamShared = 0;
-        for (const e of boundary.values()) {
+            seamShared = 0,
+            seamWorst = null;
+        for (const [pos2, e] of boundary) {
             if (e.n < 2) continue;
             seamShared++;
-            seamMax = Math.max(seamMax, e.max - e.min);
+            if (e.max - e.min > seamMax) {
+                seamMax = e.max - e.min;
+                seamWorst = { pos: pos2, keys: e.keys };
+            }
         }
         const totalVerts = sheets.reduce((t, [, m]) => t + m.geometry.getAttribute("position").count, 0);
         return {
@@ -215,6 +231,9 @@ const server = http.createServer((req, res) => {
             parWorst,
             seamShared,
             seamMax: +seamMax.toFixed(4),
+            seamWorst,
+            settleTicks,
+            settleActive,
             anchorN,
             anchorAbove,
             anchorWorst: anchorN ? +anchorWorst.toFixed(2) : 0,
@@ -474,6 +493,8 @@ const server = http.createServer((req, res) => {
     console.log(
         `NAHT (${out.seamShared} geteilte Grenz-Positionen): max Δy = ${out.seamMax} m   (${out.seamMax < 0.001 ? "✓ naht-symmetrisch" : "✗ Glätt-Asymmetrie!"})`
     );
+    if (out.seamWorst) console.log(`    worst @ ${out.seamWorst.pos}: ${out.seamWorst.keys.join(" | ")}`);
+    console.log(`    settle: ${out.settleTicks} Ticks, danach active=${out.settleActive}`);
     console.log(
         `ANKER (${out.anchorN} Ring-Vertices): über Terrain = ${out.anchorAbove} (worst +${out.anchorWorst} m)   (${out.anchorAbove / Math.max(1, out.anchorN) < 0.05 ? "✓ Kante taucht ein" : "✗ Kante schwebt!"})`
     );

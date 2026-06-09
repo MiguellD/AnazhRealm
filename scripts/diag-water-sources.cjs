@@ -263,7 +263,56 @@ const server = http.createServer((req, res) => {
         let bandMismatch = 0;
         for (let n = 0; n < fullS.level.length; n++) if (fullS.level[n] !== bandS.level[n]) bandMismatch++;
 
+        // ---- E · BADEWANNEN-SCHRANKE (V18.93 — der Distanz-Decay bändigt Wake-ALL) ----
+        // V18.92 GEMESSEN: Wake-on-Stream OHNE Decay flutete 12.5 m über L (unendliche
+        // Quellen + LOD-Ring-Damm). MIT Decay (KEEP^Hop) muss das Pooling sterben:
+        // ALLE Wasser-Chunks wecken, 2500 Ticks, dann den schlimmsten Live-Spiegel
+        // ÜBER dem Rim-L messen (finite-L-Spalten) + die live-only-Ausdehnung.
+        for (const [key, e] of s.voxelChunks) {
+            if (!e || e.empty || !e.waterCells || (Number.isFinite(e.lod) && e.lod !== 0)) continue;
+            const [bcx, bcz] = key.split(",").map(Number);
+            if (r._voxelChunkHasAnyWater(bcx, bcz)) r._wakeWaterCA(bcx, bcz);
+        }
+        for (let t = 0; t < 2500; t++) {
+            r._tickWorldWaterCA();
+            if (!s.waterCAActive || s.waterCAActive.size === 0) break;
+        }
+        let tubAbove = 0;
+        let tubLiveCols = 0;
+        const oyB = (s.terrainBaseHeight || 0) - cfg.floorDrop;
+        for (const [key, e] of s.voxelChunks) {
+            if (!e || e.empty || !e.waterCells) continue;
+            const lv = s.waterLevelCells ? s.waterLevelCells.get(key) : null;
+            if (!lv) continue;
+            const [bcx, bcz] = key.split(",").map(Number);
+            for (let c = 0; c < dimSq; c++) {
+                let flood = false;
+                let liveJ = -1;
+                for (let j = dimY - 1; j >= 0; j--) {
+                    const idx = c + j * dimSq;
+                    if (e.waterCells[idx] === WATER) {
+                        flood = true;
+                        break;
+                    }
+                    if (liveJ < 0 && lv[idx] > 0.5) liveJ = j;
+                }
+                if (flood || liveJ < 0) continue;
+                tubLiveCols++;
+                const wx = bcx * span + ((c % dim) + 0.5) * step;
+                const wz = bcz * span + (((c / dim) | 0) + 0.5) * step;
+                const Lb = r._atlasWaterLevelAt(wx, wz, -Infinity);
+                if (Lb > -Infinity) {
+                    const above = oyB + (liveJ + 1) * step - Lb;
+                    if (above > tubAbove) tubAbove = above;
+                }
+            }
+        }
+        const tubActive = s.waterCAActive ? s.waterCAActive.size : -1;
+
         return {
+            tubAbove: +tubAbove.toFixed(2),
+            tubLiveCols,
+            tubActive,
             key: pick.key,
             srcCols: srcA ? srcA.reduce((a, b) => a + b, 0) : 0,
             srcCells: srcWaterIdx.length,
@@ -302,6 +351,9 @@ const server = http.createServer((req, res) => {
     console.log(
         `D · BAND-PARITÄT: mismatches=${out.bandMismatch} (${out.bandMismatch === 0 ? "✓ bit-identisch" : "✗"}) · Voll ${out.tFull} ms vs Band ${out.tBand} ms (${(out.tFull / Math.max(0.1, out.tBand)).toFixed(1)}×)`
     );
+    console.log(
+        `E · BADEWANNEN-SCHRANKE (Wake-ALL + 2500 Ticks unter Decay): max über Rim-L = ${out.tubAbove} m · live-only ${out.tubLiveCols} Spalten · active=${out.tubActive}   (${out.tubAbove <= 3.0 ? "✓ gebändigt (V18.92: 12.5 m)" : "✗ FLUTET WEITER"})`
+    );
     console.log(`Page-Errors: ${pageErrors.length}\n`);
 
     const ok =
@@ -311,6 +363,7 @@ const server = http.createServer((req, res) => {
         out.fillEnd > 0.6 &&
         out.srcFull >= 0.95 &&
         out.bandMismatch === 0 &&
+        out.tubAbove <= 3.0 &&
         pageErrors.length === 0;
     console.log(
         ok

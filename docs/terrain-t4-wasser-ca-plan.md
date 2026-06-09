@@ -166,7 +166,7 @@ wake, T3 (kantiger Mesher) trägt die scharfen Kanäle, durch die das Wasser fli
 - **Performance:** active-cell-only + Budget/Frame; das CA-Level ist eine reaktive Schicht (bounded, sparse,
   lazy-decay wo ruhig), kein Voll-Sweep — das V17.27-Overlay-Muster.
 
-## 7 · DIE OFFENE FLOW-REGEL-ENTSCHEIDUNG (Schöpfer — nach dem V18.92-Badewannen-Befund)
+## 7 · DIE FLOW-REGEL — ENTSCHIEDEN + GEBAUT (V18.93: Decay + Spiegel-Kappe + Fixpunkt)
 
 **GEMESSEN (V18.92, frische Welt, `diag-water-cellsheet` mit 4000-Tick-Vorlauf):** „Wake-on-Stream"
 (jeder einstreamende Wasser-Chunk weckt den CA — der Versuch, „die Ausbreitung des Flusses zu
@@ -177,7 +177,26 @@ füllt sich bis zur Quell-Höhe) und falsches Spiel. **DARUM hat Minecraft Fluss
 statt purer Hydraulik.** ZURÜCKGENOMMEN — der CA bleibt CARVE-getrieben (die Spieler-Aufmerksamkeit
 ist die natürliche Grenze; genau diese Ausbreitung fand der Schöpfer „genial").
 
-**Die welt-weite lebendige Fluss-Dynamik braucht EINE dieser Regeln (Schöpfer-Entscheid):**
+**V18.93 — GEBAUT + GEMESSEN (`diag-water-sources` E, Wake-ALL + 2500 Ticks): Regel 1 ALLEIN
+REICHTE NICHT** (12.5 → 9 m: Decay begrenzt die FERNE, aber ein Pool NEBEN der Quelle steigt
+hydrostatisch trotzdem). Die GEBAUTE Lösung sind DREI Regeln zusammen:
+1. **Distanz-Decay** (`AnazhRealm.CA_FLOW_KEEP` = 0.95): jeder Lateral-Transfer liefert nur 95 %
+   ab → ferne Zungen sterben geometrisch (Gravitation verlustfrei — Fälle tragen volle Stärke).
+2. **Spiegel-Kappe** (`waterCapJ`, pro Spalte bei `_ensureWaterCALevel` berechnet): ZUFLUSS nur bis
+   rim-L + 0.5 m (im Atlas-Gebiet — Wasser steigt nie über seinen Spiegel, die Minecraft-Wahrheit)
+   bzw. Boden + 2 Zellen (jenseits — die fließende „Skin" am Canyon). Reine EMPFÄNGER-Regel im
+   Lateral-Pass + Exchange → kein Lösch-Pass, kein Dauer-Pump; der Carve refresht die Kappe
+   (`_preSeedWaterCAForEdit`).
+3. **EPS_FLOW-Fixpunkt** (Lateral-Schwelle ≈ 1−KEEP): schluckt das permanente Decay-Gefälle an
+   jeder Quell-Grenze — sonst pumpt der Automat EWIG (GEMESSEN: active=4 für immer + Dauer-
+   Re-Meshing + cm-Naht-Jitter); mit Schwelle ist der Decay-Zustand ein echter FIXPUNKT → Settle.
+**GEMESSEN: max 2.29 m über Rim-L (Zell-Quantisierung) · active → 0 (settled ~1100–2500 Ticks) ·
+See voll 0.992 · Carve-Füllung 0→1.0 · Naht Δy=0 (+ der SYMMETRIE-Fallback: ein fehlender/trockener
+Pad-Nachbar zählt TROCKEN statt eigene-Rand-Spalte — der alte Clamp gab zwei Chunks am 4-Ecken-
+Punkt verschiedene Werte = 6.6-cm-Naht). DAMIT IST WAKE-ON-STREAM AN: jeder einstreamende
+Wasser-Chunk weckt den CA einmal — die Welt-Wasser-Substanz lebt von allein und ruht dann.**
+
+Die ursprünglichen Optionen (Historie des Entscheids):
 
 1. **Distanz-Decay (der Minecraft-Weg, EMPFEHLUNG):** jeder Lateral-Transfer verliert einen
    kleinen Anteil (Dissipation) → Wasser DÜNNT mit der Entfernung von der Quelle, Pooling fern

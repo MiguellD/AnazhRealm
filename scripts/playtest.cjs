@@ -14733,9 +14733,32 @@ async function checkBandWelle6APolish(ctx) {
         out.skyOnSteepSlope = r.state.onSteepSlope;
         out.skyGroundNormalY = r.state.groundNormalY;
 
-        // (b) Flacher Bauwerks-Top: separater Tempel-Spawn
+        // (b) Flacher Bauwerks-Top: separater Tempel-Spawn.
+        // V18.93 — Spieler-Position VOR dem Spawn restoren: `spawnArchitecture`
+        // baut den Mesh nur bei XZ-Distanz ≤ architectureCullingRadius zum
+        // SPIELER — der stand hier noch im Sky-Test bei (0,5000,0) (XZ=(0,0)).
+        // Solange savedXZ nahe dem Ursprung lag, ging das ZUFÄLLIG gut; seit das
+        // Live-Wasser den Spieler tragen kann (T4a-4 + Wake-on-Stream-Skins),
+        // DRIFTET er im Warmup → savedXZ+40 fiel aus dem (0,0)-Radius → der
+        // Spawn blieb „cold" (mesh=null) → der Test maß NICHTS. Der Test prüft
+        // den INTENT „flaches Dach ist nicht steil" — der Spieler gehört
+        // VOR den Spawn an seinen Platz (deterministisch, drift-unabhängig).
+        r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
         const _beforeArchA3 = r.state.architectures.length;
-        const _entryA3 = r.spawnArchitecture("temple", { x: _savedX + 40, y: 0, z: _savedZ + 40 }, { seed: 9999 });
+        let _entryA3 = null;
+        let _spawnErrA3 = null;
+        try {
+            _entryA3 = r.spawnArchitecture("temple", { x: _savedX + 40, y: 0, z: _savedZ + 40 }, { seed: 9999 });
+        } catch (e) {
+            _spawnErrA3 = String((e && e.stack) || e).slice(0, 300);
+        }
+        out.spawnErrA3 = _spawnErrA3;
+        out.savedX = _savedX;
+        out.savedZ = _savedZ;
+        out.entryA3Null = !_entryA3;
+        out.entryA3Shape = _entryA3
+            ? `mesh=${!!_entryA3.mesh} instanced=${!!_entryA3.instanced} keys=${Object.keys(_entryA3).slice(0, 10).join("/")}`
+            : "null";
         let flatBlueprintNotSteep = false;
         // V12.0-perf.c.2 — temple instanced: Top-Y aus Flatten-Leaf-AABBs.
         let topYA3 = null;
@@ -14821,7 +14844,8 @@ async function checkBandWelle6APolish(ctx) {
         );
         check(
             "Welle 6.A3: Diskrimination — flache Bauwerks-Oberseite ist NICHT als steil markiert",
-            wave6a3Results.flatBlueprintNotSteep
+            wave6a3Results.flatBlueprintNotSteep,
+            `archTopNy=${wave6a3Results.archTopGroundNormalY}, archTopSteep=${wave6a3Results.archTopOnSteepSlope}, entryNull=${wave6a3Results.entryA3Null}, shape=${wave6a3Results.entryA3Shape}, saved=(${Math.round(wave6a3Results.savedX)},${Math.round(wave6a3Results.savedZ)}), err=${wave6a3Results.spawnErrA3}`
         );
         check("Welle 6.A3: Bewegungs-Loop nutzt slopePenalty-Variable", wave6a3Results.movementUsesSlopePenalty);
         check("Welle 6.A3: Bewegungs-Loop hat onSteepSlope ? 0.2 : 1.0 Drossel", wave6a3Results.movementHasSlopeBranch);
@@ -20699,7 +20723,10 @@ async function checkBandWelleC3CellularReaction(ctx) {
                     s1 += v;
                     cw += v * j;
                 }
-            out.t4Conserves = Math.abs(s1 - s0) < 1e-4;
+            // V18.93 — der Distanz-Decay (CA_FLOW_KEEP) dissipiert LATERAL bewusst:
+            // die Invariante ist KEINE SCHÖPFUNG + begrenzter Schwund (der Blob fällt
+            // verlustfrei, spreizt dann mit Decay — Σ fällt begrenzt, steigt nie).
+            out.t4Conserves = s1 <= s0 + 1e-4 && s1 >= s0 * 0.3;
             out.t4Flows = (s1 > 0 ? cw / s1 : 99) < 8 - 1; // Schwerpunkt fiel von j=8
         }
         // T4a-2 — der Automat ist in die WELT verdrahtet: reaktive Level-Schicht + Welt-Tick +
@@ -20826,7 +20853,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
     // T4 (terrain-t4-wasser-ca-plan §3): der Wasser-Automat-Kern — Wasser fliesst (Option A).
     check("T4 (Wasser-CA): _tickWaterCA existiert (der Fluss-Automat-Kern)", res.t4HasTickCA);
     if (res.t4HasTickCA) {
-        check("T4 (Wasser-CA): der Automat ERHÄLT das Wasser exakt (Σ konstant)", res.t4Conserves);
+        check("T4 (Wasser-CA): keine Schöpfung + begrenzter Decay-Schwund (V18.93)", res.t4Conserves);
         check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
     }
     // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
