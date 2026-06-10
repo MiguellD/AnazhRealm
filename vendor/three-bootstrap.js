@@ -74,5 +74,15 @@ THREE_GLOBAL.MeshBasicNodeMaterial = MeshBasicNodeMaterial;
 THREE_GLOBAL.PointsNodeMaterial = PointsNodeMaterial;
 THREE_GLOBAL.MeshLambertNodeMaterial = MeshLambertNodeMaterial;
 THREE_GLOBAL.MeshToonNodeMaterial = MeshToonNodeMaterial;
+// V18.98 — Post-Processing-Heilung (Schöpfer-Browser-Konsole: „Post-Processing
+// nicht verfuegbar (PostProcessing/pass fehlt)"): `PostProcessing` lebt im
+// three/webgpu-Bundle und wurde hier NIE in THREE_GLOBAL kopiert → der ganze
+// V17-Post-FX-Bogen (Bloom · Grading · Kanten-Schärfe · Entgrauen) war still
+// aus, in jedem Browser. SOFT-Lookup statt requireWebGPU-Throw: Post-FX ist
+// optional — fehlt das Symbol in einem künftigen Bundle, fällt
+// `_ensurePostProcessing` weiter sauber auf den direkten Render-Pfad.
+if (typeof WEBGPU.PostProcessing === "function") {
+    THREE_GLOBAL.PostProcessing = WEBGPU.PostProcessing;
+}
 THREE_GLOBAL.TSL = TSL;
 window.THREE = THREE_GLOBAL;

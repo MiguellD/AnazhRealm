@@ -15621,6 +15621,17 @@ class AnazhRealm {
         geom.setAttribute("normal", new THREE.Float32BufferAttribute(meshData.normals, 3));
         geom.setAttribute("color", new THREE.Float32BufferAttribute(meshData.colors, 3));
         geom.setIndex(new THREE.BufferAttribute(meshData.indices, 1));
+        // V18.98 — T2-Morph-Attribute AUCH auf dem Worker-Mesh-Pfad (Identität:
+        // Ziel=Position, Gewicht=0). Der T2-Vertrag („JEDE Terrain-Geometrie
+        // trägt sie, zentral") lebte nur in `_voxelChunkGeometry` — der E3-
+        // Worker-Pfad schlüpfte vorbei (V9.82-Parallel-Pfad-Klasse) → das
+        // Terrain-Material las `aMorphTarget` auf attribut-losen Geometrien =
+        // der `not found`-Warn-Spam in der Schöpfer-Konsole.
+        geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(meshData.positions), 3));
+        geom.setAttribute(
+            "aMorphWeight",
+            new THREE.Float32BufferAttribute(new Float32Array(meshData.positions.length / 3), 1)
+        );
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
         mesh.castShadow = true;
@@ -20614,7 +20625,7 @@ class AnazhRealm {
     // entsprechend nur Geometrie, nicht Material.
     _getVoxelChunkMaterial() {
         if (this.state.voxelChunkMaterial) return this.state.voxelChunkMaterial;
-        const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide, geomorph: true });
         this.state.voxelChunkMaterial = mat;
         return mat;
     }
@@ -20918,17 +20929,24 @@ class AnazhRealm {
             // dieselbe Polylinie = keine T-junction). Render-only: die Position-Attribute (Physik/
             // Determinismus/Naht-Test) bleiben unberührt — der Morph lebt nur hier. try/catch +
             // Marker (V17.12): fällt sauber auf un-gemorpht zurück, nie ein kaputtes Material.
-            try {
-                const _Tm = THREE.TSL;
-                const _aum = this.state.atmoUniforms;
-                if (_Tm && _Tm.attribute && _Tm.positionLocal && _aum && _aum.geomorph) {
-                    const _tgt = _Tm.attribute("aMorphTarget", "vec3");
-                    const _w = _Tm.attribute("aMorphWeight", "float");
-                    const _f = _aum.geomorph.mul(_w);
-                    mat.positionNode = _Tm.positionLocal.add(_tgt.sub(_Tm.positionLocal).mul(_f));
+            // V18.98 — der Morph-Knoten hängt am TERRAIN-Vertrag (`opts.geomorph`, nur
+            // `_getVoxelChunkMaterial`), NICHT an der vertexColors-Klasse: Inseln/Bäume/
+            // Test-Meshes morphen nie, und ihre Geometrien tragen die Attribute nicht →
+            // der `aMorphTarget not found`-Warn-Spam (Schöpfer-Konsole, V10.0-g.1-Klasse)
+            // fällt an der Wurzel; nur Chunk-Geometrie (trägt die Attribute zentral) liest sie.
+            if (opts.geomorph) {
+                try {
+                    const _Tm = THREE.TSL;
+                    const _aum = this.state.atmoUniforms;
+                    if (_Tm && _Tm.attribute && _Tm.positionLocal && _aum && _aum.geomorph) {
+                        const _tgt = _Tm.attribute("aMorphTarget", "vec3");
+                        const _w = _Tm.attribute("aMorphWeight", "float");
+                        const _f = _aum.geomorph.mul(_w);
+                        mat.positionNode = _Tm.positionLocal.add(_tgt.sub(_Tm.positionLocal).mul(_f));
+                    }
+                } catch (_e) {
+                    if (typeof window !== "undefined") window.__terrainMorphError = String((_e && _e.message) || _e);
                 }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__terrainMorphError = String((_e && _e.message) || _e);
             }
         }
 
@@ -51269,7 +51287,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.97.0";
+AnazhRealm.VERSION = "18.98.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -230,9 +230,11 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
   größter Einzelhebel). **(2)** ~~Gras-Placement → Worker~~ GELÖST via (0b) — die WAHRHEIT
   wanderte, nicht der Code. **(3)** Inseln in den HISM-Pfad (PRÜFEN: Inseln sind vermutlich UNIKATE
   Geometrie — dann ist der Hebel LOD/Dichte, nicht Instancing; messen vor schneiden). **(4)**
-  Substep-Cap senken. **(5b, aus dem Schöpfer-Browser-Log notiert):** „PostProcessing/pass fehlt"
-  = Bloom/Grading läuft im echten Browser NICHT (Bundle-Export prüfen) + 4× `aMorphTarget not
-  found` (Nicht-Terrain-Geometrie am geteilten Material ohne T2-Morph-Attribute). **(5)** Die EHRLICHE GPU-Grenze: GPU-Compute für Density bleibt Narbe (BVH braucht CPU-
+  Substep-Cap senken. **(5b) GEHEILT ✓ (V18.98):** beide Schöpfer-Konsolen-Wurzeln — die
+  Bootstrap-Export-Lücke (`PostProcessing` nie in `THREE_GLOBAL` kopiert → der ganze V17-Post-FX-
+  Bogen war ÜBERALL still aus; jetzt Soft-Lookup) + der Morph-Warn-Spam (der E3-Worker-Mesh-Pfad
+  baute ohne T2-Attribute, der V9.82-Parallel-Pfad; + der Morph-Knoten hängt jetzt am
+  Terrain-Vertrag `opts.geomorph`, nicht an der vertexColors-Klasse). **(5)** Die EHRLICHE GPU-Grenze: GPU-Compute für Density bleibt Narbe (BVH braucht CPU-
   Readback); die RICHTIGE GPU-Front sind PURE-RENDER-Felder ohne Readback — Wasser-Oberflächen-Detail,
   Partikel, Gras-Sway leben schon in TSL; mehr dorthin, nichts zurücklesen. **(6)** Draw-Call-Fernziel
   bleibt U6-Clipmap (Backlog, erst nach N-Naht). **Der Maßstab heißt: 60+ FPS auf Mittelklasse BEI
