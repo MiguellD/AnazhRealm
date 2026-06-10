@@ -345,26 +345,42 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 ### PHASE A — das Fundament watertight (trägt ALLES; zuerst)
 
 - ✓ V18.95 Spawn-Wurzel · ✓ N3 stabiles LOD (V18.86).
-- **A1 — N1 Cross-LOD watertight** [`terrain-koharenz-plan.md` §12.2; H+A]: Geomorph auf die VOLLE
-  Übergangs-Zone (heute nur Grenz-Zeile, 57.2 % offen) ODER Transvoxel; Kollision ist in der
-  Lazy-BVH-Zone moot (gemessen). Diag: `diag-chunk-seam` Zone-⌀ → <0.1 m.
-- **A2 — N2 Sub-Region-Edit** [§12.2; H+A]: der Edit re-meshet nur seinen Footprint-Teilbereich
-  (kein Ganz-Chunk-„Reset"); Anker `_rebuildVoxelChunk`/`_voxelEditedDensityGrid` (die
-  Index-Bounding-Box existiert schon für die Delta-Auflage — sie wird die Mesh-Region).
+- ✓ **A1 — N1 Cross-LOD watertight (V18.103):** MORPH-CAP (`snapCap = coarseStep·2.5` — jenseits
+  w=0, kein Cliff-Zerren; max Morph-Gap GEMESSEN 27.9→8.2 m) + **STITCH-BAND**
+  (`_rebuildLodStitchBand`: pro Grenz-Zeilen-MESH-KANTE ein Quad position→aMorphTarget — folgt
+  der echten Oberflächen-Topologie inkl. Höhlen-Loops; der Arme-Leute-Transvoxel, render-only,
+  main-only, alle Terrain-Material-Attribute [WebGPU-strikt]). GEMESSEN `diag-chunk-seam` E:
+  16 Bänder · 3881 Quads · 63 Cap-Stops · **0 sichtbare >1-m-RENDER-Spalten ungedeckt**; die
+  Grenz-Zeile unverändert 96.9 % auf Fläche. EHRLICH: das alte „Zone-⌀ <0.1 m"-Ziel hier war
+  das FALSCHE Maß (§12.2: die Zone ist der beabsichtigte Falloff — sie zuzumorphen würde Detail
+  flachdrücken); das wahre N1-Ziel „0 sichtbare >1-m-Spalten" steht. Volle Cliff-Re-Triangulation
+  = Transvoxel bleibt ein bewusst ungeweckter eigener Bogen.
+- ✓ **A2 — N2 Edit-„Reset" (V18.103, GEMESSEN AUFGELÖST):** der Ganz-Chunk-Rebuild ist
+  geometrisch UNSICHTBAR — `diag-edit-reset`: Carve-Vertex-Delta außerhalb des Einflusses
+  **0/3180** (deterministisch bit-stabil), Gras-Referenz gehalten (G-fix), Block-Platzierung
+  rebuildet das Terrain GAR nicht (0.6 ms). Der Rest ist der ~40-ms-Hitch (BVH-dominiert
+  25–30 ms, kollisions-pflichtig sync). Der Surface-Nets-Sub-Region-SPLICE wäre reine Perf
+  (≤10 ms) bei hohem Risiko für die Mesh=BVH-Identität → **bewusst deferred** (V13.9-Backlog).
+  Invariante „A2: Edit-Vertex-Delta lokal" verankert (Playtest-Band PhaseAFundament).
 - **A3 — H3 ferne Binnengewässer** [roadmap §4; H]: die ±1024-Atlas-Region wandert mit dem Spieler
   (eigene Welle, determinismus-brechend → Schöpfer-Sign-off S).
 - **A4 — Wasser-Reste-Bündel** [roadmap §4 „Wasser"; je klein]: Wasserfall-Plane-Entscheid (S:
   bleibt/durch CA ersetzt) · Schelf-Konsolidierung (Flood-Gates vs CA, H) · Hoch-Becken über `L`
   (CA-Zellen jenseits der Atlas-Domäne, H+A) · Unterwasser-Pass B5 (A) · Kapillar/Stempel an
   Gebäuden (H) · T7c/T7d-Reste (Fluss-Edit-Löcher · lake/river-Naht, H+A).
-- **A5 — Haupt-Fog ↔ Ring-Kante koppeln** [roadmap §4; A]: der Fog liest `DETAIL_CASCADE` statt
-  eigener Konstante (eine Distanz, noch ein Gesicht).
-- **A6 — KÖRPER-KOLLISION härten (Schöpfer-Browser 10.06.)** [H]: (a) „unter mir platzieren →
-  manchmal Fall-durch" — der Edit-Remesh tauscht die Spieler-Chunk-Kollision (die V17.28-Klasse
-  am PLACE-Pfad; A2-Sub-Region-Edit schrumpft das Fenster, zusätzlich: Spieler-Y während des
-  Footprint-Swaps klemmen); (b) „Kopf glitcht durch HÖHLENDECKEN" (Seitenwände halten) — der
-  Sprung-Impuls unter niedriger Decke + Penetration-Recovery nach OBEN: Jump-Clamp wenn
-  Decken-Probe < Körperhöhe + Kamera-Clip-Wand. Sonde: Place-under-self ×20 + Low-Ceiling-Jump.
+- ✓ **A5 — Haupt-Fog ↔ Ring-Kante (V18.103):** `fog.far = min(Wetter-Formel·Slider,
+  (ringRadius+0.5)·span)` in `_dayNightApplyHemiAndFog` — der Nebel deckt das Welt-Ende
+  (Default-Ring 4: Kante ~194 m, fog.far war 450 m = sichtbare Welt-Kante); bei „Weltenring max"
+  (Ring 12) greift weiter die Formel = die geliebte Weite unverändert. B2-Horizont-Mantel füllt
+  später JENSEITS derselben einen Quelle.
+- ✓ **A6 — KÖRPER-KOLLISION (V18.103):** (a) `_rescuePlayerFromEditSolid` am fill-Pfad
+  (GEMESSEN vorher: 12 Fills unter sich = 11 m im Fels begraben → jetzt reitet der Spieler die
+  steigende Oberfläche, höhlen-sicher per Dichte-Probe statt Surface-Vergleich); (b)
+  `_ceilingHeadroom` (Ammo-Ray — Terrain UND Architektur-Dächer) → handleJump-Klemme
+  `v = √(2g·Steigraum)` (GEMESSEN: Frei-Sprung rise 2.27 m unberührt · Decken-Sprung rise 0.38 m,
+  kein Head-Through) + `_loopCamera`-Ego-Auge-Clip unter die Decke (0.12 m Marge; die dritte
+  Person hatte schon die V8.36-Kollision). Sonde: `diag-edit-reset` (Fill/Block-unter-sich ×12 ·
+  Frei-Sprung-Kontrolle · Niedrig-Decken-Sprung).
 
 ### PHASE B — der Körper glatt + der Maßstab (G6 + G7)
 
@@ -516,7 +532,9 @@ schlanken (UI-Politur, jederzeit einschiebbar).
    `git push -u origin <branch>`.
 3. **Gates:** H-Wellen stapeln dürfen; A-Wellen je mit Screenshot; S-Punkte SAMMELN sich für
    EINEN Schöpfer-Browser-Durchgang — die offene Liste: R1 · E1–E3 · J4 · S9 · A2(alt) ·
-   N3-FPS · Post-FX-Look · weite-Wiese-FPS · Motion-Feel (V18.99) · danach EIN Merge.
+   N3-FPS · Post-FX-Look · weite-Wiese-FPS · Motion-Feel (V18.99) · **V18.103: A5-Fog-Look
+   (Kante gedeckt, Default-Ring spürbar nebliger) · A1-Stitch-Band-Look (Cliff-Grenzen) ·
+   A6-Sprung-Feel (Decken-Klemme)** · danach EIN Merge.
 4. **Die Wände (nie verhandeln):** Determinismus (Worker bit-identisch; eine Skala-Optimierung
    ändert NIE die Gitter-Phase) · die Narben (roadmap §5) nicht wiederholen · die Samen (roadmap
    §7 + §5-D5c hier) nie blind schneiden · Multi-Agent-Funde SELBST verifizieren (zwei
@@ -530,9 +548,9 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 
 | Schwäche (gemessen) | Adresse |
 |---|---|
-| Cross-LOD-Naht sichtbar (~100 m, render-only-Halbfix) | A1 |
-| Edit = Ganz-Chunk-Reset sichtbar | A2 |
-| Welt endet im Fog (keine Ferne) | B2 Horizont-Mantel |
+| ~~Cross-LOD-Naht sichtbar~~ | ✓ V18.103 A1 (Cap + Stitch-Band: 0 sichtbare Spalten ungedeckt) |
+| ~~Edit = Ganz-Chunk-Reset sichtbar~~ | ✓ V18.103 A2 (GEMESSEN: Vertex-Delta 0/3180 lokal; Splice bewusst deferred) |
+| Welt endet im Fog (keine Ferne) | B2 Horizont-Mantel (A5 deckt die Kante schon: fog.far ≤ Ring-Kante) |
 | Wasser-Sheet ~78 ms auf Main | B1 |
 | EINE 2048er-Schattenmap (nah grob, fern eng) | B4 CSM |
 | Physik-Todesspirale möglich (20 Substeps) | B6 |
@@ -548,7 +566,7 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | Rekursion blockiert (4 Schnitte) | F1 |
 | Netz trägt real nur ~4–6 Peers, TURN fehlt | F2 |
 | Sozial-Schicht fehlt ganz (Bewerten lokal-only) | F4 |
-| Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken | A6 |
+| ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip) |
 | Schwarze Struktur-Silhouetten (eisen × Gegenlicht × Toon-Boden) | B8 |
 | Steuerung flach (kein Feel, Bindings teils fix) | C5 |
 | Aura = folgende Lampe statt Haut-Schimmern | C6 |

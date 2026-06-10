@@ -67,7 +67,8 @@ const server = http.createServer((req, res) => {
             if (r && !stubbed && r.state && r.state.renderer) {
                 window.__origRender = r.state.renderer.render.bind(r.state.renderer);
                 r.state.renderer.render = function () {};
-                if (typeof r.state.renderer.renderAsync === "function") r.state.renderer.renderAsync = () => Promise.resolve();
+                if (typeof r.state.renderer.renderAsync === "function")
+                    r.state.renderer.renderAsync = () => Promise.resolve();
                 r.state.postProcessingFailed = true;
                 stubbed = true;
             }
@@ -100,7 +101,8 @@ const server = http.createServer((req, res) => {
             const el = document.getElementById(id);
             if (el) el.style.display = "none";
         }
-        for (const el of document.querySelectorAll(".overlay, .modal, .drawer, #chat-console")) el.style.display = "none";
+        for (const el of document.querySelectorAll(".overlay, .modal, .drawer, #chat-console"))
+            el.style.display = "none";
     });
 
     // Ein settled EYE-LEVEL-Frame zeichnen (echter Render). Kamera am Spieler, Augenhöhe, leicht nach unten.
@@ -125,19 +127,33 @@ const server = http.createServer((req, res) => {
                 };
                 cam.lookAt(ex + dir.x * 50, ey + dir.y * 50, ez + dir.z * 50);
                 cam.updateMatrixWorld(true);
-                // echten Render an + ein Frame (mit allen per-Frame-Uniform-Updates via _loopRender)
+                // echten Render an + Frames (mit allen per-Frame-Uniform-Updates via _loopRender).
+                // V18.103 — DIREKTER Render-Pfad statt Post-FX: `pp.renderAsync()` ist
+                // fire-and-forget — unter swiftshader bleibt der 3-Pass-Post-FX im
+                // Ein-Frame-Fenster SCHWARZ (GEMESSEN: Baseline v18.102 genauso schwarz =
+                // Skript-Rot seit V18.98, kein Engine-Bug). Die Geometrie/Fog/Licht-Wahrheit
+                // zeigt der direkte renderer.render; Post-FX (Bloom/Grading) ist Look-Politur
+                // → Schöpfer-Browser. Drei Frames hintereinander geben dem Backend Luft.
                 if (window.__origRender) {
                     r.state.renderer.render = window.__origRender;
-                    s.postProcessingFailed = false;
+                    s.postProcessingFailed = true;
                     let err = null;
                     try {
-                        if (typeof r._loopRender === "function") r._loopRender();
-                        else window.__origRender(s.scene, cam);
+                        if (typeof r._loopRender === "function") {
+                            r._loopRender(performance.now());
+                            r._loopRender(performance.now());
+                            r._loopRender(performance.now());
+                        } else window.__origRender(s.scene, cam);
                     } catch (_e) {
                         err = String((_e && _e.message) || _e);
                     }
                     r.state.renderer.render = function () {};
-                    return { px: +pm.position.x.toFixed(1), py: +pm.position.y.toFixed(1), pz: +pm.position.z.toFixed(1), err };
+                    return {
+                        px: +pm.position.x.toFixed(1),
+                        py: +pm.position.y.toFixed(1),
+                        pz: +pm.position.z.toFixed(1),
+                        err,
+                    };
                 }
                 return { err: "no origRender" };
             },
@@ -146,7 +162,9 @@ const server = http.createServer((req, res) => {
         );
         await new Promise((res) => setTimeout(res, 300));
         await page.screenshot({ path: path.join(ART, file), fullPage: false });
-        console.log(`${file.padEnd(34)} spieler=(${meta.px},${meta.py},${meta.pz}) yaw=${yawDeg} pitch=${pitchDeg}  ${meta.err ? "⚠ " + meta.err : "✓"} ${info || ""}`);
+        console.log(
+            `${file.padEnd(34)} spieler=(${meta.px},${meta.py},${meta.pz}) yaw=${yawDeg} pitch=${pitchDeg}  ${meta.err ? "⚠ " + meta.err : "✓"} ${info || ""}`
+        );
         return meta;
     };
 

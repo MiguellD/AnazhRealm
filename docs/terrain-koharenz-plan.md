@@ -760,12 +760,22 @@ Das LOD-Kaskaden-Polish (U4 Deko-Distanz · U5 Schatten-CSM · U6 Clipmap — Pe
 1. **N3 — GEBAUT ✓ (V18.86)** → GEMESSEN `diag-chunk-seam`: LOD0-Ring 5×5, die Grenze r1↔2 → r2↔3 (~100 m);
    Hysterese-Deadband (kein Flip-Flop); Playtest `Alle Invarianten OK`; Determinismus unberührt (LOD ist
    derived, `voxel-worker.js` unangetastet). OFFEN: **Schöpfer-Browser** — beim schnellen Laufen kein Pop + FPS tragbar.
-2. **N1 — GEMESSEN refiniert (V18.86), kein Bau nötig** → (b) Kollision MOOT (die Cross-LOD-Grenze liegt in der
-   Lazy-BVH-Zone r≥2, morphende Chunks haben keine BVH) · (a) die Render-Grenz-Zeile schliesst schon 100 %
-   (`diag-chunk-seam` D), die ganze Zone ist der beabsichtigte Falloff; der echte Rest-Riss sind die Cliff-Outlier
-   (Geomorph-Grenze an Steilwänden) → **Transvoxel** ist die volle Heilung (eigener Bogen, nach N3-Fog gemildert).
-3. **N2** → der Edit berührt nur die Sub-Region · Playtest grün. (Der grosse Bau: Surface-Nets-Sub-Region-Splice,
-   V13.9-Backlog — eigener fokussierter Bogen, KEIN Render-only-Pflaster.)
+2. **N1 — GEBAUT ✓ (V18.103: MORPH-CAP + STITCH-BAND).** Die V18.86-Refinierung hielt: (b) Kollision MOOT
+   (Lazy-BVH-Zone r≥2) · (a) die Grenz-Zeile schliesst (96.9 % auf Fläche). Der Cliff-Outlier-Rest ist jetzt
+   GEDECKT: der Morph-CAP (`snapCap = coarseStep·2.5` in `_applyCrossLodGeomorph`) stoppt das Wand-Zerren
+   (max Morph-Gap GEMESSEN 27.9 → 8.2 m), das **STITCH-BAND** (`_rebuildLodStitchBand` — pro Grenz-Zeilen-
+   MESH-KANTE ein Quad position→aMorphTarget, folgt der echten Topologie inkl. Höhlen-Loops; render-only,
+   main-only, alle Terrain-Material-Attribute) überbrückt jeden verbleibenden Spalt — der Arme-Leute-
+   Transvoxel. GEMESSEN `diag-chunk-seam` E: 16 Bänder · 3881 Quads · **0 sichtbare >1-m-RENDER-Spalten
+   ungedeckt** = das N1-Ziel „0 sichtbare >1-m-Spalten" steht. Die volle Cliff-Re-Triangulation (Transvoxel)
+   bleibt ein bewusst ungeweckter eigener Bogen — das Band macht sie für das Auge moot.
+3. **N2 — GEMESSEN AUFGELÖST (V18.103, `diag-edit-reset`):** der Ganz-Chunk-Rebuild ist geometrisch
+   UNSICHTBAR — Carve-Vertex-Delta außerhalb des Einflusses **0/3180** (bit-stabil deterministisch), Gras-
+   Referenz gehalten (G-fix), Block-Platzierung rebuildet das Terrain GAR nicht (0.6 ms). Der „Reset", den
+   der Schöpfer sah, hatte drei inzwischen geheilte Schichten (T1-Sync + G-fix-Gras + N3-Hysterese); was
+   bleibt, ist der ~40-ms-Hitch (BVH-dominiert, kollisions-pflichtig sync). Der Surface-Nets-Sub-Region-
+   SPLICE wäre reine Perf (≤10 ms Ersparnis) bei hohem Risiko für die Mesh=BVH-Identität → **bewusst
+   deferred** (V13.9-Backlog bleibt). Invariante „A2: Edit-Vertex-Delta lokal" im Playtest verankert.
 4. **T7d/T7c** → `diag-water-*` (kein vertikaler `L`-Abfall, kein Fluss-Edit-Loch) + dein Browser-Auge.
 5. Jeder Schritt: Worker-gespiegelt (Determinismus heilig) · gemessen · browser-validiert · EIN Merge pro
    bestätigtem Schritt.

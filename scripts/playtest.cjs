@@ -22225,6 +22225,181 @@ async function checkBandV17118WorkerEngaged(ctx) {
     );
 }
 
+// PHASE A (gigant-plan §5) — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
+// A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Fog↔Ring-Kante ·
+// A6 Körper-Kollision (Begraben-Rettung + Decken-Sprung-Klemme + Kamera-Clip).
+async function checkBandPhaseAFundament(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state || !r.state.voxelChunks) return { error: "no realm" };
+        const out = {};
+        // ── A1 · Stitch-Band: deterministisch frisch morphen (Band-Reihenfolge egal),
+        // dann zählen + die WebGPU-Attribut-Vollständigkeit prüfen (V10.0-g.1-Wand).
+        for (const [key, entry] of r.state.voxelChunks) {
+            if (!entry || entry.empty || !entry.mesh) continue;
+            const [cx, cz] = key.split(",").map(Number);
+            r._applyCrossLodGeomorph(cx, cz);
+        }
+        let bands = 0,
+            bandAttrsOk = true,
+            cappedTotal = 0;
+        for (const [, entry] of r.state.voxelChunks) {
+            if (!entry || !entry.lodStitchMesh) continue;
+            bands++;
+            const g = entry.lodStitchMesh.geometry;
+            for (const a of ["position", "normal", "color", "aMorphTarget", "aMorphWeight"]) {
+                if (!g.attributes[a]) bandAttrsOk = false;
+            }
+            const w = entry.mesh.geometry.attributes.aMorphWeight;
+            const tgt = entry.mesh.geometry.attributes.aMorphTarget;
+            const pos = entry.mesh.geometry.attributes.position;
+            if (w && tgt && pos) {
+                for (let v = 0; v < pos.count; v++) {
+                    if (w.getX(v) !== 0) continue;
+                    const dx = tgt.getX(v) - pos.getX(v),
+                        dy = tgt.getY(v) - pos.getY(v),
+                        dz = tgt.getZ(v) - pos.getZ(v);
+                    if (dx * dx + dy * dy + dz * dz > 0.001) cappedTotal++;
+                }
+            }
+        }
+        out.bands = bands;
+        out.bandAttrsOk = bandAttrsOk;
+        out.cappedTotal = cappedTotal;
+        out.a1SrcCap = /snapCap/.test(r._applyCrossLodGeomorph.toString());
+        out.a1SrcBand = /_rebuildLodStitchBand/.test(r._applyCrossLodGeomorph.toString());
+        out.a1SrcDispose = /lodStitchMesh/.test(r._disposeVoxelChunk.toString());
+        // ── A2 · Edit-Lokalität: ein kleiner Carve ändert NUR die Sub-Region
+        // (der Ganz-Chunk-Rebuild ist deterministisch → der „Reset" ist unsichtbar).
+        {
+            const { span } = r._voxelChunkConfig();
+            const pm = r.state.playerMesh.position;
+            const cx = Math.floor(pm.x / span) + 1,
+                cz = Math.floor(pm.z / span);
+            const entry = r.state.voxelChunks.get(`${cx},${cz}`);
+            if (entry && entry.mesh) {
+                const Q = (v) => Math.round(v * 1000);
+                const snap = (geom) => {
+                    const p = geom.attributes.position;
+                    const set = new Set();
+                    for (let i = 0; i < p.count; i++) set.add(`${Q(p.getX(i))},${Q(p.getY(i))},${Q(p.getZ(i))}`);
+                    return set;
+                };
+                const before = snap(entry.mesh.geometry);
+                const ex = cx * span + span / 2,
+                    ez = cz * span + span / 2;
+                const surf = r._voxelSurfaceY(ex, ez);
+                if (typeof surf === "number") {
+                    r.carveVoxelSphere(ex, surf - 0.5, ez, 1.5);
+                    if (r._drainDirtyVoxelChunks) r._drainDirtyVoxelChunks();
+                    const after = snap(r.state.voxelChunks.get(`${cx},${cz}`).mesh.geometry);
+                    const rInf = 1.5 + 4 * 1.8;
+                    let changedOutside = 0,
+                        totalOutside = 0;
+                    for (const k of before) {
+                        const [qx, qy, qz] = k.split(",").map((n) => n / 1000);
+                        if (Math.hypot(qx - ex, qy - (surf - 0.5), qz - ez) <= rInf) continue;
+                        totalOutside++;
+                        if (!after.has(k)) changedOutside++;
+                    }
+                    out.a2 = { totalOutside, changedOutside };
+                }
+            }
+        }
+        // ── A5 · Fog liest die Ring-Kante.
+        {
+            const cfg = r._voxelChunkConfig();
+            const ringEdge = (cfg.ringRadius + 0.5) * cfg.span;
+            if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+            out.a5 = {
+                fogFar: r.state.fog ? r.state.fog.far : null,
+                ringEdge,
+                coupled: !!r.state.fog && r.state.fog.far <= ringEdge + 0.001,
+                src: /ringEdge/.test(r._dayNightApplyHemiAndFog.toString()),
+            };
+        }
+        // ── A6 · Quellen + Begraben-Rettung behavioral (zustands-neutral).
+        out.a6SrcJump = /_ceilingHeadroom/.test(r.handleJump.toString());
+        out.a6SrcEdit = /_rescuePlayerFromEditSolid/.test(r._addVoxelEdit.toString());
+        out.a6SrcCam = /_ceilingHeadroom/.test(r._loopCamera.toString());
+        // Infinity überlebt die evaluate-JSON-Serialisierung NICHT (→ null) —
+        // als String-Sentinel "inf" transportieren (freier Himmel = kein Treffer).
+        const a6h = r._ceilingHeadroom();
+        out.a6Headroom = Number.isFinite(a6h) ? a6h : "inf";
+        {
+            const pm = r.state.playerMesh;
+            const saved = { x: pm.position.x, y: pm.position.y, z: pm.position.z };
+            const { span } = r._voxelChunkConfig();
+            const bx = Math.floor(saved.x / span) * span + span / 2;
+            const bz = Math.floor(saved.z / span) * span + span / 2;
+            const bs = r._voxelSurfaceY(bx, bz);
+            if (typeof bs === "number") {
+                // Spieler IN den Fels setzen (3 m unter der Oberfläche) → Rettung muss heben.
+                pm.position.set(bx, bs - 3, bz);
+                r._rescuePlayerFromEditSolid(bx, bs - 3, bz, 2);
+                out.a6Rescue = { liftedY: pm.position.y, surf: bs, lifted: pm.position.y > bs - 1.6 };
+            }
+            // Spieler zurücksetzen (Body + Mesh — zustands-neutral für Folge-Bands).
+            pm.position.set(saved.x, saved.y, saved.z);
+            const body = r.state.playerBody;
+            if (body && r.state.tmpTransform) {
+                const sf = r.state.scaleFactor || 1;
+                const t = r.state.tmpTransform;
+                t.setIdentity();
+                t.setOrigin(r.setVec(r.state.tmpVec1, saved.x / sf, saved.y / sf, saved.z / sf));
+                body.setWorldTransform(t);
+                body.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
+                body.activate(true);
+            }
+        }
+        return out;
+    });
+    if (res.error) {
+        check("PHASE A: Fundament-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check(
+        "A1: Stitch-Bänder an Cross-LOD-Grenzen präsent (KONSUM, nicht Existenz)",
+        res.bands >= 1,
+        `bands=${res.bands}`
+    );
+    check("A1: jedes Band trägt ALLE Terrain-Material-Attribute (WebGPU-strikt, V10.0-g.1)", res.bandAttrsOk === true);
+    check(
+        "A1: der Morph-Cap stoppt Cliff-Zerren (w=0-Vertices mit Target existieren)",
+        res.cappedTotal >= 1,
+        `capped=${res.cappedTotal}`
+    );
+    check(
+        "A1: _applyCrossLodGeomorph trägt snapCap + ruft _rebuildLodStitchBand (Source)",
+        res.a1SrcCap && res.a1SrcBand
+    );
+    check("A1: _disposeVoxelChunk räumt das Stitch-Band (Source, kein Leak)", res.a1SrcDispose === true);
+    check(
+        "A2: Edit-Vertex-Delta ist LOKAL — 0 geänderte Vertices außerhalb des Einflusses (kein sichtbarer Ganz-Chunk-Reset)",
+        res.a2 && res.a2.changedOutside === 0 && res.a2.totalOutside > 100,
+        res.a2 ? `outside=${res.a2.totalOutside} changed=${res.a2.changedOutside}` : "kein Chunk"
+    );
+    check(
+        "A5: fog.far ≤ Ring-Kante (der Nebel deckt das Welt-Ende — eine Distanz, noch ein Gesicht)",
+        res.a5 && res.a5.coupled === true,
+        res.a5 ? `far=${res.a5.fogFar && res.a5.fogFar.toFixed(1)} edge=${res.a5.ringEdge.toFixed(1)}` : ""
+    );
+    check("A5: _dayNightApplyHemiAndFog liest die Ring-Kante (Source)", res.a5 && res.a5.src === true);
+    check("A6b: handleJump klemmt am Decken-Headroom (Source)", res.a6SrcJump === true);
+    check("A6a: _addVoxelEdit ruft die Begraben-Rettung (Source)", res.a6SrcEdit === true);
+    check("A6b: _loopCamera klemmt das Ego-Auge unter die Decke (Source)", res.a6SrcCam === true);
+    check(
+        "A6b: _ceilingHeadroom liefert eine Zahl/Infinity (Ammo-Raycast trägt)",
+        res.a6Headroom === "inf" || (typeof res.a6Headroom === "number" && res.a6Headroom >= 0)
+    );
+    check(
+        "A6a: die Begraben-Rettung HEBT einen im Fels steckenden Spieler (behavioral)",
+        res.a6Rescue && res.a6Rescue.lifted === true,
+        res.a6Rescue ? `y=${res.a6Rescue.liftedY.toFixed(1)} surf=${res.a6Rescue.surf.toFixed(1)}` : "kein Surf"
+    );
+}
+
 // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH für ferne Chunks): empirischer
 // Beweis dass die BVH-Collision (Ammo, ~25-30ms pro Chunk) jetzt nur noch
 // im 2-Ring (r ≤ 1, Spieler-Nähe) sofort gebaut wird. Ferne Chunks (r ≥ 2)
@@ -42008,6 +42183,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV17117FarWater(ctx);
             // V17.118 — E3: der Voxel-Worker engagiert (Mesh off-thread, Regressions-Wand).
             await checkBandV17118WorkerEngaged(ctx);
+            // PHASE A (gigant-plan §5) — A1 Stitch-Band · A2 Edit-Lokalität · A5 Fog↔Ring · A6 Kollision.
+            await checkBandPhaseAFundament(ctx);
             // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
             await checkBandWellePerf3cPhase4LazyBVH(ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).

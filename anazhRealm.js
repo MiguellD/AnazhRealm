@@ -21848,8 +21848,8 @@ class AnazhRealm {
             if (nbLod <= myLod) continue; // nur an einen GROBEREN Nachbarn anschmiegen
             coarseFaces.push({ dx, dz, nbGeom: nb.mesh.geometry, nbLod });
         }
-        // Fast-Path: keine Cross-LOD-Grenze UND kein alter Morph → nichts zu tun (Normalfall)
-        if (coarseFaces.length === 0 && !entry.hasMorph) return;
+        // Fast-Path: keine Cross-LOD-Grenze UND kein alter Morph/Band → nichts zu tun (Normalfall)
+        if (coarseFaces.length === 0 && !entry.hasMorph && !entry.lodStitchMesh) return;
         const n = pos.count;
         const tArr = tgtAttr.array;
         const wArr = wAttr.array;
@@ -21862,6 +21862,9 @@ class AnazhRealm {
         }
         let touched = false;
         const bestDist = coarseFaces.length ? new Float32Array(n).fill(Infinity) : null;
+        // A1/N1 (gigant-plan §5 · Naht §12.2) — die Grenz-Zeilen-Vertices für das
+        // Stitch-Band sammeln (Index → hat ein echtes Morph-Target in tArr).
+        const bandVerts = new Set();
         const cp = [0, 0, 0]; // Scratch für den nächsten Punkt auf einem Dreieck
         for (const face of coarseFaces) {
             const nbGeom = face.nbGeom;
@@ -21913,6 +21916,12 @@ class AnazhRealm {
             // Fläche statt ~100 %, der Rest-Spalt 0.17 m).
             const flat = fineStep * 0.7;
             const morphBand = fineStep * 2.0;
+            // A1/N1 — der MORPH-CAP: an CLIFFS divergieren feine + grobe Fläche vertikal
+            // (GEMESSEN diag-chunk-seam: Morph-Distanzen bis 27.9 m). Einen Wand-Vertex
+            // dorthin zu ziehen ZERRT die Wand (gestreckte Dreiecke) — schlimmer als der
+            // Spalt. Jenseits des Caps bleibt der Vertex (w=0), das STITCH-BAND unten
+            // überbrückt den Spalt stattdessen (der Arme-Leute-Transvoxel).
+            const snapCap = coarseStep * 2.5;
             for (let v = 0; v < n; v++) {
                 const px = pos.getX(v),
                     py = pos.getY(v),
@@ -21937,19 +21946,111 @@ class AnazhRealm {
                     }
                 }
                 const d3 = Math.sqrt(bd);
+                // A1 — die Band-Sammlung VOR dem bestDist-Skip (idempotentes Set):
+                // ein KORNER-Vertex zwischen zwei groben Faces gehört in die Border-Row,
+                // auch wenn das nähere Target von der ANDEREN Face kam.
+                if (dPlane <= flat) bandVerts.add(v);
                 if (d3 >= bestDist[v]) continue; // ein näheres Face gewann diesen Vertex schon
                 bestDist[v] = d3;
                 tArr[v * 3] = bx;
                 tArr[v * 3 + 1] = by;
                 tArr[v * 3 + 2] = bz;
-                // Gewicht: 1 in der Grenz-Zeile (dPlane ≤ flat) → linear auf 0 bei morphBand
-                wArr[v] = Math.max(0, Math.min(1, (morphBand - dPlane) / (morphBand - flat)));
+                // Gewicht: 1 in der Grenz-Zeile (dPlane ≤ flat) → linear auf 0 bei morphBand.
+                // A1 — jenseits des Caps KEIN Morph (w=0, das Target bleibt fürs Band in tArr;
+                // der Shader liest bei w=0 die rohe Position — kein Zerren der Cliff-Wand).
+                wArr[v] = d3 > snapCap ? 0 : Math.max(0, Math.min(1, (morphBand - dPlane) / (morphBand - flat)));
                 touched = true;
             }
         }
         entry.hasMorph = touched;
         tgtAttr.needsUpdate = true;
         wAttr.needsUpdate = true;
+        this._rebuildLodStitchBand(entry, bandVerts);
+    }
+
+    // A1/N1 (gigant-plan §5 · Naht §12.2) — das STITCH-BAND: der Geomorph schliesst die
+    // Grenz-ZEILE (97 % auf der groben Fläche, ⌀0.028 m), aber an CLIFFS divergieren
+    // feine + grobe Fläche vertikal — dort greift der Morph-Cap (w=0, kein Zerren) und
+    // es bliebe ein durchsehbarer Spalt (GEMESSEN: ~13.6 % sichtbare >1-m-Spalten roh,
+    // max 26.4 m). Das Band überbrückt ihn: pro Mesh-KANTE der Grenz-Zeile (beide
+    // Endpunkte in der Border-Row — folgt der ECHTEN Oberflächen-Topologie, auch
+    // getrennten Höhlen-Loops; KEIN Polyline-Sortier-Raten auf der mehrwertigen
+    // Fläche) ein Quad von der feinen Kante (position) zur groben Oberfläche
+    // (aMorphTarget) — der Arme-Leute-Transvoxel. Render-only (KEINE BVH: die
+    // Kollision ist in der Lazy-BVH-Zone moot, N1 GEMESSEN V18.86), main-only (kein
+    // Worker-Mirror, kein Determinismus). Flache Nähte geben Sliver-Quads → unter
+    // 0.3 m Spann-Distanz übersprungen (kein Tri-Müll, kein Z-Fight). Das Band trägt
+    // ALLE Material-Attribute des geteilten Terrain-Toons (WebGPU-strikt, V10.0-g.1):
+    // color vom Quell-Vertex (Fels-Farbe läuft weiter), aMorphTarget=Identität/w=0
+    // (das Band spannt pos→tgt schon selbst — kein Doppel-Morph).
+    _rebuildLodStitchBand(entry, bandVerts) {
+        if (entry.lodStitchMesh) {
+            if (this.state.scene) this.state.scene.remove(entry.lodStitchMesh);
+            this._queueGeometryDispose(entry.lodStitchMesh.geometry);
+            entry.lodStitchMesh = null;
+        }
+        if (!bandVerts || bandVerts.size === 0 || !entry.mesh || !entry.mesh.geometry) return;
+        const geom = entry.mesh.geometry;
+        const pos = geom.attributes.position;
+        const tgt = geom.attributes.aMorphTarget;
+        const nrm = geom.attributes.normal;
+        const col = geom.attributes.color;
+        const idx = geom.index ? geom.index.array : null;
+        if (!pos || !tgt || !idx) return;
+        const MIN_SPAN = 0.3;
+        const P = [],
+            N = [],
+            C = [],
+            I = [];
+        const seen = new Set();
+        for (let t = 0; t < idx.length; t += 3) {
+            const i0 = idx[t],
+                i1 = idx[t + 1],
+                i2 = idx[t + 2];
+            for (let e = 0; e < 3; e++) {
+                const a = e === 0 ? i0 : e === 1 ? i1 : i2;
+                const b = e === 0 ? i1 : e === 1 ? i2 : i0;
+                if (!bandVerts.has(a) || !bandVerts.has(b)) continue;
+                const k = a < b ? a * 200000 + b : b * 200000 + a;
+                if (seen.has(k)) continue;
+                seen.add(k);
+                const ax = pos.getX(a),
+                    ay = pos.getY(a),
+                    az = pos.getZ(a);
+                const bx = pos.getX(b),
+                    by = pos.getY(b),
+                    bz = pos.getZ(b);
+                const tax = tgt.getX(a),
+                    tay = tgt.getY(a),
+                    taz = tgt.getZ(a);
+                const tbx = tgt.getX(b),
+                    tby = tgt.getY(b),
+                    tbz = tgt.getZ(b);
+                const spanA = Math.hypot(tax - ax, tay - ay, taz - az);
+                const spanB = Math.hypot(tbx - bx, tby - by, tbz - bz);
+                if (Math.max(spanA, spanB) < MIN_SPAN) continue;
+                const base = P.length / 3;
+                P.push(ax, ay, az, bx, by, bz, tbx, tby, tbz, tax, tay, taz);
+                for (const v of [a, b, b, a]) {
+                    N.push(nrm ? nrm.getX(v) : 0, nrm ? nrm.getY(v) : 1, nrm ? nrm.getZ(v) : 0);
+                    C.push(col ? col.getX(v) : 0.5, col ? col.getY(v) : 0.5, col ? col.getZ(v) : 0.5);
+                }
+                I.push(base, base + 1, base + 2, base, base + 2, base + 3);
+            }
+        }
+        if (I.length === 0) return;
+        const bg = new THREE.BufferGeometry();
+        bg.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+        bg.setAttribute("normal", new THREE.Float32BufferAttribute(N, 3));
+        bg.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
+        bg.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(P), 3));
+        bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(P.length / 3), 1));
+        bg.setIndex(I);
+        const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
+        mesh.castShadow = false;
+        mesh.receiveShadow = true;
+        if (this.state.scene) this.state.scene.add(mesh);
+        entry.lodStitchMesh = mesh;
     }
 
     // Nächster Punkt auf dem Dreieck (T[t..t+8] = A,B,C) zu P → out[0..2] (Ericson, RTCD §5.1.5).
@@ -22207,6 +22308,12 @@ class AnazhRealm {
             // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
             this._queueGeometryDispose(entry.mesh.geometry);
             // V9.84 Perf-1.a — Material NICHT disposen: Singleton-geteilt.
+        }
+        // A1 — das Cross-LOD-Stitch-Band des Chunks räumen (render-only Begleiter).
+        if (entry && entry.lodStitchMesh) {
+            if (this.state.scene) this.state.scene.remove(entry.lodStitchMesh);
+            this._queueGeometryDispose(entry.lodStitchMesh.geometry);
+            entry.lodStitchMesh = null;
         }
         // Welle G-fix — bei einem Rebuild, der die Oberfläche NICHT ändert
         // (Struktur-Spawn/Skirt/LOD), das Gras BEHALTEN (kein Dispose → kein
@@ -25621,6 +25728,11 @@ class AnazhRealm {
         // 1-Zell-Density-Pad sah die Kugel-Kante → sub-cell, imperzeptibel) → sie bleiben
         // ASYNC (kein Edit-Cluster-Spike, die V9.40-c-Lehre gewahrt: nur ≤Footprint sync).
         this._syncRebuildEditFootprint(x, z, radius);
+        // A6a (gigant-plan §5 PHASE A) — Fill-unter-sich darf den Spieler nicht
+        // BEGRABEN (GEMESSEN diag-edit-reset: 12 Fills unter den Füßen → Spieler
+        // 11 m UNTER der neuen Oberfläche, im Fels eingeschlossen — die V17.28-
+        // Klasse am Voxel-PLACE-Pfad). Nur fill kann einschließen; carve öffnet.
+        if (mode === "fill") this._rescuePlayerFromEditSolid(x, yClamped, z, radius);
         // T4a-2 — den Wasser-Automaten in der Carve-Region + 1-Ring WECKEN: die Zellen änderten sich
         // (neuer Raum geöffnet/verfüllt) → das Wasser strömt nach (active-cell, settled danach inaktiv).
         {
@@ -48185,8 +48297,20 @@ class AnazhRealm {
             // sondern aus dem hoehen-dominanten Aerial-Term + Schatten).
             const rainyMix = this.state.weather === "rainy" ? 1 : 0;
             const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
-            fog.near = (35 - rainyMix * 13) * fogMult;
-            fog.far = (150 - rainyMix * 55) * fogMult;
+            // A5 (gigant-plan §5 PHASE A) — der Fog liest die RING-KANTE statt einer
+            // eigenen Konstante (eine Distanz, noch ein Gesicht — die V17.114-U1-Synergie
+            // auf den Haupt-Fog vollendet): die Welt endet am gestreamten Chunk-Ring
+            // ((ringRadius+0.5)·span); ein fog.far JENSEITS dieser Kante verspricht
+            // Ferne, wo nichts steht → die abrupte Welt-Kante ist sichtbar (GEMESSEN:
+            // Default-Ring 4 → Kante ~194 m, fog.far war 450 m). Jetzt deckt der Nebel
+            // die Kante exakt; bei „Weltenring max" (Ring 12 → 540 m) bleibt die
+            // geliebte Weite UNVERÄNDERT (das Wetter-Formel-Minimum greift). Der
+            // B2-Horizont-Mantel (gigant-plan) füllt später JENSEITS der Kante — dann
+            // trägt dieselbe eine Quelle auch ihn.
+            const vCfg = this._voxelChunkConfig();
+            const ringEdge = (vCfg.ringRadius + 0.5) * vCfg.span;
+            fog.far = Math.min((150 - rainyMix * 55) * fogMult, ringEdge);
+            fog.near = Math.min((35 - rainyMix * 13) * fogMult, fog.far * 0.45);
             // V15.4 — Aerial-Perspective-Sky-Farbe aus DERSELBEN Fog-Farbe
             // speisen (EINE Quelle -> tag/nacht/wetter-kohaerent). density +
             // hazeTop folgen Wetter (rainy = dichter + niedrigerer Gipfel-
@@ -50452,6 +50576,26 @@ class AnazhRealm {
         return score >= 0.4;
     }
 
+    // A6b (gigant-plan §5 PHASE A) — die DECKEN-PROBE: freie Höhe über dem Body-Top
+    // (Ammo-Raycast → trifft Terrain-BVH UND Architektur-Bodies, z. B. ein Haus-Dach).
+    // Infinity = freier Himmel. Start knapp ÜBER der Body-Box (halfExtent 0.5),
+    // damit der Strahl nicht den eigenen Körper trifft.
+    _ceilingHeadroom() {
+        const pm = this.state.playerMesh;
+        if (!pm || !this.state.physicsWorld || typeof Ammo === "undefined") return Infinity;
+        const sf = this.state.scaleFactor || 1;
+        const x = pm.position.x,
+            y0 = pm.position.y + 0.55,
+            z = pm.position.z;
+        const rs = this.setVec(this.state.tmpVec1, x / sf, y0 / sf, z / sf);
+        const re = this.setVec(this.state.tmpVec2, x / sf, (y0 + 4.5) / sf, z / sf);
+        const hitY = this._runRaycast(rs, re, (cb, hit) => {
+            if (!hit) return null;
+            return cb.get_m_hitPointWorld().y() * sf;
+        });
+        return hitY === null ? Infinity : Math.max(0, hitY - y0);
+    }
+
     handleJump(currentTime) {
         // ### Sprunglogik ###
         // Zweck: Abstrahiert Sprungmechanik für bessere Wartbarkeit
@@ -50461,6 +50605,20 @@ class AnazhRealm {
             if ((isGrounded || withinCoyoteTime) && !this.state.isJumping) {
                 // Welle 6.X.3 C3 — Soul-bound: Drache rutscht, Phönix klettert.
                 if (!this._canSoulJumpFromSlope()) return;
+                // A6b — der Sprung-Impuls wird unter einer NIEDRIGEN Decke geklemmt
+                // (Höhle/Bauwerk): statt den Kopf mit voller Kraft in die Decke zu
+                // rammen (Penetration → Recovery schiebt den Body durch dünne Decken
+                // = „Kopf glitcht durch Höhlendecken") steigt der Sprung nur so hoch,
+                // wie Kopffreiheit da ist: v = √(2·g·Steighöhe), Marge 0.35 m vor der
+                // Decke. Ohne Kopffreiheit (< ~0.4 m Steigraum) kein Sprung.
+                let jumpV = this.state.jumpPower;
+                const headroom = this._ceilingHeadroom();
+                if (headroom < 3.4) {
+                    const g = Math.abs(this.state.gravity || -14.715);
+                    const rise = Math.max(0, headroom - 0.35);
+                    jumpV = Math.min(jumpV, Math.sqrt(2 * g * rise));
+                    if (jumpV < 1.2) return; // keine Kopffreiheit — kein Sprung
+                }
                 // Welle 6.X.1 A1 — Ammo deaktiviert „still stehende" Bodies. Ohne
                 // explizites activate(true) verpufft setLinearVelocity, weil der
                 // Body in der Island schläft. forceActivationState im Bewegungs-
@@ -50469,7 +50627,7 @@ class AnazhRealm {
                 this.state.playerBody.activate(true);
                 const velocity = this.state.playerBody.getLinearVelocity();
                 this.state.playerBody.setLinearVelocity(
-                    this.setVec(this.state.tmpVec1, velocity.x(), this.state.jumpPower, velocity.z())
+                    this.setVec(this.state.tmpVec1, velocity.x(), jumpV, velocity.z())
                 );
                 this.state.isJumping = true;
                 this.state.isInAir = true;
@@ -50820,6 +50978,53 @@ class AnazhRealm {
     // Geschwindigkeit genullt, Body geweckt (Headless-Teleport-Falle V13.0:
     // setWorldTransform reaktiviert nicht von allein → activate(true)). Generelle
     // Robustheit (jede Fall-Ursache), nicht nur der Struktur-Spawn-Fall.
+    // A6a (gigant-plan §5 PHASE A) — der Spieler steckt nach einem FILL im Fels
+    // (GEMESSEN diag-edit-reset: gestapelte Fills unter den Füßen begruben ihn 11 m
+    // unter der neuen Oberfläche). Heilung: die nächste offene Luft-Lücke ÜBER ihm
+    // finden (Füße + Kopf frei) und ihn hinaufsetzen — das Minecraft-Verhalten
+    // „Block unter dir hebt dich". HÖHLEN-SICHER per Konstruktion: in einer Höhle
+    // sind die Füße in LUFT → kein Eingriff (ein naiver „unter getTerrainHeightAt?"-
+    // Check würde den Höhlen-Spieler fälschlich auf den Berg teleportieren).
+    // Läuft NUR nach einem fill-Edit in Spieler-Nähe — wenige Dichte-Proben,
+    // kein Per-Frame-Pfad. Teleport-Mechanik = _rescuePlayerFromVoid (V17.28).
+    _rescuePlayerFromEditSolid(ex, ey, ez, radius) {
+        const pm = this.state.playerMesh;
+        if (!pm) return;
+        const px = pm.position.x,
+            py = pm.position.y,
+            pz = pm.position.z;
+        const dx = px - ex,
+            dy = py - ey,
+            dz = pz - ez;
+        if (dx * dx + dy * dy + dz * dz > (radius + 3) * (radius + 3)) return;
+        const solidAt = (y) => this._terrainDensityAt(px, y, pz) > 0;
+        // Body-Box (halfExtent 0.5): Füße ODER Zentrum im Fels → eingeschlossen.
+        if (!solidAt(py - 0.35) && !solidAt(py + 0.35)) return;
+        for (let cy = py + 0.6; cy <= py + radius * 2 + 8; cy += 0.6) {
+            if (solidAt(cy - 0.3) || solidAt(cy + 1.2)) continue;
+            const safeY = cy + 0.25;
+            pm.position.set(px, safeY, pz);
+            const body = this.state.playerBody;
+            if (body && this.state.tmpTransform) {
+                const t = this.state.tmpTransform;
+                t.setIdentity();
+                t.setOrigin(
+                    this.setVec(
+                        this.state.tmpVec1,
+                        px / this.state.scaleFactor,
+                        safeY / this.state.scaleFactor,
+                        pz / this.state.scaleFactor
+                    )
+                );
+                body.setWorldTransform(t);
+                body.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
+                body.activate(true);
+            }
+            this.log(`Aufschütten hob dich auf die neue Oberfläche (y=${safeY.toFixed(1)})`, "INFO");
+            return;
+        }
+    }
+
     _rescuePlayerFromVoid() {
         const pm = this.state.playerMesh;
         if (!pm || pm.position.y > AnazhRealm.PLAYER_VOID_Y) return;
@@ -51332,10 +51537,20 @@ class AnazhRealm {
                 camera.position.set(finalX, finalY, finalZ);
                 camera.lookAt(tx, ty, tz);
             } else {
-                camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
+                // A6b — die KAMERA-CLIP-WAND: das Ego-Auge sitzt 1.6 m über dem
+                // Body-Zentrum (Box-halfExtent nur 0.5) — unter einer niedrigen
+                // Höhlendecke ragte es IN den Fels (Durchsehen von innen). Die
+                // Decken-Probe klemmt das Auge unter die Decke (0.12 m Marge);
+                // die Seitenwände hielt schon die Physik-Box.
+                let eyeY = player.position.y + 1.6;
+                const headroomFP = this._ceilingHeadroom();
+                if (Number.isFinite(headroomFP)) {
+                    eyeY = Math.min(eyeY, player.position.y + 0.55 + headroomFP - 0.12);
+                }
+                camera.position.set(player.position.x, eyeY, player.position.z);
                 camera.lookAt(
                     player.position.x + Math.sin(this.state.yaw),
-                    player.position.y + 1.6 + Math.sin(this.state.pitch),
+                    eyeY + Math.sin(this.state.pitch),
                     player.position.z + Math.cos(this.state.yaw)
                 );
             }
@@ -51828,7 +52043,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.102.0";
+AnazhRealm.VERSION = "18.103.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -535,6 +535,87 @@ const server = http.createServer((req, res) => {
         };
     });
 
+    // ===== MESSUNG E — A1: Morph-Cap + STITCH-BAND (sichtbare Spalten gedeckt?) =====
+    const stitch = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        const span = r._voxelChunkConfig(0).span;
+        let bandMeshes = 0,
+            bandQuads = 0;
+        for (const [, entry] of s.voxelChunks) {
+            if (entry && entry.lodStitchMesh && entry.lodStitchMesh.geometry.index) {
+                bandMeshes++;
+                bandQuads += entry.lodStitchMesh.geometry.index.count / 6;
+            }
+        }
+        // Border-Row-Vertices (dPlane ≤ flat) aller Cross-LOD-Chunks: RENDERED Gap
+        // (Position nach Morph·w) > 1 m + nicht okkludiert → muss BAND-gedeckt sein.
+        let borderVerts = 0,
+            capped = 0,
+            visGap = 0,
+            visGapUnbridged = 0;
+        for (const [key, entry] of s.voxelChunks) {
+            if (!entry || entry.empty || !entry.mesh) continue;
+            const [cx, cz] = key.split(",").map(Number);
+            const myLod = Number.isFinite(entry.lod) ? entry.lod : 0;
+            const fineStep = r._voxelChunkConfig(myLod).step;
+            const flat = fineStep * 0.7;
+            const planes = [];
+            for (const [dx, dz] of [
+                [1, 0],
+                [-1, 0],
+                [0, 1],
+                [0, -1],
+            ]) {
+                const nb = s.voxelChunks.get(`${cx + dx},${cz + dz}`);
+                if (!nb || nb.empty || !nb.mesh) continue;
+                const nbLod = Number.isFinite(nb.lod) ? nb.lod : 0;
+                if (nbLod <= myLod) continue;
+                planes.push({
+                    axis: dx !== 0 ? 0 : 2,
+                    plane: dx === 1 ? (cx + 1) * span : dx === -1 ? cx * span : dz === 1 ? (cz + 1) * span : cz * span,
+                });
+            }
+            if (!planes.length) continue;
+            const g = entry.mesh.geometry;
+            const pos = g.attributes.position,
+                tgt = g.attributes.aMorphTarget,
+                w = g.attributes.aMorphWeight;
+            if (!pos || !tgt || !w) continue;
+            for (let v = 0; v < pos.count; v++) {
+                const px = pos.getX(v),
+                    py = pos.getY(v),
+                    pz = pos.getZ(v);
+                let isBorder = false;
+                for (const pl of planes) if (Math.abs((pl.axis === 0 ? px : pz) - pl.plane) <= flat) isBorder = true;
+                if (!isBorder) continue;
+                const tx = tgt.getX(v),
+                    ty = tgt.getY(v),
+                    tz = tgt.getZ(v);
+                const span3 = Math.hypot(tx - px, ty - py, tz - pz);
+                if (span3 < 0.001) continue; // kein Target (kein grober Nachbar griff)
+                borderVerts++;
+                const wv = w.getX(v);
+                if (wv === 0) capped++;
+                // RENDERED Position (Shader: pos + (tgt-pos)·geomorph·w, geomorph=1)
+                const rx = px + (tx - px) * wv,
+                    ry = py + (ty - py) * wv,
+                    rz = pz + (tz - pz) * wv;
+                // Rendered-Gap-Proxy: Distanz der gerenderten Position zum Target
+                // (das Target LIEGT auf der groben Fläche, meanTgtGap ~0.05 — Messung D).
+                const renderGap = Math.hypot(tx - rx, ty - ry, tz - rz);
+                if (renderGap <= 1) continue;
+                // Okklusions-Filter wie Messung B: tief unter der Makro-Oberfläche = Höhle.
+                const macro = r._terrainMacroSurfaceY(rx, rz);
+                if (Number.isFinite(macro) && ry < macro - 2) continue;
+                visGap++;
+                const bridged = !!entry.lodStitchMesh && span3 >= 0.3;
+                if (!bridged) visGapUnbridged++;
+            }
+        }
+        return { bandMeshes, bandQuads: Math.round(bandQuads), borderVerts, capped, visGap, visGapUnbridged };
+    });
+
     // ===== MESSUNG C — die ZEITLICHE Naht (async-Fenster beim Carve) =====
     const temporal = await page.evaluate(async () => {
         const r = window.anazhRealm;
@@ -736,6 +817,18 @@ const server = http.createServer((req, res) => {
         );
     }
 
+    console.log("── E · A1: MORPH-CAP + STITCH-BAND — sind die sichtbaren Cliff-Spalten gedeckt? ──");
+    console.log(
+        `   Stitch-Bänder: ${stitch.bandMeshes} Meshes · ${stitch.bandQuads} Quads  ·  Border-Row-Vertices (mit Target): ${stitch.borderVerts}  ·  Cap-gestoppt (w=0, kein Cliff-Zerren): ${stitch.capped}`
+    );
+    console.log(
+        `   sichtbare >1-m-RENDER-Spalten in der Grenz-Zeile: ${stitch.visGap}  ·  davon OHNE Band-Deckung: ${stitch.visGapUnbridged}`
+    );
+    const a1ok = stitch.visGapUnbridged === 0;
+    console.log(
+        `   → ${a1ok ? "A1 WIRKT: jeder sichtbare Grenz-Spalt ist vom Stitch-Band überbrückt (0 ungedeckt) — der Cap stoppt das Cliff-Zerren, das Band schliesst den Rest." : "A1 LÜCKE: sichtbare Spalten ohne Band-Deckung — _rebuildLodStitchBand prüfen."}\n`
+    );
+
     console.log("── C · ZEITLICH (das Abbau-Fenster) — nach T1: heilt der Footprint IM Edit-Call? ──");
     if (temporal.err) {
         console.log(`   SKIP: ${temporal.err}\n`);
@@ -776,11 +869,18 @@ const server = http.createServer((req, res) => {
         `   • C · zeitliche Naht (T1): ${t1ok ? "GEHEILT — Footprint (Spieler-Chunk + Grenz-Nachbar) heilt synchron im Edit-Frame, 0 Frames stale." : "noch offen — der Footprint heilt nicht vollständig in-edit."}`
     );
     console.log(
-        `   • B · Cross-LOD-T-junction: 0% geteilt, ~${lodGap}% sichtbare >1-m-Spalten → der nächste Bogen ist **T2 (Stable-LOD+Geomorph)**, pixel-blind → Schöpfer-Auge vor Merge.`
+        `   • B · Cross-LOD-T-junction: 0% geteilt, ~${lodGap}% sichtbare >1-m-Spalten (ROH) → der Geomorph schliesst die Zeile, Cap+Stitch-Band (A1) decken die Cliff-Reste.`
+    );
+    console.log(
+        `   • E · A1 Stitch-Band: ${stitch.visGapUnbridged === 0 ? "GEHEILT — 0 sichtbare Grenz-Spalten ohne Band-Deckung." : `${stitch.visGapUnbridged} sichtbare Spalten UNGEDECKT — A1 prüfen.`}`
     );
 
     if (!spatial.chunks) {
         console.log("ROT — keine Terrain-Chunks gestreamt (Harness-Versagen).");
+        process.exit(1);
+    }
+    if (stitch.visGapUnbridged > 0) {
+        console.log("ROT — A1: sichtbare Cross-LOD-Spalten ohne Stitch-Band-Deckung.");
         process.exit(1);
     }
     process.exit(0);
