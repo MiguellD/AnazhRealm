@@ -692,21 +692,24 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Privat-Feld leckt NICHT (der fixe Key-Satz schließt vibePass aus). 5 Invarianten
   (`checkBandG8R0Sovereign`). Null Risiko. Beifang: der V18.120-Konfounder (V18.1-W1 kippte je
   nach Tauch-Position) deterministisch geheilt.
-- **R1 — der gedämpfte Kanal (M2)** [H]: EIN Token-Bucket pro Overlay am Kanal-EINGANG
-  (`_portalChannelAdmit`) deckelt ALLE Sub→Heim-Nachrichten (heute `ready`/`exit`/`manifest`
-  ungedeckelt) + ein per-Peer-Cap auf den `subworld-net`-EINGANG (das `_cpRate`-Muster); die
-  Wasser-CA-Lehre eine Ebene höher (Rate bremst · Verwerfen bändigt · leerer Bucket settled),
-  transport-seitig (kein Determinismus-Bruch). Korpus: 10000 msg/s → Empfänger ≤ N/s, Bucket settled.
-- **R2 — die Irreversibilitäts-Wand (M3)** [H→S]: `SOVEREIGN_ACTIONS` (frozen, vier Akte) +
-  die DISJUNKTHEITS-Invariante `∩ (dslEffects ∪ NON_BROADCASTABLE_OPS ∪ dslComposeAtomic ∪
-Regel-Effekte) = ∅` + eine Host-gerenderte Sovereign-Geste (`_sovereignGesture`, außerhalb jedes
-  iframes, Klartext, jedes Mal frisch) — `signWorld`/`signBlueprint`/`importVibePass` laufen
-  durch sie. Korpus: DSL/Regel mit souveräner Op → unknown_op/abgelehnt; Welt-Fake-Confirm kann
-  den Host-Pfad nicht auslösen.
-- **R3 — Lokalitäts-Härtung (M1)** [H]: die Sandbox-Grenze als Invarianten einfrieren
-  (`{trust:"sandboxed"}`→`allow-scripts` allein · `{vendored:true}`→sandboxed unforgeable · kein
-  Welt-Pfad zum `SOVEREIGN_STATE`); der Escape-Korpus (parent/localStorage/Schwester-Welt) — die
-  smoke-sandbox.cjs beweist die echte null-origin-Isolation im Browser, R3 friert die Attribut-Wand.
+- ✓ **R1 — der gedämpfte Kanal (M2) (V18.123)** [H]: EIN Token-Bucket pro Overlay am Kanal-EINGANG
+  (`_portalChannelAdmit`, 200/s) deckelt ALLE Sub→Heim-Nachrichten (auch die zuvor ungedeckelten
+  `ready`/`exit`/`manifest`) + das geteilte per-Peer-Tor (`_p2pPeerRateAdmit`, V9.82-Verdichtung)
+  cappt den `subworld-net`-EINGANG (120/s/Peer) + verdichtet `creature-pos`. Wasser-CA-Lehre eine
+  Ebene höher, transport-seitig (kein Determinismus-Bruch). GEMESSEN: 10000 msg/s → genau 200
+  admittiert, Bucket settled. 5 Invarianten (`checkBandG8R1DampedChannel`).
+- ✓ **R2 — die Irreversibilitäts-Wand (M3) (V18.123)** [H→S]: `SOVEREIGN_ACTIONS` (frozen, vier
+  Akte) GEMESSEN DISJUNKT von `dslEffects ∪ NON_BROADCASTABLE_OPS ∪ dslComposeAtomic`; ein
+  `dslEval`-Guard blockt jeden souveränen Op (`sovereign_blocked`, nie ausgeführt — auch in
+  Kette/Regel); die EINE Host-Geste `_sovereignGesture` (außerhalb jedes iframes, Klartext
+  WAS/WERT/WEM, jedes Mal frisch) — `signWorld`/`signBlueprint`/`importVibePass` laufen durch sie.
+  7 Invarianten (`checkBandG8R2SovereignWall`). S-Gate: das Geste-UI-Feel (heute `window.confirm`).
+- ✓ **R3 — Lokalitäts-Härtung (M1) (V18.123)** [H]: die EINE Sandbox-Attribut-Quelle
+  `_portalSandboxAttr` (sandboxed→`allow-scripts` allein · trusted→+same-origin;
+  `_buildPortalOverlay` nutzt sie statt des inline-Ternärs) + `_localityAudit()` friert die Grenze
+  (sandboxed kein same-origin · `vendored→sandboxed` unforgeable · kein Welt-Pfad zum innersten
+  Ring · Server-iframe immer null-origin). smoke-sandbox.cjs beweist die echte Isolation im
+  Browser. 6 Invarianten (`checkBandG8R3Locality`).
 - **R4 — Netz-Immunität (M4)** [H→S]: die Herkunfts-KETTE (`provenance`-Lineage auf Artefakten,
   „Ursprung X · über dich" statt flachem origin-Enum) + der RÜCKRUF (`revokedKeys` global, NIE im
   Snapshot → Artefakte mit revoziertem Schlüssel in der Kette fallen beim Laden weg) + der
@@ -813,10 +816,10 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | ~~Rekursion blockiert (4 Schnitte)~~                                | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm                                   |
 | Netz trägt real nur ~4–6 Peers, TURN fehlt                          | F2                                                                                                 |
 | Sozial-Schicht fehlt ganz (Bewerten lokal-only)                     | F4                                                                                                 |
-| Innerster Ring nicht BENANNT (nur GEMESSEN getrennt)                | G8 R0                                                                                              |
-| Kanal dämpft nur teilweise (ready/exit/manifest ungedeckelt)        | G8 R1                                                                                              |
-| Keine Irreversibilitäts-Wand (souveräne Akte nicht getrennt)        | G8 R2                                                                                              |
-| Sandbox-Grenze nicht als Invariante eingefroren                     | G8 R3                                                                                              |
+| ~~Innerster Ring nicht BENANNT~~                                    | ✓ V18.122 G8 R0 (`SOVEREIGN_STATE` + `_sovereignStateAudit`)                                       |
+| ~~Kanal dämpft nur teilweise (ready/exit/manifest ungedeckelt)~~    | ✓ V18.123 G8 R1 (`_portalChannelAdmit` + `_p2pPeerRateAdmit`)                                      |
+| ~~Keine Irreversibilitäts-Wand~~                                    | ✓ V18.123 G8 R2 (`SOVEREIGN_ACTIONS` disjunkt + `_sovereignGesture`)                               |
+| ~~Sandbox-Grenze nicht als Invariante eingefroren~~                 | ✓ V18.123 G8 R3 (`_portalSandboxAttr` + `_localityAudit`)                                          |
 | Herkunft FLACH (origin-Enum, keine Lineage · kein Rückruf)          | G8 R4                                                                                              |
 | Immunsystem statisch (Invarianten nur beim Merge)                   | G8 R5                                                                                              |
 | ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip)                                    |

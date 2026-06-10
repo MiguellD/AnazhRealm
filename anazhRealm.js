@@ -1545,6 +1545,18 @@ class AnazhRealm {
         }
         const op = program[0];
         const args = program.slice(1);
+        // G8 R2 (Robustheits-Bogen, M3 — die Irreversibilitäts-Wand): eine
+        // SOUVERÄNE Aktion (wallet_transfer/sign_manifest/change_identity/
+        // grant_capability) läuft NIEMALS durch die DSL-Pipeline — nicht durch
+        // Welt, LLM, Regel oder Fluss. Sie verlangt die Host-gerenderte Geste
+        // (_sovereignGesture) außerhalb jedes iframes. Diese Wand ist
+        // Defense-in-Depth (die souveränen Akte sind ohnehin keine dslEffects),
+        // aber explizit: ein eingeschmuggelter souveräner Op wird blockiert +
+        // sichtbar geloggt (sovereign_blocked statt unknown_op).
+        if (AnazhRealm.SOVEREIGN_ACTIONS.includes(op)) {
+            ctx.log.push({ event: "sovereign_blocked", op: String(op), program_id: ctx.programId });
+            return;
+        }
         const fn = this.dslEffects[op];
         if (!fn) {
             ctx.log.push({ event: "unknown_op", op: String(op), program_id: ctx.programId });
@@ -6853,21 +6865,37 @@ class AnazhRealm {
         if (typeof this._renderLobbyUI === "function") this._renderLobbyUI();
     }
 
+    // G8 R1 (Robustheits-Bogen, M2-Dämpfung) — das EINE per-Peer-Raten-Tor
+    // (das _cpRate-Muster verallgemeinert, V9.82-Verdichtung: eine Quelle, viele
+    // Leser). Deckelt die Nachrichten je Sekunde JE PEER JE Kanal (`bucket`).
+    // Ein flutender/bösartiger Mesh-Peer kann den Main-Thread nicht würgen —
+    // Überschuss fällt still (Verwerfen bändigt; transport-seitig, kein
+    // State-Unterschied → Determinismus unberührt). Gibt true, wenn admittiert.
+    _p2pPeerRateAdmit(bucket, peerId, maxPerSec) {
+        if (typeof peerId !== "string") return false;
+        if (!this._p2pRate) this._p2pRate = {};
+        let m = this._p2pRate[bucket];
+        if (!m) {
+            m = new Map();
+            this._p2pRate[bucket] = m;
+        }
+        const now = performance.now();
+        let win = m.get(peerId);
+        if (!win || now - win.start > 1000) {
+            win = { start: now, n: 0 };
+            m.set(peerId, win);
+        }
+        return ++win.n <= maxPerSec;
+    }
+
     _p2pMsgCreaturePos(msg, p2p) {
         // Kreatur-Sicht-Sync — die Kreatur-Positionen eines Mitspielers.
-        // F2 (gigant-plan §5 — G3): RATEN-CAP pro Peer (das SUBWORLD_NET_RATE_MAX-
-        // Muster): ein flutender/bösartiger Peer kann den Main-Thread nicht mit
-        // creature-pos-Reconciles würgen — max 10 Nachrichten je Sekunde je Peer,
-        // Überschuss fällt still (die nächste Nachricht trägt eh die VOLLE Liste).
+        // RATEN-CAP pro Peer (G8 R1 _p2pPeerRateAdmit): ein flutender/bösartiger
+        // Peer kann den Main-Thread nicht mit creature-pos-Reconciles würgen —
+        // max 10 Nachrichten je Sekunde je Peer, Überschuss fällt still (die
+        // nächste Nachricht trägt eh die VOLLE Liste).
         if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-            if (!this._cpRate) this._cpRate = new Map();
-            const now = performance.now();
-            let win = this._cpRate.get(msg.peerId);
-            if (!win || now - win.start > 1000) {
-                win = { start: now, n: 0 };
-                this._cpRate.set(msg.peerId, win);
-            }
-            if (++win.n > 10) return;
+            if (!this._p2pPeerRateAdmit("creature-pos", msg.peerId, 10)) return;
             this._p2pHandleCreaturePos(msg.peerId, msg);
         }
     }
@@ -6884,7 +6912,12 @@ class AnazhRealm {
         // _portalNetDeliver stellt ihn nur ins eigene iframe zu, wenn ich
         // im SELBEN Multiplayer-Portal bin (B2 — worldId-Pfad-Match);
         // sonst sähe ein Mesh-Mitspieler ohne Portal fremden Verkehr.
+        // G8 R1 (M2-Dämpfung) — RATEN-CAP pro Peer (das _cpRate-Muster, das
+        // dieser Empfang bisher NICHT trug): ein bösartiger Peer kann den
+        // Main-Thread nicht mit Sub-Welt-Zustellungen würgen (der Sender
+        // deckelt sich bei 120/s, aber ein böswilliger Peer ignoriert das).
         if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            if (!this._p2pPeerRateAdmit("subworld-net", msg.peerId, AnazhRealm.SUBWORLD_NET_PEER_RATE_MAX)) return;
             this._portalNetDeliver(msg);
         }
     }
@@ -27233,6 +27266,53 @@ class AnazhRealm {
         return out;
     }
 
+    // G8 R2 (Robustheits-Bogen, M3) — ist `op` eine souveräne Aktion (berührt
+    // den innersten Ring)? Der EINE Leser von SOVEREIGN_ACTIONS.
+    _isSovereignAction(op) {
+        return AnazhRealm.SOVEREIGN_ACTIONS.includes(op);
+    }
+
+    // G8 R2 (Robustheits-Bogen, M3 — die Irreversibilitäts-Wand) — die EINE
+    // Host-gerenderte SOUVERÄNE GESTE. Genau die Akte, die den innersten Ring
+    // berühren (Signieren, Identität wechseln, künftig Wallet/Capability),
+    // laufen NUR durch diese Tür: sie sitzt AUSSERHALB jedes iframes (der Host
+    // zeichnet sie), zeigt Klartext WAS · welcher WERT · an WEN, und fragt
+    // JEDES MAL frisch (keine „merken"-Option für souveräne Akte). Eine
+    // vergiftete Welt kann täuschen, aber die Geste NICHT fälschen — der
+    // manipulierbare postMessage-Pfad erreicht sie nie (das Dual-LLM-Pattern).
+    // Die ehrliche Restlücke: sie schützt vor der GEFÄLSCHTEN Geste, nicht vor
+    // der GETÄUSCHTEN Absicht (du kannst die ECHTE Geste machen, weil die Welt
+    // dich überzeugt hat) — „Locken" ist nur teurer, nicht lösbar; darum die
+    // Reibung GENAU HIER. `opts.skipConfirm` für den Playtest (wie importVibePass).
+    _sovereignGesture(action, detail, opts) {
+        opts = opts || {};
+        // Eine unbekannte/nicht-souveräne Aktion wird VERWEIGERT (die Wand
+        // lässt nur die eingefrorene Liste durch — kein Schmuggel).
+        if (!this._isSovereignAction(action)) {
+            if (typeof this.log === "function")
+                this.log(`Souveräne Geste verweigert — unbekannte Aktion: ${action}`, "WARN");
+            return false;
+        }
+        // Headless / Test / kein Host-Confirm verfügbar → der skipConfirm-Pfad
+        // (derselbe Vertrag wie importVibePass: die Wand ist die Host-Geste,
+        // nicht ein Zwang gegen den Eigentümer-Code).
+        if (opts.skipConfirm || typeof window === "undefined" || typeof window.confirm !== "function") {
+            return true;
+        }
+        const d = detail && typeof detail === "object" ? detail : {};
+        const lines = [
+            "Souveräne Handlung — sie berührt deine Identität/Autorität:",
+            "",
+            `WAS:  ${d.what || action}`,
+            `WERT: ${d.value || "—"}`,
+            `WEM:  ${d.whom || "dir selbst"}`,
+            "",
+            "Diese Handlung kann KEINE Welt und KEIN Assistent für dich auslösen.",
+            "Nur du, jetzt. Fortfahren?",
+        ];
+        return window.confirm(lines.join("\n")) === true;
+    }
+
     // Der kanonische Identifier — dasselbe Format wie das Welt-Portal-Manifest
     // (docs/world-portal.md §3.3: "authorPubKey": "ed25519:...").
     vibePassId() {
@@ -27410,12 +27490,20 @@ class AnazhRealm {
         if (typeof crypto === "undefined" || !crypto.subtle) {
             return { ok: false, reason: "no_crypto" };
         }
-        if (!opts.skipConfirm && typeof window !== "undefined" && typeof window.confirm === "function") {
-            const accepted = window.confirm(
-                "Vibe-Pass wiederherstellen? Deine aktuelle Identität wird ersetzt — " +
-                    "sichere sie zuerst, falls du sie behalten willst."
-            );
-            if (!accepted) return { ok: false, reason: "cancelled" };
+        // G8 R2 (M3) — change_identity ist eine SOUVERÄNE Aktion: sie läuft durch
+        // die EINE Host-Geste (außerhalb jedes iframes, Klartext, jedes Mal frisch).
+        if (
+            !this._sovereignGesture(
+                "change_identity",
+                {
+                    what: "Identität (Vibe-Pass) wiederherstellen",
+                    value: "deine aktuelle Identität wird ERSETZT",
+                    whom: "dir selbst — sichere die alte zuerst",
+                },
+                opts
+            )
+        ) {
+            return { ok: false, reason: "cancelled" };
         }
         try {
             await this._adoptVibePassJwk(jwk, parsed.createdAt, false);
@@ -27570,12 +27658,28 @@ class AnazhRealm {
 
     // Versiegelt einen eigenen Bauplan mit dem Vibe-Pass. Setzt signature +
     // authorPubKey + signedHash + signedAt. Async (ed25519-Signatur).
-    async signBlueprint(name) {
+    // G8 R2 (M3) — Signieren ist sign_manifest, eine SOUVERÄNE Aktion (die
+    // Signatur beweist „ich bürge" — sie kann KEINE Welt/kein LLM für dich
+    // setzen). Sie läuft durch die EINE Host-Geste (opts.skipConfirm im Test).
+    async signBlueprint(name, opts) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "unknown" };
         if (bp.builtIn) return { ok: false, reason: "builtin" };
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
+        if (
+            !this._sovereignGesture(
+                "sign_manifest",
+                {
+                    what: `Bauplan „${bp.label || name}" signieren`,
+                    value: "deine Signatur bürgt dafür",
+                    whom: "jeden, der ihn empfängt",
+                },
+                opts
+            )
+        ) {
+            return { ok: false, reason: "cancelled" };
+        }
         const canonical = this._canonicalBlueprint(bp);
         const sig = await this._vibeSign(canonical);
         if (!sig) return { ok: false, reason: "sign_failed" };
@@ -27671,7 +27775,8 @@ class AnazhRealm {
     }
 
     // Versiegelt eine registrierte Welt mit dem Vibe-Pass. Async (ed25519).
-    async signWorld(worldId) {
+    // G8 R2 (M3) — sign_manifest, eine SOUVERÄNE Aktion (über die Host-Geste).
+    async signWorld(worldId, opts) {
         const key = String(worldId || "")
             .trim()
             .toLowerCase();
@@ -27679,6 +27784,19 @@ class AnazhRealm {
         if (!entry) return { ok: false, reason: "world_unknown" };
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
+        if (
+            !this._sovereignGesture(
+                "sign_manifest",
+                {
+                    what: `Welt „${entry.label || key}" signieren`,
+                    value: "deine Signatur bürgt dafür",
+                    whom: "jeden, der sie empfängt",
+                },
+                opts
+            )
+        ) {
+            return { ok: false, reason: "cancelled" };
+        }
         const canonical = this._canonicalManifest(entry);
         const sig = await this._vibeSign(canonical);
         if (!sig) return { ok: false, reason: "sign_failed" };
@@ -33356,6 +33474,61 @@ class AnazhRealm {
         return meta;
     }
 
+    // G8 R3 (Robustheits-Bogen, M1 — Lokalität) — die EINE Quelle für das
+    // Sandbox-Attribut eines Sub-Welt-iframes. Eine `trusted` Welt (W12-Built-in,
+    // unser eigener Code) bekommt allow-scripts + allow-same-origin (sie darf ihr
+    // manifest.json fetchen); eine `sandboxed` Welt (fremde, ungeprüfte Engine)
+    // bekommt allow-scripts ALLEIN → null-origin: fremder Code läuft VOLL, kann
+    // aber AnazhRealms localStorage/DOM/Cookies NICHT berühren. Die Wand IST die
+    // Bedingung, unter der beliebiger fremder Code sicher laufen darf — sie trägt
+    // NIE allow-same-origin für eine sandboxed Welt (die Lokalitäts-Invariante).
+    _portalSandboxAttr(meta) {
+        const sandboxed = meta && meta.trust === "sandboxed";
+        return sandboxed ? "allow-scripts" : "allow-scripts allow-same-origin";
+    }
+
+    // G8 R3 (Robustheits-Bogen, M1 — Lokalität) — der Lokalitäts-BEWEIS (mutiert
+    // NICHTS). Auditiert headless, dass die Sandbox-Grenze hält: eine sandboxed
+    // Welt bekommt nie allow-same-origin, eine `vendored` Welt wird unforgeable
+    // sandboxed (ein manipulierter Manifest-Eintrag kann das nicht aufweichen),
+    // und kein Welt-Pfad führt zum innersten Ring (R0). Die ECHTE null-origin-
+    // Isolation (parent/localStorage/Schwester-Welt unerreichbar) beweist
+    // scripts/smoke-sandbox.cjs im Browser — hier frieren wir die Attribut-Wand.
+    _localityAudit() {
+        const out = { ok: true, facts: {} };
+        // (1) sandboxed → allow-scripts ALLEIN (kein same-origin).
+        const sbAttr = this._portalSandboxAttr({ trust: "sandboxed" });
+        out.facts.sandboxedAttr = sbAttr;
+        out.facts.sandboxedNoSameOrigin = sbAttr === "allow-scripts";
+        // (2) trusted → allow-scripts allow-same-origin (unser eigener Code).
+        const trAttr = this._portalSandboxAttr({ trust: "trusted" });
+        out.facts.trustedAttr = trAttr;
+        out.facts.trustedHasSameOrigin = trAttr.indexOf("allow-same-origin") >= 0;
+        // (3) `vendored` erzwingt sandboxed unforgeable — selbst mit
+        // trust:"trusted" im rohen Manifest (die Defense-in-Depth-Wand).
+        let vendoredForced = false;
+        if (typeof this._sanitizeImportedManifest === "function") {
+            const m = this._sanitizeImportedManifest({
+                id: "g8r3_probe",
+                label: "Probe",
+                world: "worlds/g8r3_probe/index.html",
+                vendored: true,
+                trust: "trusted",
+            });
+            vendoredForced = !!m && m.trust === "sandboxed";
+        }
+        out.facts.vendoredForcedSandboxed = vendoredForced;
+        // (4) kein Welt-Pfad zum innersten Ring (R0 trägt den Beweis).
+        const ringAudit = typeof this._sovereignStateAudit === "function" ? this._sovereignStateAudit() : { ok: false };
+        out.facts.innerRingAbsent = ringAudit.ok === true;
+        out.ok =
+            out.facts.sandboxedNoSameOrigin &&
+            out.facts.trustedHasSameOrigin &&
+            out.facts.vendoredForcedSandboxed &&
+            out.facts.innerRingAbsent;
+        return out;
+    }
+
     // W12 Phase 1 — Portal-Overlay: ein Vollbild-iframe, das die Sub-Welt
     // (portalMeta.world) sandboxed lädt. Eltern-Seite des postMessage-
     // Handshakes: beim iframe-load (und beim {type:"ready"} der Sub-Welt)
@@ -33394,8 +33567,10 @@ class AnazhRealm {
         // AnazhRealms localStorage, DOM und Cookies NICHT berühren. Das ist
         // kein Freiheits-Tausch — die Wand IST die Bedingung dafür, dass
         // beliebiger fremder Code überhaupt sicher laufen darf.
-        const sandboxed = meta.trust === "sandboxed";
-        iframe.setAttribute("sandbox", sandboxed ? "allow-scripts" : "allow-scripts allow-same-origin");
+        // G8 R3 (Robustheits-Bogen, M1 — Lokalität): die EINE Quelle für das
+        // Sandbox-Attribut (_portalSandboxAttr) — eine sandboxed Welt bekommt
+        // NIE allow-same-origin (null-origin = die Wand).
+        iframe.setAttribute("sandbox", this._portalSandboxAttr(meta));
         const hint = document.createElement("div");
         hint.className = "portal-hint";
         // Stufe-bewusster Hinweis: spricht die Welt die DSL (hat sie einen
@@ -33425,6 +33600,11 @@ class AnazhRealm {
                 return;
             }
             if (event.source !== iframe.contentWindow) return;
+            // G8 R1 (M2-Dämpfung) — der EINE Kanal-Bucket: deckelt die GESAMT-
+            // Rate aller Sub→Heim-Nachrichten (auch ready/exit/manifest, die
+            // sonst ungedeckelt waren). Eine flutende Sub-Welt drosselt SICH
+            // SELBST — Überschuss fällt still (verworfen, nicht gepuffert).
+            if (!this._portalChannelAdmit(po, performance.now())) return;
             const msg = event.data;
             if (!msg || typeof msg !== "object") return;
             if (msg.type === "ready") {
@@ -33806,6 +33986,31 @@ class AnazhRealm {
     // ausgeführt — die Asymmetrie IST die Sicherheits-Wand: Heimat→Sub
     // trägt DSL (wird in der Sub-Welt ausgeführt), Sub→Heimat trägt nur
     // Ereignis-Text (wird erinnert). Selbst eine böswillige Sub-Welt kann
+    // G8 R1 (Robustheits-Bogen, M2-Dämpfung) — der EINE Kanal-Bucket pro
+    // Overlay. Bändigt die GESAMT-Rate aller Sub→Heim-Nachrichten am Eingang
+    // (vor dem Typ-Dispatch) — die per-Typ-Deckel (event/ws-send) bleiben die
+    // feineren Sub-Kontrollen darunter, dieser ist der Region-Backstop, der
+    // auch die zuvor ungedeckelten ready/exit/manifest fasst. Lazy-Init der
+    // Fenster-Zähler (robust auch für ein minimales Overlay). Gibt false, wenn
+    // über dem Deckel — die Nachricht wird VERWORFEN (nicht gepuffert; Puffern
+    // verschiebt die Flut nur). Eine flutende Welt drosselt sich selbst, der
+    // Bucket settled nach dem Sturm (EPS-Fixpunkt: leeres Fenster = Ruhe).
+    _portalChannelAdmit(po, now) {
+        if (!po) return false;
+        if (typeof po.chWindowStart !== "number") {
+            po.chWindowStart = 0;
+            po.chWindowCount = 0;
+        }
+        const t = typeof now === "number" ? now : performance.now();
+        if (t - po.chWindowStart >= AnazhRealm.PORTAL_CHANNEL_RATE_WINDOW_MS) {
+            po.chWindowStart = t;
+            po.chWindowCount = 0;
+        }
+        if (po.chWindowCount >= AnazhRealm.PORTAL_CHANNEL_RATE_MAX) return false;
+        po.chWindowCount++;
+        return true;
+    }
+
     // so nur gedeckelten Text ins Journal legen — kein Code, keine Mutation
     // des Heimat-States. Der Text wird auf 160 Zeichen gekappt, damit eine
     // fremde Welt keine Journal-Zeile sprengt.
@@ -53510,7 +53715,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.122.0";
+AnazhRealm.VERSION = "18.123.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -54792,6 +54997,25 @@ AnazhRealm.SOVEREIGN_STATE = Object.freeze({
     // Schlüssel-Material-Feldnamen, die in KEINEM geteilten Kanal lecken dürfen:
     privateFields: Object.freeze(["privateKey", "_privateKeyJwk", "privateKeyJwk"]),
 });
+// G8 R2 (Robustheits-Bogen, M3 — die Irreversibilitäts-Wand) — die EINGEFRORENE
+// SOVEREIGN_ACTIONS-Liste: die Handvoll Akte, die den INNERSTEN RING berühren.
+// Sie verlangen eine FRISCHE Mensch-Geste (Host-gerendert, außerhalb jedes
+// iframes) und sind NIEMALS automatisch — durch Welt, LLM, Regel oder Fluss —
+// auslösbar. DISJUNKT von dslEffects ∪ NON_BROADCASTABLE_OPS ∪ dslComposeAtomic
+// ∪ Regel-Effekten (die DISJUNKTHEITS-Invariante, headless bewiesen): der
+// manipulierbare Pfad berührt das Souveräne NIE (das Dual-LLM/CaMeL-Pattern).
+// `reveal_private_key` existiert GAR NICHT als Akt — der Schlüssel verlässt den
+// Ring nie. Die Liste bleibt WINZIG + wächst NICHT (die eBPF-Lehre: ein
+// wachsender Prüfer ist die Angriffsfläche; die Freiheit ist AUSSEN total).
+// wallet_transfer + grant_capability existieren heute als Akt noch nicht (kein
+// Wallet/Capability-System) — sie sind EINGEFROREN, damit kein künftiger Op sie
+// je in den DSL-/Broadcast-/Regel-Pool schmuggelt (die Wand steht VOR dem Bau).
+AnazhRealm.SOVEREIGN_ACTIONS = Object.freeze([
+    "wallet_transfer",
+    "sign_manifest",
+    "change_identity",
+    "grant_capability",
+]);
 // W12 P3-Härtung — der Portal-Rückkanal (_portalReceiveEvent: Sub-Welt →
 // Heimat-Journal) deckelt die Ereignisse je Sekunde. Eine ungeprüfte vendorte
 // Welt (V8.70+) könnte sonst pro Frame ein Ereignis posten und das 200-
@@ -54799,6 +55023,24 @@ AnazhRealm.SOVEREIGN_STATE = Object.freeze({
 // Bursts (eine Welt meldet mehrere sichtbare Momente zugleich), hart gegen Flut.
 AnazhRealm.PORTAL_EVENT_RATE_WINDOW_MS = 1000;
 AnazhRealm.PORTAL_EVENT_RATE_MAX = 8;
+// G8 R1 (Robustheits-Bogen, M2-Dämpfung) — der EINE Token-Bucket pro Welt-
+// Region am Kanal-EINGANG. Die per-Typ-Deckel (event 8/s · ws-send 120/s)
+// schützten nur ihre Kanäle; `ready`/`exit`/`manifest` waren UNGEDECKELT — eine
+// bösartige Sub-Welt konnte `{type:"ready"}` pro Frame spammen (jedes löst
+// _portalReceiveManifest + _portalSendEnter aus). Dieser Deckel bändigt die
+// GESAMT-Rate aller Sub→Heim-Nachrichten (die Wasser-CA-Lehre eine Ebene höher:
+// Rate bremst · Verwerfen bändigt · leerer Bucket settled). 200/s ist großzügig
+// über der legitimen Summe (ws-send 120 + event 8 + Handshakes), hart gegen
+// Flut. TRANSPORT-seitig (kein Welt-Tick) → eine verworfene Nachricht ist eine
+// Transport-Tatsache, kein State-Unterschied (Determinismus unberührt).
+AnazhRealm.PORTAL_CHANNEL_RATE_WINDOW_MS = 1000;
+AnazhRealm.PORTAL_CHANNEL_RATE_MAX = 200;
+// G8 R1 — der subworld-net-EINGANG vom MESH-Peer (das _cpRate-Muster, das der
+// `subworld-net`-Empfang bisher NICHT trug): ein bösartiger Peer konnte den
+// Main-Thread mit Sub-Welt-Zustellungen würgen. Max je Sekunde je Peer; der
+// Sender deckelt sich schon bei 120/s (SUBWORLD_NET_RATE_MAX), aber ein
+// böswilliger Peer ignoriert das — der Empfänger-Deckel ist die echte Wand.
+AnazhRealm.SUBWORLD_NET_PEER_RATE_MAX = 120;
 // V9.44-c — der Mesh-Router-Dispatch-Table. p2pHandleMessage mappt den
 // WS-Nachrichtentyp über diese Tabelle auf eine `_p2pMsg<Type>`-Methode,
 // statt 18 sequentielle `if (msg.type === …)`-Branches durchzulaufen. Ein

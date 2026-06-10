@@ -22317,7 +22317,10 @@ async function checkBandPhasenBF(ctx) {
         out.f1Blob = /Blob/.test(r._getVoxelWorker.toString());
         out.f2Proto = /PROTO_VERSION/.test(r.p2pSend.toString());
         out.f2Turn = Array.isArray(r.state.p2p && r.state.p2p.iceServers) && r.state.p2p.iceServers.length >= 1;
-        out.f2CpCap = /_cpRate/.test(r._p2pMsgCreaturePos.toString());
+        // G8 R1 (V18.123) — der creature-pos-Cap wanderte vom _cpRate-Inline
+        // auf das geteilte _p2pPeerRateAdmit-Tor (V9.82-Verdichtung). Der Test
+        // wandert mit (V9.56-i): die INTENT bleibt „trägt den Empfangs-Cap".
+        out.f2CpCap = /_p2pPeerRateAdmit\("creature-pos"/.test(r._p2pMsgCreaturePos.toString());
         // B8 — Struktur-LUT + Rim verdrahtet (B2-Mantel prüft das A-Band in der Tiefe).
         out.b8Lut = typeof r._ensureStructureGradient === "function" && !!r._ensureStructureGradient();
         out.b8Rim = !!(r.state.atmoUniforms && r.state.atmoUniforms.rimStrength);
@@ -31772,7 +31775,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // Vor dem Signieren: Status "unsigned".
         out.statusUnsigned = (await r.verifyBlueprintSignature(bp)) === "unsigned";
         // Signieren.
-        const signRes = await r.signBlueprint("_w13p2");
+        const signRes = await r.signBlueprint("_w13p2", { skipConfirm: true });
         out.signOk = !!signRes && signRes.ok === true;
         out.signFields =
             typeof bp.signature === "string" &&
@@ -31790,7 +31793,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         bp.parts[0].material = "eisen";
         out.statusModified = (await r.verifyBlueprintSignature(bp)) === "modified";
         // Neu signieren heilt es.
-        await r.signBlueprint("_w13p2");
+        await r.signBlueprint("_w13p2", { skipConfirm: true });
         out.resignValid = (await r.verifyBlueprintSignature(bp)) === "valid";
         // Signatur fälschen (ein Hex-Zeichen kippen, Substanz unverändert) → "forged".
         const goodSig = bp.signature;
@@ -32378,7 +32381,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // Unsigniert → "unsigned".
         out.unsignedState = (await r.verifyWorldSignature("fluid")) === "unsigned";
         // signWorld signiert + persistiert.
-        const signRes = await r.signWorld("fluid");
+        const signRes = await r.signWorld("fluid", { skipConfirm: true });
         out.signOk = signRes.ok === true && /^[0-9a-f]{64}$/i.test(signRes.authorPubKey || "");
         out.signStored =
             !!r.state.signedWorlds.fluid && /^[0-9a-f]+$/i.test(r.state.signedWorlds.fluid.signature || "");
@@ -32592,7 +32595,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // exportWorldManifest: unsigniert → not_signed.
         out.exportUnsignedRejected = r.exportWorldManifest("fluid").reason === "not_signed";
         // fluid signieren, dann exportieren.
-        await r.signWorld("fluid");
+        await r.signWorld("fluid", { skipConfirm: true });
         const exp = r.exportWorldManifest("fluid");
         out.exportOk =
             exp.ok === true &&
@@ -33757,6 +33760,206 @@ async function checkBandG8R0Sovereign(ctx) {
         res.payloadPublicOnly && res.payloadIdPublic
     );
     check("G8 R0: ein injiziertes Privat-Feld leckt NICHT in den Snapshot (fixer Key-Satz)", res.injectedKeyStaysOut);
+}
+
+// G8 R1 — der gedämpfte Kanal (M2): EIN Token-Bucket pro Overlay am Eingang
+// (auch ready/exit/manifest) + ein per-Peer-Cap auf subworld-net. Eine Flut
+// klingt von selbst ab (Verwerfen, nicht Puffern; der Bucket settled).
+async function checkBandG8R1DampedChannel(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        // (1) Methoden + Konstanten verdrahtet.
+        out.methods = typeof r._portalChannelAdmit === "function" && typeof r._p2pPeerRateAdmit === "function";
+        out.consts =
+            K.PORTAL_CHANNEL_RATE_MAX === 200 &&
+            K.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000 &&
+            K.SUBWORLD_NET_PEER_RATE_MAX === 120;
+        // (2) Der Kanal-Bucket bändigt eine Flut: 10000 Nachrichten in EINEM
+        // Fenster → admittiert genau PORTAL_CHANNEL_RATE_MAX, Rest verworfen.
+        const po = {};
+        let admitted = 0;
+        for (let i = 0; i < 10000; i++) {
+            if (r._portalChannelAdmit(po, 1000)) admitted++;
+        }
+        out.channelCapsFlood = admitted === K.PORTAL_CHANNEL_RATE_MAX;
+        out.channelAdmitted = admitted;
+        // (3) Der Bucket SETTLED: nach dem Fenster admittiert er wieder (der
+        // EPS-Fixpunkt — leeres Fenster = Ruhe, kein „settled nie").
+        out.channelSettles = r._portalChannelAdmit(po, 1000 + K.PORTAL_CHANNEL_RATE_WINDOW_MS + 1) === true;
+        // (4) Der per-Peer-Cap: 120 admittiert je Peer, der 121. fällt; ein
+        // ANDERER Peer ist unabhängig (kein gemeinsamer Eimer).
+        let pa = 0;
+        for (let i = 0; i < 300; i++) {
+            if (r._p2pPeerRateAdmit("g8r1-test", "peerA", K.SUBWORLD_NET_PEER_RATE_MAX)) pa++;
+        }
+        out.peerCaps = pa === K.SUBWORLD_NET_PEER_RATE_MAX;
+        out.peerIndependent = r._p2pPeerRateAdmit("g8r1-test", "peerB", K.SUBWORLD_NET_PEER_RATE_MAX) === true;
+        if (r._p2pRate) delete r._p2pRate["g8r1-test"];
+        // (5) Verdichtung + Verdrahtung (Source-Proben): der Kanal-Bucket sitzt
+        // im onMessage-Eingang, beide Mesh-Empfänger nutzen das EINE Raten-Tor.
+        out.wiredInOnMessage = /_portalChannelAdmit\(po, performance\.now\(\)\)/.test(r._buildPortalOverlay.toString());
+        out.subworldUsesGate = /_p2pPeerRateAdmit\("subworld-net"/.test(r._p2pMsgSubworldNet.toString());
+        out.creaturePosUsesGate =
+            /_p2pPeerRateAdmit\("creature-pos"/.test(r._p2pMsgCreaturePos.toString()) &&
+            !/_cpRate/.test(r._p2pMsgCreaturePos.toString());
+        return out;
+    });
+    if (!res) {
+        check("G8 R1: gedämpfter-Kanal-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("G8 R1: Kanal-Bucket + per-Peer-Tor verdrahtet (Methoden + Konstanten)", res.methods && res.consts);
+    check(
+        "G8 R1: der Kanal-Bucket bändigt die Flut (10000 → genau PORTAL_CHANNEL_RATE_MAX)",
+        res.channelCapsFlood,
+        `admittiert=${res.channelAdmitted}/200`
+    );
+    check("G8 R1: der Bucket SETTLED nach dem Fenster (EPS-Fixpunkt, settled-Garantie)", res.channelSettles);
+    check("G8 R1: der per-Peer-Cap deckelt je Peer + Peers sind unabhängig", res.peerCaps && res.peerIndependent);
+    check(
+        "G8 R1: das EINE Raten-Tor ist verdrahtet (onMessage-Eingang · subworld-net · creature-pos verdichtet)",
+        res.wiredInOnMessage && res.subworldUsesGate && res.creaturePosUsesGate
+    );
+}
+
+// G8 R2 — die Irreversibilitäts-Wand (M3): SOVEREIGN_ACTIONS (frozen) disjunkt
+// von jedem Auto-Pool + eine Host-gerenderte Geste. Eine vergiftete Welt/LLM/
+// Regel kann einen souveränen Akt NIE auslösen — nur du, jetzt, über die Geste.
+async function checkBandG8R2SovereignWall(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        const SA = K.SOVEREIGN_ACTIONS;
+        // (1) SOVEREIGN_ACTIONS benannt + eingefroren + die vier Akte.
+        out.frozen =
+            Array.isArray(SA) &&
+            Object.isFrozen(SA) &&
+            SA.length === 4 &&
+            SA.includes("wallet_transfer") &&
+            SA.includes("sign_manifest") &&
+            SA.includes("change_identity") &&
+            SA.includes("grant_capability");
+        out.helpers = typeof r._isSovereignAction === "function" && typeof r._sovereignGesture === "function";
+        // (2) DISJUNKTHEIT: kein souveräner Akt ist ein dslEffect, in
+        // NON_BROADCASTABLE_OPS, oder im Nexus-Auto-Pool (dslComposeAtomic).
+        const effects = r.dslEffects;
+        out.notDslOp = SA.every((a) => !(a in effects));
+        const nb = K.NON_BROADCASTABLE_OPS;
+        out.notBroadcast = SA.every((a) => !nb.has(a));
+        let composeClean = true;
+        for (let i = 0; i < 300; i++) {
+            const prog = r.dslComposeAtomic(() => Math.random());
+            if (Array.isArray(prog) && SA.includes(prog[0])) {
+                composeClean = false;
+                break;
+            }
+        }
+        out.notComposed = composeClean;
+        // (3) RUNTIME: ein DSL-Programm mit souveränem Op → sovereign_blocked
+        // (NICHT unknown_op, NICHT ausgeführt).
+        const run = r.dslRun(["wallet_transfer", "to", "someone"], { source: "human" });
+        out.dslBlocks =
+            Array.isArray(run.log) &&
+            run.log.some((e) => e.event === "sovereign_blocked") &&
+            !run.log.some((e) => e.event === "unknown_op");
+        // genistet in einer Kette: der souveräne Op fällt, der legitime läuft.
+        const savedWeather = r.state.weather;
+        r.state.weather = "sunny";
+        const run2 = r.dslRun(["chain", ["sign_manifest"], ["weather", "rainy"]], { source: "human" });
+        out.chainBlocksSovereignNotRest =
+            run2.log.some((e) => e.event === "sovereign_blocked") && r.state.weather === "rainy";
+        r.state.weather = savedWeather;
+        // (4) die Host-Geste: skipConfirm → true; ein NICHT-souveräner Akt → verweigert.
+        out.gestureSkipConfirm = r._sovereignGesture("wallet_transfer", { what: "x" }, { skipConfirm: true }) === true;
+        out.gestureRefusesUnknown = r._sovereignGesture("plant_a_tree", {}, { skipConfirm: true }) === false;
+        // (5) die drei realen souveränen Akte laufen durch die Geste (Source) +
+        // dslEval trägt die Wand.
+        out.signBpRouted = /_sovereignGesture\(\s*"sign_manifest"/.test(r.signBlueprint.toString());
+        out.signWorldRouted = /_sovereignGesture\(\s*"sign_manifest"/.test(r.signWorld.toString());
+        out.identityRouted = /_sovereignGesture\(\s*"change_identity"/.test(r.importVibePass.toString());
+        out.evalGuard = /SOVEREIGN_ACTIONS\.includes\(op\)/.test(r.dslEval.toString());
+        // (6) eine Welt-REGEL kann keinen souveränen Effekt ausführen.
+        const ctxr = r.dslCtx({ source: "rule-test" });
+        r.dslEval(["grant_capability", "world", "domain"], ctxr);
+        out.ruleEffectBlocked = ctxr.log.some((e) => e.event === "sovereign_blocked");
+        return out;
+    });
+    if (!res) {
+        check("G8 R2: Sovereign-Wall-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("G8 R2: SOVEREIGN_ACTIONS benannt + eingefroren (vier Akte) + Geste-Helfer", res.frozen && res.helpers);
+    check(
+        "G8 R2: DISJUNKT von dslEffects ∪ NON_BROADCASTABLE ∪ dslComposeAtomic (die Wand)",
+        res.notDslOp && res.notBroadcast && res.notComposed
+    );
+    check("G8 R2: ein souveräner Op im DSL wird sovereign_blocked (nie ausgeführt)", res.dslBlocks);
+    check("G8 R2: in einer Kette fällt der souveräne Op, der legitime läuft", res.chainBlocksSovereignNotRest);
+    check(
+        "G8 R2: die Host-Geste (skipConfirm→ok · Nicht-souverän→verweigert)",
+        res.gestureSkipConfirm && res.gestureRefusesUnknown
+    );
+    check(
+        "G8 R2: Signieren/Identität laufen durch die Geste + dslEval trägt die Wand",
+        res.signBpRouted && res.signWorldRouted && res.identityRouted && res.evalGuard
+    );
+    check(
+        "G8 R2: eine Welt-REGEL kann keinen souveränen Effekt ausführen (blockiert beim Feuern)",
+        res.ruleEffectBlocked
+    );
+}
+
+// G8 R3 — Lokalitäts-Härtung (M1): die Sandbox-Grenze als Invariante eingefroren
+// (sandboxed → null-origin · vendored → unforgeable sandboxed · kein Welt-Pfad
+// zum innersten Ring). Die ECHTE Isolation beweist smoke-sandbox.cjs im Browser.
+async function checkBandG8R3Locality(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.methods = typeof r._portalSandboxAttr === "function" && typeof r._localityAudit === "function";
+        // (1) das Sandbox-Attribut: sandboxed → allow-scripts allein (null-origin),
+        // trusted → + allow-same-origin (unser eigener Code).
+        out.sandboxedAttr = r._portalSandboxAttr({ trust: "sandboxed" }) === "allow-scripts";
+        out.trustedAttr = r._portalSandboxAttr({ trust: "trusted" }) === "allow-scripts allow-same-origin";
+        // (2) _sanitizePortalMeta: trust:"sandboxed" bleibt sandboxed, Default = trusted.
+        const m1 = r._sanitizePortalMeta({ world: "worlds/x/i.html", trust: "sandboxed" }, "X");
+        const m2 = r._sanitizePortalMeta({ world: "worlds/x/i.html" }, "X");
+        out.trustResolves = m1.trust === "sandboxed" && m2.trust === "trusted";
+        // (3) der Lokalitäts-Beweis: vendored-force + inner-ring-absent + die Attrs.
+        const audit = r._localityAudit();
+        out.auditOk = audit.ok === true;
+        out.vendoredForced = audit.facts.vendoredForcedSandboxed === true;
+        out.innerRingAbsent = audit.facts.innerRingAbsent === true;
+        // (4) _buildPortalOverlay nutzt die EINE Quelle (kein inline-Ternär mehr).
+        out.usesOneSource = /_portalSandboxAttr\(meta\)/.test(r._buildPortalOverlay.toString());
+        // (5) der Server-Kontext-iframe ist IMMER null-origin (allow-scripts allein).
+        out.serverNullOrigin =
+            typeof r._portalSpawnServerContext === "function" &&
+            /setAttribute\("sandbox", "allow-scripts"\)/.test(r._portalSpawnServerContext.toString());
+        return out;
+    });
+    if (!res) {
+        check("G8 R3: Lokalitäts-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("G8 R3: Sandbox-Attribut-Quelle + Lokalitäts-Audit verdrahtet", res.methods);
+    check(
+        "G8 R3: sandboxed → allow-scripts ALLEIN (null-origin) · trusted → + same-origin",
+        res.sandboxedAttr && res.trustedAttr
+    );
+    check("G8 R3: _sanitizePortalMeta löst trust (sandboxed bleibt · Default trusted)", res.trustResolves);
+    check(
+        "G8 R3: vendored erzwingt sandboxed unforgeable + der innere Ring ist abwesend",
+        res.vendoredForced && res.innerRingAbsent && res.auditOk
+    );
+    check("G8 R3: _buildPortalOverlay nutzt die EINE Sandbox-Attribut-Quelle", res.usesOneSource);
+    check("G8 R3: der Server-Kontext-iframe ist IMMER null-origin (allow-scripts allein)", res.serverNullOrigin);
 }
 
 // V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.46 Wetter + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
@@ -42930,6 +43133,9 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandRing5Soul(ctx);
             await checkBandRing6Workshop(ctx);
             await checkBandG8R0Sovereign(ctx);
+            await checkBandG8R1DampedChannel(ctx);
+            await checkBandG8R2SovereignWall(ctx);
+            await checkBandG8R3Locality(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
