@@ -7,7 +7,9 @@
 > Vektor, der noch vorwärts zeigt (§6–§7). Damit der nächste Agent NICHT wieder ein
 > Pflaster-System baut, sondern auf dem Vorhandenen weiterwächst.
 
-**Stand: V18.31 (06.06.2026) — der ganze Seelen-Bogen ist DURCH und im Code GEMESSEN.**
+**Stand: V18.94 (10.06.2026) — der ganze Seelen-Bogen ist DURCH und im Code GEMESSEN; seit
+V18.84–.94 FLIESST auch der Körper (der Wasser-CA-Bogen, vollendet + gemergt). Der Master-Blick
+über alle Säulen vorwärts: `docs/gigant-plan.md`.**
 Die Reflexion vom 01.06.2026 (Schöpfer + Agent) kartierte eine Vision, die als Hülle
 stand, aber an fünf Stellen flach war. Diese fünf Stellen sind seither GEBAUT und
 verifiziert — das Dokument hat sich darum von einer **Diagnose** („wohin driftete die
@@ -26,9 +28,11 @@ Contagion · Wagnis), die **DSL-Weltregeln** (V17.33–.41: Mensch · Nexus · K
 SELBEN Regel-Satz, persistiert + sichtbar), der **Kampf-/Interaktions-Bogen** (V17.51–.58,
 der dem Affekt seinen Konsumenten gibt) und die **Resonanz-Vereinheitlichung** (V17.59–.85:
 „ein Produkt-Vektor, viele Leser"). Der V17.92–.118-Tiefe-Fundament-Bogen + der V18-Wasser-
-Bogen bauten den KÖRPER weiter (Terrain · Render · Wasser-Geometrie); der EINE noch offene
-Körper-Vektor ist **echte Fluid-Dynamik** (Schöpfer-Entscheidung 06.06., `docs/roadmap.md`
-Phase 1.5). **Der geordnete Rest-Backlog lebt in `docs/roadmap.md` „⭐ DER PLAN VORWÄRTS".**
+Bogen bauten den KÖRPER weiter (Terrain · Render · Wasser-Geometrie); die **echte Fluid-Dynamik
+ist seit V18.84–.94 GEBAUT** (der Wasser-CA: `_tickWaterCA` + Quellen-Pin + Flow-Regel — Wasser
+fliesst nach UND ruht; `docs/archiv/terrain-t4-wasser-ca-plan.md`). Der offene Körper-Vektor ist
+jetzt die **Naht-Vollendung N1/N2** (`docs/terrain-koharenz-plan.md` §12). **Der geordnete
+Rest-Backlog lebt in `docs/roadmap.md` „⭐ DER PLAN VORWÄRTS" + `docs/gigant-plan.md` (§5).**
 
 Verwandte Anker: `state-of-realm.md` (die Vision/Testamente + die Stand-Matrix),
 `world-portal.md` (die Bibliothek von Alexandria — das Fern-Ziel), `kampf-plan.md`
@@ -283,13 +287,15 @@ VORWÄRTS"; hier der Vektor, gruppiert nach Dimension:
 
 **Der Körper (Fundament zuerst — V9.51-Disziplin):**
 
-- **Echte Fluid-Dynamik** (der gewählte Wasser-Weg, Schöpfer 06.06.). Heute ist Wasser
-  ein statisches 2.5-D-Höhenfeld + reaktive Zell-Füllung — es fliesst NIE nach. Der Vektor:
-  ein zellbasierter Fluss-Automat über `entry.waterCells` (Wasser fliesst nach wie
-  Minecraft; ein Carve daneben → das Wasser strömt sichtbar hinein). Eigener Plan-Doc,
-  Browser-Loop, Merge pro Schritt (`docs/roadmap.md` Phase 1.5 + `wasser-render-…-plan.md`).
-- Fundament-Reste: H3-Seen/Flüsse jenseits ±1024 m · G3 Höhleneingänge/Canyons · die
-  LOD-Kaskade vollenden (`docs/archiv/lod-kaskade-plan.md` U2/U4/U5/U6).
+- **Echte Fluid-Dynamik — GEBAUT ✓ (V18.84–.94):** der zellbasierte Fluss-Automat über
+  `entry.waterCells` steht end-to-end (`_tickWaterCA` + cross-chunk-wake + Quellen-Pin +
+  Receiver-Support + Flow-Regel Decay/Kappe/Fixpunkt; Zell-Sheet als der EINE Render).
+  Ein Carve daneben → das Wasser strömt sichtbar hinein UND die Welt ruht danach.
+  Chronik: `docs/archiv/terrain-t4-wasser-ca-plan.md`; Reste in `docs/roadmap.md` §4.
+- Der offene Körper-Vektor: **die Naht-Vollendung** (N1 Cross-LOD watertight · N2
+  Sub-Region-Edit, `docs/terrain-koharenz-plan.md` §12) + Fundament-Reste: H3-Seen/Flüsse
+  jenseits ±1024 m · die LOD-Kaskade vollenden (`docs/archiv/lod-kaskade-plan.md`
+  U2/U4/U5/U6) · **Licht+Terrain-Einheit** (`docs/gigant-plan.md` G6).
 
 **Die Seele (wenn das Fundament trägt):**
 
@@ -318,7 +324,8 @@ VORWÄRTS"; hier der Vektor, gruppiert nach Dimension:
 
 | Fleck | Was | Tiefe / Status |
 | --- | --- | --- |
-| **Wasser ist statisch (kein Nachfliessen)** | Eine Fläche auf dem Spiegel-Feld `L` + reaktive Zell-Füllung; keine Fluid-Dynamik. Der EINE offene Körper-Vektor. | **Der gewählte nächste große Bogen** (A, Schöpfer 06.06.). Plan: `roadmap.md` Phase 1.5 + `wasser-render-architektur-plan.md`. |
+| **~~Wasser ist statisch~~ → GEBAUT (V18.84–.94)** | Der Wasser-CA fliesst im Modell+Welt+Render (Quellen-Pin · Flow-Regel · Zell-Sheet). | **VOLLENDET + gemergt.** Chronik: `archiv/terrain-t4-wasser-ca-plan.md`; Reste in `roadmap.md` §4. Der offene Körper-Vektor ist jetzt die N-Naht (`terrain-koharenz-plan.md` §12). |
+| **Kreaturen fühlen flach (binär happy/sad)** | Kreatur-Emotion ist ein binäres Etikett statt der 6 Achsen; kein Lebenszyklus, keine Kreatur↔Kreatur-Contagion. Das Substrat (Feld · `_feelAction` · Contagion · Bond · `_finishBirth`) EXISTIERT — es wird nicht konsumiert. | **Vertiefung mit fertigem Substrat** (`gigant-plan.md` G4 — konsumieren statt bauen). |
 | **Phase E — Bedrohung/Furcht fehlt** | Kreaturen fliehen, schlagen nie zurück. Der Emotion-Kern hat den Affekt-Hook (W5), aber keinen Aggressions-Konsumenten. | **Der tiefste offene SEELEN-Fleck.** Plan: `kampf-plan.md`. Game-design-schwerste Phase. |
 | **Emotion-Kopplungen noch hand-codiert** | `sorrow→rainy` etc. sind feste Trigger, nicht aus der Weltregeln-DSL emergent. | **Vertiefung.** Das Substrat (die `rule`-Op) macht es ausdrückbar — der Schritt ist sie umzuschreiben. |
 | **Die anderen Feld-Achsen frozen + Spieler pflegt nicht** | glut/dichte/magie sind absichtlich frozen; der Spieler hat noch keinen Leben-Schreib-Pfad. | **Vertiefung.** Spieler-Pflege = Co-Schöpfung. Die geologischen Achsen nur, wenn die Vision sie braucht. |

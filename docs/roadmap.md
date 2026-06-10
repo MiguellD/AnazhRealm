@@ -36,6 +36,12 @@ Fundament-Reste, der soziale Bogen und die offenen Render-Sign-offs.
 
 ## §3 · Der Plan vorwärts — die Reihenfolge
 
+> **Der Master-Blick über allem: `docs/gigant-plan.md`** (10.06.2026 — das umfassende gemessene
+> Bild: die sieben Säulen G1 Werkstatt-Animation als Motion-Resonanz · G2 Rekursion (AnazhRealm in
+> AnazhRealm) · G3 sich-speisendes P2P-Netz · G4 Kreatur-Innenleben · G5 δ-als-Währung-Ökonomie ·
+> G6 Licht+Terrain-Einheit · G7 Performance-Maßstab + die Zwillings-Karte + die Reihenfolge §5).
+> Dieser §3 bleibt die operative Kurz-Form; der Gigant-Plan trägt das Warum + die Anker.
+
 **⭐ Die EINE Wurzel — die Chunk-Naht (Schöpfer-Befund 09.06.2026, gemessen):** blobiges Terrain ·
 Edit-/LOD-Naht · die Wasser-Naht (30 Wellen) · „Wasser fließt nicht" sind **fünf Symptome EINER Wurzel**:
 independent gebaute Chunks, deren Ränder nur approximativ + verspätet zusammenfinden. Der vereinte

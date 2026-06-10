@@ -19,7 +19,7 @@ Der aktuelle Stand + die Route: die kanonische Landkarte in **`docs/README.md`**
 
 | Datei | Was | Stand |
 |---|---|---|
-| `wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, das statische `L`, der Fluid-Dynamik-Plan = Phase 1) | **AKTIV** — der nächste große Bogen |
+| `wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, die 30-Wellen-Spirale, die Drei-Schichten-Architektur) | **REFERENZ** — der Fluid-Bogen ist GEBAUT (V18.84–.94, `terrain-t4-wasser-ca-plan.md`); ZUERST lesen bei jeder Wasser-Arbeit |
 | `lod-kaskade-plan.md` | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter) | **AKTIV** — U1+U3 gebaut, U2/U4/U5/U6 offen |
 | `kampf-plan.md` | Crafting/Kampf §11 — Schöpfungs-Fluss + Resonanz | **AKTIV** — Kern gebaut, S6-B/S9/S11/Phase E offen |
 | `world-portal-w18-plan.md` | W18 — in fremden Welten leben (Ko-Präsenz) | **GEPLANT** — Stufe 0/1 ✅ (W12–17), Stufe 2–4 offen |
@@ -72,7 +72,7 @@ LEBENDE Verständnis lebt in `docs/das-lebendige-feld.md`.
 ## Bogen: Der Crafting-/Schöpfungs-Fluss — die Resonanz-Vereinheitlichung (V17.59–.85) — VOLLENDET
 
 Die Vereinheitlichung „ein Produkt-Vektor, viele Leser". Der lebende, noch aktive Bogen
-(Kampf + Crafting, mit den offenen Resten S6-B/S9/S11/Phase E) ist `docs/kampf-plan.md` §11.
+(Kampf + Crafting, mit den offenen Resten S6-B/S9/S11/Phase E) ist `kampf-plan.md` §11.
 
 | Datei | Was | Stand |
 |---|---|---|
@@ -89,7 +89,8 @@ Die Diagnosen + Pläne, die die Welt-OBERFLÄCHE malerisch + tief machten.
 | `tiefe-bogen-plan.md` | Vier Wurzeln (Wolken-Noise · Bäume · Terrain-Makrotextur · Strukturen-Kontrast) | abgeschlossen (V17.10–.13) |
 | `lebende-umgebung.md` | GPU-instanzierte Vegetation + Gras-Riese | umgesetzt (V16.1 Gras-Riese · V17.1 Scatter-Vegetation) |
 | `tiefe-fundament-plan.md` | Der Schöpfer-Audit-Bogen A–J (Ruckel · Schwimm · Strukturen · Trapeze · effiziente Höhe · Kavernen · Aquifer · Render-Harmonie) | **GEBAUT (V17.92–.118)**; offene Reste (R-Feinschliff · G3-Canyons) in `roadmap.md`, LOD-Teil in `lod-kaskade-plan.md` |
-| `wasser-finale-form-plan.md` | Die Wasser-Render-Geometrie „Fläche auf `L`" (vom Tiefenpuffer versöhnt) | **GEBAUT (V18.6), SUBSUMIERT** von `docs/wasser-render-architektur-plan.md` (V18.31, aktiv) |
+| `wasser-finale-form-plan.md` | Die Wasser-Render-Geometrie „Fläche auf `L`" (vom Tiefenpuffer versöhnt) | **GEBAUT (V18.6), SUBSUMIERT** von `wasser-render-architektur-plan.md`; der L-Film selbst ist seit V18.92 ENTFERNT (das Zell-Sheet ist der EINE Render) |
+| `terrain-t4-wasser-ca-plan.md` | Der Wasser-CA-Bogen — Wasser FLIESST (T4a-Kern · W-B Quellen/Receiver/y-Band · W-A Zell-Sheet · die Flow-Regel Decay+Kappe+Fixpunkt) | **VOLLENDET + GEMERGT (V18.84–.94)**; die Chronik der Entscheidungen; offene Reste in `docs/roadmap.md` §4 |
 
 ## Bögen: Code- + Test- + Performance-Hygiene — VOLLENDET
 
