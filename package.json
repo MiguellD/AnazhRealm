@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.105.0",
+    "version": "18.115.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox v9.43",
     "scripts": {
@@ -21,7 +21,8 @@
         "smoke:vendor": "node scripts/smoke-vendor.cjs",
         "smoke:shim": "node scripts/smoke-shim.cjs",
         "patch:ammo": "node scripts/patch-ammo-memory.cjs",
-        "postinstall": "node scripts/patch-ammo-memory.cjs"
+        "postinstall": "node scripts/patch-ammo-memory.cjs",
+        "smoke:selfboot": "node scripts/smoke-selfboot.cjs"
     },
     "devDependencies": {
         "eslint": "^9.18.0",

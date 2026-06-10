@@ -31,7 +31,11 @@
 // bricht KEINE Vendor-Logik — die IIFE legt SimplexNoise auf window.X, und
 // window === self in unserem Shim).
 self.window = self;
-importScripts("./vendor/simplex-noise.js");
+// V18.112 — F1-Boot-Sonden-Fang: im BLOB-Worker (null-origin-Rekursion,
+// Schnitt 2) hat eine blob:-URL KEINE Basis — ein relatives importScripts
+// wirft SyntaxError. Der Blob-Fallback injiziert `self.__anazhBase`
+// (absolute App-Basis); der normale Worker läuft mit "" relativ wie eh.
+importScripts((self.__anazhBase || "") + "vendor/simplex-noise.js");
 
 // State-Container — wird per init-Message gesetzt + per state-update-Delta gepflegt.
 const state = {
@@ -921,8 +925,9 @@ function cropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
 
 function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
     const normals = new Float32Array(positions.length);
-    // V17.103 (mirror): ROLLBACK auf eps 1.5 — der eps-6-Versuch half die Trapeze
-    // nicht + verschlechterte den Schatten (normalBias). Wurzel = Geometrie.
+    // V18.113 — B3-ROLLBACK (mirror, Narbe): der Geometrie-Bake erzeugte
+    // Schatten-Akne (normalBias braucht die ECHTE Oberflächen-Normale);
+    // die Lichtung flacht im Material-normalNode (main-only Render).
     const eps = step * 1.5;
     const NxNy = Nx * Ny;
     const NxMax = Nx - 1;

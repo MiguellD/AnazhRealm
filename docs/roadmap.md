@@ -79,7 +79,10 @@ lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendig
 ## §4 · Die offenen Fäden — die VOLLSTÄNDIGE Karte (nichts vergessen)
 
 **Wasser** — Fluid-Dynamik (Phase 1, ⭐) · gefaltetes Auslauf-Mesh · Fluss-Naht (4-Chunk-Ecken) ·
-`aFlow`-Foam-Strähnen · Wasserfall-Plane (bleibt/raus?) · aufgestaute Hoch-Becken (über `L`, brauchen
+`aFlow`-Foam-Strähnen · ~~Wasserfall-Plane (bleibt/raus?)~~ **ENTSCHIEDEN+GEBAUT (V18.111–.114):
+die Plane FIEL (S-Entscheid), der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe +
+Vorhang, aSlope-Wildwasser; Tour-gehärtet: Split nur nass↔nass, Strähnen-Schaum) — das
+Abwärts-Material bleibt als Saat** · aufgestaute Hoch-Becken (über `L`, brauchen
 Zellen) · Unterwasser-Decken-Pass (V18.3 B5) · Kapillar/Stempel an Gebäuden.
 
 **Terrain/Naht (PHASE A VOLLENDET bis auf S-Wellen, §11 + gigant-plan §5)** — ~~N1 Cross-LOD watertight~~
@@ -102,7 +105,9 @@ Kreatur-FPS-Frame-Budget (falls Boden-Cache nicht reicht) · Browser-Sign-offs (
 
 **Crafting/Kampf** — S6-B erntbare Flora · S9 Gerät in der Hand (gebaut, Sign-off offen) · S11
 Werkstatt-Animation (die Kirsche) · S7-C chat/DSL-Vereinheitlichung · S8 Teilen-Konsistenz · A2
-Crafting-Fluss-Audit · Avatar-Größe→HP · Zwei-Hand-Modell · Rüstung am Avatar sichtbar · LLM-Manifest.
+Crafting-Fluss-Audit · Avatar-Größe→HP · ~~Zwei-Hand-Modell~~ **GEBAUT (V18.109: Off-Hand-Slot +
+Key G + linker Arm)** · ~~Rüstung am Avatar sichtbar~~ **GEBAUT (V18.104 + V18.110: sitzt am
+TORSO via C7-Trage-Punkt)** · LLM-Manifest.
 
 **Lebendiges Feld/Nexus** — Phase E Bedrohung/Furcht (der letzte Konsument) · Mana-Symmetrie
 (`magieleitung` → zweite Ausdauer-Achse) · Emotion→Regel-Emergenz (hand-codierte Kopplungen via DSL

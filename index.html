@@ -1244,6 +1244,13 @@
                 font-family: "Cinzel", Georgia, serif;
                 font-weight: 600;
             }
+            /* V18.109 - E8: der Off-Hand-Slot steht abgesetzt links der 9 Bau-Slots
+               (Minecraft-Modell) - eigener Messing-Ton + Luft zur Leiste. */
+            .hotbar-slot.hotbar-offhand {
+                margin-right: 10px;
+                border-color: var(--brass-2, #a98748);
+                opacity: 0.92;
+            }
             #hotbar {
                 position: absolute;
                 bottom: 18px;
@@ -7742,17 +7749,8 @@
                             >
                                 Neu
                             </button>
-                            <!-- V18.62 Ich-H (H.4) — die Seele IST ein Bauplan: den AKTUELLEN Körper
-                                 (Built-in/Custom-Seele) als role:soul-Bauplan in die Werkstatt holen →
-                                 klonen/formen/fertigen wie jeden Bauplan. Heilt „Avatare fehlen". -->
-                            <button
-                                type="button"
-                                id="workshop-import-soul-btn"
-                                class="workshop-action-btn"
-                                title="Den aktuellen Körper (deine Seele) als Bauplan holen — hier klonen + formen"
-                            >
-                                Körper holen
-                            </button>
+                            <!-- (V18.110 - C7: "Körper holen" gefallen - Built-in-Körper liegen
+                                 automatisch als koerper_*-Blueprints in der Bibliothek.) -->
                             <button
                                 type="button"
                                 id="workshop-delete-blueprint-btn"
@@ -8451,11 +8449,7 @@
                                 <input type="range" id="slider-cel" min="2" max="8" value="6" />
                                 <span class="slider-value" id="slider-cel-val">6</span>
                             </div>
-                            <div class="slider-row">
-                                <label for="slider-flatten">2.5D-Lichtung</label>
-                                <input type="range" id="slider-flatten" min="0" max="100" value="100" />
-                                <span class="slider-value" id="slider-flatten-val">100 %</span>
-                            </div>
+                            <!-- (V18.106 - B3: "2.5D-Lichtung"-Slider gefallen, in die Geometrie gebacken) -->
                             <div class="slider-row">
                                 <label for="slider-cavityao">Kavitäts-AO</label>
                                 <input type="range" id="slider-cavityao" min="0" max="200" value="35" />
@@ -8530,11 +8524,7 @@
                                 <input type="range" id="slider-waterdepthfoam" min="1" max="60" step="1" value="12" />
                                 <span class="slider-value" id="slider-waterdepthfoam-val">1.2 m</span>
                             </div>
-                            <div class="slider-row">
-                                <label for="slider-waterfallsteep">Wasserfall-Steilheit</label>
-                                <input type="range" id="slider-waterfallsteep" min="2" max="40" step="1" value="10" />
-                                <span class="slider-value" id="slider-waterfallsteep-val">1.0</span>
-                            </div>
+                            <!-- (V18.111 - A4: Wasserfall-Steilheit-Slider gefallen - die Plane fiel) -->
                         </div>
                         <!-- BAND: Schatten -->
                         <div class="settings-band">
@@ -8822,6 +8812,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.105.0" defer></script>
+        <script src="anazhRealm.js?v=18.115.0" defer></script>
     </body>
 </html>
