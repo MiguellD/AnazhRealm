@@ -280,7 +280,8 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 
 ## §5 · Der wahre Norden — die Reihenfolge (Fundament vor Seele, Sign-off vor Stapel)
 
-0. **JETZT (unverändert):** der Spawn-Restbefund (Browser-Diskriminator, roadmap §4) + die offenen
+0. **JETZT:** ~~der Spawn-Restbefund~~ **GEHEILT (V18.95** — der leere Welt-Snapshot zählte als
+   „schon generiert"; Browser-Pfad-Sonde `diag-genesis-spawn.cjs` rot→grün) + die offenen
    Browser-Sign-offs + N-Naht (N1/N2) — **das Fundament, das alles trägt** (`terrain-koharenz-plan.md` §12).
 1. **G6 + G7(1–4)** — Licht/Terrain eins + die Main-Thread-Diebe in den Worker: der Körper wird
    GLATT (beides messbar, beides ohne Look-Risiko-Stapel; CSM ist das eine pixel-sichtbare Stück →

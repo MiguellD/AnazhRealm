@@ -9966,6 +9966,27 @@ async function checkBandRing8(ctx) {
             Math.abs(r.state.playerMesh.position.x - 42) < 0.5 &&
             Math.abs(r.state.playerMesh.position.z - 23) < 0.5;
 
+        // V18.95 — der leere createNewWorld-Snapshot (playerPosition:null)
+        // zählt NICHT als „schon generiert": das Flag bleibt false und die
+        // Position bleibt unangetastet → der Browser-Reload-Pfad fährt den
+        // Genesis-Erst-Spawn (deterministischer offener Punkt + Plattform).
+        // Wurzel des V18.94-Browser-Befunds „neue Welt: keine Plattform,
+        // im Boden" (Browser-Pfad-Reproduktion: `diag-genesis-spawn.cjs`).
+        const emptySnap = r._buildEmptyWorldSnapshot(
+            { worldId: "test-genesis-pre-spawn", slug: "test-genesis", bornAt: Date.now(), seed: "s-test" },
+            false
+        );
+        out.emptySnapHasNoPosition = emptySnap.playerPosition === null;
+        const savedPos = r.state.playerMesh ? r.state.playerMesh.position.clone() : null;
+        r.state.terrainEverGenerated = false;
+        if (r.state.playerMesh) r.state.playerMesh.position.set(7, 8, 9);
+        r._loadStateRestorePlayerPosition(emptySnap);
+        out.emptySnapKeepsFirstSpawn = r.state.terrainEverGenerated === false;
+        out.emptySnapKeepsPosition = r.state.playerMesh && Math.abs(r.state.playerMesh.position.x - 7) < 0.01;
+        // Lauf-Zustand zurück: die Welt IST generiert + Position restauriert.
+        r.state.terrainEverGenerated = true;
+        if (savedPos && r.state.playerMesh) r.state.playerMesh.position.copy(savedPos);
+
         // Status-Bar zeigt aktuelle Welt
         const slugEl = document.getElementById("status-slug");
         out.statusSlugInDom = !!slugEl;
@@ -9988,6 +10009,12 @@ async function checkBandRing8(ctx) {
         check("Ring 8.2: buildStateSnapshot fängt Spieler-Position ein", ring82Results.snapshotCapturesPosition);
         check("Ring 8.2: loadState setzt terrainEverGenerated", ring82Results.flagSetAfterLoad);
         check("Ring 8.2: loadState restauriert Spieler-Position", ring82Results.positionRestoredAfterLoad);
+        check("V18.95: leerer Welt-Snapshot trägt playerPosition:null", ring82Results.emptySnapHasNoPosition);
+        check(
+            "V18.95: Save ohne playerPosition lässt terrainEverGenerated false (Erst-Spawn-Pfad)",
+            ring82Results.emptySnapKeepsFirstSpawn
+        );
+        check("V18.95: Save ohne playerPosition bewegt den Spieler nicht", ring82Results.emptySnapKeepsPosition);
         check("Ring 8.2: #status-slug im DOM", ring82Results.statusSlugInDom);
         check("Ring 8.2: Status-Bar-Label heißt 'Welt'", ring82Results.statusLabelIsWelt);
         check("Ring 8.2: Status-Bar zeigt aktive Welt-Slug", ring82Results.statusSlugShowsActiveWorld);

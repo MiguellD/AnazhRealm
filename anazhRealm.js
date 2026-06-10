@@ -11453,12 +11453,15 @@ class AnazhRealm {
     // gültigen Per-Welt-Save vor und startet die neue Welt mit dieser Basis.
     _buildEmptyWorldSnapshot(worldMeta, inheritPlayer) {
         const snap = {
-            // Ring 8.2: Y=50 wie beim allerersten Spawn — der Spieler fällt
-            // sauber aufs Terrain. Y=5 würde ihn in steile Hänge clippen
-            // lassen, weil das Terrain je nach Seed auch 30+ Einheiten hoch
-            // sein kann. Die loadState-Position-Restore-Logik teleportiert
-            // sonst auf die zu tiefe Höhe, statt einen Spawn-Fall zu lassen.
-            playerPosition: this._defaultSpawnPos(),
+            // V18.95 — playerPosition:null markiert „Welt VOR ihrem Erst-Spawn":
+            // der Reload-Restore lässt terrainEverGenerated dann false, und
+            // generateTerrainWithParameters fährt den ECHTEN Erst-Spawn
+            // (deterministischer offener Punkt + Genesis-Plattform, V18.94).
+            // Der alte Ring-8.2-Default (0,50,0) machte den leeren Snapshot
+            // zur „schon generierten" Welt → wasFirstSpawn=false → keine
+            // Plattform, Spieler fiel blind auf (0,0) — der Browser-Befund
+            // „neue Welt: keine Plattform, im Boden" (`diag-genesis-spawn.cjs`).
+            playerPosition: null,
             knowledgeBase: [],
             version: this.state.currentVersion || "7.71",
             selfAwareness: { components: [], weaknesses: [] },
@@ -27780,13 +27783,23 @@ class AnazhRealm {
         }
     }
 
-    // Ring 8.2 — loadState markiert die Welt als „bereits einmal generiert"
-    // (terrainEverGenerated=true), damit das auf init() folgende generateNewWorld()
-    // den Spieler nicht auf (0, 50, 0) teleportiert. Brand-neue Welten (loadState
-    // findet nichts) lassen das Flag auf false → erster generateNewWorld setzt
-    // den Spieler wie bisher auf den Default-Spawn.
+    // Ring 8.2 / V18.95 — loadState markiert die Welt als „bereits einmal
+    // generiert" (terrainEverGenerated=true) NUR, wenn der Save eine ECHTE
+    // Spieler-Position trägt. Ein Save mit playerPosition:null ist eine Welt
+    // VOR ihrem Erst-Spawn (der leere createNewWorld-/Fusions-Snapshot, der
+    // vor dem Reload geschrieben wird): das Flag bleibt false → das auf
+    // init() folgende generateTerrainWithParameters fährt den Erst-Spawn
+    // (deterministischer offener Punkt + Genesis-Plattform). Das heilt den
+    // V18.94-Browser-Restbefund „neue Welt: keine Plattform, im Boden" —
+    // der alte (0,50,0)-Default zählte als „schon generiert", wasFirstSpawn
+    // wurde false, der Spieler fiel blind auf (0,0) (`diag-genesis-spawn.cjs`).
+    // Brand-neue Profile (loadState findet gar nichts) bleiben wie bisher false.
     _loadStateRestorePlayerPosition(state) {
-        const playerPosition = state.playerPosition || { x: 0, y: 5, z: 0 };
+        if (!state.playerPosition) {
+            this.log("Welt vor Erst-Spawn (Save ohne playerPosition) — der Genesis-Spawn übernimmt");
+            return;
+        }
+        const playerPosition = state.playerPosition;
         const safeX = Number.isFinite(playerPosition.x) ? playerPosition.x : 0;
         const safeY = Number.isFinite(playerPosition.y) ? playerPosition.y : 5;
         const safeZ = Number.isFinite(playerPosition.z) ? playerPosition.z : 0;
@@ -28973,7 +28986,10 @@ class AnazhRealm {
         const weather = saveA.weather || saveB.weather || "sunny";
 
         const snap = {
-            playerPosition: this._defaultSpawnPos(),
+            // V18.95 — null wie im leeren createNewWorld-Snapshot: die
+            // Fusions-Welt ist VOR ihrem Erst-Spawn → der Reload fährt den
+            // Genesis-Spawn (offener Punkt + Plattform) auf dem NEUEN Terrain.
+            playerPosition: null,
             knowledgeBase: [
                 ...((Array.isArray(saveA.knowledgeBase) && saveA.knowledgeBase.slice(-100)) || []),
                 ...((Array.isArray(saveB.knowledgeBase) && saveB.knowledgeBase.slice(-100)) || []),
@@ -51113,7 +51129,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.94.0";
+AnazhRealm.VERSION = "18.95.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
