@@ -21859,13 +21859,55 @@ class AnazhRealm {
         const floorY = base - cfg.floorDrop;
         const top = floorY + cfg.dimY * cfg.step - 8;
         const bottom = floorY + 12;
+        // V18.96 (G7) — der ENVELOPE-SKIP: über `macroSurf + ROUGH(12) + 4·step`
+        // ist GARANTIERT Luft — dieselbe bewiesene Zusicherung, die der Band-
+        // Skip des Meshers nutzt (`_voxelSampleDensityGrid`, dort hole-frei
+        // gemessen). Die Schleife läuft UNVERÄNDERT über dasselbe y-Gitter
+        // (gleiche Start-Phase, gleiche Schrittweite — Bit-Exaktheit per
+        // Konstruktion, `diag-surfacescan.cjs`: 0 Drift), aber die teure
+        // Dichte-PROBE wird in der Garantie-Luft übersprungen: ~300 → ~25
+        // Proben pro Spalte. Das heilt ALLE Leser (Gras, Scatter, Veg-Spawn,
+        // Hydro-Atlas im Worldgen, der Genesis-Spawn-Scan). EINZIGE Substanz
+        // über dem Envelope: ein FILL-Edit kann höher bauen →
+        // `_voxelEditsFillTop()` hebt die Skip-Grenze mit. Macro nicht
+        // endlich → skipAbove=∞ = exakt der alte Voll-Scan.
+        const macroSurf = this._terrainMacroSurfaceY(x, z);
+        const skipAbove = Number.isFinite(macroSurf)
+            ? Math.max(macroSurf + 12 + 4 * cfg.step, this._voxelEditsFillTop() + 2)
+            : Infinity;
         let prevAir = true;
         for (let y = top; y >= bottom; y -= 1.2) {
+            if (y > skipAbove) continue; // Garantie-Luft — Probe gespart, Gitter unverändert
             const solid = this._terrainDensityAt(x, y, z) > 0;
             if (solid && prevAir) return y;
             prevAir = !solid;
         }
         return null;
+    }
+
+    // V18.96 — die höchste Oberkante aller FILL-Edits (y + r), längen-gecacht:
+    // über dem Roughness-Envelope kann NUR ein Fill-Edit Terrain tragen, also
+    // hebt der `_voxelSurfaceY`-Envelope-Skip seine Grenze darüber. Edits
+    // wachsen per push (`_addVoxelEdit`) → die Identitäts+Längen-Probe
+    // invalidiert exakt (ein Welt-Wechsel tauscht das Array, ein Regen leert
+    // es → andere Identität/Länge). Keine Fill-Edits → −Infinity (der
+    // Envelope allein gilt).
+    _voxelEditsFillTop() {
+        const meta = this.state.worldMeta;
+        const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
+        const len = edits ? edits.length : 0;
+        const cache = this._editFillTopCache;
+        if (cache && cache.edits === edits && cache.len === len) return cache.top;
+        let topY = -Infinity;
+        for (let i = 0; i < len; i++) {
+            const e = edits[i];
+            if (e && e.mode === "fill") {
+                const t = (Number(e.y) || 0) + (Number(e.r) || 0);
+                if (t > topY) topY = t;
+            }
+        }
+        this._editFillTopCache = { edits, len, top: topY };
+        return topY;
     }
 
     // === V9.43-b — Der Hydrosphären-Atlas ================================
@@ -51129,7 +51171,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.95.0";
+AnazhRealm.VERSION = "18.96.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

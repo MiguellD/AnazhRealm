@@ -23562,10 +23562,19 @@ async function checkBandVoxelP3AndInventory(ctx) {
             out.skip = true;
             return out;
         }
+        // V18.96 (V17.32-Disziplin — den INTENT deterministisch testen, nicht
+        // den konfundierten Warmup-Zustand): der Carve sitzt OBERFLÄCHEN-
+        // relativ (surf − 1.5), nicht spieler-y-relativ. Ein früheres Band
+        // kann den Spieler hoch in der Luft hinterlassen (Sky-Test y=5000;
+        // je schneller der Lauf, desto weniger Wall-Clock zum Runterfallen)
+        // → pm.y − 1.5 läge über der `_addVoxelEdit`-Y-Wand → Edit verworfen
+        // → false-rot. surf − 1.5 ist IMMER in-band + im Terrain.
+        const carveSurf = r.getTerrainHeightAt(pm.x, pm.z);
+        const cy = (Number.isFinite(carveSurf) ? carveSurf : pm.y) - 1.5;
         // Ein Carve in der Nähe des Spielers markiert Chunks dirty
         // statt sie sofort zu rebuilden (V9.40-c-Verhalten).
         const dirtyBefore = r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : 0;
-        r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+        r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         out.editMarksDirty = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > dirtyBefore);
         // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
         const dirtyMid = r.state.dirtyVoxelChunks.size;
@@ -23574,7 +23583,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
         out.drainReturnedCount = built === dirtyMid;
         // Game-Loop-Tick rebuildet pro Frame max 1.
-        r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+        r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
         if (dirtyPostEdit > 1) {
             r._tickDirtyVoxelChunks(pm);
@@ -23584,7 +23593,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         }
         // Disposal räumt dirty-Marker mit.
         r._drainDirtyVoxelChunks();
-        r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+        r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         const dirtyKey = [...r.state.dirtyVoxelChunks][0];
         if (dirtyKey) {
             r._disposeVoxelChunk(dirtyKey);

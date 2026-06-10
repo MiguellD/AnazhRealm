@@ -218,10 +218,15 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
   aber main) · Gras ~34 ms main · BVH 25–30 ms Spikes (lazy, aber main) · Inseln 20–40 un-instanzierte
   Draw-Calls · `stepSimulation(delta, 20, 1/60)` erlaubt 20 Substeps (bei FPS-Einbruch → Physik-
   Todesspirale; Standard 3–5 — PRÜFEN, dann senken) · Allokations-Hygiene in per-Frame-Pfaden (Audit).
-- **DER GENIALE WEG (jeder Hebel erhält die Tiefe):** **(1)** Wasser-Sheet → Worker (das E3-Muster
+- **DER GENIALE WEG (jeder Hebel erhält die Tiefe):** **(0) GEBAUT ✓ (V18.96): der
+  `_voxelSurfaceY`-Envelope-Skip** — Proben 214.6→17.4/Spalte (12.3×, bit-exakt 0/3000), heilt
+  ALLE 46 Leser (Gras·Scatter·Veg·16k-Spalten-Hydro-Atlas·Spawn-Scan); Playtest 183→136 s.
+  Gras-Rest: die Per-Blade-`_terrainMacroSurfaceY`-Calls dominieren jetzt (~29 ms — der nächste
+  Schnitt dort). **(1)** Wasser-Sheet → Worker (das E3-Muster
   ist BEWIESEN: Mesh wanderte V17.118; der Sheet-Builder liest Zellen, die der Worker schon baut —
   größter Einzelhebel). **(2)** Gras-Placement → Worker (der Scan liest das Density-Grid, das DORT
-  entsteht). **(3)** Inseln in den HISM-Pfad (das Instancing-Schloss existiert). **(4)** Substep-Cap
+  entsteht). **(3)** Inseln in den HISM-Pfad (PRÜFEN: Inseln sind vermutlich UNIKATE Geometrie —
+  dann ist der Hebel LOD/Dichte, nicht Instancing; messen vor schneiden). **(4)** Substep-Cap
   senken. **(5)** Die EHRLICHE GPU-Grenze: GPU-Compute für Density bleibt Narbe (BVH braucht CPU-
   Readback); die RICHTIGE GPU-Front sind PURE-RENDER-Felder ohne Readback — Wasser-Oberflächen-Detail,
   Partikel, Gras-Sway leben schon in TSL; mehr dorthin, nichts zurücklesen. **(6)** Draw-Call-Fernziel
