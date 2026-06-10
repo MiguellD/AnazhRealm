@@ -167,6 +167,11 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
   (3) kein Lebenszyklus + keine Kreatur↔Kreatur-Sozialität. Was SCHON DA ist (nicht neu bauen!):
   Gedächtnis+Spezialisierung (:13331), Bond, Contagion Spieler↔Kreatur, aura-reaktives Verhalten,
   `tendsLife`-Trickle, `_finishBirth`, KI-LOD.
+- **SCHRITT 1 GEBAUT ✓ (V18.100):** `_feelCreatureAction` + Valenz-Projektion — der Vektor ist
+  die Wahrheit, das binäre Etikett abgeleitet (alle Alt-Leser heil); Schreiber migriert (Treffer/
+  Trinken/Wetter/DSL-Op/Spawn), Decay + ERHOLUNG (sad verfliegt — vorher ewig), die Contagion
+  liest das echte Innenleben (awe reist — der Diskriminator-Beweis). OFFEN: G4-2 Kreatur↔Kreatur-
+  Contagion · G4-3 Lebenszyklus · Hof zeigt den vollen Vektor.
 - **DER GENIALE WEG — KONSUMIEREN statt bauen:** (1) Kreaturen fühlen über DASSELBE Substrat
   (`_feelAction` + `ACTION_TO_EMOTION` pro Kreatur, 6 Achsen; happy/sad wird die Projektion für
   Alt-Leser) — ihre Tat (gather/build/flee) prägt sie, ihre Aura-Zelle färbt sie (das Feld ist schon
@@ -306,8 +311,8 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
    eigener Sign-off).
 2. **G1** — die Werkstatt atmet (Motion-Resonanz). **KERN GEBAUT ✓ (V18.99)** — Kreaturen +
    Custom-Avatare + Peers + Readout; offen: Browser-Feel + G1-B Architektur-Idle.
-3. **G4 + Phase E** — Wesen mit Innenleben + der letzte Affekt-Konsument. (Danach ist der
-   Emotion-Kern VOLL konsumiert.)
+3. **G4 + Phase E** — Wesen mit Innenleben + der letzte Affekt-Konsument. **G4-1 GEBAUT ✓
+   (V18.100** — 6 Achsen, ein Substrat, Erholung, awe-Contagion); offen G4-2/3 + Phase E.
 4. **G5** — δ wird Währung (Nexus-Ökonomie + Mana-Symmetrie + Geste→Gesetz + LLM liest die δ-Karte).
    **Schöpfer-Entscheid vorab:** Budget-Formen + Modi-Geltung.
 5. **G2 + G3** — die Rekursion + das sich-speisende Netz (+ der soziale Mesh-Bogen als Begleiter).

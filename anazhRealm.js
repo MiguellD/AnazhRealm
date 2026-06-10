@@ -2822,7 +2822,18 @@ class AnazhRealm {
             },
             creatures_emotion: ([emotion]) => {
                 if (emotion !== "happy" && emotion !== "sad") return;
-                for (let i = 0; i < this.state.creatureEmotions.length; i++) this.state.creatureEmotions[i] = emotion;
+                // V18.100 (G4-1) — der Op SETZT das Innenleben (deterministisch,
+                // wie sein alter Intent): ein klarer Achsen-Zustand statt eines
+                // Etikett-Stempels; die Projektion liefert das alte Verhalten.
+                for (let i = 0; i < this.state.creatures.length; i++) {
+                    const c = this.state.creatures[i];
+                    if (!c || !c.userData) continue;
+                    c.userData.emotions =
+                        emotion === "sad"
+                            ? { joy: 0, awe: 0, sorrow: 0.6, hope: 0, peace: 0, chaos: 0.1 }
+                            : { joy: 0.6, awe: 0, sorrow: 0, hope: 0.2, peace: 0.2, chaos: 0 };
+                    this._projectCreatureEmotion(c);
+                }
             },
             creatures_speed_mul: ([factor]) => {
                 const f = c(factor, 0.1, 5);
@@ -8659,6 +8670,40 @@ class AnazhRealm {
         return { dominant: top1, valence, arousal, intensity, label, mix };
     }
 
+    // === V18.100 (G4-1 — das Kreatur-INNENLEBEN): 6 Achsen statt binär =====
+    //
+    // Der Zwillings-Schnitt (gigant-plan §3 Nr. 3): Kreaturen fühlten ein
+    // binäres Etikett ("happy"/"sad", ad-hoc mutiert), der Spieler 6 Achsen
+    // über _feelAction/ACTION_TO_EMOTION. Jetzt fühlen BEIDE über DASSELBE
+    // Substrat: der Vektor (`creature.userData.emotions`) ist die Wahrheit,
+    // das binäre Etikett (`state.creatureEmotions[i]`) wird die VALENZ-
+    // PROJEKTION (via `_emotionState` — derselbe dimensionale Leser wie für
+    // Spieler-Emotion und Mood) → ALLE Alt-Leser (Flocking · Speed/Jump ·
+    // HUD · Hof-Profil · Persistenz) bleiben unberührt heil. Der Vektor ist
+    // reaktive Schicht (NICHT persistiert — V17.27-Doktrin; die Projektion
+    // persistiert wie bisher; ein Reload startet gefühls-ruhig).
+    _feelCreatureAction(creature, type, intensity = 1) {
+        if (!creature || !creature.userData) return;
+        const table = AnazhRealm.ACTION_TO_EMOTION[type];
+        if (!table) return;
+        const ud = creature.userData;
+        if (!ud.emotions) ud.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+        for (const axis in table) {
+            const cur = ud.emotions[axis] || 0;
+            ud.emotions[axis] = Math.max(0, Math.min(1, cur + table[axis] * intensity));
+        }
+        this._projectCreatureEmotion(creature);
+    }
+
+    // Die Valenz-Projektion Vektor → binäres Etikett (EINE Quelle: _emotionState).
+    _projectCreatureEmotion(creature) {
+        const ud = creature && creature.userData;
+        if (!ud || !ud.emotions) return;
+        const idx = this.state.creatures.indexOf(creature);
+        if (idx < 0 || !Array.isArray(this.state.creatureEmotions)) return;
+        this.state.creatureEmotions[idx] = this._emotionState(ud.emotions).valence >= 0 ? "happy" : "sad";
+    }
+
     // W3 (V17.47) — die Valenz der langsamen STIMMUNG (∈ [−1, 1], via EMOTION_GEOMETRY).
     // Speist die stimmungs-kongruente Bewertung: eine trübe Stimmung tönt die nächste
     // Bewertung negativ, eine helle positiv. Skaliert mit der Stimmungs-STÄRKE (eine
@@ -8701,8 +8746,13 @@ class AnazhRealm {
                 c.userData.bond = Math.min(1, (c.userData.bond || 0) + cfg.bondGrowPerSec * proximity * delta);
             }
             const bond = (c.userData && c.userData.bond) || 0;
-            const emo = (this.state.creatureEmotions && this.state.creatureEmotions[i]) || "happy";
-            const target = targets[emo];
+            // V18.100 (G4-1, der KONSUM des neuen Vektors): die Contagion liest
+            // das ECHTE 6-Achsen-Innenleben der Kreatur, wo es lebt — der
+            // Spieler wird von dem angesteckt, was das Wesen WIRKLICH fühlt
+            // (awe/hope/peace reisen mit, nicht nur ein happy/sad-Derivat).
+            // Ohne Vektor (frisch geladen/ruhig): der alte binäre Pfad.
+            const vec = c.userData && c.userData.emotions;
+            const target = vec || targets[(this.state.creatureEmotions && this.state.creatureEmotions[i]) || "happy"];
             if (!target) continue;
             const weight = cfg.rate * proximity * (cfg.bondFloor + (1 - cfg.bondFloor) * bond) * delta;
             for (const axis of Object.keys(target)) {
@@ -12708,6 +12758,13 @@ class AnazhRealm {
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
+        // V18.100 (G4-1) — das Innenleben startet kongruent zum Spawn-Etikett
+        // (sad → Trauer-Grundton, sonst ruhige Freude); ab jetzt schreibt nur
+        // noch _feelCreatureAction/Wetter, das Etikett ist Projektion.
+        group.userData.emotions =
+            emotion === "sad"
+                ? { joy: 0, awe: 0, sorrow: 0.4, hope: 0, peace: 0, chaos: 0 }
+                : { joy: 0.2, awe: 0, sorrow: 0, hope: 0.1, peace: 0.15, chaos: 0 };
         if (this.state.physicsWorld) {
             // Hitbox bleibt bewusst kompakt (0.5×0.5×0.5 wie pre-V7.82) — die
             // Visual-Höhe variiert je Seele, aber Kollision soll vorhersagbar
@@ -13338,8 +13395,10 @@ class AnazhRealm {
         // (kein passives Stehenbleiben mehr). Ein Furcht-Fenster (fearUntil) + die Emotion sad → der
         // wander-Tick erzwingt die Flucht über _creatureWariness. Echtes Zurückschlagen bleibt Phase E.
         creature.userData.fearUntil = performance.now() / 1000 + AnazhRealm.CREATURE_NATURE.fearSec;
-        const fidx = this.state.creatures.indexOf(creature);
-        if (fidx >= 0 && Array.isArray(this.state.creatureEmotions)) this.state.creatureEmotions[fidx] = "sad";
+        // V18.100 (G4-1) — der Treffer fühlt sich über DASSELBE Substrat wie
+        // beim Spieler (ACTION_TO_EMOTION.damage → sorrow+chaos); die binäre
+        // "sad"-Projektion fällt aus der Valenz, statt direkt gestempelt zu werden.
+        this._feelCreatureAction(creature, "damage", 2.5);
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
         return { ok: true, dealt, killed: false };
     }
@@ -14592,9 +14651,10 @@ class AnazhRealm {
                 }
             }
             if (now - task.args._drinkStart >= DURATION_S) {
-                // Trinken vollendet → Happiness + Erinnerung + wander.
-                const idx = this.state.creatures.indexOf(creature);
-                if (idx >= 0) this.state.creatureEmotions[idx] = "happy";
+                // Trinken vollendet → Sättigung fühlt sich als Fülle (harvest:
+                // joy+hope, V18.100 G4-1 — dasselbe Substrat wie der Spieler;
+                // die "happy"-Projektion fällt aus der Valenz) + Erinnerung + wander.
+                this._feelCreatureAction(creature, "harvest", 2);
                 this._creatureRemember(creature, "drank", {
                     at: { x: tx, z: tz },
                     durationS: DURATION_S,
@@ -15364,6 +15424,27 @@ class AnazhRealm {
             }
 
             creature.position.addScaledVector(direction, delta);
+
+            // V18.100 (G4-1) — sanfter Decay des Kreatur-Innenlebens: Gefühle
+            // verfliegen (~17 s Halbwert), ruhige Wesen werden sparse (null =
+            // kein Tick-Kostenrest); beim Ausklingen projiziert die Valenz
+            // zurück auf "happy" — ein getroffenes Wesen ERHOLT sich (vorher
+            // blieb das sad-Etikett ewig). V1 uniform; pro-Achsen-Decay wie
+            // beim Spieler ist Vertiefung, wenn das Browser-Feel es verlangt.
+            if (creature.userData.emotions) {
+                const dk = Math.max(0, 1 - delta * 0.04);
+                let live = false;
+                const em = creature.userData.emotions;
+                for (const ax in em) {
+                    const v = em[ax] * dk;
+                    em[ax] = v < 0.005 ? 0 : v;
+                    if (em[ax] > 0) live = true;
+                }
+                if (!live) {
+                    creature.userData.emotions = null;
+                    if (Array.isArray(this.state.creatureEmotions)) this.state.creatureEmotions[i] = "happy";
+                }
+            }
 
             // V18.99 (G1 — Motion-Resonanz): die emergente Bewegung — Beine
             // schwingen, Flügel schlagen, Schwänze wellen, Köpfe nicken; aus
@@ -17074,18 +17155,24 @@ class AnazhRealm {
         chatOutput.scrollTop = chatOutput.scrollHeight;
     }
     updateCreatureEmotions() {
+        // V18.100 (G4-1) — das Wetter ist ein AMBIENTER Achsen-Impuls auf das
+        // 6-Achsen-Innenleben (rainy nährt sorrow+peace, sunny nährt joy),
+        // kein Binär-Würfel mehr; das Etikett fällt aus der Valenz-Projektion.
+        // Dieselbe 10%-Stochastik (nicht alle Wesen fühlen gleichzeitig).
+        const rainy = this.state.weather === "rainy";
         for (let i = 0; i < this.state.creatures.length; i++) {
-            if (Math.random() < 0.1) {
-                // 10% Chance, Emotion zu ändern
-                this.state.creatureEmotions[i] =
-                    this.state.weather === "rainy"
-                        ? Math.random() < 0.7
-                            ? "sad"
-                            : "happy"
-                        : Math.random() < 0.7
-                          ? "happy"
-                          : "sad";
+            if (Math.random() >= 0.1) continue;
+            const c = this.state.creatures[i];
+            if (!c || !c.userData) continue;
+            const ud = c.userData;
+            if (!ud.emotions) ud.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+            if (rainy) {
+                ud.emotions.sorrow = Math.min(1, (ud.emotions.sorrow || 0) + 0.18);
+                ud.emotions.peace = Math.min(1, (ud.emotions.peace || 0) + 0.06);
+            } else {
+                ud.emotions.joy = Math.min(1, (ud.emotions.joy || 0) + 0.15);
             }
+            this._projectCreatureEmotion(c);
         }
     }
 
@@ -51524,7 +51611,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.99.0";
+AnazhRealm.VERSION = "18.100.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

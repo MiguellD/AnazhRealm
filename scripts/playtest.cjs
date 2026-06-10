@@ -3649,6 +3649,27 @@ async function checkBandV1748Social(ctx) {
         r._tickEmotionContagion(1);
         out.sadGrieves = p.emotions.sorrow > 0 && p.emotions.joy === 0;
 
+        // (2c) V18.100 G4-1 — der VEKTOR ist die Wahrheit (KONSUM-Diskriminator):
+        // ein Wesen mit echtem awe-Innenleben steckt den Spieler mit AWE an —
+        // das binäre happy-Target (CONTAGION_TARGET) kennt KEIN awe, nur der
+        // Vektor-Pfad kann das transportieren.
+        setEmo({});
+        r.state.creatures = [fake(1)];
+        r.state.creatures[0].userData.emotions = { joy: 0, awe: 0.7, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+        r.state.creatureEmotions = ["happy"];
+        r._tickEmotionContagion(1);
+        out.vecContagionAwe = p.emotions.awe > 0;
+
+        // (2d) V18.100 G4-1 — EIN Substrat: der Kreatur-Treffer fühlt über
+        // ACTION_TO_EMOTION.damage (denselben Vektor-Eintrag wie der Spieler)
+        // und die binäre "sad"-Projektion fällt aus der Valenz (Alt-Leser heil).
+        const fcDmg = fake(0);
+        r.state.creatures = [fcDmg];
+        r.state.creatureEmotions = ["happy"];
+        r._feelCreatureAction(fcDmg, "damage", 2.5);
+        out.creatureFeelsDamage =
+            !!fcDmg.userData.emotions && fcDmg.userData.emotions.sorrow > 0.2 && r.state.creatureEmotions[0] === "sad";
+
         // (2b) gebounded: die Contagion treibt joy NICHT über das Ziel (0.5) hinaus (kein Runaway)
         setEmo({ joy: 0.5 });
         inject("happy", 1);
@@ -3712,6 +3733,14 @@ async function checkBandV1748Social(ctx) {
     check("V17.48 Soziales: EMOTION_CONTAGION-Config + CONTAGION_TARGET + die loss-Tat existieren", res.config);
     check("V17.48 Soziales: KONSUM — ein freudiges Wesen nah HEBT joy + peace (Contagion)", res.happyLifts);
     check("V17.48 Soziales: KONSUM — ein leidendes Wesen nah betrübt (sorrow)", res.sadGrieves);
+    check(
+        "V18.100 G4-1 KONSUM: die Contagion liest das 6-Achsen-Innenleben — ein awe-fühlendes Wesen steckt mit AWE an (binär unmöglich)",
+        res.vecContagionAwe
+    );
+    check(
+        "V18.100 G4-1: der Kreatur-Treffer fühlt über DASSELBE Substrat (ACTION_TO_EMOTION.damage → Vektor; 'sad' fällt aus der Valenz-Projektion)",
+        res.creatureFeelsDamage
+    );
     check(
         "V17.48 Soziales: gebounded — die Contagion sättigt am Ziel (≤0.5), kein Runaway (V17.44-Lehre)",
         res.contagionBounded
@@ -22750,7 +22779,10 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         out.routerHasDrink = /task\.name === "drink"/.test(routerSrc);
         const drinkSrc = r._tickCreatureDrink.toString();
         out.drinkHasPhases = /_target/.test(drinkSrc) && /_drinkStart/.test(drinkSrc);
-        out.drinkSetsHappy = /creatureEmotions\[idx\]\s*=\s*"happy"/.test(drinkSrc);
+        // V18.100 G4-1 (Test wandert mit, V9.56-i): das vollendete Trinken fühlt
+        // jetzt über das EINE Substrat (_feelCreatureAction → harvest: joy+hope;
+        // die "happy"-Projektion fällt aus der Valenz) statt eines Direkt-Stempels.
+        out.drinkSetsHappy = /_feelCreatureAction\(creature,\s*"harvest"/.test(drinkSrc);
 
         // Chat-Pattern „trinke" liefert drink-Programm.
         const parsed = r.parseChatToDsl("trinke");
