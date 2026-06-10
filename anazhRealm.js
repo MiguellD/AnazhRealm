@@ -17258,40 +17258,94 @@ class AnazhRealm {
     // Patch auf die alte Zwei-Skalen-Naht, die mit dem alten Quad-Mesh weg
     // ist (V9.70-B-Lehre).
 
+    // V18.94 — einen OFFENEN, FLACHEN, TROCKENEN Spawn-Punkt finden (Schöpfer:
+    // „Spawnen korrigieren, damit die Startplattform funktioniert" — der Spawn
+    // landete im T6d-Kavernen-BODEN: `getTerrainHeightAt` ist die ECHTE Voxel-
+    // Oberfläche, und in einer zum Himmel offenen Kaverne ist das der Kraterboden
+    // weit unter dem Makro-Terrain → die Plattform stand im Loch, der Spieler
+    // erwachte zwischen Felswänden). DETERMINISTISCH (Seed-Welt → alle Peers
+    // wählen denselben Punkt): Ring-Spirale um (0,0), der ERSTE Punkt, der
+    // (a) KEIN Kavernen-/Kraterboden ist (surf ≥ macro − 6 — die Voxel-Oberfläche
+    //     liegt nahe der Makro-Oberfläche = offener Himmel),
+    // (b) TROCKEN liegt (surf > waterLevel + 1.5),
+    // (c) lokal FLACH ist (±6-m-Proben, Δ ≤ 3.5 m — die Plattform steht eben).
+    // Fallback (nichts gefunden bis 240 m): (0,0) wie früher.
+    _findOpenSpawnSpot() {
+        const wl = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        const candidates = [[0, 0]];
+        for (let r = 12; r <= 240; r += 12) {
+            for (let a = 0; a < 8; a++) {
+                const ang = (a / 8) * Math.PI * 2;
+                candidates.push([Math.round(Math.cos(ang) * r), Math.round(Math.sin(ang) * r)]);
+            }
+        }
+        for (const [x, z] of candidates) {
+            const surf = this.getTerrainHeightAt(x, z);
+            if (!Number.isFinite(surf)) continue;
+            const macro = this._terrainMacroSurfaceY(x, z);
+            if (Number.isFinite(macro) && surf < macro - 6) continue; // Kavernen-/Kraterboden
+            if (surf < wl + 1.5) continue; // nass
+            let flat = true;
+            for (const [dx, dz] of [
+                [6, 0],
+                [-6, 0],
+                [0, 6],
+                [0, -6],
+            ]) {
+                const h = this.getTerrainHeightAt(x + dx, z + dz);
+                if (!Number.isFinite(h) || Math.abs(h - surf) > 3.5) {
+                    flat = false;
+                    break;
+                }
+            }
+            if (!flat) continue;
+            return { x, z, y: surf };
+        }
+        const h0 = this.getTerrainHeightAt(0, 0);
+        return { x: 0, z: 0, y: Number.isFinite(h0) ? h0 : 0 };
+    }
+
     // V8.29 — Genesis-Plattform am Welt-Zentrum. Idempotent: spawnt nur
     // wenn noch keine start_plattform-Architektur existiert (z. B. nach
     // Reload aus dem Save ist sie schon da). Der Spieler wird oben drauf
     // gesetzt, damit er beim Welt-Start die Umgebung überblickt statt in
-    // eine Schlucht zu fallen.
+    // eine Schlucht zu fallen. V18.94 — der Punkt kommt aus
+    // `_findOpenSpawnSpot` (offen + flach + trocken statt Kavernen-Boden).
     _ensureGenesisPlatform() {
         if (!this.state.architectures) return;
         const exists = this.state.architectures.some((a) => a && a.type === "start_plattform");
         if (exists) return;
-        // Terrain-Höhe am Zentrum sampeln. V9.25 Phase 5b — getTerrainHeightAt
-        // ist voxel-aware: die Genesis-Plattform sitzt in einer Voxel-Welt auf
-        // der Voxel-Oberfläche, nicht auf der schlafenden Heightfield-Höhe.
-        let h0 = this.getTerrainHeightAt(0, 0);
-        if (typeof h0 !== "number" || !Number.isFinite(h0)) h0 = 0;
-        // Plattform 5 m über dem Terrain-Zentrum (genug Überblick, nicht
+        const spot = this._findOpenSpawnSpot();
+        const h0 = spot.y;
+        // Plattform 5 m über dem Terrain (genug Überblick, nicht
         // so hoch dass der Abstieg unangenehm wird).
         const platCenterY = h0 + 5;
         // spawnArchitecture zieht intern 0.5 ab (at_player-Kalibrierung).
-        this.spawnArchitecture("start_plattform", { x: 0, y: platCenterY + 0.5, z: 0 }, { silent: true });
+        this.spawnArchitecture("start_plattform", { x: spot.x, y: platCenterY + 0.5, z: spot.z }, { silent: true });
         // Spieler oben auf die Plattform setzen. Plattform-Part-Top liegt
         // bei platCenterY + 1 (Cylinder y-Center 0.5, Höhe 1). +1.2 Puffer.
         const spawnY = platCenterY + 2.2;
         if (this.state.playerMesh) {
-            this.state.playerMesh.position.set(0, spawnY, 0);
+            this.state.playerMesh.position.set(spot.x, spawnY, spot.z);
             if (this.state.playerBody) {
                 const t = this.state.tmpTransform;
                 t.setIdentity();
-                t.setOrigin(this.setVec(this.state.tmpVec1, 0, spawnY / this.state.scaleFactor, 0));
+                t.setOrigin(
+                    this.setVec(
+                        this.state.tmpVec1,
+                        spot.x / this.state.scaleFactor,
+                        spawnY / this.state.scaleFactor,
+                        spot.z / this.state.scaleFactor
+                    )
+                );
                 this.state.playerBody.setWorldTransform(t);
                 this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
                 this.state.playerBody.activate(true);
             }
         }
-        this.log(`Genesis-Plattform erstellt bei y=${platCenterY.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`);
+        this.log(
+            `Genesis-Plattform erstellt bei (${spot.x}, ${spot.z}), y=${platCenterY.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`
+        );
     }
 
     // ### Terrain-Erweiterung ### V7.42
@@ -20063,6 +20117,7 @@ class AnazhRealm {
         // (WebGPU-strikt, V10.0-g.1); 0 = flach (der Iso-A/B-Pfad ist sowieso Vergleich).
         if (!geom.getAttribute("aDepth")) {
             geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(vCount), 1));
+            geom.setAttribute("aSlope", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         }
         const mesh = new THREE.Mesh(geom, mat);
         mesh.renderOrder = 1; // transparent — nach den opaken Objekten
@@ -20337,6 +20392,28 @@ class AnazhRealm {
         const tops = cur;
         const colTop = (ci, ck) => tops[ci + PAD + (ck + PAD) * GW];
         const colWet = (ci, ck) => !Number.isNaN(colTop(ci, ck));
+        // V18.94 — SLOPE pro Spalte (|∇top| der geglätteten Dächer): treibt das
+        // WILDWASSER im Shader (steile Läufe schäumen weiss = der Wasserfall-Look
+        // auf Läufen). Nass↔nass = Dach-Gefälle; nass↔trocken zählt NUR als LIPPE,
+        // wenn der trockene Boden WEIT unter dem Dach liegt (> 3 m → Vorhang/Fall) —
+        // normale Ufer (Boden nahe Spiegel) bleiben ruhig.
+        const slopeG = new Float32Array(GW * GW);
+        for (let gz = 1; gz < GW - 1; gz++) {
+            for (let gx = 1; gx < GW - 1; gx++) {
+                const g = gx + gz * GW;
+                const t0 = tops[g];
+                if (Number.isNaN(t0)) continue;
+                let mx = 0;
+                for (const nb of [g - 1, g + 1, g - GW, g + GW]) {
+                    const tn = tops[nb];
+                    let d = 0;
+                    if (!Number.isNaN(tn)) d = Math.abs(t0 - tn) / step;
+                    else if (solidG[nb] < t0 - 3) d = Math.min(4, (t0 - solidG[nb]) / step);
+                    if (d > mx) mx = d;
+                }
+                slopeG[g] = mx;
+            }
+        }
         // Vertex-Grid (dim+1)²: Vertex (i,k) = Ecke der Spalten (i−1,k−1)…(i,k).
         const NV = dim + 1;
         const positions = [];
@@ -20344,6 +20421,7 @@ class AnazhRealm {
         const aFlow = [];
         const aWave = [];
         const aDepth = [];
+        const aSlope = [];
         const vmap = new Int32Array(NV * NV).fill(-1);
         const addVert = (i, k) => {
             const vi = i + k * NV;
@@ -20353,6 +20431,7 @@ class AnazhRealm {
             let sum = 0;
             let n = 0;
             let dsum = 0;
+            let slopeMax = 0;
             let anchor = Infinity;
             for (const [aci, ack] of [
                 [i - 1, k - 1],
@@ -20360,13 +20439,15 @@ class AnazhRealm {
                 [i - 1, k],
                 [i, k],
             ]) {
+                const gi2 = aci + PAD + (ack + PAD) * GW;
                 const v = colTop(aci, ack);
                 if (!Number.isNaN(v)) {
                     sum += v;
                     n++;
-                    dsum += depthG[aci + PAD + (ack + PAD) * GW];
+                    dsum += depthG[gi2];
+                    if (slopeG[gi2] > slopeMax) slopeMax = slopeG[gi2];
                 }
-                const sv = solidG[aci + PAD + (ack + PAD) * GW];
+                const sv = solidG[gi2];
                 if (sv < anchor) anchor = sv;
             }
             // Nasser Vertex: das geglättete Wasser-Dach. Anker-Vertex (kein nasser
@@ -20383,6 +20464,7 @@ class AnazhRealm {
             // aWave: weiche Ozean-Rampe (V18.14) — auf dem Sheet-Spiegel statt `L`.
             aWave.push(Math.max(0, Math.min(1, 1 - (Math.abs(surfY - waterLevel) - 0.8) / 2.0)));
             aDepth.push(depthM);
+            aSlope.push(n > 0 ? slopeMax : 0);
             // aFlow — identisch zur Fläche (V18.11/.24): 3×3-geglättete Fluss-Strömung,
             // Magnitude tapert zur Mündung/Bank.
             let sfx = 0;
@@ -20424,6 +20506,7 @@ class AnazhRealm {
         geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(aFlow, 2));
         geom.setAttribute("aWave", new THREE.Float32BufferAttribute(aWave, 1));
         geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(aDepth, 1));
+        geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(aSlope, 1));
         // aShore trägt der Tiefen-Shader → 0 (wie Fläche + Iso).
         geom.setAttribute("aShore", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
         geom.setIndex(indices);
@@ -23355,6 +23438,7 @@ class AnazhRealm {
         geo.setAttribute("aWave", new THREE.BufferAttribute(aWaveArr, 1));
         // V18.14 — `aDepth`=0 (flach) → der Aufprall-Pool ist volle Gischt (aShore=1), passt.
         geo.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(vCount), 1));
+        geo.setAttribute("aSlope", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         const mesh = new THREE.Mesh(geo, mat);
         // V9.60-d.4: Pool sitzt leicht in einer Erosion-Senke (Real-World)
         mesh.position.set(wf.x, wf.bottomY - 0.25, wf.z);
@@ -23529,6 +23613,11 @@ class AnazhRealm {
         const aWaveV = attribute("aWave", "float");
         // V18.14 — der MAKRO-Kontext: die echte Wassertiefe (L−Bett) pro Vertex.
         const aDepthV = attribute("aDepth", "float");
+        // V18.94 — aSlope: |∇top| der Wasser-Oberfläche pro Vertex (das Zell-Sheet
+        // rechnet ihn aus den geglätteten Spalten-Dächern; Lippen/Vorhänge tragen
+        // hohe Werte). Treibt das WILDWASSER (steile Läufe schäumen weiss — der
+        // Wasserfall-Look auf Läufen, die Plane bleibt für echte Wände).
+        const aSlopeV = attribute("aSlope", "float");
 
         const p = positionLocal;
         // Welt-verankert: das Wasser-Mesh hat mesh.position=(0,0,0) (V9.71),
@@ -23613,18 +23702,18 @@ class AnazhRealm {
 
         // RIVER-PFAD
         const fdir = aFlowV.div(max(fmag, float(0.0001)));
-        const perp = vec2(fdir.y.mul(-1.0), fdir.x);
-        const along = dot(xz, fdir);
-        const across = dot(xz, perp);
         const scroll = uTime.mul(uFlowSpeed).mul(fmag);
-        // V18.28 — FLOW-ausgerichtete Strähnen statt FISCHGRÄT (Schöpfer-Bild: ein Herringbone-
-        // Muster auf dem Wasser, das wie Sägezähne wirkt). Das Fischgrät entstand aus zwei hohen
-        // `across`-Frequenzen (0.55 + 1.2 = Kreuzschraffur quer zur Strömung). Jetzt NIEDRIGE
-        // across-Frequenz (breite, kohärente Strähnen ENTLANG der Strömung) + die zweite Oktave
-        // schwächer + softer Schwellwert → ruhige, strömungs-folgende Schaum-Strähnen (natürlich),
-        // kein Kreuz-Moiré. Render-only (Shader).
-        const riverS1 = vnoise(vec2(across.mul(0.28), along.mul(0.13).sub(scroll)));
-        const riverS2 = vnoise(vec2(across.mul(0.6), along.mul(0.3).sub(scroll.mul(1.6))));
+        // V18.94 — ADVEKTIERTE WELT-RAUM-STRÄHNEN statt rotierender along/across-Basis
+        // (Schöpfer-Bild: „Kreuzmuster/Häuschen/Zacken" in FLUSS-KURVEN). Die Wurzel der
+        // Zacken: das alte Muster las `dot(xz, fdir)` — Welt-|xz| ist GROSS (Hebelarm!),
+        // eine kleine fdir-Drehung in der Kurve springt den Noise-Input um |xz|·dθ →
+        // dekorrelierte Fragmente = das Zickzack-Moiré (an Konfluenzen flächendeckend).
+        // Jetzt lebt das Muster STABIL in Welt-XZ und wird von der Strömung nur
+        // ADVEKTIERT (Offset −fdir·scroll, Magnitude ~scroll — KEIN Hebelarm): in
+        // Kurven dreht sich nur die Drift-Richtung, das Muster bleibt kohärent.
+        const adv = xz.sub(fdir.mul(scroll.mul(3.0)));
+        const riverS1 = vnoise(adv.mul(0.16));
+        const riverS2 = vnoise(adv.mul(0.38));
         const riverFoam = clamp(riverS1.add(riverS2.mul(0.4)).div(1.4).sub(0.44).mul(2.0), 0.0, 1.0);
 
         // LAKE/OCEAN-PFAD
@@ -23676,9 +23765,16 @@ class AnazhRealm {
         // Sonnen-Glitzern bleiben — die Ferne wird ruhig statt nervös. Render-only.
         const camDist = length(cameraPosition.sub(vWorldPos));
         const detailFade = float(1.0).sub(smoothstep(float(70.0), float(200.0), camDist));
+        // V18.94 — WILDWASSER (der Wasserfall auf LÄUFEN): steile Wasser-Oberfläche
+        // (aSlope aus den Zell-Dächern; Lippen/Vorhänge ≥3) schäumt weiss — nah
+        // texturiert (riverS1), fern FLACH-weiss (Wasserfälle sind Makro-Features:
+        // sie bleiben sichtbar, nur ihr Mikro-Detail fadet → kein Moiré).
+        const whitewater = smoothstep(float(0.5), float(2.0), aSlopeV).mul(
+            float(0.6).add(riverS1.mul(0.4).mul(detailFade))
+        );
         // V14-Emotions-Haken: uEmotion>0 hebt den Schaum sanft an (die Welt atmet
         // im Wasser); default 0 = exakt das alte Bild.
-        const foamD = clamp(max(foam, depthFoam).mul(detailFade).add(uEmotion.mul(0.25)), 0.0, 1.0);
+        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).add(uEmotion.mul(0.25)), 0.0, 1.0);
 
         const colWithFoam = mix(baseCol, uFoam, foamD.mul(0.7));
         const lit = colWithFoam.mul(uLight);
@@ -51017,7 +51113,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.93.0";
+AnazhRealm.VERSION = "18.94.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
