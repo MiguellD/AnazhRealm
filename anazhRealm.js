@@ -19729,26 +19729,19 @@ class AnazhRealm {
     // (Edge-Vertices nach Crop+Smooth) — selten, aber sicher.
     _voxelGradientNormals(positions, sample, step, preGrid = null) {
         const normals = new Float32Array(positions.length);
-        // V18.106 — B3: die 2.5D-Lichtung ist in die GEOMETRIE GEBACKEN
-        // (S-Entscheid 10.06.: „das Alte kann weichen" — der terrainFlatten-
-        // Slider + der normalNode-Override fallen). Die Geometrie-Normale wird
-        // mit TERRAIN_NORMAL_FLATTEN zur Welt-Up-Achse geblendet → AO (fwidth),
-        // Schatten-normalBias, Hemisphere UND Diffus lesen jetzt EINE Normale
-        // (G6 vollendet; heilt den V17.108-Riss „normalNode erreicht nur den
-        // Diffus"). Beim settled Wert 1.0 ist die Normale konstant (0,1,0) →
-        // der teure Gradienten-Pass (6 Lookups/Vertex) entfällt ganz.
-        // Worker-Mirror: gradientNormals in voxel-worker.js — BEIDE ändern.
-        // (Historie: eps-Experimente V17.100–.103 — eps war nie der Hebel,
-        // die Shading-Normale war es; diag-facets/diag-cel-eps messen die Wahrheit.)
-        const flatten = AnazhRealm.TERRAIN_NORMAL_FLATTEN;
-        if (flatten >= 1) {
-            for (let v = 0; v < positions.length; v += 3) {
-                normals[v] = 0;
-                normals[v + 1] = 1;
-                normals[v + 2] = 0;
-            }
-            return normals;
-        }
+        // V18.113 — B3-ROLLBACK (NARBE, Schöpfer-Browser-Beweis 10.06. nacht):
+        // der V18.106-Bake (Normale=up in die GEOMETRIE) erzeugte SCHATTEN-AKNE-
+        // RAUTEN an jedem Hang bei schräger Sonne — `shadow.normalBias` schiebt
+        // die Schatten-Probe ENTLANG DIESER Normale von der Oberfläche weg; mit
+        // up-Normalen schiebt er an Hängen PARALLEL zur Fläche → jedes Dreieck
+        // schattiert den Nachbarn (exakt die V17.103-GEGEN-Lehre, die im selben
+        // Dokument stand: „Glättung verschlechterte den Schatten via normalBias").
+        // DIE WAHRE FORM: die GEOMETRIE trägt die ECHTE Oberflächen-Normale
+        // (der Schatten-Bias-Vertrag), die LICHTUNG flacht im Material-normalNode
+        // mit der eingefrorenen Konstante (TERRAIN_NORMAL_FLATTEN — der Slider
+        // bleibt geschnitten, der S-Entscheid steht). G6 „eine Normale" ist mit
+        // dem normalBias-Vertrag NICHT vereinbar — ZWEI Wahrheiten sind hier
+        // korrekt: Geometrie=Oberfläche (Schatten), Shading=Lichtung (Look).
         const eps = step * 1.5;
         // Schneller Trilinear-Sampler aus dem Grid. Wenn preGrid==null oder
         // Sample-Punkt out-of-bounds → fallback auf sample(x,y,z).
@@ -19814,15 +19807,9 @@ class AnazhRealm {
                 normals[v + 1] = 1;
                 normals[v + 2] = 0;
             } else {
-                // B3-Bake: normalize(mix(−∇d/|∇d|, up, flatten)) — bit-identisch
-                // im Worker-Mirror (dieselben Ops, dieselbe Reihenfolge).
-                const nx = (-gx / len) * (1 - flatten);
-                const ny = (-gy / len) * (1 - flatten) + flatten;
-                const nz = (-gz / len) * (1 - flatten);
-                const nl = Math.hypot(nx, ny, nz) || 1;
-                normals[v] = nx / nl;
-                normals[v + 1] = ny / nl;
-                normals[v + 2] = nz / nl;
+                normals[v] = -gx / len;
+                normals[v + 1] = -gy / len;
+                normals[v + 2] = -gz / len;
             }
         }
         return normals;
@@ -20221,13 +20208,13 @@ class AnazhRealm {
         return Object.freeze({ strength: 0.4, cap: 0.18 });
     }
 
-    // V18.106 — B3: der GEBACKENE 2.5D-Lichtungs-Wert (S-Entscheid 10.06.:
-    // der settled Slider-Stand 1.0 [„100 % killt die Facetten", Sign-off
-    // 04.06.] wandert in die Geometrie, der Slider weicht). Konsumiert von
-    // `_voxelGradientNormals` (main) + `gradientNormals` (voxel-worker.js,
-    // dort als lokale Konstante — beim Ändern BEIDE, Determinismus-Wand).
-    // 1.0 = Normale konstant up (2.5D-Lichtung, kein Gradienten-Pass);
-    // <1 = mix(Gradient, up, Wert) — der eine künftige S-Tuning-Hebel.
+    // V18.113 — der EINGEFRORENE 2.5D-Lichtungs-Wert (S-Entscheid 10.06.: der
+    // settled Slider-Stand 1.0 [„100 % killt die Facetten", Sign-off 04.06.];
+    // der Slider ist geschnitten, dies ist der eine Tuning-Hebel). NUR die
+    // SHADING-Normale (Material-normalNode + AO in _buildToonNodeMaterial) —
+    // NIE die Geometrie: der V18.106-Geometrie-Bake erzeugte SCHATTEN-AKNE-
+    // Rauten an Hängen (shadow.normalBias braucht die ECHTE Oberflächen-
+    // Normale — die V17.103-Lehre; Rollback V18.113, die Narbe).
     static get TERRAIN_NORMAL_FLATTEN() {
         return 1.0;
     }
@@ -21603,8 +21590,11 @@ class AnazhRealm {
                     ? this.state.atmosphere.rimStrength
                     : 0.16
             ),
-            // (V18.106 — B3: das terrainFlatten-Uniform ist GEFALLEN — die
-            // 2.5D-Lichtung ist in die Geometrie gebacken, TERRAIN_NORMAL_FLATTEN.)
+            // V18.113 — die 2.5D-Lichtung als KONSOLEN-Hebel (der Settings-SLIDER
+            // bleibt geschnitten — S-Entscheid; Init aus der eingefrorenen
+            // Konstante, NICHT persistiert). Render-only, fürs S-Tuning:
+            //   anazhRealm.state.atmoUniforms.terrainFlatten.value = 0.7
+            terrainFlatten: TSL.uniform(AnazhRealm.TERRAIN_NORMAL_FLATTEN),
             // WELLE J4-DEBUG — Browser-Isolations-Regler (default 1 = unverändert):
             // `aoScale`=0 schaltet die Kavitäts-AO ab (der `fwidth`-Term, der jede
             // Surface-Nets-Facetten-Kante als Linie zeichnet — mein Haupt-Verdacht
@@ -21848,10 +21838,24 @@ class AnazhRealm {
         }
 
         if (opts.vertexColors) {
-            // V18.106 — B3: der V17.107-normalNode-Override ist GEFALLEN — die
-            // 2.5D-Lichtung ist in die GEOMETRIE gebacken (_voxelGradientNormals +
-            // Worker-Mirror, TERRAIN_NORMAL_FLATTEN). Diffus/AO/Schatten-normalBias/
-            // Hemisphere lesen jetzt per Konstruktion EINE Normale (G6 vollendet).
+            // V18.113 — die 2.5D-LICHTUNG flacht die SHADING-Normale (V17.107-Form),
+            // jetzt mit der EINGEFRORENEN Konstante TERRAIN_NORMAL_FLATTEN (der
+            // Slider bleibt geschnitten — S-Entscheid). NUR Shading: die GEOMETRIE
+            // behält die echte Oberflächen-Normale (der V18.106-Geometrie-Bake
+            // erzeugte Schatten-AKNE-Rauten via normalBias — die Narbe; GEMESSEN
+            // am Schöpfer-Bild 10.06. nacht, Rollback V18.113).
+            try {
+                const _Tn = THREE.TSL;
+                const _aun = this.state.atmoUniforms;
+                if (_Tn && _Tn.normalWorld && _Tn.normalize && _Tn.mix && _Tn.vec3) {
+                    const _up = _Tn.vec3(0.0, 1.0, 0.0);
+                    const _flat =
+                        _aun && _aun.terrainFlatten ? _aun.terrainFlatten : _Tn.float(AnazhRealm.TERRAIN_NORMAL_FLATTEN);
+                    mat.normalNode = _Tn.normalize(_Tn.mix(_Tn.normalWorld, _up, _flat));
+                }
+            } catch (_e) {
+                /* TSL fehlt → volle 3D-Lichtung, nie ein kaputtes Material (V17.12) */
+            }
             // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): die Boundary-Vertices eines
             // feinen Chunks an einer Cross-LOD-Grenze auf die GROBE Nachbar-Oberfläche ziehen
             // (`_applyCrossLodGeomorph` setzt aMorphTarget = nächster grober Boundary-Vertex,
@@ -21917,13 +21921,19 @@ class AnazhRealm {
                 // Konkavitaeten (Edge-Tint a la Genshin/BotW). Staerke 1.6 /
                 // Cap 0.45 browser-justierbar.
                 if (_T.fwidth && _T.normalWorld) {
-                    // V18.106 — B3: die AO liest die GEOMETRIE-Normale direkt — sie IST
-                    // jetzt die gebackene Lichtungs-Normale (TERRAIN_NORMAL_FLATTEN in
-                    // _voxelGradientNormals). Der V17.108-Shader-Mix fällt: Konsistenz
-                    // per Konstruktion, nicht per Doppel-Formel. (Beim settled Wert 1.0
-                    // ist fwidth(up)=0 → die AO ruht am Terrain — exakt der Live-Stand
-                    // vor dem Bake; sie erwacht, wenn der Bake-Wert je <1 geht.)
-                    const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
+                    // V18.113 — die AO liest DIESELBE geflattete LICHTUNGS-Normale wie
+                    // der Diffus (V17.108-Konsistenz), mit der Konstante: bei 1.0 ist
+                    // fwidth(up)=0 → die AO ruht am Terrain (kein view-abhängiger
+                    // Facetten-Zeichner); die GEOMETRIE-Normale bleibt dem Schatten.
+                    const _aoFlat =
+                        this.state.atmoUniforms && this.state.atmoUniforms.terrainFlatten
+                            ? this.state.atmoUniforms.terrainFlatten
+                            : _T.float(AnazhRealm.TERRAIN_NORMAL_FLATTEN);
+                    const _aoN =
+                        _T.normalize && _T.mix && _T.vec3
+                            ? _T.normalize(_T.mix(_T.normalWorld, _T.vec3(0.0, 1.0, 0.0), _aoFlat))
+                            : _T.normalWorld;
+                    const _curv = _T.fwidth(_aoN).length().div(_T.fwidth(_wp).length().add(0.0001));
                     // V17.14 - weiter gedämpft (1.0/0.3 → 0.6/0.18): der Tag-Rest
                     // der „Treppenstufen" (Schöpfer-Audit) ist die `fwidth(normal
                     // World)`-AO, die JEDE Surface-Nets-Facetten-Kante als Linie
@@ -26130,29 +26140,9 @@ class AnazhRealm {
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         geom.setIndex(idx);
         geom.computeVertexNormals();
-        // V18.112 — B3-Nachzug (Reflexions-Fang): der Mantel MUSS dieselbe
-        // gebackene Lichtungs-Normale tragen wie die Chunks — vor B3 flachte
-        // der normalNode-Override BEIDE, nach dem Bake hätte der Mantel seine
-        // Facetten-Lichtung zurück (Bruch an der Ring-Kante). Eine Wahrheit:
-        // TERRAIN_NORMAL_FLATTEN (bei 1.0 konstant up, sonst mix zur Up-Achse).
-        {
-            const flat = AnazhRealm.TERRAIN_NORMAL_FLATTEN;
-            if (flat > 0) {
-                const nAttr = geom.attributes.normal;
-                for (let i = 0; i < nAttr.count; i++) {
-                    if (flat >= 1) {
-                        nAttr.setXYZ(i, 0, 1, 0);
-                    } else {
-                        const nx = nAttr.getX(i) * (1 - flat);
-                        const ny = nAttr.getY(i) * (1 - flat) + flat;
-                        const nz = nAttr.getZ(i) * (1 - flat);
-                        const nl = Math.hypot(nx, ny, nz) || 1;
-                        nAttr.setXYZ(i, nx / nl, ny / nl, nz / nl);
-                    }
-                }
-                nAttr.needsUpdate = true;
-            }
-        }
+        // V18.113 — der Mantel behält seine echten Flächen-Normalen (Schatten-
+        // Vertrag); die LICHTUNG flacht der geteilte normalNode-Override im
+        // Terrain-Material (er teilt _buildToonNodeMaterial mit den Chunks).
         // EINE Farb-Quelle: dieselbe Biom-Logik wie die Chunks; das Meer danach Tiefblau.
         this._attachVoxelFieldColors(geom);
         const col = geom.attributes.color;
@@ -52758,7 +52748,16 @@ class AnazhRealm {
         if (this.state.postProcessing || this.state.postProcessingFailed) return this.state.postProcessing;
         try {
             const TSL = THREE.TSL;
-            if (!TSL || typeof THREE.PostProcessing !== "function" || !TSL.pass) {
+            // V18.113 — der PR-#81-Vendor benennt PostProcessing → RenderPipeline um
+            // (die Deprecation-Warnung in der Schöpfer-Konsole); wir nehmen den neuen
+            // Namen zuerst, der alte bleibt der Fallback für ältere Vendor-Stände.
+            const PPCtor =
+                typeof THREE.RenderPipeline === "function"
+                    ? THREE.RenderPipeline
+                    : typeof THREE.PostProcessing === "function"
+                      ? THREE.PostProcessing
+                      : null;
+            if (!TSL || !PPCtor || !TSL.pass) {
                 this.state.postProcessingFailed = true;
                 this.log(
                     "Post-Processing nicht verfuegbar (PostProcessing/pass fehlt) — direkter Render-Pfad.",
@@ -52767,7 +52766,7 @@ class AnazhRealm {
                 return null;
             }
             const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;
-            const pp = new THREE.PostProcessing(this.state.renderer);
+            const pp = new PPCtor(this.state.renderer);
             const scenePass = pass(this.state.scene, this.state.camera);
             // API-korrekt: der sampelbare Textur-Node kommt aus
             // getTextureNode() (PassNode != TextureNode — .sample() lebt am
@@ -52961,7 +52960,10 @@ class AnazhRealm {
         const pp = this._ensurePostProcessing();
         if (pp && !this.state.postProcessingFailed) {
             try {
-                pp.renderAsync();
+                // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
+                // in der Schöpfer-Konsole); render() ist der eine Pfad.
+                if (typeof pp.render === "function") pp.render();
+                else pp.renderAsync();
             } catch (err) {
                 this.state.postProcessingFailed = true;
                 this.log(`Post-Processing-Render scheiterte (${err && err.message}) — direkter Pfad.`, "INFO");
@@ -53225,7 +53227,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.112.0";
+AnazhRealm.VERSION = "18.113.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -22466,8 +22466,11 @@ async function checkBandPhasenBF(ctx) {
             }
         })();
         out.e45Hook = /_crystallizeGestureRule/.test(r._loopSelfAnalysis.toString());
-        // V18.112 — B3-Nachzug: der Horizont-Mantel trägt dieselbe gebackene Normale.
-        out.b3Mantle = /TERRAIN_NORMAL_FLATTEN/.test(r._ensureHorizonMantle.toString());
+        // V18.113 — der Mantel erbt die Lichtung über das GETEILTE Terrain-Material
+        // (kein eigener Geometrie-Bake — der wäre die Akne-Klasse).
+        out.b3Mantle =
+            !/setXYZ\(i, 0, 1, 0\)/.test(r._ensureHorizonMantle.toString()) &&
+            /computeVertexNormals/.test(r._ensureHorizonMantle.toString());
         return out;
     });
     if (res.error) {
@@ -22512,7 +22515,7 @@ async function checkBandPhasenBF(ctx) {
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
     check("E4+E5: der Kristallisierer lebt im Selbstanalyse-Takt (KONSUM)", res.e45Hook);
-    check("B3-Nachzug: der Horizont-Mantel trägt die gebackene Normale (eine Lichtung)", res.b3Mantle);
+    check("B3/V18.113: der Mantel behält echte Normalen + erbt die Lichtung übers Material", res.b3Mantle);
     check("B8: Struktur-LUT existiert + rimStrength-Uniform verdrahtet", res.b8Lut && res.b8Rim);
 }
 
@@ -28872,27 +28875,28 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ vertexColors: true }) : null;
         out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && !window.__toonColorNodeError;
         out.terrainColorNodeError = window.__toonColorNodeError || null;
-        // V18.106 — B3: die 2.5D-Lichtung ist in die GEOMETRIE gebacken — das
-        // Terrain-Material trägt KEINEN normalNode-Override mehr, stattdessen
-        // tragen die gebauten Chunk-Geometrien up-Normalen (KONSUM: ein echter
-        // Chunk aus state.voxelChunks, alle gesampelten Normalen ≈ (0,1,0) beim
-        // settled TERRAIN_NORMAL_FLATTEN=1.0). Worker+Main per Konstruktion EINS.
-        out.terrainNormalFlatten = !!_terrMat && !_terrMat.normalNode;
-        out.terrainNormalsBaked = (() => {
+        // V18.113 — B3-ROLLBACK (die Narbe): die 2.5D-Lichtung flacht die
+        // SHADING-Normale (normalNode mit der eingefrorenen Konstante — der
+        // Slider bleibt geschnitten); die GEOMETRIE behält die ECHTE
+        // Oberflächen-Normale (Schatten-Bias-Vertrag — der V18.106-Bake
+        // erzeugte Akne-Rauten an Hängen, Schöpfer-Browser-Beweis 10.06.).
+        out.terrainNormalFlatten = !!(_terrMat && _terrMat.normalNode);
+        // Der AKNE-WÄCHTER: ein echter Chunk trägt VARIIERENDE Normalen
+        // (mindestens ein gesampelter Vertex weicht von up ab) — ein
+        // up-gebackenes Normal-Attribut wäre die Akne-Regression.
+        out.terrainNormalsReal = (() => {
             try {
-                if (!(AnazhRealm.TERRAIN_NORMAL_FLATTEN >= 1)) return true; // <1: Bake-Formel, nicht up
                 for (const entry of r.state.voxelChunks.values()) {
                     const g = entry && entry.mesh && entry.mesh.geometry;
                     const n = g && g.attributes && g.attributes.normal;
-                    if (!n || n.count < 8) continue;
-                    const stride = Math.max(1, Math.floor(n.count / 100));
+                    if (!n || n.count < 64) continue;
+                    const stride = Math.max(1, Math.floor(n.count / 200));
                     for (let i = 0; i < n.count; i += stride) {
-                        if (Math.abs(n.getX(i)) > 1e-6 || Math.abs(n.getY(i) - 1) > 1e-6 || Math.abs(n.getZ(i)) > 1e-6)
-                            return false;
+                        if (Math.abs(n.getX(i)) > 0.05 || Math.abs(n.getY(i) - 1) > 0.05 || Math.abs(n.getZ(i)) > 0.05)
+                            return true; // echte Oberflächen-Normale gefunden
                     }
-                    return true; // ein Chunk geprüft reicht (eine Quelle)
                 }
-                return false; // kein Chunk-Mesh gefunden — sollte nach Warmup nie passieren
+                return false; // alles up → der Bake wäre zurück (Regression)
             } catch (e) {
                 return false;
             }
@@ -28994,7 +28998,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.terrainFlattenSetter =
             typeof r.setTerrainFlatten === "undefined" &&
             Number.isFinite(AnazhRealm.TERRAIN_NORMAL_FLATTEN) &&
-            !(r.state.atmoUniforms && r.state.atmoUniforms.terrainFlatten);
+            !!(r.state.atmoUniforms && r.state.atmoUniforms.terrainFlatten) &&
+            Math.abs(r.state.atmoUniforms.terrainFlatten.value - AnazhRealm.TERRAIN_NORMAL_FLATTEN) < 1e-6 &&
+            !document.getElementById("slider-flatten");
         out.sliderHeadroom = r.setCavityAO(1.5) === 1.5 && r.setSurfaceTexture(1.5) === 1.5;
         // Werte wiederherstellen, die der j4SlidersPersist-Test unten erwartet
         // (mein Headroom-Check hat cavityAO/triplanar verändert).
@@ -29081,12 +29087,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v828Results.aerialEyeRelative
         );
         check(
-            "V18.106 B3: kein normalNode-Override mehr — die 2.5D-Lichtung ist gebacken (kein Fehler)",
+            "V18.113 B3: die 2.5D-Lichtung flacht die SHADING-Normale (normalNode, eingefrorene Konstante)",
             v828Results.terrainNormalFlatten
         );
         check(
-            "V18.106 B3: die Chunk-Geometrie trägt die GEBACKENE Normale (up beim settled 1.0, KONSUM)",
-            v828Results.terrainNormalsBaked
+            "V18.113 AKNE-WÄCHTER: die Chunk-GEOMETRIE trägt echte Oberflächen-Normalen (Schatten-Vertrag)",
+            v828Results.terrainNormalsReal
         );
         check(
             "V17.J: transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element)",
@@ -29115,7 +29121,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
         check(
-            "V18.106 B3: setTerrainFlatten + Slider + Uniform sind geschnitten (Bake-Konstante steht)",
+            "V18.113 B3: Slider+Setter geschnitten; der Konsolen-Hebel lebt aus der Konstante",
             v828Results.terrainFlattenSetter
         );
         check(

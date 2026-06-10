@@ -923,23 +923,11 @@ function cropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
     for (let i = 0; i < keptIdx.length; i++) indices.push(keptIdx[i]);
 }
 
-// V18.106 — B3 (mirror): der gebackene 2.5D-Lichtungs-Wert. MUSS identisch zu
-// AnazhRealm.TERRAIN_NORMAL_FLATTEN (anazhRealm.js) sein — Determinismus-Wand.
-const TERRAIN_NORMAL_FLATTEN = 1.0;
-
 function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
     const normals = new Float32Array(positions.length);
-    // V18.106 — B3 (mirror): Normale in die Geometrie gebacken (siehe
-    // _voxelGradientNormals). Bei 1.0 konstant up, Gradienten-Pass entfällt.
-    const flatten = TERRAIN_NORMAL_FLATTEN;
-    if (flatten >= 1) {
-        for (let v = 0; v < positions.length; v += 3) {
-            normals[v] = 0;
-            normals[v + 1] = 1;
-            normals[v + 2] = 0;
-        }
-        return normals;
-    }
+    // V18.113 — B3-ROLLBACK (mirror, Narbe): der Geometrie-Bake erzeugte
+    // Schatten-Akne (normalBias braucht die ECHTE Oberflächen-Normale);
+    // die Lichtung flacht im Material-normalNode (main-only Render).
     const eps = step * 1.5;
     const NxNy = Nx * Ny;
     const NxMax = Nx - 1;
@@ -989,14 +977,9 @@ function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
             normals[v + 1] = 1;
             normals[v + 2] = 0;
         } else {
-            // B3-Bake (mirror): normalize(mix(−∇d/|∇d|, up, flatten)).
-            const nx = (-gx / len) * (1 - flatten);
-            const ny = (-gy / len) * (1 - flatten) + flatten;
-            const nz = (-gz / len) * (1 - flatten);
-            const nl = Math.hypot(nx, ny, nz) || 1;
-            normals[v] = nx / nl;
-            normals[v + 1] = ny / nl;
-            normals[v + 2] = nz / nl;
+            normals[v] = -gx / len;
+            normals[v + 1] = -gy / len;
+            normals[v + 2] = -gz / len;
         }
     }
     return normals;

@@ -409,12 +409,19 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Macro-Samples ≈ ms). A5-Fog liest jetzt die MANTEL-Kante (4.3 km) → die geliebte Weite kehrt
   zurück UND das Welt-Ende ist gefüllt. 4 Playtest-Invarianten (existiert · Höhen=Macro ·
   Loch-Radius · vertexColors). Browser-Look → S-Liste.
-- ✓ **B3 — R2 Normale GEBACKEN (V18.106, S-Entscheid 10.06.: „das Alte kann weichen"):**
-  `TERRAIN_NORMAL_FLATTEN` (settled 1.0) in `_voxelGradientNormals` + Worker-Mirror — bei 1.0
-  ist die Normale konstant up, der Gradienten-Pass ENTFÄLLT (Perf gratis); AO/Schatten/
-  Hemisphere/Diffus lesen EINE Normale (G6 vollendet). Slider + Uniform + Setter + normalNode-
-  Override GESCHNITTEN, Inseln/Stitch-Band erben über die eine Quelle, Tests gewandert
-  (KONSUM: Chunk-Normalen ≈ up GEMESSEN).
+- ✓ **B3 — VOLLENDET in der WAHREN Form (V18.113; der V18.106-Geometrie-Bake war eine
+  FEHL-HYPOTHESE — die NARBE):** der Bake (Normale=up in die GEOMETRIE) erzeugte SCHATTEN-
+  AKNE-RAUTEN an jedem Hang bei schräger Sonne (Schöpfer-Browser-Beweis 10.06. nacht;
+  `shadow.normalBias` schiebt die Probe ENTLANG der Geometrie-Normale — mit up schiebt er an
+  Hängen PARALLEL zur Fläche → Dreieck schattiert Dreieck; exakt die V17.103-GEGEN-Lehre im
+  selben Dokument). ROLLBACK V18.113 zur wahren Form: die GEOMETRIE trägt die ECHTE
+  Oberflächen-Normale (Schatten-Vertrag, Worker-Mirror echt), die LICHTUNG flacht im
+  Material-`normalNode` + AO (V17.107/.108-Form) — gespeist vom `terrainFlatten`-UNIFORM
+  (Init aus der eingefrorenen Konstante `TERRAIN_NORMAL_FLATTEN`; KONSOLEN-tunbar für
+  S-Dialoge, render-only). Der SETTINGS-SLIDER + Setter + Persist bleiben GESCHNITTEN
+  (der S-Entscheid steht). G6 „eine Normale" ist mit dem normalBias-Vertrag NICHT
+  vereinbar — ZWEI Wahrheiten sind korrekt (Geometrie=Oberfläche · Shading=Lichtung).
+  AKNE-WÄCHTER-Invariante: die Chunk-Geometrie trägt VARIIERENDE Normalen.
 - **B4 — U5 Schatten-CSM an den Kaskaden-Bändern** [lod-kaskade-plan U5; A→S]: 2–3 Kaskaden,
   Grenzen = `DETAIL_CASCADE`; der R1-Snap wandert in jede Kaskade.
 - **B5 — U2 Wasser-LOD + U4 Deko-Distanz/Impostor + Baum/Feld-DICHTE** [lod-kaskade-plan; H+A]:
@@ -647,8 +654,9 @@ schlanken (UI-Politur, jederzeit einschiebbar).
    B8-Rim/LUT-Feintuning · C1/C2-Gelenk-Motion-Feel · C5-Bewegungs-Feel (k-Werte) ·
    E3-Mana-HUD** · der Stand V18.105 ist GEMERGT (Schöpfer 10.06.: „mergen mit diesem
    Stand, offene Punkte vermerken"). **V18.106–.111 (die sechs Entscheide gebaut) — NEUE
-   S-PUNKTE: B3-Bake-Look (Terrain-Licht jetzt eine Normale — Schatten/Hemisphere im
-   Browser prüfen) · B9-Nacht-Look (Boden dämpft nachts — Feintuning der zwei Floors) ·
+   S-PUNKTE: B3-Look (V18.113-Rollback = der vertraute V17.109@100%-Stand; der KONSOLEN-
+   Hebel `anazhRealm.state.atmoUniforms.terrainFlatten.value=0.7` testet die Cel-Stufen-
+   Sehnsucht render-only — „am Anfang gaben die Cel-Stufen Kontraste") · B9-Nacht-Look (Boden dämpft nachts — Feintuning der zwei Floors) ·
    D4-Temperament-PROFILE (strike/fleeMul-Größen = mein Erst-Wurf) · E2-REGELKREIS-Faktoren
    (0.4+0.6b / 2−b = mein Erst-Wurf; die Stimmen-Gaps fühlen) · E8-Off-Hand-Feel (Slot-Optik
    + G-Tausch + linke-Hand-Optik) · C7-Punkt-Optik (Rüstung am Torso · Griff in der Hand ·

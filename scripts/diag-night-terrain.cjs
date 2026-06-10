@@ -158,6 +158,7 @@ const server = http.createServer((req, res) => {
 
     fs.mkdirSync(ART, { recursive: true });
     await shoot("night-terrain-day.png", 0.5); // Mittag (Referenz)
+    await shoot("night-terrain-abend.png", 0.8); // SCHRÄGE Sonne — der Schatten-Akne-Diskriminator (V18.113)
     await shoot("night-terrain-night.png", 0.0); // Mitternacht
     await browser.close();
     await new Promise((r) => server.close(r));
