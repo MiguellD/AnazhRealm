@@ -359,6 +359,12 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Gebäuden (H) · T7c/T7d-Reste (Fluss-Edit-Löcher · lake/river-Naht, H+A).
 - **A5 — Haupt-Fog ↔ Ring-Kante koppeln** [roadmap §4; A]: der Fog liest `DETAIL_CASCADE` statt
   eigener Konstante (eine Distanz, noch ein Gesicht).
+- **A6 — KÖRPER-KOLLISION härten (Schöpfer-Browser 10.06.)** [H]: (a) „unter mir platzieren →
+  manchmal Fall-durch" — der Edit-Remesh tauscht die Spieler-Chunk-Kollision (die V17.28-Klasse
+  am PLACE-Pfad; A2-Sub-Region-Edit schrumpft das Fenster, zusätzlich: Spieler-Y während des
+  Footprint-Swaps klemmen); (b) „Kopf glitcht durch HÖHLENDECKEN" (Seitenwände halten) — der
+  Sprung-Impuls unter niedriger Decke + Penetration-Recovery nach OBEN: Jump-Clamp wenn
+  Decken-Probe < Körperhöhe + Kamera-Clip-Wand. Sonde: Place-under-self ×20 + Low-Ceiling-Jump.
 
 ### PHASE B — der Körper glatt + der Maßstab (G6 + G7)
 
@@ -376,11 +382,22 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Grenzen = `DETAIL_CASCADE`; der R1-Snap wandert in jede Kaskade.
 - **B5 — U2 Wasser-LOD + U4 Deko-Distanz/Impostor + Baum/Feld-DICHTE** [lod-kaskade-plan; H+A]:
   Dichte-Hebel sind chance-skalar (tag-neutral, `diag-arch-tags` als Wand davor).
+  **✓ V18.102 — NATUR-CLUMPING:** EIN seed-deterministisches Klump-Feld (`_clumpAt`), zwei Leser:
+  Gras λ~28 m (Dickicht ×2.2 ↔ Lichtung ×0.15) + Bäume λ~170 m (WALD-Maske ×2.6 ↔ offen ×0.25),
+  mittelwert-neutral GEMESSEN (Ø 1.04/1.06 · Lichtungen 19.5 % · Dickichte 17.6 % · Wald 17.1 % ·
+  Halme-Total stabil 21.2k · `diag-tree-spawn` 63 Kiefern ✓ · mit dem Auge: Büschel + Lichtung).
 - **B6 — Klein-Bündel Maßstab** [H]: Substep-Cap 20→~5 (Physik-Todesspirale; Playtest-sensibel —
   Telemetrie!) · Inseln-Instancing-Claim MESSEN (vermutlich Unikate → Hebel ist LOD, nicht HISM) ·
   Kreatur-FPS-Frame-Budget (falls Boden-Cache nicht reicht) · Allokations-Audit per-Frame-Pfade.
 - **B7 — U6 Clipmap** [Backlog-Gate: erst nach A1/A2 + S-Entscheid] · **R3 Kanten-Schärfe + R5
   Struktur-Textur** [A→S, reine Look-Wellen].
+- **B8 — STRUKTUR-LICHT-HARMONIE (das Schwarz-Silhouetten-Ende; Schöpfer-Screenshot 10.06.,
+  GEMESSEN)** [A→S]: die Sonde bewies — Materialien/Lichter sind KORREKT (MeshToonNodeMaterial
+  lights:true · Hemi 0.6 · Ambient 0.62 · Aerial dran; der Tempel rendert Ghibli-schön). Das
+  „Schwarz" der Türme = dunkles Material (felsturm=eisen) × Gegenlicht × Toon-GRADIENT-BODEN ≈ 0.
+  Heilung (der geniale Twist, kein Material-Lügen): den Gradient-Boden für Flach-Farb-Strukturen
+  anheben (Schatten-Band ~0.25 statt 0) + ein warmes RIM-Licht am Strukturen-Toon (die
+  Ghibli-Silhouetten-Kante) — Terrain·Deko·Bauwerk antworten dem Licht dann in EINER Sprache.
 
 ### PHASE C — die Werkstatt atmet ZU ENDE (G1)
 
@@ -398,6 +415,16 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Avatar-Größe→HP-Kopplung dazu (S-Entscheid: Formel; `_compoundSizeFactor` existiert).
 - **C4 — Feel-Pass** [S]: Motion-Amplituden/Frequenzen + S9-Hand-Optik-Sign-off in EINEM
   Browser-Durchgang.
+- **C5 — STEUERUNGS-TIEFE (Schöpfer 10.06.: „schwach vs gute dynamische Spiele")** [H+S-Feel]:
+  (a) Bewegungs-FEEL — Beschleunigungs-/Brems-Kurven statt Sofort-Velocity, Luftkontrolle,
+  Coyote-Time + Jump-Buffer, Kamera-Smoothing (die vier Hebel, die „dynamisch" ausmachen);
+  (b) VOLLSTÄNDIGES Tasten-Rebinding in den Einstellungen (heute teils fix verdrahtet) — eine
+  Bindings-Map als EINE Quelle, der Settings-Raum editiert sie, persistiert global.
+- **C6 — DIE AURA WIRD HAUT (Schöpfer 10.06.: „folgendes Licht, kein subtiles Schimmern")**
+  [A→S]: der Aura-Glow-Sprite wird subtil; die Substanz wandert in ein **Fresnel-Emissive auf den
+  Soul-Parts** (TSL: Kanten-Glimmen in Aura-Hue, Intensität ∝ Aura-Stärke, atmet mit Puls) —
+  die Haut SCHIMMERT statt eine Lampe zu tragen; derselbe Hue/Intensitäts-Feed wie heute
+  (`_auraHueOut`/`_auraIntensityOut` — eine Quelle, neuer Leser).
 
 ### PHASE D — Wesen + Welt LEBEN (G4 + Phase E + die gefundenen Welt-Samen)
 
@@ -450,7 +477,11 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   (AnazhRealm-Bündel vendoren → im Portal betreten → die innere Welt rendert).
 - **F2 — G3 Netz** [§2-G3; H + Mehr-Peer-Smoke]: Stern-ab-6 → Host-Migration MIT Zustand
   (Roster+`world-pull` verschmelzen) → TURN-Konfiguration → Raten-Caps (`creature-pos`/`dsl`) →
-  ein 4-Peer-Smoke-Test (heute nur 2).
+  ein 4-Peer-Smoke-Test (heute nur 2) → **PROTOKOLL-VERSIONIERUNG** (Schöpfer-Vision: „alte +
+  neue Versionen vom selben Spiel verbinden sich" — jede Mesh-Nachricht trägt eine
+  Protokoll-Version, unbekannte Felder werden toleriert [das Welt-Schema-Migrations-Muster
+  existiert]; ein V18-Client und ein V20-Client teilen denselben Raum, jeder mit seinen
+  Fähigkeiten — andere ENGINES verbinden sich über F1/W18/B-WASM, das Tor steht schon).
 - **F3 — W18 in fremden Welten LEBEN** [world-portal-w18-plan; Stufen A→D]: Auto-Join/Tier →
   Ko-Präsenz-Injektion (Kern) → Input-Brücke → Swappen/Persistenz.
 - **F4 — der SOZIALE Bogen** [bibliothek-plan §E + roadmap; H+S]: Bewertungs-Aggregation
@@ -517,6 +548,11 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | Rekursion blockiert (4 Schnitte) | F1 |
 | Netz trägt real nur ~4–6 Peers, TURN fehlt | F2 |
 | Sozial-Schicht fehlt ganz (Bewerten lokal-only) | F4 |
+| Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken | A6 |
+| Schwarze Struktur-Silhouetten (eisen × Gegenlicht × Toon-Boden) | B8 |
+| Steuerung flach (kein Feel, Bindings teils fix) | C5 |
+| Aura = folgende Lampe statt Haut-Schimmern | C6 |
+| ~~Wiese homogen, keine Wälder~~ | ✓ V18.102 B5+ |
 | Test-Volatilität (Spieler-im-Fall-Klasse) | §6.2-Telemetrie-Disziplin (Muster steht) |
 | localStorage-Größen-Wand | FERN IndexedDB |
 

@@ -24518,7 +24518,12 @@ class AnazhRealm {
                 // pro Halm); liegt sie > 1.2 m unter der Zell-Höhe (Abbruch),
                 // fällt er weg → kahle Klippen-Kante statt schwebender Halm.
                 // Und der Halm STEHT auf seiner Höhe → Hänge ohne Schweben.
-                const count = Math.floor((lebendig * 14 + rnd() * 2) * farFactor);
+                // V18.102 — NATUR-CLUMPING (λ~28 m, mittelwert-neutral): die Wiese
+                // bekommt Dickichte (×bis 2.2) und magere Lichtungen (×0.15) statt
+                // homogener Dichte — dasselbe Klump-Feld, das den Bäumen die
+                // Wald-Maske gibt, eine Oktave feiner. Totale ≈ unverändert.
+                const clump = Math.max(0.15, Math.min(2.2, 1 + 1.2 * this._clumpAt(baseX, baseZ, 0.035)));
+                const count = Math.floor((lebendig * 14 + rnd() * 2) * farFactor * clump);
                 for (let k = 0; k < count; k++) {
                     const gx = baseX + (rnd() - 0.5) * step;
                     const gz = baseZ + (rnd() - 0.5) * step;
@@ -39940,6 +39945,23 @@ class AnazhRealm {
     // `_voxelSurfaceY`. Liefert 1, wenn an dieser Stelle eine Struktur spawnte,
     // sonst 0. baseY-Kompensation: `spawnArchitecture` zieht 0.5 ab (kalibriert
     // für at_player), `+0.5` setzt die Struktur exakt auf den Boden.
+    // V18.102 (B5+ — NATUR-CLUMPING, Schöpfer: „die Wiese sehr homogen, keine
+    // natürlichen dichten Büsche und mageren Stellen, keine weiten Wälder"):
+    // EIN seed-deterministisches Klump-Rauschen, zwei Leser auf zwei Skalen —
+    // Gras/Büsche bei λ~28 m (Dickicht ↔ Lichtung), Bäume bei λ~170 m (WALD ↔
+    // offenes Land). Die Formel `clamp(1 + amp·noise, lo, hi)` ist MITTELWERT-
+    // NEUTRAL (≈1) → die Gesamt-Dichte bleibt, nur die VERTEILUNG wird Natur.
+    // Deko-Schicht: main-only, kein Worker-Mirror; seed-gebunden → alle Peers
+    // sehen dieselben Wälder. Tag-/Affinitäts-neutral (reiner chance-Skalar,
+    // die V17.9-Klasse — `diag-arch-tags` bleibt die Wand).
+    _clumpAt(x, z, freq) {
+        if (!this._clumpNoise) {
+            const seed = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":clump";
+            this._clumpNoise = new SimplexNoise(seed);
+        }
+        return this._clumpNoise.noise2D(x * freq, z * freq);
+    }
+
     _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn) {
         // V9.59-b — Wasser-Awareness: Bäume/Felsen/Geoden/Glutbrunnen wachsen
         // NICHT im Wasser. 0.4 m Marge, damit eine Architektur nicht knöcheltief
@@ -40015,6 +40037,13 @@ class AnazhRealm {
             const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
             const lebendig = f ? f.lebendig : 0;
             chance = Math.min(0.4, BASE_RATE * bestAffinity * (0.4 + lebendig * 0.9));
+            // V18.102 — die WALD-MASKE (λ~170 m): lebendig ist groß-λ-glatt →
+            // V17.9 gab Dichte-GRADIENTEN, keine Wälder mit RAND. Der Faktor
+            // ist mittelwert-neutral (Gesamt-Baumzahl ≈ gleich), aber im
+            // Masken-Hoch ×~2.6 (geschlossener Wald), im Tief ×0.25 (offenes
+            // Land) → echte Wälder + Lichtungen aus den BESTEHENDEN Bäumen.
+            const forest = Math.max(0.25, Math.min(2.6, 1 + 1.6 * this._clumpAt(sampleX, sampleZ, 0.006)));
+            chance = Math.min(0.5, chance * forest);
         }
         if (probe >= chance) return 0;
 
@@ -51799,7 +51828,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.101.0";
+AnazhRealm.VERSION = "18.102.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
