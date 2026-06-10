@@ -22404,6 +22404,49 @@ async function checkBandPhasenBF(ctx) {
                 /riverness/.test(src) && /heightRamp \* \(1 - riverness\)/.test(src) && /_hydrosphereLakeAt/.test(src)
             );
         })();
+        // V18.117 — WASSER-SHEET-ANTI-STARVATION (S-Befund „durch das LOD
+        // Löcher im Wasser"): die reine Distanz-Priorität + CA-Dauer-Nachschub
+        // naher Keys ließen FERNE Queue-Einträge NIE drankommen (GEMESSEN:
+        // Ring-3/4-Ozean-Chunks mit 30k nassen Zellen „nie gebaut"). Der Tick
+        // trägt jetzt einen FIFO-Slot (ältester Eintrag). BEHAVIORAL: ein
+        // ferner Key überlebt den Dauer-Nachschub naher Keys NICHT länger als
+        // wenige Ticks — er wird gezogen, obwohl jede Runde frische nahe
+        // Keys nachkommen (vorher: blieb für immer in der Queue).
+        out.waterIsoNoStarve = (() => {
+            const s = r.state;
+            const savedQ = s.pendingWaterIso;
+            try {
+                const lpc = s.lastPlayerVoxelChunk || { cx: 0, cz: 0 };
+                // echte gestreamte Chunk-Keys: einer NAH am Spieler, einer FERN.
+                let nearKey = null;
+                let farKey = null;
+                let farDist = -1;
+                for (const k of s.voxelChunks.keys()) {
+                    const ci = k.indexOf(",");
+                    const kx = parseInt(k.slice(0, ci), 10);
+                    const kz = parseInt(k.slice(ci + 1), 10);
+                    const d = Math.max(Math.abs(kx - lpc.cx), Math.abs(kz - lpc.cz));
+                    if (d <= 1 && !nearKey) nearKey = k;
+                    if (d > farDist && d <= 4) {
+                        farDist = d;
+                        farKey = k;
+                    }
+                }
+                if (!nearKey || !farKey || nearKey === farKey) return null; // Welt zu klein → skip
+                s.pendingWaterIso = new Set([farKey]);
+                let drawn = false;
+                for (let t = 0; t < 12 && !drawn; t++) {
+                    // Dauer-Nachschub: jede Runde kommt der nahe Key frisch dazu
+                    // (das CA-Wake-Muster) — er gewinnt jeden Distanz-Slot.
+                    s.pendingWaterIso.add(nearKey);
+                    r._tickPendingWaterIso(2); // 1 Distanz-Slot + 1 FIFO-Slot
+                    if (!s.pendingWaterIso.has(farKey)) drawn = true;
+                }
+                return drawn;
+            } finally {
+                s.pendingWaterIso = savedQ;
+            }
+        })();
         // V18.112 — E4-KRISTALL + E5: eine wiederholt bewährte Geste (3 finalisierte
         // Läufe, deposit_life, sorrow-Kontext) kristallisiert zur Regel — die
         // Bedingung EMERGIERT aus der Emotions-Signatur (field_above sorrow),
@@ -22524,6 +22567,10 @@ async function checkBandPhasenBF(ctx) {
     check("A4: die Wasserfall-Plane ist geschnitten, das Abwärts-Material lebt als Saat", res.a4PlaneCut);
     check("A4: der Steil-Split formt vertikales Wasser (Lippe + Vorhang im Zell-Sheet)", res.a4Curtain);
     check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
+    check(
+        "V18.117: Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
+        res.waterIsoNoStarve !== false
+    );
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
     check("E4+E5: der Kristallisierer lebt im Selbstanalyse-Takt (KONSUM)", res.e45Hook);

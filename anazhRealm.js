@@ -41267,9 +41267,22 @@ class AnazhRealm {
             for (const k of keys) if (distOf(k) > ring) queue.delete(k);
             keys = [...queue].sort((a, b) => distOf(a) - distOf(b));
         }
+        // V18.117 — ANTI-STARVATION (S-Befund „durch das LOD Löcher im Wasser"):
+        // die reine Distanz-Priorität (V14.4) + der CA-Dauer-Nachschub NAHER
+        // Keys (V18.93-Wake + asymptotischer Schelf-Settle-Tail) ließen FERNE
+        // Einträge NIE drankommen — GEMESSEN (diag-water-lod-holes +
+        // Lebensgeschichte-Sonde): Ring-3/4-Ozean-Chunks mit bis zu 30k nassen
+        // Zellen blieben sheet-los („nie gebaut", inQueue=true, Queue hält ~60
+        // nach Settle) = die Loch-STREIFEN im Meer, die der Schöpfer sah (sie
+        // korrelieren mit LOD1, weil fern = verhungert). Das Budget teilt
+        // jetzt: (maxPerFrame−1) Slots nah-zuerst (die V14.4-Sichtbarkeit
+        // bleibt), der LETZTE Slot baut den ÄLTESTEN Eintrag (Set-Insertion-
+        // Order = FIFO; ein Re-Add eines vorhandenen Keys ändert sie nicht) →
+        // bounded Wartezeit für JEDEN Key, Starvation strukturell unmöglich.
         let built = 0;
+        const distBudget = Math.max(1, maxPerFrame - 1);
         for (const key of keys) {
-            if (built >= maxPerFrame) break;
+            if (built >= distBudget) break;
             queue.delete(key);
             // Chunk inzwischen weg (gepruned)? Dann nichts bauen.
             if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
@@ -41278,6 +41291,18 @@ class AnazhRealm {
             const cz = parseInt(key.slice(comma + 1), 10);
             this._buildVoxelChunkWaterIsoSurface(cx, cz);
             built++;
+        }
+        if (built < maxPerFrame) {
+            for (const key of queue) {
+                queue.delete(key);
+                if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+                const comma = key.indexOf(",");
+                const cx = parseInt(key.slice(0, comma), 10);
+                const cz = parseInt(key.slice(comma + 1), 10);
+                this._buildVoxelChunkWaterIsoSurface(cx, cz);
+                built++;
+                break;
+            }
         }
         return built;
     }
@@ -53265,7 +53290,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.116.0";
+AnazhRealm.VERSION = "18.117.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
