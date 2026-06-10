@@ -387,8 +387,14 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
       Fluss-Kern 0 % · Meer Ø 0.909 · See 0; Augen-A/B Abend-Drohne (vorher Fluss=Meer-Glitzer,
       nachher Art-getrennt + weiche Mündung). Mündungs-LOOK → S-Liste. Die alte T7d-„`L`-Naht
       an 4-Chunk-Ecken"-Zeile ist vom Zell-Sheet ÜBERHOLT (Render baut aus den ZELLEN, Naht
-      GEMESSEN Δy=0 — diag-water-cellsheet V18.89). WEITER OFFEN in A4:
-      Schelf-Konsolidierung (H) · Hoch-Becken über `L` (H+A) · Unterwasser-Pass B5 (A) ·
+      GEMESSEN Δy=0 — diag-water-cellsheet V18.89). ✓ UNTERWASSER-PASS B5 (V18.120):
+      der Taucher sieht die WASSERDECKE — das eine playerEyesUnderwater-Flag bekam
+      seinen dritten Konsumenten (neben Tauch-Fog + Tint): tauchen → das geteilte
+      Wasser-Material wird DoubleSide (die Top-Cull-Oberseiten sind von unten
+      sichtbar), auftauchen → BackSide (V18.1-W1-Vertrag unberührt). Augen-A/B
+      (NEU Tour-Ort `dive`): vorher Himmel durch die fehlende Fläche, nachher die
+      dunkle Decke. Kür offen: Snell-Fenster/Caustics (Backlog). WEITER OFFEN in A4:
+      Schelf-Konsolidierung (H) · Hoch-Becken über `L` (H+A) ·
       Kapillar/Stempel (H) · T7c-Reste.
 - ✓ **A5 — Haupt-Fog ↔ Ring-Kante (V18.103):** `fog.far = min(Wetter-Formel·Slider,
 (ringRadius+0.5)·span)` in `_dayNightApplyHemiAndFog` — der Nebel deckt das Welt-Ende
