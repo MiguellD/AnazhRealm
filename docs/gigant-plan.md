@@ -710,16 +710,20 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   (sandboxed kein same-origin · `vendored→sandboxed` unforgeable · kein Welt-Pfad zum innersten
   Ring · Server-iframe immer null-origin). smoke-sandbox.cjs beweist die echte Isolation im
   Browser. 6 Invarianten (`checkBandG8R3Locality`).
-- **R4 — Netz-Immunität (M4)** [H→S]: die Herkunfts-KETTE (`provenance`-Lineage auf Artefakten,
-  „Ursprung X · über dich" statt flachem origin-Enum) + der RÜCKRUF (`revokedKeys` global, NIE im
-  Snapshot → Artefakte mit revoziertem Schlüssel in der Kette fallen beim Laden weg) + der
-  quarantänisierte Vorschlags-Pfad (R4c an die R2-Disjunktheit gebunden: das welt-exponierte LLM
-  formuliert NIE eine souveräne Aktion). Korpus: vergiftete Wurzel sichtbar · Rückruf entfernt ·
-  Vorschlag geschnitten. Mesh-Aggregation = Phase F4 (sozial).
-- **R5 — das lebende Immunsystem (M5)** [H]: die vier Korpora (R1–R4) sind ab Bau Playtest-Bänder
-  → laufen bei JEDEM Push (die Impfung); `_robustnessCorpus()` enumeriert die Angriffsklassen
-  (Sichtbarkeit + die Rolle „jeder Erreger → Antikörper"); ein Regress an einer alten Wand ist
-  sofort rot. Kein neuer Apparat — eine neue ROLLE für die ~3500-Invarianten-Maschinerie.
+- ✓ **R4 — Netz-Immunität (M4) (V18.124)** [H→S]: die Herkunfts-KETTE (`provenance`-Lineage —
+  `_appendProvenance`/`_sanitizeProvenance`/`_provenanceSummary`, „Ursprung X · über dich" statt
+  flachem origin-Enum; sign trägt · export hängt den Überträger an · import bewahrt · `_worldProfile`
+  zeigt) + der RÜCKRUF (`state.revokedKeys` global/NIE im Snapshot · `revokeKey`/`_isKeyRevoked`/
+  `_artifactProvenanceTainted` · Lader sieben + `_purgeRevokedArtifacts` stößt aus — ein revozierter
+  Schlüssel IRGENDWO in der Kette fällt das Artefakt) + die QUARANTÄNE (4c an R2 gebunden: GEMESSEN
+  `source:"llm:grok"`-DSL mit souveränem Op → `sovereign_blocked`). 7 Invarianten
+  (`checkBandG8R4Immunity`). Mesh-Aggregation (wessen Rückruf zählt) = Phase F4 (sozial).
+- ✓ **R5 — das lebende Immunsystem (M5) (V18.124)** [H]: `_robustnessCorpus()` enumeriert die vier
+  Angriffsklassen (R1 Flut/M2 · R2 souverän/M3 · R3 Escape/M1 · R4 Infektion/M4), je mit ihrer
+  LEBENDEN Wand + ihrem Band; die vier Korpora SIND Playtest-Bänder → laufen bei JEDEM Push (die
+  Impfung), ein Regress ist sofort rot. Kein neuer Apparat — eine neue ROLLE für die
+  ~3500-Invarianten-Maschinerie (V9.82-Verdichtung). 4 Invarianten (`checkBandG8R5LivingImmune`).
+  **DER BOGEN IST RUND (R0–R5 gebaut).**
 - **R6 — Selbst-Erweiterung (Capability-Inversion + Komposition)** [S — der ANDERE Plan, NACH
   R0–R5]: bewusst FERN — setzt auf die fertige Wand (R2) + Immunität (R4) auf; ein eigener Bogen,
   kein Phasen-Beifang.
@@ -820,8 +824,8 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | ~~Kanal dämpft nur teilweise (ready/exit/manifest ungedeckelt)~~    | ✓ V18.123 G8 R1 (`_portalChannelAdmit` + `_p2pPeerRateAdmit`)                                      |
 | ~~Keine Irreversibilitäts-Wand~~                                    | ✓ V18.123 G8 R2 (`SOVEREIGN_ACTIONS` disjunkt + `_sovereignGesture`)                               |
 | ~~Sandbox-Grenze nicht als Invariante eingefroren~~                 | ✓ V18.123 G8 R3 (`_portalSandboxAttr` + `_localityAudit`)                                          |
-| Herkunft FLACH (origin-Enum, keine Lineage · kein Rückruf)          | G8 R4                                                                                              |
-| Immunsystem statisch (Invarianten nur beim Merge)                   | G8 R5                                                                                              |
+| ~~Herkunft FLACH (origin-Enum, keine Lineage · kein Rückruf)~~      | ✓ V18.124 G8 R4 (`provenance`-Kette + `revokeKey` + Lader-Sieb)                                    |
+| ~~Immunsystem statisch (Invarianten nur beim Merge)~~               | ✓ V18.124 G8 R5 (`_robustnessCorpus` — vier Korpora im Push-Gate)                                  |
 | ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip)                                    |
 | ~~Schwarze Struktur-Silhouetten~~                                   | ✓ V18.104 B8 — **S-BESTÄTIGT** („Bauwerke und Deko hammer, was ein Sprung")                        |
 | Terrain-Boden reagiert nachts nicht (Schöpfer 10.06. abend)         | B9 (NEU — messen, welcher Term ihn hochhält)                                                       |

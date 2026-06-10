@@ -27313,6 +27313,52 @@ class AnazhRealm {
         return window.confirm(lines.join("\n")) === true;
     }
 
+    // G8 R5 (Robustheits-Bogen, M5 — das LEBENDE Immunsystem): das
+    // Antikörper-Archiv ENUMERIERT. Kein neuer Apparat — eine neue ROLLE für die
+    // ~3500-Invarianten-Maschinerie: jeder erkannte Erreger wird ein dauerhafter
+    // Antikörper (ein Headless-Korpus), der bei JEDEM Push impft (die regelmäßige
+    // Exposition, nicht eine Mauer). Die vier Angriffsklassen, je mit ihrer
+    // strukturellen WAND (dem Guard, der lebt) + ihrem Playtest-Korpus. Ein
+    // Regress an einer alten Wand ist sofort rot. Wächst mit jeder Begegnung:
+    // ein neuer Erreger → ein neuer Eintrag + ein neues Band (die Verdichtung —
+    // ein Werkzeug, zwei Rollen: Qualität + Immunität, V9.82-Pfad).
+    _robustnessCorpus() {
+        return [
+            {
+                id: "R1-flut",
+                mechanism: "M2-Dämpfung",
+                guard: "_portalChannelAdmit",
+                band: "checkBandG8R1DampedChannel",
+                what: "eine flutende Welt drosselt sich selbst (Token-Bucket, Verwerfen statt Puffern)",
+                live: typeof this._portalChannelAdmit === "function" && typeof this._p2pPeerRateAdmit === "function",
+            },
+            {
+                id: "R2-souveraen",
+                mechanism: "M3-Katalysator",
+                guard: "_sovereignGesture",
+                band: "checkBandG8R2SovereignWall",
+                what: "ein souveräner Akt verlangt die Host-Geste (disjunkt von jedem Auto-Pool)",
+                live: typeof this._sovereignGesture === "function" && Array.isArray(AnazhRealm.SOVEREIGN_ACTIONS),
+            },
+            {
+                id: "R3-escape",
+                mechanism: "M1-Lokalität",
+                guard: "_portalSandboxAttr",
+                band: "checkBandG8R3Locality",
+                what: "eine sandboxed Welt läuft null-origin (kein Pfad zum innersten Ring)",
+                live: typeof this._portalSandboxAttr === "function" && typeof this._localityAudit === "function",
+            },
+            {
+                id: "R4-infektion",
+                mechanism: "M4-Immunsystem",
+                guard: "_artifactProvenanceTainted",
+                band: "checkBandG8R4Immunity",
+                what: "die Herkunft reist als Kette (sichtbar) + der Rückruf stößt sie aus (reversibel)",
+                live: typeof this._artifactProvenanceTainted === "function" && typeof this.revokeKey === "function",
+            },
+        ];
+    }
+
     // Der kanonische Identifier — dasselbe Format wie das Welt-Portal-Manifest
     // (docs/world-portal.md §3.3: "authorPubKey": "ed25519:...").
     vibePassId() {
@@ -27687,6 +27733,9 @@ class AnazhRealm {
         bp.authorPubKey = vp.publicKeyHex;
         bp.signedHash = this._fastHash(canonical);
         bp.signedAt = Date.now();
+        // G8 R4 (M4a) — die Herkunftskette: ich hänge mich an (Ursprung wenn
+        // leer, sonst Überträger eines empfangenen + weiterveränderten Werks).
+        this._appendProvenance(bp, vp.publicKeyHex);
         this.saveState();
         this.journalAppend("ritual", `Ich versiegelte „${bp.label || name}" mit meinem Vibe-Pass.`, {
             blueprint: name,
@@ -27750,12 +27799,18 @@ class AnazhRealm {
                     typeof e.authorPubKey === "string" &&
                     /^[0-9a-f]{64}$/i.test(e.authorPubKey)
                 ) {
-                    out[id] = {
+                    const entry = {
                         authorPubKey: e.authorPubKey,
                         signature: e.signature,
                         signedHash: typeof e.signedHash === "string" ? e.signedHash : "",
                         signedAt: typeof e.signedAt === "number" ? e.signedAt : 0,
+                        // G8 R4 (M4a) — die Herkunftskette überlebt den Rundlauf.
+                        provenance: this._sanitizeProvenance(e.provenance),
                     };
+                    // G8 R4 (M4b) — der RÜCKRUF beim Laden: ein Artefakt mit
+                    // einem revozierten Schlüssel in seiner Kette fällt weg.
+                    if (this._artifactProvenanceTainted(entry)) continue;
+                    out[id] = entry;
                 }
             }
         } catch {
@@ -27772,6 +27827,200 @@ class AnazhRealm {
         } catch (e) {
             this.log(`signedWorlds-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
         }
+    }
+
+    // ====================================================================
+    // G8 R4 (Robustheits-Bogen, M4 — das IMMUNSYSTEM): Herkunftskette (4a) +
+    // Rückruf (4b). Eine Signatur beweist „ich habe das BERÜHRT", nicht „ich
+    // BÜRGE dafür" — darum reist die ganze KETTE mit (Ursprung X · über dich),
+    // sonst tarnt sich eine Infektion als dein Gütesiegel. Wird eine Quelle als
+    // infektiös erkannt, revoziert ihr Schlüssel → jedes Artefakt mit ihr in der
+    // Kette fällt beim Laden weg (die Infektion ist reversibel, kein zentraler
+    // Wächter). KEIN Prüfer — Sichtbarkeit (Kette) + Reversibilität (Rückruf).
+    // ====================================================================
+
+    // Normalisiert einen Pubkey (akzeptiert "ed25519:<hex>" oder rohen Hex) →
+    // 64-stelliger Kleinbuchstaben-Hex oder null. Die EINE Form für die Kette.
+    _normalizePubKey(k) {
+        let s = String(k || "").trim();
+        if (s.indexOf("ed25519:") === 0) s = s.slice(8);
+        s = s.toLowerCase();
+        return /^[0-9a-f]{64}$/.test(s) ? s : null;
+    }
+
+    _loadRevokedKeys() {
+        const out = {};
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.revokedKeys") : null;
+            if (!raw) return out;
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object") return out;
+            for (const k of Object.keys(parsed)) {
+                const norm = this._normalizePubKey(k);
+                if (norm) out[norm] = { at: typeof parsed[k] === "number" ? parsed[k] : Date.now() };
+            }
+        } catch {
+            /* korrupter Eintrag → leere Map, kein Wurf */
+        }
+        return out;
+    }
+
+    _saveRevokedKeys() {
+        try {
+            if (typeof localStorage !== "undefined") {
+                const flat = {};
+                const rk = this.state.revokedKeys || {};
+                for (const k of Object.keys(rk)) flat[k] = (rk[k] && rk[k].at) || Date.now();
+                localStorage.setItem("anazh.revokedKeys", JSON.stringify(flat));
+            }
+        } catch (e) {
+            this.log(`revokedKeys-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    _isKeyRevoked(pubkeyHex) {
+        const norm = this._normalizePubKey(pubkeyHex);
+        return !!(norm && this.state.revokedKeys && this.state.revokedKeys[norm]);
+    }
+
+    // M4b — eine Quelle als infektiös erkennen: ihr Schlüssel wird revoziert.
+    // Jedes Artefakt mit ihr in der Herkunftskette fällt JETZT weg (lokaler
+    // Durchlauf) + bleibt beim nächsten Laden gesiebt. Der Rückruf ist KEINE
+    // souveräne Aktion (er berührt nicht DEINEN Schlüssel — er ist die
+    // Immun-Antwort, leicht auslösbar). Gibt die Zahl der ausgestoßenen Artefakte.
+    revokeKey(pubkey, opts) {
+        opts = opts || {};
+        const norm = this._normalizePubKey(pubkey);
+        if (!norm) return { ok: false, reason: "invalid_key" };
+        if (!this.state.revokedKeys) this.state.revokedKeys = {};
+        this.state.revokedKeys[norm] = { at: Date.now() };
+        this._saveRevokedKeys();
+        const purged = this._purgeRevokedArtifacts();
+        if (!opts.silent && typeof this.journalAppend === "function") {
+            this.journalAppend(
+                "ritual",
+                `Ich rief einen Schlüssel zurück (${this._vibeFingerprint(norm)}) — ${purged} Artefakt(e) ausgestoßen.`
+            );
+        }
+        return { ok: true, key: norm, purged };
+    }
+
+    unrevokeKey(pubkey) {
+        const norm = this._normalizePubKey(pubkey);
+        if (!norm || !this.state.revokedKeys || !this.state.revokedKeys[norm]) return { ok: false };
+        delete this.state.revokedKeys[norm];
+        this._saveRevokedKeys();
+        return { ok: true, key: norm };
+    }
+
+    // M4a — die Herkunftskette eines Artefakts (Welt-Manifest / Bauplan): ein
+    // geordnetes Array {by, at}. [0] ist der URSPRUNG (Schöpfer/Erst-Signierer),
+    // die folgenden sind Überträger (wer es weiterreichte). Defensiv-gesäubert.
+    _sanitizeProvenance(raw) {
+        if (!Array.isArray(raw)) return [];
+        const out = [];
+        for (const link of raw) {
+            if (!link || typeof link !== "object") continue;
+            const by = this._normalizePubKey(link.by);
+            if (!by) continue;
+            out.push({ by, at: typeof link.at === "number" ? link.at : 0 });
+            if (out.length >= 16) break; // gedeckelt — kein unbegrenztes Wachsen
+        }
+        return out;
+    }
+
+    // M4a — den eigenen Pubkey an die Kette anhängen (Ursprung wenn leer, sonst
+    // Überträger). Dedup: wenn ich schon der LETZTE Eintrag bin, kein Doppel.
+    _appendProvenance(artifact, pubkeyHex) {
+        if (!artifact || typeof artifact !== "object") return;
+        const by = this._normalizePubKey(pubkeyHex);
+        if (!by) return;
+        let chain = this._sanitizeProvenance(artifact.provenance);
+        const last = chain.length ? chain[chain.length - 1] : null;
+        if (!last || last.by !== by) {
+            if (chain.length < 16) chain.push({ by, at: Date.now() });
+        }
+        artifact.provenance = chain;
+    }
+
+    // M4b — ist ein Artefakt durch einen revozierten Schlüssel in seiner Kette
+    // (oder seinem Signierer) vergiftet? Dann fällt es weg.
+    _artifactProvenanceTainted(artifact) {
+        if (!artifact || typeof artifact !== "object") return false;
+        if (artifact.authorPubKey && this._isKeyRevoked(artifact.authorPubKey)) return true;
+        const chain = Array.isArray(artifact.provenance) ? artifact.provenance : [];
+        for (const link of chain) {
+            if (link && this._isKeyRevoked(link.by)) return true;
+        }
+        return false;
+    }
+
+    // M4b — den lokalen Bestand gegen die Rückruf-Liste sieben (signedWorlds +
+    // customWorlds + eigene Baupläne). Gibt die Zahl der ausgestoßenen Artefakte.
+    _purgeRevokedArtifacts() {
+        let purged = 0;
+        const sw = this.state.signedWorlds || {};
+        for (const id of Object.keys(sw)) {
+            if (this._artifactProvenanceTainted(sw[id])) {
+                delete sw[id];
+                purged++;
+            }
+        }
+        const cw = this.state.customWorlds || {};
+        for (const id of Object.keys(cw)) {
+            if (this._artifactProvenanceTainted(cw[id])) {
+                delete cw[id];
+                purged++;
+            }
+        }
+        const bp = this.state.blueprints || {};
+        for (const name of Object.keys(bp)) {
+            const b = bp[name];
+            if (b && !b.builtIn && b.signature && this._artifactProvenanceTainted(b)) {
+                // Der Bauplan bleibt (er ist Spieler-Werk), aber seine vergiftete
+                // Signatur/Herkunft fällt — er wird wieder „unsigniert".
+                delete b.signature;
+                delete b.authorPubKey;
+                delete b.signedHash;
+                delete b.provenance;
+                purged++;
+            }
+        }
+        if (purged > 0) {
+            this._saveSignedWorlds();
+            this._saveCustomWorlds();
+            if (typeof this.saveState === "function") this.saveState();
+        }
+        return purged;
+    }
+
+    // M4a — eine lesbare Zusammenfassung der Herkunft (für die Spec-Card / das
+    // Portal): Ursprung vs. „über dich" vs. „von dir". Macht den Unterschied
+    // zwischen Echtheit und Gutartigkeit SICHTBAR.
+    _provenanceSummary(artifact) {
+        const chain = this._sanitizeProvenance(artifact && artifact.provenance);
+        const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+        if (!chain.length)
+            return { chain: [], origin: "", label: "", tainted: this._artifactProvenanceTainted(artifact) };
+        const originKey = chain[0].by;
+        const lastKey = chain[chain.length - 1].by;
+        const originIsMe = myKey && originKey === myKey;
+        const lastIsMe = myKey && lastKey === myKey;
+        const fp = (k) => (myKey && k === myKey ? "dir" : this._vibeFingerprint(k));
+        let label;
+        if (chain.length === 1) {
+            label = originIsMe ? "von dir" : `von ${fp(originKey)}`;
+        } else {
+            label = `Ursprung ${fp(originKey)} · ${lastIsMe ? "über dich" : "über " + fp(lastKey)}`;
+        }
+        return {
+            chain,
+            origin: fp(originKey),
+            originKey,
+            label,
+            passers: chain.length - 1,
+            tainted: this._artifactProvenanceTainted(artifact),
+        };
     }
 
     // Versiegelt eine registrierte Welt mit dem Vibe-Pass. Async (ed25519).
@@ -27801,12 +28050,17 @@ class AnazhRealm {
         const sig = await this._vibeSign(canonical);
         if (!sig) return { ok: false, reason: "sign_failed" };
         if (!this.state.signedWorlds) this.state.signedWorlds = {};
+        // G8 R4 (M4a) — eine schon vorhandene Herkunftskette (eine empfangene,
+        // weitergereichte Welt) bewahren; ich hänge mich an.
+        const priorChain = this.state.signedWorlds[key] && this.state.signedWorlds[key].provenance;
         this.state.signedWorlds[key] = {
             authorPubKey: vp.publicKeyHex,
             signature: sig,
             signedHash: this._fastHash(canonical),
             signedAt: Date.now(),
+            provenance: this._sanitizeProvenance(priorChain),
         };
+        this._appendProvenance(this.state.signedWorlds[key], vp.publicKeyHex);
         this._saveSignedWorlds();
         this.journalAppend("ritual", `Ich veröffentlichte die ${entry.label} mit meinem Vibe-Pass.`, {
             world: key,
@@ -27890,6 +28144,11 @@ class AnazhRealm {
             authorPubKey: typeof w.authorPubKey === "string" ? w.authorPubKey : "",
             signature: typeof w.signature === "string" ? w.signature : "",
         };
+        // G8 R4 (M4a) — die Herkunftskette als Lese-Feld: macht „über dich" vs.
+        // „von dir" sichtbar (Echtheit ≠ Gutartigkeit). Eine Signatur beweist nur
+        // Berührung; die Kette zeigt, WOHER das Werk wirklich stammt.
+        prof.provenance = this._provenanceSummary(w);
+        prof.tainted = prof.provenance.tainted;
         // Stufe — wie heute (hasDsl → „übersetzt", sonst „ausgestellt"); die Marke „nativ"
         // emergiert erst beim Betreten (W12 P3).
         prof.stage = prof.hasDsl ? "übersetzt" : "ausgestellt";
@@ -27944,7 +28203,10 @@ class AnazhRealm {
             if (!parsed || typeof parsed !== "object") return out;
             for (const id of Object.keys(parsed)) {
                 const clean = this._sanitizeImportedManifest(parsed[id]);
-                if (clean) out[clean.id] = clean;
+                // G8 R4 (M4b) — der RÜCKRUF beim Laden: eine Welt mit einem
+                // revozierten Schlüssel irgendwo in ihrer Herkunftskette (oder
+                // als Signierer) fällt weg — die Infektion ist ausgestoßen.
+                if (clean && !this._artifactProvenanceTainted(clean)) out[clean.id] = clean;
             }
         } catch {
             /* korrupte Map → leer, kein Wurf */
@@ -28003,6 +28265,11 @@ class AnazhRealm {
             out.signedHash = typeof m.signedHash === "string" ? m.signedHash : "";
             out.signedAt = typeof m.signedAt === "number" ? m.signedAt : 0;
         }
+        // G8 R4 (M4a) — die mitgereiste Herkunftskette bewahren (gesäubert): der
+        // Empfänger sieht „Ursprung X · über dich" statt nur deiner Signatur, und
+        // der Rückruf (M4b) kann an JEDEM Glied der Kette greifen.
+        const chain = this._sanitizeProvenance(m.provenance);
+        if (chain.length) out.provenance = chain;
         // KI-Übersetzer Phase 1 — eine übersetzte Welt trägt eine Marke, die
         // den localStorage-Rundlauf überleben muss (sonst verlöre sie nach
         // dem Reload ihren „übersetzt"-Status).
@@ -28076,7 +28343,15 @@ class AnazhRealm {
             signature: sig.signature,
             signedHash: sig.signedHash || "",
             signedAt: sig.signedAt || 0,
+            // G8 R4 (M4a) — die ganze Herkunftskette reist mit (Ursprung +
+            // Überträger), nicht nur meine Signatur. Beim Teilen hänge ich mich
+            // als Überträger an, falls ich nicht der Ursprung bin → der Empfänger
+            // sieht „über dich" vs. „von dir". Die Kette ist Metadaten (nicht in
+            // der signierten Substanz — wie world-Pfad/desc).
+            provenance: this._sanitizeProvenance(sig.provenance),
         };
+        const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+        if (myKey) this._appendProvenance(manifest, myKey);
         this.triggerStateDownload(manifest, `anazh-welt-${entry.id}.json`);
         this.journalAppend("share", `Ich teilte die ${entry.label} — ihr signiertes Manifest ging hinaus.`, {
             world: entry.id,
@@ -51539,6 +51814,13 @@ class AnazhRealm {
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
         this.state.keybindings = this._loadKeybindings();
         this.state.keybindRebind = null;
+        // G8 R4 (Robustheits-Bogen, M4 — der RÜCKRUF): die revozierten Schlüssel
+        // aus dem globalen localStorage. Ein Artefakt mit einem revozierten
+        // Schlüssel IRGENDWO in seiner Herkunftskette fällt beim Laden weg —
+        // die Infektion ist reversibel, sobald die Quelle erkannt ist. Global,
+        // NIE im Welt-Snapshot (SOVEREIGN_STATE.excludedStateKeys). VOR den
+        // Welt-Ladern, damit die Lader gegen die Rückruf-Liste sieben können.
+        this.state.revokedKeys = this._loadRevokedKeys();
         // W14 Phase 2 — signierte Welt-Manifeste aus dem globalen localStorage.
         this.state.signedWorlds = this._loadSignedWorlds();
         // W14 Phase 3 — empfangene (importierte) Welt-Manifeste.
@@ -53715,7 +53997,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.123.0";
+AnazhRealm.VERSION = "18.124.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

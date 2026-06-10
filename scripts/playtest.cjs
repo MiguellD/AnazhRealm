@@ -33962,6 +33962,167 @@ async function checkBandG8R3Locality(ctx) {
     check("G8 R3: der Server-Kontext-iframe ist IMMER null-origin (allow-scripts allein)", res.serverNullOrigin);
 }
 
+// G8 R4 — Netz-Immunität (M4): die Herkunfts-KETTE (4a, „Ursprung X · über
+// dich" statt flachem origin-Enum) + der RÜCKRUF (4b, ein revozierter Schlüssel
+// stößt jedes Artefakt mit ihm in der Kette aus) + die Quarantäne (4c, der
+// welt-exponierte LLM kann keinen souveränen Akt formulieren — R2-gebunden).
+async function checkBandG8R4Immunity(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        // (1) Methoden + revokedKeys benannt im innersten Ring + NIE im Snapshot.
+        out.methods =
+            typeof r.revokeKey === "function" &&
+            typeof r._appendProvenance === "function" &&
+            typeof r._isKeyRevoked === "function" &&
+            typeof r._provenanceSummary === "function" &&
+            typeof r._artifactProvenanceTainted === "function" &&
+            typeof r._normalizePubKey === "function";
+        out.revokedInRing = K.SOVEREIGN_STATE.excludedStateKeys.includes("revokedKeys");
+        out.revokedNotInSnapshot = JSON.stringify(r.buildStateSnapshot()).indexOf("revokedKeys") < 0;
+        // Zustand sichern, den wir mutieren.
+        const savedRevoked = Object.assign({}, r.state.revokedKeys);
+        const savedSigned = JSON.parse(JSON.stringify(r.state.signedWorlds || {}));
+        const KA = "aa".repeat(32);
+        const KB = "bb".repeat(32);
+        const KEVIL = "cc".repeat(32);
+        // (2) Herkunftskette: append baut die Kette (Ursprung → Überträger), dedup.
+        const art = {};
+        r._appendProvenance(art, KA);
+        r._appendProvenance(art, KA); // dedup (schon letzter)
+        r._appendProvenance(art, KB);
+        out.chainBuilds = art.provenance.length === 2 && art.provenance[0].by === KA && art.provenance[1].by === KB;
+        const summ = r._provenanceSummary(art);
+        out.summaryShowsLineage = summ.chain.length === 2 && summ.passers === 1 && /Ursprung/.test(summ.label);
+        // (3) Sanitize: eine eingehende Kette wird gesäubert (hex-gated, "ed25519:"-tolerant).
+        const cleanChain = r._sanitizeProvenance([
+            { by: "ed25519:" + KA, at: 1 },
+            { by: "NOTHEX", at: 2 },
+            { by: KB, at: 3 },
+        ]);
+        out.sanitizeDropsGarbage = cleanChain.length === 2 && cleanChain[0].by === KA && cleanChain[1].by === KB;
+        // (4) RÜCKRUF: revoke KEVIL → erkannt; ein Artefakt mit KEVIL in der Kette
+        // ist tainted + wird gepurged; ein sauberes bleibt.
+        r.revokeKey(KEVIL, { silent: true });
+        out.revoked = r._isKeyRevoked(KEVIL) === true && r._isKeyRevoked("ed25519:" + KEVIL) === true;
+        out.taintDetected =
+            r._artifactProvenanceTainted({
+                authorPubKey: KA,
+                provenance: [
+                    { by: KA, at: 1 },
+                    { by: KEVIL, at: 2 },
+                ],
+            }) === true;
+        out.cleanNotTainted =
+            r._artifactProvenanceTainted({
+                authorPubKey: KA,
+                provenance: [
+                    { by: KA, at: 1 },
+                    { by: KB, at: 2 },
+                ],
+            }) === false;
+        r.state.signedWorlds = r.state.signedWorlds || {};
+        r.state.signedWorlds["_g8r4_evil"] = {
+            authorPubKey: KEVIL,
+            signature: "ab",
+            provenance: [{ by: KEVIL, at: 1 }],
+        };
+        r.state.signedWorlds["_g8r4_good"] = { authorPubKey: KA, signature: "cd", provenance: [{ by: KA, at: 1 }] };
+        const purged = r._purgeRevokedArtifacts();
+        out.purgeDropsEvil = !r.state.signedWorlds["_g8r4_evil"] && !!r.state.signedWorlds["_g8r4_good"] && purged >= 1;
+        // (5) QUARANTÄNE (4c): ein LLM-Source-DSL mit souveränem Op → sovereign_blocked
+        // (die R2-Wand hält für den welt-exponierten Pfad — das Dual-LLM-Pattern).
+        const llmRun = r.dslRun(["sign_manifest"], { source: "llm:grok" });
+        out.llmCannotSovereign = Array.isArray(llmRun.log) && llmRun.log.some((e) => e.event === "sovereign_blocked");
+        // (6) Verdrahtung (Source): sign/export/import tragen die Kette, die Lader sieben.
+        out.signSetsChain =
+            /_appendProvenance/.test(r.signWorld.toString()) && /_appendProvenance/.test(r.signBlueprint.toString());
+        out.importPreservesChain = /_sanitizeProvenance\(m\.provenance\)/.test(r._sanitizeImportedManifest.toString());
+        out.loaderSieves = /_artifactProvenanceTainted/.test(r._loadCustomWorlds.toString());
+        // restore
+        delete r.state.signedWorlds["_g8r4_evil"];
+        delete r.state.signedWorlds["_g8r4_good"];
+        r.unrevokeKey(KEVIL);
+        r.state.revokedKeys = savedRevoked;
+        r.state.signedWorlds = savedSigned;
+        if (typeof r._saveSignedWorlds === "function") r._saveSignedWorlds();
+        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+        return out;
+    });
+    if (!res) {
+        check("G8 R4: Immunsystem-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "G8 R4: Immun-Methoden + revokedKeys im innersten Ring + NIE im Snapshot",
+        res.methods && res.revokedInRing && res.revokedNotInSnapshot
+    );
+    check(
+        "G8 R4 (4a): die Herkunftskette baut sich (Ursprung → Überträger, dedup) + zeigt die Lineage",
+        res.chainBuilds && res.summaryShowsLineage
+    );
+    check("G8 R4 (4a): eine eingehende Kette wird gesäubert (hex-gated, ed25519:-tolerant)", res.sanitizeDropsGarbage);
+    check(
+        "G8 R4 (4b): Rückruf erkannt + tainted-Erkennung (vergiftet ja · sauber nein)",
+        res.revoked && res.taintDetected && res.cleanNotTainted
+    );
+    check(
+        "G8 R4 (4b): der Rückruf STÖSST AUS — ein revoziertes Artefakt fällt, ein sauberes bleibt",
+        res.purgeDropsEvil
+    );
+    check(
+        "G8 R4 (4c): der welt-exponierte LLM kann keinen souveränen Akt formulieren (R2-Wand)",
+        res.llmCannotSovereign
+    );
+    check(
+        "G8 R4: die Kette ist verdrahtet (sign trägt · import bewahrt · Lader sieben)",
+        res.signSetsChain && res.importPreservesChain && res.loaderSieves
+    );
+}
+
+// G8 R5 — das LEBENDE Immunsystem (M5): die vier Angriffs-Korpora SIND das
+// Antikörper-Archiv. Kein neuer Apparat — eine neue ROLLE für die Invarianten-
+// Maschinerie: jeder Erreger impft bei jedem Push, ein Regress ist sofort rot.
+async function checkBandG8R5LivingImmune(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.method = typeof r._robustnessCorpus === "function";
+        const corpus = out.method ? r._robustnessCorpus() : [];
+        out.fourClasses = Array.isArray(corpus) && corpus.length === 4;
+        out.allLive = corpus.every((c) => c.live === true);
+        const mechs = corpus.map((c) => String(c.mechanism));
+        out.allMechanisms = ["M1", "M2", "M3", "M4"].every((m) => mechs.some((x) => x.indexOf(m) >= 0));
+        out.classIds = corpus.map((c) => c.id).join(",");
+        return out;
+    });
+    if (!res) {
+        check("G8 R5: Immun-Archiv-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "G8 R5: das Antikörper-Archiv ist enumeriert (_robustnessCorpus → vier Klassen)",
+        res.method && res.fourClasses,
+        res.classIds
+    );
+    check("G8 R5: jede Angriffsklasse hat eine LEBENDE Wand (alle Guards da)", res.allLive);
+    check(
+        "G8 R5: alle vier Mechanismen vertreten (M1 Lokalität · M2 Dämpfung · M3 Katalysator · M4 Immunität)",
+        res.allMechanisms
+    );
+    // Meta: die vier Korpus-Bänder SIND im Gate (sie laufen bei jedem Push = die Impfung).
+    check(
+        "G8 R5: die vier Korpus-Bänder laufen im Playtest-Gate (jeder Erreger → Antikörper)",
+        typeof checkBandG8R1DampedChannel === "function" &&
+            typeof checkBandG8R2SovereignWall === "function" &&
+            typeof checkBandG8R3Locality === "function" &&
+            typeof checkBandG8R4Immunity === "function"
+    );
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.46 Wetter + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
@@ -43136,6 +43297,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandG8R1DampedChannel(ctx);
             await checkBandG8R2SovereignWall(ctx);
             await checkBandG8R3Locality(ctx);
+            await checkBandG8R4Immunity(ctx);
+            await checkBandG8R5LivingImmune(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
