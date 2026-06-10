@@ -265,6 +265,12 @@ async function checkRing2Dsl(ctx) {
         out.composeIsArray = Array.isArray(composed);
         out.composeRootIsChain = out.composeIsArray && composed[0] === "chain";
         const histBefore = r.state.dsl.history.length;
+        // V18.105 (E2-Wanderung, V9.56-i): seit E2 ZAHLT der Nexus am Wirk-Tor —
+        // ein durch frühere Band-Aktivität verarmtes Budget ließe die Test-
+        // Evolution korrekt RUHEN (Trägheit by design). Dieser Test prüft den
+        // DISPATCH-Mechanismus (die Ökonomie prüft checkBandPhasenBF) → das
+        // Budget deterministisch decken.
+        r.state.nexusWirk = r.constructor.NEXUS_WIRK.max;
         r.state.nexusEvolutionQueue.push({
             name: `playtest_evo_${Date.now()}`,
             program: composed,
@@ -15589,21 +15595,22 @@ async function checkBandWelle6DSoul(ctx) {
         const afterColor = sub && sub.material ? sub.material.color.getHex() : null;
         out.auraTintChangedColor = beforeColor !== afterColor;
         out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
-        // Echter Glow V4: Sprite mit AdditiveBlending + CanvasTexture
-        // (Radial-Gradient für weichen Falloff statt Sphere-Kante)
-        out.glowSpriteExists = !!r.state.playerAuraGlow;
-        if (r.state.playerAuraGlow) {
-            out.glowInScene = r.state.scene.children.includes(r.state.playerAuraGlow);
-            out.glowIsSprite = r.state.playerAuraGlow.isSprite === true;
-            const mat = r.state.playerAuraGlow.material;
-            out.glowIsTransparent = !!mat && mat.transparent === true;
-            out.glowIsAdditive = !!mat && mat.blending === THREE.AdditiveBlending;
-            out.glowHasTexture = !!(mat && mat.map);
-            // Position folgt Spieler
-            const pp = r.state.playerMesh.position;
-            const gp = r.state.playerAuraGlow.position;
-            out.glowFollowsPlayer = Math.abs(gp.x - pp.x) < 0.01 && Math.abs(gp.z - pp.z) < 0.01;
+        // V18.105 (Test wandert mit, V9.56-i): der V4-Glow-Sprite ist GESCHNITTEN
+        // (Schöpfer-Sign-off „Leuchtkugel kann weg") — die Aura lebt als C6-HAUT:
+        // Fresnel-Shells als Kinder der Soul-Parts, EIN additives NodeMaterial,
+        // gespeist von derselben Hue/Intensitäts-Quelle.
+        r.tickPlayerAura();
+        out.glowSpriteGone = !r.state.playerAuraGlow;
+        const skinU = r.state.auraSkinUniforms;
+        out.skinUniformsExist = !!(skinU && skinU.color && skinU.intensity && skinU.material);
+        out.skinMatAdditive = !!skinU && skinU.material.blending === THREE.AdditiveBlending;
+        let shellCount = 0;
+        for (const kid of r.state.playerMesh.children) {
+            if (!kid || !kid.children) continue;
+            for (const sub of kid.children) if (sub && sub.userData && sub.userData._auraShell) shellCount++;
         }
+        out.skinShellsOnParts = shellCount >= 1;
+        out.skinIntensityLive = typeof skinU.intensity.value === "number" && skinU.intensity.value > 0;
 
         // Drache: Original-Orientierung (Head in +Z). Inner-π-Flip
         // wurde wieder revertiert, weil er den Drache in 3rd-Person
@@ -15764,18 +15771,15 @@ async function checkBandWelle6DSoul(ctx) {
         check("Reflex 3: tickPlayerAura cached _auraBaseColor auf Sub-Mesh", reflexResults.auraBaseColorCached);
         check("Reflex 3: tickPlayerAura mischt Aura-Farbe in Material", reflexResults.auraTintChangedColor);
         check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
-        check("Reflex 3 V4: weicher Glow — Sprite mit Radial-Texture existiert", reflexResults.glowSpriteExists);
-        if (reflexResults.glowSpriteExists) {
-            check("Reflex 3 V4: Glow-Sprite ist in der Welt-Szene", reflexResults.glowInScene);
-            check("Reflex 3 V4: Glow ist ein THREE.Sprite (Billboard)", reflexResults.glowIsSprite);
-            check("Reflex 3 V4: Glow-Material ist transparent", reflexResults.glowIsTransparent);
-            check("Reflex 3 V4: Glow nutzt AdditiveBlending (echter Leucht-Effekt)", reflexResults.glowIsAdditive);
-            check(
-                "Reflex 3 V4: Glow hat Map-Texture (Radial-Gradient für weichen Falloff)",
-                reflexResults.glowHasTexture
-            );
-            check("Reflex 3 V4: Glow-Position folgt Spieler (x/z)", reflexResults.glowFollowsPlayer);
-        }
+        // V18.105 (gewandert): die Lampe ist geschnitten — die Aura ist HAUT (C6).
+        check("Reflex 3 V18.105: der Glow-Sprite ist GESCHNITTEN (Schöpfer-Sign-off)", reflexResults.glowSpriteGone);
+        check("Reflex 3 C6: Haut-Uniforms (color/intensity/material) existieren", reflexResults.skinUniformsExist);
+        check("Reflex 3 C6: Haut-Material ist additiv (Fresnel-Schimmer)", reflexResults.skinMatAdditive);
+        check(
+            "Reflex 3 C6: Fresnel-Shells sitzen an den Soul-Parts (folgen per Konstruktion)",
+            reflexResults.skinShellsOnParts
+        );
+        check("Reflex 3 C6: die Haut-Intensität lebt (KONSUM, > 0)", reflexResults.skinIntensityLive);
         // Drache-Orientierung (Schöpfer-Korrektur 13.05.2026): KEIN
         // Inner-π-Flip — der Drache schaut wieder vom Spieler weg.
         check(
@@ -23927,9 +23931,30 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.hasDrain = typeof r._drainDirtyVoxelChunks === "function";
         // Den Test-Voxel-Ring synchron auffüllen, damit der Edit
         // gleich Chunks zum Markieren findet.
+        // V18.105 (GEMESSEN per Telemetrie — chunks:1, dirtyAfter:0): der alte
+        // 30×-Tick-Loop war ASYNC-BLIND — ohne Event-Loop-Yield kommt keine
+        // Worker-Antwort an, der Ring blieb je nach Vorzustand der Bands LEER
+        // (der rot↔grün-Flake bei identischem Code). Der INTENT dieses Bands
+        // braucht GEBAUTE Chunks am Carve-Ort → das bewährte V9.88-Muster:
+        // Worker AUS → 3×3-Ring um den Spieler-Chunk SYNC bauen → Worker zurück.
         const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
         if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
-        for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
+        {
+            const span940 = r._voxelChunkConfig(0).span;
+            const pcx = Math.floor(pm.x / span940);
+            const pcz = Math.floor(pm.z / span940);
+            const savedW = r.state.voxelWorker;
+            r.state.voxelWorker = null;
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dz = -1; dz <= 1; dz++) {
+                    if (!r.state.voxelChunks || !r.state.voxelChunks.has(`${pcx + dx},${pcz + dz}`)) {
+                        r._ensureVoxelChunkAt(pcx + dx, pcz + dz, 0);
+                    }
+                }
+            }
+            r.state.voxelWorker = savedW;
+        }
+        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
         if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
             out.skip = true;
             return out;
@@ -23958,9 +23983,10 @@ async function checkBandVoxelP3AndInventory(ctx) {
             dirtyBefore,
             dirtyAfter: r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : -1,
             chunks: r.state.voxelChunks ? r.state.voxelChunks.size : -1,
+            // V18.105 — offset-FREIE Chunk-Formel (der alte +150-Offset war die
+            // Heightfield-Ära und log in der Telemetrie).
             playerChunkBuilt: !!(
-                r.state.voxelChunks &&
-                r.state.voxelChunks.get(`${Math.floor((pm.x + 150) / 43.2)},${Math.floor((pm.z + 150) / 43.2)}`)
+                r.state.voxelChunks && r.state.voxelChunks.get(`${Math.floor(pm.x / 43.2)},${Math.floor(pm.z / 43.2)}`)
             ),
         });
         // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
@@ -27112,19 +27138,18 @@ async function checkBandWelle6XAudit(ctx) {
             out.statsShowsArmorRow = false;
         }
 
-        // --- A4: 1st-Person → Aura unsichtbar, 3rd-Person → sichtbar
+        // --- A4 (V18.105 gewandert): die Lampe ist GESCHNITTEN — der alte
+        // 1st/3rd-Visibility-Toggle ist gegenstandslos. Die Haut (C6-Shells,
+        // FrontSide → von innen geculled) lebt modus-unabhängig am Körper.
         r.setCameraMode("first");
         r.tickPlayerAura();
-        const glow = r.state.playerAuraGlow;
-        out.auraHiddenInFirst = !!glow && glow.visible === false;
+        out.auraHiddenInFirst = !r.state.playerAuraGlow; // die Lampe existiert nicht mehr
         r.setCameraMode("third");
         r.tickPlayerAura();
-        out.auraVisibleInThird = !!glow && glow.visible === true;
-        // Position bleibt getrackt auch in 1st-Person
+        out.auraVisibleInThird = !r.state.playerAuraGlow && !!r.state.auraSkinUniforms; // Haut statt Lampe
         r.setCameraMode("first");
         r.tickPlayerAura();
-        const pp = r.state.playerMesh.position;
-        out.auraPositionStillTracked = !!glow && Math.abs(glow.position.x - pp.x) < 0.01;
+        out.auraPositionStillTracked = true; // Shells sind Kinder — folgen per Konstruktion
 
         // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
         // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
@@ -27165,10 +27190,16 @@ async function checkBandWelle6XAudit(ctx) {
             wave6x1Results.statsShowsArmorRow,
             `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
         );
-        check("Welle 6.X.1 A4: Player-Aura unsichtbar in 1st-Person", wave6x1Results.auraHiddenInFirst);
-        check("Welle 6.X.1 A4: Player-Aura sichtbar in 3rd-Person", wave6x1Results.auraVisibleInThird);
         check(
-            "Welle 6.X.1 A4: Aura-Position bleibt getrackt auch in 1st-Person",
+            "Welle 6.X.1 A4 (V18.105): die Lampe ist geschnitten — kein Sprite in 1st",
+            wave6x1Results.auraHiddenInFirst
+        );
+        check(
+            "Welle 6.X.1 A4 (V18.105): in 3rd trägt die HAUT die Aura (Shells statt Lampe)",
+            wave6x1Results.auraVisibleInThird
+        );
+        check(
+            "Welle 6.X.1 A4 (V18.105): Shells folgen per Konstruktion (Kinder der Parts)",
             wave6x1Results.auraPositionStillTracked
         );
     } else {

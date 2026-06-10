@@ -364,10 +364,13 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Invariante „A2: Edit-Vertex-Delta lokal" verankert (Playtest-Band PhaseAFundament).
 - **A3 — H3 ferne Binnengewässer** [roadmap §4; H]: die ±1024-Atlas-Region wandert mit dem Spieler
   (eigene Welle, determinismus-brechend → Schöpfer-Sign-off S).
-- **A4 — Wasser-Reste-Bündel** [roadmap §4 „Wasser"; je klein]: Wasserfall-Plane-Entscheid (S:
-  bleibt/durch CA ersetzt) · Schelf-Konsolidierung (Flood-Gates vs CA, H) · Hoch-Becken über `L`
-  (CA-Zellen jenseits der Atlas-Domäne, H+A) · Unterwasser-Pass B5 (A) · Kapillar/Stempel an
-  Gebäuden (H) · T7c/T7d-Reste (Fluss-Edit-Löcher · lake/river-Naht, H+A).
+- **A4 — Wasser-Reste-Bündel** [roadmap §4 „Wasser"; je klein] — **S-BESTÄTIGT (Schöpfer-Browser
+  10.06. abend: „Übergang Wasser/See/Meer zu Fluss noch komisch, der See-/Meer-Shader noch nicht
+  synergetisch, durch die Wellen oder so" — der Faden IST gesehen + hier verortet):** der Kern ist
+  die MÜNDUNGS-SYNERGIE (die V18.14-M2-`aWave`-Rampe + das Schaum-Gate + die T7d-See↔Fluss-
+  `L`-Naht an 4-Chunk-Ecken — der Makro-Kontext muss den Mikro-Shader an der Mündung WEICH
+  übergeben). Dazu: Wasserfall-Plane-Entscheid (S) · Schelf-Konsolidierung (H) · Hoch-Becken
+  über `L` (H+A) · Unterwasser-Pass B5 (A) · Kapillar/Stempel (H) · T7c-Reste.
 - ✓ **A5 — Haupt-Fog ↔ Ring-Kante (V18.103):** `fog.far = min(Wetter-Formel·Slider,
   (ringRadius+0.5)·span)` in `_dayNightApplyHemiAndFog` — der Nebel deckt das Welt-Ende
   (Default-Ring 4: Kante ~194 m, fog.far war 450 m = sichtbare Welt-Kante); bei „Weltenring max"
@@ -414,6 +417,12 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Allokations-Audit per-Frame-Pfade.
 - **B7 — U6 Clipmap** [Backlog-Gate: erst nach A1/A2 + S-Entscheid] · **R3 Kanten-Schärfe + R5
   Struktur-Textur** [A→S, reine Look-Wellen].
+- **B9 — TERRAIN-NACHTLICHT (Schöpfer-Browser 10.06. abend, NEU)** [H-Messung → A]: „der
+  Terrain-Boden selbst scheint noch nicht aufs Nachtlicht zu reagieren" (Bauwerke/Deko: „hammer,
+  was ein Sprung" = B8 BESTÄTIGT — der Kontrast macht den Boden-Rest sichtbar). MESSEN, welcher
+  Term den Boden nachts hochhält (Kandidaten: Hemi-Nacht-Floor 0.32 + V17.7-Ambient-Lift ·
+  der Aerial-skyColor-Melt · die vertexColors-Helligkeit · der B2-MANTEL [eigenes Material —
+  denselben Nacht-Sync verifizieren!]) — dann den EINEN Hebel heilen, nicht dimmen-raten.
 - ✓ **B8 — STRUKTUR-LICHT-HARMONIE (V18.104):** die Struktur-LUT mit Schatten-Boden 0.25
   (`_ensureStructureGradient` — folgt dem Cel-Regler in-place mit, nur das Dunkel-Band hebt sich,
   kein Material-Lügen) + das warme RIM-Licht (Fresnel-Saum vec3(1,0.72,0.45) im Aerial-Output-
@@ -562,12 +571,14 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 3. **Gates:** H-Wellen stapeln dürfen; A-Wellen je mit Screenshot; S-Punkte SAMMELN sich für
    EINEN Schöpfer-Browser-Durchgang — die offene Liste: R1 · E1–E3 · J4 · S9 · A2(alt) ·
    N3-FPS · Post-FX-Look · weite-Wiese-FPS · Motion-Feel (V18.99) · **V18.103: A5-Fog-Look ·
-   A1-Stitch-Band-Look (Cliff-Grenzen) · A6-Sprung-Feel (Decken-Klemme)** · **V18.104:
-   B2-Mantel-Look (ferne Hügelketten, mein Auge: ✓ gefüllter Horizont) · B8-Rim/LUT-Feintuning
-   (`rimStrength`, LUT-Boden 0.25) · C1/C2-Gelenk-Motion-Feel (Rad/Tür/Wirbel-Amplituden) ·
-   C5-Bewegungs-Feel (k-Werte) · C6-Haut-Schimmer-Look · D4-DESIGN-DIALOG (Gegenwehr — das
-   volle Phase-E) · E2-BUDGET-GRÖSSEN (NEXUS_WIRK 60/150, mein Erst-Wurf) · E3-Mana-HUD** ·
-   danach EIN Merge.
+   A1-Stitch-Band-Look (Cliff-Grenzen) · A6-Sprung-Feel (Decken-Klemme)** · **V18.104 (S-Durchgang 10.06. abend, TEIL-BESTÄTIGT):
+   ✓ B8 („Bauwerke und Deko hammer") · ✓ C6 („Hautschimmer passt"; Lampe V18.105 geschnitten) ·
+   ✓ B2-Mantel (mein Auge + Schöpfer-Screenshot: gefüllter Horizont) — NEU aus dem Durchgang:
+   B9 Terrain-Nachtlicht (messen) · A4-Mündungs-Synergie S-bestätigt. WEITER OFFEN:
+   B8-Rim/LUT-Feintuning · C1/C2-Gelenk-Motion-Feel · C5-Bewegungs-Feel (k-Werte) ·
+   D4-DESIGN-DIALOG (Gegenwehr — das volle Phase-E) · E2-BUDGET-GRÖSSEN (NEXUS_WIRK 60/150,
+   mein Erst-Wurf) · E3-Mana-HUD** · der Stand V18.105 ist GEMERGT (Schöpfer 10.06.:
+   „mergen mit diesem Stand, offene Punkte vermerken").
 4. **Die Wände (nie verhandeln):** Determinismus (Worker bit-identisch; eine Skala-Optimierung
    ändert NIE die Gitter-Phase) · die Narben (roadmap §5) nicht wiederholen · die Samen (roadmap
    §7 + §5-D5c hier) nie blind schneiden · Multi-Agent-Funde SELBST verifizieren (zwei
@@ -600,9 +611,10 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | Netz trägt real nur ~4–6 Peers, TURN fehlt | F2 |
 | Sozial-Schicht fehlt ganz (Bewerten lokal-only) | F4 |
 | ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip) |
-| Schwarze Struktur-Silhouetten (eisen × Gegenlicht × Toon-Boden) | B8 |
+| ~~Schwarze Struktur-Silhouetten~~ | ✓ V18.104 B8 — **S-BESTÄTIGT** („Bauwerke und Deko hammer, was ein Sprung") |
+| Terrain-Boden reagiert nachts nicht (Schöpfer 10.06. abend) | B9 (NEU — messen, welcher Term ihn hochhält) |
 | Steuerung flach (kein Feel, Bindings teils fix) | C5 |
-| Aura = folgende Lampe statt Haut-Schimmern | C6 |
+| ~~Aura = folgende Lampe~~ | ✓ V18.104 C6 — **S-BESTÄTIGT** („Hautschimmer passt"); V18.105: die Lampe GESCHNITTEN („kann weg") |
 | ~~Wiese homogen, keine Wälder~~ | ✓ V18.102 B5+ |
 | Test-Volatilität (Spieler-im-Fall-Klasse) | §6.2-Telemetrie-Disziplin (Muster steht) |
 | localStorage-Größen-Wand | FERN IndexedDB |

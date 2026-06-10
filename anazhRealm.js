@@ -30979,31 +30979,9 @@ class AnazhRealm {
     // _auraGlow ist eigener Mesh in der Welt-Szene (nicht playerMesh-Child,
     // damit applyPlayerSoul ihn nicht disposed). _auraBaseColor cached pro
     // Sub-Mesh die Original-Farbe (Anti-Drift wie 6.A5 Phantom-Tint).
-    _ensurePlayerAuraGlow() {
-        if (typeof THREE === "undefined" || !this.state.scene) return null;
-        if (this.state.playerAuraGlow) return this.state.playerAuraGlow;
-        // Welle 6.D Etappe 3b V4 (Schöpfer-Feedback „mehr Schimmern der Haut,
-        // weichere Kanten") — Glow ist jetzt ein Sprite mit CanvasTexture-
-        // Radial-Gradient statt einer Sphere. Sprite-Billboard + radialer
-        // Falloff zentral→transparent gibt ein WEICHES Leuchten ohne harte
-        // Sphere-Kontur. AdditiveBlending sorgt für die echte Pixel-
-        // Helligkeit (überlappende Pixel werden additiv aufgehellt).
-        const tex = this._buildAuraGradientTexture();
-        const mat = new THREE.SpriteMaterial({
-            map: tex,
-            color: 0xffffff,
-            blending: THREE.AdditiveBlending,
-            transparent: true,
-            opacity: 1.0,
-            depthWrite: false,
-        });
-        const sprite = new THREE.Sprite(mat);
-        sprite.userData.isPlayerAuraGlow = true;
-        sprite.scale.set(3.0, 3.0, 1);
-        this.state.scene.add(sprite);
-        this.state.playerAuraGlow = sprite;
-        return sprite;
-    }
+    // V18.105 — `_ensurePlayerAuraGlow` ENTFERNT (Schöpfer-Sign-off: die Lampe
+    // weicht der C6-Haut; tiefer ersetzt = schneidbar). `_buildAuraGradientTexture`
+    // unten bleibt — die PEER-Aura (p2p) ist ihr lebender Konsument.
 
     // Welle 6.D Etappe 3b V4 — Radial-Gradient-Texture für den Aura-Sprite.
     // Einmalig erzeugt + gecached. 128×128 Canvas mit fünf-Stop-Gradient von
@@ -31149,41 +31127,14 @@ class AnazhRealm {
         const auraStrength = Math.min(1, bestVal / 1.5);
         this.state.player._auraHueOut = hue;
         this.state.player._auraIntensityOut = hpRatio * auraStrength;
-        // (a) Glow-Sprite (V4): weicher Schimmer um den Avatar.
-        // Sprite ist Billboard (folgt Kamera automatisch). Radius wirkt
-        // physisch über `scale`; die radial-Gradient-Texture sorgt für den
-        // sanften Falloff (keine harte Kontur mehr). Die Material-Color tint
-        // multipliziert mit der Textur, sodass die HSL-Tag-Farbe sichtbar wird.
-        const glow = this._ensurePlayerAuraGlow();
-        if (glow) {
-            // Position + Material immer aktualisieren — Mitspieler (zukünftig
-            // mit Welle 11 V3 Soul-Sync) sollen Konsistenz auch beim Beobachten
-            // des eigenen Avatars haben, und Tests erwarten eine getrackte
-            // Position. Nur die Visibility wird durch den Camera-Mode getoggled.
-            const p = this.state.playerMesh.position;
-            glow.position.set(p.x, p.y + 0.5, p.z);
-            glow.material.color.copy(auraColor);
-            // C6 — die Lampe wird SUBTIL: die Substanz wanderte in die Haut
-            // (Fresnel-Shells unten); der Sprite bleibt als ferner Schimmer.
-            glow.material.opacity = (0.55 + 0.45 * hpRatio * auraStrength) * 0.3;
-            // Atem-Animation über Sprite-scale (5 % Modulation).
-            const breath = 3.0 * (1 + Math.sin(performance.now() * 0.001) * 0.05);
-            glow.scale.set(breath, breath, 1);
-            // Welle 6.X.1 A4 — Aura in 1st-Person ausblenden (Audit 17.05.2026):
-            // das Billboard sitzt 0.5m über dem Player. In first-Person ist die
-            // Kamera AM Spieler-Kopf, also liegt das Sprite mitten im Sichtfeld
-            // und addiert via AdditiveBlending einen Schleier auf jeden Pixel
-            // (besonders beim Blick nach unten). In 3rd-Person ist es das was
-            // es sein soll: ein Schimmer um den eigenen Körper.
-            // **Multi-User-Schnittstelle (Schöpfer-Frage 17.05.2026)**: dieser
-            // Hide gilt NUR meinen lokalen Renderer. Wenn ein Mitspieler in
-            // seiner 3rd-Person-Kamera meinen Avatar sieht, läuft das durch
-            // SEINEN Renderer — meine `glow.visible = false`-Setzung ist da
-            // irrelevant. Heute baut der Mitspieler-Renderer aber nur eine
-            // Cone+Sphere-Group, keine Aura. Welle 11 V3 (Soul-Sync) wird
-            // beides liefern: echter Soul-Mesh + Aura-Sync (low-freq Broadcast
-            // der dominanten Tag-Achse) — siehe roadmap.md Eintrag W11 V3.
-            glow.visible = this.state.cameraMode !== "first";
+        // (a) ENTFERNT (V18.105, Schöpfer-Sign-off 10.06.: „Hautschimmer passt,
+        // Leuchtkugel kann weg, die mich verfolgt"): der V4-Glow-Sprite ist durch
+        // die C6-HAUT (Fresnel-Shells unten) TIEFER ersetzt — die Saat-Regel
+        // erlaubt den Schnitt. Die Radial-Gradient-Texture bleibt (die PEER-Aura
+        // teilt sie); ein etwaiger Alt-Sprite einer laufenden Session wird geräumt.
+        if (this.state.playerAuraGlow) {
+            if (this.state.scene) this.state.scene.remove(this.state.playerAuraGlow);
+            this.state.playerAuraGlow = null;
         }
         // C6 — die HAUT schimmert: Fresnel-Shells in Aura-Hue, atmet mit dem Puls.
         const skin = this._ensureAuraSkinShells();
@@ -52849,7 +52800,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.104.0";
+AnazhRealm.VERSION = "18.105.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
