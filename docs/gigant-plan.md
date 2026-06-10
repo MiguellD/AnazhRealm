@@ -476,7 +476,11 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Idle-Dauerdrehung · TÜR: vertikale Achse + flacher Part · WIRBEL: Kette ≥3 Glieder [Grad ≤2],
   Phase = Ketten-Index · SCHARNIER: Default, schwingt um den ECHTEN Anker); `_animateCompoundMotion`
   rotiert um den Anker (`pos = anker + R(θ)·(basePos−anker)`, Eine-Achsen-Rotation alloc-frei).
-  Built-ins ohne connections = unverändert (Lage-Fallback). Offen: Werkstatt-Readout-Zeile (klein).
+  Built-ins ohne connections = unverändert (Lage-Fallback). ✓ Readout-Zeile (V18.119): das
+  Stats-Panel liest computeMotionRoles MIT bp.connections (vorher Lage-Fallback = der
+  V9.82-Riss: Animation und Readout sahen verschiedene Wahrheiten) + Gelenk-Labels
+  („Rad an Achse"/Tür/Wirbel/Scharnier/Segel) — GEMESSEN am Wagen: bein×4 → rad×4,
+  Panel zeigt „4× Rad an Achse (rollt)". Bauen → ablesen → lernen schließt.
 - ✓ **C2 — Architektur-Idle (V18.104):** `tickArchitectures` klassifiziert pro Architektur EINMAL
   lazy (`_idleMotion`, mit bp.connections) + filtert auf die SICHEREN Idle-Rollen rad/segel/tuer/
   wirbel (Hütten/Statuen wackeln NIE — bein/arm/kopf werden genullt); neue `segel`-Signatur
@@ -574,7 +578,10 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Regeneration am 5-s-Takt, schneller auf magie-leitendem FELD (`auraAt` — das Feld speist);
   VERBRAUCH: die gesprochene Welt-Geste (Chat→DSL) kostet im PFAD-Modus Mana ∝ Substanz
   (DERSELBE `_dslProgramWirkCost`-Walker wie das Nexus-Budget = EINE Ökonomie für alle
-  Schreiber; Lese-/Privat-Gesten frei; frieden/schöpfer frei — §11). HUD-Anzeige offen (klein).
+  Schreiber; Lese-/Privat-Gesten frei; frieden/schöpfer frei — §11). ✓ HUD (V18.119): dritte
+  Stats-Row (✦, blau-violett) in der HP/Stamina-Familie (tickStatsHud, eine Quelle/Throttle),
+  NUR im pfad sichtbar (frieden/schöpfer zahlen nicht → kein UI-Rauschen) — die Währung ist
+  sichtbar, „zu erschöpft" kommt nicht mehr aus dem Nichts.
 - **E4 — Geste→Gesetz:** ✓ AUDIT GEMESSEN + PASSAGIER GEHEILT (V18.104): der Fitness-Kreis
   LEBTE nur halb — der Finalizer schrieb `h.fitness` (computeMultiDimFitness), aber
   `dslSelectByFitness` las NUR den fps-Proxy nach (der Passagier-Trugschluss im Lern-Kreis).

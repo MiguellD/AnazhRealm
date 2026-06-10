@@ -47632,7 +47632,14 @@ class AnazhRealm {
         // Werks — was sich bewegen würde, trüge man es als Seele / erwachte
         // es als Wesen. Dieselbe Resonanz, die Kreaturen + Custom-Avatare
         // animiert — die Werkstatt LIEST sie nur (ein Vektor, viele Leser).
-        const motionRoles = this.computeMotionRoles(bp.parts);
+        // V18.119 (C1-Readout-Schluss): MIT bp.connections — der Readout las
+        // bis hier nur den Lage-Fallback, während die Animation (C1-Gelenke,
+        // tickArchitectures) die Verbindungen als Vorrang-Quelle liest → der
+        // Readout zeigte NIE „Rad an Achse"/„Scharnier", die sich wirklich
+        // bewegen (zwei Leser, zwei Calls = der V9.82-Riss). Jetzt EINE
+        // Wahrheit: verbinde zwei Teile → das Panel benennt das Gelenk →
+        // der Spieler LERNT das Gelenk-Substrat (bauen → ablesen → bauen).
+        const motionRoles = this.computeMotionRoles(bp.parts, bp.connections);
         if (motionRoles) {
             const counts = {};
             for (const r of motionRoles) if (r) counts[r.role] = (counts[r.role] || 0) + 1;
@@ -47642,6 +47649,11 @@ class AnazhRealm {
                 fluegel: "Flügel (Schlag)",
                 schwanz: "Schwanz (Welle)",
                 kopf: "Kopf (Nicken)",
+                rad: "Rad an Achse (rollt)",
+                tuer: "Tür/Schwenk (Scharnier-Achse)",
+                wirbel: "Wirbel-Kette (Welle)",
+                scharnier: "Scharnier (schwingt am Anker)",
+                segel: "Segel/Tuch (flattert)",
             };
             const mtxt = Object.keys(counts)
                 .map((k) => `${counts[k]}× ${mlbl[k] || k}`)
@@ -47654,7 +47666,7 @@ class AnazhRealm {
                     this._el("div", {
                         class: "spec-motion-line",
                         text: mtxt,
-                        title: "Die Bewegungs-Rollen emergieren aus Form × Lage × Spiegelung der Parts — als Seele getragen bewegt sich das Werk.",
+                        title: "Die Bewegungs-Rollen emergieren aus Form × Lage × Spiegelung — und aus den VERBINDUNGEN: ein Gelenk (Rad/Tür/Wirbel/Scharnier) entsteht am Anker zwischen zwei verbundenen Teilen. Als Seele getragen oder als Bau erwacht bewegt sich das Werk genau so.",
                     })
                 );
             }
@@ -48853,6 +48865,28 @@ class AnazhRealm {
         if (stamGlow) stamGlow.setAttribute("width", String(166 * stamRatio));
         hpText.textContent = `${hp}/${hpMax}`;
         stamText.textContent = `${stam}/${stamMax}`;
+        // V18.119 — E3-Mana SICHTBAR (der Kreis schließt): Welt-Gesten kosten
+        // im PFAD-Modus Mana (V18.104-E3, derselbe Kosten-Walker wie das
+        // Nexus-Wirk-Budget), aber die Währung hatte keine Anzeige — der
+        // Spieler konnte „zu erschöpft für diese Geste" nie kommen sehen.
+        // Dritte Row derselben Familie (eine Quelle, eine Throttle); NUR im
+        // pfad sichtbar (frieden/schöpfer zahlen nicht — kein UI-Rauschen).
+        const manaRow = document.getElementById("stats-hud-mana-row");
+        if (manaRow) {
+            const isPfad = typeof this.getGameMode === "function" && this.getGameMode() === "pfad";
+            manaRow.hidden = !isPfad;
+            if (isPfad) {
+                const manaMax = Math.max(1, Math.round(typeof p.manaMax === "number" ? p.manaMax : 40));
+                const mana = Math.max(0, Math.round(typeof p.mana === "number" ? p.mana : manaMax));
+                const manaRatio = Math.max(0, Math.min(1, mana / manaMax));
+                const manaFill = document.getElementById("stats-hud-mana-fill");
+                if (manaFill) manaFill.setAttribute("width", String(166 * manaRatio));
+                const manaGlow = document.getElementById("stats-hud-mana-glow");
+                if (manaGlow) manaGlow.setAttribute("width", String(166 * manaRatio));
+                const manaText = document.getElementById("stats-hud-mana-text");
+                if (manaText) manaText.textContent = `${mana}/${manaMax}`;
+            }
+        }
         // V8.14 — HP-niedrig-Pulse: bei < 30 % bekommt der HUD eine
         // pulsierende rote Aura via CSS-Animation. Über 30 % wieder ruhig.
         const hud = document.getElementById("stats-hud");
@@ -53318,7 +53352,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.118.0";
+AnazhRealm.VERSION = "18.119.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

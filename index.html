@@ -1341,6 +1341,13 @@
                     0 0 6px rgba(228, 200, 124, 0.5),
                     0 1px 2px rgba(0, 0, 0, 0.7);
             }
+            #stats-hud .stats-hud-glyph.glyph-mana {
+                /* Stern / Funke — Mana als Magie-Strom (V18.119 E3-Kreis). */
+                color: #9fb2ff;
+                text-shadow:
+                    0 0 6px rgba(159, 178, 255, 0.55),
+                    0 1px 2px rgba(0, 0, 0, 0.7);
+            }
             #stats-hud svg {
                 display: block;
                 filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7));
@@ -7336,6 +7343,57 @@
                 </svg>
                 <span class="stats-hud-value" id="stats-hud-stam-text">100/100</span>
             </div>
+            <!-- V18.119 — E3-Mana (der sichtbare Kreis): Welt-Gesten KOSTEN im
+                 pfad-Modus Mana (V18.104-E3), aber der Spieler sah die Währung
+                 nie. Dritte Row derselben Familie; tickStatsHud blendet sie NUR
+                 im pfad ein (frieden/schöpfer sind frei — kein UI-Rauschen). -->
+            <div class="stats-hud-row" id="stats-hud-mana-row" hidden>
+                <span class="stats-hud-glyph glyph-mana" aria-hidden="true">✦</span>
+                <svg width="170" height="12" viewBox="0 0 170 12" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="mana-gradient" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stop-color="#9fb2ff" />
+                            <stop offset="0.5" stop-color="#5f63d6" />
+                            <stop offset="1" stop-color="#2a2470" />
+                        </linearGradient>
+                        <linearGradient id="mana-glow" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stop-color="#cfd8ff" stop-opacity="0.4" />
+                            <stop offset="0.5" stop-color="#9fb2ff" stop-opacity="0.1" />
+                            <stop offset="1" stop-color="#9fb2ff" stop-opacity="0" />
+                        </linearGradient>
+                    </defs>
+                    <rect
+                        x="0"
+                        y="0"
+                        width="170"
+                        height="12"
+                        rx="3"
+                        fill="rgba(15, 8, 4, 0.85)"
+                        stroke="#8a6322"
+                        stroke-width="1"
+                    />
+                    <rect
+                        id="stats-hud-mana-fill"
+                        x="2"
+                        y="2"
+                        width="166"
+                        height="8"
+                        rx="1.5"
+                        fill="url(#mana-gradient)"
+                    />
+                    <rect
+                        id="stats-hud-mana-glow"
+                        x="2"
+                        y="2"
+                        width="166"
+                        height="4"
+                        rx="1.5"
+                        fill="url(#mana-glow)"
+                        pointer-events="none"
+                    />
+                </svg>
+                <span class="stats-hud-value" id="stats-hud-mana-text">40/40</span>
+            </div>
             <div id="stats-hud-tooltip" aria-hidden="true">Stats laden …</div>
         </div>
         <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
@@ -8812,6 +8870,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.118.0" defer></script>
+        <script src="anazhRealm.js?v=18.119.0" defer></script>
     </body>
 </html>

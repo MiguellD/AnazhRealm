@@ -22447,6 +22447,48 @@ async function checkBandPhasenBF(ctx) {
                 s.pendingWaterIso = savedQ;
             }
         })();
+        // V18.119 — E3-MANA-HUD (der Kreis schließt: Welt-Gesten KOSTEN im pfad
+        // Mana [V18.104], aber die Währung hatte keine Anzeige). BEHAVIORAL:
+        // pfad → dritte Stats-Row sichtbar + Wert folgt p.mana; frieden →
+        // hidden (kein UI-Rauschen, dort ist Mana keine Währung).
+        out.e3ManaHud = (() => {
+            const row = document.getElementById("stats-hud-mana-row");
+            if (!row) return false;
+            const savedMode = typeof r.getGameMode === "function" ? r.getGameMode() : r.state.gameMode;
+            const savedMana = r.state.player.mana;
+            try {
+                if (typeof r.setGameMode === "function") r.setGameMode("pfad");
+                else r.state.gameMode = "pfad";
+                r.state.player.mana = 7;
+                r.state._statsHudLastTick = 0;
+                r.tickStatsHud(1e9);
+                const visOk = !row.hidden;
+                const txt = document.getElementById("stats-hud-mana-text").textContent;
+                if (typeof r.setGameMode === "function") r.setGameMode("frieden");
+                else r.state.gameMode = "frieden";
+                r.state._statsHudLastTick = 0;
+                r.tickStatsHud(2e9);
+                return visOk && /^7\//.test(txt) && row.hidden === true;
+            } finally {
+                if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
+                else r.state.gameMode = savedMode;
+                r.state.player.mana = savedMana;
+            }
+        })();
+        // V18.119 — C1-GELENK-READOUT (eine Wahrheit für Animation UND Panel):
+        // der Readout rief computeMotionRoles OHNE bp.connections (Lage-
+        // Fallback), die Animation MIT → das Panel zeigte nie die Gelenke,
+        // die sich wirklich bewegen (der V9.82-Riss). KONSUM: der Wagen
+        // (Eisen-Räder) klassifiziert MIT connections als rad; die Panel-
+        // Quelle trägt den connections-Call + die Gelenk-Labels.
+        out.c1JointReadout = (() => {
+            const bp = r.state.blueprints && r.state.blueprints.fahrzeug_wagen;
+            if (!bp) return false;
+            const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
+            const hasRad = roles.some((x) => x && x.role === "rad");
+            const src = r._specRenderBody ? r._specRenderBody.toString() : "";
+            return hasRad && /computeMotionRoles\(bp\.parts, bp\.connections\)/.test(src) && /Rad an Achse/.test(src);
+        })();
         // V18.112 — E4-KRISTALL + E5: eine wiederholt bewährte Geste (3 finalisierte
         // Läufe, deposit_life, sorrow-Kontext) kristallisiert zur Regel — die
         // Bedingung EMERGIERT aus der Emotions-Signatur (field_above sorrow),
@@ -22570,6 +22612,11 @@ async function checkBandPhasenBF(ctx) {
     check(
         "V18.117: Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
         res.waterIsoNoStarve !== false
+    );
+    check("E3/V18.119: Mana-HUD — pfad zeigt die Währung (Wert folgt), frieden blendet aus", res.e3ManaHud);
+    check(
+        "C1/V18.119: das Werkstatt-Panel liest die GELENKE (connections → Rad an Achse, eine Wahrheit mit der Animation)",
+        res.c1JointReadout
     );
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
