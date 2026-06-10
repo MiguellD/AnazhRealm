@@ -60,11 +60,12 @@ keine Kreatur↔Kreatur-Sozialität.
 
 **Die KI:** Nexus tickt alle 10 s (:50430), liest `auraAt` (:3319), komponiert 35 % Regeln
 (TTL 30–90 s, Fitness `0.6·value(δ) + 0.25·success + 0.15·cost`, Mutation der Überlebenden 0.4)
-+ 65 % Gesten. Caps: 64 Regeln · 4 Effekte/Frame · everySec ≥ 0.5. LLM (Grok) schreibt nur
-`rule`-Programme (Whitelist, :4596). ABER: der Nexus **zahlt keine Materie** (`_makeCostGate`
-gatet nur Werkstatt-Akte :40484), hat **kein tat-proportionales Wirk-Budget** (Trägheit), und die
-**zwei Lern-Pools feeden nicht** (Gesten `dsl.history` ↛ Gesetze `worldRules` — die offene
-Geste→Gesetz-Vereinheitlichung).
+
+- 65 % Gesten. Caps: 64 Regeln · 4 Effekte/Frame · everySec ≥ 0.5. LLM (Grok) schreibt nur
+  `rule`-Programme (Whitelist, :4596). ABER: der Nexus **zahlt keine Materie** (`_makeCostGate`
+  gatet nur Werkstatt-Akte :40484), hat **kein tat-proportionales Wirk-Budget** (Trägheit), und die
+  **zwei Lern-Pools feeden nicht** (Gesten `dsl.history` ↛ Gesetze `worldRules` — die offene
+  Geste→Gesetz-Vereinheitlichung).
 
 **Das Netz:** Voll-Mesh über zentrales Signaling (4313, Rendezvous + Fallback-Relay); DataChannel
 trägt kanal-exklusiv Welt-Bündel (16-KiB-Chunks + Backpressure + **SHA256-Hash-Verifikation**
@@ -135,17 +136,17 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
 ### G2 — Die REKURSION: AnazhRealm in AnazhRealm (das Portal vollendet — „wie githack, aber besser")
 
 - **GEMESSEN (die vier Schnitte — die Größe passt schon, ~7.2 < 12 MiB):**
-  1. **Binary-Whitelist:** `VENDOR_ALLOWED_EXT` kennt kein `.wasm`/`.woff2` (save-server.js:91) →
-     Ammo passt nicht durchs Tor. Sauberster Schnitt: die **base64-eingebettete Wasm-Variante**
-     (ein `.js`-Textfile — der bewährte Emscripten-Weg) ODER `.wasm` in die Whitelist + Größen-Audit.
-  2. **Worker-URL:** `new Worker("voxel-worker.js?v=…")` (:15315) ist im null-origin-iframe mehrdeutig
-     → der Boot lädt die Quelle per fetch + **Blob-URL** (CSP `worker-src blob:` ist schon Konzession).
-  3. **localStorage:** 102 Zugriffe (gemessen); im sandboxed iframe wirft schon der GETTER
-     SecurityError. Der schlanke Weg: EIN Boot-Guard, der `window.localStorage` per
-     `Object.defineProperty` mit einem In-Memory-Shim SHADOWT, wenn die Probe wirft (10 Zeilen statt
-     102 Edits — verifizieren, dass das Shadowing im Ziel-Browser greift; sonst die `_store`-Fassade).
-  4. **Server-Absenz-Robustheit:** save-server-POST + signaling-WS müssen still skippen (der
-     localhost-Skip existiert als Muster) — die Sub-Welt lebt dann rein im Speicher + über den Shim.
+    1. **Binary-Whitelist:** `VENDOR_ALLOWED_EXT` kennt kein `.wasm`/`.woff2` (save-server.js:91) →
+       Ammo passt nicht durchs Tor. Sauberster Schnitt: die **base64-eingebettete Wasm-Variante**
+       (ein `.js`-Textfile — der bewährte Emscripten-Weg) ODER `.wasm` in die Whitelist + Größen-Audit.
+    2. **Worker-URL:** `new Worker("voxel-worker.js?v=…")` (:15315) ist im null-origin-iframe mehrdeutig
+       → der Boot lädt die Quelle per fetch + **Blob-URL** (CSP `worker-src blob:` ist schon Konzession).
+    3. **localStorage:** 102 Zugriffe (gemessen); im sandboxed iframe wirft schon der GETTER
+       SecurityError. Der schlanke Weg: EIN Boot-Guard, der `window.localStorage` per
+       `Object.defineProperty` mit einem In-Memory-Shim SHADOWT, wenn die Probe wirft (10 Zeilen statt
+       102 Edits — verifizieren, dass das Shadowing im Ziel-Browser greift; sonst die `_store`-Fassade).
+    4. **Server-Absenz-Robustheit:** save-server-POST + signaling-WS müssen still skippen (der
+       localhost-Skip existiert als Muster) — die Sub-Welt lebt dann rein im Speicher + über den Shim.
 - **„Besser als githack":** der Render fällt im iframe auf das WebGL2-Backend des WebGPURenderer
   zurück (der bewiesene Cloud-Container-Pfad — verifizieren im Browser); das Bündel kommt vom EIGENEN
   save-server ODER **peer-to-peer übers Mesh (W16 EXISTIERT: Chunking + Hash)** — eine Welt, die sich
@@ -262,7 +263,15 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
   größter Einzelhebel). **(2)** ~~Gras-Placement → Worker~~ GELÖST via (0b) — die WAHRHEIT
   wanderte, nicht der Code. **(3)** Inseln in den HISM-Pfad (PRÜFEN: Inseln sind vermutlich UNIKATE
   Geometrie — dann ist der Hebel LOD/Dichte, nicht Instancing; messen vor schneiden). **(4)**
-  Substep-Cap senken. **(6) G7-H — DER HORIZONT-MANTEL (der „Unendlichkeits"-Hebel, DESIGN —
+  Substep-Cap senken. **(4b) ✓ B6-REST GEMESSEN VOLLENDET (V18.121,
+  `scripts/diag-frame-profile.cjs` — das bleibende Werkzeug):** Allokationen
+  unkritisch (V3 med 3/Tick · Color 14/Tick — kein Pool-Theater) · Kreaturen
+  Ø 0.58 ms@10 (aiDiv trägt; Frame-Budget wäre Overengineering — vermerkt) ·
+  DER FUND: der Wasser-Sheet-Tick fraß Ø 14.4 ms/Frame SETTLED (stationärer
+  Fluss = Brutto-moved>0.5 ewig + Settle-Ping-Pong) → das DACH-GATE
+  (`_caRoofChanged`: Spalten-Dach-Fingerprint, re-mesh nur bei SICHTBARER
+  Änderung [max>0.25 nach 3×3-Glättungs-Wahrheit · Σ>1.0 für Fluten]) →
+  Tick-Median 18.2→1.6 ms (−91 %), Builds −87 %, Carve-Reaktivität grün. **(6) G7-H — DER HORIZONT-MANTEL (der „Unendlichkeits"-Hebel, DESIGN —
   Schöpfer: „fast instant eine gigantische Welt sehen"):** jenseits des Chunk-Rings zeichnet
   heute NICHTS — die Welt endet im Fog statt in Bergketten. Der Schnitt: ein GROBES
   Fern-Terrain-Mesh aus `_terrainMacroSurfaceY` (die EINE deterministische Quelle — exakt die
@@ -317,19 +326,19 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 
 ## §4 · Die Zukunft in die Antike (Stand der Technik 2026 → unser Boden)
 
-| Technik (die Riesen) | Bei uns | Urteil |
-|---|---|---|
-| Transvoxel / watertight LOD (Lengyel) | N1 im Terrain-Kohärenz-Plan §12 | **ÜBERNEHMEN** — der aktive Brocken |
-| Cascaded Shadow Maps | U5, an `DETAIL_CASCADE`-Bändern | **ÜBERNEHMEN** (G6) |
-| Worker-First-Meshing (alle großen Voxel-Engines) | E3 bewiesen; Wasser/Gras noch main | **VOLLENDEN** (G7) |
-| GPU-Compute ohne Readback (TSL) | Gras-Wind/Wellen leben schon dort | **WEITEN** auf reine Render-Felder; Density-Compute bleibt Narbe |
-| Prozedurale Lokomotion (Rain World/Spore) | Compound-Parts + animate-Hook da | **ÜBERNEHMEN als Resonanz** (G1) |
-| Utility-AI über Affekt-Achsen | Tasks + 6 Achsen + δ existieren | **KONSUMIEREN** (G4) — kein BT-Import |
-| Reward-Prediction-Error als Spiel-Ökonomie | δ-Substrat EINZIGARTIG schon da | **KRÖNEN** (G5) — hier ÜBERHOLEN wir den Stand der Technik |
-| Content-addressed P2P-Distribution | sha256-Bündel + Mesh-Fetch (W16) | **STEHT** — auf die Rekursion anwenden (G2) |
-| Supernode/Relay-Topologie (Discord-Muster) | Compute-Host + Migration (W17) | **GENERALISIEREN** (G3) |
-| CRDT (Yjs/Automerge) | — | **NUR** für konfliktarme Sozial-Schichten; Physik bleibt host-autoritativ |
-| ECS-Rewrite · Nanite-Neid · 3D-GPU-Fluid | — | **NICHT NACHLAUFEN** (Narben/Heilige Lektion) |
+| Technik (die Riesen)                             | Bei uns                            | Urteil                                                                    |
+| ------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------- |
+| Transvoxel / watertight LOD (Lengyel)            | N1 im Terrain-Kohärenz-Plan §12    | **ÜBERNEHMEN** — der aktive Brocken                                       |
+| Cascaded Shadow Maps                             | U5, an `DETAIL_CASCADE`-Bändern    | **ÜBERNEHMEN** (G6)                                                       |
+| Worker-First-Meshing (alle großen Voxel-Engines) | E3 bewiesen; Wasser/Gras noch main | **VOLLENDEN** (G7)                                                        |
+| GPU-Compute ohne Readback (TSL)                  | Gras-Wind/Wellen leben schon dort  | **WEITEN** auf reine Render-Felder; Density-Compute bleibt Narbe          |
+| Prozedurale Lokomotion (Rain World/Spore)        | Compound-Parts + animate-Hook da   | **ÜBERNEHMEN als Resonanz** (G1)                                          |
+| Utility-AI über Affekt-Achsen                    | Tasks + 6 Achsen + δ existieren    | **KONSUMIEREN** (G4) — kein BT-Import                                     |
+| Reward-Prediction-Error als Spiel-Ökonomie       | δ-Substrat EINZIGARTIG schon da    | **KRÖNEN** (G5) — hier ÜBERHOLEN wir den Stand der Technik                |
+| Content-addressed P2P-Distribution               | sha256-Bündel + Mesh-Fetch (W16)   | **STEHT** — auf die Rekursion anwenden (G2)                               |
+| Supernode/Relay-Topologie (Discord-Muster)       | Compute-Host + Migration (W17)     | **GENERALISIEREN** (G3)                                                   |
+| CRDT (Yjs/Automerge)                             | —                                  | **NUR** für konfliktarme Sozial-Schichten; Physik bleibt host-autoritativ |
+| ECS-Rewrite · Nanite-Neid · 3D-GPU-Fluid         | —                                  | **NICHT NACHLAUFEN** (Narben/Heilige Lektion)                             |
 
 ---
 
@@ -374,15 +383,29 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   SAAT für die kommende eigene Vertikal-Form, Test „materialKept" bewacht); der S-Befund
   „dreieckige offene Zacken — bei vertikalem Fall nur GESTRECKT" via **STEIL-SPLIT im
   Zell-Sheet** geformt: Quads >3·step-Spread → LIPPE (Deck bis zur Kante, Original-Wicklung)
-  + VERTIKALER VORHANG (senkrecht, wasserdicht, double-faced, aSlope-MAX → das CA-Wildwasser
-  schäumt den Fall weiss — aus den ZELLEN, kein Plane-Raten). GEMESSEN
-  (`diag-waterfall-zacken.cjs`, 30-m-Fall): >14-m-Zacken 137→0 · >7-m 359→2 · maxSpread
-  28.8→12.3 m · 1920 Vorhänge. Fall-LOOK → S. WEITER OFFEN in A4 (der Kern der Welle):
-  die MÜNDUNGS-SYNERGIE (oben) ·
-  Schelf-Konsolidierung (H) · Hoch-Becken über `L` (H+A) · Unterwasser-Pass B5 (A) ·
-  Kapillar/Stempel (H) · T7c-Reste.
+    - VERTIKALER VORHANG (senkrecht, wasserdicht, double-faced, aSlope-MAX → das CA-Wildwasser
+      schäumt den Fall weiss — aus den ZELLEN, kein Plane-Raten). GEMESSEN
+      (`diag-waterfall-zacken.cjs`, 30-m-Fall): >14-m-Zacken 137→0 · >7-m 359→2 · maxSpread
+      28.8→12.3 m · 1920 Vorhänge. Fall-LOOK → S. ✓ **MÜNDUNGS-SYNERGIE GEBAUT (V18.116, der
+      A4-Kern):** `aWave` war eine reine HÖHEN-Rampe um waterLevel → GEMESSEN (`diag-mouth.cjs`)
+      wogte 75 % des Fluss-KERNS an der Mündung wie Ozean (Gerstner+Gischt ÜBER den Strähnen,
+      harter +2.8-m-Schalter im Lauf). Jetzt `aWave = Höhen-Rampe × (1−riverness)` — DIESELBE
+      fmag-smoothstep(0.04→0.5), mit der der Shader die Strähnen blendet (ein Übergang, eine
+      Quelle; Crest/Farbmix erben aWave-gated; See still via `_hydrosphereLakeAt`). Nachher
+      Fluss-Kern 0 % · Meer Ø 0.909 · See 0; Augen-A/B Abend-Drohne (vorher Fluss=Meer-Glitzer,
+      nachher Art-getrennt + weiche Mündung). Mündungs-LOOK → S-Liste. Die alte T7d-„`L`-Naht
+      an 4-Chunk-Ecken"-Zeile ist vom Zell-Sheet ÜBERHOLT (Render baut aus den ZELLEN, Naht
+      GEMESSEN Δy=0 — diag-water-cellsheet V18.89). ✓ UNTERWASSER-PASS B5 (V18.120):
+      der Taucher sieht die WASSERDECKE — das eine playerEyesUnderwater-Flag bekam
+      seinen dritten Konsumenten (neben Tauch-Fog + Tint): tauchen → das geteilte
+      Wasser-Material wird DoubleSide (die Top-Cull-Oberseiten sind von unten
+      sichtbar), auftauchen → BackSide (V18.1-W1-Vertrag unberührt). Augen-A/B
+      (NEU Tour-Ort `dive`): vorher Himmel durch die fehlende Fläche, nachher die
+      dunkle Decke. Kür offen: Snell-Fenster/Caustics (Backlog). WEITER OFFEN in A4:
+      Schelf-Konsolidierung (H) · Hoch-Becken über `L` (H+A) ·
+      Kapillar/Stempel (H) · T7c-Reste.
 - ✓ **A5 — Haupt-Fog ↔ Ring-Kante (V18.103):** `fog.far = min(Wetter-Formel·Slider,
-  (ringRadius+0.5)·span)` in `_dayNightApplyHemiAndFog` — der Nebel deckt das Welt-Ende
+(ringRadius+0.5)·span)` in `_dayNightApplyHemiAndFog` — der Nebel deckt das Welt-Ende
   (Default-Ring 4: Kante ~194 m, fog.far war 450 m = sichtbare Welt-Kante); bei „Weltenring max"
   (Ring 12) greift weiter die Formel = die geliebte Weite unverändert. B2-Horizont-Mantel füllt
   später JENSEITS derselben einen Quelle.
@@ -401,6 +424,10 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 - **B1 — Wasser-Sheet → Worker** [§2-G7(1); H]: BEWUSST DEFERRED (V18.104-Entscheid): der Schnitt
   koppelt an die Live-CA-Lese (main-only) — hohes Stale-Thrash-Risiko bei reiner Perf-Wirkung
   (unsichtbar); eigene fokussierte Welle mit eigenem Stale-Diag, NICHT im Phasen-Zug stapeln.
+  **PRIORITÄT GESUNKEN (V18.121 GEMESSEN):** der wahre Kosten-Treiber war nicht der
+  Einzel-Build (~3.5 ms), sondern der DAUER-CHURN (4 Builds × jeden Frame, stationärer
+  Fluss) — das Dach-Gate heilte ihn (Tick-Median 18.2→1.6 ms). B1 lohnt erst, wenn
+  Carve-Flut-Spitzen im Browser als Hitch fühlbar sind.
 - ✓ **B2 — G7-H HORIZONT-MANTEL (V18.104):** `_ensureHorizonMantle` — POLAR-Gitter (20 Ringe ×
   72 Segmente, geometrisch wachsend, KEINE T-Junctions) aus `_terrainMacroSurfaceY` bis 4.3 km;
   Loch unter der Ring-Kante (der echte Ring occludet), Land `−drop`, Meer = Tiefblau-Ebene am
@@ -426,6 +453,14 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Grenzen = `DETAIL_CASCADE`; der R1-Snap wandert in jede Kaskade.
 - **B5 — U2 Wasser-LOD + U4 Deko-Distanz/Impostor + Baum/Feld-DICHTE** [lod-kaskade-plan; H+A]:
   Dichte-Hebel sind chance-skalar (tag-neutral, `diag-arch-tags` als Wand davor).
+  **✓ V18.117 — der S-Befund „durch das LOD Löcher im Wasser" GEMESSEN AUFGELÖST
+  (`diag-water-lod-holes.cjs`, Drei-Klassen-Anatomie + Marker-Drohne):** KEIN LOD-Boden-
+  Durchstich (0 GEMESSEN), KEINE fehlende Wasser-LOD — die Loch-Streifen waren eine
+  QUEUE-STARVATION (V14.4-Distanz-Priorität × V18.93-CA-Dauer-Nachschub → ferne lod1-
+  Ozean-Chunks mit 30k nassen Zellen wurden NIE gebaut); geheilt via FIFO-Slot im
+  Sheet-Tick (bounded Wartezeit). Rest: 10 Punkte T7d-Atlas-Flood-Lücken → A4-Schelf-
+  Konsolidierung. Echte U2-Wasser-FERN-LOD (Uferlinien-Versatz an fog-fernen Küsten)
+  bleibt der offene U2-Punkt.
   **✓ V18.102 — NATUR-CLUMPING:** EIN seed-deterministisches Klump-Feld (`_clumpAt`), zwei Leser:
   Gras λ~28 m (Dickicht ×2.2 ↔ Lichtung ×0.15) + Bäume λ~170 m (WALD-Maske ×2.6 ↔ offen ×0.25),
   mittelwert-neutral GEMESSEN (Ø 1.04/1.06 · Lichtungen 19.5 % · Dickichte 17.6 % · Wald 17.1 % ·
@@ -459,7 +494,11 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Idle-Dauerdrehung · TÜR: vertikale Achse + flacher Part · WIRBEL: Kette ≥3 Glieder [Grad ≤2],
   Phase = Ketten-Index · SCHARNIER: Default, schwingt um den ECHTEN Anker); `_animateCompoundMotion`
   rotiert um den Anker (`pos = anker + R(θ)·(basePos−anker)`, Eine-Achsen-Rotation alloc-frei).
-  Built-ins ohne connections = unverändert (Lage-Fallback). Offen: Werkstatt-Readout-Zeile (klein).
+  Built-ins ohne connections = unverändert (Lage-Fallback). ✓ Readout-Zeile (V18.119): das
+  Stats-Panel liest computeMotionRoles MIT bp.connections (vorher Lage-Fallback = der
+  V9.82-Riss: Animation und Readout sahen verschiedene Wahrheiten) + Gelenk-Labels
+  („Rad an Achse"/Tür/Wirbel/Scharnier/Segel) — GEMESSEN am Wagen: bein×4 → rad×4,
+  Panel zeigt „4× Rad an Achse (rollt)". Bauen → ablesen → lernen schließt.
 - ✓ **C2 — Architektur-Idle (V18.104):** `tickArchitectures` klassifiziert pro Architektur EINMAL
   lazy (`_idleMotion`, mit bp.connections) + filtert auf die SICHEREN Idle-Rollen rad/segel/tuer/
   wirbel (Hütten/Statuen wackeln NIE — bein/arm/kopf werden genullt); neue `segel`-Signatur
@@ -557,7 +596,10 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Regeneration am 5-s-Takt, schneller auf magie-leitendem FELD (`auraAt` — das Feld speist);
   VERBRAUCH: die gesprochene Welt-Geste (Chat→DSL) kostet im PFAD-Modus Mana ∝ Substanz
   (DERSELBE `_dslProgramWirkCost`-Walker wie das Nexus-Budget = EINE Ökonomie für alle
-  Schreiber; Lese-/Privat-Gesten frei; frieden/schöpfer frei — §11). HUD-Anzeige offen (klein).
+  Schreiber; Lese-/Privat-Gesten frei; frieden/schöpfer frei — §11). ✓ HUD (V18.119): dritte
+  Stats-Row (✦, blau-violett) in der HP/Stamina-Familie (tickStatsHud, eine Quelle/Throttle),
+  NUR im pfad sichtbar (frieden/schöpfer zahlen nicht → kein UI-Rauschen) — die Währung ist
+  sichtbar, „zu erschöpft" kommt nicht mehr aus dem Nichts.
 - **E4 — Geste→Gesetz:** ✓ AUDIT GEMESSEN + PASSAGIER GEHEILT (V18.104): der Fitness-Kreis
   LEBTE nur halb — der Finalizer schrieb `h.fitness` (computeMultiDimFitness), aber
   `dslSelectByFitness` las NUR den fps-Proxy nach (der Passagier-Trugschluss im Lern-Kreis).
@@ -582,10 +624,10 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   pfad-Modus kostet sie Mana wie jede Welt-Geste).
 - **E8 — Crafting-Schluss-Bündel**: ✓ **ZWEI-HAND GEBAUT (V18.109, S-Entscheid: wie
   Minecraft):** `equipped.offhand` + `swapHands()` (über den EINEN equipHeld-Pfad, dup-sicher)
-  + Key G (rebindable, Zähl-Tests 11→12 gewandert) + der Off-Hand-Slot NEBEN der Hotbar (eine
-  Render-Quelle, beide Mounts; Highlight auf data-slot-Wahrheit) + sichtbar am LINKEN Arm
-  (EIN buildHand-Helper) + Snapshot/Restore; faltet NICHT in die Stats (Bereitschafts-Slot).
-  Weiter offen: S6-B Flora · S8 — kampf-plan-Bogen.
+    - Key G (rebindable, Zähl-Tests 11→12 gewandert) + der Off-Hand-Slot NEBEN der Hotbar (eine
+      Render-Quelle, beide Mounts; Highlight auf data-slot-Wahrheit) + sichtbar am LINKEN Arm
+      (EIN buildHand-Helper) + Snapshot/Restore; faltet NICHT in die Stats (Bereitschafts-Slot).
+      Weiter offen: S6-B Flora · S8 — kampf-plan-Bogen.
 
 ### PHASE F — das ULTIVERSUM (G2 + G3 + W18 + der soziale Bogen)
 
@@ -653,16 +695,31 @@ schlanken (UI-Politur, jederzeit einschiebbar).
    B9 Terrain-Nachtlicht (messen) · A4-Mündungs-Synergie S-bestätigt. WEITER OFFEN:
    B8-Rim/LUT-Feintuning · C1/C2-Gelenk-Motion-Feel · C5-Bewegungs-Feel (k-Werte) ·
    E3-Mana-HUD** · der Stand V18.105 ist GEMERGT (Schöpfer 10.06.: „mergen mit diesem
-   Stand, offene Punkte vermerken"). **V18.106–.111 (die sechs Entscheide gebaut) — NEUE
+   Stand, offene Punkte vermerken"). \*\*V18.106–.111 (die sechs Entscheide gebaut) — NEUE
    S-PUNKTE: B3-Look (V18.113-Rollback = der vertraute V17.109@100%-Stand; der KONSOLEN-
    Hebel `anazhRealm.state.atmoUniforms.terrainFlatten.value=0.7` testet die Cel-Stufen-
    Sehnsucht render-only — „am Anfang gaben die Cel-Stufen Kontraste") · B9-Nacht-Look (Boden dämpft nachts — Feintuning der zwei Floors) ·
    D4-Temperament-PROFILE (strike/fleeMul-Größen = mein Erst-Wurf) · E2-REGELKREIS-Faktoren
    (0.4+0.6b / 2−b = mein Erst-Wurf; die Stimmen-Gaps fühlen) · E8-Off-Hand-Feel (Slot-Optik
-   + G-Tausch + linke-Hand-Optik) · C7-Punkt-Optik (Rüstung am Torso · Griff in der Hand ·
-   Sitz auf Wagen/Holzross — die zwei Saaten im Browser reiten!) · A4-FALL-LOOK (der
-   Steil-Split-Vorhang + das schäumende Wildwasser am echten Wasserfall — headless bewies
-   die Geometrie [137→0 Zacken], das Auge das Gefühl).**
+    - G-Tausch + linke-Hand-Optik) · C7-Punkt-Optik (Rüstung am Torso · Griff in der Hand ·
+      Sitz auf Wagen/Holzross — die zwei Saaten im Browser reiten!) · A4-FALL-LOOK (der
+      Steil-Split-Vorhang + das schäumende Wildwasser am echten Wasserfall — headless bewies
+      die Geometrie [137→0 Zacken], das Auge das Gefühl) · **A4-MÜNDUNGS-LOOK (V18.116:
+      der Fluss wogt nicht mehr wie das Meer, die Wellen laufen sanft in die Mündung —
+      das Gefühl des Übergangs im echten Browser).** **V18.116–.121-Durchgang (neu):**
+      Tauch-Blick (B5) · Mana-Balken im pfad (E3) · Gelenk-Zeile in der Werkstatt (C1) ·
+      die Mantel-Stanze in Bewegung (V18.118 — am Meer laufen) · das freie Frame-Budget
+      fühlen (V18.121).
+      **DIE SCHÖPFER-PRÜFLISTE (10.06., wächst bis zum Gigant-Abschluss — Unsauberkeiten
+      SAMMELN, er korrigiert am Schluss; ich fülle sie ehrlich mit, statt sie zu fixen):**
+      (a) **GELENK-LINIEN in der WELT sichtbar nach dem Fertigen** — die connections-Linien
+      gehören logisch NUR in den Werkstatt-Baukasten (Hilfsmittel für die Animation), nicht
+      ans fertige Werk in der Welt (Render-Gate am Spawn-Pfad vs. Werkstatt-Preview);
+      (b) **SPIELERPERSPEKTIVEN-DISZIPLIN meines Netzes** — die Wasser-Drohnen-Analysen
+      liefen teils ohne HUD-Kontext, die Werkstatt-Wirkung (wie ein Ergebnis im GESAMTSYSTEM
+      wirkt, wie es erreicht wird, ob es einheitlich ist) wurde nicht selbst angeschaut →
+      die diag-Werkzeuge wachsen um den SPIELER-Blick (HUD an, der echte Nutzungs-Fluss),
+      nicht nur den Daten-Blick; Steuerung/Bedienung der Sonden wie die Profis der Profis.
 4. **Die Wände (nie verhandeln):** Determinismus (Worker bit-identisch; eine Skala-Optimierung
    ändert NIE die Gitter-Phase) · die Narben (roadmap §5) nicht wiederholen · die Samen (roadmap
    §7 + §5-D5c hier) nie blind schneiden · Multi-Agent-Funde SELBST verifizieren (zwei
@@ -678,34 +735,34 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 
 ## §7 · DAS SCHWÄCHEN-REGISTER (ehrlich — jede Schwäche hat eine Adresse)
 
-| Schwäche (gemessen) | Adresse |
-|---|---|
-| ~~Cross-LOD-Naht sichtbar~~ | ✓ V18.103 A1 (Cap + Stitch-Band: 0 sichtbare Spalten ungedeckt) |
-| ~~Edit = Ganz-Chunk-Reset sichtbar~~ | ✓ V18.103 A2 (GEMESSEN: Vertex-Delta 0/3180 lokal; Splice bewusst deferred) |
-| Welt endet im Fog (keine Ferne) | B2 Horizont-Mantel (A5 deckt die Kante schon: fog.far ≤ Ring-Kante) |
-| Wasser-Sheet ~78 ms auf Main | B1 |
-| EINE 2048er-Schattenmap (nah grob, fern eng) | B4 CSM |
-| Physik-Todesspirale möglich (20 Substeps) | B6 |
-| Kreaturen: kein Lebenszyklus, keine Herden-Stimmung | D2/D3 |
-| Kreaturen greifen nie an (Furcht ohne Konsument) | D4 Phase E |
-| Wetter binär sunny/rainy | D5a |
-| Musik hört die Emotion nicht (Pfeiler 4 halb) | D5b |
-| Nexus zahlt nichts, Pools feeden nicht | E2/E4 |
-| Magie kostet nichts | E3 |
-| ~~Gesten-Fitness-Kreis evtl. stumm~~ | ✓ V18.104 E4-Audit + V18.112 Kristall: Geste→Gesetz schließt |
-| LLM ist Randfigur | E6 |
-| Spieler kann nicht pflegen | E7 |
-| ~~Rekursion blockiert (4 Schnitte)~~ | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm |
-| Netz trägt real nur ~4–6 Peers, TURN fehlt | F2 |
-| Sozial-Schicht fehlt ganz (Bewerten lokal-only) | F4 |
-| ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip) |
-| ~~Schwarze Struktur-Silhouetten~~ | ✓ V18.104 B8 — **S-BESTÄTIGT** („Bauwerke und Deko hammer, was ein Sprung") |
-| Terrain-Boden reagiert nachts nicht (Schöpfer 10.06. abend) | B9 (NEU — messen, welcher Term ihn hochhält) |
-| Steuerung flach (kein Feel, Bindings teils fix) | C5 |
-| ~~Aura = folgende Lampe~~ | ✓ V18.104 C6 — **S-BESTÄTIGT** („Hautschimmer passt"); V18.105: die Lampe GESCHNITTEN („kann weg") |
-| ~~Wiese homogen, keine Wälder~~ | ✓ V18.102 B5+ |
-| Test-Volatilität (Spieler-im-Fall-Klasse) | §6.2-Telemetrie-Disziplin (Muster steht) |
-| localStorage-Größen-Wand | FERN IndexedDB |
+| Schwäche (gemessen)                                                 | Adresse                                                                                            |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| ~~Cross-LOD-Naht sichtbar~~                                         | ✓ V18.103 A1 (Cap + Stitch-Band: 0 sichtbare Spalten ungedeckt)                                    |
+| ~~Edit = Ganz-Chunk-Reset sichtbar~~                                | ✓ V18.103 A2 (GEMESSEN: Vertex-Delta 0/3180 lokal; Splice bewusst deferred)                        |
+| Welt endet im Fog (keine Ferne)                                     | B2 Horizont-Mantel (A5 deckt die Kante schon: fog.far ≤ Ring-Kante)                                |
+| Wasser-Sheet ~78 ms auf Main                                        | B1                                                                                                 |
+| EINE 2048er-Schattenmap (nah grob, fern eng)                        | B4 CSM                                                                                             |
+| Physik-Todesspirale möglich (20 Substeps)                           | B6                                                                                                 |
+| Kreaturen: kein Lebenszyklus, keine Herden-Stimmung                 | D2/D3                                                                                              |
+| Kreaturen greifen nie an (Furcht ohne Konsument)                    | D4 Phase E                                                                                         |
+| Wetter binär sunny/rainy                                            | D5a                                                                                                |
+| Musik hört die Emotion nicht (Pfeiler 4 halb)                       | D5b                                                                                                |
+| Nexus zahlt nichts, Pools feeden nicht                              | E2/E4                                                                                              |
+| Magie kostet nichts                                                 | E3                                                                                                 |
+| ~~Gesten-Fitness-Kreis evtl. stumm~~                                | ✓ V18.104 E4-Audit + V18.112 Kristall: Geste→Gesetz schließt                                       |
+| LLM ist Randfigur                                                   | E6                                                                                                 |
+| Spieler kann nicht pflegen                                          | E7                                                                                                 |
+| ~~Rekursion blockiert (4 Schnitte)~~                                | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm                                   |
+| Netz trägt real nur ~4–6 Peers, TURN fehlt                          | F2                                                                                                 |
+| Sozial-Schicht fehlt ganz (Bewerten lokal-only)                     | F4                                                                                                 |
+| ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip)                                    |
+| ~~Schwarze Struktur-Silhouetten~~                                   | ✓ V18.104 B8 — **S-BESTÄTIGT** („Bauwerke und Deko hammer, was ein Sprung")                        |
+| Terrain-Boden reagiert nachts nicht (Schöpfer 10.06. abend)         | B9 (NEU — messen, welcher Term ihn hochhält)                                                       |
+| Steuerung flach (kein Feel, Bindings teils fix)                     | C5                                                                                                 |
+| ~~Aura = folgende Lampe~~                                           | ✓ V18.104 C6 — **S-BESTÄTIGT** („Hautschimmer passt"); V18.105: die Lampe GESCHNITTEN („kann weg") |
+| ~~Wiese homogen, keine Wälder~~                                     | ✓ V18.102 B5+                                                                                      |
+| Test-Volatilität (Spieler-im-Fall-Klasse)                           | §6.2-Telemetrie-Disziplin (Muster steht)                                                           |
+| localStorage-Größen-Wand                                            | FERN IndexedDB                                                                                     |
 
 **Disziplin (unverändert, roadmap §9):** Regel #0 · miss-rate-nicht · verdichte-nie-parallel ·
 KONSUM nicht Existenz · keine halben Schritte · ein bestätigter Bogen = ein Merge. **Dieses

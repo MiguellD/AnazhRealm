@@ -22393,6 +22393,154 @@ async function checkBandPhasenBF(ctx) {
         out.a4Curtain =
             /VERT_SPLIT/.test(r._buildVoxelChunkWaterCellSheet.toString()) &&
             /dupVert/.test(r._buildVoxelChunkWaterCellSheet.toString());
+        // V18.116 — A4-MÜNDUNGS-SYNERGIE: aWave (Ozean-Wellen-Anteil) ist
+        // ART-gedämpft — die Fluss-Abdeckung (riverness, dieselbe
+        // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem
+        // Fluss, ein See ist still (GEMESSEN diag-mouth: Fluss-Kern aWave>0.5
+        // 75 %→0). Source-Probe; der behaviorale Wächter ist diag-mouth.cjs.
+        out.a4MouthWave = (() => {
+            const src = r._buildVoxelChunkWaterCellSheet.toString();
+            return (
+                /riverness/.test(src) && /heightRamp \* \(1 - riverness\)/.test(src) && /_hydrosphereLakeAt/.test(src)
+            );
+        })();
+        // V18.117 — WASSER-SHEET-ANTI-STARVATION (S-Befund „durch das LOD
+        // Löcher im Wasser"): die reine Distanz-Priorität + CA-Dauer-Nachschub
+        // naher Keys ließen FERNE Queue-Einträge NIE drankommen (GEMESSEN:
+        // Ring-3/4-Ozean-Chunks mit 30k nassen Zellen „nie gebaut"). Der Tick
+        // trägt jetzt einen FIFO-Slot (ältester Eintrag). BEHAVIORAL: ein
+        // ferner Key überlebt den Dauer-Nachschub naher Keys NICHT länger als
+        // wenige Ticks — er wird gezogen, obwohl jede Runde frische nahe
+        // Keys nachkommen (vorher: blieb für immer in der Queue).
+        out.waterIsoNoStarve = (() => {
+            const s = r.state;
+            const savedQ = s.pendingWaterIso;
+            try {
+                const lpc = s.lastPlayerVoxelChunk || { cx: 0, cz: 0 };
+                // echte gestreamte Chunk-Keys: einer NAH am Spieler, einer FERN.
+                let nearKey = null;
+                let farKey = null;
+                let farDist = -1;
+                for (const k of s.voxelChunks.keys()) {
+                    const ci = k.indexOf(",");
+                    const kx = parseInt(k.slice(0, ci), 10);
+                    const kz = parseInt(k.slice(ci + 1), 10);
+                    const d = Math.max(Math.abs(kx - lpc.cx), Math.abs(kz - lpc.cz));
+                    if (d <= 1 && !nearKey) nearKey = k;
+                    if (d > farDist && d <= 4) {
+                        farDist = d;
+                        farKey = k;
+                    }
+                }
+                if (!nearKey || !farKey || nearKey === farKey) return null; // Welt zu klein → skip
+                s.pendingWaterIso = new Set([farKey]);
+                let drawn = false;
+                for (let t = 0; t < 12 && !drawn; t++) {
+                    // Dauer-Nachschub: jede Runde kommt der nahe Key frisch dazu
+                    // (das CA-Wake-Muster) — er gewinnt jeden Distanz-Slot.
+                    s.pendingWaterIso.add(nearKey);
+                    r._tickPendingWaterIso(2); // 1 Distanz-Slot + 1 FIFO-Slot
+                    if (!s.pendingWaterIso.has(farKey)) drawn = true;
+                }
+                return drawn;
+            } finally {
+                s.pendingWaterIso = savedQ;
+            }
+        })();
+        // V18.119 — E3-MANA-HUD (der Kreis schließt: Welt-Gesten KOSTEN im pfad
+        // Mana [V18.104], aber die Währung hatte keine Anzeige). BEHAVIORAL:
+        // pfad → dritte Stats-Row sichtbar + Wert folgt p.mana; frieden →
+        // hidden (kein UI-Rauschen, dort ist Mana keine Währung).
+        out.e3ManaHud = (() => {
+            const row = document.getElementById("stats-hud-mana-row");
+            if (!row) return false;
+            const savedMode = typeof r.getGameMode === "function" ? r.getGameMode() : r.state.gameMode;
+            const savedMana = r.state.player.mana;
+            try {
+                if (typeof r.setGameMode === "function") r.setGameMode("pfad");
+                else r.state.gameMode = "pfad";
+                r.state.player.mana = 7;
+                r.state._statsHudLastTick = 0;
+                r.tickStatsHud(1e9);
+                const visOk = !row.hidden;
+                const txt = document.getElementById("stats-hud-mana-text").textContent;
+                if (typeof r.setGameMode === "function") r.setGameMode("frieden");
+                else r.state.gameMode = "frieden";
+                r.state._statsHudLastTick = 0;
+                r.tickStatsHud(2e9);
+                return visOk && /^7\//.test(txt) && row.hidden === true;
+            } finally {
+                if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
+                else r.state.gameMode = savedMode;
+                r.state.player.mana = savedMana;
+            }
+        })();
+        // V18.119 — C1-GELENK-READOUT (eine Wahrheit für Animation UND Panel):
+        // der Readout rief computeMotionRoles OHNE bp.connections (Lage-
+        // Fallback), die Animation MIT → das Panel zeigte nie die Gelenke,
+        // die sich wirklich bewegen (der V9.82-Riss). KONSUM: der Wagen
+        // (Eisen-Räder) klassifiziert MIT connections als rad; die Panel-
+        // Quelle trägt den connections-Call + die Gelenk-Labels.
+        out.c1JointReadout = (() => {
+            const bp = r.state.blueprints && r.state.blueprints.fahrzeug_wagen;
+            if (!bp) return false;
+            const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
+            const hasRad = roles.some((x) => x && x.role === "rad");
+            const src = r._specRenderBody ? r._specRenderBody.toString() : "";
+            return hasRad && /computeMotionRoles\(bp\.parts, bp\.connections\)/.test(src) && /Rad an Achse/.test(src);
+        })();
+        // V18.120 — B5-UNTERWASSER-PASS: der dritte Konsument des einen
+        // playerEyesUnderwater-Flags (neben Tauch-Fog + Tint) — beim Tauchen
+        // wird das geteilte Wasser-Material DoubleSide (die Decke ist von
+        // unten sichtbar), beim Auftauchen BackSide (V18.1-W1-Vertrag).
+        // BEHAVIORAL mit Restore (zustands-neutral).
+        out.b5Underwater = (() => {
+            if (typeof r._ensureHydroSurfaceMaterial !== "function") return false;
+            const mat = r._ensureHydroSurfaceMaterial();
+            if (!mat) return false;
+            const savedFlag = r.state.playerEyesUnderwater;
+            try {
+                r.state.playerEyesUnderwater = true;
+                r._applyDayNightToScene();
+                const diveSide = mat.side;
+                r.state.playerEyesUnderwater = false;
+                r._applyDayNightToScene();
+                const surfSide = mat.side;
+                return diveSide === THREE.DoubleSide && surfSide === THREE.BackSide;
+            } finally {
+                r.state.playerEyesUnderwater = savedFlag;
+                r._applyDayNightToScene();
+            }
+        })();
+        // V18.121 — B6: das DACH-GATE des Wasser-Re-Mesh (GEMESSEN: ein
+        // stationärer Fluss trug Brutto-moved>0.5 dauerhaft → 3 Chunks
+        // re-meshten JEDEN Frame = Ø14 ms; jetzt entscheidet die SICHTBARE
+        // Spalten-Dach-Änderung). BEHAVIORAL am synthetischen Feld: erster
+        // Call true (kein FP) · unverändert false · sichtbare Änderung true ·
+        // danach false (FP fortgeschrieben). + KONSUM (Welt-Tick ruft es).
+        out.b6RoofGate = (() => {
+            const key = "__fp_test__";
+            const saved = r.state.voxelChunks.get(key);
+            try {
+                r.state.voxelChunks.set(key, {});
+                const dim = 4;
+                const dimY = 8;
+                const dimSq = dim * dim;
+                const level = new Float64Array(dimSq * dimY);
+                for (let c = 0; c < dimSq; c++) level[3 * dimSq + c] = 0.8;
+                const a = { key, level, band: { jMin: 0, jMax: dimY - 1 } };
+                const first = r._caRoofChanged(a, dim, dimY);
+                const second = r._caRoofChanged(a, dim, dimY);
+                level[4 * dimSq] = 0.9;
+                const third = r._caRoofChanged(a, dim, dimY);
+                const fourth = r._caRoofChanged(a, dim, dimY);
+                const src = r._tickWorldWaterCA ? r._tickWorldWaterCA.toString() : "";
+                return first && !second && third && !fourth && /_caRoofChanged/.test(src);
+            } finally {
+                if (saved === undefined) r.state.voxelChunks.delete(key);
+                else r.state.voxelChunks.set(key, saved);
+            }
+        })();
         // V18.112 — E4-KRISTALL + E5: eine wiederholt bewährte Geste (3 finalisierte
         // Läufe, deposit_life, sorrow-Kontext) kristallisiert zur Regel — die
         // Bedingung EMERGIERT aus der Emotions-Signatur (field_above sorrow),
@@ -22512,6 +22660,24 @@ async function checkBandPhasenBF(ctx) {
     check("C7: die Hand greift am GRIFF-Punkt (Source im Hand-Mesh-Pfad)", res.c7Grip);
     check("A4: die Wasserfall-Plane ist geschnitten, das Abwärts-Material lebt als Saat", res.a4PlaneCut);
     check("A4: der Steil-Split formt vertikales Wasser (Lippe + Vorhang im Zell-Sheet)", res.a4Curtain);
+    check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
+    check(
+        "V18.117: Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
+        res.waterIsoNoStarve !== false
+    );
+    check("E3/V18.119: Mana-HUD — pfad zeigt die Währung (Wert folgt), frieden blendet aus", res.e3ManaHud);
+    check(
+        "C1/V18.119: das Werkstatt-Panel liest die GELENKE (connections → Rad an Achse, eine Wahrheit mit der Animation)",
+        res.c1JointReadout
+    );
+    check(
+        "B5/V18.120: der Taucher sieht die Wasserdecke (eyesUnderwater → DoubleSide, auftauchen → BackSide)",
+        res.b5Underwater
+    );
+    check(
+        "B6/V18.121: das Wasser-Re-Mesh folgt der SICHTBAREN Dach-Änderung (Fingerprint-Gate, kein Durchfluss-Churn)",
+        res.b6RoofGate
+    );
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
     check("E4+E5: der Kristallisierer lebt im Selbstanalyse-Takt (KONSUM)", res.e45Hook);
@@ -22645,16 +22811,32 @@ async function checkBandPhaseAFundament(ctx) {
                         dz = pos.getZ(i) - m.anchorZ;
                     minR = Math.min(minR, Math.hypot(dx, dz));
                 }
+                // V18.118 — die SPIELER-STANZE (das alte „Geo-Loch ≥ Welt-Kante"
+                // war ein STAND-Bild-Maß: der Anker hinkt bis reanchorDist, der
+                // Ring folgt dem Spieler sofort → die opake Platte überdeckte
+                // nach Bewegung den halben Sicht-Ring, S-Bilder 10.06.). Jetzt:
+                // (1) das SICHTBARE Loch ist ein Shader-Stanz-Uniform um die
+                // SPIELER-Position (pro Tick nachgeführt, KONSUM), Radius ≥
+                // Welt-Kante; (2) die KONSTRUKTIONS-Ungleichung geoHole +
+                // reanchEff ≤ stanzR (kein Himmels-Ring); (3) das Geo-Loch
+                // selbst bleibt ≥ geoHoleR−ε (Bau-Wahrheit).
+                const hu = r.state.mantleHoleUniforms;
+                const pm2 = r.state.playerMesh.position;
+                const stanzR = (cfg.ringRadius + 0.5) * cfg.span + 6;
+                const reanchEff = Math.max(16, Math.min(HM.reanchorDist, stanzR - cfg.span - 6));
                 out.b2 = {
                     exists: true,
                     verts: pos.count,
                     probed,
                     matches,
                     minR: +minR.toFixed(1),
-                    // V18.115: das Loch deckt die VOLLE Welt-Kante (+0.5·span+6 — die
-                    // opake Platte überlappte den äußeren Chunk-Ring = die „statische
-                    // Wasserdecke" überm bewegten Wasser, S-Befund 10.06. nacht).
-                    holeOk: minR >= (cfg.ringRadius + 0.5) * cfg.span + 5,
+                    holeOk:
+                        !!hu &&
+                        hu.r.value >= stanzR - 0.01 &&
+                        Math.hypot(hu.cx.value - pm2.x, hu.cz.value - pm2.z) < 2 &&
+                        (m.geoHoleR || 0) + reanchEff <= hu.r.value + 0.01 &&
+                        minR >= (m.geoHoleR || 0) - 1,
+                    punchWired: !!(m.mesh.material && m.mesh.material.opacityNode && m.mesh.material.alphaTest > 0),
                     builtMs: m.builtMs,
                     matVertexColors: !!(m.mesh.material && m.mesh.material.vertexColors),
                 };
@@ -22736,9 +22918,13 @@ async function checkBandPhaseAFundament(ctx) {
         res.b2 && res.b2.exists ? `${res.b2.matches}/${res.b2.probed} verts=${res.b2.verts} ${res.b2.builtMs}ms` : ""
     );
     check(
-        "B2: das Mantel-Loch liegt unter dem echten Ring (Überlapp occludet)",
+        "B2/V18.118: die Spieler-Stanze deckt den Sicht-Ring (Uniform folgt + Ungleichung geo+reanch≤stanz)",
         res.b2 && res.b2.exists && res.b2.holeOk === true,
         res.b2 && res.b2.exists ? `minR=${res.b2.minR}` : ""
+    );
+    check(
+        "B2/V18.118: die Stanze ist im Material verdrahtet (opacityNode + alphaTest)",
+        res.b2 && res.b2.exists && res.b2.punchWired === true
     );
     check("B2: Mantel-Material liest vertexColors (eine Farb-Quelle)", res.b2 && res.b2.matVertexColors === true);
     check("A6b: handleJump klemmt am Decken-Headroom (Source)", res.a6SrcJump === true);

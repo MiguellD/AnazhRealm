@@ -21382,12 +21382,8 @@ class AnazhRealm {
             const id = positions.length / 3;
             vertIsAnchor[id] = n === 0;
             positions.push(wx, surfY, wz);
-            // aWave: weiche Ozean-Rampe (V18.14) — auf dem Sheet-Spiegel statt `L`.
-            aWave.push(Math.max(0, Math.min(1, 1 - (Math.abs(surfY - waterLevel) - 0.8) / 2.0)));
-            aDepth.push(depthM);
-            aSlope.push(n > 0 ? slopeMax : 0);
             // aFlow — identisch zur Fläche (V18.11/.24): 3×3-geglättete Fluss-Strömung,
-            // Magnitude tapert zur Mündung/Bank.
+            // Magnitude tapert zur Mündung/Bank. (Vor aWave berechnet — der liest sie.)
             let sfx = 0;
             let sfz = 0;
             for (let dz = -1; dz <= 1; dz++) {
@@ -21400,6 +21396,23 @@ class AnazhRealm {
                     }
                 }
             }
+            // aWave (V18.116 — A4-Mündungs-Synergie): Höhen-Rampe (V18.14, Nähe zum
+            // Meeresspiegel) × ART-Dämpfung. Die reine Höhen-Rampe ließ jeden Fluss-
+            // Lauf nahe Meereshöhe (jede Mündung!) voll wogen — Gerstner + Gischt
+            // ÜBER den Strähnen (GEMESSEN diag-mouth: 75 % des Fluss-Kerns aWave>0.5,
+            // harter +2.8-m-Schalter mitten im Lauf). Die Fluss-Abdeckung fmag ist
+            // DIESELBE Rampe, mit der der Shader die Strähnen blendet (riverness =
+            // smoothstep(0.04→0.5)) → die Meeres-Wellen laufen sanft in die Mündung
+            // ein, genau wo die Strähnen ausfaden — ein Übergang, eine Quelle. Ein
+            // SEE ist still, auch nahe Meereshöhe (der tiefen-skalierte
+            // uLakeRipple-Floor V18.19 trägt sein Kräuseln).
+            const heightRamp = Math.max(0, Math.min(1, 1 - (Math.abs(surfY - waterLevel) - 0.8) / 2.0));
+            const rt = Math.max(0, Math.min(1, (Math.hypot(sfx, sfz) / 9 - 0.04) / 0.46));
+            const riverness = rt * rt * (3 - 2 * rt);
+            const isLake = n > 0 && heightRamp > 0 && this._hydrosphereLakeAt(wx, wz);
+            aWave.push(isLake ? 0 : heightRamp * (1 - riverness));
+            aDepth.push(depthM);
+            aSlope.push(n > 0 ? slopeMax : 0);
             aFlow.push(sfx / 9, sfz / 9);
             vmap[vi] = id;
             return id;
@@ -26109,22 +26122,39 @@ class AnazhRealm {
         const cfg = AnazhRealm.HORIZON_MANTLE;
         const pm = s.playerMesh.position;
         const seed = (s.worldMeta && s.worldMeta.seed) || "";
+        const { span, ringRadius } = this._voxelChunkConfig();
+        // V18.118 — DIE SPIELER-STANZE (S-Befund, zwei Browser-Bilder: „die
+        // blaue Meerfläche statisch, wird nicht entfernt wenn ich näher gehe"
+        // + „ebene Sheets wie eine Macro-Annäherung ÜBER dem richtigen
+        // Terrain, durch die ich falle"; GEMESSEN diag-mantle-overlap: nach
+        // 238 m Lauf lagen 81 Mantel-Vertices UN-gedeckt im Sicht-Ring, 14
+        // als opake Meer-Platten): das GEOMETRIE-Loch sitzt um den ANKER und
+        // hinkt bis reanchorDist hinterher — der Chunk-Ring folgt dem Spieler
+        // SOFORT. Das SICHTBARE Loch ist darum jetzt eine SHADER-STANZE
+        // (Fragment-Kill um die SPIELER-Position, pro Tick nachgeführt) → der
+        // Überlapp ist PRO PIXEL unmöglich, egal wie der Anker hinkt. Die
+        // Geometrie behält ein KLEINERES Anker-Loch (weniger Overdraw) unter
+        // der KONSTRUKTIONS-Ungleichung geoHole + reanchEff ≤ stanzR (per
+        // Bau-Formel garantiert) → die Stanze deckt das Geo-Loch IMMER, kein
+        // Himmels-Ring. Bei kleinen Sicht-Ringen schrumpft reanchEff (öfter
+        // re-ankern, Bau ~ms), damit die Ungleichung hält.
+        const stanzR = (ringRadius + 0.5) * span + 6;
+        const reanchEff = Math.max(16, Math.min(cfg.reanchorDist, stanzR - span - 6));
+        if (s.mantleHoleUniforms) {
+            s.mantleHoleUniforms.cx.value = pm.x;
+            s.mantleHoleUniforms.cz.value = pm.z;
+            s.mantleHoleUniforms.r.value = stanzR;
+        }
         const m = s.horizonMantle;
-        if (m && m.seed === seed) {
+        if (m && m.seed === seed && m.builtStanzR === stanzR) {
             const dx = pm.x - m.anchorX,
                 dz = pm.z - m.anchorZ;
-            if (dx * dx + dz * dz < cfg.reanchorDist * cfg.reanchorDist) return;
+            if (dx * dx + dz * dz < reanchEff * reanchEff) return;
         }
         const t0 = performance.now();
-        const { span, ringRadius } = this._voxelChunkConfig();
-        // V18.115 — S-Befund „statische untransparente Wasserdecke unterm
-        // bewegten Wasser": das Loch begann bei (ringRadius−0.5)·span, die
-        // SICHTBARE Welt (Chunks + ihr Wasser) reicht bis (ringRadius+0.5)·span
-        // (die A5-Fog-Kante) → die opake Mantel-Platte überlappte den äußeren
-        // Chunk-Ring um einen vollen Span; am Meer lag sie zudem nur 0.6 m
-        // unterm Spiegel → durch das TRANSPARENTE echte Sheet sichtbar +
-        // Wellen-Täler stachen durch. Loch = volle Welt-Kante + Marge.
-        const holeR = Math.max(span, (ringRadius + 0.5) * span + 6);
+        // Das Geometrie-Loch: klein genug, dass die Spieler-Stanze es bei
+        // maximalem Anker-Versatz (reanchEff) noch VOLL enthält.
+        const holeR = Math.max(span, stanzR - reanchEff - 6);
         const rings = cfg.rings,
             segs = cfg.segments;
         const ax = pm.x,
@@ -26179,6 +26209,15 @@ class AnazhRealm {
         }
         if (!s.horizonMantleMaterial) {
             s.horizonMantleMaterial = this._buildToonNodeMaterial({ vertexColors: true });
+            // V18.118 — die SPIELER-STANZE: Fragmente innerhalb stanzR um die
+            // (pro Tick nachgeführte) Spieler-Position fallen via alphaTest
+            // (step(edge,x) = 0 innen → alpha 0 → discard). Render-only.
+            const T = THREE.TSL;
+            const hu = { cx: T.uniform(pm.x), cz: T.uniform(pm.z), r: T.uniform(stanzR) };
+            s.mantleHoleUniforms = hu;
+            const d = T.length(T.positionWorld.xz.sub(T.vec2(hu.cx, hu.cz)));
+            s.horizonMantleMaterial.opacityNode = T.step(hu.r, d);
+            s.horizonMantleMaterial.alphaTest = 0.5;
         }
         if (m && m.mesh) {
             this._queueGeometryDispose(m.mesh.geometry);
@@ -26186,13 +26225,15 @@ class AnazhRealm {
             m.anchorX = ax;
             m.anchorZ = az;
             m.seed = seed;
+            m.builtStanzR = stanzR;
+            m.geoHoleR = holeR;
         } else {
             const mesh = new THREE.Mesh(geom, s.horizonMantleMaterial);
             mesh.castShadow = false;
             mesh.receiveShadow = false;
             mesh.frustumCulled = false; // der Ring umgibt die Kamera
             s.scene.add(mesh);
-            s.horizonMantle = { mesh, anchorX: ax, anchorZ: az, seed };
+            s.horizonMantle = { mesh, anchorX: ax, anchorZ: az, seed, builtStanzR: stanzR, geoHoleR: holeR };
         }
         s.horizonMantle.builtMs = +(performance.now() - t0).toFixed(1);
     }
@@ -41254,9 +41295,22 @@ class AnazhRealm {
             for (const k of keys) if (distOf(k) > ring) queue.delete(k);
             keys = [...queue].sort((a, b) => distOf(a) - distOf(b));
         }
+        // V18.117 — ANTI-STARVATION (S-Befund „durch das LOD Löcher im Wasser"):
+        // die reine Distanz-Priorität (V14.4) + der CA-Dauer-Nachschub NAHER
+        // Keys (V18.93-Wake + asymptotischer Schelf-Settle-Tail) ließen FERNE
+        // Einträge NIE drankommen — GEMESSEN (diag-water-lod-holes +
+        // Lebensgeschichte-Sonde): Ring-3/4-Ozean-Chunks mit bis zu 30k nassen
+        // Zellen blieben sheet-los („nie gebaut", inQueue=true, Queue hält ~60
+        // nach Settle) = die Loch-STREIFEN im Meer, die der Schöpfer sah (sie
+        // korrelieren mit LOD1, weil fern = verhungert). Das Budget teilt
+        // jetzt: (maxPerFrame−1) Slots nah-zuerst (die V14.4-Sichtbarkeit
+        // bleibt), der LETZTE Slot baut den ÄLTESTEN Eintrag (Set-Insertion-
+        // Order = FIFO; ein Re-Add eines vorhandenen Keys ändert sie nicht) →
+        // bounded Wartezeit für JEDEN Key, Starvation strukturell unmöglich.
         let built = 0;
+        const distBudget = Math.max(1, maxPerFrame - 1);
         for (const key of keys) {
-            if (built >= maxPerFrame) break;
+            if (built >= distBudget) break;
             queue.delete(key);
             // Chunk inzwischen weg (gepruned)? Dann nichts bauen.
             if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
@@ -41265,6 +41319,18 @@ class AnazhRealm {
             const cz = parseInt(key.slice(comma + 1), 10);
             this._buildVoxelChunkWaterIsoSurface(cx, cz);
             built++;
+        }
+        if (built < maxPerFrame) {
+            for (const key of queue) {
+                queue.delete(key);
+                if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+                const comma = key.indexOf(",");
+                const cx = parseInt(key.slice(0, comma), 10);
+                const cz = parseInt(key.slice(comma + 1), 10);
+                this._buildVoxelChunkWaterIsoSurface(cx, cz);
+                built++;
+                break;
+            }
         }
         return built;
     }
@@ -41745,15 +41811,83 @@ class AnazhRealm {
                 }
             }
         };
-        for (const a of active) if (a.moved > 0.5) enqueueWithReaders(a.cx, a.cz);
+        // V18.121 — RE-MESH NUR BEI SICHTBARER DACH-ÄNDERUNG (GEMESSEN
+        // diag-frame-profile: Ø 14.4 ms/Frame Wasser-Sheet-Builds am SETTLED
+        // Spawn; 3 Fluss-Chunks × ~590 Builds/300 Ticks): `moved` ist BRUTTO-
+        // Durchfluss — ein STATIONÄRER Fluss (Quelle speist nach, Wasser
+        // fällt + fließt, der PEGEL bleibt konstant) trägt dauerhaft
+        // moved > 0.5 und re-meshte ewig für ein unverändertes Bild. Das
+        // Sheet rendert die SPALTEN-DÄCHER → deren Änderung entscheidet:
+        // der Dach-FINGERPRINT (`_caRoofFingerprint`, ein Float je Spalte =
+        // oberste nasse Zeile + Füllgrad, nur im y-Band) wird gegen den
+        // Stand des letzten Enqueues (`entry._caMeshFp`) gehalten — re-mesh
+        // erst bei max|Δ| > 0.25 (eine EINZEL-Spalte wird vom 3×3-Sheet-
+        // Glätten ÷9 verschmiert → erst ~0.25 Zellhöhe ist im Bild ~5 cm =
+        // die ehrliche Sichtbarkeits-Grenze; die Quell-Pin-Spalten jittern
+        // GEMESSEN dauerhaft ~0.05-0.1 = unsichtbar) ODER Σ|Δ| > 1.0
+        // (breite Drift — eine Carve-Flut hebt viele Spalten und schlägt
+        // sofort durch; der FP schreibt nur bei Überschreiten fort → leise
+        // Drift akkumuliert und schlägt korrekt durch). Der SETTLE-Final-
+        // Mesh bleibt unbedingt (der letzte Stand wird immer gezeichnet).
+        for (const a of active) if (a.moved > 0.5 && this._caRoofChanged(a, dim, dimY)) enqueueWithReaders(a.cx, a.cz);
         for (const a of active) {
             if (a.moved < SETTLE) {
                 activeSet.delete(a.key);
-                // das finale RUHE-Mesh (der Trickle unter dem Throttle wird hier sichtbar).
-                enqueueWithReaders(a.cx, a.cz);
+                // das finale RUHE-Mesh — ABER auch hier durchs Dach-Gate
+                // (V18.121): im Wake/Settle-PING-PONG (Nachbar-xfer weckt →
+                // mini-moved → settle) feuerte der ungegatete Final-Mesh
+                // jeden Zyklus (GEMESSEN: nach dem moved-Gate blieben ~150
+                // Builds/Key/300 Ticks). Ist der FP unverändert, IST der
+                // letzte sichtbare Stand schon gezeichnet — nichts zu tun.
+                if (this._caRoofChanged(a, dim, dimY)) enqueueWithReaders(a.cx, a.cz);
             }
         }
         return total;
+    }
+
+    // V18.121 — der DACH-Fingerprint: pro Spalte (dim²) die oberste nasse
+    // Zeile + ihr Füllgrad (j + frac) — exakt die Wahrheit, die das Zell-Sheet
+    // rendert. Vergleicht gegen `entry._caMeshFp` (Stand des letzten Enqueues)
+    // und schreibt bei Überschreiten (oder force=true, der Settle-Stand) fort.
+    // Scratch wiederverwendet (alloc-frei im Steady-State); Band-beschränkt.
+    _caRoofChanged(a, dim, dimY) {
+        const entry = this.state.voxelChunks ? this.state.voxelChunks.get(a.key) : null;
+        if (!entry) return true;
+        const dimSq = dim * dim;
+        let fp = this.state._caFpScratch;
+        if (!fp || fp.length < dimSq) fp = this.state._caFpScratch = new Float32Array(dimSq);
+        const jHi = a.band ? Math.min(dimY - 1, a.band.jMax) : dimY - 1;
+        const jLo = a.band ? Math.max(0, a.band.jMin) : 0;
+        const level = a.level;
+        for (let c = 0; c < dimSq; c++) {
+            let v = 0;
+            for (let j = jHi; j >= jLo; j--) {
+                const lv = level[j * dimSq + c];
+                if (lv > 0.05) {
+                    v = j + lv;
+                    break;
+                }
+            }
+            fp[c] = v;
+        }
+        const old = entry._caMeshFp;
+        if (!old || old.length !== dimSq) {
+            entry._caMeshFp = new Float32Array(fp.subarray(0, dimSq));
+            return true;
+        }
+        let maxAbs = 0;
+        let sumAbs = 0;
+        for (let c = 0; c < dimSq; c++) {
+            const d = fp[c] - old[c];
+            const ad = d < 0 ? -d : d;
+            if (ad > maxAbs) maxAbs = ad;
+            sumAbs += ad;
+        }
+        if (maxAbs > 0.25 || sumAbs > 1.0) {
+            old.set(fp.subarray(0, dimSq));
+            return true;
+        }
+        return false;
     }
 
     // Level-Austausch über die gemeinsame Chunk-Grenze (die lateral-Regel über die Naht, symmetrisch
@@ -47566,7 +47700,14 @@ class AnazhRealm {
         // Werks — was sich bewegen würde, trüge man es als Seele / erwachte
         // es als Wesen. Dieselbe Resonanz, die Kreaturen + Custom-Avatare
         // animiert — die Werkstatt LIEST sie nur (ein Vektor, viele Leser).
-        const motionRoles = this.computeMotionRoles(bp.parts);
+        // V18.119 (C1-Readout-Schluss): MIT bp.connections — der Readout las
+        // bis hier nur den Lage-Fallback, während die Animation (C1-Gelenke,
+        // tickArchitectures) die Verbindungen als Vorrang-Quelle liest → der
+        // Readout zeigte NIE „Rad an Achse"/„Scharnier", die sich wirklich
+        // bewegen (zwei Leser, zwei Calls = der V9.82-Riss). Jetzt EINE
+        // Wahrheit: verbinde zwei Teile → das Panel benennt das Gelenk →
+        // der Spieler LERNT das Gelenk-Substrat (bauen → ablesen → bauen).
+        const motionRoles = this.computeMotionRoles(bp.parts, bp.connections);
         if (motionRoles) {
             const counts = {};
             for (const r of motionRoles) if (r) counts[r.role] = (counts[r.role] || 0) + 1;
@@ -47576,6 +47717,11 @@ class AnazhRealm {
                 fluegel: "Flügel (Schlag)",
                 schwanz: "Schwanz (Welle)",
                 kopf: "Kopf (Nicken)",
+                rad: "Rad an Achse (rollt)",
+                tuer: "Tür/Schwenk (Scharnier-Achse)",
+                wirbel: "Wirbel-Kette (Welle)",
+                scharnier: "Scharnier (schwingt am Anker)",
+                segel: "Segel/Tuch (flattert)",
             };
             const mtxt = Object.keys(counts)
                 .map((k) => `${counts[k]}× ${mlbl[k] || k}`)
@@ -47588,7 +47734,7 @@ class AnazhRealm {
                     this._el("div", {
                         class: "spec-motion-line",
                         text: mtxt,
-                        title: "Die Bewegungs-Rollen emergieren aus Form × Lage × Spiegelung der Parts — als Seele getragen bewegt sich das Werk.",
+                        title: "Die Bewegungs-Rollen emergieren aus Form × Lage × Spiegelung — und aus den VERBINDUNGEN: ein Gelenk (Rad/Tür/Wirbel/Scharnier) entsteht am Anker zwischen zwei verbundenen Teilen. Als Seele getragen oder als Bau erwacht bewegt sich das Werk genau so.",
                     })
                 );
             }
@@ -48787,6 +48933,28 @@ class AnazhRealm {
         if (stamGlow) stamGlow.setAttribute("width", String(166 * stamRatio));
         hpText.textContent = `${hp}/${hpMax}`;
         stamText.textContent = `${stam}/${stamMax}`;
+        // V18.119 — E3-Mana SICHTBAR (der Kreis schließt): Welt-Gesten kosten
+        // im PFAD-Modus Mana (V18.104-E3, derselbe Kosten-Walker wie das
+        // Nexus-Wirk-Budget), aber die Währung hatte keine Anzeige — der
+        // Spieler konnte „zu erschöpft für diese Geste" nie kommen sehen.
+        // Dritte Row derselben Familie (eine Quelle, eine Throttle); NUR im
+        // pfad sichtbar (frieden/schöpfer zahlen nicht — kein UI-Rauschen).
+        const manaRow = document.getElementById("stats-hud-mana-row");
+        if (manaRow) {
+            const isPfad = typeof this.getGameMode === "function" && this.getGameMode() === "pfad";
+            manaRow.hidden = !isPfad;
+            if (isPfad) {
+                const manaMax = Math.max(1, Math.round(typeof p.manaMax === "number" ? p.manaMax : 40));
+                const mana = Math.max(0, Math.round(typeof p.mana === "number" ? p.mana : manaMax));
+                const manaRatio = Math.max(0, Math.min(1, mana / manaMax));
+                const manaFill = document.getElementById("stats-hud-mana-fill");
+                if (manaFill) manaFill.setAttribute("width", String(166 * manaRatio));
+                const manaGlow = document.getElementById("stats-hud-mana-glow");
+                if (manaGlow) manaGlow.setAttribute("width", String(166 * manaRatio));
+                const manaText = document.getElementById("stats-hud-mana-text");
+                if (manaText) manaText.textContent = `${mana}/${manaMax}`;
+            }
+        }
         // V8.14 — HP-niedrig-Pulse: bei < 30 % bekommt der HUD eine
         // pulsierende rote Aura via CSS-Animation. Über 30 % wieder ruhig.
         const hud = document.getElementById("stats-hud");
@@ -49420,6 +49588,20 @@ class AnazhRealm {
                 fog.color.setRGB(0.06, 0.19, 0.32);
                 fog.near = 4;
                 fog.far = 34;
+            }
+            // V18.120 — B5-UNTERWASSER-PASS (die seit V18.1 dokumentierte
+            // Lücke): das Wasser rendert als EINSEITIGE Oberseite (BackSide +
+            // Top-Cull) → von UNTEN war die Wasserdecke WEG (der Taucher sah
+            // Himmel statt Spiegel). Der dritte Konsument des einen
+            // playerEyesUnderwater-Flags (neben Tauch-Fog + Tint): beim
+            // Tauchen wird das EINE geteilte Wasser-Material DoubleSide (die
+            // Oberseiten-Dreiecke sind von unten sichtbar = die Decke über
+            // dir), beim Auftauchen zurück zu BackSide (der V18.1-W1-Vertrag
+            // — von oben unverändert). Ein Render-Zustand, am Look-Ort gesynct.
+            const hsm = this.state.hydroSurfaceMaterial;
+            if (hsm) {
+                const wantSide = this.state.playerEyesUnderwater ? THREE.DoubleSide : THREE.BackSide;
+                if (hsm.side !== wantSide) hsm.side = wantSide;
             }
         }
     }
@@ -53252,7 +53434,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.115.0";
+AnazhRealm.VERSION = "18.121.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -53284,7 +53466,7 @@ AnazhRealm.HORIZON_MANTLE = Object.freeze({
     rings: 20,
     segments: 72,
     drop: 2.5,
-    reanchorDist: 250,
+    reanchorDist: 120,
 });
 
 AnazhRealm.DETAIL_CASCADE = Object.freeze([

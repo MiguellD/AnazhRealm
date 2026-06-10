@@ -114,6 +114,14 @@ const server = http.createServer((req, res) => {
             const cz = (b.minZ + b.maxZ) / 2;
             out.push({ name: "lake", x: b.minX - 8, z: cz, lookX: cx, lookZ: cz, lookY: lakes[0].level });
         }
+        // V18.120 — B5-TAUCH-BLICK: im größten See UNTER Wasser, Blick schräg
+        // zur DECKE (vorher fehlte sie: BackSide+Top-Cull = Himmel statt Spiegel).
+        if (lakes[0] && lakes[0].bbox) {
+            const b = lakes[0].bbox;
+            const cx = (b.minX + b.maxX) / 2;
+            const cz = (b.minZ + b.maxZ) / 2;
+            out.push({ name: "dive", x: cx, z: cz, lookX: cx + 26, lookZ: cz + 8, lookY: lakes[0].level, dive: true });
+        }
         // Fluss-Mitte: der längste Fluss.
         const rivers = (h.rivers || []).slice().sort((a, b) => (b.points || []).length - (a.points || []).length);
         if (rivers[0] && rivers[0].points && rivers[0].points.length > 4) {
@@ -157,7 +165,7 @@ const server = http.createServer((req, res) => {
                 // der Wasserlinie; in 8 RICHTUNGEN suchen (ein Canyon hat nur eine
                 // brauchbare Seite), die beste = nah + hoch genug.
                 const wl = typeof s.waterLevel === "number" ? s.waterLevel : 0;
-                {
+                if (!spot.dive) {
                     const ref = spot.lookY !== null && spot.lookY !== undefined ? spot.lookY : wl;
                     let bx = spot.x;
                     let bz = spot.z;
@@ -218,11 +226,33 @@ const server = http.createServer((req, res) => {
                 // Augenhöhe, Blick aufs Ziel (Wasser-Spiegel/Fall-Mitte, sonst leicht runter).
                 const pm = s.playerMesh.position;
                 const cam = s.camera;
-                const ey = pm.y + 2.2; // leicht erhöht — Ufer + Wasser + Übergang im Bild
-                cam.position.set(pm.x, ey, pm.z);
-                const ly = spot.lookY !== null && spot.lookY !== undefined ? spot.lookY : ey - 6;
-                cam.lookAt(spot.lookX, ly, spot.lookZ);
-                cam.updateMatrixWorld(true);
+                if (spot.dive) {
+                    // UNTER den Spiegel: Body tief setzen, 2 Ticks (das Flag +
+                    // der Side-Sync greifen), Auge unter Wasser, Blick zur Decke.
+                    const lv = spot.lookY !== null && spot.lookY !== undefined ? spot.lookY : wl;
+                    const body = s.playerBody;
+                    if (body && s.tmpTransform && typeof Ammo !== "undefined") {
+                        s.tmpTransform.setIdentity();
+                        s.tmpTransform.setOrigin(r.setVec(s.tmpVec1, spot.x, lv - 3.2, spot.z));
+                        body.setWorldTransform(s.tmpTransform);
+                        body.setLinearVelocity(r.setVec(s.tmpVec2, 0, 0, 0));
+                        body.activate(true);
+                    }
+                    try {
+                        r._gameLoopTick(performance.now());
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                    cam.position.set(spot.x, lv - 1.6, spot.z);
+                    cam.lookAt(spot.lookX, lv + 5, spot.lookZ);
+                    cam.updateMatrixWorld(true);
+                } else {
+                    const ey = pm.y + 2.2; // leicht erhöht — Ufer + Wasser + Übergang im Bild
+                    cam.position.set(pm.x, ey, pm.z);
+                    const ly = spot.lookY !== null && spot.lookY !== undefined ? spot.lookY : ey - 6;
+                    cam.lookAt(spot.lookX, ly, spot.lookZ);
+                    cam.updateMatrixWorld(true);
+                }
                 let err = null;
                 if (window.__origRender) {
                     s.renderer.render = window.__origRender;
