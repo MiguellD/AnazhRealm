@@ -22393,6 +22393,17 @@ async function checkBandPhasenBF(ctx) {
         out.a4Curtain =
             /VERT_SPLIT/.test(r._buildVoxelChunkWaterCellSheet.toString()) &&
             /dupVert/.test(r._buildVoxelChunkWaterCellSheet.toString());
+        // V18.116 — A4-MÜNDUNGS-SYNERGIE: aWave (Ozean-Wellen-Anteil) ist
+        // ART-gedämpft — die Fluss-Abdeckung (riverness, dieselbe
+        // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem
+        // Fluss, ein See ist still (GEMESSEN diag-mouth: Fluss-Kern aWave>0.5
+        // 75 %→0). Source-Probe; der behaviorale Wächter ist diag-mouth.cjs.
+        out.a4MouthWave = (() => {
+            const src = r._buildVoxelChunkWaterCellSheet.toString();
+            return (
+                /riverness/.test(src) && /heightRamp \* \(1 - riverness\)/.test(src) && /_hydrosphereLakeAt/.test(src)
+            );
+        })();
         // V18.112 — E4-KRISTALL + E5: eine wiederholt bewährte Geste (3 finalisierte
         // Läufe, deposit_life, sorrow-Kontext) kristallisiert zur Regel — die
         // Bedingung EMERGIERT aus der Emotions-Signatur (field_above sorrow),
@@ -22512,6 +22523,7 @@ async function checkBandPhasenBF(ctx) {
     check("C7: die Hand greift am GRIFF-Punkt (Source im Hand-Mesh-Pfad)", res.c7Grip);
     check("A4: die Wasserfall-Plane ist geschnitten, das Abwärts-Material lebt als Saat", res.a4PlaneCut);
     check("A4: der Steil-Split formt vertikales Wasser (Lippe + Vorhang im Zell-Sheet)", res.a4Curtain);
+    check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
     check("E4+E5: der Kristallisierer lebt im Selbstanalyse-Takt (KONSUM)", res.e45Hook);

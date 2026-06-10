@@ -21382,12 +21382,8 @@ class AnazhRealm {
             const id = positions.length / 3;
             vertIsAnchor[id] = n === 0;
             positions.push(wx, surfY, wz);
-            // aWave: weiche Ozean-Rampe (V18.14) — auf dem Sheet-Spiegel statt `L`.
-            aWave.push(Math.max(0, Math.min(1, 1 - (Math.abs(surfY - waterLevel) - 0.8) / 2.0)));
-            aDepth.push(depthM);
-            aSlope.push(n > 0 ? slopeMax : 0);
             // aFlow — identisch zur Fläche (V18.11/.24): 3×3-geglättete Fluss-Strömung,
-            // Magnitude tapert zur Mündung/Bank.
+            // Magnitude tapert zur Mündung/Bank. (Vor aWave berechnet — der liest sie.)
             let sfx = 0;
             let sfz = 0;
             for (let dz = -1; dz <= 1; dz++) {
@@ -21400,6 +21396,23 @@ class AnazhRealm {
                     }
                 }
             }
+            // aWave (V18.116 — A4-Mündungs-Synergie): Höhen-Rampe (V18.14, Nähe zum
+            // Meeresspiegel) × ART-Dämpfung. Die reine Höhen-Rampe ließ jeden Fluss-
+            // Lauf nahe Meereshöhe (jede Mündung!) voll wogen — Gerstner + Gischt
+            // ÜBER den Strähnen (GEMESSEN diag-mouth: 75 % des Fluss-Kerns aWave>0.5,
+            // harter +2.8-m-Schalter mitten im Lauf). Die Fluss-Abdeckung fmag ist
+            // DIESELBE Rampe, mit der der Shader die Strähnen blendet (riverness =
+            // smoothstep(0.04→0.5)) → die Meeres-Wellen laufen sanft in die Mündung
+            // ein, genau wo die Strähnen ausfaden — ein Übergang, eine Quelle. Ein
+            // SEE ist still, auch nahe Meereshöhe (der tiefen-skalierte
+            // uLakeRipple-Floor V18.19 trägt sein Kräuseln).
+            const heightRamp = Math.max(0, Math.min(1, 1 - (Math.abs(surfY - waterLevel) - 0.8) / 2.0));
+            const rt = Math.max(0, Math.min(1, (Math.hypot(sfx, sfz) / 9 - 0.04) / 0.46));
+            const riverness = rt * rt * (3 - 2 * rt);
+            const isLake = n > 0 && heightRamp > 0 && this._hydrosphereLakeAt(wx, wz);
+            aWave.push(isLake ? 0 : heightRamp * (1 - riverness));
+            aDepth.push(depthM);
+            aSlope.push(n > 0 ? slopeMax : 0);
             aFlow.push(sfx / 9, sfz / 9);
             vmap[vi] = id;
             return id;
@@ -53252,7 +53265,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.115.0";
+AnazhRealm.VERSION = "18.116.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -377,8 +377,16 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   + VERTIKALER VORHANG (senkrecht, wasserdicht, double-faced, aSlope-MAX → das CA-Wildwasser
   schäumt den Fall weiss — aus den ZELLEN, kein Plane-Raten). GEMESSEN
   (`diag-waterfall-zacken.cjs`, 30-m-Fall): >14-m-Zacken 137→0 · >7-m 359→2 · maxSpread
-  28.8→12.3 m · 1920 Vorhänge. Fall-LOOK → S. WEITER OFFEN in A4 (der Kern der Welle):
-  die MÜNDUNGS-SYNERGIE (oben) ·
+  28.8→12.3 m · 1920 Vorhänge. Fall-LOOK → S. ✓ **MÜNDUNGS-SYNERGIE GEBAUT (V18.116, der
+  A4-Kern):** `aWave` war eine reine HÖHEN-Rampe um waterLevel → GEMESSEN (`diag-mouth.cjs`)
+  wogte 75 % des Fluss-KERNS an der Mündung wie Ozean (Gerstner+Gischt ÜBER den Strähnen,
+  harter +2.8-m-Schalter im Lauf). Jetzt `aWave = Höhen-Rampe × (1−riverness)` — DIESELBE
+  fmag-smoothstep(0.04→0.5), mit der der Shader die Strähnen blendet (ein Übergang, eine
+  Quelle; Crest/Farbmix erben aWave-gated; See still via `_hydrosphereLakeAt`). Nachher
+  Fluss-Kern 0 % · Meer Ø 0.909 · See 0; Augen-A/B Abend-Drohne (vorher Fluss=Meer-Glitzer,
+  nachher Art-getrennt + weiche Mündung). Mündungs-LOOK → S-Liste. Die alte T7d-„`L`-Naht
+  an 4-Chunk-Ecken"-Zeile ist vom Zell-Sheet ÜBERHOLT (Render baut aus den ZELLEN, Naht
+  GEMESSEN Δy=0 — diag-water-cellsheet V18.89). WEITER OFFEN in A4:
   Schelf-Konsolidierung (H) · Hoch-Becken über `L` (H+A) · Unterwasser-Pass B5 (A) ·
   Kapillar/Stempel (H) · T7c-Reste.
 - ✓ **A5 — Haupt-Fog ↔ Ring-Kante (V18.103):** `fog.far = min(Wetter-Formel·Slider,
@@ -662,7 +670,9 @@ schlanken (UI-Politur, jederzeit einschiebbar).
    + G-Tausch + linke-Hand-Optik) · C7-Punkt-Optik (Rüstung am Torso · Griff in der Hand ·
    Sitz auf Wagen/Holzross — die zwei Saaten im Browser reiten!) · A4-FALL-LOOK (der
    Steil-Split-Vorhang + das schäumende Wildwasser am echten Wasserfall — headless bewies
-   die Geometrie [137→0 Zacken], das Auge das Gefühl).**
+   die Geometrie [137→0 Zacken], das Auge das Gefühl) · **A4-MÜNDUNGS-LOOK (V18.116:
+   der Fluss wogt nicht mehr wie das Meer, die Wellen laufen sanft in die Mündung —
+   das Gefühl des Übergangs im echten Browser).**
 4. **Die Wände (nie verhandeln):** Determinismus (Worker bit-identisch; eine Skala-Optimierung
    ändert NIE die Gitter-Phase) · die Narben (roadmap §5) nicht wiederholen · die Samen (roadmap
    §7 + §5-D5c hier) nie blind schneiden · Multi-Agent-Funde SELBST verifizieren (zwei
