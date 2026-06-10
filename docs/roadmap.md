@@ -78,7 +78,10 @@ Zellen) · Unterwasser-Decken-Pass (V18.3 B5) · Kapillar/Stempel an Gebäuden.
 
 **Terrain/Naht (⭐ AKTIV, §11)** — N1 Cross-LOD watertight (Transvoxel ODER Geomorph→Kollision+volle Zone,
 ersetzt das alte „E4-Stitching") · N2 Sub-Region-Edit (kein Ganz-Chunk-Reset) · N3 stabiles LOD (grösserer
-LOD0-Ring + Hysterese) · Spawn-Höhe über die T6d-Kaverne. Danach: H3 ferne Seen/Flüsse (Region mitwandern) ·
+LOD0-Ring + Hysterese) · **SPAWN-RESTBEFUND (V18.94, Schöpfer):** `_findOpenSpawnSpot` gebaut +
+headless-verifiziert, aber im Browser „meist noch im Boden, neue Welt ohne Plattform" —
+try/catch-Schluck in `_ensureGenesisPlatform` / `wasFirstSpawn`-Pfad / Scan-Timing prüfen
+(Diskriminator: Browser-Konsole Genesis-Zeile). Danach: H3 ferne Seen/Flüsse (Region mitwandern) ·
 Haupt-Fog an die Ring-Kante koppeln (heute separat).
 
 **LOD/Render** — U2 Wasser-LOD (heute fest LOD0) · U4 Deko-Distanz/Dichte/Impostor · U5 Schatten-CSM ·
