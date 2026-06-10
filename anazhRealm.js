@@ -305,21 +305,15 @@ class AnazhRealm {
                 waterCull: 0.0,
                 // V18.6 U-W4 — die FINALE WASSER-FORM: Wasser ist eine FLÄCHE auf
                 // dem Spiegel L (Höhenfeld, tiefen-versöhnt), nicht die Zell-Iso.
-                // `iso` ist der A/B-Schalter auf die alte Zell-Iso (Browser-Vergleich
-                // während des Sign-offs; nach dem Sign-off entfernbar).
-                waterRenderMode: "surface", // "surface" (Fläche-auf-L) | "iso" (alte Zell-Iso)
+                // V18.92 — "cells" (Default, §0-Kanon: das Zell-Oberkanten-Sheet) |
+                // "iso" (alte Zell-Iso, Debug-A/B). Der L-Film ("surface") ist entfernt.
+                waterRenderMode: "cells",
                 // V18.25 — Schöpfer-getunte Wasser-Werte als Default übernommen (Browser-Sign-off 06.06.).
                 waterShoreWidth: 0.0305, // Ufer-Alpha-Saum in VIEWPORT-Lineardepth (gegen waterThick, V18.14-Ufer); kleiner = schärfer
                 waterDepthRange: 10.9, // Meter bis volle Tiefen-Farbe (gegen aDepth); kleiner = schneller tief
                 waterDepthFoam: 5.0, // V18.14 M1 — Schaum nur bis dieser ECHTEN Tiefe (m); kleiner = weniger Fluss-Schaum
                 waterLakeRipple: 0.65, // V18.17 Phase 3 — See-Wellen-Floor SICHTBAR (0 = flach, 1 = wie Ozean)
                 waterfallSteep: 4.0, // V18.14 M3 — Wasserfall-Plane nur ab dieser Terrain-Steilheit (Drop/Lauf); grösser = nur echte Wände
-                // V18.31 — der AUSLAUF-ÜBERGANG: die Breite des Ufer→Boden-Übergangs, über die
-                // sich das Auslauf-Wasser von der flachen L-Fläche auf das terrain-folgende Bett
-                // (Bodenkontakt, V18.31) legt. Klein = scharfer Kontakt (das Wasser erreicht schnell
-                // den Boden, fliesst sauber hinein), gross = sanfter (schwebt im Übergang länger). War
-                // bis V18.30 die "Auslauf-Breite" der alten Versteck-Logik (gross = flacher).
-                waterOutflowSlope: 3.0,
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
                 shadowRange: 300, // Frustum-Halbbreite m (kleiner = schärfer)
@@ -17264,40 +17258,94 @@ class AnazhRealm {
     // Patch auf die alte Zwei-Skalen-Naht, die mit dem alten Quad-Mesh weg
     // ist (V9.70-B-Lehre).
 
+    // V18.94 — einen OFFENEN, FLACHEN, TROCKENEN Spawn-Punkt finden (Schöpfer:
+    // „Spawnen korrigieren, damit die Startplattform funktioniert" — der Spawn
+    // landete im T6d-Kavernen-BODEN: `getTerrainHeightAt` ist die ECHTE Voxel-
+    // Oberfläche, und in einer zum Himmel offenen Kaverne ist das der Kraterboden
+    // weit unter dem Makro-Terrain → die Plattform stand im Loch, der Spieler
+    // erwachte zwischen Felswänden). DETERMINISTISCH (Seed-Welt → alle Peers
+    // wählen denselben Punkt): Ring-Spirale um (0,0), der ERSTE Punkt, der
+    // (a) KEIN Kavernen-/Kraterboden ist (surf ≥ macro − 6 — die Voxel-Oberfläche
+    //     liegt nahe der Makro-Oberfläche = offener Himmel),
+    // (b) TROCKEN liegt (surf > waterLevel + 1.5),
+    // (c) lokal FLACH ist (±6-m-Proben, Δ ≤ 3.5 m — die Plattform steht eben).
+    // Fallback (nichts gefunden bis 240 m): (0,0) wie früher.
+    _findOpenSpawnSpot() {
+        const wl = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        const candidates = [[0, 0]];
+        for (let r = 12; r <= 240; r += 12) {
+            for (let a = 0; a < 8; a++) {
+                const ang = (a / 8) * Math.PI * 2;
+                candidates.push([Math.round(Math.cos(ang) * r), Math.round(Math.sin(ang) * r)]);
+            }
+        }
+        for (const [x, z] of candidates) {
+            const surf = this.getTerrainHeightAt(x, z);
+            if (!Number.isFinite(surf)) continue;
+            const macro = this._terrainMacroSurfaceY(x, z);
+            if (Number.isFinite(macro) && surf < macro - 6) continue; // Kavernen-/Kraterboden
+            if (surf < wl + 1.5) continue; // nass
+            let flat = true;
+            for (const [dx, dz] of [
+                [6, 0],
+                [-6, 0],
+                [0, 6],
+                [0, -6],
+            ]) {
+                const h = this.getTerrainHeightAt(x + dx, z + dz);
+                if (!Number.isFinite(h) || Math.abs(h - surf) > 3.5) {
+                    flat = false;
+                    break;
+                }
+            }
+            if (!flat) continue;
+            return { x, z, y: surf };
+        }
+        const h0 = this.getTerrainHeightAt(0, 0);
+        return { x: 0, z: 0, y: Number.isFinite(h0) ? h0 : 0 };
+    }
+
     // V8.29 — Genesis-Plattform am Welt-Zentrum. Idempotent: spawnt nur
     // wenn noch keine start_plattform-Architektur existiert (z. B. nach
     // Reload aus dem Save ist sie schon da). Der Spieler wird oben drauf
     // gesetzt, damit er beim Welt-Start die Umgebung überblickt statt in
-    // eine Schlucht zu fallen.
+    // eine Schlucht zu fallen. V18.94 — der Punkt kommt aus
+    // `_findOpenSpawnSpot` (offen + flach + trocken statt Kavernen-Boden).
     _ensureGenesisPlatform() {
         if (!this.state.architectures) return;
         const exists = this.state.architectures.some((a) => a && a.type === "start_plattform");
         if (exists) return;
-        // Terrain-Höhe am Zentrum sampeln. V9.25 Phase 5b — getTerrainHeightAt
-        // ist voxel-aware: die Genesis-Plattform sitzt in einer Voxel-Welt auf
-        // der Voxel-Oberfläche, nicht auf der schlafenden Heightfield-Höhe.
-        let h0 = this.getTerrainHeightAt(0, 0);
-        if (typeof h0 !== "number" || !Number.isFinite(h0)) h0 = 0;
-        // Plattform 5 m über dem Terrain-Zentrum (genug Überblick, nicht
+        const spot = this._findOpenSpawnSpot();
+        const h0 = spot.y;
+        // Plattform 5 m über dem Terrain (genug Überblick, nicht
         // so hoch dass der Abstieg unangenehm wird).
         const platCenterY = h0 + 5;
         // spawnArchitecture zieht intern 0.5 ab (at_player-Kalibrierung).
-        this.spawnArchitecture("start_plattform", { x: 0, y: platCenterY + 0.5, z: 0 }, { silent: true });
+        this.spawnArchitecture("start_plattform", { x: spot.x, y: platCenterY + 0.5, z: spot.z }, { silent: true });
         // Spieler oben auf die Plattform setzen. Plattform-Part-Top liegt
         // bei platCenterY + 1 (Cylinder y-Center 0.5, Höhe 1). +1.2 Puffer.
         const spawnY = platCenterY + 2.2;
         if (this.state.playerMesh) {
-            this.state.playerMesh.position.set(0, spawnY, 0);
+            this.state.playerMesh.position.set(spot.x, spawnY, spot.z);
             if (this.state.playerBody) {
                 const t = this.state.tmpTransform;
                 t.setIdentity();
-                t.setOrigin(this.setVec(this.state.tmpVec1, 0, spawnY / this.state.scaleFactor, 0));
+                t.setOrigin(
+                    this.setVec(
+                        this.state.tmpVec1,
+                        spot.x / this.state.scaleFactor,
+                        spawnY / this.state.scaleFactor,
+                        spot.z / this.state.scaleFactor
+                    )
+                );
                 this.state.playerBody.setWorldTransform(t);
                 this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
                 this.state.playerBody.activate(true);
             }
         }
-        this.log(`Genesis-Plattform erstellt bei y=${platCenterY.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`);
+        this.log(
+            `Genesis-Plattform erstellt bei (${spot.x}, ${spot.z}), y=${platCenterY.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`
+        );
     }
 
     // ### Terrain-Erweiterung ### V7.42
@@ -19810,11 +19858,14 @@ class AnazhRealm {
         return geom;
     }
 
-    // V18.6 U-W4 — der Wasser-Render-Modus. "surface" (Default) = die FINALE
-    // FORM (Höhenfeld-Fläche auf dem Spiegel `L`); "iso" = die alte Zell-Iso
-    // (A/B-Schalter für den Browser-Sign-off, in den Einstellungen umstellbar).
+    // V18.92 — der Wasser-Render-Modus. "cells" (DEFAULT, der §0-KANON — Schöpfer-
+    // Sign-off „der Rest passt, genial; L-Sheet kann raus") = das Zell-Oberkanten-
+    // Sheet (Domäne aus den Zellen, folgt dem Live-CA, Kante taucht unter das
+    // Terrain); "iso" = die alte Zell-Iso (Debug-A/B). Der L-Film ("surface",
+    // V18.6–.91) ist ENTFERNT — persistierte "surface"-Werte heilen auf "cells".
     _waterRenderMode() {
-        return this.state.atmosphere && this.state.atmosphere.waterRenderMode === "iso" ? "iso" : "surface";
+        const m = this.state.atmosphere && this.state.atmosphere.waterRenderMode;
+        return m === "iso" ? "iso" : "cells";
     }
 
     _buildVoxelChunkWaterIsoSurface(cx, cz) {
@@ -19824,12 +19875,11 @@ class AnazhRealm {
         const key = `${cx},${cz}`;
         // Idempotenz: vorhandenes Mesh disposen, bevor wir neu bauen
         this._disposeVoxelChunkWaterIso(key);
-        // U-W4 — die FINALE FORM: Wasser ist eine FLÄCHE auf dem Spiegel `L`
-        // (Höhenfeld, reitet die Terrain-LOD, tiefen-versöhnt), nicht die Zell-
-        // Iso. Dispatch NACH dem Dispose (geteilter Map-/Material-Pfad), VOR dem
-        // waterCells-Lesen — die Fläche braucht die Zellen nicht (sie liest `L`
-        // direkt; die Zellen bleiben die Physik-/Reaktivitäts-/Höhlen-Wahrheit).
-        if (this._waterRenderMode() !== "iso") return this._buildVoxelChunkWaterSurfaceMesh(cx, cz, key);
+        // U-W4/V18.92 — der Modus-Dispatch NACH dem Dispose (geteilter Map-/
+        // Material-Pfad): "cells" (DEFAULT, §0-Kanon) = das Zell-Oberkanten-Sheet;
+        // "iso" = die alte Zell-Iso (der Code darunter, Debug-A/B).
+        const wrMode = this._waterRenderMode();
+        if (wrMode !== "iso") return this._buildVoxelChunkWaterCellSheet(cx, cz, key);
         const entry = this.state.voxelChunks.get(key);
         if (!entry || !entry.waterCells) {
             this.state.voxelChunkWaterIso.set(key, null);
@@ -20067,6 +20117,7 @@ class AnazhRealm {
         // (WebGPU-strikt, V10.0-g.1); 0 = flach (der Iso-A/B-Pfad ist sowieso Vergleich).
         if (!geom.getAttribute("aDepth")) {
             geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(vCount), 1));
+            geom.setAttribute("aSlope", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         }
         const mesh = new THREE.Mesh(geom, mat);
         mesh.renderOrder = 1; // transparent — nach den opaken Objekten
@@ -20084,322 +20135,338 @@ class AnazhRealm {
         return mesh;
     }
 
-    // V18.6 U-W4 — DIE FINALE WASSER-FORM: Wasser als FLÄCHE auf dem Spiegel `L`.
-    //
-    // Der ganze V13–V18-Wasser-Render-Bogen drehte um die Zell-Iso (Surface-Nets
-    // über die Flood-Zellen). Sie ist die WURZEL aller Restsymptome: sie sitzt
-    // ±1 m unter `L` (Granularität → „Seezentrum fällt"), ist ein VOLUMEN mit
-    // Unterseiten (→ „Wasser unter der Karte" an Nähten), definiert die Uferlinie
-    // GEOMETRISCH (→ „klettert die Küste hoch", obwohl der Tiefen-Shader sie pro
-    // Pixel lösen KÖNNTE), und behandelt SOLID neutral → zeichnet die Fläche QUER
-    // DURCH Strukturen auf `L` (→ Phantome an deren flachen Oberseiten). Jedes
-    // ausgelieferte Wasser-Spiel (Sea of Thieves, Unreal Water, No Man's Sky,
-    // Minecraft/Distant-Horizons) macht das Gegenteil: Wasser ist eine FLÄCHE auf
-    // der Wasserhöhe, mit dem Terrain durch den TIEFENPUFFER versöhnt — nie ein
-    // gemeshtes Volumen von Zellen. Unser Plan benannte das (U-W4 „L-Höhenfeld-
-    // Fläche"); HIER ist es gebaut.
-    //
-    // Das Höhenfeld: pro Eck-Vertex `L = _atlasWaterLevelAt(x,z, -Inf)` — der
-    // Körper-Spiegel, wenn die Spalte in/neben (±16 m, das 3×3-Atlas) einem
-    // Wasser-Körper liegt (inkl. Fluss-Gefälle → die Fläche fällt an Stufen =
-    // natürliche Wasserfälle), sonst -Inf (Land → keine Fläche). `-Inf` als
-    // terrainTop EXTENDED die Domäne ~16 m über die echte Uferlinie hinaus; den
-    // genauen Pixel-Verlauf des Ufers macht der Tiefen-Shader (`waterThick`,
-    // V13.5). KEINE Geometrie-Uferlinie → kein Klettern, keine Treppe.
-    //
-    // Naht-frei PER KONSTRUKTION: `L` ist ein geteiltes kontinuierliches Feld →
-    // zwei Nachbar-Chunks berechnen an der gemeinsamen Kante DENSELBEN `L` → die
-    // Vertices fallen zusammen (kein Smoothing, kein OOB-Iso, keine Zell-
-    // Granularität). Darum reitet die Fläche die TERRAIN-LOD gefahrlos (das war
-    // W2s Ziel — bei der Zell-Iso scheiterte es an der Höhen-Verschiebung der
-    // Vergröberung [DH #606]; auf `L` gibt es nichts zu verschieben).
-    //
-    // Einseitige Oberseite: die Wicklung gibt der Oberseite eine -Y-Normale →
-    // über die RÜCKSEITE sichtbar (das geteilte `hydroSurfaceMaterial` ist
-    // BackSide) → von oben sichtbar, von UNTEN front-gecullt = kein „Wasser unter
-    // der Karte". Der Unterwasser-Blick trägt der `playerEyesUnderwater`-Tint.
-    // Strukturen/Terrain schreiben Tiefe → sie verdecken die Fläche pro Pixel, wo
-    // sie über `L` ragen (→ kein Phantom an flachen Oberseiten).
-    //
-    // Die ZELLEN bleiben unangetastet: Physik (`_playerWaterContext`),
-    // Reaktivität (graben/dämmen → Zellen) + 3D-Höhlen-Wasser. Die Fläche LIEST
-    // die Zellen NICHT (sie liest `L`) → sie ist korrekt, auch wenn der Zell-Bau
-    // einen Frame nachhängt. Reaktivität: graben unter `L` → die Fläche (schon
-    // auf `L`) deckt die neue Tiefe, der Tiefen-Shader zeigt sie nass; dämmen
-    // ÜBER `L` → das Terrain verdeckt die Fläche (Tiefen-Test). (Aufgestaute
-    // Hoch-Becken über dem umgebenden `L` brauchen weiter die Zellen — eigener
-    // Faden.) Geht in dieselbe `voxelChunkWaterIso`-Map + denselben Dispose.
-    _buildVoxelChunkWaterSurfaceMesh(cx, cz, key) {
+    // W-A (V18.89→.92, wasser-plan §0 — der KANON): das ZELL-OBERKANTEN-SHEET,
+    // seit V18.92 der DEFAULT-Wasser-Render (Schöpfer-Sign-off „der Rest passt,
+    // genial" — der L-Film ist entfernt, "iso" bleibt Debug-A/B). Was §0 verlangt:
+    //   DOMÄNE AUS DEN ZELLEN — das Sheet existiert NUR über Spalten, die Wasser
+    //   TRAGEN (Flood/CA), + einem 1-Zell-Anker-Ring; NICHT über der 16-m-Rim-
+    //   Dilatation des frozen `L`. Damit fallen die Falt-Zonen (Auslauf/Mündung:
+    //   der L-Film spannte dort eine freie Platte über springendes `L` + trockenes
+    //   Terrain — gefaltetes Origami) strukturell weg.
+    //   KEINE KOMISCHEN KANTEN — der Anker-Ring TAUCHT unter das Terrain (die
+    //   Mesh-Kante liegt im Boden versteckt = die konvexe Verankerung; §0-Präzi-
+    //   sierung EINTAUCHEN ≠ KLIPPEN: die SICHTBARE Uferlinie bleibt der emergente
+    //   Terrain-Schnitt + der V13.5-Tiefen-Saum pro Pixel).
+    //   BETT GEFÜLLT (die V18.87-Lehre, das erste A/B-Kriterium) — die RUHE-Höhe
+    //   ist sub-zellig der Body-Spiegel: die Flood IST „gefüllt bis L", also tragen
+    //   die Zellen die DOMÄNE und `L` die Sub-Zell-Fraktion (clamp auf ±1 Zelle um
+    //   das Zell-Dach — kein abgesenkter Spiegel, keine entleerten Betten).
+    //   FLIESST — auf der Ruhe liegt der Live-CA-Delta (via `_caColumnScan`, der
+    //   eine Spalten-Kern) → das Sheet folgt dem Volumen (W-B: der CA ist die
+    //   Füll-Wahrheit, Quellen speisen, live-only-Spalten rendern).
+    //   KEINE BLOCKIGKEIT — wet-only-Glätten über die Spalten-Dächer (PAD=3, zwei
+    //   Pässe; ein nasses Dach mittelt nur über nasse Nachbarn → das Ufer wird
+    //   nicht zum Trockenen heruntergezogen).
+    //   KEIN KLETTERN — ein Höhenfeld über die Säulen-DÄCHER, nie die Zell-Iso-
+    //   Hülle (keine vertikalen water-solid-Seiten an Strukturen).
+    // NAHT: der Spalten-Resolver liest über die Chunk-Grenze (das V18.18-Muster) →
+    // beide Seiten rechnen die geteilten Rand-Spalten aus DENSELBEN Zellen; der
+    // PAD=3 deckt die volle Glätt-Reichweite der konsumierten Spalten (−1..dim) →
+    // naht-symmetrisch per Konstruktion. Fehlender Nachbar → eigene Rand-Spalte
+    // (Fallback, heilt beim 8-Nachbar-Re-Enqueue der Finalize/des CA, V18.0).
+    // Main-only (kein Worker/Determinismus); dieselbe Map + derselbe Dispose.
+    _buildVoxelChunkWaterCellSheet(cx, cz, key) {
         const entry = this.state.voxelChunks.get(key);
-        if (!entry) {
+        if (!entry || !entry.waterCells) {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
-        // Gleiches Gate wie die Zellen — ein Chunk trägt Fläche gdw. er Wasser hat.
-        if (!this._voxelChunkHasAnyWater(cx, cz)) {
+        // V18.91 — das Gate kennt das LIVE-Wasser: ein Chunk OHNE Atlas-Wasser kann
+        // trotzdem CA-Wasser TRAGEN (die Ausbreitung über die Grenze — Schöpfer-Befund
+        // „die Oberfläche geht nicht mit"). Hat er einen Level-Eintrag, entscheidet
+        // der Spalten-Scan, nicht der Atlas.
+        const levelMap = this.state.waterLevelCells;
+        if (!this._voxelChunkHasAnyWater(cx, cz) && !(levelMap && levelMap.has(key))) {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
-        // V18.22 — die Wasser-FLÄCHE lebt auf EINER LOD-Skala (LOD0), GENAU wie die
-        // Zellen (V9.93). Der Schöpfer-Befund: „du hast die Verbindung des Flusses
-        // beachtet, aber nicht wenn er GENAU AUF DER NAHT läuft — dann entstehen
-        // immer Sägezähne; Minecraft hat das längst gelöst." GEMESSEN (scripts/
-        // diag-water-lod-seam.cjs): die Surface-Chunks streamten auf GEMISCHTEN LODs
-        // (LOD0 neben LOD1) → die feineren LOD0-Vertices an der Naht fielen ZWISCHEN
-        // die gröberen LOD1-Vertices = ein T-junction-Riss = der „chunk transition"-
-        // Sägezahn. Das `L`-Höhenfeld ist zwar eine pure (x,z)-Funktion (an GETEILTEN
-        // Vertices naht-frei), aber bei unterschiedlicher Auflösung werden die Vertices
-        // NICHT geteilt → die gröbere Kante interpoliert linear unter/über den feineren
-        // L-Wert → der Riss. Die alte Annahme „die Fläche reitet die Terrain-LOD
-        // gefahrlos" war falsch; die V9.93-Lehre („naht-freie Schicht lebt auf EINER
-        // LOD-Skala") gilt für die Fläche GENAUSO wie für die Zellen. Der span ist
-        // LOD-invariant (dim·step = 43.2 m) → cx·span bleibt gleich, der Chunk kachelt
-        // korrekt. Render-only (main-only Surface-Mesh, kein Worker/Determinismus). Die
-        // aDepth/Cells sind ohnehin schon LOD0 (`colDepthAt`/`cfg0`) → jetzt teilt die
-        // Geometrie ihre Skala = vertex-für-vertex geteilte Naht über JEDE Chunk-Grenze.
-        const { dim, step, span } = this._voxelChunkConfig(0);
+        // Wie die Zellen + die Fläche: IMMER LOD0 (V9.93/V18.22 — eine Skala).
+        const cfg0 = this._voxelChunkConfig(0);
+        const dim = cfg0.dim,
+            dimY = cfg0.dimY,
+            step = cfg0.step,
+            span = cfg0.span;
         const ox = cx * span;
         const oz = cz * span;
+        const oy = (this.state.terrainBaseHeight || 0) - cfg0.floorDrop;
+        const dimSq = dim * dim;
         const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        // `L` pro Eck-Vertex ((dim+1)²). `_atlasWaterLevelAt(x,z,-Inf)`: Körper-
-        // Spiegel in/neben einem Wasser-Körper (Ozean/See/Fluss-Gefälle), sonst
-        // -Inf. -Inf als terrainTop hebt das Rim-Gate → die Fläche reicht ~16 m
-        // über die Uferlinie (der Tiefen-Shader blendet pro Pixel aus).
+        // V18.91 — OBERFLÄCHENSPANNUNG (Schöpfer: „nicht geknäulte Alufolie — das
+        // Terrain-Sheet ist deutlich glatter"): VIER Glätt-Pässe (Radius 1) statt zwei,
+        // browser-justierbar (0..6, der Schöpfer dirigiert die Spannung live):
+        //   anazhRealm.state.atmosphere.waterSheetSmooth = 6  (+ Modus neu wählen → re-mesh)
+        // PAD = Pässe + 1 (die Abhängigkeits-Kegel der konsumierten Spalten −1..dim
+        // bleiben voll im Grid → naht-symmetrisch EXAKT, wie GEMESSEN Δy=0).
+        const smoothRaw =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterSheetSmooth)
+                ? Math.round(this.state.atmosphere.waterSheetSmooth)
+                : 4;
+        const SMOOTH_PASSES = Math.max(0, Math.min(6, smoothRaw));
+        const PAD = SMOOTH_PASSES + 1;
+        const GW = dim + 2 * PAD;
+        const topG = new Float64Array(GW * GW).fill(NaN); // NaN = trocken
+        const solidG = new Float64Array(GW * GW); // Boden-Anker (Unterkante der höchsten SOLID-Zelle)
+        const depthG = new Float64Array(GW * GW); // Wasser-Säulen-Dicke (aDepth)
+        for (let ck = -PAD; ck < dim + PAD; ck++) {
+            for (let ci = -PAD; ci < dim + PAD; ci++) {
+                const gi = ci + PAD + (ck + PAD) * GW;
+                // Nachbar-Redirect (V18.18-Muster; PAD < dim → ein Schritt genügt).
+                let ncx = cx,
+                    ncz = cz,
+                    li = ci,
+                    lk = ck;
+                if (li < 0) {
+                    ncx -= 1;
+                    li += dim;
+                } else if (li >= dim) {
+                    ncx += 1;
+                    li -= dim;
+                }
+                if (lk < 0) {
+                    ncz -= 1;
+                    lk += dim;
+                } else if (lk >= dim) {
+                    ncz += 1;
+                    lk -= dim;
+                }
+                let src = entry.waterCells;
+                let srcKey = key;
+                let dryFallback = false;
+                if (ncx !== cx || ncz !== cz) {
+                    const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
+                    if (nb && nb.waterCells) {
+                        src = nb.waterCells;
+                        srcKey = `${ncx},${ncz}`;
+                    } else {
+                        // V18.93 — SYMMETRIE-Fallback: ein fehlender/trockener Nachbar zählt
+                        // TROCKEN (reader-UNABHÄNGIG — GEMESSEN: der alte Clamp auf die eigene
+                        // Rand-Spalte gab zwei Chunks am 4-Ecken-Punkt VERSCHIEDENE Pad-Werte
+                        // → 6.6-cm-Naht); der Boden (nur für den Anker) kommt aus der eigenen
+                        // Rand-Spalte. Ein UNGELADENER Nass-Nachbar heilt beim Re-Enqueue.
+                        li = Math.max(0, Math.min(dim - 1, ci));
+                        lk = Math.max(0, Math.min(dim - 1, ck));
+                        src = entry.waterCells;
+                        srcKey = key;
+                        dryFallback = true;
+                    }
+                }
+                const level = levelMap ? levelMap.get(srcKey) : undefined;
+                const sc = this._caColumnScan(src, level, li + lk * dim, dimSq, dimY);
+                solidG[gi] = sc.solidTopJ >= 0 ? oy + sc.solidTopJ * step : oy;
+                if (dryFallback) continue; // trocken — topG bleibt NaN (symmetrisch)
+                // V18.91 — LIVE-ONLY-Spalten sind NASS (Schöpfer: „die Oberfläche geht
+                // nicht mit"): Wasser, das der CA in flood-trockene Spalten trug (die
+                // Ausbreitung), rendert ab Level > 0.5 — Top = Live-Dach (sub-zellig
+                // via liveFrac), kein L-Anker (es IST jenseits der statischen Domäne).
+                if (sc.floodTopJ < 0) {
+                    if (level && sc.liveTopJ >= 0) {
+                        topG[gi] = oy + (sc.liveTopJ + sc.liveFrac) * step;
+                        depthG[gi] = Math.max(0, (sc.liveTopJ - sc.solidTopJ) * step);
+                    }
+                    continue; // sonst trocken (topG bleibt NaN)
+                }
+                const faceY = oy + (sc.floodTopJ + 1) * step; // Zell-Dach (quantisiert)
+                // RUHE: sub-zellig der Body-Spiegel `L` (die Flood ist „gefüllt bis L");
+                // clamp auf ±1 Zelle um das Dach (Schutz gegen Atlas/Zell-Drift).
+                const wx = ox + (ci + 0.5) * step;
+                const wz = oz + (ck + 0.5) * step;
+                const L = this._atlasWaterLevelAt(wx, wz, -Infinity);
+                let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
+                // LIVE: der CA-Delta obendrauf (Live-Dach − Flood-Dach, geclampt).
+                if (level) {
+                    const floodRel = (sc.floodTopJ + 1) * step;
+                    const liveRel = sc.liveTopJ < 0 ? 0 : (sc.liveTopJ + sc.liveFrac) * step;
+                    let d = liveRel - floodRel;
+                    if (d > -0.05 && d < 0.05) d = 0;
+                    top += Math.max(-14, Math.min(4, d));
+                }
+                topG[gi] = top;
+                depthG[gi] = Math.max(0, (sc.floodTopJ - sc.solidTopJ) * step);
+            }
+        }
+        // V18.92 — der BODEN-ANKER ist ÜBERHANG-BLIND (Schöpfer: „ein Teil vom Fluss
+        // springt zum FLIEGENDEN GEBÄUDE darüber"): `solidG` aus dem Top-down-Scan
+        // nimmt die erste SOLID-Zelle VON OBEN — unter einem schwebenden Bau/Überhang
+        // ist das der BAU, nicht der Boden → der Anker-Ring sprang in den Himmel
+        // (+ die Sliver-Dreiecke am Donut-Rand). Für die TROCKENEN Anker-Spalten
+        // (≥1 nasser 4-Nachbar) wird der Boden NEU gesucht: die erste SOLID-Zelle
+        // UNTERHALB des höchsten Nachbar-Wasserdachs — das Wasser verankert sich am
+        // UFER-FUSS, nie an Dingen ÜBER dem Wasser. Nasse Spalten brauchen das nicht
+        // (per V13.12-Vertikal-offen existiert kein SOLID über ihrem Wasser →
+        // solid-von-oben == Boden).
+        const SOLID_CS = AnazhRealm.CELL_STATE.SOLID;
+        for (let ck = -PAD; ck < dim + PAD; ck++) {
+            for (let ci = -PAD; ci < dim + PAD; ci++) {
+                const gi = ci + PAD + (ck + PAD) * GW;
+                if (!Number.isNaN(topG[gi])) continue; // nass → Boden stimmt schon
+                let nbTop = -Infinity;
+                if (ci + 1 < dim + PAD) {
+                    const v = topG[gi + 1];
+                    if (!Number.isNaN(v) && v > nbTop) nbTop = v;
+                }
+                if (ci - 1 >= -PAD) {
+                    const v = topG[gi - 1];
+                    if (!Number.isNaN(v) && v > nbTop) nbTop = v;
+                }
+                if (ck + 1 < dim + PAD) {
+                    const v = topG[gi + GW];
+                    if (!Number.isNaN(v) && v > nbTop) nbTop = v;
+                }
+                if (ck - 1 >= -PAD) {
+                    const v = topG[gi - GW];
+                    if (!Number.isNaN(v) && v > nbTop) nbTop = v;
+                }
+                if (nbTop === -Infinity) continue; // kein Wasser angrenzend → Anker irrelevant
+                // Redirect wie im Grid-Pass (eigene Rand-Spalte als Fallback).
+                let ncx = cx,
+                    ncz = cz,
+                    li = ci,
+                    lk = ck;
+                if (li < 0) {
+                    ncx -= 1;
+                    li += dim;
+                } else if (li >= dim) {
+                    ncx += 1;
+                    li -= dim;
+                }
+                if (lk < 0) {
+                    ncz -= 1;
+                    lk += dim;
+                } else if (lk >= dim) {
+                    ncz += 1;
+                    lk -= dim;
+                }
+                let src = entry.waterCells;
+                if (ncx !== cx || ncz !== cz) {
+                    const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
+                    if (nb && nb.waterCells) src = nb.waterCells;
+                    else {
+                        li = Math.max(0, Math.min(dim - 1, ci));
+                        lk = Math.max(0, Math.min(dim - 1, ck));
+                        src = entry.waterCells;
+                    }
+                }
+                const colBase = li + lk * dim;
+                const fromJ = Math.min(dimY - 1, Math.floor((nbTop - oy) / step) + 1);
+                let gj = -1;
+                for (let j = fromJ; j >= 0; j--) {
+                    if (src[colBase + j * dimSq] === SOLID_CS) {
+                        gj = j;
+                        break;
+                    }
+                }
+                solidG[gi] = gj >= 0 ? oy + gj * step : oy;
+            }
+        }
+        // Wet-only-Glätten (SMOOTH_PASSES × Radius 1 — die Oberflächenspannung): nimmt
+        // die 1.8-m-Treppen + die CA-Stufen-Fronten, ohne das Ufer zum Trockenen zu
+        // ziehen (trocken bleibt trocken/NaN).
+        let cur = topG;
+        let buf = new Float64Array(GW * GW);
+        for (let pass = 0; pass < SMOOTH_PASSES; pass++) {
+            buf.fill(NaN);
+            for (let g = 0; g < GW * GW; g++) {
+                if (Number.isNaN(cur[g])) continue;
+                const gx = g % GW;
+                const gz = (g / GW) | 0;
+                let sum = 0;
+                let n = 0;
+                for (let dz2 = -1; dz2 <= 1; dz2++) {
+                    for (let dx2 = -1; dx2 <= 1; dx2++) {
+                        const nx = gx + dx2;
+                        const nz = gz + dz2;
+                        if (nx < 0 || nz < 0 || nx >= GW || nz >= GW) continue;
+                        const v = cur[nx + nz * GW];
+                        if (!Number.isNaN(v)) {
+                            sum += v;
+                            n++;
+                        }
+                    }
+                }
+                buf[g] = sum / n;
+            }
+            const t = cur;
+            cur = buf;
+            buf = t;
+        }
+        const tops = cur;
+        const colTop = (ci, ck) => tops[ci + PAD + (ck + PAD) * GW];
+        const colWet = (ci, ck) => !Number.isNaN(colTop(ci, ck));
+        // V18.94 — SLOPE pro Spalte (|∇top| der geglätteten Dächer): treibt das
+        // WILDWASSER im Shader (steile Läufe schäumen weiss = der Wasserfall-Look
+        // auf Läufen). Nass↔nass = Dach-Gefälle; nass↔trocken zählt NUR als LIPPE,
+        // wenn der trockene Boden WEIT unter dem Dach liegt (> 3 m → Vorhang/Fall) —
+        // normale Ufer (Boden nahe Spiegel) bleiben ruhig.
+        const slopeG = new Float32Array(GW * GW);
+        for (let gz = 1; gz < GW - 1; gz++) {
+            for (let gx = 1; gx < GW - 1; gx++) {
+                const g = gx + gz * GW;
+                const t0 = tops[g];
+                if (Number.isNaN(t0)) continue;
+                let mx = 0;
+                for (const nb of [g - 1, g + 1, g - GW, g + GW]) {
+                    const tn = tops[nb];
+                    let d = 0;
+                    if (!Number.isNaN(tn)) d = Math.abs(t0 - tn) / step;
+                    else if (solidG[nb] < t0 - 3) d = Math.min(4, (t0 - solidG[nb]) / step);
+                    if (d > mx) mx = d;
+                }
+                slopeG[g] = mx;
+            }
+        }
+        // Vertex-Grid (dim+1)²: Vertex (i,k) = Ecke der Spalten (i−1,k−1)…(i,k).
         const NV = dim + 1;
-        const Lg = new Float64Array(NV * NV);
-        let anyWet = false;
-        for (let k = 0; k <= dim; k++) {
-            const wz = oz + k * step;
-            for (let i = 0; i <= dim; i++) {
-                const L = this._atlasWaterLevelAt(ox + i * step, wz, -Infinity);
-                Lg[i + k * NV] = L;
-                if (L > -Infinity) anyWet = true;
-            }
-        }
-        if (!anyWet) {
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        // V18.22 — EIN-ZELL-DILATION der L-Domäne gegen den CHUNKGRENZE-SCHNITT (Schöpfer
-        // „zum zigsten Mal": das Wasser fliesst NICHT über die Chunkgrenze hinaus; Seen in
-        // der Ecke / Flüsse parallel an der Naht erscheinen GESCHNITTEN). GEMESSEN
-        // (`scripts/diag-water-boundary-cut.cjs`): 9.8 % der sichtbar-nassen Rand-Positionen
-        // sind in EINEM Chunk-Mesh, im Nachbarn nicht. WURZEL: die all-4-Ecken-Quad-Regel
-        // (`l00..l11 > -Inf`) ERODIERT die Wasserkante um bis zu eine Zelle — eine Rand-Zelle
-        // mit nur 1–3 nassen Ecken wird NICHT emittiert. Fällt diese Erosion auf eine Naht,
-        // rendert die Seite mit nasser Innen-Ecke bis zur Grenze, die andere (Innen-Ecke
-        // trocken) NICHT → ein harter Schnitt in tiefem Wasser, GENAU AUF DER NAHT. (Der Gate
-        // verfehlt NICHTS — GATE-MISS=0 gemessen; es ist die Quad-Erosion.) HEILUNG (der
-        // „Minecraft"-Weg, das Wasser fliesst über): jede TROCKENE Ecke mit ≥1 nassem 4-Nachbarn
-        // bekommt einen Fallback-Spiegel (max der nassen Nachbarn) → die Quad-Erosion fällt weg,
-        // BEIDE Chunk-Seiten decken die Grenze symmetrisch (jede Seite dilatiert ihre eigene
-        // Rand-Zelle aus dem GETEILTEN Grenz-Vertex → konsistent, kein Doppel-Render). Die EINE
-        // über-deckte Zelle (1.8 m) liegt jenseits der L-Domäne = trockenes Land, das das
-        // ansteigende Terrain pro Pixel okkludiert (V18.16-Prinzip: Geometrie grosszügig,
-        // Sichtbarkeit aus der Tiefe — KEINE Geometrie-Maske, kein Sägezahn; KEIN 16-m-Rim,
-        // kein Phantom). EIN Pass aus dem ORIGINAL `Lg` (kein Kaskadieren → genau eine Zelle).
-        // V18.28 — die Dilation liest die GLOBALE Nachbarschaft (auch ÜBER die Chunkgrenze),
-        // nicht nur das lokale Gitter (Schöpfer „an der Grenze/Ecke stappelt sich das Problem,
-        // da 4 Chunks aufeinander kommen"). Bis V18.27 verfehlte ein Rand-Vertex (i=0/dim) seinen
-        // Nachbarn JENSEITS der Grenze (out-of-grid → übersprungen) → Chunk A dilatierte ihn aus
-        // SEINEN Nachbarn, Chunk B aus SEINEN → an der Ecke 4 verschiedene Lesarten = der Riss.
-        // Jetzt liest `nbL` out-of-grid den globalen Spiegel (`_atlasWaterLevelAt`, pure (x,z)) →
-        // ALLE Chunks sehen für den geteilten Rand/Ecken-Vertex DIESELBEN 4 Nachbarn → identische
-        // Dilation, naht-frei per Konstruktion (die V9.79-Pad-Lehre auf die Dilation). Nur die
-        // Rand-Ring-Vertices rufen `_atlasWaterLevelAt` (~4·dim/Chunk) → billig.
-        const Ld = Lg.slice();
-        const nbL = (ni, nk) => {
-            if (ni >= 0 && ni <= dim && nk >= 0 && nk <= dim) return Lg[ni + nk * NV];
-            return this._atlasWaterLevelAt(ox + ni * step, oz + nk * step, -Infinity);
-        };
-        for (let k = 0; k <= dim; k++) {
-            for (let i = 0; i <= dim; i++) {
-                const idx = i + k * NV;
-                if (Lg[idx] > -Infinity) continue; // schon nass
-                let best = -Infinity;
-                const a = nbL(i - 1, k);
-                if (a > best) best = a;
-                const b = nbL(i + 1, k);
-                if (b > best) best = b;
-                const c = nbL(i, k - 1);
-                if (c > best) best = c;
-                const d = nbL(i, k + 1);
-                if (d > best) best = d;
-                if (best > -Infinity) Ld[idx] = best;
-            }
-        }
         const positions = [];
         const indices = [];
         const aFlow = [];
         const aWave = [];
-        // V18.14 — DIE MAKRO-KONTEXT-SCHNITTSTELLE (Schöpfer „die Systeme reden nicht
-        // miteinander"): der Shader bekommt den MAKRO-Kontext pro Vertex (eine Quelle,
-        // viele Leser — wie das Aura-Feld), statt überall dasselbe Mikro-Rezept.
-        // `aDepth` = die ECHTE Wassertiefe (Wasser-Spalten-Höhe aus den Flood-Zellen) →
-        // der Shader schäumt nur die echte Uferlinie (Tiefe→0), NICHT den ganzen flachen
-        // Fluss (GEMESSEN `diag-water-systems`: Fluss median 1.31 m vs See/Ozean 5–6 m →
-        // der alte Tiefen-Schaum hielt den flachen Fluss für „lauter Uferlinie" = das Chaos).
         const aDepth = [];
-        const STATE = AnazhRealm.CELL_STATE;
-        const cells = entry.waterCells;
-        const cfg0 = this._voxelChunkConfig(0);
-        const dim0 = cfg0.dim;
-        const step0 = cfg0.step;
-        const dimY0 = cfg0.dimY;
-        const dq0 = dim0 * dim0;
-        // V18.31 — der browser-justierbare Auslauf-Übergang (Default 3.0). EINMAL pro Mesh-Build
-        // gelesen (nicht pro Vertex). Klein = scharfer Bodenkontakt, gross = sanfter Übergang.
-        const outflowSlope =
-            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
-                ? this.state.atmosphere.waterOutflowSlope
-                : 6.0;
-        // V18.16 — KEINE Zell-Maske auf der Geometrie (der Profi-Weg, V18.10 bestätigt):
-        // die Fläche bleibt grosszügig auf der `L`-Domäne (~16 m über die Uferlinie), die
-        // SICHTBARKEIT trägt der Tiefen-Shader PRO PIXEL aus der echten Meter-Tiefe `aDepth`
-        // (→0 an der echten Wasserkante → Alpha→0). Die V18.8/.15-Zell-Maske quantisierte die
-        // Ausdehnung aufs LOD0-Gitter → der SÄGEZAHN am Ufer (Schöpfer „das Seeufer war
-        // korrekt, jetzt Sägezahn"); ein per-Pixel-aDepth-Fade ist glatt (lineare Interpolation
-        // + smoothstep) und tötet zugleich das „Schweben" des Fluss-Ribbons (aDepth=0 → unsichtbar).
-        // V18.18 — `colDepthAt`: die WATER-Spalten-Tiefe einer LOD0-Zelle, NACHBAR-LESEND am
-        // Chunk-Rand (das V13.13.2-Muster). Die fernen Rand-Vertices (ci=dim0, eine Zelle ausser
-        // Reichweite) lasen sonst aDepth=0 → ein Schaum-/Farb-Streifen an JEDER Chunk-Fernkante
-        // = die FLUSS-Chunknaht (GEMESSEN `diag-river-seam`: ferne Kante 0 % nass vs Interieur
-        // 50 %). Bei tiefen Seen gated `shoreLine` den Schaum weg → unsichtbar; bei flachen
-        // Flüssen (shoreLine≈1) sichtbar → DARUM Fluss und nicht See. Hier liest der ferne
-        // Vertex die ZELLE DES NACHBARN (wo die Fluss-Fortsetzung wirklich liegt — die thin-
-        // Ribbon-Zelle ist oft erst jenseits der Grenze) = EXAKT der Wert, den die Nachbar-
-        // Nahkante liest → naht-frei. Nachbar nicht gestreamt → die eigene Rand-Zelle (Fallback;
-        // `_finalizeVoxelChunkBuild` re-enqueued diesen Chunk, wenn der Nachbar kommt → heilt).
-        const colDepthAt = (ci, ck) => {
-            if (!cells) return 0;
-            let ncx = cx,
-                ncz = cz,
-                li = ci,
-                lk = ck;
-            if (ci >= dim0) {
-                ncx = cx + 1;
-                li = ci - dim0;
-            } else if (ci < 0) {
-                ncx = cx - 1;
-                li = ci + dim0;
-            }
-            if (ck >= dim0) {
-                ncz = cz + 1;
-                lk = ck - dim0;
-            } else if (ck < 0) {
-                ncz = cz - 1;
-                lk = ck + dim0;
-            }
-            let src = cells;
-            if (ncx !== cx || ncz !== cz) {
-                const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
-                if (nb && nb.waterCells) src = nb.waterCells;
-                else {
-                    // Nachbar fehlt/leer → die eigene Rand-Zelle (clamp), bis er kommt.
-                    li = ci < 0 ? 0 : ci >= dim0 ? dim0 - 1 : ci;
-                    lk = ck < 0 ? 0 : ck >= dim0 ? dim0 - 1 : ck;
-                    src = cells;
-                }
-            }
-            const base = li + lk * dim0;
-            let wc = 0;
-            for (let j = 0; j < dimY0; j++) if (src[base + j * dq0] === STATE.WATER) wc++;
-            return wc * step0;
-        };
+        const aSlope = [];
         const vmap = new Int32Array(NV * NV).fill(-1);
         const addVert = (i, k) => {
             const vi = i + k * NV;
             if (vmap[vi] >= 0) return vmap[vi];
             const wx = ox + i * step;
             const wz = oz + k * step;
-            const L = Ld[vi]; // V18.22 — die dilatierte Domäne (Original + 1-Zell-Rand)
-            // aDepth — die ECHTE Wassertiefe (Anzahl WATER-Zellen × step) aus dem Flood-
-            // Feld; der Shader schäumt nur, wo sie klein ist (die echte Uferlinie), M1.
-            // V18.18 — `colDepthAt` liest am Chunk-Rand die NACHBAR-Zelle (kein aDepth=0-
-            // Streifen mehr = die geheilte Fluss-Chunknaht; s.o.).
-            const ci0 = Math.floor((wx - ox) / step0);
-            const ck0 = Math.floor((wz - oz) / step0);
-            const depthM = colDepthAt(ci0, ck0);
-            // T4b — die Fläche FOLGT dem LIVE CA-Level (0 im Ruhe-Zustand → bit-identisch zur statischen
-            // `L`; nach einem Carve senkt/hebt sie sich → das Wasser fliesst sichtbar). S. `_caWaterTopDelta`.
-            const caDelta = this._caWaterTopDelta(cx, cz, ci0, ck0);
-            // V18.31 — DAS AUSLAUF-WASSER FOLGT DEM TERRAIN (Bodenkontakt) statt als flache
-            // L-Platte unter den Boden zu tauchen. Schöpfer-Befund (Browser, nach V18.30): „es
-            // hebt einfach das vertikale Element, verliert den Kontakt zum Boden — das ist noch
-            // nicht wie die Profis; können wir die Oberfläche konvex machen ODER an den Seiten
-            // Mesh-Elemente ansetzen, bis es sauber in den Boden fliesst?". WURZEL: V18.25/.30
-            // DRÜCKTE die Über-Deckung UNTER den Boden (`surfY = tY−1`, Okklusion) — im
-            // smoothstep-Blend SCHWEBTE sie aber (grosses slopeW = breiter Blend = das Wasser
-            // bleibt lange nahe L, bevor es abtaucht → das „hebt das Element, verliert Kontakt").
-            // DER PROFI-WEG (Witcher 3 / RDR2 / Minecraft: Fluss-Wasser folgt dem Terrain, nur
-            // echte Klippen sind ein separater Wasserfall): das Auslauf-Wasser legt sich als DÜNNE
-            // SCHICHT (`skirt`) AUF das gerenderte Terrain → es fliesst sichtbar in den Boden,
-            // verliert NIE den Kontakt, so steil wie das Terrain selbst (natürlich); der Tiefen-
-            // Shader fadet die dünne Schicht pro Pixel (durchscheinend = fluidisch). Das ist die
-            // „Mesh-Elemente bis zum Boden"-Idee des Schöpfers, ohne neue Geometrie — die
-            // bestehende Über-Deckungs-Fläche FOLGT jetzt dem Terrain, statt darüber zu schweben.
-            // Dünnes Ufer (thickness ≤ thinBand) bleibt FLACH bei L (See füllt bis ans Ufer, V18.26).
-            let surfY = L + caDelta;
-            if (depthM < step0) {
-                // Die Boden-Höhe `tY` MUSS das GERENDERTE Terrain treffen — sonst schwebt das
-                // Wasser sichtbar (der „verliert Kontakt"-Befund). `colTerrainY` (die Zell-Oberkante)
-                // verfehlt die echte Mesh-Iso um bis ±step0/2 (1.8-m-Treppe) → das Restschweben; eine
-                // 5er-Glättung half NICHT (sie mittelt an Kanten HOCH → schwebt über der tieferen
-                // Seite). Stattdessen: ein kurzer Density-Iso-Scan ab knapp über L abwärts
-                // (`_terrainDensityAt`, pure (x,z,y) → naht-frei, glatt, EXAKT die Mesh-Oberfläche).
-                // Im Auslauf liegt die Oberfläche knapp unter L → wenige 1-m-Schritte = billig (das
-                // teure `_voxelSurfaceY` scannt von der Decke = ~150 m unnötig; hier nur ~max 34 m).
-                let tY = -Infinity;
-                let prevY = L + 2;
-                let prevD = this._terrainDensityAt(wx, prevY, wz);
-                for (let yy = L + 1; yy >= L - 32; yy -= 1.0) {
-                    const d = this._terrainDensityAt(wx, yy, wz);
-                    if (d > 0) {
-                        // EXAKTE Iso-Höhe (Density=0) zwischen dem letzten AIR (prevD≤0) und diesem
-                        // SOLID linear interpoliert → kontinuierlich (KEINE 1-m-Scan-Stufen → die
-                        // künstliche Treppen-Neigung fällt weg, das Wasser folgt dem Terrain glatt).
-                        tY = prevD <= 0 ? prevY + (yy - prevY) * (prevD / (prevD - d)) : yy;
-                        break;
-                    }
-                    prevY = yy;
-                    prevD = d;
+            let sum = 0;
+            let n = 0;
+            let dsum = 0;
+            let slopeMax = 0;
+            let anchor = Infinity;
+            for (const [aci, ack] of [
+                [i - 1, k - 1],
+                [i, k - 1],
+                [i - 1, k],
+                [i, k],
+            ]) {
+                const gi2 = aci + PAD + (ack + PAD) * GW;
+                const v = colTop(aci, ack);
+                if (!Number.isNaN(v)) {
+                    sum += v;
+                    n++;
+                    dsum += depthG[gi2];
+                    if (slopeG[gi2] > slopeMax) slopeMax = slopeG[gi2];
                 }
-                // Fallback, wo der 34-m-Scan kein Terrain trifft (sehr dicke Über-Deckung):
-                // das glatte Makro-Terrain (selten → bezahlbar).
-                if (tY === -Infinity) tY = this._terrainMacroSurfaceY(wx, wz);
-                if (tY > -Infinity && tY < L) {
-                    const thickness = L - tY;
-                    const thinBand = 2.5;
-                    // V18.31 — `skirt`: die dünne Wasserschicht ÜBER dem Boden (Kontakt, sichtbar);
-                    // der Tiefen-Shader fadet sie → durchscheinendes, fliessendes Wasser. `outflowSlope`
-                    // (Regler) = die Breite des Ufer→Boden-Übergangs: klein = das Wasser erreicht
-                    // schnell den Boden (scharfer Kontakt), gross = sanfter (schwebt im Übergang länger).
-                    const skirt = 0.6;
-                    const u = Math.max(0, Math.min(1, (thickness - thinBand) / outflowSlope));
-                    const s = u * u * (3 - 2 * u); // smoothstep
-                    const followY = Math.min(L, tY + skirt); // das Wasser AUF dem Boden (Kontakt)
-                    surfY = L + (followY - L) * s; // s=0→L (Ufer flach), s=1→Boden+skirt (Kontakt, nie schwebend)
-                }
+                const sv = solidG[gi2];
+                if (sv < anchor) anchor = sv;
             }
+            // Nasser Vertex: das geglättete Wasser-Dach. Anker-Vertex (kein nasser
+            // Nachbar): UNTER das Terrain — `solidG` ist die UNTERKANTE der höchsten
+            // SOLID-Zelle = sicher ≥ ~0.9 m unter der gerenderten Iso; das MIN über
+            // die 4 Nachbar-Spalten (GEMESSEN, nicht MAX: an Klippen/Überhängen
+            // griffe das MAX die WAND/DECKE → die Kante schwebte bis +24 m) folgt
+            // der NIEDRIGSTEN angrenzenden Boden-Spalte → die Kante taucht am
+            // Ufer-Fuß ein, der steigende Boden okkludiert sie pro Pixel.
+            const surfY = n > 0 ? sum / n : anchor - 0.5;
+            const depthM = n > 0 ? dsum / n : 0;
             const id = positions.length / 3;
             positions.push(wx, surfY, wz);
-            // aWave: 1 = Ozean (Spiegel ≈ Meereshöhe) → Gerstner-Wellen; 0 = See/Fluss
-            // (ruhig). V18.14 — WEICHE Rampe statt hartem 0/1-Flip → die Fluss↔Ozean-
-            // MÜNDUNG fadet, statt zu stossen (M2: der alte `< 1.5`-Schalter war die
-            // harsche Kante; gemessen 11 % der Fluss-Punkte trugen fälschlich Ozean-Wellen).
-            aWave.push(Math.max(0, Math.min(1, 1 - (Math.abs(L - waterLevel) - 0.8) / 2.0)));
+            // aWave: weiche Ozean-Rampe (V18.14) — auf dem Sheet-Spiegel statt `L`.
+            aWave.push(Math.max(0, Math.min(1, 1 - (Math.abs(surfY - waterLevel) - 0.8) / 2.0)));
             aDepth.push(depthM);
-            // aFlow — die Fluss-Strömung GEGLÄTTET (Schöpfer-Naht-Befund „an der
-            // Chunknaht plötzlich quer zur Strömung + anders skaliert"): `_hydroRiverAt`
-            // gibt eine D8-quantisierte Segment-Strömung → an den Segment-Grenzen
-            // SPRINGT sie 45° → die Foam-Strähnen im Shader reorientieren (der sichtbare
-            // Flip). Die Strömungs-RICHTUNG über ein 27-m-Fenster (3×3 @ 9 m) gemittelt
-            // glättet die Quantisierungs-Stufen, die Richtung (bergab) bleibt. GEMESSEN
-            // (`scripts/diag-water-flow.cjs`): die >45°-Sprünge zwischen Nachbar-Punkten
-            // fallen von 10 % (roh) auf 0.7 %. (Der rohe ∇L-Gradient war GEMESSEN
-            // SCHLECHTER — er folgt dem Terrain-Rauschen, nicht dem Tal-Trend, 180°-Flips
-            // → bewusst NICHT genommen; die Lehre: „lies eine Neigung" braucht die GLATTE
-            // Skala, nicht den 1,8-m-Gradienten.)
+            aSlope.push(n > 0 ? slopeMax : 0);
+            // aFlow — identisch zur Fläche (V18.11/.24): 3×3-geglättete Fluss-Strömung,
+            // Magnitude tapert zur Mündung/Bank.
             let sfx = 0;
             let sfz = 0;
             for (let dz = -1; dz <= 1; dz++) {
@@ -20412,33 +20479,21 @@ class AnazhRealm {
                     }
                 }
             }
-            // V18.24 — die MÜNDUNG fadet (Schöpfer „in und aus dem Fluss ein WAHRER Fade, die
-            // Grenzen die Strömung kennen, sauberer Makroflow"): die aFlow-MAGNITUDE TAPERT jetzt
-            // statt auf 1 normalisiert (binär Fluss/still) zu sein. `sfx/sfz` ist die Summe der
-            // 9 Einheits-Strömungsvektoren im 3×3-Fenster; `|(sfx,sfz)|/9` = ABDECKUNG×AUSRICHTUNG
-            // ∈ [0,1]: ~1 im ausgerichteten Fluss-Kern, abklingend zur Mündung/Bank (weniger
-            // Fluss-Samples) und an Konfluenzen (widersprüchliche Richtungen heben sich auf). So
-            // wird die Strömung ein GLATTES Makro-Feld: der See nahe der Mündung trägt eine
-            // Rest-Strömung (kleine fmag) → der Shader fadet die Fluss-Strähnen in den See (die
-            // Grenze „kennt" die Strömung), statt hart zu schalten. Die RICHTUNG bleibt geglättet
-            // (V18.11). Division durch die feste 9 (nicht durch m) bewahrt die Magnitude.
             aFlow.push(sfx / 9, sfz / 9);
             vmap[vi] = id;
             return id;
         };
+        // Quad-Emission: eine Zelle (i,k) rendert, wenn IHRE Spalte nass ist ODER
+        // ein 4-Nachbar (→ der 1-Zell-Anker-Ring, dessen Außen-Vertices eintauchen).
         for (let k = 0; k < dim; k++) {
             for (let i = 0; i < dim; i++) {
-                const l00 = Ld[i + k * NV];
-                const l10 = Ld[i + 1 + k * NV];
-                const l01 = Ld[i + (k + 1) * NV];
-                const l11 = Ld[i + 1 + (k + 1) * NV];
-                if (!(l00 > -Infinity && l10 > -Infinity && l01 > -Infinity && l11 > -Infinity)) continue;
+                if (!(colWet(i, k) || colWet(i - 1, k) || colWet(i + 1, k) || colWet(i, k - 1) || colWet(i, k + 1)))
+                    continue;
                 const v00 = addVert(i, k);
                 const v10 = addVert(i + 1, k);
                 const v01 = addVert(i, k + 1);
                 const v11 = addVert(i + 1, k + 1);
-                // Wicklung → -Y-Normale (Oberseite über die Rückseite sichtbar =
-                // BackSide; von unten gecullt). Dieselbe Konvention wie die Iso.
+                // Wicklung → -Y-Normale (BackSide-Oberseite), wie Fläche + Iso.
                 indices.push(v00, v10, v01, v11, v01, v10);
             }
         }
@@ -20451,7 +20506,8 @@ class AnazhRealm {
         geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(aFlow, 2));
         geom.setAttribute("aWave", new THREE.Float32BufferAttribute(aWave, 1));
         geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(aDepth, 1));
-        // aShore wird vom Tiefen-Shader getragen → 0 (wie die Iso).
+        geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(aSlope, 1));
+        // aShore trägt der Tiefen-Shader → 0 (wie Fläche + Iso).
         geom.setAttribute("aShore", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
         geom.setIndex(indices);
         const mat = this._ensureHydroSurfaceMaterial();
@@ -20464,7 +20520,7 @@ class AnazhRealm {
         mesh.renderOrder = 1; // transparent — nach den opaken Objekten
         mesh.userData = {
             isHydrosphere: true,
-            hydroKind: "chunk-water-surface",
+            hydroKind: "chunk-water-cellsheet",
             voxelChunkX: cx,
             voxelChunkZ: cz,
         };
@@ -21307,6 +21363,23 @@ class AnazhRealm {
         // Edit-Punkt. Streaming (ferne neue Chunks) deferred weiter.
         if (syncWater) this._buildVoxelChunkWaterIsoSurface(cx, cz);
         else this._enqueueWaterIso(cx, cz);
+        // V18.93 — WAKE-ON-STREAM, JETZT GEBÄNDIGT (T4-Plan §7 ENTSCHIEDEN + GEMESSEN):
+        // jeder einstreamende Wasser-Chunk weckt den CA einmal → die Welt-Wasser-Substanz
+        // LEBT von allein (Fluss-Skins breiten sich aus, Schelf-Lücken füllen, dann Settle).
+        // Der V18.92-Badewannen-Befund (12.5 m Flutung gegen den LOD-Ring-Damm) ist durch
+        // ZWEI Regeln geheilt (beide GEMESSEN, diag-water-sources E): den DISTANZ-DECAY
+        // (CA_FLOW_KEEP — ferne Zungen sterben geometrisch) + die SPIEGEL-KAPPE (waterCapJ —
+        // kein Zufluss über rim-L+0.5 bzw. Boden+2-Zellen-Skin jenseits des Atlas; Wasser
+        // steigt nie über seinen Spiegel, die Minecraft-Wahrheit). Wake-ALL + 2500 Ticks:
+        // max 2.29 m über Rim-L (Zell-Quantisierung), See voll 0.992, Carve-Füllung 0→1.0.
+        if (
+            (Number.isFinite(lod) ? lod === 0 : true) &&
+            this.state.voxelChunks.get(`${cx},${cz}`) &&
+            this.state.voxelChunks.get(`${cx},${cz}`).waterCells &&
+            this._voxelChunkHasAnyWater(cx, cz)
+        ) {
+            this._wakeWaterCA(cx, cz);
+        }
         // V13.13.2 / V18.1 — der neue Chunk ist jetzt eine präsente Flood-Wahrheit
         // für seine Nachbarn. Deren Iso wurde evtl. gegen einen ABWESENDEN Nachbarn
         // (diesen Chunk) gebaut → die Kant-Spiegelung. **V18.1-Heilung des
@@ -23188,14 +23261,24 @@ class AnazhRealm {
         const k = Math.floor((z - cz * span) / step);
         if (i < 0 || k < 0 || i >= dim || k >= dim) return null;
         const WATER = AnazhRealm.CELL_STATE.WATER;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
         const colBase = i + k * dim;
-        const cellJ = (j) => cells[colBase + j * dim * dim];
+        const dimSq = dim * dim;
+        // W-B (V18.90, T4a-4) — wo ein LIVE-CA-Level existiert, führt ES die Wasser-
+        // Wahrheit (eine Zelle trägt ab Level > 0.5): der Auftrieb folgt dem NACHFLIESSENDEN
+        // Wasser statt der instant re-geflooteten Zelle — sonst schwimmt man in einem
+        // sichtbar noch leeren Carve-Loch (Render + Physik lesen dieselbe Live-Schicht).
+        // Ohne Level-Eintrag: die statische Zell-Wahrheit (unverändert).
+        const lvl = this.state.waterLevelCells ? this.state.waterLevelCells.get(`${cx},${cz}`) : null;
+        const isWaterJ = lvl
+            ? (j) => cells[colBase + j * dimSq] !== SOLID && lvl[colBase + j * dimSq] > 0.5
+            : (j) => cells[colBase + j * dimSq] === WATER;
         // Körper-Spanne Füße..Kopf: eine Wasserzelle darin → im Wasser.
         const jFeet = Math.max(0, Math.floor((yFeet - oy) / step));
         const jHead = Math.min(dimY - 1, Math.floor((yFeet + 1.8 - oy) / step));
         let bodyWaterJ = -1;
         for (let j = jFeet; j <= jHead; j++) {
-            if (cellJ(j) === WATER) {
+            if (isWaterJ(j)) {
                 bodyWaterJ = j;
                 break;
             }
@@ -23203,7 +23286,7 @@ class AnazhRealm {
         if (bodyWaterJ < 0) return { submerged: false, surfaceY: null };
         // Aufwärts bis zum Spiegel DIESES Wasserkörpers (erste Nicht-Wasser-Zelle).
         let topJ = bodyWaterJ;
-        while (topJ + 1 < dimY && cellJ(topJ + 1) === WATER) topJ++;
+        while (topJ + 1 < dimY && isWaterJ(topJ + 1)) topJ++;
         const surfaceY = oy + (topJ + 1) * step; // Oberkante der obersten Wasserzelle
         return { submerged: true, surfaceY };
     }
@@ -23355,6 +23438,7 @@ class AnazhRealm {
         geo.setAttribute("aWave", new THREE.BufferAttribute(aWaveArr, 1));
         // V18.14 — `aDepth`=0 (flach) → der Aufprall-Pool ist volle Gischt (aShore=1), passt.
         geo.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(vCount), 1));
+        geo.setAttribute("aSlope", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         const mesh = new THREE.Mesh(geo, mat);
         // V9.60-d.4: Pool sitzt leicht in einer Erosion-Senke (Real-World)
         mesh.position.set(wf.x, wf.bottomY - 0.25, wf.z);
@@ -23529,6 +23613,11 @@ class AnazhRealm {
         const aWaveV = attribute("aWave", "float");
         // V18.14 — der MAKRO-Kontext: die echte Wassertiefe (L−Bett) pro Vertex.
         const aDepthV = attribute("aDepth", "float");
+        // V18.94 — aSlope: |∇top| der Wasser-Oberfläche pro Vertex (das Zell-Sheet
+        // rechnet ihn aus den geglätteten Spalten-Dächern; Lippen/Vorhänge tragen
+        // hohe Werte). Treibt das WILDWASSER (steile Läufe schäumen weiss — der
+        // Wasserfall-Look auf Läufen, die Plane bleibt für echte Wände).
+        const aSlopeV = attribute("aSlope", "float");
 
         const p = positionLocal;
         // Welt-verankert: das Wasser-Mesh hat mesh.position=(0,0,0) (V9.71),
@@ -23613,18 +23702,18 @@ class AnazhRealm {
 
         // RIVER-PFAD
         const fdir = aFlowV.div(max(fmag, float(0.0001)));
-        const perp = vec2(fdir.y.mul(-1.0), fdir.x);
-        const along = dot(xz, fdir);
-        const across = dot(xz, perp);
         const scroll = uTime.mul(uFlowSpeed).mul(fmag);
-        // V18.28 — FLOW-ausgerichtete Strähnen statt FISCHGRÄT (Schöpfer-Bild: ein Herringbone-
-        // Muster auf dem Wasser, das wie Sägezähne wirkt). Das Fischgrät entstand aus zwei hohen
-        // `across`-Frequenzen (0.55 + 1.2 = Kreuzschraffur quer zur Strömung). Jetzt NIEDRIGE
-        // across-Frequenz (breite, kohärente Strähnen ENTLANG der Strömung) + die zweite Oktave
-        // schwächer + softer Schwellwert → ruhige, strömungs-folgende Schaum-Strähnen (natürlich),
-        // kein Kreuz-Moiré. Render-only (Shader).
-        const riverS1 = vnoise(vec2(across.mul(0.28), along.mul(0.13).sub(scroll)));
-        const riverS2 = vnoise(vec2(across.mul(0.6), along.mul(0.3).sub(scroll.mul(1.6))));
+        // V18.94 — ADVEKTIERTE WELT-RAUM-STRÄHNEN statt rotierender along/across-Basis
+        // (Schöpfer-Bild: „Kreuzmuster/Häuschen/Zacken" in FLUSS-KURVEN). Die Wurzel der
+        // Zacken: das alte Muster las `dot(xz, fdir)` — Welt-|xz| ist GROSS (Hebelarm!),
+        // eine kleine fdir-Drehung in der Kurve springt den Noise-Input um |xz|·dθ →
+        // dekorrelierte Fragmente = das Zickzack-Moiré (an Konfluenzen flächendeckend).
+        // Jetzt lebt das Muster STABIL in Welt-XZ und wird von der Strömung nur
+        // ADVEKTIERT (Offset −fdir·scroll, Magnitude ~scroll — KEIN Hebelarm): in
+        // Kurven dreht sich nur die Drift-Richtung, das Muster bleibt kohärent.
+        const adv = xz.sub(fdir.mul(scroll.mul(3.0)));
+        const riverS1 = vnoise(adv.mul(0.16));
+        const riverS2 = vnoise(adv.mul(0.38));
         const riverFoam = clamp(riverS1.add(riverS2.mul(0.4)).div(1.4).sub(0.44).mul(2.0), 0.0, 1.0);
 
         // LAKE/OCEAN-PFAD
@@ -23668,9 +23757,24 @@ class AnazhRealm {
         // nicht hier (der dünne Ufer-Saum trägt kaum Sohle-Facetten).
         const realShallow = float(1.0).sub(smoothstep(float(0.0), uDepthFoam, aDepthV));
         const depthFoam = shoreLine.mul(realShallow).mul(shoreSparkle);
+        // V18.93 — DETAIL-FADE mit der Kamera-Distanz (der Riesen-Griff gegen das
+        // Fern-MOIRÉ, Schöpfer „der Shader noch ein wenig komisch"): die hochfrequenten
+        // Schaum-Strähnen (across/along- + Schimmer-Noise) aliasen ab ~100 m zu
+        // Kreuz-Schimmer (mehrere Noise-Perioden pro Pixel). Wie jede Detail-Textur
+        // faden sie mit der Distanz aus (70 → 200 m); Basis-Farbe, Tiefen-Farbe und
+        // Sonnen-Glitzern bleiben — die Ferne wird ruhig statt nervös. Render-only.
+        const camDist = length(cameraPosition.sub(vWorldPos));
+        const detailFade = float(1.0).sub(smoothstep(float(70.0), float(200.0), camDist));
+        // V18.94 — WILDWASSER (der Wasserfall auf LÄUFEN): steile Wasser-Oberfläche
+        // (aSlope aus den Zell-Dächern; Lippen/Vorhänge ≥3) schäumt weiss — nah
+        // texturiert (riverS1), fern FLACH-weiss (Wasserfälle sind Makro-Features:
+        // sie bleiben sichtbar, nur ihr Mikro-Detail fadet → kein Moiré).
+        const whitewater = smoothstep(float(0.5), float(2.0), aSlopeV).mul(
+            float(0.6).add(riverS1.mul(0.4).mul(detailFade))
+        );
         // V14-Emotions-Haken: uEmotion>0 hebt den Schaum sanft an (die Welt atmet
         // im Wasser); default 0 = exakt das alte Bild.
-        const foamD = clamp(max(foam, depthFoam).add(uEmotion.mul(0.25)), 0.0, 1.0);
+        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).add(uEmotion.mul(0.25)), 0.0, 1.0);
 
         const colWithFoam = mix(baseCol, uFoam, foamD.mul(0.7));
         const lit = colWithFoam.mul(uLight);
@@ -24878,6 +24982,17 @@ class AnazhRealm {
                 this.state.voxelBaseDensityCache.delete(`${cx},${cz},1`);
             }
         }
+        // V18.88 (T4-Plan §6.1) — die CA-Level-Schicht fällt MIT dem Chunk aus dem
+        // Ring (~534 KB Float32 pro Eintrag, sonst unbounded — die §5-Wand „bounded,
+        // sparse"). Lokal-reaktiv wie Wetter: der Re-Stream seedet aus der Flood neu.
+        // NICHT in `_disposeVoxelChunk` (der Edit-Rebuild ruft das vor dem Build —
+        // das Level MUSS den Carve-Rebuild überleben, damit das Wasser nachfließt).
+        // V18.90 (W-B): die Quell-Spalten + das y-Band fallen mit.
+        if (this.state.waterLevelCells) for (const key of drop) this.state.waterLevelCells.delete(key);
+        if (this.state.waterCAActive) for (const key of drop) this.state.waterCAActive.delete(key);
+        if (this.state.waterSourceCols) for (const key of drop) this.state.waterSourceCols.delete(key);
+        if (this.state.waterCABand) for (const key of drop) this.state.waterCABand.delete(key);
+        if (this.state.waterCapJ) for (const key of drop) this.state.waterCapJ.delete(key);
     }
 
     // Streamt den Voxel-Chunk-Ring um den Spieler. V9.85 Perf-2.a — Frame-
@@ -25023,6 +25138,9 @@ class AnazhRealm {
         for (let fcx = fcx0; fcx <= fcx1; fcx++) {
             for (let fcz = fcz0; fcz <= fcz1; fcz++) this.state.grassDirtyChunks.add(`${fcx},${fcz}`);
         }
+        // W-B (V18.90) — die CA-Level der Edit-Region VOR dem Rebuild aus den PRE-Carve-
+        // Zellen seeden → das Nachfließen ist deterministisch sichtbar (s. Methoden-Doku).
+        this._preSeedWaterCAForEdit(x, z, radius);
         this._remeshVoxelChunksAround(x, z, radius);
         // T1 (Terrain-Kohärenz-Plan §4 — zeitliche Naht): die direkt berührten FOOTPRINT-
         // Chunks SYNCHRON im Edit-Frame heilen, statt sie über `_tickDirtyVoxelChunks`
@@ -25047,6 +25165,32 @@ class AnazhRealm {
         }
         if (typeof this.saveState === "function") this.saveState();
         return true;
+    }
+
+    // W-B (V18.90, T4-Plan §6) — der PRE-CARVE-SEED: die CA-Level-Einträge der Edit-Region
+    // werden VOR dem Rebuild aus den PRE-Carve-Zellen geseedet. Damit ist das Nachfließen
+    // DETERMINISTISCH sichtbar: der Re-Flood füllt die Zellen unter `L` instant (die statische
+    // Wahrheit), aber das LIVE-Level hält die Ruhe von DAVOR fest → der CA füllt den neuen
+    // Raum über Ticks, caDelta/liveTop rendern den Verzug. Vorher war das timing-abhängig
+    // (sync-gebauter Spieler-Chunk: der Tick seedete NACH dem Re-Flood = instant voll =
+    // unsichtbar; nur async-Nachbarn flossen sichtbar). Der Aufrufer (`_addVoxelEdit`) ruft
+    // das VOR `_remeshVoxelChunksAround`/`_syncRebuildEditFootprint`.
+    _preSeedWaterCAForEdit(x, z, radius) {
+        if (!this.state.voxelChunks) return;
+        const { span } = this._voxelChunkConfig();
+        const minCX = Math.floor((x - radius) / span) - 1;
+        const maxCX = Math.floor((x + radius) / span) + 1;
+        const minCZ = Math.floor((z - radius) / span) - 1;
+        const maxCZ = Math.floor((z + radius) / span) + 1;
+        for (let cx = minCX; cx <= maxCX; cx++) {
+            for (let cz = minCZ; cz <= maxCZ; cz++) {
+                // V18.93 — die Spiegel-Kappe der Edit-Region REFRESHEN (ein Carve senkt
+                // den Boden → die Boden+Skin-Kappe jenseits des Atlas muss mitwandern).
+                if (this.state.waterCapJ) this.state.waterCapJ.delete(`${cx},${cz}`);
+                if (this.state.waterSourceCols) this.state.waterSourceCols.delete(`${cx},${cz}`);
+                this._ensureWaterCALevel(cx, cz);
+            }
+        }
     }
 
     carveVoxelSphere(x, y, z, r) {
@@ -25539,8 +25683,7 @@ class AnazhRealm {
                         ? this.state.atmosphere.waterCull
                         : 0.0025,
                 // V18.6 U-W4 — Wasser-Render-Modus + Tiefen-Ufer-Hebel persistieren.
-                waterRenderMode:
-                    this.state.atmosphere && this.state.atmosphere.waterRenderMode === "iso" ? "iso" : "surface",
+                waterRenderMode: this._waterRenderMode(),
                 waterShoreWidth:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterShoreWidth)
                         ? this.state.atmosphere.waterShoreWidth
@@ -25562,11 +25705,6 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterfallSteep)
                         ? this.state.atmosphere.waterfallSteep
                         : 1.0,
-                // V18.31 — der Auslauf-Übergang persistieren.
-                waterOutflowSlope:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
-                        ? this.state.atmosphere.waterOutflowSlope
-                        : 3.0,
                 // J4-Regler: Kavitäts-AO-Stärke (0..1) + Kanten-Schärfe (Post-FX local-contrast, 0..1).
                 cavityAO:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
@@ -27756,8 +27894,9 @@ class AnazhRealm {
             if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
             const wc = Number(state.atmosphere.waterCull);
             if (Number.isFinite(wc)) this.state.atmosphere.waterCull = Math.max(0.0, Math.min(0.05, wc));
-            // V18.6 U-W4 — Wasser-Render-Modus + Tiefen-Ufer-Hebel.
-            if (state.atmosphere.waterRenderMode === "iso" || state.atmosphere.waterRenderMode === "surface") {
+            // V18.92 — Wasser-Render-Modus (persistierte "surface"-Werte heilen im
+            // Setter auf "cells" — der L-Film ist entfernt).
+            if (typeof state.atmosphere.waterRenderMode === "string") {
                 this.setWaterRenderMode(state.atmosphere.waterRenderMode);
             }
             // V18.17 — uShoreWidth wieder VIEWPORT (für edgeFade←waterThick); uDepthRange METER
@@ -27780,8 +27919,6 @@ class AnazhRealm {
             // um (war "Breite/flacher" für die V18.30-Versteck-Logik, jetzt "Ufer→Boden-Übergang"
             // für den Bodenkontakt; klein = scharfer Kontakt) → ein alter, für "flacher" hoch-
             // gedrehter Wert (>8) self-healt auf den neuen Kontakt-Default; neue Tunings (1-8) bleiben.
-            const wos = Number(state.atmosphere.waterOutflowSlope);
-            if (Number.isFinite(wos)) this.state.atmosphere.waterOutflowSlope = wos > 8 ? 3.0 : Math.max(1.0, wos);
             // J4-Regler (default 1.0 / 0.5 = unverändert) + an die Uniforms pushen,
             // falls sie schon erzeugt sind (sonst liest `_ensure*` sie beim Bau).
             const ao = Number(state.atmosphere.cavityAO);
@@ -38886,7 +39023,7 @@ class AnazhRealm {
     // Fläche auf `L`, Default; "iso" = die alte Zell-Iso, A/B-Schalter für den
     // Browser-Sign-off). Setzt alle gestreamten Wasser-Meshes neu (re-enqueued).
     setWaterRenderMode(mode) {
-        const m = mode === "iso" ? "iso" : "surface";
+        const m = mode === "iso" ? "iso" : "cells";
         if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterRenderMode = m;
         // Alle Wasser-tragenden Chunks neu meshen, damit der Modus-Wechsel sofort
@@ -38964,27 +39101,6 @@ class AnazhRealm {
         if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterfallSteep = m;
         if (typeof this._buildHydrosphereMeshes === "function") this._buildHydrosphereMeshes();
-        if (typeof this.saveState === "function") this.saveState();
-        return m;
-    }
-
-    // V18.31 — der AUSLAUF-ÜBERGANG (Boden-folgender Auslauf V18.31): die Breite des Ufer→
-    // Boden-Übergangs, über die sich das Auslauf-Wasser von L auf das terrain-folgende Bett
-    // (Bodenkontakt) legt. Klein = scharfer Kontakt (fliesst schnell sauber in den Boden),
-    // gross = sanfter (schwebt im Übergang länger). GEOMETRIE-Parameter (Vertex-Y im Surface-
-    // Mesh, kein Shader-Uniform) → re-enqueued alle Wasser-tragenden Chunks (wie
-    // setWaterRenderMode); die Zellen/Physik bleiben unberührt (render-only).
-    setWaterOutflowSlope(v) {
-        const m = Math.max(1.0, Math.min(8.0, Number(v) || 3.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
-        this.state.atmosphere.waterOutflowSlope = m;
-        if (this.state.voxelChunks) {
-            for (const [key, e] of this.state.voxelChunks) {
-                if (!e || !e.waterCells) continue;
-                const comma = key.indexOf(",");
-                this._enqueueWaterIso(parseInt(key.slice(0, comma), 10), parseInt(key.slice(comma + 1), 10));
-            }
-        }
         if (typeof this.saveState === "function") this.saveState();
         return m;
     }
@@ -39377,15 +39493,34 @@ class AnazhRealm {
     // PURE über die Arrays (kein State, kein Render) → vollständig headless beweisbar (Erhaltung +
     // Fluss). Der Tick ist die reaktive Schicht (lokal, nicht persistiert, kein Worker-Mirror — wie
     // `_lifeOverlayAt`/`_tickWorldRules`). Liefert die Zahl der bewegten Zellen (für active-cell-only).
-    _tickWaterCA(level, cells, dim, dimY, rate = 0.25, deltaScratch = null) {
+    _tickWaterCA(level, cells, dim, dimY, rate = 0.25, deltaScratch = null, band = null, cap = null) {
         const SOLID = AnazhRealm.CELL_STATE.SOLID;
         const dimSq = dim * dim;
         const EPS = 1e-4;
         // `moved` = die MAGNITUDE des bewegten Wassers (nicht Zell-Zahl) → der active-cell-Settle
         // greift, wenn die Lache wirklich ruht (Zell-Zahl bliebe bei langsamem Ausgleich ewig hoch).
         let moved = 0;
+        // W-B (V18.90, T4-Plan §6.4) — das y-BAND: Wasser belegt ~das Hydro-Band, nie die volle
+        // 232er-Säule → der Tick läuft nur über die belegten Zeilen [band.jMin .. band.jMax].
+        // SEMANTIK-IDENTISCH zum Voll-Sweep (Invariante: ausserhalb des Bands ist level 0):
+        // die Gravitations-KASKADE folgt `gMin` dynamisch nach unten (eine fallende Säule
+        // durchfällt weiter in EINEM Tick), das Band wird am Ende aus dem Ist-Zustand NEU
+        // gemessen (selbst-korrigierend). `band = null` = Voll-Sweep (erster Tick nach Seed).
+        const jHi = band ? Math.min(dimY - 1, band.jMax) : dimY - 1;
+        const jLo = band ? Math.max(0, band.jMin) : 0;
+        if (jHi < jLo) {
+            if (band) {
+                band.jMin = dimY;
+                band.jMax = -1;
+            }
+            return 0;
+        }
         // (1) GRAVITÄT — von oben nach unten, damit eine Säule in einem Tick durchkaskadiert.
-        for (let j = dimY - 1; j >= 1; j--) {
+        // `gMin` = tiefste Zeile, in die Wasser fiel: der Loop folgt der Kaskade unter das
+        // Band (break, sobald keine Kaskade tiefer reicht) — exakt wie der Voll-Sweep.
+        let gMin = Math.max(1, jLo);
+        for (let j = jHi; j >= 1; j--) {
+            if (j < gMin) break;
             const baseJ = j * dimSq;
             const belowJ = (j - 1) * dimSq;
             for (let c = 0; c < dimSq; c++) {
@@ -39400,15 +39535,47 @@ class AnazhRealm {
                 level[here] = lv - flow;
                 level[below] += flow;
                 moved += flow;
+                if (j - 1 < gMin) gMin = j - 1;
             }
         }
         // (2) LATERAL — Niveau suchen. Delta-Puffer: jedes (+i)- und (+k)-Paar EINMAL, symmetrischer
         // Transfer (was hier abfliesst, kommt dort an) → exakte Erhaltung, deterministisch.
         // Scratch wiederverwenden (Welt-Tick = viele Chunks/Frame → keine Allokations-Churn).
+        // Nur die belegten Zeilen [rowLo..jHi] (inkl. dessen, was die Gravitation eben
+        // tiefer trug) — der Scratch wird NUR in diesem Fenster genullt (darunter ist er
+        // stale vom vorigen Chunk → nie lesen).
+        const rowLo = Math.max(0, Math.min(jLo, gMin));
+        const winLo = rowLo * dimSq;
+        const winHi = (jHi + 1) * dimSq;
         let delta = deltaScratch;
-        if (delta && delta.length >= level.length) delta.fill(0, 0, level.length);
+        if (delta && delta.length >= level.length) delta.fill(0, winLo, winHi);
         else delta = new Float64Array(level.length);
-        for (let j = 0; j < dimY; j++) {
+        // W-B (V18.90) — RECEIVER-SUPPORT: ein Lateral-Transfer braucht einen GESTÜTZTEN
+        // Empfänger (darunter SOLID oder ≥0.9 gefüllt; j=0 = Weltboden zählt gestützt).
+        // Wasser schiebt sich nicht seitwärts in die freie Luft — es fällt zuerst
+        // (Gravitation). OHNE die Regel diffundiert die OBERSTE Schicht jedes ruhenden
+        // Körpers ewig in die Ufer-Luft (GEMESSEN: der Quellen-Pin fand jede Runde
+        // neu zu füllen → der Chunk settled NIE = Dauer-Leck + Dauer-Aktivität; genau
+        // darum hat Minecraft Fluss-REGELN statt purer Diffusion). Ein Carve füllt
+        // damit SCHICHT FÜR SCHICHT von unten — wie echtes Wasser.
+        const SUPPORT = 0.9;
+        // V18.93 — DISTANZ-DECAY (T4-Plan §7, Regel 1 — der Minecraft-Weg): jeder
+        // LATERALE Transfer liefert nur KEEP=95 % beim Empfänger ab (der Rest
+        // dissipiert) → Wasser DÜNNT mit der Hop-Entfernung von der Quelle
+        // geometrisch aus (0.95^n) — Pooling fern der Quelle stirbt, die Carve-
+        // Füllung nahe der Quelle bleibt voll (der Pin speist die Verluste nach).
+        // GRAVITATION bleibt VERLUSTFREI (wie Minecraft: Fälle tragen volle
+        // Stärke — nur die seitliche Ausbreitung ist begrenzt). Die EINE bewusste
+        // Transfer-Dissipation; ohne sie flutete die geschlossene Ring-Domäne
+        // (V18.92-Badewannen-Befund: 12.5 m über L).
+        const KEEP = AnazhRealm.CA_FLOW_KEEP;
+        // V18.93 — EPS_FLOW: die Lateral-Schwelle SCHLUCKT das Decay-Gefälle. Mit
+        // KEEP<1 ist das Nachbar-Gleichgewicht KEEP·Quelle < Quelle → ein permanentes
+        // Rest-Gefälle an jeder Quell-Grenze → ohne diese Schwelle pumpt der Automat
+        // EWIG (GEMESSEN: active=4 nach 6000 Ticks + Dauer-Re-Meshing + cm-Naht-Jitter).
+        // Schwelle ≈ (1−KEEP) → der Decay-Zustand ist ein echter FIXPUNKT → Settle.
+        const EPS_FLOW = (1 - KEEP) * 1.1 + EPS;
+        for (let j = rowLo; j <= jHi; j++) {
             const baseJ = j * dimSq;
             for (let k = 0; k < dim; k++) {
                 const baseK = k * dim;
@@ -39421,11 +39588,25 @@ class AnazhRealm {
                         const nb = here + 1;
                         if (cells[nb] !== SOLID) {
                             const diff = lv - (level[nb] + delta[nb]);
-                            if (diff > EPS || diff < -EPS) {
-                                const t = diff * rate;
-                                delta[here] -= t;
-                                delta[nb] += t;
-                                moved += t > 0 ? t : -t;
+                            if (diff > EPS_FLOW || diff < -EPS_FLOW) {
+                                const recv = diff > 0 ? nb : here;
+                                const recvBelow = recv - dimSq;
+                                // V18.93 — SPIEGEL-KAPPE: kein Zufluss über die Spalten-Kappe
+                                // (rim-L bzw. Boden+Skin) — Wasser steigt nie über seinen Spiegel.
+                                if (
+                                    (!cap || j <= cap[recv % dimSq]) &&
+                                    (recvBelow < 0 || cells[recvBelow] === SOLID || level[recvBelow] >= SUPPORT)
+                                ) {
+                                    const t = diff * rate;
+                                    if (t > 0) {
+                                        delta[here] -= t;
+                                        delta[nb] += t * KEEP;
+                                    } else {
+                                        delta[here] -= t * KEEP;
+                                        delta[nb] += t;
+                                    }
+                                    moved += t > 0 ? t : -t;
+                                }
                             }
                         }
                     }
@@ -39434,20 +39615,47 @@ class AnazhRealm {
                         const nb = here + dim;
                         if (cells[nb] !== SOLID) {
                             const diff = lv - (level[nb] + delta[nb]);
-                            if (diff > EPS || diff < -EPS) {
-                                const t = diff * rate;
-                                delta[here] -= t;
-                                delta[nb] += t;
-                                moved += t > 0 ? t : -t;
+                            if (diff > EPS_FLOW || diff < -EPS_FLOW) {
+                                const recv = diff > 0 ? nb : here;
+                                const recvBelow = recv - dimSq;
+                                // V18.93 — SPIEGEL-KAPPE: kein Zufluss über die Spalten-Kappe
+                                // (rim-L bzw. Boden+Skin) — Wasser steigt nie über seinen Spiegel.
+                                if (
+                                    (!cap || j <= cap[recv % dimSq]) &&
+                                    (recvBelow < 0 || cells[recvBelow] === SOLID || level[recvBelow] >= SUPPORT)
+                                ) {
+                                    const t = diff * rate;
+                                    if (t > 0) {
+                                        delta[here] -= t;
+                                        delta[nb] += t * KEEP;
+                                    } else {
+                                        delta[here] -= t * KEEP;
+                                        delta[nb] += t;
+                                    }
+                                    moved += t > 0 ? t : -t;
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        for (let n = 0; n < level.length; n++) {
+        // Anwenden + das Band aus dem IST neu messen (Zeilen mit Wasser > EPS).
+        let nMin = dimY;
+        let nMax = -1;
+        for (let n = winLo; n < winHi; n++) {
             const v = level[n] + delta[n];
-            level[n] = v < 0 ? 0 : v > 1 ? 1 : v;
+            const c = v < 0 ? 0 : v > 1 ? 1 : v;
+            level[n] = c;
+            if (c > EPS) {
+                const j = (n / dimSq) | 0;
+                if (j < nMin) nMin = j;
+                if (j > nMax) nMax = j;
+            }
+        }
+        if (band) {
+            band.jMin = nMin;
+            band.jMax = nMax;
         }
         return moved;
     }
@@ -39462,6 +39670,84 @@ class AnazhRealm {
         const level = new Float32Array(cells.length);
         for (let i = 0; i < cells.length; i++) if (cells[i] === WATER) level[i] = 1.0;
         return level;
+    }
+
+    // W-B (V18.90, T4-Plan §6) — EIN Seed-Eingang für die CA-Level-Schicht (V9.82: kein
+    // Parallel-Pfad): seedet den Level-Eintrag aus den AKTUELLEN Zellen + markiert einmalig
+    // die QUELL-Spalten (der frozen Atlas kennt sie als Wasser — See/Fluss/Ozean, +Inf-Probe
+    // unterdrückt den Rim) + legt das y-Band an (voll → der erste Tick misst es). Der EDIT-
+    // Pfad ruft das VOR dem Carve-Rebuild → der Eintrag hält die PRE-Carve-Ruhe fest, und
+    // das Nachfließen ist DETERMINISTISCH sichtbar (vorher timing-abhängig: seedete der Tick
+    // erst NACH dem sync-Re-Flood, war die Füllung instant = unsichtbar).
+    _ensureWaterCALevel(cx, cz) {
+        const key = `${cx},${cz}`;
+        const entry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
+        if (!entry || entry.empty || !entry.waterCells || (Number.isFinite(entry.lod) && entry.lod !== 0)) return null;
+        if (!this.state.waterLevelCells) this.state.waterLevelCells = new Map();
+        if (!this.state.waterCABand) this.state.waterCABand = new Map();
+        let lv = this.state.waterLevelCells.get(key);
+        if (!lv) {
+            lv = this._seedWaterLevel(entry.waterCells);
+            this.state.waterLevelCells.set(key, lv);
+            // Frischer Seed → das Band VOLL resetten (ein stale Band aus einer früheren
+            // Level-Epoche würde das frische Wasser band-unsichtbar machen).
+            const cfg = this._voxelChunkConfig(0);
+            this.state.waterCABand.set(key, { jMin: 0, jMax: cfg.dimY - 1 });
+        } else if (!this.state.waterCABand.has(key)) {
+            const cfg = this._voxelChunkConfig(0);
+            this.state.waterCABand.set(key, { jMin: 0, jMax: cfg.dimY - 1 });
+        }
+        // Quell-Spalten (einmalig pro Eintrag, 576 Atlas-Probes): unendliches Reservoir
+        // (Minecraft-Source-Semantik) — der Pin im Welt-Tick füllt ihre WATER-Zellen nach.
+        // V18.93 — dazu die SPIEGEL-KAPPE pro Spalte (`waterCapJ`): die höchste Zeile, in
+        // die Wasser ZUFLIESSEN darf. Im Atlas-Gebiet = rim-L + 0.5 m (Wasser steigt nie
+        // über seinen Spiegel — die Minecraft-Wahrheit „fließendes Wasser stapelt nie über
+        // sein Quell-Niveau"); jenseits des Atlas (rim = −Inf) = Boden + 2 Zellen (die
+        // fließende „Skin", die sich am Canyon ausbreitet, ohne die Welt zu fluten —
+        // GEMESSEN V18.93: Decay allein bändigte die Badewanne NICHT [12.5 → 9 m], denn
+        // ein Pool NEBEN der Quelle steigt hydrostatisch trotzdem; die Kappe ist eine
+        // reine EMPFÄNGER-Regel im Lateral-Pass → kein Lösch-Pass, kein Dauer-Pump,
+        // settle-freundlich + erhaltungs-neutral).
+        if (!this.state.waterSourceCols) this.state.waterSourceCols = new Map();
+        if (!this.state.waterCapJ) this.state.waterCapJ = new Map();
+        if (!this.state.waterSourceCols.has(key) || !this.state.waterCapJ.has(key)) {
+            const cfg = this._voxelChunkConfig(0);
+            const dim = cfg.dim;
+            const dimY = cfg.dimY;
+            const dimSq = dim * dim;
+            const oy = (this.state.terrainBaseHeight || 0) - cfg.floorDrop;
+            const SOLID = AnazhRealm.CELL_STATE.SOLID;
+            const cells = entry.waterCells;
+            const src = new Uint8Array(dimSq);
+            const cap = new Int16Array(dimSq);
+            const ox = cx * cfg.span;
+            const oz = cz * cfg.span;
+            for (let k = 0; k < dim; k++) {
+                for (let i = 0; i < dim; i++) {
+                    const c = i + k * dim;
+                    const wx = ox + (i + 0.5) * cfg.step;
+                    const wz = oz + (k + 0.5) * cfg.step;
+                    if (this._atlasWaterLevelAt(wx, wz, Infinity) > -Infinity) src[c] = 1;
+                    const rim = this._atlasWaterLevelAt(wx, wz, -Infinity);
+                    if (rim > -Infinity) {
+                        cap[c] = Math.max(0, Math.min(dimY - 1, Math.floor((rim + 0.5 - oy) / cfg.step)));
+                    } else {
+                        // jenseits des Atlas: Boden (höchste SOLID-Zelle) + 2 Zellen Skin.
+                        let gj = -1;
+                        for (let j = dimY - 1; j >= 0; j--) {
+                            if (cells[c + j * dimSq] === SOLID) {
+                                gj = j;
+                                break;
+                            }
+                        }
+                        cap[c] = Math.min(dimY - 1, (gj >= 0 ? gj : 0) + 2);
+                    }
+                }
+            }
+            this.state.waterSourceCols.set(key, src);
+            this.state.waterCapJ.set(key, cap);
+        }
+        return lv;
     }
 
     // Der active-cell-Kern: ein Chunk tickt NUR, wenn er „aktiv" ist (frisch perturbiert). Der Carve
@@ -39487,14 +39773,10 @@ class AnazhRealm {
             this.state.waterCAScratch = new Float64Array(need);
         const scratch = this.state.waterCAScratch;
         const SETTLE = 0.25; // bewegte MAGNITUDE < SETTLE → der Chunk ruht, raus aus active (active-cell)
-        const levelOf = (key, entry) => {
-            let lv = this.state.waterLevelCells.get(key);
-            if (!lv) {
-                lv = this._seedWaterLevel(entry.waterCells);
-                this.state.waterLevelCells.set(key, lv);
-            }
-            return lv;
-        };
+        const dimSq = dim * dim;
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        const bandMap = this.state.waterCABand || (this.state.waterCABand = new Map());
+        const srcMap = this.state.waterSourceCols;
         const active = [];
         for (const key of [...activeSet]) {
             const entry = this.state.voxelChunks.get(key);
@@ -39503,17 +39785,56 @@ class AnazhRealm {
                 continue;
             }
             const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            // W-B — EIN Seed-Eingang (`_ensureWaterCALevel`): Level + Quell-Spalten + y-Band.
+            const lv = this._ensureWaterCALevel(cx, cz);
+            if (!lv) {
+                activeSet.delete(key);
+                continue;
+            }
             active.push({
-                cx: parseInt(key.slice(0, comma), 10),
-                cz: parseInt(key.slice(comma + 1), 10),
+                cx,
+                cz,
                 key,
-                level: levelOf(key, entry),
+                level: lv,
                 cells: entry.waterCells,
+                band: bandMap.get(key),
+                cap: this.state.waterCapJ ? this.state.waterCapJ.get(key) : null,
             });
         }
         let total = 0;
         for (const a of active) {
-            a.moved = this._tickWaterCA(a.level, a.cells, dim, dimY, 0.25, scratch);
+            // W-B (V18.90, T4-Plan §6) — der QUELLEN-PIN: Spalten, die der frozen Atlas als
+            // Wasser kennt (See/Fluss/Ozean), sind unendliche Reservoirs (Minecraft-Source-
+            // Semantik): ihre WATER-Zellen werden pro Tick zur Flood-Ruhe aufgefüllt → ein
+            // See ENTLEERT sich nicht in einen gegrabenen Kanal (er speist nach, bis der
+            // Kanal sein Niveau trägt). Die Erhaltung gilt überall sonst — die Quelle ist
+            // die EINE bewusste, dokumentierte Nicht-Erhaltung. Der Pin zählt als Bewegung
+            // → der Chunk bleibt aktiv, solange er nachspeist; versiegt der Abfluss,
+            // settled er. Pin VOR dem Tick (die Schwerkraft/Lateral verteilen frisch).
+            const src = srcMap ? srcMap.get(a.key) : null;
+            let pinned = 0;
+            if (src) {
+                const cells = a.cells;
+                const level = a.level;
+                const band = a.band;
+                for (let c = 0; c < dimSq; c++) {
+                    if (!src[c]) continue;
+                    for (let j = 0; j < dimY; j++) {
+                        const idx = c + j * dimSq;
+                        if (cells[idx] === WATER && level[idx] < 1) {
+                            pinned += 1 - level[idx];
+                            level[idx] = 1;
+                            if (band) {
+                                if (j < band.jMin) band.jMin = j;
+                                if (j > band.jMax) band.jMax = j;
+                            }
+                        }
+                    }
+                }
+            }
+            a.moved = pinned + this._tickWaterCA(a.level, a.cells, dim, dimY, 0.25, scratch, a.band, a.cap);
             total += a.moved;
         }
         // cross-chunk-wake: Level über die +x/+z-Grenzen austauschen; ein Transfer weckt den Nachbarn.
@@ -39525,32 +39846,125 @@ class AnazhRealm {
                 const nkey = `${a.cx + dx},${a.cz + dz}`;
                 const nb = this.state.voxelChunks.get(nkey);
                 if (!nb || nb.empty || !nb.waterCells || (Number.isFinite(nb.lod) && nb.lod !== 0)) continue;
-                const bLevel = levelOf(nkey, nb);
-                const xfer = this._exchangeWaterBoundary(a.level, a.cells, bLevel, nb.waterCells, dx, dim, dimY);
+                const bLevel = this._ensureWaterCALevel(a.cx + dx, a.cz + dz);
+                if (!bLevel) continue;
+                const touch = { jMin: dimY, jMax: -1 };
+                const xfer = this._exchangeWaterBoundary(
+                    a.level,
+                    a.cells,
+                    bLevel,
+                    nb.waterCells,
+                    dx,
+                    dim,
+                    dimY,
+                    touch,
+                    a.cap,
+                    this.state.waterCapJ ? this.state.waterCapJ.get(nkey) : null
+                );
                 if (xfer > 0.01) {
                     this._wakeWaterCA(a.cx + dx, a.cz + dz);
                     a.moved += xfer;
+                    // W-B — beide y-Bänder um die WIRKLICH berührten Zeilen weiten.
+                    const nbBand = bandMap.get(nkey);
+                    for (const b of [a.band, nbBand]) {
+                        if (!b) continue;
+                        if (touch.jMin < b.jMin) b.jMin = touch.jMin;
+                        if (touch.jMax > b.jMax) b.jMax = touch.jMax;
+                    }
+                }
+            }
+            // V18.88 (T4-Plan §6.3) — ISOTROPIE: auch mit INAKTIVEN −x/−z-Nachbarn
+            // tauschen (der inaktive West/Nord-Nachbar führt sein +x/+z nie aus →
+            // das Grenz-Paar lief sonst NIE → Wasser propagierte über den Wake-Ring
+            // hinaus nur nach Ost/Süd, die V13.3-Isotropie-Klasse). Ist der Nachbar
+            // AKTIV, führt ER das Paar als sein +x/+z aus (kein Doppel-Tausch).
+            for (const [dx, dz] of [
+                [-1, 0],
+                [0, -1],
+            ]) {
+                const wx = a.cx + dx,
+                    wz = a.cz + dz;
+                const wkey = `${wx},${wz}`;
+                if (activeSet.has(wkey)) continue;
+                const nb = this.state.voxelChunks.get(wkey);
+                if (!nb || nb.empty || !nb.waterCells || (Number.isFinite(nb.lod) && nb.lod !== 0)) continue;
+                const wLevel = this._ensureWaterCALevel(wx, wz);
+                if (!wLevel) continue;
+                // Der Nachbar ist die A-Seite des Paars (sein fernes i/k=dim−1 ↔ unser 0).
+                const touch = { jMin: dimY, jMax: -1 };
+                const xfer = this._exchangeWaterBoundary(
+                    wLevel,
+                    nb.waterCells,
+                    a.level,
+                    a.cells,
+                    dx === -1 ? 1 : 0,
+                    dim,
+                    dimY,
+                    touch,
+                    this.state.waterCapJ ? this.state.waterCapJ.get(wkey) : null,
+                    a.cap
+                );
+                if (xfer > 0.01) {
+                    this._wakeWaterCA(wx, wz);
+                    a.moved += xfer;
+                    const nbBand = bandMap.get(wkey);
+                    for (const b of [a.band, nbBand]) {
+                        if (!b) continue;
+                        if (touch.jMin < b.jMin) b.jMin = touch.jMin;
+                        if (touch.jMax > b.jMax) b.jMax = touch.jMax;
+                    }
                 }
             }
         }
         // T4b — die bewegten Chunks neu rendern: das Surface-Mesh liest das LIVE-Level (caDelta) → das
         // Wasser fliesst sichtbar. Budgetiert über die bestehende `pendingWaterIso`-Queue (4/Frame) → kein
         // Spike. Nur bei echter Bewegung (kein Rebuild im Ruhe-Zustand → kein Render-Wandel ohne Carve).
-        if (total > 0.05) {
-            if (!this.state.pendingWaterIso) this.state.pendingWaterIso = new Set();
-            for (const a of active) if (a.moved > 0.05) this.state.pendingWaterIso.add(a.key);
+        // V18.88 (T4-Plan §6.2) — „wer N Nachbarn liest, re-enqueued N" (V18.0): der ferne Rand-Vertex
+        // des surface-Modus liest die NACHBAR-Spalte (+x/+z) → die Leser-Nachbarn −x/−z/−x−z; das
+        // cells-Sheet (V18.89, W-A) glättet über einen ±3-Spalten-Pad und liest damit ALLE 8 Nachbarn
+        // → ein bewegter Chunk re-enqueued die volle 8er-Nachbarschaft (Set dedupt, Queue budgetiert).
+        // V18.93 — RE-MESH-THROTTLE: nur SUBSTANZIELLE Bewegung (> 0.5) re-meshed live
+        // (Carve-Fluten, sichtbare Fronten); der Schelf-Trickle (0.05..0.5) tickt still
+        // weiter und bekommt beim SETTLE unten EIN finales Ruhe-Mesh. OHNE Throttle
+        // re-meshte jeder Mikro-Mover sich + 8 Nachbarn JEDEN Tick bis zum Settle
+        // (~1100+ Frames nach dem Stream-in) = Dauer-Last auf dem Main-Thread
+        // (GEMESSEN: zwei last-sensible Playtest-Invarianten kippten erst mit
+        // Wake-on-Stream — der Churn war die Wurzel, nicht der Test).
+        if (!this.state.pendingWaterIso) this.state.pendingWaterIso = new Set();
+        const enqueueWithReaders = (cx2, cz2) => {
+            for (let rz = -1; rz <= 1; rz++) {
+                for (let rx = -1; rx <= 1; rx++) {
+                    const rkey = `${cx2 + rx},${cz2 + rz}`;
+                    const re = this.state.voxelChunks.get(rkey);
+                    if (re && re.waterCells) this.state.pendingWaterIso.add(rkey);
+                }
+            }
+        };
+        for (const a of active) if (a.moved > 0.5) enqueueWithReaders(a.cx, a.cz);
+        for (const a of active) {
+            if (a.moved < SETTLE) {
+                activeSet.delete(a.key);
+                // das finale RUHE-Mesh (der Trickle unter dem Throttle wird hier sichtbar).
+                enqueueWithReaders(a.cx, a.cz);
+            }
         }
-        for (const a of active) if (a.moved < SETTLE) activeSet.delete(a.key);
         return total;
     }
 
     // Level-Austausch über die gemeinsame Chunk-Grenze (die lateral-Regel über die Naht, symmetrisch
     // = Erhaltung). dx=1: A.i=dim-1 ↔ B.i=0; dz=1: A.k=dim-1 ↔ B.k=0. Liefert die übertragene Menge.
-    _exchangeWaterBoundary(aLevel, aCells, bLevel, bCells, dx, dim, dimY) {
+    // W-B (V18.90) — `touch` (optional, {jMin,jMax}) wird auf die WIRKLICH berührten Zeilen
+    // geweitet: der Aufrufer weitet damit die y-Bänder BEIDER Chunks (eine Band-Union der
+    // alten Bänder reicht NICHT — ein externer Level-Write [Test/Seed] kann Zeilen ausserhalb
+    // beider Bänder tragen, die der Tausch dann berührt → Wasser würde band-unsichtbar).
+    _exchangeWaterBoundary(aLevel, aCells, bLevel, bCells, dx, dim, dimY, touch = null, aCap = null, bCap = null) {
         const SOLID = AnazhRealm.CELL_STATE.SOLID;
         const dimSq = dim * dim;
         const rate = 0.25;
         let xfer = 0;
+        const SUPPORT = 0.9; // W-B — dieselbe Receiver-Support-Regel wie der Lateral-Pass
+        const KEEP = AnazhRealm.CA_FLOW_KEEP; // V18.93 — derselbe Distanz-Decay über die Naht
+        const EPS_FLOW = (1 - KEEP) * 1.1 + 1e-4; // V18.93 — der Decay-Fixpunkt (s. _tickWaterCA)
         for (let j = 0; j < dimY; j++) {
             const baseJ = j * dimSq;
             for (let s = 0; s < dim; s++) {
@@ -39558,60 +39972,60 @@ class AnazhRealm {
                 const bIdx = dx === 1 ? baseJ + s * dim : baseJ + s;
                 if (aCells[aIdx] === SOLID || bCells[bIdx] === SOLID) continue;
                 const diff = aLevel[aIdx] - bLevel[bIdx];
-                if (diff > 1e-4 || diff < -1e-4) {
+                if (diff > EPS_FLOW || diff < -EPS_FLOW) {
+                    // Empfänger gestützt? (darunter SOLID oder ≥0.9; j=0 = Weltboden)
+                    const rcCells = diff > 0 ? bCells : aCells;
+                    const rcLevel = diff > 0 ? bLevel : aLevel;
+                    const rcIdx = diff > 0 ? bIdx : aIdx;
+                    const rcCap = diff > 0 ? bCap : aCap;
+                    if (rcCap && j > rcCap[rcIdx % dimSq]) continue; // V18.93 — Spiegel-Kappe
+                    const rcBelow = rcIdx - dimSq;
+                    if (rcBelow >= 0 && rcCells[rcBelow] !== SOLID && rcLevel[rcBelow] < SUPPORT) continue;
                     const t = diff * rate;
-                    aLevel[aIdx] -= t;
-                    bLevel[bIdx] += t;
+                    if (t > 0) {
+                        aLevel[aIdx] -= t;
+                        bLevel[bIdx] += t * KEEP;
+                    } else {
+                        aLevel[aIdx] -= t * KEEP;
+                        bLevel[bIdx] += t;
+                    }
                     xfer += t > 0 ? t : -t;
+                    if (touch) {
+                        if (j < touch.jMin) touch.jMin = j;
+                        if (j > touch.jMax) touch.jMax = j;
+                    }
                 }
             }
         }
         return xfer;
     }
 
-    // T4b (terrain-t4-wasser-ca-plan §3) — die LIVE-Korrektur der Wasser-Oberfläche pro Spalte aus dem
-    // CA-Level. Liefert die HÖHEN-DIFFERENZ (Meter, relativ) zwischen dem LIVE-Spiegel (höchste Zelle mit
-    // Level > 0.5 + Füllgrad) und dem FLOOD-Ruhe-Spiegel (höchste WATER-Zelle). Im Ruhe-Zustand sind beide
-    // gleich (der Flood seedet jede WATER-Zelle auf 1.0) → caDelta == 0 → die Render-Fläche ist EXAKT die
-    // statische `L` (kein Render-Wandel, keine Spirale). NUR wo `waterLevelCells` einen Eintrag trägt (ein
-    // aktiv getickter Chunk nach einem Carve) UND die Spalte abweicht, weicht caDelta von 0 ab → das Wasser
-    // fliesst SICHTBAR. Render-only, lokal-reaktiv (kein Worker-Mirror, kein Determinismus-Effekt).
-    _caWaterTopDelta(cx, cz, ci, ck) {
-        const map = this.state.waterLevelCells;
-        if (!map || map.size === 0) return 0;
-        const level = map.get(`${cx},${cz}`);
-        if (!level) return 0;
-        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
-        if (!entry || !entry.waterCells) return 0;
-        const cfg = this._voxelChunkConfig(0);
-        const dim = cfg.dim,
-            dimY = cfg.dimY,
-            step = cfg.step;
-        if (ci < 0 || ck < 0 || ci >= dim || ck >= dim) return 0;
-        const cells = entry.waterCells;
-        const dimSq = dim * dim;
-        const colBase = ci + ck * dim;
+    // V18.89/.92 (W-A) — der EINE Spalten-Scan-Kern des Zell-Sheets (V9.82: kein
+    // Parallel-Pfad; der V18.89-Zweitleser `_caWaterTopDelta` fiel mit dem L-Film,
+    // V18.92). Top-down über EINE Spalte: die höchste
+    // WATER-Zelle (Flood-Ruhe), die höchste nicht-solide Zelle mit Live-Level > 0.5
+    // (CA, nur wenn `level` da), die höchste SOLID-Zelle (der Boden-Anker; per
+    // V13.12-Vertikal-offen liegt sie immer UNTER dem Wasser der Spalte).
+    _caColumnScan(cells, level, colBase, dimSq, dimY) {
         const WATER = AnazhRealm.CELL_STATE.WATER;
         const SOLID = AnazhRealm.CELL_STATE.SOLID;
-        // Flood-Top (Ruhe): höchste WATER-Zelle. Live-Top: höchste nicht-solide Zelle mit Level > 0.5.
+        const wantLive = !!level;
         let floodTopJ = -1,
             liveTopJ = -1,
-            liveFrac = 0;
+            liveFrac = 0,
+            solidTopJ = -1;
         for (let j = dimY - 1; j >= 0; j--) {
             const idx = colBase + j * dimSq;
-            if (floodTopJ < 0 && cells[idx] === WATER) floodTopJ = j;
-            if (liveTopJ < 0 && cells[idx] !== SOLID && level[idx] > 0.5) {
+            const c = cells[idx];
+            if (floodTopJ < 0 && c === WATER) floodTopJ = j;
+            if (solidTopJ < 0 && c === SOLID) solidTopJ = j;
+            if (wantLive && liveTopJ < 0 && c !== SOLID && level[idx] > 0.5) {
                 liveTopJ = j;
                 liveFrac = level[idx];
             }
-            if (floodTopJ >= 0 && liveTopJ >= 0) break;
+            if (floodTopJ >= 0 && solidTopJ >= 0 && (!wantLive || liveTopJ >= 0)) break;
         }
-        if (floodTopJ < 0) return 0; // kein Body-Wasser in dieser Spalte → `L` führt
-        const floodTopY = (floodTopJ + 1) * step; // Oberkante der Flood-Säule (relativ zu oy)
-        const liveTopY = liveTopJ < 0 ? 0 : (liveTopJ + liveFrac) * step;
-        const delta = liveTopY - floodTopY; // ≈ 0 im Ruhe-Zustand
-        if (delta > -0.05 && delta < 0.05) return 0; // Rest-Rauschen ignorieren = exakte Ruhe
-        return Math.max(-14, Math.min(4, delta));
+        return { floodTopJ, liveTopJ, liveFrac, solidTopJ };
     }
 
     // Welle A — die Gras-Queue synchron leeren (Test-Naht, Spiegel von
@@ -47965,22 +48379,6 @@ class AnazhRealm {
                 if (wfsVal) wfsVal.textContent = v.toFixed(1);
             });
         }
-        // V18.31 — Auslauf-Übergang: die Breite des Ufer→Boden-Übergangs (das Wasser folgt
-        // dem Boden). Klein = scharfer Kontakt (fliesst sauber in den Boden), gross = sanfter.
-        const wosS = document.getElementById("slider-wateroutflow");
-        const wosVal = document.getElementById("slider-wateroutflow-val");
-        if (wosS) {
-            const o0 =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterOutflowSlope)
-                    ? this.state.atmosphere.waterOutflowSlope
-                    : 3.0;
-            wosS.value = String(Math.round(o0 * 10));
-            if (wosVal) wosVal.textContent = o0.toFixed(1) + " m";
-            wosS.addEventListener("input", () => {
-                const v = this.setWaterOutflowSlope(parseInt(wosS.value, 10) / 10);
-                if (wosVal) wosVal.textContent = v.toFixed(1) + " m";
-            });
-        }
         // V17.109 — die 2.5D-Lichtung (0..100 % → terrainFlatten 0..1). Der HAUPT-
         // Hebel gegen die Facetten-Rauten (blendet die Shading-Normale zur Up-Achse).
         const tfS = document.getElementById("slider-flatten");
@@ -50715,7 +51113,17 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.86.0";
+AnazhRealm.VERSION = "18.94.0";
+
+// V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
+// Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
+// Empfänger ab; Wasser dünnt mit der Hop-Entfernung von der Quelle geometrisch
+// aus (KEEP^n) → kein Pooling gegen den LOD-Ring-Damm (der V18.92-Badewannen-
+// Befund: 12.5 m über L), die Carve-Füllung nahe der Quelle bleibt voll (der
+// Quellen-Pin speist die Verluste nach). Gravitation bleibt VERLUSTFREI.
+// Browser-justierbar: anazhRealm.constructor.CA_FLOW_KEEP = 0.97 (näher 1 =
+// weitere Ausbreitung, näher 0.9 = kürzere Fluss-Zungen).
+AnazhRealm.CA_FLOW_KEEP = 0.95;
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
