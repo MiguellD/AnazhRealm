@@ -36,6 +36,12 @@ Fundament-Reste, der soziale Bogen und die offenen Render-Sign-offs.
 
 ## §3 · Der Plan vorwärts — die Reihenfolge
 
+> **Der Master-Blick über allem: `docs/gigant-plan.md`** (10.06.2026 — das umfassende gemessene
+> Bild: die sieben Säulen G1 Werkstatt-Animation als Motion-Resonanz · G2 Rekursion (AnazhRealm in
+> AnazhRealm) · G3 sich-speisendes P2P-Netz · G4 Kreatur-Innenleben · G5 δ-als-Währung-Ökonomie ·
+> G6 Licht+Terrain-Einheit · G7 Performance-Maßstab + die Zwillings-Karte + die Reihenfolge §5).
+> Dieser §3 bleibt die operative Kurz-Form; der Gigant-Plan trägt das Warum + die Anker.
+
 **⭐ Die EINE Wurzel — die Chunk-Naht (Schöpfer-Befund 09.06.2026, gemessen):** blobiges Terrain ·
 Edit-/LOD-Naht · die Wasser-Naht (30 Wellen) · „Wasser fließt nicht" sind **fünf Symptome EINER Wurzel**:
 independent gebaute Chunks, deren Ränder nur approximativ + verspätet zusammenfinden. Der vereinte
@@ -78,10 +84,11 @@ Zellen) · Unterwasser-Decken-Pass (V18.3 B5) · Kapillar/Stempel an Gebäuden.
 
 **Terrain/Naht (⭐ AKTIV, §11)** — N1 Cross-LOD watertight (Transvoxel ODER Geomorph→Kollision+volle Zone,
 ersetzt das alte „E4-Stitching") · N2 Sub-Region-Edit (kein Ganz-Chunk-Reset) · N3 stabiles LOD (grösserer
-LOD0-Ring + Hysterese) · **SPAWN-RESTBEFUND (V18.94, Schöpfer):** `_findOpenSpawnSpot` gebaut +
-headless-verifiziert, aber im Browser „meist noch im Boden, neue Welt ohne Plattform" —
-try/catch-Schluck in `_ensureGenesisPlatform` / `wasFirstSpawn`-Pfad / Scan-Timing prüfen
-(Diskriminator: Browser-Konsole Genesis-Zeile). Danach: H3 ferne Seen/Flüsse (Region mitwandern) ·
+LOD0-Ring + Hysterese) · ~~SPAWN-RESTBEFUND~~ **GEHEILT (V18.95):** die Wurzel war Hypothese b —
+der leere createNewWorld-Snapshot trug `playerPosition (0,50,0)` → der Reload-Restore setzte
+`terrainEverGenerated=true` → der Erst-Spawn lief im Browser nie; Fix: `playerPosition:null` =
+„vor Erst-Spawn", Restore lässt das Flag false (Browser-Pfad-Sonde `diag-genesis-spawn.cjs`
+rot→grün). Danach: H3 ferne Seen/Flüsse (Region mitwandern) ·
 Haupt-Fog an die Ring-Kante koppeln (heute separat).
 
 **LOD/Render** — U2 Wasser-LOD (heute fest LOD0) · U4 Deko-Distanz/Dichte/Impostor · U5 Schatten-CSM ·
@@ -104,8 +111,9 @@ Rest) · evolveCommunity (Kreatur-Kulturen).
 
 **UI** — Statusbar schlanken (auf Essenz) · der Schöpfer-Browser-Sign-off des GPU-Galerie-Feels.
 
-**Fern (Schöpfer-Entscheid)** — Fahrzeug-Fahr-Tiefe (Sitz/Steuerung/Trägheit) · VR (`vrMenu.js` da,
-nicht im Gate) · IndexedDB-Persistenz (statt localStorage).
+**Fern (Schöpfer-Entscheid)** — Fahrzeug-Fahr-Tiefe (Sitz/Steuerung/Trägheit) · VR (**KORREKTUR
+10.06.: `vrMenu.js` existiert NICHT** — die alte Zeile war stale; ein VR-Bogen startet bei null) ·
+IndexedDB-Persistenz (statt localStorage).
 
 ---
 
@@ -187,6 +195,11 @@ nicht im Gate) · IndexedDB-Persistenz (statt localStorage).
 - Chat-DSL-Skeleton (Nexus-Parser) — ruhender Vision-Faden, Phase E / S7-C konsumiert ihn.
 - Die frozen Resonanz-Signaturen (`FORM_TAG_ACTIVATION` · `FORM_ROLE_SIGNATURES` · `computeBlueprintRole`)
   — emergent-korrekt, KEIN Ad-hoc-Tuning; die Struktur, auf der Rezeptbuch/Equip/Avatar bauen.
+- **Die Code-Sweep-Samen (10.06., gigant-plan §5-D5/F4):** das Wetter-ambient-Array
+  (`snow/embers/motes` :27292 — deklariert, nie geschaltet → D5a Wetter-Polyvalenz) · die
+  anazhSymphony-Emotion→Tonalität-Lücke (Pfeiler 4 halb — das magieleitung-Shimmer :9658 ist das
+  Vorbild → D5b) · `journal share/witness` (Typen ohne Schreiber — der Sozial-Bogen F4 schreibt
+  sie; NICHT schneiden).
 
 ---
 

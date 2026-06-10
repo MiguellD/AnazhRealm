@@ -22,6 +22,10 @@ wieder zur Halde.
 kantiges Terrain + leitbares Wasser; die Chunk-Naht-Wurzel, IPERKA, alle Schnittstellen). Wandert ins
 Archiv, wenn der Bogen vollendet ist.
 
+**Über dem Tisch — der Master-Blick:** `docs/gigant-plan.md` (DER GIGANT, 10.06.2026 — das
+umfassende gemessene Bild + die sieben Säulen G1–G7 + die Zwillinge + Stand-der-Technik-Karte +
+die Reihenfolge). Die Karte ÜBER den Detail-Plänen; pro vollendeter Säule wird sie kürzer.
+
 ---
 
 ## Die Bibliothek (`docs/archiv/`) — ZUERST lesen, wenn du an X arbeitest
@@ -30,7 +34,8 @@ Archiv, wenn der Bogen vollendet ist.
 
 | Datei | Was | Trigger |
 |---|---|---|
-| `archiv/wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, das statische `L`, der Fluid-Plan) | Wasser · Fluss · See · Wasserfall · Naht · Render · Dynamik |
+| `archiv/wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, die Drei-Schichten-Architektur) | Wasser · Fluss · See · Wasserfall · Naht · Render · Dynamik |
+| `archiv/terrain-t4-wasser-ca-plan.md` | Der Wasser-CA-Bogen (VOLLENDET V18.84–.94) — die Chronik der Fluid-Entscheidungen (Quellen-Pin · Receiver-Support · Flow-Regel) | Wasser-CA · Nachfliessen · Quellen · Flow-Regel |
 | `archiv/lod-kaskade-plan.md` | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter) | LOD · Streaming · Sicht-Ring · Schatten-CSM · Deko-Distanz · Draw-Calls |
 | `archiv/kampf-plan.md` | Crafting/Kampf §11 (Schöpfungs-Fluss, Resonanz, S6-B/S9/S11/Phase E) | Kampf · Waffe · Werkzeug · Rüstung · Trank · Avatar · Werkstatt · Crafting |
 | `archiv/world-portal-w18-plan.md` | W18 — in fremden Welten leben (Ko-Präsenz) | Portal-Ko-Präsenz · fremde Welten |

@@ -1,9 +1,14 @@
 # T4 — Wasser-Kohärenz: der zelluläre Automat (Wasser fliesst) — DETAIL-PLAN
 
-> **Status:** AKTIVER DETAIL-PLAN (09.06.2026). Der Folge-Bogen des Terrain-Kohärenz-Plans (§4 T4),
-> jetzt ENTRIEGELT — die Grenze ist kohärent (T0–T3 GEBAUT: T1 zeitlich · T2 räumlich · T3 Mesher),
-> und ein CA mit cross-chunk-wake brauchte genau diese konsistente Nachbar-Zell-Wahrheit (die These
-> des ganzen Bogens). **Vor jeder Wasser-Arbeit ZUERST `docs/archiv/wasser-render-architektur-plan.md`
+> **Status: VOLLENDET + GEMERGT (10.06.2026, V18.84–.94).** Der ganze Bogen ist GEBAUT + GEMESSEN +
+> Schöpfer-bestätigt („genial, L-Sheet kann raus" · „die Richtung stimmt"): T4a-Kern · Welt-Verdrahtung ·
+> Physik-Read · W-B (Quellen-Pin · Pre-Carve-Seed · Receiver-Support · y-Band) · W-A Zell-Sheet (seit
+> V18.92 der EINE Default-Render, der L-Film ist ENTFERNT) · die Flow-Regel (V18.93: Decay + Spiegel-
+> Kappe + EPS-Fixpunkt → Wake-on-Stream AN). Dieses Dokument ist jetzt die CHRONIK des Bogens + die
+> Referenz seiner Entscheidungen. **Offene Reste leben in `docs/roadmap.md` §4 „Wasser"** (Wasserfall-
+> Plane-Überlapp · Schelf-Konsolidierung · Hoch-Becken über `L` · Unterwasser-Pass B5 · U2 Wasser-LOD).
+> Der Folge-Bogen des Terrain-Kohärenz-Plans (§4 T4); er brauchte die kohärente Grenze (T0–T3) — die
+> These des ganzen Bogens hielt. **Vor jeder Wasser-Arbeit ZUERST `wasser-render-architektur-plan.md`
 > (die EINE Wahrheit + die 30-Wellen-Spirale) lesen.**
 >
 > **Das ist „Option A" der Schöpfer-Entscheidung (06.06., wasser-plan §157): ECHTE FLUID-DYNAMIK.**

@@ -3649,6 +3649,27 @@ async function checkBandV1748Social(ctx) {
         r._tickEmotionContagion(1);
         out.sadGrieves = p.emotions.sorrow > 0 && p.emotions.joy === 0;
 
+        // (2c) V18.100 G4-1 — der VEKTOR ist die Wahrheit (KONSUM-Diskriminator):
+        // ein Wesen mit echtem awe-Innenleben steckt den Spieler mit AWE an —
+        // das binäre happy-Target (CONTAGION_TARGET) kennt KEIN awe, nur der
+        // Vektor-Pfad kann das transportieren.
+        setEmo({});
+        r.state.creatures = [fake(1)];
+        r.state.creatures[0].userData.emotions = { joy: 0, awe: 0.7, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+        r.state.creatureEmotions = ["happy"];
+        r._tickEmotionContagion(1);
+        out.vecContagionAwe = p.emotions.awe > 0;
+
+        // (2d) V18.100 G4-1 — EIN Substrat: der Kreatur-Treffer fühlt über
+        // ACTION_TO_EMOTION.damage (denselben Vektor-Eintrag wie der Spieler)
+        // und die binäre "sad"-Projektion fällt aus der Valenz (Alt-Leser heil).
+        const fcDmg = fake(0);
+        r.state.creatures = [fcDmg];
+        r.state.creatureEmotions = ["happy"];
+        r._feelCreatureAction(fcDmg, "damage", 2.5);
+        out.creatureFeelsDamage =
+            !!fcDmg.userData.emotions && fcDmg.userData.emotions.sorrow > 0.2 && r.state.creatureEmotions[0] === "sad";
+
         // (2b) gebounded: die Contagion treibt joy NICHT über das Ziel (0.5) hinaus (kein Runaway)
         setEmo({ joy: 0.5 });
         inject("happy", 1);
@@ -3712,6 +3733,14 @@ async function checkBandV1748Social(ctx) {
     check("V17.48 Soziales: EMOTION_CONTAGION-Config + CONTAGION_TARGET + die loss-Tat existieren", res.config);
     check("V17.48 Soziales: KONSUM — ein freudiges Wesen nah HEBT joy + peace (Contagion)", res.happyLifts);
     check("V17.48 Soziales: KONSUM — ein leidendes Wesen nah betrübt (sorrow)", res.sadGrieves);
+    check(
+        "V18.100 G4-1 KONSUM: die Contagion liest das 6-Achsen-Innenleben — ein awe-fühlendes Wesen steckt mit AWE an (binär unmöglich)",
+        res.vecContagionAwe
+    );
+    check(
+        "V18.100 G4-1: der Kreatur-Treffer fühlt über DASSELBE Substrat (ACTION_TO_EMOTION.damage → Vektor; 'sad' fällt aus der Valenz-Projektion)",
+        res.creatureFeelsDamage
+    );
     check(
         "V17.48 Soziales: gebounded — die Contagion sättigt am Ziel (≤0.5), kein Runaway (V17.44-Lehre)",
         res.contagionBounded
@@ -6239,6 +6268,34 @@ async function checkBandV1774UseByRole(ctx) {
             [...soulSel2.options].filter((o) => o.value === "avatar_waechter").length === 0 &&
             [...soulSel2.options].some((o) => o.value === "bp_avatar_waechter");
 
+        // V18.99 (G1 — Motion-Resonanz): (a) die Bewegungs-Rollen EMERGIEREN
+        // für den Bauplan-Avatar (Bein + Flügel aus Form × Lage × Spiegelung,
+        // kein Hardcode), (b) der verkörperte CUSTOM-Avatar BEWEGT sich beim
+        // Gehen (vorher: der frühe animatePlayerSoul-Return = komplett
+        // statisch — KONSUM-Beweis, V17.31-Disziplin, am echten Treiber).
+        const wRoles = (r.computeMotionRoles(r.state.blueprints.avatar_waechter.parts) || []).filter(Boolean);
+        // V18.101 (Test wandert auf den WAHREREN Intent): die geschärfte
+        // flat-Formel (Platte = mid/min, nicht max/min) erkennt die dünnen
+        // Wächter-Seiten-ZYLINDER korrekt als ARME (keine Platten-Flügel);
+        // die echte fluegel-Emergenz deckt der Phönix (2 Spiegel-PLANES).
+        out.motionRolesEmerge =
+            wRoles.some((x) => x.role === "bein") &&
+            wRoles.some((x) => x.role === "arm" || x.role === "fluegel") &&
+            (r.computeMotionRoles(r.playerSoulDefs.phoenix.bodyParts) || [])
+                .filter(Boolean)
+                .filter((x) => x.role === "fluegel").length === 2;
+        if (r.state.playerBody) {
+            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 3, 0, 0));
+            r.state.playerBody.activate(true);
+        }
+        r.state.player.animationLastTick = -Infinity;
+        r.animatePlayerSoul(10.0);
+        const mSnap1 = r.state.playerMesh.children.map((c) => c.rotation.x.toFixed(4)).join(",");
+        r.animatePlayerSoul(10.6);
+        const mSnap2 = r.state.playerMesh.children.map((c) => c.rotation.x.toFixed(4)).join(",");
+        out.customAvatarAnimates = mSnap1 !== mSnap2;
+        if (r.state.playerBody) r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 0, 0, 0));
+
         // restore — kein dangling Held/Soul/Hotbar/customSoul/Phantom für die nächsten Bands
         if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
         else r.state.worldMeta.gameMode = savedMode;
@@ -6281,6 +6338,14 @@ async function checkBandV1774UseByRole(ctx) {
     check(
         "V17.74 Welle 1b BUG-b KONSUM: einen Bauplan-Avatar verkörpern formt + registriert ihn (player.soul=bp_…, customSoul), kein Doppel-Eintrag danach",
         res.avatarEmbodied && res.noDuplicate
+    );
+    check(
+        "V18.99 G1: Bewegungs-Rollen EMERGIEREN für den Bauplan-Avatar (Bein + Flügel aus Form×Lage×Spiegelung)",
+        res.motionRolesEmerge
+    );
+    check(
+        "V18.99 G1 KONSUM: der verkörperte Custom-Avatar BEWEGT sich beim Gehen (animatePlayerSoul treibt die Motion-Resonanz — vorher statisch)",
+        res.customAvatarAnimates
     );
 }
 
@@ -9966,6 +10031,27 @@ async function checkBandRing8(ctx) {
             Math.abs(r.state.playerMesh.position.x - 42) < 0.5 &&
             Math.abs(r.state.playerMesh.position.z - 23) < 0.5;
 
+        // V18.95 — der leere createNewWorld-Snapshot (playerPosition:null)
+        // zählt NICHT als „schon generiert": das Flag bleibt false und die
+        // Position bleibt unangetastet → der Browser-Reload-Pfad fährt den
+        // Genesis-Erst-Spawn (deterministischer offener Punkt + Plattform).
+        // Wurzel des V18.94-Browser-Befunds „neue Welt: keine Plattform,
+        // im Boden" (Browser-Pfad-Reproduktion: `diag-genesis-spawn.cjs`).
+        const emptySnap = r._buildEmptyWorldSnapshot(
+            { worldId: "test-genesis-pre-spawn", slug: "test-genesis", bornAt: Date.now(), seed: "s-test" },
+            false
+        );
+        out.emptySnapHasNoPosition = emptySnap.playerPosition === null;
+        const savedPos = r.state.playerMesh ? r.state.playerMesh.position.clone() : null;
+        r.state.terrainEverGenerated = false;
+        if (r.state.playerMesh) r.state.playerMesh.position.set(7, 8, 9);
+        r._loadStateRestorePlayerPosition(emptySnap);
+        out.emptySnapKeepsFirstSpawn = r.state.terrainEverGenerated === false;
+        out.emptySnapKeepsPosition = r.state.playerMesh && Math.abs(r.state.playerMesh.position.x - 7) < 0.01;
+        // Lauf-Zustand zurück: die Welt IST generiert + Position restauriert.
+        r.state.terrainEverGenerated = true;
+        if (savedPos && r.state.playerMesh) r.state.playerMesh.position.copy(savedPos);
+
         // Status-Bar zeigt aktuelle Welt
         const slugEl = document.getElementById("status-slug");
         out.statusSlugInDom = !!slugEl;
@@ -9988,6 +10074,12 @@ async function checkBandRing8(ctx) {
         check("Ring 8.2: buildStateSnapshot fängt Spieler-Position ein", ring82Results.snapshotCapturesPosition);
         check("Ring 8.2: loadState setzt terrainEverGenerated", ring82Results.flagSetAfterLoad);
         check("Ring 8.2: loadState restauriert Spieler-Position", ring82Results.positionRestoredAfterLoad);
+        check("V18.95: leerer Welt-Snapshot trägt playerPosition:null", ring82Results.emptySnapHasNoPosition);
+        check(
+            "V18.95: Save ohne playerPosition lässt terrainEverGenerated false (Erst-Spawn-Pfad)",
+            ring82Results.emptySnapKeepsFirstSpawn
+        );
+        check("V18.95: Save ohne playerPosition bewegt den Spieler nicht", ring82Results.emptySnapKeepsPosition);
         check("Ring 8.2: #status-slug im DOM", ring82Results.statusSlugInDom);
         check("Ring 8.2: Status-Bar-Label heißt 'Welt'", ring82Results.statusLabelIsWelt);
         check("Ring 8.2: Status-Bar zeigt aktive Welt-Slug", ring82Results.statusSlugShowsActiveWorld);
@@ -16490,11 +16582,18 @@ async function checkBandWelle6DSoul(ctx) {
         const s2b = r.soulToBlueprint("human");
         out.s2bOk = !!(s2b && s2b.ok);
         const s2bBp = s2b && s2b.ok ? r.state.blueprints[s2b.name] : null;
+        // V18.101 (Test wandert, V9.56-i): der Mensch hat jetzt POSITIONIERTE
+        // bodyParts (6 statt der 4 positions-losen Stat-Schatten — der
+        // Schöpfer-Befund „Körper holen zeigt nicht den getragenen Avatar").
+        // Die Wahrheit ist dynamisch: ALLE def-Teile reisen, POSITIONIERT
+        // (nicht alle am Ursprung gestapelt).
+        const humanDefParts = r.playerSoulDefs.human.bodyParts.length;
         out.s2bIsSoulRole = !!(
             s2bBp &&
             s2bBp.role === "soul" &&
             Array.isArray(s2bBp.parts) &&
-            s2bBp.parts.length === 4
+            s2bBp.parts.length === humanDefParts &&
+            new Set(s2bBp.parts.map((p) => `${p.position.x},${p.position.y},${p.position.z}`)).size >= 5
         );
         if (s2b && s2b.ok) r.deleteBlueprint(s2b.name);
 
@@ -16503,10 +16602,12 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.soul = "human";
         const cloneResult = r.cloneSoulToCustom("human", "test_clone_a");
         out.cloneReturnsOk = cloneResult && cloneResult.ok;
+        // V18.101 (Test wandert, V9.56-i): dynamisch gegen die def-Länge —
+        // der Mensch trägt jetzt 6 positionierte Teile statt 4 Stat-Schatten.
         out.cloneHasBodyParts =
             r.state.customSouls.test_clone_a &&
             Array.isArray(r.state.customSouls.test_clone_a.bodyParts) &&
-            r.state.customSouls.test_clone_a.bodyParts.length === 4;
+            r.state.customSouls.test_clone_a.bodyParts.length === r.playerSoulDefs.human.bodyParts.length;
 
         // Add part
         const beforeParts = r.state.customSouls.test_clone_a.bodyParts.length;
@@ -22696,7 +22797,10 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         out.routerHasDrink = /task\.name === "drink"/.test(routerSrc);
         const drinkSrc = r._tickCreatureDrink.toString();
         out.drinkHasPhases = /_target/.test(drinkSrc) && /_drinkStart/.test(drinkSrc);
-        out.drinkSetsHappy = /creatureEmotions\[idx\]\s*=\s*"happy"/.test(drinkSrc);
+        // V18.100 G4-1 (Test wandert mit, V9.56-i): das vollendete Trinken fühlt
+        // jetzt über das EINE Substrat (_feelCreatureAction → harvest: joy+hope;
+        // die "happy"-Projektion fällt aus der Valenz) statt eines Direkt-Stempels.
+        out.drinkSetsHappy = /_feelCreatureAction\(creature,\s*"harvest"/.test(drinkSrc);
 
         // Chat-Pattern „trinke" liefert drink-Programm.
         const parsed = r.parseChatToDsl("trinke");
@@ -23535,11 +23639,35 @@ async function checkBandVoxelP3AndInventory(ctx) {
             out.skip = true;
             return out;
         }
+        // V18.96 (V17.32-Disziplin — den INTENT deterministisch testen, nicht
+        // den konfundierten Warmup-Zustand): der Carve sitzt OBERFLÄCHEN-
+        // relativ (surf − 1.5), nicht spieler-y-relativ. Ein früheres Band
+        // kann den Spieler hoch in der Luft hinterlassen (Sky-Test y=5000;
+        // je schneller der Lauf, desto weniger Wall-Clock zum Runterfallen)
+        // → pm.y − 1.5 läge über der `_addVoxelEdit`-Y-Wand → Edit verworfen
+        // → false-rot. surf − 1.5 ist IMMER in-band + im Terrain.
+        const carveSurf = r.getTerrainHeightAt(pm.x, pm.z);
+        const cy = (Number.isFinite(carveSurf) ? carveSurf : pm.y) - 1.5;
         // Ein Carve in der Nähe des Spielers markiert Chunks dirty
         // statt sie sofort zu rebuilden (V9.40-c-Verhalten).
         const dirtyBefore = r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : 0;
-        r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+        const carveRet = r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         out.editMarksDirty = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > dirtyBefore);
+        // V18.97-Telemetrie (V18.93-Muster): bei Rot zeigt die Invariante den
+        // ECHTEN Lauf-Zustand (Position/Surface/Edit-Annahme), statt zu raten.
+        out.telemetry = JSON.stringify({
+            pm: { x: +pm.x.toFixed(1), y: +pm.y.toFixed(1), z: +pm.z.toFixed(1) },
+            carveSurf: Number.isFinite(carveSurf) ? +carveSurf.toFixed(1) : null,
+            cy: +cy.toFixed(1),
+            carveRet,
+            dirtyBefore,
+            dirtyAfter: r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : -1,
+            chunks: r.state.voxelChunks ? r.state.voxelChunks.size : -1,
+            playerChunkBuilt: !!(
+                r.state.voxelChunks &&
+                r.state.voxelChunks.get(`${Math.floor((pm.x + 150) / 43.2)},${Math.floor((pm.z + 150) / 43.2)}`)
+            ),
+        });
         // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
         const dirtyMid = r.state.dirtyVoxelChunks.size;
         const built = r._drainDirtyVoxelChunks();
@@ -23547,7 +23675,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
         out.drainReturnedCount = built === dirtyMid;
         // Game-Loop-Tick rebuildet pro Frame max 1.
-        r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+        r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
         if (dirtyPostEdit > 1) {
             r._tickDirtyVoxelChunks(pm);
@@ -23557,7 +23685,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         }
         // Disposal räumt dirty-Marker mit.
         r._drainDirtyVoxelChunks();
-        r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+        r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         const dirtyKey = [...r.state.dirtyVoxelChunks][0];
         if (dirtyKey) {
             r._disposeVoxelChunk(dirtyKey);
@@ -23576,11 +23704,13 @@ async function checkBandVoxelP3AndInventory(ctx) {
         );
         check(
             "V9.40-c: ein Carve markiert Voxel-Chunks dirty (statt sofort sync rebuild)",
-            voxelV940cResults.editMarksDirty
+            voxelV940cResults.editMarksDirty,
+            voxelV940cResults.telemetry
         );
         check(
             "V9.40-c: _drainDirtyVoxelChunks rebuildet + leert das Set",
-            voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet
+            voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet,
+            voxelV940cResults.telemetry
         );
         check(
             "V9.40-c: _drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks",

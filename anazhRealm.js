@@ -2822,7 +2822,18 @@ class AnazhRealm {
             },
             creatures_emotion: ([emotion]) => {
                 if (emotion !== "happy" && emotion !== "sad") return;
-                for (let i = 0; i < this.state.creatureEmotions.length; i++) this.state.creatureEmotions[i] = emotion;
+                // V18.100 (G4-1) — der Op SETZT das Innenleben (deterministisch,
+                // wie sein alter Intent): ein klarer Achsen-Zustand statt eines
+                // Etikett-Stempels; die Projektion liefert das alte Verhalten.
+                for (let i = 0; i < this.state.creatures.length; i++) {
+                    const c = this.state.creatures[i];
+                    if (!c || !c.userData) continue;
+                    c.userData.emotions =
+                        emotion === "sad"
+                            ? { joy: 0, awe: 0, sorrow: 0.6, hope: 0, peace: 0, chaos: 0.1 }
+                            : { joy: 0.6, awe: 0, sorrow: 0, hope: 0.2, peace: 0.2, chaos: 0 };
+                    this._projectCreatureEmotion(c);
+                }
             },
             creatures_speed_mul: ([factor]) => {
                 const f = c(factor, 0.1, 5);
@@ -7167,8 +7178,21 @@ class AnazhRealm {
         const yOff = entry.meshKind === "placeholder" ? -1 : 0;
         let posY = entry.y + yOff;
         if (entry.meshKind === "soul-custom") {
-            // Custom-Seelen kriegen kein def.animate — ein sanftes Idle-Wippen.
-            posY += Math.sin(t * 1.8) * 0.04;
+            // V18.99 (G1 — Motion-Resonanz): Peer-Custom-Seelen erben die
+            // emergente Bewegung (vorher nur Idle-Wippen) — Rollen aus den
+            // per soul-Nachricht gereisten bodyParts, Phase aus dem
+            // Positions-Stream (keine Extra-Bandbreite, wie die Built-ins).
+            if (Array.isArray(entry.bodyParts)) {
+                if (entry._motionRoles === undefined) entry._motionRoles = this.computeMotionRoles(entry.bodyParts);
+                if (entry._motionRoles) {
+                    entry.walkPhase = (entry.walkPhase || 0) + (isMoving ? dt * 5.0 : 0);
+                    this._animateCompoundMotion(mesh, entry._motionRoles, nowSec, entry.walkPhase, isMoving);
+                } else {
+                    posY += Math.sin(t * 1.8) * 0.04;
+                }
+            } else {
+                posY += Math.sin(t * 1.8) * 0.04;
+            }
         }
         mesh.position.set(entry.x, posY, entry.z);
         mesh.rotation.y = entry.yaw;
@@ -8646,6 +8670,40 @@ class AnazhRealm {
         return { dominant: top1, valence, arousal, intensity, label, mix };
     }
 
+    // === V18.100 (G4-1 — das Kreatur-INNENLEBEN): 6 Achsen statt binär =====
+    //
+    // Der Zwillings-Schnitt (gigant-plan §3 Nr. 3): Kreaturen fühlten ein
+    // binäres Etikett ("happy"/"sad", ad-hoc mutiert), der Spieler 6 Achsen
+    // über _feelAction/ACTION_TO_EMOTION. Jetzt fühlen BEIDE über DASSELBE
+    // Substrat: der Vektor (`creature.userData.emotions`) ist die Wahrheit,
+    // das binäre Etikett (`state.creatureEmotions[i]`) wird die VALENZ-
+    // PROJEKTION (via `_emotionState` — derselbe dimensionale Leser wie für
+    // Spieler-Emotion und Mood) → ALLE Alt-Leser (Flocking · Speed/Jump ·
+    // HUD · Hof-Profil · Persistenz) bleiben unberührt heil. Der Vektor ist
+    // reaktive Schicht (NICHT persistiert — V17.27-Doktrin; die Projektion
+    // persistiert wie bisher; ein Reload startet gefühls-ruhig).
+    _feelCreatureAction(creature, type, intensity = 1) {
+        if (!creature || !creature.userData) return;
+        const table = AnazhRealm.ACTION_TO_EMOTION[type];
+        if (!table) return;
+        const ud = creature.userData;
+        if (!ud.emotions) ud.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+        for (const axis in table) {
+            const cur = ud.emotions[axis] || 0;
+            ud.emotions[axis] = Math.max(0, Math.min(1, cur + table[axis] * intensity));
+        }
+        this._projectCreatureEmotion(creature);
+    }
+
+    // Die Valenz-Projektion Vektor → binäres Etikett (EINE Quelle: _emotionState).
+    _projectCreatureEmotion(creature) {
+        const ud = creature && creature.userData;
+        if (!ud || !ud.emotions) return;
+        const idx = this.state.creatures.indexOf(creature);
+        if (idx < 0 || !Array.isArray(this.state.creatureEmotions)) return;
+        this.state.creatureEmotions[idx] = this._emotionState(ud.emotions).valence >= 0 ? "happy" : "sad";
+    }
+
     // W3 (V17.47) — die Valenz der langsamen STIMMUNG (∈ [−1, 1], via EMOTION_GEOMETRY).
     // Speist die stimmungs-kongruente Bewertung: eine trübe Stimmung tönt die nächste
     // Bewertung negativ, eine helle positiv. Skaliert mit der Stimmungs-STÄRKE (eine
@@ -8688,8 +8746,13 @@ class AnazhRealm {
                 c.userData.bond = Math.min(1, (c.userData.bond || 0) + cfg.bondGrowPerSec * proximity * delta);
             }
             const bond = (c.userData && c.userData.bond) || 0;
-            const emo = (this.state.creatureEmotions && this.state.creatureEmotions[i]) || "happy";
-            const target = targets[emo];
+            // V18.100 (G4-1, der KONSUM des neuen Vektors): die Contagion liest
+            // das ECHTE 6-Achsen-Innenleben der Kreatur, wo es lebt — der
+            // Spieler wird von dem angesteckt, was das Wesen WIRKLICH fühlt
+            // (awe/hope/peace reisen mit, nicht nur ein happy/sad-Derivat).
+            // Ohne Vektor (frisch geladen/ruhig): der alte binäre Pfad.
+            const vec = c.userData && c.userData.emotions;
+            const target = vec || targets[(this.state.creatureEmotions && this.state.creatureEmotions[i]) || "happy"];
             if (!target) continue;
             const weight = cfg.rate * proximity * (cfg.bondFloor + (1 - cfg.bondFloor) * bond) * delta;
             for (const axis of Object.keys(target)) {
@@ -11453,12 +11516,15 @@ class AnazhRealm {
     // gültigen Per-Welt-Save vor und startet die neue Welt mit dieser Basis.
     _buildEmptyWorldSnapshot(worldMeta, inheritPlayer) {
         const snap = {
-            // Ring 8.2: Y=50 wie beim allerersten Spawn — der Spieler fällt
-            // sauber aufs Terrain. Y=5 würde ihn in steile Hänge clippen
-            // lassen, weil das Terrain je nach Seed auch 30+ Einheiten hoch
-            // sein kann. Die loadState-Position-Restore-Logik teleportiert
-            // sonst auf die zu tiefe Höhe, statt einen Spawn-Fall zu lassen.
-            playerPosition: this._defaultSpawnPos(),
+            // V18.95 — playerPosition:null markiert „Welt VOR ihrem Erst-Spawn":
+            // der Reload-Restore lässt terrainEverGenerated dann false, und
+            // generateTerrainWithParameters fährt den ECHTEN Erst-Spawn
+            // (deterministischer offener Punkt + Genesis-Plattform, V18.94).
+            // Der alte Ring-8.2-Default (0,50,0) machte den leeren Snapshot
+            // zur „schon generierten" Welt → wasFirstSpawn=false → keine
+            // Plattform, Spieler fiel blind auf (0,0) — der Browser-Befund
+            // „neue Welt: keine Plattform, im Boden" (`diag-genesis-spawn.cjs`).
+            playerPosition: null,
             knowledgeBase: [],
             version: this.state.currentVersion || "7.71",
             selfAwareness: { components: [], weaknesses: [] },
@@ -12692,6 +12758,13 @@ class AnazhRealm {
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
+        // V18.100 (G4-1) — das Innenleben startet kongruent zum Spawn-Etikett
+        // (sad → Trauer-Grundton, sonst ruhige Freude); ab jetzt schreibt nur
+        // noch _feelCreatureAction/Wetter, das Etikett ist Projektion.
+        group.userData.emotions =
+            emotion === "sad"
+                ? { joy: 0, awe: 0, sorrow: 0.4, hope: 0, peace: 0, chaos: 0 }
+                : { joy: 0.2, awe: 0, sorrow: 0, hope: 0.1, peace: 0.15, chaos: 0 };
         if (this.state.physicsWorld) {
             // Hitbox bleibt bewusst kompakt (0.5×0.5×0.5 wie pre-V7.82) — die
             // Visual-Höhe variiert je Seele, aber Kollision soll vorhersagbar
@@ -13004,6 +13077,186 @@ class AnazhRealm {
         return group;
     }
 
+    // === V18.99 (G1 — die Werkstatt ATMET): die MOTION-RESONANZ ============
+    //
+    // Die Bewegungs-Rolle JEDES Parts emergiert aus seiner Form × Lage ×
+    // Spiegelung gegen `MOTION_ROLE_SIGNATURES` (argmax, Floor) — exakt das
+    // Resonanz-Muster der Werk-Rollen, auf MOTION angewandt. Die drei Hand-
+    // Skelette (_animateHuman/Phoenix/Dragon) bleiben als gestaltete
+    // Signaturen der Built-in-Seelen; ALLES andere Gebaute erbt hier:
+    // Kreaturen (vorher starr) · Custom-Avatare (vorher komplett statisch) ·
+    // Peer-Custom-Seelen · die Werkstatt zeigt die erkannten Rollen im
+    // Readout. Render-only (kein Snapshot/Worker/Determinismus-Pfad).
+    // Input ist eine parts-Liste (Bauplan ODER Soul-bodyParts — ein Schema);
+    // Output ist eine zu parts ALIGNIERTE Liste ({role, side, phase} | null)
+    // oder null, wenn nichts resoniert.
+    computeMotionRoles(parts) {
+        if (!Array.isArray(parts) || parts.length < 2) return null;
+        const SIG = AnazhRealm.MOTION_ROLE_SIGNATURES;
+        const FLOOR = AnazhRealm.MOTION_ROLE_FLOOR;
+        const eps = 1e-6;
+        const info = [];
+        let minY = Infinity;
+        let maxY = -Infinity;
+        let maxAX = eps;
+        let maxAZ = eps;
+        for (const p of parts) {
+            if (!p || p.shape === "blueprint") {
+                info.push(null);
+                continue;
+            }
+            const s = p.size || {};
+            let sx = Math.abs(Number(s.x) || 0.3);
+            let sy = Math.abs(Number(s.y) || 0.3);
+            let sz = Math.abs(Number(s.z) || 0.3);
+            // V18.101 — ROTATION-bewusste effektive Ausmaße: ein um die Achse
+            // gedrehter Part (z. B. der liegende Schweif-Zylinder, rotation.x
+            // = π/2) hat in WELT-Achsen getauschte Ausdehnungen — ohne das
+            // las der Klassifikator einen liegenden Schweif als „stehendes
+            // Bein". |R|·s (Beträge der Rotations-Matrix mal Halbachsen) ist
+            // die AABB-Hülle des gedrehten Quaders — exakt das, was die
+            // Lage-Achsen (elongV/H, flat) brauchen.
+            const rot = p.rotation;
+            if (rot && (rot.x || rot.y || rot.z)) {
+                const cx = Math.abs(Math.cos(rot.x || 0));
+                const sxr = Math.abs(Math.sin(rot.x || 0));
+                const cy = Math.abs(Math.cos(rot.y || 0));
+                const syr = Math.abs(Math.sin(rot.y || 0));
+                const cz = Math.abs(Math.cos(rot.z || 0));
+                const szr = Math.abs(Math.sin(rot.z || 0));
+                // |R| für Euler XYZ, komponentenweise konservativ kombiniert.
+                const ex = cy * cz * sx + (szr * cx + sxr * syr * cz) * sy + (sxr * szr + cx * syr * cz) * sz;
+                const ey = cy * szr * sx + (cx * cz + sxr * syr * szr) * sy + (sxr * cz + cx * syr * szr) * sz;
+                const ez = syr * sx + sxr * cy * sy + cx * cy * sz;
+                sx = ex;
+                sy = ey;
+                sz = ez;
+            }
+            const pos = p.position || {};
+            const px = Number(pos.x) || 0;
+            const py = Number(pos.y) || 0;
+            const pz = Number(pos.z) || 0;
+            info.push({ sx, sy, sz, px, py, pz, shape: p.shape || "box" });
+            minY = Math.min(minY, py - sy / 2);
+            maxY = Math.max(maxY, py + sy / 2);
+            maxAX = Math.max(maxAX, Math.abs(px) + sx / 2);
+            maxAZ = Math.max(maxAZ, Math.abs(pz) + sz / 2);
+        }
+        const H = Math.max(eps, maxY - minY);
+        const c01 = (v) => Math.max(0, Math.min(1, v));
+        const roles = parts.map(() => null);
+        let any = false;
+        for (let i = 0; i < info.length; i++) {
+            const a = info[i];
+            if (!a) continue;
+            const f = {
+                elongV: c01((a.sy / Math.max(a.sx, a.sz, eps) - 1) / 1.5),
+                elongH: c01((Math.max(a.sx, a.sz) / Math.max(a.sy, eps) - 1) / 1.5),
+                // flat = PLATTE: die KLEINSTE Achse ist viel dünner als die
+                // MITTLERE (nicht max/min — ein dünner LANGER Zylinder ist
+                // gestreckt, keine Platte; der Arm-als-Flügel-Riss, V18.101).
+                flat: (() => {
+                    const d = [a.sx, a.sy, a.sz].sort((u, v) => u - v);
+                    return c01((d[1] / (d[0] + eps) - 2.2) / 3);
+                })(),
+                lowAnchor: c01(1 - (a.py - a.sy / 2 - minY) / (0.3 * H)),
+                topMount: c01((a.py - (minY + 0.55 * H)) / (0.45 * H)),
+                sideMount: c01((Math.abs(a.px) / maxAX - 0.35) / 0.45),
+                rearMount: c01((Math.abs(a.pz) / maxAZ - 0.4) / 0.4),
+                roundish: a.shape === "sphere" || a.shape === "octahedron" ? 1 : a.shape === "box" ? 0.35 : 0.15,
+                central: c01(1 - (Math.abs(a.px) / maxAX + Math.abs(a.pz) / maxAZ)),
+                paired: 0,
+            };
+            // paired: ein Spiegel-Zwilling (gleiche Form, ähnliche Größe) auf
+            // der x- ODER z-Achse — die Konjunktion als 0/1-Achse (V17.107).
+            for (let j = 0; j < info.length; j++) {
+                if (j === i) continue;
+                const b = info[j];
+                if (!b || b.shape !== a.shape) continue;
+                if (Math.abs(a.sx - b.sx) + Math.abs(a.sy - b.sy) + Math.abs(a.sz - b.sz) > 0.2) continue;
+                const mirrorX =
+                    Math.abs(a.px + b.px) < 0.12 && Math.abs(a.px) > 0.04 && Math.abs(a.py - b.py) < 0.2 * H;
+                const mirrorZ =
+                    Math.abs(a.pz + b.pz) < 0.12 && Math.abs(a.pz) > 0.04 && Math.abs(a.py - b.py) < 0.2 * H;
+                if (mirrorX || mirrorZ) {
+                    f.paired = 1;
+                    break;
+                }
+            }
+            let bestRole = null;
+            let bestScore = -Infinity;
+            for (const role in SIG) {
+                const sig = SIG[role];
+                let score = 0;
+                for (const ax in sig) score += sig[ax] * (f[ax] || 0);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestRole = role;
+                }
+            }
+            if (bestScore < FLOOR) continue;
+            // Seite + Phase: Beine im Diagonal-Trab (die Dragon-Signatur
+            // generalisiert: (x>0) xor (z>0) → Gegenphase), Arme gegen das
+            // gleichseitige Bein, der Schwanz als |z|-versetzte Welle.
+            const side = a.px > 0.02 ? 1 : a.px < -0.02 ? -1 : a.pz >= 0 ? 1 : -1;
+            let phase = 0;
+            if (bestRole === "bein") phase = ((a.px >= 0 ? 0 : 1) + (a.pz >= 0 ? 0 : 1)) % 2 === 0 ? 0 : Math.PI;
+            else if (bestRole === "arm") phase = a.px >= 0 ? Math.PI : 0;
+            else if (bestRole === "schwanz") phase = Math.abs(a.pz) * 0.8;
+            roles[i] = { role: bestRole, side, phase };
+            any = true;
+        }
+        return any ? roles : null;
+    }
+
+    // Bewegungs-Rollen pro Kreatur-Seele — einmal berechnet (eine Seele =
+    // EINE Part-Liste = EINE Rollen-Liste; Map-Cache über den Seelen-Namen).
+    _motionRolesForSoul(soulName) {
+        if (!soulName) return null;
+        if (!this._motionRolesCache) this._motionRolesCache = new Map();
+        if (this._motionRolesCache.has(soulName)) return this._motionRolesCache.get(soulName);
+        const soul = AnazhRealm.CREATURE_SOULS[soulName];
+        const roles = soul && Array.isArray(soul.bodyParts) ? this.computeMotionRoles(soul.bodyParts) : null;
+        this._motionRolesCache.set(soulName, roles);
+        return roles;
+    }
+
+    // Der EINE generische Animator: wendet die Bewegungs-Rollen auf die
+    // Compound-Children an (`children[i] ↔ parts[i]`, der _buildFromBlueprint-
+    // Vertrag — gilt für Kreaturen, Custom-Avatare und Peer-Seelen gleich).
+    // Center-Pivot-Schwünge in der Sprache der Hand-Skelette: absolute Werte
+    // pro Frame (Basis + Delta, kein Drift); die Basis-Rotationen (part.rotation)
+    // werden einmal eingefangen und geehrt. t in Sekunden.
+    _animateCompoundMotion(group, roles, t, walkPhase, moving) {
+        if (!group || !roles || !Array.isArray(group.children)) return;
+        const kids = group.children;
+        let base = group.userData._motionBase;
+        if (!base || base.length !== kids.length) {
+            base = kids.map((c) => ({ rx: c.rotation.x, ry: c.rotation.y, rz: c.rotation.z }));
+            group.userData._motionBase = base;
+        }
+        for (let i = 0; i < roles.length && i < kids.length; i++) {
+            const r = roles[i];
+            if (!r) continue;
+            const c = kids[i];
+            const b = base[i];
+            if (!c || !b) continue;
+            if (r.role === "bein") {
+                c.rotation.x = b.rx + (moving ? Math.sin(walkPhase + r.phase) * 0.45 : 0);
+            } else if (r.role === "arm") {
+                c.rotation.x =
+                    b.rx + (moving ? Math.sin(walkPhase + r.phase) * 0.3 : Math.sin(t * 1.2) * 0.05 * r.side);
+            } else if (r.role === "fluegel") {
+                const flap = Math.sin(t * (moving ? 11 : 5.5) + r.phase) * (moving ? 0.65 : 0.3);
+                c.rotation.z = b.rz + flap * r.side;
+            } else if (r.role === "schwanz") {
+                c.rotation.y = b.ry + Math.sin(t * 2.2 + r.phase) * 0.28;
+            } else if (r.role === "kopf") {
+                c.rotation.x = b.rx + Math.sin(t * 1.6) * 0.05 + (moving ? 0.04 : 0);
+            }
+        }
+    }
+
     // Compound-Tags der Kreatur via einheitlicher Pipeline. Vision §1.3 fraktal:
     // dieselbe MAX-Aggregation wie computeCompoundTags(blueprint) / computeSoulCompoundTags.
     computeCreatureCompoundTags(creature) {
@@ -13171,8 +13424,10 @@ class AnazhRealm {
         // (kein passives Stehenbleiben mehr). Ein Furcht-Fenster (fearUntil) + die Emotion sad → der
         // wander-Tick erzwingt die Flucht über _creatureWariness. Echtes Zurückschlagen bleibt Phase E.
         creature.userData.fearUntil = performance.now() / 1000 + AnazhRealm.CREATURE_NATURE.fearSec;
-        const fidx = this.state.creatures.indexOf(creature);
-        if (fidx >= 0 && Array.isArray(this.state.creatureEmotions)) this.state.creatureEmotions[fidx] = "sad";
+        // V18.100 (G4-1) — der Treffer fühlt sich über DASSELBE Substrat wie
+        // beim Spieler (ACTION_TO_EMOTION.damage → sorrow+chaos); die binäre
+        // "sad"-Projektion fällt aus der Valenz, statt direkt gestempelt zu werden.
+        this._feelCreatureAction(creature, "damage", 2.5);
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
         return { ok: true, dealt, killed: false };
     }
@@ -14425,9 +14680,10 @@ class AnazhRealm {
                 }
             }
             if (now - task.args._drinkStart >= DURATION_S) {
-                // Trinken vollendet → Happiness + Erinnerung + wander.
-                const idx = this.state.creatures.indexOf(creature);
-                if (idx >= 0) this.state.creatureEmotions[idx] = "happy";
+                // Trinken vollendet → Sättigung fühlt sich als Fülle (harvest:
+                // joy+hope, V18.100 G4-1 — dasselbe Substrat wie der Spieler;
+                // die "happy"-Projektion fällt aus der Valenz) + Erinnerung + wander.
+                this._feelCreatureAction(creature, "harvest", 2);
                 this._creatureRemember(creature, "drank", {
                     at: { x: tx, z: tz },
                     durationS: DURATION_S,
@@ -15198,6 +15454,49 @@ class AnazhRealm {
 
             creature.position.addScaledVector(direction, delta);
 
+            // V18.100 (G4-1) — sanfter Decay des Kreatur-Innenlebens: Gefühle
+            // verfliegen (~17 s Halbwert), ruhige Wesen werden sparse (null =
+            // kein Tick-Kostenrest); beim Ausklingen projiziert die Valenz
+            // zurück auf "happy" — ein getroffenes Wesen ERHOLT sich (vorher
+            // blieb das sad-Etikett ewig). V1 uniform; pro-Achsen-Decay wie
+            // beim Spieler ist Vertiefung, wenn das Browser-Feel es verlangt.
+            if (creature.userData.emotions) {
+                const dk = Math.max(0, 1 - delta * 0.04);
+                let live = false;
+                const em = creature.userData.emotions;
+                for (const ax in em) {
+                    const v = em[ax] * dk;
+                    em[ax] = v < 0.005 ? 0 : v;
+                    if (em[ax] > 0) live = true;
+                }
+                if (!live) {
+                    creature.userData.emotions = null;
+                    if (Array.isArray(this.state.creatureEmotions)) this.state.creatureEmotions[i] = "happy";
+                }
+            }
+
+            // V18.99 (G1 — Motion-Resonanz): die emergente Bewegung — Beine
+            // schwingen, Flügel schlagen, Schwänze wellen, Köpfe nicken; aus
+            // den Soul-Parts klassifiziert (vorher: Kreaturen komplett starr,
+            // nur die drei Spieler-Hand-Skelette lebten). walkPhase läuft nur
+            // in Bewegung (kein Glieder-Sprung beim Stopp — die
+            // animatePlayerSoul-Disziplin, pro Kreatur). Kosten: wenige sin()
+            // pro Wesen — weit unter dem KI-Tick.
+            {
+                const mroles = this._motionRolesForSoul(creature.userData.soul);
+                if (mroles) {
+                    const movingNow = direction.lengthSq() > 0.01;
+                    creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? delta * 5.0 : 0);
+                    this._animateCompoundMotion(
+                        creature,
+                        mroles,
+                        this.state.creatureAnimationTime,
+                        creature.userData.walkPhase,
+                        movingNow
+                    );
+                }
+            }
+
             // Terrain-Höhe anpassen. V9.28 — der letzte missed Höhen-
             // Konsument aus V9.25 Phase 5b: dieser Pfad las
             // `state.groundHeightField` DIREKT (am voxel-aware
@@ -15342,6 +15641,7 @@ class AnazhRealm {
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
                                 waterCells: new Uint8Array(msg.waterCells),
+                                surfMap: msg.surfMap ? new Float32Array(msg.surfMap) : null,
                             });
                         }
                     }
@@ -15617,6 +15917,17 @@ class AnazhRealm {
         geom.setAttribute("normal", new THREE.Float32BufferAttribute(meshData.normals, 3));
         geom.setAttribute("color", new THREE.Float32BufferAttribute(meshData.colors, 3));
         geom.setIndex(new THREE.BufferAttribute(meshData.indices, 1));
+        // V18.98 — T2-Morph-Attribute AUCH auf dem Worker-Mesh-Pfad (Identität:
+        // Ziel=Position, Gewicht=0). Der T2-Vertrag („JEDE Terrain-Geometrie
+        // trägt sie, zentral") lebte nur in `_voxelChunkGeometry` — der E3-
+        // Worker-Pfad schlüpfte vorbei (V9.82-Parallel-Pfad-Klasse) → das
+        // Terrain-Material las `aMorphTarget` auf attribut-losen Geometrien =
+        // der `not found`-Warn-Spam in der Schöpfer-Konsole.
+        geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(meshData.positions), 3));
+        geom.setAttribute(
+            "aMorphWeight",
+            new THREE.Float32BufferAttribute(new Float32Array(meshData.positions.length / 3), 1)
+        );
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
         mesh.castShadow = true;
@@ -15652,7 +15963,7 @@ class AnazhRealm {
             const oy = base - lod0Cfg.floorDrop;
             this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, 0);
         }
-        return { mesh, kind: "filled", waterCells, lod, hasBVH };
+        return { mesh, kind: "filled", waterCells, lod, hasBVH, surfMap: meshData.surfMap || null };
     }
 
     // V9.92 (Phase 4 — Lazy-BVH): hängt einem Existing-Chunk-Entry seine
@@ -16873,18 +17184,24 @@ class AnazhRealm {
         chatOutput.scrollTop = chatOutput.scrollHeight;
     }
     updateCreatureEmotions() {
+        // V18.100 (G4-1) — das Wetter ist ein AMBIENTER Achsen-Impuls auf das
+        // 6-Achsen-Innenleben (rainy nährt sorrow+peace, sunny nährt joy),
+        // kein Binär-Würfel mehr; das Etikett fällt aus der Valenz-Projektion.
+        // Dieselbe 10%-Stochastik (nicht alle Wesen fühlen gleichzeitig).
+        const rainy = this.state.weather === "rainy";
         for (let i = 0; i < this.state.creatures.length; i++) {
-            if (Math.random() < 0.1) {
-                // 10% Chance, Emotion zu ändern
-                this.state.creatureEmotions[i] =
-                    this.state.weather === "rainy"
-                        ? Math.random() < 0.7
-                            ? "sad"
-                            : "happy"
-                        : Math.random() < 0.7
-                          ? "happy"
-                          : "sad";
+            if (Math.random() >= 0.1) continue;
+            const c = this.state.creatures[i];
+            if (!c || !c.userData) continue;
+            const ud = c.userData;
+            if (!ud.emotions) ud.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+            if (rainy) {
+                ud.emotions.sorrow = Math.min(1, (ud.emotions.sorrow || 0) + 0.18);
+                ud.emotions.peace = Math.min(1, (ud.emotions.peace || 0) + 0.06);
+            } else {
+                ud.emotions.joy = Math.min(1, (ud.emotions.joy || 0) + 0.15);
             }
+            this._projectCreatureEmotion(c);
         }
     }
 
@@ -18408,6 +18725,11 @@ class AnazhRealm {
         // Density-Sample-Schleife (~90k `_terrainDensityAt`-Calls) nur einmal
         // pro Chunk-Build ausgeführt, nicht zweimal.
         const density = preDensity || this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
+        // V18.97 (G7/U4 — die weite Wiese): die OBERFLÄCHEN-KARTE fällt als
+        // Nebenprodukt aus dem SCHON gesampelten Grid (eine Quelle, viele
+        // Leser — Gras/Scatter lesen sie statt teurer `_voxelSurfaceY`-Scans).
+        // Worker-Mirror: `gridSurfaceMap` in voxel-worker.js (identischer Algo).
+        const surfMap = this._gridSurfaceMap(density, dimX + 1, dimY + 1, dimZ + 1, oy, step);
         const { positions, vertCells, cellVert, sharp } = this._voxelExtractSurfaceVertices(
             density,
             ox,
@@ -18447,7 +18769,60 @@ class AnazhRealm {
         // — der Morph lebt allein im Vertex-Shader (`positionNode`), main-only (kein Worker-Mirror).
         geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
+        geom.userData.surfMap = surfMap;
         return geom;
+    }
+
+    // V18.97 — die Oberflächen-Karte aus dem Density-Grid: pro Eck-Spalte
+    // (i,k) die oberste Luft→Fels-Kante, sub-zellig linear interpoliert
+    // (exakt die Iso-Fläche des Meshers, VOR dem Laplacian-Glätten). NaN wo
+    // die Spalte keine Oberfläche trägt. Kostet ~1 ms Array-Reads auf dem
+    // SCHON gesampelten Grid — ersetzt für Gras/Deko die teuren
+    // `_voxelSurfaceY`-Dichte-Scans (256×/Chunk). Worker-Mirror:
+    // `gridSurfaceMap` in voxel-worker.js — beim Ändern BEIDE anfassen.
+    _gridSurfaceMap(density, Nx, Ny, Nz, oy, step) {
+        const map = new Float32Array(Nx * Nz);
+        map.fill(NaN);
+        for (let k = 0; k < Nz; k++) {
+            for (let i = 0; i < Nx; i++) {
+                const colBase = i + k * Nx * Ny;
+                for (let j = Ny - 2; j >= 0; j--) {
+                    const a = density[colBase + j * Nx];
+                    const b = density[colBase + (j + 1) * Nx];
+                    if (a > 0 && b <= 0) {
+                        const t = a / (a - b);
+                        map[i + k * Nx] = oy + (j + t) * step;
+                        break;
+                    }
+                }
+            }
+        }
+        return map;
+    }
+
+    // V18.97 — bilineare Oberflächen-Höhe aus der Chunk-Karte (`entry.surfMap`,
+    // padded Grid: Origin chunk−step, Nx = dim+4). null bei fehlender Karte /
+    // NaN-Ecke / außerhalb des Pads → der Aufrufer fällt auf `_voxelSurfaceY`.
+    _chunkSurfaceAt(entry, cx, cz, x, z) {
+        const m = entry && entry.surfMap;
+        if (!m) return null;
+        const cfg = this._voxelChunkConfig(entry.lod || 0);
+        const Nx = cfg.dim + 4;
+        const ox = cx * cfg.span - cfg.step;
+        const oz = cz * cfg.span - cfg.step;
+        const u = (x - ox) / cfg.step;
+        const v = (z - oz) / cfg.step;
+        const i0 = Math.floor(u);
+        const k0 = Math.floor(v);
+        if (i0 < 0 || k0 < 0 || i0 >= Nx - 1 || k0 >= Nx - 1) return null;
+        const a = m[i0 + k0 * Nx];
+        const b = m[i0 + 1 + k0 * Nx];
+        const c = m[i0 + (k0 + 1) * Nx];
+        const d = m[i0 + 1 + (k0 + 1) * Nx];
+        if (!(Number.isFinite(a) && Number.isFinite(b) && Number.isFinite(c) && Number.isFinite(d))) return null;
+        const fu = u - i0;
+        const fv = v - k0;
+        return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
     }
 
     // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
@@ -20552,7 +20927,7 @@ class AnazhRealm {
     // entsprechend nur Geometrie, nicht Material.
     _getVoxelChunkMaterial() {
         if (this.state.voxelChunkMaterial) return this.state.voxelChunkMaterial;
-        const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide, geomorph: true });
         this.state.voxelChunkMaterial = mat;
         return mat;
     }
@@ -20856,17 +21231,24 @@ class AnazhRealm {
             // dieselbe Polylinie = keine T-junction). Render-only: die Position-Attribute (Physik/
             // Determinismus/Naht-Test) bleiben unberührt — der Morph lebt nur hier. try/catch +
             // Marker (V17.12): fällt sauber auf un-gemorpht zurück, nie ein kaputtes Material.
-            try {
-                const _Tm = THREE.TSL;
-                const _aum = this.state.atmoUniforms;
-                if (_Tm && _Tm.attribute && _Tm.positionLocal && _aum && _aum.geomorph) {
-                    const _tgt = _Tm.attribute("aMorphTarget", "vec3");
-                    const _w = _Tm.attribute("aMorphWeight", "float");
-                    const _f = _aum.geomorph.mul(_w);
-                    mat.positionNode = _Tm.positionLocal.add(_tgt.sub(_Tm.positionLocal).mul(_f));
+            // V18.98 — der Morph-Knoten hängt am TERRAIN-Vertrag (`opts.geomorph`, nur
+            // `_getVoxelChunkMaterial`), NICHT an der vertexColors-Klasse: Inseln/Bäume/
+            // Test-Meshes morphen nie, und ihre Geometrien tragen die Attribute nicht →
+            // der `aMorphTarget not found`-Warn-Spam (Schöpfer-Konsole, V10.0-g.1-Klasse)
+            // fällt an der Wurzel; nur Chunk-Geometrie (trägt die Attribute zentral) liest sie.
+            if (opts.geomorph) {
+                try {
+                    const _Tm = THREE.TSL;
+                    const _aum = this.state.atmoUniforms;
+                    if (_Tm && _Tm.attribute && _Tm.positionLocal && _aum && _aum.geomorph) {
+                        const _tgt = _Tm.attribute("aMorphTarget", "vec3");
+                        const _w = _Tm.attribute("aMorphWeight", "float");
+                        const _f = _aum.geomorph.mul(_w);
+                        mat.positionNode = _Tm.positionLocal.add(_tgt.sub(_Tm.positionLocal).mul(_f));
+                    }
+                } catch (_e) {
+                    if (typeof window !== "undefined") window.__terrainMorphError = String((_e && _e.message) || _e);
                 }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__terrainMorphError = String((_e && _e.message) || _e);
             }
         }
 
@@ -21207,7 +21589,7 @@ class AnazhRealm {
                 waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, lod0Cfg.step, lod0Density, 0);
             }
         }
-        return { mesh, kind: "filled", waterCells, lod };
+        return { mesh, kind: "filled", waterCells, lod, surfMap: geom.userData.surfMap || null };
     }
 
     // V9.40-d Dispose-Before-Build: räumt den ALTEN Chunk ZUERST (Kollision
@@ -21308,6 +21690,9 @@ class AnazhRealm {
         const entry = {
             mesh: fresh.mesh,
             waterCells: fresh.waterCells || null,
+            // V18.97 — die Oberflächen-Karte (Grid-Nebenprodukt, beide Pfade):
+            // Gras/Deko lesen sie via `_chunkSurfaceAt` statt Dichte-Scans.
+            surfMap: fresh.surfMap || null,
             lod,
             hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
         };
@@ -21327,10 +21712,15 @@ class AnazhRealm {
             const _pcx = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cx : cx;
             const _pcz = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cz : cz;
             const _gr = Math.max(Math.abs(cx - _pcx), Math.abs(cz - _pcz));
-            if (_gr <= 2) {
+            // V18.97 — DIE WEITE WIESE: der Gras-Ring weitet von ≤2 auf ≤4
+            // (~389 m, bis an die Fog-Kante des Default-Radius) — die Ferne
+            // baut DÜNNER (lod≥1 → Dichte-Faktor, s. _buildVoxelChunkGrass);
+            // die surfMap macht die Platzierung ~scan-frei (Grid-Nebenprodukt).
+            if (_gr <= 4) {
                 const _gKey = `${cx},${cz}`;
                 const _gd = this.state.grassDirtyChunks;
                 const _hasGrass = this.state.voxelChunkGrass && this.state.voxelChunkGrass.has(_gKey);
+                const _gLod = this.state.voxelChunkGrassLod ? this.state.voxelChunkGrassLod.get(_gKey) : undefined;
                 if (_gd && _gd.has(_gKey)) {
                     // Welle G-fix — die Oberfläche änderte sich (Carve/Fill): das
                     // (in _disposeVoxelChunk mit keepGrass=false entfernte) Gras
@@ -21341,9 +21731,15 @@ class AnazhRealm {
                     // Welle A — Streaming/Erst-Build (kein Gras vorhanden): deferred
                     // (≤1/Frame, kein Flackern da kein altes Gras da war).
                     this._enqueueGrass(cx, cz);
+                } else if (_gLod !== undefined && _gLod !== lod) {
+                    // V18.97 — der Chunk wechselte die LOD-Stufe (fern↔nah):
+                    // die Gras-DICHTE passt nicht mehr (fern baut dünner) →
+                    // altes Gras weg + deferred neu in der neuen Dichte.
+                    this._disposeVoxelChunkGrass(_gKey);
+                    this._enqueueGrass(cx, cz);
                 }
                 // sonst: Gras existiert + Oberfläche unverändert (Nexus-Spawn/
-                // Skirt/LOD) → es wurde gar nicht disposed → BEHALTEN.
+                // Skirt) → es wurde gar nicht disposed → BEHALTEN.
             }
         }
         // V17.1 — FÜLLE/DICHTE: die artenreiche Klein-Vegetation (Blüten/Farne/
@@ -21856,13 +22252,55 @@ class AnazhRealm {
         const floorY = base - cfg.floorDrop;
         const top = floorY + cfg.dimY * cfg.step - 8;
         const bottom = floorY + 12;
+        // V18.96 (G7) — der ENVELOPE-SKIP: über `macroSurf + ROUGH(12) + 4·step`
+        // ist GARANTIERT Luft — dieselbe bewiesene Zusicherung, die der Band-
+        // Skip des Meshers nutzt (`_voxelSampleDensityGrid`, dort hole-frei
+        // gemessen). Die Schleife läuft UNVERÄNDERT über dasselbe y-Gitter
+        // (gleiche Start-Phase, gleiche Schrittweite — Bit-Exaktheit per
+        // Konstruktion, `diag-surfacescan.cjs`: 0 Drift), aber die teure
+        // Dichte-PROBE wird in der Garantie-Luft übersprungen: ~300 → ~25
+        // Proben pro Spalte. Das heilt ALLE Leser (Gras, Scatter, Veg-Spawn,
+        // Hydro-Atlas im Worldgen, der Genesis-Spawn-Scan). EINZIGE Substanz
+        // über dem Envelope: ein FILL-Edit kann höher bauen →
+        // `_voxelEditsFillTop()` hebt die Skip-Grenze mit. Macro nicht
+        // endlich → skipAbove=∞ = exakt der alte Voll-Scan.
+        const macroSurf = this._terrainMacroSurfaceY(x, z);
+        const skipAbove = Number.isFinite(macroSurf)
+            ? Math.max(macroSurf + 12 + 4 * cfg.step, this._voxelEditsFillTop() + 2)
+            : Infinity;
         let prevAir = true;
         for (let y = top; y >= bottom; y -= 1.2) {
+            if (y > skipAbove) continue; // Garantie-Luft — Probe gespart, Gitter unverändert
             const solid = this._terrainDensityAt(x, y, z) > 0;
             if (solid && prevAir) return y;
             prevAir = !solid;
         }
         return null;
+    }
+
+    // V18.96 — die höchste Oberkante aller FILL-Edits (y + r), längen-gecacht:
+    // über dem Roughness-Envelope kann NUR ein Fill-Edit Terrain tragen, also
+    // hebt der `_voxelSurfaceY`-Envelope-Skip seine Grenze darüber. Edits
+    // wachsen per push (`_addVoxelEdit`) → die Identitäts+Längen-Probe
+    // invalidiert exakt (ein Welt-Wechsel tauscht das Array, ein Regen leert
+    // es → andere Identität/Länge). Keine Fill-Edits → −Infinity (der
+    // Envelope allein gilt).
+    _voxelEditsFillTop() {
+        const meta = this.state.worldMeta;
+        const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
+        const len = edits ? edits.length : 0;
+        const cache = this._editFillTopCache;
+        if (cache && cache.edits === edits && cache.len === len) return cache.top;
+        let topY = -Infinity;
+        for (let i = 0; i < len; i++) {
+            const e = edits[i];
+            if (e && e.mode === "fill") {
+                const t = (Number(e.y) || 0) + (Number(e.r) || 0);
+                if (t > topY) topY = t;
+            }
+        }
+        this._editFillTopCache = { edits, len, top: topY };
+        return topY;
     }
 
     // === V9.43-b — Der Hydrosphären-Atlas ================================
@@ -24023,6 +24461,29 @@ class AnazhRealm {
         const key = `${cx},${cz}`;
         if (this.state.voxelChunkGrass.has(key)) return;
         const { span } = this._voxelChunkConfig();
+        // V18.97 — DIE WEITE WIESE: (a) die Oberfläche kommt aus der Chunk-
+        // surfMap (Grid-Nebenprodukt, `_chunkSurfaceAt` — bilinear, ~gratis;
+        // Fallback `_voxelSurfaceY` nur ohne Karte/NaN-Ecke), (b) ferne Chunks
+        // (lod≥1, Ring 3–4) bauen DÜNNER (Faktor 0.35), lod≥2 gar nicht —
+        // so reicht die Wiese bis an die Fog-Kante, ohne die Vertex-Last zu
+        // vervielfachen. Der Halm sitzt auf SEINER Höhe (by), nicht der
+        // Zell-Höhe → Hänge tragen Gras ohne Schweben.
+        const chunkEntry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
+        const entryLod = chunkEntry && !chunkEntry.empty ? chunkEntry.lod || 0 : 0;
+        if (!this.state.voxelChunkGrassLod) this.state.voxelChunkGrassLod = new Map();
+        if (entryLod >= 2) {
+            this.state.voxelChunkGrass.set(key, null);
+            this.state.voxelChunkGrassLod.set(key, entryLod);
+            return;
+        }
+        const farFactor = entryLod >= 1 ? 0.35 : 1;
+        const surfAt = (x, z) => {
+            if (chunkEntry && chunkEntry.surfMap) {
+                const v = this._chunkSurfaceAt(chunkEntry, cx, cz, x, z);
+                if (v !== null) return v;
+            }
+            return this._voxelSurfaceY(x, z);
+        };
         const ox = cx * span;
         const oz = cz * span;
         const SAMPLES = 16;
@@ -24043,7 +24504,7 @@ class AnazhRealm {
                 const field = this.worldFieldAt(baseX, baseZ);
                 const lebendig = field ? field.lebendig : 0;
                 if (lebendig < 0.22) continue;
-                const surfY = this._voxelSurfaceY(baseX, baseZ);
+                const surfY = surfAt(baseX, baseZ);
                 if (surfY === null) continue;
                 // V9.59-c — Gras-Halme wachsen NICHT unter Wasser. 0.1 m
                 // Marge: Gras DARF an der Uferlinie wachsen (saftiges Ufer),
@@ -24052,18 +24513,22 @@ class AnazhRealm {
                 // Zelle, nicht pro Blade (16×16=256 Samples pro Chunk).
                 const waterY = this._waterLevelAt(baseX, baseZ);
                 if (surfY < waterY + 0.1) continue;
-                // V17.5 — Cliff-Skip (Schöpfer-Audit „Halme schweben an Kanten,
-                // verschmelzen nicht"): die Halme sitzen auf der ZELL-Höhe, aber
-                // gejittert ±step landen sie an Klippen-Kanten in der Luft. Cheap
-                // Macro-Referenz (kein Density-Scan); ein Halm, dessen Macro-Höhe
-                // > 1.2 m unter der Zell-Höhe liegt (über einem Abbruch), wird
-                // übersprungen → kahle Klippen-Kante statt schwebender Halm.
-                const cellMacro = this._terrainMacroSurfaceY(baseX, baseZ, false);
-                const count = Math.floor(lebendig * 14 + rnd() * 2);
+                // V17.5/V18.97 — Cliff-Skip an der ECHTEN Oberfläche: der Halm
+                // liest SEINE Höhe aus der surfMap (vorher: Macro-Proxy, 2 Calls
+                // pro Halm); liegt sie > 1.2 m unter der Zell-Höhe (Abbruch),
+                // fällt er weg → kahle Klippen-Kante statt schwebender Halm.
+                // Und der Halm STEHT auf seiner Höhe → Hänge ohne Schweben.
+                // V18.102 — NATUR-CLUMPING (λ~28 m, mittelwert-neutral): die Wiese
+                // bekommt Dickichte (×bis 2.2) und magere Lichtungen (×0.15) statt
+                // homogener Dichte — dasselbe Klump-Feld, das den Bäumen die
+                // Wald-Maske gibt, eine Oktave feiner. Totale ≈ unverändert.
+                const clump = Math.max(0.15, Math.min(2.2, 1 + 1.2 * this._clumpAt(baseX, baseZ, 0.035)));
+                const count = Math.floor((lebendig * 14 + rnd() * 2) * farFactor * clump);
                 for (let k = 0; k < count; k++) {
                     const gx = baseX + (rnd() - 0.5) * step;
                     const gz = baseZ + (rnd() - 0.5) * step;
-                    if (this._terrainMacroSurfaceY(gx, gz, false) < cellMacro - 1.2) continue;
+                    const by = surfAt(gx, gz);
+                    if (by === null || by < surfY - 1.2) continue;
                     // V17.14 — Halm-Variation gegen den „Lauchstängel"-Eindruck
                     // (Schöpfer-Audit „immer gleiche Länge, Höhe + Position nicht
                     // überzeugend"). Drei entkoppelte Achsen statt EINEM uniformen
@@ -24078,7 +24543,7 @@ class AnazhRealm {
                     const sY = 0.5 + r1 * r1 * 1.3; // Höhe [0.5, 1.8], kurze häufiger
                     blades.push({
                         x: gx,
-                        y: surfY,
+                        y: by,
                         z: gz,
                         rot: rnd() * Math.PI * 2,
                         sXZ,
@@ -24091,6 +24556,7 @@ class AnazhRealm {
         }
         if (blades.length === 0) {
             this.state.voxelChunkGrass.set(key, null);
+            this.state.voxelChunkGrassLod.set(key, entryLod);
             return;
         }
         // V10.0-j.j — ConeGeometry als Singleton (Profi-Vorbild: shared meshes).
@@ -24201,9 +24667,11 @@ class AnazhRealm {
         if (typeof inst.computeBoundingSphere === "function") inst.computeBoundingSphere();
         this.state.scene.add(inst);
         this.state.voxelChunkGrass.set(key, inst);
+        this.state.voxelChunkGrassLod.set(key, entryLod);
     }
 
     _disposeVoxelChunkGrass(key) {
+        if (this.state.voxelChunkGrassLod) this.state.voxelChunkGrassLod.delete(key);
         if (!this.state.voxelChunkGrass) return;
         const grass = this.state.voxelChunkGrass.get(key);
         if (grass) {
@@ -24709,7 +25177,7 @@ class AnazhRealm {
         const queue = this.state.pendingGrass;
         if (!queue || queue.size === 0) return 0;
         const lpc = this.state.lastPlayerVoxelChunk;
-        const GRASS_RING = 2; // V16.1: Gras baut nur bei Chunk-Distanz ≤ 2
+        const GRASS_RING = 4; // V18.97 (die weite Wiese): 2→4 — die Ferne baut dünner (lod-Faktor)
         let keys = [...queue];
         if (lpc) {
             const distOf = (k) => {
@@ -27780,13 +28248,23 @@ class AnazhRealm {
         }
     }
 
-    // Ring 8.2 — loadState markiert die Welt als „bereits einmal generiert"
-    // (terrainEverGenerated=true), damit das auf init() folgende generateNewWorld()
-    // den Spieler nicht auf (0, 50, 0) teleportiert. Brand-neue Welten (loadState
-    // findet nichts) lassen das Flag auf false → erster generateNewWorld setzt
-    // den Spieler wie bisher auf den Default-Spawn.
+    // Ring 8.2 / V18.95 — loadState markiert die Welt als „bereits einmal
+    // generiert" (terrainEverGenerated=true) NUR, wenn der Save eine ECHTE
+    // Spieler-Position trägt. Ein Save mit playerPosition:null ist eine Welt
+    // VOR ihrem Erst-Spawn (der leere createNewWorld-/Fusions-Snapshot, der
+    // vor dem Reload geschrieben wird): das Flag bleibt false → das auf
+    // init() folgende generateTerrainWithParameters fährt den Erst-Spawn
+    // (deterministischer offener Punkt + Genesis-Plattform). Das heilt den
+    // V18.94-Browser-Restbefund „neue Welt: keine Plattform, im Boden" —
+    // der alte (0,50,0)-Default zählte als „schon generiert", wasFirstSpawn
+    // wurde false, der Spieler fiel blind auf (0,0) (`diag-genesis-spawn.cjs`).
+    // Brand-neue Profile (loadState findet gar nichts) bleiben wie bisher false.
     _loadStateRestorePlayerPosition(state) {
-        const playerPosition = state.playerPosition || { x: 0, y: 5, z: 0 };
+        if (!state.playerPosition) {
+            this.log("Welt vor Erst-Spawn (Save ohne playerPosition) — der Genesis-Spawn übernimmt");
+            return;
+        }
+        const playerPosition = state.playerPosition;
         const safeX = Number.isFinite(playerPosition.x) ? playerPosition.x : 0;
         const safeY = Number.isFinite(playerPosition.y) ? playerPosition.y : 5;
         const safeZ = Number.isFinite(playerPosition.z) ? playerPosition.z : 0;
@@ -28973,7 +29451,10 @@ class AnazhRealm {
         const weather = saveA.weather || saveB.weather || "sunny";
 
         const snap = {
-            playerPosition: this._defaultSpawnPos(),
+            // V18.95 — null wie im leeren createNewWorld-Snapshot: die
+            // Fusions-Welt ist VOR ihrem Erst-Spawn → der Reload fährt den
+            // Genesis-Spawn (offener Punkt + Plattform) auf dem NEUEN Terrain.
+            playerPosition: null,
             knowledgeBase: [
                 ...((Array.isArray(saveA.knowledgeBase) && saveA.knowledgeBase.slice(-100)) || []),
                 ...((Array.isArray(saveB.knowledgeBase) && saveB.knowledgeBase.slice(-100)) || []),
@@ -29313,11 +29794,61 @@ class AnazhRealm {
                 color: 0xff0000,
                 build: () => this._buildHumanGroup(),
                 animate: (g, t, ph, mv, uw) => this._animateHuman(g, t, ph, mv, uw),
+                // V18.101 — POSITIONIERTE bodyParts (der Schöpfer-Befund „Körper
+                // holen zeigt nicht den getragenen Avatar"): vorher waren die
+                // Built-in-bodyParts positions-lose STAT-Schatten (alle Parts am
+                // Ursprung gestapelt) — nur der Wächter (echter Bauplan) holte
+                // sich richtig. Jetzt SPIEGELN sie die Hand-Visuals (build()),
+                // mit EXAKT denselben (Form,Material)-Paaren wie zuvor — die
+                // Tags sind MAX über Form×Material und größen-/positions-blind
+                // → Stat-Parität per Konstruktion (`diag`-verifiziert). Damit
+                // holt die Werkstatt den ECHTEN Körper, die Motion-Resonanz
+                // erkennt Glieder, und ein editierter Re-Embody lebt als
+                // Custom-Seele. build()+animate bleiben das getragene
+                // Built-in-Visual (die gestalteten Hand-Signaturen).
                 bodyParts: [
-                    { shape: "box", material: "fleisch", size: { x: 0.6, y: 1.0, z: 0.4 }, label: "Torso" },
-                    { shape: "sphere", material: "knochen", size: { x: 0.3, y: 0.3, z: 0.3 }, label: "Kopf" },
-                    { shape: "cylinder", material: "fleisch", size: { x: 0.18, y: 0.85, z: 0.18 }, label: "Glieder" },
-                    { shape: "cylinder", material: "knochen", size: { x: 0.2, y: 0.9, z: 0.2 }, label: "Skelett" },
+                    {
+                        shape: "box",
+                        material: "fleisch",
+                        size: { x: 0.6, y: 0.7, z: 0.3 },
+                        position: { x: 0, y: 0.45, z: 0 },
+                        label: "Torso",
+                    },
+                    {
+                        shape: "sphere",
+                        material: "knochen",
+                        size: { x: 0.38, y: 0.38, z: 0.38 },
+                        position: { x: 0, y: 1.0, z: 0 },
+                        label: "Kopf",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "fleisch",
+                        size: { x: 0.16, y: 0.7, z: 0.16 },
+                        position: { x: 0.42, y: 0.5, z: 0 },
+                        label: "Arm rechts",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "fleisch",
+                        size: { x: 0.16, y: 0.7, z: 0.16 },
+                        position: { x: -0.42, y: 0.5, z: 0 },
+                        label: "Arm links",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.18, y: 0.8, z: 0.18 },
+                        position: { x: 0.17, y: -0.05, z: 0 },
+                        label: "Bein rechts",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.18, y: 0.8, z: 0.18 },
+                        position: { x: -0.17, y: -0.05, z: 0 },
+                        label: "Bein links",
+                    },
                 ],
             },
             phoenix: {
@@ -29325,11 +29856,54 @@ class AnazhRealm {
                 color: 0xff7a1a,
                 build: () => this._buildPhoenixGroup(),
                 animate: (g, t, ph, mv, uw) => this._animatePhoenix(g, t, ph, mv, uw),
+                // V18.101 — positioniert (s. human): dieselben (Form,Material)-
+                // Paare wie der alte Stat-Schatten (box/plane/cone+federn,
+                // sphere+glut) → Tag-Parität; die Flügel als ECHTES Spiegel-Paar
+                // (die Motion-Resonanz erkennt sie als fluegel).
                 bodyParts: [
-                    { shape: "box", material: "federn", size: { x: 0.4, y: 0.55, z: 0.35 }, label: "Körper" },
-                    { shape: "plane", material: "federn", size: { x: 1.2, y: 0.6, z: 0.05 }, label: "Flügel" },
-                    { shape: "sphere", material: "glut", size: { x: 0.22, y: 0.22, z: 0.22 }, label: "Inneres Feuer" },
-                    { shape: "cone", material: "federn", size: { x: 0.18, y: 0.8, z: 0.18 }, label: "Schweif" },
+                    {
+                        shape: "box",
+                        material: "federn",
+                        size: { x: 0.5, y: 0.55, z: 0.4 },
+                        position: { x: 0, y: 0.5, z: 0 },
+                        label: "Körper",
+                    },
+                    {
+                        shape: "box",
+                        material: "federn",
+                        size: { x: 0.3, y: 0.3, z: 0.3 },
+                        position: { x: 0, y: 0.95, z: 0.05 },
+                        label: "Haupt",
+                    },
+                    {
+                        shape: "sphere",
+                        material: "glut",
+                        size: { x: 0.22, y: 0.22, z: 0.22 },
+                        position: { x: 0, y: 0.55, z: 0.12 },
+                        label: "Inneres Feuer",
+                    },
+                    {
+                        shape: "plane",
+                        material: "federn",
+                        size: { x: 0.9, y: 0.04, z: 0.5 },
+                        position: { x: 0.62, y: 0.55, z: 0 },
+                        label: "Flügel rechts",
+                    },
+                    {
+                        shape: "plane",
+                        material: "federn",
+                        size: { x: 0.9, y: 0.04, z: 0.5 },
+                        position: { x: -0.62, y: 0.55, z: 0 },
+                        label: "Flügel links",
+                    },
+                    {
+                        shape: "cone",
+                        material: "federn",
+                        size: { x: 0.18, y: 0.9, z: 0.18 },
+                        position: { x: 0, y: 0.4, z: -0.6 },
+                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
+                        label: "Schweif",
+                    },
                 ],
             },
             dragon: {
@@ -29337,11 +29911,77 @@ class AnazhRealm {
                 color: 0x2d6e3b,
                 build: () => this._buildDragonGroup(),
                 animate: (g, t, ph, mv, uw) => this._animateDragon(g, t, ph, mv, uw),
+                // V18.101 — positioniert (s. human): dieselben Paare (box/
+                // cylinder+schuppen, sphere+schuppen, cylinder+knochen) →
+                // Tag-Parität; vier gespiegelte Beine (Diagonal-Trab der
+                // Motion-Resonanz) + der dreigliedrige Schweif als Kette.
                 bodyParts: [
-                    { shape: "box", material: "schuppen", size: { x: 1.2, y: 0.7, z: 0.5 }, label: "Körper" },
-                    { shape: "sphere", material: "schuppen", size: { x: 0.45, y: 0.4, z: 0.4 }, label: "Kopf" },
-                    { shape: "cylinder", material: "knochen", size: { x: 0.22, y: 0.45, z: 0.22 }, label: "Beine" },
-                    { shape: "cylinder", material: "schuppen", size: { x: 0.18, y: 1.4, z: 0.18 }, label: "Schweif" },
+                    {
+                        shape: "box",
+                        material: "schuppen",
+                        size: { x: 0.55, y: 0.45, z: 1.2 },
+                        position: { x: 0, y: 0.4, z: 0 },
+                        label: "Körper",
+                    },
+                    {
+                        shape: "sphere",
+                        material: "schuppen",
+                        size: { x: 0.42, y: 0.38, z: 0.45 },
+                        position: { x: 0, y: 0.5, z: 0.85 },
+                        label: "Haupt",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.15, y: 0.45, z: 0.15 },
+                        position: { x: 0.25, y: 0.1, z: 0.4 },
+                        label: "Bein vorn rechts",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.15, y: 0.45, z: 0.15 },
+                        position: { x: -0.25, y: 0.1, z: 0.4 },
+                        label: "Bein vorn links",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.15, y: 0.45, z: 0.15 },
+                        position: { x: 0.25, y: 0.1, z: -0.4 },
+                        label: "Bein hinten rechts",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.15, y: 0.45, z: 0.15 },
+                        position: { x: -0.25, y: 0.1, z: -0.4 },
+                        label: "Bein hinten links",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "schuppen",
+                        size: { x: 0.3, y: 0.45, z: 0.3 },
+                        position: { x: 0, y: 0.4, z: -0.85 },
+                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
+                        label: "Schweif-Wurzel",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "schuppen",
+                        size: { x: 0.2, y: 0.4, z: 0.2 },
+                        position: { x: 0, y: 0.4, z: -1.25 },
+                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
+                        label: "Schweif-Mitte",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "schuppen",
+                        size: { x: 0.13, y: 0.35, z: 0.13 },
+                        position: { x: 0, y: 0.4, z: -1.6 },
+                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
+                        label: "Schweif-Spitze",
+                    },
                 ],
             },
         };
@@ -34300,9 +34940,28 @@ class AnazhRealm {
     // mit dem Physik-Body synchronisiert.
     animatePlayerSoul(currentTime) {
         const mesh = this.state.playerMesh;
-        if (!mesh || !mesh.userData || !mesh.userData.parts) return;
-        const def = this.playerSoulDefs[this.state.player.soul || "human"];
-        if (!def || typeof def.animate !== "function") return;
+        if (!mesh || !mesh.userData) return;
+        const soulName = this.state.player.soul || "human";
+        const def = this.playerSoulDefs[soulName];
+        const hasSkeleton = !!(def && typeof def.animate === "function" && mesh.userData.parts);
+        // V18.99 (G1 — Motion-Resonanz): die CUSTOM-Seele war hier KOMPLETT
+        // statisch (der frühe Return — „spieler animieren in der werkstatt"
+        // wörtlich offen). Jetzt erbt sie die emergente Bewegung: Rollen aus
+        // ihren bodyParts (einmal pro Seele, am Mesh gecacht — der Seelen-
+        // Wechsel baut ein frisches Group → frische Basis), derselbe
+        // Geh-/Schwimm-Takt wie die Hand-Skelette.
+        let customRoles = null;
+        if (!hasSkeleton) {
+            const custom = this.state.customSouls && this.state.customSouls[soulName];
+            if (!custom || !Array.isArray(custom.bodyParts)) return;
+            if (mesh.userData._motionSoul !== soulName) {
+                mesh.userData._motionSoul = soulName;
+                mesh.userData._motionRoles = this.computeMotionRoles(custom.bodyParts);
+                mesh.userData._motionBase = null;
+            }
+            customRoles = mesh.userData._motionRoles;
+            if (!customRoles) return;
+        }
         const p = this.state.player;
         // isMoving aus horizontaler Geschwindigkeit. Schwelle 0.4 m/s
         // verhindert Mikro-Walk wenn der Spieler steht aber leicht rutscht.
@@ -34328,7 +34987,8 @@ class AnazhRealm {
             const stepHz = this.state.player.soul === "dragon" ? 4.5 : 5.5;
             p.walkPhase += dt * stepHz;
         }
-        def.animate(mesh, currentTime, p.walkPhase, isMoving, underwater);
+        if (hasSkeleton) def.animate(mesh, currentTime, p.walkPhase, isMoving, underwater);
+        else this._animateCompoundMotion(mesh, customRoles, currentTime, p.walkPhase, isMoving);
     }
 
     // ### Ring 6 – architectureTemplates V1 ###
@@ -39285,6 +39945,23 @@ class AnazhRealm {
     // `_voxelSurfaceY`. Liefert 1, wenn an dieser Stelle eine Struktur spawnte,
     // sonst 0. baseY-Kompensation: `spawnArchitecture` zieht 0.5 ab (kalibriert
     // für at_player), `+0.5` setzt die Struktur exakt auf den Boden.
+    // V18.102 (B5+ — NATUR-CLUMPING, Schöpfer: „die Wiese sehr homogen, keine
+    // natürlichen dichten Büsche und mageren Stellen, keine weiten Wälder"):
+    // EIN seed-deterministisches Klump-Rauschen, zwei Leser auf zwei Skalen —
+    // Gras/Büsche bei λ~28 m (Dickicht ↔ Lichtung), Bäume bei λ~170 m (WALD ↔
+    // offenes Land). Die Formel `clamp(1 + amp·noise, lo, hi)` ist MITTELWERT-
+    // NEUTRAL (≈1) → die Gesamt-Dichte bleibt, nur die VERTEILUNG wird Natur.
+    // Deko-Schicht: main-only, kein Worker-Mirror; seed-gebunden → alle Peers
+    // sehen dieselben Wälder. Tag-/Affinitäts-neutral (reiner chance-Skalar,
+    // die V17.9-Klasse — `diag-arch-tags` bleibt die Wand).
+    _clumpAt(x, z, freq) {
+        if (!this._clumpNoise) {
+            const seed = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":clump";
+            this._clumpNoise = new SimplexNoise(seed);
+        }
+        return this._clumpNoise.noise2D(x * freq, z * freq);
+    }
+
     _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn) {
         // V9.59-b — Wasser-Awareness: Bäume/Felsen/Geoden/Glutbrunnen wachsen
         // NICHT im Wasser. 0.4 m Marge, damit eine Architektur nicht knöcheltief
@@ -39360,6 +40037,13 @@ class AnazhRealm {
             const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
             const lebendig = f ? f.lebendig : 0;
             chance = Math.min(0.4, BASE_RATE * bestAffinity * (0.4 + lebendig * 0.9));
+            // V18.102 — die WALD-MASKE (λ~170 m): lebendig ist groß-λ-glatt →
+            // V17.9 gab Dichte-GRADIENTEN, keine Wälder mit RAND. Der Faktor
+            // ist mittelwert-neutral (Gesamt-Baumzahl ≈ gleich), aber im
+            // Masken-Hoch ×~2.6 (geschlossener Wald), im Tief ×0.25 (offenes
+            // Land) → echte Wälder + Lichtungen aus den BESTEHENDEN Bäumen.
+            const forest = Math.max(0.25, Math.min(2.6, 1 + 1.6 * this._clumpAt(sampleX, sampleZ, 0.006)));
+            chance = Math.min(0.5, chance * forest);
         }
         if (probe >= chance) return 0;
 
@@ -45672,6 +46356,37 @@ class AnazhRealm {
             rightChildren.push(this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Fähigkeits-Werte" }));
             rightChildren.push(this._el("div", { class: "spec-stat-strip" }, ...statChips));
         }
+        // V18.99 (G1 — Motion-Resonanz): die erkannten BEWEGUNGS-Rollen des
+        // Werks — was sich bewegen würde, trüge man es als Seele / erwachte
+        // es als Wesen. Dieselbe Resonanz, die Kreaturen + Custom-Avatare
+        // animiert — die Werkstatt LIEST sie nur (ein Vektor, viele Leser).
+        const motionRoles = this.computeMotionRoles(bp.parts);
+        if (motionRoles) {
+            const counts = {};
+            for (const r of motionRoles) if (r) counts[r.role] = (counts[r.role] || 0) + 1;
+            const mlbl = {
+                bein: "Bein (Gang)",
+                arm: "Arm (Schwung)",
+                fluegel: "Flügel (Schlag)",
+                schwanz: "Schwanz (Welle)",
+                kopf: "Kopf (Nicken)",
+            };
+            const mtxt = Object.keys(counts)
+                .map((k) => `${counts[k]}× ${mlbl[k] || k}`)
+                .join(" · ");
+            if (mtxt) {
+                rightChildren.push(
+                    this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Bewegung (Motion-Resonanz)" })
+                );
+                rightChildren.push(
+                    this._el("div", {
+                        class: "spec-motion-line",
+                        text: mtxt,
+                        title: "Die Bewegungs-Rollen emergieren aus Form × Lage × Spiegelung der Parts — als Seele getragen bewegt sich das Werk.",
+                    })
+                );
+            }
+        }
         // Werkstatt-Station: WIE fein sie fertigt (emergiert aus ihrer Substanz) — lernbar (V17.77-Saat).
         if (bp.role === "workshop-station") {
             const prec = this._workshopStationPrecision(bp);
@@ -51113,7 +51828,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.94.0";
+AnazhRealm.VERSION = "18.102.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -51449,6 +52164,26 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
 //   sprite  — quarz × octahedron + sphere: magie-leitend, leicht, resonant
 //   wesen   — stein × box + holz × cylinder/sphere: dichte, robust, lebendig
 //   geist   — laub × torus + leder × sphere: lebendig, semi-transparent
+// V18.99 (G1 — die Werkstatt ATMET): MOTION-RESONANZ-Signaturen. Wie die
+// WERK-Rolle (`computeBlueprintRole`) emergiert die BEWEGUNGS-Rolle eines
+// PARTS als argmax-Resonanz seines Feature-Vektors gegen diese frozen
+// Signaturen — kein Typ-Whitelist, kein Per-Wesen-Hardcode (die V17.107-
+// Resonanz-Lehre: Konjunktionen als 0/1-Achse, die Disjunktion im argmax).
+// Achsen: elongV/elongH (Streckung) · flat (Plattheit) · lowAnchor (bodennah)
+// · topMount (hoch) · sideMount (seitlich) · rearMount (hinten) · roundish
+// (Form) · central (achsnah) · paired (Spiegel-Zwilling). Konsument:
+// `computeMotionRoles` → `_animateCompoundMotion` (Kreaturen · Custom-
+// Avatare · Peer-Seelen erben EINE Bewegungs-Sprache).
+AnazhRealm.MOTION_ROLE_SIGNATURES = Object.freeze({
+    bein: Object.freeze({ lowAnchor: 1.0, paired: 0.6, elongV: 0.7, flat: -0.4, topMount: -0.8, central: -0.6 }),
+    arm: Object.freeze({ sideMount: 0.8, elongV: 0.8, paired: 0.5, flat: -0.6, lowAnchor: -0.6 }),
+    fluegel: Object.freeze({ sideMount: 0.7, flat: 1.0, paired: 0.4, lowAnchor: -0.7, central: -0.3 }),
+    schwanz: Object.freeze({ rearMount: 1.0, elongH: 0.7, paired: -0.6, central: -0.4 }),
+    kopf: Object.freeze({ topMount: 0.9, roundish: 0.6, paired: -0.7, elongH: -0.4, lowAnchor: -0.5 }),
+});
+// Unter diesem argmax-Score bewegt sich ein Part NICHT (Torso/Deko bleiben ruhig).
+AnazhRealm.MOTION_ROLE_FLOOR = 0.55;
+
 AnazhRealm.CREATURE_SOULS = Object.freeze({
     sprite: Object.freeze({
         label: "Sprite",

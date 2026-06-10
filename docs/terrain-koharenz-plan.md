@@ -313,16 +313,15 @@ ihn bestätigt. T0 misst zuerst; jede Phase darf scheitern und den Plan korrigie
   Faden durch `_voxelChunkGeometry`), Worker-Mirror, `DC_LAMBDA`/`DC_SHARP_MOVE2` (static + Worker-const).
 - **Sign-off (Schöpfer-Auge):** auf echter WebGPU — kohärent, FPS hält (die Schärfe selbst ist subtil bis T5).
 
-### T4 — Wasser-Kohärenz: der zelluläre Automat (Wasser fließt) (Risiko: hoch · die Krönung) — **ENTRIEGELT, KERN GEBAUT**
-- **→ DETAIL-PLAN: `docs/terrain-t4-wasser-ca-plan.md`** (der volle Bogen + die getroffenen Entscheidungen:
-  lokal-reaktiv wie Wetter · Level-pro-Zelle über der Flood · active-cell · T4a-Zellen/T4b-Render-Split).
-- **KERN GEBAUT + BEWIESEN (09.06.2026, T4a-1):** `_tickWaterCA(level, cells, dim, dimY)` — eine REINE,
-  deterministische Tick-Funktion des Fluss-Automaten (Gravität top-down + lateral Niveau-suchen, Delta-
-  Puffer = exakte Erhaltung). **VERIFIZIERT (`diag-water-flow-ca`, headless GEOMETRIE/Zustand): ERHALTUNG
-  exakt (Σ Wasser konstant) UND FLUSS (ein Blob fällt zum Boden · eine 5er-Säule spreizt zur Lache,
-  Grundfläche 1→64).** 3 Playtest-Invarianten grün. **Die Wurzel ‚Wasser fliesst nicht nach‘ (wasser-plan
-  §3) ist im MODELL gelöst.** Noch NICHT in die Welt verdrahtet (T4a-2..4: Welt-Zellen + cross-chunk-wake
-  + Physik) + Render (T4b, Browser, Regel #0) — die nächsten verifizierten Schritte.
+### T4 — Wasser-Kohärenz: der zelluläre Automat (Wasser fließt) (Risiko: hoch · die Krönung) — **VOLLENDET ✓ (V18.84–.94, gemergt)**
+- **→ DETAIL-PLAN: `docs/archiv/terrain-t4-wasser-ca-plan.md`** (VOLLENDET; der volle Bogen + die
+  getroffenen Entscheidungen: lokal-reaktiv wie Wetter · Level-pro-Zelle über der Flood · active-cell ·
+  Quellen-Pin · Receiver-Support · die Flow-Regel Decay+Kappe+Fixpunkt · Zell-Sheet als der EINE Render).
+- **VOLLENDET (10.06.2026):** der Automat fließt im Modell + in der Welt (`_tickWaterCA` +
+  `_tickWorldWaterCA` + cross-chunk-wake), die Physik liest das Live-Level, das Zell-Sheet (W-A) ist seit
+  V18.92 der EINE Default-Render (der L-Film entfernt), die Flow-Regel (V18.93) bändigt die unendlichen
+  Quellen (Wake-on-Stream AN — die Welt-Wasser-Substanz lebt + ruht). Schöpfer-bestätigt + gemergt.
+  Offene Reste (Wasserfall-Plane-Überlapp · Schelf-Konsolidierung · Hoch-Becken) in `docs/roadmap.md` §4.
 - **Ziel.** Wasser fließt dynamisch nach wie Minecraft; ein Carve neben Wasser → es strömt hinein.
 - **Mechanik.** `_buildVoxelChunkWaterCells` → CA: pro Zelle Level (0–N) + Flow-Vektor; Tick-Regeln
   (bergab-Priorität, lateral spreizen, Niveau suchen); nur **aktive/dirty** Zellen ticken (active-cell-
