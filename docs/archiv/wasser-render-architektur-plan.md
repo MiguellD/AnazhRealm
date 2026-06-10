@@ -212,7 +212,10 @@ gefaltete, überlappende Flächen. **Meine V18.25/.30/.31-Auslauf-Pflaster haben
 - Nähte: 4-Chunk-Ecken teils fehlerhaft (V18.27); der Fluss-Saum entlang der ganzen Chunk-Kante (V18.29, „Nachbar weiss nicht ob Fluss/Wasser", vermutlich Foam auf der Naht).
 - Längs-Streifen (`aFlow`-Foam-Strähnen) auf dem Fluss — sichtbar in Screenshots 3/5.
 - Querschnitt: konkav ↔ flach ↔ konvex (V18.12/.26 flach REVERTIERT, V18.27 konvex) — hin und her, nie bestätigt.
-- Wasserfall-Plane: bleibt (dedizierter Sturz) oder raus? Überlappt mit der Fläche; passt sich nicht an Carves an.
+- ~~Wasserfall-Plane: bleibt oder raus?~~ **ENTSCHIEDEN+GEBAUT (V18.111–.114): RAUS (S-Entscheid
+  „sehr schwer korrekt zu setzen") — der STEIL-SPLIT im Zell-Sheet formt vertikales Wasser
+  (Lippe + Vorhang, nur nass↔nass [Anker tauchen ein], aSlope-MAX → Wildwasser-Strähnen);
+  das Abwärts-Material bleibt als markierte Saat (Test materialKept).**
 
 **Dynamik (Ebene A):**
 - Wasser fliesst nicht nach (Minecraft) — die fundamentale Architektur-Lücke.
