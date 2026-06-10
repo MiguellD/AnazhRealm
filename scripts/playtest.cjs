@@ -22640,6 +22640,98 @@ async function checkBandPhasenBF(ctx) {
         out.b3Mantle =
             !/setXYZ\(i, 0, 1, 0\)/.test(r._ensureHorizonMantle.toString()) &&
             /computeVertexNormals/.test(r._ensureHorizonMantle.toString());
+        // V18.125 — A4-SCHELF: der KÜSTEN-AQUIFER, der synthetische Drei-Beweis
+        // auf einem PRÄPARIERTEN preDensity-Grid an einem atlas-freien In-Region-
+        // Ort: (a) die himmel-offene Senke unter dem Wassertisch trägt WASSER
+        // (der Aquifer — vorher 0, die GEMESSENE Loch-Klasse) · (b) Land über
+        // dem Spiegel bleibt trocken (kein Bluten/Hang-Schatten, V13-Wand) ·
+        // (c) die GEDECKELTE Höhle unter dem Spiegel bleibt trocken (kein
+        // Phantom — der _skyOpenWaterFilter trennt).
+        out.a4ShelfAquifer = (() => {
+            const cfg = r._voxelChunkConfig(0);
+            const { dim, dimY, step, span, floorDrop } = cfg;
+            const base = r.state.terrainBaseHeight || 0;
+            const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
+            // atlas-freien In-Region-Chunk finden (deterministisch: erster Treffer)
+            let ox = null,
+                oz = null;
+            outer: for (let ccx = 2; ccx < 18; ccx += 2) {
+                for (let ccz = 2; ccz < 18; ccz += 2) {
+                    const tx = ccx * span,
+                        tz = ccz * span;
+                    if (tx + span > 1000 || tz + span > 1000) continue;
+                    let clean = true;
+                    for (let g = 0; g <= 4 && clean; g++) {
+                        for (let q = 0; q <= 4 && clean; q++) {
+                            const sx = tx + (g / 4) * span,
+                                sz = tz + (q / 4) * span;
+                            if (r._atlasWaterLevelAt(sx, sz, Infinity) > -Infinity) clean = false;
+                        }
+                    }
+                    if (!clean) continue;
+                    const arch = (r.state.architectures || []).some(
+                        (a) =>
+                            a &&
+                            a.position &&
+                            a.position.x > tx - 8 &&
+                            a.position.x < tx + span + 8 &&
+                            a.position.z > tz - 8 &&
+                            a.position.z < tz + span + 8
+                    );
+                    if (arch) continue;
+                    ox = tx;
+                    oz = tz;
+                    break outer;
+                }
+            }
+            if (ox === null) return "kein atlas-freier Ort";
+            const oy = base - floorDrop;
+            // synthetisches Terrain: Senke (Spalten 4..9) terr=wl−6 · Land terr=wl+8 ·
+            // Höhle (Spalten 14..17): Land MIT Hohlraum y∈[wl−5,wl−2] unter Deckel.
+            const inSenke = (x, z) => x - ox >= 7.2 && x - ox <= 18 && z - oz >= 7.2 && z - oz <= 18;
+            const inHoehle = (x, z) => x - ox >= 25.2 && x - ox <= 32.4 && z - oz >= 25.2 && z - oz <= 32.4;
+            const Nx = dim + 4,
+                Ny = dimY + 1,
+                Nz = dim + 4;
+            const density = new Float32Array(Nx * Ny * Nz);
+            for (let vk = 0; vk < Nz; vk++) {
+                const z = oz - step + vk * step;
+                for (let vj = 0; vj < Ny; vj++) {
+                    const y = oy + vj * step;
+                    for (let vi = 0; vi < Nx; vi++) {
+                        const x = ox - step + vi * step;
+                        const terr = inSenke(x, z) ? wl - 6 : wl + 8;
+                        let d = terr - y;
+                        if (inHoehle(x, z) && y > wl - 5 && y < wl - 2) d = -1;
+                        density[vi + vj * Nx + vk * Nx * Ny] = d;
+                    }
+                }
+            }
+            const cells = r._buildVoxelChunkWaterCells(ox, oy, oz, step, density, 0);
+            const dimSq = dim * dim;
+            const jCount = Math.floor(cells.length / dimSq);
+            let senkeWater = 0,
+                landWater = 0,
+                hoehleWater = 0;
+            for (let k = 0; k < dim; k++) {
+                for (let i = 0; i < dim; i++) {
+                    const cx = ox + (i + 0.5) * step,
+                        cz2 = oz + (k + 0.5) * step;
+                    const senke = inSenke(cx, cz2),
+                        hoehle = inHoehle(cx, cz2);
+                    for (let j = 0; j < jCount; j++) {
+                        if (cells[i + k * dim + j * dimSq] !== 1) continue;
+                        const cy = oy + (j + 0.5) * step;
+                        if (senke) senkeWater++;
+                        else if (hoehle && cy < wl - 1.5) hoehleWater++;
+                        else if (!hoehle) landWater++;
+                    }
+                }
+            }
+            return senkeWater > 0 && landWater === 0 && hoehleWater === 0
+                ? true
+                : `senke=${senkeWater} land=${landWater} hoehle=${hoehleWater}`;
+        })();
         return out;
     });
     if (res.error) {
@@ -22704,6 +22796,11 @@ async function checkBandPhasenBF(ctx) {
     check("E4+E5: der Kristallisierer lebt im Selbstanalyse-Takt (KONSUM)", res.e45Hook);
     check("B3/V18.113: der Mantel behält echte Normalen + erbt die Lichtung übers Material", res.b3Mantle);
     check("B8: Struktur-LUT existiert + rimStrength-Uniform verdrahtet", res.b8Lut && res.b8Rim);
+    check(
+        "A4/V18.125: der KÜSTEN-AQUIFER — offene Senke unterm Wassertisch trägt Wasser, Land + gedeckelte Höhle bleiben trocken",
+        res.a4ShelfAquifer === true,
+        typeof res.a4ShelfAquifer === "string" ? res.a4ShelfAquifer : undefined
+    );
 }
 
 // PHASE A (gigant-plan §5) — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·

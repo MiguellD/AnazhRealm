@@ -1139,6 +1139,39 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
         if (atlasWaterLevelAt(cxw, oz - 0.5 * step, Infinity) > -Infinity) colSrc[i + 0 * dim] = 1;
         if (atlasWaterLevelAt(cxw, oz + (dim + 0.5) * step, Infinity) > -Infinity) colSrc[i + (dim - 1) * dim] = 1;
     }
+    // V18.125 — KÜSTEN-AQUIFER (Mirror von `_buildVoxelChunkWaterCells`, MUSS
+    // bit-identisch): jede Atlas-lose Spalte, deren himmel-offenes ECHTES
+    // Terrain (erste SOLID-Zelle von oben) klar unter dem Wassertisch liegt,
+    // wird Aquifer-Quelle. Begründung + Messung im Main-Kommentar.
+    const SHELF_MIN_DEPTH = 1.0;
+    for (let k = 0; k < dim; k++) {
+        const baseK = k * dim;
+        for (let i = 0; i < dim; i++) {
+            const idx0 = i + baseK;
+            if (colSrc[idx0]) continue;
+            const lvl0 = colL[idx0];
+            if (lvl0 > -Infinity && lvl0 > aquiferY + 1e-6) continue;
+            let topJ = -1;
+            for (let j = jMax; j >= 0; j--) {
+                if (cells[idx0 + j * dimSq] === CELL_STATE.SOLID) {
+                    topJ = j;
+                    break;
+                }
+            }
+            if (topJ < 0) continue;
+            const topCy = oy + (topJ + 0.5) * step;
+            if (topCy < aquiferY - SHELF_MIN_DEPTH) {
+                colL[idx0] = lvl0 > -Infinity ? lvl0 : aquiferY;
+                colSrc[idx0] = 1;
+                const lvl = colL[idx0];
+                const deckCy = topCy + step;
+                if (deckCy > lvl && topJ + 1 <= jMax) {
+                    const deckIdx = idx0 + (topJ + 1) * dimSq;
+                    if (cells[deckIdx] === AIR) cells[deckIdx] = WATER;
+                }
+            }
+        }
+    }
     const queue = [];
     const seedColumn = (i, k) => {
         const idx0 = i + k * dim;
@@ -1326,21 +1359,16 @@ function chunkHasAnyWater(cx, cz, lod) {
             }
         }
     }
-    // (4) V17.117 (H3) — Mirror des globalen Ozean-Gates (siehe `_voxelChunkHasAnyWater`):
-    // beyond-region Chunk, dessen Makro-Terrain unter den Meeresspiegel dippt, trägt
-    // Ozean. Bit-identisch zum Main (terrainMacroSurfaceY ist bereits gespiegelt).
+    // (4) V17.117 (H3) + V18.125 — Mirror des MAKRO-DIP-Predicates (siehe
+    // `_voxelChunkHasAnyWater`): globaler Ozean beyond-region UND der Küsten-
+    // Aquifer in-region. Bit-identisch zum Main.
     const OCEAN_GATE_MARGIN = 16;
-    const regX1 = h.originX + h.dim * h.cell;
-    const regZ1 = h.originZ + h.dim * h.cell;
-    if (ox < h.originX || oz < h.originZ || ox + span > regX1 || oz + span > regZ1) {
+    {
         const thr = waterLevel + OCEAN_GATE_MARGIN;
         for (let gj = 0; gj <= 4; gj++) {
             for (let gi = 0; gi <= 4; gi++) {
                 const sx = ox + (gi / 4) * span;
                 const sz = oz + (gj / 4) * span;
-                const ci = Math.floor((sx - h.originX) / h.cell);
-                const cj = Math.floor((sz - h.originZ) / h.cell);
-                if (ci >= 0 && cj >= 0 && ci < h.dim && cj < h.dim) continue;
                 if (terrainMacroSurfaceY(sx, sz, true) < thr) return true;
             }
         }

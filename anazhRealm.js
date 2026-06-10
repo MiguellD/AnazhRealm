@@ -20359,25 +20359,27 @@ class AnazhRealm {
                 }
             }
         }
-        // (4) V17.117 (H3) — der GLOBALE Ozean jenseits der ±1024-Atlas-Region:
-        // liegt ein Teil des Chunk-Footprints außerhalb der Region UND dippt sein
-        // Makro-Terrain unter den Meeresspiegel (+ Roughness-Marge), trägt der
-        // Chunk Ozean (Mirror des Ozean-Defaults in `_atlasWaterLevelAt`). NUR
-        // beyond-region (in-region entscheidet der getunte Atlas oben → kein
-        // Mehraufwand, kein Verhaltens-Wandel). Marge ≥ der 3D-Roughness-Amplitude
-        // (±12 m in `_terrainBaseDensityAt`) → keine dünne Küsten-Ozean-Fehlstelle.
+        // (4) V17.117 (H3) + V18.125 — das MAKRO-DIP-Predicate für BEIDE
+        // Wasser-Wahrheiten jenseits des Atlas: (a) der GLOBALE Ozean jenseits
+        // der ±1024-Region (H3) und (b) der KÜSTEN-AQUIFER in-region (V18.125 —
+        // himmel-offene Roughness-Senken unter dem Wassertisch, die der 16-m-
+        // Atlas nicht sehen KANN; die Substanz-Regel lebt im Zellen-Build).
+        // Dippt das Makro-Terrain irgendwo im 5×5-Footprint-Raster unter
+        // waterLevel + Marge, kann der Chunk Wasser tragen. Die Marge ≥ der
+        // 3D-Roughness-Amplitude (±12 m in `_terrainBaseDensityAt`) macht
+        // false-negatives strukturell unmöglich (Makro ≥ wl+16 → echtes
+        // Terrain ≥ wl+4 → nie unter Spiegel); ein false-positive kostet nur
+        // einen leeren Zellen-Build (y-Band-beschränkt, V18.90). Die V9.87-
+        // Lehre („Atlas vor Heuristik") gilt weiter für die ATLAS-Wahrheiten
+        // (1)–(3) — dieses Predicate ist der ehrliche ENVELOPE der NEUEN
+        // substanz-getriebenen Aquifer-Wahrheit, keine Schätzung der alten.
         const OCEAN_GATE_MARGIN = 16;
-        const regX1 = h.originX + h.dim * h.cell;
-        const regZ1 = h.originZ + h.dim * h.cell;
-        if (ox < h.originX || oz < h.originZ || ox + span > regX1 || oz + span > regZ1) {
+        {
             const thr = waterLevel + OCEAN_GATE_MARGIN;
             for (let gj = 0; gj <= 4; gj++) {
                 for (let gi = 0; gi <= 4; gi++) {
                     const sx = ox + (gi / 4) * span;
                     const sz = oz + (gj / 4) * span;
-                    const ci = Math.floor((sx - h.originX) / h.cell);
-                    const cj = Math.floor((sz - h.originZ) / h.cell);
-                    if (ci >= 0 && cj >= 0 && ci < h.dim && cj < h.dim) continue;
                     if (this._terrainMacroSurfaceY(sx, sz, true) < thr) return true;
                 }
             }
@@ -20547,6 +20549,68 @@ class AnazhRealm {
             for (let i = 0; i < dim; i++) {
                 if (colWet(`${_cx},${_cz - 1}`, i, dim - 1)) colSrc[i + 0 * dim] = 1;
                 if (colWet(`${_cx},${_cz + 1}`, i, 0)) colSrc[i + (dim - 1) * dim] = 1;
+            }
+        }
+        // V18.125 — A4-SCHELF-KONSOLIDIERUNG: der KÜSTEN-AQUIFER (das im
+        // caveDry schon zitierte Minecraft-1.18-Prinzip, jetzt für die OFFENE
+        // Senke). GEMESSEN (diag-shelf): die 3D-Roughness (±12 m) taucht das
+        // ECHTE Terrain bis −24 m unter den Meeresspiegel, wo das 16-m-MAKRO
+        // (−2) den Atlas „Land" sagen lässt → colL=−Inf → die BFS kann die
+        // himmel-offene Küsten-Senke NIE füllen (sie ist zudem topologisch
+        // durch flache Roughness-Schwellen vom Meer getrennt — Pfad-Max
+        // GEMESSEN −1.4 über Spiegel −3; und der V18.93-Distanz-Decay hält
+        // auch den CA bewusst fern). Physisch steht so eine Grube am Meer
+        // voll GRUNDWASSER: jede Atlas-lose Spalte, deren himmel-offenes
+        // ECHTES Terrain (erste SOLID-Zelle von oben — die Zellen sind die
+        // Substanz-Wahrheit, kein neuer Scan) KLAR unter dem Wassertisch
+        // liegt, wird Aquifer-Quelle (colL=waterLevel, colSrc=1). PER-SPALTE
+        // LOKAL → seam-frei per Konstruktion (Nachbar-Chunks entscheiden an
+        // der Grenze identisch aus identischer Density), KEIN Atlas-/
+        // Drainage-Eingriff (die Welt-Identität der Flüsse/Seen bleibt),
+        // Worker bit-identisch (Mirror in voxel-worker.js). Land-Spalten
+        // (Terrain über Spiegel) behalten colL=−Inf → kein Bluten/Hang-
+        // Schatten (V13-Bogen-Wand); gedeckelte Höhlen filtert der
+        // _skyOpenWaterFilter wie immer.
+        const SHELF_MIN_DEPTH = 1.0;
+        for (let k = 0; k < dim; k++) {
+            const baseK = k * dim;
+            for (let i = 0; i < dim; i++) {
+                const idx0 = i + baseK;
+                if (colSrc[idx0]) continue; // schon echte Quelle (Atlas/Fluss)
+                const lvl0 = colL[idx0];
+                // Ein See-/Fluss-RIM ÜBER dem Wassertisch ist KEIN Grundwasser
+                // (sonst füllte eine getrennte Senke neben einem Hochland-See
+                // bis zu DESSEN Spiegel = der V13.0-Hang-Schatten in neuer
+                // Gestalt). Der Ozean-Rim (= waterLevel) und ein Unter-Meer-
+                // See-Rim (Tote-Meer-Klasse, lokal niedrigerer Tisch) bleiben.
+                if (lvl0 > -Infinity && lvl0 > aquiferY + 1e-6) continue;
+                let topJ = -1;
+                for (let j = jMax; j >= 0; j--) {
+                    if (cells[idx0 + j * dimSq] === STATE.SOLID) {
+                        topJ = j;
+                        break;
+                    }
+                }
+                if (topJ < 0) continue; // Terrain unterm Band — exotisch, konservativ
+                const topCy = oy + (topJ + 0.5) * step;
+                if (topCy < aquiferY - SHELF_MIN_DEPTH) {
+                    colL[idx0] = lvl0 > -Infinity ? lvl0 : aquiferY;
+                    colSrc[idx0] = 1;
+                    // Zell-QuantisierUNGS-Wand (die GEMESSENE −5.0er-Klasse):
+                    // eine ~2-m-Wassersäule kann durchs 1.8-m-Gitter fallen
+                    // (topCy −4.5 → nächste AIR-Mitte −2.7 > Spiegel −3 → die
+                    // seedColumn fände NICHTS). Dann trägt die DECK-Zelle das
+                    // flache Wasser — ihr Intervall schneidet den Spiegel per
+                    // Konstruktion (topCy < wl−1 ⇒ deckCy−step/2 < wl). Kein
+                    // queue-Push nötig (lateral kappt colL der Nachbarn, unten
+                    // ist SOLID); der _skyOpenWaterFilter behält sie (AIR drüber).
+                    const lvl = colL[idx0];
+                    const deckCy = topCy + step;
+                    if (deckCy > lvl && topJ + 1 <= jMax) {
+                        const deckIdx = idx0 + (topJ + 1) * dimSq;
+                        if (cells[deckIdx] === AIR) cells[deckIdx] = WATER;
+                    }
+                }
             }
         }
         const queue = [];
@@ -53997,7 +54061,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.124.0";
+AnazhRealm.VERSION = "18.125.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
