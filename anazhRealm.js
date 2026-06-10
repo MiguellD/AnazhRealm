@@ -41811,15 +41811,83 @@ class AnazhRealm {
                 }
             }
         };
-        for (const a of active) if (a.moved > 0.5) enqueueWithReaders(a.cx, a.cz);
+        // V18.121 — RE-MESH NUR BEI SICHTBARER DACH-ÄNDERUNG (GEMESSEN
+        // diag-frame-profile: Ø 14.4 ms/Frame Wasser-Sheet-Builds am SETTLED
+        // Spawn; 3 Fluss-Chunks × ~590 Builds/300 Ticks): `moved` ist BRUTTO-
+        // Durchfluss — ein STATIONÄRER Fluss (Quelle speist nach, Wasser
+        // fällt + fließt, der PEGEL bleibt konstant) trägt dauerhaft
+        // moved > 0.5 und re-meshte ewig für ein unverändertes Bild. Das
+        // Sheet rendert die SPALTEN-DÄCHER → deren Änderung entscheidet:
+        // der Dach-FINGERPRINT (`_caRoofFingerprint`, ein Float je Spalte =
+        // oberste nasse Zeile + Füllgrad, nur im y-Band) wird gegen den
+        // Stand des letzten Enqueues (`entry._caMeshFp`) gehalten — re-mesh
+        // erst bei max|Δ| > 0.25 (eine EINZEL-Spalte wird vom 3×3-Sheet-
+        // Glätten ÷9 verschmiert → erst ~0.25 Zellhöhe ist im Bild ~5 cm =
+        // die ehrliche Sichtbarkeits-Grenze; die Quell-Pin-Spalten jittern
+        // GEMESSEN dauerhaft ~0.05-0.1 = unsichtbar) ODER Σ|Δ| > 1.0
+        // (breite Drift — eine Carve-Flut hebt viele Spalten und schlägt
+        // sofort durch; der FP schreibt nur bei Überschreiten fort → leise
+        // Drift akkumuliert und schlägt korrekt durch). Der SETTLE-Final-
+        // Mesh bleibt unbedingt (der letzte Stand wird immer gezeichnet).
+        for (const a of active) if (a.moved > 0.5 && this._caRoofChanged(a, dim, dimY)) enqueueWithReaders(a.cx, a.cz);
         for (const a of active) {
             if (a.moved < SETTLE) {
                 activeSet.delete(a.key);
-                // das finale RUHE-Mesh (der Trickle unter dem Throttle wird hier sichtbar).
-                enqueueWithReaders(a.cx, a.cz);
+                // das finale RUHE-Mesh — ABER auch hier durchs Dach-Gate
+                // (V18.121): im Wake/Settle-PING-PONG (Nachbar-xfer weckt →
+                // mini-moved → settle) feuerte der ungegatete Final-Mesh
+                // jeden Zyklus (GEMESSEN: nach dem moved-Gate blieben ~150
+                // Builds/Key/300 Ticks). Ist der FP unverändert, IST der
+                // letzte sichtbare Stand schon gezeichnet — nichts zu tun.
+                if (this._caRoofChanged(a, dim, dimY)) enqueueWithReaders(a.cx, a.cz);
             }
         }
         return total;
+    }
+
+    // V18.121 — der DACH-Fingerprint: pro Spalte (dim²) die oberste nasse
+    // Zeile + ihr Füllgrad (j + frac) — exakt die Wahrheit, die das Zell-Sheet
+    // rendert. Vergleicht gegen `entry._caMeshFp` (Stand des letzten Enqueues)
+    // und schreibt bei Überschreiten (oder force=true, der Settle-Stand) fort.
+    // Scratch wiederverwendet (alloc-frei im Steady-State); Band-beschränkt.
+    _caRoofChanged(a, dim, dimY) {
+        const entry = this.state.voxelChunks ? this.state.voxelChunks.get(a.key) : null;
+        if (!entry) return true;
+        const dimSq = dim * dim;
+        let fp = this.state._caFpScratch;
+        if (!fp || fp.length < dimSq) fp = this.state._caFpScratch = new Float32Array(dimSq);
+        const jHi = a.band ? Math.min(dimY - 1, a.band.jMax) : dimY - 1;
+        const jLo = a.band ? Math.max(0, a.band.jMin) : 0;
+        const level = a.level;
+        for (let c = 0; c < dimSq; c++) {
+            let v = 0;
+            for (let j = jHi; j >= jLo; j--) {
+                const lv = level[j * dimSq + c];
+                if (lv > 0.05) {
+                    v = j + lv;
+                    break;
+                }
+            }
+            fp[c] = v;
+        }
+        const old = entry._caMeshFp;
+        if (!old || old.length !== dimSq) {
+            entry._caMeshFp = new Float32Array(fp.subarray(0, dimSq));
+            return true;
+        }
+        let maxAbs = 0;
+        let sumAbs = 0;
+        for (let c = 0; c < dimSq; c++) {
+            const d = fp[c] - old[c];
+            const ad = d < 0 ? -d : d;
+            if (ad > maxAbs) maxAbs = ad;
+            sumAbs += ad;
+        }
+        if (maxAbs > 0.25 || sumAbs > 1.0) {
+            old.set(fp.subarray(0, dimSq));
+            return true;
+        }
+        return false;
     }
 
     // Level-Austausch über die gemeinsame Chunk-Grenze (die lateral-Regel über die Naht, symmetrisch
@@ -53366,7 +53434,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.120.0";
+AnazhRealm.VERSION = "18.121.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

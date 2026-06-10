@@ -263,7 +263,15 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
   größter Einzelhebel). **(2)** ~~Gras-Placement → Worker~~ GELÖST via (0b) — die WAHRHEIT
   wanderte, nicht der Code. **(3)** Inseln in den HISM-Pfad (PRÜFEN: Inseln sind vermutlich UNIKATE
   Geometrie — dann ist der Hebel LOD/Dichte, nicht Instancing; messen vor schneiden). **(4)**
-  Substep-Cap senken. **(6) G7-H — DER HORIZONT-MANTEL (der „Unendlichkeits"-Hebel, DESIGN —
+  Substep-Cap senken. **(4b) ✓ B6-REST GEMESSEN VOLLENDET (V18.121,
+  `scripts/diag-frame-profile.cjs` — das bleibende Werkzeug):** Allokationen
+  unkritisch (V3 med 3/Tick · Color 14/Tick — kein Pool-Theater) · Kreaturen
+  Ø 0.58 ms@10 (aiDiv trägt; Frame-Budget wäre Overengineering — vermerkt) ·
+  DER FUND: der Wasser-Sheet-Tick fraß Ø 14.4 ms/Frame SETTLED (stationärer
+  Fluss = Brutto-moved>0.5 ewig + Settle-Ping-Pong) → das DACH-GATE
+  (`_caRoofChanged`: Spalten-Dach-Fingerprint, re-mesh nur bei SICHTBARER
+  Änderung [max>0.25 nach 3×3-Glättungs-Wahrheit · Σ>1.0 für Fluten]) →
+  Tick-Median 18.2→1.6 ms (−91 %), Builds −87 %, Carve-Reaktivität grün. **(6) G7-H — DER HORIZONT-MANTEL (der „Unendlichkeits"-Hebel, DESIGN —
   Schöpfer: „fast instant eine gigantische Welt sehen"):** jenseits des Chunk-Rings zeichnet
   heute NICHTS — die Welt endet im Fog statt in Bergketten. Der Schnitt: ein GROBES
   Fern-Terrain-Mesh aus `_terrainMacroSurfaceY` (die EINE deterministische Quelle — exakt die

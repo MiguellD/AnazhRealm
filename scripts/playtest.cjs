@@ -22512,6 +22512,35 @@ async function checkBandPhasenBF(ctx) {
                 r._applyDayNightToScene();
             }
         })();
+        // V18.121 — B6: das DACH-GATE des Wasser-Re-Mesh (GEMESSEN: ein
+        // stationärer Fluss trug Brutto-moved>0.5 dauerhaft → 3 Chunks
+        // re-meshten JEDEN Frame = Ø14 ms; jetzt entscheidet die SICHTBARE
+        // Spalten-Dach-Änderung). BEHAVIORAL am synthetischen Feld: erster
+        // Call true (kein FP) · unverändert false · sichtbare Änderung true ·
+        // danach false (FP fortgeschrieben). + KONSUM (Welt-Tick ruft es).
+        out.b6RoofGate = (() => {
+            const key = "__fp_test__";
+            const saved = r.state.voxelChunks.get(key);
+            try {
+                r.state.voxelChunks.set(key, {});
+                const dim = 4;
+                const dimY = 8;
+                const dimSq = dim * dim;
+                const level = new Float64Array(dimSq * dimY);
+                for (let c = 0; c < dimSq; c++) level[3 * dimSq + c] = 0.8;
+                const a = { key, level, band: { jMin: 0, jMax: dimY - 1 } };
+                const first = r._caRoofChanged(a, dim, dimY);
+                const second = r._caRoofChanged(a, dim, dimY);
+                level[4 * dimSq] = 0.9;
+                const third = r._caRoofChanged(a, dim, dimY);
+                const fourth = r._caRoofChanged(a, dim, dimY);
+                const src = r._tickWorldWaterCA ? r._tickWorldWaterCA.toString() : "";
+                return first && !second && third && !fourth && /_caRoofChanged/.test(src);
+            } finally {
+                if (saved === undefined) r.state.voxelChunks.delete(key);
+                else r.state.voxelChunks.set(key, saved);
+            }
+        })();
         // V18.112 — E4-KRISTALL + E5: eine wiederholt bewährte Geste (3 finalisierte
         // Läufe, deposit_life, sorrow-Kontext) kristallisiert zur Regel — die
         // Bedingung EMERGIERT aus der Emotions-Signatur (field_above sorrow),
@@ -22644,6 +22673,10 @@ async function checkBandPhasenBF(ctx) {
     check(
         "B5/V18.120: der Taucher sieht die Wasserdecke (eyesUnderwater → DoubleSide, auftauchen → BackSide)",
         res.b5Underwater
+    );
+    check(
+        "B6/V18.121: das Wasser-Re-Mesh folgt der SICHTBAREN Dach-Änderung (Fingerprint-Gate, kein Durchfluss-Churn)",
+        res.b6RoofGate
     );
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
