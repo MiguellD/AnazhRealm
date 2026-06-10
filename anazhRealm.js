@@ -21850,7 +21850,9 @@ class AnazhRealm {
                 if (_Tn && _Tn.normalWorld && _Tn.normalize && _Tn.mix && _Tn.vec3) {
                     const _up = _Tn.vec3(0.0, 1.0, 0.0);
                     const _flat =
-                        _aun && _aun.terrainFlatten ? _aun.terrainFlatten : _Tn.float(AnazhRealm.TERRAIN_NORMAL_FLATTEN);
+                        _aun && _aun.terrainFlatten
+                            ? _aun.terrainFlatten
+                            : _Tn.float(AnazhRealm.TERRAIN_NORMAL_FLATTEN);
                     mat.normalNode = _Tn.normalize(_Tn.mix(_Tn.normalWorld, _up, _flat));
                 }
             } catch (_e) {
