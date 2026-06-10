@@ -9,6 +9,34 @@
  * Performance: FPS ~90-120, Frustum Culling optimiert, SimplexNoise gecacht.
  * Chaos und Ordnung, 1 und 0, Liebe und Stabilität – alles in Harmonie.
  */
+// F1 (gigant-plan §5 — G2 REKURSION, Schnitt 3): der localStorage-SCHATTEN.
+// Im sandboxed null-origin-iframe (AnazhRealm IN AnazhRealm) wirft schon der
+// GETTER `window.localStorage` SecurityError — 102 Zugriffe im Stamm würden
+// reißen. EIN Boot-Guard statt 102 Edits: wirft die Probe, SHADOWT ein
+// In-Memory-Shim die Property (die innere Welt lebt ephemer im Speicher —
+// die ehrliche Tiefe der Rekursion; die äußere Welt ist nie betroffen).
+(function () {
+    try {
+        void window.localStorage.length;
+    } catch (_e) {
+        const mem = new Map();
+        const shim = {
+            get length() {
+                return mem.size;
+            },
+            key: (i) => [...mem.keys()][i] ?? null,
+            getItem: (k) => (mem.has(String(k)) ? mem.get(String(k)) : null),
+            setItem: (k, v) => void mem.set(String(k), String(v)),
+            removeItem: (k) => void mem.delete(String(k)),
+            clear: () => void mem.clear(),
+        };
+        try {
+            Object.defineProperty(window, "localStorage", { value: shim, configurable: true });
+        } catch (_e2) {
+            /* defineProperty verweigert → die Welt bootet ohne Persistenz-Schicht */
+        }
+    }
+})();
 class AnazhRealm {
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
@@ -572,7 +600,21 @@ class AnazhRealm {
                 // (der bleibt Rendezvous + Fallback-Relay). meshActive
                 // spiegelt diesen Zustand für die UI.
                 rtcPeers: new Map(),
-                iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+                // F2 (gigant-plan §5 — G3): TURN KONFIGURIERBAR — ohne TURN
+                // scheitern ~30–40 % der NATs an echtem P2P. Der Spieler hinter-
+                // legt seinen Relay einmal in localStorage (`anazhTurn` als JSON
+                // {urls, username, credential}) — er reist NIE im Welt-Snapshot
+                // (private Infrastruktur, die V8-p2p-Doktrin). STUN bleibt Default.
+                iceServers: (() => {
+                    const servers = [{ urls: "stun:stun.l.google.com:19302" }];
+                    try {
+                        const turn = JSON.parse(localStorage.getItem("anazhTurn") || "null");
+                        if (turn && typeof turn.urls === "string") servers.push(turn);
+                    } catch (_e) {
+                        /* fehlkonfiguriertes TURN-JSON → STUN-only */
+                    }
+                    return servers;
+                })(),
                 meshActive: false,
                 // W7 Phase 2 — Welt-Snapshot über das Mesh. worldXfers puffert
                 // eingehende Snapshot-Stücke (xferId → {from, total, parts,
@@ -3153,7 +3195,14 @@ class AnazhRealm {
         if (entries.length === 0) return null;
         // Fitness als Gewicht. fpsDamage > 100 setzt auf Floor 0.05, damit
         // schlechte Programme nicht ganz aussterben — wir wollen Diversität.
+        // E4-AUDIT-HEAL (gigant-plan §5, GEMESSEN): die FINALISIERTE Fitness
+        // (computeMultiDimFitness — Emotion + Activity + FPS, das δ-Substrat)
+        // wurde vom Finalizer GESCHRIEBEN, aber hier NIE GELESEN (der Selektor
+        // rechnete nur fpsDamage nach = der Passagier-Trugschluss im Lern-
+        // Kreis). Jetzt FÜHRT die finalisierte Wertung die Selektion; der
+        // fps-Proxy bleibt der Fallback für un-finalisierte Einträge.
         const weights = entries.map((e) => {
+            if (e.finalized && Number.isFinite(e.fitness)) return Math.max(0.05, e.fitness);
             const fpsDmg = Math.max(0, e.outcome.fpsBefore - e.outcome.fpsAfter);
             const raw = e.ok === false ? 0 : 1 - fpsDmg / 100;
             return Math.max(0.05, raw);
@@ -3781,6 +3830,16 @@ class AnazhRealm {
                 historyEntry.outcome = entry.outcome;
                 historyEntry.fitness = fitness;
                 historyEntry.finalized = true;
+            }
+            // E2 (gigant-plan §5 — G5): BEWÄHRTE Schöpfung verdient WIRK-KRAFT
+            // zurück — die Wertung (Outcome-Fitness, das δ-Substrat) wird die
+            // Regeneration der Ökonomie: gut (>0.5) → Budget wächst, gekappt.
+            if (fitness > 0.5) {
+                if (this.state.nexusWirk === undefined) this.state.nexusWirk = AnazhRealm.NEXUS_WIRK.start;
+                this.state.nexusWirk = Math.min(
+                    AnazhRealm.NEXUS_WIRK.max,
+                    this.state.nexusWirk + (fitness - 0.5) * AnazhRealm.NEXUS_WIRK.regenPerValue
+                );
             }
             const ability = (this.state.dsl.abilities || []).find((a) => a.name === entry.name);
             if (ability) ability.fitness = fitness;
@@ -5526,6 +5585,12 @@ class AnazhRealm {
     }
 
     p2pSend(obj) {
+        // F2 (gigant-plan §5 — G3): PROTOKOLL-VERSION — jede Mesh-Nachricht
+        // trägt `pv`; Empfänger TOLERIEREN unbekannte Felder/Versionen (JSON-
+        // Toleranz ist die Design-Wahrheit aller Handler) → ein V18- und ein
+        // V20-Client teilen denselben Raum, jeder mit seinen Fähigkeiten
+        // (die Schöpfer-Vision „alte + neue Versionen verbinden sich").
+        if (obj && typeof obj === "object" && obj.pv === undefined) obj.pv = AnazhRealm.PROTO_VERSION;
         // W7 Phase 1: Spiel-Broadcast (pos/dsl/soul/aura/vibe). Steht das
         // WebRTC-Mesh komplett (alle Peer-Kanäle offen), fliesst die
         // Nachricht direkt peer-to-peer über die DataChannels — der
@@ -6698,7 +6763,19 @@ class AnazhRealm {
 
     _p2pMsgCreaturePos(msg, p2p) {
         // Kreatur-Sicht-Sync — die Kreatur-Positionen eines Mitspielers.
+        // F2 (gigant-plan §5 — G3): RATEN-CAP pro Peer (das SUBWORLD_NET_RATE_MAX-
+        // Muster): ein flutender/bösartiger Peer kann den Main-Thread nicht mit
+        // creature-pos-Reconciles würgen — max 10 Nachrichten je Sekunde je Peer,
+        // Überschuss fällt still (die nächste Nachricht trägt eh die VOLLE Liste).
         if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            if (!this._cpRate) this._cpRate = new Map();
+            const now = performance.now();
+            let win = this._cpRate.get(msg.peerId);
+            if (!win || now - win.start > 1000) {
+                win = { start: now, n: 0 };
+                this._cpRate.set(msg.peerId, win);
+            }
+            if (++win.n > 10) return;
             this._p2pHandleCreaturePos(msg.peerId, msg);
         }
     }
@@ -7945,6 +8022,21 @@ class AnazhRealm {
                 },
             },
             {
+                // E7 (gigant-plan §5 — der Spieler als PFLEGER): die Pflege-Geste
+                // schreibt ins lebendig-Overlay (deposit_life — DERSELBE Op, den
+                // der Nexus nutzt) — Co-Schöpfung wörtlich: der Mensch nährt das
+                // Feld, das alle lesen · schreiben · werten.
+                example: "pflege das land",
+                re: /^(?:pflege|hege)(?:\s+(?:das\s+land|die\s+erde|den\s+ort))?\s*$/i,
+                build: () => {
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
+                    return {
+                        program: ["deposit_life", ["at", p.x, p.y, p.z]],
+                        describe: "Du pflegst das Land — das Feld wird lebendiger",
+                    };
+                },
+            },
+            {
                 example: "rufe ufo hier",
                 re: /^(?:rufe|setze|spawne)\s+ufo\s+hier\s*$/i,
                 build: () => {
@@ -8759,6 +8851,41 @@ class AnazhRealm {
                 const t = target[axis];
                 const cur = p.emotions[axis] || 0;
                 if (t > cur) p.emotions[axis] = Math.min(1, cur + weight * (t - cur)); // hebend, gebounded
+            }
+        }
+        // D2 (gigant-plan §5 — G4-2): KREATUR↔KREATUR-Contagion — die HERDEN-
+        // Stimmung emergiert. Derselbe Kern, ein zweites Paar: nahe Wesen heben
+        // sich gegenseitig zur stärkeren Achse (HEBEND + gebounded ≤1 + der
+        // V18.100-Decay zieht zurück → Gleichgewicht, kein Runaway — die
+        // V17.44-Feedback-Disziplin, viertes Mal). O(n²) mit early-out auf die
+        // 12-m-Nähe — bei ≤120 Wesen ≤ ~7k billige Distanz-Checks, und nur
+        // alle ~0.5 s (Akkumulator) statt pro Frame.
+        this.state._herdContagionAcc = (this.state._herdContagionAcc || 0) + delta;
+        if (this.state._herdContagionAcc >= 0.5) {
+            const herdDt = this.state._herdContagionAcc;
+            this.state._herdContagionAcc = 0;
+            const R2 = 12 * 12;
+            const herdRate = cfg.rate * 0.6;
+            for (let i = 0; i < creatures.length; i++) {
+                const a = creatures[i];
+                const ea = a && a.userData && a.userData.emotions;
+                if (!ea || !a.position) continue;
+                for (let j = i + 1; j < creatures.length; j++) {
+                    const b = creatures[j];
+                    const eb = b && b.userData && b.userData.emotions;
+                    if (!eb || !b.position) continue;
+                    const dx = a.position.x - b.position.x;
+                    const dz = a.position.z - b.position.z;
+                    const d2 = dx * dx + dz * dz;
+                    if (d2 > R2) continue;
+                    const w = herdRate * (1 - Math.sqrt(d2) / 12) * herdDt;
+                    for (const axis of AnazhRealm.EMOTION_AXES) {
+                        const va = ea[axis] || 0;
+                        const vb = eb[axis] || 0;
+                        if (va > vb) eb[axis] = Math.min(1, vb + w * (va - vb));
+                        else if (vb > va) ea[axis] = Math.min(1, va + w * (vb - va));
+                    }
+                }
             }
         }
     }
@@ -13090,7 +13217,7 @@ class AnazhRealm {
     // Input ist eine parts-Liste (Bauplan ODER Soul-bodyParts — ein Schema);
     // Output ist eine zu parts ALIGNIERTE Liste ({role, side, phase} | null)
     // oder null, wenn nichts resoniert.
-    computeMotionRoles(parts) {
+    computeMotionRoles(parts, connections) {
         if (!Array.isArray(parts) || parts.length < 2) return null;
         const SIG = AnazhRealm.MOTION_ROLE_SIGNATURES;
         const FLOOR = AnazhRealm.MOTION_ROLE_FLOOR;
@@ -13206,6 +13333,105 @@ class AnazhRealm {
             roles[i] = { role: bestRole, side, phase };
             any = true;
         }
+        // C1 (gigant-plan §5 — G1-C): VERBINDUNGEN ALS GELENKE — die Vorrang-Quelle.
+        // Eine Bauplan-Verbindung {partA, partB} definiert einen ANKER (der nächste
+        // Punkt zwischen den Zentren, größen-gewichtet) + den GELENK-TYP per Resonanz:
+        //   RAD       — der kleinere Part ist ein Zylinder, dessen lange Achse ⊥ zur
+        //               Verbindungs-Richtung liegt → rollt um die Verbindungs-Achse.
+        //   TÜR       — flacher Part → schwenkt um die VERTIKALE Anker-Achse.
+        //   WIRBEL    — eine KETTE (≥3 Glieder, je ≤2 Verbindungs-Nachbarn) → Welle
+        //               entlang der Kette (Phase = Ketten-Index).
+        //   SCHARNIER — sonst: der kleinere Part schwingt um den Anker (Hüfte/Schulter
+        //               ECHT statt Center-Pivot).
+        // Die Lage-Heuristik bleibt der Fallback ohne Verbindungen (Built-ins heute).
+        if (Array.isArray(connections) && connections.length > 0) {
+            const vol = (a) => (a ? a.sx * a.sy * a.sz : 0);
+            const half = (a) => (a ? (a.sx + a.sy + a.sz) / 6 : 0.2);
+            // Ketten-Erkennung: Verbindungs-Grad pro Part.
+            const degree = new Map();
+            for (const cn of connections) {
+                degree.set(cn.partA, (degree.get(cn.partA) || 0) + 1);
+                degree.set(cn.partB, (degree.get(cn.partB) || 0) + 1);
+            }
+            const chainIdx = new Map();
+            {
+                // Ketten = zusammenhängende Pfade, deren Glieder Grad ≤ 2 haben.
+                const adj = new Map();
+                for (const cn of connections) {
+                    if (!adj.has(cn.partA)) adj.set(cn.partA, []);
+                    if (!adj.has(cn.partB)) adj.set(cn.partB, []);
+                    adj.get(cn.partA).push(cn.partB);
+                    adj.get(cn.partB).push(cn.partA);
+                }
+                const seen = new Set();
+                for (const [start, nbs] of adj) {
+                    if (seen.has(start) || nbs.length !== 1 || (degree.get(start) || 0) > 2) continue;
+                    // vom Ketten-Ende entlangwandern
+                    const path = [start];
+                    seen.add(start);
+                    let cur = start;
+                    for (;;) {
+                        const nxt = (adj.get(cur) || []).find((n) => !seen.has(n) && (degree.get(n) || 0) <= 2);
+                        if (nxt === undefined) break;
+                        path.push(nxt);
+                        seen.add(nxt);
+                        cur = nxt;
+                    }
+                    if (path.length >= 3) for (let k = 0; k < path.length; k++) chainIdx.set(path[k], k);
+                }
+            }
+            for (const cn of connections) {
+                const A = info[cn.partA];
+                const B = info[cn.partB];
+                if (!A || !B) continue;
+                // der KLEINERE bewegt sich um den Anker
+                const movIdx = vol(A) <= vol(B) ? cn.partA : cn.partB;
+                const fixIdx = movIdx === cn.partA ? cn.partB : cn.partA;
+                const M = info[movIdx];
+                const F = info[fixIdx];
+                const dx = F.px - M.px,
+                    dy = F.py - M.py,
+                    dz = F.pz - M.pz;
+                const w = half(M) / (half(M) + half(F));
+                const anchor = { x: M.px + dx * w, y: M.py + dy * w, z: M.pz + dz * w };
+                // dominante Verbindungs-Achse
+                const ax = Math.abs(dx),
+                    ay = Math.abs(dy),
+                    az = Math.abs(dz);
+                const connAxis = ay >= ax && ay >= az ? "y" : ax >= az ? "x" : "z";
+                const mf = {
+                    flat: (() => {
+                        const d = [M.sx, M.sy, M.sz].sort((u, v) => u - v);
+                        return c01((d[1] / (d[0] + eps) - 2.2) / 3);
+                    })(),
+                    lowAnchor: c01(1 - (M.py - M.sy / 2 - minY) / (0.3 * H)),
+                };
+                const isCyl = M.shape === "cylinder";
+                const longAxis = M.sy >= M.sx && M.sy >= M.sz ? "y" : M.sx >= M.sz ? "x" : "z";
+                let jointRole, jointAxis, phase;
+                if (chainIdx.has(movIdx)) {
+                    jointRole = "wirbel";
+                    jointAxis = "y";
+                    phase = chainIdx.get(movIdx) * 0.9;
+                } else if (isCyl && longAxis !== connAxis && mf.lowAnchor > 0.4) {
+                    jointRole = "rad";
+                    jointAxis = connAxis; // das Rad rollt um seine ACHSE (die Verbindung)
+                    phase = 0;
+                } else if (connAxis === "y" && mf.flat > 0.4) {
+                    jointRole = "tuer";
+                    jointAxis = "y";
+                    phase = 0;
+                } else {
+                    jointRole = "scharnier";
+                    // Schwung um die horizontale Achse ⊥ zur Verbindungs-Richtung
+                    jointAxis = connAxis === "x" ? "z" : "x";
+                    phase = (M.px >= 0 ? 0 : 1) % 2 === 0 ? 0 : Math.PI;
+                }
+                const side = M.px > 0.02 ? 1 : M.px < -0.02 ? -1 : 1;
+                roles[movIdx] = { role: jointRole, side, phase, anchor, axis: jointAxis, joint: true };
+                any = true;
+            }
+        }
         return any ? roles : null;
     }
 
@@ -13232,15 +13458,72 @@ class AnazhRealm {
         const kids = group.children;
         let base = group.userData._motionBase;
         if (!base || base.length !== kids.length) {
-            base = kids.map((c) => ({ rx: c.rotation.x, ry: c.rotation.y, rz: c.rotation.z }));
+            base = kids.map((c) => ({
+                rx: c.rotation.x,
+                ry: c.rotation.y,
+                rz: c.rotation.z,
+                px: c.position.x,
+                py: c.position.y,
+                pz: c.position.z,
+            }));
             group.userData._motionBase = base;
         }
+        // C1 — Rotation um den GELENK-ANKER: rotiert das Kind um die Achse `axis`
+        // am Punkt `anchor` (Bauplan-lokal): rot += θ UND pos = anchor + R(θ)·(basePos−anchor)
+        // — Hüfte/Schulter/Achse ECHT statt Center-Pivot. Eine-Achsen-Rotation von
+        // Hand (billig, kein Quaternion-Alloc pro Frame).
+        const applyJoint = (c, b, r, theta) => {
+            const a = r.anchor;
+            const ox = b.px - a.x,
+                oy = b.py - a.y,
+                oz = b.pz - a.z;
+            const cs = Math.cos(theta),
+                sn = Math.sin(theta);
+            let nx = ox,
+                ny = oy,
+                nz = oz;
+            if (r.axis === "x") {
+                ny = oy * cs - oz * sn;
+                nz = oy * sn + oz * cs;
+                c.rotation.set(b.rx + theta, b.ry, b.rz);
+            } else if (r.axis === "y") {
+                nx = ox * cs + oz * sn;
+                nz = -ox * sn + oz * cs;
+                c.rotation.set(b.rx, b.ry + theta, b.rz);
+            } else {
+                nx = ox * cs - oy * sn;
+                ny = ox * sn + oy * cs;
+                c.rotation.set(b.rx, b.ry, b.rz + theta);
+            }
+            c.position.set(a.x + nx, a.y + ny, a.z + nz);
+        };
         for (let i = 0; i < roles.length && i < kids.length; i++) {
             const r = roles[i];
             if (!r) continue;
             const c = kids[i];
             const b = base[i];
             if (!c || !b) continue;
+            if (r.joint) {
+                // C1 — die Gelenk-Rollen (Verbindungs-Vorrang)
+                if (r.role === "rad") {
+                    // das Rad ROLLT: mit Fahrt ∝ walkPhase, im Idle (Architektur:
+                    // Mühle/Wasserrad) eine ruhige Dauer-Drehung.
+                    applyJoint(c, b, r, moving ? walkPhase * 1.6 : t * 0.7);
+                } else if (r.role === "tuer") {
+                    applyJoint(c, b, r, Math.sin(t * 0.7 + r.phase) * 0.12);
+                } else if (r.role === "wirbel") {
+                    applyJoint(c, b, r, Math.sin(t * 2.2 + r.phase) * 0.3);
+                } else {
+                    // scharnier: schwingt wie ein Glied — um den ECHTEN Anker
+                    applyJoint(
+                        c,
+                        b,
+                        r,
+                        moving ? Math.sin(walkPhase + r.phase) * 0.4 : Math.sin(t * 1.1 + r.phase) * 0.04
+                    );
+                }
+                continue;
+            }
             if (r.role === "bein") {
                 c.rotation.x = b.rx + (moving ? Math.sin(walkPhase + r.phase) * 0.45 : 0);
             } else if (r.role === "arm") {
@@ -13253,6 +13536,9 @@ class AnazhRealm {
                 c.rotation.y = b.ry + Math.sin(t * 2.2 + r.phase) * 0.28;
             } else if (r.role === "kopf") {
                 c.rotation.x = b.rx + Math.sin(t * 1.6) * 0.05 + (moving ? 0.04 : 0);
+            } else if (r.role === "segel") {
+                // C2 — das Tuch/Segel FLATTERT (Wind): kleine schnelle Wellen.
+                c.rotation.z = b.rz + Math.sin(t * 4.2 + r.phase + i) * 0.07;
             }
         }
     }
@@ -13428,6 +13714,28 @@ class AnazhRealm {
         // beim Spieler (ACTION_TO_EMOTION.damage → sorrow+chaos); die binäre
         // "sad"-Projektion fällt aus der Valenz, statt direkt gestempelt zu werden.
         this._feelCreatureAction(creature, "damage", 2.5);
+        // D4-KERN (gigant-plan §5 — Phase E minimal, MARKIERT für den Schöpfer-
+        // Dialog): GEGENWEHR — ein überlebendes, substanz-starkes Wesen schlägt
+        // im PFAD-Modus zurück, wenn der Angreifer in Reichweite steht (Chance
+        // ∝ dichte + chaos — der Affekt KONSUMIERT). frieden/schöpfer bleiben
+        // über das bestehende damagePlayer-Modus-Gate unberührt; das volle
+        // Phase-E-Design (Jagd · Furcht↔Triumph-Bögen) bleibt der benannte
+        // Schöpfer-Dialog — dies ist der kleinste ehrliche Affekt-Konsument.
+        if (opts.fromPos && typeof this.getGameMode === "function" && this.getGameMode() === "pfad") {
+            const cTags = this.computeCreatureCompoundTags(creature) || {};
+            const chaos = (creature.userData.emotions && creature.userData.emotions.chaos) || 0;
+            const strikeChance = Math.min(0.6, (cTags.dichte || 0) * 0.35 + chaos * 0.4);
+            const pmPos = this.state.playerMesh && this.state.playerMesh.position;
+            if (
+                pmPos &&
+                Math.hypot(pmPos.x - creature.position.x, pmPos.z - creature.position.z) < 4 &&
+                Math.random() < strikeChance
+            ) {
+                const counter = Math.max(2, (stats.damage || 4) * 0.6);
+                this.damagePlayer(counter, "gegenwehr");
+                this.log(`${creature.userData.name || "Ein Wesen"} wehrt sich!`, "INFO");
+            }
+        }
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
         return { ok: true, dealt, killed: false };
     }
@@ -13924,6 +14232,30 @@ class AnazhRealm {
     }
     static get FAUNA_DEATH_COOLDOWN_MS() {
         return 35000; // mind. 35 s zwischen Toden — Welt soll nicht massensterben
+    }
+    // D3 (gigant-plan §5 — G4-3): die natürliche Lebens-Spanne eines Wesens.
+    // Jenseits davon kehrt es zur Erde zurück (der Tod nährt das lebendig-Feld)
+    // — natürlicher Umschlag statt ewiger Wesen. ~35 min Echtzeit.
+    static get FAUNA_MAX_AGE_MS() {
+        return 35 * 60 * 1000;
+    }
+    // E2 (gigant-plan §5 — G5): δ WIRD WÄHRUNG — das WIRK-BUDGET des Nexus.
+    // Eine Tat kostet ∝ ihrer Substanz (computeBuildCost-Wahrheit), das Budget
+    // REGENERIERT aus bewährter Schöpfung (Outcome-Fitness > 0.5 — der
+    // Vorhersagefehler-δ, der die Welt schon WERTET) + einem langsamen Idle-
+    // Tropf. Spam verarmt sich selbst = Trägheit BY CONSTRUCTION (kein
+    // Rate-Limit-Pflaster). Modi (§11-Wahrheit, auch für den Nexus): Materie
+    // kostet in pfad+frieden, frei nur in schöpfer. SCHÖPFER-ENTSCHEID offen
+    // markiert: die Budget-GRÖSSEN (start/max/regen) sind mein Erst-Wurf.
+    static get NEXUS_WIRK() {
+        return Object.freeze({
+            start: 60,
+            max: 150,
+            regenPerValue: 30, // pro finalisiertem Outcome: (fitness−0.5)·30
+            idleRegenPer5s: 2, // der Tropf (in _loopSelfAnalysis, 5-s-Takt)
+            ruleRegisterCost: 6,
+            costCap: 80,
+        });
     }
 
     // V9.43-b — Hydrosphären-Atlas. Das Drainage-Netz wird über eine feste
@@ -15599,7 +15931,7 @@ class AnazhRealm {
     // seit V9.90, voll engagiert V17.118 — der Mesh-Bau läuft off-main-thread, nur
     // der Spieler-Chunk sync). Der Determinismus-Test bewacht die bit-identische
     // Spiegelung zum Main-Thread. (NICHT GPU — der WebGPU-Density-Compute ist abgeklemmt.)
-    _getVoxelWorker() {
+    _getVoxelWorker(srcUrl) {
         if (this.state.voxelWorker) return this.state.voxelWorker;
         if (typeof Worker === "undefined") return null;
         try {
@@ -15611,7 +15943,31 @@ class AnazhRealm {
             // Mirror erreicht den Browser nie → der Wasserschatten bleibt).
             // `AnazhRealm.VERSION` bustet bei jedem Bump automatisch mit
             // (V9.95-c-Lehre: JEDE versionierte Datei bustet, nicht nur die Haupt-JS).
-            const worker = new Worker(`voxel-worker.js?v=${AnazhRealm.VERSION}`);
+            // F1 (gigant-plan §5 — G2 REKURSION, Schnitt 2): im null-origin-
+            // Sandbox-iframe (AnazhRealm IN AnazhRealm) wirft `new Worker(url)`
+            // SecurityError (null-origin matcht keine HTTP-Quelle). Fallback:
+            // die Quelle per fetch holen (CORS: der save-server sendet ACAO *)
+            // → Blob-URL (CSP `worker-src blob:` ist schon Konzession) → dieselbe
+            // Methode RE-ENTRANT mit der Blob-URL (volle Verdrahtung, eine Quelle).
+            // ASYNC nachgereicht — bis dahin trägt der Sync-Fallback (V9.89).
+            let worker;
+            try {
+                worker = new Worker(srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`);
+            } catch (_workerErr) {
+                if (!srcUrl && !this._voxelWorkerBlobTried) {
+                    this._voxelWorkerBlobTried = true;
+                    fetch(`voxel-worker.js?v=${AnazhRealm.VERSION}`)
+                        .then((r) => r.text())
+                        .then((src) => {
+                            const blobUrl = URL.createObjectURL(new Blob([src], { type: "application/javascript" }));
+                            this._getVoxelWorker(blobUrl);
+                            if (this.state.voxelWorker)
+                                this.log("Voxel-Worker über Blob-URL gestartet (Sandbox-Rekursion)", "INFO");
+                        })
+                        .catch((e2) => this.log(`Voxel-Worker Blob-Fallback scheiterte: ${e2.message}`, "INFO"));
+                }
+                return null;
+            }
             this.state.voxelWorkerPending = new Map();
             worker.onmessage = (e) => {
                 const msg = e.data;
@@ -16865,6 +17221,25 @@ class AnazhRealm {
     _chatTryDslParse(command, chatInput, appendChatOutput) {
         const parsed = this.parseChatToDsl(command);
         if (!parsed) return false;
+        // E3 (gigant-plan §5 — Mana-Symmetrie): die gesprochene WELT-GESTE ist
+        // der Magie-Pfad des Spielers — im PFAD-Modus kostet sie MANA ∝ ihrer
+        // Substanz (DERSELBE Kosten-Walker wie das Nexus-Wirk-Budget: EINE
+        // Ökonomie für alle Schreiber des Feldes). Lese-/Privat-Gesten (Kosten
+        // 0) bleiben frei; frieden + schöpfer zahlen nicht (§11-Modi-Wahrheit:
+        // die Mühe/Bedrohung ist die pfad-Achse).
+        if (typeof this.getGameMode === "function" && this.getGameMode() === "pfad") {
+            const manaCost = Math.ceil(this._dslProgramWirkCost(parsed.program) * 0.5);
+            if (manaCost > 0) {
+                const p = this.state.player;
+                if (typeof p.mana !== "number") p.mana = p.manaMax || 40;
+                if (p.mana < manaCost) {
+                    appendChatOutput(`Zu erschöpft für diese Geste (Mana ${p.mana | 0}/${manaCost} nötig).`);
+                    chatInput.value = "";
+                    return true;
+                }
+                p.mana -= manaCost;
+            }
+        }
         const result = this.dslRun(parsed.program, { source: "human" });
         this.state.dsl.lastUserProgram = parsed.program;
         this.state.dsl.lastUserOutcome = result.outcome;
@@ -20956,6 +21331,13 @@ class AnazhRealm {
             // Distanz-Spanne bis zum vollen Faktor. Live-tunbar (Schöpfer-Sign-off).
             hazeNear: TSL.uniform(70.0),
             hazeFar: TSL.uniform(350.0),
+            // B8 — das warme Struktur-RIM (Fresnel-Saum, die Ghibli-Silhouetten-
+            // Kante im Gegenlicht). 0 = aus. Live-tunbar (Schöpfer-Sign-off).
+            rimStrength: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.rimStrength)
+                    ? this.state.atmosphere.rimStrength
+                    : 0.16
+            ),
             // V17.107 — die 2.5D-LICHTUNG: wie stark die Terrain-SHADING-Normale
             // zur Welt-Up-Achse geblendet wird (0 = volle 3D-Facetten, 1 = flach
             // wie 2.5D). GEMESSEN (diag-facets): die Surface-Nets-Normalen haben
@@ -21091,6 +21473,18 @@ class AnazhRealm {
                 const _ao = _T.float(1.0).sub(_curv.mul(_aoStr).clamp(0.0, cfg.aoCap));
                 _rgb = _rgb.mul(_shade.mul(_ao));
             }
+            // B8 (gigant-plan §5) — das warme RIM-Licht für Flach-Farb-Strukturen
+            // (die Ghibli-Silhouetten-Kante): ein Fresnel-Saum in warmem Ton hebt
+            // die Kontur eines Bauwerks im Gegenlicht aus dem Schatten — POST-
+            // lighting im selben Output-Chain (komponiert mit dem Aerial-Melt,
+            // KEIN zweiter outputNode — zwei Zuweisungen überschrieben sich).
+            // Live-tunbar: anazhRealm.state.atmoUniforms.rimStrength.value.
+            if (opts.rim && _T.normalWorld && _T.cameraPosition && _au.rimStrength) {
+                const _vd = _T.cameraPosition.sub(_wp).normalize();
+                const _fres = _T.normalWorld.dot(_vd).clamp(0.0, 1.0).oneMinus().pow(3.0);
+                const _rimCol = _T.vec3(1.0, 0.72, 0.45);
+                _rgb = _rgb.add(_rimCol.mul(_fres.mul(_au.rimStrength)));
+            }
             // (J1) die Aerial-Perspektive — der HÖHEN-Melt zur Himmelsfarbe,
             // IDENTISCH für jede Ebene (Terrain, Inseln, Strukturen, Bäume,
             // Kreaturen). scene.fog trägt die DISTANZ; dieser Term die HÖHE.
@@ -21177,6 +21571,11 @@ class AnazhRealm {
             const ef = AnazhRealm.STRUCTURE_EMISSIVE || { intensity: 0.07 };
             mat.emissive.setHex(opts.color);
             mat.emissiveIntensity = ef.intensity;
+            // B8 — Strukturen lesen die eigene LUT mit Schatten-Boden 0.25 (das
+            // „Schwarz-Silhouetten"-Ende): gleiche Plateaus wie der Cel-Regler,
+            // nur das Dunkel-Band hebt sich — Terrain·Deko·Bauwerk antworten dem
+            // Licht in EINER Sprache statt „Terrain hell, Turm schwarz".
+            mat.gradientMap = this._ensureStructureGradient();
         }
 
         // V15.4 - Aerial-Perspective-Uniforms sicherstellen (lazy, EIN Satz
@@ -21192,7 +21591,8 @@ class AnazhRealm {
         // Leser. Mikro-Tiefe (J2) nur für Flach-Farb-Strukturen (das Terrain trägt
         // sie im colorNode); transparente Phantome bleiben unberührt (UI-Element).
         if (!opts.transparent) {
-            this._applyAerialOutput(mat, { microTexture: !opts.vertexColors && opts.color !== undefined });
+            const isFlatStructure = !opts.vertexColors && opts.color !== undefined;
+            this._applyAerialOutput(mat, { microTexture: isFlatStructure, rim: isFlatStructure });
         }
 
         // V17.107 — die 2.5D-LICHTUNG: die Terrain-SHADING-Normale zur Welt-Up-Achse
@@ -25579,6 +25979,118 @@ class AnazhRealm {
     // ein einzelner Chunk schon teurer als das Budget ist (heute typisch
     // 100–150 ms), bleibt das Verhalten effektiv 1-chunk-pro-Frame —
     // identisch zum alten Pfad, aber bereit für die Cost-Heilungen.
+    // B2 (gigant-plan §5 — G7-H): DER HORIZONT-MANTEL — die Instant-Gigantik.
+    // Jenseits des Chunk-Rings zeichnete NICHTS (die Welt endete im Fog statt in
+    // Bergketten). Der Mantel ist ein GROBES Fern-Terrain als POLAR-Gitter
+    // (rings × segments, geometrisch wachsend — fein nah, grob fern, KEINE
+    // T-Junctions) aus `_terrainMacroSurfaceY` — der EINEN deterministischen
+    // Quelle: exakt die Hügel, die der Ring später fein baut. Loch in der Mitte
+    // (eine Chunk-Spanne UNTER der Ring-Kante → der echte Ring occludet die
+    // Übergangs-Zone von oben), Land sitzt `drop` unter dem Macro (kein Poke-
+    // Through gegen die echte Roughness), Meer (`macro < waterLevel`) wird eine
+    // Tiefblau-Ebene knapp unter dem Spiegel. Farben: DIESELBE Biom-Logik wie
+    // die Chunks (`_attachVoxelFieldColors` — eine Quelle, noch ein Leser);
+    // Material: eigener Toon (vertexColors, OHNE geomorph — kein aMorphTarget-
+    // Read, WebGPU-strikt sauber); `_applyAerialOutput` + Fog VERSCHMELZEN den
+    // Übergang (V17.106-Aerial trägt ihn). Re-Anker alle ~250 m Spielerbewegung
+    // (EIN Rebuild ~1.4k Macro-Samples = wenige ms, kein Per-Frame-Pfad).
+    // Render-only, main-only, seed-deterministisch — kein Worker/Determinismus.
+    _ensureHorizonMantle() {
+        const s = this.state;
+        if (!s.scene || !s.playerMesh || !s.voxelTerrainActive) return;
+        if (s.atmosphere && s.atmosphere.horizonMantle === false) {
+            if (s.horizonMantle) this._disposeHorizonMantle();
+            return;
+        }
+        const cfg = AnazhRealm.HORIZON_MANTLE;
+        const pm = s.playerMesh.position;
+        const seed = (s.worldMeta && s.worldMeta.seed) || "";
+        const m = s.horizonMantle;
+        if (m && m.seed === seed) {
+            const dx = pm.x - m.anchorX,
+                dz = pm.z - m.anchorZ;
+            if (dx * dx + dz * dz < cfg.reanchorDist * cfg.reanchorDist) return;
+        }
+        const t0 = performance.now();
+        const { span, ringRadius } = this._voxelChunkConfig();
+        const holeR = Math.max(span, (ringRadius - 0.5) * span);
+        const rings = cfg.rings,
+            segs = cfg.segments;
+        const ax = pm.x,
+            az = pm.z;
+        const waterLevel = Number.isFinite(s.waterLevel) ? s.waterLevel : 0;
+        const growth = Math.pow(cfg.outerRadius / holeR, 1 / (rings - 1));
+        const positions = new Float32Array(rings * segs * 3);
+        const isSea = new Uint8Array(rings * segs);
+        let vi = 0;
+        for (let ri = 0; ri < rings; ri++) {
+            const r = holeR * Math.pow(growth, ri);
+            for (let si = 0; si < segs; si++) {
+                const th = (si / segs) * Math.PI * 2;
+                const x = ax + Math.cos(th) * r,
+                    z = az + Math.sin(th) * r;
+                const h0 = this._terrainMacroSurfaceY(x, z);
+                const h = Number.isFinite(h0) ? h0 : waterLevel;
+                const sea = h < waterLevel + 0.4;
+                isSea[ri * segs + si] = sea ? 1 : 0;
+                positions[vi++] = x;
+                positions[vi++] = sea ? waterLevel - 0.6 : h - cfg.drop;
+                positions[vi++] = z;
+            }
+        }
+        const idx = [];
+        for (let ri = 0; ri < rings - 1; ri++) {
+            for (let si = 0; si < segs; si++) {
+                const a = ri * segs + si;
+                const b = ri * segs + ((si + 1) % segs);
+                const c = (ri + 1) * segs + ((si + 1) % segs);
+                const d = (ri + 1) * segs + si;
+                idx.push(a, b, c, a, c, d);
+            }
+        }
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geom.setIndex(idx);
+        geom.computeVertexNormals();
+        // EINE Farb-Quelle: dieselbe Biom-Logik wie die Chunks; das Meer danach Tiefblau.
+        this._attachVoxelFieldColors(geom);
+        const col = geom.attributes.color;
+        if (col) {
+            for (let i = 0; i < rings * segs; i++) {
+                if (isSea[i]) col.setXYZ(i, 0.16, 0.3, 0.46);
+            }
+            col.needsUpdate = true;
+        }
+        if (!s.horizonMantleMaterial) {
+            s.horizonMantleMaterial = this._buildToonNodeMaterial({ vertexColors: true });
+        }
+        if (m && m.mesh) {
+            this._queueGeometryDispose(m.mesh.geometry);
+            m.mesh.geometry = geom;
+            m.anchorX = ax;
+            m.anchorZ = az;
+            m.seed = seed;
+        } else {
+            const mesh = new THREE.Mesh(geom, s.horizonMantleMaterial);
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            mesh.frustumCulled = false; // der Ring umgibt die Kamera
+            s.scene.add(mesh);
+            s.horizonMantle = { mesh, anchorX: ax, anchorZ: az, seed };
+        }
+        s.horizonMantle.builtMs = +(performance.now() - t0).toFixed(1);
+    }
+
+    _disposeHorizonMantle() {
+        const m = this.state.horizonMantle;
+        if (!m) return;
+        if (m.mesh) {
+            if (this.state.scene) this.state.scene.remove(m.mesh);
+            this._queueGeometryDispose(m.mesh.geometry);
+        }
+        this.state.horizonMantle = null;
+    }
+
     _tickVoxelChunkStreaming(playerPos) {
         if (!this.state.voxelTerrainActive || !playerPos) return;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
@@ -30522,6 +31034,93 @@ class AnazhRealm {
         return tex;
     }
 
+    // C6 (gigant-plan §5) — DIE AURA WIRD HAUT: ein Fresnel-Schimmer auf den
+    // Soul-Parts (Kanten-Glimmen in Aura-Hue, ∝ Intensität, atmet mit) statt
+    // einer folgenden Glow-Lampe. Implementiert als SHELL-Kinder AM Part-Mesh
+    // (Enkel der Soul-Group → der children[i]↔parts[i]-Motion-Vertrag bleibt
+    // heil, die Shells ERBEN jede Gelenk-/Gait-Bewegung gratis). EIN additives
+    // NodeMaterial pro Spieler (Uniforms hue/intensity — dieselbe Quelle
+    // `_auraHueOut`/`_auraIntensityOut` wie der P2P-Sync: eine Quelle, neuer
+    // Leser). Geometrie wird GETEILT (kein Copy — nur scale 1.05 am Shell).
+    _ensureAuraSkinShells() {
+        const pm = this.state.playerMesh;
+        if (!pm || typeof THREE === "undefined" || !THREE.TSL) return null;
+        const soulKey = (this.state.player && this.state.player.soul) || "";
+        if (pm.userData._auraShellSoul === soulKey && this.state.auraSkinUniforms) return this.state.auraSkinUniforms;
+        if (!this.state.auraSkinUniforms) {
+            const T = THREE.TSL;
+            const colorU = T.uniform(new THREE.Color(0.5, 0.8, 1.0));
+            const intensityU = T.uniform(0.5);
+            const mat = new THREE.MeshBasicNodeMaterial({
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+            });
+            const vd = T.cameraPosition.sub(T.positionWorld).normalize();
+            const fres = T.normalWorld.dot(vd).abs().oneMinus().clamp(0.0, 1.0).pow(2.5);
+            mat.colorNode = T.vec4(colorU.mul(fres.mul(intensityU)), 1.0);
+            this.state.auraSkinUniforms = { color: colorU, intensity: intensityU, material: mat };
+        }
+        // Shells (re-)bauen: alte abwerfen, pro Part-Mesh ein skaliertes Shell-Kind.
+        for (const kid of pm.children) {
+            if (!kid || !kid.children) continue;
+            for (const sub of [...kid.children]) {
+                if (sub && sub.userData && sub.userData._auraShell) kid.remove(sub);
+            }
+        }
+        for (const kid of pm.children) {
+            if (!kid || !kid.isMesh || !kid.geometry) continue;
+            const shell = new THREE.Mesh(kid.geometry, this.state.auraSkinUniforms.material);
+            shell.scale.setScalar(1.05);
+            shell.userData._auraShell = true;
+            shell.castShadow = false;
+            shell.receiveShadow = false;
+            kid.add(shell);
+        }
+        pm.userData._auraShellSoul = soulKey;
+        return this.state.auraSkinUniforms;
+    }
+
+    // C3 (gigant-plan §5) — RÜSTUNG AM AVATAR SICHTBAR: die getragene armor als
+    // Kind-Gruppe der Soul-Group (derselbe `_buildFromBlueprint`-Pfad — KEIN
+    // neues Render-System), auf ~60 % Körperhöhe skaliert, am Torso zentriert.
+    // Lazy: rebuildet NUR beim Wechsel (equipped.armor !== _wornArmor). Die
+    // Gruppe hängt am ENDE der children → der Motion-Vertrag (roles[i]↔kids[i],
+    // roles ist kürzer) bleibt heil.
+    _tickWornArmorVisual() {
+        const pm = this.state.playerMesh;
+        const p = this.state.player;
+        if (!pm || !p) return;
+        const worn = (p.equipped && p.equipped.armor) || null;
+        if (pm.userData._wornArmor === worn) return;
+        if (pm.userData._wornArmorMesh) {
+            pm.remove(pm.userData._wornArmorMesh);
+            pm.userData._wornArmorMesh = null;
+        }
+        pm.userData._wornArmor = worn;
+        if (!worn) return;
+        const bp = this.state.blueprints && this.state.blueprints[worn];
+        if (!bp || bp.role !== "armor" || typeof this._buildFromBlueprint !== "function") return;
+        try {
+            const g = this._buildFromBlueprint(bp, 0, new Set());
+            if (!g) return;
+            const ext = typeof this._compoundVisualExtent === "function" ? this._compoundVisualExtent(bp) : null;
+            const h = ext && Number.isFinite(ext.y) && ext.y > 0.01 ? ext.y : 1.2;
+            const sc = Math.max(0.25, Math.min(3, 1.15 / h));
+            g.scale.setScalar(sc);
+            g.position.set(0, 0.18, 0);
+            g.userData._wornArmorVisual = true;
+            g.traverse((o) => {
+                o.castShadow = false;
+                o.receiveShadow = false;
+            });
+            pm.add(g);
+            pm.userData._wornArmorMesh = g;
+        } catch (_e) {
+            /* Rüstungs-Optik ist Deko — nie den Loop reißen */
+        }
+    }
+
     tickPlayerAura() {
         if (!this.state.playerMesh || !this.state.player) return;
         if (typeof THREE === "undefined") return;
@@ -30564,10 +31163,9 @@ class AnazhRealm {
             const p = this.state.playerMesh.position;
             glow.position.set(p.x, p.y + 0.5, p.z);
             glow.material.color.copy(auraColor);
-            // Sprite-Master-Opacity skaliert mit HP × dominanter Tag-Intensität
-            // (auraStrength oben berechnet). Cap bei 1.0 (Texture-Alpha selbst
-            // läuft auf max 0.55 in der Mitte, Rand 0 — der weiche Verlauf).
-            glow.material.opacity = 0.55 + 0.45 * hpRatio * auraStrength;
+            // C6 — die Lampe wird SUBTIL: die Substanz wanderte in die Haut
+            // (Fresnel-Shells unten); der Sprite bleibt als ferner Schimmer.
+            glow.material.opacity = (0.55 + 0.45 * hpRatio * auraStrength) * 0.3;
             // Atem-Animation über Sprite-scale (5 % Modulation).
             const breath = 3.0 * (1 + Math.sin(performance.now() * 0.001) * 0.05);
             glow.scale.set(breath, breath, 1);
@@ -30587,6 +31185,15 @@ class AnazhRealm {
             // der dominanten Tag-Achse) — siehe roadmap.md Eintrag W11 V3.
             glow.visible = this.state.cameraMode !== "first";
         }
+        // C6 — die HAUT schimmert: Fresnel-Shells in Aura-Hue, atmet mit dem Puls.
+        const skin = this._ensureAuraSkinShells();
+        if (skin) {
+            const pulse = 1 + Math.sin(performance.now() * 0.0012) * 0.18;
+            skin.color.value.copy(auraColor);
+            skin.intensity.value = Math.min(1.2, (0.25 + 0.75 * hpRatio * auraStrength) * pulse);
+        }
+        // C3 — die getragene Rüstung sichtbar am Körper (lazy, nur bei Wechsel).
+        this._tickWornArmorVisual();
         // (b) Sub-Mesh-Tint dezent: 15 % Mix, damit Original-Farbe vorranig
         // bleibt aber das Leuchten in die Materialien hineinwirkt.
         // V12.0-f.1 hatte einen Anti-Drift-Cache pro MATERIAL eingeführt (gegen
@@ -39705,6 +40312,21 @@ class AnazhRealm {
     // das Auge stufenlos aus. Bei celLevels<8 → genau celLevels Plateaus.
     // Textur-Größe bleibt konstant 32 px → Slider-Wechsel updated nur die
     // Pixel-Daten, KEINE neue Textur, KEINE Material-Neuzuweisung.
+    // B8 (gigant-plan §5) — die Struktur-Toon-LUT (Schatten-Boden 0.25): lazy
+    // erzeugt, vom Cel-Regler über `_refreshToonGradient` in-place mitgepflegt
+    // (geteilte DataTexture, NIE disposen — die V9.84-Singleton-Disziplin).
+    _ensureStructureGradient() {
+        if (this.state.toonGradientMapStructures) return this.state.toonGradientMapStructures;
+        const W = 32;
+        const tex = new THREE.DataTexture(new Uint8Array(W * 4), W, 1, THREE.RGBAFormat);
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.generateMipmaps = false;
+        this.state.toonGradientMapStructures = tex;
+        this._refreshToonGradient();
+        return tex;
+    }
+
     _refreshToonGradient() {
         if (typeof THREE === "undefined") return;
         const levels = (this.state.atmosphere && this.state.atmosphere.celLevels) || 8;
@@ -39739,6 +40361,25 @@ class AnazhRealm {
             data[i * 4 + 3] = 255;
         }
         this.state.toonGradientMap.needsUpdate = true;
+        // B8 (gigant-plan §5) — die STRUKTUR-LUT mit angehobenem Schatten-Boden
+        // folgt dem Cel-Regler mit (gleiche Plateaus, Boden 0.25 statt 0): die
+        // GEMESSENE „Schwarz-Silhouetten"-Wurzel war dunkles Material (eisen) ×
+        // Gegenlicht × Toon-Gradient-Boden ≈ 0 — Terrain trägt den Aerial-Boden,
+        // Flach-Farb-Strukturen fielen auf Schwarz. Kein Material-Lügen: nur das
+        // SCHATTEN-Band hebt sich, die Lichtseite bleibt identisch.
+        if (this.state.toonGradientMapStructures) {
+            const floor = (AnazhRealm.STRUCTURE_TOON && AnazhRealm.STRUCTURE_TOON.floor) || 0.25;
+            const sData = this.state.toonGradientMapStructures.image.data;
+            for (let i = 0; i < W; i++) {
+                const step = Math.min(plateaus - 1, Math.floor((i / W) * plateaus));
+                const v = Math.round((floor + (1 - floor) * (step / (plateaus - 1))) * 255);
+                sData[i * 4] = v;
+                sData[i * 4 + 1] = v;
+                sData[i * 4 + 2] = v;
+                sData[i * 4 + 3] = 255;
+            }
+            this.state.toonGradientMapStructures.needsUpdate = true;
+        }
         // Terrain-Shader (eigener Custom-Shader) parallel synchronisieren.
         // celLevels>=8 wird im Shader als "kein floor" interpretiert.
         if (this.state.terrainMaterial && this.state.terrainMaterial.uniforms) {
@@ -40987,12 +41628,38 @@ class AnazhRealm {
     // Pro-Frame-Tick: ruft animate() auf jeder Struktur, die einen Mesh
     // hat und einen animate-Hook mitbringt (aktuell nur Wasserfälle).
     // Cold-Einträge (mesh=null) werden übersprungen.
+    // C2 (gigant-plan §5 — G1-B): das ARCHITEKTUR-IDLE — Mühlen drehen, Banner
+    // flattern, Räder rollen langsam. Pro Architektur EINMAL lazy klassifiziert
+    // (`_idleMotion`, gleiche Resonanz wie die Wesen — `computeMotionRoles` mit
+    // den Bauplan-VERBINDUNGEN als Gelenk-Quelle, C1) und auf die SICHEREN
+    // Idle-Rollen gefiltert: NUR rad/segel/tuer/wirbel — Hütten/Statuen mit
+    // bein/arm/kopf-Resonanz wackeln NIE (eine Statue läuft nicht).
     tickArchitectures(currentTime) {
         const list = this.state.architectures;
         if (!list || list.length === 0) return;
+        const tSec = currentTime / 1000;
         for (const entry of list) {
-            if (entry.mesh && entry.mesh.userData && typeof entry.mesh.userData.animate === "function") {
+            if (!entry.mesh || !entry.mesh.userData) continue;
+            if (typeof entry.mesh.userData.animate === "function") {
                 entry.mesh.userData.animate(currentTime);
+            }
+            if (entry.mesh.userData._idleMotion === undefined) {
+                const bp = this.state.blueprints && this.state.blueprints[entry.type];
+                const roles =
+                    bp && Array.isArray(bp.parts) && bp.parts.length >= 2
+                        ? this.computeMotionRoles(bp.parts, bp.connections)
+                        : null;
+                const idle = roles
+                    ? roles.map((r) =>
+                          r && (r.role === "rad" || r.role === "segel" || r.role === "tuer" || r.role === "wirbel")
+                              ? r
+                              : null
+                      )
+                    : null;
+                entry.mesh.userData._idleMotion = idle && idle.some(Boolean) ? idle : null;
+            }
+            if (entry.mesh.userData._idleMotion) {
+                this._animateCompoundMotion(entry.mesh, entry.mesh.userData._idleMotion, tSec, 0, false);
             }
         }
     }
@@ -43256,6 +43923,17 @@ class AnazhRealm {
         const w = prof.wariness;
         const temper = w > 0.5 ? "scheu" : w > 0.15 ? "wachsam" : prof.bond > 0.4 ? "vertraut" : "neugierig";
         prof.moodLabel = (prof.emotion === "sad" ? "trübe" : "froh") + " · " + temper;
+        // D1 (gigant-plan §5 — G4-1b): der 6-Achsen-Vektor bekommt seine SICHTBARE
+        // Fläche — die dominante Emotion + Intensität via `_emotionState` (DERSELBE
+        // Leser wie das Ich-Porträt — eine Sprache; der benannte Passagier-Rest fällt).
+        const vec = creature.userData && creature.userData.emotions;
+        if (vec && typeof this._emotionState === "function") {
+            const es = this._emotionState(vec);
+            if (es && es.dominant && es.intensity > 0.12) {
+                prof.emotionState = es;
+                prof.moodLabel += ` · ${es.dominant} ${(es.intensity * 100) | 0}%`;
+            }
+        }
         // Sektion (§D.2/§F) — Seele + dominante Spezialisierung, für das Gruppen-Dirigat.
         const topSpec = prof.specs[0];
         prof.section = prof.soul || (topSpec ? topSpec.kind : "wesen");
@@ -48309,7 +48987,15 @@ class AnazhRealm {
             // trägt dieselbe eine Quelle auch ihn.
             const vCfg = this._voxelChunkConfig();
             const ringEdge = (vCfg.ringRadius + 0.5) * vCfg.span;
-            fog.far = Math.min((150 - rainyMix * 55) * fogMult, ringEdge);
+            // B2 — mit dem Horizont-Mantel reicht die SICHTBARE Welt bis zu
+            // seinem Außenradius → die Kante, die der Fog decken muss, ist
+            // der Mantel-Rand (4.3 km), nicht mehr der Chunk-Ring: die
+            // geliebte Weite kehrt zurück, die Wetter-Formel führt wieder.
+            const visualEdge =
+                this.state.horizonMantle && !(this.state.atmosphere && this.state.atmosphere.horizonMantle === false)
+                    ? AnazhRealm.HORIZON_MANTLE.outerRadius
+                    : ringEdge;
+            fog.far = Math.min((150 - rainyMix * 55) * fogMult, visualEdge);
             fog.near = Math.min((35 - rainyMix * 13) * fogMult, fog.far * 0.45);
             // V15.4 — Aerial-Perspective-Sky-Farbe aus DERSELBEN Fog-Farbe
             // speisen (EINE Quelle -> tag/nacht/wetter-kohaerent). density +
@@ -48741,6 +49427,17 @@ class AnazhRealm {
         const lebendig = Math.min(1, Math.max(0, (tags && tags.lebendig) || 0));
         const griefMag = 0.3 + bond * 1.2 + lebendig * 0.4; // ungebunden ~klein, tief gebunden ~Trauer
         this._feelAction("loss", { magnitude: griefMag });
+        // D3 (gigant-plan §5 — G4-3): der TOD NÄHRT DAS FELD — der Kreislauf
+        // schließt im SELBEN Overlay, in das die Geburt schreibt (lesen ·
+        // schreiben · werten): das vergehende Wesen gibt seine Lebendigkeit
+        // an den Ort zurück (∝ seiner lebendig-Substanz).
+        if (typeof this._depositLife === "function" && creature.position) {
+            this._depositLife(
+                creature.position.x,
+                creature.position.z,
+                AnazhRealm.LIFE_FIELD.pulseCenter * (0.8 + lebendig)
+            );
+        }
         // Journal-Eintrag
         if (typeof this.journalAppend === "function") {
             this.journalAppend("loss", `${name} kehrt zur Erde zurück.`, {
@@ -48906,6 +49603,41 @@ class AnazhRealm {
             if (sinceDeath >= deathCd && Math.random() < Math.max(0.02, Math.min(0.5, deathP))) {
                 const oldest = this._findOldestCreature();
                 if (oldest) this._creatureNaturalDeath(oldest);
+            }
+        }
+        // D3 (gigant-plan §5 — G4-3): das ALTER zählt — jenseits der Lebens-
+        // Spanne kehrt das älteste Wesen zur Erde zurück, AUCH wenn die
+        // Population im Soll liegt (natürlicher Umschlag statt ewiger Wesen).
+        // Sanft: ein Kandidat pro Tick, eigener Cooldown (teilt deathCd).
+        {
+            const sinceDeath = now - (this.state.faunaLifecycle.lastDeathAt || 0);
+            if (count > 2 && sinceDeath >= deathCd) {
+                const oldest = this._findOldestCreature();
+                const bornAt = oldest && oldest.userData && oldest.userData.bornAt;
+                if (bornAt && now - bornAt > AnazhRealm.FAUNA_MAX_AGE_MS) {
+                    this._creatureNaturalDeath(oldest);
+                    this.state.faunaLifecycle.lastDeathAt = now;
+                }
+            }
+        }
+        // D3 — die BOND-GEBURT: ein tief gebundenes Wesen an einem LEBENDIGEN
+        // Ort (das Feld, das Geburten schon schreiben — `auraAt`) darf sich
+        // fortpflanzen, auch über das Populations-Soll hinaus (bis max).
+        // Selbst-limitierend: die Chance ist klein, der Cooldown geteilt, und
+        // `max` bleibt die Wand — Bindung + lebendige Orte GEBÄREN Leben.
+        if (count >= target && count < max) {
+            const sinceBirth = now - (this.state.faunaLifecycle.lastBirthAt || 0);
+            if (sinceBirth >= birthCd * 2 && Math.random() < 0.12) {
+                const creatures = this.state.creatures || [];
+                for (const c of creatures) {
+                    const bond = (c && c.userData && c.userData.bond) || 0;
+                    if (bond < 0.6 || !c.position) continue;
+                    const aura = typeof this.auraAt === "function" ? this.auraAt(c.position.x, c.position.z) : null;
+                    if (!aura || (aura.lebendig || 0) < 0.55) continue;
+                    this._creatureNaturalBirth();
+                    this.state.faunaLifecycle.lastBirthAt = now;
+                    break;
+                }
             }
         }
     }
@@ -50860,10 +51592,59 @@ class AnazhRealm {
     // schon vorher aus `this.state`, kein geteilter lokaler Zustand). Reines
     // verhaltensneutrales Refactoring — die Phasen laufen in derselben
     // Reihenfolge, keine liest einen Wert, den eine spätere mutiert.
+    // E2 — die Substanz-Kosten eines DSL-Programms in WIRK-Einheiten: ein AST-
+    // Walk über die Op-Köpfe; spawn_blueprint zahlt die computeBuildCost-Summe
+    // (dieselbe Wahrheit, die der Spieler zahlt), Struktur-/Kreatur-Spawns
+    // ihre Substanz-Klasse, Welt-Schreiber einen Sockel. Lese-Ops kosten nichts.
+    _dslProgramWirkCost(program) {
+        let cost = 0;
+        const walk = (node) => {
+            if (!Array.isArray(node)) return;
+            const op = node[0];
+            if (typeof op === "string") {
+                if (op === "spawn_blueprint" && typeof node[1] === "string") {
+                    const c = this.computeBuildCost(node[1]);
+                    let units = 0;
+                    for (const m in c) units += c[m];
+                    cost += Math.max(3, units * 0.5);
+                } else if (op === "spawn_village" || op === "spawn_temple") cost += 20;
+                else if (op === "spawn_waterfall") cost += 12;
+                else if (op === "spawn_island") cost += 10;
+                else if (op === "spawn_tree") cost += 6;
+                else if (op === "spawn_creature") cost += 8;
+                else if (op.startsWith("deposit_")) cost += 2;
+                else if (op === "weather" || op === "skybox_color" || op === "set_time_of_day") cost += 3;
+            }
+            for (const child of node) walk(child);
+        };
+        walk(program);
+        return Math.min(AnazhRealm.NEXUS_WIRK.costCap, cost);
+    }
+
     _loopNexusUpdate() {
         if (this.state.nexusEvolutionQueue.length > 0) {
             const evolution = this.state.nexusEvolutionQueue.shift();
             if (Array.isArray(evolution.program)) {
+                // E2 (gigant-plan §5 — G5): der Nexus ZAHLT — das Wirk-Budget-Tor.
+                // Eine Tat kostet ∝ Substanz; reicht die Wirk-Kraft nicht, ruht der
+                // Nexus (Trägheit BY CONSTRUCTION — er verdient sie über bewährte
+                // Outcomes zurück, s. Finalizer). schöpfer-Modus = frei (§11).
+                if (this.state.nexusWirk === undefined) this.state.nexusWirk = AnazhRealm.NEXUS_WIRK.start;
+                const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+                if (mode !== "schöpfer") {
+                    const wirkCost =
+                        evolution.program[0] === "rule"
+                            ? AnazhRealm.NEXUS_WIRK.ruleRegisterCost
+                            : this._dslProgramWirkCost(evolution.program);
+                    if (wirkCost > this.state.nexusWirk) {
+                        this.log(
+                            `Nexus ruht — Wirk-Kraft erschöpft (${this.state.nexusWirk.toFixed(0)}/${wirkCost} nötig)`,
+                            "INFO"
+                        );
+                        return;
+                    }
+                    this.state.nexusWirk -= wirkCost;
+                }
                 const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
                 // V17.35 Phase C — eine REGEL-Evolution registriert (über den rule-Op)
                 // eine stehende Regel in state.worldRules; ihre Fitness läuft über das
@@ -51052,7 +51833,13 @@ class AnazhRealm {
 
     _loopPhysicsSync(delta, currentTime) {
         if (this.state.physicsWorld) {
-            this.state.physicsWorld.stepSimulation(delta, 20, 1 / 60);
+            // B6 (gigant-plan §5 — G7): Substep-Cap 20 → 5. Mit Cap 20 erlaubte ein
+            // FPS-Einbruch (Frame 333 ms) bis zu 20 Physik-Substeps im NÄCHSTEN
+            // Frame → der Frame wird noch langsamer = die Physik-Todesspirale.
+            // Der Industrie-Standard ist 3–5: bei Einbruch verlangsamt die Physik
+            // GLEICHMÄSSIG (Zeit dehnt sich), statt den Main-Thread zu würgen.
+            // CCD (Spieler) + der -25-m/s-Fall-Cap tragen das Anti-Tunneling.
+            this.state.physicsWorld.stepSimulation(delta, 5, 1 / 60);
             for (let i = 0; i < this.state.rigidBodies.length; i++) {
                 const mesh = this.state.rigidBodies[i];
                 const body = mesh.userData.physicsBody;
@@ -51272,15 +52059,23 @@ class AnazhRealm {
             // (Spieler klettert senkrechte Wände). 0.2 lässt seitliches
             // Rauslenken zu, blockiert aber Voll-Vorwärts-Klettern.
             const slopePenalty = this.state.onSteepSlope ? 0.2 : 1.0;
+            // C5 (gigant-plan §5) — BEWEGUNGS-FEEL: Beschleunigungs-/Brems-KURVEN
+            // statt Sofort-Velocity (die vier Hebel, die „dynamisch" ausmachen) +
+            // LUFTKONTROLLE (in der Luft greift der Input schwächer, Momentum
+            // bleibt). exp-Lerp 1−e^(−k·dt) ist frame-raten-unabhängig. Boden:
+            // k=14 (snappy, ~70 ms bis 63 %), Luft: k=4.5; Bremsen Boden k=18
+            // (kein Schlittern), Luft k=1.5 (Sprung-Bogen bleibt ballistisch).
+            const nowDt = Math.min(0.1, Math.max(0.001, currentTime - (this.state._lastMoveT || currentTime)));
+            this.state._lastMoveT = currentTime;
             if (this.state.moveDirection.length() > 0) {
                 this.state.moveDirection.normalize();
+                const v = playerBody.getLinearVelocity();
+                const kAcc = this.state.isInAir ? 4.5 : 14;
+                const f = 1 - Math.exp(-kAcc * nowDt);
+                const tx = this.state.moveDirection.x * currentSpeed * slopePenalty;
+                const tz = this.state.moveDirection.z * currentSpeed * slopePenalty;
                 playerBody.setLinearVelocity(
-                    this.setVec(
-                        this.state.tmpVec1,
-                        this.state.moveDirection.x * currentSpeed * slopePenalty,
-                        playerBody.getLinearVelocity().y(),
-                        this.state.moveDirection.z * currentSpeed * slopePenalty
-                    )
+                    this.setVec(this.state.tmpVec1, v.x() + (tx - v.x()) * f, v.y(), v.z() + (tz - v.z()) * f)
                 );
                 // V8.36 — kein forceActivationState mehr nötig: der
                 // Player-Body trägt seit der Erschaffung DISABLE_DEACTIVATION
@@ -51288,45 +52083,27 @@ class AnazhRealm {
                 // auf ACTIVE_TAG zurückstufen → der Stand-Sleep-Bug käme
                 // zurück, sobald man stehen bleibt.
             } else if (!this.state.onSteepSlope) {
-                // Auf flachem Boden: ohne Eingabe vx + vz auf 0 zwingen
-                // (Standard-Stopp-Verhalten). Auf steilem Hang lassen wir
-                // die existierende Velocity stehen — Gravitation + Slope-
-                // Kontakt erzeugen so eine natürliche Rutsch-Bewegung
-                // (Voraussetzung: Player-Friction 0 aus 6.A1).
-                playerBody.setLinearVelocity(this.setVec(this.state.tmpVec1, 0, playerBody.getLinearVelocity().y(), 0));
+                // C5 — BREMS-Kurve statt Hard-Stop: am Boden zackig (k=18),
+                // in der Luft bleibt das Momentum (k=1.5, ballistischer Bogen).
+                const v = playerBody.getLinearVelocity();
+                const kBrake = this.state.isInAir ? 1.5 : 18;
+                const fb = 1 - Math.exp(-kBrake * nowDt);
+                playerBody.setLinearVelocity(
+                    this.setVec(this.state.tmpVec1, v.x() * (1 - fb), v.y(), v.z() * (1 - fb))
+                );
             }
 
-            if (this.state.keys[" "] && !this.state.isJumping) {
-                const isGrounded = this.isPlayerGrounded();
-                const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
-                // Welle 6.X.3 C3 — Soul-bound Steilheits-Toleranz prüft
-                // ob der Soul leicht genug zum Abdrücken am Hang ist.
-                // Bei false: Sprung-Block wird übersprungen, restlicher
-                // Update-Loop (Selbstanalyse, Wolken, Lebensdauer …) läuft
-                // weiter wie gewohnt.
-                if ((isGrounded || withinCoyoteTime) && this._canSoulJumpFromSlope()) {
-                    // Welle 6.X.1 A1 — siehe handleJump: Body wecken vor Velocity.
-                    // Im Loop-Jump-Pfad wird nur bei moveDirection.length() > 0
-                    // ein forceActivationState aufgerufen — Stand-Sprung würde
-                    // sonst verpuffen wenn der Body im Ammo-Sleep ist.
-                    playerBody.activate(true);
-                    const jumpForce = this.state.jumpPower;
-                    const currentVelocity = playerBody.getLinearVelocity();
-                    playerBody.setLinearVelocity(
-                        this.setVec(
-                            this.state.tmpVec1,
-                            currentVelocity.x(),
-                            jumpForce / this.state.scaleFactor,
-                            currentVelocity.z()
-                        )
-                    );
-                    this.state.isJumping = true;
-                    this.state.isInAir = true;
-                    if (currentTime - this.state.lastJumpLog >= this.state.jumpLogInterval) {
-                        this.log("Spieler springt!", "INFO");
-                        this.state.lastJumpLog = currentTime;
-                    }
-                }
+            // C5 — JUMP-BUFFER: ein Space-Tipp kurz VOR der Landung wird gemerkt
+            // (0.12 s) und feuert beim Aufsetzen — das „klebrige" Sprung-Gefühl
+            // guter Plattformer. Plus VERDICHTET (V9.82): der Loop-Sprung läuft
+            // durch handleJump — EINE Quelle (Coyote + Slope-Gate + A6b-Decken-
+            // Klemme; der alte Inline-Pfad UMGING die Klemme = Parallel-Pfad).
+            if (this.state.keys[" "] && !this.state._spaceWasDown) this.state._jumpPressedAt = currentTime;
+            this.state._spaceWasDown = !!this.state.keys[" "];
+            const buffered = currentTime - (this.state._jumpPressedAt || -Infinity) <= 0.12;
+            if ((this.state.keys[" "] || buffered) && !this.state.isJumping) {
+                this.handleJump(currentTime);
+                if (this.state.isJumping) this.state._jumpPressedAt = -Infinity;
             }
         }
     }
@@ -51339,6 +52116,32 @@ class AnazhRealm {
         // in den `nexusEvolutionQueue`.
         if (currentTime - this.state.lastSelfAnalysis >= 5.0) {
             this.selfAwarenessAnalyze();
+            // E2 — der Wirk-Tropf (langsame Grund-Regeneration, verhindert
+            // permanente Verarmung; die ECHTE Regeneration ist die Wertung).
+            if (this.state.nexusWirk === undefined) this.state.nexusWirk = AnazhRealm.NEXUS_WIRK.start;
+            this.state.nexusWirk = Math.min(
+                AnazhRealm.NEXUS_WIRK.max,
+                this.state.nexusWirk + AnazhRealm.NEXUS_WIRK.idleRegenPer5s
+            );
+            // E3 (gigant-plan §5 — Mana-Symmetrie): MANA regeneriert am SELBEN
+            // 5-s-Takt — schneller, wo der Spieler magie-leitend IST (statTags)
+            // ODER auf magie-leitendem Feld steht (auraAt — das Feld speist).
+            {
+                const p = this.state.player;
+                if (p) {
+                    const tags = p.statTags || {};
+                    const lead = Math.max(0, Math.min(1, tags.magieleitung || 0));
+                    let fieldLead = 0;
+                    const pm = this.state.playerMesh && this.state.playerMesh.position;
+                    if (pm && typeof this.auraAt === "function") {
+                        const a = this.auraAt(pm.x, pm.z);
+                        fieldLead = Math.max(0, Math.min(1, (a && a.magieleitung) || 0));
+                    }
+                    p.manaMax = Math.round(40 + 80 * lead);
+                    if (typeof p.mana !== "number") p.mana = p.manaMax;
+                    p.mana = Math.min(p.manaMax, p.mana + 2 + 6 * (0.4 * lead + 0.6 * fieldLead));
+                }
+            }
             if (this.state.fps > 0 && this.state.fps < 50 && this.nexus) {
                 this.nexus.processOptimization({ fps: this.state.fps });
             }
@@ -51382,6 +52185,9 @@ class AnazhRealm {
         // dem V8.X-Sicht-Ring-Regler `state.chunkRingRadius` folgt —
         // V9.24-Verdrahtung).
         const playerPos = this.state.playerMesh.position;
+        // B2 — der Horizont-Mantel folgt dem Spieler (O(1)-Check pro Frame,
+        // Rebuild nur beim Re-Anker alle ~250 m — die Instant-Gigantik).
+        this._ensureHorizonMantle();
         const chunksBuilt = this._tickVoxelChunkStreaming(playerPos);
         // V9.96 — Per-Frame-Spawn-Budget für Vegetations-Architekturen.
         // Bändigt den Streaming-Burst-Spike (FPS 6-9 → ~60 erwartet).
@@ -52043,7 +52849,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.103.0";
+AnazhRealm.VERSION = "18.104.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -52067,6 +52873,17 @@ AnazhRealm.CA_FLOW_KEEP = 0.95;
 // `aiDiv` (V17.115 U3): wie selten ferne Kreaturen ihre teure KI-Richtung neu
 // rechnen (jeden N-ten Frame; dazwischen bewegen sie sich GLATT mit der gecachten
 // Richtung weiter → kein Ruckeln). Band 0/1 (nah/mittel, sichtbar) = jeden Frame.
+// B2 (gigant-plan §5 — G7-H) — der Horizont-Mantel: Polar-Gitter-Auflösung,
+// Außenradius, Land-Absenkung (gegen Poke-Through der echten Roughness) und
+// die Re-Anker-Distanz. rings×segments = 20×72 = 1440 Vertices (~ms-Rebuild).
+AnazhRealm.HORIZON_MANTLE = Object.freeze({
+    outerRadius: 4300,
+    rings: 20,
+    segments: 72,
+    drop: 2.5,
+    reanchorDist: 250,
+});
+
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
     // N3 (Naht §12) — der LOD0-Ring war 3×3 (maxRing 1) → die Cross-LOD-Grenze
     // sass ~50 m vom Spieler (sichtbar, wandert, popt; GEMESSEN diag-chunk-seam B:
@@ -52395,6 +53212,10 @@ AnazhRealm.MOTION_ROLE_SIGNATURES = Object.freeze({
     fluegel: Object.freeze({ sideMount: 0.7, flat: 1.0, paired: 0.4, lowAnchor: -0.7, central: -0.3 }),
     schwanz: Object.freeze({ rearMount: 1.0, elongH: 0.7, paired: -0.6, central: -0.4 }),
     kopf: Object.freeze({ topMount: 0.9, roundish: 0.6, paired: -0.7, elongH: -0.4, lowAnchor: -0.5 }),
+    // C2 (gigant-plan §5 — G1-B): SEGEL/TUCH — flach · hoch montiert · un-gepaart
+    // → flattert im Wind (Mühlen-Flügel, Banner). Konsument: das Architektur-Idle
+    // (nur segel/rad/tuer/wirbel — Hütten wackeln NIE).
+    segel: Object.freeze({ flat: 1.0, topMount: 0.7, paired: -0.3, lowAnchor: -0.8, roundish: -0.4 }),
 });
 // Unter diesem argmax-Score bewegt sich ein Part NICHT (Torso/Deko bleiben ruhig).
 AnazhRealm.MOTION_ROLE_FLOOR = 0.55;
@@ -53241,6 +54062,10 @@ AnazhRealm.PORTAL_REACH_M = 4.5;
 AnazhRealm.SUBWORLD_NET_MAX_BYTES = 16384; // 16 KiB je ws-send (Relay-.io-Nachrichten sind winzig)
 AnazhRealm.SUBWORLD_NET_RATE_WINDOW_MS = 1000;
 AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Reserve
+// F2 (gigant-plan §5 — G3): die Mesh-Protokoll-Version. Empfänger tolerieren
+// fremde Versionen (Felder, die sie nicht kennen, ignorieren sie) — Koexistenz
+// alter + neuer Clients im selben Raum. Bump nur bei INKOMPATIBLEN Änderungen.
+AnazhRealm.PROTO_VERSION = 1;
 // W12 P3-Härtung — der Portal-Rückkanal (_portalReceiveEvent: Sub-Welt →
 // Heimat-Journal) deckelt die Ereignisse je Sekunde. Eine ungeprüfte vendorte
 // Welt (V8.70+) könnte sonst pro Frame ein Ereignis posten und das 200-

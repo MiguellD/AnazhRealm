@@ -22225,6 +22225,68 @@ async function checkBandV17118WorkerEngaged(ctx) {
     );
 }
 
+// PHASEN B–F (gigant-plan §5, V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
+async function checkBandPhasenBF(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        // C1 — Gelenke: ein synthetischer 2-Part-Bauplan mit Verbindung → Joint-Rolle mit Anker.
+        const roles = r.computeMotionRoles(
+            [
+                { shape: "box", size: { x: 2, y: 2, z: 2 }, position: { x: 0, y: 1, z: 0 } },
+                { shape: "cylinder", size: { x: 0.6, y: 1.4, z: 0.6 }, position: { x: 1.6, y: 0.7, z: 0 } },
+            ],
+            [{ type: "weld", partA: 0, partB: 1 }]
+        );
+        const joint = roles && roles.find((x) => x && x.joint);
+        out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
+        out.c2Src = /_idleMotion/.test(r.tickArchitectures.toString());
+        out.c5Curves =
+            /handleJump\(/.test(r._loopPlayerMovement.toString()) && /Math\.exp/.test(r._loopPlayerMovement.toString());
+        out.c6Src = /_ensureAuraSkinShells/.test(r.tickPlayerAura.toString());
+        out.d2Src = /_herdContagionAcc/.test(r._tickEmotionContagion.toString());
+        out.d3Age = /FAUNA_MAX_AGE_MS/.test(r.tickFaunaLifecycle.toString());
+        out.d3Feed = /_depositLife/.test(r._creatureNaturalDeath.toString());
+        out.d4Src = /gegenwehr/.test(r.damageCreature.toString());
+        // E2 — der Kosten-Walker zahlt die Substanz-Wahrheit.
+        out.e2VillageCost = r._dslProgramWirkCost(["spawn_village", ["at", 0, 0, 0], 1]) === 20;
+        out.e2Gate = /nexusWirk/.test(r._loopNexusUpdate.toString());
+        out.e3Mana = /mana/.test(r._chatTryDslParse.toString());
+        out.e4Heal = /finalized/.test(r.dslSelectByFitness.toString());
+        out.f1Blob = /Blob/.test(r._getVoxelWorker.toString());
+        out.f2Proto = /PROTO_VERSION/.test(r.p2pSend.toString());
+        out.f2Turn = Array.isArray(r.state.p2p && r.state.p2p.iceServers) && r.state.p2p.iceServers.length >= 1;
+        out.f2CpCap = /_cpRate/.test(r._p2pMsgCreaturePos.toString());
+        // B8 — Struktur-LUT + Rim verdrahtet (B2-Mantel prüft das A-Band in der Tiefe).
+        out.b8Lut = typeof r._ensureStructureGradient === "function" && !!r._ensureStructureGradient();
+        out.b8Rim = !!(r.state.atmoUniforms && r.state.atmoUniforms.rimStrength);
+        return out;
+    });
+    if (res.error) {
+        check("PHASEN B–F: Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("C1: Verbindung → Gelenk-Rolle mit Anker+Achse (computeMotionRoles, KONSUM)", res.c1Joint);
+    check("C2: tickArchitectures trägt das Idle-Motion-Gate (Source)", res.c2Src);
+    check("C5: Bewegung läuft über exp-Kurven + EIN handleJump (Source, Verdichtung)", res.c5Curves);
+    check("C6: tickPlayerAura speist die Haut-Shells (Source)", res.c6Src);
+    check("D2: Herden-Contagion lebt im Contagion-Kern (Source)", res.d2Src);
+    check("D3: Alter zählt im Lebenszyklus (FAUNA_MAX_AGE_MS, Source)", res.d3Age);
+    check("D3: der Tod nährt das Feld (_depositLife im NaturalDeath, Source)", res.d3Feed);
+    check("D4: die Gegenwehr lebt im Treffer-Pfad (Source, pfad-gated)", res.d4Src);
+    check("E2: _dslProgramWirkCost zahlt die Substanz (spawn_village = 20)", res.e2VillageCost);
+    check("E2: der Nexus zahlt am Wirk-Tor (Source)", res.e2Gate);
+    check("E3: die Welt-Geste kostet Mana im pfad (Source)", res.e3Mana);
+    check("E4: die finalisierte Wertung führt die Selektion (Source, Passagier-Heal)", res.e4Heal);
+    check("F1: der Worker trägt den Blob-Fallback (Source)", res.f1Blob);
+    check("F2: p2pSend stempelt die Protokoll-Version (Source)", res.f2Proto);
+    check("F2: iceServers konfigurierbar präsent", res.f2Turn);
+    check("F2: creature-pos trägt den Empfangs-Raten-Cap (Source)", res.f2CpCap);
+    check("B8: Struktur-LUT existiert + rimStrength-Uniform verdrahtet", res.b8Lut && res.b8Rim);
+}
+
 // PHASE A (gigant-plan §5) — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
 // A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Fog↔Ring-Kante ·
 // A6 Körper-Kollision (Begraben-Rettung + Decken-Sprung-Klemme + Kamera-Clip).
@@ -22307,17 +22369,63 @@ async function checkBandPhaseAFundament(ctx) {
                 }
             }
         }
-        // ── A5 · Fog liest die Ring-Kante.
+        // ── A5 · Fog liest die SICHTBARE Welt-Kante (B2: Mantel-Rand, sonst Ring).
         {
             const cfg = r._voxelChunkConfig();
             const ringEdge = (cfg.ringRadius + 0.5) * cfg.span;
+            if (typeof r._ensureHorizonMantle === "function") r._ensureHorizonMantle();
             if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+            const mantleOn =
+                r.state.horizonMantle && !(r.state.atmosphere && r.state.atmosphere.horizonMantle === false);
+            const visualEdge = mantleOn ? r.constructor.HORIZON_MANTLE.outerRadius : ringEdge;
             out.a5 = {
                 fogFar: r.state.fog ? r.state.fog.far : null,
-                ringEdge,
-                coupled: !!r.state.fog && r.state.fog.far <= ringEdge + 0.001,
-                src: /ringEdge/.test(r._dayNightApplyHemiAndFog.toString()),
+                visualEdge,
+                coupled: !!r.state.fog && r.state.fog.far <= visualEdge + 0.001,
+                src: /visualEdge/.test(r._dayNightApplyHemiAndFog.toString()),
             };
+        }
+        // ── B2 · Horizont-Mantel (die Instant-Gigantik).
+        {
+            const cfg = r._voxelChunkConfig();
+            const m = r.state.horizonMantle;
+            if (m && m.mesh && m.mesh.geometry) {
+                const HM = r.constructor.HORIZON_MANTLE;
+                const pos = m.mesh.geometry.attributes.position;
+                // Stichprobe: Mantel-Höhe folgt dem Macro (Land: macro−drop; See: waterLevel−0.6)
+                let probed = 0,
+                    matches = 0;
+                for (let i = 0; i < pos.count; i += 97) {
+                    const x = pos.getX(i),
+                        y = pos.getY(i),
+                        z = pos.getZ(i);
+                    const macro = r._terrainMacroSurfaceY(x, z);
+                    if (!Number.isFinite(macro)) continue;
+                    probed++;
+                    const wl = r.state.waterLevel || 0;
+                    const expect = macro < wl + 0.4 ? wl - 0.6 : macro - HM.drop;
+                    if (Math.abs(y - expect) < 0.2) matches++;
+                }
+                // Loch-Radius: kein Vertex näher als (ringRadius−0.5−ε)·span am Anker
+                let minR = Infinity;
+                for (let i = 0; i < pos.count; i += 31) {
+                    const dx = pos.getX(i) - m.anchorX,
+                        dz = pos.getZ(i) - m.anchorZ;
+                    minR = Math.min(minR, Math.hypot(dx, dz));
+                }
+                out.b2 = {
+                    exists: true,
+                    verts: pos.count,
+                    probed,
+                    matches,
+                    minR: +minR.toFixed(1),
+                    holeOk: minR >= (cfg.ringRadius - 0.5) * cfg.span - 1,
+                    builtMs: m.builtMs,
+                    matVertexColors: !!(m.mesh.material && m.mesh.material.vertexColors),
+                };
+            } else {
+                out.b2 = { exists: false };
+            }
         }
         // ── A6 · Quellen + Begraben-Rettung behavioral (zustands-neutral).
         out.a6SrcJump = /_ceilingHeadroom/.test(r.handleJump.toString());
@@ -22381,11 +22489,23 @@ async function checkBandPhaseAFundament(ctx) {
         res.a2 ? `outside=${res.a2.totalOutside} changed=${res.a2.changedOutside}` : "kein Chunk"
     );
     check(
-        "A5: fog.far ≤ Ring-Kante (der Nebel deckt das Welt-Ende — eine Distanz, noch ein Gesicht)",
+        "A5: fog.far ≤ sichtbare Welt-Kante (B2-Mantel-Rand bzw. Ring — eine Distanz, noch ein Gesicht)",
         res.a5 && res.a5.coupled === true,
-        res.a5 ? `far=${res.a5.fogFar && res.a5.fogFar.toFixed(1)} edge=${res.a5.ringEdge.toFixed(1)}` : ""
+        res.a5 ? `far=${res.a5.fogFar && res.a5.fogFar.toFixed(1)} edge=${res.a5.visualEdge.toFixed(1)}` : ""
     );
-    check("A5: _dayNightApplyHemiAndFog liest die Ring-Kante (Source)", res.a5 && res.a5.src === true);
+    check("A5: _dayNightApplyHemiAndFog liest die sichtbare Kante (Source)", res.a5 && res.a5.src === true);
+    check("B2: der Horizont-Mantel existiert (Instant-Gigantik)", res.b2 && res.b2.exists === true);
+    check(
+        "B2: Mantel-Höhen folgen dem Macro (Land: −drop · See: Spiegel−0.6)",
+        res.b2 && res.b2.exists && res.b2.probed > 5 && res.b2.matches === res.b2.probed,
+        res.b2 && res.b2.exists ? `${res.b2.matches}/${res.b2.probed} verts=${res.b2.verts} ${res.b2.builtMs}ms` : ""
+    );
+    check(
+        "B2: das Mantel-Loch liegt unter dem echten Ring (Überlapp occludet)",
+        res.b2 && res.b2.exists && res.b2.holeOk === true,
+        res.b2 && res.b2.exists ? `minR=${res.b2.minR}` : ""
+    );
+    check("B2: Mantel-Material liest vertexColors (eine Farb-Quelle)", res.b2 && res.b2.matVertexColors === true);
     check("A6b: handleJump klemmt am Decken-Headroom (Source)", res.a6SrcJump === true);
     check("A6a: _addVoxelEdit ruft die Begraben-Rettung (Source)", res.a6SrcEdit === true);
     check("A6b: _loopCamera klemmt das Ego-Auge unter die Decke (Source)", res.a6SrcCam === true);
@@ -42185,6 +42305,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV17118WorkerEngaged(ctx);
             // PHASE A (gigant-plan §5) — A1 Stitch-Band · A2 Edit-Lokalität · A5 Fog↔Ring · A6 Kollision.
             await checkBandPhaseAFundament(ctx);
+            // PHASEN B–F (V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
+            await checkBandPhasenBF(ctx);
             // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
             await checkBandWellePerf3cPhase4LazyBVH(ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).

@@ -88,7 +88,24 @@ const VENDOR_MAX_TOTAL_BYTES = 12 * 1024 * 1024; // 12 MiB gesamt
 const VENDOR_MAX_BODY_BYTES = 20 * 1024 * 1024; // 20 MiB roher Request (JSON-Overhead)
 // Built-in-Welt-Verzeichnisse — ein Vendor darf sie NICHT überschreiben.
 const VENDOR_RESERVED_IDS = new Set(["skeleton", "fluid", "terrain", "schwarm", "translated"]);
-const VENDOR_ALLOWED_EXT = new Set([".html", ".htm", ".js", ".mjs", ".css", ".json", ".txt", ".md", ".glsl"]);
+// F1 (gigant-plan §5 — G2 REKURSION, Schnitt 1): .wasm + .woff2 passieren das
+// Vendor-Tor — Ammo (1.2 MiB < 4-MiB-Datei-Limit) + Fonts gehören zum Selbst-
+// Bündel „AnazhRealm in AnazhRealm". Binärformate sind durch die bestehenden
+// Größen-/Anzahl-Limits + die Pfad-Normalisierung gedeckt; sie sind DATEN
+// (kein Server-Code-Pfad führt sie aus).
+const VENDOR_ALLOWED_EXT = new Set([
+    ".html",
+    ".htm",
+    ".js",
+    ".mjs",
+    ".css",
+    ".json",
+    ".txt",
+    ".md",
+    ".glsl",
+    ".wasm",
+    ".woff2",
+]);
 
 // W17 Phase A — der Transport-Shim. Eine fremde Multiplayer-Welt kann nur
 // über `WebSocket` netzwerken; das ist ein globales Objekt. Dieser Shim
@@ -410,7 +427,12 @@ function applyVendorBundle(worldId, files) {
         if (typeof f.content !== "string") {
             return { status: 400, body: { error: `File ${rel} has no string content` } };
         }
-        const bytes = Buffer.byteLength(f.content, "utf8");
+        // F1 (G2 REKURSION, Schnitt 1b): Binär-Dateien (.wasm/.woff2) reisen
+        // base64-kodiert im JSON-Bündel (`encoding:"base64"`) — beim Schreiben
+        // dekodiert. Größen-Limits zählen die ECHTEN Bytes (dekodiert).
+        const isB64 = f.encoding === "base64";
+        const buf = isB64 ? Buffer.from(f.content, "base64") : null;
+        const bytes = isB64 ? buf.length : Buffer.byteLength(f.content, "utf8");
         if (bytes > VENDOR_MAX_FILE_BYTES) {
             return { status: 413, body: { error: `File ${rel} exceeds per-file size cap` } };
         }
@@ -423,7 +445,7 @@ function applyVendorBundle(worldId, files) {
             return { status: 403, body: { error: `Path escapes world directory: ${rel}` } };
         }
         if (rel === "index.html") hasIndex = true;
-        clean.push({ rel, content: f.content, target });
+        clean.push({ rel, content: isB64 ? buf : f.content, target, isB64 });
     }
     if (!hasIndex) {
         return { status: 400, body: { error: "Bundle must contain a root index.html (the world entry point)" } };
@@ -432,7 +454,8 @@ function applyVendorBundle(worldId, files) {
         fs.mkdirSync(worldDir, { recursive: true });
         for (const c of clean) {
             fs.mkdirSync(path.dirname(c.target), { recursive: true });
-            fs.writeFileSync(c.target, c.content, "utf8");
+            if (c.isB64) fs.writeFileSync(c.target, c.content);
+            else fs.writeFileSync(c.target, c.content, "utf8");
         }
     } catch (e) {
         return { status: 500, body: { error: "Vendor write failed", details: e.message } };
