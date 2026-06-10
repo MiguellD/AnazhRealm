@@ -333,23 +333,194 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 
 ---
 
-## §5 · Der wahre Norden — die Reihenfolge (Fundament vor Seele, Sign-off vor Stapel)
+## §5 · DER AUSFÜHRBARE PFAD — Phasen → Wellen → Gates (final ausgestaltet 10.06.2026)
 
-0. **JETZT:** ~~der Spawn-Restbefund~~ **GEHEILT (V18.95** — der leere Welt-Snapshot zählte als
-   „schon generiert"; Browser-Pfad-Sonde `diag-genesis-spawn.cjs` rot→grün) + die offenen
-   Browser-Sign-offs + N-Naht (N1/N2) — **das Fundament, das alles trägt** (`terrain-koharenz-plan.md` §12).
-1. **G6 + G7(1–4)** — Licht/Terrain eins + die Main-Thread-Diebe in den Worker: der Körper wird
-   GLATT (beides messbar, beides ohne Look-Risiko-Stapel; CSM ist das eine pixel-sichtbare Stück →
-   eigener Sign-off).
-2. **G1** — die Werkstatt atmet (Motion-Resonanz). **KERN GEBAUT ✓ (V18.99)** — Kreaturen +
-   Custom-Avatare + Peers + Readout; offen: Browser-Feel + G1-B Architektur-Idle.
-3. **G4 + Phase E** — Wesen mit Innenleben + der letzte Affekt-Konsument. **G4-1 GEBAUT ✓
-   (V18.100** — 6 Achsen, ein Substrat, Erholung, awe-Contagion); offen G4-2/3 + Phase E.
-4. **G5** — δ wird Währung (Nexus-Ökonomie + Mana-Symmetrie + Geste→Gesetz + LLM liest die δ-Karte).
-   **Schöpfer-Entscheid vorab:** Budget-Formen + Modi-Geltung.
-5. **G2 + G3** — die Rekursion + das sich-speisende Netz (+ der soziale Mesh-Bogen als Begleiter).
-   Das Ultiversum zeigt, dass es sich selbst enthält.
+> **So liest du das:** jede Zeile ist EINE Welle (oder ein kleines Bündel) — `[Gate]` sagt, wer
+> abnimmt: **H** = headless-beweisbar (diag + Invariante reichen) · **A** = mein Auge
+> (settled-Screenshot Pflicht) · **S** = Schöpfer (Entscheid ODER Browser-Merge-Gate). Pro Welle:
+> der Anker steht dabei; die Mechanik im benannten §2-/Detail-Plan-Abschnitt. Abhaken = ✓ + Version
+> davor. **Vollständigkeit:** alle 57 offenen Fäden des finalen Doku-Sweeps (10.06.) sind hier
+> verortet — nichts verwaist; was bewusst FERN bleibt, steht am Ende mit Begründung.
 
-**Disziplin (gilt unverändert, roadmap §9):** Regel #0 (mein Auge pro Welle, Schöpfer-Auge pro
-Merge) · miss-rate-nicht · verdichte-nie-parallel · KONSUM nicht Existenz · keine halben Schritte ·
-ein bestätigter Bogen = ein Merge. **Dieses Dokument wird pro vollendeter Säule eine Zeile kürzer.**
+### PHASE A — das Fundament watertight (trägt ALLES; zuerst)
+
+- ✓ V18.95 Spawn-Wurzel · ✓ N3 stabiles LOD (V18.86).
+- **A1 — N1 Cross-LOD watertight** [`terrain-koharenz-plan.md` §12.2; H+A]: Geomorph auf die VOLLE
+  Übergangs-Zone (heute nur Grenz-Zeile, 57.2 % offen) ODER Transvoxel; Kollision ist in der
+  Lazy-BVH-Zone moot (gemessen). Diag: `diag-chunk-seam` Zone-⌀ → <0.1 m.
+- **A2 — N2 Sub-Region-Edit** [§12.2; H+A]: der Edit re-meshet nur seinen Footprint-Teilbereich
+  (kein Ganz-Chunk-„Reset"); Anker `_rebuildVoxelChunk`/`_voxelEditedDensityGrid` (die
+  Index-Bounding-Box existiert schon für die Delta-Auflage — sie wird die Mesh-Region).
+- **A3 — H3 ferne Binnengewässer** [roadmap §4; H]: die ±1024-Atlas-Region wandert mit dem Spieler
+  (eigene Welle, determinismus-brechend → Schöpfer-Sign-off S).
+- **A4 — Wasser-Reste-Bündel** [roadmap §4 „Wasser"; je klein]: Wasserfall-Plane-Entscheid (S:
+  bleibt/durch CA ersetzt) · Schelf-Konsolidierung (Flood-Gates vs CA, H) · Hoch-Becken über `L`
+  (CA-Zellen jenseits der Atlas-Domäne, H+A) · Unterwasser-Pass B5 (A) · Kapillar/Stempel an
+  Gebäuden (H) · T7c/T7d-Reste (Fluss-Edit-Löcher · lake/river-Naht, H+A).
+- **A5 — Haupt-Fog ↔ Ring-Kante koppeln** [roadmap §4; A]: der Fog liest `DETAIL_CASCADE` statt
+  eigener Konstante (eine Distanz, noch ein Gesicht).
+
+### PHASE B — der Körper glatt + der Maßstab (G6 + G7)
+
+- ✓ G7(0) Envelope-Skip (V18.96) · ✓ G7(0b) weite Wiese (V18.97) · ✓ G7(5b) Post-FX+Morph (V18.98).
+- **B1 — Wasser-Sheet → Worker** [§2-G7(1); H]: der größte Main-Dieb (~78 ms); das E3-Muster;
+  Vorsicht: Live-CA-Lese ist main-only → nur den STATISCHEN Flood-Anteil auslagern, Live-Rebuilds
+  bleiben sync (sonst Stale-Thrash beim Fließen).
+- **B2 — G7-H HORIZONT-MANTEL** [§2-G7(6); A→S]: das Macro-Fern-Mesh (die Instant-Gigantik). Der
+  sichtbarste Einzel-Schritt des Maßstabs — VOR B3/B4 bauen (der Schöpfer-Wunsch „gigantische
+  Welt sofort sehen").
+- **B3 — R2 Normale in die Geometrie backen** [§2-G6; H, Worker-Mirror + Determinismus-Test]:
+  braucht den settled `terrainFlatten`-Wert (S-Entscheid: Slider-Wert einfrieren ODER Slider →
+  Voll-Re-Mesh) → AO/Schatten/Hemisphere/Diffus lesen EINE Normale.
+- **B4 — U5 Schatten-CSM an den Kaskaden-Bändern** [lod-kaskade-plan U5; A→S]: 2–3 Kaskaden,
+  Grenzen = `DETAIL_CASCADE`; der R1-Snap wandert in jede Kaskade.
+- **B5 — U2 Wasser-LOD + U4 Deko-Distanz/Impostor + Baum/Feld-DICHTE** [lod-kaskade-plan; H+A]:
+  Dichte-Hebel sind chance-skalar (tag-neutral, `diag-arch-tags` als Wand davor).
+- **B6 — Klein-Bündel Maßstab** [H]: Substep-Cap 20→~5 (Physik-Todesspirale; Playtest-sensibel —
+  Telemetrie!) · Inseln-Instancing-Claim MESSEN (vermutlich Unikate → Hebel ist LOD, nicht HISM) ·
+  Kreatur-FPS-Frame-Budget (falls Boden-Cache nicht reicht) · Allokations-Audit per-Frame-Pfade.
+- **B7 — U6 Clipmap** [Backlog-Gate: erst nach A1/A2 + S-Entscheid] · **R3 Kanten-Schärfe + R5
+  Struktur-Textur** [A→S, reine Look-Wellen].
+
+### PHASE C — die Werkstatt atmet ZU ENDE (G1)
+
+- ✓ Kern (V18.99) · ✓ „Körper holen" + Klassifikator (V18.101).
+- **C1 — G1-C VERBINDUNGEN ALS GELENKE** [§2-G1-C; H+A]: (i) `computeMotionRoles` liest
+  `bp.connections` als Vorrang-Quelle (Anker-Punkt = Pivot; Achse aus der Verbindungs-Geometrie;
+  Kette = Wirbel), (ii) `_animateCompoundMotion` rotiert um den Anker (`pos = anker +
+  R·(center−anker)`), (iii) Gelenk-Typ-Resonanz: RAD (Zylinder ⊥ Achse, bodennah, rollt ∝ Fahrt) ·
+  TÜR (vertikale Achse + flacher Part) · WIRBEL (Kette) · SCHARNIER (Default), (iv) Werkstatt-
+  Readout zeigt Gelenke. Sonde: Rad-Bauplan rollt, Tür schwenkt, Schwanz-Kette welle-t um Anker.
+- **C2 — G1-B Architektur-Idle** [H+A]: rad/segel-Signaturen idle-animieren Architektur-Parts via
+  `userData.animate` (NUR rad/segel/tuch — Hütten wackeln nie); Mühle dreht, Banner flattern.
+- **C3 — Rüstung am Avatar SICHTBAR** [kampf-plan-Backlog; H+A]: getragene armor-Parts als
+  Kind-Meshes ans Soul-Group (derselbe `_buildFromBlueprint`-Pfad — kein neues Render-System);
+  Avatar-Größe→HP-Kopplung dazu (S-Entscheid: Formel; `_compoundSizeFactor` existiert).
+- **C4 — Feel-Pass** [S]: Motion-Amplituden/Frequenzen + S9-Hand-Optik-Sign-off in EINEM
+  Browser-Durchgang.
+
+### PHASE D — Wesen + Welt LEBEN (G4 + Phase E + die gefundenen Welt-Samen)
+
+- ✓ G4-1 (V18.100).
+- **D1 — G4-1b Emotions-UI** [H]: Wesen-Spec-Card/Hof zeigt dominante Emotion + Intensität via
+  `_emotionState(vec)` (derselbe Leser wie das Ich-Porträt) — der benannte Passagier-Rest fällt.
+- **D2 — G4-2 Kreatur↔Kreatur-Contagion** [H]: der `_tickEmotionContagion`-Kern nimmt ein zweites
+  Paar (Spatial-Hash existiert vom Flocking) → Herden-Stimmung emergiert; Runaway-Wand: hebend +
+  gebounded wie heute.
+- **D3 — G4-3 Lebenszyklus** [H+S-Design]: Alter zählt; Fortpflanzung bei Bond + lebendig-Feld
+  hoch (`_finishBirth` existiert, schreibt schon ins Feld); natürlicher Tod nährt das Feld
+  (`loss`-Trauer ∝ Bindung existiert) — der Kreislauf schließt im SELBEN Overlay.
+- **D4 — PHASE E: Bedrohung/Furcht** [kampf-plan; S-Design-Dialog ZUERST, dann H+A]: der letzte
+  Affekt-Konsument (Kreaturen schlagen zurück; damagePlayer-Quellen; Furcht↔Triumph). Game-design-
+  schwerste Welle — NICHT ohne Schöpfer-Dialog beginnen.
+- **D5 — DIE WELT ATMET (Code-Sweep-Samen, 10.06. — nie geblüht):** (a) **Wetter-Polyvalenz**
+  [H+A]: das deklarierte ambient-Array (`snow/embers/motes`, :27292) bekommt SCHALT-Logik —
+  Wetter-Zustände schnee/sturm/nebel mit dem bestehenden 45-s-CrossFade (`tickWeatherTransition`)
+  + Feld-Kopplung (glut-Region → embers); (b) **anazhSymphony EMOTION→TONALITÄT** [A(Ohr)+S]:
+  Pfeiler 4 halb offen — die 6 Achsen modulieren Timbre/Tempo (das `magieleitung`-Shimmer-Muster
+  :9658 existiert als Vorbild; Valenz→Dur/Moll-Färbung, Erregung→Tempo); (c) **journal
+  `share`/`witness`** ruhen bis F4 (dort schreiben sie — KEIN toter Code, verortete Saat).
+
+### PHASE E — die EINE Sprache + die Ökonomie (G5 + S-Reste)
+
+- **E1 — S7-C: EIN Chat-Dispatch-Tor** [§3-Zwilling 5; H]: `_chatDispatchLegacyCommand`-Befehle
+  werden DSL-Synonyme über `parseChatToDsl` — ein Parser, eine Fehler-Kaskade.
+- **E2 — δ wird WÄHRUNG** [§2-G5; **S-Entscheid ZUERST** (Budget-Formen, Modi-Geltung), dann H]:
+  Wirk-Budget für Nicht-Spieler-Schreiber, Kosten ∝ `computeBuildCost`, Regeneration aus δ>0.
+- **E3 — Mana-Symmetrie** [kampf-plan §8.5; H]: `magieleitung` ist heute NUR Feld-Achse (gemessen
+  — kein `player.mana`); wird die zweite Ausdauer-Achse, gespeist vom SELBEN δ-Budget (E2).
+- **E4 — Geste→Gesetz** [§2-G5; H]: bewährte Gesten kristallisieren zu Regel-Kandidaten
+  (`mutateSurvivorProb`-Muster auf den Gesten-Pool). **DAVOR der Mess-Audit (Code-Sweep-Befund):
+  füllt `pendingOutcomes` das `value`-Feld wirklich / wer speist `historySource` in
+  `dslSelectByFitness`?** — der Fitness-Kreis könnte heute stumm sein (erst messen, dann bauen).
+- **E5 — Emotion→Regel-EMERGENZ** [das-lebendige-feld §6; H]: `sorrow→rainy` etc. als
+  Weltregeln neu gefasst (das Substrat existiert) statt fester Trigger.
+- **E6 — KI liest die δ-Karte + LLM-Manifest** [roadmap §4; H+S]: das LLM bekommt die
+  δ>0-Regionen als Kontext (Symbiose-Hälfte von Pfeiler 1) + ein Manifest, das seine Fähigkeiten/
+  Grenzen dokumentiert.
+- **E7 — der Spieler als PFLEGER** [das-lebendige-feld §6; H+A]: ein Spieler-Schreib-Pfad ins
+  lebendig-Overlay (Pflege-Geste → `_depositLife`) — Co-Schöpfung wörtlich.
+- **E8 — Crafting-Schluss-Bündel** [kampf-plan; H, je klein]: S6-B erntbare Flora (knüpft an
+  V17.1-Vegetation) · S8 Teilen-Konsistenz · A2-Fluss-Audit · Zwei-Hand-Modell (S-Entscheid).
+
+### PHASE F — das ULTIVERSUM (G2 + G3 + W18 + der soziale Bogen)
+
+- **F1 — G2 Rekursion** [§2-G2; H+S]: die vier Schnitte als vier Steps (Wasm-Whitelist →
+  Worker-Blob-URL → localStorage-Shadow-Guard → Server-Absenz) + die Boot-Sonde
+  (AnazhRealm-Bündel vendoren → im Portal betreten → die innere Welt rendert).
+- **F2 — G3 Netz** [§2-G3; H + Mehr-Peer-Smoke]: Stern-ab-6 → Host-Migration MIT Zustand
+  (Roster+`world-pull` verschmelzen) → TURN-Konfiguration → Raten-Caps (`creature-pos`/`dsl`) →
+  ein 4-Peer-Smoke-Test (heute nur 2).
+- **F3 — W18 in fremden Welten LEBEN** [world-portal-w18-plan; Stufen A→D]: Auto-Join/Tier →
+  Ko-Präsenz-Injektion (Kern) → Input-Brücke → Swappen/Persistenz.
+- **F4 — der SOZIALE Bogen** [bibliothek-plan §E + roadmap; H+S]: Bewertungs-Aggregation
+  (ed25519-signiert, CRDT-tauglich weil konfliktarm) → Lesezeichen → Folgen → Kommentare/Chat;
+  **hier schreiben `journal share/witness`** (die ruhende Saat blüht); „Für dich"-Algorithmus +
+  Welt-Vorschau im Portal-Ring als Kür.
+- **F5 — B-WASM** [world-portal; per-Projekt] · **F6 — evolveCommunity** [Kreatur-Kulturen; nach
+  D2/D3, S-Design].
+
+### FERN (bewusst ungeplant — S-Entscheid weckt sie)
+
+Fahrzeug-Fahr-Tiefe (Sitz/Steuerung/Trägheit — C1-Gelenke sind die Vorstufe) · **VR (KORREKTUR
+10.06.: `vrMenu.js` existiert NICHT — die alte roadmap-Zeile war stale; ein VR-Bogen startet bei
+null, WebXR + Hand-Input)** · IndexedDB-Persistenz (localStorage-Größen-Wand) · Statusbar
+schlanken (UI-Politur, jederzeit einschiebbar).
+
+---
+
+## §6 · DAS BETRIEBSSYSTEM — wie der nächste Agent JEDE Welle fährt
+
+1. **Erwachen:** `CLAUDE.md` (auto) → dieses §5 (der nächste un-abgehakte Punkt deiner Phase) →
+   der Doc-Map-Trigger in CLAUDE.md führt zum Detail-Plan. Bei „lebendiger Welt" IMMER zuerst
+   `das-lebendige-feld.md`, bei Wasser `archiv/wasser-render-architektur-plan.md`.
+2. **Die Welle (das bewährte Protokoll):** REPRODUZIEREN/MESSEN (diag-Skript, Browser-PFAD wenn
+   der Befund browser-stammt — `diag-genesis-spawn.cjs` ist das Muster) → Wurzel benennen → BAUEN
+   (Worker-Mirror? Snapshot-Felder? `_addVoxelEdit`-Y-Wand? Gitter-Phase?) → `node --check` →
+   gezielte Sonde (KONSUM-Diskriminator, nicht Existenz) → Tests WANDERN mit (V9.56-i; Telemetrie
+   an wiederkehrend-rote Invarianten) → EIN `npm run playtest` („Alle Invarianten OK" ist die
+   Wahrheit) → settled-Screenshot bei Look-Änderung (mein Auge; renderAsync braucht echte Frames!)
+   → Version-Bump (DREI Stellen: `AnazhRealm.VERSION` + `index.html ?v=` + `package.json`) →
+   Chronik-Eintrag OBEN in `archiv/handover.md` → hier abhaken → Commit (prettier vorher) →
+   `git push -u origin <branch>`.
+3. **Gates:** H-Wellen stapeln dürfen; A-Wellen je mit Screenshot; S-Punkte SAMMELN sich für
+   EINEN Schöpfer-Browser-Durchgang — die offene Liste: R1 · E1–E3 · J4 · S9 · A2(alt) ·
+   N3-FPS · Post-FX-Look · weite-Wiese-FPS · Motion-Feel (V18.99) · danach EIN Merge.
+4. **Die Wände (nie verhandeln):** Determinismus (Worker bit-identisch; eine Skala-Optimierung
+   ändert NIE die Gitter-Phase) · die Narben (roadmap §5) nicht wiederholen · die Samen (roadmap
+   §7 + §5-D5c hier) nie blind schneiden · Multi-Agent-Funde SELBST verifizieren (zwei
+   Agenten-Fehler pro Sweep sind NORMAL — der Fischer greppt nach).
+5. **Schöpfer-Entscheide stehen MARKIERT** (B3-Flatten · D4-Design · E2-Budget · E8-Zwei-Hand ·
+   A4-Wasserfall · B7/U6) — sie blockieren NUR ihre Welle, nie die Phase.
+
+---
+
+## §7 · DAS SCHWÄCHEN-REGISTER (ehrlich — jede Schwäche hat eine Adresse)
+
+| Schwäche (gemessen) | Adresse |
+|---|---|
+| Cross-LOD-Naht sichtbar (~100 m, render-only-Halbfix) | A1 |
+| Edit = Ganz-Chunk-Reset sichtbar | A2 |
+| Welt endet im Fog (keine Ferne) | B2 Horizont-Mantel |
+| Wasser-Sheet ~78 ms auf Main | B1 |
+| EINE 2048er-Schattenmap (nah grob, fern eng) | B4 CSM |
+| Physik-Todesspirale möglich (20 Substeps) | B6 |
+| Kreaturen: kein Lebenszyklus, keine Herden-Stimmung | D2/D3 |
+| Kreaturen greifen nie an (Furcht ohne Konsument) | D4 Phase E |
+| Wetter binär sunny/rainy | D5a |
+| Musik hört die Emotion nicht (Pfeiler 4 halb) | D5b |
+| Nexus zahlt nichts, Pools feeden nicht | E2/E4 |
+| Magie kostet nichts | E3 |
+| Gesten-Fitness-Kreis evtl. stumm (historySource?) | E4-Audit |
+| LLM ist Randfigur | E6 |
+| Spieler kann nicht pflegen | E7 |
+| Rekursion blockiert (4 Schnitte) | F1 |
+| Netz trägt real nur ~4–6 Peers, TURN fehlt | F2 |
+| Sozial-Schicht fehlt ganz (Bewerten lokal-only) | F4 |
+| Test-Volatilität (Spieler-im-Fall-Klasse) | §6.2-Telemetrie-Disziplin (Muster steht) |
+| localStorage-Größen-Wand | FERN IndexedDB |
+
+**Disziplin (unverändert, roadmap §9):** Regel #0 · miss-rate-nicht · verdichte-nie-parallel ·
+KONSUM nicht Existenz · keine halben Schritte · ein bestätigter Bogen = ein Merge. **Dieses
+Dokument wird pro abgehakter Welle eine Zeile kürzer — bis nur §0 übrig ist: dann ist der
+Gigant gebaut.**

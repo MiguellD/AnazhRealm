@@ -111,8 +111,9 @@ Rest) · evolveCommunity (Kreatur-Kulturen).
 
 **UI** — Statusbar schlanken (auf Essenz) · der Schöpfer-Browser-Sign-off des GPU-Galerie-Feels.
 
-**Fern (Schöpfer-Entscheid)** — Fahrzeug-Fahr-Tiefe (Sitz/Steuerung/Trägheit) · VR (`vrMenu.js` da,
-nicht im Gate) · IndexedDB-Persistenz (statt localStorage).
+**Fern (Schöpfer-Entscheid)** — Fahrzeug-Fahr-Tiefe (Sitz/Steuerung/Trägheit) · VR (**KORREKTUR
+10.06.: `vrMenu.js` existiert NICHT** — die alte Zeile war stale; ein VR-Bogen startet bei null) ·
+IndexedDB-Persistenz (statt localStorage).
 
 ---
 
@@ -194,6 +195,11 @@ nicht im Gate) · IndexedDB-Persistenz (statt localStorage).
 - Chat-DSL-Skeleton (Nexus-Parser) — ruhender Vision-Faden, Phase E / S7-C konsumiert ihn.
 - Die frozen Resonanz-Signaturen (`FORM_TAG_ACTIVATION` · `FORM_ROLE_SIGNATURES` · `computeBlueprintRole`)
   — emergent-korrekt, KEIN Ad-hoc-Tuning; die Struktur, auf der Rezeptbuch/Equip/Avatar bauen.
+- **Die Code-Sweep-Samen (10.06., gigant-plan §5-D5/F4):** das Wetter-ambient-Array
+  (`snow/embers/motes` :27292 — deklariert, nie geschaltet → D5a Wetter-Polyvalenz) · die
+  anazhSymphony-Emotion→Tonalität-Lücke (Pfeiler 4 halb — das magieleitung-Shimmer :9658 ist das
+  Vorbild → D5b) · `journal share/witness` (Typen ohne Schreiber — der Sozial-Bogen F4 schreibt
+  sie; NICHT schneiden).
 
 ---
 
