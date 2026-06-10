@@ -21342,6 +21342,7 @@ class AnazhRealm {
         const aDepth = [];
         const aSlope = [];
         const vmap = new Int32Array(NV * NV).fill(-1);
+        const vertIsAnchor = []; // V18.114 — pro Vertex: Anker (kein nasser Nachbar)?
         const addVert = (i, k) => {
             const vi = i + k * NV;
             if (vmap[vi] >= 0) return vmap[vi];
@@ -21379,6 +21380,7 @@ class AnazhRealm {
             const surfY = n > 0 ? sum / n : anchor - 0.5;
             const depthM = n > 0 ? dsum / n : 0;
             const id = positions.length / 3;
+            vertIsAnchor[id] = n === 0;
             positions.push(wx, surfY, wz);
             // aWave: weiche Ozean-Rampe (V18.14) — auf dem Sheet-Spiegel statt `L`.
             aWave.push(Math.max(0, Math.min(1, 1 - (Math.abs(surfY - waterLevel) - 0.8) / 2.0)));
@@ -21439,7 +21441,14 @@ class AnazhRealm {
                 const y11 = positions[v11 * 3 + 1];
                 const hi = Math.max(y00, y10, y01, y11);
                 const lo = Math.min(y00, y10, y01, y11);
-                if (hi - lo <= VERT_SPLIT) {
+                // V18.114 — TOUR-FANG (mein V18.111-Fehler, mit dem eigenen Auge
+                // gesehen: „der Fluss schwebt als Brücke überm Tal"): der Split
+                // wirkt NUR zwischen NASSEN Säulen (der echte vertikale Fall) —
+                // ein ANKER-Quad (eine Ecke trocken) MUSS eintauchen (V18.89:
+                // die Kante taucht unters Terrain; das Deck hob den Anker auf
+                // Lippen-Höhe → schwebende harte Ufer-Kanten an JEDEM Steilufer).
+                const anyAnchor = vertIsAnchor[v00] || vertIsAnchor[v10] || vertIsAnchor[v01] || vertIsAnchor[v11];
+                if (anyAnchor || hi - lo <= VERT_SPLIT) {
                     // Wicklung → -Y-Normale (BackSide-Oberseite), wie Fläche + Iso.
                     indices.push(v00, v10, v01, v11, v01, v10);
                     continue;
@@ -24801,8 +24810,13 @@ class AnazhRealm {
         // (aSlope aus den Zell-Dächern; Lippen/Vorhänge ≥3) schäumt weiss — nah
         // texturiert (riverS1), fern FLACH-weiss (Wasserfälle sind Makro-Features:
         // sie bleiben sichtbar, nur ihr Mikro-Detail fadet → kein Moiré).
-        const whitewater = smoothstep(float(0.5), float(2.0), aSlopeV).mul(
-            float(0.6).add(riverS1.mul(0.4).mul(detailFade))
+        // V18.114 — TOUR-FANG (eigenes Auge: „milchige Decke über dem Hang-Lauf,
+        // Gras sticht durch"): Schwelle 0.5→1.2 (moderate Hänge bleiben KLARES
+        // Wasser, erst echte Steilstücke schäumen; der Vorhang [aSlope 4] voll)
+        // + die Basis 0.6→0.25 — die STRÄHNEN-Textur (riverS1) trägt das Weiss
+        // (Wildwasser = Strähnen auf transparentem Wasser, kein Vollverputz).
+        const whitewater = smoothstep(float(1.2), float(3.2), aSlopeV).mul(
+            float(0.25).add(riverS1.mul(0.75).mul(detailFade))
         );
         // V14-Emotions-Haken: uEmotion>0 hebt den Schaum sanft an (die Welt atmet
         // im Wasser); default 0 = exakt das alte Bild.
@@ -53229,7 +53243,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.113.0";
+AnazhRealm.VERSION = "18.114.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
