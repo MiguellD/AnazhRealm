@@ -15345,6 +15345,7 @@ class AnazhRealm {
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
                                 waterCells: new Uint8Array(msg.waterCells),
+                                surfMap: msg.surfMap ? new Float32Array(msg.surfMap) : null,
                             });
                         }
                     }
@@ -15655,7 +15656,7 @@ class AnazhRealm {
             const oy = base - lod0Cfg.floorDrop;
             this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, 0);
         }
-        return { mesh, kind: "filled", waterCells, lod, hasBVH };
+        return { mesh, kind: "filled", waterCells, lod, hasBVH, surfMap: meshData.surfMap || null };
     }
 
     // V9.92 (Phase 4 — Lazy-BVH): hängt einem Existing-Chunk-Entry seine
@@ -18411,6 +18412,11 @@ class AnazhRealm {
         // Density-Sample-Schleife (~90k `_terrainDensityAt`-Calls) nur einmal
         // pro Chunk-Build ausgeführt, nicht zweimal.
         const density = preDensity || this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
+        // V18.97 (G7/U4 — die weite Wiese): die OBERFLÄCHEN-KARTE fällt als
+        // Nebenprodukt aus dem SCHON gesampelten Grid (eine Quelle, viele
+        // Leser — Gras/Scatter lesen sie statt teurer `_voxelSurfaceY`-Scans).
+        // Worker-Mirror: `gridSurfaceMap` in voxel-worker.js (identischer Algo).
+        const surfMap = this._gridSurfaceMap(density, dimX + 1, dimY + 1, dimZ + 1, oy, step);
         const { positions, vertCells, cellVert, sharp } = this._voxelExtractSurfaceVertices(
             density,
             ox,
@@ -18450,7 +18456,60 @@ class AnazhRealm {
         // — der Morph lebt allein im Vertex-Shader (`positionNode`), main-only (kein Worker-Mirror).
         geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
+        geom.userData.surfMap = surfMap;
         return geom;
+    }
+
+    // V18.97 — die Oberflächen-Karte aus dem Density-Grid: pro Eck-Spalte
+    // (i,k) die oberste Luft→Fels-Kante, sub-zellig linear interpoliert
+    // (exakt die Iso-Fläche des Meshers, VOR dem Laplacian-Glätten). NaN wo
+    // die Spalte keine Oberfläche trägt. Kostet ~1 ms Array-Reads auf dem
+    // SCHON gesampelten Grid — ersetzt für Gras/Deko die teuren
+    // `_voxelSurfaceY`-Dichte-Scans (256×/Chunk). Worker-Mirror:
+    // `gridSurfaceMap` in voxel-worker.js — beim Ändern BEIDE anfassen.
+    _gridSurfaceMap(density, Nx, Ny, Nz, oy, step) {
+        const map = new Float32Array(Nx * Nz);
+        map.fill(NaN);
+        for (let k = 0; k < Nz; k++) {
+            for (let i = 0; i < Nx; i++) {
+                const colBase = i + k * Nx * Ny;
+                for (let j = Ny - 2; j >= 0; j--) {
+                    const a = density[colBase + j * Nx];
+                    const b = density[colBase + (j + 1) * Nx];
+                    if (a > 0 && b <= 0) {
+                        const t = a / (a - b);
+                        map[i + k * Nx] = oy + (j + t) * step;
+                        break;
+                    }
+                }
+            }
+        }
+        return map;
+    }
+
+    // V18.97 — bilineare Oberflächen-Höhe aus der Chunk-Karte (`entry.surfMap`,
+    // padded Grid: Origin chunk−step, Nx = dim+4). null bei fehlender Karte /
+    // NaN-Ecke / außerhalb des Pads → der Aufrufer fällt auf `_voxelSurfaceY`.
+    _chunkSurfaceAt(entry, cx, cz, x, z) {
+        const m = entry && entry.surfMap;
+        if (!m) return null;
+        const cfg = this._voxelChunkConfig(entry.lod || 0);
+        const Nx = cfg.dim + 4;
+        const ox = cx * cfg.span - cfg.step;
+        const oz = cz * cfg.span - cfg.step;
+        const u = (x - ox) / cfg.step;
+        const v = (z - oz) / cfg.step;
+        const i0 = Math.floor(u);
+        const k0 = Math.floor(v);
+        if (i0 < 0 || k0 < 0 || i0 >= Nx - 1 || k0 >= Nx - 1) return null;
+        const a = m[i0 + k0 * Nx];
+        const b = m[i0 + 1 + k0 * Nx];
+        const c = m[i0 + (k0 + 1) * Nx];
+        const d = m[i0 + 1 + (k0 + 1) * Nx];
+        if (!(Number.isFinite(a) && Number.isFinite(b) && Number.isFinite(c) && Number.isFinite(d))) return null;
+        const fu = u - i0;
+        const fv = v - k0;
+        return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
     }
 
     // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
@@ -21210,7 +21269,7 @@ class AnazhRealm {
                 waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, lod0Cfg.step, lod0Density, 0);
             }
         }
-        return { mesh, kind: "filled", waterCells, lod };
+        return { mesh, kind: "filled", waterCells, lod, surfMap: geom.userData.surfMap || null };
     }
 
     // V9.40-d Dispose-Before-Build: räumt den ALTEN Chunk ZUERST (Kollision
@@ -21311,6 +21370,9 @@ class AnazhRealm {
         const entry = {
             mesh: fresh.mesh,
             waterCells: fresh.waterCells || null,
+            // V18.97 — die Oberflächen-Karte (Grid-Nebenprodukt, beide Pfade):
+            // Gras/Deko lesen sie via `_chunkSurfaceAt` statt Dichte-Scans.
+            surfMap: fresh.surfMap || null,
             lod,
             hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
         };
@@ -21330,10 +21392,15 @@ class AnazhRealm {
             const _pcx = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cx : cx;
             const _pcz = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cz : cz;
             const _gr = Math.max(Math.abs(cx - _pcx), Math.abs(cz - _pcz));
-            if (_gr <= 2) {
+            // V18.97 — DIE WEITE WIESE: der Gras-Ring weitet von ≤2 auf ≤4
+            // (~389 m, bis an die Fog-Kante des Default-Radius) — die Ferne
+            // baut DÜNNER (lod≥1 → Dichte-Faktor, s. _buildVoxelChunkGrass);
+            // die surfMap macht die Platzierung ~scan-frei (Grid-Nebenprodukt).
+            if (_gr <= 4) {
                 const _gKey = `${cx},${cz}`;
                 const _gd = this.state.grassDirtyChunks;
                 const _hasGrass = this.state.voxelChunkGrass && this.state.voxelChunkGrass.has(_gKey);
+                const _gLod = this.state.voxelChunkGrassLod ? this.state.voxelChunkGrassLod.get(_gKey) : undefined;
                 if (_gd && _gd.has(_gKey)) {
                     // Welle G-fix — die Oberfläche änderte sich (Carve/Fill): das
                     // (in _disposeVoxelChunk mit keepGrass=false entfernte) Gras
@@ -21344,9 +21411,15 @@ class AnazhRealm {
                     // Welle A — Streaming/Erst-Build (kein Gras vorhanden): deferred
                     // (≤1/Frame, kein Flackern da kein altes Gras da war).
                     this._enqueueGrass(cx, cz);
+                } else if (_gLod !== undefined && _gLod !== lod) {
+                    // V18.97 — der Chunk wechselte die LOD-Stufe (fern↔nah):
+                    // die Gras-DICHTE passt nicht mehr (fern baut dünner) →
+                    // altes Gras weg + deferred neu in der neuen Dichte.
+                    this._disposeVoxelChunkGrass(_gKey);
+                    this._enqueueGrass(cx, cz);
                 }
                 // sonst: Gras existiert + Oberfläche unverändert (Nexus-Spawn/
-                // Skirt/LOD) → es wurde gar nicht disposed → BEHALTEN.
+                // Skirt) → es wurde gar nicht disposed → BEHALTEN.
             }
         }
         // V17.1 — FÜLLE/DICHTE: die artenreiche Klein-Vegetation (Blüten/Farne/
@@ -24068,6 +24141,29 @@ class AnazhRealm {
         const key = `${cx},${cz}`;
         if (this.state.voxelChunkGrass.has(key)) return;
         const { span } = this._voxelChunkConfig();
+        // V18.97 — DIE WEITE WIESE: (a) die Oberfläche kommt aus der Chunk-
+        // surfMap (Grid-Nebenprodukt, `_chunkSurfaceAt` — bilinear, ~gratis;
+        // Fallback `_voxelSurfaceY` nur ohne Karte/NaN-Ecke), (b) ferne Chunks
+        // (lod≥1, Ring 3–4) bauen DÜNNER (Faktor 0.35), lod≥2 gar nicht —
+        // so reicht die Wiese bis an die Fog-Kante, ohne die Vertex-Last zu
+        // vervielfachen. Der Halm sitzt auf SEINER Höhe (by), nicht der
+        // Zell-Höhe → Hänge tragen Gras ohne Schweben.
+        const chunkEntry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
+        const entryLod = chunkEntry && !chunkEntry.empty ? chunkEntry.lod || 0 : 0;
+        if (!this.state.voxelChunkGrassLod) this.state.voxelChunkGrassLod = new Map();
+        if (entryLod >= 2) {
+            this.state.voxelChunkGrass.set(key, null);
+            this.state.voxelChunkGrassLod.set(key, entryLod);
+            return;
+        }
+        const farFactor = entryLod >= 1 ? 0.35 : 1;
+        const surfAt = (x, z) => {
+            if (chunkEntry && chunkEntry.surfMap) {
+                const v = this._chunkSurfaceAt(chunkEntry, cx, cz, x, z);
+                if (v !== null) return v;
+            }
+            return this._voxelSurfaceY(x, z);
+        };
         const ox = cx * span;
         const oz = cz * span;
         const SAMPLES = 16;
@@ -24088,7 +24184,7 @@ class AnazhRealm {
                 const field = this.worldFieldAt(baseX, baseZ);
                 const lebendig = field ? field.lebendig : 0;
                 if (lebendig < 0.22) continue;
-                const surfY = this._voxelSurfaceY(baseX, baseZ);
+                const surfY = surfAt(baseX, baseZ);
                 if (surfY === null) continue;
                 // V9.59-c — Gras-Halme wachsen NICHT unter Wasser. 0.1 m
                 // Marge: Gras DARF an der Uferlinie wachsen (saftiges Ufer),
@@ -24097,18 +24193,17 @@ class AnazhRealm {
                 // Zelle, nicht pro Blade (16×16=256 Samples pro Chunk).
                 const waterY = this._waterLevelAt(baseX, baseZ);
                 if (surfY < waterY + 0.1) continue;
-                // V17.5 — Cliff-Skip (Schöpfer-Audit „Halme schweben an Kanten,
-                // verschmelzen nicht"): die Halme sitzen auf der ZELL-Höhe, aber
-                // gejittert ±step landen sie an Klippen-Kanten in der Luft. Cheap
-                // Macro-Referenz (kein Density-Scan); ein Halm, dessen Macro-Höhe
-                // > 1.2 m unter der Zell-Höhe liegt (über einem Abbruch), wird
-                // übersprungen → kahle Klippen-Kante statt schwebender Halm.
-                const cellMacro = this._terrainMacroSurfaceY(baseX, baseZ, false);
-                const count = Math.floor(lebendig * 14 + rnd() * 2);
+                // V17.5/V18.97 — Cliff-Skip an der ECHTEN Oberfläche: der Halm
+                // liest SEINE Höhe aus der surfMap (vorher: Macro-Proxy, 2 Calls
+                // pro Halm); liegt sie > 1.2 m unter der Zell-Höhe (Abbruch),
+                // fällt er weg → kahle Klippen-Kante statt schwebender Halm.
+                // Und der Halm STEHT auf seiner Höhe → Hänge ohne Schweben.
+                const count = Math.floor((lebendig * 14 + rnd() * 2) * farFactor);
                 for (let k = 0; k < count; k++) {
                     const gx = baseX + (rnd() - 0.5) * step;
                     const gz = baseZ + (rnd() - 0.5) * step;
-                    if (this._terrainMacroSurfaceY(gx, gz, false) < cellMacro - 1.2) continue;
+                    const by = surfAt(gx, gz);
+                    if (by === null || by < surfY - 1.2) continue;
                     // V17.14 — Halm-Variation gegen den „Lauchstängel"-Eindruck
                     // (Schöpfer-Audit „immer gleiche Länge, Höhe + Position nicht
                     // überzeugend"). Drei entkoppelte Achsen statt EINEM uniformen
@@ -24123,7 +24218,7 @@ class AnazhRealm {
                     const sY = 0.5 + r1 * r1 * 1.3; // Höhe [0.5, 1.8], kurze häufiger
                     blades.push({
                         x: gx,
-                        y: surfY,
+                        y: by,
                         z: gz,
                         rot: rnd() * Math.PI * 2,
                         sXZ,
@@ -24136,6 +24231,7 @@ class AnazhRealm {
         }
         if (blades.length === 0) {
             this.state.voxelChunkGrass.set(key, null);
+            this.state.voxelChunkGrassLod.set(key, entryLod);
             return;
         }
         // V10.0-j.j — ConeGeometry als Singleton (Profi-Vorbild: shared meshes).
@@ -24246,9 +24342,11 @@ class AnazhRealm {
         if (typeof inst.computeBoundingSphere === "function") inst.computeBoundingSphere();
         this.state.scene.add(inst);
         this.state.voxelChunkGrass.set(key, inst);
+        this.state.voxelChunkGrassLod.set(key, entryLod);
     }
 
     _disposeVoxelChunkGrass(key) {
+        if (this.state.voxelChunkGrassLod) this.state.voxelChunkGrassLod.delete(key);
         if (!this.state.voxelChunkGrass) return;
         const grass = this.state.voxelChunkGrass.get(key);
         if (grass) {
@@ -24754,7 +24852,7 @@ class AnazhRealm {
         const queue = this.state.pendingGrass;
         if (!queue || queue.size === 0) return 0;
         const lpc = this.state.lastPlayerVoxelChunk;
-        const GRASS_RING = 2; // V16.1: Gras baut nur bei Chunk-Distanz ≤ 2
+        const GRASS_RING = 4; // V18.97 (die weite Wiese): 2→4 — die Ferne baut dünner (lod-Faktor)
         let keys = [...queue];
         if (lpc) {
             const distOf = (k) => {
@@ -51171,7 +51269,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.96.0";
+AnazhRealm.VERSION = "18.97.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

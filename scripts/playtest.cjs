@@ -23574,8 +23574,23 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // Ein Carve in der Nähe des Spielers markiert Chunks dirty
         // statt sie sofort zu rebuilden (V9.40-c-Verhalten).
         const dirtyBefore = r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : 0;
-        r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
+        const carveRet = r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         out.editMarksDirty = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > dirtyBefore);
+        // V18.97-Telemetrie (V18.93-Muster): bei Rot zeigt die Invariante den
+        // ECHTEN Lauf-Zustand (Position/Surface/Edit-Annahme), statt zu raten.
+        out.telemetry = JSON.stringify({
+            pm: { x: +pm.x.toFixed(1), y: +pm.y.toFixed(1), z: +pm.z.toFixed(1) },
+            carveSurf: Number.isFinite(carveSurf) ? +carveSurf.toFixed(1) : null,
+            cy: +cy.toFixed(1),
+            carveRet,
+            dirtyBefore,
+            dirtyAfter: r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : -1,
+            chunks: r.state.voxelChunks ? r.state.voxelChunks.size : -1,
+            playerChunkBuilt: !!(
+                r.state.voxelChunks &&
+                r.state.voxelChunks.get(`${Math.floor((pm.x + 150) / 43.2)},${Math.floor((pm.z + 150) / 43.2)}`)
+            ),
+        });
         // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
         const dirtyMid = r.state.dirtyVoxelChunks.size;
         const built = r._drainDirtyVoxelChunks();
@@ -23612,11 +23627,13 @@ async function checkBandVoxelP3AndInventory(ctx) {
         );
         check(
             "V9.40-c: ein Carve markiert Voxel-Chunks dirty (statt sofort sync rebuild)",
-            voxelV940cResults.editMarksDirty
+            voxelV940cResults.editMarksDirty,
+            voxelV940cResults.telemetry
         );
         check(
             "V9.40-c: _drainDirtyVoxelChunks rebuildet + leert das Set",
-            voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet
+            voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet,
+            voxelV940cResults.telemetry
         );
         check(
             "V9.40-c: _drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks",

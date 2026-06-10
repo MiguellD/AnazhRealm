@@ -84,6 +84,7 @@ self.onmessage = function (e) {
                         indices: mesh.indices.buffer,
                         colors: mesh.colors.buffer,
                         waterCells: mesh.waterCells.buffer,
+                        surfMap: mesh.surfMap.buffer,
                         vertCount: mesh.positions.length / 3,
                         indexCount: mesh.indices.length,
                     },
@@ -93,6 +94,7 @@ self.onmessage = function (e) {
                         mesh.indices.buffer,
                         mesh.colors.buffer,
                         mesh.waterCells.buffer,
+                        mesh.surfMap.buffer,
                     ]
                 );
             }
@@ -1374,6 +1376,8 @@ function buildChunkMesh(cx, cz, lod) {
             }
         }
     }
+    // V18.97 — die Oberflächen-Karte als Grid-Nebenprodukt (s. gridSurfaceMap).
+    const surfMap = gridSurfaceMap(density, Nx, Ny, Nz, oy, step);
     // Surface-Nets-Mesh aufbauen.
     const { positions, vertCells, cellVert, sharp } = extractSurfaceVertices(
         density,
@@ -1442,5 +1446,30 @@ function buildChunkMesh(cx, cz, lod) {
         normals,
         colors,
         waterCells,
+        surfMap,
     };
+}
+
+// V18.97 — Mirror von `_gridSurfaceMap` (anazhRealm.js): die Oberflächen-
+// Karte aus dem schon gesampelten Density-Grid (oberste Luft→Fels-Kante pro
+// Eck-Spalte, sub-zellig interpoliert; NaN ohne Oberfläche). Beim Ändern
+// BEIDE anfassen — Gras/Deko lesen sie statt teurer Dichte-Scans.
+function gridSurfaceMap(density, Nx, Ny, Nz, oy, step) {
+    const map = new Float32Array(Nx * Nz);
+    map.fill(NaN);
+    for (let k = 0; k < Nz; k++) {
+        for (let i = 0; i < Nx; i++) {
+            const colBase = i + k * Nx * Ny;
+            for (let j = Ny - 2; j >= 0; j--) {
+                const a = density[colBase + j * Nx];
+                const b = density[colBase + (j + 1) * Nx];
+                if (a > 0 && b <= 0) {
+                    const t = a / (a - b);
+                    map[i + k * Nx] = oy + (j + t) * step;
+                    break;
+                }
+            }
+        }
+    }
+    return map;
 }

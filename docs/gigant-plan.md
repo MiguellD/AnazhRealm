@@ -221,13 +221,18 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
 - **DER GENIALE WEG (jeder Hebel erhält die Tiefe):** **(0) GEBAUT ✓ (V18.96): der
   `_voxelSurfaceY`-Envelope-Skip** — Proben 214.6→17.4/Spalte (12.3×, bit-exakt 0/3000), heilt
   ALLE 46 Leser (Gras·Scatter·Veg·16k-Spalten-Hydro-Atlas·Spawn-Scan); Playtest 183→136 s.
-  Gras-Rest: die Per-Blade-`_terrainMacroSurfaceY`-Calls dominieren jetzt (~29 ms — der nächste
-  Schnitt dort). **(1)** Wasser-Sheet → Worker (das E3-Muster
+  **(0b) GEBAUT ✓ (V18.97): die WEITE WIESE** — die Oberflächen-KARTE fällt als Grid-Nebenprodukt
+  aus beiden Build-Pfaden (`entry.surfMap`, Worker-gespiegelt); Gras liest sie statt zu scannen
+  (28.9→1.2 ms, 24×), steht auf SEINER Höhe, Cliff-Skip an der echten Kante; Ring 2→4 mit
+  Fern-Dichte-Stufen (lod-Tag + Wechsel-Rebuild). Die Karte ist die EINE Quelle für künftige
+  Deko-Leser (Scatter · Veg-Spawn · Wasser-Anker). **(1)** Wasser-Sheet → Worker (das E3-Muster
   ist BEWIESEN: Mesh wanderte V17.118; der Sheet-Builder liest Zellen, die der Worker schon baut —
-  größter Einzelhebel). **(2)** Gras-Placement → Worker (der Scan liest das Density-Grid, das DORT
-  entsteht). **(3)** Inseln in den HISM-Pfad (PRÜFEN: Inseln sind vermutlich UNIKATE Geometrie —
-  dann ist der Hebel LOD/Dichte, nicht Instancing; messen vor schneiden). **(4)** Substep-Cap
-  senken. **(5)** Die EHRLICHE GPU-Grenze: GPU-Compute für Density bleibt Narbe (BVH braucht CPU-
+  größter Einzelhebel). **(2)** ~~Gras-Placement → Worker~~ GELÖST via (0b) — die WAHRHEIT
+  wanderte, nicht der Code. **(3)** Inseln in den HISM-Pfad (PRÜFEN: Inseln sind vermutlich UNIKATE
+  Geometrie — dann ist der Hebel LOD/Dichte, nicht Instancing; messen vor schneiden). **(4)**
+  Substep-Cap senken. **(5b, aus dem Schöpfer-Browser-Log notiert):** „PostProcessing/pass fehlt"
+  = Bloom/Grading läuft im echten Browser NICHT (Bundle-Export prüfen) + 4× `aMorphTarget not
+  found` (Nicht-Terrain-Geometrie am geteilten Material ohne T2-Morph-Attribute). **(5)** Die EHRLICHE GPU-Grenze: GPU-Compute für Density bleibt Narbe (BVH braucht CPU-
   Readback); die RICHTIGE GPU-Front sind PURE-RENDER-Felder ohne Readback — Wasser-Oberflächen-Detail,
   Partikel, Gras-Sway leben schon in TSL; mehr dorthin, nichts zurücklesen. **(6)** Draw-Call-Fernziel
   bleibt U6-Clipmap (Backlog, erst nach N-Naht). **Der Maßstab heißt: 60+ FPS auf Mittelklasse BEI
