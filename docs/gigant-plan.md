@@ -369,8 +369,18 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   synergetisch, durch die Wellen oder so" — der Faden IST gesehen + hier verortet):** der Kern ist
   die MÜNDUNGS-SYNERGIE (die V18.14-M2-`aWave`-Rampe + das Schaum-Gate + die T7d-See↔Fluss-
   `L`-Naht an 4-Chunk-Ecken — der Makro-Kontext muss den Mikro-Shader an der Mündung WEICH
-  übergeben). Dazu: Wasserfall-Plane-Entscheid (S) · Schelf-Konsolidierung (H) · Hoch-Becken
-  über `L` (H+A) · Unterwasser-Pass B5 (A) · Kapillar/Stempel (H) · T7c-Reste.
+  übergeben). ✓ **WASSERFALL-KERN GEBAUT (V18.111, S-Entscheid „die Plane fällt"):** Plane+Pool+
+  Builder+`setWaterfallSteep`/Slider GESCHNITTEN (das Abwärts-Material bleibt als MARKIERTE
+  SAAT für die kommende eigene Vertikal-Form, Test „materialKept" bewacht); der S-Befund
+  „dreieckige offene Zacken — bei vertikalem Fall nur GESTRECKT" via **STEIL-SPLIT im
+  Zell-Sheet** geformt: Quads >3·step-Spread → LIPPE (Deck bis zur Kante, Original-Wicklung)
+  + VERTIKALER VORHANG (senkrecht, wasserdicht, double-faced, aSlope-MAX → das CA-Wildwasser
+  schäumt den Fall weiss — aus den ZELLEN, kein Plane-Raten). GEMESSEN
+  (`diag-waterfall-zacken.cjs`, 30-m-Fall): >14-m-Zacken 137→0 · >7-m 359→2 · maxSpread
+  28.8→12.3 m · 1920 Vorhänge. Fall-LOOK → S. WEITER OFFEN in A4 (der Kern der Welle):
+  die MÜNDUNGS-SYNERGIE (oben) ·
+  Schelf-Konsolidierung (H) · Hoch-Becken über `L` (H+A) · Unterwasser-Pass B5 (A) ·
+  Kapillar/Stempel (H) · T7c-Reste.
 - ✓ **A5 — Haupt-Fog ↔ Ring-Kante (V18.103):** `fog.far = min(Wetter-Formel·Slider,
   (ringRadius+0.5)·span)` in `_dayNightApplyHemiAndFog` — der Nebel deckt das Welt-Ende
   (Default-Ring 4: Kante ~194 m, fog.far war 450 m = sichtbare Welt-Kante); bei „Weltenring max"
@@ -399,9 +409,12 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Macro-Samples ≈ ms). A5-Fog liest jetzt die MANTEL-Kante (4.3 km) → die geliebte Weite kehrt
   zurück UND das Welt-Ende ist gefüllt. 4 Playtest-Invarianten (existiert · Höhen=Macro ·
   Loch-Radius · vertexColors). Browser-Look → S-Liste.
-- **B3 — R2 Normale in die Geometrie backen** [§2-G6; H, Worker-Mirror + Determinismus-Test]:
-  braucht den settled `terrainFlatten`-Wert (S-Entscheid: Slider-Wert einfrieren ODER Slider →
-  Voll-Re-Mesh) → AO/Schatten/Hemisphere/Diffus lesen EINE Normale.
+- ✓ **B3 — R2 Normale GEBACKEN (V18.106, S-Entscheid 10.06.: „das Alte kann weichen"):**
+  `TERRAIN_NORMAL_FLATTEN` (settled 1.0) in `_voxelGradientNormals` + Worker-Mirror — bei 1.0
+  ist die Normale konstant up, der Gradienten-Pass ENTFÄLLT (Perf gratis); AO/Schatten/
+  Hemisphere/Diffus lesen EINE Normale (G6 vollendet). Slider + Uniform + Setter + normalNode-
+  Override GESCHNITTEN, Inseln/Stitch-Band erben über die eine Quelle, Tests gewandert
+  (KONSUM: Chunk-Normalen ≈ up GEMESSEN).
 - **B4 — U5 Schatten-CSM an den Kaskaden-Bändern** [lod-kaskade-plan U5; A→S]: 2–3 Kaskaden,
   Grenzen = `DETAIL_CASCADE`; der R1-Snap wandert in jede Kaskade.
 - **B5 — U2 Wasser-LOD + U4 Deko-Distanz/Impostor + Baum/Feld-DICHTE** [lod-kaskade-plan; H+A]:
@@ -417,12 +430,13 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Allokations-Audit per-Frame-Pfade.
 - **B7 — U6 Clipmap** [Backlog-Gate: erst nach A1/A2 + S-Entscheid] · **R3 Kanten-Schärfe + R5
   Struktur-Textur** [A→S, reine Look-Wellen].
-- **B9 — TERRAIN-NACHTLICHT (Schöpfer-Browser 10.06. abend, NEU)** [H-Messung → A]: „der
-  Terrain-Boden selbst scheint noch nicht aufs Nachtlicht zu reagieren" (Bauwerke/Deko: „hammer,
-  was ein Sprung" = B8 BESTÄTIGT — der Kontrast macht den Boden-Rest sichtbar). MESSEN, welcher
-  Term den Boden nachts hochhält (Kandidaten: Hemi-Nacht-Floor 0.32 + V17.7-Ambient-Lift ·
-  der Aerial-skyColor-Melt · die vertexColors-Helligkeit · der B2-MANTEL [eigenes Material —
-  denselben Nacht-Sync verifizieren!]) — dann den EINEN Hebel heilen, nicht dimmen-raten.
+- ✓ **B9 — TERRAIN-NACHTLICHT GEMESSEN GEHEILT (V18.111):** `diag-night-terrain.cjs` (Tag/
+  Nacht-Shots + Term-Dump) — nachts hielten ambient 0.24 + hemi 0.32 den up-gebackenen Boden
+  hell (voller Sky-Term), Bäume/Bauten gingen in Silhouette. Die V17.7-Nacht-Floors waren ein
+  STRUKTUR-Workaround, den B8 (LUT-Boden 0.25 + Rim) tiefer ersetzte → zurück auf die
+  Ursprungs-Formeln (ambient 0.18+0.42·s · hemi 0.25+0.35·s — Mittag per Konstruktion
+  unverändert; V10.0-j.i-Lehre). A/B mit dem Auge: der Boden dämpft nachts. Feintuning → S.
+  (Der B2-Mantel erbt den Sync über das geteilte Toon-Material — Kandidat 5 sauber.)
 - ✓ **B8 — STRUKTUR-LICHT-HARMONIE (V18.104):** die Struktur-LUT mit Schatten-Boden 0.25
   (`_ensureStructureGradient` — folgt dem Cel-Regler in-place mit, nur das Dunkel-Band hebt sich,
   kein Material-Lügen) + das warme RIM-Licht (Fresnel-Saum vec3(1,0.72,0.45) im Aerial-Output-
@@ -445,7 +459,8 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   (flach·hoch·un-gepaart → flattert). Mühle dreht, Banner flattern.
 - ✓ **C3 — Rüstung sichtbar (V18.104):** `_tickWornArmorVisual` — getragene armor als Kind-Gruppe
   der Soul-Group (derselbe `_buildFromBlueprint`-Pfad), auf ~60 % Körperhöhe skaliert, lazy nur
-  bei Wechsel. Größe→HP-Formel bleibt S-Entscheid (offen).
+  bei Wechsel. Größe→HP-Formel bleibt S-Entscheid (offen). **S-BEFUND (10.06. abend): die
+  getragene Rüstung sitzt auf KOPF-Position — der Fix ist C7 (Attachment-Punkte).**
 - **C4 — Feel-Pass** [S]: Motion-Amplituden/Frequenzen + S9-Hand-Optik-Sign-off in EINEM
   Browser-Durchgang (jetzt inkl. C1-Gelenke + C6-Haut + B8-Rim).
 - **C5 — STEUERUNGS-TIEFE:** ✓ (a) Bewegungs-FEEL (V18.104): Beschleunigungs-/Brems-Kurven
@@ -459,6 +474,25 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Gelenk-Bewegung gratis), EIN additives NodeMaterial pro Spieler (Uniforms hue/intensity =
   `_auraHueOut`-Quelle, atmet mit Puls), Geometrie GETEILT (scale 1.05); der Glow-Sprite auf
   30 % gedimmt (ferner Schimmer statt Lampe). Look → S-Liste.
+- ✓ **C7 — GRIFF-/SITZ-/TRAGE-PUNKTE GEBAUT (V18.110; Punkt-Optik/Feel → S)** [H→A→S]:
+  die EINE Heilung für DREI Symptome (die getragene Rüstung sitzt auf KOPF-Position [C3-Befund] ·
+  wo GREIFT die Hand das Schwert/die Waffe · wo SITZT der Charakter im Fahrzeug/auf dem
+  Reittier): die bestehenden `connections` werden synergetisch zu ATTACHMENT-PUNKTEN
+  weiterentwickelt — die Anker sind seit C1 (V18.104) schon GELENKE, jetzt auch GRIFF/SITZ/TRAGE
+  als Punkt-Typen (per Resonanz aus Form+Lage, dieselbe argmax-Sprache wie die Gelenk-Typen;
+  die aktuellen Benennungen sind unintuitiv, das FUNDAMENT passt — Schöpfer-Wort). Dazu:
+  ein ENTWURFSPLAN Auto/Reittier als BIBLIOTHEKS-SAAT (V17.72-Muster — craftbare
+  Beispiel-Baupläne mit connections als Sitz-/Rad-Punkten) + der „KÖRPER HOLEN"-Button FÄLLT:
+  Built-in-Körper liegen automatisch als Blueprints in der Bibliothek (synergetisch wie alles
+  Bestehende, kein Parallel-Knopf). **GEBAUT (V18.110):** drei attachment-Typen in
+  CONNECTION_TYPES (partB optional −1; die Prozess-Typen mit intuitiven deutschen Labels) ·
+  `_attachPointFor(bp, kind)` (explizit = Intent, sonst Emergenz: griff=Stiel · sitz=oberste
+  flache Fläche · trage=Masse-Zentrum) · DREI Konsumenten (Rüstung sitzt am TORSO [C3-Fix,
+  GEMESSEN ±0.45] · die Hand greift am Griff · der Mount liest die Sitz-Höhe) · die Saat
+  `fahrzeug_wagen` (Eisen-Räder = C1-RAD + Antrieb) + `reittier_holzross` (Quarz-Kern) — beide
+  GEMESSEN moveable, kein Spawn-Litter · `koerper_human/phoenix/dragon` automatisch als
+  builtIn-Blueprints (EINE Quelle: playerSoulDefs; Button + Handler GESCHNITTEN,
+  soulToBlueprint bleibt die freie API).
 
 ### PHASE D — Wesen + Welt LEBEN (G4 + Phase E + die gefundenen Welt-Samen)
 
@@ -475,11 +509,19 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   kehrt zurück, auch im Populations-Soll — natürlicher Umschlag) · (c) die BOND-GEBURT (Bindung
   ≥0.6 + `auraAt`-lebendig ≥0.55 → Geburt über das Soll hinaus, bis max — Bindung + lebendige
   Orte GEBÄREN Leben; selbst-limitierend via Cooldown×2 + max-Wand).
-- ✓ **D4-KERN — GEGENWEHR (V18.104, MARKIERT für den Schöpfer-Dialog):** ein überlebendes,
-  substanz-starkes Wesen schlägt im PFAD-Modus zurück (Chance ∝ dichte + chaos — der Affekt
-  KONSUMIERT; Reichweite 4 m, counter = 0.6×damage durch das bestehende damagePlayer-Modus-Gate
-  → frieden/schöpfer unberührt). Das VOLLE Phase-E-Design (Jagd · Furcht↔Triumph-Bögen ·
-  weitere damage-Quellen) bleibt der benannte S-Dialog — dies ist der kleinste ehrliche Konsument.
+- ✓ **D4-KERN — GEGENWEHR (V18.104):** ein überlebendes, substanz-starkes Wesen schlägt im
+  PFAD-Modus zurück (Chance ∝ dichte + chaos — der Affekt KONSUMIERT; Reichweite 4 m,
+  counter = 0.6×damage durch das bestehende damagePlayer-Modus-Gate → frieden/schöpfer
+  unberührt). **S-DIALOG GEFÜHRT (10.06. abend), das Design steht: MODUSABHÄNGIG +
+  SEELEN-RESONANZ** — pfad wird ERNSTER; ob und WIE ein Wesen bedroht/zurückschlägt, emergiert
+  aus seiner SEELE: TEMPERAMENT als Resonanz-Tendenz der Substanz (dichte/chaos-Wesen wehrhaft ·
+  lebendig/frieden-Wesen sanft), in DERSELBEN argmax-Resonanz-Sprache wie Werk-Rolle/Motion-Rolle
+  (`TEMPERAMENT_SIGNATURES`), KEIN globaler Schalter, KEIN Verhaltens-Import. ✓ **D4-VOLL GEBAUT
+  (V18.107):** `TEMPERAMENT_SIGNATURES` + `_creatureTemperament` (argmax auf dem ÷3-Vektor —
+  GEMESSEN: der Clamp sättigt, die V17.90-Norm diskriminiert: wesen→wehrhaft 0.84 ·
+  geist→sanft 0.42 · sprite→scheu 1.01) + `TEMPERAMENT_PROFILES`: die Gegenwehr liest
+  strike/counterMul (sanft/scheu schlagen NIE), die W3-Furcht liest fleeMul (scheu flieht
+  1.7×); SICHTBAR im Hof-moodLabel. Profile-Feintuning → S.
 - **D5 — DIE WELT ATMET (Code-Sweep-Samen):** (a) **Wetter-Polyvalenz** DEFERRED (V18.104-
   Entscheid, GEMESSEN: ≥8 binäre `weather === "rainy"`-Leser quer durch Render/Audio/Emotion —
   ein dritter Zustand braucht den eigenen Leser-Audit-Bogen, kein Phasen-Beifang); (b)
@@ -492,13 +534,18 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 - **E1 — S7-C: EIN Chat-Dispatch-Tor** [§3-Zwilling 5; H]: DEFERRED (V18.104-Entscheid: die
   Legacy-Kette trägt dutzende System-IO-Befehle — die Synonym-Migration ist ein eigener
   Audit-Bogen; das Tor-Muster steht über `_chatTryDslParse` schon vorn im Dispatch).
-- ✓ **E2 — δ wird WÄHRUNG (V18.104, Budget-Größen = MEIN Erst-Wurf → S-Review):** das
-  WIRK-BUDGET (`NEXUS_WIRK`: start 60 · max 150) — `_loopNexusUpdate` zahlt VOR jeder Evolution
-  (`_dslProgramWirkCost`: AST-Walk, spawn_blueprint = computeBuildCost-Summe×0.5 — DIESELBE
-  Substanz-Wahrheit, die der Spieler zahlt; Strukturen 10–20, Regel-Registrierung 6); reicht es
-  nicht → der Nexus RUHT (Trägheit BY CONSTRUCTION). REGENERATION aus der WERTUNG: der
-  Outcome-Finalizer zahlt (fitness−0.5)·30 zurück (bewährte Schöpfung verdient Wirk-Kraft;
-  Spam verarmt sich) + Idle-Tropf 2/5 s. §11-Modi: schöpfer = frei.
+- ✓ **E2 — δ wird WÄHRUNG (V18.104):** das WIRK-BUDGET (`NEXUS_WIRK`: start 60 · max 150) —
+  `_loopNexusUpdate` zahlt VOR jeder Evolution (`_dslProgramWirkCost`: AST-Walk,
+  spawn_blueprint = computeBuildCost-Summe×0.5 — DIESELBE Substanz-Wahrheit, die der Spieler
+  zahlt; Strukturen 10–20, Regel-Registrierung 6); reicht es nicht → der Nexus RUHT (Trägheit
+  BY CONSTRUCTION). REGENERATION aus der WERTUNG: der Outcome-Finalizer zahlt (fitness−0.5)·30
+  zurück + Idle-Tropf 2/5 s. §11-Modi: schöpfer = frei. ✓ **E2-VOLL DER REGELKREIS GEBAUT
+  (V18.108, S-Review):** `_emotionBalanceFactor()` — der EINE Balance-Leser (via
+  `_emotionState`, 1=Gleichgewicht, 0=gekippt; chaos/sorrow voll, hebende halb), VIER
+  Konsumenten in negativer Rückkopplung (V17.44): Outcome-Regen ×(0.4+0.6b) [nur der positive
+  Zufluss] · Idle-Tropf ×(0.4+0.6b) · Kosten ×(2−b) · die PROAKTIVEN STIMMEN (GEMESSEN: der
+  Toggle stand DANEBEN — fester Takt, kein Emotion-Leser → die Gaps atmen jetzt ×(2−b),
+  kippend wird es still; der Toggle bleibt der harte Aus). Faktor-Größen → S-Review.
 - ✓ **E3 — Mana-Symmetrie (V18.104):** `player.mana/manaMax` (max = 40+80·magieleitung) —
   Regeneration am 5-s-Takt, schneller auf magie-leitendem FELD (`auraAt` — das Feld speist);
   VERBRAUCH: die gesprochene Welt-Geste (Chat→DSL) kostet im PFAD-Modus Mana ∝ Substanz
@@ -516,7 +563,12 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 - ✓ **E7 — der Spieler als PFLEGER (V18.104):** Chat-Geste „pflege (das land)" →
   `deposit_life` am Spieler-Ort (DERSELBE Op wie der Nexus — Co-Schöpfung wörtlich; im
   pfad-Modus kostet sie Mana wie jede Welt-Geste).
-- **E8 — Crafting-Schluss-Bündel**: offen (S6-B Flora · S8 · Zwei-Hand [S]) — kampf-plan-Bogen.
+- **E8 — Crafting-Schluss-Bündel**: ✓ **ZWEI-HAND GEBAUT (V18.109, S-Entscheid: wie
+  Minecraft):** `equipped.offhand` + `swapHands()` (über den EINEN equipHeld-Pfad, dup-sicher)
+  + Key G (rebindable, Zähl-Tests 11→12 gewandert) + der Off-Hand-Slot NEBEN der Hotbar (eine
+  Render-Quelle, beide Mounts; Highlight auf data-slot-Wahrheit) + sichtbar am LINKEN Arm
+  (EIN buildHand-Helper) + Snapshot/Restore; faltet NICHT in die Stats (Bereitschafts-Slot).
+  Weiter offen: S6-B Flora · S8 — kampf-plan-Bogen.
 
 ### PHASE F — das ULTIVERSUM (G2 + G3 + W18 + der soziale Bogen)
 
@@ -576,15 +628,26 @@ schlanken (UI-Politur, jederzeit einschiebbar).
    ✓ B2-Mantel (mein Auge + Schöpfer-Screenshot: gefüllter Horizont) — NEU aus dem Durchgang:
    B9 Terrain-Nachtlicht (messen) · A4-Mündungs-Synergie S-bestätigt. WEITER OFFEN:
    B8-Rim/LUT-Feintuning · C1/C2-Gelenk-Motion-Feel · C5-Bewegungs-Feel (k-Werte) ·
-   D4-DESIGN-DIALOG (Gegenwehr — das volle Phase-E) · E2-BUDGET-GRÖSSEN (NEXUS_WIRK 60/150,
-   mein Erst-Wurf) · E3-Mana-HUD** · der Stand V18.105 ist GEMERGT (Schöpfer 10.06.:
-   „mergen mit diesem Stand, offene Punkte vermerken").
+   E3-Mana-HUD** · der Stand V18.105 ist GEMERGT (Schöpfer 10.06.: „mergen mit diesem
+   Stand, offene Punkte vermerken"). **V18.106–.111 (die sechs Entscheide gebaut) — NEUE
+   S-PUNKTE: B3-Bake-Look (Terrain-Licht jetzt eine Normale — Schatten/Hemisphere im
+   Browser prüfen) · B9-Nacht-Look (Boden dämpft nachts — Feintuning der zwei Floors) ·
+   D4-Temperament-PROFILE (strike/fleeMul-Größen = mein Erst-Wurf) · E2-REGELKREIS-Faktoren
+   (0.4+0.6b / 2−b = mein Erst-Wurf; die Stimmen-Gaps fühlen) · E8-Off-Hand-Feel (Slot-Optik
+   + G-Tausch + linke-Hand-Optik) · C7-Punkt-Optik (Rüstung am Torso · Griff in der Hand ·
+   Sitz auf Wagen/Holzross — die zwei Saaten im Browser reiten!) · A4-FALL-LOOK (der
+   Steil-Split-Vorhang + das schäumende Wildwasser am echten Wasserfall — headless bewies
+   die Geometrie [137→0 Zacken], das Auge das Gefühl).**
 4. **Die Wände (nie verhandeln):** Determinismus (Worker bit-identisch; eine Skala-Optimierung
    ändert NIE die Gitter-Phase) · die Narben (roadmap §5) nicht wiederholen · die Samen (roadmap
    §7 + §5-D5c hier) nie blind schneiden · Multi-Agent-Funde SELBST verifizieren (zwei
    Agenten-Fehler pro Sweep sind NORMAL — der Fischer greppt nach).
-5. **Schöpfer-Entscheide stehen MARKIERT** (B3-Flatten · D4-Design · E2-Budget · E8-Zwei-Hand ·
-   A4-Wasserfall · B7/U6) — sie blockieren NUR ihre Welle, nie die Phase.
+5. **Schöpfer-Entscheide (10.06. abend ALLE GEFALLEN, in §5 eingetragen):** B3-Flatten (BACKEN,
+   der Slider weicht) · D4-Design (Temperament-Resonanz, modusabhängig) · E2 (echter REGELKREIS
+   statt festem Budget, liest die Spieler-Emotion) · E8-Zwei-Hand (JA, Minecraft-Modell) ·
+   A4-Wasserfall (Plane FÄLLT, CA-Wildwasser formen + eigene Vertikal-Form) · C7 (Griff/Sitz/
+   Trage-Punkte aus connections + Auto/Reittier-Saat + „Körper holen"-Button fällt). Offen
+   bleibt nur B7/U6.
 
 ---
 

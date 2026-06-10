@@ -324,7 +324,7 @@ class AnazhRealm {
                 // V17.109 — Schöpfer-getunte Basis-Werte (Browser-Sign-off 04.06.):
                 // 2.5D-Lichtung 100 % killt die Facetten, der Rest sein bevorzugter Look.
                 celLevels: 6,
-                terrainFlatten: 1.0,
+                // (terrainFlatten V18.106 gebacken → TERRAIN_NORMAL_FLATTEN)
                 cavityAO: 0.35,
                 edgeSharp: 0.46,
                 triplanar: 2.0,
@@ -341,7 +341,7 @@ class AnazhRealm {
                 waterDepthRange: 10.9, // Meter bis volle Tiefen-Farbe (gegen aDepth); kleiner = schneller tief
                 waterDepthFoam: 5.0, // V18.14 M1 — Schaum nur bis dieser ECHTEN Tiefe (m); kleiner = weniger Fluss-Schaum
                 waterLakeRipple: 0.65, // V18.17 Phase 3 — See-Wellen-Floor SICHTBAR (0 = flach, 1 = wie Ozean)
-                waterfallSteep: 4.0, // V18.14 M3 — Wasserfall-Plane nur ab dieser Terrain-Steilheit (Drop/Lauf); grösser = nur echte Wände
+                // (waterfallSteep V18.111 gefallen — die A4-Plane ist geschnitten)
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
                 shadowRange: 300, // Frustum-Halbbreite m (kleiner = schärfer)
@@ -863,7 +863,11 @@ class AnazhRealm {
                 // Rüstung-Beitrag = blueprint.compoundTags × armorWeight.
                 // Wirkungen fließen in computePlayerStats vor den Boosts.
                 // V17.52 Kampf B — der weapon-Slot ergänzt tool/armor.
-                equipped: { held: null, armor: null },
+                // V18.109 — E8 (S-Entscheid 10.06.): die OFF-HAND wie Minecraft —
+                // ein echter Bereitschafts-Slot neben der Hotbar (Tausch-Key G,
+                // sichtbar am linken Arm). Sie faltet NICHT in die Stats (kein
+                // Doppel-Wield-Buff — die Haupt-Hand wirkt, die Off-Hand ruht).
+                equipped: { held: null, offhand: null, armor: null },
                 // Welle 6.C1 — Hylomorphismus-Inventar. 27 Slots (3 Reihen × 9),
                 // jeder Slot ist {blueprintName, count} oder null. Anders als
                 // Minecraft: die Slots tragen TAG-PROFILE der referenzierten
@@ -3834,11 +3838,16 @@ class AnazhRealm {
             // E2 (gigant-plan §5 — G5): BEWÄHRTE Schöpfung verdient WIRK-KRAFT
             // zurück — die Wertung (Outcome-Fitness, das δ-Substrat) wird die
             // Regeneration der Ökonomie: gut (>0.5) → Budget wächst, gekappt.
+            // V18.108 — E2-VOLL: der REGELKREIS atmet — der Zufluss skaliert mit
+            // der Spieler-Emotions-BALANCE (_emotionBalanceFactor): kippt der
+            // Spieler, fließt weniger Wirk (der Nexus wird träger, dämpft die
+            // Welt-Aktivität statt sie zu verstärken — negative Rückkopplung).
             if (fitness > 0.5) {
                 if (this.state.nexusWirk === undefined) this.state.nexusWirk = AnazhRealm.NEXUS_WIRK.start;
+                const balance = this._emotionBalanceFactor();
                 this.state.nexusWirk = Math.min(
                     AnazhRealm.NEXUS_WIRK.max,
-                    this.state.nexusWirk + (fitness - 0.5) * AnazhRealm.NEXUS_WIRK.regenPerValue
+                    this.state.nexusWirk + (fitness - 0.5) * AnazhRealm.NEXUS_WIRK.regenPerValue * (0.4 + 0.6 * balance)
                 );
             }
             const ability = (this.state.dsl.abilities || []).find((a) => a.name === entry.name);
@@ -4752,11 +4761,18 @@ class AnazhRealm {
         const pool = AnazhRealm.CREATURE_PROACTIVE_PHRASES[eventType];
         if (!pool) return false;
         // Throttle: per-Kreatur + global. Beide müssen erfüllt sein.
+        // V18.108 — E2-VOLL (der GEMESSENE Proaktiv-Befund): der Toggle stand
+        // NEBEN dem Regelkreis (fester Takt, kein Emotion-Leser — darum erlebte
+        // der Schöpfer ihn stimmungsabhängig mal störend). Jetzt atmen die Gaps
+        // mit der Balance (DERSELBE Leser wie die Nexus-Ökonomie): kippt der
+        // Spieler, werden die Stimmen stiller (Gaps bis ×2) — keine Plapper-
+        // Kaskade in einen aufgewühlten Moment. Der Toggle bleibt der harte Aus.
         const now = performance.now() / 1000;
+        const gapMul = 2 - this._emotionBalanceFactor();
         const lastSelf = creature.userData.lastProactiveSpeech || -Infinity;
-        if (now - lastSelf < AnazhRealm.CREATURE_PROACTIVE_GAP_PER_CREATURE) return false;
+        if (now - lastSelf < AnazhRealm.CREATURE_PROACTIVE_GAP_PER_CREATURE * gapMul) return false;
         const lastGlobal = this.state.lastCreatureProactiveSpeech || -Infinity;
-        if (now - lastGlobal < AnazhRealm.CREATURE_PROACTIVE_GAP_GLOBAL) return false;
+        if (now - lastGlobal < AnazhRealm.CREATURE_PROACTIVE_GAP_GLOBAL * gapMul) return false;
         // Soul-spezifische Phrasen wählen, mit default-Fallback.
         const soulName = creature.userData.soul || "default";
         const phrases = pool[soulName] || pool.default || pool.wesen || [];
@@ -8904,6 +8920,28 @@ class AnazhRealm {
         p.emotions.hope = Math.min(1, (p.emotions.hope || 0) + amt); // der Trost hebt die Hoffnung
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (pm) this._depositEmotion(pm.x, pm.z, { hope: amt }); // der Ort erinnert die Geste
+    }
+
+    // V18.108 — E2-VOLL (S-Entscheid 10.06.): der EINE Balance-Leser des
+    // Regelkreises. Liest das 6-Achsen-Substrat über `_emotionState` (DERSELBE
+    // Leser wie D1/Ich-Porträt — eine Sprache) und gibt [0..1]: 1 = ruhiges
+    // Gleichgewicht, 0 = stark gekippt (EINE Achse dominiert intensiv;
+    // chaos/sorrow kippen voll, hebende Achsen halb — auch Euphorie ist
+    // Einseitigkeit, aber keine Not). NEGATIVE Rückkopplung (V17.44): die
+    // Konsumenten DÄMPFEN ihre Welt-Aktivität, wo der Spieler kippt, statt
+    // Turbulenz in einen kippenden Moment zu pumpen. Zwei Konsumenten:
+    // (1) die Nexus-Wirk-Ökonomie (Regeneration × Kosten — _loopSelfAnalysis/
+    // Outcome-Finalizer/_loopNexusUpdate), (2) die proaktiven Kreatur-Stimmen
+    // (_creatureSpeakProactive — stiller, wenn der Spieler aufgewühlt ist;
+    // der Einstellungs-Toggle bleibt der harte Aus-Schalter).
+    _emotionBalanceFactor() {
+        const p = this.state.player;
+        const e = p && p.emotions;
+        if (!e || typeof this._emotionState !== "function") return 1;
+        const es = this._emotionState(e);
+        if (!es || !es.dominant) return 1;
+        const w = es.dominant === "chaos" || es.dominant === "sorrow" ? 1 : 0.5;
+        return Math.max(0, 1 - Math.min(1, (es.intensity || 0) * w));
     }
 
     // ### Ring 4 — anazhSymphony V1 ###
@@ -13344,6 +13382,16 @@ class AnazhRealm {
         //   SCHARNIER — sonst: der kleinere Part schwingt um den Anker (Hüfte/Schulter
         //               ECHT statt Center-Pivot).
         // Die Lage-Heuristik bleibt der Fallback ohne Verbindungen (Built-ins heute).
+        // V18.110 — C7: ATTACHMENT-Punkte (griff/sitz/trage) sind KEINE Gelenke —
+        // sie zeigen zur Außenwelt (partB=-1) und fallen hier vorab heraus.
+        // NUR bekannte attachment-Typen filtern — unbekannte Typen passieren
+        // wie eh (die C1-Gelenk-Lesung war nie typ-streng, der Test nutzt "weld").
+        if (Array.isArray(connections)) {
+            connections = connections.filter((cn) => {
+                const t = cn && AnazhRealm.CONNECTION_TYPES[cn.type];
+                return !(t && t.attachment);
+            });
+        }
         if (Array.isArray(connections) && connections.length > 0) {
             const vol = (a) => (a ? a.sx * a.sy * a.sz : 0);
             const half = (a) => (a ? (a.sx + a.sy + a.sz) / 6 : 0.2);
@@ -13553,6 +13601,38 @@ class AnazhRealm {
         return this.computeCompoundTags({ parts: soul.bodyParts });
     }
 
+    // V18.107 — D4-VOLL: das TEMPERAMENT der Seele (argmax-Resonanz der
+    // geclampten Substanz-Tags gegen TEMPERAMENT_SIGNATURES, Floor → scheu).
+    // Gecacht pro Soul (die Substanz ändert sich nur beim Seelen-Wechsel).
+    // Konsumenten: die Gegenwehr + Furcht-Dauer (damageCreature, pfad-only)
+    // + die Hof-Spec-Card (_creatureProfile — Vision-Mechanik SICHTBAR).
+    _creatureTemperament(creature) {
+        if (!creature || !creature.userData) return "scheu";
+        const soulKey = creature.userData.soul || "";
+        if (creature.userData._temperament && creature.userData._temperamentSoul === soulKey)
+            return creature.userData._temperament;
+        const raw = this.computeCreatureCompoundTags(creature) || {};
+        const tags = {};
+        // ÷3-Norm (PRODUCT_VECTOR_TAG_NORM) statt Clamp — die MAX-Aktivierung
+        // sättigt sonst (GEMESSEN: clamp → fast alles dichte=1, sprite würde
+        // „wehrhaft"); die ÷3-Skala ist die EINE Resonanz-Skala (V17.90).
+        const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM || 3;
+        for (const k of AnazhRealm.MATERIAL_TAG_KEYS) tags[k] = Math.max(0, Number(raw[k]) || 0) / norm;
+        const SIG = AnazhRealm.TEMPERAMENT_SIGNATURES;
+        let best = "scheu";
+        let bestScore = AnazhRealm.TEMPERAMENT_FLOOR;
+        for (const t in SIG) {
+            const score = this._blueprintResonance(tags, SIG[t]);
+            if (score > bestScore) {
+                best = t;
+                bestScore = score;
+            }
+        }
+        creature.userData._temperament = best;
+        creature.userData._temperamentSoul = soulKey;
+        return best;
+    }
+
     // === Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ===
     //
     // Vision §1.3 fraktal vollendet: Kreaturen ≡ Spieler ≡ Architektur sind
@@ -13706,32 +13786,33 @@ class AnazhRealm {
             this._creatureCombatDeath(creature, opts.source || "unknown");
             return { ok: true, dealt, killed: true };
         }
-        // V17.58 W3 — Selbst-Verteidigung: ein ÜBERLEBENDES getroffenes Wesen FÜRCHTET sich → es flieht
-        // (kein passives Stehenbleiben mehr). Ein Furcht-Fenster (fearUntil) + die Emotion sad → der
-        // wander-Tick erzwingt die Flucht über _creatureWariness. Echtes Zurückschlagen bleibt Phase E.
-        creature.userData.fearUntil = performance.now() / 1000 + AnazhRealm.CREATURE_NATURE.fearSec;
+        // V18.107 — D4-VOLL (S-Design 10.06.): MODUSABHÄNGIG + SEELEN-RESONANZ.
+        // Ob und WIE ein überlebendes Wesen antwortet, emergiert aus seinem
+        // TEMPERAMENT (_creatureTemperament — argmax über die Seelen-Substanz):
+        // wehrhaft steht + schlägt hart zurück (flieht kurz) · wild entflammt
+        // (die Moment-Emotion chaos moduliert stark) · sanft weicht, schlägt
+        // NIE · scheu flieht LANG. pfad wird ERNSTER; frieden/schöpfer bleiben
+        // über das damagePlayer-Modus-Gate + den pfad-Check unberührt. Die
+        // W3-Furcht (fearUntil → Flucht via _creatureWariness) liest jetzt die
+        // temperament-eigene Dauer (fleeMul) — KEIN globaler Schalter.
+        const temperament = this._creatureTemperament(creature);
+        const tProf = AnazhRealm.TEMPERAMENT_PROFILES[temperament] || AnazhRealm.TEMPERAMENT_PROFILES.scheu;
+        creature.userData.fearUntil = performance.now() / 1000 + AnazhRealm.CREATURE_NATURE.fearSec * tProf.fleeMul;
         // V18.100 (G4-1) — der Treffer fühlt sich über DASSELBE Substrat wie
         // beim Spieler (ACTION_TO_EMOTION.damage → sorrow+chaos); die binäre
         // "sad"-Projektion fällt aus der Valenz, statt direkt gestempelt zu werden.
         this._feelCreatureAction(creature, "damage", 2.5);
-        // D4-KERN (gigant-plan §5 — Phase E minimal, MARKIERT für den Schöpfer-
-        // Dialog): GEGENWEHR — ein überlebendes, substanz-starkes Wesen schlägt
-        // im PFAD-Modus zurück, wenn der Angreifer in Reichweite steht (Chance
-        // ∝ dichte + chaos — der Affekt KONSUMIERT). frieden/schöpfer bleiben
-        // über das bestehende damagePlayer-Modus-Gate unberührt; das volle
-        // Phase-E-Design (Jagd · Furcht↔Triumph-Bögen) bleibt der benannte
-        // Schöpfer-Dialog — dies ist der kleinste ehrliche Affekt-Konsument.
         if (opts.fromPos && typeof this.getGameMode === "function" && this.getGameMode() === "pfad") {
-            const cTags = this.computeCreatureCompoundTags(creature) || {};
             const chaos = (creature.userData.emotions && creature.userData.emotions.chaos) || 0;
-            const strikeChance = Math.min(0.6, (cTags.dichte || 0) * 0.35 + chaos * 0.4);
+            const strikeChance = Math.min(tProf.strikeCap, tProf.strike + chaos * tProf.strikeChaos);
             const pmPos = this.state.playerMesh && this.state.playerMesh.position;
             if (
+                strikeChance > 0 &&
                 pmPos &&
                 Math.hypot(pmPos.x - creature.position.x, pmPos.z - creature.position.z) < 4 &&
                 Math.random() < strikeChance
             ) {
-                const counter = Math.max(2, (stats.damage || 4) * 0.6);
+                const counter = Math.max(2, (stats.damage || 4) * tProf.counterMul);
                 this.damagePlayer(counter, "gegenwehr");
                 this.log(`${creature.userData.name || "Ein Wesen"} wehrt sich!`, "INFO");
             }
@@ -19565,25 +19646,26 @@ class AnazhRealm {
     // (Edge-Vertices nach Crop+Smooth) — selten, aber sicher.
     _voxelGradientNormals(positions, sample, step, preGrid = null) {
         const normals = new Float32Array(positions.length);
-        // Welle D — die Trapeze. GEMESSEN (diag-normals): die Normalen sind
-        // sauber (0 % degeneriert), F verzerrt sie NICHT — die Trapeze sind die
-        // Cel-Quantisierung, die entlang der HOCH-frequenten Normalen-Variation
-        // fragmentiert (Schöpfer: „in 2.5D liefen die Cel-Stufen kontrastreich
-        // über GROSSE Regionen, seit 3D mit Überhängen brechen sie in Trapeze").
-        // In 2.5D zeigten alle Normalen nach oben → grosse Cel-Regionen; die 3D-
-        // Density-Gradienten-Normalen folgen der ±12-m-Roughness → fragmentiert.
-        // V17.103 — ROLLBACK des eps-Experiments (V17.100 0.5→1.5, V17.102 1.5→6).
-        // GEMESSEN am Browser (Schöpfer-Augen): KEINE der eps-Stufen änderte die
-        // Trapeze sichtbar — der Normal-eps ist NICHT der Trapeze-Hebel (die Wurzel
-        // ist die facettierte GEOMETRIE, die die Cel-Bänder bricht; sie heilt die
-        // Laplacian-Geometrie-Glättung, nicht der Normal-eps). UND eps=6 hat über
-        // `shadow.normalBias` den Schatten verschlechtert (die makro-geglättete
-        // Normale divergiert von der bumpigen Geometrie → der normalBias-Offset
-        // landet falsch → Schatten-Swimming beim Laufen). Also zurück auf 1.5 (der
-        // schlanke Wert, der die Mikro-Roughness leicht dämpft ohne den Schatten zu
-        // brechen). PERMANENTE LEHRE: ein pixel-blinder „Messwert" (−39 % lokale
-        // Licht-Δ) ist KEIN Beweis fürs FEEL — die Augen des Schöpfers sind die
-        // Wahrheit; wenn drei eps-Stufen nichts ändern, ist eps der falsche Hebel.
+        // V18.106 — B3: die 2.5D-Lichtung ist in die GEOMETRIE GEBACKEN
+        // (S-Entscheid 10.06.: „das Alte kann weichen" — der terrainFlatten-
+        // Slider + der normalNode-Override fallen). Die Geometrie-Normale wird
+        // mit TERRAIN_NORMAL_FLATTEN zur Welt-Up-Achse geblendet → AO (fwidth),
+        // Schatten-normalBias, Hemisphere UND Diffus lesen jetzt EINE Normale
+        // (G6 vollendet; heilt den V17.108-Riss „normalNode erreicht nur den
+        // Diffus"). Beim settled Wert 1.0 ist die Normale konstant (0,1,0) →
+        // der teure Gradienten-Pass (6 Lookups/Vertex) entfällt ganz.
+        // Worker-Mirror: gradientNormals in voxel-worker.js — BEIDE ändern.
+        // (Historie: eps-Experimente V17.100–.103 — eps war nie der Hebel,
+        // die Shading-Normale war es; diag-facets/diag-cel-eps messen die Wahrheit.)
+        const flatten = AnazhRealm.TERRAIN_NORMAL_FLATTEN;
+        if (flatten >= 1) {
+            for (let v = 0; v < positions.length; v += 3) {
+                normals[v] = 0;
+                normals[v + 1] = 1;
+                normals[v + 2] = 0;
+            }
+            return normals;
+        }
         const eps = step * 1.5;
         // Schneller Trilinear-Sampler aus dem Grid. Wenn preGrid==null oder
         // Sample-Punkt out-of-bounds → fallback auf sample(x,y,z).
@@ -19649,9 +19731,15 @@ class AnazhRealm {
                 normals[v + 1] = 1;
                 normals[v + 2] = 0;
             } else {
-                normals[v] = -gx / len;
-                normals[v + 1] = -gy / len;
-                normals[v + 2] = -gz / len;
+                // B3-Bake: normalize(mix(−∇d/|∇d|, up, flatten)) — bit-identisch
+                // im Worker-Mirror (dieselben Ops, dieselbe Reihenfolge).
+                const nx = (-gx / len) * (1 - flatten);
+                const ny = (-gy / len) * (1 - flatten) + flatten;
+                const nz = (-gz / len) * (1 - flatten);
+                const nl = Math.hypot(nx, ny, nz) || 1;
+                normals[v] = nx / nl;
+                normals[v + 1] = ny / nl;
+                normals[v + 2] = nz / nl;
             }
         }
         return normals;
@@ -20048,6 +20136,17 @@ class AnazhRealm {
     // getriebene Teil) sind der Cel-Levels-Slider + der Browser-Sign-off.
     static get TERRAIN_AO() {
         return Object.freeze({ strength: 0.4, cap: 0.18 });
+    }
+
+    // V18.106 — B3: der GEBACKENE 2.5D-Lichtungs-Wert (S-Entscheid 10.06.:
+    // der settled Slider-Stand 1.0 [„100 % killt die Facetten", Sign-off
+    // 04.06.] wandert in die Geometrie, der Slider weicht). Konsumiert von
+    // `_voxelGradientNormals` (main) + `gradientNormals` (voxel-worker.js,
+    // dort als lokale Konstante — beim Ändern BEIDE, Determinismus-Wand).
+    // 1.0 = Normale konstant up (2.5D-Lichtung, kein Gradienten-Pass);
+    // <1 = mix(Gradient, up, Wert) — der eine künftige S-Tuning-Hebel.
+    static get TERRAIN_NORMAL_FLATTEN() {
+        return 1.0;
     }
 
     // Welle J — die EINE geteilte Aerial-Perspektive (`_applyAerialOutput`), die
@@ -21235,6 +21334,27 @@ class AnazhRealm {
         };
         // Quad-Emission: eine Zelle (i,k) rendert, wenn IHRE Spalte nass ist ODER
         // ein 4-Nachbar (→ der 1-Zell-Anker-Ring, dessen Außen-Vertices eintauchen).
+        // V18.111 — A4 (S-Befund „dreieckige offene Zacken am Boden — das Wasser
+        // wird bei vertikalem Fall nur GESTRECKT"): der STEIL-SPLIT. Ein Quad,
+        // dessen Ecken mehr als VERT_SPLIT (3·step) vertikal überspannen, wird
+        // NICHT als gestreckte Schräge gerendert (GEMESSEN diag-waterfall-zacken:
+        // 137 Dreiecke > 14 m, max 28.8 m über einem 30-m-Fall), sondern in die
+        // EIGENE Vertikal-Form zerlegt: das DECK läuft horizontal bis zur
+        // Fall-Kante (Lippe), ein VERTIKALER VORHANG fällt dort senkrecht auf
+        // die tiefen Vertices (wasserdicht an beide Sheets angebunden). Der
+        // Vorhang trägt aSlope-MAXIMUM → das CA-WILDWASSER (V18.94) schäumt den
+        // Fall weiss — der Wasserfall-Look entsteht aus den ZELLEN, an der per
+        // Konstruktion richtigen Stelle (die geschnittene Plane brauchte Raten).
+        const VERT_SPLIT = step * 3;
+        const dupVert = (srcId, nx, ny, nz, slopeOverride) => {
+            const id = positions.length / 3;
+            positions.push(nx, ny, nz);
+            aWave.push(aWave[srcId]);
+            aDepth.push(aDepth[srcId]);
+            aSlope.push(slopeOverride !== undefined ? slopeOverride : aSlope[srcId]);
+            aFlow.push(aFlow[srcId * 2], aFlow[srcId * 2 + 1]);
+            return id;
+        };
         for (let k = 0; k < dim; k++) {
             for (let i = 0; i < dim; i++) {
                 if (!(colWet(i, k) || colWet(i - 1, k) || colWet(i + 1, k) || colWet(i, k - 1) || colWet(i, k + 1)))
@@ -21243,8 +21363,70 @@ class AnazhRealm {
                 const v10 = addVert(i + 1, k);
                 const v01 = addVert(i, k + 1);
                 const v11 = addVert(i + 1, k + 1);
-                // Wicklung → -Y-Normale (BackSide-Oberseite), wie Fläche + Iso.
-                indices.push(v00, v10, v01, v11, v01, v10);
+                const y00 = positions[v00 * 3 + 1];
+                const y10 = positions[v10 * 3 + 1];
+                const y01 = positions[v01 * 3 + 1];
+                const y11 = positions[v11 * 3 + 1];
+                const hi = Math.max(y00, y10, y01, y11);
+                const lo = Math.min(y00, y10, y01, y11);
+                if (hi - lo <= VERT_SPLIT) {
+                    // Wicklung → -Y-Normale (BackSide-Oberseite), wie Fläche + Iso.
+                    indices.push(v00, v10, v01, v11, v01, v10);
+                    continue;
+                }
+                // dominante Fall-Achse: X (links↔rechts) oder Z (vorn↔hinten).
+                const dX = Math.abs((y00 + y01) / 2 - (y10 + y11) / 2);
+                const dZ = Math.abs((y00 + y10) / 2 - (y01 + y11) / 2);
+                // hiA/hiB = die hohe Kante, loA/loB = die tiefe (A/B = die zwei
+                // Vertices der jeweiligen Kante, konsistent gepaart).
+                let hiA, hiB, loA, loB;
+                if (dX >= dZ) {
+                    if ((y00 + y01) / 2 >= (y10 + y11) / 2) {
+                        hiA = v00;
+                        hiB = v01;
+                        loA = v10;
+                        loB = v11;
+                    } else {
+                        hiA = v10;
+                        hiB = v11;
+                        loA = v00;
+                        loB = v01;
+                    }
+                } else if ((y00 + y10) / 2 >= (y01 + y11) / 2) {
+                    hiA = v00;
+                    hiB = v10;
+                    loA = v01;
+                    loB = v11;
+                } else {
+                    hiA = v01;
+                    hiB = v11;
+                    loA = v00;
+                    loB = v10;
+                }
+                const lipY = (positions[hiA * 3 + 1] + positions[hiB * 3 + 1]) / 2;
+                // DECK: von der hohen Kante horizontal bis ÜBER die tiefen
+                // Vertices (deren XZ), auf Lippen-Höhe — das Wasser „wächst
+                // horizontal" bis zur Kante. WICKLUNG: exakt die Original-Quad-
+                // Konvention (v00,v10,v01 / v11,v01,v10 → -Y-Normale, BackSide-
+                // Oberseite) — die tiefen Ecken sind durch ihre Lippen-Dups
+                // ersetzt (der erste Wurf wickelte hiA/hiB-frei → ny>0-Decks,
+                // vom V18.4-W1-Test GEFANGEN).
+                const dA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2]);
+                const dB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2]);
+                const rep = (v) => (v === loA ? dA : v === loB ? dB : v);
+                indices.push(rep(v00), rep(v10), rep(v01), rep(v11), rep(v01), rep(v10));
+                // VORHANG: senkrecht von der Lippe auf die tiefen Original-
+                // Vertices (teilt deren Position → wasserdicht ans untere Sheet).
+                // aSlope = 4 (Cap) → der Shader schäumt den Fall weiss.
+                const cA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2], 4);
+                const cB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2], 4);
+                const fA = dupVert(loA, positions[loA * 3], positions[loA * 3 + 1], positions[loA * 3 + 2], 4);
+                const fB = dupVert(loB, positions[loB * 3], positions[loB * 3 + 1], positions[loB * 3 + 2], 4);
+                // beide Wicklungen (der Fall ist von beiden Seiten sichtbar —
+                // ein Vorhang hat keine „Unterseite", die der BackSide-Cull
+                // verstecken müsste; zwei Dreieck-Paare = double-faced).
+                indices.push(cA, fA, cB, fB, cB, fA);
+                indices.push(cB, fB, cA, fA, cA, fB);
             }
         }
         if (indices.length === 0) {
@@ -21338,21 +21520,8 @@ class AnazhRealm {
                     ? this.state.atmosphere.rimStrength
                     : 0.16
             ),
-            // V17.107 — die 2.5D-LICHTUNG: wie stark die Terrain-SHADING-Normale
-            // zur Welt-Up-Achse geblendet wird (0 = volle 3D-Facetten, 1 = flach
-            // wie 2.5D). GEMESSEN (diag-facets): die Surface-Nets-Normalen haben
-            // dot(N,Sonne) STD 0.333 bimodal → die directional Sonne malt zwei
-            // Helligkeits-Flächen auf die EINE Albedo (die „Trapeze"); Flatten
-            // senkt die STD (0.5→0.24, 0.8→0.076) → grosse Cel-Regionen wie 2.5D.
-            // NUR Shading (Render-only), NICHT die Geometrie/Schatten. Live-tunbar:
-            //   anazhRealm.state.atmoUniforms.terrainFlatten.value = 0.6
-            // ODER per Slider „2.5D-Lichtung" (Einstellungen). Liest den
-            // persistierten Wert (V17.109-Slider), sonst Default 0.5.
-            terrainFlatten: TSL.uniform(
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainFlatten)
-                    ? this.state.atmosphere.terrainFlatten
-                    : 1.0
-            ),
+            // (V18.106 — B3: das terrainFlatten-Uniform ist GEFALLEN — die
+            // 2.5D-Lichtung ist in die Geometrie gebacken, TERRAIN_NORMAL_FLATTEN.)
             // WELLE J4-DEBUG — Browser-Isolations-Regler (default 1 = unverändert):
             // `aoScale`=0 schaltet die Kavitäts-AO ab (der `fwidth`-Term, der jede
             // Surface-Nets-Facetten-Kante als Linie zeichnet — mein Haupt-Verdacht
@@ -21595,32 +21764,11 @@ class AnazhRealm {
             this._applyAerialOutput(mat, { microTexture: isFlatStructure, rim: isFlatStructure });
         }
 
-        // V17.107 — die 2.5D-LICHTUNG: die Terrain-SHADING-Normale zur Welt-Up-Achse
-        // blenden. GEMESSEN (diag-facets) am echten Stein-Hang: die Surface-Nets-
-        // Gradient-Normalen haben dot(N,Sonne) STD 0.333 mit BIMODALER Verteilung
-        // (grosser Dunkel-Cluster bei dot≈0 + Hell-Cluster bei dot≈1) → die
-        // directional Sonne malt ZWEI Helligkeits-Flächen auf die EINE Stein-Albedo
-        // = die „Trapeze"/Rauten, die der Schöpfer jagt (kein Albedo-Bug — eine
-        // Farbe, zwei Licht-Winkel; abends dominiert Ambient → verschmelzen). Der
-        // Schöpfer-Befund: „in 2.5D liefen die Cel-Stufen über GROSSE Regionen, seit
-        // 3D brechen sie in Trapeze". Heilung: die LICHTUNGS-Normale (nicht die
-        // Geometrie, nicht die Schatten-Map) Richtung oben blenden → die hochfrequente
-        // Facetten-Variation kollabiert (STD 0.333 → 0.24 @0.5 → 0.076 @0.8), grosse
-        // licht-reaktive Regionen wie in 2.5D. NUR Terrain/Inseln (vertexColors); die
-        // Strukturen/Bäume haben saubere Design-Geometrie. Render-only (kein Worker/
-        // Determinismus/Geometrie-Bake → KEIN eps-Schatten-Konflikt, V17.103); live-
-        // tunbar via `atmoUniforms.terrainFlatten`. try/catch + Marker (V17.12-Lehre).
         if (opts.vertexColors) {
-            try {
-                const _Tn = THREE.TSL;
-                const _aun = this.state.atmoUniforms;
-                if (_Tn && _Tn.normalWorld && _Tn.normalize && _Tn.mix && _Tn.vec3 && _aun && _aun.terrainFlatten) {
-                    const _up = _Tn.vec3(0.0, 1.0, 0.0);
-                    mat.normalNode = _Tn.normalize(_Tn.mix(_Tn.normalWorld, _up, _aun.terrainFlatten));
-                }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__terrainNormalError = String((_e && _e.message) || _e);
-            }
+            // V18.106 — B3: der V17.107-normalNode-Override ist GEFALLEN — die
+            // 2.5D-Lichtung ist in die GEOMETRIE gebacken (_voxelGradientNormals +
+            // Worker-Mirror, TERRAIN_NORMAL_FLATTEN). Diffus/AO/Schatten-normalBias/
+            // Hemisphere lesen jetzt per Konstruktion EINE Normale (G6 vollendet).
             // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): die Boundary-Vertices eines
             // feinen Chunks an einer Cross-LOD-Grenze auf die GROBE Nachbar-Oberfläche ziehen
             // (`_applyCrossLodGeomorph` setzt aMorphTarget = nächster grober Boundary-Vertex,
@@ -21686,29 +21834,13 @@ class AnazhRealm {
                 // Konkavitaeten (Edge-Tint a la Genshin/BotW). Staerke 1.6 /
                 // Cap 0.45 browser-justierbar.
                 if (_T.fwidth && _T.normalWorld) {
-                    // V17.108 — die Kavitäts-AO mit der V17.107-2.5D-Lichtung KONSISTENT.
-                    // Schöpfer-Befund nach V17.107: „je nach Blickrichtung taucht ein
-                    // Schattenfragment auf, das dieses Muster in dunkel wiedergibt, das
-                    // vorhin im Licht war". Wurzel: ich flattete nur die DIFFUS-Normale
-                    // (normalNode), aber die AO maß weiter `fwidth(normalWorld)` = die
-                    // un-geflattete GEOMETRIE-Normale → sie zeichnete die Facetten-Kanten
-                    // als VIEW-ABHÄNGIGE (`fwidth` = screen-space → „je nach Blickrichtung")
-                    // dunkle Linien nach, die nach dem Diffus-Flatten durchschlugen.
-                    // Heilung: die AO liest DIESELBE geflattete Lichtungs-Normale wie der
-                    // Diffus → die Facetten-Kanten kollabieren mit dem Flatten
-                    // (`fwidth(mix(N,up,tf))` → (1−tf)·`fwidth(N)`), ein Hauch Kontakt-
-                    // Schatten in echten Mulden bleibt. Live-tunbar via terrainFlatten.
-                    const _aoN =
-                        this.state.atmoUniforms &&
-                        this.state.atmoUniforms.terrainFlatten &&
-                        _T.normalize &&
-                        _T.mix &&
-                        _T.vec3
-                            ? _T.normalize(
-                                  _T.mix(_T.normalWorld, _T.vec3(0.0, 1.0, 0.0), this.state.atmoUniforms.terrainFlatten)
-                              )
-                            : _T.normalWorld;
-                    const _curv = _T.fwidth(_aoN).length().div(_T.fwidth(_wp).length().add(0.0001));
+                    // V18.106 — B3: die AO liest die GEOMETRIE-Normale direkt — sie IST
+                    // jetzt die gebackene Lichtungs-Normale (TERRAIN_NORMAL_FLATTEN in
+                    // _voxelGradientNormals). Der V17.108-Shader-Mix fällt: Konsistenz
+                    // per Konstruktion, nicht per Doppel-Formel. (Beim settled Wert 1.0
+                    // ist fwidth(up)=0 → die AO ruht am Terrain — exakt der Live-Stand
+                    // vor dem Bake; sie erwacht, wenn der Bake-Wert je <1 geht.)
+                    const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
                     // V17.14 - weiter gedämpft (1.0/0.3 → 0.6/0.18): der Tag-Rest
                     // der „Treppenstufen" (Schöpfer-Audit) ist die `fwidth(normal
                     // World)`-AO, die JEDE Surface-Nets-Facetten-Kante als Linie
@@ -24062,37 +24194,13 @@ class AnazhRealm {
         if (!hydro || !hydro.ready) return;
         this._disposeHydrosphereMeshes(); // idempotenter Rebuild
         const meshes = [];
-        // V9.75 (Welle C.4+5) — die einzige Ausnahme: Wasserfälle als
-        // vertikale Planes (ein Höhenfeld kann nichts Vertikales tragen).
-        // Ozean + Seen + Flüsse leben jetzt im Iso-Surface-Mesh
-        // (`_buildVoxelChunkWaterIsoSurface`) aus dem Voxel-Cell-Feld —
-        // EIN Wasser-Mesh, naht-frei per Konstruktion. `docs/hydrosphere.md`
-        // §16.
-        const wfMat = this._ensureWaterfallMaterial();
-        if (wfMat) {
-            for (const wf of hydro.waterfalls) {
-                // V18.14 (M3) — die vertikale Plane NUR an einer ECHTEN Wand, nicht über
-                // einem Hang (gemessen `diag-water-systems`: 85 % der „Wasserfälle" sind
-                // Hänge, Steilheit median 0.36 → die Plane schwebt = das Artefakt „zu hoch").
-                // Hang-Fälle trägt die Fluss-Fläche selbst (steiles `L`-Gefälle = schnelle
-                // Strömung). Steilheit = Drop / horizontaler Lauf des echten Terrain-Abfalls.
-                if (!this._waterfallIsRealWall(wf)) continue;
-                // V9.63 (Cleanup für Welle A): zwei Meshes pro Wasserfall.
-                //   (1) Plane = vertikaler Strahl (V9.60-d.3 mit See-Spiegel-
-                //       Verbindung)
-                //   (2) Pool = Aufprall-Foam + Erosion-Topf (V9.60-d.1+d.4)
-                const m = this._buildHydroWaterfall(wf, wfMat);
-                if (m) {
-                    this.state.scene.add(m);
-                    meshes.push(m);
-                }
-                const pool = this._buildHydroWaterfallPool(wf);
-                if (pool) {
-                    this.state.scene.add(pool);
-                    meshes.push(pool);
-                }
-            }
-        }
+        // V18.111 — A4 (S-ENTSCHEID 10.06.): die WASSERFALL-PLANE (+ ihr
+        // Aufprall-Pool) ist GESCHNITTEN — „sehr schwer korrekt zu setzen";
+        // steile Läufe trägt das CA-WILDWASSER (aSlope-Schaum, V18.94) auf der
+        // Wasser-Fläche selbst + die A4-Steilkanten-Form im Zell-Sheet. Das
+        // abwärts-fließende `_ensureWaterfallMaterial` BLEIBT als markierte
+        // Saat für die kommende EIGENE Vertikal-Form (S-Befund: vertikales
+        // Wasser braucht eigene Geometrie, nicht das gestreckte Höhenfeld).
         this.state.hydrosphereMeshes = meshes;
         // V9.75 — schon gestreamte Voxel-Chunks bekommen ihr Iso-Mesh neu
         // gebaut, damit Chunks aus der Pre-Hydrosphäre-Phase (vor dem Atlas)
@@ -24131,7 +24239,10 @@ class AnazhRealm {
                 }
             }
         }
-        this.log(`V9.75: Hydrosphäre gerendert — Iso-Wasser + ${hydro.waterfalls.length} Wasserfall-Planes`, "INFO");
+        this.log(
+            `V9.75: Hydrosphäre gerendert — Iso-Wasser (${hydro.waterfalls.length} Fall-Läufe im CA-Wildwasser)`,
+            "INFO"
+        );
     }
 
     // Räumt alle gerenderten Hydrosphären-Meshes (Geometrie disposen, aus der
@@ -24272,125 +24383,6 @@ class AnazhRealm {
             }
         }
         return base;
-    }
-
-    // Eine Wasserfall-Plane: die V9.43-a-Geometrie + das geteilte
-    // `_ensureWaterfallMaterial` — wiederverwendet, nur die Spawn-Quelle ist
-    // jetzt das Drainage-Netz (`hydro.waterfalls`) statt per-Chunk-Zufall.
-    // V18.14 (M3) — ein Wasserfall ist nur eine vertikale PLANE wert, wenn das Terrain
-    // dort WIRKLICH steil abfällt (eine Wand). Steilheit = Drop / horizontaler Lauf, bis
-    // das Terrain um den Drop gefallen ist. < `waterfallSteep` = ein Hang → die Fluss-
-    // Fläche trägt ihn als schnelle Strömung (keine schwebende Plane). Browser-Slider.
-    // GEMESSEN (`diag-water-systems`): 85 % der extrahierten „Fälle" sind Hänge (0.36).
-    _waterfallIsRealWall(wf) {
-        const dropH = (wf.topY || 0) - (wf.bottomY || 0);
-        if (dropH < 2) return false;
-        const thr =
-            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterfallSteep)
-                ? this.state.atmosphere.waterfallSteep
-                : 1.0;
-        let fx = wf.flowX || 0;
-        let fz = wf.flowZ || 0;
-        const fm = Math.hypot(fx, fz) || 1;
-        fx /= fm;
-        fz /= fm;
-        const y0 = this._voxelSurfaceY(wf.x, wf.z);
-        if (y0 === null || !Number.isFinite(y0)) return true; // unklar → behalten
-        let run = 40;
-        for (let d = 2; d <= 40; d += 2) {
-            const yy = this._voxelSurfaceY(wf.x + fx * d, wf.z + fz * d);
-            if (yy === null || !Number.isFinite(yy)) continue;
-            if (y0 - yy >= dropH * 0.8) {
-                run = d;
-                break;
-            }
-        }
-        return dropH / run >= thr;
-    }
-
-    // Vertikale Plane an der Fluss-Klippen-Kreuzung, gedreht so dass die
-    // Normale (+z) den Sturz hinab zeigt (die Gefälle-Tangente).
-    _buildHydroWaterfall(wf, mat) {
-        // V9.60-d.3 — See-Spiegel-Verbindung: wenn der See-Spiegel an der
-        // Wasserfall-Stelle höher liegt als wf.topY (das Voxel-Bett), reicht
-        // die Plane bis zum See-Spiegel hoch. Heilt den Riss zwischen See-
-        // Wasserfläche und Wasserfall-Plane-Top. Witcher 3 + NMS machen das
-        // genauso — Wasser muss optisch verbunden sein.
-        // V18.15 (Phase 4) — Höhe/Position aus dem LOKALEN Surface-Nets-Terrain, nicht dem
-        // 16-m-Drainage-Raster (`wf.topY/bottomY`), das die Plane schweben/zu hoch ragen
-        // liess. Lippe = lokales Terrain am Fall-Punkt (mit dem See-Spiegel verbunden,
-        // V9.60-d.3); Basis = lokales Terrain ein Stück STROMAB; das Zentrum liegt dazwischen.
-        const flowLen = Math.hypot(wf.flowX || 0, wf.flowZ || 0) || 1;
-        const fdx = (wf.flowX || 0) / flowLen;
-        const fdz = (wf.flowZ || 0) / flowLen;
-        const baseDist = Math.max(4, wf.width || 3);
-        const lipLocal = this._voxelSurfaceY(wf.x, wf.z);
-        const baseLocal = this._voxelSurfaceY(wf.x + fdx * baseDist, wf.z + fdz * baseDist);
-        const waterHere = typeof this._waterLevelAt === "function" ? this._waterLevelAt(wf.x, wf.z) : wf.topY;
-        const topY = Math.max(Number.isFinite(lipLocal) ? lipLocal : wf.topY, waterHere);
-        const botY = Number.isFinite(baseLocal) ? Math.min(baseLocal, wf.bottomY) : wf.bottomY;
-        const dropH = Math.min(Math.max(topY - botY, 2), 60);
-        const width = Math.max(3, wf.width || 3);
-        const planeH = dropH + 2;
-        const segH = Math.max(6, Math.round(planeH / 2.5));
-        const geo = new THREE.PlaneGeometry(width, planeH, 4, segH);
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(wf.x + fdx * baseDist * 0.5, (topY + botY) / 2, wf.z + fdz * baseDist * 0.5);
-        let dx = wf.flowX || 0;
-        let dz = wf.flowZ || 0;
-        if (dx === 0 && dz === 0) dz = 1;
-        mesh.rotation.y = Math.atan2(dx, dz);
-        mesh.renderOrder = 1;
-        mesh.frustumCulled = false;
-        mesh.userData = { isHydrosphere: true, hydroKind: "waterfall" };
-        return mesh;
-    }
-
-    // V9.60-d.1 — Foam-Pool am Wasserfall-Aufprall. Horizontale
-    // CircleGeometry auf `wf.bottomY + 0.15` (knapp über dem Wasser, damit
-    // sie nicht im Bett-Carve verschwindet). Radius skaliert mit Drop-Höhe:
-    // ein 50-m-Sturz spritzt mehr als ein 5-m-Lauf. Material ist das
-    // geteilte `hydroSurfaceMaterial`; aShore=1 + aFlow=0 + aWave=0 pro
-    // Vertex → der Shader rendert volles Foam-Band, sanfte Pool-Ruhe. Ein
-    // zweites Mesh pro Wasserfall, kein neuer Shader nötig.
-    // V9.60-d.4 — Erosion-Topf (Real-World-Lehre): der Pool sitzt in einer
-    // leichten Bett-Senke unter dem normalen Fluss-Bett. Wir simulieren das
-    // visuell via leicht TIEFEREM Pool-Y (`bottomY - 0.4`) und etwas
-    // grösserem Radius — der Wasserfall "frisst" eine Mulde in den Boden,
-    // genau wie ein echter Wasserfall am Aufprall sediment-erodiert.
-    // Witcher 3 / Real-World macht das genauso.
-    _buildHydroWaterfallPool(wf) {
-        const mat = this._ensureHydroSurfaceMaterial();
-        if (!mat) return null;
-        const dropH = Math.max(wf.topY - wf.bottomY, 2);
-        const width = Math.max(3, wf.width || 3);
-        const radius = Math.max(width * 1.5, 3.5 + dropH * 0.18);
-        const geo = new THREE.CircleGeometry(radius, 22);
-        // V18.3 (B1-Fix) — der Pool teilt das `hydroSurfaceMaterial`, das seit W1
-        // BackSide ist (die Iso-Wicklung zeigt ins Wasser). Eine `+PI/2`-Drehung
-        // legt die RÜCKSEITE der Scheibe nach OBEN (wie die Iso-Oberseite) → von
-        // oben über die Rückseite sichtbar (BackSide), nicht front-gecullt. Der
-        // Shader klappt die Normale (ny<0 → up) ohnehin → Beleuchtung korrekt.
-        // (Vorher `-PI/2` → Vorderseite oben → BackSide cullte den Pool von oben.)
-        geo.rotateX(Math.PI / 2);
-        const vCount = geo.attributes.position.count;
-        const aShoreArr = new Float32Array(vCount);
-        const aFlowArr = new Float32Array(vCount * 2);
-        const aWaveArr = new Float32Array(vCount);
-        for (let i = 0; i < vCount; i++) aShoreArr[i] = 1.0;
-        geo.setAttribute("aShore", new THREE.BufferAttribute(aShoreArr, 1));
-        geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlowArr, 2));
-        geo.setAttribute("aWave", new THREE.BufferAttribute(aWaveArr, 1));
-        // V18.14 — `aDepth`=0 (flach) → der Aufprall-Pool ist volle Gischt (aShore=1), passt.
-        geo.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(vCount), 1));
-        geo.setAttribute("aSlope", new THREE.BufferAttribute(new Float32Array(vCount), 1));
-        const mesh = new THREE.Mesh(geo, mat);
-        // V9.60-d.4: Pool sitzt leicht in einer Erosion-Senke (Real-World)
-        mesh.position.set(wf.x, wf.bottomY - 0.25, wf.z);
-        mesh.renderOrder = 1;
-        mesh.frustumCulled = false;
-        mesh.userData = { isHydrosphere: true, hydroKind: "waterfall_pool" };
-        return mesh;
     }
 
     // V9.49-c — der EINE vereinte Wasser-Shader. Trägt alle Skalen über
@@ -25755,10 +25747,13 @@ class AnazhRealm {
     // gestrichen — die Naht ist nicht mehr da, weil das Iso-Mesh den
     // Cell-Feld-Boundary 1:1 mit dem Boden-Mesh teilt.
 
-    // V9.43-a — das geteilte Wasserfall-Material. EIN ShaderMaterial für
-    // ALLE Wasserfall-Planes der Welt (lazy gebaut, in state.waterfallMaterial
-    // gehalten). Eine vertikale Wasser-Plane mit Abwärts-Flow: `uFlowDir`
-    // (0,−1) + `uFlowSpeed` scrollen Schaum-Streifen + Turbulenz die Plane
+    // V18.111 — A4-SAAT: die Wasserfall-PLANE ist geschnitten (S-Entscheid —
+    // „sehr schwer korrekt zu setzen"); dieses abwärts-fließende Material ist
+    // die BEWUSST RUHENDE Saat für die kommende EIGENE Vertikal-Wasser-Form
+    // (S-Befund: „bei vertikalem Fall wird das Sheet nur gestreckt — vertikales
+    // Wasser braucht seine eigene Form"). Der Test V9.43-c „materialKept" bewacht sie.
+    // V9.43-a — das geteilte Wasserfall-Material. EIN Material mit Abwärts-Flow:
+    // `uFlowDir` (0,−1) + `uFlowSpeed` scrollen Schaum-Streifen + Turbulenz
     // hinab. Teilt die Wasser-Substanz-Sprache mit dem Meer (`_buildWaterPlane`):
     // dieselben `uDeep`/`uShallow`-Farben, dieselben `uSunDir`/`uLight`/`fog*`-
     // Uniforms (von `_applyDayNightToScene` gespeist), dieselbe Fresnel-/Fog-
@@ -26793,10 +26788,7 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterLakeRipple)
                         ? this.state.atmosphere.waterLakeRipple
                         : 0.06,
-                waterfallSteep:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterfallSteep)
-                        ? this.state.atmosphere.waterfallSteep
-                        : 1.0,
+                // (waterfallSteep V18.111 gefallen — A4)
                 // J4-Regler: Kavitäts-AO-Stärke (0..1) + Kanten-Schärfe (Post-FX local-contrast, 0..1).
                 cavityAO:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
@@ -29012,11 +29004,9 @@ class AnazhRealm {
             const lr = Number(state.atmosphere.waterLakeRipple);
             if (Number.isFinite(lr)) this.setLakeRipple(Math.max(0.0, Math.min(1.0, lr)));
             // V18.14 M1/M3 — die Makro-Kontext-Regler (vor dem Hydrosphäre-Mesh-Bau setzen,
-            // damit waterfallSteep die erste Wasserfall-Auswahl steuert).
+            // (waterfallSteep-Restore V18.111 gefallen — A4)
             const df = Number(state.atmosphere.waterDepthFoam);
             if (Number.isFinite(df)) this.state.atmosphere.waterDepthFoam = Math.max(0.1, Math.min(6.0, df));
-            const ws = Number(state.atmosphere.waterfallSteep);
-            if (Number.isFinite(ws)) this.state.atmosphere.waterfallSteep = Math.max(0.2, Math.min(4.0, ws));
             // V18.31 — der Auslauf-Übergang (vor dem Mesh-Bau setzen). Die Semantik kehrte sich
             // um (war "Breite/flacher" für die V18.30-Versteck-Logik, jetzt "Ufer→Boden-Übergang"
             // für den Bodenkontakt; klein = scharfer Kontakt) → ein alter, für "flacher" hoch-
@@ -29031,8 +29021,7 @@ class AnazhRealm {
             if (Number.isFinite(tri)) this.setSurfaceTexture(Math.max(0, Math.min(4, tri)));
             const cv = Number(state.atmosphere.colorVar);
             if (Number.isFinite(cv)) this.setColorVariation(Math.max(0, Math.min(2, cv)));
-            const tf = Number(state.atmosphere.terrainFlatten);
-            if (Number.isFinite(tf)) this.setTerrainFlatten(Math.max(0, Math.min(1, tf)));
+            // (V18.106 — B3: terrainFlatten-Restore gefallen — gebacken in die Geometrie.)
             const sr = Number(state.atmosphere.shadowRange);
             if (Number.isFinite(sr)) this.setShadowRange(Math.max(80, Math.min(400, sr)));
             const sb = Number(state.atmosphere.shadowBias);
@@ -29063,6 +29052,12 @@ class AnazhRealm {
             else if (pe.weapon) this.equipHeld(pe.weapon);
             else if (pe.tool) this.equipHeld(pe.tool);
             if (pe.armor) this.equipArmor(pe.armor);
+            // V18.109 — E8: die Off-Hand reist im selben playerEquipped-Objekt.
+            if (pe.offhand && this.state.blueprints && this.state.blueprints[pe.offhand] && this.state.player) {
+                this.state.player.equipped = this.state.player.equipped || { held: null, offhand: null, armor: null };
+                this.state.player.equipped.offhand = pe.offhand;
+                if (typeof this._refreshHeldMesh === "function") this._refreshHeldMesh();
+            }
         }
     }
 
@@ -31086,7 +31081,12 @@ class AnazhRealm {
             const h = ext && Number.isFinite(ext.y) && ext.y > 0.01 ? ext.y : 1.2;
             const sc = Math.max(0.25, Math.min(3, 1.15 / h));
             g.scale.setScalar(sc);
-            g.position.set(0, 0.18, 0);
+            // V18.110 — C7 (der C3-„sitzt auf dem Kopf"-Fix): der TRAGE-Punkt der
+            // Rüstung (Masse-Zentrum bzw. expliziter trage-Punkt) wird auf den
+            // Torso-Anker (0, 0.18, 0) gelegt — nicht mehr der Bauplan-URSPRUNG
+            // (der Brustpanzer ist um y≈1.1 designt → landete auf Kopfhöhe).
+            const ap = this._attachPointFor(bp, "trage");
+            g.position.set(-ap.point.x * sc, 0.18 - ap.point.y * sc, -ap.point.z * sc);
             g.userData._wornArmorVisual = true;
             g.traverse((o) => {
                 o.castShadow = false;
@@ -31285,6 +31285,31 @@ class AnazhRealm {
         return this.equipHeld(name);
     }
 
+    // V18.109 — E8 (S-Entscheid 10.06.): der HAND-TAUSCH wie Minecraft. EIN Akt
+    // tauscht Haupt-Hand ↔ Off-Hand; die Haupt-Hand läuft durch den EINEN
+    // equipHeld-Pfad (Stats + Hand-Mesh — kein Parallel-Pfad), die Off-Hand ist
+    // reiner Bereitschafts-Slot (kein Schmiede-Gate nötig: was getauscht wird,
+    // war schon in der Hand = GEBRAUCH, §11 frei). Konsumenten: Key G
+    // (DEFAULT_KEYBINDINGS.swapHands, rebindable) + der Off-Hand-Slot neben der
+    // Hotbar (Klick).
+    swapHands() {
+        const p = this.state.player;
+        if (!p) return { ok: false, reason: "no_player" };
+        const eq = (p.equipped = p.equipped || { held: null, offhand: null, armor: null });
+        const main = eq.held || null;
+        const off = eq.offhand || null;
+        if (!main && !off) return { ok: false, reason: "both_empty" };
+        // tote Off-Hand (Bauplan inzwischen gelöscht) → fällt, statt zu duplizieren.
+        if (off && !(this.state.blueprints && this.state.blueprints[off])) {
+            eq.offhand = null;
+            return { ok: false, reason: "offhand_unknown" };
+        }
+        eq.offhand = main;
+        this.equipHeld(off); // null → leert die Haupt-Hand sauber (Stats + Mesh)
+        if (typeof this._renderHotbarDOM === "function") this._renderHotbarDOM();
+        return { ok: true, held: eq.held || null, offhand: eq.offhand || null };
+    }
+
     // S9 (kampf-plan §10-F4) — das gehaltene Gerät SICHTBAR in der Hand. Reuse _buildFromBlueprint
     // (derselbe Pfad wie Bauten/Phantom/Avatare — KEIN Parallel-Pfad): ein Mesh, an den rechten
     // Arm/Flügel des Avatars gehängt (schwingt automatisch mit dem _animateHuman-Walk-Cycle via der
@@ -31306,37 +31331,55 @@ class AnazhRealm {
             this._disposeSoulGroup(prev);
             pm.userData.heldMesh = null;
         }
-        const eq = this.state.player && this.state.player.equipped;
-        const held = eq && eq.held;
-        if (!held) return;
-        const bp = this.state.blueprints && this.state.blueprints[held];
-        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return;
-        const mesh = this._buildFromBlueprint({ name: `held_${held}`, parts: bp.parts });
-        const cfg = AnazhRealm.HELD_MESH;
-        // auf greifbare Hand-Größe skalieren — die ECHTE Geometrie-Spanne (positions + sizes +
-        // rotation), robust auch bei Ein-Part-Geräten (anders als _compoundBBox, das positions-only ist).
-        try {
-            mesh.updateMatrixWorld(true);
-            const box = new THREE.Box3().setFromObject(mesh);
-            if (box && Number.isFinite(box.min.x) && Number.isFinite(box.max.x)) {
-                const span = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
-                if (span > 1e-4) {
-                    const s = Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span));
-                    mesh.scale.setScalar(s);
-                }
-            }
-        } catch (_e) {
-            /* headless/degeneriert — Skala 1 lassen, die Optik ist ohnehin der Browser */
+        // V18.109 — E8: auch das Off-Hand-Mesh räumen (derselbe Lifecycle).
+        const prevOff = pm.userData && pm.userData.offhandMesh;
+        if (prevOff) {
+            if (prevOff.parent) prevOff.parent.remove(prevOff);
+            this._disposeSoulGroup(prevOff);
+            pm.userData.offhandMesh = null;
         }
-        // Anker: der rechte Arm/Flügel (schwingt mit dem Walk-Cycle) wenn die Seele ihn benennt,
-        // sonst die Körper-Wurzel (sichtbar, folgt dem Körper, schwingt nicht — Custom-/Flug-Seelen).
+        const eq = this.state.player && this.state.player.equipped;
         const parts = pm.userData && pm.userData.parts;
-        const anchor = (parts && (parts.rightArm || parts.rightWing)) || pm;
-        const off = anchor === pm ? cfg.rootOffset : cfg.handOffset;
-        mesh.position.set(off.x, off.y, off.z);
-        mesh.rotation.set(cfg.tilt.x, cfg.tilt.y, cfg.tilt.z);
-        anchor.add(mesh);
-        pm.userData.heldMesh = mesh;
+        const cfg = AnazhRealm.HELD_MESH;
+        // EIN Bau-Helfer für beide Hände (Spiegel: links negiert die x-Offsets).
+        const buildHand = (bpName, side) => {
+            const bp = this.state.blueprints && this.state.blueprints[bpName];
+            if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return null;
+            const mesh = this._buildFromBlueprint({ name: `held_${bpName}`, parts: bp.parts });
+            // auf greifbare Hand-Größe skalieren — die ECHTE Geometrie-Spanne (positions + sizes +
+            // rotation), robust auch bei Ein-Part-Geräten (anders als _compoundBBox, positions-only).
+            try {
+                mesh.updateMatrixWorld(true);
+                const box = new THREE.Box3().setFromObject(mesh);
+                if (box && Number.isFinite(box.min.x) && Number.isFinite(box.max.x)) {
+                    const span = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
+                    if (span > 1e-4) {
+                        const s = Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span));
+                        mesh.scale.setScalar(s);
+                    }
+                }
+            } catch (_e) {
+                /* headless/degeneriert — Skala 1 lassen, die Optik ist ohnehin der Browser */
+            }
+            // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
+            // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
+            const anchor =
+                (parts && (side === "left" ? parts.leftArm || parts.leftWing : parts.rightArm || parts.rightWing)) ||
+                pm;
+            const off = anchor === pm ? cfg.rootOffset : cfg.handOffset;
+            const sx = side === "left" ? -1 : 1;
+            // V18.110 — C7: der GRIFF-Punkt liegt in der Hand — das Mesh wird so
+            // verschoben, dass der griffigste Part (bzw. der explizite griff-
+            // Punkt) am Hand-Anker sitzt, nicht der Bauplan-Ursprung.
+            const ms = mesh.scale && Number.isFinite(mesh.scale.x) ? mesh.scale.x : 1;
+            const gp = this._attachPointFor(bp, "griff").point;
+            mesh.position.set(off.x * sx - gp.x * ms, off.y - gp.y * ms, off.z - gp.z * ms);
+            mesh.rotation.set(cfg.tilt.x, cfg.tilt.y * sx, cfg.tilt.z * sx);
+            anchor.add(mesh);
+            return mesh;
+        };
+        if (eq && eq.held) pm.userData.heldMesh = buildHand(eq.held, "right");
+        if (eq && eq.offhand) pm.userData.offhandMesh = buildHand(eq.offhand, "left");
     }
 
     // S4 (kampf-plan §11.4) — der gemeinsame WERK-KERN, den JEDER Mach-Akt teilt (Gerät/Rüstung/…): Material
@@ -34961,13 +35004,27 @@ class AnazhRealm {
             return { ok: false, reason: "not_moveable" };
         }
         this.state.player.mountedArch = entry.id;
-        // Spieler-Position über die Architektur heben (sodass er „oben drauf"
+        // V18.110 — C7: der SITZ-Punkt des Bauplans bestimmt, WO der Charakter
+        // sitzt (expliziter sitz-Punkt ODER die emergente oberste flache
+        // Fläche) — statt des festen MOUNT_FOLLOW_HEIGHT-Offsets. Gecacht am
+        // Entry (die Bauplan-Form ist frozen); _tickMountedMovement liest ihn.
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const scale = Number.isFinite(entry.scale) ? entry.scale : 1;
+        entry._sitzHeight = AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        if (bp) {
+            const sp = this._attachPointFor(bp, "sitz").point;
+            if (Number.isFinite(sp.y)) {
+                // Sitz-Oberkante + halbe Spieler-Körperhöhe (~0.9) = Reiter-Zentrum.
+                entry._sitzHeight = Math.max(0.6, sp.y * scale + 0.9);
+            }
+        }
+        // Spieler-Position über die Architektur heben (sodass er auf dem SITZ
         // sitzt). Architektur-Position wird in _tickMountedMovement nachgezogen.
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (pm) {
             pm.x = entry.position.x;
             pm.z = entry.position.z;
-            pm.y = entry.position.y + AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+            pm.y = entry.position.y + entry._sitzHeight;
         }
         this.log(`Eingestiegen in „${entry.type}"`, "INFO");
         return { ok: true, entry };
@@ -35011,10 +35068,12 @@ class AnazhRealm {
         }
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
-        // Architektur-Position auf Spieler ziehen (minus Höhen-Offset).
+        // Architektur-Position auf Spieler ziehen (minus Sitz-Höhe — C7: der
+        // Sitz-Punkt des Bauplans, beim Mount gecacht; Fallback der alte Offset).
         entry.position.x = pm.x;
         entry.position.z = pm.z;
-        entry.position.y = pm.y - AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        entry.position.y =
+            pm.y - (Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT);
         // Mesh-Position sofort updaten (sonst lagt das Visual einen Frame).
         if (entry.mesh) {
             entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
@@ -37021,6 +37080,147 @@ class AnazhRealm {
             },
         ];
 
+        // V18.110 — C7: die FAHRZEUG/REITTIER-Saat (S-Entscheid 10.06., das
+        // V17.72-Muster — craftbare Beispiel-Baupläne, NICHT in der Spawn-
+        // Kandidatenliste → kein Worldgen-Litter). Beide zeigen das GANZE
+        // C7-Muster: explizite sitz-Punkte (connections) + echte Rad-/Bein-
+        // Gelenke (C1) + moveable per Substanz (GEMESSEN im Playtest-Band):
+        // der WAGEN fährt über Eisen-Räder (stromleitung = Antrieb, RAD-
+        // Gelenke drehen beim Fahren), das HOLZROSS über den Quarz-Kern
+        // (magieleitung = der belebende Antrieb) auf gespreizten Beinen.
+        const fahrzeugWagenParts = [
+            // Korpus — die Sitzfläche (flach + breit, oben).
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 0.85, z: 0 },
+                size: { x: 1.3, y: 0.35, z: 2.1 },
+            },
+            // 4 Räder: vertikale Scheiben (Zylinder um Z gekippt → Achse X),
+            // bodennah + gespreizt (die moveable-Trag-Basis + C1-RAD-Gelenke).
+            {
+                shape: "cylinder",
+                material: "eisen",
+                position: { x: -0.72, y: 0.34, z: 0.8 },
+                size: { x: 0.62, y: 0.14, z: 0.62 },
+                rotation: { x: 0, y: 0, z: 1.5707963 },
+            },
+            {
+                shape: "cylinder",
+                material: "eisen",
+                position: { x: 0.72, y: 0.34, z: 0.8 },
+                size: { x: 0.62, y: 0.14, z: 0.62 },
+                rotation: { x: 0, y: 0, z: 1.5707963 },
+            },
+            {
+                shape: "cylinder",
+                material: "eisen",
+                position: { x: -0.72, y: 0.34, z: -0.8 },
+                size: { x: 0.62, y: 0.14, z: 0.62 },
+                rotation: { x: 0, y: 0, z: 1.5707963 },
+            },
+            {
+                shape: "cylinder",
+                material: "eisen",
+                position: { x: 0.72, y: 0.34, z: -0.8 },
+                size: { x: 0.62, y: 0.14, z: 0.62 },
+                rotation: { x: 0, y: 0, z: 1.5707963 },
+            },
+        ];
+        const fahrzeugWagenConnections = [
+            { type: "sitz", partA: 0, partB: -1 },
+            { type: "hafting", partA: 1, partB: 0 },
+            { type: "hafting", partA: 2, partB: 0 },
+            { type: "hafting", partA: 3, partB: 0 },
+            { type: "hafting", partA: 4, partB: 0 },
+        ];
+        const reittierHolzrossParts = [
+            // Rumpf — der Rücken ist die Sitzfläche.
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 1.05, z: 0 },
+                size: { x: 0.6, y: 0.5, z: 1.5 },
+            },
+            // Kopf vorn.
+            {
+                shape: "box",
+                material: "leder",
+                position: { x: 0, y: 1.5, z: 0.95 },
+                size: { x: 0.3, y: 0.4, z: 0.5 },
+            },
+            // der belebende Quarz-Kern (magieleitung = Antrieb).
+            {
+                shape: "octahedron",
+                material: "quarz",
+                position: { x: 0, y: 1.05, z: -0.2 },
+                size: { x: 0.22, y: 0.22, z: 0.22 },
+            },
+            // 4 Beine — gespreizt (Trag-Basis), vertikale Zylinder.
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -0.28, y: 0.4, z: 0.6 },
+                size: { x: 0.14, y: 0.8, z: 0.14 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0.28, y: 0.4, z: 0.6 },
+                size: { x: 0.14, y: 0.8, z: 0.14 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -0.28, y: 0.4, z: -0.6 },
+                size: { x: 0.14, y: 0.8, z: 0.14 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0.28, y: 0.4, z: -0.6 },
+                size: { x: 0.14, y: 0.8, z: 0.14 },
+                segments: 6,
+            },
+        ];
+        const reittierHolzrossConnections = [
+            { type: "sitz", partA: 0, partB: -1 },
+            { type: "hafting", partA: 1, partB: 0 },
+            { type: "hafting", partA: 3, partB: 0 },
+            { type: "hafting", partA: 4, partB: 0 },
+            { type: "hafting", partA: 5, partB: 0 },
+            { type: "hafting", partA: 6, partB: 0 },
+        ];
+
+        // V18.110 — C7 (S-Entscheid 10.06.): die BUILT-IN-KÖRPER liegen
+        // automatisch als role:soul-Blueprints in der Bibliothek — der
+        // „Körper holen"-Knopf FÄLLT (kein Parallel-Knopf; die Werkstatt/das
+        // Ich listen sie über den bestehenden role-Filter). EINE Quelle:
+        // playerSoulDefs (kein Parts-Duplikat — hier nur tief geklont, weil
+        // Bauplan-Klone editierbar sein müssen).
+        const builtinBodyBlueprints = {};
+        try {
+            const souls = this.playerSoulDefs || {};
+            for (const key of Object.keys(souls)) {
+                const def = souls[key];
+                if (!def || !Array.isArray(def.bodyParts) || !def.bodyParts.length) continue;
+                const name = `koerper_${key}`;
+                builtinBodyBlueprints[name] = {
+                    name,
+                    label: `${def.label || key} (Körper)`,
+                    builtIn: true,
+                    role: "soul",
+                    roleManual: true,
+                    parts: JSON.parse(JSON.stringify(def.bodyParts)),
+                };
+            }
+        } catch (_e) {
+            /* defensiv — ohne Körper-Saat bleibt der Katalog heil */
+        }
+
         // W12 Phase 2 — portalMeta aus der Welt-Registry (eine Quelle der
         // Wahrheit; je Bauplan eine eigene dsl-Kopie).
         const portalTo = (id) => {
@@ -37212,6 +37412,23 @@ class AnazhRealm {
                 roleManual: true,
                 parts: avatarWaechterParts,
             },
+            // V18.110 — C7: die Fahrzeug-/Reittier-Saat (sitz-Punkte + Gelenke).
+            fahrzeug_wagen: {
+                name: "fahrzeug_wagen",
+                label: "Wagen",
+                builtIn: true,
+                parts: fahrzeugWagenParts,
+                connections: fahrzeugWagenConnections,
+            },
+            reittier_holzross: {
+                name: "reittier_holzross",
+                label: "Holzross",
+                builtIn: true,
+                parts: reittierHolzrossParts,
+                connections: reittierHolzrossConnections,
+            },
+            // V18.110 — C7: koerper_human/koerper_phoenix/koerper_dragon.
+            ...builtinBodyBlueprints,
         };
     }
 
@@ -38354,12 +38571,20 @@ class AnazhRealm {
         const clean = [];
         for (const c of connections.slice(0, AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT)) {
             if (!c || typeof c !== "object") continue;
-            if (!AnazhRealm.CONNECTION_TYPES[c.type]) continue;
+            const typeDef = AnazhRealm.CONNECTION_TYPES[c.type];
+            if (!typeDef) continue;
             const partA = Number(c.partA);
+            if (!Number.isInteger(partA) || partA < 0 || partA >= partsLength) continue;
+            // V18.110 — C7: ein ATTACHMENT-Punkt (griff/sitz/trage) sitzt an
+            // partA allein — partB ist optional (-1 = die Außenwelt).
+            if (typeDef.attachment) {
+                const partB = Number.isInteger(Number(c.partB)) ? Number(c.partB) : -1;
+                clean.push({ type: c.type, partA, partB: partB >= 0 && partB < partsLength ? partB : -1 });
+                continue;
+            }
             const partB = Number(c.partB);
-            if (!Number.isInteger(partA) || !Number.isInteger(partB)) continue;
+            if (!Number.isInteger(partB)) continue;
             if (partA === partB) continue;
-            if (partA < 0 || partA >= partsLength) continue;
             if (partB < 0 || partB >= partsLength) continue;
             clean.push({ type: c.type, partA, partB });
         }
@@ -38388,6 +38613,101 @@ class AnazhRealm {
         this._recordBlueprintEdit(name); // V17.87 — Edit-Verlauf
         bp.connections.splice(index, 1);
         return true;
+    }
+
+    // V18.110 — C7 (S-Entscheid 10.06.): der ATTACHMENT-PUNKT eines Bauplans.
+    // Die EINE Quelle für „wo greift die Hand (griff) · wo sitzt der Reiter
+    // (sitz) · wo liegt es am Torso an (trage)". EXPLIZIT designt = eine
+    // connections-Zeile {type: griff|sitz|trage, partA} (der Intent-Override,
+    // Werkstatt/DSL); sonst EMERGIERT der Punkt aus Form × Lage (dieselbe
+    // Denkweise wie die C1-Gelenk-Typen): griff = der stiel-artigste Part
+    // (elongiert + dünn), sitz = die oberste flache Fläche nahe der Mitte,
+    // trage = das volumen-gewichtete Masse-Zentrum. Rückgabe ist BAUPLAN-LOKAL
+    // {part, point:{x,y,z}}; Konsumenten: _refreshHeldMesh (Hand) ·
+    // _tickWornArmorVisual (Rüstung — der C3-„sitzt auf dem Kopf"-Fix) ·
+    // mountArchitecture (Sitz-Höhe). Skala/Orientierung macht der Konsument.
+    _attachPointFor(bp, kind) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return { part: null, point: { x: 0, y: 0, z: 0 } };
+        const parts = bp.parts;
+        // (1) der EXPLIZITE Punkt (Intent schlägt Emergenz).
+        if (Array.isArray(bp.connections)) {
+            const c = bp.connections.find((cn) => cn && cn.type === kind);
+            if (c && parts[c.partA]) {
+                const p = parts[c.partA];
+                const pos = p.position || { x: 0, y: 0, z: 0 };
+                const sy = Math.abs((p.size && p.size.y) || 0.3);
+                // sitz zeigt auf die OBERSEITE des Parts, griff/trage aufs Zentrum.
+                const y = kind === "sitz" ? (pos.y || 0) + sy / 2 : pos.y || 0;
+                return { part: c.partA, point: { x: pos.x || 0, y, z: pos.z || 0 } };
+            }
+        }
+        // (2) EMERGENZ aus Form × Lage.
+        const dims = (p) => ({
+            sx: Math.abs((p.size && p.size.x) || 0.3),
+            sy: Math.abs((p.size && p.size.y) || 0.3),
+            sz: Math.abs((p.size && p.size.z) || 0.3),
+        });
+        if (kind === "griff") {
+            // der stiel-artigste Part: längste/mittlere Achse maximal, dünn bevorzugt.
+            let best = null;
+            let bestScore = 0;
+            for (let i = 0; i < parts.length; i++) {
+                const d = dims(parts[i]);
+                const axes = [d.sx, d.sy, d.sz].sort((a, b) => b - a);
+                const elong = axes[0] / Math.max(0.01, axes[1]);
+                const thin = 1 / Math.max(0.05, axes[2]);
+                const score = elong * Math.min(4, thin);
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = i;
+                }
+            }
+            if (best !== null) {
+                const pos = parts[best].position || { x: 0, y: 0, z: 0 };
+                return { part: best, point: { x: pos.x || 0, y: pos.y || 0, z: pos.z || 0 } };
+            }
+        }
+        if (kind === "sitz") {
+            // die oberste FLACHE Fläche nahe der XZ-Mitte (breite Oberseite).
+            let best = null;
+            let bestScore = -Infinity;
+            for (let i = 0; i < parts.length; i++) {
+                const d = dims(parts[i]);
+                const pos = parts[i].position || { x: 0, y: 0, z: 0 };
+                const flat = Math.min(d.sx, d.sz) / Math.max(0.05, d.sy); // breit + niedrig = Sitzfläche
+                if (flat < 0.8) continue;
+                const top = (pos.y || 0) + d.sy / 2;
+                const centerBias = -(Math.abs(pos.x || 0) + Math.abs(pos.z || 0)) * 0.5;
+                const score = top + Math.min(2, flat) * 0.3 + centerBias;
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = i;
+                }
+            }
+            if (best !== null) {
+                const p = parts[best];
+                const pos = p.position || { x: 0, y: 0, z: 0 };
+                return {
+                    part: best,
+                    point: { x: pos.x || 0, y: (pos.y || 0) + dims(p).sy / 2, z: pos.z || 0 },
+                };
+            }
+        }
+        // trage (+ Fallback aller Arten): das volumen-gewichtete MASSE-ZENTRUM.
+        let vx = 0;
+        let vy = 0;
+        let vz = 0;
+        let vSum = 0;
+        for (const p of parts) {
+            const d = dims(p);
+            const v = Math.max(1e-4, d.sx * d.sy * d.sz);
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            vx += (pos.x || 0) * v;
+            vy += (pos.y || 0) * v;
+            vz += (pos.z || 0) * v;
+            vSum += v;
+        }
+        return { part: null, point: { x: vx / vSum, y: vy / vSum, z: vz / vSum } };
     }
 
     // ### Welle 5 C — Maschinen-Rekursivität ###
@@ -40457,17 +40777,8 @@ class AnazhRealm {
         return m;
     }
 
-    // V18.14 M3 — die Wasserfall-Steilheits-Schwelle (Drop/Lauf): eine vertikale Plane
-    // nur ab dieser Terrain-Steilheit (echte Wand), darunter ist es ein Hang (die Fluss-
-    // Fläche trägt ihn). Rebuildet die Hydrosphäre-Meshes (die Wasserfall-Auswahl ändert sich).
-    setWaterfallSteep(v) {
-        const m = Math.max(0.2, Math.min(4.0, Number(v) || 1.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
-        this.state.atmosphere.waterfallSteep = m;
-        if (typeof this._buildHydrosphereMeshes === "function") this._buildHydrosphereMeshes();
-        if (typeof this.saveState === "function") this.saveState();
-        return m;
-    }
+    // (V18.111 — A4: setWaterfallSteep ist GESCHNITTEN — die Plane fiel,
+    // das CA-Wildwasser [aSlope] trägt steile Läufe.)
 
     // WELLE J4-Regler — die Kavitäts-AO-Stärke (0 = aus … 1 = voll). Die
     // `fwidth(normalWorld)`-AO zeichnet jede Surface-Nets-Facetten-Kante als
@@ -40486,23 +40797,8 @@ class AnazhRealm {
         return m;
     }
 
-    // V17.109 — die 2.5D-LICHTUNG als sichtbarer Slider (war nur Konsole). Wie
-    // stark die Terrain-Shading-Normale zur Up-Achse geblendet wird (0 = volle
-    // 3D-Facetten, 1 = flach wie 2.5D). GEMESSEN (diag-facets): senkt die
-    // dot(N,L)-Streuung (0.5→0.24, 0.8→0.076) → die Facetten-Rauten kollabieren
-    // zu grossen Cel-Regionen. Der HAUPT-Hebel gegen das Facetten-Muster; bei
-    // hartem Cel (Stufen<8) muss er hoch sein, damit die Bänder über GROSSE
-    // Regionen laufen statt über einzelne Facetten.
-    setTerrainFlatten(scale) {
-        const v = Math.max(0, Math.min(1, Number(scale)));
-        const m = Number.isFinite(v) ? v : 0.5;
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
-        this.state.atmosphere.terrainFlatten = m;
-        if (this.state.atmoUniforms && this.state.atmoUniforms.terrainFlatten)
-            this.state.atmoUniforms.terrainFlatten.value = m;
-        if (typeof this.saveState === "function") this.saveState();
-        return m;
-    }
+    // (V18.106 — B3: setTerrainFlatten ist GESCHNITTEN — die 2.5D-Lichtung ist
+    // in die Geometrie gebacken [TERRAIN_NORMAL_FLATTEN], der Slider weicht.)
 
     // V17.104-Regler — die Farb-Variation (V17.12-Makro-Tint-Stärke, 0..1). 0 = reine
     // Basisfarbe (testet, ob die warm/kühl-Patches die „zwei Basisfarben" sind, die
@@ -43187,6 +43483,37 @@ class AnazhRealm {
     // mit dem Klick-Fluss (Item gewählt → Slot zuweisen, sonst Bau-Modus) + Drag&Drop.
     _renderHotbarInto(bar) {
         bar.innerHTML = "";
+        // V18.109 — E8: der OFF-HAND-Slot NEBEN der Hotbar (Minecraft-Modell).
+        // Zeigt equipped.offhand, Klick = Hand-Tausch (derselbe Akt wie Key G).
+        {
+            const eq = this.state.player && this.state.player.equipped;
+            const offName = eq && eq.offhand;
+            const slot = document.createElement("button");
+            slot.type = "button";
+            slot.className = "hotbar-slot hotbar-offhand";
+            slot.setAttribute("data-slot", "offhand");
+            const num = document.createElement("span");
+            num.className = "num";
+            num.textContent = this._formatBindingCode
+                ? this._formatBindingCode(
+                      (this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS).swapHands || "KeyG"
+                  )
+                : "G";
+            const label = document.createElement("span");
+            label.className = "label";
+            if (offName && this.state.blueprints[offName]) {
+                label.textContent = this.state.blueprints[offName].label || offName;
+                slot.classList.add("filled");
+                slot.title = "Off-Hand — tauschen (G)";
+            } else {
+                label.textContent = "—";
+                slot.title = "Off-Hand leer — G tauscht die Hände";
+            }
+            slot.appendChild(num);
+            slot.appendChild(label);
+            slot.addEventListener("click", () => this.swapHands());
+            bar.appendChild(slot);
+        }
         for (let i = 0; i < 9; i++) {
             const name = this.state.hotbar[i];
             const slot = document.createElement("button");
@@ -43874,6 +44201,15 @@ class AnazhRealm {
         const w = prof.wariness;
         const temper = w > 0.5 ? "scheu" : w > 0.15 ? "wachsam" : prof.bond > 0.4 ? "vertraut" : "neugierig";
         prof.moodLabel = (prof.emotion === "sad" ? "trübe" : "froh") + " · " + temper;
+        // V18.107 — D4-VOLL: das SEELEN-Temperament (stabil, aus der Substanz) wird
+        // sichtbar — die Hof-Karte zeigt, WER das Wesen IST (nicht nur wie es sich
+        // gerade fühlt). Vision-Mechanik sichtbar (V9.95-c-Disziplin).
+        try {
+            prof.temperament = this._creatureTemperament(creature);
+            if (prof.temperament && prof.temperament !== temper) prof.moodLabel += ` · ${prof.temperament}`;
+        } catch {
+            /* temperament optional */
+        }
         // D1 (gigant-plan §5 — G4-1b): der 6-Achsen-Vektor bekommt seine SICHTBARE
         // Fläche — die dominante Emotion + Intensität via `_emotionState` (DERSELBE
         // Leser wie das Ich-Porträt — eine Sprache; der benannte Passagier-Rest fällt).
@@ -45184,7 +45520,15 @@ class AnazhRealm {
         // V17.74 — der ausgewählte Slot ist hervorgehoben: entweder der aktive Bau-Modus-Slot
         // (Platzier-Phantom) ODER der Slot, dessen Bauplan gerade in der Hand ist (Hotbar-Gate).
         const held = this.state.player && this.state.player.equipped && this.state.player.equipped.held;
-        slots.forEach((slot, i) => {
+        // V18.109 — E8: data-slot ist die Wahrheit (der Off-Hand-Slot steht als
+        // erstes Kind — der forEach-INDEX wäre um 1 verschoben).
+        slots.forEach((slot) => {
+            const ds = slot.getAttribute("data-slot");
+            const i = parseInt(ds, 10);
+            if (!Number.isFinite(i)) {
+                slot.classList.toggle("active", false);
+                return;
+            }
             const isBuild = bm.active && bm.slotIndex === i;
             const isHeld = !!held && this.state.hotbar[i] === held;
             slot.classList.toggle("active", isBuild || isHeld);
@@ -47387,21 +47731,9 @@ class AnazhRealm {
                 if (this.createBlueprint(name, name)) this.selectBlueprintForEdit(name);
             });
         }
-        // V18.62 Ich-H (H.4) — „Körper holen": den aktuellen Avatar (Seele) als Bauplan in die Werkstatt
-        // bringen (die Brücke soulToBlueprint), dann den Werkstatt-Fluss (klonen/formen/fertigen) übernimmt.
-        const importSoulBtn = document.getElementById("workshop-import-soul-btn");
-        if (importSoulBtn) {
-            importSoulBtn.addEventListener("click", () => {
-                const soulName = (this.state.player && this.state.player.soul) || "human";
-                const res = this.soulToBlueprint(soulName);
-                if (res.ok) {
-                    this.selectBlueprintForEdit(res.name);
-                    this.log(`Körper '${soulName}' als Bauplan '${res.name}' geholt — hier klonen + formen.`, "INFO");
-                } else {
-                    this.log(`Körper holen fehlgeschlagen: ${res.reason}`, "INFO");
-                }
-            });
-        }
+        // (V18.110 — C7: der „Körper holen"-Knopf ist GEFALLEN — die Built-in-
+        // Körper liegen automatisch als koerper_*-Blueprints in der Bibliothek
+        // [_defaultBlueprints]; soulToBlueprint bleibt die freie API-Brücke.)
         // V17.91 — Undo/Redo + Löschen hoch in die Top-Leiste (wo der Schöpfer sie sucht), aus dem
         // alten versteckten Detail-Editor migriert. Der disabled-Zustand pflegt _workshopUpdateTopBarState.
         const undoBtn = document.getElementById("workshop-undo-btn");
@@ -48867,13 +49199,14 @@ class AnazhRealm {
         const al = this.state.ambientLight;
         if (!al) return;
         const sunHeight = Math.max(0, Math.sin(angle));
-        // V17.7 — Nacht-Floor gehoben (0.18→0.24): Schöpfer-Audit „Strukturen
-        // nachts quasi schwarz". Wurzel: das Terrain trägt die V15.4-Aerial-
-        // Perspektive (blendet zur Sky-Farbe), die Flach-Farb-Bauten NICHT → sie
-        // fielen ins Schwarz. Ein moderater Ambient-Lift hebt sie über Null,
-        // ohne die dynamischen Avatar-/Kreatur-Farben zu berühren (reines Licht,
-        // kein colorNode). Mittag bleibt ~gleich (0.24+0.38=0.62 vs 0.18+0.42=0.60).
-        const baseAmb = 0.24 + 0.38 * sunHeight;
+        // V18.111 — B9 (GEMESSEN, diag-night-terrain): der V17.7-Nacht-Floor
+        // (0.18→0.24, „Strukturen nachts quasi schwarz") ist seit B8 ein
+        // OBSOLETER Workaround — die Strukturen tragen ihre EIGENE tiefere
+        // Heilung (LUT-Schatten-Boden 0.25 + warmes Rim). Der hohe Floor hielt
+        // stattdessen den BODEN nachts hell (S-Befund: „der Terrain-Boden
+        // reagiert nicht aufs Nachtlicht"). Zurück auf den Ursprung: Mittag
+        // bleibt per Konstruktion gleich (0.18+0.42=0.60), die Nacht fällt.
+        const baseAmb = 0.18 + 0.42 * sunHeight;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
@@ -48906,10 +49239,11 @@ class AnazhRealm {
             }
             hl.groundColor.copy(earth);
             const sunHeight = Math.max(0, Math.sin(angle));
-            // V17.7 — Hemisphere-Nacht-Floor gehoben (0.25→0.32) zusammen mit dem
-            // Ambient-Lift: der Himmel-Fill hebt die Bauten nachts über Schwarz
-            // (Mittag ~gleich: 0.32+0.28=0.60 vs 0.25+0.35=0.60).
-            hl.intensity = (0.32 + 0.28 * sunHeight) * tint.lightMul;
+            // V18.111 — B9 (GEMESSEN): der V17.7-Hemi-Nacht-Floor (0.25→0.32)
+            // fällt zurück — B8 heilte die Struktur-Schwärze tiefer (LUT+Rim),
+            // und der up-gebackene Boden (B3) bekam den VOLLEN Sky-Term → der
+            // Boden blieb nachts hell. Mittag unverändert (0.25+0.35=0.60).
+            hl.intensity = (0.25 + 0.35 * sunHeight) * tint.lightMul;
         }
         if (fog) {
             const gMix = 0.15;
@@ -49886,38 +50220,8 @@ class AnazhRealm {
                 if (dfVal) dfVal.textContent = v.toFixed(1) + " m";
             });
         }
-        // V18.14 M3 — Wasserfall-Steilheit (Drop/Lauf): Plane nur ab echter Wand.
-        const wfsS = document.getElementById("slider-waterfallsteep");
-        const wfsVal = document.getElementById("slider-waterfallsteep-val");
-        if (wfsS) {
-            const s0 =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterfallSteep)
-                    ? this.state.atmosphere.waterfallSteep
-                    : 1.0;
-            wfsS.value = String(Math.round(s0 * 10));
-            if (wfsVal) wfsVal.textContent = s0.toFixed(1);
-            wfsS.addEventListener("input", () => {
-                const v = this.setWaterfallSteep(parseInt(wfsS.value, 10) / 10);
-                if (wfsVal) wfsVal.textContent = v.toFixed(1);
-            });
-        }
-        // V17.109 — die 2.5D-Lichtung (0..100 % → terrainFlatten 0..1). Der HAUPT-
-        // Hebel gegen die Facetten-Rauten (blendet die Shading-Normale zur Up-Achse).
-        const tfS = document.getElementById("slider-flatten");
-        const tfVal = document.getElementById("slider-flatten-val");
-        if (tfS) {
-            const f0 =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainFlatten)
-                    ? this.state.atmosphere.terrainFlatten
-                    : 1.0;
-            tfS.value = String(Math.round(f0 * 100));
-            if (tfVal) tfVal.textContent = `${Math.round(f0 * 100)} %`;
-            tfS.addEventListener("input", () => {
-                const pct = parseInt(tfS.value, 10);
-                this.setTerrainFlatten(pct / 100);
-                if (tfVal) tfVal.textContent = `${pct} %`;
-            });
-        }
+        // (V18.111 — A4: der Wasserfall-Steilheit-Slider ist GEFALLEN — die Plane fiel.)
+        // (V18.106 — B3: der „2.5D-Lichtung"-Slider ist GEFALLEN — gebacken.)
         // J4-Regler — Kavitäts-AO (0..200 % → aoScale 0..2) + Kanten-Schärfe
         // (0..100 → local-contrast 0..1). Live-Wert im Label, damit der Schöpfer
         // den Trapeze-/Flacker-Beitrag jedes Filters misst statt zu raten.
@@ -51106,6 +51410,10 @@ class AnazhRealm {
                     document.body.classList.toggle("hud-hidden");
                     event.preventDefault();
                 }
+            } else if (action === "swapHands") {
+                // V18.109 — E8: G tauscht Haupt-Hand ↔ Off-Hand (Minecraft-Geste).
+                this.swapHands();
+                event.preventDefault();
             } else if (action === "cameraToggle") {
                 // V8.17 — Camera-Mode toggeln (1st/3rd) jetzt action-basiert.
                 this.setCameraMode(this.state.cameraMode === "first" ? "third" : "first");
@@ -51583,10 +51891,15 @@ class AnazhRealm {
                 if (this.state.nexusWirk === undefined) this.state.nexusWirk = AnazhRealm.NEXUS_WIRK.start;
                 const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
                 if (mode !== "schöpfer") {
+                    // V18.108 — E2-VOLL: die KOSTEN atmen invers zur Balance —
+                    // in einem kippenden Moment kostet jeder Welt-Eingriff bis
+                    // zu 2× (nur das Wichtige passiert; dieselbe Richtung wie
+                    // die gedrosselte Regeneration = EIN Regelkreis).
+                    const balanceCostMul = 2 - this._emotionBalanceFactor();
                     const wirkCost =
-                        evolution.program[0] === "rule"
+                        (evolution.program[0] === "rule"
                             ? AnazhRealm.NEXUS_WIRK.ruleRegisterCost
-                            : this._dslProgramWirkCost(evolution.program);
+                            : this._dslProgramWirkCost(evolution.program)) * balanceCostMul;
                     if (wirkCost > this.state.nexusWirk) {
                         this.log(
                             `Nexus ruht — Wirk-Kraft erschöpft (${this.state.nexusWirk.toFixed(0)}/${wirkCost} nötig)`,
@@ -52069,10 +52382,12 @@ class AnazhRealm {
             this.selfAwarenessAnalyze();
             // E2 — der Wirk-Tropf (langsame Grund-Regeneration, verhindert
             // permanente Verarmung; die ECHTE Regeneration ist die Wertung).
+            // V18.108 — E2-VOLL: auch der Tropf atmet mit der Balance (ruhig →
+            // voll, gekippt → 40 % — der Nexus wird still, wenn der Spieler kippt).
             if (this.state.nexusWirk === undefined) this.state.nexusWirk = AnazhRealm.NEXUS_WIRK.start;
             this.state.nexusWirk = Math.min(
                 AnazhRealm.NEXUS_WIRK.max,
-                this.state.nexusWirk + AnazhRealm.NEXUS_WIRK.idleRegenPer5s
+                this.state.nexusWirk + AnazhRealm.NEXUS_WIRK.idleRegenPer5s * (0.4 + 0.6 * this._emotionBalanceFactor())
             );
             // E3 (gigant-plan §5 — Mana-Symmetrie): MANA regeneriert am SELBEN
             // 5-s-Takt — schneller, wo der Spieler magie-leitend IST (statTags)
@@ -52800,7 +53115,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.105.0";
+AnazhRealm.VERSION = "18.111.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -53121,6 +53436,8 @@ AnazhRealm.DEFAULT_KEYBINDINGS = Object.freeze({
     drawerWerkstatt: "KeyB",
     drawerEinstellungen: "KeyI",
     cameraToggle: "KeyV",
+    // V18.109 — E8: der Hand-Tausch (Minecraft-Geste; F ist confirmBuild → G).
+    swapHands: "KeyG",
 });
 AnazhRealm.KEYBINDING_ACTIONS = Object.freeze(Object.keys(AnazhRealm.DEFAULT_KEYBINDINGS));
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({
@@ -53135,6 +53452,7 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     drawerWerkstatt: "Werkstatt-Drawer öffnen",
     drawerEinstellungen: "Einstellungen-Drawer öffnen",
     cameraToggle: "Kamera: 1st/3rd-Person",
+    swapHands: "Hand tauschen (Off-Hand)",
 });
 
 // Welle 6.H Phase 2A — Kreatur-Seelen als Hylomorphismus-Compounds.
@@ -53376,20 +53694,23 @@ AnazhRealm.SPATIAL_ARRAY_BONUS = 0.4; // +40 % auf resoniert + magieleitung
 // Liefert Wert 0..3-Skala wie die Tag-Strahler. Schwelle für „solide" liegt
 // bei ~0.7; darunter ist die Verbindung sichtbar fragil.
 AnazhRealm.CONNECTION_TYPES = Object.freeze({
+    // V18.110 — C7: intuitive deutsche Labels (S-Befund „die aktuellen
+    // Benennungen sind unintuitiv, das Fundament passt") — die KEYS bleiben
+    // (Persistenz/DSL), nur die Spieler-Sprache wird klar.
     hafting: Object.freeze({
-        label: "Hafting",
+        label: "Stecken (Stiel in Loch)",
         description: "Stiel in Loch — Reibschluss",
         strongTags: Object.freeze(["härte", "dichte"]),
         typeStrength: 0.8,
     }),
     lashing: Object.freeze({
-        label: "Lashing",
+        label: "Binden (Umwicklung)",
         description: "Umwicklung — Zugfest",
         strongTags: Object.freeze(["zähigkeit"]),
         typeStrength: 0.6,
     }),
     pinning: Object.freeze({
-        label: "Pinning",
+        label: "Stiften (Bolzen)",
         description: "Stift durch Loch — Scherung",
         strongTags: Object.freeze(["härte"]),
         typeStrength: 0.75,
@@ -53423,6 +53744,35 @@ AnazhRealm.CONNECTION_TYPES = Object.freeze({
         description: "Tag-Resonanz",
         strongTags: Object.freeze(["magieleitung", "resoniert"]),
         typeStrength: 0.85,
+    }),
+    // V18.110 — C7 (S-Entscheid 10.06.): ATTACHMENT-PUNKTE. Die Anker sind
+    // seit C1 Gelenke — jetzt auch GRIFF/SITZ/TRAGE als Punkt-Typen: ein
+    // Punkt AM Bauplan für die Außenwelt (die Hand des Trägers · der Körper
+    // des Reiters · der Torso unterm Panzer). partB ist optional (-1 = nur
+    // partA trägt den Punkt); `attachment: true` hält sie aus der Statik
+    // (computeConnectionStrength) + den C1-Gelenken (computeMotionRoles)
+    // heraus. Ohne expliziten Punkt EMERGIERT er per Form-Resonanz
+    // (_attachPointFor) — der explizite Punkt ist der Intent-Override.
+    griff: Object.freeze({
+        label: "Griff (hier greift die Hand)",
+        description: "Attachment-Punkt: die Hand des Trägers",
+        strongTags: Object.freeze([]),
+        typeStrength: 0,
+        attachment: true,
+    }),
+    sitz: Object.freeze({
+        label: "Sitz (hier sitzt der Reiter)",
+        description: "Attachment-Punkt: der Körper des Reiters",
+        strongTags: Object.freeze([]),
+        typeStrength: 0,
+        attachment: true,
+    }),
+    trage: Object.freeze({
+        label: "Trage (liegt am Körper an)",
+        description: "Attachment-Punkt: der Torso unterm Getragenen",
+        strongTags: Object.freeze([]),
+        typeStrength: 0,
+        attachment: true,
     }),
 });
 AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT = 64;
@@ -54353,6 +54703,36 @@ AnazhRealm.CREATURE_NATURE = Object.freeze({
     fleeSpeedBoost: 1.6, // Flucht ist schneller als das Schlendern
     combatFearWariness: 1.5, // ein getroffenes Wesen ist garantiert über der Flucht-Schwelle
     fearSec: 5, // s — wie lange die Kampf-Furcht (fearUntil) anhält
+});
+// V18.107 — D4-VOLL (S-Design 10.06.): das TEMPERAMENT eines Wesens emergiert
+// aus seiner SEELEN-SUBSTANZ — dieselbe argmax-Resonanz-Sprache wie Werk-Rolle/
+// Motion-Rolle (`_blueprintResonance` gegen Signaturen, Invers-Achsen erlaubt),
+// auf den ÷3-normalisierten Tag-Vektor (PRODUCT_VECTOR_TAG_NORM — die V17.90-
+// Skala aller Resonanz-Leser; der [0,1]-CLAMP wäre falsch: die MAX-Aktivierung
+// sättigt fast jede dichte auf 1 → keine Diskriminierung, GEMESSEN). KEIN
+// globaler Schalter, KEIN Verhaltens-Import: dichte/harte Substanz steht ihren
+// Grund (wehrhaft), glühend-heiße entflammt (wild), lebendig-weiche weicht
+// (sanft), ätherisch-transparente flieht (scheu = Floor-Default, das W3-Erbe).
+// GEMESSEN an den Built-ins (Scores im Playtest-Band): wesen→wehrhaft (0.84) ·
+// geist→sanft (0.42) · sprite→scheu (1.01) — klare Margen.
+AnazhRealm.TEMPERAMENT_SIGNATURES = Object.freeze({
+    wehrhaft: Object.freeze({ dichte: 1.0, ["härte"]: 0.6, transparent: -0.5, lebendig: -0.3 }),
+    wild: Object.freeze({ brennbar: 0.5, ["wärmeleitung"]: 0.7, ["härte"]: -0.2 }),
+    sanft: Object.freeze({ lebendig: 1.4, ["zähigkeit"]: 0.5, dichte: -0.5, ["härte"]: -0.3 }),
+    scheu: Object.freeze({ transparent: 0.8, magieleitung: 0.6, dichte: -0.4 }),
+});
+AnazhRealm.TEMPERAMENT_FLOOR = 0.35; // beste Resonanz darunter → scheu (zarte Natur)
+// Die VERHALTENS-Profile pro Temperament (NUR im pfad-Modus konsumiert — der
+// Modus macht den Ernst, die Seele macht das WIE; frieden/schöpfer bleiben
+// über das damagePlayer-Modus-Gate + den pfad-Check unberührt): strike =
+// Basis-Gegenwehr-Chance, strikeChaos = Moment-Emotion moduliert (chaos),
+// counterMul = Härte des Gegenschlags (× damage), fleeMul = Furcht-Dauer
+// (× fearSec — wehrhafte fliehen kurz, scheue lang).
+AnazhRealm.TEMPERAMENT_PROFILES = Object.freeze({
+    wehrhaft: Object.freeze({ strike: 0.45, strikeChaos: 0.3, strikeCap: 0.8, counterMul: 0.7, fleeMul: 0.5 }),
+    wild: Object.freeze({ strike: 0.3, strikeChaos: 0.5, strikeCap: 0.85, counterMul: 0.85, fleeMul: 0.7 }),
+    sanft: Object.freeze({ strike: 0, strikeChaos: 0, strikeCap: 0, counterMul: 0, fleeMul: 1.0 }),
+    scheu: Object.freeze({ strike: 0, strikeChaos: 0, strikeCap: 0, counterMul: 0, fleeMul: 1.7 }),
 });
 // Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
 // TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur

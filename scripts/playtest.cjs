@@ -22254,9 +22254,46 @@ async function checkBandPhasenBF(ctx) {
         out.d3Age = /FAUNA_MAX_AGE_MS/.test(r.tickFaunaLifecycle.toString());
         out.d3Feed = /_depositLife/.test(r._creatureNaturalDeath.toString());
         out.d4Src = /gegenwehr/.test(r.damageCreature.toString());
+        // V18.107 — D4-VOLL: das Temperament emergiert aus der Seelen-Substanz
+        // (GEMESSEN an den Built-ins: wesen [stein+holz, dicht] → wehrhaft ·
+        // geist [laub+leder, lebendig-weich] → sanft · sprite [quarz,
+        // ätherisch] → scheu) + KONSUM: die Gegenwehr liest das Profil
+        // (strikeCap/fleeMul im Treffer-Pfad), sanft/scheu haben strike 0.
+        out.d4Temperament = (() => {
+            const t = (soul) => r._creatureTemperament({ userData: { soul } });
+            return t("wesen") === "wehrhaft" && t("geist") === "sanft" && t("sprite") === "scheu";
+        })();
+        out.d4Konsum =
+            /_creatureTemperament/.test(r.damageCreature.toString()) &&
+            /fleeMul/.test(r.damageCreature.toString()) &&
+            AnazhRealm.TEMPERAMENT_PROFILES.sanft.strike === 0 &&
+            AnazhRealm.TEMPERAMENT_PROFILES.scheu.strike === 0 &&
+            AnazhRealm.TEMPERAMENT_PROFILES.wehrhaft.strike > 0;
         // E2 — der Kosten-Walker zahlt die Substanz-Wahrheit.
         out.e2VillageCost = r._dslProgramWirkCost(["spawn_village", ["at", 0, 0, 0], 1]) === 20;
         out.e2Gate = /nexusWirk/.test(r._loopNexusUpdate.toString());
+        // V18.108 — E2-VOLL: der REGELKREIS. Behavioral: ruhige Emotion → Faktor 1,
+        // stark gekippte (chaos dominant) → klein (<0.5). KONSUM an allen vier
+        // Stellen: Outcome-Regen + Idle-Tropf + Kosten-Tor + proaktive Stimmen
+        // lesen DENSELBEN _emotionBalanceFactor (eine Quelle, vier Leser).
+        out.e2Balance = (() => {
+            const p = r.state.player;
+            const save = { ...p.emotions };
+            try {
+                for (const k in p.emotions) p.emotions[k] = 0;
+                const calm = r._emotionBalanceFactor();
+                p.emotions.chaos = 0.9;
+                const tipped = r._emotionBalanceFactor();
+                return calm === 1 && tipped < 0.5;
+            } finally {
+                Object.assign(p.emotions, save);
+            }
+        })();
+        out.e2Kreis =
+            /_emotionBalanceFactor/.test(r._loopNexusUpdate.toString()) &&
+            /_emotionBalanceFactor/.test(r._loopSelfAnalysis.toString()) &&
+            /_emotionBalanceFactor/.test(r._creatureSpeakProactive.toString()) &&
+            /_emotionBalanceFactor/.test(r.finalizePendingOutcomes.toString());
         out.e3Mana = /mana/.test(r._chatTryDslParse.toString());
         out.e4Heal = /finalized/.test(r.dslSelectByFitness.toString());
         out.f1Blob = /Blob/.test(r._getVoxelWorker.toString());
@@ -22266,6 +22303,96 @@ async function checkBandPhasenBF(ctx) {
         // B8 — Struktur-LUT + Rim verdrahtet (B2-Mantel prüft das A-Band in der Tiefe).
         out.b8Lut = typeof r._ensureStructureGradient === "function" && !!r._ensureStructureGradient();
         out.b8Rim = !!(r.state.atmoUniforms && r.state.atmoUniforms.rimStrength);
+        // V18.109 — E8 ZWEI-HAND: swapHands tauscht über den EINEN equipHeld-
+        // Pfad (KONSUM: Roundtrip Hand→Off-Hand→Hand) + der Off-Hand-Slot
+        // steht neben der Hotbar + der Tausch-Key ist gebunden.
+        out.e8Swap = (() => {
+            const eq = (r.state.player.equipped = r.state.player.equipped || {
+                held: null,
+                offhand: null,
+                armor: null,
+            });
+            const save = { held: eq.held || null, offhand: eq.offhand || null };
+            try {
+                const name = r.state.blueprints.geraet_spitzhacke ? "geraet_spitzhacke" : "stein_block";
+                r.equipHeld(name); // equipHeld ist das freie Low-Level-Primitiv (GEBRAUCH)
+                const s1 = r.swapHands();
+                const okA = !!(s1.ok && s1.offhand === name && !s1.held);
+                const s2 = r.swapHands();
+                const okB = !!(s2.ok && s2.held === name && !s2.offhand);
+                return okA && okB;
+            } finally {
+                eq.held = save.held;
+                eq.offhand = save.offhand;
+                r.recomputePlayerStats();
+                if (typeof r._refreshHeldMesh === "function") r._refreshHeldMesh();
+            }
+        })();
+        out.e8Dom = !!document.querySelector('#hotbar .hotbar-slot[data-slot="offhand"]');
+        out.e8Key = (r.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS).swapHands === "KeyG";
+        out.e8OffhandMeshPath = /offhandMesh/.test(r._refreshHeldMesh.toString());
+        // V18.110 — C7 ATTACHMENT-PUNKTE: (1) ein sitz-Punkt validiert ohne
+        // partB (Attachment zur Außenwelt), (2) die getragene Rüstung sitzt am
+        // TORSO (Masse-Zentrum auf 0.18 — der „auf dem Kopf"-Fix, GEMESSEN am
+        // echten _wornArmorMesh), (3) die Fahrzeug-/Reittier-Saat ist moveable
+        // per Substanz (GEMESSEN) + trägt explizite sitz-Punkte, (4) die
+        // Built-in-Körper liegen automatisch als Blueprints (der Button fiel).
+        out.c7Validate = (() => {
+            const v = r.validateBlueprintConnections([{ type: "sitz", partA: 0 }], 3);
+            return v.length === 1 && v[0].partB === -1;
+        })();
+        out.c7ArmorSitz = (() => {
+            const p = r.state.player;
+            const savedArmor = (p.equipped && p.equipped.armor) || null;
+            try {
+                r.equipArmor("ruestung_brustpanzer");
+                r._tickWornArmorVisual();
+                const g = r.state.playerMesh && r.state.playerMesh.userData._wornArmorMesh;
+                if (!g) return false;
+                // matrixWorld ist außerhalb des Render-Loops STALE (Physik setzt
+                // nur .position) → erst aktualisieren, sonst misst die Box lokal
+                // gegen Welt (GEMESSEN: −18.9 statt 0.14 — die Probe lag, nicht der Code).
+                r.state.playerMesh.updateMatrixWorld(true);
+                const box = new THREE.Box3().setFromObject(g);
+                const pmY = r.state.playerMesh.position.y;
+                const centerLocalY = (box.min.y + box.max.y) / 2 - pmY;
+                // Masse-Zentrum nahe dem Torso-Anker 0.18 (±0.45) — NICHT ~0.9 (Kopf).
+                return Math.abs(centerLocalY - 0.18) < 0.45;
+            } finally {
+                r.equipArmor(savedArmor);
+                r._tickWornArmorVisual();
+            }
+        })();
+        out.c7Seeds = (() => {
+            const w = r.state.blueprints.fahrzeug_wagen;
+            const h = r.state.blueprints.reittier_holzross;
+            if (!w || !h) return false;
+            const wMv = r._isMoveable(w);
+            const hMv = r._isMoveable(h);
+            const wSitz = r._attachPointFor(w, "sitz").point;
+            return wMv && hMv && Math.abs(wSitz.y - 1.025) < 0.01 && w.connections.some((c) => c.type === "sitz");
+        })();
+        out.c7Bodies =
+            !!(r.state.blueprints.koerper_human && r.state.blueprints.koerper_human.role === "soul") &&
+            !!r.state.blueprints.koerper_phoenix &&
+            !!r.state.blueprints.koerper_dragon &&
+            !document.getElementById("workshop-import-soul-btn");
+        out.c7MountSitz =
+            /_sitzHeight/.test(r.mountArchitecture.toString()) && /_sitzHeight/.test(r._tickMountedMovement.toString());
+        out.c7Grip = /_attachPointFor/.test(r._refreshHeldMesh.toString());
+        // V18.111 — A4: die Wasserfall-PLANE ist geschnitten (Builder weg, das
+        // Abwärts-Material lebt als markierte Saat), der STEIL-SPLIT formt
+        // vertikales Wasser im Zell-Sheet (Lippe + Vorhang; GEMESSEN
+        // diag-waterfall-zacken: >14-m-Zacken 137→0, max 28.8→12.3 m).
+        out.a4PlaneCut =
+            typeof r._buildHydroWaterfall === "undefined" &&
+            typeof r._buildHydroWaterfallPool === "undefined" &&
+            typeof r._waterfallIsRealWall === "undefined" &&
+            typeof r._ensureWaterfallMaterial === "function" &&
+            typeof r.setWaterfallSteep === "undefined";
+        out.a4Curtain =
+            /VERT_SPLIT/.test(r._buildVoxelChunkWaterCellSheet.toString()) &&
+            /dupVert/.test(r._buildVoxelChunkWaterCellSheet.toString());
         return out;
     });
     if (res.error) {
@@ -22280,14 +22407,33 @@ async function checkBandPhasenBF(ctx) {
     check("D3: Alter zählt im Lebenszyklus (FAUNA_MAX_AGE_MS, Source)", res.d3Age);
     check("D3: der Tod nährt das Feld (_depositLife im NaturalDeath, Source)", res.d3Feed);
     check("D4: die Gegenwehr lebt im Treffer-Pfad (Source, pfad-gated)", res.d4Src);
+    check(
+        "D4-VOLL: Temperament emergiert aus der Seele (wesen wehrhaft · geist sanft · sprite scheu)",
+        res.d4Temperament
+    );
+    check("D4-VOLL: die Gegenwehr KONSUMIERT das Temperament-Profil (strike/fleeMul)", res.d4Konsum);
     check("E2: _dslProgramWirkCost zahlt die Substanz (spawn_village = 20)", res.e2VillageCost);
     check("E2: der Nexus zahlt am Wirk-Tor (Source)", res.e2Gate);
+    check("E2-VOLL: der Balance-Faktor liest die Emotion (ruhig=1, chaos-gekippt<0.5)", res.e2Balance);
+    check("E2-VOLL: EIN Regelkreis — Regen+Tropf+Kosten+Stimmen lesen den Balance-Faktor", res.e2Kreis);
     check("E3: die Welt-Geste kostet Mana im pfad (Source)", res.e3Mana);
     check("E4: die finalisierte Wertung führt die Selektion (Source, Passagier-Heal)", res.e4Heal);
     check("F1: der Worker trägt den Blob-Fallback (Source)", res.f1Blob);
     check("F2: p2pSend stempelt die Protokoll-Version (Source)", res.f2Proto);
     check("F2: iceServers konfigurierbar präsent", res.f2Turn);
     check("F2: creature-pos trägt den Empfangs-Raten-Cap (Source)", res.f2CpCap);
+    check("E8: swapHands tauscht Hand↔Off-Hand im Roundtrip (KONSUM via equipHeld)", res.e8Swap);
+    check("E8: der Off-Hand-Slot steht neben der Hotbar (data-slot=offhand)", res.e8Dom);
+    check("E8: der Hand-Tausch ist als Key G gebunden (rebindable)", res.e8Key);
+    check("E8: die Off-Hand ist am Körper sichtbar (offhandMesh im Hand-Mesh-Pfad)", res.e8OffhandMeshPath);
+    check("C7: ein Attachment-Punkt (sitz) validiert ohne partB", res.c7Validate);
+    check("C7: die getragene Rüstung sitzt am TORSO, nicht auf dem Kopf (GEMESSEN ±0.45)", res.c7ArmorSitz);
+    check("C7: Wagen+Holzross-Saat sind moveable + tragen sitz-Punkte (GEMESSEN)", res.c7Seeds);
+    check("C7: Built-in-Körper liegen automatisch als Blueprints (Button gefallen)", res.c7Bodies);
+    check("C7: der Mount liest die Sitz-Höhe des Bauplans (Source, beide Leser)", res.c7MountSitz);
+    check("C7: die Hand greift am GRIFF-Punkt (Source im Hand-Mesh-Pfad)", res.c7Grip);
+    check("A4: die Wasserfall-Plane ist geschnitten, das Abwärts-Material lebt als Saat", res.a4PlaneCut);
+    check("A4: der Steil-Split formt vertikales Wasser (Lippe + Vorhang im Zell-Sheet)", res.a4Curtain);
     check("B8: Struktur-LUT existiert + rimStrength-Uniform verdrahtet", res.b8Lut && res.b8Rim);
 }
 
@@ -25537,7 +25683,7 @@ async function checkBandWelle6Keybindings(ctx) {
             Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
         // V8.17: 11 Aktionen (6 Original + 5 Drawer/Camera-Shortcuts; UI-Putz: drawerWelt entfiel).
         out.hasActions =
-            Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 11;
+            Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 12; // V18.109 E8: + swapHands
         out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
         const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
         out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
@@ -25628,9 +25774,9 @@ async function checkBandWelle6Keybindings(ctx) {
         out.listInDom = !!document.getElementById("keybindings-list");
         out.resetInDom = !!document.getElementById("keybindings-reset");
         // 11 keybind-row Zeilen (UI-Putz: drawerWelt entfiel)
-        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 11;
+        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 12; // V18.109 E8
         // Pro Aktion ein Rebind-Button mit data-action
-        out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 11;
+        out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 12; // V18.109 E8
 
         // Reset für nachfolgende Tests
         r.resetKeybindings();
@@ -25641,7 +25787,10 @@ async function checkBandWelle6Keybindings(ctx) {
 
     if (wave6c3Results && !wave6c3Results.error) {
         check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
-        check("Welle 6.C3/V8.17: KEYBINDING_ACTIONS hat 11 Einträge (6 + 5 Drawer/Camera)", wave6c3Results.hasActions);
+        check(
+            "Welle 6.C3/V8.17+E8: KEYBINDING_ACTIONS hat 12 Einträge (6 + 5 Drawer/Camera + swapHands)",
+            wave6c3Results.hasActions
+        );
         check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
         check(
             "Welle 6.C3: Actions vollständig (break/place/confirmBuild/inventory/cancelBuild/jump)",
@@ -25696,7 +25845,7 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
         check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
         check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-        check("Welle 6.C3/V8.17: 12 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+        check("Welle 6.C3/V8.17+E8: 12 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
         check("Welle 6.C3/V8.17: 12 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
     }
 }
@@ -28640,17 +28789,35 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Schicht lautlos verschwinden — der Playtest-grün verdeckt das sonst.
         // `window.__toonColorNodeError` ist der Diagnose-Marker (null = sauber).
         window.__toonColorNodeError = null;
-        window.__terrainNormalError = null;
         const _terrMat =
             typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ vertexColors: true }) : null;
         out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && !window.__toonColorNodeError;
         out.terrainColorNodeError = window.__toonColorNodeError || null;
-        // V17.107 — die 2.5D-Lichtung: das Terrain-Material trägt einen normalNode
-        // (Shading-Normale zur Up-Achse geblendet, terrainFlatten) → die Facetten-
-        // Streuung kollabiert; ein Flach-Farb-Strukturmaterial trägt KEINEN (nur
-        // Terrain/Inseln). KONSUM, nicht Existenz; Marker gegen still gefangenen Fehler.
-        out.terrainNormalFlatten = !!(_terrMat && _terrMat.normalNode) && !window.__terrainNormalError;
-        out.terrainNormalError = window.__terrainNormalError || null;
+        // V18.106 — B3: die 2.5D-Lichtung ist in die GEOMETRIE gebacken — das
+        // Terrain-Material trägt KEINEN normalNode-Override mehr, stattdessen
+        // tragen die gebauten Chunk-Geometrien up-Normalen (KONSUM: ein echter
+        // Chunk aus state.voxelChunks, alle gesampelten Normalen ≈ (0,1,0) beim
+        // settled TERRAIN_NORMAL_FLATTEN=1.0). Worker+Main per Konstruktion EINS.
+        out.terrainNormalFlatten = !!_terrMat && !_terrMat.normalNode;
+        out.terrainNormalsBaked = (() => {
+            try {
+                if (!(AnazhRealm.TERRAIN_NORMAL_FLATTEN >= 1)) return true; // <1: Bake-Formel, nicht up
+                for (const entry of r.state.voxelChunks.values()) {
+                    const g = entry && entry.mesh && entry.mesh.geometry;
+                    const n = g && g.attributes && g.attributes.normal;
+                    if (!n || n.count < 8) continue;
+                    const stride = Math.max(1, Math.floor(n.count / 100));
+                    for (let i = 0; i < n.count; i += stride) {
+                        if (Math.abs(n.getX(i)) > 1e-6 || Math.abs(n.getY(i) - 1) > 1e-6 || Math.abs(n.getZ(i)) > 1e-6)
+                            return false;
+                    }
+                    return true; // ein Chunk geprüft reicht (eine Quelle)
+                }
+                return false; // kein Chunk-Mesh gefunden — sollte nach Warmup nie passieren
+            } catch (e) {
+                return false;
+            }
+        })();
         // ===== WELLE J — die EINE geteilte Aerial-Perspektive (Render-Harmonie) =====
         // KONSUM (nicht Existenz, V17.31): die geteilte `_applyAerialOutput` setzt
         // outputNode IDENTISCH auf Terrain UND Strukturen (eine Atmosphäre, viele
@@ -28743,20 +28910,17 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.atmosphere.colorVar === 0 &&
             r.state.atmoUniforms &&
             r.state.atmoUniforms.tintScale.value === 0;
-        // V17.109 — die 2.5D-Lichtung als Slider: setTerrainFlatten pusht live +
-        // persistiert (KONSUM); + Headroom 0..2 für die maxed Slider (kein [0,1]-Clamp).
-        const tfRet = r.setTerrainFlatten(0.8);
+        // V18.106 — B3: setTerrainFlatten/Slider/Uniform sind GESCHNITTEN (gebacken);
+        // die Wahrheit lebt als statische Konstante (Worker-Mirror-Vertrag).
         out.terrainFlattenSetter =
-            tfRet === 0.8 &&
-            r.state.atmosphere.terrainFlatten === 0.8 &&
-            r.state.atmoUniforms &&
-            Math.abs(r.state.atmoUniforms.terrainFlatten.value - 0.8) < 1e-6;
+            typeof r.setTerrainFlatten === "undefined" &&
+            Number.isFinite(AnazhRealm.TERRAIN_NORMAL_FLATTEN) &&
+            !(r.state.atmoUniforms && r.state.atmoUniforms.terrainFlatten);
         out.sliderHeadroom = r.setCavityAO(1.5) === 1.5 && r.setSurfaceTexture(1.5) === 1.5;
         // Werte wiederherstellen, die der j4SlidersPersist-Test unten erwartet
         // (mein Headroom-Check hat cavityAO/triplanar verändert).
         r.setCavityAO(0.3);
         r.setSurfaceTexture(0);
-        r.setTerrainFlatten(0.5);
         r.setColorVariation(1.0);
         const snap2 = r.buildStateSnapshot();
         out.j4SlidersPersist = !!(
@@ -28838,8 +29002,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v828Results.aerialEyeRelative
         );
         check(
-            "V17.107: das Terrain-Material trägt die 2.5D-Lichtung (normalNode/terrainFlatten, kein Fehler)",
+            "V18.106 B3: kein normalNode-Override mehr — die 2.5D-Lichtung ist gebacken (kein Fehler)",
             v828Results.terrainNormalFlatten
+        );
+        check(
+            "V18.106 B3: die Chunk-Geometrie trägt die GEBACKENE Normale (up beim settled 1.0, KONSUM)",
+            v828Results.terrainNormalsBaked
         );
         check(
             "V17.J: transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element)",
@@ -28868,7 +29036,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
         check(
-            "V17.109: setTerrainFlatten (2.5D-Lichtung-Slider) pusht live + persistiert",
+            "V18.106 B3: setTerrainFlatten + Slider + Uniform sind geschnitten (Bake-Konstante steht)",
             v828Results.terrainFlattenSetter
         );
         check(
@@ -36617,7 +36785,7 @@ async function checkBandCadWorkshop(ctx) {
             // Popover hat 8 Type-Buttons + 1 Cancel
             if (popover) {
                 const buttons = popover.querySelectorAll("button");
-                out.popoverHasButtons = buttons.length === 9; // 8 types + cancel
+                out.popoverHasButtons = buttons.length === 12; // 8 Prozess- + 3 C7-Punkt-Typen + cancel (V18.110)
             }
 
             // Apply Connection
@@ -36697,7 +36865,7 @@ async function checkBandCadWorkshop(ctx) {
         );
         check("V8.02 Phase 3b: Zweiter Connect-Klick öffnet #workshop-connect-overlay", v802Results.popoverOpened);
         check(
-            "V8.02 Phase 3b: Popover hat 8 Type-Buttons + 1 Cancel-Button (= 9 total)",
+            "V8.02/V18.110: Popover hat 11 Type-Buttons (8 Prozess + 3 C7-Punkte) + 1 Cancel (= 12 total)",
             v802Results.popoverHasButtons
         );
         check(
@@ -38846,7 +39014,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // V17.91 — die Mode-Bar trägt 4 Modi (Move/Rotate/Scale/Connect) + Snap + Zentrieren + Undo +
             // Redo + Klonen + Neu + Löschen. V18.62 Ich-H — + „Körper holen" (Seele→Bauplan-Brücke) = 12.
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
-            out.sevenButtonsInBar = allBtns === 12;
+            out.sevenButtonsInBar = allBtns === 11; // V18.110 C7: „Körper holen" fiel (auto-Saat)
 
             // Methode existiert
             out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
@@ -38903,7 +39071,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
         );
         check(
-            "V8.06/V17.91/V18.62: Mode-Bar hat 12 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + Klonen + Neu + Körper holen + Löschen)",
+            "V8.06/V17.91/V18.110: Mode-Bar hat 11 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + Klonen + Neu + Löschen — Körper holen fiel, C7-Auto-Saat)",
             v806Results.sevenButtonsInBar
         );
         check(
@@ -41544,7 +41712,11 @@ async function checkBandRing6Workshop(ctx) {
         // DOM-Hotbar
         const bar = document.getElementById("hotbar");
         out.hotbarInDom = !!bar;
-        out.hotbarHasNineSlots = bar && bar.querySelectorAll(".hotbar-slot").length === 9;
+        // V18.109 — E8: 9 Bau-Slots + der Off-Hand-Slot (Minecraft-Modell) = 10.
+        out.hotbarHasNineSlots =
+            bar &&
+            bar.querySelectorAll(".hotbar-slot").length === 10 &&
+            bar.querySelectorAll('.hotbar-slot[data-slot="offhand"]').length === 1;
         out.defaultHotbar =
             Array.isArray(r.state.hotbar) &&
             r.state.hotbar.length === 9 &&
@@ -41613,7 +41785,7 @@ async function checkBandRing6Workshop(ctx) {
         // V18.59 — die Ich-Hotbar ist jetzt eine VISUELLE 9-Slot-Reihe (Minecraft-vereint), nicht mehr 9 Dropdowns.
         const config = document.getElementById("hotbar-config");
         out.hotbarConfigInDom = !!config;
-        out.hotbarConfigHasNineRows = config && config.querySelectorAll(".hotbar-slot").length === 9;
+        out.hotbarConfigHasNineRows = config && config.querySelectorAll(".hotbar-slot").length === 10; // 9 + Off-Hand (E8)
 
         // Save-Roundtrip
         r.setHotbarSlot(7, "temple");
