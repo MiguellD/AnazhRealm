@@ -13106,9 +13106,32 @@ class AnazhRealm {
                 continue;
             }
             const s = p.size || {};
-            const sx = Math.abs(Number(s.x) || 0.3);
-            const sy = Math.abs(Number(s.y) || 0.3);
-            const sz = Math.abs(Number(s.z) || 0.3);
+            let sx = Math.abs(Number(s.x) || 0.3);
+            let sy = Math.abs(Number(s.y) || 0.3);
+            let sz = Math.abs(Number(s.z) || 0.3);
+            // V18.101 — ROTATION-bewusste effektive Ausmaße: ein um die Achse
+            // gedrehter Part (z. B. der liegende Schweif-Zylinder, rotation.x
+            // = π/2) hat in WELT-Achsen getauschte Ausdehnungen — ohne das
+            // las der Klassifikator einen liegenden Schweif als „stehendes
+            // Bein". |R|·s (Beträge der Rotations-Matrix mal Halbachsen) ist
+            // die AABB-Hülle des gedrehten Quaders — exakt das, was die
+            // Lage-Achsen (elongV/H, flat) brauchen.
+            const rot = p.rotation;
+            if (rot && (rot.x || rot.y || rot.z)) {
+                const cx = Math.abs(Math.cos(rot.x || 0));
+                const sxr = Math.abs(Math.sin(rot.x || 0));
+                const cy = Math.abs(Math.cos(rot.y || 0));
+                const syr = Math.abs(Math.sin(rot.y || 0));
+                const cz = Math.abs(Math.cos(rot.z || 0));
+                const szr = Math.abs(Math.sin(rot.z || 0));
+                // |R| für Euler XYZ, komponentenweise konservativ kombiniert.
+                const ex = cy * cz * sx + (szr * cx + sxr * syr * cz) * sy + (sxr * szr + cx * syr * cz) * sz;
+                const ey = cy * szr * sx + (cx * cz + sxr * syr * szr) * sy + (sxr * cz + cx * syr * szr) * sz;
+                const ez = syr * sx + sxr * cy * sy + cx * cy * sz;
+                sx = ex;
+                sy = ey;
+                sz = ez;
+            }
             const pos = p.position || {};
             const px = Number(pos.x) || 0;
             const py = Number(pos.y) || 0;
@@ -13129,7 +13152,13 @@ class AnazhRealm {
             const f = {
                 elongV: c01((a.sy / Math.max(a.sx, a.sz, eps) - 1) / 1.5),
                 elongH: c01((Math.max(a.sx, a.sz) / Math.max(a.sy, eps) - 1) / 1.5),
-                flat: c01((Math.max(a.sx, a.sy, a.sz) / (Math.min(a.sx, a.sy, a.sz) + eps) - 2.2) / 3),
+                // flat = PLATTE: die KLEINSTE Achse ist viel dünner als die
+                // MITTLERE (nicht max/min — ein dünner LANGER Zylinder ist
+                // gestreckt, keine Platte; der Arm-als-Flügel-Riss, V18.101).
+                flat: (() => {
+                    const d = [a.sx, a.sy, a.sz].sort((u, v) => u - v);
+                    return c01((d[1] / (d[0] + eps) - 2.2) / 3);
+                })(),
                 lowAnchor: c01(1 - (a.py - a.sy / 2 - minY) / (0.3 * H)),
                 topMount: c01((a.py - (minY + 0.55 * H)) / (0.45 * H)),
                 sideMount: c01((Math.abs(a.px) / maxAX - 0.35) / 0.45),
@@ -29760,11 +29789,61 @@ class AnazhRealm {
                 color: 0xff0000,
                 build: () => this._buildHumanGroup(),
                 animate: (g, t, ph, mv, uw) => this._animateHuman(g, t, ph, mv, uw),
+                // V18.101 — POSITIONIERTE bodyParts (der Schöpfer-Befund „Körper
+                // holen zeigt nicht den getragenen Avatar"): vorher waren die
+                // Built-in-bodyParts positions-lose STAT-Schatten (alle Parts am
+                // Ursprung gestapelt) — nur der Wächter (echter Bauplan) holte
+                // sich richtig. Jetzt SPIEGELN sie die Hand-Visuals (build()),
+                // mit EXAKT denselben (Form,Material)-Paaren wie zuvor — die
+                // Tags sind MAX über Form×Material und größen-/positions-blind
+                // → Stat-Parität per Konstruktion (`diag`-verifiziert). Damit
+                // holt die Werkstatt den ECHTEN Körper, die Motion-Resonanz
+                // erkennt Glieder, und ein editierter Re-Embody lebt als
+                // Custom-Seele. build()+animate bleiben das getragene
+                // Built-in-Visual (die gestalteten Hand-Signaturen).
                 bodyParts: [
-                    { shape: "box", material: "fleisch", size: { x: 0.6, y: 1.0, z: 0.4 }, label: "Torso" },
-                    { shape: "sphere", material: "knochen", size: { x: 0.3, y: 0.3, z: 0.3 }, label: "Kopf" },
-                    { shape: "cylinder", material: "fleisch", size: { x: 0.18, y: 0.85, z: 0.18 }, label: "Glieder" },
-                    { shape: "cylinder", material: "knochen", size: { x: 0.2, y: 0.9, z: 0.2 }, label: "Skelett" },
+                    {
+                        shape: "box",
+                        material: "fleisch",
+                        size: { x: 0.6, y: 0.7, z: 0.3 },
+                        position: { x: 0, y: 0.45, z: 0 },
+                        label: "Torso",
+                    },
+                    {
+                        shape: "sphere",
+                        material: "knochen",
+                        size: { x: 0.38, y: 0.38, z: 0.38 },
+                        position: { x: 0, y: 1.0, z: 0 },
+                        label: "Kopf",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "fleisch",
+                        size: { x: 0.16, y: 0.7, z: 0.16 },
+                        position: { x: 0.42, y: 0.5, z: 0 },
+                        label: "Arm rechts",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "fleisch",
+                        size: { x: 0.16, y: 0.7, z: 0.16 },
+                        position: { x: -0.42, y: 0.5, z: 0 },
+                        label: "Arm links",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.18, y: 0.8, z: 0.18 },
+                        position: { x: 0.17, y: -0.05, z: 0 },
+                        label: "Bein rechts",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.18, y: 0.8, z: 0.18 },
+                        position: { x: -0.17, y: -0.05, z: 0 },
+                        label: "Bein links",
+                    },
                 ],
             },
             phoenix: {
@@ -29772,11 +29851,54 @@ class AnazhRealm {
                 color: 0xff7a1a,
                 build: () => this._buildPhoenixGroup(),
                 animate: (g, t, ph, mv, uw) => this._animatePhoenix(g, t, ph, mv, uw),
+                // V18.101 — positioniert (s. human): dieselben (Form,Material)-
+                // Paare wie der alte Stat-Schatten (box/plane/cone+federn,
+                // sphere+glut) → Tag-Parität; die Flügel als ECHTES Spiegel-Paar
+                // (die Motion-Resonanz erkennt sie als fluegel).
                 bodyParts: [
-                    { shape: "box", material: "federn", size: { x: 0.4, y: 0.55, z: 0.35 }, label: "Körper" },
-                    { shape: "plane", material: "federn", size: { x: 1.2, y: 0.6, z: 0.05 }, label: "Flügel" },
-                    { shape: "sphere", material: "glut", size: { x: 0.22, y: 0.22, z: 0.22 }, label: "Inneres Feuer" },
-                    { shape: "cone", material: "federn", size: { x: 0.18, y: 0.8, z: 0.18 }, label: "Schweif" },
+                    {
+                        shape: "box",
+                        material: "federn",
+                        size: { x: 0.5, y: 0.55, z: 0.4 },
+                        position: { x: 0, y: 0.5, z: 0 },
+                        label: "Körper",
+                    },
+                    {
+                        shape: "box",
+                        material: "federn",
+                        size: { x: 0.3, y: 0.3, z: 0.3 },
+                        position: { x: 0, y: 0.95, z: 0.05 },
+                        label: "Haupt",
+                    },
+                    {
+                        shape: "sphere",
+                        material: "glut",
+                        size: { x: 0.22, y: 0.22, z: 0.22 },
+                        position: { x: 0, y: 0.55, z: 0.12 },
+                        label: "Inneres Feuer",
+                    },
+                    {
+                        shape: "plane",
+                        material: "federn",
+                        size: { x: 0.9, y: 0.04, z: 0.5 },
+                        position: { x: 0.62, y: 0.55, z: 0 },
+                        label: "Flügel rechts",
+                    },
+                    {
+                        shape: "plane",
+                        material: "federn",
+                        size: { x: 0.9, y: 0.04, z: 0.5 },
+                        position: { x: -0.62, y: 0.55, z: 0 },
+                        label: "Flügel links",
+                    },
+                    {
+                        shape: "cone",
+                        material: "federn",
+                        size: { x: 0.18, y: 0.9, z: 0.18 },
+                        position: { x: 0, y: 0.4, z: -0.6 },
+                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
+                        label: "Schweif",
+                    },
                 ],
             },
             dragon: {
@@ -29784,11 +29906,77 @@ class AnazhRealm {
                 color: 0x2d6e3b,
                 build: () => this._buildDragonGroup(),
                 animate: (g, t, ph, mv, uw) => this._animateDragon(g, t, ph, mv, uw),
+                // V18.101 — positioniert (s. human): dieselben Paare (box/
+                // cylinder+schuppen, sphere+schuppen, cylinder+knochen) →
+                // Tag-Parität; vier gespiegelte Beine (Diagonal-Trab der
+                // Motion-Resonanz) + der dreigliedrige Schweif als Kette.
                 bodyParts: [
-                    { shape: "box", material: "schuppen", size: { x: 1.2, y: 0.7, z: 0.5 }, label: "Körper" },
-                    { shape: "sphere", material: "schuppen", size: { x: 0.45, y: 0.4, z: 0.4 }, label: "Kopf" },
-                    { shape: "cylinder", material: "knochen", size: { x: 0.22, y: 0.45, z: 0.22 }, label: "Beine" },
-                    { shape: "cylinder", material: "schuppen", size: { x: 0.18, y: 1.4, z: 0.18 }, label: "Schweif" },
+                    {
+                        shape: "box",
+                        material: "schuppen",
+                        size: { x: 0.55, y: 0.45, z: 1.2 },
+                        position: { x: 0, y: 0.4, z: 0 },
+                        label: "Körper",
+                    },
+                    {
+                        shape: "sphere",
+                        material: "schuppen",
+                        size: { x: 0.42, y: 0.38, z: 0.45 },
+                        position: { x: 0, y: 0.5, z: 0.85 },
+                        label: "Haupt",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.15, y: 0.45, z: 0.15 },
+                        position: { x: 0.25, y: 0.1, z: 0.4 },
+                        label: "Bein vorn rechts",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.15, y: 0.45, z: 0.15 },
+                        position: { x: -0.25, y: 0.1, z: 0.4 },
+                        label: "Bein vorn links",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.15, y: 0.45, z: 0.15 },
+                        position: { x: 0.25, y: 0.1, z: -0.4 },
+                        label: "Bein hinten rechts",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "knochen",
+                        size: { x: 0.15, y: 0.45, z: 0.15 },
+                        position: { x: -0.25, y: 0.1, z: -0.4 },
+                        label: "Bein hinten links",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "schuppen",
+                        size: { x: 0.3, y: 0.45, z: 0.3 },
+                        position: { x: 0, y: 0.4, z: -0.85 },
+                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
+                        label: "Schweif-Wurzel",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "schuppen",
+                        size: { x: 0.2, y: 0.4, z: 0.2 },
+                        position: { x: 0, y: 0.4, z: -1.25 },
+                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
+                        label: "Schweif-Mitte",
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "schuppen",
+                        size: { x: 0.13, y: 0.35, z: 0.13 },
+                        position: { x: 0, y: 0.4, z: -1.6 },
+                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
+                        label: "Schweif-Spitze",
+                    },
                 ],
             },
         };
@@ -51611,7 +51799,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.100.0";
+AnazhRealm.VERSION = "18.101.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -51958,7 +52146,7 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
 // `computeMotionRoles` → `_animateCompoundMotion` (Kreaturen · Custom-
 // Avatare · Peer-Seelen erben EINE Bewegungs-Sprache).
 AnazhRealm.MOTION_ROLE_SIGNATURES = Object.freeze({
-    bein: Object.freeze({ lowAnchor: 1.0, paired: 0.6, elongV: 0.7, flat: -0.4, topMount: -0.8 }),
+    bein: Object.freeze({ lowAnchor: 1.0, paired: 0.6, elongV: 0.7, flat: -0.4, topMount: -0.8, central: -0.6 }),
     arm: Object.freeze({ sideMount: 0.8, elongV: 0.8, paired: 0.5, flat: -0.6, lowAnchor: -0.6 }),
     fluegel: Object.freeze({ sideMount: 0.7, flat: 1.0, paired: 0.4, lowAnchor: -0.7, central: -0.3 }),
     schwanz: Object.freeze({ rearMount: 1.0, elongH: 0.7, paired: -0.6, central: -0.4 }),

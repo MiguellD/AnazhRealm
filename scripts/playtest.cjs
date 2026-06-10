@@ -6274,7 +6274,16 @@ async function checkBandV1774UseByRole(ctx) {
         // Gehen (vorher: der frühe animatePlayerSoul-Return = komplett
         // statisch — KONSUM-Beweis, V17.31-Disziplin, am echten Treiber).
         const wRoles = (r.computeMotionRoles(r.state.blueprints.avatar_waechter.parts) || []).filter(Boolean);
-        out.motionRolesEmerge = wRoles.some((x) => x.role === "bein") && wRoles.some((x) => x.role === "fluegel");
+        // V18.101 (Test wandert auf den WAHREREN Intent): die geschärfte
+        // flat-Formel (Platte = mid/min, nicht max/min) erkennt die dünnen
+        // Wächter-Seiten-ZYLINDER korrekt als ARME (keine Platten-Flügel);
+        // die echte fluegel-Emergenz deckt der Phönix (2 Spiegel-PLANES).
+        out.motionRolesEmerge =
+            wRoles.some((x) => x.role === "bein") &&
+            wRoles.some((x) => x.role === "arm" || x.role === "fluegel") &&
+            (r.computeMotionRoles(r.playerSoulDefs.phoenix.bodyParts) || [])
+                .filter(Boolean)
+                .filter((x) => x.role === "fluegel").length === 2;
         if (r.state.playerBody) {
             r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 3, 0, 0));
             r.state.playerBody.activate(true);
@@ -16573,11 +16582,18 @@ async function checkBandWelle6DSoul(ctx) {
         const s2b = r.soulToBlueprint("human");
         out.s2bOk = !!(s2b && s2b.ok);
         const s2bBp = s2b && s2b.ok ? r.state.blueprints[s2b.name] : null;
+        // V18.101 (Test wandert, V9.56-i): der Mensch hat jetzt POSITIONIERTE
+        // bodyParts (6 statt der 4 positions-losen Stat-Schatten — der
+        // Schöpfer-Befund „Körper holen zeigt nicht den getragenen Avatar").
+        // Die Wahrheit ist dynamisch: ALLE def-Teile reisen, POSITIONIERT
+        // (nicht alle am Ursprung gestapelt).
+        const humanDefParts = r.playerSoulDefs.human.bodyParts.length;
         out.s2bIsSoulRole = !!(
             s2bBp &&
             s2bBp.role === "soul" &&
             Array.isArray(s2bBp.parts) &&
-            s2bBp.parts.length === 4
+            s2bBp.parts.length === humanDefParts &&
+            new Set(s2bBp.parts.map((p) => `${p.position.x},${p.position.y},${p.position.z}`)).size >= 5
         );
         if (s2b && s2b.ok) r.deleteBlueprint(s2b.name);
 
@@ -16586,10 +16602,12 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.soul = "human";
         const cloneResult = r.cloneSoulToCustom("human", "test_clone_a");
         out.cloneReturnsOk = cloneResult && cloneResult.ok;
+        // V18.101 (Test wandert, V9.56-i): dynamisch gegen die def-Länge —
+        // der Mensch trägt jetzt 6 positionierte Teile statt 4 Stat-Schatten.
         out.cloneHasBodyParts =
             r.state.customSouls.test_clone_a &&
             Array.isArray(r.state.customSouls.test_clone_a.bodyParts) &&
-            r.state.customSouls.test_clone_a.bodyParts.length === 4;
+            r.state.customSouls.test_clone_a.bodyParts.length === r.playerSoulDefs.human.bodyParts.length;
 
         // Add part
         const beforeParts = r.state.customSouls.test_clone_a.bodyParts.length;

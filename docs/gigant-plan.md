@@ -95,9 +95,26 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
 - **KERN GEBAUT ✓ (V18.99):** `MOTION_ROLE_SIGNATURES` (bein·arm·fluegel·schwanz·kopf) +
   `computeMotionRoles` (argmax über Feature-Vektor inkl. paired-Spiegel-Achse) + EIN
   `_animateCompoundMotion` — vier Konsumenten: Kreaturen (vorher starr) · Custom-Avatar (vorher
-  STATISCH — jetzt geht er) · Peer-Seelen · Werkstatt-Readout. GEMESSEN: avatar_waechter →
-  Kopf+2×Flügel+2×Bein; Vierbeiner antiphasig exakt. OFFEN: Browser-FEEL (Amplituden) ·
-  G1-B Architektur-Idle (Mühle/Tor: rad/segel-Signaturen) · Arm-vs-Bein-Feinschliff.
+  STATISCH — jetzt geht er) · Peer-Seelen · Werkstatt-Readout. **V18.101: „Körper holen" GEHEILT**
+  — die Built-ins tragen POSITIONIERTE bodyParts (Stat-Paritäts-Wand: dieselben Form×Material-
+  Paare → Tags bit-gleich); Klassifikator geschärft (flat=mid/min · Rotation via |R|·s ·
+  central-Malus) → Mensch kopf+2×arm+2×bein · Phönix kopf+2×fluegel+schwanz · Drache
+  kopf+4×bein+2×schwanz. OFFEN: Browser-FEEL (Amplituden) · G1-B Architektur-Idle.
+- **G1-C — VERBINDUNGEN ALS GELENKE (der Schöpfer-Faden „die Verbindungen nutzen", DESIGN):**
+  Baupläne tragen SCHON `connections` (Part↔Part, strength, validiert + als Linien gerendert —
+  heute nur Statik-Deko). Der Gigant-Schnitt: **eine Verbindung IST ein GELENK** — ihr
+  ANKER-PUNKT (Schnitt der beiden Part-Hüllen / der nächste Punkt zwischen den Zentren) wird der
+  PIVOT, um den der kleinere Part rotiert (statt des Center-Pivots von V18.99 — Hüfte/Schulter/
+  Scharnier echt). Der GELENK-TYP emergiert aus derselben Resonanz: Zylinder quer zur
+  Verbindungs-Achse + bodennah = **RAD** (rollt ∝ Fahrt) · vertikale Verbindungs-Achse + flacher
+  Part = **TÜR/SCHWENK** · Kette von Verbindungen = **WIRBEL** (Schwanz-Welle entlang der Kette
+  statt |z|-Heuristik) · sonst SCHARNIER (Bein/Arm-Schwung um den Anker). Die Werkstatt wird
+  intuitiv: Teil anlegen + verbinden = Gelenk definiert, der Readout zeigt es („Rad an Achse" ·
+  „Scharnier"), KEIN neues UI-Vokabular. Implementierung: `computeMotionRoles` liest
+  `bp.connections` als VORRANG-Quelle (Pivot + Achse + Kette aus der Verbindungs-Topologie;
+  ohne Verbindungen der heutige Lage-Fallback) — `_animateCompoundMotion` rotiert um den Anker
+  (Position-Kompensation: `pos = anker + R·(center−anker)`). Damit werden Räder, Drehachsen,
+  Mühlen, Tore SIMPEL definierbar — der ungenutzte Faden wird das Gelenk-Substrat.
 - **DER GENIALE WEG — Bewegung EMERGIERT aus dem Produkt-Vektor** (das Resonanz-Muster auf MOTION
   angewandt): wie `computeBlueprintRole` die Werk-Rolle aus Form×Material liest, liest ein
   `computeMotionRole` pro Part-Gruppe die BEWEGUNGS-Rolle gegen frozen `MOTION_ROLE_SIGNATURES` —
@@ -171,7 +188,11 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
   die Wahrheit, das binäre Etikett abgeleitet (alle Alt-Leser heil); Schreiber migriert (Treffer/
   Trinken/Wetter/DSL-Op/Spawn), Decay + ERHOLUNG (sad verfliegt — vorher ewig), die Contagion
   liest das echte Innenleben (awe reist — der Diskriminator-Beweis). OFFEN: G4-2 Kreatur↔Kreatur-
-  Contagion · G4-3 Lebenszyklus · Hof zeigt den vollen Vektor.
+  Contagion · G4-3 Lebenszyklus · **G4-1b (EHRLICHER PASSAGIER-REST, Schöpfer-Frage 10.06.):
+  der 6-Achsen-Vektor hat noch KEINE UI-Fläche** — Hof-Karte/HUD zeigen die binäre Projektion;
+  der Substanz-KONSUM steht (Contagion), der SICHTBARE fehlt → die Wesen-Spec-Card zeigt die
+  dominante Emotion + Intensität via `_emotionState(vec)` (derselbe Leser wie das Ich-Porträt —
+  ein kleiner Schnitt, dieselbe Sprache).
 - **DER GENIALE WEG — KONSUMIEREN statt bauen:** (1) Kreaturen fühlen über DASSELBE Substrat
   (`_feelAction` + `ACTION_TO_EMOTION` pro Kreatur, 6 Achsen; happy/sad wird die Projektion für
   Alt-Leser) — ihre Tat (gather/build/flee) prägt sie, ihre Aura-Zelle färbt sie (das Feld ist schon
@@ -241,7 +262,18 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
   größter Einzelhebel). **(2)** ~~Gras-Placement → Worker~~ GELÖST via (0b) — die WAHRHEIT
   wanderte, nicht der Code. **(3)** Inseln in den HISM-Pfad (PRÜFEN: Inseln sind vermutlich UNIKATE
   Geometrie — dann ist der Hebel LOD/Dichte, nicht Instancing; messen vor schneiden). **(4)**
-  Substep-Cap senken. **(5b) GEHEILT ✓ (V18.98):** beide Schöpfer-Konsolen-Wurzeln — die
+  Substep-Cap senken. **(6) G7-H — DER HORIZONT-MANTEL (der „Unendlichkeits"-Hebel, DESIGN —
+  Schöpfer: „fast instant eine gigantische Welt sehen"):** jenseits des Chunk-Rings zeichnet
+  heute NICHTS — die Welt endet im Fog statt in Bergketten. Der Schnitt: ein GROBES
+  Fern-Terrain-Mesh aus `_terrainMacroSurfaceY` (die EINE deterministische Quelle — exakt die
+  Hügel, die der Ring später fein baut!), 2–3 Ringe bis ~4 km (innen ~48-m-, außen ~200-m-Zellen,
+  Loch in der Mitte für den echten Ring), vertex-gefärbt über dieselbe Biom-Logik, durch
+  `_applyAerialOutput` + Fog VERSCHMOLZEN (der Übergang Ring→Mantel liegt im Haze — keine Naht
+  sichtbar, die V17.106-Aerial trägt ihn). Macro ist 2D-billig: ~10k Spalten ≈ wenige ms →
+  der Mantel steht BEIM BOOT (die Instant-Gigantik), re-ankert alle ~200 m Spielerbewegung
+  (ein Mesh-Rebuild, kein Per-Frame). Render-only, main-only, kein Worker/Determinismus.
+  Plus FELDER/BÄUME: die Dichte-Hebel sind GEMESSEN tag-neutral (chance-Skalar,
+  V17.9-Muster — `diag-arch-tags` als Wand davor). **(5b) GEHEILT ✓ (V18.98):** beide Schöpfer-Konsolen-Wurzeln — die
   Bootstrap-Export-Lücke (`PostProcessing` nie in `THREE_GLOBAL` kopiert → der ganze V17-Post-FX-
   Bogen war ÜBERALL still aus; jetzt Soft-Lookup) + der Morph-Warn-Spam (der E3-Worker-Mesh-Pfad
   baute ohne T2-Attribute, der V9.82-Parallel-Pfad; + der Morph-Knoten hängt jetzt am
