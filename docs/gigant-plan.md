@@ -424,6 +424,10 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 - **B1 — Wasser-Sheet → Worker** [§2-G7(1); H]: BEWUSST DEFERRED (V18.104-Entscheid): der Schnitt
   koppelt an die Live-CA-Lese (main-only) — hohes Stale-Thrash-Risiko bei reiner Perf-Wirkung
   (unsichtbar); eigene fokussierte Welle mit eigenem Stale-Diag, NICHT im Phasen-Zug stapeln.
+  **PRIORITÄT GESUNKEN (V18.121 GEMESSEN):** der wahre Kosten-Treiber war nicht der
+  Einzel-Build (~3.5 ms), sondern der DAUER-CHURN (4 Builds × jeden Frame, stationärer
+  Fluss) — das Dach-Gate heilte ihn (Tick-Median 18.2→1.6 ms). B1 lohnt erst, wenn
+  Carve-Flut-Spitzen im Browser als Hitch fühlbar sind.
 - ✓ **B2 — G7-H HORIZONT-MANTEL (V18.104):** `_ensureHorizonMantle` — POLAR-Gitter (20 Ringe ×
   72 Segmente, geometrisch wachsend, KEINE T-Junctions) aus `_terrainMacroSurfaceY` bis 4.3 km;
   Loch unter der Ring-Kante (der echte Ring occludet), Land `−drop`, Meer = Tiefblau-Ebene am
