@@ -706,7 +706,20 @@ schlanken (UI-Politur, jederzeit einschiebbar).
       Steil-Split-Vorhang + das schäumende Wildwasser am echten Wasserfall — headless bewies
       die Geometrie [137→0 Zacken], das Auge das Gefühl) · **A4-MÜNDUNGS-LOOK (V18.116:
       der Fluss wogt nicht mehr wie das Meer, die Wellen laufen sanft in die Mündung —
-      das Gefühl des Übergangs im echten Browser).**
+      das Gefühl des Übergangs im echten Browser).** **V18.116–.121-Durchgang (neu):**
+      Tauch-Blick (B5) · Mana-Balken im pfad (E3) · Gelenk-Zeile in der Werkstatt (C1) ·
+      die Mantel-Stanze in Bewegung (V18.118 — am Meer laufen) · das freie Frame-Budget
+      fühlen (V18.121).
+      **DIE SCHÖPFER-PRÜFLISTE (10.06., wächst bis zum Gigant-Abschluss — Unsauberkeiten
+      SAMMELN, er korrigiert am Schluss; ich fülle sie ehrlich mit, statt sie zu fixen):**
+      (a) **GELENK-LINIEN in der WELT sichtbar nach dem Fertigen** — die connections-Linien
+      gehören logisch NUR in den Werkstatt-Baukasten (Hilfsmittel für die Animation), nicht
+      ans fertige Werk in der Welt (Render-Gate am Spawn-Pfad vs. Werkstatt-Preview);
+      (b) **SPIELERPERSPEKTIVEN-DISZIPLIN meines Netzes** — die Wasser-Drohnen-Analysen
+      liefen teils ohne HUD-Kontext, die Werkstatt-Wirkung (wie ein Ergebnis im GESAMTSYSTEM
+      wirkt, wie es erreicht wird, ob es einheitlich ist) wurde nicht selbst angeschaut →
+      die diag-Werkzeuge wachsen um den SPIELER-Blick (HUD an, der echte Nutzungs-Fluss),
+      nicht nur den Daten-Blick; Steuerung/Bedienung der Sonden wie die Profis der Profis.
 4. **Die Wände (nie verhandeln):** Determinismus (Worker bit-identisch; eine Skala-Optimierung
    ändert NIE die Gitter-Phase) · die Narben (roadmap §5) nicht wiederholen · die Samen (roadmap
    §7 + §5-D5c hier) nie blind schneiden · Multi-Agent-Funde SELBST verifizieren (zwei
