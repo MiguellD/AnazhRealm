@@ -20303,7 +20303,25 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             // (ny>0.2 am Build verworfen). Tötet „Wasser auf der falschen Seite
             // des Bodens" an der Geometrie-Wurzel. Über ALLE Iso-Meshes gezählt.
             const BACK = window.THREE && window.THREE.BackSide !== undefined ? window.THREE.BackSide : 1;
-            out.waterMatBackSide = r.state.hydroSurfaceMaterial ? r.state.hydroSurfaceMaterial.side === BACK : false;
+            // V18.120-Konfounder geheilt: der B5-Tauch-Pass macht das GETEILTE
+            // Material DoubleSide, solange der Spieler UNTER Wasser steht
+            // (playerEyesUnderwater) — das ist der korrekte Tauch-Zustand, NICHT
+            // der Oberflächen-Vertrag. Diesen Test deterministisch auf den
+            // OBERFLÄCHEN-Zustand prüfen (Intent: die ruhende Fläche ist BackSide),
+            // zustands-neutral mit Restore — sonst kippt er je nach Spieler-
+            // Position am Warmup-Ende (die KONFUNDIERTE-Test-Lehre).
+            out.waterMatBackSide = (() => {
+                if (!r.state.hydroSurfaceMaterial) return false;
+                const savedDive = r.state.playerEyesUnderwater;
+                try {
+                    r.state.playerEyesUnderwater = false;
+                    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                    return r.state.hydroSurfaceMaterial.side === BACK;
+                } finally {
+                    r.state.playerEyesUnderwater = savedDive;
+                    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                }
+            })();
             let undersideTris = 0;
             let topsTris = 0;
             for (const [, mm] of r.state.voxelChunkWaterIso) {
@@ -33664,6 +33682,83 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     }
 }
 
+// ============================================================================
+// G8 — DER ROBUSTHEITS-BOGEN (docs/archiv/robustheit-plan.md) — die vier
+// Angriffs-KORPORA = das lebende Antikörper-Archiv (R5). Jeder Korpus impft
+// das System bei JEDEM Push gegen genau einen Angriff: R0 Trennung · R1 Flut ·
+// R2 souveräner Angriff · R3 Sandbox-Escape · R4 Infektion. Ein Regress an
+// einer alten Wand ist sofort rot.
+// ============================================================================
+
+// G8 R0 — der INNERSTE RING ist BENANNT + ABWESEND aus jedem geteilten Kanal.
+// Die Wand: der private Schlüssel / die Identität lecken NIE in einen
+// Welt-Snapshot oder Portal-Payload (GEMESSEN-schon-wahr, jetzt eingefroren).
+async function checkBandG8R0Sovereign(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        // (1) SOVEREIGN_STATE benannt + eingefroren + die kanonischen Schlüssel.
+        const S = K.SOVEREIGN_STATE;
+        out.frozen =
+            !!S && Object.isFrozen(S) && Object.isFrozen(S.excludedStateKeys) && Object.isFrozen(S.privateFields);
+        out.namesRing =
+            !!S &&
+            S.excludedStateKeys.includes("vibePass") &&
+            S.excludedStateKeys.includes("signedWorlds") &&
+            S.excludedStateKeys.includes("customWorlds") &&
+            S.excludedStateKeys.includes("p2p") &&
+            S.privateStorageKeys.includes("anazh.vibePass") &&
+            S.privateFields.includes("_privateKeyJwk");
+        out.auditMethod = typeof r._sovereignStateAudit === "function";
+        // (2) Der Trennungs-Beweis: die Sonde meldet ok, keine Lecks.
+        const audit = r._sovereignStateAudit();
+        out.auditOk = !!audit && audit.ok === true && audit.leaks.length === 0;
+        out.auditLeaks = audit ? audit.leaks.join(",") : "(no audit)";
+        // (3) Der Snapshot DIREKT: kein souveräner Slot, kein privates Feld tief.
+        const snap = r.buildStateSnapshot();
+        out.snapNoSovereignSlot = S.excludedStateKeys.every((k) => !Object.prototype.hasOwnProperty.call(snap, k));
+        const snapJson = JSON.stringify(snap);
+        out.snapNoPrivateField =
+            !/"_?privateKeyJwk"|"privateKey"/.test(snapJson) && snapJson.indexOf("anazh.vibePass") < 0;
+        // (4) Der Portal-Payload trägt nur die ÖFFENTLICHE Identität.
+        const pay = r._portalEnterPayload();
+        const payJson = JSON.stringify(pay);
+        out.payloadPublicOnly = !/"_?privateKeyJwk"|"privateKey"/.test(payJson);
+        out.payloadIdPublic = !pay.vibePassId || /^ed25519:[0-9a-f]*$/.test(pay.vibePassId);
+        // (5) DEFENSE: selbst ein injiziertes Privat-Feld in state.vibePass leckt
+        // NICHT in den Snapshot (der fixe Key-Satz schließt vibePass ganz aus).
+        const vp = r.state.vibePass || (r.state.vibePass = {});
+        const hadKey = Object.prototype.hasOwnProperty.call(vp, "privateKey");
+        const saved = vp.privateKey;
+        vp.privateKey = "SECRET-LEAK-CANARY-d-jwk";
+        const snap2 = JSON.stringify(r.buildStateSnapshot());
+        out.injectedKeyStaysOut = snap2.indexOf("SECRET-LEAK-CANARY") < 0;
+        if (hadKey) vp.privateKey = saved;
+        else delete vp.privateKey;
+        return out;
+    });
+    if (!res) {
+        check("G8 R0: Sovereign-State-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "G8 R0: SOVEREIGN_STATE benannt + eingefroren (der innerste Ring)",
+        res.frozen && res.namesRing && res.auditMethod
+    );
+    check("G8 R0: der Trennungs-Beweis (_sovereignStateAudit) ist sauber", res.auditOk, res.auditLeaks);
+    check(
+        "G8 R0: der Welt-Snapshot trägt KEINEN souveränen Slot + kein Privat-Feld",
+        res.snapNoSovereignSlot && res.snapNoPrivateField
+    );
+    check(
+        "G8 R0: der Portal-Payload trägt nur die öffentliche Identität",
+        res.payloadPublicOnly && res.payloadIdPublic
+    );
+    check("G8 R0: ein injiziertes Privat-Feld leckt NICHT in den Snapshot (fixer Key-Satz)", res.injectedKeyStaysOut);
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.46 Wetter + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
@@ -42834,6 +42929,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandEarlyRingsAndUi(ctx);
             await checkBandRing5Soul(ctx);
             await checkBandRing6Workshop(ctx);
+            await checkBandG8R0Sovereign(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

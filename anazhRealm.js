@@ -27157,6 +27157,82 @@ class AnazhRealm {
             .trim();
     }
 
+    // G8 R0 (Robustheits-Bogen, docs/archiv/robustheit-plan.md) — der
+    // Trennungs-BEWEIS des INNERSTEN RINGS. Der innerste Ring (Identität +
+    // Signatur-Autorität, AnazhRealm.SOVEREIGN_STATE) ist nicht GESCHÜTZT,
+    // er ist ABWESEND aus der Welt der Welten: NIE in einem Welt-Snapshot,
+    // NIE in einem Portal-Payload, NIE über P2P. Diese Sonde BEWEIST die
+    // GEMESSEN-schon-wahre Trennung (sie mutiert NICHTS) — ein reiner
+    // Verifikations-Refactor, der die Wand sichtbar + headless-prüfbar macht.
+    // Eine kollabierende oder täuschende Welt kann die Identität nicht
+    // mitreißen, weil der Schaden den Ort nie erreicht (Lokalität, kein
+    // Schutzschild — die Supernova-Physik). Gibt eine flache Befund-Struktur.
+    _sovereignStateAudit() {
+        const S = AnazhRealm.SOVEREIGN_STATE;
+        const out = { snapshotClean: true, payloadClean: true, leaks: [] };
+        const safeJson = (obj) => {
+            try {
+                return JSON.stringify(obj);
+            } catch (_e) {
+                return "";
+            }
+        };
+        // (1) Der Welt-Snapshot trägt KEINEN souveränen state-Slot (fixer
+        // Key-Satz in buildStateSnapshot) UND tief KEIN privates Schlüssel-Feld.
+        let snap = null;
+        try {
+            snap = this.buildStateSnapshot();
+        } catch (_e) {
+            snap = null;
+        }
+        if (snap && typeof snap === "object") {
+            for (const k of S.excludedStateKeys) {
+                if (Object.prototype.hasOwnProperty.call(snap, k)) {
+                    out.snapshotClean = false;
+                    out.leaks.push("snapshot:" + k);
+                }
+            }
+            const json = safeJson(snap);
+            for (const f of S.privateFields) {
+                if (json.indexOf('"' + f + '"') >= 0) {
+                    out.snapshotClean = false;
+                    out.leaks.push("snapshot-deep:" + f);
+                }
+            }
+            for (const sk of S.privateStorageKeys) {
+                if (json.indexOf(sk) >= 0) {
+                    out.snapshotClean = false;
+                    out.leaks.push("snapshot:" + sk);
+                }
+            }
+        }
+        // (2) Der Portal-Payload (Sub→Welt-Identität) trägt nur die
+        // ÖFFENTLICHE Identität (vibePassId/fingerprint), nie ein privates Feld.
+        let payload = null;
+        try {
+            payload = this._portalEnterPayload();
+        } catch (_e) {
+            payload = null;
+        }
+        if (payload && typeof payload === "object") {
+            const pj = safeJson(payload);
+            for (const f of S.privateFields) {
+                if (pj.indexOf('"' + f + '"') >= 0) {
+                    out.payloadClean = false;
+                    out.leaks.push("payload:" + f);
+                }
+            }
+            for (const sk of S.privateStorageKeys) {
+                if (pj.indexOf(sk) >= 0) {
+                    out.payloadClean = false;
+                    out.leaks.push("payload:" + sk);
+                }
+            }
+        }
+        out.ok = out.snapshotClean && out.payloadClean && out.leaks.length === 0;
+        return out;
+    }
+
     // Der kanonische Identifier — dasselbe Format wie das Welt-Portal-Manifest
     // (docs/world-portal.md §3.3: "authorPubKey": "ed25519:...").
     vibePassId() {
@@ -53434,7 +53510,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.121.0";
+AnazhRealm.VERSION = "18.122.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -54696,6 +54772,26 @@ AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Re
 // fremde Versionen (Felder, die sie nicht kennen, ignorieren sie) — Koexistenz
 // alter + neuer Clients im selben Raum. Bump nur bei INKOMPATIBLEN Änderungen.
 AnazhRealm.PROTO_VERSION = 1;
+// G8 R0 (Robustheits-Bogen, docs/archiv/robustheit-plan.md §2) — der INNERSTE
+// RING benannt: die „Feinstrukturkonstante" des Ultiversums. Diese state-Slots
+// (Identität + Signatur-/Autorisierungs-Autorität) sind ABWESEND aus der Welt
+// der Welten — NIE in einem Welt-Snapshot, NIE in einem Portal-Payload, NIE
+// über P2P. Der private ed25519-Schlüssel selbst lebt nur im globalen
+// localStorage ("anazh.vibePass") + dem Datei-Backup; sein Fußabdruck sind
+// 6 Methoden (_ensureVibePass/_adoptVibePassJwk/_vibeSign/_vibePassExportObject/
+// _persistVibePass/importVibePass). _sovereignStateAudit() beweist die Trennung
+// headless. Die Liste ist EINGEFROREN + winzig — sie wächst nicht (die
+// eBPF-Lehre: ein wachsender Kern ist die Angriffsfläche). revokedKeys (R4) ist
+// ebenso global + nie im Snapshot — der Rückruf-Schlüssel des Immunsystems.
+AnazhRealm.SOVEREIGN_STATE = Object.freeze({
+    // runtime-state-Slots, die NIE in buildStateSnapshot dürfen (GEMESSEN
+    // schon ausgeschlossen — der fixe Key-Satz trägt keinen davon):
+    excludedStateKeys: Object.freeze(["vibePass", "p2p", "signedWorlds", "customWorlds", "revokedKeys"]),
+    // die globalen localStorage-Schlüssel des innersten Rings (privat, nie geteilt):
+    privateStorageKeys: Object.freeze(["anazh.vibePass"]),
+    // Schlüssel-Material-Feldnamen, die in KEINEM geteilten Kanal lecken dürfen:
+    privateFields: Object.freeze(["privateKey", "_privateKeyJwk", "privateKeyJwk"]),
+});
 // W12 P3-Härtung — der Portal-Rückkanal (_portalReceiveEvent: Sub-Welt →
 // Heimat-Journal) deckelt die Ereignisse je Sekunde. Eine ungeprüfte vendorte
 // Welt (V8.70+) könnte sonst pro Frame ein Ereignis posten und das 200-
