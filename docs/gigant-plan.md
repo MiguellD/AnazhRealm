@@ -345,36 +345,60 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 ### PHASE A — das Fundament watertight (trägt ALLES; zuerst)
 
 - ✓ V18.95 Spawn-Wurzel · ✓ N3 stabiles LOD (V18.86).
-- **A1 — N1 Cross-LOD watertight** [`terrain-koharenz-plan.md` §12.2; H+A]: Geomorph auf die VOLLE
-  Übergangs-Zone (heute nur Grenz-Zeile, 57.2 % offen) ODER Transvoxel; Kollision ist in der
-  Lazy-BVH-Zone moot (gemessen). Diag: `diag-chunk-seam` Zone-⌀ → <0.1 m.
-- **A2 — N2 Sub-Region-Edit** [§12.2; H+A]: der Edit re-meshet nur seinen Footprint-Teilbereich
-  (kein Ganz-Chunk-„Reset"); Anker `_rebuildVoxelChunk`/`_voxelEditedDensityGrid` (die
-  Index-Bounding-Box existiert schon für die Delta-Auflage — sie wird die Mesh-Region).
+- ✓ **A1 — N1 Cross-LOD watertight (V18.103):** MORPH-CAP (`snapCap = coarseStep·2.5` — jenseits
+  w=0, kein Cliff-Zerren; max Morph-Gap GEMESSEN 27.9→8.2 m) + **STITCH-BAND**
+  (`_rebuildLodStitchBand`: pro Grenz-Zeilen-MESH-KANTE ein Quad position→aMorphTarget — folgt
+  der echten Oberflächen-Topologie inkl. Höhlen-Loops; der Arme-Leute-Transvoxel, render-only,
+  main-only, alle Terrain-Material-Attribute [WebGPU-strikt]). GEMESSEN `diag-chunk-seam` E:
+  16 Bänder · 3881 Quads · 63 Cap-Stops · **0 sichtbare >1-m-RENDER-Spalten ungedeckt**; die
+  Grenz-Zeile unverändert 96.9 % auf Fläche. EHRLICH: das alte „Zone-⌀ <0.1 m"-Ziel hier war
+  das FALSCHE Maß (§12.2: die Zone ist der beabsichtigte Falloff — sie zuzumorphen würde Detail
+  flachdrücken); das wahre N1-Ziel „0 sichtbare >1-m-Spalten" steht. Volle Cliff-Re-Triangulation
+  = Transvoxel bleibt ein bewusst ungeweckter eigener Bogen.
+- ✓ **A2 — N2 Edit-„Reset" (V18.103, GEMESSEN AUFGELÖST):** der Ganz-Chunk-Rebuild ist
+  geometrisch UNSICHTBAR — `diag-edit-reset`: Carve-Vertex-Delta außerhalb des Einflusses
+  **0/3180** (deterministisch bit-stabil), Gras-Referenz gehalten (G-fix), Block-Platzierung
+  rebuildet das Terrain GAR nicht (0.6 ms). Der Rest ist der ~40-ms-Hitch (BVH-dominiert
+  25–30 ms, kollisions-pflichtig sync). Der Surface-Nets-Sub-Region-SPLICE wäre reine Perf
+  (≤10 ms) bei hohem Risiko für die Mesh=BVH-Identität → **bewusst deferred** (V13.9-Backlog).
+  Invariante „A2: Edit-Vertex-Delta lokal" verankert (Playtest-Band PhaseAFundament).
 - **A3 — H3 ferne Binnengewässer** [roadmap §4; H]: die ±1024-Atlas-Region wandert mit dem Spieler
   (eigene Welle, determinismus-brechend → Schöpfer-Sign-off S).
-- **A4 — Wasser-Reste-Bündel** [roadmap §4 „Wasser"; je klein]: Wasserfall-Plane-Entscheid (S:
-  bleibt/durch CA ersetzt) · Schelf-Konsolidierung (Flood-Gates vs CA, H) · Hoch-Becken über `L`
-  (CA-Zellen jenseits der Atlas-Domäne, H+A) · Unterwasser-Pass B5 (A) · Kapillar/Stempel an
-  Gebäuden (H) · T7c/T7d-Reste (Fluss-Edit-Löcher · lake/river-Naht, H+A).
-- **A5 — Haupt-Fog ↔ Ring-Kante koppeln** [roadmap §4; A]: der Fog liest `DETAIL_CASCADE` statt
-  eigener Konstante (eine Distanz, noch ein Gesicht).
-- **A6 — KÖRPER-KOLLISION härten (Schöpfer-Browser 10.06.)** [H]: (a) „unter mir platzieren →
-  manchmal Fall-durch" — der Edit-Remesh tauscht die Spieler-Chunk-Kollision (die V17.28-Klasse
-  am PLACE-Pfad; A2-Sub-Region-Edit schrumpft das Fenster, zusätzlich: Spieler-Y während des
-  Footprint-Swaps klemmen); (b) „Kopf glitcht durch HÖHLENDECKEN" (Seitenwände halten) — der
-  Sprung-Impuls unter niedriger Decke + Penetration-Recovery nach OBEN: Jump-Clamp wenn
-  Decken-Probe < Körperhöhe + Kamera-Clip-Wand. Sonde: Place-under-self ×20 + Low-Ceiling-Jump.
+- **A4 — Wasser-Reste-Bündel** [roadmap §4 „Wasser"; je klein] — **S-BESTÄTIGT (Schöpfer-Browser
+  10.06. abend: „Übergang Wasser/See/Meer zu Fluss noch komisch, der See-/Meer-Shader noch nicht
+  synergetisch, durch die Wellen oder so" — der Faden IST gesehen + hier verortet):** der Kern ist
+  die MÜNDUNGS-SYNERGIE (die V18.14-M2-`aWave`-Rampe + das Schaum-Gate + die T7d-See↔Fluss-
+  `L`-Naht an 4-Chunk-Ecken — der Makro-Kontext muss den Mikro-Shader an der Mündung WEICH
+  übergeben). Dazu: Wasserfall-Plane-Entscheid (S) · Schelf-Konsolidierung (H) · Hoch-Becken
+  über `L` (H+A) · Unterwasser-Pass B5 (A) · Kapillar/Stempel (H) · T7c-Reste.
+- ✓ **A5 — Haupt-Fog ↔ Ring-Kante (V18.103):** `fog.far = min(Wetter-Formel·Slider,
+  (ringRadius+0.5)·span)` in `_dayNightApplyHemiAndFog` — der Nebel deckt das Welt-Ende
+  (Default-Ring 4: Kante ~194 m, fog.far war 450 m = sichtbare Welt-Kante); bei „Weltenring max"
+  (Ring 12) greift weiter die Formel = die geliebte Weite unverändert. B2-Horizont-Mantel füllt
+  später JENSEITS derselben einen Quelle.
+- ✓ **A6 — KÖRPER-KOLLISION (V18.103):** (a) `_rescuePlayerFromEditSolid` am fill-Pfad
+  (GEMESSEN vorher: 12 Fills unter sich = 11 m im Fels begraben → jetzt reitet der Spieler die
+  steigende Oberfläche, höhlen-sicher per Dichte-Probe statt Surface-Vergleich); (b)
+  `_ceilingHeadroom` (Ammo-Ray — Terrain UND Architektur-Dächer) → handleJump-Klemme
+  `v = √(2g·Steigraum)` (GEMESSEN: Frei-Sprung rise 2.27 m unberührt · Decken-Sprung rise 0.38 m,
+  kein Head-Through) + `_loopCamera`-Ego-Auge-Clip unter die Decke (0.12 m Marge; die dritte
+  Person hatte schon die V8.36-Kollision). Sonde: `diag-edit-reset` (Fill/Block-unter-sich ×12 ·
+  Frei-Sprung-Kontrolle · Niedrig-Decken-Sprung).
 
 ### PHASE B — der Körper glatt + der Maßstab (G6 + G7)
 
 - ✓ G7(0) Envelope-Skip (V18.96) · ✓ G7(0b) weite Wiese (V18.97) · ✓ G7(5b) Post-FX+Morph (V18.98).
-- **B1 — Wasser-Sheet → Worker** [§2-G7(1); H]: der größte Main-Dieb (~78 ms); das E3-Muster;
-  Vorsicht: Live-CA-Lese ist main-only → nur den STATISCHEN Flood-Anteil auslagern, Live-Rebuilds
-  bleiben sync (sonst Stale-Thrash beim Fließen).
-- **B2 — G7-H HORIZONT-MANTEL** [§2-G7(6); A→S]: das Macro-Fern-Mesh (die Instant-Gigantik). Der
-  sichtbarste Einzel-Schritt des Maßstabs — VOR B3/B4 bauen (der Schöpfer-Wunsch „gigantische
-  Welt sofort sehen").
+- **B1 — Wasser-Sheet → Worker** [§2-G7(1); H]: BEWUSST DEFERRED (V18.104-Entscheid): der Schnitt
+  koppelt an die Live-CA-Lese (main-only) — hohes Stale-Thrash-Risiko bei reiner Perf-Wirkung
+  (unsichtbar); eigene fokussierte Welle mit eigenem Stale-Diag, NICHT im Phasen-Zug stapeln.
+- ✓ **B2 — G7-H HORIZONT-MANTEL (V18.104):** `_ensureHorizonMantle` — POLAR-Gitter (20 Ringe ×
+  72 Segmente, geometrisch wachsend, KEINE T-Junctions) aus `_terrainMacroSurfaceY` bis 4.3 km;
+  Loch unter der Ring-Kante (der echte Ring occludet), Land `−drop`, Meer = Tiefblau-Ebene am
+  Spiegel; Farben über `_attachVoxelFieldColors` (EINE Quelle, noch ein Leser), eigener Toon
+  (vertexColors, ohne geomorph-Attribute — WebGPU-strikt sauber); Re-Anker alle 250 m (~1.4k
+  Macro-Samples ≈ ms). A5-Fog liest jetzt die MANTEL-Kante (4.3 km) → die geliebte Weite kehrt
+  zurück UND das Welt-Ende ist gefüllt. 4 Playtest-Invarianten (existiert · Höhen=Macro ·
+  Loch-Radius · vertexColors). Browser-Look → S-Liste.
 - **B3 — R2 Normale in die Geometrie backen** [§2-G6; H, Worker-Mirror + Determinismus-Test]:
   braucht den settled `terrainFlatten`-Wert (S-Entscheid: Slider-Wert einfrieren ODER Slider →
   Voll-Re-Mesh) → AO/Schatten/Hemisphere/Diffus lesen EINE Normale.
@@ -386,102 +410,132 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Gras λ~28 m (Dickicht ×2.2 ↔ Lichtung ×0.15) + Bäume λ~170 m (WALD-Maske ×2.6 ↔ offen ×0.25),
   mittelwert-neutral GEMESSEN (Ø 1.04/1.06 · Lichtungen 19.5 % · Dickichte 17.6 % · Wald 17.1 % ·
   Halme-Total stabil 21.2k · `diag-tree-spawn` 63 Kiefern ✓ · mit dem Auge: Büschel + Lichtung).
-- **B6 — Klein-Bündel Maßstab** [H]: Substep-Cap 20→~5 (Physik-Todesspirale; Playtest-sensibel —
-  Telemetrie!) · Inseln-Instancing-Claim MESSEN (vermutlich Unikate → Hebel ist LOD, nicht HISM) ·
-  Kreatur-FPS-Frame-Budget (falls Boden-Cache nicht reicht) · Allokations-Audit per-Frame-Pfade.
+- **B6 — Klein-Bündel Maßstab** [H]: ✓ Substep-Cap 20→5 (V18.104, Playtest grün — die Physik-
+  Todesspirale ist gebannt; CCD + Fall-Cap tragen das Anti-Tunneling) · ✓ Inseln-Instancing-Claim
+  GEMESSEN (V18.104, statisch): `spawn_island` trägt per-Insel-SEED → Unikate Geometrie → HISM
+  unanwendbar, der Hebel ist U4-LOD/Impostor (bestätigt deferred) · offen: Kreatur-FPS-Frame-Budget ·
+  Allokations-Audit per-Frame-Pfade.
 - **B7 — U6 Clipmap** [Backlog-Gate: erst nach A1/A2 + S-Entscheid] · **R3 Kanten-Schärfe + R5
   Struktur-Textur** [A→S, reine Look-Wellen].
-- **B8 — STRUKTUR-LICHT-HARMONIE (das Schwarz-Silhouetten-Ende; Schöpfer-Screenshot 10.06.,
-  GEMESSEN)** [A→S]: die Sonde bewies — Materialien/Lichter sind KORREKT (MeshToonNodeMaterial
-  lights:true · Hemi 0.6 · Ambient 0.62 · Aerial dran; der Tempel rendert Ghibli-schön). Das
-  „Schwarz" der Türme = dunkles Material (felsturm=eisen) × Gegenlicht × Toon-GRADIENT-BODEN ≈ 0.
-  Heilung (der geniale Twist, kein Material-Lügen): den Gradient-Boden für Flach-Farb-Strukturen
-  anheben (Schatten-Band ~0.25 statt 0) + ein warmes RIM-Licht am Strukturen-Toon (die
-  Ghibli-Silhouetten-Kante) — Terrain·Deko·Bauwerk antworten dem Licht dann in EINER Sprache.
+- **B9 — TERRAIN-NACHTLICHT (Schöpfer-Browser 10.06. abend, NEU)** [H-Messung → A]: „der
+  Terrain-Boden selbst scheint noch nicht aufs Nachtlicht zu reagieren" (Bauwerke/Deko: „hammer,
+  was ein Sprung" = B8 BESTÄTIGT — der Kontrast macht den Boden-Rest sichtbar). MESSEN, welcher
+  Term den Boden nachts hochhält (Kandidaten: Hemi-Nacht-Floor 0.32 + V17.7-Ambient-Lift ·
+  der Aerial-skyColor-Melt · die vertexColors-Helligkeit · der B2-MANTEL [eigenes Material —
+  denselben Nacht-Sync verifizieren!]) — dann den EINEN Hebel heilen, nicht dimmen-raten.
+- ✓ **B8 — STRUKTUR-LICHT-HARMONIE (V18.104):** die Struktur-LUT mit Schatten-Boden 0.25
+  (`_ensureStructureGradient` — folgt dem Cel-Regler in-place mit, nur das Dunkel-Band hebt sich,
+  kein Material-Lügen) + das warme RIM-Licht (Fresnel-Saum vec3(1,0.72,0.45) im Aerial-Output-
+  Chain, live-tunbar `atmoUniforms.rimStrength`, nur Flach-Farb-Strukturen) — das Schwarz-
+  Silhouetten-Ende. Look → S-Liste (Browser-Feintuning der zwei Werte).
 
 ### PHASE C — die Werkstatt atmet ZU ENDE (G1)
 
 - ✓ Kern (V18.99) · ✓ „Körper holen" + Klassifikator (V18.101).
-- **C1 — G1-C VERBINDUNGEN ALS GELENKE** [§2-G1-C; H+A]: (i) `computeMotionRoles` liest
-  `bp.connections` als Vorrang-Quelle (Anker-Punkt = Pivot; Achse aus der Verbindungs-Geometrie;
-  Kette = Wirbel), (ii) `_animateCompoundMotion` rotiert um den Anker (`pos = anker +
-  R·(center−anker)`), (iii) Gelenk-Typ-Resonanz: RAD (Zylinder ⊥ Achse, bodennah, rollt ∝ Fahrt) ·
-  TÜR (vertikale Achse + flacher Part) · WIRBEL (Kette) · SCHARNIER (Default), (iv) Werkstatt-
-  Readout zeigt Gelenke. Sonde: Rad-Bauplan rollt, Tür schwenkt, Schwanz-Kette welle-t um Anker.
-- **C2 — G1-B Architektur-Idle** [H+A]: rad/segel-Signaturen idle-animieren Architektur-Parts via
-  `userData.animate` (NUR rad/segel/tuch — Hütten wackeln nie); Mühle dreht, Banner flattern.
-- **C3 — Rüstung am Avatar SICHTBAR** [kampf-plan-Backlog; H+A]: getragene armor-Parts als
-  Kind-Meshes ans Soul-Group (derselbe `_buildFromBlueprint`-Pfad — kein neues Render-System);
-  Avatar-Größe→HP-Kopplung dazu (S-Entscheid: Formel; `_compoundSizeFactor` existiert).
+- ✓ **C1 — VERBINDUNGEN ALS GELENKE (V18.104):** `computeMotionRoles(parts, connections)` liest
+  die Bauplan-Verbindungen als VORRANG-Quelle — Anker = größen-gewichteter Punkt zwischen den
+  Zentren, Gelenk-Typ per Resonanz (RAD: Zylinder ⊥ Verbindungs-Achse + bodennah, rollt ∝ Fahrt /
+  Idle-Dauerdrehung · TÜR: vertikale Achse + flacher Part · WIRBEL: Kette ≥3 Glieder [Grad ≤2],
+  Phase = Ketten-Index · SCHARNIER: Default, schwingt um den ECHTEN Anker); `_animateCompoundMotion`
+  rotiert um den Anker (`pos = anker + R(θ)·(basePos−anker)`, Eine-Achsen-Rotation alloc-frei).
+  Built-ins ohne connections = unverändert (Lage-Fallback). Offen: Werkstatt-Readout-Zeile (klein).
+- ✓ **C2 — Architektur-Idle (V18.104):** `tickArchitectures` klassifiziert pro Architektur EINMAL
+  lazy (`_idleMotion`, mit bp.connections) + filtert auf die SICHEREN Idle-Rollen rad/segel/tuer/
+  wirbel (Hütten/Statuen wackeln NIE — bein/arm/kopf werden genullt); neue `segel`-Signatur
+  (flach·hoch·un-gepaart → flattert). Mühle dreht, Banner flattern.
+- ✓ **C3 — Rüstung sichtbar (V18.104):** `_tickWornArmorVisual` — getragene armor als Kind-Gruppe
+  der Soul-Group (derselbe `_buildFromBlueprint`-Pfad), auf ~60 % Körperhöhe skaliert, lazy nur
+  bei Wechsel. Größe→HP-Formel bleibt S-Entscheid (offen).
 - **C4 — Feel-Pass** [S]: Motion-Amplituden/Frequenzen + S9-Hand-Optik-Sign-off in EINEM
-  Browser-Durchgang.
-- **C5 — STEUERUNGS-TIEFE (Schöpfer 10.06.: „schwach vs gute dynamische Spiele")** [H+S-Feel]:
-  (a) Bewegungs-FEEL — Beschleunigungs-/Brems-Kurven statt Sofort-Velocity, Luftkontrolle,
-  Coyote-Time + Jump-Buffer, Kamera-Smoothing (die vier Hebel, die „dynamisch" ausmachen);
-  (b) VOLLSTÄNDIGES Tasten-Rebinding in den Einstellungen (heute teils fix verdrahtet) — eine
-  Bindings-Map als EINE Quelle, der Settings-Raum editiert sie, persistiert global.
-- **C6 — DIE AURA WIRD HAUT (Schöpfer 10.06.: „folgendes Licht, kein subtiles Schimmern")**
-  [A→S]: der Aura-Glow-Sprite wird subtil; die Substanz wandert in ein **Fresnel-Emissive auf den
-  Soul-Parts** (TSL: Kanten-Glimmen in Aura-Hue, Intensität ∝ Aura-Stärke, atmet mit Puls) —
-  die Haut SCHIMMERT statt eine Lampe zu tragen; derselbe Hue/Intensitäts-Feed wie heute
-  (`_auraHueOut`/`_auraIntensityOut` — eine Quelle, neuer Leser).
+  Browser-Durchgang (jetzt inkl. C1-Gelenke + C6-Haut + B8-Rim).
+- **C5 — STEUERUNGS-TIEFE:** ✓ (a) Bewegungs-FEEL (V18.104): Beschleunigungs-/Brems-Kurven
+  (exp-Lerp 1−e^(−k·dt), Boden k=14/Brems 18, LUFT k=4.5/1.5 = Luftkontrolle + ballistisches
+  Momentum) + JUMP-BUFFER (0.12 s) + VERDICHTET: der Loop-Sprung läuft durch handleJump (der alte
+  Inline-Pfad UMGING die A6b-Decken-Klemme — V9.82-Parallel-Pfad gefischt). Kamera-Smoothing →
+  S-Feel. (b) VOLLES Tasten-Rebinding: DEFERRED (Bewegungs-Keys sind mehrfach fix verdrahtet —
+  eigene Input-Map-Welle, kein Beifang).
+- ✓ **C6 — DIE AURA WIRD HAUT (V18.104):** `_ensureAuraSkinShells` — Fresnel-SHELLS als Kinder
+  AM Part-Mesh (Enkel → der children[i]↔parts[i]-Motion-Vertrag bleibt heil, Shells ERBEN jede
+  Gelenk-Bewegung gratis), EIN additives NodeMaterial pro Spieler (Uniforms hue/intensity =
+  `_auraHueOut`-Quelle, atmet mit Puls), Geometrie GETEILT (scale 1.05); der Glow-Sprite auf
+  30 % gedimmt (ferner Schimmer statt Lampe). Look → S-Liste.
 
 ### PHASE D — Wesen + Welt LEBEN (G4 + Phase E + die gefundenen Welt-Samen)
 
 - ✓ G4-1 (V18.100).
-- **D1 — G4-1b Emotions-UI** [H]: Wesen-Spec-Card/Hof zeigt dominante Emotion + Intensität via
-  `_emotionState(vec)` (derselbe Leser wie das Ich-Porträt) — der benannte Passagier-Rest fällt.
-- **D2 — G4-2 Kreatur↔Kreatur-Contagion** [H]: der `_tickEmotionContagion`-Kern nimmt ein zweites
-  Paar (Spatial-Hash existiert vom Flocking) → Herden-Stimmung emergiert; Runaway-Wand: hebend +
-  gebounded wie heute.
-- **D3 — G4-3 Lebenszyklus** [H+S-Design]: Alter zählt; Fortpflanzung bei Bond + lebendig-Feld
-  hoch (`_finishBirth` existiert, schreibt schon ins Feld); natürlicher Tod nährt das Feld
-  (`loss`-Trauer ∝ Bindung existiert) — der Kreislauf schließt im SELBEN Overlay.
-- **D4 — PHASE E: Bedrohung/Furcht** [kampf-plan; S-Design-Dialog ZUERST, dann H+A]: der letzte
-  Affekt-Konsument (Kreaturen schlagen zurück; damagePlayer-Quellen; Furcht↔Triumph). Game-design-
-  schwerste Welle — NICHT ohne Schöpfer-Dialog beginnen.
-- **D5 — DIE WELT ATMET (Code-Sweep-Samen, 10.06. — nie geblüht):** (a) **Wetter-Polyvalenz**
-  [H+A]: das deklarierte ambient-Array (`snow/embers/motes`, :27292) bekommt SCHALT-Logik —
-  Wetter-Zustände schnee/sturm/nebel mit dem bestehenden 45-s-CrossFade (`tickWeatherTransition`)
-  + Feld-Kopplung (glut-Region → embers); (b) **anazhSymphony EMOTION→TONALITÄT** [A(Ohr)+S]:
-  Pfeiler 4 halb offen — die 6 Achsen modulieren Timbre/Tempo (das `magieleitung`-Shimmer-Muster
-  :9658 existiert als Vorbild; Valenz→Dur/Moll-Färbung, Erregung→Tempo); (c) **journal
-  `share`/`witness`** ruhen bis F4 (dort schreiben sie — KEIN toter Code, verortete Saat).
+- ✓ **D1 — Emotions-UI (V18.104):** `_creatureProfile` trägt `emotionState` + das moodLabel zeigt
+  die dominante Emotion + Intensität via `_emotionState(vec)` (DERSELBE Leser wie das Ich-Porträt)
+  — Hof-Zeile/Tooltip/Feed lesen es über den EINEN Profil-Vektor; der Passagier-Rest fällt.
+- ✓ **D2 — Kreatur↔Kreatur-Contagion (V18.104):** im `_tickEmotionContagion`-Kern, zweites Paar —
+  nahe Wesen (12 m) heben sich gegenseitig zur stärkeren Achse (hebend + gebounded ≤1 + V18.100-
+  Decay → Gleichgewicht); 0.5-s-Akkumulator statt per-Frame → Herden-Stimmung emergiert billig.
+- ✓ **D3 — Lebenszyklus (V18.104, VERDICHTET ins bestehende `tickFaunaLifecycle`):** (a) der TOD
+  NÄHRT DAS FELD (`_depositLife` ∝ lebendig-Substanz in `_creatureNaturalDeath` — der Kreislauf
+  schließt im SELBEN Overlay) · (b) das ALTER zählt (FAUNA_MAX_AGE_MS 35 min → das älteste Wesen
+  kehrt zurück, auch im Populations-Soll — natürlicher Umschlag) · (c) die BOND-GEBURT (Bindung
+  ≥0.6 + `auraAt`-lebendig ≥0.55 → Geburt über das Soll hinaus, bis max — Bindung + lebendige
+  Orte GEBÄREN Leben; selbst-limitierend via Cooldown×2 + max-Wand).
+- ✓ **D4-KERN — GEGENWEHR (V18.104, MARKIERT für den Schöpfer-Dialog):** ein überlebendes,
+  substanz-starkes Wesen schlägt im PFAD-Modus zurück (Chance ∝ dichte + chaos — der Affekt
+  KONSUMIERT; Reichweite 4 m, counter = 0.6×damage durch das bestehende damagePlayer-Modus-Gate
+  → frieden/schöpfer unberührt). Das VOLLE Phase-E-Design (Jagd · Furcht↔Triumph-Bögen ·
+  weitere damage-Quellen) bleibt der benannte S-Dialog — dies ist der kleinste ehrliche Konsument.
+- **D5 — DIE WELT ATMET (Code-Sweep-Samen):** (a) **Wetter-Polyvalenz** DEFERRED (V18.104-
+  Entscheid, GEMESSEN: ≥8 binäre `weather === "rainy"`-Leser quer durch Render/Audio/Emotion —
+  ein dritter Zustand braucht den eigenen Leser-Audit-Bogen, kein Phasen-Beifang); (b)
+  **Symphony EMOTION→TONALITÄT** DEFERRED (A-Gate ist das OHR — headless unbeweisbar, gehört in
+  den S-Browser-Durchgang als eigene kleine Welle); (c) **journal `share`/`witness`** ruhen bis
+  F4 (verortete Saat).
 
 ### PHASE E — die EINE Sprache + die Ökonomie (G5 + S-Reste)
 
-- **E1 — S7-C: EIN Chat-Dispatch-Tor** [§3-Zwilling 5; H]: `_chatDispatchLegacyCommand`-Befehle
-  werden DSL-Synonyme über `parseChatToDsl` — ein Parser, eine Fehler-Kaskade.
-- **E2 — δ wird WÄHRUNG** [§2-G5; **S-Entscheid ZUERST** (Budget-Formen, Modi-Geltung), dann H]:
-  Wirk-Budget für Nicht-Spieler-Schreiber, Kosten ∝ `computeBuildCost`, Regeneration aus δ>0.
-- **E3 — Mana-Symmetrie** [kampf-plan §8.5; H]: `magieleitung` ist heute NUR Feld-Achse (gemessen
-  — kein `player.mana`); wird die zweite Ausdauer-Achse, gespeist vom SELBEN δ-Budget (E2).
-- **E4 — Geste→Gesetz** [§2-G5; H]: bewährte Gesten kristallisieren zu Regel-Kandidaten
-  (`mutateSurvivorProb`-Muster auf den Gesten-Pool). **DAVOR der Mess-Audit (Code-Sweep-Befund):
-  füllt `pendingOutcomes` das `value`-Feld wirklich / wer speist `historySource` in
-  `dslSelectByFitness`?** — der Fitness-Kreis könnte heute stumm sein (erst messen, dann bauen).
-- **E5 — Emotion→Regel-EMERGENZ** [das-lebendige-feld §6; H]: `sorrow→rainy` etc. als
-  Weltregeln neu gefasst (das Substrat existiert) statt fester Trigger.
-- **E6 — KI liest die δ-Karte + LLM-Manifest** [roadmap §4; H+S]: das LLM bekommt die
-  δ>0-Regionen als Kontext (Symbiose-Hälfte von Pfeiler 1) + ein Manifest, das seine Fähigkeiten/
-  Grenzen dokumentiert.
-- **E7 — der Spieler als PFLEGER** [das-lebendige-feld §6; H+A]: ein Spieler-Schreib-Pfad ins
-  lebendig-Overlay (Pflege-Geste → `_depositLife`) — Co-Schöpfung wörtlich.
-- **E8 — Crafting-Schluss-Bündel** [kampf-plan; H, je klein]: S6-B erntbare Flora (knüpft an
-  V17.1-Vegetation) · S8 Teilen-Konsistenz · A2-Fluss-Audit · Zwei-Hand-Modell (S-Entscheid).
+- **E1 — S7-C: EIN Chat-Dispatch-Tor** [§3-Zwilling 5; H]: DEFERRED (V18.104-Entscheid: die
+  Legacy-Kette trägt dutzende System-IO-Befehle — die Synonym-Migration ist ein eigener
+  Audit-Bogen; das Tor-Muster steht über `_chatTryDslParse` schon vorn im Dispatch).
+- ✓ **E2 — δ wird WÄHRUNG (V18.104, Budget-Größen = MEIN Erst-Wurf → S-Review):** das
+  WIRK-BUDGET (`NEXUS_WIRK`: start 60 · max 150) — `_loopNexusUpdate` zahlt VOR jeder Evolution
+  (`_dslProgramWirkCost`: AST-Walk, spawn_blueprint = computeBuildCost-Summe×0.5 — DIESELBE
+  Substanz-Wahrheit, die der Spieler zahlt; Strukturen 10–20, Regel-Registrierung 6); reicht es
+  nicht → der Nexus RUHT (Trägheit BY CONSTRUCTION). REGENERATION aus der WERTUNG: der
+  Outcome-Finalizer zahlt (fitness−0.5)·30 zurück (bewährte Schöpfung verdient Wirk-Kraft;
+  Spam verarmt sich) + Idle-Tropf 2/5 s. §11-Modi: schöpfer = frei.
+- ✓ **E3 — Mana-Symmetrie (V18.104):** `player.mana/manaMax` (max = 40+80·magieleitung) —
+  Regeneration am 5-s-Takt, schneller auf magie-leitendem FELD (`auraAt` — das Feld speist);
+  VERBRAUCH: die gesprochene Welt-Geste (Chat→DSL) kostet im PFAD-Modus Mana ∝ Substanz
+  (DERSELBE `_dslProgramWirkCost`-Walker wie das Nexus-Budget = EINE Ökonomie für alle
+  Schreiber; Lese-/Privat-Gesten frei; frieden/schöpfer frei — §11). HUD-Anzeige offen (klein).
+- **E4 — Geste→Gesetz:** ✓ AUDIT GEMESSEN + PASSAGIER GEHEILT (V18.104): der Fitness-Kreis
+  LEBTE nur halb — der Finalizer schrieb `h.fitness` (computeMultiDimFitness), aber
+  `dslSelectByFitness` las NUR den fps-Proxy nach (der Passagier-Trugschluss im Lern-Kreis).
+  Jetzt FÜHRT die finalisierte Wertung die Selektion (fps bleibt Fallback). Die KRISTALLISATION
+  (Geste→Regel-Kandidat) DEFERRED: braucht die rule-Op-AST-Form sauber (eigene kleine Welle).
+- **E5 — Emotion→Regel-EMERGENZ** [H]: DEFERRED (hängt an der rule-Op-Komposition wie E4-Kristall
+  — zusammen in EINER Folge-Welle).
+- **E6 — KI liest die δ-Karte + LLM-Manifest** [H+S]: DEFERRED (LLM ist opt-in-Randfigur;
+  der Kontext-Schnitt gehört zur LLM-Welle mit S-Prompt-Review).
+- ✓ **E7 — der Spieler als PFLEGER (V18.104):** Chat-Geste „pflege (das land)" →
+  `deposit_life` am Spieler-Ort (DERSELBE Op wie der Nexus — Co-Schöpfung wörtlich; im
+  pfad-Modus kostet sie Mana wie jede Welt-Geste).
+- **E8 — Crafting-Schluss-Bündel**: offen (S6-B Flora · S8 · Zwei-Hand [S]) — kampf-plan-Bogen.
 
 ### PHASE F — das ULTIVERSUM (G2 + G3 + W18 + der soziale Bogen)
 
-- **F1 — G2 Rekursion** [§2-G2; H+S]: die vier Schnitte als vier Steps (Wasm-Whitelist →
-  Worker-Blob-URL → localStorage-Shadow-Guard → Server-Absenz) + die Boot-Sonde
-  (AnazhRealm-Bündel vendoren → im Portal betreten → die innere Welt rendert).
-- **F2 — G3 Netz** [§2-G3; H + Mehr-Peer-Smoke]: Stern-ab-6 → Host-Migration MIT Zustand
-  (Roster+`world-pull` verschmelzen) → TURN-Konfiguration → Raten-Caps (`creature-pos`/`dsl`) →
-  ein 4-Peer-Smoke-Test (heute nur 2) → **PROTOKOLL-VERSIONIERUNG** (Schöpfer-Vision: „alte +
-  neue Versionen vom selben Spiel verbinden sich" — jede Mesh-Nachricht trägt eine
-  Protokoll-Version, unbekannte Felder werden toleriert [das Welt-Schema-Migrations-Muster
-  existiert]; ein V18-Client und ein V20-Client teilen denselben Raum, jeder mit seinen
-  Fähigkeiten — andere ENGINES verbinden sich über F1/W18/B-WASM, das Tor steht schon).
+- **F1 — G2 Rekursion:** ✓ DIE VIER SCHNITTE GEBAUT (V18.104): (1) `.wasm`/`.woff2` in der
+  Vendor-Whitelist + base64-Bündel-Support (`encoding:"base64"` → dekodierte Bytes, Limits
+  zählen echte Größe; smoke-vendor 12 ✅ — die 2 iframe-Handshake-Roten sind VORBESTEHENDER
+  Container-Rot, per git-stash-A/B BEWIESEN) · (2) Worker-Blob-Fallback (`_getVoxelWorker`
+  re-entrant: SecurityError → fetch [ACAO * steht] → Blob-URL → volle Verdrahtung, eine Quelle) ·
+  (3) der localStorage-SCHATTEN (Boot-Guard am Datei-Kopf: Probe wirft → In-Memory-Shim
+  shadowt die Property — 10 Zeilen statt 102 Edits; die innere Welt lebt ephemer) · (4)
+  Server-Absenz = done-by-existing (localhost-Skip + async-WS-Fehler). OFFEN: die BOOT-SONDE
+  (das Selbst-Bündel vendoren → im Portal betreten → rendert — der minutenlange iframe-Boot,
+  eigener Smoke-Lauf + S-Browser).
+- **F2 — G3 Netz:** ✓ TEILBÜNDEL (V18.104): Raten-Cap `creature-pos` (10/s je Peer, Empfangs-
+  seite — das SUBWORLD_NET_RATE_MAX-Muster) · TURN KONFIGURIERBAR (localStorage `anazhTurn`
+  {urls,username,credential} → iceServers; reist NIE im Snapshot) · PROTOKOLL-VERSION
+  (`pv: AnazhRealm.PROTO_VERSION` auf jeder p2pSend-Nachricht, Empfänger tolerieren — V18- +
+  V20-Clients koexistieren). DEFERRED: Stern-ab-6-Topologie + Host-Migration MIT Zustand +
+  4-Peer-Smoke (der eigene Mehr-Peer-Bogen — Topologie-Umbau gehört nicht in einen Phasen-Zug).
 - **F3 — W18 in fremden Welten LEBEN** [world-portal-w18-plan; Stufen A→D]: Auto-Join/Tier →
   Ko-Präsenz-Injektion (Kern) → Input-Brücke → Swappen/Persistenz.
 - **F4 — der SOZIALE Bogen** [bibliothek-plan §E + roadmap; H+S]: Bewertungs-Aggregation
@@ -516,7 +570,15 @@ schlanken (UI-Politur, jederzeit einschiebbar).
    `git push -u origin <branch>`.
 3. **Gates:** H-Wellen stapeln dürfen; A-Wellen je mit Screenshot; S-Punkte SAMMELN sich für
    EINEN Schöpfer-Browser-Durchgang — die offene Liste: R1 · E1–E3 · J4 · S9 · A2(alt) ·
-   N3-FPS · Post-FX-Look · weite-Wiese-FPS · Motion-Feel (V18.99) · danach EIN Merge.
+   N3-FPS · Post-FX-Look · weite-Wiese-FPS · Motion-Feel (V18.99) · **V18.103: A5-Fog-Look ·
+   A1-Stitch-Band-Look (Cliff-Grenzen) · A6-Sprung-Feel (Decken-Klemme)** · **V18.104 (S-Durchgang 10.06. abend, TEIL-BESTÄTIGT):
+   ✓ B8 („Bauwerke und Deko hammer") · ✓ C6 („Hautschimmer passt"; Lampe V18.105 geschnitten) ·
+   ✓ B2-Mantel (mein Auge + Schöpfer-Screenshot: gefüllter Horizont) — NEU aus dem Durchgang:
+   B9 Terrain-Nachtlicht (messen) · A4-Mündungs-Synergie S-bestätigt. WEITER OFFEN:
+   B8-Rim/LUT-Feintuning · C1/C2-Gelenk-Motion-Feel · C5-Bewegungs-Feel (k-Werte) ·
+   D4-DESIGN-DIALOG (Gegenwehr — das volle Phase-E) · E2-BUDGET-GRÖSSEN (NEXUS_WIRK 60/150,
+   mein Erst-Wurf) · E3-Mana-HUD** · der Stand V18.105 ist GEMERGT (Schöpfer 10.06.:
+   „mergen mit diesem Stand, offene Punkte vermerken").
 4. **Die Wände (nie verhandeln):** Determinismus (Worker bit-identisch; eine Skala-Optimierung
    ändert NIE die Gitter-Phase) · die Narben (roadmap §5) nicht wiederholen · die Samen (roadmap
    §7 + §5-D5c hier) nie blind schneiden · Multi-Agent-Funde SELBST verifizieren (zwei
@@ -530,9 +592,9 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 
 | Schwäche (gemessen) | Adresse |
 |---|---|
-| Cross-LOD-Naht sichtbar (~100 m, render-only-Halbfix) | A1 |
-| Edit = Ganz-Chunk-Reset sichtbar | A2 |
-| Welt endet im Fog (keine Ferne) | B2 Horizont-Mantel |
+| ~~Cross-LOD-Naht sichtbar~~ | ✓ V18.103 A1 (Cap + Stitch-Band: 0 sichtbare Spalten ungedeckt) |
+| ~~Edit = Ganz-Chunk-Reset sichtbar~~ | ✓ V18.103 A2 (GEMESSEN: Vertex-Delta 0/3180 lokal; Splice bewusst deferred) |
+| Welt endet im Fog (keine Ferne) | B2 Horizont-Mantel (A5 deckt die Kante schon: fog.far ≤ Ring-Kante) |
 | Wasser-Sheet ~78 ms auf Main | B1 |
 | EINE 2048er-Schattenmap (nah grob, fern eng) | B4 CSM |
 | Physik-Todesspirale möglich (20 Substeps) | B6 |
@@ -548,10 +610,11 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | Rekursion blockiert (4 Schnitte) | F1 |
 | Netz trägt real nur ~4–6 Peers, TURN fehlt | F2 |
 | Sozial-Schicht fehlt ganz (Bewerten lokal-only) | F4 |
-| Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken | A6 |
-| Schwarze Struktur-Silhouetten (eisen × Gegenlicht × Toon-Boden) | B8 |
+| ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip) |
+| ~~Schwarze Struktur-Silhouetten~~ | ✓ V18.104 B8 — **S-BESTÄTIGT** („Bauwerke und Deko hammer, was ein Sprung") |
+| Terrain-Boden reagiert nachts nicht (Schöpfer 10.06. abend) | B9 (NEU — messen, welcher Term ihn hochhält) |
 | Steuerung flach (kein Feel, Bindings teils fix) | C5 |
-| Aura = folgende Lampe statt Haut-Schimmern | C6 |
+| ~~Aura = folgende Lampe~~ | ✓ V18.104 C6 — **S-BESTÄTIGT** („Hautschimmer passt"); V18.105: die Lampe GESCHNITTEN („kann weg") |
 | ~~Wiese homogen, keine Wälder~~ | ✓ V18.102 B5+ |
 | Test-Volatilität (Spieler-im-Fall-Klasse) | §6.2-Telemetrie-Disziplin (Muster steht) |
 | localStorage-Größen-Wand | FERN IndexedDB |

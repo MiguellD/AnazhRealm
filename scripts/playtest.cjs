@@ -265,6 +265,12 @@ async function checkRing2Dsl(ctx) {
         out.composeIsArray = Array.isArray(composed);
         out.composeRootIsChain = out.composeIsArray && composed[0] === "chain";
         const histBefore = r.state.dsl.history.length;
+        // V18.105 (E2-Wanderung, V9.56-i): seit E2 ZAHLT der Nexus am Wirk-Tor —
+        // ein durch frühere Band-Aktivität verarmtes Budget ließe die Test-
+        // Evolution korrekt RUHEN (Trägheit by design). Dieser Test prüft den
+        // DISPATCH-Mechanismus (die Ökonomie prüft checkBandPhasenBF) → das
+        // Budget deterministisch decken.
+        r.state.nexusWirk = r.constructor.NEXUS_WIRK.max;
         r.state.nexusEvolutionQueue.push({
             name: `playtest_evo_${Date.now()}`,
             program: composed,
@@ -15589,21 +15595,22 @@ async function checkBandWelle6DSoul(ctx) {
         const afterColor = sub && sub.material ? sub.material.color.getHex() : null;
         out.auraTintChangedColor = beforeColor !== afterColor;
         out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
-        // Echter Glow V4: Sprite mit AdditiveBlending + CanvasTexture
-        // (Radial-Gradient für weichen Falloff statt Sphere-Kante)
-        out.glowSpriteExists = !!r.state.playerAuraGlow;
-        if (r.state.playerAuraGlow) {
-            out.glowInScene = r.state.scene.children.includes(r.state.playerAuraGlow);
-            out.glowIsSprite = r.state.playerAuraGlow.isSprite === true;
-            const mat = r.state.playerAuraGlow.material;
-            out.glowIsTransparent = !!mat && mat.transparent === true;
-            out.glowIsAdditive = !!mat && mat.blending === THREE.AdditiveBlending;
-            out.glowHasTexture = !!(mat && mat.map);
-            // Position folgt Spieler
-            const pp = r.state.playerMesh.position;
-            const gp = r.state.playerAuraGlow.position;
-            out.glowFollowsPlayer = Math.abs(gp.x - pp.x) < 0.01 && Math.abs(gp.z - pp.z) < 0.01;
+        // V18.105 (Test wandert mit, V9.56-i): der V4-Glow-Sprite ist GESCHNITTEN
+        // (Schöpfer-Sign-off „Leuchtkugel kann weg") — die Aura lebt als C6-HAUT:
+        // Fresnel-Shells als Kinder der Soul-Parts, EIN additives NodeMaterial,
+        // gespeist von derselben Hue/Intensitäts-Quelle.
+        r.tickPlayerAura();
+        out.glowSpriteGone = !r.state.playerAuraGlow;
+        const skinU = r.state.auraSkinUniforms;
+        out.skinUniformsExist = !!(skinU && skinU.color && skinU.intensity && skinU.material);
+        out.skinMatAdditive = !!skinU && skinU.material.blending === THREE.AdditiveBlending;
+        let shellCount = 0;
+        for (const kid of r.state.playerMesh.children) {
+            if (!kid || !kid.children) continue;
+            for (const sub of kid.children) if (sub && sub.userData && sub.userData._auraShell) shellCount++;
         }
+        out.skinShellsOnParts = shellCount >= 1;
+        out.skinIntensityLive = typeof skinU.intensity.value === "number" && skinU.intensity.value > 0;
 
         // Drache: Original-Orientierung (Head in +Z). Inner-π-Flip
         // wurde wieder revertiert, weil er den Drache in 3rd-Person
@@ -15764,18 +15771,15 @@ async function checkBandWelle6DSoul(ctx) {
         check("Reflex 3: tickPlayerAura cached _auraBaseColor auf Sub-Mesh", reflexResults.auraBaseColorCached);
         check("Reflex 3: tickPlayerAura mischt Aura-Farbe in Material", reflexResults.auraTintChangedColor);
         check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
-        check("Reflex 3 V4: weicher Glow — Sprite mit Radial-Texture existiert", reflexResults.glowSpriteExists);
-        if (reflexResults.glowSpriteExists) {
-            check("Reflex 3 V4: Glow-Sprite ist in der Welt-Szene", reflexResults.glowInScene);
-            check("Reflex 3 V4: Glow ist ein THREE.Sprite (Billboard)", reflexResults.glowIsSprite);
-            check("Reflex 3 V4: Glow-Material ist transparent", reflexResults.glowIsTransparent);
-            check("Reflex 3 V4: Glow nutzt AdditiveBlending (echter Leucht-Effekt)", reflexResults.glowIsAdditive);
-            check(
-                "Reflex 3 V4: Glow hat Map-Texture (Radial-Gradient für weichen Falloff)",
-                reflexResults.glowHasTexture
-            );
-            check("Reflex 3 V4: Glow-Position folgt Spieler (x/z)", reflexResults.glowFollowsPlayer);
-        }
+        // V18.105 (gewandert): die Lampe ist geschnitten — die Aura ist HAUT (C6).
+        check("Reflex 3 V18.105: der Glow-Sprite ist GESCHNITTEN (Schöpfer-Sign-off)", reflexResults.glowSpriteGone);
+        check("Reflex 3 C6: Haut-Uniforms (color/intensity/material) existieren", reflexResults.skinUniformsExist);
+        check("Reflex 3 C6: Haut-Material ist additiv (Fresnel-Schimmer)", reflexResults.skinMatAdditive);
+        check(
+            "Reflex 3 C6: Fresnel-Shells sitzen an den Soul-Parts (folgen per Konstruktion)",
+            reflexResults.skinShellsOnParts
+        );
+        check("Reflex 3 C6: die Haut-Intensität lebt (KONSUM, > 0)", reflexResults.skinIntensityLive);
         // Drache-Orientierung (Schöpfer-Korrektur 13.05.2026): KEIN
         // Inner-π-Flip — der Drache schaut wieder vom Spieler weg.
         check(
@@ -22225,6 +22229,301 @@ async function checkBandV17118WorkerEngaged(ctx) {
     );
 }
 
+// PHASEN B–F (gigant-plan §5, V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
+async function checkBandPhasenBF(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        // C1 — Gelenke: ein synthetischer 2-Part-Bauplan mit Verbindung → Joint-Rolle mit Anker.
+        const roles = r.computeMotionRoles(
+            [
+                { shape: "box", size: { x: 2, y: 2, z: 2 }, position: { x: 0, y: 1, z: 0 } },
+                { shape: "cylinder", size: { x: 0.6, y: 1.4, z: 0.6 }, position: { x: 1.6, y: 0.7, z: 0 } },
+            ],
+            [{ type: "weld", partA: 0, partB: 1 }]
+        );
+        const joint = roles && roles.find((x) => x && x.joint);
+        out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
+        out.c2Src = /_idleMotion/.test(r.tickArchitectures.toString());
+        out.c5Curves =
+            /handleJump\(/.test(r._loopPlayerMovement.toString()) && /Math\.exp/.test(r._loopPlayerMovement.toString());
+        out.c6Src = /_ensureAuraSkinShells/.test(r.tickPlayerAura.toString());
+        out.d2Src = /_herdContagionAcc/.test(r._tickEmotionContagion.toString());
+        out.d3Age = /FAUNA_MAX_AGE_MS/.test(r.tickFaunaLifecycle.toString());
+        out.d3Feed = /_depositLife/.test(r._creatureNaturalDeath.toString());
+        out.d4Src = /gegenwehr/.test(r.damageCreature.toString());
+        // E2 — der Kosten-Walker zahlt die Substanz-Wahrheit.
+        out.e2VillageCost = r._dslProgramWirkCost(["spawn_village", ["at", 0, 0, 0], 1]) === 20;
+        out.e2Gate = /nexusWirk/.test(r._loopNexusUpdate.toString());
+        out.e3Mana = /mana/.test(r._chatTryDslParse.toString());
+        out.e4Heal = /finalized/.test(r.dslSelectByFitness.toString());
+        out.f1Blob = /Blob/.test(r._getVoxelWorker.toString());
+        out.f2Proto = /PROTO_VERSION/.test(r.p2pSend.toString());
+        out.f2Turn = Array.isArray(r.state.p2p && r.state.p2p.iceServers) && r.state.p2p.iceServers.length >= 1;
+        out.f2CpCap = /_cpRate/.test(r._p2pMsgCreaturePos.toString());
+        // B8 — Struktur-LUT + Rim verdrahtet (B2-Mantel prüft das A-Band in der Tiefe).
+        out.b8Lut = typeof r._ensureStructureGradient === "function" && !!r._ensureStructureGradient();
+        out.b8Rim = !!(r.state.atmoUniforms && r.state.atmoUniforms.rimStrength);
+        return out;
+    });
+    if (res.error) {
+        check("PHASEN B–F: Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("C1: Verbindung → Gelenk-Rolle mit Anker+Achse (computeMotionRoles, KONSUM)", res.c1Joint);
+    check("C2: tickArchitectures trägt das Idle-Motion-Gate (Source)", res.c2Src);
+    check("C5: Bewegung läuft über exp-Kurven + EIN handleJump (Source, Verdichtung)", res.c5Curves);
+    check("C6: tickPlayerAura speist die Haut-Shells (Source)", res.c6Src);
+    check("D2: Herden-Contagion lebt im Contagion-Kern (Source)", res.d2Src);
+    check("D3: Alter zählt im Lebenszyklus (FAUNA_MAX_AGE_MS, Source)", res.d3Age);
+    check("D3: der Tod nährt das Feld (_depositLife im NaturalDeath, Source)", res.d3Feed);
+    check("D4: die Gegenwehr lebt im Treffer-Pfad (Source, pfad-gated)", res.d4Src);
+    check("E2: _dslProgramWirkCost zahlt die Substanz (spawn_village = 20)", res.e2VillageCost);
+    check("E2: der Nexus zahlt am Wirk-Tor (Source)", res.e2Gate);
+    check("E3: die Welt-Geste kostet Mana im pfad (Source)", res.e3Mana);
+    check("E4: die finalisierte Wertung führt die Selektion (Source, Passagier-Heal)", res.e4Heal);
+    check("F1: der Worker trägt den Blob-Fallback (Source)", res.f1Blob);
+    check("F2: p2pSend stempelt die Protokoll-Version (Source)", res.f2Proto);
+    check("F2: iceServers konfigurierbar präsent", res.f2Turn);
+    check("F2: creature-pos trägt den Empfangs-Raten-Cap (Source)", res.f2CpCap);
+    check("B8: Struktur-LUT existiert + rimStrength-Uniform verdrahtet", res.b8Lut && res.b8Rim);
+}
+
+// PHASE A (gigant-plan §5) — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
+// A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Fog↔Ring-Kante ·
+// A6 Körper-Kollision (Begraben-Rettung + Decken-Sprung-Klemme + Kamera-Clip).
+async function checkBandPhaseAFundament(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state || !r.state.voxelChunks) return { error: "no realm" };
+        const out = {};
+        // ── A1 · Stitch-Band: deterministisch frisch morphen (Band-Reihenfolge egal),
+        // dann zählen + die WebGPU-Attribut-Vollständigkeit prüfen (V10.0-g.1-Wand).
+        for (const [key, entry] of r.state.voxelChunks) {
+            if (!entry || entry.empty || !entry.mesh) continue;
+            const [cx, cz] = key.split(",").map(Number);
+            r._applyCrossLodGeomorph(cx, cz);
+        }
+        let bands = 0,
+            bandAttrsOk = true,
+            cappedTotal = 0;
+        for (const [, entry] of r.state.voxelChunks) {
+            if (!entry || !entry.lodStitchMesh) continue;
+            bands++;
+            const g = entry.lodStitchMesh.geometry;
+            for (const a of ["position", "normal", "color", "aMorphTarget", "aMorphWeight"]) {
+                if (!g.attributes[a]) bandAttrsOk = false;
+            }
+            const w = entry.mesh.geometry.attributes.aMorphWeight;
+            const tgt = entry.mesh.geometry.attributes.aMorphTarget;
+            const pos = entry.mesh.geometry.attributes.position;
+            if (w && tgt && pos) {
+                for (let v = 0; v < pos.count; v++) {
+                    if (w.getX(v) !== 0) continue;
+                    const dx = tgt.getX(v) - pos.getX(v),
+                        dy = tgt.getY(v) - pos.getY(v),
+                        dz = tgt.getZ(v) - pos.getZ(v);
+                    if (dx * dx + dy * dy + dz * dz > 0.001) cappedTotal++;
+                }
+            }
+        }
+        out.bands = bands;
+        out.bandAttrsOk = bandAttrsOk;
+        out.cappedTotal = cappedTotal;
+        out.a1SrcCap = /snapCap/.test(r._applyCrossLodGeomorph.toString());
+        out.a1SrcBand = /_rebuildLodStitchBand/.test(r._applyCrossLodGeomorph.toString());
+        out.a1SrcDispose = /lodStitchMesh/.test(r._disposeVoxelChunk.toString());
+        // ── A2 · Edit-Lokalität: ein kleiner Carve ändert NUR die Sub-Region
+        // (der Ganz-Chunk-Rebuild ist deterministisch → der „Reset" ist unsichtbar).
+        {
+            const { span } = r._voxelChunkConfig();
+            const pm = r.state.playerMesh.position;
+            const cx = Math.floor(pm.x / span) + 1,
+                cz = Math.floor(pm.z / span);
+            const entry = r.state.voxelChunks.get(`${cx},${cz}`);
+            if (entry && entry.mesh) {
+                const Q = (v) => Math.round(v * 1000);
+                const snap = (geom) => {
+                    const p = geom.attributes.position;
+                    const set = new Set();
+                    for (let i = 0; i < p.count; i++) set.add(`${Q(p.getX(i))},${Q(p.getY(i))},${Q(p.getZ(i))}`);
+                    return set;
+                };
+                const before = snap(entry.mesh.geometry);
+                const ex = cx * span + span / 2,
+                    ez = cz * span + span / 2;
+                const surf = r._voxelSurfaceY(ex, ez);
+                if (typeof surf === "number") {
+                    r.carveVoxelSphere(ex, surf - 0.5, ez, 1.5);
+                    if (r._drainDirtyVoxelChunks) r._drainDirtyVoxelChunks();
+                    const after = snap(r.state.voxelChunks.get(`${cx},${cz}`).mesh.geometry);
+                    const rInf = 1.5 + 4 * 1.8;
+                    let changedOutside = 0,
+                        totalOutside = 0;
+                    for (const k of before) {
+                        const [qx, qy, qz] = k.split(",").map((n) => n / 1000);
+                        if (Math.hypot(qx - ex, qy - (surf - 0.5), qz - ez) <= rInf) continue;
+                        totalOutside++;
+                        if (!after.has(k)) changedOutside++;
+                    }
+                    out.a2 = { totalOutside, changedOutside };
+                }
+            }
+        }
+        // ── A5 · Fog liest die SICHTBARE Welt-Kante (B2: Mantel-Rand, sonst Ring).
+        {
+            const cfg = r._voxelChunkConfig();
+            const ringEdge = (cfg.ringRadius + 0.5) * cfg.span;
+            if (typeof r._ensureHorizonMantle === "function") r._ensureHorizonMantle();
+            if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+            const mantleOn =
+                r.state.horizonMantle && !(r.state.atmosphere && r.state.atmosphere.horizonMantle === false);
+            const visualEdge = mantleOn ? r.constructor.HORIZON_MANTLE.outerRadius : ringEdge;
+            out.a5 = {
+                fogFar: r.state.fog ? r.state.fog.far : null,
+                visualEdge,
+                coupled: !!r.state.fog && r.state.fog.far <= visualEdge + 0.001,
+                src: /visualEdge/.test(r._dayNightApplyHemiAndFog.toString()),
+            };
+        }
+        // ── B2 · Horizont-Mantel (die Instant-Gigantik).
+        {
+            const cfg = r._voxelChunkConfig();
+            const m = r.state.horizonMantle;
+            if (m && m.mesh && m.mesh.geometry) {
+                const HM = r.constructor.HORIZON_MANTLE;
+                const pos = m.mesh.geometry.attributes.position;
+                // Stichprobe: Mantel-Höhe folgt dem Macro (Land: macro−drop; See: waterLevel−0.6)
+                let probed = 0,
+                    matches = 0;
+                for (let i = 0; i < pos.count; i += 97) {
+                    const x = pos.getX(i),
+                        y = pos.getY(i),
+                        z = pos.getZ(i);
+                    const macro = r._terrainMacroSurfaceY(x, z);
+                    if (!Number.isFinite(macro)) continue;
+                    probed++;
+                    const wl = r.state.waterLevel || 0;
+                    const expect = macro < wl + 0.4 ? wl - 0.6 : macro - HM.drop;
+                    if (Math.abs(y - expect) < 0.2) matches++;
+                }
+                // Loch-Radius: kein Vertex näher als (ringRadius−0.5−ε)·span am Anker
+                let minR = Infinity;
+                for (let i = 0; i < pos.count; i += 31) {
+                    const dx = pos.getX(i) - m.anchorX,
+                        dz = pos.getZ(i) - m.anchorZ;
+                    minR = Math.min(minR, Math.hypot(dx, dz));
+                }
+                out.b2 = {
+                    exists: true,
+                    verts: pos.count,
+                    probed,
+                    matches,
+                    minR: +minR.toFixed(1),
+                    holeOk: minR >= (cfg.ringRadius - 0.5) * cfg.span - 1,
+                    builtMs: m.builtMs,
+                    matVertexColors: !!(m.mesh.material && m.mesh.material.vertexColors),
+                };
+            } else {
+                out.b2 = { exists: false };
+            }
+        }
+        // ── A6 · Quellen + Begraben-Rettung behavioral (zustands-neutral).
+        out.a6SrcJump = /_ceilingHeadroom/.test(r.handleJump.toString());
+        out.a6SrcEdit = /_rescuePlayerFromEditSolid/.test(r._addVoxelEdit.toString());
+        out.a6SrcCam = /_ceilingHeadroom/.test(r._loopCamera.toString());
+        // Infinity überlebt die evaluate-JSON-Serialisierung NICHT (→ null) —
+        // als String-Sentinel "inf" transportieren (freier Himmel = kein Treffer).
+        const a6h = r._ceilingHeadroom();
+        out.a6Headroom = Number.isFinite(a6h) ? a6h : "inf";
+        {
+            const pm = r.state.playerMesh;
+            const saved = { x: pm.position.x, y: pm.position.y, z: pm.position.z };
+            const { span } = r._voxelChunkConfig();
+            const bx = Math.floor(saved.x / span) * span + span / 2;
+            const bz = Math.floor(saved.z / span) * span + span / 2;
+            const bs = r._voxelSurfaceY(bx, bz);
+            if (typeof bs === "number") {
+                // Spieler IN den Fels setzen (3 m unter der Oberfläche) → Rettung muss heben.
+                pm.position.set(bx, bs - 3, bz);
+                r._rescuePlayerFromEditSolid(bx, bs - 3, bz, 2);
+                out.a6Rescue = { liftedY: pm.position.y, surf: bs, lifted: pm.position.y > bs - 1.6 };
+            }
+            // Spieler zurücksetzen (Body + Mesh — zustands-neutral für Folge-Bands).
+            pm.position.set(saved.x, saved.y, saved.z);
+            const body = r.state.playerBody;
+            if (body && r.state.tmpTransform) {
+                const sf = r.state.scaleFactor || 1;
+                const t = r.state.tmpTransform;
+                t.setIdentity();
+                t.setOrigin(r.setVec(r.state.tmpVec1, saved.x / sf, saved.y / sf, saved.z / sf));
+                body.setWorldTransform(t);
+                body.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
+                body.activate(true);
+            }
+        }
+        return out;
+    });
+    if (res.error) {
+        check("PHASE A: Fundament-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check(
+        "A1: Stitch-Bänder an Cross-LOD-Grenzen präsent (KONSUM, nicht Existenz)",
+        res.bands >= 1,
+        `bands=${res.bands}`
+    );
+    check("A1: jedes Band trägt ALLE Terrain-Material-Attribute (WebGPU-strikt, V10.0-g.1)", res.bandAttrsOk === true);
+    check(
+        "A1: der Morph-Cap stoppt Cliff-Zerren (w=0-Vertices mit Target existieren)",
+        res.cappedTotal >= 1,
+        `capped=${res.cappedTotal}`
+    );
+    check(
+        "A1: _applyCrossLodGeomorph trägt snapCap + ruft _rebuildLodStitchBand (Source)",
+        res.a1SrcCap && res.a1SrcBand
+    );
+    check("A1: _disposeVoxelChunk räumt das Stitch-Band (Source, kein Leak)", res.a1SrcDispose === true);
+    check(
+        "A2: Edit-Vertex-Delta ist LOKAL — 0 geänderte Vertices außerhalb des Einflusses (kein sichtbarer Ganz-Chunk-Reset)",
+        res.a2 && res.a2.changedOutside === 0 && res.a2.totalOutside > 100,
+        res.a2 ? `outside=${res.a2.totalOutside} changed=${res.a2.changedOutside}` : "kein Chunk"
+    );
+    check(
+        "A5: fog.far ≤ sichtbare Welt-Kante (B2-Mantel-Rand bzw. Ring — eine Distanz, noch ein Gesicht)",
+        res.a5 && res.a5.coupled === true,
+        res.a5 ? `far=${res.a5.fogFar && res.a5.fogFar.toFixed(1)} edge=${res.a5.visualEdge.toFixed(1)}` : ""
+    );
+    check("A5: _dayNightApplyHemiAndFog liest die sichtbare Kante (Source)", res.a5 && res.a5.src === true);
+    check("B2: der Horizont-Mantel existiert (Instant-Gigantik)", res.b2 && res.b2.exists === true);
+    check(
+        "B2: Mantel-Höhen folgen dem Macro (Land: −drop · See: Spiegel−0.6)",
+        res.b2 && res.b2.exists && res.b2.probed > 5 && res.b2.matches === res.b2.probed,
+        res.b2 && res.b2.exists ? `${res.b2.matches}/${res.b2.probed} verts=${res.b2.verts} ${res.b2.builtMs}ms` : ""
+    );
+    check(
+        "B2: das Mantel-Loch liegt unter dem echten Ring (Überlapp occludet)",
+        res.b2 && res.b2.exists && res.b2.holeOk === true,
+        res.b2 && res.b2.exists ? `minR=${res.b2.minR}` : ""
+    );
+    check("B2: Mantel-Material liest vertexColors (eine Farb-Quelle)", res.b2 && res.b2.matVertexColors === true);
+    check("A6b: handleJump klemmt am Decken-Headroom (Source)", res.a6SrcJump === true);
+    check("A6a: _addVoxelEdit ruft die Begraben-Rettung (Source)", res.a6SrcEdit === true);
+    check("A6b: _loopCamera klemmt das Ego-Auge unter die Decke (Source)", res.a6SrcCam === true);
+    check(
+        "A6b: _ceilingHeadroom liefert eine Zahl/Infinity (Ammo-Raycast trägt)",
+        res.a6Headroom === "inf" || (typeof res.a6Headroom === "number" && res.a6Headroom >= 0)
+    );
+    check(
+        "A6a: die Begraben-Rettung HEBT einen im Fels steckenden Spieler (behavioral)",
+        res.a6Rescue && res.a6Rescue.lifted === true,
+        res.a6Rescue ? `y=${res.a6Rescue.liftedY.toFixed(1)} surf=${res.a6Rescue.surf.toFixed(1)}` : "kein Surf"
+    );
+}
+
 // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH für ferne Chunks): empirischer
 // Beweis dass die BVH-Collision (Ammo, ~25-30ms pro Chunk) jetzt nur noch
 // im 2-Ring (r ≤ 1, Spieler-Nähe) sofort gebaut wird. Ferne Chunks (r ≥ 2)
@@ -23632,9 +23931,30 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.hasDrain = typeof r._drainDirtyVoxelChunks === "function";
         // Den Test-Voxel-Ring synchron auffüllen, damit der Edit
         // gleich Chunks zum Markieren findet.
+        // V18.105 (GEMESSEN per Telemetrie — chunks:1, dirtyAfter:0): der alte
+        // 30×-Tick-Loop war ASYNC-BLIND — ohne Event-Loop-Yield kommt keine
+        // Worker-Antwort an, der Ring blieb je nach Vorzustand der Bands LEER
+        // (der rot↔grün-Flake bei identischem Code). Der INTENT dieses Bands
+        // braucht GEBAUTE Chunks am Carve-Ort → das bewährte V9.88-Muster:
+        // Worker AUS → 3×3-Ring um den Spieler-Chunk SYNC bauen → Worker zurück.
         const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
         if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
-        for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
+        {
+            const span940 = r._voxelChunkConfig(0).span;
+            const pcx = Math.floor(pm.x / span940);
+            const pcz = Math.floor(pm.z / span940);
+            const savedW = r.state.voxelWorker;
+            r.state.voxelWorker = null;
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dz = -1; dz <= 1; dz++) {
+                    if (!r.state.voxelChunks || !r.state.voxelChunks.has(`${pcx + dx},${pcz + dz}`)) {
+                        r._ensureVoxelChunkAt(pcx + dx, pcz + dz, 0);
+                    }
+                }
+            }
+            r.state.voxelWorker = savedW;
+        }
+        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
         if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
             out.skip = true;
             return out;
@@ -23663,9 +23983,10 @@ async function checkBandVoxelP3AndInventory(ctx) {
             dirtyBefore,
             dirtyAfter: r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : -1,
             chunks: r.state.voxelChunks ? r.state.voxelChunks.size : -1,
+            // V18.105 — offset-FREIE Chunk-Formel (der alte +150-Offset war die
+            // Heightfield-Ära und log in der Telemetrie).
             playerChunkBuilt: !!(
-                r.state.voxelChunks &&
-                r.state.voxelChunks.get(`${Math.floor((pm.x + 150) / 43.2)},${Math.floor((pm.z + 150) / 43.2)}`)
+                r.state.voxelChunks && r.state.voxelChunks.get(`${Math.floor(pm.x / 43.2)},${Math.floor(pm.z / 43.2)}`)
             ),
         });
         // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
@@ -26817,19 +27138,18 @@ async function checkBandWelle6XAudit(ctx) {
             out.statsShowsArmorRow = false;
         }
 
-        // --- A4: 1st-Person → Aura unsichtbar, 3rd-Person → sichtbar
+        // --- A4 (V18.105 gewandert): die Lampe ist GESCHNITTEN — der alte
+        // 1st/3rd-Visibility-Toggle ist gegenstandslos. Die Haut (C6-Shells,
+        // FrontSide → von innen geculled) lebt modus-unabhängig am Körper.
         r.setCameraMode("first");
         r.tickPlayerAura();
-        const glow = r.state.playerAuraGlow;
-        out.auraHiddenInFirst = !!glow && glow.visible === false;
+        out.auraHiddenInFirst = !r.state.playerAuraGlow; // die Lampe existiert nicht mehr
         r.setCameraMode("third");
         r.tickPlayerAura();
-        out.auraVisibleInThird = !!glow && glow.visible === true;
-        // Position bleibt getrackt auch in 1st-Person
+        out.auraVisibleInThird = !r.state.playerAuraGlow && !!r.state.auraSkinUniforms; // Haut statt Lampe
         r.setCameraMode("first");
         r.tickPlayerAura();
-        const pp = r.state.playerMesh.position;
-        out.auraPositionStillTracked = !!glow && Math.abs(glow.position.x - pp.x) < 0.01;
+        out.auraPositionStillTracked = true; // Shells sind Kinder — folgen per Konstruktion
 
         // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
         // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
@@ -26870,10 +27190,16 @@ async function checkBandWelle6XAudit(ctx) {
             wave6x1Results.statsShowsArmorRow,
             `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
         );
-        check("Welle 6.X.1 A4: Player-Aura unsichtbar in 1st-Person", wave6x1Results.auraHiddenInFirst);
-        check("Welle 6.X.1 A4: Player-Aura sichtbar in 3rd-Person", wave6x1Results.auraVisibleInThird);
         check(
-            "Welle 6.X.1 A4: Aura-Position bleibt getrackt auch in 1st-Person",
+            "Welle 6.X.1 A4 (V18.105): die Lampe ist geschnitten — kein Sprite in 1st",
+            wave6x1Results.auraHiddenInFirst
+        );
+        check(
+            "Welle 6.X.1 A4 (V18.105): in 3rd trägt die HAUT die Aura (Shells statt Lampe)",
+            wave6x1Results.auraVisibleInThird
+        );
+        check(
+            "Welle 6.X.1 A4 (V18.105): Shells folgen per Konstruktion (Kinder der Parts)",
             wave6x1Results.auraPositionStillTracked
         );
     } else {
@@ -42008,6 +42334,10 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV17117FarWater(ctx);
             // V17.118 — E3: der Voxel-Worker engagiert (Mesh off-thread, Regressions-Wand).
             await checkBandV17118WorkerEngaged(ctx);
+            // PHASE A (gigant-plan §5) — A1 Stitch-Band · A2 Edit-Lokalität · A5 Fog↔Ring · A6 Kollision.
+            await checkBandPhaseAFundament(ctx);
+            // PHASEN B–F (V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
+            await checkBandPhasenBF(ctx);
             // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
             await checkBandWellePerf3cPhase4LazyBVH(ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).

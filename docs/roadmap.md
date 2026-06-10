@@ -82,14 +82,18 @@ lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendig
 `aFlow`-Foam-Strähnen · Wasserfall-Plane (bleibt/raus?) · aufgestaute Hoch-Becken (über `L`, brauchen
 Zellen) · Unterwasser-Decken-Pass (V18.3 B5) · Kapillar/Stempel an Gebäuden.
 
-**Terrain/Naht (⭐ AKTIV, §11)** — N1 Cross-LOD watertight (Transvoxel ODER Geomorph→Kollision+volle Zone,
-ersetzt das alte „E4-Stitching") · N2 Sub-Region-Edit (kein Ganz-Chunk-Reset) · N3 stabiles LOD (grösserer
-LOD0-Ring + Hysterese) · ~~SPAWN-RESTBEFUND~~ **GEHEILT (V18.95):** die Wurzel war Hypothese b —
+**Terrain/Naht (PHASE A VOLLENDET bis auf S-Wellen, §11 + gigant-plan §5)** — ~~N1 Cross-LOD watertight~~
+**GEBAUT (V18.103):** Morph-Cap + Stitch-Band (`_rebuildLodStitchBand` — der Arme-Leute-Transvoxel;
+GEMESSEN 0 sichtbare >1-m-Spalten ungedeckt; Transvoxel bleibt bewusst ungeweckt) · ~~N2 Sub-Region-Edit~~
+**GEMESSEN AUFGELÖST (V18.103):** der Rebuild ist geometrisch unsichtbar (Vertex-Delta 0/3180 lokal;
+Splice = reine Perf ≤10 ms, bewusst deferred [V13.9-Backlog]) · ~~N3~~ GEBAUT (V18.86) ·
+~~SPAWN-RESTBEFUND~~ **GEHEILT (V18.95):** die Wurzel war Hypothese b —
 der leere createNewWorld-Snapshot trug `playerPosition (0,50,0)` → der Reload-Restore setzte
 `terrainEverGenerated=true` → der Erst-Spawn lief im Browser nie; Fix: `playerPosition:null` =
 „vor Erst-Spawn", Restore lässt das Flag false (Browser-Pfad-Sonde `diag-genesis-spawn.cjs`
-rot→grün). Danach: H3 ferne Seen/Flüsse (Region mitwandern) ·
-Haupt-Fog an die Ring-Kante koppeln (heute separat).
+rot→grün) · ~~Haupt-Fog an die Ring-Kante koppeln~~ **GEBAUT (V18.103 A5):** fog.far ≤
+(ringRadius+0.5)·span · **A6 Körper-Kollision GEBAUT (V18.103):** Begraben-Rettung + Sprung-Klemme +
+Ego-Auge-Clip. Danach offen: H3 ferne Seen/Flüsse (Region mitwandern, determinismus-brechend → S).
 
 **LOD/Render** — U2 Wasser-LOD (heute fest LOD0) · U4 Deko-Distanz/Dichte/Impostor · U5 Schatten-CSM ·
 U6 Clipmap (Draw-Call-Hebel) · R1 Schatten-Snap (gebaut, Sign-off offen) · R2 Normale in Geometrie
