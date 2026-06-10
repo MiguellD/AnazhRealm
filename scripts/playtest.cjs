@@ -6239,6 +6239,25 @@ async function checkBandV1774UseByRole(ctx) {
             [...soulSel2.options].filter((o) => o.value === "avatar_waechter").length === 0 &&
             [...soulSel2.options].some((o) => o.value === "bp_avatar_waechter");
 
+        // V18.99 (G1 — Motion-Resonanz): (a) die Bewegungs-Rollen EMERGIEREN
+        // für den Bauplan-Avatar (Bein + Flügel aus Form × Lage × Spiegelung,
+        // kein Hardcode), (b) der verkörperte CUSTOM-Avatar BEWEGT sich beim
+        // Gehen (vorher: der frühe animatePlayerSoul-Return = komplett
+        // statisch — KONSUM-Beweis, V17.31-Disziplin, am echten Treiber).
+        const wRoles = (r.computeMotionRoles(r.state.blueprints.avatar_waechter.parts) || []).filter(Boolean);
+        out.motionRolesEmerge = wRoles.some((x) => x.role === "bein") && wRoles.some((x) => x.role === "fluegel");
+        if (r.state.playerBody) {
+            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 3, 0, 0));
+            r.state.playerBody.activate(true);
+        }
+        r.state.player.animationLastTick = -Infinity;
+        r.animatePlayerSoul(10.0);
+        const mSnap1 = r.state.playerMesh.children.map((c) => c.rotation.x.toFixed(4)).join(",");
+        r.animatePlayerSoul(10.6);
+        const mSnap2 = r.state.playerMesh.children.map((c) => c.rotation.x.toFixed(4)).join(",");
+        out.customAvatarAnimates = mSnap1 !== mSnap2;
+        if (r.state.playerBody) r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 0, 0, 0));
+
         // restore — kein dangling Held/Soul/Hotbar/customSoul/Phantom für die nächsten Bands
         if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
         else r.state.worldMeta.gameMode = savedMode;
@@ -6281,6 +6300,14 @@ async function checkBandV1774UseByRole(ctx) {
     check(
         "V17.74 Welle 1b BUG-b KONSUM: einen Bauplan-Avatar verkörpern formt + registriert ihn (player.soul=bp_…, customSoul), kein Doppel-Eintrag danach",
         res.avatarEmbodied && res.noDuplicate
+    );
+    check(
+        "V18.99 G1: Bewegungs-Rollen EMERGIEREN für den Bauplan-Avatar (Bein + Flügel aus Form×Lage×Spiegelung)",
+        res.motionRolesEmerge
+    );
+    check(
+        "V18.99 G1 KONSUM: der verkörperte Custom-Avatar BEWEGT sich beim Gehen (animatePlayerSoul treibt die Motion-Resonanz — vorher statisch)",
+        res.customAvatarAnimates
     );
 }
 

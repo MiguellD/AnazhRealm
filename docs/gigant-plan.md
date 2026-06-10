@@ -92,6 +92,12 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
   Werkstatt-Werk ist statisch. Der Anker existiert: `userData.animate(t)`-Callbacks werden pro
   Architektur getickt (:40194) + das `water_wave`-Vertex-Muster (:34554) + der Gras-Wind
   (`positionNode`, TSL).
+- **KERN GEBAUT ✓ (V18.99):** `MOTION_ROLE_SIGNATURES` (bein·arm·fluegel·schwanz·kopf) +
+  `computeMotionRoles` (argmax über Feature-Vektor inkl. paired-Spiegel-Achse) + EIN
+  `_animateCompoundMotion` — vier Konsumenten: Kreaturen (vorher starr) · Custom-Avatar (vorher
+  STATISCH — jetzt geht er) · Peer-Seelen · Werkstatt-Readout. GEMESSEN: avatar_waechter →
+  Kopf+2×Flügel+2×Bein; Vierbeiner antiphasig exakt. OFFEN: Browser-FEEL (Amplituden) ·
+  G1-B Architektur-Idle (Mühle/Tor: rad/segel-Signaturen) · Arm-vs-Bein-Feinschliff.
 - **DER GENIALE WEG — Bewegung EMERGIERT aus dem Produkt-Vektor** (das Resonanz-Muster auf MOTION
   angewandt): wie `computeBlueprintRole` die Werk-Rolle aus Form×Material liest, liest ein
   `computeMotionRole` pro Part-Gruppe die BEWEGUNGS-Rolle gegen frozen `MOTION_ROLE_SIGNATURES` —
@@ -298,8 +304,8 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 1. **G6 + G7(1–4)** — Licht/Terrain eins + die Main-Thread-Diebe in den Worker: der Körper wird
    GLATT (beides messbar, beides ohne Look-Risiko-Stapel; CSM ist das eine pixel-sichtbare Stück →
    eigener Sign-off).
-2. **G1** — die Werkstatt atmet (Motion-Resonanz). Die Kirsche, die ALLES Gebaute belebt — und die
-   Voraussetzung, dass G4-Wesen sich tief ANFÜHLEN.
+2. **G1** — die Werkstatt atmet (Motion-Resonanz). **KERN GEBAUT ✓ (V18.99)** — Kreaturen +
+   Custom-Avatare + Peers + Readout; offen: Browser-Feel + G1-B Architektur-Idle.
 3. **G4 + Phase E** — Wesen mit Innenleben + der letzte Affekt-Konsument. (Danach ist der
    Emotion-Kern VOLL konsumiert.)
 4. **G5** — δ wird Währung (Nexus-Ökonomie + Mana-Symmetrie + Geste→Gesetz + LLM liest die δ-Karte).

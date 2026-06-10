@@ -7167,8 +7167,21 @@ class AnazhRealm {
         const yOff = entry.meshKind === "placeholder" ? -1 : 0;
         let posY = entry.y + yOff;
         if (entry.meshKind === "soul-custom") {
-            // Custom-Seelen kriegen kein def.animate — ein sanftes Idle-Wippen.
-            posY += Math.sin(t * 1.8) * 0.04;
+            // V18.99 (G1 — Motion-Resonanz): Peer-Custom-Seelen erben die
+            // emergente Bewegung (vorher nur Idle-Wippen) — Rollen aus den
+            // per soul-Nachricht gereisten bodyParts, Phase aus dem
+            // Positions-Stream (keine Extra-Bandbreite, wie die Built-ins).
+            if (Array.isArray(entry.bodyParts)) {
+                if (entry._motionRoles === undefined) entry._motionRoles = this.computeMotionRoles(entry.bodyParts);
+                if (entry._motionRoles) {
+                    entry.walkPhase = (entry.walkPhase || 0) + (isMoving ? dt * 5.0 : 0);
+                    this._animateCompoundMotion(mesh, entry._motionRoles, nowSec, entry.walkPhase, isMoving);
+                } else {
+                    posY += Math.sin(t * 1.8) * 0.04;
+                }
+            } else {
+                posY += Math.sin(t * 1.8) * 0.04;
+            }
         }
         mesh.position.set(entry.x, posY, entry.z);
         mesh.rotation.y = entry.yaw;
@@ -13007,6 +13020,157 @@ class AnazhRealm {
         return group;
     }
 
+    // === V18.99 (G1 — die Werkstatt ATMET): die MOTION-RESONANZ ============
+    //
+    // Die Bewegungs-Rolle JEDES Parts emergiert aus seiner Form × Lage ×
+    // Spiegelung gegen `MOTION_ROLE_SIGNATURES` (argmax, Floor) — exakt das
+    // Resonanz-Muster der Werk-Rollen, auf MOTION angewandt. Die drei Hand-
+    // Skelette (_animateHuman/Phoenix/Dragon) bleiben als gestaltete
+    // Signaturen der Built-in-Seelen; ALLES andere Gebaute erbt hier:
+    // Kreaturen (vorher starr) · Custom-Avatare (vorher komplett statisch) ·
+    // Peer-Custom-Seelen · die Werkstatt zeigt die erkannten Rollen im
+    // Readout. Render-only (kein Snapshot/Worker/Determinismus-Pfad).
+    // Input ist eine parts-Liste (Bauplan ODER Soul-bodyParts — ein Schema);
+    // Output ist eine zu parts ALIGNIERTE Liste ({role, side, phase} | null)
+    // oder null, wenn nichts resoniert.
+    computeMotionRoles(parts) {
+        if (!Array.isArray(parts) || parts.length < 2) return null;
+        const SIG = AnazhRealm.MOTION_ROLE_SIGNATURES;
+        const FLOOR = AnazhRealm.MOTION_ROLE_FLOOR;
+        const eps = 1e-6;
+        const info = [];
+        let minY = Infinity;
+        let maxY = -Infinity;
+        let maxAX = eps;
+        let maxAZ = eps;
+        for (const p of parts) {
+            if (!p || p.shape === "blueprint") {
+                info.push(null);
+                continue;
+            }
+            const s = p.size || {};
+            const sx = Math.abs(Number(s.x) || 0.3);
+            const sy = Math.abs(Number(s.y) || 0.3);
+            const sz = Math.abs(Number(s.z) || 0.3);
+            const pos = p.position || {};
+            const px = Number(pos.x) || 0;
+            const py = Number(pos.y) || 0;
+            const pz = Number(pos.z) || 0;
+            info.push({ sx, sy, sz, px, py, pz, shape: p.shape || "box" });
+            minY = Math.min(minY, py - sy / 2);
+            maxY = Math.max(maxY, py + sy / 2);
+            maxAX = Math.max(maxAX, Math.abs(px) + sx / 2);
+            maxAZ = Math.max(maxAZ, Math.abs(pz) + sz / 2);
+        }
+        const H = Math.max(eps, maxY - minY);
+        const c01 = (v) => Math.max(0, Math.min(1, v));
+        const roles = parts.map(() => null);
+        let any = false;
+        for (let i = 0; i < info.length; i++) {
+            const a = info[i];
+            if (!a) continue;
+            const f = {
+                elongV: c01((a.sy / Math.max(a.sx, a.sz, eps) - 1) / 1.5),
+                elongH: c01((Math.max(a.sx, a.sz) / Math.max(a.sy, eps) - 1) / 1.5),
+                flat: c01((Math.max(a.sx, a.sy, a.sz) / (Math.min(a.sx, a.sy, a.sz) + eps) - 2.2) / 3),
+                lowAnchor: c01(1 - (a.py - a.sy / 2 - minY) / (0.3 * H)),
+                topMount: c01((a.py - (minY + 0.55 * H)) / (0.45 * H)),
+                sideMount: c01((Math.abs(a.px) / maxAX - 0.35) / 0.45),
+                rearMount: c01((Math.abs(a.pz) / maxAZ - 0.4) / 0.4),
+                roundish: a.shape === "sphere" || a.shape === "octahedron" ? 1 : a.shape === "box" ? 0.35 : 0.15,
+                central: c01(1 - (Math.abs(a.px) / maxAX + Math.abs(a.pz) / maxAZ)),
+                paired: 0,
+            };
+            // paired: ein Spiegel-Zwilling (gleiche Form, ähnliche Größe) auf
+            // der x- ODER z-Achse — die Konjunktion als 0/1-Achse (V17.107).
+            for (let j = 0; j < info.length; j++) {
+                if (j === i) continue;
+                const b = info[j];
+                if (!b || b.shape !== a.shape) continue;
+                if (Math.abs(a.sx - b.sx) + Math.abs(a.sy - b.sy) + Math.abs(a.sz - b.sz) > 0.2) continue;
+                const mirrorX =
+                    Math.abs(a.px + b.px) < 0.12 && Math.abs(a.px) > 0.04 && Math.abs(a.py - b.py) < 0.2 * H;
+                const mirrorZ =
+                    Math.abs(a.pz + b.pz) < 0.12 && Math.abs(a.pz) > 0.04 && Math.abs(a.py - b.py) < 0.2 * H;
+                if (mirrorX || mirrorZ) {
+                    f.paired = 1;
+                    break;
+                }
+            }
+            let bestRole = null;
+            let bestScore = -Infinity;
+            for (const role in SIG) {
+                const sig = SIG[role];
+                let score = 0;
+                for (const ax in sig) score += sig[ax] * (f[ax] || 0);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestRole = role;
+                }
+            }
+            if (bestScore < FLOOR) continue;
+            // Seite + Phase: Beine im Diagonal-Trab (die Dragon-Signatur
+            // generalisiert: (x>0) xor (z>0) → Gegenphase), Arme gegen das
+            // gleichseitige Bein, der Schwanz als |z|-versetzte Welle.
+            const side = a.px > 0.02 ? 1 : a.px < -0.02 ? -1 : a.pz >= 0 ? 1 : -1;
+            let phase = 0;
+            if (bestRole === "bein") phase = ((a.px >= 0 ? 0 : 1) + (a.pz >= 0 ? 0 : 1)) % 2 === 0 ? 0 : Math.PI;
+            else if (bestRole === "arm") phase = a.px >= 0 ? Math.PI : 0;
+            else if (bestRole === "schwanz") phase = Math.abs(a.pz) * 0.8;
+            roles[i] = { role: bestRole, side, phase };
+            any = true;
+        }
+        return any ? roles : null;
+    }
+
+    // Bewegungs-Rollen pro Kreatur-Seele — einmal berechnet (eine Seele =
+    // EINE Part-Liste = EINE Rollen-Liste; Map-Cache über den Seelen-Namen).
+    _motionRolesForSoul(soulName) {
+        if (!soulName) return null;
+        if (!this._motionRolesCache) this._motionRolesCache = new Map();
+        if (this._motionRolesCache.has(soulName)) return this._motionRolesCache.get(soulName);
+        const soul = AnazhRealm.CREATURE_SOULS[soulName];
+        const roles = soul && Array.isArray(soul.bodyParts) ? this.computeMotionRoles(soul.bodyParts) : null;
+        this._motionRolesCache.set(soulName, roles);
+        return roles;
+    }
+
+    // Der EINE generische Animator: wendet die Bewegungs-Rollen auf die
+    // Compound-Children an (`children[i] ↔ parts[i]`, der _buildFromBlueprint-
+    // Vertrag — gilt für Kreaturen, Custom-Avatare und Peer-Seelen gleich).
+    // Center-Pivot-Schwünge in der Sprache der Hand-Skelette: absolute Werte
+    // pro Frame (Basis + Delta, kein Drift); die Basis-Rotationen (part.rotation)
+    // werden einmal eingefangen und geehrt. t in Sekunden.
+    _animateCompoundMotion(group, roles, t, walkPhase, moving) {
+        if (!group || !roles || !Array.isArray(group.children)) return;
+        const kids = group.children;
+        let base = group.userData._motionBase;
+        if (!base || base.length !== kids.length) {
+            base = kids.map((c) => ({ rx: c.rotation.x, ry: c.rotation.y, rz: c.rotation.z }));
+            group.userData._motionBase = base;
+        }
+        for (let i = 0; i < roles.length && i < kids.length; i++) {
+            const r = roles[i];
+            if (!r) continue;
+            const c = kids[i];
+            const b = base[i];
+            if (!c || !b) continue;
+            if (r.role === "bein") {
+                c.rotation.x = b.rx + (moving ? Math.sin(walkPhase + r.phase) * 0.45 : 0);
+            } else if (r.role === "arm") {
+                c.rotation.x =
+                    b.rx + (moving ? Math.sin(walkPhase + r.phase) * 0.3 : Math.sin(t * 1.2) * 0.05 * r.side);
+            } else if (r.role === "fluegel") {
+                const flap = Math.sin(t * (moving ? 11 : 5.5) + r.phase) * (moving ? 0.65 : 0.3);
+                c.rotation.z = b.rz + flap * r.side;
+            } else if (r.role === "schwanz") {
+                c.rotation.y = b.ry + Math.sin(t * 2.2 + r.phase) * 0.28;
+            } else if (r.role === "kopf") {
+                c.rotation.x = b.rx + Math.sin(t * 1.6) * 0.05 + (moving ? 0.04 : 0);
+            }
+        }
+    }
+
     // Compound-Tags der Kreatur via einheitlicher Pipeline. Vision §1.3 fraktal:
     // dieselbe MAX-Aggregation wie computeCompoundTags(blueprint) / computeSoulCompoundTags.
     computeCreatureCompoundTags(creature) {
@@ -15200,6 +15364,28 @@ class AnazhRealm {
             }
 
             creature.position.addScaledVector(direction, delta);
+
+            // V18.99 (G1 — Motion-Resonanz): die emergente Bewegung — Beine
+            // schwingen, Flügel schlagen, Schwänze wellen, Köpfe nicken; aus
+            // den Soul-Parts klassifiziert (vorher: Kreaturen komplett starr,
+            // nur die drei Spieler-Hand-Skelette lebten). walkPhase läuft nur
+            // in Bewegung (kein Glieder-Sprung beim Stopp — die
+            // animatePlayerSoul-Disziplin, pro Kreatur). Kosten: wenige sin()
+            // pro Wesen — weit unter dem KI-Tick.
+            {
+                const mroles = this._motionRolesForSoul(creature.userData.soul);
+                if (mroles) {
+                    const movingNow = direction.lengthSq() > 0.01;
+                    creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? delta * 5.0 : 0);
+                    this._animateCompoundMotion(
+                        creature,
+                        mroles,
+                        this.state.creatureAnimationTime,
+                        creature.userData.walkPhase,
+                        movingNow
+                    );
+                }
+            }
 
             // Terrain-Höhe anpassen. V9.28 — der letzte missed Höhen-
             // Konsument aus V9.25 Phase 5b: dieser Pfad las
@@ -34474,9 +34660,28 @@ class AnazhRealm {
     // mit dem Physik-Body synchronisiert.
     animatePlayerSoul(currentTime) {
         const mesh = this.state.playerMesh;
-        if (!mesh || !mesh.userData || !mesh.userData.parts) return;
-        const def = this.playerSoulDefs[this.state.player.soul || "human"];
-        if (!def || typeof def.animate !== "function") return;
+        if (!mesh || !mesh.userData) return;
+        const soulName = this.state.player.soul || "human";
+        const def = this.playerSoulDefs[soulName];
+        const hasSkeleton = !!(def && typeof def.animate === "function" && mesh.userData.parts);
+        // V18.99 (G1 — Motion-Resonanz): die CUSTOM-Seele war hier KOMPLETT
+        // statisch (der frühe Return — „spieler animieren in der werkstatt"
+        // wörtlich offen). Jetzt erbt sie die emergente Bewegung: Rollen aus
+        // ihren bodyParts (einmal pro Seele, am Mesh gecacht — der Seelen-
+        // Wechsel baut ein frisches Group → frische Basis), derselbe
+        // Geh-/Schwimm-Takt wie die Hand-Skelette.
+        let customRoles = null;
+        if (!hasSkeleton) {
+            const custom = this.state.customSouls && this.state.customSouls[soulName];
+            if (!custom || !Array.isArray(custom.bodyParts)) return;
+            if (mesh.userData._motionSoul !== soulName) {
+                mesh.userData._motionSoul = soulName;
+                mesh.userData._motionRoles = this.computeMotionRoles(custom.bodyParts);
+                mesh.userData._motionBase = null;
+            }
+            customRoles = mesh.userData._motionRoles;
+            if (!customRoles) return;
+        }
         const p = this.state.player;
         // isMoving aus horizontaler Geschwindigkeit. Schwelle 0.4 m/s
         // verhindert Mikro-Walk wenn der Spieler steht aber leicht rutscht.
@@ -34502,7 +34707,8 @@ class AnazhRealm {
             const stepHz = this.state.player.soul === "dragon" ? 4.5 : 5.5;
             p.walkPhase += dt * stepHz;
         }
-        def.animate(mesh, currentTime, p.walkPhase, isMoving, underwater);
+        if (hasSkeleton) def.animate(mesh, currentTime, p.walkPhase, isMoving, underwater);
+        else this._animateCompoundMotion(mesh, customRoles, currentTime, p.walkPhase, isMoving);
     }
 
     // ### Ring 6 – architectureTemplates V1 ###
@@ -45846,6 +46052,37 @@ class AnazhRealm {
             rightChildren.push(this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Fähigkeits-Werte" }));
             rightChildren.push(this._el("div", { class: "spec-stat-strip" }, ...statChips));
         }
+        // V18.99 (G1 — Motion-Resonanz): die erkannten BEWEGUNGS-Rollen des
+        // Werks — was sich bewegen würde, trüge man es als Seele / erwachte
+        // es als Wesen. Dieselbe Resonanz, die Kreaturen + Custom-Avatare
+        // animiert — die Werkstatt LIEST sie nur (ein Vektor, viele Leser).
+        const motionRoles = this.computeMotionRoles(bp.parts);
+        if (motionRoles) {
+            const counts = {};
+            for (const r of motionRoles) if (r) counts[r.role] = (counts[r.role] || 0) + 1;
+            const mlbl = {
+                bein: "Bein (Gang)",
+                arm: "Arm (Schwung)",
+                fluegel: "Flügel (Schlag)",
+                schwanz: "Schwanz (Welle)",
+                kopf: "Kopf (Nicken)",
+            };
+            const mtxt = Object.keys(counts)
+                .map((k) => `${counts[k]}× ${mlbl[k] || k}`)
+                .join(" · ");
+            if (mtxt) {
+                rightChildren.push(
+                    this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Bewegung (Motion-Resonanz)" })
+                );
+                rightChildren.push(
+                    this._el("div", {
+                        class: "spec-motion-line",
+                        text: mtxt,
+                        title: "Die Bewegungs-Rollen emergieren aus Form × Lage × Spiegelung der Parts — als Seele getragen bewegt sich das Werk.",
+                    })
+                );
+            }
+        }
         // Werkstatt-Station: WIE fein sie fertigt (emergiert aus ihrer Substanz) — lernbar (V17.77-Saat).
         if (bp.role === "workshop-station") {
             const prec = this._workshopStationPrecision(bp);
@@ -51287,7 +51524,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.98.0";
+AnazhRealm.VERSION = "18.99.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -51623,6 +51860,26 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
 //   sprite  — quarz × octahedron + sphere: magie-leitend, leicht, resonant
 //   wesen   — stein × box + holz × cylinder/sphere: dichte, robust, lebendig
 //   geist   — laub × torus + leder × sphere: lebendig, semi-transparent
+// V18.99 (G1 — die Werkstatt ATMET): MOTION-RESONANZ-Signaturen. Wie die
+// WERK-Rolle (`computeBlueprintRole`) emergiert die BEWEGUNGS-Rolle eines
+// PARTS als argmax-Resonanz seines Feature-Vektors gegen diese frozen
+// Signaturen — kein Typ-Whitelist, kein Per-Wesen-Hardcode (die V17.107-
+// Resonanz-Lehre: Konjunktionen als 0/1-Achse, die Disjunktion im argmax).
+// Achsen: elongV/elongH (Streckung) · flat (Plattheit) · lowAnchor (bodennah)
+// · topMount (hoch) · sideMount (seitlich) · rearMount (hinten) · roundish
+// (Form) · central (achsnah) · paired (Spiegel-Zwilling). Konsument:
+// `computeMotionRoles` → `_animateCompoundMotion` (Kreaturen · Custom-
+// Avatare · Peer-Seelen erben EINE Bewegungs-Sprache).
+AnazhRealm.MOTION_ROLE_SIGNATURES = Object.freeze({
+    bein: Object.freeze({ lowAnchor: 1.0, paired: 0.6, elongV: 0.7, flat: -0.4, topMount: -0.8 }),
+    arm: Object.freeze({ sideMount: 0.8, elongV: 0.8, paired: 0.5, flat: -0.6, lowAnchor: -0.6 }),
+    fluegel: Object.freeze({ sideMount: 0.7, flat: 1.0, paired: 0.4, lowAnchor: -0.7, central: -0.3 }),
+    schwanz: Object.freeze({ rearMount: 1.0, elongH: 0.7, paired: -0.6, central: -0.4 }),
+    kopf: Object.freeze({ topMount: 0.9, roundish: 0.6, paired: -0.7, elongH: -0.4, lowAnchor: -0.5 }),
+});
+// Unter diesem argmax-Score bewegt sich ein Part NICHT (Torso/Deko bleiben ruhig).
+AnazhRealm.MOTION_ROLE_FLOOR = 0.55;
+
 AnazhRealm.CREATURE_SOULS = Object.freeze({
     sprite: Object.freeze({
         label: "Sprite",
