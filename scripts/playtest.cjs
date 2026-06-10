@@ -22635,7 +22635,7 @@ async function checkBandPhaseAFundament(ctx) {
                     if (!Number.isFinite(macro)) continue;
                     probed++;
                     const wl = r.state.waterLevel || 0;
-                    const expect = macro < wl + 0.4 ? wl - 0.6 : macro - HM.drop;
+                    const expect = macro < wl + 0.4 ? wl - 3 : macro - HM.drop; // V18.115: See-Kulisse −3
                     if (Math.abs(y - expect) < 0.2) matches++;
                 }
                 // Loch-Radius: kein Vertex näher als (ringRadius−0.5−ε)·span am Anker
@@ -22651,7 +22651,10 @@ async function checkBandPhaseAFundament(ctx) {
                     probed,
                     matches,
                     minR: +minR.toFixed(1),
-                    holeOk: minR >= (cfg.ringRadius - 0.5) * cfg.span - 1,
+                    // V18.115: das Loch deckt die VOLLE Welt-Kante (+0.5·span+6 — die
+                    // opake Platte überlappte den äußeren Chunk-Ring = die „statische
+                    // Wasserdecke" überm bewegten Wasser, S-Befund 10.06. nacht).
+                    holeOk: minR >= (cfg.ringRadius + 0.5) * cfg.span + 5,
                     builtMs: m.builtMs,
                     matVertexColors: !!(m.mesh.material && m.mesh.material.vertexColors),
                 };

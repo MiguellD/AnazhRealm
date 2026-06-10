@@ -26117,7 +26117,14 @@ class AnazhRealm {
         }
         const t0 = performance.now();
         const { span, ringRadius } = this._voxelChunkConfig();
-        const holeR = Math.max(span, (ringRadius - 0.5) * span);
+        // V18.115 — S-Befund „statische untransparente Wasserdecke unterm
+        // bewegten Wasser": das Loch begann bei (ringRadius−0.5)·span, die
+        // SICHTBARE Welt (Chunks + ihr Wasser) reicht bis (ringRadius+0.5)·span
+        // (die A5-Fog-Kante) → die opake Mantel-Platte überlappte den äußeren
+        // Chunk-Ring um einen vollen Span; am Meer lag sie zudem nur 0.6 m
+        // unterm Spiegel → durch das TRANSPARENTE echte Sheet sichtbar +
+        // Wellen-Täler stachen durch. Loch = volle Welt-Kante + Marge.
+        const holeR = Math.max(span, (ringRadius + 0.5) * span + 6);
         const rings = cfg.rings,
             segs = cfg.segments;
         const ax = pm.x,
@@ -26138,7 +26145,9 @@ class AnazhRealm {
                 const sea = h < waterLevel + 0.4;
                 isSea[ri * segs + si] = sea ? 1 : 0;
                 positions[vi++] = x;
-                positions[vi++] = sea ? waterLevel - 0.6 : h - cfg.drop;
+                // Meer-Kulisse DEUTLICH unter die Wellen-/Ufer-Shader-Zone (−3 m:
+                // bei ≥190 m Distanz optisch nahtlos, sticht nie durch Wellen-Täler).
+                positions[vi++] = sea ? waterLevel - 3 : h - cfg.drop;
                 positions[vi++] = z;
             }
         }
@@ -53243,7 +53252,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.114.0";
+AnazhRealm.VERSION = "18.115.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
