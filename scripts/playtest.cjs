@@ -22704,16 +22704,32 @@ async function checkBandPhaseAFundament(ctx) {
                         dz = pos.getZ(i) - m.anchorZ;
                     minR = Math.min(minR, Math.hypot(dx, dz));
                 }
+                // V18.118 — die SPIELER-STANZE (das alte „Geo-Loch ≥ Welt-Kante"
+                // war ein STAND-Bild-Maß: der Anker hinkt bis reanchorDist, der
+                // Ring folgt dem Spieler sofort → die opake Platte überdeckte
+                // nach Bewegung den halben Sicht-Ring, S-Bilder 10.06.). Jetzt:
+                // (1) das SICHTBARE Loch ist ein Shader-Stanz-Uniform um die
+                // SPIELER-Position (pro Tick nachgeführt, KONSUM), Radius ≥
+                // Welt-Kante; (2) die KONSTRUKTIONS-Ungleichung geoHole +
+                // reanchEff ≤ stanzR (kein Himmels-Ring); (3) das Geo-Loch
+                // selbst bleibt ≥ geoHoleR−ε (Bau-Wahrheit).
+                const hu = r.state.mantleHoleUniforms;
+                const pm2 = r.state.playerMesh.position;
+                const stanzR = (cfg.ringRadius + 0.5) * cfg.span + 6;
+                const reanchEff = Math.max(16, Math.min(HM.reanchorDist, stanzR - cfg.span - 6));
                 out.b2 = {
                     exists: true,
                     verts: pos.count,
                     probed,
                     matches,
                     minR: +minR.toFixed(1),
-                    // V18.115: das Loch deckt die VOLLE Welt-Kante (+0.5·span+6 — die
-                    // opake Platte überlappte den äußeren Chunk-Ring = die „statische
-                    // Wasserdecke" überm bewegten Wasser, S-Befund 10.06. nacht).
-                    holeOk: minR >= (cfg.ringRadius + 0.5) * cfg.span + 5,
+                    holeOk:
+                        !!hu &&
+                        hu.r.value >= stanzR - 0.01 &&
+                        Math.hypot(hu.cx.value - pm2.x, hu.cz.value - pm2.z) < 2 &&
+                        (m.geoHoleR || 0) + reanchEff <= hu.r.value + 0.01 &&
+                        minR >= (m.geoHoleR || 0) - 1,
+                    punchWired: !!(m.mesh.material && m.mesh.material.opacityNode && m.mesh.material.alphaTest > 0),
                     builtMs: m.builtMs,
                     matVertexColors: !!(m.mesh.material && m.mesh.material.vertexColors),
                 };
@@ -22795,9 +22811,13 @@ async function checkBandPhaseAFundament(ctx) {
         res.b2 && res.b2.exists ? `${res.b2.matches}/${res.b2.probed} verts=${res.b2.verts} ${res.b2.builtMs}ms` : ""
     );
     check(
-        "B2: das Mantel-Loch liegt unter dem echten Ring (Überlapp occludet)",
+        "B2/V18.118: die Spieler-Stanze deckt den Sicht-Ring (Uniform folgt + Ungleichung geo+reanch≤stanz)",
         res.b2 && res.b2.exists && res.b2.holeOk === true,
         res.b2 && res.b2.exists ? `minR=${res.b2.minR}` : ""
+    );
+    check(
+        "B2/V18.118: die Stanze ist im Material verdrahtet (opacityNode + alphaTest)",
+        res.b2 && res.b2.exists && res.b2.punchWired === true
     );
     check("B2: Mantel-Material liest vertexColors (eine Farb-Quelle)", res.b2 && res.b2.matVertexColors === true);
     check("A6b: handleJump klemmt am Decken-Headroom (Source)", res.a6SrcJump === true);

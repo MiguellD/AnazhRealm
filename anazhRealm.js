@@ -26122,22 +26122,39 @@ class AnazhRealm {
         const cfg = AnazhRealm.HORIZON_MANTLE;
         const pm = s.playerMesh.position;
         const seed = (s.worldMeta && s.worldMeta.seed) || "";
+        const { span, ringRadius } = this._voxelChunkConfig();
+        // V18.118 — DIE SPIELER-STANZE (S-Befund, zwei Browser-Bilder: „die
+        // blaue Meerfläche statisch, wird nicht entfernt wenn ich näher gehe"
+        // + „ebene Sheets wie eine Macro-Annäherung ÜBER dem richtigen
+        // Terrain, durch die ich falle"; GEMESSEN diag-mantle-overlap: nach
+        // 238 m Lauf lagen 81 Mantel-Vertices UN-gedeckt im Sicht-Ring, 14
+        // als opake Meer-Platten): das GEOMETRIE-Loch sitzt um den ANKER und
+        // hinkt bis reanchorDist hinterher — der Chunk-Ring folgt dem Spieler
+        // SOFORT. Das SICHTBARE Loch ist darum jetzt eine SHADER-STANZE
+        // (Fragment-Kill um die SPIELER-Position, pro Tick nachgeführt) → der
+        // Überlapp ist PRO PIXEL unmöglich, egal wie der Anker hinkt. Die
+        // Geometrie behält ein KLEINERES Anker-Loch (weniger Overdraw) unter
+        // der KONSTRUKTIONS-Ungleichung geoHole + reanchEff ≤ stanzR (per
+        // Bau-Formel garantiert) → die Stanze deckt das Geo-Loch IMMER, kein
+        // Himmels-Ring. Bei kleinen Sicht-Ringen schrumpft reanchEff (öfter
+        // re-ankern, Bau ~ms), damit die Ungleichung hält.
+        const stanzR = (ringRadius + 0.5) * span + 6;
+        const reanchEff = Math.max(16, Math.min(cfg.reanchorDist, stanzR - span - 6));
+        if (s.mantleHoleUniforms) {
+            s.mantleHoleUniforms.cx.value = pm.x;
+            s.mantleHoleUniforms.cz.value = pm.z;
+            s.mantleHoleUniforms.r.value = stanzR;
+        }
         const m = s.horizonMantle;
-        if (m && m.seed === seed) {
+        if (m && m.seed === seed && m.builtStanzR === stanzR) {
             const dx = pm.x - m.anchorX,
                 dz = pm.z - m.anchorZ;
-            if (dx * dx + dz * dz < cfg.reanchorDist * cfg.reanchorDist) return;
+            if (dx * dx + dz * dz < reanchEff * reanchEff) return;
         }
         const t0 = performance.now();
-        const { span, ringRadius } = this._voxelChunkConfig();
-        // V18.115 — S-Befund „statische untransparente Wasserdecke unterm
-        // bewegten Wasser": das Loch begann bei (ringRadius−0.5)·span, die
-        // SICHTBARE Welt (Chunks + ihr Wasser) reicht bis (ringRadius+0.5)·span
-        // (die A5-Fog-Kante) → die opake Mantel-Platte überlappte den äußeren
-        // Chunk-Ring um einen vollen Span; am Meer lag sie zudem nur 0.6 m
-        // unterm Spiegel → durch das TRANSPARENTE echte Sheet sichtbar +
-        // Wellen-Täler stachen durch. Loch = volle Welt-Kante + Marge.
-        const holeR = Math.max(span, (ringRadius + 0.5) * span + 6);
+        // Das Geometrie-Loch: klein genug, dass die Spieler-Stanze es bei
+        // maximalem Anker-Versatz (reanchEff) noch VOLL enthält.
+        const holeR = Math.max(span, stanzR - reanchEff - 6);
         const rings = cfg.rings,
             segs = cfg.segments;
         const ax = pm.x,
@@ -26192,6 +26209,15 @@ class AnazhRealm {
         }
         if (!s.horizonMantleMaterial) {
             s.horizonMantleMaterial = this._buildToonNodeMaterial({ vertexColors: true });
+            // V18.118 — die SPIELER-STANZE: Fragmente innerhalb stanzR um die
+            // (pro Tick nachgeführte) Spieler-Position fallen via alphaTest
+            // (step(edge,x) = 0 innen → alpha 0 → discard). Render-only.
+            const T = THREE.TSL;
+            const hu = { cx: T.uniform(pm.x), cz: T.uniform(pm.z), r: T.uniform(stanzR) };
+            s.mantleHoleUniforms = hu;
+            const d = T.length(T.positionWorld.xz.sub(T.vec2(hu.cx, hu.cz)));
+            s.horizonMantleMaterial.opacityNode = T.step(hu.r, d);
+            s.horizonMantleMaterial.alphaTest = 0.5;
         }
         if (m && m.mesh) {
             this._queueGeometryDispose(m.mesh.geometry);
@@ -26199,13 +26225,15 @@ class AnazhRealm {
             m.anchorX = ax;
             m.anchorZ = az;
             m.seed = seed;
+            m.builtStanzR = stanzR;
+            m.geoHoleR = holeR;
         } else {
             const mesh = new THREE.Mesh(geom, s.horizonMantleMaterial);
             mesh.castShadow = false;
             mesh.receiveShadow = false;
             mesh.frustumCulled = false; // der Ring umgibt die Kamera
             s.scene.add(mesh);
-            s.horizonMantle = { mesh, anchorX: ax, anchorZ: az, seed };
+            s.horizonMantle = { mesh, anchorX: ax, anchorZ: az, seed, builtStanzR: stanzR, geoHoleR: holeR };
         }
         s.horizonMantle.builtMs = +(performance.now() - t0).toFixed(1);
     }
@@ -53290,7 +53318,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.117.0";
+AnazhRealm.VERSION = "18.118.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -53322,7 +53350,7 @@ AnazhRealm.HORIZON_MANTLE = Object.freeze({
     rings: 20,
     segments: 72,
     drop: 2.5,
-    reanchorDist: 250,
+    reanchorDist: 120,
 });
 
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
