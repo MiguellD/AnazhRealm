@@ -49521,6 +49521,20 @@ class AnazhRealm {
                 fog.near = 4;
                 fog.far = 34;
             }
+            // V18.120 — B5-UNTERWASSER-PASS (die seit V18.1 dokumentierte
+            // Lücke): das Wasser rendert als EINSEITIGE Oberseite (BackSide +
+            // Top-Cull) → von UNTEN war die Wasserdecke WEG (der Taucher sah
+            // Himmel statt Spiegel). Der dritte Konsument des einen
+            // playerEyesUnderwater-Flags (neben Tauch-Fog + Tint): beim
+            // Tauchen wird das EINE geteilte Wasser-Material DoubleSide (die
+            // Oberseiten-Dreiecke sind von unten sichtbar = die Decke über
+            // dir), beim Auftauchen zurück zu BackSide (der V18.1-W1-Vertrag
+            // — von oben unverändert). Ein Render-Zustand, am Look-Ort gesynct.
+            const hsm = this.state.hydroSurfaceMaterial;
+            if (hsm) {
+                const wantSide = this.state.playerEyesUnderwater ? THREE.DoubleSide : THREE.BackSide;
+                if (hsm.side !== wantSide) hsm.side = wantSide;
+            }
         }
     }
 
@@ -53352,7 +53366,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.119.0";
+AnazhRealm.VERSION = "18.120.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

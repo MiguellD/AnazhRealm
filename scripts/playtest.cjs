@@ -22489,6 +22489,29 @@ async function checkBandPhasenBF(ctx) {
             const src = r._specRenderBody ? r._specRenderBody.toString() : "";
             return hasRad && /computeMotionRoles\(bp\.parts, bp\.connections\)/.test(src) && /Rad an Achse/.test(src);
         })();
+        // V18.120 — B5-UNTERWASSER-PASS: der dritte Konsument des einen
+        // playerEyesUnderwater-Flags (neben Tauch-Fog + Tint) — beim Tauchen
+        // wird das geteilte Wasser-Material DoubleSide (die Decke ist von
+        // unten sichtbar), beim Auftauchen BackSide (V18.1-W1-Vertrag).
+        // BEHAVIORAL mit Restore (zustands-neutral).
+        out.b5Underwater = (() => {
+            if (typeof r._ensureHydroSurfaceMaterial !== "function") return false;
+            const mat = r._ensureHydroSurfaceMaterial();
+            if (!mat) return false;
+            const savedFlag = r.state.playerEyesUnderwater;
+            try {
+                r.state.playerEyesUnderwater = true;
+                r._applyDayNightToScene();
+                const diveSide = mat.side;
+                r.state.playerEyesUnderwater = false;
+                r._applyDayNightToScene();
+                const surfSide = mat.side;
+                return diveSide === THREE.DoubleSide && surfSide === THREE.BackSide;
+            } finally {
+                r.state.playerEyesUnderwater = savedFlag;
+                r._applyDayNightToScene();
+            }
+        })();
         // V18.112 — E4-KRISTALL + E5: eine wiederholt bewährte Geste (3 finalisierte
         // Läufe, deposit_life, sorrow-Kontext) kristallisiert zur Regel — die
         // Bedingung EMERGIERT aus der Emotions-Signatur (field_above sorrow),
@@ -22617,6 +22640,10 @@ async function checkBandPhasenBF(ctx) {
     check(
         "C1/V18.119: das Werkstatt-Panel liest die GELENKE (connections → Rad an Achse, eine Wahrheit mit der Animation)",
         res.c1JointReadout
+    );
+    check(
+        "B5/V18.120: der Taucher sieht die Wasserdecke (eyesUnderwater → DoubleSide, auftauchen → BackSide)",
+        res.b5Underwater
     );
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
