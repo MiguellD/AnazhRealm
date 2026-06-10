@@ -554,10 +554,20 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 - **E4 — Geste→Gesetz:** ✓ AUDIT GEMESSEN + PASSAGIER GEHEILT (V18.104): der Fitness-Kreis
   LEBTE nur halb — der Finalizer schrieb `h.fitness` (computeMultiDimFitness), aber
   `dslSelectByFitness` las NUR den fps-Proxy nach (der Passagier-Trugschluss im Lern-Kreis).
-  Jetzt FÜHRT die finalisierte Wertung die Selektion (fps bleibt Fallback). Die KRISTALLISATION
-  (Geste→Regel-Kandidat) DEFERRED: braucht die rule-Op-AST-Form sauber (eigene kleine Welle).
-- **E5 — Emotion→Regel-EMERGENZ** [H]: DEFERRED (hängt an der rule-Op-Komposition wie E4-Kristall
-  — zusammen in EINER Folge-Welle).
+  Jetzt FÜHRT die finalisierte Wertung die Selektion (fps bleibt Fallback). ✓ **DIE
+  KRISTALLISATION GEBAUT (V18.112, die benannte Folge-Welle):** `_crystallizeGestureRule`
+  (im Selbstanalyse-Takt, cooldown 45 s) — eine WIEDERHOLT bewährte Geste (history:
+  finalized · fitness ≥0.65 · ≥3 Läufe desselben Op-Kopfes · rule-sicher via der EINEN
+  `_isRuleEffectAllowed`-Whitelist) wird zur stehenden Regel: der beste Lauf = der Effekt,
+  die Registrierung durch DIESELBE Tür (Queue → Wirk-Tor zahlt → registerWorldRule-Dedup/
+  Cap/Evict → Fitness-Lebenszyklus). GESTE → GESETZ schließt.
+- ✓ **E5 — Emotion→Regel-EMERGENZ GEBAUT (V18.112, in EINER Welle mit E4-Kristall):** die
+  Ø-EMOTIONS-SIGNATUR der bewährten Läufe (`emotionsBefore` via `_emotionState` — der EINE
+  Leser) GEBIERT die Bedingung des Gesetzes (`["field_above", dominant, intensity·0.6]` —
+  „die Geste tat gut, als sorrow herrschte → wo der Ort sorrow trägt, wirkt das Gesetz";
+  das räumliche Emotions-Feld ist das Substrat: deposit_emotion schreibt, field_above
+  liest — der Kreis). Schwache Signatur → random_chance-Fallback. Behavioral + Wächter-
+  Invarianten (frozen-Welt-Geste kristallisiert NIE).
 - **E6 — KI liest die δ-Karte + LLM-Manifest** [H+S]: DEFERRED (LLM ist opt-in-Randfigur;
   der Kontext-Schnitt gehört zur LLM-Welle mit S-Prompt-Review).
 - ✓ **E7 — der Spieler als PFLEGER (V18.104):** Chat-Geste „pflege (das land)" →
@@ -579,9 +589,16 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   re-entrant: SecurityError → fetch [ACAO * steht] → Blob-URL → volle Verdrahtung, eine Quelle) ·
   (3) der localStorage-SCHATTEN (Boot-Guard am Datei-Kopf: Probe wirft → In-Memory-Shim
   shadowt die Property — 10 Zeilen statt 102 Edits; die innere Welt lebt ephemer) · (4)
-  Server-Absenz = done-by-existing (localhost-Skip + async-WS-Fehler). OFFEN: die BOOT-SONDE
-  (das Selbst-Bündel vendoren → im Portal betreten → rendert — der minutenlange iframe-Boot,
-  eigener Smoke-Lauf + S-Browser).
+  Server-Absenz = done-by-existing (localhost-Skip + async-WS-Fehler). ✓ **DIE BOOT-SONDE
+  GEBAUT + GRÜN (V18.112, `npm run smoke:selfboot`):** index.html im ECHTEN
+  `sandbox="allow-scripts"`-iframe (null-origin = die Portal-Umgebung) — die innere Welt
+  BOOTET (Renderer + Ammo-Physik + Worker + Chunks streamen), der localStorage-Schatten
+  greift (own-property-Shim GEMESSEN), keine ungefangenen Fehler. **Die Sonde FING einen
+  echten Riss:** der Blob-Worker (Schnitt 2) konnte das relative
+  `importScripts("./vendor/simplex-noise.js")` nicht auflösen (blob:-URLs haben keine
+  Basis) → der Fallback injiziert jetzt `self.__anazhBase` (absolute App-Basis), der
+  Worker liest sie. DIE REKURSION BOOTET — AnazhRealm lebt in AnazhRealm. Offen: nur noch
+  der S-Browser-Blick durchs echte Portal.
 - **F2 — G3 Netz:** ✓ TEILBÜNDEL (V18.104): Raten-Cap `creature-pos` (10/s je Peer, Empfangs-
   seite — das SUBWORLD_NET_RATE_MAX-Muster) · TURN KONFIGURIERBAR (localStorage `anazhTurn`
   {urls,username,credential} → iceServers; reist NIE im Snapshot) · PROTOKOLL-VERSION
@@ -667,10 +684,10 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | Musik hört die Emotion nicht (Pfeiler 4 halb) | D5b |
 | Nexus zahlt nichts, Pools feeden nicht | E2/E4 |
 | Magie kostet nichts | E3 |
-| Gesten-Fitness-Kreis evtl. stumm (historySource?) | E4-Audit |
+| ~~Gesten-Fitness-Kreis evtl. stumm~~ | ✓ V18.104 E4-Audit + V18.112 Kristall: Geste→Gesetz schließt |
 | LLM ist Randfigur | E6 |
 | Spieler kann nicht pflegen | E7 |
-| Rekursion blockiert (4 Schnitte) | F1 |
+| ~~Rekursion blockiert (4 Schnitte)~~ | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm |
 | Netz trägt real nur ~4–6 Peers, TURN fehlt | F2 |
 | Sozial-Schicht fehlt ganz (Bewerten lokal-only) | F4 |
 | ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip) |

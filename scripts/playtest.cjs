@@ -22393,6 +22393,81 @@ async function checkBandPhasenBF(ctx) {
         out.a4Curtain =
             /VERT_SPLIT/.test(r._buildVoxelChunkWaterCellSheet.toString()) &&
             /dupVert/.test(r._buildVoxelChunkWaterCellSheet.toString());
+        // V18.112 — E4-KRISTALL + E5: eine wiederholt bewährte Geste (3 finalisierte
+        // Läufe, deposit_life, sorrow-Kontext) kristallisiert zur Regel — die
+        // Bedingung EMERGIERT aus der Emotions-Signatur (field_above sorrow),
+        // der Effekt ist der beste Lauf, die Registrierung geht durch die
+        // Nexus-Queue (zahlt am Wirk-Tor). Behavioral + KONSUM (Tick-Hook).
+        out.e45Crystal = (() => {
+            const dsl = r.state.dsl;
+            const saved = {
+                hist: dsl.history,
+                q: r.state.nexusEvolutionQueue,
+                last: dsl.lastCrystallizeAt,
+                sig: dsl.lastCrystalSig,
+            };
+            try {
+                const mk = (f, sorrow) => ({
+                    id: "t_crystal",
+                    program: ["deposit_life", ["at_player"]],
+                    at: 0,
+                    ok: true,
+                    finalized: true,
+                    fitness: f,
+                    outcome: { emotionsBefore: { joy: 0, awe: 0, sorrow, hope: 0, peace: 0, chaos: 0 } },
+                });
+                dsl.history = [mk(0.8, 0.7), mk(0.75, 0.6), mk(0.9, 0.8)];
+                dsl.lastCrystallizeAt = -Infinity;
+                dsl.lastCrystalSig = null;
+                r.state.nexusEvolutionQueue = [];
+                const prog = r._crystallizeGestureRule(performance.now() / 1000);
+                const q = r.state.nexusEvolutionQueue[0];
+                return (
+                    !!prog &&
+                    prog[0] === "rule" &&
+                    Array.isArray(prog[1]) &&
+                    prog[1][0] === "field_above" &&
+                    prog[1][1] === "sorrow" &&
+                    Array.isArray(prog[2]) &&
+                    prog[2][0] === "deposit_life" &&
+                    !!q &&
+                    /kristall/.test(q.name)
+                );
+            } finally {
+                dsl.history = saved.hist;
+                r.state.nexusEvolutionQueue = saved.q;
+                dsl.lastCrystallizeAt = saved.last;
+                dsl.lastCrystalSig = saved.sig;
+            }
+        })();
+        // Wächter: eine UNSICHERE Geste (spawn_village = frozen-Welt-Op) kristallisiert NIE.
+        out.e45Guard = (() => {
+            const dsl = r.state.dsl;
+            const saved = { hist: dsl.history, q: r.state.nexusEvolutionQueue, last: dsl.lastCrystallizeAt };
+            try {
+                const bad = {
+                    id: "t_bad",
+                    program: ["spawn_village", ["at", 0, 0, 0], 1],
+                    at: 0,
+                    ok: true,
+                    finalized: true,
+                    fitness: 0.9,
+                    outcome: { emotionsBefore: { joy: 0.8, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 } },
+                };
+                dsl.history = [bad, { ...bad }, { ...bad }];
+                dsl.lastCrystallizeAt = -Infinity;
+                r.state.nexusEvolutionQueue = [];
+                const prog = r._crystallizeGestureRule(performance.now() / 1000);
+                return prog === null && r.state.nexusEvolutionQueue.length === 0;
+            } finally {
+                dsl.history = saved.hist;
+                r.state.nexusEvolutionQueue = saved.q;
+                dsl.lastCrystallizeAt = saved.last;
+            }
+        })();
+        out.e45Hook = /_crystallizeGestureRule/.test(r._loopSelfAnalysis.toString());
+        // V18.112 — B3-Nachzug: der Horizont-Mantel trägt dieselbe gebackene Normale.
+        out.b3Mantle = /TERRAIN_NORMAL_FLATTEN/.test(r._ensureHorizonMantle.toString());
         return out;
     });
     if (res.error) {
@@ -22434,6 +22509,10 @@ async function checkBandPhasenBF(ctx) {
     check("C7: die Hand greift am GRIFF-Punkt (Source im Hand-Mesh-Pfad)", res.c7Grip);
     check("A4: die Wasserfall-Plane ist geschnitten, das Abwärts-Material lebt als Saat", res.a4PlaneCut);
     check("A4: der Steil-Split formt vertikales Wasser (Lippe + Vorhang im Zell-Sheet)", res.a4Curtain);
+    check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
+    check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
+    check("E4+E5: der Kristallisierer lebt im Selbstanalyse-Takt (KONSUM)", res.e45Hook);
+    check("B3-Nachzug: der Horizont-Mantel trägt die gebackene Normale (eine Lichtung)", res.b3Mantle);
     check("B8: Struktur-LUT existiert + rimStrength-Uniform verdrahtet", res.b8Lut && res.b8Rim);
 }
 

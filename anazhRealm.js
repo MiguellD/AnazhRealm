@@ -3577,6 +3577,82 @@ class AnazhRealm {
         return this.dslComposeRule(rng);
     }
 
+    // V18.112 — E4-KRISTALL + E5 (gigant-plan §5, die benannte Folge-Welle):
+    // GESTE → GESETZ. Sucht in der finalisierten history die WIEDERHOLT
+    // bewährte Geste (derselbe Op-Kopf, ≥ minRuns, Ø-Fitness maximal) und
+    // kristallisiert sie zur stehenden Regel: der konkret BESTE Lauf wird der
+    // Effekt, die Ø-EMOTIONS-SIGNATUR der guten Läufe (emotionsBefore via
+    // _emotionState — der EINE Leser) GEBIERT die Bedingung (E5: Emotion→
+    // Regel-Emergenz — „die Geste tat gut, als sorrow herrschte" → „wo der
+    // Ort sorrow trägt, wirkt das Gesetz"; das räumliche Emotions-Feld ist
+    // das Substrat: deposit_emotion schreibt die Achsen, field_above liest
+    // sie — der Kreis schließt). Die Registrierung läuft durch DIESELBE Tür
+    // wie jede Nexus-Evolution (nexusEvolutionQueue → E2-Wirk-Tor zahlt
+    // ruleRegisterCost → rule-Op → registerWorldRule [Whitelist + Dedup +
+    // Cap + Evict] → der Regel-Fitness-Lebenszyklus erneuert/verfällt) —
+    // KEIN Parallel-Pfad. Der Effekt-Wächter ist die EINE bestehende
+    // Whitelist (_isRuleEffectAllowed). Gerufen aus _loopSelfAnalysis
+    // (5-s-Takt, intern cooldown-gegated).
+    _crystallizeGestureRule(currentTime) {
+        const dsl = this.state.dsl;
+        if (!dsl || !Array.isArray(dsl.history)) return null;
+        const cfg = AnazhRealm.GESTURE_CRYSTAL;
+        const last = Number.isFinite(dsl.lastCrystallizeAt) ? dsl.lastCrystallizeAt : -Infinity;
+        if (currentTime - last < cfg.cooldownSec) return null;
+        dsl.lastCrystallizeAt = currentTime;
+        const groups = new Map();
+        for (const h of dsl.history) {
+            if (!h || !h.finalized || !Array.isArray(h.program)) continue;
+            if ((h.fitness || 0) < cfg.minFitness) continue;
+            const head = h.program[0];
+            if (head === "rule" || head === "chain") continue; // Gesetze gebären keine Gesetze
+            if (!this._isRuleEffectAllowed(h.program)) continue; // nur die reaktive Welt
+            if (!groups.has(head)) groups.set(head, []);
+            groups.get(head).push(h);
+        }
+        let best = null;
+        let bestAvg = 0;
+        for (const [key, list] of groups) {
+            if (list.length < cfg.minRuns) continue;
+            const avg = list.reduce((a, h) => a + (h.fitness || 0), 0) / list.length;
+            if (avg > bestAvg) {
+                bestAvg = avg;
+                best = { key, list };
+            }
+        }
+        if (!best) return null;
+        const top = best.list.reduce((a, h) => ((h.fitness || 0) > (a.fitness || 0) ? h : a), best.list[0]);
+        // Ø-Emotions-Signatur über die bewährten Läufe (E5).
+        const avgEmo = {};
+        let n = 0;
+        for (const h of best.list) {
+            const e = h.outcome && h.outcome.emotionsBefore;
+            if (!e) continue;
+            n++;
+            for (const k in e) avgEmo[k] = (avgEmo[k] || 0) + (e[k] || 0);
+        }
+        if (n > 0) for (const k in avgEmo) avgEmo[k] /= n;
+        const es = n > 0 && typeof this._emotionState === "function" ? this._emotionState(avgEmo) : null;
+        const cond =
+            es && es.dominant && es.intensity >= cfg.minEmotionIntensity
+                ? ["field_above", es.dominant, Number((es.intensity * 0.6).toFixed(2))]
+                : ["random_chance", 0.35];
+        const W = AnazhRealm.WORLD_RULES;
+        const program = ["rule", cond, top.program, { everySec: 8, ttlSec: W.ruleTtlMax }];
+        // kein Doppel-Kristall derselben Signatur (die Queue soll nicht
+        // wiederholt Wirk zahlen; registerWorldRule dedupt zusätzlich).
+        const sig = JSON.stringify([cond, top.program]);
+        if (dsl.lastCrystalSig === sig) return null;
+        dsl.lastCrystalSig = sig;
+        this.state.nexusEvolutionQueue.push({ name: `kristall_${best.key}`, program, source: "nexus" });
+        this.log(
+            `Eine bewährte Geste kristallisiert zum Gesetz: ${best.key} (Ø ${bestAvg.toFixed(2)}` +
+                (es && es.dominant && es.intensity >= cfg.minEmotionIntensity ? `, geboren aus ${es.dominant})` : ")"),
+            "INFO"
+        );
+        return program;
+    }
+
     dslComposeColor(rng) {
         const palette = ["#ff7a59", "#7bd389", "#5ec0eb", "#d4a3ff", "#f7d358", "#e94c89", "#88e1e1", "#a89070"];
         return palette[Math.floor(rng() * palette.length)];
@@ -16040,7 +16116,14 @@ class AnazhRealm {
                     fetch(`voxel-worker.js?v=${AnazhRealm.VERSION}`)
                         .then((r) => r.text())
                         .then((src) => {
-                            const blobUrl = URL.createObjectURL(new Blob([src], { type: "application/javascript" }));
+                            // V18.112 — die absolute Basis injizieren: ein blob:-Worker
+                            // kann relative importScripts nicht auflösen (Sonden-Fang).
+                            const base = new URL(".", document.baseURI).href;
+                            const blobUrl = URL.createObjectURL(
+                                new Blob([`self.__anazhBase=${JSON.stringify(base)};\n`, src], {
+                                    type: "application/javascript",
+                                })
+                            );
                             this._getVoxelWorker(blobUrl);
                             if (this.state.voxelWorker)
                                 this.log("Voxel-Worker über Blob-URL gestartet (Sandbox-Rekursion)", "INFO");
@@ -26047,6 +26130,29 @@ class AnazhRealm {
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         geom.setIndex(idx);
         geom.computeVertexNormals();
+        // V18.112 — B3-Nachzug (Reflexions-Fang): der Mantel MUSS dieselbe
+        // gebackene Lichtungs-Normale tragen wie die Chunks — vor B3 flachte
+        // der normalNode-Override BEIDE, nach dem Bake hätte der Mantel seine
+        // Facetten-Lichtung zurück (Bruch an der Ring-Kante). Eine Wahrheit:
+        // TERRAIN_NORMAL_FLATTEN (bei 1.0 konstant up, sonst mix zur Up-Achse).
+        {
+            const flat = AnazhRealm.TERRAIN_NORMAL_FLATTEN;
+            if (flat > 0) {
+                const nAttr = geom.attributes.normal;
+                for (let i = 0; i < nAttr.count; i++) {
+                    if (flat >= 1) {
+                        nAttr.setXYZ(i, 0, 1, 0);
+                    } else {
+                        const nx = nAttr.getX(i) * (1 - flat);
+                        const ny = nAttr.getY(i) * (1 - flat) + flat;
+                        const nz = nAttr.getZ(i) * (1 - flat);
+                        const nl = Math.hypot(nx, ny, nz) || 1;
+                        nAttr.setXYZ(i, nx / nl, ny / nl, nz / nl);
+                    }
+                }
+                nAttr.needsUpdate = true;
+            }
+        }
         // EINE Farb-Quelle: dieselbe Biom-Logik wie die Chunks; das Meer danach Tiefblau.
         this._attachVoxelFieldColors(geom);
         const col = geom.attributes.color;
@@ -52389,6 +52495,10 @@ class AnazhRealm {
                 AnazhRealm.NEXUS_WIRK.max,
                 this.state.nexusWirk + AnazhRealm.NEXUS_WIRK.idleRegenPer5s * (0.4 + 0.6 * this._emotionBalanceFactor())
             );
+            // V18.112 — E4-KRISTALL+E5: am selben Takt prüft der Nexus, ob eine
+            // wiederholt bewährte Geste zum GESETZ kristallisiert (cooldown-
+            // gegated; läuft durch die Queue → zahlt am Wirk-Tor wie alles).
+            if (typeof this._crystallizeGestureRule === "function") this._crystallizeGestureRule(currentTime);
             // E3 (gigant-plan §5 — Mana-Symmetrie): MANA regeneriert am SELBEN
             // 5-s-Takt — schneller, wo der Spieler magie-leitend IST (statTags)
             // ODER auf magie-leitendem Feld steht (auraAt — das Feld speist).
@@ -53115,7 +53225,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.111.0";
+AnazhRealm.VERSION = "18.112.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -53180,6 +53290,16 @@ AnazhRealm.LOD_HYSTERESIS_RINGS = 1;
 // über ein Lebens-Fenster (costBudgetMs/renewFitness/mutateSurvivorProb). Eine
 // Nexus-Regel ist EPHEMER (ttlSec) — am Lebens-Ende bewertet: gut → erneuern,
 // schlecht/inert → verfallen. So lernt die Welt ihre eigene Logik (Selektion).
+// V18.112 — E4-KRISTALL + E5 (die benannte Folge-Welle): GESTE → GESETZ.
+// Eine wiederholt BEWÄHRTE Geste (history: finalized, fitness ≥ minFitness,
+// ≥ minRuns Läufe desselben Op-Kopfes) kristallisiert zu einer stehenden
+// Regel; die EMOTIONS-SIGNATUR ihres Kontexts gebiert die Bedingung (E5).
+AnazhRealm.GESTURE_CRYSTAL = Object.freeze({
+    cooldownSec: 45, // höchstens alle 45 s ein Kristallisations-Versuch
+    minFitness: 0.65, // nur wirklich bewährte Läufe zählen
+    minRuns: 3, // Wiederholung macht das Gesetz (eine Einzeltat bleibt Geste)
+    minEmotionIntensity: 0.25, // darunter trägt der Kontext keine Signatur → random_chance
+});
 AnazhRealm.WORLD_RULES = Object.freeze({
     cap: 64,
     budgetPerFrame: 4,

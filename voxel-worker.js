@@ -31,7 +31,11 @@
 // bricht KEINE Vendor-Logik — die IIFE legt SimplexNoise auf window.X, und
 // window === self in unserem Shim).
 self.window = self;
-importScripts("./vendor/simplex-noise.js");
+// V18.112 — F1-Boot-Sonden-Fang: im BLOB-Worker (null-origin-Rekursion,
+// Schnitt 2) hat eine blob:-URL KEINE Basis — ein relatives importScripts
+// wirft SyntaxError. Der Blob-Fallback injiziert `self.__anazhBase`
+// (absolute App-Basis); der normale Worker läuft mit "" relativ wie eh.
+importScripts((self.__anazhBase || "") + "vendor/simplex-noise.js");
 
 // State-Container — wird per init-Message gesetzt + per state-update-Delta gepflegt.
 const state = {
