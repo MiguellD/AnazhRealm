@@ -5927,6 +5927,7 @@ class AnazhRealm {
             "creature-pos",
             "companion-say",
             "subworld-net",
+            "subworld-pose",
             "portal-invite",
         ];
         if (!ALLOWED.includes(msg.type)) return;
@@ -6196,6 +6197,7 @@ class AnazhRealm {
                 desc: entry.desc || "",
                 dsl: Array.isArray(entry.dsl) ? entry.dsl : [],
                 multiplayer: entry.multiplayer === true,
+                coPresence: entry.coPresence === true,
                 serverMode: entry.serverMode === "js-compute" ? "js-compute" : "relay",
                 files: bundle.files,
             });
@@ -6284,6 +6286,7 @@ class AnazhRealm {
                 desc: parsed.desc,
                 dsl: parsed.dsl,
                 multiplayer: parsed.multiplayer === true,
+                coPresence: parsed.coPresence === true,
                 serverMode: parsed.serverMode === "js-compute" ? "js-compute" : "relay",
                 files: parsed.files,
             })
@@ -6382,7 +6385,11 @@ class AnazhRealm {
                     (p.catalog || [])
                         .map(
                             (w) =>
-                                w.id + w.hash + (w.multiplayer ? "M" : "") + (w.serverMode === "js-compute" ? "J" : "")
+                                w.id +
+                                w.hash +
+                                (w.multiplayer ? "M" : "") +
+                                (w.coPresence ? "K" : "") +
+                                (w.serverMode === "js-compute" ? "J" : "")
                         )
                         .join(",")
             )
@@ -6430,6 +6437,16 @@ class AnazhRealm {
                         ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS."
                         : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten.";
                     row.appendChild(mp);
+                }
+                // W18-B — eine Ko-Präsenz-Welt im Katalog kenntlich machen:
+                // AnazhRealm injiziert die Augen (ihr seht euch drinnen).
+                if (w.coPresence === true) {
+                    const cp = document.createElement("span");
+                    cp.className = "library-mp-mark";
+                    cp.textContent = "Ko-Präsenz";
+                    cp.title =
+                        "Ihr seht euch in dieser Welt — AnazhRealm trägt die Posen übers Mesh, die Welt rendert die Gefährten.";
+                    row.appendChild(cp);
                 }
                 if (this._haveWorldByHashOrId(w.id, w.hash)) {
                     const have = document.createElement("span");
@@ -6963,6 +6980,17 @@ class AnazhRealm {
         }
     }
 
+    _p2pMsgSubworldPose(msg, p2p) {
+        // W18-B — die Pose eines Gefährten in DERSELBEN Ko-Präsenz-Sub-Welt.
+        // Empfänger-Wand je Peer (das _cpRate-Muster): ein bösartiger Peer
+        // kann das eigene iframe nicht mit Posen-Zustellungen würgen.
+        // _portalPoseDeliver prüft B2 (worldId-Match) + säubert die Pose.
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            if (!this._p2pPeerRateAdmit("subworld-pose", msg.peerId, AnazhRealm.SUBWORLD_POSE_PEER_RATE_MAX)) return;
+            this._portalPoseDeliver(msg.peerId, msg);
+        }
+    }
+
     _p2pMsgPortalInvite(msg, p2p) {
         // W17 Phase C — ein Mitspieler öffnete ein Multiplayer-Portal und
         // lädt die Gruppe ein. _p2pHandlePortalInvite zeigt den Prompt.
@@ -7487,6 +7515,8 @@ class AnazhRealm {
                 // W17 — die Multiplayer-Marke reist im Katalog mit: ein Peer
                 // sieht, welche browsbaren Welten Gruppen-Portal-fähig sind.
                 multiplayer: w.multiplayer === true,
+                // W18-B — die Ko-Präsenz-Marke reist im Katalog mit.
+                coPresence: w.coPresence === true,
                 // W17 P-Vendor — der Server-Modus reist im Katalog mit.
                 serverMode: w.serverMode === "js-compute" ? "js-compute" : "relay",
             });
@@ -7514,6 +7544,7 @@ class AnazhRealm {
                 label: typeof c.label === "string" ? c.label.slice(0, 48) : id,
                 hash,
                 multiplayer: c.multiplayer === true,
+                coPresence: c.coPresence === true,
                 serverMode: c.serverMode === "js-compute" ? "js-compute" : "relay",
             });
             if (out.length >= 32) break;
@@ -27534,6 +27565,9 @@ class AnazhRealm {
             if (bp.portalMeta.serverMode === "js-compute") {
                 out.portalMeta.serverMode = "js-compute";
             }
+            // W18-B — die Ko-Präsenz-Marke reist mit, sonst verlöre ein
+            // Ko-Präsenz-Portal beim Reload die Pose-Injektion (V8.59-Lehre).
+            if (bp.portalMeta.coPresence === true) out.portalMeta.coPresence = true;
         }
         // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan (Save,
         // Welt-Tor-Export, Recipe-Import, Fusion). Echtheit prüft
@@ -28888,6 +28922,10 @@ class AnazhRealm {
             hasDsl: dsl.length > 0,
             trust: w.trust === "sandboxed" ? "sandboxed" : "trusted",
             multiplayer: w.multiplayer === true,
+            // W18-B — die Welt deklariert das Ko-Präsenz-Protokoll (AnazhRealm
+            // injiziert die Augen: ihr seht euch in ihr, obwohl sie selbst
+            // keine Mitspieler kennt).
+            coPresence: w.coPresence === true,
             serverMode: w.serverMode === "js-compute" ? "js-compute" : "relay",
             imported: isImported,
             translated: isImported && w.translated === true,
@@ -28936,6 +28974,7 @@ class AnazhRealm {
             dsl.join(" "),
             prof.trust === "sandboxed" ? "sandbox sandboxed" : "vertraut trusted",
             prof.multiplayer ? "multiplayer" : "einzelwelt",
+            prof.coPresence ? "ko-präsenz copresence gemeinsam" : "",
             prof.serverMode === "js-compute" ? "js-compute" : "",
             prof.signature ? "signiert signed" : "unsigniert",
             prof.origin,
@@ -29066,6 +29105,9 @@ class AnazhRealm {
         // Eine js-compute-Welt ist per Natur mehrspielerfähig — die Marke
         // koppelt mit (wie _sanitizePortalMeta es im portalMeta erzwingt).
         if (m.multiplayer === true || out.serverMode === "js-compute") out.multiplayer = true;
+        // W18-B — die Ko-Präsenz-Deklaration überlebt den Rundlauf (V8.59):
+        // ein geholtes Portal dieser Welt injiziert die Pose-Schicht.
+        if (m.coPresence === true) out.coPresence = true;
         // Ω2 (taille-spec §2) — must-preserve: Unbekanntes überlebt die
         // Sanitize-Wand als OPAKES Datum (die bekannten Sicherheits-Felder
         // oben bleiben sanitisiert — _carryUnknown trägt nur, was nicht im
@@ -29097,6 +29139,8 @@ class AnazhRealm {
             // W17 — die Multiplayer-Marke reist mit dem geteilten Manifest
             // (Metadaten, nicht signierte Substanz — wie world-Pfad/desc).
             multiplayer: entry.multiplayer === true,
+            // W18-B — die Ko-Präsenz-Marke reist mit (Metadaten wie multiplayer).
+            coPresence: entry.coPresence === true,
             // W17 P-Vendor — der Server-Modus reist mit dem geteilten Manifest.
             serverMode: entry.serverMode === "js-compute" ? "js-compute" : "relay",
             authorPubKey: sig.authorPubKey,
@@ -29573,6 +29617,9 @@ class AnazhRealm {
             // ihr geholtes Portal lädt mit dem Transport-Shim + broadcastet
             // beim Betreten eine Gruppen-Portal-Einladung (W17 Phase C).
             multiplayer: m.multiplayer === true,
+            // W18-B — die Ko-Präsenz-Marke: ihr geholtes Portal injiziert
+            // die Pose-Schicht (das Mesh wird ihre Multiplayer-Schicht).
+            coPresence: m.coPresence === true,
             // W17 P-Vendor — der Server-Modus: js-compute → das geholte Portal
             // wird ein Compute-Host-Portal (V8.79), nicht blosser Relay.
             serverMode: m.serverMode === "js-compute" ? "js-compute" : "relay",
@@ -29614,6 +29661,7 @@ class AnazhRealm {
             dsl: o.dsl,
             bundleHash: posted.bundleHash,
             multiplayer: o.multiplayer === true,
+            coPresence: o.coPresence === true,
             serverMode: o.serverMode === "js-compute" ? "js-compute" : "relay",
         });
         if (!reg.ok) return reg;
@@ -29653,6 +29701,7 @@ class AnazhRealm {
             dsl: o.dsl,
             bundleHash: posted.bundleHash,
             multiplayer: o.multiplayer === true,
+            coPresence: o.coPresence === true,
             serverMode: o.serverMode === "js-compute" ? "js-compute" : "relay",
         });
         if (!reg.ok) return reg;
@@ -33106,6 +33155,9 @@ class AnazhRealm {
         // der Gruppe wird Compute-Host für die autoritative Server-JS).
         if (entry.multiplayer === true) meta.multiplayer = true;
         if (entry.serverMode === "js-compute") meta.serverMode = "js-compute";
+        // W18-B — deklariert die Welt das Ko-Präsenz-Protokoll, trägt ihr
+        // Portal die Marke: das Mesh wird ihre Multiplayer-Schicht.
+        if (entry.coPresence === true) meta.coPresence = true;
         return this.setBlueprintAsPortal(blueprintName, meta);
     }
 
@@ -34404,6 +34456,17 @@ class AnazhRealm {
                 })
             );
         }
+        // W18-B — die Ko-Präsenz-Abweichung signalisieren (wie Multiplayer):
+        // ihr seht euch in dieser Welt, obwohl sie selbst keine Mitspieler kennt.
+        if (prof.coPresence) {
+            idZone.appendChild(
+                this._el("span", {
+                    class: "library-mp-mark",
+                    text: "Ko-Präsenz",
+                    title: "Ihr seht euch in dieser Welt — AnazhRealm trägt die Posen übers Mesh, die Welt rendert die Gefährten (W18-B).",
+                })
+            );
+        }
         const trusted = prof.trust === "trusted";
         const trustZone = this._el(
             "div",
@@ -34440,6 +34503,8 @@ class AnazhRealm {
                     text: prof.serverMode === "js-compute" ? "Multiplayer · JS-Compute" : "Multiplayer",
                 })
             );
+        // W18-B — die Ko-Präsenz-Abweichung (ihr seht euch drinnen).
+        if (prof.coPresence) meta.appendChild(this._el("span", { class: "lib-net-badge", text: "Ko-Präsenz" }));
         meta.appendChild(sigSeal);
         return this._el("div", { class: "spec-body lib-card-body" }, meta);
     }
@@ -35143,7 +35208,47 @@ class AnazhRealm {
         // Sandbox-Grenze als postMessage statt zu einem echten Server. Eine
         // js-compute-Welt ist per Natur eine Multiplayer-Welt.
         meta.multiplayer = src.multiplayer === true || meta.serverMode === "js-compute";
+        // W18-B — eine Welt, die das Ko-Präsenz-Protokoll DEKLARIERT
+        // (peer-join/peer-state/peer-leave über die Brücke): AnazhRealm wird
+        // ihre Multiplayer-SCHICHT — das Mesh trägt Posen, die Welt rendert
+        // die Avatare in IHRER Engine. Vom Registry-/Bauplan-Autor gesetzt;
+        // eine Welt kann es im ready-Handshake auch selbst melden
+        // (po.coPresence — dieselbe Hebung wie das native Manifest).
+        meta.coPresence = src.coPresence === true;
         return meta;
+    }
+
+    // W18-A — die EINE Quelle der Ko-Präsenz-Wahrheit einer Portal-Welt
+    // (gigant-plan F3; world-portal-w18-plan §3). Drei ehrliche Stufen:
+    // 2 — die Welt deklariert das Ko-Präsenz-Protokoll (AnazhRealm injiziert
+    //     die Augen: ihr seht euch IN der fremden Engine, W18-B);
+    // 1 — die Welt hat einen EIGENEN Multiplayer-Begriff (der Transport-Shim
+    //     + das Mesh tragen ihre Server-Logik, W17);
+    // 0 — eine Einzelwelt: jeder reist in seiner eigenen Instanz (die
+    //     Gruppe sieht sich nur im Vorraum davor). Leser: der Portal-Hinweis
+    //     + der Einladungs-Banner — der Spieler erfährt VOR/IM Tor ehrlich,
+    //     welche Gemeinsamkeit die Welt trägt.
+    _portalCoPresenceTier(meta) {
+        if (meta && meta.coPresence === true) {
+            return { tier: 2, label: "Ko-Präsenz — ihr seht euch in dieser Welt" };
+        }
+        if (meta && meta.multiplayer === true) {
+            return { tier: 1, label: "Multiplayer — die Welt verbindet euch übers Mesh" };
+        }
+        return { tier: 0, label: "Einzelwelt — jeder reist in seiner eigenen Instanz" };
+    }
+
+    // W18-A — der EINE Schreiber des Portal-Hinweises (V9.82: vorher setzten
+    // _buildPortalOverlay UND _portalReceiveManifest den Text parallel).
+    // Esc-Zeile + DSL-Fähigkeit + die ehrliche Ko-Präsenz-Stufe.
+    _portalRefreshHint(po) {
+        const target = po || this._portalOverlay;
+        if (!target || !target.hintEl) return;
+        const parts = [
+            target.dsl ? "Esc — Heimkehr · Konsole — Befehle an diese Welt" : "Esc — zurück zur Heimat-Welt",
+        ];
+        parts.push(this._portalCoPresenceTier(target).label);
+        target.hintEl.textContent = parts.join(" · ");
     }
 
     // G8 R3 (Robustheits-Bogen, M1 — Lokalität) — die EINE Quelle für das
@@ -35245,11 +35350,9 @@ class AnazhRealm {
         iframe.setAttribute("sandbox", this._portalSandboxAttr(meta));
         const hint = document.createElement("div");
         hint.className = "portal-hint";
-        // Stufe-bewusster Hinweis: spricht die Welt die DSL (hat sie einen
-        // Manifest), kann der Spieler per Konsole Befehle hineinreichen.
-        hint.textContent = meta.dsl
-            ? "Esc — Heimkehr · Konsole — Befehle an diese Welt"
-            : "Esc — zurück zur Heimat-Welt";
+        // W18-A — der Hinweis kommt aus dem EINEN Schreiber (_portalRefreshHint,
+        // nach dem _portalOverlay-Set unten): Esc-Zeile + DSL-Fähigkeit + die
+        // ehrliche Ko-Präsenz-Stufe der Welt.
         overlay.appendChild(iframe);
         overlay.appendChild(hint);
         // W14 Phase 2 — „signiert von <Autor>"-Zeile. Verborgen, bis
@@ -35283,6 +35386,13 @@ class AnazhRealm {
                 // W12 Phase 3 — meldet die Welt ihr eigenes Manifest mit,
                 // übernimmt die Heimat es (Stufe „nativ").
                 this._portalReceiveManifest(msg);
+                // W18-B — eine Welt kann das Ko-Präsenz-Protokoll auch SELBST
+                // melden (wie das native Manifest): ready {coPresence:true}
+                // hebt die Stufe — der Hinweis sagt die neue Wahrheit.
+                if (msg.coPresence === true && !po.coPresence) {
+                    po.coPresence = true;
+                    this._portalRefreshHint(po);
+                }
                 this._portalSendEnter();
             }
             // Die Sub-Welt meldet Esc (Fokus liegt im iframe) → Heimkehr.
@@ -35290,6 +35400,10 @@ class AnazhRealm {
             // W12 Phase 3 — die Sub-Welt spricht zurück: ein Welt-Ereignis
             // wandert ins Heimat-Journal (geloggt, nie ausgeführt).
             else if (msg.type === "event") this._portalReceiveEvent(msg);
+            // W18-B — die Sub-Welt meldet die Pose des LOKALEN Spielers
+            // (Daten, nie Code); sie reist als subworld-pose übers Mesh zu
+            // den Gefährten in DERSELBEN Welt.
+            else if (msg.type === "local-pose") this._portalReceiveLocalPose(msg);
             // W17 Phase A — der Transport-Shim einer Multiplayer-Welt postet
             // ihren Netz-Verkehr (`__anazhNet`-Envelope, kein `type`-Feld).
             else if (msg.__anazhNet === true) this._portalNetReceive(msg);
@@ -35355,7 +35469,20 @@ class AnazhRealm {
             stateTimer: null,
             stateSeq: 0,
             lastSrvState: null,
+            // W18-B — die Ko-Präsenz-Injektion: deklariert die Welt das
+            // Protokoll (Registry/Bauplan ODER ready-Handshake), trägt das
+            // Mesh die Posen, die Welt rendert die Avatare. peers = die in
+            // DIESER Sub-Welt gesehenen Gefährten (peerId → {lastAt});
+            // poseWindow* deckelt den local-pose-Eingang (~10 Hz + Reserve),
+            // poseTimer ist der Abwesenheits-Sweep (peer-leave bei Stille).
+            coPresence: meta.coPresence === true,
+            peers: new Map(),
+            poseWindowStart: 0,
+            poseWindowCount: 0,
+            poseTimer: null,
+            localPose: null,
         };
+        this._portalRefreshHint(this._portalOverlay);
         document.body.appendChild(overlay);
         // W14 Phase 2 — ist die Ziel-Welt mit einem Vibe-Pass versiegelt,
         // zeigt das Overlay „signiert von <Autor>". Heimat-seitige Signatur
@@ -35516,6 +35643,11 @@ class AnazhRealm {
         if (po.stateTimer) {
             clearInterval(po.stateTimer);
             po.stateTimer = null;
+        }
+        // W18-B — der Ko-Präsenz-Abwesenheits-Sweep endet mit dem Overlay.
+        if (po.poseTimer) {
+            clearInterval(po.poseTimer);
+            po.poseTimer = null;
         }
         if (po.onMessage) window.removeEventListener("message", po.onMessage);
         if (po.overlayEl && po.overlayEl.parentNode) {
@@ -35739,9 +35871,8 @@ class AnazhRealm {
         if (typeof msg.label === "string" && msg.label.trim()) {
             po.label = msg.label.trim().slice(0, 60);
         }
-        if (po.hintEl) {
-            po.hintEl.textContent = "Esc — Heimkehr · Konsole — Befehle an diese Welt";
-        }
+        // W18-A — der Hinweis kommt aus dem EINEN Schreiber (V9.82).
+        this._portalRefreshHint(po);
         return true;
     }
 
@@ -35859,6 +35990,109 @@ class AnazhRealm {
             po.iframe.contentWindow.postMessage({ __anazhNet: true, kind: "ws-recv", channel, data }, target);
         }
         return true;
+    }
+
+    // W18-B — die Pose des LOKALEN Spielers aus der Sub-Welt (sie kennt nur
+    // ihn). Nur eine Ko-Präsenz-Welt (deklariert via Registry/ready) spricht
+    // diesen Kanal; die Pose ist DATEN (vier endliche Zahlen), nie Code.
+    // Eigene Rate-Wand (~10 Hz + Reserve) UNTER dem R1-Gesamt-Bucket — eine
+    // flutende Welt kann den Posen-Kanal nicht als Mesh-Verstärker nutzen.
+    // Der Broadcast reist als subworld-pose; der B2-Sub-Raum-Schlüssel ist
+    // der Welt-Pfad (nur Gefährten in DERSELBEN Welt stellen zu).
+    _portalReceiveLocalPose(msg) {
+        const po = this._portalOverlay;
+        if (!po || !po.coPresence) return false;
+        const pose = this._sanitizePose(msg && msg.pose);
+        if (!pose) return false;
+        const now = performance.now();
+        if (now - po.poseWindowStart >= AnazhRealm.SUBWORLD_POSE_RATE_WINDOW_MS) {
+            po.poseWindowStart = now;
+            po.poseWindowCount = 0;
+        }
+        if (po.poseWindowCount >= AnazhRealm.SUBWORLD_POSE_RATE_MAX) return false;
+        po.poseWindowCount++;
+        po.localPose = pose;
+        const p2p = this.state.p2p;
+        if (p2p && p2p.enabled && p2p.connected) {
+            this.p2pSend({ type: "subworld-pose", worldId: po.world, pose });
+        }
+        return true;
+    }
+
+    // W18-B — eine Pose säubern: vier endliche, geklemmte Zahlen oder null.
+    // Eine fremde Welt (oder ein fremder Peer) kann keine NaN/Infinity-Posen
+    // oder Objekt-Schmuggel in die Zustell-Kette legen.
+    _sanitizePose(p) {
+        if (!p || typeof p !== "object") return null;
+        const x = Number(p.x);
+        const y = Number(p.y);
+        const z = Number(p.z);
+        const yaw = Number(p.yaw);
+        if (![x, y, z, yaw].every(Number.isFinite)) return null;
+        const c = (v) => Math.max(-1e6, Math.min(1e6, v));
+        return { x: c(x), y: c(y), z: c(z), yaw: Math.max(-Math.PI * 2, Math.min(Math.PI * 2, yaw)) };
+    }
+
+    // W18-B — die Pose eines Mesh-Gefährten in die eigene Sub-Welt zustellen.
+    // B2 — nur wenn ich im SELBEN Ko-Präsenz-Portal bin (worldId-Pfad-Match).
+    // Die ERSTE Pose eines Peers gebiert sein peer-join (Name + Seele aus dem
+    // Mesh-Roster — der soul-Kanal trägt beide schon; die Ko-Präsenz erfindet
+    // KEINE zweite Identitäts-Quelle), danach fließen peer-state-Updates.
+    // Der Abwesenheits-Sweep (poseTimer) räumt verstummte Peers als
+    // peer-leave — auch ein Mesh-Abriss endet so sauber in der Sub-Welt.
+    _portalPoseDeliver(peerId, msg) {
+        const po = this._portalOverlay;
+        if (!po || !po.coPresence || !msg) return false;
+        if (msg.worldId !== po.world) return false;
+        const pose = this._sanitizePose(msg.pose);
+        if (!pose) return false;
+        if (!po.iframe || !po.iframe.contentWindow) return false;
+        const target = po.trust === "sandboxed" ? "*" : window.location.origin;
+        let entry = po.peers.get(peerId);
+        if (!entry) {
+            const known = this.state.p2p && this.state.p2p.peers ? this.state.p2p.peers.get(peerId) : null;
+            entry = { lastAt: performance.now() };
+            po.peers.set(peerId, entry);
+            po.iframe.contentWindow.postMessage(
+                {
+                    type: "peer-join",
+                    peerId,
+                    name: (known && known.avatarName) || String(peerId).slice(0, 8),
+                    soul: (known && known.soulName) || "human",
+                },
+                target
+            );
+            this._portalEnsurePoseSweep();
+        }
+        entry.lastAt = performance.now();
+        po.iframe.contentWindow.postMessage({ type: "peer-state", peerId, pose }, target);
+        return true;
+    }
+
+    // W18-B — der Abwesenheits-Sweep, lazy beim ersten Gefährten gestartet
+    // (das stateTimer-Muster: lebt + stirbt mit dem Overlay).
+    _portalEnsurePoseSweep() {
+        const po = this._portalOverlay;
+        if (!po || po.poseTimer) return;
+        po.poseTimer = setInterval(() => this._portalSweepPosePeers(), 2000);
+    }
+
+    // W18-B — verstummte Gefährten (keine Pose binnen SUBWORLD_POSE_TIMEOUT_MS)
+    // als peer-leave aus der Sub-Welt räumen. Deckt Portal-Austritt UND
+    // Mesh-Abriss mit EINER Regel (die Pose ist das Lebenszeichen).
+    _portalSweepPosePeers() {
+        const po = this._portalOverlay;
+        if (!po || !po.peers || po.peers.size === 0) return;
+        const now = performance.now();
+        const target = po.trust === "sandboxed" ? "*" : window.location.origin;
+        for (const [peerId, entry] of po.peers) {
+            if (now - entry.lastAt > AnazhRealm.SUBWORLD_POSE_TIMEOUT_MS) {
+                po.peers.delete(peerId);
+                if (po.iframe && po.iframe.contentWindow) {
+                    po.iframe.contentWindow.postMessage({ type: "peer-leave", peerId }, target);
+                }
+            }
+        }
     }
 
     // W17 Phase B-JS-Compute — die eigene Verbindungs-id im Server-Kontext.
@@ -36180,14 +36414,15 @@ class AnazhRealm {
     // W17 Phase C — C1: betritt der Spieler ein Multiplayer-Portal, lädt er
     // die Mesh-Gruppe ein. Ein `portal-invite`-Broadcast (`{worldId, label}`)
     // — wie companion-say ein event-driven Spiel-Broadcast, kein DSL. Nur ein
-    // Multiplayer-Portal (B-Relay verbindet die Gruppe nur dort) und nur eine
+    // gemeinsamkeits-fähiges Portal (Multiplayer: B-Relay verbindet die Gruppe
+    // dort; W18-B Ko-Präsenz: das Pose-Mesh verbindet sie) und nur eine
     // library-bekannte Welt (der Empfänger muss sie via obtainPortalForWorld
     // holen können — _resolvePortalWorldId liefert sonst null).
     _p2pBroadcastPortalInvite() {
         const p2p = this.state.p2p;
         if (!p2p || !p2p.enabled || !p2p.connected) return false;
         const po = this._portalOverlay;
-        if (!po || !po.multiplayer) return false;
+        if (!po || (!po.multiplayer && !po.coPresence)) return false;
         const worldId = this._resolvePortalWorldId(po);
         if (!worldId) return false;
         this.p2pSend({ type: "portal-invite", worldId, label: po.label || worldId });
@@ -36233,7 +36468,12 @@ class AnazhRealm {
             return { ok: false, reason: obtained.reason };
         }
         const bp = this.state.blueprints[obtained.blueprint];
-        const meta = Object.assign({}, bp.portalMeta, { multiplayer: true });
+        // W18-B — eine Ko-Präsenz-Welt behält ihre Natur (ihr Pose-Mesh
+        // braucht den Shim nicht); nur eine Shim-Multiplayer-Welt bekommt
+        // das erzwungene multiplayer:true (die Einladung IST der Beweis —
+        // B2 verbindet die Gruppe auch ohne eigene Registry-Marke).
+        const forced = bp.portalMeta && bp.portalMeta.coPresence === true ? {} : { multiplayer: true };
+        const meta = Object.assign({}, bp.portalMeta, forced);
         this.state.p2p.pendingInvite = null;
         this._renderPortalInviteBanner();
         // Direkt über _buildPortalOverlay — enterPortal bräuchte eine
@@ -36280,6 +36520,15 @@ class AnazhRealm {
         const text = document.createElement("div");
         text.className = "portal-invite-text";
         text.textContent = `${who} öffnete ein Tor nach „${inv.label}"`;
+        // W18-A — die ehrliche Ko-Präsenz-Stufe VOR dem Mitkommen: der
+        // Empfänger löst die Welt lokal auf (seine Bibliothek) und erfährt,
+        // ob er die Gefährten drinnen SEHEN wird oder jeder allein reist.
+        const known = this._worldEntry(inv.worldId);
+        const tierEl = document.createElement("div");
+        tierEl.className = "portal-invite-tier";
+        tierEl.textContent = this._portalCoPresenceTier(
+            known || { multiplayer: true } // die Einladung selbst beweist mindestens Stufe 1
+        ).label;
         const row = document.createElement("div");
         row.className = "portal-invite-row";
         const joinBtn = document.createElement("button");
@@ -36295,6 +36544,7 @@ class AnazhRealm {
         row.appendChild(joinBtn);
         row.appendChild(dismissBtn);
         banner.appendChild(text);
+        banner.appendChild(tierEl);
         banner.appendChild(row);
     }
 
@@ -56057,7 +56307,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.143.0";
+AnazhRealm.VERSION = "18.144.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -56753,6 +57003,9 @@ AnazhRealm.MANIFEST_KNOWN_KEYS = Object.freeze([
     "bundleHash",
     "serverMode",
     "multiplayer",
+    // W18-B — die Ko-Präsenz-Deklaration (additives Minor-Wachstum, Ω6:
+    // alte Builds bewahren sie als Unbekanntes, neue erkennen sie).
+    "coPresence",
 ]);
 AnazhRealm.MATERIAL_TAG_DEFAULTS = Object.freeze(
     AnazhRealm.MATERIAL_TAG_KEYS.reduce((acc, key) => {
@@ -57002,6 +57255,22 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         dsl: Object.freeze(["sturm", "ruhe", "schwaermen", "skybox_color"]),
         desc: "Ein 2D-Schwarm aus hunderten Wesen — eine fremde Engine, die null-origin sandgesichert läuft, ohne AnazhRealm je zu berühren.",
         trust: "sandboxed",
+    }),
+    // W18-B — die erste Ko-Präsenz-Welt: eine single-player fremde Engine
+    // (2D-Canvas, kein Multiplayer-Begriff), die das Ko-Präsenz-Protokoll
+    // DEKLARIERT (peer-join/peer-state/peer-leave). AnazhRealm gibt ihr die
+    // Augen: das Mesh trägt die Posen der Gefährten, die Welt rendert sie in
+    // IHRER Engine — der Beweis, dass Freunde sich in einer Welt sehen, die
+    // selbst nie wusste, was ein Freund ist. Null-origin sandgesichert wie
+    // der Schwarm (das Protokoll quert die VOLLE Wand).
+    begegnung: Object.freeze({
+        id: "begegnung",
+        label: "Begegnungs-Feld",
+        world: "worlds/begegnung/index.html",
+        dsl: Object.freeze([]),
+        desc: "Ein stilles Lichter-Feld — eine fremde single-player Engine, in der ihr euch trotzdem seht: AnazhRealm injiziert die Ko-Präsenz übers Mesh.",
+        trust: "sandboxed",
+        coPresence: true,
     }),
 });
 
@@ -57527,6 +57796,15 @@ AnazhRealm.PORTAL_CHANNEL_RATE_MAX = 200;
 // Sender deckelt sich schon bei 120/s (SUBWORLD_NET_RATE_MAX), aber ein
 // böswilliger Peer ignoriert das — der Empfänger-Deckel ist die echte Wand.
 AnazhRealm.SUBWORLD_NET_PEER_RATE_MAX = 120;
+// W18-B (gigant-plan F3; world-portal-w18-plan §5) — die Ko-Präsenz-Injektion:
+// AnazhRealm ist die Multiplayer-SCHICHT für Welten, die selbst keine haben.
+// Das Mesh trägt Posen (~10 Hz, das W7-pos-Muster), die Welt rendert Avatare.
+// Sende-Wand (local-pose aus dem iframe) + Empfänger-Wand (subworld-pose je
+// Peer, das _cpRate-Muster) + Abwesenheits-Timeout (Stille = peer-leave).
+AnazhRealm.SUBWORLD_POSE_RATE_WINDOW_MS = 1000;
+AnazhRealm.SUBWORLD_POSE_RATE_MAX = 15;
+AnazhRealm.SUBWORLD_POSE_PEER_RATE_MAX = 15;
+AnazhRealm.SUBWORLD_POSE_TIMEOUT_MS = 6000;
 // V9.44-c — der Mesh-Router-Dispatch-Table. p2pHandleMessage mappt den
 // WS-Nachrichtentyp über diese Tabelle auf eine `_p2pMsg<Type>`-Methode,
 // statt 18 sequentielle `if (msg.type === …)`-Branches durchzulaufen. Ein
@@ -57541,6 +57819,7 @@ AnazhRealm.P2P_MESSAGE_HANDLERS = Object.freeze({
     "creature-pos": "_p2pMsgCreaturePos",
     "companion-say": "_p2pMsgCompanionSay",
     "subworld-net": "_p2pMsgSubworldNet",
+    "subworld-pose": "_p2pMsgSubworldPose",
     "portal-invite": "_p2pMsgPortalInvite",
     pos: "_p2pMsgPos",
     dsl: "_p2pMsgDsl",

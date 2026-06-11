@@ -768,8 +768,24 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
   Stempel-Vertrauen (heute: kanal-gestempelt = unfälschbar; via Hub nur noch Hub-vertraut) —
   ein 4-Mechanismen-Umbau im R1/R2-gehärteten Kanal; ein HALBER Stern bräche W16/W17 bei
     > 6 Peers. Der eigene fokussierte Bogen, mit diesem Design als Startpunkt.
-- **F3 — W18 in fremden Welten LEBEN** [world-portal-w18-plan; Stufen A→D]: Auto-Join/Tier →
-  Ko-Präsenz-Injektion (Kern) → Input-Brücke → Swappen/Persistenz.
+- **F3 — W18 in fremden Welten LEBEN** [world-portal-w18-plan; Stufen A→D]: ✓ **W18-A+B
+  GEBAUT (V18.144) — die KO-PRÄSENZ-INJEKTION + die Tier-Wahrheit (der W18-Kern):**
+  AnazhRealm ist die Multiplayer-SCHICHT für Welten, die selbst keine haben — reine
+  Verdichtung (Brücke W12 + Mesh W7/W17 + Einladung V8.77, kein neues System).
+  `_portalCoPresenceTier` = EINE Quelle, drei ehrliche Stufen (Hinweis/Banner/Chips
+  konsumieren sie); das Protokoll: die Welt deklariert `coPresence` (Registry ODER
+  ready) → `local-pose` (sanitisiert, 15/s-Wand) → `subworld-pose` übers Mesh
+  (B2-Welt-Schlüssel + Peer-Rate-Wand) → die Heimat injiziert peer-join (Name+Seele
+  aus dem soul-Roster) VOR peer-state, der Abwesenheits-Sweep räumt Verstummte als
+  peer-leave (Portal-Austritt + Mesh-Abriss = EINE Regel). Die Marke reist überall
+  (Snapshot/aim/Manifest [Ω6-additiv]/Katalog/Vendor). Die erste Ko-Präsenz-Welt
+  `worlds/begegnung/` (null-origin sandboxed — die VOLLE Wand): single-player
+  2D-Engine rendert die Gefährten + meldet Begegnungen ins Journal. GEMESSEN
+  end-to-end (`npm run smoke:copresence`, zwei Browser, erster Lauf grün): „Anna
+  erschien neben dir im Begegnungs-Feld" durch die Sandbox-Wand; +10 Invarianten
+  (`checkBandW18CoPresence`). Der Übersetzer-Avatar-Hook (§5.2 Weg 2) bleibt
+  benannt-fern (fragil je Engine; der ehrliche Fallback ist der Vorraum). OFFEN:
+  W18-C (Input-Brücke) → W18-D (Swappen/Persistenz).
 - **F4 — der SOZIALE Bogen** [bibliothek-plan §E + roadmap; H+S]: ✓ **STUFE 1 GEBAUT
   (V18.134) — die Bewertungs-Aggregation:** signierte Zeugnisse {id,s,t,pub,sig}
   (ed25519, stabiles Kanonisches), LWW = die CRDT-Schicht wörtlich, kanal-exklusiv +

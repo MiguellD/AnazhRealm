@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <!-- W18-B — die BEGEGNUNGS-Welt: eine eigenständige single-player
+             Engine (2D-Canvas, kein Three.js, kein AnazhRealm-Code, KEIN
+             eigener Multiplayer-Begriff), die das Ko-Präsenz-Protokoll
+             DEKLARIERT (ready {coPresence:true}) und drei Callbacks rendert:
+             peer-join → Gefährten-Glyph erscheint, peer-state → er bewegt
+             sich, peer-leave → er verblasst. Die eigene Pose reist als
+             {type:"local-pose"} zur Heimat — AnazhRealm trägt sie übers
+             Mesh. So sehen sich Freunde in einer Welt, die selbst nie
+             wusste, was ein Freund ist. Läuft null-origin sandgesichert
+             (sandbox="allow-scripts"); die eigene CSP riegelt jedes Netz ab
+             (default-src 'none') — die Welt ist vollständig in sich
+             geschlossen, ihr einziger Kanal ist postMessage. -->
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none';"
+        />
+        <title>Begegnungs-Feld — AnazhRealm-Portal</title>
+        <link
+            rel="icon"
+            type="image/png"
+            href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        />
+        <style>
+            html,
+            body {
+                margin: 0;
+                height: 100%;
+                background: #070a14;
+                overflow: hidden;
+                font-family: "Courier New", monospace;
+            }
+            #feld {
+                position: fixed;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+            }
+            #titel {
+                position: fixed;
+                top: 12px;
+                left: 14px;
+                color: #9fb4e8;
+                font-size: 13px;
+                letter-spacing: 0.12em;
+                text-shadow: 0 0 12px #3a4f8f;
+                pointer-events: none;
+            }
+            #hinweis {
+                position: fixed;
+                bottom: 12px;
+                left: 14px;
+                color: #5d6f9e;
+                font-size: 11px;
+                pointer-events: none;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="feld"></canvas>
+        <div id="titel">BEGEGNUNGS-FELD</div>
+        <div id="hinweis">WASD / Pfeile — treiben · deine Gefährten erscheinen als Lichter</div>
+        <script>
+            (function () {
+                "use strict";
+                var canvas = document.getElementById("feld");
+                var ctx = canvas.getContext("2d");
+                var W = 0,
+                    H = 0;
+                function resize() {
+                    W = canvas.width = window.innerWidth;
+                    H = canvas.height = window.innerHeight;
+                }
+                window.addEventListener("resize", resize);
+                resize();
+
+                // --- die eigene Gestalt (single-player Kern der Engine) ---
+                var me = { x: 0, y: 0, yaw: 0, name: "Reisender" };
+                var keys = {};
+                window.addEventListener("keydown", function (e) {
+                    keys[e.key.toLowerCase()] = true;
+                });
+                window.addEventListener("keyup", function (e) {
+                    keys[e.key.toLowerCase()] = false;
+                });
+
+                // --- die Gefährten (das Ko-Präsenz-Protokoll rendert sie) ---
+                // peerId → {x, y, yaw, name, hue, seenAt}
+                var peers = {};
+                function peerHue(id) {
+                    var h = 0;
+                    for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 360;
+                    return h;
+                }
+
+                function post(msg) {
+                    try {
+                        parent.postMessage(msg, "*");
+                    } catch (e) {
+                        /* ohne Eltern-Fenster (direkt geöffnet) bleibt die Welt still */
+                    }
+                }
+
+                // --- die Brücke: Heimat → Welt ---
+                window.addEventListener("message", function (event) {
+                    var msg = event.data;
+                    if (!msg || typeof msg !== "object") return;
+                    if (msg.type === "enter" && msg.avatar && typeof msg.avatar.name === "string") {
+                        me.name = msg.avatar.name.slice(0, 24);
+                    } else if (msg.type === "peer-join" && typeof msg.peerId === "string") {
+                        if (!peers[msg.peerId]) {
+                            var nm = typeof msg.name === "string" ? msg.name.slice(0, 24) : "Gefährte";
+                            peers[msg.peerId] = {
+                                x: 0,
+                                y: 0,
+                                yaw: 0,
+                                name: nm,
+                                hue: peerHue(msg.peerId),
+                                seenAt: Date.now(),
+                            };
+                            // Der Beweis-Rückkanal: die Welt MELDET die Begegnung
+                            // (wandert ins Heimat-Journal — der Smoke liest sie dort).
+                            post({ type: "event", text: nm + " erschien neben dir im Begegnungs-Feld" });
+                        }
+                    } else if (msg.type === "peer-state" && typeof msg.peerId === "string" && msg.pose) {
+                        var p = peers[msg.peerId];
+                        if (p) {
+                            p.x = Number(msg.pose.x) || 0;
+                            p.y = Number(msg.pose.z) || 0;
+                            p.yaw = Number(msg.pose.yaw) || 0;
+                            p.seenAt = Date.now();
+                        }
+                    } else if (msg.type === "peer-leave" && typeof msg.peerId === "string") {
+                        var gone = peers[msg.peerId];
+                        if (gone) post({ type: "event", text: gone.name + " verließ das Begegnungs-Feld" });
+                        delete peers[msg.peerId];
+                    }
+                });
+
+                // --- die Brücke: Welt → Heimat (die eigene Pose, ~8 Hz + Herzschlag) ---
+                var lastSent = { x: NaN, y: NaN },
+                    lastBeat = 0;
+                setInterval(function () {
+                    var moved = lastSent.x !== me.x || lastSent.y !== me.y;
+                    var now = Date.now();
+                    if (!moved && now - lastBeat < 1000) return;
+                    lastBeat = now;
+                    lastSent.x = me.x;
+                    lastSent.y = me.y;
+                    // 2D-Engine → generische Pose: Canvas-y reist als Welt-z.
+                    post({ type: "local-pose", pose: { x: me.x, y: 0, z: me.y, yaw: me.yaw } });
+                }, 125);
+
+                // --- der Welt-eigene Loop (Lichter-Feld + Glyphen) ---
+                var motes = [];
+                for (var i = 0; i < 90; i++) {
+                    motes.push({
+                        x: Math.random() * 2 - 1,
+                        y: Math.random() * 2 - 1,
+                        r: 0.6 + Math.random() * 1.8,
+                        ph: Math.random() * Math.PI * 2,
+                    });
+                }
+                function drawGlyph(sx, sy, yaw, hue, name, mine) {
+                    ctx.save();
+                    ctx.translate(sx, sy);
+                    ctx.rotate(yaw);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, mine ? 11 : 9, 0, Math.PI * 2);
+                    ctx.fillStyle = mine ? "#ffd98a" : "hsl(" + hue + ", 75%, 68%)";
+                    ctx.shadowColor = ctx.fillStyle;
+                    ctx.shadowBlur = 22;
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(0, -(mine ? 16 : 13));
+                    ctx.lineTo(4, -(mine ? 9 : 7));
+                    ctx.lineTo(-4, -(mine ? 9 : 7));
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                    ctx.font = "11px monospace";
+                    ctx.textAlign = "center";
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = mine ? "#ffe9bd" : "hsl(" + hue + ", 60%, 80%)";
+                    ctx.fillText(name, sx, sy + 24);
+                }
+                function tick() {
+                    var sp = 2.6;
+                    var dx = 0,
+                        dy = 0;
+                    if (keys.w || keys.arrowup) dy -= sp;
+                    if (keys.s || keys.arrowdown) dy += sp;
+                    if (keys.a || keys.arrowleft) dx -= sp;
+                    if (keys.d || keys.arrowright) dx += sp;
+                    if (dx || dy) {
+                        me.x += dx;
+                        me.y += dy;
+                        me.yaw = Math.atan2(dx, -dy);
+                    }
+                    ctx.fillStyle = "#070a14";
+                    ctx.fillRect(0, 0, W, H);
+                    // Lichter-Motes treiben relativ zur eigenen Position (Parallax).
+                    var t = Date.now() / 1000;
+                    for (var i = 0; i < motes.length; i++) {
+                        var m = motes[i];
+                        var mx = ((((m.x * 900 - me.x * 0.4) % 900) + 900) % 900) * (W / 900);
+                        var my = ((((m.y * 600 - me.y * 0.4) % 600) + 600) % 600) * (H / 600);
+                        var a = 0.25 + 0.2 * Math.sin(t * 0.8 + m.ph);
+                        ctx.beginPath();
+                        ctx.arc(mx, my, m.r, 0, Math.PI * 2);
+                        ctx.fillStyle = "rgba(120, 150, 230, " + a.toFixed(3) + ")";
+                        ctx.fill();
+                    }
+                    // Gefährten — relativ zur eigenen Position (ich bin die Mitte).
+                    for (var id in peers) {
+                        var p = peers[id];
+                        drawGlyph(W / 2 + (p.x - me.x), H / 2 + (p.y - me.y), p.yaw, p.hue, p.name, false);
+                    }
+                    drawGlyph(W / 2, H / 2, me.yaw, 0, me.name, true);
+                    requestAnimationFrame(tick);
+                }
+                tick();
+
+                // Esc → Heimkehr (der W12-Vertrag).
+                window.addEventListener("keydown", function (e) {
+                    if (e.key === "Escape") post({ type: "exit" });
+                });
+
+                // Der Handshake: die Welt deklariert ihre Ko-Präsenz-Fähigkeit.
+                post({ type: "ready", coPresence: true, label: "Begegnungs-Feld" });
+            })();
+        </script>
+    </body>
+</html>

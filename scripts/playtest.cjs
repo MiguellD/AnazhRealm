@@ -28237,6 +28237,132 @@ async function checkBandV18143Comments(ctx) {
     );
 }
 
+// W18-A+B (V18.144, gigant-plan F3; world-portal-w18-plan §5) — die KO-PRÄSENZ-
+// INJEKTION: AnazhRealm ist die Multiplayer-SCHICHT für Welten, die selbst
+// keine haben. Das Mesh trägt Posen (subworld-pose, B2-Welt-Schlüssel +
+// Empfänger-Rate-Wand), die Heimat injiziert peer-join/peer-state/peer-leave
+// ins Sub-Welt-iframe, die WELT rendert die Gefährten (worlds/begegnung
+// deklariert das Protokoll). Der End-to-End-Beweis über zwei echte Browser
+// lebt in `npm run smoke:copresence`; dieses Band friert die Mechanik:
+// Tier-Wahrheit · Sanitize-Wand · Mesh-Verdrahtung · Sende-/Zustell-/Sweep-
+// Verhalten · Deklarations-Gate · Snapshot-Reise.
+async function checkBandW18CoPresence(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) die Tier-Wahrheit: EINE Quelle, drei ehrliche Stufen.
+        out.tier2 = r._portalCoPresenceTier({ coPresence: true }).tier === 2;
+        out.tier1 = r._portalCoPresenceTier({ multiplayer: true }).tier === 1;
+        out.tier0 = r._portalCoPresenceTier({}).tier === 0;
+        // (2) die Sanitize-Wand trägt die Deklaration nur als echten Boolean.
+        out.metaSan =
+            r._sanitizePortalMeta({ world: "worlds/begegnung/index.html", coPresence: true }, "x").coPresence ===
+                true &&
+            r._sanitizePortalMeta({ world: "worlds/begegnung/index.html", coPresence: "ja" }, "x").coPresence === false;
+        // (3) die Registry trägt die erste Ko-Präsenz-Welt (sandboxed — das
+        // Protokoll quert die VOLLE null-origin-Wand).
+        const reg = r.constructor.WORLD_REGISTRY.begegnung;
+        out.registry =
+            !!reg && reg.coPresence === true && reg.trust === "sandboxed" && /worlds\/begegnung\//.test(reg.world);
+        // (4) der Mesh-Pfad ist verdrahtet: ALLOWED-Liste + Dispatch-Tabelle +
+        // Empfänger-Rate-Wand je Peer (das _cpRate-Muster).
+        out.channelAllowed = /"subworld-pose"/.test(r._p2pHandleChannelMessage.toString());
+        out.dispatch = r.constructor.P2P_MESSAGE_HANDLERS["subworld-pose"] === "_p2pMsgSubworldPose";
+        out.peerRate = /_p2pPeerRateAdmit\("subworld-pose"/.test(r._p2pMsgSubworldPose.toString());
+        // (5)-(8) BEHAVIORAL am gestubbten Overlay (kein echtes iframe nötig —
+        // die postMessage-Injektion wird über ein Fake-contentWindow gefangen).
+        const savedPo = r._portalOverlay;
+        try {
+            const sent = [];
+            const fakeWin = { postMessage: (m) => sent.push(m) };
+            r._portalOverlay = {
+                coPresence: true,
+                world: "worlds/begegnung/index.html",
+                trust: "sandboxed",
+                peers: new Map(),
+                poseWindowStart: 0,
+                poseWindowCount: 0,
+                poseTimer: null,
+                localPose: null,
+                iframe: { contentWindow: fakeWin },
+            };
+            // (5) local-pose: angenommen + gemerkt; Müll-Pose fällt; Rate-Wand deckelt.
+            const ok = r._portalReceiveLocalPose({ pose: { x: 1, y: 2, z: 3, yaw: 0.5 } });
+            out.localPose = ok === true && r._portalOverlay.localPose && r._portalOverlay.localPose.x === 1;
+            out.localPoseGarbage = r._portalReceiveLocalPose({ pose: { x: NaN, y: 0, z: 0, yaw: 0 } }) === false;
+            let accepted = 1;
+            for (let i = 0; i < 30; i++) {
+                if (r._portalReceiveLocalPose({ pose: { x: i, y: 0, z: 0, yaw: 0 } })) accepted++;
+            }
+            out.rateCapped = accepted <= r.constructor.SUBWORLD_POSE_RATE_MAX;
+            // (6) Zustellung: die ERSTE Pose gebiert peer-join VOR peer-state,
+            // die zweite nur peer-state; eine fremde worldId fällt (B2).
+            sent.length = 0;
+            const msg = { worldId: "worlds/begegnung/index.html", pose: { x: 4, y: 0, z: 5, yaw: 1 } };
+            const d1 = r._portalPoseDeliver("peer-test-1", msg);
+            const d2 = r._portalPoseDeliver("peer-test-1", msg);
+            out.joinThenState =
+                d1 === true &&
+                d2 === true &&
+                sent.length === 3 &&
+                sent[0].type === "peer-join" &&
+                sent[1].type === "peer-state" &&
+                sent[2].type === "peer-state";
+            out.b2Scoped =
+                r._portalPoseDeliver("peer-test-2", { worldId: "worlds/anders/index.html", pose: msg.pose }) === false;
+            // (7) der Abwesenheits-Sweep: verstummt → peer-leave + raus.
+            r._portalOverlay.peers.get("peer-test-1").lastAt =
+                performance.now() - (r.constructor.SUBWORLD_POSE_TIMEOUT_MS + 1000);
+            sent.length = 0;
+            r._portalSweepPosePeers();
+            out.sweep =
+                !r._portalOverlay.peers.has("peer-test-1") && sent.length === 1 && sent[0].type === "peer-leave";
+            if (r._portalOverlay.poseTimer) {
+                clearInterval(r._portalOverlay.poseTimer);
+                r._portalOverlay.poseTimer = null;
+            }
+            // (8) das Deklarations-Gate: ohne coPresence nimmt das Portal weder
+            // local-pose an noch stellt es Peer-Posen zu (die Welt bleibt still).
+            r._portalOverlay.coPresence = false;
+            out.declarationGate =
+                r._portalReceiveLocalPose({ pose: { x: 1, y: 1, z: 1, yaw: 0 } }) === false &&
+                r._portalPoseDeliver("peer-test-3", msg) === false;
+        } finally {
+            r._portalOverlay = savedPo || null;
+        }
+        // (9) der invite-Gate kennt die Ko-Präsenz (Quelle) + die Marke reist
+        // im Blueprint-Snapshot (V8.59: sonst verlöre das Portal beim Reload
+        // die Injektion) + obtainPortalForWorld trägt sie ins portalMeta.
+        out.inviteGate = /!po\.multiplayer && !po\.coPresence/.test(r._p2pBroadcastPortalInvite.toString());
+        out.serializeTravels = /portalMeta\.coPresence/.test(r._serializeBlueprint.toString());
+        out.aimTravels = /coPresence === true\) meta\.coPresence = true/.test(r.aimBlueprintAtWorld.toString());
+        // (10) der Hinweis + der Banner sprechen die Tier-Wahrheit (Konsum).
+        out.hintConsumes = /_portalCoPresenceTier/.test(r._portalRefreshHint.toString());
+        out.bannerConsumes = /_portalCoPresenceTier/.test(r._renderPortalInviteBanner.toString());
+        return out;
+    });
+    check("W18 Ko-Präsenz: die Tier-Wahrheit (EINE Quelle, drei ehrliche Stufen)", res.tier2 && res.tier1 && res.tier0);
+    check("W18 Ko-Präsenz: Sanitize-Wand + Registry (begegnung sandboxed + deklariert)", res.metaSan && res.registry);
+    check(
+        "W18 Ko-Präsenz: der Mesh-Pfad verdrahtet (ALLOWED + Dispatch + Peer-Rate-Wand)",
+        res.channelAllowed && res.dispatch && res.peerRate
+    );
+    check(
+        "W18 Ko-Präsenz: local-pose angenommen + Müll fällt + Rate-Wand deckelt",
+        res.localPose && res.localPoseGarbage && res.rateCapped
+    );
+    check("W18 Ko-Präsenz: peer-join VOR peer-state, dann nur peer-state (Injektion)", res.joinThenState);
+    check("W18 Ko-Präsenz: B2-Welt-Schlüssel scoped die Zustellung", res.b2Scoped);
+    check("W18 Ko-Präsenz: der Abwesenheits-Sweep räumt Verstummte als peer-leave", res.sweep);
+    check("W18 Ko-Präsenz: das Deklarations-Gate (ohne coPresence bleibt die Welt still)", res.declarationGate);
+    check(
+        "W18 Ko-Präsenz: invite-Gate + Snapshot-Reise + aim-Reise (V8.59)",
+        res.inviteGate && res.serializeTravels && res.aimTravels
+    );
+    check("W18 Ko-Präsenz: Hinweis + Banner KONSUMIEREN die Tier-Wahrheit", res.hintConsumes && res.bannerConsumes);
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -44841,6 +44967,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandTailleOmega6(ctx);
             await checkBandV18142Follow(ctx);
             await checkBandV18143Comments(ctx);
+            await checkBandW18CoPresence(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
