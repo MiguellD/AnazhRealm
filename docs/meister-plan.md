@@ -180,7 +180,86 @@ Rückruf) — Evolution MIT Gedächtnis und Wächter. Wo andere zwischen „eing
 
 ---
 
-## §4 · Mess-Aufträge VOR den Wellen (Fischer-Pflicht)
+## §4 · Die VERDICHTUNGS-KARTE — welche Architektur jede Welle KONSUMIERT (kein Neubau)
+
+> Die Synergie-Pflicht (V9.82/V17.9): jede M-Welle ist Verdichtung des Stamms. Wer hier
+> ein neues System ansetzt, hat die Welle falsch geschnitten.
+
+- **M1** konsumiert: `CONNECTION_TYPES`-Daten (die Kacheln SIND die Tabelle) · die
+  Material-Resonanz für den Vorschlag (`computeCompoundTags` der zwei Parts → EIN
+  Mapping-Frozen `MATERIAL_PAIR_TO_CONNECTION`) · den BESTEHENDEN Werkstatt-Gizmo
+  (Verschieben/Drehen) fürs Anker-Feintuning · P12-Help-Pops statt Textwänden.
+- **M2** konsumiert: das EINE `ROLE_SIGNATURES`/`FORM_ROLE_SIGNATURES`-Register (+1 Rolle,
+  keine Prädikat-Kette — die V17.90-Konjunktions-Lehre: rad-Gelenk/sitz-Anker als 0/1-
+  Feature-Achsen) · `computeMotionRoles` (die rad-Zählung EXISTIERT — `_vehicleProfile`
+  liest sie schon; die Rolle liest dieselbe Quelle) · `_blueprintUseKind` (ein Zweig) ·
+  `_compoundSizeFactor` (die Formel wandert auf Σ-Substanz — ALLE Leser erben).
+- **M3** konsumiert: C7-Anker (`_attachPointFor`) · `getTerrainHeightAt` (das Gefährt
+  steht wie jede Kreatur) · `_animateHuman`-Pose-Familie (Sitz = Variante, kein neuer
+  Animator) · die Gelenk-Anker-Geometrie für die Rad-Achse (KEINE neue Achs-Tabelle).
+- **M4** konsumiert: die PROFIL-Vektoren (`_worldProfile.searchText` ·
+  `_recipeProfile` · `_creatureProfile`) — der Such-Kern matcht GEGEN sie; die Räume
+  verlieren ihre Privat-Filter.
+- **M5** konsumiert: das V18.149-Dev-Toggle-Muster (Logbuch) · den MutationObserver-
+  Feed (V18.82 — Nexus/Omnibox-Strom dockt an) · die P11-Tokens · den EINEN
+  `tickStatsHud` (Equip/Pickup rufen ihn EVENT-getrieben zusätzlich).
+- **M6** konsumiert: `harvestArchitecture`/`_harvestFitness` (EINE Ernte-Sprache —
+  der instanced-Pfad muss sie ERREICHEN, nicht duplizieren) · `_structureSpawnPos`
+  (der EINE Spawn-Eingang — der Mana-Pfad routet hindurch) · die W1-Mühe-Formel
+  (Terrain-Graben liest dieselbe Substanz-Härte).
+- **M7** konsumiert: die B8-LUT-Boden-Konstante (Terrain erbt die Bauten-Parität) ·
+  `atmoUniforms`/`AERIAL` (Regler exponieren VORHANDENE Uniforms — tote-Hebel-Lehre
+  V18.65 umgekehrt: lebendige Hebel sichtbar machen) · `_hydroRiverAt`-Tangente
+  (die Fluss-Glättung baut auf der V18.11-Advektion).
+- **M8** konsumiert: signaling-server-Räume (Stats = Zählen des Vorhandenen) · den
+  Feed-`data-author`-Filter (die Identitäts-Seite ist EIN gefilterter Feed) ·
+  `importVibePass`/Export (nur Sichtbarkeit).
+- **M9** konsumiert: `_worldRuleFitness` (Bewähren = derselbe Lebenszyklus) ·
+  `_crystallizeGestureRule` (Kristallisieren = das E4-Muster eine Ebene höher) ·
+  die Manifest-/Provenance-Reise (die wandernde Fähigkeit ist ein signiertes
+  Artefakt wie jedes) · den Dual-LLM-Pfad (`worlds/translated`-Prinzip) für Code.
+
+## §5 · DIE GEERBTEN FÄDEN (vollständig — nichts aus dem Giganten verwaist)
+
+> Die verbindliche Fortschreibung der gigant-§5-Schluss-Liste + aller benannten
+> Defer/Vermerke. Jeder Faden trägt seinen Weck-Moment; keiner wird still gestrichen.
+
+1. **B1 Wasser-Sheet→Worker** — weckt der fühlbare Carve-Hitch im Browser.
+2. **Echtes V18→V19-Zeit-Portal** — weckt das erste Alt-Build-Artefakt (git-Tag→dist).
+3. **VR** — geparkt (Schöpfer 11.06.: Portal-Welten können WebXR tragen; Stamm braucht es nicht).
+4. **Stern-ab-6-Topologie** — eigener Bogen; Design GEMESSEN in gigant-§5-F2 (Hub-Routing
+   + transitives Stempel-Vertrauen). Weckt: der erste Raum, der real >6 Peers will.
+5. **Übersetzer-Avatar-Hook + Input-Variante B** — weckt die erste echte fremde
+   three.js-Welt, die wir ko-präsent machen wollen (Fallback Vorraum steht).
+6. **F5 B-WASM** (per Projekt) · **F6 evolveCommunity** (S-Design nach gelebter Herde).
+7. **E6 LLM-δ-Karte** — weckt ein Schöpfer-LLM-Setup im Alltag (opt-in-Randfigur).
+8. **B7/U6 Clipmap · R3 Kanten-Schärfe · R5 Struktur-Textur · Transvoxel · Splice (V13.9)**
+   — Render/Perf-Backlog mit Gates (erst Druck, dann Bogen).
+9. **U2 Wasser-Fern-LOD** — Uferlinien-Versatz an fog-fernen Küsten (Look-Druck weckt).
+10. **C4 Feel-Pass · C5b volles Tasten-Rebinding** — S-Feel-Bögen.
+11. **Symphony Emotion→Tonalität** — braucht das OHR (S-Session).
+12. **Mana-Symmetrie** (magieleitung → zweite Ausdauer-Achse) — der benannte
+    Ökonomie-Rest; passt als M6-Nachbar, wenn die Mühe-Sprache ohnehin offen ist.
+13. **Nexus-Lern-Vereinheitlichung Rest** (Emotion→Regel-Emergenz über E4 hinaus) —
+    wächst natürlich mit M9-Sprosse 3 (EIN Fitness-Substrat für Gesetz UND Fähigkeit).
+14. **Ambiente Glut-Region-Geburt** (Raubtiere aus dem Feld) — eigene Mess-Welle
+    (V17.16-Spawn-Verteilungs-Wächter Pflicht).
+15. **Ritt-Stufe 2 / Kreatur-FPS-Budget / Portal-Ring-Vorschau / A4-T7c-Reste /
+    Kron-Überlauf** — Vermerke (Abnahme-Regel: kein Zögern, beim Berühren heilen).
+
+**Selbstkritik des Plans (ehrlich, Stand 12.06.):** (a) M2-Bäume→architecture berührt
+NICHT die Spawn-Affinität (die liest Material-Tags, nicht die Rolle) — aber die
+ROLLEN-erwartenden Tests + die Bibliothek-Saaten wandern; der `diag-roles`-Dump VOR dem
+Schnitt ist Pflicht, sonst rate ich an 30 Bauplänen. (b) M3 „das Gefährt führt" ändert
+den Physik-Vertrag im Sattel (Spieler-Body kinematisch ÜBER dem Sitz) — die A6-Klassen
+(Decken-Klemme, Void-Boden, Rescue) müssen den Sattel-Fall kennen; eigener diag-ride-Pass
+VOR dem Playtest. (c) M4 riskiert UI-Test-Brüche in vier Räumen (V9.56-i-Wander-Schwall
+einplanen). (d) Die Fluss-Glättung (M7) ist die heikelste Render-Welle — die
+Narben-Liste (roadmap §5: ZWEIMAL flacher Querschnitt revertiert!) gilt; NUR der
+geglättete LAUF (Tangenten-Smoothing), NIE der Querschnitt. (e) M9 Sprosse 5 braucht
+den S-Dialog je Adoption — der Plan legt die Leiter, nicht die Automatik.
+
+## §6 · Mess-Aufträge VOR den Wellen (Fischer-Pflicht)
 
 1. `diag-roles.cjs`: `computeBlueprintRole` für ALLE Built-ins dumpen (die Fehl-Rollen-Karte
    komplett — nicht nur die 3 gesehenen). [M2]

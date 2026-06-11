@@ -1,5 +1,12 @@
 # DER GIGANT — das umfassende Bild + der wahre Norden (10.06.2026)
 
+> **ARCHIVIERT (12.06.2026):** der §5-Pfad ist GESCHLOSSEN (V18.147), die GEMERKTEN
+> FÄDEN sind erfüllt (R6-Kern V18.152 · Phase E V18.148 · Statusbar V18.149 · Fahrzeug
+> V18.150 · IndexedDB V18.151) oder in `docs/meister-plan.md` §5 FORTGESCHRIEBEN (B1 ·
+> Zeit-Portal · VR · Stern-ab-6 · Übersetzer-Hook · …). Der AKTIVE Plan ist der
+> Meister-Plan; dieses Dokument bleibt die Karte der neun Säulen + Zwillinge + Stand
+> der Technik.
+
 > **Status: DER AKTIVE MASTER-BLICK (auf dem Tisch).** Der Schöpfer-Auftrag (10.06.): _„das ganze
 > Projekt analysieren, auch sämtliche Dokumente im Archiv … ein umfassendes Bild, wie kein Riese
 > zuvor … den wahren Norden aufzeigen, die Details durchdacht, das ganze System geprüft … wo

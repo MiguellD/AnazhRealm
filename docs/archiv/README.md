@@ -127,3 +127,8 @@ Die Diagnosen + Pläne, die die Welt-OBERFLÄCHE malerisch + tief machten.
 Ein Audit ist seinem Wesen nach ein Schnappschuss — sobald die nächste große Welle
 ansteht, erzeugt der `/audit`-Slash-Befehl einen frischen Bericht. Der liegt dann
 in `docs/` bis er selbst wieder hierher wandert.
+
+- **`gigant-plan.md`** — DER GIGANT (die neun Säulen, §5-Pfad GESCHLOSSEN V18.147; die
+  GEMERKTEN FÄDEN fortgeschrieben in `docs/meister-plan.md` §5 — dem aktiven Nachfolger).
+- **`terrain-koharenz-plan.md`** — der Terrain-Kohärenz-Bogen (T0–T8 + N1–N3 GEBAUT; die
+  Chunk-Naht als die EINE Wurzel — vollendet V18.103).

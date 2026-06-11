@@ -19,11 +19,11 @@ wieder zur Halde.
 | **`docs/taille-spec.md`** | **DER VERTRAG** | Die gefrorene Taille, NORMATIV (Ω1) — Draht-Formen · must-ignore/must-preserve · Empfänger-Gesetz · Versions-Semantik · Ledger-Gesetz · Namensraum. **ZUERST** vor Arbeit an Serialisierung/Import/p2p-Schema/Snapshot-Schema. Die ausführbare Form: `spec/golden/v1/` (EINGEFROREN, nie regenerieren). |
 | **`README.md`** (Wurzel) | **DIE TÜR** | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion. |
 
-**Auf dem Tisch — der aktive Bau-Plan:** `docs/terrain-koharenz-plan.md` (DIE EINE GRENZE — kohärentes,
+**Auf dem Tisch — der aktive Bau-Plan:** `docs/archiv/terrain-koharenz-plan.md` (DIE EINE GRENZE — kohärentes,
 kantiges Terrain + leitbares Wasser; die Chunk-Naht-Wurzel, IPERKA, alle Schnittstellen). Wandert ins
 Archiv, wenn der Bogen vollendet ist.
 
-**Über dem Tisch — der Master-Blick:** `docs/gigant-plan.md` (DER GIGANT, 10.06.2026 — das
+**Über dem Tisch — der Master-Blick:** `docs/archiv/gigant-plan.md` (DER GIGANT, 10.06.2026 — das
 umfassende gemessene Bild + die neun Säulen G1–G9/Ω [der §5-Pfad ist GESCHLOSSEN seit V18.147; NACHFOLGER: `docs/meister-plan.md` — der Schöpfer-Audit 12.06. + die Aufstiegs-Leiter] + die
 Zwillinge + Stand-der-Technik-Karte + die Reihenfolge + **DIE GEMERKTEN FÄDEN** am §5-Ende).
 Die Karte ÜBER den Detail-Plänen; pro vollendeter Säule wird sie kürzer.

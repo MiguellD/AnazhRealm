@@ -36,7 +36,7 @@ Kommentare) · F2-Stern · W18 · Phase E · die Taille Ω0–Ω6.
 
 ## §3 · Der Plan vorwärts — die Reihenfolge
 
-> **Der Master-Blick über allem: `docs/gigant-plan.md`** (10.06.2026 — das umfassende gemessene
+> **Der Master-Blick über allem: `docs/archiv/gigant-plan.md`** (10.06.2026 — das umfassende gemessene
 > Bild: die NEUN Säulen G1 Motion-Resonanz · G2 Rekursion · G3 sich-speisendes P2P-Netz ·
 > G4 Kreatur-Innenleben · G5 δ-als-Währung · G6 Licht+Terrain · G7 Maßstab · G8 Robustheit (✓ rund) ·
 > G9/Ω die gefrorene Taille (✓ rund V18.137–.141; `docs/taille-spec.md` NORMATIV, Historie
@@ -47,7 +47,7 @@ Kommentare) · F2-Stern · W18 · Phase E · die Taille Ω0–Ω6.
 **⭐ Die EINE Wurzel — die Chunk-Naht (Schöpfer-Befund 09.06.2026, gemessen):** blobiges Terrain ·
 Edit-/LOD-Naht · die Wasser-Naht (30 Wellen) · „Wasser fließt nicht" sind **fünf Symptome EINER Wurzel**:
 independent gebaute Chunks, deren Ränder nur approximativ + verspätet zusammenfinden. Der vereinte
-Bogen ist **`docs/terrain-koharenz-plan.md`** (DIE EINE GRENZE).
+Bogen ist **`docs/archiv/terrain-koharenz-plan.md`** (DIE EINE GRENZE).
 
 **GEBAUT + GEMESSEN + Playtest-grün (T0–T8, alle Worker-gespiegelt, Determinismus 0/6885):** T0–T3 die
 kohärente Grenze (T1 zeitlich · T2 Cross-LOD-Geomorph · T3 Dual-Contouring-QEF) · **T4 der Wasser-CA**
@@ -139,7 +139,7 @@ B-WASM (Fremd-Engine-Rest) · evolveCommunity (Kreatur-Kulturen) · Stern-ab-6-T
 **UI** — ~~Statusbar schlanken~~ **✓ V18.149 (Essenz + ···-Toggle für die Werkstatt-Zahlen)**.
 
 **DIE GEMERKTEN FÄDEN (Schöpfer 11.06.2026: „alle wichtig — vergesse die bitte nicht"; die
-verbindliche Voll-Liste mit Weck-Momenten lebt in `gigant-plan.md` §5-Ende):** ~~R6 Selbst-
+verbindliche Voll-Liste mit Weck-Momenten lebt in `archiv/gigant-plan.md` §5-Ende; FORTSCHREIBUNG: `docs/meister-plan.md` §5):** ~~R6 Selbst-
 Erweiterung~~ ✓ KERN V18.152 (Rest des Bogens benannt) · ~~Phase E Bedrohung/Furcht~~ ✓ V18.148 ·
 B1 Wasser-Sheet→Worker (weckt der fühlbare Carve-Hitch) · das ECHTE V18→V19-Zeit-Portal (weckt
 das erste Alt-Build-Artefakt) · VR (startet bei null, WebXR) · ~~IndexedDB-Persistenz~~ ✓ V18.151 ·
