@@ -1,5 +1,16 @@
 # DER EWIGKEITS-BOGEN — die gefrorene Taille (Ω)
 
+> **STATUS: GEBAUT — DER BOGEN IST RUND (Ω0–Ω6, V18.137–.141, 11.06.2026).** Die normative
+> Wahrheit lebt in `docs/taille-spec.md` (Ω1); die goldenen Dateien in `spec/golden/v1/` sind
+> EINGEFROREN (NIE regenerieren — `checkBandTailleGolden` lädt sie für immer). Werkzeuge:
+> `scripts/diag-taille.cjs` (Inventur + Konformanz) · `scripts/diag-ledger-cycles.cjs`
+> (Perpetuum-Verbot) · `npm run smoke:zeitportal` (der Vorwärts-Beweis). GEMESSEN geheilt:
+> alle vier Risse + die Modus-Wäsche (+14/Zyklus → 0) + der Import-portalMeta-Beifang-Riss.
+> Offen bleiben NUR die benannten S-Punkte (§5): Klemm-Decken-Review (Erst-Wurf ×2) ·
+> Werkzeug-Abnutzung (∞-Katalysator benannt) · Provenance-Cap-16-Politik. Sobald ein
+> Alt-Build als git-Tag-Artefakt vorliegt: das ECHTE V18→V19-Zeit-Portal (Ω4-Vollform).
+> Dieses Dokument ist ab jetzt HISTORIE des Bogens (die Risse + der Weg).
+>
 > Analyse-Stand: Branch `claude/admiring-fermat-c0d5ct`, `anazhRealm.js` @ 56'987 Zeilen, 11.06.2026.
 > Alle Zeilennummern GEMESSEN gegen diesen Stand (sie wandern — die Symbolnamen sind der Anker).
 >

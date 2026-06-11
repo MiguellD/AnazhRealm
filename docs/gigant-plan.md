@@ -302,34 +302,19 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
 - **Der ehrliche Preis (§8 des Arc-Plans):** eine fremde Welt DARF kollabieren/hässlich werden/ihren Besucher täuschen — das System überlebt (Lokalität), der Ort nicht (die akzeptierte Supernova). „Locken" bleibt teil-offen (die letzte Instanz bist du im Moment der souveränen Geste — darum die Reibung GENAU DORT). Der Plan ist by-design UNvollständig (ein vollständiger wäre der wachsende Prüfer = die 19-Modul-Falle).
 - **Anker:** `docs/archiv/robustheit-plan.md` (der ganze Bogen — die vier Mechanismen, die Naturanalogie, die offenen Ränder) · die Treppe R0–R6 in §5 Phase G · `_buildPortalOverlay` (:33289) · `_sanitizePortalMeta` (:33269) · `vibePass`/`_vibeSign` (:27162–27358) · `NON_BROADCASTABLE_OPS` (:1388) · `RULE_FORBIDDEN_EFFECT_OPS` (:1458) · `_worldProfile` (:27674).
 
-### G9/Ω — DIE GEFRORENE TAILLE: das Ultiversum versteht sich selbst über die ZEIT (der Ewigkeits-Bogen)
+### G9/Ω — DIE GEFRORENE TAILLE ✓ RUND (V18.137–.141 — das Ultiversum versteht sich über die ZEIT)
 
-- **GEMESSEN (Plan `docs/taille-plan.md`, Fischer-verifiziert 11.06.):** die Taille existiert zu
-  ~70 % implizit — Resonanz ist must-ignore per Konstruktion (`_blueprintResonance` iteriert die
-  SIGNATUR-Achsen) · Kosten sind GESETZ statt Tabelle (`computeBuildCost` = reine Substanz-Funktion) ·
-  Bau→Abbau ist nie netto-positiv (yieldMult≤1 ✓) · die Stat-Pipe klemmt [0,1] ✓. Die VIER Risse:
-  (1) die ROLLE steckt im signierten Kanon (Behauptung und Substanz verschmolzen — Re-Derive
-  bräche jede Signatur); (2) die UNGEKLEMMTEN Magnitude-Leser außerhalb der Stat-Pipe
-  (KORRIGIERT: nicht die Klinge — die GOTT-MAUER: `_architectureResistance` liest rohes härte/
-  dichte → ein fremdes härte=10⁶-Material baut Unzerstörbares); (3) der IMPORT re-derived nichts
-  und prüft nichts (`importRecipesFromWorld` übernimmt role/roleManual/Signatur 1:1 — fremder
-  Intent wird lokales Gesetz ohne lokale Geste); (4) DREI Versionsfelder ohne EINE Semantik
-  (v/pv/Snapshot-version — Toleranz ist Kommentar, nicht Korpus).
-- **DER GENIALE WEG — zwei Sätze frieren ein, alles andere lebt** (die IP-Sanduhr in
-  Substanz-Sprache): (1) der Vektor trifft die Signaturen — Artefakte reisen als deskriptive
-  Substanz, der Empfänger rechnet jede BEDEUTUNG (Rolle/Kraft/Kosten) mit den EIGENEN frozen
-  Signaturen; Behauptetes ist Metadatum, Unbekanntes wird projiziert (must-ignore) und bewahrt
-  (must-preserve). (2) das Werk kostet, der Kreis erhält null — das Perpetuum-Verbot als lebende
-  Invariante. Wellen Ω0–Ω6 in §5 PHASE Ω; das R0-Muster (BENENNEN + BEWEISEN, Verdichtung statt
-  Anbau) eine Ebene höher: F1 bewies, dass die Welt sich selbst LÄDT — Ω beweist, dass sie sich
-  selbst über die ZEIT versteht.
-- **Stand der Technik:** die IP-Taille (seit 1981 stabil, WEIL winzig) · Postel/Robustheits-
-  Prinzip als GESETZ statt Höflichkeit · Protobuf-„unknown fields survive roundtrip" ·
-  HTML-„must ignore". **Anti-Scope (§4 des Plans):** Signatur-Tabellen/Gewichte/Kosten-Konstanten/
-  Engine bleiben FREI welt-lokal — wächst die Taille über eine Seite Spec + vier goldene Dateien
-  + fünf Gesetze hinaus, ist DAS der Geruch des Fehlers.
-- **Anker:** `docs/taille-plan.md` (der ganze Bogen Ω0–Ω6 + S-Gates §5) · `_canonicalBlueprint` ·
-  `importRecipesFromWorld` · `computeBuildCost` · `_blueprintResonance` · `PROTO_VERSION`.
+- **✓ GEBAUT + GEMESSEN (alle Wellen Ω0–Ω6, Details in §5 PHASE Ω):** die normative Spec
+  (`docs/taille-spec.md`) + vier goldene Dateien (`spec/golden/v1/`, NIE regenerieren) + die
+  fünf Gesetze LEBEN als Invarianten: must-preserve (`_carryUnknown`, Zwillinge tragen
+  Unbekanntes + die R4-Kette) · Re-Derive-Wand (roleClaimed-Kanon · `MATERIAL_TAG_CEIL` am
+  Leser [Gott-Mauer GEMESSEN 6.1e6→13] · `_admitForeignArtifact` als der EINE Eingang) ·
+  Konformanz-Band für immer + `smoke:zeitportal` (der heutige Build versteht V25, 10/10) ·
+  Perpetuum-Verbot (`freeBorn` schließt die GEMESSENE Modus-Wäsche +14→0) · Namensraum-Doktrin
+  (must-ignore BEHAVIORAL bit-gleich). Offen NUR S: Klemm-Decken · Werkzeug-Abnutzung ·
+  Provenance-Cap (taille-plan §5) + das echte V18→V19-Portal bei Alt-Build-Artefakt.
+- **Anker:** `docs/taille-spec.md` (NORMATIV) · `docs/taille-plan.md` (Historie des Bogens) ·
+  `diag-taille.cjs` · `diag-ledger-cycles.cjs` · `smoke-zeitportal.cjs`.
 
 ---
 
@@ -849,42 +834,27 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
   R0–R5]: bewusst FERN — setzt auf die fertige Wand (R2) + Immunität (R4) auf; ein eigener Bogen,
   kein Phasen-Beifang.
 
-### PHASE Ω — DIE GEFRORENE TAILLE (G9; der Ewigkeits-Bogen — `docs/taille-plan.md`, Fischer-verifiziert)
+### PHASE Ω — DIE GEFRORENE TAILLE (G9 — ✓ GEBAUT V18.137–.141, 11.06.2026; der Bogen ist RUND)
 
-> Reihenfolge: messen → benennen → bewahren → re-deriven → durch die Zeit beweisen → den Kreis
-> schließen → wachsen lassen. Ω0–Ω1 risikofrei (parallel zum S-Browser-Audit fahrbar); Ω3/Ω5
-> tragen S-Gates (Klemm-Decken · roleManual-aus-fremder-Hand · Werkzeug-Abnutzung ·
-> Provenance-Cap — Plan §5).
-
-- **Ω0 — die Inventur** [H, klein]: `diag-taille.cjs` — vier goldene Draht-Artefakte nach
-  `spec/golden/v1/` (signierter Bauplan · Welt-Manifest · Snapshot-KOPF · p2p-Umschläge) +
-  die Round-Trip-Matrix (überlebt `xZukunft:{…}` jeden Pfad?). Die goldenen Dateien werden ab
-  dann NIE regeneriert.
-- **Ω1 — die Spec** [H, klein-mittel]: `docs/taille-spec.md` — Bauplan-Draht-Form · EINE
-  Versions-Semantik (minor=additiv, major=neues Universum; Achsen sterben/werden geboren, nie
-  umgedeutet) · must-ignore + must-preserve · Empfänger-Gesetz (kein Import übernimmt
-  Abgeleitetes) · Ledger-Gesetz (Mengen reisen NIE, nur Definitionen). + CLAUDE.md-Trigger.
-- **Ω2 — must-preserve als Gesetz** [H, klein]: `_carryUnknown(src, dst, knownKeys)` als EINE
-  Quelle an den Ω0-gefundenen Lücken; Invarianten-Band (xZukunft überlebt bit-gleich).
-- **Ω3 — die Re-Derive-Wand** [H→S, mittel]: (a) `role` → `roleClaimed` beim Import + lokales
-  Re-Derive (Signatur-kompatibel via `roleClaimed ?? role` in der v1-Prüfung — Riss 1 ohne
-  Signatur-Bruch); (b) die Stat-Klemme am LESER (`MATERIAL_TAG_CEIL` pro Achse, frozen — deckt
-  die GEMESSENE Gott-Mauer-Klasse `_architectureResistance` + jeden künftigen Eintrittsweg);
-  (c) der EINE Import-Eingang `_admitForeignArtifact` (verify + Tainted-Sieb AM EINGANG +
-  Provenance + Behauptung/Wahrheit-Trennung). + Antikörper „der lügende Bauplan" (R5-Stil).
-- **Ω4 — Konformanz + Zeit-Portal** [H, klein-mittel]: `checkBandTailleGolden` lädt
-  `spec/golden/v1/*` für immer; `smoke:zeitportal` (auf der F1-Infrastruktur): der aktuelle
-  Build empfängt einen ZUKUNFTS-Bauplan (unbekannte Tags/Felder/v2-Hülle) → degradiert
-  graceful, 0 Errors. Sobald ein Alt-Build als Artefakt vorliegt: der echte V18→V19-Test.
-- **Ω5 — das Perpetuum-Verbot lebt** [H→S, mittel]: `diag-ledger-cycles.cjs` — der
-  Transformations-Graph (Ernte·Mach-Tor·Abbau·ablesen·fertigen·Trank·Modus-Wechsel) random-
-  gewalkt: KEIN Zyklus netto-positiv; die Modus-Wäsche (schöpfer baut gratis → pfad erntet)
-  zuerst gezielt — Heilung falls positiv: `freeBorn=true` erntet zu 0 (Herkunft entscheidet
-  den Ertrag). Wird Playtest-Band (R5-Impfung).
-- **Ω6 — Namensraum + Wachstumsregel** [H, klein]: nackte Tags = der eingefrorene anazh-Kern;
-  präfixierte (`x:`/`<welt>:`) = fremdes Vokabular (reist, resoniert nur mit lokaler Signatur —
-  must-ignore trägt das GEMESSEN schon); neue Kern-Achsen additiv mit Default 0; die
-  Signatur-TABELLEN sind deklariert WELT-LOKAL (Lesart, nie Taille).
+> ✓ **Ω0** Inventur (`diag-taille.cjs` + `spec/golden/v1/` geprägt — NIE regenerieren; die
+> Matrix fand: Snapshot-Zwilling strippte Unbekanntes UND die R4-provenance, Manifest-Sanitize
+> strippte, Import prüfte NICHTS, Gott-Mauer mineResist 6.1e6) · ✓ **Ω1** Spec
+> (`docs/taille-spec.md` normativ + CLAUDE.md-Trigger) · ✓ **Ω2** must-preserve
+> (V18.137: `_carryUnknown` als EINE Quelle, 8-KiB-Wand; Bauplan-/Material-/Tool-/Manifest-
+> Zwillinge tragen Unbekanntes + die Kette; zwei Serialize-Parallel-Pfade verdichtet) ·
+> ✓ **Ω3** Re-Derive-Wand (V18.138: roleClaimed-Kanon ohne Signatur-Bruch · `MATERIAL_TAG_CEIL`
+> am Leser [Gott-Mauer 6.1e6→13, abbaubar; Substanz unangetastet] · `_admitForeignArtifact`
+> als der EINE Eingang [BEIFANG-RISS geheilt: der rohe Spread lief an `_sanitizePortalMeta`
+> vorbei] · Antikörper „der lügende Bauplan") · ✓ **Ω4** Konformanz + Zeit-Portal (V18.139:
+> `checkBandTailleGolden` für immer · `npm run smoke:zeitportal` 10/10 GRÜN — der heutige
+> Build versteht V25; unbekannte Verbindungs-Typen werden BEWAHRT statt verworfen) ·
+> ✓ **Ω5** Perpetuum-Verbot (V18.140: `diag-ledger-cycles.cjs` — die Modus-Wäsche GEMESSEN
+> +14/Zyklus → `freeBorn` schließt sie [Herkunft entscheidet den Ertrag, reist durch den
+> Snapshot]; kein Zyklus netto-positiv; Werkzeug = ∞-Katalysator BENANNT) · ✓ **Ω6**
+> Namensraum (V18.141: Doktrin am frozen Kern; must-ignore BEHAVIORAL bit-gleich bewiesen).
+> **OFFEN nur S (taille-plan §5):** Klemm-Decken-Review (Erst-Wurf ×2) · Werkzeug-Abnutzung-
+> Entscheid · Provenance-Cap-16-Politik; + das ECHTE V18→V19-Zeit-Portal, sobald ein
+> Alt-Build-Artefakt (git-Tag → dist) existiert.
 
 ### FERN (bewusst ungeplant — S-Entscheid weckt sie)
 
@@ -1013,7 +983,7 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | ~~Wiese homogen, keine Wälder~~                                     | ✓ V18.102 B5+                                                                                                                  |
 | Test-Volatilität (Spieler-im-Fall-Klasse)                           | §6.2-Telemetrie-Disziplin (Muster steht)                                                                                       |
 | localStorage-Größen-Wand                                            | FERN IndexedDB                                                                                                                 |
-| Die Taille ist implizit (~70 %): Import prüft/re-derived nichts · Gott-Mauer-Klasse · 3 Versionsfelder ohne Semantik | PHASE Ω (G9 — `docs/taille-plan.md`, Ω0–Ω6)                                                   |
+| ~~Die Taille ist implizit (~70 %): Import prüft/re-derived nichts · Gott-Mauer-Klasse · 3 Versionsfelder ohne Semantik~~ | ✓ V18.137–.141 PHASE Ω RUND (Spec + golden + Re-Derive-Wand + Zeit-Portal + Perpetuum-Verbot) |
 
 **Disziplin (unverändert, roadmap §9):** Regel #0 · miss-rate-nicht · verdichte-nie-parallel ·
 KONSUM nicht Existenz · keine halben Schritte · ein bestätigter Bogen = ein Merge. **Dieses
