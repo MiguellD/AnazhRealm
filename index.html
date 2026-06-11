@@ -5549,6 +5549,21 @@
             .feed-bookmark.active {
                 opacity: 1;
             }
+            /* F4 Stufe 3 (V18.142) — der Folgen-Toggle (Identitäts-Chip) */
+            .feed-follow {
+                font-size: 10.5px;
+                line-height: 15px;
+                opacity: 0.6;
+                color: var(--ink-on-dark-soft, #c9bfae);
+                white-space: nowrap;
+            }
+            .feed-follow:hover {
+                opacity: 1;
+            }
+            .feed-follow.active {
+                opacity: 1;
+                color: var(--brass-2, #c9a35a);
+            }
             .library-columns {
                 column-count: 3;
                 column-gap: 20px;
@@ -8893,6 +8908,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.141.0" defer></script>
+        <script src="anazhRealm.js?v=18.142.0" defer></script>
     </body>
 </html>

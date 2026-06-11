@@ -33261,7 +33261,12 @@ class AnazhRealm {
         for (const card of list.querySelectorAll(".library-card, .feed-card")) {
             const hay = card.dataset.search || "";
             const kindOk =
-                kind === "alle" || (kind === "gemerkt" ? card.dataset.bookmarked === "1" : card.dataset.kind === kind);
+                kind === "alle" ||
+                (kind === "gemerkt"
+                    ? card.dataset.bookmarked === "1"
+                    : kind === "gefolgt"
+                      ? card.dataset.followed === "1"
+                      : card.dataset.kind === kind);
             const match = kindOk && (!q || hay.includes(q));
             card.style.display = match ? "" : "none";
             if (match) shown++;
@@ -33349,6 +33354,54 @@ class AnazhRealm {
         else this.state.feedBookmarks[id] = true;
         this._saveFeedBookmarks();
         return this.state.feedBookmarks[id] === true;
+    }
+
+    // F4 Stufe 3 (V18.142) — FOLGEN: das Merken einer IDENTITÄT (ed25519-
+    // pubkey — die Vibe-Pass-Sprache; Karten ohne Autor [Wesen/unsignierte]
+    // tragen keinen Knopf). Speicher lokal-global wie die Lesezeichen
+    // (anazh.feedFollows, NIE im Welt-Snapshot); die Folge-Liste selbst ist
+    // PRIVAT — was reist, sind die Werke der Gefolgten (Katalog/Zeugnisse).
+    // KONSUM: der „Gefolgt"-Kind-Chip filtert die Werke gefolgter Autoren,
+    // das Folgen schreibt witness ins Journal (die ruhende Saat blüht an).
+    _loadFeedFollows() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.feedFollows") : null;
+            const obj = raw ? JSON.parse(raw) : {};
+            return obj && typeof obj === "object" ? obj : {};
+        } catch {
+            return {};
+        }
+    }
+
+    _saveFeedFollows() {
+        try {
+            if (typeof localStorage !== "undefined")
+                localStorage.setItem("anazh.feedFollows", JSON.stringify(this.state.feedFollows || {}));
+        } catch (e) {
+            this.log(`feedFollows-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    _feedFollowed(pub) {
+        if (!pub) return false;
+        if (!this.state.feedFollows) this.state.feedFollows = this._loadFeedFollows();
+        return this.state.feedFollows[String(pub).toLowerCase()] === true;
+    }
+
+    _toggleFeedFollow(pub) {
+        const key = String(pub || "").toLowerCase();
+        if (!/^[0-9a-f]{64}$/.test(key)) return false;
+        if (!this.state.feedFollows) this.state.feedFollows = this._loadFeedFollows();
+        const on = !this.state.feedFollows[key];
+        if (on) this.state.feedFollows[key] = true;
+        else delete this.state.feedFollows[key];
+        this._saveFeedFollows();
+        if (on && typeof this.journalAppend === "function") {
+            this.journalAppend("witness", `Ich folge nun ${this._vibeFingerprint(key)} — seine Werke begleiten mich.`, {
+                follow: key,
+            });
+        }
+        return on;
     }
 
     // ===== F4 Stufe 1 (V18.134) — die soziale Bewertungs-Aggregation =========
@@ -33531,6 +33584,15 @@ class AnazhRealm {
             // F4 (V18.134) — die Gemeinschafts-Wertung in den Strom (Sort-Quelle).
             const agg = this._feedRatingAgg(it.id);
             it.ratingScore = agg.count > 0 ? agg.avg : it.rating || 0;
+            // F4 Stufe 3 (V18.142) — die AUTOR-Identität (signierte Welten/
+            // Rezepte tragen sie; Wesen nicht) speist Folgen-Toggle + Filter.
+            const author =
+                it.kind === "world"
+                    ? it.prof.authorPubKey
+                    : it.kind === "recipe" && it.prof.bp
+                      ? it.prof.bp.authorPubKey
+                      : "";
+            it.author = typeof author === "string" && /^[0-9a-f]{64}$/i.test(author) ? author.toLowerCase() : "";
         }
         return items;
     }
@@ -33546,6 +33608,9 @@ class AnazhRealm {
         if (!card.dataset.search) card.dataset.search = item.search || "";
         // F4 Stufe 2 (V18.135) — der Gemerkt-Filter liest das dataset.
         card.dataset.bookmarked = this._feedBookmarked(item.id) ? "1" : "";
+        // F4 Stufe 3 (V18.142) — der Gefolgt-Filter liest Autor + Folge-Stand.
+        card.dataset.author = item.author || "";
+        card.dataset.followed = item.author && this._feedFollowed(item.author) ? "1" : "";
         card.insertBefore(this._feedCover(item), card.firstChild); // die Vorschau (ein simples Cover-Bild) oben
         card.appendChild(this._feedRatingBar(item));
         // V18.75 — Klick auf den Karten-Körper (nicht auf einen Akt/Stern) stellt das echte 3D-Modell in
@@ -33907,6 +33972,40 @@ class AnazhRealm {
             this._applyLibraryFilter();
         });
         bar.appendChild(mark);
+        // F4 Stufe 3 (V18.142) — FOLGEN: der Identitäts-Toggle (nur auf Karten
+        // MIT Autor, nie auf den EIGENEN Werken — sich selbst folgen ist
+        // Rauschen). Der Klick pflegt ALLE Karten desselben Autors live
+        // (data-author — derselbe Schöpfer hat oft mehrere Werke im Feed),
+        // dazu Chips + Filter (die V18.65-Loop-Disziplin: der Knopf TREIBT).
+        const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+        if (item.author && item.author !== myKey) {
+            const followed = this._feedFollowed(item.author);
+            const follow = this._el("span", {
+                class: "feed-follow" + (followed ? " active" : ""),
+                text: followed ? "✓ folge" : "➕ folgen",
+                title: `Dem Schöpfer ${this._vibeFingerprint(item.author)} folgen — seine Werke im „Gefolgt"-Filter.`,
+            });
+            follow.style.cursor = "pointer";
+            follow.style.marginLeft = "6px";
+            follow.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const on = this._toggleFeedFollow(item.author);
+                const list = document.getElementById("library-list");
+                if (list) {
+                    for (const c of list.querySelectorAll(`[data-author="${item.author}"]`)) {
+                        c.dataset.followed = on ? "1" : "";
+                        const f = c.querySelector(".feed-follow");
+                        if (f) {
+                            f.textContent = on ? "✓ folge" : "➕ folgen";
+                            f.classList.toggle("active", on);
+                        }
+                    }
+                }
+                this._renderFeedKindChips();
+                this._applyLibraryFilter();
+            });
+            bar.appendChild(follow);
+        }
         return bar;
     }
 
@@ -33921,13 +34020,18 @@ class AnazhRealm {
         const total = counts.world + counts.recipe + counts.creature;
         const active = this.state.feedKind || "alle";
         let marked = 0;
-        for (const it of this._feedItems()) if (this._feedBookmarked(it.id)) marked++;
+        let followed = 0;
+        for (const it of this._feedItems()) {
+            if (this._feedBookmarked(it.id)) marked++;
+            if (it.author && this._feedFollowed(it.author)) followed++;
+        }
         const kinds = [
             ["alle", "Alle", total],
             ["world", "Welten", counts.world],
             ["recipe", "Rezepte", counts.recipe],
             ["creature", "Wesen", counts.creature],
             ["gemerkt", "🔖 Gemerkt", marked], // F4 Stufe 2 (V18.135)
+            ["gefolgt", "👤 Gefolgt", followed], // F4 Stufe 3 (V18.142)
         ];
         for (const [k, label, n] of kinds) {
             const chip = this._el("button", {
@@ -55709,7 +55813,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.141.0";
+AnazhRealm.VERSION = "18.142.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

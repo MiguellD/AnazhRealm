@@ -28078,6 +28078,68 @@ async function checkBandV18135Bookmarks(ctx) {
     );
 }
 
+// F4 Stufe 3 (V18.142) — FOLGEN: das Merken einer IDENTITÄT (pubkey).
+// Privat-lokal (anazh.feedFollows, nie im Snapshot); KONSUM: der „Gefolgt"-
+// Chip + Filter über data-followed, die Karte trägt den Toggle (nie auf den
+// EIGENEN Werken), das Folgen schreibt witness (die share/witness-Saat).
+async function checkBandV18142Follow(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.helpers =
+            typeof r._feedFollowed === "function" &&
+            typeof r._toggleFeedFollow === "function" &&
+            typeof r._loadFeedFollows === "function";
+        // Toggle-Roundtrip + Persistenz + Hex-Wand + witness-Journal.
+        const pub = "ab".repeat(32);
+        const was = r._feedFollowed(pub);
+        const jBefore = ((r.state.worldJournal && r.state.worldJournal.entries) || []).length;
+        const on = r._toggleFeedFollow(pub);
+        out.toggleOn = on === true && r._feedFollowed(pub) === true;
+        let persisted = false;
+        try {
+            persisted = JSON.parse(localStorage.getItem("anazh.feedFollows") || "{}")[pub] === true;
+        } catch (_e) {
+            /* leer */
+        }
+        out.persisted = persisted;
+        // Das Journal cappt bei entryCap (200) — nach dem langen Warmup wächst
+        // length NICHT mehr; der Beweis sitzt am NEUESTEN Eintrag.
+        void jBefore;
+        const j = (r.state.worldJournal && r.state.worldJournal.entries) || [];
+        out.witnessWritten = j.slice(-3).some((e) => e.type === "witness" && /folge nun/.test(e.text || ""));
+        const off = r._toggleFeedFollow(pub);
+        out.toggleOff = off === false && r._feedFollowed(pub) === false;
+        out.garbageRejected = r._toggleFeedFollow("NICHT-HEX") === false;
+        if (was) r._toggleFeedFollow(pub);
+        // NIE im Welt-Snapshot (das Lesezeichen/Wertungs-Muster).
+        const snap = r.buildStateSnapshot();
+        out.notInSnapshot = !("feedFollows" in snap);
+        // KONSUM: Items tragen den Autor, die Karte den Toggle (nicht auf
+        // eigenen), Chips tragen Gefolgt, der Filter liest data-followed.
+        out.itemsCarryAuthor = /it\.author/.test(r._feedItems.toString());
+        const barSrc = r._feedRatingBar.toString();
+        out.barHasFollow = /_toggleFeedFollow/.test(barSrc) && /item\.author !== myKey/.test(barSrc);
+        out.chipsHaveGefolgt = /gefolgt/.test(r._renderFeedKindChips.toString());
+        out.filterReads = /followed/.test(r._applyLibraryFilter.toString());
+        return out;
+    });
+    if (!res) {
+        check("V18.142 Folgen: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "V18.142 Folgen: Helfer + Toggle-Roundtrip + globale Persistenz + Hex-Wand + NIE im Snapshot",
+        res.helpers && res.toggleOn && res.persisted && res.toggleOff && res.garbageRejected && res.notInSnapshot
+    );
+    check("V18.142 Folgen: das Folgen schreibt witness (die ruhende Journal-Saat blüht)", res.witnessWritten);
+    check(
+        "V18.142 Folgen: KONSUM verdrahtet (Items tragen Autor · Karte den Toggle [nie eigene] · Chip „Gefolgt“ · Filter liest)",
+        res.itemsCarryAuthor && res.barHasFollow && res.chipsHaveGefolgt && res.filterReads
+    );
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -33344,7 +33406,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             wCards.every((c) => c.style.display === "none");
         r.state.feedKind = "alle";
         r._applyLibraryFilter();
-        out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 5; // V18.135: + „Gemerkt"
+        out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 6; // V18.135 + „Gemerkt"; V18.142 + „Gefolgt"
         // V18.74 — jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
         out.feedCovers =
             !!stream.querySelector(".library-card[data-kind='world'] .feed-cover .feed-cover-glyph") &&
@@ -33520,7 +33582,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Feed: das WERTEN wirkt — setzen + lesen + Toggle (das dritte Verb, lokal)", w14Results.feedRatingWorks);
         check("Feed: der Kind-Filter TREIBT den Strom (nur Rezepte sichtbar)", w14Results.feedKindFilter);
         check(
-            "Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen/Gemerkt, V18.135)",
+            "Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen/Gemerkt/Gefolgt, V18.142)",
             w14Results.feedKindChips
         );
         check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
@@ -44680,6 +44742,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandTailleGolden(ctx);
             await checkBandTailleOmega5(ctx);
             await checkBandTailleOmega6(ctx);
+            await checkBandV18142Follow(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
