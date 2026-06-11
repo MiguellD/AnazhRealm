@@ -28875,6 +28875,93 @@ async function checkBandV18150Ride(ctx) {
     check("V18.150 Fahr-Tiefe: Idle-Animator pausiert im Sattel + Absteigen gibt frei", res.idleSkips && res.dismounts);
 }
 
+// FADEN #6 (V18.151) — INDEXEDDB-PERSISTENZ: die localStorage-5-MB-Wand
+// fällt. Die großen Welt-Snapshots leben ZUSÄTZLICH in IndexedDB (additiv +
+// graceful: ohne IDB bleibt alles wie heute); beim Lesen gewinnt der ECHT
+// frischere Stand (IDB-Stempel vs. worldsIndex.lastPlayed); wirft
+// localStorage QUOTA, trägt IndexedDB die Welt weiter (ehrliches WARN
+// statt stillem Verlust). Der winzige Index bleibt synchron in localStorage.
+async function checkBandV18151Idb(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) der Store öffnet (echtes IndexedDB im Test-Browser).
+        const db = await r._idb();
+        out.opens = !!db;
+        // (2) der Rundlauf: put → get (json + Stempel) → delete → null.
+        const putOk = await r._idbPutWorld("band151-test", '{"a":1}');
+        const rec = await r._idbGetWorld("band151-test");
+        out.roundTrip = putOk === true && !!rec && rec.json === '{"a":1}' && Number.isFinite(rec.at);
+        await r._idbDeleteWorld("band151-test");
+        out.deleteWorks = (await r._idbGetWorld("band151-test")) === null;
+        // (3) saveState SCHREIBT die aktive Welt nach IndexedDB (Spiegel-Paar).
+        const worldId = r.state.worldMeta && r.state.worldMeta.worldId;
+        r.saveState();
+        let mirrored = null;
+        for (let i = 0; i < 20 && !mirrored; i++) {
+            await new Promise((res2) => setTimeout(res2, 100));
+            mirrored = await r._idbGetWorld(worldId);
+        }
+        const lsJson = localStorage.getItem(r.worldStorageKey(worldId));
+        out.saveMirrors = !!mirrored && !!lsJson && mirrored.json.length === lsJson.length;
+        // (4) die QUOTA-Wand fällt WEICH: localStorage wirft → kein Wurf nach
+        // außen, das Log sagt „lebt in IndexedDB weiter" (Quelle).
+        const origSet = Storage.prototype.setItem;
+        let threw = false;
+        Storage.prototype.setItem = function () {
+            throw new Error("QuotaExceededError (Band-Probe)");
+        };
+        try {
+            r.saveState();
+        } catch {
+            threw = true;
+        } finally {
+            Storage.prototype.setItem = origSet;
+        }
+        out.quotaSoft = !threw && /lebt in IndexedDB weiter/.test(r.saveState.toString());
+        r.saveState(); // den echten Spiegel wiederherstellen
+        // (5) der Boot-Vorzug: ein ECHT frischerer IDB-Stand gewinnt das Lesen
+        // (Welt-Guard inklusive — der Preload trägt die worldId).
+        await r._idbPutWorld(worldId, '{"__band151Marker":true}');
+        // den Stempel künstlich in die Zukunft heben (frischer als lastPlayed):
+        {
+            const db2 = await r._idb();
+            await new Promise((res2) => {
+                const tx = db2.transaction("worlds", "readwrite");
+                tx.objectStore("worlds").put({ at: Date.now() + 600000, json: '{"__band151Marker":true}' }, worldId);
+                tx.oncomplete = res2;
+                tx.onerror = res2;
+            });
+        }
+        await r._idbPreload();
+        const pre = r._idbPreloadedState;
+        out.preloadWins = !!pre && pre.worldId === worldId && pre.state && pre.state.__band151Marker === true;
+        const fromStorage = r._loadStateLoadFromStorage();
+        out.readPrefersFresh = !!fromStorage && fromStorage.__band151Marker === true;
+        out.preloadConsumed = r._idbPreloadedState === null;
+        r.saveState(); // die Wahrheit zurück in den IDB-Spiegel
+        // (6) Verdrahtung: init awaitet den Preload; deleteWorld räumt IDB.
+        out.initAwaits = /await this\._idbPreload\(\)/.test(r.init.toString());
+        out.deleteCleans = /_idbDeleteWorld/.test(r.deleteWorld.toString());
+        return out;
+    });
+    check(
+        "V18.151 IndexedDB: der Store öffnet + put/get/delete-Rundlauf",
+        res.opens && res.roundTrip && res.deleteWorks
+    );
+    check("V18.151 IndexedDB: saveState spiegelt die Welt (LS + IDB, gleiche Länge)", res.saveMirrors);
+    check("V18.151 IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN)", res.quotaSoft);
+    check(
+        "V18.151 IndexedDB: der ECHT frischere IDB-Stand gewinnt das Boot-Lesen (+ wird konsumiert)",
+        res.preloadWins && res.readPrefersFresh && res.preloadConsumed
+    );
+    check(
+        "V18.151 IndexedDB: init awaitet den Preload + deleteWorld räumt die IDB-Heimat",
+        res.initAwaits && res.deleteCleans
+    );
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -45491,6 +45578,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandPhaseEThreat(ctx);
             await checkBandV18149Statusbar(ctx);
             await checkBandV18150Ride(ctx);
+            await checkBandV18151Idb(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

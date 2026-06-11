@@ -932,7 +932,9 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
    grün und ist die Vorlage.
 5. **VR** (KORREKTUR 10.06.: `vrMenu.js` existiert NICHT — ein VR-Bogen startet bei null,
    WebXR + Hand-Input).
-6. **IndexedDB-Persistenz** (die localStorage-Größen-Wand).
+6. ~~**IndexedDB-Persistenz**~~ **✓ ERFÜLLT (V18.151):** Snapshots leben additiv in
+   IndexedDB (QUOTA fällt weich, der echt frischere Stand gewinnt das Boot-Lesen,
+   graceful ohne IDB; Ω-Taille unberührt — kein neues Snapshot-Feld).
 7. ~~**Fahrzeug-Fahr-Tiefe**~~ **✓ ERFÜLLT (V18.150):** das Fahr-Profil emergiert (Räder →
    Tempo+Ausrollen · Masse → Trägheit), der Sattel führt die C5-Kurven, das Gefährt richtet
    sich aus + Gelenke fahren mit (Phase ∝ Weg), Reiter+Gefährt sind EINS (Kollision ruht ·

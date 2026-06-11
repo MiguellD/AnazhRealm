@@ -12135,6 +12135,8 @@ class AnazhRealm {
         } catch {
             // ignorieren — Index trotzdem bereinigen, damit der UI-Picker stimmt.
         }
+        // V18.151 (Faden #6) — auch die IndexedDB-Heimat der Welt räumen.
+        this._idbDeleteWorld(worldId);
         this.worldsIndexRemove(worldId);
         this.log(`Welt gelöscht: ${worldId.slice(0, 8)}…`, "INFO");
         return true;
@@ -28022,6 +28024,125 @@ class AnazhRealm {
         };
     }
 
+    // ===== GEMERKTER FADEN #6 (V18.151) — IndexedDB-Persistenz =====
+    // Die localStorage-Größen-Wand (~5 MB je Origin) fällt: die GROSSEN
+    // Welt-Snapshots leben zusätzlich in IndexedDB (hunderte MB), der
+    // winzige Index (anazhRealmWorlds/Active) bleibt synchron in
+    // localStorage. ADDITIV + graceful: ohne IndexedDB (Privacy-Modus,
+    // alte Browser) bleibt alles exakt wie heute; localStorage wird
+    // weiter geschrieben (der Spiegel), und beim LESEN gewinnt der
+    // NEUERE Stand (IDB-Stempel vs. worldsIndex.lastPlayed — kein neues
+    // Snapshot-Feld, die Ω-Taille bleibt unberührt). Wirft localStorage
+    // QUOTA, trägt IndexedDB allein — die Welt geht nie mehr still
+    // verloren, das Log sagt es ehrlich.
+
+    // Lazy-Open der EINEN DB (Promise gecacht; null = nicht verfügbar).
+    _idb() {
+        if (this._idbPromise !== undefined) return this._idbPromise;
+        if (typeof indexedDB === "undefined") {
+            this._idbPromise = Promise.resolve(null);
+            return this._idbPromise;
+        }
+        this._idbPromise = new Promise((resolve) => {
+            try {
+                const req = indexedDB.open("anazhRealm", 1);
+                req.onupgradeneeded = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains("worlds")) db.createObjectStore("worlds");
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+                req.onblocked = () => resolve(null);
+            } catch {
+                resolve(null);
+            }
+        });
+        return this._idbPromise;
+    }
+
+    // Einen Welt-Snapshot (JSON-String) ablegen. {at} stempelt die Frische.
+    async _idbPutWorld(worldId, json) {
+        const db = await this._idb();
+        if (!db || !worldId) return false;
+        return new Promise((resolve) => {
+            try {
+                const tx = db.transaction("worlds", "readwrite");
+                tx.objectStore("worlds").put({ at: Date.now(), json }, worldId);
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = () => resolve(false);
+                tx.onabort = () => resolve(false);
+            } catch {
+                resolve(false);
+            }
+        });
+    }
+
+    async _idbGetWorld(worldId) {
+        const db = await this._idb();
+        if (!db || !worldId) return null;
+        return new Promise((resolve) => {
+            try {
+                const tx = db.transaction("worlds", "readonly");
+                const req = tx.objectStore("worlds").get(worldId);
+                req.onsuccess = () => {
+                    const r = req.result;
+                    resolve(r && typeof r.json === "string" ? r : null);
+                };
+                req.onerror = () => resolve(null);
+            } catch {
+                resolve(null);
+            }
+        });
+    }
+
+    async _idbDeleteWorld(worldId) {
+        const db = await this._idb();
+        if (!db || !worldId) return false;
+        return new Promise((resolve) => {
+            try {
+                const tx = db.transaction("worlds", "readwrite");
+                tx.objectStore("worlds").delete(worldId);
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = () => resolve(false);
+            } catch {
+                resolve(false);
+            }
+        });
+    }
+
+    // Boot-Vorlauf (init awaitet ihn VOR loadState): den IDB-Snapshot der
+    // AKTIVEN Welt laden + nur behalten, wenn er FRISCHER ist als der
+    // localStorage-Spiegel (worldsIndex.lastPlayed — saveState stempelt
+    // beide im selben Zug; auseinander laufen sie nur, wenn EIN Pfad
+    // fehlschlug → der überlebende ist die Wahrheit).
+    async _idbPreload() {
+        this._idbPreloadedState = null;
+        const activeId = this.activeWorldGet();
+        if (!activeId) return;
+        const rec = await this._idbGetWorld(activeId);
+        if (!rec) return;
+        let lsAt = 0;
+        try {
+            const idx = this.worldsIndexLoad();
+            const entry = Array.isArray(idx) ? idx.find((w) => w && w.worldId === activeId) : null;
+            const hasLs = typeof localStorage !== "undefined" && !!localStorage.getItem(this.worldStorageKey(activeId));
+            lsAt = hasLs && entry && Number.isFinite(entry.lastPlayed) ? entry.lastPlayed : 0;
+        } catch {
+            lsAt = 0;
+        }
+        // IDB gewinnt bei Gleichstand NICHT (saveState schreibt beide im
+        // selben Zug — der Spiegel ist dann identisch; kleiner Takt-Skew
+        // soll den sync-Pfad nicht entthronen). Nur ECHT frischer gewinnt.
+        if (rec.at > lsAt + 1500) {
+            try {
+                this._idbPreloadedState = { worldId: activeId, state: JSON.parse(rec.json) };
+                this.log("Welt-Stand aus IndexedDB (frischer als der localStorage-Spiegel).", "INFO");
+            } catch {
+                this._idbPreloadedState = null;
+            }
+        }
+    }
+
     saveState() {
         const stateToSave = this.buildStateSnapshot();
         // Ring 8: Multi-Welt-Pfad. Pro Welt eigener Key, Index-Eintrag mit
@@ -28030,9 +28151,22 @@ class AnazhRealm {
         // fallen wir auf den Legacy-Key zurück, damit der Spieler nicht
         // still verliert.
         const worldId = this.state.worldMeta && this.state.worldMeta.worldId;
+        // V18.151 (Faden #6) — der Snapshot-JSON EINMAL gebaut; IndexedDB
+        // trägt ihn IMMER (async, hunderte MB Raum), localStorage bleibt der
+        // schnelle Spiegel + Fallback. Wirft localStorage QUOTA, geht die
+        // Welt nicht mehr verloren — IndexedDB hat sie schon.
+        const json = JSON.stringify(stateToSave);
+        if (worldId) {
+            this._idbPutWorld(worldId, json).then((ok) => {
+                if (!ok && !this._idbWarned) {
+                    this._idbWarned = true;
+                    this.log("IndexedDB nicht verfügbar — Welten leben allein im localStorage (5-MB-Wand).", "WARN");
+                }
+            });
+        }
         try {
             if (worldId) {
-                localStorage.setItem(this.worldStorageKey(worldId), JSON.stringify(stateToSave));
+                localStorage.setItem(this.worldStorageKey(worldId), json);
                 this.worldsIndexUpsert({
                     worldId,
                     slug: this.state.worldMeta.slug || "",
@@ -28041,7 +28175,7 @@ class AnazhRealm {
                 });
                 this.activeWorldSet(worldId);
             } else {
-                localStorage.setItem("anazhRealmState", JSON.stringify(stateToSave));
+                localStorage.setItem("anazhRealmState", json);
             }
             const lastVersion = this.state.versionHistory[this.state.versionHistory.length - 1];
             if (lastVersion !== this.state.currentVersion) {
@@ -28053,7 +28187,12 @@ class AnazhRealm {
             localStorage.setItem("anazhRealmVersions", JSON.stringify(this.state.versionHistory));
             this.log("Zustand in localStorage gespeichert", "DEBUG");
         } catch (error) {
-            this.log(`localStorage-Speichern fehlgeschlagen: ${error.message}`, "ERROR");
+            // V18.151 — die QUOTA-Wand fällt weich: IndexedDB trägt die Welt
+            // (der Schreiber oben lief schon); ehrlich loggen statt ERROR-Panik.
+            this.log(
+                `localStorage-Spiegel voll/fehlgeschlagen (${error.message}) — die Welt lebt in IndexedDB weiter.`,
+                "WARN"
+            );
         }
     }
 
@@ -30442,6 +30581,17 @@ class AnazhRealm {
     // fehlendem oder ungültigem Save.
     _loadStateLoadFromStorage() {
         const activeId = this.activeWorldGet();
+        // V18.151 (Faden #6) — der Boot-Vorlauf (_idbPreload, in init
+        // awaitet) hat den IndexedDB-Stand der AKTIVEN Welt schon geparst,
+        // wenn er FRISCHER ist als der localStorage-Spiegel (z. B. weil die
+        // 5-MB-Wand den Spiegel brach). Welt-Guard: nur für DIESELBE Welt
+        // (ein {reload:false}-Welt-Wechsel im Test liefe sonst auf den
+        // Preload der alten Welt).
+        if (this._idbPreloadedState && this._idbPreloadedState.worldId === activeId) {
+            const pre = this._idbPreloadedState.state;
+            this._idbPreloadedState = null;
+            return pre;
+        }
         let savedState = null;
         if (activeId) {
             savedState = localStorage.getItem(this.worldStorageKey(activeId));
@@ -55034,6 +55184,9 @@ class AnazhRealm {
             this.state.selfAwareness.components.push("playerBody");
         }
 
+        // V18.151 (Faden #6) — den IndexedDB-Stand der aktiven Welt laden
+        // (gewinnt nur, wenn frischer als der localStorage-Spiegel).
+        await this._idbPreload();
         this.loadState();
         this.generateNewWorld();
 
@@ -56891,7 +57044,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.150.0";
+AnazhRealm.VERSION = "18.151.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
