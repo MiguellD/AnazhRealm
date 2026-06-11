@@ -776,9 +776,17 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
   R1-gegated + onopen-Batch-Annonce; Feed zeigt „Ø x.x (n)", Bestbewertet reiht nach
   der Gemeinschaft; R4-Rückruf siebt sozial. GEMESSEN end-to-end mit zweiter
   Identität (verify · LWW · Tamper · Rückruf); +7 Invarianten. ✓ STUFE 2 (V18.135):
-  LESEZEICHEN (🔖-Toggle + „Gemerkt"-Chip, privat-lokal). WEITER OFFEN:
-  Folgen → Kommentare/Chat; **hier schreiben `journal share/witness`**
-  (die ruhende Saat blüht); „Für dich"-Algorithmus + Welt-Vorschau im Portal-Ring als Kür.
+  LESEZEICHEN (🔖-Toggle + „Gemerkt"-Chip, privat-lokal). ✓ **STUFE 3 (V18.142):
+  FOLGEN** — das Merken einer IDENTITÄT (Autor-pubkey signierter Welten/Rezepte;
+  privat-lokal `anazh.feedFollows`, Hex-Wand, nie auf den EIGENEN Werken); der
+  „👤 Gefolgt"-Chip filtert, der Toggle pflegt ALLE Karten desselben Autors live;
+  das Folgen schreibt `journal witness`. ✓ **STUFE 4 (V18.143): KOMMENTARE** —
+  signierte Worte übers Mesh (das Stufe-1-Substrat, append-only statt LWW:
+  Kanonisches `comment|id|t|pub|x`, kanal-exklusiv + R1 + onopen-Batch, bounded
+  400, Rückruf siebt dem Wort beidseitig, textContent-XSS-Wand); „💬 N"-Panel je
+  Karte + Eingabe; das eigene Wort schreibt `journal share` — **die ruhende
+  share/witness-Saat ist ERBLÜHT**. GEMESSEN end-to-end mit zweiter Identität.
+  WEITER OFFEN (Kür): „Für dich"-Algorithmus + Welt-Vorschau im Portal-Ring.
 - **F5 — B-WASM** [world-portal; per-Projekt] · **F6 — evolveCommunity** [Kreatur-Kulturen; nach
   D2/D3, S-Design].
 
@@ -968,7 +976,7 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | Spieler kann nicht pflegen                                          | E7                                                                                                                             |
 | ~~Rekursion blockiert (4 Schnitte)~~                                | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm                                                               |
 | Netz trägt real nur ~4–6 Peers (Stern-Topologie offen)              | F2-Rest (Design GEMESSEN in §5-F2: Hub-Routing + Stempel-Vertrauen); ~~TURN~~ ✓ V18.104 · ~~Migration ohne Zustand~~ ✓ V18.126 |
-| ~~Sozial-Schicht fehlt ganz (Bewerten lokal-only)~~                 | ✓ V18.134 F4-Stufe-1 (signierte Zeugnisse übers Mesh, LWW, R4 siebt); Rest: Lesezeichen/Folgen/Kommentare                     |
+| ~~Sozial-Schicht fehlt ganz (Bewerten lokal-only)~~                 | ✓ V18.134–.143 F4 Stufen 1–4 (Zeugnisse · Lesezeichen · Folgen · Kommentare; share/witness blüht); Rest: „Für dich"-Kür       |
 | ~~Innerster Ring nicht BENANNT~~                                    | ✓ V18.122 G8 R0 (`SOVEREIGN_STATE` + `_sovereignStateAudit`)                                                                   |
 | ~~Kanal dämpft nur teilweise (ready/exit/manifest ungedeckelt)~~    | ✓ V18.123 G8 R1 (`_portalChannelAdmit` + `_p2pPeerRateAdmit`)                                                                  |
 | ~~Keine Irreversibilitäts-Wand~~                                    | ✓ V18.123 G8 R2 (`SOVEREIGN_ACTIONS` disjunkt + `_sovereignGesture`)                                                           |
