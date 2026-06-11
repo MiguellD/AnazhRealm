@@ -23,8 +23,13 @@ kantiges Terrain + leitbares Wasser; die Chunk-Naht-Wurzel, IPERKA, alle Schnitt
 Archiv, wenn der Bogen vollendet ist.
 
 **Über dem Tisch — der Master-Blick:** `docs/gigant-plan.md` (DER GIGANT, 10.06.2026 — das
-umfassende gemessene Bild + die sieben Säulen G1–G7 + die Zwillinge + Stand-der-Technik-Karte +
+umfassende gemessene Bild + die neun Säulen G1–G9/Ω + die Zwillinge + Stand-der-Technik-Karte +
 die Reihenfolge). Die Karte ÜBER den Detail-Plänen; pro vollendeter Säule wird sie kürzer.
+
+**Daneben auf dem Tisch:** `docs/taille-plan.md` (DER EWIGKEITS-BOGEN Ω, 11.06.2026,
+Fischer-verifiziert — die gefrorene Taille: zwei Sätze frieren ein, must-ignore/must-preserve,
+Re-Derive-Wand, Zeit-Portal; Wellen Ω0–Ω6 in gigant-plan §5 PHASE Ω. Ab Ω1: die goldenen
+Dateien `spec/golden/` werden NIE regeneriert).
 
 ---
 

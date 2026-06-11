@@ -6,7 +6,7 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand: V18.83 (`main`), 09.06.2026.**
+> **Stand: `main` @ V18.121 (PR #84) · Branch `claude/admiring-fermat-c0d5ct` @ V18.136, 11.06.2026.**
 
 ---
 
@@ -23,23 +23,23 @@ Welle, sein Auge pro Merge — Regel #0 ist ein Werkzeug, keine Bremse.
 
 ## §2 · Wo wir stehen
 
-Das **Fundament steht**: Voxel-Terrain mit echten Höhlen · Stream-Power-Erosion · das Wasser-
-*Datenmodell* (3D-Zellen, Physik, Reaktivität, globaler Ozean) **+ der Wasser-CA-KERN** (T4,
-V18.84–.86: `_tickWaterCA` fließt im Modell+Welt, Render-Hybrid `surfY = L + caDelta`) · das
-Rückgrat der LOD-Kaskade (U1+U3, N3) · das lebendige Feld (lesen·schreiben·werten) + Emotion-Kern ·
-die Crafting-Resonanz · der UI-Putz-Bogen. Was fehlt: **eine** große Sache — die Wasser-
-**Render/Dynamik-VEREINIGUNG** (wasser-plan §0: W-A Zell-Oberkanten-Sheet · W-B der CA als einzige
-Füll-Wahrheit + Quellen/Senken · W-C Ufer-Verankerung) — plus N2 (Sub-Region-Edit), die
-Fundament-Reste, der soziale Bogen und die offenen Render-Sign-offs.
+Das **Fundament steht und ist RUND** (Stand 11.06.2026): Voxel-Terrain mit Höhlen/Canyons ·
+Erosion · **das Wasser VOLLENDET** (CA fließt + ruht V18.84–.94 · Stau-Spiegel V18.129 ·
+Küsten-Aquifer V18.125 · ferne Binnengewässer-Kacheln V18.132) · **PHASE A KOMPLETT** (Naht ·
+Spawn · Fog · Kollision) · LOD-Kaskade U1–U5 (U4-Fernfeld V18.131 · U5-CSM V18.130) · das
+lebendige Feld + Emotion-Kern + Lebenszyklus · Crafting-Resonanz + Foraging (V18.133) ·
+Robustheit R0–R5 rund · Rekursion bootet · der soziale Bogen begonnen (Zeugnisse + Lesezeichen
+V18.134/.135). Was fehlt: die S-Browser-Sign-offs (gigant-plan §6.3) · F4-Rest (Folgen/
+Kommentare) · F2-Stern · W18 · Phase E · die Taille Ω0–Ω6.
 
 ---
 
 ## §3 · Der Plan vorwärts — die Reihenfolge
 
 > **Der Master-Blick über allem: `docs/gigant-plan.md`** (10.06.2026 — das umfassende gemessene
-> Bild: die sieben Säulen G1 Werkstatt-Animation als Motion-Resonanz · G2 Rekursion (AnazhRealm in
-> AnazhRealm) · G3 sich-speisendes P2P-Netz · G4 Kreatur-Innenleben · G5 δ-als-Währung-Ökonomie ·
-> G6 Licht+Terrain-Einheit · G7 Performance-Maßstab + die Zwillings-Karte + die Reihenfolge §5).
+> Bild: die NEUN Säulen G1 Motion-Resonanz · G2 Rekursion · G3 sich-speisendes P2P-Netz ·
+> G4 Kreatur-Innenleben · G5 δ-als-Währung · G6 Licht+Terrain · G7 Maßstab · G8 Robustheit (✓ rund) ·
+> G9/Ω die gefrorene Taille (`docs/taille-plan.md`) + die Zwillings-Karte + die Reihenfolge §5).
 > Dieser §3 bleibt die operative Kurz-Form; der Gigant-Plan trägt das Warum + die Anker.
 
 **⭐ Die EINE Wurzel — die Chunk-Naht (Schöpfer-Befund 09.06.2026, gemessen):** blobiges Terrain ·
@@ -62,17 +62,18 @@ die Grenz-Zeile, Kollision gappt) + Edit/LOD re-meshet den GANZEN Chunk (das „
 N1 Cross-LOD watertight (Transvoxel [Lengyel] ODER Geomorph→Kollision+volle Zone) · N2 Sub-Region-Edit ·
 N3 stabiles LOD (grösserer LOD0-Ring + Hysterese).** (Subsumiert das alte „E4-Stitching".)
 
-**Phase 2 — das Fundament sauber schließen (nach der Naht-Vollendung)** H3 (ferne Binnengewässer) → G3
-(weitere Höhleneingänge) → LOD-Kaskade-Rest (U2 Wasser-LOD · U4/U5/U6) → Render-Sign-offs (R1/R2/R3/R5) ·
+**Phase 2 — das Fundament sauber schließen (nach der Naht-Vollendung)** ~~H3~~ ✓ V18.132 (Kacheln) → G3
+(weitere Höhleneingänge) → LOD-Kaskade-Rest (U2 Wasser-LOD · ~~U4~~ ✓ V18.131 · ~~U5~~ ✓ V18.130 · U6) → Render-Sign-offs (R1/R2/R3/R5) ·
 das Wasser-RENDER T7c/T7d (Fluss-Edit-Löcher + lake/river-Naht, burnte Zone, Schöpfer-Auge) · der Spawn
 liegt in einer T6d-Kaverne (Spawn-Höhe heben). Detail: `archiv/lod-kaskade-plan.md`.
 
-**Phase 3 — die Seele** Crafting-Schluss (S6-B/S9/S11/S7-C) · **Phase E** (Bedrohung/Furcht — der
+**Phase 3 — die Seele** Crafting-Schluss (~~S6-B~~ ✓ V18.133 · S9-Sign-off · S11 · ~~S7-C~~ ✓ V18.127) · **Phase E** (Bedrohung/Furcht — der
 letzte Emotion-Kern-Konsument) · Mana-Symmetrie · Emotion→Regel-Emergenz · **Nexus-Lern-Vereinheit-
 lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendige-feld.md`.
 
-**Quer dazu (eigene Bögen):** der **soziale Mesh-Bogen** (Bewerten-Aggregation → Lesezeichen → Folgen
-→ Kommentare/Chat) · **W18** (in fremden Welten leben, `archiv/world-portal-w18-plan.md`).
+**Quer dazu (eigene Bögen):** der **soziale Mesh-Bogen** (~~Bewerten-Aggregation~~ ✓ V18.134 ·
+~~Lesezeichen~~ ✓ V18.135 · offen: Folgen → Kommentare/Chat → „Für dich") · **W18** (in fremden
+Welten leben, `archiv/world-portal-w18-plan.md`) · **Ω die gefrorene Taille** (`docs/taille-plan.md`).
 
 ---
 

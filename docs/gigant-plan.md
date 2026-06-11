@@ -937,7 +937,13 @@ schlanken (UI-Politur, jederzeit einschiebbar).
       laufen) · der STURM (V18.128 — „setze wetter stormy": dunklerer Tint, kräftiger
       Wind, dichterer Nebel, lauteres Rauschen; die Wesen werden chaotisch-ehrfürchtig
       statt traurig; der 120-s-Auto-Zug fadet sanft) · die Migrations-Mitgift ist
-      Browser-unsichtbar (V18.126, smoke-bewiesen — kein S-Punkt) · der STAUSEE
+      Browser-unsichtbar (V18.126, smoke-bewiesen — kein S-Punkt) · **V18.132–.135-Durchgang (neu):** die FERNEN
+      BINNENGEWÄSSER (V18.132 — jenseits ±1 km wandern: Flüsse/Seen statt kahlem
+      Ozean-Land; der ~265-ms-Kachel-Hitch beim Queren der 2-km-Grenze fühlbar?) ·
+      das PFLÜCKEN (V18.133 — Blüten/Farne/Sporen in Arm-Länge klicken: Ertrag-Feel,
+      dann „Lebenssaft" brauen aus Gepflücktem) · die GEMEINSCHAFTS-WERTUNG +
+      LESEZEICHEN (V18.134/.135 — in der Bibliothek: Ø-Anzeige auf den Karten,
+      der „Gemerkt"-Chip; mit zweitem Peer die Zeugnis-Reise prüfen). Dazu: der STAUSEE
       (V18.129 — einen Damm aus Blöcken/Fill quer über einen Bach bauen: das Wasser
       staut sich ÜBER den Spiegel zur ebenen Fläche; Pfeiler/Brücken stauen nicht;
       Damm abbauen → der See läuft durch die Lücke ab. KÜR offen: der ÜBERLAUF über
