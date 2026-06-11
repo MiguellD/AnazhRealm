@@ -33084,7 +33084,8 @@ class AnazhRealm {
         let shown = 0;
         for (const card of list.querySelectorAll(".library-card, .feed-card")) {
             const hay = card.dataset.search || "";
-            const kindOk = kind === "alle" || card.dataset.kind === kind;
+            const kindOk =
+                kind === "alle" || (kind === "gemerkt" ? card.dataset.bookmarked === "1" : card.dataset.kind === kind);
             const match = kindOk && (!q || hay.includes(q));
             card.style.display = match ? "" : "none";
             if (match) shown++;
@@ -33136,6 +33137,42 @@ class AnazhRealm {
         // Wertung lokal wie bisher — kein Zwang zur Identitaet).
         this._socialSignOwnRating(id, this.state.feedRatings[id]);
         return this.state.feedRatings[id];
+    }
+
+    // F4 Stufe 2 (V18.135) — LESEZEICHEN: das eigene Merken (lokal-global wie
+    // die Wertungen — anazh.feedBookmarks, NIE im Welt-Snapshot; Lesezeichen
+    // sind privat, sie reisen NICHT uebers Mesh — das Folgen/Teilen ist die
+    // spaetere Stufe). Ein 🔖-Toggle pro Karte + der „Gemerkt"-Kind-Chip.
+    _loadFeedBookmarks() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.feedBookmarks") : null;
+            const obj = raw ? JSON.parse(raw) : {};
+            return obj && typeof obj === "object" ? obj : {};
+        } catch {
+            return {};
+        }
+    }
+
+    _saveFeedBookmarks() {
+        try {
+            if (typeof localStorage !== "undefined")
+                localStorage.setItem("anazh.feedBookmarks", JSON.stringify(this.state.feedBookmarks || {}));
+        } catch (e) {
+            this.log(`feedBookmarks-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    _feedBookmarked(id) {
+        if (!this.state.feedBookmarks) this.state.feedBookmarks = this._loadFeedBookmarks();
+        return this.state.feedBookmarks[id] === true;
+    }
+
+    _toggleFeedBookmark(id) {
+        if (!this.state.feedBookmarks) this.state.feedBookmarks = this._loadFeedBookmarks();
+        if (this.state.feedBookmarks[id]) delete this.state.feedBookmarks[id];
+        else this.state.feedBookmarks[id] = true;
+        this._saveFeedBookmarks();
+        return this.state.feedBookmarks[id] === true;
     }
 
     // ===== F4 Stufe 1 (V18.134) — die soziale Bewertungs-Aggregation =========
@@ -33331,6 +33368,8 @@ class AnazhRealm {
         else card = this._feedCreatureCard(item);
         card.dataset.kind = item.kind;
         if (!card.dataset.search) card.dataset.search = item.search || "";
+        // F4 Stufe 2 (V18.135) — der Gemerkt-Filter liest das dataset.
+        card.dataset.bookmarked = this._feedBookmarked(item.id) ? "1" : "";
         card.insertBefore(this._feedCover(item), card.firstChild); // die Vorschau (ein simples Cover-Bild) oben
         card.appendChild(this._feedRatingBar(item));
         // V18.75 — Klick auf den Karten-Körper (nicht auf einen Akt/Stern) stellt das echte 3D-Modell in
@@ -33673,6 +33712,25 @@ class AnazhRealm {
                 })
             );
         }
+        // F4 Stufe 2 (V18.135) — das LESEZEICHEN (privat, lokal): merken ohne
+        // werten. Der Toggle pflegt das Karten-dataset → der „Gemerkt"-Chip
+        // filtert live (kein Feed-Rebuild — die V18.65-Loop-Disziplin).
+        const mark = this._el("span", {
+            class: "feed-bookmark" + (this._feedBookmarked(item.id) ? " active" : ""),
+            text: this._feedBookmarked(item.id) ? "🔖" : "📑",
+            title: "Lesezeichen — merken (privat, lokal)",
+        });
+        mark.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const on = this._toggleFeedBookmark(item.id);
+            mark.textContent = on ? "🔖" : "📑";
+            mark.classList.toggle("active", on);
+            const card = mark.closest(".library-card, .feed-card");
+            if (card) card.dataset.bookmarked = on ? "1" : "";
+            this._renderFeedKindChips();
+            this._applyLibraryFilter();
+        });
+        bar.appendChild(mark);
         return bar;
     }
 
@@ -33686,11 +33744,14 @@ class AnazhRealm {
         for (const it of this._feedItems()) counts[it.kind]++;
         const total = counts.world + counts.recipe + counts.creature;
         const active = this.state.feedKind || "alle";
+        let marked = 0;
+        for (const it of this._feedItems()) if (this._feedBookmarked(it.id)) marked++;
         const kinds = [
             ["alle", "Alle", total],
             ["world", "Welten", counts.world],
             ["recipe", "Rezepte", counts.recipe],
             ["creature", "Wesen", counts.creature],
+            ["gemerkt", "🔖 Gemerkt", marked], // F4 Stufe 2 (V18.135)
         ];
         for (const [k, label, n] of kinds) {
             const chip = this._el("button", {
@@ -55398,7 +55459,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.134.0";
+AnazhRealm.VERSION = "18.135.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -760,8 +760,9 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
   (ed25519, stabiles Kanonisches), LWW = die CRDT-Schicht wörtlich, kanal-exklusiv +
   R1-gegated + onopen-Batch-Annonce; Feed zeigt „Ø x.x (n)", Bestbewertet reiht nach
   der Gemeinschaft; R4-Rückruf siebt sozial. GEMESSEN end-to-end mit zweiter
-  Identität (verify · LWW · Tamper · Rückruf); +7 Invarianten. WEITER OFFEN:
-  Lesezeichen → Folgen → Kommentare/Chat; **hier schreiben `journal share/witness`**
+  Identität (verify · LWW · Tamper · Rückruf); +7 Invarianten. ✓ STUFE 2 (V18.135):
+  LESEZEICHEN (🔖-Toggle + „Gemerkt"-Chip, privat-lokal). WEITER OFFEN:
+  Folgen → Kommentare/Chat; **hier schreiben `journal share/witness`**
   (die ruhende Saat blüht); „Für dich"-Algorithmus + Welt-Vorschau im Portal-Ring als Kür.
 - **F5 — B-WASM** [world-portal; per-Projekt] · **F6 — evolveCommunity** [Kreatur-Kulturen; nach
   D2/D3, S-Design].

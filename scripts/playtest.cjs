@@ -28005,6 +28005,52 @@ async function checkBandV18134Social(ctx) {
     }
 }
 
+// V18.135 — F4 Stufe 2: LESEZEICHEN (privat-lokal, anazh.feedBookmarks — NIE
+// im Welt-Snapshot; das Mesh-Folgen ist die spaetere Stufe). Ein 🔖-Toggle
+// pro Feed-Karte + der „Gemerkt"-Kind-Chip, der Filter liest das dataset.
+async function checkBandV18135Bookmarks(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.helpers =
+            typeof r._feedBookmarked === "function" &&
+            typeof r._toggleFeedBookmark === "function" &&
+            typeof r._loadFeedBookmarks === "function";
+        // Toggle-Roundtrip + Persistenz (localStorage, global).
+        const id = "band135:test";
+        const was = r._feedBookmarked(id);
+        const on = r._toggleFeedBookmark(id);
+        out.toggleOn = on === true && r._feedBookmarked(id) === true;
+        let persisted = false;
+        try {
+            persisted = JSON.parse(localStorage.getItem("anazh.feedBookmarks") || "{}")[id] === true;
+        } catch (_e) {}
+        out.persisted = persisted;
+        const off = r._toggleFeedBookmark(id);
+        out.toggleOff = off === false && r._feedBookmarked(id) === false;
+        if (was) r._toggleFeedBookmark(id); // Zustand wiederherstellen
+        // KONSUM: Karte traegt den Toggle + dataset, Chips tragen Gemerkt,
+        // der Filter liest es.
+        out.barHasMark = /_toggleFeedBookmark/.test(r._feedRatingBar.toString());
+        out.chipsHaveGemerkt = /gemerkt/.test(r._renderFeedKindChips.toString());
+        out.filterReads = /bookmarked/.test(r._applyLibraryFilter.toString());
+        return out;
+    });
+    if (!res) {
+        check("V18.135 Lesezeichen: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "V18.135 Lesezeichen: Helfer + Toggle-Roundtrip + globale Persistenz",
+        res.helpers && res.toggleOn && res.persisted && res.toggleOff
+    );
+    check(
+        "V18.135 Lesezeichen: KONSUM verdrahtet (Karte traegt 🔖 · Chip „Gemerkt“ · Filter liest dataset)",
+        res.barHasMark && res.chipsHaveGemerkt && res.filterReads
+    );
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
@@ -32684,7 +32730,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             wCards.every((c) => c.style.display === "none");
         r.state.feedKind = "alle";
         r._applyLibraryFilter();
-        out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 4;
+        out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 5; // V18.135: + „Gemerkt"
         // V18.74 — jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
         out.feedCovers =
             !!stream.querySelector(".library-card[data-kind='world'] .feed-cover .feed-cover-glyph") &&
@@ -32859,7 +32905,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Feed: jede Karte trägt das WERTEN (5 Sterne)", w14Results.feedRatingBars);
         check("Feed: das WERTEN wirkt — setzen + lesen + Toggle (das dritte Verb, lokal)", w14Results.feedRatingWorks);
         check("Feed: der Kind-Filter TREIBT den Strom (nur Rezepte sichtbar)", w14Results.feedKindFilter);
-        check("Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen)", w14Results.feedKindChips);
+        check("Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen/Gemerkt, V18.135)", w14Results.feedKindChips);
         check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
         check("Feed: die Sortier-Chips (Neueste | Bewertung) sind da (V18.74)", w14Results.feedSortChips);
         check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
@@ -44010,6 +44056,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18132FerneSeen(ctx);
             await checkBandV18133Forage(ctx);
             await checkBandV18134Social(ctx);
+            await checkBandV18135Bookmarks(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
