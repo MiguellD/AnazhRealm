@@ -238,9 +238,14 @@ function startSaveServer() {
                         matUnknownSurvives: !!(mat && mat.xZukunft && mat.xZukunft.b === 2),
                         matForeignTagSurvives: !!(mat && mat.tags && mat.tags["x:fremd"] === 0.7),
                     };
-                    // Riss 3: prüft der Import irgendwas?
-                    const src = r.importRecipesFromWorld.toString();
+                    // Riss 3: prüft der Import irgendwas? (Ω3: die Wände leben im
+                    // EINEN Eingang _admitForeignArtifact — der Import ruft ihn.)
+                    const importSrc = r.importRecipesFromWorld.toString();
+                    const admitSrc =
+                        typeof r._admitForeignArtifact === "function" ? r._admitForeignArtifact.toString() : "";
+                    const src = importSrc + admitSrc;
                     M.rt1_importChecks = {
+                        importUsesAdmit: /_admitForeignArtifact/.test(importSrc),
                         verifiesSignature: /verifyBlueprintSignature/.test(src),
                         sievesTainted: /_artifactProvenanceTainted/.test(src),
                         appendsProvenance: /_appendProvenance/.test(src),
@@ -421,8 +426,8 @@ function startSaveServer() {
             if (!m.rt2_snapshot.deserializeKeepsUnknown)
                 findings.push("LÜCKE: _deserializeBlueprint strippt Unbekanntes");
             if (!m.rt3_manifest.unknownSurvives) findings.push("LÜCKE: _sanitizeImportedManifest strippt Unbekanntes");
-            if (!m.rt1_importChecks.verifiesSignature && !m.rt1_importChecks.sievesTainted)
-                findings.push("RISS 3: importRecipesFromWorld prüft nichts (kein verify, kein Tainted-Sieb)");
+            if (!m.rt1_importChecks.importUsesAdmit || !m.rt1_importChecks.sievesTainted)
+                findings.push("RISS 3: importRecipesFromWorld prüft nichts (kein Admit-Eingang, kein Tainted-Sieb)");
             if (m.riss2_gottmauer.unbreakable)
                 findings.push(`RISS 2: Gott-Mauer ungeklemmt (mineResist=${m.riss2_gottmauer.mineResist}, fit→0)`);
             console.log("\n── BEFUNDE ──");

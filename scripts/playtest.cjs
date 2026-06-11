@@ -10571,7 +10571,11 @@ async function checkBandRing9to10(ctx) {
                 ],
                 connections: [],
                 role: "tool",
-                toolMeta: { opName: "Fremder-Hammer", opClass: "form_geben" },
+                // Ω3 (V18.138): der Import läuft jetzt durch dieselbe Wand wie
+                // der Save-Restore (TOOL_OP_CLASSES + opName-Pattern) — das
+                // Test-Werkzeug trägt eine VALIDE opClass (die alte Fiktion
+                // "form_geben" überlebte schon den Reload nie; V9.56-i).
+                toolMeta: { opName: "fremder-hammer", opClass: "plastic" },
             },
             {
                 name: "fremder-fraktal",
@@ -10585,7 +10589,8 @@ async function checkBandRing9to10(ctx) {
             {
                 name: "fremder-hammer",
                 label: "Fremder Hammer",
-                opClass: "form_geben",
+                // Ω3: valide opClass (siehe toolMeta-Kommentar oben).
+                opClass: "plastic",
                 opName: "smithing",
                 precisionCap: 0.85,
                 sourceBlueprint: "fremder-hammer-bp",
@@ -28182,7 +28187,7 @@ async function checkBandTailleOmega2(ctx) {
             name: "_omega2_tool",
             label: "Ω2-Werk",
             builtIn: false,
-            opClass: "shaping",
+            opClass: "plastic",
             opName: "schmieden",
             precisionCap: 0.7,
             sourceBlueprint: null,
@@ -28242,6 +28247,163 @@ async function checkBandTailleOmega2(ctx) {
     check(
         "Ω2: der Material-Restore ist substanz-treu (exakte Magnitude · x:-Achse · label · Unbekanntes) — die lokale Geste bleibt streng",
         res.matRestoreTrue && res.gestureStaysStrict
+    );
+}
+
+// Ω3 (V18.138, taille-spec §3) — die RE-DERIVE-WAND + der ANTIKÖRPER „der
+// lügende Bauplan" (R5-Stil): ein fremdes Artefakt behauptet role=workshop-
+// station + roleManual, schmuggelt ein fremdes portalMeta-Origin, trägt ein
+// Gott-Material (härte=10⁶) und ein revoziertes Ketten-Glied → der Import
+// emergiert die Rolle lokal, sanitisiert das Portal, die Klemme am Leser
+// deckelt die Mauer (abbaubar), das Sieb fällt das Vergiftete AM EINGANG.
+async function checkBandTailleOmega3(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const C = r.constructor;
+        const out = {};
+        const KEVIL = "ef".repeat(32);
+        const savedRevoked = r.state.revokedKeys;
+        r.revokeKey(KEVIL, { silent: true });
+        const mkPart = (material) => ({
+            shape: "box",
+            material,
+            position: { x: 0, y: 0, z: 0 },
+            size: { x: 1.5, y: 1.5, z: 1.5 },
+            rotation: { x: 0, y: 0, z: 0 },
+            opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+        });
+        const srcId = "taille-omega3-src";
+        const srcSave = {
+            worldMeta: { worldId: srcId, slug: "ω3-quelle" },
+            materials: [
+                {
+                    name: "o3_gott",
+                    label: "Gott-Stoff",
+                    tags: { härte: 1e6, dichte: 1e6 },
+                },
+            ],
+            blueprints: [
+                {
+                    // der LÜGNER: eine Box behauptet workshop-station + roleManual
+                    // + schmuggelt ein fremdes Portal-Origin.
+                    name: "o3_luegner",
+                    label: "Lügner",
+                    role: "workshop-station",
+                    roleManual: true,
+                    portalMeta: { world: "https://evil.example/x.html", label: "Evil" },
+                    parts: [mkPart("stein")],
+                    connections: [],
+                },
+                {
+                    // die GOTT-MAUER: ein Werk aus härte=10⁶.
+                    name: "o3_mauer",
+                    label: "Gott-Mauer",
+                    parts: [mkPart("o3_gott")],
+                    connections: [],
+                },
+                {
+                    // das VERGIFTETE: ein revoziertes Glied in der Kette.
+                    name: "o3_gift",
+                    label: "Gift",
+                    parts: [mkPart("stein")],
+                    connections: [],
+                    provenance: [{ by: KEVIL, at: 1 }],
+                },
+            ],
+            tools: [
+                { name: "o3_badtool", label: "Bad", opClass: "nichtexistent", opName: "x", precisionCap: 0.5 },
+                { name: "o3_goodtool", label: "Gut", opClass: "plastic", opName: "schmieden", precisionCap: 0.5 },
+            ],
+        };
+        localStorage.setItem(r.worldStorageKey(srcId), JSON.stringify(srcSave));
+        const resImp = r.importRecipesFromWorld(srcId);
+        out.importOk = !!(resImp && resImp.ok);
+        const luegner = r.state.blueprints["o3_luegner"];
+        const mauer = r.state.blueprints["o3_mauer"];
+        const gift = r.state.blueprints["o3_gift"];
+        const goodTool = r.state.tools["o3_goodtool"];
+        const badTool = r.state.tools["o3_badtool"];
+        // (1) Behauptung/Wahrheit: roleClaimed trägt die Lüge, role emergiert
+        // lokal (eine Box ist KEINE Werkstatt-Station), roleManual fiel.
+        out.claimSeparated =
+            !!luegner &&
+            luegner.roleClaimed === "workshop-station" &&
+            luegner.role !== "workshop-station" &&
+            luegner.roleManual === undefined;
+        // (2) die Portal-Wand: das geschmuggelte fremde Origin ist sanitisiert
+        // (worlds/-Pfad — _sanitizePortalMeta lief im EINEN Eingang).
+        out.portalSanitized =
+            !!luegner && (!luegner.portalMeta || !/evil\.example/.test(String(luegner.portalMeta.world)));
+        // (3) die Klemme am Leser: die Gott-Mauer ist ABBAUBAR (fit klar über 0;
+        // die Substanz selbst bleibt unangetastet — härte=10⁶ lebt im Material).
+        out.matMagnitudeKept = r.state.materials["o3_gott"] && r.state.materials["o3_gott"].tags["härte"] === 1e6;
+        const fit = r._harvestFitnessFromResist(r._architectureResistance({ type: "o3_mauer" }));
+        out.wallBreakable = !!mauer && fit.fit > 0.01;
+        out.ceilFrozen = Object.isFrozen(C.MATERIAL_TAG_CEIL) && C.MATERIAL_TAG_CEIL["härte"] === 2;
+        // (4) das Rückruf-Sieb AM EINGANG: das Vergiftete kam NIE in den state.
+        out.taintedFellAtGate = gift === undefined;
+        // (5) die Tool-Wand: opClass-Müll fällt, das valide Werkzeug lebt.
+        out.toolWall = badTool === undefined && !!goodTool;
+        // (6) die Signatur bleibt prüfbar über roleClaimed (Kanon liest
+        // roleClaimed ?? role) — der goldene Pfad: signieren → importieren →
+        // verify bleibt valid, obwohl die lokale Rolle re-derived wurde.
+        r.state.blueprints["_o3_signed"] = {
+            name: "_o3_signed",
+            label: "Ω3-Siegel",
+            builtIn: false,
+            role: "weapon",
+            roleManual: true,
+            parts: [mkPart("stein")],
+            connections: [],
+        };
+        let sigChain = false;
+        if (r.state.vibePass && r.state.vibePass.ready) {
+            const s = await r.signBlueprint("_o3_signed", { skipConfirm: true });
+            if (s.ok) {
+                const wire = r._serializeBlueprint(r.state.blueprints["_o3_signed"]);
+                const admitted = r._admitForeignArtifact(wire);
+                sigChain =
+                    !!admitted &&
+                    admitted.roleClaimed === "weapon" &&
+                    (await r.verifyBlueprintSignature(admitted)) === "valid";
+            }
+        } else {
+            sigChain = true; // kein Secure Context → der Krypto-Teil ruht (headless-Wand anderswo)
+        }
+        out.signatureSurvivesRederive = sigChain;
+        // Aufräumen.
+        delete r.state.blueprints["o3_luegner"];
+        delete r.state.blueprints["o3_mauer"];
+        delete r.state.blueprints["_o3_signed"];
+        delete r.state.materials["o3_gott"];
+        delete r.state.tools["o3_goodtool"];
+        localStorage.removeItem(r.worldStorageKey(srcId));
+        r.unrevokeKey(KEVIL);
+        r.state.revokedKeys = savedRevoked;
+        return out;
+    });
+    if (!res) {
+        check("Ω3: Antikörper-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "Ω3: der Import läuft + die Lüge ist getrennt (roleClaimed trägt, role emergiert, roleManual fällt)",
+        res.importOk && res.claimSeparated
+    );
+    check(
+        "Ω3: die Portal-Wand hält am EINEN Eingang (fremdes Origin sanitisiert — kein Reload nötig)",
+        res.portalSanitized
+    );
+    check(
+        "Ω3: die Klemme sitzt am LESER — die Gott-Mauer ist abbaubar, die Substanz bleibt unangetastet (härte=10⁶ lebt)",
+        res.wallBreakable && res.matMagnitudeKept && res.ceilFrozen
+    );
+    check("Ω3: das Rückruf-Sieb fällt Vergiftetes AM EINGANG (nicht erst beim Laden)", res.taintedFellAtGate);
+    check("Ω3: die Tool-Wand gilt auch dem Import (opClass/opName whitelisted)", res.toolWall);
+    check(
+        "Ω3: die Signatur überlebt das Re-Derive (Kanon liest roleClaimed ?? role → valid)",
+        res.signatureSurvivesRederive
     );
 }
 
@@ -44256,6 +44418,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18135Bookmarks(ctx);
             await checkBandV18136Audit(ctx);
             await checkBandTailleOmega2(ctx);
+            await checkBandTailleOmega3(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

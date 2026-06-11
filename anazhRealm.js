@@ -27519,6 +27519,8 @@ class AnazhRealm {
         // nur über authorPubKey treffen, nie über ein Ketten-Glied).
         const prov = this._sanitizeProvenance(bp.provenance);
         if (prov.length) out.provenance = prov;
+        // Ω3(a) — die gereiste Autor-Behauptung (Metadatum) reist weiter.
+        if (typeof bp.roleClaimed === "string" && bp.roleClaimed) out.roleClaimed = bp.roleClaimed;
         // Ω2 — must-preserve: Unbekanntes überlebt den Round-Trip (EINE Quelle).
         this._carryUnknown(bp, out, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return out;
@@ -27606,6 +27608,8 @@ class AnazhRealm {
         // _carryUnknown trägt NUR, was nicht im known-Satz steht).
         const prov = this._sanitizeProvenance(data.provenance);
         if (prov.length) restored.provenance = prov;
+        // Ω3(a) — die gereiste Autor-Behauptung (Metadatum, string-gewandet).
+        if (typeof data.roleClaimed === "string" && data.roleClaimed) restored.roleClaimed = data.roleClaimed;
         this._carryUnknown(data, restored, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return restored;
     }
@@ -28390,7 +28394,14 @@ class AnazhRealm {
             partA: Number(c && c.partA) || 0,
             partB: Number(c && c.partB) || 0,
         }));
-        return JSON.stringify({ v: 1, role: String(bp.role || ""), parts, connections });
+        // Ω3(a) (taille-spec §3) — die Signatur deckt die GEREISTE Behauptung:
+        // nach einem Import lebt die Autor-Rolle als roleClaimed (Metadatum)
+        // weiter, die lokale role ist re-derived → die Prüfung liest
+        // roleClaimed ?? role (rückwärts-kompatibel, golden v1 bleibt valid;
+        // signBlueprint löscht roleClaimed vor dem Siegeln — wer NEU signiert,
+        // bürgt für die EIGENE Form, nicht die fremde Behauptung).
+        const role = bp.roleClaimed != null ? bp.roleClaimed : bp.role;
+        return JSON.stringify({ v: 1, role: String(role || ""), parts, connections });
     }
 
     // Schneller, nicht-kryptografischer Hash (FNV-1a, 32-bit) — NUR zur
@@ -28433,6 +28444,9 @@ class AnazhRealm {
         ) {
             return { ok: false, reason: "cancelled" };
         }
+        // Ω3(a) — wer signiert, bürgt für die EIGENE Form: eine mitgereiste
+        // fremde Rollen-Behauptung fällt, der Kanon liest dann bp.role.
+        delete bp.roleClaimed;
         const canonical = this._canonicalBlueprint(bp);
         const sig = await this._vibeSign(canonical);
         if (!sig) return { ok: false, reason: "sign_failed" };
@@ -31278,6 +31292,54 @@ class AnazhRealm {
     // Querverweise (Werkzeug.sourceBlueprint, fraktaler-Bauplan.part.refName)
     // werden mit umbenannt — selbe Logik wie bei Fusion. Schreibt einen
     // Witness-Journal-Eintrag mit der Quelle.
+    // Ω3(c) (taille-spec §3) — der EINE Import-Eingang für fremde Bauplan-
+    // Artefakte (importRecipesFromWorld + jeder künftige Import). Vier Wände
+    // in fester Reihenfolge:
+    //   (1) das R4-Rückruf-SIEB AM EINGANG (nicht erst beim nächsten Laden),
+    //   (2) die _deserializeBlueprint-Wand — Parts-Migration, connections-
+    //       Validierung, portalMeta-SANITIZE, Ω2-carry (GEMESSEN vorher: der
+    //       rohe {...bp}-Spread lief an _sanitizePortalMeta VORBEI — ein
+    //       fremdes Save konnte bis zum nächsten Reload ein un-sanitisiertes
+    //       Portal in die laufende Session legen),
+    //   (3) BEHAUPTUNG/WAHRHEIT trennen: die gereiste Rolle wird roleClaimed
+    //       (Metadatum, reist weiter — die Signatur bleibt prüfbar, weil
+    //       _canonicalBlueprint roleClaimed ?? role liest), roleManual aus
+    //       fremder Hand FÄLLT (der lokale Intent-Override braucht die lokale
+    //       Geste, V17.70 empfänger-seitig), die lokale role EMERGIERT aus
+    //       der Substanz (das Empfänger-Gesetz: die Form führt),
+    //   (4) die HERKUNFT wächst („über dich" — nur wenn eine echte Kette
+    //       reist; eine leere Kette bleibt leer, sonst erfänden wir einen
+    //       Ursprung) + der Signatur-Status wird ASYNC gestempelt (reine
+    //       Anzeige-Wahrheit; die Wände hier sind synchron).
+    // Liefert den admittierten Bauplan oder null (gesiebt/Müll).
+    _admitForeignArtifact(rawBp) {
+        if (!rawBp || typeof rawBp !== "object") return null;
+        if (this._artifactProvenanceTainted(rawBp)) return null;
+        const restored = this._deserializeBlueprint(rawBp);
+        if (!restored) return null;
+        const claimed =
+            typeof restored.roleClaimed === "string" && restored.roleClaimed
+                ? restored.roleClaimed
+                : typeof rawBp.role === "string"
+                  ? rawBp.role
+                  : "";
+        delete restored.roleManual;
+        if (claimed) restored.roleClaimed = claimed;
+        restored.role = this.computeBlueprintRole(restored);
+        const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+        if (myKey && Array.isArray(restored.provenance) && restored.provenance.length) {
+            this._appendProvenance(restored, myKey);
+        }
+        if (restored.signature) {
+            this.verifyBlueprintSignature(restored)
+                .then((st) => {
+                    restored.signatureStatus = st;
+                })
+                .catch(() => {});
+        }
+        return restored;
+    }
+
     importRecipesFromWorld(sourceWorldId) {
         if (!sourceWorldId || typeof sourceWorldId !== "string") {
             return { ok: false, reason: "keine Quell-Welt-ID" };
@@ -31319,21 +31381,45 @@ class AnazhRealm {
             return candidate;
         };
 
-        for (const bp of sourceBPs) {
-            if (!bp || typeof bp.name !== "string" || bp.builtIn) continue;
-            const newName = resolveName(bp.name, existingBPNames);
-            existingBPNames.add(newName);
-            if (newName !== bp.name) renameMap[bp.name] = newName;
-            addedBPs.push({ ...bp, name: newName, builtIn: false });
-        }
+        // Ω3(c) — MATERIALIEN ZUERST anwenden (vor der Bauplan-Admission):
+        // die _deserializeBlueprint-Wand migriert unbekannte Material-Namen
+        // auf „stein" — die fremden Definitionen müssen im state stehen,
+        // BEVOR die Baupläne durch die Wand laufen (sonst Substanz-Verlust).
+        // Material-Tags füllen wir mit Defaults auf, damit alte Saves ohne
+        // alle Tag-Felder konsistent bleiben; die Magnituden bleiben EXAKT
+        // (Substanz-Treue — die Klemme sitzt am Leser, computePartTags Ω3b).
+        const tagDefaults = AnazhRealm.MATERIAL_TAG_DEFAULTS || {};
         for (const m of sourceMats) {
             if (!m || typeof m.name !== "string" || m.builtIn) continue;
             const newName = resolveName(m.name, existingMatNames);
             existingMatNames.add(newName);
             addedMats.push({ ...m, name: newName, builtIn: false });
         }
+        for (const m of addedMats) {
+            this.state.materials[m.name] = {
+                ...m,
+                tags: { ...tagDefaults, ...(m.tags || {}) },
+            };
+        }
+
+        for (const bp of sourceBPs) {
+            if (!bp || typeof bp.name !== "string" || bp.builtIn) continue;
+            // Ω3(c) — der EINE Eingang: Rückruf-Sieb + Restore-Wand +
+            // Behauptung/Wahrheit + Herkunft (statt des rohen {...bp}-Spreads).
+            const admitted = this._admitForeignArtifact(bp);
+            if (!admitted) continue;
+            const newName = resolveName(bp.name, existingBPNames);
+            existingBPNames.add(newName);
+            if (newName !== bp.name) renameMap[bp.name] = newName;
+            admitted.name = newName;
+            addedBPs.push(admitted);
+        }
         for (const t of sourceTools) {
             if (!t || typeof t.name !== "string" || t.builtIn) continue;
+            // Ω3 — dieselbe Wand wie der Save-Restore: opClass/opName sind
+            // whitelisted (der rohe Spread ließ vorher alles durch).
+            if (!AnazhRealm.TOOL_OP_CLASSES.has(t.opClass)) continue;
+            if (!AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(t.opName || ""))) continue;
             const newName = resolveName(t.name, existingToolNames);
             existingToolNames.add(newName);
             addedTools.push({ ...t, name: newName, builtIn: false });
@@ -31343,17 +31429,9 @@ class AnazhRealm {
         // den Bauplan-Umbenennungen. Selbe Logik wie Fusion — kein Drift.
         this._rewireBlueprintRefs(addedBPs, addedTools, renameMap);
 
-        // Anwenden auf state. Material-Tags füllen wir mit Defaults auf, damit
-        // alte Saves ohne alle Tag-Felder konsistent bleiben.
-        const tagDefaults = AnazhRealm.MATERIAL_TAG_DEFAULTS || {};
+        // Anwenden auf state (Materialien stehen schon — siehe oben).
         for (const bp of addedBPs) {
             this.state.blueprints[bp.name] = bp;
-        }
-        for (const m of addedMats) {
-            this.state.materials[m.name] = {
-                ...m,
-                tags: { ...tagDefaults, ...(m.tags || {}) },
-            };
         }
         for (const t of addedTools) {
             this.state.tools[t.name] = t;
@@ -39947,8 +40025,17 @@ class AnazhRealm {
         const material = this.state.materials && this.state.materials[matName];
         if (!material || !material.tags) return {};
         const out = {};
+        const ceil = AnazhRealm.MATERIAL_TAG_CEIL;
         for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
-            const val = (activation[tag] || 0) * (material.tags[tag] || 0);
+            // Ω3(b) (taille-spec §3) — die Klemme am LESER: fremde Substanz
+            // behält ihre Magnitude (must-preserve), aber DIESE Welt liest
+            // nur, was sie trägt (härte=10⁶ baute GEMESSEN die unzerstörbare
+            // GOTT-MAUER: mineResist 6.1e6, fit→0). Lokale Materialien sind
+            // per Geburt [0,1] (defineMaterial) → die Decke ist für sie no-op;
+            // sie deckt JEDEN Eintrittsweg (Import/Save-Edit/künftige) per
+            // Konstruktion, weil ALLE Compound-Konsumenten hier durchlaufen.
+            const raw = Math.min(ceil[tag] !== undefined ? ceil[tag] : 2, material.tags[tag] || 0);
+            const val = (activation[tag] || 0) * raw;
             if (val > 0) out[tag] = val;
         }
         return out;
@@ -49631,6 +49718,20 @@ class AnazhRealm {
         roleChip.title = bp.roleManual
             ? "Manuell gesetzt — überschreibt die emergente Rolle (zurücksetzen via Markier-Sektion)."
             : "✨ Emergent aus der ganzen Substanz: Form × Material × Handwerk → die Rolle.";
+        // Ω3(a) (taille-spec §3) — eine ABWEICHENDE fremde Behauptung wird
+        // SICHTBAR (Echtheit ≠ Gutartigkeit): „behauptet: X" neben der lokal
+        // emergierten Rolle; der lokale Intent-Override bleibt die Geste.
+        let claimChip = null;
+        if (bp.roleClaimed && bp.roleClaimed !== role) {
+            const claimLabel =
+                AnazhRealm.ROLE_LABELS[bp.roleClaimed] ||
+                AnazhRealm.BLUEPRINT_ROLE_LABELS[bp.roleClaimed] ||
+                bp.roleClaimed;
+            claimChip = this._el("span", { class: "role-chip spec-role-claimed", text: `behauptet: ${claimLabel}` });
+            claimChip.style.opacity = "0.65";
+            claimChip.title =
+                "Die Autor-Behauptung des importierten Plans — hier zählt, was die Substanz trägt (Empfänger-Gesetz). Übernehmen: die Markier-Geste.";
+        }
         const caps = this._blueprintCapabilityHints(bp) || [];
         const aff = this.computeBlueprintAffordances(bp) || {};
         const affLabels = Object.keys(aff).map((k) => AnazhRealm.AFFORDANCE_LABELS[k] || k);
@@ -49638,7 +49739,9 @@ class AnazhRealm {
             this._el("span", { class: "affordance-chip spec-cap-chip", text: "✦ " + c })
         );
         const q = this._compoundAvgPrecision(bp);
-        const idZone = this._el("div", { class: "spec-id" }, roleChip, ...capChips);
+        const idZone = claimChip
+            ? this._el("div", { class: "spec-id" }, roleChip, claimChip, ...capChips)
+            : this._el("div", { class: "spec-id" }, roleChip, ...capChips);
         let qualZone = null;
         if (q > 0) {
             const q5 = Math.max(0, Math.min(5, Math.round(q * 5)));
@@ -55563,7 +55666,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.137.0";
+AnazhRealm.VERSION = "18.138.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -56176,6 +56279,18 @@ AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
 // Sätze der Serialize/Restore-Zwillinge: ALLE explizit behandelten Schlüssel.
 // Was hier NICHT steht, reist als opakes Unbekanntes (_carryUnknown).
 AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX = 8192;
+// Ω3(b) (taille-spec §3) — die Stat-Klemme am LESER (der Spannungsregler):
+// pro Achse die lokale Trag-Decke = max(Built-in-Materialien GEMESSEN: 1.0,
+// defineMaterial-Geburts-Clamp [0,1]) × Headroom 2. Fremde Substanz über der
+// Decke ist nicht kaputt — sie ist hier nur so stark, wie diese Welt trägt
+// (eine künftige Welt mit höherer Decke liest die volle Pracht).
+// S-REVIEW-MARKER: die Decken-Zahl (×2) ist mein Erst-Wurf (wie E2-Budgets).
+AnazhRealm.MATERIAL_TAG_CEIL = Object.freeze(
+    AnazhRealm.MATERIAL_TAG_KEYS.reduce((acc, key) => {
+        acc[key] = 2;
+        return acc;
+    }, {})
+);
 AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
     "name",
     "label",
@@ -56183,6 +56298,7 @@ AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
     "parts",
     "connections",
     "role",
+    "roleClaimed",
     "roleManual",
     "toolMeta",
     "portalMeta",
@@ -56191,6 +56307,7 @@ AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
     "authorPubKey",
     "signedHash",
     "signedAt",
+    "signatureStatus",
     "provenance",
 ]);
 AnazhRealm.MATERIAL_KNOWN_KEYS = Object.freeze(["name", "label", "builtIn", "color", "tags"]);
