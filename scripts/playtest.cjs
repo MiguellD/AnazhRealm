@@ -28051,6 +28051,53 @@ async function checkBandV18135Bookmarks(ctx) {
     );
 }
 
+// V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
+// Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
+// Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
+// (V18.65-Klasse) → er treibt jetzt csm.maxFar (300→540 = der gebaute Default,
+// nahtlos); (2) Kachel-Erosion trug 64-KB-flowTo-Ballast (Konsument nur der
+// Heimat-diag); (3) die Bestbewertet-Rail las nur die EIGENE Wertung (mesh-
+// gewertete Items unsichtbar — Konsum-Riss zur V18.134-Aggregation); (4) der
+// per-Chunk-RNG lebte 2x inline (Scatter+Fernfeld) → EIN _scatterChunkRng.
+// Entkraeftet (GEMESSEN): die CSM-Haupt-Map rendert NICHT (mainMap=false).
+async function checkBandV18136Audit(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf).
+        out.rangeSrc = /csm\.maxFar/.test(r.setShadowRange.toString());
+        const savedCsm = r.state.csmNode;
+        const savedRange = r.state.atmosphere && r.state.atmosphere.shadowRange;
+        r.state.csmNode = { maxFar: 0, camera: null, updateFrustums() {} };
+        r.setShadowRange(200);
+        out.rangeDrives = Math.abs(r.state.csmNode.maxFar - 360) < 1e-9;
+        r.state.csmNode = savedCsm;
+        if (Number.isFinite(savedRange)) r.setShadowRange(savedRange);
+        // (2) Kachel-Erosion ohne flowTo-Ballast (Source-Probe am Ensure).
+        out.tileLean = /eTile\.flowTo = null/.test(r._ensureHydroTilesAround.toString());
+        // (3) die Rail liest die Gemeinschafts-Aggregation.
+        out.trendsAgg = /_feedRatingAgg/.test(r._renderFeedTrends.toString());
+        // (4) EIN RNG-Helfer, zwei Konsumenten (V9.82).
+        out.oneRng =
+            typeof r._scatterChunkRng === "function" &&
+            /_scatterChunkRng/.test(r._buildVoxelChunkScatter.toString()) &&
+            /_scatterChunkRng/.test(r._buildDekoFernfeldSpecies.toString());
+        return out;
+    });
+    if (!res) {
+        check("V18.136 Audit: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "V18.136 Audit: der Schatten-Weite-Slider treibt unter CSM maxFar (kein toter Knopf)",
+        res.rangeSrc && res.rangeDrives
+    );
+    check("V18.136 Audit: Kachel-Erosion ohne flowTo-Ballast (64 KB/Kachel gespart)", res.tileLean);
+    check("V18.136 Audit: die Bestbewertet-Rail liest die Gemeinschafts-Aggregation", res.trendsAgg);
+    check("V18.136 Audit: EIN per-Chunk-RNG (Scatter + Fernfeld verdichtet, V9.82)", res.oneRng);
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
@@ -32905,7 +32952,10 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Feed: jede Karte trägt das WERTEN (5 Sterne)", w14Results.feedRatingBars);
         check("Feed: das WERTEN wirkt — setzen + lesen + Toggle (das dritte Verb, lokal)", w14Results.feedRatingWorks);
         check("Feed: der Kind-Filter TREIBT den Strom (nur Rezepte sichtbar)", w14Results.feedKindFilter);
-        check("Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen/Gemerkt, V18.135)", w14Results.feedKindChips);
+        check(
+            "Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen/Gemerkt, V18.135)",
+            w14Results.feedKindChips
+        );
         check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
         check("Feed: die Sortier-Chips (Neueste | Bewertung) sind da (V18.74)", w14Results.feedSortChips);
         check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
@@ -44057,6 +44107,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18133Forage(ctx);
             await checkBandV18134Social(ctx);
             await checkBandV18135Bookmarks(ctx);
+            await checkBandV18136Audit(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

@@ -18822,7 +18822,11 @@ class AnazhRealm {
                 const origin = { x: rx * size - half, z: rz * size - half };
                 // EROSION ZUERST (dieselbe Worldgen-Reihenfolge wie die Heimat:
                 // die Hydro-Probe sieht die erodierten Taeler via _erosionFor).
-                this.state.erosionTiles.set(key, this._computeErosion(origin));
+                // flowTo (64 KB) traegt nur der Heimat-Atlas (diag-flow-bias
+                // liest ihn dort) — die Kachel bleibt schlank (Audit V18.136).
+                const eTile = this._computeErosion(origin);
+                eTile.flowTo = null;
+                this.state.erosionTiles.set(key, eTile);
                 this.state.hydroTiles.set(key, this._computeHydrosphere(origin));
                 this._computeHydroBand();
                 made++;
@@ -26077,16 +26081,7 @@ class AnazhRealm {
         // Pro Art ein deterministischer rng-Strom (dekorreliert via Art-Index,
         // stabil beim Re-Streamen → kein Flackern). Mulberry32-Stil wie das Gras.
         const buckets = species.map(() => []);
-        const rngs = species.map((sp, si) => {
-            let rs = ((cx * 73856093) ^ (cz * 19349663) ^ ((si + 1) * 0x85ebca6b)) >>> 0 || 1;
-            return () => {
-                rs = (rs + 0x6d2b79f5) >>> 0;
-                let t = rs;
-                t = Math.imul(t ^ (t >>> 15), t | 1);
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
-        });
+        const rngs = species.map((_sp, si) => this._scatterChunkRng(cx, cz, si));
         for (let zi = 0; zi < SAMPLES; zi++) {
             for (let xi = 0; xi < SAMPLES; xi++) {
                 const bx = ox + (xi + 0.5) * step;
@@ -26274,6 +26269,21 @@ class AnazhRealm {
     // `state.scatterHarvested` (der Build-Filter haelt sie ueber Re-Streams
     // verborgen), der REGROW-Tick laesst sie nach FORAGE.regrowMs nachwachsen
     // (dispose + re-enqueue — der bestehende Scatter-Lebenszyklus).
+    // V18.136 (Reflexions-Audit, V9.82-Verdichtung) — der EINE deterministische
+    // per-Chunk-Art-RNG (Mulberry32-Stil): Scatter (nah) + Fernfeld (impostor)
+    // ziehen aus DERSELBEN Quelle (stabil ueber Re-Streams — der Bucket-Index
+    // ist damit eine Identitaet, die das Foraging V18.133 traegt).
+    _scatterChunkRng(cx, cz, si) {
+        let rs = ((cx * 73856093) ^ (cz * 19349663) ^ ((si + 1) * 0x85ebca6b)) >>> 0 || 1;
+        return () => {
+            rs = (rs + 0x6d2b79f5) >>> 0;
+            let t = rs;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
     _pickScatterAtCrosshair() {
         const sc = this.state.voxelChunkScatter;
         if (!sc || sc.size === 0 || !this.state.camera) return null;
@@ -26491,17 +26501,13 @@ class AnazhRealm {
             if (band.deko !== "impostor") continue;
             const dekoDensity = (band.dekoDichte || 0) * atmoD;
             if (dekoDensity <= 0) continue;
-            // Derselbe deterministische RNG-Strom wie der nahe Scatter (Hash über
-            // Chunk + Art) → ein Chunk, der ins mesh-Band wandert, behält seine
-            // Plätze in etwa (kein Voll-Flackern am Band-Übergang).
-            let rs = ((cx * 73856093) ^ (cz * 19349663) ^ ((si + 1) * 0x85ebca6b)) >>> 0 || 1;
-            const rnd = () => {
-                rs = (rs + 0x6d2b79f5) >>> 0;
-                let t = rs;
-                t = Math.imul(t ^ (t >>> 15), t | 1);
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
+            // Derselbe deterministische RNG-STROM wie der nahe Scatter (eine
+            // Quelle, V9.82). EHRLICH (Audit V18.136): die POSITIONEN entsprechen
+            // sich NICHT 1:1 (das Fernfeld sampelt 4×4, nah ist 8×8 — der Strom
+            // wird anders konsumiert); deterministisch ist das Fernfeld in sich
+            // (kein Re-Anker-Flackern, GEMESSEN), der Band-Uebergang wechselt
+            // die Plaetze im Fog-Abstand (~130 m) — unterhalb der Wahrnehmung.
+            const rnd = this._scatterChunkRng(cx, cz, si);
             const S = FF.samples;
             const stepXZ = cfg.span / S;
             const ox = cx * cfg.span;
@@ -33774,9 +33780,16 @@ class AnazhRealm {
         const host = document.getElementById("feed-trends");
         if (!host) return;
         host.innerHTML = "";
+        // V18.136 (Reflexions-Audit) — die Rail liest die GEMEINSCHAFT (V18.134-
+        // Aggregation; eigene Sterne als Fallback) — vorher blieben mesh-
+        // gewertete Items unsichtbar, bis man SELBST wertete (Konsum-Riss).
         const top = this._feedItems()
-            .filter((it) => it.rating > 0)
-            .sort((a, b) => b.rating - a.rating)
+            .map((it) => {
+                const agg = this._feedRatingAgg(it.id);
+                return { it, score: agg.count > 0 ? agg.avg : it.rating || 0, count: agg.count };
+            })
+            .filter((x) => x.score > 0)
+            .sort((a, b) => b.score - a.score || b.count - a.count)
             .slice(0, 5);
         if (!top.length) {
             host.appendChild(
@@ -33787,12 +33800,15 @@ class AnazhRealm {
             );
             return;
         }
-        for (const it of top)
+        for (const { it, score, count } of top)
             host.appendChild(
                 this._el(
                     "div",
                     { class: "feed-trend-row" },
-                    this._el("span", { class: "feed-trend-stars", text: "★".repeat(it.rating) }),
+                    this._el("span", {
+                        class: "feed-trend-stars",
+                        text: "★".repeat(Math.max(1, Math.round(score))) + (count > 1 ? ` (${count})` : ""),
+                    }),
                     this._el("span", { class: "feed-trend-label", text: it.label })
                 )
             );
@@ -42568,6 +42584,17 @@ class AnazhRealm {
             sc.top = m;
             sc.bottom = -m;
             sc.updateProjectionMatrix();
+        }
+        // V18.136 (Reflexions-Audit) — unter CSM (V18.130) waere der Slider sonst
+        // ein TOTER Knopf (die Haupt-Map rendert nicht — GEMESSEN; die V18.65-
+        // Nullnummer-Klasse): er wird der ehrliche REICHWEITEN-Hebel der
+        // Kaskaden — maxFar = m × 1.8 (Default 300 → 540 = exakt der gebaute
+        // CSM-Default, der Uebergang ist nahtlos; kleiner = schaerfere nahe
+        // Kaskaden, groesser = weitere Schatten).
+        const csm = this.state.csmNode;
+        if (csm) {
+            csm.maxFar = m * 1.8;
+            if (csm.camera) csm.updateFrustums();
         }
         if (typeof this.saveState === "function") this.saveState();
         return m;
@@ -55459,7 +55486,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.135.0";
+AnazhRealm.VERSION = "18.136.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
