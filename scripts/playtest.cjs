@@ -18767,6 +18767,15 @@ async function checkBandVoxelTerrainCore(ctx) {
             const voxelY = r._voxelSurfaceY(testX, testZ);
             const creature = r.spawnCreatureAt(testX, 50, testZ, "happy");
             if (creature && Number.isFinite(voxelY)) {
+                // V18.149 (GEMESSEN, der Flake-Heal): _creatureGroundY trägt ein
+                // 20-Scans-Budget pro Tick; die Test-Kreatur ist die LETZTE im
+                // Array — bei ≥20 Vorgängern fiel EIN Tick auf den Makro-
+                // Schätzwert (seed-abhängige ±m-Divergenz = rot↔grün je Lauf).
+                // Der Cache deckt pro Tick 20 WEITERE Kreaturen → drei Ticks
+                // erreichen sie deterministisch (der echte Budget+Cache-Pfad
+                // bleibt geprüft, kein Cache-Bypass).
+                r.updateCreatures(0.016);
+                r.updateCreatures(0.016);
                 r.updateCreatures(0.016);
                 const expected = voxelY + 0.5;
                 const actual = creature.position.y;
@@ -26780,12 +26789,7 @@ async function checkBandWelle6HCreatures(ctx) {
         // Phase E (V18.148) gebar die vierte Seele (glutwesen, predator) —
         // der Test wandert mit (V9.56-i): die drei sanften Gründer + das Raubtier.
         out.threeSouls =
-            souls &&
-            Object.keys(souls).length === 4 &&
-            souls.sprite &&
-            souls.wesen &&
-            souls.geist &&
-            souls.glutwesen;
+            souls && Object.keys(souls).length === 4 && souls.sprite && souls.wesen && souls.geist && souls.glutwesen;
         out.hasSoulNames =
             Array.isArray(r.constructor.CREATURE_SOUL_NAMES) && r.constructor.CREATURE_SOUL_NAMES.length === 4;
         out.hasNamePool =
@@ -28731,6 +28735,55 @@ async function checkBandPhaseEThreat(ctx) {
     check("Phase E Bedrohung: die Rüstung dämpft FLACH (die EINE Kreatur-Formel)", res.armorDampens);
     check("Phase E Bedrohung: FURCHT bei niedriger HP + TRIUMPH beim Fall des Jägers", res.fearFelt && res.triumphFelt);
     check("Phase E Bedrohung: Jagd + Biss im Bewegungs-Zweig verdrahtet", res.moveWired);
+}
+
+// GEMERKTER FADEN #8 (V18.149) — die STATUSBAR auf ESSENZ (Minecraft-F3-
+// Muster): immer sichtbar nur, was den Spieler trägt (Welt · Wetter · Modus ·
+// Zeit); die Werkstatt-Zahlen ruhen hinter dem ···-Toggle (persistiert).
+// Kein Verlust (P17): alle Items bleiben im DOM, alle Schreiber schreiben.
+async function checkBandV18149Statusbar(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const out = {};
+        const bar = document.getElementById("statusbar");
+        const toggle = document.getElementById("status-dev-toggle");
+        out.exists = !!bar && !!toggle;
+        if (!bar || !toggle) return out;
+        // Essenz unmarkiert sichtbar; Dev-Items markiert (6 Stück).
+        const essence = ["status-slug", "status-weather", "status-mode", "status-time"];
+        out.essenceClean = essence.every((id) => {
+            const el = document.getElementById(id);
+            return !!el && !el.closest(".status-item").classList.contains("status-dev");
+        });
+        out.devMarked = bar.querySelectorAll(".status-item.status-dev").length === 6;
+        // Default: Essenz (dev-hidden) + die Dev-Items sind unsichtbar, aber IM DOM.
+        const savedClass = bar.classList.contains("dev-hidden");
+        const savedStore = localStorage.getItem("anazh.ui.statusDev");
+        try {
+            bar.classList.add("dev-hidden");
+            const fps = document.getElementById("status-fps");
+            out.devHiddenHides = !!fps && getComputedStyle(fps.closest(".status-item")).display === "none";
+            out.stillInDom = !!fps;
+            // Der Toggle flippt + persistiert.
+            toggle.click();
+            out.toggleShows =
+                !bar.classList.contains("dev-hidden") && localStorage.getItem("anazh.ui.statusDev") === "1";
+            toggle.click();
+            out.toggleHides =
+                bar.classList.contains("dev-hidden") && localStorage.getItem("anazh.ui.statusDev") === "0";
+        } finally {
+            bar.classList.toggle("dev-hidden", savedClass);
+            if (savedStore === null) localStorage.removeItem("anazh.ui.statusDev");
+            else localStorage.setItem("anazh.ui.statusDev", savedStore);
+        }
+        return out;
+    });
+    check(
+        "V18.149 Statusbar: Essenz (Welt·Wetter·Modus·Zeit) + 6 Dev-Items markiert",
+        res.essenceClean && res.devMarked
+    );
+    check("V18.149 Statusbar: Dev ruht unsichtbar, bleibt aber im DOM (P17)", res.devHiddenHides && res.stillInDom);
+    check("V18.149 Statusbar: der ···-Toggle flippt + persistiert", res.toggleShows && res.toggleHides);
 }
 
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
@@ -45347,6 +45400,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandW18Dwell(ctx);
             await checkBandV18147ForYou(ctx);
             await checkBandPhaseEThreat(ctx);
+            await checkBandV18149Statusbar(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

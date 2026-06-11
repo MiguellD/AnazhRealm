@@ -2033,6 +2033,33 @@
             #statusbar .status-item.pos {
                 margin-left: auto;
             }
+            /* Faden #8 (V18.149) — die Essenz-Schlankung: Dev-Items ruhen
+               hinter dem ···-Toggle; der Knopf hält die rechte Kante. */
+            #statusbar.dev-hidden .status-item.status-dev {
+                display: none;
+            }
+            #status-dev-toggle {
+                margin-left: auto;
+                background: none;
+                border: 1px solid var(--iron-1);
+                border-radius: 3px;
+                color: var(--ink-on-dark-soft);
+                font-size: 12px;
+                line-height: 1;
+                padding: 2px 7px;
+                cursor: pointer;
+            }
+            #status-dev-toggle:hover {
+                color: #f4e4b8;
+                border-color: var(--brass-1);
+            }
+            #statusbar:not(.dev-hidden) #status-dev-toggle {
+                color: #f4e4b8;
+            }
+            #statusbar .status-item.pos + #status-dev-toggle,
+            #statusbar:not(.dev-hidden) #status-dev-toggle {
+                margin-left: 10px;
+            }
 
             /* Drawer: rechte Pergament-Schriftrolle, slidet rein bei .open. */
             .drawer {
@@ -7612,22 +7639,18 @@
                 </div>
             </div>
         </header>
-        <div id="statusbar" class="hud-frame">
+        <!-- GEMERKTER FADEN #8 (V18.149) — die Statusbar auf ESSENZ geschlankt
+             (das Minecraft-F3-Muster): immer sichtbar ist nur, was den SPIELER
+             beim Spielen trägt (Welt · Wetter · Modus · Zeit); die Werkstatt-
+             Zahlen (FPS · Kreaturen · Aufträge · Seele · Bauten · Position)
+             leben hinter dem ···-Toggle (status-dev, persistiert) — kein
+             Verlust (P17), ein Klick entfernt. -->
+        <div id="statusbar" class="hud-frame dev-hidden">
             <span class="status-item"
                 ><span class="label">Welt</span><span class="value" id="status-slug">—</span></span
             >
             <span class="status-item"
                 ><span class="label">Wetter</span><span class="value" id="status-weather">—</span></span
-            >
-            <span class="status-item"><span class="label">FPS</span><span class="value" id="status-fps">—</span></span>
-            <span class="status-item"
-                ><span class="label">Kreaturen</span><span class="value" id="status-creatures">—</span></span
-            >
-            <span class="status-item"
-                ><span class="label">Aufträge</span><span class="value" id="status-tasks">—</span></span
-            >
-            <span class="status-item"
-                ><span class="label">Seele</span><span class="value" id="status-soul">—</span></span
             >
             <span class="status-item"
                 ><span class="label">Modus</span><span class="value" id="status-mode">frieden</span></span
@@ -7635,12 +7658,27 @@
             <span class="status-item"
                 ><span class="label">Zeit</span><span class="value" id="status-time">—</span></span
             >
-            <span class="status-item"
+            <span class="status-item status-dev"
+                ><span class="label">FPS</span><span class="value" id="status-fps">—</span></span
+            >
+            <span class="status-item status-dev"
+                ><span class="label">Kreaturen</span><span class="value" id="status-creatures">—</span></span
+            >
+            <span class="status-item status-dev"
+                ><span class="label">Aufträge</span><span class="value" id="status-tasks">—</span></span
+            >
+            <span class="status-item status-dev"
+                ><span class="label">Seele</span><span class="value" id="status-soul">—</span></span
+            >
+            <span class="status-item status-dev"
                 ><span class="label">Bauten</span><span class="value" id="status-architectures">—</span></span
             >
-            <span class="status-item pos"
+            <span class="status-item status-dev pos"
                 ><span class="label">Position</span><span class="value" id="status-position">—</span></span
             >
+            <button id="status-dev-toggle" type="button" title="Werkstatt-Zahlen ein-/ausblenden (FPS · Kreaturen · Aufträge · Seele · Bauten · Position)">
+                ···
+            </button>
         </div>
         <!-- V18.45 — die OMNIBOX (Ctrl/Cmd+K): EIN beschwörbarer Ort für jede Absicht (Spotlight/Raycast/
              Linear-Muster). Tag-Grammatik c: Befehl · b: Bauplan · w/s/t/a/g/p: Bauplan nach Rolle · geh: Raum ·
@@ -8962,6 +9000,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.148.0" defer></script>
+        <script src="anazhRealm.js?v=18.149.0" defer></script>
     </body>
 </html>

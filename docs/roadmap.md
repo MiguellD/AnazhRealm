@@ -136,14 +136,14 @@ Persistenz-Slot; `npm run smoke:copresence`; benannt-fern nur der Übersetzer-Av
 B-WASM (Fremd-Engine-Rest) · evolveCommunity (Kreatur-Kulturen) · Stern-ab-6-Topologie
 (gigant-plan §5-F2, Design gemessen).
 
-**UI** — Statusbar schlanken (auf Essenz; GEMERKTER FADEN #8).
+**UI** — ~~Statusbar schlanken~~ **✓ V18.149 (Essenz + ···-Toggle für die Werkstatt-Zahlen)**.
 
 **DIE GEMERKTEN FÄDEN (Schöpfer 11.06.2026: „alle wichtig — vergesse die bitte nicht"; die
 verbindliche Voll-Liste mit Weck-Momenten lebt in `gigant-plan.md` §5-Ende):** R6 Selbst-
 Erweiterung (bereit — R2+R4 stehen) · ~~Phase E Bedrohung/Furcht~~ ✓ V18.148 ·
 B1 Wasser-Sheet→Worker (weckt der fühlbare Carve-Hitch) · das ECHTE V18→V19-Zeit-Portal (weckt
 das erste Alt-Build-Artefakt) · VR (startet bei null, WebXR) · IndexedDB-Persistenz ·
-Fahrzeug-Fahr-Tiefe (C1/C7 sind die Vorstufe) · Statusbar schlanken.
+Fahrzeug-Fahr-Tiefe (C1/C7 sind die Vorstufe) · ~~Statusbar schlanken~~ ✓ V18.149.
 
 ---
 

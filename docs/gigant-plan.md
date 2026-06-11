@@ -935,7 +935,9 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
 6. **IndexedDB-Persistenz** (die localStorage-Größen-Wand).
 7. **Fahrzeug-Fahr-Tiefe** (Sitz/Steuerung/Trägheit — C1-Gelenke + C7-Sitz-Punkte sind die
    gebaute Vorstufe; die Saaten `fahrzeug_wagen`/`reittier_holzross` warten).
-8. **Statusbar schlanken** (UI-Politur, jederzeit einschiebbar).
+8. ~~**Statusbar schlanken**~~ **✓ ERFÜLLT (V18.149):** Essenz immer sichtbar (Welt·Wetter·
+   Modus·Zeit), die sechs Werkstatt-Zahlen hinter dem ···-Toggle (persistiert; P17 — kein
+   Verlust, ein Klick entfernt).
 
 ---
 

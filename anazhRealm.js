@@ -10311,6 +10311,32 @@ class AnazhRealm {
         this._emotionVignette = document.getElementById("emotion-vignette");
         this._emotionLabel = document.getElementById("emotion-label");
 
+        // GEMERKTER FADEN #8 (V18.149) — die Statusbar auf ESSENZ: die
+        // Werkstatt-Zahlen (status-dev) ruhen hinter dem ···-Toggle; die
+        // Wahl überlebt den Reload (anazh.ui.statusDev, global wie jede
+        // UI-Präferenz — nie im Welt-Snapshot). Alle Schreiber schreiben
+        // weiter (display:none liest niemandem die textContent weg — P17,
+        // die bestehenden Status-Invarianten bleiben wahr).
+        const statusbar = document.getElementById("statusbar");
+        const devToggle = document.getElementById("status-dev-toggle");
+        if (statusbar && devToggle) {
+            let devOn = false;
+            try {
+                devOn = localStorage.getItem("anazh.ui.statusDev") === "1";
+            } catch {
+                /* Privacy-Modus — Default bleibt Essenz */
+            }
+            statusbar.classList.toggle("dev-hidden", !devOn);
+            devToggle.addEventListener("click", () => {
+                const hidden = statusbar.classList.toggle("dev-hidden");
+                try {
+                    localStorage.setItem("anazh.ui.statusDev", hidden ? "0" : "1");
+                } catch {
+                    /* Quota — die Wahl gilt für diese Session */
+                }
+            });
+        }
+
         // Abilities-Container: Event-Delegation — ▶ ausführen · ✕ eine Geste vergessen · „leeren" (V18.53).
         const abilitiesContainer = this._statusRefs.abilities;
         if (abilitiesContainer) {
@@ -56713,7 +56739,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.148.0";
+AnazhRealm.VERSION = "18.149.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
