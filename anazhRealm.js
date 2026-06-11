@@ -27753,6 +27753,16 @@ class AnazhRealm {
             // Ko-Präsenz-Portal beim Reload die Pose-Injektion (V8.59-Lehre).
             if (bp.portalMeta.coPresence === true) out.portalMeta.coPresence = true;
         }
+        // M2 (V18.154) — JEDE deklarierte Rolle reist (roleManual = Intent: die Werkstatt-
+        // Designation V17.70 · armor · consumable · soul · vehicle). Vorher reisten nur
+        // tool/weapon/portal — eine markierte Werkstatt-Station VERLOR ihre Designation beim
+        // Reload (V8.59-Klasse; der alte weapon-Kommentar benannte die armor/consumable-Lücke
+        // selbst als Schuld). Fremde Artefakte bleiben gesiebt: _admitForeignArtifact löscht
+        // roleManual + re-derived (Ω3-Empfänger-Gesetz) — diese Reise gilt dem EIGENEN Save.
+        if (bp.role && bp.roleManual === true) {
+            if (!out.role) out.role = bp.role;
+            out.roleManual = true;
+        }
         // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan (Save,
         // Welt-Tor-Export, Recipe-Import, Fusion). Echtheit prüft
         // verifyBlueprintSignature beim Anzeigen.
@@ -27834,6 +27844,19 @@ class AnazhRealm {
             restored.role = "portal";
             if (data.roleManual === true) restored.roleManual = true;
             restored.portalMeta = this._sanitizePortalMeta(data.portalMeta, restored.label);
+        }
+        // M2 (V18.154) — das Gegenstück zur Serialize-Reise: JEDE deklarierte Rolle kehrt
+        // zurück (Wand: nur Register-bekannte Rollen — ein manipulierter Save injiziert
+        // keinen Müll-String). Die tool/portal-Meta-Zweige oben bleiben die Spezialisten;
+        // für FREMDE Artefakte löscht _admitForeignArtifact roleManual danach (Ω3).
+        if (
+            !restored.role &&
+            typeof data.role === "string" &&
+            data.roleManual === true &&
+            AnazhRealm.ROLE_SIGNATURES[data.role]
+        ) {
+            restored.role = data.role;
+            restored.roleManual = true;
         }
         // W13 Phase 2 — Bauplan-Signatur wiederherstellen. Strukturell
         // plausibel prüfen (Hex-Form); die echte Verifikation macht
@@ -42272,6 +42295,22 @@ class AnazhRealm {
         v.hollowness = extVol > 0.001 ? Math.max(0, Math.min(1, 1 - partVol / extVol)) : 0;
         v.axialSymmetry = (this._compoundSymmetry(bp) || {}).ratio || 0; // Symmetrieachse trägt Alignment
         v.spread = this._compoundSpread(bp); // Trag-Basis (Fahrzeug/Bauwerk) vs Säule (Mast/Stab)
+        // M2 (meister-plan §2 — die fahrzeug-Rolle): `rideable` = die KONJUNKTION „hat einen
+        // deklarierten SITZ und ist beweglich" als 0/1-Achse (V17.90-Lehre: Konjunktion in die
+        // Feature-Achse, die disjunktive Entscheidung ins argmax). Liest die BESTEHENDEN
+        // Wahrheiten — den C7-sitz-Anker (connections) + _isMoveable (Trag-Basis + Antrieb,
+        // V17.11): ein Wagen/Holzross (sitz + moveable) wird Fahrzeug, ein toter Stein-Stuhl
+        // (sitz, kein Antrieb) bleibt Bauwerk, ein Avatar (moveable-artig, KEIN sitz) Seele.
+        // GEMESSEN (diag-roles): die Glieder-Zählung wäre fragil (Holzross-Beine sind via
+        // connections „scharnier", nicht „bein") — _isMoveable ist die robuste EINE Quelle.
+        const hasSitz = Array.isArray(bp.connections) && bp.connections.some((c) => c && c.type === "sitz");
+        v.rideable = hasSitz && this._isMoveable(bp) ? 1 : 0;
+        // M2 — `bulk`: die GRÖSSE als kontinuierliche Achse, beginnend JENSEITS der
+        // Greifbarkeit ((span − 2 m)/6, gekappt): was größer ist als du, trinkst du nicht.
+        // GEMESSEN: ein Baum (span 7) trägt 0.83; ein Trank (0.81) UND die fleisch-Kugel
+        // (1 m — die Nahrungs-Klasse mit hauchdünner consumable-Margin 0.5 vs 0.4) exakt 0.
+        // consumable liest NEGATIV (kein Baum-Trank), architecture POSITIV (Masse).
+        v.bulk = Math.max(0, Math.min(1, (longest - 2) / 6));
         return v;
     }
 
@@ -42308,11 +42347,22 @@ class AnazhRealm {
     // Schaden/Rückschlag/Verteidigung, aber TRÄGER (geringeres Tempo) — der vision-treue Trade-off (eine riesige
     // Keule ist mächtig + langsam). Zentriert ~1.0 für ein typisches Werk → Modulation, kein Dominator. Wirkt
     // konsistent in der Werte-Anzeige UND im Ausrüstungs-Fold (ein größeres gehaltenes Gerät trägt schwerer).
+    // M2(f) (meister-plan Befund 24, GEMESSEN diag-roles): Σ SUBSTANZ-Volumen statt Hüll-Volumen —
+    // das Auseinanderzieh-Exploit (Teile spreizen = bbox aufblasen = stärker: 1.06→1.29→1.53 bei
+    // IDENTISCHER Substanz) fällt strukturell, denn der Part-Abstand ändert die Substanz nicht
+    // (Ω5-Geist: kein freier Ertrag). Der „Hohlheits-Malus" des Plans ist damit IMPLIZIT: eine
+    // aufgeblasene Hülle trägt nicht mehr Masse als ihre Parts — ein expliziter Hüll-Malus würde
+    // legitime mehrteilige Werke (Wagen: Räder + Lücken) doppelt bestrafen. REF auf die Archetypen
+    // kalibriert (diag-roles: Spitzhacke 1.07→1.08 · Brustpanzer 1.40→1.47 · Schwert 0.90→0.86).
     _compoundSizeFactor(bp) {
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return 1;
-        const ext = this._compoundVisualExtent(bp);
-        const vol = Math.max(0.0001, (ext.dx || 0) * (ext.dy || 0) * (ext.dz || 0));
-        const ref = AnazhRealm.SIZE_STAT_REF_VOLUME || 0.15;
+        let vol = 0;
+        for (const p of bp.parts) {
+            const s = p.size || {};
+            vol += Math.abs((s.x || 0.3) * (s.y || 0.3) * (s.z || 0.3));
+        }
+        vol = Math.max(0.0001, vol);
+        const ref = AnazhRealm.SIZE_STAT_REF_SUBSTANCE || 0.06;
         const exp = AnazhRealm.SIZE_STAT_EXPONENT || 0.2;
         const f = Math.pow(vol / ref, exp);
         const lo = AnazhRealm.SIZE_STAT_MIN || 0.7;
@@ -46794,7 +46844,10 @@ class AnazhRealm {
         if (role === "soul") return "embody";
         if (role === "consumable") return "drink";
         if (role === "tool" || role === "weapon") return "hold"; // explizite Geräte
-        if (role === "portal" || role === "workshop-station" || role === "machine") return "place"; // Welt-Apparate
+        // M2 — vehicle ist ein Welt-Apparat: ein Wagen wird PLATZIERT (Phantom → confirmBuild
+        // zahlt), nie in die Hand genommen (Befund 7: der Wagen rutschte in die Hand).
+        if (role === "portal" || role === "workshop-station" || role === "machine" || role === "vehicle")
+            return "place"; // Welt-Apparate
         // architecture / rollenlos: die FORM entscheidet — der stein_block-vs-Spitzhacke-Zwilling (beide
         // klein + rollenlos) wird über die WERKZEUG-Form getrennt. Default „place" (konservativ — bricht
         // keinen Block); „hold" NUR wenn die Form ein Gerät verrät: eine SPITZE/Klinge (pointedFraction>0)
@@ -47848,6 +47901,22 @@ class AnazhRealm {
                 .map(([m, n]) => `${n}× ${m}`)
                 .join(" · ") || "frei";
         info.appendChild(cost);
+        // M2(e) (meister-plan Befund 8) — das ehrliche Mach-Tor SICHTBAR: ein Eintrag ist erst
+        // ein BAUPLAN (reine Information, Plan→Werk: das Fertigen kostet Materie) oder schon
+        // ein WERK (forgedPrecision eingefroren). Vorher war unsichtbar, WARUM ein sichtbarer
+        // Blueprint noch nicht wirkt — jetzt sagt es die Zeile.
+        const status = document.createElement("span");
+        status.className = "recipe-status";
+        const isWerk = Number.isFinite(bp && bp.forgedPrecision);
+        status.textContent = isWerk ? "Werk ✓" : "Bauplan";
+        status.title = isWerk
+            ? "Gefertigt — die Präzision ist eingefroren, der Gebrauch ist frei."
+            : kind === "place"
+              ? "Reine Information — das Platzieren in der Welt zieht das Material (pfad)."
+              : "Reine Information — das Fertigen zieht das Material (pfad), dann ist der Gebrauch frei.";
+        status.style.opacity = "0.75";
+        status.style.fontStyle = "italic";
+        info.appendChild(status);
         row.appendChild(info);
         const btn = document.createElement("button");
         btn.type = "button";
@@ -49497,11 +49566,26 @@ class AnazhRealm {
             builtIn: false,
             parts: JSON.parse(JSON.stringify(source.parts || [])),
         };
-        // V17.85 — der Klon ist ein Nicht-Built-in → er trägt seine EMERGENTE Rolle (wie jeder
-        // Nicht-Built-in nach _refreshBlueprintRoleEmergent). Ohne das blieb bp.role undefined →
-        // der Klon einer rollenlosen Klinge (Spitzhacke) zeigte „Bauwerk" + alle bp.role-Leser
-        // (fertigeBlueprint-Routing, Use-Kind) sahen den Default, statt der Form-Rolle „Werkzeug".
-        this._refreshBlueprintRoleEmergent && this._refreshBlueprintRoleEmergent(cleanNew);
+        // M2 (meister-plan Befund 6/7, GEMESSEN): der Klon erbt die volle SUBSTANZ — connections
+        // (Gelenke/Anker) SIND Substanz wie parts. Ohne sie verlor ein geklonter Wagen seine
+        // rad-Gelenke + den Sitz (keine rollenden Räder, kein Reiten, keine fahrzeug-Rolle).
+        if (Array.isArray(source.connections) && source.connections.length) {
+            this.state.blueprints[cleanNew].connections = JSON.parse(JSON.stringify(source.connections));
+        }
+        // M2 — und den INTENT: eine DEKLARIERTE Rolle (builtIn-Saat ODER roleManual — z. B. die
+        // Werkstatt-Designation V17.70) reist mit (als roleManual, via Markier-Sektion lösbar):
+        // ein geklonter Brennkolben BLEIBT Werkstatt-Station (der Chip UND _workshopStationGate
+        // lesen bp.role — ohne Erbe zeigte der Klon „Bauwerk" und fertigte NICHT). forgedPrecision
+        // reist bewusst NICHT (Plan→Werk: der Plan ist frei kopierbar, das WERK kostet — Ω5).
+        if (source.role && (source.roleManual || source.builtIn)) {
+            this.state.blueprints[cleanNew].role = source.role;
+            this.state.blueprints[cleanNew].roleManual = true;
+        } else {
+            // V17.85 — sonst trägt der Klon seine EMERGENTE Rolle (wie jeder Nicht-Built-in nach
+            // _refreshBlueprintRoleEmergent). Ohne das bliebe bp.role undefined → der Klon einer
+            // rollenlosen Klinge (Spitzhacke) zeigte „Bauwerk" statt der Form-Rolle „Werkzeug".
+            this._refreshBlueprintRoleEmergent && this._refreshBlueprintRoleEmergent(cleanNew);
+        }
         this.log(`Bauplan '${sourceName}' nach '${cleanNew}' geklont`, "INFO");
         return true;
     }
@@ -51123,7 +51207,13 @@ class AnazhRealm {
         // die Rolle einen Mach-Akt trägt (Station/Portal werden gebaut, nicht gefertigt).
         const machZone = az || panel;
         const role = this._displayRole(bp);
-        const canMake = !(role === "workshop-station" || role === "portal" || (role === "soul" && bp.builtIn));
+        // M2 — vehicle gehört zur place-Familie: gebaut (Phantom + confirmBuild), nicht gefertigt.
+        const canMake = !(
+            role === "workshop-station" ||
+            role === "portal" ||
+            role === "vehicle" ||
+            (role === "soul" && bp.builtIn)
+        );
         if (canMake || !bp.builtIn) {
             this._workshopAppendWerkHeading(machZone);
             if (!bp.builtIn) this._workshopAppendSignatureRow(machZone, bp, ws);
@@ -51153,9 +51243,9 @@ class AnazhRealm {
         // Default) bestimmt den FERTIGEN-Akt: eine Spitzhacke wird „geschmiedet (in die Hand)", nicht
         // als Bauwerk behandelt — der Mach-Verb folgt der angezeigten Rolle.
         const role = this._displayRole(bp);
-        // Welt-platzierte Rollen (Station/Portal) werden gebaut (confirmBuild), nicht gefertigt; eine
-        // geborene (built-in) Seele wird nicht geformt.
-        if (role === "workshop-station" || role === "portal") return;
+        // Welt-platzierte Rollen (Station/Portal/Fahrzeug, M2) werden gebaut (confirmBuild), nicht
+        // gefertigt; eine geborene (built-in) Seele wird nicht geformt.
+        if (role === "workshop-station" || role === "portal" || role === "vehicle") return;
         if (role === "soul" && bp.builtIn) return;
         const isSoul = role === "soul";
         const verb =
@@ -57233,7 +57323,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.153.0";
+AnazhRealm.VERSION = "18.154.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -58266,6 +58356,8 @@ AnazhRealm.BLUEPRINT_ROLE_LABELS = Object.freeze({
     soul: "Seele",
     machine: "Maschine",
     portal: "Portal",
+    vehicle: "Fahrzeug", // M2
+    "workshop-station": "Werkstatt",
 });
 
 // V8.39 — Farb-Sprache: jede Rolle eine feste Farbe. Rollen-Chip +
@@ -58282,6 +58374,8 @@ AnazhRealm.BLUEPRINT_ROLE_COLORS = Object.freeze({
     soul: "#88e1e1",
     machine: "#b08648",
     portal: "#43c98a",
+    vehicle: "#c98a43", // M2 — Wagen-Ocker (Reise/Leder)
+    "workshop-station": "#cc6b35", // M2 — Essen-Glut (die Designation sichtbar)
 });
 
 // Werkzeug-Domain-Labels (deutsch) für UI-Anzeige. null = generic
@@ -58314,10 +58408,11 @@ AnazhRealm.TOOL_DOMAIN_COLORS = Object.freeze({
 // nicht „direkt daneben". 32 m (2 Chunk-Breiten) deckt eine Basis großzügig — der Prozess bleibt, solange
 // man in seinem Werkstatt-Areal ist. Gilt für die Prozess-Erkennung UND das Schmiede-Tor (konsistent).
 AnazhRealm.WORKSHOP_PROXIMITY_M = 32;
-// V17.90 — der GRÖSSEN/MASSE-Stat-Faktor (_compoundSizeFactor): das Hüll-Volumen gegen diese Referenz, sanfte
-// Potenz, gebounded. Zentriert ~1.0 für ein typisches Hand-Werk (~0.15 m³); ein 3× größeres → ~1.4 (mächtiger
-// + träger). Alle browser-justierbar (die Balance „wie viel stärker ist größer" ist das Schöpfer-Auge).
-AnazhRealm.SIZE_STAT_REF_VOLUME = 0.1;
+// V17.90 — der GRÖSSEN/MASSE-Stat-Faktor (_compoundSizeFactor): seit M2 das Σ-SUBSTANZ-Volumen der Parts
+// gegen diese Referenz, sanfte Potenz, gebounded (das Hüll-Volumen war das Auseinanderzieh-Exploit, Befund 24).
+// Zentriert ~1.0 für ein typisches Hand-Werk (~0.06 m³ Substanz, an den Archetypen kalibriert — diag-roles);
+// ein massigeres → mächtiger + träger. Alle browser-justierbar (die Balance ist das Schöpfer-Auge).
+AnazhRealm.SIZE_STAT_REF_SUBSTANCE = 0.06;
 AnazhRealm.SIZE_STAT_EXPONENT = 0.15;
 AnazhRealm.SIZE_STAT_MIN = 0.75;
 AnazhRealm.SIZE_STAT_MAX = 1.6;
@@ -58482,11 +58577,17 @@ AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR = 2.0;
 // Heilungen: soul liest `livingBody` (Körper-Form UND lebendig — ein toter Panzer ist keine Seele), portal
 // liest `portalShape` (die Ring-Form — ein magisches Kristall ohne Ring ist kein Tor). architecture bleibt
 // der dichte-harte Default für Welt-Strukturen (konservativ). An den Built-ins GEMESSEN (diag).
+// M2 (meister-plan §2 — die Rollen-Wahrheit, GEMESSEN diag-roles): + `vehicle` (die fehlende
+// Rolle — der Wagen las „Bauwerk", das Holzross „Seele"): rideable (sitz ∧ moveable) 1.8 schlägt
+// das Holzross-soul (1.587) klar (2.03) und den Wagen-architecture (0.83 → 2.1). + `bulk` heilt
+// die Trank-Bäume (Befund 5, arithmetisch: Eiche bulk 0.83 → consumable 0.667−0.67≈0, architecture
+// 0.307+0.25=0.56 → Bauwerk; Trank + fleisch-Kugel: span < 2 m → bulk 0, unberührt).
 AnazhRealm.FORM_ROLE_SIGNATURES = Object.freeze({
     soul: Object.freeze({ livingBody: 1.4, lebendig: 0.4 }),
     portal: Object.freeze({ portalShape: 1.6 }),
-    consumable: Object.freeze({ lebendig: 1.5, härte: -0.5 }),
-    architecture: Object.freeze({ dichte: 1.0, härte: 0.6 }),
+    vehicle: Object.freeze({ rideable: 1.8, spread: 0.3 }),
+    consumable: Object.freeze({ lebendig: 1.5, härte: -0.5, bulk: -0.8 }),
+    architecture: Object.freeze({ dichte: 1.0, härte: 0.6, bulk: 0.3 }),
 });
 // Der Floor auf die NORMALISIERTE Skala gesenkt (A1: Material-Tags jetzt [0..1] statt [0..3] → die rohen
 // Resonanzen fielen ~3× → der alte 0.5-Floor schluckte z.B. den Trank in den architecture-Default).
@@ -58546,7 +58647,9 @@ AnazhRealm.ROLE_SIGNATURES = Object.freeze({
     // PORTAL: Ring-Form, magie-leitend, transparent, resonant.
     portal: Object.freeze({ portalShape: 2.0, magieleitung: 1.0, transparent: 0.5, resoniert: 0.4 }),
     // FAHRZEUG: Trag-Basis, zäh, gestreckt, angetrieben (magie/strom), tot, mittel-dicht.
+    // M2 — + rideable (sitz ∧ moveable): der deklarierte Sitz ist die Fahrzeug-Essenz.
     vehicle: Object.freeze({
+        rideable: 1.0,
         spread: 1.4,
         zähigkeit: 1.0,
         elongation: 0.4,

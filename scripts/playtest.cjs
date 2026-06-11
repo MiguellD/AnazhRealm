@@ -5730,9 +5730,12 @@ async function checkBandV1769RoleResonance(ctx) {
             "felsbogen",
         ];
         out.allArch = wantArch.every((n) => r.computeBlueprintRole(blu[n]) === "architecture");
-        out.baeumeConsumable =
-            r.computeBlueprintRole(blu.baum_eiche) === "consumable" &&
-            r.computeBlueprintRole(blu.baum_kiefer) === "consumable";
+        // M2 (V18.154, meister-plan Befund 5): die Bäume sind ARCHITECTURE — die bulk-Achse
+        // (span/8) nimmt dem Riesen-Laub die consumable-Resonanz (man trinkt keinen Baum;
+        // GEMESSEN diag-roles: Eiche consumable 0.667→−0.03, architecture 0.307→0.57).
+        out.baeumeArchitecture =
+            r.computeBlueprintRole(blu.baum_eiche) === "architecture" &&
+            r.computeBlueprintRole(blu.baum_kiefer) === "architecture";
 
         // (4) die Form-Rollen via Resonanz: ein weicher fleisch-Körper → soul, ein Turm → architecture, Nahrung →
         // consumable, ein magie-Ring → portal, ein Stein-Ring → architecture (KONSUM der Fixtures durch die Resonanz)
@@ -5799,8 +5802,8 @@ async function checkBandV1769RoleResonance(ctx) {
         res.templeHealed && res.felsbogenHealed && res.healMechanism
     );
     check(
-        "V17.69 R3 DER WÄCHTER: die 12 Form-Fallback-Built-ins emergieren auf der Baseline (10 architecture, 2 Bäume consumable)",
-        res.allArch && res.baeumeConsumable
+        "V17.69 R3 DER WÄCHTER: die 12 Form-Fallback-Built-ins emergieren auf der Baseline (10 architecture; M2: die 2 Bäume jetzt auch — bulk nimmt dem Laub die Trank-Resonanz)",
+        res.allArch && res.baeumeArchitecture
     );
     check(
         "V17.69 R3 KONSUM: die Form-Rollen via Resonanz — fleisch-Körper→soul, Turm→architecture, Nahrung→consumable, magie-Ring→portal, Stein-Ring→architecture",
@@ -29089,6 +29092,118 @@ async function checkBandR6Capability(ctx) {
     check(`R6 Selbst-Erweiterung: „gewähre/wirke" in der EINEN Chat-Tabelle`, res.chatGestures);
 }
 
+// V18.154 — M2: DIE ROLLEN-WAHRHEIT (meister-plan §2, GEMESSEN diag-roles). Die größte
+// Audit-Einzel-Wurzel: dem Register fehlte `vehicle` (Wagen→Bauwerk, Holzross→Seele,
+// Bäume→Trank) + das Hüll-Volumen-Exploit (auseinanderziehen = stärker) + der Klon
+// verlor Substanz (connections) und Intent (role). KONSUM, nicht Existenz.
+async function checkBandM2RollenWahrheit(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const sigs = r.constructor.FORM_ROLE_SIGNATURES;
+
+        // (1) die fahrzeug-Rolle + ihr MECHANISMUS: der Wagen (4 rad-Gelenke + sitz)
+        // und das Holzross (sitz + moveable) emergieren vehicle; am Holzross schlägt
+        // die vehicle-Resonanz das alte soul (livingBody) — die rideable-Konjunktion.
+        out.wagenVehicle = r.computeBlueprintRole(blu.fahrzeug_wagen) === "vehicle";
+        out.rossVehicle = r.computeBlueprintRole(blu.reittier_holzross) === "vehicle";
+        const rossV = r._blueprintProductVector(blu.reittier_holzross);
+        out.rossMechanism =
+            rossV.rideable === 1 &&
+            r._blueprintResonance(rossV, sigs.vehicle) > r._blueprintResonance(rossV, sigs.soul);
+
+        // (2) useKind: ein Fahrzeug wird PLATZIERT (Befund 7: es rutschte in die Hand) —
+        // und ein Baum wird nicht mehr GETRUNKEN (war useKind=drink via consumable).
+        out.vehiclePlace =
+            r._blueprintUseKind(blu.fahrzeug_wagen) === "place" &&
+            r._blueprintUseKind(blu.reittier_holzross) === "place";
+        out.baumPlace = r._blueprintUseKind(blu.baum_eiche) === "place";
+
+        // (3) die KONJUNKTION hält: ein toter Stein-Stuhl (sitz-Anker, KEIN Antrieb →
+        // nicht moveable) bleibt Bauwerk — der Sitz allein macht kein Fahrzeug.
+        const stuhl = {
+            name: "__m2_stuhl",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 1, y: 0.2, z: 1 }, position: { x: 0, y: 0.6, z: 0 } },
+                { shape: "box", material: "stein", size: { x: 0.9, y: 0.6, z: 0.9 }, position: { x: 0, y: 0.2, z: 0 } },
+            ],
+            connections: [{ type: "sitz", partA: 0, partB: -1 }],
+        };
+        const stuhlV = r._blueprintProductVector(stuhl);
+        out.stuhlBleibtBauwerk = stuhlV.rideable === 0 && r.computeBlueprintRole(stuhl) === "architecture";
+
+        // (4) das Auseinanderzieh-Exploit ist TOT (Befund 24): identische Substanz, nur
+        // gespreizt → IDENTISCHER Größen-Faktor (Σ-Substanz-Volumen statt Hüll-Volumen).
+        const mk = (d) => ({
+            parts: [
+                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
+                { shape: "box", material: "eisen", position: { x: d, y: 0, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
+            ],
+        });
+        out.exploitTot = Math.abs(r._compoundSizeFactor(mk(0.5)) - r._compoundSizeFactor(mk(10))) < 1e-9;
+
+        // (5) der Klon erbt die SUBSTANZ: ein geklonter Wagen behält seine connections
+        // (Gelenke/Sitz) → die fahrzeug-Rolle emergiert auch am Klon (Befund 7-Kette).
+        if (blu.__m2_wagenklon) delete blu.__m2_wagenklon;
+        r.cloneBlueprint("fahrzeug_wagen", "__m2_wagenklon");
+        const wk = blu.__m2_wagenklon;
+        out.klonSubstanz =
+            !!wk &&
+            Array.isArray(wk.connections) &&
+            wk.connections.length === (blu.fahrzeug_wagen.connections || []).length &&
+            r.computeBlueprintRole(wk) === "vehicle";
+        delete blu.__m2_wagenklon;
+
+        // (6) der Klon erbt den INTENT: ein geklonter Brennkolben BLEIBT Werkstatt-
+        // Station (Chip + _workshopStationGate lesen bp.role — Befund 6-Kette).
+        if (blu.__m2_kolbenklon) delete blu.__m2_kolbenklon;
+        r.cloneBlueprint("brennkolben", "__m2_kolbenklon");
+        const kk = blu.__m2_kolbenklon;
+        out.klonIntent = !!kk && kk.role === "workshop-station" && kk.roleManual === true;
+        delete blu.__m2_kolbenklon;
+
+        // (7) das ehrliche Mach-Tor SICHTBAR (Befund 8): die Rezept-Zeile sagt
+        // „Bauplan" vs „Werk ✓" (recipe-status aus forgedPrecision).
+        const rowSrc = r._recipeRow.toString();
+        out.machTorSichtbar = /recipe-status/.test(rowSrc) && /Werk ✓/.test(rowSrc) && /forgedPrecision/.test(rowSrc);
+
+        // (8) kein Regress an den Substanz-Zwillingen: Trank bleibt Trank (klein +
+        // lebendig), die Werkstatt-Saaten tragen ihre Designation, Avatar bleibt Seele.
+        out.keinRegress =
+            r.computeBlueprintRole(blu.trank_lebenssaft) === "consumable" &&
+            r._displayRole(blu.brennkolben) === "workshop-station" &&
+            r.computeBlueprintRole(blu.avatar_waechter) === "soul";
+        return out;
+    });
+    check(
+        "M2 Rollen-Wahrheit: Wagen + Holzross emergieren `vehicle` — die rideable-Konjunktion (sitz ∧ moveable) schlägt soul am Holzross",
+        res.wagenVehicle && res.rossVehicle && res.rossMechanism
+    );
+    check(
+        "M2 Rollen-Wahrheit: ein Fahrzeug wird PLATZIERT (useKind place, nicht Hand) — und ein Baum nicht mehr getrunken",
+        res.vehiclePlace && res.baumPlace
+    );
+    check(
+        "M2 Rollen-Wahrheit: die Konjunktion hält — ein toter Stein-Stuhl (sitz ohne Antrieb) bleibt Bauwerk",
+        res.stuhlBleibtBauwerk
+    );
+    check(
+        "M2 Stat-Robustheit: das Auseinanderzieh-Exploit ist tot — identische Substanz gespreizt gibt identischen Größen-Faktor (Ω5-Geist)",
+        res.exploitTot
+    );
+    check(
+        "M2 Klon-Erbe: der Klon trägt die volle Substanz (connections → der Wagen-Klon bleibt Fahrzeug) UND den Intent (der Brennkolben-Klon bleibt Werkstatt-Station)",
+        res.klonSubstanz && res.klonIntent
+    );
+    check("M2 Mach-Tor sichtbar: die Rezept-Zeile sagt Bauplan vs Werk (Plan→Werk lesbar)", res.machTorSichtbar);
+    check(
+        "M2 kein Regress: Trank bleibt Trank, die Werkstatt-Designation steht, der Avatar bleibt Seele",
+        res.keinRegress
+    );
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -45709,6 +45824,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18150Ride(ctx);
             await checkBandV18151Idb(ctx);
             await checkBandR6Capability(ctx);
+            await checkBandM2RollenWahrheit(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

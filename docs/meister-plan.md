@@ -83,17 +83,23 @@ Box-Seiten/Quadranten), der Punkt rastet auf Flächen-Mitte/Kanten-Mitte/Ecke (S
 dann der BESTEHENDE Verschiebe-Gizmo für Offset (+ R für Dreh-Schritte). Das ist das
 Besiege/Scrap-Mechanic-Muster: simpel anzuwenden, volle Tiefe.
 
-**M2 — Die Rollen-Wahrheit + das ehrliche Mach-Tor [H].** (Die größte Einzel-Wurzel.)
-(a) Neue Rolle `fahrzeug` im EINEN Register (Diskriminator: rad-Gelenke/sitz-Anker als
-0/1-Feature-Achsen — die V17.90-Konjunktions-Lehre); Holzross→fahrzeug (sitz+beine schlägt
-livingBody via Gegen-Gewicht), Wagen→fahrzeug. (b) Bäume→architecture (Größen/verwurzelt-
-Achse oder brennbar/zähigkeit-Gegengewicht in consumable — ARITHMETISCH vorrechnen wie beim
-glutwesen, dann messen `diag-blass`-Stil). (c) Werkstatt-Stationen zeigen „Werkstatt"-Chip
-(die Designation wird Rollen-Anzeige-Quelle). (d) `_blueprintUseKind`: fahrzeug→place.
-(e) Inventar-Karte sagt ehrlich „Bauplan — fertigen in der Werkstatt" vs „Werk ×N".
-(f) **Stat-Robustheit**: `_compoundSizeFactor` auf SUBSTANZ-Volumen (Σ Parts) + Hüll-
-Verhältnis-Malus — das Auseinanderzieh-Exploit fällt (Ω5-Geist: kein freier Ertrag).
-Tests wandern (Rollen-Erwartungen!).
+**M2 — Die Rollen-Wahrheit + das ehrliche Mach-Tor [H]. ✓ GEBAUT (V18.154).**
+(a) ✓ Rolle `vehicle` im EINEN Register — die Diskriminator-Achse wurde GEMESSEN schärfer
+als geplant: `rideable` = KONJUNKTION „sitz-Anker ∧ `_isMoveable`" (die Glieder-Zählung
+wäre fragil — Holzross-Beine sind via connections „scharnier", nicht „bein"); Wagen →
+vehicle 2.1, Holzross → vehicle 2.032 (schlägt soul 1.587). (b) ✓ Bäume → architecture
+via `bulk`-Achse — ABER an der GREIFBARKEITS-SchWELLE ((span−2)/6, nicht linear ab 0:
+der Erst-Wurf kippte die fleisch-Kugel-Nahrungsklasse mit 0.5-vs-0.4-Margin; 4 Alt-
+Invarianten fingen es). (c) ✓ über die KLON-KETTE: `cloneBlueprint` erbt jetzt
+connections (Substanz) + role/roleManual (Intent — der geklonte Brennkolben BLEIBT
+Werkstatt-Station, Chip + Gate lesen role); BEIFANG: `_serializeBlueprint` trug role nur
+für tool/weapon/portal → jede Designation STARB im Save (V8.59) — jetzt reist jede
+roleManual-Rolle symmetrisch (Ω3-Sieb am Import unberührt). (d) ✓ vehicle→place (+
+FERTIGEN-Row: place-Familie). (e) ✓ Rezept-Zeile „Bauplan" vs „Werk ✓". (f) ✓ Σ-SUBSTANZ-
+Volumen (`SIZE_STAT_REF_SUBSTANCE 0.06`, Archetypen-kalibriert; Exploit 1.06→1.53 VORHER,
+konstant 1.12 NACHHER — der Hüll-Malus ist implizit, ein expliziter hätte mehrteilige
+Werke doppelt bestraft). +7 Invarianten (`checkBandM2RollenWahrheit`); `diag-roles.cjs`
+= die bleibende Mess-Karte; baeumeConsumable-Test wanderte. „Alle Invarianten OK" 218 s.
 
 **M3 — Der Ritt VOLLENDET [H+A].** (a) **Das Gefährt führt**: vertikal steht es auf
 `getTerrainHeightAt` (+Rad-Radius), der REITER folgt ihm (Body-Kinematik im Sattel:
@@ -136,9 +142,10 @@ sichtbar dokumentiert (Einstellungen-Identität + ein Satz im Pass-Panel).
 
 **M9 — DIE AUFSTIEGS-LEITER (die Krone; eigener Bogen, S-Dialog je Sprosse).** §3.
 
-**Reihenfolge:** M2 → M3 (spielbarer Kern zuerst: Rollen+Ritt) → M1 (Werkstatt-UX) →
-M5 → M4 → M6 → M7 → M8 → M9 (parallel designbar). M2/M3 zuerst, weil sie die
-Schöpfer-Session DIREKT entblockt haben (Wagen bauen→fertigen→platzieren→reiten).
+**Reihenfolge:** M2 ✓ → M3 (spielbarer Kern zuerst: Rollen+Ritt — **M3 ist der AKTIVE
+nächste Schritt**) → M1 (Werkstatt-UX) → M5 → M4 → M6 → M7 → M8 → M9 (parallel
+designbar). M2/M3 zuerst, weil sie die Schöpfer-Session DIREKT entblockt haben
+(Wagen bauen→fertigen→platzieren→reiten).
 
 ---
 
@@ -261,8 +268,8 @@ den S-Dialog je Adoption — der Plan legt die Leiter, nicht die Automatik.
 
 ## §6 · Mess-Aufträge VOR den Wellen (Fischer-Pflicht)
 
-1. `diag-roles.cjs`: `computeBlueprintRole` für ALLE Built-ins dumpen (die Fehl-Rollen-Karte
-   komplett — nicht nur die 3 gesehenen). [M2]
+1. ✓ `diag-roles.cjs` (V18.154): `computeBlueprintRole` für ALLE 31 Built-ins gedumpt + Achsen-
+   Rohdaten (span/Volumina/spread/motion) + Exploit-Probe — die bleibende M2-Mess-Karte. [M2]
 2. `diag-harvest.cjs`: Baum/Deko-Abbau end-to-end je Modus (instanced-Pfad!). [M6]
 3. Rad-Achsen-Probe im diag-ride (Achse der rotierenden Räder dumpen). [M3]
 4. Filter-Inventur: grep aller Such/Filter-Implementierungen. [M4]

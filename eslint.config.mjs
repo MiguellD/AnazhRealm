@@ -38,6 +38,7 @@ export default [
                 atob: "readonly",
                 btoa: "readonly",
                 TextEncoder: "readonly",
+                indexedDB: "readonly", // V18.151 IndexedDB-Spiegel (vorbestehender Lint-Riss, M2-Beifang)
                 // CDN-Libs
                 THREE: "readonly",
                 Ammo: "readonly",
