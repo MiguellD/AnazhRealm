@@ -7061,6 +7061,13 @@ class AnazhRealm {
         if (typeof msg.worldRole === "string") entry.worldRole = msg.worldRole;
         // W7 Phase 3 — teilt der Peer seine Stimme?
         if (typeof msg.voiceShared === "boolean") entry.voiceShared = msg.voiceShared;
+        // W18-D — wohnt der Peer in einer Fremd-Welt? Das Name-Schild zeigt
+        // es („wohnt in …" — die Gefährten finden ihn dort).
+        const dwellIn = typeof msg.dwell === "string" ? msg.dwell.trim().slice(0, 60) : "";
+        if (dwellIn !== (entry.dwellingIn || "")) {
+            entry.dwellingIn = dwellIn;
+            this._p2pRefreshPeerNameLabel(entry);
+        }
         // W16 Phase 2 — der Welt-Katalog des Peers (seine vendorten Welten).
         if (Array.isArray(msg.catalog)) {
             entry.catalog = this._p2pSanitizeCatalog(msg.catalog);
@@ -7429,7 +7436,10 @@ class AnazhRealm {
                 fingerprint = m[1].replace(/(.{4})/g, "$1 ").trim();
             }
         }
-        const label = this._p2pBuildNameLabel(entry.avatarName || "Reisender", fingerprint);
+        // W18-D — „wohnt in …" reist im Name-Schild mit (Auffindbarkeit).
+        const baseName = entry.avatarName || "Reisender";
+        const shown = entry.dwellingIn ? `${baseName} · wohnt in ${entry.dwellingIn}` : baseName;
+        const label = this._p2pBuildNameLabel(shown, fingerprint);
         if (label && this.state.scene) {
             this.state.scene.add(label);
             entry.nameLabel = label;
@@ -7581,6 +7591,11 @@ class AnazhRealm {
         msg.voiceShared = !!(this.state.p2p && this.state.p2p.voiceShared);
         // W16 Phase 2 — den eigenen Welt-Katalog annoncieren (wie worldRole).
         msg.catalog = this._p2pBuildCatalog();
+        // W18-D — „wohnt in …": die Gefährten finden mich in meiner Wahl-
+        // Heimat (Auffindbarkeit, world-portal-w18-plan §7). Das Label ist
+        // öffentlich-harmlos (eine Welt-Bezeichnung, kein Pfad/Zustand).
+        const dwell = this._loadPortalDwelling();
+        if (dwell) msg.dwell = dwell.label;
         this.p2pSend(msg);
     }
 
@@ -17650,6 +17665,32 @@ class AnazhRealm {
                             `Fähigkeit '${abilityName}' nicht gefunden. Lerne sie mit 'Lerne Fähigkeit <Name> <Beschreibung>'`
                         );
                     }
+                },
+            },
+            {
+                // W18-D — „wohne hier": das aktuelle Portal wird Zuhause
+                // (der Boot kehrt dorthin zurück, die Gefährten sehen es).
+                example: "wohne hier",
+                re: /^wohne\s+hier(?:\s.*)?$/i,
+                run: (m, append) => {
+                    const res = this.dwellInPortal();
+                    if (res.ok) append(`Du wohnst jetzt hier — der nächste Aufbruch bringt dich hierher zurück.`);
+                    else if (res.reason === "not_in_portal")
+                        append("Du bist in deiner Heimat-Welt — wohnen kannst du nur in einer Portal-Welt.");
+                    else append("Diese Welt ist nicht in deiner Bibliothek — hier kannst du nicht wohnen.");
+                },
+            },
+            {
+                // W18-D — „ziehe heim": das Wohnen endet.
+                example: "ziehe heim",
+                re: /^ziehe\s+heim(?:\s.*)?$/i,
+                run: (m, append) => {
+                    const res = this.endDwelling();
+                    append(
+                        res.was
+                            ? "Du bist heimgezogen — deine Heimat-Welt ist wieder die Basis."
+                            : "Du wohnst nirgendwo fremd — du bist schon daheim."
+                    );
                 },
             },
             {
@@ -35252,6 +35293,11 @@ class AnazhRealm {
         if (target.inputActions && target.inputActions.length) {
             parts.push("deine Tasten wirken (WASD · Pfeile)");
         }
+        // W18-D — du WOHNST hier: Esc ist nur der kurze Heimweg.
+        const dwell = this._loadPortalDwelling();
+        if (dwell && this._resolvePortalWorldId(target) === dwell.worldId) {
+            parts[0] = `Esc — kurz heim (du wohnst hier · „ziehe heim" beendet das Wohnen)`;
+        }
         target.hintEl.textContent = parts.join(" · ");
     }
 
@@ -35413,6 +35459,9 @@ class AnazhRealm {
             // (Daten, nie Code); sie reist als subworld-pose übers Mesh zu
             // den Gefährten in DERSELBEN Welt.
             else if (msg.type === "local-pose") this._portalReceiveLocalPose(msg);
+            // W18-D — die Sub-Welt exponiert ihren Zustand (Persistenz-Slot:
+            // beim nächsten Betreten reist er als restoreState zurück).
+            else if (msg.type === "state") this._portalReceiveState(msg);
             // W17 Phase A — der Transport-Shim einer Multiplayer-Welt postet
             // ihren Netz-Verkehr (`__anazhNet`-Envelope, kein `type`-Feld).
             else if (msg.__anazhNet === true) this._portalNetReceive(msg);
@@ -35633,6 +35682,15 @@ class AnazhRealm {
         if (po.translatedWorldId) {
             const w = this.state.customWorlds && this.state.customWorlds[po.translatedWorldId];
             if (w && w.scene) msg.scene = w.scene;
+        }
+        // W18-D — der Persistenz-Slot reist zurück: hat diese Welt beim
+        // letzten Besuch ihren Zustand exponiert ({type:"state"}), bekommt
+        // sie ihn als restoreState wieder (Daten, nie Code — die Welt selbst
+        // entscheidet, was sie damit tut).
+        const dwellWorldId = this._resolvePortalWorldId(po);
+        if (dwellWorldId) {
+            const saved = this._loadPortalStates()[dwellWorldId];
+            if (saved && typeof saved.data === "string") msg.restoreState = saved.data;
         }
         // V8.70 — eine null-origin (sandboxed) Welt hat eine opake Herkunft;
         // ein gezieltes targetOrigin würde die Nachricht verwerfen → "*".
@@ -36130,6 +36188,142 @@ class AnazhRealm {
         if (!action || !po.inputActions.includes(action)) return false;
         const target = po.trust === "sandboxed" ? "*" : window.location.origin;
         po.iframe.contentWindow.postMessage({ type: "input", action, down: e.type === "keydown" }, target);
+        return true;
+    }
+
+    // ===== W18-D — DARIN LEBEN (world-portal-w18-plan §7) =====
+    // „Swappen + leben": die Fremd-Welt wird (zeitweise) die BASIS, nicht
+    // nur eine Episode. Die kondensierte Form des Welt-Zeiger-Swaps: das
+    // WOHNEN ist ein globaler Zeiger (anazh.portalDwelling — wie der
+    // Vibe-Pass NIE im Welt-Snapshot), der Boot kehrt durch das Tor ZURÜCK
+    // (du wachst auf, wo du wohnst — die Heimat trägt darunter eingefroren,
+    // das OASIS-Rig), die Gefährten sehen „wohnt in …" übers Mesh (soul-
+    // Kanal), und der Zustand der Fremd-Welt überlebt im Persistenz-Slot
+    // (soweit sie ihn exponiert — die ehrliche §7-Tiefe).
+
+    // Der Wohn-Zeiger: global + gesäubert (id-förmig) oder null.
+    _loadPortalDwelling() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.portalDwelling") : null;
+            if (!raw) return null;
+            const p = JSON.parse(raw);
+            if (!p || typeof p !== "object") return null;
+            const worldId = String(p.worldId || "")
+                .trim()
+                .toLowerCase();
+            if (!/^[a-z0-9_-]{1,40}$/.test(worldId)) return null;
+            return {
+                worldId,
+                label: typeof p.label === "string" ? p.label.slice(0, 60) : worldId,
+                at: Number(p.at) || 0,
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    _savePortalDwelling(d) {
+        try {
+            if (typeof localStorage === "undefined") return;
+            if (d) localStorage.setItem("anazh.portalDwelling", JSON.stringify(d));
+            else localStorage.removeItem("anazh.portalDwelling");
+        } catch {
+            /* Quota/Privacy — das Wohnen bleibt dann eine Episode */
+        }
+    }
+
+    // „Wohne hier" — das aktuelle Portal wird Zuhause. Nur eine library-
+    // bekannte Welt (der Boot muss sie via obtainPortalForWorld wiederfinden);
+    // die Gefährten erfahren es sofort (soul-Kanal trägt das Wohnen).
+    dwellInPortal() {
+        const po = this._portalOverlay;
+        if (!po) return { ok: false, reason: "not_in_portal" };
+        const worldId = this._resolvePortalWorldId(po);
+        if (!worldId) return { ok: false, reason: "world_unknown" };
+        const label = po.label || worldId;
+        this._savePortalDwelling({ worldId, label, at: Date.now() });
+        this._portalRefreshHint(po);
+        this._p2pBroadcastSoul();
+        this.journalAppendOnce(`portalDwell:${worldId}`, "portal", `Du wohnst jetzt in „${label}".`);
+        this.log(
+            `Du wohnst jetzt in „${label}" — der nächste Aufbruch bringt dich HIERHER zurück („ziehe heim" beendet das Wohnen).`,
+            "INFO"
+        );
+        return { ok: true, worldId };
+    }
+
+    // „Ziehe heim" — das Wohnen endet, die Heimat-Welt ist wieder die Basis.
+    endDwelling() {
+        const d = this._loadPortalDwelling();
+        this._savePortalDwelling(null);
+        if (this._portalOverlay) this._portalRefreshHint(this._portalOverlay);
+        this._p2pBroadcastSoul();
+        if (d) this.log(`Du bist heimgezogen — „${d.label}" bleibt ein Ort, kein Zuhause mehr.`, "INFO");
+        return { ok: true, was: d ? d.worldId : null };
+    }
+
+    // Der Boot kehrt durch das Tor zurück: wohnt der Spieler in einer Welt,
+    // öffnet der Start das Portal dorthin (statt der Heimat-Wiese). Die
+    // Heimat lebt eingefroren darunter (der Game-Loop sieht _portalOverlay)
+    // — Esc ist jederzeit der kurze Heimweg, das Wohnen bleibt bestehen.
+    // Eine nicht mehr auffindbare Welt beendet das Wohnen ehrlich.
+    _portalDwellingBootReturn() {
+        if (typeof document === "undefined" || this._portalOverlay) return false;
+        const d = this._loadPortalDwelling();
+        if (!d) return false;
+        const obtained = this.obtainPortalForWorld(d.worldId);
+        if (!obtained.ok) {
+            this.log(
+                `Dein Zuhause „${d.label}" ist nicht mehr auffindbar (${obtained.reason}) — du wachst daheim auf.`,
+                "WARN"
+            );
+            this._savePortalDwelling(null);
+            return false;
+        }
+        const bp = this.state.blueprints[obtained.blueprint];
+        this._buildPortalOverlay(bp.portalMeta, { computeRole: "host" });
+        this._p2pBroadcastPortalInvite();
+        this.log(
+            `Du wachst auf, wo du wohnst: „${d.label}" (Esc — kurz heim · „ziehe heim" beendet das Wohnen).`,
+            "INFO"
+        );
+        return true;
+    }
+
+    // Der Persistenz-Slot: die Welt exponiert ihren Zustand als
+    // {type:"state", data} (String, gedeckelt) — die Heimat hält ihn global
+    // (anazh.portalState) und reicht ihn beim Betreten als `restoreState`
+    // zurück. Nur library-bekannte Welten (stabile id); Daten, nie Code.
+    _loadPortalStates() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.portalState") : null;
+            const p = raw ? JSON.parse(raw) : null;
+            return p && typeof p === "object" && !Array.isArray(p) ? p : {};
+        } catch {
+            return {};
+        }
+    }
+
+    _portalReceiveState(msg) {
+        const po = this._portalOverlay;
+        if (!po || !msg) return false;
+        const data = msg.data;
+        if (typeof data !== "string" || data.length > AnazhRealm.PORTAL_STATE_MAX_BYTES) return false;
+        const worldId = this._resolvePortalWorldId(po);
+        if (!worldId) return false;
+        const states = this._loadPortalStates();
+        states[worldId] = { data, at: Date.now() };
+        // Welt-Anzahl-Deckel: die älteste fällt (bounded, kein Quota-Fresser).
+        const ids = Object.keys(states);
+        if (ids.length > AnazhRealm.PORTAL_STATE_MAX_WORLDS) {
+            ids.sort((a, b) => (states[a].at || 0) - (states[b].at || 0));
+            for (let i = 0; i < ids.length - AnazhRealm.PORTAL_STATE_MAX_WORLDS; i++) delete states[ids[i]];
+        }
+        try {
+            localStorage.setItem("anazh.portalState", JSON.stringify(states));
+        } catch {
+            return false;
+        }
         return true;
     }
 
@@ -54756,6 +54950,10 @@ class AnazhRealm {
         // Die initialen Voxel-Chunks werden vom Streaming-Ring im Game-Loop
         // gestreamt; eine Welt-Initialisierungs-Geste ist nicht mehr nötig.
 
+        // W18-D — wohnt der Spieler in einer Fremd-Welt, kehrt der Boot
+        // durch das Tor zurück (die Heimat trägt darunter eingefroren).
+        this._portalDwellingBootReturn();
+
         this.core.startEternalLoop();
         this.log("Hauptschleife gestartet – Ultiversum pulsiert!", "INFO");
     }
@@ -56371,7 +56569,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.145.0";
+AnazhRealm.VERSION = "18.146.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -57889,6 +58087,14 @@ AnazhRealm.PORTAL_INPUT_KEYMAP = Object.freeze({
     Space: "jump",
     KeyE: "use",
 });
+// W18-D (world-portal-w18-plan §7) — DARIN LEBEN: der Persistenz-Slot einer
+// Fremd-Welt. Eine Welt darf ihren Zustand als {type:"state", data} (String)
+// exponieren; die Heimat hält ihn im GLOBALEN localStorage (anazh.portalState
+// — wie der Vibe-Pass NIE im Welt-Snapshot: er gehört der Fremd-Welt, nicht
+// der Heimat-Welt) und reicht ihn beim nächsten Betreten als `restoreState`
+// zurück. Größen-Deckel je Welt + Welt-Anzahl-Deckel (älteste fällt).
+AnazhRealm.PORTAL_STATE_MAX_BYTES = 8192;
+AnazhRealm.PORTAL_STATE_MAX_WORLDS = 16;
 // V9.44-c — der Mesh-Router-Dispatch-Table. p2pHandleMessage mappt den
 // WS-Nachrichtentyp über diese Tabelle auf eine `_p2pMsg<Type>`-Methode,
 // statt 18 sequentielle `if (msg.type === …)`-Branches durchzulaufen. Ein

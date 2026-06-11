@@ -115,6 +115,20 @@
                     if (!msg || typeof msg !== "object") return;
                     if (msg.type === "enter" && msg.avatar && typeof msg.avatar.name === "string") {
                         me.name = msg.avatar.name.slice(0, 24);
+                        // W18-D — der Persistenz-Slot kehrt zurück: die eigene
+                        // Position überlebt Besuche + Reloads (die Heimat hält
+                        // den Zustand, die Welt entscheidet, was er bedeutet).
+                        if (typeof msg.restoreState === "string") {
+                            try {
+                                var st = JSON.parse(msg.restoreState);
+                                if (st && typeof st.x === "number" && typeof st.y === "number") {
+                                    me.x = st.x;
+                                    me.y = st.y;
+                                }
+                            } catch (e) {
+                                /* fremder/alter Zustand — frisch starten */
+                            }
+                        }
                     } else if (msg.type === "peer-join" && typeof msg.peerId === "string") {
                         if (!peers[msg.peerId]) {
                             var nm = typeof msg.name === "string" ? msg.name.slice(0, 24) : "Gefährte";
@@ -168,7 +182,8 @@
                     }
                 }
                 var lastSent = { x: NaN, y: NaN },
-                    lastBeat = 0;
+                    lastBeat = 0,
+                    lastStateSent = { x: NaN, y: NaN };
                 setInterval(function () {
                     integrate();
                     var moved = lastSent.x !== me.x || lastSent.y !== me.y;
@@ -180,6 +195,15 @@
                     // 2D-Engine → generische Pose: Canvas-y reist als Welt-z.
                     post({ type: "local-pose", pose: { x: me.x, y: 0, z: me.y, yaw: me.yaw } });
                 }, 125);
+                // W18-D — den eigenen Zustand exponieren (Persistenz-Slot):
+                // gemächlich (2 s) + nur bei Änderung — die Position überlebt
+                // den Besuch.
+                setInterval(function () {
+                    if (lastStateSent.x === me.x && lastStateSent.y === me.y) return;
+                    lastStateSent.x = me.x;
+                    lastStateSent.y = me.y;
+                    post({ type: "state", data: JSON.stringify({ x: me.x, y: me.y }) });
+                }, 2000);
 
                 // --- der Welt-eigene Loop (Lichter-Feld + Glyphen) ---
                 var motes = [];

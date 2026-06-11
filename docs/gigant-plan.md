@@ -792,7 +792,16 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
   wirken"); GEMESSEN im Smoke: Heimat-Taste → fremde Engine bewegt sich → Pose
   wandert übers Mesh (dieselbe Pose-Quelle treibt Ko-Präsenz UND Input — die
   §6-Synergie); +6 Invarianten. Variante B (synthetische KeyboardEvents +
-  KI-Control-Map) bleibt benannt-fern. OFFEN: W18-D (Swappen/Persistenz).
+  KI-Control-Map) bleibt benannt-fern.
+  ✓ **W18-D GEBAUT (V18.146) — DARIN LEBEN (die Krone; F3 ist RUND):** das WOHNEN
+  als globaler Zeiger (`anazh.portalDwelling`, NIE im Snapshot) + die BOOT-RÜCKKEHR
+  durchs Tor („du wachst auf, wo du wohnst"; un-auffindbar → endet ehrlich) + „wohnt
+  in …" übers soul-Mesh (Name-Schild) + der PERSISTENZ-SLOT (`{type:"state"}` →
+  `restoreState`, 8-KiB-/16-Welten-Deckel, global). Gesten „wohne hier"/„ziehe heim"
+  in der EINEN Chat-Tabelle. GEMESSEN im Smoke: Position überlebt den Besuch · B
+  lädt neu + wacht IN der Fremd-Welt auf · A sieht „Bo wohnt in Begegnungs-Feld";
+  +8 Invarianten. KEIN zweites Boot-System — die Heimat trägt eingefroren darunter
+  (das OASIS-Rig). Benannt-fern bleibt nur der Übersetzer-Avatar-Hook (§5.2 Weg 2).
 - **F4 — der SOZIALE Bogen** [bibliothek-plan §E + roadmap; H+S]: ✓ **STUFE 1 GEBAUT
   (V18.134) — die Bewertungs-Aggregation:** signierte Zeugnisse {id,s,t,pub,sig}
   (ed25519, stabiles Kanonisches), LWW = die CRDT-Schicht wörtlich, kanal-exklusiv +

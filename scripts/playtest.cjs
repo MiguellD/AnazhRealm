@@ -28455,6 +28455,104 @@ async function checkBandW18InputBridge(ctx) {
     check("W18-C Input-Brücke: ready-Verdrahtung + Dispose räumt den Listener", res.readyWired && res.disposeCleans);
 }
 
+// W18-D (V18.146, world-portal-w18-plan §7) — DARIN LEBEN: das WOHNEN ist
+// ein globaler Zeiger (anazh.portalDwelling — NIE im Welt-Snapshot), der
+// Boot kehrt durch das Tor zurück, die Gefährten sehen „wohnt in …" übers
+// Mesh (soul-Kanal), der Persistenz-Slot (anazh.portalState) trägt den
+// Zustand der Fremd-Welt zurück (restoreState im enter). Der End-to-End-
+// Bogen (B lädt neu + wacht IN der Fremd-Welt auf) lebt im Smoke.
+async function checkBandW18Dwell(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const savedPo = r._portalOverlay;
+        const savedDwell = localStorage.getItem("anazh.portalDwelling");
+        const savedStates = localStorage.getItem("anazh.portalState");
+        try {
+            localStorage.removeItem("anazh.portalDwelling");
+            localStorage.removeItem("anazh.portalState");
+            // (1) Wohnen außerhalb eines Portals ist ehrlich unmöglich.
+            r._portalOverlay = null;
+            out.dwellOutside = r.dwellInPortal().reason === "not_in_portal";
+            // (2) der Wohn-Rundlauf am gestubbten Begegnungs-Portal: Zeiger
+            // gesetzt (id-förmig) + der Hinweis sagt „du wohnst hier";
+            // endDwelling räumt den Zeiger.
+            const sent = [];
+            r._portalOverlay = {
+                world: "worlds/begegnung/index.html",
+                label: "Begegnungs-Feld",
+                trust: "sandboxed",
+                dsl: null,
+                inputActions: null,
+                coPresence: true,
+                peers: new Map(),
+                hintEl: { textContent: "" },
+                iframe: { contentWindow: { postMessage: (m) => sent.push(m) } },
+            };
+            const dw = r.dwellInPortal();
+            const marker = r._loadPortalDwelling();
+            out.dwellSets = dw.ok === true && !!marker && marker.worldId === "begegnung";
+            out.hintDwell = /wohnst hier/.test(r._portalOverlay.hintEl.textContent);
+            // (3) der Persistenz-Slot: Zustand angenommen (String, gedeckelt),
+            // Müll + Oversize fallen.
+            out.stateSaved =
+                r._portalReceiveState({ data: '{"x":7,"y":-9}' }) === true &&
+                r._loadPortalStates().begegnung &&
+                r._loadPortalStates().begegnung.data === '{"x":7,"y":-9}';
+            out.stateOversize =
+                r._portalReceiveState({ data: "x".repeat(r.constructor.PORTAL_STATE_MAX_BYTES + 1) }) === false;
+            out.stateGarbage = r._portalReceiveState({ data: 42 }) === false;
+            // (4) der Zustand kehrt im enter zurück (restoreState).
+            sent.length = 0;
+            r._portalSendEnter();
+            out.restoreTravels =
+                sent.length === 1 && sent[0].type === "enter" && sent[0].restoreState === '{"x":7,"y":-9}';
+            // (5) heimziehen räumt den Zeiger.
+            const end = r.endDwelling();
+            out.endClears = end.was === "begegnung" && r._loadPortalDwelling() === null;
+            // (6) die Boot-Rückkehr beendet ein un-auffindbares Zuhause ehrlich
+            // (Welt weg → Zeiger fällt, der Spieler wacht daheim auf).
+            r._portalOverlay = null;
+            r._savePortalDwelling({ worldId: "gibtsnichtwelt", label: "Verloren", at: Date.now() });
+            out.bootHonest = r._portalDwellingBootReturn() === false && r._loadPortalDwelling() === null;
+        } finally {
+            r._portalOverlay = savedPo || null;
+            if (savedDwell === null) localStorage.removeItem("anazh.portalDwelling");
+            else localStorage.setItem("anazh.portalDwelling", savedDwell);
+            if (savedStates === null) localStorage.removeItem("anazh.portalState");
+            else localStorage.setItem("anazh.portalState", savedStates);
+        }
+        // (7) Verdrahtung: der Boot ruft die Rückkehr; das Wohnen reist im
+        // soul-Kanal (Sender + Empfänger + Name-Schild); die Chat-Gesten
+        // „wohne hier"/„ziehe heim" stehen in der EINEN Tabelle (V18.127).
+        out.bootWired = /_portalDwellingBootReturn/.test(r.init.toString());
+        out.soulSends = /dwell/.test(r._p2pBroadcastSoul.toString());
+        out.soulReads = /dwellingIn/.test(r._p2pMsgSoul.toString());
+        out.labelShows = /wohnt in/.test(r._p2pRefreshPeerNameLabel.toString());
+        const examples = r.chatSystemPatterns.map((p) => p.example);
+        out.chatGestures = examples.includes("wohne hier") && examples.includes("ziehe heim");
+        // (8) der Zeiger + der Slot leben GLOBAL (nie im Welt-Snapshot) —
+        // buildStateSnapshot kennt sie nicht.
+        out.notInSnapshot = !/portalDwelling|portalState/.test(r.buildStateSnapshot.toString());
+        return out;
+    });
+    check("W18-D Wohnen: außerhalb eines Portals ehrlich unmöglich", res.dwellOutside);
+    check("W18-D Wohnen: „wohne hier“ setzt den Zeiger + der Hinweis sagt es", res.dwellSets && res.hintDwell);
+    check(
+        "W18-D Persistenz-Slot: Zustand angenommen, Oversize + Müll fallen",
+        res.stateSaved && res.stateOversize && res.stateGarbage
+    );
+    check("W18-D Persistenz-Slot: der Zustand kehrt im enter zurück (restoreState)", res.restoreTravels);
+    check("W18-D Wohnen: „ziehe heim“ räumt den Zeiger", res.endClears);
+    check("W18-D Boot-Rückkehr: un-auffindbares Zuhause endet ehrlich", res.bootHonest);
+    check(
+        "W18-D verdrahtet: Boot-Rückkehr + soul-Kanal (Sender/Empfänger/Name-Schild) + Chat-Gesten",
+        res.bootWired && res.soulSends && res.soulReads && res.labelShows && res.chatGestures
+    );
+    check("W18-D Souveränität: Zeiger + Slot leben GLOBAL, nie im Welt-Snapshot", res.notInSnapshot);
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -45061,6 +45159,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18143Comments(ctx);
             await checkBandW18CoPresence(ctx);
             await checkBandW18InputBridge(ctx);
+            await checkBandW18Dwell(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

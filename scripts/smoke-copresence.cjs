@@ -268,6 +268,27 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         );
         check("A: Heimat-Taste → fremde Engine → local-pose (der volle Kreis)", true);
 
+        // W18-D — der PERSISTENZ-SLOT: A's Welt exponiert ihren Zustand
+        // ({type:"state"}, 2-s-Takt). Wir warten auf den BEWEGTEN Zustand
+        // (nicht bloße Existenz — der erste Post trägt noch die 0/0-Geburt),
+        // damit der Exit gleich danach die gemerkte Position nicht verliert.
+        await waitFor(
+            pageA,
+            () => {
+                try {
+                    const st = JSON.parse(localStorage.getItem("anazh.portalState") || "{}");
+                    if (!st.begegnung || typeof st.begegnung.data !== "string") return false;
+                    const data = JSON.parse(st.begegnung.data);
+                    return !!(data && typeof data.y === "number" && data.y < -50);
+                } catch {
+                    return false;
+                }
+            },
+            10000,
+            "A: die Welt exponierte ihren BEWEGTEN Zustand (Persistenz-Slot)"
+        );
+        check("A: der Persistenz-Slot hält den bewegten Welt-Zustand (anazh.portalState)", true);
+
         // Abschied: A verlässt das Portal → A's Posen verstummen → B's Sweep
         // räumt A als peer-leave (Timeout 6 s + Sweep 2 s).
         await pageA.evaluate(() => window.anazhRealm.exitPortal());
@@ -282,7 +303,91 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             peerIdA
         );
         check("B: der Abwesenheits-Sweep räumt den gegangenen Gefährten", true);
+
+        // W18-D — die RÜCKKEHR: A betritt erneut → restoreState reist mit dem
+        // enter → die fremde Gestalt steht, wo sie stand (die bewegte Position
+        // aus dem Input-Brücken-Lauf, nicht 0/0).
+        await pageA.evaluate(() => {
+            const r = window.anazhRealm;
+            const bp = r.state.blueprints["portal_begegnung"];
+            r._buildPortalOverlay(bp.portalMeta, { computeRole: "host" });
+        });
+        await waitFor(
+            pageA,
+            () => {
+                const po = window.anazhRealm._portalOverlay;
+                return !!(po && po.localPose && po.localPose.z < -50);
+            },
+            10000,
+            "A: die Welt erwachte an der gemerkten Position (restoreState)"
+        );
+        check("A: der Zustand kehrte in die Welt zurück (Position überlebte den Besuch)", true);
+
+        // W18-D — das WOHNEN: B (noch im Portal) wohnt hier → der Hinweis
+        // sagt es, der Zeiger steht, die Gefährten sehen „wohnt in …".
+        const dwellB = await pageB.evaluate(() => {
+            const r = window.anazhRealm;
+            const res = r.dwellInPortal();
+            const po = r._portalOverlay;
+            let marker = null;
+            try {
+                marker = JSON.parse(localStorage.getItem("anazh.portalDwelling") || "null");
+            } catch {
+                marker = null;
+            }
+            return {
+                ok: res.ok === true,
+                worldId: marker ? marker.worldId : null,
+                hint: po && po.hintEl ? po.hintEl.textContent : "",
+            };
+        });
+        check(
+            'B: „wohne hier" setzt den Wohn-Zeiger',
+            dwellB.ok && dwellB.worldId === "begegnung",
+            JSON.stringify(dwellB)
+        );
+        check('B: der Hinweis sagt „du wohnst hier"', /wohnst hier/.test(dwellB.hint), dwellB.hint);
+        await waitFor(
+            pageA,
+            (idB) => {
+                const entry = window.anazhRealm.state.p2p.peers.get(idB);
+                return !!(entry && /Begegnungs-Feld/.test(entry.dwellingIn || ""));
+            },
+            10000,
+            "A sieht B's Wohnsitz übers Mesh (soul-Kanal)",
+            peerIdB
+        );
+        check('A: „Bo wohnt in Begegnungs-Feld" reist übers Mesh', true);
+
+        // W18-D — die KRONE: B lädt neu → der Boot kehrt DURCH DAS TOR zurück
+        // (du wachst auf, wo du wohnst — nicht auf der Heimat-Wiese).
+        await pageB.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
+        await waitFor(pageB, () => !!window.anazhRealm, 20000, "B nach Reload initialisiert");
+        await waitFor(
+            pageB,
+            () => {
+                const po = window.anazhRealm._portalOverlay;
+                return !!(po && /begegnung/.test(po.world));
+            },
+            20000,
+            "B: der Boot kehrte durch das Tor zurück (Wohnen überlebte den Reload)"
+        );
+        const rebornB = await pageB.evaluate(() => {
+            const po = window.anazhRealm._portalOverlay;
+            return { hint: po && po.hintEl ? po.hintEl.textContent : "" };
+        });
+        check("B: du wachst auf, wo du wohnst (Boot-Rückkehr durchs Tor)", true);
+        check("B: der Hinweis kennt das Zuhause nach dem Reload", /wohnst hier/.test(rebornB.hint), rebornB.hint);
+
+        // W18-D — „ziehe heim": das Wohnen endet, der Zeiger fällt.
+        const movedHome = await pageB.evaluate(() => {
+            const r = window.anazhRealm;
+            const res = r.endDwelling();
+            return { was: res.was, marker: localStorage.getItem("anazh.portalDwelling") };
+        });
+        check('B: „ziehe heim" beendet das Wohnen', movedHome.was === "begegnung" && movedHome.marker === null);
         await pageB.evaluate(() => window.anazhRealm.exitPortal());
+        await pageA.evaluate(() => window.anazhRealm.exitPortal());
 
         console.log("");
         if (failures.length) {
