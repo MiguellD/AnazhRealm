@@ -13416,7 +13416,12 @@ class AnazhRealm {
     _pickCreatureSoulName(requested) {
         const souls = AnazhRealm.CREATURE_SOUL_NAMES;
         if (typeof requested === "string" && souls.includes(requested)) return requested;
-        return souls[Math.floor(Math.random() * souls.length)];
+        // PHASE E — Raubtier-Seelen entstehen nur auf BEWUSSTEN Wunsch
+        // (requested), nie aus dem Zufalls-/Ambient-Pick (sparsam: keine
+        // friedliche Welt voll Aggression).
+        const gentle = souls.filter((n) => !AnazhRealm.CREATURE_SOULS[n].predator);
+        const pool = gentle.length ? gentle : souls;
+        return pool[Math.floor(Math.random() * pool.length)];
     }
 
     // Aura-Y-Offset folgt der Soul-Höhe (auraY-Hint pro Seele), damit die
@@ -14079,6 +14084,19 @@ class AnazhRealm {
             const bond = Math.min(1, Math.max(0, (creature.userData && creature.userData.bond) || 0));
             const guiltMag = leb * (0.4 + 0.6 * bond);
             if (guiltMag > 0.02) this._feelAction("loss", { magnitude: guiltMag });
+            // PHASE E — der TRIUMPH: fiel ein Wesen, das dich FRISCH jagte
+            // (lastHuntAt im Fenster), ist sein Fall Erleichterung/Sieg —
+            // der positive δ der beseitigten Bedrohung (joy+hope). Die
+            // Schuld oben bleibt unabhängig (ein gebundenes, lebendiges
+            // Raubtier zu fällen darf BEIDES wecken — der ehrliche Konflikt).
+            const lastHunt = creature.userData && creature.userData.lastHuntAt;
+            if (
+                Number.isFinite(lastHunt) &&
+                performance.now() / 1000 - lastHunt < AnazhRealm.CREATURE_HUNT.triumphWindowSec
+            ) {
+                this._feelAction("triumph", { magnitude: 1 });
+                this.journalAppend("relationship", `Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`);
+            }
         }
         if (typeof this.journalAppend === "function") {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
@@ -15251,6 +15269,58 @@ class AnazhRealm {
         return wariness;
     }
 
+    // PHASE E — JAGT dieses Wesen den Spieler? Tag-emergent + sparsam:
+    // NUR das wilde Temperament (glühende Substanz — kein sanftes Built-in
+    // resoniert es; Raubtiere entstehen durch bewusste Schöpfung), NUR im
+    // pfad (frieden/schöpfer kennen keine Bedrohung), NUR unverängstigt
+    // (Furcht schlägt Jagd — der W3-fleeMul bleibt der Ausweg der Beute,
+    // die sich wehrt) + in Witterungs-Reichweite. Dirigierte Wesen (Task)
+    // jagen nicht — der Wille des Schöpfers schlägt den Instinkt (der
+    // Hunt sitzt im task-losen Bewegungs-Zweig).
+    _creatureHuntDrive(creature, wariness) {
+        if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return false;
+        if (wariness >= AnazhRealm.CREATURE_NATURE.fleeThreshold) return false;
+        if (this._creatureTemperament(creature) !== "wild") return false;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return false;
+        const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
+        return dist < AnazhRealm.CREATURE_HUNT.radius;
+    }
+
+    // PHASE E — der BISS: in Reichweite + Cooldown vorbei → Schaden durch
+    // DASSELBE damagePlayer-Tor wie die Gegenwehr (Quelle "jagd": die
+    // Rüstung dämpft flach, die FURCHT differenziert sich dort bei
+    // niedriger HP). Das Wesen fühlt seinen Angriff (chaos — dieselbe
+    // ACTION_TO_EMOTION-Sprache wie der Spieler); die erste Jagd eines
+    // Wesens ist eine Journal-Erinnerung (der Kreis: die Bedrohung ist
+    // LESBAR, kein unsichtbarer Schaden aus dem Nichts).
+    _tickCreatureHuntStrike(creature) {
+        const HUNT = AnazhRealm.CREATURE_HUNT;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return false;
+        const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
+        if (dist > HUNT.strikeRange) return false;
+        const ud = creature.userData || {};
+        const now = performance.now() / 1000;
+        if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
+        ud.nextHuntStrikeAt = now + HUNT.strikeCooldownSec;
+        ud.lastHuntAt = now;
+        const stats = this.computeCreatureStats(creature).stats || {};
+        const dmg = Math.max(2, (stats.damage || 4) * HUNT.damageMul);
+        this.damagePlayer(dmg, "jagd");
+        this._feelCreatureAction(creature, "attack", 1);
+        const name = ud.name || "Ein wildes Wesen";
+        this.log(`${name} jagt dich!`, "WARN");
+        if (typeof this.journalAppendOnce === "function") {
+            this.journalAppendOnce(
+                `hunted:${name}`,
+                "relationship",
+                `${name} witterte dich als Beute — die Wildnis hat Zähne.`
+            );
+        }
+        return true;
+    }
+
     // Direction-Berechnung für den aktiven Task. Liefert immer einen
     // THREE.Vector3 (nullt bei wait, Spieler-Vektor bei follow_player,
     // null bei wander → Caller fällt auf heutige Emotion-Logik zurück).
@@ -15984,7 +16054,21 @@ class AnazhRealm {
                     // Aura, scheues Wesen, oder getroffen) · sonst gemächlich wandern. Kein Skript — Emergenz.
                     const wariness = this._creatureWariness(creature);
                     const NAT = AnazhRealm.CREATURE_NATURE;
-                    if (wariness >= NAT.fleeThreshold) {
+                    // PHASE E — die JAGD: ein wildes, unverängstigtes Wesen
+                    // pirscht ZUR Beute (schneller als Schlendern) + beißt in
+                    // Reichweite. Furcht schlägt Jagd (_creatureHuntDrive
+                    // prüft die fleeThreshold selbst → ein getroffenes
+                    // Raubtier fällt in den Flucht-Zweig darunter).
+                    if (this._creatureHuntDrive(creature, wariness)) {
+                        const toPrey = scratchA.subVectors(playerPos, creature.position);
+                        toPrey.y = 0;
+                        if (toPrey.length() > 1.6) {
+                            direction.copy(
+                                toPrey.normalize().multiplyScalar(speed * AnazhRealm.CREATURE_HUNT.speedBoost)
+                            );
+                        }
+                        this._tickCreatureHuntStrike(creature);
+                    } else if (wariness >= NAT.fleeThreshold) {
                         // SCHEU/verschreckt — fort vom Spieler (schneller als das Schlendern; sonst Zufalls-Drift).
                         const fromPlayer = scratchA.subVectors(creature.position, playerPos);
                         fromPlayer.y = 0;
@@ -32349,12 +32433,31 @@ class AnazhRealm {
             const resist = Math.max(0, Math.min(0.9, stats.heatResist || 0));
             scaled = value * (1 - resist);
         }
+        // PHASE E — KREATUR-Schläge (Jagd-Biss + Gegenwehr) dämpft die
+        // Rüstung FLACH: dealt = max(1, amount − defense) — EXAKT die
+        // Kreatur-Formel aus damageCreature (EINE Sprache, kein Sonderfall;
+        // keine Unverwundbarkeit). Andere Quellen (Fall/Hitze/Welt) bleiben
+        // unberührt — defense ist die PHYSISCHE Abwehr gegen Schläge.
+        const creatureStrike = source === "jagd" || source === "gegenwehr";
+        if (creatureStrike) {
+            scaled = Math.max(1, scaled - Math.max(0, stats.defense || 0));
+        }
         const hpBefore = Number(this.state.player.hp) || 0;
         const hp = Math.max(0, hpBefore - scaled);
         this.state.player.hp = hp;
         // V17.30 — Schaden/Gefahr hebt sorrow + chaos (akut; die chronische
         // Wund-Dread trägt der ZUSTAND-Kanal in updatePlayerEmotions).
         this._feelAction("damage");
+        // PHASE E — die FURCHT: gejagt + niedrige HP differenziert den
+        // damage-Affekt (kampf-plan Phase F: „Bedroht + niedrige HP →
+        // Furcht"). Magnitude wächst, je tiefer die HP sinken — die Beute
+        // spürt den Ernst (sorrow+chaos via ACTION_TO_EMOTION.threatened).
+        if (creatureStrike) {
+            const hpFrac = stats.hpMax > 0 ? hp / stats.hpMax : 1;
+            if (hpFrac < AnazhRealm.CREATURE_HUNT.fearHpFrac) {
+                this._feelAction("threatened", { magnitude: 1 + (1 - hpFrac) });
+            }
+        }
         this.log(
             `Schaden ${scaled.toFixed(1)} (${source || "unbekannt"}) → HP ${hp.toFixed(0)}/${stats.hpMax || 0}`,
             "INFO"
@@ -53063,10 +53166,13 @@ class AnazhRealm {
         // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags
         const souls = AnazhRealm.CREATURE_SOULS;
         if (!souls) return this._pickCreatureSoulName();
-        const candidates = Object.keys(souls).map((name) => ({
-            name,
-            tags: this._creatureSoulTags(name),
-        }));
+        // PHASE E — Raubtiere kommen nicht ambient (predator-Filter, sparsam).
+        const candidates = Object.keys(souls)
+            .filter((name) => !souls[name].predator)
+            .map((name) => ({
+                name,
+                tags: this._creatureSoulTags(name),
+            }));
         const { pick } = this._affinityPickFromCandidates(candidates, field);
         return (pick && pick.name) || this._pickCreatureSoulName();
     }
@@ -56607,7 +56713,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.147.0";
+AnazhRealm.VERSION = "18.148.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -57121,6 +57227,50 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
             }),
         ]),
         auraY: 0.6,
+    }),
+    // PHASE E (kampf-plan) — die RAUBTIER-Seele: glühende Substanz resoniert
+    // das WILDE Temperament (brennbar+wärmeleitung — tag-emergent, kein
+    // hostile-Flag; die Formen sind bewusst box+cone: Zylinder/Kugel würden
+    // glut.lebendig=1.0 aktivieren → sanft gewänne, GEMESSEN im Band).
+    // `predator: true` hält sie aus den AMBIENT-Pickern (sparsam per
+    // Konstruktion — KEINE friedliche Welt voll Aggression): Bedrohung
+    // entsteht nur durch bewusste Schöpfung (Chat/DSL/Nexus/Hof). VERMERK:
+    // die ambiente Glut-Region-Geburt wäre eine eigene Welle MIT
+    // Spawn-Verteilungs-Messung (die V17.16-Affinitäts-Lehre).
+    glutwesen: Object.freeze({
+        label: "Glutwesen",
+        predator: true,
+        bodyParts: Object.freeze([
+            Object.freeze({
+                shape: "box",
+                material: "glut",
+                size: { x: 0.42, y: 0.28, z: 0.32 },
+                position: { x: 0, y: 0, z: 0 },
+                label: "Glut-Leib",
+            }),
+            Object.freeze({
+                shape: "cone",
+                material: "glut",
+                size: { x: 0.16, y: 0.24, z: 0.16 },
+                position: { x: 0, y: 0.04, z: 0.28 },
+                label: "Maul",
+            }),
+            Object.freeze({
+                shape: "box",
+                material: "glut",
+                size: { x: 0.09, y: 0.2, z: 0.09 },
+                position: { x: -0.12, y: -0.24, z: 0 },
+                label: "Bein",
+            }),
+            Object.freeze({
+                shape: "box",
+                material: "glut",
+                size: { x: 0.09, y: 0.2, z: 0.09 },
+                position: { x: 0.12, y: -0.24, z: 0 },
+                label: "Bein",
+            }),
+        ]),
+        auraY: 0.7,
     }),
 });
 AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
@@ -58275,6 +58425,8 @@ AnazhRealm.ACTION_TO_EMOTION = Object.freeze({
     resonance: { awe: 0.1 }, // resonante Architektur erlebt
     damage: { sorrow: 0.12, chaos: 0.1 }, // Schaden/Gefahr — Angst
     attack: { chaos: 0.08 }, // V17.54 Kampf D — angreifen (Zorn/Kampf-Intensität); + Waffen-härte via die W2-Brücke
+    threatened: { sorrow: 0.14, chaos: 0.12 }, // PHASE E — gejagt + niedrige HP: die FURCHT (der damage-Affekt, durch HP differenziert)
+    triumph: { joy: 0.16, hope: 0.1 }, // PHASE E — die Bedrohung bezwungen: Triumph/Erleichterung (der positive δ)
     create: { joy: 0.1, hope: 0.1 }, // V17.46 — einen Bauplan ERSCHAFFEN (Werkstatt/Chat): der Stolz (× Komplexität)
     loss: { sorrow: 0.15 }, // V17.48 — den Verlust einer Kreatur (× Magnitude ∝ Bindung × Vitalität)
 });
@@ -58493,6 +58645,23 @@ AnazhRealm.TEMPERAMENT_PROFILES = Object.freeze({
     wild: Object.freeze({ strike: 0.3, strikeChaos: 0.5, strikeCap: 0.85, counterMul: 0.85, fleeMul: 0.7 }),
     sanft: Object.freeze({ strike: 0, strikeChaos: 0, strikeCap: 0, counterMul: 0, fleeMul: 1.0 }),
     scheu: Object.freeze({ strike: 0, strikeChaos: 0, strikeCap: 0, counterMul: 0, fleeMul: 1.7 }),
+});
+// PHASE E (kampf-plan — die BEDROHUNG; GEMERKTER FADEN #2, der letzte
+// Affekt-Konsument): ein WILDES Wesen (Temperament aus der Seelen-Substanz,
+// kein hostile-Flag) JAGT die Beute — pfad-only (frieden/schöpfer kennen
+// keine Bedrohung), Furcht schlägt Jagd (ein getroffenes Raubtier flieht
+// nach seinem fleeMul wie jedes Wesen). Der Biss läuft durch dasselbe
+// damagePlayer-Tor wie die Gegenwehr; die Rüstung dämpft FLACH (dealt =
+// max(1, amount − defense) — exakt die Kreatur-Formel, EINE Sprache).
+// Erst-Wurf-Werte (Abnahme-Regel: bauen, vermerken, weiterfahren).
+AnazhRealm.CREATURE_HUNT = Object.freeze({
+    radius: 12, // m — Witterungs-Reichweite (darüber wandert das Raubtier)
+    speedBoost: 1.45, // Jagd ist schneller als Schlendern, langsamer als Flucht (1.6)
+    strikeRange: 2.4, // m — Biss-Reichweite
+    strikeCooldownSec: 1.6, // s — zwischen zwei Bissen
+    damageMul: 0.8, // × dem damage-Stat des Wesens (die EINE Stat-Pipeline)
+    fearHpFrac: 0.5, // unter dieser HP-Fraktion wird Schaden zur FURCHT (threatened)
+    triumphWindowSec: 20, // s — ein Jäger, so frisch er biss, gebiert beim Fall TRIUMPH
 });
 // Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
 // TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur

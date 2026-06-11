@@ -73,9 +73,10 @@ liegt in einer T6d-Kaverne (Spawn-Höhe heben). Detail: `archiv/lod-kaskade-plan
 letzte Emotion-Kern-Konsument) · Mana-Symmetrie · Emotion→Regel-Emergenz · **Nexus-Lern-Vereinheit-
 lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendige-feld.md`.
 
-**Quer dazu (eigene Bögen):** der **soziale Mesh-Bogen** (~~Bewerten~~ ✓ V18.134 · ~~Lesezeichen~~
-✓ V18.135 · ~~Folgen~~ ✓ V18.142 · ~~Kommentare~~ ✓ V18.143; offen nur die „Für dich"-Kür) ·
-**W18** (in fremden Welten leben, `archiv/world-portal-w18-plan.md`) · ~~Ω die gefrorene Taille~~
+**Quer dazu (eigene Bögen):** ~~der **soziale Mesh-Bogen**~~ **✓ RUND V18.134–.147** (Bewerten ·
+Lesezeichen · Folgen · Kommentare · „Für dich"; Kür-Vermerk nur die Portal-Ring-Vorschau) ·
+~~**W18** (in fremden Welten leben)~~ **✓ RUND V18.144–.146** (`archiv/world-portal-w18-plan.md`;
+benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 **✓ RUND V18.137–.141** (`docs/taille-spec.md` NORMATIV · `docs/archiv/taille-plan.md` Historie ·
 `spec/golden/v1/` EINGEFROREN).
 
@@ -119,7 +120,9 @@ Crafting-Fluss-Audit · Avatar-Größe→HP · ~~Zwei-Hand-Modell~~ **GEBAUT (V1
 Key G + linker Arm)** · ~~Rüstung am Avatar sichtbar~~ **GEBAUT (V18.104 + V18.110: sitzt am
 TORSO via C7-Trage-Punkt)** · LLM-Manifest.
 
-**Lebendiges Feld/Nexus** — Phase E Bedrohung/Furcht (der letzte Konsument) · Mana-Symmetrie
+**Lebendiges Feld/Nexus** — ~~Phase E Bedrohung/Furcht~~ **✓ V18.148 (Raubtier-Seele · Jagd ·
+Furcht/Triumph/Schuld — der Emotion-Kern ist RUND; Vermerk: ambiente Glut-Region-Geburt = eigene
+Mess-Welle)** · Mana-Symmetrie
 (`magieleitung` → zweite Ausdauer-Achse) · Emotion→Regel-Emergenz (hand-codierte Kopplungen via DSL
 emergent) · Nexus-Lern-Vereinheitlichung (Geste→Gesetz: EIN Lern-Substrat, bewährte Geste kristallisiert
 zur Regel).
@@ -137,7 +140,7 @@ B-WASM (Fremd-Engine-Rest) · evolveCommunity (Kreatur-Kulturen) · Stern-ab-6-T
 
 **DIE GEMERKTEN FÄDEN (Schöpfer 11.06.2026: „alle wichtig — vergesse die bitte nicht"; die
 verbindliche Voll-Liste mit Weck-Momenten lebt in `gigant-plan.md` §5-Ende):** R6 Selbst-
-Erweiterung (bereit — R2+R4 stehen) · Phase E Bedrohung/Furcht (D4-Temperament ist die Vorstufe) ·
+Erweiterung (bereit — R2+R4 stehen) · ~~Phase E Bedrohung/Furcht~~ ✓ V18.148 ·
 B1 Wasser-Sheet→Worker (weckt der fühlbare Carve-Hitch) · das ECHTE V18→V19-Zeit-Portal (weckt
 das erste Alt-Build-Artefakt) · VR (startet bei null, WebXR) · IndexedDB-Persistenz ·
 Fahrzeug-Fahr-Tiefe (C1/C7 sind die Vorstufe) · Statusbar schlanken.

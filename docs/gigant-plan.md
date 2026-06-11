@@ -918,8 +918,12 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
 1. **R6 — Selbst-Erweiterung** (Capability-Inversion + Komposition; `archiv/robustheit-plan.md`)
    — der ANDERE Plan. Setzt auf R2 (Wand) + R4 (Immunität) auf — **beide stehen seit V18.124,
    R6 ist damit BEREIT**; ein eigener Bogen mit S-Design-Dialog am Start.
-2. **Phase E — Bedrohung/Furcht** (`archiv/kampf-plan.md`) — der letzte Affekt-Konsument, der
-   den Emotion-Kern rund macht; D4-Temperament (V18.107) ist die gebaute Vorstufe.
+2. ~~**Phase E — Bedrohung/Furcht**~~ **✓ ERFÜLLT (V18.148):** die Raubtier-Seele (glutwesen,
+   tag-emergent wild, predator-gefiltert aus den Ambient-Pickern — Bedrohung nur durch bewusste
+   Schöpfung) · die Jagd (pfad-only, Furcht schlägt Jagd, Biss durchs damagePlayer-Tor, Rüstung
+   dämpft flach) · FURCHT (threatened bei niedriger HP) + TRIUMPH (Jäger fällt → joy+hope) +
+   SCHULD (V17.54) — **der Emotion-Kern ist RUND** (der letzte Affekt-Konsument). VERMERK: die
+   ambiente Glut-Region-Geburt = eigene Welle mit Spawn-Verteilungs-Messung (V17.16-Lehre).
 3. **B1 — Wasser-Sheet → Worker** — Priorität GEMESSEN gesunken (das V18.121-Dach-Gate heilte
    den Dauer-Churn 18.2→1.6 ms); lohnt, sobald Carve-Flut-Spitzen im Browser als Hitch fühlbar
    sind. Eigene fokussierte Welle mit eigenem Stale-Diag (Live-CA-Kopplung).
@@ -995,7 +999,7 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
 | ~~Spieler kann nicht pflegen~~                                      | ✓ V18.104 E7 („pflege das land" → deposit_life)                                                                                |
 | ~~Rekursion blockiert (4 Schnitte)~~                                | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm                                                               |
 | Netz trägt real nur ~4–6 Peers (Stern-Topologie offen)              | F2-Rest (Design GEMESSEN in §5-F2: Hub-Routing + Stempel-Vertrauen); ~~TURN~~ ✓ V18.104 · ~~Migration ohne Zustand~~ ✓ V18.126 |
-| ~~Sozial-Schicht fehlt ganz (Bewerten lokal-only)~~                 | ✓ V18.134–.143 F4 Stufen 1–4 (Zeugnisse · Lesezeichen · Folgen · Kommentare; share/witness blüht); Rest: „Für dich"-Kür       |
+| ~~Sozial-Schicht fehlt ganz (Bewerten lokal-only)~~                 | ✓ V18.134–.147 F4 RUND (Zeugnisse · Lesezeichen · Folgen · Kommentare · „Für dich"; share/witness blüht)                      |
 | ~~Innerster Ring nicht BENANNT~~                                    | ✓ V18.122 G8 R0 (`SOVEREIGN_STATE` + `_sovereignStateAudit`)                                                                   |
 | ~~Kanal dämpft nur teilweise (ready/exit/manifest ungedeckelt)~~    | ✓ V18.123 G8 R1 (`_portalChannelAdmit` + `_p2pPeerRateAdmit`)                                                                  |
 | ~~Keine Irreversibilitäts-Wand~~                                    | ✓ V18.123 G8 R2 (`SOVEREIGN_ACTIONS` disjunkt + `_sovereignGesture`)                                                           |

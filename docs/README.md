@@ -24,7 +24,7 @@ kantiges Terrain + leitbares Wasser; die Chunk-Naht-Wurzel, IPERKA, alle Schnitt
 Archiv, wenn der Bogen vollendet ist.
 
 **Über dem Tisch — der Master-Blick:** `docs/gigant-plan.md` (DER GIGANT, 10.06.2026 — das
-umfassende gemessene Bild + die neun Säulen G1–G9/Ω [alle ✓ im Kern seit V18.141] + die
+umfassende gemessene Bild + die neun Säulen G1–G9/Ω [der §5-Pfad ist GESCHLOSSEN seit V18.147] + die
 Zwillinge + Stand-der-Technik-Karte + die Reihenfolge + **DIE GEMERKTEN FÄDEN** am §5-Ende).
 Die Karte ÜBER den Detail-Plänen; pro vollendeter Säule wird sie kürzer.
 

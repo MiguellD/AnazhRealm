@@ -26777,9 +26777,17 @@ async function checkBandWelle6HCreatures(ctx) {
         const out = {};
         const souls = r.constructor.CREATURE_SOULS;
         out.soulsFrozen = !!souls && Object.isFrozen(souls);
-        out.threeSouls = souls && Object.keys(souls).length === 3 && souls.sprite && souls.wesen && souls.geist;
+        // Phase E (V18.148) gebar die vierte Seele (glutwesen, predator) —
+        // der Test wandert mit (V9.56-i): die drei sanften Gründer + das Raubtier.
+        out.threeSouls =
+            souls &&
+            Object.keys(souls).length === 4 &&
+            souls.sprite &&
+            souls.wesen &&
+            souls.geist &&
+            souls.glutwesen;
         out.hasSoulNames =
-            Array.isArray(r.constructor.CREATURE_SOUL_NAMES) && r.constructor.CREATURE_SOUL_NAMES.length === 3;
+            Array.isArray(r.constructor.CREATURE_SOUL_NAMES) && r.constructor.CREATURE_SOUL_NAMES.length === 4;
         out.hasNamePool =
             Array.isArray(r.constructor.CREATURE_NAME_POOL) && r.constructor.CREATURE_NAME_POOL.length >= 20;
         const spritePart = souls && souls.sprite && souls.sprite.bodyParts[0];
@@ -26945,7 +26953,7 @@ async function checkBandWelle6HCreatures(ctx) {
 
     if (wave6hP2aResults && !wave6hP2aResults.error) {
         check("Welle 6.H P2A: CREATURE_SOULS frozen", wave6hP2aResults.soulsFrozen);
-        check("Welle 6.H P2A: drei Seelen (sprite/wesen/geist)", wave6hP2aResults.threeSouls);
+        check("Welle 6.H P2A/Phase E: vier Seelen (sprite/wesen/geist + glutwesen)", wave6hP2aResults.threeSouls);
         check("Welle 6.H P2A: CREATURE_SOUL_NAMES Array", wave6hP2aResults.hasSoulNames);
         check("Welle 6.H P2A: CREATURE_NAME_POOL ≥ 20 Namen", wave6hP2aResults.hasNamePool);
         check("Welle 6.H P2A: bodyParts haben shape+material-Schema", wave6hP2aResults.bodyPartsHaveSchema);
@@ -28604,6 +28612,125 @@ async function checkBandV18147ForYou(ctx) {
     check("V18.147 Für dich: das Merken hebt (+2)", res.bookmarkBoost);
     check("V18.147 Für dich: der Strom reiht nach dem Score (fuerdich-Sort verdrahtet)", res.sortWired);
     check("V18.147 Für dich: die drei Sortier-Chips stehen (Neueste · Für dich · Bewertung)", res.chips);
+}
+
+// PHASE E (V18.148, kampf-plan — GEMERKTER FADEN #2): die BEDROHUNG — der
+// letzte Affekt-Konsument, der den Emotion-Kern RUND macht. Ein WILDES Wesen
+// (Temperament tag-emergent aus glühender Substanz, kein hostile-Flag) JAGT
+// die Beute (pfad-only, Furcht schlägt Jagd, sparsam: Raubtiere entstehen
+// nur durch bewusste Schöpfung — predator-Filter hält sie aus den Ambient-
+// Pickern); der Biss läuft durchs damagePlayer-Tor (Rüstung dämpft FLACH wie
+// die Kreatur-Formel) → FURCHT bei niedriger HP (threatened) · TRIUMPH beim
+// Fall eines frischen Jägers (joy+hope) · die SCHULD (V17.54) bleibt daneben.
+async function checkBandPhaseEThreat(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const HUNT = r.constructor.CREATURE_HUNT;
+        out.consts = !!HUNT && Object.isFrozen(HUNT) && HUNT.radius > 0 && HUNT.strikeRange > 0;
+        // Die Raubtier-Seele: registriert + predator-markiert + aus BEIDEN
+        // Ambient-Pickern gefiltert (sparsam per Konstruktion).
+        const soul = r.constructor.CREATURE_SOULS.glutwesen;
+        out.soul = !!soul && soul.predator === true;
+        let randomPickedPredator = false;
+        for (let i = 0; i < 60; i++) {
+            if (r._pickCreatureSoulName() === "glutwesen") randomPickedPredator = true;
+        }
+        out.ambientExcluded = !randomPickedPredator && /predator/.test(r._pickFaunaSoulAtPlayer.toString());
+        const p = r.state.player;
+        const pm = r.state.playerMesh.position;
+        const savedMode = r.getGameMode();
+        const savedHp = p.hp;
+        const savedPhoenix = p.phoenixUntil;
+        const savedMax = r.state.maxCreatures;
+        const savedEmo = {};
+        for (const k of Object.keys(p.emotions)) savedEmo[k] = p.emotions[k];
+        const spawned = [];
+        try {
+            r.setGameMode("pfad");
+            p.phoenixUntil = 0;
+            r.state.maxCreatures = r.state.creatures.length + 4;
+            const wolf = r.spawnCreatureAt(pm.x + 2, pm.y, pm.z, "happy", "glutwesen");
+            spawned.push(wolf);
+            // (1) die Substanz resoniert WILD (box+cone aus glut — tag-emergent).
+            out.wildTemperament = !!wolf && r._creatureTemperament(wolf) === "wild";
+            // (2) der Jagd-Trieb: pfad+nah+unverängstigt → JA; Furcht schlägt
+            // Jagd; frieden kennt keine Bedrohung; eine sanfte Seele jagt nie.
+            out.drivePfad = r._creatureHuntDrive(wolf, 0) === true;
+            out.fearBeatsHunt = r._creatureHuntDrive(wolf, r.constructor.CREATURE_NATURE.fleeThreshold) === false;
+            r.setGameMode("frieden");
+            out.friedenNoHunt = r._creatureHuntDrive(wolf, 0) === false;
+            r.setGameMode("pfad");
+            const lamm = r.spawnCreatureAt(pm.x + 3.5, pm.y, pm.z + 1, "happy", "geist");
+            spawned.push(lamm);
+            out.gentleNoHunt = r._creatureHuntDrive(lamm, 0) === false;
+            // (3) der BISS: HP sinkt durchs damagePlayer-Tor; der Cooldown
+            // deckelt; die Rüstung dämpft FLACH — die Probe ISOLIERT die
+            // Abwehr (0 vs 3), denn der weiche Glut-Biss (max(2,…)) klemmt
+            // mit der Basis-defense des Spielers sonst beidseitig auf der
+            // max(1,…)-Untergrenze (keine Marge — der erste Lauf maß es).
+            const savedDef = p.stats.defense;
+            p.stats.defense = 0;
+            p.hp = p.stats.hpMax || 100;
+            const hp0 = p.hp;
+            const bit = r._tickCreatureHuntStrike(wolf);
+            out.strikeHits = bit === true && p.hp < hp0;
+            out.cooldownGates = r._tickCreatureHuntStrike(wolf) === false;
+            const dealt1 = hp0 - p.hp;
+            wolf.userData.nextHuntStrikeAt = 0;
+            p.stats.defense = 3;
+            const hp1 = p.hp;
+            r._tickCreatureHuntStrike(wolf);
+            const dealt2 = hp1 - p.hp;
+            p.stats.defense = savedDef;
+            out.armorDampens = dealt2 < dealt1 - 1e-9 && dealt2 >= 1;
+            // (4) die FURCHT: niedrige HP + Jagd-Schlag → sorrow steigt (threatened).
+            p.hp = (p.stats.hpMax || 100) * 0.2;
+            const sor0 = p.emotions.sorrow || 0;
+            wolf.userData.nextHuntStrikeAt = 0;
+            r._tickCreatureHuntStrike(wolf);
+            out.fearFelt = (p.emotions.sorrow || 0) > sor0;
+            // (5) der TRIUMPH: ein frischer Jäger fällt von Spieler-Hand → joy steigt.
+            p.hp = p.stats.hpMax || 100;
+            const joy0 = p.emotions.joy || 0;
+            r.damageCreature(wolf, 9999, { source: "player" });
+            spawned[0] = null;
+            out.triumphFelt = (p.emotions.joy || 0) > joy0;
+            // (6) die Bewegungs-Verdrahtung: Jagd + Biss sitzen im Wariness-Zweig.
+            out.moveWired =
+                /_creatureHuntDrive/.test(r.updateCreatures.toString()) &&
+                /_tickCreatureHuntStrike/.test(r.updateCreatures.toString());
+        } finally {
+            for (const c of spawned) {
+                if (c) r.removeCreature(c);
+            }
+            p.hp = savedHp;
+            p.phoenixUntil = savedPhoenix;
+            r.state.maxCreatures = savedMax;
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = savedEmo[k] || 0;
+            r.setGameMode(savedMode);
+        }
+        return out;
+    });
+    check("Phase E Bedrohung: Konstanten + Raubtier-Seele (predator-markiert)", res.consts && res.soul);
+    check("Phase E Bedrohung: sparsam — Raubtiere fallen aus BEIDEN Ambient-Pickern", res.ambientExcluded);
+    check("Phase E Bedrohung: die Substanz resoniert WILD (tag-emergent, kein Flag)", res.wildTemperament);
+    check(
+        "Phase E Bedrohung: Jagd-Trieb pfad+nah+unverängstigt; Furcht schlägt Jagd",
+        res.drivePfad && res.fearBeatsHunt
+    );
+    check(
+        "Phase E Bedrohung: frieden kennt keine Bedrohung + sanfte Seelen jagen nie",
+        res.friedenNoHunt && res.gentleNoHunt
+    );
+    check(
+        "Phase E Bedrohung: der Biss trifft durchs damagePlayer-Tor + Cooldown deckelt",
+        res.strikeHits && res.cooldownGates
+    );
+    check("Phase E Bedrohung: die Rüstung dämpft FLACH (die EINE Kreatur-Formel)", res.armorDampens);
+    check("Phase E Bedrohung: FURCHT bei niedriger HP + TRIUMPH beim Fall des Jägers", res.fearFelt && res.triumphFelt);
+    check("Phase E Bedrohung: Jagd + Biss im Bewegungs-Zweig verdrahtet", res.moveWired);
 }
 
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
@@ -34054,7 +34181,10 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             w14Results.feedKindChips
         );
         check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
-        check("Feed: die Sortier-Chips (Neueste | Für dich | Bewertung) sind da (V18.74/.147)", w14Results.feedSortChips);
+        check(
+            "Feed: die Sortier-Chips (Neueste | Für dich | Bewertung) sind da (V18.74/.147)",
+            w14Results.feedSortChips
+        );
         check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
         check(
             "Feed: der geteilte 3D-Vorschau-Bereich (Canvas + Methoden) ist da (V18.75)",
@@ -45216,6 +45346,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandW18InputBridge(ctx);
             await checkBandW18Dwell(ctx);
             await checkBandV18147ForYou(ctx);
+            await checkBandPhaseEThreat(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
