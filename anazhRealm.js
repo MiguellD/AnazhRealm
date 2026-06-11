@@ -5877,6 +5877,13 @@ class AnazhRealm {
             this._portalRosterReceive(peerId, msg);
             return;
         }
+        // F2 (G3, V18.126) — der Compute-Host annonciert den kooperativen
+        // Server-ZUSTAND (die Mitgift der Host-Migration). Kanal-exklusiv wie
+        // die Roster: nicht WS-injizierbar, peerId kanal-gestempelt.
+        if (msg.type === "subworld-state") {
+            this._portalStateReceive(peerId, msg);
+            return;
+        }
         const ALLOWED = [
             "pos",
             "dsl",
@@ -34015,6 +34022,13 @@ class AnazhRealm {
             // empfangene Roster (alle Sub-Welt-Mitglieder). Verlässt der Host
             // das Mesh, wählt jeder Gast daraus deterministisch den Nachfolger.
             roster: [],
+            // F2 (G3, V18.126) — Host-Migration MIT Zustand: der Host pollt
+            // den kooperativen Server-Snapshot (stateTimer → srv-state-req)
+            // und annonciert ihn als subworld-state (stateSeq monoton); ein
+            // Gast cacht den letzten (lastSrvState) als Mitgift der Migration.
+            stateTimer: null,
+            stateSeq: 0,
+            lastSrvState: null,
         };
         document.body.appendChild(overlay);
         // W14 Phase 2 — ist die Ziel-Welt mit einem Vibe-Pass versiegelt,
@@ -34171,6 +34185,11 @@ class AnazhRealm {
                 kind: "close",
                 worldId: po.world,
             });
+        }
+        // F2 (G3, V18.126) — der kooperative Zustands-Poll endet mit dem Overlay.
+        if (po.stateTimer) {
+            clearInterval(po.stateTimer);
+            po.stateTimer = null;
         }
         if (po.onMessage) window.removeEventListener("message", po.onMessage);
         if (po.overlayEl && po.overlayEl.parentNode) {
@@ -34551,6 +34570,16 @@ class AnazhRealm {
         po.overlayEl.appendChild(serverIframe);
         po.serverIframe = serverIframe;
         serverIframe.src = po.world + "?anazh-server=1";
+        // F2 (G3, V18.126) — der kooperative Zustands-Poll: alle 5 s einen
+        // Snapshot anfragen. Eine Welt OHNE snapshot()-Handler antwortet nie —
+        // der Poll bleibt stumm, die Migration bootet frisch (die alte
+        // ehrliche Grenze als Degradation, kein Zwang). Geräumt im
+        // _disposePortalOverlay.
+        if (!po.stateTimer) {
+            po.stateTimer = setInterval(() => {
+                this._portalSrvSend({ __anazhNet: true, kind: "srv-state-req" });
+            }, 5000);
+        }
         return serverIframe;
     }
 
@@ -34583,6 +34612,24 @@ class AnazhRealm {
         return true;
     }
 
+    // F2 (G3, V18.126) — ein Gast cacht den kooperativen Server-Zustand seines
+    // Compute-Hosts (das Roster-Muster): nur vom EIGENEN Host (kanal-
+    // gestempelte peerId), nur für die eigene Sub-Welt, Größen-gedeckelt,
+    // seq-monoton (ein verspäteter älterer Snapshot überschreibt nie einen
+    // neueren). Er ist die MITGIFT der Host-Migration — übernimmt dieser Gast,
+    // reist der Zustand als srv-state-restore in den frischen Server-Kontext.
+    _portalStateReceive(peerId, msg) {
+        const po = this._portalOverlay;
+        if (!po || po.serverMode !== "js-compute" || po.computeRole !== "guest") return false;
+        if (peerId !== po.hostPeerId) return false;
+        if (!msg || msg.worldId !== po.world || typeof msg.data !== "string") return false;
+        if (msg.data.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
+        const seq = Number(msg.seq) || 0;
+        if (po.lastSrvState && seq <= po.lastSrvState.seq) return false;
+        po.lastSrvState = { data: msg.data, seq };
+        return true;
+    }
+
     // W17 Phase B-JS-Compute Phase 2 — der Compute-Host hat das Mesh verlassen.
     // Jeder verbliebene Gast wählt aus der zuletzt empfangenen Roster
     // deterministisch denselben Nachfolger (die kleinste peerId, ohne den
@@ -34609,10 +34656,15 @@ class AnazhRealm {
     }
 
     // W17 Phase B-JS-Compute Phase 2 — ein Gast übernimmt die Compute-Host-
-    // Rolle. Er flippt computeRole, baut einen FRISCHEN Server-Kontext (der
-    // Server-Zustand des alten Hosts ist verloren — ehrliche Grenze) und
+    // Rolle. Er flippt computeRole, baut einen frischen Server-Kontext und
     // registriert seine eigene Verbindung. Die übrigen Gäste melden sich per
     // subworld-srv-open neu an → _portalSrvFromGuest füllt serverConns.
+    // F2 (G3, V18.126) — Migration MIT Zustand: der zuletzt gecachte
+    // kooperative Snapshot (lastSrvState, die Mitgift) reist als
+    // srv-state-restore in den frischen Kontext — VOR jedem srv-open (die
+    // serverQueue ist FIFO, der Shim puffert bis `new WebSocketServer()`).
+    // Eine Welt ohne restore()-Handler ignoriert ihn — der Boot bleibt
+    // frisch (die alte ehrliche Grenze als Degradation).
     _portalPromoteToHost() {
         const po = this._portalOverlay;
         if (!po) return;
@@ -34623,6 +34675,18 @@ class AnazhRealm {
         po.serverQueue = [];
         this.log(`Du übernimmst den Compute-Host für „${po.label}".`, "INFO");
         this._portalSpawnServerContext();
+        if (po.lastSrvState) {
+            let data;
+            try {
+                data = JSON.parse(po.lastSrvState.data);
+            } catch (_e) {
+                data = undefined;
+            }
+            if (data !== undefined) {
+                this._portalSrvSend({ __anazhNet: true, kind: "srv-state-restore", data });
+                this.log(`Der Server-Zustand reiste mit (Mitgift seq ${po.lastSrvState.seq}).`, "INFO");
+            }
+        }
         // Der Host ist sein eigener Client — die eigene Verbindung registrieren.
         this._portalSrvEnsureConn(this._portalSelfConnId());
     }
@@ -34683,6 +34747,33 @@ class AnazhRealm {
         if (!msg || msg.__anazhNet !== true) return false;
         if (msg.kind === "srv-close-req") {
             if (typeof msg.conn === "string" && po.serverConns) po.serverConns.delete(msg.conn);
+            return true;
+        }
+        // F2 (G3, V18.126) — der Server-Kontext lieferte seinen kooperativen
+        // Zustands-Snapshot (Antwort auf den srv-state-req-Poll): als
+        // subworld-state an ALLE Gäste (die Migrations-Kandidaten — der
+        // deterministische Nachfolger ist erst beim Abgang bekannt, und ein
+        // einzelner designierter könnte selbst gehen). DATEN, kein Code
+        // (JSON-String wie aller Sub-Welt-Verkehr), Größen-Deckel, Takt 1/5 s.
+        if (msg.kind === "srv-state") {
+            let txt;
+            try {
+                txt = JSON.stringify(msg.data);
+            } catch (_e) {
+                return false;
+            }
+            if (typeof txt !== "string" || txt.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
+            po.stateSeq = (po.stateSeq || 0) + 1;
+            const selfId = this._portalSelfConnId();
+            for (const conn of po.serverConns) {
+                if (conn === selfId) continue;
+                this._p2pSendChannelTo(conn, {
+                    type: "subworld-state",
+                    worldId: po.world,
+                    data: txt,
+                    seq: po.stateSeq,
+                });
+            }
             return true;
         }
         if (msg.kind !== "srv-send") return false;
@@ -40918,7 +41009,11 @@ class AnazhRealm {
             // forceSync gemessen = TRANSIENT, kein Stempel-Loch). NUR wasser-
             // tragende, schon gestreamte Footprint-Chunks (sonst kein Transient)
             // → bounded (skirt=0, kleine Footprint, nur intentionale Spawns).
-            for (const key of footprintKeys) {
+            // V18.126-Robustheit (GEMESSEN im smoke-webrtc, vorbestehend per
+            // A/B): ohne gebootete Chunk-Map (Headless-/Smoke-Kontext, Welt
+            // vor dem Terrain-Init) gibt es keine Wasser-Transienten zu
+            // syncen — derselbe Guard wie der V18.29-Carve-Block.
+            for (const key of this.state.voxelChunks ? footprintKeys : []) {
                 const fe = this.state.voxelChunks.get(key);
                 if (!fe || !fe.waterCells) continue;
                 const comma = key.indexOf(",");
@@ -54061,7 +54156,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.125.0";
+AnazhRealm.VERSION = "18.126.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

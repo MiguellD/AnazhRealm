@@ -65,10 +65,17 @@ const W17JS_WORLD_HTML = `<!doctype html>
   if (window.__anazhRole === "server") {
     // SERVER-Zweig — autoritative Rechnung: eine laufende Summe über ALLE
     // Verbindungen. Ein Relay broadcastet nur; diese Summe beweist Compute.
+    // F2 (V18.126) — die Welt ist migrations-kooperativ: snapshot() exportiert
+    // die Summe, restore() stellt sie im frischen Kontext des Nachfolgers her.
     note("jscompute-server-start");
     if (typeof WebSocketServer !== "function") { note("jscompute-server-no-wss"); return; }
     var total = 0;
     var wss = new WebSocketServer();
+    wss.snapshot = function () { return { total: total }; };
+    wss.restore = function (d) {
+      total = (d && Number(d.total)) || 0;
+      note("jscompute-server-restored:" + total);
+    };
     wss.on("connection", function (sock) {
       sock.on("message", function (data) {
         total += Number(data) || 0;
@@ -471,11 +478,15 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
 
         // B holt die Welt von A über das Mesh — worldId + Peer kommen aus dem
         // Katalog (der Phase-2-Spieler-Pfad, kein blankes Text-Feld mehr).
-        const w16Req = await pageB.evaluate((pid, wid) => {
-            const peer = window.anazhRealm.state.p2p.peers.get(pid);
-            const e = peer.catalog.find((w) => w.id === wid);
-            return window.anazhRealm.requestWorldBundleFromPeer(e.id, pid);
-        }, peerIdA, W16_ID);
+        const w16Req = await pageB.evaluate(
+            (pid, wid) => {
+                const peer = window.anazhRealm.state.p2p.peers.get(pid);
+                const e = peer.catalog.find((w) => w.id === wid);
+                return window.anazhRealm.requestWorldBundleFromPeer(e.id, pid);
+            },
+            peerIdA,
+            W16_ID
+        );
         check("W16: B fordert das Welt-Bündel von A an", !!w16Req && w16Req.ok === true, JSON.stringify(w16Req));
         // Das Bündel reist p2p; B's customWorlds bekommt den Eintrag.
         await waitFor(
@@ -491,7 +502,12 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         check("W16: A's Welt reiste peer-to-peer in B's Bibliothek (trust:sandboxed)", true);
         const w16Entry = await pageB.evaluate((id) => {
             const e = window.anazhRealm.state.customWorlds[id];
-            return { label: e && e.label, vendored: e && e.vendored, world: e && e.world, multiplayer: e && e.multiplayer };
+            return {
+                label: e && e.label,
+                vendored: e && e.vendored,
+                world: e && e.world,
+                multiplayer: e && e.multiplayer,
+            };
         }, W16_ID);
         check(
             "W16: die mesh-empfangene Welt ist vendored + trägt ihren Namen + Tor-Pfad",
@@ -735,12 +751,31 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             true
         );
 
-        // W17 Phase B-JS-Compute Phase 2 — Host-Migration. A (der Compute-
-        // Host) verlässt das Mesh; B (Gast) erkennt es, wählt sich aus der
-        // Roster zum Nachfolger und baut einen FRISCHEN Server-Kontext. B's
-        // Verkehr läuft danach durch B's eigenen Server — die laufende Summe
-        // startet bei 0 (der Server-Zustand des alten Hosts ist verloren,
-        // eine ehrliche Phase-2-Grenze).
+        // F2 (G3, V18.126) — Host-Migration MIT Zustand. Der Host pollt den
+        // kooperativen Snapshot (5-s-Timer; der Test stößt ihn deterministisch
+        // an) und annonciert ihn als subworld-state an die Gäste. B (Gast)
+        // muss die Mitgift {total:12} gecacht haben, BEVOR A geht.
+        await pageA.evaluate(() => {
+            window.anazhRealm._portalSrvSend({ __anazhNet: true, kind: "srv-state-req" });
+        });
+        await waitFor(
+            pageB,
+            () => {
+                const po = window.anazhRealm._portalOverlay;
+                if (!po || !po.lastSrvState) return false;
+                try {
+                    return JSON.parse(po.lastSrvState.data).total === 12;
+                } catch (_e) {
+                    return false;
+                }
+            },
+            15000,
+            "B cachte die Migrations-Mitgift {total:12} vom Host"
+        );
+        check("F2: der kooperative Server-Snapshot reiste als subworld-state zum Gast", true);
+        // A (der Compute-Host) verlässt das Mesh; B erkennt es, wählt sich aus
+        // der Roster zum Nachfolger, baut den Server-Kontext und injiziert die
+        // Mitgift (srv-state-restore VOR den Verbindungs-Replays).
         await pageB.evaluate((host) => window.anazhRealm._p2pRemovePeer(host), aPeerId);
         await waitFor(
             pageB,
@@ -749,11 +784,14 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
                 return po && po.computeRole === "host" && po.serverReady === true;
             },
             15000,
-            "B übernahm den Compute-Host nach A's Abgang + baute einen frischen Server-Kontext"
+            "B übernahm den Compute-Host nach A's Abgang"
         );
         check("W17 JS-Compute Phase 2: B erkannte A's Abgang + wurde Compute-Host", true);
-        // B's Client sendet "9" → B's neuer, frischer Server-Kontext rechnet
-        // (total = 0+9 = 9, NICHT 12+9) → die Antwort kommt lokal zurück.
+        // (Die restore-note des Server-Kontexts erreicht das Journal NIE —
+        // der Portal-onMessage routet vom Server-iframe NUR __anazhNet-
+        // Envelopes. Der funktionale Beweis ist die Summe: 21 = 12+9.)
+        // B's Client sendet "9" → B's restaurierter Server rechnet
+        // (total = 12+9 = 21, NICHT 0+9) → der Zustand ÜBERLEBTE die Migration.
         await pageB.evaluate(() => {
             window.anazhRealm._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "9" });
         });
@@ -761,19 +799,16 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             pageB,
             () =>
                 (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
-                    String(e.text || "").includes("jscompute-client-recv:9")
+                    String(e.text || "").includes("jscompute-client-recv:21")
                 ),
             12000,
-            "B's Verkehr lief durch B's frischen Server-Kontext"
+            "B's Verkehr lief durch B's restaurierten Server-Kontext (21 = 12+9)"
         );
-        check(
-            "W17 JS-Compute Phase 2: B's Verkehr lief durch B's frischen Server-Kontext — die Summe startet bei 0 (9, nicht 21)",
-            true
-        );
+        check("F2: Host-Migration MIT Zustand — die Summe überlebte den Host-Wechsel (21 = 12+9, nicht 9)", true);
         await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
         await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
     } catch (err) {
-        check(`Test-Ablauf ohne Fehler`, false, err.message);
+        check(`Test-Ablauf ohne Fehler`, false, err.stack || err.message);
     } finally {
         await browser.close();
         saveServer.kill();

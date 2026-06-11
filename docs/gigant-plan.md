@@ -414,9 +414,23 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
       Wasser-Material wird DoubleSide (die Top-Cull-Oberseiten sind von unten
       sichtbar), auftauchen → BackSide (V18.1-W1-Vertrag unberührt). Augen-A/B
       (NEU Tour-Ort `dive`): vorher Himmel durch die fehlende Fläche, nachher die
-      dunkle Decke. Kür offen: Snell-Fenster/Caustics (Backlog). WEITER OFFEN in A4:
-      Schelf-Konsolidierung (H) · Hoch-Becken über `L` (H+A) ·
-      Kapillar/Stempel (H) · T7c-Reste.
+      dunkle Decke. Kür offen: Snell-Fenster/Caustics (Backlog). ✓ **SCHELF-
+      KONSOLIDIERUNG (V18.125 — der KÜSTEN-AQUIFER):** die V18.117-Restklasse
+      GEMESSEN seziert (`diag-shelf.cjs`): die 3D-Roughness (±12 m) taucht das
+      ECHTE Terrain bis −24 m unter den Spiegel, wo das 16-m-MAKRO den Atlas
+      „Land" sagen lässt → colL=−Inf → die BFS kann die himmel-offene Senke NIE
+      füllen (topologisch von flachen Schwellen getrennt, Pfad-Max −1.4; der
+      V18.93-Decay hält auch den CA fern). HEILUNG = das Minecraft-1.18-Prinzip
+      (im caveDry schon zitiert) für die OFFENE Senke: jede Atlas-lose Spalte,
+      deren himmel-offenes ECHTES Terrain (erste SOLID-Zelle von oben) klar
+      unter dem Wassertisch liegt, wird Aquifer-Quelle; die Deck-Zelle trägt
+      das flache Wasser (Quantisierungs-Wand). PER-SPALTE LOKAL → seam-frei
+      per Konstruktion, KEIN Atlas-/Drainage-Eingriff, Worker bit-identisch.
+      GEMESSEN: Punkt-Probe-Löcher 10→0. +1 Drei-Beweis-Invariante (Senke
+      nass · Land trocken · gedeckelte Höhle trocken). WEITER OFFEN in A4:
+      Hoch-Becken über `L` (H+A — eine CA-Gleichgewichts-Regel, die
+      Badewannen-Klasse: eigener fokussierter Bogen) · Kapillar/Stempel (H) ·
+      T7c-Reste.
 - ✓ **A5 — Haupt-Fog ↔ Ring-Kante (V18.103):** `fog.far = min(Wetter-Formel·Slider,
 (ringRadius+0.5)·span)` in `_dayNightApplyHemiAndFog` — der Nebel deckt das Welt-Ende
   (Default-Ring 4: Kante ~194 m, fog.far war 450 m = sichtbare Welt-Kante); bei „Weltenring max"
@@ -478,11 +492,13 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Gras λ~28 m (Dickicht ×2.2 ↔ Lichtung ×0.15) + Bäume λ~170 m (WALD-Maske ×2.6 ↔ offen ×0.25),
   mittelwert-neutral GEMESSEN (Ø 1.04/1.06 · Lichtungen 19.5 % · Dickichte 17.6 % · Wald 17.1 % ·
   Halme-Total stabil 21.2k · `diag-tree-spawn` 63 Kiefern ✓ · mit dem Auge: Büschel + Lichtung).
-- **B6 — Klein-Bündel Maßstab** [H]: ✓ Substep-Cap 20→5 (V18.104, Playtest grün — die Physik-
-  Todesspirale ist gebannt; CCD + Fall-Cap tragen das Anti-Tunneling) · ✓ Inseln-Instancing-Claim
-  GEMESSEN (V18.104, statisch): `spawn_island` trägt per-Insel-SEED → Unikate Geometrie → HISM
-  unanwendbar, der Hebel ist U4-LOD/Impostor (bestätigt deferred) · offen: Kreatur-FPS-Frame-Budget ·
-  Allokations-Audit per-Frame-Pfade.
+- ✓ **B6 — Klein-Bündel Maßstab VOLLENDET (V18.104 + V18.121)** [H]: ✓ Substep-Cap 20→5 (V18.104 —
+  die Physik-Todesspirale ist gebannt; CCD + Fall-Cap tragen das Anti-Tunneling) · ✓ Inseln-
+  Instancing-Claim GEMESSEN (V18.104: per-Insel-SEED → Unikate → HISM unanwendbar, Hebel ist
+  U4) · ✓ Allokations-Audit GEMESSEN (V18.121, `diag-frame-profile.cjs`: V3 med 3/Tick — kein
+  Pool-Theater nötig) · ✓ Kreatur-Budget GEMESSEN MOOT (V18.121: Ø 0.58 ms@10, aiDiv trägt —
+  ein Frame-Budget wäre Overengineering, vermerkt) · DER FUND: das DACH-GATE (Tick-Median
+  18.2→1.6 ms — der wahre Kosten-Treiber war der Dauer-Churn, nicht der Einzel-Build).
 - **B7 — U6 Clipmap** [Backlog-Gate: erst nach A1/A2 + S-Entscheid] · **R3 Kanten-Schärfe + R5
   Struktur-Textur** [A→S, reine Look-Wellen].
 - ✓ **B9 — TERRAIN-NACHTLICHT GEMESSEN GEHEILT (V18.111):** `diag-night-terrain.cjs` (Tag/
@@ -665,8 +681,24 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   seite — das SUBWORLD_NET_RATE_MAX-Muster) · TURN KONFIGURIERBAR (localStorage `anazhTurn`
   {urls,username,credential} → iceServers; reist NIE im Snapshot) · PROTOKOLL-VERSION
   (`pv: AnazhRealm.PROTO_VERSION` auf jeder p2pSend-Nachricht, Empfänger tolerieren — V18- +
-  V20-Clients koexistieren). DEFERRED: Stern-ab-6-Topologie + Host-Migration MIT Zustand +
-  4-Peer-Smoke (der eigene Mehr-Peer-Bogen — Topologie-Umbau gehört nicht in einen Phasen-Zug).
+  V20-Clients koexistieren). ✓ **HOST-MIGRATION MIT ZUSTAND (V18.126, smoke-bewiesen):** das
+  kooperative `srv-state`-Protokoll — fremde Server-Closures kann NIEMAND snapshotten (die
+  ehrliche Grenze), also serialisiert die WELT selbst (das Minecraft-Server-Save-Muster):
+  der Shim trägt `server.snapshot()`/`server.restore()` (opt-in), der Host pollt (5 s,
+  `srv-state-req`) + annonciert als kanal-exklusives `subworld-state` an ALLE Gäste
+  (Migrations-Kandidaten; Größen-Deckel, seq-monoton), ein Gast cacht die MITGIFT
+  (`lastSrvState`, Roster-Muster: nur vom eigenen Host) und injiziert sie bei der Promotion
+  als `srv-state-restore` VOR den Verbindungs-Replays (FIFO der serverQueue; der Shim puffert
+  bis `new WebSocketServer()`). Welt OHNE Handler → frischer Boot (die alte Grenze als
+  Degradation). GEMESSEN (smoke-webrtc): die Summe ÜBERLEBTE den Host-Wechsel (21 = 12+9,
+  vorher 9). Beifang: der vorbestehende `spawnArchitecture`-Crash auf un-gebooteter Chunk-Map
+  geheilt (blockierte den halben Smoke seit V18.1, A/B-bewiesen). **DEFERRED mit GEMESSENEM
+  Design-Befund: Stern-ab-6-Topologie** — der Verbindungs-Gate (nur Hub-Conns ab 6) + das
+  Broadcast-Relay sind klein, ABER der GEZIELTE Verkehr (`_p2pSendChannelTo`: subworld-srv/
+  cli · world-pull · llm-\*) bräuchte ein Hub-ROUTING-Envelope + ein transitives peerId-
+  Stempel-Vertrauen (heute: kanal-gestempelt = unfälschbar; via Hub nur noch Hub-vertraut) —
+  ein 4-Mechanismen-Umbau im R1/R2-gehärteten Kanal; ein HALBER Stern bräche W16/W17 bei
+    > 6 Peers. Der eigene fokussierte Bogen, mit diesem Design als Startpunkt.
 - **F3 — W18 in fremden Welten LEBEN** [world-portal-w18-plan; Stufen A→D]: Auto-Join/Tier →
   Ko-Präsenz-Injektion (Kern) → Input-Brücke → Swappen/Persistenz.
 - **F4 — der SOZIALE Bogen** [bibliothek-plan §E + roadmap; H+S]: Bewertungs-Aggregation
@@ -800,40 +832,40 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 
 ## §7 · DAS SCHWÄCHEN-REGISTER (ehrlich — jede Schwäche hat eine Adresse)
 
-| Schwäche (gemessen)                                                 | Adresse                                                                                            |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| ~~Cross-LOD-Naht sichtbar~~                                         | ✓ V18.103 A1 (Cap + Stitch-Band: 0 sichtbare Spalten ungedeckt)                                    |
-| ~~Edit = Ganz-Chunk-Reset sichtbar~~                                | ✓ V18.103 A2 (GEMESSEN: Vertex-Delta 0/3180 lokal; Splice bewusst deferred)                        |
-| Welt endet im Fog (keine Ferne)                                     | B2 Horizont-Mantel (A5 deckt die Kante schon: fog.far ≤ Ring-Kante)                                |
-| Wasser-Sheet ~78 ms auf Main                                        | B1                                                                                                 |
-| EINE 2048er-Schattenmap (nah grob, fern eng)                        | B4 CSM                                                                                             |
-| Physik-Todesspirale möglich (20 Substeps)                           | B6                                                                                                 |
-| Kreaturen: kein Lebenszyklus, keine Herden-Stimmung                 | D2/D3                                                                                              |
-| Kreaturen greifen nie an (Furcht ohne Konsument)                    | D4 Phase E                                                                                         |
-| Wetter binär sunny/rainy                                            | D5a                                                                                                |
-| Musik hört die Emotion nicht (Pfeiler 4 halb)                       | D5b                                                                                                |
-| Nexus zahlt nichts, Pools feeden nicht                              | E2/E4                                                                                              |
-| Magie kostet nichts                                                 | E3                                                                                                 |
-| ~~Gesten-Fitness-Kreis evtl. stumm~~                                | ✓ V18.104 E4-Audit + V18.112 Kristall: Geste→Gesetz schließt                                       |
-| LLM ist Randfigur                                                   | E6                                                                                                 |
-| Spieler kann nicht pflegen                                          | E7                                                                                                 |
-| ~~Rekursion blockiert (4 Schnitte)~~                                | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm                                   |
-| Netz trägt real nur ~4–6 Peers, TURN fehlt                          | F2                                                                                                 |
-| Sozial-Schicht fehlt ganz (Bewerten lokal-only)                     | F4                                                                                                 |
-| ~~Innerster Ring nicht BENANNT~~                                    | ✓ V18.122 G8 R0 (`SOVEREIGN_STATE` + `_sovereignStateAudit`)                                       |
-| ~~Kanal dämpft nur teilweise (ready/exit/manifest ungedeckelt)~~    | ✓ V18.123 G8 R1 (`_portalChannelAdmit` + `_p2pPeerRateAdmit`)                                      |
-| ~~Keine Irreversibilitäts-Wand~~                                    | ✓ V18.123 G8 R2 (`SOVEREIGN_ACTIONS` disjunkt + `_sovereignGesture`)                               |
-| ~~Sandbox-Grenze nicht als Invariante eingefroren~~                 | ✓ V18.123 G8 R3 (`_portalSandboxAttr` + `_localityAudit`)                                          |
-| ~~Herkunft FLACH (origin-Enum, keine Lineage · kein Rückruf)~~      | ✓ V18.124 G8 R4 (`provenance`-Kette + `revokeKey` + Lader-Sieb)                                    |
-| ~~Immunsystem statisch (Invarianten nur beim Merge)~~               | ✓ V18.124 G8 R5 (`_robustnessCorpus` — vier Korpora im Push-Gate)                                  |
-| ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip)                                    |
-| ~~Schwarze Struktur-Silhouetten~~                                   | ✓ V18.104 B8 — **S-BESTÄTIGT** („Bauwerke und Deko hammer, was ein Sprung")                        |
-| Terrain-Boden reagiert nachts nicht (Schöpfer 10.06. abend)         | B9 (NEU — messen, welcher Term ihn hochhält)                                                       |
-| Steuerung flach (kein Feel, Bindings teils fix)                     | C5                                                                                                 |
-| ~~Aura = folgende Lampe~~                                           | ✓ V18.104 C6 — **S-BESTÄTIGT** („Hautschimmer passt"); V18.105: die Lampe GESCHNITTEN („kann weg") |
-| ~~Wiese homogen, keine Wälder~~                                     | ✓ V18.102 B5+                                                                                      |
-| Test-Volatilität (Spieler-im-Fall-Klasse)                           | §6.2-Telemetrie-Disziplin (Muster steht)                                                           |
-| localStorage-Größen-Wand                                            | FERN IndexedDB                                                                                     |
+| Schwäche (gemessen)                                                 | Adresse                                                                                                                        |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| ~~Cross-LOD-Naht sichtbar~~                                         | ✓ V18.103 A1 (Cap + Stitch-Band: 0 sichtbare Spalten ungedeckt)                                                                |
+| ~~Edit = Ganz-Chunk-Reset sichtbar~~                                | ✓ V18.103 A2 (GEMESSEN: Vertex-Delta 0/3180 lokal; Splice bewusst deferred)                                                    |
+| Welt endet im Fog (keine Ferne)                                     | B2 Horizont-Mantel (A5 deckt die Kante schon: fog.far ≤ Ring-Kante)                                                            |
+| Wasser-Sheet ~78 ms auf Main                                        | B1                                                                                                                             |
+| EINE 2048er-Schattenmap (nah grob, fern eng)                        | B4 CSM                                                                                                                         |
+| Physik-Todesspirale möglich (20 Substeps)                           | B6                                                                                                                             |
+| Kreaturen: kein Lebenszyklus, keine Herden-Stimmung                 | D2/D3                                                                                                                          |
+| Kreaturen greifen nie an (Furcht ohne Konsument)                    | D4 Phase E                                                                                                                     |
+| Wetter binär sunny/rainy                                            | D5a                                                                                                                            |
+| Musik hört die Emotion nicht (Pfeiler 4 halb)                       | D5b                                                                                                                            |
+| Nexus zahlt nichts, Pools feeden nicht                              | E2/E4                                                                                                                          |
+| Magie kostet nichts                                                 | E3                                                                                                                             |
+| ~~Gesten-Fitness-Kreis evtl. stumm~~                                | ✓ V18.104 E4-Audit + V18.112 Kristall: Geste→Gesetz schließt                                                                   |
+| LLM ist Randfigur                                                   | E6                                                                                                                             |
+| Spieler kann nicht pflegen                                          | E7                                                                                                                             |
+| ~~Rekursion blockiert (4 Schnitte)~~                                | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm                                                               |
+| Netz trägt real nur ~4–6 Peers (Stern-Topologie offen)              | F2-Rest (Design GEMESSEN in §5-F2: Hub-Routing + Stempel-Vertrauen); ~~TURN~~ ✓ V18.104 · ~~Migration ohne Zustand~~ ✓ V18.126 |
+| Sozial-Schicht fehlt ganz (Bewerten lokal-only)                     | F4                                                                                                                             |
+| ~~Innerster Ring nicht BENANNT~~                                    | ✓ V18.122 G8 R0 (`SOVEREIGN_STATE` + `_sovereignStateAudit`)                                                                   |
+| ~~Kanal dämpft nur teilweise (ready/exit/manifest ungedeckelt)~~    | ✓ V18.123 G8 R1 (`_portalChannelAdmit` + `_p2pPeerRateAdmit`)                                                                  |
+| ~~Keine Irreversibilitäts-Wand~~                                    | ✓ V18.123 G8 R2 (`SOVEREIGN_ACTIONS` disjunkt + `_sovereignGesture`)                                                           |
+| ~~Sandbox-Grenze nicht als Invariante eingefroren~~                 | ✓ V18.123 G8 R3 (`_portalSandboxAttr` + `_localityAudit`)                                                                      |
+| ~~Herkunft FLACH (origin-Enum, keine Lineage · kein Rückruf)~~      | ✓ V18.124 G8 R4 (`provenance`-Kette + `revokeKey` + Lader-Sieb)                                                                |
+| ~~Immunsystem statisch (Invarianten nur beim Merge)~~               | ✓ V18.124 G8 R5 (`_robustnessCorpus` — vier Korpora im Push-Gate)                                                              |
+| ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip)                                                                |
+| ~~Schwarze Struktur-Silhouetten~~                                   | ✓ V18.104 B8 — **S-BESTÄTIGT** („Bauwerke und Deko hammer, was ein Sprung")                                                    |
+| Terrain-Boden reagiert nachts nicht (Schöpfer 10.06. abend)         | B9 (NEU — messen, welcher Term ihn hochhält)                                                                                   |
+| Steuerung flach (kein Feel, Bindings teils fix)                     | C5                                                                                                                             |
+| ~~Aura = folgende Lampe~~                                           | ✓ V18.104 C6 — **S-BESTÄTIGT** („Hautschimmer passt"); V18.105: die Lampe GESCHNITTEN („kann weg")                             |
+| ~~Wiese homogen, keine Wälder~~                                     | ✓ V18.102 B5+                                                                                                                  |
+| Test-Volatilität (Spieler-im-Fall-Klasse)                           | §6.2-Telemetrie-Disziplin (Muster steht)                                                                                       |
+| localStorage-Größen-Wand                                            | FERN IndexedDB                                                                                                                 |
 
 **Disziplin (unverändert, roadmap §9):** Regel #0 · miss-rate-nicht · verdichte-nie-parallel ·
 KONSUM nicht Existenz · keine halben Schritte · ein bestätigter Bogen = ein Merge. **Dieses

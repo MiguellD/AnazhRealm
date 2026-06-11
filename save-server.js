@@ -200,11 +200,24 @@ const PORTAL_SERVER_SHIM = `(function(){
       if(s){delete conns[m.conn];s.readyState=3;
         for(var j=0;j<servers.length;j++)servers[j].clients.delete(s);
         s.__emit("close");}
+    }else if(m.kind==="srv-state-req"){
+      // F2 (G3) — der kooperative Zustands-Snapshot: die Welt setzt
+      // server.snapshot = function(){ return daten; } (opt-in). Der erste
+      // Server mit Handler antwortet; ohne Handler bleibt der Poll stumm.
+      for(var k2=0;k2<servers.length;k2++){var sv=servers[k2];
+        if(typeof sv.snapshot==="function"){var d;try{d=sv.snapshot();}catch(e){d=undefined;}
+          if(d!==undefined){parent.postMessage({__anazhNet:true,kind:"srv-state",data:d},"*");break;}}}
+    }else if(m.kind==="srv-state-restore"){
+      // F2 (G3) — die Migrations-Mitgift: die Welt setzt
+      // server.restore = function(daten){...} (opt-in). Gepuffert wie
+      // srv-open, läuft also VOR den Verbindungs-Replays des neuen Hosts.
+      for(var k3=0;k3<servers.length;k3++){var sv2=servers[k3];
+        if(typeof sv2.restore==="function"){try{sv2.restore(m.data);}catch(e){}}}
     }
   }
   window.addEventListener("message",function(ev){
     var m=ev.data;if(!m||m.__anazhNet!==true)return;
-    if(m.kind!=="srv-open"&&m.kind!=="srv-recv"&&m.kind!=="srv-close")return;
+    if(m.kind!=="srv-open"&&m.kind!=="srv-recv"&&m.kind!=="srv-close"&&m.kind!=="srv-state-req"&&m.kind!=="srv-state-restore")return;
     if(servers.length===0){buffer.push(m);return;}
     deliver(m);
   });
