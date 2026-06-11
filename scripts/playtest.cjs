@@ -56,8 +56,8 @@ function startSaveServer() {
 // `null` korrekt zur Fehler-Branch zweigen (kein Detail-String mehr auf catch,
 // aber catch ist Browser-Crash-Pfad — passiert nicht auf grünen Läufen). Sub-
 // Welle f rollt diesen Helfer mechanisch durch alle ~200 Call-Sites.
-async function safeEvaluate(page, fn) {
-    return await page.evaluate(fn).catch(() => null);
+async function safeEvaluate(page, fn, ...args) {
+    return await page.evaluate(fn, ...args).catch(() => null);
 }
 
 // V9.52 Sub-Welle a — die Initial-State-Probe als benannte Funktion. War vorher der
@@ -9178,9 +9178,28 @@ async function checkBandWave5(ctx) {
         // Validation
         const v1 = r.validateBlueprintConnections([{ type: "hafting", partA: 0, partB: 1 }], 2);
         out.validAcceptsGood = v1.length === 1;
-        // Unknown type
+        // Unknown type — Ω4 (V18.139, taille-spec §2): seit must-preserve wird
+        // eine STRUKTURELL valide Verbindung mit unbekanntem Typ BEWAHRT
+        // (sie ist signierte Substanz; die typ-gebundenen Lesarten ignorieren
+        // sie: Strength → 0). Struktur-Müll fällt weiter (v3/v4 unten). Der
+        // Test wandert vom alten „lehnt ab" zur neuen Wahrheit (V9.56-i).
         const v2 = r.validateBlueprintConnections([{ type: "schmusen", partA: 0, partB: 1 }], 2);
-        out.validRejectsUnknownType = v2.length === 0;
+        const touchingBp = {
+            parts: [
+                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+            ],
+        };
+        out.validRejectsUnknownType =
+            v2.length === 1 && v2[0].type === "schmusen" && r.computeConnectionStrength(v2[0], touchingBp) === 0;
+        const v2b = r.validateBlueprintConnections(
+            [
+                { type: "schmusen", partA: 0, partB: 99 },
+                { type: "schmusen", partA: 0, partB: 0 },
+            ],
+            2
+        );
+        out.validRejectsUnknownType = out.validRejectsUnknownType && v2b.length === 0;
         // Out-of-range index
         const v3 = r.validateBlueprintConnections([{ type: "hafting", partA: 0, partB: 99 }], 2);
         out.validRejectsBadIndex = v3.length === 0;
@@ -9282,7 +9301,10 @@ async function checkBandWave5(ctx) {
         check("Welle 5 A: Hafting auf Leder ist schwaecher als auf Eisen", wave5aResults.softHaftingWeaker);
         check("Welle 5 A: Lashing passt zu Leder besser als Hafting", wave5aResults.lashingFitsLeather);
         check("Welle 5 A: validateConnections akzeptiert gueltige", wave5aResults.validAcceptsGood);
-        check("Welle 5 A: validateConnections lehnt unbekannten Typ ab", wave5aResults.validRejectsUnknownType);
+        check(
+            "Welle 5 A→Ω4: validateConnections BEWAHRT unbekannten Typ (Strength 0, Struktur-Müll fällt)",
+            wave5aResults.validRejectsUnknownType
+        );
         check("Welle 5 A: validateConnections lehnt Out-of-Range-Index ab", wave5aResults.validRejectsBadIndex);
         check("Welle 5 A: validateConnections lehnt Self-Reference ab", wave5aResults.validRejectsSelfRef);
         check("Welle 5 A: addConnectionToBlueprint haengt an", wave5aResults.addConnectionOk);
@@ -28407,6 +28429,92 @@ async function checkBandTailleOmega3(ctx) {
     );
 }
 
+// Ω4 (V18.139, taille-spec) — DER KONFORMANZ-KORPUS: die eingefrorenen
+// goldenen Dateien (spec/golden/v1/ — NIE regeneriert) werden FÜR IMMER
+// geladen: der heutige Code MUSS sie lesen, beide Signaturen MÜSSEN "valid"
+// verifizieren (bricht das, hat jemand die Taille verletzt — dieses Band IST
+// die Wand), der Snapshot-Kopf trägt weiter ⊇ das goldene Schema, jeder
+// goldene p2p-Typ hat einen lebenden Handler + den pv-Stempel.
+async function checkBandTailleGolden(ctx) {
+    const { page, check } = ctx;
+    const goldenDir = path.join(__dirname, "..", "spec", "golden", "v1");
+    let golden = null;
+    try {
+        golden = {
+            blueprint: JSON.parse(fs.readFileSync(path.join(goldenDir, "blueprint-signed.json"), "utf8")),
+            manifest: JSON.parse(fs.readFileSync(path.join(goldenDir, "world-manifest.json"), "utf8")),
+            snapshotHead: JSON.parse(fs.readFileSync(path.join(goldenDir, "snapshot-head.json"), "utf8")),
+            envelopes: JSON.parse(fs.readFileSync(path.join(goldenDir, "p2p-envelopes.json"), "utf8")),
+        };
+    } catch (e) {
+        check("Ω4: die goldenen Dateien existieren (spec/golden/v1 — NIE regenerieren)", false, e.message);
+        return;
+    }
+    check("Ω4: die goldenen Dateien existieren (spec/golden/v1 — NIE regenerieren)", true);
+    const res = await safeEvaluate(
+        page,
+        async (g) => {
+            const r = window.anazhRealm;
+            const out = {};
+            // (1) der goldene Bauplan: lesbar + Signatur EWIG "valid" + die
+            // Kette lebt + der Admit-Pfad (Re-Derive) bricht die Echtheit nicht.
+            const deser = r._deserializeBlueprint(g.blueprint);
+            out.bpReadable = !!deser && deser.parts.length === 3 && deser.connections.length === 2;
+            out.bpProvenance = !!deser && Array.isArray(deser.provenance) && deser.provenance.length === 1;
+            out.bpSigValid = deser ? (await r.verifyBlueprintSignature(deser)) === "valid" : false;
+            const admitted = r._admitForeignArtifact(g.blueprint);
+            out.bpAdmitValid =
+                !!admitted &&
+                admitted.roleClaimed === "weapon" &&
+                (await r.verifyBlueprintSignature(admitted)) === "valid";
+            // (2) das goldene Manifest: die Sanitize nimmt es + Signatur "valid".
+            const man = r._sanitizeImportedManifest({ ...g.manifest, id: "taille-golden-band" });
+            out.manReadable = !!man && !!man.signature;
+            out.manSigValid = man
+                ? await r._vibeVerify(r._canonicalManifest({ ...g.manifest }), man.signature, man.authorPubKey)
+                : false;
+            // (3) der Snapshot-Kopf: das heutige Schema ⊇ das goldene (additiv
+            // wachsen erlaubt, verlieren = Taille verletzt) + Typen kompatibel.
+            const snap = r.buildStateSnapshot();
+            const missing = [];
+            for (const k of Object.keys(g.snapshotHead.schema)) {
+                const want = g.snapshotHead.schema[k];
+                const v = snap[k];
+                const got = Array.isArray(v) ? "array" : v === null ? "null" : typeof v;
+                if (v === undefined || (got !== want && want !== "null" && got !== "null"))
+                    missing.push(`${k}:${want}→${got}`);
+            }
+            out.snapKeys = missing.length === 0;
+            out.snapMissing = missing.join(",");
+            const wmKeys = Object.keys(snap.worldMeta || {});
+            out.snapWorldMeta = g.snapshotHead.worldMetaKeys.every((k) => wmKeys.includes(k));
+            // (4) die p2p-Umschläge: pv-Vertrag + jeder goldene Typ hat einen
+            // lebenden Handler (kanal-exklusiv ODER im ALLOWED-Durchreich-Satz).
+            out.pvMatches = g.envelopes.pv === r.constructor.PROTO_VERSION;
+            const handlerSrc = r._p2pHandleChannelMessage.toString() + r.p2pHandleMessage.toString();
+            const dead = g.envelopes.types.filter((t) => handlerSrc.indexOf(`"${t.type}"`) < 0).map((t) => t.type);
+            out.typesAlive = dead.length === 0;
+            out.deadTypes = dead.join(",");
+            return out;
+        },
+        golden
+    );
+    if (!res) {
+        check("Ω4: Konformanz-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "Ω4: der goldene Bauplan ist lesbar (3 Parts · 2 Verbindungen · Kette lebt)",
+        res.bpReadable && res.bpProvenance
+    );
+    check("Ω4: die goldene Bauplan-Signatur verifiziert EWIG valid (die Taille hält)", res.bpSigValid);
+    check("Ω4: der Admit-Pfad bewahrt die goldene Echtheit (roleClaimed-Kanon)", res.bpAdmitValid);
+    check("Ω4: das goldene Manifest ist lesbar + seine Signatur valid", res.manReadable && res.manSigValid);
+    check("Ω4: der Snapshot-Kopf trägt ⊇ das goldene Schema (Typen kompatibel)", res.snapKeys, res.snapMissing);
+    check("Ω4: worldMeta trägt ⊇ die goldenen Schlüssel", res.snapWorldMeta);
+    check("Ω4: die goldenen p2p-Typen leben (Handler + pv-Vertrag)", res.pvMatches && res.typesAlive, res.deadTypes);
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
@@ -44419,6 +44527,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18136Audit(ctx);
             await checkBandTailleOmega2(ctx);
             await checkBandTailleOmega3(ctx);
+            await checkBandTailleGolden(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

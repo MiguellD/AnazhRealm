@@ -13528,6 +13528,12 @@ class AnazhRealm {
         // sie zeigen zur Außenwelt (partB=-1) und fallen hier vorab heraus.
         // NUR bekannte attachment-Typen filtern — unbekannte Typen passieren
         // wie eh (die C1-Gelenk-Lesung war nie typ-streng, der Test nutzt "weld").
+        // Ω4-Anmerkung (taille-spec §2): das ist DESIGN, kein Loch — der
+        // Gelenk-TYP emergiert aus der ANKER-GEOMETRIE (typ-frei, bekannte
+        // Substanz), nur die typ-gebundenen Lesarten (Strength/Attachment)
+        // ignorieren fremdes Vokabular. Eine unbekannte Verbindung (seit Ω4
+        // bewahrt) darf sich also bewegen; die Paar-Schleife ist gegen
+        // partB:-1 defensiv (!A || !B → continue, GEMESSEN).
         if (Array.isArray(connections)) {
             connections = connections.filter((cn) => {
                 const t = cn && AnazhRealm.CONNECTION_TYPES[cn.type];
@@ -40446,7 +40452,23 @@ class AnazhRealm {
         for (const c of connections.slice(0, AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT)) {
             if (!c || typeof c !== "object") continue;
             const typeDef = AnazhRealm.CONNECTION_TYPES[c.type];
-            if (!typeDef) continue;
+            // Ω4 (taille-spec §2) — eine STRUKTURELL valide Verbindung mit
+            // UNBEKANNTEM Typ wird BEWAHRT, nicht verworfen: connections sind
+            // signierte Substanz — sie zu droppen kippte die Signatur eines
+            // Zukunfts-Bauplans auf „modified" (must-preserve). Die LESER
+            // ignorieren sie (must-ignore: computeConnectionStrength → 0,
+            // der computeMotionRoles-Filter nimmt nur bekannte Typen,
+            // _attachPointFor matcht exakte kinds). Struktur-Müll fällt weiter.
+            if (!typeDef) {
+                const type = typeof c.type === "string" ? c.type.slice(0, 40) : "";
+                if (!type) continue;
+                const pA = Number(c.partA);
+                const pB = Number(c.partB);
+                if (!Number.isInteger(pA) || pA < 0 || pA >= partsLength) continue;
+                if (!Number.isInteger(pB) || pA === pB || pB >= partsLength || pB < -1) continue;
+                clean.push({ type, partA: pA, partB: pB });
+                continue;
+            }
             const partA = Number(c.partA);
             if (!Number.isInteger(partA) || partA < 0 || partA >= partsLength) continue;
             // V18.110 — C7: ein ATTACHMENT-Punkt (griff/sitz/trage) sitzt an
@@ -55666,7 +55688,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.138.0";
+AnazhRealm.VERSION = "18.139.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
