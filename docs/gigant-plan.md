@@ -384,8 +384,12 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   25–30 ms, kollisions-pflichtig sync). Der Surface-Nets-Sub-Region-SPLICE wäre reine Perf
   (≤10 ms) bei hohem Risiko für die Mesh=BVH-Identität → **bewusst deferred** (V13.9-Backlog).
   Invariante „A2: Edit-Vertex-Delta lokal" verankert (Playtest-Band PhaseAFundament).
-- **A3 — H3 ferne Binnengewässer** [roadmap §4; H]: die ±1024-Atlas-Region wandert mit dem Spieler
-  (eigene Welle, determinismus-brechend → Schöpfer-Sign-off S).
+- ✓ **A3 — H3 ferne Binnengewässer (V18.132):** GEBAUT als seed-deterministische
+  KACHELN (NICHT „Region wandert mit" — das wäre spieler-abhängig = determinismus-
+  brechend; Kachel-Inhalt = f(seed, Koordinate) = peer-identisch). EIN Resolver
+  `_hydroFor/_erosionFor` → alle 8 Leser; Worker gespiegelt; harte Garantie am
+  Build-Eingang + weicher 1-Hz-Vorlauf. GEMESSEN: 34 Flüsse + 13 Seen/Kachel in
+  265 ms · Heimat bit-identisch · Worker==Main 0/32144. PHASE A IST RUND.
 - **A4 — Wasser-Reste-Bündel** [roadmap §4 „Wasser"; je klein] — **S-BESTÄTIGT (Schöpfer-Browser
   10.06. abend: „Übergang Wasser/See/Meer zu Fluss noch komisch, der See-/Meer-Shader noch nicht
   synergetisch, durch die Wellen oder so" — der Faden IST gesehen + hier verortet):** der Kern ist

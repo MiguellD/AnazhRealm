@@ -99,7 +99,9 @@ der leere createNewWorld-Snapshot trug `playerPosition (0,50,0)` → der Reload-
 „vor Erst-Spawn", Restore lässt das Flag false (Browser-Pfad-Sonde `diag-genesis-spawn.cjs`
 rot→grün) · ~~Haupt-Fog an die Ring-Kante koppeln~~ **GEBAUT (V18.103 A5):** fog.far ≤
 (ringRadius+0.5)·span · **A6 Körper-Kollision GEBAUT (V18.103):** Begraben-Rettung + Sprung-Klemme +
-Ego-Auge-Clip. Danach offen: H3 ferne Seen/Flüsse (Region mitwandern, determinismus-brechend → S).
+Ego-Auge-Clip. ~~H3 ferne Seen/Flüsse~~ **GEBAUT (V18.132: seed-deterministische
+KACHELN statt „Region mitwandern" — f(seed, Koordinate) bricht den Determinismus NICHT; Worker
+gespiegelt, Heimat bit-identisch, GEMESSEN Worker==Main 0/32144).**
 
 **LOD/Render** — U2 Wasser-LOD (heute fest LOD0) · ~~U4 Deko-Distanz/Dichte/Impostor~~ **GEBAUT (V18.131: Band-getrieben + das EINE Fernfeld-Impostor-Mesh pro Art; Look-Sign-off offen)** · ~~U5 Schatten-CSM~~ **GEBAUT (V18.130: r184-CSMShadowNode an den DETAIL_CASCADE-Band-Kanten, Snap pro Kaskade eingebaut; Look/FPS-Sign-off offen)** ·
 U6 Clipmap (Draw-Call-Hebel) · R1 Schatten-Snap (gebaut, Sign-off offen) · R2 Normale in Geometrie

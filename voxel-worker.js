@@ -44,6 +44,8 @@ const state = {
     baseHeight: 0,
     waterLevel: 0,
     hydrosphere: null, // { ready, originX, originZ, cell, dim, riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind} }
+    hydroTiles: null, // A3 (V18.132) — {key: tile} ferne Kacheln (gleicher Feld-Satz wie hydrosphere)
+    erosionTiles: null, // A3 (V18.132) — {key: {originX, originZ, cell, dim, delta}}
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
     erosion: null, // { originX, originZ, cell, dim, delta }
     tarns: null, // Array of { x, z, d, reach2, twoSig2 }
@@ -127,6 +129,8 @@ function applyStateSnapshot(snap) {
     if (snap.hydrosphere !== undefined) state.hydrosphere = snap.hydrosphere;
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
     if (snap.erosion !== undefined) state.erosion = snap.erosion;
+    if (snap.hydroTiles !== undefined) state.hydroTiles = snap.hydroTiles; // A3 (V18.132)
+    if (snap.erosionTiles !== undefined) state.erosionTiles = snap.erosionTiles; // A3 (V18.132)
     if (snap.tarns !== undefined) state.tarns = snap.tarns;
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
     if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
@@ -361,8 +365,47 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     return Math.max(withoutTarnFinal + td, waterRef + 1);
 }
 
-function erosionDeltaAt(x, z) {
+// A3 (V18.132) — Mirror der Region-Aufloesung (_hydroTileKeyFor/_hydroFor/
+// _erosionFor in anazhRealm.js): Heimat-Region wenn (x,z) in ihr, sonst die
+// Kachel, sonst die Heimat (deren OOB-Logik in den Lesern = der alte Pfad).
+// MUSS 1:1 mit dem Main wandern (Determinismus-Wand). Kachel-Container ist
+// hier ein plain Object (postMessage-Form), im Main eine Map — gleiche Logik.
+function hydroTileKeyFor(x, z) {
+    const size = 2048; // AnazhRealm.HYDROSPHERE.regionSize (frozen Welt-Konstante)
+    const half = size / 2;
+    return Math.floor((x + half) / size) + "," + Math.floor((z + half) / size);
+}
+
+function hydroFor(x, z) {
+    const h = state.hydrosphere;
+    if (h && h.ready) {
+        const sizeM = h.dim * h.cell;
+        if (x >= h.originX && z >= h.originZ && x < h.originX + sizeM && z < h.originZ + sizeM) return h;
+        const tiles = state.hydroTiles;
+        if (tiles) {
+            const t = tiles[hydroTileKeyFor(x, z)];
+            if (t && t.ready) return t;
+        }
+    }
+    return h;
+}
+
+function erosionFor(x, z) {
     const e = state.erosion;
+    if (e) {
+        const sizeM = e.dim * e.cell;
+        if (x >= e.originX && z >= e.originZ && x < e.originX + sizeM && z < e.originZ + sizeM) return e;
+    }
+    const tiles = state.erosionTiles;
+    if (tiles) {
+        const t = tiles[hydroTileKeyFor(x, z)];
+        if (t) return t;
+    }
+    return e;
+}
+
+function erosionDeltaAt(x, z) {
+    const e = erosionFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (!e) return 0;
     const fx = (x - e.originX) / e.cell;
     const fz = (z - e.originZ) / e.cell;
@@ -393,7 +436,7 @@ function tarnDeltaAt(x, z) {
 }
 
 function hydrosphereCarveAt(x, z) {
-    const h = state.hydrosphere;
+    const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (!h || !h.ready) return 0;
     let cut = 0;
     const rb = h.riverBuckets;
@@ -436,7 +479,7 @@ function hydrosphereCarveAt(x, z) {
 }
 
 function hydrosphereLakeAt(x, z) {
-    const h = state.hydrosphere;
+    const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (!h || !h.ready) return null;
     const lw = h.lakeW;
     const lb = h.lakeBedCell;
@@ -526,7 +569,7 @@ function worldFieldAt(x, z) {
 }
 
 function hydroRiverAt(x, z) {
-    const h = state.hydrosphere;
+    const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (!h || !h.ready || !h.riverBuckets) return null;
     const bs = h.bucketSize;
     const bd = h.bucketsDim;
@@ -568,7 +611,7 @@ function hydroRiverAt(x, z) {
 
 function waterLevelAt(x, z) {
     let level = typeof state.waterLevel === "number" ? state.waterLevel : 0;
-    const h = state.hydrosphere;
+    const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (h && h.ready && h.water && h.water.waterKind) {
         const dim = h.dim;
         const cell = h.cell;
@@ -599,7 +642,7 @@ function waterLevelAt(x, z) {
 function atlasWaterLevelAt(x, z, terrainTopY) {
     let level = -Infinity;
     let inRegion = false;
-    const h = state.hydrosphere;
+    const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (h && h.ready && h.water && h.water.waterKind) {
         const dim = h.dim;
         const cell = h.cell;
@@ -1330,32 +1373,45 @@ function chunkHasAnyWater(cx, cz, lod) {
             return true;
         }
     }
-    const h = state.hydrosphere;
-    if (!h || !h.ready) return false;
-    if (h.water && h.water.waterKind) {
-        const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
-        const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
-        const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
-        const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
-        const wK = h.water.waterKind;
-        for (let cj = c0j; cj <= c1j; cj++) {
-            for (let ci = c0i; ci <= c1i; ci++) {
-                if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
-                const kind = wK[ci + cj * h.dim];
-                if (kind === 1 || kind === 2) return true;
+    const hHome = state.hydrosphere;
+    if (!hHome || !hHome.ready) return false;
+    // A3 (V18.132) — Mirror des Main-Umbaus: alle Regionen des Footprints.
+    const regions = [];
+    for (const pp of [
+        [ox, oz],
+        [ox + span, oz],
+        [ox, oz + span],
+        [ox + span, oz + span],
+    ]) {
+        const hr = hydroFor(pp[0], pp[1]);
+        if (hr && hr.ready && regions.indexOf(hr) < 0) regions.push(hr);
+    }
+    for (const h of regions) {
+        if (h.water && h.water.waterKind) {
+            const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
+            const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
+            const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
+            const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
+            const wK = h.water.waterKind;
+            for (let cj = c0j; cj <= c1j; cj++) {
+                for (let ci = c0i; ci <= c1i; ci++) {
+                    if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
+                    const kind = wK[ci + cj * h.dim];
+                    if (kind === 1 || kind === 2) return true;
+                }
             }
         }
-    }
-    if (h.riverBuckets) {
-        const b0i = Math.floor((ox - h.originX) / h.bucketSize);
-        const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
-        const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
-        const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
-        for (let bj = b0j; bj <= b1j; bj++) {
-            for (let bi = b0i; bi <= b1i; bi++) {
-                if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
-                const list = h.riverBuckets[bi + bj * h.bucketsDim];
-                if (list && list.length) return true;
+        if (h.riverBuckets) {
+            const b0i = Math.floor((ox - h.originX) / h.bucketSize);
+            const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
+            const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
+            const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
+            for (let bj = b0j; bj <= b1j; bj++) {
+                for (let bi = b0i; bi <= b1i; bi++) {
+                    if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
+                    const list = h.riverBuckets[bi + bj * h.bucketsDim];
+                    if (list && list.length) return true;
+                }
             }
         }
     }

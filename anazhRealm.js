@@ -16307,6 +16307,45 @@ class AnazhRealm {
             snap.erosion = null;
         }
         snap.tarns = Array.isArray(this.state.tarns) ? this.state.tarns.map((t) => ({ ...t })) : null;
+        // A3 (V18.132) — die fernen KACHELN reisen mit (derselbe Feld-Satz wie
+        // snap.hydrosphere/erosion, als plain Object {key: tile} — der Worker
+        // liest sie in hydroFor/erosionFor; ohne sie baute er ferne Chunks
+        // gegen die alte OOB-Wahrheit = Determinismus-Bruch main↔worker).
+        snap.hydroTiles = null;
+        if (this.state.hydroTiles && this.state.hydroTiles.size) {
+            snap.hydroTiles = {};
+            for (const [key, t] of this.state.hydroTiles) {
+                if (!t || !t.ready) continue;
+                snap.hydroTiles[key] = {
+                    ready: true,
+                    originX: t.originX,
+                    originZ: t.originZ,
+                    cell: t.cell,
+                    dim: t.dim,
+                    bucketSize: t.bucketSize,
+                    bucketsDim: t.bucketsDim,
+                    riverBuckets: t.riverBuckets,
+                    lakeBedCell: t.lakeBedCell,
+                    lakeW: t.lakeW,
+                    lakeNear: t.lakeNear,
+                    water: t.water || null,
+                };
+            }
+        }
+        snap.erosionTiles = null;
+        if (this.state.erosionTiles && this.state.erosionTiles.size) {
+            snap.erosionTiles = {};
+            for (const [key, t] of this.state.erosionTiles) {
+                if (!t) continue;
+                snap.erosionTiles[key] = {
+                    originX: t.originX,
+                    originZ: t.originZ,
+                    cell: t.cell,
+                    dim: t.dim,
+                    delta: t.delta,
+                };
+            }
+        }
         return snap;
     }
 
@@ -18158,6 +18197,11 @@ class AnazhRealm {
     // Zwei try/catch — beide Stufen dürfen den Worldgen nie brechen.
     _worldgenComputeAndBuildHydrosphere() {
         try {
+            // A3 (V18.132) — ein Welt-Regen erneuert die Heimat-Wahrheit: die
+            // fernen Kacheln des ALTEN Seeds muessen fallen (lazy-Neubau aus
+            // dem neuen Seed; derived, nie persistiert).
+            this.state.hydroTiles = new Map();
+            this.state.erosionTiles = new Map();
             const hydro = this._computeHydrosphere();
             this.state.hydrosphere = hydro;
             this.log(
@@ -18202,6 +18246,17 @@ class AnazhRealm {
         if (h && Array.isArray(h.lakes)) {
             for (const lake of h.lakes) {
                 if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
+            }
+        }
+        // A3 (V18.132) — das Band ist GLOBAL (V9.77: alle Chunks teilen die
+        // Thresholds): die See-Spiegel der fernen Kacheln heben es mit, sonst
+        // wuerde der Band-Skip ihre Zellen als garantiert-AIR ueberspringen.
+        if (this.state.hydroTiles) {
+            for (const t of this.state.hydroTiles.values()) {
+                if (!t || !Array.isArray(t.lakes)) continue;
+                for (const lake of t.lakes) {
+                    if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
+                }
             }
         }
         this.state.hydroBand = {
@@ -18358,15 +18413,20 @@ class AnazhRealm {
     // erodierten Gelände. Zirkel-frei: solange `state.erosion` null ist,
     // liefert `_erosionDeltaAt` 0 → die Sample-Schleife sieht die rohe
     // Surface. Voll deterministisch (kein RNG) → multiplayer-sicher.
-    _computeErosion() {
+    _computeErosion(origin = null) {
         const E = AnazhRealm.EROSION;
         const dim = Math.max(8, Math.round(E.regionSize / E.cell));
-        const originX = -E.regionSize / 2;
-        const originZ = -E.regionSize / 2;
+        // A3 (V18.132) — parametrisierter Ursprung (Kachel-Erosion): die
+        // Heimat-Region nullt `state.erosion` fuer die Re-Compute-Reinheit;
+        // eine KACHEL laesst sie stehen (die Region-Aufloesung `_erosionFor`
+        // ist exklusiv — das Kachel-Fenster liest die Heimat-Erosion nie,
+        // und die eigene existiert noch nicht → roh per Konstruktion).
+        const originX = origin && Number.isFinite(origin.x) ? origin.x : -E.regionSize / 2;
+        const originZ = origin && Number.isFinite(origin.z) ? origin.z : -E.regionSize / 2;
         const n = dim * dim;
         // (1) die rohe Makro-Surface ins Heightfield sampeln (includeDetail
         // false — erodiert wird die Makro-Form, nicht das Hochfrequenz-Detail).
-        this.state.erosion = null; // ein Re-Compute sieht so die rohe Surface
+        if (!origin) this.state.erosion = null; // ein Re-Compute sieht so die rohe Surface
         // V9.51 — `_terrainMacroSurfaceY` addiert sonst die Tarn-Mulden; die
         // Erosion läuft VOR `_hydroSeedTarns` (tarn-frei) und muss bei einem
         // Re-Run (Determinismus-Test) ebenfalls tarn-frei sampeln, sonst
@@ -18657,8 +18717,107 @@ class AnazhRealm {
     // Raster noch nicht gebaut ist). `_terrainMacroSurfaceY` addiert es → die
     // ganze Welt (Dichte, Hydrosphäre) sieht das erodierte Gelände. O(1) —
     // wird beim Meshing millionenfach gerufen.
-    _erosionDeltaAt(x, z) {
+    // ===== A3 (V18.132) — FERNE BINNENGEWAESSER: die seed-deterministischen ====
+    // KACHELN. Die Heimat-Region (state.hydrosphere/erosion, ±1024 m) bleibt
+    // UNANGETASTET (Welt-Identitaet); jenseits liefert eine lazy berechnete
+    // KACHEL (2048 m, dieselbe Maschinerie mit parametrisiertem Ursprung)
+    // Seen·Fluesse·Erosion. Kachel-Inhalt = f(seed, Kachel-Koordinate) — fuer
+    // jeden Peer identisch, egal wann/von wem berechnet (das alte Plan-Konzept
+    // „Region wandert mit dem Spieler" waere spieler-abhaengig = determinismus-
+    // brechend gewesen; die Kachel-Form vermeidet das strukturell). Worker-
+    // gespiegelt (hydroFor/erosionFor in voxel-worker.js — Determinismus-Wand);
+    // Kacheln sind DERIVED (nie im Snapshot), Welt-Regen leert sie.
+    _hydroTileKeyFor(x, z) {
+        const size = AnazhRealm.HYDROSPHERE.regionSize;
+        const half = size / 2;
+        return `${Math.floor((x + half) / size)},${Math.floor((z + half) / size)}`;
+    }
+
+    // Die EINE Region-Aufloesung fuer alle Hydro-Leser: Heimat-Region, wenn
+    // (x,z) in ihr liegt; sonst die Kachel; sonst die Heimat (deren OOB-Logik
+    // in den Lesern = exakt der alte Pfad — H3-Ozean etc., bit-identisch).
+    _hydroFor(x, z) {
+        const h = this.state.hydrosphere;
+        if (h && h.ready) {
+            const sizeM = h.dim * h.cell;
+            if (x >= h.originX && z >= h.originZ && x < h.originX + sizeM && z < h.originZ + sizeM) return h;
+            const tiles = this.state.hydroTiles;
+            if (tiles && tiles.size) {
+                const t = tiles.get(this._hydroTileKeyFor(x, z));
+                if (t && t.ready) return t;
+            }
+        }
+        return h;
+    }
+
+    _erosionFor(x, z) {
         const e = this.state.erosion;
+        if (e) {
+            const sizeM = e.dim * e.cell;
+            if (x >= e.originX && z >= e.originZ && x < e.originX + sizeM && z < e.originZ + sizeM) return e;
+        }
+        const tiles = this.state.erosionTiles;
+        if (tiles && tiles.size) {
+            const t = tiles.get(this._hydroTileKeyFor(x, z));
+            if (t) return t;
+        }
+        return e;
+    }
+
+    // Stellt sicher, dass jede Kachel, die das Rechteck [x±r, z±r] schneidet,
+    // berechnet ist (Heimat-Region "0,0" ist immer da). Aufgerufen am Chunk-
+    // Build-Eingang (Chunk-AABB + Pad — die HARTE Garantie: kein Chunk baut,
+    // bevor seine Wasser/Erosions-Wahrheit steht → keine Kachel-Naht durch
+    // Build-Reihenfolge). Nach jeder neuen Kachel: hydroBand neu + VOLLER
+    // Worker-Re-Sync (gen-bump → in-flight stale Builds verworfen, V9.90-
+    // Mechanik — die Nachrichten-Ordnung garantiert Kachel-vor-Request).
+    _ensureHydroTilesAround(x, z, r) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return 0; // vor dem Worldgen gibt es keine Wahrheit zu kacheln
+        const size = AnazhRealm.HYDROSPHERE.regionSize;
+        const half = size / 2;
+        const r0x = Math.floor((x - r + half) / size);
+        const r1x = Math.floor((x + r + half) / size);
+        const r0z = Math.floor((z - r + half) / size);
+        const r1z = Math.floor((z + r + half) / size);
+        let made = 0;
+        for (let rx = r0x; rx <= r1x; rx++) {
+            for (let rz = r0z; rz <= r1z; rz++) {
+                if (rx === 0 && rz === 0) continue;
+                const key = `${rx},${rz}`;
+                if (!this.state.hydroTiles) this.state.hydroTiles = new Map();
+                if (!this.state.erosionTiles) this.state.erosionTiles = new Map();
+                if (this.state.hydroTiles.has(key)) continue;
+                const t0 = performance.now();
+                const origin = { x: rx * size - half, z: rz * size - half };
+                // EROSION ZUERST (dieselbe Worldgen-Reihenfolge wie die Heimat:
+                // die Hydro-Probe sieht die erodierten Taeler via _erosionFor).
+                this.state.erosionTiles.set(key, this._computeErosion(origin));
+                this.state.hydroTiles.set(key, this._computeHydrosphere(origin));
+                this._computeHydroBand();
+                made++;
+                const t = this.state.hydroTiles.get(key);
+                this.log(
+                    `A3: Hydro-Kachel ${key} berechnet (${Math.round(performance.now() - t0)} ms — ` +
+                        `${t.rivers ? t.rivers.length : 0} Fluesse, ${t.lakes ? t.lakes.length : 0} Seen)`,
+                    "INFO"
+                );
+            }
+        }
+        // NUR einen EXISTIERENDEN Worker syncen, NIE bootstrappen:
+        // `_voxelWorkerSyncWorldgenState` würde via `_getVoxelWorker` einen
+        // genullten Worker RE-SPAWNEN (V17.118) — ein Seiteneffekt, der den
+        // Sync-Fail-Pfad (V9.40-e) unterläuft und hier nichts gewinnt (ohne
+        // Worker baut Stufe 3 sync mit der Main-Kachel-Wahrheit — korrekt per
+        // Konstruktion). Die Caches brauchen KEIN Clear: kein Chunk der neuen
+        // Kachel wurde je gebaut (die harte Garantie), und in-flight Requests
+        // verwirft der gen-bump (V9.90).
+        if (made && this.state.voxelWorker) this._voxelWorkerSyncState({ op: "state-set" });
+        return made;
+    }
+
+    _erosionDeltaAt(x, z) {
+        const e = this._erosionFor(x, z);
         if (!e) return 0;
         const fx = (x - e.originX) / e.cell;
         const fz = (z - e.originZ) / e.cell;
@@ -19260,7 +19419,7 @@ class AnazhRealm {
     // Die SEE-Becken wandern seit V9.45-b nach `_hydrosphereLakeAt` — sie
     // sind kein reiner Schnitt mehr, sondern ein flacher, wasserdichter Topf.
     _hydrosphereCarveAt(x, z) {
-        const h = this.state.hydrosphere;
+        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (!h || !h.ready) return 0;
         let cut = 0;
         // --- Fluss-Kanal: nächstes Segment im Bucket ---
@@ -19312,7 +19471,7 @@ class AnazhRealm {
     // bleibt vom festen Bett verdeckt — kein zweites Wasser-Layer mehr).
     // Bilinear; der `lakeNear`-Early-Out hält die wasserlose Welt billig.
     _hydrosphereLakeAt(x, z) {
-        const h = this.state.hydrosphere;
+        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (!h || !h.ready) return null;
         const lw = h.lakeW;
         const lb = h.lakeBedCell;
@@ -20403,36 +20562,51 @@ class AnazhRealm {
                 return true;
             }
         }
-        const h = this.state.hydrosphere;
-        if (!h || !h.ready) return false;
-        // (2) Atlas-Marker: Ozean (kind === 1) ODER See (kind === 2) im
-        // Chunk-Footprint (+1 Cell Marge für Boundary-Continuität — der
-        // 16-m-Atlas-Cell-Raster liegt nicht perfekt auf dem Chunk-Raster).
-        if (h.water && h.water.waterKind) {
-            const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
-            const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
-            const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
-            const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
-            const wK = h.water.waterKind;
-            for (let cj = c0j; cj <= c1j; cj++) {
-                for (let ci = c0i; ci <= c1i; ci++) {
-                    if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
-                    const kind = wK[ci + cj * h.dim];
-                    if (kind === 1 || kind === 2) return true;
+        const hHome = this.state.hydrosphere;
+        if (!hHome || !hHome.ready) return false;
+        // A3 (V18.132) — der Chunk kann eine KACHEL-Grenze queren: alle
+        // Regionen sammeln, die sein Footprint (+1-Cell-Marge) beruehrt
+        // (Heimat + bis zu 4 Kacheln via die 4 Ecken; dedupe per Identitaet).
+        const regions = [];
+        for (const [px, pz] of [
+            [ox, oz],
+            [ox + span, oz],
+            [ox, oz + span],
+            [ox + span, oz + span],
+        ]) {
+            const hr = this._hydroFor(px, pz);
+            if (hr && hr.ready && regions.indexOf(hr) < 0) regions.push(hr);
+        }
+        for (const h of regions) {
+            // (2) Atlas-Marker: Ozean (kind === 1) ODER See (kind === 2) im
+            // Chunk-Footprint (+1 Cell Marge für Boundary-Continuität — der
+            // 16-m-Atlas-Cell-Raster liegt nicht perfekt auf dem Chunk-Raster).
+            if (h.water && h.water.waterKind) {
+                const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
+                const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
+                const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
+                const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
+                const wK = h.water.waterKind;
+                for (let cj = c0j; cj <= c1j; cj++) {
+                    for (let ci = c0i; ci <= c1i; ci++) {
+                        if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
+                        const kind = wK[ci + cj * h.dim];
+                        if (kind === 1 || kind === 2) return true;
+                    }
                 }
             }
-        }
-        // (3) Fluss-Bucket im Footprint
-        if (h.riverBuckets) {
-            const b0i = Math.floor((ox - h.originX) / h.bucketSize);
-            const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
-            const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
-            const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
-            for (let bj = b0j; bj <= b1j; bj++) {
-                for (let bi = b0i; bi <= b1i; bi++) {
-                    if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
-                    const list = h.riverBuckets[bi + bj * h.bucketsDim];
-                    if (list && list.length) return true;
+            // (3) Fluss-Bucket im Footprint
+            if (h.riverBuckets) {
+                const b0i = Math.floor((ox - h.originX) / h.bucketSize);
+                const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
+                const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
+                const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
+                for (let bj = b0j; bj <= b1j; bj++) {
+                    for (let bi = b0i; bi <= b1i; bi++) {
+                        if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
+                        const list = h.riverBuckets[bi + bj * h.bucketsDim];
+                        if (list && list.length) return true;
+                    }
                 }
             }
         }
@@ -22457,6 +22631,18 @@ class AnazhRealm {
     // `forceSync` (Spieler-Chunk + Test-Naht) überspringt die async-Stufen →
     // direkt Stufe 3 (immer BVH, kein Worker-Roundtrip → Instant-Feedback).
     _acquireVoxelChunkBuild(cx, cz, lod, opts = {}) {
+        // A3 (V18.132) — die HARTE Kachel-Garantie am EINEN Build-Eingang
+        // (V9.82: alle Stufen laufen hier durch): bevor irgendein Chunk baut,
+        // steht die Hydro/Erosions-Wahrheit seines Footprints (+64-m-Pad — die
+        // Smoothing/Atlas/Bucket-Reads ueber die Grenze). O(4 Map-Lookups),
+        // wenn nichts fehlt; eine NEUE Kachel re-synct den Worker VOR dem
+        // Request (Nachrichten-Ordnung) → main- und worker-gebaute Chunks
+        // teilen dieselbe Kachel-Wahrheit (Determinismus-Wand).
+        {
+            const { span } = this._voxelChunkConfig(0);
+            const half = span / 2;
+            this._ensureHydroTilesAround(cx * span + half, cz * span + half, half + 64);
+        }
         if (opts.forceSync === true) {
             return this._buildVoxelChunkData(cx, cz, lod);
         }
@@ -23245,7 +23431,7 @@ class AnazhRealm {
     // Aufrufer setzt `state.hydrosphere` erst nach vollständigem Bau (so
     // greift der spätere V9.43-d-Carve-Term während des Baus nicht — kein
     // Zirkel: die Surface wird un-gecarvt gesampelt).
-    _computeHydrosphere() {
+    _computeHydrosphere(origin = null) {
         // V9.43-d — der Carve darf NICHT in die eigene Berechnung leiten: ein
         // Re-Compute (Welt-Regen, Test) hätte ein gesetztes `state.hydrosphere`,
         // und `_voxelSurfaceY` läse dann die GECARVTE Surface → Zirkel. Das
@@ -23254,7 +23440,7 @@ class AnazhRealm {
         // allerersten Worldgen ist `state.hydrosphere` ohnehin noch null.
         this._hydroComputing = true;
         try {
-            const ctx = this._hydroInit();
+            const ctx = this._hydroInit(origin);
             this._hydroMarkOcean(ctx);
             this._hydroPriorityFlood(ctx);
             this._hydroFlowDirection(ctx);
@@ -23405,7 +23591,7 @@ class AnazhRealm {
     // ist der exakte Schnitt mit dem ECHTEN Voxel-Terrain. `hydrosphere.md` §14.
     _waterLevelAt(x, z) {
         let level = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        const h = this.state.hydrosphere;
+        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (h && h.ready && h.water && h.water.waterKind) {
             // See: das 3×3 der 16-m-Zellen (1-Zell-Dilatation gegen den
             // 16-m-quantisierten Becken-Rand — der `_voxelSurfaceY`-Test klemmt
@@ -23452,7 +23638,7 @@ class AnazhRealm {
     _atlasWaterLevelAt(x, z, terrainTopY) {
         let level = -Infinity;
         let inRegion = false;
-        const h = this.state.hydrosphere;
+        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (h && h.ready && h.water && h.water.waterKind) {
             const dim = h.dim;
             const cell = h.cell;
@@ -23737,7 +23923,7 @@ class AnazhRealm {
     // → das Wasser füllt den Kanal zu ~60 %, folgt dem Gefälle), oder null.
     // O(1) über den `riverBuckets`-Index (wie `_hydrosphereCarveAt`).
     _hydroRiverAt(x, z) {
-        const h = this.state.hydrosphere;
+        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (!h || !h.ready || !h.riverBuckets) return null;
         const bs = h.bucketSize;
         const bd = h.bucketsDim;
@@ -23804,7 +23990,7 @@ class AnazhRealm {
     // statt eines 91-Schritt-Säulen-Scans). Ein 3×3-Blur glättet jeden Rest
     // (defense-in-depth). `state.hydrosphere` ist während des Baus noch
     // null — der V9.43-d-Carve-Term greift also nicht (kein Zirkel).
-    _hydroInit() {
+    _hydroInit(origin = null) {
         const H = AnazhRealm.HYDROSPHERE;
         const base = this.state.terrainBaseHeight || 0;
         let waterLevel = this.state.waterLevel;
@@ -23814,8 +24000,11 @@ class AnazhRealm {
         const size = H.regionSize;
         const cell = H.cell;
         const dim = Math.max(8, Math.round(size / cell));
-        const originX = -size / 2;
-        const originZ = -size / 2;
+        // A3 (V18.132) — parametrisierter Ursprung: ohne `origin` die Heimat-
+        // Region (bit-identisch zu immer); mit `origin` eine ferne KACHEL
+        // (seed-deterministisch — f(seed, Kachel-Koordinate), nie Spieler-Pfad).
+        const originX = origin && Number.isFinite(origin.x) ? origin.x : -size / 2;
+        const originZ = origin && Number.isFinite(origin.z) ? origin.z : -size / 2;
         const n = dim * dim;
         const raw = new Float64Array(n);
         for (let j = 0; j < dim; j++) {
@@ -24640,7 +24829,7 @@ class AnazhRealm {
 
     _hydroWaterLevelAt(x, z) {
         const base = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
-        const hydro = this.state.hydrosphere;
+        const hydro = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (!hydro || !hydro.ready || !Array.isArray(hydro.lakes)) return base;
         const { dim, cell, originX, originZ } = hydro;
         const i = Math.floor((x - originX) / cell);
@@ -54237,6 +54426,18 @@ class AnazhRealm {
             // U4 (V18.131) — das Deko-Fernfeld baut auf den RUHIGSTEN Frames
             // (kein Terrain, kein Gras, kein Scatter): eine Art pro Tick.
             if (!grassBuilt && !scatterBuilt) this._tickDekoFernfeld();
+            // A3 (V18.132) — der WEICHE Kachel-Vorlauf (throttled ~1 Hz): die
+            // Hydro-Kacheln um den Spieler entstehen ~300 m BEVOR der Build-
+            // Eingang sie hart braucht → der ~265-ms-Compute faellt auf einen
+            // ruhigen Frame der Wanderung, nicht in den Chunk-Build-Moment.
+            const nowTiles = performance.now();
+            const lastTileCheck = this._lastHydroTileCheck ?? -Infinity;
+            if (nowTiles - lastTileCheck > 1000 && playerPos) {
+                this._lastHydroTileCheck = nowTiles;
+                const ringR = (this.state.chunkRingRadius || 4) + 0.5;
+                const reach = ringR * this._voxelChunkConfig(0).span + 300;
+                this._ensureHydroTilesAround(playerPos.x, playerPos.z, reach);
+            }
         }
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
@@ -54879,7 +55080,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.131.0";
+AnazhRealm.VERSION = "18.132.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

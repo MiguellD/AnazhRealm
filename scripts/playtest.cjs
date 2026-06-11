@@ -27727,6 +27727,103 @@ async function checkBandV18131DekoKaskade(ctx) {
     );
 }
 
+// V18.132 — A3 (gigant-plan §5): FERNE BINNENGEWAESSER via seed-deterministische
+// KACHELN. Heimat-Region (±1024) UNANGETASTET; jenseits liefern lazy Kacheln
+// (2048 m, f(seed, Koordinate) — peer-identisch egal wann berechnet; die alte
+// Plan-Idee „Region wandert mit dem Spieler" waere determinismus-brechend
+// gewesen) Seen·Fluesse·Erosion. Voller Beweis: `scripts/diag-ferne-seen.cjs`
+// (GEMESSEN GRUEN: Kachel 34 Fluesse + 13 Seen in 265 ms · Heimat bit-identisch ·
+// Kachel deterministisch · Worker==Main 0/32144 am fernen Fluss-Chunk).
+async function checkBandV18132FerneSeen(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.machinery =
+            typeof r._hydroFor === "function" &&
+            typeof r._erosionFor === "function" &&
+            typeof r._hydroTileKeyFor === "function" &&
+            typeof r._ensureHydroTilesAround === "function";
+        // KONSUM (V17.31): ALLE Hydro-Leser laufen durch die Region-Aufloesung.
+        const readers = [
+            r._erosionDeltaAt,
+            r._hydrosphereCarveAt,
+            r._hydrosphereLakeAt,
+            r._waterLevelAt,
+            r._atlasWaterLevelAt,
+            r._hydroRiverAt,
+            r._hydroWaterLevelAt,
+            r._voxelChunkHasAnyWater,
+        ];
+        out.readersResolved = readers.every((f) => /_hydroFor|_erosionFor/.test(f.toString()));
+        // Der EINE Build-Eingang traegt die harte Kachel-Garantie.
+        out.buildGuarded = /_ensureHydroTilesAround/.test(r._acquireVoxelChunkBuild.toString());
+        // Worker-Mirror (Quelle per fetch — gleiche Origin): Resolver + Apply.
+        try {
+            const src = await fetch("voxel-worker.js").then((x) => x.text());
+            out.workerMirror =
+                /function hydroFor\(/.test(src) &&
+                /function erosionFor\(/.test(src) &&
+                /snap\.hydroTiles/.test(src) &&
+                /snap\.erosionTiles/.test(src);
+        } catch (_e) {
+            out.workerMirror = "fetch-fail";
+        }
+        if (!r.state.hydrosphere || !r.state.hydrosphere.ready) {
+            out.unmeasurable = true; // Welt zu jung — unmessbar = bestanden (V13.1)
+            return out;
+        }
+        // HEIMAT-IDENTITAET: Fingerprint vor/nach einem Kachel-Bau bit-gleich.
+        const fp = () => {
+            const v = [];
+            for (let i = 0; i < 6; i++)
+                for (let j = 0; j < 6; j++) {
+                    const x = -900 + i * 360;
+                    const z = -900 + j * 360;
+                    v.push(r._atlasWaterLevelAt(x, z, -Infinity), r._erosionDeltaAt(x, z));
+                }
+            return JSON.stringify(v);
+        };
+        const before = fp();
+        r._ensureHydroTilesAround(-2048, 0, 10); // Kachel WEST (-1,0)
+        const tile = r.state.hydroTiles ? r.state.hydroTiles.get("-1,0") : null;
+        out.tileBuilt = !!(tile && tile.ready);
+        out.tileSubstanz = tile ? (tile.rivers ? tile.rivers.length : 0) + (tile.lakes ? tile.lakes.length : 0) : 0;
+        out.homeIdentical = fp() === before;
+        // hydroBand deckt die Kachel-Seen (V9.77: das Band ist global).
+        let maxLake = -Infinity;
+        if (tile && Array.isArray(tile.lakes))
+            for (const lk of tile.lakes) if (Number.isFinite(lk.level) && lk.level > maxLake) maxLake = lk.level;
+        out.bandCovers = !Number.isFinite(maxLake) || (r.state.hydroBand && r.state.hydroBand.top >= maxLake);
+        // Der Worker-Snapshot traegt die Kachel.
+        const snap = r._voxelWorkerSnapshotState();
+        out.snapCarries = !!(snap.hydroTiles && snap.hydroTiles["-1,0"]);
+        return out;
+    });
+    if (!res) {
+        check("V18.132 Ferne Seen: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/_erosionFor/_ensure...)", res.machinery);
+    check("V18.132 Ferne Seen: ALLE 8 Hydro-Leser laufen durch die Region-Aufloesung (KONSUM)", res.readersResolved);
+    check("V18.132 Ferne Seen: der EINE Build-Eingang traegt die harte Kachel-Garantie", res.buildGuarded);
+    check(
+        "V18.132 Ferne Seen: der Worker-Mirror traegt hydroFor/erosionFor + Kachel-Apply",
+        res.workerMirror === true,
+        String(res.workerMirror)
+    );
+    if (!res.unmeasurable) {
+        check(
+            "V18.132 Ferne Seen: die WEST-Kachel baut mit Substanz (Fluesse+Seen > 0)",
+            res.tileBuilt && res.tileSubstanz > 0,
+            `substanz=${res.tileSubstanz}`
+        );
+        check("V18.132 Ferne Seen: die HEIMAT-Region bleibt bit-identisch (Welt-Identitaet)", res.homeIdentical);
+        check("V18.132 Ferne Seen: hydroBand deckt die Kachel-Seen (global, V9.77)", res.bandCovers);
+        check("V18.132 Ferne Seen: der Worker-Snapshot traegt die Kachel (Determinismus-Wand)", res.snapCarries);
+    }
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
@@ -43729,6 +43826,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18129HochBecken(ctx);
             await checkBandV18130CsmShadow(ctx);
             await checkBandV18131DekoKaskade(ctx);
+            await checkBandV18132FerneSeen(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
