@@ -14663,6 +14663,7 @@ class AnazhRealm {
             // Kern. Dicht + nah, weich im Wind. Cap 512 fängt die dichte Wiese.
             {
                 name: "blume",
+                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "lebendig",
                 floor: 0.5,
                 perCell: 3.2,
@@ -14680,6 +14681,7 @@ class AnazhRealm {
             // Unterholz, füllt zwischen den Blüten. Weich im Wind.
             {
                 name: "farn",
+                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "lebendig",
                 floor: 0.32,
                 perCell: 2.4,
@@ -14697,6 +14699,7 @@ class AnazhRealm {
             // heißen/trockenen Regionen. Leicht im Wind.
             {
                 name: "gestruepp",
+                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "glut",
                 floor: 0.5,
                 perCell: 1.8,
@@ -14714,6 +14717,7 @@ class AnazhRealm {
             // Regionen. Statisch (kein Wind), empfängt Schatten, weiter sichtbar.
             {
                 name: "fels",
+                ernte: "stein", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "dichte",
                 floor: 0.46,
                 perCell: 1.4,
@@ -14731,6 +14735,7 @@ class AnazhRealm {
             // magischen Regionen. Emissive → speist das V17.0-Bloom (Synergie).
             {
                 name: "spore",
+                ernte: "essenz", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "magieleitung",
                 floor: 0.62,
                 perCell: 1.6,
@@ -14750,6 +14755,7 @@ class AnazhRealm {
             // → warmes Schweben in Sonnenstrahlen, kein Glühwurm. Reine Deko.
             {
                 name: "pollen",
+                ernte: "essenz", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "lebendig",
                 floor: 0.55,
                 perCell: 1.3,
@@ -26101,6 +26107,10 @@ class AnazhRealm {
         const pos = new THREE.Vector3();
         const scl = new THREE.Vector3();
         const up = new THREE.Vector3(0, 1, 0);
+        // S6-B (V18.133) — der Ernte-Filter: gepflueckte Indizes bleiben ueber
+        // Re-Streams verborgen (Skala 0 — der Index ist stabil, das RNG
+        // deterministisch), bis der Regrow-Tick sie freigibt.
+        const harvested = this.state.scatterHarvested ? this.state.scatterHarvested.get(key) : null;
         for (let si = 0; si < species.length; si++) {
             const items = buckets[si];
             if (items.length === 0) continue;
@@ -26112,7 +26122,8 @@ class AnazhRealm {
                 const it = items[i];
                 pos.set(it.x, it.y, it.z);
                 q.setFromAxisAngle(up, it.rot);
-                scl.set(it.scale, it.scale, it.scale);
+                if (harvested && harvested.has(`${sp.name}:${i}`)) scl.set(0, 0, 0);
+                else scl.set(it.scale, it.scale, it.scale);
                 m.compose(pos, q, scl);
                 inst.setMatrixAt(i, m);
             }
@@ -26229,6 +26240,98 @@ class AnazhRealm {
             built++;
         }
         return built;
+    }
+
+    // ===== S6-B (V18.133) — FORAGING: die Klein-Vegetation ist pflueckbar ======
+    // (kampf-plan §11 „die echte Zutaten-Tiefe"). Drei Stuecke, kein Parallel-
+    // System: der PICK raycastet die BESTEHENDEN Scatter-InstancedMeshes
+    // (instanceId = der stabile Bucket-Index — deterministisches per-Chunk-RNG),
+    // die ERNTE setzt die Instanz auf Skala 0 + merkt sie im Session-Gedaechtnis
+    // `state.scatterHarvested` (der Build-Filter haelt sie ueber Re-Streams
+    // verborgen), der REGROW-Tick laesst sie nach FORAGE.regrowMs nachwachsen
+    // (dispose + re-enqueue — der bestehende Scatter-Lebenszyklus).
+    _pickScatterAtCrosshair() {
+        const sc = this.state.voxelChunkScatter;
+        if (!sc || sc.size === 0 || !this.state.camera) return null;
+        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
+        this.state.camera.getWorldDirection(this._tmpCamDir);
+        const meshes = [];
+        const meta = new Map();
+        for (const [key, list] of sc) {
+            for (const it of list) {
+                if (!it.mesh || it.mesh.count === 0) continue;
+                meshes.push(it.mesh);
+                meta.set(it.mesh, { key, name: it.name });
+            }
+        }
+        if (!meshes.length) return null;
+        if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
+        this._tmpRaycaster.set(this.state.camera.position, this._tmpCamDir);
+        this._tmpRaycaster.far = AnazhRealm.FORAGE.reach;
+        const hits = this._tmpRaycaster.intersectObjects(meshes, false);
+        for (const hit of hits) {
+            if (!hit.object || typeof hit.instanceId !== "number") continue;
+            const m = meta.get(hit.object);
+            if (!m) continue;
+            return { key: m.key, name: m.name, index: hit.instanceId, mesh: hit.object, point: hit.point };
+        }
+        return null;
+    }
+
+    _harvestScatterPick(pick) {
+        if (!pick || !pick.mesh) return false;
+        const sp = AnazhRealm.KLEIN_VEGETATION_SPECIES.find((x) => x.name === pick.name);
+        if (!sp || !sp.ernte) return false;
+        // Session-Gedaechtnis: `${art}:${index}` → Ernte-Zeit (der Build-Filter
+        // + der Regrow-Tick lesen es). NICHT persistiert (Flora waechst nach).
+        if (!this.state.scatterHarvested) this.state.scatterHarvested = new Map();
+        let perChunk = this.state.scatterHarvested.get(pick.key);
+        if (!perChunk) {
+            perChunk = new Map();
+            this.state.scatterHarvested.set(pick.key, perChunk);
+        }
+        const id = `${pick.name}:${pick.index}`;
+        if (perChunk.has(id)) return false; // schon gepflueckt (Doppel-Klick-Race)
+        perChunk.set(id, performance.now());
+        // Die Instanz verschwindet SOFORT (Skala 0 am selben Index — stabil).
+        if (!this._tmpForageMat) this._tmpForageMat = new THREE.Matrix4();
+        this._tmpForageMat.makeScale(0, 0, 0);
+        pick.mesh.setMatrixAt(pick.index, this._tmpForageMat);
+        pick.mesh.instanceMatrix.needsUpdate = true;
+        const got = this.addMaterialToInventory(sp.ernte, 1);
+        this.log(
+            got ? `Gepflueckt: ${pick.name} → 1× ${sp.ernte}` : `Gepflueckt: ${pick.name} — aber das Inventar ist voll`,
+            "INFO"
+        );
+        // Die Tat praegt (V17.30-Substrat — sanft, wie das Sammeln).
+        if (typeof this._feelAction === "function") this._feelAction("harvest");
+        return true;
+    }
+
+    // Der Regrow-Tick (im ruhigen Streaming-Slot, ~0.1 Hz): abgelaufene Ernten
+    // fallen aus dem Gedaechtnis, der Chunk-Scatter baut neu → die Flora steht
+    // wieder. Billig: ein Map-Sweep, Rebuild nur bei echtem Ablauf.
+    _tickScatterRegrow(now) {
+        const last = this._lastScatterRegrowCheck ?? -Infinity;
+        if (now - last < 10000) return;
+        this._lastScatterRegrowCheck = now;
+        const sh = this.state.scatterHarvested;
+        if (!sh || sh.size === 0) return;
+        const ttl = AnazhRealm.FORAGE.regrowMs;
+        for (const [key, perChunk] of sh) {
+            let regrown = false;
+            for (const [id, t] of perChunk) {
+                if (now - t > ttl) {
+                    perChunk.delete(id);
+                    regrown = true;
+                }
+            }
+            if (perChunk.size === 0) sh.delete(key);
+            if (regrown && this.state.voxelChunkScatter && this.state.voxelChunkScatter.has(key)) {
+                this._disposeVoxelChunkScatter(key);
+                this._enqueueScatter(...key.split(",").map(Number));
+            }
+        }
     }
 
     // ===== U4 (V18.131) — DAS DEKO-FERNFELD: ein Impostor-Mesh pro Art =========
@@ -38338,8 +38441,10 @@ class AnazhRealm {
                 opacity: 0.92,
             },
             {
+                // S6-B (V18.133) — laub → kraut: der Lebenssaft zieht jetzt
+                // GEPFLUECKTE Zutaten (Foraging-Oekonomie; tag-nah, Rolle bleibt).
                 shape: "sphere",
-                material: "laub",
+                material: "kraut",
                 position: { x: 0, y: 0.42, z: 0 },
                 size: { x: 0.36, y: 0.44, z: 0.36 },
                 opacity: 0.8,
@@ -38899,6 +39004,33 @@ class AnazhRealm {
                 zähigkeit: 0.4,
                 wärmeleitung: 0.1,
                 lebendig: 0.55,
+            }),
+            // S6-B (V18.133) — die ALCHEMIE-MATERIALIEN der erntbaren Klein-
+            // Vegetation (kampf-plan §11: „die echte Zutaten-Tiefe"): `kraut` =
+            // das Pflanzliche (Blueten/Farne/Gestruepp — lebendig, leicht,
+            // brennbar; tag-nah an laub → die Trank-Rollen-Resonanz bleibt
+            // consumable), `essenz` = das Magische (Sporen/Pollen — fast
+            // koerperlos, stark magieleitend). Trank-Bauplaene tragen sie als
+            // Part-Material → `brewConsumable` zieht GESAMMELTE Zutaten durchs
+            // Mach-Tor: pfluecken → brauen → trinken, die Foraging-Oekonomie.
+            make("kraut", "Kraut", 0x4e9a3c, {
+                härte: 0.05,
+                dichte: 0.08,
+                zähigkeit: 0.3,
+                wärmeleitung: 0.1,
+                magieleitung: 0.3,
+                brennbar: 0.7,
+                resoniert: 0.35,
+                lebendig: 1.0,
+            }),
+            make("essenz", "Essenz", 0x9fd8ff, {
+                härte: 0.02,
+                dichte: 0.05,
+                zähigkeit: 0.1,
+                magieleitung: 0.95,
+                transparent: 0.8,
+                resoniert: 0.8,
+                lebendig: 0.6,
             }),
         ];
         const out = {};
@@ -44923,6 +45055,11 @@ class AnazhRealm {
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
         if (pick && pick.entry) return this._strikeArchitecture(pick.entry);
+        // S6-B (V18.133) — FORAGING vor dem Graben: nahe Klein-Vegetation in
+        // Arm-Laenge wird GEPFLUECKT (wer auf die Bluete zielt, will sie —
+        // kein Loch darunter). Reichweite 6 m « der 30-m-Grabe-Ray.
+        const flora = this._pickScatterAtCrosshair();
+        if (flora) return this._harvestScatterPick(flora);
         const target = this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
@@ -45403,6 +45540,8 @@ class AnazhRealm {
                 schuppen: "⬢",
                 glut: "✺",
                 laub: "❀",
+                kraut: "✿",
+                essenz: "✧",
             };
             if (isMaterialSlot) {
                 const glyph = document.createElement("span");
@@ -49911,6 +50050,8 @@ class AnazhRealm {
             schuppen: "⬢",
             glut: "✺",
             laub: "❀",
+            kraut: "✿",
+            essenz: "✧",
         };
         for (const name of Object.keys(materials)) {
             const mat = materials[name];
@@ -54426,6 +54567,8 @@ class AnazhRealm {
             // U4 (V18.131) — das Deko-Fernfeld baut auf den RUHIGSTEN Frames
             // (kein Terrain, kein Gras, kein Scatter): eine Art pro Tick.
             if (!grassBuilt && !scatterBuilt) this._tickDekoFernfeld();
+            // S6-B (V18.133) — die gepflueckte Flora waechst nach (throttled).
+            this._tickScatterRegrow(performance.now());
             // A3 (V18.132) — der WEICHE Kachel-Vorlauf (throttled ~1 Hz): die
             // Hydro-Kacheln um den Spieler entstehen ~300 m BEVOR der Build-
             // Eingang sie hart braucht → der ~265-ms-Compute faellt auf einen
@@ -55080,7 +55223,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.132.0";
+AnazhRealm.VERSION = "18.133.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -55104,6 +55247,18 @@ AnazhRealm.CA_FLOW_KEEP = 0.95;
 // staut bis zur Krone. Die Welt-Badewanne (V18.92) bleibt strukturell
 // unmöglich: ohne Spieler-Werk ist die Kappe bit-identisch zu V18.93.
 // Browser-justierbar (S-Dialog): REACH weiter = größere Stauseen.
+// S6-B (V18.133) — FORAGING: die Klein-Vegetation ist PFLUECKBAR (kampf-plan
+// §11 „die echte Zutaten-Tiefe"). reach = Arm-Laenge (kuerzer als der 30-m-
+// Abbau-Ray — wer auf eine Bluete zielt, will SIE, kein Loch darunter);
+// regrowMs = die Flora waechst nach (Session-Gedaechtnis, NICHT persistiert —
+// Pflanzen wachsen ueber einen Reload natuerlich nach, keine Ernte-Halde im
+// Snapshot); der Index ist stabil (deterministisches per-Chunk-RNG → geerntete
+// Instanzen werden auf Skala 0 gesetzt, nie umnummeriert).
+AnazhRealm.FORAGE = Object.freeze({
+    reach: 6, // m — Pflueck-Reichweite
+    regrowMs: 300000, // 5 min — die Flora kehrt zurueck
+});
+
 AnazhRealm.CA_STAU = Object.freeze({
     REACH: 16, // Spalten (×1.8 m ≈ 29 m) Fenster-Pad um das Werk — die Spieler-Aufmerksamkeits-Grenze
     MAX_CELLS: 7, // harter Stau-Deckel über der rim-Kappe (~12.6 m) gegen den degenerierten Mega-Damm

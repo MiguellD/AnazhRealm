@@ -108,7 +108,7 @@ U6 Clipmap (Draw-Call-Hebel) · R1 Schatten-Snap (gebaut, Sign-off offen) · R2 
 backen · R3 Kanten-Schärfe · R5 Struktur-Textur · E3 Worker-Mesh (gebaut V17.118, Sign-off offen) ·
 Kreatur-FPS-Frame-Budget (falls Boden-Cache nicht reicht) · Browser-Sign-offs (J4 · E1–E3).
 
-**Crafting/Kampf** — S6-B erntbare Flora · S9 Gerät in der Hand (gebaut, Sign-off offen) · S11
+**Crafting/Kampf** — ~~S6-B erntbare Flora~~ **GEBAUT (V18.133: Scatter pflückbar, kraut/essenz, Trank zieht gepflückte Zutaten)** · S9 Gerät in der Hand (gebaut, Sign-off offen) · S11
 Werkstatt-Animation (die Kirsche) · S7-C chat/DSL-Vereinheitlichung · S8 Teilen-Konsistenz · A2
 Crafting-Fluss-Audit · Avatar-Größe→HP · ~~Zwei-Hand-Modell~~ **GEBAUT (V18.109: Off-Hand-Slot +
 Key G + linker Arm)** · ~~Rüstung am Avatar sichtbar~~ **GEBAUT (V18.104 + V18.110: sitzt am

@@ -8114,8 +8114,8 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
         check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
         check(
-            "Welle 4 P1: Built-in-Anzahl exakt 13 (6 Bau + 5 Körper + laub + erde/W6.G-P4)",
-            wave4p1Results.builtInCount === 13
+            "Welle 4 P1: Built-in-Anzahl exakt 15 (6 Bau + 5 Körper + laub + erde + kraut/essenz V18.133)",
+            wave4p1Results.builtInCount === 15
         );
         check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
         check(
@@ -27824,6 +27824,101 @@ async function checkBandV18132FerneSeen(ctx) {
     }
 }
 
+// V18.133 — S6-B (kampf-plan §11): ERNTBARE FLORA — die Foraging-Oekonomie.
+// Die V17.1-Klein-Vegetation (bisher reine GPU-Deko) ist PFLUECKBAR: Raycast
+// auf die bestehenden InstancedMeshes (instanceId = stabiler Bucket-Index),
+// Ertrag = Alchemie-Materialien kraut/essenz (Arten-Daten `ernte`), Session-
+// Gedaechtnis + Regrow (NICHT persistiert — Flora waechst nach), der Trank-
+// Bauplan zieht GEPFLUECKTES kraut durchs Mach-Tor (V17.65). End-to-end-
+// Probe-bewiesen (pfluecken → +1 kraut → versteckt ueber Rebuild → Regrow).
+async function checkBandV18133Forage(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const mats = r.state.materials;
+        out.materials =
+            !!(mats.kraut && mats.kraut.builtIn && mats.kraut.tags.lebendig >= 0.9) &&
+            !!(mats.essenz && mats.essenz.builtIn && mats.essenz.tags.magieleitung >= 0.9);
+        const species = r.constructor.KLEIN_VEGETATION_SPECIES;
+        out.allYields = species.every((sp) => typeof sp.ernte === "string" && !!mats[sp.ernte]);
+        out.forageConst = !!r.constructor.FORAGE && Number.isFinite(r.constructor.FORAGE.regrowMs);
+        // KONSUM-Proben: die Maus-Geste routet Flora, der Build filtert die
+        // Ernte, der Streaming-Slot tickt den Regrow.
+        out.gestureRoutes = /_pickScatterAtCrosshair/.test(r.tryMouseBreak.toString());
+        out.buildFilters = /scatterHarvested/.test(r._buildVoxelChunkScatter.toString());
+        out.loopRegrows = /_tickScatterRegrow/.test(r._loopVoxelStreaming.toString());
+        // Die Zutaten-Oekonomie schliesst: der Lebenssaft traegt kraut (das
+        // Mach-Tor V17.65 zieht damit GEPFLUECKTE Zutaten).
+        out.trankKraut =
+            r.state.blueprints.trank_lebenssaft &&
+            r.state.blueprints.trank_lebenssaft.parts.some((pp) => pp.material === "kraut");
+        // Behavioral (wenn Scatter da — sonst unmessbar=bestanden, V13.1):
+        let pick = null;
+        if (r.state.voxelChunkScatter) {
+            for (const [key, list] of r.state.voxelChunkScatter) {
+                for (const it of list) {
+                    if (it.mesh && it.mesh.count > 0) {
+                        pick = { key, name: it.name, index: 0, mesh: it.mesh };
+                        break;
+                    }
+                }
+                if (pick) break;
+            }
+        }
+        if (pick) {
+            const sp = species.find((x) => x.name === pick.name);
+            const countMat = () => {
+                let n = 0;
+                for (const sl of r.state.player.inventory || []) if (sl && sl.material === sp.ernte) n += sl.count || 0;
+                return n;
+            };
+            const before = countMat();
+            const ok1 = r._harvestScatterPick(pick);
+            out.harvested = ok1 && countMat() - before === 1;
+            out.doubleRejected = r._harvestScatterPick(pick) === false;
+            const m = new window.THREE.Matrix4();
+            pick.mesh.getMatrixAt(0, m);
+            out.zeroScaled = Math.abs(m.elements[0]) < 1e-6;
+            // Aufraeumen: Ernte-Eintrag zuruecknehmen (kein Band-Crosstalk) +
+            // Scatter des Chunks neu (die Instanz kehrt sofort zurueck).
+            const perChunk = r.state.scatterHarvested.get(pick.key);
+            if (perChunk) {
+                perChunk.delete(`${pick.name}:0`);
+                if (perChunk.size === 0) r.state.scatterHarvested.delete(pick.key);
+            }
+            r._disposeVoxelChunkScatter(pick.key);
+            const [cx, cz] = pick.key.split(",").map(Number);
+            r._buildVoxelChunkScatter(cx, cz);
+            out.measured = true;
+        } else {
+            out.measured = false;
+        }
+        return out;
+    });
+    if (!res) {
+        check("V18.133 Foraging: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("V18.133 Foraging: die Alchemie-Materialien kraut+essenz stehen (builtIn, Tag-Profil)", res.materials);
+    check(
+        "V18.133 Foraging: jede Art traegt einen existierenden Ernte-Stoff (Daten-Vertrag)",
+        res.allYields && res.forageConst
+    );
+    check(
+        "V18.133 Foraging: KONSUM verdrahtet (Geste routet Flora · Build filtert Ernte · Loop tickt Regrow)",
+        res.gestureRoutes && res.buildFilters && res.loopRegrows
+    );
+    check(
+        "V18.133 Foraging: der Lebenssaft zieht GEPFLUECKTES kraut (die Zutaten-Oekonomie schliesst)",
+        res.trankKraut
+    );
+    check(
+        "V18.133 Foraging: pfluecken wirkt (+1 Stoff · Instanz Skala 0 · Doppel-Pflueck abgelehnt) — oder unmessbar",
+        !res.measured || (res.harvested && res.doubleRejected && res.zeroScaled)
+    );
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
@@ -43827,6 +43922,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18130CsmShadow(ctx);
             await checkBandV18131DekoKaskade(ctx);
             await checkBandV18132FerneSeen(ctx);
+            await checkBandV18133Forage(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

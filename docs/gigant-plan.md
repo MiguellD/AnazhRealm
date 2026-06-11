@@ -706,7 +706,11 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
     - Key G (rebindable, Zähl-Tests 11→12 gewandert) + der Off-Hand-Slot NEBEN der Hotbar (eine
       Render-Quelle, beide Mounts; Highlight auf data-slot-Wahrheit) + sichtbar am LINKEN Arm
       (EIN buildHand-Helper) + Snapshot/Restore; faltet NICHT in die Stats (Bereitschafts-Slot).
-      Weiter offen: S6-B Flora · S8 — kampf-plan-Bogen.
+      ✓ **S6-B erntbare Flora (V18.133):** die Scatter-Deko ist pflückbar
+      (InstancedMesh-instanceId + Session-Regrow), Alchemie-Materialien
+      kraut/essenz, der Lebenssaft zieht GEPFLÜCKTE Zutaten — die
+      Foraging-Ökonomie schließt (pflücken → brauen → trinken).
+      Weiter offen: S8 — kampf-plan-Bogen.
 
 ### PHASE F — das ULTIVERSUM (G2 + G3 + W18 + der soziale Bogen)
 
