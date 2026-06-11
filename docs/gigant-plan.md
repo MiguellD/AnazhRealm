@@ -429,8 +429,11 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
       GEMESSEN: Punkt-Probe-Löcher 10→0. +1 Drei-Beweis-Invariante (Senke
       nass · Land trocken · gedeckelte Höhle trocken). WEITER OFFEN in A4:
       Hoch-Becken über `L` (H+A — eine CA-Gleichgewichts-Regel, die
-      Badewannen-Klasse: eigener fokussierter Bogen) · Kapillar/Stempel (H) ·
-      T7c-Reste.
+      Badewannen-Klasse: eigener fokussierter Bogen) · Kapillar/Stempel
+      (PRÄZISIERT V18.128: die GEMESSENEN Wurzeln sind seit V18.1 geheilt
+      [8-Nachbar-Re-Enqueue + forceSync]; der Rest ist S-gated — „Schöpfer-
+      Dump an der echten Fehlstelle", V13.0: Spawn ≠ Fehlstelle — KEIN
+      offenes H) · T7c-Reste.
 - ✓ **A5 — Haupt-Fog ↔ Ring-Kante (V18.103):** `fog.far = min(Wetter-Formel·Slider,
 (ringRadius+0.5)·span)` in `_dayNightApplyHemiAndFog` — der Nebel deckt das Welt-Ende
   (Default-Ring 4: Kante ~194 m, fog.far war 450 m = sichtbare Welt-Kante); bei „Weltenring max"
@@ -828,7 +831,12 @@ schlanken (UI-Politur, jederzeit einschiebbar).
       das Gefühl des Übergangs im echten Browser).** **V18.116–.121-Durchgang (neu):**
       Tauch-Blick (B5) · Mana-Balken im pfad (E3) · Gelenk-Zeile in der Werkstatt (C1) ·
       die Mantel-Stanze in Bewegung (V18.118 — am Meer laufen) · das freie Frame-Budget
-      fühlen (V18.121).
+      fühlen (V18.121). **V18.125–.128-Durchgang (neu):** die KÜSTEN-LAGUNEN (V18.125 —
+      die einst trockenen Senken am Meer stehen voll Grundwasser; am Mündungs-Ort
+      laufen) · der STURM (V18.128 — „setze wetter stormy": dunklerer Tint, kräftiger
+      Wind, dichterer Nebel, lauteres Rauschen; die Wesen werden chaotisch-ehrfürchtig
+      statt traurig; der 120-s-Auto-Zug fadet sanft) · die Migrations-Mitgift ist
+      Browser-unsichtbar (V18.126, smoke-bewiesen — kein S-Punkt).
       **DIE SCHÖPFER-PRÜFLISTE (10.06., wächst bis zum Gigant-Abschluss — Unsauberkeiten
       SAMMELN, er korrigiert am Schluss; ich fülle sie ehrlich mit, statt sie zu fixen):**
       (a) **GELENK-LINIEN in der WELT sichtbar nach dem Fertigen** — die connections-Linien
