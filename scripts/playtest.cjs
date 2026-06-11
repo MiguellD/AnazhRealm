@@ -28098,6 +28098,153 @@ async function checkBandV18136Audit(ctx) {
     check("V18.136 Audit: EIN per-Chunk-RNG (Scatter + Fernfeld verdichtet, V9.82)", res.oneRng);
 }
 
+// Ω2 (V18.137, taille-spec §2) — must-preserve als GESETZ: Unbekanntes
+// überlebt jeden Serialize/Restore-Zwilling bit-gleich (EINE Quelle
+// _carryUnknown), die R4-Herkunftskette überlebt den Save, die bekannten
+// Sicherheits-Wände halten WEITER (Gegenproben), die Größen-Wand dämpft.
+async function checkBandTailleOmega2(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const C = r.constructor;
+        out.constants =
+            Number.isFinite(C.TAILLE_UNKNOWN_FIELD_MAX) &&
+            Object.isFrozen(C.BLUEPRINT_KNOWN_KEYS) &&
+            Object.isFrozen(C.MATERIAL_KNOWN_KEYS) &&
+            Object.isFrozen(C.TOOL_KNOWN_KEYS) &&
+            Object.isFrozen(C.MANIFEST_KNOWN_KEYS);
+        // (1) Blueprint-Zwilling: xZukunft + provenance überleben bit-gleich.
+        const KA = "ab".repeat(32);
+        const live = {
+            name: "_omega2_bp",
+            label: "Ω2",
+            builtIn: false,
+            parts: [
+                {
+                    shape: "box",
+                    material: "stein",
+                    position: { x: 0, y: 0, z: 0 },
+                    size: { x: 1, y: 1, z: 1 },
+                    rotation: { x: 0, y: 0, z: 0 },
+                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                },
+            ],
+            connections: [],
+            xZukunft: { tief: [1, 2, { drei: true }] },
+            provenance: [{ by: KA, at: 7 }],
+        };
+        const ser = r._serializeBlueprint(live);
+        out.serCarries =
+            JSON.stringify(ser.xZukunft) === JSON.stringify(live.xZukunft) &&
+            Array.isArray(ser.provenance) &&
+            ser.provenance[0].by === KA;
+        const deser = r._deserializeBlueprint(JSON.parse(JSON.stringify(ser)));
+        out.deserCarries =
+            !!deser &&
+            JSON.stringify(deser.xZukunft) === JSON.stringify(live.xZukunft) &&
+            Array.isArray(deser.provenance) &&
+            deser.provenance[0].by === KA;
+        // (2) die Größen-Wand: ein >8-KiB-Feld fällt (Dämpfung, dokumentiert).
+        const fat = r._serializeBlueprint({ ...live, xRiese: "y".repeat(C.TAILLE_UNKNOWN_FIELD_MAX + 10) });
+        out.sizeWall = fat.xRiese === undefined && JSON.stringify(fat.xZukunft) === JSON.stringify(live.xZukunft);
+        // (3) Manifest: Unbekanntes überlebt, die Sicherheits-Wand HÄLT weiter.
+        const man = r._sanitizeImportedManifest({
+            id: "omega2-welt",
+            label: "Ω2",
+            world: "https://evil.example/x.html",
+            dsl: ["set_weather"],
+            trust: "trusted",
+            vendored: true,
+            xZukunft: { d: 4 },
+        });
+        out.manifestCarries = !!man && man.xZukunft && man.xZukunft.d === 4;
+        out.manifestWallHolds =
+            !!man && !/evil\.example/.test(String(man.world)) && man.trust === "sandboxed" && man.vendored === true;
+        // (4) Material/Tool-Zwilling: EINE Serialize-Quelle (Source-Proben) +
+        // Substanz-Treue (label + fremde Tag-Achse + Unbekanntes + isMachine).
+        out.oneSource =
+            /_serializeMaterial/.test(r.buildStateSnapshot.toString()) &&
+            /_serializeMaterial/.test(r._buildEmptyWorldSnapshot.toString()) &&
+            /_serializeTool/.test(r.buildStateSnapshot.toString()) &&
+            /_serializeTool/.test(r._buildEmptyWorldSnapshot.toString());
+        const serMat = r._serializeMaterial({
+            name: "_omega2_mat",
+            label: "Ω2-Stoff",
+            builtIn: false,
+            color: 0x123456,
+            tags: { härte: 0.5, "x:fremd": 0.7 },
+            xZukunft: { e: 5 },
+        });
+        out.matCarries =
+            serMat.label === "Ω2-Stoff" && serMat.tags["x:fremd"] === 0.7 && serMat.xZukunft && serMat.xZukunft.e === 5;
+        const serTool = r._serializeTool({
+            name: "_omega2_tool",
+            label: "Ω2-Werk",
+            builtIn: false,
+            opClass: "shaping",
+            opName: "schmieden",
+            precisionCap: 0.7,
+            sourceBlueprint: null,
+            isMachine: true,
+        });
+        out.toolCarries = serTool.isMachine === true;
+        // (5) Material-RESTORE ist substanz-treu (label + exakte Magnitude +
+        // fremde Achse + Unbekanntes) — aber defineMaterial (die lokale
+        // Geste/DSL) bleibt die strenge [0,1]-Whitelist-Wand.
+        delete r.state.materials["_omega2_mat"];
+        const beforeKeys = Object.keys(r.state.materials).length;
+        r._loadStateRestoreCraftingInventory({
+            materials: [
+                {
+                    name: "_omega2_mat",
+                    label: "Ω2-Stoff",
+                    color: 0x123456,
+                    tags: { härte: 2.5, "x:fremd": 0.7 },
+                    xZukunft: { e: 5 },
+                },
+            ],
+        });
+        const restored = r.state.materials["_omega2_mat"];
+        out.matRestoreTrue =
+            !!restored &&
+            restored.label === "Ω2-Stoff" &&
+            restored.tags["härte"] === 2.5 &&
+            restored.tags["x:fremd"] === 0.7 &&
+            restored.xZukunft &&
+            restored.xZukunft.e === 5;
+        const strict = r.defineMaterial("_omega2_strict", 0x111111, { härte: 9, "x:fremd": 0.5 });
+        const strictEntry = strict.ok ? r.state.materials[strict.name] : null;
+        out.gestureStaysStrict =
+            !!strictEntry && strictEntry.tags["härte"] === 1 && strictEntry.tags["x:fremd"] === undefined;
+        delete r.state.materials["_omega2_mat"];
+        delete r.state.materials["_omega2_strict"];
+        void beforeKeys;
+        return out;
+    });
+    if (!res) {
+        check("Ω2: must-preserve-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("Ω2: die Taille-Konstanten stehen frozen (Größen-Wand + vier known-Sätze)", res.constants);
+    check("Ω2: der Bauplan-Zwilling bewahrt Unbekanntes + die R4-Herkunftskette (serialize)", res.serCarries);
+    check("Ω2: der Bauplan-Zwilling bewahrt Unbekanntes + Kette (deserialize, bit-gleich)", res.deserCarries);
+    check("Ω2: die Größen-Wand dämpft (>8 KiB fällt, kleine Zukunft lebt)", res.sizeWall);
+    check(
+        "Ω2: das Manifest bewahrt Unbekanntes — UND die Sicherheits-Wand hält (world/trust/vendored)",
+        res.manifestCarries && res.manifestWallHolds
+    );
+    check("Ω2: EINE Material/Tool-Serialize-Quelle (beide Snapshot-Pfade, V9.82)", res.oneSource);
+    check(
+        "Ω2: Material/Tool-Serialize tragen Substanz + Unbekanntes (x:-Tag · isMachine)",
+        res.matCarries && res.toolCarries
+    );
+    check(
+        "Ω2: der Material-Restore ist substanz-treu (exakte Magnitude · x:-Achse · label · Unbekanntes) — die lokale Geste bleibt streng",
+        res.matRestoreTrue && res.gestureStaysStrict
+    );
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
@@ -44108,6 +44255,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18134Social(ctx);
             await checkBandV18135Bookmarks(ctx);
             await checkBandV18136Audit(ctx);
+            await checkBandTailleOmega2(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

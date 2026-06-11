@@ -11906,19 +11906,14 @@ class AnazhRealm {
             // Auch eigene Materialien und Werkzeuge (aus state.materials /
             // state.tools, jeweils nicht-builtIn) wandern mit, weil sie an
             // den Spieler-Schöpfer gebunden sind, nicht an die Welt.
+            // Ω2: dieselbe EINE Serialize-Quelle wie buildStateSnapshot
+            // (vorher die V9.82-Parallel-Map, die isMachine/Unbekanntes verlor).
             snap.materials = Object.values(this.state.materials || {})
                 .filter((m) => m && !m.builtIn)
-                .map((m) => ({ name: m.name, label: m.label || m.name, color: m.color, tags: { ...m.tags } }));
+                .map((m) => this._serializeMaterial(m));
             snap.tools = Object.values(this.state.tools || {})
                 .filter((t) => t && !t.builtIn)
-                .map((t) => ({
-                    name: t.name,
-                    label: t.label,
-                    opClass: t.opClass,
-                    opName: t.opName,
-                    precisionCap: t.precisionCap,
-                    sourceBlueprint: t.sourceBlueprint || null,
-                }));
+                .map((t) => this._serializeTool(t));
             // Eigene Baupläne ebenfalls — sie sind Schöpfer-Wissen, kein
             // Welt-Erlebnis. Hotbar bleibt leer (Welt-spezifisch). V9.44-a:
             // über _serializeBlueprint. Vorher trug dieser Pfad NUR
@@ -27397,6 +27392,59 @@ class AnazhRealm {
     // jede persistente Bauplan-Eigenschaft ein Ein-Stellen-Edit. Spiegelt
     // das erprobte _serializeCreature/_restoreCreatureFromSnapshot-Paar.
     //
+    // Ω2 (taille-spec §2 must-preserve) — die EINE Quelle: unbekannte Felder
+    // überleben jeden Round-Trip. knownKeys = ALLE Schlüssel, die der
+    // jeweilige Serialize/Restore-Zwilling EXPLIZIT behandelt (auch die
+    // sanitisierten — must-preserve gilt dem UNBEKANNTEN, nie als Umgehung
+    // einer bekannten Wand). Werte reisen als strukturierter JSON-Klon;
+    // die Größen-Wand (8 KiB/Feld) ist die dokumentierte Dämpfung (R1-Geist:
+    // ein Riesen-Feld ist ein DoS auf die localStorage-Quota, keine Zukunft).
+    _carryUnknown(src, dst, knownKeys) {
+        if (!src || typeof src !== "object" || !dst || typeof dst !== "object") return dst;
+        const known = knownKeys instanceof Set ? knownKeys : new Set(knownKeys);
+        for (const k of Object.keys(src)) {
+            if (known.has(k)) continue;
+            try {
+                const json = JSON.stringify(src[k]);
+                if (typeof json !== "string" || json.length > AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) continue;
+                dst[k] = JSON.parse(json);
+            } catch {
+                /* nicht-serialisierbar (Zyklus/Funktion) → fällt still */
+            }
+        }
+        return dst;
+    }
+
+    // Ω2 — der EINE Material-Serialize (vorher ZWEI inline-Maps: Snapshot +
+    // Welt-Wechsel-Mitnahme — V9.82-Parallel-Pfad verdichtet). Substanz-treu:
+    // das ganze tags-Objekt (auch fremde/künftige Tag-Achsen, taille-spec §6)
+    // + Unbekanntes via _carryUnknown.
+    _serializeMaterial(m) {
+        const out = {
+            name: m.name,
+            label: m.label || m.name,
+            color: m.color,
+            tags: { ...m.tags },
+        };
+        this._carryUnknown(m, out, AnazhRealm.MATERIAL_KNOWN_KEYS);
+        return out;
+    }
+
+    // Ω2 — der EINE Tool-Serialize (gleiche Verdichtung). isMachine + künftige
+    // Felder reisen via _carryUnknown (starben vorher im fixen Satz).
+    _serializeTool(t) {
+        const out = {
+            name: t.name,
+            label: t.label,
+            opClass: t.opClass,
+            opName: t.opName,
+            precisionCap: t.precisionCap,
+            sourceBlueprint: t.sourceBlueprint || null,
+        };
+        this._carryUnknown(t, out, AnazhRealm.TOOL_KNOWN_KEYS);
+        return out;
+    }
+
     // Serialisiert einen Bauplan in ein JSON-taugliches Objekt. Reine
     // Transformation (liest nur bp.*); der Aufrufer filtert die Built-ins
     // (sie entstehen je Init aus _defaultBlueprints()).
@@ -27466,6 +27514,13 @@ class AnazhRealm {
             if (bp.signedHash) out.signedHash = bp.signedHash;
             if (bp.signedAt) out.signedAt = bp.signedAt;
         }
+        // Ω2 (taille-spec §1a/§2) — die R4-Herkunftskette reist mit (GEMESSEN
+        // Ω0: sie starb im Save — der Rückruf konnte ein gespeichertes Artefakt
+        // nur über authorPubKey treffen, nie über ein Ketten-Glied).
+        const prov = this._sanitizeProvenance(bp.provenance);
+        if (prov.length) out.provenance = prov;
+        // Ω2 — must-preserve: Unbekanntes überlebt den Round-Trip (EINE Quelle).
+        this._carryUnknown(bp, out, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return out;
     }
 
@@ -27545,6 +27600,13 @@ class AnazhRealm {
             if (typeof data.signedHash === "string") restored.signedHash = data.signedHash;
             if (typeof data.signedAt === "number") restored.signedAt = data.signedAt;
         }
+        // Ω2 (taille-spec §1a/§2) — die Herkunftskette wiederherstellen
+        // (gesäubert — die R4-Hex-Wand gilt auch dem Save) + must-preserve:
+        // Unbekanntes überlebt (die Sicherheits-Keys oben bleiben sanitisiert,
+        // _carryUnknown trägt NUR, was nicht im known-Satz steht).
+        const prov = this._sanitizeProvenance(data.provenance);
+        if (prov.length) restored.provenance = prov;
+        this._carryUnknown(data, restored, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return restored;
     }
 
@@ -27711,28 +27773,16 @@ class AnazhRealm {
                 .map((bp) => this._serializeBlueprint(bp)),
             // Welle 5 C — eigene Werkzeuge (aus registrierten Bauplänen)
             // persistieren. Starter-Werkzeuge entstehen aus _defaultTools()
-            // bei jedem Init, deshalb nur eigene speichern.
+            // bei jedem Init, deshalb nur eigene speichern. Ω2: EIN Serialize.
             tools: Object.values(this.state.tools || {})
                 .filter((t) => t && !t.builtIn)
-                .map((t) => ({
-                    name: t.name,
-                    label: t.label,
-                    opClass: t.opClass,
-                    opName: t.opName,
-                    precisionCap: t.precisionCap,
-                    sourceBlueprint: t.sourceBlueprint || null,
-                })),
+                .map((t) => this._serializeTool(t)),
             // Welle 4 Phase 1 — eigene Materialien persistieren. Built-ins
             // kommen aus _defaultMaterials() im Konstruktor zurück; auch hier
-            // schreiben wir nur, was der Spieler dazugefügt hat.
+            // schreiben wir nur, was der Spieler dazugefügt hat. Ω2: EIN Serialize.
             materials: Object.values(this.state.materials || {})
                 .filter((m) => m && !m.builtIn)
-                .map((m) => ({
-                    name: m.name,
-                    label: m.label || m.name,
-                    color: m.color,
-                    tags: { ...m.tags },
-                })),
+                .map((m) => this._serializeMaterial(m)),
             // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name
             // oder null. Default wird beim Init überschrieben.
             hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
@@ -28969,6 +29019,12 @@ class AnazhRealm {
         // Eine js-compute-Welt ist per Natur mehrspielerfähig — die Marke
         // koppelt mit (wie _sanitizePortalMeta es im portalMeta erzwingt).
         if (m.multiplayer === true || out.serverMode === "js-compute") out.multiplayer = true;
+        // Ω2 (taille-spec §2) — must-preserve: Unbekanntes überlebt die
+        // Sanitize-Wand als OPAKES Datum (die bekannten Sicherheits-Felder
+        // oben bleiben sanitisiert — _carryUnknown trägt nur, was nicht im
+        // known-Satz steht; ein künftiges Sicherheits-Feld sanitisiert der
+        // künftige Build selbst, das Empfänger-Gesetz).
+        this._carryUnknown(m, out, AnazhRealm.MANIFEST_KNOWN_KEYS);
         return out;
     }
 
@@ -30362,7 +30418,25 @@ class AnazhRealm {
                 if (!m || typeof m.name !== "string") continue;
                 if (this.state.materials[m.name] && this.state.materials[m.name].builtIn) continue;
                 const r = this.defineMaterial(m.name, m.color, m.tags || {});
-                if (r.ok) restoredMats++;
+                if (r.ok) {
+                    restoredMats++;
+                    // Ω2 (taille-spec §2/§6) — SUBSTANZ-TREUE über die strenge
+                    // Geste hinaus: defineMaterial bleibt die [0,1]-Wand der
+                    // lokalen SCHÖPFUNG (DSL/UI), aber der RESTORE bewahrt die
+                    // gespeicherte Substanz exakt — label, die EXAKTEN Tag-
+                    // Magnituden (ein importiertes Material behält seine Werte;
+                    // die Klemme sitzt am LESER, Ω3) inkl. fremder/künftiger
+                    // Tag-Achsen, + Unbekanntes.
+                    const entry = this.state.materials[r.name];
+                    if (typeof m.label === "string" && m.label) entry.label = m.label;
+                    if (m.tags && typeof m.tags === "object") {
+                        for (const k of Object.keys(m.tags)) {
+                            const v = Number(m.tags[k]);
+                            if (Number.isFinite(v)) entry.tags[k] = v;
+                        }
+                    }
+                    this._carryUnknown(m, entry, AnazhRealm.MATERIAL_KNOWN_KEYS);
+                }
             }
             this.log(`Materialien geladen: ${restoredMats} eigene`);
         }
@@ -30393,6 +30467,9 @@ class AnazhRealm {
                     builtIn: false,
                     sourceBlueprint: typeof t.sourceBlueprint === "string" ? t.sourceBlueprint : null,
                 };
+                // Ω2 — must-preserve NACH der opClass/opName-Wand (isMachine +
+                // künftige Felder überleben den Reload; die Wand bleibt).
+                this._carryUnknown(t, this.state.tools[t.name], AnazhRealm.TOOL_KNOWN_KEYS);
                 if (!this.state.player.tools.includes(t.name)) this.state.player.tools.push(t.name);
                 restoredTools++;
             }
@@ -55486,7 +55563,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.136.0";
+AnazhRealm.VERSION = "18.137.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -56094,6 +56171,64 @@ AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
 // materialTag[0..1]); ÷3 normalisiert die Material-Tags des Produkt-Vektors auf [0..1] (= dieselbe Skala wie
 // die Form-Achsen) → die FORM konkurriert mit dem MATERIAL in der Resonanz (heilt die Spektrum-Sättigung).
 AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
+// Ω2 (taille-spec §2 must-preserve) — die Größen-Wand für unbekannte Felder
+// (Dämpfung: ein Riesen-Feld ist ein Quota-DoS, keine Zukunft) + die known-
+// Sätze der Serialize/Restore-Zwillinge: ALLE explizit behandelten Schlüssel.
+// Was hier NICHT steht, reist als opakes Unbekanntes (_carryUnknown).
+AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX = 8192;
+AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
+    "name",
+    "label",
+    "builtIn",
+    "parts",
+    "connections",
+    "role",
+    "roleManual",
+    "toolMeta",
+    "portalMeta",
+    "forgedPrecision",
+    "signature",
+    "authorPubKey",
+    "signedHash",
+    "signedAt",
+    "provenance",
+]);
+AnazhRealm.MATERIAL_KNOWN_KEYS = Object.freeze(["name", "label", "builtIn", "color", "tags"]);
+AnazhRealm.TOOL_KNOWN_KEYS = Object.freeze([
+    "name",
+    "label",
+    "builtIn",
+    "isStarter",
+    "opClass",
+    "opName",
+    "precisionCap",
+    "sourceBlueprint",
+    "domain",
+]);
+AnazhRealm.MANIFEST_KNOWN_KEYS = Object.freeze([
+    "schemaVersion",
+    "id",
+    "label",
+    "world",
+    "dsl",
+    "desc",
+    "reachable",
+    "importedAt",
+    "trust",
+    "authorPubKey",
+    "signature",
+    "signedHash",
+    "signedAt",
+    "provenance",
+    "translated",
+    "translatedAt",
+    "scene",
+    "vendored",
+    "vendoredAt",
+    "bundleHash",
+    "serverMode",
+    "multiplayer",
+]);
 AnazhRealm.MATERIAL_TAG_DEFAULTS = Object.freeze(
     AnazhRealm.MATERIAL_TAG_KEYS.reduce((acc, key) => {
         acc[key] = 0;
