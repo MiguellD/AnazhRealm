@@ -755,10 +755,14 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
     > 6 Peers. Der eigene fokussierte Bogen, mit diesem Design als Startpunkt.
 - **F3 — W18 in fremden Welten LEBEN** [world-portal-w18-plan; Stufen A→D]: Auto-Join/Tier →
   Ko-Präsenz-Injektion (Kern) → Input-Brücke → Swappen/Persistenz.
-- **F4 — der SOZIALE Bogen** [bibliothek-plan §E + roadmap; H+S]: Bewertungs-Aggregation
-  (ed25519-signiert, CRDT-tauglich weil konfliktarm) → Lesezeichen → Folgen → Kommentare/Chat;
-  **hier schreiben `journal share/witness`** (die ruhende Saat blüht); „Für dich"-Algorithmus +
-  Welt-Vorschau im Portal-Ring als Kür.
+- **F4 — der SOZIALE Bogen** [bibliothek-plan §E + roadmap; H+S]: ✓ **STUFE 1 GEBAUT
+  (V18.134) — die Bewertungs-Aggregation:** signierte Zeugnisse {id,s,t,pub,sig}
+  (ed25519, stabiles Kanonisches), LWW = die CRDT-Schicht wörtlich, kanal-exklusiv +
+  R1-gegated + onopen-Batch-Annonce; Feed zeigt „Ø x.x (n)", Bestbewertet reiht nach
+  der Gemeinschaft; R4-Rückruf siebt sozial. GEMESSEN end-to-end mit zweiter
+  Identität (verify · LWW · Tamper · Rückruf); +7 Invarianten. WEITER OFFEN:
+  Lesezeichen → Folgen → Kommentare/Chat; **hier schreiben `journal share/witness`**
+  (die ruhende Saat blüht); „Für dich"-Algorithmus + Welt-Vorschau im Portal-Ring als Kür.
 - **F5 — B-WASM** [world-portal; per-Projekt] · **F6 — evolveCommunity** [Kreatur-Kulturen; nach
   D2/D3, S-Design].
 
@@ -920,7 +924,7 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | Spieler kann nicht pflegen                                          | E7                                                                                                                             |
 | ~~Rekursion blockiert (4 Schnitte)~~                                | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm                                                               |
 | Netz trägt real nur ~4–6 Peers (Stern-Topologie offen)              | F2-Rest (Design GEMESSEN in §5-F2: Hub-Routing + Stempel-Vertrauen); ~~TURN~~ ✓ V18.104 · ~~Migration ohne Zustand~~ ✓ V18.126 |
-| Sozial-Schicht fehlt ganz (Bewerten lokal-only)                     | F4                                                                                                                             |
+| ~~Sozial-Schicht fehlt ganz (Bewerten lokal-only)~~                 | ✓ V18.134 F4-Stufe-1 (signierte Zeugnisse übers Mesh, LWW, R4 siebt); Rest: Lesezeichen/Folgen/Kommentare                     |
 | ~~Innerster Ring nicht BENANNT~~                                    | ✓ V18.122 G8 R0 (`SOVEREIGN_STATE` + `_sovereignStateAudit`)                                                                   |
 | ~~Kanal dämpft nur teilweise (ready/exit/manifest ungedeckelt)~~    | ✓ V18.123 G8 R1 (`_portalChannelAdmit` + `_p2pPeerRateAdmit`)                                                                  |
 | ~~Keine Irreversibilitäts-Wand~~                                    | ✓ V18.123 G8 R2 (`SOVEREIGN_ACTIONS` disjunkt + `_sovereignGesture`)                                                           |

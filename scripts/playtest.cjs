@@ -27919,6 +27919,92 @@ async function checkBandV18133Forage(ctx) {
     );
 }
 
+// V18.134 — F4 Stufe 1 (gigant-plan §5): der SOZIALE BOGEN beginnt — signierte
+// BEWERTUNGS-ZEUGNISSE uebers Mesh. Ein Zeugnis {id,s,t,pub,sig} (ed25519 ueber
+// das stabile Kanonische), LWW pro (Ziel, Schluessel) = CRDT-tauglich
+// konfliktarm; kanal-exklusiv + R1-rate-gegated; R4-Rueckruf-KONSUMENT
+// (revozierte Schluessel fallen aus der Wertungs-Wahrheit). End-to-end mit
+// ZWEITER Identitaet probe-bewiesen (verify, LWW, Tamper, Rueckruf, Batch).
+async function checkBandV18134Social(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.consts = !!r.constructor.SOCIAL && Object.isFrozen(r.constructor.SOCIAL);
+        // KONSUM-Proben: das Werten signiert, der Kanal routet, der Feed liest.
+        out.rateSigns = /_socialSignOwnRating/.test(r._setFeedRating.toString());
+        out.channelRoutes = /social-rating/.test(r._p2pHandleChannelMessage.toString());
+        out.feedReadsAgg = /_feedRatingAgg/.test(r._feedRatingBar.toString());
+        if (!r.state.vibePass || !r.state.vibePass.ready || typeof crypto === "undefined" || !crypto.subtle) {
+            out.unmeasurable = true;
+            return out;
+        }
+        const saved = r.state.socialRatings;
+        r.state.socialRatings = new Map();
+        try {
+            const own = await r._socialSignOwnRating("welt:band134", 4);
+            out.ownSigned = !!(own && own.sig);
+            const kp = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+            const jwk = await crypto.subtle.exportKey("jwk", kp.publicKey);
+            const b64uToBytes = (b64u) => {
+                const b64 = b64u.replace(/-/g, "+").replace(/_/g, "/");
+                const bin = atob(b64);
+                return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+            };
+            const pubHex = [...b64uToBytes(jwk.x)].map((b) => b.toString(16).padStart(2, "0")).join("");
+            const mk = async (id, sVal, t) => {
+                const z = { id, s: sVal, t, pub: pubHex };
+                const data = new TextEncoder().encode(r._socialCanonical(z));
+                const sig = await crypto.subtle.sign({ name: "Ed25519" }, kp.privateKey, data);
+                z.sig = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
+                return z;
+            };
+            const fremd = await mk("welt:band134", 5, Date.now());
+            out.received = await r._socialRatingReceive("peerX", fremd);
+            const agg = r._feedRatingAgg("welt:band134");
+            out.aggOk = agg.count === 2 && Math.abs(agg.avg - 4.5) < 1e-9;
+            out.lwwRejected =
+                (await r._socialRatingReceive("peerX", await mk("welt:band134", 1, fremd.t - 5000))) === false;
+            out.tamperRejected = (await r._socialRatingReceive("peerX", { ...fremd, s: 1 })) === false;
+            if (typeof r.revokeKey === "function") {
+                r.revokeKey(pubHex, { reason: "band134" });
+                const agg2 = r._feedRatingAgg("welt:band134");
+                out.revokeConsumed =
+                    agg2.count === 1 &&
+                    (await r._socialRatingReceive("peerX", await mk("welt:band134", 3, Date.now() + 1000))) === false;
+                if (r.state.revokedKeys && r.state.revokedKeys.delete) r.state.revokedKeys.delete(pubHex.toLowerCase());
+            } else {
+                out.revokeConsumed = true;
+            }
+            const batch = r._socialAnnounceBatch();
+            out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length >= 1);
+        } finally {
+            r.state.socialRatings = saved || new Map();
+            r._saveSocialRatings();
+        }
+        return out;
+    });
+    if (!res) {
+        check("V18.134 Sozial: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("V18.134 Sozial: SOCIAL-Konfiguration steht (frozen)", res.consts);
+    check(
+        "V18.134 Sozial: KONSUM verdrahtet (Werten signiert · Kanal routet · Feed liest die Aggregation)",
+        res.rateSigns && res.channelRoutes && res.feedReadsAgg
+    );
+    if (!res.unmeasurable) {
+        check(
+            "V18.134 Sozial: eigenes Zeugnis signiert + fremdes verifiziert + Aggregation Ø 4.5 (2)",
+            res.ownSigned && res.received && res.aggOk
+        );
+        check("V18.134 Sozial: LWW haelt (aelteres Zeugnis derselben Identitaet faellt)", res.lwwRejected);
+        check("V18.134 Sozial: ein manipuliertes Zeugnis bricht an der Signatur", res.tamperRejected);
+        check("V18.134 Sozial: der R4-Rueckruf wirkt sozial (Aggregation + Empfang sieben)", res.revokeConsumed);
+        check("V18.134 Sozial: die Anschluss-Annonce traegt die eigenen Zeugnisse (Batch)", res.batchCarries);
+    }
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
@@ -43923,6 +44009,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18131DekoKaskade(ctx);
             await checkBandV18132FerneSeen(ctx);
             await checkBandV18133Forage(ctx);
+            await checkBandV18134Social(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

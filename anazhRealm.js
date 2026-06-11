@@ -5789,6 +5789,16 @@ class AnazhRealm {
             // Eigene Seele + Vibe-Identität direkt peer-to-peer nachreichen.
             this._p2pBroadcastSoul();
             this._p2pBroadcastVibe();
+            // F4 (V18.134) — die eigenen Bewertungs-Zeugnisse nachreichen
+            // (EIN Batch, kanal-direkt an den frischen Peer).
+            const socialBatch = this._socialAnnounceBatch();
+            if (socialBatch && channel.readyState === "open") {
+                try {
+                    channel.send(JSON.stringify(socialBatch));
+                } catch (_e) {
+                    /* Kanal frisch zu — der naechste onopen reicht nach */
+                }
+            }
         };
         channel.onmessage = (ev) => this._p2pHandleChannelMessage(peerId, ev.data);
         channel.onclose = () => {
@@ -5810,6 +5820,20 @@ class AnazhRealm {
             return;
         }
         if (!msg || typeof msg !== "object") return;
+        // F4 (V18.134) — soziale Bewertungs-Zeugnisse: kanal-exklusiv +
+        // R1-rate-gegated; die Signatur-Pruefung lebt im Receive (async).
+        if (msg.type === "social-rating") {
+            if (this._p2pPeerRateAdmit("social", peerId, AnazhRealm.SOCIAL.ratePerSec)) {
+                this._socialRatingReceive(peerId, msg.r);
+            }
+            return;
+        }
+        if (msg.type === "social-ratings") {
+            if (Array.isArray(msg.list) && this._p2pPeerRateAdmit("social", peerId, AnazhRealm.SOCIAL.ratePerSec)) {
+                for (const r of msg.list.slice(0, AnazhRealm.SOCIAL.maxBatch)) this._socialRatingReceive(peerId, r);
+            }
+            return;
+        }
         // W7 Phase 2 — Welt-Transfer läuft kanal-exklusiv (kann nicht über
         // den WS injiziert werden, weil hier behandelt statt re-dispatcht).
         if (msg.type === "world-pull") {
@@ -32967,7 +32991,10 @@ class AnazhRealm {
         if (this.state.feedSort === "rating")
             items = items
                 .map((it, i) => [it, i])
-                .sort((a, b) => (b[0].rating || 0) - (a[0].rating || 0) || a[1] - b[1])
+                .sort(
+                    (a, b) =>
+                        (b[0].ratingScore || b[0].rating || 0) - (a[0].ratingScore || a[0].rating || 0) || a[1] - b[1]
+                )
                 .map((p) => p[0]);
         for (const item of items) list.appendChild(this._feedItemCard(item));
         this._renderFeedKindChips();
@@ -33104,7 +33131,137 @@ class AnazhRealm {
         const s = Math.max(0, Math.min(5, Math.round(stars)));
         this.state.feedRatings[id] = this.state.feedRatings[id] === s ? 0 : s; // Toggle — kein erzwungenes Werten
         this._saveFeedRatings();
+        // F4 (V18.134) — die eigene Wertung wird ein signiertes ZEUGNIS
+        // (fire-and-forget: signieren ist async; ohne Vibe-Pass bleibt die
+        // Wertung lokal wie bisher — kein Zwang zur Identitaet).
+        this._socialSignOwnRating(id, this.state.feedRatings[id]);
         return this.state.feedRatings[id];
+    }
+
+    // ===== F4 Stufe 1 (V18.134) — die soziale Bewertungs-Aggregation =========
+    // Doku an AnazhRealm.SOCIAL. Das Zeugnis-Kanonische ist STABIL (jede
+    // Aenderung braechte alle Signaturen — Vertrags-Disziplin wie signWorld).
+    _socialCanonical(r) {
+        return `rating|${r.id}|${r.s}|${r.t}|${r.pub}`;
+    }
+
+    _loadSocialRatings() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.socialRatings") : null;
+            const arr = raw ? JSON.parse(raw) : [];
+            const m = new Map();
+            if (Array.isArray(arr)) for (const r of arr) if (r && r.id && r.pub) m.set(`${r.id}|${r.pub}`, r);
+            return m;
+        } catch {
+            return new Map();
+        }
+    }
+
+    _saveSocialRatings() {
+        try {
+            if (typeof localStorage === "undefined") return;
+            const arr = [...(this.state.socialRatings || new Map()).values()];
+            localStorage.setItem("anazh.socialRatings", JSON.stringify(arr));
+        } catch (e) {
+            this.log(`socialRatings-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    _socialRatings() {
+        if (!this.state.socialRatings) this.state.socialRatings = this._loadSocialRatings();
+        return this.state.socialRatings;
+    }
+
+    // LWW-Store: neuestes t pro (Ziel, Schluessel) gewinnt; Cap verdraengt das
+    // aelteste Zeugnis (bounded — die §5-Wand). true = gespeichert.
+    _socialStoreRating(r) {
+        const m = this._socialRatings();
+        const key = `${r.id}|${r.pub}`;
+        const old = m.get(key);
+        if (old && old.t >= r.t) return false; // LWW — Aelteres faellt
+        m.set(key, r);
+        const cap = AnazhRealm.SOCIAL.maxStore;
+        if (m.size > cap) {
+            let oldestK = null;
+            let oldestT = Infinity;
+            for (const [k, v] of m) {
+                if (v.t < oldestT) {
+                    oldestT = v.t;
+                    oldestK = k;
+                }
+            }
+            if (oldestK) m.delete(oldestK);
+        }
+        this._saveSocialRatings();
+        return true;
+    }
+
+    // Die AGGREGATION (der Feed-Leser): Ø + Anzahl ueber alle nicht-revozierten
+    // Zeugnisse eines Ziels (s=0 = zurueckgezogene Wertung zaehlt nicht).
+    // R4-KONSUM: ein revozierter Schluessel faellt aus der Wertungs-Wahrheit.
+    _feedRatingAgg(id) {
+        const m = this._socialRatings();
+        let sum = 0;
+        let count = 0;
+        for (const r of m.values()) {
+            if (r.id !== id || !(r.s > 0)) continue;
+            if (typeof this._isKeyRevoked === "function" && this._isKeyRevoked(r.pub)) continue;
+            sum += r.s;
+            count++;
+        }
+        return { avg: count ? sum / count : 0, count };
+    }
+
+    // Die EIGENE Wertung signieren + speichern + (wenn das Mesh lebt)
+    // annoncieren. Ohne Vibe-Pass still lokal (kein Identitaets-Zwang).
+    async _socialSignOwnRating(id, s) {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp.publicKeyHex) return null;
+        const r = { id, s: Math.max(0, Math.min(5, Math.round(s))), t: Date.now(), pub: vp.publicKeyHex };
+        const sig = await this._vibeSign(this._socialCanonical(r));
+        if (!sig) return null;
+        r.sig = sig;
+        this._socialStoreRating(r);
+        if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pSend === "function") {
+            this.p2pSend({ type: "social-rating", r });
+        }
+        return r;
+    }
+
+    // Empfang (kanal-exklusiv, R1-gegated am Aufrufer): Form pruefen →
+    // Rueckruf pruefen → Signatur VERIFIZIEREN → LWW-Store. Async (subtle).
+    async _socialRatingReceive(peerId, r) {
+        if (!r || typeof r !== "object") return false;
+        const s = r.s;
+        const okShape =
+            typeof r.id === "string" &&
+            r.id.length > 0 &&
+            r.id.length <= 200 &&
+            Number.isInteger(s) &&
+            s >= 0 &&
+            s <= 5 &&
+            Number.isFinite(r.t) &&
+            typeof r.pub === "string" &&
+            /^[0-9a-f]{64}$/i.test(r.pub) &&
+            typeof r.sig === "string";
+        if (!okShape) return false;
+        if (typeof this._isKeyRevoked === "function" && this._isKeyRevoked(r.pub)) return false;
+        const ok = await this._vibeVerify(this._socialCanonical(r), r.sig, r.pub);
+        if (!ok) return false;
+        return this._socialStoreRating({ id: r.id, s, t: r.t, pub: r.pub.toLowerCase(), sig: r.sig });
+    }
+
+    // Die ANSCHLUSS-ANNONCE: die eigenen neuesten Zeugnisse als EIN Batch an
+    // einen frisch verbundenen Peer (das Soul/Vibe-Muster am channel.onopen).
+    _socialAnnounceBatch() {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp.publicKeyHex) return null;
+        const own = [...this._socialRatings().values()]
+            .filter((r) => r.pub === vp.publicKeyHex && r.sig)
+            .sort((a, b) => b.t - a.t)
+            .slice(0, AnazhRealm.SOCIAL.maxBatch);
+        if (!own.length) return null;
+        return { type: "social-ratings", list: own };
     }
 
     // Ein Bauplan-Lese-Vektor (das _worldProfile/_creatureProfile-Muster auf ein Rezept). KONSUM-ehrlich.
@@ -33156,7 +33313,12 @@ class AnazhRealm {
                 search: (p.name + " " + p.soulLabel + " " + p.moodLabel + " wesen kreatur").toLowerCase(),
             });
         }
-        for (const it of items) it.rating = this._feedRating(it.id);
+        for (const it of items) {
+            it.rating = this._feedRating(it.id);
+            // F4 (V18.134) — die Gemeinschafts-Wertung in den Strom (Sort-Quelle).
+            const agg = this._feedRatingAgg(it.id);
+            it.ratingScore = agg.count > 0 ? agg.avg : it.rating || 0;
+        }
         return items;
     }
 
@@ -33498,6 +33660,19 @@ class AnazhRealm {
             bar.appendChild(star);
         }
         paint(item.rating || 0);
+        // F4 (V18.134) — die GEMEINSCHAFTS-Wertung (Mesh-Aggregation) neben den
+        // eigenen Sternen: "Ø 4.2 (3)" — nur wenn Zeugnisse da sind (kein
+        // UI-Rauschen in der Einzelwelt, die V18.77-Abweichungs-Disziplin).
+        const agg = typeof this._feedRatingAgg === "function" ? this._feedRatingAgg(item.id) : null;
+        if (agg && agg.count > 0) {
+            bar.appendChild(
+                this._el("span", {
+                    class: "feed-rating-agg",
+                    text: ` Ø ${agg.avg.toFixed(1)} (${agg.count})`,
+                    title: "Gemeinschafts-Wertung (signierte Zeugnisse uebers Mesh)",
+                })
+            );
+        }
         return bar;
     }
 
@@ -55223,7 +55398,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.133.0";
+AnazhRealm.VERSION = "18.134.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -55254,6 +55429,22 @@ AnazhRealm.CA_FLOW_KEEP = 0.95;
 // Pflanzen wachsen ueber einen Reload natuerlich nach, keine Ernte-Halde im
 // Snapshot); der Index ist stabil (deterministisches per-Chunk-RNG → geerntete
 // Instanzen werden auf Skala 0 gesetzt, nie umnummeriert).
+// F4 Stufe 1 (V18.134) — der SOZIALE BOGEN beginnt: signierte BEWERTUNGS-
+// ZEUGNISSE reisen uebers Mesh (gigant-plan §5-F4). Ein Zeugnis = {id, s, t,
+// pub, sig} mit sig = ed25519(canonical) — die ed25519-Identitaet (Vibe-Pass)
+// macht es UNFAELSCHBAR, die LWW-Semantik (neuestes t pro (id, pub) gewinnt)
+// macht es CRDT-tauglich (konfliktarm — die richtige CRDT-Schicht, Physik
+// bleibt host-autoritativ, §4-Urteil). KANAL-EXKLUSIV (DataChannel, nicht
+// WS-injizierbar), R1-rate-gegated, R4-Rueckruf-KONSUMENT (revozierte
+// Schluessel fallen aus der Aggregation — das Immunsystem wirkt sozial).
+// Global in localStorage (anazh.socialRatings) — NIE im Welt-Snapshot
+// (Bewertungen sind welt-uebergreifend, wie der Vibe-Pass).
+AnazhRealm.SOCIAL = Object.freeze({
+    maxStore: 600, // Zeugnisse gesamt (LWW-dedupe; aelteste t fallen)
+    maxBatch: 32, // Zeugnisse pro Mesh-Batch (Anschluss-Annonce)
+    ratePerSec: 12, // R1-Empfangs-Deckel pro Peer
+});
+
 AnazhRealm.FORAGE = Object.freeze({
     reach: 6, // m — Pflueck-Reichweite
     regrowMs: 300000, // 5 min — die Flora kehrt zurueck
