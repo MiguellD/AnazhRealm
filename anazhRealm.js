@@ -1204,10 +1204,10 @@ class AnazhRealm {
             if (this.grokSpeak("jumpBurst")) grok.recentJumps.length = 0;
         }
 
-        // Regen-Dauer beobachten.
-        if (this.state.weather === "rainy" && grok.prevWeather !== "rainy") {
+        // Regen-Dauer beobachten (D5a: die wet-Frage — rainy UND stormy nässen).
+        if (this._weatherIsWet() && !this._weatherIsWet(grok.prevWeather)) {
             grok.rainStartedAt = currentTime;
-        } else if (this.state.weather !== "rainy") {
+        } else if (!this._weatherIsWet()) {
             grok.rainStartedAt = null;
         }
         grok.prevWeather = this.state.weather;
@@ -1545,6 +1545,18 @@ class AnazhRealm {
         }
         const op = program[0];
         const args = program.slice(1);
+        // G8 R2 (Robustheits-Bogen, M3 — die Irreversibilitäts-Wand): eine
+        // SOUVERÄNE Aktion (wallet_transfer/sign_manifest/change_identity/
+        // grant_capability) läuft NIEMALS durch die DSL-Pipeline — nicht durch
+        // Welt, LLM, Regel oder Fluss. Sie verlangt die Host-gerenderte Geste
+        // (_sovereignGesture) außerhalb jedes iframes. Diese Wand ist
+        // Defense-in-Depth (die souveränen Akte sind ohnehin keine dslEffects),
+        // aber explizit: ein eingeschmuggelter souveräner Op wird blockiert +
+        // sichtbar geloggt (sovereign_blocked statt unknown_op).
+        if (AnazhRealm.SOVEREIGN_ACTIONS.includes(op)) {
+            ctx.log.push({ event: "sovereign_blocked", op: String(op), program_id: ctx.programId });
+            return;
+        }
         const fn = this.dslEffects[op];
         if (!fn) {
             ctx.log.push({ event: "unknown_op", op: String(op), program_id: ctx.programId });
@@ -2007,25 +2019,11 @@ class AnazhRealm {
         const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
         this._dslEffectsCache = {
             weather: ([name]) => {
-                if (name === "sunny" || name === "rainy") {
-                    // Welle 6.G3.b — state.weather wird SOFORT gesetzt
-                    // (logisch das Ziel-Wetter, weather_is-Condition + DSL-
-                    // Sequenzen reagieren sofort darauf). Die Transition ist
-                    // eine REIN VISUELLE Schicht — Skybox+Symphonie cross-
-                    // faden über 45 s zum neuen Zielwetter. So bleibt die
-                    // Logik instant, das Auge sieht den weichen Übergang.
-                    const oldWeather = this.state.weather;
-                    this.state.weather = name;
-                    this.state.weatherEffectTime = 0;
-                    if (oldWeather !== name) {
-                        // Nur einen Cross-Fade starten wenn es wirklich
-                        // einen Wechsel gibt.
-                        this.requestWeatherTransition(name, undefined, oldWeather);
-                    }
-                    // updateSkyboxWeather wird nicht mehr direkt gerufen —
-                    // _applyDayNightToScene übernimmt das pro Frame.
-                    this.updateCreatureEmotions();
-                }
+                // D5a (V18.128) — das Vokabular ist die WEATHER_INTENSITY-
+                // Tabelle (sunny · rainy · stormy); der EINE Schreiber
+                // `_setWeather` trägt Logik-instant + visuellen Cross-Fade
+                // (vom DSL-Op UND dem Auto-Zug geteilt — V9.82-Verdichtung).
+                if (name in AnazhRealm.WEATHER_INTENSITY) this._setWeather(name);
             },
             // Welle 6.G3.a — set_time_of_day(t) als DSL-Op. t ∈ 0..1, 0=
             // Mitternacht, 0.5=Mittag. NON_BROADCASTABLE — jeder Mitspieler
@@ -3809,7 +3807,7 @@ class AnazhRealm {
         const heightKey = pos.y < 30 ? "low" : pos.y < 60 ? "mid" : "high";
         const distXZ = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
         const distKey = distXZ < 30 ? "center" : distXZ < 80 ? "mid" : "edge";
-        const weatherKey = this.state.weather === "rainy" ? "rainy" : "sunny";
+        const weatherKey = this.state.weather || "sunny"; // D5a: polyvalent — stormy ist ein eigener Lern-Key
         const moves = p.recentActivity.moves || 0;
         const jumps = p.recentActivity.jumps || 0;
         const activityKey = jumps > 0 ? "jumping" : moves > 1 ? "walking" : "still";
@@ -5791,6 +5789,16 @@ class AnazhRealm {
             // Eigene Seele + Vibe-Identität direkt peer-to-peer nachreichen.
             this._p2pBroadcastSoul();
             this._p2pBroadcastVibe();
+            // F4 (V18.134) — die eigenen Bewertungs-Zeugnisse nachreichen
+            // (EIN Batch, kanal-direkt an den frischen Peer).
+            const socialBatch = this._socialAnnounceBatch();
+            if (socialBatch && channel.readyState === "open") {
+                try {
+                    channel.send(JSON.stringify(socialBatch));
+                } catch (_e) {
+                    /* Kanal frisch zu — der naechste onopen reicht nach */
+                }
+            }
         };
         channel.onmessage = (ev) => this._p2pHandleChannelMessage(peerId, ev.data);
         channel.onclose = () => {
@@ -5812,6 +5820,20 @@ class AnazhRealm {
             return;
         }
         if (!msg || typeof msg !== "object") return;
+        // F4 (V18.134) — soziale Bewertungs-Zeugnisse: kanal-exklusiv +
+        // R1-rate-gegated; die Signatur-Pruefung lebt im Receive (async).
+        if (msg.type === "social-rating") {
+            if (this._p2pPeerRateAdmit("social", peerId, AnazhRealm.SOCIAL.ratePerSec)) {
+                this._socialRatingReceive(peerId, msg.r);
+            }
+            return;
+        }
+        if (msg.type === "social-ratings") {
+            if (Array.isArray(msg.list) && this._p2pPeerRateAdmit("social", peerId, AnazhRealm.SOCIAL.ratePerSec)) {
+                for (const r of msg.list.slice(0, AnazhRealm.SOCIAL.maxBatch)) this._socialRatingReceive(peerId, r);
+            }
+            return;
+        }
         // W7 Phase 2 — Welt-Transfer läuft kanal-exklusiv (kann nicht über
         // den WS injiziert werden, weil hier behandelt statt re-dispatcht).
         if (msg.type === "world-pull") {
@@ -5863,6 +5885,13 @@ class AnazhRealm {
         // Roster (für die Host-Migration, wenn er das Mesh verlässt).
         if (msg.type === "subworld-roster") {
             this._portalRosterReceive(peerId, msg);
+            return;
+        }
+        // F2 (G3, V18.126) — der Compute-Host annonciert den kooperativen
+        // Server-ZUSTAND (die Mitgift der Host-Migration). Kanal-exklusiv wie
+        // die Roster: nicht WS-injizierbar, peerId kanal-gestempelt.
+        if (msg.type === "subworld-state") {
+            this._portalStateReceive(peerId, msg);
             return;
         }
         const ALLOWED = [
@@ -6853,21 +6882,37 @@ class AnazhRealm {
         if (typeof this._renderLobbyUI === "function") this._renderLobbyUI();
     }
 
+    // G8 R1 (Robustheits-Bogen, M2-Dämpfung) — das EINE per-Peer-Raten-Tor
+    // (das _cpRate-Muster verallgemeinert, V9.82-Verdichtung: eine Quelle, viele
+    // Leser). Deckelt die Nachrichten je Sekunde JE PEER JE Kanal (`bucket`).
+    // Ein flutender/bösartiger Mesh-Peer kann den Main-Thread nicht würgen —
+    // Überschuss fällt still (Verwerfen bändigt; transport-seitig, kein
+    // State-Unterschied → Determinismus unberührt). Gibt true, wenn admittiert.
+    _p2pPeerRateAdmit(bucket, peerId, maxPerSec) {
+        if (typeof peerId !== "string") return false;
+        if (!this._p2pRate) this._p2pRate = {};
+        let m = this._p2pRate[bucket];
+        if (!m) {
+            m = new Map();
+            this._p2pRate[bucket] = m;
+        }
+        const now = performance.now();
+        let win = m.get(peerId);
+        if (!win || now - win.start > 1000) {
+            win = { start: now, n: 0 };
+            m.set(peerId, win);
+        }
+        return ++win.n <= maxPerSec;
+    }
+
     _p2pMsgCreaturePos(msg, p2p) {
         // Kreatur-Sicht-Sync — die Kreatur-Positionen eines Mitspielers.
-        // F2 (gigant-plan §5 — G3): RATEN-CAP pro Peer (das SUBWORLD_NET_RATE_MAX-
-        // Muster): ein flutender/bösartiger Peer kann den Main-Thread nicht mit
-        // creature-pos-Reconciles würgen — max 10 Nachrichten je Sekunde je Peer,
-        // Überschuss fällt still (die nächste Nachricht trägt eh die VOLLE Liste).
+        // RATEN-CAP pro Peer (G8 R1 _p2pPeerRateAdmit): ein flutender/bösartiger
+        // Peer kann den Main-Thread nicht mit creature-pos-Reconciles würgen —
+        // max 10 Nachrichten je Sekunde je Peer, Überschuss fällt still (die
+        // nächste Nachricht trägt eh die VOLLE Liste).
         if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-            if (!this._cpRate) this._cpRate = new Map();
-            const now = performance.now();
-            let win = this._cpRate.get(msg.peerId);
-            if (!win || now - win.start > 1000) {
-                win = { start: now, n: 0 };
-                this._cpRate.set(msg.peerId, win);
-            }
-            if (++win.n > 10) return;
+            if (!this._p2pPeerRateAdmit("creature-pos", msg.peerId, 10)) return;
             this._p2pHandleCreaturePos(msg.peerId, msg);
         }
     }
@@ -6884,7 +6929,12 @@ class AnazhRealm {
         // _portalNetDeliver stellt ihn nur ins eigene iframe zu, wenn ich
         // im SELBEN Multiplayer-Portal bin (B2 — worldId-Pfad-Match);
         // sonst sähe ein Mesh-Mitspieler ohne Portal fremden Verkehr.
+        // G8 R1 (M2-Dämpfung) — RATEN-CAP pro Peer (das _cpRate-Muster, das
+        // dieser Empfang bisher NICHT trug): ein bösartiger Peer kann den
+        // Main-Thread nicht mit Sub-Welt-Zustellungen würgen (der Sender
+        // deckelt sich bei 120/s, aber ein böswilliger Peer ignoriert das).
         if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            if (!this._p2pPeerRateAdmit("subworld-net", msg.peerId, AnazhRealm.SUBWORLD_NET_PEER_RATE_MAX)) return;
             this._portalNetDeliver(msg);
         }
     }
@@ -7901,11 +7951,25 @@ class AnazhRealm {
         this._chatDslPatternsCache = [
             {
                 example: "setze wetter rainy",
-                re: /^setze\s+wetter\s+(sunny|rainy)\s*$/i,
-                build: (m) => ({
-                    program: ["weather", m[1].toLowerCase()],
-                    describe: `Wetter gesetzt auf ${m[1].toLowerCase()}`,
-                }),
+                // D5a (V18.128) — das Vokabular wächst mit der WEATHER_INTENSITY-
+                // Tabelle; deutsche Worte normalisieren auf die kanonischen.
+                re: /^setze\s+wetter\s+(sunny|rainy|stormy|sturm|stürmisch|sonnig|sonne|regen|regnerisch)\s*$/i,
+                build: (m) => {
+                    const raw = m[1].toLowerCase();
+                    const map = {
+                        sturm: "stormy",
+                        stürmisch: "stormy",
+                        sonnig: "sunny",
+                        sonne: "sunny",
+                        regen: "rainy",
+                        regnerisch: "rainy",
+                    };
+                    const word = map[raw] || raw;
+                    return {
+                        program: ["weather", word],
+                        describe: `Wetter gesetzt auf ${word}`,
+                    };
+                },
             },
             {
                 // Ring 11 V2.1: Position embed bei Build-Zeit (sonst spawnt
@@ -8414,6 +8478,8 @@ class AnazhRealm {
             .trim();
         if (!t) return null;
         // Wetter
+        // D5a (V18.128): der Sturm VOR dem Regen — das spezifischere Wort gewinnt.
+        if (/\bsturm|stürmisch|stuermisch|stormy|gewitter/.test(t)) return ["weather_is", "stormy"];
         if (/\bregn|\bregen\b|regnet|rainy|nass/.test(t)) return ["weather_is", "rainy"];
         if (/\bsonn|sunny|klar\b|heiter/.test(t)) return ["weather_is", "sunny"];
         // Stimmung (globale Spieler-Emotion)
@@ -8456,9 +8522,12 @@ class AnazhRealm {
         return null;
     }
 
-    // Levenshtein-basierte Vorschläge, wenn weder DSL- noch Legacy-Pfad griff.
+    // Levenshtein-basierte Vorschläge, wenn weder DSL- noch System-Pfad griff.
     // Wir vergleichen den ersten Tokens-Bigram (z. B. "setze wetter") gegen
     // die Beispiel-Patterns. Distanz <= 4 gilt als „nahe genug".
+    // E1 (V18.127) — liest BEIDE Tabellen (DSL + System): ein Tippfehler bei
+    // „speichere zustand" bekommt jetzt einen Vorschlag (vorher waren die
+    // Legacy-Befehle für die Vorschläge unsichtbar — der KONSUM-Gewinn).
     chatSuggest(text) {
         if (typeof text !== "string") return null;
         const t = text.trim().toLowerCase();
@@ -8466,7 +8535,9 @@ class AnazhRealm {
         const parts = t.split(/\s+/);
         const head = parts.slice(0, 2).join(" ");
         if (!head) return null;
-        const candidates = this.chatDslPatterns.map((p) => p.example);
+        const candidates = this.chatDslPatterns
+            .map((p) => p.example)
+            .concat(this.chatSystemPatterns.map((p) => p.example));
         let best = null;
         let bestDist = Infinity;
         for (const cand of candidates) {
@@ -9341,7 +9412,7 @@ class AnazhRealm {
     _symphonyWeatherTarget() {
         const s = this.state.symphony;
         const pingVol = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
-        return (this.state.weather === "rainy" ? 0.014 : 0) * pingVol;
+        return this._weatherBlendedValue(0, 0.014) * pingVol; // D5a: Achsen-Lerp — stormy rauscht lauter
     }
 
     // [ATMOSPHERE] Symphonie-Tick. V8.25-Erweiterung: ambient-Gain atmet
@@ -12035,7 +12106,7 @@ class AnazhRealm {
             );
         }
         // Wetter-Wechsel: aus prevWeather merken, der nicht im Journal-State liegt
-        if (this.state.weather === "rainy") {
+        if (this._weatherIsWet()) {
             this.journalAppendOnce("firstRain", "weather", "Der erste Regen begann.");
         }
         // Hochfitness-Programm aus der History — wir wandern beim ersten
@@ -14351,7 +14422,18 @@ class AnazhRealm {
         return Object.freeze({
             sunny: Object.freeze({ skyMul: 1.0, lightMul: 1.0 }),
             rainy: Object.freeze({ skyMul: 0.55, lightMul: 0.7 }),
+            stormy: Object.freeze({ skyMul: 0.42, lightMul: 0.55 }),
         });
+    }
+    // D5a (V18.128) — das Wetter ist eine INTENSITÄTS-ACHSE, kein Binär-Paar:
+    // jeder wetter-abhängige Skalar lerpt über sie (`_weatherBlendedValue`),
+    // ein NEUES Wort ist EIN Tabellen-Eintrag — alle Blend-Leser (Wolken ·
+    // Licht-Tint via TINTS · Wind · Fog · Regen-Rauschen) erben es GRATIS
+    // (die „eine Achse, viele Leser"-Lehre; stormy extrapoliert ÜBER rainy
+    // hinaus — [0,1]-gebundene Shader-Konsumenten clampen lokal). Die
+    // wet-Frage (`_weatherIsWet`) ersetzt die binären ===\"rainy\"-Leser.
+    static get WEATHER_INTENSITY() {
+        return Object.freeze({ sunny: 0, rainy: 1, stormy: 1.35 });
     }
     static get WEATHER_TRANSITION_DURATION_MS() {
         return 45000; // 45 s — sanft, nicht zu lang
@@ -14592,8 +14674,9 @@ class AnazhRealm {
     // Parallelcode). Jede Art: ein eigener KONSTANTER `cap` (Uniform-Capacity-
     // Pattern, alle Pool-Meshes derselben Art gleich groß → kein Bind-Group-
     // Cache-Pollution; r184-geheilt, kein 256-Crash mehr). `field`/`floor`
-    // gaten WO die Art wächst, `perCell` die Dichte, `ring` den Distanz-LOD
-    // (Chunk-Distanz ≤ ring; teurere/seltenere Arten näher), `pool` die Anzahl
+    // gaten WO die Art wächst, `perCell` die Dichte; den Distanz-LOD trägt seit
+    // U4 (V18.131) die DETAIL_CASCADE (`deko`/`dekoDichte` — Band 0 mesh, fern
+    // das EINE Impostor-Fernfeld pro Art), `pool` die Anzahl
     // recycelbarer Mesh-Objekte (≥ Ring-Chunk-Zahl + Headroom). `wind` = weich
     // (teilt die Gras-Wind-positionNode), `emissive` = leuchtet (speist V17.0-
     // Bloom). `yOff` hebt schwebende Arten (Sporen). Alle Werte browser-
@@ -14604,12 +14687,12 @@ class AnazhRealm {
             // Kern. Dicht + nah, weich im Wind. Cap 512 fängt die dichte Wiese.
             {
                 name: "blume",
+                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "lebendig",
                 floor: 0.5,
                 perCell: 3.2,
                 cap: 512,
-                ring: 1,
-                pool: 16,
+                pool: 28,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -14622,12 +14705,12 @@ class AnazhRealm {
             // Unterholz, füllt zwischen den Blüten. Weich im Wind.
             {
                 name: "farn",
+                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "lebendig",
                 floor: 0.32,
                 perCell: 2.4,
                 cap: 448,
-                ring: 1,
-                pool: 16,
+                pool: 28,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -14640,12 +14723,12 @@ class AnazhRealm {
             // heißen/trockenen Regionen. Leicht im Wind.
             {
                 name: "gestruepp",
+                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "glut",
                 floor: 0.5,
                 perCell: 1.8,
                 cap: 320,
-                ring: 1,
-                pool: 16,
+                pool: 28,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -14658,11 +14741,11 @@ class AnazhRealm {
             // Regionen. Statisch (kein Wind), empfängt Schatten, weiter sichtbar.
             {
                 name: "fels",
+                ernte: "stein", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "dichte",
                 floor: 0.46,
                 perCell: 1.4,
                 cap: 256,
-                ring: 2,
                 pool: 32,
                 wind: false,
                 emissive: false,
@@ -14676,12 +14759,12 @@ class AnazhRealm {
             // magischen Regionen. Emissive → speist das V17.0-Bloom (Synergie).
             {
                 name: "spore",
+                ernte: "essenz", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "magieleitung",
                 floor: 0.62,
                 perCell: 1.6,
                 cap: 224,
-                ring: 1,
-                pool: 16,
+                pool: 28,
                 wind: false,
                 emissive: true,
                 yOff: 0.5,
@@ -14696,12 +14779,12 @@ class AnazhRealm {
             // → warmes Schweben in Sonnenstrahlen, kein Glühwurm. Reine Deko.
             {
                 name: "pollen",
+                ernte: "essenz", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "lebendig",
                 floor: 0.55,
                 perCell: 1.3,
                 cap: 200,
-                ring: 1,
-                pool: 16,
+                pool: 28,
                 wind: false,
                 emissive: true,
                 emissiveBoost: 1.15,
@@ -15686,14 +15769,13 @@ class AnazhRealm {
             // Voxel-Welt liefert es die Voxel-Oberfläche, die Kreatur spawnt
             // auf dem echten Boden statt auf der schlafenden Heightfield-Höhe.
             const terrainHeight = this.getTerrainHeightAt(x, z);
-            const emotion =
-                this.state.weather === "rainy"
-                    ? Math.random() < 0.7
-                        ? "sad"
-                        : "happy"
-                    : Math.random() < 0.7
-                      ? "happy"
-                      : "sad";
+            const emotion = this._weatherIsWet()
+                ? Math.random() < 0.7
+                    ? "sad"
+                    : "happy"
+                : Math.random() < 0.7
+                  ? "happy"
+                  : "sad";
             // playCreaturePing in spawnCreatureAt mute-temporär, sonst 10 Pings.
             const symBefore = this.state.symphony && this.state.symphony.enabled;
             if (this.state.symphony) this.state.symphony.enabled = false;
@@ -16255,6 +16337,45 @@ class AnazhRealm {
             snap.erosion = null;
         }
         snap.tarns = Array.isArray(this.state.tarns) ? this.state.tarns.map((t) => ({ ...t })) : null;
+        // A3 (V18.132) — die fernen KACHELN reisen mit (derselbe Feld-Satz wie
+        // snap.hydrosphere/erosion, als plain Object {key: tile} — der Worker
+        // liest sie in hydroFor/erosionFor; ohne sie baute er ferne Chunks
+        // gegen die alte OOB-Wahrheit = Determinismus-Bruch main↔worker).
+        snap.hydroTiles = null;
+        if (this.state.hydroTiles && this.state.hydroTiles.size) {
+            snap.hydroTiles = {};
+            for (const [key, t] of this.state.hydroTiles) {
+                if (!t || !t.ready) continue;
+                snap.hydroTiles[key] = {
+                    ready: true,
+                    originX: t.originX,
+                    originZ: t.originZ,
+                    cell: t.cell,
+                    dim: t.dim,
+                    bucketSize: t.bucketSize,
+                    bucketsDim: t.bucketsDim,
+                    riverBuckets: t.riverBuckets,
+                    lakeBedCell: t.lakeBedCell,
+                    lakeW: t.lakeW,
+                    lakeNear: t.lakeNear,
+                    water: t.water || null,
+                };
+            }
+        }
+        snap.erosionTiles = null;
+        if (this.state.erosionTiles && this.state.erosionTiles.size) {
+            snap.erosionTiles = {};
+            for (const [key, t] of this.state.erosionTiles) {
+                if (!t) continue;
+                snap.erosionTiles[key] = {
+                    originX: t.originX,
+                    originZ: t.originZ,
+                    cell: t.cell,
+                    dim: t.dim,
+                    delta: t.delta,
+                };
+            }
+        }
         return snap;
     }
 
@@ -17418,216 +17539,260 @@ class AnazhRealm {
         return true;
     }
 
-    // Legacy-if-else-Kette als Themen-Dispatcher. Jeder Themen-Helfer prüft
-    // sein Pattern + handhabt es + returns true; sonst fällt's zum nächsten.
-    // Der letzte Helfer (Conversational+Fallback) handhabt alles, was übrig
-    // bleibt (Kreatur/LLM/P2P/Hilfetext).
+    // E1 (gigant-plan §3-Zwilling 5, V18.127) — das EINE Dispatch-Tor: die
+    // Legacy-if-else-Kette ist zur DATEN-Tabelle verdichtet (DIESELBE Sprache
+    // wie `chatDslPatterns`: {example, re, run} — die Regel IST die Daten).
+    // BEWUSSTE Intent-Dualität bleibt: System-Akte (Welt-Wechsel · Datei-IO ·
+    // Versions-Rollback · Physik-Tuning) laufen NIE durch dslRun — sie sind
+    // NUR vom Chat erreichbar (der R2-Geist: der manipulierbare Pfad
+    // [Nexus/LLM/Regeln] berührt das System-IO nie). Vereinheitlicht ist die
+    // PARSE-Form: ein Tor, eine Tabellen-Sprache, chatSuggest + Hilfetext
+    // lesen BEIDE Tabellen (Tippfehler bei „speichere zustand" bekommen
+    // jetzt Vorschläge — der KONSUM-Gewinn der Verdichtung).
     _chatDispatchLegacyCommand(command, parts, appendChatOutput) {
-        if (this._chatTryAbilityCommand(parts, command, appendChatOutput)) return;
-        if (this._chatTryPersistenceCommand(parts, appendChatOutput)) return;
-        if (this._chatTryWorldCommand(parts, command, appendChatOutput)) return;
-        if (this._chatTrySystemCommand(parts, appendChatOutput)) return;
+        void parts;
+        const t = String(command || "").trim();
+        for (const p of this.chatSystemPatterns) {
+            const m = t.match(p.re);
+            if (!m) continue;
+            try {
+                p.run(m, appendChatOutput);
+            } catch (err) {
+                appendChatOutput(`(System-Befehl-Fehler: ${err.message || err})`);
+            }
+            return;
+        }
         this._chatHandleConversationalFallback(command, appendChatOutput);
     }
 
-    // Fähigkeiten: lerne/führe Fähigkeit aus.
-    _chatTryAbilityCommand(parts, command, appendChatOutput) {
-        if (parts[0] === "lerne" && parts[1] === "fähigkeit") {
-            const abilityName = parts[2];
-            const startIdx = parts[3] ? command.toLowerCase().indexOf(parts[3]) : -1;
-            const abilityDesc = startIdx >= 0 ? command.slice(startIdx).trim() : "";
-            this.learnAbility(abilityName, abilityDesc);
-            appendChatOutput(`Fähigkeit '${abilityName}' gelernt: ${abilityDesc}`);
-            return true;
-        }
-        if (parts[0] === "führe" && parts[1] === "fähigkeit" && parts[2] === "aus") {
-            const abilityName = parts[3];
-            if (this.state.abilities[abilityName]) {
-                this.state.abilities[abilityName](this, this.state);
-                appendChatOutput(`Fähigkeit '${abilityName}' ausgeführt`);
-            } else {
-                appendChatOutput(
-                    `Fähigkeit '${abilityName}' nicht gefunden. Lerne sie mit 'Lerne Fähigkeit <Name> <Beschreibung>'`
-                );
-            }
-            return true;
-        }
-        return false;
-    }
-
-    // Persistenz: speichere/lade Zustand, Datei-Picker.
-    _chatTryPersistenceCommand(parts, appendChatOutput) {
-        if (parts[0] === "speichere" && parts[1] === "zustand") {
-            this.saveState();
-            this.saveToProjectFolder().then((result) => {
-                if (result === "server") {
-                    appendChatOutput("Zustand gespeichert (direkt im Spielordner + localStorage)");
-                } else if (result === "download") {
-                    appendChatOutput("Zustand gespeichert (Browser-Download + localStorage)");
-                } else {
-                    appendChatOutput("Zustand gespeichert (nur localStorage)");
-                }
-            });
-            return true;
-        }
-        if (parts[0] === "lade" && parts[1] === "zustand") {
-            this.loadState();
-            appendChatOutput("Zustand aus localStorage geladen");
-            return true;
-        }
-        if (parts[0] === "lade" && parts[1] === "datei") {
-            this.openStateFilePicker();
-            appendChatOutput("Datei-Picker geöffnet – wähle eine anazhRealmState.json");
-            return true;
-        }
-        return false;
-    }
-
-    // Welt-Verwaltung (Ring 8): spawne/erschaffe/wechsle/lösche/liste Welten.
-    _chatTryWorldCommand(parts, command, appendChatOutput) {
-        if (parts[0] === "spawne" && parts[1] === "neue" && parts[2] === "welt") {
-            this.generateNewWorld();
-            appendChatOutput("Neue Welt generiert");
-            return true;
-        }
-        if ((parts[0] === "erschaffe" && parts[1] === "welt") || (parts[0] === "neue" && parts[1] === "welt")) {
-            // Ring 8: neue eigenständige Welt mit eigener worldId. Optional
-            // „mit person" am Ende → bisherige Spieler-Identität übernehmen.
-            // Slug ist alles zwischen dem Verb-Paar und einem optionalen Trailer.
-            const inherit = / mit person$/i.test(command) || / mit übernahme$/i.test(command);
-            let slug = "";
-            const headLen = parts[0] === "erschaffe" ? 2 : 2;
-            const rest = parts.slice(headLen).join(" ").trim();
-            slug = rest
-                .replace(/ mit person$/i, "")
-                .replace(/ mit übernahme$/i, "")
-                .trim();
-            const newId = this.createNewWorld({ slug: slug || null, inheritPlayer: inherit, reload: true });
-            if (newId) {
-                appendChatOutput(`Neue Welt erschaffen (lade neu, Person ${inherit ? "übernommen" : "neu"}…)`);
-            } else {
-                appendChatOutput("Neue Welt konnte nicht erschaffen werden — siehe Log.");
-            }
-            return true;
-        }
-        if (parts[0] === "wechsle" && (parts[1] === "zu" || parts[1] === "zur") && parts.length >= 3) {
-            // Ring 8: Wechsel zu einer existierenden Welt via slug. Wir suchen
-            // den Index, finden den passenden Eintrag (genauer Match oder
-            // Präfix), und triggern den Reload.
-            const targetSlug = parts
-                .slice(parts[2] === "welt" ? 3 : 2)
-                .join(" ")
-                .trim();
-            const idx = this.worldsIndexLoad();
-            const exact = idx.find((e) => e.slug === targetSlug);
-            const prefix = exact || idx.find((e) => e.slug && e.slug.startsWith(targetSlug));
-            if (!prefix) {
-                appendChatOutput(`Welt „${targetSlug}" nicht gefunden. Befehl „liste welten" zeigt verfügbare.`);
-            } else {
-                const ok = this.switchToWorld(prefix.worldId, { reload: true });
-                if (ok) appendChatOutput(`Wechsle zu ${prefix.slug}…`);
-                else appendChatOutput("Welt-Wechsel verweigert (siehe Log).");
-            }
-            return true;
-        }
-        if (parts[0] === "lösche" && parts[1] === "welt" && parts.length >= 3) {
-            const targetSlug = parts.slice(2).join(" ").trim();
-            const idx = this.worldsIndexLoad();
-            const entry = idx.find((e) => e.slug === targetSlug);
-            if (!entry) {
-                appendChatOutput(`Welt „${targetSlug}" nicht gefunden.`);
-            } else if (entry.worldId === this.state.worldMeta.worldId) {
-                appendChatOutput("Die aktive Welt kann nicht gelöscht werden. Wechsle erst zu einer anderen.");
-            } else {
-                this.deleteWorld(entry.worldId);
-                appendChatOutput(`Welt „${entry.slug}" gelöscht.`);
-                this.updateWorldInfo();
-            }
-            return true;
-        }
-        if ((parts[0] === "liste" || parts[0] === "zeige") && parts[1] === "welten") {
-            const idx = this.worldsIndexLoad();
-            if (idx.length === 0) {
-                appendChatOutput("Nur diese eine Welt im Speicher.");
-            } else {
-                const lines = idx
-                    .slice()
-                    .sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))
-                    .map((e) => {
-                        const ageDays = e.bornAt ? Math.floor((Date.now() - e.bornAt) / 86400000) : 0;
-                        const isActive = e.worldId === this.state.worldMeta.worldId;
-                        return `${isActive ? "★ " : "  "}${e.slug} — ${ageDays}d alt, ID ${e.worldId.slice(0, 8)}…`;
+    // E1 — die System-Befehls-Tabelle (Fähigkeiten · Persistenz · Welt-
+    // Verwaltung · System-Tuning). Verhalten 1:1 aus den vier alten
+    // if-else-Handlern migriert (V9.82-Verdichtung — kein Parallel-Pfad).
+    get chatSystemPatterns() {
+        if (this._chatSystemPatternsCache) return this._chatSystemPatternsCache;
+        this._chatSystemPatternsCache = [
+            {
+                example: "lerne fähigkeit <name> <beschreibung>",
+                re: /^lerne\s+fähigkeit(?:\s+(\S+))?(?:\s+(.+))?$/i,
+                run: (m, append) => {
+                    const abilityName = m[1] ? m[1].toLowerCase() : undefined;
+                    const abilityDesc = (m[2] || "").trim();
+                    this.learnAbility(abilityName, abilityDesc);
+                    append(`Fähigkeit '${abilityName}' gelernt: ${abilityDesc}`);
+                },
+            },
+            {
+                example: "führe fähigkeit aus <name>",
+                re: /^führe\s+fähigkeit\s+aus(?:\s+(\S+))?$/i,
+                run: (m, append) => {
+                    const abilityName = m[1] ? m[1].toLowerCase() : undefined;
+                    if (this.state.abilities[abilityName]) {
+                        this.state.abilities[abilityName](this, this.state);
+                        append(`Fähigkeit '${abilityName}' ausgeführt`);
+                    } else {
+                        append(
+                            `Fähigkeit '${abilityName}' nicht gefunden. Lerne sie mit 'Lerne Fähigkeit <Name> <Beschreibung>'`
+                        );
+                    }
+                },
+            },
+            {
+                example: "speichere zustand",
+                re: /^speichere\s+zustand(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.saveState();
+                    this.saveToProjectFolder().then((result) => {
+                        if (result === "server") {
+                            append("Zustand gespeichert (direkt im Spielordner + localStorage)");
+                        } else if (result === "download") {
+                            append("Zustand gespeichert (Browser-Download + localStorage)");
+                        } else {
+                            append("Zustand gespeichert (nur localStorage)");
+                        }
                     });
-                appendChatOutput(`Welten im Speicher (${idx.length}):`);
-                for (const l of lines) appendChatOutput(l);
-            }
-            return true;
-        }
-        return false;
-    }
-
-    // System-Befehle: Physik-Tuning, Version-Aktivierung, Boden-Re-Gen,
-    // Symphonie-V1-Platzhalter, Debug-Log-Toggle.
-    _chatTrySystemCommand(parts, appendChatOutput) {
-        if (parts[0] === "behebe" && parts[1] === "physik-tunneling") {
-            this.optimizeCollisions();
-            appendChatOutput("Physik-Tunneling behoben: CCD angepasst");
-            return true;
-        }
-        if (parts[0] === "optimiere" && parts[1] === "physik") {
-            this.optimizePhysics();
-            appendChatOutput("Physik optimiert");
-            return true;
-        }
-        if (parts[0] === "aktiviere" && parts[1] === "version") {
-            const version = parts[2];
-            if (this.state.versionHistory.includes(version)) {
-                this.loadVersion(version);
-                appendChatOutput(`Version ${version} aktiviert`);
-            } else {
-                appendChatOutput(`Version ${version} nicht gefunden`);
-            }
-            return true;
-        }
-        if (parts[0] === "boden" && parts[1] === "nicht" && parts[2] === "sichtbar") {
-            if (
-                !this.state.groundChunks ||
-                this.state.groundChunks.length === 0 ||
-                !this.state.groundChunks.some((chunk) => chunk.visible)
-            ) {
-                this.log("Boden nicht sichtbar – Erzeuge neuen Boden...", "INFO");
-                this.generateNewWorld();
-                appendChatOutput("Neuer Boden generiert");
-            } else {
-                appendChatOutput("Boden ist bereits sichtbar");
-            }
-            return true;
-        }
-        if (parts[0] === "aktiviere" && parts[1] === "anazh-symphonie") {
-            // V1-Platzhalter, bis Ring 4 Web-Audio bringt: ein DSL-Programm
-            // belebt die Kreaturen sichtbar (happy + schneller) statt eines
-            // JS-Closures, der per Sinus animiert. Ehrlicher als der alte
-            // Stub und persistierbar als Ability.
-            this.addNewAbility(
-                "anazhSymphony",
-                ["chain", ["creatures_emotion", "happy"], ["creatures_speed_mul", 1.5]],
-                "human"
-            );
-            this.state.abilities["anazhSymphony"]();
-            appendChatOutput("Anazh-Symphonie V1 aktiviert (Web-Audio kommt mit Ring 4)");
-            return true;
-        }
-        if (parts[0] === "aktiviere" && parts[1] === "debug-logs") {
-            this.state.debugLogging = true;
-            appendChatOutput("Debug-Logs aktiviert");
-            return true;
-        }
-        if (parts[0] === "deaktiviere" && parts[1] === "debug-logs") {
-            this.state.debugLogging = false;
-            appendChatOutput("Debug-Logs deaktiviert");
-            return true;
-        }
-        return false;
+                },
+            },
+            {
+                example: "lade zustand",
+                re: /^lade\s+zustand(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.loadState();
+                    append("Zustand aus localStorage geladen");
+                },
+            },
+            {
+                example: "lade datei",
+                re: /^lade\s+datei(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.openStateFilePicker();
+                    append("Datei-Picker geöffnet – wähle eine anazhRealmState.json");
+                },
+            },
+            {
+                example: "spawne neue welt",
+                re: /^spawne\s+neue\s+welt(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.generateNewWorld();
+                    append("Neue Welt generiert");
+                },
+            },
+            {
+                example: "erschaffe welt <slug> [mit person]",
+                re: /^(?:erschaffe|neue)\s+welt(?:\s+(.+))?$/i,
+                run: (m, append) => {
+                    // Ring 8: neue eigenständige Welt mit eigener worldId. Optional
+                    // „mit person" am Ende → bisherige Spieler-Identität übernehmen.
+                    const rest = (m[1] || "").toLowerCase().trim();
+                    const inherit = / mit person$/i.test(rest) || / mit übernahme$/i.test(rest);
+                    const slug = rest
+                        .replace(/ mit person$/i, "")
+                        .replace(/ mit übernahme$/i, "")
+                        .trim();
+                    const newId = this.createNewWorld({ slug: slug || null, inheritPlayer: inherit, reload: true });
+                    if (newId) {
+                        append(`Neue Welt erschaffen (lade neu, Person ${inherit ? "übernommen" : "neu"}…)`);
+                    } else {
+                        append("Neue Welt konnte nicht erschaffen werden — siehe Log.");
+                    }
+                },
+            },
+            {
+                example: "wechsle zu <welt>",
+                re: /^wechsle\s+zur?\s+(?:welt\s+)?(.+)$/i,
+                run: (m, append) => {
+                    // Ring 8: Wechsel zu einer existierenden Welt via slug (genauer
+                    // Match oder Präfix), dann Reload.
+                    const targetSlug = m[1].toLowerCase().trim();
+                    const idx = this.worldsIndexLoad();
+                    const exact = idx.find((e) => e.slug === targetSlug);
+                    const prefix = exact || idx.find((e) => e.slug && e.slug.startsWith(targetSlug));
+                    if (!prefix) {
+                        append(`Welt „${targetSlug}" nicht gefunden. Befehl „liste welten" zeigt verfügbare.`);
+                    } else {
+                        const ok = this.switchToWorld(prefix.worldId, { reload: true });
+                        if (ok) append(`Wechsle zu ${prefix.slug}…`);
+                        else append("Welt-Wechsel verweigert (siehe Log).");
+                    }
+                },
+            },
+            {
+                example: "lösche welt <slug>",
+                re: /^lösche\s+welt\s+(.+)$/i,
+                run: (m, append) => {
+                    const targetSlug = m[1].toLowerCase().trim();
+                    const idx = this.worldsIndexLoad();
+                    const entry = idx.find((e) => e.slug === targetSlug);
+                    if (!entry) {
+                        append(`Welt „${targetSlug}" nicht gefunden.`);
+                    } else if (entry.worldId === this.state.worldMeta.worldId) {
+                        append("Die aktive Welt kann nicht gelöscht werden. Wechsle erst zu einer anderen.");
+                    } else {
+                        this.deleteWorld(entry.worldId);
+                        append(`Welt „${entry.slug}" gelöscht.`);
+                        this.updateWorldInfo();
+                    }
+                },
+            },
+            {
+                example: "liste welten",
+                re: /^(?:liste|zeige)\s+welten(?:\s.*)?$/i,
+                run: (m, append) => {
+                    const idx = this.worldsIndexLoad();
+                    if (idx.length === 0) {
+                        append("Nur diese eine Welt im Speicher.");
+                    } else {
+                        const lines = idx
+                            .slice()
+                            .sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))
+                            .map((e) => {
+                                const ageDays = e.bornAt ? Math.floor((Date.now() - e.bornAt) / 86400000) : 0;
+                                const isActive = e.worldId === this.state.worldMeta.worldId;
+                                return `${isActive ? "★ " : "  "}${e.slug} — ${ageDays}d alt, ID ${e.worldId.slice(0, 8)}…`;
+                            });
+                        append(`Welten im Speicher (${idx.length}):`);
+                        for (const l of lines) append(l);
+                    }
+                },
+            },
+            {
+                example: "behebe physik-tunneling",
+                re: /^behebe\s+physik-tunneling(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.optimizeCollisions();
+                    append("Physik-Tunneling behoben: CCD angepasst");
+                },
+            },
+            {
+                example: "optimiere physik",
+                re: /^optimiere\s+physik(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.optimizePhysics();
+                    append("Physik optimiert");
+                },
+            },
+            {
+                example: "aktiviere version <v>",
+                re: /^aktiviere\s+version(?:\s+(\S+))?$/i,
+                run: (m, append) => {
+                    const version = m[1] ? m[1].toLowerCase() : undefined;
+                    if (this.state.versionHistory.includes(version)) {
+                        this.loadVersion(version);
+                        append(`Version ${version} aktiviert`);
+                    } else {
+                        append(`Version ${version} nicht gefunden`);
+                    }
+                },
+            },
+            {
+                example: "boden nicht sichtbar",
+                re: /^boden\s+nicht\s+sichtbar(?:\s.*)?$/i,
+                run: (m, append) => {
+                    if (
+                        !this.state.groundChunks ||
+                        this.state.groundChunks.length === 0 ||
+                        !this.state.groundChunks.some((chunk) => chunk.visible)
+                    ) {
+                        this.log("Boden nicht sichtbar – Erzeuge neuen Boden...", "INFO");
+                        this.generateNewWorld();
+                        append("Neuer Boden generiert");
+                    } else {
+                        append("Boden ist bereits sichtbar");
+                    }
+                },
+            },
+            {
+                example: "aktiviere anazh-symphonie",
+                re: /^aktiviere\s+anazh-symphonie(?:\s.*)?$/i,
+                run: (m, append) => {
+                    // V1-Platzhalter, bis Ring 4 Web-Audio bringt: ein DSL-Programm
+                    // belebt die Kreaturen sichtbar (happy + schneller).
+                    this.addNewAbility(
+                        "anazhSymphony",
+                        ["chain", ["creatures_emotion", "happy"], ["creatures_speed_mul", 1.5]],
+                        "human"
+                    );
+                    this.state.abilities["anazhSymphony"]();
+                    append("Anazh-Symphonie V1 aktiviert (Web-Audio kommt mit Ring 4)");
+                },
+            },
+            {
+                example: "aktiviere debug-logs",
+                re: /^aktiviere\s+debug-logs(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.state.debugLogging = true;
+                    append("Debug-Logs aktiviert");
+                },
+            },
+            {
+                example: "deaktiviere debug-logs",
+                re: /^deaktiviere\s+debug-logs(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.state.debugLogging = false;
+                    append("Debug-Logs deaktiviert");
+                },
+            },
+        ];
+        return this._chatSystemPatternsCache;
     }
 
     // Conversational-Fallback: Kreatur-Konversation (Welle 6.H Phase 2E V1),
@@ -17660,8 +17825,15 @@ class AnazhRealm {
         if (suggestion) {
             appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
         } else {
+            // E1 (V18.127) — der System-Teil der Hilfe wird aus der EINEN
+            // Tabelle GENERIERT (eine Hardcode-Liste neben einer Tabelle
+            // driftet zwangsläufig); die DSL-Beispiele bleiben kuratiert
+            // (die volle Pattern-Liste wäre eine Textwand).
+            const sys = this.chatSystemPatterns.map((p) => `'${p.example}'`).join(", ");
             appendChatOutput(
-                "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>'."
+                "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. System: " +
+                    sys +
+                    "."
             );
         }
     }
@@ -17724,17 +17896,24 @@ class AnazhRealm {
     }
     updateCreatureEmotions() {
         // V18.100 (G4-1) — das Wetter ist ein AMBIENTER Achsen-Impuls auf das
-        // 6-Achsen-Innenleben (rainy nährt sorrow+peace, sunny nährt joy),
-        // kein Binär-Würfel mehr; das Etikett fällt aus der Valenz-Projektion.
-        // Dieselbe 10%-Stochastik (nicht alle Wesen fühlen gleichzeitig).
-        const rainy = this.state.weather === "rainy";
+        // 6-Achsen-Innenleben, kein Binär-Würfel; das Etikett fällt aus der
+        // Valenz-Projektion. Dieselbe 10%-Stochastik (nicht alle Wesen fühlen
+        // gleichzeitig). D5a (V18.128) — POLYVALENT: der STURM ist ein
+        // EIGENES Gefühl (chaos + awe — aufgewühlt UND ehrfürchtig), nicht
+        // bloß mehr Regen: das Innenleben unterscheidet die Wetter-Worte,
+        // wo die Render-Skalare nur die Intensitäts-Achse lerpen.
+        const word = this.state.weather;
+        const wet = this._weatherIsWet(word);
         for (let i = 0; i < this.state.creatures.length; i++) {
             if (Math.random() >= 0.1) continue;
             const c = this.state.creatures[i];
             if (!c || !c.userData) continue;
             const ud = c.userData;
             if (!ud.emotions) ud.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
-            if (rainy) {
+            if (word === "stormy") {
+                ud.emotions.chaos = Math.min(1, (ud.emotions.chaos || 0) + 0.15);
+                ud.emotions.awe = Math.min(1, (ud.emotions.awe || 0) + 0.1);
+            } else if (wet) {
                 ud.emotions.sorrow = Math.min(1, (ud.emotions.sorrow || 0) + 0.18);
                 ud.emotions.peace = Math.min(1, (ud.emotions.peace || 0) + 0.06);
             } else {
@@ -18048,6 +18227,11 @@ class AnazhRealm {
     // Zwei try/catch — beide Stufen dürfen den Worldgen nie brechen.
     _worldgenComputeAndBuildHydrosphere() {
         try {
+            // A3 (V18.132) — ein Welt-Regen erneuert die Heimat-Wahrheit: die
+            // fernen Kacheln des ALTEN Seeds muessen fallen (lazy-Neubau aus
+            // dem neuen Seed; derived, nie persistiert).
+            this.state.hydroTiles = new Map();
+            this.state.erosionTiles = new Map();
             const hydro = this._computeHydrosphere();
             this.state.hydrosphere = hydro;
             this.log(
@@ -18092,6 +18276,17 @@ class AnazhRealm {
         if (h && Array.isArray(h.lakes)) {
             for (const lake of h.lakes) {
                 if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
+            }
+        }
+        // A3 (V18.132) — das Band ist GLOBAL (V9.77: alle Chunks teilen die
+        // Thresholds): die See-Spiegel der fernen Kacheln heben es mit, sonst
+        // wuerde der Band-Skip ihre Zellen als garantiert-AIR ueberspringen.
+        if (this.state.hydroTiles) {
+            for (const t of this.state.hydroTiles.values()) {
+                if (!t || !Array.isArray(t.lakes)) continue;
+                for (const lake of t.lakes) {
+                    if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
+                }
             }
         }
         this.state.hydroBand = {
@@ -18248,15 +18443,20 @@ class AnazhRealm {
     // erodierten Gelände. Zirkel-frei: solange `state.erosion` null ist,
     // liefert `_erosionDeltaAt` 0 → die Sample-Schleife sieht die rohe
     // Surface. Voll deterministisch (kein RNG) → multiplayer-sicher.
-    _computeErosion() {
+    _computeErosion(origin = null) {
         const E = AnazhRealm.EROSION;
         const dim = Math.max(8, Math.round(E.regionSize / E.cell));
-        const originX = -E.regionSize / 2;
-        const originZ = -E.regionSize / 2;
+        // A3 (V18.132) — parametrisierter Ursprung (Kachel-Erosion): die
+        // Heimat-Region nullt `state.erosion` fuer die Re-Compute-Reinheit;
+        // eine KACHEL laesst sie stehen (die Region-Aufloesung `_erosionFor`
+        // ist exklusiv — das Kachel-Fenster liest die Heimat-Erosion nie,
+        // und die eigene existiert noch nicht → roh per Konstruktion).
+        const originX = origin && Number.isFinite(origin.x) ? origin.x : -E.regionSize / 2;
+        const originZ = origin && Number.isFinite(origin.z) ? origin.z : -E.regionSize / 2;
         const n = dim * dim;
         // (1) die rohe Makro-Surface ins Heightfield sampeln (includeDetail
         // false — erodiert wird die Makro-Form, nicht das Hochfrequenz-Detail).
-        this.state.erosion = null; // ein Re-Compute sieht so die rohe Surface
+        if (!origin) this.state.erosion = null; // ein Re-Compute sieht so die rohe Surface
         // V9.51 — `_terrainMacroSurfaceY` addiert sonst die Tarn-Mulden; die
         // Erosion läuft VOR `_hydroSeedTarns` (tarn-frei) und muss bei einem
         // Re-Run (Determinismus-Test) ebenfalls tarn-frei sampeln, sonst
@@ -18547,8 +18747,111 @@ class AnazhRealm {
     // Raster noch nicht gebaut ist). `_terrainMacroSurfaceY` addiert es → die
     // ganze Welt (Dichte, Hydrosphäre) sieht das erodierte Gelände. O(1) —
     // wird beim Meshing millionenfach gerufen.
-    _erosionDeltaAt(x, z) {
+    // ===== A3 (V18.132) — FERNE BINNENGEWAESSER: die seed-deterministischen ====
+    // KACHELN. Die Heimat-Region (state.hydrosphere/erosion, ±1024 m) bleibt
+    // UNANGETASTET (Welt-Identitaet); jenseits liefert eine lazy berechnete
+    // KACHEL (2048 m, dieselbe Maschinerie mit parametrisiertem Ursprung)
+    // Seen·Fluesse·Erosion. Kachel-Inhalt = f(seed, Kachel-Koordinate) — fuer
+    // jeden Peer identisch, egal wann/von wem berechnet (das alte Plan-Konzept
+    // „Region wandert mit dem Spieler" waere spieler-abhaengig = determinismus-
+    // brechend gewesen; die Kachel-Form vermeidet das strukturell). Worker-
+    // gespiegelt (hydroFor/erosionFor in voxel-worker.js — Determinismus-Wand);
+    // Kacheln sind DERIVED (nie im Snapshot), Welt-Regen leert sie.
+    _hydroTileKeyFor(x, z) {
+        const size = AnazhRealm.HYDROSPHERE.regionSize;
+        const half = size / 2;
+        return `${Math.floor((x + half) / size)},${Math.floor((z + half) / size)}`;
+    }
+
+    // Die EINE Region-Aufloesung fuer alle Hydro-Leser: Heimat-Region, wenn
+    // (x,z) in ihr liegt; sonst die Kachel; sonst die Heimat (deren OOB-Logik
+    // in den Lesern = exakt der alte Pfad — H3-Ozean etc., bit-identisch).
+    _hydroFor(x, z) {
+        const h = this.state.hydrosphere;
+        if (h && h.ready) {
+            const sizeM = h.dim * h.cell;
+            if (x >= h.originX && z >= h.originZ && x < h.originX + sizeM && z < h.originZ + sizeM) return h;
+            const tiles = this.state.hydroTiles;
+            if (tiles && tiles.size) {
+                const t = tiles.get(this._hydroTileKeyFor(x, z));
+                if (t && t.ready) return t;
+            }
+        }
+        return h;
+    }
+
+    _erosionFor(x, z) {
         const e = this.state.erosion;
+        if (e) {
+            const sizeM = e.dim * e.cell;
+            if (x >= e.originX && z >= e.originZ && x < e.originX + sizeM && z < e.originZ + sizeM) return e;
+        }
+        const tiles = this.state.erosionTiles;
+        if (tiles && tiles.size) {
+            const t = tiles.get(this._hydroTileKeyFor(x, z));
+            if (t) return t;
+        }
+        return e;
+    }
+
+    // Stellt sicher, dass jede Kachel, die das Rechteck [x±r, z±r] schneidet,
+    // berechnet ist (Heimat-Region "0,0" ist immer da). Aufgerufen am Chunk-
+    // Build-Eingang (Chunk-AABB + Pad — die HARTE Garantie: kein Chunk baut,
+    // bevor seine Wasser/Erosions-Wahrheit steht → keine Kachel-Naht durch
+    // Build-Reihenfolge). Nach jeder neuen Kachel: hydroBand neu + VOLLER
+    // Worker-Re-Sync (gen-bump → in-flight stale Builds verworfen, V9.90-
+    // Mechanik — die Nachrichten-Ordnung garantiert Kachel-vor-Request).
+    _ensureHydroTilesAround(x, z, r) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return 0; // vor dem Worldgen gibt es keine Wahrheit zu kacheln
+        const size = AnazhRealm.HYDROSPHERE.regionSize;
+        const half = size / 2;
+        const r0x = Math.floor((x - r + half) / size);
+        const r1x = Math.floor((x + r + half) / size);
+        const r0z = Math.floor((z - r + half) / size);
+        const r1z = Math.floor((z + r + half) / size);
+        let made = 0;
+        for (let rx = r0x; rx <= r1x; rx++) {
+            for (let rz = r0z; rz <= r1z; rz++) {
+                if (rx === 0 && rz === 0) continue;
+                const key = `${rx},${rz}`;
+                if (!this.state.hydroTiles) this.state.hydroTiles = new Map();
+                if (!this.state.erosionTiles) this.state.erosionTiles = new Map();
+                if (this.state.hydroTiles.has(key)) continue;
+                const t0 = performance.now();
+                const origin = { x: rx * size - half, z: rz * size - half };
+                // EROSION ZUERST (dieselbe Worldgen-Reihenfolge wie die Heimat:
+                // die Hydro-Probe sieht die erodierten Taeler via _erosionFor).
+                // flowTo (64 KB) traegt nur der Heimat-Atlas (diag-flow-bias
+                // liest ihn dort) — die Kachel bleibt schlank (Audit V18.136).
+                const eTile = this._computeErosion(origin);
+                eTile.flowTo = null;
+                this.state.erosionTiles.set(key, eTile);
+                this.state.hydroTiles.set(key, this._computeHydrosphere(origin));
+                this._computeHydroBand();
+                made++;
+                const t = this.state.hydroTiles.get(key);
+                this.log(
+                    `A3: Hydro-Kachel ${key} berechnet (${Math.round(performance.now() - t0)} ms — ` +
+                        `${t.rivers ? t.rivers.length : 0} Fluesse, ${t.lakes ? t.lakes.length : 0} Seen)`,
+                    "INFO"
+                );
+            }
+        }
+        // NUR einen EXISTIERENDEN Worker syncen, NIE bootstrappen:
+        // `_voxelWorkerSyncWorldgenState` würde via `_getVoxelWorker` einen
+        // genullten Worker RE-SPAWNEN (V17.118) — ein Seiteneffekt, der den
+        // Sync-Fail-Pfad (V9.40-e) unterläuft und hier nichts gewinnt (ohne
+        // Worker baut Stufe 3 sync mit der Main-Kachel-Wahrheit — korrekt per
+        // Konstruktion). Die Caches brauchen KEIN Clear: kein Chunk der neuen
+        // Kachel wurde je gebaut (die harte Garantie), und in-flight Requests
+        // verwirft der gen-bump (V9.90).
+        if (made && this.state.voxelWorker) this._voxelWorkerSyncState({ op: "state-set" });
+        return made;
+    }
+
+    _erosionDeltaAt(x, z) {
+        const e = this._erosionFor(x, z);
         if (!e) return 0;
         const fx = (x - e.originX) / e.cell;
         const fz = (z - e.originZ) / e.cell;
@@ -19150,7 +19453,7 @@ class AnazhRealm {
     // Die SEE-Becken wandern seit V9.45-b nach `_hydrosphereLakeAt` — sie
     // sind kein reiner Schnitt mehr, sondern ein flacher, wasserdichter Topf.
     _hydrosphereCarveAt(x, z) {
-        const h = this.state.hydrosphere;
+        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (!h || !h.ready) return 0;
         let cut = 0;
         // --- Fluss-Kanal: nächstes Segment im Bucket ---
@@ -19202,7 +19505,7 @@ class AnazhRealm {
     // bleibt vom festen Bett verdeckt — kein zweites Wasser-Layer mehr).
     // Bilinear; der `lakeNear`-Early-Out hält die wasserlose Welt billig.
     _hydrosphereLakeAt(x, z) {
-        const h = this.state.hydrosphere;
+        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (!h || !h.ready) return null;
         const lw = h.lakeW;
         const lb = h.lakeBedCell;
@@ -20293,58 +20596,75 @@ class AnazhRealm {
                 return true;
             }
         }
-        const h = this.state.hydrosphere;
-        if (!h || !h.ready) return false;
-        // (2) Atlas-Marker: Ozean (kind === 1) ODER See (kind === 2) im
-        // Chunk-Footprint (+1 Cell Marge für Boundary-Continuität — der
-        // 16-m-Atlas-Cell-Raster liegt nicht perfekt auf dem Chunk-Raster).
-        if (h.water && h.water.waterKind) {
-            const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
-            const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
-            const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
-            const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
-            const wK = h.water.waterKind;
-            for (let cj = c0j; cj <= c1j; cj++) {
-                for (let ci = c0i; ci <= c1i; ci++) {
-                    if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
-                    const kind = wK[ci + cj * h.dim];
-                    if (kind === 1 || kind === 2) return true;
+        const hHome = this.state.hydrosphere;
+        if (!hHome || !hHome.ready) return false;
+        // A3 (V18.132) — der Chunk kann eine KACHEL-Grenze queren: alle
+        // Regionen sammeln, die sein Footprint (+1-Cell-Marge) beruehrt
+        // (Heimat + bis zu 4 Kacheln via die 4 Ecken; dedupe per Identitaet).
+        const regions = [];
+        for (const [px, pz] of [
+            [ox, oz],
+            [ox + span, oz],
+            [ox, oz + span],
+            [ox + span, oz + span],
+        ]) {
+            const hr = this._hydroFor(px, pz);
+            if (hr && hr.ready && regions.indexOf(hr) < 0) regions.push(hr);
+        }
+        for (const h of regions) {
+            // (2) Atlas-Marker: Ozean (kind === 1) ODER See (kind === 2) im
+            // Chunk-Footprint (+1 Cell Marge für Boundary-Continuität — der
+            // 16-m-Atlas-Cell-Raster liegt nicht perfekt auf dem Chunk-Raster).
+            if (h.water && h.water.waterKind) {
+                const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
+                const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
+                const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
+                const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
+                const wK = h.water.waterKind;
+                for (let cj = c0j; cj <= c1j; cj++) {
+                    for (let ci = c0i; ci <= c1i; ci++) {
+                        if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
+                        const kind = wK[ci + cj * h.dim];
+                        if (kind === 1 || kind === 2) return true;
+                    }
+                }
+            }
+            // (3) Fluss-Bucket im Footprint
+            if (h.riverBuckets) {
+                const b0i = Math.floor((ox - h.originX) / h.bucketSize);
+                const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
+                const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
+                const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
+                for (let bj = b0j; bj <= b1j; bj++) {
+                    for (let bi = b0i; bi <= b1i; bi++) {
+                        if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
+                        const list = h.riverBuckets[bi + bj * h.bucketsDim];
+                        if (list && list.length) return true;
+                    }
                 }
             }
         }
-        // (3) Fluss-Bucket im Footprint
-        if (h.riverBuckets) {
-            const b0i = Math.floor((ox - h.originX) / h.bucketSize);
-            const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
-            const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
-            const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
-            for (let bj = b0j; bj <= b1j; bj++) {
-                for (let bi = b0i; bi <= b1i; bi++) {
-                    if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
-                    const list = h.riverBuckets[bi + bj * h.bucketsDim];
-                    if (list && list.length) return true;
-                }
-            }
-        }
-        // (4) V17.117 (H3) — der GLOBALE Ozean jenseits der ±1024-Atlas-Region:
-        // liegt ein Teil des Chunk-Footprints außerhalb der Region UND dippt sein
-        // Makro-Terrain unter den Meeresspiegel (+ Roughness-Marge), trägt der
-        // Chunk Ozean (Mirror des Ozean-Defaults in `_atlasWaterLevelAt`). NUR
-        // beyond-region (in-region entscheidet der getunte Atlas oben → kein
-        // Mehraufwand, kein Verhaltens-Wandel). Marge ≥ der 3D-Roughness-Amplitude
-        // (±12 m in `_terrainBaseDensityAt`) → keine dünne Küsten-Ozean-Fehlstelle.
+        // (4) V17.117 (H3) + V18.125 — das MAKRO-DIP-Predicate für BEIDE
+        // Wasser-Wahrheiten jenseits des Atlas: (a) der GLOBALE Ozean jenseits
+        // der ±1024-Region (H3) und (b) der KÜSTEN-AQUIFER in-region (V18.125 —
+        // himmel-offene Roughness-Senken unter dem Wassertisch, die der 16-m-
+        // Atlas nicht sehen KANN; die Substanz-Regel lebt im Zellen-Build).
+        // Dippt das Makro-Terrain irgendwo im 5×5-Footprint-Raster unter
+        // waterLevel + Marge, kann der Chunk Wasser tragen. Die Marge ≥ der
+        // 3D-Roughness-Amplitude (±12 m in `_terrainBaseDensityAt`) macht
+        // false-negatives strukturell unmöglich (Makro ≥ wl+16 → echtes
+        // Terrain ≥ wl+4 → nie unter Spiegel); ein false-positive kostet nur
+        // einen leeren Zellen-Build (y-Band-beschränkt, V18.90). Die V9.87-
+        // Lehre („Atlas vor Heuristik") gilt weiter für die ATLAS-Wahrheiten
+        // (1)–(3) — dieses Predicate ist der ehrliche ENVELOPE der NEUEN
+        // substanz-getriebenen Aquifer-Wahrheit, keine Schätzung der alten.
         const OCEAN_GATE_MARGIN = 16;
-        const regX1 = h.originX + h.dim * h.cell;
-        const regZ1 = h.originZ + h.dim * h.cell;
-        if (ox < h.originX || oz < h.originZ || ox + span > regX1 || oz + span > regZ1) {
+        {
             const thr = waterLevel + OCEAN_GATE_MARGIN;
             for (let gj = 0; gj <= 4; gj++) {
                 for (let gi = 0; gi <= 4; gi++) {
                     const sx = ox + (gi / 4) * span;
                     const sz = oz + (gj / 4) * span;
-                    const ci = Math.floor((sx - h.originX) / h.cell);
-                    const cj = Math.floor((sz - h.originZ) / h.cell);
-                    if (ci >= 0 && cj >= 0 && ci < h.dim && cj < h.dim) continue;
                     if (this._terrainMacroSurfaceY(sx, sz, true) < thr) return true;
                 }
             }
@@ -20514,6 +20834,68 @@ class AnazhRealm {
             for (let i = 0; i < dim; i++) {
                 if (colWet(`${_cx},${_cz - 1}`, i, dim - 1)) colSrc[i + 0 * dim] = 1;
                 if (colWet(`${_cx},${_cz + 1}`, i, 0)) colSrc[i + (dim - 1) * dim] = 1;
+            }
+        }
+        // V18.125 — A4-SCHELF-KONSOLIDIERUNG: der KÜSTEN-AQUIFER (das im
+        // caveDry schon zitierte Minecraft-1.18-Prinzip, jetzt für die OFFENE
+        // Senke). GEMESSEN (diag-shelf): die 3D-Roughness (±12 m) taucht das
+        // ECHTE Terrain bis −24 m unter den Meeresspiegel, wo das 16-m-MAKRO
+        // (−2) den Atlas „Land" sagen lässt → colL=−Inf → die BFS kann die
+        // himmel-offene Küsten-Senke NIE füllen (sie ist zudem topologisch
+        // durch flache Roughness-Schwellen vom Meer getrennt — Pfad-Max
+        // GEMESSEN −1.4 über Spiegel −3; und der V18.93-Distanz-Decay hält
+        // auch den CA bewusst fern). Physisch steht so eine Grube am Meer
+        // voll GRUNDWASSER: jede Atlas-lose Spalte, deren himmel-offenes
+        // ECHTES Terrain (erste SOLID-Zelle von oben — die Zellen sind die
+        // Substanz-Wahrheit, kein neuer Scan) KLAR unter dem Wassertisch
+        // liegt, wird Aquifer-Quelle (colL=waterLevel, colSrc=1). PER-SPALTE
+        // LOKAL → seam-frei per Konstruktion (Nachbar-Chunks entscheiden an
+        // der Grenze identisch aus identischer Density), KEIN Atlas-/
+        // Drainage-Eingriff (die Welt-Identität der Flüsse/Seen bleibt),
+        // Worker bit-identisch (Mirror in voxel-worker.js). Land-Spalten
+        // (Terrain über Spiegel) behalten colL=−Inf → kein Bluten/Hang-
+        // Schatten (V13-Bogen-Wand); gedeckelte Höhlen filtert der
+        // _skyOpenWaterFilter wie immer.
+        const SHELF_MIN_DEPTH = 1.0;
+        for (let k = 0; k < dim; k++) {
+            const baseK = k * dim;
+            for (let i = 0; i < dim; i++) {
+                const idx0 = i + baseK;
+                if (colSrc[idx0]) continue; // schon echte Quelle (Atlas/Fluss)
+                const lvl0 = colL[idx0];
+                // Ein See-/Fluss-RIM ÜBER dem Wassertisch ist KEIN Grundwasser
+                // (sonst füllte eine getrennte Senke neben einem Hochland-See
+                // bis zu DESSEN Spiegel = der V13.0-Hang-Schatten in neuer
+                // Gestalt). Der Ozean-Rim (= waterLevel) und ein Unter-Meer-
+                // See-Rim (Tote-Meer-Klasse, lokal niedrigerer Tisch) bleiben.
+                if (lvl0 > -Infinity && lvl0 > aquiferY + 1e-6) continue;
+                let topJ = -1;
+                for (let j = jMax; j >= 0; j--) {
+                    if (cells[idx0 + j * dimSq] === STATE.SOLID) {
+                        topJ = j;
+                        break;
+                    }
+                }
+                if (topJ < 0) continue; // Terrain unterm Band — exotisch, konservativ
+                const topCy = oy + (topJ + 0.5) * step;
+                if (topCy < aquiferY - SHELF_MIN_DEPTH) {
+                    colL[idx0] = lvl0 > -Infinity ? lvl0 : aquiferY;
+                    colSrc[idx0] = 1;
+                    // Zell-QuantisierUNGS-Wand (die GEMESSENE −5.0er-Klasse):
+                    // eine ~2-m-Wassersäule kann durchs 1.8-m-Gitter fallen
+                    // (topCy −4.5 → nächste AIR-Mitte −2.7 > Spiegel −3 → die
+                    // seedColumn fände NICHTS). Dann trägt die DECK-Zelle das
+                    // flache Wasser — ihr Intervall schneidet den Spiegel per
+                    // Konstruktion (topCy < wl−1 ⇒ deckCy−step/2 < wl). Kein
+                    // queue-Push nötig (lateral kappt colL der Nachbarn, unten
+                    // ist SOLID); der _skyOpenWaterFilter behält sie (AIR drüber).
+                    const lvl = colL[idx0];
+                    const deckCy = topCy + step;
+                    if (deckCy > lvl && topJ + 1 <= jMax) {
+                        const deckIdx = idx0 + (topJ + 1) * dimSq;
+                        if (cells[deckIdx] === AIR) cells[deckIdx] = WATER;
+                    }
+                }
             }
         }
         const queue = [];
@@ -22283,6 +22665,18 @@ class AnazhRealm {
     // `forceSync` (Spieler-Chunk + Test-Naht) überspringt die async-Stufen →
     // direkt Stufe 3 (immer BVH, kein Worker-Roundtrip → Instant-Feedback).
     _acquireVoxelChunkBuild(cx, cz, lod, opts = {}) {
+        // A3 (V18.132) — die HARTE Kachel-Garantie am EINEN Build-Eingang
+        // (V9.82: alle Stufen laufen hier durch): bevor irgendein Chunk baut,
+        // steht die Hydro/Erosions-Wahrheit seines Footprints (+64-m-Pad — die
+        // Smoothing/Atlas/Bucket-Reads ueber die Grenze). O(4 Map-Lookups),
+        // wenn nichts fehlt; eine NEUE Kachel re-synct den Worker VOR dem
+        // Request (Nachrichten-Ordnung) → main- und worker-gebaute Chunks
+        // teilen dieselbe Kachel-Wahrheit (Determinismus-Wand).
+        {
+            const { span } = this._voxelChunkConfig(0);
+            const half = span / 2;
+            this._ensureHydroTilesAround(cx * span + half, cz * span + half, half + 64);
+        }
         if (opts.forceSync === true) {
             return this._buildVoxelChunkData(cx, cz, lod);
         }
@@ -23071,7 +23465,7 @@ class AnazhRealm {
     // Aufrufer setzt `state.hydrosphere` erst nach vollständigem Bau (so
     // greift der spätere V9.43-d-Carve-Term während des Baus nicht — kein
     // Zirkel: die Surface wird un-gecarvt gesampelt).
-    _computeHydrosphere() {
+    _computeHydrosphere(origin = null) {
         // V9.43-d — der Carve darf NICHT in die eigene Berechnung leiten: ein
         // Re-Compute (Welt-Regen, Test) hätte ein gesetztes `state.hydrosphere`,
         // und `_voxelSurfaceY` läse dann die GECARVTE Surface → Zirkel. Das
@@ -23080,7 +23474,7 @@ class AnazhRealm {
         // allerersten Worldgen ist `state.hydrosphere` ohnehin noch null.
         this._hydroComputing = true;
         try {
-            const ctx = this._hydroInit();
+            const ctx = this._hydroInit(origin);
             this._hydroMarkOcean(ctx);
             this._hydroPriorityFlood(ctx);
             this._hydroFlowDirection(ctx);
@@ -23231,7 +23625,7 @@ class AnazhRealm {
     // ist der exakte Schnitt mit dem ECHTEN Voxel-Terrain. `hydrosphere.md` §14.
     _waterLevelAt(x, z) {
         let level = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        const h = this.state.hydrosphere;
+        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (h && h.ready && h.water && h.water.waterKind) {
             // See: das 3×3 der 16-m-Zellen (1-Zell-Dilatation gegen den
             // 16-m-quantisierten Becken-Rand — der `_voxelSurfaceY`-Test klemmt
@@ -23278,7 +23672,7 @@ class AnazhRealm {
     _atlasWaterLevelAt(x, z, terrainTopY) {
         let level = -Infinity;
         let inRegion = false;
-        const h = this.state.hydrosphere;
+        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (h && h.ready && h.water && h.water.waterKind) {
             const dim = h.dim;
             const cell = h.cell;
@@ -23563,7 +23957,7 @@ class AnazhRealm {
     // → das Wasser füllt den Kanal zu ~60 %, folgt dem Gefälle), oder null.
     // O(1) über den `riverBuckets`-Index (wie `_hydrosphereCarveAt`).
     _hydroRiverAt(x, z) {
-        const h = this.state.hydrosphere;
+        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (!h || !h.ready || !h.riverBuckets) return null;
         const bs = h.bucketSize;
         const bd = h.bucketsDim;
@@ -23630,7 +24024,7 @@ class AnazhRealm {
     // statt eines 91-Schritt-Säulen-Scans). Ein 3×3-Blur glättet jeden Rest
     // (defense-in-depth). `state.hydrosphere` ist während des Baus noch
     // null — der V9.43-d-Carve-Term greift also nicht (kein Zirkel).
-    _hydroInit() {
+    _hydroInit(origin = null) {
         const H = AnazhRealm.HYDROSPHERE;
         const base = this.state.terrainBaseHeight || 0;
         let waterLevel = this.state.waterLevel;
@@ -23640,8 +24034,11 @@ class AnazhRealm {
         const size = H.regionSize;
         const cell = H.cell;
         const dim = Math.max(8, Math.round(size / cell));
-        const originX = -size / 2;
-        const originZ = -size / 2;
+        // A3 (V18.132) — parametrisierter Ursprung: ohne `origin` die Heimat-
+        // Region (bit-identisch zu immer); mit `origin` eine ferne KACHEL
+        // (seed-deterministisch — f(seed, Kachel-Koordinate), nie Spieler-Pfad).
+        const originX = origin && Number.isFinite(origin.x) ? origin.x : -size / 2;
+        const originZ = origin && Number.isFinite(origin.z) ? origin.z : -size / 2;
         const n = dim * dim;
         const raw = new Float64Array(n);
         for (let j = 0; j < dim; j++) {
@@ -24466,7 +24863,7 @@ class AnazhRealm {
 
     _hydroWaterLevelAt(x, z) {
         const base = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
-        const hydro = this.state.hydrosphere;
+        const hydro = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (!hydro || !hydro.ready || !Array.isArray(hydro.lakes)) return base;
         const { dim, cell, originX, originZ } = hydro;
         const i = Math.floor((x - originX) / cell);
@@ -25647,7 +26044,7 @@ class AnazhRealm {
     // Der Streu-Mechanismus (EINE Funktion für alle Arten — Heilige Lektion).
     // Sampelt jede Zelle EINMAL (worldFieldAt + Surface + Wasser, geteilt über
     // alle Arten — kein 5×-Resampling), streut dann pro Art deterministisch aus
-    // ihrem Feld. Gegated per-Art auf `ringDist ≤ species.ring` (Distanz-LOD).
+    // ihrem Feld. Distanz-LOD seit U4 (V18.131) band-getrieben (DETAIL_CASCADE.deko).
     // Idempotent (Map-Guard); der LOD-Rebuild (Ring 1↔2) ruft dispose→build neu,
     // sodass die Vegetation beim Näherkommen erscheint (das Gras-Lifecycle).
     _buildVoxelChunkScatter(cx, cz) {
@@ -25662,8 +26059,16 @@ class AnazhRealm {
         const pcz = lpc ? lpc.cz : cz;
         const ringDist = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
         const species = AnazhRealm.KLEIN_VEGETATION_SPECIES;
-        const maxRing = species.reduce((m, s) => Math.max(m, s.ring), 0);
-        if (ringDist > maxRing) return; // fern: nichts zu streuen (FPS)
+        // U4 (V18.131) — die Deko liest die KASKADE statt per-Art-`ring`: das
+        // Band entscheidet mesh/impostor/none + die Dichte. Jenseits des
+        // mesh-Bands trägt das EINE Fernfeld pro Art (s. _tickDekoFernfeld).
+        const band = this._detailBand(ringDist);
+        if (band.deko !== "mesh") return;
+        const atmoD =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
+                ? this.state.atmosphere.dekoDensity
+                : 1; // globaler Dichte-Faktor — Konsolen-tunbar (U4-Plan-Slider, UI = S-Entscheid)
+        const dekoDensity = (band.dekoDichte || 1) * atmoD;
         const { span } = this._voxelChunkConfig();
         const ox = cx * span;
         const oz = cz * span;
@@ -25676,16 +26081,7 @@ class AnazhRealm {
         // Pro Art ein deterministischer rng-Strom (dekorreliert via Art-Index,
         // stabil beim Re-Streamen → kein Flackern). Mulberry32-Stil wie das Gras.
         const buckets = species.map(() => []);
-        const rngs = species.map((sp, si) => {
-            let rs = ((cx * 73856093) ^ (cz * 19349663) ^ ((si + 1) * 0x85ebca6b)) >>> 0 || 1;
-            return () => {
-                rs = (rs + 0x6d2b79f5) >>> 0;
-                let t = rs;
-                t = Math.imul(t ^ (t >>> 15), t | 1);
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
-        });
+        const rngs = species.map((_sp, si) => this._scatterChunkRng(cx, cz, si));
         for (let zi = 0; zi < SAMPLES; zi++) {
             for (let xi = 0; xi < SAMPLES; xi++) {
                 const bx = ox + (xi + 0.5) * step;
@@ -25705,13 +26101,12 @@ class AnazhRealm {
                 const cellMacro = this._terrainMacroSurfaceY(bx, bz, false);
                 for (let si = 0; si < species.length; si++) {
                     const sp = species[si];
-                    if (ringDist > sp.ring) continue;
                     if (buckets[si].length >= sp.cap) continue;
                     const fv = f[sp.field] || 0;
                     if (fv < sp.floor) continue;
                     const norm = (fv - sp.floor) / Math.max(0.001, 1 - sp.floor);
                     const rnd = rngs[si];
-                    const count = Math.floor(sp.perCell * (0.4 + 0.6 * norm) + rnd() * 0.8);
+                    const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) + rnd() * 0.8);
                     const sMin = sp.scale[0];
                     const sMax = sp.scale[1];
                     for (let k = 0; k < count && buckets[si].length < sp.cap; k++) {
@@ -25731,6 +26126,10 @@ class AnazhRealm {
         const pos = new THREE.Vector3();
         const scl = new THREE.Vector3();
         const up = new THREE.Vector3(0, 1, 0);
+        // S6-B (V18.133) — der Ernte-Filter: gepflueckte Indizes bleiben ueber
+        // Re-Streams verborgen (Skala 0 — der Index ist stabil, das RNG
+        // deterministisch), bis der Regrow-Tick sie freigibt.
+        const harvested = this.state.scatterHarvested ? this.state.scatterHarvested.get(key) : null;
         for (let si = 0; si < species.length; si++) {
             const items = buckets[si];
             if (items.length === 0) continue;
@@ -25742,7 +26141,8 @@ class AnazhRealm {
                 const it = items[i];
                 pos.set(it.x, it.y, it.z);
                 q.setFromAxisAngle(up, it.rot);
-                scl.set(it.scale, it.scale, it.scale);
+                if (harvested && harvested.has(`${sp.name}:${i}`)) scl.set(0, 0, 0);
+                else scl.set(it.scale, it.scale, it.scale);
                 m.compose(pos, q, scl);
                 inst.setMatrixAt(i, m);
             }
@@ -25832,8 +26232,9 @@ class AnazhRealm {
         const queue = this.state.pendingScatter;
         if (!queue || queue.size === 0) return 0;
         const lpc = this.state.lastPlayerVoxelChunk;
-        const species = AnazhRealm.KLEIN_VEGETATION_SPECIES;
-        const maxRing = species.reduce((m, s) => Math.max(m, s.ring), 0);
+        // U4 (V18.131) — die mesh-Reichweite kommt aus der Kaskade (Band 0),
+        // nicht mehr aus per-Art-`ring`-Feldern.
+        const maxRing = AnazhRealm.DETAIL_CASCADE[0].maxRing;
         let keys = [...queue];
         if (lpc) {
             const distOf = (k) => {
@@ -25858,6 +26259,289 @@ class AnazhRealm {
             built++;
         }
         return built;
+    }
+
+    // ===== S6-B (V18.133) — FORAGING: die Klein-Vegetation ist pflueckbar ======
+    // (kampf-plan §11 „die echte Zutaten-Tiefe"). Drei Stuecke, kein Parallel-
+    // System: der PICK raycastet die BESTEHENDEN Scatter-InstancedMeshes
+    // (instanceId = der stabile Bucket-Index — deterministisches per-Chunk-RNG),
+    // die ERNTE setzt die Instanz auf Skala 0 + merkt sie im Session-Gedaechtnis
+    // `state.scatterHarvested` (der Build-Filter haelt sie ueber Re-Streams
+    // verborgen), der REGROW-Tick laesst sie nach FORAGE.regrowMs nachwachsen
+    // (dispose + re-enqueue — der bestehende Scatter-Lebenszyklus).
+    // V18.136 (Reflexions-Audit, V9.82-Verdichtung) — der EINE deterministische
+    // per-Chunk-Art-RNG (Mulberry32-Stil): Scatter (nah) + Fernfeld (impostor)
+    // ziehen aus DERSELBEN Quelle (stabil ueber Re-Streams — der Bucket-Index
+    // ist damit eine Identitaet, die das Foraging V18.133 traegt).
+    _scatterChunkRng(cx, cz, si) {
+        let rs = ((cx * 73856093) ^ (cz * 19349663) ^ ((si + 1) * 0x85ebca6b)) >>> 0 || 1;
+        return () => {
+            rs = (rs + 0x6d2b79f5) >>> 0;
+            let t = rs;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    _pickScatterAtCrosshair() {
+        const sc = this.state.voxelChunkScatter;
+        if (!sc || sc.size === 0 || !this.state.camera) return null;
+        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
+        this.state.camera.getWorldDirection(this._tmpCamDir);
+        const meshes = [];
+        const meta = new Map();
+        for (const [key, list] of sc) {
+            for (const it of list) {
+                if (!it.mesh || it.mesh.count === 0) continue;
+                meshes.push(it.mesh);
+                meta.set(it.mesh, { key, name: it.name });
+            }
+        }
+        if (!meshes.length) return null;
+        if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
+        this._tmpRaycaster.set(this.state.camera.position, this._tmpCamDir);
+        this._tmpRaycaster.far = AnazhRealm.FORAGE.reach;
+        const hits = this._tmpRaycaster.intersectObjects(meshes, false);
+        for (const hit of hits) {
+            if (!hit.object || typeof hit.instanceId !== "number") continue;
+            const m = meta.get(hit.object);
+            if (!m) continue;
+            return { key: m.key, name: m.name, index: hit.instanceId, mesh: hit.object, point: hit.point };
+        }
+        return null;
+    }
+
+    _harvestScatterPick(pick) {
+        if (!pick || !pick.mesh) return false;
+        const sp = AnazhRealm.KLEIN_VEGETATION_SPECIES.find((x) => x.name === pick.name);
+        if (!sp || !sp.ernte) return false;
+        // Session-Gedaechtnis: `${art}:${index}` → Ernte-Zeit (der Build-Filter
+        // + der Regrow-Tick lesen es). NICHT persistiert (Flora waechst nach).
+        if (!this.state.scatterHarvested) this.state.scatterHarvested = new Map();
+        let perChunk = this.state.scatterHarvested.get(pick.key);
+        if (!perChunk) {
+            perChunk = new Map();
+            this.state.scatterHarvested.set(pick.key, perChunk);
+        }
+        const id = `${pick.name}:${pick.index}`;
+        if (perChunk.has(id)) return false; // schon gepflueckt (Doppel-Klick-Race)
+        perChunk.set(id, performance.now());
+        // Die Instanz verschwindet SOFORT (Skala 0 am selben Index — stabil).
+        if (!this._tmpForageMat) this._tmpForageMat = new THREE.Matrix4();
+        this._tmpForageMat.makeScale(0, 0, 0);
+        pick.mesh.setMatrixAt(pick.index, this._tmpForageMat);
+        pick.mesh.instanceMatrix.needsUpdate = true;
+        const got = this.addMaterialToInventory(sp.ernte, 1);
+        this.log(
+            got ? `Gepflueckt: ${pick.name} → 1× ${sp.ernte}` : `Gepflueckt: ${pick.name} — aber das Inventar ist voll`,
+            "INFO"
+        );
+        // Die Tat praegt (V17.30-Substrat — sanft, wie das Sammeln).
+        if (typeof this._feelAction === "function") this._feelAction("harvest");
+        return true;
+    }
+
+    // Der Regrow-Tick (im ruhigen Streaming-Slot, ~0.1 Hz): abgelaufene Ernten
+    // fallen aus dem Gedaechtnis, der Chunk-Scatter baut neu → die Flora steht
+    // wieder. Billig: ein Map-Sweep, Rebuild nur bei echtem Ablauf.
+    _tickScatterRegrow(now) {
+        const last = this._lastScatterRegrowCheck ?? -Infinity;
+        if (now - last < 10000) return;
+        this._lastScatterRegrowCheck = now;
+        const sh = this.state.scatterHarvested;
+        if (!sh || sh.size === 0) return;
+        const ttl = AnazhRealm.FORAGE.regrowMs;
+        for (const [key, perChunk] of sh) {
+            let regrown = false;
+            for (const [id, t] of perChunk) {
+                if (now - t > ttl) {
+                    perChunk.delete(id);
+                    regrown = true;
+                }
+            }
+            if (perChunk.size === 0) sh.delete(key);
+            if (regrown && this.state.voxelChunkScatter && this.state.voxelChunkScatter.has(key)) {
+                this._disposeVoxelChunkScatter(key);
+                this._enqueueScatter(...key.split(",").map(Number));
+            }
+        }
+    }
+
+    // ===== U4 (V18.131) — DAS DEKO-FERNFELD: ein Impostor-Mesh pro Art =========
+    // Jenseits des mesh-Bands (DETAIL_CASCADE Band 0) trägt EIN InstancedMesh
+    // pro Art die ferne Deko (Band 1+2, deko:"impostor") — das B2-Mantel-Muster
+    // statt per-Chunk-Instancing (das wären ~6 Draw-Calls statt ~1600 bei
+    // Weltenring max). Re-Anker beim Spieler-Chunk-Wechsel, EINE Art pro Tick
+    // (deferred, terrain-nachrangig wie der Scatter). Platzierung DETERMINISTISCH
+    // aus demselben per-Chunk-RNG-Schema wie der nahe Scatter (kein Flackern
+    // beim Re-Anker), Oberfläche aus der V18.97-Karte (`_chunkSurfaceAt` —
+    // die EINE Deko-Oberflächen-Quelle, Scan nur als Fallback-Disziplin: hier
+    // ohne Karte wird die Spalte ÜBERSPRUNGEN, ferner Impostor braucht keine
+    // Scan-Kosten). Render-only, main-only, kein Worker/Determinismus.
+    static get DEKO_FERNFELD() {
+        return Object.freeze({
+            cap: 1024, // Instanzen pro Art (das ganze Fernfeld)
+            samples: 4, // 4×4 Sample-Raster pro Chunk (gröber als nah: 8×8)
+            scaleMul: 1.35, // Impostoren leicht größer (gleichen die Dünne optisch aus)
+        });
+    }
+
+    // Die Impostor-Geometrie einer Art: ein KREUZ aus zwei vertikalen Quads
+    // (der klassische Fern-Vegetations-Impostor, 4 Tris) mit vertikalem
+    // color→color2-Verlauf als Vertex-Farbe — sie teilt das ART-MATERIAL
+    // (`_scatterMaterial` liest attribute("color") → WebGPU-strikt erfüllt,
+    // V10.0-g.1; Wind/Emissive/Drift erben gratis). Schwebende Arten (yOff>0)
+    // bekommen eine kleine Raute (Mote) statt des Kreuzes.
+    _scatterImpostorGeometry(species) {
+        if (!this.state._scatterImpostorGeoms) this.state._scatterImpostorGeoms = new Map();
+        const cache = this.state._scatterImpostorGeoms;
+        if (cache.has(species.name)) return cache.get(species.name);
+        if (typeof THREE === "undefined") return null;
+        const P = [];
+        const C = [];
+        const c = species.color;
+        const c2 = species.color2 || species.color;
+        const v = (x, y, z, col) => {
+            P.push(x, y, z);
+            C.push(col[0], col[1], col[2]);
+        };
+        if (species.yOff > 0.2) {
+            // Mote: kleine vertikale Raute (2 Tris), Mittelfarbe hell.
+            const r = 0.32;
+            v(0, -r, 0, c);
+            v(r, 0, 0, c2);
+            v(0, r, 0, c2);
+            v(0, -r, 0, c);
+            v(0, r, 0, c2);
+            v(-r, 0, 0, c2);
+        } else {
+            const h = 1.0;
+            const w = 0.42;
+            const quad = (ax, az, bx, bz) => {
+                // zwei Tris: Boden trägt color, Spitze color2 (wie die strip-Verläufe).
+                v(ax, 0, az, c);
+                v(bx, 0, bz, c);
+                v(bx, h, bz, c2);
+                v(ax, 0, az, c);
+                v(bx, h, bz, c2);
+                v(ax, h, az, c2);
+            };
+            quad(-w, 0, w, 0);
+            quad(0, -w, 0, w);
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+        geo.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
+        geo.computeVertexNormals();
+        cache.set(species.name, geo);
+        return geo;
+    }
+
+    // Der Fernfeld-Tick: re-ankert beim Spieler-Chunk-Wechsel (oder wenn sich
+    // die Welt substanziell änderte — Chunk-Zahl-Drift) und baut EINE Art pro
+    // Aufruf neu. Aufruf terrain-nachrangig (nur auf ruhigen Frames, V17.1).
+    _tickDekoFernfeld() {
+        const lpc = this.state.lastPlayerVoxelChunk;
+        if (!lpc || !this.state.scene || !this.state.voxelChunks) return 0;
+        if (!this.state.dekoFernfeld)
+            this.state.dekoFernfeld = { anchor: null, queue: [], meshes: new Map(), chunkCount: 0 };
+        const ff = this.state.dekoFernfeld;
+        const anchor = `${lpc.cx},${lpc.cz}`;
+        const size = this.state.voxelChunks.size;
+        if (ff.anchor !== anchor || Math.abs(size - ff.chunkCount) > 8) {
+            ff.anchor = anchor;
+            ff.chunkCount = size;
+            ff.queue = AnazhRealm.KLEIN_VEGETATION_SPECIES.map((_s, i) => i);
+        }
+        if (ff.queue.length === 0) return 0;
+        const si = ff.queue.shift();
+        this._buildDekoFernfeldSpecies(si, lpc.cx, lpc.cz);
+        return 1;
+    }
+
+    _buildDekoFernfeldSpecies(si, pcx, pcz) {
+        const species = AnazhRealm.KLEIN_VEGETATION_SPECIES;
+        const sp = species[si];
+        if (!sp || typeof THREE === "undefined") return;
+        const FF = AnazhRealm.DEKO_FERNFELD;
+        const ff = this.state.dekoFernfeld;
+        let inst = ff.meshes.get(sp.name);
+        if (!inst) {
+            const geo = this._scatterImpostorGeometry(sp);
+            const mat = this._scatterMaterial(sp);
+            if (!geo || !mat) return;
+            inst = new THREE.InstancedMesh(geo, mat, FF.cap);
+            inst.count = 0;
+            inst.castShadow = false;
+            inst.receiveShadow = false;
+            inst.frustumCulled = false; // das Feld umspannt den Spieler ringsum
+            this.state.scene.add(inst);
+            ff.meshes.set(sp.name, inst);
+        }
+        const atmoD =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
+                ? this.state.atmosphere.dekoDensity
+                : 1;
+        const cfg = this._voxelChunkConfig(0);
+        const m = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const pos = new THREE.Vector3();
+        const scl = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        let n = 0;
+        for (const [key, entry] of this.state.voxelChunks) {
+            if (n >= FF.cap) break;
+            if (!entry || entry.empty || !entry.surfMap) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            const ringDist = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
+            const band = this._detailBand(ringDist);
+            if (band.deko !== "impostor") continue;
+            const dekoDensity = (band.dekoDichte || 0) * atmoD;
+            if (dekoDensity <= 0) continue;
+            // Derselbe deterministische RNG-STROM wie der nahe Scatter (eine
+            // Quelle, V9.82). EHRLICH (Audit V18.136): die POSITIONEN entsprechen
+            // sich NICHT 1:1 (das Fernfeld sampelt 4×4, nah ist 8×8 — der Strom
+            // wird anders konsumiert); deterministisch ist das Fernfeld in sich
+            // (kein Re-Anker-Flackern, GEMESSEN), der Band-Uebergang wechselt
+            // die Plaetze im Fog-Abstand (~130 m) — unterhalb der Wahrnehmung.
+            const rnd = this._scatterChunkRng(cx, cz, si);
+            const S = FF.samples;
+            const stepXZ = cfg.span / S;
+            const ox = cx * cfg.span;
+            const oz = cz * cfg.span;
+            for (let zi = 0; zi < S && n < FF.cap; zi++) {
+                for (let xi = 0; xi < S && n < FF.cap; xi++) {
+                    const bx = ox + (xi + 0.5) * stepXZ;
+                    const bz = oz + (zi + 0.5) * stepXZ;
+                    const f = this.worldFieldAt(bx, bz);
+                    if (!f) continue;
+                    const fv = f[sp.field] || 0;
+                    if (fv < sp.floor) continue;
+                    const norm = (fv - sp.floor) / Math.max(0.001, 1 - sp.floor);
+                    const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) + rnd() * 0.8);
+                    for (let k = 0; k < count && n < FF.cap; k++) {
+                        const gx = bx + (rnd() - 0.5) * stepXZ;
+                        const gz = bz + (rnd() - 0.5) * stepXZ;
+                        const sclK = (sp.scale[0] + rnd() * (sp.scale[1] - sp.scale[0])) * FF.scaleMul;
+                        const rotK = rnd() * Math.PI * 2;
+                        const surfY = this._chunkSurfaceAt(entry, cx, cz, gx, gz);
+                        if (surfY === null || !Number.isFinite(surfY)) continue;
+                        if (surfY < this._waterLevelAt(gx, gz) + 0.1) continue;
+                        pos.set(gx, surfY + sp.yOff, gz);
+                        q.setFromAxisAngle(up, rotK);
+                        scl.set(sclK, sclK, sclK);
+                        m.compose(pos, q, scl);
+                        inst.setMatrixAt(n, m);
+                        n++;
+                    }
+                }
+            }
+        }
+        inst.count = n;
+        inst.instanceMatrix.needsUpdate = true;
     }
 
     // V9.75 (Welle C.4+5) — `_buildVoxelChunkWater`, `_disposeVoxelChunkWater`,
@@ -26397,6 +27081,12 @@ class AnazhRealm {
         // 1-Zell-Density-Pad sah die Kugel-Kante → sub-cell, imperzeptibel) → sie bleiben
         // ASYNC (kein Edit-Cluster-Spike, die V9.40-c-Lehre gewahrt: nur ≤Footprint sync).
         this._syncRebuildEditFootprint(x, z, radius);
+        // V18.129 — NACH dem Rebuild: Kappen/Quell-Markierungen/Stau-Felder der
+        // Region verwerfen (der Spill-Scan muss die FRISCHEN Zellen sehen — ein
+        // Fill kann ein Damm sein, ein Carve kann einen Damm öffnen). Der Pre-
+        // Seed oben löschte sie VOR dem Rebuild (mit alten Zellen neu gebaut) —
+        // dieser zweite Wurf macht den Lazy-Neubau wahrheits-frisch.
+        this._invalidateWaterCapsAround(x, z, radius);
         // A6a (gigant-plan §5 PHASE A) — Fill-unter-sich darf den Spieler nicht
         // BEGRABEN (GEMESSEN diag-edit-reset: 12 Fills unter den Füßen → Spieler
         // 11 m UNTER der neuen Oberfläche, im Fels eingeschlossen — die V17.28-
@@ -27157,6 +27847,175 @@ class AnazhRealm {
             .trim();
     }
 
+    // G8 R0 (Robustheits-Bogen, docs/archiv/robustheit-plan.md) — der
+    // Trennungs-BEWEIS des INNERSTEN RINGS. Der innerste Ring (Identität +
+    // Signatur-Autorität, AnazhRealm.SOVEREIGN_STATE) ist nicht GESCHÜTZT,
+    // er ist ABWESEND aus der Welt der Welten: NIE in einem Welt-Snapshot,
+    // NIE in einem Portal-Payload, NIE über P2P. Diese Sonde BEWEIST die
+    // GEMESSEN-schon-wahre Trennung (sie mutiert NICHTS) — ein reiner
+    // Verifikations-Refactor, der die Wand sichtbar + headless-prüfbar macht.
+    // Eine kollabierende oder täuschende Welt kann die Identität nicht
+    // mitreißen, weil der Schaden den Ort nie erreicht (Lokalität, kein
+    // Schutzschild — die Supernova-Physik). Gibt eine flache Befund-Struktur.
+    _sovereignStateAudit() {
+        const S = AnazhRealm.SOVEREIGN_STATE;
+        const out = { snapshotClean: true, payloadClean: true, leaks: [] };
+        const safeJson = (obj) => {
+            try {
+                return JSON.stringify(obj);
+            } catch (_e) {
+                return "";
+            }
+        };
+        // (1) Der Welt-Snapshot trägt KEINEN souveränen state-Slot (fixer
+        // Key-Satz in buildStateSnapshot) UND tief KEIN privates Schlüssel-Feld.
+        let snap = null;
+        try {
+            snap = this.buildStateSnapshot();
+        } catch (_e) {
+            snap = null;
+        }
+        if (snap && typeof snap === "object") {
+            for (const k of S.excludedStateKeys) {
+                if (Object.prototype.hasOwnProperty.call(snap, k)) {
+                    out.snapshotClean = false;
+                    out.leaks.push("snapshot:" + k);
+                }
+            }
+            const json = safeJson(snap);
+            for (const f of S.privateFields) {
+                if (json.indexOf('"' + f + '"') >= 0) {
+                    out.snapshotClean = false;
+                    out.leaks.push("snapshot-deep:" + f);
+                }
+            }
+            for (const sk of S.privateStorageKeys) {
+                if (json.indexOf(sk) >= 0) {
+                    out.snapshotClean = false;
+                    out.leaks.push("snapshot:" + sk);
+                }
+            }
+        }
+        // (2) Der Portal-Payload (Sub→Welt-Identität) trägt nur die
+        // ÖFFENTLICHE Identität (vibePassId/fingerprint), nie ein privates Feld.
+        let payload = null;
+        try {
+            payload = this._portalEnterPayload();
+        } catch (_e) {
+            payload = null;
+        }
+        if (payload && typeof payload === "object") {
+            const pj = safeJson(payload);
+            for (const f of S.privateFields) {
+                if (pj.indexOf('"' + f + '"') >= 0) {
+                    out.payloadClean = false;
+                    out.leaks.push("payload:" + f);
+                }
+            }
+            for (const sk of S.privateStorageKeys) {
+                if (pj.indexOf(sk) >= 0) {
+                    out.payloadClean = false;
+                    out.leaks.push("payload:" + sk);
+                }
+            }
+        }
+        out.ok = out.snapshotClean && out.payloadClean && out.leaks.length === 0;
+        return out;
+    }
+
+    // G8 R2 (Robustheits-Bogen, M3) — ist `op` eine souveräne Aktion (berührt
+    // den innersten Ring)? Der EINE Leser von SOVEREIGN_ACTIONS.
+    _isSovereignAction(op) {
+        return AnazhRealm.SOVEREIGN_ACTIONS.includes(op);
+    }
+
+    // G8 R2 (Robustheits-Bogen, M3 — die Irreversibilitäts-Wand) — die EINE
+    // Host-gerenderte SOUVERÄNE GESTE. Genau die Akte, die den innersten Ring
+    // berühren (Signieren, Identität wechseln, künftig Wallet/Capability),
+    // laufen NUR durch diese Tür: sie sitzt AUSSERHALB jedes iframes (der Host
+    // zeichnet sie), zeigt Klartext WAS · welcher WERT · an WEN, und fragt
+    // JEDES MAL frisch (keine „merken"-Option für souveräne Akte). Eine
+    // vergiftete Welt kann täuschen, aber die Geste NICHT fälschen — der
+    // manipulierbare postMessage-Pfad erreicht sie nie (das Dual-LLM-Pattern).
+    // Die ehrliche Restlücke: sie schützt vor der GEFÄLSCHTEN Geste, nicht vor
+    // der GETÄUSCHTEN Absicht (du kannst die ECHTE Geste machen, weil die Welt
+    // dich überzeugt hat) — „Locken" ist nur teurer, nicht lösbar; darum die
+    // Reibung GENAU HIER. `opts.skipConfirm` für den Playtest (wie importVibePass).
+    _sovereignGesture(action, detail, opts) {
+        opts = opts || {};
+        // Eine unbekannte/nicht-souveräne Aktion wird VERWEIGERT (die Wand
+        // lässt nur die eingefrorene Liste durch — kein Schmuggel).
+        if (!this._isSovereignAction(action)) {
+            if (typeof this.log === "function")
+                this.log(`Souveräne Geste verweigert — unbekannte Aktion: ${action}`, "WARN");
+            return false;
+        }
+        // Headless / Test / kein Host-Confirm verfügbar → der skipConfirm-Pfad
+        // (derselbe Vertrag wie importVibePass: die Wand ist die Host-Geste,
+        // nicht ein Zwang gegen den Eigentümer-Code).
+        if (opts.skipConfirm || typeof window === "undefined" || typeof window.confirm !== "function") {
+            return true;
+        }
+        const d = detail && typeof detail === "object" ? detail : {};
+        const lines = [
+            "Souveräne Handlung — sie berührt deine Identität/Autorität:",
+            "",
+            `WAS:  ${d.what || action}`,
+            `WERT: ${d.value || "—"}`,
+            `WEM:  ${d.whom || "dir selbst"}`,
+            "",
+            "Diese Handlung kann KEINE Welt und KEIN Assistent für dich auslösen.",
+            "Nur du, jetzt. Fortfahren?",
+        ];
+        return window.confirm(lines.join("\n")) === true;
+    }
+
+    // G8 R5 (Robustheits-Bogen, M5 — das LEBENDE Immunsystem): das
+    // Antikörper-Archiv ENUMERIERT. Kein neuer Apparat — eine neue ROLLE für die
+    // ~3500-Invarianten-Maschinerie: jeder erkannte Erreger wird ein dauerhafter
+    // Antikörper (ein Headless-Korpus), der bei JEDEM Push impft (die regelmäßige
+    // Exposition, nicht eine Mauer). Die vier Angriffsklassen, je mit ihrer
+    // strukturellen WAND (dem Guard, der lebt) + ihrem Playtest-Korpus. Ein
+    // Regress an einer alten Wand ist sofort rot. Wächst mit jeder Begegnung:
+    // ein neuer Erreger → ein neuer Eintrag + ein neues Band (die Verdichtung —
+    // ein Werkzeug, zwei Rollen: Qualität + Immunität, V9.82-Pfad).
+    _robustnessCorpus() {
+        return [
+            {
+                id: "R1-flut",
+                mechanism: "M2-Dämpfung",
+                guard: "_portalChannelAdmit",
+                band: "checkBandG8R1DampedChannel",
+                what: "eine flutende Welt drosselt sich selbst (Token-Bucket, Verwerfen statt Puffern)",
+                live: typeof this._portalChannelAdmit === "function" && typeof this._p2pPeerRateAdmit === "function",
+            },
+            {
+                id: "R2-souveraen",
+                mechanism: "M3-Katalysator",
+                guard: "_sovereignGesture",
+                band: "checkBandG8R2SovereignWall",
+                what: "ein souveräner Akt verlangt die Host-Geste (disjunkt von jedem Auto-Pool)",
+                live: typeof this._sovereignGesture === "function" && Array.isArray(AnazhRealm.SOVEREIGN_ACTIONS),
+            },
+            {
+                id: "R3-escape",
+                mechanism: "M1-Lokalität",
+                guard: "_portalSandboxAttr",
+                band: "checkBandG8R3Locality",
+                what: "eine sandboxed Welt läuft null-origin (kein Pfad zum innersten Ring)",
+                live: typeof this._portalSandboxAttr === "function" && typeof this._localityAudit === "function",
+            },
+            {
+                id: "R4-infektion",
+                mechanism: "M4-Immunsystem",
+                guard: "_artifactProvenanceTainted",
+                band: "checkBandG8R4Immunity",
+                what: "die Herkunft reist als Kette (sichtbar) + der Rückruf stößt sie aus (reversibel)",
+                live: typeof this._artifactProvenanceTainted === "function" && typeof this.revokeKey === "function",
+            },
+        ];
+    }
+
     // Der kanonische Identifier — dasselbe Format wie das Welt-Portal-Manifest
     // (docs/world-portal.md §3.3: "authorPubKey": "ed25519:...").
     vibePassId() {
@@ -27334,12 +28193,20 @@ class AnazhRealm {
         if (typeof crypto === "undefined" || !crypto.subtle) {
             return { ok: false, reason: "no_crypto" };
         }
-        if (!opts.skipConfirm && typeof window !== "undefined" && typeof window.confirm === "function") {
-            const accepted = window.confirm(
-                "Vibe-Pass wiederherstellen? Deine aktuelle Identität wird ersetzt — " +
-                    "sichere sie zuerst, falls du sie behalten willst."
-            );
-            if (!accepted) return { ok: false, reason: "cancelled" };
+        // G8 R2 (M3) — change_identity ist eine SOUVERÄNE Aktion: sie läuft durch
+        // die EINE Host-Geste (außerhalb jedes iframes, Klartext, jedes Mal frisch).
+        if (
+            !this._sovereignGesture(
+                "change_identity",
+                {
+                    what: "Identität (Vibe-Pass) wiederherstellen",
+                    value: "deine aktuelle Identität wird ERSETZT",
+                    whom: "dir selbst — sichere die alte zuerst",
+                },
+                opts
+            )
+        ) {
+            return { ok: false, reason: "cancelled" };
         }
         try {
             await this._adoptVibePassJwk(jwk, parsed.createdAt, false);
@@ -27494,12 +28361,28 @@ class AnazhRealm {
 
     // Versiegelt einen eigenen Bauplan mit dem Vibe-Pass. Setzt signature +
     // authorPubKey + signedHash + signedAt. Async (ed25519-Signatur).
-    async signBlueprint(name) {
+    // G8 R2 (M3) — Signieren ist sign_manifest, eine SOUVERÄNE Aktion (die
+    // Signatur beweist „ich bürge" — sie kann KEINE Welt/kein LLM für dich
+    // setzen). Sie läuft durch die EINE Host-Geste (opts.skipConfirm im Test).
+    async signBlueprint(name, opts) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "unknown" };
         if (bp.builtIn) return { ok: false, reason: "builtin" };
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
+        if (
+            !this._sovereignGesture(
+                "sign_manifest",
+                {
+                    what: `Bauplan „${bp.label || name}" signieren`,
+                    value: "deine Signatur bürgt dafür",
+                    whom: "jeden, der ihn empfängt",
+                },
+                opts
+            )
+        ) {
+            return { ok: false, reason: "cancelled" };
+        }
         const canonical = this._canonicalBlueprint(bp);
         const sig = await this._vibeSign(canonical);
         if (!sig) return { ok: false, reason: "sign_failed" };
@@ -27507,6 +28390,9 @@ class AnazhRealm {
         bp.authorPubKey = vp.publicKeyHex;
         bp.signedHash = this._fastHash(canonical);
         bp.signedAt = Date.now();
+        // G8 R4 (M4a) — die Herkunftskette: ich hänge mich an (Ursprung wenn
+        // leer, sonst Überträger eines empfangenen + weiterveränderten Werks).
+        this._appendProvenance(bp, vp.publicKeyHex);
         this.saveState();
         this.journalAppend("ritual", `Ich versiegelte „${bp.label || name}" mit meinem Vibe-Pass.`, {
             blueprint: name,
@@ -27570,12 +28456,18 @@ class AnazhRealm {
                     typeof e.authorPubKey === "string" &&
                     /^[0-9a-f]{64}$/i.test(e.authorPubKey)
                 ) {
-                    out[id] = {
+                    const entry = {
                         authorPubKey: e.authorPubKey,
                         signature: e.signature,
                         signedHash: typeof e.signedHash === "string" ? e.signedHash : "",
                         signedAt: typeof e.signedAt === "number" ? e.signedAt : 0,
+                        // G8 R4 (M4a) — die Herkunftskette überlebt den Rundlauf.
+                        provenance: this._sanitizeProvenance(e.provenance),
                     };
+                    // G8 R4 (M4b) — der RÜCKRUF beim Laden: ein Artefakt mit
+                    // einem revozierten Schlüssel in seiner Kette fällt weg.
+                    if (this._artifactProvenanceTainted(entry)) continue;
+                    out[id] = entry;
                 }
             }
         } catch {
@@ -27594,8 +28486,203 @@ class AnazhRealm {
         }
     }
 
+    // ====================================================================
+    // G8 R4 (Robustheits-Bogen, M4 — das IMMUNSYSTEM): Herkunftskette (4a) +
+    // Rückruf (4b). Eine Signatur beweist „ich habe das BERÜHRT", nicht „ich
+    // BÜRGE dafür" — darum reist die ganze KETTE mit (Ursprung X · über dich),
+    // sonst tarnt sich eine Infektion als dein Gütesiegel. Wird eine Quelle als
+    // infektiös erkannt, revoziert ihr Schlüssel → jedes Artefakt mit ihr in der
+    // Kette fällt beim Laden weg (die Infektion ist reversibel, kein zentraler
+    // Wächter). KEIN Prüfer — Sichtbarkeit (Kette) + Reversibilität (Rückruf).
+    // ====================================================================
+
+    // Normalisiert einen Pubkey (akzeptiert "ed25519:<hex>" oder rohen Hex) →
+    // 64-stelliger Kleinbuchstaben-Hex oder null. Die EINE Form für die Kette.
+    _normalizePubKey(k) {
+        let s = String(k || "").trim();
+        if (s.indexOf("ed25519:") === 0) s = s.slice(8);
+        s = s.toLowerCase();
+        return /^[0-9a-f]{64}$/.test(s) ? s : null;
+    }
+
+    _loadRevokedKeys() {
+        const out = {};
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.revokedKeys") : null;
+            if (!raw) return out;
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object") return out;
+            for (const k of Object.keys(parsed)) {
+                const norm = this._normalizePubKey(k);
+                if (norm) out[norm] = { at: typeof parsed[k] === "number" ? parsed[k] : Date.now() };
+            }
+        } catch {
+            /* korrupter Eintrag → leere Map, kein Wurf */
+        }
+        return out;
+    }
+
+    _saveRevokedKeys() {
+        try {
+            if (typeof localStorage !== "undefined") {
+                const flat = {};
+                const rk = this.state.revokedKeys || {};
+                for (const k of Object.keys(rk)) flat[k] = (rk[k] && rk[k].at) || Date.now();
+                localStorage.setItem("anazh.revokedKeys", JSON.stringify(flat));
+            }
+        } catch (e) {
+            this.log(`revokedKeys-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    _isKeyRevoked(pubkeyHex) {
+        const norm = this._normalizePubKey(pubkeyHex);
+        return !!(norm && this.state.revokedKeys && this.state.revokedKeys[norm]);
+    }
+
+    // M4b — eine Quelle als infektiös erkennen: ihr Schlüssel wird revoziert.
+    // Jedes Artefakt mit ihr in der Herkunftskette fällt JETZT weg (lokaler
+    // Durchlauf) + bleibt beim nächsten Laden gesiebt. Der Rückruf ist KEINE
+    // souveräne Aktion (er berührt nicht DEINEN Schlüssel — er ist die
+    // Immun-Antwort, leicht auslösbar). Gibt die Zahl der ausgestoßenen Artefakte.
+    revokeKey(pubkey, opts) {
+        opts = opts || {};
+        const norm = this._normalizePubKey(pubkey);
+        if (!norm) return { ok: false, reason: "invalid_key" };
+        if (!this.state.revokedKeys) this.state.revokedKeys = {};
+        this.state.revokedKeys[norm] = { at: Date.now() };
+        this._saveRevokedKeys();
+        const purged = this._purgeRevokedArtifacts();
+        if (!opts.silent && typeof this.journalAppend === "function") {
+            this.journalAppend(
+                "ritual",
+                `Ich rief einen Schlüssel zurück (${this._vibeFingerprint(norm)}) — ${purged} Artefakt(e) ausgestoßen.`
+            );
+        }
+        return { ok: true, key: norm, purged };
+    }
+
+    unrevokeKey(pubkey) {
+        const norm = this._normalizePubKey(pubkey);
+        if (!norm || !this.state.revokedKeys || !this.state.revokedKeys[norm]) return { ok: false };
+        delete this.state.revokedKeys[norm];
+        this._saveRevokedKeys();
+        return { ok: true, key: norm };
+    }
+
+    // M4a — die Herkunftskette eines Artefakts (Welt-Manifest / Bauplan): ein
+    // geordnetes Array {by, at}. [0] ist der URSPRUNG (Schöpfer/Erst-Signierer),
+    // die folgenden sind Überträger (wer es weiterreichte). Defensiv-gesäubert.
+    _sanitizeProvenance(raw) {
+        if (!Array.isArray(raw)) return [];
+        const out = [];
+        for (const link of raw) {
+            if (!link || typeof link !== "object") continue;
+            const by = this._normalizePubKey(link.by);
+            if (!by) continue;
+            out.push({ by, at: typeof link.at === "number" ? link.at : 0 });
+            if (out.length >= 16) break; // gedeckelt — kein unbegrenztes Wachsen
+        }
+        return out;
+    }
+
+    // M4a — den eigenen Pubkey an die Kette anhängen (Ursprung wenn leer, sonst
+    // Überträger). Dedup: wenn ich schon der LETZTE Eintrag bin, kein Doppel.
+    _appendProvenance(artifact, pubkeyHex) {
+        if (!artifact || typeof artifact !== "object") return;
+        const by = this._normalizePubKey(pubkeyHex);
+        if (!by) return;
+        let chain = this._sanitizeProvenance(artifact.provenance);
+        const last = chain.length ? chain[chain.length - 1] : null;
+        if (!last || last.by !== by) {
+            if (chain.length < 16) chain.push({ by, at: Date.now() });
+        }
+        artifact.provenance = chain;
+    }
+
+    // M4b — ist ein Artefakt durch einen revozierten Schlüssel in seiner Kette
+    // (oder seinem Signierer) vergiftet? Dann fällt es weg.
+    _artifactProvenanceTainted(artifact) {
+        if (!artifact || typeof artifact !== "object") return false;
+        if (artifact.authorPubKey && this._isKeyRevoked(artifact.authorPubKey)) return true;
+        const chain = Array.isArray(artifact.provenance) ? artifact.provenance : [];
+        for (const link of chain) {
+            if (link && this._isKeyRevoked(link.by)) return true;
+        }
+        return false;
+    }
+
+    // M4b — den lokalen Bestand gegen die Rückruf-Liste sieben (signedWorlds +
+    // customWorlds + eigene Baupläne). Gibt die Zahl der ausgestoßenen Artefakte.
+    _purgeRevokedArtifacts() {
+        let purged = 0;
+        const sw = this.state.signedWorlds || {};
+        for (const id of Object.keys(sw)) {
+            if (this._artifactProvenanceTainted(sw[id])) {
+                delete sw[id];
+                purged++;
+            }
+        }
+        const cw = this.state.customWorlds || {};
+        for (const id of Object.keys(cw)) {
+            if (this._artifactProvenanceTainted(cw[id])) {
+                delete cw[id];
+                purged++;
+            }
+        }
+        const bp = this.state.blueprints || {};
+        for (const name of Object.keys(bp)) {
+            const b = bp[name];
+            if (b && !b.builtIn && b.signature && this._artifactProvenanceTainted(b)) {
+                // Der Bauplan bleibt (er ist Spieler-Werk), aber seine vergiftete
+                // Signatur/Herkunft fällt — er wird wieder „unsigniert".
+                delete b.signature;
+                delete b.authorPubKey;
+                delete b.signedHash;
+                delete b.provenance;
+                purged++;
+            }
+        }
+        if (purged > 0) {
+            this._saveSignedWorlds();
+            this._saveCustomWorlds();
+            if (typeof this.saveState === "function") this.saveState();
+        }
+        return purged;
+    }
+
+    // M4a — eine lesbare Zusammenfassung der Herkunft (für die Spec-Card / das
+    // Portal): Ursprung vs. „über dich" vs. „von dir". Macht den Unterschied
+    // zwischen Echtheit und Gutartigkeit SICHTBAR.
+    _provenanceSummary(artifact) {
+        const chain = this._sanitizeProvenance(artifact && artifact.provenance);
+        const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+        if (!chain.length)
+            return { chain: [], origin: "", label: "", tainted: this._artifactProvenanceTainted(artifact) };
+        const originKey = chain[0].by;
+        const lastKey = chain[chain.length - 1].by;
+        const originIsMe = myKey && originKey === myKey;
+        const lastIsMe = myKey && lastKey === myKey;
+        const fp = (k) => (myKey && k === myKey ? "dir" : this._vibeFingerprint(k));
+        let label;
+        if (chain.length === 1) {
+            label = originIsMe ? "von dir" : `von ${fp(originKey)}`;
+        } else {
+            label = `Ursprung ${fp(originKey)} · ${lastIsMe ? "über dich" : "über " + fp(lastKey)}`;
+        }
+        return {
+            chain,
+            origin: fp(originKey),
+            originKey,
+            label,
+            passers: chain.length - 1,
+            tainted: this._artifactProvenanceTainted(artifact),
+        };
+    }
+
     // Versiegelt eine registrierte Welt mit dem Vibe-Pass. Async (ed25519).
-    async signWorld(worldId) {
+    // G8 R2 (M3) — sign_manifest, eine SOUVERÄNE Aktion (über die Host-Geste).
+    async signWorld(worldId, opts) {
         const key = String(worldId || "")
             .trim()
             .toLowerCase();
@@ -27603,16 +28690,34 @@ class AnazhRealm {
         if (!entry) return { ok: false, reason: "world_unknown" };
         const vp = this.state.vibePass;
         if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
+        if (
+            !this._sovereignGesture(
+                "sign_manifest",
+                {
+                    what: `Welt „${entry.label || key}" signieren`,
+                    value: "deine Signatur bürgt dafür",
+                    whom: "jeden, der sie empfängt",
+                },
+                opts
+            )
+        ) {
+            return { ok: false, reason: "cancelled" };
+        }
         const canonical = this._canonicalManifest(entry);
         const sig = await this._vibeSign(canonical);
         if (!sig) return { ok: false, reason: "sign_failed" };
         if (!this.state.signedWorlds) this.state.signedWorlds = {};
+        // G8 R4 (M4a) — eine schon vorhandene Herkunftskette (eine empfangene,
+        // weitergereichte Welt) bewahren; ich hänge mich an.
+        const priorChain = this.state.signedWorlds[key] && this.state.signedWorlds[key].provenance;
         this.state.signedWorlds[key] = {
             authorPubKey: vp.publicKeyHex,
             signature: sig,
             signedHash: this._fastHash(canonical),
             signedAt: Date.now(),
+            provenance: this._sanitizeProvenance(priorChain),
         };
+        this._appendProvenance(this.state.signedWorlds[key], vp.publicKeyHex);
         this._saveSignedWorlds();
         this.journalAppend("ritual", `Ich veröffentlichte die ${entry.label} mit meinem Vibe-Pass.`, {
             world: key,
@@ -27696,6 +28801,11 @@ class AnazhRealm {
             authorPubKey: typeof w.authorPubKey === "string" ? w.authorPubKey : "",
             signature: typeof w.signature === "string" ? w.signature : "",
         };
+        // G8 R4 (M4a) — die Herkunftskette als Lese-Feld: macht „über dich" vs.
+        // „von dir" sichtbar (Echtheit ≠ Gutartigkeit). Eine Signatur beweist nur
+        // Berührung; die Kette zeigt, WOHER das Werk wirklich stammt.
+        prof.provenance = this._provenanceSummary(w);
+        prof.tainted = prof.provenance.tainted;
         // Stufe — wie heute (hasDsl → „übersetzt", sonst „ausgestellt"); die Marke „nativ"
         // emergiert erst beim Betreten (W12 P3).
         prof.stage = prof.hasDsl ? "übersetzt" : "ausgestellt";
@@ -27750,7 +28860,10 @@ class AnazhRealm {
             if (!parsed || typeof parsed !== "object") return out;
             for (const id of Object.keys(parsed)) {
                 const clean = this._sanitizeImportedManifest(parsed[id]);
-                if (clean) out[clean.id] = clean;
+                // G8 R4 (M4b) — der RÜCKRUF beim Laden: eine Welt mit einem
+                // revozierten Schlüssel irgendwo in ihrer Herkunftskette (oder
+                // als Signierer) fällt weg — die Infektion ist ausgestoßen.
+                if (clean && !this._artifactProvenanceTainted(clean)) out[clean.id] = clean;
             }
         } catch {
             /* korrupte Map → leer, kein Wurf */
@@ -27809,6 +28922,11 @@ class AnazhRealm {
             out.signedHash = typeof m.signedHash === "string" ? m.signedHash : "";
             out.signedAt = typeof m.signedAt === "number" ? m.signedAt : 0;
         }
+        // G8 R4 (M4a) — die mitgereiste Herkunftskette bewahren (gesäubert): der
+        // Empfänger sieht „Ursprung X · über dich" statt nur deiner Signatur, und
+        // der Rückruf (M4b) kann an JEDEM Glied der Kette greifen.
+        const chain = this._sanitizeProvenance(m.provenance);
+        if (chain.length) out.provenance = chain;
         // KI-Übersetzer Phase 1 — eine übersetzte Welt trägt eine Marke, die
         // den localStorage-Rundlauf überleben muss (sonst verlöre sie nach
         // dem Reload ihren „übersetzt"-Status).
@@ -27882,7 +29000,15 @@ class AnazhRealm {
             signature: sig.signature,
             signedHash: sig.signedHash || "",
             signedAt: sig.signedAt || 0,
+            // G8 R4 (M4a) — die ganze Herkunftskette reist mit (Ursprung +
+            // Überträger), nicht nur meine Signatur. Beim Teilen hänge ich mich
+            // als Überträger an, falls ich nicht der Ursprung bin → der Empfänger
+            // sieht „über dich" vs. „von dir". Die Kette ist Metadaten (nicht in
+            // der signierten Substanz — wie world-Pfad/desc).
+            provenance: this._sanitizeProvenance(sig.provenance),
         };
+        const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+        if (myKey) this._appendProvenance(manifest, myKey);
         this.triggerStateDownload(manifest, `anazh-welt-${entry.id}.json`);
         this.journalAppend("share", `Ich teilte die ${entry.label} — ihr signiertes Manifest ging hinaus.`, {
             world: entry.id,
@@ -31871,7 +32997,10 @@ class AnazhRealm {
         if (this.state.feedSort === "rating")
             items = items
                 .map((it, i) => [it, i])
-                .sort((a, b) => (b[0].rating || 0) - (a[0].rating || 0) || a[1] - b[1])
+                .sort(
+                    (a, b) =>
+                        (b[0].ratingScore || b[0].rating || 0) - (a[0].ratingScore || a[0].rating || 0) || a[1] - b[1]
+                )
                 .map((p) => p[0]);
         for (const item of items) list.appendChild(this._feedItemCard(item));
         this._renderFeedKindChips();
@@ -31961,7 +33090,8 @@ class AnazhRealm {
         let shown = 0;
         for (const card of list.querySelectorAll(".library-card, .feed-card")) {
             const hay = card.dataset.search || "";
-            const kindOk = kind === "alle" || card.dataset.kind === kind;
+            const kindOk =
+                kind === "alle" || (kind === "gemerkt" ? card.dataset.bookmarked === "1" : card.dataset.kind === kind);
             const match = kindOk && (!q || hay.includes(q));
             card.style.display = match ? "" : "none";
             if (match) shown++;
@@ -32008,7 +33138,173 @@ class AnazhRealm {
         const s = Math.max(0, Math.min(5, Math.round(stars)));
         this.state.feedRatings[id] = this.state.feedRatings[id] === s ? 0 : s; // Toggle — kein erzwungenes Werten
         this._saveFeedRatings();
+        // F4 (V18.134) — die eigene Wertung wird ein signiertes ZEUGNIS
+        // (fire-and-forget: signieren ist async; ohne Vibe-Pass bleibt die
+        // Wertung lokal wie bisher — kein Zwang zur Identitaet).
+        this._socialSignOwnRating(id, this.state.feedRatings[id]);
         return this.state.feedRatings[id];
+    }
+
+    // F4 Stufe 2 (V18.135) — LESEZEICHEN: das eigene Merken (lokal-global wie
+    // die Wertungen — anazh.feedBookmarks, NIE im Welt-Snapshot; Lesezeichen
+    // sind privat, sie reisen NICHT uebers Mesh — das Folgen/Teilen ist die
+    // spaetere Stufe). Ein 🔖-Toggle pro Karte + der „Gemerkt"-Kind-Chip.
+    _loadFeedBookmarks() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.feedBookmarks") : null;
+            const obj = raw ? JSON.parse(raw) : {};
+            return obj && typeof obj === "object" ? obj : {};
+        } catch {
+            return {};
+        }
+    }
+
+    _saveFeedBookmarks() {
+        try {
+            if (typeof localStorage !== "undefined")
+                localStorage.setItem("anazh.feedBookmarks", JSON.stringify(this.state.feedBookmarks || {}));
+        } catch (e) {
+            this.log(`feedBookmarks-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    _feedBookmarked(id) {
+        if (!this.state.feedBookmarks) this.state.feedBookmarks = this._loadFeedBookmarks();
+        return this.state.feedBookmarks[id] === true;
+    }
+
+    _toggleFeedBookmark(id) {
+        if (!this.state.feedBookmarks) this.state.feedBookmarks = this._loadFeedBookmarks();
+        if (this.state.feedBookmarks[id]) delete this.state.feedBookmarks[id];
+        else this.state.feedBookmarks[id] = true;
+        this._saveFeedBookmarks();
+        return this.state.feedBookmarks[id] === true;
+    }
+
+    // ===== F4 Stufe 1 (V18.134) — die soziale Bewertungs-Aggregation =========
+    // Doku an AnazhRealm.SOCIAL. Das Zeugnis-Kanonische ist STABIL (jede
+    // Aenderung braechte alle Signaturen — Vertrags-Disziplin wie signWorld).
+    _socialCanonical(r) {
+        return `rating|${r.id}|${r.s}|${r.t}|${r.pub}`;
+    }
+
+    _loadSocialRatings() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.socialRatings") : null;
+            const arr = raw ? JSON.parse(raw) : [];
+            const m = new Map();
+            if (Array.isArray(arr)) for (const r of arr) if (r && r.id && r.pub) m.set(`${r.id}|${r.pub}`, r);
+            return m;
+        } catch {
+            return new Map();
+        }
+    }
+
+    _saveSocialRatings() {
+        try {
+            if (typeof localStorage === "undefined") return;
+            const arr = [...(this.state.socialRatings || new Map()).values()];
+            localStorage.setItem("anazh.socialRatings", JSON.stringify(arr));
+        } catch (e) {
+            this.log(`socialRatings-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    _socialRatings() {
+        if (!this.state.socialRatings) this.state.socialRatings = this._loadSocialRatings();
+        return this.state.socialRatings;
+    }
+
+    // LWW-Store: neuestes t pro (Ziel, Schluessel) gewinnt; Cap verdraengt das
+    // aelteste Zeugnis (bounded — die §5-Wand). true = gespeichert.
+    _socialStoreRating(r) {
+        const m = this._socialRatings();
+        const key = `${r.id}|${r.pub}`;
+        const old = m.get(key);
+        if (old && old.t >= r.t) return false; // LWW — Aelteres faellt
+        m.set(key, r);
+        const cap = AnazhRealm.SOCIAL.maxStore;
+        if (m.size > cap) {
+            let oldestK = null;
+            let oldestT = Infinity;
+            for (const [k, v] of m) {
+                if (v.t < oldestT) {
+                    oldestT = v.t;
+                    oldestK = k;
+                }
+            }
+            if (oldestK) m.delete(oldestK);
+        }
+        this._saveSocialRatings();
+        return true;
+    }
+
+    // Die AGGREGATION (der Feed-Leser): Ø + Anzahl ueber alle nicht-revozierten
+    // Zeugnisse eines Ziels (s=0 = zurueckgezogene Wertung zaehlt nicht).
+    // R4-KONSUM: ein revozierter Schluessel faellt aus der Wertungs-Wahrheit.
+    _feedRatingAgg(id) {
+        const m = this._socialRatings();
+        let sum = 0;
+        let count = 0;
+        for (const r of m.values()) {
+            if (r.id !== id || !(r.s > 0)) continue;
+            if (typeof this._isKeyRevoked === "function" && this._isKeyRevoked(r.pub)) continue;
+            sum += r.s;
+            count++;
+        }
+        return { avg: count ? sum / count : 0, count };
+    }
+
+    // Die EIGENE Wertung signieren + speichern + (wenn das Mesh lebt)
+    // annoncieren. Ohne Vibe-Pass still lokal (kein Identitaets-Zwang).
+    async _socialSignOwnRating(id, s) {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp.publicKeyHex) return null;
+        const r = { id, s: Math.max(0, Math.min(5, Math.round(s))), t: Date.now(), pub: vp.publicKeyHex };
+        const sig = await this._vibeSign(this._socialCanonical(r));
+        if (!sig) return null;
+        r.sig = sig;
+        this._socialStoreRating(r);
+        if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pSend === "function") {
+            this.p2pSend({ type: "social-rating", r });
+        }
+        return r;
+    }
+
+    // Empfang (kanal-exklusiv, R1-gegated am Aufrufer): Form pruefen →
+    // Rueckruf pruefen → Signatur VERIFIZIEREN → LWW-Store. Async (subtle).
+    async _socialRatingReceive(peerId, r) {
+        if (!r || typeof r !== "object") return false;
+        const s = r.s;
+        const okShape =
+            typeof r.id === "string" &&
+            r.id.length > 0 &&
+            r.id.length <= 200 &&
+            Number.isInteger(s) &&
+            s >= 0 &&
+            s <= 5 &&
+            Number.isFinite(r.t) &&
+            typeof r.pub === "string" &&
+            /^[0-9a-f]{64}$/i.test(r.pub) &&
+            typeof r.sig === "string";
+        if (!okShape) return false;
+        if (typeof this._isKeyRevoked === "function" && this._isKeyRevoked(r.pub)) return false;
+        const ok = await this._vibeVerify(this._socialCanonical(r), r.sig, r.pub);
+        if (!ok) return false;
+        return this._socialStoreRating({ id: r.id, s, t: r.t, pub: r.pub.toLowerCase(), sig: r.sig });
+    }
+
+    // Die ANSCHLUSS-ANNONCE: die eigenen neuesten Zeugnisse als EIN Batch an
+    // einen frisch verbundenen Peer (das Soul/Vibe-Muster am channel.onopen).
+    _socialAnnounceBatch() {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp.publicKeyHex) return null;
+        const own = [...this._socialRatings().values()]
+            .filter((r) => r.pub === vp.publicKeyHex && r.sig)
+            .sort((a, b) => b.t - a.t)
+            .slice(0, AnazhRealm.SOCIAL.maxBatch);
+        if (!own.length) return null;
+        return { type: "social-ratings", list: own };
     }
 
     // Ein Bauplan-Lese-Vektor (das _worldProfile/_creatureProfile-Muster auf ein Rezept). KONSUM-ehrlich.
@@ -32060,7 +33356,12 @@ class AnazhRealm {
                 search: (p.name + " " + p.soulLabel + " " + p.moodLabel + " wesen kreatur").toLowerCase(),
             });
         }
-        for (const it of items) it.rating = this._feedRating(it.id);
+        for (const it of items) {
+            it.rating = this._feedRating(it.id);
+            // F4 (V18.134) — die Gemeinschafts-Wertung in den Strom (Sort-Quelle).
+            const agg = this._feedRatingAgg(it.id);
+            it.ratingScore = agg.count > 0 ? agg.avg : it.rating || 0;
+        }
         return items;
     }
 
@@ -32073,6 +33374,8 @@ class AnazhRealm {
         else card = this._feedCreatureCard(item);
         card.dataset.kind = item.kind;
         if (!card.dataset.search) card.dataset.search = item.search || "";
+        // F4 Stufe 2 (V18.135) — der Gemerkt-Filter liest das dataset.
+        card.dataset.bookmarked = this._feedBookmarked(item.id) ? "1" : "";
         card.insertBefore(this._feedCover(item), card.firstChild); // die Vorschau (ein simples Cover-Bild) oben
         card.appendChild(this._feedRatingBar(item));
         // V18.75 — Klick auf den Karten-Körper (nicht auf einen Akt/Stern) stellt das echte 3D-Modell in
@@ -32402,6 +33705,38 @@ class AnazhRealm {
             bar.appendChild(star);
         }
         paint(item.rating || 0);
+        // F4 (V18.134) — die GEMEINSCHAFTS-Wertung (Mesh-Aggregation) neben den
+        // eigenen Sternen: "Ø 4.2 (3)" — nur wenn Zeugnisse da sind (kein
+        // UI-Rauschen in der Einzelwelt, die V18.77-Abweichungs-Disziplin).
+        const agg = typeof this._feedRatingAgg === "function" ? this._feedRatingAgg(item.id) : null;
+        if (agg && agg.count > 0) {
+            bar.appendChild(
+                this._el("span", {
+                    class: "feed-rating-agg",
+                    text: ` Ø ${agg.avg.toFixed(1)} (${agg.count})`,
+                    title: "Gemeinschafts-Wertung (signierte Zeugnisse uebers Mesh)",
+                })
+            );
+        }
+        // F4 Stufe 2 (V18.135) — das LESEZEICHEN (privat, lokal): merken ohne
+        // werten. Der Toggle pflegt das Karten-dataset → der „Gemerkt"-Chip
+        // filtert live (kein Feed-Rebuild — die V18.65-Loop-Disziplin).
+        const mark = this._el("span", {
+            class: "feed-bookmark" + (this._feedBookmarked(item.id) ? " active" : ""),
+            text: this._feedBookmarked(item.id) ? "🔖" : "📑",
+            title: "Lesezeichen — merken (privat, lokal)",
+        });
+        mark.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const on = this._toggleFeedBookmark(item.id);
+            mark.textContent = on ? "🔖" : "📑";
+            mark.classList.toggle("active", on);
+            const card = mark.closest(".library-card, .feed-card");
+            if (card) card.dataset.bookmarked = on ? "1" : "";
+            this._renderFeedKindChips();
+            this._applyLibraryFilter();
+        });
+        bar.appendChild(mark);
         return bar;
     }
 
@@ -32415,11 +33750,14 @@ class AnazhRealm {
         for (const it of this._feedItems()) counts[it.kind]++;
         const total = counts.world + counts.recipe + counts.creature;
         const active = this.state.feedKind || "alle";
+        let marked = 0;
+        for (const it of this._feedItems()) if (this._feedBookmarked(it.id)) marked++;
         const kinds = [
             ["alle", "Alle", total],
             ["world", "Welten", counts.world],
             ["recipe", "Rezepte", counts.recipe],
             ["creature", "Wesen", counts.creature],
+            ["gemerkt", "🔖 Gemerkt", marked], // F4 Stufe 2 (V18.135)
         ];
         for (const [k, label, n] of kinds) {
             const chip = this._el("button", {
@@ -32442,9 +33780,16 @@ class AnazhRealm {
         const host = document.getElementById("feed-trends");
         if (!host) return;
         host.innerHTML = "";
+        // V18.136 (Reflexions-Audit) — die Rail liest die GEMEINSCHAFT (V18.134-
+        // Aggregation; eigene Sterne als Fallback) — vorher blieben mesh-
+        // gewertete Items unsichtbar, bis man SELBST wertete (Konsum-Riss).
         const top = this._feedItems()
-            .filter((it) => it.rating > 0)
-            .sort((a, b) => b.rating - a.rating)
+            .map((it) => {
+                const agg = this._feedRatingAgg(it.id);
+                return { it, score: agg.count > 0 ? agg.avg : it.rating || 0, count: agg.count };
+            })
+            .filter((x) => x.score > 0)
+            .sort((a, b) => b.score - a.score || b.count - a.count)
             .slice(0, 5);
         if (!top.length) {
             host.appendChild(
@@ -32455,12 +33800,15 @@ class AnazhRealm {
             );
             return;
         }
-        for (const it of top)
+        for (const { it, score, count } of top)
             host.appendChild(
                 this._el(
                     "div",
                     { class: "feed-trend-row" },
-                    this._el("span", { class: "feed-trend-stars", text: "★".repeat(it.rating) }),
+                    this._el("span", {
+                        class: "feed-trend-stars",
+                        text: "★".repeat(Math.max(1, Math.round(score))) + (count > 1 ? ` (${count})` : ""),
+                    }),
                     this._el("span", { class: "feed-trend-label", text: it.label })
                 )
             );
@@ -33280,6 +34628,61 @@ class AnazhRealm {
         return meta;
     }
 
+    // G8 R3 (Robustheits-Bogen, M1 — Lokalität) — die EINE Quelle für das
+    // Sandbox-Attribut eines Sub-Welt-iframes. Eine `trusted` Welt (W12-Built-in,
+    // unser eigener Code) bekommt allow-scripts + allow-same-origin (sie darf ihr
+    // manifest.json fetchen); eine `sandboxed` Welt (fremde, ungeprüfte Engine)
+    // bekommt allow-scripts ALLEIN → null-origin: fremder Code läuft VOLL, kann
+    // aber AnazhRealms localStorage/DOM/Cookies NICHT berühren. Die Wand IST die
+    // Bedingung, unter der beliebiger fremder Code sicher laufen darf — sie trägt
+    // NIE allow-same-origin für eine sandboxed Welt (die Lokalitäts-Invariante).
+    _portalSandboxAttr(meta) {
+        const sandboxed = meta && meta.trust === "sandboxed";
+        return sandboxed ? "allow-scripts" : "allow-scripts allow-same-origin";
+    }
+
+    // G8 R3 (Robustheits-Bogen, M1 — Lokalität) — der Lokalitäts-BEWEIS (mutiert
+    // NICHTS). Auditiert headless, dass die Sandbox-Grenze hält: eine sandboxed
+    // Welt bekommt nie allow-same-origin, eine `vendored` Welt wird unforgeable
+    // sandboxed (ein manipulierter Manifest-Eintrag kann das nicht aufweichen),
+    // und kein Welt-Pfad führt zum innersten Ring (R0). Die ECHTE null-origin-
+    // Isolation (parent/localStorage/Schwester-Welt unerreichbar) beweist
+    // scripts/smoke-sandbox.cjs im Browser — hier frieren wir die Attribut-Wand.
+    _localityAudit() {
+        const out = { ok: true, facts: {} };
+        // (1) sandboxed → allow-scripts ALLEIN (kein same-origin).
+        const sbAttr = this._portalSandboxAttr({ trust: "sandboxed" });
+        out.facts.sandboxedAttr = sbAttr;
+        out.facts.sandboxedNoSameOrigin = sbAttr === "allow-scripts";
+        // (2) trusted → allow-scripts allow-same-origin (unser eigener Code).
+        const trAttr = this._portalSandboxAttr({ trust: "trusted" });
+        out.facts.trustedAttr = trAttr;
+        out.facts.trustedHasSameOrigin = trAttr.indexOf("allow-same-origin") >= 0;
+        // (3) `vendored` erzwingt sandboxed unforgeable — selbst mit
+        // trust:"trusted" im rohen Manifest (die Defense-in-Depth-Wand).
+        let vendoredForced = false;
+        if (typeof this._sanitizeImportedManifest === "function") {
+            const m = this._sanitizeImportedManifest({
+                id: "g8r3_probe",
+                label: "Probe",
+                world: "worlds/g8r3_probe/index.html",
+                vendored: true,
+                trust: "trusted",
+            });
+            vendoredForced = !!m && m.trust === "sandboxed";
+        }
+        out.facts.vendoredForcedSandboxed = vendoredForced;
+        // (4) kein Welt-Pfad zum innersten Ring (R0 trägt den Beweis).
+        const ringAudit = typeof this._sovereignStateAudit === "function" ? this._sovereignStateAudit() : { ok: false };
+        out.facts.innerRingAbsent = ringAudit.ok === true;
+        out.ok =
+            out.facts.sandboxedNoSameOrigin &&
+            out.facts.trustedHasSameOrigin &&
+            out.facts.vendoredForcedSandboxed &&
+            out.facts.innerRingAbsent;
+        return out;
+    }
+
     // W12 Phase 1 — Portal-Overlay: ein Vollbild-iframe, das die Sub-Welt
     // (portalMeta.world) sandboxed lädt. Eltern-Seite des postMessage-
     // Handshakes: beim iframe-load (und beim {type:"ready"} der Sub-Welt)
@@ -33318,8 +34721,10 @@ class AnazhRealm {
         // AnazhRealms localStorage, DOM und Cookies NICHT berühren. Das ist
         // kein Freiheits-Tausch — die Wand IST die Bedingung dafür, dass
         // beliebiger fremder Code überhaupt sicher laufen darf.
-        const sandboxed = meta.trust === "sandboxed";
-        iframe.setAttribute("sandbox", sandboxed ? "allow-scripts" : "allow-scripts allow-same-origin");
+        // G8 R3 (Robustheits-Bogen, M1 — Lokalität): die EINE Quelle für das
+        // Sandbox-Attribut (_portalSandboxAttr) — eine sandboxed Welt bekommt
+        // NIE allow-same-origin (null-origin = die Wand).
+        iframe.setAttribute("sandbox", this._portalSandboxAttr(meta));
         const hint = document.createElement("div");
         hint.className = "portal-hint";
         // Stufe-bewusster Hinweis: spricht die Welt die DSL (hat sie einen
@@ -33349,6 +34754,11 @@ class AnazhRealm {
                 return;
             }
             if (event.source !== iframe.contentWindow) return;
+            // G8 R1 (M2-Dämpfung) — der EINE Kanal-Bucket: deckelt die GESAMT-
+            // Rate aller Sub→Heim-Nachrichten (auch ready/exit/manifest, die
+            // sonst ungedeckelt waren). Eine flutende Sub-Welt drosselt SICH
+            // SELBST — Überschuss fällt still (verworfen, nicht gepuffert).
+            if (!this._portalChannelAdmit(po, performance.now())) return;
             const msg = event.data;
             if (!msg || typeof msg !== "object") return;
             if (msg.type === "ready") {
@@ -33420,6 +34830,13 @@ class AnazhRealm {
             // empfangene Roster (alle Sub-Welt-Mitglieder). Verlässt der Host
             // das Mesh, wählt jeder Gast daraus deterministisch den Nachfolger.
             roster: [],
+            // F2 (G3, V18.126) — Host-Migration MIT Zustand: der Host pollt
+            // den kooperativen Server-Snapshot (stateTimer → srv-state-req)
+            // und annonciert ihn als subworld-state (stateSeq monoton); ein
+            // Gast cacht den letzten (lastSrvState) als Mitgift der Migration.
+            stateTimer: null,
+            stateSeq: 0,
+            lastSrvState: null,
         };
         document.body.appendChild(overlay);
         // W14 Phase 2 — ist die Ziel-Welt mit einem Vibe-Pass versiegelt,
@@ -33577,6 +34994,11 @@ class AnazhRealm {
                 worldId: po.world,
             });
         }
+        // F2 (G3, V18.126) — der kooperative Zustands-Poll endet mit dem Overlay.
+        if (po.stateTimer) {
+            clearInterval(po.stateTimer);
+            po.stateTimer = null;
+        }
         if (po.onMessage) window.removeEventListener("message", po.onMessage);
         if (po.overlayEl && po.overlayEl.parentNode) {
             po.overlayEl.parentNode.removeChild(po.overlayEl);
@@ -33730,6 +35152,31 @@ class AnazhRealm {
     // ausgeführt — die Asymmetrie IST die Sicherheits-Wand: Heimat→Sub
     // trägt DSL (wird in der Sub-Welt ausgeführt), Sub→Heimat trägt nur
     // Ereignis-Text (wird erinnert). Selbst eine böswillige Sub-Welt kann
+    // G8 R1 (Robustheits-Bogen, M2-Dämpfung) — der EINE Kanal-Bucket pro
+    // Overlay. Bändigt die GESAMT-Rate aller Sub→Heim-Nachrichten am Eingang
+    // (vor dem Typ-Dispatch) — die per-Typ-Deckel (event/ws-send) bleiben die
+    // feineren Sub-Kontrollen darunter, dieser ist der Region-Backstop, der
+    // auch die zuvor ungedeckelten ready/exit/manifest fasst. Lazy-Init der
+    // Fenster-Zähler (robust auch für ein minimales Overlay). Gibt false, wenn
+    // über dem Deckel — die Nachricht wird VERWORFEN (nicht gepuffert; Puffern
+    // verschiebt die Flut nur). Eine flutende Welt drosselt sich selbst, der
+    // Bucket settled nach dem Sturm (EPS-Fixpunkt: leeres Fenster = Ruhe).
+    _portalChannelAdmit(po, now) {
+        if (!po) return false;
+        if (typeof po.chWindowStart !== "number") {
+            po.chWindowStart = 0;
+            po.chWindowCount = 0;
+        }
+        const t = typeof now === "number" ? now : performance.now();
+        if (t - po.chWindowStart >= AnazhRealm.PORTAL_CHANNEL_RATE_WINDOW_MS) {
+            po.chWindowStart = t;
+            po.chWindowCount = 0;
+        }
+        if (po.chWindowCount >= AnazhRealm.PORTAL_CHANNEL_RATE_MAX) return false;
+        po.chWindowCount++;
+        return true;
+    }
+
     // so nur gedeckelten Text ins Journal legen — kein Code, keine Mutation
     // des Heimat-States. Der Text wird auf 160 Zeichen gekappt, damit eine
     // fremde Welt keine Journal-Zeile sprengt.
@@ -33931,6 +35378,16 @@ class AnazhRealm {
         po.overlayEl.appendChild(serverIframe);
         po.serverIframe = serverIframe;
         serverIframe.src = po.world + "?anazh-server=1";
+        // F2 (G3, V18.126) — der kooperative Zustands-Poll: alle 5 s einen
+        // Snapshot anfragen. Eine Welt OHNE snapshot()-Handler antwortet nie —
+        // der Poll bleibt stumm, die Migration bootet frisch (die alte
+        // ehrliche Grenze als Degradation, kein Zwang). Geräumt im
+        // _disposePortalOverlay.
+        if (!po.stateTimer) {
+            po.stateTimer = setInterval(() => {
+                this._portalSrvSend({ __anazhNet: true, kind: "srv-state-req" });
+            }, 5000);
+        }
         return serverIframe;
     }
 
@@ -33963,6 +35420,24 @@ class AnazhRealm {
         return true;
     }
 
+    // F2 (G3, V18.126) — ein Gast cacht den kooperativen Server-Zustand seines
+    // Compute-Hosts (das Roster-Muster): nur vom EIGENEN Host (kanal-
+    // gestempelte peerId), nur für die eigene Sub-Welt, Größen-gedeckelt,
+    // seq-monoton (ein verspäteter älterer Snapshot überschreibt nie einen
+    // neueren). Er ist die MITGIFT der Host-Migration — übernimmt dieser Gast,
+    // reist der Zustand als srv-state-restore in den frischen Server-Kontext.
+    _portalStateReceive(peerId, msg) {
+        const po = this._portalOverlay;
+        if (!po || po.serverMode !== "js-compute" || po.computeRole !== "guest") return false;
+        if (peerId !== po.hostPeerId) return false;
+        if (!msg || msg.worldId !== po.world || typeof msg.data !== "string") return false;
+        if (msg.data.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
+        const seq = Number(msg.seq) || 0;
+        if (po.lastSrvState && seq <= po.lastSrvState.seq) return false;
+        po.lastSrvState = { data: msg.data, seq };
+        return true;
+    }
+
     // W17 Phase B-JS-Compute Phase 2 — der Compute-Host hat das Mesh verlassen.
     // Jeder verbliebene Gast wählt aus der zuletzt empfangenen Roster
     // deterministisch denselben Nachfolger (die kleinste peerId, ohne den
@@ -33989,10 +35464,15 @@ class AnazhRealm {
     }
 
     // W17 Phase B-JS-Compute Phase 2 — ein Gast übernimmt die Compute-Host-
-    // Rolle. Er flippt computeRole, baut einen FRISCHEN Server-Kontext (der
-    // Server-Zustand des alten Hosts ist verloren — ehrliche Grenze) und
+    // Rolle. Er flippt computeRole, baut einen frischen Server-Kontext und
     // registriert seine eigene Verbindung. Die übrigen Gäste melden sich per
     // subworld-srv-open neu an → _portalSrvFromGuest füllt serverConns.
+    // F2 (G3, V18.126) — Migration MIT Zustand: der zuletzt gecachte
+    // kooperative Snapshot (lastSrvState, die Mitgift) reist als
+    // srv-state-restore in den frischen Kontext — VOR jedem srv-open (die
+    // serverQueue ist FIFO, der Shim puffert bis `new WebSocketServer()`).
+    // Eine Welt ohne restore()-Handler ignoriert ihn — der Boot bleibt
+    // frisch (die alte ehrliche Grenze als Degradation).
     _portalPromoteToHost() {
         const po = this._portalOverlay;
         if (!po) return;
@@ -34003,6 +35483,18 @@ class AnazhRealm {
         po.serverQueue = [];
         this.log(`Du übernimmst den Compute-Host für „${po.label}".`, "INFO");
         this._portalSpawnServerContext();
+        if (po.lastSrvState) {
+            let data;
+            try {
+                data = JSON.parse(po.lastSrvState.data);
+            } catch (_e) {
+                data = undefined;
+            }
+            if (data !== undefined) {
+                this._portalSrvSend({ __anazhNet: true, kind: "srv-state-restore", data });
+                this.log(`Der Server-Zustand reiste mit (Mitgift seq ${po.lastSrvState.seq}).`, "INFO");
+            }
+        }
         // Der Host ist sein eigener Client — die eigene Verbindung registrieren.
         this._portalSrvEnsureConn(this._portalSelfConnId());
     }
@@ -34063,6 +35555,33 @@ class AnazhRealm {
         if (!msg || msg.__anazhNet !== true) return false;
         if (msg.kind === "srv-close-req") {
             if (typeof msg.conn === "string" && po.serverConns) po.serverConns.delete(msg.conn);
+            return true;
+        }
+        // F2 (G3, V18.126) — der Server-Kontext lieferte seinen kooperativen
+        // Zustands-Snapshot (Antwort auf den srv-state-req-Poll): als
+        // subworld-state an ALLE Gäste (die Migrations-Kandidaten — der
+        // deterministische Nachfolger ist erst beim Abgang bekannt, und ein
+        // einzelner designierter könnte selbst gehen). DATEN, kein Code
+        // (JSON-String wie aller Sub-Welt-Verkehr), Größen-Deckel, Takt 1/5 s.
+        if (msg.kind === "srv-state") {
+            let txt;
+            try {
+                txt = JSON.stringify(msg.data);
+            } catch (_e) {
+                return false;
+            }
+            if (typeof txt !== "string" || txt.length > AnazhRealm.SUBWORLD_NET_MAX_BYTES) return false;
+            po.stateSeq = (po.stateSeq || 0) + 1;
+            const selfId = this._portalSelfConnId();
+            for (const conn of po.serverConns) {
+                if (conn === selfId) continue;
+                this._p2pSendChannelTo(conn, {
+                    type: "subworld-state",
+                    worldId: po.world,
+                    data: txt,
+                    seq: po.stateSeq,
+                });
+            }
             return true;
         }
         if (msg.kind !== "srv-send") return false;
@@ -37174,8 +38693,10 @@ class AnazhRealm {
                 opacity: 0.92,
             },
             {
+                // S6-B (V18.133) — laub → kraut: der Lebenssaft zieht jetzt
+                // GEPFLUECKTE Zutaten (Foraging-Oekonomie; tag-nah, Rolle bleibt).
                 shape: "sphere",
-                material: "laub",
+                material: "kraut",
                 position: { x: 0, y: 0.42, z: 0 },
                 size: { x: 0.36, y: 0.44, z: 0.36 },
                 opacity: 0.8,
@@ -37735,6 +39256,33 @@ class AnazhRealm {
                 zähigkeit: 0.4,
                 wärmeleitung: 0.1,
                 lebendig: 0.55,
+            }),
+            // S6-B (V18.133) — die ALCHEMIE-MATERIALIEN der erntbaren Klein-
+            // Vegetation (kampf-plan §11: „die echte Zutaten-Tiefe"): `kraut` =
+            // das Pflanzliche (Blueten/Farne/Gestruepp — lebendig, leicht,
+            // brennbar; tag-nah an laub → die Trank-Rollen-Resonanz bleibt
+            // consumable), `essenz` = das Magische (Sporen/Pollen — fast
+            // koerperlos, stark magieleitend). Trank-Bauplaene tragen sie als
+            // Part-Material → `brewConsumable` zieht GESAMMELTE Zutaten durchs
+            // Mach-Tor: pfluecken → brauen → trinken, die Foraging-Oekonomie.
+            make("kraut", "Kraut", 0x4e9a3c, {
+                härte: 0.05,
+                dichte: 0.08,
+                zähigkeit: 0.3,
+                wärmeleitung: 0.1,
+                magieleitung: 0.3,
+                brennbar: 0.7,
+                resoniert: 0.35,
+                lebendig: 1.0,
+            }),
+            make("essenz", "Essenz", 0x9fd8ff, {
+                härte: 0.02,
+                dichte: 0.05,
+                zähigkeit: 0.1,
+                magieleitung: 0.95,
+                transparent: 0.8,
+                resoniert: 0.8,
+                lebendig: 0.6,
             }),
         ];
         const out = {};
@@ -40298,7 +41846,11 @@ class AnazhRealm {
             // forceSync gemessen = TRANSIENT, kein Stempel-Loch). NUR wasser-
             // tragende, schon gestreamte Footprint-Chunks (sonst kein Transient)
             // → bounded (skirt=0, kleine Footprint, nur intentionale Spawns).
-            for (const key of footprintKeys) {
+            // V18.126-Robustheit (GEMESSEN im smoke-webrtc, vorbestehend per
+            // A/B): ohne gebootete Chunk-Map (Headless-/Smoke-Kontext, Welt
+            // vor dem Terrain-Init) gibt es keine Wasser-Transienten zu
+            // syncen — derselbe Guard wie der V18.29-Carve-Block.
+            for (const key of this.state.voxelChunks ? footprintKeys : []) {
                 const fe = this.state.voxelChunks.get(key);
                 if (!fe || !fe.waterCells) continue;
                 const comma = key.indexOf(",");
@@ -40316,6 +41868,16 @@ class AnazhRealm {
             // Journal-Eintrag pro Spawn (würde die 6.F2-Idempotenz-Invariante
             // brechen — Journal-Schicht zählt total).
             this._playWaterReactionPing();
+            // V18.129 — eine solide Architektur kann ein DAMM sein: Kappen/Stau-
+            // Felder der Region verwerfen (lazy-Neubau liest die frisch
+            // gestempelten Zellen) + CA wecken → das Wasser staut sich auf.
+            for (const aabb of entry.blockerAABBs) {
+                this._invalidateWaterCapsAround(
+                    (aabb.minX + aabb.maxX) * 0.5,
+                    (aabb.minZ + aabb.maxZ) * 0.5,
+                    Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5
+                );
+            }
         }
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
@@ -41023,6 +42585,17 @@ class AnazhRealm {
             sc.bottom = -m;
             sc.updateProjectionMatrix();
         }
+        // V18.136 (Reflexions-Audit) — unter CSM (V18.130) waere der Slider sonst
+        // ein TOTER Knopf (die Haupt-Map rendert nicht — GEMESSEN; die V18.65-
+        // Nullnummer-Klasse): er wird der ehrliche REICHWEITEN-Hebel der
+        // Kaskaden — maxFar = m × 1.8 (Default 300 → 540 = exakt der gebaute
+        // CSM-Default, der Uebergang ist nahtlos; kleiner = schaerfere nahe
+        // Kaskaden, groesser = weitere Schatten).
+        const csm = this.state.csmNode;
+        if (csm) {
+            csm.maxFar = m * 1.8;
+            if (csm.camera) csm.updateFrustums();
+        }
         if (typeof this.saveState === "function") this.saveState();
         return m;
     }
@@ -41039,6 +42612,13 @@ class AnazhRealm {
         this.state.atmosphere.shadowBias = m;
         const dl = this.state.directionalLight;
         if (dl && dl.shadow) dl.shadow.normalBias = m;
+        // B4 (V18.130) — die CSM-Kaskaden-Lichter klonen den normalBias nur
+        // beim Init; ein Live-Hebel MUSS sie mit-stellen (sonst stellt der
+        // Slider nur die unbenutzte Haupt-Map — der Passagier-Trugschluss).
+        const csm = this.state.csmNode;
+        if (csm && Array.isArray(csm.lights)) {
+            for (const lw of csm.lights) if (lw && lw.shadow) lw.shadow.normalBias = m;
+        }
         if (typeof this.saveState === "function") this.saveState();
         return m;
     }
@@ -41543,6 +43123,307 @@ class AnazhRealm {
         return level;
     }
 
+    // ===== V18.129 — DAS HOCH-BECKEN (A4-Rest): der Stau-Spiegel ==================
+    // Doku der Regel an AnazhRealm.CA_STAU. Lebenszyklus: alles LAZY + gecacht im
+    // BESTEHENDEN Kappen-Leben (waterCapJ/waterSourceCols — V9.82: kein Parallel-
+    // Pfad), abgeleitet aus PERSISTIERTER Wahrheit (worldMeta.voxelEdits +
+    // architectures.blockerAABBs) → nach einem Reload füllt der Fluss den See über
+    // Ticks neu (der CA bleibt die reaktive, NICHT persistierte Schicht — die
+    // Determinismus-Wand unberührt, kein Worker-Mirror, main-only).
+
+    // Die STAU-WERKE der Welt, zu Clustern verschmolzen (ein Damm aus vielen
+    // Blöcken/Fill-Kugeln ist EIN Werk). Identitäts+Längen-gecacht (das
+    // `_voxelEditsFillTop`-Muster): ein Edit-Push / Architektur-Spawn/-Remove
+    // invalidiert exakt. Deterministisch (stabile Listen-Ordnung).
+    _stauWorkClusters() {
+        const meta = this.state.worldMeta;
+        const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
+        const archs = Array.isArray(this.state.architectures) ? this.state.architectures : null;
+        const eLen = edits ? edits.length : 0;
+        const aLen = archs ? archs.length : 0;
+        const c = this._stauClusterCache;
+        if (c && c.edits === edits && c.eLen === eLen && c.archs === archs && c.aLen === aLen) return c.clusters;
+        const CFG = AnazhRealm.CA_STAU;
+        const works = [];
+        for (let i = 0; i < eLen; i++) {
+            const e = edits[i];
+            if (!e || e.mode !== "fill") continue;
+            const r = Number(e.r) || 0;
+            if (r * 2 < CFG.MIN_EXTENT) continue;
+            works.push({ minX: e.x - r, maxX: e.x + r, minZ: e.z - r, maxZ: e.z + r, topY: (Number(e.y) || 0) + r });
+        }
+        if (archs) {
+            for (const entry of archs) {
+                if (!entry || !entry.blockerAABBs) continue;
+                for (const a of entry.blockerAABBs) {
+                    if (Math.max(a.maxX - a.minX, a.maxZ - a.minZ) < CFG.MIN_EXTENT) continue;
+                    works.push({ minX: a.minX, maxX: a.maxX, minZ: a.minZ, maxZ: a.maxZ, topY: a.topY });
+                }
+            }
+        }
+        // Die Krone muss über dem lokalen Ruhe-Spiegel liegen (sonst hält sie nichts)
+        // — eine Atlas-Probe pro Werk; Werke fern jedes Wassers (rim=-Inf) bleiben
+        // drin (jenseits des Atlas gilt die Boden+Skin-Kappe, auch dort darf gedämmt
+        // werden — der Spill-Scan entscheidet die Substanz).
+        const qualified = [];
+        for (const w of works) {
+            const rim = this._atlasWaterLevelAt((w.minX + w.maxX) * 0.5, (w.minZ + w.maxZ) * 0.5, -Infinity);
+            if (rim > -Infinity && w.topY <= rim + 0.9) continue;
+            qualified.push(w);
+        }
+        const GAP = CFG.CLUSTER_GAP;
+        const clusters = [];
+        for (const w of qualified) {
+            let merged = { minX: w.minX, maxX: w.maxX, minZ: w.minZ, maxZ: w.maxZ, topY: w.topY };
+            let changed = true;
+            while (changed) {
+                changed = false;
+                for (let i = clusters.length - 1; i >= 0; i--) {
+                    const cl = clusters[i];
+                    if (cl.minX - GAP > merged.maxX || merged.minX - GAP > cl.maxX) continue;
+                    if (cl.minZ - GAP > merged.maxZ || merged.minZ - GAP > cl.maxZ) continue;
+                    merged = {
+                        minX: Math.min(cl.minX, merged.minX),
+                        maxX: Math.max(cl.maxX, merged.maxX),
+                        minZ: Math.min(cl.minZ, merged.minZ),
+                        maxZ: Math.max(cl.maxZ, merged.maxZ),
+                        topY: Math.max(cl.topY, merged.topY),
+                    };
+                    clusters.splice(i, 1);
+                    changed = true;
+                }
+            }
+            clusters.push(merged);
+        }
+        for (const cl of clusters)
+            cl.key =
+                `${Math.round(cl.minX)},${Math.round(cl.minZ)},${Math.round(cl.maxX)},` +
+                `${Math.round(cl.maxZ)},${Math.round(cl.topY)}`;
+        this._stauClusterCache = { edits, eLen, archs, aLen, clusters };
+        return clusters;
+    }
+
+    // PURE Priority-Flood (headless-testbar): `barrier[c]` = Höhe, ÜBER der Wasser
+    // die Spalte passieren kann; `init[c]` = Halte-Pegel der Außenwelt am Fenster-
+    // rand (innen +Infinity). Liefert pro Spalte den SPILL-Pegel — die niedrigste
+    // Höhe, auf der Wasser über irgendeinen Pfad nach außen entkommt; bis dahin
+    // wird es GEHALTEN. Relaxation fill[nb] = max(fill[cur], barrier[nb]), min-Heap.
+    _stauSpillLevels(barrier, w, h, init) {
+        const n = w * h;
+        const fill = new Float64Array(n);
+        const heap = new Int32Array(n + 1);
+        const pos = new Int32Array(n).fill(-1);
+        let size = 0;
+        const less = (a, b) => fill[a] < fill[b];
+        const swap = (i, j) => {
+            const t = heap[i];
+            heap[i] = heap[j];
+            heap[j] = t;
+            pos[heap[i]] = i;
+            pos[heap[j]] = j;
+        };
+        const up = (i) => {
+            while (i > 1 && less(heap[i], heap[i >> 1])) {
+                swap(i, i >> 1);
+                i >>= 1;
+            }
+        };
+        const down = (i) => {
+            for (;;) {
+                let m = i;
+                const l = i * 2;
+                const r = l + 1;
+                if (l <= size && less(heap[l], heap[m])) m = l;
+                if (r <= size && less(heap[r], heap[m])) m = r;
+                if (m === i) break;
+                swap(i, m);
+                i = m;
+            }
+        };
+        for (let c = 0; c < n; c++) {
+            fill[c] = init[c];
+            if (Number.isFinite(init[c])) {
+                heap[++size] = c;
+                pos[c] = size;
+                up(size);
+            }
+        }
+        const done = new Uint8Array(n);
+        const NDX = [1, -1, 0, 0];
+        const NDZ = [0, 0, 1, -1];
+        while (size > 0) {
+            const cur = heap[1];
+            heap[1] = heap[size--];
+            if (size > 0) {
+                pos[heap[1]] = 1;
+                down(1);
+            }
+            pos[cur] = -1;
+            if (done[cur]) continue;
+            done[cur] = 1;
+            const ci = cur % w;
+            const ck = (cur / w) | 0;
+            for (let d = 0; d < 4; d++) {
+                const ni = ci + NDX[d];
+                const nk = ck + NDZ[d];
+                if (ni < 0 || nk < 0 || ni >= w || nk >= h) continue;
+                const nb = ni + nk * w;
+                if (done[nb]) continue;
+                const cand = Math.max(fill[cur], barrier[nb]);
+                if (cand < fill[nb]) {
+                    fill[nb] = cand;
+                    if (pos[nb] >= 0) up(pos[nb]);
+                    else {
+                        heap[++size] = nb;
+                        pos[nb] = size;
+                        up(size);
+                    }
+                }
+            }
+        }
+        return fill;
+    }
+
+    // Das STAU-FELD eines Werk-Clusters (gecacht in `state.waterStauFields`,
+    // WERK-zentriert → Nachbar-Chunks lesen DASSELBE Feld = keine Kappen-Naht,
+    // die V9.77-Klasse strukturell vermieden). Fenster in GLOBALEN Spalten-
+    // Indizes (gx = floor(x/step) — das eine Welt-Zell-Gitter, identisch zur
+    // Chunk-Spalte gx = cx·dim+i). barrier aus der ZELL-Wahrheit (inkl.
+    // Architektur-Stempel + Edits; ungeladene Rand-Spalten → Macro-Terrain,
+    // konservativ offen). Rand-Init = die V18.93-Außenwelt (rim+0.5 bzw.
+    // Boden+Skin) — erst DARÜBER ist der Rand ein Ausweg. Kein Quell-Atlas-
+    // Wasser im Fenster → null (nichts kann den Stau speisen).
+    _ensureStauField(cluster) {
+        if (!this.state.waterStauFields) this.state.waterStauFields = new Map();
+        if (this.state.waterStauFields.has(cluster.key)) return this.state.waterStauFields.get(cluster.key);
+        const CFG = AnazhRealm.CA_STAU;
+        const cfg = this._voxelChunkConfig(0);
+        const step = cfg.step;
+        const dim = cfg.dim;
+        const dimY = cfg.dimY;
+        const dimSq = dim * dim;
+        const oy = (this.state.terrainBaseHeight || 0) - cfg.floorDrop;
+        let gx0 = Math.floor(cluster.minX / step) - CFG.REACH;
+        let gx1 = Math.floor(cluster.maxX / step) + CFG.REACH;
+        let gz0 = Math.floor(cluster.minZ / step) - CFG.REACH;
+        let gz1 = Math.floor(cluster.maxZ / step) + CFG.REACH;
+        if (gx1 - gx0 + 1 > CFG.WIN_MAX) {
+            const mid = (gx0 + gx1) >> 1;
+            gx0 = mid - (CFG.WIN_MAX >> 1);
+            gx1 = gx0 + CFG.WIN_MAX - 1;
+        }
+        if (gz1 - gz0 + 1 > CFG.WIN_MAX) {
+            const mid = (gz0 + gz1) >> 1;
+            gz0 = mid - (CFG.WIN_MAX >> 1);
+            gz1 = gz0 + CFG.WIN_MAX - 1;
+        }
+        const w = gx1 - gx0 + 1;
+        const h = gz1 - gz0 + 1;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
+        const barrier = new Float64Array(w * h);
+        const init = new Float64Array(w * h).fill(Infinity);
+        let anySource = false;
+        for (let kz = 0; kz < h; kz++) {
+            for (let ix = 0; ix < w; ix++) {
+                const gx = gx0 + ix;
+                const gz = gz0 + kz;
+                const x = (gx + 0.5) * step;
+                const z = (gz + 0.5) * step;
+                const c = ix + kz * w;
+                const ccx = Math.floor(gx / dim);
+                const ccz = Math.floor(gz / dim);
+                const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${ccx},${ccz}`) : null;
+                let bY = null;
+                if (entry && entry.waterCells && !entry.empty && (!Number.isFinite(entry.lod) || entry.lod === 0)) {
+                    const cells = entry.waterCells;
+                    const col = gx - ccx * dim + (gz - ccz * dim) * dim;
+                    for (let j = dimY - 1; j >= 0; j--) {
+                        if (cells[col + j * dimSq] === SOLID) {
+                            bY = oy + (j + 1) * step;
+                            break;
+                        }
+                    }
+                    if (bY === null) bY = oy;
+                } else {
+                    const m = this._terrainMacroSurfaceY(x, z);
+                    bY = Number.isFinite(m) ? m : oy;
+                }
+                barrier[c] = bY;
+                if (this._atlasWaterLevelAt(x, z, Infinity) > -Infinity) anySource = true;
+                if (ix === 0 || kz === 0 || ix === w - 1 || kz === h - 1) {
+                    const rim = this._atlasWaterLevelAt(x, z, -Infinity);
+                    init[c] = Math.max(bY, rim > -Infinity ? rim + 0.5 : bY + 2 * step);
+                }
+            }
+        }
+        let field = null;
+        if (anySource) {
+            const fill = this._stauSpillLevels(barrier, w, h, init);
+            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill) };
+        }
+        this.state.waterStauFields.set(cluster.key, field);
+        return field;
+    }
+
+    // Die Stau-Felder, deren Fenster den Chunk schneiden (für den Kappen-Bau).
+    // null = keines (der häufige Fall — exakt der V18.93-Stand, null Extra-Kosten
+    // jenseits des gecachten Cluster-Reads).
+    _stauFieldsNear(cx, cz) {
+        const clusters = this._stauWorkClusters();
+        if (!clusters || clusters.length === 0) return null;
+        const cfg = this._voxelChunkConfig(0);
+        const R = AnazhRealm.CA_STAU.REACH;
+        const gxA = cx * cfg.dim;
+        const gxB = gxA + cfg.dim - 1;
+        const gzA = cz * cfg.dim;
+        const gzB = gzA + cfg.dim - 1;
+        let out = null;
+        for (const cl of clusters) {
+            if (Math.floor(cl.maxX / cfg.step) + R < gxA || Math.floor(cl.minX / cfg.step) - R > gxB) continue;
+            if (Math.floor(cl.maxZ / cfg.step) + R < gzA || Math.floor(cl.minZ / cfg.step) - R > gzB) continue;
+            const f = this._ensureStauField(cl);
+            if (f) (out || (out = [])).push(f);
+        }
+        return out;
+    }
+
+    // Kappen + Quell-Markierungen + Stau-Felder einer Region verwerfen + den CA
+    // wecken — der EINE Invalidations-Eingang nach einer Werk-Änderung (Edit /
+    // Architektur-Spawn/-Remove). Lazy-Neubau beim nächsten Tick liest die
+    // FRISCHEN Zellen (nach dem Rebuild rufen — sonst sähe der Spill-Scan den
+    // Damm noch nicht).
+    _invalidateWaterCapsAround(x, z, r) {
+        const cfg = this._voxelChunkConfig(0);
+        const R = (Number(r) || 0) + (AnazhRealm.CA_STAU.REACH + 4) * cfg.step + AnazhRealm.CA_STAU.CLUSTER_GAP;
+        const minCX = Math.floor((x - R) / cfg.span);
+        const maxCX = Math.floor((x + R) / cfg.span);
+        const minCZ = Math.floor((z - R) / cfg.span);
+        const maxCZ = Math.floor((z + R) / cfg.span);
+        for (let cx = minCX; cx <= maxCX; cx++) {
+            for (let cz = minCZ; cz <= maxCZ; cz++) {
+                const key = `${cx},${cz}`;
+                if (this.state.waterCapJ) this.state.waterCapJ.delete(key);
+                if (this.state.waterSourceCols) this.state.waterSourceCols.delete(key);
+                this._wakeWaterCA(cx, cz);
+            }
+        }
+        if (this.state.waterStauFields) {
+            for (const [key, f] of this.state.waterStauFields) {
+                // null-Felder mit-verwerfen (das Werk-Bild änderte sich; billig neu).
+                if (!f) {
+                    this.state.waterStauFields.delete(key);
+                    continue;
+                }
+                const fx0 = f.gx0 * cfg.step;
+                const fx1 = (f.gx0 + f.w) * cfg.step;
+                const fz0 = f.gz0 * cfg.step;
+                const fz1 = (f.gz0 + f.h) * cfg.step;
+                if (fx1 < x - R || fx0 > x + R || fz1 < z - R || fz0 > z + R) continue;
+                this.state.waterStauFields.delete(key);
+            }
+        }
+    }
+
     // W-B (V18.90, T4-Plan §6) — EIN Seed-Eingang für die CA-Level-Schicht (V9.82: kein
     // Parallel-Pfad): seedet den Level-Eintrag aus den AKTUELLEN Zellen + markiert einmalig
     // die QUELL-Spalten (der frozen Atlas kennt sie als Wasser — See/Fluss/Ozean, +Inf-Probe
@@ -41593,6 +43474,9 @@ class AnazhRealm {
             const cap = new Int16Array(dimSq);
             const ox = cx * cfg.span;
             const oz = cz * cfg.span;
+            // V18.129 — die Stau-Felder der Spieler-Werke (null im häufigen Fall).
+            const stauFields = this._stauFieldsNear(cx, cz);
+            const stauMax = AnazhRealm.CA_STAU.MAX_CELLS;
             for (let k = 0; k < dim; k++) {
                 for (let i = 0; i < dim; i++) {
                     const c = i + k * dim;
@@ -41612,6 +43496,26 @@ class AnazhRealm {
                             }
                         }
                         cap[c] = Math.min(dimY - 1, (gj >= 0 ? gj : 0) + 2);
+                    }
+                    // V18.129 — der STAU-SPIEGEL: liegt die Spalte in einem Werk-Feld,
+                    // hebt sich die Kappe auf den GEHALTENEN Pegel (Spill-Wahrheit),
+                    // hart gedeckelt (MAX_CELLS). Eine gehobene QUELL-Spalte wird zur
+                    // STAU-Quelle (src=2): der Pin TROPFT sie über die Ruhe hinaus —
+                    // der Fluss speist den Stausee (s. _tickWorldWaterCA).
+                    if (stauFields) {
+                        const gx = cx * dim + i;
+                        const gz = cz * dim + k;
+                        for (const f of stauFields) {
+                            const fi = gx - f.gx0;
+                            const fk = gz - f.gz0;
+                            if (fi < 0 || fk < 0 || fi >= f.w || fk >= f.h) continue;
+                            const fillY = f.fillY[fi + fk * f.w];
+                            const stauJ = Math.min(Math.floor((fillY - oy) / cfg.step) - 1, cap[c] + stauMax, dimY - 1);
+                            if (stauJ > cap[c]) {
+                                cap[c] = stauJ;
+                                if (src[c] === 1) src[c] = 2;
+                            }
+                        }
                     }
                 }
             }
@@ -41646,6 +43550,7 @@ class AnazhRealm {
         const SETTLE = 0.25; // bewegte MAGNITUDE < SETTLE → der Chunk ruht, raus aus active (active-cell)
         const dimSq = dim * dim;
         const WATER = AnazhRealm.CELL_STATE.WATER;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID; // V18.129 — der Stau-Tropf prüft die Stütze
         const bandMap = this.state.waterCABand || (this.state.waterCABand = new Map());
         const srcMap = this.state.waterSourceCols;
         const active = [];
@@ -41690,6 +43595,7 @@ class AnazhRealm {
                 const cells = a.cells;
                 const level = a.level;
                 const band = a.band;
+                const stauFeed = AnazhRealm.CA_STAU.FEED;
                 for (let c = 0; c < dimSq; c++) {
                     if (!src[c]) continue;
                     for (let j = 0; j < dimY; j++) {
@@ -41701,6 +43607,32 @@ class AnazhRealm {
                                 if (j < band.jMin) band.jMin = j;
                                 if (j > band.jMax) band.jMax = j;
                             }
+                        }
+                    }
+                    // V18.129 — der STAU-TROPF: eine Quell-Spalte im Stau-Bereich
+                    // (src=2, Kappe über rim gehoben — s. _ensureWaterCALevel) speist
+                    // ÜBER ihre Ruhe hinaus: pro Tick FEED in die unterste unvolle,
+                    // gestützte Zelle ≤ Kappe (Schicht für Schicht, wie der Carve).
+                    // Der Fluss füllt den Stausee; voll → kein Add → Settle-Fixpunkt.
+                    // Die EINE bewusste Pin-Nicht-Erhaltung, eine Schicht weiter.
+                    if (src[c] === 2 && a.cap) {
+                        const capJ = a.cap[c];
+                        for (let j = 0; j <= capJ; j++) {
+                            const idx = c + j * dimSq;
+                            if (cells[idx] === SOLID) continue;
+                            if (level[idx] >= 0.999) continue;
+                            if (j > 0) {
+                                const below = idx - dimSq;
+                                if (cells[below] !== SOLID && level[below] < 0.9) break;
+                            }
+                            const add = Math.min(stauFeed, 1 - level[idx]);
+                            level[idx] += add;
+                            pinned += add;
+                            if (band) {
+                                if (j < band.jMin) band.jMin = j;
+                                if (j > band.jMax) band.jMax = j;
+                            }
+                            break;
                         }
                     }
                 }
@@ -42853,6 +44785,11 @@ class AnazhRealm {
             }
             // V9.75 — Spiegel zum Spawn-Trigger: das Wasser kehrt zurück.
             this._playWaterReactionPing();
+            // V18.129 — ein abgebauter DAMM lässt seinen Stausee ablaufen: Kappen/
+            // Stau-Felder verwerfen + CA wecken (das gestaute Wasser fällt durch
+            // die Lücke — Gravitation ist kappen-frei; die Empfänger-Kappe sinkt
+            // lazy auf den V18.93-Stand zurück).
+            for (const fp of blockerFootprints) this._invalidateWaterCapsAround(fp.cx, fp.cz, fp.r);
         }
         // Vision §1.2 — die Welt antwortet sensorisch. Eine resonierende
         // Struktur (Kristall-Geode, hoch-präzises Werkstück, Singendes
@@ -43381,6 +45318,11 @@ class AnazhRealm {
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
         if (pick && pick.entry) return this._strikeArchitecture(pick.entry);
+        // S6-B (V18.133) — FORAGING vor dem Graben: nahe Klein-Vegetation in
+        // Arm-Laenge wird GEPFLUECKT (wer auf die Bluete zielt, will sie —
+        // kein Loch darunter). Reichweite 6 m « der 30-m-Grabe-Ray.
+        const flora = this._pickScatterAtCrosshair();
+        if (flora) return this._harvestScatterPick(flora);
         const target = this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
@@ -43861,6 +45803,8 @@ class AnazhRealm {
                 schuppen: "⬢",
                 glut: "✺",
                 laub: "❀",
+                kraut: "✿",
+                essenz: "✧",
             };
             if (isMaterialSlot) {
                 const glyph = document.createElement("span");
@@ -48369,6 +50313,8 @@ class AnazhRealm {
             schuppen: "⬢",
             glut: "✺",
             laub: "❀",
+            kraut: "✿",
+            essenz: "✧",
         };
         for (const name of Object.keys(materials)) {
             const mat = materials[name];
@@ -49360,7 +51306,7 @@ class AnazhRealm {
             // V17.2 — klar 0.32 (verstreute Cumulus statt kahler Himmel), Regen
             // 0.9 (Overcast). Der neue FBM-Wolken-Layer liest den Wert als
             // Schwellen-Senker (mehr Deckung = mehr Wolken). Browser-justierbar.
-            u.cloudCover.value = this._weatherBlendedValue(0.32, 0.9);
+            u.cloudCover.value = Math.min(1, this._weatherBlendedValue(0.32, 0.9)); // D5a: [0,1]-Konsument clampt lokal
         }
     }
 
@@ -49547,7 +51493,7 @@ class AnazhRealm {
             // gegen die Weite, die der Schoepfer liebt — Weltenring max, Fog
             // weit, die Ferne entdecken. Tiefe gehoert NICHT aus Nebel-Naehe,
             // sondern aus dem hoehen-dominanten Aerial-Term + Schatten).
-            const rainyMix = this.state.weather === "rainy" ? 1 : 0;
+            const rainyMix = this._weatherBlendedValue(0, 1); // D5a: Achsen-Lerp — stormy zieht den Nebel dichter
             const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
             // A5 (gigant-plan §5 PHASE A) — der Fog liest die RING-KANTE statt einer
             // eigenen Konstante (eine Distanz, noch ein Gesicht — die V17.114-U1-Synergie
@@ -49620,7 +51566,7 @@ class AnazhRealm {
             if (cu.lightDirection) cu.lightDirection.value.copy(sunDir);
             if (cu.lightIntensity) cu.lightIntensity.value = dl.intensity;
             if (cu.ambientIntensity) cu.ambientIntensity.value = al ? al.intensity : 0.45;
-            if (cu.weatherEffect) cu.weatherEffect.value = this._weatherBlendedValue(0.0, 1.0);
+            if (cu.weatherEffect) cu.weatherEffect.value = Math.min(1, this._weatherBlendedValue(0.0, 1.0)); // D5a: [0,1]-Clamp
             if (fog) {
                 if (cu.fogColor) cu.fogColor.value.copy(fog.color);
                 if (cu.fogNear) cu.fogNear.value = fog.near;
@@ -49815,8 +51761,14 @@ class AnazhRealm {
     // und cloudCover SOFORT mit state.weather, während Licht/Skybox sanft
     // faden → der Wetter-Wechsel sprang hart. Eine Quelle für alle
     // wetter-abhängigen Skalare.
+    // D5a (V18.128) — POLYVALENT: der Skalar lerpt über die WEATHER_INTENSITY-
+    // Achse (sunny=0 · rainy=1 · stormy=1.35) statt des Binär-Ternärs — ein
+    // drittes Wort braucht KEINEN neuen Parameter, es extrapoliert die
+    // bestehende sunny→rainy-Spanne (Sturm = mehr als Regen). Unbekannte
+    // Worte zählen 0 (sunny-artig, der alte Fallback).
     _weatherBlendedValue(sunnyVal, rainyVal) {
-        const valFor = (w) => (w === "rainy" ? rainyVal : sunnyVal);
+        const INT = AnazhRealm.WEATHER_INTENSITY;
+        const valFor = (w) => sunnyVal + (rainyVal - sunnyVal) * (INT[w] || 0);
         const wt = this.state.weatherTransition;
         if (wt && wt.from && wt.to) {
             const p = Math.max(0, Math.min(1, wt.progress || 0));
@@ -49825,13 +51777,42 @@ class AnazhRealm {
         return valFor(this.state.weather);
     }
 
+    // D5a (V18.128) — die wet-Frage: regnet es hier (rainy UND stormy)?
+    // Ersetzt die binären ===\"rainy\"-Leser (Journal/Nexus/Spawn-Stimmung).
+    _weatherIsWet(w) {
+        const word = typeof w === "string" ? w : this.state.weather;
+        return (AnazhRealm.WEATHER_INTENSITY[word] || 0) >= 1;
+    }
+
+    // D5a (V18.128) — der EINE Wetter-Schreiber (Welle 6.G3.b-Semantik,
+    // verdichtet aus dem DSL-Op): state.weather wird SOFORT gesetzt (logisch
+    // das Ziel-Wetter — weather_is + DSL-Sequenzen reagieren instant), die
+    // Transition ist die REIN VISUELLE Schicht (Skybox+Symphonie cross-faden
+    // über ~45 s). DSL-Op `weather` UND der Auto-Zug (_loopWeatherAndGrowth)
+    // rufen ihn — der alte rohe Loop-Flip am Blend-System vorbei ist Geschichte.
+    _setWeather(name) {
+        if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
+        const oldWeather = this.state.weather;
+        this.state.weather = name;
+        this.state.weatherEffectTime = 0;
+        if (oldWeather !== name) {
+            this.requestWeatherTransition(name, undefined, oldWeather);
+        }
+        // updateSkyboxWeather wird nicht direkt gerufen —
+        // _applyDayNightToScene übernimmt das pro Frame.
+        this.updateCreatureEmotions();
+        return true;
+    }
+
     // [ATMOSPHERE] Startet einen Cross-Fade. V8.25-Heilung: Default-Dauer
     // emergiert aus Player-Emotionen via _emotionModulate — eine ruhige Welt
     // (peace hoch) zieht Wolken langsamer (×1.6), eine chaotische (chaos hoch)
     // blitzt schneller (×0.4). Explizit übergebene Dauer überschreibt das.
     // Vision §3: Wetter atmet mit dem Spieler.
     requestWeatherTransition(target, durationMs, fromWeather) {
-        if (target !== "sunny" && target !== "rainy") return false;
+        // D5a (V18.128) — das Vokabular ist die WEATHER_INTENSITY-Tabelle
+        // (sunny · rainy · stormy), nicht mehr das harte Binär-Paar.
+        if (!(target in AnazhRealm.WEATHER_INTENSITY)) return false;
         let dur;
         if (typeof durationMs === "number" && Number.isFinite(durationMs)) {
             dur = Math.max(100, durationMs);
@@ -51258,6 +53239,13 @@ class AnazhRealm {
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
         this.state.keybindings = this._loadKeybindings();
         this.state.keybindRebind = null;
+        // G8 R4 (Robustheits-Bogen, M4 — der RÜCKRUF): die revozierten Schlüssel
+        // aus dem globalen localStorage. Ein Artefakt mit einem revozierten
+        // Schlüssel IRGENDWO in seiner Herkunftskette fällt beim Laden weg —
+        // die Infektion ist reversibel, sobald die Quelle erkannt ist. Global,
+        // NIE im Welt-Snapshot (SOVEREIGN_STATE.excludedStateKeys). VOR den
+        // Welt-Ladern, damit die Lader gegen die Rückruf-Liste sieben können.
+        this.state.revokedKeys = this._loadRevokedKeys();
         // W14 Phase 2 — signierte Welt-Manifeste aus dem globalen localStorage.
         this.state.signedWorlds = this._loadSignedWorlds();
         // W14 Phase 3 — empfangene (importierte) Welt-Manifeste.
@@ -51540,6 +53528,43 @@ class AnazhRealm {
         // folgt dem Spieler, statt fix um den Ursprung zu liegen (sonst
         // empfingen nur Strukturen nahe (0,0) Schatten aufs Terrain).
         scene.add(directionalLight.target);
+        // B4 (V18.130, gigant-plan §5 — U5): SCHATTEN-CSM AN DEN KASKADEN-
+        // BÄNDERN. Die EINE 2048er-Map über ±300 m war nah zu GROB (~0.29 m/
+        // Texel) und fern zu ENG (Schatten enden vor der Mittelsicht). Drei
+        // Kaskaden, deren GRENZEN die `DETAIL_CASCADE`-Band-Kanten SIND (die
+        // eine Distanz, sieben Gesichter — der lod-kaskade-plan): Kaskade 0
+        // deckt Band 0 (volles Detail, ~108 m → ~0.10 m/Texel = 3× schärfer
+        // nah), Kaskade 1 die Mittelsicht (Band 1, ~367 m), Kaskade 2 die
+        // Ferne bis maxFar (deckt auch den Weltenring-max-Ring). Der V17.111-
+        // R1-Texel-Snap lebt im Addon PRO KASKADE (updateBefore snappt das
+        // Kaskaden-Zentrum im Licht-Raum — kein Swimming). `fade` weicht die
+        // Kaskaden-Übergänge. Die Kaskaden-Lichter klonen Map-Größe/bias/
+        // normalBias vom Haupt-Licht (setShadowBias propagiert live, s. dort);
+        // der `setShadowRange`-Hebel betrifft nur den Legacy-Pfad (CSM rechnet
+        // seine Frusta selbst). Soft-Gate: ohne Vendor-Symbol bleibt die EINE
+        // Map exakt wie bisher (kein Verhaltens-Bruch im Fallback).
+        if (typeof THREE.CSMShadowNode === "function") {
+            try {
+                const bands = AnazhRealm.DETAIL_CASCADE;
+                const span = this._voxelChunkConfig(0).span; // 43.2 m
+                const e0 = (bands[0].maxRing + 0.5) * span; // Band-0-Kante ~108 m
+                const e1 = (bands[1].maxRing + 0.5) * span; // Band-1-Kante ~367 m
+                const csm = new THREE.CSMShadowNode(directionalLight, {
+                    cascades: 3,
+                    maxFar: 540, // deckt Weltenring max (Ring 12 ≈ 540 m); Default-Fog deckt früher
+                    mode: "custom",
+                    customSplitsCallback: (cascades, near, far, breaks) => {
+                        breaks.push(Math.min(0.85, e0 / far), Math.min(0.95, e1 / far), 1);
+                    },
+                });
+                csm.fade = true;
+                directionalLight.shadow.shadowNode = csm;
+                this.state.csmNode = csm;
+                this.log("Schatten-CSM aktiv (3 Kaskaden an den DETAIL_CASCADE-Bändern)", "INFO");
+            } catch (e) {
+                this.log(`Schatten-CSM nicht verfügbar (${e && e.message}) — eine Map wie bisher`, "WARN");
+            }
+        }
         // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
         this.state.ambientLight = ambientLight;
@@ -51818,6 +53843,9 @@ class AnazhRealm {
             renderer.setSize(window.innerWidth, window.innerHeight);
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
+            // B4 (V18.130) — die CSM-Frusta hängen an der Kamera-Projektion
+            // (Addon-Vertrag: „call every time you change camera settings").
+            if (this.state.csmNode && this.state.csmNode.camera) this.state.csmNode.updateFrustums();
             this.log("Fenstergröße angepasst", "INFO");
         });
 
@@ -52732,11 +54760,18 @@ class AnazhRealm {
         // ### Kreaturen, Wetter, Wachstum ###
         this.updateCreatures(delta);
         this.state.weatherEffectTime += delta;
-        if (this.state.weatherEffectTime >= 30.0) {
-            this.state.weather = this.state.weather === "sunny" ? "rainy" : "sunny";
-            this.updateSkyboxWeather();
-            this.updateCreatureEmotions();
-            this.log(`Wetter gewechselt zu ${this.state.weather}`, "INFO");
+        // D5a (V18.128) — der Auto-Zug zieht POLYVALENT aus dem Vokabular
+        // (nie zweimal dasselbe Wort) und geht SANFT über die Transition —
+        // der alte rohe sunny↔rainy-Flip war der V9.82-Parallel-Pfad AM
+        // V8.46-Blend-System VORBEI (cloudCover/weatherEffect sprangen hart).
+        // Takt 30→120 s: mit der 45-s-Transition STEHT das Wetter jetzt
+        // (~75 s) statt dauernd zu morphen — der alte 30er war mit dem
+        // harten Flip gepaart.
+        if (this.state.weatherEffectTime >= 120.0) {
+            const words = Object.keys(AnazhRealm.WEATHER_INTENSITY).filter((w) => w !== this.state.weather);
+            const next = words[Math.floor(Math.random() * words.length)];
+            this._setWeather(next);
+            this.log(`Das Wetter zieht zu ${next}`, "INFO");
             this.state.weatherEffectTime = 0;
         }
 
@@ -52791,7 +54826,24 @@ class AnazhRealm {
         // (sichtbarer); baute es diese Frame, wartet Scatter eine Frame.
         if (!chunksBuilt) {
             const grassBuilt = this._tickPendingGrass(1);
-            if (!grassBuilt) this._tickPendingScatter(2);
+            const scatterBuilt = grassBuilt ? 1 : this._tickPendingScatter(2);
+            // U4 (V18.131) — das Deko-Fernfeld baut auf den RUHIGSTEN Frames
+            // (kein Terrain, kein Gras, kein Scatter): eine Art pro Tick.
+            if (!grassBuilt && !scatterBuilt) this._tickDekoFernfeld();
+            // S6-B (V18.133) — die gepflueckte Flora waechst nach (throttled).
+            this._tickScatterRegrow(performance.now());
+            // A3 (V18.132) — der WEICHE Kachel-Vorlauf (throttled ~1 Hz): die
+            // Hydro-Kacheln um den Spieler entstehen ~300 m BEVOR der Build-
+            // Eingang sie hart braucht → der ~265-ms-Compute faellt auf einen
+            // ruhigen Frame der Wanderung, nicht in den Chunk-Build-Moment.
+            const nowTiles = performance.now();
+            const lastTileCheck = this._lastHydroTileCheck ?? -Infinity;
+            if (nowTiles - lastTileCheck > 1000 && playerPos) {
+                this._lastHydroTileCheck = nowTiles;
+                const ringR = (this.state.chunkRingRadius || 4) + 0.5;
+                const reach = ringR * this._voxelChunkConfig(0).span + 300;
+                this._ensureHydroTilesAround(playerPos.x, playerPos.z, reach);
+            }
         }
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
@@ -53145,7 +55197,7 @@ class AnazhRealm {
         // uWindStrength emergiert aus weather (rainy = kräftiger).
         if (this.state.windUniforms) {
             this.state.windUniforms.uWindTime.value = currentTime;
-            this.state.windUniforms.uWindStrength.value = this.state.weather === "rainy" ? 0.26 : 0.12;
+            this.state.windUniforms.uWindStrength.value = this._weatherBlendedValue(0.12, 0.26); // D5a: stormy bläst kräftiger
         }
         // V10.0-d — WebGPURenderer's `init()` ist async, der Game-Loop läuft
         // sofort beim Worldgen-Abschluss. Skip-Render-Frames bis der Renderer
@@ -53434,7 +55486,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.121.0";
+AnazhRealm.VERSION = "18.136.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -53445,6 +55497,55 @@ AnazhRealm.VERSION = "18.121.0";
 // Browser-justierbar: anazhRealm.constructor.CA_FLOW_KEEP = 0.97 (näher 1 =
 // weitere Ausbreitung, näher 0.9 = kürzere Fluss-Zungen).
 AnazhRealm.CA_FLOW_KEEP = 0.95;
+
+// V18.129 — DAS HOCH-BECKEN (A4-Rest, gigant-plan §5): die STAU-Regel des
+// Wasser-Automaten — die vierte Gleichgewichts-Regel neben Decay·Kappe·
+// Fixpunkt (V18.93). Ein SPIELER-WERK (Fill-Edit / solide Architektur,
+// Krone über dem Ruhe-Spiegel) öffnet die Spiegel-Kappe LOKAL: ein bounded
+// Spill-Scan (Priority-Flood — das Hydro-Atlas-Muster im Kleinen) liefert
+// pro Spalte den ehrlichen HALTE-Pegel (der billigste Ausweg: über die
+// Damm-Krone · die Ufer · die V18.93-Kappen-Welt am Fensterrand). Ein
+// PFEILER staut damit strukturell NICHT (sein Ausweg liegt auf rim-Niveau
+// — die Physik filtert, keine Werk-Heuristik); ein Damm quer überm Fluss
+// staut bis zur Krone. Die Welt-Badewanne (V18.92) bleibt strukturell
+// unmöglich: ohne Spieler-Werk ist die Kappe bit-identisch zu V18.93.
+// Browser-justierbar (S-Dialog): REACH weiter = größere Stauseen.
+// S6-B (V18.133) — FORAGING: die Klein-Vegetation ist PFLUECKBAR (kampf-plan
+// §11 „die echte Zutaten-Tiefe"). reach = Arm-Laenge (kuerzer als der 30-m-
+// Abbau-Ray — wer auf eine Bluete zielt, will SIE, kein Loch darunter);
+// regrowMs = die Flora waechst nach (Session-Gedaechtnis, NICHT persistiert —
+// Pflanzen wachsen ueber einen Reload natuerlich nach, keine Ernte-Halde im
+// Snapshot); der Index ist stabil (deterministisches per-Chunk-RNG → geerntete
+// Instanzen werden auf Skala 0 gesetzt, nie umnummeriert).
+// F4 Stufe 1 (V18.134) — der SOZIALE BOGEN beginnt: signierte BEWERTUNGS-
+// ZEUGNISSE reisen uebers Mesh (gigant-plan §5-F4). Ein Zeugnis = {id, s, t,
+// pub, sig} mit sig = ed25519(canonical) — die ed25519-Identitaet (Vibe-Pass)
+// macht es UNFAELSCHBAR, die LWW-Semantik (neuestes t pro (id, pub) gewinnt)
+// macht es CRDT-tauglich (konfliktarm — die richtige CRDT-Schicht, Physik
+// bleibt host-autoritativ, §4-Urteil). KANAL-EXKLUSIV (DataChannel, nicht
+// WS-injizierbar), R1-rate-gegated, R4-Rueckruf-KONSUMENT (revozierte
+// Schluessel fallen aus der Aggregation — das Immunsystem wirkt sozial).
+// Global in localStorage (anazh.socialRatings) — NIE im Welt-Snapshot
+// (Bewertungen sind welt-uebergreifend, wie der Vibe-Pass).
+AnazhRealm.SOCIAL = Object.freeze({
+    maxStore: 600, // Zeugnisse gesamt (LWW-dedupe; aelteste t fallen)
+    maxBatch: 32, // Zeugnisse pro Mesh-Batch (Anschluss-Annonce)
+    ratePerSec: 12, // R1-Empfangs-Deckel pro Peer
+});
+
+AnazhRealm.FORAGE = Object.freeze({
+    reach: 6, // m — Pflueck-Reichweite
+    regrowMs: 300000, // 5 min — die Flora kehrt zurueck
+});
+
+AnazhRealm.CA_STAU = Object.freeze({
+    REACH: 16, // Spalten (×1.8 m ≈ 29 m) Fenster-Pad um das Werk — die Spieler-Aufmerksamkeits-Grenze
+    MAX_CELLS: 7, // harter Stau-Deckel über der rim-Kappe (~12.6 m) gegen den degenerierten Mega-Damm
+    FEED: 0.2, // Zufluss-Tropf/Tick in die unterste unvolle Stau-Zelle einer Quell-Spalte (der Fluss speist)
+    WIN_MAX: 72, // max Fenster-Kante in Spalten — der Spill-Scan ist bounded by construction
+    CLUSTER_GAP: 4, // m — Werke näher als das verschmelzen zu EINEM Stau-Werk (ein Damm = viele Blöcke)
+    MIN_EXTENT: 1.6, // m — schmalere Werke (Baum-Stämme, Deko-Säulen) stauen nichts (Perf-Vorfilter)
+});
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze
@@ -53476,10 +55577,16 @@ AnazhRealm.DETAIL_CASCADE = Object.freeze([
     // → die Grenze schiebt auf ~100 m (Fog-verdeckt + seltener) → die Naht (N1) hat
     // fernere Grenzen zu schliessen. Kosten: +16 LOD0-Chunks (~1.45× Terrain-Tris,
     // GEMESSEN tragbar) — der Build amortisiert (einmal pro Chunk).
-    Object.freeze({ maxRing: 2, lod: 0, aiDiv: 1 }), // Band 0 — ≤ 130 m (5×5): volles Detail
-    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
-    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
-    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
+    // U4 (V18.131) — `deko` + `dekoDichte`: das Tabellen-Feld wächst mit seinem
+    // Leser (V17.31-Vertrag). "mesh" = per-Chunk-Instanz-Scatter (voll), "impostor"
+    // = das EINE Fernfeld-Mesh pro Art (s. _tickDekoFernfeld — NICHT per-Chunk:
+    // 264 Band-1-Chunks × 6 Arten wären ~1600 Draw-Calls, das B2-Mantel-Muster
+    // ist die synergetische Form; der lod-kaskade-plan-Wortlaut „Band 1 mesh"
+    // war eine Hypothese VOR der Draw-Call-Messung). dekoDichte fällt mit dem Band.
+    Object.freeze({ maxRing: 2, lod: 0, aiDiv: 1, deko: "mesh", dekoDichte: 1 }), // Band 0 — ≤ 130 m (5×5): volles Detail
+    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1, deko: "impostor", dekoDichte: 0.3 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
+    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3, deko: "impostor", dekoDichte: 0.12 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
+    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6, deko: "none", dekoDichte: 0 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
 ]);
 
 // N3 (Naht §12) — die LOD-Hysterese: ein bestehender Chunk wechselt seine LOD
@@ -54696,6 +56803,45 @@ AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Re
 // fremde Versionen (Felder, die sie nicht kennen, ignorieren sie) — Koexistenz
 // alter + neuer Clients im selben Raum. Bump nur bei INKOMPATIBLEN Änderungen.
 AnazhRealm.PROTO_VERSION = 1;
+// G8 R0 (Robustheits-Bogen, docs/archiv/robustheit-plan.md §2) — der INNERSTE
+// RING benannt: die „Feinstrukturkonstante" des Ultiversums. Diese state-Slots
+// (Identität + Signatur-/Autorisierungs-Autorität) sind ABWESEND aus der Welt
+// der Welten — NIE in einem Welt-Snapshot, NIE in einem Portal-Payload, NIE
+// über P2P. Der private ed25519-Schlüssel selbst lebt nur im globalen
+// localStorage ("anazh.vibePass") + dem Datei-Backup; sein Fußabdruck sind
+// 6 Methoden (_ensureVibePass/_adoptVibePassJwk/_vibeSign/_vibePassExportObject/
+// _persistVibePass/importVibePass). _sovereignStateAudit() beweist die Trennung
+// headless. Die Liste ist EINGEFROREN + winzig — sie wächst nicht (die
+// eBPF-Lehre: ein wachsender Kern ist die Angriffsfläche). revokedKeys (R4) ist
+// ebenso global + nie im Snapshot — der Rückruf-Schlüssel des Immunsystems.
+AnazhRealm.SOVEREIGN_STATE = Object.freeze({
+    // runtime-state-Slots, die NIE in buildStateSnapshot dürfen (GEMESSEN
+    // schon ausgeschlossen — der fixe Key-Satz trägt keinen davon):
+    excludedStateKeys: Object.freeze(["vibePass", "p2p", "signedWorlds", "customWorlds", "revokedKeys"]),
+    // die globalen localStorage-Schlüssel des innersten Rings (privat, nie geteilt):
+    privateStorageKeys: Object.freeze(["anazh.vibePass"]),
+    // Schlüssel-Material-Feldnamen, die in KEINEM geteilten Kanal lecken dürfen:
+    privateFields: Object.freeze(["privateKey", "_privateKeyJwk", "privateKeyJwk"]),
+});
+// G8 R2 (Robustheits-Bogen, M3 — die Irreversibilitäts-Wand) — die EINGEFRORENE
+// SOVEREIGN_ACTIONS-Liste: die Handvoll Akte, die den INNERSTEN RING berühren.
+// Sie verlangen eine FRISCHE Mensch-Geste (Host-gerendert, außerhalb jedes
+// iframes) und sind NIEMALS automatisch — durch Welt, LLM, Regel oder Fluss —
+// auslösbar. DISJUNKT von dslEffects ∪ NON_BROADCASTABLE_OPS ∪ dslComposeAtomic
+// ∪ Regel-Effekten (die DISJUNKTHEITS-Invariante, headless bewiesen): der
+// manipulierbare Pfad berührt das Souveräne NIE (das Dual-LLM/CaMeL-Pattern).
+// `reveal_private_key` existiert GAR NICHT als Akt — der Schlüssel verlässt den
+// Ring nie. Die Liste bleibt WINZIG + wächst NICHT (die eBPF-Lehre: ein
+// wachsender Prüfer ist die Angriffsfläche; die Freiheit ist AUSSEN total).
+// wallet_transfer + grant_capability existieren heute als Akt noch nicht (kein
+// Wallet/Capability-System) — sie sind EINGEFROREN, damit kein künftiger Op sie
+// je in den DSL-/Broadcast-/Regel-Pool schmuggelt (die Wand steht VOR dem Bau).
+AnazhRealm.SOVEREIGN_ACTIONS = Object.freeze([
+    "wallet_transfer",
+    "sign_manifest",
+    "change_identity",
+    "grant_capability",
+]);
 // W12 P3-Härtung — der Portal-Rückkanal (_portalReceiveEvent: Sub-Welt →
 // Heimat-Journal) deckelt die Ereignisse je Sekunde. Eine ungeprüfte vendorte
 // Welt (V8.70+) könnte sonst pro Frame ein Ereignis posten und das 200-
@@ -54703,6 +56849,24 @@ AnazhRealm.PROTO_VERSION = 1;
 // Bursts (eine Welt meldet mehrere sichtbare Momente zugleich), hart gegen Flut.
 AnazhRealm.PORTAL_EVENT_RATE_WINDOW_MS = 1000;
 AnazhRealm.PORTAL_EVENT_RATE_MAX = 8;
+// G8 R1 (Robustheits-Bogen, M2-Dämpfung) — der EINE Token-Bucket pro Welt-
+// Region am Kanal-EINGANG. Die per-Typ-Deckel (event 8/s · ws-send 120/s)
+// schützten nur ihre Kanäle; `ready`/`exit`/`manifest` waren UNGEDECKELT — eine
+// bösartige Sub-Welt konnte `{type:"ready"}` pro Frame spammen (jedes löst
+// _portalReceiveManifest + _portalSendEnter aus). Dieser Deckel bändigt die
+// GESAMT-Rate aller Sub→Heim-Nachrichten (die Wasser-CA-Lehre eine Ebene höher:
+// Rate bremst · Verwerfen bändigt · leerer Bucket settled). 200/s ist großzügig
+// über der legitimen Summe (ws-send 120 + event 8 + Handshakes), hart gegen
+// Flut. TRANSPORT-seitig (kein Welt-Tick) → eine verworfene Nachricht ist eine
+// Transport-Tatsache, kein State-Unterschied (Determinismus unberührt).
+AnazhRealm.PORTAL_CHANNEL_RATE_WINDOW_MS = 1000;
+AnazhRealm.PORTAL_CHANNEL_RATE_MAX = 200;
+// G8 R1 — der subworld-net-EINGANG vom MESH-Peer (das _cpRate-Muster, das der
+// `subworld-net`-Empfang bisher NICHT trug): ein bösartiger Peer konnte den
+// Main-Thread mit Sub-Welt-Zustellungen würgen. Max je Sekunde je Peer; der
+// Sender deckelt sich schon bei 120/s (SUBWORLD_NET_RATE_MAX), aber ein
+// böswilliger Peer ignoriert das — der Empfänger-Deckel ist die echte Wand.
+AnazhRealm.SUBWORLD_NET_PEER_RATE_MAX = 120;
 // V9.44-c — der Mesh-Router-Dispatch-Table. p2pHandleMessage mappt den
 // WS-Nachrichtentyp über diese Tabelle auf eine `_p2pMsg<Type>`-Methode,
 // statt 18 sequentielle `if (msg.type === …)`-Branches durchzulaufen. Ein

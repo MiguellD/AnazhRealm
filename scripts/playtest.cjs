@@ -8114,8 +8114,8 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
         check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
         check(
-            "Welle 4 P1: Built-in-Anzahl exakt 13 (6 Bau + 5 Körper + laub + erde/W6.G-P4)",
-            wave4p1Results.builtInCount === 13
+            "Welle 4 P1: Built-in-Anzahl exakt 15 (6 Bau + 5 Körper + laub + erde + kraut/essenz V18.133)",
+            wave4p1Results.builtInCount === 15
         );
         check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
         check(
@@ -20303,7 +20303,25 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             // (ny>0.2 am Build verworfen). Tötet „Wasser auf der falschen Seite
             // des Bodens" an der Geometrie-Wurzel. Über ALLE Iso-Meshes gezählt.
             const BACK = window.THREE && window.THREE.BackSide !== undefined ? window.THREE.BackSide : 1;
-            out.waterMatBackSide = r.state.hydroSurfaceMaterial ? r.state.hydroSurfaceMaterial.side === BACK : false;
+            // V18.120-Konfounder geheilt: der B5-Tauch-Pass macht das GETEILTE
+            // Material DoubleSide, solange der Spieler UNTER Wasser steht
+            // (playerEyesUnderwater) — das ist der korrekte Tauch-Zustand, NICHT
+            // der Oberflächen-Vertrag. Diesen Test deterministisch auf den
+            // OBERFLÄCHEN-Zustand prüfen (Intent: die ruhende Fläche ist BackSide),
+            // zustands-neutral mit Restore — sonst kippt er je nach Spieler-
+            // Position am Warmup-Ende (die KONFUNDIERTE-Test-Lehre).
+            out.waterMatBackSide = (() => {
+                if (!r.state.hydroSurfaceMaterial) return false;
+                const savedDive = r.state.playerEyesUnderwater;
+                try {
+                    r.state.playerEyesUnderwater = false;
+                    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                    return r.state.hydroSurfaceMaterial.side === BACK;
+                } finally {
+                    r.state.playerEyesUnderwater = savedDive;
+                    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                }
+            })();
             let undersideTris = 0;
             let topsTris = 0;
             for (const [, mm] of r.state.voxelChunkWaterIso) {
@@ -22299,7 +22317,10 @@ async function checkBandPhasenBF(ctx) {
         out.f1Blob = /Blob/.test(r._getVoxelWorker.toString());
         out.f2Proto = /PROTO_VERSION/.test(r.p2pSend.toString());
         out.f2Turn = Array.isArray(r.state.p2p && r.state.p2p.iceServers) && r.state.p2p.iceServers.length >= 1;
-        out.f2CpCap = /_cpRate/.test(r._p2pMsgCreaturePos.toString());
+        // G8 R1 (V18.123) — der creature-pos-Cap wanderte vom _cpRate-Inline
+        // auf das geteilte _p2pPeerRateAdmit-Tor (V9.82-Verdichtung). Der Test
+        // wandert mit (V9.56-i): die INTENT bleibt „trägt den Empfangs-Cap".
+        out.f2CpCap = /_p2pPeerRateAdmit\("creature-pos"/.test(r._p2pMsgCreaturePos.toString());
         // B8 — Struktur-LUT + Rim verdrahtet (B2-Mantel prüft das A-Band in der Tiefe).
         out.b8Lut = typeof r._ensureStructureGradient === "function" && !!r._ensureStructureGradient();
         out.b8Rim = !!(r.state.atmoUniforms && r.state.atmoUniforms.rimStrength);
@@ -22614,11 +22635,181 @@ async function checkBandPhasenBF(ctx) {
             }
         })();
         out.e45Hook = /_crystallizeGestureRule/.test(r._loopSelfAnalysis.toString());
+        // V18.127 — E1: das EINE Dispatch-Tor (gigant-plan §3-Zwilling 5).
+        // (a) VERDICHTUNG: die vier if-else-Handler sind GESCHNITTEN, der
+        // Dispatch läuft über die chatSystemPatterns-Tabelle (kein Parallel-
+        // Pfad, V9.82); (b) BEHAVIORAL: „liste welten" läuft durch die Tabelle
+        // (Output-Beweis); (c) KONSUM: chatSuggest liest jetzt BEIDE Tabellen —
+        // der Tippfehler „speichre zustand" bekommt den System-Vorschlag
+        // (vorher waren Legacy-Befehle für die Vorschläge unsichtbar).
+        out.e1OneGate = (() => {
+            const oldHandlersGone =
+                typeof r._chatTryWorldCommand !== "function" &&
+                typeof r._chatTrySystemCommand !== "function" &&
+                typeof r._chatTryAbilityCommand !== "function" &&
+                typeof r._chatTryPersistenceCommand !== "function";
+            if (!oldHandlersGone) return "alte if-else-Handler leben noch";
+            if (!/chatSystemPatterns/.test(r._chatDispatchLegacyCommand.toString()))
+                return "Dispatch liest die Tabelle nicht";
+            const out0 = document.getElementById("chat-output");
+            const before = out0 ? out0.children.length : 0;
+            r.processChatCommand("liste welten");
+            const after = out0 ? out0.children.length : 0;
+            let listed = false;
+            for (let i = before; i < after; i++) {
+                const txt = out0.children[i].textContent || "";
+                if (/Welten im Speicher|Nur diese eine Welt/.test(txt)) listed = true;
+            }
+            if (!listed) return "liste welten lief nicht über die Tabelle";
+            const sugg = r.chatSuggest("speichre zustand");
+            if (sugg !== "speichere zustand") return `Suggest las die System-Tabelle nicht (${sugg})`;
+            return true;
+        })();
+        // V18.128 — D5a: die Wetter-INTENSITÄTS-ACHSE (Vier-Teil-Beweis):
+        // (a) die Achse extrapoliert (stormy > rainy im Blend-Lerp) ·
+        // (b) das Vokabular-Gate (stormy ja, xyz nein) · (c) das Innenleben
+        // unterscheidet die WORTE (Sturm fühlt chaos+awe, NICHT sorrow) ·
+        // (d) der EINE Schreiber (DSL-Op + Auto-Zug rufen _setWeather, der
+        // den Cross-Fade trägt — der rohe Loop-Flip ist Geschichte).
+        out.d5aWeather = (() => {
+            const saved = {
+                w: r.state.weather,
+                wt: r.state.weatherTransition,
+                wet: r.state.weatherEffectTime,
+                creatures: r.state.creatures,
+                ce: r.state.creatureEmotions,
+            };
+            const savedRandom = Math.random;
+            try {
+                r.state.weatherTransition = null;
+                r.state.weather = "rainy";
+                const vRainy = r._weatherBlendedValue(0, 1);
+                r.state.weather = "stormy";
+                const vStormy = r._weatherBlendedValue(0, 1);
+                if (!(Math.abs(vRainy - 1) < 1e-9 && vStormy > 1)) return `Achse: rainy=${vRainy} stormy=${vStormy}`;
+                if (!r.requestWeatherTransition("sunny")) return "Gate: sunny abgelehnt";
+                r.state.weatherTransition = null;
+                if (r.requestWeatherTransition("xyz")) return "Gate: xyz angenommen";
+                const fake = {
+                    userData: { emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 } },
+                };
+                r.state.creatures = [fake];
+                r.state.creatureEmotions = ["happy"];
+                Math.random = () => 0.05;
+                r.state.weather = "stormy";
+                r.updateCreatureEmotions();
+                const em = fake.userData.emotions;
+                if (!(em.chaos > 0.1 && em.awe > 0.05 && em.sorrow === 0))
+                    return `Innenleben: chaos=${em.chaos} awe=${em.awe} sorrow=${em.sorrow}`;
+                if (!/_setWeather/.test(r._loopWeatherAndGrowth.toString())) return "Auto-Zug ruft _setWeather nicht";
+                if (!/requestWeatherTransition/.test(r._setWeather.toString())) return "_setWeather fadet nicht";
+                return true;
+            } finally {
+                Math.random = savedRandom;
+                r.state.weather = saved.w;
+                r.state.weatherTransition = saved.wt;
+                r.state.weatherEffectTime = saved.wet;
+                r.state.creatures = saved.creatures;
+                r.state.creatureEmotions = saved.ce;
+            }
+        })();
         // V18.113 — der Mantel erbt die Lichtung über das GETEILTE Terrain-Material
         // (kein eigener Geometrie-Bake — der wäre die Akne-Klasse).
         out.b3Mantle =
             !/setXYZ\(i, 0, 1, 0\)/.test(r._ensureHorizonMantle.toString()) &&
             /computeVertexNormals/.test(r._ensureHorizonMantle.toString());
+        // V18.125 — A4-SCHELF: der KÜSTEN-AQUIFER, der synthetische Drei-Beweis
+        // auf einem PRÄPARIERTEN preDensity-Grid an einem atlas-freien In-Region-
+        // Ort: (a) die himmel-offene Senke unter dem Wassertisch trägt WASSER
+        // (der Aquifer — vorher 0, die GEMESSENE Loch-Klasse) · (b) Land über
+        // dem Spiegel bleibt trocken (kein Bluten/Hang-Schatten, V13-Wand) ·
+        // (c) die GEDECKELTE Höhle unter dem Spiegel bleibt trocken (kein
+        // Phantom — der _skyOpenWaterFilter trennt).
+        out.a4ShelfAquifer = (() => {
+            const cfg = r._voxelChunkConfig(0);
+            const { dim, dimY, step, span, floorDrop } = cfg;
+            const base = r.state.terrainBaseHeight || 0;
+            const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
+            // atlas-freien In-Region-Chunk finden (deterministisch: erster Treffer)
+            let ox = null,
+                oz = null;
+            outer: for (let ccx = 2; ccx < 18; ccx += 2) {
+                for (let ccz = 2; ccz < 18; ccz += 2) {
+                    const tx = ccx * span,
+                        tz = ccz * span;
+                    if (tx + span > 1000 || tz + span > 1000) continue;
+                    let clean = true;
+                    for (let g = 0; g <= 4 && clean; g++) {
+                        for (let q = 0; q <= 4 && clean; q++) {
+                            const sx = tx + (g / 4) * span,
+                                sz = tz + (q / 4) * span;
+                            if (r._atlasWaterLevelAt(sx, sz, Infinity) > -Infinity) clean = false;
+                        }
+                    }
+                    if (!clean) continue;
+                    const arch = (r.state.architectures || []).some(
+                        (a) =>
+                            a &&
+                            a.position &&
+                            a.position.x > tx - 8 &&
+                            a.position.x < tx + span + 8 &&
+                            a.position.z > tz - 8 &&
+                            a.position.z < tz + span + 8
+                    );
+                    if (arch) continue;
+                    ox = tx;
+                    oz = tz;
+                    break outer;
+                }
+            }
+            if (ox === null) return "kein atlas-freier Ort";
+            const oy = base - floorDrop;
+            // synthetisches Terrain: Senke (Spalten 4..9) terr=wl−6 · Land terr=wl+8 ·
+            // Höhle (Spalten 14..17): Land MIT Hohlraum y∈[wl−5,wl−2] unter Deckel.
+            const inSenke = (x, z) => x - ox >= 7.2 && x - ox <= 18 && z - oz >= 7.2 && z - oz <= 18;
+            const inHoehle = (x, z) => x - ox >= 25.2 && x - ox <= 32.4 && z - oz >= 25.2 && z - oz <= 32.4;
+            const Nx = dim + 4,
+                Ny = dimY + 1,
+                Nz = dim + 4;
+            const density = new Float32Array(Nx * Ny * Nz);
+            for (let vk = 0; vk < Nz; vk++) {
+                const z = oz - step + vk * step;
+                for (let vj = 0; vj < Ny; vj++) {
+                    const y = oy + vj * step;
+                    for (let vi = 0; vi < Nx; vi++) {
+                        const x = ox - step + vi * step;
+                        const terr = inSenke(x, z) ? wl - 6 : wl + 8;
+                        let d = terr - y;
+                        if (inHoehle(x, z) && y > wl - 5 && y < wl - 2) d = -1;
+                        density[vi + vj * Nx + vk * Nx * Ny] = d;
+                    }
+                }
+            }
+            const cells = r._buildVoxelChunkWaterCells(ox, oy, oz, step, density, 0);
+            const dimSq = dim * dim;
+            const jCount = Math.floor(cells.length / dimSq);
+            let senkeWater = 0,
+                landWater = 0,
+                hoehleWater = 0;
+            for (let k = 0; k < dim; k++) {
+                for (let i = 0; i < dim; i++) {
+                    const cx = ox + (i + 0.5) * step,
+                        cz2 = oz + (k + 0.5) * step;
+                    const senke = inSenke(cx, cz2),
+                        hoehle = inHoehle(cx, cz2);
+                    for (let j = 0; j < jCount; j++) {
+                        if (cells[i + k * dim + j * dimSq] !== 1) continue;
+                        const cy = oy + (j + 0.5) * step;
+                        if (senke) senkeWater++;
+                        else if (hoehle && cy < wl - 1.5) hoehleWater++;
+                        else if (!hoehle) landWater++;
+                    }
+                }
+            }
+            return senkeWater > 0 && landWater === 0 && hoehleWater === 0
+                ? true
+                : `senke=${senkeWater} land=${landWater} hoehle=${hoehleWater}`;
+        })();
         return out;
     });
     if (res.error) {
@@ -22683,6 +22874,21 @@ async function checkBandPhasenBF(ctx) {
     check("E4+E5: der Kristallisierer lebt im Selbstanalyse-Takt (KONSUM)", res.e45Hook);
     check("B3/V18.113: der Mantel behält echte Normalen + erbt die Lichtung übers Material", res.b3Mantle);
     check("B8: Struktur-LUT existiert + rimStrength-Uniform verdrahtet", res.b8Lut && res.b8Rim);
+    check(
+        "A4/V18.125: der KÜSTEN-AQUIFER — offene Senke unterm Wassertisch trägt Wasser, Land + gedeckelte Höhle bleiben trocken",
+        res.a4ShelfAquifer === true,
+        typeof res.a4ShelfAquifer === "string" ? res.a4ShelfAquifer : undefined
+    );
+    check(
+        "E1/V18.127: das EINE Dispatch-Tor — System-Befehle laufen über die Tabelle, chatSuggest liest beide",
+        res.e1OneGate === true,
+        typeof res.e1OneGate === "string" ? res.e1OneGate : undefined
+    );
+    check(
+        "D5a/V18.128: die Wetter-ACHSE — stormy extrapoliert, das Vokabular gated, der Sturm fühlt chaos, EIN Schreiber fadet",
+        res.d5aWeather === true,
+        typeof res.d5aWeather === "string" ? res.d5aWeather : undefined
+    );
 }
 
 // PHASE A (gigant-plan §5) — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
@@ -27446,6 +27652,452 @@ async function checkBandWelle6HCreatures(ctx) {
     }
 }
 
+// V18.131 — U4 (gigant-plan §5-B5 / lod-kaskade-plan U4): die DEKO LIEST DIE
+// KASKADE. Die per-Art-`ring`-Felder fielen; das Band entscheidet mesh (Band 0,
+// 5×5) / impostor (Band 1+2 — EIN Fernfeld-InstancedMesh pro Art, das
+// B2-Mantel-Muster: +6 Draw-Calls statt per-Chunk-Explosion) / none (Band 3).
+// Voller Welt-Beweis: `scripts/diag-deko-fernfeld.cjs` (GEMESSEN GRÜN: 25
+// mesh-Chunks · 5241 nahe Instanzen · Fernfeld 6 Meshes, deterministisch
+// über Re-Anker · Dichte fällt mit dem Band).
+async function checkBandV18131DekoKaskade(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const bands = r.constructor.DETAIL_CASCADE;
+        out.dekoFields = bands.every((b) => typeof b.deko === "string" && Number.isFinite(b.dekoDichte));
+        out.bandPlan =
+            bands[0].deko === "mesh" &&
+            bands[1].deko === "impostor" &&
+            bands[2].deko === "impostor" &&
+            bands[3].deko === "none";
+        out.dichteFaellt =
+            bands[0].dekoDichte > bands[1].dekoDichte &&
+            bands[1].dekoDichte > bands[2].dekoDichte &&
+            bands[3].dekoDichte === 0;
+        const species = r.constructor.KLEIN_VEGETATION_SPECIES;
+        out.ringFiel = species.every((sp) => typeof sp.ring === "undefined");
+        // KONSUM-Proben (V17.31): der Scatter liest das Band, der Loop tickt das
+        // Fernfeld terrain-nachrangig.
+        out.scatterReadsBand = /_detailBand\(ringDist\)/.test(r._buildVoxelChunkScatter.toString());
+        out.loopTicksFernfeld = /_tickDekoFernfeld/.test(r._loopVoxelStreaming.toString());
+        // WebGPU-strikt (V10.0-g.1): die Impostor-Geometrie trägt das color-
+        // Attribut, das das geteilte Art-Material liest.
+        const geo = r._scatterImpostorGeometry(species[0]);
+        out.impostorHasColor = !!(geo && geo.attributes && geo.attributes.color && geo.attributes.position);
+        // Behavioral: das Fernfeld baut deterministisch (ein voller Durchlauf,
+        // dann Re-Anker + zweiter — identische Instanz-Zahlen, ≤6 Meshes).
+        if (r.state.lastPlayerVoxelChunk && r.state.voxelChunks && r.state.voxelChunks.size > 5) {
+            for (let i = 0; i < 14; i++) r._tickDekoFernfeld();
+            const ff = r.state.dekoFernfeld;
+            const c1 = {};
+            if (ff) for (const [name, mesh] of ff.meshes) c1[name] = mesh.count;
+            if (ff) ff.anchor = null;
+            for (let i = 0; i < 14; i++) r._tickDekoFernfeld();
+            const c2 = {};
+            if (ff) for (const [name, mesh] of ff.meshes) c2[name] = mesh.count;
+            out.fernfeldDeterministisch = !!ff && JSON.stringify(c1) === JSON.stringify(c2);
+            out.fernfeldBounded = !!ff && ff.meshes.size <= species.length;
+            out.fernfeldMeasured = true;
+        } else {
+            out.fernfeldMeasured = false; // Welt zu jung — unmessbar = bestanden (V13.1-Default)
+        }
+        return out;
+    });
+    if (!res) {
+        check("V18.131 Deko-Kaskade: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "V18.131 Deko-Kaskade: DETAIL_CASCADE trägt deko+dekoDichte (mesh·impostor·impostor·none, fallend)",
+        res.dekoFields && res.bandPlan && res.dichteFaellt
+    );
+    check("V18.131 Deko-Kaskade: die per-Art-ring-Felder FIELEN (das Band ist die eine Quelle)", res.ringFiel);
+    check(
+        "V18.131 Deko-Kaskade: KONSUM verdrahtet (Scatter liest das Band · der Loop tickt das Fernfeld)",
+        res.scatterReadsBand && res.loopTicksFernfeld
+    );
+    check(
+        "V18.131 Deko-Kaskade: die Impostor-Geometrie trägt color+position (WebGPU-strikt, geteiltes Material)",
+        res.impostorHasColor
+    );
+    check(
+        "V18.131 Deko-Kaskade: das Fernfeld baut deterministisch + bounded (oder Welt zu jung = unmessbar)",
+        !res.fernfeldMeasured || (res.fernfeldDeterministisch && res.fernfeldBounded)
+    );
+}
+
+// V18.132 — A3 (gigant-plan §5): FERNE BINNENGEWAESSER via seed-deterministische
+// KACHELN. Heimat-Region (±1024) UNANGETASTET; jenseits liefern lazy Kacheln
+// (2048 m, f(seed, Koordinate) — peer-identisch egal wann berechnet; die alte
+// Plan-Idee „Region wandert mit dem Spieler" waere determinismus-brechend
+// gewesen) Seen·Fluesse·Erosion. Voller Beweis: `scripts/diag-ferne-seen.cjs`
+// (GEMESSEN GRUEN: Kachel 34 Fluesse + 13 Seen in 265 ms · Heimat bit-identisch ·
+// Kachel deterministisch · Worker==Main 0/32144 am fernen Fluss-Chunk).
+async function checkBandV18132FerneSeen(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.machinery =
+            typeof r._hydroFor === "function" &&
+            typeof r._erosionFor === "function" &&
+            typeof r._hydroTileKeyFor === "function" &&
+            typeof r._ensureHydroTilesAround === "function";
+        // KONSUM (V17.31): ALLE Hydro-Leser laufen durch die Region-Aufloesung.
+        const readers = [
+            r._erosionDeltaAt,
+            r._hydrosphereCarveAt,
+            r._hydrosphereLakeAt,
+            r._waterLevelAt,
+            r._atlasWaterLevelAt,
+            r._hydroRiverAt,
+            r._hydroWaterLevelAt,
+            r._voxelChunkHasAnyWater,
+        ];
+        out.readersResolved = readers.every((f) => /_hydroFor|_erosionFor/.test(f.toString()));
+        // Der EINE Build-Eingang traegt die harte Kachel-Garantie.
+        out.buildGuarded = /_ensureHydroTilesAround/.test(r._acquireVoxelChunkBuild.toString());
+        // Worker-Mirror (Quelle per fetch — gleiche Origin): Resolver + Apply.
+        try {
+            const src = await fetch("voxel-worker.js").then((x) => x.text());
+            out.workerMirror =
+                /function hydroFor\(/.test(src) &&
+                /function erosionFor\(/.test(src) &&
+                /snap\.hydroTiles/.test(src) &&
+                /snap\.erosionTiles/.test(src);
+        } catch (_e) {
+            out.workerMirror = "fetch-fail";
+        }
+        if (!r.state.hydrosphere || !r.state.hydrosphere.ready) {
+            out.unmeasurable = true; // Welt zu jung — unmessbar = bestanden (V13.1)
+            return out;
+        }
+        // HEIMAT-IDENTITAET: Fingerprint vor/nach einem Kachel-Bau bit-gleich.
+        const fp = () => {
+            const v = [];
+            for (let i = 0; i < 6; i++)
+                for (let j = 0; j < 6; j++) {
+                    const x = -900 + i * 360;
+                    const z = -900 + j * 360;
+                    v.push(r._atlasWaterLevelAt(x, z, -Infinity), r._erosionDeltaAt(x, z));
+                }
+            return JSON.stringify(v);
+        };
+        const before = fp();
+        r._ensureHydroTilesAround(-2048, 0, 10); // Kachel WEST (-1,0)
+        const tile = r.state.hydroTiles ? r.state.hydroTiles.get("-1,0") : null;
+        out.tileBuilt = !!(tile && tile.ready);
+        out.tileSubstanz = tile ? (tile.rivers ? tile.rivers.length : 0) + (tile.lakes ? tile.lakes.length : 0) : 0;
+        out.homeIdentical = fp() === before;
+        // hydroBand deckt die Kachel-Seen (V9.77: das Band ist global).
+        let maxLake = -Infinity;
+        if (tile && Array.isArray(tile.lakes))
+            for (const lk of tile.lakes) if (Number.isFinite(lk.level) && lk.level > maxLake) maxLake = lk.level;
+        out.bandCovers = !Number.isFinite(maxLake) || (r.state.hydroBand && r.state.hydroBand.top >= maxLake);
+        // Der Worker-Snapshot traegt die Kachel.
+        const snap = r._voxelWorkerSnapshotState();
+        out.snapCarries = !!(snap.hydroTiles && snap.hydroTiles["-1,0"]);
+        return out;
+    });
+    if (!res) {
+        check("V18.132 Ferne Seen: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/_erosionFor/_ensure...)", res.machinery);
+    check("V18.132 Ferne Seen: ALLE 8 Hydro-Leser laufen durch die Region-Aufloesung (KONSUM)", res.readersResolved);
+    check("V18.132 Ferne Seen: der EINE Build-Eingang traegt die harte Kachel-Garantie", res.buildGuarded);
+    check(
+        "V18.132 Ferne Seen: der Worker-Mirror traegt hydroFor/erosionFor + Kachel-Apply",
+        res.workerMirror === true,
+        String(res.workerMirror)
+    );
+    if (!res.unmeasurable) {
+        check(
+            "V18.132 Ferne Seen: die WEST-Kachel baut mit Substanz (Fluesse+Seen > 0)",
+            res.tileBuilt && res.tileSubstanz > 0,
+            `substanz=${res.tileSubstanz}`
+        );
+        check("V18.132 Ferne Seen: die HEIMAT-Region bleibt bit-identisch (Welt-Identitaet)", res.homeIdentical);
+        check("V18.132 Ferne Seen: hydroBand deckt die Kachel-Seen (global, V9.77)", res.bandCovers);
+        check("V18.132 Ferne Seen: der Worker-Snapshot traegt die Kachel (Determinismus-Wand)", res.snapCarries);
+    }
+}
+
+// V18.133 — S6-B (kampf-plan §11): ERNTBARE FLORA — die Foraging-Oekonomie.
+// Die V17.1-Klein-Vegetation (bisher reine GPU-Deko) ist PFLUECKBAR: Raycast
+// auf die bestehenden InstancedMeshes (instanceId = stabiler Bucket-Index),
+// Ertrag = Alchemie-Materialien kraut/essenz (Arten-Daten `ernte`), Session-
+// Gedaechtnis + Regrow (NICHT persistiert — Flora waechst nach), der Trank-
+// Bauplan zieht GEPFLUECKTES kraut durchs Mach-Tor (V17.65). End-to-end-
+// Probe-bewiesen (pfluecken → +1 kraut → versteckt ueber Rebuild → Regrow).
+async function checkBandV18133Forage(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const mats = r.state.materials;
+        out.materials =
+            !!(mats.kraut && mats.kraut.builtIn && mats.kraut.tags.lebendig >= 0.9) &&
+            !!(mats.essenz && mats.essenz.builtIn && mats.essenz.tags.magieleitung >= 0.9);
+        const species = r.constructor.KLEIN_VEGETATION_SPECIES;
+        out.allYields = species.every((sp) => typeof sp.ernte === "string" && !!mats[sp.ernte]);
+        out.forageConst = !!r.constructor.FORAGE && Number.isFinite(r.constructor.FORAGE.regrowMs);
+        // KONSUM-Proben: die Maus-Geste routet Flora, der Build filtert die
+        // Ernte, der Streaming-Slot tickt den Regrow.
+        out.gestureRoutes = /_pickScatterAtCrosshair/.test(r.tryMouseBreak.toString());
+        out.buildFilters = /scatterHarvested/.test(r._buildVoxelChunkScatter.toString());
+        out.loopRegrows = /_tickScatterRegrow/.test(r._loopVoxelStreaming.toString());
+        // Die Zutaten-Oekonomie schliesst: der Lebenssaft traegt kraut (das
+        // Mach-Tor V17.65 zieht damit GEPFLUECKTE Zutaten).
+        out.trankKraut =
+            r.state.blueprints.trank_lebenssaft &&
+            r.state.blueprints.trank_lebenssaft.parts.some((pp) => pp.material === "kraut");
+        // Behavioral (wenn Scatter da — sonst unmessbar=bestanden, V13.1):
+        let pick = null;
+        if (r.state.voxelChunkScatter) {
+            for (const [key, list] of r.state.voxelChunkScatter) {
+                for (const it of list) {
+                    if (it.mesh && it.mesh.count > 0) {
+                        pick = { key, name: it.name, index: 0, mesh: it.mesh };
+                        break;
+                    }
+                }
+                if (pick) break;
+            }
+        }
+        if (pick) {
+            const sp = species.find((x) => x.name === pick.name);
+            const countMat = () => {
+                let n = 0;
+                for (const sl of r.state.player.inventory || []) if (sl && sl.material === sp.ernte) n += sl.count || 0;
+                return n;
+            };
+            const before = countMat();
+            const ok1 = r._harvestScatterPick(pick);
+            out.harvested = ok1 && countMat() - before === 1;
+            out.doubleRejected = r._harvestScatterPick(pick) === false;
+            const m = new window.THREE.Matrix4();
+            pick.mesh.getMatrixAt(0, m);
+            out.zeroScaled = Math.abs(m.elements[0]) < 1e-6;
+            // Aufraeumen: Ernte-Eintrag zuruecknehmen (kein Band-Crosstalk) +
+            // Scatter des Chunks neu (die Instanz kehrt sofort zurueck).
+            const perChunk = r.state.scatterHarvested.get(pick.key);
+            if (perChunk) {
+                perChunk.delete(`${pick.name}:0`);
+                if (perChunk.size === 0) r.state.scatterHarvested.delete(pick.key);
+            }
+            r._disposeVoxelChunkScatter(pick.key);
+            const [cx, cz] = pick.key.split(",").map(Number);
+            r._buildVoxelChunkScatter(cx, cz);
+            out.measured = true;
+        } else {
+            out.measured = false;
+        }
+        return out;
+    });
+    if (!res) {
+        check("V18.133 Foraging: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("V18.133 Foraging: die Alchemie-Materialien kraut+essenz stehen (builtIn, Tag-Profil)", res.materials);
+    check(
+        "V18.133 Foraging: jede Art traegt einen existierenden Ernte-Stoff (Daten-Vertrag)",
+        res.allYields && res.forageConst
+    );
+    check(
+        "V18.133 Foraging: KONSUM verdrahtet (Geste routet Flora · Build filtert Ernte · Loop tickt Regrow)",
+        res.gestureRoutes && res.buildFilters && res.loopRegrows
+    );
+    check(
+        "V18.133 Foraging: der Lebenssaft zieht GEPFLUECKTES kraut (die Zutaten-Oekonomie schliesst)",
+        res.trankKraut
+    );
+    check(
+        "V18.133 Foraging: pfluecken wirkt (+1 Stoff · Instanz Skala 0 · Doppel-Pflueck abgelehnt) — oder unmessbar",
+        !res.measured || (res.harvested && res.doubleRejected && res.zeroScaled)
+    );
+}
+
+// V18.134 — F4 Stufe 1 (gigant-plan §5): der SOZIALE BOGEN beginnt — signierte
+// BEWERTUNGS-ZEUGNISSE uebers Mesh. Ein Zeugnis {id,s,t,pub,sig} (ed25519 ueber
+// das stabile Kanonische), LWW pro (Ziel, Schluessel) = CRDT-tauglich
+// konfliktarm; kanal-exklusiv + R1-rate-gegated; R4-Rueckruf-KONSUMENT
+// (revozierte Schluessel fallen aus der Wertungs-Wahrheit). End-to-end mit
+// ZWEITER Identitaet probe-bewiesen (verify, LWW, Tamper, Rueckruf, Batch).
+async function checkBandV18134Social(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.consts = !!r.constructor.SOCIAL && Object.isFrozen(r.constructor.SOCIAL);
+        // KONSUM-Proben: das Werten signiert, der Kanal routet, der Feed liest.
+        out.rateSigns = /_socialSignOwnRating/.test(r._setFeedRating.toString());
+        out.channelRoutes = /social-rating/.test(r._p2pHandleChannelMessage.toString());
+        out.feedReadsAgg = /_feedRatingAgg/.test(r._feedRatingBar.toString());
+        if (!r.state.vibePass || !r.state.vibePass.ready || typeof crypto === "undefined" || !crypto.subtle) {
+            out.unmeasurable = true;
+            return out;
+        }
+        const saved = r.state.socialRatings;
+        r.state.socialRatings = new Map();
+        try {
+            const own = await r._socialSignOwnRating("welt:band134", 4);
+            out.ownSigned = !!(own && own.sig);
+            const kp = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+            const jwk = await crypto.subtle.exportKey("jwk", kp.publicKey);
+            const b64uToBytes = (b64u) => {
+                const b64 = b64u.replace(/-/g, "+").replace(/_/g, "/");
+                const bin = atob(b64);
+                return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+            };
+            const pubHex = [...b64uToBytes(jwk.x)].map((b) => b.toString(16).padStart(2, "0")).join("");
+            const mk = async (id, sVal, t) => {
+                const z = { id, s: sVal, t, pub: pubHex };
+                const data = new TextEncoder().encode(r._socialCanonical(z));
+                const sig = await crypto.subtle.sign({ name: "Ed25519" }, kp.privateKey, data);
+                z.sig = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
+                return z;
+            };
+            const fremd = await mk("welt:band134", 5, Date.now());
+            out.received = await r._socialRatingReceive("peerX", fremd);
+            const agg = r._feedRatingAgg("welt:band134");
+            out.aggOk = agg.count === 2 && Math.abs(agg.avg - 4.5) < 1e-9;
+            out.lwwRejected =
+                (await r._socialRatingReceive("peerX", await mk("welt:band134", 1, fremd.t - 5000))) === false;
+            out.tamperRejected = (await r._socialRatingReceive("peerX", { ...fremd, s: 1 })) === false;
+            if (typeof r.revokeKey === "function") {
+                r.revokeKey(pubHex, { reason: "band134" });
+                const agg2 = r._feedRatingAgg("welt:band134");
+                out.revokeConsumed =
+                    agg2.count === 1 &&
+                    (await r._socialRatingReceive("peerX", await mk("welt:band134", 3, Date.now() + 1000))) === false;
+                if (r.state.revokedKeys && r.state.revokedKeys.delete) r.state.revokedKeys.delete(pubHex.toLowerCase());
+            } else {
+                out.revokeConsumed = true;
+            }
+            const batch = r._socialAnnounceBatch();
+            out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length >= 1);
+        } finally {
+            r.state.socialRatings = saved || new Map();
+            r._saveSocialRatings();
+        }
+        return out;
+    });
+    if (!res) {
+        check("V18.134 Sozial: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("V18.134 Sozial: SOCIAL-Konfiguration steht (frozen)", res.consts);
+    check(
+        "V18.134 Sozial: KONSUM verdrahtet (Werten signiert · Kanal routet · Feed liest die Aggregation)",
+        res.rateSigns && res.channelRoutes && res.feedReadsAgg
+    );
+    if (!res.unmeasurable) {
+        check(
+            "V18.134 Sozial: eigenes Zeugnis signiert + fremdes verifiziert + Aggregation Ø 4.5 (2)",
+            res.ownSigned && res.received && res.aggOk
+        );
+        check("V18.134 Sozial: LWW haelt (aelteres Zeugnis derselben Identitaet faellt)", res.lwwRejected);
+        check("V18.134 Sozial: ein manipuliertes Zeugnis bricht an der Signatur", res.tamperRejected);
+        check("V18.134 Sozial: der R4-Rueckruf wirkt sozial (Aggregation + Empfang sieben)", res.revokeConsumed);
+        check("V18.134 Sozial: die Anschluss-Annonce traegt die eigenen Zeugnisse (Batch)", res.batchCarries);
+    }
+}
+
+// V18.135 — F4 Stufe 2: LESEZEICHEN (privat-lokal, anazh.feedBookmarks — NIE
+// im Welt-Snapshot; das Mesh-Folgen ist die spaetere Stufe). Ein 🔖-Toggle
+// pro Feed-Karte + der „Gemerkt"-Kind-Chip, der Filter liest das dataset.
+async function checkBandV18135Bookmarks(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.helpers =
+            typeof r._feedBookmarked === "function" &&
+            typeof r._toggleFeedBookmark === "function" &&
+            typeof r._loadFeedBookmarks === "function";
+        // Toggle-Roundtrip + Persistenz (localStorage, global).
+        const id = "band135:test";
+        const was = r._feedBookmarked(id);
+        const on = r._toggleFeedBookmark(id);
+        out.toggleOn = on === true && r._feedBookmarked(id) === true;
+        let persisted = false;
+        try {
+            persisted = JSON.parse(localStorage.getItem("anazh.feedBookmarks") || "{}")[id] === true;
+        } catch (_e) {}
+        out.persisted = persisted;
+        const off = r._toggleFeedBookmark(id);
+        out.toggleOff = off === false && r._feedBookmarked(id) === false;
+        if (was) r._toggleFeedBookmark(id); // Zustand wiederherstellen
+        // KONSUM: Karte traegt den Toggle + dataset, Chips tragen Gemerkt,
+        // der Filter liest es.
+        out.barHasMark = /_toggleFeedBookmark/.test(r._feedRatingBar.toString());
+        out.chipsHaveGemerkt = /gemerkt/.test(r._renderFeedKindChips.toString());
+        out.filterReads = /bookmarked/.test(r._applyLibraryFilter.toString());
+        return out;
+    });
+    if (!res) {
+        check("V18.135 Lesezeichen: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "V18.135 Lesezeichen: Helfer + Toggle-Roundtrip + globale Persistenz",
+        res.helpers && res.toggleOn && res.persisted && res.toggleOff
+    );
+    check(
+        "V18.135 Lesezeichen: KONSUM verdrahtet (Karte traegt 🔖 · Chip „Gemerkt“ · Filter liest dataset)",
+        res.barHasMark && res.chipsHaveGemerkt && res.filterReads
+    );
+}
+
+// V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
+// Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
+// Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
+// (V18.65-Klasse) → er treibt jetzt csm.maxFar (300→540 = der gebaute Default,
+// nahtlos); (2) Kachel-Erosion trug 64-KB-flowTo-Ballast (Konsument nur der
+// Heimat-diag); (3) die Bestbewertet-Rail las nur die EIGENE Wertung (mesh-
+// gewertete Items unsichtbar — Konsum-Riss zur V18.134-Aggregation); (4) der
+// per-Chunk-RNG lebte 2x inline (Scatter+Fernfeld) → EIN _scatterChunkRng.
+// Entkraeftet (GEMESSEN): die CSM-Haupt-Map rendert NICHT (mainMap=false).
+async function checkBandV18136Audit(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf).
+        out.rangeSrc = /csm\.maxFar/.test(r.setShadowRange.toString());
+        const savedCsm = r.state.csmNode;
+        const savedRange = r.state.atmosphere && r.state.atmosphere.shadowRange;
+        r.state.csmNode = { maxFar: 0, camera: null, updateFrustums() {} };
+        r.setShadowRange(200);
+        out.rangeDrives = Math.abs(r.state.csmNode.maxFar - 360) < 1e-9;
+        r.state.csmNode = savedCsm;
+        if (Number.isFinite(savedRange)) r.setShadowRange(savedRange);
+        // (2) Kachel-Erosion ohne flowTo-Ballast (Source-Probe am Ensure).
+        out.tileLean = /eTile\.flowTo = null/.test(r._ensureHydroTilesAround.toString());
+        // (3) die Rail liest die Gemeinschafts-Aggregation.
+        out.trendsAgg = /_feedRatingAgg/.test(r._renderFeedTrends.toString());
+        // (4) EIN RNG-Helfer, zwei Konsumenten (V9.82).
+        out.oneRng =
+            typeof r._scatterChunkRng === "function" &&
+            /_scatterChunkRng/.test(r._buildVoxelChunkScatter.toString()) &&
+            /_scatterChunkRng/.test(r._buildDekoFernfeldSpecies.toString());
+        return out;
+    });
+    if (!res) {
+        check("V18.136 Audit: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "V18.136 Audit: der Schatten-Weite-Slider treibt unter CSM maxFar (kein toter Knopf)",
+        res.rangeSrc && res.rangeDrives
+    );
+    check("V18.136 Audit: Kachel-Erosion ohne flowTo-Ballast (64 KB/Kachel gespart)", res.tileLean);
+    check("V18.136 Audit: die Bestbewertet-Rail liest die Gemeinschafts-Aggregation", res.trendsAgg);
+    check("V18.136 Audit: EIN per-Chunk-RNG (Scatter + Fernfeld verdichtet, V9.82)", res.oneRng);
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
@@ -31754,7 +32406,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // Vor dem Signieren: Status "unsigned".
         out.statusUnsigned = (await r.verifyBlueprintSignature(bp)) === "unsigned";
         // Signieren.
-        const signRes = await r.signBlueprint("_w13p2");
+        const signRes = await r.signBlueprint("_w13p2", { skipConfirm: true });
         out.signOk = !!signRes && signRes.ok === true;
         out.signFields =
             typeof bp.signature === "string" &&
@@ -31772,7 +32424,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         bp.parts[0].material = "eisen";
         out.statusModified = (await r.verifyBlueprintSignature(bp)) === "modified";
         // Neu signieren heilt es.
-        await r.signBlueprint("_w13p2");
+        await r.signBlueprint("_w13p2", { skipConfirm: true });
         out.resignValid = (await r.verifyBlueprintSignature(bp)) === "valid";
         // Signatur fälschen (ein Hex-Zeichen kippen, Substanz unverändert) → "forged".
         const goodSig = bp.signature;
@@ -32125,7 +32777,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             wCards.every((c) => c.style.display === "none");
         r.state.feedKind = "alle";
         r._applyLibraryFilter();
-        out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 4;
+        out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 5; // V18.135: + „Gemerkt"
         // V18.74 — jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
         out.feedCovers =
             !!stream.querySelector(".library-card[data-kind='world'] .feed-cover .feed-cover-glyph") &&
@@ -32300,7 +32952,10 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Feed: jede Karte trägt das WERTEN (5 Sterne)", w14Results.feedRatingBars);
         check("Feed: das WERTEN wirkt — setzen + lesen + Toggle (das dritte Verb, lokal)", w14Results.feedRatingWorks);
         check("Feed: der Kind-Filter TREIBT den Strom (nur Rezepte sichtbar)", w14Results.feedKindFilter);
-        check("Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen)", w14Results.feedKindChips);
+        check(
+            "Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen/Gemerkt, V18.135)",
+            w14Results.feedKindChips
+        );
         check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
         check("Feed: die Sortier-Chips (Neueste | Bewertung) sind da (V18.74)", w14Results.feedSortChips);
         check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
@@ -32360,7 +33015,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // Unsigniert → "unsigned".
         out.unsignedState = (await r.verifyWorldSignature("fluid")) === "unsigned";
         // signWorld signiert + persistiert.
-        const signRes = await r.signWorld("fluid");
+        const signRes = await r.signWorld("fluid", { skipConfirm: true });
         out.signOk = signRes.ok === true && /^[0-9a-f]{64}$/i.test(signRes.authorPubKey || "");
         out.signStored =
             !!r.state.signedWorlds.fluid && /^[0-9a-f]+$/i.test(r.state.signedWorlds.fluid.signature || "");
@@ -32574,7 +33229,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // exportWorldManifest: unsigniert → not_signed.
         out.exportUnsignedRejected = r.exportWorldManifest("fluid").reason === "not_signed";
         // fluid signieren, dann exportieren.
-        await r.signWorld("fluid");
+        await r.signWorld("fluid", { skipConfirm: true });
         const exp = r.exportWorldManifest("fluid");
         out.exportOk =
             exp.ok === true &&
@@ -33664,6 +34319,607 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     }
 }
 
+// ============================================================================
+// G8 — DER ROBUSTHEITS-BOGEN (docs/archiv/robustheit-plan.md) — die vier
+// Angriffs-KORPORA = das lebende Antikörper-Archiv (R5). Jeder Korpus impft
+// das System bei JEDEM Push gegen genau einen Angriff: R0 Trennung · R1 Flut ·
+// R2 souveräner Angriff · R3 Sandbox-Escape · R4 Infektion. Ein Regress an
+// einer alten Wand ist sofort rot.
+// ============================================================================
+
+// G8 R0 — der INNERSTE RING ist BENANNT + ABWESEND aus jedem geteilten Kanal.
+// Die Wand: der private Schlüssel / die Identität lecken NIE in einen
+// Welt-Snapshot oder Portal-Payload (GEMESSEN-schon-wahr, jetzt eingefroren).
+async function checkBandG8R0Sovereign(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        // (1) SOVEREIGN_STATE benannt + eingefroren + die kanonischen Schlüssel.
+        const S = K.SOVEREIGN_STATE;
+        out.frozen =
+            !!S && Object.isFrozen(S) && Object.isFrozen(S.excludedStateKeys) && Object.isFrozen(S.privateFields);
+        out.namesRing =
+            !!S &&
+            S.excludedStateKeys.includes("vibePass") &&
+            S.excludedStateKeys.includes("signedWorlds") &&
+            S.excludedStateKeys.includes("customWorlds") &&
+            S.excludedStateKeys.includes("p2p") &&
+            S.privateStorageKeys.includes("anazh.vibePass") &&
+            S.privateFields.includes("_privateKeyJwk");
+        out.auditMethod = typeof r._sovereignStateAudit === "function";
+        // (2) Der Trennungs-Beweis: die Sonde meldet ok, keine Lecks.
+        const audit = r._sovereignStateAudit();
+        out.auditOk = !!audit && audit.ok === true && audit.leaks.length === 0;
+        out.auditLeaks = audit ? audit.leaks.join(",") : "(no audit)";
+        // (3) Der Snapshot DIREKT: kein souveräner Slot, kein privates Feld tief.
+        const snap = r.buildStateSnapshot();
+        out.snapNoSovereignSlot = S.excludedStateKeys.every((k) => !Object.prototype.hasOwnProperty.call(snap, k));
+        const snapJson = JSON.stringify(snap);
+        out.snapNoPrivateField =
+            !/"_?privateKeyJwk"|"privateKey"/.test(snapJson) && snapJson.indexOf("anazh.vibePass") < 0;
+        // (4) Der Portal-Payload trägt nur die ÖFFENTLICHE Identität.
+        const pay = r._portalEnterPayload();
+        const payJson = JSON.stringify(pay);
+        out.payloadPublicOnly = !/"_?privateKeyJwk"|"privateKey"/.test(payJson);
+        out.payloadIdPublic = !pay.vibePassId || /^ed25519:[0-9a-f]*$/.test(pay.vibePassId);
+        // (5) DEFENSE: selbst ein injiziertes Privat-Feld in state.vibePass leckt
+        // NICHT in den Snapshot (der fixe Key-Satz schließt vibePass ganz aus).
+        const vp = r.state.vibePass || (r.state.vibePass = {});
+        const hadKey = Object.prototype.hasOwnProperty.call(vp, "privateKey");
+        const saved = vp.privateKey;
+        vp.privateKey = "SECRET-LEAK-CANARY-d-jwk";
+        const snap2 = JSON.stringify(r.buildStateSnapshot());
+        out.injectedKeyStaysOut = snap2.indexOf("SECRET-LEAK-CANARY") < 0;
+        if (hadKey) vp.privateKey = saved;
+        else delete vp.privateKey;
+        return out;
+    });
+    if (!res) {
+        check("G8 R0: Sovereign-State-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "G8 R0: SOVEREIGN_STATE benannt + eingefroren (der innerste Ring)",
+        res.frozen && res.namesRing && res.auditMethod
+    );
+    check("G8 R0: der Trennungs-Beweis (_sovereignStateAudit) ist sauber", res.auditOk, res.auditLeaks);
+    check(
+        "G8 R0: der Welt-Snapshot trägt KEINEN souveränen Slot + kein Privat-Feld",
+        res.snapNoSovereignSlot && res.snapNoPrivateField
+    );
+    check(
+        "G8 R0: der Portal-Payload trägt nur die öffentliche Identität",
+        res.payloadPublicOnly && res.payloadIdPublic
+    );
+    check("G8 R0: ein injiziertes Privat-Feld leckt NICHT in den Snapshot (fixer Key-Satz)", res.injectedKeyStaysOut);
+}
+
+// G8 R1 — der gedämpfte Kanal (M2): EIN Token-Bucket pro Overlay am Eingang
+// (auch ready/exit/manifest) + ein per-Peer-Cap auf subworld-net. Eine Flut
+// klingt von selbst ab (Verwerfen, nicht Puffern; der Bucket settled).
+async function checkBandG8R1DampedChannel(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        // (1) Methoden + Konstanten verdrahtet.
+        out.methods = typeof r._portalChannelAdmit === "function" && typeof r._p2pPeerRateAdmit === "function";
+        out.consts =
+            K.PORTAL_CHANNEL_RATE_MAX === 200 &&
+            K.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000 &&
+            K.SUBWORLD_NET_PEER_RATE_MAX === 120;
+        // (2) Der Kanal-Bucket bändigt eine Flut: 10000 Nachrichten in EINEM
+        // Fenster → admittiert genau PORTAL_CHANNEL_RATE_MAX, Rest verworfen.
+        const po = {};
+        let admitted = 0;
+        for (let i = 0; i < 10000; i++) {
+            if (r._portalChannelAdmit(po, 1000)) admitted++;
+        }
+        out.channelCapsFlood = admitted === K.PORTAL_CHANNEL_RATE_MAX;
+        out.channelAdmitted = admitted;
+        // (3) Der Bucket SETTLED: nach dem Fenster admittiert er wieder (der
+        // EPS-Fixpunkt — leeres Fenster = Ruhe, kein „settled nie").
+        out.channelSettles = r._portalChannelAdmit(po, 1000 + K.PORTAL_CHANNEL_RATE_WINDOW_MS + 1) === true;
+        // (4) Der per-Peer-Cap: 120 admittiert je Peer, der 121. fällt; ein
+        // ANDERER Peer ist unabhängig (kein gemeinsamer Eimer).
+        let pa = 0;
+        for (let i = 0; i < 300; i++) {
+            if (r._p2pPeerRateAdmit("g8r1-test", "peerA", K.SUBWORLD_NET_PEER_RATE_MAX)) pa++;
+        }
+        out.peerCaps = pa === K.SUBWORLD_NET_PEER_RATE_MAX;
+        out.peerIndependent = r._p2pPeerRateAdmit("g8r1-test", "peerB", K.SUBWORLD_NET_PEER_RATE_MAX) === true;
+        if (r._p2pRate) delete r._p2pRate["g8r1-test"];
+        // (5) Verdichtung + Verdrahtung (Source-Proben): der Kanal-Bucket sitzt
+        // im onMessage-Eingang, beide Mesh-Empfänger nutzen das EINE Raten-Tor.
+        out.wiredInOnMessage = /_portalChannelAdmit\(po, performance\.now\(\)\)/.test(r._buildPortalOverlay.toString());
+        out.subworldUsesGate = /_p2pPeerRateAdmit\("subworld-net"/.test(r._p2pMsgSubworldNet.toString());
+        out.creaturePosUsesGate =
+            /_p2pPeerRateAdmit\("creature-pos"/.test(r._p2pMsgCreaturePos.toString()) &&
+            !/_cpRate/.test(r._p2pMsgCreaturePos.toString());
+        return out;
+    });
+    if (!res) {
+        check("G8 R1: gedämpfter-Kanal-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("G8 R1: Kanal-Bucket + per-Peer-Tor verdrahtet (Methoden + Konstanten)", res.methods && res.consts);
+    check(
+        "G8 R1: der Kanal-Bucket bändigt die Flut (10000 → genau PORTAL_CHANNEL_RATE_MAX)",
+        res.channelCapsFlood,
+        `admittiert=${res.channelAdmitted}/200`
+    );
+    check("G8 R1: der Bucket SETTLED nach dem Fenster (EPS-Fixpunkt, settled-Garantie)", res.channelSettles);
+    check("G8 R1: der per-Peer-Cap deckelt je Peer + Peers sind unabhängig", res.peerCaps && res.peerIndependent);
+    check(
+        "G8 R1: das EINE Raten-Tor ist verdrahtet (onMessage-Eingang · subworld-net · creature-pos verdichtet)",
+        res.wiredInOnMessage && res.subworldUsesGate && res.creaturePosUsesGate
+    );
+}
+
+// G8 R2 — die Irreversibilitäts-Wand (M3): SOVEREIGN_ACTIONS (frozen) disjunkt
+// von jedem Auto-Pool + eine Host-gerenderte Geste. Eine vergiftete Welt/LLM/
+// Regel kann einen souveränen Akt NIE auslösen — nur du, jetzt, über die Geste.
+async function checkBandG8R2SovereignWall(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        const SA = K.SOVEREIGN_ACTIONS;
+        // (1) SOVEREIGN_ACTIONS benannt + eingefroren + die vier Akte.
+        out.frozen =
+            Array.isArray(SA) &&
+            Object.isFrozen(SA) &&
+            SA.length === 4 &&
+            SA.includes("wallet_transfer") &&
+            SA.includes("sign_manifest") &&
+            SA.includes("change_identity") &&
+            SA.includes("grant_capability");
+        out.helpers = typeof r._isSovereignAction === "function" && typeof r._sovereignGesture === "function";
+        // (2) DISJUNKTHEIT: kein souveräner Akt ist ein dslEffect, in
+        // NON_BROADCASTABLE_OPS, oder im Nexus-Auto-Pool (dslComposeAtomic).
+        const effects = r.dslEffects;
+        out.notDslOp = SA.every((a) => !(a in effects));
+        const nb = K.NON_BROADCASTABLE_OPS;
+        out.notBroadcast = SA.every((a) => !nb.has(a));
+        let composeClean = true;
+        for (let i = 0; i < 300; i++) {
+            const prog = r.dslComposeAtomic(() => Math.random());
+            if (Array.isArray(prog) && SA.includes(prog[0])) {
+                composeClean = false;
+                break;
+            }
+        }
+        out.notComposed = composeClean;
+        // (3) RUNTIME: ein DSL-Programm mit souveränem Op → sovereign_blocked
+        // (NICHT unknown_op, NICHT ausgeführt).
+        const run = r.dslRun(["wallet_transfer", "to", "someone"], { source: "human" });
+        out.dslBlocks =
+            Array.isArray(run.log) &&
+            run.log.some((e) => e.event === "sovereign_blocked") &&
+            !run.log.some((e) => e.event === "unknown_op");
+        // genistet in einer Kette: der souveräne Op fällt, der legitime läuft.
+        const savedWeather = r.state.weather;
+        r.state.weather = "sunny";
+        const run2 = r.dslRun(["chain", ["sign_manifest"], ["weather", "rainy"]], { source: "human" });
+        out.chainBlocksSovereignNotRest =
+            run2.log.some((e) => e.event === "sovereign_blocked") && r.state.weather === "rainy";
+        r.state.weather = savedWeather;
+        // (4) die Host-Geste: skipConfirm → true; ein NICHT-souveräner Akt → verweigert.
+        out.gestureSkipConfirm = r._sovereignGesture("wallet_transfer", { what: "x" }, { skipConfirm: true }) === true;
+        out.gestureRefusesUnknown = r._sovereignGesture("plant_a_tree", {}, { skipConfirm: true }) === false;
+        // (5) die drei realen souveränen Akte laufen durch die Geste (Source) +
+        // dslEval trägt die Wand.
+        out.signBpRouted = /_sovereignGesture\(\s*"sign_manifest"/.test(r.signBlueprint.toString());
+        out.signWorldRouted = /_sovereignGesture\(\s*"sign_manifest"/.test(r.signWorld.toString());
+        out.identityRouted = /_sovereignGesture\(\s*"change_identity"/.test(r.importVibePass.toString());
+        out.evalGuard = /SOVEREIGN_ACTIONS\.includes\(op\)/.test(r.dslEval.toString());
+        // (6) eine Welt-REGEL kann keinen souveränen Effekt ausführen.
+        const ctxr = r.dslCtx({ source: "rule-test" });
+        r.dslEval(["grant_capability", "world", "domain"], ctxr);
+        out.ruleEffectBlocked = ctxr.log.some((e) => e.event === "sovereign_blocked");
+        return out;
+    });
+    if (!res) {
+        check("G8 R2: Sovereign-Wall-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("G8 R2: SOVEREIGN_ACTIONS benannt + eingefroren (vier Akte) + Geste-Helfer", res.frozen && res.helpers);
+    check(
+        "G8 R2: DISJUNKT von dslEffects ∪ NON_BROADCASTABLE ∪ dslComposeAtomic (die Wand)",
+        res.notDslOp && res.notBroadcast && res.notComposed
+    );
+    check("G8 R2: ein souveräner Op im DSL wird sovereign_blocked (nie ausgeführt)", res.dslBlocks);
+    check("G8 R2: in einer Kette fällt der souveräne Op, der legitime läuft", res.chainBlocksSovereignNotRest);
+    check(
+        "G8 R2: die Host-Geste (skipConfirm→ok · Nicht-souverän→verweigert)",
+        res.gestureSkipConfirm && res.gestureRefusesUnknown
+    );
+    check(
+        "G8 R2: Signieren/Identität laufen durch die Geste + dslEval trägt die Wand",
+        res.signBpRouted && res.signWorldRouted && res.identityRouted && res.evalGuard
+    );
+    check(
+        "G8 R2: eine Welt-REGEL kann keinen souveränen Effekt ausführen (blockiert beim Feuern)",
+        res.ruleEffectBlocked
+    );
+}
+
+// G8 R3 — Lokalitäts-Härtung (M1): die Sandbox-Grenze als Invariante eingefroren
+// (sandboxed → null-origin · vendored → unforgeable sandboxed · kein Welt-Pfad
+// zum innersten Ring). Die ECHTE Isolation beweist smoke-sandbox.cjs im Browser.
+async function checkBandG8R3Locality(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.methods = typeof r._portalSandboxAttr === "function" && typeof r._localityAudit === "function";
+        // (1) das Sandbox-Attribut: sandboxed → allow-scripts allein (null-origin),
+        // trusted → + allow-same-origin (unser eigener Code).
+        out.sandboxedAttr = r._portalSandboxAttr({ trust: "sandboxed" }) === "allow-scripts";
+        out.trustedAttr = r._portalSandboxAttr({ trust: "trusted" }) === "allow-scripts allow-same-origin";
+        // (2) _sanitizePortalMeta: trust:"sandboxed" bleibt sandboxed, Default = trusted.
+        const m1 = r._sanitizePortalMeta({ world: "worlds/x/i.html", trust: "sandboxed" }, "X");
+        const m2 = r._sanitizePortalMeta({ world: "worlds/x/i.html" }, "X");
+        out.trustResolves = m1.trust === "sandboxed" && m2.trust === "trusted";
+        // (3) der Lokalitäts-Beweis: vendored-force + inner-ring-absent + die Attrs.
+        const audit = r._localityAudit();
+        out.auditOk = audit.ok === true;
+        out.vendoredForced = audit.facts.vendoredForcedSandboxed === true;
+        out.innerRingAbsent = audit.facts.innerRingAbsent === true;
+        // (4) _buildPortalOverlay nutzt die EINE Quelle (kein inline-Ternär mehr).
+        out.usesOneSource = /_portalSandboxAttr\(meta\)/.test(r._buildPortalOverlay.toString());
+        // (5) der Server-Kontext-iframe ist IMMER null-origin (allow-scripts allein).
+        out.serverNullOrigin =
+            typeof r._portalSpawnServerContext === "function" &&
+            /setAttribute\("sandbox", "allow-scripts"\)/.test(r._portalSpawnServerContext.toString());
+        return out;
+    });
+    if (!res) {
+        check("G8 R3: Lokalitäts-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("G8 R3: Sandbox-Attribut-Quelle + Lokalitäts-Audit verdrahtet", res.methods);
+    check(
+        "G8 R3: sandboxed → allow-scripts ALLEIN (null-origin) · trusted → + same-origin",
+        res.sandboxedAttr && res.trustedAttr
+    );
+    check("G8 R3: _sanitizePortalMeta löst trust (sandboxed bleibt · Default trusted)", res.trustResolves);
+    check(
+        "G8 R3: vendored erzwingt sandboxed unforgeable + der innere Ring ist abwesend",
+        res.vendoredForced && res.innerRingAbsent && res.auditOk
+    );
+    check("G8 R3: _buildPortalOverlay nutzt die EINE Sandbox-Attribut-Quelle", res.usesOneSource);
+    check("G8 R3: der Server-Kontext-iframe ist IMMER null-origin (allow-scripts allein)", res.serverNullOrigin);
+}
+
+// G8 R4 — Netz-Immunität (M4): die Herkunfts-KETTE (4a, „Ursprung X · über
+// dich" statt flachem origin-Enum) + der RÜCKRUF (4b, ein revozierter Schlüssel
+// stößt jedes Artefakt mit ihm in der Kette aus) + die Quarantäne (4c, der
+// welt-exponierte LLM kann keinen souveränen Akt formulieren — R2-gebunden).
+async function checkBandG8R4Immunity(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        // (1) Methoden + revokedKeys benannt im innersten Ring + NIE im Snapshot.
+        out.methods =
+            typeof r.revokeKey === "function" &&
+            typeof r._appendProvenance === "function" &&
+            typeof r._isKeyRevoked === "function" &&
+            typeof r._provenanceSummary === "function" &&
+            typeof r._artifactProvenanceTainted === "function" &&
+            typeof r._normalizePubKey === "function";
+        out.revokedInRing = K.SOVEREIGN_STATE.excludedStateKeys.includes("revokedKeys");
+        out.revokedNotInSnapshot = JSON.stringify(r.buildStateSnapshot()).indexOf("revokedKeys") < 0;
+        // Zustand sichern, den wir mutieren.
+        const savedRevoked = Object.assign({}, r.state.revokedKeys);
+        const savedSigned = JSON.parse(JSON.stringify(r.state.signedWorlds || {}));
+        const KA = "aa".repeat(32);
+        const KB = "bb".repeat(32);
+        const KEVIL = "cc".repeat(32);
+        // (2) Herkunftskette: append baut die Kette (Ursprung → Überträger), dedup.
+        const art = {};
+        r._appendProvenance(art, KA);
+        r._appendProvenance(art, KA); // dedup (schon letzter)
+        r._appendProvenance(art, KB);
+        out.chainBuilds = art.provenance.length === 2 && art.provenance[0].by === KA && art.provenance[1].by === KB;
+        const summ = r._provenanceSummary(art);
+        out.summaryShowsLineage = summ.chain.length === 2 && summ.passers === 1 && /Ursprung/.test(summ.label);
+        // (3) Sanitize: eine eingehende Kette wird gesäubert (hex-gated, "ed25519:"-tolerant).
+        const cleanChain = r._sanitizeProvenance([
+            { by: "ed25519:" + KA, at: 1 },
+            { by: "NOTHEX", at: 2 },
+            { by: KB, at: 3 },
+        ]);
+        out.sanitizeDropsGarbage = cleanChain.length === 2 && cleanChain[0].by === KA && cleanChain[1].by === KB;
+        // (4) RÜCKRUF: revoke KEVIL → erkannt; ein Artefakt mit KEVIL in der Kette
+        // ist tainted + wird gepurged; ein sauberes bleibt.
+        r.revokeKey(KEVIL, { silent: true });
+        out.revoked = r._isKeyRevoked(KEVIL) === true && r._isKeyRevoked("ed25519:" + KEVIL) === true;
+        out.taintDetected =
+            r._artifactProvenanceTainted({
+                authorPubKey: KA,
+                provenance: [
+                    { by: KA, at: 1 },
+                    { by: KEVIL, at: 2 },
+                ],
+            }) === true;
+        out.cleanNotTainted =
+            r._artifactProvenanceTainted({
+                authorPubKey: KA,
+                provenance: [
+                    { by: KA, at: 1 },
+                    { by: KB, at: 2 },
+                ],
+            }) === false;
+        r.state.signedWorlds = r.state.signedWorlds || {};
+        r.state.signedWorlds["_g8r4_evil"] = {
+            authorPubKey: KEVIL,
+            signature: "ab",
+            provenance: [{ by: KEVIL, at: 1 }],
+        };
+        r.state.signedWorlds["_g8r4_good"] = { authorPubKey: KA, signature: "cd", provenance: [{ by: KA, at: 1 }] };
+        const purged = r._purgeRevokedArtifacts();
+        out.purgeDropsEvil = !r.state.signedWorlds["_g8r4_evil"] && !!r.state.signedWorlds["_g8r4_good"] && purged >= 1;
+        // (5) QUARANTÄNE (4c): ein LLM-Source-DSL mit souveränem Op → sovereign_blocked
+        // (die R2-Wand hält für den welt-exponierten Pfad — das Dual-LLM-Pattern).
+        const llmRun = r.dslRun(["sign_manifest"], { source: "llm:grok" });
+        out.llmCannotSovereign = Array.isArray(llmRun.log) && llmRun.log.some((e) => e.event === "sovereign_blocked");
+        // (6) Verdrahtung (Source): sign/export/import tragen die Kette, die Lader sieben.
+        out.signSetsChain =
+            /_appendProvenance/.test(r.signWorld.toString()) && /_appendProvenance/.test(r.signBlueprint.toString());
+        out.importPreservesChain = /_sanitizeProvenance\(m\.provenance\)/.test(r._sanitizeImportedManifest.toString());
+        out.loaderSieves = /_artifactProvenanceTainted/.test(r._loadCustomWorlds.toString());
+        // restore
+        delete r.state.signedWorlds["_g8r4_evil"];
+        delete r.state.signedWorlds["_g8r4_good"];
+        r.unrevokeKey(KEVIL);
+        r.state.revokedKeys = savedRevoked;
+        r.state.signedWorlds = savedSigned;
+        if (typeof r._saveSignedWorlds === "function") r._saveSignedWorlds();
+        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+        return out;
+    });
+    if (!res) {
+        check("G8 R4: Immunsystem-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "G8 R4: Immun-Methoden + revokedKeys im innersten Ring + NIE im Snapshot",
+        res.methods && res.revokedInRing && res.revokedNotInSnapshot
+    );
+    check(
+        "G8 R4 (4a): die Herkunftskette baut sich (Ursprung → Überträger, dedup) + zeigt die Lineage",
+        res.chainBuilds && res.summaryShowsLineage
+    );
+    check("G8 R4 (4a): eine eingehende Kette wird gesäubert (hex-gated, ed25519:-tolerant)", res.sanitizeDropsGarbage);
+    check(
+        "G8 R4 (4b): Rückruf erkannt + tainted-Erkennung (vergiftet ja · sauber nein)",
+        res.revoked && res.taintDetected && res.cleanNotTainted
+    );
+    check(
+        "G8 R4 (4b): der Rückruf STÖSST AUS — ein revoziertes Artefakt fällt, ein sauberes bleibt",
+        res.purgeDropsEvil
+    );
+    check(
+        "G8 R4 (4c): der welt-exponierte LLM kann keinen souveränen Akt formulieren (R2-Wand)",
+        res.llmCannotSovereign
+    );
+    check(
+        "G8 R4: die Kette ist verdrahtet (sign trägt · import bewahrt · Lader sieben)",
+        res.signSetsChain && res.importPreservesChain && res.loaderSieves
+    );
+}
+
+// G8 R5 — das LEBENDE Immunsystem (M5): die vier Angriffs-Korpora SIND das
+// Antikörper-Archiv. Kein neuer Apparat — eine neue ROLLE für die Invarianten-
+// Maschinerie: jeder Erreger impft bei jedem Push, ein Regress ist sofort rot.
+async function checkBandG8R5LivingImmune(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.method = typeof r._robustnessCorpus === "function";
+        const corpus = out.method ? r._robustnessCorpus() : [];
+        out.fourClasses = Array.isArray(corpus) && corpus.length === 4;
+        out.allLive = corpus.every((c) => c.live === true);
+        const mechs = corpus.map((c) => String(c.mechanism));
+        out.allMechanisms = ["M1", "M2", "M3", "M4"].every((m) => mechs.some((x) => x.indexOf(m) >= 0));
+        out.classIds = corpus.map((c) => c.id).join(",");
+        return out;
+    });
+    if (!res) {
+        check("G8 R5: Immun-Archiv-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "G8 R5: das Antikörper-Archiv ist enumeriert (_robustnessCorpus → vier Klassen)",
+        res.method && res.fourClasses,
+        res.classIds
+    );
+    check("G8 R5: jede Angriffsklasse hat eine LEBENDE Wand (alle Guards da)", res.allLive);
+    check(
+        "G8 R5: alle vier Mechanismen vertreten (M1 Lokalität · M2 Dämpfung · M3 Katalysator · M4 Immunität)",
+        res.allMechanisms
+    );
+    // Meta: die vier Korpus-Bänder SIND im Gate (sie laufen bei jedem Push = die Impfung).
+    check(
+        "G8 R5: die vier Korpus-Bänder laufen im Playtest-Gate (jeder Erreger → Antikörper)",
+        typeof checkBandG8R1DampedChannel === "function" &&
+            typeof checkBandG8R2SovereignWall === "function" &&
+            typeof checkBandG8R3Locality === "function" &&
+            typeof checkBandG8R4Immunity === "function"
+    );
+}
+
+// V18.129 — DAS HOCH-BECKEN (A4-Rest, gigant-plan §5): der Stau-Spiegel. Ein
+// Spieler-Werk (Fill/solide Architektur) öffnet die V18.93-Spiegel-Kappe LOKAL
+// über einen bounded Spill-Scan (Priority-Flood); gepinnte Quell-Spalten im
+// Stau-Bereich TROPFEN den Pool voll. PURE Beweise hier (deterministisch,
+// welt-unabhängig); der Welt-Beweis am echten Fluss: `scripts/diag-stau.cjs`
+// (Pfeiler staut 0 m · Damm-Pool +2.68 m über rim, flat · settled · Welt
+// unverändert — GEMESSEN, reproduzierbar).
+async function checkBandV18129HochBecken(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const C = r.constructor.CA_STAU;
+        out.config =
+            !!C &&
+            Object.isFrozen(C) &&
+            [C.REACH, C.MAX_CELLS, C.FEED, C.WIN_MAX, C.CLUSTER_GAP, C.MIN_EXTENT].every(Number.isFinite);
+        // KONSUM-Source-Proben (V17.31: kein Passagier): der Kappen-Bau liest die
+        // Stau-Felder, der Pin trägt den Tropf, alle drei Werk-Pfade invalidieren.
+        out.capReadsStau = /_stauFieldsNear/.test(r._ensureWaterCALevel.toString());
+        out.pinHasDrip = /src\[c\] === 2/.test(r._tickWorldWaterCA.toString());
+        out.editInvalidates = /_invalidateWaterCapsAround/.test(r._addVoxelEdit.toString());
+        out.spawnInvalidates = /_invalidateWaterCapsAround/.test(r.spawnArchitecture.toString());
+        out.removeInvalidates = /_invalidateWaterCapsAround/.test(r.removeArchitecture.toString());
+        // PURE Spill-Scan (Priority-Flood): das BECKEN hält, der PFEILER nicht —
+        // der strukturelle Damm/Pfeiler-Diskriminator (die Physik filtert).
+        const w = 11;
+        const mkGrid = (gap) => {
+            const barrier = new Float64Array(w * w); // Boden 0
+            for (let k = 3; k <= 7; k++) {
+                for (let i = 3; i <= 7; i++) {
+                    if (i > 3 && i < 7 && k > 3 && k < 7) continue; // Ring bei |d|=2
+                    barrier[i + k * w] = 10; // die Wand
+                }
+            }
+            if (gap) barrier[5 + 3 * w] = 0; // EIN Loch im Ring = der „Pfeiler-Fall"
+            const init = new Float64Array(w * w).fill(Infinity);
+            for (let k = 0; k < w; k++)
+                for (let i = 0; i < w; i++) if (i === 0 || k === 0 || i === w - 1 || k === w - 1) init[i + k * w] = 1;
+            return { barrier, init };
+        };
+        const closed = mkGrid(false);
+        const fillClosed = r._stauSpillLevels(closed.barrier, w, w, closed.init);
+        out.basinHolds = Math.abs(fillClosed[5 + 5 * w] - 10) < 1e-9; // Zentrum hält bis Wand-Krone
+        out.outsideOpen = Math.abs(fillClosed[1 + 1 * w] - 1) < 1e-9; // außerhalb: Außenwelt-Pegel
+        const gapped = mkGrid(true);
+        const fillGap = r._stauSpillLevels(gapped.barrier, w, w, gapped.init);
+        out.gapDrains = Math.abs(fillGap[5 + 5 * w] - 1) < 1e-9; // ein Loch → kein Stau
+        // PURE Empfänger-Kappe (V18.93-Semantik bleibt + trägt den Stau): Spalte A
+        // voll bis j=6, Spalte B leer mit Kappe j=3 → B füllt NIE über die Kappe.
+        const SOLID = r.constructor.CELL_STATE.SOLID;
+        const d = 2;
+        const dy = 8;
+        const dimSq = d * d;
+        const cells = new Uint8Array(dimSq * dy);
+        for (let j = 0; j < dy; j++) {
+            cells[2 + j * dimSq] = SOLID; // Spalten (0,1)+(1,1) ganz solide —
+            cells[3 + j * dimSq] = SOLID; // nur das Paar c0↔c1 tauscht
+        }
+        cells[0] = SOLID; // Böden j=0
+        cells[1] = SOLID;
+        const level = new Float64Array(dimSq * dy);
+        for (let j = 1; j <= 6; j++) level[0 + j * dimSq] = 1; // Säule A voll
+        const cap = new Int16Array(dimSq);
+        cap[0] = 7;
+        cap[1] = 3;
+        for (let t = 0; t < 120; t++) r._tickWaterCA(level, cells, d, dy, 0.25, null, null, cap);
+        let overCap = 0;
+        for (let j = 4; j < dy; j++) overCap += level[1 + j * dimSq];
+        let underCap = 0;
+        for (let j = 1; j <= 3; j++) underCap += level[1 + j * dimSq];
+        out.capHolds = overCap < 1e-6;
+        out.capFillsBelow = underCap > 0.5;
+        out.overCap = overCap;
+        return out;
+    });
+    if (!res) {
+        check("V18.129 Hoch-Becken: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("V18.129 Hoch-Becken: CA_STAU-Konfiguration steht (frozen, vollständig)", res.config);
+    check(
+        "V18.129 Hoch-Becken: KONSUM verdrahtet (Kappen-Bau liest Stau-Felder · Pin trägt den Tropf)",
+        res.capReadsStau && res.pinHasDrip
+    );
+    check(
+        "V18.129 Hoch-Becken: alle drei Werk-Pfade invalidieren (Edit · Spawn · Remove)",
+        res.editInvalidates && res.spawnInvalidates && res.removeInvalidates
+    );
+    check("V18.129 Hoch-Becken: der Spill-Scan hält das GESCHLOSSENE Becken (Krone-Pegel)", res.basinHolds);
+    check("V18.129 Hoch-Becken: außerhalb der Wand gilt der Außenwelt-Pegel (keine Badewanne)", res.outsideOpen);
+    check("V18.129 Hoch-Becken: EIN Loch im Ring → kein Stau (der Damm/Pfeiler-Diskriminator)", res.gapDrains);
+    check(
+        "V18.129 Hoch-Becken: die Empfänger-Kappe hält im Automaten (nichts über cap, darunter füllt es)",
+        res.capHolds && res.capFillsBelow,
+        `overCap=${res.overCap}`
+    );
+}
+
+// V18.130 — B4 (gigant-plan §5 / U5): SCHATTEN-CSM an den Kaskaden-Bändern.
+// Das r184-Addon (CSMShadowNode, verbatim vendort) ersetzt die EINE 2048er-
+// Map: 3 Kaskaden, deren Grenzen die DETAIL_CASCADE-Band-Kanten SIND; der
+// R1-Texel-Snap lebt im Addon pro Kaskade. Headless prüft die VERDRAHTUNG
+// (der Look + die Map-Allokation: `scripts/diag-csm.cjs` — GEMESSEN GRÜN:
+// Maps alloziert, breaks [0.2,0.68,1], nahe Kaskade 0.167 m/Texel vs. 0.293
+// vorher, keine Akne in der V18.113-Matrix). Die CSM-Initialisierung ist
+// LAZY (erster echter Material-Build) — unter gestubbtem Render sind breaks
+// leer; die Invarianten prüfen darum Konstruktion + Vertrag, nicht den
+// Render-Zustand.
+async function checkBandV18130CsmShadow(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.vendorSymbol = typeof window.THREE.CSMShadowNode === "function";
+        const csm = r.state.csmNode;
+        out.active = !!csm;
+        if (csm) {
+            out.cascades = csm.cascades;
+            out.fade = csm.fade === true;
+            out.isShadowNode = r.state.directionalLight && r.state.directionalLight.shadow.shadowNode === csm;
+            out.mode = csm.mode;
+            // Der Kaskaden-Vertrag: der custom-Split liefert EXAKT die
+            // DETAIL_CASCADE-Band-Kanten (Band 0 ~108 m, Band 1 ~367 m) / maxFar.
+            const breaks = [];
+            csm.customSplitsCallback(3, 0.5, 540, breaks);
+            const span = r._voxelChunkConfig(0).span;
+            const bands = r.constructor.DETAIL_CASCADE;
+            const e0 = ((bands[0].maxRing + 0.5) * span) / 540;
+            const e1 = ((bands[1].maxRing + 0.5) * span) / 540;
+            out.breaksAreBandEdges =
+                breaks.length === 3 &&
+                Math.abs(breaks[0] - e0) < 1e-9 &&
+                Math.abs(breaks[1] - e1) < 1e-9 &&
+                breaks[2] === 1;
+            out.breaks = breaks.map((b) => +b.toFixed(3)).join(",");
+        }
+        // KONSUM-Proben: der Bias-Hebel propagiert auf die Kaskaden-Lichter,
+        // der Resize ruft updateFrustums (Addon-Vertrag).
+        out.biasPropagates = /csm\.lights/.test(r.setShadowBias.toString());
+        out.resizeUpdates = /updateFrustums/.test(r.init.toString());
+        return out;
+    });
+    if (!res) {
+        check("V18.130 CSM: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("V18.130 CSM: das r184-Addon ist vendort + angebunden (THREE.CSMShadowNode)", res.vendorSymbol);
+    check(
+        "V18.130 CSM: 3 Kaskaden aktiv als shadowNode des Sonnen-Lichts (fade an)",
+        res.active && res.cascades === 3 && res.fade && res.isShadowNode
+    );
+    check(
+        "V18.130 CSM: die Kaskaden-Grenzen SIND die DETAIL_CASCADE-Band-Kanten (custom-Split)",
+        res.active && res.mode === "custom" && res.breaksAreBandEdges,
+        `breaks=${res.breaks}`
+    );
+    check(
+        "V18.130 CSM: setShadowBias propagiert auf die Kaskaden + Resize ruft updateFrustums",
+        res.biasPropagates && res.resizeUpdates
+    );
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.46 Wetter + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
@@ -33774,8 +35030,12 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // V10.0-f-1 Doku-Sync: _dayNightApplySkybox liest jetzt aus
         // state.skyboxUniforms. Der Cross-Fade-Helper-Aufruf hat dieselbe
         // Semantik (_weatherBlendedValue), aber das Ziel ist u.cloudCover.value.
+        // V18.128 (D5a): der [0,1]-Konsument clampt die unbounded Achse lokal
+        // (Math.min(1, …)) — die Probe toleriert den Clamp-Wrapper.
         const skyboxSrc = r._dayNightApplySkybox.toString();
-        out.cloudFades = /u\.cloudCover\.value\s*=\s*this\._weatherBlendedValue/.test(skyboxSrc);
+        out.cloudFades = /u\.cloudCover\.value\s*=\s*(?:Math\.min\(\s*1\s*,\s*)?this\._weatherBlendedValue/.test(
+            skyboxSrc
+        );
         // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
         const sh = r.state.directionalLight && r.state.directionalLight.shadow;
         out.shadowAntiAcne = !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
@@ -42834,6 +44094,20 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandEarlyRingsAndUi(ctx);
             await checkBandRing5Soul(ctx);
             await checkBandRing6Workshop(ctx);
+            await checkBandG8R0Sovereign(ctx);
+            await checkBandG8R1DampedChannel(ctx);
+            await checkBandG8R2SovereignWall(ctx);
+            await checkBandG8R3Locality(ctx);
+            await checkBandG8R4Immunity(ctx);
+            await checkBandG8R5LivingImmune(ctx);
+            await checkBandV18129HochBecken(ctx);
+            await checkBandV18130CsmShadow(ctx);
+            await checkBandV18131DekoKaskade(ctx);
+            await checkBandV18132FerneSeen(ctx);
+            await checkBandV18133Forage(ctx);
+            await checkBandV18134Social(ctx);
+            await checkBandV18135Bookmarks(ctx);
+            await checkBandV18136Audit(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

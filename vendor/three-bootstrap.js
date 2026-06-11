@@ -38,6 +38,14 @@
 import * as THREE from "three";
 import * as WEBGPU from "three/webgpu";
 import * as TSL from "three/tsl";
+// B4 (V18.130, gigant-plan §5 — U5 Schatten-CSM): das r184-Addon
+// `examples/jsm/csm/CSMShadowNode.js` + `CSMFrustum.js`, verbatim vendort
+// (Quelle: npm three@0.184.0). Importiert 'three/webgpu' + 'three/tsl' —
+// exakt unsere Import-Map-Pfade. WICHTIG (eingebaut, kein Eigenbau nötig):
+// `updateBefore` snappt das Kaskaden-Zentrum auf das TEXEL-Grid im
+// LICHT-Raum (floor(center/texel)·texel in der Light-Orientierung) —
+// die V17.111-R1-Lehre ist im Addon pro Kaskade schon Gesetz.
+import { CSMShadowNode } from "./CSMShadowNode.js";
 
 // Defensive Existence-Checks: bei Vendor-Versionswechsel (r184→r190+) können
 // Symbol-Namen verschwinden — wir wollen klare Bootstrap-Fehler, KEINE stille
@@ -85,4 +93,10 @@ if (typeof WEBGPU.PostProcessing === "function") {
     THREE_GLOBAL.PostProcessing = WEBGPU.PostProcessing;
 }
 THREE_GLOBAL.TSL = TSL;
+// B4 — CSM ist optional (fehlt das Symbol nach einem Vendor-Wechsel, fällt
+// initThreeJS sauber auf die EINE 2048er-Map zurück — Soft-Anbindung wie
+// PostProcessing, kein requireWebGPU-Throw).
+if (typeof CSMShadowNode === "function") {
+    THREE_GLOBAL.CSMShadowNode = CSMShadowNode;
+}
 window.THREE = THREE_GLOBAL;

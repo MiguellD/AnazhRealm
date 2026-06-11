@@ -223,7 +223,7 @@ gefaltete, überlappende Flächen. **Meine V18.25/.30/.31-Auslauf-Pflaster haben
 
 **Fundament (älter, aus der roadmap):**
 - H3: Seen/Flüsse jenseits ±1024 m (Region mit dem Spieler mitwandern) — der Ozean ist global (V17.117), Binnengewässer nicht.
-- Aufgestaute Hoch-Becken (gedämmt über `L`) — die Fläche-auf-`L` trägt sie nicht (brauchen die Zellen).
+- ~~Aufgestaute Hoch-Becken (gedämmt über `L`)~~ ✓ GEBAUT V18.129 (der STAU-SPIEGEL: bounded Spill-Scan + Stau-Tropf in den ZELLEN — genau wie hier vorausgesagt).
 - U2: Wasser-LOD auf der Terrain-LOD (statt erzwungenem LOD0) — ferne Wasser-Nähte.
 - Echter Unterwasser-Decken-Pass (V18.3 B5).
 

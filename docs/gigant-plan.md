@@ -25,7 +25,7 @@
 ist gebrochen), das lebendige Feld mit allen drei Verben (lesen `auraAt` · schreiben `_deposit*` ·
 WERTEN Vorhersagefehler-δ), der dimensionale Emotion-Kern, die Resonanz-Schöpfung („ein Produkt-Vektor,
 viele Leser"), sechs UI-Räume auf einem Designsystem, ein echtes P2P-Mesh mit Fremd-Engine-Tor
-(W12–17). **Was den Giganten vom sehr guten Werk trennt, sind SIEBEN Säulen (§2)** — und keine davon
+(W12–17). **Was den Giganten vom sehr guten Werk trennt, sind NEUN Säulen (§2)** — und keine davon
 verlangt ein neues Parallel-System: jede ist die KONSEQUENTE ANWENDUNG eines Musters, das im Stamm
 schon lebt (Resonanz → Bewegung · δ-Wertung → Ökonomie · Compute-Host → Netz-Speisung · Feld-Substrat
 → Kreatur-Innenleben · eine Distanz → eine Normale/ein Schatten). Der Gigant entsteht durch
@@ -79,7 +79,7 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
 
 ---
 
-## §2 · Die sieben Säulen des Giganten
+## §2 · Die neun Säulen des Giganten
 
 > Jede Säule: **GEMESSEN** (warum sie fehlt) → **DER GENIALE WEG** (das bestehende Muster, konsequent
 > angewandt — kein Parallel-Pfad) → **Stand der Technik** (die Zukunft, in die Antike geholt).
@@ -293,6 +293,44 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
   steigender Welt-Dichte — gemessen pro Welle (`diag`-Disziplin), nie durch Tiefe-Opfer erkauft.**
 - **Anker:** `lod-kaskade-plan.md` U2/U4/U6 · CLAUDE.md V12.0-perf-Gotchas · `_loopVoxelStreaming` (:50453).
 
+### G8 — FREIHEIT OHNE ZUSAMMENBRUCH: die drei Ringe + das Immunsystem (Robustheit in der STRUKTUR, kein Prüfer)
+
+- **GEMESSEN (die Architektur ist zu ~60 % gebaut — als isolierte Features, kein BENANNTES System; drei Tiefen-Sweeps 10.06.):** sechs Bausteine tragen die Robustheit schon, keiner ist als Ring/Immunität gedacht. **Innerster Ring (abwesend, nicht geschützt):** der ed25519-PRIVATschlüssel lebt im globalen `localStorage["anazh.vibePass"]`, sein ganzer Fußabdruck sind 6 Methoden (`_ensureVibePass`/`_adoptVibePassJwk`/`_vibeSign`/…) — GEMESSEN NIE in `buildStateSnapshot` (fixer Key-Satz :26861–27058, kein vibePass/signedWorlds/customWorlds/p2p), NIE im `_portalEnterPayload` (:33495, nur die öffentliche `vibePassId`+Fingerprint). **Äußerster Ring:** das Portal-iframe `sandbox="allow-scripts"` ALLEIN für `trust:"sandboxed"` (null-origin, :33322), `vendored→sandboxed` unforgeable erzwungen (:27829). **Der Kanal:** asymmetrisch (Heim→Sub DSL, Sub→Heim nur Ereignis-TEXT, nie ausgeführt) — aber NUR teil-gedämpft: `event` 8/s + `ws-send` 120/s gedeckelt, `ready`/`exit`/`manifest` + `subworld-net`-EINGANG vom Peer UNGEDECKELT. **Identitäts-Beweis:** `_vibeSign`/`_vibeVerify` (Signatur über die peerId, :6984). **Immunsystem (Keim):** ~3500 Invarianten — laufen EINMAL beim Merge, nicht als lebendes Archiv. **DIE FÜNF LÜCKEN:** (1) kein BENANNTER innerster Ring (`SOVEREIGN_STATE`); (2) der Kanal dämpft nicht EINHEITLICH; (3) keine IRREVERSIBILITÄTS-Wand (`SOVEREIGN_ACTIONS` — heute existiert KEINE Sovereign-Schicht, nur Material-/Modus-Kosten-Tore `_makeCostGate`/`confirmBuild`); (4) die Herkunft ist FLACH (Signierer + origin-Enum via `_worldProfile` :27674, KEINE Lineage-Kette) → eine getäuschte Signatur tarnt sich als Gütesiegel; (5) das Immunsystem ist statisch.
+- **DER GENIALE WEG — Robustheit sitzt in der STRUKTUR, nicht in einem wachsenden Prüfer (die eBPF-Warnung):** die vier Naturgesetze, je auf das BESTEHENDE Muster angewandt, kein Parallel-System. **M1 Lokalität** (die Supernova erreicht den Ort nie): jede fremde Welt in eigener Sandbox, kein Welt-Pfad zum innersten Ring — der Ring ist ABWESEND, nicht geschützt. **M2 Dämpfung** (die Wasser-CA-Lehre eine Ebene höher — Rate bremst · Verwerfen bändigt · leerer Bucket beruhigt): EIN Token-Bucket pro Welt-Region am Kanal-Eingang, transport-seitig (NIE im deterministischen Welt-Tick — eine verworfene Nachricht ist eine Transport-Tatsache, kein State-Unterschied). **M3 Katalysator** (die winzige eingefrorene `SOVEREIGN_ACTIONS`-Liste, die NIE wächst): `wallet_transfer·sign_manifest·change_identity·grant_capability` — disjunkt von `dslEffects ∪ NON_BROADCASTABLE_OPS ∪ dslComposeAtomic ∪ Regel-Effekten` (das Dual-LLM/CaMeL-Pattern: der manipulierbare Pfad berührt das Souveräne NIE), nur über eine Host-gerenderte Geste AUSSERHALB jedes iframes. **M4 Immunsystem** (Gesundheit durch Immunität, nicht Schutzschild): die Herkunft reist als KETTE mit (Echtheit ≠ Gutartigkeit sichtbar) · Rückruf durchläuft das Netz (eine erkannte Infektion ist reversibel) · der Vorschlags-Pfad quarantänisiert (das welt-exponierte LLM reicht nur Referenzen, ein zweiter Pfad baut den Klartext — `worlds/translated` IST das Pattern, vom Rendering auf den Vorschlag geweitet).
+- **DAS IMMUNSYSTEM LEBT durch EXPOSITION, nicht Maschinerie (M5 — kein neuer Apparat, eine neue ROLLE):** jeder erkannte Erreger (kollabierende/flutende/täuschende Welt) wird ein abgeschwächter Reproduzent im Angriffs-Korpus = ein neuer Headless-Invariant; die vier Korpora (Sandbox-Escape · Flut · souveräner Angriff · Infektion) laufen im `playtest`-Gate bei JEDEM Push (die regelmäßige Impfung) — die ~3500-Invarianten-Maschinerie wird das Antikörper-Archiv (V9.82-Verdichtung: ein Werkzeug, zwei Rollen).
+- **Stand der Technik (die Zukunft in die Antike):** CaMeL (DeepMind/ETH 2025, Capability-Metadata) + Dual-LLM (Willison 2023) = M3+M4c, in Substanz-Sprache · Lethal Trifecta (Willison 2025, in-the-wild 2026) — wir haben alle drei (Welt-LLM + fremde Welten + Rückkanal), R2+R4 nehmen das Souveräne aus dem manipulierbaren Pfad · eBPF-Verifier = die WARNUNG (kein wachsender Prüfer — `SOVEREIGN_ACTIONS` bleibt vier Akte) · Darwin-Gödel (Sakana 2025) validiert R5 (empirisch testen statt beweisen) + den Menschen am irreversiblen Hebel · Capability-Security/SELinux = der Vibe-Pass-Proof + die Herkunftskette.
+- **Der ehrliche Preis (§8 des Arc-Plans):** eine fremde Welt DARF kollabieren/hässlich werden/ihren Besucher täuschen — das System überlebt (Lokalität), der Ort nicht (die akzeptierte Supernova). „Locken" bleibt teil-offen (die letzte Instanz bist du im Moment der souveränen Geste — darum die Reibung GENAU DORT). Der Plan ist by-design UNvollständig (ein vollständiger wäre der wachsende Prüfer = die 19-Modul-Falle).
+- **Anker:** `docs/archiv/robustheit-plan.md` (der ganze Bogen — die vier Mechanismen, die Naturanalogie, die offenen Ränder) · die Treppe R0–R6 in §5 Phase G · `_buildPortalOverlay` (:33289) · `_sanitizePortalMeta` (:33269) · `vibePass`/`_vibeSign` (:27162–27358) · `NON_BROADCASTABLE_OPS` (:1388) · `RULE_FORBIDDEN_EFFECT_OPS` (:1458) · `_worldProfile` (:27674).
+
+### G9/Ω — DIE GEFRORENE TAILLE: das Ultiversum versteht sich selbst über die ZEIT (der Ewigkeits-Bogen)
+
+- **GEMESSEN (Plan `docs/taille-plan.md`, Fischer-verifiziert 11.06.):** die Taille existiert zu
+  ~70 % implizit — Resonanz ist must-ignore per Konstruktion (`_blueprintResonance` iteriert die
+  SIGNATUR-Achsen) · Kosten sind GESETZ statt Tabelle (`computeBuildCost` = reine Substanz-Funktion) ·
+  Bau→Abbau ist nie netto-positiv (yieldMult≤1 ✓) · die Stat-Pipe klemmt [0,1] ✓. Die VIER Risse:
+  (1) die ROLLE steckt im signierten Kanon (Behauptung und Substanz verschmolzen — Re-Derive
+  bräche jede Signatur); (2) die UNGEKLEMMTEN Magnitude-Leser außerhalb der Stat-Pipe
+  (KORRIGIERT: nicht die Klinge — die GOTT-MAUER: `_architectureResistance` liest rohes härte/
+  dichte → ein fremdes härte=10⁶-Material baut Unzerstörbares); (3) der IMPORT re-derived nichts
+  und prüft nichts (`importRecipesFromWorld` übernimmt role/roleManual/Signatur 1:1 — fremder
+  Intent wird lokales Gesetz ohne lokale Geste); (4) DREI Versionsfelder ohne EINE Semantik
+  (v/pv/Snapshot-version — Toleranz ist Kommentar, nicht Korpus).
+- **DER GENIALE WEG — zwei Sätze frieren ein, alles andere lebt** (die IP-Sanduhr in
+  Substanz-Sprache): (1) der Vektor trifft die Signaturen — Artefakte reisen als deskriptive
+  Substanz, der Empfänger rechnet jede BEDEUTUNG (Rolle/Kraft/Kosten) mit den EIGENEN frozen
+  Signaturen; Behauptetes ist Metadatum, Unbekanntes wird projiziert (must-ignore) und bewahrt
+  (must-preserve). (2) das Werk kostet, der Kreis erhält null — das Perpetuum-Verbot als lebende
+  Invariante. Wellen Ω0–Ω6 in §5 PHASE Ω; das R0-Muster (BENENNEN + BEWEISEN, Verdichtung statt
+  Anbau) eine Ebene höher: F1 bewies, dass die Welt sich selbst LÄDT — Ω beweist, dass sie sich
+  selbst über die ZEIT versteht.
+- **Stand der Technik:** die IP-Taille (seit 1981 stabil, WEIL winzig) · Postel/Robustheits-
+  Prinzip als GESETZ statt Höflichkeit · Protobuf-„unknown fields survive roundtrip" ·
+  HTML-„must ignore". **Anti-Scope (§4 des Plans):** Signatur-Tabellen/Gewichte/Kosten-Konstanten/
+  Engine bleiben FREI welt-lokal — wächst die Taille über eine Seite Spec + vier goldene Dateien
+  + fünf Gesetze hinaus, ist DAS der Geruch des Fehlers.
+- **Anker:** `docs/taille-plan.md` (der ganze Bogen Ω0–Ω6 + S-Gates §5) · `_canonicalBlueprint` ·
+  `importRecipesFromWorld` · `computeBuildCost` · `_blueprintResonance` · `PROTO_VERSION`.
+
 ---
 
 ## §3 · Die Zwillinge — was EINS gehört (gemessen, mit Urteil)
@@ -326,19 +364,24 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 
 ## §4 · Die Zukunft in die Antike (Stand der Technik 2026 → unser Boden)
 
-| Technik (die Riesen)                             | Bei uns                            | Urteil                                                                    |
-| ------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------- |
-| Transvoxel / watertight LOD (Lengyel)            | N1 im Terrain-Kohärenz-Plan §12    | **ÜBERNEHMEN** — der aktive Brocken                                       |
-| Cascaded Shadow Maps                             | U5, an `DETAIL_CASCADE`-Bändern    | **ÜBERNEHMEN** (G6)                                                       |
-| Worker-First-Meshing (alle großen Voxel-Engines) | E3 bewiesen; Wasser/Gras noch main | **VOLLENDEN** (G7)                                                        |
-| GPU-Compute ohne Readback (TSL)                  | Gras-Wind/Wellen leben schon dort  | **WEITEN** auf reine Render-Felder; Density-Compute bleibt Narbe          |
-| Prozedurale Lokomotion (Rain World/Spore)        | Compound-Parts + animate-Hook da   | **ÜBERNEHMEN als Resonanz** (G1)                                          |
-| Utility-AI über Affekt-Achsen                    | Tasks + 6 Achsen + δ existieren    | **KONSUMIEREN** (G4) — kein BT-Import                                     |
-| Reward-Prediction-Error als Spiel-Ökonomie       | δ-Substrat EINZIGARTIG schon da    | **KRÖNEN** (G5) — hier ÜBERHOLEN wir den Stand der Technik                |
-| Content-addressed P2P-Distribution               | sha256-Bündel + Mesh-Fetch (W16)   | **STEHT** — auf die Rekursion anwenden (G2)                               |
-| Supernode/Relay-Topologie (Discord-Muster)       | Compute-Host + Migration (W17)     | **GENERALISIEREN** (G3)                                                   |
-| CRDT (Yjs/Automerge)                             | —                                  | **NUR** für konfliktarme Sozial-Schichten; Physik bleibt host-autoritativ |
-| ECS-Rewrite · Nanite-Neid · 3D-GPU-Fluid         | —                                  | **NICHT NACHLAUFEN** (Narben/Heilige Lektion)                             |
+| Technik (die Riesen)                             | Bei uns                               | Urteil                                                                     |
+| ------------------------------------------------ | ------------------------------------- | -------------------------------------------------------------------------- |
+| Transvoxel / watertight LOD (Lengyel)            | N1 im Terrain-Kohärenz-Plan §12       | **ÜBERNEHMEN** — der aktive Brocken                                        |
+| Cascaded Shadow Maps                             | U5, an `DETAIL_CASCADE`-Bändern       | **ÜBERNEHMEN** (G6)                                                        |
+| Worker-First-Meshing (alle großen Voxel-Engines) | E3 bewiesen; Wasser/Gras noch main    | **VOLLENDEN** (G7)                                                         |
+| GPU-Compute ohne Readback (TSL)                  | Gras-Wind/Wellen leben schon dort     | **WEITEN** auf reine Render-Felder; Density-Compute bleibt Narbe           |
+| Prozedurale Lokomotion (Rain World/Spore)        | Compound-Parts + animate-Hook da      | **ÜBERNEHMEN als Resonanz** (G1)                                           |
+| Utility-AI über Affekt-Achsen                    | Tasks + 6 Achsen + δ existieren       | **KONSUMIEREN** (G4) — kein BT-Import                                      |
+| Reward-Prediction-Error als Spiel-Ökonomie       | δ-Substrat EINZIGARTIG schon da       | **KRÖNEN** (G5) — hier ÜBERHOLEN wir den Stand der Technik                 |
+| Content-addressed P2P-Distribution               | sha256-Bündel + Mesh-Fetch (W16)      | **STEHT** — auf die Rekursion anwenden (G2)                                |
+| Supernode/Relay-Topologie (Discord-Muster)       | Compute-Host + Migration (W17)        | **GENERALISIEREN** (G3)                                                    |
+| CRDT (Yjs/Automerge)                             | —                                     | **NUR** für konfliktarme Sozial-Schichten; Physik bleibt host-autoritativ  |
+| CaMeL / Dual-LLM (DeepMind·Willison)             | `worlds/translated` (Daten kein Code) | **WEITEN** (G8 M3+M4c) — der manipulierbare Pfad berührt das Souveräne nie |
+| Lethal-Trifecta-Härtung (Willison 2025)          | alle drei da (LLM+Welten+Rückkanal)   | **SCHNEIDEN** (G8 R2+R4) — das Souveräne aus dem manipulierbaren Pfad      |
+| Capability-Security / Herkunftskette (SELinux)   | Vibe-Pass-Proof da, Herkunft flach    | **VERTIEFEN** (G8 M4a) — Lineage-Kette statt origin-Enum                   |
+| eBPF-Verifier (wachsender Prüfer)                | `SOVEREIGN_ACTIONS` = vier Akte       | **NICHT NACHLAUFEN** (G8 — die Freiheit ist AUSSEN total, der Kern winzig) |
+| IP-Sanduhr/Postel als GESETZ (must-ignore/-preserve) | Resonanz projiziert schon; Import nicht | **EINFRIEREN** (G9/Ω — zwei Sätze, goldene Dateien, Zeit-Portal-Beweis)  |
+| ECS-Rewrite · Nanite-Neid · 3D-GPU-Fluid         | —                                     | **NICHT NACHLAUFEN** (Narben/Heilige Lektion)                              |
 
 ---
 
@@ -371,8 +414,12 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   25–30 ms, kollisions-pflichtig sync). Der Surface-Nets-Sub-Region-SPLICE wäre reine Perf
   (≤10 ms) bei hohem Risiko für die Mesh=BVH-Identität → **bewusst deferred** (V13.9-Backlog).
   Invariante „A2: Edit-Vertex-Delta lokal" verankert (Playtest-Band PhaseAFundament).
-- **A3 — H3 ferne Binnengewässer** [roadmap §4; H]: die ±1024-Atlas-Region wandert mit dem Spieler
-  (eigene Welle, determinismus-brechend → Schöpfer-Sign-off S).
+- ✓ **A3 — H3 ferne Binnengewässer (V18.132):** GEBAUT als seed-deterministische
+  KACHELN (NICHT „Region wandert mit" — das wäre spieler-abhängig = determinismus-
+  brechend; Kachel-Inhalt = f(seed, Koordinate) = peer-identisch). EIN Resolver
+  `_hydroFor/_erosionFor` → alle 8 Leser; Worker gespiegelt; harte Garantie am
+  Build-Eingang + weicher 1-Hz-Vorlauf. GEMESSEN: 34 Flüsse + 13 Seen/Kachel in
+  265 ms · Heimat bit-identisch · Worker==Main 0/32144. PHASE A IST RUND.
 - **A4 — Wasser-Reste-Bündel** [roadmap §4 „Wasser"; je klein] — **S-BESTÄTIGT (Schöpfer-Browser
   10.06. abend: „Übergang Wasser/See/Meer zu Fluss noch komisch, der See-/Meer-Shader noch nicht
   synergetisch, durch die Wellen oder so" — der Faden IST gesehen + hier verortet):** der Kern ist
@@ -401,9 +448,34 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
       Wasser-Material wird DoubleSide (die Top-Cull-Oberseiten sind von unten
       sichtbar), auftauchen → BackSide (V18.1-W1-Vertrag unberührt). Augen-A/B
       (NEU Tour-Ort `dive`): vorher Himmel durch die fehlende Fläche, nachher die
-      dunkle Decke. Kür offen: Snell-Fenster/Caustics (Backlog). WEITER OFFEN in A4:
-      Schelf-Konsolidierung (H) · Hoch-Becken über `L` (H+A) ·
-      Kapillar/Stempel (H) · T7c-Reste.
+      dunkle Decke. Kür offen: Snell-Fenster/Caustics (Backlog). ✓ **SCHELF-
+      KONSOLIDIERUNG (V18.125 — der KÜSTEN-AQUIFER):** die V18.117-Restklasse
+      GEMESSEN seziert (`diag-shelf.cjs`): die 3D-Roughness (±12 m) taucht das
+      ECHTE Terrain bis −24 m unter den Spiegel, wo das 16-m-MAKRO den Atlas
+      „Land" sagen lässt → colL=−Inf → die BFS kann die himmel-offene Senke NIE
+      füllen (topologisch von flachen Schwellen getrennt, Pfad-Max −1.4; der
+      V18.93-Decay hält auch den CA fern). HEILUNG = das Minecraft-1.18-Prinzip
+      (im caveDry schon zitiert) für die OFFENE Senke: jede Atlas-lose Spalte,
+      deren himmel-offenes ECHTES Terrain (erste SOLID-Zelle von oben) klar
+      unter dem Wassertisch liegt, wird Aquifer-Quelle; die Deck-Zelle trägt
+      das flache Wasser (Quantisierungs-Wand). PER-SPALTE LOKAL → seam-frei
+      per Konstruktion, KEIN Atlas-/Drainage-Eingriff, Worker bit-identisch.
+      GEMESSEN: Punkt-Probe-Löcher 10→0. +1 Drei-Beweis-Invariante (Senke
+      nass · Land trocken · gedeckelte Höhle trocken). ✓ **HOCH-BECKEN
+      (V18.129 — der STAU-SPIEGEL, der eigene fokussierte Bogen GEFAHREN):**
+      die vierte CA-Gleichgewichts-Regel — ein Spieler-Werk öffnet die
+      V18.93-Kappe LOKAL über einen bounded SPILL-SCAN (`_stauSpillLevels`,
+      PURE Priority-Flood); der Pfeiler staut strukturell NICHT (Ausweg auf
+      rim — die Physik filtert), der Damm bis zur Krone (Deckel MAX_CELLS);
+      Stau-Quell-Spalten TROPFEN den Pool voll (Pin-Erweiterung) → settle
+      by Fixpunkt. GEMESSEN (`diag-stau.cjs`): Pfeiler 0.00 m · Pool
+      +2.68 m über rim EBEN · settled · Welt unverändert; +7 Invarianten.
+      Stausee-LOOK + Kron-ÜBERLAUF-Kür → S. WEITER OFFEN in A4:
+      Kapillar/Stempel
+      (PRÄZISIERT V18.128: die GEMESSENEN Wurzeln sind seit V18.1 geheilt
+      [8-Nachbar-Re-Enqueue + forceSync]; der Rest ist S-gated — „Schöpfer-
+      Dump an der echten Fehlstelle", V13.0: Spawn ≠ Fehlstelle — KEIN
+      offenes H) · T7c-Reste.
 - ✓ **A5 — Haupt-Fog ↔ Ring-Kante (V18.103):** `fog.far = min(Wetter-Formel·Slider,
 (ringRadius+0.5)·span)` in `_dayNightApplyHemiAndFog` — der Nebel deckt das Welt-Ende
   (Default-Ring 4: Kante ~194 m, fog.far war 450 m = sichtbare Welt-Kante); bei „Weltenring max"
@@ -449,10 +521,23 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   (der S-Entscheid steht). G6 „eine Normale" ist mit dem normalBias-Vertrag NICHT
   vereinbar — ZWEI Wahrheiten sind korrekt (Geometrie=Oberfläche · Shading=Lichtung).
   AKNE-WÄCHTER-Invariante: die Chunk-Geometrie trägt VARIIERENDE Normalen.
-- **B4 — U5 Schatten-CSM an den Kaskaden-Bändern** [lod-kaskade-plan U5; A→S]: 2–3 Kaskaden,
-  Grenzen = `DETAIL_CASCADE`; der R1-Snap wandert in jede Kaskade.
+- ✓ **B4 — U5 Schatten-CSM an den Kaskaden-Bändern (V18.130)** [A→S]: das r184-Addon
+  `CSMShadowNode` VERBATIM vendort (Soft-Anbindung — ohne Symbol bleibt die EINE Map);
+  der FUND beim Quell-Lesen: der R1-Texel-Snap lebt im Addon PRO KASKADE schon
+  (`updateBefore` snappt im Licht-Raum) — kein Eigenbau. 3 Kaskaden, custom-Split =
+  die `DETAIL_CASCADE`-Band-Kanten (108 m · 367 m · maxFar 540; breaks [0.2,0.68,1]),
+  fade an; setShadowBias propagiert live auf die Kaskaden, Resize ruft updateFrustums.
+  GEMESSEN (`diag-csm.cjs` GRÜN): 3 Maps alloziert · nah 0.167 m/Texel (1.75× schärfer)
+  + Deckung 300→540 m · KEINE Akne in der V18.113-Matrix · 0 Page-Errors; +4
+  Invarianten. Schatten-LOOK/FPS auf echter GPU → S.
 - **B5 — U2 Wasser-LOD + U4 Deko-Distanz/Impostor + Baum/Feld-DICHTE** [lod-kaskade-plan; H+A]:
   Dichte-Hebel sind chance-skalar (tag-neutral, `diag-arch-tags` als Wand davor).
+  ✓ **U4 GEBAUT (V18.131):** die Deko liest die KASKADE (`deko`+`dekoDichte` in
+  DETAIL_CASCADE; per-Art-`ring` fiel) — mesh-Band 0 (5×5, „eine Reihe weiter") +
+  das FERNFELD (EIN Impostor-InstancedMesh pro Art, das B2-Mantel-Muster: +6
+  Draw-Calls statt ~1600 per-Chunk; deterministisch über Re-Anker, Oberfläche aus
+  der V18.97-Karte, geteiltes Art-Material → Wind/Emissive gratis). GEMESSEN
+  `diag-deko-fernfeld.cjs` GRÜN; +5 Invarianten. Fern-Look/scaleMul → S.
   **✓ V18.117 — der S-Befund „durch das LOD Löcher im Wasser" GEMESSEN AUFGELÖST
   (`diag-water-lod-holes.cjs`, Drei-Klassen-Anatomie + Marker-Drohne):** KEIN LOD-Boden-
   Durchstich (0 GEMESSEN), KEINE fehlende Wasser-LOD — die Loch-Streifen waren eine
@@ -465,11 +550,13 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Gras λ~28 m (Dickicht ×2.2 ↔ Lichtung ×0.15) + Bäume λ~170 m (WALD-Maske ×2.6 ↔ offen ×0.25),
   mittelwert-neutral GEMESSEN (Ø 1.04/1.06 · Lichtungen 19.5 % · Dickichte 17.6 % · Wald 17.1 % ·
   Halme-Total stabil 21.2k · `diag-tree-spawn` 63 Kiefern ✓ · mit dem Auge: Büschel + Lichtung).
-- **B6 — Klein-Bündel Maßstab** [H]: ✓ Substep-Cap 20→5 (V18.104, Playtest grün — die Physik-
-  Todesspirale ist gebannt; CCD + Fall-Cap tragen das Anti-Tunneling) · ✓ Inseln-Instancing-Claim
-  GEMESSEN (V18.104, statisch): `spawn_island` trägt per-Insel-SEED → Unikate Geometrie → HISM
-  unanwendbar, der Hebel ist U4-LOD/Impostor (bestätigt deferred) · offen: Kreatur-FPS-Frame-Budget ·
-  Allokations-Audit per-Frame-Pfade.
+- ✓ **B6 — Klein-Bündel Maßstab VOLLENDET (V18.104 + V18.121)** [H]: ✓ Substep-Cap 20→5 (V18.104 —
+  die Physik-Todesspirale ist gebannt; CCD + Fall-Cap tragen das Anti-Tunneling) · ✓ Inseln-
+  Instancing-Claim GEMESSEN (V18.104: per-Insel-SEED → Unikate → HISM unanwendbar, Hebel ist
+  U4) · ✓ Allokations-Audit GEMESSEN (V18.121, `diag-frame-profile.cjs`: V3 med 3/Tick — kein
+  Pool-Theater nötig) · ✓ Kreatur-Budget GEMESSEN MOOT (V18.121: Ø 0.58 ms@10, aiDiv trägt —
+  ein Frame-Budget wäre Overengineering, vermerkt) · DER FUND: das DACH-GATE (Tick-Median
+  18.2→1.6 ms — der wahre Kosten-Treiber war der Dauer-Churn, nicht der Einzel-Build).
 - **B7 — U6 Clipmap** [Backlog-Gate: erst nach A1/A2 + S-Entscheid] · **R3 Kanten-Schärfe + R5
   Struktur-Textur** [A→S, reine Look-Wellen].
 - ✓ **B9 — TERRAIN-NACHTLICHT GEMESSEN GEHEILT (V18.111):** `diag-night-terrain.cjs` (Tag/
@@ -568,18 +655,40 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   geist→sanft 0.42 · sprite→scheu 1.01) + `TEMPERAMENT_PROFILES`: die Gegenwehr liest
   strike/counterMul (sanft/scheu schlagen NIE), die W3-Furcht liest fleeMul (scheu flieht
   1.7×); SICHTBAR im Hof-moodLabel. Profile-Feintuning → S.
-- **D5 — DIE WELT ATMET (Code-Sweep-Samen):** (a) **Wetter-Polyvalenz** DEFERRED (V18.104-
-  Entscheid, GEMESSEN: ≥8 binäre `weather === "rainy"`-Leser quer durch Render/Audio/Emotion —
-  ein dritter Zustand braucht den eigenen Leser-Audit-Bogen, kein Phasen-Beifang); (b)
+- **D5 — DIE WELT ATMET (Code-Sweep-Samen):** ✓ (a) **Wetter-Polyvalenz GEBAUT (V18.128, der
+  eigene Leser-Audit-Bogen GEFAHREN):** das Wetter ist eine INTENSITÄTS-ACHSE
+  (`WEATHER_INTENSITY` sunny 0 · rainy 1 · stormy 1.35) — `_weatherBlendedValue` LERPT über
+  sie statt des Binär-Ternärs → ALLE Blend-Leser (Wolken · Tints · Wind · Fog · Regen-Rauschen)
+  erben das dritte Wort GRATIS (extrapoliert über rainy hinaus; [0,1]-Shader-Konsumenten
+  clampen lokal). Die 8 binären `==="rainy"`-Leser GEMESSEN migriert: 4 zur wet-Frage
+  (`_weatherIsWet` ≥1 — Journal/Nexus/Spawn-Stimmung nässen bei rainy UND stormy), 3 zum
+  Achsen-Lerp (Symphony/Wind/Fog jetzt auch TRANSITION-gefadet statt hart), 1 POLYVALENT:
+  das Kreatur-Innenleben unterscheidet die WORTE (Sturm fühlt chaos+awe, nicht sorrow — wo
+  Render nur Intensität lerpt, fühlt das Leben qualitativ). BEIFANG-Wurzel: der 30-s-Auto-Flip
+  setzte HART am V8.46-Blend-System VORBEI (V9.82-Parallel-Pfad) → der EINE Schreiber
+  `_setWeather` (DSL-Op + Auto-Zug, Logik instant + Cross-Fade), Auto-Takt 30→120 s (mit
+  45-s-Transition STEHT das Wetter jetzt, statt dauernd zu morphen). Vokabular-Gates
+  (Transition + DSL-Op + Chat-Pattern inkl. deutscher Worte + Regel-Grammatik „gewitter").
+  +1 Vier-Teil-Invariante. Look (Sturm-Tint/Wind-Feel) → S-Liste; (b)
   **Symphony EMOTION→TONALITÄT** DEFERRED (A-Gate ist das OHR — headless unbeweisbar, gehört in
   den S-Browser-Durchgang als eigene kleine Welle); (c) **journal `share`/`witness`** ruhen bis
   F4 (verortete Saat).
 
 ### PHASE E — die EINE Sprache + die Ökonomie (G5 + S-Reste)
 
-- **E1 — S7-C: EIN Chat-Dispatch-Tor** [§3-Zwilling 5; H]: DEFERRED (V18.104-Entscheid: die
-  Legacy-Kette trägt dutzende System-IO-Befehle — die Synonym-Migration ist ein eigener
-  Audit-Bogen; das Tor-Muster steht über `_chatTryDslParse` schon vorn im Dispatch).
+- ✓ **E1 — S7-C: EIN Chat-Dispatch-Tor (V18.127, der eigene Audit-Bogen GEFAHREN)** [§3-Zwilling
+  5; H]: die 17 Legacy-Befehle aus den VIER if-else-Handlern (`_chatTryAbility/Persistence/
+World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabelle verdichtet
+  (DIESELBE Sprache wie `chatDslPatterns`: {example, re, run} — die Regel IST die Daten).
+  **Der EHRLICHE Audit-Befund: NICHT alles wird DSL** — die BEWUSSTE Intent-Dualität bleibt:
+  System-Akte (Welt-Wechsel · Datei-IO · Versions-Rollback · Physik-Tuning) laufen NIE durch
+  dslRun (der R2-Geist: der manipulierbare Pfad [Nexus/LLM/Regeln] berührt das System-IO nie —
+  „Legacy wird DSL-Synonym" hätte dem LLM den Welt-Wechsel gegeben). Vereinheitlicht ist die
+  PARSE-Form: ein Tor, eine Tabellen-Sprache; `chatSuggest` liest BEIDE Tabellen (Tippfehler
+  bei „speichere zustand" bekommen jetzt Vorschläge — vorher unsichtbar) + der System-Teil
+  des Hilfetexts wird aus der Tabelle GENERIERT (kein Drift mehr). Verhalten 1:1 (die
+  Fähigkeits-/Welt-Tests laufen unverändert grün); +1 Drei-Teil-Invariante (Handler weg ·
+  „liste welten" über die Tabelle · Suggest liest System).
 - ✓ **E2 — δ wird WÄHRUNG (V18.104):** das WIRK-BUDGET (`NEXUS_WIRK`: start 60 · max 150) —
   `_loopNexusUpdate` zahlt VOR jeder Evolution (`_dslProgramWirkCost`: AST-Walk,
   spawn_blueprint = computeBuildCost-Summe×0.5 — DIESELBE Substanz-Wahrheit, die der Spieler
@@ -627,7 +736,11 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
     - Key G (rebindable, Zähl-Tests 11→12 gewandert) + der Off-Hand-Slot NEBEN der Hotbar (eine
       Render-Quelle, beide Mounts; Highlight auf data-slot-Wahrheit) + sichtbar am LINKEN Arm
       (EIN buildHand-Helper) + Snapshot/Restore; faltet NICHT in die Stats (Bereitschafts-Slot).
-      Weiter offen: S6-B Flora · S8 — kampf-plan-Bogen.
+      ✓ **S6-B erntbare Flora (V18.133):** die Scatter-Deko ist pflückbar
+      (InstancedMesh-instanceId + Session-Regrow), Alchemie-Materialien
+      kraut/essenz, der Lebenssaft zieht GEPFLÜCKTE Zutaten — die
+      Foraging-Ökonomie schließt (pflücken → brauen → trinken).
+      Weiter offen: S8 — kampf-plan-Bogen.
 
 ### PHASE F — das ULTIVERSUM (G2 + G3 + W18 + der soziale Bogen)
 
@@ -652,16 +765,126 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   seite — das SUBWORLD_NET_RATE_MAX-Muster) · TURN KONFIGURIERBAR (localStorage `anazhTurn`
   {urls,username,credential} → iceServers; reist NIE im Snapshot) · PROTOKOLL-VERSION
   (`pv: AnazhRealm.PROTO_VERSION` auf jeder p2pSend-Nachricht, Empfänger tolerieren — V18- +
-  V20-Clients koexistieren). DEFERRED: Stern-ab-6-Topologie + Host-Migration MIT Zustand +
-  4-Peer-Smoke (der eigene Mehr-Peer-Bogen — Topologie-Umbau gehört nicht in einen Phasen-Zug).
+  V20-Clients koexistieren). ✓ **HOST-MIGRATION MIT ZUSTAND (V18.126, smoke-bewiesen):** das
+  kooperative `srv-state`-Protokoll — fremde Server-Closures kann NIEMAND snapshotten (die
+  ehrliche Grenze), also serialisiert die WELT selbst (das Minecraft-Server-Save-Muster):
+  der Shim trägt `server.snapshot()`/`server.restore()` (opt-in), der Host pollt (5 s,
+  `srv-state-req`) + annonciert als kanal-exklusives `subworld-state` an ALLE Gäste
+  (Migrations-Kandidaten; Größen-Deckel, seq-monoton), ein Gast cacht die MITGIFT
+  (`lastSrvState`, Roster-Muster: nur vom eigenen Host) und injiziert sie bei der Promotion
+  als `srv-state-restore` VOR den Verbindungs-Replays (FIFO der serverQueue; der Shim puffert
+  bis `new WebSocketServer()`). Welt OHNE Handler → frischer Boot (die alte Grenze als
+  Degradation). GEMESSEN (smoke-webrtc): die Summe ÜBERLEBTE den Host-Wechsel (21 = 12+9,
+  vorher 9). Beifang: der vorbestehende `spawnArchitecture`-Crash auf un-gebooteter Chunk-Map
+  geheilt (blockierte den halben Smoke seit V18.1, A/B-bewiesen). **DEFERRED mit GEMESSENEM
+  Design-Befund: Stern-ab-6-Topologie** — der Verbindungs-Gate (nur Hub-Conns ab 6) + das
+  Broadcast-Relay sind klein, ABER der GEZIELTE Verkehr (`_p2pSendChannelTo`: subworld-srv/
+  cli · world-pull · llm-\*) bräuchte ein Hub-ROUTING-Envelope + ein transitives peerId-
+  Stempel-Vertrauen (heute: kanal-gestempelt = unfälschbar; via Hub nur noch Hub-vertraut) —
+  ein 4-Mechanismen-Umbau im R1/R2-gehärteten Kanal; ein HALBER Stern bräche W16/W17 bei
+    > 6 Peers. Der eigene fokussierte Bogen, mit diesem Design als Startpunkt.
 - **F3 — W18 in fremden Welten LEBEN** [world-portal-w18-plan; Stufen A→D]: Auto-Join/Tier →
   Ko-Präsenz-Injektion (Kern) → Input-Brücke → Swappen/Persistenz.
-- **F4 — der SOZIALE Bogen** [bibliothek-plan §E + roadmap; H+S]: Bewertungs-Aggregation
-  (ed25519-signiert, CRDT-tauglich weil konfliktarm) → Lesezeichen → Folgen → Kommentare/Chat;
-  **hier schreiben `journal share/witness`** (die ruhende Saat blüht); „Für dich"-Algorithmus +
-  Welt-Vorschau im Portal-Ring als Kür.
+- **F4 — der SOZIALE Bogen** [bibliothek-plan §E + roadmap; H+S]: ✓ **STUFE 1 GEBAUT
+  (V18.134) — die Bewertungs-Aggregation:** signierte Zeugnisse {id,s,t,pub,sig}
+  (ed25519, stabiles Kanonisches), LWW = die CRDT-Schicht wörtlich, kanal-exklusiv +
+  R1-gegated + onopen-Batch-Annonce; Feed zeigt „Ø x.x (n)", Bestbewertet reiht nach
+  der Gemeinschaft; R4-Rückruf siebt sozial. GEMESSEN end-to-end mit zweiter
+  Identität (verify · LWW · Tamper · Rückruf); +7 Invarianten. ✓ STUFE 2 (V18.135):
+  LESEZEICHEN (🔖-Toggle + „Gemerkt"-Chip, privat-lokal). WEITER OFFEN:
+  Folgen → Kommentare/Chat; **hier schreiben `journal share/witness`**
+  (die ruhende Saat blüht); „Für dich"-Algorithmus + Welt-Vorschau im Portal-Ring als Kür.
 - **F5 — B-WASM** [world-portal; per-Projekt] · **F6 — evolveCommunity** [Kreatur-Kulturen; nach
   D2/D3, S-Design].
+
+### PHASE G — DIE ROBUSTHEIT (Freiheit ohne Zusammenbruch; G8 — die Treppe R0→R6, Reihenfolge ist Pflicht)
+
+> Der Robustheits-Bogen (`docs/archiv/robustheit-plan.md`): drei Ringe + ein lebendes Immunsystem.
+> Jede Stufe macht Schaden lokal, reversibel oder selbst-abklingend — keine behauptet, ihn zu
+> verhindern. **Reihenfolge-Wand (§6 des Arc-Plans):** R2 (Wall) + R4 (Immunität) gehören VOR R6
+> (Selbst-Erweiterung) — sonst die lethal trifecta sehenden Auges. R0–R5 sind headless-beweisbar
+> (Korpora + Invarianten); R4-Sozial + R6 tragen S-Gates. Die vier Angriffs-Korpora WERDEN das
+> lebende Antikörper-Archiv (R5) — sie laufen ab Bau im `playtest`-Gate bei jedem Push.
+
+- ✓ **R0 — BENENNEN + die Trennung BEWEISEN (V18.122)** [§2-G8; H]: der innerste Ring benannt
+  (`AnazhRealm.SOVEREIGN_STATE`, frozen) + `_sovereignStateAudit()` (mutiert nichts) beweist
+  headless die GEMESSEN-schon-wahre Trennung — kein souveräner Slot/Privat-Feld im
+  `buildStateSnapshot`, nur die öffentliche Identität im `_portalEnterPayload`, ein injiziertes
+  Privat-Feld leckt NICHT (der fixe Key-Satz schließt vibePass aus). 5 Invarianten
+  (`checkBandG8R0Sovereign`). Null Risiko. Beifang: der V18.120-Konfounder (V18.1-W1 kippte je
+  nach Tauch-Position) deterministisch geheilt.
+- ✓ **R1 — der gedämpfte Kanal (M2) (V18.123)** [H]: EIN Token-Bucket pro Overlay am Kanal-EINGANG
+  (`_portalChannelAdmit`, 200/s) deckelt ALLE Sub→Heim-Nachrichten (auch die zuvor ungedeckelten
+  `ready`/`exit`/`manifest`) + das geteilte per-Peer-Tor (`_p2pPeerRateAdmit`, V9.82-Verdichtung)
+  cappt den `subworld-net`-EINGANG (120/s/Peer) + verdichtet `creature-pos`. Wasser-CA-Lehre eine
+  Ebene höher, transport-seitig (kein Determinismus-Bruch). GEMESSEN: 10000 msg/s → genau 200
+  admittiert, Bucket settled. 5 Invarianten (`checkBandG8R1DampedChannel`).
+- ✓ **R2 — die Irreversibilitäts-Wand (M3) (V18.123)** [H→S]: `SOVEREIGN_ACTIONS` (frozen, vier
+  Akte) GEMESSEN DISJUNKT von `dslEffects ∪ NON_BROADCASTABLE_OPS ∪ dslComposeAtomic`; ein
+  `dslEval`-Guard blockt jeden souveränen Op (`sovereign_blocked`, nie ausgeführt — auch in
+  Kette/Regel); die EINE Host-Geste `_sovereignGesture` (außerhalb jedes iframes, Klartext
+  WAS/WERT/WEM, jedes Mal frisch) — `signWorld`/`signBlueprint`/`importVibePass` laufen durch sie.
+  7 Invarianten (`checkBandG8R2SovereignWall`). S-Gate: das Geste-UI-Feel (heute `window.confirm`).
+- ✓ **R3 — Lokalitäts-Härtung (M1) (V18.123)** [H]: die EINE Sandbox-Attribut-Quelle
+  `_portalSandboxAttr` (sandboxed→`allow-scripts` allein · trusted→+same-origin;
+  `_buildPortalOverlay` nutzt sie statt des inline-Ternärs) + `_localityAudit()` friert die Grenze
+  (sandboxed kein same-origin · `vendored→sandboxed` unforgeable · kein Welt-Pfad zum innersten
+  Ring · Server-iframe immer null-origin). smoke-sandbox.cjs beweist die echte Isolation im
+  Browser. 6 Invarianten (`checkBandG8R3Locality`).
+- ✓ **R4 — Netz-Immunität (M4) (V18.124)** [H→S]: die Herkunfts-KETTE (`provenance`-Lineage —
+  `_appendProvenance`/`_sanitizeProvenance`/`_provenanceSummary`, „Ursprung X · über dich" statt
+  flachem origin-Enum; sign trägt · export hängt den Überträger an · import bewahrt · `_worldProfile`
+  zeigt) + der RÜCKRUF (`state.revokedKeys` global/NIE im Snapshot · `revokeKey`/`_isKeyRevoked`/
+  `_artifactProvenanceTainted` · Lader sieben + `_purgeRevokedArtifacts` stößt aus — ein revozierter
+  Schlüssel IRGENDWO in der Kette fällt das Artefakt) + die QUARANTÄNE (4c an R2 gebunden: GEMESSEN
+  `source:"llm:grok"`-DSL mit souveränem Op → `sovereign_blocked`). 7 Invarianten
+  (`checkBandG8R4Immunity`). Mesh-Aggregation (wessen Rückruf zählt) = Phase F4 (sozial).
+- ✓ **R5 — das lebende Immunsystem (M5) (V18.124)** [H]: `_robustnessCorpus()` enumeriert die vier
+  Angriffsklassen (R1 Flut/M2 · R2 souverän/M3 · R3 Escape/M1 · R4 Infektion/M4), je mit ihrer
+  LEBENDEN Wand + ihrem Band; die vier Korpora SIND Playtest-Bänder → laufen bei JEDEM Push (die
+  Impfung), ein Regress ist sofort rot. Kein neuer Apparat — eine neue ROLLE für die
+  ~3500-Invarianten-Maschinerie (V9.82-Verdichtung). 4 Invarianten (`checkBandG8R5LivingImmune`).
+  **DER BOGEN IST RUND (R0–R5 gebaut).**
+- **R6 — Selbst-Erweiterung (Capability-Inversion + Komposition)** [S — der ANDERE Plan, NACH
+  R0–R5]: bewusst FERN — setzt auf die fertige Wand (R2) + Immunität (R4) auf; ein eigener Bogen,
+  kein Phasen-Beifang.
+
+### PHASE Ω — DIE GEFRORENE TAILLE (G9; der Ewigkeits-Bogen — `docs/taille-plan.md`, Fischer-verifiziert)
+
+> Reihenfolge: messen → benennen → bewahren → re-deriven → durch die Zeit beweisen → den Kreis
+> schließen → wachsen lassen. Ω0–Ω1 risikofrei (parallel zum S-Browser-Audit fahrbar); Ω3/Ω5
+> tragen S-Gates (Klemm-Decken · roleManual-aus-fremder-Hand · Werkzeug-Abnutzung ·
+> Provenance-Cap — Plan §5).
+
+- **Ω0 — die Inventur** [H, klein]: `diag-taille.cjs` — vier goldene Draht-Artefakte nach
+  `spec/golden/v1/` (signierter Bauplan · Welt-Manifest · Snapshot-KOPF · p2p-Umschläge) +
+  die Round-Trip-Matrix (überlebt `xZukunft:{…}` jeden Pfad?). Die goldenen Dateien werden ab
+  dann NIE regeneriert.
+- **Ω1 — die Spec** [H, klein-mittel]: `docs/taille-spec.md` — Bauplan-Draht-Form · EINE
+  Versions-Semantik (minor=additiv, major=neues Universum; Achsen sterben/werden geboren, nie
+  umgedeutet) · must-ignore + must-preserve · Empfänger-Gesetz (kein Import übernimmt
+  Abgeleitetes) · Ledger-Gesetz (Mengen reisen NIE, nur Definitionen). + CLAUDE.md-Trigger.
+- **Ω2 — must-preserve als Gesetz** [H, klein]: `_carryUnknown(src, dst, knownKeys)` als EINE
+  Quelle an den Ω0-gefundenen Lücken; Invarianten-Band (xZukunft überlebt bit-gleich).
+- **Ω3 — die Re-Derive-Wand** [H→S, mittel]: (a) `role` → `roleClaimed` beim Import + lokales
+  Re-Derive (Signatur-kompatibel via `roleClaimed ?? role` in der v1-Prüfung — Riss 1 ohne
+  Signatur-Bruch); (b) die Stat-Klemme am LESER (`MATERIAL_TAG_CEIL` pro Achse, frozen — deckt
+  die GEMESSENE Gott-Mauer-Klasse `_architectureResistance` + jeden künftigen Eintrittsweg);
+  (c) der EINE Import-Eingang `_admitForeignArtifact` (verify + Tainted-Sieb AM EINGANG +
+  Provenance + Behauptung/Wahrheit-Trennung). + Antikörper „der lügende Bauplan" (R5-Stil).
+- **Ω4 — Konformanz + Zeit-Portal** [H, klein-mittel]: `checkBandTailleGolden` lädt
+  `spec/golden/v1/*` für immer; `smoke:zeitportal` (auf der F1-Infrastruktur): der aktuelle
+  Build empfängt einen ZUKUNFTS-Bauplan (unbekannte Tags/Felder/v2-Hülle) → degradiert
+  graceful, 0 Errors. Sobald ein Alt-Build als Artefakt vorliegt: der echte V18→V19-Test.
+- **Ω5 — das Perpetuum-Verbot lebt** [H→S, mittel]: `diag-ledger-cycles.cjs` — der
+  Transformations-Graph (Ernte·Mach-Tor·Abbau·ablesen·fertigen·Trank·Modus-Wechsel) random-
+  gewalkt: KEIN Zyklus netto-positiv; die Modus-Wäsche (schöpfer baut gratis → pfad erntet)
+  zuerst gezielt — Heilung falls positiv: `freeBorn=true` erntet zu 0 (Herkunft entscheidet
+  den Ertrag). Wird Playtest-Band (R5-Impfung).
+- **Ω6 — Namensraum + Wachstumsregel** [H, klein]: nackte Tags = der eingefrorene anazh-Kern;
+  präfixierte (`x:`/`<welt>:`) = fremdes Vokabular (reist, resoniert nur mit lokaler Signatur —
+  must-ignore trägt das GEMESSEN schon); neue Kern-Achsen additiv mit Default 0; die
+  Signatur-TABELLEN sind deklariert WELT-LOKAL (Lesart, nie Taille).
 
 ### FERN (bewusst ungeplant — S-Entscheid weckt sie)
 
@@ -709,7 +932,28 @@ schlanken (UI-Politur, jederzeit einschiebbar).
       das Gefühl des Übergangs im echten Browser).** **V18.116–.121-Durchgang (neu):**
       Tauch-Blick (B5) · Mana-Balken im pfad (E3) · Gelenk-Zeile in der Werkstatt (C1) ·
       die Mantel-Stanze in Bewegung (V18.118 — am Meer laufen) · das freie Frame-Budget
-      fühlen (V18.121).
+      fühlen (V18.121). **V18.125–.128-Durchgang (neu):** die KÜSTEN-LAGUNEN (V18.125 —
+      die einst trockenen Senken am Meer stehen voll Grundwasser; am Mündungs-Ort
+      laufen) · der STURM (V18.128 — „setze wetter stormy": dunklerer Tint, kräftiger
+      Wind, dichterer Nebel, lauteres Rauschen; die Wesen werden chaotisch-ehrfürchtig
+      statt traurig; der 120-s-Auto-Zug fadet sanft) · die Migrations-Mitgift ist
+      Browser-unsichtbar (V18.126, smoke-bewiesen — kein S-Punkt) · **V18.132–.135-Durchgang (neu):** die FERNEN
+      BINNENGEWÄSSER (V18.132 — jenseits ±1 km wandern: Flüsse/Seen statt kahlem
+      Ozean-Land; der ~265-ms-Kachel-Hitch beim Queren der 2-km-Grenze fühlbar?) ·
+      das PFLÜCKEN (V18.133 — Blüten/Farne/Sporen in Arm-Länge klicken: Ertrag-Feel,
+      dann „Lebenssaft" brauen aus Gepflücktem) · die GEMEINSCHAFTS-WERTUNG +
+      LESEZEICHEN (V18.134/.135 — in der Bibliothek: Ø-Anzeige auf den Karten,
+      der „Gemerkt"-Chip; mit zweitem Peer die Zeugnis-Reise prüfen). Dazu: der STAUSEE
+      (V18.129 — einen Damm aus Blöcken/Fill quer über einen Bach bauen: das Wasser
+      staut sich ÜBER den Spiegel zur ebenen Fläche; Pfeiler/Brücken stauen nicht;
+      Damm abbauen → der See läuft durch die Lücke ab. KÜR offen: der ÜBERLAUF über
+      die Krone als Wasserfall — heute füllt er exakt bis zur Krone und ruht) ·
+      das SCHATTEN-CSM (V18.130 — nahe Schatten 1.75× schärfer, ferne Schatten bis
+      540 m statt 300; FPS-Feel der 3×2048-Maps auf echter GPU prüfen; kein
+      Akne/Swimming beim Laufen unter schräger Sonne — der Snap lebt pro Kaskade) ·
+      das DEKO-FERNFELD (V18.131 — die Wiese reicht jetzt 5×5 voll + Impostoren
+      bis in den Fog: Dichte/Größe fühlen, `DEKO_FERNFELD.scaleMul` +
+      `atmosphere.dekoDensity` sind die Konsolen-Hebel).
       **DIE SCHÖPFER-PRÜFLISTE (10.06., wächst bis zum Gigant-Abschluss — Unsauberkeiten
       SAMMELN, er korrigiert am Schluss; ich fülle sie ehrlich mit, statt sie zu fixen):**
       (a) **GELENK-LINIEN in der WELT sichtbar nach dem Fertigen** — die connections-Linien
@@ -735,34 +979,41 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 
 ## §7 · DAS SCHWÄCHEN-REGISTER (ehrlich — jede Schwäche hat eine Adresse)
 
-| Schwäche (gemessen)                                                 | Adresse                                                                                            |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| ~~Cross-LOD-Naht sichtbar~~                                         | ✓ V18.103 A1 (Cap + Stitch-Band: 0 sichtbare Spalten ungedeckt)                                    |
-| ~~Edit = Ganz-Chunk-Reset sichtbar~~                                | ✓ V18.103 A2 (GEMESSEN: Vertex-Delta 0/3180 lokal; Splice bewusst deferred)                        |
-| Welt endet im Fog (keine Ferne)                                     | B2 Horizont-Mantel (A5 deckt die Kante schon: fog.far ≤ Ring-Kante)                                |
-| Wasser-Sheet ~78 ms auf Main                                        | B1                                                                                                 |
-| EINE 2048er-Schattenmap (nah grob, fern eng)                        | B4 CSM                                                                                             |
-| Physik-Todesspirale möglich (20 Substeps)                           | B6                                                                                                 |
-| Kreaturen: kein Lebenszyklus, keine Herden-Stimmung                 | D2/D3                                                                                              |
-| Kreaturen greifen nie an (Furcht ohne Konsument)                    | D4 Phase E                                                                                         |
-| Wetter binär sunny/rainy                                            | D5a                                                                                                |
-| Musik hört die Emotion nicht (Pfeiler 4 halb)                       | D5b                                                                                                |
-| Nexus zahlt nichts, Pools feeden nicht                              | E2/E4                                                                                              |
-| Magie kostet nichts                                                 | E3                                                                                                 |
-| ~~Gesten-Fitness-Kreis evtl. stumm~~                                | ✓ V18.104 E4-Audit + V18.112 Kristall: Geste→Gesetz schließt                                       |
-| LLM ist Randfigur                                                   | E6                                                                                                 |
-| Spieler kann nicht pflegen                                          | E7                                                                                                 |
-| ~~Rekursion blockiert (4 Schnitte)~~                                | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm                                   |
-| Netz trägt real nur ~4–6 Peers, TURN fehlt                          | F2                                                                                                 |
-| Sozial-Schicht fehlt ganz (Bewerten lokal-only)                     | F4                                                                                                 |
-| ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip)                                    |
-| ~~Schwarze Struktur-Silhouetten~~                                   | ✓ V18.104 B8 — **S-BESTÄTIGT** („Bauwerke und Deko hammer, was ein Sprung")                        |
-| Terrain-Boden reagiert nachts nicht (Schöpfer 10.06. abend)         | B9 (NEU — messen, welcher Term ihn hochhält)                                                       |
-| Steuerung flach (kein Feel, Bindings teils fix)                     | C5                                                                                                 |
-| ~~Aura = folgende Lampe~~                                           | ✓ V18.104 C6 — **S-BESTÄTIGT** („Hautschimmer passt"); V18.105: die Lampe GESCHNITTEN („kann weg") |
-| ~~Wiese homogen, keine Wälder~~                                     | ✓ V18.102 B5+                                                                                      |
-| Test-Volatilität (Spieler-im-Fall-Klasse)                           | §6.2-Telemetrie-Disziplin (Muster steht)                                                           |
-| localStorage-Größen-Wand                                            | FERN IndexedDB                                                                                     |
+| Schwäche (gemessen)                                                 | Adresse                                                                                                                        |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| ~~Cross-LOD-Naht sichtbar~~                                         | ✓ V18.103 A1 (Cap + Stitch-Band: 0 sichtbare Spalten ungedeckt)                                                                |
+| ~~Edit = Ganz-Chunk-Reset sichtbar~~                                | ✓ V18.103 A2 (GEMESSEN: Vertex-Delta 0/3180 lokal; Splice bewusst deferred)                                                    |
+| Welt endet im Fog (keine Ferne)                                     | B2 Horizont-Mantel (A5 deckt die Kante schon: fog.far ≤ Ring-Kante)                                                            |
+| Wasser-Sheet ~78 ms auf Main                                        | B1                                                                                                                             |
+| EINE 2048er-Schattenmap (nah grob, fern eng)                        | B4 CSM                                                                                                                         |
+| Physik-Todesspirale möglich (20 Substeps)                           | B6                                                                                                                             |
+| Kreaturen: kein Lebenszyklus, keine Herden-Stimmung                 | D2/D3                                                                                                                          |
+| Kreaturen greifen nie an (Furcht ohne Konsument)                    | D4 Phase E                                                                                                                     |
+| ~~Wetter binär sunny/rainy~~                                        | ✓ V18.128 D5a (Intensitäts-Achse + stormy; Sturm-Look → S)                                                                     |
+| Musik hört die Emotion nicht (Pfeiler 4 halb)                       | D5b                                                                                                                            |
+| Nexus zahlt nichts, Pools feeden nicht                              | E2/E4                                                                                                                          |
+| Magie kostet nichts                                                 | E3                                                                                                                             |
+| ~~Gesten-Fitness-Kreis evtl. stumm~~                                | ✓ V18.104 E4-Audit + V18.112 Kristall: Geste→Gesetz schließt                                                                   |
+| LLM ist Randfigur                                                   | E6                                                                                                                             |
+| Spieler kann nicht pflegen                                          | E7                                                                                                                             |
+| ~~Rekursion blockiert (4 Schnitte)~~                                | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm                                                               |
+| Netz trägt real nur ~4–6 Peers (Stern-Topologie offen)              | F2-Rest (Design GEMESSEN in §5-F2: Hub-Routing + Stempel-Vertrauen); ~~TURN~~ ✓ V18.104 · ~~Migration ohne Zustand~~ ✓ V18.126 |
+| ~~Sozial-Schicht fehlt ganz (Bewerten lokal-only)~~                 | ✓ V18.134 F4-Stufe-1 (signierte Zeugnisse übers Mesh, LWW, R4 siebt); Rest: Lesezeichen/Folgen/Kommentare                     |
+| ~~Innerster Ring nicht BENANNT~~                                    | ✓ V18.122 G8 R0 (`SOVEREIGN_STATE` + `_sovereignStateAudit`)                                                                   |
+| ~~Kanal dämpft nur teilweise (ready/exit/manifest ungedeckelt)~~    | ✓ V18.123 G8 R1 (`_portalChannelAdmit` + `_p2pPeerRateAdmit`)                                                                  |
+| ~~Keine Irreversibilitäts-Wand~~                                    | ✓ V18.123 G8 R2 (`SOVEREIGN_ACTIONS` disjunkt + `_sovereignGesture`)                                                           |
+| ~~Sandbox-Grenze nicht als Invariante eingefroren~~                 | ✓ V18.123 G8 R3 (`_portalSandboxAttr` + `_localityAudit`)                                                                      |
+| ~~Herkunft FLACH (origin-Enum, keine Lineage · kein Rückruf)~~      | ✓ V18.124 G8 R4 (`provenance`-Kette + `revokeKey` + Lader-Sieb)                                                                |
+| ~~Immunsystem statisch (Invarianten nur beim Merge)~~               | ✓ V18.124 G8 R5 (`_robustnessCorpus` — vier Korpora im Push-Gate)                                                              |
+| ~~Fall-durch beim Platzieren-unter-sich · Kopf durch Höhlendecken~~ | ✓ V18.103 A6 (Begraben-Rettung · Sprung-Klemme · Ego-Auge-Clip)                                                                |
+| ~~Schwarze Struktur-Silhouetten~~                                   | ✓ V18.104 B8 — **S-BESTÄTIGT** („Bauwerke und Deko hammer, was ein Sprung")                                                    |
+| Terrain-Boden reagiert nachts nicht (Schöpfer 10.06. abend)         | B9 (NEU — messen, welcher Term ihn hochhält)                                                                                   |
+| Steuerung flach (kein Feel, Bindings teils fix)                     | C5                                                                                                                             |
+| ~~Aura = folgende Lampe~~                                           | ✓ V18.104 C6 — **S-BESTÄTIGT** („Hautschimmer passt"); V18.105: die Lampe GESCHNITTEN („kann weg")                             |
+| ~~Wiese homogen, keine Wälder~~                                     | ✓ V18.102 B5+                                                                                                                  |
+| Test-Volatilität (Spieler-im-Fall-Klasse)                           | §6.2-Telemetrie-Disziplin (Muster steht)                                                                                       |
+| localStorage-Größen-Wand                                            | FERN IndexedDB                                                                                                                 |
+| Die Taille ist implizit (~70 %): Import prüft/re-derived nichts · Gott-Mauer-Klasse · 3 Versionsfelder ohne Semantik | PHASE Ω (G9 — `docs/taille-plan.md`, Ω0–Ω6)                                                   |
 
 **Disziplin (unverändert, roadmap §9):** Regel #0 · miss-rate-nicht · verdichte-nie-parallel ·
 KONSUM nicht Existenz · keine halben Schritte · ein bestätigter Bogen = ein Merge. **Dieses

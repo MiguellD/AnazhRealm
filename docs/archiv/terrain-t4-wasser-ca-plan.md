@@ -171,7 +171,20 @@ wake, T3 (kantiger Mesher) trägt die scharfen Kanäle, durch die das Wasser fli
 - **Performance:** active-cell-only + Budget/Frame; das CA-Level ist eine reaktive Schicht (bounded, sparse,
   lazy-decay wo ruhig), kein Voll-Sweep — das V17.27-Overlay-Muster.
 
-## 7 · DIE FLOW-REGEL — ENTSCHIEDEN + GEBAUT (V18.93: Decay + Spiegel-Kappe + Fixpunkt)
+## 7 · DIE FLOW-REGEL — ENTSCHIEDEN + GEBAUT (V18.93: Decay + Spiegel-Kappe + Fixpunkt; V18.129: + der STAU-SPIEGEL)
+
+> **V18.129 — die VIERTE Regel (das Hoch-Becken, gigant-plan §5-A4-Rest):** ein
+> SPIELER-WERK (Fill-Edit / solide Architektur, Krone über rim) öffnet die
+> Spiegel-Kappe LOKAL über einen bounded SPILL-SCAN (`_stauSpillLevels` — PURE
+> Priority-Flood im Werk-Fenster, `CA_STAU`): die Kappe steigt auf den ehrlichen
+> HALTE-Pegel (billigster Ausweg — Krone · Ufer · die V18.93-Außenwelt am
+> Fensterrand). Ein Pfeiler staut damit strukturell NICHT (Ausweg auf rim);
+> gepinnte Quell-Spalten im Stau-Bereich (src=2) TROPFEN den Pool voll
+> (`FEED`/Tick, gestützt, bis zur Kappe) → der Fixpunkt settled den vollen See.
+> GEMESSEN (`diag-stau.cjs`): Pfeiler 0.00 m · Damm-Pool +2.68 m über rim als
+> EBENE Fläche · settled · Welt unverändert. Felder werk-zentriert gecacht
+> (keine Kappen-Naht), Invalidation via `_invalidateWaterCapsAround`
+> (Edit/Spawn/Remove). Offene Kür: der ÜBERLAUF über die Krone als Wasserfall.
 
 **GEMESSEN (V18.92, frische Welt, `diag-water-cellsheet` mit 4000-Tick-Vorlauf):** „Wake-on-Stream"
 (jeder einstreamende Wasser-Chunk weckt den CA — der Versuch, „die Ausbreitung des Flusses zu

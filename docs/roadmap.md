@@ -6,7 +6,7 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand: V18.83 (`main`), 09.06.2026.**
+> **Stand: `main` @ V18.121 (PR #84) · Branch `claude/admiring-fermat-c0d5ct` @ V18.136, 11.06.2026.**
 
 ---
 
@@ -23,23 +23,23 @@ Welle, sein Auge pro Merge — Regel #0 ist ein Werkzeug, keine Bremse.
 
 ## §2 · Wo wir stehen
 
-Das **Fundament steht**: Voxel-Terrain mit echten Höhlen · Stream-Power-Erosion · das Wasser-
-*Datenmodell* (3D-Zellen, Physik, Reaktivität, globaler Ozean) **+ der Wasser-CA-KERN** (T4,
-V18.84–.86: `_tickWaterCA` fließt im Modell+Welt, Render-Hybrid `surfY = L + caDelta`) · das
-Rückgrat der LOD-Kaskade (U1+U3, N3) · das lebendige Feld (lesen·schreiben·werten) + Emotion-Kern ·
-die Crafting-Resonanz · der UI-Putz-Bogen. Was fehlt: **eine** große Sache — die Wasser-
-**Render/Dynamik-VEREINIGUNG** (wasser-plan §0: W-A Zell-Oberkanten-Sheet · W-B der CA als einzige
-Füll-Wahrheit + Quellen/Senken · W-C Ufer-Verankerung) — plus N2 (Sub-Region-Edit), die
-Fundament-Reste, der soziale Bogen und die offenen Render-Sign-offs.
+Das **Fundament steht und ist RUND** (Stand 11.06.2026): Voxel-Terrain mit Höhlen/Canyons ·
+Erosion · **das Wasser VOLLENDET** (CA fließt + ruht V18.84–.94 · Stau-Spiegel V18.129 ·
+Küsten-Aquifer V18.125 · ferne Binnengewässer-Kacheln V18.132) · **PHASE A KOMPLETT** (Naht ·
+Spawn · Fog · Kollision) · LOD-Kaskade U1–U5 (U4-Fernfeld V18.131 · U5-CSM V18.130) · das
+lebendige Feld + Emotion-Kern + Lebenszyklus · Crafting-Resonanz + Foraging (V18.133) ·
+Robustheit R0–R5 rund · Rekursion bootet · der soziale Bogen begonnen (Zeugnisse + Lesezeichen
+V18.134/.135). Was fehlt: die S-Browser-Sign-offs (gigant-plan §6.3) · F4-Rest (Folgen/
+Kommentare) · F2-Stern · W18 · Phase E · die Taille Ω0–Ω6.
 
 ---
 
 ## §3 · Der Plan vorwärts — die Reihenfolge
 
 > **Der Master-Blick über allem: `docs/gigant-plan.md`** (10.06.2026 — das umfassende gemessene
-> Bild: die sieben Säulen G1 Werkstatt-Animation als Motion-Resonanz · G2 Rekursion (AnazhRealm in
-> AnazhRealm) · G3 sich-speisendes P2P-Netz · G4 Kreatur-Innenleben · G5 δ-als-Währung-Ökonomie ·
-> G6 Licht+Terrain-Einheit · G7 Performance-Maßstab + die Zwillings-Karte + die Reihenfolge §5).
+> Bild: die NEUN Säulen G1 Motion-Resonanz · G2 Rekursion · G3 sich-speisendes P2P-Netz ·
+> G4 Kreatur-Innenleben · G5 δ-als-Währung · G6 Licht+Terrain · G7 Maßstab · G8 Robustheit (✓ rund) ·
+> G9/Ω die gefrorene Taille (`docs/taille-plan.md`) + die Zwillings-Karte + die Reihenfolge §5).
 > Dieser §3 bleibt die operative Kurz-Form; der Gigant-Plan trägt das Warum + die Anker.
 
 **⭐ Die EINE Wurzel — die Chunk-Naht (Schöpfer-Befund 09.06.2026, gemessen):** blobiges Terrain ·
@@ -62,17 +62,18 @@ die Grenz-Zeile, Kollision gappt) + Edit/LOD re-meshet den GANZEN Chunk (das „
 N1 Cross-LOD watertight (Transvoxel [Lengyel] ODER Geomorph→Kollision+volle Zone) · N2 Sub-Region-Edit ·
 N3 stabiles LOD (grösserer LOD0-Ring + Hysterese).** (Subsumiert das alte „E4-Stitching".)
 
-**Phase 2 — das Fundament sauber schließen (nach der Naht-Vollendung)** H3 (ferne Binnengewässer) → G3
-(weitere Höhleneingänge) → LOD-Kaskade-Rest (U2 Wasser-LOD · U4/U5/U6) → Render-Sign-offs (R1/R2/R3/R5) ·
+**Phase 2 — das Fundament sauber schließen (nach der Naht-Vollendung)** ~~H3~~ ✓ V18.132 (Kacheln) → G3
+(weitere Höhleneingänge) → LOD-Kaskade-Rest (U2 Wasser-LOD · ~~U4~~ ✓ V18.131 · ~~U5~~ ✓ V18.130 · U6) → Render-Sign-offs (R1/R2/R3/R5) ·
 das Wasser-RENDER T7c/T7d (Fluss-Edit-Löcher + lake/river-Naht, burnte Zone, Schöpfer-Auge) · der Spawn
 liegt in einer T6d-Kaverne (Spawn-Höhe heben). Detail: `archiv/lod-kaskade-plan.md`.
 
-**Phase 3 — die Seele** Crafting-Schluss (S6-B/S9/S11/S7-C) · **Phase E** (Bedrohung/Furcht — der
+**Phase 3 — die Seele** Crafting-Schluss (~~S6-B~~ ✓ V18.133 · S9-Sign-off · S11 · ~~S7-C~~ ✓ V18.127) · **Phase E** (Bedrohung/Furcht — der
 letzte Emotion-Kern-Konsument) · Mana-Symmetrie · Emotion→Regel-Emergenz · **Nexus-Lern-Vereinheit-
 lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendige-feld.md`.
 
-**Quer dazu (eigene Bögen):** der **soziale Mesh-Bogen** (Bewerten-Aggregation → Lesezeichen → Folgen
-→ Kommentare/Chat) · **W18** (in fremden Welten leben, `archiv/world-portal-w18-plan.md`).
+**Quer dazu (eigene Bögen):** der **soziale Mesh-Bogen** (~~Bewerten-Aggregation~~ ✓ V18.134 ·
+~~Lesezeichen~~ ✓ V18.135 · offen: Folgen → Kommentare/Chat → „Für dich") · **W18** (in fremden
+Welten leben, `archiv/world-portal-w18-plan.md`) · **Ω die gefrorene Taille** (`docs/taille-plan.md`).
 
 ---
 
@@ -82,8 +83,11 @@ lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendig
 `aFlow`-Foam-Strähnen · ~~Wasserfall-Plane (bleibt/raus?)~~ **ENTSCHIEDEN+GEBAUT (V18.111–.114):
 die Plane FIEL (S-Entscheid), der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe +
 Vorhang, aSlope-Wildwasser; Tour-gehärtet: Split nur nass↔nass, Strähnen-Schaum) — das
-Abwärts-Material bleibt als Saat** · aufgestaute Hoch-Becken (über `L`, brauchen
-Zellen) · Unterwasser-Decken-Pass (V18.3 B5) · Kapillar/Stempel an Gebäuden.
+Abwärts-Material bleibt als Saat** · ~~aufgestaute Hoch-Becken (über `L`)~~
+**GEBAUT (V18.129 — der STAU-SPIEGEL):** ein Spieler-Damm staut über rim
+(bounded Spill-Scan + Stau-Tropf; Pfeiler stauen strukturell nicht; GEMESSEN
+`diag-stau.cjs` — Pool +2.68 m EBEN, settled; Kron-ÜBERLAUF als Wasserfall =
+offene Kür) · Unterwasser-Decken-Pass (V18.3 B5) · Kapillar/Stempel an Gebäuden.
 
 **Terrain/Naht (PHASE A VOLLENDET bis auf S-Wellen, §11 + gigant-plan §5)** — ~~N1 Cross-LOD watertight~~
 **GEBAUT (V18.103):** Morph-Cap + Stitch-Band (`_rebuildLodStitchBand` — der Arme-Leute-Transvoxel;
@@ -96,14 +100,16 @@ der leere createNewWorld-Snapshot trug `playerPosition (0,50,0)` → der Reload-
 „vor Erst-Spawn", Restore lässt das Flag false (Browser-Pfad-Sonde `diag-genesis-spawn.cjs`
 rot→grün) · ~~Haupt-Fog an die Ring-Kante koppeln~~ **GEBAUT (V18.103 A5):** fog.far ≤
 (ringRadius+0.5)·span · **A6 Körper-Kollision GEBAUT (V18.103):** Begraben-Rettung + Sprung-Klemme +
-Ego-Auge-Clip. Danach offen: H3 ferne Seen/Flüsse (Region mitwandern, determinismus-brechend → S).
+Ego-Auge-Clip. ~~H3 ferne Seen/Flüsse~~ **GEBAUT (V18.132: seed-deterministische
+KACHELN statt „Region mitwandern" — f(seed, Koordinate) bricht den Determinismus NICHT; Worker
+gespiegelt, Heimat bit-identisch, GEMESSEN Worker==Main 0/32144).**
 
-**LOD/Render** — U2 Wasser-LOD (heute fest LOD0) · U4 Deko-Distanz/Dichte/Impostor · U5 Schatten-CSM ·
+**LOD/Render** — U2 Wasser-LOD (heute fest LOD0) · ~~U4 Deko-Distanz/Dichte/Impostor~~ **GEBAUT (V18.131: Band-getrieben + das EINE Fernfeld-Impostor-Mesh pro Art; Look-Sign-off offen)** · ~~U5 Schatten-CSM~~ **GEBAUT (V18.130: r184-CSMShadowNode an den DETAIL_CASCADE-Band-Kanten, Snap pro Kaskade eingebaut; Look/FPS-Sign-off offen)** ·
 U6 Clipmap (Draw-Call-Hebel) · R1 Schatten-Snap (gebaut, Sign-off offen) · R2 Normale in Geometrie
 backen · R3 Kanten-Schärfe · R5 Struktur-Textur · E3 Worker-Mesh (gebaut V17.118, Sign-off offen) ·
 Kreatur-FPS-Frame-Budget (falls Boden-Cache nicht reicht) · Browser-Sign-offs (J4 · E1–E3).
 
-**Crafting/Kampf** — S6-B erntbare Flora · S9 Gerät in der Hand (gebaut, Sign-off offen) · S11
+**Crafting/Kampf** — ~~S6-B erntbare Flora~~ **GEBAUT (V18.133: Scatter pflückbar, kraut/essenz, Trank zieht gepflückte Zutaten)** · S9 Gerät in der Hand (gebaut, Sign-off offen) · S11
 Werkstatt-Animation (die Kirsche) · S7-C chat/DSL-Vereinheitlichung · S8 Teilen-Konsistenz · A2
 Crafting-Fluss-Audit · Avatar-Größe→HP · ~~Zwei-Hand-Modell~~ **GEBAUT (V18.109: Off-Hand-Slot +
 Key G + linker Arm)** · ~~Rüstung am Avatar sichtbar~~ **GEBAUT (V18.104 + V18.110: sitzt am

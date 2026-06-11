@@ -5526,6 +5526,29 @@
                 transform: scale(1.2);
                 text-shadow: 0 0 6px rgba(224, 169, 58, 0.6);
             }
+            /* F4 (V18.134/.135) — Gemeinschafts-Wertung + Lesezeichen in der Akt-Zeile */
+            .feed-rating-agg {
+                color: var(--ink-on-dark-soft, #b8a888);
+                font-size: 11px;
+                line-height: 15px;
+                margin-left: 6px;
+                white-space: nowrap;
+            }
+            .feed-bookmark {
+                margin-left: auto;
+                font-size: 13px;
+                line-height: 15px;
+                cursor: pointer;
+                opacity: 0.55;
+                transition: transform 0.1s ease;
+            }
+            .feed-bookmark:hover {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            .feed-bookmark.active {
+                opacity: 1;
+            }
             .library-columns {
                 column-count: 3;
                 column-gap: 20px;
@@ -8870,6 +8893,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.121.0" defer></script>
+        <script src="anazhRealm.js?v=18.136.0" defer></script>
     </body>
 </html>
