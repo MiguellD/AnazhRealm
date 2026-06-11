@@ -818,7 +818,12 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
   400, Rückruf siebt dem Wort beidseitig, textContent-XSS-Wand); „💬 N"-Panel je
   Karte + Eingabe; das eigene Wort schreibt `journal share` — **die ruhende
   share/witness-Saat ist ERBLÜHT**. GEMESSEN end-to-end mit zweiter Identität.
-  WEITER OFFEN (Kür): „Für dich"-Algorithmus + Welt-Vorschau im Portal-Ring.
+  ✓ **STUFE 5 (V18.147): „FÜR DICH" — der Bogen ist RUND:** die persönliche
+  Reihung als LESBARE Verdichtung der Stufen 1-4 (`_feedForYouScore`: Folgen +4 ·
+  Gemeinschafts-Ø vertrauens-gewichtet · Merken +2 · eigenes Urteil ×0.5 ·
+  Gesprächs-Puls gedeckelt; dritter Chip „✦ Für dich", Tooltip erklärt die
+  Gewichte — keine Black-Box); +5 Invarianten. Kür-VERMERK bleibt allein die
+  Welt-Vorschau im Portal-Ring (Look; S-Vermerk nach der Abnahme-Regel).
 - **F5 — B-WASM** [world-portal; per-Projekt] · **F6 — evolveCommunity** [Kreatur-Kulturen; nach
   D2/D3, S-Design].
 

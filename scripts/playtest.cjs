@@ -28553,6 +28553,59 @@ async function checkBandW18Dwell(ctx) {
     check("W18-D Souveränität: Zeiger + Slot leben GLOBAL, nie im Welt-Snapshot", res.notInSnapshot);
 }
 
+// F4 Stufe 5 (V18.147) — „FÜR DICH": die persönliche Feed-Reihung als
+// LESBARE Verdichtung der gebauten sozialen Signale (Folgen +4 · Gemeinschafts-
+// Ø vertrauens-gewichtet · Merken +2 · eigenes Urteil ×0.5 · Gesprächs-Puls
+// gedeckelt). Kein Server, keine Black-Box — der letzte benannte F4-Schritt.
+async function checkBandV18147ForYou(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) der Score KONSUMIERT alle fünf F4-Quellen (Stufen 1-4).
+        const src = r._feedForYouScore.toString();
+        out.consumesAll =
+            /_feedFollowed/.test(src) &&
+            /_feedRatingAgg/.test(src) &&
+            /_feedBookmarked/.test(src) &&
+            /_feedRating\(/.test(src) &&
+            /_feedComments/.test(src);
+        // (2)-(3) BEHAVIORAL mit injizierten Signalen (restauriert).
+        const savedFollows = r.state.feedFollows;
+        const savedBookmarks = r.state.feedBookmarks;
+        try {
+            const pub = "ab".repeat(32);
+            r.state.feedFollows = { [pub]: true };
+            r.state.feedBookmarks = {};
+            const plain = r._feedForYouScore({ id: "world:forYouTest", author: "" });
+            const followed = r._feedForYouScore({ id: "world:forYouTest", author: pub });
+            out.followBoost = followed - plain >= 3.9;
+            r.state.feedBookmarks = { "world:forYouTest": true };
+            const marked = r._feedForYouScore({ id: "world:forYouTest", author: "" });
+            out.bookmarkBoost = marked - plain >= 1.9;
+        } finally {
+            r.state.feedFollows = savedFollows;
+            r.state.feedBookmarks = savedBookmarks;
+        }
+        // (4) die Reihung ist verdrahtet: der Strom sortiert nach dem Score,
+        // die Chips tragen „Für dich" (Konsum, nicht Existenz).
+        out.sortWired =
+            /fuerdich/.test(r.renderLibraryUI.toString()) && /_feedForYouScore/.test(r.renderLibraryUI.toString());
+        // (5) die DREI Sortier-Chips leben im DOM (Neueste · Für dich · Bewertung).
+        const savedSort = r.state.feedSort;
+        r._renderFeedSort();
+        const host = document.getElementById("feed-sort");
+        out.chips = !!host && host.children.length === 3 && /Für dich/.test(host.textContent);
+        r.state.feedSort = savedSort;
+        return out;
+    });
+    check("V18.147 Für dich: der Score KONSUMIERT alle fünf F4-Signale", res.consumesAll);
+    check("V18.147 Für dich: Folgen ist das stärkste persönliche Wort (+4)", res.followBoost);
+    check("V18.147 Für dich: das Merken hebt (+2)", res.bookmarkBoost);
+    check("V18.147 Für dich: der Strom reiht nach dem Score (fuerdich-Sort verdrahtet)", res.sortWired);
+    check("V18.147 Für dich: die drei Sortier-Chips stehen (Neueste · Für dich · Bewertung)", res.chips);
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -33825,8 +33878,10 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!stream.querySelector(".library-card[data-kind='world'] .feed-cover .feed-cover-glyph") &&
             !!stream.querySelector(".feed-recipe .feed-cover") &&
             (!hasCreatures || !!stream.querySelector(".feed-creature .feed-cover"));
-        // V18.74 — die Sortier-Chips (Neueste | Bewertung) + sort-by-rating WIRKT (ein 5★-Item steigt nach oben).
-        out.feedSortChips = document.querySelectorAll("#feed-sort .feed-kind-chip").length === 2;
+        // V18.74 — die Sortier-Chips + sort-by-rating WIRKT (ein 5★-Item steigt
+        // nach oben). V18.147: die Chips wuchsen auf DREI (Neueste · ✦ Für dich
+        // · ★ Bewertung) — der Test wandert mit (V9.56-i).
+        out.feedSortChips = document.querySelectorAll("#feed-sort .feed-kind-chip").length === 3;
         const aRecipe = Object.values(r.state.blueprints).find((b) => b && !b.instanced && b.role !== "portal");
         if (aRecipe) {
             r._setFeedRating("recipe:" + aRecipe.name, 0);
@@ -33999,7 +34054,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             w14Results.feedKindChips
         );
         check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
-        check("Feed: die Sortier-Chips (Neueste | Bewertung) sind da (V18.74)", w14Results.feedSortChips);
+        check("Feed: die Sortier-Chips (Neueste | Für dich | Bewertung) sind da (V18.74/.147)", w14Results.feedSortChips);
         check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
         check(
             "Feed: der geteilte 3D-Vorschau-Bereich (Canvas + Methoden) ist da (V18.75)",
@@ -45160,6 +45215,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandW18CoPresence(ctx);
             await checkBandW18InputBridge(ctx);
             await checkBandW18Dwell(ctx);
+            await checkBandV18147ForYou(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

@@ -33289,6 +33289,14 @@ class AnazhRealm {
                         (b[0].ratingScore || b[0].rating || 0) - (a[0].ratingScore || a[0].rating || 0) || a[1] - b[1]
                 )
                 .map((p) => p[0]);
+        // F4 Stufe 5 (V18.147) — „Für dich": die persönliche Reihung aus den
+        // GEBAUTEN sozialen Signalen (stabil; die Summe ist LESBAR, kein
+        // Black-Box-Algorithmus — _feedForYouScore trägt die Gewichte).
+        else if (this.state.feedSort === "fuerdich")
+            items = items
+                .map((it, i) => [it, this._feedForYouScore(it), i])
+                .sort((a, b) => b[1] - a[1] || a[2] - b[2])
+                .map((p) => p[0]);
         for (const item of items) list.appendChild(this._feedItemCard(item));
         this._renderFeedKindChips();
         this._renderFeedSort();
@@ -33297,24 +33305,51 @@ class AnazhRealm {
         this._applyLibraryFilter();
     }
 
-    // V18.74 — die Sortier-Chips (Neueste | Bestbewertet) im Kuratieren-Rail; treiben den Strom.
+    // F4 Stufe 5 (V18.147) — der „Für dich"-Score: eine LESBARE Summe der
+    // GEBAUTEN sozialen Signale (kein Server, keine Black-Box — der Spieler
+    // kann jede Zeile nachvollziehen). Die Gewichte: FOLGEN ist das stärkste
+    // persönliche Wort (+4 — du wähltest diesen Schöpfer), dann die
+    // GEMEINSCHAFTS-Wertung (Ø, vertrauens-gewichtet: volle Kraft erst ab
+    // ~3 Zeugnissen — ein einzelnes 5★ überstimmt keine breite 4★-Basis),
+    // das eigene MERKEN (+2) + das eigene URTEIL (×0.5), und ein leiser
+    // GESPRÄCHS-Puls (Kommentare = Leben, gedeckelt). Alle Quellen sind die
+    // F4-Stufen 1-4 — die Reihung ist ihre VERDICHTUNG, kein neues System.
+    _feedForYouScore(it) {
+        let s = 0;
+        if (it.author && this._feedFollowed(it.author)) s += 4;
+        const agg = this._feedRatingAgg(it.id);
+        if (agg.count > 0) s += agg.avg * Math.min(1, agg.count / 3);
+        if (this._feedBookmarked(it.id)) s += 2;
+        const own = this._feedRating(it.id);
+        if (own > 0) s += own * 0.5;
+        s += Math.min(1.5, this._feedComments(it.id).length * 0.3);
+        return s;
+    }
+
+    // V18.74 — die Sortier-Chips (Neueste | ✦ Für dich | Bestbewertet) im Kuratieren-Rail; treiben den Strom.
     _renderFeedSort() {
         if (typeof document === "undefined") return;
         const host = document.getElementById("feed-sort");
         if (!host) return;
         host.innerHTML = "";
-        const active = this.state.feedSort === "rating" ? "rating" : "neueste";
+        const active =
+            this.state.feedSort === "rating" ? "rating" : this.state.feedSort === "fuerdich" ? "fuerdich" : "neueste";
         for (const [k, label] of [
             ["neueste", "Neueste"],
+            ["fuerdich", "✦ Für dich"],
             ["rating", "★ Bewertung"],
         ]) {
             const chip = this._el("button", {
                 class: "feed-kind-chip" + (k === active ? " active" : ""),
                 type: "button",
                 text: label,
+                title:
+                    k === "fuerdich"
+                        ? "Deine persönliche Reihung: Gefolgte zuerst, dann Gemeinschafts-Wertung, Gemerktes, dein Urteil, Gespräch — eine lesbare Summe, keine Black-Box."
+                        : undefined,
             });
             chip.addEventListener("click", () => {
-                this.state.feedSort = k === "rating" ? "rating" : "neueste";
+                this.state.feedSort = k === "rating" ? "rating" : k === "fuerdich" ? "fuerdich" : "neueste";
                 this.renderLibraryUI();
             });
             host.appendChild(chip);
@@ -56569,7 +56604,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.146.0";
+AnazhRealm.VERSION = "18.147.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
