@@ -185,6 +185,40 @@ const server = http.createServer((req, res) => {
     });
     console.log("MOUNT:", JSON.stringify(mounted));
 
+    // M3-PROBEN (meister-plan §6.3 + Befunde 9/10/11): Rad-Achse · Versinken · Sitz-Pose.
+    const m3 = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const archId = r.state.player.mountedArch;
+        const entry = (r.state.architectures || []).find((e) => e.id === archId) || r._mountedEntry;
+        const bp = entry && r.state.blueprints[entry.type];
+        // (1) RAD-ACHSEN-PROBE: die rad-Gelenk-Rollen dumpen — Achse + Anker.
+        if (bp) {
+            const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
+            out.radJoints = roles
+                .map((x, i) => (x && x.role === "rad" ? { i, axis: x.axis, anchor: x.anchor } : null))
+                .filter(Boolean);
+        }
+        // (2) VERSINK-PROBE: ein Tick → Gefährt-Unterkante vs Terrain.
+        r._tickMountedMovement(0.05);
+        const terr = r.getTerrainHeightAt(entry.position.x, entry.position.z);
+        const bottomWorld = entry.position.y + (bp ? r._compoundBottomY(bp) * (entry.scale || 1) : 0);
+        out.sink = {
+            entryY: +entry.position.y.toFixed(2),
+            terrain: +terr.toFixed(2),
+            bottomVsTerrain: +(bottomWorld - terr).toFixed(2),
+            riderY: +r.state.playerMesh.position.y.toFixed(2),
+            sitz: +entry._sitzHeight.toFixed(2),
+            groundClear: +(entry._groundClear || 0).toFixed(2),
+        };
+        // (3) SITZ-POSE-PROBE: der menschliche Avatar winkelt die Beine an.
+        r.animatePlayerSoul(performance.now() / 1000);
+        const parts = r.state.playerMesh.userData.parts;
+        out.seat = parts && parts.leftLeg ? { legRotX: +parts.leftLeg.rotation.x.toFixed(2) } : null;
+        return out;
+    });
+    console.log("M3-PROBEN:", JSON.stringify(m3));
+
     // Drohnen-Shot-Helfer: Kamera seitlich-hinter dem Reiter, Blick auf ihn.
     const shoot = async (file, offX, offY, offZ, info) => {
         const meta = await page.evaluate(

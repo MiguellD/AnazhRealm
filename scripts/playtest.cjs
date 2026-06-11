@@ -29204,6 +29204,109 @@ async function checkBandM2RollenWahrheit(ctx) {
     );
 }
 
+// V18.155 — M3: DER RITT VOLLENDET (meister-plan §2; Befunde 9/10/11/27). Das
+// GEFÄHRT führt vertikal (steht auf dem Terrain — der V18.150-Beifang-Riss
+// „versinkt komplett" fällt), der Reiter folgt ihm (Body kinematisch auf
+// Sitz-Höhe); die SITZ-Pose (Walk-Cycle ruht); die Rad-ACHSE = Zylinder-
+// Eigenachse (nicht die Verbindungs-Richtung = Propeller) + Anker im Rad-
+// Zentrum (kein Eiern); der Rüstungs-FIT generisch (der ext.y-Pfad war TOT).
+async function checkBandM3RittVollendet(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const pm = r.state.playerMesh.position;
+        const savedMounted = r.state.player.mountedArch;
+        const savedPos = { x: pm.x, y: pm.y, z: pm.z };
+        let entry = null;
+        try {
+            // nah am Spieler spawnen (gebauter Chunk → getTerrainHeightAt trägt).
+            entry = r.spawnArchitecture("fahrzeug_wagen", { x: pm.x + 6, y: pm.y, z: pm.z }, { silent: true });
+            out.spawned = !!entry;
+            if (!entry) return out;
+            const bp = r.state.blueprints.fahrzeug_wagen;
+
+            // (1) die RAD-ACHSE ist die Zylinder-Eigenachse (Welt-X am Wagen-Rad,
+            // rotation.z=π/2) — NICHT die Verbindungs-Richtung (connAxis wäre "z" =
+            // Fahrt-Richtung = Propeller); und der Anker sitzt IM Rad-Zentrum.
+            const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
+            const radIdx = [];
+            for (let i = 0; i < roles.length; i++) if (roles[i] && roles[i].role === "rad") radIdx.push(i);
+            out.radAxis = radIdx.length === 4 && radIdx.every((i) => roles[i].axis === "x");
+            out.radAnchor = radIdx.every((i) => {
+                const pos = bp.parts[i].position;
+                const a = roles[i].anchor;
+                return Math.abs(a.x - pos.x) < 1e-6 && Math.abs(a.y - pos.y) < 1e-6 && Math.abs(a.z - pos.z) < 1e-6;
+            });
+            // der Helfer selbst: liegender Zylinder → x, stehende Scheibe → z, aufrecht → y.
+            out.cylAxis =
+                r._cylinderWorldAxis({ rotation: { z: Math.PI / 2 } }) === "x" &&
+                r._cylinderWorldAxis({ rotation: { x: Math.PI / 2 } }) === "z" &&
+                r._cylinderWorldAxis({}) === "y";
+
+            // (2) das GEFÄHRT FÜHRT vertikal: nach dem Mount + Tick steht die
+            // Gefährt-Unterkante auf dem Terrain (±0.35 — die exp-Glättung settlet),
+            // der Reiter sitzt auf entry.y + sitz, und vy ist genullt (kein Versinken).
+            r.mountArchitecture(entry);
+            const body = r.state.playerBody;
+            body.setLinearVelocity(r.setVec(r.state.tmpVec1, 0, -8, 0)); // simulierter Fall
+            for (let i = 0; i < 40; i++) r._tickMountedMovement(0.05); // settled (exp-Lerp)
+            const terr = r.getTerrainHeightAt(entry.position.x, entry.position.z);
+            const bottom = entry.position.y + r._compoundBottomY(bp) * (entry.scale || 1);
+            out.standsOnTerrain = Number.isFinite(terr) && Math.abs(bottom - terr) < 0.35;
+            out.riderFollows = Math.abs(pm.y - (entry.position.y + entry._sitzHeight)) < 0.05;
+            const v = body.getLinearVelocity();
+            out.vyZeroed = Math.abs(v.y()) < 1e-6;
+            out.clearCached = Number.isFinite(entry._groundClear) && Math.abs(entry._groundClear - -0.03) < 0.05;
+
+            // (3) die SITZ-POSE: im Sattel winkelt der menschliche Avatar die Beine
+            // an (Walk-Cycle ruht); beim Absteigen räumt _animateHuman die Pose.
+            const savedSoul = r.state.player.soul;
+            r.applyPlayerSoul("human");
+            r.state.player.animationLastTick = -Infinity;
+            r.animatePlayerSoul(10.0);
+            const parts = r.state.playerMesh.userData.parts;
+            out.seatPose = !!parts && Math.abs(parts.leftLeg.rotation.x - -1.3) < 1e-6;
+            r.dismountArchitecture();
+            r.animatePlayerSoul(10.1);
+            out.poseCleared = !!parts && Math.abs(parts.leftLeg.rotation.x) < 0.6; // Idle ≈ 0
+            r.applyPlayerSoul(savedSoul);
+
+            // (4) der RÜSTUNGS-FIT ist generisch (der tote ext.y-Pfad fiel): die
+            // Quelle liest ext.dy/dx/dz, Höhe (1.15/dy) UND Breite (0.95/dw) deckeln.
+            // (Positiv-Probe — der Erklär-Kommentar in der Quelle nennt das alte
+            // Literal, eine Negativ-Probe matchte den Kommentar.)
+            const fitSrc = r._tickWornArmorVisual.toString();
+            out.fitReadsDy = /ext\.dy/.test(fitSrc) && /ext\.dx/.test(fitSrc) && /1\.15 \/ dy/.test(fitSrc);
+            return out;
+        } finally {
+            if (entry) r.removeArchitecture(entry);
+            r.state.player.mountedArch = savedMounted === undefined ? null : savedMounted;
+            pm.set(savedPos.x, savedPos.y, savedPos.z);
+            if (r.state.playerBody) {
+                const tr = r.state.playerBody.getWorldTransform();
+                tr.getOrigin().setValue(savedPos.x, savedPos.y, savedPos.z);
+                r.state.playerBody.setWorldTransform(tr);
+                r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 0, 0, 0));
+                r.state.playerBody.activate(true);
+            }
+        }
+    });
+    check(
+        "M3 Ritt: die Rad-ACHSE ist die Zylinder-Eigenachse (4× Welt-X, kein Propeller) + der Anker sitzt im Rad-Zentrum (kein Eiern)",
+        res.radAxis && res.radAnchor && res.cylAxis
+    );
+    check(
+        "M3 Ritt: das GEFÄHRT führt vertikal — es steht auf dem Terrain, der Reiter folgt ihm auf Sitz-Höhe, vy genullt (kein Versinken)",
+        res.standsOnTerrain && res.riderFollows && res.vyZeroed && res.clearCached
+    );
+    check(
+        "M3 Ritt: die SITZ-POSE — der Avatar winkelt die Beine an, der Walk-Cycle ruht; Absteigen räumt die Pose",
+        res.seatPose && res.poseCleared
+    );
+    check("M3 Ritt: der Rüstungs-FIT liest die echte Werk-Hülle (ext.dy — der ext.y-Pfad war tot)", res.fitReadsDy);
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -45825,6 +45928,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18151Idb(ctx);
             await checkBandR6Capability(ctx);
             await checkBandM2RollenWahrheit(ctx);
+            await checkBandM3RittVollendet(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

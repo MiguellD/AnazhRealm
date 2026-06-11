@@ -101,15 +101,20 @@ konstant 1.12 NACHHER — der Hüll-Malus ist implizit, ein expliziter hätte me
 Werke doppelt bestraft). +7 Invarianten (`checkBandM2RollenWahrheit`); `diag-roles.cjs`
 = die bleibende Mess-Karte; baeumeConsumable-Test wanderte. „Alle Invarianten OK" 218 s.
 
-**M3 — Der Ritt VOLLENDET [H+A].** (a) **Das Gefährt führt**: vertikal steht es auf
-`getTerrainHeightAt` (+Rad-Radius), der REITER folgt ihm (Body-Kinematik im Sattel:
-Spieler-Body schwebt auf Sitz-Höhe — kein Versinken, und die Mikro-Steigungs-Bremse
-fällt GRATIS, weil der Spieler-Body nicht mehr über Buckel schrammt = die benannte
-Stufe 2). (b) Sitz-POSE: Walk-Cycle pausiert im Sattel, Beine angewinkelt (eine
-`_animateHuman`-Sitz-Variante / Motion-Rolle „sitzt"). (c) Rad-ACHSE messen + aus der
-Anker-Geometrie ableiten (Zylinder-Achse = lokale Y nach Rotation → Welt-Achse). 
-(d) Rüstungs-FIT generisch: Skalierung = Torso-Hülle des Trägers / Hülle des Werks,
-Anker = Trage-Punkt (für JEDEN Nutzer-Bauplan, kein Spezialfall) — Mess-diag mit Shots.
+**M3 — Der Ritt VOLLENDET [H+A]. ✓ GEBAUT (V18.155).** (a) ✓ das Gefährt führt
+vertikal (`getTerrainHeightAt` + `_compoundBottomY`-Boden-Klärung rotations-bewusst,
+exp-geglättet — Stufe 2 GRATIS), der Reiter folgt kinematisch (Body auf Sitz-Höhe,
+vy genullt; Sprung ruht im Sattel = Boot-Konvention); GEMESSEN diag-ride:
+bottomVsTerrain 0.00, riderY = entryY + sitz exakt. (b) ✓ Sitz-POSE
+(`_applySeatPose`: Beine −1.3, Zügel-Arme; Walk-Cycle ruht, Idle räumt beim
+Absteigen). (c) ✓ Rad-ACHSE = Zylinder-EIGEN-Achse (`_cylinderWorldAxis`; GEMESSEN:
+connAxis war "z" = Fahrt-Richtung → Propeller) + der Anker ins RAD-ZENTRUM (der
+Zwischen-Anker ließe ~0.26 m Eiern — ZWEI Wurzeln im selben Zweig). (d) ✓ Rüstungs-
+FIT generisch (GEMESSEN: `ext.y` war ein TOTER Pfad — das Feld heißt `dy`; jetzt
+Träger-Torso 1.15×0.95 ÷ Werk-Hülle, Höhe UND Breite). +4 Invarianten
+(`checkBandM3RittVollendet`); diag-ride trägt die M3-Proben (§6.3 ✓).
+VERMERK: das diag-FAHRT-Segment unterschätzt v (Headless-Timer-Drossel, arithmetisch
+erklärt) · Wasser-Fahrt steht auf dem Grund (kein Boot-Schwimmen — eigener Faden).
 
 **M4 — EIN Such/Filter-Kern [H].** Messen: wie viele Filter-Implementierungen leben
 (Omnibox · Werkstatt · Inventar · Feed · Hof)? → EIN `_matchQuery(item, query)`-Kern
@@ -142,10 +147,9 @@ sichtbar dokumentiert (Einstellungen-Identität + ein Satz im Pass-Panel).
 
 **M9 — DIE AUFSTIEGS-LEITER (die Krone; eigener Bogen, S-Dialog je Sprosse).** §3.
 
-**Reihenfolge:** M2 ✓ → M3 (spielbarer Kern zuerst: Rollen+Ritt — **M3 ist der AKTIVE
-nächste Schritt**) → M1 (Werkstatt-UX) → M5 → M4 → M6 → M7 → M8 → M9 (parallel
-designbar). M2/M3 zuerst, weil sie die Schöpfer-Session DIREKT entblockt haben
-(Wagen bauen→fertigen→platzieren→reiten).
+**Reihenfolge:** M2 ✓ → M3 ✓ (der spielbare Kern Rollen+Ritt STEHT — Wagen
+bauen→fertigen→platzieren→REITEN ist entblockt) → **M1 (Werkstatt-UX) ist der
+AKTIVE nächste Schritt** → M5 → M4 → M6 → M7 → M8 → M9 (parallel designbar).
 
 ---
 
@@ -271,7 +275,8 @@ den S-Dialog je Adoption — der Plan legt die Leiter, nicht die Automatik.
 1. ✓ `diag-roles.cjs` (V18.154): `computeBlueprintRole` für ALLE 31 Built-ins gedumpt + Achsen-
    Rohdaten (span/Volumina/spread/motion) + Exploit-Probe — die bleibende M2-Mess-Karte. [M2]
 2. `diag-harvest.cjs`: Baum/Deko-Abbau end-to-end je Modus (instanced-Pfad!). [M6]
-3. Rad-Achsen-Probe im diag-ride (Achse der rotierenden Räder dumpen). [M3]
+3. ✓ Rad-Achsen-Probe im diag-ride (V18.155: M3-PROBEN — Rad-Achse/Anker-Dump +
+   Versink-Wahrheit + Sitz-Pose). [M3]
 4. Filter-Inventur: grep aller Such/Filter-Implementierungen. [M4]
 5. LOD-Start-Loch: `diag-chunk-seam` mit Ring=Start-Default. [M7]
 6. Nexus-Spawn-Pfade: grep aller spawn-Aufrufer auf `_structureSpawnPos`-Konsum. [M6]

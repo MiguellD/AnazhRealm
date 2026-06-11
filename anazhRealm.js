@@ -13714,7 +13714,17 @@ class AnazhRealm {
                     phase = chainIdx.get(movIdx) * 0.9;
                 } else if (isCyl && longAxis !== connAxis && mf.lowAnchor > 0.4) {
                     jointRole = "rad";
-                    jointAxis = connAxis; // das Rad rollt um seine ACHSE (die Verbindung)
+                    // M3(c)/V18.155 (Befund 9, ARITHMETISCH bestätigt): das Rad rollt um
+                    // seine ZYLINDER-EIGEN-Achse (lokale Y durch part.rotation gedreht →
+                    // dominante Welt-Achse), NICHT um die Verbindungs-Richtung — am Wagen
+                    // ist connAxis "z" (das Rad sitzt schräg unter dem Korpus, |dz| 0.8 >
+                    // |dx| 0.72) = die FAHRT-Richtung → das Rad drehte wie ein Propeller.
+                    jointAxis = this._cylinderWorldAxis(parts[movIdx]);
+                    // Die Achse läuft DURCH das RAD-Zentrum: der größen-gewichtete
+                    // Zwischen-Anker ließe das Rad auf einer ~0.26-m-Kreisbahn EIERN.
+                    anchor.x = M.px;
+                    anchor.y = M.py;
+                    anchor.z = M.pz;
                     phase = 0;
                 } else if (connAxis === "y" && mf.flat > 0.4) {
                     jointRole = "tuer";
@@ -13732,6 +13742,25 @@ class AnazhRealm {
             }
         }
         return any ? roles : null;
+    }
+
+    // M3(c)/V18.155 — die Welt-Achse der Zylinder-HÖHE: lokale Y durch die
+    // Part-Euler-Rotation gedreht (Three.js 'XYZ': R = Rx·Ry·Rz; v = R·e_y =
+    // die mittlere Spalte), dominante |Komponente| → "x"/"y"/"z". Die Achse,
+    // um die ein Rad ROLLT (GEMESSEN: Wagen-Rad rotation.z=π/2 → Welt-X;
+    // eine stehende Scheibe rotation.x=π/2 → Welt-Z; unrotiert → Y).
+    _cylinderWorldAxis(part) {
+        const rot = (part && part.rotation) || {};
+        const cx = Math.cos(rot.x || 0),
+            sx = Math.sin(rot.x || 0);
+        const cy = Math.cos(rot.y || 0),
+            sy = Math.sin(rot.y || 0);
+        const cz = Math.cos(rot.z || 0),
+            sz = Math.sin(rot.z || 0);
+        const vx = Math.abs(-sz * cy);
+        const vy = Math.abs(cz * cx - sz * sy * sx);
+        const vz = Math.abs(cz * sx + sz * sy * cx);
+        return vy >= vx && vy >= vz ? "y" : vx >= vz ? "x" : "z";
     }
 
     // Bewegungs-Rollen pro Kreatur-Seele — einmal berechnet (eine Seele =
@@ -33019,8 +33048,17 @@ class AnazhRealm {
             const g = this._buildFromBlueprint(bp, 0, new Set());
             if (!g) return;
             const ext = typeof this._compoundVisualExtent === "function" ? this._compoundVisualExtent(bp) : null;
-            const h = ext && Number.isFinite(ext.y) && ext.y > 0.01 ? ext.y : 1.2;
-            const sc = Math.max(0.25, Math.min(3, 1.15 / h));
+            // M3(d)/V18.155 (Befund 27, GEMESSEN am Code): die Skalierung las `ext.y` —
+            // das Feld heißt `dy` → der Pfad war TOT (immer Fallback 1.2 ≈ Skala 0.96,
+            // eine 3-m-Nutzer-Rüstung blieb riesig am Spieler). Der generische FIT:
+            // Träger-Torso-Hülle (1.15 m hoch · ~0.95 m breit) ÷ Werk-Hülle — Höhe UND
+            // Breite deckeln, für JEDEN Bauplan (kein Spezialfall; Erst-Wurf-Maße).
+            let sc = 0.96;
+            if (ext) {
+                const dy = Math.max(0.01, ext.dy || 0);
+                const dw = Math.max(0.01, ext.dx || 0, ext.dz || 0);
+                sc = Math.max(0.25, Math.min(3, Math.min(1.15 / dy, 0.95 / dw)));
+            }
             g.scale.setScalar(sc);
             // V18.110 — C7 (der C3-„sitzt auf dem Kopf"-Fix): der TRAGE-Punkt der
             // Rüstung (Masse-Zentrum bzw. expliziter trage-Punkt) wird auf den
@@ -37518,6 +37556,24 @@ class AnazhRealm {
         }
     }
 
+    // M3(b)/V18.155 — die Sitz-Pose des menschlichen Avatars (Befund 10): die
+    // Beine angewinkelt nach vorn (≈75°), die Arme ruhig vorgehalten (Zügel-
+    // Geste), der Torso atmet sanft. Absolute Werte pro Frame (kein Drift —
+    // die _animateHuman-Sprache); _animateHuman räumt die Pose beim Absteigen
+    // (sein Idle-/Walk-Zweig setzt alle Rotationen absolut).
+    _applySeatPose(group, t) {
+        const p = group.userData.parts;
+        if (!p || !p.leftLeg || !p.rightLeg) return;
+        group.rotation.x = 0;
+        p.leftLeg.rotation.x = -1.3;
+        p.rightLeg.rotation.x = -1.3;
+        p.leftArm.rotation.x = -0.45;
+        p.rightArm.rotation.x = -0.45;
+        p.leftArm.rotation.z = 0.12;
+        p.rightArm.rotation.z = -0.12;
+        p.torso.position.y = 0.45 + Math.sin(t * 1.8) * 0.02;
+    }
+
     _buildPhoenixGroup() {
         const group = new THREE.Group();
         // V8.33 — YXZ-Rotation für den lokalen Schwimm-Lehnen (rotation.x).
@@ -38296,6 +38352,11 @@ class AnazhRealm {
                 entry._sitzHeight = Math.max(0.6, sp.y * scale + 0.9);
             }
         }
+        // M3(a)/V18.155 — die BODEN-KLÄRUNG fürs vertikale FÜHREN (das Gefährt
+        // steht auf dem Terrain, der Reiter folgt ihm): Ursprung − Bauplan-
+        // Unterkante (rotations-bewusst), ×scale. Gecacht (die Form ist frozen).
+        entry._groundClear = bp ? -this._compoundBottomY(bp) * scale : 0;
+        entry._rideY = null;
         // Spieler-Position über die Architektur heben (sodass er auf dem SITZ
         // sitzt). Architektur-Position wird in _tickMountedMovement nachgezogen.
         const pm = this.state.playerMesh && this.state.playerMesh.position;
@@ -38378,16 +38439,46 @@ class AnazhRealm {
         this._mountedEntry = entry;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
-        // Architektur-Position auf Spieler ziehen (minus Sitz-Höhe — C7: der
-        // Sitz-Punkt des Bauplans, beim Mount gecacht; Fallback der alte Offset).
+        const tick = Number.isFinite(dt) && dt > 0 ? Math.min(0.1, dt) : 0.016;
+        // HORIZONTAL führt der REITER (die WASD-Physik = die EINE Bewegungs-
+        // Quelle, V18.150); die Architektur folgt in x/z.
         entry.position.x = pm.x;
         entry.position.z = pm.z;
-        entry.position.y =
-            pm.y - (Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT);
+        // M3(a)/V18.155 — VERTIKAL führt das GEFÄHRT (Befund 11: das Gefährt
+        // versank KOMPLETT — die V18.150-Kollisions-Ruhe ließ den Spieler-Body
+        // auf den Boden fallen → entry.y = pm.y − sitz ≈ Boden − 1 m). Die
+        // Minecraft-Boot-Form: das Gefährt steht auf dem Terrain
+        // (getTerrainHeightAt + Boden-Klärung), exp-geglättet gegen Voxel-
+        // Stufen (der V18.150-Vermerk „Mikro-Steigungs-Bremse / Ritt glättet —
+        // Stufe 2" fällt GRATIS mit); der REITER folgt IHM (Body kinematisch
+        // auf Sitz-Höhe, vy genullt — der Sprung ruht im Sattel, wie im Boot).
+        const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        const groundY = this.getTerrainHeightAt(pm.x, pm.z);
+        if (Number.isFinite(groundY)) {
+            const targetY = groundY + (Number.isFinite(entry._groundClear) ? entry._groundClear : 0);
+            const k = 1 - Math.exp(-8 * tick);
+            entry.position.y = Number.isFinite(entry._rideY) ? entry._rideY + (targetY - entry._rideY) * k : targetY;
+            entry._rideY = entry.position.y;
+            const riderY = entry.position.y + sitz;
+            pm.y = riderY;
+            const body = this.state.playerBody;
+            if (body) {
+                const tr = body.getWorldTransform();
+                const o = tr.getOrigin();
+                o.setValue(o.x(), riderY, o.z());
+                body.setWorldTransform(tr);
+                const v = body.getLinearVelocity();
+                body.setLinearVelocity(this.setVec(this.state.tmpVec1, v.x(), 0, v.z()));
+                body.activate(true);
+            }
+        } else {
+            // Fallback (ungebauter Chunk): der alte Reiter-führt-Pfad.
+            entry.position.y = pm.y - sitz;
+            entry._rideY = null;
+        }
         // Mesh-Position sofort updaten (sonst lagt das Visual einen Frame).
         if (entry.mesh) {
             entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
-            const tick = Number.isFinite(dt) && dt > 0 ? Math.min(0.1, dt) : 0.016;
             const body = this.state.playerBody;
             const v = body ? body.getLinearVelocity() : null;
             const vx = v ? v.x() : 0;
@@ -39036,6 +39127,22 @@ class AnazhRealm {
             if (!customRoles) return;
         }
         const p = this.state.player;
+        // M3(b)/V18.155 — die SITZ-POSE (Befund 10: der Walk-Cycle lief im
+        // Sattel weiter): im Sattel pausiert der Schritt (Phase eingefroren,
+        // kein Lauf-Zappeln auf dem Wagen); der menschliche Avatar SITZT
+        // (Beine angewinkelt, Zügel-Arme), andere Seelen ruhen in der Idle-Pose.
+        const mounted = p.mountedArch !== null && p.mountedArch !== undefined;
+        if (mounted) {
+            p.animationLastTick = currentTime;
+            if (hasSkeleton && soulName === "human" && mesh.userData.parts) {
+                this._applySeatPose(mesh, currentTime);
+            } else if (hasSkeleton) {
+                def.animate(mesh, currentTime, p.walkPhase, false, false);
+            } else if (customRoles) {
+                this._animateCompoundMotion(mesh, customRoles, currentTime, p.walkPhase, false);
+            }
+            return;
+        }
         // isMoving aus horizontaler Geschwindigkeit. Schwelle 0.4 m/s
         // verhindert Mikro-Walk wenn der Spieler steht aber leicht rutscht.
         let isMoving = false;
@@ -42312,6 +42419,39 @@ class AnazhRealm {
         // consumable liest NEGATIV (kein Baum-Trank), architecture POSITIV (Masse).
         v.bulk = Math.max(0, Math.min(1, (longest - 2) / 6));
         return v;
+    }
+
+    // M3(a)/V18.155 — die vertikale Halb-Ausdehnung eines Parts, ROTATIONS-bewusst
+    // (die y-Zeile von |R|·s, dieselbe konservative AABB-Hülle wie computeMotionRoles):
+    // ein liegendes Wagen-Rad (rotation.z=π/2, size 0.62/0.14/0.62) ist vertikal 0.31 hoch.
+    _partVerticalHalfExtent(p) {
+        const s = (p && p.size) || {};
+        const sx = Math.abs(Number(s.x) || 0.3);
+        const sy = Math.abs(Number(s.y) || 0.3);
+        const sz = Math.abs(Number(s.z) || 0.3);
+        const rot = p && p.rotation;
+        if (!rot || (!rot.x && !rot.y && !rot.z)) return sy / 2;
+        const cx = Math.abs(Math.cos(rot.x || 0));
+        const sxr = Math.abs(Math.sin(rot.x || 0));
+        const cy = Math.abs(Math.cos(rot.y || 0));
+        const syr = Math.abs(Math.sin(rot.y || 0));
+        const cz = Math.abs(Math.cos(rot.z || 0));
+        const szr = Math.abs(Math.sin(rot.z || 0));
+        const ey = cy * szr * sx + (cx * cz + sxr * syr * szr) * sy + (sxr * cz + cx * syr * szr) * sz;
+        return ey / 2;
+    }
+
+    // M3(a)/V18.155 — die UNTERKANTE eines Bauplans (Bauplan-lokal): min über die
+    // Parts von (pos.y − vertikale Halb-Ausdehnung). Die Boden-Klärung des Gefährts:
+    // entry.y = Terrain − bottomY ⇒ die Rad-Unterkante berührt den Boden.
+    _compoundBottomY(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return 0;
+        let min = Infinity;
+        for (const p of bp.parts) {
+            const y = ((p && p.position && p.position.y) || 0) - this._partVerticalHalfExtent(p);
+            if (y < min) min = y;
+        }
+        return Number.isFinite(min) ? min : 0;
     }
 
     // U1 (resonanz-system.md §2.2) — die Standflächen-Spreizung als 0–1-Achse (Trag-Basis vs Säule): die
@@ -57323,7 +57463,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.154.0";
+AnazhRealm.VERSION = "18.155.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
