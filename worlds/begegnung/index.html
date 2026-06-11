@@ -87,6 +87,10 @@
                 window.addEventListener("keyup", function (e) {
                     keys[e.key.toLowerCase()] = false;
                 });
+                // W18-C — die Input-Brücke: die Heimat reicht semantische
+                // Aktionen ({type:"input", action, down}), wenn der Fokus
+                // bei IHR liegt — beide Pfade treiben dieselbe Gestalt.
+                var held = {};
 
                 // --- die Gefährten (das Ko-Präsenz-Protokoll rendert sie) ---
                 // peerId → {x, y, yaw, name, hue, seenAt}
@@ -138,13 +142,35 @@
                         var gone = peers[msg.peerId];
                         if (gone) post({ type: "event", text: gone.name + " verließ das Begegnungs-Feld" });
                         delete peers[msg.peerId];
+                    } else if (msg.type === "input" && typeof msg.action === "string") {
+                        // W18-C — die deklarierte Input-Brücke der Heimat.
+                        held[msg.action] = msg.down === true;
                     }
                 });
 
-                // --- die Brücke: Welt → Heimat (die eigene Pose, ~8 Hz + Herzschlag) ---
+                // --- Bewegung + Brücke: Welt → Heimat (~8 Hz + Herzschlag) ---
+                // Die Bewegungs-INTEGRATION lebt im Intervall, nicht im rAF:
+                // ein Hintergrund-Tab drosselt rAF auf null (der Loop ist
+                // reines Zeichnen), aber die Gestalt soll sich auch dann
+                // bewegen, wenn die Heimat-Tasten (Input-Brücke) sie treiben.
+                function integrate() {
+                    var sp = 20; // je 125-ms-Schritt ≈ 160 px/s
+                    var dx = 0,
+                        dy = 0;
+                    if (keys.w || keys.arrowup || held.forward) dy -= sp;
+                    if (keys.s || keys.arrowdown || held.back) dy += sp;
+                    if (keys.a || keys.arrowleft || held.left) dx -= sp;
+                    if (keys.d || keys.arrowright || held.right) dx += sp;
+                    if (dx || dy) {
+                        me.x += dx;
+                        me.y += dy;
+                        me.yaw = Math.atan2(dx, -dy);
+                    }
+                }
                 var lastSent = { x: NaN, y: NaN },
                     lastBeat = 0;
                 setInterval(function () {
+                    integrate();
                     var moved = lastSent.x !== me.x || lastSent.y !== me.y;
                     var now = Date.now();
                     if (!moved && now - lastBeat < 1000) return;
@@ -189,18 +215,8 @@
                     ctx.fillText(name, sx, sy + 24);
                 }
                 function tick() {
-                    var sp = 2.6;
-                    var dx = 0,
-                        dy = 0;
-                    if (keys.w || keys.arrowup) dy -= sp;
-                    if (keys.s || keys.arrowdown) dy += sp;
-                    if (keys.a || keys.arrowleft) dx -= sp;
-                    if (keys.d || keys.arrowright) dx += sp;
-                    if (dx || dy) {
-                        me.x += dx;
-                        me.y += dy;
-                        me.yaw = Math.atan2(dx, -dy);
-                    }
+                    // Reines ZEICHNEN — die Bewegung integriert das Intervall
+                    // oben (rAF-Drosselung im Hintergrund-Tab ist dann egal).
                     ctx.fillStyle = "#070a14";
                     ctx.fillRect(0, 0, W, H);
                     // Lichter-Motes treiben relativ zur eigenen Position (Parallax).
@@ -230,8 +246,14 @@
                     if (e.key === "Escape") post({ type: "exit" });
                 });
 
-                // Der Handshake: die Welt deklariert ihre Ko-Präsenz-Fähigkeit.
-                post({ type: "ready", coPresence: true, label: "Begegnungs-Feld" });
+                // Der Handshake: die Welt deklariert Ko-Präsenz (W18-B) +
+                // die Input-Brücke (W18-C — die Heimat-Tasten wirken hier).
+                post({
+                    type: "ready",
+                    coPresence: true,
+                    inputActions: ["forward", "back", "left", "right"],
+                    label: "Begegnungs-Feld",
+                });
             })();
         </script>
     </body>

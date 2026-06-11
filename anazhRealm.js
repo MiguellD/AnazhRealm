@@ -35248,6 +35248,10 @@ class AnazhRealm {
             target.dsl ? "Esc — Heimkehr · Konsole — Befehle an diese Welt" : "Esc — zurück zur Heimat-Welt",
         ];
         parts.push(this._portalCoPresenceTier(target).label);
+        // W18-C — die Input-Brücke ist aktiv: deine Tasten wirken drinnen.
+        if (target.inputActions && target.inputActions.length) {
+            parts.push("deine Tasten wirken (WASD · Pfeile)");
+        }
         target.hintEl.textContent = parts.join(" · ");
     }
 
@@ -35393,6 +35397,11 @@ class AnazhRealm {
                     po.coPresence = true;
                     this._portalRefreshHint(po);
                 }
+                // W18-C — eine Welt kann die Input-Brücke deklarieren:
+                // ready {inputActions:[...]} → AnazhRealms Tasten erreichen
+                // sie als semantische Aktionen (Variante A, world-portal-
+                // w18-plan §6).
+                if (Array.isArray(msg.inputActions)) this._portalEnableInputBridge(msg.inputActions);
                 this._portalSendEnter();
             }
             // Die Sub-Welt meldet Esc (Fokus liegt im iframe) → Heimkehr.
@@ -35481,6 +35490,12 @@ class AnazhRealm {
             poseWindowCount: 0,
             poseTimer: null,
             localPose: null,
+            // W18-C — die Input-Brücke (Variante A): deklariert die Welt im
+            // ready-Handshake `inputActions`, hält inputActions die saubere
+            // Auswahl + onInputKey den Parent-Tasten-Listener (lebt + stirbt
+            // mit dem Overlay).
+            inputActions: null,
+            onInputKey: null,
         };
         this._portalRefreshHint(this._portalOverlay);
         document.body.appendChild(overlay);
@@ -35648,6 +35663,12 @@ class AnazhRealm {
         if (po.poseTimer) {
             clearInterval(po.poseTimer);
             po.poseTimer = null;
+        }
+        // W18-C — der Input-Brücken-Listener endet mit dem Overlay.
+        if (po.onInputKey && typeof window !== "undefined") {
+            window.removeEventListener("keydown", po.onInputKey);
+            window.removeEventListener("keyup", po.onInputKey);
+            po.onInputKey = null;
         }
         if (po.onMessage) window.removeEventListener("message", po.onMessage);
         if (po.overlayEl && po.overlayEl.parentNode) {
@@ -36066,6 +36087,49 @@ class AnazhRealm {
         }
         entry.lastAt = performance.now();
         po.iframe.contentWindow.postMessage({ type: "peer-state", peerId, pose }, target);
+        return true;
+    }
+
+    // W18-C — die Input-Brücke aktivieren (Variante A — deklariert, world-
+    // portal-w18-plan §6): die Welt wählte aus dem EINGEFRORENEN Aktions-
+    // Vokabular; AnazhRealms Tasten erreichen sie fortan als semantische
+    // {type:"input", action, down}-Daten. Der Listener sitzt am PARENT-
+    // Fenster (liegt der Fokus im iframe, wirken die welt-eigenen Tasten —
+    // beide Pfade derselben Absicht, kein Konflikt).
+    _portalEnableInputBridge(actions) {
+        const po = this._portalOverlay;
+        if (!po || !Array.isArray(actions)) return false;
+        const clean = [];
+        for (const a of actions) {
+            if (typeof a === "string" && AnazhRealm.PORTAL_INPUT_ACTIONS.includes(a) && !clean.includes(a)) {
+                clean.push(a);
+            }
+        }
+        if (!clean.length) return false;
+        po.inputActions = clean;
+        if (!po.onInputKey && typeof window !== "undefined") {
+            po.onInputKey = (e) => this._portalForwardInput(e);
+            window.addEventListener("keydown", po.onInputKey);
+            window.addEventListener("keyup", po.onInputKey);
+        }
+        this._portalRefreshHint(po);
+        return true;
+    }
+
+    // W18-C — eine Heimat-Taste als semantische Aktion in die Sub-Welt
+    // reichen. Nur deklarierte Aktionen; Tipp-Felder (Konsole/Omnibox über
+    // dem Portal) bleiben unberührt — wer schreibt, steuert nicht; Auto-
+    // Repeat fällt (down/up sind die Wahrheit, nicht der Tasten-Hagel).
+    _portalForwardInput(e) {
+        const po = this._portalOverlay;
+        if (!po || !po.inputActions || !po.iframe || !po.iframe.contentWindow) return false;
+        if (e.repeat) return false;
+        const t = e.target;
+        if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return false;
+        const action = AnazhRealm.PORTAL_INPUT_KEYMAP[e.code];
+        if (!action || !po.inputActions.includes(action)) return false;
+        const target = po.trust === "sandboxed" ? "*" : window.location.origin;
+        po.iframe.contentWindow.postMessage({ type: "input", action, down: e.type === "keydown" }, target);
         return true;
     }
 
@@ -56307,7 +56371,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.144.0";
+AnazhRealm.VERSION = "18.145.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -57805,6 +57869,26 @@ AnazhRealm.SUBWORLD_POSE_RATE_WINDOW_MS = 1000;
 AnazhRealm.SUBWORLD_POSE_RATE_MAX = 15;
 AnazhRealm.SUBWORLD_POSE_PEER_RATE_MAX = 15;
 AnazhRealm.SUBWORLD_POSE_TIMEOUT_MS = 6000;
+// W18-C (world-portal-w18-plan §6, Variante A — deklariert) — die INPUT-
+// BRÜCKE: eine Welt, die im ready-Handshake `inputActions` deklariert,
+// bekommt AnazhRealms Tasten als SEMANTISCHE Aktionen gereicht
+// ({type:"input", action, down} — Daten, nie Key-Codes, nie Events). Das
+// Vokabular ist EINGEFROREN + winzig (die eBPF-Lehre): eine Welt wählt
+// daraus, erfindet nie eigene Worte in diesem Kanal. Die Tasten-Karte
+// spiegelt die Heimat-Controls (WASD/Pfeile · Leertaste · E).
+AnazhRealm.PORTAL_INPUT_ACTIONS = Object.freeze(["forward", "back", "left", "right", "jump", "use"]);
+AnazhRealm.PORTAL_INPUT_KEYMAP = Object.freeze({
+    KeyW: "forward",
+    ArrowUp: "forward",
+    KeyS: "back",
+    ArrowDown: "back",
+    KeyA: "left",
+    ArrowLeft: "left",
+    KeyD: "right",
+    ArrowRight: "right",
+    Space: "jump",
+    KeyE: "use",
+});
 // V9.44-c — der Mesh-Router-Dispatch-Table. p2pHandleMessage mappt den
 // WS-Nachrichtentyp über diese Tabelle auf eine `_p2pMsg<Type>`-Methode,
 // statt 18 sequentielle `if (msg.type === …)`-Branches durchzulaufen. Ein

@@ -229,6 +229,45 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         });
         check("A: die Welt rendert B (Gegenrichtung)", /Bo/.test(journalA), journalA);
 
+        // W18-C — die INPUT-BRÜCKE (Variante A): die Welt deklarierte
+        // inputActions im ready → A's Heimat-Tasten (Parent-Fokus!) reichen
+        // semantische Aktionen hinein → die WELT bewegt A's Gestalt → ihre
+        // local-pose wandert → B sieht die NEUE Pose übers Mesh. Der volle
+        // Kreis: AnazhRealm-Taste treibt die fremde Engine treibt das Mesh.
+        const bridgeA = await pageA.evaluate(() => {
+            const po = window.anazhRealm._portalOverlay;
+            return {
+                actions: po && po.inputActions ? po.inputActions.slice() : null,
+                hint: po && po.hintEl ? po.hintEl.textContent : "",
+                poseZ: po && po.localPose ? po.localPose.z : null,
+            };
+        });
+        check(
+            "A: die Welt deklarierte die Input-Brücke (inputActions)",
+            Array.isArray(bridgeA.actions) && bridgeA.actions.includes("forward"),
+            JSON.stringify(bridgeA.actions)
+        );
+        check('A: der Hinweis sagt „deine Tasten wirken"', /Tasten wirken/.test(bridgeA.hint), bridgeA.hint);
+        // A in den Vordergrund (ein spielender Tab ist sichtbar) + W halten;
+        // die puppeteer-Tastatur trifft das fokussierte PARENT-Dokument, nie
+        // das iframe — exakt der Input-Brücken-Fall.
+        await pageA.bringToFront();
+        await pageA.evaluate(() => document.body.focus());
+        await pageA.keyboard.down("KeyW");
+        await sleep(700);
+        await pageA.keyboard.up("KeyW");
+        await waitFor(
+            pageA,
+            (beforeZ) => {
+                const po = window.anazhRealm._portalOverlay;
+                return !!(po && po.localPose && po.localPose.z < beforeZ - 0.5);
+            },
+            8000,
+            "A: die Heimat-Taste bewegte die fremde Gestalt (localPose wandert)",
+            bridgeA.poseZ === null ? 0 : bridgeA.poseZ
+        );
+        check("A: Heimat-Taste → fremde Engine → local-pose (der volle Kreis)", true);
+
         // Abschied: A verlässt das Portal → A's Posen verstummen → B's Sweep
         // räumt A als peer-leave (Timeout 6 s + Sweep 2 s).
         await pageA.evaluate(() => window.anazhRealm.exitPortal());

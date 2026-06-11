@@ -28363,6 +28363,98 @@ async function checkBandW18CoPresence(ctx) {
     check("W18 Ko-Präsenz: Hinweis + Banner KONSUMIEREN die Tier-Wahrheit", res.hintConsumes && res.bannerConsumes);
 }
 
+// W18-C (V18.145, world-portal-w18-plan §6 Variante A) — die INPUT-BRÜCKE:
+// eine Welt, die im ready-Handshake `inputActions` deklariert, bekommt
+// AnazhRealms Tasten als SEMANTISCHE Aktionen ({type:"input", action, down}
+// — Daten, nie Key-Codes). Eingefrorenes Vokabular, Tipp-Feld-Wand (wer in
+// die Konsole schreibt, steuert nicht), Listener lebt + stirbt mit dem
+// Overlay. Der End-to-End-Kreis (Heimat-Taste → fremde Engine bewegt sich →
+// Pose wandert übers Mesh) lebt in `npm run smoke:copresence`.
+async function checkBandW18InputBridge(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) das eingefrorene Vokabular + die Tasten-Karte (WASD/Pfeile).
+        const A = r.constructor.PORTAL_INPUT_ACTIONS;
+        const K = r.constructor.PORTAL_INPUT_KEYMAP;
+        out.vocab = Object.isFrozen(A) && A.includes("forward") && A.includes("use") && A.length === 6;
+        out.keymap = Object.isFrozen(K) && K.KeyW === "forward" && K.ArrowDown === "back" && K.Space === "jump";
+        const savedPo = r._portalOverlay;
+        try {
+            const sent = [];
+            const fakeWin = { postMessage: (m) => sent.push(m) };
+            r._portalOverlay = {
+                coPresence: true,
+                world: "worlds/begegnung/index.html",
+                trust: "sandboxed",
+                peers: new Map(),
+                inputActions: null,
+                onInputKey: null,
+                hintEl: { textContent: "" },
+                dsl: null,
+                iframe: { contentWindow: fakeWin },
+            };
+            // (2) die Deklaration: nur Vokabular-Worte überleben; Müll allein → false.
+            out.declareClean =
+                r._portalEnableInputBridge(["forward", "fliegen", "forward", "left"]) === true &&
+                JSON.stringify(r._portalOverlay.inputActions) === '["forward","left"]';
+            out.declareGarbage = (() => {
+                const po2 = { ...r._portalOverlay, inputActions: null, onInputKey: null };
+                const saved2 = r._portalOverlay;
+                r._portalOverlay = po2;
+                const res2 = r._portalEnableInputBridge(["zaubern", 42]);
+                r._portalOverlay = saved2;
+                return res2 === false && po2.inputActions === null;
+            })();
+            // (3) der Hinweis KONSUMIERT die Brücke („deine Tasten wirken").
+            out.hintSays = /Tasten wirken/.test(r._portalOverlay.hintEl.textContent);
+            // (4) das Forwarding: deklarierte Taste → semantische Aktion;
+            // un-deklarierte (Space→jump nicht gewählt) fällt; Tipp-Feld fällt;
+            // Auto-Repeat fällt; keyup trägt down:false.
+            sent.length = 0;
+            const ev = (code, type, extra) => Object.assign({ code, type, repeat: false, target: null }, extra || {});
+            out.fwdDown =
+                r._portalForwardInput(ev("KeyW", "keydown")) === true &&
+                sent.length === 1 &&
+                sent[0].type === "input" &&
+                sent[0].action === "forward" &&
+                sent[0].down === true;
+            out.fwdUp = r._portalForwardInput(ev("KeyW", "keyup")) === true && sent[1] && sent[1].down === false;
+            out.undeclared = r._portalForwardInput(ev("Space", "keydown")) === false;
+            out.typingWall = r._portalForwardInput(ev("KeyW", "keydown", { target: { tagName: "INPUT" } })) === false;
+            out.repeatWall = r._portalForwardInput(ev("KeyW", "keydown", { repeat: true })) === false;
+        } finally {
+            // Den Test-Listener vom echten window räumen (die Deklaration
+            // registrierte ihn) — kein Leck in die Folge-Bands.
+            const po = r._portalOverlay;
+            if (po && po.onInputKey) {
+                window.removeEventListener("keydown", po.onInputKey);
+                window.removeEventListener("keyup", po.onInputKey);
+            }
+            r._portalOverlay = savedPo || null;
+        }
+        // (5) Verdrahtung: ready-Zweig ruft die Brücke, der Dispose räumt den
+        // Listener (lebt + stirbt mit dem Overlay), die Begegnungs-Welt
+        // deklariert sie (der Smoke beweist den vollen Kreis).
+        out.readyWired = /_portalEnableInputBridge/.test(r._buildPortalOverlay.toString());
+        out.disposeCleans = /onInputKey/.test(r._disposePortalOverlay.toString());
+        return out;
+    });
+    check("W18-C Input-Brücke: eingefrorenes Vokabular + Tasten-Karte (WASD/Pfeile)", res.vocab && res.keymap);
+    check(
+        "W18-C Input-Brücke: die Deklaration siebt (nur Vokabular, Müll fällt)",
+        res.declareClean && res.declareGarbage
+    );
+    check("W18-C Input-Brücke: der Hinweis sagt „deine Tasten wirken“", res.hintSays);
+    check(
+        "W18-C Input-Brücke: Taste → semantische Aktion (down/up; un-deklariert fällt)",
+        res.fwdDown && res.fwdUp && res.undeclared
+    );
+    check("W18-C Input-Brücke: Tipp-Feld-Wand + Auto-Repeat-Wand", res.typingWall && res.repeatWall);
+    check("W18-C Input-Brücke: ready-Verdrahtung + Dispose räumt den Listener", res.readyWired && res.disposeCleans);
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -44968,6 +45060,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18142Follow(ctx);
             await checkBandV18143Comments(ctx);
             await checkBandW18CoPresence(ctx);
+            await checkBandW18InputBridge(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

@@ -784,8 +784,15 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
   end-to-end (`npm run smoke:copresence`, zwei Browser, erster Lauf grün): „Anna
   erschien neben dir im Begegnungs-Feld" durch die Sandbox-Wand; +10 Invarianten
   (`checkBandW18CoPresence`). Der Übersetzer-Avatar-Hook (§5.2 Weg 2) bleibt
-  benannt-fern (fragil je Engine; der ehrliche Fallback ist der Vorraum). OFFEN:
-  W18-C (Input-Brücke) → W18-D (Swappen/Persistenz).
+  benannt-fern (fragil je Engine; der ehrliche Fallback ist der Vorraum).
+  ✓ **W18-C GEBAUT (V18.145) — die INPUT-BRÜCKE (Variante A, deklariert):** die Welt
+  deklariert `inputActions` im ready → AnazhRealms Tasten erreichen sie als
+  SEMANTISCHE `{type:"input", action, down}`-Daten (eingefrorenes 6-Wort-Vokabular ·
+  Tipp-Feld-/Repeat-Wand · Listener stirbt mit dem Overlay · Hinweis „deine Tasten
+  wirken"); GEMESSEN im Smoke: Heimat-Taste → fremde Engine bewegt sich → Pose
+  wandert übers Mesh (dieselbe Pose-Quelle treibt Ko-Präsenz UND Input — die
+  §6-Synergie); +6 Invarianten. Variante B (synthetische KeyboardEvents +
+  KI-Control-Map) bleibt benannt-fern. OFFEN: W18-D (Swappen/Persistenz).
 - **F4 — der SOZIALE Bogen** [bibliothek-plan §E + roadmap; H+S]: ✓ **STUFE 1 GEBAUT
   (V18.134) — die Bewertungs-Aggregation:** signierte Zeugnisse {id,s,t,pub,sig}
   (ed25519, stabiles Kanonisches), LWW = die CRDT-Schicht wörtlich, kanal-exklusiv +
