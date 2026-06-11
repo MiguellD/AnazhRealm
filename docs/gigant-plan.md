@@ -498,6 +498,12 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   Invarianten. Schatten-LOOK/FPS auf echter GPU → S.
 - **B5 — U2 Wasser-LOD + U4 Deko-Distanz/Impostor + Baum/Feld-DICHTE** [lod-kaskade-plan; H+A]:
   Dichte-Hebel sind chance-skalar (tag-neutral, `diag-arch-tags` als Wand davor).
+  ✓ **U4 GEBAUT (V18.131):** die Deko liest die KASKADE (`deko`+`dekoDichte` in
+  DETAIL_CASCADE; per-Art-`ring` fiel) — mesh-Band 0 (5×5, „eine Reihe weiter") +
+  das FERNFELD (EIN Impostor-InstancedMesh pro Art, das B2-Mantel-Muster: +6
+  Draw-Calls statt ~1600 per-Chunk; deterministisch über Re-Anker, Oberfläche aus
+  der V18.97-Karte, geteiltes Art-Material → Wind/Emissive gratis). GEMESSEN
+  `diag-deko-fernfeld.cjs` GRÜN; +5 Invarianten. Fern-Look/scaleMul → S.
   **✓ V18.117 — der S-Befund „durch das LOD Löcher im Wasser" GEMESSEN AUFGELÖST
   (`diag-water-lod-holes.cjs`, Drei-Klassen-Anatomie + Marker-Drohne):** KEIN LOD-Boden-
   Durchstich (0 GEMESSEN), KEINE fehlende Wasser-LOD — die Loch-Streifen waren eine
@@ -858,7 +864,10 @@ schlanken (UI-Politur, jederzeit einschiebbar).
       die Krone als Wasserfall — heute füllt er exakt bis zur Krone und ruht) ·
       das SCHATTEN-CSM (V18.130 — nahe Schatten 1.75× schärfer, ferne Schatten bis
       540 m statt 300; FPS-Feel der 3×2048-Maps auf echter GPU prüfen; kein
-      Akne/Swimming beim Laufen unter schräger Sonne — der Snap lebt pro Kaskade).
+      Akne/Swimming beim Laufen unter schräger Sonne — der Snap lebt pro Kaskade) ·
+      das DEKO-FERNFELD (V18.131 — die Wiese reicht jetzt 5×5 voll + Impostoren
+      bis in den Fog: Dichte/Größe fühlen, `DEKO_FERNFELD.scaleMul` +
+      `atmosphere.dekoDensity` sind die Konsolen-Hebel).
       **DIE SCHÖPFER-PRÜFLISTE (10.06., wächst bis zum Gigant-Abschluss — Unsauberkeiten
       SAMMELN, er korrigiert am Schluss; ich fülle sie ehrlich mit, statt sie zu fixen):**
       (a) **GELENK-LINIEN in der WELT sichtbar nach dem Fertigen** — die connections-Linien

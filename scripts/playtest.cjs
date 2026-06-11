@@ -27652,6 +27652,81 @@ async function checkBandWelle6HCreatures(ctx) {
     }
 }
 
+// V18.131 — U4 (gigant-plan §5-B5 / lod-kaskade-plan U4): die DEKO LIEST DIE
+// KASKADE. Die per-Art-`ring`-Felder fielen; das Band entscheidet mesh (Band 0,
+// 5×5) / impostor (Band 1+2 — EIN Fernfeld-InstancedMesh pro Art, das
+// B2-Mantel-Muster: +6 Draw-Calls statt per-Chunk-Explosion) / none (Band 3).
+// Voller Welt-Beweis: `scripts/diag-deko-fernfeld.cjs` (GEMESSEN GRÜN: 25
+// mesh-Chunks · 5241 nahe Instanzen · Fernfeld 6 Meshes, deterministisch
+// über Re-Anker · Dichte fällt mit dem Band).
+async function checkBandV18131DekoKaskade(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const bands = r.constructor.DETAIL_CASCADE;
+        out.dekoFields = bands.every((b) => typeof b.deko === "string" && Number.isFinite(b.dekoDichte));
+        out.bandPlan =
+            bands[0].deko === "mesh" &&
+            bands[1].deko === "impostor" &&
+            bands[2].deko === "impostor" &&
+            bands[3].deko === "none";
+        out.dichteFaellt =
+            bands[0].dekoDichte > bands[1].dekoDichte &&
+            bands[1].dekoDichte > bands[2].dekoDichte &&
+            bands[3].dekoDichte === 0;
+        const species = r.constructor.KLEIN_VEGETATION_SPECIES;
+        out.ringFiel = species.every((sp) => typeof sp.ring === "undefined");
+        // KONSUM-Proben (V17.31): der Scatter liest das Band, der Loop tickt das
+        // Fernfeld terrain-nachrangig.
+        out.scatterReadsBand = /_detailBand\(ringDist\)/.test(r._buildVoxelChunkScatter.toString());
+        out.loopTicksFernfeld = /_tickDekoFernfeld/.test(r._loopVoxelStreaming.toString());
+        // WebGPU-strikt (V10.0-g.1): die Impostor-Geometrie trägt das color-
+        // Attribut, das das geteilte Art-Material liest.
+        const geo = r._scatterImpostorGeometry(species[0]);
+        out.impostorHasColor = !!(geo && geo.attributes && geo.attributes.color && geo.attributes.position);
+        // Behavioral: das Fernfeld baut deterministisch (ein voller Durchlauf,
+        // dann Re-Anker + zweiter — identische Instanz-Zahlen, ≤6 Meshes).
+        if (r.state.lastPlayerVoxelChunk && r.state.voxelChunks && r.state.voxelChunks.size > 5) {
+            for (let i = 0; i < 14; i++) r._tickDekoFernfeld();
+            const ff = r.state.dekoFernfeld;
+            const c1 = {};
+            if (ff) for (const [name, mesh] of ff.meshes) c1[name] = mesh.count;
+            if (ff) ff.anchor = null;
+            for (let i = 0; i < 14; i++) r._tickDekoFernfeld();
+            const c2 = {};
+            if (ff) for (const [name, mesh] of ff.meshes) c2[name] = mesh.count;
+            out.fernfeldDeterministisch = !!ff && JSON.stringify(c1) === JSON.stringify(c2);
+            out.fernfeldBounded = !!ff && ff.meshes.size <= species.length;
+            out.fernfeldMeasured = true;
+        } else {
+            out.fernfeldMeasured = false; // Welt zu jung — unmessbar = bestanden (V13.1-Default)
+        }
+        return out;
+    });
+    if (!res) {
+        check("V18.131 Deko-Kaskade: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "V18.131 Deko-Kaskade: DETAIL_CASCADE trägt deko+dekoDichte (mesh·impostor·impostor·none, fallend)",
+        res.dekoFields && res.bandPlan && res.dichteFaellt
+    );
+    check("V18.131 Deko-Kaskade: die per-Art-ring-Felder FIELEN (das Band ist die eine Quelle)", res.ringFiel);
+    check(
+        "V18.131 Deko-Kaskade: KONSUM verdrahtet (Scatter liest das Band · der Loop tickt das Fernfeld)",
+        res.scatterReadsBand && res.loopTicksFernfeld
+    );
+    check(
+        "V18.131 Deko-Kaskade: die Impostor-Geometrie trägt color+position (WebGPU-strikt, geteiltes Material)",
+        res.impostorHasColor
+    );
+    check(
+        "V18.131 Deko-Kaskade: das Fernfeld baut deterministisch + bounded (oder Welt zu jung = unmessbar)",
+        !res.fernfeldMeasured || (res.fernfeldDeterministisch && res.fernfeldBounded)
+    );
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6XAudit(ctx) {
@@ -43653,6 +43728,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandG8R5LivingImmune(ctx);
             await checkBandV18129HochBecken(ctx);
             await checkBandV18130CsmShadow(ctx);
+            await checkBandV18131DekoKaskade(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

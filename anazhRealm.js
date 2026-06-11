@@ -14650,8 +14650,9 @@ class AnazhRealm {
     // Parallelcode). Jede Art: ein eigener KONSTANTER `cap` (Uniform-Capacity-
     // Pattern, alle Pool-Meshes derselben Art gleich groß → kein Bind-Group-
     // Cache-Pollution; r184-geheilt, kein 256-Crash mehr). `field`/`floor`
-    // gaten WO die Art wächst, `perCell` die Dichte, `ring` den Distanz-LOD
-    // (Chunk-Distanz ≤ ring; teurere/seltenere Arten näher), `pool` die Anzahl
+    // gaten WO die Art wächst, `perCell` die Dichte; den Distanz-LOD trägt seit
+    // U4 (V18.131) die DETAIL_CASCADE (`deko`/`dekoDichte` — Band 0 mesh, fern
+    // das EINE Impostor-Fernfeld pro Art), `pool` die Anzahl
     // recycelbarer Mesh-Objekte (≥ Ring-Chunk-Zahl + Headroom). `wind` = weich
     // (teilt die Gras-Wind-positionNode), `emissive` = leuchtet (speist V17.0-
     // Bloom). `yOff` hebt schwebende Arten (Sporen). Alle Werte browser-
@@ -14666,8 +14667,7 @@ class AnazhRealm {
                 floor: 0.5,
                 perCell: 3.2,
                 cap: 512,
-                ring: 1,
-                pool: 16,
+                pool: 28,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -14684,8 +14684,7 @@ class AnazhRealm {
                 floor: 0.32,
                 perCell: 2.4,
                 cap: 448,
-                ring: 1,
-                pool: 16,
+                pool: 28,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -14702,8 +14701,7 @@ class AnazhRealm {
                 floor: 0.5,
                 perCell: 1.8,
                 cap: 320,
-                ring: 1,
-                pool: 16,
+                pool: 28,
                 wind: true,
                 emissive: false,
                 yOff: 0,
@@ -14720,7 +14718,6 @@ class AnazhRealm {
                 floor: 0.46,
                 perCell: 1.4,
                 cap: 256,
-                ring: 2,
                 pool: 32,
                 wind: false,
                 emissive: false,
@@ -14738,8 +14735,7 @@ class AnazhRealm {
                 floor: 0.62,
                 perCell: 1.6,
                 cap: 224,
-                ring: 1,
-                pool: 16,
+                pool: 28,
                 wind: false,
                 emissive: true,
                 yOff: 0.5,
@@ -14758,8 +14754,7 @@ class AnazhRealm {
                 floor: 0.55,
                 perCell: 1.3,
                 cap: 200,
-                ring: 1,
-                pool: 16,
+                pool: 28,
                 wind: false,
                 emissive: true,
                 emissiveBoost: 1.15,
@@ -25826,7 +25821,7 @@ class AnazhRealm {
     // Der Streu-Mechanismus (EINE Funktion für alle Arten — Heilige Lektion).
     // Sampelt jede Zelle EINMAL (worldFieldAt + Surface + Wasser, geteilt über
     // alle Arten — kein 5×-Resampling), streut dann pro Art deterministisch aus
-    // ihrem Feld. Gegated per-Art auf `ringDist ≤ species.ring` (Distanz-LOD).
+    // ihrem Feld. Distanz-LOD seit U4 (V18.131) band-getrieben (DETAIL_CASCADE.deko).
     // Idempotent (Map-Guard); der LOD-Rebuild (Ring 1↔2) ruft dispose→build neu,
     // sodass die Vegetation beim Näherkommen erscheint (das Gras-Lifecycle).
     _buildVoxelChunkScatter(cx, cz) {
@@ -25841,8 +25836,16 @@ class AnazhRealm {
         const pcz = lpc ? lpc.cz : cz;
         const ringDist = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
         const species = AnazhRealm.KLEIN_VEGETATION_SPECIES;
-        const maxRing = species.reduce((m, s) => Math.max(m, s.ring), 0);
-        if (ringDist > maxRing) return; // fern: nichts zu streuen (FPS)
+        // U4 (V18.131) — die Deko liest die KASKADE statt per-Art-`ring`: das
+        // Band entscheidet mesh/impostor/none + die Dichte. Jenseits des
+        // mesh-Bands trägt das EINE Fernfeld pro Art (s. _tickDekoFernfeld).
+        const band = this._detailBand(ringDist);
+        if (band.deko !== "mesh") return;
+        const atmoD =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
+                ? this.state.atmosphere.dekoDensity
+                : 1; // globaler Dichte-Faktor — Konsolen-tunbar (U4-Plan-Slider, UI = S-Entscheid)
+        const dekoDensity = (band.dekoDichte || 1) * atmoD;
         const { span } = this._voxelChunkConfig();
         const ox = cx * span;
         const oz = cz * span;
@@ -25884,13 +25887,12 @@ class AnazhRealm {
                 const cellMacro = this._terrainMacroSurfaceY(bx, bz, false);
                 for (let si = 0; si < species.length; si++) {
                     const sp = species[si];
-                    if (ringDist > sp.ring) continue;
                     if (buckets[si].length >= sp.cap) continue;
                     const fv = f[sp.field] || 0;
                     if (fv < sp.floor) continue;
                     const norm = (fv - sp.floor) / Math.max(0.001, 1 - sp.floor);
                     const rnd = rngs[si];
-                    const count = Math.floor(sp.perCell * (0.4 + 0.6 * norm) + rnd() * 0.8);
+                    const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) + rnd() * 0.8);
                     const sMin = sp.scale[0];
                     const sMax = sp.scale[1];
                     for (let k = 0; k < count && buckets[si].length < sp.cap; k++) {
@@ -26011,8 +26013,9 @@ class AnazhRealm {
         const queue = this.state.pendingScatter;
         if (!queue || queue.size === 0) return 0;
         const lpc = this.state.lastPlayerVoxelChunk;
-        const species = AnazhRealm.KLEIN_VEGETATION_SPECIES;
-        const maxRing = species.reduce((m, s) => Math.max(m, s.ring), 0);
+        // U4 (V18.131) — die mesh-Reichweite kommt aus der Kaskade (Band 0),
+        // nicht mehr aus per-Art-`ring`-Feldern.
+        const maxRing = AnazhRealm.DETAIL_CASCADE[0].maxRing;
         let keys = [...queue];
         if (lpc) {
             const distOf = (k) => {
@@ -26037,6 +26040,186 @@ class AnazhRealm {
             built++;
         }
         return built;
+    }
+
+    // ===== U4 (V18.131) — DAS DEKO-FERNFELD: ein Impostor-Mesh pro Art =========
+    // Jenseits des mesh-Bands (DETAIL_CASCADE Band 0) trägt EIN InstancedMesh
+    // pro Art die ferne Deko (Band 1+2, deko:"impostor") — das B2-Mantel-Muster
+    // statt per-Chunk-Instancing (das wären ~6 Draw-Calls statt ~1600 bei
+    // Weltenring max). Re-Anker beim Spieler-Chunk-Wechsel, EINE Art pro Tick
+    // (deferred, terrain-nachrangig wie der Scatter). Platzierung DETERMINISTISCH
+    // aus demselben per-Chunk-RNG-Schema wie der nahe Scatter (kein Flackern
+    // beim Re-Anker), Oberfläche aus der V18.97-Karte (`_chunkSurfaceAt` —
+    // die EINE Deko-Oberflächen-Quelle, Scan nur als Fallback-Disziplin: hier
+    // ohne Karte wird die Spalte ÜBERSPRUNGEN, ferner Impostor braucht keine
+    // Scan-Kosten). Render-only, main-only, kein Worker/Determinismus.
+    static get DEKO_FERNFELD() {
+        return Object.freeze({
+            cap: 1024, // Instanzen pro Art (das ganze Fernfeld)
+            samples: 4, // 4×4 Sample-Raster pro Chunk (gröber als nah: 8×8)
+            scaleMul: 1.35, // Impostoren leicht größer (gleichen die Dünne optisch aus)
+        });
+    }
+
+    // Die Impostor-Geometrie einer Art: ein KREUZ aus zwei vertikalen Quads
+    // (der klassische Fern-Vegetations-Impostor, 4 Tris) mit vertikalem
+    // color→color2-Verlauf als Vertex-Farbe — sie teilt das ART-MATERIAL
+    // (`_scatterMaterial` liest attribute("color") → WebGPU-strikt erfüllt,
+    // V10.0-g.1; Wind/Emissive/Drift erben gratis). Schwebende Arten (yOff>0)
+    // bekommen eine kleine Raute (Mote) statt des Kreuzes.
+    _scatterImpostorGeometry(species) {
+        if (!this.state._scatterImpostorGeoms) this.state._scatterImpostorGeoms = new Map();
+        const cache = this.state._scatterImpostorGeoms;
+        if (cache.has(species.name)) return cache.get(species.name);
+        if (typeof THREE === "undefined") return null;
+        const P = [];
+        const C = [];
+        const c = species.color;
+        const c2 = species.color2 || species.color;
+        const v = (x, y, z, col) => {
+            P.push(x, y, z);
+            C.push(col[0], col[1], col[2]);
+        };
+        if (species.yOff > 0.2) {
+            // Mote: kleine vertikale Raute (2 Tris), Mittelfarbe hell.
+            const r = 0.32;
+            v(0, -r, 0, c);
+            v(r, 0, 0, c2);
+            v(0, r, 0, c2);
+            v(0, -r, 0, c);
+            v(0, r, 0, c2);
+            v(-r, 0, 0, c2);
+        } else {
+            const h = 1.0;
+            const w = 0.42;
+            const quad = (ax, az, bx, bz) => {
+                // zwei Tris: Boden trägt color, Spitze color2 (wie die strip-Verläufe).
+                v(ax, 0, az, c);
+                v(bx, 0, bz, c);
+                v(bx, h, bz, c2);
+                v(ax, 0, az, c);
+                v(bx, h, bz, c2);
+                v(ax, h, az, c2);
+            };
+            quad(-w, 0, w, 0);
+            quad(0, -w, 0, w);
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+        geo.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
+        geo.computeVertexNormals();
+        cache.set(species.name, geo);
+        return geo;
+    }
+
+    // Der Fernfeld-Tick: re-ankert beim Spieler-Chunk-Wechsel (oder wenn sich
+    // die Welt substanziell änderte — Chunk-Zahl-Drift) und baut EINE Art pro
+    // Aufruf neu. Aufruf terrain-nachrangig (nur auf ruhigen Frames, V17.1).
+    _tickDekoFernfeld() {
+        const lpc = this.state.lastPlayerVoxelChunk;
+        if (!lpc || !this.state.scene || !this.state.voxelChunks) return 0;
+        if (!this.state.dekoFernfeld)
+            this.state.dekoFernfeld = { anchor: null, queue: [], meshes: new Map(), chunkCount: 0 };
+        const ff = this.state.dekoFernfeld;
+        const anchor = `${lpc.cx},${lpc.cz}`;
+        const size = this.state.voxelChunks.size;
+        if (ff.anchor !== anchor || Math.abs(size - ff.chunkCount) > 8) {
+            ff.anchor = anchor;
+            ff.chunkCount = size;
+            ff.queue = AnazhRealm.KLEIN_VEGETATION_SPECIES.map((_s, i) => i);
+        }
+        if (ff.queue.length === 0) return 0;
+        const si = ff.queue.shift();
+        this._buildDekoFernfeldSpecies(si, lpc.cx, lpc.cz);
+        return 1;
+    }
+
+    _buildDekoFernfeldSpecies(si, pcx, pcz) {
+        const species = AnazhRealm.KLEIN_VEGETATION_SPECIES;
+        const sp = species[si];
+        if (!sp || typeof THREE === "undefined") return;
+        const FF = AnazhRealm.DEKO_FERNFELD;
+        const ff = this.state.dekoFernfeld;
+        let inst = ff.meshes.get(sp.name);
+        if (!inst) {
+            const geo = this._scatterImpostorGeometry(sp);
+            const mat = this._scatterMaterial(sp);
+            if (!geo || !mat) return;
+            inst = new THREE.InstancedMesh(geo, mat, FF.cap);
+            inst.count = 0;
+            inst.castShadow = false;
+            inst.receiveShadow = false;
+            inst.frustumCulled = false; // das Feld umspannt den Spieler ringsum
+            this.state.scene.add(inst);
+            ff.meshes.set(sp.name, inst);
+        }
+        const atmoD =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
+                ? this.state.atmosphere.dekoDensity
+                : 1;
+        const cfg = this._voxelChunkConfig(0);
+        const m = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const pos = new THREE.Vector3();
+        const scl = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        let n = 0;
+        for (const [key, entry] of this.state.voxelChunks) {
+            if (n >= FF.cap) break;
+            if (!entry || entry.empty || !entry.surfMap) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            const ringDist = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
+            const band = this._detailBand(ringDist);
+            if (band.deko !== "impostor") continue;
+            const dekoDensity = (band.dekoDichte || 0) * atmoD;
+            if (dekoDensity <= 0) continue;
+            // Derselbe deterministische RNG-Strom wie der nahe Scatter (Hash über
+            // Chunk + Art) → ein Chunk, der ins mesh-Band wandert, behält seine
+            // Plätze in etwa (kein Voll-Flackern am Band-Übergang).
+            let rs = ((cx * 73856093) ^ (cz * 19349663) ^ ((si + 1) * 0x85ebca6b)) >>> 0 || 1;
+            const rnd = () => {
+                rs = (rs + 0x6d2b79f5) >>> 0;
+                let t = rs;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+            const S = FF.samples;
+            const stepXZ = cfg.span / S;
+            const ox = cx * cfg.span;
+            const oz = cz * cfg.span;
+            for (let zi = 0; zi < S && n < FF.cap; zi++) {
+                for (let xi = 0; xi < S && n < FF.cap; xi++) {
+                    const bx = ox + (xi + 0.5) * stepXZ;
+                    const bz = oz + (zi + 0.5) * stepXZ;
+                    const f = this.worldFieldAt(bx, bz);
+                    if (!f) continue;
+                    const fv = f[sp.field] || 0;
+                    if (fv < sp.floor) continue;
+                    const norm = (fv - sp.floor) / Math.max(0.001, 1 - sp.floor);
+                    const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) + rnd() * 0.8);
+                    for (let k = 0; k < count && n < FF.cap; k++) {
+                        const gx = bx + (rnd() - 0.5) * stepXZ;
+                        const gz = bz + (rnd() - 0.5) * stepXZ;
+                        const sclK = (sp.scale[0] + rnd() * (sp.scale[1] - sp.scale[0])) * FF.scaleMul;
+                        const rotK = rnd() * Math.PI * 2;
+                        const surfY = this._chunkSurfaceAt(entry, cx, cz, gx, gz);
+                        if (surfY === null || !Number.isFinite(surfY)) continue;
+                        if (surfY < this._waterLevelAt(gx, gz) + 0.1) continue;
+                        pos.set(gx, surfY + sp.yOff, gz);
+                        q.setFromAxisAngle(up, rotK);
+                        scl.set(sclK, sclK, sclK);
+                        m.compose(pos, q, scl);
+                        inst.setMatrixAt(n, m);
+                        n++;
+                    }
+                }
+            }
+        }
+        inst.count = n;
+        inst.instanceMatrix.needsUpdate = true;
     }
 
     // V9.75 (Welle C.4+5) — `_buildVoxelChunkWater`, `_disposeVoxelChunkWater`,
@@ -54050,7 +54233,10 @@ class AnazhRealm {
         // (sichtbarer); baute es diese Frame, wartet Scatter eine Frame.
         if (!chunksBuilt) {
             const grassBuilt = this._tickPendingGrass(1);
-            if (!grassBuilt) this._tickPendingScatter(2);
+            const scatterBuilt = grassBuilt ? 1 : this._tickPendingScatter(2);
+            // U4 (V18.131) — das Deko-Fernfeld baut auf den RUHIGSTEN Frames
+            // (kein Terrain, kein Gras, kein Scatter): eine Art pro Tick.
+            if (!grassBuilt && !scatterBuilt) this._tickDekoFernfeld();
         }
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
@@ -54693,7 +54879,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.130.0";
+AnazhRealm.VERSION = "18.131.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -54756,10 +54942,16 @@ AnazhRealm.DETAIL_CASCADE = Object.freeze([
     // → die Grenze schiebt auf ~100 m (Fog-verdeckt + seltener) → die Naht (N1) hat
     // fernere Grenzen zu schliessen. Kosten: +16 LOD0-Chunks (~1.45× Terrain-Tris,
     // GEMESSEN tragbar) — der Build amortisiert (einmal pro Chunk).
-    Object.freeze({ maxRing: 2, lod: 0, aiDiv: 1 }), // Band 0 — ≤ 130 m (5×5): volles Detail
-    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
-    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
-    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
+    // U4 (V18.131) — `deko` + `dekoDichte`: das Tabellen-Feld wächst mit seinem
+    // Leser (V17.31-Vertrag). "mesh" = per-Chunk-Instanz-Scatter (voll), "impostor"
+    // = das EINE Fernfeld-Mesh pro Art (s. _tickDekoFernfeld — NICHT per-Chunk:
+    // 264 Band-1-Chunks × 6 Arten wären ~1600 Draw-Calls, das B2-Mantel-Muster
+    // ist die synergetische Form; der lod-kaskade-plan-Wortlaut „Band 1 mesh"
+    // war eine Hypothese VOR der Draw-Call-Messung). dekoDichte fällt mit dem Band.
+    Object.freeze({ maxRing: 2, lod: 0, aiDiv: 1, deko: "mesh", dekoDichte: 1 }), // Band 0 — ≤ 130 m (5×5): volles Detail
+    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1, deko: "impostor", dekoDichte: 0.3 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
+    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3, deko: "impostor", dekoDichte: 0.12 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
+    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6, deko: "none", dekoDichte: 0 }), // Band 3 — ≤ 518 m: tief im Fog (~300×)
 ]);
 
 // N3 (Naht §12) — die LOD-Hysterese: ein bestehender Chunk wechselt seine LOD
