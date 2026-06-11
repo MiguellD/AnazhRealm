@@ -1,0 +1,60 @@
+{
+  "v": 1,
+  "pv": 1,
+  "types": [
+    {
+      "type": "pos",
+      "fields": [
+        "x",
+        "y",
+        "z",
+        "ry"
+      ]
+    },
+    {
+      "type": "dsl",
+      "fields": [
+        "program"
+      ]
+    },
+    {
+      "type": "soul",
+      "fields": [
+        "soul"
+      ]
+    },
+    {
+      "type": "aura",
+      "fields": [
+        "hue",
+        "intensity"
+      ]
+    },
+    {
+      "type": "vibe",
+      "fields": [
+        "vibePassId",
+        "proof"
+      ]
+    },
+    {
+      "type": "creature-pos",
+      "fields": [
+        "list"
+      ]
+    },
+    {
+      "type": "social-rating",
+      "fields": [
+        "r"
+      ]
+    },
+    {
+      "type": "subworld-net",
+      "fields": [
+        "worldId",
+        "data"
+      ]
+    }
+  ]
+}

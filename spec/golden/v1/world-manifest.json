@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0",
+  "id": "fluid",
+  "label": "Strom-Welt",
+  "desc": "Ein Stable-Fluids-Solver: Tinte strömt, Stürme wirbeln. Eine fremde Engine mit eigener Three.js.",
+  "world": "worlds/fluid/index.html",
+  "dsl": [
+    "weather",
+    "skybox_color",
+    "sturm",
+    "ruhe",
+    "set_turbulence"
+  ],
+  "multiplayer": false,
+  "serverMode": "relay",
+  "authorPubKey": "e112b249a5054237e3ef38fb34ee5099fff507284a0dc0187306851e03cd91de",
+  "signature": "a87a15b2d8475fb8326c85c9254f8282c5fe4e51bfd6b1bbfce71a6a1f14bb1555cfe9982fd2c22623cca55733609aca8f3875cf6cdd19b2fcc4289915b1b909",
+  "signedHash": "e7b558a5",
+  "signedAt": 1700000000000,
+  "provenance": [
+    {
+      "by": "e112b249a5054237e3ef38fb34ee5099fff507284a0dc0187306851e03cd91de",
+      "at": 1700000000000
+    }
+  ]
+}
