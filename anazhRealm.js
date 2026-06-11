@@ -27772,6 +27772,9 @@ class AnazhRealm {
                 position: { x: a.position.x, y: a.position.y, z: a.position.z },
                 seed: a.seed,
                 scale: Number.isFinite(a.scale) ? a.scale : 1,
+                // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
+                // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
+                ...(a.freeBorn === true ? { freeBorn: true } : {}),
             })),
             // Ring 6.4 — eigene Baupläne (nicht built-in) persistieren. Die
             // Built-ins werden beim Init aus _defaultBlueprints() erzeugt;
@@ -30519,7 +30522,13 @@ class AnazhRealm {
         // `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
         for (const a of state.architectures) {
             if (!a || typeof a.type !== "string" || !a.position) continue;
-            this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
+            this.spawnArchitecture(a.type, a.position, {
+                seed: a.seed,
+                scale: a.scale,
+                id: a.id,
+                // Ω5 — die Gratis-Geburt reist durch den Reload mit.
+                freeBorn: a.freeBorn === true,
+            });
         }
         this.log(`Architekturen geladen: ${state.architectures.length}`);
     }
@@ -41978,6 +41987,12 @@ class AnazhRealm {
             scale,
             mesh: null,
         };
+        // Ω5 (taille-spec §5, Perpetuum-Verbot) — die HERKUNFT entscheidet den
+        // Ertrag: ein GRATIS geborenes Spieler-Werk (schöpfer-Modus baute ohne
+        // Material) erntet zu 0 (GEMESSEN: die Modus-Wäsche schöpfer→pfad gab
+        // +14 Stein/Zyklus aus dem Nichts). Worldgen/Nexus-Spawns tragen die
+        // Marke NICHT — die Welt selbst ist die legitime Quelle (Minecraft).
+        if (opts.freeBorn === true) entry.freeBorn = true;
         // Welle 10b — Affordances werden EINMAL beim Spawn berechnet (nicht
         // pro Frame). Welt-Reaktionen (Bewegung, Zoom, Brennglas) lesen das
         // Profil aus entry.affordances. Wenn der Bauplan später editiert
@@ -44696,7 +44711,9 @@ class AnazhRealm {
         // erscheinen. Ein eigener (nicht-built-in) Bauplan reist als
         // define_blueprint mit — der Empfänger kennt ihn sonst nicht.
         const archId = this._newArchId();
-        this.spawnArchitecture(bm.blueprintName, spawnPos, { id: archId });
+        // Ω5 — ein im schöpfer-Modus (gate.free) gebautes Werk ist freeBorn:
+        // es erntet zu 0 (das Perpetuum-Verbot — die Modus-Wäsche schließt).
+        this.spawnArchitecture(bm.blueprintName, spawnPos, { id: archId, freeBorn: gate.free === true });
         if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pBroadcastDsl === "function") {
             const posNode = ["at", spawnPos.x, spawnPos.y, spawnPos.z];
             const spawnOp = ["spawn_blueprint", bm.blueprintName, posNode, 0, archId];
@@ -44892,7 +44909,11 @@ class AnazhRealm {
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         const materials = {};
         let totalParts = 0;
-        if (bp && Array.isArray(bp.parts)) {
+        // Ω5 (taille-spec §5) — die HERKUNFT entscheidet den Ertrag: ein
+        // freeBorn-Werk (schöpfer baute gratis) erntet zu 0 — das Perpetuum-
+        // Verbot als lebende Regel (die GEMESSENE Modus-Wäsche schließt).
+        const freeBorn = entry.freeBorn === true;
+        if (bp && Array.isArray(bp.parts) && !freeBorn) {
             const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS || 4;
             for (const part of bp.parts) {
                 if (!part || typeof part.material !== "string") continue;
@@ -55688,7 +55709,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.139.0";
+AnazhRealm.VERSION = "18.140.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

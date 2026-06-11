@@ -28429,6 +28429,77 @@ async function checkBandTailleOmega3(ctx) {
     );
 }
 
+// Ω5 (V18.140, taille-spec §5) — DAS PERPETUUM-VERBOT als lebende Invariante
+// (Antikörper, impft bei jedem Push): die GEMESSENE Modus-Wäsche (schöpfer
+// baut gratis → pfad erntet: +14 Stein/Zyklus aus dem Nichts, Random-Walk
+// +69) ist durch freeBorn GESCHLOSSEN — die Herkunft entscheidet den Ertrag;
+// die Marke überlebt den Snapshot (sonst wüsche der Reload sie ab). Das
+// ausführliche Werkzeug: scripts/diag-ledger-cycles.cjs.
+async function checkBandTailleOmega5(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        r.state.blueprints["_o5_werk"] = {
+            name: "_o5_werk",
+            label: "Ω5-Werk",
+            builtIn: false,
+            parts: [
+                {
+                    shape: "box",
+                    material: "stein",
+                    position: { x: 0, y: 0.75, z: 0 },
+                    size: { x: 1.5, y: 1.5, z: 1.5 },
+                    rotation: { x: 0, y: 0, z: 0 },
+                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                },
+            ],
+            connections: [],
+        };
+        const savedMode = r.getGameMode();
+        // (1) die WÄSCHE ist zu: schöpfer-geborenes Werk erntet 0 im pfad.
+        r.setGameMode("schöpfer");
+        const gate = r._makeCostGate("_o5_werk");
+        const e1 = r.spawnArchitecture("_o5_werk", { x: 4, y: 2, z: 4 }, { freeBorn: gate.free === true });
+        out.gateFree = gate.ok && gate.free === true;
+        out.entryMarked = !!e1 && e1.freeBorn === true;
+        r.setGameMode("pfad");
+        const loot = e1 ? r.harvestArchitecture(e1, "player", 1) : null;
+        out.washClosed = !!loot && Object.values(loot.materials || {}).every((n) => n === 0);
+        // (2) die Marke überlebt den Snapshot-Zwilling.
+        r.setGameMode("schöpfer");
+        const e2 = r.spawnArchitecture("_o5_werk", { x: 8, y: 2, z: 8 }, { freeBorn: true });
+        const snap = r.buildStateSnapshot();
+        const snapped = (snap.architectures || []).find((a) => a.id === e2.id);
+        out.persisted = !!(snapped && snapped.freeBorn === true);
+        if (e2) r.removeArchitecture(e2);
+        // (3) ein NORMAL bezahltes/Worldgen-Werk erntet weiter (keine Über-Heilung).
+        const e3 = r.spawnArchitecture("_o5_werk", { x: 12, y: 2, z: 12 }, {});
+        const loot3 = e3 ? r.harvestArchitecture(e3, "player", 1) : null;
+        out.paidStillYields = !!loot3 && (loot3.materials["stein"] || 0) > 0;
+        // (4) die Verdrahtung: confirmBuild trägt gate.free → freeBorn; der
+        // Restore reicht die Marke durch (Source-Proben).
+        out.wired =
+            /freeBorn: gate\.free === true/.test(r.confirmBuild.toString()) &&
+            /freeBorn: a\.freeBorn === true/.test(r._loadStateRestoreArchitectures.toString()) &&
+            /entry\.freeBorn === true/.test(r.harvestArchitecture.toString());
+        r.setGameMode(savedMode);
+        delete r.state.blueprints["_o5_werk"];
+        return out;
+    });
+    if (!res) {
+        check("Ω5: Perpetuum-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "Ω5: die Modus-Wäsche ist ZU (schöpfer-geboren → pfad erntet 0)",
+        res.gateFree && res.entryMarked && res.washClosed
+    );
+    check("Ω5: die Gratis-Geburt überlebt den Snapshot (kein Wäsche-Reload)", res.persisted);
+    check("Ω5: ein bezahltes/Welt-Werk erntet weiter (Herkunft entscheidet, keine Über-Heilung)", res.paidStillYields);
+    check("Ω5: die Kette ist verdrahtet (confirmBuild → spawn → snapshot → restore → harvest)", res.wired);
+}
+
 // Ω4 (V18.139, taille-spec) — DER KONFORMANZ-KORPUS: die eingefrorenen
 // goldenen Dateien (spec/golden/v1/ — NIE regeneriert) werden FÜR IMMER
 // geladen: der heutige Code MUSS sie lesen, beide Signaturen MÜSSEN "valid"
@@ -44528,6 +44599,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandTailleOmega2(ctx);
             await checkBandTailleOmega3(ctx);
             await checkBandTailleGolden(ctx);
+            await checkBandTailleOmega5(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
