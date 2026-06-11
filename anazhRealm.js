@@ -1204,10 +1204,10 @@ class AnazhRealm {
             if (this.grokSpeak("jumpBurst")) grok.recentJumps.length = 0;
         }
 
-        // Regen-Dauer beobachten.
-        if (this.state.weather === "rainy" && grok.prevWeather !== "rainy") {
+        // Regen-Dauer beobachten (D5a: die wet-Frage — rainy UND stormy nässen).
+        if (this._weatherIsWet() && !this._weatherIsWet(grok.prevWeather)) {
             grok.rainStartedAt = currentTime;
-        } else if (this.state.weather !== "rainy") {
+        } else if (!this._weatherIsWet()) {
             grok.rainStartedAt = null;
         }
         grok.prevWeather = this.state.weather;
@@ -2019,25 +2019,11 @@ class AnazhRealm {
         const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
         this._dslEffectsCache = {
             weather: ([name]) => {
-                if (name === "sunny" || name === "rainy") {
-                    // Welle 6.G3.b — state.weather wird SOFORT gesetzt
-                    // (logisch das Ziel-Wetter, weather_is-Condition + DSL-
-                    // Sequenzen reagieren sofort darauf). Die Transition ist
-                    // eine REIN VISUELLE Schicht — Skybox+Symphonie cross-
-                    // faden über 45 s zum neuen Zielwetter. So bleibt die
-                    // Logik instant, das Auge sieht den weichen Übergang.
-                    const oldWeather = this.state.weather;
-                    this.state.weather = name;
-                    this.state.weatherEffectTime = 0;
-                    if (oldWeather !== name) {
-                        // Nur einen Cross-Fade starten wenn es wirklich
-                        // einen Wechsel gibt.
-                        this.requestWeatherTransition(name, undefined, oldWeather);
-                    }
-                    // updateSkyboxWeather wird nicht mehr direkt gerufen —
-                    // _applyDayNightToScene übernimmt das pro Frame.
-                    this.updateCreatureEmotions();
-                }
+                // D5a (V18.128) — das Vokabular ist die WEATHER_INTENSITY-
+                // Tabelle (sunny · rainy · stormy); der EINE Schreiber
+                // `_setWeather` trägt Logik-instant + visuellen Cross-Fade
+                // (vom DSL-Op UND dem Auto-Zug geteilt — V9.82-Verdichtung).
+                if (name in AnazhRealm.WEATHER_INTENSITY) this._setWeather(name);
             },
             // Welle 6.G3.a — set_time_of_day(t) als DSL-Op. t ∈ 0..1, 0=
             // Mitternacht, 0.5=Mittag. NON_BROADCASTABLE — jeder Mitspieler
@@ -3821,7 +3807,7 @@ class AnazhRealm {
         const heightKey = pos.y < 30 ? "low" : pos.y < 60 ? "mid" : "high";
         const distXZ = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
         const distKey = distXZ < 30 ? "center" : distXZ < 80 ? "mid" : "edge";
-        const weatherKey = this.state.weather === "rainy" ? "rainy" : "sunny";
+        const weatherKey = this.state.weather || "sunny"; // D5a: polyvalent — stormy ist ein eigener Lern-Key
         const moves = p.recentActivity.moves || 0;
         const jumps = p.recentActivity.jumps || 0;
         const activityKey = jumps > 0 ? "jumping" : moves > 1 ? "walking" : "still";
@@ -7941,11 +7927,25 @@ class AnazhRealm {
         this._chatDslPatternsCache = [
             {
                 example: "setze wetter rainy",
-                re: /^setze\s+wetter\s+(sunny|rainy)\s*$/i,
-                build: (m) => ({
-                    program: ["weather", m[1].toLowerCase()],
-                    describe: `Wetter gesetzt auf ${m[1].toLowerCase()}`,
-                }),
+                // D5a (V18.128) — das Vokabular wächst mit der WEATHER_INTENSITY-
+                // Tabelle; deutsche Worte normalisieren auf die kanonischen.
+                re: /^setze\s+wetter\s+(sunny|rainy|stormy|sturm|stürmisch|sonnig|sonne|regen|regnerisch)\s*$/i,
+                build: (m) => {
+                    const raw = m[1].toLowerCase();
+                    const map = {
+                        sturm: "stormy",
+                        stürmisch: "stormy",
+                        sonnig: "sunny",
+                        sonne: "sunny",
+                        regen: "rainy",
+                        regnerisch: "rainy",
+                    };
+                    const word = map[raw] || raw;
+                    return {
+                        program: ["weather", word],
+                        describe: `Wetter gesetzt auf ${word}`,
+                    };
+                },
             },
             {
                 // Ring 11 V2.1: Position embed bei Build-Zeit (sonst spawnt
@@ -8454,6 +8454,8 @@ class AnazhRealm {
             .trim();
         if (!t) return null;
         // Wetter
+        // D5a (V18.128): der Sturm VOR dem Regen — das spezifischere Wort gewinnt.
+        if (/\bsturm|stürmisch|stuermisch|stormy|gewitter/.test(t)) return ["weather_is", "stormy"];
         if (/\bregn|\bregen\b|regnet|rainy|nass/.test(t)) return ["weather_is", "rainy"];
         if (/\bsonn|sunny|klar\b|heiter/.test(t)) return ["weather_is", "sunny"];
         // Stimmung (globale Spieler-Emotion)
@@ -9386,7 +9388,7 @@ class AnazhRealm {
     _symphonyWeatherTarget() {
         const s = this.state.symphony;
         const pingVol = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
-        return (this.state.weather === "rainy" ? 0.014 : 0) * pingVol;
+        return this._weatherBlendedValue(0, 0.014) * pingVol; // D5a: Achsen-Lerp — stormy rauscht lauter
     }
 
     // [ATMOSPHERE] Symphonie-Tick. V8.25-Erweiterung: ambient-Gain atmet
@@ -12080,7 +12082,7 @@ class AnazhRealm {
             );
         }
         // Wetter-Wechsel: aus prevWeather merken, der nicht im Journal-State liegt
-        if (this.state.weather === "rainy") {
+        if (this._weatherIsWet()) {
             this.journalAppendOnce("firstRain", "weather", "Der erste Regen begann.");
         }
         // Hochfitness-Programm aus der History — wir wandern beim ersten
@@ -14396,7 +14398,18 @@ class AnazhRealm {
         return Object.freeze({
             sunny: Object.freeze({ skyMul: 1.0, lightMul: 1.0 }),
             rainy: Object.freeze({ skyMul: 0.55, lightMul: 0.7 }),
+            stormy: Object.freeze({ skyMul: 0.42, lightMul: 0.55 }),
         });
+    }
+    // D5a (V18.128) — das Wetter ist eine INTENSITÄTS-ACHSE, kein Binär-Paar:
+    // jeder wetter-abhängige Skalar lerpt über sie (`_weatherBlendedValue`),
+    // ein NEUES Wort ist EIN Tabellen-Eintrag — alle Blend-Leser (Wolken ·
+    // Licht-Tint via TINTS · Wind · Fog · Regen-Rauschen) erben es GRATIS
+    // (die „eine Achse, viele Leser"-Lehre; stormy extrapoliert ÜBER rainy
+    // hinaus — [0,1]-gebundene Shader-Konsumenten clampen lokal). Die
+    // wet-Frage (`_weatherIsWet`) ersetzt die binären ===\"rainy\"-Leser.
+    static get WEATHER_INTENSITY() {
+        return Object.freeze({ sunny: 0, rainy: 1, stormy: 1.35 });
     }
     static get WEATHER_TRANSITION_DURATION_MS() {
         return 45000; // 45 s — sanft, nicht zu lang
@@ -15731,14 +15744,13 @@ class AnazhRealm {
             // Voxel-Welt liefert es die Voxel-Oberfläche, die Kreatur spawnt
             // auf dem echten Boden statt auf der schlafenden Heightfield-Höhe.
             const terrainHeight = this.getTerrainHeightAt(x, z);
-            const emotion =
-                this.state.weather === "rainy"
-                    ? Math.random() < 0.7
-                        ? "sad"
-                        : "happy"
-                    : Math.random() < 0.7
-                      ? "happy"
-                      : "sad";
+            const emotion = this._weatherIsWet()
+                ? Math.random() < 0.7
+                    ? "sad"
+                    : "happy"
+                : Math.random() < 0.7
+                  ? "happy"
+                  : "sad";
             // playCreaturePing in spawnCreatureAt mute-temporär, sonst 10 Pings.
             const symBefore = this.state.symphony && this.state.symphony.enabled;
             if (this.state.symphony) this.state.symphony.enabled = false;
@@ -17820,17 +17832,24 @@ class AnazhRealm {
     }
     updateCreatureEmotions() {
         // V18.100 (G4-1) — das Wetter ist ein AMBIENTER Achsen-Impuls auf das
-        // 6-Achsen-Innenleben (rainy nährt sorrow+peace, sunny nährt joy),
-        // kein Binär-Würfel mehr; das Etikett fällt aus der Valenz-Projektion.
-        // Dieselbe 10%-Stochastik (nicht alle Wesen fühlen gleichzeitig).
-        const rainy = this.state.weather === "rainy";
+        // 6-Achsen-Innenleben, kein Binär-Würfel; das Etikett fällt aus der
+        // Valenz-Projektion. Dieselbe 10%-Stochastik (nicht alle Wesen fühlen
+        // gleichzeitig). D5a (V18.128) — POLYVALENT: der STURM ist ein
+        // EIGENES Gefühl (chaos + awe — aufgewühlt UND ehrfürchtig), nicht
+        // bloß mehr Regen: das Innenleben unterscheidet die Wetter-Worte,
+        // wo die Render-Skalare nur die Intensitäts-Achse lerpen.
+        const word = this.state.weather;
+        const wet = this._weatherIsWet(word);
         for (let i = 0; i < this.state.creatures.length; i++) {
             if (Math.random() >= 0.1) continue;
             const c = this.state.creatures[i];
             if (!c || !c.userData) continue;
             const ud = c.userData;
             if (!ud.emotions) ud.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
-            if (rainy) {
+            if (word === "stormy") {
+                ud.emotions.chaos = Math.min(1, (ud.emotions.chaos || 0) + 0.15);
+                ud.emotions.awe = Math.min(1, (ud.emotions.awe || 0) + 0.1);
+            } else if (wet) {
                 ud.emotions.sorrow = Math.min(1, (ud.emotions.sorrow || 0) + 0.18);
                 ud.emotions.peace = Math.min(1, (ud.emotions.peace || 0) + 0.06);
             } else {
@@ -50131,7 +50150,7 @@ class AnazhRealm {
             // V17.2 — klar 0.32 (verstreute Cumulus statt kahler Himmel), Regen
             // 0.9 (Overcast). Der neue FBM-Wolken-Layer liest den Wert als
             // Schwellen-Senker (mehr Deckung = mehr Wolken). Browser-justierbar.
-            u.cloudCover.value = this._weatherBlendedValue(0.32, 0.9);
+            u.cloudCover.value = Math.min(1, this._weatherBlendedValue(0.32, 0.9)); // D5a: [0,1]-Konsument clampt lokal
         }
     }
 
@@ -50318,7 +50337,7 @@ class AnazhRealm {
             // gegen die Weite, die der Schoepfer liebt — Weltenring max, Fog
             // weit, die Ferne entdecken. Tiefe gehoert NICHT aus Nebel-Naehe,
             // sondern aus dem hoehen-dominanten Aerial-Term + Schatten).
-            const rainyMix = this.state.weather === "rainy" ? 1 : 0;
+            const rainyMix = this._weatherBlendedValue(0, 1); // D5a: Achsen-Lerp — stormy zieht den Nebel dichter
             const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
             // A5 (gigant-plan §5 PHASE A) — der Fog liest die RING-KANTE statt einer
             // eigenen Konstante (eine Distanz, noch ein Gesicht — die V17.114-U1-Synergie
@@ -50391,7 +50410,7 @@ class AnazhRealm {
             if (cu.lightDirection) cu.lightDirection.value.copy(sunDir);
             if (cu.lightIntensity) cu.lightIntensity.value = dl.intensity;
             if (cu.ambientIntensity) cu.ambientIntensity.value = al ? al.intensity : 0.45;
-            if (cu.weatherEffect) cu.weatherEffect.value = this._weatherBlendedValue(0.0, 1.0);
+            if (cu.weatherEffect) cu.weatherEffect.value = Math.min(1, this._weatherBlendedValue(0.0, 1.0)); // D5a: [0,1]-Clamp
             if (fog) {
                 if (cu.fogColor) cu.fogColor.value.copy(fog.color);
                 if (cu.fogNear) cu.fogNear.value = fog.near;
@@ -50586,8 +50605,14 @@ class AnazhRealm {
     // und cloudCover SOFORT mit state.weather, während Licht/Skybox sanft
     // faden → der Wetter-Wechsel sprang hart. Eine Quelle für alle
     // wetter-abhängigen Skalare.
+    // D5a (V18.128) — POLYVALENT: der Skalar lerpt über die WEATHER_INTENSITY-
+    // Achse (sunny=0 · rainy=1 · stormy=1.35) statt des Binär-Ternärs — ein
+    // drittes Wort braucht KEINEN neuen Parameter, es extrapoliert die
+    // bestehende sunny→rainy-Spanne (Sturm = mehr als Regen). Unbekannte
+    // Worte zählen 0 (sunny-artig, der alte Fallback).
     _weatherBlendedValue(sunnyVal, rainyVal) {
-        const valFor = (w) => (w === "rainy" ? rainyVal : sunnyVal);
+        const INT = AnazhRealm.WEATHER_INTENSITY;
+        const valFor = (w) => sunnyVal + (rainyVal - sunnyVal) * (INT[w] || 0);
         const wt = this.state.weatherTransition;
         if (wt && wt.from && wt.to) {
             const p = Math.max(0, Math.min(1, wt.progress || 0));
@@ -50596,13 +50621,42 @@ class AnazhRealm {
         return valFor(this.state.weather);
     }
 
+    // D5a (V18.128) — die wet-Frage: regnet es hier (rainy UND stormy)?
+    // Ersetzt die binären ===\"rainy\"-Leser (Journal/Nexus/Spawn-Stimmung).
+    _weatherIsWet(w) {
+        const word = typeof w === "string" ? w : this.state.weather;
+        return (AnazhRealm.WEATHER_INTENSITY[word] || 0) >= 1;
+    }
+
+    // D5a (V18.128) — der EINE Wetter-Schreiber (Welle 6.G3.b-Semantik,
+    // verdichtet aus dem DSL-Op): state.weather wird SOFORT gesetzt (logisch
+    // das Ziel-Wetter — weather_is + DSL-Sequenzen reagieren instant), die
+    // Transition ist die REIN VISUELLE Schicht (Skybox+Symphonie cross-faden
+    // über ~45 s). DSL-Op `weather` UND der Auto-Zug (_loopWeatherAndGrowth)
+    // rufen ihn — der alte rohe Loop-Flip am Blend-System vorbei ist Geschichte.
+    _setWeather(name) {
+        if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
+        const oldWeather = this.state.weather;
+        this.state.weather = name;
+        this.state.weatherEffectTime = 0;
+        if (oldWeather !== name) {
+            this.requestWeatherTransition(name, undefined, oldWeather);
+        }
+        // updateSkyboxWeather wird nicht direkt gerufen —
+        // _applyDayNightToScene übernimmt das pro Frame.
+        this.updateCreatureEmotions();
+        return true;
+    }
+
     // [ATMOSPHERE] Startet einen Cross-Fade. V8.25-Heilung: Default-Dauer
     // emergiert aus Player-Emotionen via _emotionModulate — eine ruhige Welt
     // (peace hoch) zieht Wolken langsamer (×1.6), eine chaotische (chaos hoch)
     // blitzt schneller (×0.4). Explizit übergebene Dauer überschreibt das.
     // Vision §3: Wetter atmet mit dem Spieler.
     requestWeatherTransition(target, durationMs, fromWeather) {
-        if (target !== "sunny" && target !== "rainy") return false;
+        // D5a (V18.128) — das Vokabular ist die WEATHER_INTENSITY-Tabelle
+        // (sunny · rainy · stormy), nicht mehr das harte Binär-Paar.
+        if (!(target in AnazhRealm.WEATHER_INTENSITY)) return false;
         let dur;
         if (typeof durationMs === "number" && Number.isFinite(durationMs)) {
             dur = Math.max(100, durationMs);
@@ -53510,11 +53564,18 @@ class AnazhRealm {
         // ### Kreaturen, Wetter, Wachstum ###
         this.updateCreatures(delta);
         this.state.weatherEffectTime += delta;
-        if (this.state.weatherEffectTime >= 30.0) {
-            this.state.weather = this.state.weather === "sunny" ? "rainy" : "sunny";
-            this.updateSkyboxWeather();
-            this.updateCreatureEmotions();
-            this.log(`Wetter gewechselt zu ${this.state.weather}`, "INFO");
+        // D5a (V18.128) — der Auto-Zug zieht POLYVALENT aus dem Vokabular
+        // (nie zweimal dasselbe Wort) und geht SANFT über die Transition —
+        // der alte rohe sunny↔rainy-Flip war der V9.82-Parallel-Pfad AM
+        // V8.46-Blend-System VORBEI (cloudCover/weatherEffect sprangen hart).
+        // Takt 30→120 s: mit der 45-s-Transition STEHT das Wetter jetzt
+        // (~75 s) statt dauernd zu morphen — der alte 30er war mit dem
+        // harten Flip gepaart.
+        if (this.state.weatherEffectTime >= 120.0) {
+            const words = Object.keys(AnazhRealm.WEATHER_INTENSITY).filter((w) => w !== this.state.weather);
+            const next = words[Math.floor(Math.random() * words.length)];
+            this._setWeather(next);
+            this.log(`Das Wetter zieht zu ${next}`, "INFO");
             this.state.weatherEffectTime = 0;
         }
 
@@ -53923,7 +53984,7 @@ class AnazhRealm {
         // uWindStrength emergiert aus weather (rainy = kräftiger).
         if (this.state.windUniforms) {
             this.state.windUniforms.uWindTime.value = currentTime;
-            this.state.windUniforms.uWindStrength.value = this.state.weather === "rainy" ? 0.26 : 0.12;
+            this.state.windUniforms.uWindStrength.value = this._weatherBlendedValue(0.12, 0.26); // D5a: stormy bläst kräftiger
         }
         // V10.0-d — WebGPURenderer's `init()` ist async, der Game-Loop läuft
         // sofort beim Worldgen-Abschluss. Skip-Render-Frames bis der Renderer
@@ -54212,7 +54273,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.127.0";
+AnazhRealm.VERSION = "18.128.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

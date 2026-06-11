@@ -26,6 +26,8 @@ export default [
                 FileReader: "readonly",
                 setTimeout: "readonly",
                 clearTimeout: "readonly",
+                setInterval: "readonly",
+                clearInterval: "readonly",
                 SpeechSynthesisUtterance: "readonly",
                 AudioContext: "readonly",
                 HTMLElement: "readonly",

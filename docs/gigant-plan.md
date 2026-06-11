@@ -597,9 +597,21 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   geist→sanft 0.42 · sprite→scheu 1.01) + `TEMPERAMENT_PROFILES`: die Gegenwehr liest
   strike/counterMul (sanft/scheu schlagen NIE), die W3-Furcht liest fleeMul (scheu flieht
   1.7×); SICHTBAR im Hof-moodLabel. Profile-Feintuning → S.
-- **D5 — DIE WELT ATMET (Code-Sweep-Samen):** (a) **Wetter-Polyvalenz** DEFERRED (V18.104-
-  Entscheid, GEMESSEN: ≥8 binäre `weather === "rainy"`-Leser quer durch Render/Audio/Emotion —
-  ein dritter Zustand braucht den eigenen Leser-Audit-Bogen, kein Phasen-Beifang); (b)
+- **D5 — DIE WELT ATMET (Code-Sweep-Samen):** ✓ (a) **Wetter-Polyvalenz GEBAUT (V18.128, der
+  eigene Leser-Audit-Bogen GEFAHREN):** das Wetter ist eine INTENSITÄTS-ACHSE
+  (`WEATHER_INTENSITY` sunny 0 · rainy 1 · stormy 1.35) — `_weatherBlendedValue` LERPT über
+  sie statt des Binär-Ternärs → ALLE Blend-Leser (Wolken · Tints · Wind · Fog · Regen-Rauschen)
+  erben das dritte Wort GRATIS (extrapoliert über rainy hinaus; [0,1]-Shader-Konsumenten
+  clampen lokal). Die 8 binären `==="rainy"`-Leser GEMESSEN migriert: 4 zur wet-Frage
+  (`_weatherIsWet` ≥1 — Journal/Nexus/Spawn-Stimmung nässen bei rainy UND stormy), 3 zum
+  Achsen-Lerp (Symphony/Wind/Fog jetzt auch TRANSITION-gefadet statt hart), 1 POLYVALENT:
+  das Kreatur-Innenleben unterscheidet die WORTE (Sturm fühlt chaos+awe, nicht sorrow — wo
+  Render nur Intensität lerpt, fühlt das Leben qualitativ). BEIFANG-Wurzel: der 30-s-Auto-Flip
+  setzte HART am V8.46-Blend-System VORBEI (V9.82-Parallel-Pfad) → der EINE Schreiber
+  `_setWeather` (DSL-Op + Auto-Zug, Logik instant + Cross-Fade), Auto-Takt 30→120 s (mit
+  45-s-Transition STEHT das Wetter jetzt, statt dauernd zu morphen). Vokabular-Gates
+  (Transition + DSL-Op + Chat-Pattern inkl. deutscher Worte + Regel-Grammatik „gewitter").
+  +1 Vier-Teil-Invariante. Look (Sturm-Tint/Wind-Feel) → S-Liste; (b)
   **Symphony EMOTION→TONALITÄT** DEFERRED (A-Gate ist das OHR — headless unbeweisbar, gehört in
   den S-Browser-Durchgang als eigene kleine Welle); (c) **journal `share`/`witness`** ruhen bis
   F4 (verortete Saat).
@@ -852,7 +864,7 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | Physik-Todesspirale möglich (20 Substeps)                           | B6                                                                                                                             |
 | Kreaturen: kein Lebenszyklus, keine Herden-Stimmung                 | D2/D3                                                                                                                          |
 | Kreaturen greifen nie an (Furcht ohne Konsument)                    | D4 Phase E                                                                                                                     |
-| Wetter binär sunny/rainy                                            | D5a                                                                                                                            |
+| ~~Wetter binär sunny/rainy~~                                        | ✓ V18.128 D5a (Intensitäts-Achse + stormy; Sturm-Look → S)                                                                     |
 | Musik hört die Emotion nicht (Pfeiler 4 halb)                       | D5b                                                                                                                            |
 | Nexus zahlt nichts, Pools feeden nicht                              | E2/E4                                                                                                                          |
 | Magie kostet nichts                                                 | E3                                                                                                                             |

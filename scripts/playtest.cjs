@@ -22665,6 +22665,54 @@ async function checkBandPhasenBF(ctx) {
             if (sugg !== "speichere zustand") return `Suggest las die System-Tabelle nicht (${sugg})`;
             return true;
         })();
+        // V18.128 — D5a: die Wetter-INTENSITÄTS-ACHSE (Vier-Teil-Beweis):
+        // (a) die Achse extrapoliert (stormy > rainy im Blend-Lerp) ·
+        // (b) das Vokabular-Gate (stormy ja, xyz nein) · (c) das Innenleben
+        // unterscheidet die WORTE (Sturm fühlt chaos+awe, NICHT sorrow) ·
+        // (d) der EINE Schreiber (DSL-Op + Auto-Zug rufen _setWeather, der
+        // den Cross-Fade trägt — der rohe Loop-Flip ist Geschichte).
+        out.d5aWeather = (() => {
+            const saved = {
+                w: r.state.weather,
+                wt: r.state.weatherTransition,
+                wet: r.state.weatherEffectTime,
+                creatures: r.state.creatures,
+                ce: r.state.creatureEmotions,
+            };
+            const savedRandom = Math.random;
+            try {
+                r.state.weatherTransition = null;
+                r.state.weather = "rainy";
+                const vRainy = r._weatherBlendedValue(0, 1);
+                r.state.weather = "stormy";
+                const vStormy = r._weatherBlendedValue(0, 1);
+                if (!(Math.abs(vRainy - 1) < 1e-9 && vStormy > 1)) return `Achse: rainy=${vRainy} stormy=${vStormy}`;
+                if (!r.requestWeatherTransition("sunny")) return "Gate: sunny abgelehnt";
+                r.state.weatherTransition = null;
+                if (r.requestWeatherTransition("xyz")) return "Gate: xyz angenommen";
+                const fake = {
+                    userData: { emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 } },
+                };
+                r.state.creatures = [fake];
+                r.state.creatureEmotions = ["happy"];
+                Math.random = () => 0.05;
+                r.state.weather = "stormy";
+                r.updateCreatureEmotions();
+                const em = fake.userData.emotions;
+                if (!(em.chaos > 0.1 && em.awe > 0.05 && em.sorrow === 0))
+                    return `Innenleben: chaos=${em.chaos} awe=${em.awe} sorrow=${em.sorrow}`;
+                if (!/_setWeather/.test(r._loopWeatherAndGrowth.toString())) return "Auto-Zug ruft _setWeather nicht";
+                if (!/requestWeatherTransition/.test(r._setWeather.toString())) return "_setWeather fadet nicht";
+                return true;
+            } finally {
+                Math.random = savedRandom;
+                r.state.weather = saved.w;
+                r.state.weatherTransition = saved.wt;
+                r.state.weatherEffectTime = saved.wet;
+                r.state.creatures = saved.creatures;
+                r.state.creatureEmotions = saved.ce;
+            }
+        })();
         // V18.113 — der Mantel erbt die Lichtung über das GETEILTE Terrain-Material
         // (kein eigener Geometrie-Bake — der wäre die Akne-Klasse).
         out.b3Mantle =
@@ -22835,6 +22883,11 @@ async function checkBandPhasenBF(ctx) {
         "E1/V18.127: das EINE Dispatch-Tor — System-Befehle laufen über die Tabelle, chatSuggest liest beide",
         res.e1OneGate === true,
         typeof res.e1OneGate === "string" ? res.e1OneGate : undefined
+    );
+    check(
+        "D5a/V18.128: die Wetter-ACHSE — stormy extrapoliert, das Vokabular gated, der Sturm fühlt chaos, EIN Schreiber fadet",
+        res.d5aWeather === true,
+        typeof res.d5aWeather === "string" ? res.d5aWeather : undefined
     );
 }
 
@@ -34365,8 +34418,12 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // V10.0-f-1 Doku-Sync: _dayNightApplySkybox liest jetzt aus
         // state.skyboxUniforms. Der Cross-Fade-Helper-Aufruf hat dieselbe
         // Semantik (_weatherBlendedValue), aber das Ziel ist u.cloudCover.value.
+        // V18.128 (D5a): der [0,1]-Konsument clampt die unbounded Achse lokal
+        // (Math.min(1, …)) — die Probe toleriert den Clamp-Wrapper.
         const skyboxSrc = r._dayNightApplySkybox.toString();
-        out.cloudFades = /u\.cloudCover\.value\s*=\s*this\._weatherBlendedValue/.test(skyboxSrc);
+        out.cloudFades = /u\.cloudCover\.value\s*=\s*(?:Math\.min\(\s*1\s*,\s*)?this\._weatherBlendedValue/.test(
+            skyboxSrc
+        );
         // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
         const sh = r.state.directionalLight && r.state.directionalLight.shadow;
         out.shadowAntiAcne = !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
