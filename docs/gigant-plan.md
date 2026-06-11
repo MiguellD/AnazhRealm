@@ -883,9 +883,11 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
   Impfung), ein Regress ist sofort rot. Kein neuer Apparat — eine neue ROLLE für die
   ~3500-Invarianten-Maschinerie (V9.82-Verdichtung). 4 Invarianten (`checkBandG8R5LivingImmune`).
   **DER BOGEN IST RUND (R0–R5 gebaut).**
-- **R6 — Selbst-Erweiterung (Capability-Inversion + Komposition)** [S — der ANDERE Plan, NACH
-  R0–R5]: bewusst FERN — setzt auf die fertige Wand (R2) + Immunität (R4) auf; ein eigener Bogen,
-  kein Phasen-Beifang.
+- ✓ **R6 — Selbst-Erweiterung KERN (V18.152)** [war: der ANDERE Plan]: Capability-Inversion
+  gebaut — Quarantäne (drei Wände am Tor) → souveräne Gewähr (R2-Geste erwacht) → Sandbox-Lauf
+  (R4-Rückruf wirkt auch nach der Gewähr) → Reload-Reise (Empfänger-Gesetz). Jede Schicht
+  KONSUMIERT eine fertige Wand — kein neues Sicherheits-System. Rest des Bogens benannt
+  (Kompositions-Tiefe · UI-Fläche · Nicht-DSL-Typen).
 
 ### PHASE Ω — DIE GEFRORENE TAILLE (G9 — ✓ GEBAUT V18.137–.141, 11.06.2026; der Bogen ist RUND)
 
@@ -915,9 +917,12 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
 > wartet auf seinen benannten Weck-Moment. Wer dieses Dokument kürzt, trägt diese Liste weiter
 > (auch gespiegelt in `docs/roadmap.md` „OFFENE FÄDEN").
 
-1. **R6 — Selbst-Erweiterung** (Capability-Inversion + Komposition; `archiv/robustheit-plan.md`)
-   — der ANDERE Plan. Setzt auf R2 (Wand) + R4 (Immunität) auf — **beide stehen seit V18.124,
-   R6 ist damit BEREIT**; ein eigener Bogen mit S-Design-Dialog am Start.
+1. ~~**R6 — Selbst-Erweiterung**~~ **✓ KERN GEBAUT (V18.152, aus der Vision abgeleitet —
+   Schöpfer 11.06.: „ergibt sich aus den Visionen"):** Capability-Inversion lebt — eine Welt
+   REICHT eine Fähigkeit (DSL-Daten, Quarantäne-Queue, drei Wände am Tor), der Mensch GEWÄHRT
+   durch die R2-Geste (`grant_capability` erwacht), der Lauf geht durch die dslRun-Sandbox,
+   der R4-Rückruf wirkt vor + nach der Gewähr, die Gewähr überlebt den Reload (Empfänger-
+   Gesetz). OFFEN im Bogen: Kompositions-Tiefe · Vorschlags-UI-Fläche · Nicht-DSL-Typen.
 2. ~~**Phase E — Bedrohung/Furcht**~~ **✓ ERFÜLLT (V18.148):** die Raubtier-Seele (glutwesen,
    tag-emergent wild, predator-gefiltert aus den Ambient-Pickern — Bedrohung nur durch bewusste
    Schöpfung) · die Jagd (pfad-only, Furcht schlägt Jagd, Biss durchs damagePlayer-Tor, Rüstung

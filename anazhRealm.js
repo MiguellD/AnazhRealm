@@ -17796,6 +17796,34 @@ class AnazhRealm {
                 },
             },
             {
+                // R6 (V18.152) — die souveräne GEWÄHR einer gereichten Fähigkeit.
+                example: "gewähre <fähigkeit>",
+                re: /^gew(?:ä|ae)hre\s+([a-z0-9_-]{1,32})\s*$/i,
+                run: (m, append) => {
+                    const res = this.grantCapability(m[1]);
+                    if (res.ok)
+                        append(
+                            `Fähigkeit „${m[1].toLowerCase()}" gewährt — „wirke ${m[1].toLowerCase()}" führt sie aus.`
+                        );
+                    else if (res.reason === "no_proposal") append("Keine Welt hat diese Fähigkeit gereicht.");
+                    else if (res.reason === "revoked")
+                        append("Verweigert — die Herkunft dieser Fähigkeit ist revoziert.");
+                    else append("Die Gewähr blieb aus.");
+                },
+            },
+            {
+                // R6 (V18.152) — eine gewährte Fähigkeit WIRKEN (dslRun-Sandbox).
+                example: "wirke <fähigkeit>",
+                re: /^wirke\s+([a-z0-9_-]{1,32})\s*$/i,
+                run: (m, append) => {
+                    const res = this.runCapability(m[1]);
+                    if (res.ok) append(`Fähigkeit „${m[1].toLowerCase()}" gewirkt.`);
+                    else if (res.reason === "unknown") append("Diese Fähigkeit wurde (noch) nicht gewährt.");
+                    else if (res.reason === "revoked") append("Diese Fähigkeit ruht — ihre Herkunft wurde revoziert.");
+                    else append("Die Fähigkeit ließ sich nicht wirken.");
+                },
+            },
+            {
                 // W18-D — „ziehe heim": das Wohnen endet.
                 example: "ziehe heim",
                 re: /^ziehe\s+heim(?:\s.*)?$/i,
@@ -27877,6 +27905,12 @@ class AnazhRealm {
                 ...(r.pinned ? { pinned: true } : {}),
                 ...(r.disabled ? { disabled: true } : {}),
             })),
+            // R6 (V18.152) — die GEWÄHRTEN Fähigkeiten überleben den Reload
+            // (eine Gewähr ist eine souveräne Entscheidung — die Welt vergisst
+            // sie nicht). Additives Snapshot-Feld (Ω6: alte Builds bewahren es
+            // als Unbekanntes). Die Quarantäne-Queue reist bewusst NICHT (ein
+            // Vorschlag ist eine Session-Tatsache — die Welt reicht ihn neu).
+            grantedCapabilities: this.state.grantedCapabilities || {},
             // Schicht 1 — Pattern-Memory + Pfad-Buckets persistieren. Beides
             // ist Welt-Gedächtnis und überlebt Reloads bewusst.
             dslPatternMemory: this.state.dsl.patternMemory || {},
@@ -31036,6 +31070,36 @@ class AnazhRealm {
     // (Phase 4 — Namensliste statt DSL-Programme, restoreAbility mappt drei
     // historische Nexus-Namen auf ihre DSL-Äquivalente).
     _loadStateRestoreMiscState(state) {
+        // R6 (V18.152) — gewährte Fähigkeiten wiederherstellen, durch die
+        // HEUTIGE Wand (Empfänger-Gesetz: auch Restauriertes prüft die
+        // Regel-Wand + die Broadcast-Wand; Name id-förmig; bounded).
+        if (state.grantedCapabilities && typeof state.grantedCapabilities === "object") {
+            const out = {};
+            let n = 0;
+            for (const key of Object.keys(state.grantedCapabilities)) {
+                if (n >= AnazhRealm.CAPABILITY_PROPOSAL_MAX) break;
+                const c = state.grantedCapabilities[key];
+                const name = String(key).trim().toLowerCase();
+                if (!/^[a-z0-9_-]{1,32}$/.test(name)) continue;
+                if (!c || !this._isRuleEffectAllowed(c.dsl)) continue;
+                if (this._dslContainsAnyOp(c.dsl, AnazhRealm.NON_BROADCASTABLE_OPS)) continue;
+                out[name] = {
+                    name,
+                    desc: typeof c.desc === "string" ? c.desc.slice(0, 120) : "",
+                    dsl: JSON.parse(JSON.stringify(c.dsl)),
+                    fromLabel: typeof c.fromLabel === "string" ? c.fromLabel.slice(0, 60) : "?",
+                    fromWorldId: typeof c.fromWorldId === "string" ? c.fromWorldId.slice(0, 40) : "",
+                    authorPubKey:
+                        typeof c.authorPubKey === "string" && /^[0-9a-f]{64}$/i.test(c.authorPubKey)
+                            ? c.authorPubKey.toLowerCase()
+                            : "",
+                    at: Number(c.at) || 0,
+                    grantedAt: Number(c.grantedAt) || 0,
+                };
+                n++;
+            }
+            this.state.grantedCapabilities = out;
+        }
         if (state.playerPathBuckets && typeof state.playerPathBuckets === "object") {
             const target = this.state.player.pathBuckets;
             for (const group of Object.keys(target)) {
@@ -35779,6 +35843,10 @@ class AnazhRealm {
             // W18-D — die Sub-Welt exponiert ihren Zustand (Persistenz-Slot:
             // beim nächsten Betreten reist er als restoreState zurück).
             else if (msg.type === "state") this._portalReceiveState(msg);
+            // R6 (V18.152) — die Sub-Welt REICHT eine Fähigkeit (Capability-
+            // Inversion: DSL-Daten in die Quarantäne-Queue, NIE ausgeführt —
+            // gewährt wird nur souverän).
+            else if (msg.type === "capability") this._portalReceiveCapability(msg);
             // W17 Phase A — der Transport-Shim einer Multiplayer-Welt postet
             // ihren Netz-Verkehr (`__anazhNet`-Envelope, kein `type`-Feld).
             else if (msg.__anazhNet === true) this._portalNetReceive(msg);
@@ -36645,6 +36713,115 @@ class AnazhRealm {
             return false;
         }
         return true;
+    }
+
+    // ===== R6-KERN (V18.152, robustheit-plan — die SELBST-ERWEITERUNG
+    // beginnt): CAPABILITY-INVERSION. Eine Welt darf eine FÄHIGKEIT REICHEN
+    // (DSL-DATEN aus dem bestehenden Vokabular, nie Code); der Mensch
+    // GEWÄHRT sie souverän — die seit R2 EINGEFRORENE grant_capability-
+    // Geste erwacht GENAU hierfür (die Wand stand vor dem Bau). Die drei
+    // Schichten: QUARANTÄNE (der Vorschlag liegt, läuft nie von allein) →
+    // GEWÄHR (Host-Geste, Klartext, frisch) → LAUF (dslRun-Sandbox, Budget,
+    // R4-Rückruf wirkt auch NACH der Gewähr). Die DSL-Wand ist die REGEL-
+    // Wand (_isRuleEffectAllowed — reaktive Ops only, kein Worldgen/
+    // Identität; V9.82: EINE Wand, zwei Konsumenten) + die Broadcast-Wand
+    // (kein Spieler-privates). KOMPOSITION: die Fähigkeit komponiert das
+    // BESTEHENDE Vokabular — nichts Neues betritt den Op-Raum. =====
+
+    _portalReceiveCapability(msg) {
+        const po = this._portalOverlay;
+        if (!po || !msg) return false;
+        const name = typeof msg.name === "string" ? msg.name.trim().toLowerCase().slice(0, 32) : "";
+        if (!/^[a-z0-9_-]{1,32}$/.test(name)) return false;
+        const dsl = msg.dsl;
+        if (!this._isRuleEffectAllowed(dsl)) return false;
+        if (this._dslContainsAnyOp(dsl, AnazhRealm.NON_BROADCASTABLE_OPS)) return false;
+        // R2 — die SOUVERÄNE Disjunktheit explizit AM TOR (ein wallet_transfer
+        // wäre auch im Lauf unbekannt/geblockt — aber die Wand steht sichtbar
+        // VOR der Queue, nicht erst in der Sandbox).
+        if (this._dslContainsAnyOp(dsl, new Set(AnazhRealm.SOVEREIGN_ACTIONS))) return false;
+        const desc = typeof msg.desc === "string" ? msg.desc.trim().slice(0, 120) : "";
+        if (!this.state.capabilityProposals) this.state.capabilityProposals = new Map();
+        const q = this.state.capabilityProposals;
+        if (!q.has(name) && q.size >= AnazhRealm.CAPABILITY_PROPOSAL_MAX) return false;
+        // R4 — die HERKUNFT reist mit: die Welt + (wenn signiert) ihr Autor.
+        const worldId = this._resolvePortalWorldId(po);
+        const reg = worldId ? this._worldEntry(worldId) : null;
+        q.set(name, {
+            name,
+            desc,
+            dsl: JSON.parse(JSON.stringify(dsl)),
+            fromLabel: (po.label || po.world || "?").slice(0, 60),
+            fromWorldId: worldId || "",
+            authorPubKey:
+                reg && typeof reg.authorPubKey === "string" && /^[0-9a-f]{64}$/i.test(reg.authorPubKey)
+                    ? reg.authorPubKey.toLowerCase()
+                    : "",
+            at: Date.now(),
+        });
+        this.log(
+            `Die Welt „${(po.label || "?").slice(0, 40)}" reicht eine Fähigkeit: „${name}"${desc ? ` — ${desc}` : ""}. „gewähre ${name}" nimmt sie an (souveräne Geste).`,
+            "INFO"
+        );
+        return true;
+    }
+
+    // Die GEWÄHR — nur durch die R2-Host-Geste (außerhalb jedes iframes,
+    // Klartext, frisch). Ein revoziertes Herkunfts-Glied fällt am Tor.
+    grantCapability(name, opts) {
+        const key = String(name || "")
+            .trim()
+            .toLowerCase();
+        const q = this.state.capabilityProposals;
+        const prop = q && q.get(key);
+        if (!prop) return { ok: false, reason: "no_proposal" };
+        if (prop.authorPubKey && this.state.revokedKeys && this.state.revokedKeys.has(prop.authorPubKey)) {
+            q.delete(key);
+            this.log(`Fähigkeit „${key}" verweigert — die Herkunft ist revoziert.`, "WARN");
+            return { ok: false, reason: "revoked" };
+        }
+        const granted = this._sovereignGesture(
+            "grant_capability",
+            {
+                what: `Fähigkeit „${key}" gewähren (von „${prop.fromLabel}")`,
+                value: typeof this.describeProgram === "function" ? this.describeProgram(prop.dsl) : key,
+                whom: "deiner Welt",
+            },
+            opts
+        );
+        if (!granted) return { ok: false, reason: "declined" };
+        if (!this.state.grantedCapabilities) this.state.grantedCapabilities = {};
+        this.state.grantedCapabilities[key] = { ...prop, grantedAt: Date.now() };
+        q.delete(key);
+        if (typeof this.journalAppend === "function") {
+            this.journalAppend(
+                "growth",
+                `Eine fremde Fähigkeit wurde Teil deiner Welt: „${key}" (von „${prop.fromLabel}").`,
+                {
+                    capability: key,
+                }
+            );
+        }
+        this.log(`Fähigkeit „${key}" gewährt — „wirke ${key}" führt sie aus.`, "INFO");
+        return { ok: true };
+    }
+
+    // Der LAUF — durch DIESELBE dslRun-Sandbox wie jede Geste (Budget/
+    // Whitelist); der R4-Rückruf wirkt auch NACH der Gewähr, und die
+    // HEUTIGE Wand prüft auch Restauriertes (das Empfänger-Gesetz).
+    runCapability(name) {
+        const key = String(name || "")
+            .trim()
+            .toLowerCase();
+        const cap = this.state.grantedCapabilities && this.state.grantedCapabilities[key];
+        if (!cap) return { ok: false, reason: "unknown" };
+        if (cap.authorPubKey && this.state.revokedKeys && this.state.revokedKeys.has(cap.authorPubKey)) {
+            this.log(`Fähigkeit „${key}" ruht — ihre Herkunft wurde revoziert.`, "WARN");
+            return { ok: false, reason: "revoked" };
+        }
+        if (!this._isRuleEffectAllowed(cap.dsl)) return { ok: false, reason: "forbidden" };
+        const res = this.dslRun(cap.dsl, { source: `capability:${key}` });
+        return { ok: true, res };
     }
 
     // W18-B — der Abwesenheits-Sweep, lazy beim ersten Gefährten gestartet
@@ -57044,7 +57221,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.151.0";
+AnazhRealm.VERSION = "18.152.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -58614,6 +58791,9 @@ AnazhRealm.PORTAL_INPUT_KEYMAP = Object.freeze({
 // zurück. Größen-Deckel je Welt + Welt-Anzahl-Deckel (älteste fällt).
 AnazhRealm.PORTAL_STATE_MAX_BYTES = 8192;
 AnazhRealm.PORTAL_STATE_MAX_WORLDS = 16;
+// R6 (V18.152) — die Quarantäne-Queue der gereichten Fähigkeiten (bounded;
+// dedupe per Name — ein erneuter Vorschlag refresht, flutet nie).
+AnazhRealm.CAPABILITY_PROPOSAL_MAX = 16;
 // V9.44-c — der Mesh-Router-Dispatch-Table. p2pHandleMessage mappt den
 // WS-Nachrichtentyp über diese Tabelle auf eine `_p2pMsg<Type>`-Methode,
 // statt 18 sequentielle `if (msg.type === …)`-Branches durchzulaufen. Ein

@@ -28962,6 +28962,116 @@ async function checkBandV18151Idb(ctx) {
     );
 }
 
+// R6-KERN (V18.152, robustheit-plan — GEMERKTER FADEN #1): die SELBST-
+// ERWEITERUNG beginnt. Capability-Inversion: eine Welt REICHT eine Fähigkeit
+// (DSL-Daten in die Quarantäne-Queue, NIE ausgeführt), der Mensch GEWÄHRT
+// souverän (die seit R2 eingefrorene grant_capability-Geste erwacht), der
+// LAUF geht durch die dslRun-Sandbox; der R4-Rückruf wirkt VOR und NACH der
+// Gewähr; die Gewähr überlebt den Reload durch die heutige Wand.
+async function checkBandR6Capability(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const savedPo = r._portalOverlay;
+        const savedProps = r.state.capabilityProposals;
+        const savedCaps = r.state.grantedCapabilities;
+        const savedWeather = r.state.weather;
+        try {
+            r.state.capabilityProposals = new Map();
+            r.state.grantedCapabilities = {};
+            r._portalOverlay = {
+                world: "worlds/begegnung/index.html",
+                label: "Begegnungs-Feld",
+                trust: "sandboxed",
+                chWindowStart: 0,
+                chWindowCount: 0,
+            };
+            out.accepts =
+                r._portalReceiveCapability({
+                    type: "capability",
+                    name: "regen-tanz",
+                    desc: "ruft den Regen",
+                    dsl: ["weather", "rainy"],
+                }) === true && r.state.capabilityProposals.has("regen-tanz");
+            out.rejectsWorldgen =
+                r._portalReceiveCapability({ type: "capability", name: "graben", dsl: ["voxel_carve", 0, 0, 0, 3] }) ===
+                false;
+            out.rejectsPrivate =
+                r._portalReceiveCapability({ type: "capability", name: "zeit", dsl: ["set_time_of_day", 0.5] }) ===
+                false;
+            out.rejectsSovereign =
+                r._portalReceiveCapability({ type: "capability", name: "klau", dsl: ["wallet_transfer", "x"] }) ===
+                false;
+            out.rejectsGarbage =
+                r._portalReceiveCapability({ type: "capability", name: "ÜBEL!", dsl: ["weather", "rainy"] }) === false;
+            out.notExecuted = r.state.weather === savedWeather;
+            out.grantNoProposal = r.grantCapability("gibtsnicht").reason === "no_proposal";
+            const granted = r.grantCapability("regen-tanz", { skipConfirm: true });
+            out.grants =
+                granted.ok === true &&
+                !!r.state.grantedCapabilities["regen-tanz"] &&
+                !r.state.capabilityProposals.has("regen-tanz");
+            out.gestureWired = /_sovereignGesture/.test(r.grantCapability.toString());
+            const ran = r.runCapability("regen-tanz");
+            out.runs = ran.ok === true && r.state.weather === "rainy";
+            const pub = "cd".repeat(32);
+            r.state.grantedCapabilities["regen-tanz"].authorPubKey = pub;
+            if (r.state.revokedKeys && r.state.revokedKeys.add) {
+                r.state.revokedKeys.add(pub);
+                out.revokeStops = r.runCapability("regen-tanz").reason === "revoked";
+                r._portalReceiveCapability({ type: "capability", name: "zweite", dsl: ["weather", "sunny"] });
+                const p2 = r.state.capabilityProposals.get("zweite");
+                if (p2) p2.authorPubKey = pub;
+                out.revokeGates = r.grantCapability("zweite", { skipConfirm: true }).reason === "revoked";
+                r.state.revokedKeys.delete(pub);
+            } else {
+                out.revokeStops = true;
+                out.revokeGates = true;
+            }
+            r.state.grantedCapabilities["regen-tanz"].authorPubKey = "";
+            const snap = r.buildStateSnapshot();
+            out.travels = !!(snap.grantedCapabilities && snap.grantedCapabilities["regen-tanz"]);
+            r._loadStateRestoreMiscState({
+                grantedCapabilities: {
+                    "regen-tanz": snap.grantedCapabilities["regen-tanz"],
+                    boese: { dsl: ["voxel_carve", 0, 0, 0, 9] },
+                },
+            });
+            out.restoreWalled = !!r.state.grantedCapabilities["regen-tanz"] && !r.state.grantedCapabilities["boese"];
+            const ex = r.chatSystemPatterns.map((p) => p.example);
+            out.chatGestures = ex.includes("gewähre <fähigkeit>") && ex.includes("wirke <fähigkeit>");
+        } finally {
+            r._portalOverlay = savedPo || null;
+            r.state.capabilityProposals = savedProps;
+            r.state.grantedCapabilities = savedCaps;
+            if (typeof r._setWeather === "function") r._setWeather(savedWeather, "band-r6");
+            else r.state.weather = savedWeather;
+        }
+        return out;
+    });
+    check(
+        "R6 Selbst-Erweiterung: die Quarantäne-Wand (reaktiv landet · Worldgen/privat/souverän/Müll fallen · NIE ausgeführt)",
+        res.accepts &&
+            res.rejectsWorldgen &&
+            res.rejectsPrivate &&
+            res.rejectsSovereign &&
+            res.rejectsGarbage &&
+            res.notExecuted
+    );
+    check(
+        "R6 Selbst-Erweiterung: die GEWÄHR nur durch die R2-Geste (grant_capability erwacht)",
+        res.grants && res.gestureWired && res.grantNoProposal
+    );
+    check("R6 Selbst-Erweiterung: der LAUF durch die dslRun-Sandbox (das Wetter flippt)", res.runs);
+    check("R6 Selbst-Erweiterung: der R4-Rückruf wirkt am Tor UND nach der Gewähr", res.revokeStops && res.revokeGates);
+    check(
+        "R6 Selbst-Erweiterung: die Gewähr reist + der Restore prüft die heutige Wand",
+        res.travels && res.restoreWalled
+    );
+    check(`R6 Selbst-Erweiterung: „gewähre/wirke" in der EINEN Chat-Tabelle`, res.chatGestures);
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -45579,6 +45689,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18149Statusbar(ctx);
             await checkBandV18150Ride(ctx);
             await checkBandV18151Idb(ctx);
+            await checkBandR6Capability(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
