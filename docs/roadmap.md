@@ -126,7 +126,10 @@ zur Regel).
 
 **Sozial/Multi-User** — ~~Bewertungs-Aggregation~~ ✓ V18.134 · ~~Lesezeichen~~ ✓ V18.135 ·
 ~~Folgen~~ ✓ V18.142 · ~~Kommentare~~ ✓ V18.143 (signierte Worte übers Mesh; Chat/Moderation =
-spätere Kür) · „Für dich"-Algorithmus (Kür — Substrat liegt: Folgen + Gemeinschafts-Wertung) ·
+spätere Kür) · ~~„Für dich"~~ ✓ V18.147 (die LESBARE Summe der eigenen Signale — F4 ist RUND;
+Kür-Vermerk nur die Portal-Ring-Welt-Vorschau) · ~~W18 in fremden Welten LEBEN~~ ✓ V18.144–.146
+(Ko-Präsenz-Injektion + Tier-Wahrheit · Input-Brücke · Wohnen/Boot-Rückkehr/„wohnt in"/
+Persistenz-Slot; `npm run smoke:copresence`; benannt-fern nur der Übersetzer-Avatar-Hook) ·
 B-WASM (Fremd-Engine-Rest) · evolveCommunity (Kreatur-Kulturen) · Stern-ab-6-Topologie
 (gigant-plan §5-F2, Design gemessen).
 

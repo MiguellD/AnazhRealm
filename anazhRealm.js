@@ -35568,6 +35568,9 @@ class AnazhRealm {
             // DIESER Sub-Welt gesehenen Gefährten (peerId → {lastAt});
             // poseWindow* deckelt den local-pose-Eingang (~10 Hz + Reserve),
             // poseTimer ist der Abwesenheits-Sweep (peer-leave bei Stille).
+            // localPose = die letzte angenommene EIGENE Pose — die Lese-
+            // Fläche der Sandbox-Wand (die null-origin-Welt ist von außen
+            // unlesbar; Smoke/Diagnose lesen HIER, was drinnen geschah).
             coPresence: meta.coPresence === true,
             peers: new Map(),
             poseWindowStart: 0,

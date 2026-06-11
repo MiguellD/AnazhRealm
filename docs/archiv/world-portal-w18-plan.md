@@ -1,5 +1,14 @@
 # W18 — In fremden Welten LEBEN (allein oder gemeinsam)
 
+> **STATUS: GEBAUT (V18.144–.146, 11.06.2026) — der Bogen ist RUND.** W18-A+B
+> (Ko-Präsenz-Injektion + Tier-Wahrheit; `worlds/begegnung/` als erste deklarierte
+> Ko-Präsenz-Welt) · W18-C (Input-Brücke, Variante A) · W18-D (Wohnen + Boot-Rückkehr
+> + „wohnt in …" übers Mesh + Persistenz-Slot). End-to-End-Beweis:
+> `npm run smoke:copresence` (zwei echte Browser — „Anna erschien neben dir im
+> Begegnungs-Feld" durch die null-origin-Wand; B lädt neu und wacht IN der
+> Fremd-Welt auf). Benannt-fern bleibt nur der Übersetzer-Avatar-Hook (§5.2 Weg 2,
+> fragil je Engine — der ehrliche Fallback ist der Vorraum) + Input-Variante B.
+
 **Arc-Plan, 01.06.2026.** Der nächste große Bogen NACH dem vollendeten DSL-Weltregeln-Bogen
 (V17.33–.40). Dies ist die Vertiefung des **Fremd-Engine-Bogens** (W12–W17) zu seiner
 eigentlichen Vision: nicht nur eine fremde Welt *besuchen*, sondern in ihr **umfänglich

@@ -378,6 +378,14 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 > der Anker steht dabei; die Mechanik im benannten §2-/Detail-Plan-Abschnitt. Abhaken = ✓ + Version
 > davor. **Vollständigkeit:** alle 57 offenen Fäden des finalen Doku-Sweeps (10.06.) sind hier
 > verortet — nichts verwaist; was bewusst FERN bleibt, steht am Ende mit Begründung.
+>
+> **DER PFAD IST GESCHLOSSEN (11.06.2026, V18.147):** jede Zeile jeder Phase A–Ω ist ✓
+> GEBAUT, S-VERMERK (Gesamt-Abnahme: „bauen mit Erst-Wurf, vermerken, weiterfahren"),
+> bewusst DEFERRED mit gemessenem Grund (B1 · B7/U6 · E6 · F5/F6 · Stern-ab-6 · Splice)
+> oder GEMERKTER FADEN mit benanntem Weck-Moment (§5-Ende). Die letzten Bögen: F3/W18
+> ✓ RUND (V18.144–.146) + F4 sozial ✓ RUND (V18.134–.147). Was als Nächstes wächst,
+> wächst aus den GEMERKTEN FÄDEN oder einem neuen Schöpfer-Wort — nicht aus diesem
+> Pfad: er ist gegangen.
 
 ### PHASE A — das Fundament watertight (trägt ALLES; zuerst)
 
