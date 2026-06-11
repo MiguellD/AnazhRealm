@@ -34407,6 +34407,70 @@ async function checkBandV18129HochBecken(ctx) {
     );
 }
 
+// V18.130 — B4 (gigant-plan §5 / U5): SCHATTEN-CSM an den Kaskaden-Bändern.
+// Das r184-Addon (CSMShadowNode, verbatim vendort) ersetzt die EINE 2048er-
+// Map: 3 Kaskaden, deren Grenzen die DETAIL_CASCADE-Band-Kanten SIND; der
+// R1-Texel-Snap lebt im Addon pro Kaskade. Headless prüft die VERDRAHTUNG
+// (der Look + die Map-Allokation: `scripts/diag-csm.cjs` — GEMESSEN GRÜN:
+// Maps alloziert, breaks [0.2,0.68,1], nahe Kaskade 0.167 m/Texel vs. 0.293
+// vorher, keine Akne in der V18.113-Matrix). Die CSM-Initialisierung ist
+// LAZY (erster echter Material-Build) — unter gestubbtem Render sind breaks
+// leer; die Invarianten prüfen darum Konstruktion + Vertrag, nicht den
+// Render-Zustand.
+async function checkBandV18130CsmShadow(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.vendorSymbol = typeof window.THREE.CSMShadowNode === "function";
+        const csm = r.state.csmNode;
+        out.active = !!csm;
+        if (csm) {
+            out.cascades = csm.cascades;
+            out.fade = csm.fade === true;
+            out.isShadowNode = r.state.directionalLight && r.state.directionalLight.shadow.shadowNode === csm;
+            out.mode = csm.mode;
+            // Der Kaskaden-Vertrag: der custom-Split liefert EXAKT die
+            // DETAIL_CASCADE-Band-Kanten (Band 0 ~108 m, Band 1 ~367 m) / maxFar.
+            const breaks = [];
+            csm.customSplitsCallback(3, 0.5, 540, breaks);
+            const span = r._voxelChunkConfig(0).span;
+            const bands = r.constructor.DETAIL_CASCADE;
+            const e0 = ((bands[0].maxRing + 0.5) * span) / 540;
+            const e1 = ((bands[1].maxRing + 0.5) * span) / 540;
+            out.breaksAreBandEdges =
+                breaks.length === 3 &&
+                Math.abs(breaks[0] - e0) < 1e-9 &&
+                Math.abs(breaks[1] - e1) < 1e-9 &&
+                breaks[2] === 1;
+            out.breaks = breaks.map((b) => +b.toFixed(3)).join(",");
+        }
+        // KONSUM-Proben: der Bias-Hebel propagiert auf die Kaskaden-Lichter,
+        // der Resize ruft updateFrustums (Addon-Vertrag).
+        out.biasPropagates = /csm\.lights/.test(r.setShadowBias.toString());
+        out.resizeUpdates = /updateFrustums/.test(r.init.toString());
+        return out;
+    });
+    if (!res) {
+        check("V18.130 CSM: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("V18.130 CSM: das r184-Addon ist vendort + angebunden (THREE.CSMShadowNode)", res.vendorSymbol);
+    check(
+        "V18.130 CSM: 3 Kaskaden aktiv als shadowNode des Sonnen-Lichts (fade an)",
+        res.active && res.cascades === 3 && res.fade && res.isShadowNode
+    );
+    check(
+        "V18.130 CSM: die Kaskaden-Grenzen SIND die DETAIL_CASCADE-Band-Kanten (custom-Split)",
+        res.active && res.mode === "custom" && res.breaksAreBandEdges,
+        `breaks=${res.breaks}`
+    );
+    check(
+        "V18.130 CSM: setShadowBias propagiert auf die Kaskaden + Resize ruft updateFrustums",
+        res.biasPropagates && res.resizeUpdates
+    );
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.46 Wetter + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
@@ -43588,6 +43652,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandG8R4Immunity(ctx);
             await checkBandG8R5LivingImmune(ctx);
             await checkBandV18129HochBecken(ctx);
+            await checkBandV18130CsmShadow(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

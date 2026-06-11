@@ -101,7 +101,7 @@ rot→grün) · ~~Haupt-Fog an die Ring-Kante koppeln~~ **GEBAUT (V18.103 A5):**
 (ringRadius+0.5)·span · **A6 Körper-Kollision GEBAUT (V18.103):** Begraben-Rettung + Sprung-Klemme +
 Ego-Auge-Clip. Danach offen: H3 ferne Seen/Flüsse (Region mitwandern, determinismus-brechend → S).
 
-**LOD/Render** — U2 Wasser-LOD (heute fest LOD0) · U4 Deko-Distanz/Dichte/Impostor · U5 Schatten-CSM ·
+**LOD/Render** — U2 Wasser-LOD (heute fest LOD0) · U4 Deko-Distanz/Dichte/Impostor · ~~U5 Schatten-CSM~~ **GEBAUT (V18.130: r184-CSMShadowNode an den DETAIL_CASCADE-Band-Kanten, Snap pro Kaskade eingebaut; Look/FPS-Sign-off offen)** ·
 U6 Clipmap (Draw-Call-Hebel) · R1 Schatten-Snap (gebaut, Sign-off offen) · R2 Normale in Geometrie
 backen · R3 Kanten-Schärfe · R5 Struktur-Textur · E3 Worker-Mesh (gebaut V17.118, Sign-off offen) ·
 Kreatur-FPS-Frame-Budget (falls Boden-Cache nicht reicht) · Browser-Sign-offs (J4 · E1–E3).

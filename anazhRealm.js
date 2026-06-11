@@ -41845,6 +41845,13 @@ class AnazhRealm {
         this.state.atmosphere.shadowBias = m;
         const dl = this.state.directionalLight;
         if (dl && dl.shadow) dl.shadow.normalBias = m;
+        // B4 (V18.130) — die CSM-Kaskaden-Lichter klonen den normalBias nur
+        // beim Init; ein Live-Hebel MUSS sie mit-stellen (sonst stellt der
+        // Slider nur die unbenutzte Haupt-Map — der Passagier-Trugschluss).
+        const csm = this.state.csmNode;
+        if (csm && Array.isArray(csm.lights)) {
+            for (const lw of csm.lights) if (lw && lw.shadow) lw.shadow.normalBias = m;
+        }
         if (typeof this.saveState === "function") this.saveState();
         return m;
     }
@@ -52745,6 +52752,43 @@ class AnazhRealm {
         // folgt dem Spieler, statt fix um den Ursprung zu liegen (sonst
         // empfingen nur Strukturen nahe (0,0) Schatten aufs Terrain).
         scene.add(directionalLight.target);
+        // B4 (V18.130, gigant-plan §5 — U5): SCHATTEN-CSM AN DEN KASKADEN-
+        // BÄNDERN. Die EINE 2048er-Map über ±300 m war nah zu GROB (~0.29 m/
+        // Texel) und fern zu ENG (Schatten enden vor der Mittelsicht). Drei
+        // Kaskaden, deren GRENZEN die `DETAIL_CASCADE`-Band-Kanten SIND (die
+        // eine Distanz, sieben Gesichter — der lod-kaskade-plan): Kaskade 0
+        // deckt Band 0 (volles Detail, ~108 m → ~0.10 m/Texel = 3× schärfer
+        // nah), Kaskade 1 die Mittelsicht (Band 1, ~367 m), Kaskade 2 die
+        // Ferne bis maxFar (deckt auch den Weltenring-max-Ring). Der V17.111-
+        // R1-Texel-Snap lebt im Addon PRO KASKADE (updateBefore snappt das
+        // Kaskaden-Zentrum im Licht-Raum — kein Swimming). `fade` weicht die
+        // Kaskaden-Übergänge. Die Kaskaden-Lichter klonen Map-Größe/bias/
+        // normalBias vom Haupt-Licht (setShadowBias propagiert live, s. dort);
+        // der `setShadowRange`-Hebel betrifft nur den Legacy-Pfad (CSM rechnet
+        // seine Frusta selbst). Soft-Gate: ohne Vendor-Symbol bleibt die EINE
+        // Map exakt wie bisher (kein Verhaltens-Bruch im Fallback).
+        if (typeof THREE.CSMShadowNode === "function") {
+            try {
+                const bands = AnazhRealm.DETAIL_CASCADE;
+                const span = this._voxelChunkConfig(0).span; // 43.2 m
+                const e0 = (bands[0].maxRing + 0.5) * span; // Band-0-Kante ~108 m
+                const e1 = (bands[1].maxRing + 0.5) * span; // Band-1-Kante ~367 m
+                const csm = new THREE.CSMShadowNode(directionalLight, {
+                    cascades: 3,
+                    maxFar: 540, // deckt Weltenring max (Ring 12 ≈ 540 m); Default-Fog deckt früher
+                    mode: "custom",
+                    customSplitsCallback: (cascades, near, far, breaks) => {
+                        breaks.push(Math.min(0.85, e0 / far), Math.min(0.95, e1 / far), 1);
+                    },
+                });
+                csm.fade = true;
+                directionalLight.shadow.shadowNode = csm;
+                this.state.csmNode = csm;
+                this.log("Schatten-CSM aktiv (3 Kaskaden an den DETAIL_CASCADE-Bändern)", "INFO");
+            } catch (e) {
+                this.log(`Schatten-CSM nicht verfügbar (${e && e.message}) — eine Map wie bisher`, "WARN");
+            }
+        }
         // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
         this.state.ambientLight = ambientLight;
@@ -53023,6 +53067,9 @@ class AnazhRealm {
             renderer.setSize(window.innerWidth, window.innerHeight);
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
+            // B4 (V18.130) — die CSM-Frusta hängen an der Kamera-Projektion
+            // (Addon-Vertrag: „call every time you change camera settings").
+            if (this.state.csmNode && this.state.csmNode.camera) this.state.csmNode.updateFrustums();
             this.log("Fenstergröße angepasst", "INFO");
         });
 
@@ -54646,7 +54693,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.129.0";
+AnazhRealm.VERSION = "18.130.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

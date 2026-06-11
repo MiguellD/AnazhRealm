@@ -487,8 +487,15 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
   (der S-Entscheid steht). G6 „eine Normale" ist mit dem normalBias-Vertrag NICHT
   vereinbar — ZWEI Wahrheiten sind korrekt (Geometrie=Oberfläche · Shading=Lichtung).
   AKNE-WÄCHTER-Invariante: die Chunk-Geometrie trägt VARIIERENDE Normalen.
-- **B4 — U5 Schatten-CSM an den Kaskaden-Bändern** [lod-kaskade-plan U5; A→S]: 2–3 Kaskaden,
-  Grenzen = `DETAIL_CASCADE`; der R1-Snap wandert in jede Kaskade.
+- ✓ **B4 — U5 Schatten-CSM an den Kaskaden-Bändern (V18.130)** [A→S]: das r184-Addon
+  `CSMShadowNode` VERBATIM vendort (Soft-Anbindung — ohne Symbol bleibt die EINE Map);
+  der FUND beim Quell-Lesen: der R1-Texel-Snap lebt im Addon PRO KASKADE schon
+  (`updateBefore` snappt im Licht-Raum) — kein Eigenbau. 3 Kaskaden, custom-Split =
+  die `DETAIL_CASCADE`-Band-Kanten (108 m · 367 m · maxFar 540; breaks [0.2,0.68,1]),
+  fade an; setShadowBias propagiert live auf die Kaskaden, Resize ruft updateFrustums.
+  GEMESSEN (`diag-csm.cjs` GRÜN): 3 Maps alloziert · nah 0.167 m/Texel (1.75× schärfer)
+  + Deckung 300→540 m · KEINE Akne in der V18.113-Matrix · 0 Page-Errors; +4
+  Invarianten. Schatten-LOOK/FPS auf echter GPU → S.
 - **B5 — U2 Wasser-LOD + U4 Deko-Distanz/Impostor + Baum/Feld-DICHTE** [lod-kaskade-plan; H+A]:
   Dichte-Hebel sind chance-skalar (tag-neutral, `diag-arch-tags` als Wand davor).
   **✓ V18.117 — der S-Befund „durch das LOD Löcher im Wasser" GEMESSEN AUFGELÖST
@@ -848,7 +855,10 @@ schlanken (UI-Politur, jederzeit einschiebbar).
       (V18.129 — einen Damm aus Blöcken/Fill quer über einen Bach bauen: das Wasser
       staut sich ÜBER den Spiegel zur ebenen Fläche; Pfeiler/Brücken stauen nicht;
       Damm abbauen → der See läuft durch die Lücke ab. KÜR offen: der ÜBERLAUF über
-      die Krone als Wasserfall — heute füllt er exakt bis zur Krone und ruht).
+      die Krone als Wasserfall — heute füllt er exakt bis zur Krone und ruht) ·
+      das SCHATTEN-CSM (V18.130 — nahe Schatten 1.75× schärfer, ferne Schatten bis
+      540 m statt 300; FPS-Feel der 3×2048-Maps auf echter GPU prüfen; kein
+      Akne/Swimming beim Laufen unter schräger Sonne — der Snap lebt pro Kaskade).
       **DIE SCHÖPFER-PRÜFLISTE (10.06., wächst bis zum Gigant-Abschluss — Unsauberkeiten
       SAMMELN, er korrigiert am Schluss; ich fülle sie ehrlich mit, statt sie zu fixen):**
       (a) **GELENK-LINIEN in der WELT sichtbar nach dem Fertigen** — die connections-Linien

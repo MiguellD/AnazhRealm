@@ -24,6 +24,8 @@ Drei reasons we host these instead of using a CDN:
 | `ammo.wasm.wasm` | `ammojs3@0.0.11` (`dist/ammo.wasm.wasm`) | Bullet physics WASM binary, V9.40-f-gepatcht (max 64→256 MB) |
 | `ammo-bootstrap.js` | own | V9.40-f pre-grow-Hook — MUSS vor `ammo.js` geladen werden |
 | `simplex-noise.js` | `simplex-noise@2.4.0` | Not minified upstream (only ~17 KB) |
+| `CSMShadowNode.js` | `three@0.184.0` (`examples/jsm/csm/CSMShadowNode.js`) | B4/V18.130 — Cascaded Shadow Maps fuer den WebGPURenderer, verbatim (importiert `three/webgpu` + `three/tsl` via Import-Map + `./CSMFrustum.js` relativ). Traegt den Light-Space-Texel-Snap PRO Kaskade eingebaut (`updateBefore`) |
+| `CSMFrustum.js` | `three@0.184.0` (`examples/jsm/csm/CSMFrustum.js`) | Frustum-Split-Helfer von CSMShadowNode (importiert nur `three`) |
 
 **V10.0-Bogen (Three.js r134 → r160 + WebGPU, 26-27.05.2026)** — Migration in vier Schritten: UMD `three.min.js` r134 → ESM r160 + Inline-Importmap mit CSP-SHA256-Hash + 238 Addon-Files aus `examples/jsm/` + WebGPURenderer aktiv mit Hot-Swap-Safety-Net. Welt rendert dauerhaft auf WebGPU.
 
