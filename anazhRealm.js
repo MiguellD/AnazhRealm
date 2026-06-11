@@ -39160,7 +39160,7 @@ class AnazhRealm {
     // Part erzeugt (mehrere Parts mit gleicher Farbe würden sich Material
     // teilen können — V1 hält's einfach). Wasser-Animation kommt automatisch,
     // wenn ein Part `animate: "water_wave"` trägt.
-    _buildFromBlueprint(blueprint, depth, visited) {
+    _buildFromBlueprint(blueprint, depth, visited, opts) {
         // Welle 2 C — fraktale Verschachtelung. Ein Part mit shape:"blueprint"
         // referenziert via refName einen anderen Bauplan, der als Sub-Group
         // an dieser Position eingebettet wird. Cycle-Guard via visited-Set,
@@ -39292,7 +39292,19 @@ class AnazhRealm {
         // doppelt sich der Render bei Fraktal-Bauplänen. Farbe + Opacity
         // folgen der Lastformel (W5-A): stark = grün, ok = goldgelb, schwach
         // = rot (= Brech-Warning, V1 nur visuell).
-        if (!depth && Array.isArray(blueprint.connections) && blueprint.connections.length > 0) {
+        // V18.153 (Schöpfer-Befund): die Linien+Marker sind ein WERKSTATT-
+        // Werkzeug (das Gelenk-Design ablesen — aus GENAU diesen Verbindungen
+        // emergiert die C1-Animation), KEIN Welt-Schmuck: depthTest:false +
+        // renderOrder 999 zeichneten sie ÜBER jedes gespawnte Gefährt/Portal.
+        // Nur wer sie BESTELLT (opts.connectionLines — der Werkstatt-Viewer),
+        // bekommt sie; die Welt zeigt das reine Werk.
+        if (
+            opts &&
+            opts.connectionLines === true &&
+            !depth &&
+            Array.isArray(blueprint.connections) &&
+            blueprint.connections.length > 0
+        ) {
             this._addConnectionLines(group, blueprint);
         }
         return group;
@@ -50150,7 +50162,7 @@ class AnazhRealm {
             p.dirty = true;
             return;
         }
-        const group = this._buildFromBlueprint(bp);
+        const group = this._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
         // Top-level-Children korrespondieren 1:1 zu bp.parts (in Reihenfolge).
         // _buildFromBlueprint fügt pro Part entweder einen Mesh oder eine Sub-Group
         // (für fraktale blueprint-Refs) hinzu. Wir markieren nur Mesh-Children
@@ -57221,7 +57233,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.152.0";
+AnazhRealm.VERSION = "18.153.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

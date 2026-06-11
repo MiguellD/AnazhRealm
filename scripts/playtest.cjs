@@ -15287,8 +15287,10 @@ async function checkBandWelle6APolish(ctx) {
             ],
             connections: [{ type: "masonry", partA: 0, partB: 1 }],
         };
-        // Build und auf THREE.Line prüfen
-        const built = r._buildFromBlueprint(r.state.blueprints[testName]);
+        // Build und auf THREE.Line prüfen — V18.153: die Linien sind ein
+        // WERKSTATT-Werkzeug (opts.connectionLines), der Test bestellt sie
+        // wie der Werkstatt-Viewer (V9.56-i: der Test wandert mit).
+        const built = r._buildFromBlueprint(r.state.blueprints[testName], 0, undefined, { connectionLines: true });
         // V8.38 — eine Verbindung erzeugt jetzt eine Linie UND
         // einen Mittelpunkt-Marker (beide isConnectionLine), damit
         // die Verbindung auch bei überlappenden Parts sichtbar ist.
@@ -15306,6 +15308,17 @@ async function checkBandWelle6APolish(ctx) {
         out.lineExists = connLineCount === 1 && connMarkerCount === 1;
         out.lineHasUserDataFlag = connLineCount === 1;
         out.lineColor = lineColor;
+        // V18.153 — OHNE Bestellung (= jeder Welt-Spawn) bleibt das Werk REIN:
+        // keine Linien/Marker über gespawnten Gefährten/Portalen.
+        let worldLines = 0;
+        const builtPlain = r._buildFromBlueprint(r.state.blueprints[testName]);
+        builtPlain.traverse((node) => {
+            if (node.userData && node.userData.isConnectionLine) worldLines++;
+        });
+        out.worldClean = worldLines === 0;
+        out.workshopOrders = /connectionLines: true/.test(
+            r._workshopRebuildPreviewMesh ? r._workshopRebuildPreviewMesh.toString() : ""
+        );
 
         // 6.F2 Brech-Warning: extrem schwache Verbindung → Journal-Eintrag
         // (wir erzwingen weak indem wir partB sehr weit weg setzen → contactArea=0)
@@ -15414,6 +15427,10 @@ async function checkBandWelle6APolish(ctx) {
         check("Welle 6.F1: mittlere Verbindung (0.7..1.5) = goldgelb 0xffcc44", wave6fResults.colorOkIsYellow);
         check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
         check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
+        check(
+            "V18.153: die Gelenk-Linien sind WERKSTATT-Werkzeug — die Welt bleibt rein, der Viewer bestellt sie",
+            wave6fResults.worldClean && wave6fResults.workshopOrders
+        );
         check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
         check("Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)", wave6fResults.weakIsBelowThreshold);
         check(
@@ -32578,7 +32595,9 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
                 },
             ];
             r.addConnectionToBlueprint("_t838d", { type: "masonry", partA: 0, partB: 1 });
-            const group = r._buildFromBlueprint(bp);
+            // V18.153 — die Linien sind Werkstatt-Werkzeug: der Test bestellt
+            // sie wie der Werkstatt-Viewer (V9.56-i: der Test wandert mit).
+            const group = r._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
             const conn = group.children.filter((c) => c.userData && c.userData.isConnectionLine);
             out.connHasLine = conn.some((c) => c.isLine);
             out.connHasMarker = conn.some((c) => c.isMesh);
