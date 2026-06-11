@@ -28140,6 +28140,103 @@ async function checkBandV18142Follow(ctx) {
     );
 }
 
+// F4 Stufe 4 (V18.143) — KOMMENTARE: signierte Text-Zeugnisse uebers Mesh
+// (das V18.134-Substrat, append-only statt LWW). End-to-end mit ZWEITER
+// Ed25519-Identitaet: eigenes Wort signiert+gespeichert+bezeugt (share-
+// Journal) · fremdes verifiziert · Tamper bricht · Rueckruf siebt · Batch
+// + Handler + onopen verdrahtet · der Text bleibt DATEN (textContent-Wand).
+async function checkBandV18143Comments(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const S = r.constructor.SOCIAL;
+        out.config = Number.isFinite(S.maxComments) && Number.isFinite(S.maxCommentLen) && S.maxCommentsShown > 0;
+        out.canonical = r._socialCommentCanonical({ id: "a", t: 5, pub: "p", x: "x|y" }) === "comment|a|5|p|x|y";
+        if (!r.state.vibePass || !r.state.vibePass.ready) {
+            out.skipCrypto = true;
+            return out;
+        }
+        const saved = r.state.socialComments;
+        r.state.socialComments = new Map();
+        // (1) das EIGENE Wort: signiert + gespeichert + share-Journal.
+        const own = await r._socialSignOwnComment("band143:ziel", "  Ein gutes Werk!  ");
+        out.ownSigned = !!own && own.x === "Ein gutes Werk!" && typeof own.sig === "string";
+        out.ownStored = r._feedComments("band143:ziel").length === 1;
+        const j = (r.state.worldJournal && r.state.worldJournal.entries) || [];
+        out.shareWritten = j.slice(-3).some((e) => e.type === "share" && /Wort/.test(e.text || ""));
+        // (2) die ZWEITE Identitaet: ihr Wort verifiziert + landet; Tamper bricht.
+        const pair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+        const jwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
+        const pub2 = r._vibeBytesToHex(r._vibeB64uToBytes(jwk.x));
+        const c2 = { id: "band143:ziel", x: "Fremdes Wort", t: Date.now() + 1, pub: pub2 };
+        const sigBytes = await crypto.subtle.sign(
+            { name: "Ed25519" },
+            pair.privateKey,
+            new TextEncoder().encode(r._socialCommentCanonical(c2))
+        );
+        c2.sig = r._vibeBytesToHex(new Uint8Array(sigBytes));
+        out.foreignAccepted = (await r._socialCommentReceive("peerX", c2)) === true;
+        out.foreignStored = r._feedComments("band143:ziel").length === 2;
+        const tampered = { ...c2, x: "Boeses Wort", t: c2.t + 1 };
+        out.tamperRejected = (await r._socialCommentReceive("peerX", tampered)) === false;
+        out.dedupe = (await r._socialCommentReceive("peerX", c2)) === false;
+        // (3) der Rueckruf siebt (R4-KONSUM): revozierter Schluessel faellt aus
+        // der Lese-Wahrheit UND dem Empfang.
+        r.revokeKey(pub2, { silent: true });
+        out.revokedSieved = r._feedComments("band143:ziel").length === 1;
+        const c3 = { id: "band143:ziel", x: "Nochmal", t: Date.now() + 9, pub: pub2 };
+        const sig3 = await crypto.subtle.sign(
+            { name: "Ed25519" },
+            pair.privateKey,
+            new TextEncoder().encode(r._socialCommentCanonical(c3))
+        );
+        c3.sig = r._vibeBytesToHex(new Uint8Array(sig3));
+        out.revokedReceiveBlocked = (await r._socialCommentReceive("peerX", c3)) === false;
+        r.unrevokeKey(pub2);
+        // (4) die Verdrahtung: Handler kanal-exklusiv + onopen-Batch + die
+        // Karte traegt 💬 + der Panel-Text ist textContent (XSS-Wand).
+        const handler = r._p2pHandleChannelMessage.toString();
+        out.handlerWired = /social-comment/.test(handler) && /_p2pPeerRateAdmit\("social"/.test(handler);
+        out.batchExists = typeof r._socialCommentsBatch === "function";
+        out.barHasTalk = /_renderFeedCommentsPanel/.test(r._feedRatingBar.toString());
+        const panelSrc = r._renderFeedCommentsPanel.toString();
+        out.xssWall = /textContent = c\.x/.test(panelSrc) && !/innerHTML\s*=\s*c\.x/.test(panelSrc);
+        // restore
+        r.state.socialComments = saved;
+        if (typeof r._saveSocialComments === "function") r._saveSocialComments();
+        return out;
+    });
+    if (!res) {
+        check("V18.143 Kommentare: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "V18.143 Kommentare: Config + stabiles Kanonisches (x am Ende — Trennzeichen-eindeutig)",
+        res.config && res.canonical
+    );
+    if (res.skipCrypto) {
+        check("V18.143 Kommentare: Krypto-Teil lief (Vibe-Pass bereit)", false, "vibePass nicht ready");
+        return;
+    }
+    check(
+        "V18.143 Kommentare: das eigene Wort signiert + gespeichert + bezeugt (journal share — die Saat blüht)",
+        res.ownSigned && res.ownStored && res.shareWritten
+    );
+    check(
+        "V18.143 Kommentare: das fremde Wort verifiziert + landet — Tamper bricht, dedupe hält",
+        res.foreignAccepted && res.foreignStored && res.tamperRejected && res.dedupe
+    );
+    check(
+        "V18.143 Kommentare: der Rückruf siebt das Wort (Lese-Wahrheit + Empfang — R4 wirkt)",
+        res.revokedSieved && res.revokedReceiveBlocked
+    );
+    check(
+        "V18.143 Kommentare: verdrahtet (kanal-exklusiv + R1-Rate · onopen-Batch · Karte trägt 💬 · textContent-XSS-Wand)",
+        res.handlerWired && res.batchExists && res.barHasTalk && res.xssWall
+    );
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -44743,6 +44840,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandTailleOmega5(ctx);
             await checkBandTailleOmega6(ctx);
             await checkBandV18142Follow(ctx);
+            await checkBandV18143Comments(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

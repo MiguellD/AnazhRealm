@@ -5799,6 +5799,15 @@ class AnazhRealm {
                     /* Kanal frisch zu — der naechste onopen reicht nach */
                 }
             }
+            // F4 Stufe 4 (V18.143) — die eigenen Kommentar-Zeugnisse nachreichen.
+            const commentBatch = this._socialCommentsBatch();
+            if (commentBatch && channel.readyState === "open") {
+                try {
+                    channel.send(JSON.stringify(commentBatch));
+                } catch (_e) {
+                    /* dito */
+                }
+            }
         };
         channel.onmessage = (ev) => this._p2pHandleChannelMessage(peerId, ev.data);
         channel.onclose = () => {
@@ -5831,6 +5840,21 @@ class AnazhRealm {
         if (msg.type === "social-ratings") {
             if (Array.isArray(msg.list) && this._p2pPeerRateAdmit("social", peerId, AnazhRealm.SOCIAL.ratePerSec)) {
                 for (const r of msg.list.slice(0, AnazhRealm.SOCIAL.maxBatch)) this._socialRatingReceive(peerId, r);
+            }
+            return;
+        }
+        // F4 Stufe 4 (V18.143) — Kommentar-Zeugnisse: dieselbe Wand (kanal-
+        // exklusiv + R1-Rate; Form/verify/Rueckruf leben im Receive).
+        if (msg.type === "social-comment") {
+            if (this._p2pPeerRateAdmit("social", peerId, AnazhRealm.SOCIAL.ratePerSec)) {
+                this._socialCommentReceive(peerId, msg.c);
+            }
+            return;
+        }
+        if (msg.type === "social-comments") {
+            if (Array.isArray(msg.list) && this._p2pPeerRateAdmit("social", peerId, AnazhRealm.SOCIAL.ratePerSec)) {
+                for (const c of msg.list.slice(0, AnazhRealm.SOCIAL.maxCommentBatch))
+                    this._socialCommentReceive(peerId, c);
             }
             return;
         }
@@ -33530,6 +33554,139 @@ class AnazhRealm {
         return { type: "social-ratings", list: own };
     }
 
+    // ===== F4 Stufe 4 (V18.143) — KOMMENTARE: signierte Text-Zeugnisse ======
+    // Dasselbe V18.134-Substrat (Vibe-Pass-Signatur · kanal-exklusiv · R1-Rate
+    // · Rueckruf siebt · bounded Store), aber APPEND-ONLY statt LWW: ein
+    // Kommentar ist ein Einzelstueck (Schluessel id|pub|t, dedupe via Schluessel).
+    // Der Text reist als DATEN und wird NUR als textContent gerendert (XSS-Wand).
+    // Das Kanonische ist STABIL; x steht am ENDE (Trennzeichen-eindeutig, der
+    // Text darf "|" enthalten).
+    _socialCommentCanonical(c) {
+        return `comment|${c.id}|${c.t}|${c.pub}|${c.x}`;
+    }
+
+    _loadSocialComments() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.socialComments") : null;
+            const arr = raw ? JSON.parse(raw) : [];
+            const m = new Map();
+            if (Array.isArray(arr))
+                for (const c of arr)
+                    if (c && c.id && c.pub && Number.isFinite(c.t)) m.set(`${c.id}|${c.pub}|${c.t}`, c);
+            return m;
+        } catch {
+            return new Map();
+        }
+    }
+
+    _saveSocialComments() {
+        try {
+            if (typeof localStorage === "undefined") return;
+            const arr = [...(this.state.socialComments || new Map()).values()];
+            localStorage.setItem("anazh.socialComments", JSON.stringify(arr));
+        } catch (e) {
+            this.log(`socialComments-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    _socialCommentsMap() {
+        if (!this.state.socialComments) this.state.socialComments = this._loadSocialComments();
+        return this.state.socialComments;
+    }
+
+    _socialStoreComment(c) {
+        const m = this._socialCommentsMap();
+        const key = `${c.id}|${c.pub}|${c.t}`;
+        if (m.has(key)) return false; // dedupe — Einzelstueck
+        m.set(key, c);
+        const cap = AnazhRealm.SOCIAL.maxComments;
+        if (m.size > cap) {
+            let oldestK = null;
+            let oldestT = Infinity;
+            for (const [k, v] of m) {
+                if (v.t < oldestT) {
+                    oldestT = v.t;
+                    oldestK = k;
+                }
+            }
+            if (oldestK) m.delete(oldestK);
+        }
+        this._saveSocialComments();
+        return true;
+    }
+
+    // Der Feed-Leser: die Kommentare eines Ziels, aelteste zuerst; revozierte
+    // Schluessel fallen (R4-KONSUM — der Rueckruf wirkt auch dem Wort).
+    _feedComments(id) {
+        const out = [];
+        for (const c of this._socialCommentsMap().values()) {
+            if (c.id !== id) continue;
+            if (typeof this._isKeyRevoked === "function" && this._isKeyRevoked(c.pub)) continue;
+            out.push(c);
+        }
+        out.sort((a, b) => a.t - b.t);
+        return out;
+    }
+
+    // Den EIGENEN Kommentar signieren + speichern + annoncieren + bezeugen
+    // (journal share — die ruhende Saat blueht: ein Wort an die Gemeinschaft).
+    async _socialSignOwnComment(id, text) {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp.publicKeyHex) return null;
+        const x = String(text || "")
+            .trim()
+            .slice(0, AnazhRealm.SOCIAL.maxCommentLen);
+        if (!x) return null;
+        const c = { id, x, t: Date.now(), pub: vp.publicKeyHex };
+        const sig = await this._vibeSign(this._socialCommentCanonical(c));
+        if (!sig) return null;
+        c.sig = sig;
+        this._socialStoreComment(c);
+        if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pSend === "function") {
+            this.p2pSend({ type: "social-comment", c });
+        }
+        if (typeof this.journalAppend === "function") {
+            this.journalAppend("share", `Ich liess ein Wort bei „${id}" zurueck: „${x.slice(0, 60)}"`, {
+                comment: id,
+            });
+        }
+        return c;
+    }
+
+    // Empfang (kanal-exklusiv, R1-gegated am Aufrufer): Form-Wand → Rueckruf
+    // → Signatur VERIFIZIEREN → Store. Async (subtle).
+    async _socialCommentReceive(peerId, c) {
+        if (!c || typeof c !== "object") return false;
+        const okShape =
+            typeof c.id === "string" &&
+            c.id.length > 0 &&
+            c.id.length <= 200 &&
+            typeof c.x === "string" &&
+            c.x.length > 0 &&
+            c.x.length <= AnazhRealm.SOCIAL.maxCommentLen &&
+            Number.isFinite(c.t) &&
+            typeof c.pub === "string" &&
+            /^[0-9a-f]{64}$/i.test(c.pub) &&
+            typeof c.sig === "string";
+        if (!okShape) return false;
+        if (typeof this._isKeyRevoked === "function" && this._isKeyRevoked(c.pub)) return false;
+        const ok = await this._vibeVerify(this._socialCommentCanonical(c), c.sig, c.pub);
+        if (!ok) return false;
+        return this._socialStoreComment({ id: c.id, x: c.x, t: c.t, pub: c.pub.toLowerCase(), sig: c.sig });
+    }
+
+    // Die Anschluss-Annonce (das Rating-Muster): die eigenen neuesten Worte.
+    _socialCommentsBatch() {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp.publicKeyHex) return null;
+        const own = [...this._socialCommentsMap().values()]
+            .filter((c) => c.pub === vp.publicKeyHex && c.sig)
+            .sort((a, b) => b.t - a.t)
+            .slice(0, AnazhRealm.SOCIAL.maxCommentBatch);
+        if (!own.length) return null;
+        return { type: "social-comments", list: own };
+    }
+
     // Ein Bauplan-Lese-Vektor (das _worldProfile/_creatureProfile-Muster auf ein Rezept). KONSUM-ehrlich.
     _recipeProfile(bp) {
         let tags = {};
@@ -33953,6 +34110,31 @@ class AnazhRealm {
                 })
             );
         }
+        // F4 Stufe 4 (V18.143) — KOMMENTARE: „💬 N" toggelt das Wort-Panel an
+        // der Karte (Liste der signierten Worte + die eigene Eingabe). Der
+        // Text wird NUR als textContent gerendert (XSS-Wand); ohne Vibe-Pass
+        // ist die Eingabe ruhend (kein Identitaets-Zwang, nur kein Senden).
+        const cCount = this._feedComments(item.id).length;
+        const talk = this._el("span", {
+            class: "feed-talk",
+            text: `💬 ${cCount || ""}`.trim(),
+            title: "Worte der Gemeinschaft — lesen + eines zuruecklassen (signiert).",
+        });
+        talk.style.cursor = "pointer";
+        talk.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const card = talk.closest(".library-card, .feed-card");
+            if (!card) return;
+            let panel = card.querySelector(".feed-comments");
+            if (panel) {
+                panel.remove();
+                return;
+            }
+            panel = this._el("div", { class: "feed-comments" });
+            this._renderFeedCommentsPanel(panel, item, talk);
+            card.appendChild(panel);
+        });
+        bar.appendChild(talk);
         // F4 Stufe 2 (V18.135) — das LESEZEICHEN (privat, lokal): merken ohne
         // werten. Der Toggle pflegt das Karten-dataset → der „Gemerkt"-Chip
         // filtert live (kein Feed-Rebuild — die V18.65-Loop-Disziplin).
@@ -34010,6 +34192,68 @@ class AnazhRealm {
     }
 
     // Die Kind-Filter-Chips (rechts/oben) — Alle · Welten · Rezepte · Wesen, mit Anzahl.
+    // F4 Stufe 4 (V18.143) — das Wort-Panel einer Karte: die juengsten
+    // Kommentare (Fingerprint + Text, NUR textContent — die XSS-Wand) + die
+    // eigene Eingabe (Enter/➤ sendet; ohne Vibe-Pass ruht sie sichtbar).
+    _renderFeedCommentsPanel(panel, item, talkEl) {
+        panel.innerHTML = "";
+        const list = this._feedComments(item.id);
+        const shown = list.slice(-AnazhRealm.SOCIAL.maxCommentsShown);
+        const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+        if (!shown.length) {
+            panel.appendChild(
+                this._el("div", { class: "feed-comment-empty", text: "Noch kein Wort — sei das erste." })
+            );
+        }
+        for (const c of shown) {
+            const row = this._el("div", { class: "feed-comment-row" });
+            const who = this._el("span", {
+                class: "feed-comment-who",
+                text: c.pub === myKey ? "du" : this._vibeFingerprint(c.pub),
+                title: "ed25519:" + c.pub,
+            });
+            const text = this._el("span", { class: "feed-comment-text" });
+            text.textContent = c.x; // NUR textContent — nie HTML aus dem Mesh
+            row.appendChild(who);
+            row.appendChild(text);
+            panel.appendChild(row);
+        }
+        const ready = !!(this.state.vibePass && this.state.vibePass.ready);
+        const inputRow = this._el("div", { class: "feed-comment-input" });
+        const input = this._el("input", {
+            type: "text",
+            placeholder: ready ? "Ein Wort zuruecklassen …" : "Vibe-Pass noetig (Einstellungen → Identitaet)",
+            maxlength: String(AnazhRealm.SOCIAL.maxCommentLen),
+        });
+        input.disabled = !ready;
+        const send = this._el("button", { type: "button", text: "➤", title: "Senden (signiert mit deinem Vibe-Pass)" });
+        send.disabled = !ready;
+        const submit = async () => {
+            const v = input.value.trim();
+            if (!v) return;
+            input.disabled = true;
+            const c = await this._socialSignOwnComment(item.id, v);
+            input.disabled = !ready;
+            input.value = "";
+            if (c) {
+                this._renderFeedCommentsPanel(panel, item, talkEl);
+                if (talkEl) talkEl.textContent = `💬 ${this._feedComments(item.id).length}`;
+            }
+        };
+        input.addEventListener("click", (e) => e.stopPropagation());
+        input.addEventListener("keydown", (e) => {
+            e.stopPropagation();
+            if (e.key === "Enter") submit();
+        });
+        send.addEventListener("click", (e) => {
+            e.stopPropagation();
+            submit();
+        });
+        inputRow.appendChild(input);
+        inputRow.appendChild(send);
+        panel.appendChild(inputRow);
+    }
+
     _renderFeedKindChips() {
         if (typeof document === "undefined") return;
         const host = document.getElementById("feed-kinds");
@@ -55813,7 +56057,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.142.0";
+AnazhRealm.VERSION = "18.143.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -55858,6 +56102,11 @@ AnazhRealm.SOCIAL = Object.freeze({
     maxStore: 600, // Zeugnisse gesamt (LWW-dedupe; aelteste t fallen)
     maxBatch: 32, // Zeugnisse pro Mesh-Batch (Anschluss-Annonce)
     ratePerSec: 12, // R1-Empfangs-Deckel pro Peer
+    // F4 Stufe 4 (V18.143) — KOMMENTARE (signierte Text-Zeugnisse, append-only).
+    maxComments: 400, // Kommentare gesamt (aelteste t fallen — bounded, §5-Wand)
+    maxCommentLen: 240, // Zeichen pro Kommentar (die Journal-Laenge)
+    maxCommentBatch: 16, // Kommentare pro Anschluss-Annonce
+    maxCommentsShown: 8, // juengste je Karte sichtbar (das Panel bleibt leicht)
 });
 
 AnazhRealm.FORAGE = Object.freeze({
