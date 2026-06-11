@@ -606,9 +606,19 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
 
 ### PHASE E — die EINE Sprache + die Ökonomie (G5 + S-Reste)
 
-- **E1 — S7-C: EIN Chat-Dispatch-Tor** [§3-Zwilling 5; H]: DEFERRED (V18.104-Entscheid: die
-  Legacy-Kette trägt dutzende System-IO-Befehle — die Synonym-Migration ist ein eigener
-  Audit-Bogen; das Tor-Muster steht über `_chatTryDslParse` schon vorn im Dispatch).
+- ✓ **E1 — S7-C: EIN Chat-Dispatch-Tor (V18.127, der eigene Audit-Bogen GEFAHREN)** [§3-Zwilling
+  5; H]: die 17 Legacy-Befehle aus den VIER if-else-Handlern (`_chatTryAbility/Persistence/
+World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabelle verdichtet
+  (DIESELBE Sprache wie `chatDslPatterns`: {example, re, run} — die Regel IST die Daten).
+  **Der EHRLICHE Audit-Befund: NICHT alles wird DSL** — die BEWUSSTE Intent-Dualität bleibt:
+  System-Akte (Welt-Wechsel · Datei-IO · Versions-Rollback · Physik-Tuning) laufen NIE durch
+  dslRun (der R2-Geist: der manipulierbare Pfad [Nexus/LLM/Regeln] berührt das System-IO nie —
+  „Legacy wird DSL-Synonym" hätte dem LLM den Welt-Wechsel gegeben). Vereinheitlicht ist die
+  PARSE-Form: ein Tor, eine Tabellen-Sprache; `chatSuggest` liest BEIDE Tabellen (Tippfehler
+  bei „speichere zustand" bekommen jetzt Vorschläge — vorher unsichtbar) + der System-Teil
+  des Hilfetexts wird aus der Tabelle GENERIERT (kein Drift mehr). Verhalten 1:1 (die
+  Fähigkeits-/Welt-Tests laufen unverändert grün); +1 Drei-Teil-Invariante (Handler weg ·
+  „liste welten" über die Tabelle · Suggest liest System).
 - ✓ **E2 — δ wird WÄHRUNG (V18.104):** das WIRK-BUDGET (`NEXUS_WIRK`: start 60 · max 150) —
   `_loopNexusUpdate` zahlt VOR jeder Evolution (`_dslProgramWirkCost`: AST-Walk,
   spawn_blueprint = computeBuildCost-Summe×0.5 — DIESELBE Substanz-Wahrheit, die der Spieler

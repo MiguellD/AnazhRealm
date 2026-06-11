@@ -22635,6 +22635,36 @@ async function checkBandPhasenBF(ctx) {
             }
         })();
         out.e45Hook = /_crystallizeGestureRule/.test(r._loopSelfAnalysis.toString());
+        // V18.127 — E1: das EINE Dispatch-Tor (gigant-plan §3-Zwilling 5).
+        // (a) VERDICHTUNG: die vier if-else-Handler sind GESCHNITTEN, der
+        // Dispatch läuft über die chatSystemPatterns-Tabelle (kein Parallel-
+        // Pfad, V9.82); (b) BEHAVIORAL: „liste welten" läuft durch die Tabelle
+        // (Output-Beweis); (c) KONSUM: chatSuggest liest jetzt BEIDE Tabellen —
+        // der Tippfehler „speichre zustand" bekommt den System-Vorschlag
+        // (vorher waren Legacy-Befehle für die Vorschläge unsichtbar).
+        out.e1OneGate = (() => {
+            const oldHandlersGone =
+                typeof r._chatTryWorldCommand !== "function" &&
+                typeof r._chatTrySystemCommand !== "function" &&
+                typeof r._chatTryAbilityCommand !== "function" &&
+                typeof r._chatTryPersistenceCommand !== "function";
+            if (!oldHandlersGone) return "alte if-else-Handler leben noch";
+            if (!/chatSystemPatterns/.test(r._chatDispatchLegacyCommand.toString()))
+                return "Dispatch liest die Tabelle nicht";
+            const out0 = document.getElementById("chat-output");
+            const before = out0 ? out0.children.length : 0;
+            r.processChatCommand("liste welten");
+            const after = out0 ? out0.children.length : 0;
+            let listed = false;
+            for (let i = before; i < after; i++) {
+                const txt = out0.children[i].textContent || "";
+                if (/Welten im Speicher|Nur diese eine Welt/.test(txt)) listed = true;
+            }
+            if (!listed) return "liste welten lief nicht über die Tabelle";
+            const sugg = r.chatSuggest("speichre zustand");
+            if (sugg !== "speichere zustand") return `Suggest las die System-Tabelle nicht (${sugg})`;
+            return true;
+        })();
         // V18.113 — der Mantel erbt die Lichtung über das GETEILTE Terrain-Material
         // (kein eigener Geometrie-Bake — der wäre die Akne-Klasse).
         out.b3Mantle =
@@ -22800,6 +22830,11 @@ async function checkBandPhasenBF(ctx) {
         "A4/V18.125: der KÜSTEN-AQUIFER — offene Senke unterm Wassertisch trägt Wasser, Land + gedeckelte Höhle bleiben trocken",
         res.a4ShelfAquifer === true,
         typeof res.a4ShelfAquifer === "string" ? res.a4ShelfAquifer : undefined
+    );
+    check(
+        "E1/V18.127: das EINE Dispatch-Tor — System-Befehle laufen über die Tabelle, chatSuggest liest beide",
+        res.e1OneGate === true,
+        typeof res.e1OneGate === "string" ? res.e1OneGate : undefined
     );
 }
 

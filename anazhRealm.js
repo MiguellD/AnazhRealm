@@ -8496,9 +8496,12 @@ class AnazhRealm {
         return null;
     }
 
-    // Levenshtein-basierte Vorschläge, wenn weder DSL- noch Legacy-Pfad griff.
+    // Levenshtein-basierte Vorschläge, wenn weder DSL- noch System-Pfad griff.
     // Wir vergleichen den ersten Tokens-Bigram (z. B. "setze wetter") gegen
     // die Beispiel-Patterns. Distanz <= 4 gilt als „nahe genug".
+    // E1 (V18.127) — liest BEIDE Tabellen (DSL + System): ein Tippfehler bei
+    // „speichere zustand" bekommt jetzt einen Vorschlag (vorher waren die
+    // Legacy-Befehle für die Vorschläge unsichtbar — der KONSUM-Gewinn).
     chatSuggest(text) {
         if (typeof text !== "string") return null;
         const t = text.trim().toLowerCase();
@@ -8506,7 +8509,9 @@ class AnazhRealm {
         const parts = t.split(/\s+/);
         const head = parts.slice(0, 2).join(" ");
         if (!head) return null;
-        const candidates = this.chatDslPatterns.map((p) => p.example);
+        const candidates = this.chatDslPatterns
+            .map((p) => p.example)
+            .concat(this.chatSystemPatterns.map((p) => p.example));
         let best = null;
         let bestDist = Infinity;
         for (const cand of candidates) {
@@ -17458,216 +17463,260 @@ class AnazhRealm {
         return true;
     }
 
-    // Legacy-if-else-Kette als Themen-Dispatcher. Jeder Themen-Helfer prüft
-    // sein Pattern + handhabt es + returns true; sonst fällt's zum nächsten.
-    // Der letzte Helfer (Conversational+Fallback) handhabt alles, was übrig
-    // bleibt (Kreatur/LLM/P2P/Hilfetext).
+    // E1 (gigant-plan §3-Zwilling 5, V18.127) — das EINE Dispatch-Tor: die
+    // Legacy-if-else-Kette ist zur DATEN-Tabelle verdichtet (DIESELBE Sprache
+    // wie `chatDslPatterns`: {example, re, run} — die Regel IST die Daten).
+    // BEWUSSTE Intent-Dualität bleibt: System-Akte (Welt-Wechsel · Datei-IO ·
+    // Versions-Rollback · Physik-Tuning) laufen NIE durch dslRun — sie sind
+    // NUR vom Chat erreichbar (der R2-Geist: der manipulierbare Pfad
+    // [Nexus/LLM/Regeln] berührt das System-IO nie). Vereinheitlicht ist die
+    // PARSE-Form: ein Tor, eine Tabellen-Sprache, chatSuggest + Hilfetext
+    // lesen BEIDE Tabellen (Tippfehler bei „speichere zustand" bekommen
+    // jetzt Vorschläge — der KONSUM-Gewinn der Verdichtung).
     _chatDispatchLegacyCommand(command, parts, appendChatOutput) {
-        if (this._chatTryAbilityCommand(parts, command, appendChatOutput)) return;
-        if (this._chatTryPersistenceCommand(parts, appendChatOutput)) return;
-        if (this._chatTryWorldCommand(parts, command, appendChatOutput)) return;
-        if (this._chatTrySystemCommand(parts, appendChatOutput)) return;
+        void parts;
+        const t = String(command || "").trim();
+        for (const p of this.chatSystemPatterns) {
+            const m = t.match(p.re);
+            if (!m) continue;
+            try {
+                p.run(m, appendChatOutput);
+            } catch (err) {
+                appendChatOutput(`(System-Befehl-Fehler: ${err.message || err})`);
+            }
+            return;
+        }
         this._chatHandleConversationalFallback(command, appendChatOutput);
     }
 
-    // Fähigkeiten: lerne/führe Fähigkeit aus.
-    _chatTryAbilityCommand(parts, command, appendChatOutput) {
-        if (parts[0] === "lerne" && parts[1] === "fähigkeit") {
-            const abilityName = parts[2];
-            const startIdx = parts[3] ? command.toLowerCase().indexOf(parts[3]) : -1;
-            const abilityDesc = startIdx >= 0 ? command.slice(startIdx).trim() : "";
-            this.learnAbility(abilityName, abilityDesc);
-            appendChatOutput(`Fähigkeit '${abilityName}' gelernt: ${abilityDesc}`);
-            return true;
-        }
-        if (parts[0] === "führe" && parts[1] === "fähigkeit" && parts[2] === "aus") {
-            const abilityName = parts[3];
-            if (this.state.abilities[abilityName]) {
-                this.state.abilities[abilityName](this, this.state);
-                appendChatOutput(`Fähigkeit '${abilityName}' ausgeführt`);
-            } else {
-                appendChatOutput(
-                    `Fähigkeit '${abilityName}' nicht gefunden. Lerne sie mit 'Lerne Fähigkeit <Name> <Beschreibung>'`
-                );
-            }
-            return true;
-        }
-        return false;
-    }
-
-    // Persistenz: speichere/lade Zustand, Datei-Picker.
-    _chatTryPersistenceCommand(parts, appendChatOutput) {
-        if (parts[0] === "speichere" && parts[1] === "zustand") {
-            this.saveState();
-            this.saveToProjectFolder().then((result) => {
-                if (result === "server") {
-                    appendChatOutput("Zustand gespeichert (direkt im Spielordner + localStorage)");
-                } else if (result === "download") {
-                    appendChatOutput("Zustand gespeichert (Browser-Download + localStorage)");
-                } else {
-                    appendChatOutput("Zustand gespeichert (nur localStorage)");
-                }
-            });
-            return true;
-        }
-        if (parts[0] === "lade" && parts[1] === "zustand") {
-            this.loadState();
-            appendChatOutput("Zustand aus localStorage geladen");
-            return true;
-        }
-        if (parts[0] === "lade" && parts[1] === "datei") {
-            this.openStateFilePicker();
-            appendChatOutput("Datei-Picker geöffnet – wähle eine anazhRealmState.json");
-            return true;
-        }
-        return false;
-    }
-
-    // Welt-Verwaltung (Ring 8): spawne/erschaffe/wechsle/lösche/liste Welten.
-    _chatTryWorldCommand(parts, command, appendChatOutput) {
-        if (parts[0] === "spawne" && parts[1] === "neue" && parts[2] === "welt") {
-            this.generateNewWorld();
-            appendChatOutput("Neue Welt generiert");
-            return true;
-        }
-        if ((parts[0] === "erschaffe" && parts[1] === "welt") || (parts[0] === "neue" && parts[1] === "welt")) {
-            // Ring 8: neue eigenständige Welt mit eigener worldId. Optional
-            // „mit person" am Ende → bisherige Spieler-Identität übernehmen.
-            // Slug ist alles zwischen dem Verb-Paar und einem optionalen Trailer.
-            const inherit = / mit person$/i.test(command) || / mit übernahme$/i.test(command);
-            let slug = "";
-            const headLen = parts[0] === "erschaffe" ? 2 : 2;
-            const rest = parts.slice(headLen).join(" ").trim();
-            slug = rest
-                .replace(/ mit person$/i, "")
-                .replace(/ mit übernahme$/i, "")
-                .trim();
-            const newId = this.createNewWorld({ slug: slug || null, inheritPlayer: inherit, reload: true });
-            if (newId) {
-                appendChatOutput(`Neue Welt erschaffen (lade neu, Person ${inherit ? "übernommen" : "neu"}…)`);
-            } else {
-                appendChatOutput("Neue Welt konnte nicht erschaffen werden — siehe Log.");
-            }
-            return true;
-        }
-        if (parts[0] === "wechsle" && (parts[1] === "zu" || parts[1] === "zur") && parts.length >= 3) {
-            // Ring 8: Wechsel zu einer existierenden Welt via slug. Wir suchen
-            // den Index, finden den passenden Eintrag (genauer Match oder
-            // Präfix), und triggern den Reload.
-            const targetSlug = parts
-                .slice(parts[2] === "welt" ? 3 : 2)
-                .join(" ")
-                .trim();
-            const idx = this.worldsIndexLoad();
-            const exact = idx.find((e) => e.slug === targetSlug);
-            const prefix = exact || idx.find((e) => e.slug && e.slug.startsWith(targetSlug));
-            if (!prefix) {
-                appendChatOutput(`Welt „${targetSlug}" nicht gefunden. Befehl „liste welten" zeigt verfügbare.`);
-            } else {
-                const ok = this.switchToWorld(prefix.worldId, { reload: true });
-                if (ok) appendChatOutput(`Wechsle zu ${prefix.slug}…`);
-                else appendChatOutput("Welt-Wechsel verweigert (siehe Log).");
-            }
-            return true;
-        }
-        if (parts[0] === "lösche" && parts[1] === "welt" && parts.length >= 3) {
-            const targetSlug = parts.slice(2).join(" ").trim();
-            const idx = this.worldsIndexLoad();
-            const entry = idx.find((e) => e.slug === targetSlug);
-            if (!entry) {
-                appendChatOutput(`Welt „${targetSlug}" nicht gefunden.`);
-            } else if (entry.worldId === this.state.worldMeta.worldId) {
-                appendChatOutput("Die aktive Welt kann nicht gelöscht werden. Wechsle erst zu einer anderen.");
-            } else {
-                this.deleteWorld(entry.worldId);
-                appendChatOutput(`Welt „${entry.slug}" gelöscht.`);
-                this.updateWorldInfo();
-            }
-            return true;
-        }
-        if ((parts[0] === "liste" || parts[0] === "zeige") && parts[1] === "welten") {
-            const idx = this.worldsIndexLoad();
-            if (idx.length === 0) {
-                appendChatOutput("Nur diese eine Welt im Speicher.");
-            } else {
-                const lines = idx
-                    .slice()
-                    .sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))
-                    .map((e) => {
-                        const ageDays = e.bornAt ? Math.floor((Date.now() - e.bornAt) / 86400000) : 0;
-                        const isActive = e.worldId === this.state.worldMeta.worldId;
-                        return `${isActive ? "★ " : "  "}${e.slug} — ${ageDays}d alt, ID ${e.worldId.slice(0, 8)}…`;
+    // E1 — die System-Befehls-Tabelle (Fähigkeiten · Persistenz · Welt-
+    // Verwaltung · System-Tuning). Verhalten 1:1 aus den vier alten
+    // if-else-Handlern migriert (V9.82-Verdichtung — kein Parallel-Pfad).
+    get chatSystemPatterns() {
+        if (this._chatSystemPatternsCache) return this._chatSystemPatternsCache;
+        this._chatSystemPatternsCache = [
+            {
+                example: "lerne fähigkeit <name> <beschreibung>",
+                re: /^lerne\s+fähigkeit(?:\s+(\S+))?(?:\s+(.+))?$/i,
+                run: (m, append) => {
+                    const abilityName = m[1] ? m[1].toLowerCase() : undefined;
+                    const abilityDesc = (m[2] || "").trim();
+                    this.learnAbility(abilityName, abilityDesc);
+                    append(`Fähigkeit '${abilityName}' gelernt: ${abilityDesc}`);
+                },
+            },
+            {
+                example: "führe fähigkeit aus <name>",
+                re: /^führe\s+fähigkeit\s+aus(?:\s+(\S+))?$/i,
+                run: (m, append) => {
+                    const abilityName = m[1] ? m[1].toLowerCase() : undefined;
+                    if (this.state.abilities[abilityName]) {
+                        this.state.abilities[abilityName](this, this.state);
+                        append(`Fähigkeit '${abilityName}' ausgeführt`);
+                    } else {
+                        append(
+                            `Fähigkeit '${abilityName}' nicht gefunden. Lerne sie mit 'Lerne Fähigkeit <Name> <Beschreibung>'`
+                        );
+                    }
+                },
+            },
+            {
+                example: "speichere zustand",
+                re: /^speichere\s+zustand(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.saveState();
+                    this.saveToProjectFolder().then((result) => {
+                        if (result === "server") {
+                            append("Zustand gespeichert (direkt im Spielordner + localStorage)");
+                        } else if (result === "download") {
+                            append("Zustand gespeichert (Browser-Download + localStorage)");
+                        } else {
+                            append("Zustand gespeichert (nur localStorage)");
+                        }
                     });
-                appendChatOutput(`Welten im Speicher (${idx.length}):`);
-                for (const l of lines) appendChatOutput(l);
-            }
-            return true;
-        }
-        return false;
-    }
-
-    // System-Befehle: Physik-Tuning, Version-Aktivierung, Boden-Re-Gen,
-    // Symphonie-V1-Platzhalter, Debug-Log-Toggle.
-    _chatTrySystemCommand(parts, appendChatOutput) {
-        if (parts[0] === "behebe" && parts[1] === "physik-tunneling") {
-            this.optimizeCollisions();
-            appendChatOutput("Physik-Tunneling behoben: CCD angepasst");
-            return true;
-        }
-        if (parts[0] === "optimiere" && parts[1] === "physik") {
-            this.optimizePhysics();
-            appendChatOutput("Physik optimiert");
-            return true;
-        }
-        if (parts[0] === "aktiviere" && parts[1] === "version") {
-            const version = parts[2];
-            if (this.state.versionHistory.includes(version)) {
-                this.loadVersion(version);
-                appendChatOutput(`Version ${version} aktiviert`);
-            } else {
-                appendChatOutput(`Version ${version} nicht gefunden`);
-            }
-            return true;
-        }
-        if (parts[0] === "boden" && parts[1] === "nicht" && parts[2] === "sichtbar") {
-            if (
-                !this.state.groundChunks ||
-                this.state.groundChunks.length === 0 ||
-                !this.state.groundChunks.some((chunk) => chunk.visible)
-            ) {
-                this.log("Boden nicht sichtbar – Erzeuge neuen Boden...", "INFO");
-                this.generateNewWorld();
-                appendChatOutput("Neuer Boden generiert");
-            } else {
-                appendChatOutput("Boden ist bereits sichtbar");
-            }
-            return true;
-        }
-        if (parts[0] === "aktiviere" && parts[1] === "anazh-symphonie") {
-            // V1-Platzhalter, bis Ring 4 Web-Audio bringt: ein DSL-Programm
-            // belebt die Kreaturen sichtbar (happy + schneller) statt eines
-            // JS-Closures, der per Sinus animiert. Ehrlicher als der alte
-            // Stub und persistierbar als Ability.
-            this.addNewAbility(
-                "anazhSymphony",
-                ["chain", ["creatures_emotion", "happy"], ["creatures_speed_mul", 1.5]],
-                "human"
-            );
-            this.state.abilities["anazhSymphony"]();
-            appendChatOutput("Anazh-Symphonie V1 aktiviert (Web-Audio kommt mit Ring 4)");
-            return true;
-        }
-        if (parts[0] === "aktiviere" && parts[1] === "debug-logs") {
-            this.state.debugLogging = true;
-            appendChatOutput("Debug-Logs aktiviert");
-            return true;
-        }
-        if (parts[0] === "deaktiviere" && parts[1] === "debug-logs") {
-            this.state.debugLogging = false;
-            appendChatOutput("Debug-Logs deaktiviert");
-            return true;
-        }
-        return false;
+                },
+            },
+            {
+                example: "lade zustand",
+                re: /^lade\s+zustand(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.loadState();
+                    append("Zustand aus localStorage geladen");
+                },
+            },
+            {
+                example: "lade datei",
+                re: /^lade\s+datei(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.openStateFilePicker();
+                    append("Datei-Picker geöffnet – wähle eine anazhRealmState.json");
+                },
+            },
+            {
+                example: "spawne neue welt",
+                re: /^spawne\s+neue\s+welt(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.generateNewWorld();
+                    append("Neue Welt generiert");
+                },
+            },
+            {
+                example: "erschaffe welt <slug> [mit person]",
+                re: /^(?:erschaffe|neue)\s+welt(?:\s+(.+))?$/i,
+                run: (m, append) => {
+                    // Ring 8: neue eigenständige Welt mit eigener worldId. Optional
+                    // „mit person" am Ende → bisherige Spieler-Identität übernehmen.
+                    const rest = (m[1] || "").toLowerCase().trim();
+                    const inherit = / mit person$/i.test(rest) || / mit übernahme$/i.test(rest);
+                    const slug = rest
+                        .replace(/ mit person$/i, "")
+                        .replace(/ mit übernahme$/i, "")
+                        .trim();
+                    const newId = this.createNewWorld({ slug: slug || null, inheritPlayer: inherit, reload: true });
+                    if (newId) {
+                        append(`Neue Welt erschaffen (lade neu, Person ${inherit ? "übernommen" : "neu"}…)`);
+                    } else {
+                        append("Neue Welt konnte nicht erschaffen werden — siehe Log.");
+                    }
+                },
+            },
+            {
+                example: "wechsle zu <welt>",
+                re: /^wechsle\s+zur?\s+(?:welt\s+)?(.+)$/i,
+                run: (m, append) => {
+                    // Ring 8: Wechsel zu einer existierenden Welt via slug (genauer
+                    // Match oder Präfix), dann Reload.
+                    const targetSlug = m[1].toLowerCase().trim();
+                    const idx = this.worldsIndexLoad();
+                    const exact = idx.find((e) => e.slug === targetSlug);
+                    const prefix = exact || idx.find((e) => e.slug && e.slug.startsWith(targetSlug));
+                    if (!prefix) {
+                        append(`Welt „${targetSlug}" nicht gefunden. Befehl „liste welten" zeigt verfügbare.`);
+                    } else {
+                        const ok = this.switchToWorld(prefix.worldId, { reload: true });
+                        if (ok) append(`Wechsle zu ${prefix.slug}…`);
+                        else append("Welt-Wechsel verweigert (siehe Log).");
+                    }
+                },
+            },
+            {
+                example: "lösche welt <slug>",
+                re: /^lösche\s+welt\s+(.+)$/i,
+                run: (m, append) => {
+                    const targetSlug = m[1].toLowerCase().trim();
+                    const idx = this.worldsIndexLoad();
+                    const entry = idx.find((e) => e.slug === targetSlug);
+                    if (!entry) {
+                        append(`Welt „${targetSlug}" nicht gefunden.`);
+                    } else if (entry.worldId === this.state.worldMeta.worldId) {
+                        append("Die aktive Welt kann nicht gelöscht werden. Wechsle erst zu einer anderen.");
+                    } else {
+                        this.deleteWorld(entry.worldId);
+                        append(`Welt „${entry.slug}" gelöscht.`);
+                        this.updateWorldInfo();
+                    }
+                },
+            },
+            {
+                example: "liste welten",
+                re: /^(?:liste|zeige)\s+welten(?:\s.*)?$/i,
+                run: (m, append) => {
+                    const idx = this.worldsIndexLoad();
+                    if (idx.length === 0) {
+                        append("Nur diese eine Welt im Speicher.");
+                    } else {
+                        const lines = idx
+                            .slice()
+                            .sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))
+                            .map((e) => {
+                                const ageDays = e.bornAt ? Math.floor((Date.now() - e.bornAt) / 86400000) : 0;
+                                const isActive = e.worldId === this.state.worldMeta.worldId;
+                                return `${isActive ? "★ " : "  "}${e.slug} — ${ageDays}d alt, ID ${e.worldId.slice(0, 8)}…`;
+                            });
+                        append(`Welten im Speicher (${idx.length}):`);
+                        for (const l of lines) append(l);
+                    }
+                },
+            },
+            {
+                example: "behebe physik-tunneling",
+                re: /^behebe\s+physik-tunneling(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.optimizeCollisions();
+                    append("Physik-Tunneling behoben: CCD angepasst");
+                },
+            },
+            {
+                example: "optimiere physik",
+                re: /^optimiere\s+physik(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.optimizePhysics();
+                    append("Physik optimiert");
+                },
+            },
+            {
+                example: "aktiviere version <v>",
+                re: /^aktiviere\s+version(?:\s+(\S+))?$/i,
+                run: (m, append) => {
+                    const version = m[1] ? m[1].toLowerCase() : undefined;
+                    if (this.state.versionHistory.includes(version)) {
+                        this.loadVersion(version);
+                        append(`Version ${version} aktiviert`);
+                    } else {
+                        append(`Version ${version} nicht gefunden`);
+                    }
+                },
+            },
+            {
+                example: "boden nicht sichtbar",
+                re: /^boden\s+nicht\s+sichtbar(?:\s.*)?$/i,
+                run: (m, append) => {
+                    if (
+                        !this.state.groundChunks ||
+                        this.state.groundChunks.length === 0 ||
+                        !this.state.groundChunks.some((chunk) => chunk.visible)
+                    ) {
+                        this.log("Boden nicht sichtbar – Erzeuge neuen Boden...", "INFO");
+                        this.generateNewWorld();
+                        append("Neuer Boden generiert");
+                    } else {
+                        append("Boden ist bereits sichtbar");
+                    }
+                },
+            },
+            {
+                example: "aktiviere anazh-symphonie",
+                re: /^aktiviere\s+anazh-symphonie(?:\s.*)?$/i,
+                run: (m, append) => {
+                    // V1-Platzhalter, bis Ring 4 Web-Audio bringt: ein DSL-Programm
+                    // belebt die Kreaturen sichtbar (happy + schneller).
+                    this.addNewAbility(
+                        "anazhSymphony",
+                        ["chain", ["creatures_emotion", "happy"], ["creatures_speed_mul", 1.5]],
+                        "human"
+                    );
+                    this.state.abilities["anazhSymphony"]();
+                    append("Anazh-Symphonie V1 aktiviert (Web-Audio kommt mit Ring 4)");
+                },
+            },
+            {
+                example: "aktiviere debug-logs",
+                re: /^aktiviere\s+debug-logs(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.state.debugLogging = true;
+                    append("Debug-Logs aktiviert");
+                },
+            },
+            {
+                example: "deaktiviere debug-logs",
+                re: /^deaktiviere\s+debug-logs(?:\s.*)?$/i,
+                run: (m, append) => {
+                    this.state.debugLogging = false;
+                    append("Debug-Logs deaktiviert");
+                },
+            },
+        ];
+        return this._chatSystemPatternsCache;
     }
 
     // Conversational-Fallback: Kreatur-Konversation (Welle 6.H Phase 2E V1),
@@ -17700,8 +17749,15 @@ class AnazhRealm {
         if (suggestion) {
             appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
         } else {
+            // E1 (V18.127) — der System-Teil der Hilfe wird aus der EINEN
+            // Tabelle GENERIERT (eine Hardcode-Liste neben einer Tabelle
+            // driftet zwangsläufig); die DSL-Beispiele bleiben kuratiert
+            // (die volle Pattern-Liste wäre eine Textwand).
+            const sys = this.chatSystemPatterns.map((p) => `'${p.example}'`).join(", ");
             appendChatOutput(
-                "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>'."
+                "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. System: " +
+                    sys +
+                    "."
             );
         }
     }
@@ -54156,7 +54212,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.126.0";
+AnazhRealm.VERSION = "18.127.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
