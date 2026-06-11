@@ -427,9 +427,17 @@ Spalten-Scanner-Hierarchie (`_voxelSurfaceY`/`_atlasWaterLevelAt`/`_caColumnScan
       das flache Wasser (Quantisierungs-Wand). PER-SPALTE LOKAL → seam-frei
       per Konstruktion, KEIN Atlas-/Drainage-Eingriff, Worker bit-identisch.
       GEMESSEN: Punkt-Probe-Löcher 10→0. +1 Drei-Beweis-Invariante (Senke
-      nass · Land trocken · gedeckelte Höhle trocken). WEITER OFFEN in A4:
-      Hoch-Becken über `L` (H+A — eine CA-Gleichgewichts-Regel, die
-      Badewannen-Klasse: eigener fokussierter Bogen) · Kapillar/Stempel
+      nass · Land trocken · gedeckelte Höhle trocken). ✓ **HOCH-BECKEN
+      (V18.129 — der STAU-SPIEGEL, der eigene fokussierte Bogen GEFAHREN):**
+      die vierte CA-Gleichgewichts-Regel — ein Spieler-Werk öffnet die
+      V18.93-Kappe LOKAL über einen bounded SPILL-SCAN (`_stauSpillLevels`,
+      PURE Priority-Flood); der Pfeiler staut strukturell NICHT (Ausweg auf
+      rim — die Physik filtert), der Damm bis zur Krone (Deckel MAX_CELLS);
+      Stau-Quell-Spalten TROPFEN den Pool voll (Pin-Erweiterung) → settle
+      by Fixpunkt. GEMESSEN (`diag-stau.cjs`): Pfeiler 0.00 m · Pool
+      +2.68 m über rim EBEN · settled · Welt unverändert; +7 Invarianten.
+      Stausee-LOOK + Kron-ÜBERLAUF-Kür → S. WEITER OFFEN in A4:
+      Kapillar/Stempel
       (PRÄZISIERT V18.128: die GEMESSENEN Wurzeln sind seit V18.1 geheilt
       [8-Nachbar-Re-Enqueue + forceSync]; der Rest ist S-gated — „Schöpfer-
       Dump an der echten Fehlstelle", V13.0: Spawn ≠ Fehlstelle — KEIN
@@ -836,7 +844,11 @@ schlanken (UI-Politur, jederzeit einschiebbar).
       laufen) · der STURM (V18.128 — „setze wetter stormy": dunklerer Tint, kräftiger
       Wind, dichterer Nebel, lauteres Rauschen; die Wesen werden chaotisch-ehrfürchtig
       statt traurig; der 120-s-Auto-Zug fadet sanft) · die Migrations-Mitgift ist
-      Browser-unsichtbar (V18.126, smoke-bewiesen — kein S-Punkt).
+      Browser-unsichtbar (V18.126, smoke-bewiesen — kein S-Punkt) · der STAUSEE
+      (V18.129 — einen Damm aus Blöcken/Fill quer über einen Bach bauen: das Wasser
+      staut sich ÜBER den Spiegel zur ebenen Fläche; Pfeiler/Brücken stauen nicht;
+      Damm abbauen → der See läuft durch die Lücke ab. KÜR offen: der ÜBERLAUF über
+      die Krone als Wasserfall — heute füllt er exakt bis zur Krone und ruht).
       **DIE SCHÖPFER-PRÜFLISTE (10.06., wächst bis zum Gigant-Abschluss — Unsauberkeiten
       SAMMELN, er korrigiert am Schluss; ich fülle sie ehrlich mit, statt sie zu fixen):**
       (a) **GELENK-LINIEN in der WELT sichtbar nach dem Fertigen** — die connections-Linien

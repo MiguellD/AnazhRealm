@@ -82,8 +82,11 @@ lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendig
 `aFlow`-Foam-Strähnen · ~~Wasserfall-Plane (bleibt/raus?)~~ **ENTSCHIEDEN+GEBAUT (V18.111–.114):
 die Plane FIEL (S-Entscheid), der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe +
 Vorhang, aSlope-Wildwasser; Tour-gehärtet: Split nur nass↔nass, Strähnen-Schaum) — das
-Abwärts-Material bleibt als Saat** · aufgestaute Hoch-Becken (über `L`, brauchen
-Zellen) · Unterwasser-Decken-Pass (V18.3 B5) · Kapillar/Stempel an Gebäuden.
+Abwärts-Material bleibt als Saat** · ~~aufgestaute Hoch-Becken (über `L`)~~
+**GEBAUT (V18.129 — der STAU-SPIEGEL):** ein Spieler-Damm staut über rim
+(bounded Spill-Scan + Stau-Tropf; Pfeiler stauen strukturell nicht; GEMESSEN
+`diag-stau.cjs` — Pool +2.68 m EBEN, settled; Kron-ÜBERLAUF als Wasserfall =
+offene Kür) · Unterwasser-Decken-Pass (V18.3 B5) · Kapillar/Stempel an Gebäuden.
 
 **Terrain/Naht (PHASE A VOLLENDET bis auf S-Wellen, §11 + gigant-plan §5)** — ~~N1 Cross-LOD watertight~~
 **GEBAUT (V18.103):** Morph-Cap + Stitch-Band (`_rebuildLodStitchBand` — der Arme-Leute-Transvoxel;

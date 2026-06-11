@@ -26576,6 +26576,12 @@ class AnazhRealm {
         // 1-Zell-Density-Pad sah die Kugel-Kante → sub-cell, imperzeptibel) → sie bleiben
         // ASYNC (kein Edit-Cluster-Spike, die V9.40-c-Lehre gewahrt: nur ≤Footprint sync).
         this._syncRebuildEditFootprint(x, z, radius);
+        // V18.129 — NACH dem Rebuild: Kappen/Quell-Markierungen/Stau-Felder der
+        // Region verwerfen (der Spill-Scan muss die FRISCHEN Zellen sehen — ein
+        // Fill kann ein Damm sein, ein Carve kann einen Damm öffnen). Der Pre-
+        // Seed oben löschte sie VOR dem Rebuild (mit alten Zellen neu gebaut) —
+        // dieser zweite Wurf macht den Lazy-Neubau wahrheits-frisch.
+        this._invalidateWaterCapsAround(x, z, radius);
         // A6a (gigant-plan §5 PHASE A) — Fill-unter-sich darf den Spieler nicht
         // BEGRABEN (GEMESSEN diag-edit-reset: 12 Fills unter den Füßen → Spieler
         // 11 m UNTER der neuen Oberfläche, im Fels eingeschlossen — die V17.28-
@@ -41106,6 +41112,16 @@ class AnazhRealm {
             // Journal-Eintrag pro Spawn (würde die 6.F2-Idempotenz-Invariante
             // brechen — Journal-Schicht zählt total).
             this._playWaterReactionPing();
+            // V18.129 — eine solide Architektur kann ein DAMM sein: Kappen/Stau-
+            // Felder der Region verwerfen (lazy-Neubau liest die frisch
+            // gestempelten Zellen) + CA wecken → das Wasser staut sich auf.
+            for (const aabb of entry.blockerAABBs) {
+                this._invalidateWaterCapsAround(
+                    (aabb.minX + aabb.maxX) * 0.5,
+                    (aabb.minZ + aabb.maxZ) * 0.5,
+                    Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5
+                );
+            }
         }
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
@@ -42333,6 +42349,307 @@ class AnazhRealm {
         return level;
     }
 
+    // ===== V18.129 — DAS HOCH-BECKEN (A4-Rest): der Stau-Spiegel ==================
+    // Doku der Regel an AnazhRealm.CA_STAU. Lebenszyklus: alles LAZY + gecacht im
+    // BESTEHENDEN Kappen-Leben (waterCapJ/waterSourceCols — V9.82: kein Parallel-
+    // Pfad), abgeleitet aus PERSISTIERTER Wahrheit (worldMeta.voxelEdits +
+    // architectures.blockerAABBs) → nach einem Reload füllt der Fluss den See über
+    // Ticks neu (der CA bleibt die reaktive, NICHT persistierte Schicht — die
+    // Determinismus-Wand unberührt, kein Worker-Mirror, main-only).
+
+    // Die STAU-WERKE der Welt, zu Clustern verschmolzen (ein Damm aus vielen
+    // Blöcken/Fill-Kugeln ist EIN Werk). Identitäts+Längen-gecacht (das
+    // `_voxelEditsFillTop`-Muster): ein Edit-Push / Architektur-Spawn/-Remove
+    // invalidiert exakt. Deterministisch (stabile Listen-Ordnung).
+    _stauWorkClusters() {
+        const meta = this.state.worldMeta;
+        const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
+        const archs = Array.isArray(this.state.architectures) ? this.state.architectures : null;
+        const eLen = edits ? edits.length : 0;
+        const aLen = archs ? archs.length : 0;
+        const c = this._stauClusterCache;
+        if (c && c.edits === edits && c.eLen === eLen && c.archs === archs && c.aLen === aLen) return c.clusters;
+        const CFG = AnazhRealm.CA_STAU;
+        const works = [];
+        for (let i = 0; i < eLen; i++) {
+            const e = edits[i];
+            if (!e || e.mode !== "fill") continue;
+            const r = Number(e.r) || 0;
+            if (r * 2 < CFG.MIN_EXTENT) continue;
+            works.push({ minX: e.x - r, maxX: e.x + r, minZ: e.z - r, maxZ: e.z + r, topY: (Number(e.y) || 0) + r });
+        }
+        if (archs) {
+            for (const entry of archs) {
+                if (!entry || !entry.blockerAABBs) continue;
+                for (const a of entry.blockerAABBs) {
+                    if (Math.max(a.maxX - a.minX, a.maxZ - a.minZ) < CFG.MIN_EXTENT) continue;
+                    works.push({ minX: a.minX, maxX: a.maxX, minZ: a.minZ, maxZ: a.maxZ, topY: a.topY });
+                }
+            }
+        }
+        // Die Krone muss über dem lokalen Ruhe-Spiegel liegen (sonst hält sie nichts)
+        // — eine Atlas-Probe pro Werk; Werke fern jedes Wassers (rim=-Inf) bleiben
+        // drin (jenseits des Atlas gilt die Boden+Skin-Kappe, auch dort darf gedämmt
+        // werden — der Spill-Scan entscheidet die Substanz).
+        const qualified = [];
+        for (const w of works) {
+            const rim = this._atlasWaterLevelAt((w.minX + w.maxX) * 0.5, (w.minZ + w.maxZ) * 0.5, -Infinity);
+            if (rim > -Infinity && w.topY <= rim + 0.9) continue;
+            qualified.push(w);
+        }
+        const GAP = CFG.CLUSTER_GAP;
+        const clusters = [];
+        for (const w of qualified) {
+            let merged = { minX: w.minX, maxX: w.maxX, minZ: w.minZ, maxZ: w.maxZ, topY: w.topY };
+            let changed = true;
+            while (changed) {
+                changed = false;
+                for (let i = clusters.length - 1; i >= 0; i--) {
+                    const cl = clusters[i];
+                    if (cl.minX - GAP > merged.maxX || merged.minX - GAP > cl.maxX) continue;
+                    if (cl.minZ - GAP > merged.maxZ || merged.minZ - GAP > cl.maxZ) continue;
+                    merged = {
+                        minX: Math.min(cl.minX, merged.minX),
+                        maxX: Math.max(cl.maxX, merged.maxX),
+                        minZ: Math.min(cl.minZ, merged.minZ),
+                        maxZ: Math.max(cl.maxZ, merged.maxZ),
+                        topY: Math.max(cl.topY, merged.topY),
+                    };
+                    clusters.splice(i, 1);
+                    changed = true;
+                }
+            }
+            clusters.push(merged);
+        }
+        for (const cl of clusters)
+            cl.key =
+                `${Math.round(cl.minX)},${Math.round(cl.minZ)},${Math.round(cl.maxX)},` +
+                `${Math.round(cl.maxZ)},${Math.round(cl.topY)}`;
+        this._stauClusterCache = { edits, eLen, archs, aLen, clusters };
+        return clusters;
+    }
+
+    // PURE Priority-Flood (headless-testbar): `barrier[c]` = Höhe, ÜBER der Wasser
+    // die Spalte passieren kann; `init[c]` = Halte-Pegel der Außenwelt am Fenster-
+    // rand (innen +Infinity). Liefert pro Spalte den SPILL-Pegel — die niedrigste
+    // Höhe, auf der Wasser über irgendeinen Pfad nach außen entkommt; bis dahin
+    // wird es GEHALTEN. Relaxation fill[nb] = max(fill[cur], barrier[nb]), min-Heap.
+    _stauSpillLevels(barrier, w, h, init) {
+        const n = w * h;
+        const fill = new Float64Array(n);
+        const heap = new Int32Array(n + 1);
+        const pos = new Int32Array(n).fill(-1);
+        let size = 0;
+        const less = (a, b) => fill[a] < fill[b];
+        const swap = (i, j) => {
+            const t = heap[i];
+            heap[i] = heap[j];
+            heap[j] = t;
+            pos[heap[i]] = i;
+            pos[heap[j]] = j;
+        };
+        const up = (i) => {
+            while (i > 1 && less(heap[i], heap[i >> 1])) {
+                swap(i, i >> 1);
+                i >>= 1;
+            }
+        };
+        const down = (i) => {
+            for (;;) {
+                let m = i;
+                const l = i * 2;
+                const r = l + 1;
+                if (l <= size && less(heap[l], heap[m])) m = l;
+                if (r <= size && less(heap[r], heap[m])) m = r;
+                if (m === i) break;
+                swap(i, m);
+                i = m;
+            }
+        };
+        for (let c = 0; c < n; c++) {
+            fill[c] = init[c];
+            if (Number.isFinite(init[c])) {
+                heap[++size] = c;
+                pos[c] = size;
+                up(size);
+            }
+        }
+        const done = new Uint8Array(n);
+        const NDX = [1, -1, 0, 0];
+        const NDZ = [0, 0, 1, -1];
+        while (size > 0) {
+            const cur = heap[1];
+            heap[1] = heap[size--];
+            if (size > 0) {
+                pos[heap[1]] = 1;
+                down(1);
+            }
+            pos[cur] = -1;
+            if (done[cur]) continue;
+            done[cur] = 1;
+            const ci = cur % w;
+            const ck = (cur / w) | 0;
+            for (let d = 0; d < 4; d++) {
+                const ni = ci + NDX[d];
+                const nk = ck + NDZ[d];
+                if (ni < 0 || nk < 0 || ni >= w || nk >= h) continue;
+                const nb = ni + nk * w;
+                if (done[nb]) continue;
+                const cand = Math.max(fill[cur], barrier[nb]);
+                if (cand < fill[nb]) {
+                    fill[nb] = cand;
+                    if (pos[nb] >= 0) up(pos[nb]);
+                    else {
+                        heap[++size] = nb;
+                        pos[nb] = size;
+                        up(size);
+                    }
+                }
+            }
+        }
+        return fill;
+    }
+
+    // Das STAU-FELD eines Werk-Clusters (gecacht in `state.waterStauFields`,
+    // WERK-zentriert → Nachbar-Chunks lesen DASSELBE Feld = keine Kappen-Naht,
+    // die V9.77-Klasse strukturell vermieden). Fenster in GLOBALEN Spalten-
+    // Indizes (gx = floor(x/step) — das eine Welt-Zell-Gitter, identisch zur
+    // Chunk-Spalte gx = cx·dim+i). barrier aus der ZELL-Wahrheit (inkl.
+    // Architektur-Stempel + Edits; ungeladene Rand-Spalten → Macro-Terrain,
+    // konservativ offen). Rand-Init = die V18.93-Außenwelt (rim+0.5 bzw.
+    // Boden+Skin) — erst DARÜBER ist der Rand ein Ausweg. Kein Quell-Atlas-
+    // Wasser im Fenster → null (nichts kann den Stau speisen).
+    _ensureStauField(cluster) {
+        if (!this.state.waterStauFields) this.state.waterStauFields = new Map();
+        if (this.state.waterStauFields.has(cluster.key)) return this.state.waterStauFields.get(cluster.key);
+        const CFG = AnazhRealm.CA_STAU;
+        const cfg = this._voxelChunkConfig(0);
+        const step = cfg.step;
+        const dim = cfg.dim;
+        const dimY = cfg.dimY;
+        const dimSq = dim * dim;
+        const oy = (this.state.terrainBaseHeight || 0) - cfg.floorDrop;
+        let gx0 = Math.floor(cluster.minX / step) - CFG.REACH;
+        let gx1 = Math.floor(cluster.maxX / step) + CFG.REACH;
+        let gz0 = Math.floor(cluster.minZ / step) - CFG.REACH;
+        let gz1 = Math.floor(cluster.maxZ / step) + CFG.REACH;
+        if (gx1 - gx0 + 1 > CFG.WIN_MAX) {
+            const mid = (gx0 + gx1) >> 1;
+            gx0 = mid - (CFG.WIN_MAX >> 1);
+            gx1 = gx0 + CFG.WIN_MAX - 1;
+        }
+        if (gz1 - gz0 + 1 > CFG.WIN_MAX) {
+            const mid = (gz0 + gz1) >> 1;
+            gz0 = mid - (CFG.WIN_MAX >> 1);
+            gz1 = gz0 + CFG.WIN_MAX - 1;
+        }
+        const w = gx1 - gx0 + 1;
+        const h = gz1 - gz0 + 1;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
+        const barrier = new Float64Array(w * h);
+        const init = new Float64Array(w * h).fill(Infinity);
+        let anySource = false;
+        for (let kz = 0; kz < h; kz++) {
+            for (let ix = 0; ix < w; ix++) {
+                const gx = gx0 + ix;
+                const gz = gz0 + kz;
+                const x = (gx + 0.5) * step;
+                const z = (gz + 0.5) * step;
+                const c = ix + kz * w;
+                const ccx = Math.floor(gx / dim);
+                const ccz = Math.floor(gz / dim);
+                const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${ccx},${ccz}`) : null;
+                let bY = null;
+                if (entry && entry.waterCells && !entry.empty && (!Number.isFinite(entry.lod) || entry.lod === 0)) {
+                    const cells = entry.waterCells;
+                    const col = gx - ccx * dim + (gz - ccz * dim) * dim;
+                    for (let j = dimY - 1; j >= 0; j--) {
+                        if (cells[col + j * dimSq] === SOLID) {
+                            bY = oy + (j + 1) * step;
+                            break;
+                        }
+                    }
+                    if (bY === null) bY = oy;
+                } else {
+                    const m = this._terrainMacroSurfaceY(x, z);
+                    bY = Number.isFinite(m) ? m : oy;
+                }
+                barrier[c] = bY;
+                if (this._atlasWaterLevelAt(x, z, Infinity) > -Infinity) anySource = true;
+                if (ix === 0 || kz === 0 || ix === w - 1 || kz === h - 1) {
+                    const rim = this._atlasWaterLevelAt(x, z, -Infinity);
+                    init[c] = Math.max(bY, rim > -Infinity ? rim + 0.5 : bY + 2 * step);
+                }
+            }
+        }
+        let field = null;
+        if (anySource) {
+            const fill = this._stauSpillLevels(barrier, w, h, init);
+            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill) };
+        }
+        this.state.waterStauFields.set(cluster.key, field);
+        return field;
+    }
+
+    // Die Stau-Felder, deren Fenster den Chunk schneiden (für den Kappen-Bau).
+    // null = keines (der häufige Fall — exakt der V18.93-Stand, null Extra-Kosten
+    // jenseits des gecachten Cluster-Reads).
+    _stauFieldsNear(cx, cz) {
+        const clusters = this._stauWorkClusters();
+        if (!clusters || clusters.length === 0) return null;
+        const cfg = this._voxelChunkConfig(0);
+        const R = AnazhRealm.CA_STAU.REACH;
+        const gxA = cx * cfg.dim;
+        const gxB = gxA + cfg.dim - 1;
+        const gzA = cz * cfg.dim;
+        const gzB = gzA + cfg.dim - 1;
+        let out = null;
+        for (const cl of clusters) {
+            if (Math.floor(cl.maxX / cfg.step) + R < gxA || Math.floor(cl.minX / cfg.step) - R > gxB) continue;
+            if (Math.floor(cl.maxZ / cfg.step) + R < gzA || Math.floor(cl.minZ / cfg.step) - R > gzB) continue;
+            const f = this._ensureStauField(cl);
+            if (f) (out || (out = [])).push(f);
+        }
+        return out;
+    }
+
+    // Kappen + Quell-Markierungen + Stau-Felder einer Region verwerfen + den CA
+    // wecken — der EINE Invalidations-Eingang nach einer Werk-Änderung (Edit /
+    // Architektur-Spawn/-Remove). Lazy-Neubau beim nächsten Tick liest die
+    // FRISCHEN Zellen (nach dem Rebuild rufen — sonst sähe der Spill-Scan den
+    // Damm noch nicht).
+    _invalidateWaterCapsAround(x, z, r) {
+        const cfg = this._voxelChunkConfig(0);
+        const R = (Number(r) || 0) + (AnazhRealm.CA_STAU.REACH + 4) * cfg.step + AnazhRealm.CA_STAU.CLUSTER_GAP;
+        const minCX = Math.floor((x - R) / cfg.span);
+        const maxCX = Math.floor((x + R) / cfg.span);
+        const minCZ = Math.floor((z - R) / cfg.span);
+        const maxCZ = Math.floor((z + R) / cfg.span);
+        for (let cx = minCX; cx <= maxCX; cx++) {
+            for (let cz = minCZ; cz <= maxCZ; cz++) {
+                const key = `${cx},${cz}`;
+                if (this.state.waterCapJ) this.state.waterCapJ.delete(key);
+                if (this.state.waterSourceCols) this.state.waterSourceCols.delete(key);
+                this._wakeWaterCA(cx, cz);
+            }
+        }
+        if (this.state.waterStauFields) {
+            for (const [key, f] of this.state.waterStauFields) {
+                // null-Felder mit-verwerfen (das Werk-Bild änderte sich; billig neu).
+                if (!f) {
+                    this.state.waterStauFields.delete(key);
+                    continue;
+                }
+                const fx0 = f.gx0 * cfg.step;
+                const fx1 = (f.gx0 + f.w) * cfg.step;
+                const fz0 = f.gz0 * cfg.step;
+                const fz1 = (f.gz0 + f.h) * cfg.step;
+                if (fx1 < x - R || fx0 > x + R || fz1 < z - R || fz0 > z + R) continue;
+                this.state.waterStauFields.delete(key);
+            }
+        }
+    }
+
     // W-B (V18.90, T4-Plan §6) — EIN Seed-Eingang für die CA-Level-Schicht (V9.82: kein
     // Parallel-Pfad): seedet den Level-Eintrag aus den AKTUELLEN Zellen + markiert einmalig
     // die QUELL-Spalten (der frozen Atlas kennt sie als Wasser — See/Fluss/Ozean, +Inf-Probe
@@ -42383,6 +42700,9 @@ class AnazhRealm {
             const cap = new Int16Array(dimSq);
             const ox = cx * cfg.span;
             const oz = cz * cfg.span;
+            // V18.129 — die Stau-Felder der Spieler-Werke (null im häufigen Fall).
+            const stauFields = this._stauFieldsNear(cx, cz);
+            const stauMax = AnazhRealm.CA_STAU.MAX_CELLS;
             for (let k = 0; k < dim; k++) {
                 for (let i = 0; i < dim; i++) {
                     const c = i + k * dim;
@@ -42402,6 +42722,26 @@ class AnazhRealm {
                             }
                         }
                         cap[c] = Math.min(dimY - 1, (gj >= 0 ? gj : 0) + 2);
+                    }
+                    // V18.129 — der STAU-SPIEGEL: liegt die Spalte in einem Werk-Feld,
+                    // hebt sich die Kappe auf den GEHALTENEN Pegel (Spill-Wahrheit),
+                    // hart gedeckelt (MAX_CELLS). Eine gehobene QUELL-Spalte wird zur
+                    // STAU-Quelle (src=2): der Pin TROPFT sie über die Ruhe hinaus —
+                    // der Fluss speist den Stausee (s. _tickWorldWaterCA).
+                    if (stauFields) {
+                        const gx = cx * dim + i;
+                        const gz = cz * dim + k;
+                        for (const f of stauFields) {
+                            const fi = gx - f.gx0;
+                            const fk = gz - f.gz0;
+                            if (fi < 0 || fk < 0 || fi >= f.w || fk >= f.h) continue;
+                            const fillY = f.fillY[fi + fk * f.w];
+                            const stauJ = Math.min(Math.floor((fillY - oy) / cfg.step) - 1, cap[c] + stauMax, dimY - 1);
+                            if (stauJ > cap[c]) {
+                                cap[c] = stauJ;
+                                if (src[c] === 1) src[c] = 2;
+                            }
+                        }
                     }
                 }
             }
@@ -42436,6 +42776,7 @@ class AnazhRealm {
         const SETTLE = 0.25; // bewegte MAGNITUDE < SETTLE → der Chunk ruht, raus aus active (active-cell)
         const dimSq = dim * dim;
         const WATER = AnazhRealm.CELL_STATE.WATER;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID; // V18.129 — der Stau-Tropf prüft die Stütze
         const bandMap = this.state.waterCABand || (this.state.waterCABand = new Map());
         const srcMap = this.state.waterSourceCols;
         const active = [];
@@ -42480,6 +42821,7 @@ class AnazhRealm {
                 const cells = a.cells;
                 const level = a.level;
                 const band = a.band;
+                const stauFeed = AnazhRealm.CA_STAU.FEED;
                 for (let c = 0; c < dimSq; c++) {
                     if (!src[c]) continue;
                     for (let j = 0; j < dimY; j++) {
@@ -42491,6 +42833,32 @@ class AnazhRealm {
                                 if (j < band.jMin) band.jMin = j;
                                 if (j > band.jMax) band.jMax = j;
                             }
+                        }
+                    }
+                    // V18.129 — der STAU-TROPF: eine Quell-Spalte im Stau-Bereich
+                    // (src=2, Kappe über rim gehoben — s. _ensureWaterCALevel) speist
+                    // ÜBER ihre Ruhe hinaus: pro Tick FEED in die unterste unvolle,
+                    // gestützte Zelle ≤ Kappe (Schicht für Schicht, wie der Carve).
+                    // Der Fluss füllt den Stausee; voll → kein Add → Settle-Fixpunkt.
+                    // Die EINE bewusste Pin-Nicht-Erhaltung, eine Schicht weiter.
+                    if (src[c] === 2 && a.cap) {
+                        const capJ = a.cap[c];
+                        for (let j = 0; j <= capJ; j++) {
+                            const idx = c + j * dimSq;
+                            if (cells[idx] === SOLID) continue;
+                            if (level[idx] >= 0.999) continue;
+                            if (j > 0) {
+                                const below = idx - dimSq;
+                                if (cells[below] !== SOLID && level[below] < 0.9) break;
+                            }
+                            const add = Math.min(stauFeed, 1 - level[idx]);
+                            level[idx] += add;
+                            pinned += add;
+                            if (band) {
+                                if (j < band.jMin) band.jMin = j;
+                                if (j > band.jMax) band.jMax = j;
+                            }
+                            break;
                         }
                     }
                 }
@@ -43643,6 +44011,11 @@ class AnazhRealm {
             }
             // V9.75 — Spiegel zum Spawn-Trigger: das Wasser kehrt zurück.
             this._playWaterReactionPing();
+            // V18.129 — ein abgebauter DAMM lässt seinen Stausee ablaufen: Kappen/
+            // Stau-Felder verwerfen + CA wecken (das gestaute Wasser fällt durch
+            // die Lücke — Gravitation ist kappen-frei; die Empfänger-Kappe sinkt
+            // lazy auf den V18.93-Stand zurück).
+            for (const fp of blockerFootprints) this._invalidateWaterCapsAround(fp.cx, fp.cz, fp.r);
         }
         // Vision §1.2 — die Welt antwortet sensorisch. Eine resonierende
         // Struktur (Kristall-Geode, hoch-präzises Werkstück, Singendes
@@ -54273,7 +54646,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.128.0";
+AnazhRealm.VERSION = "18.129.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -54284,6 +54657,27 @@ AnazhRealm.VERSION = "18.128.0";
 // Browser-justierbar: anazhRealm.constructor.CA_FLOW_KEEP = 0.97 (näher 1 =
 // weitere Ausbreitung, näher 0.9 = kürzere Fluss-Zungen).
 AnazhRealm.CA_FLOW_KEEP = 0.95;
+
+// V18.129 — DAS HOCH-BECKEN (A4-Rest, gigant-plan §5): die STAU-Regel des
+// Wasser-Automaten — die vierte Gleichgewichts-Regel neben Decay·Kappe·
+// Fixpunkt (V18.93). Ein SPIELER-WERK (Fill-Edit / solide Architektur,
+// Krone über dem Ruhe-Spiegel) öffnet die Spiegel-Kappe LOKAL: ein bounded
+// Spill-Scan (Priority-Flood — das Hydro-Atlas-Muster im Kleinen) liefert
+// pro Spalte den ehrlichen HALTE-Pegel (der billigste Ausweg: über die
+// Damm-Krone · die Ufer · die V18.93-Kappen-Welt am Fensterrand). Ein
+// PFEILER staut damit strukturell NICHT (sein Ausweg liegt auf rim-Niveau
+// — die Physik filtert, keine Werk-Heuristik); ein Damm quer überm Fluss
+// staut bis zur Krone. Die Welt-Badewanne (V18.92) bleibt strukturell
+// unmöglich: ohne Spieler-Werk ist die Kappe bit-identisch zu V18.93.
+// Browser-justierbar (S-Dialog): REACH weiter = größere Stauseen.
+AnazhRealm.CA_STAU = Object.freeze({
+    REACH: 16, // Spalten (×1.8 m ≈ 29 m) Fenster-Pad um das Werk — die Spieler-Aufmerksamkeits-Grenze
+    MAX_CELLS: 7, // harter Stau-Deckel über der rim-Kappe (~12.6 m) gegen den degenerierten Mega-Damm
+    FEED: 0.2, // Zufluss-Tropf/Tick in die unterste unvolle Stau-Zelle einer Quell-Spalte (der Fluss speist)
+    WIN_MAX: 72, // max Fenster-Kante in Spalten — der Spill-Scan ist bounded by construction
+    CLUSTER_GAP: 4, // m — Werke näher als das verschmelzen zu EINEM Stau-Werk (ein Damm = viele Blöcke)
+    MIN_EXTENT: 1.6, // m — schmalere Werke (Baum-Stämme, Deko-Säulen) stauen nichts (Perf-Vorfilter)
+});
 
 // V17.114 U1 — DIE DETAIL-KASKADE: die EINE frozen Distanz→Detail-Tabelle, die
 // `_detailBand(r)` liest (r = Chebyshev-Chunk-Distanz vom Spieler). Die ganze

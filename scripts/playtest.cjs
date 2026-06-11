@@ -34308,6 +34308,105 @@ async function checkBandG8R5LivingImmune(ctx) {
     );
 }
 
+// V18.129 — DAS HOCH-BECKEN (A4-Rest, gigant-plan §5): der Stau-Spiegel. Ein
+// Spieler-Werk (Fill/solide Architektur) öffnet die V18.93-Spiegel-Kappe LOKAL
+// über einen bounded Spill-Scan (Priority-Flood); gepinnte Quell-Spalten im
+// Stau-Bereich TROPFEN den Pool voll. PURE Beweise hier (deterministisch,
+// welt-unabhängig); der Welt-Beweis am echten Fluss: `scripts/diag-stau.cjs`
+// (Pfeiler staut 0 m · Damm-Pool +2.68 m über rim, flat · settled · Welt
+// unverändert — GEMESSEN, reproduzierbar).
+async function checkBandV18129HochBecken(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const C = r.constructor.CA_STAU;
+        out.config =
+            !!C &&
+            Object.isFrozen(C) &&
+            [C.REACH, C.MAX_CELLS, C.FEED, C.WIN_MAX, C.CLUSTER_GAP, C.MIN_EXTENT].every(Number.isFinite);
+        // KONSUM-Source-Proben (V17.31: kein Passagier): der Kappen-Bau liest die
+        // Stau-Felder, der Pin trägt den Tropf, alle drei Werk-Pfade invalidieren.
+        out.capReadsStau = /_stauFieldsNear/.test(r._ensureWaterCALevel.toString());
+        out.pinHasDrip = /src\[c\] === 2/.test(r._tickWorldWaterCA.toString());
+        out.editInvalidates = /_invalidateWaterCapsAround/.test(r._addVoxelEdit.toString());
+        out.spawnInvalidates = /_invalidateWaterCapsAround/.test(r.spawnArchitecture.toString());
+        out.removeInvalidates = /_invalidateWaterCapsAround/.test(r.removeArchitecture.toString());
+        // PURE Spill-Scan (Priority-Flood): das BECKEN hält, der PFEILER nicht —
+        // der strukturelle Damm/Pfeiler-Diskriminator (die Physik filtert).
+        const w = 11;
+        const mkGrid = (gap) => {
+            const barrier = new Float64Array(w * w); // Boden 0
+            for (let k = 3; k <= 7; k++) {
+                for (let i = 3; i <= 7; i++) {
+                    if (i > 3 && i < 7 && k > 3 && k < 7) continue; // Ring bei |d|=2
+                    barrier[i + k * w] = 10; // die Wand
+                }
+            }
+            if (gap) barrier[5 + 3 * w] = 0; // EIN Loch im Ring = der „Pfeiler-Fall"
+            const init = new Float64Array(w * w).fill(Infinity);
+            for (let k = 0; k < w; k++)
+                for (let i = 0; i < w; i++) if (i === 0 || k === 0 || i === w - 1 || k === w - 1) init[i + k * w] = 1;
+            return { barrier, init };
+        };
+        const closed = mkGrid(false);
+        const fillClosed = r._stauSpillLevels(closed.barrier, w, w, closed.init);
+        out.basinHolds = Math.abs(fillClosed[5 + 5 * w] - 10) < 1e-9; // Zentrum hält bis Wand-Krone
+        out.outsideOpen = Math.abs(fillClosed[1 + 1 * w] - 1) < 1e-9; // außerhalb: Außenwelt-Pegel
+        const gapped = mkGrid(true);
+        const fillGap = r._stauSpillLevels(gapped.barrier, w, w, gapped.init);
+        out.gapDrains = Math.abs(fillGap[5 + 5 * w] - 1) < 1e-9; // ein Loch → kein Stau
+        // PURE Empfänger-Kappe (V18.93-Semantik bleibt + trägt den Stau): Spalte A
+        // voll bis j=6, Spalte B leer mit Kappe j=3 → B füllt NIE über die Kappe.
+        const SOLID = r.constructor.CELL_STATE.SOLID;
+        const d = 2;
+        const dy = 8;
+        const dimSq = d * d;
+        const cells = new Uint8Array(dimSq * dy);
+        for (let j = 0; j < dy; j++) {
+            cells[2 + j * dimSq] = SOLID; // Spalten (0,1)+(1,1) ganz solide —
+            cells[3 + j * dimSq] = SOLID; // nur das Paar c0↔c1 tauscht
+        }
+        cells[0] = SOLID; // Böden j=0
+        cells[1] = SOLID;
+        const level = new Float64Array(dimSq * dy);
+        for (let j = 1; j <= 6; j++) level[0 + j * dimSq] = 1; // Säule A voll
+        const cap = new Int16Array(dimSq);
+        cap[0] = 7;
+        cap[1] = 3;
+        for (let t = 0; t < 120; t++) r._tickWaterCA(level, cells, d, dy, 0.25, null, null, cap);
+        let overCap = 0;
+        for (let j = 4; j < dy; j++) overCap += level[1 + j * dimSq];
+        let underCap = 0;
+        for (let j = 1; j <= 3; j++) underCap += level[1 + j * dimSq];
+        out.capHolds = overCap < 1e-6;
+        out.capFillsBelow = underCap > 0.5;
+        out.overCap = overCap;
+        return out;
+    });
+    if (!res) {
+        check("V18.129 Hoch-Becken: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("V18.129 Hoch-Becken: CA_STAU-Konfiguration steht (frozen, vollständig)", res.config);
+    check(
+        "V18.129 Hoch-Becken: KONSUM verdrahtet (Kappen-Bau liest Stau-Felder · Pin trägt den Tropf)",
+        res.capReadsStau && res.pinHasDrip
+    );
+    check(
+        "V18.129 Hoch-Becken: alle drei Werk-Pfade invalidieren (Edit · Spawn · Remove)",
+        res.editInvalidates && res.spawnInvalidates && res.removeInvalidates
+    );
+    check("V18.129 Hoch-Becken: der Spill-Scan hält das GESCHLOSSENE Becken (Krone-Pegel)", res.basinHolds);
+    check("V18.129 Hoch-Becken: außerhalb der Wand gilt der Außenwelt-Pegel (keine Badewanne)", res.outsideOpen);
+    check("V18.129 Hoch-Becken: EIN Loch im Ring → kein Stau (der Damm/Pfeiler-Diskriminator)", res.gapDrains);
+    check(
+        "V18.129 Hoch-Becken: die Empfänger-Kappe hält im Automaten (nichts über cap, darunter füllt es)",
+        res.capHolds && res.capFillsBelow,
+        `overCap=${res.overCap}`
+    );
+}
+
 // V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.46 Wetter + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
@@ -43488,6 +43587,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandG8R3Locality(ctx);
             await checkBandG8R4Immunity(ctx);
             await checkBandG8R5LivingImmune(ctx);
+            await checkBandV18129HochBecken(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
