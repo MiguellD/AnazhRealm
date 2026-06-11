@@ -28500,6 +28500,85 @@ async function checkBandTailleOmega5(ctx) {
     check("Ω5: die Kette ist verdrahtet (confirmBuild → spawn → snapshot → restore → harvest)", res.wired);
 }
 
+// Ω6 (V18.141, taille-spec §6) — NAMENSRAUM + WACHSTUMSREGEL: fremdes
+// Vokabular (x:-präfixiert ODER künftige nackte Achsen) REIST (must-preserve)
+// und beeinflusst KEINE Kern-Lesart (must-ignore, BEHAVIORAL bewiesen:
+// bit-gleiche Rolle/Kosten/Tags/Vektor mit und ohne fremdem Tag).
+async function checkBandTailleOmega6(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const mkMat = (name, extraTags) => {
+            r.state.materials[name] = {
+                name,
+                label: name,
+                builtIn: false,
+                color: 0x888888,
+                tags: { ...r.constructor.MATERIAL_TAG_DEFAULTS, härte: 0.6, dichte: 0.7, ...extraTags },
+            };
+        };
+        mkMat("_o6_rein", {});
+        mkMat("_o6_fremd", { "x:v25:aether": 99, leuchtkraft: 42 });
+        const mkBp = (material) => ({
+            name: "_o6_bp_" + material,
+            label: "Ω6",
+            builtIn: false,
+            parts: [
+                {
+                    shape: "cone",
+                    material,
+                    position: { x: 0, y: 1, z: 0 },
+                    size: { x: 0.5, y: 1.2, z: 0.5 },
+                    rotation: { x: 0, y: 0, z: 0 },
+                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                },
+            ],
+            connections: [],
+        });
+        const a = mkBp("_o6_rein");
+        const b = mkBp("_o6_fremd");
+        r.state.blueprints[a.name] = a;
+        r.state.blueprints[b.name] = b;
+        // (1) must-ignore BEHAVIORAL: jede Kern-Lesart ist BIT-GLEICH —
+        // das fremde Vokabular (x:-Tag 99 + unbekannte nackte Achse 42)
+        // trägt zu KEINER Kern-Resonanz bei.
+        out.tagsEqual = JSON.stringify(r.computeCompoundTags(a)) === JSON.stringify(r.computeCompoundTags(b));
+        out.vectorEqual = JSON.stringify(r._blueprintProductVector(a)) === JSON.stringify(r._blueprintProductVector(b));
+        out.roleEqual = r.computeBlueprintRole(a) === r.computeBlueprintRole(b);
+        out.costEqual =
+            JSON.stringify(r.computeBuildCost(a.name)).replace(/_o6_rein/g, "M") ===
+            JSON.stringify(r.computeBuildCost(b.name)).replace(/_o6_fremd/g, "M");
+        // (2) must-preserve: das fremde Vokabular REIST durch den Material-
+        // Zwilling (Ω2) bit-gleich.
+        const ser = r._serializeMaterial(r.state.materials["_o6_fremd"]);
+        out.travels = ser.tags["x:v25:aether"] === 99 && ser.tags["leuchtkraft"] === 42;
+        // (3) der KERN ist eingefroren + die Doktrin steht am Kern (frozen +
+        // Kommentar-Anker ist Doku; hier der strukturelle Teil).
+        out.coreFrozen =
+            Object.isFrozen(r.constructor.MATERIAL_TAG_KEYS) && r.constructor.MATERIAL_TAG_KEYS.length === 10;
+        // (4) die Wachstumsregel: eine NEUE Achse wäre additiv mit Default 0 —
+        // MATERIAL_TAG_DEFAULTS trägt für jede Kern-Achse 0 (per Konstruktion).
+        out.defaultsZero = r.constructor.MATERIAL_TAG_KEYS.every((k) => r.constructor.MATERIAL_TAG_DEFAULTS[k] === 0);
+        delete r.state.blueprints[a.name];
+        delete r.state.blueprints[b.name];
+        delete r.state.materials["_o6_rein"];
+        delete r.state.materials["_o6_fremd"];
+        return out;
+    });
+    if (!res) {
+        check("Ω6: Namensraum-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "Ω6: must-ignore BEHAVIORAL — fremdes Vokabular ändert KEIN Kern-Bit (Tags · Vektor · Rolle · Kosten)",
+        res.tagsEqual && res.vectorEqual && res.roleEqual && res.costEqual
+    );
+    check("Ω6: must-preserve — das fremde Vokabular reist bit-gleich (x:-Tag · künftige Achse)", res.travels);
+    check("Ω6: der anazh-Kern ist eingefroren (10 Achsen, frozen, Doktrin am Kern verankert)", res.coreFrozen);
+    check("Ω6: die Wachstumsregel steht (neue Achsen additiv, Default 0 per Konstruktion)", res.defaultsZero);
+}
+
 // Ω4 (V18.139, taille-spec) — DER KONFORMANZ-KORPUS: die eingefrorenen
 // goldenen Dateien (spec/golden/v1/ — NIE regeneriert) werden FÜR IMMER
 // geladen: der heutige Code MUSS sie lesen, beide Signaturen MÜSSEN "valid"
@@ -44600,6 +44679,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandTailleOmega3(ctx);
             await checkBandTailleGolden(ctx);
             await checkBandTailleOmega5(ctx);
+            await checkBandTailleOmega6(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

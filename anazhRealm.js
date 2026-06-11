@@ -55709,7 +55709,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.140.0";
+AnazhRealm.VERSION = "18.141.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -56301,6 +56301,18 @@ AnazhRealm.BOOST_RESONANCE_RADIUS = 18; // m, in deren Nähe das Welt-Effekt-Boo
 AnazhRealm.BOOST_RESONANCE_DELTA = 0.15; // +0.15 resoniert auf Spieler-Compound
 AnazhRealm.BOOST_RESONANCE_LABEL = "Welt-Resonanz";
 
+// Ω6 (taille-spec §6, NAMENSRAUM-DOKTRIN — eingefroren seit V18.141):
+// die NACKTEN Tags hier sind der anazh-KERN — ihre BEDEUTUNG ist ab jetzt
+// eingefroren und wird NIE umgedeutet (eine Achse kann nur sterben [Gewicht 0
+// in allen lokalen Signaturen] oder ADDITIV geboren werden [Default 0 — alte
+// Artefakte bleiben gültig per Konstruktion]). Präfixierte Tags (`x:…` /
+// `<welt>:…`) sind fremdes Vokabular: sie REISEN (must-preserve, Ω2-Zwillinge)
+// und resonieren lokal NUR, wenn eine lokale Signatur die Achse führt —
+// must-ignore ist strukturell (computePartTags/_blueprintResonance iterieren
+// die KERN-/SIGNATUR-Achsen; GEMESSEN: x:fremd=99 ändert kein Kern-Bit).
+// Die Signatur-TABELLEN (FORM_ROLE_/WORKSHOP_DOMAIN_/MOTION_ROLE_SIGNATURES,
+// Gewichte, Kosten-Konstante k) sind WELT-LOKAL — die Lesart, nie die Taille;
+// jede Welt darf sie forken, ohne irgendetwas zu brechen.
 AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
     "härte",
     "dichte",
