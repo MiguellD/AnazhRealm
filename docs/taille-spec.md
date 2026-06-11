@@ -5,7 +5,7 @@
 > ausführbare Form dieses Vertrags — sie werden **NIE regeneriert** (Konformanz-Band Ω4 lädt sie
 > für immer; `scripts/diag-taille.cjs` prüft sie bei jedem Lauf). Wächst die Taille über diese
 > eine Seite + vier Dateien + fünf Gesetze hinaus, ist DAS der Geruch des Fehlers
-> (`docs/taille-plan.md` §4 — Anti-Scope).
+> (`docs/archiv/taille-plan.md` §4 — Anti-Scope).
 
 ## Die zwei Sätze (alles andere folgt aus ihnen)
 

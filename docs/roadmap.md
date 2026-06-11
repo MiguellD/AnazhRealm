@@ -39,7 +39,9 @@ Kommentare) · F2-Stern · W18 · Phase E · die Taille Ω0–Ω6.
 > **Der Master-Blick über allem: `docs/gigant-plan.md`** (10.06.2026 — das umfassende gemessene
 > Bild: die NEUN Säulen G1 Motion-Resonanz · G2 Rekursion · G3 sich-speisendes P2P-Netz ·
 > G4 Kreatur-Innenleben · G5 δ-als-Währung · G6 Licht+Terrain · G7 Maßstab · G8 Robustheit (✓ rund) ·
-> G9/Ω die gefrorene Taille (`docs/taille-plan.md`) + die Zwillings-Karte + die Reihenfolge §5).
+> G9/Ω die gefrorene Taille (✓ rund V18.137–.141; `docs/taille-spec.md` NORMATIV, Historie
+> `docs/archiv/taille-plan.md`) + die Zwillings-Karte + die Reihenfolge §5 + **DIE GEMERKTEN
+> FÄDEN** (§5-Ende — Schöpfer 11.06.: „alle wichtig, nie vergessen")).
 > Dieser §3 bleibt die operative Kurz-Form; der Gigant-Plan trägt das Warum + die Anker.
 
 **⭐ Die EINE Wurzel — die Chunk-Naht (Schöpfer-Befund 09.06.2026, gemessen):** blobiges Terrain ·
@@ -71,9 +73,11 @@ liegt in einer T6d-Kaverne (Spawn-Höhe heben). Detail: `archiv/lod-kaskade-plan
 letzte Emotion-Kern-Konsument) · Mana-Symmetrie · Emotion→Regel-Emergenz · **Nexus-Lern-Vereinheit-
 lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendige-feld.md`.
 
-**Quer dazu (eigene Bögen):** der **soziale Mesh-Bogen** (~~Bewerten-Aggregation~~ ✓ V18.134 ·
-~~Lesezeichen~~ ✓ V18.135 · offen: Folgen → Kommentare/Chat → „Für dich") · **W18** (in fremden
-Welten leben, `archiv/world-portal-w18-plan.md`) · **Ω die gefrorene Taille** (`docs/taille-plan.md`).
+**Quer dazu (eigene Bögen):** der **soziale Mesh-Bogen** (~~Bewerten~~ ✓ V18.134 · ~~Lesezeichen~~
+✓ V18.135 · ~~Folgen~~ ✓ V18.142 · ~~Kommentare~~ ✓ V18.143; offen nur die „Für dich"-Kür) ·
+**W18** (in fremden Welten leben, `archiv/world-portal-w18-plan.md`) · ~~Ω die gefrorene Taille~~
+**✓ RUND V18.137–.141** (`docs/taille-spec.md` NORMATIV · `docs/archiv/taille-plan.md` Historie ·
+`spec/golden/v1/` EINGEFROREN).
 
 ---
 
@@ -120,15 +124,20 @@ TORSO via C7-Trage-Punkt)** · LLM-Manifest.
 emergent) · Nexus-Lern-Vereinheitlichung (Geste→Gesetz: EIN Lern-Substrat, bewährte Geste kristallisiert
 zur Regel).
 
-**Sozial/Multi-User** — Bewertungs-Aggregation (Mesh, ed25519-signiert) · Lesezeichen (lokal-first) ·
-Folgen (Vibe-Pass-Identität) · Kommentare + Chat (Persistenz + P2P + Moderation) · B-WASM (Fremd-Engine-
-Rest) · evolveCommunity (Kreatur-Kulturen).
+**Sozial/Multi-User** — ~~Bewertungs-Aggregation~~ ✓ V18.134 · ~~Lesezeichen~~ ✓ V18.135 ·
+~~Folgen~~ ✓ V18.142 · ~~Kommentare~~ ✓ V18.143 (signierte Worte übers Mesh; Chat/Moderation =
+spätere Kür) · „Für dich"-Algorithmus (Kür — Substrat liegt: Folgen + Gemeinschafts-Wertung) ·
+B-WASM (Fremd-Engine-Rest) · evolveCommunity (Kreatur-Kulturen) · Stern-ab-6-Topologie
+(gigant-plan §5-F2, Design gemessen).
 
-**UI** — Statusbar schlanken (auf Essenz) · der Schöpfer-Browser-Sign-off des GPU-Galerie-Feels.
+**UI** — Statusbar schlanken (auf Essenz; GEMERKTER FADEN #8).
 
-**Fern (Schöpfer-Entscheid)** — Fahrzeug-Fahr-Tiefe (Sitz/Steuerung/Trägheit) · VR (**KORREKTUR
-10.06.: `vrMenu.js` existiert NICHT** — die alte Zeile war stale; ein VR-Bogen startet bei null) ·
-IndexedDB-Persistenz (statt localStorage).
+**DIE GEMERKTEN FÄDEN (Schöpfer 11.06.2026: „alle wichtig — vergesse die bitte nicht"; die
+verbindliche Voll-Liste mit Weck-Momenten lebt in `gigant-plan.md` §5-Ende):** R6 Selbst-
+Erweiterung (bereit — R2+R4 stehen) · Phase E Bedrohung/Furcht (D4-Temperament ist die Vorstufe) ·
+B1 Wasser-Sheet→Worker (weckt der fühlbare Carve-Hitch) · das ECHTE V18→V19-Zeit-Portal (weckt
+das erste Alt-Build-Artefakt) · VR (startet bei null, WebXR) · IndexedDB-Persistenz ·
+Fahrzeug-Fahr-Tiefe (C1/C7 sind die Vorstufe) · Statusbar schlanken.
 
 ---
 

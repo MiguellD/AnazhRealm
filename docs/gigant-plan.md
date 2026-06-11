@@ -313,7 +313,7 @@ Vendor-Limits** (64 Dateien · 4 MiB/Datei · 12 MiB gesamt). Was blockt, sind g
   Perpetuum-Verbot (`freeBorn` schließt die GEMESSENE Modus-Wäsche +14→0) · Namensraum-Doktrin
   (must-ignore BEHAVIORAL bit-gleich). Offen NUR S: Klemm-Decken · Werkzeug-Abnutzung ·
   Provenance-Cap (taille-plan §5) + das echte V18→V19-Portal bei Alt-Build-Artefakt.
-- **Anker:** `docs/taille-spec.md` (NORMATIV) · `docs/taille-plan.md` (Historie des Bogens) ·
+- **Anker:** `docs/taille-spec.md` (NORMATIV) · `docs/archiv/taille-plan.md` (Historie des Bogens) ·
   `diag-taille.cjs` · `diag-ledger-cycles.cjs` · `smoke-zeitportal.cjs`.
 
 ---
@@ -864,12 +864,29 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
 > Entscheid · Provenance-Cap-16-Politik; + das ECHTE V18→V19-Zeit-Portal, sobald ein
 > Alt-Build-Artefakt (git-Tag → dist) existiert.
 
-### FERN (bewusst ungeplant — S-Entscheid weckt sie)
+### DIE GEMERKTEN FÄDEN (Schöpfer 11.06.2026: „alle scheinen mir wichtig — vergesse die bitte nicht")
 
-Fahrzeug-Fahr-Tiefe (Sitz/Steuerung/Trägheit — C1-Gelenke sind die Vorstufe) · **VR (KORREKTUR
-10.06.: `vrMenu.js` existiert NICHT — die alte roadmap-Zeile war stale; ein VR-Bogen startet bei
-null, WebXR + Hand-Input)** · IndexedDB-Persistenz (localStorage-Größen-Wand) · Statusbar
-schlanken (UI-Politur, jederzeit einschiebbar).
+> Diese Liste ist VERBINDLICH: keiner dieser Fäden wird still gestrichen oder vergessen — jeder
+> wartet auf seinen benannten Weck-Moment. Wer dieses Dokument kürzt, trägt diese Liste weiter
+> (auch gespiegelt in `docs/roadmap.md` „OFFENE FÄDEN").
+
+1. **R6 — Selbst-Erweiterung** (Capability-Inversion + Komposition; `archiv/robustheit-plan.md`)
+   — der ANDERE Plan. Setzt auf R2 (Wand) + R4 (Immunität) auf — **beide stehen seit V18.124,
+   R6 ist damit BEREIT**; ein eigener Bogen mit S-Design-Dialog am Start.
+2. **Phase E — Bedrohung/Furcht** (`archiv/kampf-plan.md`) — der letzte Affekt-Konsument, der
+   den Emotion-Kern rund macht; D4-Temperament (V18.107) ist die gebaute Vorstufe.
+3. **B1 — Wasser-Sheet → Worker** — Priorität GEMESSEN gesunken (das V18.121-Dach-Gate heilte
+   den Dauer-Churn 18.2→1.6 ms); lohnt, sobald Carve-Flut-Spitzen im Browser als Hitch fühlbar
+   sind. Eigene fokussierte Welle mit eigenem Stale-Diag (Live-CA-Kopplung).
+4. **Das ECHTE V18→V19-Zeit-Portal** (Ω4-Vollform) — wird scharf, sobald ein Alt-Build als
+   git-Tag-Artefakt (gebündeltes dist) existiert; das synthetische `smoke:zeitportal` läuft
+   grün und ist die Vorlage.
+5. **VR** (KORREKTUR 10.06.: `vrMenu.js` existiert NICHT — ein VR-Bogen startet bei null,
+   WebXR + Hand-Input).
+6. **IndexedDB-Persistenz** (die localStorage-Größen-Wand).
+7. **Fahrzeug-Fahr-Tiefe** (Sitz/Steuerung/Trägheit — C1-Gelenke + C7-Sitz-Punkte sind die
+   gebaute Vorstufe; die Saaten `fahrzeug_wagen`/`reittier_holzross` warten).
+8. **Statusbar schlanken** (UI-Politur, jederzeit einschiebbar).
 
 ---
 
@@ -887,61 +904,15 @@ schlanken (UI-Politur, jederzeit einschiebbar).
    → Version-Bump (DREI Stellen: `AnazhRealm.VERSION` + `index.html ?v=` + `package.json`) →
    Chronik-Eintrag OBEN in `archiv/handover.md` → hier abhaken → Commit (prettier vorher) →
    `git push -u origin <branch>`.
-3. **Gates:** H-Wellen stapeln dürfen; A-Wellen je mit Screenshot; S-Punkte SAMMELN sich für
-   EINEN Schöpfer-Browser-Durchgang — die offene Liste: R1 · E1–E3 · J4 · S9 · A2(alt) ·
-   N3-FPS · Post-FX-Look · weite-Wiese-FPS · Motion-Feel (V18.99) · **V18.103: A5-Fog-Look ·
-   A1-Stitch-Band-Look (Cliff-Grenzen) · A6-Sprung-Feel (Decken-Klemme)** · **V18.104 (S-Durchgang 10.06. abend, TEIL-BESTÄTIGT):
-   ✓ B8 („Bauwerke und Deko hammer") · ✓ C6 („Hautschimmer passt"; Lampe V18.105 geschnitten) ·
-   ✓ B2-Mantel (mein Auge + Schöpfer-Screenshot: gefüllter Horizont) — NEU aus dem Durchgang:
-   B9 Terrain-Nachtlicht (messen) · A4-Mündungs-Synergie S-bestätigt. WEITER OFFEN:
-   B8-Rim/LUT-Feintuning · C1/C2-Gelenk-Motion-Feel · C5-Bewegungs-Feel (k-Werte) ·
-   E3-Mana-HUD** · der Stand V18.105 ist GEMERGT (Schöpfer 10.06.: „mergen mit diesem
-   Stand, offene Punkte vermerken"). \*\*V18.106–.111 (die sechs Entscheide gebaut) — NEUE
-   S-PUNKTE: B3-Look (V18.113-Rollback = der vertraute V17.109@100%-Stand; der KONSOLEN-
-   Hebel `anazhRealm.state.atmoUniforms.terrainFlatten.value=0.7` testet die Cel-Stufen-
-   Sehnsucht render-only — „am Anfang gaben die Cel-Stufen Kontraste") · B9-Nacht-Look (Boden dämpft nachts — Feintuning der zwei Floors) ·
-   D4-Temperament-PROFILE (strike/fleeMul-Größen = mein Erst-Wurf) · E2-REGELKREIS-Faktoren
-   (0.4+0.6b / 2−b = mein Erst-Wurf; die Stimmen-Gaps fühlen) · E8-Off-Hand-Feel (Slot-Optik
-    - G-Tausch + linke-Hand-Optik) · C7-Punkt-Optik (Rüstung am Torso · Griff in der Hand ·
-      Sitz auf Wagen/Holzross — die zwei Saaten im Browser reiten!) · A4-FALL-LOOK (der
-      Steil-Split-Vorhang + das schäumende Wildwasser am echten Wasserfall — headless bewies
-      die Geometrie [137→0 Zacken], das Auge das Gefühl) · **A4-MÜNDUNGS-LOOK (V18.116:
-      der Fluss wogt nicht mehr wie das Meer, die Wellen laufen sanft in die Mündung —
-      das Gefühl des Übergangs im echten Browser).** **V18.116–.121-Durchgang (neu):**
-      Tauch-Blick (B5) · Mana-Balken im pfad (E3) · Gelenk-Zeile in der Werkstatt (C1) ·
-      die Mantel-Stanze in Bewegung (V18.118 — am Meer laufen) · das freie Frame-Budget
-      fühlen (V18.121). **V18.125–.128-Durchgang (neu):** die KÜSTEN-LAGUNEN (V18.125 —
-      die einst trockenen Senken am Meer stehen voll Grundwasser; am Mündungs-Ort
-      laufen) · der STURM (V18.128 — „setze wetter stormy": dunklerer Tint, kräftiger
-      Wind, dichterer Nebel, lauteres Rauschen; die Wesen werden chaotisch-ehrfürchtig
-      statt traurig; der 120-s-Auto-Zug fadet sanft) · die Migrations-Mitgift ist
-      Browser-unsichtbar (V18.126, smoke-bewiesen — kein S-Punkt) · **V18.132–.135-Durchgang (neu):** die FERNEN
-      BINNENGEWÄSSER (V18.132 — jenseits ±1 km wandern: Flüsse/Seen statt kahlem
-      Ozean-Land; der ~265-ms-Kachel-Hitch beim Queren der 2-km-Grenze fühlbar?) ·
-      das PFLÜCKEN (V18.133 — Blüten/Farne/Sporen in Arm-Länge klicken: Ertrag-Feel,
-      dann „Lebenssaft" brauen aus Gepflücktem) · die GEMEINSCHAFTS-WERTUNG +
-      LESEZEICHEN (V18.134/.135 — in der Bibliothek: Ø-Anzeige auf den Karten,
-      der „Gemerkt"-Chip; mit zweitem Peer die Zeugnis-Reise prüfen). Dazu: der STAUSEE
-      (V18.129 — einen Damm aus Blöcken/Fill quer über einen Bach bauen: das Wasser
-      staut sich ÜBER den Spiegel zur ebenen Fläche; Pfeiler/Brücken stauen nicht;
-      Damm abbauen → der See läuft durch die Lücke ab. KÜR offen: der ÜBERLAUF über
-      die Krone als Wasserfall — heute füllt er exakt bis zur Krone und ruht) ·
-      das SCHATTEN-CSM (V18.130 — nahe Schatten 1.75× schärfer, ferne Schatten bis
-      540 m statt 300; FPS-Feel der 3×2048-Maps auf echter GPU prüfen; kein
-      Akne/Swimming beim Laufen unter schräger Sonne — der Snap lebt pro Kaskade) ·
-      das DEKO-FERNFELD (V18.131 — die Wiese reicht jetzt 5×5 voll + Impostoren
-      bis in den Fog: Dichte/Größe fühlen, `DEKO_FERNFELD.scaleMul` +
-      `atmosphere.dekoDensity` sind die Konsolen-Hebel).
-      **DIE SCHÖPFER-PRÜFLISTE (10.06., wächst bis zum Gigant-Abschluss — Unsauberkeiten
-      SAMMELN, er korrigiert am Schluss; ich fülle sie ehrlich mit, statt sie zu fixen):**
-      (a) **GELENK-LINIEN in der WELT sichtbar nach dem Fertigen** — die connections-Linien
-      gehören logisch NUR in den Werkstatt-Baukasten (Hilfsmittel für die Animation), nicht
-      ans fertige Werk in der Welt (Render-Gate am Spawn-Pfad vs. Werkstatt-Preview);
-      (b) **SPIELERPERSPEKTIVEN-DISZIPLIN meines Netzes** — die Wasser-Drohnen-Analysen
-      liefen teils ohne HUD-Kontext, die Werkstatt-Wirkung (wie ein Ergebnis im GESAMTSYSTEM
-      wirkt, wie es erreicht wird, ob es einheitlich ist) wurde nicht selbst angeschaut →
-      die diag-Werkzeuge wachsen um den SPIELER-Blick (HUD an, der echte Nutzungs-Fluss),
-      nicht nur den Daten-Blick; Steuerung/Bedienung der Sonden wie die Profis der Profis.
+3. **Gates:** H-Wellen stapeln dürfen; A-Wellen je mit Screenshot. **DIE S-SAMMEL-LISTE +
+   SCHÖPFER-PRÜFLISTE SIND ABGENOMMEN (Schöpfer 11.06.2026: „passt alles, gut genug, vorerst —
+   die Liste ist erledigt, weg damit; sie soll nie zum Zögern führen").** Alle bis V18.143
+   gesammelten S-Punkte (Look/Feel-Durchgänge V18.103–.135, B3/B9/D4/E2/E8/C7/A4-Feintuning,
+   Gelenk-Linien-Render, Sonden-Spieler-Blick, die Ω-Erst-Würfe) gelten als BESTÄTIGT — die
+   Erst-Wurf-Werte SIND die Werte, bis ein neuer Schöpfer-Befund sie konkret benennt. Die
+   gefallene Liste lebt als Historie in der git-Geschichte dieses Dokuments. **REGEL ab jetzt:
+   ein S-Punkt ist ein VERMERK für den Schöpfer, NIE eine Bremse für die nächste Welle —
+   bauen mit Erst-Wurf, vermerken, weiterfahren.**
 4. **Die Wände (nie verhandeln):** Determinismus (Worker bit-identisch; eine Skala-Optimierung
    ändert NIE die Gitter-Phase) · die Narben (roadmap §5) nicht wiederholen · die Samen (roadmap
    §7 + §5-D5c hier) nie blind schneiden · Multi-Agent-Funde SELBST verifizieren (zwei
@@ -951,7 +922,10 @@ schlanken (UI-Politur, jederzeit einschiebbar).
    statt festem Budget, liest die Spieler-Emotion) · E8-Zwei-Hand (JA, Minecraft-Modell) ·
    A4-Wasserfall (Plane FÄLLT, CA-Wildwasser formen + eigene Vertikal-Form) · C7 (Griff/Sitz/
    Trage-Punkte aus connections + Auto/Reittier-Saat + „Körper holen"-Button fällt). Offen
-   bleibt nur B7/U6.
+   bleibt nur B7/U6. **NEU (11.06.2026): die GESAMT-ABNAHME** — alle S-Punkte bis V18.143
+   bestätigt („gut genug, vorerst"), die Ω-Erst-Würfe GELTEN (MATERIAL_TAG_CEIL ×2 ·
+   Werkzeug = ∞-Katalysator · Provenance-Cap 16 bleibt + dokumentiert), und **die GEMERKTEN
+   FÄDEN in §5 sind dem Schöpfer ALLE wichtig — nie vergessen, nie still streichen.**
 
 ---
 
@@ -961,19 +935,19 @@ schlanken (UI-Politur, jederzeit einschiebbar).
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | ~~Cross-LOD-Naht sichtbar~~                                         | ✓ V18.103 A1 (Cap + Stitch-Band: 0 sichtbare Spalten ungedeckt)                                                                |
 | ~~Edit = Ganz-Chunk-Reset sichtbar~~                                | ✓ V18.103 A2 (GEMESSEN: Vertex-Delta 0/3180 lokal; Splice bewusst deferred)                                                    |
-| Welt endet im Fog (keine Ferne)                                     | B2 Horizont-Mantel (A5 deckt die Kante schon: fog.far ≤ Ring-Kante)                                                            |
-| Wasser-Sheet ~78 ms auf Main                                        | B1                                                                                                                             |
-| EINE 2048er-Schattenmap (nah grob, fern eng)                        | B4 CSM                                                                                                                         |
-| Physik-Todesspirale möglich (20 Substeps)                           | B6                                                                                                                             |
-| Kreaturen: kein Lebenszyklus, keine Herden-Stimmung                 | D2/D3                                                                                                                          |
-| Kreaturen greifen nie an (Furcht ohne Konsument)                    | D4 Phase E                                                                                                                     |
-| ~~Wetter binär sunny/rainy~~                                        | ✓ V18.128 D5a (Intensitäts-Achse + stormy; Sturm-Look → S)                                                                     |
-| Musik hört die Emotion nicht (Pfeiler 4 halb)                       | D5b                                                                                                                            |
-| Nexus zahlt nichts, Pools feeden nicht                              | E2/E4                                                                                                                          |
-| Magie kostet nichts                                                 | E3                                                                                                                             |
+| ~~Welt endet im Fog (keine Ferne)~~                                 | ✓ V18.104 B2 Horizont-Mantel (4.3 km) + V18.118 Spieler-Stanze                                                                 |
+| Wasser-Sheet auf Main (Carve-Flut-Spitzen)                          | B1 — GEMERKTER FADEN #3 (Dach-Gate V18.121 heilte den Dauer-Churn 18.2→1.6 ms; weckt der fühlbare Browser-Hitch)              |
+| ~~EINE 2048er-Schattenmap (nah grob, fern eng)~~                    | ✓ V18.130 B4 CSM (3 Kaskaden an den Bändern, 1.75× schärfer, bis 540 m)                                                        |
+| ~~Physik-Todesspirale möglich (20 Substeps)~~                       | ✓ V18.104 B6 (Substep-Cap 5)                                                                                                   |
+| ~~Kreaturen: kein Lebenszyklus, keine Herden-Stimmung~~             | ✓ V18.104 D2/D3 (Contagion · Alter · Bond-Geburt · Tod nährt das Feld)                                                         |
+| Kreaturen wehren sich, greifen aber nie AN (Furcht ohne Jäger)      | Phase E — GEMERKTER FADEN #2 (D4-Gegenwehr+Temperament ✓ V18.107 sind die Vorstufe)                                            |
+| ~~Wetter binär sunny/rainy~~                                        | ✓ V18.128 D5a (Intensitäts-Achse + stormy)                                                                                     |
+| Musik hört die Emotion nicht (Pfeiler 4 halb)                       | D5b (das Ohr-Gate — eine kleine eigene Welle, Erst-Wurf erlaubt)                                                               |
+| ~~Nexus zahlt nichts, Pools feeden nicht~~                          | ✓ V18.104 E2 Wirk-Budget + V18.112 E4/E5 Geste→Gesetz                                                                          |
+| ~~Magie kostet nichts~~                                             | ✓ V18.104 E3 Mana + V18.119 HUD                                                                                                |
 | ~~Gesten-Fitness-Kreis evtl. stumm~~                                | ✓ V18.104 E4-Audit + V18.112 Kristall: Geste→Gesetz schließt                                                                   |
-| LLM ist Randfigur                                                   | E6                                                                                                                             |
-| Spieler kann nicht pflegen                                          | E7                                                                                                                             |
+| LLM ist Randfigur                                                   | E6 (δ-Karte + Manifest — die LLM-Welle)                                                                                        |
+| ~~Spieler kann nicht pflegen~~                                      | ✓ V18.104 E7 („pflege das land" → deposit_life)                                                                                |
 | ~~Rekursion blockiert (4 Schnitte)~~                                | ✓ V18.112 — smoke:selfboot GRÜN: AnazhRealm bootet in AnazhRealm                                                               |
 | Netz trägt real nur ~4–6 Peers (Stern-Topologie offen)              | F2-Rest (Design GEMESSEN in §5-F2: Hub-Routing + Stempel-Vertrauen); ~~TURN~~ ✓ V18.104 · ~~Migration ohne Zustand~~ ✓ V18.126 |
 | ~~Sozial-Schicht fehlt ganz (Bewerten lokal-only)~~                 | ✓ V18.134–.143 F4 Stufen 1–4 (Zeugnisse · Lesezeichen · Folgen · Kommentare; share/witness blüht); Rest: „Für dich"-Kür       |

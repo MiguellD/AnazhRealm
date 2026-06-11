@@ -15,7 +15,8 @@ wieder zur Halde.
 | **`CLAUDE.md`** (Wurzel) | **JETZT** | Stand · die quer-schneidenden Gotchas · Konventionen · Doc-Map. Auto-geladen bei jeder Session. |
 | **`docs/state-of-realm.md`** | **WOHIN** | Die Vision — die Pfeiler aus den Testamenten, die Heilige Lektion, die Stand-vs-Vision-Matrix, das Welten-Ultiversum. |
 | **`docs/das-lebendige-feld.md`** | **DER WAHRE NORDEN** | Der operative Vision-Anker: die Welt als EIN Feld, das alle lesen · schreiben · WERTEN — wie es GEMESSEN im Code lebt + der Vektor vorwärts. **ZUERST** vor Arbeit an lebendiger Welt / Emotion / Nexus / DSL / Kreaturen. |
-| **`docs/roadmap.md`** | **DER WEG** | Der Plan vorwärts (3 Phasen) · die offene-Fäden-Karte · die Vergangenheit stichwortmäßig · die Disziplin. |
+| **`docs/roadmap.md`** | **DER WEG** | Der Plan vorwärts (3 Phasen) · die offene-Fäden-Karte (inkl. der GEMERKTEN FÄDEN) · die Vergangenheit stichwortmäßig · die Disziplin. |
+| **`docs/taille-spec.md`** | **DER VERTRAG** | Die gefrorene Taille, NORMATIV (Ω1) — Draht-Formen · must-ignore/must-preserve · Empfänger-Gesetz · Versions-Semantik · Ledger-Gesetz · Namensraum. **ZUERST** vor Arbeit an Serialisierung/Import/p2p-Schema/Snapshot-Schema. Die ausführbare Form: `spec/golden/v1/` (EINGEFROREN, nie regenerieren). |
 | **`README.md`** (Wurzel) | **DIE TÜR** | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion. |
 
 **Auf dem Tisch — der aktive Bau-Plan:** `docs/terrain-koharenz-plan.md` (DIE EINE GRENZE — kohärentes,
@@ -23,13 +24,9 @@ kantiges Terrain + leitbares Wasser; die Chunk-Naht-Wurzel, IPERKA, alle Schnitt
 Archiv, wenn der Bogen vollendet ist.
 
 **Über dem Tisch — der Master-Blick:** `docs/gigant-plan.md` (DER GIGANT, 10.06.2026 — das
-umfassende gemessene Bild + die neun Säulen G1–G9/Ω + die Zwillinge + Stand-der-Technik-Karte +
-die Reihenfolge). Die Karte ÜBER den Detail-Plänen; pro vollendeter Säule wird sie kürzer.
-
-**Daneben auf dem Tisch:** `docs/taille-plan.md` (DER EWIGKEITS-BOGEN Ω, 11.06.2026,
-Fischer-verifiziert — die gefrorene Taille: zwei Sätze frieren ein, must-ignore/must-preserve,
-Re-Derive-Wand, Zeit-Portal; Wellen Ω0–Ω6 in gigant-plan §5 PHASE Ω. Ab Ω1: die goldenen
-Dateien `spec/golden/` werden NIE regeneriert).
+umfassende gemessene Bild + die neun Säulen G1–G9/Ω [alle ✓ im Kern seit V18.141] + die
+Zwillinge + Stand-der-Technik-Karte + die Reihenfolge + **DIE GEMERKTEN FÄDEN** am §5-Ende).
+Die Karte ÜBER den Detail-Plänen; pro vollendeter Säule wird sie kürzer.
 
 ---
 
@@ -44,6 +41,8 @@ Dateien `spec/golden/` werden NIE regeneriert).
 | `archiv/lod-kaskade-plan.md` | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter) | LOD · Streaming · Sicht-Ring · Schatten-CSM · Deko-Distanz · Draw-Calls |
 | `archiv/kampf-plan.md` | Crafting/Kampf §11 (Schöpfungs-Fluss, Resonanz, S6-B/S9/S11/Phase E) | Kampf · Waffe · Werkzeug · Rüstung · Trank · Avatar · Werkstatt · Crafting |
 | `archiv/world-portal-w18-plan.md` | W18 — in fremden Welten leben (Ko-Präsenz) | Portal-Ko-Präsenz · fremde Welten |
+| `archiv/taille-plan.md` | Ω — der Ewigkeits-Bogen (VOLLENDET V18.137–.141) — die Risse + der Weg; die NORM lebt in `docs/taille-spec.md` | Taille · Serialisierung · Import · Versions-Felder · Perpetuum |
+| `archiv/robustheit-plan.md` | G8 — die drei Ringe + Immunsystem (R0–R5 ✓); **R6 Selbst-Erweiterung = GEMERKTER FADEN #1** | Sicherheit · Sandbox · Rückruf · Souverän · R6 |
 
 **Referenz** — Nachschlagewerke:
 
@@ -66,6 +65,7 @@ Dateien `spec/golden/` werden NIE regeneriert).
 
 | Datei | Was |
 |---|---|
+| `spec/golden/v1/` | Die vier goldenen Draht-Artefakte der Taille (Ω0) — **EINGEFROREN, NIE regenerieren**; `scripts/diag-taille.cjs` prüft Konformanz. |
 | `vendor/README.md` | Vendor-Libs (Three.js r184 / Ammo / simplex-noise) — Versionen + Update-Befehl. |
 | `.claude/commands/audit.md` | Der `/audit`-Slash-Befehl. |
 | `.github/workflows/check.yml` | CI — zwei Jobs (statische Checks + Playtest-Gate). |

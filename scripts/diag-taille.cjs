@@ -1,4 +1,4 @@
-// diag-taille.cjs — Ω0: die INVENTUR der gefrorenen Taille (docs/taille-plan.md §3).
+// diag-taille.cjs — Ω0: die INVENTUR der gefrorenen Taille (docs/archiv/taille-plan.md §3).
 //
 // Zwei Rollen in EINEM Werkzeug:
 //   (1) MINT (einmalig): existiert `spec/golden/v1/` NICHT, werden die vier
