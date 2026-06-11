@@ -933,8 +933,11 @@ World/SystemCommand` — GESCHNITTEN) sind zur `chatSystemPatterns`-DATEN-Tabell
 5. **VR** (KORREKTUR 10.06.: `vrMenu.js` existiert NICHT — ein VR-Bogen startet bei null,
    WebXR + Hand-Input).
 6. **IndexedDB-Persistenz** (die localStorage-Größen-Wand).
-7. **Fahrzeug-Fahr-Tiefe** (Sitz/Steuerung/Trägheit — C1-Gelenke + C7-Sitz-Punkte sind die
-   gebaute Vorstufe; die Saaten `fahrzeug_wagen`/`reittier_holzross` warten).
+7. ~~**Fahrzeug-Fahr-Tiefe**~~ **✓ ERFÜLLT (V18.150):** das Fahr-Profil emergiert (Räder →
+   Tempo+Ausrollen · Masse → Trägheit), der Sattel führt die C5-Kurven, das Gefährt richtet
+   sich aus + Gelenke fahren mit (Phase ∝ Weg), Reiter+Gefährt sind EINS (Kollision ruht ·
+   unerntbar · brennglas-fest — drei Welt-Fresser im Nutzer-Blick gefangen). VERMERK Stufe 2:
+   der Ritt glättet Mikro-Steigungen (onSteepSlope bremst Beräderte ×0.2).
 8. ~~**Statusbar schlanken**~~ **✓ ERFÜLLT (V18.149):** Essenz immer sichtbar (Welt·Wetter·
    Modus·Zeit), die sechs Werkstatt-Zahlen hinter dem ···-Toggle (persistiert; P17 — kein
    Verlust, ein Klick entfernt).

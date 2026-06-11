@@ -14451,6 +14451,7 @@ class AnazhRealm {
     // null) sind erreichbar — dieselbe Disziplin wie _pickArchitectureAtCrosshair
     // in 6.A6: Distance-Culling ist die natürliche Reichweite-Begrenzung.
     _findNearestArchitectureWithMaterial(fromPos, materialName) {
+        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         if (!fromPos || typeof materialName !== "string" || materialName.length === 0) return null;
         if (!Array.isArray(this.state.architectures)) return null;
         let best = null;
@@ -14460,6 +14461,8 @@ class AnazhRealm {
             // (Bäume sind jetzt instanced; ohne diesen Fix fände die Kreatur
             // kein „holz" mehr).
             if (!a || !this._archIsRendered(a)) continue;
+            // V18.150 — das GERITTENE Gefährt ist kein Sammler-Ziel.
+            if (riddenId !== null && riddenId !== undefined && a.id === riddenId) continue;
             const bp = this.state.blueprints && this.state.blueprints[a.type];
             if (!bp || !Array.isArray(bp.parts)) continue;
             const hasMaterial = bp.parts.some((p) => p && p.material === materialName);
@@ -37872,6 +37875,57 @@ class AnazhRealm {
     // Spieler steigt auf eine moveable-Architektur. Setzt mountedArch + cached
     // den Mount-Offset (Spieler-Position relativ zur Architektur). Im Game-
     // Loop (siehe _tickMountedMovement) folgt die Architektur dem Spieler.
+    // V18.150 — FADEN #7 (Fahrzeug-Fahr-Tiefe): das FAHR-PROFIL emergiert
+    // aus der SUBSTANZ des Gefährts (kein Fahrzeug-Typ-Enum — die C1-GELENKE
+    // sagen das WIE, die MASSE das WIE SEHR): Räder tragen TEMPO (+12 % je
+    // Rad, Cap +60 %) und ROLLEN AUS (niedriges Brems-k — ein Wagen stoppt
+    // nicht auf der Stelle), Beine tragen einen Ritt-Schritt; das Hüll-
+    // Volumen (_compoundSizeFactor — dieselbe Größe→Stat-Achse wie beim
+    // Werk) macht TRÄGE (zähe Beschleunigung). Gecacht am Entry (die
+    // Bauplan-Form ist frozen). Erst-Wurf-Werte (Abnahme-Regel).
+    _vehicleProfile(entry) {
+        if (!entry) return null;
+        if (entry._vehicleProfile) return entry._vehicleProfile;
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const roles =
+            bp && Array.isArray(bp.parts) && bp.parts.length >= 2
+                ? this.computeMotionRoles(bp.parts, bp.connections)
+                : null;
+        let radCount = 0;
+        let beinCount = 0;
+        if (roles) {
+            for (const r of roles) {
+                if (r && r.role === "rad") radCount++;
+                else if (r && r.role === "bein") beinCount++;
+            }
+        }
+        const mass = bp ? Math.max(0.6, Math.min(2.5, this._compoundSizeFactor(bp))) : 1;
+        const prof = {
+            radCount,
+            beinCount,
+            mass,
+            topSpeedMul: 1 + Math.min(0.6, radCount * 0.12) + (radCount === 0 && beinCount >= 2 ? 0.15 : 0),
+            kAcc: Math.max(2.5, Math.min(10, 7 / mass)),
+            kBrake: radCount > 0 ? Math.max(1.5, Math.min(6, 3.5 / mass)) : Math.max(4, Math.min(10, 8 / mass)),
+            roles,
+        };
+        entry._vehicleProfile = prof;
+        return prof;
+    }
+
+    // V18.150 — das Profil des AKTUELL gerittenen Gefährts (der Bewegungs-
+    // Loop konsumiert es). _tickMountedMovement cacht den Entry pro Frame
+    // (_mountedEntry) — kein zweiter Array-Scan im Bewegungs-Pfad.
+    _mountedVehicleProfile() {
+        const archId = this.state.player && this.state.player.mountedArch;
+        if (archId === null || archId === undefined) return null;
+        const entry =
+            this._mountedEntry && this._mountedEntry.id === archId
+                ? this._mountedEntry
+                : (this.state.architectures || []).find((e) => e.id === archId);
+        return entry ? this._vehicleProfile(entry) : null;
+    }
+
     mountArchitecture(entry) {
         if (!entry || !entry.affordances || !entry.affordances.moveable) {
             this.log("Mount: Architektur ist nicht fahrbar", "INFO");
@@ -37900,7 +37954,26 @@ class AnazhRealm {
             pm.z = entry.position.z;
             pm.y = entry.position.y + entry._sitzHeight;
         }
-        this.log(`Eingestiegen in „${entry.type}"`, "INFO");
+        // V18.150 — die KOLLISION RUHT IM SATTEL (das Minecraft-Boot-Muster:
+        // Reiter + Gefährt sind EIN Körper — die Spieler-Kapsel kollidiert):
+        // GEMESSEN im diag-ride blockierte der STATISCHE Wagen-Körper die
+        // Fahrt als Bordstein (er folgt der gezogenen Position nie). Beim
+        // Aufsteigen fällt er; der Lazy-Builder (_archWithinCollisionRadius-
+        // Tick) überspringt das gerittene Gefährt; Absteigen baut lazy neu.
+        if (entry.collision) this._disposeArchitectureCollision(entry);
+        // V18.150 — das Fahr-Profil LESBAR beim Aufsteigen (der V18.119-Kreis:
+        // bauen → ablesen → lernen): der Spieler erfährt, WAS er reitet.
+        const prof = this._vehicleProfile(entry);
+        const art =
+            prof && prof.radCount > 0
+                ? `${prof.radCount}× Rad — rollt`
+                : prof && prof.beinCount >= 2
+                  ? `${prof.beinCount}× Bein — trabt`
+                  : "starr";
+        this.log(
+            `Eingestiegen in „${entry.type}" (${art} · Tempo ×${prof ? prof.topSpeedMul.toFixed(2) : "1.00"} · ${prof && prof.mass > 1.4 ? "träge" : "wendig"})`,
+            "INFO"
+        );
         return { ok: true, entry };
     }
 
@@ -37931,15 +38004,28 @@ class AnazhRealm {
     // Pro Frame: wenn mounted, ziehe die Architektur an die Spieler-Position
     // (mit Höhen-Offset abziehen — Spieler sitzt OBEN). Die Welt-Mesh des
     // Compounds wird in tickArchitectureCulling automatisch nachgezogen.
-    _tickMountedMovement() {
+    // V18.150 — FADEN #7: das Gefährt bekommt einen KÖRPER: es RICHTET sich
+    // sanft in die Fahrt-Richtung aus (exp-Lerp übers kürzeste Winkel-Delta —
+    // vorher rutschte der Wagen seitwärts wie ein Aufkleber) und seine
+    // GELENKE fahren MIT (die C1-Räder rollen / die Ross-Beine traben mit
+    // einer Phase ∝ dem ECHTEN Weg — dieselbe _animateCompoundMotion wie
+    // Kreatur + Avatar, kein Parallel-Animator). Die Ausrichtung ist
+    // VISUAL-first (die Kollisions-AABB bleibt achsen-orientiert — der
+    // Stempel ÜBER-deckt quadratisch, V18.0-Korrektur #3); vermerkt.
+    _tickMountedMovement(dt) {
         const archId = this.state.player.mountedArch;
-        if (archId === null || archId === undefined) return;
+        if (archId === null || archId === undefined) {
+            this._mountedEntry = null;
+            return;
+        }
         const entry = (this.state.architectures || []).find((e) => e.id === archId);
         if (!entry) {
             // Architektur ist verschwunden (z. B. abgebaut) → auto-dismount
             this.state.player.mountedArch = null;
+            this._mountedEntry = null;
             return;
         }
+        this._mountedEntry = entry;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
         // Architektur-Position auf Spieler ziehen (minus Sitz-Höhe — C7: der
@@ -37951,6 +38037,34 @@ class AnazhRealm {
         // Mesh-Position sofort updaten (sonst lagt das Visual einen Frame).
         if (entry.mesh) {
             entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
+            const tick = Number.isFinite(dt) && dt > 0 ? Math.min(0.1, dt) : 0.016;
+            const body = this.state.playerBody;
+            const v = body ? body.getLinearVelocity() : null;
+            const vx = v ? v.x() : 0;
+            const vz = v ? v.z() : 0;
+            const sp = Math.hypot(vx, vz);
+            if (sp > 0.4) {
+                const targetYaw = Math.atan2(vx, vz);
+                let cur = Number.isFinite(entry._rideYaw) ? entry._rideYaw : targetYaw;
+                let d = targetYaw - cur;
+                while (d > Math.PI) d -= 2 * Math.PI;
+                while (d < -Math.PI) d += 2 * Math.PI;
+                cur += d * (1 - Math.exp(-4 * tick));
+                entry._rideYaw = cur;
+                entry.mesh.rotation.y = cur;
+            }
+            // Die Fahr-Phase wächst mit dem WEG (Rad-Umfang-Gefühl statt Uhr).
+            entry._ridePhase = (entry._ridePhase || 0) + sp * tick * 2.2;
+            const prof = this._vehicleProfile(entry);
+            if (prof && prof.roles) {
+                this._animateCompoundMotion(
+                    entry.mesh,
+                    prof.roles,
+                    performance.now() / 1000,
+                    entry._ridePhase,
+                    sp > 0.4
+                );
+            }
         }
     }
 
@@ -38028,8 +38142,14 @@ class AnazhRealm {
         const ignite = AnazhRealm.FOCUSING_IGNITE_THRESHOLD;
         const ratePerSec = AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC;
         const ignitions = [];
+        // V18.150 — das GERITTENE Gefährt brennt nicht still unter dem Reiter
+        // weg (GEMESSEN im diag-ride: eine Quarz-Geode am Spawn verbrannte
+        // den Holz-Wagen mitsamt Sitz = Auto-Dismount aus dem Nichts —
+        // Reiter + Gefährt sind EINS, er hält es aus dem Brennpunkt).
+        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         for (const target of this.state.architectures || []) {
             if (target.affordances && target.affordances.focusing) continue; // selbst nicht
+            if (riddenId !== null && riddenId !== undefined && target.id === riddenId) continue;
             const targetBp = this.state.blueprints && this.state.blueprints[target.type];
             if (!targetBp) continue;
             const tags = this.computeCompoundTags(targetBp) || {};
@@ -38193,7 +38313,7 @@ class AnazhRealm {
     // Nimmt dt = Sekunden seit letztem Frame.
     tickAffordances(dt) {
         if (!Number.isFinite(dt) || dt <= 0) return;
-        this._tickMountedMovement();
+        this._tickMountedMovement(dt);
         this._tickFocusingAffordances(dt);
         this._tickRadiatingAffordances(dt);
         this._tickBalancingAffordances(dt);
@@ -45296,8 +45416,13 @@ class AnazhRealm {
         const list = this.state.architectures;
         if (!list || list.length === 0) return;
         const tSec = currentTime / 1000;
+        const mountedId = this.state.player && this.state.player.mountedArch;
         for (const entry of list) {
             if (!entry.mesh || !entry.mesh.userData) continue;
+            // V18.150 — das GERITTENE Gefährt animiert der Fahr-Tick
+            // (_tickMountedMovement: Phase ∝ Weg) — der Idle-Animator
+            // pausiert dafür (sonst überschrieben sich beide pro Frame).
+            if (mountedId !== null && mountedId !== undefined && entry.id === mountedId) continue;
             if (typeof entry.mesh.userData.animate === "function") {
                 entry.mesh.userData.animate(currentTime);
             }
@@ -45351,6 +45476,10 @@ class AnazhRealm {
         const colRadiusSq = colRadius * colRadius;
         const budget = Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
         let built = 0;
+        // V18.150 — die Kollision des GERITTENEN Gefährts ruht (das Minecraft-
+        // Boot-Muster): der Lazy-Pass würde sie sonst sofort zurückbauen
+        // (der Reiter ist per Definition IM Collision-Radius).
+        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         for (const entry of this.state.architectures) {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
@@ -45364,7 +45493,9 @@ class AnazhRealm {
                     // Budget erschöpft → baut in einem der nächsten Frames.
                 } else if (distSq <= colRadiusSq) {
                     // Gerendert + im Collision-Radius: Body sicherstellen (budgetiert).
-                    if (!entry.collision && built < budget) {
+                    if (riddenId !== null && riddenId !== undefined && entry.id === riddenId) {
+                        if (entry.collision) this._disposeArchitectureCollision(entry);
+                    } else if (!entry.collision && built < budget) {
                         this._archEnsureCollision(entry);
                         built++;
                     }
@@ -45928,6 +46059,13 @@ class AnazhRealm {
     // Kreatur-gather → erst in creature.userData.carrying, dann beim Bring-
     // Übergabe-Schritt ins Spieler-Inventar.
     harvestArchitecture(entry, harvester = "player", yieldMult = 1) {
+        // V18.150 — FADEN #7: das GERITTENE Gefährt ist unerntbar (Reiter +
+        // Gefährt sind EINS — GEMESSEN im diag-ride: ein Nexus-gather-
+        // Sammler erntete den Wagen UNTER dem Reiter weg → Auto-Dismount
+        // aus dem Nichts). Absteigen gibt es frei.
+        if (entry && this.state.player && entry.id === this.state.player.mountedArch) {
+            return null;
+        }
         if (!entry) return null;
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         const materials = {};
@@ -55915,10 +56053,23 @@ class AnazhRealm {
             // (kein Schlittern), Luft k=1.5 (Sprung-Bogen bleibt ballistisch).
             const nowDt = Math.min(0.1, Math.max(0.001, currentTime - (this.state._lastMoveT || currentTime)));
             this.state._lastMoveT = currentTime;
+            // V18.150 — FADEN #7: im SATTEL führt das GEFÄHRT die Kurven.
+            // Sein Substanz-Profil ersetzt die Fuß-k-Werte: Räder tragen
+            // TEMPO (topSpeedMul) + beschleunigen zäh (kAcc ∝ 1/Masse) +
+            // ROLLEN AUS (niedriges kBrake — der Wagen stoppt nicht auf der
+            // Stelle). EINE Bewegungs-Quelle bleibt (dieselben exp-Kurven,
+            // nur die Konstanten kommen vom Gefährt — kein Parallel-Pfad).
+            const ride =
+                this.state.player &&
+                this.state.player.mountedArch !== null &&
+                this.state.player.mountedArch !== undefined
+                    ? this._mountedVehicleProfile()
+                    : null;
+            if (ride) currentSpeed *= ride.topSpeedMul;
             if (this.state.moveDirection.length() > 0) {
                 this.state.moveDirection.normalize();
                 const v = playerBody.getLinearVelocity();
-                const kAcc = this.state.isInAir ? 4.5 : 14;
+                const kAcc = ride ? ride.kAcc : this.state.isInAir ? 4.5 : 14;
                 const f = 1 - Math.exp(-kAcc * nowDt);
                 const tx = this.state.moveDirection.x * currentSpeed * slopePenalty;
                 const tz = this.state.moveDirection.z * currentSpeed * slopePenalty;
@@ -55933,8 +56084,9 @@ class AnazhRealm {
             } else if (!this.state.onSteepSlope) {
                 // C5 — BREMS-Kurve statt Hard-Stop: am Boden zackig (k=18),
                 // in der Luft bleibt das Momentum (k=1.5, ballistischer Bogen).
+                // V18.150 — im Sattel rollt das Gefährt AUS (sein kBrake).
                 const v = playerBody.getLinearVelocity();
-                const kBrake = this.state.isInAir ? 1.5 : 18;
+                const kBrake = ride ? ride.kBrake : this.state.isInAir ? 1.5 : 18;
                 const fb = 1 - Math.exp(-kBrake * nowDt);
                 playerBody.setLinearVelocity(
                     this.setVec(this.state.tmpVec1, v.x() * (1 - fb), v.y(), v.z() * (1 - fb))
@@ -56739,7 +56891,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.149.0";
+AnazhRealm.VERSION = "18.150.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -28786,6 +28786,95 @@ async function checkBandV18149Statusbar(ctx) {
     check("V18.149 Statusbar: der ···-Toggle flippt + persistiert", res.toggleShows && res.toggleHides);
 }
 
+// FADEN #7 (V18.150) — FAHRZEUG-FAHR-TIEFE: das Fahr-Profil EMERGIERT aus
+// der Substanz (C1-Gelenke: Räder = Tempo + Ausrollen; Masse = Trägheit),
+// der Sattel führt die C5-Kurven (EINE Bewegungs-Quelle), das Gefährt
+// RICHTET sich aus + seine Gelenke fahren mit (Phase ∝ Weg), und Reiter +
+// Gefährt sind EINS (Kollision ruht im Sattel; unerntbar; brennglas-fest —
+// alle drei GEMESSEN im diag-ride: Sammler/Brennglas fraßen den Wagen unterm
+// Reiter weg, der statische Körper stand als Bordstein im Weg).
+async function checkBandV18150Ride(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const pm = r.state.playerMesh.position;
+        const savedMounted = r.state.player.mountedArch;
+        let entry = null;
+        try {
+            entry = r.spawnArchitecture("fahrzeug_wagen", { x: pm.x + 60, y: pm.y, z: pm.z + 60 }, { silent: true });
+            out.spawned = !!entry;
+            if (!entry) return out;
+            // (1) das Profil emergiert aus den Gelenken + der Masse.
+            const prof = r._vehicleProfile(entry);
+            out.profile =
+                !!prof && prof.radCount === 4 && prof.topSpeedMul > 1.3 && prof.kBrake < prof.kAcc && prof.mass > 1;
+            // (2) der Sattel: Aufsteigen ruht die Kollision + liest das Profil.
+            r.mountArchitecture(entry);
+            out.collisionRests = !entry.collision;
+            out.profileConsumed = r._mountedVehicleProfile() === prof;
+            // (3) Reiter + Gefährt sind EINS: unerntbar + kein Sammler-Ziel +
+            // brennglas-fest (Quelle), solange geritten.
+            out.unharvestable = r.harvestArchitecture(entry, "player") === null;
+            out.noGatherTarget = r._findNearestArchitectureWithMaterial(entry.position, "holz") !== entry;
+            out.brennglasSafe = /riddenId/.test(r._tickFocusingAffordances.toString());
+            out.lazyPassSkips = /riddenId/.test(r.tickArchitectureCulling.toString());
+            // (4) das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg).
+            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 5, 0, 0));
+            r.state.playerBody.activate(true);
+            r._tickMountedMovement(0.05);
+            r._tickMountedMovement(0.05);
+            r._tickMountedMovement(0.05);
+            const yawTarget = Math.atan2(5, 0);
+            out.orients =
+                Number.isFinite(entry._rideYaw) &&
+                Math.abs(entry._rideYaw - yawTarget) < 1.2 &&
+                entry.mesh &&
+                Math.abs(entry.mesh.rotation.y - entry._rideYaw) < 1e-6;
+            out.wheelsRoll = (entry._ridePhase || 0) > 0.3;
+            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 0, 0, 0));
+            // (5) die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle).
+            const moveSrc = r._loopHandleMovement
+                ? r._loopHandleMovement.toString()
+                : Object.getOwnPropertyNames(Object.getPrototypeOf(r))
+                      .map((n) => {
+                          try {
+                              return typeof r[n] === "function" ? r[n].toString() : "";
+                          } catch {
+                              return "";
+                          }
+                      })
+                      .find((s) => /_mountedVehicleProfile/.test(s) && /kBrake/.test(s)) || "";
+            out.movementConsumes =
+                /ride\.kAcc/.test(moveSrc) && /ride\.kBrake/.test(moveSrc) && /ride\.topSpeedMul/.test(moveSrc);
+            // (6) der Idle-Animator pausiert fürs gerittene Gefährt.
+            out.idleSkips = /mountedId/.test(r.tickArchitectures.toString());
+            // (7) Absteigen: die Kollision darf lazy wiederkommen (kein Dauer-Skip).
+            r.dismountArchitecture();
+            out.dismounts = r.state.player.mountedArch === null;
+        } finally {
+            if (entry) r.removeArchitecture(entry);
+            r.state.player.mountedArch = savedMounted === undefined ? null : savedMounted;
+        }
+        return out;
+    });
+    check("V18.150 Fahr-Tiefe: das Profil emergiert (4× Rad → Tempo ×>1.3 · rollt aus · träge)", res.profile);
+    check(
+        "V18.150 Fahr-Tiefe: der Sattel ruht die Kollision + liest das Profil",
+        res.collisionRests && res.profileConsumed
+    );
+    check(
+        "V18.150 Fahr-Tiefe: Reiter + Gefährt sind EINS (unerntbar · kein Sammler-Ziel · brennglas-fest · Lazy-Pass ruht)",
+        res.unharvestable && res.noGatherTarget && res.brennglasSafe && res.lazyPassSkips
+    );
+    check(
+        "V18.150 Fahr-Tiefe: das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg)",
+        res.orients && res.wheelsRoll
+    );
+    check("V18.150 Fahr-Tiefe: die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle)", res.movementConsumes);
+    check("V18.150 Fahr-Tiefe: Idle-Animator pausiert im Sattel + Absteigen gibt frei", res.idleSkips && res.dismounts);
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -45401,6 +45490,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18147ForYou(ctx);
             await checkBandPhaseEThreat(ctx);
             await checkBandV18149Statusbar(ctx);
+            await checkBandV18150Ride(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

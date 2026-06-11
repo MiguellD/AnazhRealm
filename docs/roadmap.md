@@ -143,7 +143,8 @@ verbindliche Voll-Liste mit Weck-Momenten lebt in `gigant-plan.md` §5-Ende):** 
 Erweiterung (bereit — R2+R4 stehen) · ~~Phase E Bedrohung/Furcht~~ ✓ V18.148 ·
 B1 Wasser-Sheet→Worker (weckt der fühlbare Carve-Hitch) · das ECHTE V18→V19-Zeit-Portal (weckt
 das erste Alt-Build-Artefakt) · VR (startet bei null, WebXR) · IndexedDB-Persistenz ·
-Fahrzeug-Fahr-Tiefe (C1/C7 sind die Vorstufe) · ~~Statusbar schlanken~~ ✓ V18.149.
+~~Fahrzeug-Fahr-Tiefe~~ ✓ V18.150 (Profil emergent · Sattel-Kurven · Ausrichtung · EINS-Regel) ·
+~~Statusbar schlanken~~ ✓ V18.149.
 
 ---
 
