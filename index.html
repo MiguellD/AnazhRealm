@@ -7070,6 +7070,65 @@
                 text-align: center;
                 font-style: italic;
             }
+            /* M1 (V18.156) - der Kachel-Dialog (Besiege/Scrap-Mechanic-Muster):
+               zwei Gruppen kompakter Glyph-Kacheln statt der Text-Liste. */
+            #workshop-connect-overlay .conn-group-label {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 9px;
+                letter-spacing: 0.8px;
+                text-transform: uppercase;
+                color: var(--ink-on-dark-soft, #b9a989);
+                margin: 4px 2px 1px;
+            }
+            #workshop-connect-overlay .conn-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 64px);
+                gap: 4px;
+            }
+            #workshop-connect-overlay .conn-tile {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                padding: 5px 2px 4px;
+                text-align: center;
+            }
+            #workshop-connect-overlay .conn-tile .conn-glyph {
+                font-size: 17px;
+                line-height: 1;
+                color: var(--brass-1);
+            }
+            #workshop-connect-overlay .conn-tile .conn-name {
+                font-size: 8.5px;
+                letter-spacing: 0.3px;
+            }
+            #workshop-connect-overlay .conn-tile .conn-strength {
+                display: block;
+                width: 80%;
+                height: 3px;
+                background: rgba(255, 255, 255, 0.08);
+                border-radius: 2px;
+                overflow: hidden;
+            }
+            #workshop-connect-overlay .conn-tile .conn-strength-fill {
+                display: block;
+                height: 100%;
+                background: var(--brass-1);
+                border-radius: 2px;
+            }
+            #workshop-connect-overlay .conn-tile.suggested {
+                border-color: var(--brass-1);
+                box-shadow:
+                    0 0 0 1px var(--brass-1) inset,
+                    0 0 10px rgba(212, 176, 118, 0.45);
+                background: rgba(212, 176, 118, 0.16);
+            }
+            #workshop-connect-overlay .conn-tile.suggested .conn-strength-fill {
+                background: #e8c987;
+            }
+            #workshop-connect-overlay .conn-tile.conn-anchor .conn-glyph {
+                color: var(--violet-1, #b06ad9);
+            }
             .workshop-part-row.selected {
                 background: linear-gradient(180deg, rgba(176, 106, 217, 0.18), rgba(176, 106, 217, 0.08));
                 border-color: var(--violet-1);
@@ -9000,6 +9059,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.155.0" defer></script>
+        <script src="anazhRealm.js?v=18.156.0" defer></script>
     </body>
 </html>

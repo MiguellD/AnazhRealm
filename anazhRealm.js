@@ -39446,6 +39446,41 @@ class AnazhRealm {
         const parts = blueprint.parts || [];
         for (const c of conns) {
             const a = parts[c.partA];
+            // M1(b) (V18.156) — ANKER-Punkte (attachment, partB=-1) zeigen ihren
+            // PUNKT im Werkstatt-Viewer: ein violetter Mini-Oktaeder am exakten
+            // Face-Snap-Punkt (bauen → ablesen — derselbe Punkt, den die Hand/
+            // der Reiter/der Torso konsumiert; Anker-Default = _attachPointFor).
+            const typeDef = AnazhRealm.CONNECTION_TYPES[c.type];
+            if (typeDef && typeDef.attachment) {
+                if (!a) continue;
+                const pa = a.position || { x: 0, y: 0, z: 0 };
+                let px = pa.x || 0;
+                let py = pa.y || 0;
+                let pz = pa.z || 0;
+                if (c.anchor && Number.isFinite(c.anchor.x) && Number.isFinite(c.anchor.y)) {
+                    px += c.anchor.x;
+                    py += c.anchor.y;
+                    pz += c.anchor.z || 0;
+                } else if (c.type === "sitz") {
+                    py += Math.abs((a.size && a.size.y) || 0.3) / 2;
+                }
+                const anchorMarker = new THREE.Mesh(
+                    new THREE.OctahedronGeometry(0.14, 0),
+                    new THREE.MeshBasicMaterial({
+                        color: 0xb06ad9,
+                        transparent: true,
+                        opacity: 0.95,
+                        depthTest: false,
+                    })
+                );
+                anchorMarker.position.set(px, py, pz);
+                anchorMarker.renderOrder = 1000;
+                anchorMarker.userData.isConnectionLine = true;
+                anchorMarker.userData.connectionType = c.type;
+                anchorMarker.userData.isAnchorPoint = true;
+                group.add(anchorMarker);
+                continue;
+            }
             const b = parts[c.partB];
             if (!a || !b) continue;
             const pa = a.position || { x: 0, y: 0, z: 0 };
@@ -42096,7 +42131,19 @@ class AnazhRealm {
             // partA allein — partB ist optional (-1 = die Außenwelt).
             if (typeDef.attachment) {
                 const partB = Number.isInteger(Number(c.partB)) ? Number(c.partB) : -1;
-                clean.push({ type: c.type, partA, partB: partB >= 0 && partB < partsLength ? partB : -1 });
+                const entry = { type: c.type, partA, partB: partB >= 0 && partB < partsLength ? partB : -1 };
+                // M1(b) (V18.156) — der Face-Snap-Anker ist SUBSTANZ und reist
+                // (3 finite Zahlen, geklemmt ±64 — Struktur-Müll fällt weiter).
+                if (
+                    c.anchor &&
+                    Number.isFinite(Number(c.anchor.x)) &&
+                    Number.isFinite(Number(c.anchor.y)) &&
+                    Number.isFinite(Number(c.anchor.z))
+                ) {
+                    const cl = (v) => Math.max(-64, Math.min(64, Number(v)));
+                    entry.anchor = { x: cl(c.anchor.x), y: cl(c.anchor.y), z: cl(c.anchor.z) };
+                }
+                clean.push(entry);
                 continue;
             }
             const partB = Number(c.partB);
@@ -42152,6 +42199,25 @@ class AnazhRealm {
             if (c && parts[c.partA]) {
                 const p = parts[c.partA];
                 const pos = p.position || { x: 0, y: 0, z: 0 };
+                // M1(b) (V18.156) — der FACE-SNAP-Anker: ein präzise gesetzter
+                // Punkt (Part-Zentrum + anchor, Bauplan-Achsen) IST der Punkt —
+                // kein Oberseiten-Default mehr nötig (Befund 2: „Position
+                // definieren — wie?" → die gewählte Stelle gilt wörtlich).
+                if (
+                    c.anchor &&
+                    Number.isFinite(c.anchor.x) &&
+                    Number.isFinite(c.anchor.y) &&
+                    Number.isFinite(c.anchor.z)
+                ) {
+                    return {
+                        part: c.partA,
+                        point: {
+                            x: (pos.x || 0) + c.anchor.x,
+                            y: (pos.y || 0) + c.anchor.y,
+                            z: (pos.z || 0) + c.anchor.z,
+                        },
+                    };
+                }
                 const sy = Math.abs((p.size && p.size.y) || 0.3);
                 // sitz zeigt auf die OBERSEITE des Parts, griff/trage aufs Zentrum.
                 const y = kind === "sitz" ? (pos.y || 0) + sy / 2 : pos.y || 0;
@@ -50705,6 +50771,12 @@ class AnazhRealm {
             const idx = p.partMeshes.get(hitMesh);
             if (typeof idx === "number") hitIdx = idx;
         }
+        // M1(b) (V18.156) — der ANKER-FACE-PICK hat höchsten Vorrang: nach der
+        // Anker-Kachel wählt DIESER Klick die Stelle auf dem Part (Face-Snap).
+        if (ws.anchorPick) {
+            this._workshopHandleAnchorPick(hits.length > 0 ? hits[0] : null, hitIdx);
+            return;
+        }
         // V8.02 Phase 3b — Connect-Modus hat Vorrang über Selection-Update.
         // Klick auf Part im Connect-Modus → zählt als Connect-Schritt (Source
         // oder Target), nicht als normaler Selection-Wechsel.
@@ -52491,8 +52563,38 @@ class AnazhRealm {
         this._workshopOpenConnectPopover(a, partIdx);
     }
 
+    // M1 (meister-plan §2, V18.156) — der SUBSTANZ-VORSCHLAG: die stärkste Verbindung
+    // für DIESES Part-Paar, als argmax über die BESTEHENDE Stärke-Wahrheit
+    // (computeConnectionStrength = typeStrength × strongTags-Resonanz der beiden
+    // Materialien × Kontakt) — KEIN zweites Mapping (V9.82; der Plan nannte
+    // MATERIAL_PAIR_TO_CONNECTION — die Stärke-Funktion IST die Tabelle, emergent:
+    // Eisen+Eisen → Schweißen, Holz+Holz → Binden [zähigkeit]). Liefert auch ALLE
+    // Stärken (jede Kachel zeigt ihre Substanz-Resonanz als Balken).
+    _suggestConnectionType(bp, partA, partB) {
+        const types = AnazhRealm.CONNECTION_TYPES;
+        const strengths = {};
+        let best = null;
+        let bestS = -Infinity;
+        for (const typeName of Object.keys(types)) {
+            if (types[typeName].attachment) continue;
+            const s = this.computeConnectionStrength({ type: typeName, partA, partB }, bp);
+            strengths[typeName] = s;
+            if (s > bestS) {
+                bestS = s;
+                best = typeName;
+            }
+        }
+        return { type: best, strength: bestS, strengths };
+    }
+
     // Öffnet das Connection-Type-Auswahl-Popover über dem Canvas. Klick auf
     // einen Type schreibt die Connection ins Blueprint + UI-Refresh.
+    // M1 (V18.156, Befund 1: „11 Text-Zeilen, nicht intuitiv") — der Dialog ist
+    // KEINE Liste mehr, sondern ZWEI Gruppen kompakter GLYPH-KACHELN (das Besiege/
+    // Scrap-Mechanic-Muster): „VERBINDEN" (8 Struktur-Typen — Kachel zeigt Glyph +
+    // Kurzwort + die ECHTE Substanz-Stärke dieses Paars als Balken; die STÄRKSTE
+    // leuchtet als Vorschlag) und „ANKER" (Griff/Sitz/Trage — Klick startet den
+    // Face-Snap-Pick auf dem ersten Part). Hover = Detail (title), keine Textwand.
     _workshopOpenConnectPopover(partA, partB) {
         if (typeof document === "undefined") return;
         this._workshopCloseConnectPopover(); // idempotent
@@ -52501,6 +52603,7 @@ class AnazhRealm {
         if (!canvas) return;
         const wrapper = document.getElementById("workshop-preview-wrapper");
         if (!wrapper) return;
+        const bp = this.state.blueprints[ws.selectedBlueprint];
         const overlay = document.createElement("div");
         overlay.id = "workshop-connect-overlay";
         const title = document.createElement("div");
@@ -52508,16 +52611,79 @@ class AnazhRealm {
         title.textContent = `Verbindung: Part ${partA} → Part ${partB}`;
         overlay.appendChild(title);
         const types = AnazhRealm.CONNECTION_TYPES;
+        const suggestion = bp ? this._suggestConnectionType(bp, partA, partB) : null;
+        const shortLabel = (def) => (def.label || "").split(" (")[0];
+        const mkGroup = (labelText) => {
+            const lab = document.createElement("div");
+            lab.className = "conn-group-label";
+            lab.textContent = labelText;
+            overlay.appendChild(lab);
+            const grid = document.createElement("div");
+            grid.className = "conn-grid";
+            overlay.appendChild(grid);
+            return grid;
+        };
+        // Gruppe 1 — VERBINDEN (Struktur): Kacheln mit Substanz-Stärke-Balken.
+        const connectGrid = mkGroup("Verbinden — wie die Teile halten");
         for (const typeName of Object.keys(types)) {
             const def = types[typeName];
+            if (def.attachment) continue;
             const btn = document.createElement("button");
             btn.type = "button";
-            btn.textContent = `${def.label} — ${def.description}`;
-            btn.title = `Stark in: ${def.strongTags.join(", ")} · Basis ${def.typeStrength}`;
+            btn.className = "conn-tile";
+            btn.setAttribute("data-conn-type", typeName);
+            const s = suggestion ? suggestion.strengths[typeName] || 0 : 0;
+            if (suggestion && typeName === suggestion.type && suggestion.strength > 0) {
+                btn.classList.add("suggested");
+                btn.setAttribute("data-suggested", "1");
+            }
+            const glyph = document.createElement("span");
+            glyph.className = "conn-glyph";
+            glyph.textContent = def.glyph || "·";
+            const name = document.createElement("span");
+            name.className = "conn-name";
+            name.textContent = shortLabel(def);
+            const bar = document.createElement("span");
+            bar.className = "conn-strength";
+            const fill = document.createElement("span");
+            fill.className = "conn-strength-fill";
+            fill.style.width = `${Math.round(Math.max(0, Math.min(1, s / 3)) * 100)}%`;
+            bar.appendChild(fill);
+            btn.appendChild(glyph);
+            btn.appendChild(name);
+            btn.appendChild(bar);
+            btn.title =
+                `${def.label} — ${def.description}\n` +
+                `Substanz-Stärke dieses Paars: ${s.toFixed(2)} / 3` +
+                (def.strongTags.length ? ` · stark in: ${def.strongTags.join(", ")}` : "") +
+                (suggestion && typeName === suggestion.type ? "\n✓ passt zur Substanz (Vorschlag)" : "");
             btn.addEventListener("click", () => {
                 this._workshopApplyConnection(partA, partB, typeName);
             });
-            overlay.appendChild(btn);
+            connectGrid.appendChild(btn);
+        }
+        // Gruppe 2 — ANKER (Punkte für die Außenwelt): Klick startet den Face-Snap.
+        const anchorGrid = mkGroup("Anker — Punkt für die Außenwelt (Fläche wählen)");
+        for (const typeName of Object.keys(types)) {
+            const def = types[typeName];
+            if (!def.attachment) continue;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "conn-tile conn-anchor";
+            btn.setAttribute("data-conn-type", typeName);
+            const glyph = document.createElement("span");
+            glyph.className = "conn-glyph";
+            glyph.textContent = def.glyph || "·";
+            const name = document.createElement("span");
+            name.className = "conn-name";
+            name.textContent = shortLabel(def);
+            btn.appendChild(glyph);
+            btn.appendChild(name);
+            btn.title = `${def.label} — ${def.description}\nKlick, dann die STELLE auf Part ${partA} wählen — der Punkt rastet auf Mitte/Kante/Ecke.`;
+            btn.addEventListener("click", () => {
+                this._workshopBeginAnchorPick(typeName, partA);
+            });
+            anchorGrid.appendChild(btn);
         }
         const cancelBtn = document.createElement("button");
         cancelBtn.type = "button";
@@ -52545,6 +52711,82 @@ class AnazhRealm {
         if (typeof document === "undefined") return;
         const overlay = document.getElementById("workshop-connect-overlay");
         if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+
+    // M1(b) (meister-plan §2, Befund 2: „Sitz/Griff-Position definieren — wie?") —
+    // der ANKER-FACE-PICK (Besiege/Scrap-Mechanic-Muster): die Anker-Kachel startet
+    // den Modus, der NÄCHSTE Klick auf den Part wählt die Stelle; der Punkt rastet
+    // auf Flächen-Mitte/Kanten-Mitte/Ecke (3×3-Snap je Fläche, _workshopSnapAnchor).
+    _workshopBeginAnchorPick(typeName, partIdx) {
+        const ws = this._ensureWorkshopState();
+        ws.anchorPick = { type: typeName, partIdx };
+        ws.connectFirstPartIdx = null;
+        this._workshopCloseConnectPopover();
+        const def = AnazhRealm.CONNECTION_TYPES[typeName];
+        this.log(
+            `Anker „${(def && def.label) || typeName}": klicke die STELLE auf Part ${partIdx} — der Punkt rastet auf Mitte/Kante/Ecke. (Klick ins Leere bricht ab.)`,
+            "INFO"
+        );
+    }
+
+    // Der Face-Pick-Klick: nimmt den Raycast-Hit aus _workshopRaycastSelection
+    // (kein zweiter Raycast), snappt den Punkt, schreibt die Anker-Verbindung
+    // {type, partA, partB:-1, anchor} — anchor ist BAUPLAN-lokal relativ zum
+    // Part-ZENTRUM (so lesen ihn _attachPointFor + alle C7-Konsumenten direkt).
+    _workshopHandleAnchorPick(hit, hitIdx) {
+        const ws = this._ensureWorkshopState();
+        const pick = ws.anchorPick;
+        ws.anchorPick = null;
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!pick || !bp || bp.builtIn) return;
+        if (!hit || hitIdx !== pick.partIdx) {
+            this.log("Anker: kein Treffer auf dem gewählten Part — abgebrochen.", "INFO");
+            this._workshopSetSelection(null);
+            return;
+        }
+        const part = bp.parts[pick.partIdx];
+        if (!part) return;
+        // Welt → COMPOUND-lokal (worldToLocal des Compound-Group nimmt alle
+        // Preview-Transforms heraus), minus Part-Zentrum = der rohe Anker.
+        const root = ws.preview && ws.preview.currentMesh;
+        const local = root ? root.worldToLocal(hit.point.clone()) : hit.point.clone();
+        const pos = part.position || { x: 0, y: 0, z: 0 };
+        const raw = { x: local.x - (pos.x || 0), y: local.y - (pos.y || 0), z: local.z - (pos.z || 0) };
+        const anchor = this._workshopSnapAnchor(raw, part.size || {});
+        if (!Array.isArray(bp.connections)) bp.connections = [];
+        // EIN Anker pro Typ+Part (ein zweiter Pick ersetzt den alten Punkt).
+        bp.connections = bp.connections.filter((c) => !(c && c.type === pick.type && c.partA === pick.partIdx));
+        bp.connections.push({ type: pick.type, partA: pick.partIdx, partB: -1, anchor });
+        this.log(
+            `Anker „${pick.type}" auf Part ${pick.partIdx} gesetzt: (${anchor.x.toFixed(2)}, ${anchor.y.toFixed(2)}, ${anchor.z.toFixed(2)}) — gerastet.`,
+            "INFO"
+        );
+        this._workshopSetSelection(null);
+        this._renderWorkshopDOM();
+    }
+
+    // M1(b) — der 3×3-FACE-SNAP (pure, testbar): die dominante Achse des rohen
+    // Punkts (relativ zu den Halb-Ausdehnungen) ist die FLÄCHEN-Normale — sie
+    // wird auf ±half festgesetzt; die zwei Tangenten rasten im Drittel-Raster
+    // auf {−half, 0, +half} (Mitte · Kanten-Mitte · Ecke = 9 Punkte je Fläche).
+    _workshopSnapAnchor(raw, size) {
+        const hx = Math.abs(Number(size.x) || 0.3) / 2;
+        const hy = Math.abs(Number(size.y) || 0.3) / 2;
+        const hz = Math.abs(Number(size.z) || 0.3) / 2;
+        const rx = Math.abs(raw.x) / Math.max(1e-4, hx);
+        const ry = Math.abs(raw.y) / Math.max(1e-4, hy);
+        const rz = Math.abs(raw.z) / Math.max(1e-4, hz);
+        const snapT = (v, half) => (v > half * 0.34 ? half : v < -half * 0.34 ? -half : 0);
+        const r3 = (v) => Math.round(v * 1e3) / 1e3;
+        let a;
+        if (rx >= ry && rx >= rz) {
+            a = { x: Math.sign(raw.x || 1) * hx, y: snapT(raw.y, hy), z: snapT(raw.z, hz) };
+        } else if (ry >= rx && ry >= rz) {
+            a = { x: snapT(raw.x, hx), y: Math.sign(raw.y || 1) * hy, z: snapT(raw.z, hz) };
+        } else {
+            a = { x: snapT(raw.x, hx), y: snapT(raw.y, hy), z: Math.sign(raw.z || 1) * hz };
+        }
+        return { x: r3(a.x), y: r3(a.y), z: r3(a.z) };
     }
 
     // Schreibt die Connection ins Blueprint + UI-Refresh + Reset.
@@ -57463,7 +57705,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.155.0";
+AnazhRealm.VERSION = "18.156.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -58247,48 +58489,56 @@ AnazhRealm.CONNECTION_TYPES = Object.freeze({
     // Benennungen sind unintuitiv, das Fundament passt") — die KEYS bleiben
     // (Persistenz/DSL), nur die Spieler-Sprache wird klar.
     hafting: Object.freeze({
+        glyph: "⊕",
         label: "Stecken (Stiel in Loch)",
         description: "Stiel in Loch — Reibschluss",
         strongTags: Object.freeze(["härte", "dichte"]),
         typeStrength: 0.8,
     }),
     lashing: Object.freeze({
+        glyph: "∾",
         label: "Binden (Umwicklung)",
         description: "Umwicklung — Zugfest",
         strongTags: Object.freeze(["zähigkeit"]),
         typeStrength: 0.6,
     }),
     pinning: Object.freeze({
+        glyph: "⌖",
         label: "Stiften (Bolzen)",
         description: "Stift durch Loch — Scherung",
         strongTags: Object.freeze(["härte"]),
         typeStrength: 0.75,
     }),
     welding: Object.freeze({
+        glyph: "✶",
         label: "Schweißen",
         description: "Atomar verschmolzen",
         strongTags: Object.freeze(["härte", "wärmeleitung"]),
         typeStrength: 0.95,
     }),
     gluing: Object.freeze({
+        glyph: "≣",
         label: "Kleben",
         description: "Adhäsion — Schubfest",
         strongTags: Object.freeze(["zähigkeit"]),
         typeStrength: 0.55,
     }),
     masonry: Object.freeze({
+        glyph: "⊞",
         label: "Mauern",
         description: "Druckschluss + Mörtel",
         strongTags: Object.freeze(["dichte"]),
         typeStrength: 0.7,
     }),
     sewing: Object.freeze({
+        glyph: "✕",
         label: "Nähen",
         description: "Garn durch Material",
         strongTags: Object.freeze(["zähigkeit"]),
         typeStrength: 0.5,
     }),
     magic_bind: Object.freeze({
+        glyph: "✦",
         label: "Magisch",
         description: "Tag-Resonanz",
         strongTags: Object.freeze(["magieleitung", "resoniert"]),
@@ -58303,6 +58553,7 @@ AnazhRealm.CONNECTION_TYPES = Object.freeze({
     // heraus. Ohne expliziten Punkt EMERGIERT er per Form-Resonanz
     // (_attachPointFor) — der explizite Punkt ist der Intent-Override.
     griff: Object.freeze({
+        glyph: "⊢",
         label: "Griff (hier greift die Hand)",
         description: "Attachment-Punkt: die Hand des Trägers",
         strongTags: Object.freeze([]),
@@ -58310,6 +58561,7 @@ AnazhRealm.CONNECTION_TYPES = Object.freeze({
         attachment: true,
     }),
     sitz: Object.freeze({
+        glyph: "⊓",
         label: "Sitz (hier sitzt der Reiter)",
         description: "Attachment-Punkt: der Körper des Reiters",
         strongTags: Object.freeze([]),
@@ -58317,6 +58569,7 @@ AnazhRealm.CONNECTION_TYPES = Object.freeze({
         attachment: true,
     }),
     trage: Object.freeze({
+        glyph: "◈",
         label: "Trage (liegt am Körper an)",
         description: "Attachment-Punkt: der Torso unterm Getragenen",
         strongTags: Object.freeze([]),

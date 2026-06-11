@@ -72,16 +72,21 @@ Symptomen. Jede Welle: messen → bauen → Invarianten → „Alle Invarianten 
 
 ## §2 · Die Wellen (Wurzel-Bögen, in Reihenfolge)
 
-**M1 — Die Verbindungs-Werkstatt wie ein Profi [H+A, dann S].**
-Der Dialog wird ZWEI Schritte: (a) ART wählen — kompakte Glyph-Kacheln in ZWEI Gruppen
-(„VERBINDEN": Stecken·Binden·Stiften·Schweißen·Kleben·Mauern·Nähen·Magisch / „ANKER":
-Griff·Sitz·Trage), 3-Wort-Essenz, Hover = Detail (P12-Help-Pop statt Textwand); der
-SUBSTANZ-VORSCHLAG leuchtet vor (die Resonanz kennt das Material-Paar: Holz+Holz→Stecken,
-Metall+Metall→Schweißen, Stein+Stein→Mauern — EIN Daten-Mapping, kein neues System).
-(b) Für ANKER: **Face-Snap + Gizmo** — Klick wählt die Part-FLÄCHE (Raycast auf die 6
-Box-Seiten/Quadranten), der Punkt rastet auf Flächen-Mitte/Kanten-Mitte/Ecke (Snap-Stufen),
-dann der BESTEHENDE Verschiebe-Gizmo für Offset (+ R für Dreh-Schritte). Das ist das
-Besiege/Scrap-Mechanic-Muster: simpel anzuwenden, volle Tiefe.
+**M1 — Die Verbindungs-Werkstatt wie ein Profi [H+A, dann S]. ✓ GEBAUT (V18.156).**
+(a) ✓ ZWEI Gruppen Glyph-KACHELN („Verbinden" 8 Typen 4×2 + „Anker" 3, violett),
+Glyph + Kurzwort + die ECHTE Substanz-Stärke des Paars als Balken je Kachel; Hover =
+title-Detail. Der VORSCHLAG leuchtet — GEMESSEN schärfer als das geplante Mapping:
+`_suggestConnectionType` = argmax über die BESTEHENDE computeConnectionStrength-
+Wahrheit (eisen+eisen → Schweißen ✓, holz+holz → Binden [zähigkeit] — emergent,
+kein zweites Daten-Mapping; V9.82). VORHER/NACHHER mit dem Auge: diag-m1-connect.cjs
+(Textliste 459×363 → Kacheln 314×249, Zoom-Shots). (b) ✓ ANKER-FACE-SNAP: Kachel →
+Pick-Modus → der Klick wählt die STELLE (Raycast-Hit aus _workshopRaycastSelection),
+`_workshopSnapAnchor` rastet aufs 3×3-Raster je Fläche (Mitte·Kante·Ecke); die
+Verbindung trägt `anchor` (Bauplan-Achsen, Part-relativ) — WIRKT (_attachPointFor
+liest wörtlich, alle C7-Konsumenten erben) · REIST (validate bewahrt ±64) · ABLESBAR
+(violetter Viewer-Marker). +5 Invarianten. VERMERK (Kür): freier Gizmo-Offset +
+R-Dreh-Schritte — der 9-Punkt-Snap deckt die Besiege-Praxis; rotierte Parts rastern
+aufs unrotierte Größen-Raster (der Pick-Punkt sitzt immer auf der echten Oberfläche).
 
 **M2 — Die Rollen-Wahrheit + das ehrliche Mach-Tor [H]. ✓ GEBAUT (V18.154).**
 (a) ✓ Rolle `vehicle` im EINEN Register — die Diskriminator-Achse wurde GEMESSEN schärfer
@@ -147,9 +152,8 @@ sichtbar dokumentiert (Einstellungen-Identität + ein Satz im Pass-Panel).
 
 **M9 — DIE AUFSTIEGS-LEITER (die Krone; eigener Bogen, S-Dialog je Sprosse).** §3.
 
-**Reihenfolge:** M2 ✓ → M3 ✓ (der spielbare Kern Rollen+Ritt STEHT — Wagen
-bauen→fertigen→platzieren→REITEN ist entblockt) → **M1 (Werkstatt-UX) ist der
-AKTIVE nächste Schritt** → M5 → M4 → M6 → M7 → M8 → M9 (parallel designbar).
+**Reihenfolge:** M2 ✓ → M3 ✓ (der spielbare Kern STEHT) → M1 ✓ (Werkstatt-UX) →
+**M5 ist der AKTIVE nächste Schritt** → M4 → M6 → M7 → M8 → M9 (parallel designbar).
 
 ---
 

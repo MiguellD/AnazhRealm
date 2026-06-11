@@ -29307,6 +29307,129 @@ async function checkBandM3RittVollendet(ctx) {
     check("M3 Ritt: der Rüstungs-FIT liest die echte Werk-Hülle (ext.dy — der ext.y-Pfad war tot)", res.fitReadsDy);
 }
 
+// V18.156 — M1: DIE VERBINDUNGS-WERKSTATT WIE EIN PROFI (meister-plan §2;
+// Befunde 1+2). Der Dialog ist ZWEI Gruppen Glyph-KACHELN (Besiege/Scrap-
+// Mechanic) statt der 12-Zeilen-Textliste; der SUBSTANZ-VORSCHLAG = argmax
+// über die BESTEHENDE Stärke-Wahrheit (kein zweites Mapping); ANKER-Kacheln
+// starten den FACE-SNAP-Pick (3×3 je Fläche), der Punkt reist als Substanz.
+async function checkBandM1VerbindungsWerkstatt(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const mk = (mat) => ({
+            name: "__m1band",
+            builtIn: false,
+            parts: [
+                { shape: "box", material: mat, position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                { shape: "box", material: mat, position: { x: 1.0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+            ],
+        });
+        try {
+            // (1) der SUBSTANZ-VORSCHLAG konsumiert die Stärke-Wahrheit: das
+            // Material-Paar entscheidet (eisen → Schweißen, holz → Binden).
+            const sugEisen = r._suggestConnectionType(mk("eisen"), 0, 1);
+            const sugHolz = r._suggestConnectionType(mk("holz"), 0, 1);
+            out.suggestEmergent =
+                sugEisen.type === "welding" && sugHolz.type === "lashing" && sugEisen.strength > sugHolz.strength;
+            out.suggestIsStrength =
+                Math.abs(
+                    sugEisen.strength -
+                        r.computeConnectionStrength({ type: "welding", partA: 0, partB: 1 }, mk("eisen"))
+                ) < 1e-9;
+
+            // (2) der KACHEL-Dialog: 2 Gruppen, 11 Kacheln (8 Verbinden + 3 Anker),
+            // Glyphen, der Vorschlag leuchtet (DOM-Probe am eisen-Paar).
+            blu.__m1band = mk("eisen");
+            const ws = r._ensureWorkshopState();
+            const savedSel = ws.selectedBlueprint;
+            ws.selectedBlueprint = "__m1band";
+            r._workshopOpenConnectPopover(0, 1);
+            const ov = document.getElementById("workshop-connect-overlay");
+            out.dialogTiles =
+                !!ov &&
+                ov.querySelectorAll(".conn-tile").length === 11 &&
+                ov.querySelectorAll(".conn-grid").length === 2 &&
+                ov.querySelectorAll(".conn-group-label").length === 2 &&
+                ov.querySelectorAll(".conn-glyph").length === 11;
+            const sugTile = ov && ov.querySelector(".conn-tile.suggested");
+            out.dialogSuggests = !!sugTile && sugTile.getAttribute("data-conn-type") === "welding";
+            r._workshopCloseConnectPopover();
+            ws.selectedBlueprint = savedSel;
+
+            // (3) der FACE-SNAP (pure Mathe): Flächen-Mitte · Kanten-Mitte · Ecke.
+            const size = { x: 1, y: 1, z: 1 };
+            const sMitte = r._workshopSnapAnchor({ x: 0.5, y: 0.05, z: 0.05 }, size);
+            const sKante = r._workshopSnapAnchor({ x: 0.5, y: 0.42, z: 0.05 }, size);
+            const sEcke = r._workshopSnapAnchor({ x: 0.5, y: 0.42, z: -0.42 }, size);
+            const eq = (a, x, y, z) => a.x === x && a.y === y && a.z === z;
+            out.snapMathe = eq(sMitte, 0.5, 0, 0) && eq(sKante, 0.5, 0.5, 0) && eq(sEcke, 0.5, 0.5, -0.5);
+
+            // (4) der PICK end-to-end: Anker-Kachel → Modus → Klick-Hit → die
+            // Verbindung trägt den gesnappten Punkt; ein zweiter Pick ERSETZT.
+            blu.__m1band = mk("holz");
+            ws.selectedBlueprint = "__m1band";
+            r._workshopBeginAnchorPick("sitz", 0);
+            out.pickArmed = !!ws.anchorPick && ws.anchorPick.type === "sitz" && ws.anchorPick.partIdx === 0;
+            r._workshopHandleAnchorPick({ point: new THREE.Vector3(0.1, 1.0, 0.1) }, 0);
+            const c1 = (blu.__m1band.connections || []).find((c) => c.type === "sitz");
+            out.pickWrites =
+                !!c1 && c1.partB === -1 && !!c1.anchor && c1.anchor.y === 0.5 && c1.anchor.x === 0 && c1.anchor.z === 0;
+            r._workshopBeginAnchorPick("sitz", 0);
+            r._workshopHandleAnchorPick({ point: new THREE.Vector3(0.45, 0.95, 0.1) }, 0);
+            const sitzConns = (blu.__m1band.connections || []).filter((c) => c.type === "sitz");
+            out.pickReplaces = sitzConns.length === 1 && sitzConns[0].anchor.x === 0.5;
+
+            // (5) der Punkt WIRKT: _attachPointFor liest den expliziten Anker
+            // (Part-Zentrum + anchor — die gewählte Stelle gilt wörtlich).
+            blu.__m1band.connections = [{ type: "sitz", partA: 0, partB: -1, anchor: { x: 0.5, y: 0.5, z: 0 } }];
+            const ap = r._attachPointFor(blu.__m1band, "sitz").point;
+            out.anchorConsumed = ap.x === 0.5 && ap.y === 1.0 && ap.z === 0;
+
+            // (6) der Punkt REIST: validateBlueprintConnections bewahrt anchor
+            // (geklemmt ±64), Struktur-Müll fällt.
+            const v = r.validateBlueprintConnections(
+                [
+                    { type: "sitz", partA: 0, partB: -1, anchor: { x: 0.5, y: 200, z: -0.5 } },
+                    { type: "griff", partA: 1, partB: -1, anchor: { x: "müll", y: 0, z: 0 } },
+                ],
+                2
+            );
+            out.anchorTravels =
+                v.length === 2 && !!v[0].anchor && v[0].anchor.y === 64 && v[0].anchor.x === 0.5 && !v[1].anchor;
+
+            // (7) der Punkt ist ABLESBAR: der Werkstatt-Viewer (connectionLines)
+            // zeigt den Anker-Marker am exakten Punkt.
+            const g = r._buildFromBlueprint(blu.__m1band, 0, undefined, { connectionLines: true });
+            const marker = g.children.find((ch) => ch.userData && ch.userData.isAnchorPoint);
+            out.anchorVisible = !!marker && marker.position.x === 0.5 && marker.position.y === 1.0;
+            return out;
+        } finally {
+            delete blu.__m1band;
+            const ws2 = r._ensureWorkshopState();
+            ws2.anchorPick = null;
+        }
+    });
+    check(
+        "M1 Verbindungs-Werkstatt: der SUBSTANZ-VORSCHLAG emergiert aus der Stärke-Wahrheit (eisen→Schweißen, holz→Binden — kein zweites Mapping)",
+        res.suggestEmergent && res.suggestIsStrength
+    );
+    check(
+        "M1 Verbindungs-Werkstatt: der Dialog ist ZWEI Gruppen Glyph-Kacheln (8 Verbinden + 3 Anker) und der Vorschlag leuchtet",
+        res.dialogTiles && res.dialogSuggests
+    );
+    check("M1 Face-Snap: die 3×3-Snap-Mathe rastet auf Flächen-Mitte · Kanten-Mitte · Ecke", res.snapMathe);
+    check(
+        "M1 Face-Snap: der Pick schreibt den gesnappten Anker-Punkt (partB=-1) und ein zweiter Pick ERSETZT",
+        res.pickArmed && res.pickWrites && res.pickReplaces
+    );
+    check(
+        "M1 Face-Snap: der Punkt WIRKT (_attachPointFor liest ihn) · REIST (validate bewahrt, klemmt, siebt Müll) · ist ABLESBAR (Viewer-Marker)",
+        res.anchorConsumed && res.anchorTravels && res.anchorVisible
+    );
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -45929,6 +46052,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandR6Capability(ctx);
             await checkBandM2RollenWahrheit(ctx);
             await checkBandM3RittVollendet(ctx);
+            await checkBandM1VerbindungsWerkstatt(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
