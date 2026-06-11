@@ -5799,6 +5799,15 @@ class AnazhRealm {
                     /* Kanal frisch zu — der naechste onopen reicht nach */
                 }
             }
+            // F4 Stufe 4 (V18.143) — die eigenen Kommentar-Zeugnisse nachreichen.
+            const commentBatch = this._socialCommentsBatch();
+            if (commentBatch && channel.readyState === "open") {
+                try {
+                    channel.send(JSON.stringify(commentBatch));
+                } catch (_e) {
+                    /* dito */
+                }
+            }
         };
         channel.onmessage = (ev) => this._p2pHandleChannelMessage(peerId, ev.data);
         channel.onclose = () => {
@@ -5831,6 +5840,21 @@ class AnazhRealm {
         if (msg.type === "social-ratings") {
             if (Array.isArray(msg.list) && this._p2pPeerRateAdmit("social", peerId, AnazhRealm.SOCIAL.ratePerSec)) {
                 for (const r of msg.list.slice(0, AnazhRealm.SOCIAL.maxBatch)) this._socialRatingReceive(peerId, r);
+            }
+            return;
+        }
+        // F4 Stufe 4 (V18.143) — Kommentar-Zeugnisse: dieselbe Wand (kanal-
+        // exklusiv + R1-Rate; Form/verify/Rueckruf leben im Receive).
+        if (msg.type === "social-comment") {
+            if (this._p2pPeerRateAdmit("social", peerId, AnazhRealm.SOCIAL.ratePerSec)) {
+                this._socialCommentReceive(peerId, msg.c);
+            }
+            return;
+        }
+        if (msg.type === "social-comments") {
+            if (Array.isArray(msg.list) && this._p2pPeerRateAdmit("social", peerId, AnazhRealm.SOCIAL.ratePerSec)) {
+                for (const c of msg.list.slice(0, AnazhRealm.SOCIAL.maxCommentBatch))
+                    this._socialCommentReceive(peerId, c);
             }
             return;
         }
@@ -5903,6 +5927,7 @@ class AnazhRealm {
             "creature-pos",
             "companion-say",
             "subworld-net",
+            "subworld-pose",
             "portal-invite",
         ];
         if (!ALLOWED.includes(msg.type)) return;
@@ -6172,6 +6197,7 @@ class AnazhRealm {
                 desc: entry.desc || "",
                 dsl: Array.isArray(entry.dsl) ? entry.dsl : [],
                 multiplayer: entry.multiplayer === true,
+                coPresence: entry.coPresence === true,
                 serverMode: entry.serverMode === "js-compute" ? "js-compute" : "relay",
                 files: bundle.files,
             });
@@ -6260,6 +6286,7 @@ class AnazhRealm {
                 desc: parsed.desc,
                 dsl: parsed.dsl,
                 multiplayer: parsed.multiplayer === true,
+                coPresence: parsed.coPresence === true,
                 serverMode: parsed.serverMode === "js-compute" ? "js-compute" : "relay",
                 files: parsed.files,
             })
@@ -6358,7 +6385,11 @@ class AnazhRealm {
                     (p.catalog || [])
                         .map(
                             (w) =>
-                                w.id + w.hash + (w.multiplayer ? "M" : "") + (w.serverMode === "js-compute" ? "J" : "")
+                                w.id +
+                                w.hash +
+                                (w.multiplayer ? "M" : "") +
+                                (w.coPresence ? "K" : "") +
+                                (w.serverMode === "js-compute" ? "J" : "")
                         )
                         .join(",")
             )
@@ -6406,6 +6437,16 @@ class AnazhRealm {
                         ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS."
                         : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten.";
                     row.appendChild(mp);
+                }
+                // W18-B — eine Ko-Präsenz-Welt im Katalog kenntlich machen:
+                // AnazhRealm injiziert die Augen (ihr seht euch drinnen).
+                if (w.coPresence === true) {
+                    const cp = document.createElement("span");
+                    cp.className = "library-mp-mark";
+                    cp.textContent = "Ko-Präsenz";
+                    cp.title =
+                        "Ihr seht euch in dieser Welt — AnazhRealm trägt die Posen übers Mesh, die Welt rendert die Gefährten.";
+                    row.appendChild(cp);
                 }
                 if (this._haveWorldByHashOrId(w.id, w.hash)) {
                     const have = document.createElement("span");
@@ -6939,6 +6980,17 @@ class AnazhRealm {
         }
     }
 
+    _p2pMsgSubworldPose(msg, p2p) {
+        // W18-B — die Pose eines Gefährten in DERSELBEN Ko-Präsenz-Sub-Welt.
+        // Empfänger-Wand je Peer (das _cpRate-Muster): ein bösartiger Peer
+        // kann das eigene iframe nicht mit Posen-Zustellungen würgen.
+        // _portalPoseDeliver prüft B2 (worldId-Match) + säubert die Pose.
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            if (!this._p2pPeerRateAdmit("subworld-pose", msg.peerId, AnazhRealm.SUBWORLD_POSE_PEER_RATE_MAX)) return;
+            this._portalPoseDeliver(msg.peerId, msg);
+        }
+    }
+
     _p2pMsgPortalInvite(msg, p2p) {
         // W17 Phase C — ein Mitspieler öffnete ein Multiplayer-Portal und
         // lädt die Gruppe ein. _p2pHandlePortalInvite zeigt den Prompt.
@@ -7009,6 +7061,13 @@ class AnazhRealm {
         if (typeof msg.worldRole === "string") entry.worldRole = msg.worldRole;
         // W7 Phase 3 — teilt der Peer seine Stimme?
         if (typeof msg.voiceShared === "boolean") entry.voiceShared = msg.voiceShared;
+        // W18-D — wohnt der Peer in einer Fremd-Welt? Das Name-Schild zeigt
+        // es („wohnt in …" — die Gefährten finden ihn dort).
+        const dwellIn = typeof msg.dwell === "string" ? msg.dwell.trim().slice(0, 60) : "";
+        if (dwellIn !== (entry.dwellingIn || "")) {
+            entry.dwellingIn = dwellIn;
+            this._p2pRefreshPeerNameLabel(entry);
+        }
         // W16 Phase 2 — der Welt-Katalog des Peers (seine vendorten Welten).
         if (Array.isArray(msg.catalog)) {
             entry.catalog = this._p2pSanitizeCatalog(msg.catalog);
@@ -7377,7 +7436,10 @@ class AnazhRealm {
                 fingerprint = m[1].replace(/(.{4})/g, "$1 ").trim();
             }
         }
-        const label = this._p2pBuildNameLabel(entry.avatarName || "Reisender", fingerprint);
+        // W18-D — „wohnt in …" reist im Name-Schild mit (Auffindbarkeit).
+        const baseName = entry.avatarName || "Reisender";
+        const shown = entry.dwellingIn ? `${baseName} · wohnt in ${entry.dwellingIn}` : baseName;
+        const label = this._p2pBuildNameLabel(shown, fingerprint);
         if (label && this.state.scene) {
             this.state.scene.add(label);
             entry.nameLabel = label;
@@ -7463,6 +7525,8 @@ class AnazhRealm {
                 // W17 — die Multiplayer-Marke reist im Katalog mit: ein Peer
                 // sieht, welche browsbaren Welten Gruppen-Portal-fähig sind.
                 multiplayer: w.multiplayer === true,
+                // W18-B — die Ko-Präsenz-Marke reist im Katalog mit.
+                coPresence: w.coPresence === true,
                 // W17 P-Vendor — der Server-Modus reist im Katalog mit.
                 serverMode: w.serverMode === "js-compute" ? "js-compute" : "relay",
             });
@@ -7490,6 +7554,7 @@ class AnazhRealm {
                 label: typeof c.label === "string" ? c.label.slice(0, 48) : id,
                 hash,
                 multiplayer: c.multiplayer === true,
+                coPresence: c.coPresence === true,
                 serverMode: c.serverMode === "js-compute" ? "js-compute" : "relay",
             });
             if (out.length >= 32) break;
@@ -7526,6 +7591,11 @@ class AnazhRealm {
         msg.voiceShared = !!(this.state.p2p && this.state.p2p.voiceShared);
         // W16 Phase 2 — den eigenen Welt-Katalog annoncieren (wie worldRole).
         msg.catalog = this._p2pBuildCatalog();
+        // W18-D — „wohnt in …": die Gefährten finden mich in meiner Wahl-
+        // Heimat (Auffindbarkeit, world-portal-w18-plan §7). Das Label ist
+        // öffentlich-harmlos (eine Welt-Bezeichnung, kein Pfad/Zustand).
+        const dwell = this._loadPortalDwelling();
+        if (dwell) msg.dwell = dwell.label;
         this.p2pSend(msg);
     }
 
@@ -10241,6 +10311,32 @@ class AnazhRealm {
         this._emotionVignette = document.getElementById("emotion-vignette");
         this._emotionLabel = document.getElementById("emotion-label");
 
+        // GEMERKTER FADEN #8 (V18.149) — die Statusbar auf ESSENZ: die
+        // Werkstatt-Zahlen (status-dev) ruhen hinter dem ···-Toggle; die
+        // Wahl überlebt den Reload (anazh.ui.statusDev, global wie jede
+        // UI-Präferenz — nie im Welt-Snapshot). Alle Schreiber schreiben
+        // weiter (display:none liest niemandem die textContent weg — P17,
+        // die bestehenden Status-Invarianten bleiben wahr).
+        const statusbar = document.getElementById("statusbar");
+        const devToggle = document.getElementById("status-dev-toggle");
+        if (statusbar && devToggle) {
+            let devOn = false;
+            try {
+                devOn = localStorage.getItem("anazh.ui.statusDev") === "1";
+            } catch {
+                /* Privacy-Modus — Default bleibt Essenz */
+            }
+            statusbar.classList.toggle("dev-hidden", !devOn);
+            devToggle.addEventListener("click", () => {
+                const hidden = statusbar.classList.toggle("dev-hidden");
+                try {
+                    localStorage.setItem("anazh.ui.statusDev", hidden ? "0" : "1");
+                } catch {
+                    /* Quota — die Wahl gilt für diese Session */
+                }
+            });
+        }
+
         // Abilities-Container: Event-Delegation — ▶ ausführen · ✕ eine Geste vergessen · „leeren" (V18.53).
         const abilitiesContainer = this._statusRefs.abilities;
         if (abilitiesContainer) {
@@ -11906,19 +12002,14 @@ class AnazhRealm {
             // Auch eigene Materialien und Werkzeuge (aus state.materials /
             // state.tools, jeweils nicht-builtIn) wandern mit, weil sie an
             // den Spieler-Schöpfer gebunden sind, nicht an die Welt.
+            // Ω2: dieselbe EINE Serialize-Quelle wie buildStateSnapshot
+            // (vorher die V9.82-Parallel-Map, die isMachine/Unbekanntes verlor).
             snap.materials = Object.values(this.state.materials || {})
                 .filter((m) => m && !m.builtIn)
-                .map((m) => ({ name: m.name, label: m.label || m.name, color: m.color, tags: { ...m.tags } }));
+                .map((m) => this._serializeMaterial(m));
             snap.tools = Object.values(this.state.tools || {})
                 .filter((t) => t && !t.builtIn)
-                .map((t) => ({
-                    name: t.name,
-                    label: t.label,
-                    opClass: t.opClass,
-                    opName: t.opName,
-                    precisionCap: t.precisionCap,
-                    sourceBlueprint: t.sourceBlueprint || null,
-                }));
+                .map((t) => this._serializeTool(t));
             // Eigene Baupläne ebenfalls — sie sind Schöpfer-Wissen, kein
             // Welt-Erlebnis. Hotbar bleibt leer (Welt-spezifisch). V9.44-a:
             // über _serializeBlueprint. Vorher trug dieser Pfad NUR
@@ -12044,6 +12135,8 @@ class AnazhRealm {
         } catch {
             // ignorieren — Index trotzdem bereinigen, damit der UI-Picker stimmt.
         }
+        // V18.151 (Faden #6) — auch die IndexedDB-Heimat der Welt räumen.
+        this._idbDeleteWorld(worldId);
         this.worldsIndexRemove(worldId);
         this.log(`Welt gelöscht: ${worldId.slice(0, 8)}…`, "INFO");
         return true;
@@ -13351,7 +13444,12 @@ class AnazhRealm {
     _pickCreatureSoulName(requested) {
         const souls = AnazhRealm.CREATURE_SOUL_NAMES;
         if (typeof requested === "string" && souls.includes(requested)) return requested;
-        return souls[Math.floor(Math.random() * souls.length)];
+        // PHASE E — Raubtier-Seelen entstehen nur auf BEWUSSTEN Wunsch
+        // (requested), nie aus dem Zufalls-/Ambient-Pick (sparsam: keine
+        // friedliche Welt voll Aggression).
+        const gentle = souls.filter((n) => !AnazhRealm.CREATURE_SOULS[n].predator);
+        const pool = gentle.length ? gentle : souls;
+        return pool[Math.floor(Math.random() * pool.length)];
     }
 
     // Aura-Y-Offset folgt der Soul-Höhe (auraY-Hint pro Seele), damit die
@@ -13533,6 +13631,12 @@ class AnazhRealm {
         // sie zeigen zur Außenwelt (partB=-1) und fallen hier vorab heraus.
         // NUR bekannte attachment-Typen filtern — unbekannte Typen passieren
         // wie eh (die C1-Gelenk-Lesung war nie typ-streng, der Test nutzt "weld").
+        // Ω4-Anmerkung (taille-spec §2): das ist DESIGN, kein Loch — der
+        // Gelenk-TYP emergiert aus der ANKER-GEOMETRIE (typ-frei, bekannte
+        // Substanz), nur die typ-gebundenen Lesarten (Strength/Attachment)
+        // ignorieren fremdes Vokabular. Eine unbekannte Verbindung (seit Ω4
+        // bewahrt) darf sich also bewegen; die Paar-Schleife ist gegen
+        // partB:-1 defensiv (!A || !B → continue, GEMESSEN).
         if (Array.isArray(connections)) {
             connections = connections.filter((cn) => {
                 const t = cn && AnazhRealm.CONNECTION_TYPES[cn.type];
@@ -14008,6 +14112,19 @@ class AnazhRealm {
             const bond = Math.min(1, Math.max(0, (creature.userData && creature.userData.bond) || 0));
             const guiltMag = leb * (0.4 + 0.6 * bond);
             if (guiltMag > 0.02) this._feelAction("loss", { magnitude: guiltMag });
+            // PHASE E — der TRIUMPH: fiel ein Wesen, das dich FRISCH jagte
+            // (lastHuntAt im Fenster), ist sein Fall Erleichterung/Sieg —
+            // der positive δ der beseitigten Bedrohung (joy+hope). Die
+            // Schuld oben bleibt unabhängig (ein gebundenes, lebendiges
+            // Raubtier zu fällen darf BEIDES wecken — der ehrliche Konflikt).
+            const lastHunt = creature.userData && creature.userData.lastHuntAt;
+            if (
+                Number.isFinite(lastHunt) &&
+                performance.now() / 1000 - lastHunt < AnazhRealm.CREATURE_HUNT.triumphWindowSec
+            ) {
+                this._feelAction("triumph", { magnitude: 1 });
+                this.journalAppend("relationship", `Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`);
+            }
         }
         if (typeof this.journalAppend === "function") {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
@@ -14336,6 +14453,7 @@ class AnazhRealm {
     // null) sind erreichbar — dieselbe Disziplin wie _pickArchitectureAtCrosshair
     // in 6.A6: Distance-Culling ist die natürliche Reichweite-Begrenzung.
     _findNearestArchitectureWithMaterial(fromPos, materialName) {
+        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         if (!fromPos || typeof materialName !== "string" || materialName.length === 0) return null;
         if (!Array.isArray(this.state.architectures)) return null;
         let best = null;
@@ -14345,6 +14463,8 @@ class AnazhRealm {
             // (Bäume sind jetzt instanced; ohne diesen Fix fände die Kreatur
             // kein „holz" mehr).
             if (!a || !this._archIsRendered(a)) continue;
+            // V18.150 — das GERITTENE Gefährt ist kein Sammler-Ziel.
+            if (riddenId !== null && riddenId !== undefined && a.id === riddenId) continue;
             const bp = this.state.blueprints && this.state.blueprints[a.type];
             if (!bp || !Array.isArray(bp.parts)) continue;
             const hasMaterial = bp.parts.some((p) => p && p.material === materialName);
@@ -15180,6 +15300,58 @@ class AnazhRealm {
         return wariness;
     }
 
+    // PHASE E — JAGT dieses Wesen den Spieler? Tag-emergent + sparsam:
+    // NUR das wilde Temperament (glühende Substanz — kein sanftes Built-in
+    // resoniert es; Raubtiere entstehen durch bewusste Schöpfung), NUR im
+    // pfad (frieden/schöpfer kennen keine Bedrohung), NUR unverängstigt
+    // (Furcht schlägt Jagd — der W3-fleeMul bleibt der Ausweg der Beute,
+    // die sich wehrt) + in Witterungs-Reichweite. Dirigierte Wesen (Task)
+    // jagen nicht — der Wille des Schöpfers schlägt den Instinkt (der
+    // Hunt sitzt im task-losen Bewegungs-Zweig).
+    _creatureHuntDrive(creature, wariness) {
+        if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return false;
+        if (wariness >= AnazhRealm.CREATURE_NATURE.fleeThreshold) return false;
+        if (this._creatureTemperament(creature) !== "wild") return false;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return false;
+        const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
+        return dist < AnazhRealm.CREATURE_HUNT.radius;
+    }
+
+    // PHASE E — der BISS: in Reichweite + Cooldown vorbei → Schaden durch
+    // DASSELBE damagePlayer-Tor wie die Gegenwehr (Quelle "jagd": die
+    // Rüstung dämpft flach, die FURCHT differenziert sich dort bei
+    // niedriger HP). Das Wesen fühlt seinen Angriff (chaos — dieselbe
+    // ACTION_TO_EMOTION-Sprache wie der Spieler); die erste Jagd eines
+    // Wesens ist eine Journal-Erinnerung (der Kreis: die Bedrohung ist
+    // LESBAR, kein unsichtbarer Schaden aus dem Nichts).
+    _tickCreatureHuntStrike(creature) {
+        const HUNT = AnazhRealm.CREATURE_HUNT;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return false;
+        const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
+        if (dist > HUNT.strikeRange) return false;
+        const ud = creature.userData || {};
+        const now = performance.now() / 1000;
+        if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
+        ud.nextHuntStrikeAt = now + HUNT.strikeCooldownSec;
+        ud.lastHuntAt = now;
+        const stats = this.computeCreatureStats(creature).stats || {};
+        const dmg = Math.max(2, (stats.damage || 4) * HUNT.damageMul);
+        this.damagePlayer(dmg, "jagd");
+        this._feelCreatureAction(creature, "attack", 1);
+        const name = ud.name || "Ein wildes Wesen";
+        this.log(`${name} jagt dich!`, "WARN");
+        if (typeof this.journalAppendOnce === "function") {
+            this.journalAppendOnce(
+                `hunted:${name}`,
+                "relationship",
+                `${name} witterte dich als Beute — die Wildnis hat Zähne.`
+            );
+        }
+        return true;
+    }
+
     // Direction-Berechnung für den aktiven Task. Liefert immer einen
     // THREE.Vector3 (nullt bei wait, Spieler-Vektor bei follow_player,
     // null bei wander → Caller fällt auf heutige Emotion-Logik zurück).
@@ -15913,7 +16085,21 @@ class AnazhRealm {
                     // Aura, scheues Wesen, oder getroffen) · sonst gemächlich wandern. Kein Skript — Emergenz.
                     const wariness = this._creatureWariness(creature);
                     const NAT = AnazhRealm.CREATURE_NATURE;
-                    if (wariness >= NAT.fleeThreshold) {
+                    // PHASE E — die JAGD: ein wildes, unverängstigtes Wesen
+                    // pirscht ZUR Beute (schneller als Schlendern) + beißt in
+                    // Reichweite. Furcht schlägt Jagd (_creatureHuntDrive
+                    // prüft die fleeThreshold selbst → ein getroffenes
+                    // Raubtier fällt in den Flucht-Zweig darunter).
+                    if (this._creatureHuntDrive(creature, wariness)) {
+                        const toPrey = scratchA.subVectors(playerPos, creature.position);
+                        toPrey.y = 0;
+                        if (toPrey.length() > 1.6) {
+                            direction.copy(
+                                toPrey.normalize().multiplyScalar(speed * AnazhRealm.CREATURE_HUNT.speedBoost)
+                            );
+                        }
+                        this._tickCreatureHuntStrike(creature);
+                    } else if (wariness >= NAT.fleeThreshold) {
                         // SCHEU/verschreckt — fort vom Spieler (schneller als das Schlendern; sonst Zufalls-Drift).
                         const fromPlayer = scratchA.subVectors(creature.position, playerPos);
                         fromPlayer.y = 0;
@@ -17594,6 +17780,60 @@ class AnazhRealm {
                             `Fähigkeit '${abilityName}' nicht gefunden. Lerne sie mit 'Lerne Fähigkeit <Name> <Beschreibung>'`
                         );
                     }
+                },
+            },
+            {
+                // W18-D — „wohne hier": das aktuelle Portal wird Zuhause
+                // (der Boot kehrt dorthin zurück, die Gefährten sehen es).
+                example: "wohne hier",
+                re: /^wohne\s+hier(?:\s.*)?$/i,
+                run: (m, append) => {
+                    const res = this.dwellInPortal();
+                    if (res.ok) append(`Du wohnst jetzt hier — der nächste Aufbruch bringt dich hierher zurück.`);
+                    else if (res.reason === "not_in_portal")
+                        append("Du bist in deiner Heimat-Welt — wohnen kannst du nur in einer Portal-Welt.");
+                    else append("Diese Welt ist nicht in deiner Bibliothek — hier kannst du nicht wohnen.");
+                },
+            },
+            {
+                // R6 (V18.152) — die souveräne GEWÄHR einer gereichten Fähigkeit.
+                example: "gewähre <fähigkeit>",
+                re: /^gew(?:ä|ae)hre\s+([a-z0-9_-]{1,32})\s*$/i,
+                run: (m, append) => {
+                    const res = this.grantCapability(m[1]);
+                    if (res.ok)
+                        append(
+                            `Fähigkeit „${m[1].toLowerCase()}" gewährt — „wirke ${m[1].toLowerCase()}" führt sie aus.`
+                        );
+                    else if (res.reason === "no_proposal") append("Keine Welt hat diese Fähigkeit gereicht.");
+                    else if (res.reason === "revoked")
+                        append("Verweigert — die Herkunft dieser Fähigkeit ist revoziert.");
+                    else append("Die Gewähr blieb aus.");
+                },
+            },
+            {
+                // R6 (V18.152) — eine gewährte Fähigkeit WIRKEN (dslRun-Sandbox).
+                example: "wirke <fähigkeit>",
+                re: /^wirke\s+([a-z0-9_-]{1,32})\s*$/i,
+                run: (m, append) => {
+                    const res = this.runCapability(m[1]);
+                    if (res.ok) append(`Fähigkeit „${m[1].toLowerCase()}" gewirkt.`);
+                    else if (res.reason === "unknown") append("Diese Fähigkeit wurde (noch) nicht gewährt.");
+                    else if (res.reason === "revoked") append("Diese Fähigkeit ruht — ihre Herkunft wurde revoziert.");
+                    else append("Die Fähigkeit ließ sich nicht wirken.");
+                },
+            },
+            {
+                // W18-D — „ziehe heim": das Wohnen endet.
+                example: "ziehe heim",
+                re: /^ziehe\s+heim(?:\s.*)?$/i,
+                run: (m, append) => {
+                    const res = this.endDwelling();
+                    append(
+                        res.was
+                            ? "Du bist heimgezogen — deine Heimat-Welt ist wieder die Basis."
+                            : "Du wohnst nirgendwo fremd — du bist schon daheim."
+                    );
                 },
             },
             {
@@ -27397,6 +27637,59 @@ class AnazhRealm {
     // jede persistente Bauplan-Eigenschaft ein Ein-Stellen-Edit. Spiegelt
     // das erprobte _serializeCreature/_restoreCreatureFromSnapshot-Paar.
     //
+    // Ω2 (taille-spec §2 must-preserve) — die EINE Quelle: unbekannte Felder
+    // überleben jeden Round-Trip. knownKeys = ALLE Schlüssel, die der
+    // jeweilige Serialize/Restore-Zwilling EXPLIZIT behandelt (auch die
+    // sanitisierten — must-preserve gilt dem UNBEKANNTEN, nie als Umgehung
+    // einer bekannten Wand). Werte reisen als strukturierter JSON-Klon;
+    // die Größen-Wand (8 KiB/Feld) ist die dokumentierte Dämpfung (R1-Geist:
+    // ein Riesen-Feld ist ein DoS auf die localStorage-Quota, keine Zukunft).
+    _carryUnknown(src, dst, knownKeys) {
+        if (!src || typeof src !== "object" || !dst || typeof dst !== "object") return dst;
+        const known = knownKeys instanceof Set ? knownKeys : new Set(knownKeys);
+        for (const k of Object.keys(src)) {
+            if (known.has(k)) continue;
+            try {
+                const json = JSON.stringify(src[k]);
+                if (typeof json !== "string" || json.length > AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) continue;
+                dst[k] = JSON.parse(json);
+            } catch {
+                /* nicht-serialisierbar (Zyklus/Funktion) → fällt still */
+            }
+        }
+        return dst;
+    }
+
+    // Ω2 — der EINE Material-Serialize (vorher ZWEI inline-Maps: Snapshot +
+    // Welt-Wechsel-Mitnahme — V9.82-Parallel-Pfad verdichtet). Substanz-treu:
+    // das ganze tags-Objekt (auch fremde/künftige Tag-Achsen, taille-spec §6)
+    // + Unbekanntes via _carryUnknown.
+    _serializeMaterial(m) {
+        const out = {
+            name: m.name,
+            label: m.label || m.name,
+            color: m.color,
+            tags: { ...m.tags },
+        };
+        this._carryUnknown(m, out, AnazhRealm.MATERIAL_KNOWN_KEYS);
+        return out;
+    }
+
+    // Ω2 — der EINE Tool-Serialize (gleiche Verdichtung). isMachine + künftige
+    // Felder reisen via _carryUnknown (starben vorher im fixen Satz).
+    _serializeTool(t) {
+        const out = {
+            name: t.name,
+            label: t.label,
+            opClass: t.opClass,
+            opName: t.opName,
+            precisionCap: t.precisionCap,
+            sourceBlueprint: t.sourceBlueprint || null,
+        };
+        this._carryUnknown(t, out, AnazhRealm.TOOL_KNOWN_KEYS);
+        return out;
+    }
+
     // Serialisiert einen Bauplan in ein JSON-taugliches Objekt. Reine
     // Transformation (liest nur bp.*); der Aufrufer filtert die Built-ins
     // (sie entstehen je Init aus _defaultBlueprints()).
@@ -27456,6 +27749,9 @@ class AnazhRealm {
             if (bp.portalMeta.serverMode === "js-compute") {
                 out.portalMeta.serverMode = "js-compute";
             }
+            // W18-B — die Ko-Präsenz-Marke reist mit, sonst verlöre ein
+            // Ko-Präsenz-Portal beim Reload die Pose-Injektion (V8.59-Lehre).
+            if (bp.portalMeta.coPresence === true) out.portalMeta.coPresence = true;
         }
         // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan (Save,
         // Welt-Tor-Export, Recipe-Import, Fusion). Echtheit prüft
@@ -27466,6 +27762,15 @@ class AnazhRealm {
             if (bp.signedHash) out.signedHash = bp.signedHash;
             if (bp.signedAt) out.signedAt = bp.signedAt;
         }
+        // Ω2 (taille-spec §1a/§2) — die R4-Herkunftskette reist mit (GEMESSEN
+        // Ω0: sie starb im Save — der Rückruf konnte ein gespeichertes Artefakt
+        // nur über authorPubKey treffen, nie über ein Ketten-Glied).
+        const prov = this._sanitizeProvenance(bp.provenance);
+        if (prov.length) out.provenance = prov;
+        // Ω3(a) — die gereiste Autor-Behauptung (Metadatum) reist weiter.
+        if (typeof bp.roleClaimed === "string" && bp.roleClaimed) out.roleClaimed = bp.roleClaimed;
+        // Ω2 — must-preserve: Unbekanntes überlebt den Round-Trip (EINE Quelle).
+        this._carryUnknown(bp, out, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return out;
     }
 
@@ -27545,6 +27850,15 @@ class AnazhRealm {
             if (typeof data.signedHash === "string") restored.signedHash = data.signedHash;
             if (typeof data.signedAt === "number") restored.signedAt = data.signedAt;
         }
+        // Ω2 (taille-spec §1a/§2) — die Herkunftskette wiederherstellen
+        // (gesäubert — die R4-Hex-Wand gilt auch dem Save) + must-preserve:
+        // Unbekanntes überlebt (die Sicherheits-Keys oben bleiben sanitisiert,
+        // _carryUnknown trägt NUR, was nicht im known-Satz steht).
+        const prov = this._sanitizeProvenance(data.provenance);
+        if (prov.length) restored.provenance = prov;
+        // Ω3(a) — die gereiste Autor-Behauptung (Metadatum, string-gewandet).
+        if (typeof data.roleClaimed === "string" && data.roleClaimed) restored.roleClaimed = data.roleClaimed;
+        this._carryUnknown(data, restored, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return restored;
     }
 
@@ -27591,6 +27905,12 @@ class AnazhRealm {
                 ...(r.pinned ? { pinned: true } : {}),
                 ...(r.disabled ? { disabled: true } : {}),
             })),
+            // R6 (V18.152) — die GEWÄHRTEN Fähigkeiten überleben den Reload
+            // (eine Gewähr ist eine souveräne Entscheidung — die Welt vergisst
+            // sie nicht). Additives Snapshot-Feld (Ω6: alte Builds bewahren es
+            // als Unbekanntes). Die Quarantäne-Queue reist bewusst NICHT (ein
+            // Vorschlag ist eine Session-Tatsache — die Welt reicht ihn neu).
+            grantedCapabilities: this.state.grantedCapabilities || {},
             // Schicht 1 — Pattern-Memory + Pfad-Buckets persistieren. Beides
             // ist Welt-Gedächtnis und überlebt Reloads bewusst.
             dslPatternMemory: this.state.dsl.patternMemory || {},
@@ -27700,6 +28020,9 @@ class AnazhRealm {
                 position: { x: a.position.x, y: a.position.y, z: a.position.z },
                 seed: a.seed,
                 scale: Number.isFinite(a.scale) ? a.scale : 1,
+                // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
+                // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
+                ...(a.freeBorn === true ? { freeBorn: true } : {}),
             })),
             // Ring 6.4 — eigene Baupläne (nicht built-in) persistieren. Die
             // Built-ins werden beim Init aus _defaultBlueprints() erzeugt;
@@ -27711,28 +28034,16 @@ class AnazhRealm {
                 .map((bp) => this._serializeBlueprint(bp)),
             // Welle 5 C — eigene Werkzeuge (aus registrierten Bauplänen)
             // persistieren. Starter-Werkzeuge entstehen aus _defaultTools()
-            // bei jedem Init, deshalb nur eigene speichern.
+            // bei jedem Init, deshalb nur eigene speichern. Ω2: EIN Serialize.
             tools: Object.values(this.state.tools || {})
                 .filter((t) => t && !t.builtIn)
-                .map((t) => ({
-                    name: t.name,
-                    label: t.label,
-                    opClass: t.opClass,
-                    opName: t.opName,
-                    precisionCap: t.precisionCap,
-                    sourceBlueprint: t.sourceBlueprint || null,
-                })),
+                .map((t) => this._serializeTool(t)),
             // Welle 4 Phase 1 — eigene Materialien persistieren. Built-ins
             // kommen aus _defaultMaterials() im Konstruktor zurück; auch hier
-            // schreiben wir nur, was der Spieler dazugefügt hat.
+            // schreiben wir nur, was der Spieler dazugefügt hat. Ω2: EIN Serialize.
             materials: Object.values(this.state.materials || {})
                 .filter((m) => m && !m.builtIn)
-                .map((m) => ({
-                    name: m.name,
-                    label: m.label || m.name,
-                    color: m.color,
-                    tags: { ...m.tags },
-                })),
+                .map((m) => this._serializeMaterial(m)),
             // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name
             // oder null. Default wird beim Init überschrieben.
             hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
@@ -27747,6 +28058,125 @@ class AnazhRealm {
         };
     }
 
+    // ===== GEMERKTER FADEN #6 (V18.151) — IndexedDB-Persistenz =====
+    // Die localStorage-Größen-Wand (~5 MB je Origin) fällt: die GROSSEN
+    // Welt-Snapshots leben zusätzlich in IndexedDB (hunderte MB), der
+    // winzige Index (anazhRealmWorlds/Active) bleibt synchron in
+    // localStorage. ADDITIV + graceful: ohne IndexedDB (Privacy-Modus,
+    // alte Browser) bleibt alles exakt wie heute; localStorage wird
+    // weiter geschrieben (der Spiegel), und beim LESEN gewinnt der
+    // NEUERE Stand (IDB-Stempel vs. worldsIndex.lastPlayed — kein neues
+    // Snapshot-Feld, die Ω-Taille bleibt unberührt). Wirft localStorage
+    // QUOTA, trägt IndexedDB allein — die Welt geht nie mehr still
+    // verloren, das Log sagt es ehrlich.
+
+    // Lazy-Open der EINEN DB (Promise gecacht; null = nicht verfügbar).
+    _idb() {
+        if (this._idbPromise !== undefined) return this._idbPromise;
+        if (typeof indexedDB === "undefined") {
+            this._idbPromise = Promise.resolve(null);
+            return this._idbPromise;
+        }
+        this._idbPromise = new Promise((resolve) => {
+            try {
+                const req = indexedDB.open("anazhRealm", 1);
+                req.onupgradeneeded = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains("worlds")) db.createObjectStore("worlds");
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+                req.onblocked = () => resolve(null);
+            } catch {
+                resolve(null);
+            }
+        });
+        return this._idbPromise;
+    }
+
+    // Einen Welt-Snapshot (JSON-String) ablegen. {at} stempelt die Frische.
+    async _idbPutWorld(worldId, json) {
+        const db = await this._idb();
+        if (!db || !worldId) return false;
+        return new Promise((resolve) => {
+            try {
+                const tx = db.transaction("worlds", "readwrite");
+                tx.objectStore("worlds").put({ at: Date.now(), json }, worldId);
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = () => resolve(false);
+                tx.onabort = () => resolve(false);
+            } catch {
+                resolve(false);
+            }
+        });
+    }
+
+    async _idbGetWorld(worldId) {
+        const db = await this._idb();
+        if (!db || !worldId) return null;
+        return new Promise((resolve) => {
+            try {
+                const tx = db.transaction("worlds", "readonly");
+                const req = tx.objectStore("worlds").get(worldId);
+                req.onsuccess = () => {
+                    const r = req.result;
+                    resolve(r && typeof r.json === "string" ? r : null);
+                };
+                req.onerror = () => resolve(null);
+            } catch {
+                resolve(null);
+            }
+        });
+    }
+
+    async _idbDeleteWorld(worldId) {
+        const db = await this._idb();
+        if (!db || !worldId) return false;
+        return new Promise((resolve) => {
+            try {
+                const tx = db.transaction("worlds", "readwrite");
+                tx.objectStore("worlds").delete(worldId);
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = () => resolve(false);
+            } catch {
+                resolve(false);
+            }
+        });
+    }
+
+    // Boot-Vorlauf (init awaitet ihn VOR loadState): den IDB-Snapshot der
+    // AKTIVEN Welt laden + nur behalten, wenn er FRISCHER ist als der
+    // localStorage-Spiegel (worldsIndex.lastPlayed — saveState stempelt
+    // beide im selben Zug; auseinander laufen sie nur, wenn EIN Pfad
+    // fehlschlug → der überlebende ist die Wahrheit).
+    async _idbPreload() {
+        this._idbPreloadedState = null;
+        const activeId = this.activeWorldGet();
+        if (!activeId) return;
+        const rec = await this._idbGetWorld(activeId);
+        if (!rec) return;
+        let lsAt = 0;
+        try {
+            const idx = this.worldsIndexLoad();
+            const entry = Array.isArray(idx) ? idx.find((w) => w && w.worldId === activeId) : null;
+            const hasLs = typeof localStorage !== "undefined" && !!localStorage.getItem(this.worldStorageKey(activeId));
+            lsAt = hasLs && entry && Number.isFinite(entry.lastPlayed) ? entry.lastPlayed : 0;
+        } catch {
+            lsAt = 0;
+        }
+        // IDB gewinnt bei Gleichstand NICHT (saveState schreibt beide im
+        // selben Zug — der Spiegel ist dann identisch; kleiner Takt-Skew
+        // soll den sync-Pfad nicht entthronen). Nur ECHT frischer gewinnt.
+        if (rec.at > lsAt + 1500) {
+            try {
+                this._idbPreloadedState = { worldId: activeId, state: JSON.parse(rec.json) };
+                this.log("Welt-Stand aus IndexedDB (frischer als der localStorage-Spiegel).", "INFO");
+            } catch {
+                this._idbPreloadedState = null;
+            }
+        }
+    }
+
     saveState() {
         const stateToSave = this.buildStateSnapshot();
         // Ring 8: Multi-Welt-Pfad. Pro Welt eigener Key, Index-Eintrag mit
@@ -27755,9 +28185,22 @@ class AnazhRealm {
         // fallen wir auf den Legacy-Key zurück, damit der Spieler nicht
         // still verliert.
         const worldId = this.state.worldMeta && this.state.worldMeta.worldId;
+        // V18.151 (Faden #6) — der Snapshot-JSON EINMAL gebaut; IndexedDB
+        // trägt ihn IMMER (async, hunderte MB Raum), localStorage bleibt der
+        // schnelle Spiegel + Fallback. Wirft localStorage QUOTA, geht die
+        // Welt nicht mehr verloren — IndexedDB hat sie schon.
+        const json = JSON.stringify(stateToSave);
+        if (worldId) {
+            this._idbPutWorld(worldId, json).then((ok) => {
+                if (!ok && !this._idbWarned) {
+                    this._idbWarned = true;
+                    this.log("IndexedDB nicht verfügbar — Welten leben allein im localStorage (5-MB-Wand).", "WARN");
+                }
+            });
+        }
         try {
             if (worldId) {
-                localStorage.setItem(this.worldStorageKey(worldId), JSON.stringify(stateToSave));
+                localStorage.setItem(this.worldStorageKey(worldId), json);
                 this.worldsIndexUpsert({
                     worldId,
                     slug: this.state.worldMeta.slug || "",
@@ -27766,7 +28209,7 @@ class AnazhRealm {
                 });
                 this.activeWorldSet(worldId);
             } else {
-                localStorage.setItem("anazhRealmState", JSON.stringify(stateToSave));
+                localStorage.setItem("anazhRealmState", json);
             }
             const lastVersion = this.state.versionHistory[this.state.versionHistory.length - 1];
             if (lastVersion !== this.state.currentVersion) {
@@ -27778,7 +28221,12 @@ class AnazhRealm {
             localStorage.setItem("anazhRealmVersions", JSON.stringify(this.state.versionHistory));
             this.log("Zustand in localStorage gespeichert", "DEBUG");
         } catch (error) {
-            this.log(`localStorage-Speichern fehlgeschlagen: ${error.message}`, "ERROR");
+            // V18.151 — die QUOTA-Wand fällt weich: IndexedDB trägt die Welt
+            // (der Schreiber oben lief schon); ehrlich loggen statt ERROR-Panik.
+            this.log(
+                `localStorage-Spiegel voll/fehlgeschlagen (${error.message}) — die Welt lebt in IndexedDB weiter.`,
+                "WARN"
+            );
         }
     }
 
@@ -28340,7 +28788,14 @@ class AnazhRealm {
             partA: Number(c && c.partA) || 0,
             partB: Number(c && c.partB) || 0,
         }));
-        return JSON.stringify({ v: 1, role: String(bp.role || ""), parts, connections });
+        // Ω3(a) (taille-spec §3) — die Signatur deckt die GEREISTE Behauptung:
+        // nach einem Import lebt die Autor-Rolle als roleClaimed (Metadatum)
+        // weiter, die lokale role ist re-derived → die Prüfung liest
+        // roleClaimed ?? role (rückwärts-kompatibel, golden v1 bleibt valid;
+        // signBlueprint löscht roleClaimed vor dem Siegeln — wer NEU signiert,
+        // bürgt für die EIGENE Form, nicht die fremde Behauptung).
+        const role = bp.roleClaimed != null ? bp.roleClaimed : bp.role;
+        return JSON.stringify({ v: 1, role: String(role || ""), parts, connections });
     }
 
     // Schneller, nicht-kryptografischer Hash (FNV-1a, 32-bit) — NUR zur
@@ -28383,6 +28838,9 @@ class AnazhRealm {
         ) {
             return { ok: false, reason: "cancelled" };
         }
+        // Ω3(a) — wer signiert, bürgt für die EIGENE Form: eine mitgereiste
+        // fremde Rollen-Behauptung fällt, der Kanon liest dann bp.role.
+        delete bp.roleClaimed;
         const canonical = this._canonicalBlueprint(bp);
         const sig = await this._vibeSign(canonical);
         if (!sig) return { ok: false, reason: "sign_failed" };
@@ -28791,6 +29249,10 @@ class AnazhRealm {
             hasDsl: dsl.length > 0,
             trust: w.trust === "sandboxed" ? "sandboxed" : "trusted",
             multiplayer: w.multiplayer === true,
+            // W18-B — die Welt deklariert das Ko-Präsenz-Protokoll (AnazhRealm
+            // injiziert die Augen: ihr seht euch in ihr, obwohl sie selbst
+            // keine Mitspieler kennt).
+            coPresence: w.coPresence === true,
             serverMode: w.serverMode === "js-compute" ? "js-compute" : "relay",
             imported: isImported,
             translated: isImported && w.translated === true,
@@ -28839,6 +29301,7 @@ class AnazhRealm {
             dsl.join(" "),
             prof.trust === "sandboxed" ? "sandbox sandboxed" : "vertraut trusted",
             prof.multiplayer ? "multiplayer" : "einzelwelt",
+            prof.coPresence ? "ko-präsenz copresence gemeinsam" : "",
             prof.serverMode === "js-compute" ? "js-compute" : "",
             prof.signature ? "signiert signed" : "unsigniert",
             prof.origin,
@@ -28969,6 +29432,15 @@ class AnazhRealm {
         // Eine js-compute-Welt ist per Natur mehrspielerfähig — die Marke
         // koppelt mit (wie _sanitizePortalMeta es im portalMeta erzwingt).
         if (m.multiplayer === true || out.serverMode === "js-compute") out.multiplayer = true;
+        // W18-B — die Ko-Präsenz-Deklaration überlebt den Rundlauf (V8.59):
+        // ein geholtes Portal dieser Welt injiziert die Pose-Schicht.
+        if (m.coPresence === true) out.coPresence = true;
+        // Ω2 (taille-spec §2) — must-preserve: Unbekanntes überlebt die
+        // Sanitize-Wand als OPAKES Datum (die bekannten Sicherheits-Felder
+        // oben bleiben sanitisiert — _carryUnknown trägt nur, was nicht im
+        // known-Satz steht; ein künftiges Sicherheits-Feld sanitisiert der
+        // künftige Build selbst, das Empfänger-Gesetz).
+        this._carryUnknown(m, out, AnazhRealm.MANIFEST_KNOWN_KEYS);
         return out;
     }
 
@@ -28994,6 +29466,8 @@ class AnazhRealm {
             // W17 — die Multiplayer-Marke reist mit dem geteilten Manifest
             // (Metadaten, nicht signierte Substanz — wie world-Pfad/desc).
             multiplayer: entry.multiplayer === true,
+            // W18-B — die Ko-Präsenz-Marke reist mit (Metadaten wie multiplayer).
+            coPresence: entry.coPresence === true,
             // W17 P-Vendor — der Server-Modus reist mit dem geteilten Manifest.
             serverMode: entry.serverMode === "js-compute" ? "js-compute" : "relay",
             authorPubKey: sig.authorPubKey,
@@ -29470,6 +29944,9 @@ class AnazhRealm {
             // ihr geholtes Portal lädt mit dem Transport-Shim + broadcastet
             // beim Betreten eine Gruppen-Portal-Einladung (W17 Phase C).
             multiplayer: m.multiplayer === true,
+            // W18-B — die Ko-Präsenz-Marke: ihr geholtes Portal injiziert
+            // die Pose-Schicht (das Mesh wird ihre Multiplayer-Schicht).
+            coPresence: m.coPresence === true,
             // W17 P-Vendor — der Server-Modus: js-compute → das geholte Portal
             // wird ein Compute-Host-Portal (V8.79), nicht blosser Relay.
             serverMode: m.serverMode === "js-compute" ? "js-compute" : "relay",
@@ -29511,6 +29988,7 @@ class AnazhRealm {
             dsl: o.dsl,
             bundleHash: posted.bundleHash,
             multiplayer: o.multiplayer === true,
+            coPresence: o.coPresence === true,
             serverMode: o.serverMode === "js-compute" ? "js-compute" : "relay",
         });
         if (!reg.ok) return reg;
@@ -29550,6 +30028,7 @@ class AnazhRealm {
             dsl: o.dsl,
             bundleHash: posted.bundleHash,
             multiplayer: o.multiplayer === true,
+            coPresence: o.coPresence === true,
             serverMode: o.serverMode === "js-compute" ? "js-compute" : "relay",
         });
         if (!reg.ok) return reg;
@@ -30136,6 +30615,17 @@ class AnazhRealm {
     // fehlendem oder ungültigem Save.
     _loadStateLoadFromStorage() {
         const activeId = this.activeWorldGet();
+        // V18.151 (Faden #6) — der Boot-Vorlauf (_idbPreload, in init
+        // awaitet) hat den IndexedDB-Stand der AKTIVEN Welt schon geparst,
+        // wenn er FRISCHER ist als der localStorage-Spiegel (z. B. weil die
+        // 5-MB-Wand den Spiegel brach). Welt-Guard: nur für DIESELBE Welt
+        // (ein {reload:false}-Welt-Wechsel im Test liefe sonst auf den
+        // Preload der alten Welt).
+        if (this._idbPreloadedState && this._idbPreloadedState.worldId === activeId) {
+            const pre = this._idbPreloadedState.state;
+            this._idbPreloadedState = null;
+            return pre;
+        }
         let savedState = null;
         if (activeId) {
             savedState = localStorage.getItem(this.worldStorageKey(activeId));
@@ -30362,7 +30852,25 @@ class AnazhRealm {
                 if (!m || typeof m.name !== "string") continue;
                 if (this.state.materials[m.name] && this.state.materials[m.name].builtIn) continue;
                 const r = this.defineMaterial(m.name, m.color, m.tags || {});
-                if (r.ok) restoredMats++;
+                if (r.ok) {
+                    restoredMats++;
+                    // Ω2 (taille-spec §2/§6) — SUBSTANZ-TREUE über die strenge
+                    // Geste hinaus: defineMaterial bleibt die [0,1]-Wand der
+                    // lokalen SCHÖPFUNG (DSL/UI), aber der RESTORE bewahrt die
+                    // gespeicherte Substanz exakt — label, die EXAKTEN Tag-
+                    // Magnituden (ein importiertes Material behält seine Werte;
+                    // die Klemme sitzt am LESER, Ω3) inkl. fremder/künftiger
+                    // Tag-Achsen, + Unbekanntes.
+                    const entry = this.state.materials[r.name];
+                    if (typeof m.label === "string" && m.label) entry.label = m.label;
+                    if (m.tags && typeof m.tags === "object") {
+                        for (const k of Object.keys(m.tags)) {
+                            const v = Number(m.tags[k]);
+                            if (Number.isFinite(v)) entry.tags[k] = v;
+                        }
+                    }
+                    this._carryUnknown(m, entry, AnazhRealm.MATERIAL_KNOWN_KEYS);
+                }
             }
             this.log(`Materialien geladen: ${restoredMats} eigene`);
         }
@@ -30393,6 +30901,9 @@ class AnazhRealm {
                     builtIn: false,
                     sourceBlueprint: typeof t.sourceBlueprint === "string" ? t.sourceBlueprint : null,
                 };
+                // Ω2 — must-preserve NACH der opClass/opName-Wand (isMachine +
+                // künftige Felder überleben den Reload; die Wand bleibt).
+                this._carryUnknown(t, this.state.tools[t.name], AnazhRealm.TOOL_KNOWN_KEYS);
                 if (!this.state.player.tools.includes(t.name)) this.state.player.tools.push(t.name);
                 restoredTools++;
             }
@@ -30422,7 +30933,13 @@ class AnazhRealm {
         // `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
         for (const a of state.architectures) {
             if (!a || typeof a.type !== "string" || !a.position) continue;
-            this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
+            this.spawnArchitecture(a.type, a.position, {
+                seed: a.seed,
+                scale: a.scale,
+                id: a.id,
+                // Ω5 — die Gratis-Geburt reist durch den Reload mit.
+                freeBorn: a.freeBorn === true,
+            });
         }
         this.log(`Architekturen geladen: ${state.architectures.length}`);
     }
@@ -30553,6 +31070,36 @@ class AnazhRealm {
     // (Phase 4 — Namensliste statt DSL-Programme, restoreAbility mappt drei
     // historische Nexus-Namen auf ihre DSL-Äquivalente).
     _loadStateRestoreMiscState(state) {
+        // R6 (V18.152) — gewährte Fähigkeiten wiederherstellen, durch die
+        // HEUTIGE Wand (Empfänger-Gesetz: auch Restauriertes prüft die
+        // Regel-Wand + die Broadcast-Wand; Name id-förmig; bounded).
+        if (state.grantedCapabilities && typeof state.grantedCapabilities === "object") {
+            const out = {};
+            let n = 0;
+            for (const key of Object.keys(state.grantedCapabilities)) {
+                if (n >= AnazhRealm.CAPABILITY_PROPOSAL_MAX) break;
+                const c = state.grantedCapabilities[key];
+                const name = String(key).trim().toLowerCase();
+                if (!/^[a-z0-9_-]{1,32}$/.test(name)) continue;
+                if (!c || !this._isRuleEffectAllowed(c.dsl)) continue;
+                if (this._dslContainsAnyOp(c.dsl, AnazhRealm.NON_BROADCASTABLE_OPS)) continue;
+                out[name] = {
+                    name,
+                    desc: typeof c.desc === "string" ? c.desc.slice(0, 120) : "",
+                    dsl: JSON.parse(JSON.stringify(c.dsl)),
+                    fromLabel: typeof c.fromLabel === "string" ? c.fromLabel.slice(0, 60) : "?",
+                    fromWorldId: typeof c.fromWorldId === "string" ? c.fromWorldId.slice(0, 40) : "",
+                    authorPubKey:
+                        typeof c.authorPubKey === "string" && /^[0-9a-f]{64}$/i.test(c.authorPubKey)
+                            ? c.authorPubKey.toLowerCase()
+                            : "",
+                    at: Number(c.at) || 0,
+                    grantedAt: Number(c.grantedAt) || 0,
+                };
+                n++;
+            }
+            this.state.grantedCapabilities = out;
+        }
         if (state.playerPathBuckets && typeof state.playerPathBuckets === "object") {
             const target = this.state.player.pathBuckets;
             for (const group of Object.keys(target)) {
@@ -31201,6 +31748,54 @@ class AnazhRealm {
     // Querverweise (Werkzeug.sourceBlueprint, fraktaler-Bauplan.part.refName)
     // werden mit umbenannt — selbe Logik wie bei Fusion. Schreibt einen
     // Witness-Journal-Eintrag mit der Quelle.
+    // Ω3(c) (taille-spec §3) — der EINE Import-Eingang für fremde Bauplan-
+    // Artefakte (importRecipesFromWorld + jeder künftige Import). Vier Wände
+    // in fester Reihenfolge:
+    //   (1) das R4-Rückruf-SIEB AM EINGANG (nicht erst beim nächsten Laden),
+    //   (2) die _deserializeBlueprint-Wand — Parts-Migration, connections-
+    //       Validierung, portalMeta-SANITIZE, Ω2-carry (GEMESSEN vorher: der
+    //       rohe {...bp}-Spread lief an _sanitizePortalMeta VORBEI — ein
+    //       fremdes Save konnte bis zum nächsten Reload ein un-sanitisiertes
+    //       Portal in die laufende Session legen),
+    //   (3) BEHAUPTUNG/WAHRHEIT trennen: die gereiste Rolle wird roleClaimed
+    //       (Metadatum, reist weiter — die Signatur bleibt prüfbar, weil
+    //       _canonicalBlueprint roleClaimed ?? role liest), roleManual aus
+    //       fremder Hand FÄLLT (der lokale Intent-Override braucht die lokale
+    //       Geste, V17.70 empfänger-seitig), die lokale role EMERGIERT aus
+    //       der Substanz (das Empfänger-Gesetz: die Form führt),
+    //   (4) die HERKUNFT wächst („über dich" — nur wenn eine echte Kette
+    //       reist; eine leere Kette bleibt leer, sonst erfänden wir einen
+    //       Ursprung) + der Signatur-Status wird ASYNC gestempelt (reine
+    //       Anzeige-Wahrheit; die Wände hier sind synchron).
+    // Liefert den admittierten Bauplan oder null (gesiebt/Müll).
+    _admitForeignArtifact(rawBp) {
+        if (!rawBp || typeof rawBp !== "object") return null;
+        if (this._artifactProvenanceTainted(rawBp)) return null;
+        const restored = this._deserializeBlueprint(rawBp);
+        if (!restored) return null;
+        const claimed =
+            typeof restored.roleClaimed === "string" && restored.roleClaimed
+                ? restored.roleClaimed
+                : typeof rawBp.role === "string"
+                  ? rawBp.role
+                  : "";
+        delete restored.roleManual;
+        if (claimed) restored.roleClaimed = claimed;
+        restored.role = this.computeBlueprintRole(restored);
+        const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+        if (myKey && Array.isArray(restored.provenance) && restored.provenance.length) {
+            this._appendProvenance(restored, myKey);
+        }
+        if (restored.signature) {
+            this.verifyBlueprintSignature(restored)
+                .then((st) => {
+                    restored.signatureStatus = st;
+                })
+                .catch(() => {});
+        }
+        return restored;
+    }
+
     importRecipesFromWorld(sourceWorldId) {
         if (!sourceWorldId || typeof sourceWorldId !== "string") {
             return { ok: false, reason: "keine Quell-Welt-ID" };
@@ -31242,21 +31837,45 @@ class AnazhRealm {
             return candidate;
         };
 
-        for (const bp of sourceBPs) {
-            if (!bp || typeof bp.name !== "string" || bp.builtIn) continue;
-            const newName = resolveName(bp.name, existingBPNames);
-            existingBPNames.add(newName);
-            if (newName !== bp.name) renameMap[bp.name] = newName;
-            addedBPs.push({ ...bp, name: newName, builtIn: false });
-        }
+        // Ω3(c) — MATERIALIEN ZUERST anwenden (vor der Bauplan-Admission):
+        // die _deserializeBlueprint-Wand migriert unbekannte Material-Namen
+        // auf „stein" — die fremden Definitionen müssen im state stehen,
+        // BEVOR die Baupläne durch die Wand laufen (sonst Substanz-Verlust).
+        // Material-Tags füllen wir mit Defaults auf, damit alte Saves ohne
+        // alle Tag-Felder konsistent bleiben; die Magnituden bleiben EXAKT
+        // (Substanz-Treue — die Klemme sitzt am Leser, computePartTags Ω3b).
+        const tagDefaults = AnazhRealm.MATERIAL_TAG_DEFAULTS || {};
         for (const m of sourceMats) {
             if (!m || typeof m.name !== "string" || m.builtIn) continue;
             const newName = resolveName(m.name, existingMatNames);
             existingMatNames.add(newName);
             addedMats.push({ ...m, name: newName, builtIn: false });
         }
+        for (const m of addedMats) {
+            this.state.materials[m.name] = {
+                ...m,
+                tags: { ...tagDefaults, ...(m.tags || {}) },
+            };
+        }
+
+        for (const bp of sourceBPs) {
+            if (!bp || typeof bp.name !== "string" || bp.builtIn) continue;
+            // Ω3(c) — der EINE Eingang: Rückruf-Sieb + Restore-Wand +
+            // Behauptung/Wahrheit + Herkunft (statt des rohen {...bp}-Spreads).
+            const admitted = this._admitForeignArtifact(bp);
+            if (!admitted) continue;
+            const newName = resolveName(bp.name, existingBPNames);
+            existingBPNames.add(newName);
+            if (newName !== bp.name) renameMap[bp.name] = newName;
+            admitted.name = newName;
+            addedBPs.push(admitted);
+        }
         for (const t of sourceTools) {
             if (!t || typeof t.name !== "string" || t.builtIn) continue;
+            // Ω3 — dieselbe Wand wie der Save-Restore: opClass/opName sind
+            // whitelisted (der rohe Spread ließ vorher alles durch).
+            if (!AnazhRealm.TOOL_OP_CLASSES.has(t.opClass)) continue;
+            if (!AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(t.opName || ""))) continue;
             const newName = resolveName(t.name, existingToolNames);
             existingToolNames.add(newName);
             addedTools.push({ ...t, name: newName, builtIn: false });
@@ -31266,17 +31885,9 @@ class AnazhRealm {
         // den Bauplan-Umbenennungen. Selbe Logik wie Fusion — kein Drift.
         this._rewireBlueprintRefs(addedBPs, addedTools, renameMap);
 
-        // Anwenden auf state. Material-Tags füllen wir mit Defaults auf, damit
-        // alte Saves ohne alle Tag-Felder konsistent bleiben.
-        const tagDefaults = AnazhRealm.MATERIAL_TAG_DEFAULTS || {};
+        // Anwenden auf state (Materialien stehen schon — siehe oben).
         for (const bp of addedBPs) {
             this.state.blueprints[bp.name] = bp;
-        }
-        for (const m of addedMats) {
-            this.state.materials[m.name] = {
-                ...m,
-                tags: { ...tagDefaults, ...(m.tags || {}) },
-            };
         }
         for (const t of addedTools) {
             this.state.tools[t.name] = t;
@@ -32065,12 +32676,31 @@ class AnazhRealm {
             const resist = Math.max(0, Math.min(0.9, stats.heatResist || 0));
             scaled = value * (1 - resist);
         }
+        // PHASE E — KREATUR-Schläge (Jagd-Biss + Gegenwehr) dämpft die
+        // Rüstung FLACH: dealt = max(1, amount − defense) — EXAKT die
+        // Kreatur-Formel aus damageCreature (EINE Sprache, kein Sonderfall;
+        // keine Unverwundbarkeit). Andere Quellen (Fall/Hitze/Welt) bleiben
+        // unberührt — defense ist die PHYSISCHE Abwehr gegen Schläge.
+        const creatureStrike = source === "jagd" || source === "gegenwehr";
+        if (creatureStrike) {
+            scaled = Math.max(1, scaled - Math.max(0, stats.defense || 0));
+        }
         const hpBefore = Number(this.state.player.hp) || 0;
         const hp = Math.max(0, hpBefore - scaled);
         this.state.player.hp = hp;
         // V17.30 — Schaden/Gefahr hebt sorrow + chaos (akut; die chronische
         // Wund-Dread trägt der ZUSTAND-Kanal in updatePlayerEmotions).
         this._feelAction("damage");
+        // PHASE E — die FURCHT: gejagt + niedrige HP differenziert den
+        // damage-Affekt (kampf-plan Phase F: „Bedroht + niedrige HP →
+        // Furcht"). Magnitude wächst, je tiefer die HP sinken — die Beute
+        // spürt den Ernst (sorrow+chaos via ACTION_TO_EMOTION.threatened).
+        if (creatureStrike) {
+            const hpFrac = stats.hpMax > 0 ? hp / stats.hpMax : 1;
+            if (hpFrac < AnazhRealm.CREATURE_HUNT.fearHpFrac) {
+                this._feelAction("threatened", { magnitude: 1 + (1 - hpFrac) });
+            }
+        }
         this.log(
             `Schaden ${scaled.toFixed(1)} (${source || "unbekannt"}) → HP ${hp.toFixed(0)}/${stats.hpMax || 0}`,
             "INFO"
@@ -32912,6 +33542,9 @@ class AnazhRealm {
         // der Gruppe wird Compute-Host für die autoritative Server-JS).
         if (entry.multiplayer === true) meta.multiplayer = true;
         if (entry.serverMode === "js-compute") meta.serverMode = "js-compute";
+        // W18-B — deklariert die Welt das Ko-Präsenz-Protokoll, trägt ihr
+        // Portal die Marke: das Mesh wird ihre Multiplayer-Schicht.
+        if (entry.coPresence === true) meta.coPresence = true;
         return this.setBlueprintAsPortal(blueprintName, meta);
     }
 
@@ -33002,6 +33635,14 @@ class AnazhRealm {
                         (b[0].ratingScore || b[0].rating || 0) - (a[0].ratingScore || a[0].rating || 0) || a[1] - b[1]
                 )
                 .map((p) => p[0]);
+        // F4 Stufe 5 (V18.147) — „Für dich": die persönliche Reihung aus den
+        // GEBAUTEN sozialen Signalen (stabil; die Summe ist LESBAR, kein
+        // Black-Box-Algorithmus — _feedForYouScore trägt die Gewichte).
+        else if (this.state.feedSort === "fuerdich")
+            items = items
+                .map((it, i) => [it, this._feedForYouScore(it), i])
+                .sort((a, b) => b[1] - a[1] || a[2] - b[2])
+                .map((p) => p[0]);
         for (const item of items) list.appendChild(this._feedItemCard(item));
         this._renderFeedKindChips();
         this._renderFeedSort();
@@ -33010,24 +33651,51 @@ class AnazhRealm {
         this._applyLibraryFilter();
     }
 
-    // V18.74 — die Sortier-Chips (Neueste | Bestbewertet) im Kuratieren-Rail; treiben den Strom.
+    // F4 Stufe 5 (V18.147) — der „Für dich"-Score: eine LESBARE Summe der
+    // GEBAUTEN sozialen Signale (kein Server, keine Black-Box — der Spieler
+    // kann jede Zeile nachvollziehen). Die Gewichte: FOLGEN ist das stärkste
+    // persönliche Wort (+4 — du wähltest diesen Schöpfer), dann die
+    // GEMEINSCHAFTS-Wertung (Ø, vertrauens-gewichtet: volle Kraft erst ab
+    // ~3 Zeugnissen — ein einzelnes 5★ überstimmt keine breite 4★-Basis),
+    // das eigene MERKEN (+2) + das eigene URTEIL (×0.5), und ein leiser
+    // GESPRÄCHS-Puls (Kommentare = Leben, gedeckelt). Alle Quellen sind die
+    // F4-Stufen 1-4 — die Reihung ist ihre VERDICHTUNG, kein neues System.
+    _feedForYouScore(it) {
+        let s = 0;
+        if (it.author && this._feedFollowed(it.author)) s += 4;
+        const agg = this._feedRatingAgg(it.id);
+        if (agg.count > 0) s += agg.avg * Math.min(1, agg.count / 3);
+        if (this._feedBookmarked(it.id)) s += 2;
+        const own = this._feedRating(it.id);
+        if (own > 0) s += own * 0.5;
+        s += Math.min(1.5, this._feedComments(it.id).length * 0.3);
+        return s;
+    }
+
+    // V18.74 — die Sortier-Chips (Neueste | ✦ Für dich | Bestbewertet) im Kuratieren-Rail; treiben den Strom.
     _renderFeedSort() {
         if (typeof document === "undefined") return;
         const host = document.getElementById("feed-sort");
         if (!host) return;
         host.innerHTML = "";
-        const active = this.state.feedSort === "rating" ? "rating" : "neueste";
+        const active =
+            this.state.feedSort === "rating" ? "rating" : this.state.feedSort === "fuerdich" ? "fuerdich" : "neueste";
         for (const [k, label] of [
             ["neueste", "Neueste"],
+            ["fuerdich", "✦ Für dich"],
             ["rating", "★ Bewertung"],
         ]) {
             const chip = this._el("button", {
                 class: "feed-kind-chip" + (k === active ? " active" : ""),
                 type: "button",
                 text: label,
+                title:
+                    k === "fuerdich"
+                        ? "Deine persönliche Reihung: Gefolgte zuerst, dann Gemeinschafts-Wertung, Gemerktes, dein Urteil, Gespräch — eine lesbare Summe, keine Black-Box."
+                        : undefined,
             });
             chip.addEventListener("click", () => {
-                this.state.feedSort = k === "rating" ? "rating" : "neueste";
+                this.state.feedSort = k === "rating" ? "rating" : k === "fuerdich" ? "fuerdich" : "neueste";
                 this.renderLibraryUI();
             });
             host.appendChild(chip);
@@ -33091,7 +33759,12 @@ class AnazhRealm {
         for (const card of list.querySelectorAll(".library-card, .feed-card")) {
             const hay = card.dataset.search || "";
             const kindOk =
-                kind === "alle" || (kind === "gemerkt" ? card.dataset.bookmarked === "1" : card.dataset.kind === kind);
+                kind === "alle" ||
+                (kind === "gemerkt"
+                    ? card.dataset.bookmarked === "1"
+                    : kind === "gefolgt"
+                      ? card.dataset.followed === "1"
+                      : card.dataset.kind === kind);
             const match = kindOk && (!q || hay.includes(q));
             card.style.display = match ? "" : "none";
             if (match) shown++;
@@ -33179,6 +33852,54 @@ class AnazhRealm {
         else this.state.feedBookmarks[id] = true;
         this._saveFeedBookmarks();
         return this.state.feedBookmarks[id] === true;
+    }
+
+    // F4 Stufe 3 (V18.142) — FOLGEN: das Merken einer IDENTITÄT (ed25519-
+    // pubkey — die Vibe-Pass-Sprache; Karten ohne Autor [Wesen/unsignierte]
+    // tragen keinen Knopf). Speicher lokal-global wie die Lesezeichen
+    // (anazh.feedFollows, NIE im Welt-Snapshot); die Folge-Liste selbst ist
+    // PRIVAT — was reist, sind die Werke der Gefolgten (Katalog/Zeugnisse).
+    // KONSUM: der „Gefolgt"-Kind-Chip filtert die Werke gefolgter Autoren,
+    // das Folgen schreibt witness ins Journal (die ruhende Saat blüht an).
+    _loadFeedFollows() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.feedFollows") : null;
+            const obj = raw ? JSON.parse(raw) : {};
+            return obj && typeof obj === "object" ? obj : {};
+        } catch {
+            return {};
+        }
+    }
+
+    _saveFeedFollows() {
+        try {
+            if (typeof localStorage !== "undefined")
+                localStorage.setItem("anazh.feedFollows", JSON.stringify(this.state.feedFollows || {}));
+        } catch (e) {
+            this.log(`feedFollows-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    _feedFollowed(pub) {
+        if (!pub) return false;
+        if (!this.state.feedFollows) this.state.feedFollows = this._loadFeedFollows();
+        return this.state.feedFollows[String(pub).toLowerCase()] === true;
+    }
+
+    _toggleFeedFollow(pub) {
+        const key = String(pub || "").toLowerCase();
+        if (!/^[0-9a-f]{64}$/.test(key)) return false;
+        if (!this.state.feedFollows) this.state.feedFollows = this._loadFeedFollows();
+        const on = !this.state.feedFollows[key];
+        if (on) this.state.feedFollows[key] = true;
+        else delete this.state.feedFollows[key];
+        this._saveFeedFollows();
+        if (on && typeof this.journalAppend === "function") {
+            this.journalAppend("witness", `Ich folge nun ${this._vibeFingerprint(key)} — seine Werke begleiten mich.`, {
+                follow: key,
+            });
+        }
+        return on;
     }
 
     // ===== F4 Stufe 1 (V18.134) — die soziale Bewertungs-Aggregation =========
@@ -33307,6 +34028,139 @@ class AnazhRealm {
         return { type: "social-ratings", list: own };
     }
 
+    // ===== F4 Stufe 4 (V18.143) — KOMMENTARE: signierte Text-Zeugnisse ======
+    // Dasselbe V18.134-Substrat (Vibe-Pass-Signatur · kanal-exklusiv · R1-Rate
+    // · Rueckruf siebt · bounded Store), aber APPEND-ONLY statt LWW: ein
+    // Kommentar ist ein Einzelstueck (Schluessel id|pub|t, dedupe via Schluessel).
+    // Der Text reist als DATEN und wird NUR als textContent gerendert (XSS-Wand).
+    // Das Kanonische ist STABIL; x steht am ENDE (Trennzeichen-eindeutig, der
+    // Text darf "|" enthalten).
+    _socialCommentCanonical(c) {
+        return `comment|${c.id}|${c.t}|${c.pub}|${c.x}`;
+    }
+
+    _loadSocialComments() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.socialComments") : null;
+            const arr = raw ? JSON.parse(raw) : [];
+            const m = new Map();
+            if (Array.isArray(arr))
+                for (const c of arr)
+                    if (c && c.id && c.pub && Number.isFinite(c.t)) m.set(`${c.id}|${c.pub}|${c.t}`, c);
+            return m;
+        } catch {
+            return new Map();
+        }
+    }
+
+    _saveSocialComments() {
+        try {
+            if (typeof localStorage === "undefined") return;
+            const arr = [...(this.state.socialComments || new Map()).values()];
+            localStorage.setItem("anazh.socialComments", JSON.stringify(arr));
+        } catch (e) {
+            this.log(`socialComments-Speichern fehlgeschlagen: ${e && e.message}`, "WARN");
+        }
+    }
+
+    _socialCommentsMap() {
+        if (!this.state.socialComments) this.state.socialComments = this._loadSocialComments();
+        return this.state.socialComments;
+    }
+
+    _socialStoreComment(c) {
+        const m = this._socialCommentsMap();
+        const key = `${c.id}|${c.pub}|${c.t}`;
+        if (m.has(key)) return false; // dedupe — Einzelstueck
+        m.set(key, c);
+        const cap = AnazhRealm.SOCIAL.maxComments;
+        if (m.size > cap) {
+            let oldestK = null;
+            let oldestT = Infinity;
+            for (const [k, v] of m) {
+                if (v.t < oldestT) {
+                    oldestT = v.t;
+                    oldestK = k;
+                }
+            }
+            if (oldestK) m.delete(oldestK);
+        }
+        this._saveSocialComments();
+        return true;
+    }
+
+    // Der Feed-Leser: die Kommentare eines Ziels, aelteste zuerst; revozierte
+    // Schluessel fallen (R4-KONSUM — der Rueckruf wirkt auch dem Wort).
+    _feedComments(id) {
+        const out = [];
+        for (const c of this._socialCommentsMap().values()) {
+            if (c.id !== id) continue;
+            if (typeof this._isKeyRevoked === "function" && this._isKeyRevoked(c.pub)) continue;
+            out.push(c);
+        }
+        out.sort((a, b) => a.t - b.t);
+        return out;
+    }
+
+    // Den EIGENEN Kommentar signieren + speichern + annoncieren + bezeugen
+    // (journal share — die ruhende Saat blueht: ein Wort an die Gemeinschaft).
+    async _socialSignOwnComment(id, text) {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp.publicKeyHex) return null;
+        const x = String(text || "")
+            .trim()
+            .slice(0, AnazhRealm.SOCIAL.maxCommentLen);
+        if (!x) return null;
+        const c = { id, x, t: Date.now(), pub: vp.publicKeyHex };
+        const sig = await this._vibeSign(this._socialCommentCanonical(c));
+        if (!sig) return null;
+        c.sig = sig;
+        this._socialStoreComment(c);
+        if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pSend === "function") {
+            this.p2pSend({ type: "social-comment", c });
+        }
+        if (typeof this.journalAppend === "function") {
+            this.journalAppend("share", `Ich liess ein Wort bei „${id}" zurueck: „${x.slice(0, 60)}"`, {
+                comment: id,
+            });
+        }
+        return c;
+    }
+
+    // Empfang (kanal-exklusiv, R1-gegated am Aufrufer): Form-Wand → Rueckruf
+    // → Signatur VERIFIZIEREN → Store. Async (subtle).
+    async _socialCommentReceive(peerId, c) {
+        if (!c || typeof c !== "object") return false;
+        const okShape =
+            typeof c.id === "string" &&
+            c.id.length > 0 &&
+            c.id.length <= 200 &&
+            typeof c.x === "string" &&
+            c.x.length > 0 &&
+            c.x.length <= AnazhRealm.SOCIAL.maxCommentLen &&
+            Number.isFinite(c.t) &&
+            typeof c.pub === "string" &&
+            /^[0-9a-f]{64}$/i.test(c.pub) &&
+            typeof c.sig === "string";
+        if (!okShape) return false;
+        if (typeof this._isKeyRevoked === "function" && this._isKeyRevoked(c.pub)) return false;
+        const ok = await this._vibeVerify(this._socialCommentCanonical(c), c.sig, c.pub);
+        if (!ok) return false;
+        return this._socialStoreComment({ id: c.id, x: c.x, t: c.t, pub: c.pub.toLowerCase(), sig: c.sig });
+    }
+
+    // Die Anschluss-Annonce (das Rating-Muster): die eigenen neuesten Worte.
+    _socialCommentsBatch() {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready || !vp.publicKeyHex) return null;
+        const own = [...this._socialCommentsMap().values()]
+            .filter((c) => c.pub === vp.publicKeyHex && c.sig)
+            .sort((a, b) => b.t - a.t)
+            .slice(0, AnazhRealm.SOCIAL.maxCommentBatch);
+        if (!own.length) return null;
+        return { type: "social-comments", list: own };
+    }
+
     // Ein Bauplan-Lese-Vektor (das _worldProfile/_creatureProfile-Muster auf ein Rezept). KONSUM-ehrlich.
     _recipeProfile(bp) {
         let tags = {};
@@ -33361,6 +34215,15 @@ class AnazhRealm {
             // F4 (V18.134) — die Gemeinschafts-Wertung in den Strom (Sort-Quelle).
             const agg = this._feedRatingAgg(it.id);
             it.ratingScore = agg.count > 0 ? agg.avg : it.rating || 0;
+            // F4 Stufe 3 (V18.142) — die AUTOR-Identität (signierte Welten/
+            // Rezepte tragen sie; Wesen nicht) speist Folgen-Toggle + Filter.
+            const author =
+                it.kind === "world"
+                    ? it.prof.authorPubKey
+                    : it.kind === "recipe" && it.prof.bp
+                      ? it.prof.bp.authorPubKey
+                      : "";
+            it.author = typeof author === "string" && /^[0-9a-f]{64}$/i.test(author) ? author.toLowerCase() : "";
         }
         return items;
     }
@@ -33376,6 +34239,9 @@ class AnazhRealm {
         if (!card.dataset.search) card.dataset.search = item.search || "";
         // F4 Stufe 2 (V18.135) — der Gemerkt-Filter liest das dataset.
         card.dataset.bookmarked = this._feedBookmarked(item.id) ? "1" : "";
+        // F4 Stufe 3 (V18.142) — der Gefolgt-Filter liest Autor + Folge-Stand.
+        card.dataset.author = item.author || "";
+        card.dataset.followed = item.author && this._feedFollowed(item.author) ? "1" : "";
         card.insertBefore(this._feedCover(item), card.firstChild); // die Vorschau (ein simples Cover-Bild) oben
         card.appendChild(this._feedRatingBar(item));
         // V18.75 — Klick auf den Karten-Körper (nicht auf einen Akt/Stern) stellt das echte 3D-Modell in
@@ -33718,6 +34584,31 @@ class AnazhRealm {
                 })
             );
         }
+        // F4 Stufe 4 (V18.143) — KOMMENTARE: „💬 N" toggelt das Wort-Panel an
+        // der Karte (Liste der signierten Worte + die eigene Eingabe). Der
+        // Text wird NUR als textContent gerendert (XSS-Wand); ohne Vibe-Pass
+        // ist die Eingabe ruhend (kein Identitaets-Zwang, nur kein Senden).
+        const cCount = this._feedComments(item.id).length;
+        const talk = this._el("span", {
+            class: "feed-talk",
+            text: `💬 ${cCount || ""}`.trim(),
+            title: "Worte der Gemeinschaft — lesen + eines zuruecklassen (signiert).",
+        });
+        talk.style.cursor = "pointer";
+        talk.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const card = talk.closest(".library-card, .feed-card");
+            if (!card) return;
+            let panel = card.querySelector(".feed-comments");
+            if (panel) {
+                panel.remove();
+                return;
+            }
+            panel = this._el("div", { class: "feed-comments" });
+            this._renderFeedCommentsPanel(panel, item, talk);
+            card.appendChild(panel);
+        });
+        bar.appendChild(talk);
         // F4 Stufe 2 (V18.135) — das LESEZEICHEN (privat, lokal): merken ohne
         // werten. Der Toggle pflegt das Karten-dataset → der „Gemerkt"-Chip
         // filtert live (kein Feed-Rebuild — die V18.65-Loop-Disziplin).
@@ -33737,10 +34628,106 @@ class AnazhRealm {
             this._applyLibraryFilter();
         });
         bar.appendChild(mark);
+        // F4 Stufe 3 (V18.142) — FOLGEN: der Identitäts-Toggle (nur auf Karten
+        // MIT Autor, nie auf den EIGENEN Werken — sich selbst folgen ist
+        // Rauschen). Der Klick pflegt ALLE Karten desselben Autors live
+        // (data-author — derselbe Schöpfer hat oft mehrere Werke im Feed),
+        // dazu Chips + Filter (die V18.65-Loop-Disziplin: der Knopf TREIBT).
+        const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+        if (item.author && item.author !== myKey) {
+            const followed = this._feedFollowed(item.author);
+            const follow = this._el("span", {
+                class: "feed-follow" + (followed ? " active" : ""),
+                text: followed ? "✓ folge" : "➕ folgen",
+                title: `Dem Schöpfer ${this._vibeFingerprint(item.author)} folgen — seine Werke im „Gefolgt"-Filter.`,
+            });
+            follow.style.cursor = "pointer";
+            follow.style.marginLeft = "6px";
+            follow.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const on = this._toggleFeedFollow(item.author);
+                const list = document.getElementById("library-list");
+                if (list) {
+                    for (const c of list.querySelectorAll(`[data-author="${item.author}"]`)) {
+                        c.dataset.followed = on ? "1" : "";
+                        const f = c.querySelector(".feed-follow");
+                        if (f) {
+                            f.textContent = on ? "✓ folge" : "➕ folgen";
+                            f.classList.toggle("active", on);
+                        }
+                    }
+                }
+                this._renderFeedKindChips();
+                this._applyLibraryFilter();
+            });
+            bar.appendChild(follow);
+        }
         return bar;
     }
 
     // Die Kind-Filter-Chips (rechts/oben) — Alle · Welten · Rezepte · Wesen, mit Anzahl.
+    // F4 Stufe 4 (V18.143) — das Wort-Panel einer Karte: die juengsten
+    // Kommentare (Fingerprint + Text, NUR textContent — die XSS-Wand) + die
+    // eigene Eingabe (Enter/➤ sendet; ohne Vibe-Pass ruht sie sichtbar).
+    _renderFeedCommentsPanel(panel, item, talkEl) {
+        panel.innerHTML = "";
+        const list = this._feedComments(item.id);
+        const shown = list.slice(-AnazhRealm.SOCIAL.maxCommentsShown);
+        const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+        if (!shown.length) {
+            panel.appendChild(
+                this._el("div", { class: "feed-comment-empty", text: "Noch kein Wort — sei das erste." })
+            );
+        }
+        for (const c of shown) {
+            const row = this._el("div", { class: "feed-comment-row" });
+            const who = this._el("span", {
+                class: "feed-comment-who",
+                text: c.pub === myKey ? "du" : this._vibeFingerprint(c.pub),
+                title: "ed25519:" + c.pub,
+            });
+            const text = this._el("span", { class: "feed-comment-text" });
+            text.textContent = c.x; // NUR textContent — nie HTML aus dem Mesh
+            row.appendChild(who);
+            row.appendChild(text);
+            panel.appendChild(row);
+        }
+        const ready = !!(this.state.vibePass && this.state.vibePass.ready);
+        const inputRow = this._el("div", { class: "feed-comment-input" });
+        const input = this._el("input", {
+            type: "text",
+            placeholder: ready ? "Ein Wort zuruecklassen …" : "Vibe-Pass noetig (Einstellungen → Identitaet)",
+            maxlength: String(AnazhRealm.SOCIAL.maxCommentLen),
+        });
+        input.disabled = !ready;
+        const send = this._el("button", { type: "button", text: "➤", title: "Senden (signiert mit deinem Vibe-Pass)" });
+        send.disabled = !ready;
+        const submit = async () => {
+            const v = input.value.trim();
+            if (!v) return;
+            input.disabled = true;
+            const c = await this._socialSignOwnComment(item.id, v);
+            input.disabled = !ready;
+            input.value = "";
+            if (c) {
+                this._renderFeedCommentsPanel(panel, item, talkEl);
+                if (talkEl) talkEl.textContent = `💬 ${this._feedComments(item.id).length}`;
+            }
+        };
+        input.addEventListener("click", (e) => e.stopPropagation());
+        input.addEventListener("keydown", (e) => {
+            e.stopPropagation();
+            if (e.key === "Enter") submit();
+        });
+        send.addEventListener("click", (e) => {
+            e.stopPropagation();
+            submit();
+        });
+        inputRow.appendChild(input);
+        inputRow.appendChild(send);
+        panel.appendChild(inputRow);
+    }
+
     _renderFeedKindChips() {
         if (typeof document === "undefined") return;
         const host = document.getElementById("feed-kinds");
@@ -33751,13 +34738,18 @@ class AnazhRealm {
         const total = counts.world + counts.recipe + counts.creature;
         const active = this.state.feedKind || "alle";
         let marked = 0;
-        for (const it of this._feedItems()) if (this._feedBookmarked(it.id)) marked++;
+        let followed = 0;
+        for (const it of this._feedItems()) {
+            if (this._feedBookmarked(it.id)) marked++;
+            if (it.author && this._feedFollowed(it.author)) followed++;
+        }
         const kinds = [
             ["alle", "Alle", total],
             ["world", "Welten", counts.world],
             ["recipe", "Rezepte", counts.recipe],
             ["creature", "Wesen", counts.creature],
             ["gemerkt", "🔖 Gemerkt", marked], // F4 Stufe 2 (V18.135)
+            ["gefolgt", "👤 Gefolgt", followed], // F4 Stufe 3 (V18.142)
         ];
         for (const [k, label, n] of kinds) {
             const chip = this._el("button", {
@@ -33886,6 +34878,17 @@ class AnazhRealm {
                 })
             );
         }
+        // W18-B — die Ko-Präsenz-Abweichung signalisieren (wie Multiplayer):
+        // ihr seht euch in dieser Welt, obwohl sie selbst keine Mitspieler kennt.
+        if (prof.coPresence) {
+            idZone.appendChild(
+                this._el("span", {
+                    class: "library-mp-mark",
+                    text: "Ko-Präsenz",
+                    title: "Ihr seht euch in dieser Welt — AnazhRealm trägt die Posen übers Mesh, die Welt rendert die Gefährten (W18-B).",
+                })
+            );
+        }
         const trusted = prof.trust === "trusted";
         const trustZone = this._el(
             "div",
@@ -33922,6 +34925,8 @@ class AnazhRealm {
                     text: prof.serverMode === "js-compute" ? "Multiplayer · JS-Compute" : "Multiplayer",
                 })
             );
+        // W18-B — die Ko-Präsenz-Abweichung (ihr seht euch drinnen).
+        if (prof.coPresence) meta.appendChild(this._el("span", { class: "lib-net-badge", text: "Ko-Präsenz" }));
         meta.appendChild(sigSeal);
         return this._el("div", { class: "spec-body lib-card-body" }, meta);
     }
@@ -34625,7 +35630,56 @@ class AnazhRealm {
         // Sandbox-Grenze als postMessage statt zu einem echten Server. Eine
         // js-compute-Welt ist per Natur eine Multiplayer-Welt.
         meta.multiplayer = src.multiplayer === true || meta.serverMode === "js-compute";
+        // W18-B — eine Welt, die das Ko-Präsenz-Protokoll DEKLARIERT
+        // (peer-join/peer-state/peer-leave über die Brücke): AnazhRealm wird
+        // ihre Multiplayer-SCHICHT — das Mesh trägt Posen, die Welt rendert
+        // die Avatare in IHRER Engine. Vom Registry-/Bauplan-Autor gesetzt;
+        // eine Welt kann es im ready-Handshake auch selbst melden
+        // (po.coPresence — dieselbe Hebung wie das native Manifest).
+        meta.coPresence = src.coPresence === true;
         return meta;
+    }
+
+    // W18-A — die EINE Quelle der Ko-Präsenz-Wahrheit einer Portal-Welt
+    // (gigant-plan F3; world-portal-w18-plan §3). Drei ehrliche Stufen:
+    // 2 — die Welt deklariert das Ko-Präsenz-Protokoll (AnazhRealm injiziert
+    //     die Augen: ihr seht euch IN der fremden Engine, W18-B);
+    // 1 — die Welt hat einen EIGENEN Multiplayer-Begriff (der Transport-Shim
+    //     + das Mesh tragen ihre Server-Logik, W17);
+    // 0 — eine Einzelwelt: jeder reist in seiner eigenen Instanz (die
+    //     Gruppe sieht sich nur im Vorraum davor). Leser: der Portal-Hinweis
+    //     + der Einladungs-Banner — der Spieler erfährt VOR/IM Tor ehrlich,
+    //     welche Gemeinsamkeit die Welt trägt.
+    _portalCoPresenceTier(meta) {
+        if (meta && meta.coPresence === true) {
+            return { tier: 2, label: "Ko-Präsenz — ihr seht euch in dieser Welt" };
+        }
+        if (meta && meta.multiplayer === true) {
+            return { tier: 1, label: "Multiplayer — die Welt verbindet euch übers Mesh" };
+        }
+        return { tier: 0, label: "Einzelwelt — jeder reist in seiner eigenen Instanz" };
+    }
+
+    // W18-A — der EINE Schreiber des Portal-Hinweises (V9.82: vorher setzten
+    // _buildPortalOverlay UND _portalReceiveManifest den Text parallel).
+    // Esc-Zeile + DSL-Fähigkeit + die ehrliche Ko-Präsenz-Stufe.
+    _portalRefreshHint(po) {
+        const target = po || this._portalOverlay;
+        if (!target || !target.hintEl) return;
+        const parts = [
+            target.dsl ? "Esc — Heimkehr · Konsole — Befehle an diese Welt" : "Esc — zurück zur Heimat-Welt",
+        ];
+        parts.push(this._portalCoPresenceTier(target).label);
+        // W18-C — die Input-Brücke ist aktiv: deine Tasten wirken drinnen.
+        if (target.inputActions && target.inputActions.length) {
+            parts.push("deine Tasten wirken (WASD · Pfeile)");
+        }
+        // W18-D — du WOHNST hier: Esc ist nur der kurze Heimweg.
+        const dwell = this._loadPortalDwelling();
+        if (dwell && this._resolvePortalWorldId(target) === dwell.worldId) {
+            parts[0] = `Esc — kurz heim (du wohnst hier · „ziehe heim" beendet das Wohnen)`;
+        }
+        target.hintEl.textContent = parts.join(" · ");
     }
 
     // G8 R3 (Robustheits-Bogen, M1 — Lokalität) — die EINE Quelle für das
@@ -34727,11 +35781,9 @@ class AnazhRealm {
         iframe.setAttribute("sandbox", this._portalSandboxAttr(meta));
         const hint = document.createElement("div");
         hint.className = "portal-hint";
-        // Stufe-bewusster Hinweis: spricht die Welt die DSL (hat sie einen
-        // Manifest), kann der Spieler per Konsole Befehle hineinreichen.
-        hint.textContent = meta.dsl
-            ? "Esc — Heimkehr · Konsole — Befehle an diese Welt"
-            : "Esc — zurück zur Heimat-Welt";
+        // W18-A — der Hinweis kommt aus dem EINEN Schreiber (_portalRefreshHint,
+        // nach dem _portalOverlay-Set unten): Esc-Zeile + DSL-Fähigkeit + die
+        // ehrliche Ko-Präsenz-Stufe der Welt.
         overlay.appendChild(iframe);
         overlay.appendChild(hint);
         // W14 Phase 2 — „signiert von <Autor>"-Zeile. Verborgen, bis
@@ -34765,6 +35817,18 @@ class AnazhRealm {
                 // W12 Phase 3 — meldet die Welt ihr eigenes Manifest mit,
                 // übernimmt die Heimat es (Stufe „nativ").
                 this._portalReceiveManifest(msg);
+                // W18-B — eine Welt kann das Ko-Präsenz-Protokoll auch SELBST
+                // melden (wie das native Manifest): ready {coPresence:true}
+                // hebt die Stufe — der Hinweis sagt die neue Wahrheit.
+                if (msg.coPresence === true && !po.coPresence) {
+                    po.coPresence = true;
+                    this._portalRefreshHint(po);
+                }
+                // W18-C — eine Welt kann die Input-Brücke deklarieren:
+                // ready {inputActions:[...]} → AnazhRealms Tasten erreichen
+                // sie als semantische Aktionen (Variante A, world-portal-
+                // w18-plan §6).
+                if (Array.isArray(msg.inputActions)) this._portalEnableInputBridge(msg.inputActions);
                 this._portalSendEnter();
             }
             // Die Sub-Welt meldet Esc (Fokus liegt im iframe) → Heimkehr.
@@ -34772,6 +35836,17 @@ class AnazhRealm {
             // W12 Phase 3 — die Sub-Welt spricht zurück: ein Welt-Ereignis
             // wandert ins Heimat-Journal (geloggt, nie ausgeführt).
             else if (msg.type === "event") this._portalReceiveEvent(msg);
+            // W18-B — die Sub-Welt meldet die Pose des LOKALEN Spielers
+            // (Daten, nie Code); sie reist als subworld-pose übers Mesh zu
+            // den Gefährten in DERSELBEN Welt.
+            else if (msg.type === "local-pose") this._portalReceiveLocalPose(msg);
+            // W18-D — die Sub-Welt exponiert ihren Zustand (Persistenz-Slot:
+            // beim nächsten Betreten reist er als restoreState zurück).
+            else if (msg.type === "state") this._portalReceiveState(msg);
+            // R6 (V18.152) — die Sub-Welt REICHT eine Fähigkeit (Capability-
+            // Inversion: DSL-Daten in die Quarantäne-Queue, NIE ausgeführt —
+            // gewährt wird nur souverän).
+            else if (msg.type === "capability") this._portalReceiveCapability(msg);
             // W17 Phase A — der Transport-Shim einer Multiplayer-Welt postet
             // ihren Netz-Verkehr (`__anazhNet`-Envelope, kein `type`-Feld).
             else if (msg.__anazhNet === true) this._portalNetReceive(msg);
@@ -34837,7 +35912,29 @@ class AnazhRealm {
             stateTimer: null,
             stateSeq: 0,
             lastSrvState: null,
+            // W18-B — die Ko-Präsenz-Injektion: deklariert die Welt das
+            // Protokoll (Registry/Bauplan ODER ready-Handshake), trägt das
+            // Mesh die Posen, die Welt rendert die Avatare. peers = die in
+            // DIESER Sub-Welt gesehenen Gefährten (peerId → {lastAt});
+            // poseWindow* deckelt den local-pose-Eingang (~10 Hz + Reserve),
+            // poseTimer ist der Abwesenheits-Sweep (peer-leave bei Stille).
+            // localPose = die letzte angenommene EIGENE Pose — die Lese-
+            // Fläche der Sandbox-Wand (die null-origin-Welt ist von außen
+            // unlesbar; Smoke/Diagnose lesen HIER, was drinnen geschah).
+            coPresence: meta.coPresence === true,
+            peers: new Map(),
+            poseWindowStart: 0,
+            poseWindowCount: 0,
+            poseTimer: null,
+            localPose: null,
+            // W18-C — die Input-Brücke (Variante A): deklariert die Welt im
+            // ready-Handshake `inputActions`, hält inputActions die saubere
+            // Auswahl + onInputKey den Parent-Tasten-Listener (lebt + stirbt
+            // mit dem Overlay).
+            inputActions: null,
+            onInputKey: null,
         };
+        this._portalRefreshHint(this._portalOverlay);
         document.body.appendChild(overlay);
         // W14 Phase 2 — ist die Ziel-Welt mit einem Vibe-Pass versiegelt,
         // zeigt das Overlay „signiert von <Autor>". Heimat-seitige Signatur
@@ -34974,6 +36071,15 @@ class AnazhRealm {
             const w = this.state.customWorlds && this.state.customWorlds[po.translatedWorldId];
             if (w && w.scene) msg.scene = w.scene;
         }
+        // W18-D — der Persistenz-Slot reist zurück: hat diese Welt beim
+        // letzten Besuch ihren Zustand exponiert ({type:"state"}), bekommt
+        // sie ihn als restoreState wieder (Daten, nie Code — die Welt selbst
+        // entscheidet, was sie damit tut).
+        const dwellWorldId = this._resolvePortalWorldId(po);
+        if (dwellWorldId) {
+            const saved = this._loadPortalStates()[dwellWorldId];
+            if (saved && typeof saved.data === "string") msg.restoreState = saved.data;
+        }
         // V8.70 — eine null-origin (sandboxed) Welt hat eine opake Herkunft;
         // ein gezieltes targetOrigin würde die Nachricht verwerfen → "*".
         po.iframe.contentWindow.postMessage(msg, po.trust === "sandboxed" ? "*" : window.location.origin);
@@ -34998,6 +36104,17 @@ class AnazhRealm {
         if (po.stateTimer) {
             clearInterval(po.stateTimer);
             po.stateTimer = null;
+        }
+        // W18-B — der Ko-Präsenz-Abwesenheits-Sweep endet mit dem Overlay.
+        if (po.poseTimer) {
+            clearInterval(po.poseTimer);
+            po.poseTimer = null;
+        }
+        // W18-C — der Input-Brücken-Listener endet mit dem Overlay.
+        if (po.onInputKey && typeof window !== "undefined") {
+            window.removeEventListener("keydown", po.onInputKey);
+            window.removeEventListener("keyup", po.onInputKey);
+            po.onInputKey = null;
         }
         if (po.onMessage) window.removeEventListener("message", po.onMessage);
         if (po.overlayEl && po.overlayEl.parentNode) {
@@ -35221,9 +36338,8 @@ class AnazhRealm {
         if (typeof msg.label === "string" && msg.label.trim()) {
             po.label = msg.label.trim().slice(0, 60);
         }
-        if (po.hintEl) {
-            po.hintEl.textContent = "Esc — Heimkehr · Konsole — Befehle an diese Welt";
-        }
+        // W18-A — der Hinweis kommt aus dem EINEN Schreiber (V9.82).
+        this._portalRefreshHint(po);
         return true;
     }
 
@@ -35341,6 +36457,397 @@ class AnazhRealm {
             po.iframe.contentWindow.postMessage({ __anazhNet: true, kind: "ws-recv", channel, data }, target);
         }
         return true;
+    }
+
+    // W18-B — die Pose des LOKALEN Spielers aus der Sub-Welt (sie kennt nur
+    // ihn). Nur eine Ko-Präsenz-Welt (deklariert via Registry/ready) spricht
+    // diesen Kanal; die Pose ist DATEN (vier endliche Zahlen), nie Code.
+    // Eigene Rate-Wand (~10 Hz + Reserve) UNTER dem R1-Gesamt-Bucket — eine
+    // flutende Welt kann den Posen-Kanal nicht als Mesh-Verstärker nutzen.
+    // Der Broadcast reist als subworld-pose; der B2-Sub-Raum-Schlüssel ist
+    // der Welt-Pfad (nur Gefährten in DERSELBEN Welt stellen zu).
+    _portalReceiveLocalPose(msg) {
+        const po = this._portalOverlay;
+        if (!po || !po.coPresence) return false;
+        const pose = this._sanitizePose(msg && msg.pose);
+        if (!pose) return false;
+        const now = performance.now();
+        if (now - po.poseWindowStart >= AnazhRealm.SUBWORLD_POSE_RATE_WINDOW_MS) {
+            po.poseWindowStart = now;
+            po.poseWindowCount = 0;
+        }
+        if (po.poseWindowCount >= AnazhRealm.SUBWORLD_POSE_RATE_MAX) return false;
+        po.poseWindowCount++;
+        po.localPose = pose;
+        const p2p = this.state.p2p;
+        if (p2p && p2p.enabled && p2p.connected) {
+            this.p2pSend({ type: "subworld-pose", worldId: po.world, pose });
+        }
+        return true;
+    }
+
+    // W18-B — eine Pose säubern: vier endliche, geklemmte Zahlen oder null.
+    // Eine fremde Welt (oder ein fremder Peer) kann keine NaN/Infinity-Posen
+    // oder Objekt-Schmuggel in die Zustell-Kette legen.
+    _sanitizePose(p) {
+        if (!p || typeof p !== "object") return null;
+        const x = Number(p.x);
+        const y = Number(p.y);
+        const z = Number(p.z);
+        const yaw = Number(p.yaw);
+        if (![x, y, z, yaw].every(Number.isFinite)) return null;
+        const c = (v) => Math.max(-1e6, Math.min(1e6, v));
+        return { x: c(x), y: c(y), z: c(z), yaw: Math.max(-Math.PI * 2, Math.min(Math.PI * 2, yaw)) };
+    }
+
+    // W18-B — die Pose eines Mesh-Gefährten in die eigene Sub-Welt zustellen.
+    // B2 — nur wenn ich im SELBEN Ko-Präsenz-Portal bin (worldId-Pfad-Match).
+    // Die ERSTE Pose eines Peers gebiert sein peer-join (Name + Seele aus dem
+    // Mesh-Roster — der soul-Kanal trägt beide schon; die Ko-Präsenz erfindet
+    // KEINE zweite Identitäts-Quelle), danach fließen peer-state-Updates.
+    // Der Abwesenheits-Sweep (poseTimer) räumt verstummte Peers als
+    // peer-leave — auch ein Mesh-Abriss endet so sauber in der Sub-Welt.
+    _portalPoseDeliver(peerId, msg) {
+        const po = this._portalOverlay;
+        if (!po || !po.coPresence || !msg) return false;
+        if (msg.worldId !== po.world) return false;
+        const pose = this._sanitizePose(msg.pose);
+        if (!pose) return false;
+        if (!po.iframe || !po.iframe.contentWindow) return false;
+        const target = po.trust === "sandboxed" ? "*" : window.location.origin;
+        let entry = po.peers.get(peerId);
+        if (!entry) {
+            const known = this.state.p2p && this.state.p2p.peers ? this.state.p2p.peers.get(peerId) : null;
+            entry = { lastAt: performance.now() };
+            po.peers.set(peerId, entry);
+            po.iframe.contentWindow.postMessage(
+                {
+                    type: "peer-join",
+                    peerId,
+                    name: (known && known.avatarName) || String(peerId).slice(0, 8),
+                    soul: (known && known.soulName) || "human",
+                },
+                target
+            );
+            this._portalEnsurePoseSweep();
+        }
+        entry.lastAt = performance.now();
+        po.iframe.contentWindow.postMessage({ type: "peer-state", peerId, pose }, target);
+        return true;
+    }
+
+    // W18-C — die Input-Brücke aktivieren (Variante A — deklariert, world-
+    // portal-w18-plan §6): die Welt wählte aus dem EINGEFRORENEN Aktions-
+    // Vokabular; AnazhRealms Tasten erreichen sie fortan als semantische
+    // {type:"input", action, down}-Daten. Der Listener sitzt am PARENT-
+    // Fenster (liegt der Fokus im iframe, wirken die welt-eigenen Tasten —
+    // beide Pfade derselben Absicht, kein Konflikt).
+    _portalEnableInputBridge(actions) {
+        const po = this._portalOverlay;
+        if (!po || !Array.isArray(actions)) return false;
+        const clean = [];
+        for (const a of actions) {
+            if (typeof a === "string" && AnazhRealm.PORTAL_INPUT_ACTIONS.includes(a) && !clean.includes(a)) {
+                clean.push(a);
+            }
+        }
+        if (!clean.length) return false;
+        po.inputActions = clean;
+        if (!po.onInputKey && typeof window !== "undefined") {
+            po.onInputKey = (e) => this._portalForwardInput(e);
+            window.addEventListener("keydown", po.onInputKey);
+            window.addEventListener("keyup", po.onInputKey);
+        }
+        this._portalRefreshHint(po);
+        return true;
+    }
+
+    // W18-C — eine Heimat-Taste als semantische Aktion in die Sub-Welt
+    // reichen. Nur deklarierte Aktionen; Tipp-Felder (Konsole/Omnibox über
+    // dem Portal) bleiben unberührt — wer schreibt, steuert nicht; Auto-
+    // Repeat fällt (down/up sind die Wahrheit, nicht der Tasten-Hagel).
+    _portalForwardInput(e) {
+        const po = this._portalOverlay;
+        if (!po || !po.inputActions || !po.iframe || !po.iframe.contentWindow) return false;
+        if (e.repeat) return false;
+        const t = e.target;
+        if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return false;
+        const action = AnazhRealm.PORTAL_INPUT_KEYMAP[e.code];
+        if (!action || !po.inputActions.includes(action)) return false;
+        const target = po.trust === "sandboxed" ? "*" : window.location.origin;
+        po.iframe.contentWindow.postMessage({ type: "input", action, down: e.type === "keydown" }, target);
+        return true;
+    }
+
+    // ===== W18-D — DARIN LEBEN (world-portal-w18-plan §7) =====
+    // „Swappen + leben": die Fremd-Welt wird (zeitweise) die BASIS, nicht
+    // nur eine Episode. Die kondensierte Form des Welt-Zeiger-Swaps: das
+    // WOHNEN ist ein globaler Zeiger (anazh.portalDwelling — wie der
+    // Vibe-Pass NIE im Welt-Snapshot), der Boot kehrt durch das Tor ZURÜCK
+    // (du wachst auf, wo du wohnst — die Heimat trägt darunter eingefroren,
+    // das OASIS-Rig), die Gefährten sehen „wohnt in …" übers Mesh (soul-
+    // Kanal), und der Zustand der Fremd-Welt überlebt im Persistenz-Slot
+    // (soweit sie ihn exponiert — die ehrliche §7-Tiefe).
+
+    // Der Wohn-Zeiger: global + gesäubert (id-förmig) oder null.
+    _loadPortalDwelling() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.portalDwelling") : null;
+            if (!raw) return null;
+            const p = JSON.parse(raw);
+            if (!p || typeof p !== "object") return null;
+            const worldId = String(p.worldId || "")
+                .trim()
+                .toLowerCase();
+            if (!/^[a-z0-9_-]{1,40}$/.test(worldId)) return null;
+            return {
+                worldId,
+                label: typeof p.label === "string" ? p.label.slice(0, 60) : worldId,
+                at: Number(p.at) || 0,
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    _savePortalDwelling(d) {
+        try {
+            if (typeof localStorage === "undefined") return;
+            if (d) localStorage.setItem("anazh.portalDwelling", JSON.stringify(d));
+            else localStorage.removeItem("anazh.portalDwelling");
+        } catch {
+            /* Quota/Privacy — das Wohnen bleibt dann eine Episode */
+        }
+    }
+
+    // „Wohne hier" — das aktuelle Portal wird Zuhause. Nur eine library-
+    // bekannte Welt (der Boot muss sie via obtainPortalForWorld wiederfinden);
+    // die Gefährten erfahren es sofort (soul-Kanal trägt das Wohnen).
+    dwellInPortal() {
+        const po = this._portalOverlay;
+        if (!po) return { ok: false, reason: "not_in_portal" };
+        const worldId = this._resolvePortalWorldId(po);
+        if (!worldId) return { ok: false, reason: "world_unknown" };
+        const label = po.label || worldId;
+        this._savePortalDwelling({ worldId, label, at: Date.now() });
+        this._portalRefreshHint(po);
+        this._p2pBroadcastSoul();
+        this.journalAppendOnce(`portalDwell:${worldId}`, "portal", `Du wohnst jetzt in „${label}".`);
+        this.log(
+            `Du wohnst jetzt in „${label}" — der nächste Aufbruch bringt dich HIERHER zurück („ziehe heim" beendet das Wohnen).`,
+            "INFO"
+        );
+        return { ok: true, worldId };
+    }
+
+    // „Ziehe heim" — das Wohnen endet, die Heimat-Welt ist wieder die Basis.
+    endDwelling() {
+        const d = this._loadPortalDwelling();
+        this._savePortalDwelling(null);
+        if (this._portalOverlay) this._portalRefreshHint(this._portalOverlay);
+        this._p2pBroadcastSoul();
+        if (d) this.log(`Du bist heimgezogen — „${d.label}" bleibt ein Ort, kein Zuhause mehr.`, "INFO");
+        return { ok: true, was: d ? d.worldId : null };
+    }
+
+    // Der Boot kehrt durch das Tor zurück: wohnt der Spieler in einer Welt,
+    // öffnet der Start das Portal dorthin (statt der Heimat-Wiese). Die
+    // Heimat lebt eingefroren darunter (der Game-Loop sieht _portalOverlay)
+    // — Esc ist jederzeit der kurze Heimweg, das Wohnen bleibt bestehen.
+    // Eine nicht mehr auffindbare Welt beendet das Wohnen ehrlich.
+    _portalDwellingBootReturn() {
+        if (typeof document === "undefined" || this._portalOverlay) return false;
+        const d = this._loadPortalDwelling();
+        if (!d) return false;
+        const obtained = this.obtainPortalForWorld(d.worldId);
+        if (!obtained.ok) {
+            this.log(
+                `Dein Zuhause „${d.label}" ist nicht mehr auffindbar (${obtained.reason}) — du wachst daheim auf.`,
+                "WARN"
+            );
+            this._savePortalDwelling(null);
+            return false;
+        }
+        const bp = this.state.blueprints[obtained.blueprint];
+        this._buildPortalOverlay(bp.portalMeta, { computeRole: "host" });
+        this._p2pBroadcastPortalInvite();
+        this.log(
+            `Du wachst auf, wo du wohnst: „${d.label}" (Esc — kurz heim · „ziehe heim" beendet das Wohnen).`,
+            "INFO"
+        );
+        return true;
+    }
+
+    // Der Persistenz-Slot: die Welt exponiert ihren Zustand als
+    // {type:"state", data} (String, gedeckelt) — die Heimat hält ihn global
+    // (anazh.portalState) und reicht ihn beim Betreten als `restoreState`
+    // zurück. Nur library-bekannte Welten (stabile id); Daten, nie Code.
+    _loadPortalStates() {
+        try {
+            const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.portalState") : null;
+            const p = raw ? JSON.parse(raw) : null;
+            return p && typeof p === "object" && !Array.isArray(p) ? p : {};
+        } catch {
+            return {};
+        }
+    }
+
+    _portalReceiveState(msg) {
+        const po = this._portalOverlay;
+        if (!po || !msg) return false;
+        const data = msg.data;
+        if (typeof data !== "string" || data.length > AnazhRealm.PORTAL_STATE_MAX_BYTES) return false;
+        const worldId = this._resolvePortalWorldId(po);
+        if (!worldId) return false;
+        const states = this._loadPortalStates();
+        states[worldId] = { data, at: Date.now() };
+        // Welt-Anzahl-Deckel: die älteste fällt (bounded, kein Quota-Fresser).
+        const ids = Object.keys(states);
+        if (ids.length > AnazhRealm.PORTAL_STATE_MAX_WORLDS) {
+            ids.sort((a, b) => (states[a].at || 0) - (states[b].at || 0));
+            for (let i = 0; i < ids.length - AnazhRealm.PORTAL_STATE_MAX_WORLDS; i++) delete states[ids[i]];
+        }
+        try {
+            localStorage.setItem("anazh.portalState", JSON.stringify(states));
+        } catch {
+            return false;
+        }
+        return true;
+    }
+
+    // ===== R6-KERN (V18.152, robustheit-plan — die SELBST-ERWEITERUNG
+    // beginnt): CAPABILITY-INVERSION. Eine Welt darf eine FÄHIGKEIT REICHEN
+    // (DSL-DATEN aus dem bestehenden Vokabular, nie Code); der Mensch
+    // GEWÄHRT sie souverän — die seit R2 EINGEFRORENE grant_capability-
+    // Geste erwacht GENAU hierfür (die Wand stand vor dem Bau). Die drei
+    // Schichten: QUARANTÄNE (der Vorschlag liegt, läuft nie von allein) →
+    // GEWÄHR (Host-Geste, Klartext, frisch) → LAUF (dslRun-Sandbox, Budget,
+    // R4-Rückruf wirkt auch NACH der Gewähr). Die DSL-Wand ist die REGEL-
+    // Wand (_isRuleEffectAllowed — reaktive Ops only, kein Worldgen/
+    // Identität; V9.82: EINE Wand, zwei Konsumenten) + die Broadcast-Wand
+    // (kein Spieler-privates). KOMPOSITION: die Fähigkeit komponiert das
+    // BESTEHENDE Vokabular — nichts Neues betritt den Op-Raum. =====
+
+    _portalReceiveCapability(msg) {
+        const po = this._portalOverlay;
+        if (!po || !msg) return false;
+        const name = typeof msg.name === "string" ? msg.name.trim().toLowerCase().slice(0, 32) : "";
+        if (!/^[a-z0-9_-]{1,32}$/.test(name)) return false;
+        const dsl = msg.dsl;
+        if (!this._isRuleEffectAllowed(dsl)) return false;
+        if (this._dslContainsAnyOp(dsl, AnazhRealm.NON_BROADCASTABLE_OPS)) return false;
+        // R2 — die SOUVERÄNE Disjunktheit explizit AM TOR (ein wallet_transfer
+        // wäre auch im Lauf unbekannt/geblockt — aber die Wand steht sichtbar
+        // VOR der Queue, nicht erst in der Sandbox).
+        if (this._dslContainsAnyOp(dsl, new Set(AnazhRealm.SOVEREIGN_ACTIONS))) return false;
+        const desc = typeof msg.desc === "string" ? msg.desc.trim().slice(0, 120) : "";
+        if (!this.state.capabilityProposals) this.state.capabilityProposals = new Map();
+        const q = this.state.capabilityProposals;
+        if (!q.has(name) && q.size >= AnazhRealm.CAPABILITY_PROPOSAL_MAX) return false;
+        // R4 — die HERKUNFT reist mit: die Welt + (wenn signiert) ihr Autor.
+        const worldId = this._resolvePortalWorldId(po);
+        const reg = worldId ? this._worldEntry(worldId) : null;
+        q.set(name, {
+            name,
+            desc,
+            dsl: JSON.parse(JSON.stringify(dsl)),
+            fromLabel: (po.label || po.world || "?").slice(0, 60),
+            fromWorldId: worldId || "",
+            authorPubKey:
+                reg && typeof reg.authorPubKey === "string" && /^[0-9a-f]{64}$/i.test(reg.authorPubKey)
+                    ? reg.authorPubKey.toLowerCase()
+                    : "",
+            at: Date.now(),
+        });
+        this.log(
+            `Die Welt „${(po.label || "?").slice(0, 40)}" reicht eine Fähigkeit: „${name}"${desc ? ` — ${desc}` : ""}. „gewähre ${name}" nimmt sie an (souveräne Geste).`,
+            "INFO"
+        );
+        return true;
+    }
+
+    // Die GEWÄHR — nur durch die R2-Host-Geste (außerhalb jedes iframes,
+    // Klartext, frisch). Ein revoziertes Herkunfts-Glied fällt am Tor.
+    grantCapability(name, opts) {
+        const key = String(name || "")
+            .trim()
+            .toLowerCase();
+        const q = this.state.capabilityProposals;
+        const prop = q && q.get(key);
+        if (!prop) return { ok: false, reason: "no_proposal" };
+        if (prop.authorPubKey && this.state.revokedKeys && this.state.revokedKeys.has(prop.authorPubKey)) {
+            q.delete(key);
+            this.log(`Fähigkeit „${key}" verweigert — die Herkunft ist revoziert.`, "WARN");
+            return { ok: false, reason: "revoked" };
+        }
+        const granted = this._sovereignGesture(
+            "grant_capability",
+            {
+                what: `Fähigkeit „${key}" gewähren (von „${prop.fromLabel}")`,
+                value: typeof this.describeProgram === "function" ? this.describeProgram(prop.dsl) : key,
+                whom: "deiner Welt",
+            },
+            opts
+        );
+        if (!granted) return { ok: false, reason: "declined" };
+        if (!this.state.grantedCapabilities) this.state.grantedCapabilities = {};
+        this.state.grantedCapabilities[key] = { ...prop, grantedAt: Date.now() };
+        q.delete(key);
+        if (typeof this.journalAppend === "function") {
+            this.journalAppend(
+                "growth",
+                `Eine fremde Fähigkeit wurde Teil deiner Welt: „${key}" (von „${prop.fromLabel}").`,
+                {
+                    capability: key,
+                }
+            );
+        }
+        this.log(`Fähigkeit „${key}" gewährt — „wirke ${key}" führt sie aus.`, "INFO");
+        return { ok: true };
+    }
+
+    // Der LAUF — durch DIESELBE dslRun-Sandbox wie jede Geste (Budget/
+    // Whitelist); der R4-Rückruf wirkt auch NACH der Gewähr, und die
+    // HEUTIGE Wand prüft auch Restauriertes (das Empfänger-Gesetz).
+    runCapability(name) {
+        const key = String(name || "")
+            .trim()
+            .toLowerCase();
+        const cap = this.state.grantedCapabilities && this.state.grantedCapabilities[key];
+        if (!cap) return { ok: false, reason: "unknown" };
+        if (cap.authorPubKey && this.state.revokedKeys && this.state.revokedKeys.has(cap.authorPubKey)) {
+            this.log(`Fähigkeit „${key}" ruht — ihre Herkunft wurde revoziert.`, "WARN");
+            return { ok: false, reason: "revoked" };
+        }
+        if (!this._isRuleEffectAllowed(cap.dsl)) return { ok: false, reason: "forbidden" };
+        const res = this.dslRun(cap.dsl, { source: `capability:${key}` });
+        return { ok: true, res };
+    }
+
+    // W18-B — der Abwesenheits-Sweep, lazy beim ersten Gefährten gestartet
+    // (das stateTimer-Muster: lebt + stirbt mit dem Overlay).
+    _portalEnsurePoseSweep() {
+        const po = this._portalOverlay;
+        if (!po || po.poseTimer) return;
+        po.poseTimer = setInterval(() => this._portalSweepPosePeers(), 2000);
+    }
+
+    // W18-B — verstummte Gefährten (keine Pose binnen SUBWORLD_POSE_TIMEOUT_MS)
+    // als peer-leave aus der Sub-Welt räumen. Deckt Portal-Austritt UND
+    // Mesh-Abriss mit EINER Regel (die Pose ist das Lebenszeichen).
+    _portalSweepPosePeers() {
+        const po = this._portalOverlay;
+        if (!po || !po.peers || po.peers.size === 0) return;
+        const now = performance.now();
+        const target = po.trust === "sandboxed" ? "*" : window.location.origin;
+        for (const [peerId, entry] of po.peers) {
+            if (now - entry.lastAt > AnazhRealm.SUBWORLD_POSE_TIMEOUT_MS) {
+                po.peers.delete(peerId);
+                if (po.iframe && po.iframe.contentWindow) {
+                    po.iframe.contentWindow.postMessage({ type: "peer-leave", peerId }, target);
+                }
+            }
+        }
     }
 
     // W17 Phase B-JS-Compute — die eigene Verbindungs-id im Server-Kontext.
@@ -35662,14 +37169,15 @@ class AnazhRealm {
     // W17 Phase C — C1: betritt der Spieler ein Multiplayer-Portal, lädt er
     // die Mesh-Gruppe ein. Ein `portal-invite`-Broadcast (`{worldId, label}`)
     // — wie companion-say ein event-driven Spiel-Broadcast, kein DSL. Nur ein
-    // Multiplayer-Portal (B-Relay verbindet die Gruppe nur dort) und nur eine
+    // gemeinsamkeits-fähiges Portal (Multiplayer: B-Relay verbindet die Gruppe
+    // dort; W18-B Ko-Präsenz: das Pose-Mesh verbindet sie) und nur eine
     // library-bekannte Welt (der Empfänger muss sie via obtainPortalForWorld
     // holen können — _resolvePortalWorldId liefert sonst null).
     _p2pBroadcastPortalInvite() {
         const p2p = this.state.p2p;
         if (!p2p || !p2p.enabled || !p2p.connected) return false;
         const po = this._portalOverlay;
-        if (!po || !po.multiplayer) return false;
+        if (!po || (!po.multiplayer && !po.coPresence)) return false;
         const worldId = this._resolvePortalWorldId(po);
         if (!worldId) return false;
         this.p2pSend({ type: "portal-invite", worldId, label: po.label || worldId });
@@ -35715,7 +37223,12 @@ class AnazhRealm {
             return { ok: false, reason: obtained.reason };
         }
         const bp = this.state.blueprints[obtained.blueprint];
-        const meta = Object.assign({}, bp.portalMeta, { multiplayer: true });
+        // W18-B — eine Ko-Präsenz-Welt behält ihre Natur (ihr Pose-Mesh
+        // braucht den Shim nicht); nur eine Shim-Multiplayer-Welt bekommt
+        // das erzwungene multiplayer:true (die Einladung IST der Beweis —
+        // B2 verbindet die Gruppe auch ohne eigene Registry-Marke).
+        const forced = bp.portalMeta && bp.portalMeta.coPresence === true ? {} : { multiplayer: true };
+        const meta = Object.assign({}, bp.portalMeta, forced);
         this.state.p2p.pendingInvite = null;
         this._renderPortalInviteBanner();
         // Direkt über _buildPortalOverlay — enterPortal bräuchte eine
@@ -35762,6 +37275,15 @@ class AnazhRealm {
         const text = document.createElement("div");
         text.className = "portal-invite-text";
         text.textContent = `${who} öffnete ein Tor nach „${inv.label}"`;
+        // W18-A — die ehrliche Ko-Präsenz-Stufe VOR dem Mitkommen: der
+        // Empfänger löst die Welt lokal auf (seine Bibliothek) und erfährt,
+        // ob er die Gefährten drinnen SEHEN wird oder jeder allein reist.
+        const known = this._worldEntry(inv.worldId);
+        const tierEl = document.createElement("div");
+        tierEl.className = "portal-invite-tier";
+        tierEl.textContent = this._portalCoPresenceTier(
+            known || { multiplayer: true } // die Einladung selbst beweist mindestens Stufe 1
+        ).label;
         const row = document.createElement("div");
         row.className = "portal-invite-row";
         const joinBtn = document.createElement("button");
@@ -35777,6 +37299,7 @@ class AnazhRealm {
         row.appendChild(joinBtn);
         row.appendChild(dismissBtn);
         banner.appendChild(text);
+        banner.appendChild(tierEl);
         banner.appendChild(row);
     }
 
@@ -36679,6 +38202,57 @@ class AnazhRealm {
     // Spieler steigt auf eine moveable-Architektur. Setzt mountedArch + cached
     // den Mount-Offset (Spieler-Position relativ zur Architektur). Im Game-
     // Loop (siehe _tickMountedMovement) folgt die Architektur dem Spieler.
+    // V18.150 — FADEN #7 (Fahrzeug-Fahr-Tiefe): das FAHR-PROFIL emergiert
+    // aus der SUBSTANZ des Gefährts (kein Fahrzeug-Typ-Enum — die C1-GELENKE
+    // sagen das WIE, die MASSE das WIE SEHR): Räder tragen TEMPO (+12 % je
+    // Rad, Cap +60 %) und ROLLEN AUS (niedriges Brems-k — ein Wagen stoppt
+    // nicht auf der Stelle), Beine tragen einen Ritt-Schritt; das Hüll-
+    // Volumen (_compoundSizeFactor — dieselbe Größe→Stat-Achse wie beim
+    // Werk) macht TRÄGE (zähe Beschleunigung). Gecacht am Entry (die
+    // Bauplan-Form ist frozen). Erst-Wurf-Werte (Abnahme-Regel).
+    _vehicleProfile(entry) {
+        if (!entry) return null;
+        if (entry._vehicleProfile) return entry._vehicleProfile;
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const roles =
+            bp && Array.isArray(bp.parts) && bp.parts.length >= 2
+                ? this.computeMotionRoles(bp.parts, bp.connections)
+                : null;
+        let radCount = 0;
+        let beinCount = 0;
+        if (roles) {
+            for (const r of roles) {
+                if (r && r.role === "rad") radCount++;
+                else if (r && r.role === "bein") beinCount++;
+            }
+        }
+        const mass = bp ? Math.max(0.6, Math.min(2.5, this._compoundSizeFactor(bp))) : 1;
+        const prof = {
+            radCount,
+            beinCount,
+            mass,
+            topSpeedMul: 1 + Math.min(0.6, radCount * 0.12) + (radCount === 0 && beinCount >= 2 ? 0.15 : 0),
+            kAcc: Math.max(2.5, Math.min(10, 7 / mass)),
+            kBrake: radCount > 0 ? Math.max(1.5, Math.min(6, 3.5 / mass)) : Math.max(4, Math.min(10, 8 / mass)),
+            roles,
+        };
+        entry._vehicleProfile = prof;
+        return prof;
+    }
+
+    // V18.150 — das Profil des AKTUELL gerittenen Gefährts (der Bewegungs-
+    // Loop konsumiert es). _tickMountedMovement cacht den Entry pro Frame
+    // (_mountedEntry) — kein zweiter Array-Scan im Bewegungs-Pfad.
+    _mountedVehicleProfile() {
+        const archId = this.state.player && this.state.player.mountedArch;
+        if (archId === null || archId === undefined) return null;
+        const entry =
+            this._mountedEntry && this._mountedEntry.id === archId
+                ? this._mountedEntry
+                : (this.state.architectures || []).find((e) => e.id === archId);
+        return entry ? this._vehicleProfile(entry) : null;
+    }
+
     mountArchitecture(entry) {
         if (!entry || !entry.affordances || !entry.affordances.moveable) {
             this.log("Mount: Architektur ist nicht fahrbar", "INFO");
@@ -36707,7 +38281,26 @@ class AnazhRealm {
             pm.z = entry.position.z;
             pm.y = entry.position.y + entry._sitzHeight;
         }
-        this.log(`Eingestiegen in „${entry.type}"`, "INFO");
+        // V18.150 — die KOLLISION RUHT IM SATTEL (das Minecraft-Boot-Muster:
+        // Reiter + Gefährt sind EIN Körper — die Spieler-Kapsel kollidiert):
+        // GEMESSEN im diag-ride blockierte der STATISCHE Wagen-Körper die
+        // Fahrt als Bordstein (er folgt der gezogenen Position nie). Beim
+        // Aufsteigen fällt er; der Lazy-Builder (_archWithinCollisionRadius-
+        // Tick) überspringt das gerittene Gefährt; Absteigen baut lazy neu.
+        if (entry.collision) this._disposeArchitectureCollision(entry);
+        // V18.150 — das Fahr-Profil LESBAR beim Aufsteigen (der V18.119-Kreis:
+        // bauen → ablesen → lernen): der Spieler erfährt, WAS er reitet.
+        const prof = this._vehicleProfile(entry);
+        const art =
+            prof && prof.radCount > 0
+                ? `${prof.radCount}× Rad — rollt`
+                : prof && prof.beinCount >= 2
+                  ? `${prof.beinCount}× Bein — trabt`
+                  : "starr";
+        this.log(
+            `Eingestiegen in „${entry.type}" (${art} · Tempo ×${prof ? prof.topSpeedMul.toFixed(2) : "1.00"} · ${prof && prof.mass > 1.4 ? "träge" : "wendig"})`,
+            "INFO"
+        );
         return { ok: true, entry };
     }
 
@@ -36738,15 +38331,28 @@ class AnazhRealm {
     // Pro Frame: wenn mounted, ziehe die Architektur an die Spieler-Position
     // (mit Höhen-Offset abziehen — Spieler sitzt OBEN). Die Welt-Mesh des
     // Compounds wird in tickArchitectureCulling automatisch nachgezogen.
-    _tickMountedMovement() {
+    // V18.150 — FADEN #7: das Gefährt bekommt einen KÖRPER: es RICHTET sich
+    // sanft in die Fahrt-Richtung aus (exp-Lerp übers kürzeste Winkel-Delta —
+    // vorher rutschte der Wagen seitwärts wie ein Aufkleber) und seine
+    // GELENKE fahren MIT (die C1-Räder rollen / die Ross-Beine traben mit
+    // einer Phase ∝ dem ECHTEN Weg — dieselbe _animateCompoundMotion wie
+    // Kreatur + Avatar, kein Parallel-Animator). Die Ausrichtung ist
+    // VISUAL-first (die Kollisions-AABB bleibt achsen-orientiert — der
+    // Stempel ÜBER-deckt quadratisch, V18.0-Korrektur #3); vermerkt.
+    _tickMountedMovement(dt) {
         const archId = this.state.player.mountedArch;
-        if (archId === null || archId === undefined) return;
+        if (archId === null || archId === undefined) {
+            this._mountedEntry = null;
+            return;
+        }
         const entry = (this.state.architectures || []).find((e) => e.id === archId);
         if (!entry) {
             // Architektur ist verschwunden (z. B. abgebaut) → auto-dismount
             this.state.player.mountedArch = null;
+            this._mountedEntry = null;
             return;
         }
+        this._mountedEntry = entry;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
         // Architektur-Position auf Spieler ziehen (minus Sitz-Höhe — C7: der
@@ -36758,6 +38364,34 @@ class AnazhRealm {
         // Mesh-Position sofort updaten (sonst lagt das Visual einen Frame).
         if (entry.mesh) {
             entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
+            const tick = Number.isFinite(dt) && dt > 0 ? Math.min(0.1, dt) : 0.016;
+            const body = this.state.playerBody;
+            const v = body ? body.getLinearVelocity() : null;
+            const vx = v ? v.x() : 0;
+            const vz = v ? v.z() : 0;
+            const sp = Math.hypot(vx, vz);
+            if (sp > 0.4) {
+                const targetYaw = Math.atan2(vx, vz);
+                let cur = Number.isFinite(entry._rideYaw) ? entry._rideYaw : targetYaw;
+                let d = targetYaw - cur;
+                while (d > Math.PI) d -= 2 * Math.PI;
+                while (d < -Math.PI) d += 2 * Math.PI;
+                cur += d * (1 - Math.exp(-4 * tick));
+                entry._rideYaw = cur;
+                entry.mesh.rotation.y = cur;
+            }
+            // Die Fahr-Phase wächst mit dem WEG (Rad-Umfang-Gefühl statt Uhr).
+            entry._ridePhase = (entry._ridePhase || 0) + sp * tick * 2.2;
+            const prof = this._vehicleProfile(entry);
+            if (prof && prof.roles) {
+                this._animateCompoundMotion(
+                    entry.mesh,
+                    prof.roles,
+                    performance.now() / 1000,
+                    entry._ridePhase,
+                    sp > 0.4
+                );
+            }
         }
     }
 
@@ -36835,8 +38469,14 @@ class AnazhRealm {
         const ignite = AnazhRealm.FOCUSING_IGNITE_THRESHOLD;
         const ratePerSec = AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC;
         const ignitions = [];
+        // V18.150 — das GERITTENE Gefährt brennt nicht still unter dem Reiter
+        // weg (GEMESSEN im diag-ride: eine Quarz-Geode am Spawn verbrannte
+        // den Holz-Wagen mitsamt Sitz = Auto-Dismount aus dem Nichts —
+        // Reiter + Gefährt sind EINS, er hält es aus dem Brennpunkt).
+        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         for (const target of this.state.architectures || []) {
             if (target.affordances && target.affordances.focusing) continue; // selbst nicht
+            if (riddenId !== null && riddenId !== undefined && target.id === riddenId) continue;
             const targetBp = this.state.blueprints && this.state.blueprints[target.type];
             if (!targetBp) continue;
             const tags = this.computeCompoundTags(targetBp) || {};
@@ -37000,7 +38640,7 @@ class AnazhRealm {
     // Nimmt dt = Sekunden seit letztem Frame.
     tickAffordances(dt) {
         if (!Number.isFinite(dt) || dt <= 0) return;
-        this._tickMountedMovement();
+        this._tickMountedMovement(dt);
         this._tickFocusingAffordances(dt);
         this._tickRadiatingAffordances(dt);
         this._tickBalancingAffordances(dt);
@@ -37520,7 +39160,7 @@ class AnazhRealm {
     // Part erzeugt (mehrere Parts mit gleicher Farbe würden sich Material
     // teilen können — V1 hält's einfach). Wasser-Animation kommt automatisch,
     // wenn ein Part `animate: "water_wave"` trägt.
-    _buildFromBlueprint(blueprint, depth, visited) {
+    _buildFromBlueprint(blueprint, depth, visited, opts) {
         // Welle 2 C — fraktale Verschachtelung. Ein Part mit shape:"blueprint"
         // referenziert via refName einen anderen Bauplan, der als Sub-Group
         // an dieser Position eingebettet wird. Cycle-Guard via visited-Set,
@@ -37652,7 +39292,19 @@ class AnazhRealm {
         // doppelt sich der Render bei Fraktal-Bauplänen. Farbe + Opacity
         // folgen der Lastformel (W5-A): stark = grün, ok = goldgelb, schwach
         // = rot (= Brech-Warning, V1 nur visuell).
-        if (!depth && Array.isArray(blueprint.connections) && blueprint.connections.length > 0) {
+        // V18.153 (Schöpfer-Befund): die Linien+Marker sind ein WERKSTATT-
+        // Werkzeug (das Gelenk-Design ablesen — aus GENAU diesen Verbindungen
+        // emergiert die C1-Animation), KEIN Welt-Schmuck: depthTest:false +
+        // renderOrder 999 zeichneten sie ÜBER jedes gespawnte Gefährt/Portal.
+        // Nur wer sie BESTELLT (opts.connectionLines — der Werkstatt-Viewer),
+        // bekommt sie; die Welt zeigt das reine Werk.
+        if (
+            opts &&
+            opts.connectionLines === true &&
+            !depth &&
+            Array.isArray(blueprint.connections) &&
+            blueprint.connections.length > 0
+        ) {
             this._addConnectionLines(group, blueprint);
         }
         return group;
@@ -39870,8 +41522,17 @@ class AnazhRealm {
         const material = this.state.materials && this.state.materials[matName];
         if (!material || !material.tags) return {};
         const out = {};
+        const ceil = AnazhRealm.MATERIAL_TAG_CEIL;
         for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
-            const val = (activation[tag] || 0) * (material.tags[tag] || 0);
+            // Ω3(b) (taille-spec §3) — die Klemme am LESER: fremde Substanz
+            // behält ihre Magnitude (must-preserve), aber DIESE Welt liest
+            // nur, was sie trägt (härte=10⁶ baute GEMESSEN die unzerstörbare
+            // GOTT-MAUER: mineResist 6.1e6, fit→0). Lokale Materialien sind
+            // per Geburt [0,1] (defineMaterial) → die Decke ist für sie no-op;
+            // sie deckt JEDEN Eintrittsweg (Import/Save-Edit/künftige) per
+            // Konstruktion, weil ALLE Compound-Konsumenten hier durchlaufen.
+            const raw = Math.min(ceil[tag] !== undefined ? ceil[tag] : 2, material.tags[tag] || 0);
+            const val = (activation[tag] || 0) * raw;
             if (val > 0) out[tag] = val;
         }
         return out;
@@ -40282,7 +41943,23 @@ class AnazhRealm {
         for (const c of connections.slice(0, AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT)) {
             if (!c || typeof c !== "object") continue;
             const typeDef = AnazhRealm.CONNECTION_TYPES[c.type];
-            if (!typeDef) continue;
+            // Ω4 (taille-spec §2) — eine STRUKTURELL valide Verbindung mit
+            // UNBEKANNTEM Typ wird BEWAHRT, nicht verworfen: connections sind
+            // signierte Substanz — sie zu droppen kippte die Signatur eines
+            // Zukunfts-Bauplans auf „modified" (must-preserve). Die LESER
+            // ignorieren sie (must-ignore: computeConnectionStrength → 0,
+            // der computeMotionRoles-Filter nimmt nur bekannte Typen,
+            // _attachPointFor matcht exakte kinds). Struktur-Müll fällt weiter.
+            if (!typeDef) {
+                const type = typeof c.type === "string" ? c.type.slice(0, 40) : "";
+                if (!type) continue;
+                const pA = Number(c.partA);
+                const pB = Number(c.partB);
+                if (!Number.isInteger(pA) || pA < 0 || pA >= partsLength) continue;
+                if (!Number.isInteger(pB) || pA === pB || pB >= partsLength || pB < -1) continue;
+                clean.push({ type, partA: pA, partB: pB });
+                continue;
+            }
             const partA = Number(c.partA);
             if (!Number.isInteger(partA) || partA < 0 || partA >= partsLength) continue;
             // V18.110 — C7: ein ATTACHMENT-Punkt (griff/sitz/trage) sitzt an
@@ -41792,6 +43469,12 @@ class AnazhRealm {
             scale,
             mesh: null,
         };
+        // Ω5 (taille-spec §5, Perpetuum-Verbot) — die HERKUNFT entscheidet den
+        // Ertrag: ein GRATIS geborenes Spieler-Werk (schöpfer-Modus baute ohne
+        // Material) erntet zu 0 (GEMESSEN: die Modus-Wäsche schöpfer→pfad gab
+        // +14 Stein/Zyklus aus dem Nichts). Worldgen/Nexus-Spawns tragen die
+        // Marke NICHT — die Welt selbst ist die legitime Quelle (Minecraft).
+        if (opts.freeBorn === true) entry.freeBorn = true;
         // Welle 10b — Affordances werden EINMAL beim Spawn berechnet (nicht
         // pro Frame). Welt-Reaktionen (Bewegung, Zoom, Brennglas) lesen das
         // Profil aus entry.affordances. Wenn der Bauplan später editiert
@@ -44072,8 +45755,13 @@ class AnazhRealm {
         const list = this.state.architectures;
         if (!list || list.length === 0) return;
         const tSec = currentTime / 1000;
+        const mountedId = this.state.player && this.state.player.mountedArch;
         for (const entry of list) {
             if (!entry.mesh || !entry.mesh.userData) continue;
+            // V18.150 — das GERITTENE Gefährt animiert der Fahr-Tick
+            // (_tickMountedMovement: Phase ∝ Weg) — der Idle-Animator
+            // pausiert dafür (sonst überschrieben sich beide pro Frame).
+            if (mountedId !== null && mountedId !== undefined && entry.id === mountedId) continue;
             if (typeof entry.mesh.userData.animate === "function") {
                 entry.mesh.userData.animate(currentTime);
             }
@@ -44127,6 +45815,10 @@ class AnazhRealm {
         const colRadiusSq = colRadius * colRadius;
         const budget = Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
         let built = 0;
+        // V18.150 — die Kollision des GERITTENEN Gefährts ruht (das Minecraft-
+        // Boot-Muster): der Lazy-Pass würde sie sonst sofort zurückbauen
+        // (der Reiter ist per Definition IM Collision-Radius).
+        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         for (const entry of this.state.architectures) {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
@@ -44140,7 +45832,9 @@ class AnazhRealm {
                     // Budget erschöpft → baut in einem der nächsten Frames.
                 } else if (distSq <= colRadiusSq) {
                     // Gerendert + im Collision-Radius: Body sicherstellen (budgetiert).
-                    if (!entry.collision && built < budget) {
+                    if (riddenId !== null && riddenId !== undefined && entry.id === riddenId) {
+                        if (entry.collision) this._disposeArchitectureCollision(entry);
+                    } else if (!entry.collision && built < budget) {
                         this._archEnsureCollision(entry);
                         built++;
                     }
@@ -44510,7 +46204,9 @@ class AnazhRealm {
         // erscheinen. Ein eigener (nicht-built-in) Bauplan reist als
         // define_blueprint mit — der Empfänger kennt ihn sonst nicht.
         const archId = this._newArchId();
-        this.spawnArchitecture(bm.blueprintName, spawnPos, { id: archId });
+        // Ω5 — ein im schöpfer-Modus (gate.free) gebautes Werk ist freeBorn:
+        // es erntet zu 0 (das Perpetuum-Verbot — die Modus-Wäsche schließt).
+        this.spawnArchitecture(bm.blueprintName, spawnPos, { id: archId, freeBorn: gate.free === true });
         if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pBroadcastDsl === "function") {
             const posNode = ["at", spawnPos.x, spawnPos.y, spawnPos.z];
             const spawnOp = ["spawn_blueprint", bm.blueprintName, posNode, 0, archId];
@@ -44702,11 +46398,22 @@ class AnazhRealm {
     // Kreatur-gather → erst in creature.userData.carrying, dann beim Bring-
     // Übergabe-Schritt ins Spieler-Inventar.
     harvestArchitecture(entry, harvester = "player", yieldMult = 1) {
+        // V18.150 — FADEN #7: das GERITTENE Gefährt ist unerntbar (Reiter +
+        // Gefährt sind EINS — GEMESSEN im diag-ride: ein Nexus-gather-
+        // Sammler erntete den Wagen UNTER dem Reiter weg → Auto-Dismount
+        // aus dem Nichts). Absteigen gibt es frei.
+        if (entry && this.state.player && entry.id === this.state.player.mountedArch) {
+            return null;
+        }
         if (!entry) return null;
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         const materials = {};
         let totalParts = 0;
-        if (bp && Array.isArray(bp.parts)) {
+        // Ω5 (taille-spec §5) — die HERKUNFT entscheidet den Ertrag: ein
+        // freeBorn-Werk (schöpfer baute gratis) erntet zu 0 — das Perpetuum-
+        // Verbot als lebende Regel (die GEMESSENE Modus-Wäsche schließt).
+        const freeBorn = entry.freeBorn === true;
+        if (bp && Array.isArray(bp.parts) && !freeBorn) {
             const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS || 4;
             for (const part of bp.parts) {
                 if (!part || typeof part.material !== "string") continue;
@@ -48455,7 +50162,7 @@ class AnazhRealm {
             p.dirty = true;
             return;
         }
-        const group = this._buildFromBlueprint(bp);
+        const group = this._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
         // Top-level-Children korrespondieren 1:1 zu bp.parts (in Reihenfolge).
         // _buildFromBlueprint fügt pro Part entweder einen Mesh oder eine Sub-Group
         // (für fraktale blueprint-Refs) hinzu. Wir markieren nur Mesh-Children
@@ -49554,6 +51261,20 @@ class AnazhRealm {
         roleChip.title = bp.roleManual
             ? "Manuell gesetzt — überschreibt die emergente Rolle (zurücksetzen via Markier-Sektion)."
             : "✨ Emergent aus der ganzen Substanz: Form × Material × Handwerk → die Rolle.";
+        // Ω3(a) (taille-spec §3) — eine ABWEICHENDE fremde Behauptung wird
+        // SICHTBAR (Echtheit ≠ Gutartigkeit): „behauptet: X" neben der lokal
+        // emergierten Rolle; der lokale Intent-Override bleibt die Geste.
+        let claimChip = null;
+        if (bp.roleClaimed && bp.roleClaimed !== role) {
+            const claimLabel =
+                AnazhRealm.ROLE_LABELS[bp.roleClaimed] ||
+                AnazhRealm.BLUEPRINT_ROLE_LABELS[bp.roleClaimed] ||
+                bp.roleClaimed;
+            claimChip = this._el("span", { class: "role-chip spec-role-claimed", text: `behauptet: ${claimLabel}` });
+            claimChip.style.opacity = "0.65";
+            claimChip.title =
+                "Die Autor-Behauptung des importierten Plans — hier zählt, was die Substanz trägt (Empfänger-Gesetz). Übernehmen: die Markier-Geste.";
+        }
         const caps = this._blueprintCapabilityHints(bp) || [];
         const aff = this.computeBlueprintAffordances(bp) || {};
         const affLabels = Object.keys(aff).map((k) => AnazhRealm.AFFORDANCE_LABELS[k] || k);
@@ -49561,7 +51282,9 @@ class AnazhRealm {
             this._el("span", { class: "affordance-chip spec-cap-chip", text: "✦ " + c })
         );
         const q = this._compoundAvgPrecision(bp);
-        const idZone = this._el("div", { class: "spec-id" }, roleChip, ...capChips);
+        const idZone = claimChip
+            ? this._el("div", { class: "spec-id" }, roleChip, claimChip, ...capChips)
+            : this._el("div", { class: "spec-id" }, roleChip, ...capChips);
         let qualZone = null;
         if (q > 0) {
             const q5 = Math.max(0, Math.min(5, Math.round(q * 5)));
@@ -51946,10 +53669,13 @@ class AnazhRealm {
         // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags
         const souls = AnazhRealm.CREATURE_SOULS;
         if (!souls) return this._pickCreatureSoulName();
-        const candidates = Object.keys(souls).map((name) => ({
-            name,
-            tags: this._creatureSoulTags(name),
-        }));
+        // PHASE E — Raubtiere kommen nicht ambient (predator-Filter, sparsam).
+        const candidates = Object.keys(souls)
+            .filter((name) => !souls[name].predator)
+            .map((name) => ({
+                name,
+                tags: this._creatureSoulTags(name),
+            }));
         const { pick } = this._affinityPickFromCandidates(candidates, field);
         return (pick && pick.name) || this._pickCreatureSoulName();
     }
@@ -53647,6 +55373,9 @@ class AnazhRealm {
             this.state.selfAwareness.components.push("playerBody");
         }
 
+        // V18.151 (Faden #6) — den IndexedDB-Stand der aktiven Welt laden
+        // (gewinnt nur, wenn frischer als der localStorage-Spiegel).
+        await this._idbPreload();
         this.loadState();
         this.generateNewWorld();
 
@@ -53870,6 +55599,10 @@ class AnazhRealm {
         // permanent ab Init, `state.voxelTerrainActive = true` (default).
         // Die initialen Voxel-Chunks werden vom Streaming-Ring im Game-Loop
         // gestreamt; eine Welt-Initialisierungs-Geste ist nicht mehr nötig.
+
+        // W18-D — wohnt der Spieler in einer Fremd-Welt, kehrt der Boot
+        // durch das Tor zurück (die Heimat trägt darunter eingefroren).
+        this._portalDwellingBootReturn();
 
         this.core.startEternalLoop();
         this.log("Hauptschleife gestartet – Ultiversum pulsiert!", "INFO");
@@ -54662,10 +56395,23 @@ class AnazhRealm {
             // (kein Schlittern), Luft k=1.5 (Sprung-Bogen bleibt ballistisch).
             const nowDt = Math.min(0.1, Math.max(0.001, currentTime - (this.state._lastMoveT || currentTime)));
             this.state._lastMoveT = currentTime;
+            // V18.150 — FADEN #7: im SATTEL führt das GEFÄHRT die Kurven.
+            // Sein Substanz-Profil ersetzt die Fuß-k-Werte: Räder tragen
+            // TEMPO (topSpeedMul) + beschleunigen zäh (kAcc ∝ 1/Masse) +
+            // ROLLEN AUS (niedriges kBrake — der Wagen stoppt nicht auf der
+            // Stelle). EINE Bewegungs-Quelle bleibt (dieselben exp-Kurven,
+            // nur die Konstanten kommen vom Gefährt — kein Parallel-Pfad).
+            const ride =
+                this.state.player &&
+                this.state.player.mountedArch !== null &&
+                this.state.player.mountedArch !== undefined
+                    ? this._mountedVehicleProfile()
+                    : null;
+            if (ride) currentSpeed *= ride.topSpeedMul;
             if (this.state.moveDirection.length() > 0) {
                 this.state.moveDirection.normalize();
                 const v = playerBody.getLinearVelocity();
-                const kAcc = this.state.isInAir ? 4.5 : 14;
+                const kAcc = ride ? ride.kAcc : this.state.isInAir ? 4.5 : 14;
                 const f = 1 - Math.exp(-kAcc * nowDt);
                 const tx = this.state.moveDirection.x * currentSpeed * slopePenalty;
                 const tz = this.state.moveDirection.z * currentSpeed * slopePenalty;
@@ -54680,8 +56426,9 @@ class AnazhRealm {
             } else if (!this.state.onSteepSlope) {
                 // C5 — BREMS-Kurve statt Hard-Stop: am Boden zackig (k=18),
                 // in der Luft bleibt das Momentum (k=1.5, ballistischer Bogen).
+                // V18.150 — im Sattel rollt das Gefährt AUS (sein kBrake).
                 const v = playerBody.getLinearVelocity();
-                const kBrake = this.state.isInAir ? 1.5 : 18;
+                const kBrake = ride ? ride.kBrake : this.state.isInAir ? 1.5 : 18;
                 const fb = 1 - Math.exp(-kBrake * nowDt);
                 playerBody.setLinearVelocity(
                     this.setVec(this.state.tmpVec1, v.x() * (1 - fb), v.y(), v.z() * (1 - fb))
@@ -55486,7 +57233,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.136.0";
+AnazhRealm.VERSION = "18.153.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -55531,6 +57278,11 @@ AnazhRealm.SOCIAL = Object.freeze({
     maxStore: 600, // Zeugnisse gesamt (LWW-dedupe; aelteste t fallen)
     maxBatch: 32, // Zeugnisse pro Mesh-Batch (Anschluss-Annonce)
     ratePerSec: 12, // R1-Empfangs-Deckel pro Peer
+    // F4 Stufe 4 (V18.143) — KOMMENTARE (signierte Text-Zeugnisse, append-only).
+    maxComments: 400, // Kommentare gesamt (aelteste t fallen — bounded, §5-Wand)
+    maxCommentLen: 240, // Zeichen pro Kommentar (die Journal-Laenge)
+    maxCommentBatch: 16, // Kommentare pro Anschluss-Annonce
+    maxCommentsShown: 8, // juengste je Karte sichtbar (das Panel bleibt leicht)
 });
 
 AnazhRealm.FORAGE = Object.freeze({
@@ -55996,6 +57748,50 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         ]),
         auraY: 0.6,
     }),
+    // PHASE E (kampf-plan) — die RAUBTIER-Seele: glühende Substanz resoniert
+    // das WILDE Temperament (brennbar+wärmeleitung — tag-emergent, kein
+    // hostile-Flag; die Formen sind bewusst box+cone: Zylinder/Kugel würden
+    // glut.lebendig=1.0 aktivieren → sanft gewänne, GEMESSEN im Band).
+    // `predator: true` hält sie aus den AMBIENT-Pickern (sparsam per
+    // Konstruktion — KEINE friedliche Welt voll Aggression): Bedrohung
+    // entsteht nur durch bewusste Schöpfung (Chat/DSL/Nexus/Hof). VERMERK:
+    // die ambiente Glut-Region-Geburt wäre eine eigene Welle MIT
+    // Spawn-Verteilungs-Messung (die V17.16-Affinitäts-Lehre).
+    glutwesen: Object.freeze({
+        label: "Glutwesen",
+        predator: true,
+        bodyParts: Object.freeze([
+            Object.freeze({
+                shape: "box",
+                material: "glut",
+                size: { x: 0.42, y: 0.28, z: 0.32 },
+                position: { x: 0, y: 0, z: 0 },
+                label: "Glut-Leib",
+            }),
+            Object.freeze({
+                shape: "cone",
+                material: "glut",
+                size: { x: 0.16, y: 0.24, z: 0.16 },
+                position: { x: 0, y: 0.04, z: 0.28 },
+                label: "Maul",
+            }),
+            Object.freeze({
+                shape: "box",
+                material: "glut",
+                size: { x: 0.09, y: 0.2, z: 0.09 },
+                position: { x: -0.12, y: -0.24, z: 0 },
+                label: "Bein",
+            }),
+            Object.freeze({
+                shape: "box",
+                material: "glut",
+                size: { x: 0.09, y: 0.2, z: 0.09 },
+                position: { x: 0.12, y: -0.24, z: 0 },
+                label: "Bein",
+            }),
+        ]),
+        auraY: 0.7,
+    }),
 });
 AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
 
@@ -56078,6 +57874,18 @@ AnazhRealm.BOOST_RESONANCE_RADIUS = 18; // m, in deren Nähe das Welt-Effekt-Boo
 AnazhRealm.BOOST_RESONANCE_DELTA = 0.15; // +0.15 resoniert auf Spieler-Compound
 AnazhRealm.BOOST_RESONANCE_LABEL = "Welt-Resonanz";
 
+// Ω6 (taille-spec §6, NAMENSRAUM-DOKTRIN — eingefroren seit V18.141):
+// die NACKTEN Tags hier sind der anazh-KERN — ihre BEDEUTUNG ist ab jetzt
+// eingefroren und wird NIE umgedeutet (eine Achse kann nur sterben [Gewicht 0
+// in allen lokalen Signaturen] oder ADDITIV geboren werden [Default 0 — alte
+// Artefakte bleiben gültig per Konstruktion]). Präfixierte Tags (`x:…` /
+// `<welt>:…`) sind fremdes Vokabular: sie REISEN (must-preserve, Ω2-Zwillinge)
+// und resonieren lokal NUR, wenn eine lokale Signatur die Achse führt —
+// must-ignore ist strukturell (computePartTags/_blueprintResonance iterieren
+// die KERN-/SIGNATUR-Achsen; GEMESSEN: x:fremd=99 ändert kein Kern-Bit).
+// Die Signatur-TABELLEN (FORM_ROLE_/WORKSHOP_DOMAIN_/MOTION_ROLE_SIGNATURES,
+// Gewichte, Kosten-Konstante k) sind WELT-LOKAL — die Lesart, nie die Taille;
+// jede Welt darf sie forken, ohne irgendetwas zu brechen.
 AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
     "härte",
     "dichte",
@@ -56094,6 +57902,81 @@ AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
 // materialTag[0..1]); ÷3 normalisiert die Material-Tags des Produkt-Vektors auf [0..1] (= dieselbe Skala wie
 // die Form-Achsen) → die FORM konkurriert mit dem MATERIAL in der Resonanz (heilt die Spektrum-Sättigung).
 AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
+// Ω2 (taille-spec §2 must-preserve) — die Größen-Wand für unbekannte Felder
+// (Dämpfung: ein Riesen-Feld ist ein Quota-DoS, keine Zukunft) + die known-
+// Sätze der Serialize/Restore-Zwillinge: ALLE explizit behandelten Schlüssel.
+// Was hier NICHT steht, reist als opakes Unbekanntes (_carryUnknown).
+AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX = 8192;
+// Ω3(b) (taille-spec §3) — die Stat-Klemme am LESER (der Spannungsregler):
+// pro Achse die lokale Trag-Decke = max(Built-in-Materialien GEMESSEN: 1.0,
+// defineMaterial-Geburts-Clamp [0,1]) × Headroom 2. Fremde Substanz über der
+// Decke ist nicht kaputt — sie ist hier nur so stark, wie diese Welt trägt
+// (eine künftige Welt mit höherer Decke liest die volle Pracht).
+// S-REVIEW-MARKER: die Decken-Zahl (×2) ist mein Erst-Wurf (wie E2-Budgets).
+AnazhRealm.MATERIAL_TAG_CEIL = Object.freeze(
+    AnazhRealm.MATERIAL_TAG_KEYS.reduce((acc, key) => {
+        acc[key] = 2;
+        return acc;
+    }, {})
+);
+AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
+    "name",
+    "label",
+    "builtIn",
+    "parts",
+    "connections",
+    "role",
+    "roleClaimed",
+    "roleManual",
+    "toolMeta",
+    "portalMeta",
+    "forgedPrecision",
+    "signature",
+    "authorPubKey",
+    "signedHash",
+    "signedAt",
+    "signatureStatus",
+    "provenance",
+]);
+AnazhRealm.MATERIAL_KNOWN_KEYS = Object.freeze(["name", "label", "builtIn", "color", "tags"]);
+AnazhRealm.TOOL_KNOWN_KEYS = Object.freeze([
+    "name",
+    "label",
+    "builtIn",
+    "isStarter",
+    "opClass",
+    "opName",
+    "precisionCap",
+    "sourceBlueprint",
+    "domain",
+]);
+AnazhRealm.MANIFEST_KNOWN_KEYS = Object.freeze([
+    "schemaVersion",
+    "id",
+    "label",
+    "world",
+    "dsl",
+    "desc",
+    "reachable",
+    "importedAt",
+    "trust",
+    "authorPubKey",
+    "signature",
+    "signedHash",
+    "signedAt",
+    "provenance",
+    "translated",
+    "translatedAt",
+    "scene",
+    "vendored",
+    "vendoredAt",
+    "bundleHash",
+    "serverMode",
+    "multiplayer",
+    // W18-B — die Ko-Präsenz-Deklaration (additives Minor-Wachstum, Ω6:
+    // alte Builds bewahren sie als Unbekanntes, neue erkennen sie).
+    "coPresence",
+]);
 AnazhRealm.MATERIAL_TAG_DEFAULTS = Object.freeze(
     AnazhRealm.MATERIAL_TAG_KEYS.reduce((acc, key) => {
         acc[key] = 0;
@@ -56342,6 +58225,22 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         dsl: Object.freeze(["sturm", "ruhe", "schwaermen", "skybox_color"]),
         desc: "Ein 2D-Schwarm aus hunderten Wesen — eine fremde Engine, die null-origin sandgesichert läuft, ohne AnazhRealm je zu berühren.",
         trust: "sandboxed",
+    }),
+    // W18-B — die erste Ko-Präsenz-Welt: eine single-player fremde Engine
+    // (2D-Canvas, kein Multiplayer-Begriff), die das Ko-Präsenz-Protokoll
+    // DEKLARIERT (peer-join/peer-state/peer-leave). AnazhRealm gibt ihr die
+    // Augen: das Mesh trägt die Posen der Gefährten, die Welt rendert sie in
+    // IHRER Engine — der Beweis, dass Freunde sich in einer Welt sehen, die
+    // selbst nie wusste, was ein Freund ist. Null-origin sandgesichert wie
+    // der Schwarm (das Protokoll quert die VOLLE Wand).
+    begegnung: Object.freeze({
+        id: "begegnung",
+        label: "Begegnungs-Feld",
+        world: "worlds/begegnung/index.html",
+        dsl: Object.freeze([]),
+        desc: "Ein stilles Lichter-Feld — eine fremde single-player Engine, in der ihr euch trotzdem seht: AnazhRealm injiziert die Ko-Präsenz übers Mesh.",
+        trust: "sandboxed",
+        coPresence: true,
     }),
 });
 
@@ -56867,6 +58766,46 @@ AnazhRealm.PORTAL_CHANNEL_RATE_MAX = 200;
 // Sender deckelt sich schon bei 120/s (SUBWORLD_NET_RATE_MAX), aber ein
 // böswilliger Peer ignoriert das — der Empfänger-Deckel ist die echte Wand.
 AnazhRealm.SUBWORLD_NET_PEER_RATE_MAX = 120;
+// W18-B (gigant-plan F3; world-portal-w18-plan §5) — die Ko-Präsenz-Injektion:
+// AnazhRealm ist die Multiplayer-SCHICHT für Welten, die selbst keine haben.
+// Das Mesh trägt Posen (~10 Hz, das W7-pos-Muster), die Welt rendert Avatare.
+// Sende-Wand (local-pose aus dem iframe) + Empfänger-Wand (subworld-pose je
+// Peer, das _cpRate-Muster) + Abwesenheits-Timeout (Stille = peer-leave).
+AnazhRealm.SUBWORLD_POSE_RATE_WINDOW_MS = 1000;
+AnazhRealm.SUBWORLD_POSE_RATE_MAX = 15;
+AnazhRealm.SUBWORLD_POSE_PEER_RATE_MAX = 15;
+AnazhRealm.SUBWORLD_POSE_TIMEOUT_MS = 6000;
+// W18-C (world-portal-w18-plan §6, Variante A — deklariert) — die INPUT-
+// BRÜCKE: eine Welt, die im ready-Handshake `inputActions` deklariert,
+// bekommt AnazhRealms Tasten als SEMANTISCHE Aktionen gereicht
+// ({type:"input", action, down} — Daten, nie Key-Codes, nie Events). Das
+// Vokabular ist EINGEFROREN + winzig (die eBPF-Lehre): eine Welt wählt
+// daraus, erfindet nie eigene Worte in diesem Kanal. Die Tasten-Karte
+// spiegelt die Heimat-Controls (WASD/Pfeile · Leertaste · E).
+AnazhRealm.PORTAL_INPUT_ACTIONS = Object.freeze(["forward", "back", "left", "right", "jump", "use"]);
+AnazhRealm.PORTAL_INPUT_KEYMAP = Object.freeze({
+    KeyW: "forward",
+    ArrowUp: "forward",
+    KeyS: "back",
+    ArrowDown: "back",
+    KeyA: "left",
+    ArrowLeft: "left",
+    KeyD: "right",
+    ArrowRight: "right",
+    Space: "jump",
+    KeyE: "use",
+});
+// W18-D (world-portal-w18-plan §7) — DARIN LEBEN: der Persistenz-Slot einer
+// Fremd-Welt. Eine Welt darf ihren Zustand als {type:"state", data} (String)
+// exponieren; die Heimat hält ihn im GLOBALEN localStorage (anazh.portalState
+// — wie der Vibe-Pass NIE im Welt-Snapshot: er gehört der Fremd-Welt, nicht
+// der Heimat-Welt) und reicht ihn beim nächsten Betreten als `restoreState`
+// zurück. Größen-Deckel je Welt + Welt-Anzahl-Deckel (älteste fällt).
+AnazhRealm.PORTAL_STATE_MAX_BYTES = 8192;
+AnazhRealm.PORTAL_STATE_MAX_WORLDS = 16;
+// R6 (V18.152) — die Quarantäne-Queue der gereichten Fähigkeiten (bounded;
+// dedupe per Name — ein erneuter Vorschlag refresht, flutet nie).
+AnazhRealm.CAPABILITY_PROPOSAL_MAX = 16;
 // V9.44-c — der Mesh-Router-Dispatch-Table. p2pHandleMessage mappt den
 // WS-Nachrichtentyp über diese Tabelle auf eine `_p2pMsg<Type>`-Methode,
 // statt 18 sequentielle `if (msg.type === …)`-Branches durchzulaufen. Ein
@@ -56881,6 +58820,7 @@ AnazhRealm.P2P_MESSAGE_HANDLERS = Object.freeze({
     "creature-pos": "_p2pMsgCreaturePos",
     "companion-say": "_p2pMsgCompanionSay",
     "subworld-net": "_p2pMsgSubworldNet",
+    "subworld-pose": "_p2pMsgSubworldPose",
     "portal-invite": "_p2pMsgPortalInvite",
     pos: "_p2pMsgPos",
     dsl: "_p2pMsgDsl",
@@ -57008,6 +58948,8 @@ AnazhRealm.ACTION_TO_EMOTION = Object.freeze({
     resonance: { awe: 0.1 }, // resonante Architektur erlebt
     damage: { sorrow: 0.12, chaos: 0.1 }, // Schaden/Gefahr — Angst
     attack: { chaos: 0.08 }, // V17.54 Kampf D — angreifen (Zorn/Kampf-Intensität); + Waffen-härte via die W2-Brücke
+    threatened: { sorrow: 0.14, chaos: 0.12 }, // PHASE E — gejagt + niedrige HP: die FURCHT (der damage-Affekt, durch HP differenziert)
+    triumph: { joy: 0.16, hope: 0.1 }, // PHASE E — die Bedrohung bezwungen: Triumph/Erleichterung (der positive δ)
     create: { joy: 0.1, hope: 0.1 }, // V17.46 — einen Bauplan ERSCHAFFEN (Werkstatt/Chat): der Stolz (× Komplexität)
     loss: { sorrow: 0.15 }, // V17.48 — den Verlust einer Kreatur (× Magnitude ∝ Bindung × Vitalität)
 });
@@ -57226,6 +59168,23 @@ AnazhRealm.TEMPERAMENT_PROFILES = Object.freeze({
     wild: Object.freeze({ strike: 0.3, strikeChaos: 0.5, strikeCap: 0.85, counterMul: 0.85, fleeMul: 0.7 }),
     sanft: Object.freeze({ strike: 0, strikeChaos: 0, strikeCap: 0, counterMul: 0, fleeMul: 1.0 }),
     scheu: Object.freeze({ strike: 0, strikeChaos: 0, strikeCap: 0, counterMul: 0, fleeMul: 1.7 }),
+});
+// PHASE E (kampf-plan — die BEDROHUNG; GEMERKTER FADEN #2, der letzte
+// Affekt-Konsument): ein WILDES Wesen (Temperament aus der Seelen-Substanz,
+// kein hostile-Flag) JAGT die Beute — pfad-only (frieden/schöpfer kennen
+// keine Bedrohung), Furcht schlägt Jagd (ein getroffenes Raubtier flieht
+// nach seinem fleeMul wie jedes Wesen). Der Biss läuft durch dasselbe
+// damagePlayer-Tor wie die Gegenwehr; die Rüstung dämpft FLACH (dealt =
+// max(1, amount − defense) — exakt die Kreatur-Formel, EINE Sprache).
+// Erst-Wurf-Werte (Abnahme-Regel: bauen, vermerken, weiterfahren).
+AnazhRealm.CREATURE_HUNT = Object.freeze({
+    radius: 12, // m — Witterungs-Reichweite (darüber wandert das Raubtier)
+    speedBoost: 1.45, // Jagd ist schneller als Schlendern, langsamer als Flucht (1.6)
+    strikeRange: 2.4, // m — Biss-Reichweite
+    strikeCooldownSec: 1.6, // s — zwischen zwei Bissen
+    damageMul: 0.8, // × dem damage-Stat des Wesens (die EINE Stat-Pipeline)
+    fearHpFrac: 0.5, // unter dieser HP-Fraktion wird Schaden zur FURCHT (threatened)
+    triumphWindowSec: 20, // s — ein Jäger, so frisch er biss, gebiert beim Fall TRIUMPH
 });
 // Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
 // TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur

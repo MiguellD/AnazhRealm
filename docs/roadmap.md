@@ -36,16 +36,18 @@ Kommentare) · F2-Stern · W18 · Phase E · die Taille Ω0–Ω6.
 
 ## §3 · Der Plan vorwärts — die Reihenfolge
 
-> **Der Master-Blick über allem: `docs/gigant-plan.md`** (10.06.2026 — das umfassende gemessene
+> **Der Master-Blick über allem: `docs/archiv/gigant-plan.md`** (10.06.2026 — das umfassende gemessene
 > Bild: die NEUN Säulen G1 Motion-Resonanz · G2 Rekursion · G3 sich-speisendes P2P-Netz ·
 > G4 Kreatur-Innenleben · G5 δ-als-Währung · G6 Licht+Terrain · G7 Maßstab · G8 Robustheit (✓ rund) ·
-> G9/Ω die gefrorene Taille (`docs/taille-plan.md`) + die Zwillings-Karte + die Reihenfolge §5).
+> G9/Ω die gefrorene Taille (✓ rund V18.137–.141; `docs/taille-spec.md` NORMATIV, Historie
+> `docs/archiv/taille-plan.md`) + die Zwillings-Karte + die Reihenfolge §5 + **DIE GEMERKTEN
+> FÄDEN** (§5-Ende — Schöpfer 11.06.: „alle wichtig, nie vergessen")).
 > Dieser §3 bleibt die operative Kurz-Form; der Gigant-Plan trägt das Warum + die Anker.
 
 **⭐ Die EINE Wurzel — die Chunk-Naht (Schöpfer-Befund 09.06.2026, gemessen):** blobiges Terrain ·
 Edit-/LOD-Naht · die Wasser-Naht (30 Wellen) · „Wasser fließt nicht" sind **fünf Symptome EINER Wurzel**:
 independent gebaute Chunks, deren Ränder nur approximativ + verspätet zusammenfinden. Der vereinte
-Bogen ist **`docs/terrain-koharenz-plan.md`** (DIE EINE GRENZE).
+Bogen ist **`docs/archiv/terrain-koharenz-plan.md`** (DIE EINE GRENZE).
 
 **GEBAUT + GEMESSEN + Playtest-grün (T0–T8, alle Worker-gespiegelt, Determinismus 0/6885):** T0–T3 die
 kohärente Grenze (T1 zeitlich · T2 Cross-LOD-Geomorph · T3 Dual-Contouring-QEF) · **T4 der Wasser-CA**
@@ -71,9 +73,12 @@ liegt in einer T6d-Kaverne (Spawn-Höhe heben). Detail: `archiv/lod-kaskade-plan
 letzte Emotion-Kern-Konsument) · Mana-Symmetrie · Emotion→Regel-Emergenz · **Nexus-Lern-Vereinheit-
 lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendige-feld.md`.
 
-**Quer dazu (eigene Bögen):** der **soziale Mesh-Bogen** (~~Bewerten-Aggregation~~ ✓ V18.134 ·
-~~Lesezeichen~~ ✓ V18.135 · offen: Folgen → Kommentare/Chat → „Für dich") · **W18** (in fremden
-Welten leben, `archiv/world-portal-w18-plan.md`) · **Ω die gefrorene Taille** (`docs/taille-plan.md`).
+**Quer dazu (eigene Bögen):** ~~der **soziale Mesh-Bogen**~~ **✓ RUND V18.134–.147** (Bewerten ·
+Lesezeichen · Folgen · Kommentare · „Für dich"; Kür-Vermerk nur die Portal-Ring-Vorschau) ·
+~~**W18** (in fremden Welten leben)~~ **✓ RUND V18.144–.146** (`archiv/world-portal-w18-plan.md`;
+benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
+**✓ RUND V18.137–.141** (`docs/taille-spec.md` NORMATIV · `docs/archiv/taille-plan.md` Historie ·
+`spec/golden/v1/` EINGEFROREN).
 
 ---
 
@@ -115,20 +120,31 @@ Crafting-Fluss-Audit · Avatar-Größe→HP · ~~Zwei-Hand-Modell~~ **GEBAUT (V1
 Key G + linker Arm)** · ~~Rüstung am Avatar sichtbar~~ **GEBAUT (V18.104 + V18.110: sitzt am
 TORSO via C7-Trage-Punkt)** · LLM-Manifest.
 
-**Lebendiges Feld/Nexus** — Phase E Bedrohung/Furcht (der letzte Konsument) · Mana-Symmetrie
+**Lebendiges Feld/Nexus** — ~~Phase E Bedrohung/Furcht~~ **✓ V18.148 (Raubtier-Seele · Jagd ·
+Furcht/Triumph/Schuld — der Emotion-Kern ist RUND; Vermerk: ambiente Glut-Region-Geburt = eigene
+Mess-Welle)** · Mana-Symmetrie
 (`magieleitung` → zweite Ausdauer-Achse) · Emotion→Regel-Emergenz (hand-codierte Kopplungen via DSL
 emergent) · Nexus-Lern-Vereinheitlichung (Geste→Gesetz: EIN Lern-Substrat, bewährte Geste kristallisiert
 zur Regel).
 
-**Sozial/Multi-User** — Bewertungs-Aggregation (Mesh, ed25519-signiert) · Lesezeichen (lokal-first) ·
-Folgen (Vibe-Pass-Identität) · Kommentare + Chat (Persistenz + P2P + Moderation) · B-WASM (Fremd-Engine-
-Rest) · evolveCommunity (Kreatur-Kulturen).
+**Sozial/Multi-User** — ~~Bewertungs-Aggregation~~ ✓ V18.134 · ~~Lesezeichen~~ ✓ V18.135 ·
+~~Folgen~~ ✓ V18.142 · ~~Kommentare~~ ✓ V18.143 (signierte Worte übers Mesh; Chat/Moderation =
+spätere Kür) · ~~„Für dich"~~ ✓ V18.147 (die LESBARE Summe der eigenen Signale — F4 ist RUND;
+Kür-Vermerk nur die Portal-Ring-Welt-Vorschau) · ~~W18 in fremden Welten LEBEN~~ ✓ V18.144–.146
+(Ko-Präsenz-Injektion + Tier-Wahrheit · Input-Brücke · Wohnen/Boot-Rückkehr/„wohnt in"/
+Persistenz-Slot; `npm run smoke:copresence`; benannt-fern nur der Übersetzer-Avatar-Hook) ·
+B-WASM (Fremd-Engine-Rest) · evolveCommunity (Kreatur-Kulturen) · Stern-ab-6-Topologie
+(gigant-plan §5-F2, Design gemessen).
 
-**UI** — Statusbar schlanken (auf Essenz) · der Schöpfer-Browser-Sign-off des GPU-Galerie-Feels.
+**UI** — ~~Statusbar schlanken~~ **✓ V18.149 (Essenz + ···-Toggle für die Werkstatt-Zahlen)**.
 
-**Fern (Schöpfer-Entscheid)** — Fahrzeug-Fahr-Tiefe (Sitz/Steuerung/Trägheit) · VR (**KORREKTUR
-10.06.: `vrMenu.js` existiert NICHT** — die alte Zeile war stale; ein VR-Bogen startet bei null) ·
-IndexedDB-Persistenz (statt localStorage).
+**DIE GEMERKTEN FÄDEN (Schöpfer 11.06.2026: „alle wichtig — vergesse die bitte nicht"; die
+verbindliche Voll-Liste mit Weck-Momenten lebt in `archiv/gigant-plan.md` §5-Ende; FORTSCHREIBUNG: `docs/meister-plan.md` §5):** ~~R6 Selbst-
+Erweiterung~~ ✓ KERN V18.152 (Rest des Bogens benannt) · ~~Phase E Bedrohung/Furcht~~ ✓ V18.148 ·
+B1 Wasser-Sheet→Worker (weckt der fühlbare Carve-Hitch) · das ECHTE V18→V19-Zeit-Portal (weckt
+das erste Alt-Build-Artefakt) · VR (startet bei null, WebXR) · ~~IndexedDB-Persistenz~~ ✓ V18.151 ·
+~~Fahrzeug-Fahr-Tiefe~~ ✓ V18.150 (Profil emergent · Sattel-Kurven · Ausrichtung · EINS-Regel) ·
+~~Statusbar schlanken~~ ✓ V18.149.
 
 ---
 

@@ -56,8 +56,8 @@ function startSaveServer() {
 // `null` korrekt zur Fehler-Branch zweigen (kein Detail-String mehr auf catch,
 // aber catch ist Browser-Crash-Pfad — passiert nicht auf grünen Läufen). Sub-
 // Welle f rollt diesen Helfer mechanisch durch alle ~200 Call-Sites.
-async function safeEvaluate(page, fn) {
-    return await page.evaluate(fn).catch(() => null);
+async function safeEvaluate(page, fn, ...args) {
+    return await page.evaluate(fn, ...args).catch(() => null);
 }
 
 // V9.52 Sub-Welle a — die Initial-State-Probe als benannte Funktion. War vorher der
@@ -9178,9 +9178,28 @@ async function checkBandWave5(ctx) {
         // Validation
         const v1 = r.validateBlueprintConnections([{ type: "hafting", partA: 0, partB: 1 }], 2);
         out.validAcceptsGood = v1.length === 1;
-        // Unknown type
+        // Unknown type — Ω4 (V18.139, taille-spec §2): seit must-preserve wird
+        // eine STRUKTURELL valide Verbindung mit unbekanntem Typ BEWAHRT
+        // (sie ist signierte Substanz; die typ-gebundenen Lesarten ignorieren
+        // sie: Strength → 0). Struktur-Müll fällt weiter (v3/v4 unten). Der
+        // Test wandert vom alten „lehnt ab" zur neuen Wahrheit (V9.56-i).
         const v2 = r.validateBlueprintConnections([{ type: "schmusen", partA: 0, partB: 1 }], 2);
-        out.validRejectsUnknownType = v2.length === 0;
+        const touchingBp = {
+            parts: [
+                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+            ],
+        };
+        out.validRejectsUnknownType =
+            v2.length === 1 && v2[0].type === "schmusen" && r.computeConnectionStrength(v2[0], touchingBp) === 0;
+        const v2b = r.validateBlueprintConnections(
+            [
+                { type: "schmusen", partA: 0, partB: 99 },
+                { type: "schmusen", partA: 0, partB: 0 },
+            ],
+            2
+        );
+        out.validRejectsUnknownType = out.validRejectsUnknownType && v2b.length === 0;
         // Out-of-range index
         const v3 = r.validateBlueprintConnections([{ type: "hafting", partA: 0, partB: 99 }], 2);
         out.validRejectsBadIndex = v3.length === 0;
@@ -9282,7 +9301,10 @@ async function checkBandWave5(ctx) {
         check("Welle 5 A: Hafting auf Leder ist schwaecher als auf Eisen", wave5aResults.softHaftingWeaker);
         check("Welle 5 A: Lashing passt zu Leder besser als Hafting", wave5aResults.lashingFitsLeather);
         check("Welle 5 A: validateConnections akzeptiert gueltige", wave5aResults.validAcceptsGood);
-        check("Welle 5 A: validateConnections lehnt unbekannten Typ ab", wave5aResults.validRejectsUnknownType);
+        check(
+            "Welle 5 A→Ω4: validateConnections BEWAHRT unbekannten Typ (Strength 0, Struktur-Müll fällt)",
+            wave5aResults.validRejectsUnknownType
+        );
         check("Welle 5 A: validateConnections lehnt Out-of-Range-Index ab", wave5aResults.validRejectsBadIndex);
         check("Welle 5 A: validateConnections lehnt Self-Reference ab", wave5aResults.validRejectsSelfRef);
         check("Welle 5 A: addConnectionToBlueprint haengt an", wave5aResults.addConnectionOk);
@@ -10571,7 +10593,11 @@ async function checkBandRing9to10(ctx) {
                 ],
                 connections: [],
                 role: "tool",
-                toolMeta: { opName: "Fremder-Hammer", opClass: "form_geben" },
+                // Ω3 (V18.138): der Import läuft jetzt durch dieselbe Wand wie
+                // der Save-Restore (TOOL_OP_CLASSES + opName-Pattern) — das
+                // Test-Werkzeug trägt eine VALIDE opClass (die alte Fiktion
+                // "form_geben" überlebte schon den Reload nie; V9.56-i).
+                toolMeta: { opName: "fremder-hammer", opClass: "plastic" },
             },
             {
                 name: "fremder-fraktal",
@@ -10585,7 +10611,8 @@ async function checkBandRing9to10(ctx) {
             {
                 name: "fremder-hammer",
                 label: "Fremder Hammer",
-                opClass: "form_geben",
+                // Ω3: valide opClass (siehe toolMeta-Kommentar oben).
+                opClass: "plastic",
                 opName: "smithing",
                 precisionCap: 0.85,
                 sourceBlueprint: "fremder-hammer-bp",
@@ -15260,8 +15287,10 @@ async function checkBandWelle6APolish(ctx) {
             ],
             connections: [{ type: "masonry", partA: 0, partB: 1 }],
         };
-        // Build und auf THREE.Line prüfen
-        const built = r._buildFromBlueprint(r.state.blueprints[testName]);
+        // Build und auf THREE.Line prüfen — V18.153: die Linien sind ein
+        // WERKSTATT-Werkzeug (opts.connectionLines), der Test bestellt sie
+        // wie der Werkstatt-Viewer (V9.56-i: der Test wandert mit).
+        const built = r._buildFromBlueprint(r.state.blueprints[testName], 0, undefined, { connectionLines: true });
         // V8.38 — eine Verbindung erzeugt jetzt eine Linie UND
         // einen Mittelpunkt-Marker (beide isConnectionLine), damit
         // die Verbindung auch bei überlappenden Parts sichtbar ist.
@@ -15279,6 +15308,17 @@ async function checkBandWelle6APolish(ctx) {
         out.lineExists = connLineCount === 1 && connMarkerCount === 1;
         out.lineHasUserDataFlag = connLineCount === 1;
         out.lineColor = lineColor;
+        // V18.153 — OHNE Bestellung (= jeder Welt-Spawn) bleibt das Werk REIN:
+        // keine Linien/Marker über gespawnten Gefährten/Portalen.
+        let worldLines = 0;
+        const builtPlain = r._buildFromBlueprint(r.state.blueprints[testName]);
+        builtPlain.traverse((node) => {
+            if (node.userData && node.userData.isConnectionLine) worldLines++;
+        });
+        out.worldClean = worldLines === 0;
+        out.workshopOrders = /connectionLines: true/.test(
+            r._workshopRebuildPreviewMesh ? r._workshopRebuildPreviewMesh.toString() : ""
+        );
 
         // 6.F2 Brech-Warning: extrem schwache Verbindung → Journal-Eintrag
         // (wir erzwingen weak indem wir partB sehr weit weg setzen → contactArea=0)
@@ -15387,6 +15427,10 @@ async function checkBandWelle6APolish(ctx) {
         check("Welle 6.F1: mittlere Verbindung (0.7..1.5) = goldgelb 0xffcc44", wave6fResults.colorOkIsYellow);
         check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
         check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
+        check(
+            "V18.153: die Gelenk-Linien sind WERKSTATT-Werkzeug — die Welt bleibt rein, der Viewer bestellt sie",
+            wave6fResults.worldClean && wave6fResults.workshopOrders
+        );
         check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
         check("Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)", wave6fResults.weakIsBelowThreshold);
         check(
@@ -18740,6 +18784,15 @@ async function checkBandVoxelTerrainCore(ctx) {
             const voxelY = r._voxelSurfaceY(testX, testZ);
             const creature = r.spawnCreatureAt(testX, 50, testZ, "happy");
             if (creature && Number.isFinite(voxelY)) {
+                // V18.149 (GEMESSEN, der Flake-Heal): _creatureGroundY trägt ein
+                // 20-Scans-Budget pro Tick; die Test-Kreatur ist die LETZTE im
+                // Array — bei ≥20 Vorgängern fiel EIN Tick auf den Makro-
+                // Schätzwert (seed-abhängige ±m-Divergenz = rot↔grün je Lauf).
+                // Der Cache deckt pro Tick 20 WEITERE Kreaturen → drei Ticks
+                // erreichen sie deterministisch (der echte Budget+Cache-Pfad
+                // bleibt geprüft, kein Cache-Bypass).
+                r.updateCreatures(0.016);
+                r.updateCreatures(0.016);
                 r.updateCreatures(0.016);
                 const expected = voxelY + 0.5;
                 const actual = creature.position.y;
@@ -26750,9 +26803,12 @@ async function checkBandWelle6HCreatures(ctx) {
         const out = {};
         const souls = r.constructor.CREATURE_SOULS;
         out.soulsFrozen = !!souls && Object.isFrozen(souls);
-        out.threeSouls = souls && Object.keys(souls).length === 3 && souls.sprite && souls.wesen && souls.geist;
+        // Phase E (V18.148) gebar die vierte Seele (glutwesen, predator) —
+        // der Test wandert mit (V9.56-i): die drei sanften Gründer + das Raubtier.
+        out.threeSouls =
+            souls && Object.keys(souls).length === 4 && souls.sprite && souls.wesen && souls.geist && souls.glutwesen;
         out.hasSoulNames =
-            Array.isArray(r.constructor.CREATURE_SOUL_NAMES) && r.constructor.CREATURE_SOUL_NAMES.length === 3;
+            Array.isArray(r.constructor.CREATURE_SOUL_NAMES) && r.constructor.CREATURE_SOUL_NAMES.length === 4;
         out.hasNamePool =
             Array.isArray(r.constructor.CREATURE_NAME_POOL) && r.constructor.CREATURE_NAME_POOL.length >= 20;
         const spritePart = souls && souls.sprite && souls.sprite.bodyParts[0];
@@ -26918,7 +26974,7 @@ async function checkBandWelle6HCreatures(ctx) {
 
     if (wave6hP2aResults && !wave6hP2aResults.error) {
         check("Welle 6.H P2A: CREATURE_SOULS frozen", wave6hP2aResults.soulsFrozen);
-        check("Welle 6.H P2A: drei Seelen (sprite/wesen/geist)", wave6hP2aResults.threeSouls);
+        check("Welle 6.H P2A/Phase E: vier Seelen (sprite/wesen/geist + glutwesen)", wave6hP2aResults.threeSouls);
         check("Welle 6.H P2A: CREATURE_SOUL_NAMES Array", wave6hP2aResults.hasSoulNames);
         check("Welle 6.H P2A: CREATURE_NAME_POOL ≥ 20 Namen", wave6hP2aResults.hasNamePool);
         check("Welle 6.H P2A: bodyParts haben shape+material-Schema", wave6hP2aResults.bodyPartsHaveSchema);
@@ -28051,6 +28107,988 @@ async function checkBandV18135Bookmarks(ctx) {
     );
 }
 
+// F4 Stufe 3 (V18.142) — FOLGEN: das Merken einer IDENTITÄT (pubkey).
+// Privat-lokal (anazh.feedFollows, nie im Snapshot); KONSUM: der „Gefolgt"-
+// Chip + Filter über data-followed, die Karte trägt den Toggle (nie auf den
+// EIGENEN Werken), das Folgen schreibt witness (die share/witness-Saat).
+async function checkBandV18142Follow(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.helpers =
+            typeof r._feedFollowed === "function" &&
+            typeof r._toggleFeedFollow === "function" &&
+            typeof r._loadFeedFollows === "function";
+        // Toggle-Roundtrip + Persistenz + Hex-Wand + witness-Journal.
+        const pub = "ab".repeat(32);
+        const was = r._feedFollowed(pub);
+        const jBefore = ((r.state.worldJournal && r.state.worldJournal.entries) || []).length;
+        const on = r._toggleFeedFollow(pub);
+        out.toggleOn = on === true && r._feedFollowed(pub) === true;
+        let persisted = false;
+        try {
+            persisted = JSON.parse(localStorage.getItem("anazh.feedFollows") || "{}")[pub] === true;
+        } catch (_e) {
+            /* leer */
+        }
+        out.persisted = persisted;
+        // Das Journal cappt bei entryCap (200) — nach dem langen Warmup wächst
+        // length NICHT mehr; der Beweis sitzt am NEUESTEN Eintrag.
+        void jBefore;
+        const j = (r.state.worldJournal && r.state.worldJournal.entries) || [];
+        out.witnessWritten = j.slice(-3).some((e) => e.type === "witness" && /folge nun/.test(e.text || ""));
+        const off = r._toggleFeedFollow(pub);
+        out.toggleOff = off === false && r._feedFollowed(pub) === false;
+        out.garbageRejected = r._toggleFeedFollow("NICHT-HEX") === false;
+        if (was) r._toggleFeedFollow(pub);
+        // NIE im Welt-Snapshot (das Lesezeichen/Wertungs-Muster).
+        const snap = r.buildStateSnapshot();
+        out.notInSnapshot = !("feedFollows" in snap);
+        // KONSUM: Items tragen den Autor, die Karte den Toggle (nicht auf
+        // eigenen), Chips tragen Gefolgt, der Filter liest data-followed.
+        out.itemsCarryAuthor = /it\.author/.test(r._feedItems.toString());
+        const barSrc = r._feedRatingBar.toString();
+        out.barHasFollow = /_toggleFeedFollow/.test(barSrc) && /item\.author !== myKey/.test(barSrc);
+        out.chipsHaveGefolgt = /gefolgt/.test(r._renderFeedKindChips.toString());
+        out.filterReads = /followed/.test(r._applyLibraryFilter.toString());
+        return out;
+    });
+    if (!res) {
+        check("V18.142 Folgen: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "V18.142 Folgen: Helfer + Toggle-Roundtrip + globale Persistenz + Hex-Wand + NIE im Snapshot",
+        res.helpers && res.toggleOn && res.persisted && res.toggleOff && res.garbageRejected && res.notInSnapshot
+    );
+    check("V18.142 Folgen: das Folgen schreibt witness (die ruhende Journal-Saat blüht)", res.witnessWritten);
+    check(
+        "V18.142 Folgen: KONSUM verdrahtet (Items tragen Autor · Karte den Toggle [nie eigene] · Chip „Gefolgt“ · Filter liest)",
+        res.itemsCarryAuthor && res.barHasFollow && res.chipsHaveGefolgt && res.filterReads
+    );
+}
+
+// F4 Stufe 4 (V18.143) — KOMMENTARE: signierte Text-Zeugnisse uebers Mesh
+// (das V18.134-Substrat, append-only statt LWW). End-to-end mit ZWEITER
+// Ed25519-Identitaet: eigenes Wort signiert+gespeichert+bezeugt (share-
+// Journal) · fremdes verifiziert · Tamper bricht · Rueckruf siebt · Batch
+// + Handler + onopen verdrahtet · der Text bleibt DATEN (textContent-Wand).
+async function checkBandV18143Comments(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const S = r.constructor.SOCIAL;
+        out.config = Number.isFinite(S.maxComments) && Number.isFinite(S.maxCommentLen) && S.maxCommentsShown > 0;
+        out.canonical = r._socialCommentCanonical({ id: "a", t: 5, pub: "p", x: "x|y" }) === "comment|a|5|p|x|y";
+        if (!r.state.vibePass || !r.state.vibePass.ready) {
+            out.skipCrypto = true;
+            return out;
+        }
+        const saved = r.state.socialComments;
+        r.state.socialComments = new Map();
+        // (1) das EIGENE Wort: signiert + gespeichert + share-Journal.
+        const own = await r._socialSignOwnComment("band143:ziel", "  Ein gutes Werk!  ");
+        out.ownSigned = !!own && own.x === "Ein gutes Werk!" && typeof own.sig === "string";
+        out.ownStored = r._feedComments("band143:ziel").length === 1;
+        const j = (r.state.worldJournal && r.state.worldJournal.entries) || [];
+        out.shareWritten = j.slice(-3).some((e) => e.type === "share" && /Wort/.test(e.text || ""));
+        // (2) die ZWEITE Identitaet: ihr Wort verifiziert + landet; Tamper bricht.
+        const pair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+        const jwk = await crypto.subtle.exportKey("jwk", pair.privateKey);
+        const pub2 = r._vibeBytesToHex(r._vibeB64uToBytes(jwk.x));
+        const c2 = { id: "band143:ziel", x: "Fremdes Wort", t: Date.now() + 1, pub: pub2 };
+        const sigBytes = await crypto.subtle.sign(
+            { name: "Ed25519" },
+            pair.privateKey,
+            new TextEncoder().encode(r._socialCommentCanonical(c2))
+        );
+        c2.sig = r._vibeBytesToHex(new Uint8Array(sigBytes));
+        out.foreignAccepted = (await r._socialCommentReceive("peerX", c2)) === true;
+        out.foreignStored = r._feedComments("band143:ziel").length === 2;
+        const tampered = { ...c2, x: "Boeses Wort", t: c2.t + 1 };
+        out.tamperRejected = (await r._socialCommentReceive("peerX", tampered)) === false;
+        out.dedupe = (await r._socialCommentReceive("peerX", c2)) === false;
+        // (3) der Rueckruf siebt (R4-KONSUM): revozierter Schluessel faellt aus
+        // der Lese-Wahrheit UND dem Empfang.
+        r.revokeKey(pub2, { silent: true });
+        out.revokedSieved = r._feedComments("band143:ziel").length === 1;
+        const c3 = { id: "band143:ziel", x: "Nochmal", t: Date.now() + 9, pub: pub2 };
+        const sig3 = await crypto.subtle.sign(
+            { name: "Ed25519" },
+            pair.privateKey,
+            new TextEncoder().encode(r._socialCommentCanonical(c3))
+        );
+        c3.sig = r._vibeBytesToHex(new Uint8Array(sig3));
+        out.revokedReceiveBlocked = (await r._socialCommentReceive("peerX", c3)) === false;
+        r.unrevokeKey(pub2);
+        // (4) die Verdrahtung: Handler kanal-exklusiv + onopen-Batch + die
+        // Karte traegt 💬 + der Panel-Text ist textContent (XSS-Wand).
+        const handler = r._p2pHandleChannelMessage.toString();
+        out.handlerWired = /social-comment/.test(handler) && /_p2pPeerRateAdmit\("social"/.test(handler);
+        out.batchExists = typeof r._socialCommentsBatch === "function";
+        out.barHasTalk = /_renderFeedCommentsPanel/.test(r._feedRatingBar.toString());
+        const panelSrc = r._renderFeedCommentsPanel.toString();
+        out.xssWall = /textContent = c\.x/.test(panelSrc) && !/innerHTML\s*=\s*c\.x/.test(panelSrc);
+        // restore
+        r.state.socialComments = saved;
+        if (typeof r._saveSocialComments === "function") r._saveSocialComments();
+        return out;
+    });
+    if (!res) {
+        check("V18.143 Kommentare: Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "V18.143 Kommentare: Config + stabiles Kanonisches (x am Ende — Trennzeichen-eindeutig)",
+        res.config && res.canonical
+    );
+    if (res.skipCrypto) {
+        check("V18.143 Kommentare: Krypto-Teil lief (Vibe-Pass bereit)", false, "vibePass nicht ready");
+        return;
+    }
+    check(
+        "V18.143 Kommentare: das eigene Wort signiert + gespeichert + bezeugt (journal share — die Saat blüht)",
+        res.ownSigned && res.ownStored && res.shareWritten
+    );
+    check(
+        "V18.143 Kommentare: das fremde Wort verifiziert + landet — Tamper bricht, dedupe hält",
+        res.foreignAccepted && res.foreignStored && res.tamperRejected && res.dedupe
+    );
+    check(
+        "V18.143 Kommentare: der Rückruf siebt das Wort (Lese-Wahrheit + Empfang — R4 wirkt)",
+        res.revokedSieved && res.revokedReceiveBlocked
+    );
+    check(
+        "V18.143 Kommentare: verdrahtet (kanal-exklusiv + R1-Rate · onopen-Batch · Karte trägt 💬 · textContent-XSS-Wand)",
+        res.handlerWired && res.batchExists && res.barHasTalk && res.xssWall
+    );
+}
+
+// W18-A+B (V18.144, gigant-plan F3; world-portal-w18-plan §5) — die KO-PRÄSENZ-
+// INJEKTION: AnazhRealm ist die Multiplayer-SCHICHT für Welten, die selbst
+// keine haben. Das Mesh trägt Posen (subworld-pose, B2-Welt-Schlüssel +
+// Empfänger-Rate-Wand), die Heimat injiziert peer-join/peer-state/peer-leave
+// ins Sub-Welt-iframe, die WELT rendert die Gefährten (worlds/begegnung
+// deklariert das Protokoll). Der End-to-End-Beweis über zwei echte Browser
+// lebt in `npm run smoke:copresence`; dieses Band friert die Mechanik:
+// Tier-Wahrheit · Sanitize-Wand · Mesh-Verdrahtung · Sende-/Zustell-/Sweep-
+// Verhalten · Deklarations-Gate · Snapshot-Reise.
+async function checkBandW18CoPresence(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) die Tier-Wahrheit: EINE Quelle, drei ehrliche Stufen.
+        out.tier2 = r._portalCoPresenceTier({ coPresence: true }).tier === 2;
+        out.tier1 = r._portalCoPresenceTier({ multiplayer: true }).tier === 1;
+        out.tier0 = r._portalCoPresenceTier({}).tier === 0;
+        // (2) die Sanitize-Wand trägt die Deklaration nur als echten Boolean.
+        out.metaSan =
+            r._sanitizePortalMeta({ world: "worlds/begegnung/index.html", coPresence: true }, "x").coPresence ===
+                true &&
+            r._sanitizePortalMeta({ world: "worlds/begegnung/index.html", coPresence: "ja" }, "x").coPresence === false;
+        // (3) die Registry trägt die erste Ko-Präsenz-Welt (sandboxed — das
+        // Protokoll quert die VOLLE null-origin-Wand).
+        const reg = r.constructor.WORLD_REGISTRY.begegnung;
+        out.registry =
+            !!reg && reg.coPresence === true && reg.trust === "sandboxed" && /worlds\/begegnung\//.test(reg.world);
+        // (4) der Mesh-Pfad ist verdrahtet: ALLOWED-Liste + Dispatch-Tabelle +
+        // Empfänger-Rate-Wand je Peer (das _cpRate-Muster).
+        out.channelAllowed = /"subworld-pose"/.test(r._p2pHandleChannelMessage.toString());
+        out.dispatch = r.constructor.P2P_MESSAGE_HANDLERS["subworld-pose"] === "_p2pMsgSubworldPose";
+        out.peerRate = /_p2pPeerRateAdmit\("subworld-pose"/.test(r._p2pMsgSubworldPose.toString());
+        // (5)-(8) BEHAVIORAL am gestubbten Overlay (kein echtes iframe nötig —
+        // die postMessage-Injektion wird über ein Fake-contentWindow gefangen).
+        const savedPo = r._portalOverlay;
+        try {
+            const sent = [];
+            const fakeWin = { postMessage: (m) => sent.push(m) };
+            r._portalOverlay = {
+                coPresence: true,
+                world: "worlds/begegnung/index.html",
+                trust: "sandboxed",
+                peers: new Map(),
+                poseWindowStart: 0,
+                poseWindowCount: 0,
+                poseTimer: null,
+                localPose: null,
+                iframe: { contentWindow: fakeWin },
+            };
+            // (5) local-pose: angenommen + gemerkt; Müll-Pose fällt; Rate-Wand deckelt.
+            const ok = r._portalReceiveLocalPose({ pose: { x: 1, y: 2, z: 3, yaw: 0.5 } });
+            out.localPose = ok === true && r._portalOverlay.localPose && r._portalOverlay.localPose.x === 1;
+            out.localPoseGarbage = r._portalReceiveLocalPose({ pose: { x: NaN, y: 0, z: 0, yaw: 0 } }) === false;
+            let accepted = 1;
+            for (let i = 0; i < 30; i++) {
+                if (r._portalReceiveLocalPose({ pose: { x: i, y: 0, z: 0, yaw: 0 } })) accepted++;
+            }
+            out.rateCapped = accepted <= r.constructor.SUBWORLD_POSE_RATE_MAX;
+            // (6) Zustellung: die ERSTE Pose gebiert peer-join VOR peer-state,
+            // die zweite nur peer-state; eine fremde worldId fällt (B2).
+            sent.length = 0;
+            const msg = { worldId: "worlds/begegnung/index.html", pose: { x: 4, y: 0, z: 5, yaw: 1 } };
+            const d1 = r._portalPoseDeliver("peer-test-1", msg);
+            const d2 = r._portalPoseDeliver("peer-test-1", msg);
+            out.joinThenState =
+                d1 === true &&
+                d2 === true &&
+                sent.length === 3 &&
+                sent[0].type === "peer-join" &&
+                sent[1].type === "peer-state" &&
+                sent[2].type === "peer-state";
+            out.b2Scoped =
+                r._portalPoseDeliver("peer-test-2", { worldId: "worlds/anders/index.html", pose: msg.pose }) === false;
+            // (7) der Abwesenheits-Sweep: verstummt → peer-leave + raus.
+            r._portalOverlay.peers.get("peer-test-1").lastAt =
+                performance.now() - (r.constructor.SUBWORLD_POSE_TIMEOUT_MS + 1000);
+            sent.length = 0;
+            r._portalSweepPosePeers();
+            out.sweep =
+                !r._portalOverlay.peers.has("peer-test-1") && sent.length === 1 && sent[0].type === "peer-leave";
+            if (r._portalOverlay.poseTimer) {
+                clearInterval(r._portalOverlay.poseTimer);
+                r._portalOverlay.poseTimer = null;
+            }
+            // (8) das Deklarations-Gate: ohne coPresence nimmt das Portal weder
+            // local-pose an noch stellt es Peer-Posen zu (die Welt bleibt still).
+            r._portalOverlay.coPresence = false;
+            out.declarationGate =
+                r._portalReceiveLocalPose({ pose: { x: 1, y: 1, z: 1, yaw: 0 } }) === false &&
+                r._portalPoseDeliver("peer-test-3", msg) === false;
+        } finally {
+            r._portalOverlay = savedPo || null;
+        }
+        // (9) der invite-Gate kennt die Ko-Präsenz (Quelle) + die Marke reist
+        // im Blueprint-Snapshot (V8.59: sonst verlöre das Portal beim Reload
+        // die Injektion) + obtainPortalForWorld trägt sie ins portalMeta.
+        out.inviteGate = /!po\.multiplayer && !po\.coPresence/.test(r._p2pBroadcastPortalInvite.toString());
+        out.serializeTravels = /portalMeta\.coPresence/.test(r._serializeBlueprint.toString());
+        out.aimTravels = /coPresence === true\) meta\.coPresence = true/.test(r.aimBlueprintAtWorld.toString());
+        // (10) der Hinweis + der Banner sprechen die Tier-Wahrheit (Konsum).
+        out.hintConsumes = /_portalCoPresenceTier/.test(r._portalRefreshHint.toString());
+        out.bannerConsumes = /_portalCoPresenceTier/.test(r._renderPortalInviteBanner.toString());
+        return out;
+    });
+    check("W18 Ko-Präsenz: die Tier-Wahrheit (EINE Quelle, drei ehrliche Stufen)", res.tier2 && res.tier1 && res.tier0);
+    check("W18 Ko-Präsenz: Sanitize-Wand + Registry (begegnung sandboxed + deklariert)", res.metaSan && res.registry);
+    check(
+        "W18 Ko-Präsenz: der Mesh-Pfad verdrahtet (ALLOWED + Dispatch + Peer-Rate-Wand)",
+        res.channelAllowed && res.dispatch && res.peerRate
+    );
+    check(
+        "W18 Ko-Präsenz: local-pose angenommen + Müll fällt + Rate-Wand deckelt",
+        res.localPose && res.localPoseGarbage && res.rateCapped
+    );
+    check("W18 Ko-Präsenz: peer-join VOR peer-state, dann nur peer-state (Injektion)", res.joinThenState);
+    check("W18 Ko-Präsenz: B2-Welt-Schlüssel scoped die Zustellung", res.b2Scoped);
+    check("W18 Ko-Präsenz: der Abwesenheits-Sweep räumt Verstummte als peer-leave", res.sweep);
+    check("W18 Ko-Präsenz: das Deklarations-Gate (ohne coPresence bleibt die Welt still)", res.declarationGate);
+    check(
+        "W18 Ko-Präsenz: invite-Gate + Snapshot-Reise + aim-Reise (V8.59)",
+        res.inviteGate && res.serializeTravels && res.aimTravels
+    );
+    check("W18 Ko-Präsenz: Hinweis + Banner KONSUMIEREN die Tier-Wahrheit", res.hintConsumes && res.bannerConsumes);
+}
+
+// W18-C (V18.145, world-portal-w18-plan §6 Variante A) — die INPUT-BRÜCKE:
+// eine Welt, die im ready-Handshake `inputActions` deklariert, bekommt
+// AnazhRealms Tasten als SEMANTISCHE Aktionen ({type:"input", action, down}
+// — Daten, nie Key-Codes). Eingefrorenes Vokabular, Tipp-Feld-Wand (wer in
+// die Konsole schreibt, steuert nicht), Listener lebt + stirbt mit dem
+// Overlay. Der End-to-End-Kreis (Heimat-Taste → fremde Engine bewegt sich →
+// Pose wandert übers Mesh) lebt in `npm run smoke:copresence`.
+async function checkBandW18InputBridge(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) das eingefrorene Vokabular + die Tasten-Karte (WASD/Pfeile).
+        const A = r.constructor.PORTAL_INPUT_ACTIONS;
+        const K = r.constructor.PORTAL_INPUT_KEYMAP;
+        out.vocab = Object.isFrozen(A) && A.includes("forward") && A.includes("use") && A.length === 6;
+        out.keymap = Object.isFrozen(K) && K.KeyW === "forward" && K.ArrowDown === "back" && K.Space === "jump";
+        const savedPo = r._portalOverlay;
+        try {
+            const sent = [];
+            const fakeWin = { postMessage: (m) => sent.push(m) };
+            r._portalOverlay = {
+                coPresence: true,
+                world: "worlds/begegnung/index.html",
+                trust: "sandboxed",
+                peers: new Map(),
+                inputActions: null,
+                onInputKey: null,
+                hintEl: { textContent: "" },
+                dsl: null,
+                iframe: { contentWindow: fakeWin },
+            };
+            // (2) die Deklaration: nur Vokabular-Worte überleben; Müll allein → false.
+            out.declareClean =
+                r._portalEnableInputBridge(["forward", "fliegen", "forward", "left"]) === true &&
+                JSON.stringify(r._portalOverlay.inputActions) === '["forward","left"]';
+            out.declareGarbage = (() => {
+                const po2 = { ...r._portalOverlay, inputActions: null, onInputKey: null };
+                const saved2 = r._portalOverlay;
+                r._portalOverlay = po2;
+                const res2 = r._portalEnableInputBridge(["zaubern", 42]);
+                r._portalOverlay = saved2;
+                return res2 === false && po2.inputActions === null;
+            })();
+            // (3) der Hinweis KONSUMIERT die Brücke („deine Tasten wirken").
+            out.hintSays = /Tasten wirken/.test(r._portalOverlay.hintEl.textContent);
+            // (4) das Forwarding: deklarierte Taste → semantische Aktion;
+            // un-deklarierte (Space→jump nicht gewählt) fällt; Tipp-Feld fällt;
+            // Auto-Repeat fällt; keyup trägt down:false.
+            sent.length = 0;
+            const ev = (code, type, extra) => Object.assign({ code, type, repeat: false, target: null }, extra || {});
+            out.fwdDown =
+                r._portalForwardInput(ev("KeyW", "keydown")) === true &&
+                sent.length === 1 &&
+                sent[0].type === "input" &&
+                sent[0].action === "forward" &&
+                sent[0].down === true;
+            out.fwdUp = r._portalForwardInput(ev("KeyW", "keyup")) === true && sent[1] && sent[1].down === false;
+            out.undeclared = r._portalForwardInput(ev("Space", "keydown")) === false;
+            out.typingWall = r._portalForwardInput(ev("KeyW", "keydown", { target: { tagName: "INPUT" } })) === false;
+            out.repeatWall = r._portalForwardInput(ev("KeyW", "keydown", { repeat: true })) === false;
+        } finally {
+            // Den Test-Listener vom echten window räumen (die Deklaration
+            // registrierte ihn) — kein Leck in die Folge-Bands.
+            const po = r._portalOverlay;
+            if (po && po.onInputKey) {
+                window.removeEventListener("keydown", po.onInputKey);
+                window.removeEventListener("keyup", po.onInputKey);
+            }
+            r._portalOverlay = savedPo || null;
+        }
+        // (5) Verdrahtung: ready-Zweig ruft die Brücke, der Dispose räumt den
+        // Listener (lebt + stirbt mit dem Overlay), die Begegnungs-Welt
+        // deklariert sie (der Smoke beweist den vollen Kreis).
+        out.readyWired = /_portalEnableInputBridge/.test(r._buildPortalOverlay.toString());
+        out.disposeCleans = /onInputKey/.test(r._disposePortalOverlay.toString());
+        return out;
+    });
+    check("W18-C Input-Brücke: eingefrorenes Vokabular + Tasten-Karte (WASD/Pfeile)", res.vocab && res.keymap);
+    check(
+        "W18-C Input-Brücke: die Deklaration siebt (nur Vokabular, Müll fällt)",
+        res.declareClean && res.declareGarbage
+    );
+    check("W18-C Input-Brücke: der Hinweis sagt „deine Tasten wirken“", res.hintSays);
+    check(
+        "W18-C Input-Brücke: Taste → semantische Aktion (down/up; un-deklariert fällt)",
+        res.fwdDown && res.fwdUp && res.undeclared
+    );
+    check("W18-C Input-Brücke: Tipp-Feld-Wand + Auto-Repeat-Wand", res.typingWall && res.repeatWall);
+    check("W18-C Input-Brücke: ready-Verdrahtung + Dispose räumt den Listener", res.readyWired && res.disposeCleans);
+}
+
+// W18-D (V18.146, world-portal-w18-plan §7) — DARIN LEBEN: das WOHNEN ist
+// ein globaler Zeiger (anazh.portalDwelling — NIE im Welt-Snapshot), der
+// Boot kehrt durch das Tor zurück, die Gefährten sehen „wohnt in …" übers
+// Mesh (soul-Kanal), der Persistenz-Slot (anazh.portalState) trägt den
+// Zustand der Fremd-Welt zurück (restoreState im enter). Der End-to-End-
+// Bogen (B lädt neu + wacht IN der Fremd-Welt auf) lebt im Smoke.
+async function checkBandW18Dwell(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const savedPo = r._portalOverlay;
+        const savedDwell = localStorage.getItem("anazh.portalDwelling");
+        const savedStates = localStorage.getItem("anazh.portalState");
+        try {
+            localStorage.removeItem("anazh.portalDwelling");
+            localStorage.removeItem("anazh.portalState");
+            // (1) Wohnen außerhalb eines Portals ist ehrlich unmöglich.
+            r._portalOverlay = null;
+            out.dwellOutside = r.dwellInPortal().reason === "not_in_portal";
+            // (2) der Wohn-Rundlauf am gestubbten Begegnungs-Portal: Zeiger
+            // gesetzt (id-förmig) + der Hinweis sagt „du wohnst hier";
+            // endDwelling räumt den Zeiger.
+            const sent = [];
+            r._portalOverlay = {
+                world: "worlds/begegnung/index.html",
+                label: "Begegnungs-Feld",
+                trust: "sandboxed",
+                dsl: null,
+                inputActions: null,
+                coPresence: true,
+                peers: new Map(),
+                hintEl: { textContent: "" },
+                iframe: { contentWindow: { postMessage: (m) => sent.push(m) } },
+            };
+            const dw = r.dwellInPortal();
+            const marker = r._loadPortalDwelling();
+            out.dwellSets = dw.ok === true && !!marker && marker.worldId === "begegnung";
+            out.hintDwell = /wohnst hier/.test(r._portalOverlay.hintEl.textContent);
+            // (3) der Persistenz-Slot: Zustand angenommen (String, gedeckelt),
+            // Müll + Oversize fallen.
+            out.stateSaved =
+                r._portalReceiveState({ data: '{"x":7,"y":-9}' }) === true &&
+                r._loadPortalStates().begegnung &&
+                r._loadPortalStates().begegnung.data === '{"x":7,"y":-9}';
+            out.stateOversize =
+                r._portalReceiveState({ data: "x".repeat(r.constructor.PORTAL_STATE_MAX_BYTES + 1) }) === false;
+            out.stateGarbage = r._portalReceiveState({ data: 42 }) === false;
+            // (4) der Zustand kehrt im enter zurück (restoreState).
+            sent.length = 0;
+            r._portalSendEnter();
+            out.restoreTravels =
+                sent.length === 1 && sent[0].type === "enter" && sent[0].restoreState === '{"x":7,"y":-9}';
+            // (5) heimziehen räumt den Zeiger.
+            const end = r.endDwelling();
+            out.endClears = end.was === "begegnung" && r._loadPortalDwelling() === null;
+            // (6) die Boot-Rückkehr beendet ein un-auffindbares Zuhause ehrlich
+            // (Welt weg → Zeiger fällt, der Spieler wacht daheim auf).
+            r._portalOverlay = null;
+            r._savePortalDwelling({ worldId: "gibtsnichtwelt", label: "Verloren", at: Date.now() });
+            out.bootHonest = r._portalDwellingBootReturn() === false && r._loadPortalDwelling() === null;
+        } finally {
+            r._portalOverlay = savedPo || null;
+            if (savedDwell === null) localStorage.removeItem("anazh.portalDwelling");
+            else localStorage.setItem("anazh.portalDwelling", savedDwell);
+            if (savedStates === null) localStorage.removeItem("anazh.portalState");
+            else localStorage.setItem("anazh.portalState", savedStates);
+        }
+        // (7) Verdrahtung: der Boot ruft die Rückkehr; das Wohnen reist im
+        // soul-Kanal (Sender + Empfänger + Name-Schild); die Chat-Gesten
+        // „wohne hier"/„ziehe heim" stehen in der EINEN Tabelle (V18.127).
+        out.bootWired = /_portalDwellingBootReturn/.test(r.init.toString());
+        out.soulSends = /dwell/.test(r._p2pBroadcastSoul.toString());
+        out.soulReads = /dwellingIn/.test(r._p2pMsgSoul.toString());
+        out.labelShows = /wohnt in/.test(r._p2pRefreshPeerNameLabel.toString());
+        const examples = r.chatSystemPatterns.map((p) => p.example);
+        out.chatGestures = examples.includes("wohne hier") && examples.includes("ziehe heim");
+        // (8) der Zeiger + der Slot leben GLOBAL (nie im Welt-Snapshot) —
+        // buildStateSnapshot kennt sie nicht.
+        out.notInSnapshot = !/portalDwelling|portalState/.test(r.buildStateSnapshot.toString());
+        return out;
+    });
+    check("W18-D Wohnen: außerhalb eines Portals ehrlich unmöglich", res.dwellOutside);
+    check("W18-D Wohnen: „wohne hier“ setzt den Zeiger + der Hinweis sagt es", res.dwellSets && res.hintDwell);
+    check(
+        "W18-D Persistenz-Slot: Zustand angenommen, Oversize + Müll fallen",
+        res.stateSaved && res.stateOversize && res.stateGarbage
+    );
+    check("W18-D Persistenz-Slot: der Zustand kehrt im enter zurück (restoreState)", res.restoreTravels);
+    check("W18-D Wohnen: „ziehe heim“ räumt den Zeiger", res.endClears);
+    check("W18-D Boot-Rückkehr: un-auffindbares Zuhause endet ehrlich", res.bootHonest);
+    check(
+        "W18-D verdrahtet: Boot-Rückkehr + soul-Kanal (Sender/Empfänger/Name-Schild) + Chat-Gesten",
+        res.bootWired && res.soulSends && res.soulReads && res.labelShows && res.chatGestures
+    );
+    check("W18-D Souveränität: Zeiger + Slot leben GLOBAL, nie im Welt-Snapshot", res.notInSnapshot);
+}
+
+// F4 Stufe 5 (V18.147) — „FÜR DICH": die persönliche Feed-Reihung als
+// LESBARE Verdichtung der gebauten sozialen Signale (Folgen +4 · Gemeinschafts-
+// Ø vertrauens-gewichtet · Merken +2 · eigenes Urteil ×0.5 · Gesprächs-Puls
+// gedeckelt). Kein Server, keine Black-Box — der letzte benannte F4-Schritt.
+async function checkBandV18147ForYou(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) der Score KONSUMIERT alle fünf F4-Quellen (Stufen 1-4).
+        const src = r._feedForYouScore.toString();
+        out.consumesAll =
+            /_feedFollowed/.test(src) &&
+            /_feedRatingAgg/.test(src) &&
+            /_feedBookmarked/.test(src) &&
+            /_feedRating\(/.test(src) &&
+            /_feedComments/.test(src);
+        // (2)-(3) BEHAVIORAL mit injizierten Signalen (restauriert).
+        const savedFollows = r.state.feedFollows;
+        const savedBookmarks = r.state.feedBookmarks;
+        try {
+            const pub = "ab".repeat(32);
+            r.state.feedFollows = { [pub]: true };
+            r.state.feedBookmarks = {};
+            const plain = r._feedForYouScore({ id: "world:forYouTest", author: "" });
+            const followed = r._feedForYouScore({ id: "world:forYouTest", author: pub });
+            out.followBoost = followed - plain >= 3.9;
+            r.state.feedBookmarks = { "world:forYouTest": true };
+            const marked = r._feedForYouScore({ id: "world:forYouTest", author: "" });
+            out.bookmarkBoost = marked - plain >= 1.9;
+        } finally {
+            r.state.feedFollows = savedFollows;
+            r.state.feedBookmarks = savedBookmarks;
+        }
+        // (4) die Reihung ist verdrahtet: der Strom sortiert nach dem Score,
+        // die Chips tragen „Für dich" (Konsum, nicht Existenz).
+        out.sortWired =
+            /fuerdich/.test(r.renderLibraryUI.toString()) && /_feedForYouScore/.test(r.renderLibraryUI.toString());
+        // (5) die DREI Sortier-Chips leben im DOM (Neueste · Für dich · Bewertung).
+        const savedSort = r.state.feedSort;
+        r._renderFeedSort();
+        const host = document.getElementById("feed-sort");
+        out.chips = !!host && host.children.length === 3 && /Für dich/.test(host.textContent);
+        r.state.feedSort = savedSort;
+        return out;
+    });
+    check("V18.147 Für dich: der Score KONSUMIERT alle fünf F4-Signale", res.consumesAll);
+    check("V18.147 Für dich: Folgen ist das stärkste persönliche Wort (+4)", res.followBoost);
+    check("V18.147 Für dich: das Merken hebt (+2)", res.bookmarkBoost);
+    check("V18.147 Für dich: der Strom reiht nach dem Score (fuerdich-Sort verdrahtet)", res.sortWired);
+    check("V18.147 Für dich: die drei Sortier-Chips stehen (Neueste · Für dich · Bewertung)", res.chips);
+}
+
+// PHASE E (V18.148, kampf-plan — GEMERKTER FADEN #2): die BEDROHUNG — der
+// letzte Affekt-Konsument, der den Emotion-Kern RUND macht. Ein WILDES Wesen
+// (Temperament tag-emergent aus glühender Substanz, kein hostile-Flag) JAGT
+// die Beute (pfad-only, Furcht schlägt Jagd, sparsam: Raubtiere entstehen
+// nur durch bewusste Schöpfung — predator-Filter hält sie aus den Ambient-
+// Pickern); der Biss läuft durchs damagePlayer-Tor (Rüstung dämpft FLACH wie
+// die Kreatur-Formel) → FURCHT bei niedriger HP (threatened) · TRIUMPH beim
+// Fall eines frischen Jägers (joy+hope) · die SCHULD (V17.54) bleibt daneben.
+async function checkBandPhaseEThreat(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const HUNT = r.constructor.CREATURE_HUNT;
+        out.consts = !!HUNT && Object.isFrozen(HUNT) && HUNT.radius > 0 && HUNT.strikeRange > 0;
+        // Die Raubtier-Seele: registriert + predator-markiert + aus BEIDEN
+        // Ambient-Pickern gefiltert (sparsam per Konstruktion).
+        const soul = r.constructor.CREATURE_SOULS.glutwesen;
+        out.soul = !!soul && soul.predator === true;
+        let randomPickedPredator = false;
+        for (let i = 0; i < 60; i++) {
+            if (r._pickCreatureSoulName() === "glutwesen") randomPickedPredator = true;
+        }
+        out.ambientExcluded = !randomPickedPredator && /predator/.test(r._pickFaunaSoulAtPlayer.toString());
+        const p = r.state.player;
+        const pm = r.state.playerMesh.position;
+        const savedMode = r.getGameMode();
+        const savedHp = p.hp;
+        const savedPhoenix = p.phoenixUntil;
+        const savedMax = r.state.maxCreatures;
+        const savedEmo = {};
+        for (const k of Object.keys(p.emotions)) savedEmo[k] = p.emotions[k];
+        const spawned = [];
+        try {
+            r.setGameMode("pfad");
+            p.phoenixUntil = 0;
+            r.state.maxCreatures = r.state.creatures.length + 4;
+            const wolf = r.spawnCreatureAt(pm.x + 2, pm.y, pm.z, "happy", "glutwesen");
+            spawned.push(wolf);
+            // (1) die Substanz resoniert WILD (box+cone aus glut — tag-emergent).
+            out.wildTemperament = !!wolf && r._creatureTemperament(wolf) === "wild";
+            // (2) der Jagd-Trieb: pfad+nah+unverängstigt → JA; Furcht schlägt
+            // Jagd; frieden kennt keine Bedrohung; eine sanfte Seele jagt nie.
+            out.drivePfad = r._creatureHuntDrive(wolf, 0) === true;
+            out.fearBeatsHunt = r._creatureHuntDrive(wolf, r.constructor.CREATURE_NATURE.fleeThreshold) === false;
+            r.setGameMode("frieden");
+            out.friedenNoHunt = r._creatureHuntDrive(wolf, 0) === false;
+            r.setGameMode("pfad");
+            const lamm = r.spawnCreatureAt(pm.x + 3.5, pm.y, pm.z + 1, "happy", "geist");
+            spawned.push(lamm);
+            out.gentleNoHunt = r._creatureHuntDrive(lamm, 0) === false;
+            // (3) der BISS: HP sinkt durchs damagePlayer-Tor; der Cooldown
+            // deckelt; die Rüstung dämpft FLACH — die Probe ISOLIERT die
+            // Abwehr (0 vs 3), denn der weiche Glut-Biss (max(2,…)) klemmt
+            // mit der Basis-defense des Spielers sonst beidseitig auf der
+            // max(1,…)-Untergrenze (keine Marge — der erste Lauf maß es).
+            const savedDef = p.stats.defense;
+            p.stats.defense = 0;
+            p.hp = p.stats.hpMax || 100;
+            const hp0 = p.hp;
+            const bit = r._tickCreatureHuntStrike(wolf);
+            out.strikeHits = bit === true && p.hp < hp0;
+            out.cooldownGates = r._tickCreatureHuntStrike(wolf) === false;
+            const dealt1 = hp0 - p.hp;
+            wolf.userData.nextHuntStrikeAt = 0;
+            p.stats.defense = 3;
+            const hp1 = p.hp;
+            r._tickCreatureHuntStrike(wolf);
+            const dealt2 = hp1 - p.hp;
+            p.stats.defense = savedDef;
+            out.armorDampens = dealt2 < dealt1 - 1e-9 && dealt2 >= 1;
+            // (4) die FURCHT: niedrige HP + Jagd-Schlag → sorrow steigt (threatened).
+            p.hp = (p.stats.hpMax || 100) * 0.2;
+            const sor0 = p.emotions.sorrow || 0;
+            wolf.userData.nextHuntStrikeAt = 0;
+            r._tickCreatureHuntStrike(wolf);
+            out.fearFelt = (p.emotions.sorrow || 0) > sor0;
+            // (5) der TRIUMPH: ein frischer Jäger fällt von Spieler-Hand → joy steigt.
+            p.hp = p.stats.hpMax || 100;
+            const joy0 = p.emotions.joy || 0;
+            r.damageCreature(wolf, 9999, { source: "player" });
+            spawned[0] = null;
+            out.triumphFelt = (p.emotions.joy || 0) > joy0;
+            // (6) die Bewegungs-Verdrahtung: Jagd + Biss sitzen im Wariness-Zweig.
+            out.moveWired =
+                /_creatureHuntDrive/.test(r.updateCreatures.toString()) &&
+                /_tickCreatureHuntStrike/.test(r.updateCreatures.toString());
+        } finally {
+            for (const c of spawned) {
+                if (c) r.removeCreature(c);
+            }
+            p.hp = savedHp;
+            p.phoenixUntil = savedPhoenix;
+            r.state.maxCreatures = savedMax;
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = savedEmo[k] || 0;
+            r.setGameMode(savedMode);
+        }
+        return out;
+    });
+    check("Phase E Bedrohung: Konstanten + Raubtier-Seele (predator-markiert)", res.consts && res.soul);
+    check("Phase E Bedrohung: sparsam — Raubtiere fallen aus BEIDEN Ambient-Pickern", res.ambientExcluded);
+    check("Phase E Bedrohung: die Substanz resoniert WILD (tag-emergent, kein Flag)", res.wildTemperament);
+    check(
+        "Phase E Bedrohung: Jagd-Trieb pfad+nah+unverängstigt; Furcht schlägt Jagd",
+        res.drivePfad && res.fearBeatsHunt
+    );
+    check(
+        "Phase E Bedrohung: frieden kennt keine Bedrohung + sanfte Seelen jagen nie",
+        res.friedenNoHunt && res.gentleNoHunt
+    );
+    check(
+        "Phase E Bedrohung: der Biss trifft durchs damagePlayer-Tor + Cooldown deckelt",
+        res.strikeHits && res.cooldownGates
+    );
+    check("Phase E Bedrohung: die Rüstung dämpft FLACH (die EINE Kreatur-Formel)", res.armorDampens);
+    check("Phase E Bedrohung: FURCHT bei niedriger HP + TRIUMPH beim Fall des Jägers", res.fearFelt && res.triumphFelt);
+    check("Phase E Bedrohung: Jagd + Biss im Bewegungs-Zweig verdrahtet", res.moveWired);
+}
+
+// GEMERKTER FADEN #8 (V18.149) — die STATUSBAR auf ESSENZ (Minecraft-F3-
+// Muster): immer sichtbar nur, was den Spieler trägt (Welt · Wetter · Modus ·
+// Zeit); die Werkstatt-Zahlen ruhen hinter dem ···-Toggle (persistiert).
+// Kein Verlust (P17): alle Items bleiben im DOM, alle Schreiber schreiben.
+async function checkBandV18149Statusbar(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const out = {};
+        const bar = document.getElementById("statusbar");
+        const toggle = document.getElementById("status-dev-toggle");
+        out.exists = !!bar && !!toggle;
+        if (!bar || !toggle) return out;
+        // Essenz unmarkiert sichtbar; Dev-Items markiert (6 Stück).
+        const essence = ["status-slug", "status-weather", "status-mode", "status-time"];
+        out.essenceClean = essence.every((id) => {
+            const el = document.getElementById(id);
+            return !!el && !el.closest(".status-item").classList.contains("status-dev");
+        });
+        out.devMarked = bar.querySelectorAll(".status-item.status-dev").length === 6;
+        // Default: Essenz (dev-hidden) + die Dev-Items sind unsichtbar, aber IM DOM.
+        const savedClass = bar.classList.contains("dev-hidden");
+        const savedStore = localStorage.getItem("anazh.ui.statusDev");
+        try {
+            bar.classList.add("dev-hidden");
+            const fps = document.getElementById("status-fps");
+            out.devHiddenHides = !!fps && getComputedStyle(fps.closest(".status-item")).display === "none";
+            out.stillInDom = !!fps;
+            // Der Toggle flippt + persistiert.
+            toggle.click();
+            out.toggleShows =
+                !bar.classList.contains("dev-hidden") && localStorage.getItem("anazh.ui.statusDev") === "1";
+            toggle.click();
+            out.toggleHides =
+                bar.classList.contains("dev-hidden") && localStorage.getItem("anazh.ui.statusDev") === "0";
+        } finally {
+            bar.classList.toggle("dev-hidden", savedClass);
+            if (savedStore === null) localStorage.removeItem("anazh.ui.statusDev");
+            else localStorage.setItem("anazh.ui.statusDev", savedStore);
+        }
+        return out;
+    });
+    check(
+        "V18.149 Statusbar: Essenz (Welt·Wetter·Modus·Zeit) + 6 Dev-Items markiert",
+        res.essenceClean && res.devMarked
+    );
+    check("V18.149 Statusbar: Dev ruht unsichtbar, bleibt aber im DOM (P17)", res.devHiddenHides && res.stillInDom);
+    check("V18.149 Statusbar: der ···-Toggle flippt + persistiert", res.toggleShows && res.toggleHides);
+}
+
+// FADEN #7 (V18.150) — FAHRZEUG-FAHR-TIEFE: das Fahr-Profil EMERGIERT aus
+// der Substanz (C1-Gelenke: Räder = Tempo + Ausrollen; Masse = Trägheit),
+// der Sattel führt die C5-Kurven (EINE Bewegungs-Quelle), das Gefährt
+// RICHTET sich aus + seine Gelenke fahren mit (Phase ∝ Weg), und Reiter +
+// Gefährt sind EINS (Kollision ruht im Sattel; unerntbar; brennglas-fest —
+// alle drei GEMESSEN im diag-ride: Sammler/Brennglas fraßen den Wagen unterm
+// Reiter weg, der statische Körper stand als Bordstein im Weg).
+async function checkBandV18150Ride(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const pm = r.state.playerMesh.position;
+        const savedMounted = r.state.player.mountedArch;
+        let entry = null;
+        try {
+            entry = r.spawnArchitecture("fahrzeug_wagen", { x: pm.x + 60, y: pm.y, z: pm.z + 60 }, { silent: true });
+            out.spawned = !!entry;
+            if (!entry) return out;
+            // (1) das Profil emergiert aus den Gelenken + der Masse.
+            const prof = r._vehicleProfile(entry);
+            out.profile =
+                !!prof && prof.radCount === 4 && prof.topSpeedMul > 1.3 && prof.kBrake < prof.kAcc && prof.mass > 1;
+            // (2) der Sattel: Aufsteigen ruht die Kollision + liest das Profil.
+            r.mountArchitecture(entry);
+            out.collisionRests = !entry.collision;
+            out.profileConsumed = r._mountedVehicleProfile() === prof;
+            // (3) Reiter + Gefährt sind EINS: unerntbar + kein Sammler-Ziel +
+            // brennglas-fest (Quelle), solange geritten.
+            out.unharvestable = r.harvestArchitecture(entry, "player") === null;
+            out.noGatherTarget = r._findNearestArchitectureWithMaterial(entry.position, "holz") !== entry;
+            out.brennglasSafe = /riddenId/.test(r._tickFocusingAffordances.toString());
+            out.lazyPassSkips = /riddenId/.test(r.tickArchitectureCulling.toString());
+            // (4) das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg).
+            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 5, 0, 0));
+            r.state.playerBody.activate(true);
+            r._tickMountedMovement(0.05);
+            r._tickMountedMovement(0.05);
+            r._tickMountedMovement(0.05);
+            const yawTarget = Math.atan2(5, 0);
+            out.orients =
+                Number.isFinite(entry._rideYaw) &&
+                Math.abs(entry._rideYaw - yawTarget) < 1.2 &&
+                entry.mesh &&
+                Math.abs(entry.mesh.rotation.y - entry._rideYaw) < 1e-6;
+            out.wheelsRoll = (entry._ridePhase || 0) > 0.3;
+            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 0, 0, 0));
+            // (5) die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle).
+            const moveSrc = r._loopHandleMovement
+                ? r._loopHandleMovement.toString()
+                : Object.getOwnPropertyNames(Object.getPrototypeOf(r))
+                      .map((n) => {
+                          try {
+                              return typeof r[n] === "function" ? r[n].toString() : "";
+                          } catch {
+                              return "";
+                          }
+                      })
+                      .find((s) => /_mountedVehicleProfile/.test(s) && /kBrake/.test(s)) || "";
+            out.movementConsumes =
+                /ride\.kAcc/.test(moveSrc) && /ride\.kBrake/.test(moveSrc) && /ride\.topSpeedMul/.test(moveSrc);
+            // (6) der Idle-Animator pausiert fürs gerittene Gefährt.
+            out.idleSkips = /mountedId/.test(r.tickArchitectures.toString());
+            // (7) Absteigen: die Kollision darf lazy wiederkommen (kein Dauer-Skip).
+            r.dismountArchitecture();
+            out.dismounts = r.state.player.mountedArch === null;
+        } finally {
+            if (entry) r.removeArchitecture(entry);
+            r.state.player.mountedArch = savedMounted === undefined ? null : savedMounted;
+        }
+        return out;
+    });
+    check("V18.150 Fahr-Tiefe: das Profil emergiert (4× Rad → Tempo ×>1.3 · rollt aus · träge)", res.profile);
+    check(
+        "V18.150 Fahr-Tiefe: der Sattel ruht die Kollision + liest das Profil",
+        res.collisionRests && res.profileConsumed
+    );
+    check(
+        "V18.150 Fahr-Tiefe: Reiter + Gefährt sind EINS (unerntbar · kein Sammler-Ziel · brennglas-fest · Lazy-Pass ruht)",
+        res.unharvestable && res.noGatherTarget && res.brennglasSafe && res.lazyPassSkips
+    );
+    check(
+        "V18.150 Fahr-Tiefe: das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg)",
+        res.orients && res.wheelsRoll
+    );
+    check("V18.150 Fahr-Tiefe: die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle)", res.movementConsumes);
+    check("V18.150 Fahr-Tiefe: Idle-Animator pausiert im Sattel + Absteigen gibt frei", res.idleSkips && res.dismounts);
+}
+
+// FADEN #6 (V18.151) — INDEXEDDB-PERSISTENZ: die localStorage-5-MB-Wand
+// fällt. Die großen Welt-Snapshots leben ZUSÄTZLICH in IndexedDB (additiv +
+// graceful: ohne IDB bleibt alles wie heute); beim Lesen gewinnt der ECHT
+// frischere Stand (IDB-Stempel vs. worldsIndex.lastPlayed); wirft
+// localStorage QUOTA, trägt IndexedDB die Welt weiter (ehrliches WARN
+// statt stillem Verlust). Der winzige Index bleibt synchron in localStorage.
+async function checkBandV18151Idb(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) der Store öffnet (echtes IndexedDB im Test-Browser).
+        const db = await r._idb();
+        out.opens = !!db;
+        // (2) der Rundlauf: put → get (json + Stempel) → delete → null.
+        const putOk = await r._idbPutWorld("band151-test", '{"a":1}');
+        const rec = await r._idbGetWorld("band151-test");
+        out.roundTrip = putOk === true && !!rec && rec.json === '{"a":1}' && Number.isFinite(rec.at);
+        await r._idbDeleteWorld("band151-test");
+        out.deleteWorks = (await r._idbGetWorld("band151-test")) === null;
+        // (3) saveState SCHREIBT die aktive Welt nach IndexedDB (Spiegel-Paar).
+        const worldId = r.state.worldMeta && r.state.worldMeta.worldId;
+        r.saveState();
+        let mirrored = null;
+        for (let i = 0; i < 20 && !mirrored; i++) {
+            await new Promise((res2) => setTimeout(res2, 100));
+            mirrored = await r._idbGetWorld(worldId);
+        }
+        const lsJson = localStorage.getItem(r.worldStorageKey(worldId));
+        out.saveMirrors = !!mirrored && !!lsJson && mirrored.json.length === lsJson.length;
+        // (4) die QUOTA-Wand fällt WEICH: localStorage wirft → kein Wurf nach
+        // außen, das Log sagt „lebt in IndexedDB weiter" (Quelle).
+        const origSet = Storage.prototype.setItem;
+        let threw = false;
+        Storage.prototype.setItem = function () {
+            throw new Error("QuotaExceededError (Band-Probe)");
+        };
+        try {
+            r.saveState();
+        } catch {
+            threw = true;
+        } finally {
+            Storage.prototype.setItem = origSet;
+        }
+        out.quotaSoft = !threw && /lebt in IndexedDB weiter/.test(r.saveState.toString());
+        r.saveState(); // den echten Spiegel wiederherstellen
+        // (5) der Boot-Vorzug: ein ECHT frischerer IDB-Stand gewinnt das Lesen
+        // (Welt-Guard inklusive — der Preload trägt die worldId).
+        await r._idbPutWorld(worldId, '{"__band151Marker":true}');
+        // den Stempel künstlich in die Zukunft heben (frischer als lastPlayed):
+        {
+            const db2 = await r._idb();
+            await new Promise((res2) => {
+                const tx = db2.transaction("worlds", "readwrite");
+                tx.objectStore("worlds").put({ at: Date.now() + 600000, json: '{"__band151Marker":true}' }, worldId);
+                tx.oncomplete = res2;
+                tx.onerror = res2;
+            });
+        }
+        await r._idbPreload();
+        const pre = r._idbPreloadedState;
+        out.preloadWins = !!pre && pre.worldId === worldId && pre.state && pre.state.__band151Marker === true;
+        const fromStorage = r._loadStateLoadFromStorage();
+        out.readPrefersFresh = !!fromStorage && fromStorage.__band151Marker === true;
+        out.preloadConsumed = r._idbPreloadedState === null;
+        r.saveState(); // die Wahrheit zurück in den IDB-Spiegel
+        // (6) Verdrahtung: init awaitet den Preload; deleteWorld räumt IDB.
+        out.initAwaits = /await this\._idbPreload\(\)/.test(r.init.toString());
+        out.deleteCleans = /_idbDeleteWorld/.test(r.deleteWorld.toString());
+        return out;
+    });
+    check(
+        "V18.151 IndexedDB: der Store öffnet + put/get/delete-Rundlauf",
+        res.opens && res.roundTrip && res.deleteWorks
+    );
+    check("V18.151 IndexedDB: saveState spiegelt die Welt (LS + IDB, gleiche Länge)", res.saveMirrors);
+    check("V18.151 IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN)", res.quotaSoft);
+    check(
+        "V18.151 IndexedDB: der ECHT frischere IDB-Stand gewinnt das Boot-Lesen (+ wird konsumiert)",
+        res.preloadWins && res.readPrefersFresh && res.preloadConsumed
+    );
+    check(
+        "V18.151 IndexedDB: init awaitet den Preload + deleteWorld räumt die IDB-Heimat",
+        res.initAwaits && res.deleteCleans
+    );
+}
+
+// R6-KERN (V18.152, robustheit-plan — GEMERKTER FADEN #1): die SELBST-
+// ERWEITERUNG beginnt. Capability-Inversion: eine Welt REICHT eine Fähigkeit
+// (DSL-Daten in die Quarantäne-Queue, NIE ausgeführt), der Mensch GEWÄHRT
+// souverän (die seit R2 eingefrorene grant_capability-Geste erwacht), der
+// LAUF geht durch die dslRun-Sandbox; der R4-Rückruf wirkt VOR und NACH der
+// Gewähr; die Gewähr überlebt den Reload durch die heutige Wand.
+async function checkBandR6Capability(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const savedPo = r._portalOverlay;
+        const savedProps = r.state.capabilityProposals;
+        const savedCaps = r.state.grantedCapabilities;
+        const savedWeather = r.state.weather;
+        try {
+            r.state.capabilityProposals = new Map();
+            r.state.grantedCapabilities = {};
+            r._portalOverlay = {
+                world: "worlds/begegnung/index.html",
+                label: "Begegnungs-Feld",
+                trust: "sandboxed",
+                chWindowStart: 0,
+                chWindowCount: 0,
+            };
+            out.accepts =
+                r._portalReceiveCapability({
+                    type: "capability",
+                    name: "regen-tanz",
+                    desc: "ruft den Regen",
+                    dsl: ["weather", "rainy"],
+                }) === true && r.state.capabilityProposals.has("regen-tanz");
+            out.rejectsWorldgen =
+                r._portalReceiveCapability({ type: "capability", name: "graben", dsl: ["voxel_carve", 0, 0, 0, 3] }) ===
+                false;
+            out.rejectsPrivate =
+                r._portalReceiveCapability({ type: "capability", name: "zeit", dsl: ["set_time_of_day", 0.5] }) ===
+                false;
+            out.rejectsSovereign =
+                r._portalReceiveCapability({ type: "capability", name: "klau", dsl: ["wallet_transfer", "x"] }) ===
+                false;
+            out.rejectsGarbage =
+                r._portalReceiveCapability({ type: "capability", name: "ÜBEL!", dsl: ["weather", "rainy"] }) === false;
+            out.notExecuted = r.state.weather === savedWeather;
+            out.grantNoProposal = r.grantCapability("gibtsnicht").reason === "no_proposal";
+            const granted = r.grantCapability("regen-tanz", { skipConfirm: true });
+            out.grants =
+                granted.ok === true &&
+                !!r.state.grantedCapabilities["regen-tanz"] &&
+                !r.state.capabilityProposals.has("regen-tanz");
+            out.gestureWired = /_sovereignGesture/.test(r.grantCapability.toString());
+            const ran = r.runCapability("regen-tanz");
+            out.runs = ran.ok === true && r.state.weather === "rainy";
+            const pub = "cd".repeat(32);
+            r.state.grantedCapabilities["regen-tanz"].authorPubKey = pub;
+            if (r.state.revokedKeys && r.state.revokedKeys.add) {
+                r.state.revokedKeys.add(pub);
+                out.revokeStops = r.runCapability("regen-tanz").reason === "revoked";
+                r._portalReceiveCapability({ type: "capability", name: "zweite", dsl: ["weather", "sunny"] });
+                const p2 = r.state.capabilityProposals.get("zweite");
+                if (p2) p2.authorPubKey = pub;
+                out.revokeGates = r.grantCapability("zweite", { skipConfirm: true }).reason === "revoked";
+                r.state.revokedKeys.delete(pub);
+            } else {
+                out.revokeStops = true;
+                out.revokeGates = true;
+            }
+            r.state.grantedCapabilities["regen-tanz"].authorPubKey = "";
+            const snap = r.buildStateSnapshot();
+            out.travels = !!(snap.grantedCapabilities && snap.grantedCapabilities["regen-tanz"]);
+            r._loadStateRestoreMiscState({
+                grantedCapabilities: {
+                    "regen-tanz": snap.grantedCapabilities["regen-tanz"],
+                    boese: { dsl: ["voxel_carve", 0, 0, 0, 9] },
+                },
+            });
+            out.restoreWalled = !!r.state.grantedCapabilities["regen-tanz"] && !r.state.grantedCapabilities["boese"];
+            const ex = r.chatSystemPatterns.map((p) => p.example);
+            out.chatGestures = ex.includes("gewähre <fähigkeit>") && ex.includes("wirke <fähigkeit>");
+        } finally {
+            r._portalOverlay = savedPo || null;
+            r.state.capabilityProposals = savedProps;
+            r.state.grantedCapabilities = savedCaps;
+            if (typeof r._setWeather === "function") r._setWeather(savedWeather, "band-r6");
+            else r.state.weather = savedWeather;
+        }
+        return out;
+    });
+    check(
+        "R6 Selbst-Erweiterung: die Quarantäne-Wand (reaktiv landet · Worldgen/privat/souverän/Müll fallen · NIE ausgeführt)",
+        res.accepts &&
+            res.rejectsWorldgen &&
+            res.rejectsPrivate &&
+            res.rejectsSovereign &&
+            res.rejectsGarbage &&
+            res.notExecuted
+    );
+    check(
+        "R6 Selbst-Erweiterung: die GEWÄHR nur durch die R2-Geste (grant_capability erwacht)",
+        res.grants && res.gestureWired && res.grantNoProposal
+    );
+    check("R6 Selbst-Erweiterung: der LAUF durch die dslRun-Sandbox (das Wetter flippt)", res.runs);
+    check("R6 Selbst-Erweiterung: der R4-Rückruf wirkt am Tor UND nach der Gewähr", res.revokeStops && res.revokeGates);
+    check(
+        "R6 Selbst-Erweiterung: die Gewähr reist + der Restore prüft die heutige Wand",
+        res.travels && res.restoreWalled
+    );
+    check(`R6 Selbst-Erweiterung: „gewähre/wirke" in der EINEN Chat-Tabelle`, res.chatGestures);
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -28096,6 +29134,546 @@ async function checkBandV18136Audit(ctx) {
     check("V18.136 Audit: Kachel-Erosion ohne flowTo-Ballast (64 KB/Kachel gespart)", res.tileLean);
     check("V18.136 Audit: die Bestbewertet-Rail liest die Gemeinschafts-Aggregation", res.trendsAgg);
     check("V18.136 Audit: EIN per-Chunk-RNG (Scatter + Fernfeld verdichtet, V9.82)", res.oneRng);
+}
+
+// Ω2 (V18.137, taille-spec §2) — must-preserve als GESETZ: Unbekanntes
+// überlebt jeden Serialize/Restore-Zwilling bit-gleich (EINE Quelle
+// _carryUnknown), die R4-Herkunftskette überlebt den Save, die bekannten
+// Sicherheits-Wände halten WEITER (Gegenproben), die Größen-Wand dämpft.
+async function checkBandTailleOmega2(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const C = r.constructor;
+        out.constants =
+            Number.isFinite(C.TAILLE_UNKNOWN_FIELD_MAX) &&
+            Object.isFrozen(C.BLUEPRINT_KNOWN_KEYS) &&
+            Object.isFrozen(C.MATERIAL_KNOWN_KEYS) &&
+            Object.isFrozen(C.TOOL_KNOWN_KEYS) &&
+            Object.isFrozen(C.MANIFEST_KNOWN_KEYS);
+        // (1) Blueprint-Zwilling: xZukunft + provenance überleben bit-gleich.
+        const KA = "ab".repeat(32);
+        const live = {
+            name: "_omega2_bp",
+            label: "Ω2",
+            builtIn: false,
+            parts: [
+                {
+                    shape: "box",
+                    material: "stein",
+                    position: { x: 0, y: 0, z: 0 },
+                    size: { x: 1, y: 1, z: 1 },
+                    rotation: { x: 0, y: 0, z: 0 },
+                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                },
+            ],
+            connections: [],
+            xZukunft: { tief: [1, 2, { drei: true }] },
+            provenance: [{ by: KA, at: 7 }],
+        };
+        const ser = r._serializeBlueprint(live);
+        out.serCarries =
+            JSON.stringify(ser.xZukunft) === JSON.stringify(live.xZukunft) &&
+            Array.isArray(ser.provenance) &&
+            ser.provenance[0].by === KA;
+        const deser = r._deserializeBlueprint(JSON.parse(JSON.stringify(ser)));
+        out.deserCarries =
+            !!deser &&
+            JSON.stringify(deser.xZukunft) === JSON.stringify(live.xZukunft) &&
+            Array.isArray(deser.provenance) &&
+            deser.provenance[0].by === KA;
+        // (2) die Größen-Wand: ein >8-KiB-Feld fällt (Dämpfung, dokumentiert).
+        const fat = r._serializeBlueprint({ ...live, xRiese: "y".repeat(C.TAILLE_UNKNOWN_FIELD_MAX + 10) });
+        out.sizeWall = fat.xRiese === undefined && JSON.stringify(fat.xZukunft) === JSON.stringify(live.xZukunft);
+        // (3) Manifest: Unbekanntes überlebt, die Sicherheits-Wand HÄLT weiter.
+        const man = r._sanitizeImportedManifest({
+            id: "omega2-welt",
+            label: "Ω2",
+            world: "https://evil.example/x.html",
+            dsl: ["set_weather"],
+            trust: "trusted",
+            vendored: true,
+            xZukunft: { d: 4 },
+        });
+        out.manifestCarries = !!man && man.xZukunft && man.xZukunft.d === 4;
+        out.manifestWallHolds =
+            !!man && !/evil\.example/.test(String(man.world)) && man.trust === "sandboxed" && man.vendored === true;
+        // (4) Material/Tool-Zwilling: EINE Serialize-Quelle (Source-Proben) +
+        // Substanz-Treue (label + fremde Tag-Achse + Unbekanntes + isMachine).
+        out.oneSource =
+            /_serializeMaterial/.test(r.buildStateSnapshot.toString()) &&
+            /_serializeMaterial/.test(r._buildEmptyWorldSnapshot.toString()) &&
+            /_serializeTool/.test(r.buildStateSnapshot.toString()) &&
+            /_serializeTool/.test(r._buildEmptyWorldSnapshot.toString());
+        const serMat = r._serializeMaterial({
+            name: "_omega2_mat",
+            label: "Ω2-Stoff",
+            builtIn: false,
+            color: 0x123456,
+            tags: { härte: 0.5, "x:fremd": 0.7 },
+            xZukunft: { e: 5 },
+        });
+        out.matCarries =
+            serMat.label === "Ω2-Stoff" && serMat.tags["x:fremd"] === 0.7 && serMat.xZukunft && serMat.xZukunft.e === 5;
+        const serTool = r._serializeTool({
+            name: "_omega2_tool",
+            label: "Ω2-Werk",
+            builtIn: false,
+            opClass: "plastic",
+            opName: "schmieden",
+            precisionCap: 0.7,
+            sourceBlueprint: null,
+            isMachine: true,
+        });
+        out.toolCarries = serTool.isMachine === true;
+        // (5) Material-RESTORE ist substanz-treu (label + exakte Magnitude +
+        // fremde Achse + Unbekanntes) — aber defineMaterial (die lokale
+        // Geste/DSL) bleibt die strenge [0,1]-Whitelist-Wand.
+        delete r.state.materials["_omega2_mat"];
+        const beforeKeys = Object.keys(r.state.materials).length;
+        r._loadStateRestoreCraftingInventory({
+            materials: [
+                {
+                    name: "_omega2_mat",
+                    label: "Ω2-Stoff",
+                    color: 0x123456,
+                    tags: { härte: 2.5, "x:fremd": 0.7 },
+                    xZukunft: { e: 5 },
+                },
+            ],
+        });
+        const restored = r.state.materials["_omega2_mat"];
+        out.matRestoreTrue =
+            !!restored &&
+            restored.label === "Ω2-Stoff" &&
+            restored.tags["härte"] === 2.5 &&
+            restored.tags["x:fremd"] === 0.7 &&
+            restored.xZukunft &&
+            restored.xZukunft.e === 5;
+        const strict = r.defineMaterial("_omega2_strict", 0x111111, { härte: 9, "x:fremd": 0.5 });
+        const strictEntry = strict.ok ? r.state.materials[strict.name] : null;
+        out.gestureStaysStrict =
+            !!strictEntry && strictEntry.tags["härte"] === 1 && strictEntry.tags["x:fremd"] === undefined;
+        delete r.state.materials["_omega2_mat"];
+        delete r.state.materials["_omega2_strict"];
+        void beforeKeys;
+        return out;
+    });
+    if (!res) {
+        check("Ω2: must-preserve-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check("Ω2: die Taille-Konstanten stehen frozen (Größen-Wand + vier known-Sätze)", res.constants);
+    check("Ω2: der Bauplan-Zwilling bewahrt Unbekanntes + die R4-Herkunftskette (serialize)", res.serCarries);
+    check("Ω2: der Bauplan-Zwilling bewahrt Unbekanntes + Kette (deserialize, bit-gleich)", res.deserCarries);
+    check("Ω2: die Größen-Wand dämpft (>8 KiB fällt, kleine Zukunft lebt)", res.sizeWall);
+    check(
+        "Ω2: das Manifest bewahrt Unbekanntes — UND die Sicherheits-Wand hält (world/trust/vendored)",
+        res.manifestCarries && res.manifestWallHolds
+    );
+    check("Ω2: EINE Material/Tool-Serialize-Quelle (beide Snapshot-Pfade, V9.82)", res.oneSource);
+    check(
+        "Ω2: Material/Tool-Serialize tragen Substanz + Unbekanntes (x:-Tag · isMachine)",
+        res.matCarries && res.toolCarries
+    );
+    check(
+        "Ω2: der Material-Restore ist substanz-treu (exakte Magnitude · x:-Achse · label · Unbekanntes) — die lokale Geste bleibt streng",
+        res.matRestoreTrue && res.gestureStaysStrict
+    );
+}
+
+// Ω3 (V18.138, taille-spec §3) — die RE-DERIVE-WAND + der ANTIKÖRPER „der
+// lügende Bauplan" (R5-Stil): ein fremdes Artefakt behauptet role=workshop-
+// station + roleManual, schmuggelt ein fremdes portalMeta-Origin, trägt ein
+// Gott-Material (härte=10⁶) und ein revoziertes Ketten-Glied → der Import
+// emergiert die Rolle lokal, sanitisiert das Portal, die Klemme am Leser
+// deckelt die Mauer (abbaubar), das Sieb fällt das Vergiftete AM EINGANG.
+async function checkBandTailleOmega3(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const C = r.constructor;
+        const out = {};
+        const KEVIL = "ef".repeat(32);
+        const savedRevoked = r.state.revokedKeys;
+        r.revokeKey(KEVIL, { silent: true });
+        const mkPart = (material) => ({
+            shape: "box",
+            material,
+            position: { x: 0, y: 0, z: 0 },
+            size: { x: 1.5, y: 1.5, z: 1.5 },
+            rotation: { x: 0, y: 0, z: 0 },
+            opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+        });
+        const srcId = "taille-omega3-src";
+        const srcSave = {
+            worldMeta: { worldId: srcId, slug: "ω3-quelle" },
+            materials: [
+                {
+                    name: "o3_gott",
+                    label: "Gott-Stoff",
+                    tags: { härte: 1e6, dichte: 1e6 },
+                },
+            ],
+            blueprints: [
+                {
+                    // der LÜGNER: eine Box behauptet workshop-station + roleManual
+                    // + schmuggelt ein fremdes Portal-Origin.
+                    name: "o3_luegner",
+                    label: "Lügner",
+                    role: "workshop-station",
+                    roleManual: true,
+                    portalMeta: { world: "https://evil.example/x.html", label: "Evil" },
+                    parts: [mkPart("stein")],
+                    connections: [],
+                },
+                {
+                    // die GOTT-MAUER: ein Werk aus härte=10⁶.
+                    name: "o3_mauer",
+                    label: "Gott-Mauer",
+                    parts: [mkPart("o3_gott")],
+                    connections: [],
+                },
+                {
+                    // das VERGIFTETE: ein revoziertes Glied in der Kette.
+                    name: "o3_gift",
+                    label: "Gift",
+                    parts: [mkPart("stein")],
+                    connections: [],
+                    provenance: [{ by: KEVIL, at: 1 }],
+                },
+            ],
+            tools: [
+                { name: "o3_badtool", label: "Bad", opClass: "nichtexistent", opName: "x", precisionCap: 0.5 },
+                { name: "o3_goodtool", label: "Gut", opClass: "plastic", opName: "schmieden", precisionCap: 0.5 },
+            ],
+        };
+        localStorage.setItem(r.worldStorageKey(srcId), JSON.stringify(srcSave));
+        const resImp = r.importRecipesFromWorld(srcId);
+        out.importOk = !!(resImp && resImp.ok);
+        const luegner = r.state.blueprints["o3_luegner"];
+        const mauer = r.state.blueprints["o3_mauer"];
+        const gift = r.state.blueprints["o3_gift"];
+        const goodTool = r.state.tools["o3_goodtool"];
+        const badTool = r.state.tools["o3_badtool"];
+        // (1) Behauptung/Wahrheit: roleClaimed trägt die Lüge, role emergiert
+        // lokal (eine Box ist KEINE Werkstatt-Station), roleManual fiel.
+        out.claimSeparated =
+            !!luegner &&
+            luegner.roleClaimed === "workshop-station" &&
+            luegner.role !== "workshop-station" &&
+            luegner.roleManual === undefined;
+        // (2) die Portal-Wand: das geschmuggelte fremde Origin ist sanitisiert
+        // (worlds/-Pfad — _sanitizePortalMeta lief im EINEN Eingang).
+        out.portalSanitized =
+            !!luegner && (!luegner.portalMeta || !/evil\.example/.test(String(luegner.portalMeta.world)));
+        // (3) die Klemme am Leser: die Gott-Mauer ist ABBAUBAR (fit klar über 0;
+        // die Substanz selbst bleibt unangetastet — härte=10⁶ lebt im Material).
+        out.matMagnitudeKept = r.state.materials["o3_gott"] && r.state.materials["o3_gott"].tags["härte"] === 1e6;
+        const fit = r._harvestFitnessFromResist(r._architectureResistance({ type: "o3_mauer" }));
+        out.wallBreakable = !!mauer && fit.fit > 0.01;
+        out.ceilFrozen = Object.isFrozen(C.MATERIAL_TAG_CEIL) && C.MATERIAL_TAG_CEIL["härte"] === 2;
+        // (4) das Rückruf-Sieb AM EINGANG: das Vergiftete kam NIE in den state.
+        out.taintedFellAtGate = gift === undefined;
+        // (5) die Tool-Wand: opClass-Müll fällt, das valide Werkzeug lebt.
+        out.toolWall = badTool === undefined && !!goodTool;
+        // (6) die Signatur bleibt prüfbar über roleClaimed (Kanon liest
+        // roleClaimed ?? role) — der goldene Pfad: signieren → importieren →
+        // verify bleibt valid, obwohl die lokale Rolle re-derived wurde.
+        r.state.blueprints["_o3_signed"] = {
+            name: "_o3_signed",
+            label: "Ω3-Siegel",
+            builtIn: false,
+            role: "weapon",
+            roleManual: true,
+            parts: [mkPart("stein")],
+            connections: [],
+        };
+        let sigChain = false;
+        if (r.state.vibePass && r.state.vibePass.ready) {
+            const s = await r.signBlueprint("_o3_signed", { skipConfirm: true });
+            if (s.ok) {
+                const wire = r._serializeBlueprint(r.state.blueprints["_o3_signed"]);
+                const admitted = r._admitForeignArtifact(wire);
+                sigChain =
+                    !!admitted &&
+                    admitted.roleClaimed === "weapon" &&
+                    (await r.verifyBlueprintSignature(admitted)) === "valid";
+            }
+        } else {
+            sigChain = true; // kein Secure Context → der Krypto-Teil ruht (headless-Wand anderswo)
+        }
+        out.signatureSurvivesRederive = sigChain;
+        // Aufräumen.
+        delete r.state.blueprints["o3_luegner"];
+        delete r.state.blueprints["o3_mauer"];
+        delete r.state.blueprints["_o3_signed"];
+        delete r.state.materials["o3_gott"];
+        delete r.state.tools["o3_goodtool"];
+        localStorage.removeItem(r.worldStorageKey(srcId));
+        r.unrevokeKey(KEVIL);
+        r.state.revokedKeys = savedRevoked;
+        return out;
+    });
+    if (!res) {
+        check("Ω3: Antikörper-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "Ω3: der Import läuft + die Lüge ist getrennt (roleClaimed trägt, role emergiert, roleManual fällt)",
+        res.importOk && res.claimSeparated
+    );
+    check(
+        "Ω3: die Portal-Wand hält am EINEN Eingang (fremdes Origin sanitisiert — kein Reload nötig)",
+        res.portalSanitized
+    );
+    check(
+        "Ω3: die Klemme sitzt am LESER — die Gott-Mauer ist abbaubar, die Substanz bleibt unangetastet (härte=10⁶ lebt)",
+        res.wallBreakable && res.matMagnitudeKept && res.ceilFrozen
+    );
+    check("Ω3: das Rückruf-Sieb fällt Vergiftetes AM EINGANG (nicht erst beim Laden)", res.taintedFellAtGate);
+    check("Ω3: die Tool-Wand gilt auch dem Import (opClass/opName whitelisted)", res.toolWall);
+    check(
+        "Ω3: die Signatur überlebt das Re-Derive (Kanon liest roleClaimed ?? role → valid)",
+        res.signatureSurvivesRederive
+    );
+}
+
+// Ω5 (V18.140, taille-spec §5) — DAS PERPETUUM-VERBOT als lebende Invariante
+// (Antikörper, impft bei jedem Push): die GEMESSENE Modus-Wäsche (schöpfer
+// baut gratis → pfad erntet: +14 Stein/Zyklus aus dem Nichts, Random-Walk
+// +69) ist durch freeBorn GESCHLOSSEN — die Herkunft entscheidet den Ertrag;
+// die Marke überlebt den Snapshot (sonst wüsche der Reload sie ab). Das
+// ausführliche Werkzeug: scripts/diag-ledger-cycles.cjs.
+async function checkBandTailleOmega5(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        r.state.blueprints["_o5_werk"] = {
+            name: "_o5_werk",
+            label: "Ω5-Werk",
+            builtIn: false,
+            parts: [
+                {
+                    shape: "box",
+                    material: "stein",
+                    position: { x: 0, y: 0.75, z: 0 },
+                    size: { x: 1.5, y: 1.5, z: 1.5 },
+                    rotation: { x: 0, y: 0, z: 0 },
+                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                },
+            ],
+            connections: [],
+        };
+        const savedMode = r.getGameMode();
+        // (1) die WÄSCHE ist zu: schöpfer-geborenes Werk erntet 0 im pfad.
+        r.setGameMode("schöpfer");
+        const gate = r._makeCostGate("_o5_werk");
+        const e1 = r.spawnArchitecture("_o5_werk", { x: 4, y: 2, z: 4 }, { freeBorn: gate.free === true });
+        out.gateFree = gate.ok && gate.free === true;
+        out.entryMarked = !!e1 && e1.freeBorn === true;
+        r.setGameMode("pfad");
+        const loot = e1 ? r.harvestArchitecture(e1, "player", 1) : null;
+        out.washClosed = !!loot && Object.values(loot.materials || {}).every((n) => n === 0);
+        // (2) die Marke überlebt den Snapshot-Zwilling.
+        r.setGameMode("schöpfer");
+        const e2 = r.spawnArchitecture("_o5_werk", { x: 8, y: 2, z: 8 }, { freeBorn: true });
+        const snap = r.buildStateSnapshot();
+        const snapped = (snap.architectures || []).find((a) => a.id === e2.id);
+        out.persisted = !!(snapped && snapped.freeBorn === true);
+        if (e2) r.removeArchitecture(e2);
+        // (3) ein NORMAL bezahltes/Worldgen-Werk erntet weiter (keine Über-Heilung).
+        const e3 = r.spawnArchitecture("_o5_werk", { x: 12, y: 2, z: 12 }, {});
+        const loot3 = e3 ? r.harvestArchitecture(e3, "player", 1) : null;
+        out.paidStillYields = !!loot3 && (loot3.materials["stein"] || 0) > 0;
+        // (4) die Verdrahtung: confirmBuild trägt gate.free → freeBorn; der
+        // Restore reicht die Marke durch (Source-Proben).
+        out.wired =
+            /freeBorn: gate\.free === true/.test(r.confirmBuild.toString()) &&
+            /freeBorn: a\.freeBorn === true/.test(r._loadStateRestoreArchitectures.toString()) &&
+            /entry\.freeBorn === true/.test(r.harvestArchitecture.toString());
+        r.setGameMode(savedMode);
+        delete r.state.blueprints["_o5_werk"];
+        return out;
+    });
+    if (!res) {
+        check("Ω5: Perpetuum-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "Ω5: die Modus-Wäsche ist ZU (schöpfer-geboren → pfad erntet 0)",
+        res.gateFree && res.entryMarked && res.washClosed
+    );
+    check("Ω5: die Gratis-Geburt überlebt den Snapshot (kein Wäsche-Reload)", res.persisted);
+    check("Ω5: ein bezahltes/Welt-Werk erntet weiter (Herkunft entscheidet, keine Über-Heilung)", res.paidStillYields);
+    check("Ω5: die Kette ist verdrahtet (confirmBuild → spawn → snapshot → restore → harvest)", res.wired);
+}
+
+// Ω6 (V18.141, taille-spec §6) — NAMENSRAUM + WACHSTUMSREGEL: fremdes
+// Vokabular (x:-präfixiert ODER künftige nackte Achsen) REIST (must-preserve)
+// und beeinflusst KEINE Kern-Lesart (must-ignore, BEHAVIORAL bewiesen:
+// bit-gleiche Rolle/Kosten/Tags/Vektor mit und ohne fremdem Tag).
+async function checkBandTailleOmega6(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const mkMat = (name, extraTags) => {
+            r.state.materials[name] = {
+                name,
+                label: name,
+                builtIn: false,
+                color: 0x888888,
+                tags: { ...r.constructor.MATERIAL_TAG_DEFAULTS, härte: 0.6, dichte: 0.7, ...extraTags },
+            };
+        };
+        mkMat("_o6_rein", {});
+        mkMat("_o6_fremd", { "x:v25:aether": 99, leuchtkraft: 42 });
+        const mkBp = (material) => ({
+            name: "_o6_bp_" + material,
+            label: "Ω6",
+            builtIn: false,
+            parts: [
+                {
+                    shape: "cone",
+                    material,
+                    position: { x: 0, y: 1, z: 0 },
+                    size: { x: 0.5, y: 1.2, z: 0.5 },
+                    rotation: { x: 0, y: 0, z: 0 },
+                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                },
+            ],
+            connections: [],
+        });
+        const a = mkBp("_o6_rein");
+        const b = mkBp("_o6_fremd");
+        r.state.blueprints[a.name] = a;
+        r.state.blueprints[b.name] = b;
+        // (1) must-ignore BEHAVIORAL: jede Kern-Lesart ist BIT-GLEICH —
+        // das fremde Vokabular (x:-Tag 99 + unbekannte nackte Achse 42)
+        // trägt zu KEINER Kern-Resonanz bei.
+        out.tagsEqual = JSON.stringify(r.computeCompoundTags(a)) === JSON.stringify(r.computeCompoundTags(b));
+        out.vectorEqual = JSON.stringify(r._blueprintProductVector(a)) === JSON.stringify(r._blueprintProductVector(b));
+        out.roleEqual = r.computeBlueprintRole(a) === r.computeBlueprintRole(b);
+        out.costEqual =
+            JSON.stringify(r.computeBuildCost(a.name)).replace(/_o6_rein/g, "M") ===
+            JSON.stringify(r.computeBuildCost(b.name)).replace(/_o6_fremd/g, "M");
+        // (2) must-preserve: das fremde Vokabular REIST durch den Material-
+        // Zwilling (Ω2) bit-gleich.
+        const ser = r._serializeMaterial(r.state.materials["_o6_fremd"]);
+        out.travels = ser.tags["x:v25:aether"] === 99 && ser.tags["leuchtkraft"] === 42;
+        // (3) der KERN ist eingefroren + die Doktrin steht am Kern (frozen +
+        // Kommentar-Anker ist Doku; hier der strukturelle Teil).
+        out.coreFrozen =
+            Object.isFrozen(r.constructor.MATERIAL_TAG_KEYS) && r.constructor.MATERIAL_TAG_KEYS.length === 10;
+        // (4) die Wachstumsregel: eine NEUE Achse wäre additiv mit Default 0 —
+        // MATERIAL_TAG_DEFAULTS trägt für jede Kern-Achse 0 (per Konstruktion).
+        out.defaultsZero = r.constructor.MATERIAL_TAG_KEYS.every((k) => r.constructor.MATERIAL_TAG_DEFAULTS[k] === 0);
+        delete r.state.blueprints[a.name];
+        delete r.state.blueprints[b.name];
+        delete r.state.materials["_o6_rein"];
+        delete r.state.materials["_o6_fremd"];
+        return out;
+    });
+    if (!res) {
+        check("Ω6: Namensraum-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "Ω6: must-ignore BEHAVIORAL — fremdes Vokabular ändert KEIN Kern-Bit (Tags · Vektor · Rolle · Kosten)",
+        res.tagsEqual && res.vectorEqual && res.roleEqual && res.costEqual
+    );
+    check("Ω6: must-preserve — das fremde Vokabular reist bit-gleich (x:-Tag · künftige Achse)", res.travels);
+    check("Ω6: der anazh-Kern ist eingefroren (10 Achsen, frozen, Doktrin am Kern verankert)", res.coreFrozen);
+    check("Ω6: die Wachstumsregel steht (neue Achsen additiv, Default 0 per Konstruktion)", res.defaultsZero);
+}
+
+// Ω4 (V18.139, taille-spec) — DER KONFORMANZ-KORPUS: die eingefrorenen
+// goldenen Dateien (spec/golden/v1/ — NIE regeneriert) werden FÜR IMMER
+// geladen: der heutige Code MUSS sie lesen, beide Signaturen MÜSSEN "valid"
+// verifizieren (bricht das, hat jemand die Taille verletzt — dieses Band IST
+// die Wand), der Snapshot-Kopf trägt weiter ⊇ das goldene Schema, jeder
+// goldene p2p-Typ hat einen lebenden Handler + den pv-Stempel.
+async function checkBandTailleGolden(ctx) {
+    const { page, check } = ctx;
+    const goldenDir = path.join(__dirname, "..", "spec", "golden", "v1");
+    let golden = null;
+    try {
+        golden = {
+            blueprint: JSON.parse(fs.readFileSync(path.join(goldenDir, "blueprint-signed.json"), "utf8")),
+            manifest: JSON.parse(fs.readFileSync(path.join(goldenDir, "world-manifest.json"), "utf8")),
+            snapshotHead: JSON.parse(fs.readFileSync(path.join(goldenDir, "snapshot-head.json"), "utf8")),
+            envelopes: JSON.parse(fs.readFileSync(path.join(goldenDir, "p2p-envelopes.json"), "utf8")),
+        };
+    } catch (e) {
+        check("Ω4: die goldenen Dateien existieren (spec/golden/v1 — NIE regenerieren)", false, e.message);
+        return;
+    }
+    check("Ω4: die goldenen Dateien existieren (spec/golden/v1 — NIE regenerieren)", true);
+    const res = await safeEvaluate(
+        page,
+        async (g) => {
+            const r = window.anazhRealm;
+            const out = {};
+            // (1) der goldene Bauplan: lesbar + Signatur EWIG "valid" + die
+            // Kette lebt + der Admit-Pfad (Re-Derive) bricht die Echtheit nicht.
+            const deser = r._deserializeBlueprint(g.blueprint);
+            out.bpReadable = !!deser && deser.parts.length === 3 && deser.connections.length === 2;
+            out.bpProvenance = !!deser && Array.isArray(deser.provenance) && deser.provenance.length === 1;
+            out.bpSigValid = deser ? (await r.verifyBlueprintSignature(deser)) === "valid" : false;
+            const admitted = r._admitForeignArtifact(g.blueprint);
+            out.bpAdmitValid =
+                !!admitted &&
+                admitted.roleClaimed === "weapon" &&
+                (await r.verifyBlueprintSignature(admitted)) === "valid";
+            // (2) das goldene Manifest: die Sanitize nimmt es + Signatur "valid".
+            const man = r._sanitizeImportedManifest({ ...g.manifest, id: "taille-golden-band" });
+            out.manReadable = !!man && !!man.signature;
+            out.manSigValid = man
+                ? await r._vibeVerify(r._canonicalManifest({ ...g.manifest }), man.signature, man.authorPubKey)
+                : false;
+            // (3) der Snapshot-Kopf: das heutige Schema ⊇ das goldene (additiv
+            // wachsen erlaubt, verlieren = Taille verletzt) + Typen kompatibel.
+            const snap = r.buildStateSnapshot();
+            const missing = [];
+            for (const k of Object.keys(g.snapshotHead.schema)) {
+                const want = g.snapshotHead.schema[k];
+                const v = snap[k];
+                const got = Array.isArray(v) ? "array" : v === null ? "null" : typeof v;
+                if (v === undefined || (got !== want && want !== "null" && got !== "null"))
+                    missing.push(`${k}:${want}→${got}`);
+            }
+            out.snapKeys = missing.length === 0;
+            out.snapMissing = missing.join(",");
+            const wmKeys = Object.keys(snap.worldMeta || {});
+            out.snapWorldMeta = g.snapshotHead.worldMetaKeys.every((k) => wmKeys.includes(k));
+            // (4) die p2p-Umschläge: pv-Vertrag + jeder goldene Typ hat einen
+            // lebenden Handler (kanal-exklusiv ODER im ALLOWED-Durchreich-Satz).
+            out.pvMatches = g.envelopes.pv === r.constructor.PROTO_VERSION;
+            const handlerSrc = r._p2pHandleChannelMessage.toString() + r.p2pHandleMessage.toString();
+            const dead = g.envelopes.types.filter((t) => handlerSrc.indexOf(`"${t.type}"`) < 0).map((t) => t.type);
+            out.typesAlive = dead.length === 0;
+            out.deadTypes = dead.join(",");
+            return out;
+        },
+        golden
+    );
+    if (!res) {
+        check("Ω4: Konformanz-Sonde lief", false, "evaluate warf");
+        return;
+    }
+    check(
+        "Ω4: der goldene Bauplan ist lesbar (3 Parts · 2 Verbindungen · Kette lebt)",
+        res.bpReadable && res.bpProvenance
+    );
+    check("Ω4: die goldene Bauplan-Signatur verifiziert EWIG valid (die Taille hält)", res.bpSigValid);
+    check("Ω4: der Admit-Pfad bewahrt die goldene Echtheit (roleClaimed-Kanon)", res.bpAdmitValid);
+    check("Ω4: das goldene Manifest ist lesbar + seine Signatur valid", res.manReadable && res.manSigValid);
+    check("Ω4: der Snapshot-Kopf trägt ⊇ das goldene Schema (Typen kompatibel)", res.snapKeys, res.snapMissing);
+    check("Ω4: worldMeta trägt ⊇ die goldenen Schlüssel", res.snapWorldMeta);
+    check("Ω4: die goldenen p2p-Typen leben (Handler + pv-Vertrag)", res.pvMatches && res.typesAlive, res.deadTypes);
 }
 
 // V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
@@ -31017,7 +32595,9 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
                 },
             ];
             r.addConnectionToBlueprint("_t838d", { type: "masonry", partA: 0, partB: 1 });
-            const group = r._buildFromBlueprint(bp);
+            // V18.153 — die Linien sind Werkstatt-Werkzeug: der Test bestellt
+            // sie wie der Werkstatt-Viewer (V9.56-i: der Test wandert mit).
+            const group = r._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
             const conn = group.children.filter((c) => c.userData && c.userData.isConnectionLine);
             out.connHasLine = conn.some((c) => c.isLine);
             out.connHasMarker = conn.some((c) => c.isMesh);
@@ -32777,14 +34357,16 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             wCards.every((c) => c.style.display === "none");
         r.state.feedKind = "alle";
         r._applyLibraryFilter();
-        out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 5; // V18.135: + „Gemerkt"
+        out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 6; // V18.135 + „Gemerkt"; V18.142 + „Gefolgt"
         // V18.74 — jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
         out.feedCovers =
             !!stream.querySelector(".library-card[data-kind='world'] .feed-cover .feed-cover-glyph") &&
             !!stream.querySelector(".feed-recipe .feed-cover") &&
             (!hasCreatures || !!stream.querySelector(".feed-creature .feed-cover"));
-        // V18.74 — die Sortier-Chips (Neueste | Bewertung) + sort-by-rating WIRKT (ein 5★-Item steigt nach oben).
-        out.feedSortChips = document.querySelectorAll("#feed-sort .feed-kind-chip").length === 2;
+        // V18.74 — die Sortier-Chips + sort-by-rating WIRKT (ein 5★-Item steigt
+        // nach oben). V18.147: die Chips wuchsen auf DREI (Neueste · ✦ Für dich
+        // · ★ Bewertung) — der Test wandert mit (V9.56-i).
+        out.feedSortChips = document.querySelectorAll("#feed-sort .feed-kind-chip").length === 3;
         const aRecipe = Object.values(r.state.blueprints).find((b) => b && !b.instanced && b.role !== "portal");
         if (aRecipe) {
             r._setFeedRating("recipe:" + aRecipe.name, 0);
@@ -32953,11 +34535,14 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("Feed: das WERTEN wirkt — setzen + lesen + Toggle (das dritte Verb, lokal)", w14Results.feedRatingWorks);
         check("Feed: der Kind-Filter TREIBT den Strom (nur Rezepte sichtbar)", w14Results.feedKindFilter);
         check(
-            "Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen/Gemerkt, V18.135)",
+            "Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen/Gemerkt/Gefolgt, V18.142)",
             w14Results.feedKindChips
         );
         check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
-        check("Feed: die Sortier-Chips (Neueste | Bewertung) sind da (V18.74)", w14Results.feedSortChips);
+        check(
+            "Feed: die Sortier-Chips (Neueste | Für dich | Bewertung) sind da (V18.74/.147)",
+            w14Results.feedSortChips
+        );
         check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
         check(
             "Feed: der geteilte 3D-Vorschau-Bereich (Canvas + Methoden) ist da (V18.75)",
@@ -44108,6 +45693,22 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18134Social(ctx);
             await checkBandV18135Bookmarks(ctx);
             await checkBandV18136Audit(ctx);
+            await checkBandTailleOmega2(ctx);
+            await checkBandTailleOmega3(ctx);
+            await checkBandTailleGolden(ctx);
+            await checkBandTailleOmega5(ctx);
+            await checkBandTailleOmega6(ctx);
+            await checkBandV18142Follow(ctx);
+            await checkBandV18143Comments(ctx);
+            await checkBandW18CoPresence(ctx);
+            await checkBandW18InputBridge(ctx);
+            await checkBandW18Dwell(ctx);
+            await checkBandV18147ForYou(ctx);
+            await checkBandPhaseEThreat(ctx);
+            await checkBandV18149Statusbar(ctx);
+            await checkBandV18150Ride(ctx);
+            await checkBandV18151Idb(ctx);
+            await checkBandR6Capability(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

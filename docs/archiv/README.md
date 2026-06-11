@@ -20,9 +20,11 @@ Der aktuelle Stand + die Route: die kanonische Landkarte in **`docs/README.md`**
 | Datei | Was | Stand |
 |---|---|---|
 | `wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, die 30-Wellen-Spirale, die Drei-Schichten-Architektur) | **REFERENZ** — der Fluid-Bogen ist GEBAUT (V18.84–.94, `terrain-t4-wasser-ca-plan.md`); ZUERST lesen bei jeder Wasser-Arbeit |
-| `lod-kaskade-plan.md` | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter) | **AKTIV** — U1+U3 gebaut, U2/U4/U5/U6 offen |
-| `kampf-plan.md` | Crafting/Kampf §11 — Schöpfungs-Fluss + Resonanz | **AKTIV** — Kern gebaut, S6-B/S9/S11/Phase E offen |
+| `lod-kaskade-plan.md` | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter) | **AKTIV** — U1/U3/U4/U5 gebaut, U2/U6 offen |
+| `kampf-plan.md` | Crafting/Kampf §11 — Schöpfungs-Fluss + Resonanz | **AKTIV** — Kern + S6-B gebaut; **Phase E = GEMERKTER FADEN #2** (gigant-plan §5-Ende), S11 offen |
 | `world-portal-w18-plan.md` | W18 — in fremden Welten leben (Ko-Präsenz) | **GEPLANT** — Stufe 0/1 ✅ (W12–17), Stufe 2–4 offen |
+| `taille-plan.md` | Ω — der Ewigkeits-Bogen: die gefrorene Taille (die Risse + der Weg Ω0–Ω6) | **VOLLENDET (V18.137–.141)** — die NORM lebt auf dem Tisch (`docs/taille-spec.md` + `spec/golden/v1/`); hier die Historie; **das echte V18→V19-Zeit-Portal = GEMERKTER FADEN #4** |
+| `robustheit-plan.md` | G8 — drei Ringe + lebendes Immunsystem | **R0–R5 VOLLENDET (V18.122–.124)**; **R6 Selbst-Erweiterung = GEMERKTER FADEN #1** (bereit — R2+R4 stehen) |
 
 ## Referenz (Nachschlagewerke)
 
@@ -125,3 +127,8 @@ Die Diagnosen + Pläne, die die Welt-OBERFLÄCHE malerisch + tief machten.
 Ein Audit ist seinem Wesen nach ein Schnappschuss — sobald die nächste große Welle
 ansteht, erzeugt der `/audit`-Slash-Befehl einen frischen Bericht. Der liegt dann
 in `docs/` bis er selbst wieder hierher wandert.
+
+- **`gigant-plan.md`** — DER GIGANT (die neun Säulen, §5-Pfad GESCHLOSSEN V18.147; die
+  GEMERKTEN FÄDEN fortgeschrieben in `docs/meister-plan.md` §5 — dem aktiven Nachfolger).
+- **`terrain-koharenz-plan.md`** — der Terrain-Kohärenz-Bogen (T0–T8 + N1–N3 GEBAUT; die
+  Chunk-Naht als die EINE Wurzel — vollendet V18.103).
