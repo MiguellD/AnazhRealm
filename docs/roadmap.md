@@ -6,7 +6,7 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand: `main` @ V18.121 (PR #84) · Branch `claude/admiring-fermat-c0d5ct` @ V18.136, 11.06.2026.**
+> **Stand: `main` @ V18.172 (Merge `claude/bold-bardeen-ky7gmx`, 12.06.2026) — der aktive Marsch lebt in `docs/meister-plan.md` §8.8.**
 
 ---
 

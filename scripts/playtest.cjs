@@ -18797,6 +18797,9 @@ async function checkBandVoxelTerrainCore(ctx) {
             const testZ = 5;
             const voxelY = r._voxelSurfaceY(testX, testZ);
             const creature = r.spawnCreatureAt(testX, 50, testZ, "happy");
+            // W-D/M-F1 (V18.170) — falls der Spieler nahe (5,5) steht, klemmt der
+            // Spawn weg; der Test misst den BODEN an (testX,testZ) → re-platzieren.
+            if (creature) creature.position.set(testX, 50, testZ);
             if (creature && Number.isFinite(voxelY)) {
                 // V18.149 (GEMESSEN, der Flake-Heal): _creatureGroundY trägt ein
                 // 20-Scans-Budget pro Tick; die Test-Kreatur ist die LETZTE im
@@ -28690,6 +28693,10 @@ async function checkBandPhaseEThreat(ctx) {
             r.state.maxCreatures = r.state.creatures.length + 4;
             const wolf = r.spawnCreatureAt(pm.x + 2, pm.y, pm.z, "happy", "glutwesen");
             spawned.push(wolf);
+            // W-D/M-F1 (V18.170) — die Spieler-Klemme schiebt frische Spawns auf
+            // ≥3 m (> strikeRange 2.4); dieser Test prüft den BISS, nicht den
+            // Spawn-Ort → die Kreatur rückt explizit in Biss-Distanz (V9.56-i).
+            if (wolf) wolf.position.set(pm.x + 2, pm.y, pm.z);
             // (1) die Substanz resoniert WILD (box+cone aus glut — tag-emergent).
             out.wildTemperament = !!wolf && r._creatureTemperament(wolf) === "wild";
             // (2) der Jagd-Trieb: pfad+nah+unverängstigt → JA; Furcht schlägt
@@ -30052,6 +30059,294 @@ async function checkBandPsi0Winkel(ctx) {
         `Ψ0 die übrigen Register unter Baseline: MOTION ${res.motion.max} ≤ 0.65 · WORKSHOP ${res.workshop.max} ≤ 0.07 · OP ${res.op.max} ≤ 0.04 · TEMPERAMENT ${res.temperament.max} ≤ 0.13`,
         res.motion.max <= 0.65 && res.workshop.max <= 0.07 && res.op.max <= 0.04 && res.temperament.max <= 0.13
     );
+
+    // Ψ1 (V18.167, meister-plan §8.8a) — das EINE argmax-Organ: die ~7 Inline-
+    // Loops sind VERDICHTET (V9.82). Source-KONSUM aller Leser + die Organ-
+    // Semantik behavioral (floor strikt > · refs/refDefault-Norm · keys-Subset).
+    const psi1 = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const liest = (fn) => typeof fn === "function" && /_resonateArgmax/.test(fn.toString());
+        out.organDa = typeof r._resonateArgmax === "function";
+        out.leser =
+            liest(r._computeWorkshopDomain) &&
+            liest(r._creatureTemperament) &&
+            liest(r._blueprintRoleGapHint) &&
+            liest(r._computeFormRole) &&
+            liest(r._argmaxImplementRole) &&
+            liest(r._computeToolOpFromForm) &&
+            liest(r.computeMotionRoles);
+        // Behavioral: argmax + strikt-> floor + refs-Norm + keys-Subset.
+        const tab = { x: { a: 2 }, y: { a: 3 }, z: { b: 9 } };
+        const v = { a: 1 };
+        out.argmax = r._resonateArgmax(v, tab).key === "y";
+        out.floorStrikt = r._resonateArgmax(v, tab, { floor: 3 }).key === null; // 3 > 3 ist falsch
+        out.refsNorm = r._resonateArgmax(v, tab, { refs: { y: 10 }, refDefault: 1 }).key === "x"; // 2/1 > 3/10
+        out.subset = r._resonateArgmax(v, tab, { keys: ["x"] }).key === "x";
+        return out;
+    });
+    check(
+        "Ψ1 das EINE argmax-Organ: alle 7 Inline-Leser konsumieren _resonateArgmax (Domäne·Temperament·GapHint·FormRolle·Implement·Op·Motion)",
+        psi1.organDa && psi1.leser
+    );
+    check(
+        "Ψ1 Organ-Semantik: argmax + strikt-über-floor + refs/refDefault-Norm + keys-Subset (bit-gleiche Inline-Form)",
+        psi1.argmax && psi1.floorStrikt && psi1.refsNorm && psi1.subset
+    );
+}
+
+// V18.168 — W-B (meister-plan §8.2, Korpus R-002): die HOF-KARTE FÜHLT. Der EINE
+// Emotions-Renderer (_buildEmotionRows) baut die 6-Achsen-Reihen für ICH (live)
+// und HOF (statisch — an der Stelle der Natur); die NATUR ruht als <details>;
+// die Lesbarkeit (R-006) ist KONSUM-bewiesen (die Farbe IST hell, nicht „Token
+// gesetzt"); die Werte-Balken tragen sichtbare Füllung (die Sichtbarkeits-Lüge
+// als Invariante — M-B1 maß die CSS gesund, das Band hält sie so).
+async function checkBandWBHofKarte(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // EIN Renderer, zwei Konsumenten (Source-KONSUM, V17.31).
+        out.einRenderer =
+            typeof r._buildEmotionRows === "function" &&
+            /_buildEmotionRows/.test(r.initStatusPanel.toString()) &&
+            /_buildEmotionRows/.test(r._hofBuildSpecSheet.toString());
+        // Die Karte: 6 Gefühls-Reihen mit eingebrannter Füllung + Natur als <details>.
+        const pm = r.state.playerMesh.position;
+        const c = r.spawnCreatureAt(pm.x + 4, pm.y, pm.z, "happy", "wesen");
+        if (!c) return { ...out, fehler: "kein Spawn" };
+        c.userData.emotions = { joy: 0.8, awe: 0.1, sorrow: 0, hope: 0.2, peace: 0.1, chaos: 0 };
+        const sheet = r._hofBuildSpecSheet(r._creatureProfile(c));
+        document.body.appendChild(sheet);
+        const rows = sheet.querySelectorAll(".hof-emotion-rows .emotion");
+        out.sechsReihen = rows.length === 6;
+        const joyFill = sheet.querySelector(".hof-emotion-rows .emotion.joy .bar > div");
+        out.joyGefuellt = !!joyFill && parseInt(joyFill.style.width, 10) === 80;
+        // KONSUM-Beweis Lesbarkeit: die berechnete Reihen-Farbe ist HELL (R-006-
+        // Klasse: nicht „Token gesetzt", sondern „Farbe IST hell" — > 150 je Kanal-Mittel).
+        const joyName = sheet.querySelector(".hof-emotion-rows .emotion.joy .name");
+        const colStr = joyName ? window.getComputedStyle(joyName).color : "";
+        const mCol = colStr.match(/(\d+),\s*(\d+),\s*(\d+)/);
+        out.reihenHell = !!mCol && (Number(mCol[1]) + Number(mCol[2]) + Number(mCol[3])) / 3 > 150;
+        const nat = sheet.querySelector("details.spec-nature-details");
+        out.naturDetails = !!nat && !nat.open && nat.querySelectorAll(".spec-bar").length > 0;
+        // Die Werte-Balken-Füllung ist gesetzt + sichtbar gefärbt (M-B1-Wahrheit gehalten).
+        const hpFill = sheet.querySelector(".spec-col .spec-bar .spec-bar-fill");
+        const fillBg = hpFill ? window.getComputedStyle(hpFill) : null;
+        out.werteBalkenSichtbar =
+            !!hpFill &&
+            parseInt(hpFill.style.width, 10) > 0 &&
+            !!fillBg &&
+            (fillBg.backgroundColor !== "rgba(0, 0, 0, 0)" || fillBg.backgroundImage !== "none");
+        document.body.removeChild(sheet);
+        r.removeCreature(c);
+        r.state.creatures = (r.state.creatures || []).filter((x) => x !== c);
+        // Das ICH konsumiert weiter live: 6 Reihen im #status-emotions (bestehende
+        // Invarianten prüfen das mit — hier nur der Renderer-Konsum oben).
+        return out;
+    });
+    check(
+        "W-B Hof-Karte fühlt: EIN Emotions-Renderer (_buildEmotionRows) — Ich (live) + Hof (statisch) konsumieren ihn",
+        res.einRenderer
+    );
+    check(
+        `W-B Hof-Karte: 6 Gefühls-Reihen an der Stelle der Natur, joy-Balken eingebrannt 80% (Reihen ${res.sechsReihen} · gefüllt ${res.joyGefuellt})`,
+        res.sechsReihen && res.joyGefuellt
+    );
+    check(
+        "W-B Lesbarkeit (R-006-Klasse): die berechnete Reihen-Farbe IST hell auf der dunklen Karte (KONSUM, nicht Existenz)",
+        res.reihenHell
+    );
+    check(
+        "W-B Natur ruht als <details> (zu, mit Substanz-Balken) — das Werkstatt-Wissen einen Klick entfernt",
+        res.naturDetails
+    );
+    check(
+        "W-B Werte-Balken: Füllung gesetzt + sichtbar gefärbt (M-B1-Wahrheit als stehende Invariante)",
+        res.werteBalkenSichtbar
+    );
+}
+
+// V18.169 — W-C (meister-plan §8.2, Korpus R-003..R-009 + R-036): der ICH-RAUM
+// SAGT DIE WAHRHEIT. (a) Das Mach-Tor SPRICHT inline (EIN Formatter, drei
+// Konsumenten — der GEMESSENE „Stats ändern sich nicht"-Bruch war ein STILLER
+// Fehlschlag in der zugeklappten Konsole); (b) EIN Boost-Band (Doublette tot,
+// Abgelaufene werden ENTFERNT); (c) Haupthand/Nebenhand benannt; (e) Label==Tat
+// (vehicle → „Fertigen"); (h) der WARUM-CHIP (lesbare Emergenz, R-036).
+async function checkBandWCIchWahrheit(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (a) EIN Formatter + drei Konsumenten (Source-KONSUM, V17.31).
+        out.formatter =
+            typeof r._machTorHint === "function" &&
+            /sammeln|fehlt/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
+            /4× eisen/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
+            /⚒/.test(r._machTorHint({ ok: false, reason: "no_workshop_station", neededDomain: "forging" }));
+        out.konsumenten =
+            /_showMachTorHint/.test(r._renderInventoryEquip.toString()) &&
+            /_showMachTorHint/.test(r._recipeRow.toString()) &&
+            /_showMachTorHint/.test(r._workshopAppendFertigenRow.toString());
+        // (a) NUTZER-ZUSTAND (§8.7): frieden + leerer Beutel → der Web-Akt scheitert
+        // EHRLICH strukturiert, der Hint nennt das fehlende Material. Deterministisch:
+        // Inventar + forgedPrecision (ein früheres Band könnte gefertigt haben) gesichert.
+        const savedMode = r.getGameMode();
+        const savedInv = r.state.player.inventory;
+        const bpArmor = r.state.blueprints.ruestung_brustpanzer;
+        const savedForged = bpArmor && bpArmor.forgedPrecision;
+        const savedArmor = r.state.player.equipped && r.state.player.equipped.armor;
+        r.state.player.inventory = [];
+        if (bpArmor) delete bpArmor.forgedPrecision;
+        r.setGameMode("frieden");
+        const wres = r.wearArmor("ruestung_brustpanzer");
+        out.torEhrlich =
+            !!wres && wres.ok === false && wres.reason === "not_enough_material" && /eisen/.test(r._machTorHint(wres));
+        out.keinAnlegen = (r.state.player.equipped && r.state.player.equipped.armor) === savedArmor;
+        r.state.player.inventory = savedInv;
+        if (bpArmor && Number.isFinite(savedForged)) bpArmor.forgedPrecision = savedForged;
+        r.setGameMode(savedMode);
+        // (a) der PREIS lesbar: die Stat-Folge der Rüstung trägt Abwehr-Delta.
+        const delta = r._armorStatDeltaText("ruestung_brustpanzer");
+        out.preisLesbar = /Abwehr/.test(delta || "");
+        // (b) EIN Boost-Band: injizierter Boost → GENAU ein DOM-Ort (#ich-boosts-host);
+        // die Selbst-Sheet-Fußzeile trägt KEINE ✺-Chips mehr; der Tick ENTFERNT Abgelaufene.
+        const p = r.state.player;
+        const savedBoosts = p.boosts;
+        const nowSec = performance.now() / 1000;
+        p.boosts = [{ source: "wc", label: "WC-Probe", tagDelta: { magieleitung: 0.3 }, expiresAt: nowSec + 30 }];
+        r._renderInventoryEquip();
+        const orte = document.querySelectorAll(".ich-boosts");
+        const hostBand = document.querySelector("#ich-boosts-host .ich-boosts");
+        out.einBandOrt = orte.length === 1 && !!hostBand;
+        const selfSheetSrc = (r._ichBuildSpecSheet || function () {}).toString();
+        out.fusszeileOhneBoosts = !/✺/.test(selfSheetSrc);
+        const chip = document.querySelector("#ich-boosts-host .ich-boost-chip");
+        if (chip) {
+            chip.setAttribute("data-expires", String(nowSec - 1));
+            r._tickBoostChips();
+        }
+        out.abgelaufenEntfernt = !!chip && !document.querySelector("#ich-boosts-host .ich-boost-chip");
+        p.boosts = savedBoosts;
+        r._renderInventoryEquip();
+        // (c) Haupthand benannt + Nebenhand-Brücke im Tooltip.
+        const equipHost = document.getElementById("inventory-equip");
+        out.haupthand =
+            !!equipHost &&
+            /Haupthand/.test(equipHost.textContent || "") &&
+            /Nebenhand/.test(
+                equipHost.querySelector(".equip-slot") ? equipHost.querySelector(".equip-slot").title : ""
+            );
+        // (e) LABEL == TAT: der Fahrzeug-Knopf sagt „Fertigen" (der Wagen log „In die Hand").
+        const row = r._recipeRow("fahrzeug_wagen", "vehicle");
+        out.vehicleLabel =
+            !!row && /Fertigen/.test(row.querySelector("button") ? row.querySelector("button").textContent : "");
+        // (h) der WARUM-CHIP: lesbare Emergenz an Eiche (architektur-ehrlich: dichte/
+        // härte-Familie) + Trank (lebendig) + die sichtbare spec-why-line im Werkstatt-Quell.
+        const whyEiche = r._blueprintRoleWhy(r.state.blueprints.baum_eiche);
+        const whyTrank = r._blueprintRoleWhy(r.state.blueprints.trank_lebenssaft);
+        out.warumEiche = !!whyEiche && /Dichte|Härte|dichte|härte|bulk|Standfläche/.test(whyEiche.text);
+        out.warumTrank = !!whyTrank && /Lebendig|lebendig/.test(whyTrank.text);
+        out.warumFlaechen =
+            /spec-why-line/.test(r._specRenderBody.toString()) &&
+            /_blueprintRoleWhy/.test(r._specRenderBody.toString());
+        out.warumKarten =
+            /_blueprintRoleWhy/.test(r._recipeRow.toString()) && /_blueprintRoleWhy/.test(r._feedRecipeCard.toString());
+        // (g) V18.172-Nachbau-Fund — das LEISTEN-LOCH ist tot: bei Ruhe verlässt
+        // das Emotions-Item den FLOW (display:none nach dem 1.4-s-Fade; vorher
+        // stand „Freude" mit 49 px + Doppel-Gap unsichtbar in der Leiste);
+        // Wieder-Entzünden holt es zurück. End-VERHALTEN, nicht Existenz.
+        {
+            const lab = document.getElementById("status-emotion");
+            const item = document.getElementById("status-emotion-item");
+            const saved = {};
+            for (const k of Object.keys(r.state.player.emotions)) saved[k] = r.state.player.emotions[k];
+            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+            r.state.player.emotions.joy = 0.9;
+            r._updateEmotionFeedback();
+            const anImFlow = !!item && item.style.display !== "none" && !!lab && lab.textContent === "Freude";
+            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+            r._updateEmotionFeedback();
+            await new Promise((res2) => setTimeout(res2, 1700));
+            const ruheAusFlow = !!item && item.style.display === "none";
+            r.state.player.emotions.joy = 0.9;
+            r._updateEmotionFeedback();
+            const zurueck = !!item && item.style.display !== "none";
+            out.leistenLochTot = anImFlow && ruheAusFlow && zurueck;
+            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = saved[k];
+            r._updateEmotionFeedback();
+        }
+        return out;
+    });
+    check(
+        "W-C(a) Mach-Tor: EIN Formatter (_machTorHint: Material + ⚒ Station) + drei Inline-Konsumenten (Slot·Rezept·FERTIGEN)",
+        res.formatter && res.konsumenten
+    );
+    check(
+        "W-C(a) Nutzer-Zustand (frieden + leerer Beutel): der Web-Akt scheitert EHRLICH strukturiert, der Hint nennt eisen, nichts wird angelegt",
+        res.torEhrlich && res.keinAnlegen
+    );
+    check("W-C(a) der PREIS lesbar: die Rüstungs-Stat-Folge nennt die Abwehr (Vorzeichen + Zahl)", res.preisLesbar);
+    check(
+        "W-C(b) EIN Boost-Band (#ich-boosts-host) — die Fußzeilen-Doublette ist tot, Abgelaufene werden ENTFERNT (kein Ausgelaufen-Linger)",
+        res.einBandOrt && res.fusszeileOhneBoosts && res.abgelaufenEntfernt
+    );
+    check("W-C(c) Haupthand benannt + Nebenhand-Brücke im Tooltip (zwei Slots, EINE Struktur)", res.haupthand);
+    check("W-C(e) LABEL == TAT: der Fahrzeug-Knopf sagt Fertigen (kein lügendes In-die-Hand)", res.vehicleLabel);
+    check(
+        "W-C(h) WARUM-CHIP (R-036): Eiche erklärt sich über die dichte-harte Familie, der Trank über Lebendigkeit — an Werkstatt + Rezeptbuch + Bibliothek",
+        res.warumEiche && res.warumTrank && res.warumFlaechen && res.warumKarten
+    );
+    check(
+        "W-C(g) V18.172: das Leisten-Loch ist tot — bei Ruhe verlässt das Emotions-Item den Flow (display:none nach Fade), Wieder-Entzünden holt es zurück",
+        res.leistenLochTot
+    );
+}
+
+// V18.170 — W-D (meister-plan §8.2, Korpus R-010 + R-017): RITT-FEEL + SPAWN-
+// HYGIENE. (1) Der Reiter sitzt: die Steh-Anatomie (+0.9) wich der SITZ-Hüfte
+// (SITZ_HIP_OFFSET 0.45 — GEMESSEN schwebte er exakt +0.90 m). (2) Die SPIELER-
+// KLEMME an der Kreatur-Wurzel: kein frisches Wesen materialisiert IM Spieler
+// (≥3 m radial); Restore/Peer-Sicht bleiben PRECISE (bit-treu).
+async function checkBandWDRittSpawn(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+        // (1) die Hüft-Konstante + der EINE Konsument (Source-KONSUM).
+        out.hipKonstante = A.SITZ_HIP_OFFSET === 0.45;
+        const mountSrc = r.mountArchitecture.toString();
+        out.hipKonsum = /SITZ_HIP_OFFSET/.test(mountSrc) && !/\+ 0\.9\b/.test(mountSrc);
+        // (2) die Klemme: ein Spawn IM Spieler (1 m) landet auf ≥3 m; precise bleibt.
+        const pm = r.state.playerMesh.position;
+        const saveMax = r.state.maxCreatures;
+        r.state.maxCreatures = r.state.creatures.length + 2;
+        const nah = r.spawnCreatureAt(pm.x + 1, pm.y, pm.z, "happy", "wesen");
+        const dNah = nah ? Math.hypot(nah.position.x - pm.x, nah.position.z - pm.z) : -1;
+        out.klemmeWirkt = !!nah && dNah >= (A.CREATURE_SPAWN_CLEAR_M || 3) - 1e-6;
+        const genau = r.spawnCreatureAt(pm.x + 1, pm.y, pm.z, "happy", "wesen", { precise: true });
+        const dGenau = genau ? Math.hypot(genau.position.x - pm.x, genau.position.z - pm.z) : -1;
+        out.preciseUnberuehrt = !!genau && Math.abs(dGenau - 1) < 1e-6;
+        for (const c of [nah, genau]) {
+            if (!c) continue;
+            r.removeCreature(c);
+            r.state.creatures = (r.state.creatures || []).filter((x) => x !== c);
+        }
+        r.state.maxCreatures = saveMax;
+        // (3) der Restore ist PRECISE (Source-Probe — bit-treue Welt nach Reload).
+        out.restorePrecise = /precise:\s*true/.test(r._restoreCreatureFromSnapshot.toString());
+        return out;
+    });
+    check(
+        "W-D(R-010) Sitz-Hüfte: SITZ_HIP_OFFSET 0.45 ersetzt die Steh-Anatomie (+0.9) im EINEN Mount-Pfad",
+        res.hipKonstante && res.hipKonsum
+    );
+    check(
+        `W-D(R-017) Spieler-Klemme: frischer Spawn IM Spieler landet auf ≥3 m (gemessen ${res.klemmeWirkt}), precise bleibt bit-treu (${res.preciseUnberuehrt})`,
+        res.klemmeWirkt && res.preciseUnberuehrt
+    );
+    check("W-D Restore ist precise — das Wesen wacht auf, wo es stand (Opt-out-Karte wie M6)", res.restorePrecise);
 }
 
 // V18.165 — W-A (meister-plan §8.2, Korpus R-001): die KONSOLE ist heil. Die
@@ -31409,6 +31704,33 @@ async function checkBandTailleOmega6(ctx) {
 // goldene p2p-Typ hat einen lebenden Handler + den pv-Stempel.
 async function checkBandTailleGolden(ctx) {
     const { page, check } = ctx;
+    // V18.171 — DER LEUCHTTURM (R-035, taille-spec §7): der Broker-Protokoll-
+    // DRIFT-WÄCHTER. Jeder im signaling-server gelesene `msg.type === "X"`-Typ
+    // MUSS in §7 der Taille-Spec (DE + EN-Spiegel) dokumentiert sein — ein
+    // neuer Broker-Typ ohne Andock-Vertrag ist der Riss von morgen. Plus: der
+    // Ein-Befehl-Self-Host existiert (npm run leuchtturm + Skript).
+    try {
+        const brokerSrc = fs.readFileSync(path.join(__dirname, "..", "signaling-server.js"), "utf8");
+        const specDe = fs.readFileSync(path.join(__dirname, "..", "docs", "taille-spec.md"), "utf8");
+        const specEn = fs.readFileSync(path.join(__dirname, "..", "docs", "taille-spec.en.md"), "utf8");
+        const typen = new Set();
+        for (const m of brokerSrc.matchAll(/msg\.type === "([a-z-]+)"/g)) typen.add(m[1]);
+        const fehltDe = [...typen].filter((t) => !specDe.includes("`" + t));
+        const fehltEn = [...typen].filter((t) => !specEn.includes("`" + t));
+        check(
+            `Leuchtturm §7: alle ${typen.size} Broker-Typen sind im Andock-Vertrag dokumentiert (DE${fehltDe.length ? " fehlt: " + fehltDe.join(",") : ""} · EN${fehltEn.length ? " fehlt: " + fehltEn.join(",") : ""})`,
+            fehltDe.length === 0 && fehltEn.length === 0
+        );
+        const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"));
+        check(
+            "Leuchtturm: der Ein-Befehl-Self-Host steht (npm run leuchtturm + scripts/leuchtturm.cjs + README-Sektion)",
+            !!(pkg.scripts && pkg.scripts.leuchtturm) &&
+                fs.existsSync(path.join(__dirname, "..", "scripts", "leuchtturm.cjs")) &&
+                /Dein eigener Leuchtturm/.test(fs.readFileSync(path.join(__dirname, "..", "README.md"), "utf8"))
+        );
+    } catch (e) {
+        check("Leuchtturm §7: Drift-Wächter lesbar", false, e.message);
+    }
     const goldenDir = path.join(__dirname, "..", "spec", "golden", "v1");
     let golden = null;
     try {
@@ -31560,7 +31882,10 @@ async function checkBandWelle6XAudit(ctx) {
                 document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
             const rowA3 = zoneA3 && zoneA3.querySelector(".workshop-umwidmen-row");
             out._a3aLabelCount = rowA3 ? rowA3.querySelectorAll(".workshop-umwidmen-btn").length : 0;
-            out.markListShowsEmergentRole = !!rowA3 && out._a3aLabelCount >= 4;
+            // W-C(f)/V18.169 — die Zeile schrumpfte aufs INTENT-TRIO (Portal → ·
+            // ⚒ Station · ✨ Emergent): Rüstung/Konsumabel fixt der PROZESS.
+            out.markListShowsEmergentRole =
+                !!rowA3 && out._a3aLabelCount === 3 && /⚒ Station/.test(rowA3.textContent || "");
             delete r.state.blueprints["audit_armor_test"];
             wsA3.selectedBlueprint = savedSelA3;
         } else {
@@ -34553,11 +34878,13 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             }
         }
 
-        // Equip-Hinweis im Spieler-Drawer. V18.66 Ich-J2 — der Hinweis nennt die neuen Wege (Hand/Hotbar +
-        // Rezeptbuch fürs Wechseln; hier Rüstung-Wechsel + Umwidmen). Test wandert mit (V9.56-i).
+        // W-C(f)/R-008 (V18.169) — der Umwidmen-Rest im Ich FIEL ERSATZLOS: kein
+        // <details>-Summary, kein toter Verweis-Hint; #player-equip trägt höchstens
+        // die Schnell-Trünke (Gebrauch). Test wandert mit (V9.56-i).
         r.renderPlayerEquipUI();
         const eq = document.getElementById("player-equip");
-        out.equipHint = !!eq && /Rüstung/.test(eq.textContent || "") && /Hotbar|Rezeptbuch/.test(eq.textContent || "");
+        out.equipHint =
+            !!eq && !document.getElementById("equip-advanced-section") && !/umwidmen/i.test(eq.textContent || "");
 
         return out;
     });
@@ -34574,7 +34901,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.39: Werkstatt-Stats-Panel zeigt eine Qualität-Zeile", v839Results.qualityRow);
         check("V8.39: Bauplan-Liste-Zeile leuchtet in der Rollen-Farbe", v839Results.listRowGlow);
         check(
-            "V18.66 Ich-J2: der Equip-Hinweis nennt die Wechsel-Wege (Hand/Hotbar/Rezeptbuch) + Rüstung",
+            "W-C(f)/R-008: der Umwidmen-Rest im Ich ist ersatzlos gefallen (kein details/Verweis — die Intent-Akte leben in der Werkstatt)",
             v839Results.equipHint
         );
     } else {
@@ -45292,13 +45619,15 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.germanName = !!joyName && joyName.textContent === "Freude";
         out.rowHasWirkungTooltip = !!joyRow && /wärmt/i.test(joyRow.getAttribute("title") || "");
 
-        // (b) Das FP-Feedback existiert (Vignette + Label) — sichtbar in jeder Kamera.
+        // (b) Das FP-Feedback existiert — W-C(g)/R-009 (V18.169): das WORT lebt
+        // IN der Statusbar (#status-emotion), das fixe Overlay #emotion-label FIEL
+        // („in die Leiste oder gar nicht"). Test wandert mit (V9.56-i).
         const vig = document.getElementById("emotion-vignette");
-        const lab = document.getElementById("emotion-label");
+        const lab = document.getElementById("status-emotion");
         out.vignetteInDom = !!vig;
-        out.labelInDom = !!lab;
+        out.labelInDom = !!lab && !document.getElementById("emotion-label") && !!lab.closest("#statusbar");
 
-        // (c) Eine starke Emotion entzündet Vignette + Label (dominante = Freude).
+        // (c) Eine starke Emotion entzündet Vignette + Leisten-Wort (dominante = Freude).
         for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
         r.state.player.emotions.joy = 0.9;
         r._updateEmotionFeedback();
@@ -45318,9 +45647,15 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("UI-Putz Emotion: Balken zeigen deutschen Namen (Freude statt joy)", emoClarityResults.germanName);
         check("UI-Putz Emotion: Row trägt Wirkung-Tooltip (Legende)", emoClarityResults.rowHasWirkungTooltip);
         check("UI-Putz Emotion: FP-Vignette im DOM", emoClarityResults.vignetteInDom);
-        check("UI-Putz Emotion: FP-Label im DOM", emoClarityResults.labelInDom);
+        check(
+            "W-C(g)/R-009: das Emotions-Wort lebt IN der Statusbar (#status-emotion) — das fixe Overlay fiel",
+            emoClarityResults.labelInDom
+        );
         check("UI-Putz Emotion: starke Emotion entzündet die Vignette", emoClarityResults.vignetteLit);
-        check("UI-Putz Emotion: Label zeigt die dominante Emotion (Freude)", emoClarityResults.labelShowsDominant);
+        check(
+            "UI-Putz Emotion: Leisten-Wort zeigt die dominante Emotion (Freude)",
+            emoClarityResults.labelShowsDominant
+        );
         check("UI-Putz Emotion: Ruhe verblasst das Feedback", emoClarityResults.vignetteFadesWhenCalm);
     }
 
@@ -47555,6 +47890,9 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18164WarumLicht(ctx);
             await checkBandPsi0Winkel(ctx);
             await checkBandV18165KonsoleHeil(ctx);
+            await checkBandWBHofKarte(ctx);
+            await checkBandWCIchWahrheit(ctx);
+            await checkBandWDRittSpawn(ctx);
             await checkBandGammaGenese(ctx);
         }
 

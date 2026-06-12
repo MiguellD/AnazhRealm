@@ -215,9 +215,110 @@ const server = http.createServer((req, res) => {
         r.animatePlayerSoul(performance.now() / 1000);
         const parts = r.state.playerMesh.userData.parts;
         out.seat = parts && parts.leftLeg ? { legRotX: +parts.leftLeg.rotation.x.toFixed(2) } : null;
+        // W-D(R-010) — die SCHWEBE-PROBE: Reiter-Körperzentrum minus Sitz-Welt-Y
+        // soll ≈ SITZ_HIP_OFFSET sein (die alte Steh-Anatomie gab +0.9 darüber).
+        {
+            const sp = bp && r._attachPointFor(bp, "sitz").point;
+            if (sp && Number.isFinite(sp.y)) {
+                const sitzWorldY = entry.position.y + sp.y * (entry.scale || 1);
+                out.schwebe = {
+                    riderCenterAboveSitz: +(r.state.playerMesh.position.y - sitzWorldY).toFixed(2),
+                    soll: r.constructor.SITZ_HIP_OFFSET,
+                };
+            }
+        }
         return out;
     });
     console.log("M3-PROBEN:", JSON.stringify(m3));
+
+    // M-D2 (W-D, meister-plan §8.2 — der Ross-Clip): das HYPOTHESEN-PAAR messen.
+    // (a) Schwingt die scharnier-ANIMIERTE Bein-Pose unter das statische
+    //     _compoundBottomY (Box3 der ECHTEN Pose vs Bauplan-Schätzung)?
+    // (b) Verfehlt die Zentrum-Terrain-Probe den Hang (Bug/Heck-Terrain-Spanne)?
+    const md2 = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        const T = window.THREE;
+        const out = {};
+        if (typeof r.dismountArchitecture === "function") r.dismountArchitecture();
+        const pm = r.state.playerMesh.position;
+        const ross = r.spawnArchitecture(
+            "reittier_holzross",
+            { x: pm.x + 4, y: pm.y - 0.9, z: pm.z },
+            { silent: true }
+        );
+        if (!ross) return { fehler: "kein Ross-Spawn" };
+        const bp = r.state.blueprints[ross.type];
+        const res = r.mountArchitecture(ross);
+        out.mounted = !!(res && res.ok !== false);
+        // Fahr-Ticks mit Vorwärts-Drang, damit die Bein-Scharniere SCHWINGEN.
+        r.state.keys = r.state.keys || {};
+        r.state.keys.KeyW = true;
+        for (let i = 0; i < 40; i++) r._tickMountedMovement(0.05);
+        r.state.keys.KeyW = false;
+        const statBottom = ross.position.y + r._compoundBottomY(bp) * (ross.scale || 1);
+        let animMinY = Infinity;
+        if (ross.mesh) {
+            const box = new T.Box3().setFromObject(ross.mesh);
+            animMinY = box.min.y;
+        }
+        const terrC = r.getTerrainHeightAt(ross.position.x, ross.position.z);
+        // Hang-These: Terrain an Bug/Heck (±1.2 m in Fahrt-Richtung ~ +x hier).
+        const terrBug = r.getTerrainHeightAt(ross.position.x + 1.2, ross.position.z);
+        const terrHeck = r.getTerrainHeightAt(ross.position.x - 1.2, ross.position.z);
+        out.clip = {
+            statischBottomVsTerrain: +(statBottom - terrC).toFixed(2),
+            animiertMinYVsTerrain: Number.isFinite(animMinY) ? +(animMinY - terrC).toFixed(2) : null,
+            beinSchwungUnterStatik: Number.isFinite(animMinY) ? +(statBottom - animMinY).toFixed(2) : null,
+            terrainSpanneBugHeck: +(Math.max(terrC, terrBug, terrHeck) - Math.min(terrC, terrBug, terrHeck)).toFixed(2),
+        };
+        // HANG-BEWEIS (W-D-Heilung — die 2-Punkt-Probe): den steilsten Punkt im
+        // Umkreis suchen, Reiter+Ross hin, in Fahrt-Richtung des Gefälles ticken,
+        // dann der Clip am HÖCHSTEN der 3 Probe-Punkte (Zentrum·Bug·Heck).
+        {
+            const pm2 = r.state.playerMesh.position;
+            let best = null;
+            for (let ang = 0; ang < Math.PI * 2; ang += Math.PI / 8) {
+                for (let rad = 10; rad <= 60; rad += 10) {
+                    const x = pm2.x + Math.cos(ang) * rad;
+                    const z = pm2.z + Math.sin(ang) * rad;
+                    const h0 = r.getTerrainHeightAt(x, z);
+                    const h1 = r.getTerrainHeightAt(x + 1.4, z);
+                    const h2 = r.getTerrainHeightAt(x - 1.4, z);
+                    const span = Math.max(h0, h1, h2) - Math.min(h0, h1, h2);
+                    if (Number.isFinite(span) && (!best || span > best.span)) best = { x, z, span };
+                }
+            }
+            if (best && best.span > 0.4) {
+                const hy = r.getTerrainHeightAt(best.x, best.z) + 1.5;
+                const t = r.state.tmpTransform;
+                t.setIdentity();
+                t.setOrigin(r.setVec(r.state.tmpVec1, best.x, hy + 1.6, best.z));
+                r.state.playerBody.setWorldTransform(t);
+                r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
+                r.state.playerBody.activate(true);
+                pm2.set(best.x, hy + 1.6, best.z);
+                ross._rideYaw = Math.PI / 2; // Fahrt-Richtung +x (die Mess-Achse des Hangs)
+                for (let i = 0; i < 30; i++) r._tickMountedMovement(0.05);
+                const half = ross._rideHalfLen || 1;
+                const gC = r.getTerrainHeightAt(ross.position.x, ross.position.z);
+                const gB = r.getTerrainHeightAt(ross.position.x + half, ross.position.z);
+                const gH = r.getTerrainHeightAt(ross.position.x - half, ross.position.z);
+                const gMax = Math.max(gC, gB, gH);
+                const bottom = ross.position.y + r._compoundBottomY(bp) * (ross.scale || 1);
+                out.hang = {
+                    spanne: +best.span.toFixed(2),
+                    halfLen: +half.toFixed(2),
+                    bottomVsHoechstemPunkt: +(bottom - gMax).toFixed(2),
+                };
+            } else {
+                out.hang = { fehler: "kein Hang gefunden", maxSpanne: best ? +best.span.toFixed(2) : null };
+            }
+        }
+        if (typeof r.dismountArchitecture === "function") r.dismountArchitecture();
+        r.removeArchitecture(ross);
+        return out;
+    });
+    console.log("M-D2 ROSS-CLIP:", JSON.stringify(md2));
 
     // Drohnen-Shot-Helfer: Kamera seitlich-hinter dem Reiter, Blick auf ihn.
     const shoot = async (file, offX, offY, offZ, info) => {

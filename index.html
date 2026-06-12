@@ -522,20 +522,36 @@
                     opacity 1.4s ease,
                     box-shadow 1.4s ease;
             }
-            #emotion-label {
-                position: fixed;
-                top: 92px;
-                left: 50%;
-                transform: translateX(-50%);
-                pointer-events: none;
-                z-index: 3;
+            /* W-C(g)/R-009 — das Emotions-Wort IN der Statusbar (das fixe
+               #emotion-label-Overlay unter der Leiste fiel): dieselbe Farbe/
+               derselbe Fade, jetzt als Leisten-Wert. */
+            #status-emotion {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
-                letter-spacing: 0.18em;
+                font-size: 11px;
+                letter-spacing: 0.14em;
                 text-transform: uppercase;
-                opacity: 0;
                 transition: opacity 1.4s ease;
                 text-shadow: 0 0 8px currentColor;
+            }
+            /* W-C(a)/R-005 — der Mach-Tor-Hint INLINE am Ort der Geste. */
+            .mach-tor-hint {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 11px;
+                color: #e8b04a;
+                margin-top: 4px;
+                transition: opacity 0.9s ease;
+            }
+            .mach-tor-hint.fade {
+                opacity: 0;
+            }
+            /* W-C(a) — die Stat-FOLGE der gewählten Rüstung als Mini-Zeile. */
+            .equip-stat-delta {
+                display: block;
+                font-family: "JetBrains Mono", monospace;
+                font-size: 9px;
+                color: var(--ink-on-dark-soft, #cdbf9d);
+                margin-top: 2px;
             }
             #dialogue-box {
                 position: absolute;
@@ -2451,20 +2467,27 @@
                 font-size: 11px;
                 font-family: "JetBrains Mono", monospace;
             }
-            #inventory-overlay .emotion {
+            /* W-B (V18.168) — die .emotion-Reihen sind GETEILT (der EINE Renderer
+               _buildEmotionRows): das Ich (#inventory-overlay, live) UND die
+               Hof-Karte (.hof-emotion-rows, statisch) lesen DIESELBEN Regeln —
+               Selektor-Listen, ein Definitions-Ort (V9.56-l). */
+            #inventory-overlay .emotion,
+            .hof-emotion-rows .emotion {
                 display: flex;
                 align-items: center;
                 gap: 6px;
                 margin-bottom: 4px;
             }
-            #inventory-overlay .emotion .name {
+            #inventory-overlay .emotion .name,
+            .hof-emotion-rows .emotion .name {
                 width: 60px;
                 font-size: 10px;
                 color: var(--parch-ink-soft);
                 text-transform: capitalize;
                 font-family: "IM Fell English", Georgia, serif;
             }
-            #inventory-overlay .emotion .bar {
+            #inventory-overlay .emotion .bar,
+            .hof-emotion-rows .emotion .bar {
                 flex: 1;
                 height: 8px;
                 background: rgba(40, 25, 10, 0.18);
@@ -2472,40 +2495,65 @@
                 overflow: hidden;
                 box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
             }
-            #inventory-overlay .emotion .bar > div {
+            #inventory-overlay .emotion .bar > div,
+            .hof-emotion-rows .emotion .bar > div {
                 height: 100%;
                 width: 0%;
                 transition: width 250ms ease-out;
                 box-shadow: 0 0 4px currentColor;
             }
-            #inventory-overlay .emotion .value {
+            #inventory-overlay .emotion .value,
+            .hof-emotion-rows .emotion .value {
                 width: 30px;
                 text-align: right;
                 font-size: 10px;
                 color: var(--parch-ink-faded);
                 font-family: "JetBrains Mono", monospace;
             }
-            #inventory-overlay .emotion.joy .bar > div {
+            /* W-C(d)/R-006 (GEMESSEN): die M5-Lesbarkeits-Heilung `.ich-readout
+               .emotion .name` (0,3,0) VERLOR gegen `#inventory-overlay .emotion
+               .name` (1,3,0) — nur der Track trug die ID. Jetzt tragen name+value
+               DIESELBE ID-Spezifität; der Hof (dunkle Spec-Insel) liest on-dark
+               über seine eigene Container-Klasse. */
+            #inventory-overlay .ich-readout .emotion .name,
+            .hof-emotion-rows .emotion .name {
+                color: var(--ink-on-dark-soft);
+            }
+            #inventory-overlay .ich-readout .emotion .value,
+            .hof-emotion-rows .emotion .value {
+                color: var(--ink-on-dark);
+            }
+            .hof-emotion-rows .emotion .bar {
+                background: rgba(236, 225, 197, 0.14);
+                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+            }
+            #inventory-overlay .emotion.joy .bar > div,
+            .hof-emotion-rows .emotion.joy .bar > div {
                 background: var(--joy);
                 color: var(--joy);
             }
-            #inventory-overlay .emotion.awe .bar > div {
+            #inventory-overlay .emotion.awe .bar > div,
+            .hof-emotion-rows .emotion.awe .bar > div {
                 background: var(--awe);
                 color: var(--awe);
             }
-            #inventory-overlay .emotion.sorrow .bar > div {
+            #inventory-overlay .emotion.sorrow .bar > div,
+            .hof-emotion-rows .emotion.sorrow .bar > div {
                 background: var(--sorrow);
                 color: var(--sorrow);
             }
-            #inventory-overlay .emotion.hope .bar > div {
+            #inventory-overlay .emotion.hope .bar > div,
+            .hof-emotion-rows .emotion.hope .bar > div {
                 background: var(--hope);
                 color: var(--hope);
             }
-            #inventory-overlay .emotion.peace .bar > div {
+            #inventory-overlay .emotion.peace .bar > div,
+            .hof-emotion-rows .emotion.peace .bar > div {
                 background: var(--peace);
                 color: var(--peace);
             }
-            #inventory-overlay .emotion.chaos .bar > div {
+            #inventory-overlay .emotion.chaos .bar > div,
+            .hof-emotion-rows .emotion.chaos .bar > div {
                 background: var(--chaos);
                 color: var(--chaos);
             }
@@ -6260,6 +6308,24 @@
                 color: var(--ink-on-dark-soft);
                 font-size: 10px;
             }
+            /* W-B (V18.168) — die NATUR ruht als <details> (Werkstatt-Wissen,
+               einen Klick entfernt): das Gefühl prägt die Karte, die Substanz
+               bleibt erreichbar. */
+            .spec-nature-details {
+                margin-top: 6px;
+            }
+            .spec-nature-details > summary {
+                cursor: pointer;
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 10px;
+                color: var(--ink-on-dark-soft);
+                list-style-position: inside;
+                margin-bottom: 3px;
+            }
+            .spec-nature-details > summary:hover {
+                color: var(--ink-on-dark);
+            }
             /* Die Daten-Viz-Balken: Label | Track(Fill) | Wert auf EINEM Raster. */
             .spec-bar {
                 display: grid;
@@ -7533,10 +7599,9 @@
     <body>
         <canvas id="world-canvas"></canvas>
         <!-- FP-sichtbares Emotion-Feedback: ein Bildschirmrand-Schimmer in der Farbe der
-             dominanten Emotion + ein Label ("Freude"). Anders als die 3D-Aura (nur in
-             3rd-Person sichtbar) trägt es die Stimmung in JEDER Kamera. -->
+             dominanten Emotion. Das WORT lebt seit W-C(g)/R-009 IN der Statusbar
+             (#status-emotion) — das fixe Overlay unter der Leiste fiel. -->
         <div id="emotion-vignette" aria-hidden="true"></div>
-        <div id="emotion-label" aria-hidden="true"></div>
         <div id="fps"></div>
         <div id="dialogue-box" aria-live="polite"></div>
         <div id="build-mode-hud" aria-live="polite" hidden></div>
@@ -7722,10 +7787,11 @@
                                  wer ich bin (Avatar) + was ich trage zusammen. -->
                             <div id="inventory-equip" class="inventory-equip" aria-live="polite"></div>
                         </div>
-                        <details id="equip-advanced-section" class="ich-equip-more">
-                            <summary>⚙ Bauplan umwidmen (Rüstung · Konsumabel · Portal)</summary>
-                            <div id="player-equip"></div>
-                        </details>
+                        <!-- W-C(f)/R-008 (V18.169) — das Umwidmen-<details> fiel ERSATZLOS: die Rolle
+                             fixt der PROZESS (applyOp/Station); die drei Intent-Akte (Portal-Ziel ·
+                             Werkstatt-Designation · Emergent-Reset) leben in der WERKSTATT-Mach-Zone.
+                             #player-equip bleibt für die Schnell-Trünke (Gebrauch; leer = unsichtbar). -->
+                        <div id="player-equip"></div>
                     </div>
                     <div class="inventory-col-items">
                         <h3 class="inventory-col-title">Was ich habe</h3>
@@ -7759,6 +7825,9 @@
                         <div class="ich-emotion-block">
                             <h4 title="Wie du die Welt WERTEST — färbt den Bildschirmrand.">Emotion</h4>
                             <div id="status-emotions"></div>
+                            <!-- W-C(b)/R-003 — das EINE Boost-Band (was JETZT wirkt) lebt hier
+                                 im Freiraum der Emotions-Spalte (Schöpfer-Wort „rechts unten"). -->
+                            <div id="ich-boosts-host" aria-live="polite"></div>
                         </div>
                     </div>
                 </div>
@@ -7822,6 +7891,14 @@
             >
             <span class="status-item"
                 ><span class="label">Wetter</span><span class="value" id="status-weather">—</span></span
+            >
+            <!-- W-C(g)/R-009 (V18.169) — das EMOTIONS-WORT lebt IN der Leiste (Schöpfer:
+                 „in die Leiste oder gar nicht"): dieselbe _emotionState-Quelle + Farbe +
+                 Fade wie das alte fixe Overlay, das fiel. V18.172-Nachbau-Fund: bei Ruhe
+                 verlässt das ITEM den Flow (display:none nach dem Fade — sonst stand das
+                 Wort als 49-px-Loch + Doppel-Gap unsichtbar in der Leiste); startet draußen. -->
+            <span class="status-item" id="status-emotion-item" style="display: none"
+                ><span class="value" id="status-emotion" style="opacity: 0"></span></span
             >
             <span class="status-item"
                 ><span class="label">Modus</span><span class="value" id="status-mode">frieden</span></span
@@ -9205,6 +9282,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.166.0" defer></script>
+        <script src="anazhRealm.js?v=18.172.0" defer></script>
     </body>
 </html>

@@ -498,7 +498,13 @@ Messing-Ecken-Affordanz mit Richtungs-Titel. Details: Chronik V18.165.
 
 ---
 
-**W-B — die Hof-Karte fühlt (klein).**
+**W-B — die Hof-Karte fühlt (klein). ✓ GEBAUT (V18.168):** EIN Emotions-Renderer
+`_buildEmotionRows` (Ich live + Hof statisch); die 6 Achsen an der STELLE der
+Natur, Natur → `<details>`; M-B1 GEMESSEN (`diag-hof-bars.cjs`): die Balken-CSS
+war GESUND (kein Spezifitäts-Riss — die Vermutung §8.1#2 korrigiert; die
+R-006-Wurzel saß WOANDERS: name/value verloren gegen die `#inventory-overlay`-ID,
+nur der Track trug sie — geheilt im EINEN Bauer + ID-Selektor). Band: 5 Invarianten
+(inkl. „Farbe IST hell"-KONSUM + Werte-Balken-Sichtbarkeit als stehende Wand).
 
 *KREIS:* Die Kreatur TRÄGT ihr Innenleben längst (`creature.userData.emotions`, 6
 Achsen — dieselben Schlüssel wie der Spieler; D2-Contagion + D4-Temperament SCHREIBEN
@@ -542,7 +548,15 @@ Screenshot — die Emotionen lesen sich wie HP (diag-hof erweitert).
 
 ---
 
-**W-C — der Ich-Raum sagt die Wahrheit (mittel — SIEBEN Kreise, jeder benannt).**
+**W-C — der Ich-Raum sagt die Wahrheit (mittel — SIEBEN Kreise, jeder benannt).
+✓ GEBAUT (V18.169):** (a) `_machTorHint` + `_showMachTorHint` inline an Slot·
+Rezept·FERTIGEN + `_armorStatDeltaText` („+8.1 Abwehr · −4.2 Tempo") · (b) EIN
+Boost-Band in #ich-boosts-host, Tick ENTFERNT Abgelaufene · (c) Haupthand/
+Nebenhand-Brücke · (d) in W-B geheilt · (e) vehicle → „Fertigen" · (f) Ich-Rest
+fiel, Werkstatt = Intent-Trio (Portal·⚒ Station·✨ Emergent) · (g) #status-emotion
+in der Leiste, Overlay fiel · (h) WARUM-CHIP `_blueprintRoleWhy` an drei Flächen
+(Werkstatt sichtbar ÜBER dem GapHint · Rezept · Bibliothek). Band: 7 Invarianten
+inkl. Nutzer-Zustands-Nachbau (frieden + leerer Beutel).
 
 > Der gemeinsame Nenner aller sieben: das Ich ZEIGT heute Zustände, ohne ihre
 > WAHRHEIT zu sagen (Fehlschläge stumm, Doubletten, tote Worte). Die Welle macht
@@ -633,7 +647,14 @@ beide; kein Spiel hat lesbare Emergenz.
 
 ---
 
-**W-D — Ritt-Feel + Spawn-Hygiene (klein, drei gemessene Stiche).**
+**W-D — Ritt-Feel + Spawn-Hygiene (klein, drei gemessene Stiche). ✓ GEBAUT
+(V18.170):** Sitz `SITZ_HIP_OFFSET 0.45` (GEMESSEN riderCenterAboveSitz 0.45 ==
+soll — die +0.90-Schwebe tot) · M-D2 GEMESSEN (diag-ride): Bein-Schwung ±1 cm
+(These a widerlegt) → die Hang-Wurzel geheilt via 2-Punkt-Probe Bug/Heck in
+Fahrt-Richtung, max() führt (Hang-Beweis: Spanne 21.6 m → bottom == höchster
+Punkt) · M-F1 Spieler-Klemme in `spawnCreatureAt` (≥3 m, Goldwinkel-deterministisch,
+precise-Opt-out für Restore). Band: 3 Invarianten; 2 Alt-Tests wanderten (Biss-
+Distanz/Boden-Probe re-platzieren — sie testen Mechanik, nicht Spawn-Ort).
 
 *KREIS (Ritt):* `mountArchitecture` schreibt `entry._sitzHeight = sitzPunkt.y·scale
 + 0.9`; `_tickMountedMovement` setzt den Spieler-Körper-MITTELPUNKT jeden Frame auf
@@ -760,6 +781,44 @@ Genau das erzeugt auch MEINE Reibung: jede Look-Welle muss N Ketten einzeln anfa
    Geometrie-Normale bleibt!), V18.113 (Look-Matrix Pflicht), Worker unberührt
    (render-only).
 
+**E1 ✓ GEMESSEN (V18.171, `scripts/diag-frequenzband.cjs` — das stehende
+Werkzeug; Patch-Helligkeit pro Ebene am eingefrorenen Auge, Shots
+`artifacts/freqband-*.png`): die Divergenz-Karte VORHER.** floor 0 → 0.3 hebt
+(Δ Patch-Helligkeit): **nacht** terrain +44.6 · bau +7.3 · baum +8.2 · gras −2.0
+· **abend** terrain +41.5 · bau +6.8 · baum −2.4 · gras −1.7 · **mittag**
+terrain +31.0 · bau +5.5 · gras +2.4 — der EINE Hebel trifft das Terrain mit
+**Faktor ~6** gegenüber den Bauten und GAR NICHT das Gras (die §8.1#11-
+Fragmentierung als Zahl). Dazu der Silhouetten-Beleg: nachts ist der BAU (27.8)
+schon bei floor 0 DUNKLER als das Terrain (56.4). Mess-Grenzen ehrlich: die
+Kreatur-Probe blutet bei 8 m Distanz in den Terrain-Patch dahinter (ihre +46.8
+spiegeln das Terrain — für die Kreatur-Antwort braucht E4 eine NAH-Probe), das
+Wasser lag außer Blick (die Wasser-Antwort misst der W-F-Bogen), zwischen den
+Messungen drifteten Wolken (±10 Rauschen — die Faktor-6-Aussage trägt es).
+→ E2 beginnt mit der Λ1-Disziplin (§8.8d): erst ENTGATEN mit Default-Gewichten
+(bit-nah), dann Substanz-Ableitung + S-Kalibrierung.
+
+**Die E2-SCHNITT-KARTE (V18.171, lesend kartiert — die nächste Session startet
+chirurgisch):** Die Empfangs-Hebel leben heute an EINEM Ort, nur familien-GEGATET
+— der Λ1-Schnitt ist kleiner als befürchtet: **(1)** `_applyAerialOutput(mat,
+opts)` (~Z22648) trägt micro+AO (`opts.microTexture`) · warmes Rim (`opts.rim`)
+· nightFloor-max()+moonRim (`opts.nightFloor`) · Aerial-Haze (immer) — die
+EINE Aufruf-Stelle ist `_buildToonNodeMaterial` (~Z22819): `isFlatStructure =
+!vertexColors && color!==undefined` → micro+rim; `vertexColors===true` →
+nightFloor. **Kreaturen laufen SCHON als Flach-Farb durch dieselbe Kette** (sie
+sind keine getrennte Familie — nur Gras [`_grassInstanceMat` ~Z13035, eigenes
+MeshLambertNodeMaterial] und Wasser [eigener TSL-Stack] stehen außerhalb).
+**(2)** Der Emissiv-Floor + die Struktur-LUT (~Z22794) sitzen im Material-BAU
+(nicht im Output-Chain) — sie wandern als `glimmen`-/`tiefe`-Gewichte ins
+Profil. **(3)** Λ1-Schritt 1 = die opts-Booleans werden ein GEWICHTS-Objekt
+(`{micro:0|1, rim:0|1, nightFloor:0|1, …}`) mit exakt den heutigen Familien-
+Werten → bit-identisch shippbar; Schritt 2 = `_substanceResponseProfile(tags)`
+ersetzt die Familien-Defaults (glanz=f(härte,dichte) · tiefe=f(dichte) ·
+glimmen=f(magieleitung,glut) · wärme=f(lebendig) · glas=f(transparent)) + der
+nightFloor-max() wird FÜLL-LICHT `lit + albedo·floor·(1−lit)` (der eine
+BEHAVIORAL-Wechsel — Matrix-A/B + S-Gate Pflicht, Defaults 0.06/0.06). Gras +
+Wasser docken als Schritt 3 an (eigene Materialien konsumieren dieselben
+Uniforms + Profil-Gewichte — kein Material-Merge).
+
 ### §8.4 W-G: Werkstatt-Gelenke/Anker — begreifbar wie ein Profi
 
 **Die Schöpfer-Fragen beantwortet (der heutige Stand, damit du weiterbaust):**
@@ -843,7 +902,7 @@ Souveränität fehlen). M9 bleibt der S-DIALOG — die Sprossen 3–5 designen w
 > „Λ-Bogen" IST W-E (dieselbe Frequenzband-Antwort), ihr W2 ist W-F, ihre Prozess-Hälfte
 > deckt §8.7. Hier NUR, was NEU ist — übernommen und verbindlich:
 
-**(a) Ψ0 — das ORTHOGONALITÄTS-MESSGERÄT. ✓ GEBAUT (V18.165 — diag-band-belegung + checkBandPsi0Winkel; kalibriert: Spektrum-Familie max 0.931/7 Paare >0.85 akzeptiert, KLASSIFIKATOR 0.22 — hart ≤0.35 gedeckelt; Ψ1 folgt als eigener Verdichtungs-Schnitt):**
+**(a) Ψ0 — das ORTHOGONALITÄTS-MESSGERÄT. ✓ GEBAUT (V18.165 — diag-band-belegung + checkBandPsi0Winkel; kalibriert: Spektrum-Familie max 0.931/7 Paare >0.85 akzeptiert, KLASSIFIKATOR 0.22 — hart ≤0.35 gedeckelt). Ψ1 ✓ GEBAUT (V18.167 — `_resonateArgmax` mit floor/refs/refDefault/keys; die 7 Inline-Leser [Domäne·Temperament·GapHint·FormRolle·Implement·Op·Motion] verdichtet, bit-gleich: Archetypen-Bank 46/0 Mismatches; 2 Invarianten im Ψ0-Band):**
 `diag-band-belegung.cjs` misst die paarweisen KOSINUS-WINKEL aller Signaturen über alle
 Tabellen (ROLE/FORM_ROLE/MOTION/WORKSHOP_DOMAIN/TEMPERAMENT inkl. der neuen
 rideable/bulk-Achsen) + Warnschwelle als Zahl + Playtest-Band. Die Wahrheit dahinter:
@@ -917,17 +976,18 @@ allem.
 > konvertiert — drei Klassen, ehrlich getrennt. Die zwei ANGRIFFS-Inversionen
 > (Leuchtturm + Warum-Chip) sind priorisiert: sie machen aus Verteidigung Angriff.
 
-**(a) DER LEUCHTTURM (Souveränitäts-Widerspruch → BEWEISBARE Souveränität) — eigene
-kleine Welle, früh, parallel-fähig:** signaling- und save-server sind je EINE
-zero-dep-Datei — die Schwäche „es sind doch deine Server" invertiert zu „jeder
-betreibt seinen eigenen Leuchtturm". Teilschritte: (1) EIN Befehl
-(`npm run leuchtturm` startet beide Server; start.bat-Parität für Unix); (2) eine
-SELF-HOST-Sektion (Ports · wss/TURN-Hinweis [`anazhTurn` existiert] · was der
-Leuchtturm sieht und was NIE: er relayed, er besitzt nichts — die Taille gilt);
-(3) das Broker-PROTOKOLL dokumentiert in der Taille-Spec (die WS-Typen sind heute
-nur Code-Kommentar); (4) Leuchtturm-FÖDERATION = M9-Sprosse (nach der Leiter).
-Dann ist „ohne Herrn" VERIFIZIERBAR — kein Gigant kann das nachmachen, weil deren
-Geschäftsmodell der Herr ist.
+**(a) DER LEUCHTTURM (Souveränitäts-Widerspruch → BEWEISBARE Souveränität). ✓ GEBAUT
+(V18.171):** (1) `npm run leuchtturm` (`scripts/leuchtturm.cjs` — beide zero-dep-
+Server, ein Befehl, GEMESSEN beide Ports LISTEN; fällt ein Turm, fallen beide);
+(2) README „Dein eigener Leuchtturm" (Ports · Reverse-Proxy/wss · `anazhTurn` ·
+was der Broker sieht und was NIE); (3) **taille-spec §7** — das Broker-Protokoll
+als Andock-Vertrag (19 WS-Typen; „relayed, besitzt nichts"; §4-Versions-Regel;
+erweitert die Taille NICHT — dokumentiert die 1d-Schwester-Drahtform); dazu der
+**EN-Voll-Spiegel `docs/taille-spec.en.md`** (§8.9e mit-erledigt) + der
+DRIFT-WÄCHTER im Golden-Band (jeder neue `msg.type` MUSS §7 DE+EN tragen).
+(4) Leuchtturm-FÖDERATION bleibt M9-Sprosse (nach der Leiter). „Ohne Herrn" ist
+damit VERIFIZIERBAR — kein Gigant kann das nachmachen, weil deren Geschäftsmodell
+der Herr ist.
 
 **(b) DER WARUM-CHIP (UX-Verwirrung → ERKLÄRBARE Emergenz) — in W-C eingewoben:**
 „Warum ist mein Ding ein Trank?" ist die größte Fremden-Hürde — und die Antwort
