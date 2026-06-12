@@ -9236,8 +9236,8 @@ async function checkBandWave5(ctx) {
         out.saveCarriesConnections =
             ourSavedBp && Array.isArray(ourSavedBp.connections) && ourSavedBp.connections.length === 1;
 
-        // V17.91 — Verbindungen werden jetzt im 3D-Connect-Modus angelegt (zwei Parts klicken → Typ-Popover)
-        // + per Toggle (zwei verbundene Parts erneut anklicken) gelöst; die alte Editor-Listen-UI entfiel.
+        // V17.91 — Verbindungen werden im 3D-Connect-Modus angelegt (zwei Parts klicken → Typ-Popover);
+        // V18.162: zwei VERBUNDENE Parts öffnen den Dialog mit ✂-Lösen-Kachel (der stille Toggle fiel).
         r.selectBlueprintForEdit("w5a-test");
         r._renderWorkshopDOM();
         out.uiConnectMode = !!document.querySelector('#workshop-mode-bar [data-workshop-mode="connect"]');
@@ -29435,6 +29435,135 @@ async function checkBandM1VerbindungsWerkstatt(ctx) {
     );
 }
 
+// V18.162 — DER NUTZER-BLICK (Schöpfer-Szenario diag-nachbau, 3 Brüche GEMESSEN
+// + geheilt): der NACHGEBAUTE Holz-Wagen wurde „Trank" und war nicht platzierbar.
+// (1) Der Sofort-Löse-Toggle machte die Anker-Kacheln auf verbundenen Parts
+// unerreichbar → der Dialog öffnet IMMER (✂ Lösen ist eine sichtbare Kachel,
+// ein Kachel-Klick ERSETZT). (2) consumable frisst keinen Holz-Kasten mehr
+// (spread-Gegen-Achse). (3) Das Rezeptbuch kennt die Fahrzeug-Gruppe.
+async function checkBandNutzerBlickNachbau(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const ws = r._ensureWorkshopState();
+        const savedSel = ws.selectedBlueprint;
+        const savedMode = ws.manipulatorMode;
+        try {
+            // der NACHBAU (wie der Schöpfer): Holz-Korpus + 4 Holz-Räder.
+            if (blu.__nb_wagen) delete blu.__nb_wagen;
+            blu.__nb_wagen = { name: "__nb_wagen", label: "NB-Wagen", builtIn: false, parts: [], connections: [] };
+            const add = (part) => r.addPartToBlueprint("__nb_wagen", part);
+            add({
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 0.85, z: 0 },
+                size: { x: 1.3, y: 0.35, z: 2.1 },
+            });
+            const rad = (x, z) =>
+                add({
+                    shape: "cylinder",
+                    material: "holz",
+                    position: { x, y: 0.34, z },
+                    size: { x: 0.62, y: 0.14, z: 0.62 },
+                    rotation: { x: 0, y: 0, z: 1.5707963 },
+                });
+            rad(-0.72, 0.8);
+            rad(0.72, 0.8);
+            rad(-0.72, -0.8);
+            rad(0.72, -0.8);
+            ws.selectedBlueprint = "__nb_wagen";
+            ws.manipulatorMode = "connect";
+            // (1) verbinden über den ECHTEN Klick-Pfad; der zweite Klick auf
+            // VERBUNDENE Parts öffnet den Dialog (löscht NICHT mehr still).
+            const connect = (a, b) => {
+                r._workshopHandleConnectClick(a);
+                r._workshopHandleConnectClick(b);
+                const ov = document.getElementById("workshop-connect-overlay");
+                const t = ov && (ov.querySelector(".conn-tile.suggested") || ov.querySelector(".conn-tile"));
+                if (t) t.click();
+            };
+            connect(1, 0);
+            connect(2, 0);
+            connect(3, 0);
+            connect(4, 0);
+            const vier = (blu.__nb_wagen.connections || []).filter(
+                (c) => !AnazhRealm.CONNECTION_TYPES[c.type].attachment
+            ).length;
+            r._workshopHandleConnectClick(1);
+            r._workshopHandleConnectClick(0);
+            const ov = document.getElementById("workshop-connect-overlay");
+            out.dialogStattToggle =
+                vier === 4 &&
+                !!ov &&
+                (blu.__nb_wagen.connections || []).length >= 4 && // NICHT still gelöst
+                !!ov.querySelector(".conn-tile.conn-loesen"); // ✂ Lösen sichtbar
+            // (2) die ANKER-Kacheln sind auf verbundenen Parts ERREICHBAR → Sitz.
+            const sitzTile = ov && ov.querySelector('.conn-tile[data-conn-type="sitz"]');
+            if (sitzTile) sitzTile.click();
+            out.sitzErreichbar = !!(ws.anchorPick && ws.anchorPick.type === "sitz");
+            if (out.sitzErreichbar) r._workshopHandleAnchorPick({ point: new THREE.Vector3(0, 1.03, 0) }, 1);
+            // Moment — der Pick lief auf partIdx 1 (der Dialog war 1→0); der Anker sitzt auf partA=1 (Rad).
+            // Der ECHTE Flow wählt den Korpus — für die Invariante zählt: der Anker KAM AN.
+            const sitzConn = (blu.__nb_wagen.connections || []).find((c) => c.type === "sitz");
+            out.sitzKamAn = !!sitzConn && !!sitzConn.anchor;
+            // (3) die ROLLEN-KETTE des Nachbaus: vehicle → place → Fahrzeug-Gruppe.
+            // (Der sitz sitzt hier auf dem Rad — rideable liest NUR Existenz+moveable.)
+            out.nachbauVehicle = r.computeBlueprintRole(blu.__nb_wagen) === "vehicle";
+            out.nachbauPlace = r._blueprintUseKind(blu.__nb_wagen) === "place";
+            // ohne Sitz: KEIN Trank mehr (die spread-Gegen-Achse) — Bauwerk.
+            const ohneSitz = {
+                name: "__nb_ohnesitz",
+                builtIn: false,
+                parts: JSON.parse(JSON.stringify(blu.__nb_wagen.parts)),
+                connections: (blu.__nb_wagen.connections || []).filter((c) => c.type !== "sitz"),
+            };
+            out.ohneSitzKeinTrank = r.computeBlueprintRole(ohneSitz) === "architecture";
+            // (4) das Rezeptbuch kennt die Fahrzeug-Gruppe.
+            out.rezeptGruppe = /vehicle: "Fahrzeug"/.test(r.renderRecipeBook.toString());
+            // (5) der Kachel-Klick ERSETZT (ein Paar = eine Verbindung).
+            const ov2 = document.getElementById("workshop-connect-overlay");
+            if (ov2) r._workshopCloseConnectPopover();
+            r._workshopHandleConnectClick(2);
+            r._workshopHandleConnectClick(0);
+            const ov3 = document.getElementById("workshop-connect-overlay");
+            const welding = ov3 && ov3.querySelector('.conn-tile[data-conn-type="welding"]');
+            if (welding) welding.click();
+            const paar20 = (blu.__nb_wagen.connections || []).filter(
+                (c) =>
+                    !AnazhRealm.CONNECTION_TYPES[c.type].attachment &&
+                    ((c.partA === 2 && c.partB === 0) || (c.partA === 0 && c.partB === 2))
+            );
+            out.klickErsetzt = paar20.length === 1 && paar20[0].type === "welding";
+            return out;
+        } finally {
+            delete blu.__nb_wagen;
+            ws.selectedBlueprint = savedSel;
+            ws.manipulatorMode = savedMode;
+            ws.anchorPick = null;
+            ws.connectFirstPartIdx = null;
+            r._workshopCloseConnectPopover();
+        }
+    });
+    check(
+        "Nutzer-Blick: zwei VERBUNDENE Parts öffnen den Dialog (✂ Lösen ist eine sichtbare Kachel — kein stiller Sofort-Toggle)",
+        res.dialogStattToggle
+    );
+    check(
+        "Nutzer-Blick: die Anker-Kacheln sind auf verbundenen Parts ERREICHBAR — der Sitz kommt an",
+        res.sitzErreichbar && res.sitzKamAn
+    );
+    check(
+        "Nutzer-Blick: der NACHGEBAUTE Holz-Wagen ist Fahrzeug (place) — und ohne Sitz Bauwerk, NIE Trank (spread-Gegen-Achse)",
+        res.nachbauVehicle && res.nachbauPlace && res.ohneSitzKeinTrank
+    );
+    check(
+        "Nutzer-Blick: das Rezeptbuch kennt die Fahrzeug-Gruppe + ein Kachel-Klick ERSETZT die Verbindung (ein Paar, eine Verbindung)",
+        res.rezeptGruppe && res.klickErsetzt
+    );
+}
+
 // V18.157 — M5: HUD/RÄUME-POLITUR nach Spieler-Denken (meister-plan §2;
 // Befunde 13–17 + 26, alle GEMESSEN via diag-m5-hud). Resize-Sprung (105→180
 // beim ersten Pixel) · Logbuch = Dev-Sicht (EIN Schalter) · Emotion-Track auf
@@ -46533,6 +46662,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandM6ErnteSpawn(ctx);
             await checkBandM7LichtFeinschliff(ctx);
             await checkBandM8MakroFenster(ctx);
+            await checkBandNutzerBlickNachbau(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

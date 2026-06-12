@@ -48306,16 +48306,25 @@ class AnazhRealm {
         if (!host) return;
         host.innerHTML = "";
         const bps = this.state.blueprints || {};
-        const groups = { hold: [], wear: [], drink: [], place: [] };
-        const groupLabel = { hold: "In die Hand", wear: "Rüstung", drink: "Trank", place: "Bauwerk" };
+        // V18.162 (Nutzer-Blick) — FAHRZEUGE sind eine eigene Gruppe (der Wagen
+        // lag unter „Bauwerk" — die Rolle war da, die Gruppe las nur useKind).
+        const groups = { hold: [], wear: [], drink: [], vehicle: [], place: [] };
+        const groupLabel = {
+            hold: "In die Hand",
+            wear: "Rüstung",
+            drink: "Trank",
+            vehicle: "Fahrzeug",
+            place: "Bauwerk",
+        };
         for (const name of Object.keys(bps)) {
             const bp = bps[name];
             if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) continue;
             const kind = this._blueprintUseKind(bp);
-            if (groups[kind]) groups[kind].push(name);
+            const slot = kind === "place" && this._displayRole(bp) === "vehicle" ? "vehicle" : kind;
+            if (groups[slot]) groups[slot].push(name);
         }
         let any = false;
-        for (const kind of ["hold", "wear", "drink", "place"]) {
+        for (const kind of ["hold", "wear", "drink", "vehicle", "place"]) {
             const names = groups[kind].sort();
             if (!names.length) continue;
             any = true;
@@ -52934,15 +52943,12 @@ class AnazhRealm {
         const existingIdx = (bp.connections || []).findIndex(
             (c) => (c.partA === a && c.partB === partIdx) || (c.partA === partIdx && c.partB === a)
         );
-        if (existingIdx >= 0) {
-            this.removeConnectionFromBlueprint(bp.name, existingIdx);
-            ws.connectFirstPartIdx = null;
-            this._workshopSetSelection(null);
-            this._renderWorkshopDOM();
-            this.log(`Verbindung Part ${a} ↔ ${partIdx} gelöst.`, "INFO");
-            return;
-        }
-        this._workshopOpenConnectPopover(a, partIdx);
+        // NUTZER-BLICK (V18.162, diag-nachbau S4): der alte SOFORT-Löse-Toggle
+        // machte die ANKER-Kacheln auf verbundenen Parts UNERREICHBAR (der Sitz-
+        // Weg am fertig verbundenen Wagen war verbaut — und löste still die
+        // frische Verbindung). Die Scrap-Mechanic-Form: der Dialog öffnet IMMER;
+        // „✂ Lösen" ist eine sichtbare KACHEL darin, kein stiller Sofort-Akt.
+        this._workshopOpenConnectPopover(a, partIdx, existingIdx);
     }
 
     // M1 (meister-plan §2, V18.156) — der SUBSTANZ-VORSCHLAG: die stärkste Verbindung
@@ -52977,7 +52983,7 @@ class AnazhRealm {
     // Kurzwort + die ECHTE Substanz-Stärke dieses Paars als Balken; die STÄRKSTE
     // leuchtet als Vorschlag) und „ANKER" (Griff/Sitz/Trage — Klick startet den
     // Face-Snap-Pick auf dem ersten Part). Hover = Detail (title), keine Textwand.
-    _workshopOpenConnectPopover(partA, partB) {
+    _workshopOpenConnectPopover(partA, partB, existingIdx = -1) {
         if (typeof document === "undefined") return;
         this._workshopCloseConnectPopover(); // idempotent
         const ws = this._ensureWorkshopState();
@@ -52990,7 +52996,11 @@ class AnazhRealm {
         overlay.id = "workshop-connect-overlay";
         const title = document.createElement("div");
         title.className = "conn-title";
-        title.textContent = `Verbindung: Part ${partA} → Part ${partB}`;
+        const existing = existingIdx >= 0 && bp && bp.connections ? bp.connections[existingIdx] : null;
+        const existingDef = existing && AnazhRealm.CONNECTION_TYPES[existing.type];
+        title.textContent = existing
+            ? `Part ${partA} ↔ ${partB} — verbunden: ${existingDef ? existingDef.label.split(" (")[0] : existing.type}`
+            : `Verbindung: Part ${partA} → Part ${partB}`;
         overlay.appendChild(title);
         const types = AnazhRealm.CONNECTION_TYPES;
         const suggestion = bp ? this._suggestConnectionType(bp, partA, partB) : null;
@@ -53067,6 +53077,32 @@ class AnazhRealm {
             });
             anchorGrid.appendChild(btn);
         }
+        // NUTZER-BLICK (V18.162) — „✂ Lösen" als SICHTBARE Kachel (statt des
+        // stillen Sofort-Toggles): nur wenn die Parts schon verbunden sind.
+        if (existing) {
+            const loese = document.createElement("button");
+            loese.type = "button";
+            loese.className = "conn-tile conn-loesen";
+            loese.setAttribute("data-conn-type", "__loesen");
+            const lg = document.createElement("span");
+            lg.className = "conn-glyph";
+            lg.textContent = "✂";
+            const ln = document.createElement("span");
+            ln.className = "conn-name";
+            ln.textContent = "Lösen";
+            loese.appendChild(lg);
+            loese.appendChild(ln);
+            loese.title = "Die bestehende Verbindung zwischen diesen Parts trennen.";
+            loese.addEventListener("click", () => {
+                this.removeConnectionFromBlueprint(bp.name, existingIdx);
+                ws.connectFirstPartIdx = null;
+                this._workshopCloseConnectPopover();
+                this._workshopSetSelection(null);
+                this._renderWorkshopDOM();
+                this.log(`Verbindung Part ${partA} ↔ ${partB} gelöst.`, "INFO");
+            });
+            overlay.appendChild(loese);
+        }
         const cancelBtn = document.createElement("button");
         cancelBtn.type = "button";
         cancelBtn.className = "cancel";
@@ -53106,7 +53142,7 @@ class AnazhRealm {
         this._workshopCloseConnectPopover();
         const def = AnazhRealm.CONNECTION_TYPES[typeName];
         this.log(
-            `Anker „${(def && def.label) || typeName}": klicke die STELLE auf Part ${partIdx} — der Punkt rastet auf Mitte/Kante/Ecke. (Klick ins Leere bricht ab.)`,
+            `Anker „${(def && def.label) || typeName}": klicke die STELLE auf dem gewünschten Part — der Punkt rastet auf Mitte/Kante/Ecke. (Klick ins Leere bricht ab.)`,
             "INFO"
         );
     }
@@ -53121,11 +53157,16 @@ class AnazhRealm {
         ws.anchorPick = null;
         const bp = this.state.blueprints[ws.selectedBlueprint];
         if (!pick || !bp || bp.builtIn) return;
-        if (!hit || hitIdx !== pick.partIdx) {
-            this.log("Anker: kein Treffer auf dem gewählten Part — abgebrochen.", "INFO");
+        // V18.162 (Nutzer-Blick) — der PICK-Klick IST die Wahl: der Anker landet
+        // auf dem Part, den der Nutzer KLICKT (die Kachel sagt nur den TYP; vorher
+        // war er auf den Dialog-partA festgenagelt → der intuitive „Sitz wählen,
+        // dann Korpus-Fläche klicken"-Flow brach mit „kein Treffer" ab).
+        if (!hit || hitIdx === null || hitIdx === undefined || !bp.parts[hitIdx]) {
+            this.log("Anker: kein Part getroffen — abgebrochen.", "INFO");
             this._workshopSetSelection(null);
             return;
         }
+        pick.partIdx = hitIdx;
         const part = bp.parts[pick.partIdx];
         if (!part) return;
         // Welt → COMPOUND-lokal (worldToLocal des Compound-Group nimmt alle
@@ -53178,17 +53219,15 @@ class AnazhRealm {
         if (!bp || bp.builtIn) return;
         if (!AnazhRealm.CONNECTION_TYPES[typeName]) return;
         if (!Array.isArray(bp.connections)) bp.connections = [];
-        // Duplikat-Schutz: dieselbe Connection nicht zweimal hinzufügen.
-        // Reihenfolge ist symmetrisch (A→B ≡ B→A) für diesen Check.
-        const exists = bp.connections.some(
-            (c) =>
-                c.type === typeName &&
-                ((c.partA === partA && c.partB === partB) || (c.partA === partB && c.partB === partA))
+        // NUTZER-BLICK (V18.162) — EIN Paar trägt EINE Verbindung: ein Kachel-
+        // Klick auf schon verbundene Parts ERSETZT den Typ (vorher: stiller
+        // Skip bei gleichem Typ + stille DOPPEL-Verbindung bei anderem Typ).
+        const oldIdx = bp.connections.findIndex(
+            (c) => (c.partA === partA && c.partB === partB) || (c.partA === partB && c.partB === partA)
         );
-        if (!exists) {
-            bp.connections.push({ type: typeName, partA, partB });
-            this.log(`Workshop: Verbindung ${typeName} zwischen Part ${partA} und Part ${partB}`, "INFO");
-        }
+        if (oldIdx >= 0) bp.connections.splice(oldIdx, 1);
+        bp.connections.push({ type: typeName, partA, partB });
+        this.log(`Workshop: Verbindung ${typeName} zwischen Part ${partA} und Part ${partB}`, "INFO");
         ws.connectFirstPartIdx = null;
         this._workshopCloseConnectPopover();
         this._workshopSetSelection(null);
@@ -58053,7 +58092,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.161.0";
+AnazhRealm.VERSION = "18.162.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -59328,7 +59367,11 @@ AnazhRealm.FORM_ROLE_SIGNATURES = Object.freeze({
     soul: Object.freeze({ livingBody: 1.4, lebendig: 0.4 }),
     portal: Object.freeze({ portalShape: 1.6 }),
     vehicle: Object.freeze({ rideable: 1.8, spread: 0.3 }),
-    consumable: Object.freeze({ lebendig: 1.5, härte: -0.5, bulk: -0.8 }),
+    // V18.162 (diag-nachbau GEMESSEN): ein NACHGEBAUTER Holz-Wagen ohne Sitz fiel
+    // auf „Trank" (holz.lebendig 0.7 trifft die Signatur). Die Gegen-Achse: ein
+    // Trank hat KEINE Trag-Basis (spread — der Wagen 1.0, das Holzross 0.77, der
+    // Trank/die Frucht 0) → der tote Holz-Kasten wird Bauwerk, Tränke unberührt.
+    consumable: Object.freeze({ lebendig: 1.5, härte: -0.5, bulk: -0.8, spread: -0.6 }),
     architecture: Object.freeze({ dichte: 1.0, härte: 0.6, bulk: 0.3 }),
 });
 // Der Floor auf die NORMALISIERTE Skala gesenkt (A1: Material-Tags jetzt [0..1] statt [0..3] → die rohen

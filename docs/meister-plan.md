@@ -175,11 +175,16 @@ Kopf-Banner + ✕ löst). ✓ Vibe-Pass-Backup-Pfad sichtbar (die §0-Wahrheit i
 
 **M9 — DIE AUFSTIEGS-LEITER (die Krone; eigener Bogen, S-Dialog je Sprosse).** §3.
 
-**Reihenfolge:** M2 ✓ → M3 ✓ → M1 ✓ → M5 ✓ → M4 ✓ → M6 ✓ → M7 ✓ (Kern) → M8 ✓ —
-**der autonome Plan-Teil ist RUND. Es bleibt M9 (die Aufstiegs-Leiter, §3):
-ein S-DIALOG-Bogen je Sprosse** (Sprossen 3–5 brauchen den Schöpfer am Tisch);
-dazu die S-Sign-offs der M-Wellen + die zwei benannten offenen Mess-/Polish-Bögen
-(Befund 22 Wasser · Befund 23 Start-Loch).
+**Reihenfolge:** M2 ✓ → M3 ✓ → M1 ✓ → M5 ✓ → M4 ✓ → M6 ✓ → M7 ✓ (Kern) → M8 ✓ →
+**V18.162 NUTZER-BLICK-NACHBAU ✓** (die Schöpfer-Konfrontation: diag-nachbau spielte
+das Wagen-Nachbau-Szenario → 3 lebende Brüche, die alle Saat-Tests nie sahen
+[Löse-Toggle verbaute den Sitz-Weg · Holz-Nachbau = „Trank" · kein Phantom] → an
+den Wurzeln geheilt, Re-Run 0 Brüche, Chip „FAHRZEUG", geritten). **DIE NEUE
+WAND: vor jedem „GEBAUT ✓" das Nachbau-Szenario spielen (Schritt → Shot →
+Soll/Ist) — die Saat beweist die Mechanik, nicht den Nutzer-Weg.** Es bleibt
+M9 (die Aufstiegs-Leiter, §3): ein S-DIALOG-Bogen je Sprosse (3–5 brauchen den
+Schöpfer am Tisch); dazu die S-Sign-offs der M-Wellen + die offenen Bögen
+(Befund 22 Wasser · Befund 23 Start-Loch · Deko-Pflück-Reichweite/Fernfeld).
 
 ---
 
