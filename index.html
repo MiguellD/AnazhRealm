@@ -330,9 +330,16 @@
             #console.collapsed #console-body {
                 display: none;
             }
+            /* W-A (V18.165, Korpus R-001 — GEMESSEN diag-audit2): die Drag-Inline-
+               Höhe übersteuerte den Einklapp-Zustand (Toggle ohne sichtbare Wirkung,
+               h blieb 229). Die ZUSTANDS-Sprache erklärt hier ihre Supremacy: im
+               .collapsed gewinnt das Widget-Maß über JEDEN Inline-Schreiber (Drag/
+               Restore) — beim Entfalten kehrt die gezogene Größe von selbst zurück
+               (die Inline-Styles leben weiter, nur der Zustand deckt sie). */
             #console.collapsed {
-                width: 340px;
-                max-height: 38vh;
+                width: 340px !important;
+                height: auto !important;
+                max-height: 38vh !important;
             }
             /* V18.82 — DER FADING-FEED (der freie Bildschirm, BotW/Minecraft): default ist die Konsole
                eingeklappt → ein schlankes Chat-Widget (Header · Feed · Eingabe). Neue Nachrichten
@@ -2254,6 +2261,18 @@
                 top: 2px;
                 right: 2px;
                 cursor: nesw-resize;
+                /* W-A (V18.165, Korpus R-001): der Griff war eine UNSICHTBARE Zone —
+                   der Schöpfer griff unten-links ins Leere. Jetzt eine sichtbare
+                   Ecken-Affordanz (Messing-Winkel, hover hebt) an der Wachstums-Ecke
+                   des unten-links-Panels (es wächst nach OBEN-rechts). */
+                border-top: 2px solid var(--brass-2, #b08648);
+                border-right: 2px solid var(--brass-2, #b08648);
+                border-top-right-radius: 6px;
+                opacity: 0.55;
+                transition: opacity 0.15s ease;
+            }
+            .resize-handle.resize-tr:hover {
+                opacity: 1;
             }
             .drawer h2 {
                 font-family: "Cinzel", Georgia, serif;
@@ -9186,6 +9205,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.164.0" defer></script>
+        <script src="anazhRealm.js?v=18.165.0" defer></script>
     </body>
 </html>

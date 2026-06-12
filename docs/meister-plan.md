@@ -481,7 +481,7 @@ gemessene Klassen, KEINE davon „der Test log":
 
 ### §8.2 Die Wellen (Reihenfolge — schnelle gemessene Wurzeln zuerst, dann die Architektur)
 
-**W-A — Konsole heil (klein):** Resize schreibt in die ZUSTANDS-Sprache statt daran
+**W-A — Konsole heil (klein). ✓ GEBAUT (V18.165):** Resize schreibt in die ZUSTANDS-Sprache statt daran
 vorbei (expanded-Höhe als CSS-Variable/Zustands-Wert, `.collapsed` gewinnt IMMER:
 Inline-Höhe fällt beim Einklappen bzw. Höhe lebt nur am `#console-body`); der Griff
 wandert an die intuitive Ecke des unten-links-Panels (oben-rechts BLEIBT die
@@ -659,7 +659,7 @@ Souveränität fehlen). M9 bleibt der S-DIALOG — die Sprossen 3–5 designen w
 > „Λ-Bogen" IST W-E (dieselbe Frequenzband-Antwort), ihr W2 ist W-F, ihre Prozess-Hälfte
 > deckt §8.7. Hier NUR, was NEU ist — übernommen und verbindlich:
 
-**(a) Ψ0 — das ORTHOGONALITÄTS-MESSGERÄT (klein, SOFORT, parallel zu W-A):**
+**(a) Ψ0 — das ORTHOGONALITÄTS-MESSGERÄT. ✓ GEBAUT (V18.165 — diag-band-belegung + checkBandPsi0Winkel; kalibriert: Spektrum-Familie max 0.931/7 Paare >0.85 akzeptiert, KLASSIFIKATOR 0.22 — hart ≤0.35 gedeckelt; Ψ1 folgt als eigener Verdichtungs-Schnitt):**
 `diag-band-belegung.cjs` misst die paarweisen KOSINUS-WINKEL aller Signaturen über alle
 Tabellen (ROLE/FORM_ROLE/MOTION/WORKSHOP_DOMAIN/TEMPERAMENT inkl. der neuen
 rideable/bulk-Achsen) + Warnschwelle als Zahl + Playtest-Band. Die Wahrheit dahinter:

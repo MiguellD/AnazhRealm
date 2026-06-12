@@ -29978,6 +29978,135 @@ async function checkBandArchetypBank(ctx) {
 // Bäume laufen GEMESSEN durch den microTexture-Zweig (Befund-21-Rest); das
 // Mond-Rim lebt nacht-getrieben; die M7-Regler überleben den Reload (der
 // geheilte V8.59-Riss).
+// V18.165 — Ψ0 (meister-plan §8.8a): das ORTHOGONALITÄTS-MESSGERÄT als stehende
+// Wand. Paarweise Kosinus-Winkel aller Signaturen je Tabelle gegen die KALIBRIERTE
+// Baseline (diag-band-belegung, 12.06.): Eiche=Trank/Holzross=Seele WAREN zu enge
+// Winkel — jede künftige Signatur, die ein Paar ENGER macht als die heute
+// akzeptierte Nähe (die bewussten Geschwister definieren sie), wird ROT, bevor
+// der Browser sie als Fehl-Rolle zeigt. Der KLASSIFIKATOR (FORM_ROLE) trägt
+// zusätzlich eine harte semantische Schranke (0.35) — dort wird Übersprechen
+// zur falschen ROLLE, nicht nur zur unscharfen Anzeige.
+async function checkBandPsi0Winkel(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const A = window.anazhRealm.constructor;
+        const cos = (a, b) => {
+            const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+            let dot = 0;
+            let na = 0;
+            let nb = 0;
+            for (const k of keys) {
+                const va = Number(a[k]) || 0;
+                const vb = Number(b[k]) || 0;
+                dot += va * vb;
+                na += va * va;
+                nb += vb * vb;
+            }
+            return na && nb ? dot / Math.sqrt(na * nb) : 0;
+        };
+        const maxCos = (table) => {
+            const names = Object.keys(table || {}).filter((k) => table[k] && typeof table[k] === "object");
+            let max = 0;
+            let warn = 0;
+            let top = "";
+            for (let i = 0; i < names.length; i++) {
+                for (let j = i + 1; j < names.length; j++) {
+                    const num = (sig) => {
+                        const o = {};
+                        for (const k of Object.keys(sig)) if (Number.isFinite(Number(sig[k]))) o[k] = Number(sig[k]);
+                        return o;
+                    };
+                    const c = cos(num(table[names[i]]), num(table[names[j]]));
+                    if (c > 0.85) warn++;
+                    if (c > max) {
+                        max = c;
+                        top = `${names[i]}↔${names[j]}`;
+                    }
+                }
+            }
+            return { max: Math.round(max * 1000) / 1000, warn, top };
+        };
+        return {
+            role: maxCos(A.ROLE_SIGNATURES),
+            form: maxCos(A.FORM_ROLE_SIGNATURES),
+            motion: maxCos(A.MOTION_ROLE_SIGNATURES),
+            workshop: maxCos(A.WORKSHOP_DOMAIN_SIGNATURES),
+            op: maxCos(A.OP_CLASS_SIGNATURES),
+            temperament: maxCos(A.TEMPERAMENT_SIGNATURES),
+        };
+    });
+    // FROZEN-Baseline (12.06.2026): ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
+    // dichte-harte Familie brecher·armor·architecture·workshop-station + held·tool);
+    // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 · TEMPERAMENT 0.116.
+    check(
+        `Ψ0 Spektrum-Register: kein Signatur-Paar enger als die kalibrierte Baseline (max ${res.role.max} [${res.role.top}] ≤ 0.94 · >0.85-Paare ${res.role.warn} ≤ 7)`,
+        res.role.max <= 0.94 && res.role.warn <= 7
+    );
+    check(
+        `Ψ0 KLASSIFIKATOR bleibt orthogonal: FORM_ROLE max ${res.form.max} ≤ 0.35 (hart — hier wird Übersprechen zur falschen Rolle)`,
+        res.form.max <= 0.35
+    );
+    check(
+        `Ψ0 die übrigen Register unter Baseline: MOTION ${res.motion.max} ≤ 0.65 · WORKSHOP ${res.workshop.max} ≤ 0.07 · OP ${res.op.max} ≤ 0.04 · TEMPERAMENT ${res.temperament.max} ≤ 0.13`,
+        res.motion.max <= 0.65 && res.workshop.max <= 0.07 && res.op.max <= 0.04 && res.temperament.max <= 0.13
+    );
+}
+
+// V18.165 — W-A (meister-plan §8.2, Korpus R-001): die KONSOLE ist heil. Die
+// Zustands-CSS gewinnt über JEDEN Inline-Schreiber (Drag/Restore): eine per Drag
+// gesetzte Inline-Höhe wird vom Einklappen GEDECKT (Widget-Maß), beim Entfalten
+// kehrt sie von selbst zurück — drei unterscheidbare, korrekte Höhen. Plus: der
+// Griff ist eine SICHTBARE Ecken-Affordanz (Messing-Winkel) mit Richtungs-Titel.
+async function checkBandV18165KonsoleHeil(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const out = {};
+        const cons = document.getElementById("console");
+        if (!cons) return { fehlt: true };
+        const wasCollapsed = cons.classList.contains("collapsed");
+        // Drag simulieren: Inline-Höhe KLAR über dem Widget-Deckel (38vh) — genau
+        // der R-001-Bruch (die gezogene Höhe hielt die eingeklappte Konsole groß).
+        cons.classList.remove("collapsed");
+        cons.style.height = "500px";
+        cons.style.maxHeight = "none";
+        const hOffen = cons.getBoundingClientRect().height;
+        cons.classList.add("collapsed");
+        const hZu = cons.getBoundingClientRect().height;
+        const wZu = cons.getBoundingClientRect().width;
+        cons.classList.remove("collapsed");
+        const hWieder = cons.getBoundingClientRect().height;
+        out.offen = Math.round(hOffen);
+        out.zu = Math.round(hZu);
+        out.zuBreite = Math.round(wZu);
+        out.wieder = Math.round(hWieder);
+        // Der Kern: zugeklappt gilt der WIDGET-DECKEL (≤ 38vh, content-getrieben —
+        // die Inline-500 ist GEDECKT), entfaltet kehrt die gezogene Höhe zurück.
+        const deckel = window.innerHeight * 0.38 + 4;
+        out.zustandGewinnt =
+            hZu <= deckel && hZu < hOffen - 100 && Math.abs(hWieder - hOffen) < 2 && Math.abs(wZu - 340) < 2;
+        // Aufräumen: Inline-Größe zurücknehmen + Ursprungs-Zustand.
+        cons.style.height = "";
+        cons.style.maxHeight = "";
+        cons.classList.toggle("collapsed", wasCollapsed);
+        // Der Griff ist sichtbar (Messing-Winkel, kein unsichtbares Feld) + sagt die Richtung.
+        const handle = cons.querySelector(".resize-handle");
+        if (handle) {
+            const cs = getComputedStyle(handle);
+            out.griffSichtbar = parseFloat(cs.borderTopWidth) >= 1 && parseFloat(cs.opacity) > 0.2;
+            out.griffTitel = /wächst nach oben/.test(handle.getAttribute("title") || "");
+        }
+        return out;
+    });
+    check(
+        `W-A Konsole: die Zustands-CSS gewinnt über die Drag-Inline-Höhe (offen ${res.offen} → zu ${res.zu}@${res.zuBreite}px → wieder ${res.wieder}) — der R-001-Bruch ist strukturell unmöglich`,
+        !res.fehlt && res.zustandGewinnt
+    );
+    check(
+        "W-A Konsole: der Griff ist eine SICHTBARE Affordanz (Messing-Winkel) und benennt die Wachstums-Richtung",
+        res.griffSichtbar && res.griffTitel
+    );
+}
+
 async function checkBandV18164WarumLicht(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -47230,6 +47359,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18164AutoConnect(ctx);
             await checkBandArchetypBank(ctx);
             await checkBandV18164WarumLicht(ctx);
+            await checkBandPsi0Winkel(ctx);
+            await checkBandV18165KonsoleHeil(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

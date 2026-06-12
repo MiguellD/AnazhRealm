@@ -16,7 +16,7 @@ Wurzeln: meister-plan §8.1 (GEMESSEN via `diag-audit2.cjs`); Zweitmessung: Tief
 
 | ID | Rückmeldung (Kurzform) | Status | Wurzel | Welle |
 |---|---|---|---|---|
-| R-001 | Konsole nach Resize „komplett komisch"; Griff wirkt am falschen Ort | offen | Inline-Höhe übersteuert `.collapsed`-CSS; Griff oben-rechts an unten-links-Panel (§8.1#1) | W-A |
+| R-001 | Konsole nach Resize „komplett komisch"; Griff wirkt am falschen Ort | gebaut (V18.165, S-Abnahme offen) | Inline-Höhe übersteuert `.collapsed`-CSS; Griff oben-rechts an unten-links-Panel (§8.1#1) | W-A |
 | R-002 | Hof: Emotionen statt Natur, mit intuitiven Balken; Werte-Balken „weg" | offen | Balken existieren, im Hof-Kontext unsichtbar (CSS); Emotionen nur 1 Gemüts-Balken (§8.1#2) | W-B |
 | R-003 | Boosts doppelt + überlagern + „(ausgelaufen)" bleibt; gehören zu den Emotionen rechts | offen | ZWEI Renderer (Equip + Sheet-Fußzeile); Tick relabelt statt entfernt (§8.1#3) | W-C |
 | R-004 | „Faust"-Feld unterm Viewer interferiert mit G-Offhand | offen | Haupthand-Slot vs Nebenhand (G) ohne Benennungs-Klarheit (§8.1#4) | W-C |

@@ -11207,7 +11207,14 @@ class AnazhRealm {
         if (container.querySelector(":scope > .resize-handle")) return; // idempotent
         const handle = document.createElement("div");
         handle.className = `resize-handle resize-${corner}`;
-        handle.setAttribute("title", "Größe ändern · Doppelklick: Default");
+        // W-A (V18.165, Korpus R-001): die Konsole wächst nach OBEN (bottom-Anker) —
+        // der Griff sagt es jetzt (Titel + sichtbare Ecken-Affordanz im CSS).
+        handle.setAttribute(
+            "title",
+            corner === "tr"
+                ? "Größe ziehen (wächst nach oben) · Doppelklick: Standard"
+                : "Größe ändern · Doppelklick: Default"
+        );
         handle.setAttribute("aria-label", "Größe ändern");
         container.appendChild(handle);
 
@@ -58657,7 +58664,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.164.0";
+AnazhRealm.VERSION = "18.165.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
