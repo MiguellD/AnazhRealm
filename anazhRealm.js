@@ -11754,6 +11754,12 @@ class AnazhRealm {
         if (typeof m.seed !== "string" || m.seed.length === 0) {
             m.seed = "anazh-realm-seed";
         }
+        // Γ1 (genese-plan) — ein BRANDNEUER Spieler (fresh: kein worldId aus
+        // einem Save) bekommt die heutige Genese-Version: er hat kein Gesicht
+        // zu bewahren, und „identisch für alle" bleibt wahr (alle neuen Spieler
+        // teilen Seed UND genVersion). Eine GELADENE Welt ohne Feld bleibt
+        // Legacy (fehlend → 1, _genVersion) — das Drainage-Netz-Gesetz.
+        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 2;
         // V9.26 Phase 5c-Migrations-Flip + V9.33 Phase 5c.2.b Eingangs-Welt-
         // Flip + V9.35 Phase 5c.2.c.2 Toggle-Tod — der Voxel-Boden ist die
         // kanonische, irreversible Form. V9.35 zieht die ZWANGS-Migration nach:
@@ -11993,7 +11999,10 @@ class AnazhRealm {
         // hasht das intern. Der Seed bleibt für die gesamte Welt-Lebensdauer
         // konstant (in worldMeta persistiert).
         const seed = `w-${worldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed };
+        // Γ1 (genese-plan) — jede NEUE Welt wird mit der heutigen Genese-Version
+        // geboren; bestehende Welten (Feld fehlt → 1) behalten ihr Gesicht
+        // (legacy-erhaltend: das Drainage-Netz-Gesetz, Genese ist Welt-Identität).
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 2 };
     }
 
     // Snapshot einer „leeren" Welt mit gegebenem worldMeta. Optional bekommt
@@ -14930,6 +14939,7 @@ class AnazhRealm {
                 ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "lebendig",
                 floor: 0.5,
+                kronen: "lichtung", // Γ2 — Blüten dort, wo der Wald NICHT ist
                 perCell: 3.2,
                 cap: 512,
                 pool: 28,
@@ -14948,6 +14958,12 @@ class AnazhRealm {
                 ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "lebendig",
                 floor: 0.32,
+                // Γ1 — in Genese-2-Welten liest der Farn die FEUCHTE (Ufer-/
+                // Niederungs-Pflanze); Legacy-Welten behalten lebendig (das
+                // Gesicht bleibt). Γ2 — er sammelt sich UNTER den Kronen.
+                feldNass: "feuchte",
+                floorNass: 0.3,
+                kronen: "unter",
                 perCell: 2.4,
                 cap: 448,
                 pool: 28,
@@ -14966,6 +14982,7 @@ class AnazhRealm {
                 ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
                 field: "glut",
                 floor: 0.5,
+                kronen: "rand", // Γ2 — der Saum zwischen Wald und Lichtung
                 perCell: 1.8,
                 cap: 320,
                 pool: 28,
@@ -15034,6 +15051,27 @@ class AnazhRealm {
                 color: [1.0, 0.93, 0.66],
                 color2: [1.0, 0.82, 0.5],
                 geom: "spore",
+            },
+            // Γ1 (genese-plan) — SCHILF: die siebte Art, NUR in Genese-2-Welten
+            // (minGen-Gate): liest die FEUCHTE direkt (das schmale Ufer-Band,
+            // floor 0.62) — Flüsse und Niederungen bekommen ihren Saum. Reine
+            // Daten, derselbe Streu-Mechanismus (die V18.133-Schönheit).
+            {
+                name: "schilf",
+                ernte: "kraut",
+                field: "feuchte",
+                floor: 0.62,
+                minGen: 2,
+                perCell: 2.6,
+                cap: 288,
+                pool: 24,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.9, 1.7],
+                color: [0.33, 0.48, 0.2],
+                color2: [0.66, 0.64, 0.3],
+                geom: "farn",
             },
         ];
     }
@@ -19853,6 +19891,88 @@ class AnazhRealm {
             }
         }
         return cut;
+    }
+
+    // Γ1 (genese-plan) — die FLUSS-DISTANZ an (x,z): derselbe riverBuckets-Walk
+    // wie _hydrosphereCarveAt (gleiche Segmente, gleiche Buckets — EINE Quelle,
+    // kein Parallelcode), aber er gibt die DISTANZ + Segment-Halbbreite zurück
+    // statt des Carve-Schnitts. WICHTIG anders als der Carve: für die Feuchte-
+    // Reichweite (~26 m > Bankbreite) liest er die 3×3-BUCKET-NACHBARSCHAFT —
+    // der Carve braucht nur ~Bankbreite und kommt mit dem einen Bucket aus.
+    _hydroDistAt(x, z) {
+        const h = this._hydroFor(x, z);
+        if (!h || !h.ready || !h.riverBuckets) return { dist: Infinity, halfW: 0 };
+        const rb = h.riverBuckets;
+        const bs = h.bucketSize;
+        const bd = h.bucketsDim;
+        const bi0 = Math.floor((x - h.originX) / bs);
+        const bj0 = Math.floor((z - h.originZ) / bs);
+        let best = Infinity;
+        let bestHw = 0;
+        for (let dj = -1; dj <= 1; dj++) {
+            for (let di = -1; di <= 1; di++) {
+                const bi = bi0 + di;
+                const bj = bj0 + dj;
+                if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) continue;
+                const list = rb[bj * bd + bi];
+                if (!list) continue;
+                for (let s = 0; s < list.length; s++) {
+                    const seg = list[s];
+                    const ex = seg.bx - seg.ax;
+                    const ez = seg.bz - seg.az;
+                    const len2 = ex * ex + ez * ez || 1;
+                    let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+                    if (t < 0) t = 0;
+                    else if (t > 1) t = 1;
+                    const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
+                    if (dist < best) {
+                        best = dist;
+                        bestHw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                    }
+                }
+            }
+        }
+        return { dist: best, halfW: bestHw };
+    }
+
+    // Γ1 (genese-plan) — die GENESE-Version der Welt: fehlend = 1 (Legacy —
+    // bestehende Welten behalten ihr Gesicht; das Drainage-Netz-Gesetz
+    // konsequent: Genese ist Welt-Identität). Neue Welten werden mit 2 geboren.
+    _genVersion() {
+        return (this.state.worldMeta && this.state.worldMeta.genVersion) || 1;
+    }
+
+    // Γ1 (genese-plan) — DAS FEUCHTE-FELD: die fünfte Welt-Stimme, abgeleitet
+    // aus der HYDROSPHÄRE statt aus Noise (Kausalkette Terrain → Wasser →
+    // Feuchte → Leben; `lebendig` trägt schon vier Bedeutungen — eine fünfte
+    // wäre die Bedeutungs-Drift, vor der das Ψ0-Winkel-Audit warnt). Sie lebt
+    // bewusst am GENESE-LESER (Spawn/Scatter/Boden), NICHT in worldFieldAt:
+    // der Bucket-Walk gehört nicht in den Hot-Path (auraAt läuft pro Frame),
+    // und der Höhen-Term braucht surfY, das die Genese-Leser schon tragen.
+    // Zwei Terme, max(): (a) FLUSS-Nähe (smoothstep über die echte Segment-
+    // Distanz — ein Wald hat jetzt einen GRUND, dem Fluss zu folgen);
+    // (b) HÖHE ÜBER DEM WASSERSPIEGEL (Niederungen an See/Ozean-Ufern sind
+    // feucht — der breite Term). Erst-Wurf-Reichweiten browser-justierbar.
+    _feuchteAt(x, z, surfY) {
+        if (this._genVersion() < 2) return 0;
+        const F = AnazhRealm.FEUCHTE;
+        const r = this._hydroDistAt(x, z);
+        let fluss = 0;
+        if (Number.isFinite(r.dist)) {
+            const inner = Math.max(1, r.halfW);
+            const outer = inner + F.flussReichweite;
+            const t = Math.max(0, Math.min(1, (outer - r.dist) / (outer - inner)));
+            fluss = t * t * (3 - 2 * t);
+        }
+        let hoehe = 0;
+        const sy = Number.isFinite(surfY) ? surfY : this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
+        if (Number.isFinite(sy)) {
+            const wl = this._waterLevelAt(x, z);
+            const above = sy - wl;
+            const t = Math.max(0, Math.min(1, (F.hoeheFern - above) / (F.hoeheFern - F.hoeheNah)));
+            hoehe = t * t * (3 - 2 * t) * F.hoeheGewicht;
+        }
+        return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
     }
 
     // V9.45-b — das See-Becken an einer xz-Welt-Position. Liefert `{bedY, w}`
@@ -26532,14 +26652,25 @@ class AnazhRealm {
                 // (> 1.2 m unter der Zell-Macro) wird übersprungen → kahle Kante
                 // statt schwebender Stein/Blüte. Gilt für alle Arten.
                 const cellMacro = this._terrainMacroSurfaceY(bx, bz, false);
+                // Γ1 — die Feuchte EINMAL pro Zelle (surfY liegt vor; Legacy → 0).
+                const gen2 = this._genVersion() >= 2;
+                const feuchteCell = gen2 ? this._feuchteAt(bx, bz, surfY) : 0;
                 for (let si = 0; si < species.length; si++) {
                     const sp = species[si];
+                    if (sp.minGen && this._genVersion() < sp.minGen) continue; // Γ1 — schilf nur Genese ≥ 2
                     if (buckets[si].length >= sp.cap) continue;
-                    const fv = f[sp.field] || 0;
-                    if (fv < sp.floor) continue;
-                    const norm = (fv - sp.floor) / Math.max(0.001, 1 - sp.floor);
+                    // Γ1 — Dual-Feld: in Genese-2 liest eine Art ihr Nass-Feld
+                    // (farn → feuchte), Legacy bleibt beim Stamm-Feld.
+                    const useNass = gen2 && sp.feldNass;
+                    const fieldKey = useNass ? sp.feldNass : sp.field;
+                    const floorV = useNass && Number.isFinite(sp.floorNass) ? sp.floorNass : sp.floor;
+                    const fv = fieldKey === "feuchte" ? feuchteCell : f[fieldKey] || 0;
+                    if (fv < floorV) continue;
+                    const norm = (fv - floorV) / Math.max(0.001, 1 - floorV);
                     const rnd = rngs[si];
-                    const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) + rnd() * 0.8);
+                    // Γ2 — die Kronen-Lesart formt die Verteilung (mittelwert-neutral).
+                    const kron = this._kronenMult(sp, bx, bz);
+                    const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) * kron + rnd() * 0.8);
                     const sMin = sp.scale[0];
                     const sMax = sp.scale[1];
                     for (let k = 0; k < count && buckets[si].length < sp.cap; k++) {
@@ -26897,6 +27028,7 @@ class AnazhRealm {
         const species = AnazhRealm.KLEIN_VEGETATION_SPECIES;
         const sp = species[si];
         if (!sp || typeof THREE === "undefined") return;
+        if (sp.minGen && this._genVersion() < sp.minGen) return; // Γ1 — schilf nur Genese ≥ 2
         const FF = AnazhRealm.DEKO_FERNFELD;
         const ff = this.state.dekoFernfeld;
         let inst = ff.meshes.get(sp.name);
@@ -26951,10 +27083,23 @@ class AnazhRealm {
                     const bz = oz + (zi + 0.5) * stepXZ;
                     const f = this.worldFieldAt(bx, bz);
                     if (!f) continue;
-                    const fv = f[sp.field] || 0;
-                    if (fv < sp.floor) continue;
-                    const norm = (fv - sp.floor) / Math.max(0.001, 1 - sp.floor);
-                    const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) + rnd() * 0.8);
+                    // Γ1/Γ2 — DIESELBE Lesart wie der Nah-Pass (die Doppel-Gating-
+                    // WAND: ein Multiplikator, zwei Aufrufer — sonst ploppt die
+                    // Dichte beim Band-Übergang). surfY aus der V18.97-Karte.
+                    const gen2ff = this._genVersion() >= 2;
+                    const useNass = gen2ff && sp.feldNass;
+                    const fieldKey = useNass ? sp.feldNass : sp.field;
+                    const floorV = useNass && Number.isFinite(sp.floorNass) ? sp.floorNass : sp.floor;
+                    const fv =
+                        fieldKey === "feuchte"
+                            ? gen2ff
+                                ? this._feuchteAt(bx, bz, this._chunkSurfaceAt(entry, cx, cz, bx, bz))
+                                : 0
+                            : f[fieldKey] || 0;
+                    if (fv < floorV) continue;
+                    const norm = (fv - floorV) / Math.max(0.001, 1 - floorV);
+                    const kron = this._kronenMult(sp, bx, bz);
+                    const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) * kron + rnd() * 0.8);
                     for (let k = 0; k < count && n < FF.cap; k++) {
                         const gx = bx + (rnd() - 0.5) * stepXZ;
                         const gz = bz + (rnd() - 0.5) * stepXZ;
@@ -32237,6 +32382,9 @@ class AnazhRealm {
                 seed: identity.newSeed,
                 fusionStrategy: strategy,
                 schemaVersion: "10.0-fusion-v1",
+                // Γ1 (genese-plan) — die Fusion gebiert NEUES Terrain (newSeed):
+                // kein Gesicht zu bewahren → die heutige Genese-Version.
+                genVersion: 2,
             },
             dslAbilities: mergedAbilities,
             dslHistory: mergedHistory,
@@ -45141,7 +45289,7 @@ class AnazhRealm {
     // Welt-Feldes. Resultat 0..1 (sum / 4 da MAX-aggregierte Tags ebenfalls
     // 0..1 nach computeCompoundTags + Felder 0..1). Bauplan-Tags > 1 bei
     // räumlicher Verstärkung würden das überschreiten — wir clampen final.
-    spawnAffinityForBlueprint(name, x, z) {
+    spawnAffinityForBlueprint(name, x, z, feuchte) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return 0;
         const world = this.worldFieldAt(x, z);
@@ -45154,6 +45302,14 @@ class AnazhRealm {
         score += world.dichte * (tags.dichte || 0);
         score += world.glut * (tags.brennbar || 0); // glut → brennbar (Material-Achse)
         score += world.magieleitung * (tags.magieleitung || 0);
+        // Γ1 (genese-plan) — die FÜNFTE Stimme nach dem glut→brennbar-Präzedenz:
+        // feuchte resoniert mit lebendig (Bäume folgen Flüssen; Glutbrunnen
+        // meiden sie gratis — brennbar resoniert nicht mit feuchte). Der Wert
+        // kommt vom GENESE-Leser (der Populator misst ihn einmal pro Sample und
+        // reicht ihn — kein Hot-Path-Bucket-Walk); fehlt er, misst der seltene
+        // Direkt-Aufrufer (Diag/UI) selbst. Legacy-Welten: _feuchteAt → 0.
+        const fw = Number.isFinite(feuchte) ? feuchte : this._feuchteAt(x, z);
+        score += fw * (tags.lebendig || 0) * AnazhRealm.FEUCHTE.affinitaetGewicht;
         return Math.max(0, Math.min(1, score / 4));
     }
 
@@ -45170,8 +45326,12 @@ class AnazhRealm {
     _terrainMaterialAt(x, z) {
         const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(x, z) : null;
         if (!f) return "stein";
+        // Γ1 (genese-plan, Lesart Boden): die FEUCHTE hebt die erde-Achse —
+        // Ufer und Niederungen sind grabbar weich (erde schlägt stein), die
+        // Farbe, die der Spieler sieht, bleibt das Material, das er bekommt.
+        const fw = this._genVersion() >= 2 ? this._feuchteAt(x, z) : 0;
         const axes = [
-            [f.lebendig || 0, "erde"],
+            [(f.lebendig || 0) + fw * AnazhRealm.FEUCHTE.erdeGewicht, "erde"],
             [f.dichte || 0, "stein"],
             [f.glut || 0, "glut"],
             [f.magieleitung || 0, "quarz"],
@@ -45217,6 +45377,26 @@ class AnazhRealm {
         return this._clumpNoise.noise2D(x * freq, z * freq);
     }
 
+    // Γ2 (genese-plan) — die KRONEN-Lesart: EIN Klump-Feld (dasselbe c wie der
+    // Baum-Leser, λ~167 m), von jeder KLEIN-Art ANDERS gelesen — Farne sammeln
+    // sich UNTER den Wald-Clustern, Blumen in den LICHTUNGEN, Gestrüpp am RAND
+    // (der Saum). Ökologie statt Gleichverteilung, ohne je eine Baum-Position
+    // abzufragen. Die Norm-Faktoren (AnazhRealm.KRONEN, diag-genese-kalibriert)
+    // halten die Chunk-Gesamtmenge mittelwert-neutral (B5+-Regel V18.102).
+    _kronenMult(sp, x, z) {
+        if (!sp || !sp.kronen) return 1;
+        const c = this._clumpAt(x, z, 0.006);
+        const K = AnazhRealm.KRONEN;
+        const ss = (v) => {
+            const t = Math.max(0, Math.min(1, (v - 0.05) / 0.5));
+            return t * t * (3 - 2 * t);
+        };
+        if (sp.kronen === "unter") return ss(c) * K.unterNorm;
+        if (sp.kronen === "lichtung") return ss(-c) * K.lichtungNorm;
+        if (sp.kronen === "rand") return Math.exp(-((c / 0.18) * (c / 0.18))) * K.randNorm;
+        return 1;
+    }
+
     _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn) {
         // V9.59-b — Wasser-Awareness: Bäume/Felsen/Geoden/Glutbrunnen wachsen
         // NICHT im Wasser. 0.4 m Marge, damit eine Architektur nicht knöcheltief
@@ -45235,11 +45415,21 @@ class AnazhRealm {
         const BASE_RATE = 0.4;
         const AFFINITY_FLOOR = 0.18;
         const candidates = ["baum_eiche", "baum_kiefer", "stein_block", "kristall_geode", "glutbrunnen"];
+        // Γ5 (genese-plan — Determinismus-Schliff): der STILLE Math.random-
+        // Fallback fällt. worldFieldAt() lazy-initialisiert state.worldField
+        // (inkl. rngNoise, seed-gebunden) — bei fehlendem Feld würfelte vorher
+        // jeder Peer LAUTLOS anders (P2P-Drift-Klasse). Nie Math.random im
+        // Worldgen (das Band bewacht es).
+        if (!this.state.worldField || !this.state.worldField.rngNoise) this.worldFieldAt(sampleX, sampleZ);
         const rng = this.state.worldField && this.state.worldField.rngNoise;
+        // Γ1 — die FEUCHTE einmal pro Sample (surfaceY liegt hier schon vor;
+        // der Bucket-Walk läuft 1× statt 1× je Kandidat) → alle Affinitäts-
+        // Aufrufe dieses Samples lesen denselben Wert.
+        const feuchte = this._feuchteAt(sampleX, sampleZ, surfaceY);
 
         if ((seedForSpawn % 1000) / 1000 < LANDMARK_RATE) {
-            const affBogen = this.spawnAffinityForBlueprint("felsbogen", sampleX, sampleZ);
-            const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ);
+            const affBogen = this.spawnAffinityForBlueprint("felsbogen", sampleX, sampleZ, feuchte);
+            const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ, feuchte);
             if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
                 const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
                 // V9.96 — Spawn-Burst-Heilung: enqueue statt sofort spawnen.
@@ -45266,7 +45456,7 @@ class AnazhRealm {
         let bestName = null;
         let bestAffinity = 0;
         for (const name of candidates) {
-            const aff = this.spawnAffinityForBlueprint(name, sampleX, sampleZ);
+            const aff = this.spawnAffinityForBlueprint(name, sampleX, sampleZ, feuchte);
             if (aff > bestAffinity) {
                 bestAffinity = aff;
                 bestName = name;
@@ -45275,7 +45465,9 @@ class AnazhRealm {
         if (!bestName || bestAffinity < AFFINITY_FLOOR) return 0;
 
         // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
-        const probe = rng ? (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2 : Math.random();
+        // Γ5 — rng ist oben garantiert initialisiert (worldFieldAt lazy); der alte
+        // Math.random-Fallback ist GESTRICHEN (P2P-Drift-Klasse).
+        const probe = (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2;
         // V17.9 — Wald-Dichte (die WURZEL-Heilung des Schöpfer-Befundes „Bäume
         // spärlich, nicht vereint"): Bäume (baum_eiche/baum_kiefer) sind in
         // üppigen (lebendig-hohen) Regionen VIEL wahrscheinlicher → echte Wälder
@@ -58664,7 +58856,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.165.0";
+AnazhRealm.VERSION = "18.166.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -59434,6 +59626,28 @@ AnazhRealm.SPATIAL_HOLLOW_SHAPES = Object.freeze(new Set(["sphere", "torus"]));
 // Effekt entsteht aus der Kombination (eine Glocke ist nicht nur sphere
 // mit Hohlraum-Bonus, sondern sphere am Top mit Tip-Bonus, mit Klöppel im
 // Hohlraum, und einer Resonanz-Array von 4 Glocken im Kreis).
+// Γ1/Γ2 (genese-plan) — DAS FEUCHTE-FELD + die KRONEN-Lesarten. Die fünfte
+// Welt-Stimme (aus der Hydrosphäre abgeleitet, nicht Noise) + das ökologische
+// Differenzial auf dem EINEN Klump-Feld. Erst-Würfe browser-justierbar.
+AnazhRealm.FEUCHTE = Object.freeze({
+    flussReichweite: 26, // m jenseits der Fluss-Halbbreite, smoothstep-Fade
+    hoeheNah: 1.5, // ≤ so hoch überm Wasserspiegel = voll feucht (Niederung)
+    hoeheFern: 7, // ab so hoch überm Spiegel = trocken (der Höhen-Fade)
+    hoeheGewicht: 0.6, // der breite Niederungs-Term zählt schwächer als der Fluss
+    affinitaetGewicht: 0.8, // feuchte × lebendig in der Spawn-Affinität
+    erdeGewicht: 0.35, // Γ1-Lesart Boden: feuchte hebt die erde-Achse beim Graben
+});
+// Γ2 — die Kronen-Lesart: dasselbe c wie der Baum-Leser (λ~167 m, _clumpAt
+// 0.006) — die Kopplung an die realen Wälder ist strukturell, ohne je eine
+// Baum-Position abzufragen. Die norm-Faktoren machen die Multiplikatoren
+// MITTELWERT-NEUTRAL (B5+-Regel V18.102: Verteilung verschiebt sich, die
+// Chunk-Gesamtmenge bleibt ±10 % — diag-genese misst die Mittel).
+AnazhRealm.KRONEN = Object.freeze({
+    unterNorm: 3.35, // 1 / E[smoothstep(0.05,0.55,c)] — diag-genese GEMESSEN (E=0.2981)
+    lichtungNorm: 3.37, // E=0.2967
+    randNorm: 4.65, // 1 / E[exp(−(c/0.18)²)] — E=0.2149
+});
+
 AnazhRealm.SPATIAL_HOLLOW_BONUS = 0.3; // +30 % auf resoniert für beide Parts
 AnazhRealm.SPATIAL_AXIS_BONUS = 0.3; // +30 % auf magieleitung + stromleitung
 AnazhRealm.SPATIAL_ARRAY_BONUS = 0.4; // +40 % auf resoniert + magieleitung

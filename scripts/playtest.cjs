@@ -24319,7 +24319,9 @@ async function checkBandV171Scatter(ctx) {
         // (1) Registry.
         out.registryArray = Array.isArray(species);
         out.speciesCount = out.registryArray ? species.length : 0;
-        const validFields = ["lebendig", "dichte", "glut", "magieleitung"];
+        // Γ1 (V18.166): „feuchte" ist gültige fünfte Stimme (schilf liest sie;
+        // sie kommt aus der Hydrosphäre statt aus worldFieldAt — genese-plan).
+        const validFields = ["lebendig", "dichte", "glut", "magieleitung", "feuchte"];
         out.allFieldsValid =
             out.registryArray &&
             species.every(
@@ -30105,6 +30107,198 @@ async function checkBandV18165KonsoleHeil(ctx) {
         "W-A Konsole: der Griff ist eine SICHTBARE Affordanz (Messing-Winkel) und benennt die Wachstums-Richtung",
         res.griffSichtbar && res.griffTitel
     );
+}
+
+// V18.166 — Γ-GENESE (genese-plan Γ1/Γ2/Γ5): das FEUCHTE-Feld (die fünfte
+// Welt-Stimme, aus der HYDROSPHÄRE abgeleitet statt aus Noise) + die KRONEN-
+// Lesarten (EIN Klump-Feld, drei Öko-Verteilungen) + der Determinismus-Schliff
+// (nie Math.random im Worldgen). Die Invarianten messen die KERN-Funktion mit
+// kontrolliertem Input (V17.32) + den KONSUM beider Gating-Stellen (V17.31,
+// die Doppel-Gating-WAND nah/Fernfeld) + das Legacy-Tor (genVersion fehlt → 1
+// → Feld schweigt, schilf ruht — bestehende Welten behalten ihr Gesicht).
+// Das End-to-End (schilf wächst am echten Ufer, 51 GEMESSEN) lebt im
+// stehenden Werkzeug scripts/diag-genese.cjs.
+async function checkBandGammaGenese(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+        const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
+        try {
+            if (!r.state.worldMeta) r.state.worldMeta = {};
+            r.state.worldMeta.genVersion = 2;
+            // (1) Struktur: Funktionen da, Konstanten frozen.
+            out.struct =
+                typeof r._feuchteAt === "function" &&
+                typeof r._hydroDistAt === "function" &&
+                typeof r._kronenMult === "function" &&
+                Object.isFrozen(A.FEUCHTE) &&
+                Object.isFrozen(A.KRONEN);
+            // (2) FEUCHTE am ECHTEN Fluss: der Senkrecht-Walk findet die Bank
+            // (erste Land-Zelle neben der Mittellinie) — dort muss das Feld
+            // mindestens den schilf-floor tragen; Legacy-Tor an derselben Stelle.
+            const hydro = r.state.hydrosphere;
+            const rivers = hydro && Array.isArray(hydro.rivers) ? hydro.rivers : [];
+            out.rivers = rivers.length;
+            let bank = null;
+            outer: for (const rv of rivers) {
+                const pts = rv.points || [];
+                for (let k = 1; k + 1 < pts.length; k += 2) {
+                    const p = pts[k];
+                    const q = pts[k + 1];
+                    const dx = q.x - p.x;
+                    const dz = q.z - p.z;
+                    const len = Math.hypot(dx, dz) || 1;
+                    const nx = -dz / len;
+                    const nz = dx / len;
+                    for (const side of [1, -1]) {
+                        for (let d = 2; d <= 14; d += 1.5) {
+                            const x = p.x + nx * d * side;
+                            const z = p.z + nz * d * side;
+                            const sy = r._voxelSurfaceY(x, z);
+                            if (sy === null || !Number.isFinite(sy)) continue;
+                            if (sy > r._waterLevelAt(x, z) + 0.15) {
+                                const hd = r._hydroDistAt(x, z);
+                                if (Number.isFinite(hd.dist) && hd.dist < 20) {
+                                    bank = { x, z, sy };
+                                    break outer;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            out.bankFound = !!bank;
+            if (bank) {
+                out.feuchteBank = r._feuchteAt(bank.x, bank.z, bank.sy);
+                r.state.worldMeta.genVersion = 1;
+                out.feuchteLegacy = r._feuchteAt(bank.x, bank.z, bank.sy);
+                r.state.worldMeta.genVersion = 2;
+            }
+            // (3) Affinitäts-KONSUM kontrolliert (V17.32): DERSELBE Punkt,
+            // feuchte explizit 1 vs 0 → Δ = tags.lebendig × Gewicht / 4, exakt
+            // und welt-zustands-unabhängig. Punkt mit unsaturierter Basis wählen
+            // (der [0,1]-Clamp würde das Δ sonst fressen).
+            let aff = null;
+            for (let i = 0; i < 64 && !aff; i++) {
+                const x = -780 + (i % 8) * 220;
+                const z = -780 + Math.floor(i / 8) * 220;
+                const a0 = r.spawnAffinityForBlueprint("baum_eiche", x, z, 0);
+                if (a0 <= 0.7) aff = { a0, a1: r.spawnAffinityForBlueprint("baum_eiche", x, z, 1) };
+            }
+            if (aff) out.affDelta = aff.a1 - aff.a0;
+            // (4) KRONEN-Verhalten an kontrollierten c-Werten: Wald-Punkt
+            // (c > 0.3) und Lichtungs-Punkt (c < −0.3) aus dem Klump-Feld.
+            let pWald = null;
+            let pLicht = null;
+            for (let i = 0; i < 4096 && (!pWald || !pLicht); i++) {
+                const x = -800 + (i % 64) * 25;
+                const z = -800 + Math.floor(i / 64) * 25;
+                const c = r._clumpAt(x, z, 0.006);
+                if (!pWald && c > 0.3) pWald = { x, z };
+                if (!pLicht && c < -0.3) pLicht = { x, z };
+            }
+            if (pWald && pLicht) {
+                const u = { kronen: "unter" };
+                const l = { kronen: "lichtung" };
+                const rd = { kronen: "rand" };
+                out.kron = {
+                    unterWald: r._kronenMult(u, pWald.x, pWald.z),
+                    unterLicht: r._kronenMult(u, pLicht.x, pLicht.z),
+                    lichtWald: r._kronenMult(l, pWald.x, pWald.z),
+                    lichtLicht: r._kronenMult(l, pLicht.x, pLicht.z),
+                    randWald: r._kronenMult(rd, pWald.x, pWald.z),
+                    neutral: r._kronenMult({}, pWald.x, pWald.z),
+                };
+            }
+            // (5) Arten-Daten + der KONSUM BEIDER Gating-Stellen (die Doppel-
+            // Gating-WAND: nah-Mesh UND Fernfeld lesen feldNass/minGen/kronen
+            // identisch — sonst ploppt die Dichte am Band-Übergang).
+            const species = A.KLEIN_VEGETATION_SPECIES;
+            const schilf = species.find((s) => s.name === "schilf");
+            const farn = species.find((s) => s.name === "farn");
+            out.schilfData = !!(schilf && schilf.field === "feuchte" && schilf.minGen === 2);
+            out.farnDual = !!(
+                farn &&
+                farn.feldNass === "feuchte" &&
+                Number.isFinite(farn.floorNass) &&
+                farn.kronen === "unter"
+            );
+            const nahSrc = r._buildVoxelChunkScatter.toString();
+            const fernSrc = r._buildDekoFernfeldSpecies.toString();
+            const reads = (src) =>
+                /feldNass/.test(src) && /_kronenMult/.test(src) && /minGen/.test(src) && /_feuchteAt/.test(src);
+            out.gatingNah = reads(nahSrc);
+            out.gatingFern = reads(fernSrc);
+            out.bodenLiest = /_feuchteAt/.test(r._terrainMaterialAt.toString());
+            out.spawnReicht = /spawnAffinityForBlueprint\([^)]*feuchte\)/.test(r._vegetationSampleSpawn.toString());
+            // (6) Γ5 — Math.random-Zensus (Kommentare gestrippt; der CODE darf
+            // im Worldgen nie würfeln — P2P-Drift-Klasse).
+            const fns = [
+                "_vegetationSampleSpawn",
+                "_buildVoxelChunkScatter",
+                "_buildDekoFernfeldSpecies",
+                "_kronenMult",
+                "_feuchteAt",
+                "_hydroDistAt",
+                "worldFieldAt",
+                "_clumpAt",
+                "spawnAffinityForBlueprint",
+            ];
+            out.randHits = fns.filter((fn) => {
+                const f = r[fn];
+                if (typeof f !== "function") return true;
+                return /Math\.random/.test(f.toString().replace(/\/\/[^\n]*/g, ""));
+            });
+            // (7) genVersion REIST im Snapshot (V8.59-Klasse: was der Save
+            // verliert, verliert die Welt beim Reload).
+            const snap = r.buildStateSnapshot();
+            out.snapGen = snap && snap.worldMeta ? snap.worldMeta.genVersion : null;
+        } finally {
+            if (r.state.worldMeta) {
+                if (origGen === undefined) delete r.state.worldMeta.genVersion;
+                else r.state.worldMeta.genVersion = origGen;
+            }
+        }
+        return out;
+    });
+    check("Γ Struktur: _feuchteAt/_hydroDistAt/_kronenMult leben, FEUCHTE+KRONEN frozen", res.struct === true);
+    check(
+        `Γ1 FEUCHTE am echten Fluss-Ufer ≥ schilf-floor 0.62 (${res.rivers} Flüsse, feuchte=${res.feuchteBank && res.feuchteBank.toFixed ? res.feuchteBank.toFixed(3) : res.feuchteBank})`,
+        res.bankFound && res.feuchteBank >= 0.62
+    );
+    check(
+        `Γ1 Legacy-Tor: genVersion 1 → das Feld schweigt an derselben Stelle (=${res.feuchteLegacy})`,
+        res.feuchteLegacy === 0
+    );
+    check(
+        `Γ1 Affinitäts-KONSUM: feuchte hebt die Baum-Resonanz (Δ=${res.affDelta && res.affDelta.toFixed ? res.affDelta.toFixed(3) : res.affDelta})`,
+        Number.isFinite(res.affDelta) && res.affDelta > 0.04
+    );
+    check(
+        "Γ2 KRONEN differenzieren: unter wächst im Wald-Klumpen, lichtung in der Lücke, rand meidet beide Pole, ohne kronen-Feld neutral 1",
+        res.kron &&
+            res.kron.unterWald > 1 &&
+            res.kron.unterLicht < 0.05 &&
+            res.kron.lichtLicht > 1 &&
+            res.kron.lichtWald < 0.05 &&
+            res.kron.randWald < 0.6 &&
+            res.kron.neutral === 1
+    );
+    check(
+        "Γ1/Γ2 Doppel-Gating-WAND: nah-Streu UND Fernfeld lesen feldNass/minGen/kronen/feuchte identisch; Boden + Spawn-Pass konsumieren",
+        res.gatingNah && res.gatingFern && res.bodenLiest && res.spawnReicht
+    );
+    check(
+        "Γ1 Arten-Daten: schilf (field feuchte, minGen 2) + farn Dual-Feld (feldNass/floorNass, kronen unter)",
+        res.schilfData && res.farnDual
+    );
+    check(
+        `Γ5 Determinismus: kein Math.random im Worldgen-Code (${res.randHits && res.randHits.length ? res.randHits.join(",") : "9 Fn sauber"})`,
+        Array.isArray(res.randHits) && res.randHits.length === 0
+    );
+    check("Γ1 genVersion reist im Welt-Snapshot (V8.59-Klasse)", res.snapGen === 2);
 }
 
 async function checkBandV18164WarumLicht(ctx) {
@@ -47361,6 +47555,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18164WarumLicht(ctx);
             await checkBandPsi0Winkel(ctx);
             await checkBandV18165KonsoleHeil(ctx);
+            await checkBandGammaGenese(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
