@@ -22322,6 +22322,23 @@ class AnazhRealm {
             // Konstante, NICHT persistiert). Render-only, fürs S-Tuning:
             //   anazhRealm.state.atmoUniforms.terrainFlatten.value = 0.7
             terrainFlatten: TSL.uniform(AnazhRealm.TERRAIN_NORMAL_FLATTEN),
+            // M7 (V18.160, Befund 21) — die Mikro-Struktur als LEBENDIGER Hebel:
+            // vorher war AERIAL.microStrength als KONSTANTE in den Tree gebacken
+            // (ein Settings-Slider wäre der tote Knopf, V18.65-Klasse) → Uniform.
+            microStrength: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.microStrength)
+                    ? this.state.atmosphere.microStrength
+                    : (AnazhRealm.AERIAL && AnazhRealm.AERIAL.microStrength) || 0.1
+            ),
+            // M7 (Befund 20 „Terrain nachts SCHWARZ") — der NACHT-BODEN des
+            // vertexColor-Terrains: max(lit, albedo × floor) — wirkt NUR, wenn
+            // das Gesamtlicht unter den Boden fällt (Mittag per Konstruktion
+            // unverändert; die B8-Parität: Bauten haben LUT-Boden 0.25 + Rim).
+            terrainNightFloor: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainNightFloor)
+                    ? this.state.atmosphere.terrainNightFloor
+                    : 0.12
+            ),
             // WELLE J4-DEBUG — Browser-Isolations-Regler (default 1 = unverändert):
             // `aoScale`=0 schaltet die Kavitäts-AO ab (der `fwidth`-Term, der jede
             // Surface-Nets-Facetten-Kante als Linie zeichnet — mein Haupt-Verdacht
@@ -22433,7 +22450,9 @@ class AnazhRealm {
                 const _n1 = _T.mx_noise_float(_wp.mul(0.33));
                 const _n2 = _T.mx_noise_float(_wp.mul(1.6));
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
-                let _shade = _T.float(1.0).add(_det.mul(cfg.microStrength));
+                // M7 — microStrength ist ein UNIFORM (der Settings-Regler lebt).
+                const _micro = _au.microStrength || _T.float(cfg.microStrength);
+                let _shade = _T.float(1.0).add(_det.mul(_micro));
                 // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
                 // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
                 const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
@@ -22470,6 +22489,15 @@ class AnazhRealm {
             // der Boden, auf dem du stehst (aboveEye≈0 + nah), bleicht NICHT. Beide
             // Größen sind kamera-relativ (`cameraPosition` aktualisiert pro Frame) →
             // die Verblassung folgt deiner Position, wie die echte Atmosphäre.
+            // M7 (V18.160, Befund 20) — der TERRAIN-NACHT-BODEN (nur vertexColors-
+            // Ebenen: Terrain + Inseln): max(lit, albedo × floor). Nachts fiel
+            // ambient(0.18) × vertexColor(~0.4) ≈ 0.07 → schwarz, während Bauten
+            // über LUT-Boden 0.25 + Rim Restlicht trugen (Licht-Parität der Ebenen).
+            // Der max-Boden greift NUR unterhalb — Mittag bleibt per Konstruktion.
+            if (opts.nightFloor && _au.terrainNightFloor && _T.attribute && _T.max) {
+                const _albedo = _T.attribute("color", "vec3");
+                _rgb = _T.max(_rgb, _albedo.mul(_au.terrainNightFloor));
+            }
             const _cam = _T.cameraPosition;
             const _aboveEye = _wp.y.sub(_cam.y); // < 0 (unter dem Auge) → smoothstep gibt 0
             const _hazeNear = _au.hazeNear || _T.float(70.0);
@@ -22561,7 +22589,12 @@ class AnazhRealm {
         // sie im colorNode); transparente Phantome bleiben unberührt (UI-Element).
         if (!opts.transparent) {
             const isFlatStructure = !opts.vertexColors && opts.color !== undefined;
-            this._applyAerialOutput(mat, { microTexture: isFlatStructure, rim: isFlatStructure });
+            this._applyAerialOutput(mat, {
+                microTexture: isFlatStructure,
+                rim: isFlatStructure,
+                // M7 (Befund 20) — Terrain/Inseln (vertexColors) tragen den Nacht-Boden.
+                nightFloor: opts.vertexColors === true,
+            });
         }
 
         if (opts.vertexColors) {
@@ -44549,6 +44582,30 @@ class AnazhRealm {
     // `fwidth(normalWorld)`-AO zeichnet jede Surface-Nets-Facetten-Kante als
     // Linie (screen-space → flackert beim Laufen) — der Haupt-Verdacht für die
     // Trapeze. Live justierbar, bis sie weg sind, ohne pixel-blindes Raten.
+    // M7 (V18.160, Befund 21) — der Mikro-Struktur-REGLER (J2-microStrength als
+    // lebendiger Hebel): setzt das Uniform live + persistiert in atmosphere.
+    setMicroStrength(v) {
+        const val = Math.max(0, Math.min(0.4, Number(v) || 0));
+        if (!this.state.atmosphere) this.state.atmosphere = {};
+        this.state.atmosphere.microStrength = val;
+        const au = this._ensureAtmoUniforms();
+        if (au && au.microStrength) au.microStrength.value = val;
+        if (typeof this.saveState === "function") this.saveState();
+        return val;
+    }
+
+    // M7 (Befund 20) — der Terrain-NACHT-BODEN-Regler: 0 = das alte Schwarz,
+    // 0.12 = Default-Parität zu den Bauten, höher = hellere Nächte.
+    setTerrainNightFloor(v) {
+        const val = Math.max(0, Math.min(0.3, Number(v) || 0));
+        if (!this.state.atmosphere) this.state.atmosphere = {};
+        this.state.atmosphere.terrainNightFloor = val;
+        const au = this._ensureAtmoUniforms();
+        if (au && au.terrainNightFloor) au.terrainNightFloor.value = val;
+        if (typeof this.saveState === "function") this.saveState();
+        return val;
+    }
+
     setCavityAO(scale) {
         // V17.109 — Headroom: Bereich 0..2 (200 %), damit 100 % die Mitte ist
         // (Schöpfer-Wunsch „nicht am Anschlag"). >1 verstärkt die AO über den
@@ -54988,6 +55045,38 @@ class AnazhRealm {
                 if (aoVal) aoVal.textContent = `${pct} %`;
             });
         }
+        // M7 (V18.160) — Mikro-Struktur (Befund 21: der lebendige Hebel) +
+        // Terrain-Nacht-Boden (Befund 20: Licht-Parität) als Live-Regler.
+        const mtS = document.getElementById("slider-microtex");
+        const mtVal = document.getElementById("slider-microtex-val");
+        if (mtS) {
+            const m0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.microStrength)
+                    ? this.state.atmosphere.microStrength
+                    : (AnazhRealm.AERIAL && AnazhRealm.AERIAL.microStrength) || 0.1;
+            mtS.value = String(Math.round(m0 * 100));
+            if (mtVal) mtVal.textContent = m0.toFixed(2);
+            mtS.addEventListener("input", () => {
+                const v = parseInt(mtS.value, 10) / 100;
+                this.setMicroStrength(v);
+                if (mtVal) mtVal.textContent = v.toFixed(2);
+            });
+        }
+        const nfS = document.getElementById("slider-nightfloor");
+        const nfVal = document.getElementById("slider-nightfloor-val");
+        if (nfS) {
+            const n0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainNightFloor)
+                    ? this.state.atmosphere.terrainNightFloor
+                    : 0.12;
+            nfS.value = String(Math.round(n0 * 100));
+            if (nfVal) nfVal.textContent = n0.toFixed(2);
+            nfS.addEventListener("input", () => {
+                const v = parseInt(nfS.value, 10) / 100;
+                this.setTerrainNightFloor(v);
+                if (nfVal) nfVal.textContent = v.toFixed(2);
+            });
+        }
         const esS = document.getElementById("slider-edgesharp");
         const esVal = document.getElementById("slider-edgesharp-val");
         if (esS) {
@@ -57903,7 +57992,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.159.0";
+AnazhRealm.VERSION = "18.160.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

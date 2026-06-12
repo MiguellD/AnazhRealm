@@ -8742,6 +8742,18 @@
                                 <input type="range" id="slider-cavityao" min="0" max="200" value="35" />
                                 <span class="slider-value" id="slider-cavityao-val">35 %</span>
                             </div>
+                            <!-- M7 (V18.160, Befund 21) - die Mikro-Struktur als lebendiger Regler. -->
+                            <div class="slider-row">
+                                <label for="slider-microtex">Mikro-Struktur</label>
+                                <input type="range" id="slider-microtex" min="0" max="40" value="10" />
+                                <span class="slider-value" id="slider-microtex-val">0.10</span>
+                            </div>
+                            <!-- M7 (Befund 20) - der Terrain-Nacht-Boden (Paritaet zu den Bauten). -->
+                            <div class="slider-row">
+                                <label for="slider-nightfloor">Nacht-Boden (Terrain)</label>
+                                <input type="range" id="slider-nightfloor" min="0" max="30" value="12" />
+                                <span class="slider-value" id="slider-nightfloor-val">0.12</span>
+                            </div>
                             <div class="slider-row">
                                 <label for="slider-edgesharp">Kanten-Schärfe</label>
                                 <input type="range" id="slider-edgesharp" min="0" max="100" value="46" />
@@ -9099,6 +9111,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.159.0" defer></script>
+        <script src="anazhRealm.js?v=18.160.0" defer></script>
     </body>
 </html>

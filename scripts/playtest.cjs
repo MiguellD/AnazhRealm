@@ -29741,6 +29741,69 @@ async function checkBandM6ErnteSpawn(ctx) {
     );
 }
 
+// V18.160 — M7: LICHT-FEINSCHLIFF (meister-plan §2; Befunde 20+21). Der
+// Terrain-NACHT-BODEN (max(lit, albedo × floor) — Mittag per Konstruktion
+// unverändert; A/B GEMESSEN: Pixel-Mittel 25.9 → 37.9 am Abend) + die
+// Mikro-Struktur als LEBENDIGER Regler (vorher Konstante im Tree — ein
+// Slider wäre der tote Knopf, V18.65-Klasse).
+async function checkBandM7LichtFeinschliff(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const au = r._ensureAtmoUniforms();
+        // (1) beide Hebel sind UNIFORMS (lebendig, nicht eingebacken).
+        out.uniforms = !!au && !!au.microStrength && !!au.terrainNightFloor;
+        // (2) die Setter TREIBEN die Uniforms (KONSUM, mit Restore).
+        const m0 = au.microStrength.value;
+        const n0 = au.terrainNightFloor.value;
+        r.setMicroStrength(0.27);
+        r.setTerrainNightFloor(0.21);
+        out.settersDrive =
+            Math.abs(au.microStrength.value - 0.27) < 1e-9 && Math.abs(au.terrainNightFloor.value - 0.21) < 1e-9;
+        r.setMicroStrength(m0);
+        r.setTerrainNightFloor(n0);
+        // (3) der Shader-Tree KONSUMIERT beide (Source: _au.microStrength im
+        // micro-Block; der nightFloor-max auf der albedo; der vertexColors-
+        // Aufruf bestellt nightFloor).
+        const aerialSrc = r._applyAerialOutput.toString();
+        const toonSrc = r._buildToonNodeMaterial.toString();
+        out.treeConsumes =
+            /_au\.microStrength/.test(aerialSrc) &&
+            /nightFloor/.test(aerialSrc) &&
+            /attribute\("color"/.test(aerialSrc) &&
+            /nightFloor: opts\.vertexColors === true/.test(toonSrc);
+        // (4) die Regler leben in den Einstellungen + treiben die Setter.
+        const mtS = document.getElementById("slider-microtex");
+        const nfS = document.getElementById("slider-nightfloor");
+        out.slidersLive = !!mtS && !!nfS;
+        if (mtS) {
+            mtS.value = "30";
+            mtS.dispatchEvent(new Event("input", { bubbles: true }));
+            out.sliderDrives = Math.abs(au.microStrength.value - 0.3) < 1e-9;
+            mtS.value = String(Math.round(m0 * 100));
+            mtS.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        return out;
+    });
+    check(
+        "M7 Licht: Mikro-Struktur + Nacht-Boden sind LEBENDIGE Uniforms (keine eingebackenen Konstanten)",
+        res.uniforms
+    );
+    check(
+        "M7 Licht: die Setter treiben die Uniforms (setMicroStrength/setTerrainNightFloor — KONSUM)",
+        res.settersDrive
+    );
+    check(
+        "M7 Licht: der Shader-Tree konsumiert beide (micro-Uniform · nightFloor-max auf der Albedo · vertexColors bestellt)",
+        res.treeConsumes
+    );
+    check(
+        "M7 Licht: die Einstellungs-Regler leben und treiben die Setter (kein toter Knopf)",
+        res.slidersLive && res.sliderDrives
+    );
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -46383,6 +46446,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandM5HudPolitur(ctx);
             await checkBandM4SuchKern(ctx);
             await checkBandM6ErnteSpawn(ctx);
+            await checkBandM7LichtFeinschliff(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

@@ -155,11 +155,15 @@ Kreatur-BUILD + spawn_tree umgingen V17.28); Opt-outs: silent/string-id/precise
 (Restore + Fraktal-Kinder). +3 Invarianten; 2 Tests wanderten (W1-Faust→SOCKEL,
 Ring-6-Hexagon precise).
 
-**M7 — Licht/Wasser/LOD-Feinschliff [A, S-Vermerke].** Terrain-Nacht-Floor (Parität zu
-Bauten) · Cel-Kontrast/Mikro-Struktur als Regler (`microStrength`/Stufen-Schärfe in
-Einstellungen-Feinschliff) + auf Bauten/Bäume prüfen · Fluss-Lauf-Glättung + flow-aligned
-Wellen (der Wasser-Polish aus roadmap §4 — eigene Mess-Welle mit diag-tour) · LOD-Start-
-Loch messen (`diag-chunk-seam` am kleinen Ring) + Frustum-Priorität im Streaming prüfen.
+**M7 — Licht/Wasser/LOD-Feinschliff [A, S-Vermerke]. ✓ KERN GEBAUT (V18.160).**
+✓ Terrain-NACHT-BODEN (Befund 20): `max(lit, albedo × terrainNightFloor)` im geteilten
+Output-Chain, nur vertexColors-Ebenen, Mittag per Konstruktion; A/B GEMESSEN
+(diag-nightfloor-ab: Pixel-Mittel 25.9 → 37.9 am Abend). ✓ Mikro-Struktur als
+LEBENDIGER Regler (Befund 21: die Konstante war eingebacken = jeder Slider tot →
+Uniform + setMicroStrength/setTerrainNightFloor + zwei Regler im Cel-&-Licht-Band).
+OFFEN (ehrlich verortet): Befund 22 Fluss-Polish = der EIGENE Bogen (roadmap §4,
+Narben-Liste: NUR der Lauf, NIE der Querschnitt) · Befund 23 LOD-Start-Loch = der
+§6.5-Mess-Auftrag (braucht ein frisches Boot-Setup). +4 Invarianten.
 
 **M8 — Das Makro-Fenster [H].** signaling-server `/stats` (Räume/Peers gesamt) + Anzeige
 im Multi-User-Bereich · Identitäts-Seite (alle public Werke eines pubkeys, aus dem
@@ -168,8 +172,8 @@ sichtbar dokumentiert (Einstellungen-Identität + ein Satz im Pass-Panel).
 
 **M9 — DIE AUFSTIEGS-LEITER (die Krone; eigener Bogen, S-Dialog je Sprosse).** §3.
 
-**Reihenfolge:** M2 ✓ → M3 ✓ → M1 ✓ → M5 ✓ → M4 ✓ → M6 ✓ → **M7 (Licht/Wasser/
-LOD) ist der AKTIVE nächste Schritt** → M8 → M9 (parallel designbar).
+**Reihenfolge:** M2 ✓ → M3 ✓ → M1 ✓ → M5 ✓ → M4 ✓ → M6 ✓ → M7 ✓ (Kern) →
+**M8 (Makro-Fenster) ist der AKTIVE nächste Schritt** → M9 (S-Dialog-Bogen).
 
 ---
 
