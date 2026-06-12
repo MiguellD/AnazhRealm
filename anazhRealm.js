@@ -11410,17 +11410,34 @@ class AnazhRealm {
         const lab = this._emotionLabel;
         if (!vig || !lab) return;
         const es = this._emotionState();
+        const item = typeof lab.closest === "function" ? lab.closest(".status-item") : null;
         if (es.dominant && es.intensity > 0.2) {
             const css = window.getComputedStyle(document.body).getPropertyValue(`--${es.dominant}`).trim() || "#ffffff";
             const op = Math.min(0.45, 0.12 + es.intensity * 0.4);
             vig.style.boxShadow = `inset 0 0 150px 28px ${css}`;
             vig.style.opacity = op.toFixed(3);
+            if (this._emotionLabelHideTimer) {
+                clearTimeout(this._emotionLabelHideTimer);
+                this._emotionLabelHideTimer = null;
+            }
+            if (item) item.style.display = "";
             lab.textContent = es.label;
             lab.style.color = css;
             lab.style.opacity = "0.8";
         } else {
             vig.style.opacity = "0";
             lab.style.opacity = "0";
+            // W-C(g)-NACHBAU-FUND (V18.172, GEMESSEN diag-wbc-nachbau): das Wort
+            // stand mit opacity 0 als 49-px-LOCH im Leisten-FLOW (das alte
+            // Overlay war `fixed` — der Leisten-Eintrag ist es nicht). Nach dem
+            // 1.4-s-Fade verlässt das Item den Flow (display:none — der
+            // 22-px-Flex-Gap verdoppelte sich sonst um ein unsichtbares Mitglied).
+            if (item && !this._emotionLabelHideTimer) {
+                this._emotionLabelHideTimer = setTimeout(() => {
+                    this._emotionLabelHideTimer = null;
+                    if (lab.style.opacity === "0") item.style.display = "none";
+                }, 1500);
+            }
         }
     }
 
@@ -42048,7 +42065,9 @@ class AnazhRealm {
         const beitraege = [];
         for (const axis in sig) {
             const contrib = (v[axis] || 0) * sig[axis];
-            if (Math.abs(contrib) > 0.02) beitraege.push({ axis, contrib });
+            // V18.172-Nachbau-Fund: Beiträge unter 0.05 ERKLÄREN nichts (die
+            // Eiche las „Härte 0.0 · Standfläche 0.0" — Rauschen als Begründung).
+            if (Math.abs(contrib) > 0.05) beitraege.push({ axis, contrib });
         }
         if (!beitraege.length) return null;
         beitraege.sort((a, b) => Math.abs(b.contrib) - Math.abs(a.contrib));
@@ -42056,7 +42075,8 @@ class AnazhRealm {
             .slice(0, 3)
             .map((p) => {
                 const label = (AnazhRealm.AXIS_LABELS && AnazhRealm.AXIS_LABELS[p.axis]) || p.axis;
-                return `${label} ${p.contrib < 0 ? "−" : ""}${Math.abs(p.contrib).toFixed(1)}`;
+                // 2 Dezimalen — die Skala ist der ÷3-normierte Vektor (klein, ehrlich).
+                return `${label} ${p.contrib < 0 ? "−" : ""}${Math.abs(p.contrib).toFixed(2)}`;
             })
             .join(" · ");
         return { role, text };
@@ -59089,7 +59109,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.171.0";
+AnazhRealm.VERSION = "18.172.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -7894,8 +7894,10 @@
             >
             <!-- W-C(g)/R-009 (V18.169) — das EMOTIONS-WORT lebt IN der Leiste (Schöpfer:
                  „in die Leiste oder gar nicht"): dieselbe _emotionState-Quelle + Farbe +
-                 Fade wie das alte fixe Overlay, das fiel. Ruht (opacity 0) bei Ruhe. -->
-            <span class="status-item" id="status-emotion-item"
+                 Fade wie das alte fixe Overlay, das fiel. V18.172-Nachbau-Fund: bei Ruhe
+                 verlässt das ITEM den Flow (display:none nach dem Fade — sonst stand das
+                 Wort als 49-px-Loch + Doppel-Gap unsichtbar in der Leiste); startet draußen. -->
+            <span class="status-item" id="status-emotion-item" style="display: none"
                 ><span class="value" id="status-emotion" style="opacity: 0"></span></span
             >
             <span class="status-item"
@@ -9280,6 +9282,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.171.0" defer></script>
+        <script src="anazhRealm.js?v=18.172.0" defer></script>
     </body>
 </html>

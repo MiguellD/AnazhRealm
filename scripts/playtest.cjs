@@ -30175,7 +30175,7 @@ async function checkBandWBHofKarte(ctx) {
 // (vehicle → „Fertigen"); (h) der WARUM-CHIP (lesbare Emergenz, R-036).
 async function checkBandWCIchWahrheit(ctx) {
     const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
+    const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
         // (a) EIN Formatter + drei Konsumenten (Source-KONSUM, V17.31).
@@ -30252,6 +30252,30 @@ async function checkBandWCIchWahrheit(ctx) {
             /_blueprintRoleWhy/.test(r._specRenderBody.toString());
         out.warumKarten =
             /_blueprintRoleWhy/.test(r._recipeRow.toString()) && /_blueprintRoleWhy/.test(r._feedRecipeCard.toString());
+        // (g) V18.172-Nachbau-Fund — das LEISTEN-LOCH ist tot: bei Ruhe verlässt
+        // das Emotions-Item den FLOW (display:none nach dem 1.4-s-Fade; vorher
+        // stand „Freude" mit 49 px + Doppel-Gap unsichtbar in der Leiste);
+        // Wieder-Entzünden holt es zurück. End-VERHALTEN, nicht Existenz.
+        {
+            const lab = document.getElementById("status-emotion");
+            const item = document.getElementById("status-emotion-item");
+            const saved = {};
+            for (const k of Object.keys(r.state.player.emotions)) saved[k] = r.state.player.emotions[k];
+            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+            r.state.player.emotions.joy = 0.9;
+            r._updateEmotionFeedback();
+            const anImFlow = !!item && item.style.display !== "none" && !!lab && lab.textContent === "Freude";
+            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+            r._updateEmotionFeedback();
+            await new Promise((res2) => setTimeout(res2, 1700));
+            const ruheAusFlow = !!item && item.style.display === "none";
+            r.state.player.emotions.joy = 0.9;
+            r._updateEmotionFeedback();
+            const zurueck = !!item && item.style.display !== "none";
+            out.leistenLochTot = anImFlow && ruheAusFlow && zurueck;
+            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = saved[k];
+            r._updateEmotionFeedback();
+        }
         return out;
     });
     check(
@@ -30272,6 +30296,10 @@ async function checkBandWCIchWahrheit(ctx) {
     check(
         "W-C(h) WARUM-CHIP (R-036): Eiche erklärt sich über die dichte-harte Familie, der Trank über Lebendigkeit — an Werkstatt + Rezeptbuch + Bibliothek",
         res.warumEiche && res.warumTrank && res.warumFlaechen && res.warumKarten
+    );
+    check(
+        "W-C(g) V18.172: das Leisten-Loch ist tot — bei Ruhe verlässt das Emotions-Item den Flow (display:none nach Fade), Wieder-Entzünden holt es zurück",
+        res.leistenLochTot
     );
 }
 
