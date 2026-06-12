@@ -498,7 +498,13 @@ Messing-Ecken-Affordanz mit Richtungs-Titel. Details: Chronik V18.165.
 
 ---
 
-**W-B — die Hof-Karte fühlt (klein).**
+**W-B — die Hof-Karte fühlt (klein). ✓ GEBAUT (V18.168):** EIN Emotions-Renderer
+`_buildEmotionRows` (Ich live + Hof statisch); die 6 Achsen an der STELLE der
+Natur, Natur → `<details>`; M-B1 GEMESSEN (`diag-hof-bars.cjs`): die Balken-CSS
+war GESUND (kein Spezifitäts-Riss — die Vermutung §8.1#2 korrigiert; die
+R-006-Wurzel saß WOANDERS: name/value verloren gegen die `#inventory-overlay`-ID,
+nur der Track trug sie — geheilt im EINEN Bauer + ID-Selektor). Band: 5 Invarianten
+(inkl. „Farbe IST hell"-KONSUM + Werte-Balken-Sichtbarkeit als stehende Wand).
 
 *KREIS:* Die Kreatur TRÄGT ihr Innenleben längst (`creature.userData.emotions`, 6
 Achsen — dieselben Schlüssel wie der Spieler; D2-Contagion + D4-Temperament SCHREIBEN
@@ -542,7 +548,15 @@ Screenshot — die Emotionen lesen sich wie HP (diag-hof erweitert).
 
 ---
 
-**W-C — der Ich-Raum sagt die Wahrheit (mittel — SIEBEN Kreise, jeder benannt).**
+**W-C — der Ich-Raum sagt die Wahrheit (mittel — SIEBEN Kreise, jeder benannt).
+✓ GEBAUT (V18.169):** (a) `_machTorHint` + `_showMachTorHint` inline an Slot·
+Rezept·FERTIGEN + `_armorStatDeltaText` („+8.1 Abwehr · −4.2 Tempo") · (b) EIN
+Boost-Band in #ich-boosts-host, Tick ENTFERNT Abgelaufene · (c) Haupthand/
+Nebenhand-Brücke · (d) in W-B geheilt · (e) vehicle → „Fertigen" · (f) Ich-Rest
+fiel, Werkstatt = Intent-Trio (Portal·⚒ Station·✨ Emergent) · (g) #status-emotion
+in der Leiste, Overlay fiel · (h) WARUM-CHIP `_blueprintRoleWhy` an drei Flächen
+(Werkstatt sichtbar ÜBER dem GapHint · Rezept · Bibliothek). Band: 7 Invarianten
+inkl. Nutzer-Zustands-Nachbau (frieden + leerer Beutel).
 
 > Der gemeinsame Nenner aller sieben: das Ich ZEIGT heute Zustände, ohne ihre
 > WAHRHEIT zu sagen (Fehlschläge stumm, Doubletten, tote Worte). Die Welle macht
@@ -633,7 +647,14 @@ beide; kein Spiel hat lesbare Emergenz.
 
 ---
 
-**W-D — Ritt-Feel + Spawn-Hygiene (klein, drei gemessene Stiche).**
+**W-D — Ritt-Feel + Spawn-Hygiene (klein, drei gemessene Stiche). ✓ GEBAUT
+(V18.170):** Sitz `SITZ_HIP_OFFSET 0.45` (GEMESSEN riderCenterAboveSitz 0.45 ==
+soll — die +0.90-Schwebe tot) · M-D2 GEMESSEN (diag-ride): Bein-Schwung ±1 cm
+(These a widerlegt) → die Hang-Wurzel geheilt via 2-Punkt-Probe Bug/Heck in
+Fahrt-Richtung, max() führt (Hang-Beweis: Spanne 21.6 m → bottom == höchster
+Punkt) · M-F1 Spieler-Klemme in `spawnCreatureAt` (≥3 m, Goldwinkel-deterministisch,
+precise-Opt-out für Restore). Band: 3 Invarianten; 2 Alt-Tests wanderten (Biss-
+Distanz/Boden-Probe re-platzieren — sie testen Mechanik, nicht Spawn-Ort).
 
 *KREIS (Ritt):* `mountArchitecture` schreibt `entry._sitzHeight = sitzPunkt.y·scale
 + 0.9`; `_tickMountedMovement` setzt den Spieler-Körper-MITTELPUNKT jeden Frame auf
@@ -843,7 +864,7 @@ Souveränität fehlen). M9 bleibt der S-DIALOG — die Sprossen 3–5 designen w
 > „Λ-Bogen" IST W-E (dieselbe Frequenzband-Antwort), ihr W2 ist W-F, ihre Prozess-Hälfte
 > deckt §8.7. Hier NUR, was NEU ist — übernommen und verbindlich:
 
-**(a) Ψ0 — das ORTHOGONALITÄTS-MESSGERÄT. ✓ GEBAUT (V18.165 — diag-band-belegung + checkBandPsi0Winkel; kalibriert: Spektrum-Familie max 0.931/7 Paare >0.85 akzeptiert, KLASSIFIKATOR 0.22 — hart ≤0.35 gedeckelt; Ψ1 folgt als eigener Verdichtungs-Schnitt):**
+**(a) Ψ0 — das ORTHOGONALITÄTS-MESSGERÄT. ✓ GEBAUT (V18.165 — diag-band-belegung + checkBandPsi0Winkel; kalibriert: Spektrum-Familie max 0.931/7 Paare >0.85 akzeptiert, KLASSIFIKATOR 0.22 — hart ≤0.35 gedeckelt). Ψ1 ✓ GEBAUT (V18.167 — `_resonateArgmax` mit floor/refs/refDefault/keys; die 7 Inline-Leser [Domäne·Temperament·GapHint·FormRolle·Implement·Op·Motion] verdichtet, bit-gleich: Archetypen-Bank 46/0 Mismatches; 2 Invarianten im Ψ0-Band):**
 `diag-band-belegung.cjs` misst die paarweisen KOSINUS-WINKEL aller Signaturen über alle
 Tabellen (ROLE/FORM_ROLE/MOTION/WORKSHOP_DOMAIN/TEMPERAMENT inkl. der neuen
 rideable/bulk-Achsen) + Warnschwelle als Zahl + Playtest-Band. Die Wahrheit dahinter:

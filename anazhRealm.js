@@ -10280,16 +10280,18 @@ class AnazhRealm {
         });
     }
 
-    initStatusPanel() {
-        // UI V2: kein zentrales #status-panel mehr — Sektionen leben in den
-        // sechs Drawer (Welt, Kreaturen, Spieler, Fähigkeiten, Einstellungen,
-        // Hilfe). Wir greifen direkt auf die einzelnen IDs zu.
-        const emotions = document.getElementById("status-emotions");
-        if (!emotions) return;
-        const axes = Object.keys(this.state.player.emotions);
-        emotions.innerHTML = "";
-        const emotionRefs = {};
-        for (const axis of axes) {
+    // W-B (V18.168, meister-plan §8.2) — DER EINE EMOTIONS-RENDERER: die
+    // 6-Achsen-Reihen (name·bar·value) lebten nur im Ich (initStatusPanel),
+    // die Hof-Karte baute ihren Balken von Hand — zwei Renderer derselben
+    // Sprache (V9.82). Jetzt bauen BEIDE hier: das Ich konsumiert {live:true}
+    // (refs für den updateStatusPanel-Tick, Werte starten leer), die Hof-Karte
+    // STATISCH pro Render (Werte aus dem Wesen-Vektor eingebrannt — der Hof
+    // re-rendert bei Fokus/Befehl, kein neuer Tick). Labels + Wirkung aus
+    // EMOTION_LABEL/EMOTION_WIRKT — eine Sprache überall. Gibt {rows, refs}.
+    _buildEmotionRows(emotions, opts = {}) {
+        const rows = [];
+        const refs = {};
+        for (const axis of Object.keys(emotions || {})) {
             const row = document.createElement("div");
             row.className = `emotion ${axis}`;
             // Legende: deutscher Name + was die Emotion in der Welt bewirkt (Hover) —
@@ -10305,13 +10307,29 @@ class AnazhRealm {
             bar.appendChild(fill);
             const value = document.createElement("span");
             value.className = "value";
-            value.textContent = "0.00";
+            const v = Math.max(0, Math.min(1, Number(emotions[axis]) || 0));
+            fill.style.width = opts.live ? "0%" : `${Math.round(v * 100)}%`;
+            value.textContent = opts.live ? "0.00" : v.toFixed(2);
             row.appendChild(name);
             row.appendChild(bar);
             row.appendChild(value);
-            emotions.appendChild(row);
-            emotionRefs[axis] = { fill, value };
+            rows.push(row);
+            refs[axis] = { fill, value };
         }
+        return { rows, refs };
+    }
+
+    initStatusPanel() {
+        // UI V2: kein zentrales #status-panel mehr — Sektionen leben in den
+        // sechs Drawer (Welt, Kreaturen, Spieler, Fähigkeiten, Einstellungen,
+        // Hilfe). Wir greifen direkt auf die einzelnen IDs zu.
+        const emotions = document.getElementById("status-emotions");
+        if (!emotions) return;
+        emotions.innerHTML = "";
+        // W-B — der EINE Renderer baut die Reihen; das Ich tickt sie live.
+        const built = this._buildEmotionRows(this.state.player.emotions, { live: true });
+        for (const row of built.rows) emotions.appendChild(row);
+        const emotionRefs = built.refs;
         this._statusRefs = {
             weather: document.getElementById("status-weather"),
             slug: document.getElementById("status-slug"),
@@ -10331,9 +10349,10 @@ class AnazhRealm {
             lastTick: -Infinity,
         };
         // FP-sichtbares Emotion-Feedback (UI-Putz): die Refs für den Bildschirmrand-
-        // Schimmer + das Label, gefärbt nach der dominanten Emotion in updateStatusPanel.
+        // Schimmer + das WORT — W-C(g)/R-009: das Wort lebt IN der Statusbar
+        // (#status-emotion, „in die Leiste oder gar nicht"); das fixe Overlay fiel.
         this._emotionVignette = document.getElementById("emotion-vignette");
-        this._emotionLabel = document.getElementById("emotion-label");
+        this._emotionLabel = document.getElementById("status-emotion");
 
         // GEMERKTER FADEN #8 (V18.149) — die Statusbar auf ESSENZ: die
         // Werkstatt-Zahlen (status-dev) ruhen hinter dem ···-Toggle; die
@@ -13205,11 +13224,30 @@ class AnazhRealm {
         this.state.creatureEmotions = [];
     }
 
-    spawnCreatureAt(x, y, z, emotion = "happy", soulName = null) {
+    spawnCreatureAt(x, y, z, emotion = "happy", soulName = null, opts = {}) {
         // Welle 6.H Phase 2A — Kreatur ist jetzt eine Hylomorphismus-Group.
         // Selber Renderpfad wie Architektur + Spieler-Seele: _buildFromBlueprint
         // konsumiert bodyParts × Material aus CREATURE_SOULS.
         if (this.state.creatures.length >= this.state.maxCreatures) return null;
+        // W-D/M-F1 (V18.170, Korpus R-017 „Nexus spawnt wieder auf mir"): die
+        // SPIELER-KLEMME an der WURZEL (das M6-Muster der Strukturen auf die
+        // Kreatur): kein Wesen materialisiert IM Spieler — näher als
+        // CREATURE_SPAWN_CLEAR_M wird radial auf den Ring geschoben (gleiche
+        // Richtung; deckungsgleich → deterministischer Goldwinkel über die
+        // netSeq, kein Math.random — Kreaturen sind reaktiv, aber Determinismus
+        // ist gratis). Opt-out `precise` für bit-treue Pfade (Restore/Peer-Sicht).
+        if (!opts.precise && this.state.playerMesh) {
+            const pm = this.state.playerMesh.position;
+            const dx = x - pm.x;
+            const dz = z - pm.z;
+            const d = Math.hypot(dx, dz);
+            const MIN = AnazhRealm.CREATURE_SPAWN_CLEAR_M;
+            if (d < MIN) {
+                const ang = d > 1e-4 ? Math.atan2(dz, dx) : ((this.state._creatureNetSeq || 0) + 1) * 2.39996;
+                x = pm.x + Math.cos(ang) * MIN;
+                z = pm.z + Math.sin(ang) * MIN;
+            }
+        }
         const chosenSoul = this._pickCreatureSoulName(soulName);
         const group = this._buildCreatureGroup(chosenSoul);
         if (!group) return null;
@@ -13311,7 +13349,11 @@ class AnazhRealm {
     // Liefert die wiederhergestellte THREE.Group oder null.
     _restoreCreatureFromSnapshot(snap, emotion = "happy") {
         if (!snap || !snap.position) return null;
-        const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul);
+        // W-D/M-F1 — der Restore ist PRECISE (bit-treu): das Wesen wacht auf, wo
+        // es stand — auch direkt neben dem Spieler (die Klemme gilt nur frischen Spawns).
+        const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul, {
+            precise: true,
+        });
         if (!c) return null;
         if (typeof snap.name === "string" && snap.name.length > 0) {
             c.userData.name = snap.name;
@@ -13680,18 +13722,11 @@ class AnazhRealm {
                     break;
                 }
             }
-            let bestRole = null;
-            let bestScore = -Infinity;
-            for (const role in SIG) {
-                const sig = SIG[role];
-                let score = 0;
-                for (const ax in sig) score += sig[ax] * (f[ax] || 0);
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestRole = role;
-                }
-            }
-            if (bestScore < FLOOR) continue;
+            // Ψ1 — das EINE argmax-Organ (der f-Feature-Vektor ist dieselbe
+            // Σ tag·gewicht-Sprache); der Floor bleibt die NACH-Prüfung wie eh.
+            const m = this._resonateArgmax(f, SIG);
+            const bestRole = m.key;
+            if (m.score < FLOOR || !bestRole) continue;
             // Seite + Phase: Beine im Diagonal-Trab (die Dragon-Signatur
             // generalisiert: (x>0) xor (z>0) → Gegenphase), Arme gegen das
             // gleichseitige Bein, der Schwanz als |z|-versetzte Welle.
@@ -13998,16 +14033,11 @@ class AnazhRealm {
         // „wehrhaft"); die ÷3-Skala ist die EINE Resonanz-Skala (V17.90).
         const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM || 3;
         for (const k of AnazhRealm.MATERIAL_TAG_KEYS) tags[k] = Math.max(0, Number(raw[k]) || 0) / norm;
-        const SIG = AnazhRealm.TEMPERAMENT_SIGNATURES;
-        let best = "scheu";
-        let bestScore = AnazhRealm.TEMPERAMENT_FLOOR;
-        for (const t in SIG) {
-            const score = this._blueprintResonance(tags, SIG[t]);
-            if (score > bestScore) {
-                best = t;
-                bestScore = score;
-            }
-        }
+        // Ψ1 — das EINE argmax-Organ liest; unter dem Floor bleibt „scheu".
+        const best =
+            this._resonateArgmax(tags, AnazhRealm.TEMPERAMENT_SIGNATURES, {
+                floor: AnazhRealm.TEMPERAMENT_FLOOR,
+            }).key || "scheu";
         creature.userData._temperament = best;
         creature.userData._temperamentSoul = soulKey;
         return best;
@@ -34940,6 +34970,12 @@ class AnazhRealm {
             roleChip.style.borderColor = p.roleColor;
             roleChip.style.color = p.roleColor;
         }
+        // W-C(h)/R-036 — der WARUM-CHIP an der Bibliotheks-Karte (Tooltip am
+        // Rollen-Chip): dieselbe lesbare Emergenz wie Werkstatt + Rezeptbuch.
+        {
+            const why = p.bp && this._blueprintRoleWhy(p.bp);
+            if (why && why.text) roleChip.title = `${AnazhRealm.ROLE_LABELS[why.role] || why.role}, weil: ${why.text}`;
+        }
         const header = this._el(
             "div",
             { class: "spec-header" },
@@ -38674,6 +38710,37 @@ class AnazhRealm {
         return score;
     }
 
+    // Ψ1 (meister-plan §8.8a, V18.167) — DAS EINE ARGMAX-ORGAN: der
+    // argmax-über-Signaturen-Loop lebte ~7× inline (Form-Rolle · Werkstatt-
+    // Domäne · Werkzeug-Op · Temperament · GapHint-Sieger · Implement-Rolle ·
+    // Motion-Rolle) — eine Registry, viele Leser (V9.82). Liest den Vektor
+    // gegen JEDE Signatur der Tabelle (_blueprintResonance), optional pro Key
+    // normalisiert (refs + refDefault — die QUALITY_ROLE_FIT-Skala raw/ref),
+    // optional auf ein Key-Subset beschränkt (keys, z. B. weapon/tool).
+    // Gewinner nur STRIKT über dem floor (exakt die historische >-Form jeder
+    // Inline-Stelle, gleiche Iterations-Ordnung) — bit-gleiche Verdichtung;
+    // findet nichts den floor, kommt { key: null, score: floor }. Ψ0 bewacht
+    // die WINKEL der Tabellen, dieses Organ bewacht die LESE-Form.
+    _resonateArgmax(vektor, tabelle, opts = {}) {
+        const floor = opts.floor !== undefined ? opts.floor : -Infinity;
+        const refs = opts.refs || null;
+        const refDefault = Number.isFinite(opts.refDefault) ? opts.refDefault : 0;
+        const keys = opts.keys || Object.keys(tabelle || {});
+        let key = null;
+        let score = floor;
+        for (const k of keys) {
+            const sig = tabelle[k];
+            if (!sig) continue;
+            let s = this._blueprintResonance(vektor, sig);
+            if (refs || refDefault) s /= (refs && refs[k]) || refDefault || 1;
+            if (s > score) {
+                score = s;
+                key = k;
+            }
+        }
+        return { key, score };
+    }
+
     // S7-B / R1 (kampf-plan §11.10) — DIE WERKSTATT-DOMÄNE EMERGIERT als RESONANZ aus der Substanz, kein
     // hardcoded `workshopDomain` + keine Einzel-Tag-Schwelle mehr. Jede Domäne hat einen Signatur-Vektor
     // (`WORKSHOP_DOMAIN_SIGNATURES`, an den 5 Built-ins GEMESSEN); die bediente Domäne ist das ARGMAX der
@@ -38684,17 +38751,10 @@ class AnazhRealm {
     _computeWorkshopDomain(bp) {
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
         const t = this.computeCompoundTags(bp) || {};
-        const sigs = AnazhRealm.WORKSHOP_DOMAIN_SIGNATURES;
-        let best = null;
-        let bestScore = AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR;
-        for (const domain in sigs) {
-            const score = this._blueprintResonance(t, sigs[domain]);
-            if (score > bestScore) {
-                bestScore = score;
-                best = domain;
-            }
-        }
-        return best;
+        // Ψ1 — das EINE argmax-Organ liest (bit-gleiche Verdichtung des Inline-Loops).
+        return this._resonateArgmax(t, AnazhRealm.WORKSHOP_DOMAIN_SIGNATURES, {
+            floor: AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR,
+        }).key;
     }
 
     // ----- Welt-Reaktion: moveable (Spieler steigt ein, Compound folgt) -----
@@ -38792,14 +38852,22 @@ class AnazhRealm {
         if (bp) {
             const sp = this._attachPointFor(bp, "sitz").point;
             if (Number.isFinite(sp.y)) {
-                // Sitz-Oberkante + halbe Spieler-Körperhöhe (~0.9) = Reiter-Zentrum.
-                entry._sitzHeight = Math.max(0.6, sp.y * scale + 0.9);
+                // W-D (V18.170, R-010 — GEMESSEN +0.90 m Schwebe): die alte +0.9
+                // war die STEH-Anatomie (Körperzentrum ≈ Hüfte+0.9 im Stand) —
+                // aber die M3-SITZ-Pose senkt die Hüfte AUF den Sattel. Das
+                // Reiter-ZENTRUM der sitzenden Pose liegt ~SITZ_HIP_OFFSET über
+                // dem Sattelpunkt (Spieler-Anatomie, gefährt-skalen-unabhängig).
+                entry._sitzHeight = Math.max(0.45, sp.y * scale + AnazhRealm.SITZ_HIP_OFFSET);
             }
         }
         // M3(a)/V18.155 — die BODEN-KLÄRUNG fürs vertikale FÜHREN (das Gefährt
         // steht auf dem Terrain, der Reiter folgt ihm): Ursprung − Bauplan-
         // Unterkante (rotations-bewusst), ×scale. Gecacht (die Form ist frozen).
         entry._groundClear = bp ? -this._compoundBottomY(bp) * scale : 0;
+        // W-D/M-D2 (V18.170, R-011) — die halbe HORIZONTALE Spanne fürs
+        // Hang-Proben (Bug/Heck in Fahrt-Richtung): gecacht, gedeckelt 0.8..3 m.
+        const ext = bp ? this._compoundVisualExtent(bp) : null;
+        entry._rideHalfLen = ext ? Math.max(0.8, Math.min(3, (Math.max(ext.dx, ext.dz) * scale) / 2)) : 1;
         entry._rideY = null;
         // Spieler-Position über die Architektur heben (sodass er auf dem SITZ
         // sitzt). Architektur-Position wird in _tickMountedMovement nachgezogen.
@@ -38897,7 +38965,21 @@ class AnazhRealm {
         // Stufe 2" fällt GRATIS mit); der REITER folgt IHM (Body kinematisch
         // auf Sitz-Höhe, vy genullt — der Sprung ruht im Sattel, wie im Boot).
         const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
-        const groundY = this.getTerrainHeightAt(pm.x, pm.z);
+        let groundY = this.getTerrainHeightAt(pm.x, pm.z);
+        // W-D/M-D2 (V18.170, R-011 — GEMESSEN: der Bein-Schwung ist ±1 cm, die
+        // Hang-Wurzel bleibt): ein STARRER Körper auf gekrümmtem Boden braucht
+        // den HÖCHSTEN Kontaktpunkt — Bug + Heck in Fahrt-Richtung mit-proben,
+        // max() führt (Minecraft-Boot: die Tal-Seite schwebt minimal, statt
+        // dass die Berg-Seite eintaucht). 2 zusätzliche surfMap-Reads/Frame.
+        if (Number.isFinite(groundY) && Number.isFinite(entry._rideYaw)) {
+            const half = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
+            const dx = Math.sin(entry._rideYaw) * half;
+            const dz = Math.cos(entry._rideYaw) * half;
+            const gBug = this.getTerrainHeightAt(pm.x + dx, pm.z + dz);
+            const gHeck = this.getTerrainHeightAt(pm.x - dx, pm.z - dz);
+            if (Number.isFinite(gBug)) groundY = Math.max(groundY, gBug);
+            if (Number.isFinite(gHeck)) groundY = Math.max(groundY, gHeck);
+        }
         if (Number.isFinite(groundY)) {
             const targetY = groundY + (Number.isFinite(entry._groundClear) ? entry._groundClear : 0);
             const k = 1 - Math.exp(-8 * tick);
@@ -41913,15 +41995,10 @@ class AnazhRealm {
         const cfg = AnazhRealm.QUALITY_ROLE_FIT;
         const refFor = (role) => (cfg.refs && cfg.refs[role]) || 3.0;
         const v = this._blueprintProductVector(bp);
-        let winner = null;
-        let winScore = -Infinity;
-        for (const role in sigs) {
-            const score = this._blueprintResonance(v, sigs[role]) / refFor(role);
-            if (score > winScore) {
-                winScore = score;
-                winner = role;
-            }
-        }
+        // Ψ1 — der Sieger über das EINE argmax-Organ (raw/ref-Skala via refs+refDefault).
+        const win = this._resonateArgmax(v, sigs, { refs: cfg.refs, refDefault: 3.0 });
+        const winner = win.key;
+        const winScore = win.score;
         if (winner === targetRole) return { already: true, targetRole };
         const sigW = sigs[winner];
         const refT = refFor(targetRole);
@@ -41949,6 +42026,40 @@ class AnazhRealm {
             ? `${action} → ${roleLabel}`
             : `+${Math.max(0.05, best.need).toFixed(2)} ${label} → ${roleLabel}`;
         return { targetRole, winner, axis: best.axis, need: best.need, text };
+    }
+
+    // W-C(h) (V18.169, R-036/§8.9b — die Angriffs-Inversion #2): DER WARUM-CHIP.
+    // „Warum ist mein Ding ein Trank?" ist die größte Fremden-Hürde — die
+    // Antwort liegt SCHON als Zahl im argmax: die top-3 BEITRÄGE (v[achse] ×
+    // gewicht) der GEWONNENEN Rolle, lesbar formatiert („lebendig 1.0 ·
+    // greifbar 0.6 · härte −0.5"). KEIN zweites Register (liest Produkt-Vektor
+    // + ROLE_/FORM_ROLE_SIGNATURES — Ψ0 bewacht die Achsen-Stabilität); der
+    // GapHint zeigt WIE DAHIN, dieser Chip zeigt WARUM HIER — zusammen die
+    // volle Lehrer-Geste. Kein Spiel hat lesbare Emergenz.
+    _blueprintRoleWhy(bp) {
+        if (!bp) return null;
+        const role = (typeof this._displayRole === "function" && this._displayRole(bp)) || bp.role;
+        const sig =
+            AnazhRealm.ROLE_SIGNATURES[role] ||
+            (AnazhRealm.FORM_ROLE_SIGNATURES && AnazhRealm.FORM_ROLE_SIGNATURES[role]) ||
+            null;
+        if (!sig) return null;
+        const v = this._blueprintProductVector(bp);
+        const beitraege = [];
+        for (const axis in sig) {
+            const contrib = (v[axis] || 0) * sig[axis];
+            if (Math.abs(contrib) > 0.02) beitraege.push({ axis, contrib });
+        }
+        if (!beitraege.length) return null;
+        beitraege.sort((a, b) => Math.abs(b.contrib) - Math.abs(a.contrib));
+        const text = beitraege
+            .slice(0, 3)
+            .map((p) => {
+                const label = (AnazhRealm.AXIS_LABELS && AnazhRealm.AXIS_LABELS[p.axis]) || p.axis;
+                return `${label} ${p.contrib < 0 ? "−" : ""}${Math.abs(p.contrib).toFixed(1)}`;
+            })
+            .join(" · ");
+        return { role, text };
     }
 
     // §7.3(b) — der KONJUNKTIONS-RUF (die wertvollste Lehrer-Geste): resoniert
@@ -43254,17 +43365,12 @@ class AnazhRealm {
         // soul liest `livingBody` (V17.90 — ein toter Körper-Panzer ist KEINE Seele); portal braucht die
         // Ring-FORM (ein magisches Kristall ohne Ring ist kein Tor).
         const v = this._blueprintProductVector(bp);
-        const sigs = AnazhRealm.FORM_ROLE_SIGNATURES;
-        let best = AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
-        let bestScore = AnazhRealm.FORM_ROLE_RESONANCE_FLOOR;
-        for (const role in sigs) {
-            const score = this._blueprintResonance(v, sigs[role]);
-            if (score > bestScore) {
-                bestScore = score;
-                best = role;
-            }
-        }
-        return best;
+        // Ψ1 — das EINE argmax-Organ liest; unter dem Floor bleibt der Default (architecture).
+        return (
+            this._resonateArgmax(v, AnazhRealm.FORM_ROLE_SIGNATURES, {
+                floor: AnazhRealm.FORM_ROLE_RESONANCE_FLOOR,
+            }).key || AnazhRealm.DEFAULT_BLUEPRINT_ROLE
+        );
     }
 
     // U4 — die GERÄTE-Rolle aus der Form: argmax der NORMIERTEN Resonanz (raw/ref, damit die Signatur-Skalen
@@ -43272,17 +43378,14 @@ class AnazhRealm {
     _argmaxImplementRole(bp) {
         const v = this._blueprintProductVector(bp);
         const cfg = AnazhRealm.QUALITY_ROLE_FIT;
-        let best = "tool";
-        let bestNorm = -Infinity;
-        for (const role of ["weapon", "tool"]) {
-            const raw = this._blueprintResonance(v, AnazhRealm.ROLE_SIGNATURES[role]);
-            const norm = raw / ((cfg.refs && cfg.refs[role]) || 3.0);
-            if (norm > bestNorm) {
-                bestNorm = norm;
-                best = role;
-            }
-        }
-        return best;
+        // Ψ1 — das EINE argmax-Organ auf dem weapon/tool-Subset (keys), raw/ref-normiert.
+        return (
+            this._resonateArgmax(v, AnazhRealm.ROLE_SIGNATURES, {
+                keys: ["weapon", "tool"],
+                refs: cfg.refs,
+                refDefault: 3.0,
+            }).key || "tool"
+        );
     }
 
     // Setzt bp.role emergent ein. Wird aus den Mutations-Methoden gerufen
@@ -43306,18 +43409,10 @@ class AnazhRealm {
         const fallback = { opClass: "subtractive", opName: AnazhRealm.OP_NAME_BY_CLASS.subtractive };
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return fallback;
         const v = this._blueprintProductVector(bp);
-        const sigs = AnazhRealm.OP_CLASS_SIGNATURES;
-        let best = null;
-        let bestScore = -Infinity;
-        for (const cls in sigs) {
-            const score = this._blueprintResonance(v, sigs[cls]);
-            if (score > bestScore) {
-                bestScore = score;
-                best = cls;
-            }
-        }
-        if (!best || bestScore <= 0) return fallback;
-        return { opClass: best, opName: AnazhRealm.OP_NAME_BY_CLASS[best] || "carve" };
+        // Ψ1 — das EINE argmax-Organ; floor 0 = die historische `bestScore <= 0 → fallback`-Wand.
+        const r = this._resonateArgmax(v, AnazhRealm.OP_CLASS_SIGNATURES, { floor: 0 });
+        if (!r.key) return fallback;
+        return { opClass: r.key, opName: AnazhRealm.OP_NAME_BY_CLASS[r.key] || "carve" };
     }
 
     // Setzt Bauplan-Werkzeug-Meta. Nur eigene Baupläne, nur whitelisted
@@ -48703,6 +48798,81 @@ class AnazhRealm {
         this.renderRecipeBook();
     }
 
+    // W-C(a) (V18.169, Korpus R-005) — EIN Mach-Tor-FORMATTER: das Tor antwortet
+    // strukturiert ({reason, missing, cost, neededDomain}); jeder Konsument
+    // präsentierte den Fehlschlag anders (Log in der ZUGEKLAPPTEN Konsole = die
+    // GEMESSENE Meta-Wurzel „Stats ändern sich nicht"). Jetzt formt EINE Stimme
+    // den Hint, und _showMachTorHint zeigt ihn INLINE am Ort der Geste.
+    _machTorHint(result) {
+        if (!result || result.ok) return "";
+        if (result.reason === "not_enough_material") {
+            const miss = Object.entries(result.missing || {})
+                .map(([m, n]) => `${n}× ${m}`)
+                .join(" · ");
+            return `fehlt ${miss || "Material"} — sammeln oder abbauen, dann fertigen`;
+        }
+        if (result.reason === "no_workshop_station") {
+            const label =
+                typeof this._stationLabelForDomain === "function"
+                    ? this._stationLabelForDomain(result.neededDomain)
+                    : result.neededDomain || "Werkstatt";
+            return `braucht ⚒ ${label} in der Nähe (pfad-Modus)`;
+        }
+        return result.reason ? `fehlgeschlagen: ${result.reason}` : "fehlgeschlagen";
+    }
+
+    // W-C(a) — der Hint INLINE am Ort der Geste (kein Log-Only mehr): eine
+    // .mach-tor-hint-Zeile im host (alte ersetzt — idempotent), nach 4 s fade +
+    // Entfernen. Dient JEDEM Tor-Konsumenten (Rüstungs-Slot · Rezept-Zeile ·
+    // FERTIGEN) und jedem künftigen (Trank/Avatar/Portal — W-G erbt ihn).
+    _showMachTorHint(host, result) {
+        if (!host || typeof document === "undefined") return;
+        const text = this._machTorHint(result);
+        if (!text) return;
+        const old = host.querySelector(":scope > .mach-tor-hint");
+        if (old) old.remove();
+        const line = document.createElement("div");
+        line.className = "mach-tor-hint";
+        line.textContent = `⚒ ${text}`;
+        host.appendChild(line);
+        setTimeout(() => {
+            line.classList.add("fade");
+            setTimeout(() => line.remove(), 900);
+        }, 4000);
+    }
+
+    // W-C(a) (R-005) — der PREIS lesbar: die Stat-FOLGE einer Rüstung („+8.1
+    // Abwehr · −4.2 Tempo") VOR dem Anlegen. computePlayerStats ist der pure
+    // Rechner — equipped.armor wird transient getauscht, gerechnet, exakt
+    // restauriert (kein recompute, kein State-Echo).
+    _armorStatDeltaText(name) {
+        const p = this.state.player;
+        if (!p || !name || !this.state.blueprints || !this.state.blueprints[name]) return "";
+        const eq = (p.equipped = p.equipped || { held: null, offhand: null, armor: null });
+        const prev = eq.armor;
+        let before;
+        let after;
+        try {
+            eq.armor = null;
+            before = this.computePlayerStats().stats;
+            eq.armor = name;
+            after = this.computePlayerStats().stats;
+        } catch {
+            return "";
+        } finally {
+            eq.armor = prev;
+        }
+        if (!before || !after) return "";
+        const parts = [];
+        const push = (label, d, digits = 1) => {
+            if (Math.abs(d) >= 0.05) parts.push(`${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(digits)} ${label}`);
+        };
+        push("Abwehr", (after.defense || 0) - (before.defense || 0));
+        push("Tempo", (after.speed || 0) - (before.speed || 0));
+        push("HP", (after.hpMax || 0) - (before.hpMax || 0), 0);
+        return parts.join(" · ");
+    }
+
     // Was du trägst — Gerät in der Hand + Rüstung, sichtbar + klickbar (Klick legt ab). V18.67 Ich-J5:
     // direkt unter dem Viewer (ohne Überschrift), die Rüstung mit eingebautem Wechsel (Select IM Slot, kein
     // „Mehr"-Aufklappen), + die aktiven BOOSTS als Chips (was JETZT wirkt — wie wenn der Nexus feuert).
@@ -48712,20 +48882,26 @@ class AnazhRealm {
         host.innerHTML = "";
         const eq = (this.state.player && this.state.player.equipped) || { held: null, armor: null };
         const bps = this.state.blueprints || {};
-        // (1) In der Hand — Klick legt ab; GEWECHSELT wird in der Hand über die Hotbar (J2).
+        // (1) HAUPTHAND — Klick legt ab; GEWECHSELT wird über die Hotbar (J2).
+        // W-C(c) (R-004): die Benennung trägt die Wahrheit — das Feld IST die
+        // Haupthand (equipped.held), die NEBENHAND lebt am G-Slot neben der
+        // Hotbar; beide Tooltips verweisen aufeinander (eine equipped-Struktur,
+        // zwei Slots — kein Parallel-Pfad, nur fehlende Brücke).
         {
             const bp = eq.held && bps[eq.held];
             const el = document.createElement("div");
             el.className = "equip-slot";
-            el.appendChild(this._el("span", { class: "equip-kind", text: "In der Hand" }));
+            el.appendChild(this._el("span", { class: "equip-kind", text: "Haupthand" }));
             el.appendChild(
                 this._el("span", {
                     class: "equip-name",
                     text: eq.held ? (bp && bp.label) || eq.held : "— leer (Faust) —",
                 })
             );
+            el.title = eq.held
+                ? "Klick → ablegen · Wechseln über die Hotbar · G tauscht mit der Nebenhand"
+                : "Die Haupthand — wählen über die Hotbar; G tauscht mit der Nebenhand (Slot links der Hotbar)";
             if (eq.held) {
-                el.title = "Klick → ablegen · Wechseln über die Hotbar";
                 el.addEventListener("click", () => {
                     this.equipHeld(null);
                     this._renderInventoryEquip();
@@ -48748,19 +48924,30 @@ class AnazhRealm {
                 sel.appendChild(this._el("option", { value: "", text: "— keine —" }));
                 for (const name of armorBlueprints) {
                     const opt = this._el("option", { value: name, text: (bps[name] && bps[name].label) || name });
+                    // W-C(a) (R-005) — der PREIS lesbar VOR der Wahl: die Stat-FOLGE
+                    // („+8.1 Abwehr · −4.2 Tempo") am Eintrag — der Spieler errät
+                    // nicht einmal mehr das Vorzeichen.
+                    const delta = this._armorStatDeltaText(name);
+                    if (delta) opt.title = delta;
                     if (eq.armor === name) opt.selected = true;
                     sel.appendChild(opt);
                 }
+                // Die Stat-Folge der GEWÄHLTEN Rüstung als sichtbare Mini-Zeile.
+                if (eq.armor) {
+                    const d = this._armorStatDeltaText(eq.armor);
+                    if (d) el.appendChild(this._el("span", { class: "equip-stat-delta", text: d }));
+                }
                 sel.addEventListener("change", () => {
                     const res = this.wearArmor(sel.value || null);
-                    if (!res.ok && res.reason === "not_enough_material") {
-                        const miss = Object.entries(res.missing || {})
-                            .map(([m, n]) => `${n}× ${m}`)
-                            .join(", ");
-                        this.log(`Rüstung weben nötig — fehlt: ${miss || "Material"} (⚒ in der Werkstatt).`, "ERROR");
-                    }
+                    // W-C(a) — das Mach-Tor SPRICHT am Ort der Geste: der Re-Render
+                    // unten stellt das Select auf den ECHTEN Zustand zurück (die
+                    // Select-Lüge fällt), DANN erscheint der Hint im frischen Host.
                     this._renderInventoryEquip();
                     this.renderRecipeBook();
+                    if (!res.ok) {
+                        this._showMachTorHint(document.getElementById("inventory-equip"), res);
+                        this.log(`Rüstung: ${this._machTorHint(res)}`, "ERROR");
+                    }
                 });
                 el.appendChild(sel);
             } else {
@@ -48773,8 +48960,12 @@ class AnazhRealm {
             }
             host.appendChild(el);
         }
-        // (3) Aktive Boosts — was JETZT wirkt (wie wenn der Nexus feuert), Schöpfer-Wunsch.
-        this._renderEquipBoosts(host);
+        // (3) Aktive Boosts — was JETZT wirkt. W-C(b) (R-003): das EINE Band lebt
+        // im Freiraum der Emotions-Spalte (Schöpfer-Wort „rechts unten zu den
+        // Emotionen") — #ich-boosts-host neben #status-emotions; die alte
+        // Sheet-Fußzeilen-Doublette ist GESCHNITTEN (zwei Gesichter derselben
+        // Wahrheit alterten verschieden). Fallback: der Equip-Block selbst.
+        this._renderEquipBoosts(document.getElementById("ich-boosts-host") || host);
     }
 
     // V18.67 Ich-J5 — die aktiven Boost-Effekte als Chips. Liest player.boosts
@@ -48784,6 +48975,11 @@ class AnazhRealm {
     // EFFEKT (die stärkste tagDelta-Achse: „+magieleitung 0.4") und trägt data-expires —
     // tickStatsHud zählt die Restzeit LIVE herunter (textContent, kein Re-Render).
     _renderEquipBoosts(host) {
+        if (!host) return;
+        // W-C(b) — EIN Band, idempotent: ein vorheriger Render im selben Host
+        // wird ersetzt (der Host ist jetzt stehend — #ich-boosts-host).
+        const prev = host.querySelector(":scope > .ich-boosts");
+        if (prev) prev.remove();
         const boosts = this.state.player && Array.isArray(this.state.player.boosts) ? this.state.player.boosts : [];
         const nowSec = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
         const active = boosts.filter((b) => b && b.expiresAt > nowSec);
@@ -48827,8 +49023,9 @@ class AnazhRealm {
     }
 
     // M5 (Befund 15) — die LIVE-Restzeit: tickStatsHud ruft das ~1×/s; aktualisiert
-    // NUR die textContents sichtbarer Chips (kein Re-Render), räumt Ausgelaufene
-    // über den nächsten echten Render (renderInventoryUI/Equip-Refresh).
+    // NUR die textContents sichtbarer Chips (kein Re-Render). W-C(b) (R-003): ein
+    // ABGELAUFENER Chip wird ENTFERNT statt umbeschriftet — „(ausgelaufen)"
+    // existiert nicht mehr als Anzeige-Zustand (der Linger war der Befund).
     _tickBoostChips() {
         if (typeof document === "undefined") return;
         const chips = document.querySelectorAll(".ich-boost-chip[data-expires]");
@@ -48838,8 +49035,12 @@ class AnazhRealm {
             const exp = Number(chip.getAttribute("data-expires"));
             if (!Number.isFinite(exp)) continue;
             const rest = Math.max(0, Math.round(exp - nowSec));
+            if (rest <= 0) {
+                chip.remove();
+                continue;
+            }
             const base = chip.getAttribute("data-base") || "✺ Boost";
-            const next = rest > 0 ? `${base} (${rest}s)` : `${base} (ausgelaufen)`;
+            const next = `${base} (${rest}s)`;
             if (chip.textContent !== next) chip.textContent = next;
         }
     }
@@ -48952,6 +49153,10 @@ class AnazhRealm {
             const rRole = (typeof this._displayRole === "function" && this._displayRole(bp)) || bp.role;
             const rColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[rRole];
             if (rColor) row.style.borderLeft = `3px solid ${rColor}`;
+            // W-C(h)/R-036 — der WARUM-CHIP an der Rezept-Zeile (Tooltip): die
+            // lesbare Emergenz reist an jede Rollen-Anzeige.
+            const why = this._blueprintRoleWhy(bp);
+            if (why && why.text) row.title = `${AnazhRealm.ROLE_LABELS[why.role] || why.role}, weil: ${why.text}`;
         }
         const info = document.createElement("div");
         info.className = "recipe-info";
@@ -48987,14 +49192,18 @@ class AnazhRealm {
         row.appendChild(info);
         const btn = document.createElement("button");
         btn.type = "button";
+        // W-C(e)/R-007 — LABEL == TAT: das Knopf-Wort folgt derselben useKind-
+        // Familie wie craftFromRecipe (vehicle = place+Rolle → wird GEFERTIGT,
+        // dann platziert; der alte sonst-Zweig log „In die Hand").
         btn.textContent =
             kind === "wear"
                 ? "Anlegen"
                 : kind === "drink"
                   ? "Brauen + Trinken"
-                  : kind === "place"
+                  : kind === "place" || kind === "vehicle"
                     ? "Fertigen"
                     : "In die Hand";
+        if (kind === "vehicle") btn.title = "Fertigen — dann über die Hotbar in der Welt platzieren + reiten (E).";
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         const free = mode === "schöpfer" || Number.isFinite(bp && bp.forgedPrecision);
         btn.disabled = !free && !check.ok;
@@ -49009,13 +49218,11 @@ class AnazhRealm {
             const res = this.craftFromRecipe(name);
             if (res && res.ok) {
                 this.renderInventoryUI();
-            } else if (res && res.reason === "no_workshop_station") {
-                this.log(
-                    `„${label}" braucht eine Werkstatt-Station (${res.neededDomain || "Esse"}) in der Nähe.`,
-                    "INFO"
-                );
-            } else if (res && res.reason === "not_enough_material") {
-                this.log(`Nicht genug Material für „${label}".`, "INFO");
+            } else if (res && !res.ok) {
+                // W-C(a)/R-005 — das Mach-Tor spricht AN DER ZEILE (die Konsole
+                // ist zugeklappt — der Log allein erreichte nie jemanden).
+                this._showMachTorHint(row, res);
+                this.log(`„${label}": ${this._machTorHint(res)}`, "INFO");
             }
         });
         row.appendChild(btn);
@@ -49262,6 +49469,9 @@ class AnazhRealm {
                 prof.emotionState = es;
                 prof.moodLabel += ` · ${es.dominant} ${(es.intensity * 100) | 0}%`;
             }
+            // W-B — der VOLLE 6-Achsen-Vektor reist mit (Kopie): die Hof-Karte
+            // zeigt das Innenleben als Fenster, nicht mehr nur das Destillat.
+            prof.emotions = { ...vec };
         }
         // Sektion (§D.2/§F) — Seele + dominante Spezialisierung, für das Gruppen-Dirigat.
         const topSpec = prof.specs[0];
@@ -49543,7 +49753,20 @@ class AnazhRealm {
         }
         const leftCol = this._el("div", { class: "spec-col" }, ...werteChildren);
 
-        // NATUR (sekundär) — die Compound-Tags als Balken (0–3): die Substanz, aus der die Werte emergieren.
+        // W-B (R-002, meister-plan §8.2) — die EMOTION an der STELLE der Natur:
+        // die 6 Achsen als intuitive Balken (wie HP), gebaut vom EINEN Renderer
+        // (_buildEmotionRows — dieselbe Sprache wie das Ich, statisch pro Render).
+        const rightChildren = [this._el("div", { class: "spec-col-head", text: "Gefühl" })];
+        if (prof.emotions) {
+            const built = this._buildEmotionRows(prof.emotions);
+            const rowsHost = this._el("div", { class: "hof-emotion-rows" });
+            for (const row of built.rows) rowsHost.appendChild(row);
+            rightChildren.push(rowsHost);
+        } else {
+            rightChildren.push(this._el("span", { class: "spec-empty", text: "noch kein Innenleben" }));
+        }
+        // NATUR (Werkstatt-Wissen, sekundär) — die Compound-Tags wandern in ein
+        // einklappbares <details>: einen Klick entfernt, prägt die Karte nicht mehr.
         const tagEntries = Object.entries(prof.tags || {})
             .filter(([, v]) => Number.isFinite(v) && v > 0.05)
             .sort((a, b) => b[1] - a[1])
@@ -49557,10 +49780,16 @@ class AnazhRealm {
                 `${k}: ${v.toFixed(2)} (Natur, 0–3 — speist die Werte)`
             )
         );
-        const rightChildren = [this._el("div", { class: "spec-col-head", text: "Natur" })];
-        rightChildren.push(
-            ...(natBars.length ? natBars : [this._el("span", { class: "spec-empty", text: "noch keine Substanz" })])
-        );
+        if (natBars.length) {
+            const natDetails = document.createElement("details");
+            natDetails.className = "spec-nature-details";
+            const natSum = document.createElement("summary");
+            natSum.textContent = "Substanz — speist die Werte";
+            natSum.title = "Die Compound-Tags (Natur, 0–3), aus denen die Werte emergieren — Werkstatt-Wissen.";
+            natDetails.appendChild(natSum);
+            for (const b of natBars) natDetails.appendChild(b);
+            rightChildren.push(natDetails);
+        }
         const rightCol = this._el("div", { class: "spec-col" }, ...rightChildren);
         const body = this._el("div", { class: "spec-body" }, leftCol, rightCol);
 
@@ -49852,11 +50081,15 @@ class AnazhRealm {
         );
         const body = this._el("div", { class: "spec-body" }, leftCol, rightCol);
 
-        // FOOTER — die getragene Habe (Werkzeug/Rüstung/Boosts) als Chips.
+        // FOOTER — die getragene Habe (Werkzeug/Rüstung) als Chips. W-C(b)
+        // (R-003): die Boost-Chips sind hier GESCHNITTEN — das EINE Boost-Band
+        // lebt in der Emotions-Spalte (#ich-boosts-host, mit Live-Countdown);
+        // die statische Fußzeilen-Doublette alterte nie und verwirrte. (Die
+        // Source-Probe sucht das Chip-Glyph — der Kommentar trägt es bewusst
+        // nicht: die Γ5-Zensus-Lehre.)
         const habe = [];
         if (prof.equipped.tool) habe.push("⚒ " + prof.equipped.tool);
         if (prof.equipped.armor) habe.push("⛨ " + prof.equipped.armor);
-        for (const b of prof.boosts) if (b && (b.label || b.source)) habe.push("✺ " + (b.label || b.source));
         const footer = this._el(
             "div",
             { class: "spec-footer hof-spec-footer" },
@@ -52337,21 +52570,25 @@ class AnazhRealm {
         }
     }
 
-    // M5 (V18.157, Befund 17 „Umwidmen unterm ICH doppelt zur Werkstatt") — die
-    // Umwidmen-Reihe in der Mach-Zone des GEWÄHLTEN Bauplans (Domänen-Trennung,
-    // V18.79-Klasse: die Rolle eines Werks ist Werkstatt-Sache). Vier Gesten:
-    // Rüstung · Konsumabel · Portal(Ziel-Select) · ✨ Emergent (resetBlueprintRole
-    // — löst roleManual, die Substanz spricht wieder; der Chip-Tooltip-Verweis
-    // ist damit WAHR). Jede Geste re-rendert das Panel (der Rollen-Chip folgt live).
+    // W-C(f) (V18.169, Korpus R-008 — Schöpfer: „wozu Umwidmen, der Prozess fixt
+    // doch die Rolle?"): die Rolle FIXT der PROZESS (applyOp/Station) — Rüstung/
+    // Konsumabel als Knöpfe FIELEN. Legitim bleiben NUR die drei NICHT-EMERGENTEN
+    // Intent-Akte (V17.70-Klasse — Zweck über Materie, GEMESSEN nicht aus der
+    // Substanz ableitbar): Portal-ZIEL (wohin führt es) · Werkstatt-DESIGNATION
+    // (ein Forge und ein Bauwerk sind Substanz-Zwillinge — der Zweck trennt sie)
+    // · ✨ Emergent-Reset (Markierung lösen, die Substanz spricht wieder). Jede
+    // Geste trägt ihren EINEN Warum-Satz; jede re-rendert (der Chip folgt live).
+    // setBlueprintAsArmor/AsConsumable BLEIBEN als DSL/Chat-Gesten — nur die
+    // Werkstatt-Knöpfe (die Doublette zum Prozess-Fluss) sind geschnitten.
     _workshopAppendUmwidmenRow(zone, bp) {
         if (!zone || !bp || bp.builtIn || typeof document === "undefined") return;
         const row = document.createElement("div");
         row.className = "stat-row workshop-umwidmen-row";
         const label = document.createElement("span");
         label.className = "stat-label";
-        label.textContent = "Umwidmen";
+        label.textContent = "Intent";
         label.title =
-            "Dem Werk eine Rolle GEBEN (Intent-Override) — oder mit ✨ die Markierung lösen, damit die Rolle wieder aus der Substanz emergiert.";
+            "Die ROLLE fixt der Prozess (Werkzeug auf den Part ziehen). Hier leben nur die drei Akte, die KEIN Prozess ableiten kann: Ziel, Zweck, Loslassen.";
         row.appendChild(label);
         const acts = document.createElement("span");
         acts.className = "workshop-umwidmen-acts";
@@ -52364,18 +52601,12 @@ class AnazhRealm {
             btn.title = title;
             btn.addEventListener("click", () => {
                 const res = fn();
-                if (res && res.ok === false) this.log(`Umwidmen: ${res.reason}`, "ERROR");
+                if (res && res.ok === false) this.log(`Intent: ${res.reason}`, "ERROR");
                 refresh();
             });
             acts.appendChild(btn);
             return btn;
         };
-        mkBtn("Rüstung", "Als Rüstung markieren (tragbar via „Was du trägst“).", () =>
-            this.setBlueprintAsArmor(bp.name)
-        );
-        mkBtn("Konsumabel", "Als Konsumabel markieren (trinkbar, Wirkung aus den Tags).", () =>
-            this.setBlueprintAsConsumable(bp.name, 30, bp.label || bp.name, 0.2)
-        );
         // Portal: Ziel-Welt wählen + richten (W12 — der spieler-erreichbare Pfad).
         const portalSel = document.createElement("select");
         portalSel.className = "equip-portal-select";
@@ -52385,11 +52616,18 @@ class AnazhRealm {
             wOpt.textContent = AnazhRealm.WORLD_REGISTRY[wid].label;
             portalSel.appendChild(wOpt);
         }
-        mkBtn("Portal →", "Auf die gewählte Welt richten (das Werk wird ein Tor).", () =>
-            this.aimBlueprintAtWorld(bp.name, portalSel.value)
+        mkBtn(
+            "Portal →",
+            "Das ZIEL ist Wille, keine Substanz: auf die gewählte Welt richten — das Werk wird ein Tor.",
+            () => this.aimBlueprintAtWorld(bp.name, portalSel.value)
         );
         acts.appendChild(portalSel);
-        mkBtn("✨ Emergent", "Markierung lösen — die Rolle emergiert wieder aus der Substanz.", () =>
+        mkBtn(
+            "⚒ Station",
+            "Der ZWECK ist Wille: dieses Bauwerk DIENT als Werkstatt (Esse/Brennkolben-Zwilling) — die bediente Domäne emergiert aus seiner Substanz.",
+            () => this.setBlueprintAsWorkshopStation(bp.name)
+        );
+        mkBtn("✨ Emergent", "LOSLASSEN: Markierung lösen — die Rolle emergiert wieder aus der Substanz.", () =>
             this.resetBlueprintRole(bp.name)
         );
         row.appendChild(acts);
@@ -52448,16 +52686,11 @@ class AnazhRealm {
             if (res.ok) {
                 this.log(`Gefertigt: „${bp.label || bp.name}" — ${verb}${wasFree ? " (frei)" : ""}.`, "INFO");
                 this._renderWorkshopDOM();
-            } else if (res.reason === "no_workshop_station") {
-                const stationLabel = this._stationLabelForDomain(res.neededDomain);
-                this.log(`Fertigen braucht eine Werkstatt: „${stationLabel}" in der Nähe (pfad-Modus).`, "ERROR");
-            } else if (res.reason === "not_enough_material") {
-                const missingStr = Object.entries(res.missing || {})
-                    .map(([m, n]) => `${n}× ${m}`)
-                    .join(", ");
-                this.log(`Fertigen fehlt an Material: ${missingStr || "Material"}.`, "ERROR");
             } else {
-                this.log(`Fertigen fehlgeschlagen (${res.reason || "unknown"}).`, "ERROR");
+                // W-C(a)/R-005 — das Mach-Tor spricht AN DER FERTIGEN-Zeile
+                // (derselbe EINE Formatter wie Rüstungs-Slot + Rezeptbuch).
+                this._showMachTorHint(row, res);
+                this.log(`Fertigen: ${this._machTorHint(res)}`, "ERROR");
             }
         });
         row.appendChild(btn);
@@ -52613,6 +52846,18 @@ class AnazhRealm {
             )
         );
         const rightChildren = [this._el("div", { class: "spec-col-head", text: "Rollen-Resonanz" }), ...resBars];
+        // W-C(h)/R-036 — der WARUM-CHIP: WARUM die Rolle GEWANN (top-3 Beiträge),
+        // direkt über dem GapHint (WIE DAHIN) — zusammen die volle Lehrer-Geste.
+        const why = this._blueprintRoleWhy(bp);
+        if (why && why.text) {
+            rightChildren.push(
+                this._el("div", {
+                    class: "spec-gap-hint spec-why-line",
+                    text: `✓ ${AnazhRealm.ROLE_LABELS[why.role] || why.role}, weil: ${why.text}`,
+                    title: "Lesbare Emergenz: die drei stärksten Achsen-Beiträge (Produkt-Vektor × Signatur-Gewicht) der gewonnenen Rolle.",
+                })
+            );
+        }
         // Der KONJUNKTIONS-RUF hat Vorrang (die direkteste Tat: „Fahrzeug ruft:
         // setze einen Sitz-Anker"), sonst der erste machbare Achsen-Hinweis.
         const konjRuf = this._blueprintConjunctionCall(bp);
@@ -56330,23 +56575,11 @@ class AnazhRealm {
         // Wechsel-Pfad für eine besessene (geschmiedete) Rüstung (wearArmor), während das Rezept-„Anlegen"
         // die Zutaten neu zieht (GEMESSEN _forgeMaterialAndFreeze → _makeCostGate) — also kein Duplikat.
         // V18.67 Ich-J5 — der Rüstung-WECHSEL lebt jetzt IM Slot („Was du trägst", _renderInventoryEquip).
-        // M5 (V18.157, Befund 17) — das UMWIDMEN zog GANZ in die WERKSTATT (Domänen-Trennung,
-        // V18.79-Klasse: die Rolle eines Werks ist Werkstatt-Sache — _workshopAppendUmwidmenRow
-        // in der Mach-Zone des gewählten Bauplans; das ICH trug eine Doublette). Hier bleiben
-        // die Schnell-Trünke (GEBRAUCH, kein Crafting) + der Verweis.
-        this._equipAppendDrawerHint(container);
+        // W-C(f)/R-008 (V18.169) — das Umwidmen-<details> + der Verweis-Hint FIELEN
+        // ERSATZLOS (das tote Wort erklärte etwas, das es im Ich nicht mehr gibt;
+        // die drei Intent-Akte leben in der Werkstatt-Mach-Zone). Hier bleiben NUR
+        // die Schnell-Trünke (GEBRAUCH, kein Crafting; leer = unsichtbar).
         this._equipAppendConsumablesSection(container);
-    }
-
-    // V18.67 Ich-J5 — der Hinweis erklärt das UMWIDMEN (das Tragen/Wechseln lebt in „Was du trägst" +
-    // der Hotbar). Behält „Rüstung" + „Hotbar" als Keywords (der Wechsel-Wege-Test).
-    _equipAppendDrawerHint(container) {
-        const equipHint = document.createElement("div");
-        equipHint.className = "drawer-hint";
-        equipHint.textContent =
-            "Umwidmen (einem Bauplan eine Rolle geben — Rüstung · Konsumabel · Portal) lebt in der WERKSTATT " +
-            "beim gewählten Werk. Tragen + Wechseln läuft über Was du trägst (Rüstung-Wechsel im Slot) + die Hotbar (in der Hand).";
-        container.appendChild(equipHint);
     }
 
     // W12 Phase 2 — JEDER eigene Nicht-Rüstung-Bauplan ist Markier-Kandidat,
@@ -58856,7 +59089,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.166.0";
+AnazhRealm.VERSION = "18.170.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -60373,6 +60606,14 @@ AnazhRealm.LIFTING_DRIFT_PER_SEC = 2.0;
 // Welt-Reaktion-Konstanten (Welle 10b.3).
 AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben
 AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
+// W-D (V18.170, R-010) — das Körperzentrum der SITZENDEN Pose über dem
+// Sattelpunkt (die M3-Sitz-Pose senkt die Hüfte auf den Sattel; die alte
+// Steh-Anatomie +0.9 ließ den Reiter GEMESSEN +0.90 m schweben). Dient
+// jedem künftigen Sitz (Boot · Bank · Thron).
+AnazhRealm.SITZ_HIP_OFFSET = 0.45;
+// W-D/M-F1 (V18.170, R-017) — der Min-Abstand frischer Kreatur-Spawns zum
+// Spieler (die M6-Struktur-Klemme aufs Wesen; Restore/Peer-Sicht = precise).
+AnazhRealm.CREATURE_SPAWN_CLEAR_M = 3;
 // V12.0-perf.e — adaptiver Qualitäts-Governor (Nexus). Render-Radius +
 // Build-Budget werden zwischen MIN/MAX justiert je FPS-Druck (NIE Gravitation).
 // RMAX = der Default-Render-Radius; RMIN bleibt > maximaler Test-Spawn-Distanz
