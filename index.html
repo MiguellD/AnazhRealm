@@ -6296,6 +6296,16 @@
                 color: var(--ink-on-dark-soft);
                 text-align: right;
             }
+            /* §7.3(b) (V18.164) — die WARUM-Führung: eine Zeile „+0.3 Standfläche
+               → Fahrzeug" unter dem Rollen-Spektrum (P11: lesbar auf dunklem Grund). */
+            .spec-gap-hint {
+                font-family: "IM Fell English", Georgia, serif;
+                font-style: italic;
+                font-size: 10.5px;
+                color: var(--ink-on-dark);
+                opacity: 0.92;
+                margin: 1px 0 3px;
+            }
             /* Werte-Chip-Streifen. */
             .spec-stat-strip {
                 display: flex;
@@ -8813,6 +8823,12 @@
                                 <input type="range" id="slider-nightfloor" min="0" max="30" value="12" />
                                 <span class="slider-value" id="slider-nightfloor-val">0.12</span>
                             </div>
+                            <!-- §7.5(a) (V18.164) - das Terrain-Mond-Rim (kuehler Nacht-Saum, tags 0). -->
+                            <div class="slider-row">
+                                <label for="slider-moonrim">Mond-Rim (Terrain, nachts)</label>
+                                <input type="range" id="slider-moonrim" min="0" max="50" value="12" />
+                                <span class="slider-value" id="slider-moonrim-val">0.12</span>
+                            </div>
                             <div class="slider-row">
                                 <label for="slider-edgesharp">Kanten-Schärfe</label>
                                 <input type="range" id="slider-edgesharp" min="0" max="100" value="46" />
@@ -9170,6 +9186,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.163.0" defer></script>
+        <script src="anazhRealm.js?v=18.164.0" defer></script>
     </body>
 </html>

@@ -5744,13 +5744,19 @@ async function checkBandV1769RoleResonance(ctx) {
 
         // (4) die Form-Rollen via Resonanz: ein weicher fleisch-Körper → soul, ein Turm → architecture, Nahrung →
         // consumable, ein magie-Ring → portal, ein Stein-Ring → architecture (KONSUM der Fixtures durch die Resonanz)
+        // V18.164 §7.3(a) (V9.56-i — die Spec schärfte sich): ein GLIED ist GESTRECKT
+        // (wie jede echte Engine-Seele: waechter/koerper_human-Arme sind elongierte
+        // Zylinder) — gespiegelte BLOBS sind keine Glieder mehr (sonst wurde die
+        // Eiche zur Seele, von der Archetypen-Bank gefangen). Die Würfel-Arme der
+        // 2025-Fixture wandern auf gestreckte Arme.
+        const arm = (mat, x) => ({
+            shape: "box",
+            material: mat,
+            size: { x: 0.4, y: 1.2, z: 0.4 },
+            position: { x, y: 2, z: 0 },
+        });
         const body = {
-            parts: [
-                part("fleisch", 0, 1, 0),
-                part("knochen", 0, 3, 0),
-                part("fleisch", -1, 2, 0),
-                part("fleisch", 1, 2, 0),
-            ],
+            parts: [part("fleisch", 0, 1, 0), part("knochen", 0, 3, 0), arm("fleisch", -1), arm("fleisch", 1)],
         };
         const tower = { parts: [part("stein", 0, 0, 0), part("stein", 0, 1, 0), part("stein", 0, 2, 0)] };
         const food = {
@@ -5776,7 +5782,7 @@ async function checkBandV1769RoleResonance(ctx) {
 
         // (5) DER FLIP — dieselbe body-Geometrie, andere Substanz kippt die Rolle: fleisch → soul, stein → architecture
         const stoneBody = {
-            parts: [part("stein", 0, 1, 0), part("stein", 0, 3, 0), part("stein", -1, 2, 0), part("stein", 1, 2, 0)],
+            parts: [part("stein", 0, 1, 0), part("stein", 0, 3, 0), arm("stein", -1), arm("stein", 1)],
         };
         out.substanceFlip =
             r.computeBlueprintRole(body) === "soul" && r.computeBlueprintRole(stoneBody) === "architecture";
@@ -29625,6 +29631,498 @@ async function checkBandV18163DetailTiefe(ctx) {
     );
 }
 
+// V18.164 — §7.1 (meister-plan): die AUTO-VERBINDUNG (Besiege-Muster) + §7.2
+// (Sattel-Optik + Probesitz-Ghost). GEMESSEN via diag-autoconnect (der Wagen
+// entsteht ohne einen Dialog-Klick); hier die stehenden Wände: Transition-
+// Geburt/-Lösung · „✂ Lösen" geehrt · Typ folgt der Substanz · Tür/Wirbel nur
+// aus bewusster Hand (Hütten wackeln nie) · die rotations-bewusste Kontakt-
+// Hülle (das liegende Rad BERÜHRT) · der geheilte Remap-Riss (Anker überleben
+// Part-Löschen) · Sattel in der Welt, Ghost nur in der Werkstatt.
+async function checkBandV18164AutoConnect(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        const P = (shape, material, x, y, z, sx, sy, sz, rot) => ({
+            shape,
+            material,
+            position: { x, y, z },
+            size: { x: sx, y: sy, z: sz },
+            ...(rot ? { rotation: rot } : {}),
+        });
+        if (blu.__ac) delete blu.__ac;
+        r.createBlueprint("__ac", "AutoConnect-Probe");
+        const bp = blu.__ac;
+        r.addPartToBlueprint("__ac", P("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1));
+        r.addPartToBlueprint("__ac", P("cylinder", "holz", 6, 0.34, 6, 0.62, 0.14, 0.62, { x: 0, y: 0, z: 1.5707963 }));
+
+        // (1) die ROTATIONS-BEWUSSTE Kontakt-Hülle: das liegende Rad (|R|·s →
+        // vertikal 0.62) berührt den Korpus an der kanonischen Platzierung —
+        // die rotations-blinde Hülle (0.14) hätte NIE berührt (GEMESSENE Wurzel).
+        bp.parts[1].position = { x: -0.72, y: 0.34, z: 0.8 };
+        out.rotKontakt = r._partsContactArea(bp.parts[0], bp.parts[1]) > 0;
+        const unrot = { ...bp.parts[1], rotation: { x: 0, y: 0, z: 0 } };
+        out.rotIstDieWurzel = r._partsContactArea(bp.parts[0], unrot) === 0;
+
+        // (2) TRANSITION gebiert: neu-berührt → auto-Verbindung (argmax-Typ:
+        // holz+holz → lashing/Binden, die M1-gemessene Substanz-Wahrheit).
+        let res1 = r._workshopAutoConnect(bp, 1, new Set());
+        const c1 = (bp.connections || []).find((c) => c.auto);
+        out.geburt = res1.created.length === 1 && !!c1 && c1.type === "lashing";
+
+        // (3) TRENNUNG löst nur auto-Geborenes; die bewusste Wahl bleibt.
+        bp.connections.push({ type: "welding", partA: 0, partB: 1 }); // bewusste Zweit-Verbindung (Test-Konstrukt)
+        bp.parts[1].position = { x: 9, y: 0.34, z: 9 };
+        r._workshopAutoConnect(bp, 1, new Set([0]));
+        out.trennung =
+            !(bp.connections || []).some((c) => c.auto) &&
+            (bp.connections || []).some((c) => c.type === "welding" && !c.auto);
+        bp.connections = [];
+
+        // (4) „✂ Lösen" GEEHRT: ruhender Kontakt (prevTouches trägt den Partner)
+        // gebiert NICHT neu; erst der echte Weg-und-zurück-Übergang tut es.
+        bp.parts[1].position = { x: -0.72, y: 0.34, z: 0.8 };
+        r._workshopAutoConnect(bp, 1, new Set([0]));
+        out.loesenGeehrt = (bp.connections || []).length === 0;
+        r._workshopAutoConnect(bp, 1, new Set());
+        out.uebergangGebiert = (bp.connections || []).filter((c) => c.auto).length === 1;
+
+        // (5) der Typ FOLGT der Substanz: Material → eisen ⇒ argmax wandert auf
+        // welding (der Kontakt ist gemeinsamer Faktor — der argmax hängt nur
+        // am Material-Paar).
+        bp.parts[0].material = "eisen";
+        bp.parts[1].material = "eisen";
+        r._workshopAutoConnect(bp, 1, r._workshopTouchesOf(bp, 1));
+        out.typFolgt = (bp.connections || []).some((c) => c.auto && c.type === "welding");
+
+        // (6) TÜR/WIRBEL nur aus bewusster Hand (das C2-„Hütten wackeln nie"):
+        // dieselbe Geometrie, auto vs. manuell — nur manuell gebiert das Gelenk.
+        const wand = (auto) => ({
+            parts: [P("box", "holz", 0, 0.15, 0, 6, 0.3, 6), P("box", "holz", 0, 1.8, 0, 4, 3, 0.2)],
+            connections: [
+                auto ? { type: "lashing", partA: 1, partB: 0, auto: 1 } : { type: "lashing", partA: 1, partB: 0 },
+            ],
+        });
+        const tuer = (auto) =>
+            (r.computeMotionRoles(wand(auto).parts, wand(auto).connections) || []).some((x) => x && x.role === "tuer");
+        const turm = (auto) => {
+            const p = [0, 1, 2, 3].map((i) => P("box", "stein", 0, 0.5 + i, 0, 1, 1, 1));
+            const c = [0, 1, 2].map((i) =>
+                auto
+                    ? { type: "masonry", partA: i, partB: i + 1, auto: 1 }
+                    : { type: "masonry", partA: i, partB: i + 1 }
+            );
+            return (r.computeMotionRoles(p, c) || []).some((x) => x && x.role === "wirbel");
+        };
+        out.tuerNurBewusst = !tuer(true) && tuer(false);
+        out.wirbelNurBewusst = !turm(true) && turm(false);
+        // …und das RAD bleibt der auto-Geburt offen (der Wagen ROLLT).
+        const radRoles = r.computeMotionRoles(bp.parts, bp.connections) || [];
+        out.radBleibtFrei = radRoles.some((x) => x && x.role === "rad");
+
+        // (7) die Marke REIST durch das Validierungs-Sieb (wie der M1-anchor).
+        const valid = r.validateBlueprintConnections([{ type: "lashing", partA: 0, partB: 1, auto: 1 }], 2);
+        out.validReist = valid.length === 1 && valid[0].auto === 1;
+
+        // (8) der GEHEILTE Remap-Riss: Part-Löschen bewahrt anchor + auto der
+        // ÜBRIGEN Verbindungen (vorher strippte der Remap ALLE Zusatz-Felder —
+        // ein Löschen zerstörte die M1-Face-Snap-Anker des ganzen Bauplans).
+        if (blu.__acRm) delete blu.__acRm;
+        r.createBlueprint("__acRm", "Remap-Probe");
+        r.addPartToBlueprint("__acRm", P("box", "holz", 0, 0.5, 0, 1, 1, 1));
+        r.addPartToBlueprint("__acRm", P("box", "holz", 0, 1.5, 0, 1, 1, 1));
+        r.addPartToBlueprint("__acRm", P("box", "holz", 0, 2.5, 0, 1, 1, 1));
+        const rmBp = blu.__acRm;
+        rmBp.connections = [
+            { type: "sitz", partA: 2, partB: -1, anchor: { x: 0.1, y: 0.5, z: 0 } },
+            { type: "lashing", partA: 1, partB: 2, auto: 1 },
+        ];
+        r.removePartFromBlueprint("__acRm", 0);
+        const sitzC = (rmBp.connections || []).find((c) => c.type === "sitz");
+        const autoC = (rmBp.connections || []).find((c) => c.type === "lashing");
+        out.remapHeil =
+            !!sitzC && !!sitzC.anchor && sitzC.anchor.x === 0.1 && sitzC.partA === 1 && !!autoC && autoC.auto === 1;
+        delete blu.__acRm;
+
+        // (9) §7.2 — SATTEL in der Welt (Substanz-Optik am expliziten Sitz),
+        // GHOST nur in der Werkstatt (opts-bestellt, V18.153-Trennung).
+        bp.connections.push({ type: "sitz", partA: 0, partB: -1, anchor: { x: 0, y: 0.175, z: 0 } });
+        const world = r._buildFromBlueprint(bp, 0);
+        const shop = r._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
+        out.sattelWelt = world.children.some((c) => c.userData && c.userData.isAttachmentVisual);
+        out.ghostNurWerkstatt =
+            shop.children.some((c) => c.userData && c.userData.isSeatGhost) &&
+            !world.children.some((c) => c.userData && c.userData.isSeatGhost);
+        const ohneSitz = { name: "__acNoSitz", parts: bp.parts };
+        out.keinSattelOhneSitz = !r
+            ._buildFromBlueprint(ohneSitz, 0)
+            .children.some((c) => c.userData && c.userData.isAttachmentVisual);
+        delete blu.__ac;
+        return out;
+    });
+    check(
+        "V18.164 §7.1 Kontakt-Wahrheit: die Hülle ist rotations-bewusst (|R|·s) — das liegende Wagenrad BERÜHRT den Korpus, die rotations-blinde Hülle war die gemessene Wurzel",
+        res.rotKontakt && res.rotIstDieWurzel
+    );
+    check(
+        "V18.164 §7.1 Auto-Verbindung: neu-berührt gebiert den Substanz-argmax (holz→Binden) · getrennt löst NUR auto-Geborenes (die bewusste Wahl bleibt)",
+        res.geburt && res.trennung
+    );
+    check(
+        "V18.164 §7.1 Lösen geehrt: ruhender Kontakt gebiert nie neu — erst der echte Weg-und-zurück-Übergang; und der Typ FOLGT der Substanz (eisen → Schweißen)",
+        res.loesenGeehrt && res.uebergangGebiert && res.typFolgt
+    );
+    check(
+        "V18.164 §7.1 Gelenk-Wand: Tür + Wirbel-Kette nur aus bewusster Hand (Hütten wackeln nie, C2) — das RAD bleibt der auto-Geburt offen (der Wagen rollt)",
+        res.tuerNurBewusst && res.wirbelNurBewusst && res.radBleibtFrei
+    );
+    check(
+        "V18.164 §7.1 die auto-Marke reist (Validierungs-Sieb) + der Remap-Riss ist geheilt (Part-Löschen bewahrt anchor/auto der übrigen Verbindungen)",
+        res.validReist && res.remapHeil
+    );
+    check(
+        "V18.164 §7.2 der Sitz ist SICHTBAR: Sattel-Optik in der Welt (Substanz am expliziten Anker) · Probesitz-Ghost NUR in der Werkstatt (opts-bestellt) · kein Sattel ohne Sitz",
+        res.sattelWelt && res.ghostNurWerkstatt && res.keinSattelOhneSitz
+    );
+}
+
+// V18.164 — §7.3(a) (meister-plan): die ARCHETYPEN-BANK. ~46 synthetische
+// Positiv- + GEGEN-Beispiele je Rolle als STEHENDE Invariante — jeder künftige
+// Signatur-Edit läuft gegen die Bank (nicht nur 31 Built-ins). Kalibriert via
+// diag-archetypbank (dieselbe Tabelle); die Bank fing beim Bau sofort zwei
+// echte Fragilitäten: den first-match-Spiegel (kompakte Körper hatten keine
+// Glieder) + die Kronen-Blob-Glieder (die Eiche wurde kurz zur Seele).
+async function checkBandArchetypBank(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const P = (shape, material, x, y, z, sx, sy, sz, rot) => ({
+            shape,
+            material,
+            position: { x, y, z },
+            size: { x: sx, y: sy, z: sz },
+            ...(rot ? { rotation: rot } : {}),
+        });
+        const RZ = { x: 0, y: 0, z: 1.5707963 };
+        const wheelQuad = (mat) => [
+            P("cylinder", mat, -0.72, 0.34, 0.8, 0.62, 0.14, 0.62, RZ),
+            P("cylinder", mat, 0.72, 0.34, 0.8, 0.62, 0.14, 0.62, RZ),
+            P("cylinder", mat, -0.72, 0.34, -0.8, 0.62, 0.14, 0.62, RZ),
+            P("cylinder", mat, 0.72, 0.34, -0.8, 0.62, 0.14, 0.62, RZ),
+        ];
+        const wheelConns = [1, 2, 3, 4].map((i) => ({ type: "lashing", partA: 0, partB: i, auto: 1 }));
+        const sitz = { type: "sitz", partA: 0, partB: -1 };
+        const humanoid = (mat) => [
+            P("box", mat, 0, 1.1, 0, 0.5, 0.7, 0.3),
+            P("sphere", mat, 0, 1.7, 0, 0.3, 0.3, 0.3),
+            P("box", mat, -0.15, 0.35, 0, 0.18, 0.7, 0.18),
+            P("box", mat, 0.15, 0.35, 0, 0.18, 0.7, 0.18),
+            P("box", mat, -0.4, 1.2, 0, 0.15, 0.6, 0.15),
+            P("box", mat, 0.4, 1.2, 0, 0.15, 0.6, 0.15),
+        ];
+        const BANK = [
+            {
+                n: "wagen holz+sitz",
+                p: [P("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1), ...wheelQuad("holz")],
+                c: [...wheelConns, sitz],
+                e: "vehicle",
+            },
+            {
+                n: "karren eisen+sitz",
+                p: [P("box", "eisen", 0, 0.85, 0, 1.4, 0.3, 2.4), ...wheelQuad("eisen")],
+                c: [...wheelConns, sitz],
+                e: "vehicle",
+            },
+            {
+                n: "wagen breit holz",
+                p: [P("box", "holz", 0, 0.85, 0, 1.8, 0.4, 2.6), ...wheelQuad("holz")],
+                c: [...wheelConns, sitz],
+                e: "vehicle",
+            },
+            {
+                n: "GEGEN stein-stuhl",
+                p: [P("box", "stein", 0, 0.6, 0, 1, 0.2, 1), P("box", "stein", 0, 0.2, 0, 0.9, 0.6, 0.9)],
+                c: [sitz],
+                ne: "vehicle",
+            },
+            {
+                n: "GEGEN wagen ohne sitz ≠ trank",
+                p: [P("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1), ...wheelQuad("holz")],
+                c: wheelConns,
+                ne: "consumable",
+            },
+            {
+                n: "GEGEN wagen ohne sitz ≠ seele",
+                p: [P("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1), ...wheelQuad("holz")],
+                c: wheelConns,
+                ne: "soul",
+            },
+            { n: "fleisch-humanoid", p: humanoid("fleisch"), e: "soul" },
+            { n: "GEGEN leder-humanoid (Puppe)", p: humanoid("leder"), ne: "soul" },
+            {
+                n: "fleisch-humanoid groß",
+                p: humanoid("fleisch").map((q) => ({
+                    ...q,
+                    size: { x: q.size.x * 1.5, y: q.size.y * 1.5, z: q.size.z * 1.5 },
+                })),
+                e: "soul",
+            },
+            { n: "GEGEN eisen-humanoid", p: humanoid("eisen"), ne: "soul" },
+            { n: "GEGEN stein-humanoid", p: humanoid("stein"), ne: "soul" },
+            { n: "trank laub-kügelchen", p: [P("sphere", "laub", 0, 0.4, 0, 0.5, 0.6, 0.5)], e: "consumable" },
+            { n: "frucht fleisch-kugel", p: [P("sphere", "fleisch", 0, 0.5, 0, 1, 1, 1)], e: "consumable" },
+            { n: "kraut-bündel", p: [P("sphere", "kraut", 0, 0.3, 0, 0.4, 0.5, 0.4)], e: "consumable" },
+            {
+                n: "trank zwei-teilig",
+                p: [P("sphere", "laub", 0, 0.35, 0, 0.45, 0.55, 0.45), P("sphere", "essenz", 0, 0.7, 0, 0.2, 0.2, 0.2)],
+                e: "consumable",
+            },
+            {
+                n: "GEGEN baum ≠ trank",
+                p: [P("cylinder", "holz", 0, 1.5, 0, 0.85, 3.2, 0.85), P("sphere", "laub", 0, 4.7, 0, 2.9, 2.6, 2.9)],
+                ne: "consumable",
+            },
+            { n: "GEGEN holz-kasten ≠ trank", p: [P("box", "holz", 0, 0.5, 0, 2.2, 1, 2.2)], ne: "consumable" },
+            { n: "GEGEN laub-teppich ≠ trank", p: [P("box", "laub", 0, 0.1, 0, 3, 0.2, 3)], ne: "consumable" },
+            {
+                n: "stein-turm",
+                p: [P("box", "stein", 0, 1, 0, 2, 2, 2), P("box", "stein", 0, 3, 0, 1.6, 2, 1.6)],
+                e: "architecture",
+            },
+            {
+                n: "holz-hütte",
+                p: [
+                    P("box", "holz", 0, 0.15, 0, 4, 0.3, 4),
+                    P("box", "holz", 0, 1.5, 1.9, 4, 3, 0.2),
+                    P("box", "holz", 0, 1.5, -1.9, 4, 3, 0.2),
+                ],
+                e: "architecture",
+            },
+            { n: "eisen-säule", p: [P("cylinder", "eisen", 0, 2, 0, 0.8, 4, 0.8)], e: "architecture" },
+            { n: "quarz-monument", p: [P("box", "quarz", 0, 1.2, 0, 1.8, 2.4, 1.8)], e: "architecture" },
+            {
+                n: "baum-gestalt",
+                p: [P("cylinder", "holz", 0, 1.5, 0, 0.85, 3.2, 0.85), P("sphere", "laub", 0, 4.7, 0, 2.9, 2.6, 2.9)],
+                e: "architecture",
+            },
+            { n: "quarz-torus tor", p: [P("torus", "quarz", 0, 1.6, 0, 2.6, 2.6, 0.5)], e: "portal" },
+            { n: "essenz-ring tor", p: [P("torus", "essenz", 0, 1.5, 0, 2.4, 2.4, 0.4)], e: "portal" },
+            { n: "GEGEN mini-ring ≠ tor", p: [P("torus", "quarz", 0, 0.3, 0, 0.5, 0.5, 0.15)], ne: "portal" },
+            { n: "GEGEN stein-ring ≠ tor", p: [P("torus", "stein", 0, 1.6, 0, 2.6, 2.6, 0.5)], ne: "portal" },
+            {
+                n: "eisen-klinge",
+                p: [P("cone", "eisen", 0, 1.0, 0, 0.12, 1.2, 0.12), P("cylinder", "eisen", 0, 0.2, 0, 0.08, 0.5, 0.08)],
+                eIn: ["weapon", "held", "tool", "brecher"],
+            },
+            {
+                n: "pickel holz-stiel",
+                p: [
+                    P("cone", "stein", 0, 0.95, 0, 0.18, 0.5, 0.18),
+                    P("cylinder", "holz", 0, 0.35, 0, 0.07, 0.8, 0.07),
+                ],
+                eIn: ["tool", "held", "weapon", "brecher"],
+            },
+            { n: "GEGEN eisen-klotz ≠ waffe", p: [P("box", "eisen", 0, 0.4, 0, 0.8, 0.8, 0.8)], ne: "weapon" },
+            {
+                n: "GEGEN spitzen-cluster ≠ waffe",
+                p: [P("cone", "stein", 0, 0.5, 0, 0.6, 0.7, 0.6), P("cone", "stein", 0.3, 0.45, 0.2, 0.5, 0.6, 0.5)],
+                ne: "weapon",
+            },
+            { n: "builtin fahrzeug_wagen", b: "fahrzeug_wagen", e: "vehicle" },
+            { n: "builtin reittier_holzross", b: "reittier_holzross", e: "vehicle" },
+            { n: "builtin baum_eiche", b: "baum_eiche", e: "architecture" },
+            { n: "builtin baum_kiefer", b: "baum_kiefer", e: "architecture" },
+            { n: "builtin trank_lebenssaft", b: "trank_lebenssaft", e: "consumable" },
+            { n: "builtin avatar_waechter", b: "avatar_waechter", e: "soul" },
+            { n: "builtin ruestung_brustpanzer", b: "ruestung_brustpanzer", eIn: ["armor", "architecture"] },
+            { n: "builtin stein_block", b: "stein_block", e: "architecture" },
+            { n: "builtin kristall_geode", b: "kristall_geode", eIn: ["architecture", "portal"] },
+            { n: "trank variant 0.7×", p: [P("sphere", "laub", 0, 0.3, 0, 0.35, 0.42, 0.35)], e: "consumable" },
+            { n: "turm variant schmal", p: [P("box", "stein", 0, 2, 0, 1, 4, 1)], e: "architecture" },
+            { n: "humanoid variant knochen", p: humanoid("knochen"), ne: "consumable" },
+            {
+                n: "wagen variant 3 räder",
+                p: [P("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1), ...wheelQuad("holz").slice(0, 3)],
+                c: [...wheelConns.slice(0, 3), sitz],
+                e: "vehicle",
+            },
+            { n: "GEGEN leerer ein-block", p: [P("box", "stein", 0, 0.5, 0, 1, 1, 1)], ne: "vehicle" },
+            { n: "GEGEN glut-brocken ≠ seele", p: [P("sphere", "glut", 0, 0.5, 0, 1.2, 1.2, 1.2)], ne: "soul" },
+        ];
+        const fails = [];
+        for (const tc of BANK) {
+            const bp = tc.b
+                ? r.state.blueprints[tc.b]
+                : { name: "_bank", parts: tc.p, ...(tc.c ? { connections: tc.c } : {}) };
+            if (!bp) {
+                fails.push(`${tc.n}: builtin fehlt`);
+                continue;
+            }
+            const got = r.computeBlueprintRole(bp);
+            const ok = tc.e ? got === tc.e : tc.eIn ? tc.eIn.includes(got) : got !== tc.ne;
+            if (!ok) fails.push(`${tc.n}: ${got} (soll ${tc.e || (tc.eIn && tc.eIn.join("|")) || "≠" + tc.ne})`);
+        }
+        return { cases: BANK.length, fails };
+    });
+    check(
+        `V18.164 §7.3(a) ARCHETYPEN-BANK: alle ${res.cases} synthetischen Positiv-/GEGEN-Beispiele klassifizieren wie kalibriert (Signatur-Edits laufen gegen die Bank)` +
+            (res.fails.length ? ` — FAILS: ${res.fails.join(" · ")}` : ""),
+        res.cases >= 45 && res.fails.length === 0
+    );
+}
+
+// V18.164 — §7.3(b) WARUM-Führung + §7.5 Licht-Folgepunkte (meister-plan):
+// die Lehrer-Geste („+0.3 Standfläche → Fahrzeug") ist ARITHMETISCH EHRLICH
+// (die Drehung flippt die Rolle wirklich) + sichtbar im Spektrum; die HISM-
+// Bäume laufen GEMESSEN durch den microTexture-Zweig (Befund-21-Rest); das
+// Mond-Rim lebt nacht-getrieben; die M7-Regler überleben den Reload (der
+// geheilte V8.59-Riss).
+async function checkBandV18164WarumLicht(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const P = (shape, material, x, y, z, sx, sy, sz) => ({
+            shape,
+            material,
+            position: { x, y, z },
+            size: { x: sx, y: sy, z: sz },
+        });
+        // (1) die WARUM-Führung ist ARITHMETISCH EHRLICH: für einen Bauplan,
+        // dessen Wunsch-Rolle machbar ist, flippt die empfohlene Achsen-Drehung
+        // die Ziel-Rolle wirklich über den Sieger (dieselbe Spektrum-Skala).
+        const probe = { name: "__warum", parts: [P("box", "holz", 0, 0.5, 0, 1.6, 1, 1.6)] };
+        const spectrum = r._blueprintRoleSpectrum(probe);
+        let hinted = null;
+        for (let i = 1; i < spectrum.length && !hinted; i++) {
+            const h = r._blueprintRoleGapHint(probe, spectrum[i].role);
+            if (h && h.text && Number.isFinite(h.need)) hinted = h;
+        }
+        out.hintGefunden = !!hinted;
+        if (hinted) {
+            const cfg = r.constructor.QUALITY_ROLE_FIT;
+            const sigs = r.constructor.ROLE_SIGNATURES;
+            const v = r._blueprintProductVector(probe);
+            const v2 = { ...v, [hinted.axis]: Math.min(1, (v[hinted.axis] || 0) + hinted.need + 1e-6) };
+            const score = (role, vec) => r._blueprintResonance(vec, sigs[role]) / ((cfg.refs && cfg.refs[role]) || 3);
+            let winner2 = null;
+            let best2 = -Infinity;
+            for (const role in sigs) {
+                const s = score(role, v2);
+                if (s > best2) {
+                    best2 = s;
+                    winner2 = role;
+                }
+            }
+            out.hintEhrlich = score(hinted.targetRole, v2) >= score(hinted.winner, v2) - 1e-6;
+            out.hintFlippt = winner2 === hinted.targetRole || out.hintEhrlich;
+        }
+        // …und der KONJUNKTIONS-RUF spricht als TAT: der sitzlose Wagen
+        // resoniert Fahrzeug schon als SPEKTRUM-Spitze (GEMESSEN nach dem
+        // consumable-Spiegel-Heal), der Klassifikator wartet auf den Sitz —
+        // die Zeile ruft die Tat aus („Fahrzeug ruft: setze einen Sitz-Anker").
+        const RZ = { x: 0, y: 0, z: 1.5707963 };
+        const wagenOhneSitz = {
+            name: "__warum2",
+            parts: [
+                P("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1),
+                { ...P("cylinder", "holz", -0.72, 0.34, 0.8, 0.62, 0.14, 0.62), rotation: RZ },
+                { ...P("cylinder", "holz", 0.72, 0.34, 0.8, 0.62, 0.14, 0.62), rotation: RZ },
+            ],
+            connections: [
+                { type: "lashing", partA: 0, partB: 1, auto: 1 },
+                { type: "lashing", partA: 0, partB: 2, auto: 1 },
+            ],
+        };
+        const ruf = r._blueprintConjunctionCall(wagenOhneSitz);
+        out.tatHinweis = !!ruf && /Sitz-Anker/.test(ruf.text) && ruf.role === "vehicle";
+        // …und der SPEKTRUM-Spiegel-Heal selbst: der sitzlose Holz-Wagen liest
+        // im Spektrum NICHT mehr „Trank" oben (der V18.162-Heal erreicht jetzt
+        // BEIDE Register — eine Wahrheit, alle Leser).
+        const spec2 = r._blueprintRoleSpectrum(wagenOhneSitz);
+        out.spektrumKeinTrank = spec2[0].role !== "consumable";
+        // (2) die Führung ist VERDRAHTET (Spektrum-Zeile + sichtbare Hint-Zeile + Ruf).
+        const srcSpec = r._specRenderBody.toString();
+        out.verdrahtet =
+            /spec-gap-hint/.test(srcSpec) &&
+            /_blueprintRoleGapHint/.test(srcSpec) &&
+            /_blueprintConjunctionCall/.test(srcSpec);
+
+        // (3) §7.5(b) GEMESSEN ENCODIERT: die HISM-Bäume (instanced) laufen
+        // durch den microTexture-Zweig — _archLeafMaterial → _buildToonNode-
+        // Material(color) → isFlatStructure → Aerial-Chain (outputNode lebt).
+        const flat = r._archFlattenBlueprint("baum_eiche");
+        out.baumInstanced = !!flat && flat.instanceable === true;
+        out.baumMicro =
+            !!flat && flat.leaves.length > 0 && flat.leaves.every((l) => !!l.mat && l.mat.outputNode != null);
+
+        // (4) §7.5(a) das MOND-RIM: Uniform existiert + wird im Output-Chain
+        // konsumiert + der Tag-Nacht-Sync treibt es (nachts > 0, mittags 0).
+        const au = r._ensureAtmoUniforms();
+        out.moonUniform = !!au.terrainMoonRim;
+        out.moonKonsum = /terrainMoonRim/.test(r._applyAerialOutput.toString());
+        const tintProbe = { skyR: 0.1, skyG: 0.1, skyB: 0.2, lightMul: 1 };
+        r._dayNightApplyHemiAndFog(-Math.PI / 2, tintProbe); // Mitternacht (sin=-1)
+        const nightVal = au.terrainMoonRim.value;
+        r._dayNightApplyHemiAndFog(Math.PI / 2, tintProbe); // Mittag (sin=1)
+        const noonVal = au.terrainMoonRim.value;
+        out.moonNachtGetrieben = nightVal > 0.01 && noonVal === 0;
+        // Den echten Tag-Nacht-Zustand wiederherstellen (die Sonde schrieb
+        // synthetische Winkel in Hemi/Fog/Uniforms — Folge-Bands lesen sauber).
+        if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+
+        // (5) der GEHEILTE M7-Persistenz-Riss (V8.59-Klasse): Snapshot trägt
+        // microStrength/terrainNightFloor/moonRim, der Restore liest sie.
+        const snap = r.buildStateSnapshot();
+        out.persistenz =
+            !!snap.atmosphere &&
+            Number.isFinite(snap.atmosphere.microStrength) &&
+            Number.isFinite(snap.atmosphere.terrainNightFloor) &&
+            Number.isFinite(snap.atmosphere.moonRim);
+        const srcRestore = r._loadStateRestoreSoulAndAtmosphere.toString();
+        out.restoreLiest =
+            /setMicroStrength/.test(srcRestore) &&
+            /setTerrainNightFloor/.test(srcRestore) &&
+            /setTerrainMoonRim/.test(srcRestore);
+
+        // (6) §6.5 LADE-NEBEL (Befund 23, GEMESSEN diag-startloch): solange der
+        // Ziel-Ring nicht voll steht, deckt der Nebel die GEBAUTE Kante (der
+        // Boot-Blick in die Mantel-Stanze fällt). KONSUM: der Fog-Sync liest
+        // _builtRingRadius; im warmen Test-Ring ist der Spieler-Chunk gebaut.
+        out.ladeNebelKonsum = /_builtRingRadius/.test(r._dayNightApplyHemiAndFog.toString());
+        const bk = r._builtRingRadius();
+        out.builtRing = Number.isInteger(bk) && bk >= 0;
+        out.fogDeckel =
+            !!r.state.scene && !!r.state.scene.fog && Number.isFinite(r.state._fogEdgeSmooth)
+                ? r.state.scene.fog.far <= r.state._fogEdgeSmooth + 0.001 ||
+                  r.state.scene.fog.far <= 150 * 9 /* Formel-Min griff */
+                : true;
+        return out;
+    });
+    check(
+        "V18.164 §7.3(b) WARUM-Führung: der Hinweis ist arithmetisch EHRLICH (die Drehung hebt die Ziel-Rolle über den Sieger) + Konjunktions-Achsen sprechen als TAT (Sitz-Anker setzen → Fahrzeug)",
+        res.hintGefunden && res.hintEhrlich && res.hintFlippt && res.tatHinweis && res.spektrumKeinTrank
+    );
+    check("V18.164 §7.3(b) die Führung ist im Spektrum VERDRAHTET (spec-gap-hint + Tooltip)", res.verdrahtet);
+    check(
+        "V18.164 §7.5(b) GEMESSEN: die HISM-Bäume laufen durch den microTexture-Zweig (instanceable + Aerial-outputNode auf jedem Leaf-Material)",
+        res.baumInstanced && res.baumMicro
+    );
+    check(
+        "V18.164 §7.5(a) Mond-Rim: Uniform konsumiert im EINEN Output-Chain + nacht-getrieben (Mitternacht > 0, Mittag exakt 0)",
+        res.moonUniform && res.moonKonsum && res.moonNachtGetrieben
+    );
+    check(
+        "V18.164 §7.5 M7-Regler-Persistenz GEHEILT (V8.59-Klasse): microStrength/terrainNightFloor/moonRim reisen im Snapshot + der Restore liest sie",
+        res.persistenz && res.restoreLiest
+    );
+    check(
+        "V18.164 §6.5 LADE-NEBEL (Befund 23): der Fog-Sync liest die GEBAUTE Ring-Kante (_builtRingRadius) — der Boot-Blick in die Mantel-Stanze fällt; im warmen Ring steht der Spieler-Chunk",
+        res.ladeNebelKonsum && res.builtRing && res.fogDeckel
+    );
+}
+
 // V18.157 — M5: HUD/RÄUME-POLITUR nach Spieler-Denken (meister-plan §2;
 // Befunde 13–17 + 26, alle GEMESSEN via diag-m5-hud). Resize-Sprung (105→180
 // beim ersten Pixel) · Logbuch = Dev-Sicht (EIN Schalter) · Emotion-Track auf
@@ -33161,14 +33659,18 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         //     Glieder als Spiegel-Paar ---
         // Wesen: Torso+Kopf auf der Achse (vertikal gestreckt),
         // Arme als Off-Achsen-Spiegel-Paar.
+        // V18.164 §7.3(a) (V9.56-i — die Spec schärfte sich): ein GLIED ist
+        // GESTRECKT (wie jede echte Engine-Seele) — gespiegelte BLOBS sind
+        // keine Glieder (sonst wurde die Eiche zur Seele; Archetypen-Bank).
+        const armPart = (mat, x) => ({
+            shape: "box",
+            material: mat,
+            size: { x: 0.4, y: 1.2, z: 0.4 },
+            position: { x, y: 2, z: 0 },
+        });
         const bodyBp = {
             name: "_t835_body",
-            parts: [
-                part("fleisch", 0, 1, 0),
-                part("knochen", 0, 3, 0),
-                part("fleisch", -1, 2, 0),
-                part("fleisch", 1, 2, 0),
-            ],
+            parts: [part("fleisch", 0, 1, 0), part("knochen", 0, 3, 0), armPart("fleisch", -1), armPart("fleisch", 1)],
         };
         out.bodyIsShaped = r._isBodyShaped(bodyBp) === true;
         out.bodyRoleSoul = r.computeBlueprintRole(bodyBp) === "soul";
@@ -46725,6 +47227,9 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandM8MakroFenster(ctx);
             await checkBandNutzerBlickNachbau(ctx);
             await checkBandV18163DetailTiefe(ctx);
+            await checkBandV18164AutoConnect(ctx);
+            await checkBandArchetypBank(ctx);
+            await checkBandV18164WarumLicht(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

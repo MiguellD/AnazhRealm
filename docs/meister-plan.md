@@ -60,7 +60,7 @@ Symptomen. Jede Welle: messen → bauen → Invarianten → „Alle Invarianten 
 | 20 | Terrain nachts SCHWARZ (Gras/Bauten haben Restlicht) | Bauten haben LUT-Boden 0.25 (B8), Terrain-vertexColor-Pfad hat keinen Floor | Licht-Parität der Ebenen | M7 |
 | 21 | Cel-Mikrokontrast: Regler gewünscht; fehlt auf Bauten/Bäumen | `AERIAL.microStrength` existiert (J2) — als Slider exponieren + Stärke auf Strukturen prüfen | tote/versteckte Hebel | M7 |
 | 22 | Fluss: Shaderlinien + Tauchhöhe versetzt; Oberfläche glätten, eigene Strömungswellen | Sheet folgt Terrain-Bumps; Profis: geglättete Lauf-Fläche + flow-aligned Wellen (eigener Wasser-Polish-Bogen, roadmap §4 lebt) | Wasser-Render-Architektur §0 | M7 |
-| 23 | LOD-Loch beim Start-Ring; Fog-Kopplung; Sichtkegel-Priorität | A5 koppelt fog≤Ringkante — MESSEN warum sichtbar (Mantel-Loch? Ring zu klein default?); Frustum-first-Streaming prüfen | die EINE Kaskade | M7 |
+| 23 | LOD-Loch beim Start-Ring; Fog-Kopplung; Sichtkegel-Priorität | ✓ V18.164 GEMESSEN (diag-startloch): die FOG-KOPPLUNG — fog.far las die Mantel-Kante (4.3 km) bei 1–12/81 gebauten Chunks → Blick in die Stanze. GEHEILT: der LADE-NEBEL deckt die GEBAUTE Ring-Kante (`_builtRingRadius`), weicht mit der Welt | die EINE Kaskade | M7 ✓ |
 | 24 | Werkstatt-Evaluation: Teile auseinanderziehen = besser | **ECHTES Ökonomie-Loch**: `_compoundSizeFactor` = HÜLL-Volumen → bbox aufblasen erhöht Stats. Heilung: SUBSTANZ-Volumen (Σ Part-Volumina) + Hüll/Substanz-Verhältnis als Hohlheits-Malus | Robustheit der Stat-Formel (Ω5-Geist) | M2 |
 | 25 | Nexus spawnt wieder AUF dem Spieler | `_structureSpawnPos` (V17.28) umgangen? Neuer Spawn-Pfad (Mana-Ära) ohne die Klemme → messen + EIN Eingang | V9.82 | M6 |
 | 26 | Hof: Emotionen statt Natur prominent | D1 zeigt dominante Emotion als Label — der Schöpfer will HP-artige Intuition (Balken) | Vision-Mechanik sichtbar | M5 |
@@ -162,8 +162,8 @@ Output-Chain, nur vertexColors-Ebenen, Mittag per Konstruktion; A/B GEMESSEN
 LEBENDIGER Regler (Befund 21: die Konstante war eingebacken = jeder Slider tot →
 Uniform + setMicroStrength/setTerrainNightFloor + zwei Regler im Cel-&-Licht-Band).
 OFFEN (ehrlich verortet): Befund 22 Fluss-Polish = der EIGENE Bogen (roadmap §4,
-Narben-Liste: NUR der Lauf, NIE der Querschnitt) · Befund 23 LOD-Start-Loch = der
-§6.5-Mess-Auftrag (braucht ein frisches Boot-Setup). +4 Invarianten.
+Narben-Liste: NUR der Lauf, NIE der Querschnitt) · Befund 23 ✓ V18.164 (der
+§6.5-Mess-Auftrag — Wurzel Fog-Kopplung, Heilung Lade-Nebel). +4 Invarianten.
 
 **M8 — Das Makro-Fenster [H]. ✓ GEBAUT (V18.161).** ✓ Die Online-Zahl über den
 BESTEHENDEN WS-Kanal ({type:"stats"} → Räume+Peers, nur dem Anfrager — die CSP-kluge
@@ -181,10 +181,12 @@ das Wagen-Nachbau-Szenario → 3 lebende Brüche, die alle Saat-Tests nie sahen
 [Löse-Toggle verbaute den Sitz-Weg · Holz-Nachbau = „Trank" · kein Phantom] → an
 den Wurzeln geheilt, Re-Run 0 Brüche, Chip „FAHRZEUG", geritten). **DIE NEUE
 WAND: vor jedem „GEBAUT ✓" das Nachbau-Szenario spielen (Schritt → Shot →
-Soll/Ist) — die Saat beweist die Mechanik, nicht den Nutzer-Weg.** Es bleibt
+Soll/Ist) — die Saat beweist die Mechanik, nicht den Nutzer-Weg.** →
+**V18.164 ✓ (§7.1 AUTO-VERBINDUNG + §7.2 Anker sichtbar + §7.3 Bank/WARUM +
+§7.5-Folgepunkte + §6.5 Start-Loch GEMESSEN+GEHEILT — Details in §7).** Es bleibt
 M9 (die Aufstiegs-Leiter, §3): ein S-DIALOG-Bogen je Sprosse (3–5 brauchen den
-Schöpfer am Tisch); dazu die S-Sign-offs der M-Wellen + die offenen Bögen
-(Befund 22 Wasser · Befund 23 Start-Loch · Deko-Pflück-Reichweite/Fernfeld).
+Schöpfer am Tisch); dazu die S-Sign-offs der M-Wellen + der offene Bogen
+Befund 22 Wasser (+ Deko-Pflück-Reichweite/Fernfeld-Vermerk).
 
 ---
 
@@ -315,7 +317,15 @@ den S-Dialog je Adoption — der Plan legt die Leiter, nicht die Automatik.
    Versink-Wahrheit + Sitz-Pose). [M3]
 4. ✓ Filter-Inventur (V18.158): 5 Implementierungen gemessen, auf den EINEN Kern
    verdichtet. [M4]
-5. LOD-Start-Loch: `diag-chunk-seam` mit Ring=Start-Default. [M7]
+5. ✓ LOD-Start-Loch (V18.164): `diag-startloch.cjs` — frischer Boot, frühe
+   Zeitpunkte. GEMESSENE Wurzel = die FOG-KOPPLUNG: fog.far las die VERSPROCHENE
+   Kante (Mantel 4.3 km), während erst 1–12 von 81 Ring-Chunks standen → Blick
+   durch klare Luft in die Mantel-Stanze (Void; der Baseline-Shot zeigt das Loch
+   wörtlich). NICHT „Ring zu klein", der Mantel ist früh DA. HEILUNG = der
+   LADE-NEBEL (Minecraft-Muster): solange der Ziel-Ring nicht voll steht, deckt
+   fog die GEBAUTE zusammenhängende Kante (`_builtRingRadius`, exp-geglättet,
+   harter ≤-Ziel-Deckel — A5 wird boot-ehrlich); A/B GEMESSEN: fog.far 796→98 m
+   am unfertigen Ring, Loch im Shot gedeckt. [M7 → ✓]
 6. ✓ Nexus-Spawn-Pfade (V18.159): 13 Aufrufer gemessen → die Klemme an die WURZEL
    (spawnArchitecture), Opt-out-Karte silent/id/precise. [M6]
 
@@ -326,33 +336,48 @@ den S-Dialog je Adoption — der Plan legt die Leiter, nicht die Automatik.
 Die ehrliche Antwort pro Teilsystem: IST → die Profi-Referenz → die Lücke → WOHIN ES WIRKLICH SOLL.
 GEMESSEN, nicht Bauchgefühl. Sortiert nach Hebel-Größe.
 
-**7.1 VERBINDUNGS-SYSTEM — die größte ehrliche Lücke.**
-IST: connect-Modus → Paar klicken → Kachel-Dialog (als EDITOR gut; 4 Räder = 12 Klicks).
-PROFI: Besiege/Scrap Mechanic/TotK-Ultrahand — die Verbindung entsteht BEIM BAUEN
-(Snappen/Berühren = verbunden, NULL Klicks). WOHIN: **AUTO-VERBINDUNG beim Part-
-Platzieren/Verschieben** — berührt ein Part einen bestehenden (`_partsContactArea` > 0,
-die Wahrheit EXISTIERT), entsteht automatisch die `_suggestConnectionType`-Verbindung
-(substanz-emergent — DAS hat kein Profi: bei uns folgt der Verbindungs-TYP dem
-Material-Paar). Der Kachel-Dialog wird das EDIT-Werkzeug (ändern/lösen/Anker), nicht
-der Pflicht-Schritt. = Besiege-Leichtigkeit + Hylomorphismus-Tiefe. [nächste Welle]
+**7.1 VERBINDUNGS-SYSTEM — die größte ehrliche Lücke. ✓ GEBAUT (V18.164).**
+PROFI-Form steht: die Verbindung entsteht BEIM BAUEN (`_workshopAutoConnect` am
+Drag-Ende/Shape-Drop/Material-Drop — Berühren = verbunden, NULL Klicks; GEMESSEN
+diag-autoconnect: der volle Wagen-Nachbau ohne EINEN Dialog-Klick, 4 Räder rollen).
+Substanz-emergent via `_suggestConnectionType`-argmax (holz→Binden, eisen→Schweißen;
+Material-Wechsel RE-TYPED die auto-Verbindung — der Typ FOLGT der Substanz). Nur
+ÜBERGÄNGE zählen (Besiege): neu-berührt → geboren (`auto:1`) · getrennt → nur
+auto-Geborenes löst sich · „✂ Lösen" wird GEEHRT (ruhender Kontakt re-spawnt nie).
+Der Kachel-Dialog ist das EDIT-Werkzeug (Wahl macht bewusst). DREI Wurzel-Heilungen
+unterwegs: (a) `_partsContactArea` ist jetzt ROTATIONS-BEWUSST (`_partWorldExtents`
+= |R|·s, Three-exakt — das liegende Wagenrad „berührte" NIE; M3-Helfer verdichtet);
+(b) TÜR/WIRBEL-Gelenke nur aus bewusster Hand (eine auto-Wand-auf-Boden ist keine
+Tür, ein auto-Turm keine Wirbel-Kette — Hütten wackeln weiter nie, das RAD bleibt
+frei); (c) der Remap-Riss (Part-Löschen strippte M1-Anker ALLER Verbindungen).
+Gizmo-Drags sind jetzt undobar (eine Geste = ein Schritt). +6 Invarianten.
 
-**7.2 ANKER/SITZ — sichtbar machen.**
-IST: Face-Snap (Kachel→Klick→3×3-Raster), Werkstatt-Marker (violett). PROFI: Scrap
-Mechanic — der Sitz ist ein SICHTBARES TEIL, immer. WOHIN: (a) der Sitz-Punkt bekommt
-eine WELT-Optik (Sattel-Andeutung am Anker — heute unsichtbar außerhalb der
-Werkstatt); (b) „Probesitzen" in der Preview (der Avatar-Ghost setzt sich beim
-Hover); (c) fern: Sitz-FORMEN emergent erkennen (Mulde = Sitz — der Fallback
-existiert als „oberste flache Fläche").
+**7.2 ANKER/SITZ — sichtbar machen. (a)+(b) ✓ GEBAUT (V18.164).**
+(a) ✓ der explizite Sitz-Anker trägt eine SATTEL-Optik in der WELT (`_buildSeatVisual`
+— Leder-Kissen + Pommel am exakten `_attachPointFor`-Punkt, reiter-skaliert;
+Substanz-Look im EINEN Builder, die V18.153-Trennung bleibt: Ablese-Werkzeuge
+opts-bestellt). (b) ✓ PROBESITZEN: ein durchscheinender Reiter-Ghost SITZT am
+Anker in der Werkstatt-Preview (`_buildSeatGhost`, Sitz-Pose-Silhouette —
+DAUERHAFT statt hover: keine Entdeckbarkeits-Hürde, nicht raycastbar, leckt nie
+in die Welt). bauen → sehen → sitzen ist EIN Punkt. (c) bleibt fern (Mulde=Sitz).
 
-**7.3 ROLLEN-EMERGENZ — unser Alleinstellungsmerkmal, aber fragil.**
-KEIN Profi hat emergente Rollen aus Substanz×Form (TotK hat Physik statt Rollen,
-Scrap Mechanic explizite Funktions-Teile). Die GEMESSENE Fragilität: handgewichtete
-Linear-Signaturen mit Kipp-Margins (fleisch-Kugel 0.5 vs 0.4 · Holz-Wagen→Trank).
-WOHIN: (a) die ARCHETYPEN-BANK als stehende Invariante (~50 synthetische Positiv- +
-GEGEN-Beispiele je Rolle — nicht nur 31 Built-ins; jeder Signatur-Edit läuft gegen
-die Bank); (b) die „WARUM"-FÜHRUNG in der Werkstatt: das Spektrum zeigt heute WAS
-resoniert — nicht WIE DAHIN („+0.3 Standfläche bis Fahrzeug" als Achsen-Differenz
-zur Wunsch-Rolle = die geniale Lehrer-Geste, billig aus den Signaturen ableitbar).
+**7.3 ROLLEN-EMERGENZ — unser Alleinstellungsmerkmal. (a)+(b) ✓ GEBAUT (V18.164).**
+(a) ✓ die ARCHETYPEN-BANK steht (46 synthetische Positiv-/GEGEN-Beispiele,
+`checkBandArchetypBank` + `diag-archetypbank` als Kalibrier-Karte) — und sie FING
+beim Bau sofort ZWEI echte Fragilitäten: den first-match-Spiegel (kompakte Körper
+hatten keine Glieder — Arme „spiegelten" auf den Torso; jetzt best-match) + die
+Kronen-Blob-Glieder (die Eiche wurde kurz zur Seele → die Spec schärfte sich:
+ein GLIED ist GESTRECKT [längste ≥ 2× kürzeste Achse], wie jede echte Engine-Seele;
+V8.35/V17.69-Fixtures wanderten, V9.56-i). Dazu der GEMESSENE Spektrum-KONSUM-Riss:
+die V18.162-Trank-Gegen-Achsen (bulk/spread) erreichten nur FORM_ROLE_SIGNATURES —
+das SPEKTRUM las den Holz-Wagen weiter als Top-„Trank" → in ROLE_SIGNATURES
+gespiegelt (eine Wahrheit, alle Leser). (b) ✓ die WARUM-FÜHRUNG:
+`_blueprintRoleGapHint` (Achsen-Differenz zur Wunsch-Rolle, arithmetisch EHRLICH —
+die Drehung flippt die Rolle wirklich, invariant-bewiesen) + der KONJUNKTIONS-RUF
+`_blueprintConjunctionCall` (resoniert die Spektrum-Spitze stärker als die Rolle
+und hält sie nur eine 0/1-TAT zurück, spricht die Zeile die Tat: „Fahrzeug ruft:
+setze einen Sitz-Anker" — GEMESSEN exakt der sitzlose Wagen); sichtbar als
+`spec-gap-hint`-Zeile + Tooltips im Spektrum. +7 Invarianten.
 
 **7.4 FAHRZEUG-PHYSIK — ehrlich: Minecraft-Boot-Stufe, nicht TotK.**
 IST: kinematisch (Terrain-Höhe + exp-Glättung; die Kamera lenkt). PROFI: TotK = echte
@@ -361,13 +386,16 @@ Rad-Physik (Federung, Lenk-Trägheit, Hang-Rutschen). Der benannte nächste Berg
 Bewusst NICHT jetzt (die kinematische Stufe ist konsistent + robust); der Berg ist
 kartiert, nicht vergessen.
 
-**7.5 LICHT/CEL — der Kontrast-Regler ist jetzt ECHT (V18.163).**
-Das Fehl-Verständnis geheilt: „Kontrast erhöhen" = die STUFEN-SPREIZUNG der LUT
-(pinselstrich-Pop), nicht Mikro-Noise — beide existieren jetzt getrennt. OFFEN:
-(a) „Reflexion nachts" (der Schöpfer verglich mit Gras/Bauten — deren RIM; das
-Terrain könnte ein schwaches Mond-Rim tragen — kleiner Folgepunkt am geteilten
-Output-Chain); (b) Mikro-Struktur auf BÄUMEN ungemessen (HISM-Pfad — prüfen, ob
-die Instanz-Gruppen durch den microTexture-Zweig laufen).
+**7.5 LICHT/CEL — der Kontrast-Regler ist ECHT (V18.163); Folgepunkte ✓ (V18.164).**
+(a) ✓ das TERRAIN-MOND-RIM lebt: kühler Fresnel-Saum im EINEN Output-Chain
+(vertexColors-Ebenen), der WERT ist das Gate — der Tag-Nacht-Sync treibt ihn
+(Mitternacht = Basis, Mittag exakt 0, Regen dämpft; Erst-Wurf 0.12, Regler im
+Cel-&-Licht-Band + `setTerrainMoonRim`; Look = S-Vermerk). (b) ✓ GEMESSEN: die
+HISM-Bäume LAUFEN durch den microTexture-Zweig (`_archLeafMaterial` →
+isFlatStructure → Aerial-Chain; als Invariante encodiert — kein offener Punkt).
+BEIFANG GEHEILT (V8.59-Klasse): die M7-Regler (microStrength/terrainNightFloor)
+lebten nur in der Session — Snapshot+Restore trugen sie nicht; jetzt reisen alle
+drei (+moonRim).
 
 **7.6 WALD-GESTALT — der offene WOW-Wunsch (eigener Gestaltungs-Bogen).**
 „Cooleres Waldfeeling, bessere Baupläne, die Welt erwacht": die Bäume sind 2 Arten

@@ -13717,9 +13717,21 @@ class AnazhRealm {
         if (Array.isArray(connections) && connections.length > 0) {
             const vol = (a) => (a ? a.sx * a.sy * a.sz : 0);
             const half = (a) => (a ? (a.sx + a.sy + a.sz) / 6 : 0.2);
-            // Ketten-Erkennung: Verbindungs-Grad pro Part.
+            // §7.1 (V18.164) — AUTO-geborene Verbindungen (Kontakt-Emergenz beim
+            // Platzieren, `auto:1`) sind STRUKTUR: sie tragen Statik, Stats und
+            // das RAD (geometrisch eindeutig: Zylinder ⊥ Verbindung + bodennah —
+            // der auto-verbundene Wagen ROLLT) sowie das SCHARNIER (das
+            // Architektur-Idle filtert es; an Wesen/Gefährten schwingt das kleine
+            // Angehängte = gewollte Emergenz). Aber die MEHRDEUTIGEN Idle-Gelenke
+            // gebiert nur die BEWUSSTE Hand: flat+y trifft JEDE Wand-auf-Boden
+            // (sonst schwenkte jede Hütten-Wand als „Tür"), und jeder ≥3-Stapel
+            // ist ein Grad-≤2-Pfad (sonst wellte jeder Turm als „Wirbel-Kette")
+            // → Ketten-Erkennung NUR über manuelle Verbindungen, TÜR nur manuell.
+            // Hütten wackeln weiter NIE (der C2-Vertrag).
+            const manualConns = connections.filter((cn) => !(cn && cn.auto));
+            // Ketten-Erkennung: Verbindungs-Grad pro Part (nur bewusste Hand).
             const degree = new Map();
-            for (const cn of connections) {
+            for (const cn of manualConns) {
                 degree.set(cn.partA, (degree.get(cn.partA) || 0) + 1);
                 degree.set(cn.partB, (degree.get(cn.partB) || 0) + 1);
             }
@@ -13727,7 +13739,7 @@ class AnazhRealm {
             {
                 // Ketten = zusammenhängende Pfade, deren Glieder Grad ≤ 2 haben.
                 const adj = new Map();
-                for (const cn of connections) {
+                for (const cn of manualConns) {
                     if (!adj.has(cn.partA)) adj.set(cn.partA, []);
                     if (!adj.has(cn.partB)) adj.set(cn.partB, []);
                     adj.get(cn.partA).push(cn.partB);
@@ -13797,7 +13809,8 @@ class AnazhRealm {
                     anchor.y = M.py;
                     anchor.z = M.pz;
                     phase = 0;
-                } else if (connAxis === "y" && mf.flat > 0.4) {
+                } else if (connAxis === "y" && mf.flat > 0.4 && !cn.auto) {
+                    // §7.1 — TÜR nur aus bewusster Hand (s. manualConns oben).
                     jointRole = "tuer";
                     jointAxis = "y";
                     phase = 0;
@@ -20786,6 +20799,29 @@ class AnazhRealm {
         return Math.max(cfg.min, Math.min(cfg.max, cfg.base + noveltyTerm + distTerm + boldTerm));
     }
 
+    // §6.5 (V18.164) — der GEBAUTE zusammenhängende Ring um den Spieler: das
+    // größte k, dessen Ringe 0..k VOLL stehen (mesh ODER empty — Luft braucht
+    // kein Mesh; pending/fehlend bricht). Der Lade-Nebel liest ihn pro Sync
+    // (≤ ~81 Map-Gets — trivial); null solange der Spieler-Chunk unbekannt ist.
+    _builtRingRadius() {
+        const st = this.state;
+        if (!st || !st.voxelChunks || !st.lastPlayerVoxelChunk) return null;
+        const cfg = this._voxelChunkConfig();
+        const { cx, cz } = st.lastPlayerVoxelChunk;
+        let k = -1;
+        outer: for (let ring = 0; ring <= cfg.ringRadius; ring++) {
+            for (let dx = -ring; dx <= ring; dx++) {
+                for (let dz = -ring; dz <= ring; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
+                    const e = st.voxelChunks.get(`${cx + dx},${cz + dz}`);
+                    if (!e || (!e.mesh && !e.empty)) break outer;
+                }
+            }
+            k = ring;
+        }
+        return k;
+    }
+
     _setLastPlayerVoxelChunk(pcx, pcz) {
         if (!this.state) return;
         // V17.30/V17.49 — Erkundung: betritt der Spieler einen ANDEREN Chunk, hebt das
@@ -22398,6 +22434,13 @@ class AnazhRealm {
                     ? this.state.atmosphere.geomorph
                     : 1.0
             ),
+            // §7.5(a) (V18.164) — das TERRAIN-MOND-RIM („Reflexion nachts"): ein
+            // kühler Fresnel-Saum auf den vertexColors-Ebenen, dessen WERT der
+            // Tag-Nacht-Sync treibt (nachts = setTerrainMoonRim-Basis, tags 0 —
+            // kein Shader-Branch, der EINE Schreiber ist _dayNightApplyHemiAndFog).
+            // Die B8-Rim-Parität: Bauten tragen ihr warmes Rim immer, das Terrain
+            // sein kühles nur, wenn der Mond führt. Erst-Wurf 0.12, S-Vermerk.
+            terrainMoonRim: TSL.uniform(0.0),
         };
         // V17.114 U1 — die §2-Synergie: der Aerial-Schleier koppelt an die
         // Kaskaden-Kante (der Dunst wandert mit dem Sicht-Ring).
@@ -22514,6 +22557,16 @@ class AnazhRealm {
             if (opts.nightFloor && _au.terrainNightFloor && _T.attribute && _T.max) {
                 const _albedo = _T.attribute("color", "vec3");
                 _rgb = _T.max(_rgb, _albedo.mul(_au.terrainNightFloor));
+                // §7.5(a) (V18.164) — das MOND-RIM: kühler Fresnel-Saum, nur wenn
+                // der Tag-Nacht-Sync den Uniform hebt (nachts > 0, mittags 0 —
+                // der Wert IST das Gate, kein Branch). Dieselbe Fresnel-Form wie
+                // das warme B8-Bauten-Rim → Licht-Parität der Ebenen (Befund 20).
+                if (_au.terrainMoonRim && _T.cameraPosition && _T.normalWorld) {
+                    const _mvd = _T.cameraPosition.sub(_wp).normalize();
+                    const _mfres = _T.normalWorld.dot(_mvd).clamp(0.0, 1.0).oneMinus().pow(3.0);
+                    const _moonCol = _T.vec3(0.55, 0.66, 1.0);
+                    _rgb = _rgb.add(_moonCol.mul(_mfres.mul(_au.terrainMoonRim)));
+                }
             }
             const _cam = _T.cameraPosition;
             const _aboveEye = _wp.y.sub(_cam.y); // < 0 (unter dem Auge) → smoothstep gibt 0
@@ -28143,6 +28196,21 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.shadowBias)
                         ? this.state.atmosphere.shadowBias
                         : 1.0,
+                // §7.5/V18.164 (GEMESSENER Riss, V8.59-Klasse): die M7-Regler
+                // (V18.160) lebten nur in der Session — Snapshot + Restore
+                // trugen sie nicht → jeder Reload setzte sie still zurück.
+                microStrength:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.microStrength)
+                        ? this.state.atmosphere.microStrength
+                        : 0.1,
+                terrainNightFloor:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainNightFloor)
+                        ? this.state.atmosphere.terrainNightFloor
+                        : 0.12,
+                moonRim:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
+                        ? this.state.atmosphere.moonRim
+                        : 0.12,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -30960,6 +31028,15 @@ class AnazhRealm {
             if (Number.isFinite(sr)) this.setShadowRange(Math.max(80, Math.min(400, sr)));
             const sb = Number(state.atmosphere.shadowBias);
             if (Number.isFinite(sb)) this.setShadowBias(Math.max(0, Math.min(3, sb)));
+            // §7.5/V18.164 — die M7-Regler überleben den Reload (Riss geheilt:
+            // sie reisten weder im Snapshot noch hier). Setter clampen + pushen
+            // an die Uniforms (oder _ensureAtmoUniforms liest sie beim Bau).
+            const ms = Number(state.atmosphere.microStrength);
+            if (Number.isFinite(ms)) this.setMicroStrength(ms);
+            const nf = Number(state.atmosphere.terrainNightFloor);
+            if (Number.isFinite(nf)) this.setTerrainNightFloor(nf);
+            const mr = Number(state.atmosphere.moonRim);
+            if (Number.isFinite(mr)) this.setTerrainMoonRim(mr);
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -38302,18 +38379,43 @@ class AnazhRealm {
             const p = parts[i].position || { x: 0, y: 0, z: 0 };
             const offAxis = Math.abs(p.x - centerX) > offAxisCut;
             const mx = 2 * centerX - p.x; // gespiegelte x-Position
+            // §7.3(a) (V18.164, von der Archetypen-Bank GEFANGEN): der alte
+            // first-match-break fraß die Glieder-Paare kompakter Körper — bei
+            // Armen nahe am Torso „spiegelte" der Arm auf den TORSO (innerhalb
+            // tol) statt auf den echten Partner-Arm → limbPairs=0 → kein
+            // Körper. Jetzt zählt die NÄCHSTE Übereinstimmung (best-match):
+            // `found` ist identisch (irgendein Treffer in tol), nur die Paar-
+            // Zuordnung wird ehrlich — ratio kann nie fallen, Paare nie
+            // verloren gehen (die Hütten-Wand hält: vertikal+symmetrisch+
+            // Glieder bleibt die Konjunktion).
             let found = false;
+            let bestJ = -1;
+            let bestD = Infinity;
             for (let j = 0; j < parts.length; j++) {
                 if (j === i) continue;
                 const q = parts[j].position || { x: 0, y: 0, z: 0 };
-                if (Math.abs(q.x - mx) <= tol && Math.abs(q.y - p.y) <= tol && Math.abs(q.z - p.z) <= tol) {
+                const dx = Math.abs(q.x - mx);
+                const dy = Math.abs(q.y - p.y);
+                const dz = Math.abs(q.z - p.z);
+                if (dx <= tol && dy <= tol && dz <= tol) {
                     found = true;
-                    if (offAxis && i < j && !usedAsPartner.has(j)) {
-                        limbPairs++;
-                        usedAsPartner.add(j);
+                    const d = dx + dy + dz;
+                    if (d < bestD) {
+                        bestD = d;
+                        bestJ = j;
                     }
-                    break;
                 }
+            }
+            // …und ein GLIED ist GESTRECKT (Arm/Bein/Flügel-Holm: längste ≥ 2×
+            // kürzeste Achse) — gespiegelte BLOBS (Baum-Kronen-Kugeln ±x am
+            // Stamm) sind KEINE Glieder; ohne diese Wand machte best-match die
+            // Eiche zur Seele (von der Archetypen-Bank GEFANGEN, V18.164).
+            const sI = parts[i].size || {};
+            const ax = [Math.abs(sI.x || 0.3), Math.abs(sI.y || 0.3), Math.abs(sI.z || 0.3)].sort((u, w) => w - u);
+            const limbish = ax[0] / Math.max(0.05, ax[2]) >= 2;
+            if (found && offAxis && limbish && i < bestJ && !usedAsPartner.has(bestJ)) {
+                limbPairs++;
+                usedAsPartner.add(bestJ);
             }
             // Ein Part auf der Mittelachse ist sein eigener Spiegel.
             if (!found && !offAxis) found = true;
@@ -39624,7 +39726,83 @@ class AnazhRealm {
         ) {
             this._addConnectionLines(group, blueprint);
         }
+        // §7.2(a) (meister-plan, V18.164) — der SITZ wird WELT-OPTIK (Scrap-
+        // Mechanic: „der Sitz ist ein SICHTBARES Teil, immer"): ein EXPLIZIT
+        // gesetzter sitz-Anker (die bewusste Design-Geste, M1-Face-Snap) trägt
+        // eine Sattel-Andeutung als Substanz-Look — in der Welt UND der
+        // Werkstatt (EIN Builder, ein Look; die V18.153-Trennung bleibt: das
+        // Ablese-Werkzeug [Linien/Marker/Ghost] ist opts-bestellt, der Sattel
+        // ist das Werk selbst). Top-Level only; der Vertrag children[i]↔parts[i]
+        // bleibt heil (Anhang am ENDE, vom Preview-Mapping übersprungen).
+        if (!depth && Array.isArray(blueprint.connections)) {
+            const sitzConn = blueprint.connections.find(
+                (c) => c && c.type === "sitz" && blueprint.parts && blueprint.parts[c.partA]
+            );
+            if (sitzConn) {
+                const seat = this._buildSeatVisual(blueprint);
+                if (seat) group.add(seat);
+            }
+        }
         return group;
+    }
+
+    // §7.2(a) — die SATTEL-ANDEUTUNG am expliziten sitz-Anker: ein flaches
+    // Leder-Kissen + Frontwulst (Pommel), reiter-skaliert (der Reiter ist
+    // menschengroß — der Sattel skaliert NICHT mit dem Gefährt). Position =
+    // der exakte _attachPointFor-Punkt (dieselbe Wahrheit, die der Reiter
+    // konsumiert — bauen → sehen → sitzen ist EIN Punkt).
+    _buildSeatVisual(blueprint) {
+        const ap = this._attachPointFor(blueprint, "sitz");
+        if (!ap || !ap.point) return null;
+        const grp = new THREE.Group();
+        const leather = this._buildToonNodeMaterial({ color: 0x6b4a2f });
+        const cushion = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.09, 0.46), leather);
+        cushion.position.y = 0.045;
+        grp.add(cushion);
+        const pommel = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.1), leather);
+        pommel.position.set(0, 0.1, 0.2);
+        grp.add(pommel);
+        grp.position.set(ap.point.x, ap.point.y, ap.point.z);
+        grp.userData.isAttachmentVisual = true;
+        grp.userData.connectionType = "sitz";
+        return grp;
+    }
+
+    // §7.2(b) — das PROBESITZEN in der Werkstatt: ein durchscheinender Reiter-
+    // Ghost SITZT am sitz-Anker (die _applySeatPose-Haltung als statische
+    // Silhouette — Beine vor, Zügel-Arme). Werkstatt-Ablese-Werkzeug wie die
+    // Linien/Marker (opts-bestellt, V18.153) — der Schöpfer SIEHT beim Bauen,
+    // wo + wie der Reiter sitzen wird, ohne aufzusteigen.
+    _buildSeatGhost(point) {
+        const grp = new THREE.Group();
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0x9fd8ff,
+            transparent: true,
+            opacity: 0.3,
+            depthWrite: false,
+        });
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.5, 0.2), mat);
+        torso.position.y = 0.62;
+        grp.add(torso);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), mat);
+        head.position.y = 1.0;
+        grp.add(head);
+        for (const side of [-1, 1]) {
+            const thigh = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.12, 0.42), mat);
+            thigh.position.set(side * 0.11, 0.32, 0.16);
+            grp.add(thigh);
+            const shin = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.36, 0.11), mat);
+            shin.position.set(side * 0.11, 0.1, 0.34);
+            grp.add(shin);
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.36, 0.09), mat);
+            arm.position.set(side * 0.24, 0.62, 0.1);
+            arm.rotation.x = -0.45;
+            grp.add(arm);
+        }
+        grp.position.set(point.x, point.y, point.z);
+        grp.userData.isConnectionLine = true; // Ablese-Werkzeug: vom Preview-Part-Mapping übersprungen
+        grp.userData.isSeatGhost = true;
+        return grp;
     }
 
     // Welle 6.F1 — Verbindungs-Linien an einen Bauplan-Group anhängen.
@@ -39666,6 +39844,13 @@ class AnazhRealm {
                 anchorMarker.userData.connectionType = c.type;
                 anchorMarker.userData.isAnchorPoint = true;
                 group.add(anchorMarker);
+                // §7.2(b) (V18.164) — PROBESITZEN: am sitz-Anker sitzt der
+                // durchscheinende Reiter-Ghost (Werkstatt-only — dieselbe
+                // opts-Bestellung wie Linien/Marker). Der Schöpfer sieht
+                // Höhe + Richtung des Reiters, bevor er aufsteigt.
+                if (c.type === "sitz") {
+                    group.add(this._buildSeatGhost({ x: px, y: py, z: pz }));
+                }
                 continue;
             }
             const b = parts[c.partB];
@@ -41554,6 +41739,88 @@ class AnazhRealm {
         return bestAxis ? { axis: bestAxis, label: AnazhRealm.AXIS_LABELS[bestAxis] || bestAxis } : null;
     }
 
+    // §7.3(b) (meister-plan — die „WARUM"-FÜHRUNG, V18.164): das Spektrum zeigt
+    // WAS resoniert — diese Geste zeigt WIE DAHIN: die Achsen-Differenz zur
+    // WUNSCH-Rolle („+0.3 Standfläche → Fahrzeug"). Billig aus den Signaturen
+    // abgeleitet (kein zweites Register, V9.82): deficit = Sieger-Score −
+    // Ziel-Score (die _blueprintRoleSpectrum-Skala, raw/ref); pro positiver
+    // Ziel-Achse wirkt eine Drehung mit eff = wT/refT − wS/refS (eine Achse,
+    // die den Sieger MIT hebt, lehrt nichts; eine Sieger-GEGEN-Achse wirkt
+    // doppelt) → need = deficit/eff. Gewählt wird die machbare Achse mit der
+    // kleinsten Drehung (Produkt-Vektor-Skala [0..1], headroom-geprüft).
+    // KONJUNKTIONS-Achsen (0/1: rideable/livingBody/portalShape/bodyShape)
+    // sind keine Zahl, sondern eine TAT → der Hinweis wird die deutsche
+    // Handlung (AXIS_ACTION_HINTS) — die geniale Lehrer-Geste.
+    _blueprintRoleGapHint(bp, targetRole) {
+        const sigs = AnazhRealm.ROLE_SIGNATURES;
+        const sigT = sigs[targetRole];
+        if (!sigT) return null;
+        const cfg = AnazhRealm.QUALITY_ROLE_FIT;
+        const refFor = (role) => (cfg.refs && cfg.refs[role]) || 3.0;
+        const v = this._blueprintProductVector(bp);
+        let winner = null;
+        let winScore = -Infinity;
+        for (const role in sigs) {
+            const score = this._blueprintResonance(v, sigs[role]) / refFor(role);
+            if (score > winScore) {
+                winScore = score;
+                winner = role;
+            }
+        }
+        if (winner === targetRole) return { already: true, targetRole };
+        const sigW = sigs[winner];
+        const refT = refFor(targetRole);
+        const refW = refFor(winner);
+        const deficit = winScore - this._blueprintResonance(v, sigT) / refT;
+        const actions = AnazhRealm.AXIS_ACTION_HINTS || {};
+        let best = null;
+        for (const axis in sigT) {
+            const wT = sigT[axis];
+            if (wT <= 0) continue;
+            const cur = Math.max(0, Math.min(1, v[axis] || 0));
+            const headroom = 1 - cur;
+            if (headroom <= 0.02) continue;
+            const eff = wT / refT - ((sigW && sigW[axis]) || 0) / refW;
+            if (eff <= 0.01) continue;
+            const need = deficit / eff;
+            if (need > headroom + 1e-9) continue;
+            if (!best || need < best.need) best = { axis, need };
+        }
+        if (!best) return { targetRole, winner, infeasible: true };
+        const label = AnazhRealm.AXIS_LABELS[best.axis] || best.axis;
+        const roleLabel = AnazhRealm.ROLE_LABELS[targetRole] || targetRole;
+        const action = actions[best.axis];
+        const text = action
+            ? `${action} → ${roleLabel}`
+            : `+${Math.max(0.05, best.need).toFixed(2)} ${label} → ${roleLabel}`;
+        return { targetRole, winner, axis: best.axis, need: best.need, text };
+    }
+
+    // §7.3(b) — der KONJUNKTIONS-RUF (die wertvollste Lehrer-Geste): resoniert
+    // die SPEKTRUM-Spitze stärker als die zugewiesene Rolle, und hält sie nur
+    // eine unerfüllte 0/1-TAT-Achse zurück (rideable/livingBody/portalShape…),
+    // spricht die Zeile die TAT aus — der sitzlose Wagen liest „Fahrzeug ruft:
+    // setze einen Sitz-Anker" (GEMESSEN: genau sein Zustand — vehicle ist die
+    // Top-Resonanz, der konservative Klassifikator wartet auf die Konjunktion).
+    _blueprintConjunctionCall(bp) {
+        const spectrum = this._blueprintRoleSpectrum(bp);
+        if (!spectrum || !spectrum.length) return null;
+        const top = spectrum[0];
+        const assigned = typeof this._displayRole === "function" ? this._displayRole(bp) : bp.role;
+        if (!top || top.role === assigned || top.score <= 0.05) return null;
+        const sigTop = AnazhRealm.ROLE_SIGNATURES[top.role];
+        const actions = AnazhRealm.AXIS_ACTION_HINTS || {};
+        if (!sigTop) return null;
+        const v = this._blueprintProductVector(bp);
+        for (const axis in sigTop) {
+            if (sigTop[axis] > 0 && actions[axis] && (v[axis] || 0) === 0) {
+                const roleLabel = AnazhRealm.ROLE_LABELS[top.role] || top.role;
+                return { role: top.role, axis, text: `${roleLabel} ruft: ${actions[axis]}` };
+            }
+        }
+        return null;
+    }
+
     computeBlueprintQuality(blueprint) {
         if (!blueprint || !Array.isArray(blueprint.parts)) return 1.0;
         return this._compoundAvgPrecisionFromParts(blueprint.parts);
@@ -42238,8 +42505,15 @@ class AnazhRealm {
     // aber in X/Y weit auseinander sind, ist die Kontaktfläche klein. Wenn
     // sie sich auf einer großen Fläche treffen, ist sie groß.
     _partsContactArea(partA, partB) {
-        const a = this._partBoundingBox(partA);
-        const b = this._partBoundingBox(partB);
+        // §7.1 (V18.164, GEMESSEN im Nachbau-Diag): die Kontakt-Hülle ist
+        // ROTATIONS-BEWUSST (|R|·s) — die rotations-blinde _partBoundingBox
+        // behauptete für ein liegendes Wagenrad (rotation.z=π/2, size
+        // 0.62/0.14/0.62) vertikal 0.14 m statt 0.62 → die kanonische Rad-
+        // Platzierung „berührte" NIE (Auto-Verbindung + Stärke-Balken logen).
+        // _partBoundingBox bleibt für die Spatial-Tag-Leser unangetastet
+        // (eingefrorene Affinitäts-Baselines, V17.16-Wächter).
+        const a = this._partWorldAABB(partA);
+        const b = this._partWorldAABB(partB);
         if (!a || !b) return 0;
         // Pro Achse signed gap: negativ bei Overlap, positiv bei Trennung.
         const gapX = Math.max(a.min.x - b.max.x, b.min.x - a.max.x);
@@ -42337,7 +42611,14 @@ class AnazhRealm {
             if (!Number.isInteger(partB)) continue;
             if (partA === partB) continue;
             if (partB < 0 || partB >= partsLength) continue;
-            clean.push({ type: c.type, partA, partB });
+            const entry = { type: c.type, partA, partB };
+            // §7.1 (V18.164) — die AUTO-Marke (Kontakt-Emergenz) reist wie der
+            // M1-anchor: Metadatum, NICHT im Signatur-Kanon (_canonicalBlueprint
+            // liest nur type/partA/partB) — sie unterscheidet die auto-geborene
+            // Verbindung (löst sich beim Trennen, Typ folgt der Substanz) von
+            // der bewussten Wahl (bleibt; gebiert Tür/Wirbel-Gelenke).
+            if (c.auto) entry.auto = 1;
+            clean.push(entry);
         }
         return clean;
     }
@@ -42674,24 +42955,56 @@ class AnazhRealm {
         return v;
     }
 
-    // M3(a)/V18.155 — die vertikale Halb-Ausdehnung eines Parts, ROTATIONS-bewusst
-    // (die y-Zeile von |R|·s, dieselbe konservative AABB-Hülle wie computeMotionRoles):
-    // ein liegendes Wagen-Rad (rotation.z=π/2, size 0.62/0.14/0.62) ist vertikal 0.31 hoch.
-    _partVerticalHalfExtent(p) {
+    // §7.1 (V18.164) — die ROTATIONS-BEWUSSTE Welt-Hülle eines Parts: die
+    // konservative AABB |R|·s (M3-`_partVerticalHalfExtent` auf alle drei
+    // Achsen verallgemeinert + auf Three.js' EXAKTE Euler-XYZ-Matrix gestellt
+    // — makeRotationFromEuler-Zeilen, damit die Hülle dem Renderer entspricht;
+    // bei Ein-Achsen-Rotationen identisch zur M3-Form, GEMESSEN diag-ride).
+    // Liefert {ex, ey, ez} = volle Welt-Ausdehnung je Achse.
+    _partWorldExtents(p) {
         const s = (p && p.size) || {};
         const sx = Math.abs(Number(s.x) || 0.3);
         const sy = Math.abs(Number(s.y) || 0.3);
         const sz = Math.abs(Number(s.z) || 0.3);
         const rot = p && p.rotation;
-        if (!rot || (!rot.x && !rot.y && !rot.z)) return sy / 2;
-        const cx = Math.abs(Math.cos(rot.x || 0));
-        const sxr = Math.abs(Math.sin(rot.x || 0));
-        const cy = Math.abs(Math.cos(rot.y || 0));
-        const syr = Math.abs(Math.sin(rot.y || 0));
-        const cz = Math.abs(Math.cos(rot.z || 0));
-        const szr = Math.abs(Math.sin(rot.z || 0));
-        const ey = cy * szr * sx + (cx * cz + sxr * syr * szr) * sy + (sxr * cz + cx * syr * szr) * sz;
-        return ey / 2;
+        if (!rot || (!rot.x && !rot.y && !rot.z)) return { ex: sx, ey: sy, ez: sz };
+        const a = Math.cos(rot.x || 0);
+        const b = Math.sin(rot.x || 0);
+        const c = Math.cos(rot.y || 0);
+        const d = Math.sin(rot.y || 0);
+        const e = Math.cos(rot.z || 0);
+        const f = Math.sin(rot.z || 0);
+        const ae = a * e;
+        const af = a * f;
+        const be = b * e;
+        const bf = b * f;
+        // Zeilen von R (Three.js 'XYZ'): Welt-Extent_i = Σ_j |R[i][j]| · s_j.
+        const ex = Math.abs(c * e) * sx + Math.abs(c * f) * sy + Math.abs(d) * sz;
+        const ey = Math.abs(af + be * d) * sx + Math.abs(ae - bf * d) * sy + Math.abs(b * c) * sz;
+        const ez = Math.abs(bf - ae * d) * sx + Math.abs(be + af * d) * sy + Math.abs(a * c) * sz;
+        return { ex, ey, ez };
+    }
+
+    // §7.1 — die rotations-bewusste Welt-AABB (Kontakt-Wahrheit; min-Floor 0.1
+    // je Achse wie _partBoundingBox, damit Mini-Parts greifbar bleiben).
+    _partWorldAABB(part) {
+        if (!part || typeof part !== "object") return null;
+        const pos = part.position || { x: 0, y: 0, z: 0 };
+        const ext = this._partWorldExtents(part);
+        const hx = Math.max(0.1, ext.ex) / 2;
+        const hy = Math.max(0.1, ext.ey) / 2;
+        const hz = Math.max(0.1, ext.ez) / 2;
+        return {
+            min: { x: (pos.x || 0) - hx, y: (pos.y || 0) - hy, z: (pos.z || 0) - hz },
+            max: { x: (pos.x || 0) + hx, y: (pos.y || 0) + hy, z: (pos.z || 0) + hz },
+        };
+    }
+
+    // M3(a)/V18.155 — die vertikale Halb-Ausdehnung eines Parts, ROTATIONS-bewusst:
+    // ein liegendes Wagen-Rad (rotation.z=π/2, size 0.62/0.14/0.62) ist vertikal 0.31 hoch.
+    // §7.1 (V18.164) — verdichtet auf die EINE Hüllen-Quelle (_partWorldExtents).
+    _partVerticalHalfExtent(p) {
+        return this._partWorldExtents(p).ey / 2;
     }
 
     // M3(a)/V18.155 — die UNTERKANTE eines Bauplans (Bauplan-lokal): min über die
@@ -44686,6 +44999,17 @@ class AnazhRealm {
         this.state.atmosphere.terrainNightFloor = val;
         const au = this._ensureAtmoUniforms();
         if (au && au.terrainNightFloor) au.terrainNightFloor.value = val;
+        if (typeof this.saveState === "function") this.saveState();
+        return val;
+    }
+
+    // §7.5(a) (V18.164) — die BASIS-Stärke des Terrain-Mond-Rims (0..0.5).
+    // Den LIVE-Wert treibt der Tag-Nacht-Sync (nachts Basis, tags 0) — dieser
+    // Setter stellt nur die Basis; der nächste Sync-Tick übernimmt sie.
+    setTerrainMoonRim(v) {
+        const val = Math.max(0, Math.min(0.5, Number(v) || 0));
+        if (!this.state.atmosphere) this.state.atmosphere = {};
+        this.state.atmosphere.moonRim = val;
         if (typeof this.saveState === "function") this.saveState();
         return val;
     }
@@ -50240,11 +50564,20 @@ class AnazhRealm {
         if (Array.isArray(bp.connections)) {
             bp.connections = bp.connections
                 .filter((c) => c.partA !== index && c.partB !== index)
-                .map((c) => ({
-                    type: c.type,
-                    partA: c.partA > index ? c.partA - 1 : c.partA,
-                    partB: c.partB > index ? c.partB - 1 : c.partB,
-                }));
+                .map((c) => {
+                    const out = {
+                        type: c.type,
+                        partA: c.partA > index ? c.partA - 1 : c.partA,
+                        partB: c.partB > index ? c.partB - 1 : c.partB,
+                    };
+                    // §7.1/V18.164 (GEMESSENER Beifang-Riss): der alte Remap
+                    // strippte ALLE Zusatz-Felder — ein Part-Löschen zerstörte
+                    // die M1-Face-Snap-Anker ALLER übrigen Verbindungen (und
+                    // hätte die auto-Marke gefressen). Metadaten wandern mit.
+                    if (c.anchor) out.anchor = c.anchor;
+                    if (c.auto) out.auto = 1;
+                    return out;
+                });
         }
         // Welle 9a — emergente Rolle aktualisieren
         this._refreshBlueprintRoleEmergent(name);
@@ -50817,7 +51150,8 @@ class AnazhRealm {
             // damit ein Marker nicht als Part in partMeshes landet (sonst wäre
             // er selektierbar + würde getintet). Sie liegen am Ende der
             // children-Liste — continue ohne idx++ hält die Part-Indizes 1:1.
-            if (child.userData && child.userData.isConnectionLine) continue;
+            // §7.2 (V18.164) — die Sattel-Optik (isAttachmentVisual) ebenso.
+            if (child.userData && (child.userData.isConnectionLine || child.userData.isAttachmentVisual)) continue;
             child.userData.partIdx = idx;
             if (child.isMesh) {
                 p.partMeshes.set(child, idx);
@@ -51450,6 +51784,12 @@ class AnazhRealm {
             startAngle = Math.atan2(v.dot(refV), v.dot(refU));
         }
 
+        // §7.1 (V18.164) — der Kontakt-Schnappschuss VOR dem Drag: die Auto-
+        // Verbindung am Drag-Ende zählt nur ÜBERGÄNGE (neu-berührt/getrennt) —
+        // ein ruhender Kontakt (z.B. nach bewusstem „✂ Lösen") bleibt still.
+        // Plus: die GANZE Geste (Bewegen + entstehende Verbindungen) ist EIN
+        // Undo-Schritt — der Gizmo-Drag war vorher gar nicht undobar (Beifang).
+        this._recordBlueprintEdit(bp.name);
         p.dragManipulator = {
             mode,
             axis,
@@ -51461,6 +51801,7 @@ class AnazhRealm {
             startAngle,
             startClientX: clientX,
             startClientY: clientY,
+            touchesBefore: this._workshopTouchesOf(bp, idx),
         };
     }
 
@@ -51541,7 +51882,16 @@ class AnazhRealm {
     _workshopEndManipulation() {
         const ws = this._ensureWorkshopState();
         if (!ws.preview || !ws.preview.dragManipulator) return;
+        const m = ws.preview.dragManipulator;
         ws.preview.dragManipulator = null;
+        // §7.1 (V18.164) — die AUTO-VERBINDUNG: berührt das bewegte Part jetzt
+        // ein anderes (und tat es VOR dem Drag nicht), entsteht die Verbindung
+        // von selbst (Besiege-Muster); Getrenntes löst auto-Geborenes. Gilt für
+        // translate/rotate/scale gleichermaßen — alle drei ändern den Kontakt.
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (bp && !bp.builtIn && ws.selectedPartIdx !== null) {
+            this._workshopLogAutoConnect(this._workshopAutoConnect(bp, ws.selectedPartIdx, m.touchesBefore));
+        }
         // Mesh + Number-Inputs sind möglicherweise out-of-sync (Live-Update war
         // approximativ). Volle Rebuild + DOM-Render: kostet einmalig, lohnt sich.
         this._renderWorkshopDOM();
@@ -52049,16 +52399,34 @@ class AnazhRealm {
         );
 
         const spectrum = (this._blueprintRoleSpectrum(bp) || []).slice(0, 4);
+        // §7.3(b) (V18.164) — die WARUM-Führung: jede Nicht-Sieger-Zeile trägt im
+        // Tooltip den Weg DAHIN (Achsen-Differenz zur Wunsch-Rolle); die erste
+        // Verfolger-Zeile zeigt ihn sichtbar (die Lehrer-Geste, eine Zeile).
+        const gapHints = spectrum.map((s, i) => (i === 0 ? null : this._blueprintRoleGapHint(bp, s.role)));
         const resBars = spectrum.map((s, i) =>
             this._specBar(
                 AnazhRealm.ROLE_LABELS[s.role] || s.role,
                 s.score,
                 s.score.toFixed(2),
                 i === 0 ? "res-top" : "res",
-                `Resonanz als ${AnazhRealm.ROLE_LABELS[s.role] || s.role}: ${s.score.toFixed(2)} (0–1)`
+                `Resonanz als ${AnazhRealm.ROLE_LABELS[s.role] || s.role}: ${s.score.toFixed(2)} (0–1)` +
+                    (gapHints[i] && gapHints[i].text ? `\nWeg dahin: ${gapHints[i].text}` : "")
             )
         );
         const rightChildren = [this._el("div", { class: "spec-col-head", text: "Rollen-Resonanz" }), ...resBars];
+        // Der KONJUNKTIONS-RUF hat Vorrang (die direkteste Tat: „Fahrzeug ruft:
+        // setze einen Sitz-Anker"), sonst der erste machbare Achsen-Hinweis.
+        const konjRuf = this._blueprintConjunctionCall(bp);
+        const firstHint = konjRuf || gapHints.find((h) => h && h.text);
+        if (firstHint && firstHint.text) {
+            rightChildren.push(
+                this._el("div", {
+                    class: "spec-gap-hint",
+                    text: `↗ ${firstHint.text}`,
+                    title: "Die Lehrer-Geste: welche Achsen-Drehung (oder Tat) diese Rolle zum Sieg führt — aus den Signaturen abgeleitet, dieselbe Skala wie die Balken.",
+                })
+            );
+        }
         const ab = this._blueprintAbilityStats(bp);
         if (ab && ab.stats && ab.stats.length) {
             const statChips = ab.stats.map(([name, v]) =>
@@ -52838,6 +53206,10 @@ class AnazhRealm {
             return;
         }
         this.updatePartInBlueprint(bp.name, idx, { material, recolor: true });
+        // §7.1 (V18.164) — AUTO-Verbindungen folgen der Substanz: ein Material-
+        // Wechsel kann den argmax-Typ kippen (Holz→Eisen: Binden → Schweißen).
+        // prevTouches = aktueller Kontakt → keine Neu-Anlage, nur Typ-Nachführung.
+        this._workshopLogAutoConnect(this._workshopAutoConnect(bp, idx, this._workshopTouchesOf(bp, idx)));
         this._renderWorkshopDOM();
         this._workshopSetSelection(idx);
         this.log(`Workshop: Material '${material}' auf Part ${idx} gesetzt`, "INFO");
@@ -52916,9 +53288,14 @@ class AnazhRealm {
             size: { x: 1, y: 1, z: 1 },
         };
         this.addPartToBlueprint(bp.name, newPart);
+        const newIdx = bp.parts.length - 1;
+        // §7.1 (V18.164) — ein NEUES Part, das in Kontakt landet (der Ursprung
+        // überlappt meist das erste), ist sofort verbunden (Besiege: platziert-
+        // in-Kontakt = verbunden). Zieht man es weg, löst sich die auto-
+        // Verbindung; am Zielort entsteht die neue — selbstheilend.
+        this._workshopLogAutoConnect(this._workshopAutoConnect(bp, newIdx, new Set()));
         // UI refresh + neuen Part auto-selektieren
         this._renderWorkshopDOM();
-        const newIdx = bp.parts.length - 1;
         this._workshopSetSelection(newIdx);
         this.log(
             `Workshop: ${shape}-Part hinzugefügt bei (${dropPos.x.toFixed(2)}, ${dropPos.y.toFixed(2)}, ${dropPos.z.toFixed(2)})`,
@@ -52998,6 +53375,104 @@ class AnazhRealm {
         return { type: best, strength: bestS, strengths };
     }
 
+    // §7.1 (meister-plan, V18.164) — welche anderen Parts BERÜHRT dieses Part?
+    // Liest die EINE Kontakt-Wahrheit (_partsContactArea > 0 — dieselbe, die
+    // die Lastformel trägt). Bündiges Sitzen (gap ≤ TOUCH) zählt, ein bloßer
+    // Ecken-Punkt (Fläche 0) nicht.
+    _workshopTouchesOf(bp, partIdx) {
+        const touches = new Set();
+        const parts = (bp && bp.parts) || [];
+        const part = parts[partIdx];
+        if (!part) return touches;
+        for (let j = 0; j < parts.length; j++) {
+            if (j === partIdx) continue;
+            if (this._partsContactArea(part, parts[j]) > 0) touches.add(j);
+        }
+        return touches;
+    }
+
+    // §7.1 (meister-plan — „die größte ehrliche Lücke", V18.164) — die
+    // AUTO-VERBINDUNG beim Platzieren/Verschieben (Besiege/Scrap-Mechanic/
+    // TotK-Ultrahand: Berühren = verbunden, NULL Klicks). Berührt das bewegte/
+    // neue Part ein anderes, entsteht die Verbindung VON SELBST — als
+    // _suggestConnectionType-argmax (substanz-emergent: Eisen+Eisen → Schweißen,
+    // Holz+Holz → Binden; der Verbindungs-TYP folgt dem Material-Paar — DAS hat
+    // kein Profi). Nur die ÜBERGÄNGE zählen (das Besiege-Prinzip „beim Platzieren
+    // in Kontakt"): neu-berührt → verbinden · getrennt → NUR auto-geborene lösen
+    // (die bewusste Kachel-Wahl ist Intent und bleibt, ihre Stärke skaliert eh
+    // mit dem Kontakt) · ruhender Kontakt bleibt unangetastet — ein bewusstes
+    // „✂ Lösen" wird GEEHRT (kein Re-Spawn, solange das Paar sich nicht neu
+    // findet). Eine bestehende AUTO-Verbindung folgt der Substanz: ändert sich
+    // das Material-Paar, wandert ihr Typ auf den neuen argmax (der Kontakt ist
+    // in der Stärke-Formel ein GEMEINSAMER Faktor aller Typen → der argmax
+    // hängt nur an den Materialien). Der Kachel-Dialog bleibt das EDIT-Werkzeug
+    // (Typ ändern/lösen/Anker setzen). Rückgabe {created, removed, retyped}
+    // für den EINEN Log-Satz des Aufrufers.
+    _workshopAutoConnect(bp, partIdx, prevTouches) {
+        const out = { created: [], removed: [], retyped: [] };
+        if (!bp || bp.builtIn || !Array.isArray(bp.parts) || !bp.parts[partIdx]) return out;
+        if (!Array.isArray(bp.connections)) bp.connections = [];
+        const touching = this._workshopTouchesOf(bp, partIdx);
+        const unconnected = new Set(touching);
+        // (1) Bestehende Paar-Verbindungen dieses Parts: getrennte AUTO lösen,
+        // berührte AUTO dem Substanz-argmax nachführen (Anker partB=-1 bleiben
+        // außen — sie sind Punkte zur Außenwelt, keine Paare).
+        for (let i = bp.connections.length - 1; i >= 0; i--) {
+            const c = bp.connections[i];
+            if (!c) continue;
+            const def = AnazhRealm.CONNECTION_TYPES[c.type];
+            if (def && def.attachment) continue;
+            const other = c.partA === partIdx ? c.partB : c.partB === partIdx ? c.partA : null;
+            if (other === null || other < 0) continue;
+            if (touching.has(other)) {
+                unconnected.delete(other); // Paar trägt schon — kein Neu-Anlegen
+                if (c.auto) {
+                    const sug = this._suggestConnectionType(bp, c.partA, c.partB);
+                    if (sug.type && sug.type !== c.type) {
+                        out.retyped.push({ other, from: c.type, to: sug.type });
+                        c.type = sug.type;
+                    }
+                }
+            } else if (c.auto) {
+                bp.connections.splice(i, 1);
+                out.removed.push(other);
+            }
+        }
+        // (2) NEU in Kontakt getretene Paare verbinden (Transition, nicht Zustand).
+        for (const j of unconnected) {
+            if (prevTouches && prevTouches.has(j)) continue; // ruhender Kontakt: Lösen geehrt
+            if (bp.connections.length >= AnazhRealm.CONNECTION_MAX_PER_BLUEPRINT) break;
+            const sug = this._suggestConnectionType(bp, partIdx, j);
+            if (!sug.type || !(sug.strength > 0)) continue;
+            bp.connections.push({ type: sug.type, partA: partIdx, partB: j, auto: 1 });
+            out.created.push({ other: j, type: sug.type });
+        }
+        return out;
+    }
+
+    // §7.1 — der EINE Log-Satz einer Auto-Verbindungs-Geste (leise: nur wenn
+    // etwas geschah; der Spieler lernt das Substrat ohne Textwand).
+    _workshopLogAutoConnect(result) {
+        if (!result) return;
+        const label = (t) => {
+            const def = AnazhRealm.CONNECTION_TYPES[t];
+            return def ? (def.label || t).split(" (")[0] : t;
+        };
+        const parts = [];
+        if (result.created.length) {
+            parts.push(`⚡ verbunden: ${result.created.map((c) => `${label(c.type)} ↔ Part ${c.other}`).join(" · ")}`);
+        }
+        if (result.retyped.length) {
+            parts.push(`Typ folgt der Substanz: ${result.retyped.map((r) => label(r.to)).join(" · ")}`);
+        }
+        if (result.removed.length) {
+            parts.push(`getrennt → gelöst: Part ${result.removed.join(", ")}`);
+        }
+        if (parts.length) {
+            this.log(`Auto-Verbindung — ${parts.join(" — ")} (Kachel-Dialog ändert/löst).`, "INFO");
+        }
+    }
+
     // Öffnet das Connection-Type-Auswahl-Popover über dem Canvas. Klick auf
     // einen Type schreibt die Connection ins Blueprint + UI-Refresh.
     // M1 (V18.156, Befund 1: „11 Text-Zeilen, nicht intuitiv") — der Dialog ist
@@ -53022,7 +53497,10 @@ class AnazhRealm {
         const existing = existingIdx >= 0 && bp && bp.connections ? bp.connections[existingIdx] : null;
         const existingDef = existing && AnazhRealm.CONNECTION_TYPES[existing.type];
         title.textContent = existing
-            ? `Part ${partA} ↔ ${partB} — verbunden: ${existingDef ? existingDef.label.split(" (")[0] : existing.type}`
+            ? `Part ${partA} ↔ ${partB} — verbunden: ${existingDef ? existingDef.label.split(" (")[0] : existing.type}` +
+              // §7.1 — auto-geboren sichtbar: eine Kachel-Wahl macht sie BEWUSST
+              // (bleibt dann auch bei Trennung + darf Tür/Wirbel-Gelenke gebären).
+              (existing.auto ? " (auto — aus Berührung)" : "")
             : `Verbindung: Part ${partA} → Part ${partB}`;
         overlay.appendChild(title);
         const types = AnazhRealm.CONNECTION_TYPES;
@@ -54152,11 +54630,29 @@ class AnazhRealm {
             // seinem Außenradius → die Kante, die der Fog decken muss, ist
             // der Mantel-Rand (4.3 km), nicht mehr der Chunk-Ring: die
             // geliebte Weite kehrt zurück, die Wetter-Formel führt wieder.
-            const visualEdge =
+            const visualEdgeTarget =
                 this.state.horizonMantle && !(this.state.atmosphere && this.state.atmosphere.horizonMantle === false)
                     ? AnazhRealm.HORIZON_MANTLE.outerRadius
                     : ringEdge;
-            fog.far = Math.min((150 - rainyMix * 55) * fogMult, visualEdge);
+            // §6.5 (V18.164, Befund 23 — GEMESSEN diag-startloch): das START-
+            // LOCH war die FOG-KOPPLUNG. fog.far las die VERSPROCHENE Kante
+            // (Mantel 4.3 km), während beim Boot erst 1–12 von 81 Ring-Chunks
+            // standen → der Blick ging durch klare Luft über ungebaute
+            // Positionen in die Mantel-Stanze (Void). Der Profi-Heal ist der
+            // LADE-NEBEL (Minecraft): solange der Ziel-Ring NICHT voll steht,
+            // deckt der Nebel die GEBAUTE zusammenhängende Kante und weicht
+            // mit der Welt — exp-geglättet (kein Pop); nach Ring-Vollendung
+            // konvergiert er exakt aufs alte Verhalten (A5 „fog ≤ Kante"
+            // wird BOOT-ehrlich, der harte Min-Deckel garantiert ≤ Ziel).
+            let visualEdge = visualEdgeTarget;
+            const builtK = this._builtRingRadius();
+            if (builtK !== null && builtK < vCfg.ringRadius) {
+                visualEdge = Math.min(visualEdgeTarget, Math.max(46, (builtK + 0.5) * vCfg.span + 18));
+            }
+            const smPrev = this.state._fogEdgeSmooth;
+            const sm = smPrev == null ? visualEdge : smPrev + (visualEdge - smPrev) * 0.08;
+            this.state._fogEdgeSmooth = sm;
+            fog.far = Math.min((150 - rainyMix * 55) * fogMult, sm, visualEdgeTarget);
             fog.near = Math.min((35 - rainyMix * 13) * fogMult, fog.far * 0.45);
             // V15.4 — Aerial-Perspective-Sky-Farbe aus DERSELBEN Fog-Farbe
             // speisen (EINE Quelle -> tag/nacht/wetter-kohaerent). density +
@@ -54169,6 +54665,18 @@ class AnazhRealm {
                 }
                 if (au.density) au.density.value = 0.0085 + rainyMix * 0.006;
                 if (au.hazeTop) au.hazeTop.value = 150 - rainyMix * 55;
+                // §7.5(a) (V18.164) — das Mond-Rim atmet mit der Nacht: voll,
+                // wenn die Sonne unter dem Horizont steht, ausgeblendet bis
+                // Sonnenhöhe 0.25 (Dämmerung), tags 0. Regen dämpft (kein
+                // Mondlicht durch Wolken). Der Wert IST das Shader-Gate.
+                if (au.terrainMoonRim) {
+                    const moonBase =
+                        this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
+                            ? this.state.atmosphere.moonRim
+                            : 0.12;
+                    const sunUp = Math.max(0, Math.sin(angle));
+                    au.terrainMoonRim.value = moonBase * Math.max(0, 1 - sunUp * 4) * (1 - Math.min(1, rainyMix) * 0.7);
+                }
             }
             if (this.state.playerEyesUnderwater) {
                 // V8.32 — Tauch-Trübung ist fest, ignoriert fogDistance-Slider.
@@ -55215,6 +55723,23 @@ class AnazhRealm {
                 const v = parseInt(nfS.value, 10) / 100;
                 this.setTerrainNightFloor(v);
                 if (nfVal) nfVal.textContent = v.toFixed(2);
+            });
+        }
+        // §7.5(a) (V18.164) — das Terrain-Mond-Rim (Basis; der Tag-Nacht-Sync
+        // treibt den Live-Wert: nachts Basis, tags 0).
+        const mrS = document.getElementById("slider-moonrim");
+        const mrVal = document.getElementById("slider-moonrim-val");
+        if (mrS) {
+            const r0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
+                    ? this.state.atmosphere.moonRim
+                    : 0.12;
+            mrS.value = String(Math.round(r0 * 100));
+            if (mrVal) mrVal.textContent = r0.toFixed(2);
+            mrS.addEventListener("input", () => {
+                const v = parseInt(mrS.value, 10) / 100;
+                this.setTerrainMoonRim(v);
+                if (mrVal) mrVal.textContent = v.toFixed(2);
             });
         }
         const esS = document.getElementById("slider-edgesharp");
@@ -58132,7 +58657,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.163.0";
+AnazhRealm.VERSION = "18.164.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -59465,7 +59990,19 @@ AnazhRealm.ROLE_SIGNATURES = Object.freeze({
         pointedFraction: -0.4,
     }),
     // TRANK: lebendig, transparent, resonant, hohl (Behälter), weich.
-    consumable: Object.freeze({ lebendig: 1.5, transparent: 0.4, resoniert: 0.3, hollowness: 0.3, härte: -0.6 }),
+    // V18.164 §7.3 (KONSUM-Riss, GEMESSEN): die V18.162-Gegen-Achsen (ein Trank
+    // hat weder Masse noch Trag-Basis — der Holz-Wagen ist KEIN Trank) erreichten
+    // nur FORM_ROLE_SIGNATURES; das SPEKTRUM zeigte den Wagen weiter als Top-
+    // „Trank". Eine Wahrheit, alle Leser — die Achsen spiegeln hierher.
+    consumable: Object.freeze({
+        lebendig: 1.5,
+        transparent: 0.4,
+        resoniert: 0.3,
+        hollowness: 0.3,
+        härte: -0.6,
+        bulk: -0.8,
+        spread: -0.6,
+    }),
     // SEELE: ein LEBENDIGER Körper (livingBody = Körper-Form UND lebendig, V17.90 — ein toter Körper-Panzer
     // ist KEINE Seele) + lebendig-Gradient + Symmetrie/Resonanz für die Feinheit.
     soul: Object.freeze({ livingBody: 1.8, lebendig: 0.6, axialSymmetry: 0.4, bodyShape: 0.3, resoniert: 0.2 }),
@@ -59548,6 +60085,14 @@ AnazhRealm.AXIS_LABELS = Object.freeze({
     brennbar: "Brennbarkeit",
     bodyShape: "Körper-Form",
     portalShape: "Tor-Form",
+});
+// §7.3(b) (V18.164) — KONJUNKTIONS-Achsen (0/1) sind TATEN, keine Zahlen: die
+// WARUM-Führung (_blueprintRoleGapHint) spricht sie als deutsche Handlung aus.
+AnazhRealm.AXIS_ACTION_HINTS = Object.freeze({
+    rideable: "setze einen Sitz-Anker (Fahrzeug = Sitz + Antrieb)",
+    livingBody: "nutze lebendiges Material am Körper",
+    bodyShape: "forme einen Körper (symmetrisch · vertikal · Glieder)",
+    portalShape: "forme einen Ring in Reisenden-Größe",
 });
 
 // S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der Form: ein Werkzeug katalysiert eine Transformation, und
