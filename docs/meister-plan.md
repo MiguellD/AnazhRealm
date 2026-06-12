@@ -645,3 +645,78 @@ Souveränität fehlen). M9 bleibt der S-DIALOG — die Sprossen 3–5 designen w
    Hebel, der eine Ebene hebt und die Nachbar-Ebene kippt, ist NICHT fertig.
 4. **Jede neue UI-Fläche konsumiert die geteilten Renderer** (Balken/Chips/Slots) —
    eine neue Privat-Form ist der Riss von morgen.
+
+### §8.8 DIE ZWEITMESSUNG (Tiefen-Audit, 12.06. abend) — was sie dem Plan HINZUFÜGT
+
+> Eine unabhängige Zweitmessung hat §8 nachgeprüft (11 Stichproben der M-Wellen: 11 real)
+> und die SYSTEM-Ebene vermessen, die die Befund-Karte nicht anfasst. Konvergenz: ihr
+> „Λ-Bogen" IST W-E (dieselbe Frequenzband-Antwort), ihr W2 ist W-F, ihre Prozess-Hälfte
+> deckt §8.7. Hier NUR, was NEU ist — übernommen und verbindlich:
+
+**(a) Ψ0 — das ORTHOGONALITÄTS-MESSGERÄT (klein, SOFORT, parallel zu W-A):**
+`diag-band-belegung.cjs` misst die paarweisen KOSINUS-WINKEL aller Signaturen über alle
+Tabellen (ROLE/FORM_ROLE/MOTION/WORKSHOP_DOMAIN/TEMPERAMENT inkl. der neuen
+rideable/bulk-Achsen) + Warnschwelle als Zahl + Playtest-Band. Die Wahrheit dahinter:
+Eiche=Trank und Holzross=Seele WAREN vorhersagbares Übersprechen (zu enge Winkel) —
+die V18.164-Archetypen-Bank fängt FÄLLE (empirisch), Ψ0 fängt WINKEL (geometrisch,
+VOR dem ersten Fall). Beide zusammen sind die Wand. Dazu **Ψ1** als Verdichtung:
+EIN `_resonateArgmax(vektor, tabelle, refs?)`-Organ — der argmax-über-Signaturen-Loop
+lebt heute ~8× inline (Rolle/Domäne/Op/Temperament/GapHint…); eine Registry, viele
+Leser (V9.82).
+
+**(b) W7 — der RÜCKMELDUNGS-KORPUS (sofort, mit dieser Welle INSTITUTIONALISIERT):**
+`docs/rueckmeldung.md` — JEDE Schöpfer-Rückmeldung bekommt ID · Status
+(offen/gebaut/S-Abnahme/beantwortet/Entscheid) · Wurzel-Link · Welle. Der CLAUDE.md-
+Trigger: vor jeder Session-Planung den Korpus lesen; KEIN ✓ ohne Korpus-Update +
+Nachbau-Szenario. Damit ist „Rückmeldung nicht gelesen" strukturell unmöglich —
+erzwungen, nicht versprochen. (Korpus v1 ist angelegt — alle Befunde vom 12.06. abend
+sind eingetragen.)
+
+**(c) W6 — der STAMM-ATLAS (ein Nachmittag, senkt MEINE Reibung dauerhaft):** GEMESSEN
+60'854 Zeilen mit 4 Abschnitts-Markern — die „du verlierst die Übersicht"-Beobachtung
+ist berechtigt. Antwort ist NICHT der Split (Heilige Lektion), sondern eine KARTE:
+die maschinenlesbare Sektions-Registry am Stammkopf (Name → Zeilen-Anker →
+Zuständigkeit), `diag-atlas.cjs` prüft Registry ↔ Realität (Drift = rot), CLAUDE.md
+verlinkt hinein. Dazu als MESS-Vermerk (erst messen, dann entscheiden):
+`computeCompoundTags` hat 0 Cache bei ~47 Aufrufstellen — Memo-Kandidat NUR mit
+gemessener Frame-Zahl.
+
+**(d) Λ1-DISZIPLIN für W-E (die sichere Migration, übernommen):** Schritt 1 des
+Frequenzbands ENTGATET nur — alle Familien konsumieren alle Licht-Uniforms, aber mit
+DEFAULT-GEWICHTEN, die das HEUTIGE Verhalten bit-nah reproduzieren (Familie = Default-
+Profil). Erst Schritt 2 leitet die Gewichte aus den Substanz-Tags ab (+ S-Kalibrierung).
+So ist der Umbau in jedem Zwischenstand shippbar — kein Look-Sprung ohne Abnahme.
+
+**(e) W-F-Schärfung (Wasser):** der UNTERWASSER-/Tauch-Trigger liest künftig die
+GEGLÄTTETE Lauf-Fläche (nicht das Terrain) — der „Tauchhöhe versetzt"-Befund heilt im
+selben Zug; und NACH dem Bogen kommt das Boot-SCHWIMMEN (M3-Vermerk) fast gratis —
+dieselbe Fläche, dieselbe Wahrheit.
+
+**(f) v1.0 — DEFINITION OF DONE (die 80%-wirkt-100%-Marke, übernommen + ergänzt):**
+W-E S-abgenommen (eine Dämmerung, die trägt) · W-F (Strömung statt Papier) · Ψ0-Band
+grün + Ψ1-Organ · UI-PULS: Mechanik-Pfade schreiben NIE direkt DOM, sie melden
+`dirty(raum)` → pro Raum EINE rAF-gebündelte Render-Insel (die Verallgemeinerung des
+M5-`_refreshIchIfOpen`-Musters; Invariante als grep-Band „kein DOM-Schreib außerhalb
+der Inseln" — GEMESSEN heute: 220 createElement · 331 getElementById · 54 innerHTML
+handverdrahtet; der Boost-Doppel war das Symptom) · **die ERSTE-5-MINUTEN-GESTE**
+(ein Nachbau OHNE Doku muss gelingen: ankommen → ein Ding bauen → es benutzen —
+das Onboarding ist Teil der Substanz, nicht Marketing) · **das PERFORMANCE-BUDGET**
+(FPS-Sockel bei Ziel-Last DEFINIEREN + als Band messen — heute existiert kein
+benannter Sockel) · Abnutzungs-ENTSCHEID im Korpus notiert (Stand der Gesamt-Abnahme
+11.06.: Werkzeug = ∞-Katalysator GILT als Erst-Wurf; will der Schöpfer die Mühe-Senke,
+ist „Reparieren" die Werkstatt-Geste dazu — beides taille-konform, der Korpus macht
+die Wahl SICHTBAR) · Zeitportal-Smoke dauerhaft grün · Korpus institutionalisiert ·
+M9-Sprossen 1–2 am Tisch.
+
+**(g) M9-Nuance:** die Schlüssel-VERWAHRUNG (Vibe-Pass-Rotation/Widerruf-UX) wird
+eine eigene Sprosse — die Ökonomie-Seite ist per Architektur beantwortet (der Pass
+ist ein SCHLÜSSEL, kein Wert; Kopie dupliziert Identität, nicht Besitz), die
+UX-Seite (verlorener/kompromittierter Schlüssel) noch nicht.
+
+**Die VERBUNDENE Reihenfolge (ersetzt §8.2-Reihenfolge):** Ψ0+Ψ1+W7-Korpus (klein,
+sofort, parallel) → W-A…W-D (die sichtbaren gemessenen UI/Feel-Wurzeln — der Schöpfer
+SIEHT die Heilung zuerst) → **W-E/Λ das Frequenzband** (mit Λ1-Disziplin) → W-F Wasser
+(+ Tauch-Trigger, dann Boot-Schwimmen) → W3 UI-Puls (das Organ hinter W-C) → W-G
+Gelenke · W-H Wald → W6 Stamm-Atlas + W5-Entscheid (ein Nachmittag) → **M9 die Krone**
+(S-Dialog; + Schlüssel-Verwahrungs-Sprosse). Die v1.0-DoD (f) ist das Ziel-Band über
+allem.
