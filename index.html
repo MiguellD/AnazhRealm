@@ -5002,6 +5002,30 @@
             .library-star {
                 margin: 0 0 16px 0;
             }
+            /* M8 (V18.161) - der Identitaets-Kopf (Autor-Filter aktiv). */
+            .library-author-banner {
+                grid-column: 1 / -1;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 10px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.4px;
+                color: var(--ink-on-dark, #ece1c5);
+                background: rgba(212, 176, 118, 0.12);
+                border: 1px solid var(--brass-3);
+                border-radius: 3px;
+            }
+            .library-author-banner .library-author-clear {
+                font-size: 10px;
+                cursor: pointer;
+            }
+            .feed-ident {
+                font-size: 9px;
+                opacity: 0.8;
+                margin-left: 6px;
+            }
             .library-empty {
                 grid-column: 1 / -1;
                 font-family: "IM Fell English", Georgia, serif;
@@ -8617,6 +8641,13 @@
                             <button type="button" id="vibe-pass-export">Vibe-Pass sichern…</button>
                             <button type="button" id="vibe-pass-import">Wiederherstellen…</button>
                         </div>
+                        <!-- M8 (V18.161) - der Backup-Pfad SICHTBAR dokumentiert (Audit-Frage 28). -->
+                        <div class="drawer-hint" id="vibe-pass-backup-hint">
+                            Sichern = die Pass-Datei exportieren; am neuen PC importieren. Der Pass IST der
+                            Schlüssel: wer die Datei hat, ist du (wie ein Bitcoin-Key) — sicher verwahren.
+                            Das System verhindert Fälschung (signieren ohne Key unmöglich), nicht die Kopie
+                            der eigenen Datei.
+                        </div>
                     </section>
                     <!-- Ring 11 V1+V2 — Multi-User Sync. Default eingeklappt. -->
                     <section class="section default-collapsed" id="multiuser-section">
@@ -8654,6 +8685,8 @@
                                 kopieren
                             </button>
                         </div>
+                        <!-- M8 (V18.161) - das Makro-Fenster: die Knoten-Gesamtzahl (Broker-stats). -->
+                        <div class="drawer-hint" id="p2p-broker-stats">Knoten: — (verbinden für die Online-Zahl)</div>
                         <div class="actions">
                             <button type="button" id="p2p-toggle" aria-pressed="false">Aktivieren</button>
                             <!-- W7 Phase 2 — ein Guest holt die Welt des Hosts frisch über das Mesh. -->
@@ -9111,6 +9144,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.160.0" defer></script>
+        <script src="anazhRealm.js?v=18.161.0" defer></script>
     </body>
 </html>

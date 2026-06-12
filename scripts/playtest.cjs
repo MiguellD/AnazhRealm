@@ -29804,6 +29804,91 @@ async function checkBandM7LichtFeinschliff(ctx) {
     );
 }
 
+// V18.161 — M8: DAS MAKRO-FENSTER (meister-plan §2/§0; Audit-Frage 28).
+// Broker-stats über den BESTEHENDEN WS-Kanal (kein neuer HTTP-Pfad/CSP) ·
+// die Identitäts-Seite als GEFILTERTER Feed (data-author — F4-Verdichtung) ·
+// der Vibe-Pass-Backup-Pfad sichtbar. Der ECHTE Server-Beweis lebt im
+// smoke:multiuser (1 Raum · 2 Peers · nur der Anfrager).
+async function checkBandM8MakroFenster(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) der stats-Handler: im Dispatch + cached + schreibt die Anzeige.
+        out.dispatch = r.constructor.P2P_MESSAGE_HANDLERS.stats === "_p2pMsgStats";
+        const p2p = r.state.p2p || (r.state.p2p = {});
+        r._p2pMsgStats({ rooms: 3, peers: 7 }, p2p);
+        const el = document.getElementById("p2p-broker-stats");
+        out.statsCached = !!p2p.brokerStats && p2p.brokerStats.rooms === 3 && p2p.brokerStats.peers === 7;
+        out.statsShown = !!el && /7 online in 3/.test(el.textContent);
+        out.welcomeAsks = /type: "stats"/.test(r._p2pMsgWelcome.toString());
+        // Müll fällt (defensive Wand).
+        r._p2pMsgStats({ rooms: "x", peers: null }, p2p);
+        out.statsWall = p2p.brokerStats.rooms === 3;
+        // (2) die IDENTITÄTS-SEITE: zwei synthetische Karten, der Autor-Filter
+        // blendet die fremde aus + der Kopf steht + ✕ löst.
+        const list = document.getElementById("library-list");
+        out.identity = false;
+        if (list) {
+            const mk = (author) => {
+                const c = document.createElement("div");
+                c.className = "feed-card";
+                c.dataset.search = "m8probe";
+                c.dataset.kind = "welt";
+                c.dataset.author = author;
+                list.appendChild(c);
+                return c;
+            };
+            const cA = mk("aa11");
+            const cB = mk("bb22");
+            const savedKind = r.state.feedKind;
+            r.state.feedKind = "alle";
+            r.state._libraryAuthorFilter = "aa11";
+            r._applyLibraryFilter();
+            const banner = list.querySelector(".library-author-banner");
+            const filtered = cA.style.display !== "none" && cB.style.display === "none" && !!banner;
+            const clearBtn = banner && banner.querySelector(".library-author-clear");
+            if (clearBtn) clearBtn.click();
+            const cleared =
+                !r.state._libraryAuthorFilter &&
+                cB.style.display !== "none" &&
+                !list.querySelector(".library-author-banner");
+            out.identity = filtered && cleared;
+            cA.remove();
+            cB.remove();
+            r.state.feedKind = savedKind;
+            r._applyLibraryFilter();
+        }
+        // (3) der Karten-Chip ist verdrahtet (Source irgendeiner Render-Methode
+        // trägt den feed-ident-Klick) + der Backup-Hinweis steht.
+        const protoSrcs = Object.getOwnPropertyNames(Object.getPrototypeOf(r)).map((n) => {
+            try {
+                return typeof r[n] === "function" ? r[n].toString() : "";
+            } catch {
+                return "";
+            }
+        });
+        out.identChip = protoSrcs.some(
+            (src) => /feed-ident/.test(src) && /_libraryAuthorFilter = item\.author/.test(src)
+        );
+        const hint = document.getElementById("vibe-pass-backup-hint");
+        out.backupHint = !!hint && /Schlüssel/.test(hint.textContent) && /Fälschung/.test(hint.textContent);
+        return out;
+    });
+    check(
+        "M8 Makro-Fenster: der Broker-stats-Handler (Dispatch · Cache · Anzeige · welcome fragt an · Müll-Wand)",
+        res.dispatch && res.statsCached && res.statsShown && res.welcomeAsks && res.statsWall
+    );
+    check(
+        "M8 Identitäts-Seite: der Autor-Filter zeigt EINEN Schöpfer (Kopf-Banner + ✕ löst) — ein gefilterter Feed, kein neuer Raum",
+        res.identity && res.identChip
+    );
+    check(
+        "M8 Vibe-Pass: der Backup-Pfad ist sichtbar dokumentiert (Schlüssel-Wahrheit + Fälschungs-Wand)",
+        res.backupHint
+    );
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -46447,6 +46532,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandM4SuchKern(ctx);
             await checkBandM6ErnteSpawn(ctx);
             await checkBandM7LichtFeinschliff(ctx);
+            await checkBandM8MakroFenster(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

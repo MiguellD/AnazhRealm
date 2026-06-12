@@ -76,9 +76,7 @@ async function run() {
     // W13 Phase 3: Vibe-Pass-Identität. A teilt vibePassId + proof → B
     // bekommt beides mit dem peerId-Stempel des Servers. (Die echte
     // ed25519-Verifikation prüft der Playtest — hier nur der Relay.)
-    wsA.send(
-        JSON.stringify({ type: "vibe", vibePassId: "ed25519:" + "ab".repeat(32), proof: "cd".repeat(64) })
-    );
+    wsA.send(JSON.stringify({ type: "vibe", vibePassId: "ed25519:" + "ab".repeat(32), proof: "cd".repeat(64) }));
     await sleep(150);
     // Defensive: vibe ohne proof bzw. ganz leer werden verworfen.
     wsA.send(JSON.stringify({ type: "vibe", vibePassId: "ed25519:abc" }));
@@ -119,9 +117,7 @@ async function run() {
     await sleep(150);
 
     // Kreatur-Sicht-Sync: A streamt eine creature-pos-Liste, B empfängt sie.
-    wsA.send(
-        JSON.stringify({ type: "creature-pos", list: [{ id: "c1", x: 4, y: 6, z: 4, yaw: 0, soul: "wesen" }] })
-    );
+    wsA.send(JSON.stringify({ type: "creature-pos", list: [{ id: "c1", x: 4, y: 6, z: 4, yaw: 0, soul: "wesen" }] }));
     await sleep(150);
 
     // W11 Phase 4: Voice-Sync. A's Begleiter spricht → B empfängt companion-say.
@@ -133,9 +129,7 @@ async function run() {
     // W17 Phase B-Relay: der Sub-Welt-Verkehr eines Multiplayer-Portals.
     // A's ws-send fliesst als subworld-net durchs Mesh → B empfängt es.
     // Defensive: subworld-net ohne data / ohne worldId wird verworfen.
-    wsA.send(
-        JSON.stringify({ type: "subworld-net", worldId: "worlds/_test/index.html", data: "subnet-payload" })
-    );
+    wsA.send(JSON.stringify({ type: "subworld-net", worldId: "worlds/_test/index.html", data: "subnet-payload" }));
     wsA.send(JSON.stringify({ type: "subworld-net", worldId: "worlds/_test/index.html" }));
     wsA.send(JSON.stringify({ type: "subworld-net", data: "subnet-payload" }));
     await sleep(150);
@@ -144,6 +138,11 @@ async function run() {
     // B bekommt die portal-invite. Defensive: ohne worldId wird verworfen.
     wsA.send(JSON.stringify({ type: "portal-invite", worldId: "skeleton", label: "Skelett-Welt" }));
     wsA.send(JSON.stringify({ type: "portal-invite", label: "ohne worldId" }));
+    await sleep(150);
+
+    // M8 (V18.161) — das Makro-Fenster: der Broker antwortet dem Anfrager
+    // mit der Knoten-Gesamtzahl (Räume + Peers), kein Broadcast.
+    wsA.send(JSON.stringify({ type: "stats" }));
     await sleep(150);
 
     console.log("\n=== A received ===");
@@ -171,13 +170,10 @@ async function run() {
             e.program[4] === -2.5
     );
     const aNotEchoedOwnDsl = !events.a.some((e) => e.type === "dsl");
-    const bRejectedBadDsl =
-        events.b.filter((e) => e.type === "dsl").length === 1; // genau das eine gute, keine kaputten
+    const bRejectedBadDsl = events.b.filter((e) => e.type === "dsl").length === 1; // genau das eine gute, keine kaputten
 
     // Ring 11.5 Assertions
-    const aGotWorldRequest = events.a.some(
-        (e) => e.type === "world-request" && e.peerId === "peerB"
-    );
+    const aGotWorldRequest = events.a.some((e) => e.type === "world-request" && e.peerId === "peerB");
     const bGotWorldSnapshot = events.b.some(
         (e) => e.type === "world-snapshot" && e.peerId === "peerA" && e.state && e.state.hello === "world"
     );
@@ -185,9 +181,11 @@ async function run() {
     // Targeted-delivery: A sollte sein EIGENES world-snapshot NICHT zurückbekommen
     const aNotEchoedOwnSnapshot = !events.a.some((e) => e.type === "world-snapshot");
     // lanAddresses im welcome-Message (Ring 11.5)
-    const welcomeHasLanAddresses = events.a.some(
-        (e) => e.type === "welcome" && Array.isArray(e.lanAddresses)
-    );
+    const welcomeHasLanAddresses = events.a.some((e) => e.type === "welcome" && Array.isArray(e.lanAddresses));
+
+    // M8 Assertions — die Knoten-Gesamtzahl (2 Peers in 1 Raum), nur an den Anfrager.
+    const aGotStats = events.a.some((e) => e.type === "stats" && e.rooms === 1 && e.peers === 2);
+    const bNotStats = !events.b.some((e) => e.type === "stats");
 
     // Ring 11 V3 Assertions
     const bGotSoulFromA = events.b.some(
@@ -268,6 +266,7 @@ async function run() {
     console.log("W7P1 B bekommt A's rtc-ice (targeted):", bGotRtcIceFromA);
     console.log("W7P1 A bekommt eigenen rtc-offer NICHT zurück:", aNotEchoedOwnRtcOffer);
     console.log("W7P1 Server verwirft rtc-offer ohne to/sdp:", bRejectedBadRtcOffer);
+    console.log("M8 A bekommt Broker-stats (1 Raum, 2 Peers, nur Anfrager):", aGotStats && bNotStats);
 
     // W7 Phase 4 + Kreatur-Sync Assertions
     const bGotLobbyRooms = events.b.some(
@@ -286,7 +285,8 @@ async function run() {
     const aNotEchoedOwnCreaturePos = !events.a.some((e) => e.type === "creature-pos");
     // W11 Phase 4: Voice-Sync.
     const bGotCompanionSay = events.b.some(
-        (e) => e.type === "companion-say" && e.peerId === "peerA" && e.text === "Ich träume mit dir." && e.voice === "Aria"
+        (e) =>
+            e.type === "companion-say" && e.peerId === "peerA" && e.text === "Ich träume mit dir." && e.voice === "Aria"
     );
     const aNotEchoedOwnCompanionSay = !events.a.some((e) => e.type === "companion-say");
     const bRejectedBadCompanionSay = events.b.filter((e) => e.type === "companion-say").length === 1;
@@ -303,10 +303,7 @@ async function run() {
     // W17 Phase C Assertions.
     const bGotPortalInvite = events.b.some(
         (e) =>
-            e.type === "portal-invite" &&
-            e.peerId === "peerA" &&
-            e.worldId === "skeleton" &&
-            e.label === "Skelett-Welt"
+            e.type === "portal-invite" && e.peerId === "peerA" && e.worldId === "skeleton" && e.label === "Skelett-Welt"
     );
     const aNotEchoedOwnPortalInvite = !events.a.some((e) => e.type === "portal-invite");
     const bRejectedBadPortalInvite = events.b.filter((e) => e.type === "portal-invite").length === 1;
@@ -372,7 +369,9 @@ async function run() {
         bRejectedBadSubworldNet &&
         bGotPortalInvite &&
         aNotEchoedOwnPortalInvite &&
-        bRejectedBadPortalInvite;
+        bRejectedBadPortalInvite &&
+        aGotStats &&
+        bNotStats;
     server.kill();
     process.exit(allOk ? 0 : 1);
 }

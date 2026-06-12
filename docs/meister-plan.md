@@ -165,15 +165,21 @@ OFFEN (ehrlich verortet): Befund 22 Fluss-Polish = der EIGENE Bogen (roadmap §4
 Narben-Liste: NUR der Lauf, NIE der Querschnitt) · Befund 23 LOD-Start-Loch = der
 §6.5-Mess-Auftrag (braucht ein frisches Boot-Setup). +4 Invarianten.
 
-**M8 — Das Makro-Fenster [H].** signaling-server `/stats` (Räume/Peers gesamt) + Anzeige
-im Multi-User-Bereich · Identitäts-Seite (alle public Werke eines pubkeys, aus dem
-bestehenden Feed-Filter `data-author` — reine Verdichtung) · Vibe-Pass-Backup-Pfad
-sichtbar dokumentiert (Einstellungen-Identität + ein Satz im Pass-Panel).
+**M8 — Das Makro-Fenster [H]. ✓ GEBAUT (V18.161).** ✓ Die Online-Zahl über den
+BESTEHENDEN WS-Kanal ({type:"stats"} → Räume+Peers, nur dem Anfrager — die CSP-kluge
+Form statt eines neuen HTTP-Endpoints); welcome fragt an, die Anzeige lebt im
+Multi-User-Bereich; smoke-bewiesen (echter Broker: 1 Raum · 2 Peers · B bekommt
+nichts). ✓ Identitäts-Seite = EIN gefilterter Feed (👤-Chip → _libraryAuthorFilter,
+Kopf-Banner + ✕ löst). ✓ Vibe-Pass-Backup-Pfad sichtbar (die §0-Wahrheit im UI).
++3 Invarianten, +2 smoke-Assertions.
 
 **M9 — DIE AUFSTIEGS-LEITER (die Krone; eigener Bogen, S-Dialog je Sprosse).** §3.
 
-**Reihenfolge:** M2 ✓ → M3 ✓ → M1 ✓ → M5 ✓ → M4 ✓ → M6 ✓ → M7 ✓ (Kern) →
-**M8 (Makro-Fenster) ist der AKTIVE nächste Schritt** → M9 (S-Dialog-Bogen).
+**Reihenfolge:** M2 ✓ → M3 ✓ → M1 ✓ → M5 ✓ → M4 ✓ → M6 ✓ → M7 ✓ (Kern) → M8 ✓ —
+**der autonome Plan-Teil ist RUND. Es bleibt M9 (die Aufstiegs-Leiter, §3):
+ein S-DIALOG-Bogen je Sprosse** (Sprossen 3–5 brauchen den Schöpfer am Tisch);
+dazu die S-Sign-offs der M-Wellen + die zwei benannten offenen Mess-/Polish-Bögen
+(Befund 22 Wasser · Befund 23 Start-Loch).
 
 ---
 

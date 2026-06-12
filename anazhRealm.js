@@ -6902,6 +6902,23 @@ class AnazhRealm {
         this._p2pBroadcastSoul();
         // W13 Phase 3 — und meine Vibe-Pass-Identität (beweisbar).
         this._p2pBroadcastVibe();
+        // M8 (V18.161) — das MAKRO-FENSTER: die Knoten-Gesamtzahl anfragen
+        // (über den BESTEHENDEN WS-Kanal — kein neuer HTTP-Pfad, keine CSP-Tür).
+        if (typeof this.p2pSend === "function") this.p2pSend({ type: "stats" });
+    }
+
+    // M8 (V18.161) — die Broker-Antwort: Räume + Spieler an DIESEM Knoten.
+    // Gecacht + im Multi-User-Bereich sichtbar (Vision-Mechanik sichtbar,
+    // V9.95-c — der Schöpfer sieht das Makrosystem, nicht nur den Raum).
+    _p2pMsgStats(msg, p2p) {
+        const rooms = Number(msg.rooms);
+        const peers = Number(msg.peers);
+        if (!Number.isFinite(rooms) || !Number.isFinite(peers)) return;
+        p2p.brokerStats = { rooms, peers, at: Date.now() };
+        if (typeof document !== "undefined") {
+            const el = document.getElementById("p2p-broker-stats");
+            if (el) el.textContent = `Knoten: ${peers} online in ${rooms} ${rooms === 1 ? "Raum" : "Räumen"}`;
+        }
     }
 
     _p2pMsgPeerJoin(msg, p2p) {
@@ -33942,6 +33959,11 @@ class AnazhRealm {
         const input = document.getElementById("library-search");
         const q = (input && input.value ? input.value : "").trim().toLowerCase();
         const kind = this.state.feedKind || "alle";
+        // M8 (V18.161) — die IDENTITÄTS-SEITE ist EIN gefilterter Feed: ein
+        // gesetzter Autor-Filter (Klick auf den 👤-Fingerprint einer Karte)
+        // zeigt ALLE public Werke EINES pubkeys (data-author — reine
+        // Verdichtung des F4-Substrats, kein neuer Raum).
+        const author = this.state._libraryAuthorFilter || null;
         let shown = 0;
         for (const card of list.querySelectorAll(".library-card, .feed-card")) {
             const hay = card.dataset.search || "";
@@ -33952,9 +33974,32 @@ class AnazhRealm {
                     : kind === "gefolgt"
                       ? card.dataset.followed === "1"
                       : card.dataset.kind === kind);
-            const match = kindOk && this._matchQuery(hay, q); // M4 — der EINE Kern
+            const authorOk = !author || card.dataset.author === author;
+            const match = kindOk && authorOk && this._matchQuery(hay, q); // M4 — der EINE Kern
             card.style.display = match ? "" : "none";
             if (match) shown++;
+        }
+        // M8 — der Identitäts-KOPF (sichtbar nur bei gesetztem Autor-Filter):
+        // „Werke von <fp> (N) · ✕ alle zeigen" — der ✕ löst den Filter.
+        let banner = list.querySelector(".library-author-banner");
+        if (author) {
+            if (!banner) {
+                banner = this._el("div", { class: "library-author-banner" });
+                list.prepend(banner);
+            }
+            banner.textContent = "";
+            banner.appendChild(
+                this._el("span", { text: `👤 Werke von ${this._vibeFingerprint(author)} — ${shown} im Feed ` })
+            );
+            const clear = this._el("button", { class: "library-author-clear", text: "✕ alle zeigen" });
+            clear.type = "button";
+            clear.addEventListener("click", () => {
+                this.state._libraryAuthorFilter = null;
+                this._applyLibraryFilter();
+            });
+            banner.appendChild(clear);
+        } else if (banner) {
+            banner.remove();
         }
         let empty = list.querySelector(".library-empty");
         if (shown === 0 && (q || kind !== "alle")) {
@@ -34821,6 +34866,22 @@ class AnazhRealm {
         // (data-author — derselbe Schöpfer hat oft mehrere Werke im Feed),
         // dazu Chips + Filter (die V18.65-Loop-Disziplin: der Knopf TREIBT).
         const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+        // M8 (V18.161) — der 👤-IDENTITÄTS-Chip: ein Klick zeigt ALLE Werke
+        // dieses Schöpfers (der Autor-Filter — die Identitäts-Seite als Feed).
+        if (item.author) {
+            const ident = this._el("span", {
+                class: "feed-ident",
+                text: `👤 ${this._vibeFingerprint(item.author)}`,
+                title: "Alle Werke dieses Schöpfers zeigen (Identitäts-Seite).",
+            });
+            ident.style.cursor = "pointer";
+            ident.addEventListener("click", (e) => {
+                e.stopPropagation();
+                this.state._libraryAuthorFilter = item.author;
+                this._applyLibraryFilter();
+            });
+            bar.appendChild(ident);
+        }
         if (item.author && item.author !== myKey) {
             const followed = this._feedFollowed(item.author);
             const follow = this._el("span", {
@@ -57992,7 +58053,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.160.0";
+AnazhRealm.VERSION = "18.161.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -59598,6 +59659,7 @@ AnazhRealm.CAPABILITY_PROPOSAL_MAX = 16;
 // bewusst NICHT hier — sie laufen über _p2pHandleChannelMessage.
 AnazhRealm.P2P_MESSAGE_HANDLERS = Object.freeze({
     welcome: "_p2pMsgWelcome",
+    stats: "_p2pMsgStats", // M8 — das Makro-Fenster
     "peer-join": "_p2pMsgPeerJoin",
     "peer-leave": "_p2pMsgPeerLeave",
     "lobby-rooms": "_p2pMsgLobbyRooms",

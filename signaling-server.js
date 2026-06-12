@@ -165,6 +165,15 @@ function handleClientMessage(ws, raw) {
         return;
     }
     if (!msg || typeof msg !== "object") return;
+    // M8 (V18.161) — das MAKRO-FENSTER: die Gesamt-Zahl DIESES Knotens
+    // (Räume + Peers am Broker). Antwortet nur dem Anfrager — kein Broadcast,
+    // keine Identitäten (nur Zahlen; die Räume bleiben privat).
+    if (msg.type === "stats") {
+        let peers = 0;
+        for (const set of rooms.values()) peers += set.size;
+        sendTo(ws, { type: "stats", rooms: rooms.size, peers });
+        return;
+    }
     if (msg.type === "join") {
         const room = String(msg.room || "").slice(0, 64);
         const peerId = String(msg.peerId || "").slice(0, 64);
