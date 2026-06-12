@@ -2,17 +2,17 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V18.83 (08.06.2026) — der **UI-Putz-Bogen ist RUND**: 8 flache Tabs → 6 Kern-Räume (Welt · Hof · Ich · Werkstatt · Bibliothek · Einstellungen) auf dem Werkstatt-Designsystem, der **Omnibox**-Schlüsselstein (Ctrl+K, löst die ~60-Knopf-Duplikation), jeder Raum auf Tiefe gebaut (Spec-Sheets · Bühnen · der zentrale Feed · die Einstellungen als reine Präferenzen, die Welt-Verwaltung in der Bibliothek) + das **freie HUD** (das Chrome weicht beim Spielen, der Chat sitzt unten-links wie bei den Profis, ein Fading-Feed — der Bildschirm gehört der Welt). Davor steht der **Körper der Welt** (Terrain · Wasser-Modell [V18.6: Wasser ist eine Fläche auf dem Spiegel `L`] · Render/Ghibli · Strukturen) UND die **Seele** substanziell: das lebendige Feld (lesen · schreiben · WERTEN), der DSL-Weltregeln-Bogen (Mensch · Nexus · KI schreiben am selben Regel-Satz), der Emotion-Kern, der Kampf-Bogen, der vereinte Schöpfungs-Fluss + die Resonanz-Vereinheitlichung („ein Produkt-Vektor, viele Leser" — Domäne · Rolle · Werkzeug-Op emergieren als argmax-Resonanz) und der Werkstatt-Bogen (die Werkstatt IST der Prozess, die Werte sichtbar + dynamisch, 3D-zentrisch).
+**Stand**: V18.172 (12.06.2026) — der **Meister-Plan-Marsch** läuft (`docs/meister-plan.md` §8): die Wahrheits-Politur der Räume ist gebaut (Ψ1-argmax-Organ · Hof fühlt [6 Emotions-Achsen wie HP] · der Ich-Raum sagt die Wahrheit [Mach-Tor spricht inline · EIN Boost-Band · WARUM-Chip = lesbare Emergenz] · Ritt-Feel + Spawn-Hygiene) + **der Leuchtturm** (`npm run leuchtturm` — beweisbare Souveränität, das Broker-Protokoll als Andock-Vertrag in `docs/taille-spec.md` §7, englischer Spiegel `docs/taille-spec.en.md`). Darunter stehen die großen Bögen RUND: die gefrorene Taille (Ω, golden-verankert) · das Robustheits-Immunsystem (R0–R6-Kern) · der soziale Bogen (F4: signierte Zeugnisse · Folgen · Kommentare · transparentes Für-dich) · die Welten-Föderation (W18: Ko-Präsenz-Injektion + in fremden Welten LEBEN) · der Genese-Bogen-Kern (Γ: Feuchte-Feld + Kronen-Ökologie) · das lebendige Feld (lesen · schreiben · WERTEN), der Emotion-Kern, der Kampf- und Schöpfungs-Fluss und die Resonanz-Vereinheitlichung (ein Produkt-Vektor, viele Leser).
 
 > Der **live gepflegte Stand** (mit allen Gotchas) lebt im `CLAUDE.md`-Kopf — dort steht immer die Wahrheit, dieser Absatz ist nur ein Schnappschuss.
 
-**Nächste offene Fäden** (geordnet in `docs/roadmap.md` „⭐ DER PLAN VORWÄRTS"): nach dem UI-Bogen ist der nächste GROSSE Welt-Bogen das **Wasser** — echte Fluid-Dynamik (Wasser fliesst nach wie Minecraft); heute ein statisches 2.5D-Höhenfeld, die volle Wahrheit + die drei Optionen in `docs/wasser-render-architektur-plan.md`. Danach: **Fundament sauber** (H3-Seen/Flüsse · G3 Eingänge/Canyons · LOD-Kaskade · Render-Feinschliff) → **die Seele** (Crafting-Schluss [S6-B erntbare Flora · S11 Werkstatt-Animation] · Kampf [Phase E Bedrohung/Furcht · Mana-Symmetrie] · Vision [Emotion→Regel-Emergenz · W18 in fremden Welten LEBEN]). Offen daneben: der Schöpfer-Browser-Sign-off des UI-Bogens (GPU-Feel) + das Statusbar-Schlanken.
+**Nächste offene Fäden** (der verbindliche Marsch in `docs/meister-plan.md` §8.8): **W-E das Frequenzband** (eine Atmosphäre, alle Ebenen als Antennen — die Inventur ist gemessen, die Schnitt-Karte liegt) → W-F Wasser-Look (Lauf-Glättung statt Häuschenpapier) → W3 UI-Puls → W-G Gelenk-Begreifbarkeit · W-H Wald-WOW → W6 Stamm-Atlas → M9 die Aufstiegs-Leiter. Parallel-fähig: der Archipel-Bogen Φ0/Φ1 (`docs/archipel-plan.md`) + der Genese-Rest (Γ4 Makro-Anker, `docs/genese-plan.md`). Offen daneben: die Schöpfer-Browser-Abnahme der gesammelten S-Punkte (`docs/rueckmeldung.md` ist der verfolgbare Korpus).
 
-Die **volle Wellen-Chronik** (jede Welle ein Eintrag) lebt in `docs/handover.md`; der **aktuelle Stand + Gotchas** in `CLAUDE.md`; der **Plan vorwärts** in `docs/roadmap.md`; die **Vision** in `docs/state-of-realm.md`.
+Die **volle Wellen-Chronik** (jede Welle ein Eintrag) lebt in `docs/archiv/handover.md`; der **aktuelle Stand + Gotchas** in `CLAUDE.md`; der **Plan vorwärts** in `docs/roadmap.md`; die **Vision** in `docs/state-of-realm.md`.
 
 ## Was es ist
 
-AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~45 000 Zeilen, Vanilla JS + Three.js r184/WebGPU + Ammo.js). Drei zentrale Vision-Pfeiler:
+AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~61 000 Zeilen, Vanilla JS + Three.js r184/WebGPU + Ammo.js). Drei zentrale Vision-Pfeiler:
 
 - **Hylomorphismus als Sprache**: Form × Material × Werkzeug × räumliche Konfiguration → emergente Identität. Player-Seele, Bauwerk, Kreatur, Werkzeug, Rüstung, Trank — alles spricht dieselbe Compound-Tag-Sprache.
 - **DSL als Co-Schöpfer-Werkzeug**: 41 Ops, Sandbox mit Budget-Limits + Op-Whitelist + kein `eval`. Mensch und Welt-LLM teilen sich die Sprache. CSP-strict.
@@ -67,7 +67,7 @@ Pre-Push-Empfehlung: `npm run check && npm run playtest && npm run audit:strict`
 Die **EINE kanonische Doc-Landkarte** lebt in **[`docs/README.md`](docs/README.md)** — sie ordnet jedes Dokument nach Zeit-Ebene des Wissens (Einstiege · lebendige Anker · aktive Pläne · Referenz · Archiv). Die wichtigsten Routen:
 
 - **JETZT** (Stand + Gotchas) → `CLAUDE.md` (auto-geladen)
-- **DIE CHRONIK** (Wellen-Historie + Start) → `docs/handover.md`
+- **DIE CHRONIK** (Wellen-Historie + Start) → `docs/archiv/handover.md`
 - **DIE VISION** → `docs/state-of-realm.md` · **DER WAHRE NORDEN** → `docs/das-lebendige-feld.md`
 - **DER PLAN** → `docs/roadmap.md` · **DER AKTIVE BOGEN** → `docs/kampf-plan.md`
 - **REFERENZ** → `docs/crafting-konzept.md` · `docs/aktivierungsmatrix.md` · `docs/hydrosphere.md` · `docs/world-portal.md`
