@@ -61,6 +61,7 @@ Wurzeln: meister-plan §8.1 (GEMESSEN via `diag-audit2.cjs`); Zweitmessung: Tief
 | R-038 | Pausierbarkeit als Eigenschaft + Probe | Prozess (sofort gültig) | Kaltstart-Probe = Prozess-Wand §8.7#5 (Session nach 90 Tagen kalt aufsetzbar?); Burnout-PHYSIK bleibt ehrlich Schöpfer-Domäne (§8.9d/g) | §8.7 |
 | R-039 | Devlog/„Welle-Schau" gegen das Versanden | Entscheid | Schöpfer-Option: monatliche Welle-Schau („Mensch+KI bauen ein Ultiversum" ist Content, den es nicht gibt) — Audience-Arbeit darf das Bauen nicht fressen; Wort hier eintragen (§8.9f) | — |
 | R-040 | Moderations-Haltung, falls je öffentlich | dokumentiert | „Welten sind Wohnzimmer, keine Marktplätze" (Klein-N + Einladungs-Welten) = bewusste Entscheidung GEGEN den öffentlichen Platz, kein Sieg über dessen Probleme (§8.9g) | M9-Kontext |
+| R-041 | „Damit die Zukunft wirklich klar wird — der Pfad": das Welten-Netz (öffentliche Welten · Portale · Tausende unter einem Himmel) | Plan verankert | `docs/archipel-plan.md` (Φ0–Φ7) — die Bau-Form der M9-Sprossen 1–3; Fundamente unabhängig nachgemessen (§6 dort: Lobby-Keim real, zwei Zahlen korrigiert: Region ~346 m, Ring-Kopplung bei Weltenring-max); Φ0/Φ1 parallel-fähig, Φ3 wartet auf W-E + UI-Puls (meister-plan §8.10) | Φ-Bogen |
 
 ## Pflege-Regeln
 

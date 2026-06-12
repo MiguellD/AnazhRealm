@@ -802,3 +802,20 @@ Sieg über dessen Probleme; sie steht damit dokumentiert, nicht vergessen).
 T-WELLE nach W6 (beide senken MEINE Reibung) · Kaltstart-Probe + Profi-Checklisten-
 Regel sind Prozess (sofort gültig) · taille-spec.en mit dem Leuchtturm ·
 Leuchtturm-Föderation + Devlog-Entscheid → M9-Zeit.
+
+### §8.10 DER ARCHIPEL-BOGEN (Φ) — die Zukunft hat jetzt einen eigenen Plan
+
+Der Schöpfer-Bogen `docs/archipel-plan.md` (12.06.) ist die KONKRETE Bau-Form der
+M9-Sprossen 1–3: Welten-Netz (Φ1 Adressen + tragende Portale · Φ2 Sichtbarkeit/Hausrecht)
+→ Archipel (Φ3 Regions-Blasen + Naht-Handoff · Φ4 Anwesenheit) → tragende Menge (Φ5
+Mittragen · Φ6 Spenden-Rechnen). Unabhängig NACHGEMESSEN (archipel-plan §6): die
+Fundamente stehen real (Lobby-Keim! roomOverride 11 · srv-state 7 · isPortal 12 ·
+hostInfo · Taille), zwei Zahlen korrigiert (Voxel-span 43.2 m → Region-Erst-Wurf ~346 m;
+Weltenring-max 540 m bricht „Sichtweite < Region" → Φ3 koppelt den Ring oder weitet die
+Region — Φ0 misst). Einordnung in DIESEN Marsch: **Φ0+Φ1 sind parallel-fähig wie der
+Leuchtturm** (berühren weder Licht noch Wasser noch UI; Φ1+Leuchtturm teilen sogar das
+Andock-Dokument taille-spec[.en]); **Φ3 wartet bewusst auf W-E (Licht) + UI-Puls** —
+eine sichtbare Naht ist doppelt teuer. Die Anti-Scope-Wände (§3 dort: kein Feed-Algorithmus
+· keine Lichtkegel-Illusion · keine Rechen-Währung in V1 · kein zentraler Wächter) sind
+verbindlich. Nach Φ1 wandert der EINE Satz in CLAUDE.md: „Das Welten-Netz spricht NUR
+durch die Taille — jeder neue Reise-Pfad geht durch `_admitForeignArtifact`, ohne Ausnahme."
