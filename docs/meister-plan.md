@@ -645,6 +645,12 @@ Souveränität fehlen). M9 bleibt der S-DIALOG — die Sprossen 3–5 designen w
    Hebel, der eine Ebene hebt und die Nachbar-Ebene kippt, ist NICHT fertig.
 4. **Jede neue UI-Fläche konsumiert die geteilten Renderer** (Balken/Chips/Slots) —
    eine neue Privat-Form ist der Riss von morgen.
+5. **Die KALTSTART-PROBE (§8.9d):** periodisch prüfen, ob eine Session nach 90 Tagen
+   KALT aufsetzen könnte (CLAUDE.md → meister-plan → Korpus → ein Band laufen lassen,
+   ohne Erinnerung an die letzte Session) — die Pausierbarkeit ist eine GEBAUTE
+   Eigenschaft (Taille · golden · Bänder); die Probe hält sie wahr.
+6. **Die PROFI-MUSTER-REGEL (§7 als Checkliste, §8.9f):** jedes Profi-Muster wird
+   ÜBERNOMMEN oder BEWUSST abgelehnt mit benanntem Grund — es gibt kein stilles Drittes.
 
 ### §8.8 DIE ZWEITMESSUNG (Tiefen-Audit, 12.06. abend) — was sie dem Plan HINZUFÜGT
 
@@ -720,3 +726,79 @@ SIEHT die Heilung zuerst) → **W-E/Λ das Frequenzband** (mit Λ1-Disziplin) �
 Gelenke · W-H Wald → W6 Stamm-Atlas + W5-Entscheid (ein Nachmittag) → **M9 die Krone**
 (S-Dialog; + Schlüssel-Verwahrungs-Sprosse). Die v1.0-DoD (f) ist das Ziel-Band über
 allem.
+
+### §8.9 DIE SWOT-INVERSIONEN (12.06.) — was davon in die Planung einfließt
+
+> Quelle: die Schwächen→Stärken-Analyse des Schöpfers. Übernommen wird NUR, was sauber
+> konvertiert — drei Klassen, ehrlich getrennt. Die zwei ANGRIFFS-Inversionen
+> (Leuchtturm + Warum-Chip) sind priorisiert: sie machen aus Verteidigung Angriff.
+
+**(a) DER LEUCHTTURM (Souveränitäts-Widerspruch → BEWEISBARE Souveränität) — eigene
+kleine Welle, früh, parallel-fähig:** signaling- und save-server sind je EINE
+zero-dep-Datei — die Schwäche „es sind doch deine Server" invertiert zu „jeder
+betreibt seinen eigenen Leuchtturm". Teilschritte: (1) EIN Befehl
+(`npm run leuchtturm` startet beide Server; start.bat-Parität für Unix); (2) eine
+SELF-HOST-Sektion (Ports · wss/TURN-Hinweis [`anazhTurn` existiert] · was der
+Leuchtturm sieht und was NIE: er relayed, er besitzt nichts — die Taille gilt);
+(3) das Broker-PROTOKOLL dokumentiert in der Taille-Spec (die WS-Typen sind heute
+nur Code-Kommentar); (4) Leuchtturm-FÖDERATION = M9-Sprosse (nach der Leiter).
+Dann ist „ohne Herrn" VERIFIZIERBAR — kein Gigant kann das nachmachen, weil deren
+Geschäftsmodell der Herr ist.
+
+**(b) DER WARUM-CHIP (UX-Verwirrung → ERKLÄRBARE Emergenz) — in W-C eingewoben:**
+„Warum ist mein Ding ein Trank?" ist die größte Fremden-Hürde — und die Antwort
+liegt SCHON als Zahl im argmax. Ein „Warum?"-Chip an JEDER Rollen-Anzeige
+(Werkstatt-Chip · Ich-Karten · Bibliothek) zeigt die drei stärksten Resonanz-Achsen
+(„lebendig 1.0 · greifbar 0.6 · härte −0.5") — die V18.164-WARUM-Spur
+(`_blueprintRoleGapHint`/Spektrum) zu Ende gedacht: der verwirrendste Moment wird
+der lehrreichste. KEIN Spiel hat lesbare Emergenz; wir haben sie fast gratis.
+
+**(c) DIE T-WELLE (kein Typsystem → Typen als nächste Invarianten-Schicht) — nach
+W6-Atlas:** JSDoc-Typen + `// @ts-check` + `tsc --checkJs` als weiteres Band —
+~80 % des TypeScript-Nutzens, NULL Build-Schritt, NULL Datei-Split (Heilige Lektion
+unberührt). EHRLICH: auf 60k Zeilen ist der Erstlauf eine Fehler-Lawine → das Band
+ist eine RATSCHE (T0: Fehlerzahl messen = Baseline · T1: die tragenden Nähte typisieren
+[state-Shape, Blueprint, Connection, Entry] · Band: Fehlerzahl ≤ Baseline, monoton
+fallend — nie ein Block, immer ein Druck).
+
+**(d) DIE KALTSTART-PROBE (Eigenfrequenz-Risiko → pausierbares Projekt) — Prozess-Wand
+§8.7 Punkt 5:** die Architektur ist bereits pausen-tolerant GEBAUT (gefrorene Taille ·
+goldene Dateien · handover · Bänder, die nach 90 Tagen gleich grün sind). Das wird
+benannte EIGENSCHAFT + periodische PROBE: „könnte eine Session nach drei Monaten kalt
+aufsetzen?" — operationalisiert als Onboarding-Pfad-Check (CLAUDE.md → meister-plan →
+Korpus → ein Band laufen lassen, OHNE Erinnerung an die letzte Session). Intensität
+wird damit ein MODUS, kein Hasard. (Die Burnout-PHYSIK selbst bleibt Schöpfer-Domäne —
+kein Framework ersetzt Pausen; hier steht nur die Projekt-Seite.)
+
+**(e) DEUTSCH ALS SIGNATUR (Sprachmauer → Identität):** der Code bleibt deutsche
+Handschrift (Hylomorphismus · Werkstatt · Mühe SIND Identität). Die EINE Stelle, die
+Fremde wirklich brauchen, bekommt den englischen Spiegel: `docs/taille-spec.en.md`
+(gehört zur Leuchtturm-Welle — Taille + Protokoll zusammen ist das Andock-Dokument).
+
+**(f) Umwidmungen, die in BESTEHENDE Organe fallen (kein neues Gefäß):**
+der FREMD-NACHBAU als Band (5 Fremde + Beobachtungsbogen — die Nachbau-Wand mit
+fremden Augen; der eine diag, der nie headless läuft) → gehört zur v1.0-DoD
+ERSTE-5-MINUTEN-Geste (§8.8f, der Schöpfer organisiert die Fremden, der Bogen liegt
+als `docs/beobachtungsbogen.md`-Vorlage bei, wenn die Geste gebaut ist) · das
+PERF-BUDGET als SPEC („läuft auf X bei Last Y") → präzisiert §8.8f (Sockel DEFINIEREN
+ist der erste Schritt, der diag der zweite) · der GIGANT-VERGLEICH als Checkliste →
+ist §7 (die Regel wird explizit: jedes Profi-Muster ÜBERNEHMEN oder BEWUSST abweichen,
+mit benanntem Grund — kein drittes) · der DEVLOG (Versanden → Resonanz) → Schöpfer-
+Option, im Korpus als Entscheid notiert (R-039; „Mensch und KI bauen ein Ultiversum"
+ist Content, den es nicht gibt — aber Audience-Arbeit darf das Bauen nicht fressen).
+
+**(g) Die RESTRISIKEN, ehrlich (nur dosierbar, nie konvertierbar):** Burnout-Physik
+(Schöpfer-Domäne; das Projekt kann nur pausierbar SEIN) · Werkzeug-Kopplung (der Hedge
+IST die Architektur: eine Datei ohne Build-Kette bleibt von Hand editierbar — das ist
+ab jetzt eine BENANNTE Eigenschaft der Heiligen Lektion, kein Zufall; die Methodik ist
+modell-agnostisch: jede fähige Intelligenz onboardet über CLAUDE.md+Pläne+Bänder) ·
+Moderation (Klein-N + Einladungs-Welten = die kohärente HALTUNG „Welten sind
+Wohnzimmer, keine Marktplätze" — eine Entscheidung GEGEN den öffentlichen Platz, kein
+Sieg über dessen Probleme; sie steht damit dokumentiert, nicht vergessen).
+
+**Einordnung in die Reihenfolge (§8.8 bleibt führend):** der WARUM-CHIP reist IN W-C
+(dieselben Flächen, derselbe Aufschlag) · der LEUCHTTURM ist parallel-fähig
+(„ein-Nachmittag"-Klasse wie W6, empfohlen früh — die Angriffs-Inversion) · die
+T-WELLE nach W6 (beide senken MEINE Reibung) · Kaltstart-Probe + Profi-Checklisten-
+Regel sind Prozess (sofort gültig) · taille-spec.en mit dem Leuchtturm ·
+Leuchtturm-Föderation + Devlog-Entscheid → M9-Zeit.

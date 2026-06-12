@@ -51,6 +51,17 @@ Wurzeln: meister-plan §8.1 (GEMESSEN via `diag-audit2.cjs`); Zweitmessung: Tief
 | R-033 | Aufstiegs-Leiter = der Kern, der Gigant; „siehst du den Pfad?" | beantwortet/Plan | §3 + §8.6: die gewinnbaren Achsen (Schöpfungs-Emergenz · Souveränität) fühlbar machen statt alle Achsen; M9-Sprossen am Tisch | M9 |
 | R-034 | „GTA/Fortnite/Minecraft/X in den Schatten" | beantwortet/Plan | §8.6/§8.8f: die ehrliche Matrix — Minecraft gewann 2011 keine Grafik, es ÖFFNETE eine Achse; unsere Achse ist gemessen real. v1.0-DoD inkl. Erste-5-Minuten-Geste + FPS-Sockel | v1.0-DoD |
 
+## Korpus v1.1 — die SWOT-Inversionen (12.06., meister-plan §8.9)
+
+| ID | Rückmeldung/Faden | Status | Wurzel/Form | Welle |
+|---|---|---|---|---|
+| R-035 | Souveränität beweisbar machen: jeder kann seinen Leuchtturm betreiben | offen | Ein-Befehl-Self-Host (beide Ein-Datei-Server) + SELF-HOST-Doku + Broker-Protokoll in die Taille-Spec + EN-Spiegel `taille-spec.en.md`; Föderation = M9-Sprosse (§8.9a/e) — die Angriffs-Inversion #1 | Leuchtturm-Welle (früh, parallel-fähig) |
+| R-036 | Erklärbare Emergenz: „Warum ist mein Ding ein Trank?" | offen | „Warum?"-Chip an JEDER Rollen-Anzeige — top-3 Resonanz-Achsen mit Zahlen (die `_blueprintRoleGapHint`/Spektrum-Spur zu Ende; §8.9b) — die Angriffs-Inversion #2 | W-C (eingewoben) |
+| R-037 | Typ-Sicherheit ohne Build/Split | offen | T-Welle: JSDoc + `// @ts-check` + `tsc --checkJs` als RATSCHEN-Band (Baseline messen, monoton fallend — nie ein Block; §8.9c) | nach W6 |
+| R-038 | Pausierbarkeit als Eigenschaft + Probe | Prozess (sofort gültig) | Kaltstart-Probe = Prozess-Wand §8.7#5 (Session nach 90 Tagen kalt aufsetzbar?); Burnout-PHYSIK bleibt ehrlich Schöpfer-Domäne (§8.9d/g) | §8.7 |
+| R-039 | Devlog/„Welle-Schau" gegen das Versanden | Entscheid | Schöpfer-Option: monatliche Welle-Schau („Mensch+KI bauen ein Ultiversum" ist Content, den es nicht gibt) — Audience-Arbeit darf das Bauen nicht fressen; Wort hier eintragen (§8.9f) | — |
+| R-040 | Moderations-Haltung, falls je öffentlich | dokumentiert | „Welten sind Wohnzimmer, keine Marktplätze" (Klein-N + Einladungs-Welten) = bewusste Entscheidung GEGEN den öffentlichen Platz, kein Sieg über dessen Probleme (§8.9g) | M9-Kontext |
+
 ## Pflege-Regeln
 
 1. Neue Rückmeldung → neue ID (fortlaufend), Roh-Wortlaut darf gekürzt, der SINN nie.
