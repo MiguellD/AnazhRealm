@@ -781,6 +781,44 @@ Genau das erzeugt auch MEINE Reibung: jede Look-Welle muss N Ketten einzeln anfa
    Geometrie-Normale bleibt!), V18.113 (Look-Matrix Pflicht), Worker unberührt
    (render-only).
 
+**E1 ✓ GEMESSEN (V18.171, `scripts/diag-frequenzband.cjs` — das stehende
+Werkzeug; Patch-Helligkeit pro Ebene am eingefrorenen Auge, Shots
+`artifacts/freqband-*.png`): die Divergenz-Karte VORHER.** floor 0 → 0.3 hebt
+(Δ Patch-Helligkeit): **nacht** terrain +44.6 · bau +7.3 · baum +8.2 · gras −2.0
+· **abend** terrain +41.5 · bau +6.8 · baum −2.4 · gras −1.7 · **mittag**
+terrain +31.0 · bau +5.5 · gras +2.4 — der EINE Hebel trifft das Terrain mit
+**Faktor ~6** gegenüber den Bauten und GAR NICHT das Gras (die §8.1#11-
+Fragmentierung als Zahl). Dazu der Silhouetten-Beleg: nachts ist der BAU (27.8)
+schon bei floor 0 DUNKLER als das Terrain (56.4). Mess-Grenzen ehrlich: die
+Kreatur-Probe blutet bei 8 m Distanz in den Terrain-Patch dahinter (ihre +46.8
+spiegeln das Terrain — für die Kreatur-Antwort braucht E4 eine NAH-Probe), das
+Wasser lag außer Blick (die Wasser-Antwort misst der W-F-Bogen), zwischen den
+Messungen drifteten Wolken (±10 Rauschen — die Faktor-6-Aussage trägt es).
+→ E2 beginnt mit der Λ1-Disziplin (§8.8d): erst ENTGATEN mit Default-Gewichten
+(bit-nah), dann Substanz-Ableitung + S-Kalibrierung.
+
+**Die E2-SCHNITT-KARTE (V18.171, lesend kartiert — die nächste Session startet
+chirurgisch):** Die Empfangs-Hebel leben heute an EINEM Ort, nur familien-GEGATET
+— der Λ1-Schnitt ist kleiner als befürchtet: **(1)** `_applyAerialOutput(mat,
+opts)` (~Z22648) trägt micro+AO (`opts.microTexture`) · warmes Rim (`opts.rim`)
+· nightFloor-max()+moonRim (`opts.nightFloor`) · Aerial-Haze (immer) — die
+EINE Aufruf-Stelle ist `_buildToonNodeMaterial` (~Z22819): `isFlatStructure =
+!vertexColors && color!==undefined` → micro+rim; `vertexColors===true` →
+nightFloor. **Kreaturen laufen SCHON als Flach-Farb durch dieselbe Kette** (sie
+sind keine getrennte Familie — nur Gras [`_grassInstanceMat` ~Z13035, eigenes
+MeshLambertNodeMaterial] und Wasser [eigener TSL-Stack] stehen außerhalb).
+**(2)** Der Emissiv-Floor + die Struktur-LUT (~Z22794) sitzen im Material-BAU
+(nicht im Output-Chain) — sie wandern als `glimmen`-/`tiefe`-Gewichte ins
+Profil. **(3)** Λ1-Schritt 1 = die opts-Booleans werden ein GEWICHTS-Objekt
+(`{micro:0|1, rim:0|1, nightFloor:0|1, …}`) mit exakt den heutigen Familien-
+Werten → bit-identisch shippbar; Schritt 2 = `_substanceResponseProfile(tags)`
+ersetzt die Familien-Defaults (glanz=f(härte,dichte) · tiefe=f(dichte) ·
+glimmen=f(magieleitung,glut) · wärme=f(lebendig) · glas=f(transparent)) + der
+nightFloor-max() wird FÜLL-LICHT `lit + albedo·floor·(1−lit)` (der eine
+BEHAVIORAL-Wechsel — Matrix-A/B + S-Gate Pflicht, Defaults 0.06/0.06). Gras +
+Wasser docken als Schritt 3 an (eigene Materialien konsumieren dieselben
+Uniforms + Profil-Gewichte — kein Material-Merge).
+
 ### §8.4 W-G: Werkstatt-Gelenke/Anker — begreifbar wie ein Profi
 
 **Die Schöpfer-Fragen beantwortet (der heutige Stand, damit du weiterbaust):**
@@ -938,17 +976,18 @@ allem.
 > konvertiert — drei Klassen, ehrlich getrennt. Die zwei ANGRIFFS-Inversionen
 > (Leuchtturm + Warum-Chip) sind priorisiert: sie machen aus Verteidigung Angriff.
 
-**(a) DER LEUCHTTURM (Souveränitäts-Widerspruch → BEWEISBARE Souveränität) — eigene
-kleine Welle, früh, parallel-fähig:** signaling- und save-server sind je EINE
-zero-dep-Datei — die Schwäche „es sind doch deine Server" invertiert zu „jeder
-betreibt seinen eigenen Leuchtturm". Teilschritte: (1) EIN Befehl
-(`npm run leuchtturm` startet beide Server; start.bat-Parität für Unix); (2) eine
-SELF-HOST-Sektion (Ports · wss/TURN-Hinweis [`anazhTurn` existiert] · was der
-Leuchtturm sieht und was NIE: er relayed, er besitzt nichts — die Taille gilt);
-(3) das Broker-PROTOKOLL dokumentiert in der Taille-Spec (die WS-Typen sind heute
-nur Code-Kommentar); (4) Leuchtturm-FÖDERATION = M9-Sprosse (nach der Leiter).
-Dann ist „ohne Herrn" VERIFIZIERBAR — kein Gigant kann das nachmachen, weil deren
-Geschäftsmodell der Herr ist.
+**(a) DER LEUCHTTURM (Souveränitäts-Widerspruch → BEWEISBARE Souveränität). ✓ GEBAUT
+(V18.171):** (1) `npm run leuchtturm` (`scripts/leuchtturm.cjs` — beide zero-dep-
+Server, ein Befehl, GEMESSEN beide Ports LISTEN; fällt ein Turm, fallen beide);
+(2) README „Dein eigener Leuchtturm" (Ports · Reverse-Proxy/wss · `anazhTurn` ·
+was der Broker sieht und was NIE); (3) **taille-spec §7** — das Broker-Protokoll
+als Andock-Vertrag (19 WS-Typen; „relayed, besitzt nichts"; §4-Versions-Regel;
+erweitert die Taille NICHT — dokumentiert die 1d-Schwester-Drahtform); dazu der
+**EN-Voll-Spiegel `docs/taille-spec.en.md`** (§8.9e mit-erledigt) + der
+DRIFT-WÄCHTER im Golden-Band (jeder neue `msg.type` MUSS §7 DE+EN tragen).
+(4) Leuchtturm-FÖDERATION bleibt M9-Sprosse (nach der Leiter). „Ohne Herrn" ist
+damit VERIFIZIERBAR — kein Gigant kann das nachmachen, weil deren Geschäftsmodell
+der Herr ist.
 
 **(b) DER WARUM-CHIP (UX-Verwirrung → ERKLÄRBARE Emergenz) — in W-C eingewoben:**
 „Warum ist mein Ding ein Trank?" ist die größte Fremden-Hürde — und die Antwort

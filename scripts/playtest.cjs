@@ -31676,6 +31676,33 @@ async function checkBandTailleOmega6(ctx) {
 // goldene p2p-Typ hat einen lebenden Handler + den pv-Stempel.
 async function checkBandTailleGolden(ctx) {
     const { page, check } = ctx;
+    // V18.171 — DER LEUCHTTURM (R-035, taille-spec §7): der Broker-Protokoll-
+    // DRIFT-WÄCHTER. Jeder im signaling-server gelesene `msg.type === "X"`-Typ
+    // MUSS in §7 der Taille-Spec (DE + EN-Spiegel) dokumentiert sein — ein
+    // neuer Broker-Typ ohne Andock-Vertrag ist der Riss von morgen. Plus: der
+    // Ein-Befehl-Self-Host existiert (npm run leuchtturm + Skript).
+    try {
+        const brokerSrc = fs.readFileSync(path.join(__dirname, "..", "signaling-server.js"), "utf8");
+        const specDe = fs.readFileSync(path.join(__dirname, "..", "docs", "taille-spec.md"), "utf8");
+        const specEn = fs.readFileSync(path.join(__dirname, "..", "docs", "taille-spec.en.md"), "utf8");
+        const typen = new Set();
+        for (const m of brokerSrc.matchAll(/msg\.type === "([a-z-]+)"/g)) typen.add(m[1]);
+        const fehltDe = [...typen].filter((t) => !specDe.includes("`" + t));
+        const fehltEn = [...typen].filter((t) => !specEn.includes("`" + t));
+        check(
+            `Leuchtturm §7: alle ${typen.size} Broker-Typen sind im Andock-Vertrag dokumentiert (DE${fehltDe.length ? " fehlt: " + fehltDe.join(",") : ""} · EN${fehltEn.length ? " fehlt: " + fehltEn.join(",") : ""})`,
+            fehltDe.length === 0 && fehltEn.length === 0
+        );
+        const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"));
+        check(
+            "Leuchtturm: der Ein-Befehl-Self-Host steht (npm run leuchtturm + scripts/leuchtturm.cjs + README-Sektion)",
+            !!(pkg.scripts && pkg.scripts.leuchtturm) &&
+                fs.existsSync(path.join(__dirname, "..", "scripts", "leuchtturm.cjs")) &&
+                /Dein eigener Leuchtturm/.test(fs.readFileSync(path.join(__dirname, "..", "README.md"), "utf8"))
+        );
+    } catch (e) {
+        check("Leuchtturm §7: Drift-Wächter lesbar", false, e.message);
+    }
     const goldenDir = path.join(__dirname, "..", "spec", "golden", "v1");
     let golden = null;
     try {

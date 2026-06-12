@@ -22,12 +22,33 @@ AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.
 
 ```bash
 npm install
-npm start            # save-server (Port 4312)
-# In neuem Terminal:
-npm run signaling    # WebSocket-Broker für Multi-User (Port 4313)
+npm run leuchtturm   # beide Server mit EINEM Befehl (HTTP 4312 + WS-Broker 4313)
 ```
 
-Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
+Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt). Einzeln:
+`npm start` (save-server) + `npm run signaling` (Broker) in zwei Terminals.
+
+## Dein eigener Leuchtturm (Self-Host)
+
+**„Ohne Herrn" ist hier verifizierbar, nicht behauptet:** beide Server sind je
+EINE zero-dep-Node-Datei (`save-server.js` + `signaling-server.js`) — jeder kann
+seinen eigenen Leuchtturm betreiben, auf jedem Rechner, der Node hat.
+
+- **Ein Befehl:** `npm run leuchtturm` startet beide; Strg+C beendet beide.
+- **Ports:** HTTP `4312` (statische Dateien + lokale Saves auf localhost),
+  WebSocket-Broker `4313` (Multi-User-Rendezvous + Relay).
+- **Hinter Domain/TLS:** ein Reverse-Proxy (Caddy/nginx) terminiert `https://`
+  und `wss://` und reicht an 4312/4313 weiter — die Server selbst bleiben pur.
+- **TURN (optional, für strenge NATs):** der Client liest `localStorage`-Key
+  `anazhTurn` (`{"urls":"turn:…","username":"…","credential":"…"}`); ohne TURN
+  läuft das Mesh über STUN, wo die NATs es erlauben.
+- **Was der Leuchtturm sieht — und was NIE:** er RELAYED, er besitzt nichts.
+  Räume + Peer-Listen leben im RAM; er stempelt die `peerId` authoritativ und
+  reicht Nachrichten weiter. Er sieht **nie** private Schlüssel (der Vibe-Pass
+  verlässt den Browser nicht), besitzt keine Welten (Snapshots reisen
+  peer-to-peer durch ihn hindurch) und führt kein Konto. Das volle
+  Broker-Protokoll: `docs/taille-spec.md` §7 (englisch:
+  `docs/taille-spec.en.md`).
 
 ## Tests + Audit
 

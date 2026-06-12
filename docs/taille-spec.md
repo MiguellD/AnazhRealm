@@ -113,3 +113,35 @@ jetzt eingefroren). Präfixierte Tags (`x:…` / `<welt>:…`) = fremdes Vokabul
 Die Signatur-TABELLEN (`FORM_ROLE_SIGNATURES`, `WORKSHOP_DOMAIN_SIGNATURES`, Gewichte,
 Kosten-Konstante k) sind **WELT-LOKAL** — die Lesart, nie die Taille; jede Welt darf sie
 forken, ohne irgendetwas zu brechen.
+
+## §7 · Das Broker-Protokoll (der Leuchtturm — R-035)
+
+> §7 DOKUMENTIERT die bestehende Drahtform des WebSocket-Brokers
+> (`signaling-server.js` — die Schwester des p2p-Umschlags 1d). Es erweitert die
+> Taille NICHT (Anti-Scope §0 bleibt): jeder kann seinen eigenen Leuchtturm
+> betreiben (`npm run leuchtturm`), und DIESES Kapitel ist der Andock-Vertrag.
+
+**Grundsatz: der Broker RELAYED, er besitzt nichts.** Räume + Peer-Mengen leben im
+RAM (kein Persistenz-Pfad); er stempelt die `peerId` AUTHORITATIV auf jede
+Relay-Nachricht (ein Client kann sich nie als anderer ausgeben); er validiert
+INHALTE nicht (das Vertrauen liegt in der Client-Sandbox — dslRun/Empfänger-Gesetz),
+nur FORMEN (Größen-Deckel, Typ-Checks). Er sieht **nie**: private Schlüssel (der
+Vibe-Pass verlässt den Browser nicht, §0-Souveränität), Inventar-Mengen (§5) oder
+dauerhaften Welt-Besitz (`world-snapshot` ist Durchreiche).
+
+- **Client → Broker:** `join {room, peerId}` (authentifiziert den Socket; alles
+  davor außer `stats` wird verworfen) · Raum-Broadcasts `pos {x,y,z,yaw}` ·
+  `creature-pos {list ≤64}` · `dsl {program: Array 1..256}` · `soul` · `aura` ·
+  `vibe` · `companion-say` · `subworld-net` · `portal-invite` ·
+  `world-request`/`world-snapshot` (Welt-Zug, Durchreiche) · adressiert
+  `rtc-offer`/`rtc-answer`/`rtc-ice {to}` (WebRTC-Rendezvous) · Lobby
+  `lobby-publish {label}` / `lobby-unpublish` / `lobby-list` · `stats`.
+- **Broker → Client:** `welcome {peers[], lanAddresses[]}` · `peer-join {peerId}` ·
+  `peer-leave {peerId}` · die gestempelten Relays (Original-Felder + `peerId`) ·
+  `lobby-rooms {rooms[{room,label,peers}]}` · `stats {rooms, peers}`.
+- **Versions-Regel:** §4 gilt wörtlich — neue Typen sind additiv (minor); ein
+  Broker MUST unbekannte Typen still verwerfen; ein Client MUST unbekannte
+  Antwort-Typen ignorieren. Felder bestehender Typen werden NIE umgedeutet.
+- **Betrieb:** HTTP 4312 (statisch + lokale Saves, localhost-only-POST) · WS 4313;
+  TLS/wss terminiert ein Reverse-Proxy davor; TURN optional client-seitig
+  (`localStorage.anazhTurn`). Englischer Spiegel: `docs/taille-spec.en.md`.

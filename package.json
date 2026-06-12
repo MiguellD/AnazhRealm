@@ -1,11 +1,12 @@
 {
     "name": "anazhrealm",
-    "version": "18.170.0",
+    "version": "18.171.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox v9.43",
     "scripts": {
         "start": "node save-server.js",
         "signaling": "node signaling-server.js",
+        "leuchtturm": "node scripts/leuchtturm.cjs",
         "lint": "eslint anazhRealm.js voxel-worker.js save-server.js signaling-server.js",
         "lint:fix": "eslint --fix anazhRealm.js voxel-worker.js save-server.js signaling-server.js",
         "format": "prettier --write anazhRealm.js voxel-worker.js save-server.js signaling-server.js",
