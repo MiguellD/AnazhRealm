@@ -415,3 +415,233 @@ Unverändert der S-DIALOG-Bogen (§3): Sprossen 3 BEWÄHREN / 4 KRISTALLISIEREN 
 Adoption ohne Substanz-Wahrheit; wir haben Substanz-Wahrheit (Ω/R0–R6) — die Leiter
 verbindet beides. Das Design gehört an den Tisch.
 
+
+---
+
+## §8 · DER ZWEITE SCHÖPFER-AUDIT (12.06.2026 abend) — GEMESSEN, die Wurzel-Karte + der Harmonie-Plan
+
+> **Auftrag:** „Prüfe, messe, analysiere — keine Zeile Code ändern. Den Plan mit den
+> WAHREN Wurzelproblemen aufstellen. Wo herrscht Chaos, wo Reibung, wo Parallel-Lösungen?
+> Können wir ein FREQUENZBAND bauen, das die Objekte wie Antennen empfangen?"
+> Alle Befunde dieses Abschnitts sind GEMESSEN (`scripts/diag-audit2.cjs` — die stehende
+> Mess-Karte dieses Audits — + gezielte Code-Sektionen + die A/B-Shots
+> `artifacts/audit2-nightfloor-0/30.png`). Kein Code wurde geändert.
+
+### §8.0 DIE META-WURZEL — warum „GEBAUT ✓" im Browser trotzdem brach
+
+Die M-Wellen waren headless-grün und sind im Schöpfer-Browser TROTZDEM kaputt. Drei
+gemessene Klassen, KEINE davon „der Test log":
+
+1. **Der NUTZER-ZUSTAND fehlte im Test.** Die Bänder testeten die FUNKTION im
+   Labor-Zustand — der Schöpfer spielt in **frieden + leerem Material-Beutel +
+   eingeklappter Konsole**. GEMESSEN: `wearArmor("ruestung_brustpanzer")` in frieden →
+   `not_enough_material {eisen:4, bronze:1}` → NICHT angelegt → Stats bleiben 12.8 —
+   und die einzige Erklärung (ein ERROR-Log) liegt in der ZUGEKLAPPTEN Konsole. Der
+   M5-„Sofort-Refresh" wirkt (angelegt wäre Abwehr 12.8→20.9, HP 134→191, GEMESSEN) —
+   aber der Spieler ERREICHT den Equip-Erfolg gar nicht und sieht keinen Grund.
+   → Die NACHBAU-WAND (V18.162) wird zur ZUSTANDS-WAND: frieden · leeres Inventar ·
+   Konsole zu · 1366er-Viewport ist der Pflicht-Zustand jedes UI-Nachbaus.
+2. **Parallel-UI-Pfade entstehen schneller als sie verdichtet werden (V9.82 in
+   UI-Gestalt).** Drei frische GEMESSENE Instanzen: (a) `_recipeRow` schaltet das
+   Knopf-Label über den GRUPPEN-Key (wear/drink/place/sonst→„In die Hand") — die
+   V18.162-Fahrzeug-GRUPPE fiel in den sonst-Zweig → der Wagen-Knopf LÜGT („In die
+   Hand", die Aktion fertigt korrekt); (b) BOOSTS rendern ZWEIMAL (Equip-Bereich mit
+   Countdown + Selbst-Sheet-Fußzeile statisch als „✺ Freude wärmt" — zwei Leser,
+   zwei Formen); (c) die Konsolen-Resize schreibt INLINE-Höhe, der Collapse spricht
+   ZUSTANDS-CSS — nach EINEM Drag übersteuert die Inline-Höhe beide Zustände
+   (GEMESSEN: collapsed→expanded ohne sichtbare Änderung, h bleibt 229) = die
+   V18.42-Klasse, wieder.
+3. **Look-Hebel ohne Harmonie-Modell.** `terrainNightFloor` ist ein `max(lit,
+   albedo×floor)`-CLAMP auf NUR der Terrain-Ebene: hochgedreht frisst er JEDE
+   Schattierung (AO·Cel·Triplanar kollabieren auf die flache Albedo — A/B-Shots
+   bewiesen) und kippt die Balance gegen die anders beleuchteten Bauten (schwarze
+   Silhouetten daneben). Der Hebel ist nicht „falsch eingestellt" — die ARCHITEKTUR
+   hat kein gemeinsames Antwort-Modell der Ebenen. → §8.3 DAS FREQUENZBAND.
+
+### §8.1 Die Befund→Wurzel-Karte (alle GEMESSEN, 12.06. abend)
+
+| # | Befund (Schöpfer) | GEMESSENE Wurzel | Welle |
+|---|---|---|---|
+| 1 | Konsole nach Resize „komplett komisch"; Griff wirkt am falschen Ort | Inline-`style.height` (Drag, persistiert) ÜBERSTEUERT die `.collapsed`-Zustands-CSS — Toggle flippt die Klasse ohne sichtbare Wirkung (GEMESSEN h=229 in beiden Zuständen). Plus: der Griff sitzt OBEN-RECHTS an einem UNTEN-LINKS-Panel (Erwartung ≠ Ort) | W-A |
+| 2 | Hof: Natur statt Emotionen; Werte-Balken „entfernt" | Die Balken WERDEN gebaut (`_specBar`) — sie sind im Hof-Kontext UNSICHTBAR (CSS-Spezifitäts-Riss, die M5-Klasse; Mess-Schritt: getComputedStyle der `.hof-spec-sheet .spec-bar`). Emotionen: nur der EINE Gemüts-Balken (M5) — der Schöpfer will die 6 Achsen INTUITIV (wie HP) an der Stelle der Natur; Natur = Werkstatt-Wissen → sekundär | W-B |
+| 3 | Boosts doppelt + überlagern + „(ausgelaufen)" bleibt | ZWEI Renderer derselben Wahrheit (Equip-Bereich `_renderEquipBoosts` + Selbst-Sheet-Fußzeile Z~49418); der Tick RELABELT Abgelaufene statt sie zu ENTFERNEN (Räumen hängt am nächsten Event-Render) | W-C |
+| 4 | „Faust"-Feld unterm Viewer interferiert mit G | Das Feld ist die HAUPTHAND (held), G die NEBENHAND — zwei hand-artige Flächen ohne Benennungs-Klarheit; Haupthand lebt schon in der Hotbar-Wahl → Dopplungs-GEFÜHL ist berechtigt | W-C |
+| 5 | Rüstung anziehen ändert Stats nicht | GEMESSEN: der Web-Akt schlägt in frieden am Material-Tor fehl (eisen 4 · bronze 1 fehlen) → nie angelegt; Feedback nur als Log in der zugeklappten Konsole. ANGELEGT ändert sie massiv (Abwehr +8.1, Tempo 7→2.8!) | W-C |
+| 6 | Emotion-Schrift im Ich unlesbar | GEMESSEN: Label rgb(58,46,74) + Wert rgb(90,74,110) auf dunklem Panel = dunkel-auf-dunkel (M5 heilte nur den TRACK) | W-C |
+| 7 | Wagen-Karte „In die Hand" | `_recipeRow`-Label-Switch kennt den vehicle-Gruppen-Key nicht (→ sonst-Zweig); die Aktion (craftFromRecipe) rechnet useKind selbst = Label und Tat divergieren | W-C |
+| 8 | Umwidmen im Ich „gottlos" + wozu überhaupt? | index.html:7707 lebt noch (M5 zog nur die Werkstatt-Seite ein). GRUNDSATZ-Antwort: die Rolle fixt der PROZESS (applyOp/Station) — Umwidmen ist NUR für die nicht-emergenten INTENT-Akte legitim (Portal-ZIEL · Werkstatt-Designation · Emergent-Reset). Das Ich-Feld fällt ersatzlos; die Werkstatt-Zeile schrumpft auf diese drei Intent-Akte mit ehrlichen Worten | W-C |
+| 9 | „Überlagerter Emotions-Text unter der Leiste" | GEMESSEN: `#emotion-label` (fixed, top:92px, zentriert) — das V8-Emotions-Wort schwebt unter der Statusbar. Schöpfer-Wort: „in die Leiste oder gar nicht" → als kleines farbiges Wort IN die Statusbar (neben Modus), das fixe Overlay fällt | W-C |
+| 10 | Reiter schwebt überm Sattel; Ross/Wagen clippen | GEMESSEN: `entry._sitzHeight = sp.y·scale + 0.9` — der Körper-MITTELPUNKT wird 0.9 m über den SitzPUNKT gehoben (Steh-Anatomie); die SITZ-Pose braucht ~Hüfthöhe (≈0.45·scale). Schwebe GEMESSEN: +0.90 m. Boden-Clip am Wagen flach = 0.00 (ok) — der Ross-/Hang-Clip ist der offene Mess-Schritt (M-D2: Beine sind scharnier-animiert → bottomY der ANIMIERTEN Pose vs. Bauplan-Pose) | W-D |
+| 11 | „Drehe Nacht-Boden hoch → jegliche Struktur weg; Ebenen nicht harmonisch" | GEMESSEN (A/B-Shots): der max()-Clamp frisst AO/Cel/Triplanar der Terrain-Ebene; Bauten (eigene Kette: Emissiv-Floor+Struktur-LUT+Micro+Rim) kippen relativ zu schwarzen Silhouetten. Wurzel = KEIN gemeinsames Substanz-Antwort-Modell | **W-E (§8.3)** |
+| 12 | Fluss „Häuschenpapier", keine wilde Strömung | Bekannter eigener Bogen (Befund 22; Narben-Liste roadmap §4/§5: NUR der Lauf, NIE der Querschnitt). Screenshot 5 zeigt zusätzlich Moiré-/Kristall-Aliasing der Strähnen-Textur in der Distanz | W-F |
+| 13 | Anker/Gelenke nicht begreifbar; „Hälfte der Verbindungen überflüssig?" | Der Anker ist NUR über Dialog→Kachel→Flächen-Klick setzbar (kein Drag, kein Gizmo am Anker — der Part-Gizmo greift Anker nicht); die Dreh-ACHSE eines Gelenks ist unsichtbar (emergiert aus Geometrie, wird nirgends GEZEIGT); 8 Struktur-Typen wirken gleichwertig statt 2–3 substanz-passende + Rest | W-G (§8.4) |
+| 14 | Wald enttäuscht („da-Vinci-Pinsel" erwartet) | Bäume = 2 Arten × 1 Gestalt (Stamm+Kugeln); die Trank-Trennung kam über Signatur-Achsen statt über REICHERE Baupläne — die ehrliche Diagnose des Schöpfers | W-H (§8.5) |
+| 15 | „Nexus spawnt wieder auf mir" | Struktur-Klemme WIRKT (GEMESSEN: temple at_player → 17.9 m). Offen: KREATUR-/Flora-Spawns (nicht geklemmt — by design harmlos, aber fühlbar) → Mess-Schritt M-F1 + Min-Abstand ~3 m | W-D |
+| 16 | LOD-Start-Loch / Fog an die Kante | Lade-Nebel GEBAUT (V18.164, fog deckt die GEBAUTE Kante). Der SICHTBARE LOD0↔1-Übergang bei kleinem Ring bleibt der U-Kaskaden-LOOK-Pass (S; nach W-E, dasselbe Harmonie-Band) | S |
+
+### §8.2 Die Wellen (Reihenfolge — schnelle gemessene Wurzeln zuerst, dann die Architektur)
+
+**W-A — Konsole heil (klein):** Resize schreibt in die ZUSTANDS-Sprache statt daran
+vorbei (expanded-Höhe als CSS-Variable/Zustands-Wert, `.collapsed` gewinnt IMMER:
+Inline-Höhe fällt beim Einklappen bzw. Höhe lebt nur am `#console-body`); der Griff
+wandert an die intuitive Ecke des unten-links-Panels (oben-rechts BLEIBT die
+Wachstumsrichtung, aber sichtbar als Kante/Griff-Affordanz statt unsichtbarer Zone);
+Doppelklick-Reset bleibt. Invariante: Drag→Collapse→Expand = drei UNTERSCHEIDBARE,
+korrekte Höhen.
+
+**W-B — die Hof-Karte fürs Gefühl (klein):** EMOTIONEN (6 Achsen, dieselbe intuitive
+Balken-Sprache wie HP — `#status-emotions`-Muster als geteilter Renderer, EIN Code-Pfad
+für Ich+Hof) ersetzen die NATUR an der Primär-Stelle; NATUR wandert als einklappbare
+Sekundär-Sektion („Substanz — speist die Werte", fürs Werkstatt-Denken). Die
+unsichtbaren Werte-Balken: Spezifitäts-Riss messen + auf die P11-Tokens stellen.
+
+**W-C — der Ich-Raum sagt die Wahrheit (mittel; ALLE Punkte 3–9):** (a) EIN
+Boost-Band — die Fußzeilen-Chips fallen, das Equip-Band wandert in den FREIRAUM
+rechts-unten neben die Emotionen (Schöpfer-Wort), Abgelaufene werden im Tick ENTFERNT
+(nicht relabelt); (b) Slots heißen „Haupthand" / „Nebenhand (G)" — oder die Haupthand
+zeigt NUR den Hotbar-Zustand (ein Leser); (c) der Rüstungs-/Fertigen-FEHLSCHLAG wird
+INLINE sichtbar (am Slot/Knopf: „fehlt 4× eisen — ⚒ Werkstatt", der Dropdown springt
+auf den ECHTEN Zustand zurück; dieselbe Inline-Wahrheit für jedes Mach-Tor) + der
+Tempo-Preis der Rüstung wird als Chip lesbar („+8 Abwehr · −4 Tempo"); (d) die
+Emotion-Labels/Werte auf `--ink-on-dark` (P11, diesmal ALLE Kinder); (e) der
+vehicle-Zweig im Label-Switch („Fertigen"/„Platzieren") — und die LABEL-Quelle wird
+mit der AKTIONS-Quelle vereinigt (EIN useKind-Leser für Text+Tat); (f) das
+Ich-Umwidmen-Feld fällt; die Werkstatt-Zeile wird zu den DREI Intent-Akten (Portal-Ziel
+· Werkstatt-Designation · ✨ Emergent) mit einem Satz WARUM; (g) `#emotion-label` →
+in die Statusbar (kleines farbiges Wort), das Overlay fällt.
+
+**W-D — Ritt-Feel + Spawn-Hygiene (klein):** Sitz-Mathe `+0.9` → anatomisch
+(Hüft-Offset der Sitz-Pose ≈ 0.45·scale, am Wagen GEMESSEN nachstellen, Schwebe → ~0);
+M-D2: Ross-Boden-Clip messen (animierte Bein-Pose vs `_compoundBottomY`); M-F1:
+Kreatur-/Flora-Spawn-Distanz messen + Min-Abstand (~3 m) am EINEN Spawn-Eingang.
+
+**W-E — DAS FREQUENZBAND (§8.3, die große Welle).**
+
+**W-F — der Fluss wie von Profis (eigener Look-Bogen, NACH W-E):** geglätteter
+LAUF (Tangenten-Glättung der Mittellinie — die V18.11-Advektion trägt sie schon),
+flow-aligned WELLEN (Gerstner entlang aFlow statt Terrain-Bumps), Schaum-STRÄHNEN
+statt Flächen-Noise, Distanz-Fade gegen das gemessene Moiré (Screenshot 5). Die
+NARBEN-WAND gilt: NIE der Querschnitt (zweimal revertiert), nur Lauf + Wellen-Form;
+jede Stufe als A/B-Shot an den drei Tour-Orten (diag-tour).
+
+**W-G — Werkstatt-Gelenke begreifbar (§8.4).**
+
+**W-H — der Wald-WOW (§8.5).**
+
+**M9 — die Aufstiegs-Leiter (§3/§8.6, S-Dialog).**
+
+### §8.3 W-E: DAS FREQUENZBAND — eine Atmosphäre, viele Antennen (die Architektur-Antwort)
+
+**Die Schöpfer-Frage wörtlich:** „wie aura — EIN Vektor, der wie ein Frequenzband durch
+das System schießt und die Objekte ihn wie Antennen empfangen; je nach Material mehr
+oder weniger spiegeln, wie die Profis?" **Antwort: JA — und die Hälfte existiert schon,
+sie ist nur nicht VERBUNDEN.**
+
+**IST (gemessen):** Das SENDE-Feld ist bereits EINS (atmoUniforms + lights + fog +
+Tag-Nacht-Sync = die eine Quelle). Aber die EMPFANGS-Seite ist fragmentiert — fünf
+Ebenen-Familien mit je EIGENER Antwort-Kette: Terrain/Inseln (triplanar+AO+tint im
+colorNode · flatten im normalNode · nightFloor-max+moonRim+aerial im outputNode) ·
+Bauten/Deko/HISM (Emissiv-Floor + eigene Struktur-LUT + micro+rim im outputNode) ·
+Gras (eigenes Wind/Lambert-Material) · Wasser (eigener TSL-Stack) · Kreaturen/Avatare
+(nackte Toon-Kette). Jeder „Hebel" (nightFloor, microStrength, celContrast, rim) trifft
+nur SEINE Familie → drehst du einen, kippt die Balance der anderen (die A/B-Shots).
+Genau das erzeugt auch MEINE Reibung: jede Look-Welle muss N Ketten einzeln anfassen.
+
+**SOLL — die Verdichtung (kein Neubau, V17.9):**
+
+1. **`SUBSTANCE_RESPONSE` — die Antennen-Tabelle (EINE, frozen):** das Antwort-PROFIL
+   eines Materials emergiert aus seinen 10 Tags (die Antenne IST die Substanz):
+   `glanz` (härte+dichte → Specular/Rim-Stärke — „Metall spiegelt, Holz nicht"),
+   `tiefe` (dichte → AO/Cel-Kontrast-Gewicht), `glimmen` (magieleitung+glut →
+   Emissiv-Anteil), `wärme` (lebendig → Subsurface-Warmton), `glas` (transparent →
+   Fresnel). EIN Ableiter `_substanceResponseProfile(tagsOrMaterial)` — dieselbe
+   argmax/Gewichts-Sprache wie die Rollen-Resonanz (das bewährte Muster).
+2. **`_applySubstanceResponse(mat, profile, layerOpts)` — der EINE Empfänger:** die
+   Verallgemeinerung des existierenden `_applyAerialOutput` (der Keim!). ALLE
+   heutigen Sonderketten falten hinein: Emissiv-Floor, Struktur-LUT-Boden, micro,
+   rim, nightFloor, moonRim, aerial — profil-GEWICHTET statt familien-gegated.
+   Terrain-vertexColors bleiben die Albedo-Quelle; der UNTERSCHIED der Ebenen wird
+   zum PROFIL-Unterschied (Daten), nicht zum Code-Pfad-Unterschied.
+3. **Der Nacht-Boden wird FÜLL-LICHT statt Clamp:** `lit + albedo·floor·(1−lit)`
+   (additiv, struktur-ERHALTEND — die Profi-Form: Ambient-Fill/LUT-Lift, nie max) —
+   GLOBAL über alle Profile, von `tiefe` moduliert. Defaults (Schöpfer-Wort):
+   nightFloor 0.06 · moonRim 0.06.
+4. **Die Regler werden BAND-Regler:** Cel-Kontrast/Micro/Nacht-Boden/Rim wirken auf
+   das BAND (alle Empfänger, profil-gewichtet) — ein Regler, eine Welt-Antwort.
+5. **Pfad + Beweis:** E1 Inventur-Diag (`diag-frequenzband.cjs`: die MATERIAL-MATRIX
+   {Terrain·Bau·Baum·Kreatur·Gras·Wasser-Ufer} × {Mittag·Abend·Nacht} × {floor
+   0/0.06/0.3} als Shot-Gitter = die Divergenz-Karte VORHER) → E2 Tabelle+Empfänger
+   (Verdichtung, Ebene für Ebene, jede mit Matrix-A/B) → E3 Band-Regler → E4 die
+   Matrix NACHHER + S-Sign-off. Risiko-Wand: V17.103 (normalBias-Vertrag — die
+   Geometrie-Normale bleibt!), V18.113 (Look-Matrix Pflicht), Worker unberührt
+   (render-only).
+
+### §8.4 W-G: Werkstatt-Gelenke/Anker — begreifbar wie ein Profi
+
+**Die Schöpfer-Fragen beantwortet (der heutige Stand, damit du weiterbaust):**
+- **Worum dreht sich ein Gelenk?** Es EMERGIERT aus der Geometrie des Paares: der
+  KLEINERE Part bewegt sich; ein quer liegender, bodennaher ZYLINDER wird RAD (dreht
+  um seine Eigen-Achse), ein flacher Part mit Verbindung nach OBEN/UNTEN wird TÜR
+  (schwenkt um die Hoch-Achse am Anker), eine Kette ≥3 wird WIRBEL, sonst SCHARNIER
+  (schwingt am größen-gewichteten Anker zwischen den Zentren). Der Verbindungs-TYP
+  (Schweißen/Binden …) bestimmt die STÄRKE, nicht die Bewegung.
+- **Wie setze ich den Sitz/Griff um?** connect-Modus → Part-Paar klicken → ANKER-Kachel
+  (Sitz) → dann die STELLE auf dem Part klicken (3×3-Raster). Ein ZWEITER Pick ersetzt
+  den Punkt. Verschieben per Drag geht heute NICHT — das ist die Lücke.
+
+**Der Plan (die gemessenen Lücken):** (a) **Anker = DIREKT manipulierbar:** der
+violette Marker/Sattel ist PICKBAR, der Translate-Gizmo dockt an den ANKER (nicht nur
+an Parts) — ziehen verschiebt den Punkt (gerastet, Raster-Toggle wie Parts); (b) die
+**ACHSEN-SICHTBARKEIT:** jedes erkannte Gelenk zeigt im Viewer seine Dreh-Achse als
+Linie + Pfeil (die computeMotionRoles-Wahrheit GEZEICHNET — ablesen statt raten);
+(c) die **GELENK-PROBE:** ein ▶-Knopf wackelt die Motion-Rollen 2 s in der Preview
+(bauen → SEHEN was sich bewegt, vor dem Spawn); (d) **Progressive Disclosure der
+Typen:** die Kachel-Gruppe zeigt die 3 substanz-stärksten + „weitere…" (die „Hälfte
+überflüssig"-Wahrnehmung ist ehrlich: 8 gleichwertige Kacheln ohne Vorrang); (e) der
+**Lehr-Satz im Dialog:** eine Zeile pro entstehendem Gelenk („wird RAD — rollt um die
+Querachse"). Verdichtung: alles liest die EXISTIERENDEN Wahrheiten (computeMotionRoles
+· _attachPointFor · CONNECTION_TYPES) — nur die SICHTBARKEIT + der Zugriff fehlen.
+
+### §8.5 W-H: Der Wald-WOW (Gestaltungs-Bogen, kein System-Bau)
+
+Diagnose ehrlich: die Trank-Trennung kam über GEGEN-ACHSEN (Signatur) — die Bäume
+selbst blieben 2 Arten × 1 Gestalt. Der Pinsel-Wald der Profis (Valheim/Ghibli) ist
+GESTALT-Varianz + Schichtung: **(a)** 3–4 GESTALTEN je Art als Bauplan-VARIANTEN
+(krumm · breit · jung · alt — der Worldgen wählt per Seed; `instanced:true`, OHNE
+connections → HISM bleibt); **(b)** KRONEN-SCHICHTUNG: 4–7 überlappende Ellipsoide
+mit Farb-GRADIENT je Höhe (dunkler Kern → helle Spitzen = der Pinsel-Look; Parts
+tragen color — kein neues System); **(c)** Stamm-CHARAKTER (Knick, 1–2 Ast-Zylinder,
+Wurzel-Flare); **(d)** GRÖSSEN-Spanne ±40 % über entry.scale; **(e)** DICHTE-CLUSTER
+(Lichtungen + Dickichte — das Affinitäts-Feld KANN das, Spawn-Tuning); **(f)** das
+W-E-Band gibt den Kronen `wärme`/`tiefe` (lebendig-Profil) = das Licht malt mit.
+Wächter: V17.16-Affinitäts-Baseline (diag-arch-tags) + Warmup-Kosten (Dichte-Disziplin
+V17.9) + die Archetypen-Bank (Baum bleibt architecture).
+
+### §8.6 M9 + die „In-den-Schatten"-Matrix (der Gigant — ehrlich)
+
+**Wo wir JETZT schon architektonisch vorn sind (gemessen am Code, nicht Marketing):**
+Substanz-Emergenz statt Item-IDs (kein Titel hat emergente Rollen/Gelenke aus
+Material×Form) · Souveränität + lebendes Immunsystem (Ω/R0–R6 — keine Plattform gibt
+dem Spieler den Schlüssel) · transparenter sozialer Feed (F4: jede Reihung erklärbar —
+das Anti-X) · Welten-Föderation mit Ko-Präsenz-Injektion (W18: Multiplayer als SCHICHT
+über fremde Welten) · Selbst-Erweiterung mit Wänden (R6/M9 — woran die Profis 2026
+real scheitern). **Wo sie vorn sind:** Produktions-Politur (Animation/Audio/FX-Dichte),
+Content-Masse, Onboarding. **Der Weg, sie ERLEBBAR in den Schatten zu stellen, ist
+darum exakt diese Reihenfolge:** W-A…D (die Wahrheits-Politur: jedes Feedback sofort +
+ehrlich) → W-E (EINE Licht-Harmonie = der Look-Sprung, der alle Teilsysteme zugleich
+hebt) → W-F/W-H (Wasser+Wald = die zwei sichtbarsten Welt-Flächen) → **M9 als Krone**
+(die Leiter §3: BEWÄHREN→KRISTALLISIEREN→CODE-PFAD — Evolution mit Gedächtnis und
+Wächter; das können die Großen strukturell nicht, weil ihnen Substanz-Wahrheit +
+Souveränität fehlen). M9 bleibt der S-DIALOG — die Sprossen 3–5 designen wir am Tisch.
+
+### §8.7 Die PROZESS-WAND (damit „GEBAUT ✓" nie wieder lügt)
+
+1. **Der ZUSTANDS-NACHBAU ist Pflicht** vor jedem UI/Feel-✓: frieden · leeres
+   Inventar · Konsole zu · 1366 px · Maus-Gesten (nicht nur Funktions-Calls).
+   `diag-audit2.cjs` ist das stehende Werkzeug (erweitern, nicht duplizieren).
+2. **Der ZWEI-RENDERER-GREP** vor jeder Anzeige-Welle: wer liest dieselbe Wahrheit
+   noch? (Boost-Doppel, Label-vs-Aktion-Switch — beide wären gefangen worden.)
+3. **Look-Hebel nur mit MATRIX-A/B** ({Ebenen}×{Tageszeiten}×{Hebel-Stufen}) — ein
+   Hebel, der eine Ebene hebt und die Nachbar-Ebene kippt, ist NICHT fertig.
+4. **Jede neue UI-Fläche konsumiert die geteilten Renderer** (Balken/Chips/Slots) —
+   eine neue Privat-Form ist der Riss von morgen.
