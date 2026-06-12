@@ -10904,6 +10904,42 @@ class AnazhRealm {
         if (this._omniboxClose) this._omniboxClose();
     }
 
+    // M4 (V18.158, meister-plan §2 — Befund 12 „Tags klappen nicht überall"): der EINE
+    // Such-KERN. GEMESSEN lebten 5 Privat-Filter mit UNGLEICHER Treffer-Logik (die
+    // Werkstatt matchte Rolle+Material, das Ich nur textContent, die Habe die ROHE
+    // role-id statt des deutschen Labels → „bauwerk" traf nirgends gleich). Jetzt:
+    // EINE Logik (Mehrwort-UND: jedes Query-Wort muss im Heuhaufen vorkommen —
+    // „eisen klinge" findet die Eisen-Klinge), alle Flächen konsumieren sie (V9.82).
+    _matchQuery(hay, query) {
+        const q = (query || "").trim().toLowerCase();
+        if (!q) return true;
+        const h = (hay || "").toLowerCase();
+        for (const word of q.split(/\s+/)) {
+            if (word && !h.includes(word)) return false;
+        }
+        return true;
+    }
+
+    // M4 — der EINE Blueprint-HEUHAUFEN (das searchText-Profil-Muster der Welten/
+    // Rezepte auf Baupläne): Name + Label + Rolle (ID UND deutsches Label — „bauwerk"
+    // trifft architecture) + Materialien + die 2 stärksten Tag-Achsen (deutsch).
+    // Jede Bauplan-Such-Fläche (Omnibox · Werkstatt-Liste · Ich-Rezepte/Habe) liest IHN.
+    _blueprintSearchText(bp) {
+        if (!bp) return "";
+        const parts = Array.isArray(bp.parts) ? bp.parts : [];
+        const role = this._displayRole(bp);
+        const roleLabel = AnazhRealm.ROLE_LABELS[role] || AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || "";
+        const mats = [...new Set(parts.map((p) => p && p.material).filter(Boolean))];
+        const tags = this.computeCompoundTags(bp) || {};
+        const topTags = Object.entries(tags)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 2)
+            .map(([k]) => (AnazhRealm.AXIS_LABELS && AnazhRealm.AXIS_LABELS[k]) || k);
+        return [bp.label || "", bp.name || "", role, roleLabel, mats.join(" "), topTags.join(" ")]
+            .join(" ")
+            .toLowerCase();
+    }
+
     // Das Herz: parse die Tag-Grammatik, lese die BESTEHENDEN Vektoren, ranke. Liefert
     // [{kindLabel, label, sub, run}]. Reine Lese-Funktion (headless verifizierbar).
     _omniboxSearch(query) {
@@ -10941,10 +10977,8 @@ class AnazhRealm {
                 if (!bp || !Array.isArray(bp.parts)) continue;
                 const role = this._displayRole(bp);
                 if (roles && !roles.includes(role)) continue;
-                const name = (bp.label || bp.name || "").toLowerCase();
-                const matchName = !t || name.includes(t);
-                const matchMat = !!t && bp.parts.some((p) => (p.material || "").toLowerCase().includes(t));
-                if (matchName || matchMat) {
+                // M4 (V18.158) — der EINE Heuhaufen + Kern: Name/Rolle(label)/Material/Tags.
+                if (this._matchQuery(this._blueprintSearchText(bp), t)) {
                     const rl = AnazhRealm.ROLE_LABELS[role] || AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
                     out.push({
                         kindLabel: rl,
@@ -10966,7 +11000,7 @@ class AnazhRealm {
             for (const w of this._libraryWorlds()) {
                 if (out.length >= LIMIT) return;
                 const p = this._worldProfile(w);
-                if (t && !p.searchText.includes(t)) continue;
+                if (!this._matchQuery(p.searchText, t)) continue; // M4 — der EINE Kern
                 out.push({
                     kindLabel: p.trust === "sandboxed" ? "Sandbox-Welt" : "Welt",
                     label: p.label,
@@ -33879,7 +33913,7 @@ class AnazhRealm {
                     : kind === "gefolgt"
                       ? card.dataset.followed === "1"
                       : card.dataset.kind === kind);
-            const match = kindOk && (!q || hay.includes(q));
+            const match = kindOk && this._matchQuery(hay, q); // M4 — der EINE Kern
             card.style.display = match ? "" : "none";
             if (match) shown++;
         }
@@ -47924,7 +47958,9 @@ class AnazhRealm {
             {
                 let hay = label.textContent || "";
                 if (isMaterialSlot) hay += " " + (slot.material || "") + " rohmaterial";
-                else if (bp) hay += " " + (slot.blueprintName || "") + " " + (bp.role || "");
+                // M4 (V18.158) — der EINE Blueprint-Heuhaufen (vorher die ROHE role-id:
+                // „bauwerk" traf architecture NIE; jetzt Rolle deutsch + Material + Tags).
+                else if (bp) hay += " " + this._blueprintSearchText(bp);
                 el.setAttribute("data-search", hay.toLowerCase());
             }
             el.addEventListener("click", () => this.selectInventorySlot(i));
@@ -48159,7 +48195,10 @@ class AnazhRealm {
                     continue;
                 }
                 if (!node.classList.contains("recipe-row")) continue;
-                const match = !q || (node.textContent || "").toLowerCase().includes(q);
+                // M4 (V18.158) — der EINE Heuhaufen (data-search trägt Rolle/Material/
+                // Tags) + textContent (Kosten-Zeile), durch den EINEN Kern.
+                const hay = (node.getAttribute("data-search") || "") + " " + (node.textContent || "");
+                const match = this._matchQuery(hay, q);
                 node.style.display = match ? "" : "none";
                 if (match) groupHasVisible = true;
             }
@@ -48173,8 +48212,8 @@ class AnazhRealm {
                     el.classList.remove("search-dim");
                     continue;
                 }
-                const hay = (el.getAttribute("data-search") || "").toLowerCase();
-                el.classList.toggle("search-dim", !hay.includes(q));
+                const hay = el.getAttribute("data-search") || "";
+                el.classList.toggle("search-dim", !this._matchQuery(hay, q)); // M4 — der EINE Kern
             }
         }
     }
@@ -48183,6 +48222,9 @@ class AnazhRealm {
         const bp = this.state.blueprints[name];
         const row = document.createElement("div");
         row.className = "recipe-row";
+        // M4 (V18.158) — die Zeile trägt den EINEN Blueprint-Heuhaufen (Rolle/Material/
+        // Tags) für die Selbst-Suche — dieselbe Treffer-Logik wie Werkstatt + Omnibox.
+        row.setAttribute("data-search", this._blueprintSearchText(bp));
         // V18.63 Ich-I (ich-plan §H.5) — die GETEILTE Rollen-Farb-Sprache der Werkstatt (V8.39): die
         // Zeile leuchtet links in der emergenten Rollen-Farbe → ein Blick sagt, was ein Rezept IST,
         // einheitlich Ich ≡ Werkstatt (kein drittes System — dieselbe BLUEPRINT_ROLE_COLORS-Quelle).
@@ -50175,28 +50217,12 @@ class AnazhRealm {
                 row.style.display = "";
                 continue;
             }
-            // V18.48 — rollen/tag-bewusst wie die Omnibox (die EINE Such-Sprache, Schöpfer-Wunsch):
-            // „Bauwerk" trifft über die emergente Rolle, „eisen" über das Material-Tag, sonst der Name.
-            let match = (row.textContent || "").toLowerCase().includes(q);
-            if (!match) {
-                const bp = this.state.blueprints[row.getAttribute("data-blueprint")];
-                if (bp) {
-                    const role = this._displayRole(bp);
-                    const roleLabel = (
-                        AnazhRealm.ROLE_LABELS[role] ||
-                        AnazhRealm.BLUEPRINT_ROLE_LABELS[role] ||
-                        role ||
-                        ""
-                    ).toLowerCase();
-                    if (roleLabel.includes(q)) match = true;
-                    else if (
-                        Array.isArray(bp.parts) &&
-                        bp.parts.some((p) => (p.material || "").toLowerCase().includes(q))
-                    )
-                        match = true;
-                }
-            }
-            row.style.display = match ? "" : "none";
+            // M4 (V18.158) — die EINE Such-Sprache (V18.48 wollte sie, baute sie aber
+            // PRIVAT nach): der geteilte Blueprint-Heuhaufen + _matchQuery — „Bauwerk"
+            // trifft die Rolle, „eisen" das Material, „Härte" die Tag-Achse, überall gleich.
+            const bp = this.state.blueprints[row.getAttribute("data-blueprint")];
+            const hay = (row.textContent || "") + " " + (bp ? this._blueprintSearchText(bp) : "");
+            row.style.display = this._matchQuery(hay, q) ? "" : "none";
         }
     }
 
@@ -57830,7 +57856,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.157.0";
+AnazhRealm.VERSION = "18.158.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -29551,6 +29551,94 @@ async function checkBandM5HudPolitur(ctx) {
     );
 }
 
+// V18.158 — M4: EIN SUCH/FILTER-KERN (meister-plan §2; Befund 12 „Tags klappen
+// nicht überall"). GEMESSEN lebten 5 Privat-Filter mit UNGLEICHER Logik (die
+// Habe matchte die ROHE role-id — „bauwerk" traf architecture nie). Jetzt:
+// _matchQuery (Mehrwort-UND) + _blueprintSearchText (der EINE Heuhaufen:
+// Rolle deutsch + Material + Tags) — alle Flächen konsumieren sie (V9.82).
+async function checkBandM4SuchKern(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const blu = r.state.blueprints;
+        try {
+            // (1) der KERN: Mehrwort-UND, leere Query trifft alles.
+            out.kern =
+                r._matchQuery("eisen-klinge waffe härte", "eisen") === true &&
+                r._matchQuery("eisen-klinge waffe härte", "eisen klinge") === true &&
+                r._matchQuery("eisen-klinge waffe härte", "eisen holz") === false &&
+                r._matchQuery("irgendwas", "") === true;
+            // (2) der HEUHAUFEN: Rolle (deutsch UND id) + Material + Tag-Achse.
+            blu.__m4probe = {
+                name: "__m4probe",
+                label: "Probe-Block",
+                builtIn: false,
+                parts: [
+                    { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                ],
+            };
+            const hay = r._blueprintSearchText(blu.__m4probe);
+            out.heuhaufen =
+                /bauwerk/.test(hay) && /architecture/.test(hay) && /eisen/.test(hay) && /probe-block/.test(hay);
+            // (3) DIESELBE Query trifft in ALLEN Flächen (die M4-Invariante):
+            // (a) Omnibox — „bauwerk" surfaced den Eisen-Block (Rollen-Label).
+            const omni = r._omniboxSearch("b: bauwerk");
+            out.omniboxHits = (omni || []).some((x) => /Probe-Block/.test(x.label));
+            // (b) Werkstatt-Liste — display folgt dem EINEN Kern.
+            const ws = r._ensureWorkshopState();
+            const savedSel = ws.selectedBlueprint;
+            r.selectBlueprintForEdit("__m4probe");
+            const search = document.getElementById("workshop-search");
+            const list = document.getElementById("workshop-list");
+            if (search && list) {
+                search.value = "bauwerk eisen";
+                r._applyWorkshopFilter();
+                const probeRow = [...list.children].find(
+                    (row) => row.getAttribute && row.getAttribute("data-blueprint") === "__m4probe"
+                );
+                out.workshopHits = !!probeRow && probeRow.style.display !== "none";
+                search.value = "";
+                r._applyWorkshopFilter();
+            }
+            ws.selectedBlueprint = savedSel;
+            // (c) Ich-Rezeptbuch — die Zeile trägt den Heuhaufen, der Filter den Kern.
+            if (typeof r.renderRecipeBook === "function") r.renderRecipeBook();
+            const ichSearch = document.getElementById("ich-search");
+            if (ichSearch) {
+                ichSearch.value = "bauwerk eisen";
+                r._applyIchFilter();
+                const rows = [...document.querySelectorAll("#inventory-recipes .recipe-row")];
+                const probeRow = rows.find((row) => /Probe-Block/.test(row.textContent || ""));
+                out.ichHits = !!probeRow && probeRow.style.display !== "none";
+                // die Nicht-Treffer verschwinden (UND-Logik siebt).
+                const trankRow = rows.find((row) => /lebenssaft/i.test(row.textContent || ""));
+                out.ichSiebt = !trankRow || trankRow.style.display === "none";
+                ichSearch.value = "";
+                r._applyIchFilter();
+            }
+            // (4) KONSUM überall (Source-Proben — kein Privat-Filter-Rest).
+            out.konsum =
+                /_matchQuery/.test(r._applyWorkshopFilter.toString()) &&
+                /_blueprintSearchText/.test(r._applyWorkshopFilter.toString()) &&
+                /_matchQuery/.test(r._applyIchFilter.toString()) &&
+                /_matchQuery/.test(r._applyLibraryFilter.toString()) &&
+                /_blueprintSearchText/.test(r._omniboxSearch.toString()) &&
+                /_blueprintSearchText/.test(r._recipeRow.toString());
+            return out;
+        } finally {
+            delete blu.__m4probe;
+        }
+    });
+    check("M4 Such-Kern: _matchQuery ist Mehrwort-UND (eisen klinge trifft, eisen holz nicht)", res.kern);
+    check("M4 Such-Kern: der EINE Blueprint-Heuhaufen trägt Rolle (deutsch+id) + Material + Name", res.heuhaufen);
+    check(
+        "M4 Such-Kern: DIESELBE Query trifft in Omnibox + Werkstatt + Ich-Rezeptbuch (und die UND-Logik siebt)",
+        res.omniboxHits && res.workshopHits && res.ichHits && res.ichSiebt
+    );
+    check("M4 Such-Kern: alle Flächen KONSUMIEREN den Kern (Source — kein Privat-Filter-Rest)", res.konsum);
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -46191,6 +46279,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandM3RittVollendet(ctx);
             await checkBandM1VerbindungsWerkstatt(ctx);
             await checkBandM5HudPolitur(ctx);
+            await checkBandM4SuchKern(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

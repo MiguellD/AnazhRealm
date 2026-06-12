@@ -121,10 +121,14 @@ Träger-Torso 1.15×0.95 ÷ Werk-Hülle, Höhe UND Breite). +4 Invarianten
 VERMERK: das diag-FAHRT-Segment unterschätzt v (Headless-Timer-Drossel, arithmetisch
 erklärt) · Wasser-Fahrt steht auf dem Grund (kein Boot-Schwimmen — eigener Faden).
 
-**M4 — EIN Such/Filter-Kern [H].** Messen: wie viele Filter-Implementierungen leben
-(Omnibox · Werkstatt · Inventar · Feed · Hof)? → EIN `_matchQuery(item, query)`-Kern
-(Tags+Name+Rolle), alle Flächen konsumieren ihn (V9.82). Invariante: dieselbe Query
-liefert in allen Räumen dieselbe Treffer-Logik.
+**M4 — EIN Such/Filter-Kern [H]. ✓ GEBAUT (V18.158).** Inventur GEMESSEN: 5
+Privat-Filter, ungleiche Logik (Habe matchte die ROHE role-id — „bauwerk" traf nie;
+der V18.48-Werkstatt-Kommentar „wie die Omnibox" stand neben NACHGEBAUTER Logik =
+der V9.82-Marker). ✓ `_matchQuery` (Mehrwort-UND) + `_blueprintSearchText` (der
+EINE Heuhaufen: Name + Rolle deutsch+id + Material + Top-2-Tag-Achsen); ALLE
+Flächen konsumieren (Omnibox · Werkstatt · Ich-Rezepte/Habe · Feed). Die
+Invariante BEHAVIORAL: „bauwerk eisen" trifft den Probe-Block in drei Räumen
+gleich + die UND-Logik siebt. +4 Invarianten (KONSUM-Source-Proben).
 
 **M5 — HUD/Räume-Politur nach Spieler-Denken [H+A]. ✓ GEBAUT (V18.157).**
 ✓ Resize-Sprung tot (GEMESSEN: collapsed 105 px sprang +75 auf die Clamp-Min →
@@ -160,8 +164,8 @@ sichtbar dokumentiert (Einstellungen-Identität + ein Satz im Pass-Panel).
 
 **M9 — DIE AUFSTIEGS-LEITER (die Krone; eigener Bogen, S-Dialog je Sprosse).** §3.
 
-**Reihenfolge:** M2 ✓ → M3 ✓ → M1 ✓ → M5 ✓ → **M4 (Such-Kern) ist der AKTIVE
-nächste Schritt** → M6 → M7 → M8 → M9 (parallel designbar).
+**Reihenfolge:** M2 ✓ → M3 ✓ → M1 ✓ → M5 ✓ → M4 ✓ → **M6 (Ernte/Spawn-
+Ehrlichkeit) ist der AKTIVE nächste Schritt** → M7 → M8 → M9 (parallel designbar).
 
 ---
 
@@ -289,6 +293,7 @@ den S-Dialog je Adoption — der Plan legt die Leiter, nicht die Automatik.
 2. `diag-harvest.cjs`: Baum/Deko-Abbau end-to-end je Modus (instanced-Pfad!). [M6]
 3. ✓ Rad-Achsen-Probe im diag-ride (V18.155: M3-PROBEN — Rad-Achse/Anker-Dump +
    Versink-Wahrheit + Sitz-Pose). [M3]
-4. Filter-Inventur: grep aller Such/Filter-Implementierungen. [M4]
+4. ✓ Filter-Inventur (V18.158): 5 Implementierungen gemessen, auf den EINEN Kern
+   verdichtet. [M4]
 5. LOD-Start-Loch: `diag-chunk-seam` mit Ring=Start-Default. [M7]
 6. Nexus-Spawn-Pfade: grep aller spawn-Aufrufer auf `_structureSpawnPos`-Konsum. [M6]
