@@ -29564,6 +29564,67 @@ async function checkBandNutzerBlickNachbau(ctx) {
     );
 }
 
+// V18.163 — DIE DETAIL-TIEFE (Schöpfer: „die Tiefe jedes Details erkannt?"):
+// (1) der CEL-KONTRAST — das ECHTE Verständnis des Wunsches („kontrast selbst
+// erhöhen, pinselstrichartig" = die Stufen-SPREIZUNG, nicht Mikro-Noise):
+// die LUT-Werte spreizen um die Mitte, der Struktur-Boden hält. (2) die
+// GEMESSENE HUD-Kollision (ab 1366 px überlappten Konsole+Hotbar 32–165 px) —
+// die Minecraft-Wahrheit: der Chat sitzt ÜBER der Hotbar-Ebene.
+async function checkBandV18163DetailTiefe(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const savedLevels = (r.state.atmosphere && r.state.atmosphere.celLevels) || 8;
+        const savedContrast = (r.state.atmosphere && r.state.atmosphere.celContrast) || 1.0;
+        try {
+            // (1) die LUT SPREIZT messbar: bei 4 Plateaus rückt das 2/3-Band
+            // unter Kontrast 1.6 von ~170 auf ~195 (heller), das 1/3-Band wird
+            // dunkler — und neutral (1.0) ist bit-identisch zur alten Form.
+            const lutMid = () => {
+                const d = r.state.toonGradientMap.image.data;
+                return d[Math.floor(d.length / 2)];
+            };
+            r.setCelLevels(4);
+            r.setCelContrast(1.0);
+            const neutral = lutMid();
+            r.setCelContrast(1.6);
+            const hart = lutMid();
+            out.lutSpreizt = neutral === 170 && hart > neutral + 15;
+            // der Struktur-Boden hält NACH der Spreizung (kein Schwarz-Rückfall).
+            const sd = r.state.toonGradientMapStructures ? r.state.toonGradientMapStructures.image.data : null;
+            out.bodenHaelt = !sd || sd[0] >= Math.round(0.25 * 255) - 2;
+            // Setter + Slider leben.
+            out.setter = typeof r.setCelContrast === "function" && r.state.atmosphere.celContrast === 1.6;
+            out.slider = !!document.getElementById("slider-celcontrast");
+            // (2) die Konsole-über-Hotbar-Regel lebt im CSS (媒-Query — die
+            // behaviorale 1366-Probe lebt im diag; hier die Regel-Existenz).
+            const css = [...document.styleSheets]
+                .map((ss) => {
+                    try {
+                        return [...ss.cssRules].map((rr) => rr.cssText).join("");
+                    } catch {
+                        return "";
+                    }
+                })
+                .join("");
+            out.hudRegel = /max-width: 1440px/.test(css) && /bottom: 110px/.test(css);
+            return out;
+        } finally {
+            r.setCelContrast(savedContrast);
+            r.setCelLevels(savedLevels);
+        }
+    });
+    check(
+        "V18.163 Cel-KONTRAST: die Stufen-Spreizung wirkt auf der LUT (neutral bit-gleich · 1.6 spreizt · der Struktur-Boden hält) + Setter/Slider leben",
+        res.lutSpreizt && res.bodenHaelt && res.setter && res.slider
+    );
+    check(
+        "V18.163 HUD: die Konsole weicht der Hotbar auf schmalen Schirmen (GEMESSEN: ab 1366px kollidierten sie — Chat über der Hotbar-Ebene)",
+        res.hudRegel
+    );
+}
+
 // V18.157 — M5: HUD/RÄUME-POLITUR nach Spieler-Denken (meister-plan §2;
 // Befunde 13–17 + 26, alle GEMESSEN via diag-m5-hud). Resize-Sprung (105→180
 // beim ersten Pixel) · Logbuch = Dev-Sicht (EIN Schalter) · Emotion-Track auf
@@ -46663,6 +46724,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandM7LichtFeinschliff(ctx);
             await checkBandM8MakroFenster(ctx);
             await checkBandNutzerBlickNachbau(ctx);
+            await checkBandV18163DetailTiefe(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

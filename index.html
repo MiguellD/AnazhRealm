@@ -7193,6 +7193,13 @@
             #workshop-connect-overlay .conn-tile.conn-anchor .conn-glyph {
                 color: var(--violet-1, #b06ad9);
             }
+            /* V18.163 (GEMESSEN: ab 1366px kollidieren Konsole und Hotbar um 32-165px) -
+               die Minecraft-Wahrheit: der Chat sitzt UEBER der Hotbar-Ebene, nie daneben. */
+            @media (max-width: 1440px) {
+                #console {
+                    bottom: 110px;
+                }
+            }
             #workshop-connect-overlay .conn-tile.conn-loesen {
                 width: 100%;
                 flex-direction: row;
@@ -8781,6 +8788,13 @@
                                 <input type="range" id="slider-cel" min="2" max="8" value="6" />
                                 <span class="slider-value" id="slider-cel-val">6</span>
                             </div>
+                            <!-- V18.163 - der CEL-KONTRAST (Schoepfer woertlich: 'kontrast selbst erhoehen,
+                                 pinselstrichartig') - die Stufen-Spreizung um die Mitte. -->
+                            <div class="slider-row">
+                                <label for="slider-celcontrast">Cel-Kontrast</label>
+                                <input type="range" id="slider-celcontrast" min="50" max="200" value="100" />
+                                <span class="slider-value" id="slider-celcontrast-val">100 %</span>
+                            </div>
                             <!-- (V18.106 - B3: "2.5D-Lichtung"-Slider gefallen, in die Geometrie gebacken) -->
                             <div class="slider-row">
                                 <label for="slider-cavityao">Kavitäts-AO</label>
@@ -9156,6 +9170,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.162.0" defer></script>
+        <script src="anazhRealm.js?v=18.163.0" defer></script>
     </body>
 </html>

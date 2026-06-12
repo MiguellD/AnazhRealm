@@ -318,3 +318,72 @@ den S-Dialog je Adoption — der Plan legt die Leiter, nicht die Automatik.
 5. LOD-Start-Loch: `diag-chunk-seam` mit Ring=Start-Default. [M7]
 6. ✓ Nexus-Spawn-Pfade (V18.159): 13 Aufrufer gemessen → die Klemme an die WURZEL
    (spawnArchitecture), Opt-out-Karte silent/id/precise. [M6]
+
+---
+
+## §7 · DIE PROFI-LÜCKEN-KARTE (12.06.2026 — „hast du die Profis wirklich in den Schatten gestellt?")
+
+Die ehrliche Antwort pro Teilsystem: IST → die Profi-Referenz → die Lücke → WOHIN ES WIRKLICH SOLL.
+GEMESSEN, nicht Bauchgefühl. Sortiert nach Hebel-Größe.
+
+**7.1 VERBINDUNGS-SYSTEM — die größte ehrliche Lücke.**
+IST: connect-Modus → Paar klicken → Kachel-Dialog (als EDITOR gut; 4 Räder = 12 Klicks).
+PROFI: Besiege/Scrap Mechanic/TotK-Ultrahand — die Verbindung entsteht BEIM BAUEN
+(Snappen/Berühren = verbunden, NULL Klicks). WOHIN: **AUTO-VERBINDUNG beim Part-
+Platzieren/Verschieben** — berührt ein Part einen bestehenden (`_partsContactArea` > 0,
+die Wahrheit EXISTIERT), entsteht automatisch die `_suggestConnectionType`-Verbindung
+(substanz-emergent — DAS hat kein Profi: bei uns folgt der Verbindungs-TYP dem
+Material-Paar). Der Kachel-Dialog wird das EDIT-Werkzeug (ändern/lösen/Anker), nicht
+der Pflicht-Schritt. = Besiege-Leichtigkeit + Hylomorphismus-Tiefe. [nächste Welle]
+
+**7.2 ANKER/SITZ — sichtbar machen.**
+IST: Face-Snap (Kachel→Klick→3×3-Raster), Werkstatt-Marker (violett). PROFI: Scrap
+Mechanic — der Sitz ist ein SICHTBARES TEIL, immer. WOHIN: (a) der Sitz-Punkt bekommt
+eine WELT-Optik (Sattel-Andeutung am Anker — heute unsichtbar außerhalb der
+Werkstatt); (b) „Probesitzen" in der Preview (der Avatar-Ghost setzt sich beim
+Hover); (c) fern: Sitz-FORMEN emergent erkennen (Mulde = Sitz — der Fallback
+existiert als „oberste flache Fläche").
+
+**7.3 ROLLEN-EMERGENZ — unser Alleinstellungsmerkmal, aber fragil.**
+KEIN Profi hat emergente Rollen aus Substanz×Form (TotK hat Physik statt Rollen,
+Scrap Mechanic explizite Funktions-Teile). Die GEMESSENE Fragilität: handgewichtete
+Linear-Signaturen mit Kipp-Margins (fleisch-Kugel 0.5 vs 0.4 · Holz-Wagen→Trank).
+WOHIN: (a) die ARCHETYPEN-BANK als stehende Invariante (~50 synthetische Positiv- +
+GEGEN-Beispiele je Rolle — nicht nur 31 Built-ins; jeder Signatur-Edit läuft gegen
+die Bank); (b) die „WARUM"-FÜHRUNG in der Werkstatt: das Spektrum zeigt heute WAS
+resoniert — nicht WIE DAHIN („+0.3 Standfläche bis Fahrzeug" als Achsen-Differenz
+zur Wunsch-Rolle = die geniale Lehrer-Geste, billig aus den Signaturen ableitbar).
+
+**7.4 FAHRZEUG-PHYSIK — ehrlich: Minecraft-Boot-Stufe, nicht TotK.**
+IST: kinematisch (Terrain-Höhe + exp-Glättung; die Kamera lenkt). PROFI: TotK = echte
+Rad-Physik (Federung, Lenk-Trägheit, Hang-Rutschen). Der benannte nächste Berg:
+**btRaycastVehicle** (in Ammo VORHANDEN!) — echte Federung + Lenkung + Masse-Gefühl.
+Bewusst NICHT jetzt (die kinematische Stufe ist konsistent + robust); der Berg ist
+kartiert, nicht vergessen.
+
+**7.5 LICHT/CEL — der Kontrast-Regler ist jetzt ECHT (V18.163).**
+Das Fehl-Verständnis geheilt: „Kontrast erhöhen" = die STUFEN-SPREIZUNG der LUT
+(pinselstrich-Pop), nicht Mikro-Noise — beide existieren jetzt getrennt. OFFEN:
+(a) „Reflexion nachts" (der Schöpfer verglich mit Gras/Bauten — deren RIM; das
+Terrain könnte ein schwaches Mond-Rim tragen — kleiner Folgepunkt am geteilten
+Output-Chain); (b) Mikro-Struktur auf BÄUMEN ungemessen (HISM-Pfad — prüfen, ob
+die Instanz-Gruppen durch den microTexture-Zweig laufen).
+
+**7.6 WALD-GESTALT — der offene WOW-Wunsch (eigener Gestaltungs-Bogen).**
+„Cooleres Waldfeeling, bessere Baupläne, die Welt erwacht": die Bäume sind 2 Arten
+× 1 Gestalt (Stamm+Kugel/Kegel). PROFI (Valheim/Ghibli): Arten-VARIANZ (3–4 Formen
+je Art via seed), Äste/Kronen-Tiefe, Dichte-CLUSTER (Lichtungen + Dickichte statt
+Gleichverteilung — das Spawn-Feld KANN das: die Affinitäts-Cluster existieren),
+Größen-Spannweite. Ein GESTALTUNGS-Bogen (Baupläne + Spawn-Tuning), kein System-Bau.
+
+**7.7 HUD — die 1366er-Kollision GEMESSEN + geheilt (V18.163).**
+Konsole×Hotbar überlappten ab 1366 px (32–165 px) — mein 1600er-Viewport sah es nie.
+Jetzt: Chat über der Hotbar-Ebene (Minecraft-Wahrheit) per Media-Query. LEHRE: HUD-
+Messungen brauchen die VIEWPORT-MATRIX (1366 ist das häufigste Laptop-Format).
+
+**7.8 AUFSTIEGS-LEITER (M9) — der Kern, der Gigant.**
+Unverändert der S-DIALOG-Bogen (§3): Sprossen 3 BEWÄHREN / 4 KRISTALLISIEREN /
+5 CODE-PFAD. Die Profi-Referenz, die ALLE verfehlen: Roblox/UGC-Plattformen haben
+Adoption ohne Substanz-Wahrheit; wir haben Substanz-Wahrheit (Ω/R0–R6) — die Leiter
+verbindet beides. Das Design gehört an den Tisch.
+

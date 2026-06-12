@@ -44481,10 +44481,21 @@ class AnazhRealm {
         }
         // celLevels>=8 → 32 distinkte Stufen (smooth). Sonst n Plateaus.
         const plateaus = n >= 8 ? W : n;
+        // V18.163 (Schöpfer-Wunsch wörtlich: „im cel-stufen shader den KONTRAST
+        // selbst erhöhen — die bringen schwung, pinselstrichartige oberfläche"):
+        // die KONTRAST-Kurve spreizt die Plateau-WERTE um die Mitte (>1 = dunkle
+        // Bänder dunkler, helle heller — das malerische Pop; 1 = wie immer;
+        // <1 = weicher). Wirkt auf BEIDE LUTs (Haupt + Struktur, deren Boden
+        // NACH der Spreizung gilt — der B8-Schwarz-Schutz bleibt).
+        const celContrast =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.celContrast)
+                ? this.state.atmosphere.celContrast
+                : 1.0;
+        const spread = (t) => Math.max(0, Math.min(1, 0.5 + (t - 0.5) * celContrast));
         const data = this.state.toonGradientMap.image.data;
         for (let i = 0; i < W; i++) {
             const step = Math.min(plateaus - 1, Math.floor((i / W) * plateaus));
-            const v = Math.round((step / (plateaus - 1)) * 255);
+            const v = Math.round(spread(step / (plateaus - 1)) * 255);
             data[i * 4] = v;
             data[i * 4 + 1] = v;
             data[i * 4 + 2] = v;
@@ -44502,7 +44513,8 @@ class AnazhRealm {
             const sData = this.state.toonGradientMapStructures.image.data;
             for (let i = 0; i < W; i++) {
                 const step = Math.min(plateaus - 1, Math.floor((i / W) * plateaus));
-                const v = Math.round((floor + (1 - floor) * (step / (plateaus - 1))) * 255);
+                // V18.163 — Kontrast-Spreizung VOR dem Boden (der Schwarz-Schutz hält).
+                const v = Math.round((floor + (1 - floor) * spread(step / (plateaus - 1))) * 255);
                 sData[i * 4] = v;
                 sData[i * 4 + 1] = v;
                 sData[i * 4 + 2] = v;
@@ -44516,6 +44528,17 @@ class AnazhRealm {
             const u = this.state.terrainMaterial.uniforms.celLevels;
             if (u) u.value = n;
         }
+    }
+
+    // V18.163 — der CEL-KONTRAST (die Stufen-Spreizung um die Mitte): 1 = neutral,
+    // >1 = das malerische Pop (Schöpfer: „pinselstrichartig"), <1 = weicher.
+    setCelContrast(v) {
+        const val = Math.max(0.5, Math.min(2, Number(v) || 1));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.celContrast = val;
+        this._refreshToonGradient();
+        if (typeof this.saveState === "function") this.saveState();
+        return val;
     }
 
     // V8.28 6.G4.b C — Mutations-Pfad für den Cel-Shading-Slider. Setzt
@@ -55145,6 +55168,23 @@ class AnazhRealm {
                 if (aoVal) aoVal.textContent = `${pct} %`;
             });
         }
+        // V18.163 — der CEL-KONTRAST-Regler (die Stufen-Spreizung — das echte
+        // Verständnis des Schöpfer-Wunsches; Mikro-Struktur unten ist die Textur).
+        const ccS = document.getElementById("slider-celcontrast");
+        const ccVal = document.getElementById("slider-celcontrast-val");
+        if (ccS) {
+            const c0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.celContrast)
+                    ? this.state.atmosphere.celContrast
+                    : 1.0;
+            ccS.value = String(Math.round(c0 * 100));
+            if (ccVal) ccVal.textContent = `${Math.round(c0 * 100)} %`;
+            ccS.addEventListener("input", () => {
+                const pct = parseInt(ccS.value, 10);
+                this.setCelContrast(pct / 100);
+                if (ccVal) ccVal.textContent = `${pct} %`;
+            });
+        }
         // M7 (V18.160) — Mikro-Struktur (Befund 21: der lebendige Hebel) +
         // Terrain-Nacht-Boden (Befund 20: Licht-Parität) als Live-Regler.
         const mtS = document.getElementById("slider-microtex");
@@ -58092,7 +58132,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.162.0";
+AnazhRealm.VERSION = "18.163.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
