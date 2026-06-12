@@ -30679,7 +30679,7 @@ async function checkBandV18164WarumLicht(ctx) {
         // konsumiert + der Tag-Nacht-Sync treibt es (nachts > 0, mittags 0).
         const au = r._ensureAtmoUniforms();
         out.moonUniform = !!au.terrainMoonRim;
-        out.moonKonsum = /terrainMoonRim/.test(r._applyAerialOutput.toString());
+        out.moonKonsum = /terrainMoonRim/.test(r._applySubstanceResponse.toString());
         const tintProbe = { skyR: 0.1, skyG: 0.1, skyB: 0.2, lightMul: 1 };
         r._dayNightApplyHemiAndFog(-Math.PI / 2, tintProbe); // Mitternacht (sin=-1)
         const nightVal = au.terrainMoonRim.value;
@@ -31070,15 +31070,16 @@ async function checkBandM7LichtFeinschliff(ctx) {
         r.setMicroStrength(m0);
         r.setTerrainNightFloor(n0);
         // (3) der Shader-Tree KONSUMIERT beide (Source: _au.microStrength im
-        // micro-Block; der nightFloor-max auf der albedo; der vertexColors-
-        // Aufruf bestellt nightFloor).
-        const aerialSrc = r._applyAerialOutput.toString();
+        // micro-Block; das fuell-Licht auf der Albedo; der vertexColors-Bau
+        // reicht die per-Vertex-Albedo-Quelle — W-E: die Probe wanderte mit
+        // dem Code in den EINEN Band-Empfänger, V9.56-i).
+        const aerialSrc = r._applySubstanceResponse.toString();
         const toonSrc = r._buildToonNodeMaterial.toString();
         out.treeConsumes =
             /_au\.microStrength/.test(aerialSrc) &&
-            /nightFloor/.test(aerialSrc) &&
-            /attribute\("color"/.test(aerialSrc) &&
-            /nightFloor: opts\.vertexColors === true/.test(toonSrc);
+            /terrainNightFloor/.test(aerialSrc) &&
+            /attribute\("color"/.test(toonSrc) &&
+            /SUBSTANCE_RESPONSE/.test(toonSrc);
         // (4) die Regler leben in den Einstellungen + treiben die Setter.
         const mtS = document.getElementById("slider-microtex");
         const nfS = document.getElementById("slider-nightfloor");
@@ -31101,7 +31102,7 @@ async function checkBandM7LichtFeinschliff(ctx) {
         res.settersDrive
     );
     check(
-        "M7 Licht: der Shader-Tree konsumiert beide (micro-Uniform · nightFloor-max auf der Albedo · vertexColors bestellt)",
+        "M7 Licht: der Shader-Tree konsumiert beide (micro-Uniform · Nacht-Boden auf der Albedo · der Bau reicht die Albedo-Quelle ans Band)",
         res.treeConsumes
     );
     check(
@@ -33450,13 +33451,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 return false;
             }
         })();
-        // ===== WELLE J — die EINE geteilte Aerial-Perspektive (Render-Harmonie) =====
-        // KONSUM (nicht Existenz, V17.31): die geteilte `_applyAerialOutput` setzt
+        // ===== WELLE J → W-E — der EINE geteilte Band-Empfänger (Render-Harmonie) =====
+        // KONSUM (nicht Existenz, V17.31): `_applySubstanceResponse` setzt
         // outputNode IDENTISCH auf Terrain UND Strukturen (eine Atmosphäre, viele
-        // Leser); transparente Phantome bleiben unberührt; die dynamische
+        // Antennen); transparente Phantome bleiben unberührt; die dynamische
         // material.color bleibt setzbar (kein colorNode-Override).
         window.__aerialOutputError = null;
-        out.aerialHelperExists = typeof r._applyAerialOutput === "function";
+        out.aerialHelperExists = typeof r._applySubstanceResponse === "function";
         // (1) Terrain (vertexColors) bekommt den geteilten Höhen-Aerial-outputNode.
         out.terrainHasAerialOutput = !!(_terrMat && _terrMat.outputNode);
         // (2) Struktur (Flach-Farbe) bekommt DENSELBEN outputNode + Mikro-Tiefe.
@@ -33465,7 +33466,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.structHasAerialOutput = !!(_structMat && _structMat.outputNode);
         // (3) der Builder ruft die EINE Quelle (Source-Probe: kein Parallel-Pfad).
         const _btSrc = r._buildToonNodeMaterial ? r._buildToonNodeMaterial.toString() : "";
-        out.aerialFromOneSource = _btSrc.includes("_applyAerialOutput") && !_btSrc.includes("__structAerialError");
+        out.aerialFromOneSource = _btSrc.includes("_applySubstanceResponse") && !_btSrc.includes("__structAerialError");
         // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
         // outputNode liest `output` (post-lighting), überschreibt material.color
         // NICHT (CLAUDE.md-Gotcha).
@@ -33492,7 +33493,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // (Distanz + Höhe-über-Auge), NICHT an der absoluten Welt-Höhe → auf einen
         // Berg klettern bleicht den Boden um dich nicht mehr. Source-Probe (Render
         // pixel-blind), schützt gegen Rückfall auf `smoothstep(.., positionWorld.y)`.
-        const _aerSrc = typeof r._applyAerialOutput === "function" ? r._applyAerialOutput.toString() : "";
+        const _aerSrc = typeof r._applySubstanceResponse === "function" ? r._applySubstanceResponse.toString() : "";
         out.aerialEyeRelative = _aerSrc.includes("cameraPosition") && _aerSrc.includes("hazeNear");
         // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
         // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
@@ -33612,7 +33613,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         // ===== WELLE J — Render-Harmonie (die EINE geteilte Aerial-Perspektive) =====
         check(
-            "V17.J: _applyAerialOutput existiert (die EINE geteilte Umgebungs-Funktion)",
+            "V17.J→W-E: _applySubstanceResponse existiert (der EINE geteilte Band-Empfänger)",
             v828Results.aerialHelperExists
         );
         check(

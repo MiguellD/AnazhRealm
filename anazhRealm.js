@@ -21072,7 +21072,7 @@ class AnazhRealm {
         return 1.0;
     }
 
-    // Welle J — die EINE geteilte Aerial-Perspektive (`_applyAerialOutput`), die
+    // Welle J — die EINE geteilte Aerial-Perspektive (heute `_applySubstanceResponse`), die
     // ALLE opaken Ebenen identisch post-lighting aufrufen. heightWeight/heightCap =
     // der Höhen-Melt zur Himmelsfarbe (scene.fog trägt die Distanz); microStrength/
     // aoStrength/aoCap = die output-seitige Mikro-Tiefe für Flach-Farb-Strukturen
@@ -21085,6 +21085,52 @@ class AnazhRealm {
             microStrength: 0.1,
             aoStrength: 0.35,
             aoCap: 0.16,
+        });
+    }
+
+    // W-E (meister-plan §8.3, V18.173) — DAS FREQUENZBAND: das SENDE-Feld war
+    // schon EINS (atmoUniforms + lights + fog), die EMPFANGS-Seite war fünffach
+    // familien-gegated (Terrain max-Clamp · Bauten Emissiv+LUT+micro+rim · Gras
+    // taub · …) → ein Hebel traf GEMESSEN das Terrain mit Faktor ~6 gegenüber
+    // den Bauten und das Gras gar nicht (E1-Inventur, diag-frequenzband).
+    // Jetzt empfängt JEDE opake Ebene über EIN Antwort-PROFIL (Gewichte 0..1
+    // auf dieselben Band-Uniforms — der Unterschied der Ebenen ist DATEN,
+    // kein Code-Pfad):
+    //   micro  → Mikro-Tiefe/AO im Output-Chain (tiefe-Antenne: dichte)
+    //   rim    → warmes Konturen-Rim (glanz-Antenne: härte+dichte; waerme tönt)
+    //   fuell  → das Nacht-FÜLL-LICHT lit + albedo·floor·(1−lit) (additiv,
+    //            struktur-erhaltend — die Profi-Form; ersetzt den max()-Clamp,
+    //            der GEMESSEN jede Struktur fraß, §8.1#11)
+    //   mond   → kühles Mond-Rim (der Tag-Nacht-Sync treibt den Uniform-Wert)
+    //   emissiv→ der Eigen-Leucht-Floor der Werk-Familie (glimmen-Antenne)
+    // `defaults` = die FAMILIEN-Profile (Λ1-Disziplin: Schritt 1 reproduzierte
+    // das heutige Verhalten bit-nah; Schritt 2 holte die Werk-Familie ans
+    // fuell/mond-Band — die Harmonisierung). Kennt ein Material seine SUBSTANZ
+    // (part.material-Tags), emergiert das Profil via _substanceResponseProfile
+    // — die Antenne IST die Substanz. nightFloor/moonRim 0.06 = das Schöpfer-
+    // Wort (R-013), die EINE Default-Quelle aller Leser.
+    static get SUBSTANCE_RESPONSE() {
+        return Object.freeze({
+            defaults: Object.freeze({
+                // Terrain/Inseln/Mantel (vertexColors): Albedo-Quelle bleibt das
+                // per-Vertex-color-Attribut; micro/AO trägt ihr eigener
+                // triplanar-colorNode (darum hier 0).
+                feld: Object.freeze({ micro: 0, rim: 0, waerme: 0, fuell: 1, mond: 1, emissiv: 0 }),
+                // Flach-Farb-Werke (Bauten/Deko/Kreaturen/Avatare). Λ1 Schritt 1
+                // (bit-nah): fuell/mond noch 0 = das heutige Familien-Gate;
+                // Schritt 2 holt die Werk-Familie ans Band (E1: nachts war der
+                // Bau bei floor 0 dunkler als das Terrain — die Silhouetten-Wurzel).
+                werk: Object.freeze({ micro: 1, rim: 1, waerme: 1, fuell: 0, mond: 0, emissiv: 1 }),
+                // Gras (Schritt 3, eigenes Lambert-Material — KEIN Merge): es
+                // konsumiert dieselben Band-Uniforms (E1: floor-Hebel traf das
+                // Gras mit −2.0, jetzt antwortet es).
+                gras: Object.freeze({ micro: 0, rim: 0, waerme: 1, fuell: 1, mond: 0, emissiv: 0 }),
+                // Weder vertexColors noch Farbe: nur der Aerial-Haze (wie zuvor).
+                frei: Object.freeze({}),
+            }),
+            // Λ1 Schritt 1: noch die alten Defaults; Schritt 2 → 0.06 (R-013).
+            nightFloor: 0.12,
+            moonRim: 0.12,
         });
     }
 
@@ -22633,6 +22679,43 @@ class AnazhRealm {
         u.hazeFar.value = Math.max(350, this._detailViewDistance());
     }
 
+    // W-E (§8.3) — die ANTENNE emergiert aus der SUBSTANZ: das Antwort-Profil
+    // eines Materials aus seinen 10 Tags (dieselbe Gewichts-Sprache wie die
+    // Rollen-Resonanz — kein zweites Register, nur eine weitere LESART der
+    // einen Substanz-Wahrheit). Fünf Achsen (Plan-Wortlaut):
+    //   glanz   = härte+dichte   → Rim/Specular („Metall spiegelt, Holz nicht")
+    //   tiefe   = dichte         → AO/Mikro-Kontrast-Gewicht
+    //   glimmen = magieleitung + wärmeleitung·brennbar → Emissiv (Glut glüht)
+    //   waerme  = lebendig       → der warme Subsurface-Ton des Rims
+    //   glas    = transparent    → Fresnel (fließt in die Rim-Stärke ein)
+    // Darunter die FEATURE-Gewichte (Antenne → Render-Hebel, mit weichen
+    // Böden — keine Substanz schaltet ein Band-Feature ganz ab; Erst-Wurf,
+    // S-Kalibrierung als Vermerk):
+    _substanceResponseProfile(tags) {
+        const t = (k) => Math.max(0, Math.min(1, Number(tags && tags[k]) || 0));
+        const glanz = Math.min(1, t("härte") * 0.6 + t("dichte") * 0.4);
+        const tiefe = t("dichte");
+        const glimmen = Math.min(1, t("magieleitung") * 0.55 + t("wärmeleitung") * t("brennbar") * 0.6);
+        const waerme = t("lebendig");
+        const glas = t("transparent");
+        return {
+            glanz,
+            tiefe,
+            glimmen,
+            waerme,
+            glas,
+            micro: 0.5 + 0.5 * tiefe,
+            rim: 0.4 + 0.6 * Math.max(glanz, glas * 0.9),
+            // emissiv darf > 1 (Glut glüht ÜBER den Familien-Floor hinaus);
+            // der Leser deckelt bei 1.6.
+            emissiv: 0.5 + glimmen,
+            // dichte Substanz hält mehr von ihrer Dunkelheit (Kontrast-Hierarchie
+            // bleibt), lebendig-leichte fängt mehr Füll-Licht.
+            fuell: 1 - 0.3 * tiefe,
+            mond: 0.35 + 0.65 * glanz,
+        };
+    }
+
     // ===== WELLE J — DIE EINE GETEILTE UMGEBUNGS-FUNKTION (Render-Harmonie) =====
     // Schöpfer-Befund (04.06.): Strukturen/Bäume tragen bei rainy die Himmelsfarbe,
     // reagieren ANDERS als das Terrain auf Licht/Nebel. GEMESSENE Wurzel: die acht
@@ -22662,7 +22745,18 @@ class AnazhRealm {
     // überschreiben, CLAUDE.md-Gotcha). Werte browser-justierbar via
     // `AnazhRealm.AERIAL`. try/catch + `window.__aerialOutputError`-Marker (V17.12:
     // ein still gefangener Node-Fehler verdeckt sonst die ganze Schicht).
-    _applyAerialOutput(mat, opts = {}) {
+    //
+    // W-E (meister-plan §8.3, V18.173) — `_applySubstanceResponse` ist die
+    // Verallgemeinerung dieses Keims: der EINE Empfänger des FREQUENZBANDS.
+    // Statt familien-gegateter Booleans (microTexture/rim/nightFloor) empfängt
+    // jede Ebene über ein Antwort-PROFIL (Gewichte 0..1, s. SUBSTANCE_RESPONSE)
+    // — Gewicht 0 lässt den Block ganz fallen (bit-gleich zum alten Gate),
+    // Gewicht 1 ist exakt die alte Stärke (·1.0 ist IEEE-754-exakt). Die
+    // Albedo-Quelle fürs Füll-Licht reicht der AUFRUFER (`layerOpts.albedoNode`:
+    // Feld → per-Vertex-Attribut, Werk → gebackene Materialfarbe, Gras →
+    // Konstante) — der Empfänger bleibt attribut-frei (V10.0-g.1-Disziplin:
+    // kein attribute()-Lookup auf Meshes, die das Attribut nicht tragen).
+    _applySubstanceResponse(mat, profile = {}, layerOpts = {}) {
         if (!mat) return;
         try {
             const _T = THREE.TSL;
@@ -22675,37 +22769,44 @@ class AnazhRealm {
                 aoStrength: 0.35,
                 aoCap: 0.16,
             };
+            // Antennen-Gewicht [0..1]: 0 = der Block fällt (kein toter Shader-Ast).
+            const _p = (k) => Math.max(0, Math.min(1, Number(profile[k]) || 0));
             const _o = _T.output; // die FERTIGE lit-Farbe (post-lighting)
             let _rgb = _o.xyz;
             const _wp = _T.positionWorld;
-            // (J2) Mikro-Tiefe nur für die Flach-Farb-Strukturen (das Terrain trägt
-            // seine eigene reichere triplanar-Schicht im colorNode).
-            if (opts.microTexture && _T.mx_noise_float && _T.fwidth && _T.normalWorld && _T.float) {
+            // (J2) Mikro-Tiefe/Kavitäts-AO — die tiefe-Antenne (das Terrain trägt
+            // seine eigene reichere triplanar-Schicht im colorNode → Gewicht 0).
+            if (_p("micro") > 0 && _T.mx_noise_float && _T.fwidth && _T.normalWorld && _T.float) {
                 const _n1 = _T.mx_noise_float(_wp.mul(0.33));
                 const _n2 = _T.mx_noise_float(_wp.mul(1.6));
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
-                // M7 — microStrength ist ein UNIFORM (der Settings-Regler lebt).
-                const _micro = _au.microStrength || _T.float(cfg.microStrength);
+                // M7 — microStrength ist ein UNIFORM (der Settings-Regler lebt);
+                // W-E: profil-gewichtet (ein Regler, eine Welt-Antwort).
+                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(_p("micro"));
                 let _shade = _T.float(1.0).add(_det.mul(_micro));
                 // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
                 // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
                 const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
                 // J4-DEBUG: aoScale (default 1) schaltet die Kavitäts-AO ab (=0).
-                const _aoStr = _au.aoScale ? _T.float(cfg.aoStrength).mul(_au.aoScale) : _T.float(cfg.aoStrength);
+                const _aoStr = (_au.aoScale ? _T.float(cfg.aoStrength).mul(_au.aoScale) : _T.float(cfg.aoStrength)).mul(
+                    _p("micro")
+                );
                 const _ao = _T.float(1.0).sub(_curv.mul(_aoStr).clamp(0.0, cfg.aoCap));
                 _rgb = _rgb.mul(_shade.mul(_ao));
             }
-            // B8 (gigant-plan §5) — das warme RIM-Licht für Flach-Farb-Strukturen
-            // (die Ghibli-Silhouetten-Kante): ein Fresnel-Saum in warmem Ton hebt
-            // die Kontur eines Bauwerks im Gegenlicht aus dem Schatten — POST-
-            // lighting im selben Output-Chain (komponiert mit dem Aerial-Melt,
-            // KEIN zweiter outputNode — zwei Zuweisungen überschrieben sich).
+            // B8 (gigant-plan §5) — das warme RIM-Licht (die Ghibli-Silhouetten-
+            // Kante): ein Fresnel-Saum hebt die Kontur im Gegenlicht aus dem
+            // Schatten — POST-lighting im selben Output-Chain (komponiert mit dem
+            // Aerial-Melt, KEIN zweiter outputNode — zwei Zuweisungen überschrieben
+            // sich). W-E: die glanz-Antenne wichtet die Stärke (Metall spiegelt,
+            // Holz kaum), die waerme-Antenne tönt die Rim-Farbe (lebendig → warm,
+            // mineralisch → kühl-neutral; bei waerme=1 exakt der alte Warm-Ton).
             // Live-tunbar: anazhRealm.state.atmoUniforms.rimStrength.value.
-            if (opts.rim && _T.normalWorld && _T.cameraPosition && _au.rimStrength) {
+            if (_p("rim") > 0 && _T.normalWorld && _T.cameraPosition && _au.rimStrength) {
                 const _vd = _T.cameraPosition.sub(_wp).normalize();
                 const _fres = _T.normalWorld.dot(_vd).clamp(0.0, 1.0).oneMinus().pow(3.0);
-                const _rimCol = _T.vec3(1.0, 0.72, 0.45);
-                _rgb = _rgb.add(_rimCol.mul(_fres.mul(_au.rimStrength)));
+                const _rimCol = _T.mix(_T.vec3(0.85, 0.88, 0.98), _T.vec3(1.0, 0.72, 0.45), _p("waerme"));
+                _rgb = _rgb.add(_rimCol.mul(_fres.mul(_au.rimStrength).mul(_p("rim"))));
             }
             // (J1) die Aerial-Perspektive — der HÖHEN-Melt zur Himmelsfarbe,
             // IDENTISCH für jede Ebene (Terrain, Inseln, Strukturen, Bäume,
@@ -22723,24 +22824,25 @@ class AnazhRealm {
             // der Boden, auf dem du stehst (aboveEye≈0 + nah), bleicht NICHT. Beide
             // Größen sind kamera-relativ (`cameraPosition` aktualisiert pro Frame) →
             // die Verblassung folgt deiner Position, wie die echte Atmosphäre.
-            // M7 (V18.160, Befund 20) — der TERRAIN-NACHT-BODEN (nur vertexColors-
-            // Ebenen: Terrain + Inseln): max(lit, albedo × floor). Nachts fiel
-            // ambient(0.18) × vertexColor(~0.4) ≈ 0.07 → schwarz, während Bauten
-            // über LUT-Boden 0.25 + Rim Restlicht trugen (Licht-Parität der Ebenen).
-            // Der max-Boden greift NUR unterhalb — Mittag bleibt per Konstruktion.
-            if (opts.nightFloor && _au.terrainNightFloor && _T.attribute && _T.max) {
-                const _albedo = _T.attribute("color", "vec3");
-                _rgb = _T.max(_rgb, _albedo.mul(_au.terrainNightFloor));
-                // §7.5(a) (V18.164) — das MOND-RIM: kühler Fresnel-Saum, nur wenn
-                // der Tag-Nacht-Sync den Uniform hebt (nachts > 0, mittags 0 —
-                // der Wert IST das Gate, kein Branch). Dieselbe Fresnel-Form wie
-                // das warme B8-Bauten-Rim → Licht-Parität der Ebenen (Befund 20).
-                if (_au.terrainMoonRim && _T.cameraPosition && _T.normalWorld) {
-                    const _mvd = _T.cameraPosition.sub(_wp).normalize();
-                    const _mfres = _T.normalWorld.dot(_mvd).clamp(0.0, 1.0).oneMinus().pow(3.0);
-                    const _moonCol = _T.vec3(0.55, 0.66, 1.0);
-                    _rgb = _rgb.add(_moonCol.mul(_mfres.mul(_au.terrainMoonRim)));
-                }
+            // M7 (V18.160, Befund 20) → W-E — der NACHT-BODEN als fuell-Antenne.
+            // Nachts fiel ambient(0.18) × Albedo(~0.4) ≈ 0.07 → schwarz; der alte
+            // max(lit, albedo·floor)-Clamp hob aber NUR das Terrain und FRASS
+            // dabei AO/Cel/Triplanar (§8.1#11 — „Nacht-Boden hochdrehen frisst
+            // jede Struktur"). Λ1 Schritt 1: noch die max-Form, nur entgated
+            // (Albedo kommt vom Aufrufer). Mittag bleibt per Konstruktion.
+            if (_p("fuell") > 0 && _au.terrainNightFloor && layerOpts.albedoNode && _T.max) {
+                const _albedo = layerOpts.albedoNode;
+                _rgb = _T.max(_rgb, _albedo.mul(_au.terrainNightFloor).mul(_p("fuell")));
+            }
+            // §7.5(a) (V18.164) → W-E — das MOND-RIM als mond-Antenne: kühler
+            // Fresnel-Saum, nur wenn der Tag-Nacht-Sync den Uniform hebt (nachts
+            // > 0, mittags 0 — der Wert IST das Gate, kein Branch). Dieselbe
+            // Fresnel-Form wie das warme B8-Rim → Licht-Parität der Ebenen.
+            if (_p("mond") > 0 && _au.terrainMoonRim && _T.cameraPosition && _T.normalWorld) {
+                const _mvd = _T.cameraPosition.sub(_wp).normalize();
+                const _mfres = _T.normalWorld.dot(_mvd).clamp(0.0, 1.0).oneMinus().pow(3.0);
+                const _moonCol = _T.vec3(0.55, 0.66, 1.0);
+                _rgb = _rgb.add(_moonCol.mul(_mfres.mul(_au.terrainMoonRim).mul(_p("mond"))));
             }
             const _cam = _T.cameraPosition;
             const _aboveEye = _wp.y.sub(_cam.y); // < 0 (unter dem Auge) → smoothstep gibt 0
@@ -22808,14 +22910,34 @@ class AnazhRealm {
         // heilt „nachts schwarz"; die Aerial-MELT + Mikro-Textur der Strukturen
         // (der „flach/pappig"-Teil) ist pixel-blind → Browser-iterierte Folge (C2).
         // Werte browser-justierbar via `AnazhRealm.STRUCTURE_EMISSIVE`.
+        // W-E (§8.3) — das Antwort-PROFIL der Ebene: aus der SUBSTANZ, wenn der
+        // Aufrufer sie kennt (opts.tags = Material-Tags des Parts — die Antenne
+        // IST die Substanz), sonst das Familien-Default (Λ1: bit-nah zum alten
+        // Familien-Gate). Der Unterschied der Ebenen ist DATEN, kein Code-Pfad.
+        const _SR = AnazhRealm.SUBSTANCE_RESPONSE;
+        const isFlatStructure = !opts.vertexColors && opts.color !== undefined;
+        const responseProfile = opts.tags
+            ? this._substanceResponseProfile(opts.tags)
+            : opts.vertexColors === true
+              ? _SR.defaults.feld
+              : isFlatStructure
+                ? _SR.defaults.werk
+                : _SR.defaults.frei;
+
         if (!opts.vertexColors && opts.color !== undefined && !opts.transparent && mat.emissive) {
             const ef = AnazhRealm.STRUCTURE_EMISSIVE || { intensity: 0.07 };
             mat.emissive.setHex(opts.color);
-            mat.emissiveIntensity = ef.intensity;
+            // W-E — die glimmen-Antenne wichtet den Eigen-Leucht-Floor (Familie=1
+            // → exakt der alte 0.07; Substanz: Glut/Quarz glimmen, Stein kaum).
+            mat.emissiveIntensity = ef.intensity * Math.max(0, Math.min(1.6, Number(responseProfile.emissiv) || 0));
             // B8 — Strukturen lesen die eigene LUT mit Schatten-Boden 0.25 (das
             // „Schwarz-Silhouetten"-Ende): gleiche Plateaus wie der Cel-Regler,
             // nur das Dunkel-Band hebt sich — Terrain·Deko·Bauwerk antworten dem
             // Licht in EINER Sprache statt „Terrain hell, Turm schwarz".
+            // (W-E-Entscheid: die LUT bleibt FAMILIEN-binär — sie ist eine
+            // GETEILTE DataTexture [V9.84-Singleton-Disziplin], ihr Boden ist
+            // schon Band-Hebel via celContrast/_refreshToonGradient; die per-
+            // Substanz-Tiefen-Antwort lebt in micro/AO [tiefe-Antenne].)
             mat.gradientMap = this._ensureStructureGradient();
         }
 
@@ -22823,22 +22945,32 @@ class AnazhRealm {
         // fuer alle Terrain-Materials, vom Tag-Nacht-Wetter-Sync gespeist).
         this._ensureAtmoUniforms();
 
-        // Welle J — die EINE geteilte Aerial-Perspektive (`_applyAerialOutput`).
+        // Welle J → W-E — der EINE geteilte Empfänger (`_applySubstanceResponse`).
         // ERSETZT den alten divergenten Pfad (V17.99-C2: ein eigener outputNode
         // für Strukturen mit ANDERER Mathematik + redundantem Distanz-Term über
         // scene.fog = Doppel-Nebel; das Terrain melt'ete VOR dem Licht im
         // colorNode). Jetzt rufen Terrain, Inseln, Strukturen, Bäume, Kreaturen
-        // DIESELBE Funktion identisch POST-lighting → eine Atmosphäre, viele
-        // Leser. Mikro-Tiefe (J2) nur für Flach-Farb-Strukturen (das Terrain trägt
-        // sie im colorNode); transparente Phantome bleiben unberührt (UI-Element).
+        // DIESELBE Funktion identisch POST-lighting, profil-gewichtet → eine
+        // Atmosphäre, viele Antennen; transparente Phantome bleiben unberührt.
         if (!opts.transparent) {
-            const isFlatStructure = !opts.vertexColors && opts.color !== undefined;
-            this._applyAerialOutput(mat, {
-                microTexture: isFlatStructure,
-                rim: isFlatStructure,
-                // M7 (Befund 20) — Terrain/Inseln (vertexColors) tragen den Nacht-Boden.
-                nightFloor: opts.vertexColors === true,
-            });
+            // Albedo-Quelle fürs Füll-Licht: Feld → per-Vertex-Farbe (die Ebene
+            // TRÄGT das Attribut — V10.0-g.1-Disziplin), Werk → die gebackene
+            // Materialfarbe (statisch wie der Emissiv-Floor, V10.0-g-Muster; die
+            // dynamische material.color bleibt unberührt). Ohne Quelle fällt
+            // nur das Füll-Licht (Haze/Micro/Rim bleiben).
+            let albedoNode = null;
+            try {
+                const _Ta = THREE.TSL;
+                if (opts.vertexColors === true && _Ta && _Ta.attribute) {
+                    albedoNode = _Ta.attribute("color", "vec3");
+                } else if (isFlatStructure && _Ta && _Ta.vec3) {
+                    const _c = new THREE.Color(opts.color);
+                    albedoNode = _Ta.vec3(_c.r, _c.g, _c.b);
+                }
+            } catch (_e) {
+                /* ohne Albedo-Quelle fällt nur das Füll-Licht */
+            }
+            this._applySubstanceResponse(mat, responseProfile, { albedoNode });
         }
 
         if (opts.vertexColors) {
@@ -23073,13 +23205,13 @@ class AnazhRealm {
                 }
                 // V15.4 → WELLE J: die Aerial-Perspektive ist NICHT mehr hier
                 // (pre-lighting, auf der Albedo) — sie wandert in die EINE geteilte
-                // `_applyAerialOutput` (post-lighting, IDENTISCH für alle Ebenen).
+                // `_applySubstanceResponse` (post-lighting, profil-gewichtet für alle Ebenen).
                 // Das war die Wurzel der Schöpfer-Disharmonie: das Terrain melt'ete
                 // VOR dem Licht (atmosphärisch), die Strukturen NACH dem Licht
                 // (flach) → sie schmolzen verschieden. Jetzt melten beide identisch
                 // post-lighting. Der colorNode trägt nur noch die ALBEDO (Vertex-
                 // Farbe + triplanar-Textur + Wiese + Tint); die Atmosphäre ist eine
-                // Output-Stufe (siehe `_applyAerialOutput`, am Ende des Builders).
+                // Output-Stufe (siehe `_applySubstanceResponse`, am Ende des Builders).
                 mat.colorNode = _T.vec4(_albedo, 1.0);
             }
         } catch (_e) {
@@ -27417,7 +27549,7 @@ class AnazhRealm {
     // Tiefblau-Ebene knapp unter dem Spiegel. Farben: DIESELBE Biom-Logik wie
     // die Chunks (`_attachVoxelFieldColors` — eine Quelle, noch ein Leser);
     // Material: eigener Toon (vertexColors, OHNE geomorph — kein aMorphTarget-
-    // Read, WebGPU-strikt sauber); `_applyAerialOutput` + Fog VERSCHMELZEN den
+    // Read, WebGPU-strikt sauber); `_applySubstanceResponse` + Fog VERSCHMELZEN den
     // Übergang (V17.106-Aerial trägt ihn). Re-Anker alle ~250 m Spielerbewegung
     // (EIN Rebuild ~1.4k Macro-Samples = wenige ms, kein Per-Frame-Pfad).
     // Render-only, main-only, seed-deterministisch — kein Worker/Determinismus.
