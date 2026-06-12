@@ -479,56 +479,240 @@ gemessene Klassen, KEINE davon „der Test log":
 | 15 | „Nexus spawnt wieder auf mir" | Struktur-Klemme WIRKT (GEMESSEN: temple at_player → 17.9 m). Offen: KREATUR-/Flora-Spawns (nicht geklemmt — by design harmlos, aber fühlbar) → Mess-Schritt M-F1 + Min-Abstand ~3 m | W-D |
 | 16 | LOD-Start-Loch / Fog an die Kante | Lade-Nebel GEBAUT (V18.164, fog deckt die GEBAUTE Kante). Der SICHTBARE LOD0↔1-Übergang bei kleinem Ring bleibt der U-Kaskaden-LOOK-Pass (S; nach W-E, dasselbe Harmonie-Band) | S |
 
-### §8.2 Die Wellen (Reihenfolge — schnelle gemessene Wurzeln zuerst, dann die Architektur)
+### §8.2 Die Wellen — als SYSTEM geschrieben, nicht als Liste
 
-**W-A — Konsole heil (klein). ✓ GEBAUT (V18.165):** Resize schreibt in die ZUSTANDS-Sprache statt daran
-vorbei (expanded-Höhe als CSS-Variable/Zustands-Wert, `.collapsed` gewinnt IMMER:
-Inline-Höhe fällt beim Einklappen bzw. Höhe lebt nur am `#console-body`); der Griff
-wandert an die intuitive Ecke des unten-links-Panels (oben-rechts BLEIBT die
-Wachstumsrichtung, aber sichtbar als Kante/Griff-Affordanz statt unsichtbarer Zone);
-Doppelklick-Reset bleibt. Invariante: Drag→Collapse→Expand = drei UNTERSCHEIDBARE,
-korrekte Höhen.
+> **Wie dieser Plan zu lesen ist (der Lese-Vertrag):** §8.1 ist der INDEX, nie der
+> Plan. Eine Welle ist erst PLANBAR, wenn ihr KREIS steht (V18.119): wo entsteht die
+> Wahrheit · durch welche Organe fließt sie · was sieht und LERNT der Spieler · was
+> bricht daneben. Jede Welle trägt darum dasselbe Skelett: **KREIS → WURZEL (gemessen)
+> → FORM (die Organe mit Namen + warum DIESE Form) → SYNERGIE (konsumiert/gibt) →
+> BEWEIS (Invarianten + Nutzer-Zustands-Nachbau)**. Eine Welle ohne Kreis ist eine
+> Todo — und Todos verlieren uns.
 
-**W-B — die Hof-Karte fürs Gefühl (klein):** EMOTIONEN (6 Achsen, dieselbe intuitive
-Balken-Sprache wie HP — `#status-emotions`-Muster als geteilter Renderer, EIN Code-Pfad
-für Ich+Hof) ersetzen die NATUR an der Primär-Stelle; NATUR wandert als einklappbare
-Sekundär-Sektion („Substanz — speist die Werte", fürs Werkstatt-Denken). Die
-unsichtbaren Werte-Balken: Spezifitäts-Riss messen + auf die P11-Tokens stellen.
+---
 
-**W-C — der Ich-Raum sagt die Wahrheit (mittel; ALLE Punkte 3–9):** (a) EIN
-Boost-Band — die Fußzeilen-Chips fallen, das Equip-Band wandert in den FREIRAUM
-rechts-unten neben die Emotionen (Schöpfer-Wort), Abgelaufene werden im Tick ENTFERNT
-(nicht relabelt); (b) Slots heißen „Haupthand" / „Nebenhand (G)" — oder die Haupthand
-zeigt NUR den Hotbar-Zustand (ein Leser); (c) der Rüstungs-/Fertigen-FEHLSCHLAG wird
-INLINE sichtbar (am Slot/Knopf: „fehlt 4× eisen — ⚒ Werkstatt", der Dropdown springt
-auf den ECHTEN Zustand zurück; dieselbe Inline-Wahrheit für jedes Mach-Tor) + der
-Tempo-Preis der Rüstung wird als Chip lesbar („+8 Abwehr · −4 Tempo"); (d) die
-Emotion-Labels/Werte auf `--ink-on-dark` (P11, diesmal ALLE Kinder); (e) der
-vehicle-Zweig im Label-Switch („Fertigen"/„Platzieren") — und die LABEL-Quelle wird
-mit der AKTIONS-Quelle vereinigt (EIN useKind-Leser für Text+Tat); (f) das
-Ich-Umwidmen-Feld fällt; die Werkstatt-Zeile wird zu den DREI Intent-Akten (Portal-Ziel
-· Werkstatt-Designation · ✨ Emergent) mit einem Satz WARUM; (g) `#emotion-label` →
-in die Statusbar (kleines farbiges Wort), das Overlay fällt.
+**W-A — Konsole heil (klein). ✓ GEBAUT (V18.165):** die Zustands-CSS erklärt
+Supremacy (`#console.collapsed` !important-Deckel — der R-001-Bruch strukturell
+unmöglich; Band-bewiesen 500→≤38vh→500) + der Griff ist eine sichtbare
+Messing-Ecken-Affordanz mit Richtungs-Titel. Details: Chronik V18.165.
 
-**W-D — Ritt-Feel + Spawn-Hygiene (klein):** Sitz-Mathe `+0.9` → anatomisch
-(Hüft-Offset der Sitz-Pose ≈ 0.45·scale, am Wagen GEMESSEN nachstellen, Schwebe → ~0);
-M-D2: Ross-Boden-Clip messen (animierte Bein-Pose vs `_compoundBottomY`); M-F1:
-Kreatur-/Flora-Spawn-Distanz messen + Min-Abstand (~3 m) am EINEN Spawn-Eingang.
+---
 
-**W-E — DAS FREQUENZBAND (§8.3, die große Welle).**
+**W-B — die Hof-Karte fühlt (klein).**
 
-**W-F — der Fluss wie von Profis (eigener Look-Bogen, NACH W-E):** geglätteter
-LAUF (Tangenten-Glättung der Mittellinie — die V18.11-Advektion trägt sie schon),
-flow-aligned WELLEN (Gerstner entlang aFlow statt Terrain-Bumps), Schaum-STRÄHNEN
-statt Flächen-Noise, Distanz-Fade gegen das gemessene Moiré (Screenshot 5). Die
-NARBEN-WAND gilt: NIE der Querschnitt (zweimal revertiert), nur Lauf + Wellen-Form;
-jede Stufe als A/B-Shot an den drei Tour-Orten (diag-tour).
+*KREIS:* Die Kreatur TRÄGT ihr Innenleben längst (`creature.userData.emotions`, 6
+Achsen — dieselben Schlüssel wie der Spieler; D2-Contagion + D4-Temperament SCHREIBEN
+es jeden Tick). Heute liest die Hof-Karte davon nur EIN Destillat (`prof.emotionState`
+→ der M5-Gemüts-Balken, dominante Achse). Der Spieler sieht also ein reiches
+Innenleben durch ein Schlüsselloch — während NATUR (die Compound-Tags, ein
+WERKSTATT-Wissen) den Primär-Platz füllt. Lern-Schleife des Spielers: Wesen wählen →
+fühlen, was es fühlt → dirigieren → die Emotion ANTWORTET (Contagion/Verhalten) —
+diese Schleife ist heute unterbrochen, weil das Gefühl nicht lesbar ist.
 
-**W-G — Werkstatt-Gelenke begreifbar (§8.4).**
+*WURZEL (gemessen, diag-audit2 + Code):* (1) Es gibt ZWEI Balken-Renderer für
+dieselbe Emotions-Sprache: `initStatusPanel` baut die 6-Achsen-Reihen fürs Ich
+(`#status-emotions`: name·bar·value, Labels aus `EMOTION_LABEL`, Wirkung aus
+`EMOTION_WIRKT`, Live-Fill über `_statusRefs.emotions`) — die Hof-Karte baut ihren
+EINEN Balken von Hand (Z~49453). (2) Die WERTE-Balken der Hof-Karte EXISTIEREN im
+Code (`_specBar`-Aufrufe) und sind im Hof-Kontext UNSICHTBAR — die M5-Klasse
+(CSS-Spezifität/Kontext), noch ungemessen WELCHE Regel verliert.
 
-**W-H — der Wald-WOW (§8.5).**
+*FORM:* (1) **EIN Emotions-Renderer**: der Reihen-Bauer aus `initStatusPanel` wird
+`_buildEmotionRows(emotions, {live})` — das Ich konsumiert ihn mit Live-Refs (heutiges
+Verhalten bit-gleich), die Hof-Karte konsumiert ihn STATISCH pro Render (der Hof
+re-rendert ohnehin bei Fokus/Befehl; kein neuer Tick). Der M5-Gemüts-Balken bleibt
+als Kopf-Zeile (das Destillat ÜBER dem Detail — HP-Muster). (2) NATUR wandert in ein
+einklappbares `<details>` („Substanz — speist die Werte"): das Werkstatt-Wissen bleibt
+einen Klick entfernt, prägt aber nicht mehr das Gefühl der Karte. (3) Der
+Werte-Balken-Riss wird ZUERST GEMESSEN (M-B1: `getComputedStyle` der
+`.hof-spec-sheet .spec-bar`-Füllung im echten Drawer — welche Regel gewinnt?), dann
+auf die P11-Token-Pfad gestellt (dieselbe Heilung wie der M5-Emotion-Track: die
+Bestands-Regel-SPEZIFITÄT schlagen, nicht raten).
 
-**M9 — die Aufstiegs-Leiter (§3/§8.6, S-Dialog).**
+*SYNERGIE:* konsumiert `EMOTION_LABEL`/`EMOTION_WIRKT` (eine Sprache überall) + das
+M5-Gemüts-Destillat; GIBT den geteilten Emotions-Renderer an W-C weiter (das Ich
+erbt die P11-Heilung gratis, weil beide DENSELBEN Bauer rufen — der Doppel-Renderer
+stirbt, BEVOR W-C ihn polieren müsste).
+
+*BEWEIS:* Band: die Hof-Karte trägt 6 `.emotion`-Reihen mit Balken-Füllung
+(offsetWidth > 0 im offenen Drawer — die Sichtbarkeits-Lüge ist die Invariante,
+nicht die DOM-Existenz [Passagier-Trugschluss]); Natur ist `<details>` zu; die
+Werte-Balken haben sichtbare Füllung. Nachbau: Hof öffnen → Wesen fokussieren →
+Screenshot — die Emotionen lesen sich wie HP (diag-hof erweitert).
+
+---
+
+**W-C — der Ich-Raum sagt die Wahrheit (mittel — SIEBEN Kreise, jeder benannt).**
+
+> Der gemeinsame Nenner aller sieben: das Ich ZEIGT heute Zustände, ohne ihre
+> WAHRHEIT zu sagen (Fehlschläge stumm, Doubletten, tote Worte). Die Welle macht
+> jeden Readout zu einem ehrlichen KONSUMENTEN genau EINER Quelle.
+
+*(a) DAS MACH-TOR WIRD SICHTBAR — der wichtigste Kreis (R-005).*
+KREIS: `wearArmor`/`fertigeBlueprint`/`wieldBlueprint`/`brewConsumable` laufen ALLE
+durchs Mach-Tor (`_makeCostGate` + `_makeStationGate`) — das Tor antwortet schon
+strukturiert (`{reason: "not_enough_material", missing, cost}` /
+`"no_workshop_station", neededDomain`). Aber JEDER Konsument präsentiert den
+Fehlschlag anders: der Armor-Select loggt in die ZUGEKLAPPTE Konsole (GEMESSEN:
+genau dein „Stats ändern sich nicht"), die Rezept-Zeile disabled mit title, der
+FERTIGEN-Knopf loggt. Der Spieler lernt das Tor nie, weil es nie spricht.
+FORM: **EIN Formatter `_machTorHint(result)`** ({missing, neededDomain} → „fehlt
+4× eisen · 1× bronze — ⚒ Esse nötig") + **EIN Präsentations-Vertrag**: jeder
+Mach-Tor-Konsument zeigt den Hint INLINE am Ort der Geste (eine `.mach-tor-hint`-
+Zeile unterm Slot/Knopf, 4 s, dann fade — kein Log-Only mehr); der Armor-Select
+springt nach Fehlschlag auf den ECHTEN Equip-Zustand zurück (die Select-Lüge fällt).
+Dazu der PREIS lesbar: der Rüstungs-Chip sagt die Stat-FOLGE („+8.1 Abwehr · −4.2
+Tempo" — GEMESSEN sind beide groß; heute errät der Spieler nicht einmal das
+Vorzeichen). SYNERGIE: derselbe Hint dient JEDEM künftigen Tor (Trank/Avatar/
+Portal) — und W-G erbt ihn für die Werkstatt. BEWEIS: Nachbau im NUTZER-ZUSTAND
+(frieden · leerer Beutel · Konsole ZU): Brustpanzer wählen → der Hint erscheint AM
+SLOT, das Select zeigt „— keine —", die Stats bleiben ehrlich; mit Material →
+Stats springen sofort (M5-Refresh existiert).
+
+*(b) EIN BOOST-BAND (R-003).* KREIS: `state.player.boosts` ist die eine Wahrheit;
+sie hat heute ZWEI Gesichter (Equip-Zone `_renderEquipBoosts` mit Countdown +
+Selbst-Sheet-Fußzeile Z~49660 statisch) — der Spieler sieht Doubletten, die
+unterschiedlich altern. FORM: die Fußzeilen-„✺"-Chips fallen (die Fußzeile behält
+⚒/⛨-Ausrüstung); das EINE Band wandert in den Freiraum der Emotions-Spalte
+(Schöpfer-Wort: rechts unten); `_tickBoostChips` ENTFERNT Abgelaufene
+(`chip.remove()`) statt sie umzubeschriften — „(ausgelaufen)" existiert nicht mehr
+als Anzeige-Zustand. BEWEIS: ein injizierter 1-s-Boost erscheint an GENAU einem Ort
+und ist nach Ablauf WEG (Band zählt DOM-Orte == 1, dann == 0).
+
+*(c) HAUPTHAND/NEBENHAND klar (R-004).* KREIS: zwei hand-artige Flächen (Equip-Slot
+„In der Hand" = HAUPThand; G-Hotbar-Slot = NEBENhand) ohne Benennungs-Brücke →
+fühlt sich wie Parallel-Code an, IST aber zwei Slots EINER equipped-Struktur.
+FORM: Benennung trägt die Wahrheit („Haupthand" / „Nebenhand (G)", beide mit
+Tooltip aufeinander verweisend); die Haupthand-Zeile liest DENSELBEN Zustand wie
+die Hotbar-Markierung (ein Leser, Source-Probe). BEWEIS: G-Tausch → beide Flächen
+flippen synchron im selben Frame.
+
+*(d) LESBARKEIT (R-006).* WURZEL GEMESSEN: `#status-emotions .name` rgb(58,46,74)
+auf dunklem Panel. FORM: die Reihen des (jetzt von W-B geteilten!) Emotions-Renderers
+tragen `--ink-on-dark`/`--ink-on-dark-soft` für ALLE Kinder (name+value) — die
+P11-Heilung sitzt im EINEN Bauer, beide Räume erben. BEWEIS: getComputedStyle-Band
+(Kontrast-Differenz zur Panel-Farbe > Schwelle) — nicht „Token gesetzt", sondern
+„Farbe IST hell" (KONSUM, nicht Existenz).
+
+*(e) LABEL = TAT (R-007).* WURZEL GEMESSEN: `_recipeRow` schaltet das Knopf-Wort
+über den GRUPPEN-Key (vehicle fällt in den sonst-Zweig „In die Hand"), während
+`craftFromRecipe` die Tat aus `_blueprintUseKind` ableitet — Wort und Tat haben
+ZWEI Quellen. FORM: das Wort kommt aus DERSELBEN useKind-Quelle wie die Tat (EIN
+Leser; vehicle → „Fertigen", gefertigt → „in die Hotbar — platzieren"); der
+Gruppen-Key bleibt reine Sortierung. BEWEIS: für JEDE Rolle ist Knopf-Wort ==
+Tat-Familie (Band iteriert die Bibliothek).
+
+*(f) UMWIDMEN wird Intent-Trio (R-008).* KREIS: die Rolle FIXT der Prozess
+(applyOp/Station — der Schöpfer hat recht); legitim bleiben NUR die drei
+nicht-emergenten INTENT-Akte: Portal-ZIEL (wohin führt es) · Werkstatt-DESIGNATION
+(V17.70: die Drehbank IST Station, weil du es erklärst) · ✨ Emergent-Reset (zurück
+zur Substanz-Wahrheit). FORM: das Ich-`<details>` (index.html:7707) fällt ersatzlos;
+die Werkstatt-Zeile zeigt die drei Akte mit je EINEM Satz Warum. BEWEIS: kein
+„umwidmen"-Summary im Ich-DOM; die drei Akte tragen title-Sätze.
+
+*(g) DAS EMOTIONS-WORT in die Leiste (R-009).* WURZEL GEMESSEN: `#emotion-label`
+(fixed, top 92px, zentriert) schwebt als Overlay. FORM: das Wort wird ein kleiner
+farbiger Statusbar-Eintrag (neben Modus; dieselbe `_emotionState`-Quelle + Farbe,
+dieselbe Fade-Logik auf opacity) — „in die Leiste oder gar nicht" wörtlich; das
+fixe Element fällt. BEWEIS: kein fixed-Element unter der Leiste; der
+Statusbar-Eintrag färbt mit der dominanten Emotion (Band setzt joy=0.9 → liest
+Farbe+Text).
+
+*(h) DER WARUM-CHIP reist hier ein (R-036, §8.9b — die Angriffs-Inversion #2).*
+KREIS: die Rolle EMERGIERT aus dem argmax (Ψ0-bewacht) — aber der Spieler sieht
+nur das ERGEBNIS-Wort. Die Zahlen existieren alle (`_blueprintProductVector` ×
+Signatur = die Beiträge je Achse). FORM: `_blueprintRoleWhy(bp)` = die top-3
+Beitrags-Achsen der GEWONNENEN Rolle („lebendig 1.0 · greifbar 0.6 · härte −0.5"),
+als Mini-Zeile/Tooltip an JEDER Rollen-Anzeige (Werkstatt-Chip · Rezept-Zeile ·
+Bibliothek-Karte — dieselben drei Flächen, die diese Welle ohnehin anfasst).
+SYNERGIE: konsumiert die §7.3-WARUM-Spur (`_blueprintRoleGapHint` zeigt WIE DAHIN,
+der Chip zeigt WARUM HIER — zusammen die volle Lehrer-Geste); Ψ0 garantiert, dass
+die erklärten Achsen stabil bleiben. BEWEIS: der Chip-Text der Eiche nennt
+dichte/härte/bulk (architektur-ehrlich), der des Tranks lebendig — Band liest
+beide; kein Spiel hat lesbare Emergenz.
+
+---
+
+**W-D — Ritt-Feel + Spawn-Hygiene (klein, drei gemessene Stiche).**
+
+*KREIS (Ritt):* `mountArchitecture` schreibt `entry._sitzHeight = sitzPunkt.y·scale
++ 0.9`; `_tickMountedMovement` setzt den Spieler-Körper-MITTELPUNKT jeden Frame auf
+`entry.y + _sitzHeight`. Die +0.9 stammt aus der Steh-Anatomie (Körperzentrum ≈
+Hüfte+0.9 beim Stehen) — aber die M3-SITZ-Pose senkt die Hüfte AUF den Sattel:
+GEMESSEN schwebt der Reiter exakt +0.90 m. FORM: die Konstante wird anatomisch —
+`SITZ_HIP_OFFSET ≈ 0.45·scale` (das Körperzentrum der SITZENDEN Pose über dem
+Sattelpunkt; am Wagen per diag-ride nachgestellt, Schwebe → ≤0.1 m); der V18.164-
+Sattel und der Reiter konsumieren denselben `_attachPointFor`-Punkt — bauen →
+sehen → sitzen bleibt EIN Punkt. *M-D2 (Ross-Clip, erst MESSEN):* Hypothesen-Paar —
+die scharnier-ANIMIERTE Bein-Pose schwingt unter das Bauplan-`_compoundBottomY`
+(statisch gerechnet) ODER die Terrain-Probe am Zentrum verfehlt den Hang (Lösung
+wäre 2-Punkt-Probe Bug/Heck, max). Erst die Messung wählt. *M-F1 (Spawn-Nähe):*
+Kreatur-/Flora-Spawns sind UNgeklemmt (die M6-Klemme gilt Strukturen — GEMESSEN
+17.9 m ✓); FORM: Min-Abstand ~3 m am EINEN Kreatur-Spawn-Eingang, mit denselben
+Opt-outs wie M6 (silent/precise — Worldgen + Restore bit-treu). BEWEIS: diag-ride
+um die Hüft-Probe erweitert; Spawn-Band misst Distanz ≥ 3 der nexus-Quelle.
+
+*SYNERGIE:* die Hüft-Konstante dient JEDEM künftigen Sitz (Boot, Bank, Thron);
+die 2-Punkt-Boden-Probe (falls M-D2 sie wählt) ist der Keim der Φ3-Naht-Fahrt.
+
+---
+
+**W-E — DAS FREQUENZBAND (§8.3 — dort in voller System-Tiefe: IST-Fragmentierung,
+Antennen-Tabelle, Λ1-Migrations-Disziplin, Matrix-Beweis).**
+
+**W-F — der Fluss wie von Profis (eigener Look-Bogen, NACH W-E).**
+*KREIS:* die Wasser-Wahrheit fließt heute Atlas-`L`/fmag → Zell-Sheet-Vertices
+(`_buildVoxelChunkWaterCellSheet` liest pro Ecke die Spiegel-Höhe) → Shader
+(aFlow/aDepth/aWave; die V18.11-Tangente glättet die STRÖMUNGS-Richtung schon).
+Das „Häuschenpapier" entsteht, weil die SHEET-HÖHE den Terrain-Beulen folgt; der
+Tauch-Trigger liest dieselbe ungeglättete Wahrheit (Versatz). *FORM (drei
+Teilwellen, je A/B an den diag-tour-Orten):* (1) LAUF-Glättung — ein
+Along-Flow-Tiefpass NUR auf den Fluss-KERN-Spalten der Sheet-Höhe (die Mittellinie
+wird ruhig; die NARBEN-WAND gilt absolut: NIE der Querschnitt, zweimal revertiert);
+(2) FLOW-Wellen — Gerstner entlang aFlow statt Resthöhe + Schaum-STRÄHNEN statt
+Flächen-Noise + Distanz-Fade gegen das gemessene Moiré (Screenshot 5); (3) der
+TAUCH-Trigger liest die GEGLÄTTETE Fläche (§8.8e — der Versatz heilt im selben
+Zug). *SYNERGIE:* dieselbe geglättete Fläche trägt danach das Boot-SCHWIMMEN
+(M3-Vermerk) fast gratis. *BEWEIS:* diag-tour-A/B je Teilwelle + die
+Unterwasser-Grenze als Invariante (Augenhöhe vs Fläche ±ε).
+
+**W-G — Werkstatt-Gelenke begreifbar (§8.4 — Anker-Gizmo · Achsen-Geister ·
+Gelenk-Probe ▶ · Typen-Vorrang; konsumiert die computeMotionRoles/_attachPointFor-
+Wahrheiten + den W-C-Mach-Tor-Hint).**
+
+**W-H — der Wald-WOW (§8.5 — Gestalt-Varianten · Kronen-Schichtung · Cluster;
+Wächter: Affinitäts-Baseline + Archetypen-Bank + Warmup-Dichte-Disziplin).**
+
+**M9 — die Aufstiegs-Leiter (§3/§8.6, S-Dialog; Φ = die Bau-Form, §8.10).**
+
+---
+
+### §8.2b DIE W-VERDICHTUNGS-KARTE — was jede Welle KONSUMIERT (kein Neubau; Spiegel von §4)
+
+- **W-B** konsumiert: `initStatusPanel`-Reihen-Bauer (wird der EINE) ·
+  `EMOTION_LABEL`/`EMOTION_WIRKT` · das M5-Gemüts-Destillat · P11-Tokens. Gibt:
+  den geteilten Emotions-Renderer (W-C erbt die Lesbarkeit).
+- **W-C** konsumiert: die Mach-Tor-Antworten (`_makeCostGate`/`_makeStationGate` —
+  sie sprechen schon strukturiert) · `_blueprintUseKind` (wird der EINE
+  Label+Tat-Leser) · `state.player.boosts`/`equipped` · `_emotionState` ·
+  `_blueprintProductVector`+Signaturen (Warum-Chip, Ψ0-bewacht) · den
+  W-B-Emotions-Renderer. Gibt: `_machTorHint` an W-G/alle künftigen Tore; den
+  Warum-Chip an die Bibliothek.
+- **W-D** konsumiert: `_attachPointFor` (der EINE Sitz-Punkt) · diag-ride ·
+  die M6-Klemmen-Form (Opt-outs silent/precise). Gibt: die Hüft-Konstante an jeden
+  künftigen Sitz; die Boden-Probe an Φ3.
+- **W-E** konsumiert: atmoUniforms/lights/fog (das EINE Sende-Feld) ·
+  `_applyAerialOutput` (der Keim) · die 10 Material-Tags (die Antennen) ·
+  M7-Regler. Gibt: das Band an W-F (Wasser-Licht) und W-H (Kronen-Wärme).
+- **W-F** konsumiert: `_hydroRiverAt`-Tangente (V18.11) · das Zell-Sheet ·
+  diag-tour · die Narben-Liste. Gibt: die geglättete Fläche ans Boot-Schwimmen.
+- **W-G** konsumiert: `computeMotionRoles` (die Gelenk-Wahrheit wird GEZEICHNET) ·
+  `_attachPointFor` · den Werkstatt-Gizmo (dockt an Anker) · `CONNECTION_TYPES`
+  + `_suggestConnectionType` (Vorrang) · den W-C-Hint. Gibt: die Achsen-Geister
+  an die Welt-Vorschau (Hof-Bühne könnte sie erben).
+- **W-H** konsumiert: `spawnArchitecture`-Varianten-Wahl (per Seed) · das
+  Affinitäts-Feld (Cluster existieren) · HISM (`instanced:true`, OHNE connections)
+  · das W-E-Band. Gibt: die Gestalt-Varianten-Form an jede künftige Flora.
 
 ### §8.3 W-E: DAS FREQUENZBAND — eine Atmosphäre, viele Antennen (die Architektur-Antwort)
 
