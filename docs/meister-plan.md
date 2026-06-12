@@ -145,11 +145,15 @@ der tote Chip-Tooltip-Verweis ist wahr; das ICH behält Schnell-Trünke) ·
 +6 Invarianten (checkBandM5HudPolitur); diag-m5-hud.cjs = die Mess-Karte;
 2 Tests wanderten (W12-P2 → Werkstatt-Form, 6.X.1-A3a).
 
-**M6 — Ernte/Spawn-Ehrlichkeit [H].** MESSEN (diag): Baum-LMB-Abbau end-to-end
-(instanced-Pfad! yieldMult, Modus) + Deko-Pflücken; DANN heilen. Terrain-Graben im
-pfad an die W1-Mühe koppeln (Substanz-Härte → Schlag-Zahl; schöpfer bleibt instant).
-Nexus-Spawn-Klemme: ALLE Spawn-Pfade durch `_structureSpawnPos` (EIN Eingang — der
-Mana-Ära-Pfad umging ihn offenbar; grep + Invariante).
+**M6 — Ernte/Spawn-Ehrlichkeit [H]. ✓ GEBAUT (V18.159).** GEMESSEN (diag-harvest
+end-to-end): Pick traf (instanced ✓), 8 Hiebe → Bruch ✓, aber yieldMult=0 (Faust-fit
+0.229 < floor 0.35) → loot {}. ✓ Der ERTRAGS-SOCKEL yieldMin 0.34 (Mühe wird bezahlt;
+GEMESSEN: holz 4 + laub 61). ✓ Terrain-Mühe: Grabe-Fortschritt ∝ Tauglichkeit im pfad
+(Faust ~9 Hiebe; Stamina ANTEILIG — Σ ≈ alter Ein-Hieb-Preis, der Voll-Preis hätte
+173/100 verlangt). ✓ Die Klemme an der WURZEL (spawnArchitecture selbst — der
+Kreatur-BUILD + spawn_tree umgingen V17.28); Opt-outs: silent/string-id/precise
+(Restore + Fraktal-Kinder). +3 Invarianten; 2 Tests wanderten (W1-Faust→SOCKEL,
+Ring-6-Hexagon precise).
 
 **M7 — Licht/Wasser/LOD-Feinschliff [A, S-Vermerke].** Terrain-Nacht-Floor (Parität zu
 Bauten) · Cel-Kontrast/Mikro-Struktur als Regler (`microStrength`/Stufen-Schärfe in
@@ -164,8 +168,8 @@ sichtbar dokumentiert (Einstellungen-Identität + ein Satz im Pass-Panel).
 
 **M9 — DIE AUFSTIEGS-LEITER (die Krone; eigener Bogen, S-Dialog je Sprosse).** §3.
 
-**Reihenfolge:** M2 ✓ → M3 ✓ → M1 ✓ → M5 ✓ → M4 ✓ → **M6 (Ernte/Spawn-
-Ehrlichkeit) ist der AKTIVE nächste Schritt** → M7 → M8 → M9 (parallel designbar).
+**Reihenfolge:** M2 ✓ → M3 ✓ → M1 ✓ → M5 ✓ → M4 ✓ → M6 ✓ → **M7 (Licht/Wasser/
+LOD) ist der AKTIVE nächste Schritt** → M8 → M9 (parallel designbar).
 
 ---
 
@@ -290,10 +294,12 @@ den S-Dialog je Adoption — der Plan legt die Leiter, nicht die Automatik.
 
 1. ✓ `diag-roles.cjs` (V18.154): `computeBlueprintRole` für ALLE 31 Built-ins gedumpt + Achsen-
    Rohdaten (span/Volumina/spread/motion) + Exploit-Probe — die bleibende M2-Mess-Karte. [M2]
-2. `diag-harvest.cjs`: Baum/Deko-Abbau end-to-end je Modus (instanced-Pfad!). [M6]
+2. ✓ `diag-harvest.cjs` (V18.159): Baum-Abbau end-to-end je Modus gemessen — die
+   yieldMult-0-Wurzel gefunden + geheilt. [M6]
 3. ✓ Rad-Achsen-Probe im diag-ride (V18.155: M3-PROBEN — Rad-Achse/Anker-Dump +
    Versink-Wahrheit + Sitz-Pose). [M3]
 4. ✓ Filter-Inventur (V18.158): 5 Implementierungen gemessen, auf den EINEN Kern
    verdichtet. [M4]
 5. LOD-Start-Loch: `diag-chunk-seam` mit Ring=Start-Default. [M7]
-6. Nexus-Spawn-Pfade: grep aller spawn-Aufrufer auf `_structureSpawnPos`-Konsum. [M6]
+6. ✓ Nexus-Spawn-Pfade (V18.159): 13 Aufrufer gemessen → die Klemme an die WURZEL
+   (spawnArchitecture), Opt-out-Karte silent/id/precise. [M6]

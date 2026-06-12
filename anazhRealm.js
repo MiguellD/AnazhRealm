@@ -2816,7 +2816,10 @@ class AnazhRealm {
                     ctx.budget.spawnsLeft--;
                     spawned++;
                     const childSeed = (parentSeed * 16807 + level * 31) >>> 0;
-                    this.spawnArchitecture(t, { x: cx, y: pos.y, z: cz }, { seed: childSeed, scale });
+                    // M6 — die Fraktal-KINDER folgen der (an der Wurzel schon geklemmten)
+                    // Struktur EXAKT (precise): das Hexagon-Muster bleibt ganz; das
+                    // Fraktal als GANZES weicht dem Spieler über die Wurzel-Klemme aus.
+                    this.spawnArchitecture(t, { x: cx, y: pos.y, z: cz }, { seed: childSeed, scale, precise: true });
                     if (level >= d) return;
                     const childRadius = 14 * scale;
                     for (let i = 0; i < 6; i++) {
@@ -31040,6 +31043,9 @@ class AnazhRealm {
                 seed: a.seed,
                 scale: a.scale,
                 id: a.id,
+                // M6 — der Restore ist PRÄZISE (die Architektur stand, wo sie stand;
+                // numerische Worldgen-ids fielen sonst durch den string-id-Opt-out).
+                precise: true,
                 // Ω5 — die Gratis-Geburt reist durch den Reload mit.
                 freeBorn: a.freeBorn === true,
             });
@@ -43804,6 +43810,15 @@ class AnazhRealm {
         if (!this.state.scene) return null;
         const seed = Number.isFinite(opts.seed) ? opts.seed : Math.floor(Math.random() * 0xffffffff);
         const scale = Number.isFinite(opts.scale) && opts.scale > 0 ? opts.scale : 1;
+        // M6 (V18.159, Befund 25 „Nexus spawnt wieder AUF dem Spieler") — die EINE
+        // Spieler-Klemme an der WURZEL (V17.28 klemmte nur die drei DSL-Gesten; neue
+        // Pfade [Kreatur-BUILD-Task am Spieler-folgenden Wesen, spawn_tree, künftige]
+        // umgingen sie). Präzisions-Opt-outs bleiben heilig: opts.silent (Worldgen —
+        // Determinismus!), string-id (Multi-User-Sync/confirmBuild — bit-treu) und
+        // opts.precise (Restore/Tests). Kleine Spawns (< 3 m Footprint) bleiben eh frei.
+        if (!opts.silent && !opts.precise && !(typeof opts.id === "string" && opts.id) && position) {
+            position = this._structureSpawnPos(type, position, { state: this.state }, scale);
+        }
         const entry = {
             id: typeof opts.id === "string" && opts.id ? opts.id : this.state.architectureNextId++,
             type,
@@ -47269,7 +47284,15 @@ class AnazhRealm {
             H.maxStrikeStamina,
             Math.max(H.minStrikeStamina, H.strikeStaminaBase / Math.max(0.12, fit))
         );
-        const yieldMult = Math.min(1, Math.max(0, (fit - H.yieldFloorRatio) / (1 - H.yieldFloorRatio)));
+        // M6 (V18.159, Befund 18 GEMESSEN: Faust-fit 0.229 < floor 0.35 → yieldMult 0 —
+        // der Baum BRACH nach 8 Hieben + Stamina, gab aber NICHTS; Mühe bezahlt, Ertrag
+        // null = Dreifach-Bestrafung). Der Floor wird ein SOCKEL: wer den Bruch ERARBEITET,
+        // erntet mindestens yieldMin (Minecraft-Wahrheit: die Hand fällt den Baum LANGSAM,
+        // aber voll bezahlt) — die Untauglichkeit bestraft weiter über Tempo + Stamina.
+        const yieldMult = Math.max(
+            H.yieldMin || 0,
+            Math.min(1, Math.max(0, (fit - H.yieldFloorRatio) / (1 - H.yieldFloorRatio)))
+        );
         return {
             minePower: prof.minePower,
             cutPower: prof.cutPower,
@@ -47388,12 +47411,36 @@ class AnazhRealm {
                 mineResist: AnazhRealm.HARVEST.terrainResist,
                 cutResist: AnazhRealm.HARVEST.terrainCutResist,
             });
+            // M6 — die Stamina ist ANTEILIG pro Hieb (Σ über die Schlag-Zahl ≈ der
+            // alte Ein-Hieb-Preis: die Mühe der Untauglichkeit ist die ZEIT, nicht
+            // ein vervielfachter Ausdauer-Preis — sonst könnte die Faust gar kein
+            // Loch mehr graben: 9 Hiebe × 19 wären 173 von 100 Stamina).
+            const perStrike = digFit.stamina * Math.min(1, digFit.progress);
             const have = (this.state.player && this.state.player.stamina) || 0;
-            if (have < digFit.stamina) {
+            if (have < perStrike) {
                 this.log(`Graben: zu erschöpft (${Math.round(have)} Ausdauer).`, "INFO");
                 return false;
             }
-            this.state.player.stamina = Math.max(0, have - digFit.stamina);
+            this.state.player.stamina = Math.max(0, have - perStrike);
+            // M6 (V18.159, Befund 19 „Terrain-Abbau instant") — die EINE Mühe-Sprache
+            // auch fürs GRABEN: der Hieb akkumuliert FORTSCHRITT ∝ Tauglichkeit (exakt
+            // die W1-Struktur-Form — die Faust braucht mehrere Schläge, das gute Gerät
+            // gräbt in einem); der Fortschritt resettet, wenn das Ziel wandert (>2.5 m).
+            // frieden + schöpfer bleiben instant (die Welt umarmt/gehorcht).
+            const dig = this.state.player._dig || (this.state.player._dig = { x: 0, y: 0, z: 0, progress: 0 });
+            const moved = Math.hypot(target.x - dig.x, target.y - dig.y, target.z - dig.z) > 2.5;
+            if (moved) {
+                dig.x = target.x;
+                dig.y = target.y;
+                dig.z = target.z;
+                dig.progress = 0;
+            }
+            dig.progress += digFit.progress;
+            if (dig.progress < 1) {
+                this.log(`Graben: ${Math.round(dig.progress * 100)} % — der Boden leistet Widerstand.`, "INFO");
+                return true;
+            }
+            dig.progress = 0;
         }
         // V9.36 Phase 5c.2.c.3.a: Voxel ist permanent (V9.35) — der Grabe-Hieb
         // schnitzt immer das 3D-Dichte-Feld (ein echtes Loch). Der ehemalige
@@ -57856,7 +57903,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.158.0";
+AnazhRealm.VERSION = "18.159.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -58175,7 +58222,8 @@ AnazhRealm.HARVEST = Object.freeze({
     strikeStaminaBase: 4, // Stamina/Hieb-Basis (pfad) ÷ Tauglichkeit (INVERS zur Effizienz)
     minStrikeStamina: 2,
     maxStrikeStamina: 30, // ein falsches Werkzeug verbrennt Ausdauer für fast nichts
-    yieldFloorRatio: 0.35, // Tauglichkeit darunter → KEIN Ertrag (das falsche Werkzeug gibt nichts)
+    yieldFloorRatio: 0.35, // unter dieser Tauglichkeit greift nur noch der Sockel (oberhalb rampt der Ertrag auf 1)
+    yieldMin: 0.34, // M6 (Befund 18) — der ERTRAGS-SOCKEL: wer den Bruch erarbeitet, bekommt mindestens 1/3 (die Faust holt das Grobe; Feines braucht Werkzeug)
     strikeIntervalSec: 0.2, // Halten → Auto-Hieb-Kadenz (5 Hiebe/s) → kontinuierliches Mahlen
     terrainResist: 2.4, // der Boden-Wucht-Widerstand (W1: konstant; später aus der lokalen Dichte)
     terrainCutResist: 9, // der Boden wird GEWUCHTET, nicht geschnitten (Schärfe greift nicht)

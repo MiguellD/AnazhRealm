@@ -4496,7 +4496,12 @@ async function checkBandV1755HarvestEffort(ctx) {
             fitGood.progress > fitHand.progress && // TEMPO
             fitGood.yieldMult > fitHand.yieldMult && // ERTRAG
             fitGood.stamina < fitHand.stamina; // STAMINA (invers)
-        out.handYieldsNothingOnHard = fitHand.yieldMult <= 0.001;
+        // M6 (V18.159, V9.56-i): das alte „Faust an Hartem → NICHTS" ist BEWUSST
+        // ersetzt — der Ertrags-SOCKEL (yieldMin): wer den Bruch erarbeitet, erntet
+        // mindestens 1/3; die Untauglichkeit bestraft über Tempo + Stamina (gemessen
+        // im fitnessDifferentiates-Check daneben). Der Test prüft den SOCKEL.
+        out.handYieldsNothingOnHard =
+            fitHand.yieldMult >= (r.constructor.HARVEST.yieldMin || 0.34) - 1e-9 && fitHand.yieldMult < 0.5;
 
         // (5)+(6) KONSUM: Mühe (viele Hiebe) + gutes Werkzeug schneller + Ertrag skaliert.
         // In frieden (keine Stamina-Störung) den Hieb-Kern _strikeArchitecture direkt treiben.
@@ -4558,7 +4563,7 @@ async function checkBandV1755HarvestEffort(ctx) {
         res.fitnessDifferentiates
     );
     check(
-        "V17.55 W1: die bloße Faust an HARTEM gibt KEINEN Ertrag (das falsche Werkzeug gibt nichts)",
+        "V17.55 W1/M6: die bloße Faust an HARTEM erntet den SOCKEL (yieldMin — Mühe wird bezahlt, das Werkzeug macht ergiebiger)",
         res.handYieldsNothingOnHard
     );
     check("V17.55 W1: KONSUM — Abbauen kostet MÜHE (die Faust braucht VIELE Hiebe, kein Instant)", res.multiStrikeHand);
@@ -29639,6 +29644,103 @@ async function checkBandM4SuchKern(ctx) {
     check("M4 Such-Kern: alle Flächen KONSUMIEREN den Kern (Source — kein Privat-Filter-Rest)", res.konsum);
 }
 
+// V18.159 — M6: ERNTE/SPAWN-EHRLICHKEIT (meister-plan §2; Befunde 18/19/25,
+// alle GEMESSEN via diag-harvest). Der Ertrags-SOCKEL (die Faust brach den Baum
+// nach 8 Hieben, yieldMult war 0 → nichts) · die EINE Mühe-Sprache fürs Terrain
+// (Schlag-Zahl im pfad, Stamina anteilig) · die Spieler-Klemme an der WURZEL
+// (spawnArchitecture — neue Pfade wie der Kreatur-BUILD umgingen V17.28).
+async function checkBandM6ErnteSpawn(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const pm = r.state.playerMesh.position;
+        const savedMode = r.getGameMode();
+        const savedInv = JSON.parse(JSON.stringify(r.state.player.inventory));
+        const savedStamina = r.state.player.stamina;
+        let baum = null;
+        let clampSpawn = null;
+        try {
+            // (1) der ERTRAGS-SOCKEL: yieldMult ≥ yieldMin auch bei Faust-fit < floor;
+            // end-to-end: die Faust erntet den Baum (vorher loot = {}).
+            const fitProbe = r._harvestFitnessFromResist({ mineResist: 3.0, cutResist: 3.0 });
+            out.sockel = fitProbe.yieldMult >= (r.constructor.HARVEST.yieldMin || 0.34) - 1e-9;
+            r.setGameMode("frieden");
+            baum = r.spawnArchitecture(
+                "baum_eiche",
+                { x: pm.x + 7, y: pm.y, z: pm.z },
+                { silent: true, precise: true }
+            );
+            const fitBaum = r._harvestFitness(baum);
+            for (let i = 0; i < 40 && (r.state.architectures || []).some((e) => e === baum); i++) {
+                r._strikeArchitecture(baum);
+            }
+            const holz = (r.state.player.inventory || []).reduce(
+                (n, s) => n + (s && s.kind === "material" && s.material === "holz" ? s.count : 0),
+                0
+            );
+            const holzVorher = savedInv.reduce(
+                (n, s) => n + (s && s.kind === "material" && s.material === "holz" ? s.count : 0),
+                0
+            );
+            out.faustErntet = fitBaum.yieldMult > 0 && holz > holzVorher;
+            baum = null;
+
+            // (2) die TERRAIN-Mühe (pfad): der erste Hieb gräbt NICHT (Fortschritt),
+            // erst die Schlag-Zahl vollendet; die Stamina ist ANTEILIG (Σ ≈ alter
+            // Ein-Hieb-Preis — die Faust KANN weiter graben); frieden bleibt instant.
+            const src = r.tryMouseBreak.toString();
+            out.musyntax = /_dig/.test(src) && /dig\.progress \+= digFit\.progress/.test(src) && /perStrike/.test(src);
+            r.setGameMode("pfad");
+            r.state.player.stamina = 100;
+            const digFit = r._harvestFitnessFromResist({
+                mineResist: r.constructor.HARVEST.terrainResist,
+                cutResist: r.constructor.HARVEST.terrainCutResist,
+            });
+            out.terrainBrauchtSchlaege = digFit.progress < 1; // die Faust ein-hiebt NICHT
+            const perStrike = digFit.stamina * Math.min(1, digFit.progress);
+            out.staminaAnteilig = perStrike < digFit.stamina - 1e-9 && perStrike * (1 / digFit.progress) < 30;
+
+            // (3) die WURZEL-KLEMME: ein großer Spawn AUF dem Spieler (ohne Opt-out)
+            // weicht aus; precise/silent/string-id bleiben EXAKT (bit-treu).
+            r.setGameMode("frieden");
+            clampSpawn = r.spawnArchitecture("village", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7 });
+            const d = clampSpawn ? Math.hypot(clampSpawn.position.x - pm.x, clampSpawn.position.z - pm.z) : 0;
+            out.wurzelKlemmt = !!clampSpawn && d > 2.9;
+            if (clampSpawn) r.removeArchitecture(clampSpawn);
+            clampSpawn = r.spawnArchitecture("village", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7, precise: true });
+            out.preciseExakt = !!clampSpawn && clampSpawn.position.x === pm.x && clampSpawn.position.z === pm.z;
+            if (clampSpawn) r.removeArchitecture(clampSpawn);
+            clampSpawn = r.spawnArchitecture("village", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7, id: "mu-sync-1" });
+            out.idExakt = !!clampSpawn && clampSpawn.position.x === pm.x;
+            if (clampSpawn) r.removeArchitecture(clampSpawn);
+            clampSpawn = null;
+            // KONSUM: die Klemme sitzt in spawnArchitecture (die Wurzel — kein Pfad daran vorbei).
+            out.klemmeKonsum = /_structureSpawnPos/.test(r.spawnArchitecture.toString());
+            return out;
+        } finally {
+            if (baum) r.removeArchitecture(baum);
+            if (clampSpawn) r.removeArchitecture(clampSpawn);
+            r.setGameMode(savedMode);
+            r.state.player.inventory = savedInv;
+            r.state.player.stamina = savedStamina;
+            if (r.state.player._dig) r.state.player._dig.progress = 0;
+        }
+    });
+    check(
+        "M6 Ernte: der Ertrags-SOCKEL — wer den Bruch erarbeitet, erntet mindestens yieldMin (die Faust fällt den Baum UND bekommt Holz)",
+        res.sockel && res.faustErntet
+    );
+    check(
+        "M6 Mühe: das Terrain-Graben spricht die EINE Mühe-Sprache (Schlag-Zahl im pfad, Stamina anteilig — Σ ≈ alter Preis)",
+        res.musyntax && res.terrainBrauchtSchlaege && res.staminaAnteilig
+    );
+    check(
+        "M6 Spawn: die Spieler-Klemme sitzt an der WURZEL (großer Spawn weicht aus; precise/string-id bleiben bit-treu)",
+        res.wurzelKlemmt && res.preciseExakt && res.idExakt && res.klemmeKonsum
+    );
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -46280,6 +46382,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandM1VerbindungsWerkstatt(ctx);
             await checkBandM5HudPolitur(ctx);
             await checkBandM4SuchKern(ctx);
+            await checkBandM6ErnteSpawn(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
