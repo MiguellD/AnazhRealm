@@ -29430,6 +29430,127 @@ async function checkBandM1VerbindungsWerkstatt(ctx) {
     );
 }
 
+// V18.157 — M5: HUD/RÄUME-POLITUR nach Spieler-Denken (meister-plan §2;
+// Befunde 13–17 + 26, alle GEMESSEN via diag-m5-hud). Resize-Sprung (105→180
+// beim ersten Pixel) · Logbuch = Dev-Sicht (EIN Schalter) · Emotion-Track auf
+// dunklem Grund · Boost-Chips mit Effekt + LIVE-Restzeit · Equip/Pickup →
+// Sofort-Refresh · Umwidmen zog in die Werkstatt (eigener W12-Test) ·
+// Hof-Gemüt als HP-artiger Balken.
+async function checkBandM5HudPolitur(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) der RESIZE-Sprung ist tot: 1-px-Drag an der EINGEKLAPPTEN Konsole
+        // (105 px) bleibt bei ~105 (GEMESSEN vorher: +75 auf die harte 180er-Min).
+        const consoleEl = document.getElementById("console");
+        const handle = consoleEl && consoleEl.querySelector(".resize-handle");
+        if (consoleEl && handle) {
+            const savedH = consoleEl.style.height;
+            const before = consoleEl.getBoundingClientRect();
+            const hr = handle.getBoundingClientRect();
+            const mk = (type, x, y) =>
+                new MouseEvent(type, { clientX: x, clientY: y, bubbles: true, cancelable: true });
+            handle.dispatchEvent(mk("mousedown", hr.x + 2, hr.y + 2));
+            window.dispatchEvent(mk("mousemove", hr.x + 2, hr.y + 1));
+            window.dispatchEvent(mk("mouseup", hr.x + 2, hr.y + 1));
+            const after = consoleEl.getBoundingClientRect();
+            out.resizeNoJump = Math.abs(after.height - before.height) <= 4;
+            consoleEl.style.height = savedH;
+            consoleEl.style.width = "";
+            try {
+                localStorage.removeItem("anazh.resize.console");
+            } catch (_e) {
+                /* egal */
+            }
+        }
+        // (2) das LOGBUCH ruht hinter dem EINEN Dev-Schalter (Default: versteckt).
+        const logb = document.getElementById("logbook-section");
+        const statusbar = document.getElementById("statusbar");
+        out.logbookDev =
+            !!logb &&
+            !!statusbar &&
+            (statusbar.classList.contains("dev-hidden") ? logb.style.display === "none" : true);
+        // (3) der Emotion-Track ist auf dem dunklen Readout HELL (P11-Klasse).
+        const probeBar = document.querySelector(".ich-readout .emotion .bar");
+        if (probeBar) {
+            const bg = getComputedStyle(probeBar).backgroundColor;
+            const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            out.emotionTrackBright = !!m && Number(m[1]) > 150;
+        } else {
+            out.emotionTrackBright = /236, 225, 197/.test(
+                [...document.styleSheets]
+                    .map((ss) => {
+                        try {
+                            return [...ss.cssRules].map((r2) => r2.cssText).join("");
+                        } catch {
+                            return "";
+                        }
+                    })
+                    .join("")
+            );
+        }
+        // (4) Boost-Chips: Effekt-Label + data-expires + LIVE-Tick ändert den Text.
+        const p = r.state.player;
+        const savedBoosts = p.boosts;
+        const nowSec = performance.now() / 1000;
+        p.boosts = [{ source: "test", label: "Probe", tagDelta: { magieleitung: 0.4 }, expiresAt: nowSec + 40 }];
+        const host = document.createElement("div");
+        r._renderEquipBoosts(host);
+        const chip = host.querySelector(".ich-boost-chip");
+        out.chipEffect =
+            !!chip && /\+0\.4 Magie-Leitung/.test(chip.textContent) && /\(40s\)|\(39s\)/.test(chip.textContent);
+        // den Tick GEGEN einen synthetisch-älteren Stempel beweisen (deterministisch):
+        if (chip) {
+            document.body.appendChild(host);
+            chip.setAttribute("data-expires", String(nowSec + 10));
+            r._tickBoostChips();
+            out.chipTicks = /\(10s\)|\(9s\)/.test(chip.textContent);
+            document.body.removeChild(host);
+        }
+        p.boosts = savedBoosts;
+        // (5) Equip/Pickup rufen den Sofort-Refresh (Source-KONSUM + Helper existiert).
+        out.instantRefresh =
+            typeof r._refreshIchIfOpen === "function" &&
+            /_refreshIchIfOpen/.test(r.equipHeld.toString()) &&
+            /_refreshIchIfOpen/.test(r.equipArmor.toString()) &&
+            /_refreshIchIfOpen/.test(r.addToInventory.toString()) &&
+            /_refreshIchIfOpen/.test(r.addMaterialToInventory.toString());
+        // (6) das HOF-GEMÜT als Balken: injizierte Emotion → .hof-emotion-bar gefüllt.
+        const pm = r.state.playerMesh.position;
+        const c = r.spawnCreatureAt(pm.x + 4, pm.y, pm.z, "happy", "wesen");
+        let sheet = null;
+        if (c) {
+            c.userData.emotions = { joy: 0.8, sorrow: 0, awe: 0.1, fear: 0, curiosity: 0.2, calm: 0.1 };
+            sheet = r._hofBuildSpecSheet(r._creatureProfile(c));
+        }
+        const ebar = sheet && sheet.querySelector(".hof-emotion-bar");
+        const efill = ebar && ebar.querySelector(".bar > div");
+        out.hofEmotionBar =
+            !!ebar &&
+            !!efill &&
+            parseInt(efill.style.width, 10) > 30 &&
+            /%$/.test(ebar.querySelector(".value").textContent.trim());
+        if (c) r.removeCreature(c);
+        return out;
+    });
+    check(
+        "M5 HUD: der Resize-Sprung ist tot — die eingeklappte Konsole (105 px) bleibt beim Drag-Start stehen",
+        res.resizeNoJump
+    );
+    check("M5 HUD: das Logbuch ruht hinter dem EINEN Dev-Schalter (V18.149-Muster, zwei Konsumenten)", res.logbookDev);
+    check("M5 HUD: der Emotion-Balken-Track ist auf dem dunklen Readout hell (P11-Klasse)", res.emotionTrackBright);
+    check(
+        "M5 HUD: die Boost-Chips sagen den EFFEKT (+0.4 Magie-Leitung) und zählen LIVE (data-expires + Tick)",
+        res.chipEffect && res.chipTicks
+    );
+    check("M5 HUD: Equip/Pickup rufen den Sofort-Refresh (Event-getrieben, alle vier Pfade)", res.instantRefresh);
+    check(
+        "M5 HUD: das Hof-GEMÜT ist ein HP-artiger Balken (dominante Emotion färbt, Intensität füllt)",
+        res.hofEmotionBar
+    );
+}
+
 // V18.136 — der REFLEXIONS-AUDIT der V18.129-.135-Wellen (Schoepfer: „Profi der
 // Profis — Passagiere? Parallelcode? Spieler-Perspektive?"). Vier GEMESSENE
 // Funde geheilt: (1) der Schatten-Weite-Slider war unter CSM ein TOTER Knopf
@@ -30072,33 +30193,27 @@ async function checkBandWelle6XAudit(ctx) {
         r._clearBuildMode && r._clearBuildMode();
         r.setGameMode("frieden");
 
-        // --- A3a: Markier-UI nimmt Baupläne mit emergenter Rolle auf
-        // (filter auf !roleManual statt !role). Wir machen einen
-        // eigenen Bauplan mit forcierter emergenter Rolle ohne
-        // roleManual-Flag — vor dem Fix wäre er gefiltert worden.
-        // createBlueprint returnt true/false, nicht {ok}.
+        // --- A3a: Umwidmen nimmt Baupläne mit emergenter Rolle auf.
+        // M5 (V18.157, V9.56-i): das Umwidmen zog in die WERKSTATT-Mach-Zone —
+        // die Reihe erscheint für den GEWÄHLTEN eigenen Bauplan, auch wenn er
+        // schon eine EMERGENTE Rolle trägt (kein roleManual-Filter, kein
+        // Sackgassen-Zustand). createBlueprint returnt true/false, nicht {ok}.
         const bpCreated = r.createBlueprint("audit_armor_test", "Audit-Test");
         out._a3aCreated = bpCreated === true;
         if (bpCreated) {
             const bpRef = r.state.blueprints["audit_armor_test"];
             bpRef.role = "tool"; // emergent gesetzt, kein Manual
             bpRef.roleManual = false;
-            r.renderPlayerEquipUI && r.renderPlayerEquipUI();
-            // Alle .equip-mark-label durchsuchen — der Test-Bauplan
-            // hat "Audit-Test" als Label und muss in mindestens
-            // einem .equip-mark-label gerendert sein.
-            const labels = document.querySelectorAll(".equip-mark-label");
-            out._a3aLabelCount = labels.length;
-            let found = false;
-            for (const l of labels) {
-                if (/audit-test/i.test(l.textContent || "")) {
-                    found = true;
-                    break;
-                }
-            }
-            out.markListShowsEmergentRole = found;
+            const wsA3 = r._ensureWorkshopState();
+            const savedSelA3 = wsA3.selectedBlueprint;
+            r.selectBlueprintForEdit("audit_armor_test");
+            const zoneA3 =
+                document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
+            const rowA3 = zoneA3 && zoneA3.querySelector(".workshop-umwidmen-row");
+            out._a3aLabelCount = rowA3 ? rowA3.querySelectorAll(".workshop-umwidmen-btn").length : 0;
+            out.markListShowsEmergentRole = !!rowA3 && out._a3aLabelCount >= 4;
             delete r.state.blueprints["audit_armor_test"];
-            r.renderPlayerEquipUI && r.renderPlayerEquipUI();
+            wsA3.selectedBlueprint = savedSelA3;
         } else {
             out.markListShowsEmergentRole = false;
         }
@@ -33899,7 +34014,10 @@ async function checkBandW12WorldPortal(ctx) {
         );
     }
 
-    // ### W12 Phase 2 — Markier-Sektion: Portal-Knopf erreichbar + umwidmbar ###
+    // ### W12 Phase 2 — Umwidmen: Portal-Geste erreichbar + umwidmbar ###
+    // M5 (V18.157, Befund 17, V9.56-i): das Umwidmen zog aus dem ICH in die
+    // WERKSTATT-Mach-Zone (Domänen-Trennung) — der Test prüft die Werkstatt-Reihe
+    // des gewählten Bauplans + den NEUEN ✨-Emergent-Reset (vorher toter Verweis).
     const w12markResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -33907,33 +34025,52 @@ async function checkBandW12WorldPortal(ctx) {
             name: "test_mark_ring",
             label: "TestMarkRing",
             builtIn: false,
-            parts: [],
+            parts: [{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
         };
-        r.renderPlayerEquipUI();
-        const rowsBefore = document.querySelectorAll(".equip-mark-row").length;
-        out.markRowRendered = rowsBefore > 0 && !!document.querySelector(".equip-portal-select");
-        // markieren → roleManual gesetzt
+        const ws = r._ensureWorkshopState();
+        const savedSel = ws.selectedBlueprint;
+        r.selectBlueprintForEdit("test_mark_ring");
+        const zone = document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
+        out.markRowRendered =
+            !!zone && !!zone.querySelector(".workshop-umwidmen-row") && !!zone.querySelector(".equip-portal-select");
+        // markieren → roleManual gesetzt; die Reihe BLEIBT (re-markierbar, kein Sackgassen-Zustand)
         r.aimBlueprintAtWorld("test_mark_ring", "fluid");
-        r.renderPlayerEquipUI();
-        const rowsAfter = document.querySelectorAll(".equip-mark-row").length;
-        // Trap-Fix: ein markierter Bauplan bleibt re-markierbar in der Sektion.
-        out.markPersistsAfterRole = rowsAfter === rowsBefore;
-        // Die Reihe nennt die aktuelle Rolle.
-        out.rowShowsRole = Array.from(document.querySelectorAll(".equip-mark-label")).some(
-            (el) => /TestMarkRing/.test(el.textContent) && /portal/i.test(el.textContent)
+        r.selectBlueprintForEdit("test_mark_ring");
+        const zone2 =
+            document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
+        out.markPersistsAfterRole = !!zone2 && !!zone2.querySelector(".workshop-umwidmen-row");
+        // der Rollen-Chip des Panels nennt die aktuelle Rolle (Tor).
+        out.rowShowsRole = Array.from(document.querySelectorAll(".spec-role-chip")).some((el) =>
+            /tor|portal/i.test(el.textContent)
         );
-        delete r.state.blueprints.test_mark_ring;
+        // ✨ Emergent löst die Markierung — die Rolle emergiert wieder.
+        const reset = r.resetBlueprintRole("test_mark_ring");
+        out.resetWorks =
+            reset.ok === true &&
+            r.state.blueprints.test_mark_ring.roleManual === undefined &&
+            r.state.blueprints.test_mark_ring.role === r.computeBlueprintRole(r.state.blueprints.test_mark_ring);
+        // das ICH trägt die Doublette NICHT mehr (nur Verweis + Schnell-Trünke).
         r.renderPlayerEquipUI();
+        out.ichClean = document.querySelectorAll("#player-equip .equip-portal-select").length === 0;
+        delete r.state.blueprints.test_mark_ring;
+        ws.selectedBlueprint = savedSel;
         return out;
     });
 
     if (w12markResults && !w12markResults.error) {
-        check("W12 P2: Markier-Reihe + Portal-Auswahl gerendert", w12markResults.markRowRendered);
         check(
-            "W12 P2: markierter Bauplan bleibt umwidmbar (kein Sackgassen-Zustand)",
+            "W12 P2/M5: die Umwidmen-Reihe (+ Portal-Auswahl) lebt in der WERKSTATT-Mach-Zone",
+            w12markResults.markRowRendered
+        );
+        check(
+            "W12 P2/M5: markierter Bauplan bleibt umwidmbar (kein Sackgassen-Zustand)",
             w12markResults.markPersistsAfterRole
         );
-        check("W12 P2: Markier-Reihe nennt die aktuelle Rolle", w12markResults.rowShowsRole);
+        check("W12 P2/M5: der Rollen-Chip nennt die aktuelle Rolle", w12markResults.rowShowsRole);
+        check(
+            "M5: ✨ Emergent löst roleManual (der Chip-Tooltip-Verweis ist wahr) + das ICH trägt keine Doublette",
+            w12markResults.resetWorks && w12markResults.ichClean
+        );
     } else {
         check("W12 P2: Markier-Sektion Tests laufen", false, w12markResults ? w12markResults.error : "no result");
     }
@@ -46053,6 +46190,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandM2RollenWahrheit(ctx);
             await checkBandM3RittVollendet(ctx);
             await checkBandM1VerbindungsWerkstatt(ctx);
+            await checkBandM5HudPolitur(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

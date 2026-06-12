@@ -9389,12 +9389,14 @@ class AnazhRealm {
         );
         if (existingIdx >= 0) {
             inv[existingIdx].count = (inv[existingIdx].count || 0) + count;
+            this._refreshIchIfOpen(); // M5 — Pickup-Feedback ist instant
             return true;
         }
         // Erster leerer Slot.
         const emptyIdx = inv.findIndex((s) => !s);
         if (emptyIdx < 0) return false; // Inventar voll
         inv[emptyIdx] = { kind: "blueprint", blueprintName, count };
+        this._refreshIchIfOpen(); // M5 — Pickup-Feedback ist instant
         return true;
     }
 
@@ -9411,11 +9413,13 @@ class AnazhRealm {
         const existingIdx = inv.findIndex((s) => s && s.kind === "material" && s.material === material);
         if (existingIdx >= 0) {
             inv[existingIdx].count = (inv[existingIdx].count || 0) + n;
+            this._refreshIchIfOpen(); // M5 — Pickup-Feedback ist instant
             return true;
         }
         const emptyIdx = inv.findIndex((s) => !s);
         if (emptyIdx < 0) return false;
         inv[emptyIdx] = { kind: "material", material, count: n };
+        this._refreshIchIfOpen(); // M5 — Pickup-Feedback ist instant
         return true;
     }
 
@@ -10327,8 +10331,15 @@ class AnazhRealm {
                 /* Privacy-Modus — Default bleibt Essenz */
             }
             statusbar.classList.toggle("dev-hidden", !devOn);
+            // M5 (V18.157, Befund 13c) — das LOGBUCH ist Entwickler-Sicht wie die
+            // Werkstatt-Zahlen: die ganze Einstellungs-Sektion ruht hinter DEMSELBEN
+            // Dev-Schalter (EIN Zustand, zwei Konsumenten — kein zweiter Toggle-Pfad;
+            // P17: die Sektion bleibt im DOM, ihr innerer logbook-toggle wirkt weiter).
+            const logbookSection = document.getElementById("logbook-section");
+            if (logbookSection) logbookSection.style.display = devOn ? "" : "none";
             devToggle.addEventListener("click", () => {
                 const hidden = statusbar.classList.toggle("dev-hidden");
+                if (logbookSection) logbookSection.style.display = hidden ? "none" : "";
                 try {
                     localStorage.setItem("anazh.ui.statusDev", hidden ? "0" : "1");
                 } catch {
@@ -11219,9 +11230,15 @@ class AnazhRealm {
                 newW = drag.startW - dx;
                 newH = drag.startH - dy;
             }
-            // Clamp: sinnvolle Min + Max (Viewport-Abstand)
-            const clampedW = Math.max(220, Math.min(window.innerWidth - 40, newW));
-            const clampedH = Math.max(180, Math.min(window.innerHeight - 140, newH));
+            // Clamp: sinnvolle Min + Max (Viewport-Abstand).
+            // M5 (V18.157, Befund 13a GEMESSEN): die Min-Grenzen respektieren den
+            // START-Zustand — die EINGEKLAPPTE Konsole (105 px) sprang beim ersten
+            // Drag-Pixel auf die harte 180er-Min (+75 px). Wer kleiner STARTET,
+            // darf dort bleiben; die harte Min gilt erst beim Größer-Ziehen.
+            const minW = Math.min(220, drag.startW);
+            const minH = Math.min(180, drag.startH);
+            const clampedW = Math.max(minW, Math.min(window.innerWidth - 40, newW));
+            const clampedH = Math.max(minH, Math.min(window.innerHeight - 140, newH));
             if (!heightOnly) container.style.width = `${clampedW}px`;
             container.style.height = `${clampedH}px`;
             container.style.maxHeight = "none";
@@ -33192,6 +33209,19 @@ class AnazhRealm {
         return { ok: true, name };
     }
 
+    // M5 (V18.157) — die Markierung LÖSEN: roleManual fällt, die Rolle EMERGIERT
+    // wieder aus der Substanz. Macht den Rollen-Chip-Tooltip („zurücksetzen via
+    // Markier-Sektion") WAHR — die alte Sektion hatte nie einen Reset (toter Verweis).
+    resetBlueprintRole(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        if (bp.builtIn) return { ok: false, reason: "cannot_modify_builtin" };
+        delete bp.roleManual;
+        delete bp.role;
+        this._refreshBlueprintRoleEmergent(name);
+        return { ok: true, name, role: bp.role };
+    }
+
     // R3-Schluss (kampf-plan §11.10) — einen Bauplan als WELT-WERKSTATT markieren. GEMESSEN (die
     // domain-vs-architecture-Resonanz, Schöpfer-Dialog 03.06.): ob etwas eine Werkstatt IST, emergiert
     // NICHT sauber aus der Substanz — eine Esse (dichte Glut-Masse) und ein dichtes Bauwerk sind Substanz-
@@ -33237,6 +33267,7 @@ class AnazhRealm {
             eq.held = null;
             this.recomputePlayerStats();
             this._refreshHeldMesh(); // S9 — die Hand-Optik leeren
+            this._refreshIchIfOpen(); // M5 — Equip-Feedback ist instant
             return { ok: true, equipped: null };
         }
         // den Bauplan auflösen: ein direkter Bauplan ODER ein gecraftetes Werkzeug (name == Bauplan
@@ -33251,7 +33282,27 @@ class AnazhRealm {
         eq.held = bpName;
         this.recomputePlayerStats();
         this._refreshHeldMesh(); // S9 — das Gerät in der Hand sichtbar machen
+        this._refreshIchIfOpen(); // M5 — Equip-Feedback ist instant
         return { ok: true, equipped: bpName };
+    }
+
+    // M5 (V18.157, Befund 16 „Stats/Inventar aktualisieren verzögert") — der
+    // EVENT-getriebene Sofort-Refresh: Equip/Pickup rufen ihn ZUSÄTZLICH zum
+    // Throttle-Tick (Profi-Feedback ist instant). Rendert NUR, wenn das
+    // Ich-Overlay offen ist (sonst kostet es nichts); rAF-gebündelt, damit
+    // ein Aufnahme-Schwall (Kreatur liefert 8 Stacks) EINEN Render zahlt.
+    _refreshIchIfOpen() {
+        if (typeof document === "undefined") return;
+        const overlay = document.getElementById("inventory-overlay");
+        if (!overlay || overlay.style.display === "none" || overlay.getAttribute("aria-hidden") === "true") return;
+        if (this._ichRefreshQueued) return;
+        this._ichRefreshQueued = true;
+        const run = () => {
+            this._ichRefreshQueued = false;
+            if (typeof this.renderInventoryUI === "function") this.renderInventoryUI();
+        };
+        if (typeof requestAnimationFrame === "function") requestAnimationFrame(run);
+        else run();
     }
 
     // V17.57 W2-B — equipTool/equipWeapon sind jetzt ALIASE auf equipHeld (ein Slot, kein
@@ -33486,6 +33537,7 @@ class AnazhRealm {
             this.state.player.equipped = this.state.player.equipped || { held: null, armor: null };
             this.state.player.equipped.armor = null;
             this.recomputePlayerStats();
+            this._refreshIchIfOpen(); // M5 — Equip-Feedback ist instant
             return { ok: true, equipped: null };
         }
         const bp = this.state.blueprints && this.state.blueprints[name];
@@ -33494,6 +33546,7 @@ class AnazhRealm {
         this.state.player.equipped = this.state.player.equipped || { held: null, armor: null };
         this.state.player.equipped.armor = name;
         this.recomputePlayerStats();
+        this._refreshIchIfOpen(); // M5 — Equip-Feedback ist instant
         return { ok: true, equipped: name };
     }
 
@@ -47977,9 +48030,12 @@ class AnazhRealm {
         this._renderEquipBoosts(host);
     }
 
-    // V18.67 Ich-J5 — die aktiven Boost-Effekte als Chips (✺ Name (Restzeit)). Liest player.boosts
+    // V18.67 Ich-J5 — die aktiven Boost-Effekte als Chips. Liest player.boosts
     // ({source, tagDelta, expiresAt, label}, expiresAt in performance.now()/1000) — ein echter Leser
     // des Boost-Vektors (KONSUM, V17.31), kein erfundenes Feld.
+    // M5 (V18.157, Befund 15 „unverständlich · Zeit zählt nicht"): der Chip sagt den
+    // EFFEKT (die stärkste tagDelta-Achse: „+magieleitung 0.4") und trägt data-expires —
+    // tickStatsHud zählt die Restzeit LIVE herunter (textContent, kein Re-Render).
     _renderEquipBoosts(host) {
         const boosts = this.state.player && Array.isArray(this.state.player.boosts) ? this.state.player.boosts : [];
         const nowSec = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
@@ -47990,12 +48046,55 @@ class AnazhRealm {
         } else {
             for (const b of active) {
                 const rest = Math.max(0, Math.round(b.expiresAt - nowSec));
-                row.appendChild(
-                    this._el("span", { class: "ich-boost-chip", text: `✺ ${b.label || b.source} (${rest}s)` })
-                );
+                const effect = this._boostEffectLabel(b);
+                const chip = this._el("span", {
+                    class: "ich-boost-chip",
+                    text: `✺ ${b.label || b.source}${effect ? ` · ${effect}` : ""} (${rest}s)`,
+                });
+                chip.setAttribute("data-expires", String(b.expiresAt));
+                chip.setAttribute("data-base", `✺ ${b.label || b.source}${effect ? ` · ${effect}` : ""}`);
+                chip.title = effect ? `Wirkt jetzt: ${effect} — läuft in ${rest}s aus.` : `Läuft in ${rest}s aus.`;
+                row.appendChild(chip);
             }
         }
         host.appendChild(row);
+    }
+
+    // M5 — die stärkste Wirkungs-Achse eines Boosts, lesbar („+magieleitung 0.4").
+    // Liest tagDelta (der echte Boost-Vektor); ohne Achsen bleibt der Name allein.
+    _boostEffectLabel(b) {
+        const tags = (b && (b.tagDelta || b.tags)) || null;
+        if (!tags || typeof tags !== "object") return "";
+        let bestK = null;
+        let bestV = 0;
+        for (const k of Object.keys(tags)) {
+            const v = Number(tags[k]) || 0;
+            if (Math.abs(v) > Math.abs(bestV)) {
+                bestV = v;
+                bestK = k;
+            }
+        }
+        if (!bestK || !bestV) return "";
+        const label = (AnazhRealm.AXIS_LABELS && AnazhRealm.AXIS_LABELS[bestK]) || bestK;
+        return `${bestV > 0 ? "+" : ""}${Math.round(bestV * 100) / 100} ${label}`;
+    }
+
+    // M5 (Befund 15) — die LIVE-Restzeit: tickStatsHud ruft das ~1×/s; aktualisiert
+    // NUR die textContents sichtbarer Chips (kein Re-Render), räumt Ausgelaufene
+    // über den nächsten echten Render (renderInventoryUI/Equip-Refresh).
+    _tickBoostChips() {
+        if (typeof document === "undefined") return;
+        const chips = document.querySelectorAll(".ich-boost-chip[data-expires]");
+        if (!chips.length) return;
+        const nowSec = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
+        for (const chip of chips) {
+            const exp = Number(chip.getAttribute("data-expires"));
+            if (!Number.isFinite(exp)) continue;
+            const rest = Math.max(0, Math.round(exp - nowSec));
+            const base = chip.getAttribute("data-base") || "✺ Boost";
+            const next = rest > 0 ? `${base} (${rest}s)` : `${base} (ausgelaufen)`;
+            if (chip.textContent !== next) chip.textContent = next;
+        }
     }
 
     // Das Rezeptbuch (wie Minecraft): die craftbaren Baupläne, gruppiert nach Verwendung,
@@ -48782,7 +48881,38 @@ class AnazhRealm {
             })
         );
         const footer = this._el("div", { class: "spec-footer hof-spec-footer" }, ...footChildren);
-        return this._el("div", { class: "spec-sheet hof-spec-sheet" }, header, body, growth, footer);
+        // M5 (V18.157, Befund 26 „Emotionen statt Natur prominent — HP-artige Intuition") —
+        // das GEMÜT als prominenter BALKEN direkt unter dem Header (das HP-Muster auf die
+        // Emotion): die dominante Achse FÄRBT (dieselben --joy/--awe-Vars wie das Ich),
+        // die Intensität FÜLLT; der Text-Chip im Header bleibt das Detail. Ruht das
+        // Innenleben (< 12 % — _creatureProfile setzt emotionState nur darüber), ruht
+        // auch der Balken (kein Deko-Rauschen).
+        const es = prof.emotionState;
+        let emotionRow = null;
+        if (es && es.dominant) {
+            const fill = document.createElement("div");
+            fill.style.width = `${Math.round(Math.max(0, Math.min(1, es.intensity)) * 100)}%`;
+            fill.style.background = `var(--${es.dominant}, #c69ad9)`;
+            fill.style.boxShadow = "0 0 4px currentColor";
+            const bar = this._el("span", { class: "bar" });
+            bar.appendChild(fill);
+            emotionRow = this._el(
+                "div",
+                {
+                    class: `emotion hof-emotion-bar ${es.dominant}`,
+                    title: `Dominante Emotion: ${(AnazhRealm.EMOTION_LABEL && AnazhRealm.EMOTION_LABEL[es.dominant]) || es.dominant} — Intensität ${(es.intensity * 100) | 0} % (färbt Verhalten + Contagion).`,
+                },
+                this._el("span", {
+                    class: "name",
+                    text: (AnazhRealm.EMOTION_LABEL && AnazhRealm.EMOTION_LABEL[es.dominant]) || es.dominant,
+                }),
+                bar,
+                this._el("span", { class: "value", text: `${(es.intensity * 100) | 0}%` })
+            );
+        }
+        return emotionRow
+            ? this._el("div", { class: "spec-sheet hof-spec-sheet" }, header, emotionRow, body, growth, footer)
+            : this._el("div", { class: "spec-sheet hof-spec-sheet" }, header, body, growth, footer);
     }
 
     // V18.56 — die jüngste Tat eines Wesens, menschen-lesbar (aus ud.memory). Macht die wachsende GESCHICHTE
@@ -51430,7 +51560,68 @@ class AnazhRealm {
             this._workshopAppendWerkHeading(machZone);
             if (!bp.builtIn) this._workshopAppendSignatureRow(machZone, bp, ws);
             if (canMake) this._workshopAppendFertigenRow(machZone, bp);
+            // M5 (V18.157, Befund 17) — das UMWIDMEN gehört der WERKSTATT.
+            if (!bp.builtIn) this._workshopAppendUmwidmenRow(machZone, bp);
         }
+    }
+
+    // M5 (V18.157, Befund 17 „Umwidmen unterm ICH doppelt zur Werkstatt") — die
+    // Umwidmen-Reihe in der Mach-Zone des GEWÄHLTEN Bauplans (Domänen-Trennung,
+    // V18.79-Klasse: die Rolle eines Werks ist Werkstatt-Sache). Vier Gesten:
+    // Rüstung · Konsumabel · Portal(Ziel-Select) · ✨ Emergent (resetBlueprintRole
+    // — löst roleManual, die Substanz spricht wieder; der Chip-Tooltip-Verweis
+    // ist damit WAHR). Jede Geste re-rendert das Panel (der Rollen-Chip folgt live).
+    _workshopAppendUmwidmenRow(zone, bp) {
+        if (!zone || !bp || bp.builtIn || typeof document === "undefined") return;
+        const row = document.createElement("div");
+        row.className = "stat-row workshop-umwidmen-row";
+        const label = document.createElement("span");
+        label.className = "stat-label";
+        label.textContent = "Umwidmen";
+        label.title =
+            "Dem Werk eine Rolle GEBEN (Intent-Override) — oder mit ✨ die Markierung lösen, damit die Rolle wieder aus der Substanz emergiert.";
+        row.appendChild(label);
+        const acts = document.createElement("span");
+        acts.className = "workshop-umwidmen-acts";
+        const refresh = () => this._renderWorkshopDOM();
+        const mkBtn = (text, title, fn) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "workshop-umwidmen-btn";
+            btn.textContent = text;
+            btn.title = title;
+            btn.addEventListener("click", () => {
+                const res = fn();
+                if (res && res.ok === false) this.log(`Umwidmen: ${res.reason}`, "ERROR");
+                refresh();
+            });
+            acts.appendChild(btn);
+            return btn;
+        };
+        mkBtn("Rüstung", "Als Rüstung markieren (tragbar via „Was du trägst“).", () =>
+            this.setBlueprintAsArmor(bp.name)
+        );
+        mkBtn("Konsumabel", "Als Konsumabel markieren (trinkbar, Wirkung aus den Tags).", () =>
+            this.setBlueprintAsConsumable(bp.name, 30, bp.label || bp.name, 0.2)
+        );
+        // Portal: Ziel-Welt wählen + richten (W12 — der spieler-erreichbare Pfad).
+        const portalSel = document.createElement("select");
+        portalSel.className = "equip-portal-select";
+        for (const wid of Object.keys(AnazhRealm.WORLD_REGISTRY)) {
+            const wOpt = document.createElement("option");
+            wOpt.value = wid;
+            wOpt.textContent = AnazhRealm.WORLD_REGISTRY[wid].label;
+            portalSel.appendChild(wOpt);
+        }
+        mkBtn("Portal →", "Auf die gewählte Welt richten (das Werk wird ein Tor).", () =>
+            this.aimBlueprintAtWorld(bp.name, portalSel.value)
+        );
+        acts.appendChild(portalSel);
+        mkBtn("✨ Emergent", "Markierung lösen — die Rolle emergiert wieder aus der Substanz.", () =>
+            this.resetBlueprintRole(bp.name)
+        );
+        row.appendChild(acts);
+        zone.appendChild(row);
     }
 
     // Step 1 — das „Werk"-Heading der Mach-Zone: ein echtes Heading (Cinzel), nicht der
@@ -53109,6 +53300,8 @@ class AnazhRealm {
         const ttLast = this.state._statsHudTooltipLastTick || 0;
         if (currentTime - ttLast < 1.0) return;
         this.state._statsHudTooltipLastTick = currentTime;
+        // M5 (V18.157, Befund 15) — die Boost-Chips zählen LIVE (im selben 1-s-Takt).
+        this._tickBoostChips();
         const tooltip = document.getElementById("stats-hud-tooltip");
         if (!tooltip) return;
         const stats = (this.state.player && this.state.player.stats) || null;
@@ -55110,16 +55303,13 @@ class AnazhRealm {
         // wieldBlueprint, frei wenn geschmiedet — GEMESSEN). Die Rüstung-Zeile BLEIBT: sie ist der FREIE
         // Wechsel-Pfad für eine besessene (geschmiedete) Rüstung (wearArmor), während das Rezept-„Anlegen"
         // die Zutaten neu zieht (GEMESSEN _forgeMaterialAndFreeze → _makeCostGate) — also kein Duplikat.
-        // V18.67 Ich-J5 — der Rüstung-WECHSEL lebt jetzt IM Slot („Was du trägst", _renderInventoryEquip);
-        // #player-equip ist nur noch das UMWIDMEN (Intent-Override: einen Bauplan zur Rüstung/zum Konsumabel/
-        // Portal erklären) — EIN klarer Zweck statt eines Sammelsuriums (Schöpfer „das Aufklappen traurig").
+        // V18.67 Ich-J5 — der Rüstung-WECHSEL lebt jetzt IM Slot („Was du trägst", _renderInventoryEquip).
+        // M5 (V18.157, Befund 17) — das UMWIDMEN zog GANZ in die WERKSTATT (Domänen-Trennung,
+        // V18.79-Klasse: die Rolle eines Werks ist Werkstatt-Sache — _workshopAppendUmwidmenRow
+        // in der Mach-Zone des gewählten Bauplans; das ICH trug eine Doublette). Hier bleiben
+        // die Schnell-Trünke (GEBRAUCH, kein Crafting) + der Verweis.
         this._equipAppendDrawerHint(container);
-        const { candidateBlueprints } = this._equipPartitionEquipBlueprints();
-        this._equipAppendMarkSection(container, candidateBlueprints);
         this._equipAppendConsumablesSection(container);
-        if (candidateBlueprints.length === 0 && !container.querySelector(".equip-mark-row")) {
-            this._equipAppendEmptyHint(container);
-        }
     }
 
     // V18.67 Ich-J5 — der Hinweis erklärt das UMWIDMEN (das Tragen/Wechseln lebt in „Was du trägst" +
@@ -55128,8 +55318,8 @@ class AnazhRealm {
         const equipHint = document.createElement("div");
         equipHint.className = "drawer-hint";
         equipHint.textContent =
-            "Umwidmen: einem eigenen Bauplan eine Rolle geben (Rüstung · Konsumabel · Portal). " +
-            "Tragen + Wechseln läuft über Was du trägst (Rüstung-Wechsel im Slot) + die Hotbar (in der Hand).";
+            "Umwidmen (einem Bauplan eine Rolle geben — Rüstung · Konsumabel · Portal) lebt in der WERKSTATT " +
+            "beim gewählten Werk. Tragen + Wechseln läuft über Was du trägst (Rüstung-Wechsel im Slot) + die Hotbar (in der Hand).";
         container.appendChild(equipHint);
     }
 
@@ -55199,71 +55389,6 @@ class AnazhRealm {
         });
         armorRow.appendChild(armorSel);
         container.appendChild(armorRow);
-    }
-
-    // Markier-Sektion: jeder eigene Bauplan bekommt Rüstung-/Konsumabel-/
-    // Portal-Optionen. So entscheidet der Schöpfer pro Bauplan, was es IST —
-    // und kann eine Wahl jederzeit umwidmen (die Reihe nennt die Rolle).
-    _equipAppendMarkSection(container, candidateBlueprints) {
-        if (candidateBlueprints.length === 0) return;
-        const markHeader = document.createElement("div");
-        markHeader.className = "equip-mark-header";
-        markHeader.textContent = "Bauplan als ... markieren:";
-        container.appendChild(markHeader);
-        for (const name of candidateBlueprints) {
-            const bp = this.state.blueprints[name];
-            const row = document.createElement("div");
-            row.className = "equip-mark-row";
-            const label = document.createElement("span");
-            label.className = "equip-mark-label";
-            // aktuelle Rolle anzeigen — der Schöpfer sieht, was der Bauplan
-            // gerade IST, und kann ihn gezielt umwidmen.
-            const roleLabel = bp.role ? AnazhRealm.BLUEPRINT_ROLE_LABELS[bp.role] || bp.role : "";
-            label.textContent = (bp.label || name) + (roleLabel ? ` — ${roleLabel}` : "");
-            row.appendChild(label);
-            const armorBtn = document.createElement("button");
-            armorBtn.type = "button";
-            armorBtn.textContent = "Rüstung";
-            armorBtn.addEventListener("click", () => {
-                const result = this.setBlueprintAsArmor(name);
-                if (!result.ok) this.log(`setBlueprintAsArmor: ${result.reason}`, "ERROR");
-                this.renderPlayerEquipUI();
-            });
-            row.appendChild(armorBtn);
-            // V17.57 W2-B — der „als Waffe"-Knopf ist weg: das gehaltene Gerät braucht KEINE
-            // Markierung mehr (jeder Bauplan ist haltbar, die Rolle wird abgelesen, nicht gesetzt).
-            const consBtn = document.createElement("button");
-            consBtn.type = "button";
-            consBtn.textContent = "Konsumabel";
-            consBtn.addEventListener("click", () => {
-                const result = this.setBlueprintAsConsumable(name, 30, bp.label || name, 0.2);
-                if (!result.ok) this.log(`setBlueprintAsConsumable: ${result.reason}`, "ERROR");
-                this.renderPlayerEquipUI();
-            });
-            row.appendChild(consBtn);
-            // W12 Phase 2 — Portal-Zielen: einen eigenen Bauplan auf eine
-            // registrierte Welt richten (Welt-Auswahl + Knopf). Macht den
-            // systemischen Pfad spieler-erreichbar — kein Built-in nötig.
-            const portalSel = document.createElement("select");
-            portalSel.className = "equip-portal-select";
-            for (const wid of Object.keys(AnazhRealm.WORLD_REGISTRY)) {
-                const wOpt = document.createElement("option");
-                wOpt.value = wid;
-                wOpt.textContent = AnazhRealm.WORLD_REGISTRY[wid].label;
-                portalSel.appendChild(wOpt);
-            }
-            row.appendChild(portalSel);
-            const portalBtn = document.createElement("button");
-            portalBtn.type = "button";
-            portalBtn.textContent = "Portal";
-            portalBtn.addEventListener("click", () => {
-                const result = this.aimBlueprintAtWorld(name, portalSel.value);
-                if (!result.ok) this.log(`aimBlueprintAtWorld: ${result.reason}`, "ERROR");
-                this.renderPlayerEquipUI();
-            });
-            row.appendChild(portalBtn);
-            container.appendChild(row);
-        }
     }
 
     // V18.66 Ich-J3 (ich-plan §J #4) — das TRINKEN lebt sichtbar im REZEPTBUCH (die „Trank"-Gruppe,
@@ -57705,7 +57830,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.156.0";
+AnazhRealm.VERSION = "18.157.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

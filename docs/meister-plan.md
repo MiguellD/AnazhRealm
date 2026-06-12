@@ -126,12 +126,20 @@ erklärt) · Wasser-Fahrt steht auf dem Grund (kein Boot-Schwimmen — eigener F
 (Tags+Name+Rolle), alle Flächen konsumieren ihn (V9.82). Invariante: dieselbe Query
 liefert in allen Räumen dieselbe Treffer-Logik.
 
-**M5 — HUD/Räume-Politur nach Spieler-Denken [H+A].** Chat-Resize-Mathe fixen ·
-Logbuch hinter Dev-Toggle (V18.149-Muster) · Nexus/Omnibox/Chat = EIN Strom ·
-P11-Kontrast auf Ich-Emotionen · Boost-Chips mit Effekt+Restzeit (live zählend) +
-Platz-Layout · Equip/Pickup → SOFORT-Refresh (Event-hooked, nicht Tick) · „Umwidmen"
-aus dem ICH (Werkstatt hat es) · Hof-Wesen: Emotions-BALKEN prominent (HP-Muster),
-Natur-Werte in den Detail-Bereich.
+**M5 — HUD/Räume-Politur nach Spieler-Denken [H+A]. ✓ GEBAUT (V18.157).**
+✓ Resize-Sprung tot (GEMESSEN: collapsed 105 px sprang +75 auf die Clamp-Min →
+die Min respektiert den Start, nachher +1) · ✓ Logbuch hinter dem EINEN
+statusDev-Schalter (V18.149-Muster, zwei Konsumenten) · ✓ Ein-Strom GEMESSEN
+SCHON VEREINT (Omnibox-Akte → log → #chat-output → V18.82-Feed; dokumentiert,
+kein Doppel-Bau) · ✓ Ich-Emotion-Track on-dark (die ID-Spezifität war die
+zweite Wurzel — class-only verlor) · ✓ Boost-Chips: Effekt-Label
+(_boostEffectLabel) + LIVE-Restzeit (_tickBoostChips im tickStatsHud-Takt) ·
+✓ Sofort-Refresh event-getrieben (_refreshIchIfOpen, rAF-gebündelt, 4 Pfade) ·
+✓ Umwidmen GANZ in die Werkstatt-Mach-Zone (+ ✨ Emergent = resetBlueprintRole —
+der tote Chip-Tooltip-Verweis ist wahr; das ICH behält Schnell-Trünke) ·
+✓ Hof-GEMÜT als HP-Balken (dominante Emotion färbt, Intensität füllt, ruht <12 %).
++6 Invarianten (checkBandM5HudPolitur); diag-m5-hud.cjs = die Mess-Karte;
+2 Tests wanderten (W12-P2 → Werkstatt-Form, 6.X.1-A3a).
 
 **M6 — Ernte/Spawn-Ehrlichkeit [H].** MESSEN (diag): Baum-LMB-Abbau end-to-end
 (instanced-Pfad! yieldMult, Modus) + Deko-Pflücken; DANN heilen. Terrain-Graben im
@@ -152,8 +160,8 @@ sichtbar dokumentiert (Einstellungen-Identität + ein Satz im Pass-Panel).
 
 **M9 — DIE AUFSTIEGS-LEITER (die Krone; eigener Bogen, S-Dialog je Sprosse).** §3.
 
-**Reihenfolge:** M2 ✓ → M3 ✓ (der spielbare Kern STEHT) → M1 ✓ (Werkstatt-UX) →
-**M5 ist der AKTIVE nächste Schritt** → M4 → M6 → M7 → M8 → M9 (parallel designbar).
+**Reihenfolge:** M2 ✓ → M3 ✓ → M1 ✓ → M5 ✓ → **M4 (Such-Kern) ist der AKTIVE
+nächste Schritt** → M6 → M7 → M8 → M9 (parallel designbar).
 
 ---
 

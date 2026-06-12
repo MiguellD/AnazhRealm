@@ -829,6 +829,46 @@
             .ich-readout .emotion .value {
                 color: var(--ink-on-dark);
             }
+            /* M5 (V18.157, Befund 14) - der BALKEN-Track war dunkle Tinte auf dunklem
+               Grund (rgba(40,25,10,.18) = unsichtbar; bei Emotion nahe 0 sah man NICHTS).
+               Auf dem dunklen Readout traegt der Track die on-dark-Basis (P11-Klasse). */
+            #inventory-overlay .ich-readout .emotion .bar {
+                background: rgba(236, 225, 197, 0.14);
+                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+            }
+            /* M5 (V18.157, Befund 26) - das GEMUET des Hof-Wesens als prominenter
+               Balken (HP-Muster): direkt unter dem Spec-Header, dunkler Grund. */
+            .hof-emotion-bar {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin: 2px 0 4px 0;
+            }
+            .hof-emotion-bar .name {
+                width: 78px;
+                font-size: 10px;
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.4px;
+                color: var(--ink-on-dark);
+            }
+            .hof-emotion-bar .bar {
+                flex: 1;
+                height: 9px;
+                background: rgba(236, 225, 197, 0.14);
+                border-radius: 2px;
+                overflow: hidden;
+                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+            }
+            .hof-emotion-bar .bar > div {
+                height: 100%;
+            }
+            .hof-emotion-bar .value {
+                width: 34px;
+                text-align: right;
+                font-size: 10px;
+                font-family: "JetBrains Mono", monospace;
+                color: var(--ink-on-dark);
+            }
             @media (max-width: 760px) {
                 .ich-readout {
                     grid-template-columns: 1fr;
@@ -9059,6 +9099,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.156.0" defer></script>
+        <script src="anazhRealm.js?v=18.157.0" defer></script>
     </body>
 </html>
