@@ -17,11 +17,14 @@ wieder zur Halde.
 | **`docs/das-lebendige-feld.md`** | **DER WAHRE NORDEN** | Der operative Vision-Anker: die Welt als EIN Feld, das alle lesen · schreiben · WERTEN — wie es GEMESSEN im Code lebt + der Vektor vorwärts. **ZUERST** vor Arbeit an lebendiger Welt / Emotion / Nexus / DSL / Kreaturen. |
 | **`docs/roadmap.md`** | **DER WEG** | Der Plan vorwärts (3 Phasen) · die offene-Fäden-Karte (inkl. der GEMERKTEN FÄDEN) · die Vergangenheit stichwortmäßig · die Disziplin. |
 | **`docs/taille-spec.md`** | **DER VERTRAG** | Die gefrorene Taille, NORMATIV (Ω1) — Draht-Formen · must-ignore/must-preserve · Empfänger-Gesetz · Versions-Semantik · Ledger-Gesetz · Namensraum. **ZUERST** vor Arbeit an Serialisierung/Import/p2p-Schema/Snapshot-Schema. Die ausführbare Form: `spec/golden/v1/` (EINGEFROREN, nie regenerieren). |
+| **`docs/meister-plan.md`** | **DER AKTIVE PLAN** | Der zweite Schöpfer-Audit GEMESSEN kartiert: §8 = der aktive Marsch W-A…W-H (Lese-Vertrag + KREIS-Skelett) · §7 = die Profi-Lücken-Karte · §3 = die Aufstiegs-Leiter. **ZUERST** vor „was als Nächstes" / Werkstatt-UX / HUD / Licht-Harmonie. |
+| **`docs/rueckmeldung.md`** | **DAS GESETZ** | Der Rückmeldungs-Korpus — jede Schöpfer-Rückmeldung mit ID·Status·Wurzel·Welle. **VOR jeder Session-Planung lesen; kein „GEBAUT ✓" ohne Korpus-Update + Nachbau im Nutzer-Zustand (§8.7).** |
+| **`docs/archipel-plan.md`** | **DER PFAD Φ** | Das Welten-Netz (öffentliche Welten · Portale-als-Links · „Tausende unter einem Himmel") — die Bau-Form der M9-Sprossen 1–3; Fundamente nachgemessen §6; Anti-Scope-Wände §3 verbindlich. |
+| **`docs/genese-plan.md`** | **DER BOGEN Γ** | Worldgen-Qualität (der LAAS-Transfer „Neue Felder, alte Leser"): Feuchte-Feld · Kronen-Lesarten · Stream-Gesetz GEBAUT V18.166; offen Γ4 Makro-Anker · Farb-Lesart · Γ3/Γ6/Γ7 (Verifikations-Anhang §V mit Abweichungs-Gründen). |
 | **`README.md`** (Wurzel) | **DIE TÜR** | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion. |
 
-**Auf dem Tisch — der aktive Bau-Plan:** `docs/archiv/terrain-koharenz-plan.md` (DIE EINE GRENZE — kohärentes,
-kantiges Terrain + leitbares Wasser; die Chunk-Naht-Wurzel, IPERKA, alle Schnittstellen). Wandert ins
-Archiv, wenn der Bogen vollendet ist.
+(Der frühere „Auf dem Tisch"-Plan `docs/archiv/terrain-koharenz-plan.md` ist VOLLENDET + archiviert —
+die aktiven Pläne stehen in der Tabelle oben.)
 
 **Über dem Tisch — der Master-Blick:** `docs/archiv/gigant-plan.md` (DER GIGANT, 10.06.2026 — das
 umfassende gemessene Bild + die neun Säulen G1–G9/Ω [der §5-Pfad ist GESCHLOSSEN seit V18.147; NACHFOLGER: `docs/meister-plan.md` — der Schöpfer-Audit 12.06. + die Aufstiegs-Leiter] + die

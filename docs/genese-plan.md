@@ -57,9 +57,20 @@ Gebaut (alle Anker GEMESSEN, diag-genese):
 2. Das Band: kein `Math.random` im CODE der worldgen-erreichbaren Pfade (Kommentar-gestrippt; 12 Fn im diag, 9 im Band).
 3. **Das Stream-Gesetz (jetzt expliziter Satz):** seed-deterministische RNG-Streams pro Zweck (`seed + ":clump"`, `":voxel"`, `"-veg-*"`) — ein Draw mehr in einem Stream re-rollt nie einen anderen; pro Zweck ein Suffix; NIE `Math.random` in einem Pfad, der Welt-Substanz formt.
 
+### Γ3 — Feld-Charakter: Warp + Frequenz-Fächer (offen, optional — die Subschritte für die spätere Welle)
+
+Heute leben alle vier Welt-Stimmen auf EINER Skala (`s = 0.005`, λ~200 m in `worldFieldAt`) — gleich große Simplex-Blobs, nur dekorreliert. Die Welle (wenn sie kommt):
+
+1. **Domain-Warp** in `worldFieldAt`: `(x,z) += warpNoise(x,z) · A` VOR den vier Reads — eigener Stream `seed + "-veg-warp"` (das Stream-Gesetz), Erst-Wurf A ≈ 40 m.
+2. **Frequenz-Fächer** pro Stimme: lebendig λ200 · dichte λ340 · glut λ520 · magieleitung λ160 (Erst-Wurf). Der Ecotone-Effekt an den argmax-Grenzen (`_terrainMaterialAt`) und der AFFINITY_FLOOR-Linie (0.18) kommt gratis mit.
+3. **genVersion-Schleuse zwingend** (ändert JEDE Welt bei gleichem Seed → nur Genese ≥ 3 oder hinter demselben 2er-Tor wie Γ1, Entscheid bei Bau).
+4. **Beweis:** `diag-region-histogramm` (Region-Größen-Verteilung vorher/nachher) + Schöpfer-Auge.
+
+Bewusst zurückgestellt (Entscheid 5): das kontinuierliche Feld interdigitiert schon von Natur aus — diese Welle ist Charakter, kein Heilen.
+
 ### Γ4 — Makro-Anker (offen, der nächste große Wurf des Bogens)
 
-Designte Geographie statt Noise-Statistik: `makeMacroAnker(seed)` (Massiv·Tal-Polyline·Becken, pro Seed nur GEJITTERT, getrennte Streams), drei additive Terme in `_terrainMacroSurfaceY` (Worker bit-identisch — die Determinismus-Wand ist die Abnahme), Hydro-Kopplung gratis (die bestehende Pipeline findet das Becken als See, sammelt den Flow im Tal). **Die geerbte LAAS-Narbe als Invariante ab Tag 1:** Becken-Spillpunkt < minimale Randhöhe Richtung Kartenrand/Ozean — ein Becken ohne Abfluss-Sattel flutet. Anker nach `worldMeta.macro` (Entscheid 3: Geographie als diffbares/teilbares Erbgut). Beweis: Tal-Fluss-Band (längster Fluss ≥ 60 % im Korridor) + 9-Shot-Bookmark-diag.
+Designte Geographie statt Noise-Statistik: `makeMacroAnker(seed)` → `{ massivC, massivR, massivRot, talPolyline[], talFloors[], talBreite, beckenC, beckenR }` aus den Streams `seed + "-macro-anker"` / `"-macro-tal"` (pro Seed nur GEJITTERT, ≈ ±10 % der Weltskala; getrennte Streams — ein Draw mehr re-rollt nie andere). Drei additive Terme in `_terrainMacroSurfaceY` (Ridge-Anhebung anisotrop entlang massivRot · Tal-Trog über Punkt-zu-Polyline-Distanz [der riverBuckets-Walk in grob] · Becken-Mulde); Worker bit-identisch — die Determinismus-Wand ist die Abnahme. Hydro-Kopplung gratis (die bestehende Pipeline findet das Becken als See, sammelt den Flow im Tal — kein Hydro-Code wird angefasst). **Die geerbte LAAS-Narbe als Invariante ab Tag 1:** Becken-Spillpunkt < minimale Randhöhe Richtung Kartenrand/Ozean — ein Becken ohne Abfluss-Sattel flutet (Konstruktions-Constraint in makeMacroAnker UND Band). Anker nach `worldMeta.macro` (Entscheid 3: Geographie als diffbares/teilbares Erbgut; Welten ohne Feld = Legacy-Noise-Makro, der `_carryUnknown`-Geist). **Γ0-Nachmessung beim Bau:** dürfen Tarns (`_hydroSeedTarns`) im Tal landen? Beweis: Tal-Fluss-Band (längster Fluss ≥ 60 % im Korridor, über Seeds) + der bestehende Längster-Fluss-Test bleibt grün + 9-Shot-Bookmark-diag (Massiv-Vista · Tal-Blick · Becken-Ufer).
 
 ### Γ7 — Baum-Varianten (offen, zuletzt)
 
@@ -114,6 +125,7 @@ Designte Geographie statt Noise-Statistik: `makeMacroAnker(seed)` (Massiv·Tal-P
 2. **Γ6-Beförderung** — die vier Alt-diags bekommen Schwellwerte als stehende Bänder.
 3. **Γ4 Makro-Anker** — eigener Abschnitt (mit Entscheid 3 + Abfluss-Invariante ab Tag 1; Γ0-Nachmessung Tarn-im-Tal).
 4. **Γ3 / Γ7 / Totholz / Ψ2-Nase** — vorgemerkt (Entscheide 4/5, video-getrieben).
+5. **Die offenen BEWEIS-Schritte des Dokuments** (gebaut ist der Mechanismus-Beweis; das EMERGENTE Outcome misst die jeweils nächste Welle): (a) das **Baum-Dichte-Ufer-Band** (≥ 1.8× im 15-m- vs 120-m-Band, über Seeds — der sichtbare „Wald folgt dem Fluss"; heute bewiesen: Affinitäts-Δ 0.28 = der Mechanismus, nicht die emergente Dichte) → reist mit der Γ1-Farb-/Look-Welle; (b) das **Γ2-Korrelations-Band** (`corr(farnDichte, c) > 0.4` · `corr(blumeDichte, c) < −0.3` über M Chunks; heute bewiesen: der Multiplikator an kontrollierten c-Polen) + der Waldrand-Shot; (c) die **See-/Ozean-Ufer-Probe** (der Höhen-Term deckt sie per Konstruktion über `_waterLevelAt`, GEMESSEN ist nur das Fluss-Ufer); (d) das **Γ0-Shot-Paar** (Flussufer vs 200 m landeinwärts — das Auge; headless steht die Zahl).
 
 ### V.5 Beweis-Lage
 
