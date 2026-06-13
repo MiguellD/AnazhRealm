@@ -1,5 +1,23 @@
 # DER GENESE-BOGEN (Γ) — Was die Fotografie dem Organismus schenkt
 
+> **Status: ARCHIVIERT (13.06.2026).** Der Γ-Kern ist RUND: Γ1 (Feuchte-Feld) + Γ2
+> (Kronen-Lesarten) + Γ5 (Determinismus-Schliff) gebaut V18.166. Plus über die
+> Branch-Synthese (V18.180-FIX bis V18.187): Γ1-Lesart-4 „Boden atmet" (V18.178 →
+> Sub 3h) + Worker-Mirror bit-identisch + Γ4 „Welt wird Komposition" (V18.179 →
+> Sub 3i: Massiv + Tal + Becken, anisotrope smoothstep-Glocke, NE-SW-
+> Streichrichtung) + Γ4.2 Ridge-Noise + Γ4.4 Drainage-by-Design (V18.180) + Γ4½
+> Slope/Rock-Exposure-Foundation (V18.181).
+>
+> **Reste sind klein/optional und leben in `docs/aktiv.md` §1.C:** Γ7 Baum-
+> Varianten (video-getrieben zuletzt) · Γ1 Lesart 5 (Ψ2-Nase, Geruch des Feldes) ·
+> Γ3 Feld-Charakter (Domain-Warp, optional) · Γ-M Multi-Class-Material (Strata/
+> Iron-Bands/Lichen — ersetzt das alte Γ8) · Γ8 Kies+Saum (schrumpft) · Γ2 Totholz-
+> Option (Entscheid 4). Diese Reste sind reine Pickel — keine Bogen-Phasen.
+>
+> Das hier ist die VOLLE historische Plan-Datei mit dem LAAS-Transfer-Prinzip
+> („NEUE FELDER, ALTE LESER"), allen Lesart-Karten, den Verifikations-Anhang §V
+> + den Schöpfer-Entscheiden. Nachschlagbar für jede künftige Γ-Welle.
+
 Schöpfer-Dokument 12.06.2026 (LAAS-Transfer-Analyse, `Braffolk/fable5-world-demo` ~21k Z. TypeScript gegen `anazhRealm.js`) — hier verankert mit **Bau-Status + Verifikations-Anhang** (§V). Schwester-Bogen zu Ω (taille-spec), Ψ (Wellen), Λ (Licht), W (Wasser).
 
 **Das eine Prinzip dieses Bogens: NEUE FELDER, ALTE LESER.** LAAS implementiert „ein Feld, viele Leser" mit handgeschriebenen Dichtefunktionen, weil es kein Resonanz-Organ hat. AnazhRealm hat eins. Jede Welle hier schreibt ein neues Feld (oder eine neue Lesart) und schließt es an existierende Organe an: spawnAffinity, KLEIN-Arten, `_terrainMaterialAt`, Terrain-Farbe, Kreaturen-Nase (Ψ2), Klang-Antennen (Ψ3). Kein neues Subsystem. Kein neues Vokabular außerhalb der dafür vorgesehenen Räume.

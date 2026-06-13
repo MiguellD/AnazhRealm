@@ -52,6 +52,10 @@ const state = {
     voxelEdits: [], // Array of { x, y, z, r, strength, mode }
     hydroComputing: false,
     carveBankSlope: 1.4, // Mirror AnazhRealm.HYDROSPHERE.carveBankSlope
+    // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss): die Genese-
+    // Schleuse. Fehlt im Snap (Legacy-Welt) → 1 → feuchteAt = 0 (kein Erde-
+    // Boden-Drift); Genese-2 (neue Welt) → 2 → der Boden atmet.
+    genVersion: 1,
 };
 
 self.onmessage = function (e) {
@@ -135,6 +139,8 @@ function applyStateSnapshot(snap) {
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
     if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
     if (typeof snap.carveBankSlope === "number") state.carveBankSlope = snap.carveBankSlope;
+    // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
+    if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
 }
 
 function applyStateDelta(delta) {
@@ -265,6 +271,170 @@ function terrainDensityAt(x, y, z) {
     return d;
 }
 
+// Γ4 (genese-plan §4) — DER MAKRO-ANKER Worker-Spiegel. Bit-identisch zur
+// Main `_makeMacroAnker` / `_macroAnker` / `_macroSurfaceContribution`. Die
+// MACRO_ANKER-Konstanten sind hardkodiert (V17.100-Lehre, eine Runtime-Tunable
+// im Mirror würde den bit-Vertrag brechen). Bei Anpassung im Main hier mit-
+// ziehen.
+const MACRO_ANKER_SPAWN_R = 700;
+const MACRO_ANKER_MASSIV_R_MIN = 480;
+const MACRO_ANKER_MASSIV_R_MAX = 720;
+const MACRO_ANKER_MASSIV_H_MIN = 70;
+const MACRO_ANKER_MASSIV_H_MAX = 110;
+const MACRO_ANKER_MASSIV_ASPECT = 1.6;
+const MACRO_ANKER_BECKEN_DIST_MIN = 900;
+const MACRO_ANKER_BECKEN_DIST_MAX = 1500;
+const MACRO_ANKER_BECKEN_R_MIN = 280;
+const MACRO_ANKER_BECKEN_R_MAX = 420;
+const MACRO_ANKER_BECKEN_D_MIN = 12;
+const MACRO_ANKER_BECKEN_D_MAX = 22;
+const MACRO_ANKER_TAL_N = 5;
+const MACRO_ANKER_TAL_JITTER = 100;
+const MACRO_ANKER_TAL_BREITE = 120;
+const MACRO_ANKER_TAL_TRENCH_TIEFE = 14;
+const MACRO_ANKER_TAL_TRENCH_BREITE = 28;
+const MACRO_ANKER_TAL_BLEND_EXP = 2.2;
+
+function makeMacroAnker(seed) {
+    const noise = new SimplexNoise(seed + "-macro-anker");
+    const r01 = (k) => (noise.noise2D(k * 17.3, k * 9.7) + 1) * 0.5;
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const massivAng = r01(1) * Math.PI * 2;
+    const massivDist = MACRO_ANKER_SPAWN_R * (0.4 + r01(2) * 0.5);
+    const massivC = { x: Math.cos(massivAng) * massivDist, z: Math.sin(massivAng) * massivDist };
+    const massivR = lerp(MACRO_ANKER_MASSIV_R_MIN, MACRO_ANKER_MASSIV_R_MAX, r01(3));
+    const massivH = lerp(MACRO_ANKER_MASSIV_H_MIN, MACRO_ANKER_MASSIV_H_MAX, r01(4));
+    const massivRot = 0.2 + r01(5) * 1.7;
+    const beckenAng = massivAng + Math.PI + (r01(6) - 0.5) * 0.5;
+    const beckenDist = lerp(MACRO_ANKER_BECKEN_DIST_MIN, MACRO_ANKER_BECKEN_DIST_MAX, r01(7));
+    const beckenC = { x: Math.cos(beckenAng) * beckenDist, z: Math.sin(beckenAng) * beckenDist };
+    const beckenR = lerp(MACRO_ANKER_BECKEN_R_MIN, MACRO_ANKER_BECKEN_R_MAX, r01(8));
+    const beckenD = lerp(MACRO_ANKER_BECKEN_D_MIN, MACRO_ANKER_BECKEN_D_MAX, r01(9));
+    const N = MACRO_ANKER_TAL_N;
+    const talVertices = [];
+    const talFloors = [];
+    const dx = beckenC.x - massivC.x;
+    const dz = beckenC.z - massivC.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const ux = dx / len;
+    const uz = dz / len;
+    const perpX = -uz;
+    const perpZ = ux;
+    const talStartX = massivC.x + ux * massivR;
+    const talStartZ = massivC.z + uz * massivR;
+    const tdx = beckenC.x - talStartX;
+    const tdz = beckenC.z - talStartZ;
+    const startFloor = massivH * 0.15;
+    const endFloor = -beckenD * 0.6;
+    for (let i = 0; i < N; i++) {
+        const t = N === 1 ? 0 : i / (N - 1);
+        const lerpX = talStartX + tdx * t;
+        const lerpZ = talStartZ + tdz * t;
+        const jitterScale = i === 0 || i === N - 1 ? 0 : 1;
+        const jitter = (r01(10 + i) - 0.5) * MACRO_ANKER_TAL_JITTER * jitterScale;
+        talVertices.push({ x: lerpX + perpX * jitter, z: lerpZ + perpZ * jitter });
+        const tSm = t * t * (3 - 2 * t);
+        talFloors.push(startFloor + (endFloor - startFloor) * tSm);
+    }
+    return {
+        massivC,
+        massivR,
+        massivH,
+        massivRot,
+        massivAspect: MACRO_ANKER_MASSIV_ASPECT,
+        beckenC,
+        beckenR,
+        beckenD,
+        talVertices,
+        talFloors,
+        talBreite: MACRO_ANKER_TAL_BREITE,
+        talTrenchTiefe: MACRO_ANKER_TAL_TRENCH_TIEFE,
+        talTrenchBreite: MACRO_ANKER_TAL_TRENCH_BREITE,
+        talBlendExp: MACRO_ANKER_TAL_BLEND_EXP,
+    };
+}
+
+let _macroAnkerCache = null;
+let _macroAnkerSeed = null;
+function macroAnker() {
+    if (state.genVersion < 3) return null;
+    if (_macroAnkerCache && _macroAnkerSeed === state.seed) return _macroAnkerCache;
+    if (!state.seed) return null;
+    _macroAnkerCache = makeMacroAnker(state.seed);
+    _macroAnkerSeed = state.seed;
+    return _macroAnkerCache;
+}
+
+// Γ4.2 (Vertiefung §2.2 Worker-Spiegel) — RIDGE-NOISE für scharfe Grate.
+// Bit-identisch zum Main `_ridgeAnkerNoise`.
+let _macroRidgeNoise = null;
+let _macroRidgeSeed = null;
+function ridgeAnkerNoise(x, z) {
+    if (!_macroRidgeNoise || _macroRidgeSeed !== state.seed) {
+        _macroRidgeNoise = new SimplexNoise(state.seed + "-macro-ridge");
+        _macroRidgeSeed = state.seed;
+    }
+    const n = _macroRidgeNoise;
+    const rxBase = (x + z) * 0.7071;
+    const rzBase = (z - x) * 0.7071 * 1.65;
+    const SCALE = 1 / 600;
+    let ridge = 0;
+    let amp = 0.5;
+    let freq = SCALE;
+    let norm = 0;
+    for (let i = 0; i < 7; i++) {
+        const v = n.noise2D(rxBase * freq + i * 7.31, rzBase * freq + i * 7.31);
+        const nv = 1 - Math.abs(v);
+        ridge += nv * nv * amp;
+        norm += amp;
+        amp *= 0.52;
+        freq *= 2.13;
+    }
+    return ridge / norm;
+}
+
+function macroSurfaceContribution(x, z, anker) {
+    const ddx = x - anker.massivC.x;
+    const ddz = z - anker.massivC.z;
+    const cs = Math.cos(anker.massivRot);
+    const sn = Math.sin(anker.massivRot);
+    const rxA = ddx * cs - ddz * sn;
+    const rzA = ddx * sn + ddz * cs;
+    const ax = rxA / anker.massivAspect;
+    const aDist = Math.hypot(ax, rzA);
+    const mT = Math.max(0, Math.min(1, 1 - aDist / anker.massivR));
+    const mShape = mT * mT * (3 - 2 * mT);
+    // Γ4.2 Mirror — Ridge-Noise im Maskel
+    const ridge = ridgeAnkerNoise(x, z);
+    const ridgePow = Math.pow(ridge, 1.5);
+    const massiv = mShape * (ridgePow * anker.massivH * 1.25 + mShape * anker.massivH * 0.35);
+    const bdx = x - anker.beckenC.x;
+    const bdz = z - anker.beckenC.z;
+    const bDist = Math.hypot(bdx, bdz);
+    const bT = Math.max(0, Math.min(1, 1 - bDist / anker.beckenR));
+    const becken = -bT * bT * (3 - 2 * bT) * anker.beckenD;
+    let tDist = Infinity;
+    let tFloor = 0;
+    for (let i = 0; i + 1 < anker.talVertices.length; i++) {
+        const A = anker.talVertices[i];
+        const B = anker.talVertices[i + 1];
+        const ex = B.x - A.x;
+        const ez = B.z - A.z;
+        const len2 = ex * ex + ez * ez || 1;
+        let t = ((x - A.x) * ex + (z - A.z) * ez) / len2;
+        if (t < 0) t = 0;
+        else if (t > 1) t = 1;
+        const px = A.x + ex * t;
+        const pz = A.z + ez * t;
+        const d = Math.hypot(x - px, z - pz);
+        if (d < tDist) {
+            tDist = d;
+            tFloor = anker.talFloors[i] + (anker.talFloors[i + 1] - anker.talFloors[i]) * t;
+        }
+    }
+    return { massiv, becken, tDist, tFloor, mShape };
+}
+
 function terrainMacroSurfaceY(x, z, includeDetail) {
     if (!state.noise) return state.baseHeight || 0;
     const n = state.noise;
@@ -303,6 +473,35 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
     const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4 (mirror)
     let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
+    // Γ4 (genese-plan §4, Worker-Spiegel) — DIE MAKRO-GEOGRAPHIE: Massiv +
+    // Tal + Becken. MUSS bit-identisch zum Main `_terrainMacroSurfaceY` sein
+    // (Determinismus-/Naht-Wand). genVersion ≥ 3 Schleuse via macroAnker()
+    // → alte Welten unverändert.
+    const _macroAnker = macroAnker();
+    if (_macroAnker) {
+        const _m = macroSurfaceContribution(x, z, _macroAnker);
+        withoutTarn += _m.massiv + _m.becken;
+        // Γ4.4 Drainage-by-Design (Worker-Spiegel)
+        const _distOutsideTal = Math.max(0, _m.tDist - _macroAnker.talBreite);
+        const _drainageH = Math.min(_distOutsideTal * 0.06, 35);
+        const _distBecken = Math.hypot(x - _macroAnker.beckenC.x, z - _macroAnker.beckenC.z);
+        const _beckenBlock = Math.max(
+            0,
+            Math.min(1, (_distBecken - _macroAnker.beckenR * 0.6) / (_macroAnker.beckenR * 0.4))
+        );
+        withoutTarn += _drainageH * (1 - _m.mShape) * _beckenBlock;
+        if (_m.tDist < _macroAnker.talBreite) {
+            const _uT = _m.tDist / _macroAnker.talBreite;
+            const _uShape = Math.pow(_uT, _macroAnker.talBlendExp);
+            const _target = base + _m.tFloor;
+            withoutTarn = withoutTarn + (_target - withoutTarn) * (1 - _uShape);
+            if (_m.tDist < _macroAnker.talTrenchBreite) {
+                const _iT = 1 - _m.tDist / _macroAnker.talTrenchBreite;
+                const _iShape = _iT * _iT * (3 - 2 * _iT);
+                withoutTarn -= _iShape * _macroAnker.talTrenchTiefe;
+            }
+        }
+    }
     // === T6 (mirror) — DAS DRAMA auf kontinentaler Skala. MUSS bit-identisch zum Main-Thread
     // `_terrainMacroSurfaceY` sein (Determinismus-/Naht-Wand V9.42-b). ===
     // T6a (mirror) — GIGANTISCHE CANYONS (λ~960-m-Ravine × sparse λ~3300-m-Maske, bis ~150 m tief, Floor base-65).
@@ -607,6 +806,79 @@ function hydroRiverAt(x, z) {
     // konvexer Querschnitt (Mitte höher, fällt zu den Ufern). MUSS bit-identisch zum Main sein.
     const convexBulge = 0.45 * depth * Math.max(0, 1 - (bestD / Math.max(bestHalfW, 1)) ** 2);
     return { depth, surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.25 + convexBulge };
+}
+
+// V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss): DAS FEUCHTE-
+// FELD im Worker. Bit-identischer Spiegel von Main `_hydroDistAt` +
+// `_feuchteAt`. Der V18.166-Γ1-Kern ließ den Worker die Feuchte NICHT kennen,
+// weil sie nur in Spawn/Streu/Boden-LESERN auf der Main-Seite lebte. Die
+// VISUELLE Lesart-4 läuft jetzt auch im Worker (er baut die Chunk-Field-Colors,
+// V9.91-Phase-3 — der Mesh-Color-Pfad gehört dem Worker). Ohne diese zwei
+// Funktionen würde der `mix(dampEarth, …)` des Mains gegen die Worker-Naht
+// ab Frame 1 driften (Determinismus-Wand rot).
+//
+// HARDKODIERTE KONSTANTEN (V17.100-Lehre): jede Runtime-Tunable im Mirror
+// würde den bit-Vertrag brechen. Bei einer AnazhRealm.FEUCHTE-Änderung im
+// Main hier mit-ziehen.
+const FEUCHTE_FLUSS_REICHWEITE = 26;
+const FEUCHTE_HOEHE_NAH = 1.5;
+const FEUCHTE_HOEHE_FERN = 7;
+const FEUCHTE_HOEHE_GEWICHT = 0.6;
+
+function hydroDistAt(x, z) {
+    const h = hydroFor(x, z);
+    if (!h || !h.ready || !h.riverBuckets) return { dist: Infinity, halfW: 0 };
+    const rb = h.riverBuckets;
+    const bs = h.bucketSize;
+    const bd = h.bucketsDim;
+    const bi0 = Math.floor((x - h.originX) / bs);
+    const bj0 = Math.floor((z - h.originZ) / bs);
+    let best = Infinity;
+    let bestHw = 0;
+    for (let dj = -1; dj <= 1; dj++) {
+        for (let di = -1; di <= 1; di++) {
+            const bi = bi0 + di;
+            const bj = bj0 + dj;
+            if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) continue;
+            const list = rb[bj * bd + bi];
+            if (!list) continue;
+            for (let s = 0; s < list.length; s++) {
+                const seg = list[s];
+                const ex = seg.bx - seg.ax;
+                const ez = seg.bz - seg.az;
+                const len2 = ex * ex + ez * ez || 1;
+                let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+                if (t < 0) t = 0;
+                else if (t > 1) t = 1;
+                const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
+                if (dist < best) {
+                    best = dist;
+                    bestHw = seg.halfW || 0;
+                }
+            }
+        }
+    }
+    return { dist: best, halfW: bestHw };
+}
+
+function feuchteAt(x, z, surfY) {
+    if (state.genVersion < 2) return 0;
+    const r = hydroDistAt(x, z);
+    let fluss = 0;
+    if (Number.isFinite(r.dist)) {
+        const inner = Math.max(1, r.halfW);
+        const outer = inner + FEUCHTE_FLUSS_REICHWEITE;
+        const t = Math.max(0, Math.min(1, (outer - r.dist) / (outer - inner)));
+        fluss = t * t * (3 - 2 * t);
+    }
+    let hoehe = 0;
+    if (Number.isFinite(surfY)) {
+        const wl = waterLevelAt(x, z);
+        const above = surfY - wl;
+        const t = Math.max(0, Math.min(1, (FEUCHTE_HOEHE_FERN - above) / (FEUCHTE_HOEHE_FERN - FEUCHTE_HOEHE_NAH)));
+        hoehe = t * t * (3 - 2 * t) * FEUCHTE_HOEHE_GEWICHT;
+    }
+    return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
 }
 
 function waterLevelAt(x, z) {
@@ -1042,6 +1314,13 @@ function attachFieldColors(positions) {
     };
     const stone = [0.42, 0.44, 0.49];
     const earth = [0.27, 0.49, 0.19];
+    // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): Mirror von Main
+    // _attachVoxelFieldColors. dampEarth + Sichtbarkeits-Kurve hardkodiert
+    // (V17.100-Lehre — bit-Vertrag mit Main; bei Konstanten-Änderung beide
+    // mit-ziehen).
+    const dampEarth = [0.22, 0.18, 0.12];
+    const F_VIS_LO = 0.3;
+    const F_VIS_HI = 0.85;
     const lava = [0.46, 0.2, 0.11];
     const violet = [0.55, 0.36, 0.86];
     const snow = [0.92, 0.93, 1.0];
@@ -1064,6 +1343,12 @@ function attachFieldColors(positions) {
             c[2] += (target[2] - c[2]) * t;
         };
         mix(earth, ss(0.25, 0.85, f.lebendig));
+        // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, Worker-Mirror): DER
+        // BODEN ATMET. Identische Position im Mix-Stack wie Main: nach earth,
+        // vor lava/snow/sed/strand. y ist die Vertex-Y = die Oberfläche,
+        // als surfY-Argument an feuchteAt übergeben.
+        const feuchte = feuchteAt(x, z, y);
+        mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
         mix(lava, ss(0.38, 0.92, f.glut));
         mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
         // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y. Bit-

@@ -7307,6 +7307,37 @@
                 color: #ff8888;
                 font-size: 13px;
             }
+            /* W-G (V18.177) — Progressive Disclosure + Lehr-Satz */
+            #workshop-connect-overlay .conn-more-toggle {
+                width: 100%;
+                margin-top: 4px;
+                padding: 4px 8px;
+                background: rgba(176, 106, 217, 0.1);
+                border: 1px dashed rgba(176, 106, 217, 0.4);
+                border-radius: 5px;
+                color: var(--ink-on-dark-soft, #c9b8e0);
+                font-size: 11px;
+                cursor: pointer;
+            }
+            #workshop-connect-overlay .conn-more-toggle:hover {
+                background: rgba(176, 106, 217, 0.18);
+            }
+            #workshop-connect-overlay .conn-more-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 64px);
+                gap: 4px;
+                margin-top: 4px;
+            }
+            #workshop-connect-overlay .conn-teach {
+                margin-top: 6px;
+                padding: 5px 8px;
+                background: rgba(95, 167, 255, 0.12);
+                border-left: 3px solid #5fa7ff;
+                border-radius: 4px;
+                color: var(--ink-on-dark, #e8eef7);
+                font-size: 11.5px;
+                line-height: 1.35;
+            }
             .workshop-part-row.selected {
                 background: linear-gradient(180deg, rgba(176, 106, 217, 0.18), rgba(176, 106, 217, 0.08));
                 border-color: var(--violet-1);
@@ -8171,6 +8202,15 @@
                             <span class="workshop-mode-divider" aria-hidden="true"></span>
                             <button
                                 type="button"
+                                id="workshop-probe-btn"
+                                class="workshop-action-btn"
+                                title="Gelenk-Probe — wackelt die erkannten Gelenke 2 s in der Vorschau (bauen → SEHEN, was sich bewegt)"
+                            >
+                                ▶ Gelenk-Probe
+                            </button>
+                            <span class="workshop-mode-divider" aria-hidden="true"></span>
+                            <button
+                                type="button"
                                 id="workshop-clone-btn"
                                 class="workshop-action-btn"
                                 title="Aktuellen Bauplan klonen"
@@ -8913,17 +8953,20 @@
                                 <input type="range" id="slider-microtex" min="0" max="40" value="10" />
                                 <span class="slider-value" id="slider-microtex-val">0.10</span>
                             </div>
-                            <!-- M7 (Befund 20) - der Terrain-Nacht-Boden (Paritaet zu den Bauten). -->
+                            <!-- M7 (Befund 20) -> W-E: der Nacht-Boden ist seit dem Frequenzband
+                                 ein BAND-Regler (Fuell-Licht ALLER opaken Ebenen, profil-gewichtet).
+                                 Standard 0.06 = das Schoepfer-Wort (R-013). -->
                             <div class="slider-row">
-                                <label for="slider-nightfloor">Nacht-Boden (Terrain)</label>
-                                <input type="range" id="slider-nightfloor" min="0" max="30" value="12" />
-                                <span class="slider-value" id="slider-nightfloor-val">0.12</span>
+                                <label for="slider-nightfloor">Nacht-Boden (Band)</label>
+                                <input type="range" id="slider-nightfloor" min="0" max="30" value="6" />
+                                <span class="slider-value" id="slider-nightfloor-val">0.06</span>
                             </div>
-                            <!-- §7.5(a) (V18.164) - das Terrain-Mond-Rim (kuehler Nacht-Saum, tags 0). -->
+                            <!-- §7.5(a) (V18.164) -> W-E: das Mond-Rim (kuehler Nacht-Saum, tags 0),
+                                 seit dem Frequenzband mond-gewichtet auf allen opaken Ebenen. -->
                             <div class="slider-row">
-                                <label for="slider-moonrim">Mond-Rim (Terrain, nachts)</label>
-                                <input type="range" id="slider-moonrim" min="0" max="50" value="12" />
-                                <span class="slider-value" id="slider-moonrim-val">0.12</span>
+                                <label for="slider-moonrim">Mond-Rim (Band, nachts)</label>
+                                <input type="range" id="slider-moonrim" min="0" max="50" value="6" />
+                                <span class="slider-value" id="slider-moonrim-val">0.06</span>
                             </div>
                             <div class="slider-row">
                                 <label for="slider-edgesharp">Kanten-Schärfe</label>
@@ -9282,6 +9325,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.172.0" defer></script>
+        <script src="anazhRealm.js?v=18.187.0" defer></script>
     </body>
 </html>

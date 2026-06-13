@@ -1,5 +1,17 @@
 # DER MEISTER-PLAN — der große Schöpfer-Browser-Audit (12.06.2026) + die Aufstiegs-Leiter
 
+> **Status: ARCHIVIERT (13.06.2026).** Der §8-Marsch (W-A · W-B · W-C · W-D · W-E ·
+> W-F · W-G · W-H) ist RUND (V18.165–V18.179 + Welle 2 Branch-Merge V18.180-merge-W).
+> M1–M8 sind RUND (V18.154–V18.161). Der ganze §8.8-Φ-Bogen + §3 Aufstiegs-Leiter (M9)
+> leben in `docs/aktiv.md` als die zwei großen offenen Bögen. Das hier ist die VOLLE
+> historische Plan-Datei mit allen Wellen-Begründungen, Befund-zu-Wurzel-Karten,
+> Schöpfer-Audit-Texten — nachschlagbar.
+>
+> **Pointer für die nächste Session:** `docs/aktiv.md` §1.A (Φ-Welten-Netz) + §1.B
+> (M9-Aufstiegs-Leiter) tragen die offenen Wellen mit Reihenfolge + Schöpfer-
+> Entscheiden. `docs/archipel-plan.md` ist der Voll-Plan für Φ. `docs/archiv/genese-
+> plan.md` ist der Voll-Plan für Γ-Reste.
+
 **Status: AKTIV — der Plan nach dem Plan.** Der gigant-§5-Pfad ist gegangen; dieser Plan trägt
 die ~30 Befunde des ersten großen Schöpfer-Browser-Audits NACH der Gesamt-Abnahme + die
 Aufstiegs-Leiter (R6-Vertiefung) als die Krone. Disziplin: jeder Befund ist ein SIGNAL für ein
@@ -681,7 +693,16 @@ die 2-Punkt-Boden-Probe (falls M-D2 sie wählt) ist der Keim der Φ3-Naht-Fahrt.
 **W-E — DAS FREQUENZBAND (§8.3 — dort in voller System-Tiefe: IST-Fragmentierung,
 Antennen-Tabelle, Λ1-Migrations-Disziplin, Matrix-Beweis).**
 
-**W-F — der Fluss wie von Profis (eigener Look-Bogen, NACH W-E).**
+**W-F ✓ GEBAUT (V18.175) — der Fluss wie von Profis.** Die EINE geglättete
+Lauf-Fläche `_waterRunSurfaceAt` (Along-Flow-Tiefpass ±18 m, GEMESSEN −56 %
+Längs-Rauheit), drei Konsumenten (Zell-Sheet · Tauch-Trigger · Boot); die
+NARBEN-WAND via ZENTRUMS-BLENDE geehrt (`_hydroRiverAt.centerness` — nur der
+Kern glättet, Ufer-Kante roh: kein Trog, Δ 0.074 GEMESSEN); Flow-Kräuselung
+fragment-seitig (`flowRipple` — Glitzer stromab, narben-sicher); Boot-
+Schwimmen Substanz-emergent (`_vehicleProfile.floats`, volumen-gewichtete
+Mittel-Dichte < 0.55 — holz schwimmt, stein/eisen sinken). `diag-wf.cjs`
+alle grün; offen: der Fluss-LOOK im Schöpfer-Browser (Animation). Der
+ursprüngliche Plan:
 *KREIS:* die Wasser-Wahrheit fließt heute Atlas-`L`/fmag → Zell-Sheet-Vertices
 (`_buildVoxelChunkWaterCellSheet` liest pro Ecke die Spiegel-Höhe) → Shader
 (aFlow/aDepth/aWave; die V18.11-Tangente glättet die STRÖMUNGS-Richtung schon).
@@ -697,9 +718,13 @@ Zug). *SYNERGIE:* dieselbe geglättete Fläche trägt danach das Boot-SCHWIMMEN
 (M3-Vermerk) fast gratis. *BEWEIS:* diag-tour-A/B je Teilwelle + die
 Unterwasser-Grenze als Invariante (Augenhöhe vs Fläche ±ε).
 
-**W-G — Werkstatt-Gelenke begreifbar (§8.4 — Anker-Gizmo · Achsen-Geister ·
-Gelenk-Probe ▶ · Typen-Vorrang; konsumiert die computeMotionRoles/_attachPointFor-
-Wahrheiten + den W-C-Mach-Tor-Hint).**
+**W-G ✓ teil GEBAUT (V18.177) — Werkstatt-Gelenke begreifbar (§8.4).** Vier
+Heilungen aus den bestehenden Wahrheiten: (e) `_jointTeachLine` (Gelenk →
+Menschen-Sprache) · (b) Achsen-Geister (Dreh-Achse GEZEICHNET im Viewer) ·
+(d) `_connectionTypesByStrength` (Kacheln nach Substanz-Stärke, 3 + „weitere…") ·
+(c) Gelenk-Probe ▶ (`_workshopProbeJoints` — 2.2 s wackeln). +4 Invarianten.
+Bewusst OFFEN: (a) der Anker-GIZMO-DRAG (der violette Marker direkt ziehbar —
+ein eigener Gizmo-Refactor) + der Browser-FEEL. Der ursprüngliche Plan:
 
 **W-H — der Wald-WOW (§8.5 — Gestalt-Varianten · Kronen-Schichtung · Cluster;
 Wächter: Affinitäts-Baseline + Archetypen-Bank + Warmup-Dichte-Disziplin).**
@@ -819,6 +844,45 @@ BEHAVIORAL-Wechsel — Matrix-A/B + S-Gate Pflicht, Defaults 0.06/0.06). Gras +
 Wasser docken als Schritt 3 an (eigene Materialien konsumieren dieselben
 Uniforms + Profil-Gewichte — kein Material-Merge).
 
+**E2+E3 ✓ GEBAUT (V18.173, exakt nach der Schnitt-Karte — zwei Λ1-Schnitte,
+beide GEMESSEN; S-Abnahme der Dämmerung offen, R-012/R-013 im Korpus auf
+gebaut):** **Schnitt 1 (bit-nah):** `_applyAerialOutput` →
+`_applySubstanceResponse(mat, profile, layerOpts)` — die Familien-Gates wurden
+PROFILE (`SUBSTANCE_RESPONSE.defaults` feld/werk/gras/frei), die Albedo-Quelle
+reicht der Aufrufer (`layerOpts.albedoNode`; der Empfänger bleibt attribut-frei).
+GEMESSEN: die Schnitt-1-Matrix reproduziert die E1-Signatur (nacht terrain
++41.3 · bau +5.7 · gras +0.5 — Faktor ~7, das Gras taub) = der entgatete
+Empfänger ist verhaltens-treu; erst DANN der bewusste Wechsel. **Schnitt 2:**
+das FÜLL-LICHT `lit + albedo·floor·(1−lit)` ersetzt den max()-Clamp
+(struktur-erhaltend — der §8.1#11-Fresser strukturell tot) · die Antenne
+EMERGIERT aus der Substanz (`_substanceResponseProfile`: glanz/tiefe/glimmen/
+waerme/glas aus den 10 Tags; die Tags reisen in BEIDE Part-Builder
+[`_buildFromBlueprint` + `_archLeafMaterial`, Spiegel]; GEMESSEN: Eisen-glanz
+0.81 vs Holz 0.28 · Glut-Emissiv 0.104 vs Stein 0.035) · die Werk-Familie kommt
+ans fuell/mond-Band (fuell 1 · mond 0.7) · das GRAS dockt an (Schritt 3, kein
+Merge) · E3: das Terrain-Mikro liest DENSELBEN microStrength-Uniform (×1.3 =
+der alte Hardcode am Default; ein Regler, eine Welt-Antwort) · R-013: Standard
+0.06/0.06 als EINE Quelle aller Leser + Restore-Migration des auto-gebackenen
+0.12. Bewusste Abweichung: die Struktur-LUT bleibt familien-binär (geteilte
+DataTexture, V9.84-Singleton; ihr Boden ist schon Band-Hebel via celContrast)
+— die per-Substanz-Tiefe lebt in micro/AO. +6 Invarianten
+(`checkBandWEFrequenzband`). **E4-Matrix NACHHER (derselbe Diag, Schnitt-2-Stand; `FREQBAND_FLOORS`-
+Override fürs schnelle Δ — das Werkzeug wuchs):** floor 0→0.3 hebt **nacht**
+terrain +76 · **kreatur +77.2** (war strukturell clamp-los) · **baum +30.6**
+(E1: +8.2) · **bau +12.9** (E1: +7.3) · **gras +4.5** (E1: −2.0, TAUB) —
+JEDE Familie antwortet jetzt positiv; der Silhouetten-Beweis: bei floor 0
+steht der Bau nachts ÜBER dem Terrain (20.1 vs 13 — die schwarze Silhouette
+ist tot), und der f0.3-Shot zeigt ERHALTENES Relief (Hänge schattiert statt
+flacher Albedo-Platte = das Füll-Licht hält, was der max()-Clamp fraß). Die
+Rest-Spreizung Terrain↔Bau ist ALBEDO-getrieben (dunkler Stein fängt
+physikalisch weniger Füll-Licht: fill ∝ albedo) — Substanz-Ehrlichkeit, kein
+Code-Pfad mehr. EHRLICH benannt: die additive Form hebt beim STRESS-Floor 0.3
+auch den Mittag (+55 terrain; der alte Clamp war tags unsichtbar, fraß dafür
+nachts die Struktur) — beim Schöpfer-Standard 0.06 ist der Tag-Hub linear ~⅕
+davon (≈ +11/255, moderat). Offen: der S-Blick (eine Dämmerung, die trägt —
+das v1.0-DoD-Gate) + die S-Kalibrierung der Erst-Wurf-Gewichte (weiche Böden
+0.4/0.5/0.35) als Vermerk; die Wasser-Antwort misst der W-F-Bogen.
+
 ### §8.4 W-G: Werkstatt-Gelenke/Anker — begreifbar wie ein Profi
 
 **Die Schöpfer-Fragen beantwortet (der heutige Stand, damit du weiterbaust):**
@@ -846,6 +910,14 @@ Querachse"). Verdichtung: alles liest die EXISTIERENDEN Wahrheiten (computeMotio
 · _attachPointFor · CONNECTION_TYPES) — nur die SICHTBARKEIT + der Zugriff fehlen.
 
 ### §8.5 W-H: Der Wald-WOW (Gestaltungs-Bogen, kein System-Bau)
+
+**W-H ✓ teil GEBAUT (V18.178):** (a) 3 Gestalt-Varianten (baum_eiche_breit/jung ·
+baum_kiefer_schlank) — seed-gewählt NACH dem Affinitäts-Sieg (kanonischer
+bestName → Verteilung bit-identisch, die V17.16-Falle strukturell vermieden;
+GEMESSEN diag-arch-tags: tag-identisch zur Basis) · (c) Stamm-Charakter (Knick+
+Ast) · (d) Größen-Span ±~25 % (HISM-Instanz-Matrix). (b) Kronen-Schichtung+
+Gradient + (f) W-E-Kronen-Wärme lebten schon. +4 Invarianten. Offen: der
+Wald-WOW im Browser + ggf. mehr Gestalten/Cluster-Tuning. Der ursprüngliche Plan:
 
 Diagnose ehrlich: die Trank-Trennung kam über GEGEN-ACHSEN (Signatur) — die Bäume
 selbst blieben 2 Arten × 1 Gestalt. Der Pinsel-Wald der Profis (Valheim/Ghibli) ist
@@ -921,14 +993,24 @@ Nachbau-Szenario. Damit ist „Rückmeldung nicht gelesen" strukturell unmöglic
 erzwungen, nicht versprochen. (Korpus v1 ist angelegt — alle Befunde vom 12.06. abend
 sind eingetragen.)
 
-**(c) W6 — der STAMM-ATLAS (ein Nachmittag, senkt MEINE Reibung dauerhaft):** GEMESSEN
-60'854 Zeilen mit 4 Abschnitts-Markern — die „du verlierst die Übersicht"-Beobachtung
-ist berechtigt. Antwort ist NICHT der Split (Heilige Lektion), sondern eine KARTE:
-die maschinenlesbare Sektions-Registry am Stammkopf (Name → Zeilen-Anker →
-Zuständigkeit), `diag-atlas.cjs` prüft Registry ↔ Realität (Drift = rot), CLAUDE.md
-verlinkt hinein. Dazu als MESS-Vermerk (erst messen, dann entscheiden):
-`computeCompoundTags` hat 0 Cache bei ~47 Aufrufstellen — Memo-Kandidat NUR mit
-gemessener Frame-Zahl.
+**(c) W6 — der STAMM-ATLAS ✓ GEBAUT (V18.174, vorgezogen auf Schöpfer-Wort
+„wo herrscht die größte Reibung?" — R-032):** 26 ehrliche ZONEN-Marker
+(`// ===== ATLAS §NN · NAME — Themen =====`, an GEMESSENEN Cluster-Grenzen
+der 1420 Methoden-Defs platziert, anker-basiert über die Kommentar-Blöcke)
++ die Registry am Stammkopf (ATLAS-REGISTRY…-ENDE — Ordnung+Zuständigkeit,
+NIE Zeilen-Nummern [sie rotten]) + `scripts/diag-atlas.cjs` (pures fs, <1 s:
+die LIVE-Karte mit Start/Zeilen/Methoden je Zone · `--find <regex>` verortet
+Methoden · `--check` = Drift-Wand Registry↔Marker im `npm run check`-Gate +
+`npm run atlas`). Die Registry sagt EHRLICH „Zonen = dominante Themen,
+Einsprengsel kommen vor — Karte, nicht Käfig" (der Stamm wuchs organisch;
+die Antwort auf R-032 ist NAVIGATION, kein Split — Heilige Lektion).
+Im selben Zug: CLAUDE.md-SCHLANKUNG (382→~280 KB: 56 historische V-Blöcke +
+Terrain-Bogen-Erzählung → Brücken-Zeile; JEDER Block vorher GEMESSEN in der
+handover-Chronik verifiziert — Saat-Disziplin) + DIAG-HÄRTUNG (s. Gotcha
+„Remote-Container-Prozess-Wahrheit": DIAG_PORT 4317 · inkrementelles
+JSON-Artefakt · Warm-Welt-Cache · Wetter-Pinning im Messgerät). Offen als
+MESS-Vermerk (erst messen, dann entscheiden): `computeCompoundTags` hat
+0 Cache bei ~47 Aufrufstellen — Memo-Kandidat NUR mit gemessener Frame-Zahl.
 
 **(d) Λ1-DISZIPLIN für W-E (die sichere Migration, übernommen):** Schritt 1 des
 Frequenzbands ENTGATET nur — alle Familien konsumieren alle Licht-Uniforms, aber mit
@@ -962,13 +1044,14 @@ eine eigene Sprosse — die Ökonomie-Seite ist per Architektur beantwortet (der
 ist ein SCHLÜSSEL, kein Wert; Kopie dupliziert Identität, nicht Besitz), die
 UX-Seite (verlorener/kompromittierter Schlüssel) noch nicht.
 
-**Die VERBUNDENE Reihenfolge (ersetzt §8.2-Reihenfolge):** Ψ0+Ψ1+W7-Korpus (klein,
-sofort, parallel) → W-A…W-D (die sichtbaren gemessenen UI/Feel-Wurzeln — der Schöpfer
-SIEHT die Heilung zuerst) → **W-E/Λ das Frequenzband** (mit Λ1-Disziplin) → W-F Wasser
-(+ Tauch-Trigger, dann Boot-Schwimmen) → W3 UI-Puls (das Organ hinter W-C) → W-G
-Gelenke · W-H Wald → W6 Stamm-Atlas + W5-Entscheid (ein Nachmittag) → **M9 die Krone**
-(S-Dialog; + Schlüssel-Verwahrungs-Sprosse). Die v1.0-DoD (f) ist das Ziel-Band über
-allem.
+**Die VERBUNDENE Reihenfolge (ersetzt §8.2-Reihenfolge; Stand V18.174):**
+Ψ0+Ψ1+W7-Korpus ✓ → W-A…W-D ✓ → W-E/Λ das Frequenzband ✓ (V18.173, S-Blick
+offen) → W6 Stamm-Atlas ✓ (V18.174) → W-F Wasser ✓ (V18.175) → W3 UI-Puls ✓
+(V18.176 — `_uiDirty(raum)`-Organ + Inseln, Ich/Hof; Werkstatt/Bibliothek
+docken an, wenn Doppel-Render gemessen) → **W-G Gelenke · W-H Wald sind die
+NÄCHSTEN Bögen** → W5-Entscheid → **M9 die Krone** (S-Dialog; +
+Schlüssel-Verwahrungs-Sprosse). Die v1.0-DoD (f) ist das Ziel-Band über
+allem; parallel-fähig: Φ0/Φ1 · T-Welle (nach W6 jetzt FREI).
 
 ### §8.9 DIE SWOT-INVERSIONEN (12.06.) — was davon in die Planung einfließt
 
@@ -1004,6 +1087,19 @@ unberührt). EHRLICH: auf 60k Zeilen ist der Erstlauf eine Fehler-Lawine → das
 ist eine RATSCHE (T0: Fehlerzahl messen = Baseline · T1: die tragenden Nähte typisieren
 [state-Shape, Blueprint, Connection, Entry] · Band: Fehlerzahl ≤ Baseline, monoton
 fallend — nie ein Block, immer ein Druck).
+
+**T0 GEMESSEN (V18.178, „miss zuerst, dann entscheiden"):** `tsc --checkJs`
+über den Stamm wirft **1103** Fehler roh → **490** mit den Vendor-Globals als
+`.d.ts` deklariert (THREE/Ammo/window) → davon **416 = TS2339 „Property X does
+not exist"** auf dem untypisierten `this.state`-Bag (kein echtes Signal — TS
+kennt die inkrementell gebaute state-Form nicht; der echte Rest: ~11 TS2304
+Cannot-find-name · 18 TS2488 Iterator · ~11 Typ-Mismatch · ~6 Arithmetik). BEFUND:
+die Ratsche hat erst SIGNAL, wenn T1 zuerst den `state`-Shape typisiert (sonst
+überwacht das Band 416 Rausch-Einträge); done minimal (490 einfrieren) wäre eine
+halbe Sache. → **SCHÖPFER-ENTSCHEID (R-037, Korpus):** in die state-Typisierung
+investieren (dann ist die Ratsche scharf) ODER ruhen lassen (der no-build-Hedge
+bleibt rein). Die `.d.ts`+tsconfig-Schicht ist reine CHECK-Schicht (keine
+Runtime, kein Transpile) — der no-build-Charakter bliebe so oder so unberührt.
 
 **(d) DIE KALTSTART-PROBE (Eigenfrequenz-Risiko → pausierbares Projekt) — Prozess-Wand
 §8.7 Punkt 5:** die Architektur ist bereits pausen-tolerant GEBAUT (gefrorene Taille ·

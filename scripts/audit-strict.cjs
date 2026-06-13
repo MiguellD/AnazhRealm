@@ -721,6 +721,53 @@ function auditAtmosphereHardcode() {
 }
 
 // ============================================================
+// 5. Playtest-Skip-Gate-Audit (V18.180-FIX §6.5) — das `if (api.exists)`-
+//    Anti-Pattern. Ein Test, der seine eigene Erwartung gegen die LIVE-API
+//    pruft (`if (revokedKeys.add)`, `if (revokeKey)`), läuft still durch,
+//    wenn die API anders heißt — er meldet PASS, ohne zu pruefen. Genau
+//    das ließ die `revokedKeys`-Set/Object-Wunde (§6.1) durch. Die Wand
+//    erzwingt: keine NEUEN Skip-Gates dieser Form in `scripts/playtest.cjs`.
+//
+//    Erlaubte Patterns (Zulassungs-Liste): Optional-Feature-Checks gegen
+//    LAUFZEIT-Umgebungen (typeof indexedDB, typeof crypto, typeof
+//    localStorage). Die Wand fängt nur den Set/Map/Array-Method-Sniff.
+function auditPlaytestSkipGates() {
+    console.log("\n=== Playtest-Skip-Gate-Audit (§6.5) ===");
+    const PLAYTEST = path.join(ROOT, "scripts", "playtest.cjs");
+    const src = fs.readFileSync(PLAYTEST, "utf8");
+    const lines = src.split("\n");
+    // Pattern: `if (X && X.add)`, `if (X.has)`, `if (X.delete)` — Set/Map-API-
+    // Existenz-Sniff. `set` und `size` ausgenommen: `set` matcht zu viele
+    // Vector3/Color/Matrix-Aufrufe (false positives), `size` ist semantisch
+    // selten ein Skip-Trigger. Die drei verbleibenden Verben tragen die
+    // §6.1-Bug-Klasse zuverlässig (`revokedKeys.add/has/delete`).
+    const sniffRe = /if\s*\([^)]*\.(add|has|delete)\s*\)/;
+    // Zulassungs-Liste: bewusste Optional-Feature-Checks (kommentar-markiert
+    // mit `// audit-allow-skip-gate`).
+    const allowMarker = /audit-allow-skip-gate/;
+    let bad = 0;
+    for (let i = 0; i < lines.length; i++) {
+        const here = lines[i];
+        // Kommentar-Zeilen (// am Anfang nach Whitespace, oder // vor dem if)
+        // ausschließen — die Wand prüft Code, nicht Erklär-Text.
+        if (/^\s*\/\//.test(here)) continue;
+        if (!sniffRe.test(here)) continue;
+        // Allow-Marker am Zeilen-Ende oder in der Zeile davor.
+        const prev = i > 0 ? lines[i - 1] : "";
+        if (allowMarker.test(here) || allowMarker.test(prev)) continue;
+        fail(
+            "SKIP-GATE",
+            `playtest.cjs:${i + 1} — verbotenes \`if (api.method)\`-Sniff-Gate`,
+            here.trim().slice(0, 100)
+        );
+        bad++;
+    }
+    if (bad === 0) {
+        pass("SKIP-GATE", `playtest.cjs frei von api-existence-Skip-Gates (oder explizit allow-markiert)`);
+    }
+}
+
+// ============================================================
 // Main
 // ============================================================
 (async () => {
@@ -728,6 +775,7 @@ function auditAtmosphereHardcode() {
     auditCssVariables();
     auditSoftDefaults();
     auditAtmosphereHardcode();
+    auditPlaytestSkipGates();
     await auditStateAndMethods();
 
     console.log("\n=== Zusammenfassung ===");

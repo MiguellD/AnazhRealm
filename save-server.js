@@ -6,7 +6,13 @@ const path = require("path");
 const crypto = require("crypto");
 
 const HOST = "127.0.0.1";
-const PORT = 4312;
+// V18.174 (Diag-Härtung) — der Port ist per Env übersteuerbar, damit Diags
+// und Playtest nicht hart auf 4312 serialisieren (ein vergessener Lauf
+// blockiert sonst den nächsten). Client-seitig ist das graceful: die
+// absoluten localhost:4312-Fetches (Save-POST/LLM-Proxy) prüfen den href
+// (`_isLocalhostSaveServer`) und fallen auf localStorage-only zurück —
+// genau der Modus, den Diags wollen. Default bleibt 4312 (Playtest/Start).
+const PORT = Number(process.env.PORT) || 4312;
 const PROJECT_ROOT = __dirname;
 // Ring 8 (Multi-Welt): localStorage hält pro Welt einen eigenen Key, der
 // kanonische Multi-Welt-Speicher liegt also im Browser. Der save-server

@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.172.0",
+    "version": "18.187.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox v9.43",
     "scripts": {
@@ -11,7 +11,8 @@
         "lint:fix": "eslint --fix anazhRealm.js voxel-worker.js save-server.js signaling-server.js",
         "format": "prettier --write anazhRealm.js voxel-worker.js save-server.js signaling-server.js",
         "format:check": "prettier --check anazhRealm.js voxel-worker.js save-server.js signaling-server.js",
-        "check": "node --check anazhRealm.js && node --check save-server.js && node --check signaling-server.js",
+        "check": "node --check anazhRealm.js && node --check save-server.js && node --check signaling-server.js && node scripts/diag-atlas.cjs --check",
+        "atlas": "node scripts/diag-atlas.cjs",
         "playtest": "node scripts/playtest.cjs",
         "audit:strict": "node scripts/audit-strict.cjs",
         "verify:ring9": "node scripts/verify-ring9.cjs",
