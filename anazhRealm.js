@@ -14978,68 +14978,179 @@ class AnazhRealm {
     // Bloom). `yOff` hebt schwebende Arten (Sporen). Alle Werte browser-
     // justierbar (die Dichte-/FPS-Wahrheit ist der Schöpfer-Browser, V13-Lehre).
     static get KLEIN_VEGETATION_SPECIES() {
+        // V18.176 (Λ.4 ECHTE Tiefe) — die LEBENDEN Streu-Arten in DREI
+        // Gestalt-Varianten je Art (Plan §IV.4):
+        //   blume: Tulpe (1 Stiel+Kelch) · Klee (3 Blätter low) · Mohn (flache Scheibe)
+        //   farn:  normal (Wedel-Tuff) · breit (niederliegend) · schmal (vertikal)
+        //   gestrüpp: Busch-Kugel · Bodendecker · Dürre-Stecher
+        //   schilf: Halme-Reihe · Tuff (kompakt) · hoch-Rohr
+        // Jede Variante teilt die Affinitäts-Daten der Art (field/floor/kronen)
+        // → konkurriert als 3 separate Arten unter demselben field, perCell ÷ 3
+        // → die Gesamt-Dichte bleibt, die Vielfalt verdreifacht. Tag-Neutralität
+        // bewahrt (V17.16-Wand): die Tags emergieren via ernte→kraut, nicht via
+        // species.name. Pool ÷ 3 (Speicher unverändert).
         return [
-            // lebendig → Wiesen-Blüten: bunte Farb-Tupfer, der „randvolle Wiese"-
-            // Kern. Dicht + nah, weich im Wind. Cap 512 fängt die dichte Wiese.
+            // === BLUME × 3 (Tulpe · Klee · Mohn) ===
             {
-                name: "blume",
-                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
+                name: "blume_tulpe",
+                ernte: "kraut",
                 field: "lebendig",
                 floor: 0.5,
-                kronen: "lichtung", // Γ2 — Blüten dort, wo der Wald NICHT ist
-                perCell: 3.2,
-                cap: 512,
-                pool: 28,
+                kronen: "lichtung",
+                perCell: 1.1,
+                cap: 200,
+                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
                 scale: [0.5, 1.0],
                 color: [0.86, 0.32, 0.46],
                 color2: [0.95, 0.82, 0.3],
-                geom: "blume",
+                geom: "blume_tulpe",
             },
-            // lebendig (niedrigerer Floor → breiter) → Farn-Tuffs: sattes grünes
-            // Unterholz, füllt zwischen den Blüten. Weich im Wind.
             {
-                name: "farn",
-                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
+                name: "blume_klee",
+                ernte: "kraut",
+                field: "lebendig",
+                floor: 0.5,
+                kronen: "lichtung",
+                perCell: 1.1,
+                cap: 200,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.45, 0.85],
+                color: [0.55, 0.78, 0.4],
+                color2: [0.92, 0.92, 0.94],
+                geom: "blume_klee",
+            },
+            {
+                name: "blume_mohn",
+                ernte: "kraut",
+                field: "lebendig",
+                floor: 0.5,
+                kronen: "lichtung",
+                perCell: 1.0,
+                cap: 180,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.55, 1.05],
+                color: [0.92, 0.18, 0.15],
+                color2: [0.18, 0.1, 0.08],
+                geom: "blume_mohn",
+            },
+            // === FARN × 3 (normal · breit · schmal) ===
+            {
+                name: "farn_normal",
+                ernte: "kraut",
                 field: "lebendig",
                 floor: 0.32,
-                // Γ1 — in Genese-2-Welten liest der Farn die FEUCHTE (Ufer-/
-                // Niederungs-Pflanze); Legacy-Welten behalten lebendig (das
-                // Gesicht bleibt). Γ2 — er sammelt sich UNTER den Kronen.
                 feldNass: "feuchte",
                 floorNass: 0.3,
                 kronen: "unter",
-                perCell: 2.4,
-                cap: 448,
-                pool: 28,
+                perCell: 0.8,
+                cap: 160,
+                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
                 scale: [0.6, 1.2],
                 color: [0.22, 0.46, 0.2],
                 color2: [0.34, 0.6, 0.26],
-                geom: "farn",
+                geom: "farn_normal",
             },
-            // glut → trockenes Glut-Gestrüpp: rötlich-braune steife Zweige in
-            // heißen/trockenen Regionen. Leicht im Wind.
             {
-                name: "gestruepp",
-                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
+                name: "farn_breit",
+                ernte: "kraut",
+                field: "lebendig",
+                floor: 0.32,
+                feldNass: "feuchte",
+                floorNass: 0.3,
+                kronen: "unter",
+                perCell: 0.8,
+                cap: 160,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.5, 1.0],
+                color: [0.28, 0.5, 0.22],
+                color2: [0.4, 0.66, 0.3],
+                geom: "farn_breit",
+            },
+            {
+                name: "farn_schmal",
+                ernte: "kraut",
+                field: "lebendig",
+                floor: 0.32,
+                feldNass: "feuchte",
+                floorNass: 0.3,
+                kronen: "unter",
+                perCell: 0.8,
+                cap: 160,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.7, 1.3],
+                color: [0.2, 0.42, 0.18],
+                color2: [0.32, 0.55, 0.24],
+                geom: "farn_schmal",
+            },
+            // === GESTRÜPP × 3 (Busch-Kugel · Bodendecker · Dürre-Stecher) ===
+            {
+                name: "gestruepp_busch",
+                ernte: "kraut",
                 field: "glut",
                 floor: 0.5,
-                kronen: "rand", // Γ2 — der Saum zwischen Wald und Lichtung
-                perCell: 1.8,
-                cap: 320,
-                pool: 28,
+                kronen: "rand",
+                perCell: 0.6,
+                cap: 110,
+                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
                 scale: [0.6, 1.3],
                 color: [0.55, 0.3, 0.16],
                 color2: [0.68, 0.42, 0.2],
-                geom: "gestruepp",
+                geom: "gestruepp_busch",
+            },
+            {
+                name: "gestruepp_decker",
+                ernte: "kraut",
+                field: "glut",
+                floor: 0.5,
+                kronen: "rand",
+                perCell: 0.6,
+                cap: 110,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.65, 1.4],
+                color: [0.48, 0.34, 0.2],
+                color2: [0.62, 0.46, 0.26],
+                geom: "gestruepp_decker",
+            },
+            {
+                name: "gestruepp_stecher",
+                ernte: "kraut",
+                field: "glut",
+                floor: 0.5,
+                kronen: "rand",
+                perCell: 0.6,
+                cap: 110,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.55, 1.2],
+                color: [0.6, 0.36, 0.18],
+                color2: [0.75, 0.5, 0.24],
+                geom: "gestruepp_stecher",
             },
             // dichte → Fels-Brocken/Kiesel: graubraune Low-Poly-Steine, steinige
             // Regionen. Statisch (kein Wind), empfängt Schatten, weiter sichtbar.
@@ -15099,26 +15210,60 @@ class AnazhRealm {
                 color2: [1.0, 0.82, 0.5],
                 geom: "spore",
             },
-            // Γ1 (genese-plan) — SCHILF: die siebte Art, NUR in Genese-2-Welten
-            // (minGen-Gate): liest die FEUCHTE direkt (das schmale Ufer-Band,
-            // floor 0.62) — Flüsse und Niederungen bekommen ihren Saum. Reine
-            // Daten, derselbe Streu-Mechanismus (die V18.133-Schönheit).
+            // Γ1 (genese-plan) — SCHILF: NUR in Genese-2-Welten (minGen-Gate);
+            // liest die FEUCHTE direkt — Flüsse und Niederungen bekommen ihren
+            // Saum. V18.176 (Λ.4 Tiefe): 3 Gestalt-Varianten je Art.
+            // === SCHILF × 3 (Halme-Reihe · Tuff · hoch-Rohr) ===
             {
-                name: "schilf",
+                name: "schilf_reihe",
                 ernte: "kraut",
                 field: "feuchte",
                 floor: 0.62,
                 minGen: 2,
-                perCell: 2.6,
-                cap: 288,
-                pool: 24,
+                perCell: 0.9,
+                cap: 100,
+                pool: 8,
                 wind: true,
                 emissive: false,
                 yOff: 0,
                 scale: [0.9, 1.7],
                 color: [0.33, 0.48, 0.2],
                 color2: [0.66, 0.64, 0.3],
-                geom: "farn",
+                geom: "schilf_reihe",
+            },
+            {
+                name: "schilf_tuff",
+                ernte: "kraut",
+                field: "feuchte",
+                floor: 0.62,
+                minGen: 2,
+                perCell: 0.9,
+                cap: 100,
+                pool: 8,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.8, 1.5],
+                color: [0.3, 0.44, 0.18],
+                color2: [0.6, 0.6, 0.28],
+                geom: "schilf_tuff",
+            },
+            {
+                name: "schilf_rohr",
+                ernte: "kraut",
+                field: "feuchte",
+                floor: 0.62,
+                minGen: 2,
+                perCell: 0.9,
+                cap: 100,
+                pool: 8,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [1.2, 2.4],
+                color: [0.38, 0.52, 0.22],
+                color2: [0.72, 0.7, 0.34],
+                geom: "schilf_rohr",
             },
         ];
     }
@@ -26577,15 +26722,20 @@ class AnazhRealm {
                 tri(a0, b1, b0, colA, colB, colB);
             }
         };
-        if (species.geom === "blume") {
-            // Stiel (grün) + 5-Blütenblatt-Schale (Spitze color2/innen, color/außen).
-            const stemG = [0.2, 0.4, 0.16];
-            strip(0.0, 0.16, 0.022, 0.02, stemG, [0.28, 0.5, 0.22], 2);
-            strip(1.6, 0.15, 0.02, 0.02, stemG, [0.28, 0.5, 0.22], 2);
-            const top = [0, 0.205, 0];
-            const r = 0.085;
-            const yTip = 0.155;
-            const N = 5;
+        const stemG = [0.2, 0.4, 0.16];
+        // V18.176 (Λ.4 Gestalt-Varianten) — drei DEUTLICH unterschiedliche
+        // Gestalten je lebender Art: blume Tulpe/Klee/Mohn · farn normal/breit/
+        // schmal · gestrüpp Busch/Decker/Stecher · schilf Reihe/Tuff/Rohr.
+        // Backward-Kompatibilität: "blume"/"farn"/"gestruepp" (alt) fallen auf
+        // die normalen Varianten zurück (falls altes Save sie referenziert).
+        if (species.geom === "blume_tulpe" || species.geom === "blume") {
+            // TULPE: Stiel + glockenförmiger Kelch (6 Blütenblätter, hoch+schmal).
+            strip(0.0, 0.18, 0.018, 0.0, stemG, [0.28, 0.5, 0.22], 2);
+            strip(1.6, 0.18, 0.016, 0.0, stemG, [0.28, 0.5, 0.22], 2);
+            const top = [0, 0.24, 0];
+            const r = 0.06;
+            const yTip = 0.175;
+            const N = 6;
             for (let i = 0; i < N; i++) {
                 const a0 = (i / N) * Math.PI * 2;
                 const a1 = ((i + 1) / N) * Math.PI * 2;
@@ -26593,18 +26743,110 @@ class AnazhRealm {
                 const p1 = [Math.cos(a1) * r, yTip, Math.sin(a1) * r];
                 tri(top, p0, p1, c2, c, c);
             }
-        } else if (species.geom === "farn") {
-            // 4 breite, gebogene Wedel, fächerförmig — sattes Unterholz-Grün.
+        } else if (species.geom === "blume_klee") {
+            // KLEE: 3 flache Blätter sehr niedrig, fast bodendeckend.
+            const stemH = 0.06;
+            strip(0.0, stemH, 0.012, 0.0, stemG, [0.28, 0.5, 0.22], 2);
+            for (let i = 0; i < 3; i++) {
+                const a = (i / 3) * Math.PI * 2;
+                const cx = Math.cos(a) * 0.04;
+                const cz = Math.sin(a) * 0.04;
+                const r = 0.075;
+                const yBlatt = stemH + 0.008;
+                // Blatt als gerundetes Dreieck (3 Vertices um Zentrum)
+                const p0 = [cx + Math.cos(a) * r, yBlatt, cz + Math.sin(a) * r];
+                const p1 = [cx + Math.cos(a + 0.7) * r * 0.6, yBlatt + 0.004, cz + Math.sin(a + 0.7) * r * 0.6];
+                const p2 = [cx + Math.cos(a - 0.7) * r * 0.6, yBlatt + 0.004, cz + Math.sin(a - 0.7) * r * 0.6];
+                tri(p0, p1, p2, c, c2, c);
+                // Blatt-Unterseite (DoubleSide-Render macht es sichtbar von unten)
+                tri(p0, p2, p1, c, c, c2);
+            }
+            // kleines Mittel-Blüte (weiss)
+            const cBlute = [0.98, 0.98, 0.99];
+            const center = [0, stemH + 0.012, 0];
+            for (let i = 0; i < 5; i++) {
+                const a0 = (i / 5) * Math.PI * 2;
+                const a1 = ((i + 1) / 5) * Math.PI * 2;
+                const r = 0.025;
+                tri(
+                    center,
+                    [Math.cos(a0) * r, stemH + 0.014, Math.sin(a0) * r],
+                    [Math.cos(a1) * r, stemH + 0.014, Math.sin(a1) * r],
+                    cBlute,
+                    cBlute,
+                    cBlute
+                );
+            }
+        } else if (species.geom === "blume_mohn") {
+            // MOHN: hoher Stiel + flache breite Scheibe (4 Blütenblätter).
+            strip(0.0, 0.22, 0.014, 0.0, stemG, [0.28, 0.5, 0.22], 2);
+            strip(1.6, 0.22, 0.013, 0.0, stemG, [0.28, 0.5, 0.22], 2);
+            const yScheibe = 0.22;
+            const N = 4;
+            const r = 0.13;
+            // Schwarzes Zentrum
+            const dark = [0.18, 0.1, 0.08];
+            const center = [0, yScheibe, 0];
+            for (let i = 0; i < N; i++) {
+                const a0 = (i / N) * Math.PI * 2;
+                const a1 = ((i + 1) / N) * Math.PI * 2;
+                const am = (a0 + a1) / 2;
+                // Breites Blütenblatt — Trapez
+                const pOuter = [Math.cos(am) * r, yScheibe + 0.002, Math.sin(am) * r];
+                const pSide1 = [Math.cos(a0) * r * 0.35, yScheibe + 0.001, Math.sin(a0) * r * 0.35];
+                const pSide2 = [Math.cos(a1) * r * 0.35, yScheibe + 0.001, Math.sin(a1) * r * 0.35];
+                tri(center, pSide1, pOuter, dark, c, c);
+                tri(center, pOuter, pSide2, dark, c, c);
+            }
+        } else if (species.geom === "farn_normal" || species.geom === "farn") {
+            // FARN normal: 4 breite gebogene Wedel, fächerförmig.
             strip(0.0, 0.42, 0.07, 0.16, c, c2, 3);
             strip(1.57, 0.4, 0.065, 0.18, c, c2, 3);
             strip(3.14, 0.44, 0.07, 0.15, c, c2, 3);
             strip(4.71, 0.38, 0.06, 0.2, c, c2, 3);
-        } else if (species.geom === "gestruepp") {
-            // 5 steife, dünne Zweige, leicht auseinander — trockenes Gestrüpp.
+        } else if (species.geom === "farn_breit") {
+            // FARN breit: niederliegend gespreizt — 6 niedrige weite Wedel.
+            for (let i = 0; i < 6; i++) {
+                const rot = (i / 6) * Math.PI * 2;
+                strip(rot, 0.22, 0.11, 0.3, c, c2, 3); // tief gebogen → liegend
+            }
+        } else if (species.geom === "farn_schmal") {
+            // FARN schmal: vertikal aufrecht — 2 hohe steile Wedel.
+            strip(0.0, 0.7, 0.05, 0.04, c, c2, 4);
+            strip(1.57, 0.65, 0.045, 0.05, c, c2, 4);
+            strip(3.14, 0.68, 0.05, 0.04, c, c2, 4);
+        } else if (species.geom === "gestruepp_busch" || species.geom === "gestruepp") {
+            // BUSCH: 5 steife dünne Zweige, leicht auseinander.
             for (let i = 0; i < 5; i++) {
                 const rot = (i / 5) * Math.PI * 2 + 0.3;
                 strip(rot, 0.26 + (i % 2) * 0.06, 0.022, 0.05 + (i % 3) * 0.03, c, c2, 2);
             }
+        } else if (species.geom === "gestruepp_decker") {
+            // BODENDECKER: flach-breit, viele kleine Zweige nahe am Boden.
+            for (let i = 0; i < 8; i++) {
+                const rot = (i / 8) * Math.PI * 2;
+                strip(rot, 0.14, 0.035, 0.18, c, c2, 2); // sehr niedrig, stark gebogen
+            }
+        } else if (species.geom === "gestruepp_stecher") {
+            // DÜRRE-STECHER: 3 hohe kahle Stäbe, aufrecht.
+            strip(0.0, 0.5, 0.018, 0.02, c, c2, 2);
+            strip(2.1, 0.55, 0.018, 0.02, c, c2, 2);
+            strip(4.2, 0.45, 0.018, 0.02, c, c2, 2);
+        } else if (species.geom === "schilf_reihe") {
+            // SCHILF Halme-Reihe: 3 parallel aufrechte Halme.
+            strip(0.0, 0.52, 0.025, 0.02, c, c2, 3);
+            strip(0.0, 0.48, 0.024, 0.02, c, c2, 3);
+            strip(0.0, 0.55, 0.026, 0.02, c, c2, 3);
+        } else if (species.geom === "schilf_tuff") {
+            // SCHILF Tuff: kompakt-dicht, viele Halme in alle Richtungen.
+            for (let i = 0; i < 7; i++) {
+                const rot = (i / 7) * Math.PI * 2;
+                strip(rot, 0.35 + (i % 3) * 0.07, 0.022, 0.04, c, c2, 3);
+            }
+        } else if (species.geom === "schilf_rohr") {
+            // SCHILF hoch-Rohr: 1 hoher Halm (3m bei scale=1), nahe am Wasser.
+            strip(0.0, 1.1, 0.045, 0.04, c, c2, 5);
+            strip(1.57, 1.05, 0.042, 0.04, c, c2, 5);
         } else if (species.geom === "fels") {
             // Low-Poly-Brocken: gejitterter Oktaeder (6 Ecken, 8 Flächen).
             const top = [0, 0.34, 0];
@@ -31601,6 +31843,32 @@ class AnazhRealm {
                 if (restored) this.state.blueprints[restored.name] = restored;
             }
             this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
+            // V18.176 (Λ.1 ROLE-CACHE-MIGRATION, Plan-Pflicht — Genese-Versions-
+            // Gate): die V18.173-livingCenterY-Wand klassifiziert reiche+
+            // symmetrische Eichen jetzt als architecture (Krone oben, yNorm > 0.7).
+            // Alte Welten (genVersion < 2) erben aber `bp.role: 'soul'` aus dem
+            // Save, weil ihre Eiche unter der ALTEN Regel ein Körper war. Heilung:
+            // re-derived alle emergenten Rollen (roleManual=false → die emergente
+            // Klassifikation lebt). Schöpfer-Intent (roleManual=true: Portal-Ziel,
+            // Werkstatt-Designation) bleibt heilig.
+            const genV = this.state.worldMeta && Number(this.state.worldMeta.genVersion);
+            const needsRoleMigration = !Number.isFinite(genV) || genV < 2;
+            if (needsRoleMigration && typeof this.computeBlueprintRole === "function") {
+                let migrated = 0;
+                for (const name of Object.keys(this.state.blueprints || {})) {
+                    const bpEntry = this.state.blueprints[name];
+                    if (!bpEntry || bpEntry.builtIn) continue;
+                    if (bpEntry.roleManual) continue; // Schöpfer-Intent unberührt
+                    const oldRole = bpEntry.role;
+                    const newRole = this.computeBlueprintRole(bpEntry);
+                    if (newRole && oldRole !== newRole) {
+                        bpEntry.role = newRole;
+                        migrated++;
+                    }
+                }
+                if (migrated > 0)
+                    this.log(`Λ.1 Role-Migration: ${migrated} Bauplan-Rollen re-derived (genVersion < 2)`);
+            }
         }
         if (Array.isArray(state.tools)) {
             let restoredTools = 0;
@@ -40867,16 +41135,43 @@ class AnazhRealm {
                 size: { x: 1.9, y: 1.8, z: 1.9 },
             },
         ];
-        // Λ.5 (V18.173 — DER ÖKOTON-WALD): vier neue Baumarten je 1 Gestalt
-        // (Mischwald-Saat). NUTZEN die existierenden Materialien `holz`/`laub`
-        // → die Tag-Neutralitäts-Wand bleibt heil (V17.16: keine neue Material-
-        // Tag-Verteilung, kein Affinitäts-Sprung). Die Variation kommt aus
-        // FORM (Stamm-Höhe, Krone-Gestalt) + COLOR (Birken-Weiß, Tannen-Dunkel-
-        // Grün). Die Mischwald-Verteilung lebt im Spawn (`_vegetationSampleSpawn`):
-        // wenn der argmax-Sieger ein Baum-Typ ist, würfelt ein Top-3-Pick mit
-        // aff² Gewichten — der Sieger dominiert (70%), Verlierer existieren.
+        // Λ.5 (V18.173/V18.176 — DER ÖKOTON-WALD): vier neue Baumarten ×
+        // drei Gestalten = 12 Baupläne (Mischwald-Tiefe). NUTZEN die
+        // existierenden Materialien `holz`/`laub` → die Tag-Neutralitäts-
+        // Wand bleibt heil (V17.16). Die Variation kommt aus FORM
+        // (jung/normal/alt unterscheiden Stamm-Höhe, Krone-Tiefe,
+        // Asymmetrie) + COLOR (Art-spezifisch). Die Mischwald-Verteilung
+        // wählt erst die ART (Top-3 aff² weighted), dann seed-
+        // deterministisch eine VARIANTE (jung 30% · normal 50% · alt 20%
+        // — junge Bäume häufig, alte rar = Wald-Demographie).
         //
-        // BIRKE — hell, schmal, hoch (Licht-Baum, Lichtungs-Rand).
+        // === BIRKE — hell, schmal, hoch (Licht-Baum, Lichtungs-Rand) ===
+        // jung: nur 1 Stamm-Segment + 2 kleine Kronen-Kugeln
+        const baumBirkeJungParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xede0c8,
+                position: { x: 0, y: 1.2, z: 0 },
+                size: { x: 0.32, y: 2.4, z: 0.32 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x9bbf4d,
+                position: { x: 0, y: 3.0, z: 0 },
+                size: { x: 1.3, y: 1.2, z: 1.3 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xb0d063,
+                position: { x: 0.2, y: 3.5, z: 0.1 },
+                size: { x: 0.9, y: 0.85, z: 0.9 },
+            },
+        ];
+        // normal: 2 Stamm-Segmente + 3 Kronen-Kugeln (die V18.173-Form)
         const baumBirkeParts = [
             {
                 shape: "cylinder",
@@ -40916,7 +41211,94 @@ class AnazhRealm {
                 size: { x: 1.4, y: 1.3, z: 1.4 },
             },
         ];
-        // ERLE — Ufer-Pflicht (`feuchte ≥ 0.5`); kräftiger Stamm + breite Krone.
+        // alt: 3 Stamm-Segmente + krumm + 5 große asymmetrische Kronen-Kugeln
+        const baumBirkeAltParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xe8d8be,
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 0.7, y: 4.4, z: 0.7 },
+                segments: 7,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xe8d8be,
+                position: { x: 0.2, y: 5.6, z: 0.05 },
+                size: { x: 0.5, y: 3.0, z: 0.5 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xe8d8be,
+                position: { x: 0.35, y: 7.4, z: 0.0 },
+                size: { x: 0.35, y: 1.8, z: 0.35 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x8bb240,
+                position: { x: 0, y: 6.6, z: 0 },
+                size: { x: 3.2, y: 2.7, z: 3.2 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x9bbf4d,
+                position: { x: -1.6, y: 6.4, z: 0.5 },
+                size: { x: 1.9, y: 1.7, z: 1.9 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xa3c454,
+                position: { x: 1.6, y: 6.5, z: -0.6 },
+                size: { x: 2.0, y: 1.8, z: 2.0 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xb0d063,
+                position: { x: 0.4, y: 8.3, z: 0.3 },
+                size: { x: 1.7, y: 1.5, z: 1.7 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xb0d063,
+                position: { x: -0.6, y: 8.0, z: -0.3 },
+                size: { x: 1.4, y: 1.3, z: 1.4 },
+            },
+        ];
+        // === ERLE — Ufer-Pflicht (feuchte ≥ 0.5); kräftiger Stamm + breite Krone ===
+        // jung: klein + schmal, 1 Krone-Kugel
+        const baumErleJungParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x6a5538,
+                position: { x: 0, y: 1.0, z: 0 },
+                size: { x: 0.55, y: 2.0, z: 0.55 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4f8638,
+                position: { x: 0, y: 2.6, z: 0 },
+                size: { x: 1.7, y: 1.5, z: 1.7 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5f9a40,
+                position: { x: -0.4, y: 2.9, z: 0.2 },
+                size: { x: 0.9, y: 0.85, z: 0.9 },
+            },
+        ];
         const baumErleParts = [
             {
                 shape: "cylinder",
@@ -40956,7 +41338,86 @@ class AnazhRealm {
                 size: { x: 2.0, y: 1.8, z: 2.0 },
             },
         ];
-        // BUCHE — runde Krone, gedrungen (kräftige Wald-Mitte).
+        // alt: weit ausladende Krone + 4 Kronen-Kugeln im Halbrund
+        const baumErleAltParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x4f3d2a,
+                position: { x: 0, y: 1.8, z: 0 },
+                size: { x: 1.2, y: 3.6, z: 1.2 },
+                segments: 8,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x4f3d2a,
+                position: { x: 0.15, y: 4.4, z: 0.05 },
+                size: { x: 0.85, y: 1.8, z: 0.85 },
+                segments: 7,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x366028,
+                position: { x: 0, y: 5.6, z: 0 },
+                size: { x: 4.0, y: 3.0, z: 4.0 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x437a30,
+                position: { x: -2.0, y: 5.2, z: 0.6 },
+                size: { x: 2.3, y: 2.0, z: 2.3 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4a823a,
+                position: { x: 2.0, y: 5.3, z: -0.6 },
+                size: { x: 2.4, y: 2.1, z: 2.4 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4f8638,
+                position: { x: 0.6, y: 6.4, z: 0.5 },
+                size: { x: 2.0, y: 1.8, z: 2.0 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x366028,
+                position: { x: -0.5, y: 6.3, z: -0.7 },
+                size: { x: 1.8, y: 1.6, z: 1.8 },
+            },
+        ];
+        // === BUCHE — runde Krone, gedrungen (kräftige Wald-Mitte) ===
+        // jung: knapp + schmal, 1 Kugel
+        const baumBucheJungParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x7a5d36,
+                position: { x: 0, y: 0.9, z: 0 },
+                size: { x: 0.55, y: 1.8, z: 0.55 },
+                segments: 7,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5e9447,
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 1.8, y: 1.5, z: 1.8 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x68a850,
+                position: { x: 0.2, y: 2.6, z: 0.1 },
+                size: { x: 1.1, y: 1.0, z: 1.1 },
+            },
+        ];
         const baumBucheParts = [
             {
                 shape: "cylinder",
@@ -41003,7 +41464,86 @@ class AnazhRealm {
                 size: { x: 2.0, y: 1.8, z: 2.0 },
             },
         ];
-        // TANNE — Kegel-Form, sehr dunkel, hoch (kalter Hochwald).
+        // alt: massiv, sehr runde Krone — wahre Wald-Mitte
+        const baumBucheAltParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x5a4222,
+                position: { x: 0, y: 1.8, z: 0 },
+                size: { x: 1.4, y: 3.6, z: 1.4 },
+                segments: 8,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x5a4222,
+                position: { x: 0, y: 4.4, z: 0 },
+                size: { x: 1.0, y: 1.8, z: 1.0 },
+                segments: 7,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x447030,
+                position: { x: 0, y: 5.4, z: 0 },
+                size: { x: 4.8, y: 4.0, z: 4.8 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5a9342,
+                position: { x: -2.2, y: 5.0, z: 0.6 },
+                size: { x: 3.0, y: 2.6, z: 3.0 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5e9e48,
+                position: { x: 2.2, y: 5.1, z: -0.7 },
+                size: { x: 3.1, y: 2.7, z: 3.1 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x68a850,
+                position: { x: 0.4, y: 6.6, z: 0.4 },
+                size: { x: 2.6, y: 2.2, z: 2.6 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x68a850,
+                position: { x: -0.7, y: 6.5, z: -0.5 },
+                size: { x: 2.3, y: 2.0, z: 2.3 },
+            },
+        ];
+        // === TANNE — Kegel-Form, sehr dunkel, hoch (kalter Hochwald) ===
+        // jung: kurz + 2 Kegel, schmal
+        const baumTanneJungParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x4a3220,
+                position: { x: 0, y: 1.0, z: 0 },
+                size: { x: 0.32, y: 2.0, z: 0.32 },
+                segments: 5,
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x255c30,
+                position: { x: 0, y: 2.4, z: 0 },
+                size: { x: 1.6, y: 2.0, z: 1.6 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x2d6a3a,
+                position: { x: 0, y: 3.6, z: 0 },
+                size: { x: 1.0, y: 1.6, z: 1.0 },
+            },
+        ];
         const baumTanneParts = [
             {
                 shape: "cylinder",
@@ -41048,6 +41588,67 @@ class AnazhRealm {
                 color: 0x357841,
                 position: { x: 0, y: 8.7, z: 0 },
                 size: { x: 0.9, y: 1.8, z: 0.9 },
+            },
+        ];
+        // alt: hoch, dichte mehrfache Kegel — Höhe-Riesin
+        const baumTanneAltParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x2c1a0e,
+                position: { x: 0, y: 2.6, z: 0 },
+                size: { x: 0.85, y: 5.2, z: 0.85 },
+                segments: 7,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x2c1a0e,
+                position: { x: 0, y: 6.6, z: 0 },
+                size: { x: 0.6, y: 2.6, z: 0.6 },
+                segments: 6,
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x16401e,
+                position: { x: 0, y: 5.4, z: 0 },
+                size: { x: 3.6, y: 3.4, z: 3.6 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x1d4a25,
+                position: { x: 0, y: 7.2, z: 0 },
+                size: { x: 3.0, y: 3.2, z: 3.0 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x265a30,
+                position: { x: 0, y: 9.0, z: 0 },
+                size: { x: 2.4, y: 3.0, z: 2.4 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x2d6a3a,
+                position: { x: 0, y: 10.7, z: 0 },
+                size: { x: 1.8, y: 2.8, z: 1.8 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x357841,
+                position: { x: 0, y: 12.3, z: 0 },
+                size: { x: 1.2, y: 2.4, z: 1.2 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x3e8748,
+                position: { x: 0, y: 13.8, z: 0 },
+                size: { x: 0.6, y: 1.6, z: 0.6 },
             },
         ];
         // Kiefer: schlanker 2-segmentiger Stamm + 3 gestapelte Kegel abnehmender
@@ -41940,14 +42541,73 @@ class AnazhRealm {
                 instanced: true,
                 parts: baumKieferParts,
             },
-            // Λ.5 (V18.173 — Mischwald-Saat) — vier neue Baumarten. Alle nutzen
+            // Λ.5 (V18.173/V18.176 — Mischwald-Saat) — vier Baumarten × DREI
+            // Gestalt-Varianten (jung/normal/alt) = 12 Baupläne. Alle nutzen
             // `holz`/`laub` (Tag-Neutralitäts-Wand: identische Affinitäts-Tags
             // wie eiche/kiefer); nur Form + Color unterscheiden. Erle bekommt
             // einen feuchte-Affinitäts-Term (Ufer-Anker, analog schilf).
+            // Mischwald-Lottery wählt nach der ART eine VARIANTE: jung 30 % ·
+            // normal 50 % · alt 20 % (junge Bäume häufig, alte rar = Demographie).
+            baum_birke_jung: {
+                name: "baum_birke_jung",
+                label: "Birke (jung)",
+                builtIn: true,
+                instanced: true,
+                parts: baumBirkeJungParts,
+            },
             baum_birke: { name: "baum_birke", label: "Birke", builtIn: true, instanced: true, parts: baumBirkeParts },
+            baum_birke_alt: {
+                name: "baum_birke_alt",
+                label: "Birke (alt)",
+                builtIn: true,
+                instanced: true,
+                parts: baumBirkeAltParts,
+            },
+            baum_erle_jung: {
+                name: "baum_erle_jung",
+                label: "Erle (jung)",
+                builtIn: true,
+                instanced: true,
+                parts: baumErleJungParts,
+            },
             baum_erle: { name: "baum_erle", label: "Erle", builtIn: true, instanced: true, parts: baumErleParts },
+            baum_erle_alt: {
+                name: "baum_erle_alt",
+                label: "Erle (alt)",
+                builtIn: true,
+                instanced: true,
+                parts: baumErleAltParts,
+            },
+            baum_buche_jung: {
+                name: "baum_buche_jung",
+                label: "Buche (jung)",
+                builtIn: true,
+                instanced: true,
+                parts: baumBucheJungParts,
+            },
             baum_buche: { name: "baum_buche", label: "Buche", builtIn: true, instanced: true, parts: baumBucheParts },
+            baum_buche_alt: {
+                name: "baum_buche_alt",
+                label: "Buche (alt)",
+                builtIn: true,
+                instanced: true,
+                parts: baumBucheAltParts,
+            },
+            baum_tanne_jung: {
+                name: "baum_tanne_jung",
+                label: "Tanne (jung)",
+                builtIn: true,
+                instanced: true,
+                parts: baumTanneJungParts,
+            },
             baum_tanne: { name: "baum_tanne", label: "Tanne", builtIn: true, instanced: true, parts: baumTanneParts },
+            baum_tanne_alt: {
+                name: "baum_tanne_alt",
+                label: "Tanne (alt)",
+                builtIn: true,
+                instanced: true,
+                parts: baumTanneAltParts,
+            },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
             damm: { name: "damm", label: "Damm", builtIn: true, parts: dammParts },
@@ -46189,9 +46849,20 @@ class AnazhRealm {
             "kristall_geode",
             "glutbrunnen",
         ];
-        // Λ.5 — der TREE_SET zur Mischwald-Lottery (alle baum_*-IDs); die
-        // Erle wird nur in feuchten Regionen aktiv (≥0.5 Λ-Schwelle).
-        const TREE_SET = new Set(["baum_eiche", "baum_kiefer", "baum_birke", "baum_erle", "baum_buche", "baum_tanne"]);
+        // Λ.5/V18.176 — pro Art die 3 Gestalt-Varianten (jung/normal/alt);
+        // Eiche+Kiefer sind heute 1-Gestalt (Saat aus dem alten Bestand).
+        // Demographie-Verteilung: jung 30 % · normal 50 % · alt 20 % — junge
+        // Bäume häufig, alte rar (echte Wald-Altersstruktur statt Klon-Wald).
+        const TREE_VARIANTS = {
+            baum_eiche: ["baum_eiche"],
+            baum_kiefer: ["baum_kiefer"],
+            baum_birke: ["baum_birke_jung", "baum_birke", "baum_birke_alt"],
+            baum_erle: ["baum_erle_jung", "baum_erle", "baum_erle_alt"],
+            baum_buche: ["baum_buche_jung", "baum_buche", "baum_buche_alt"],
+            baum_tanne: ["baum_tanne_jung", "baum_tanne", "baum_tanne_alt"],
+        };
+        const VARIANT_WEIGHTS = [0.3, 0.5, 0.2];
+        const TREE_SET = new Set(Object.keys(TREE_VARIANTS));
         // Γ5 (genese-plan — Determinismus-Schliff): der STILLE Math.random-
         // Fallback fällt. worldFieldAt() lazy-initialisiert state.worldField
         // (inkl. rngNoise, seed-gebunden) — bei fehlendem Feld würfelte vorher
@@ -46270,6 +46941,22 @@ class AnazhRealm {
                     }
                 }
             }
+            // V18.176 (Λ.5 Vertiefung) — die ART hat gewonnen; jetzt wähle
+            // VARIANTE (jung/normal/alt) per Demographie-Verteilung. Ein
+            // ZWEITER seed-Bit gibt die Variante: jung 30 % · normal 50 % ·
+            // alt 20 % (junge Bäume häufig, alte rar = echte Wald-Demographie).
+            const variants = TREE_VARIANTS[bestName] || null;
+            if (variants && variants.length > 1) {
+                const variantRng = ((seedForSpawn >>> 17) & 0xff) / 256;
+                let vacc = 0;
+                for (let vi = 0; vi < variants.length; vi++) {
+                    vacc += VARIANT_WEIGHTS[vi] || 1 / variants.length;
+                    if (variantRng < vacc) {
+                        bestName = variants[vi];
+                        break;
+                    }
+                }
+            }
         }
 
         // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
@@ -46285,7 +46972,9 @@ class AnazhRealm {
         // Lazy-Collision (Ammo-Bodies nur < 40 m, V9.92-Pattern), Distanz-
         // Mesh-Culling (< 150 m). Felsen/Geoden/Glutbrunnen bleiben spärliche
         // Landmarken (nur Bäume werden zum Wald). Werte browser-justierbar (FPS).
-        const isTree = TREE_SET.has(bestName);
+        // V18.176 — die ART-Wahl hat bestName auf eine VARIANTE migriert
+        // (baum_birke_jung etc.); isTree fragt jetzt prefix-basiert.
+        const isTree = typeof bestName === "string" && bestName.startsWith("baum_");
         let chance = BASE_RATE * bestAffinity * bestAffinity;
         // Λ.5 — Saum-Skala-Variation: der `_clumpAt` liefert die Wald-Maske.
         // Bäume am Rand (clump ∈ [0.05, 0.15]) bekommen size-Bonus (+15%);
@@ -59820,7 +60509,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.175.0";
+AnazhRealm.VERSION = "18.176.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -30527,8 +30527,12 @@ async function checkBandGammaGenese(ctx) {
             // Gating-WAND: nah-Mesh UND Fernfeld lesen feldNass/minGen/kronen
             // identisch — sonst ploppt die Dichte am Band-Übergang).
             const species = A.KLEIN_VEGETATION_SPECIES;
-            const schilf = species.find((s) => s.name === "schilf");
-            const farn = species.find((s) => s.name === "farn");
+            // V18.176 (Λ.4 Tiefe — V9.56-i Test-Wanderung): die Arten haben
+            // jetzt 3 Gestalt-Varianten je Art (blume_tulpe/klee/mohn,
+            // farn_normal/breit/schmal, ...) — der Γ-Test sucht jetzt einen
+            // beliebigen Repräsentanten je Art-Familie.
+            const schilf = species.find((s) => s.name && s.name.startsWith("schilf"));
+            const farn = species.find((s) => s.name && s.name.startsWith("farn"));
             out.schilfData = !!(schilf && schilf.field === "feuchte" && schilf.minGen === 2);
             out.farnDual = !!(
                 farn &&
