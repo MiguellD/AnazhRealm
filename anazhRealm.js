@@ -19732,24 +19732,64 @@ class AnazhRealm {
         return this._macroAnkerCache;
     }
 
-    // Drei-Terme der Macro-Geographie: Massiv-Boost (anisotrop), Tal-Senke
-    // (U-Profil + Innentrog) mit ZIEL-FLOOR (zum Lerpen), Becken-Mulde. Rein
-    // f(x, z, anker) → bit-identisch im Worker-Spiegel reproduzierbar.
+    // Γ4.2 (genese-plan Vertiefung §2.2) — RIDGE-NOISE für scharfe Grate.
+    // Ersetzt die naive smoothstep-Glocke durch sieben Oktaven `(1 − |noise|)²`
+    // mit anisotroper Rotation (NE-SW-Vorzugs-Streichrichtung) — das ist der
+    // Unterschied zwischen einem Hügel und einem Berg. Eigener Seed-Stream
+    // (`seed + "-macro-ridge"`, Γ5-Stream-Disziplin: kein Re-Roll anderer
+    // Welt-Streams). 7 Oktaven mit `i·7.31`-Offset (NICHT `+i`, das gibt
+    // Symmetrie-Beats), persistence 0.52, lacunarity 2.13.
+    _ridgeAnkerNoise(x, z) {
+        if (!this._macroRidgeNoise) {
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._macroRidgeNoise = new SimplexNoise(seed + "-macro-ridge");
+        }
+        const n = this._macroRidgeNoise;
+        // Anisotrope Domain: 45°-Rotation × 1.65-Y-Stauchung → Grate richten
+        // sich NE-SW aus (LAAS §4.2-Maß). Skala 1/600 → λ~600 m Massiv-Grat-Skala.
+        const rxBase = (x + z) * 0.7071;
+        const rzBase = (z - x) * 0.7071 * 1.65;
+        const SCALE = 1 / 600;
+        let ridge = 0;
+        let amp = 0.5;
+        let freq = SCALE;
+        let norm = 0;
+        for (let i = 0; i < 7; i++) {
+            const v = n.noise2D(rxBase * freq + i * 7.31, rzBase * freq + i * 7.31);
+            const nv = 1 - Math.abs(v);
+            ridge += nv * nv * amp;
+            norm += amp;
+            amp *= 0.52;
+            freq *= 2.13;
+        }
+        return ridge / norm;
+    }
+
+    // Drei-Terme der Macro-Geographie: Massiv-Boost (Ridge-Noise im Maskel),
+    // Tal-Senke (U-Profil + Innentrog) mit ZIEL-FLOOR (zum Lerpen), Becken-
+    // Mulde. Rein f(x, z, anker) → bit-identisch im Worker-Spiegel
+    // reproduzierbar.
     _macroSurfaceContribution(x, z, anker) {
-        // (1) Massiv-Boost — anisotrope smoothstep-Glocke, dreht entlang
-        // Streichrichtung. Das ist die FORTSETZUNGS-Form (§4 des Plans);
-        // die volle Ridge-Noise-Form (Vertiefung §4.2) kommt als spätere
-        // Welle (Substitution der Glocke durch das ridge-Noise-Spektrum).
+        // (1) Massiv — Vertiefung §2.2: Ridge-Noise statt smoothstep-Glocke.
+        // Der Massiv-Maskel `mShape` bündelt die Grate ins Massiv-Footprint;
+        // die scharfen Grate selbst kommen aus dem 7-Oktaven `_ridgeAnker-
+        // Noise`. Profi-Form: `mask × (ridge^1.5 × H_core + mask × H_lift)`
+        // — gibt scharfe Spitzen-Linien IM Massiv (ridge fluktuiert
+        // ~[0.3, 1.0] entlang den Graten) PLUS einen breiten Massiv-Sockel-
+        // Lift. Das ist der Unterschied zwischen Hügel und Berg (LAAS §2.2).
         const ddx = x - anker.massivC.x;
         const ddz = z - anker.massivC.z;
         const cs = Math.cos(anker.massivRot);
         const sn = Math.sin(anker.massivRot);
         const rxA = ddx * cs - ddz * sn;
         const rzA = ddx * sn + ddz * cs;
-        const ax = rxA / anker.massivAspect; // entlang Streichrichtung gestaucht
+        const ax = rxA / anker.massivAspect;
         const aDist = Math.hypot(ax, rzA);
         const mT = Math.max(0, Math.min(1, 1 - aDist / anker.massivR));
-        const massiv = mT * mT * (3 - 2 * mT) * anker.massivH;
+        const mShape = mT * mT * (3 - 2 * mT);
+        const ridge = this._ridgeAnkerNoise(x, z);
+        const ridgePow = Math.pow(ridge, 1.5);
+        const massiv = mShape * (ridgePow * anker.massivH * 1.25 + mShape * anker.massivH * 0.35);
         // (2) Becken-Senke — smoothstep-Mulde
         const bdx = x - anker.beckenC.x;
         const bdz = z - anker.beckenC.z;
@@ -19778,7 +19818,7 @@ class AnazhRealm {
                 tFloor = anker.talFloors[i] + (anker.talFloors[i + 1] - anker.talFloors[i]) * t;
             }
         }
-        return { massiv, becken, tDist, tFloor };
+        return { massiv, becken, tDist, tFloor, mShape };
     }
 
     _terrainMacroSurfaceY(x, z, includeDetail = true) {
@@ -19887,8 +19927,23 @@ class AnazhRealm {
         const _macroAnker = this._macroAnker();
         if (_macroAnker) {
             const _m = this._macroSurfaceContribution(x, z, _macroAnker);
-            // Massiv-Boost + Becken-Senke: additiv, geformen die Bühne
+            // Massiv-Boost (jetzt Ridge-Noise im Maskel) + Becken-Senke
             withoutTarn += _m.massiv + _m.becken;
+            // Γ4.4 (Vertiefung §2.4) DRAINAGE-BY-DESIGN: außerhalb des Tal-
+            // Korridors bekommt die Spalte zusätzliche Höhe proportional zur
+            // Tal-Distanz. Resultat: das Terrain hat eine monotone VOR-NEIGUNG
+            // Richtung Tal — die Drainage findet das Tal ZUVERLÄSSIG, kein
+            // closed basin abseits des designten Beckens. Mask `(1−mShape)`
+            // schützt das Massiv (sonst würde der Drainage-Hub den Berg noch
+            // höher schieben); Becken-Block schützt den Becken-Innenraum.
+            const _distOutsideTal = Math.max(0, _m.tDist - _macroAnker.talBreite);
+            const _drainageH = Math.min(_distOutsideTal * 0.06, 35);
+            const _distBecken = Math.hypot(x - _macroAnker.beckenC.x, z - _macroAnker.beckenC.z);
+            const _beckenBlock = Math.max(
+                0,
+                Math.min(1, (_distBecken - _macroAnker.beckenR * 0.6) / (_macroAnker.beckenR * 0.4))
+            );
+            withoutTarn += _drainageH * (1 - _m.mShape) * _beckenBlock;
             // Tal: Lerp die Surface zum Per-Vertex-Floor (innerhalb Tal-
             // Breite). Profi-Form: pow-U-Profil + smoothstep-Innentrog —
             // das Plan-Vertiefungs-§4.5-Pattern (Lerpen statt blindes
@@ -60753,7 +60808,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.179.0";
+AnazhRealm.VERSION = "18.180.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
