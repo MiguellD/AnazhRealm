@@ -57,8 +57,8 @@ function startSaveServer() {
             st.textContent = `
                 #topbar, #console, #stats-hud, #hotbar, #fps, #dialogue-box, #build-mode-hud,
                 #portal-prompt, #portal-invite-banner, #emotion-vignette, #emotion-label,
-                #status-emotion, #status-bar, #chat-feed, #inventory-overlay,
-                .drawer, .hud-overlay, .topbar, [class*="drawer"] {
+                #status-emotion, #statusbar, #chat-feed, #inventory-overlay,
+                .drawer, .hud-overlay, .topbar, [class*="drawer"], .hud-frame {
                     display: none !important;
                     visibility: hidden !important;
                     opacity: 0 !important;
