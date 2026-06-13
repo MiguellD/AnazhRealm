@@ -365,6 +365,34 @@ function macroAnker() {
     return _macroAnkerCache;
 }
 
+// Γ4.2 (Vertiefung §2.2 Worker-Spiegel) — RIDGE-NOISE für scharfe Grate.
+// Bit-identisch zum Main `_ridgeAnkerNoise`.
+let _macroRidgeNoise = null;
+let _macroRidgeSeed = null;
+function ridgeAnkerNoise(x, z) {
+    if (!_macroRidgeNoise || _macroRidgeSeed !== state.seed) {
+        _macroRidgeNoise = new SimplexNoise(state.seed + "-macro-ridge");
+        _macroRidgeSeed = state.seed;
+    }
+    const n = _macroRidgeNoise;
+    const rxBase = (x + z) * 0.7071;
+    const rzBase = (z - x) * 0.7071 * 1.65;
+    const SCALE = 1 / 600;
+    let ridge = 0;
+    let amp = 0.5;
+    let freq = SCALE;
+    let norm = 0;
+    for (let i = 0; i < 7; i++) {
+        const v = n.noise2D(rxBase * freq + i * 7.31, rzBase * freq + i * 7.31);
+        const nv = 1 - Math.abs(v);
+        ridge += nv * nv * amp;
+        norm += amp;
+        amp *= 0.52;
+        freq *= 2.13;
+    }
+    return ridge / norm;
+}
+
 function macroSurfaceContribution(x, z, anker) {
     const ddx = x - anker.massivC.x;
     const ddz = z - anker.massivC.z;
@@ -375,7 +403,11 @@ function macroSurfaceContribution(x, z, anker) {
     const ax = rxA / anker.massivAspect;
     const aDist = Math.hypot(ax, rzA);
     const mT = Math.max(0, Math.min(1, 1 - aDist / anker.massivR));
-    const massiv = mT * mT * (3 - 2 * mT) * anker.massivH;
+    const mShape = mT * mT * (3 - 2 * mT);
+    // Γ4.2 Mirror — Ridge-Noise im Maskel
+    const ridge = ridgeAnkerNoise(x, z);
+    const ridgePow = Math.pow(ridge, 1.5);
+    const massiv = mShape * (ridgePow * anker.massivH * 1.25 + mShape * anker.massivH * 0.35);
     const bdx = x - anker.beckenC.x;
     const bdz = z - anker.beckenC.z;
     const bDist = Math.hypot(bdx, bdz);
@@ -400,7 +432,7 @@ function macroSurfaceContribution(x, z, anker) {
             tFloor = anker.talFloors[i] + (anker.talFloors[i + 1] - anker.talFloors[i]) * t;
         }
     }
-    return { massiv, becken, tDist, tFloor };
+    return { massiv, becken, tDist, tFloor, mShape };
 }
 
 function terrainMacroSurfaceY(x, z, includeDetail) {
@@ -449,6 +481,15 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     if (_macroAnker) {
         const _m = macroSurfaceContribution(x, z, _macroAnker);
         withoutTarn += _m.massiv + _m.becken;
+        // Γ4.4 Drainage-by-Design (Worker-Spiegel)
+        const _distOutsideTal = Math.max(0, _m.tDist - _macroAnker.talBreite);
+        const _drainageH = Math.min(_distOutsideTal * 0.06, 35);
+        const _distBecken = Math.hypot(x - _macroAnker.beckenC.x, z - _macroAnker.beckenC.z);
+        const _beckenBlock = Math.max(
+            0,
+            Math.min(1, (_distBecken - _macroAnker.beckenR * 0.6) / (_macroAnker.beckenR * 0.4))
+        );
+        withoutTarn += _drainageH * (1 - _m.mShape) * _beckenBlock;
         if (_m.tDist < _macroAnker.talBreite) {
             const _uT = _m.tDist / _macroAnker.talBreite;
             const _uShape = Math.pow(_uT, _macroAnker.talBlendExp);
