@@ -12729,10 +12729,14 @@ class AnazhRealm {
         // hash3-Präzisions-Chaos). Fallback: der alte noise3-Pfad.
         let fbm;
         if (mxNoise) {
+            // V18.181-merge-Λ Sub 3g (V18.177, clever-gauss) — vierte Oktave
+            // (AAA-Detail-Standard): die feine Mikrostruktur in Cumulus-Rändern,
+            // sichtbar als zerrissene Fetzen statt glatter Schwellen-Kante.
             const o1 = mxNoise(cp);
             const o2 = mxNoise(cp.mul(2.03)).mul(0.5);
             const o3 = mxNoise(cp.mul(4.01)).mul(0.25);
-            fbm = o1.add(o2).add(o3).div(1.75).mul(0.5).add(0.5);
+            const o4 = mxNoise(cp.mul(8.05)).mul(0.125);
+            fbm = o1.add(o2).add(o3).add(o4).div(1.875).mul(0.5).add(0.5);
         } else {
             const o1 = noise3(cp);
             const o2 = noise3(cp.mul(2.03)).mul(0.5);
@@ -12761,20 +12765,41 @@ class AnazhRealm {
         // (nahe der Schwelle = ausgedünnte Fetzen) → der „plastische" Eindruck.
         const lit = smoothstep(thr, float(1.0), fbm);
         const cloudShade = mix(float(0.7), float(1.05), lit);
-        // Sonnen-Glow: nahe der Sonnen-Richtung ein warmer heller Rand (golden hour).
+        // V18.181-merge-Λ Sub 3g (V18.177, clever-gauss DIE WELT ERWACHT —
+        // AAA-Profi-Atmosphäre): die Sonnen-Halo-Schichten. AAA-Pattern: drei
+        // kaskadierte Glow-Layer + Sonnen-Disc-Highlight, damit die Sonne am
+        // Himmel als ECHTES Objekt erscheint (statt nur als Punkt). Goldener
+        // Halo am Tag, kühler Mondhalo nachts.
         const sunDot = clamp(dot(vDir, normalize(uSunDir)), float(0.0), float(1.0));
-        const sunGlow = pow(sunDot, float(5.0));
-        // Wolken-Grundfarbe folgt der Himmel-Helligkeit (Nacht graublau → Tag warm-
-        // weiß) + additive Sonnen-Wärme am Glow-Rand.
+        // Drei Schichten: bright Disc → enger Halo → weiter Halo → atmosphärischer Haze.
+        const sunGlowWide = pow(sunDot, float(4.0)); // Wolken-Wärme (golden hour)
+        const sunGlowMid = pow(sunDot, float(28.0)); // enger heller Halo
+        const sunGlowDisc = pow(sunDot, float(240.0)); // bright Sonnen-Disc (sichtbar als Kugel)
+        // Wolken-Grundfarbe folgt der Himmel-Helligkeit (Nacht graublau → Tag warm-weiß).
         const skyLum = uNebulaColor.x.add(uNebulaColor.y).add(uNebulaColor.z).div(3.0);
         const baseCloud = mix(
             vec3(0.4, 0.43, 0.52),
             vec3(1.0, 0.99, 0.96),
             clamp(skyLum.mul(2.2), float(0.0), float(1.0))
         );
-        const cloudColor = baseCloud.mul(cloudShade).add(vec3(1.0, 0.82, 0.55).mul(sunGlow.mul(0.55)));
+        // Wolken: Cumulus mit goldenem Glow-Rand (V17.2-Form) + sun-back-lit (V18.177).
+        const cloudColor = baseCloud
+            .mul(cloudShade)
+            .add(vec3(1.0, 0.82, 0.55).mul(sunGlowWide.mul(0.55)))
+            .add(vec3(1.0, 0.9, 0.7).mul(sunGlowMid.mul(0.4))); // sun-back-lit am Cumulus-Rand
 
-        const finalColor = mix(nebula, cloudColor, cloudAmt);
+        const finalCloud = mix(nebula, cloudColor, cloudAmt);
+        // Sonnen-DISC + Halo wirken AUCH am wolkenlosen Himmel: nebula bekommt
+        // einen weiten warmen Halo (die „warme Stunde"-Atmosphäre) + einen
+        // bright Disc-Highlight (die sichtbare Sonne, auch ohne Sphere-Mesh).
+        // isDayMix gated alles ab: nachts (skyLum klein) sind die Halos aus.
+        const isDayMix = clamp(skyLum.mul(3.5), float(0.0), float(1.0));
+        const haloWarm = vec3(1.0, 0.85, 0.55);
+        const discBright = vec3(1.2, 1.1, 0.9);
+        const finalColor = finalCloud
+            .add(haloWarm.mul(sunGlowWide.mul(0.18).mul(isDayMix))) // weiter goldener Halo
+            .add(haloWarm.mul(sunGlowMid.mul(0.6).mul(isDayMix))) // enger heller Halo
+            .add(discBright.mul(sunGlowDisc.mul(0.95).mul(isDayMix))); // Sonnen-Disc
 
         const skyboxGeometry = new THREE.SphereGeometry(500, 32, 32);
         const skyboxMaterial = new THREE.MeshBasicNodeMaterial();
