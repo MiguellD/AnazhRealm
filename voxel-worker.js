@@ -52,6 +52,7 @@ const state = {
     voxelEdits: [], // Array of { x, y, z, r, strength, mode }
     hydroComputing: false,
     carveBankSlope: 1.4, // Mirror AnazhRealm.HYDROSPHERE.carveBankSlope
+    genVersion: 1, // Γ1-Lesart-4 (V18.178) — die Genese-Schleuse. Fehlt im Snap (Legacy) → 1 → feuchteAt = 0.
 };
 
 self.onmessage = function (e) {
@@ -135,6 +136,7 @@ function applyStateSnapshot(snap) {
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
     if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
     if (typeof snap.carveBankSlope === "number") state.carveBankSlope = snap.carveBankSlope;
+    if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion; // Γ1-Lesart-4 (V18.178)
 }
 
 function applyStateDelta(delta) {
@@ -609,6 +611,78 @@ function hydroRiverAt(x, z) {
     return { depth, surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.25 + convexBulge };
 }
 
+// Γ1-Lesart-4 (V18.178) — DAS FEUCHTE-FELD im Worker. Bit-identischer Spiegel
+// von Main `_hydroDistAt` + `_feuchteAt`. Der V18.166-Γ1-Kern ließ den Worker
+// die Feuchte NICHT kennen, weil sie nur in Spawn/Streu/Boden-LESERN auf der
+// Main-Seite lebte. Die VISUELLE Lesart-4 läuft jetzt auch im Worker (er baut
+// die Chunk-Field-Colors, V9.91-Phase-3 — der Mesh-Color-Pfad gehört dem
+// Worker). Ohne diese zwei Funktionen würde der `mix(dampEarth, …)` des Mains
+// gegen die Worker-Naht ab Frame 1 driften (Determinismus-Wand rot).
+//
+// HARDKODIERTE KONSTANTEN (V17.100-Lehre): jede Runtime-Tunable im Mirror
+// würde den bit-Vertrag brechen. Bei einer AnazhRealm.FEUCHTE-Änderung im
+// Main hier mit-ziehen.
+const FEUCHTE_FLUSS_REICHWEITE = 26;
+const FEUCHTE_HOEHE_NAH = 1.5;
+const FEUCHTE_HOEHE_FERN = 7;
+const FEUCHTE_HOEHE_GEWICHT = 0.6;
+
+function hydroDistAt(x, z) {
+    const h = hydroFor(x, z);
+    if (!h || !h.ready || !h.riverBuckets) return { dist: Infinity, halfW: 0 };
+    const rb = h.riverBuckets;
+    const bs = h.bucketSize;
+    const bd = h.bucketsDim;
+    const bi0 = Math.floor((x - h.originX) / bs);
+    const bj0 = Math.floor((z - h.originZ) / bs);
+    let best = Infinity;
+    let bestHw = 0;
+    for (let dj = -1; dj <= 1; dj++) {
+        for (let di = -1; di <= 1; di++) {
+            const bi = bi0 + di;
+            const bj = bj0 + dj;
+            if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) continue;
+            const list = rb[bj * bd + bi];
+            if (!list) continue;
+            for (let s = 0; s < list.length; s++) {
+                const seg = list[s];
+                const ex = seg.bx - seg.ax;
+                const ez = seg.bz - seg.az;
+                const len2 = ex * ex + ez * ez || 1;
+                let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+                if (t < 0) t = 0;
+                else if (t > 1) t = 1;
+                const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
+                if (dist < best) {
+                    best = dist;
+                    bestHw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                }
+            }
+        }
+    }
+    return { dist: best, halfW: bestHw };
+}
+
+function feuchteAt(x, z, surfY) {
+    if (state.genVersion < 2) return 0;
+    const r = hydroDistAt(x, z);
+    let fluss = 0;
+    if (Number.isFinite(r.dist)) {
+        const inner = Math.max(1, r.halfW);
+        const outer = inner + FEUCHTE_FLUSS_REICHWEITE;
+        const t = Math.max(0, Math.min(1, (outer - r.dist) / (outer - inner)));
+        fluss = t * t * (3 - 2 * t);
+    }
+    let hoehe = 0;
+    if (Number.isFinite(surfY)) {
+        const wl = waterLevelAt(x, z);
+        const above = surfY - wl;
+        const t = Math.max(0, Math.min(1, (FEUCHTE_HOEHE_FERN - above) / (FEUCHTE_HOEHE_FERN - FEUCHTE_HOEHE_NAH)));
+        hoehe = t * t * (3 - 2 * t) * FEUCHTE_HOEHE_GEWICHT;
+    }
+    return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
+}
+
 function waterLevelAt(x, z) {
     let level = typeof state.waterLevel === "number" ? state.waterLevel : 0;
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
@@ -1042,6 +1116,12 @@ function attachFieldColors(positions) {
     };
     const stone = [0.42, 0.44, 0.49];
     const earth = [0.27, 0.49, 0.19];
+    // Γ1-Lesart-4 (V18.178) — Mirror von AnazhRealm._attachVoxelFieldColors:
+    // dampEarth-Ton (dunkler-satter Boden) + Feuchte-Sichtbarkeitskurve [0.30,
+    // 0.85]. Hardkodiert (V17.100-Lehre, bit-Vertrag mit dem Main).
+    const dampEarth = [0.22, 0.18, 0.12];
+    const F_VIS_LO = 0.3;
+    const F_VIS_HI = 0.85;
     const lava = [0.46, 0.2, 0.11];
     const violet = [0.55, 0.36, 0.86];
     const snow = [0.92, 0.93, 1.0];
@@ -1064,6 +1144,11 @@ function attachFieldColors(positions) {
             c[2] += (target[2] - c[2]) * t;
         };
         mix(earth, ss(0.25, 0.85, f.lebendig));
+        // Γ1-Lesart-4 (V18.178) — DER BODEN ATMET (Mirror). Identische Position
+        // im Mix-Stack wie Main: nach earth, vor lava/snow/sed/strand. y ist die
+        // Vertex-Y = die Oberfläche, als surfY-Argument übergeben.
+        const feuchte = feuchteAt(x, z, y);
+        mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
         mix(lava, ss(0.38, 0.92, f.glut));
         mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
         // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y. Bit-

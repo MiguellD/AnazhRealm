@@ -16858,6 +16858,10 @@ class AnazhRealm {
             voxelEdits: this._snapshotVoxelEdits(),
             hydroComputing: !!this._hydroComputing,
             carveBankSlope: AnazhRealm.HYDROSPHERE.carveBankSlope,
+            // Γ1-Lesart-4 (V18.178) — die genVersion-Schleuse reist mit, damit der
+            // Worker-Spiegel der Feuchte-Mix-Linie identisch gated (Legacy-Welten
+            // behalten ihr Gesicht: < 2 → feuchte = 0, kein Erde-Boden-Drift).
+            genVersion: this._genVersion(),
         };
         const h = this.state.hydrosphere;
         if (h && h.ready) {
@@ -20845,6 +20849,14 @@ class AnazhRealm {
         };
         const stone = [0.42, 0.44, 0.49];
         const earth = [0.27, 0.49, 0.19];
+        // Γ1-Lesart-4 (V18.178) — dampEarth: ein dunklerer, satterer Erd-Ton
+        // als earth. Die Feuchte-Linie liegt im Mix-Stack ZWEITER (nach earth,
+        // vor lava/snow/sed/strand) — sie zieht den Boden dunkler/satter, soll
+        // aber von Glut/Schnee überschreibbar bleiben (ein Vulkan-Hang in
+        // Flussnähe bleibt Vulkan-Hang). Erst-Wurf [0.22, 0.18, 0.12] gegen
+        // earth ~[0.27, 0.49, 0.19] — der Cel-Schritt im V12-Renderer steuert
+        // die Sättigung, hier braucht es nur den klaren Anker-Ton.
+        const dampEarth = [0.22, 0.18, 0.12];
         const lava = [0.46, 0.2, 0.11];
         const violet = [0.55, 0.36, 0.86];
         const snow = [0.92, 0.93, 1.0];
@@ -20859,6 +20871,12 @@ class AnazhRealm {
         // die Uferlinie zu einer emergenten Beige-Linie — der Schöpfer-
         // Befund "küste versteht das sie küste ist".
         const sand = [0.87, 0.78, 0.55];
+        // Γ1-Lesart-4 (V18.178) — die schmal-aber-deutlich-Kurve der Feuchte-
+        // Sichtbarkeit. Aus AnazhRealm.FEUCHTE gelesen (browser-justierbar im
+        // Main); der Worker-Spiegel hardkodiert sie (V17.100-Lehre, eine
+        // Runtime-Tunable würde den bit-Vertrag brechen).
+        const F_VIS_LO = AnazhRealm.FEUCHTE.sichtbarLo;
+        const F_VIS_HI = AnazhRealm.FEUCHTE.sichtbarHi;
         for (let i = 0; i < n; i++) {
             const x = pos.getX(i);
             const y = pos.getY(i);
@@ -20871,6 +20889,17 @@ class AnazhRealm {
                 c[2] += (target[2] - c[2]) * t;
             };
             mix(earth, ss(0.25, 0.85, f.lebendig));
+            // Γ1-Lesart-4 (V18.178) — DER BODEN ATMET: die Feuchte schiebt den
+            // Boden Richtung dampEarth (dunkler-satter). Die Lesart-4 schließt
+            // die Kausalkette „Wasser → feuchter Boden" als VISUELLE Realität —
+            // ein Ufer liest sich aus Distanz als Ufer, auch ohne dass der
+            // Spiegel im Frame ist. Reihenfolge im mix-Stack ist Pflicht: nach
+            // earth (lebendig-Boden), VOR lava/snow/sed/strand (sie überschreiben
+            // bei Glut/Höhe/Tiefe/Strand). genVersion-Schleuse via _feuchteAt
+            // (< 2 → 0 → kein Mix); der Vertex-y ist die Surface (das Vertex
+            // SITZT auf der Oberfläche), darum direkt als surfY-Argument.
+            const feuchte = this._feuchteAt(x, z, y);
+            mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
             mix(lava, ss(0.38, 0.92, f.glut));
             mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
             // V17.105 — Schnee auf PROMINENZ (y − kontinentale Basis cont0), nicht
@@ -60538,7 +60567,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.177.0";
+AnazhRealm.VERSION = "18.178.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -61334,6 +61363,15 @@ AnazhRealm.FEUCHTE = Object.freeze({
     hoeheGewicht: 0.6, // der breite Niederungs-Term zählt schwächer als der Fluss
     affinitaetGewicht: 0.8, // feuchte × lebendig in der Spawn-Affinität
     erdeGewicht: 0.35, // Γ1-Lesart Boden: feuchte hebt die erde-Achse beim Graben
+    // Γ1-Lesart-4 (V18.178) — der Boden ATMET: Vertex-Color-Mix einer dunkleren,
+    // satteren Erd-Schicht über der lebendig-Erde. Die Feuchte wird damit von
+    // einer unsichtbaren Datenrealität zur visuellen — ein Ufer liest sich aus
+    // 20 m Distanz als Ufer, auch wenn der Wasser-Spiegel nicht im Frame ist.
+    // sichtbarLo/sichtbarHi: schmal-aber-deutlich-Kurve (Niederungen kippen, der
+    // breite trockene Boden bleibt earth). Browser-justierbar — bit-identisch
+    // im Worker `attachFieldColors` (Konstanten hardkodiert dort, V17.100-Lehre).
+    sichtbarLo: 0.3,
+    sichtbarHi: 0.85,
 });
 // Γ2 — die Kronen-Lesart: dasselbe c wie der Baum-Leser (λ~167 m, _clumpAt
 // 0.006) — die Kopplung an die realen Wälder ist strukturell, ohne je eine

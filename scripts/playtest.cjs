@@ -30486,6 +30486,39 @@ async function checkBandGammaGenese(ctx) {
                 r.state.worldMeta.genVersion = 1;
                 out.feuchteLegacy = r._feuchteAt(bank.x, bank.z, bank.sy);
                 r.state.worldMeta.genVersion = 2;
+                // Γ1-Lesart-4 (V18.178) — DER BODEN ATMET: Same-Position-A/B
+                // über die genVersion-Schleuse. Mit genVersion=2 läuft die Mix-
+                // Linie (feuchte > 0 am Ufer → dampEarth-Mix dunkelt); mit
+                // genVersion=1 schweigt sie (feuchte=0 → kein Mix). Die ΔLum
+                // an demselben Vertex isoliert die Welle, frei von Welt-Stimmen-
+                // Variation. Plus source-probe der Mix-Linie (struktureller
+                // Wächter gegen versehentliches Entfernen — V8.50-Lehre).
+                const THREE = window.THREE;
+                if (THREE) {
+                    const mkGeom = () => {
+                        const g = new THREE.BufferGeometry();
+                        g.setAttribute(
+                            "position",
+                            new THREE.BufferAttribute(new Float32Array([bank.x, bank.sy, bank.z]), 3)
+                        );
+                        return g;
+                    };
+                    const gOn = mkGeom();
+                    r._attachVoxelFieldColors(gOn);
+                    const cOn = gOn.getAttribute("color").array;
+                    const lumOn = (cOn[0] + cOn[1] + cOn[2]) / 3;
+                    r.state.worldMeta.genVersion = 1;
+                    const gOff = mkGeom();
+                    r._attachVoxelFieldColors(gOff);
+                    const cOff = gOff.getAttribute("color").array;
+                    const lumOff = (cOff[0] + cOff[1] + cOff[2]) / 3;
+                    r.state.worldMeta.genVersion = 2;
+                    out.bankLumOn = lumOn;
+                    out.bankLumOff = lumOff;
+                    out.bankDLum = lumOff - lumOn; // > 0 = Welle dunkelt
+                }
+                const colSrc = r._attachVoxelFieldColors.toString();
+                out.colSrcHasDamp = /dampEarth/.test(colSrc) && /F_VIS_LO/.test(colSrc);
             }
             // (3) Affinitäts-KONSUM kontrolliert (V17.32): DERSELBE Punkt,
             // feuchte explizit 1 vs 0 → Δ = tags.lebendig × Gewicht / 4, exakt
@@ -30590,6 +30623,15 @@ async function checkBandGammaGenese(ctx) {
     check(
         `Γ1 Affinitäts-KONSUM: feuchte hebt die Baum-Resonanz (Δ=${res.affDelta && res.affDelta.toFixed ? res.affDelta.toFixed(3) : res.affDelta})`,
         Number.isFinite(res.affDelta) && res.affDelta > 0.04
+    );
+    // Γ1-Lesart-4 (V18.178) — DER BODEN ATMET.
+    check(
+        `Γ1-Lesart-4 Mix-Linie LEBT in der Source (dampEarth + F_VIS_LO)`,
+        res.colSrcHasDamp === true
+    );
+    check(
+        `Γ1-Lesart-4 BODEN ATMET am Ufer: ΔLum=${res.bankDLum && res.bankDLum.toFixed ? res.bankDLum.toFixed(3) : res.bankDLum} (Welle dunkelt feuchte Vertices)`,
+        Number.isFinite(res.bankDLum) && res.bankDLum > 0
     );
     check(
         "Γ2 KRONEN differenzieren: unter wächst im Wald-Klumpen, lichtung in der Lücke, rand meidet beide Pole, ohne kronen-Feld neutral 1",
