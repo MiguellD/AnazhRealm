@@ -1887,29 +1887,46 @@ er voxel-worker.js anfasst, und beide Hunks zusammen wandern.
   PFLICHT · §14.8 nicht-gelesene Sub-Blöcke · §14.9 Γ-Bogen-Erweiterung).
   Mess-Wand: `git merge-base` bestätigt common base 6d9d342; clever-gauss-
   Real-Stand d0f0ec1 (V18.181, +4626/−142) vs tesla 3da302f (V18.179,
-  +2360/−313) GEMESSEN. — *in Bearbeitung*
+  +2360/−313) GEMESSEN. **✓ abd1891 (13.06.2026)**
 
-- **Welle 1 — V18.180-FIX** auf V18.172: vier Wunden geheilt (revokedKeys
-  als Map · Γ5 streamRng · vier tote Helfer fort · _hydroWaterLevelAt fort
-  · audit:strict-Wand). Mess-Wand: 3500 Invarianten + 3 neue. — *offen*
+- **Welle 1 — V18.180-FIX** auf V18.172: fünf Wunden geheilt (revokedKeys
+  als Map · Γ5 streamRng · drei tote Helfer fort, `_archInstanceUpdate` als
+  SAAT BEHALTEN — Plan §6.3-Korrektur, CLAUDE.md-Lehre · _hydroWaterLevelAt
+  fort · audit:strict-Wand). Mess-Wand: Alle Invarianten OK + Welle-1-
+  Test-Wanderung V9.43-c.2 auf _waterLevelAt. **✓ 56763a9 (13.06.2026)**
 
-- **Welle 2 — V18.180-merge-W**: tesla rebased auf Bugfix, gemerged in
-  main. Mess-Wand: playtest + audit:strict + diag-atlas grün. — *offen*
+- **Welle 2 — V18.180-merge-W**: tesla auto-merged auf zen-pascal-7k36wk
+  ohne Konflikt — die beiden Branches berühren disjunkte Regionen.
+  Mess-Wand: playtest + audit:strict + diag-atlas grün, Tesla-Substanz
+  GEMESSEN integriert (W-E/W-F/W-G/W-H/W3/W6 alle Methoden vorhanden +
+  26 Atlas-Marker). **✓ 332f9e7 (13.06.2026)**
 
-  **Welle-2-Vorbedingung (Welle 0):** vor dem Rebase die 9 nicht-gelesenen
-  tesla-Hunks aus §14.8 zeilenweise lesen. Wenn ein Block die Annahmen
-  sprengt → Welle 0 nachpflegen.
-
-- **Welle 3 — V18.181-merge-Λ** (Sub 3a–3i, NEU 3h+3i für Γ-Bogen):
-  clever-gauss-Substanz (Λ + Γ) auf tesla-Architektur, Synthese rund.
-  Mess-Wand: alle bestehenden + 7 neue Λ-Bänder + AAA-Band + ≥1 neues
-  Γ-Band + Worker-Mirror-Wand bit-identisch. — *offen*
+- **Welle 3 — V18.181-merge-Λ** (Sub 3a–3i): clever-gauss-Substanz
+  (Λ + Γ) auf tesla-Architektur, Synthese rund.
+  - Sub 3a+3b+3g-Konstanten: `INSTANCE_TINT` frozen, `AERIAL` erweitert,
+    `_substanceResponseProfile` 12-Feld-Synthese (Plan §9). **✓ 2b2bb3f**
+  - Sub 3c+3d: Λ.1 livingCenterY-Heilung + V9.56-i Test-Wanderung; Λ.2
+    Pro-Instanz-Tint Daten-Flow (HISM instanceColor lazy, Snapshot+
+    Restore). **✓ 739ce4c**
+  - Sub 3g KONSUMENTEN: 3 kaskadierte Sonnen-Halos + 4. Cumulus-Oktave
+    in tesla's createGalaxySkybox. **✓ 536f7d9**
+  - Sub 3e: Λ.5 Mischwald-Synthese (Plan §10), 12 neue Baupläne +
+    candidates 5→9 + switch-case-TREE_VARIANTS. **✓ 63e44e5**
+  - Sub 3f: Λ.3 Wind-Sway auf Bäumen (positionNode-Sway aus wiegen-
+    Antenne, lazy windUniforms). Λ.4/Λ.6 als Folge-Welle markiert
+    (Browser-Verify nötig). **✓ d8aba10**
+  - Sub 3h: Γ1-Lesart-4 DER BODEN ATMET + Worker-Mirror bit-identisch
+    (+278 Z. in voxel-worker.js, genVersion-Schleuse). **✓ 332c144**
+  - Sub 3i: Γ4 Welt-Komposition + Γ4.2/4.4 Hügel-zu-Berg + Γ4½ Slope/
+    Rock-Foundation (3 Cherry-Picks, MACRO_ANKER, Ridge-Noise 7 Oktaven,
+    Y-Stauchung 1.65×, Worker-Mirror). V9.56-i: `_applyAerialOutput`→
+    `_applySubstanceResponse` in 7 Playtest-Stellen migriert (tesla-
+    Rename Welle 2 nicht mit-gewandert). **✓ b77d9e6**
 
 - **Welle 4 — V18.182-Painterly-Mischwald** (PFLICHT, NICHT Empfehlung —
-  Welle-0-Korrektur): die 4 neuen Bäume bekommen die Painterly-Krone, sonst
-  bleibt der Wald permanent inhomogen (Eiche/Kiefer painterly, birke/erle/
-  buche/tanne flach).
-  Mess-Wand: `checkBandLambda5Painterly` grün, `diag-wald` macht sichtbar. — *offen*
+  Welle-0-Korrektur): Birke/Erle/Buche NORMAL-Varianten auf 7-Layer-
+  Painterly-Krone mit Vertikal-Gradient. Tanne bleibt Cone-Nadel-Form.
+  Tag-Neutralität GEMESSEN erhalten. **✓ a458e31 (13.06.2026)**
 
 - **Welle 5 — V18.183-Hygiene-Konsolidierung**: Atlas auf Synthese-Stamm,
   CLAUDE.md + handover synchronisiert, Dubletten geprüft.
