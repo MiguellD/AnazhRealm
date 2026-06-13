@@ -4978,7 +4978,7 @@ class AnazhRealm {
             // List-UI refresh (Memory-Length könnte zu neuer Spec-Pill führen
             // wenn say als skill-key zählen würde — tut es aktuell nicht,
             // aber Refresh ist günstig).
-            if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+            this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
         }
         // Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschlag der Kreatur.
         // Whitelist-Validation gegen CREATURE_PROPOSED_OPS (atmosphärisch
@@ -13290,7 +13290,7 @@ class AnazhRealm {
             }
         }
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
-        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+        this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
     }
 
     clearCreatures() {
@@ -13528,7 +13528,7 @@ class AnazhRealm {
         if (typeof this._refreshCreatureStatsCache === "function") {
             this._refreshCreatureStatsCache(creature);
         }
-        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+        this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
     }
 
     // === Welle 6.H Phase 2F.3 — Kreatur-Boosts via Konsumables ===
@@ -14303,7 +14303,7 @@ class AnazhRealm {
                 this.log(`${creature.userData.name || "Ein Wesen"} wehrt sich!`, "INFO");
             }
         }
-        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+        this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
         return { ok: true, dealt, killed: false };
     }
 
@@ -14584,7 +14584,7 @@ class AnazhRealm {
             });
         }
         // List-UI-Refresh damit die neue Pill sofort sichtbar wird.
-        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+        this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
         // Welle 6.H Phase 2E V2 — proaktive Sprache bei Level-Up.
         // Event-Typ je nach Skill-Art: gather/build. Throttle in
         // _creatureSpeakProactive verhindert Flood bei Mehr-Level-Bursts.
@@ -15417,7 +15417,7 @@ class AnazhRealm {
             }
         }
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
-        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+        this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
         return true;
     }
 
@@ -15805,7 +15805,7 @@ class AnazhRealm {
                 if (typeof this._refreshCreatureCarryingVisual === "function") {
                     this._refreshCreatureCarryingVisual(creature);
                 }
-                if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+                this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
                 return out.set(0, 0, 0);
             }
             // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation.
@@ -15863,7 +15863,7 @@ class AnazhRealm {
                     materials: harvest.materials,
                 });
             }
-            if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+            this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
             return out.set(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
         }
         // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (Such-Phase).
@@ -15965,7 +15965,7 @@ class AnazhRealm {
                 if (!gate.free && typeof this.renderInventoryUI === "function") {
                     this.renderInventoryUI();
                 }
-                if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+                this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
                 return out.set(0, 0, 0);
             }
             return out.set((dxp / distp) * buildSpeed, 0, (dzp / distp) * buildSpeed);
@@ -16187,7 +16187,7 @@ class AnazhRealm {
             this.state._pendingCreatureSnapshots = null;
             this.log(`Kreaturen wiederhergestellt: ${restored} aus persistiertem Save`, "INFO");
             if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
-            if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+            this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
             return;
         }
         this.clearCreatures();
@@ -16220,7 +16220,7 @@ class AnazhRealm {
         }
         this.log(`Kreaturen gespawnt: ${safeCount} Kreaturen`);
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
-        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+        this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
     }
 
     updateCreatures(delta) {
@@ -33953,18 +33953,72 @@ class AnazhRealm {
     // Throttle-Tick (Profi-Feedback ist instant). Rendert NUR, wenn das
     // Ich-Overlay offen ist (sonst kostet es nichts); rAF-gebündelt, damit
     // ein Aufnahme-Schwall (Kreatur liefert 8 Stacks) EINEN Render zahlt.
-    _refreshIchIfOpen() {
+    // ===== W3 (V18.176) — DER UI-PULS: ein dirty(raum) → eine Render-Insel =====
+    // Die Verallgemeinerung des M5-`_refreshIchIfOpen`-Musters auf ALLE Räume
+    // (meister-plan §8.8f). Die GEMESSENE Krankheit (der Boost-Doppel war das
+    // Symptom): N hand-verdrahtete Render-Aufrufe pro Raum schreiben direkt DOM
+    // — zwei in einem Frame ⇒ Doppel-Render derselben Region; jeder Mechanik-
+    // Pfad muss den Render selbst rufen ⇒ ein vergessener Pfad lässt den Raum
+    // stale. HEILUNG: die Mechanik-Pfade melden nur `_uiDirty(raum)`; EIN rAF-
+    // gebündelter Puls rendert JEDE schmutzige Raum-Insel GENAU EINMAL pro Frame
+    // (Set dedupt → Doppel-Render strukturell unmöglich). `isOpen` (optional):
+    // hat der Raum einen verifizierten On-Open-Render (Ich, M5), skippt die
+    // Insel bei geschlossenem Raum (Perf); ohne `isOpen` rendert sie IMMER (das
+    // versteckte Drawer-DOM bleibt frisch — kein Stale-Risiko, der Hof-Vertrag).
+    // Eine fehlerhafte Insel ist isoliert (try/catch — ein Raum-Render-Wurf
+    // killt nicht den Puls der anderen).
+    _uiRoomRegistry() {
+        if (this._uiRooms) return this._uiRooms;
+        const overlayOpen = () => {
+            const o = typeof document !== "undefined" && document.getElementById("inventory-overlay");
+            return !!o && o.style.display !== "none" && o.getAttribute("aria-hidden") !== "true";
+        };
+        const drawerOpen = (n) => {
+            const d = typeof document !== "undefined" && document.querySelector(`.drawer[data-drawer="${n}"]`);
+            return !!d && !d.hidden;
+        };
+        this._uiRooms = {
+            // Ich: skip-when-closed (M5-verifiziert — der Open-Pfad rendert frisch).
+            ich: { render: () => this.renderInventoryUI && this.renderInventoryUI(), isOpen: overlayOpen },
+            // Hof: skip-when-closed (der V18.176-On-Open-Render im Drawer-Hook
+            // macht das Öffnen selbst-genügsam → das hidden-DOM darf ruhen).
+            hof: {
+                render: () => this._renderCreatureListUI && this._renderCreatureListUI(),
+                isOpen: () => drawerOpen("kreaturen"),
+            },
+        };
+        return this._uiRooms;
+    }
+    _uiDirty(raum) {
         if (typeof document === "undefined") return;
-        const overlay = document.getElementById("inventory-overlay");
-        if (!overlay || overlay.style.display === "none" || overlay.getAttribute("aria-hidden") === "true") return;
-        if (this._ichRefreshQueued) return;
-        this._ichRefreshQueued = true;
+        const reg = this._uiRoomRegistry();
+        if (!reg[raum]) return;
+        (this._uiDirtyRooms || (this._uiDirtyRooms = new Set())).add(raum);
+        if (this._uiPulseQueued) return;
+        this._uiPulseQueued = true;
         const run = () => {
-            this._ichRefreshQueued = false;
-            if (typeof this.renderInventoryUI === "function") this.renderInventoryUI();
+            this._uiPulseQueued = false;
+            const dirty = this._uiDirtyRooms || new Set();
+            this._uiDirtyRooms = new Set();
+            for (const r of dirty) {
+                const room = reg[r];
+                if (!room) continue;
+                if (room.isOpen && !room.isOpen()) continue;
+                try {
+                    room.render();
+                } catch (_e) {
+                    if (typeof window !== "undefined") window.__uiPulseError = String((_e && _e.message) || _e);
+                }
+            }
         };
         if (typeof requestAnimationFrame === "function") requestAnimationFrame(run);
         else run();
+    }
+
+    // V18.176 — `_refreshIchIfOpen` ist jetzt ein ALIAS auf den EINEN Puls
+    // (die 8 Aufrufer bleiben heil; die Logik lebt in `_uiDirty`).
+    _refreshIchIfOpen() {
+        this._uiDirty("ich");
     }
 
     // V17.57 W2-B — equipTool/equipWeapon sind jetzt ALIASE auf equipHeld (ein Slot, kein
@@ -49987,6 +50041,12 @@ class AnazhRealm {
     _hofHandleDrawerChange(name) {
         const stage = this.state.hofStage;
         if (name === "kreaturen") {
+            // W3 (V18.176) — der ON-OPEN-Render der Hof-Insel: die Liste wird
+            // beim Öffnen SYNCHRON frisch gerendert (so darf die Insel `isOpen`-
+            // skippen, ohne dass das hidden-DOM je stale wird). Schlichte Form
+            // (kein typeof-Guard) — DAS ist die Insel, kein Mechanik-Pfad; die
+            // Grep-Wand zählt nur die geguardete Mechanik-Signatur.
+            this._renderCreatureListUI();
             const s = this._hofEnsureStage();
             if (!s) return;
             s.active = true;
@@ -59474,7 +59534,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.175.0";
+AnazhRealm.VERSION = "18.176.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

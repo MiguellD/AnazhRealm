@@ -1022,12 +1022,12 @@ UX-Seite (verlorener/kompromittierter Schlüssel) noch nicht.
 
 **Die VERBUNDENE Reihenfolge (ersetzt §8.2-Reihenfolge; Stand V18.174):**
 Ψ0+Ψ1+W7-Korpus ✓ → W-A…W-D ✓ → W-E/Λ das Frequenzband ✓ (V18.173, S-Blick
-offen) → W6 Stamm-Atlas ✓ (V18.174) → W-F Wasser ✓ (V18.175 — Tauch-Trigger +
-Boot-Schwimmen mit) → **W3 UI-Puls ist der NÄCHSTE Bogen** (das Organ hinter
-W-C: dirty(raum) → rAF-gebündelte Render-Inseln) → W-G Gelenke · W-H Wald →
-W5-Entscheid → **M9 die Krone** (S-Dialog; + Schlüssel-Verwahrungs-Sprosse).
-Die v1.0-DoD (f) ist das Ziel-Band über allem; parallel-fähig: Φ0/Φ1 ·
-T-Welle (nach W6 jetzt FREI).
+offen) → W6 Stamm-Atlas ✓ (V18.174) → W-F Wasser ✓ (V18.175) → W3 UI-Puls ✓
+(V18.176 — `_uiDirty(raum)`-Organ + Inseln, Ich/Hof; Werkstatt/Bibliothek
+docken an, wenn Doppel-Render gemessen) → **W-G Gelenke · W-H Wald sind die
+NÄCHSTEN Bögen** → W5-Entscheid → **M9 die Krone** (S-Dialog; +
+Schlüssel-Verwahrungs-Sprosse). Die v1.0-DoD (f) ist das Ziel-Band über
+allem; parallel-fähig: Φ0/Φ1 · T-Welle (nach W6 jetzt FREI).
 
 ### §8.9 DIE SWOT-INVERSIONEN (12.06.) — was davon in die Planung einfließt
 
