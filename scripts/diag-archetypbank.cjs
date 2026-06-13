@@ -238,6 +238,86 @@ function startSaveServer() {
                 },
                 { n: "GEGEN leerer ein-block", p: [P("box", "stein", 0, 0.5, 0, 1, 1, 1)], ne: "vehicle" },
                 { n: "GEGEN glut-brocken ≠ seele", p: [P("sphere", "glut", 0, 0.5, 0, 1.2, 1.2, 1.2)], ne: "soul" },
+                // === Λ.1 (V18.173 — DIE REGEL HEILEN, livingCenterY) ===
+                // Reiche, symmetrische Bäume sollen architecture bleiben, weil
+                // ihre laub-Krone OBEN sitzt (yNorm > 0.7). Nur lebende Körper
+                // mit mittig verteiltem fleisch sollen soul werden (yNorm ∈ 0.3..0.7).
+                {
+                    n: "Λ.1: eiche reich symmetrisch (laub oben → architecture)",
+                    p: [
+                        P("cylinder", "holz", 0, 1.5, 0, 0.85, 3.2, 0.85),
+                        P("cylinder", "holz", -1.2, 4.0, 0, 0.3, 1.5, 0.3),
+                        P("cylinder", "holz", 1.2, 4.0, 0, 0.3, 1.5, 0.3),
+                        P("sphere", "laub", 0, 4.7, 0, 2.9, 2.6, 2.9),
+                        P("sphere", "laub", -1.5, 4.7, 0, 1.5, 1.4, 1.5),
+                        P("sphere", "laub", 1.5, 4.7, 0, 1.5, 1.4, 1.5),
+                    ],
+                    e: "architecture",
+                },
+                {
+                    n: "Λ.1: eiche 4-Äste symmetrisch (laub oben → architecture)",
+                    p: [
+                        P("cylinder", "holz", 0, 1.5, 0, 0.85, 3.2, 0.85),
+                        P("cylinder", "holz", -1.0, 4.0, 0, 0.25, 1.5, 0.25),
+                        P("cylinder", "holz", 1.0, 4.0, 0, 0.25, 1.5, 0.25),
+                        P("cylinder", "holz", 0, 4.0, -1.0, 0.25, 1.5, 0.25),
+                        P("cylinder", "holz", 0, 4.0, 1.0, 0.25, 1.5, 0.25),
+                        P("sphere", "laub", 0, 5.5, 0, 3.0, 2.6, 3.0),
+                    ],
+                    e: "architecture",
+                },
+                {
+                    n: "Λ.1: pilz-form 2-Parts (zu wenige Parts → kein body, klein+lebendig → consumable)",
+                    p: [
+                        P("cylinder", "holz", 0, 0.4, 0, 0.3, 0.8, 0.3),
+                        P("sphere", "laub", 0, 1.2, 0, 1.4, 0.6, 1.4),
+                    ],
+                    ne: "soul", // 2 Parts < minParts → kein body; consumable per Resonanz ist ok (klein+lebendig)
+                },
+                {
+                    n: "Λ.1: holzross 4-bein (holz lebendig=0.7 → soul-form möglich; nur Sitz fehlt für vehicle)",
+                    p: [
+                        P("box", "holz", 0, 1.0, 0, 0.6, 0.4, 1.4),
+                        P("box", "holz", 0, 1.4, -0.6, 0.4, 0.4, 0.4),
+                        P("cylinder", "holz", -0.4, 0.5, -0.5, 0.12, 0.8, 0.12),
+                        P("cylinder", "holz", 0.4, 0.5, -0.5, 0.12, 0.8, 0.12),
+                        P("cylinder", "holz", -0.4, 0.5, 0.5, 0.12, 0.8, 0.12),
+                        P("cylinder", "holz", 0.4, 0.5, 0.5, 0.12, 0.8, 0.12),
+                    ],
+                    e: "soul", // Λ.1: holz hat lebendig 0.7, livingMass > 0.02, yNorm mittig → body ✓
+                },
+                {
+                    n: "Λ.1: tanne (laub-Kegel oben → architecture, nicht soul)",
+                    p: [
+                        P("cylinder", "holz", 0, 1.8, 0, 0.55, 3.6, 0.55),
+                        P("cone", "laub", 0, 4.2, 0, 2.8, 2.8, 2.8),
+                        P("cone", "laub", 0, 5.7, 0, 2.2, 2.6, 2.2),
+                        P("cone", "laub", 0, 7.2, 0, 1.6, 2.4, 1.6),
+                    ],
+                    e: "architecture",
+                },
+                {
+                    n: "Λ.1: humanoid mit fleisch verteilt → soul",
+                    p: humanoid("fleisch"),
+                    e: "soul",
+                },
+                {
+                    n: "Λ.1: drache aufrecht fleisch → soul (verticalMin ≥ 0.45)",
+                    p: [
+                        P("box", "fleisch", 0, 1.2, 0, 1.0, 1.4, 0.8),
+                        P("box", "fleisch", 0, 2.0, 0.6, 0.4, 0.4, 0.6),
+                        P("cylinder", "fleisch", -0.5, 0.4, 0, 0.18, 0.8, 0.18),
+                        P("cylinder", "fleisch", 0.5, 0.4, 0, 0.18, 0.8, 0.18),
+                        P("cylinder", "fleisch", -0.6, 1.2, 0, 0.16, 0.8, 0.16),
+                        P("cylinder", "fleisch", 0.6, 1.2, 0, 0.16, 0.8, 0.16),
+                    ],
+                    e: "soul",
+                },
+                // === Λ.5 (V18.173 — Mischwald-Saat: die 4 neuen Built-ins) ===
+                { n: "builtin baum_birke", b: "baum_birke", e: "architecture" },
+                { n: "builtin baum_erle", b: "baum_erle", e: "architecture" },
+                { n: "builtin baum_buche", b: "baum_buche", e: "architecture" },
+                { n: "builtin baum_tanne", b: "baum_tanne", e: "architecture" },
             ];
             const out = [];
             for (const tc of BANK) {

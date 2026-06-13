@@ -22557,14 +22557,18 @@ class AnazhRealm {
                     ? this.state.atmosphere.microStrength
                     : (AnazhRealm.AERIAL && AnazhRealm.AERIAL.microStrength) || 0.1
             ),
-            // M7 (Befund 20 „Terrain nachts SCHWARZ") — der NACHT-BODEN des
-            // vertexColor-Terrains: max(lit, albedo × floor) — wirkt NUR, wenn
-            // das Gesamtlicht unter den Boden fällt (Mittag per Konstruktion
-            // unverändert; die B8-Parität: Bauten haben LUT-Boden 0.25 + Rim).
+            // M7/Λ.0 (V18.173 §8.3.3 FÜLL-LICHT statt max-Clamp): der NACHT-
+            // BODEN ist additiv (`lit + albedo·floor·(1−lit)`) — wirkt nur
+            // unterm Licht (Mittag per Konstruktion unverändert) UND lässt
+            // AO/Cel/Triplanar atmen (das alte max() FRASS sie, A/B §8.0.3).
+            // Erst-Wurf 0.06 (Schöpfer-Wort §8.3.4) — die B8-Parität (Bauten
+            // LUT-Boden 0.25) bleibt für die Familien-Default-Profile, ein
+            // dichtes Stein-Material kann profil-gewichtet auch geliftet
+            // werden (Λ1-Schritt 2 / Substanz-Modulation in _applyAerialOutput).
             terrainNightFloor: TSL.uniform(
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainNightFloor)
                     ? this.state.atmosphere.terrainNightFloor
-                    : 0.12
+                    : 0.06
             ),
             // WELLE J4-DEBUG — Browser-Isolations-Regler (default 1 = unverändert):
             // `aoScale`=0 schaltet die Kavitäts-AO ab (der `fwidth`-Term, der jede
@@ -22675,17 +22679,47 @@ class AnazhRealm {
                 aoStrength: 0.35,
                 aoCap: 0.16,
             };
+            // Λ.0 / W-E (meister-plan §8.3, V18.171/E1 GEMESSEN): die opts werden
+            // GEWICHTE statt Booleans (Λ1-Schritt 1 ENTGATEN: alle Familien
+            // konsumieren alle Licht-Uniforms, die Familie ist nur ein DEFAULT-
+            // Profil — bit-nah zum heutigen Verhalten). Schritt 2 (Substanz-
+            // Profil) ersetzt die Familien-Defaults durch Material-Tags →
+            // `opts.substanceProfile` (Λ.0 _substanceResponseProfile-Ergebnis)
+            // moduliert die Gewichte. Brücke: true→1, false/undefined→0; Float
+            // bleibt Float [0,1]. Profil-Achsen: glanz hebt rim, tiefe moduliert
+            // micro+AO, glimmen wird im Material-Bau (emissive) gelesen — hier
+            // wirkt es nur als zusätzlicher Rim-Lift.
+            const _toFloat = (v) => {
+                if (v === true) return 1;
+                if (typeof v === "number" && Number.isFinite(v)) return Math.max(0, Math.min(1, v));
+                return 0;
+            };
+            const sp = opts.substanceProfile || null;
+            let wMicro = _toFloat(opts.microTexture);
+            let wRim = _toFloat(opts.rim);
+            let wNight = _toFloat(opts.nightFloor);
+            if (sp) {
+                // Substanz-Modulation: tiefe (dichte) treibt Mikro-Detail (Stein
+                // hat MEHR Mikro-Struktur), glanz/glimmen heben den Rim, glas
+                // dämpft Schatten. Λ1-bit-nah: nur wenn das Familie-Gewicht > 0,
+                // hebt das Profil-Gewicht. Default-Familie bleibt also leitend;
+                // das Profil VERSTÄRKT, statt zu UMSCHALTEN.
+                wMicro *= 0.7 + 0.6 * sp.tiefe;
+                wRim *= 0.6 + 0.8 * Math.max(sp.glanz, sp.glimmen);
+            }
             const _o = _T.output; // die FERTIGE lit-Farbe (post-lighting)
             let _rgb = _o.xyz;
             const _wp = _T.positionWorld;
-            // (J2) Mikro-Tiefe nur für die Flach-Farb-Strukturen (das Terrain trägt
-            // seine eigene reichere triplanar-Schicht im colorNode).
-            if (opts.microTexture && _T.mx_noise_float && _T.fwidth && _T.normalWorld && _T.float) {
+            // (J2) Mikro-Tiefe als GEWICHTETE Schicht (Λ.0: stärke ∝ Familien-
+            // Default × Substanz-tiefe). Das Terrain hat eine eigene triplanar
+            // Schicht im colorNode — hier wirkt der Output-seitige Schimmer.
+            if (wMicro > 0 && _T.mx_noise_float && _T.fwidth && _T.normalWorld && _T.float) {
                 const _n1 = _T.mx_noise_float(_wp.mul(0.33));
                 const _n2 = _T.mx_noise_float(_wp.mul(1.6));
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
                 // M7 — microStrength ist ein UNIFORM (der Settings-Regler lebt).
-                const _micro = _au.microStrength || _T.float(cfg.microStrength);
+                const _microBase = _au.microStrength || _T.float(cfg.microStrength);
+                const _micro = _microBase.mul(_T.float(wMicro));
                 let _shade = _T.float(1.0).add(_det.mul(_micro));
                 // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
                 // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
@@ -22695,17 +22729,14 @@ class AnazhRealm {
                 const _ao = _T.float(1.0).sub(_curv.mul(_aoStr).clamp(0.0, cfg.aoCap));
                 _rgb = _rgb.mul(_shade.mul(_ao));
             }
-            // B8 (gigant-plan §5) — das warme RIM-Licht für Flach-Farb-Strukturen
-            // (die Ghibli-Silhouetten-Kante): ein Fresnel-Saum in warmem Ton hebt
-            // die Kontur eines Bauwerks im Gegenlicht aus dem Schatten — POST-
-            // lighting im selben Output-Chain (komponiert mit dem Aerial-Melt,
-            // KEIN zweiter outputNode — zwei Zuweisungen überschrieben sich).
-            // Live-tunbar: anazhRealm.state.atmoUniforms.rimStrength.value.
-            if (opts.rim && _T.normalWorld && _T.cameraPosition && _au.rimStrength) {
+            // B8 (gigant-plan §5) — das warme RIM-Licht (Ghibli-Silhouetten-
+            // Kante). Λ.0: gewichtet aus Familien-Default + Substanz-glanz/
+            // glimmen. Live-tunbar via atmoUniforms.rimStrength.
+            if (wRim > 0 && _T.normalWorld && _T.cameraPosition && _au.rimStrength) {
                 const _vd = _T.cameraPosition.sub(_wp).normalize();
                 const _fres = _T.normalWorld.dot(_vd).clamp(0.0, 1.0).oneMinus().pow(3.0);
                 const _rimCol = _T.vec3(1.0, 0.72, 0.45);
-                _rgb = _rgb.add(_rimCol.mul(_fres.mul(_au.rimStrength)));
+                _rgb = _rgb.add(_rimCol.mul(_fres.mul(_au.rimStrength).mul(_T.float(wRim))));
             }
             // (J1) die Aerial-Perspektive — der HÖHEN-Melt zur Himmelsfarbe,
             // IDENTISCH für jede Ebene (Terrain, Inseln, Strukturen, Bäume,
@@ -22723,23 +22754,75 @@ class AnazhRealm {
             // der Boden, auf dem du stehst (aboveEye≈0 + nah), bleicht NICHT. Beide
             // Größen sind kamera-relativ (`cameraPosition` aktualisiert pro Frame) →
             // die Verblassung folgt deiner Position, wie die echte Atmosphäre.
-            // M7 (V18.160, Befund 20) — der TERRAIN-NACHT-BODEN (nur vertexColors-
-            // Ebenen: Terrain + Inseln): max(lit, albedo × floor). Nachts fiel
-            // ambient(0.18) × vertexColor(~0.4) ≈ 0.07 → schwarz, während Bauten
-            // über LUT-Boden 0.25 + Rim Restlicht trugen (Licht-Parität der Ebenen).
-            // Der max-Boden greift NUR unterhalb — Mittag bleibt per Konstruktion.
-            if (opts.nightFloor && _au.terrainNightFloor && _T.attribute && _T.max) {
+            // Λ.0 / W-E §8.3.3 (FÜLL-LICHT statt CLAMP) — die NACHT-BODEN-Heilung
+            // (Befund 20 + §8.0.3 Look-Hebel ohne Harmonie). Heute: max(lit, albedo×floor)
+            // ein CLAMP, der AO/Cel/Triplanar frisst, sobald der Hebel hoch geht
+            // (A/B-Shots §8.0.3). Profi-Form: `lit + albedo·floor·(1−litLum)` —
+            // ADDITIV (struktur-ERHALTEND), die `(1−litLum)`-Modulation gibt
+            // den Lift nur dort, wo das Licht fehlt (Mittag per Konstruktion
+            // unverändert). Erst-Wurf-Default 0.06 (Schöpfer-Wort §8.3.4) — die
+            // Familien-binäre `opts.nightFloor` wird ein GEWICHT (`wNight`),
+            // alle Ebenen konsumieren den Floor profil-gewichtet (Λ1-Schritt 1
+            // ENTGATEN: heute bekommen nur vertexColors-Ebenen den Term [wNight=1],
+            // morgen kann ein dichtes Stein-Material auch geliftet werden).
+            if (wNight > 0 && _au.terrainNightFloor && _T.attribute && _T.max) {
                 const _albedo = _T.attribute("color", "vec3");
-                _rgb = _T.max(_rgb, _albedo.mul(_au.terrainNightFloor));
-                // §7.5(a) (V18.164) — das MOND-RIM: kühler Fresnel-Saum, nur wenn
-                // der Tag-Nacht-Sync den Uniform hebt (nachts > 0, mittags 0 —
-                // der Wert IST das Gate, kein Branch). Dieselbe Fresnel-Form wie
-                // das warme B8-Bauten-Rim → Licht-Parität der Ebenen (Befund 20).
+                // FÜLL-LICHT: Helligkeits-Luminanz aus _rgb (Rec.709-Gewicht),
+                // (1−lit) als Modulator → kein Fressen heller Stellen, kein
+                // Clamp gegen die Lichtungs-Mathematik.
+                const _litLum = _rgb.x.mul(0.299).add(_rgb.y.mul(0.587)).add(_rgb.z.mul(0.114));
+                const _fillMod = _T.float(1.0).sub(_litLum).clamp(0.0, 1.0);
+                const _floorEff = _au.terrainNightFloor.mul(_T.float(wNight));
+                _rgb = _rgb.add(_albedo.mul(_floorEff).mul(_fillMod));
+                // §7.5(a) (V18.164) — MOND-RIM: kühler Fresnel-Saum. Der WERT
+                // ist das Gate (tag → moonRim=0). Λ.0 Default 0.06.
                 if (_au.terrainMoonRim && _T.cameraPosition && _T.normalWorld) {
                     const _mvd = _T.cameraPosition.sub(_wp).normalize();
                     const _mfres = _T.normalWorld.dot(_mvd).clamp(0.0, 1.0).oneMinus().pow(3.0);
                     const _moonCol = _T.vec3(0.55, 0.66, 1.0);
-                    _rgb = _rgb.add(_moonCol.mul(_mfres.mul(_au.terrainMoonRim)));
+                    _rgb = _rgb.add(_moonCol.mul(_mfres.mul(_au.terrainMoonRim).mul(_T.float(wNight))));
+                }
+            }
+            // Λ.6 — VERTIKALER KRONE-GRADIENT (für lebende Materialien: laub).
+            // Heute hat jede Krone-Kugel eine fixe color — harte Sprünge zwischen
+            // Kugeln. Mit der waerme-Achse: ein KONTINUIERLICHER smoothstep
+            // über positionWorld.y im Material → die Spitzen werden 15 % heller,
+            // der Boden bleibt. Wirkt nur, wenn das Profil waerme > 0 trägt
+            // (laub voll, holz halb, stein gar nicht). Nutzt entry-Bounds nicht
+            // (ein einzelner Leaf-Mesh kennt keine Welt-Hülle) — ein lokaler
+            // Gradient über die Materialhöhe; die nahen Krone-Kugeln zeigen
+            // ihn als Hell-Spitze-Dunkel-Boden-Glühen.
+            if (sp && sp.waerme > 0.3 && _T.smoothstep && _T.vec3) {
+                const _waermeF = _T.float(sp.waerme);
+                // Lokal: smoothstep über positionLocal.y normiert auf [0,1]
+                // mit erwarteter Krone-Spanne ±1 m (eingebackener Bereich).
+                const _grad = _T.smoothstep(_T.float(-1.0), _T.float(1.0), _T.positionLocal.y);
+                const _gradTint = _T.float(0.85).add(_grad.mul(_T.float(0.3)));
+                const _tintFinal = _T
+                    .float(1.0)
+                    .sub(_waermeF.mul(_T.float(0.4)))
+                    .add(_gradTint.mul(_waermeF).mul(_T.float(0.4)));
+                _rgb = _rgb.mul(_T.vec3(_tintFinal, _tintFinal, _tintFinal));
+            }
+            // Λ.6 — SUBSURFACE-BACKLIT (Gegenlicht-Glühen für lebende Strukturen).
+            // wenn die Sonne im Rücken steht und die Normale auf das Auge zeigt
+            // → ein warmer Schein durch das laub. Gated über das waerme-Profil.
+            // Das EINE Subsurface, das alle lebenden Leaves erben (laub-Bäume,
+            // Erle, Buche). Nutzt die geteilte sunDir aus dem Gras-Material
+            // (state.windUniforms.uSunDir; vom Tag-Nacht-Sync gefüttert,
+            // V16.2-Quelle der Wahrheit).
+            if (sp && sp.waerme > 0.3 && _T.cameraPosition && _T.normalWorld && _T.pow) {
+                const _sunU = this.state.windUniforms && this.state.windUniforms.uSunDir;
+                if (_sunU) {
+                    const _vd = _T.cameraPosition.sub(_wp).normalize();
+                    const _sunBack = _sunU.mul(_T.float(-1.0));
+                    const _backDot = _vd.dot(_sunBack).clamp(0.0, 1.0);
+                    const _backlit = _T.pow(_backDot, _T.float(3.0));
+                    const _glow = _T
+                        .vec3(1.0, 0.85, 0.6)
+                        .mul(_backlit)
+                        .mul(_T.float(sp.waerme * 0.3));
+                    _rgb = _rgb.add(_glow);
                 }
             }
             const _cam = _T.cameraPosition;
@@ -22833,12 +22916,118 @@ class AnazhRealm {
         // sie im colorNode); transparente Phantome bleiben unberührt (UI-Element).
         if (!opts.transparent) {
             const isFlatStructure = !opts.vertexColors && opts.color !== undefined;
+            // Λ.0 / W-E (V18.173 §8.3): die Familien-Booleans → DEFAULT-Gewichte
+            // (bit-nah heute), das Substanz-Profil (`opts.substanceProfile`)
+            // moduliert sie. Wer einen Material-Bauer (z.B. `_archLeafMaterial`)
+            // mit Tags rufft, gibt das Profil mit → die Antwort wird
+            // material-spezifisch (laub wiegt anders als stein). Wer ohne ruft,
+            // bekommt das heutige Familien-Verhalten (Λ1-Schritt 1 bit-nah).
+            // nightFloor: vertexColors=1, Flach-Farb-Strukturen=0 (heute) —
+            // die material-spezifische Lift-Erweiterung (Strukturen mit tiefe>0)
+            // kommt mit Schritt 2 wenn der Schöpfer-Browser den Look abnimmt;
+            // jetzt bleibt das HEUTIGE Familien-Verhalten + nur der FÜLL-LICHT-
+            // Wechsel + die 0.06-Defaults wirken.
             this._applyAerialOutput(mat, {
-                microTexture: isFlatStructure,
-                rim: isFlatStructure,
-                // M7 (Befund 20) — Terrain/Inseln (vertexColors) tragen den Nacht-Boden.
-                nightFloor: opts.vertexColors === true,
+                microTexture: isFlatStructure ? 1 : 0,
+                rim: isFlatStructure ? 1 : 0,
+                nightFloor: opts.vertexColors === true ? 1 : 0,
+                substanceProfile: opts.substanceProfile || null,
             });
+        }
+
+        // Λ.3 (V18.173 — Wind auf Bäumen): wenn das Material wiegen > 0 trägt,
+        // bekommt es eine positionNode-Sway-Welle. Geteilte windUniforms.uWindTime
+        // (Gras-Quelle, EINE Quelle für die ganze Welt). Die Krone wiegt mehr
+        // als der Stamm (positionLocal.y · crownFactor). Render-only — die
+        // Kollision bleibt am Bauplan-Original (kein Ammo-Re-Build pro Frame).
+        if (opts.windSway && opts.windSway > 0) {
+            try {
+                const _T = THREE.TSL;
+                // windUniforms.uWindTime existiert seit V10.0-i.b (Gras-Quelle);
+                // lazy initialisieren wenn das Gras-Material noch nicht gebaut wurde.
+                if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") {
+                    this._grassInstanceMat();
+                }
+                const wu = this.state.windUniforms;
+                if (_T && _T.positionLocal && _T.positionWorld && _T.sin && _T.cos && wu && wu.uWindTime) {
+                    const sway = Math.max(0, Math.min(1, opts.windSway));
+                    const phase = wu.uWindTime
+                        .mul(_T.float(1.3))
+                        .add(_T.positionWorld.x.mul(_T.float(0.18)))
+                        .add(_T.positionWorld.z.mul(_T.float(0.14)));
+                    // crownFactor: positionLocal.y normiert auf ±1m → höhere
+                    // Vertices wiegen mehr (lokale Approximation; eingebackene
+                    // Bauplan-Bounds wären eine eigene Welle).
+                    const crownFactor = _T.positionLocal.y.mul(_T.float(0.5)).add(_T.float(0.5)).clamp(0.0, 1.0);
+                    const swayMag = _T.float(sway * 0.25).mul(crownFactor);
+                    const offsetX = _T.sin(phase).mul(swayMag);
+                    const offsetZ = _T.cos(phase.mul(_T.float(0.7))).mul(swayMag.mul(_T.float(0.6)));
+                    mat.positionNode = _T.positionLocal.add(_T.vec3(offsetX, _T.float(0.0), offsetZ));
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__windSwayError = String((_e && _e.message) || _e);
+            }
+        }
+
+        // Λ.2 (V18.173 — pro-Instanz-Tint): wenn das Material useInstanceTint
+        // trägt, liest es `attribute("instanceColor", "vec3")` und appliziert
+        // einen HSL-Hue-Shift auf die Material-Farbe. Ein Wald von 50 Eichen
+        // bekommt 50 leicht verschobene Grün-Töne (statt einem flachen Klon-
+        // Grün), aus dem seed-deterministischen entry.tintH. Material-Gating
+        // im Aufrufer (`_archLeafMaterial`: nur für waerme>0.5-Materialien).
+        // Im Shader wird R = Hue-Shift, G = Saturation-Shift, B = Value-Shift
+        // konsumiert; die Standard-Color (mat.color) ist die NEUTRALE Mitte
+        // (instanceColor=0.5,0.5,0.5 → kein Shift). HSL-Mathematik im TSL.
+        if (opts.useInstanceTint && opts.color !== undefined) {
+            // Λ.2 — der _archInstanceAdd-Aufrufer prüft userData.useInstanceTint,
+            // um zu entscheiden ob `setColorAt` aufgerufen wird (lazy Allocation
+            // von mesh.instanceColor nur dort, wo das Material es liest).
+            if (!mat.userData) mat.userData = {};
+            mat.userData.useInstanceTint = true;
+            try {
+                const _T = THREE.TSL;
+                if (_T && _T.attribute && _T.vec3 && _T.mix && _T.float) {
+                    const _ic = _T.attribute("instanceColor", "vec3");
+                    const cfg = AnazhRealm.INSTANCE_TINT || { rangeH: 0.08, rangeS: 0.1, rangeV: 0.06 };
+                    // V10.0-g-Diagnose: TSL.materialColor crasht im
+                    // WebGLNodeBuilder → die Material-Color statisch in den
+                    // colorNode-Tree backen (die Bauplan-Farbe ist eindeutig
+                    // pro Material-Instanz, kein dynamisches `mat.color = …`-
+                    // Risiko an Laub-Materialien). Die HSL-Modulation läuft
+                    // auf den statischen Werten.
+                    const hex = opts.color | 0;
+                    const r0 = ((hex >> 16) & 0xff) / 255;
+                    const g0 = ((hex >> 8) & 0xff) / 255;
+                    const b0 = (hex & 0xff) / 255;
+                    const _baseStatic = _T.vec3(_T.float(r0), _T.float(g0), _T.float(b0));
+                    // Die instanceColor wird seed-deterministisch in [0,1]
+                    // gesetzt; 0.5 ist die NEUTRALE Mitte (kein Shift).
+                    //   hueShift  ∈ [-rangeH, +rangeH] → R−, G+, B− (kühl/warm-Grün)
+                    //   satShift  ∈ [-rangeS, +rangeS] → mix gegen Luma-Grau
+                    //   valShift  ∈ [-rangeV, +rangeV] → mul auf Helligkeit
+                    const hueShift = _ic.x.sub(_T.float(0.5)).mul(_T.float(cfg.rangeH * 2));
+                    const satShift = _ic.y.sub(_T.float(0.5)).mul(_T.float(cfg.rangeS * 2));
+                    const valShift = _ic.z.sub(_T.float(0.5)).mul(_T.float(cfg.rangeV * 2));
+                    const tintRGB = _T.vec3(
+                        _T.float(1.0).sub(hueShift.mul(_T.float(0.3))),
+                        _T.float(1.0).add(hueShift.mul(_T.float(0.5))),
+                        _T.float(1.0).sub(hueShift.mul(_T.float(0.2)))
+                    );
+                    // Saturation: mix gegen die Luma-graue Variante (Rec. 709).
+                    const _lum = _baseStatic.x.mul(0.299).add(_baseStatic.y.mul(0.587)).add(_baseStatic.z.mul(0.114));
+                    const _gray = _T.vec3(_lum, _lum, _lum);
+                    const _satF = _T.float(1.0).add(satShift);
+                    let _tinted = _T.mix(_gray, _baseStatic, _satF);
+                    _tinted = _tinted.mul(tintRGB).mul(_T.float(1.0).add(valShift));
+                    // colorNode-Override: lights=true bleibt aktiv (HSL-Shift
+                    // läuft pre-lighting, das Toon-Cel-LUT konsumiert das
+                    // shifted Albedo). _applyAerialOutput wirkt post-lighting
+                    // im outputNode — keine Kollision.
+                    mat.colorNode = _T.vec4(_tinted, _T.float(1.0));
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__instanceTintError = String((_e && _e.message) || _e);
+            }
         }
 
         if (opts.vertexColors) {
@@ -28446,6 +28635,16 @@ class AnazhRealm {
                 // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
                 // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
                 ...(a.freeBorn === true ? { freeBorn: true } : {}),
+                // Λ.2 (V18.173 — pro-Instanz-Tint): die seed-deterministischen
+                // HSL-Werte reisen mit. Bei einer Welt-Migration (zwischen
+                // Versionen) bleibt die Bauplan-Färbung bit-stabil; ohne
+                // Persistenz würde ein Reload sie zwar deterministisch neu
+                // ableiten (Bit-Mask vom seed), aber wenn die Ableitung-Mathe
+                // je ändert, kippt die Welt-Identität — die explizite Reise
+                // schützt die Identität.
+                ...(Number.isFinite(a.tintH) ? { tintH: a.tintH } : {}),
+                ...(Number.isFinite(a.tintS) ? { tintS: a.tintS } : {}),
+                ...(Number.isFinite(a.tintV) ? { tintV: a.tintV } : {}),
             })),
             // Ring 6.4 — eigene Baupläne (nicht built-in) persistieren. Die
             // Built-ins werden beim Init aus _defaultBlueprints() erzeugt;
@@ -31374,6 +31573,10 @@ class AnazhRealm {
                 precise: true,
                 // Ω5 — die Gratis-Geburt reist durch den Reload mit.
                 freeBorn: a.freeBorn === true,
+                // Λ.2 — explizite tint-Werte reisen mit (Welt-Identität).
+                tintH: a.tintH,
+                tintS: a.tintS,
+                tintV: a.tintV,
             });
         }
         this.log(`Architekturen geladen: ${state.architectures.length}`);
@@ -38648,7 +38851,46 @@ class AnazhRealm {
         const horiz = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
         if (spanY < horiz * T.verticalMin) return false;
         const sym = this._compoundSymmetry(bp);
-        return sym.ratio >= T.symmetryMin && sym.limbPairs >= T.minLimbPairs;
+        if (!(sym.ratio >= T.symmetryMin && sym.limbPairs >= T.minLimbPairs)) return false;
+        // Λ.1 (V18.173 — DIE REGEL HEILEN, der Schöpfer-Plan): der vertikale
+        // Schwerpunkt des LEBENDIGEN Materials trennt Eichbaum von Menschen-
+        // Körper. Die naive Symmetrie+Glieder-Form (V8.35) fiel bei der reichen
+        // symmetrischen Eiche zur Seele um (4 Äste sind Glieder!) — die echte
+        // Diskriminator ist „WO sitzt das Leben?": Krone oben (yNorm > 0.7) =
+        // Baum; mittig verteilt (0.3..0.7) = Körper; unten konzentriert
+        // (yNorm < 0.3) = Pilz/Wurzel (auch architecture). Lebende Masse
+        // gewichtet mit Volumen × lebendig-Tag → echtes Material-Gewicht.
+        // WICHTIG: die Λ.1-Bounding-Box ist size-bewusst (Position ± size/2),
+        // im Gegensatz zur `_compoundBBox` (position-only). Sonst wäre die
+        // Eiche scheinbar weniger kopflastig als sie ist (yNorm 0.71 statt 0.85).
+        let liveMass = 0;
+        let liveMassY = 0;
+        let bbMinY = Infinity;
+        let bbMaxY = -Infinity;
+        for (const p of bp.parts) {
+            const sy = (p.size && p.size.y) || 0.3;
+            const py = (p.position && p.position.y) || 0;
+            const top = py + sy * 0.5;
+            const bot = py - sy * 0.5;
+            if (bot < bbMinY) bbMinY = bot;
+            if (top > bbMaxY) bbMaxY = top;
+            const mat = (this.state.materials && this.state.materials[p.material]) || null;
+            const lebendig = mat && mat.tags && Number.isFinite(mat.tags.lebendig) ? mat.tags.lebendig : 0;
+            if (lebendig <= 0) continue;
+            const sx = (p.size && p.size.x) || 0.3;
+            const sz = (p.size && p.size.z) || 0.3;
+            const vol = Math.abs(sx * sy * sz);
+            const m = vol * Math.max(0, Math.min(1, lebendig));
+            liveMass += m;
+            liveMassY += m * py;
+        }
+        if (liveMass < T.livingMassMin) return false; // nicht genug Leben → kein Körper
+        const liveCenterY = liveMassY / liveMass;
+        const denom = bbMaxY - bbMinY;
+        if (!(denom > 0.001)) return false;
+        const yNorm = (liveCenterY - bbMinY) / denom;
+        if (!(yNorm >= T.livingCenterMinY && yNorm <= T.livingCenterMaxY)) return false;
+        return true;
     }
 
     // food — Nahrungs-Signatur: lebendig + weich. Reine Tag-Sprache aus den
@@ -38714,6 +38956,58 @@ class AnazhRealm {
         if (!hasRing) return false;
         const tags = this.computeCompoundTags(bp) || {};
         return (tags.magieleitung || 0) >= T.magieleitungMin;
+    }
+
+    // Λ.0 / W-E (meister-plan §8.3 — DAS FREQUENZBAND): die Substanz-Antwort als
+    // EIN ableitbares Profil aus den 10 Material-Tags. Die Antenne IST die
+    // Substanz — eine Welt-Stimme (Licht), viele profil-spezifische Antworten.
+    // Die Profile (alle ∈ [0,1] per Konstruktion):
+    //   glanz  = (härte + dichte) / 2        — Metall spiegelt, Holz nicht
+    //   tiefe  = dichte                       — AO/Cel-Kontrast-Stärke
+    //   glimmen= max(magieleitung, brennbar·resoniert/2) — Emissiv-Anteil
+    //   wärme  = lebendig                     — Subsurface-Warmton (Λ.3/Λ.6)
+    //   glas   = transparent                  — Fresnel-Stärke
+    //   wiegen = lebendig·(1−dichte)·zähigkeit — Wind-Antwort (Λ.3): laub
+    //            wiegt, holz schwach, stein gar nicht
+    //   detail = max(lebendig·(1−dichte), magieleitung·transparent) — Mikro-
+    //            Cluster-Textur-Stärke (Λ.6): laub schlägt 9× stärker als heute
+    // Akzeptiert Material-Objekt, Tag-Hash ODER Material-Name (state.materials-
+    // Lookup); fehlt alles → neutrale Mitte (kein Crash). Render-only, frozen
+    // Konstanten in AnazhRealm.SUBSTANCE_RESPONSE für Browser-Justage.
+    _substanceResponseProfile(materialOrTags) {
+        let tags = null;
+        if (materialOrTags && typeof materialOrTags === "object") {
+            if (materialOrTags.tags && typeof materialOrTags.tags === "object") {
+                tags = materialOrTags.tags;
+            } else {
+                tags = materialOrTags;
+            }
+        } else if (typeof materialOrTags === "string" && this.state.materials) {
+            const mat = this.state.materials[materialOrTags];
+            if (mat && mat.tags) tags = mat.tags;
+        }
+        if (!tags) tags = {};
+        const g = (k) => {
+            const v = +tags[k];
+            return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0;
+        };
+        const haerte = g("härte");
+        const dichte = g("dichte");
+        const zaehigkeit = g("zähigkeit");
+        const magieleitung = g("magieleitung");
+        const transparent = g("transparent");
+        const brennbar = g("brennbar");
+        const lebendig = g("lebendig");
+        const resoniert = g("resoniert");
+        return {
+            glanz: (haerte + dichte) * 0.5,
+            tiefe: dichte,
+            glimmen: Math.max(magieleitung, brennbar * resoniert * 0.5),
+            waerme: lebendig,
+            glas: transparent,
+            wiegen: lebendig * (1 - dichte) * zaehigkeit,
+            detail: Math.max(lebendig * (1 - dichte), magieleitung * transparent),
+        };
     }
 
     // R1 (kampf-plan §11.10) — DER RESONANZ-KERN: ein Produkt ist ein Vektor, jede Ablesung ist eine
@@ -40485,6 +40779,189 @@ class AnazhRealm {
                 size: { x: 1.9, y: 1.8, z: 1.9 },
             },
         ];
+        // Λ.5 (V18.173 — DER ÖKOTON-WALD): vier neue Baumarten je 1 Gestalt
+        // (Mischwald-Saat). NUTZEN die existierenden Materialien `holz`/`laub`
+        // → die Tag-Neutralitäts-Wand bleibt heil (V17.16: keine neue Material-
+        // Tag-Verteilung, kein Affinitäts-Sprung). Die Variation kommt aus
+        // FORM (Stamm-Höhe, Krone-Gestalt) + COLOR (Birken-Weiß, Tannen-Dunkel-
+        // Grün). Die Mischwald-Verteilung lebt im Spawn (`_vegetationSampleSpawn`):
+        // wenn der argmax-Sieger ein Baum-Typ ist, würfelt ein Top-3-Pick mit
+        // aff² Gewichten — der Sieger dominiert (70%), Verlierer existieren.
+        //
+        // BIRKE — hell, schmal, hoch (Licht-Baum, Lichtungs-Rand).
+        const baumBirkeParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xede0c8,
+                position: { x: 0, y: 1.8, z: 0 },
+                size: { x: 0.55, y: 3.6, z: 0.55 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xede0c8,
+                position: { x: 0, y: 4.6, z: 0 },
+                size: { x: 0.4, y: 2.6, z: 0.4 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x8fb343,
+                position: { x: 0, y: 5.8, z: 0 },
+                size: { x: 2.2, y: 2.0, z: 2.2 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xa3c454,
+                position: { x: 0.3, y: 6.6, z: 0.2 },
+                size: { x: 1.6, y: 1.5, z: 1.6 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xb0d063,
+                position: { x: -0.3, y: 7.0, z: -0.1 },
+                size: { x: 1.4, y: 1.3, z: 1.4 },
+            },
+        ];
+        // ERLE — Ufer-Pflicht (`feuchte ≥ 0.5`); kräftiger Stamm + breite Krone.
+        const baumErleParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x5a4632,
+                position: { x: 0, y: 1.5, z: 0 },
+                size: { x: 0.95, y: 3.0, z: 0.95 },
+                segments: 7,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x5a4632,
+                position: { x: 0.1, y: 3.4, z: 0.05 },
+                size: { x: 0.7, y: 1.6, z: 0.7 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x3f6f30,
+                position: { x: 0, y: 4.4, z: 0 },
+                size: { x: 3.0, y: 2.4, z: 3.0 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4a823a,
+                position: { x: -1.3, y: 4.2, z: 0.5 },
+                size: { x: 1.9, y: 1.7, z: 1.9 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x376628,
+                position: { x: 1.3, y: 4.3, z: -0.5 },
+                size: { x: 2.0, y: 1.8, z: 2.0 },
+            },
+        ];
+        // BUCHE — runde Krone, gedrungen (kräftige Wald-Mitte).
+        const baumBucheParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x6a5230,
+                position: { x: 0, y: 1.3, z: 0 },
+                size: { x: 1.0, y: 2.6, z: 1.0 },
+                segments: 7,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x6a5230,
+                position: { x: 0, y: 2.9, z: 0 },
+                size: { x: 0.75, y: 1.4, z: 0.75 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4c8035,
+                position: { x: 0, y: 3.8, z: 0 },
+                size: { x: 3.6, y: 3.0, z: 3.6 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5a9342,
+                position: { x: -1.6, y: 3.6, z: 0.4 },
+                size: { x: 2.4, y: 2.2, z: 2.4 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5e9e48,
+                position: { x: 1.5, y: 3.7, z: -0.5 },
+                size: { x: 2.5, y: 2.3, z: 2.5 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x68a850,
+                position: { x: 0.2, y: 4.8, z: 0.2 },
+                size: { x: 2.0, y: 1.8, z: 2.0 },
+            },
+        ];
+        // TANNE — Kegel-Form, sehr dunkel, hoch (kalter Hochwald).
+        const baumTanneParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x3a2818,
+                position: { x: 0, y: 1.8, z: 0 },
+                size: { x: 0.55, y: 3.6, z: 0.55 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x3a2818,
+                position: { x: 0, y: 4.6, z: 0 },
+                size: { x: 0.4, y: 2.0, z: 0.4 },
+                segments: 6,
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x1d4a25,
+                position: { x: 0, y: 4.2, z: 0 },
+                size: { x: 2.8, y: 2.8, z: 2.8 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x265a30,
+                position: { x: 0, y: 5.7, z: 0 },
+                size: { x: 2.2, y: 2.6, z: 2.2 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x2d6a3a,
+                position: { x: 0, y: 7.2, z: 0 },
+                size: { x: 1.6, y: 2.4, z: 1.6 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x357841,
+                position: { x: 0, y: 8.7, z: 0 },
+                size: { x: 0.9, y: 1.8, z: 0.9 },
+            },
+        ];
         // Kiefer: schlanker 2-segmentiger Stamm + 3 gestapelte Kegel abnehmender
         // Größe (klassische Tannen-Silhouette) + Farb-Gradient zur Spitze.
         const baumKieferParts = [
@@ -41375,6 +41852,14 @@ class AnazhRealm {
                 instanced: true,
                 parts: baumKieferParts,
             },
+            // Λ.5 (V18.173 — Mischwald-Saat) — vier neue Baumarten. Alle nutzen
+            // `holz`/`laub` (Tag-Neutralitäts-Wand: identische Affinitäts-Tags
+            // wie eiche/kiefer); nur Form + Color unterscheiden. Erle bekommt
+            // einen feuchte-Affinitäts-Term (Ufer-Anker, analog schilf).
+            baum_birke: { name: "baum_birke", label: "Birke", builtIn: true, instanced: true, parts: baumBirkeParts },
+            baum_erle: { name: "baum_erle", label: "Erle", builtIn: true, instanced: true, parts: baumErleParts },
+            baum_buche: { name: "baum_buche", label: "Buche", builtIn: true, instanced: true, parts: baumBucheParts },
+            baum_tanne: { name: "baum_tanne", label: "Tanne", builtIn: true, instanced: true, parts: baumTanneParts },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
             damm: { name: "damm", label: "Damm", builtIn: true, parts: dammParts },
@@ -43583,6 +44068,27 @@ class AnazhRealm {
             matOpts.transparent = true;
             matOpts.opacity = part.opacity;
         }
+        // Λ.0 / W-E (V18.173 §8.3) — die SUBSTANZ-Antenne: jedes Leaf bekommt
+        // sein material-spezifisches Antwort-Profil mit. Λ.6 liest waerme
+        // (Subsurface-Backlit + vertikaler Krone-Gradient), Λ.3 wiegen (Wind);
+        // tiefe/glanz/glimmen modulieren Rim/Mikro im _applyAerialOutput.
+        // Eine Sprache, viele Leser — kein Per-Material-Spezialcode mehr.
+        if (typeof part.material === "string") {
+            matOpts.substanceProfile = this._substanceResponseProfile(part.material);
+        }
+        // Λ.2 / Λ.3 — pro-Instanz-Tint markieren (das HISM-Material liest
+        // `attribute("instanceColor")`); nur lebende Materialien (laub-typisch)
+        // bekommen den HSL-Shift, Stein/Eisen bleiben uniform per Bauplan-
+        // Färbung. Material-Gating-Schwelle: waerme > 0.5 (lebendig dominiert).
+        if (matOpts.substanceProfile && matOpts.substanceProfile.waerme > 0.5 && !matOpts.transparent) {
+            matOpts.useInstanceTint = true;
+        }
+        // Λ.3 — der Wind-Bauen-Faktor (Material wiegt nur, wenn das Profil
+        // wiegen > 0 trägt). Im Shader später kombiniert mit positionLocal.y
+        // (Crown-Höhe) → die Krone wiegt stärker als der Boden.
+        if (matOpts.substanceProfile && matOpts.substanceProfile.wiegen > 0.05) {
+            matOpts.windSway = matOpts.substanceProfile.wiegen;
+        }
         if (!this.state.toonGradientMap) this._refreshToonGradient();
         return this._buildToonNodeMaterial(matOpts);
     }
@@ -43754,6 +44260,17 @@ class AnazhRealm {
         }
         next.count = g.next;
         next.instanceMatrix.needsUpdate = true;
+        // Λ.2 — instanceColor mit-kopieren (wenn die alte Gruppe schon einen
+        // Tint trug). Ohne diesen Schritt würden die ersten N Slots nach dem
+        // Grow auf "kein Tint" zurückspringen (sichtbare HSL-Sprünge).
+        if (g.mesh.instanceColor) {
+            const tmpC = this._archTmpCopyColor || (this._archTmpCopyColor = new THREE.Color());
+            for (let i = 0; i < g.next; i++) {
+                g.mesh.getColorAt(i, tmpC);
+                next.setColorAt(i, tmpC);
+            }
+            if (next.instanceColor) next.instanceColor.needsUpdate = true;
+        }
         if (this.state.scene) {
             this.state.scene.remove(g.mesh);
             this.state.scene.add(next);
@@ -43796,6 +44313,18 @@ class AnazhRealm {
         );
         const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
         const slots = [];
+        // Λ.2 (V18.173 — pro-Instanz-Tint): die HSL-Werte als instanceColor an
+        // den HISM-Slot. Das Material liest sie als `attribute("instanceColor")`,
+        // appliziert HSL-Shift im Shader (kein Per-Instance-Material — alle 50
+        // Eichen teilen EIN Material, der Shift macht die Streuung). Der
+        // tintColor existiert nur für Materialien, die useInstanceTint tragen
+        // (Material-Gating in _archLeafMaterial: waerme>0.5 = lebendige Krone).
+        const _tintColor = this._archTmpTintColor || (this._archTmpTintColor = new THREE.Color());
+        if (Number.isFinite(entry.tintH) && Number.isFinite(entry.tintS) && Number.isFinite(entry.tintV)) {
+            _tintColor.setRGB(entry.tintH, entry.tintS, entry.tintV);
+        } else {
+            _tintColor.setRGB(0.5, 0.5, 0.5); // neutrale Mitte
+        }
         for (let i = 0; i < flat.leaves.length; i++) {
             const leaf = flat.leaves[i];
             const g = this._archInstanceGroupFor(entry.type, i, leaf);
@@ -43803,6 +44332,14 @@ class AnazhRealm {
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
             g.mesh.instanceMatrix.needsUpdate = true;
+            // Λ.2 — den tint nur für Materialien setzen, die ihn lesen (Three.js'
+            // InstancedMesh.setColorAt alloziert instanceColor LAZY beim ersten
+            // Call). Ein nicht-tint Material ignoriert das Attribut (kein
+            // attribute("instanceColor")-Lookup → Performance neutral).
+            if (leaf.mat && leaf.mat.userData && leaf.mat.userData.useInstanceTint) {
+                g.mesh.setColorAt(slot, _tintColor);
+                if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
+            }
             if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
             if (g.slotEntry) g.slotEntry[slot] = entry;
             // boundingSphere invalidieren (Raycast-Cull, s. _archGroupFree).
@@ -44504,6 +45041,26 @@ class AnazhRealm {
             scale,
             mesh: null,
         };
+        // Λ.2 (V18.173 — pro-Instanz-Tint): der HSL-Shift wird PRO Eintrag aus
+        // dem seed deterministisch abgeleitet (drei Bit-Bänder des seeds). Reist
+        // im Snapshot (überleben Reload), passt zu der GENESE-Versions-Lehre:
+        // die seed-deterministische Färbung ist eine WELT-Identität. Bei
+        // opts.tintH/.tintS/.tintV (Restore) führen die expliziten Werte.
+        if (Number.isFinite(opts.tintH)) {
+            entry.tintH = Math.max(0, Math.min(1, +opts.tintH));
+        } else {
+            entry.tintH = ((seed >>> 13) & 0xff) / 256;
+        }
+        if (Number.isFinite(opts.tintS)) {
+            entry.tintS = Math.max(0, Math.min(1, +opts.tintS));
+        } else {
+            entry.tintS = ((seed >>> 21) & 0xff) / 256;
+        }
+        if (Number.isFinite(opts.tintV)) {
+            entry.tintV = Math.max(0, Math.min(1, +opts.tintV));
+        } else {
+            entry.tintV = ((seed >>> 5) & 0xff) / 256;
+        }
         // Ω5 (taille-spec §5, Perpetuum-Verbot) — die HERKUNFT entscheidet den
         // Ertrag: ein GRATIS geborenes Spieler-Werk (schöpfer-Modus baute ohne
         // Material) erntet zu 0 (GEMESSEN: die Modus-Wäsche schöpfer→pfad gab
@@ -45529,7 +46086,24 @@ class AnazhRealm {
         const LANDMARK_RATE = 0.014;
         const BASE_RATE = 0.4;
         const AFFINITY_FLOOR = 0.18;
-        const candidates = ["baum_eiche", "baum_kiefer", "stein_block", "kristall_geode", "glutbrunnen"];
+        // Λ.5 (V18.173 — DER ÖKOTON-WALD): die 4 neuen Baumarten erweitern die
+        // candidates. Alle laub-Bäume haben identische Tags (Tag-Neutralitäts-
+        // Wand) → die Mischwald-Verteilung emergiert aus dem aff²-Lottery
+        // (s.u.), nicht aus Affinität-Differenzen.
+        const candidates = [
+            "baum_eiche",
+            "baum_kiefer",
+            "baum_birke",
+            "baum_erle",
+            "baum_buche",
+            "baum_tanne",
+            "stein_block",
+            "kristall_geode",
+            "glutbrunnen",
+        ];
+        // Λ.5 — der TREE_SET zur Mischwald-Lottery (alle baum_*-IDs); die
+        // Erle wird nur in feuchten Regionen aktiv (≥0.5 Λ-Schwelle).
+        const TREE_SET = new Set(["baum_eiche", "baum_kiefer", "baum_birke", "baum_erle", "baum_buche", "baum_tanne"]);
         // Γ5 (genese-plan — Determinismus-Schliff): der STILLE Math.random-
         // Fallback fällt. worldFieldAt() lazy-initialisiert state.worldField
         // (inkl. rngNoise, seed-gebunden) — bei fehlendem Feld würfelte vorher
@@ -45568,33 +46142,69 @@ class AnazhRealm {
         }
 
         // Streu-Pass: beste-Affinität-Bauplan an dieser Position.
-        let bestName = null;
-        let bestAffinity = 0;
+        // Λ.5 — Mischwald-Lottery: wir sammeln ALLE Affinitäten + sortieren
+        // sie absteigend, der Sieger ist heute die argmax. Wenn der Sieger
+        // ein Baum-Typ ist, würfeln die Top-3 mit aff²-Gewichten gegeneinander
+        // → der Sieger dominiert (70-80%), Verlierer existieren (Misch-Wald).
+        const affList = [];
         for (const name of candidates) {
+            // Λ.5 — Erle-Constraint: nur in feuchten Regionen (≥0.5 Λ-Schwelle).
+            // Das Material `holz`/`laub` würde sonst überall mit derselben
+            // Affinität liegen → die Erle ist eine Wasser-Spezies.
+            if (name === "baum_erle" && (!Number.isFinite(feuchte) || feuchte < 0.5)) {
+                continue;
+            }
             const aff = this.spawnAffinityForBlueprint(name, sampleX, sampleZ, feuchte);
-            if (aff > bestAffinity) {
-                bestAffinity = aff;
-                bestName = name;
+            if (aff >= AFFINITY_FLOOR) affList.push({ name, aff });
+        }
+        if (affList.length === 0) return 0;
+        affList.sort((a, b) => b.aff - a.aff);
+        let bestName = affList[0].name;
+        const bestAffinity = affList[0].aff;
+        // Λ.5 — Mischwald-Lottery: wenn der Sieger ein Baum-Typ ist, würfle
+        // unter den Top-3 baum_*-Kandidaten (quadratisches aff²-Gewicht — der
+        // Sieger gewinnt typisch 70%, der Zweite 20%, der Dritte 10%). Andere
+        // Kandidaten (stein_block/Felsen) bleiben deterministisch argmax.
+        if (TREE_SET.has(bestName)) {
+            const treeTop3 = affList.filter((e) => TREE_SET.has(e.name)).slice(0, 3);
+            if (treeTop3.length > 1) {
+                const weights = treeTop3.map((e) => e.aff * e.aff);
+                const totalW = weights.reduce((a, b) => a + b, 0);
+                // Seed-deterministischer Würfel (Multi-User-safe). Wir reuse
+                // den seedForSpawn-Wert (eindeutig pro Sample).
+                const pickRng = ((seedForSpawn >>> 7) % 1000) / 1000;
+                let acc = 0;
+                for (let i = 0; i < treeTop3.length; i++) {
+                    acc += weights[i] / totalW;
+                    if (pickRng < acc) {
+                        bestName = treeTop3[i].name;
+                        break;
+                    }
+                }
             }
         }
-        if (!bestName || bestAffinity < AFFINITY_FLOOR) return 0;
 
         // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
         // Γ5 — rng ist oben garantiert initialisiert (worldFieldAt lazy); der alte
         // Math.random-Fallback ist GESTRICHEN (P2P-Drift-Klasse).
         const probe = (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2;
         // V17.9 — Wald-Dichte (die WURZEL-Heilung des Schöpfer-Befundes „Bäume
-        // spärlich, nicht vereint"): Bäume (baum_eiche/baum_kiefer) sind in
-        // üppigen (lebendig-hohen) Regionen VIEL wahrscheinlicher → echte Wälder
-        // aus den BESTEHENDEN, abbaubaren Bäumen. KEIN paralleles Deko-System
-        // (der V17.6-Scatter-`baum` ist entfernt — er war redundant + entkoppelt
-        // von Ernte/Kollision). Die Dichte füttert die SCHON vorhandene Effizienz-
-        // Maschinerie: HISM-Instancing (rendert N gleiche Bäume in EINEM Draw-
-        // Call), Lazy-Collision (Ammo-Bodies nur < 40 m, V9.92-Pattern), Distanz-
+        // spärlich, nicht vereint"): Bäume (alle baum_*) sind in üppigen
+        // (lebendig-hohen) Regionen VIEL wahrscheinlicher → echte Wälder aus
+        // den BESTEHENDEN, abbaubaren Bäumen. KEIN paralleles Deko-System.
+        // Die Dichte füttert die SCHON vorhandene Effizienz-Maschinerie:
+        // HISM-Instancing (rendert N gleiche Bäume in EINEM Draw-Call),
+        // Lazy-Collision (Ammo-Bodies nur < 40 m, V9.92-Pattern), Distanz-
         // Mesh-Culling (< 150 m). Felsen/Geoden/Glutbrunnen bleiben spärliche
         // Landmarken (nur Bäume werden zum Wald). Werte browser-justierbar (FPS).
-        const isTree = bestName === "baum_eiche" || bestName === "baum_kiefer";
+        const isTree = TREE_SET.has(bestName);
         let chance = BASE_RATE * bestAffinity * bestAffinity;
+        // Λ.5 — Saum-Skala-Variation: der `_clumpAt` liefert die Wald-Maske.
+        // Bäume am Rand (clump ∈ [0.05, 0.15]) bekommen size-Bonus (+15%);
+        // Wald-Kern (clump > 0.4) etwas kleiner (-10%); Lichtung (clump < 0.05)
+        // selten + groß (+20%). Die seed-abhängige size emergiert aus dem
+        // spawnSeed in spawnArchitecture (entry.scale).
+        let edgeFactor = 1.0;
         if (isTree) {
             const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
             const lebendig = f ? f.lebendig : 0;
@@ -45604,17 +46214,26 @@ class AnazhRealm {
             // ist mittelwert-neutral (Gesamt-Baumzahl ≈ gleich), aber im
             // Masken-Hoch ×~2.6 (geschlossener Wald), im Tief ×0.25 (offenes
             // Land) → echte Wälder + Lichtungen aus den BESTEHENDEN Bäumen.
-            const forest = Math.max(0.25, Math.min(2.6, 1 + 1.6 * this._clumpAt(sampleX, sampleZ, 0.006)));
+            const clumpRaw = this._clumpAt(sampleX, sampleZ, 0.006);
+            const forest = Math.max(0.25, Math.min(2.6, 1 + 1.6 * clumpRaw));
             chance = Math.min(0.5, chance * forest);
+            // Λ.5 — Saum/Lichtungs-Skala
+            if (clumpRaw < 0.05) edgeFactor = 1.2;
+            else if (clumpRaw < 0.15) edgeFactor = 1.15;
+            else if (clumpRaw > 0.4) edgeFactor = 0.9;
         }
         if (probe >= chance) return 0;
 
+        // Λ.5 — Spawn-Skala mit Saum-Faktor; opts.scale wird in spawnArchitecture
+        // gelesen + setzt entry.scale. Default 1.0 + edgeFactor.
+        const finalScale = edgeFactor;
         this._enqueueVegetationSpawn(
             bestName,
             { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
             {
                 seed: seedForSpawn,
                 silent: true,
+                scale: finalScale,
             }
         );
         return 1;
@@ -55134,10 +55753,14 @@ class AnazhRealm {
                 // Sonnenhöhe 0.25 (Dämmerung), tags 0. Regen dämpft (kein
                 // Mondlicht durch Wolken). Der Wert IST das Shader-Gate.
                 if (au.terrainMoonRim) {
+                    // Λ.0 (V18.173 §8.3.4): Erst-Wurf-Default 0.06 (Schöpfer-Wort) —
+                    // löst die 0.12 von §7.5(a)/V18.164 ab, weil das Frequenzband
+                    // ALLE Ebenen profil-gewichtet liftet (kein "Terrain isoliert
+                    // hochdrehen" mehr nötig).
                     const moonBase =
                         this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
                             ? this.state.atmosphere.moonRim
-                            : 0.12;
+                            : 0.06;
                     const sunUp = Math.max(0, Math.sin(angle));
                     au.terrainMoonRim.value = moonBase * Math.max(0, 1 - sunUp * 4) * (1 - Math.min(1, rainyMix) * 0.7);
                 }
@@ -59109,7 +59732,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.172.0";
+AnazhRealm.VERSION = "18.173.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -59779,6 +60402,11 @@ AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
 // materialTag[0..1]); ÷3 normalisiert die Material-Tags des Produkt-Vektors auf [0..1] (= dieselbe Skala wie
 // die Form-Achsen) → die FORM konkurriert mit dem MATERIAL in der Resonanz (heilt die Spektrum-Sättigung).
 AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
+// Λ.2 (V18.173 — pro-Instanz-Tint): die HSL-Spannweite, die jede gespawnte
+// Architektur-Instanz bekommt (seed-deterministisch aus entry.tintH/.tintS/.tintV).
+// rangeH 0.08 = ±8 % Hue → laub-Töne von kühlem zu warmem Grün, ohne grellbunt;
+// rangeS 0.10 = ±10 % Sättigung; rangeV 0.06 = ±6 % Helligkeit. Browser-justierbar.
+AnazhRealm.INSTANCE_TINT = Object.freeze({ rangeH: 0.08, rangeS: 0.1, rangeV: 0.06 });
 // Ω2 (taille-spec §2 must-preserve) — die Größen-Wand für unbekannte Felder
 // (Dämpfung: ein Riesen-Feld ist ein Quota-DoS, keine Zukunft) + die known-
 // Sätze der Serialize/Restore-Zwillinge: ALLE explizit behandelten Schlüssel.
@@ -60351,6 +60979,18 @@ AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS = Object.freeze({
         mirrorTol: 0.35, // Spiegel-Such-Toleranz, relativ zur Compound-Größe
         verticalMin: 0.45, // Y-Spanne ≥ 45 % der horizontalen — ein Körper
         // "steht"; ein flaches Dorf (Hütten in der xz-Ebene) fällt raus.
+        // Λ.1 (V18.173 — DIE REGEL HEILEN, Schöpfer-Plan): die VERTIKALE
+        // VERTEILUNG des lebendigen Materials trennt Baum von Körper. Ein
+        // Eichbaum hat lebendiges Material (laub) OBEN (yNorm ≈ 0.85), ein
+        // Mensch hat es mittig verteilt (yNorm ≈ 0.5). Ein Pilz/Wurzel hat
+        // es UNTEN (yNorm ≈ 0.15). Eine reiche+symmetrische Eiche DARF jetzt
+        // 4 Äste haben — sie wird nicht zur Seele, weil das lebendige Material
+        // OBEN sitzt. Ein Mensch braucht mind. livingMassMin gewichtete Masse
+        // an lebendigem Material (verhindert, dass ein paar Holz-Teile als
+        // „Körper" durchgehen würden).
+        livingCenterMinY: 0.3, // unter 30 % der Höhe = Boden-konzentriert
+        livingCenterMaxY: 0.7, // über 70 % der Höhe = Krone (Baum)
+        livingMassMin: 0.02, // mindestens diese gewichtete lebende Masse
     }),
     food: Object.freeze({
         lebendigMin: 0.6, // klar lebendig (Fleisch, Laub, Frucht)

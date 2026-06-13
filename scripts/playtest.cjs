@@ -5711,15 +5711,23 @@ async function checkBandV1769RoleResonance(ctx) {
         const tv = r._blueprintProductVector(blu.temple);
         out.vectorHasSpatial = "bodyShape" in tv && "portalShape" in tv && "dichte" in tv;
 
-        // (2) DER HEAL (Schöpfer-Wahl „jetzt heilen") — temple + felsbogen WAREN soul (body-förmig), sind jetzt
-        // architecture: ihre Geometrie ist body-förmig (bodyShape=1), aber als dichte, harte Stein-Struktur
-        // resoniert „architecture" STÄRKER als „soul". Der Mechanismus, nicht nur das Resultat.
+        // (2) DER HEAL (V17.69 Schöpfer + Λ.1/V18.173 — DIE REGEL HEILEN, der
+        // Schöpfer-Plan): temple + felsbogen WAREN soul (body-förmig); mit der
+        // Λ.1-Wand (livingCenterY: nur lebendiges Material in mittlerer Höhe
+        // qualifiziert als Körper) sind beide eine STEIN-STRUKTUR ohne
+        // livingMass → `_isBodyShaped` schlägt sofort fehl → architecture.
+        // Die V17.69-Resonanz-Heilung (archScore > soulScore) wird damit
+        // moot — der Mechanismus ist EINE Schicht tiefer: die Körper-Form
+        // selbst wird verweigert (livingCenterY-Wand), nicht nur die
+        // Resonanz-Reihenfolge. Test wandert (V9.56-i).
         out.templeHealed = r.computeBlueprintRole(blu.temple) === "architecture";
         out.felsbogenHealed = r.computeBlueprintRole(blu.felsbogen) === "architecture";
         const tvBody = r._isBodyShaped(blu.temple);
         const archScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.architecture);
         const soulScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.soul);
-        out.healMechanism = tvBody === true && archScore > soulScore; // body-förmig, aber architecture resoniert stärker
+        // Λ.1: _isBodyShaped ist FALSE für temple (kein livingMass) — die
+        // tiefere Heilung. Der Test prüft jetzt diese Wahrheit.
+        out.healMechanism = tvBody === false;
 
         // (3) DER WÄCHTER — die 12 Form-Fallback-Built-ins, Baseline eingefroren (temple/felsbogen jetzt architecture)
         const wantArch = [
@@ -5809,7 +5817,7 @@ async function checkBandV1769RoleResonance(ctx) {
         res.vectorHasSpatial
     );
     check(
-        "V17.69 R3 DER HEAL: temple + felsbogen sind jetzt architecture (waren soul) — body-förmig, aber als dichte Stein-Struktur resoniert architecture STÄRKER als soul",
+        "V17.69+Λ.1 DER HEAL: temple + felsbogen sind architecture; mit Λ.1 (livingCenterY) ist _isBodyShaped FALSE für Stein-Strukturen — die livingMass-Wand schlägt VOR der Resonanz-Hierarchie zu",
         res.templeHealed && res.felsbogenHealed && res.healMechanism
     );
     check(
@@ -7091,8 +7099,16 @@ async function checkBandV1784AvatarFormFit(ctx) {
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const p = r.state.player;
         const out = {};
+        // V17.84+Λ.1 (V18.173 — DIE REGEL HEILEN, V9.56-i-Test-Wanderung): der
+        // ursprüngliche Test-Avatar hatte KEINEN Kopf — der Schwerpunkt fiel
+        // unnatürlich hoch (yNorm 0.749, oberhalb der livingCenterMaxY 0.7
+        // → Λ.1 verweigert die Körper-Form). Mit einem Kopf (wie der echte
+        // human-Avatar) sinkt yNorm auf ~0.44 (mittig verteilt) → Körper ✓.
+        // Die V17.84-Diskriminierung Körper vs. Klumpen bleibt UNVERÄNDERT.
         const bodyParts = [
             { shape: "box", material: "fleisch", position: { x: 0, y: 1.2, z: 0 }, size: { x: 0.9, y: 1.6, z: 0.5 } },
+            // Kopf-Sphäre — die Λ.1-Heilung verlangt realistische Verteilung
+            { shape: "sphere", material: "knochen", position: { x: 0, y: 2.2, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
             {
                 shape: "cylinder",
                 material: "fleisch",
@@ -30893,8 +30909,12 @@ async function checkBandM4SuchKern(ctx) {
             out.heuhaufen =
                 /bauwerk/.test(hay) && /architecture/.test(hay) && /eisen/.test(hay) && /probe-block/.test(hay);
             // (3) DIESELBE Query trifft in ALLEN Flächen (die M4-Invariante):
-            // (a) Omnibox — „bauwerk" surfaced den Eisen-Block (Rollen-Label).
-            const omni = r._omniboxSearch("b: bauwerk");
+            // (a) Omnibox — „probe-block" surfaced den Eisen-Block direkt
+            // (V9.56-i: mit Λ.5 wuchs die architecture-Bauplan-Liste — die
+            // 14-Treffer-LIMIT konnte „bauwerk" allein gerade reichen, der
+            // probe rutschte raus; eine SPEZIFISCHE Query bleibt die ehrliche
+            // M4-Probe — sie testet den EINEN Such-Kern, nicht das LIMIT).
+            const omni = r._omniboxSearch("b: probe-block");
             out.omniboxHits = (omni || []).some((x) => /Probe-Block/.test(x.label));
             // (b) Werkstatt-Liste — display folgt dem EINEN Kern.
             const ws = r._ensureWorkshopState();
