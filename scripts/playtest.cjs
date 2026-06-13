@@ -32447,6 +32447,208 @@ async function checkBandPhi7PortalHalls(ctx) {
     );
 }
 
+// Φ6-Bogen (V18.191) — DIE COMPUTE-SPENDE: das verteilte Immunsystem.
+// (a) Chunk-Compute-Beiträge (signiert + bit-Hash + Stichproben-Verify
+//     gegen die LOKAL nachgerechnete Wahrheit — die Worker-Asymmetrie:
+//     verifizieren ist O(Build), schummeln gegen Hash unmöglich).
+// (b) Playtest-Lauf-Beiträge (signiert + Commit + Resultat; eine Welt mit
+//     N Mitläufern hat N× die Antikörper-Exposition).
+// Geschenk-Schicht — KEINE Rechen-Währung (Anti-Scope §3 ehrt).
+async function checkBandPhi6ComputeSpende(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+
+        // (K1) Daten-Modelle existieren (Map + Array, initial leer).
+        out.contribMap = r.state.computeContributions instanceof Map;
+        out.runArray = Array.isArray(r.state.playtestContributions);
+
+        // (K2) Input-Hash ist deterministisch + ändert sich mit cx/cz/lod.
+        const spec1 = { kind: "chunk-density", worldSeed: "test-seed", cx: 0, cz: 0, lod: 0 };
+        const spec2 = { kind: "chunk-density", worldSeed: "test-seed", cx: 0, cz: 0, lod: 0 };
+        const spec3 = { kind: "chunk-density", worldSeed: "test-seed", cx: 1, cz: 0, lod: 0 };
+        const h1 = r._computeJobInputHash(spec1);
+        const h2 = r._computeJobInputHash(spec2);
+        const h3 = r._computeJobInputHash(spec3);
+        out.hashDeterministic = h1 && h1 === h2;
+        out.hashChanges = h1 !== h3;
+
+        // (K3) Output-Hash funktioniert auf einem echten Chunk-Build (das ist
+        // die ECHTE Verify-Asymmetrie — der Hash ist O(Vertex), die Substanz
+        // ist O(Welt × Build); bit-stabile Position-Hashes).
+        const result = r._buildVoxelChunkData(2, 2, 0);
+        const outputHash = r._computeChunkOutputHash(result);
+        out.outputHashOk = typeof outputHash === "string" && outputHash.length === 8;
+        // Bit-Stabilität: derselbe Build muss denselben Hash geben.
+        const result2 = r._buildVoxelChunkData(2, 2, 0);
+        const outputHash2 = r._computeChunkOutputHash(result2);
+        out.outputHashStable = outputHash === outputHash2;
+        // Aufräumen (Mesh-Heap nicht aufblasen).
+        try {
+            if (result && result.mesh && result.mesh.geometry) result.mesh.geometry.dispose();
+            if (result2 && result2.mesh && result2.mesh.geometry) result2.mesh.geometry.dispose();
+        } catch {
+            /* defensive */
+        }
+
+        // (K4) Signieren + Verifizieren einer Compute-Contribution (ed25519).
+        const sigRes = await r.signComputeContribution(h1, outputHash, { skipConfirm: true });
+        out.signOk = !!(sigRes && sigRes.ok && sigRes.sig);
+
+        // (K5) Pin-Pfad: eine valide Contribution wird angenommen + Status
+        // ist "unverified" (Sig okay, aber noch nicht stichproben-verifiziert).
+        const pinRes = await r.pinComputeContribution({
+            inputHash: h1,
+            outputHash,
+            providedBy: sigRes.authorPubKey,
+            sig: sigRes.sig,
+        });
+        out.pinOk = !!(pinRes && pinRes.ok && pinRes.status === "unverified");
+        out.pinInMap = r.state.computeContributions.has(h1);
+
+        // (K6) Müll fällt am Eingang (kaputter Hash, Hex-Form verletzt).
+        const badPin = await r.pinComputeContribution({ inputHash: "X!?", outputHash: "Y!?" });
+        out.badRejected = !badPin.ok && badPin.reason === "invalid";
+
+        // (K7) STICHPROBEN-VERIFY: der Spec wird lokal nachgerechnet, Hash
+        // verglichen → "verified" wenn gleich. Das ist die echte Wand.
+        // Wir nutzen den oben gespeicherten h1-Eintrag (spec liegt vor).
+        // ABER: wir müssen denselben Spec auch lokal bauen können, also
+        // brauchen wir den ECHTEN buildVoxelChunkData(spec.cx, spec.cz).
+        // Spec1 hat cx=0,cz=0 → bauen + Hash vergleichen.
+        const verifySpec = { kind: "chunk-density", worldSeed: "test-seed", cx: 2, cz: 2, lod: 0 };
+        const verifyHash = r._computeJobInputHash(verifySpec);
+        // Pin mit dem LOKAL korrekten outputHash (das ist der „ehrliche Spender"-Fall).
+        await r.pinComputeContribution({
+            inputHash: verifyHash,
+            outputHash, // der oben berechnete Hash für (2,2,0)
+            providedBy: sigRes.authorPubKey,
+            sig: null, // sig optional für diesen Test (Sieb akzeptiert null)
+        });
+        const entry = r.state.computeContributions.get(verifyHash);
+        const verifyRes = r.verifyComputeContribution(verifySpec, entry);
+        out.verifyEhrlich = !!(verifyRes && verifyRes.ok && verifyRes.equal && entry.status === "verified");
+
+        // (K8) FORGED-Wand: ein falscher outputHash → status forged + R4-
+        // Eskalation (der Anbieter wird revoziert).
+        const forgedSpec = { kind: "chunk-density", worldSeed: "test-seed", cx: 5, cz: 5, lod: 0 };
+        const forgedHash = r._computeJobInputHash(forgedSpec);
+        const fakeKey = "a".repeat(64);
+        const revBefore = r.state.revokedKeys.size;
+        await r.pinComputeContribution({
+            inputHash: forgedHash,
+            outputHash: "deadbeef", // falscher Hash
+            providedBy: fakeKey,
+            sig: null,
+        });
+        const forgedEntry = r.state.computeContributions.get(forgedHash);
+        const forgedVerify = r.verifyComputeContribution(forgedSpec, forgedEntry);
+        out.verifyForged = forgedVerify.equal === false && forgedEntry.status === "forged";
+        out.revokedSchummler = r.state.revokedKeys.has(fakeKey) && r.state.revokedKeys.size === revBefore + 1;
+        r.state.revokedKeys.delete(fakeKey);
+        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+
+        // (K9) PLAYTEST-Lauf signieren + recordPlaytestRun ehrlicher Pfad.
+        const runRes = await r.signPlaytestRun(
+            { commit: "abc12345", version: "18.191.0", result: "ok", total: 3500 },
+            { skipConfirm: true }
+        );
+        out.runSignOk = !!(runRes && runRes.ok && runRes.run.sig);
+        const recordRes = await r.recordPlaytestRun(runRes.run);
+        out.recordOk = !!(recordRes && recordRes.ok);
+        out.recordInArray = r.state.playtestContributions.some((e) => e.commit === "abc12345");
+
+        // (K10) DEDUP: derselbe Anbieter darf denselben Commit nur einmal
+        // bürgen (Update, kein Doppel-Eintrag).
+        const beforeLen = r.state.playtestContributions.length;
+        await r.recordPlaytestRun(runRes.run);
+        out.dedupOk = r.state.playtestContributions.length === beforeLen;
+
+        // (K11) FORGED Sig fällt: ein Lauf mit kaputtem Sig wird verworfen.
+        const badRun = {
+            commit: "xyz98765",
+            version: "18.0",
+            result: "ok",
+            total: 100,
+            providedBy: "b".repeat(64),
+            sig: "deadbeef",
+            signedAt: Date.now(),
+        };
+        const badRecord = await r.recordPlaytestRun(badRun);
+        out.badRunRejected = !badRecord.ok;
+
+        // (K12) listPlaytestContributions Aggregat + Snapshot-Round-Trip.
+        const list = r.listPlaytestContributions("abc12345");
+        out.listOk = list.length === 1 && list[0].providedBy === runRes.run.providedBy;
+        const snap = r.buildStateSnapshot();
+        out.snapHasContribs = Array.isArray(snap.computeContributions) && snap.computeContributions.length >= 1;
+        out.snapHasRuns = Array.isArray(snap.playtestContributions) && snap.playtestContributions.length >= 1;
+
+        // (K13) R2-DISJUNKTHEIT: keine Φ6-Akte sind DSL-Ops.
+        const dslRunSrc = r.dslRun.toString();
+        out.noPinComputeOp = !/op\s*===\s*["']pin_compute["']/.test(dslRunSrc);
+        out.noSignPlaytestOp = !/op\s*===\s*["']sign_playtest["']/.test(dslRunSrc);
+
+        // Aufräumen: die Test-Einträge.
+        r.state.computeContributions.delete(h1);
+        r.state.computeContributions.delete(verifyHash);
+        r.state.computeContributions.delete(forgedHash);
+        r.state.playtestContributions = r.state.playtestContributions.filter(
+            (e) => e.commit !== "abc12345" && e.commit !== "xyz98765"
+        );
+
+        return out;
+    });
+
+    check(
+        "Φ6 (K1): Daten-Modelle leben — computeContributions: Map, playtestContributions: Array",
+        res.contribMap && res.runArray
+    );
+    check(
+        "Φ6 (K2): _computeJobInputHash deterministisch (gleicher Spec → gleicher Hash) + ändert sich mit cx/cz/lod",
+        res.hashDeterministic && res.hashChanges
+    );
+    check(
+        "Φ6 (K3): _computeChunkOutputHash funktioniert auf einem echten Chunk-Build + ist bit-stabil (das Verify-Asymmetrie-Fundament — derselbe Build → derselbe Hash)",
+        res.outputHashOk && res.outputHashStable
+    );
+    check("Φ6 (K4): signComputeContribution signiert über sign_manifest (SOUVERÄNE Geste, ed25519)", res.signOk);
+    check(
+        "Φ6 (K5): pinComputeContribution nimmt valide Spende an (status=unverified bis zur Stichprobe) + speichert in Map",
+        res.pinOk && res.pinInMap
+    );
+    check(
+        "Φ6 (K6): _admitForeignComputeContribution siebt Müll (kaputte Hex-Hashes fallen am Eingang)",
+        res.badRejected
+    );
+    check(
+        "Φ6 (K7): STICHPROBEN-VERIFY — ehrlicher Spender: lokal nachgerechneter Hash = gespendeter Hash → status=verified",
+        res.verifyEhrlich
+    );
+    check(
+        "Φ6 (K8): FORGED-WAND — falscher Hash → status=forged + R4-Eskalation (Anbieter revoziert, Schummler fällt für alles weitere)",
+        res.verifyForged && res.revokedSchummler
+    );
+    check(
+        "Φ6 (K9): signPlaytestRun signiert + recordPlaytestRun nimmt ehrlich an (Sig-Verify am Eingang)",
+        res.runSignOk && res.recordOk && res.recordInArray
+    );
+    check("Φ6 (K10): DEDUP — derselbe Anbieter + Commit → Update, kein Doppel-Eintrag (Cap-Schutz)", res.dedupOk);
+    check(
+        "Φ6 (K11): FORGED Playtest-Sig fällt am Eingang (recordPlaytestRun verifiziert die Sig vor dem Speichern)",
+        res.badRunRejected
+    );
+    check(
+        "Φ6 (K12 — must-preserve): listPlaytestContributions Aggregat + Snapshot trägt BEIDE Pools mit (computeContributions + playtestContributions)",
+        res.listOk && res.snapHasContribs && res.snapHasRuns
+    );
+    check(
+        "Φ6 (K13 — R2-DISJUNKTHEIT): KEINE Φ6-Akte sind DSL-Ops (kein Skript kann automatisch pinnen/signieren — Anti-Scope §3: Geschenk-Schicht, keine Rechen-Währung)",
+        res.noPinComputeOp && res.noSignPlaytestOp
+    );
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -49603,6 +49805,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandPhiArchipel(ctx);
             await checkBandPhiArchipelV2(ctx);
             await checkBandPhi7PortalHalls(ctx);
+            await checkBandPhi6ComputeSpende(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

@@ -6,14 +6,13 @@
 > sozial · welten-föderation · meister-marsch · genese-bogen · wellen-synthese) leben im Archiv —
 > ein Bogen erwacht → sein Plan kommt auf den Tisch.
 
-**Stand 13.06.2026 (V18.190 — `claude/stoic-archimedes-36l2it`):** **Φ-BOGEN ZU 6/7 GEBAUT.**
-V18.188: Φ0/Φ1/Φ2 (Last-Sonde · Welt-Adressen · Wohnzimmer-Stufen). V18.189: Φ3/Φ4/Φ5
-(Regions-Archipel · Anwesenheit · Mittragen). **V18.190: Φ7** (Portal-Hallen — kuratierte
-Welt-Verzeichnisse als signierte Artefakte; N Adressen im Kreis materialisiert, jeder Slot
-trägt seine EIGENE entry-level worldAddress). Nur **Φ6 Vorberechnung + verteiltes Immunsystem**
-bleibt offen (eigene große Welle — Job-Queue, Stichproben-Verify, Worker-Pool). Der Tisch trägt
-jetzt nur noch: Φ6 (groß), M9-Sprossen 4-7 (S-Dialog), Γ-Reste, LOD-Reste, Wasser-Entscheid
-+ drei Schöpfer-Entscheide + die Browser-Sign-offs.
+**Stand 13.06.2026 (V18.191 — `claude/stoic-archimedes-36l2it`):** **DER WELTEN-NETZ-BOGEN Φ IST RUND
+(7/7 GEBAUT).** V18.188 Φ0+Φ1+Φ2 · V18.189 Φ3+Φ4+Φ5 · V18.190 Φ7 · **V18.191 Φ6** (Compute-Spende
++ Antikörper-Lauf-Aggregat — Worker-Asymmetrie als Geschenk-Schicht, Anti-Scope §3 ehrt: KEINE
+Rechen-Währung). 58 neue Wände in 4 Test-Bands, smoke-multiuser end-to-end, alle Wände grün.
+**M9-Sprossen 1+2+3 stehen** (Sprosse 1=Φ1+Φ2, Sprosse 2=Φ3, Sprosse 3=Φ5). Der Tisch trägt jetzt
+nur noch: M9-Sprossen 4-7 (S-Dialog), Γ-Reste (klein, optional), LOD-Reste (S-Wahl),
+Wasser-Render-Entscheid + die drei Schöpfer-Entscheide + die Browser-Sign-offs.
 
 ---
 
@@ -32,45 +31,40 @@ jetzt nur noch: Φ6 (groß), M9-Sprossen 4-7 (S-Dialog), Γ-Reste, LOD-Reste, Wa
 | Meister-Marsch §8 (W-A · W-B · W-C · W-D · W-E · W-F · W-G · W-H · M1–M8) | V18.154–.179 | `docs/archiv/meister-plan.md` |
 | Genese-Bogen Γ (Γ1-Kern · Γ2 · Γ5 V18.166; Γ1-Lesart-4 · Γ4 · Γ4.2/4.4 · Γ4½ V18.179-.181 via Synthese) | V18.166 + V18.180-FIX-Bogen | `docs/archiv/genese-plan.md` |
 | Branch-Synthese (clever-gauss × tesla → ein Stamm) | V18.180-FIX bis V18.187 (20 Commits, 10 permanente Lehren) | `docs/wellen-synthese-plan.md` + Archiv-Voll-Datei |
-| **Φ-Bogen Φ0+Φ1+Φ2 (M9-Sprosse 1 — Welten-Netz: Last-Sonde · Welt-Adressen · Wohnzimmer-Stufen)** | **V18.188** | `docs/archipel-plan.md` §2 (Φ0/Φ1/Φ2 gebaut, Φ3–Φ7 offen) |
-| **Φ-Bogen Φ3+Φ4+Φ5 (M9-Sprossen 2+3 — Regions-Archipel · Anwesenheits-Schicht · Mittragen)** | **V18.189** | `docs/archipel-plan.md` §2 (Φ3/Φ4/Φ5 gebaut, Φ6/Φ7 offen als Kür) |
-| **Φ-Bogen Φ7 (Portal-Hallen — kuratierte Welt-Verzeichnisse als signierte Artefakte)** | **V18.190** | `docs/archipel-plan.md` §2 (6/7 Wellen gebaut, NUR Φ6 Vorberechnung offen) |
+| **Φ-Bogen Φ0–Φ7 (M9-Sprossen 1+2+3 — DAS WELTEN-NETZ, RUND 7/7)** | **V18.188–V18.191** | `docs/archiv/archipel-plan.md` (ALLE Wellen GEBAUT; 58 Wände in 4 Test-Bands; smoke-multiuser end-to-end) |
 
 ---
 
-## §1 — Die fünf offenen Bögen
+## §1 — Die offenen Bögen
 
-### A. Φ — Welten-Netz/Archipel (Sprossen 1+2+3 GEBAUT; Φ6/Φ7 als Kür)
+### A. Φ — Welten-Netz/Archipel (VOLLENDET 7/7, V18.188–V18.191; archiviert)
 
-M9-Sprossen 1+2+3 sind GEBAUT (V18.188 + V18.189). Φ6 (verteilte Vorberechnung) ist die nächste
-große Vision-Welle; Φ7 (Portal-Hallen) ist Kür.
+Alle sieben Wellen GEBAUT (`docs/archiv/archipel-plan.md`):
 
-| Welle | Was | Status |
+| Welle | Was | Wände |
 |---|---|---|
-| Φ0 | Last-Sonde (Snapshot 4.1 KiB brotli, Chunk-Build avg 116 ms, Adresse 394 B, REGION_CHUNKS=8 Erst-Wurf) | **GEBAUT V18.188** (`scripts/diag-archipel-last.cjs`, Report `artifacts/archipel-last.json`) |
-| Φ1 | Welt-Adressen + tragendes Portal (`signWorldAddress` · `_admitForeignWorldAddress` · `setPortalAddress` · Bestätigungs-Karte + Antikörper „lügendes Portal") | **GEBAUT V18.188** (`checkBandPhiArchipel` 12 Wände) |
-| Φ2 | Sichtbarkeit (4-stufig, Lobby-Bridge) + Gast-Rechte (3-stufig, Default frieden) + Hausrecht (kick · banPeer · banVibePassKey · Sieb am world-snapshot) | **GEBAUT V18.188** (R2 strukturell durch DSL-Disjunktheit) |
-| Φ3 | Regions-Archipel V1 (opt-in via `regionsActive`, FROZEN REGION_CHUNKS=8 · SPAN=345.6m · HYSTERESIS=10m; Mathe-Helper + Auto-Detection + `_p2pRegionHandoff` als Re-Join) | **GEBAUT V18.189** (R6-Sanftheit: Default OFF; 9 Wände in `checkBandPhiArchipelV2`) |
-| Φ4 | Anwesenheits-Schicht (Broker `world-presence` regional aufgelöst + Client-Cache + opt-in pro Welt) | **GEBAUT V18.189** (5 Wände + `smoke-multiuser` END-TO-END mit 3-Peer-Region-Probe grün) |
-| Φ5 | Spenden-Schicht I: Mittragen (`pinCurrentWorld` · `_p2pMaybeServeAsCarrier` + Persistenz + hash-validiert) | **GEBAUT V18.189** (7 Wände — das Torrent-Modell wirkt) |
-| Φ6 | Spenden-Schicht II: Vorberechnung + verteiltes Immunsystem (Präcompute-Jobs · signiertes Artefakt · Stichproben-Verify) | groß, eigene Welle |
-| Φ7 | Portal-Hallen als Artefakte (signierte Welt-Verzeichnisse mit Φ1-Adressen, Kreis-Materialisierung mit entry-level worldAddress) | **GEBAUT V18.190** (12 Wände in `checkBandPhi7PortalHalls`; Coalesce-Lehre `entry.portalMeta || bp.portalMeta` — N gleiche Bauplan-Tore, N verschiedene Welten) |
+| Φ0 | Last-Sonde (`scripts/diag-archipel-last.cjs`; Snapshot 4.1 KiB brotli · Adresse 394 B · REGION_CHUNKS=8 Erst-Wurf) | Report-Artefakt |
+| Φ1 | Welt-Adressen + tragendes Portal (signiert · admittiert · Bestätigungs-Karte + Antikörper „lügendes Portal") | 12 (V18.188) |
+| Φ2 | Sichtbarkeit 4-stufig + Lobby-Bridge · Gast-Rechte 3-stufig · Hausrecht (kick·ban·banVibePassKey · Sieb am world-snapshot) | (V18.188) |
+| Φ3 | Regions-Archipel (opt-in `regionsActive` Default OFF · R6-Sanftheit · FROZEN-Geometrie · Mathe + Hysterese-Handoff) | 9 (V18.189) |
+| Φ4 | Anwesenheits-Schicht (Broker `world-presence` regional · Client-Cache · opt-in pro Welt) | 5 + smoke-multiuser end-to-end |
+| Φ5 | Mittragen-Schicht (`pinCurrentWorld` · `_p2pMaybeServeAsCarrier` · Persistenz · hash-validiert) | 7 (V18.189) |
+| Φ6 | Compute-Spende + Antikörper-Lauf (`pinComputeContribution` · `verifyComputeContribution` Stichproben-Wand · `recordPlaytestRun` · R4-Eskalation bei forged) | 13 (V18.191) |
+| Φ7 | Portal-Hallen als Artefakte (signierte Welt-Verzeichnisse · Coalesce `entry.portalMeta \|\| bp.portalMeta` · Kreis-Materialisierung) | 12 (V18.190) |
 
-**Voll-Plan:** `docs/archipel-plan.md`. **Φ-Bogen 6/7 GEBAUT.** **S-Browser-Abnahmen für
-V18.188+V18.189+V18.190 offen** (Portal-Karte fühlen, Visibility-Wechsel, Lobby-Auftritt;
-im Multi-Browser: zwei Peers in zwei Regionen einer Welt — Anwesenheits-Aura wenn gewünscht;
-eine Halle mit 4-8 Adressen kuratieren + materialisieren + durch die Tore reisen).
+**M9-Sprossen 1+2+3 ✓** (Sprosse 1=Φ1+Φ2 das Netz · Sprosse 2=Φ3 das Archipel · Sprosse 3=Φ5+Φ6
+die tragende+rechnende Menge). **S-Browser-Abnahmen offen** (Portal-Karte fühlen,
+Visibility-Wechsel, Region wechseln, Anwesenheit pollen, eine Welt pinnen + als Mitträger
+antworten, Halle kuratieren+materialisieren+durchreisen, Compute-Beitrag verifizieren).
 
-### B. M9 — Aufstiegs-Leiter (die Krone, eigener Bogen)
-
-Sieben Sprossen, jede braucht den S-Dialog am Tisch.
+### B. M9 — Aufstiegs-Leiter (Sprossen 1–3 GEBAUT, 4-7 S-Dialog)
 
 - **Sprosse 1** = Φ1+Φ2 ✓ V18.188 (das Netz)
 - **Sprosse 2** = Φ3 ✓ V18.189 (das Archipel)
-- **Sprosse 3** = Φ5 ✓ V18.189 (Mittragen-Foundation; F2-Stern als Selbst-Erweiterung ist eine separate Welle)
+- **Sprosse 3** = Φ5+Φ6 ✓ V18.189+V18.191 (Mittragen + Compute-Spende)
 - **Sprosse 4-7** = S-Dialog, je Vision-getrieben
 
-**Voll-Plan:** `docs/archiv/meister-plan.md` §3 + §8.6. **Φ und M9 verzahnen — Sprossen 1–3 stehen.**
+**Voll-Plan:** `docs/archiv/meister-plan.md` §3 + §8.6.
 
 ### C. Γ-Reste (klein, optional, gut zu picken)
 
@@ -153,13 +147,12 @@ Pflicht-Sign-offs:
 
 ## §5 — Empfohlene Reihenfolge
 
-1. **S-Browser-Abnahme V18.188 + V18.189 + V18.190** (das Schöpfer-Auge prüft Φ1/Φ2/Φ3/Φ4/Φ5/Φ7 — Portal-Karte fühlen, eine Welt verlinken, Region wechseln, Anwesenheit pollen, eine fremde Welt pinnen, eine Halle kuratieren+materialisieren+durch die Tore reisen)
-2. **Φ6 Spenden II** (Vorberechnung + verteiltes Immunsystem — die Tiefe der Mitträger-Schicht, eigene große Welle)
-3. **ODER B1 Worker-Sheet** (Performance-Faden, wenn Carve-Hitch fühlbar)
-4. **ODER U2 Wasser-LOD** (sobald Wasser-Render-Pfad-Entscheid steht)
-5. **ODER Γ7 Baum-Varianten** (klein, video-getrieben)
+1. **S-Browser-Abnahme V18.188–V18.191** (das Schöpfer-Auge prüft den ganzen Φ-Bogen — Portal-Karte fühlen, Welt verlinken, Region wechseln, Anwesenheit pollen, Welt pinnen + als Mitträger antworten, Halle kuratieren+materialisieren+durchreisen, Compute-Beitrag verifizieren)
+2. **B1 Worker-Sheet** (Performance-Faden, wenn Carve-Hitch fühlbar)
+3. **ODER U2 Wasser-LOD** (sobald Wasser-Render-Pfad-Entscheid steht)
+4. **ODER Γ7 Baum-Varianten / Γ1 Lesart 5 (Geruch) / Γ3 Feld-Charakter / Γ-M Strata** (klein, gut zu picken)
 
-Die größeren Pakete (Φ6 · M9-Sprossen 4+ · U6 · Wasser-Render-Bogen · Γ-M) sind eigene Bogen-Phasen, die am Tisch designt werden.
+Die größeren Pakete (M9-Sprossen 4+ · U6 · Wasser-Render-Bogen · Γ-M) sind eigene Bogen-Phasen, die am Tisch designt werden.
 
 ---
 

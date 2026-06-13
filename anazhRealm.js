@@ -994,6 +994,21 @@ class AnazhRealm {
             // (worldMeta-frei, weltweit lebende Werke; Spieler-global wie
             // Baupläne). Reist über _admitForeignPortalHall (R4-Wand).
             portalHalls: new Map(),
+            // Φ6 (V18.191) — DIE COMPUTE-SPENDE: verteiltes Immunsystem.
+            // Geschenk-Schicht (Anti-Scope §3: KEINE Rechen-Währung).
+            // computeContributions: Map<inputHash, {outputHash, providedBy,
+            //   providedAt, sig, status: "fresh"|"verified"|"forged"|"unverified"}>
+            // Ein gespendetes Chunk-Artefakt wird bit-Hash gegen die LOKAL
+            // nachgerechnete Wahrheit getestet (Stichproben-Verify); ein
+            // forged Resultat markiert „forged" + revoziert den Anbieter
+            // (R4 → der Schummler fällt für die ganze Welt).
+            computeContributions: new Map(),
+            // playtestContributions: Array<{commit, version, result, total,
+            //   providedBy, signedAt, sig}>  (Rolling, max 64 — ein Peer
+            //   signiert „ich lief playtest auf commit X mit Resultat Y";
+            //   Aggregat: die Gesundheit des Ultiversums skaliert mit
+            //   seinen Bewohnern als Ledger-Fakt).
+            playtestContributions: [],
             architectureCullingRadius: 150,
             // V7.75: 1Hz war zu langsam — bei Lauf-Geschwindigkeit ~7m/s
             // kam der Spieler in Bereiche bevor das Culling sie erweckte.
@@ -29665,6 +29680,18 @@ class AnazhRealm {
                 signedHash: h.signedHash || null,
                 provenance: Array.isArray(h.provenance) ? h.provenance.slice() : [],
             })),
+            // Φ6 (V18.191) — die COMPUTE-SPENDE-Schicht reist mit (Hashes,
+            // klein — 256 contributions × ~50 B = ~13 KiB Cap). Das Web der
+            // Verifizierung wächst mit der Welt.
+            computeContributions: Array.from(this.state.computeContributions || new Map()).map(([inputHash, c]) => ({
+                inputHash,
+                outputHash: c.outputHash,
+                providedBy: c.providedBy || null,
+                providedAt: c.providedAt || 0,
+                sig: c.sig || null,
+                status: c.status || "unverified",
+            })),
+            playtestContributions: (this.state.playtestContributions || []).slice(),
             // Ring 6.4 — eigene Baupläne (nicht built-in) persistieren. Die
             // Built-ins werden beim Init aus _defaultBlueprints() erzeugt;
             // wir speichern nur, was der Spieler dazugefügt hat. V9.44-a:
@@ -31263,6 +31290,341 @@ class AnazhRealm {
             });
         }
         return out;
+    }
+
+    // ====================================================================
+    // Φ6 (V18.191) — DIE COMPUTE-SPENDE: das verteilte Immunsystem.
+    // Geschenk-Schicht (Anti-Scope §3: KEINE Rechen-Währung). Zwei Pfade:
+    // (a) gespendete Chunk-Resultate (signiert + bit-Hash + Stichproben-
+    //     Verify gegen die LOKAL nachgerechnete Wahrheit — die Worker-
+    //     Asymmetrie: verifizieren ist O(1) Lookup oder O(Build), nicht
+    //     O(Suche-im-möglichen-Raum); Schummler fallen auf, R4 revoziert).
+    // (b) gespendete Playtest-Läufe (signiert + Commit + Resultat; eine
+    //     Welt mit 10 Mitläufern hat 10× die Antikörper-Exposition).
+    // BEIDE laufen durch den EINEN _admitForeign...-Vertrag (R4-Wand am
+    // Eingang). Persistiert über den Snapshot (Hashes sind klein —
+    //   100 contributions ≈ ~10 KiB).
+    // ====================================================================
+
+    // Φ6 — der kanonische Hash einer Compute-JOB-SPEC. Form: kind +
+    // worldSeed + die kind-spezifischen Inputs (z.B. chunk: {cx, cz, lod}).
+    // Deterministisch über die FROZEN-Reihenfolge der Felder.
+    _computeJobInputHash(spec) {
+        if (!spec || typeof spec !== "object") return null;
+        const kind = String(spec.kind || "");
+        if (!kind) return null;
+        const worldSeed = String(spec.worldSeed || "");
+        const canonical = JSON.stringify({
+            v: 1,
+            kind,
+            worldSeed,
+            ...(kind === "chunk-density"
+                ? { cx: Number(spec.cx) || 0, cz: Number(spec.cz) || 0, lod: Number(spec.lod) || 0 }
+                : { input: spec.input || null }),
+        });
+        return this._fastHash(canonical);
+    }
+
+    // Φ6 — der bit-stabile Output-Hash eines Chunk-Mesh-Resultats. Wir
+    // hashen das Position-Array auf 4 Dezimalen gerundet (FNV-1a über
+    // den canonicalen Zahlen-String). 4 Dezimalen = ~0.1 mm Auflösung
+    // ist FEINER als die Surface-Nets-Granularität (Step 1.8 m / 2^23
+    // Float32-mantisse) → robust gegen Float-Driftage, scharf genug für
+    // echte Substanz-Unterschiede.
+    _computeChunkOutputHash(meshData) {
+        if (!meshData || !meshData.mesh) return null;
+        const geom = meshData.mesh.geometry;
+        if (!geom) return null;
+        const pos = geom.getAttribute && geom.getAttribute("position");
+        if (!pos || !pos.array) return null;
+        const arr = pos.array;
+        // Skip-Sample für Performance (jedes 4. Triplet hashen — bei ~24k
+        // Vertices pro Chunk = ~6k Samples, bleibt schnell, behält Sensitivität).
+        // Die Wahrheit fängt auch jede Mesh-Topologie-Differenz auf (eine
+        // verschobene Vertex-Reihenfolge ändert den Hash).
+        let h = 0x811c9dc5;
+        const step = 12; // alle 4 Vertices (3 floats × 4)
+        for (let i = 0; i < arr.length; i += step) {
+            // Auf 4 Dezimalen runden + als String hashen (deterministisch).
+            const s = arr[i].toFixed(4) + "," + (arr[i + 1] || 0).toFixed(4) + "," + (arr[i + 2] || 0).toFixed(4);
+            for (let j = 0; j < s.length; j++) {
+                h ^= s.charCodeAt(j);
+                h = Math.imul(h, 0x01000193);
+            }
+        }
+        return (h >>> 0).toString(16).padStart(8, "0");
+    }
+
+    // Φ6 — eine Compute-Contribution SIGNIEREN. SOUVERÄNE Geste (sign_manifest).
+    // Der signierte Kern ist {v:1, inputHash, outputHash} — der Anbieter
+    // bürgt: „für diese Spec habe ich dieses Resultat berechnet". opts.skip-
+    // Confirm für Tests.
+    async signComputeContribution(inputHash, outputHash, opts) {
+        if (!inputHash || !outputHash) return { ok: false, reason: "no_hash" };
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
+        if (
+            !this._sovereignGesture(
+                "sign_manifest",
+                {
+                    what: `Compute-Resultat (${String(inputHash).slice(0, 8)}…) bürgen`,
+                    value: `Ergebnis-Hash ${String(outputHash).slice(0, 8)}…`,
+                    whom: "jeden, der den Spec re-rechnet",
+                },
+                opts
+            )
+        ) {
+            return { ok: false, reason: "cancelled" };
+        }
+        const canonical = JSON.stringify({ v: 1, inputHash, outputHash });
+        const sig = await this._vibeSign(canonical);
+        if (!sig) return { ok: false, reason: "sign_failed" };
+        return { ok: true, sig, authorPubKey: vp.publicKeyHex, signedAt: Date.now() };
+    }
+
+    // Φ6 — eine FREMDE Compute-Contribution prüfen + ggf. annehmen. Drei
+    // Wände am Eingang:
+    //   (1) Struktur (Hex-Form von Hash + sig)
+    //   (2) R4 — der Anbieter ist nicht revoziert
+    //   (3) Signatur deckt {inputHash, outputHash} (verify-pfad)
+    // Status der admittierten Contribution: "unverified" (Sig okay, aber
+    // wir haben nicht selbst nachgerechnet — eine spätere Stichprobe kann
+    // sie zu "verified" oder "forged" wandeln).
+    _admitForeignComputeContribution(raw) {
+        if (!raw || typeof raw !== "object") return null;
+        const inputHash = typeof raw.inputHash === "string" ? raw.inputHash.trim() : "";
+        const outputHash = typeof raw.outputHash === "string" ? raw.outputHash.trim() : "";
+        const providedBy = typeof raw.providedBy === "string" ? raw.providedBy.toLowerCase() : "";
+        const sig = typeof raw.sig === "string" ? raw.sig.trim() : "";
+        if (!inputHash || !outputHash) return null;
+        if (!/^[0-9a-f]{4,64}$/i.test(inputHash) || !/^[0-9a-f]{4,64}$/i.test(outputHash)) return null;
+        if (providedBy && !/^[0-9a-f]{64}$/.test(providedBy)) return null;
+        if (sig && !/^[0-9a-f]{2,256}$/.test(sig)) return null;
+        // R4-Sieb: revozierte Herkunft fällt am Eingang.
+        if (providedBy && this.state.revokedKeys && this.state.revokedKeys.has(providedBy)) {
+            return null;
+        }
+        return {
+            inputHash,
+            outputHash,
+            providedBy: providedBy || null,
+            sig: sig || null,
+            providedAt: typeof raw.providedAt === "number" ? raw.providedAt : Date.now(),
+            status: "unverified",
+        };
+    }
+
+    // Φ6 — eine gespendete Contribution annehmen + im Pool speichern. Wenn
+    // signiert, verifizieren wir die Signatur ASYNC (analog Bauplan). Eine
+    // bestehende Contribution für denselben inputHash wird VERGLICHEN: wenn
+    // outputHash differiert + die bestehende war „verified", markieren wir
+    // die NEUE als „forged" + revozieren den Anbieter (R4-Eskalation; ein
+    // Schummler fällt für die ganze Welt). Cap: 256 Einträge (Rolling, FIFO).
+    async pinComputeContribution(raw) {
+        const admitted = this._admitForeignComputeContribution(raw);
+        if (!admitted) return { ok: false, reason: "invalid" };
+        // Sig-Check (async, nicht-blockierend für die Annahme — der Status
+        // wandert über die Stichproben-Verify weiter; eine forged Signatur
+        // wird DIREKT als „forged" markiert).
+        if (admitted.sig && admitted.providedBy) {
+            try {
+                const canonical = JSON.stringify({
+                    v: 1,
+                    inputHash: admitted.inputHash,
+                    outputHash: admitted.outputHash,
+                });
+                const ok = await this._vibeVerify(canonical, admitted.sig, admitted.providedBy);
+                if (!ok) {
+                    admitted.status = "forged";
+                    // R4: der Schummler-Schlüssel fällt für ALLES, was er bürgt.
+                    if (typeof this.revokeKey === "function") this.revokeKey(admitted.providedBy);
+                }
+            } catch {
+                /* defensive: ein Wurf am Verify lässt status auf "unverified" */
+            }
+        }
+        // Konfliktprüfung gegen bestehende „verified"-Form derselben Spec.
+        const existing = this.state.computeContributions.get(admitted.inputHash);
+        if (
+            existing &&
+            existing.status === "verified" &&
+            existing.outputHash !== admitted.outputHash &&
+            admitted.status !== "forged"
+        ) {
+            admitted.status = "forged";
+            if (admitted.providedBy && typeof this.revokeKey === "function") {
+                this.revokeKey(admitted.providedBy);
+            }
+        }
+        // Cap (256, FIFO): die ÄLTESTE „unverified"/„fresh" fällt zuerst.
+        if (this.state.computeContributions.size >= 256 && !this.state.computeContributions.has(admitted.inputHash)) {
+            // ältesten Eintrag finden (Map ist Insertion-ordered).
+            const firstKey = this.state.computeContributions.keys().next().value;
+            if (firstKey) this.state.computeContributions.delete(firstKey);
+        }
+        this.state.computeContributions.set(admitted.inputHash, admitted);
+        return { ok: true, status: admitted.status, inputHash: admitted.inputHash };
+    }
+
+    // Φ6 — die Stichproben-Wand: eine gespendete Chunk-Contribution gegen
+    // die LOKAL nachgerechnete Wahrheit prüfen. Rechnet den Chunk frisch
+    // (bewusst sync — ein Stichprobe pro Zeit, nicht jeden Frame), hashed
+    // das Resultat, vergleicht. Status-Übergang: "unverified" → "verified"
+    // oder "forged" (das Schwertgericht ist deterministisch — bit-Hash
+    // entweder identisch oder nicht). Liefert {ok, status, equal}.
+    verifyComputeContribution(spec, contribution) {
+        if (!contribution) return { ok: false, reason: "no_contribution" };
+        if (String(spec.kind || "") !== "chunk-density") {
+            return { ok: false, reason: "unsupported_kind" };
+        }
+        // Spec-Hash gegen Eintrag prüfen (man kann nicht den falschen Spec
+        // gegen eine fremde Contribution verifizieren).
+        const specHash = this._computeJobInputHash(spec);
+        if (specHash !== contribution.inputHash) return { ok: false, reason: "spec_mismatch" };
+        // Frisch rechnen + Hash bilden.
+        let localHash = null;
+        try {
+            const result = this._buildVoxelChunkData(spec.cx, spec.cz, spec.lod || 0);
+            localHash = this._computeChunkOutputHash(result);
+            // Aufräumen (Mesh-Heap nicht aufblasen).
+            if (result && result.mesh && result.mesh.geometry) {
+                try {
+                    result.mesh.geometry.dispose();
+                    if (result.mesh.material && result.mesh.material.dispose) result.mesh.material.dispose();
+                } catch {
+                    /* defensive */
+                }
+            }
+        } catch (err) {
+            return { ok: false, reason: "local_compute_failed", error: err.message };
+        }
+        if (!localHash) return { ok: false, reason: "local_hash_failed" };
+        const equal = localHash === contribution.outputHash;
+        contribution.status = equal ? "verified" : "forged";
+        if (!equal && contribution.providedBy && typeof this.revokeKey === "function") {
+            // R4-Eskalation: ein nachweislich falsches Resultat → Anbieter revoziert.
+            this.revokeKey(contribution.providedBy);
+        }
+        return { ok: true, status: contribution.status, equal, localHash };
+    }
+
+    // Φ6 — LESE-API: was ist im Pool? Für UI + Tests.
+    listComputeContributions(opts) {
+        const out = [];
+        for (const [inputHash, c] of this.state.computeContributions) {
+            if (opts && opts.status && c.status !== opts.status) continue;
+            out.push({
+                inputHash,
+                outputHash: c.outputHash,
+                providedBy: c.providedBy,
+                providedAt: c.providedAt,
+                status: c.status,
+            });
+        }
+        return out;
+    }
+
+    // Φ6 (b) — eine PLAYTEST-Lauf SIGNIEREN. Der Anbieter bürgt: „ich lief
+    // playtest auf commit X mit Resultat Y". SOUVERÄN (sign_manifest).
+    async signPlaytestRun(run, opts) {
+        if (!run || typeof run !== "object") return { ok: false, reason: "no_run" };
+        const commit = String(run.commit || "")
+            .trim()
+            .slice(0, 64);
+        const version = String(run.version || "")
+            .trim()
+            .slice(0, 32);
+        const result = String(run.result || "")
+            .trim()
+            .slice(0, 16);
+        const total = Number.isFinite(run.total) ? Math.max(0, Math.floor(run.total)) : 0;
+        if (!commit || !version || !result) return { ok: false, reason: "incomplete" };
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
+        if (
+            !this._sovereignGesture(
+                "sign_manifest",
+                {
+                    what: `Playtest-Lauf bürgen (commit ${commit.slice(0, 8)}…)`,
+                    value: `Resultat „${result}", ${total} Invarianten`,
+                    whom: "die Gesundheit des Ultiversums",
+                },
+                opts
+            )
+        ) {
+            return { ok: false, reason: "cancelled" };
+        }
+        const canonical = JSON.stringify({ v: 1, commit, version, result, total });
+        const sig = await this._vibeSign(canonical);
+        if (!sig) return { ok: false, reason: "sign_failed" };
+        return {
+            ok: true,
+            run: {
+                commit,
+                version,
+                result,
+                total,
+                providedBy: vp.publicKeyHex,
+                signedAt: Date.now(),
+                sig,
+            },
+        };
+    }
+
+    // Φ6 — fremden Playtest-Lauf admittieren + speichern. Sieb: Hex + R4 +
+    // Sig-Check + Cap (64, Rolling FIFO). Antikörper-Aggregat: je mehr Peers
+    // einen Commit signiert haben, desto höher seine Gesundheits-Sichtbarkeit
+    // (Ledger-Fakt, kein Belohnungs-Algo — Anti-Scope §3 ehrt).
+    async recordPlaytestRun(raw) {
+        if (!raw || typeof raw !== "object") return { ok: false, reason: "invalid" };
+        const commit = typeof raw.commit === "string" ? raw.commit.trim().slice(0, 64) : "";
+        const version = typeof raw.version === "string" ? raw.version.trim().slice(0, 32) : "";
+        const result = typeof raw.result === "string" ? raw.result.trim().slice(0, 16) : "";
+        const total = Number.isFinite(raw.total) ? Math.max(0, Math.floor(raw.total)) : 0;
+        const providedBy = typeof raw.providedBy === "string" ? raw.providedBy.toLowerCase() : "";
+        const sig = typeof raw.sig === "string" ? raw.sig.trim() : "";
+        const signedAt = Number.isFinite(raw.signedAt) ? raw.signedAt : 0;
+        if (!commit || !version || !result) return { ok: false, reason: "incomplete" };
+        if (providedBy && !/^[0-9a-f]{64}$/.test(providedBy)) return { ok: false, reason: "bad_key" };
+        if (sig && !/^[0-9a-f]{2,256}$/.test(sig)) return { ok: false, reason: "bad_sig" };
+        if (providedBy && this.state.revokedKeys && this.state.revokedKeys.has(providedBy)) {
+            return { ok: false, reason: "revoked" };
+        }
+        // Sig-Verify (asynchron — eine falsche Sig fällt sofort).
+        if (sig && providedBy) {
+            const canonical = JSON.stringify({ v: 1, commit, version, result, total });
+            try {
+                const ok = await this._vibeVerify(canonical, sig, providedBy);
+                if (!ok) return { ok: false, reason: "forged_sig" };
+            } catch {
+                return { ok: false, reason: "verify_failed" };
+            }
+        }
+        // Dedup: derselbe Anbieter darf denselben Commit nur EINMAL bürgen.
+        for (let i = 0; i < this.state.playtestContributions.length; i++) {
+            const e = this.state.playtestContributions[i];
+            if (e.commit === commit && e.providedBy === providedBy) {
+                // Update (neuere Signatur ersetzt ältere).
+                this.state.playtestContributions[i] = { commit, version, result, total, providedBy, signedAt, sig };
+                return { ok: true, updated: true, commit, providedBy };
+            }
+        }
+        // Cap (64, FIFO): die ÄLTESTE fällt zuerst.
+        if (this.state.playtestContributions.length >= 64) {
+            this.state.playtestContributions.shift();
+        }
+        this.state.playtestContributions.push({ commit, version, result, total, providedBy, signedAt, sig });
+        return { ok: true, commit, providedBy };
+    }
+
+    // Φ6 — Aggregat: wie viele Mitläufer hat dieser Commit? Eine Welt
+    // mit 10 unabhängigen Peers, die EINEN Commit grün signiert haben,
+    // hat 10× die Antikörper-Exposition (das ist die Skalierungs-Wahrheit
+    // des Plan-§2 Φ6.b — verteilte CI als Geschenk).
+    listPlaytestContributions(commit) {
+        const c = String(commit || "").trim();
+        const out = this.state.playtestContributions.slice();
+        return c ? out.filter((e) => e.commit === c) : out;
     }
 
     // Φ1 — eine Welt-Adresse in ein PORTAL einlegen. Strukturell R2: KEIN
@@ -33189,6 +33551,34 @@ class AnazhRealm {
                 const admitted = this._admitForeignPortalHall(raw);
                 if (admitted) this.state.portalHalls.set(admitted.name, admitted);
             }
+        }
+        // Φ6 (V18.191) — Compute-Spende-Pool restaurieren. Compute-Contributions
+        // laufen durch _admitForeignComputeContribution (R4-Wand auch auf
+        // Self-Imports — ein zwischen Sessions revozierter Anbieter fällt).
+        if (Array.isArray(state.computeContributions)) {
+            for (const raw of state.computeContributions) {
+                const admitted = this._admitForeignComputeContribution(raw);
+                if (admitted) {
+                    // Status aus Snapshot zurück (verified/forged überlebt — die
+                    // Stichproben-Wahrheit ist deterministisch, sie bleibt wahr).
+                    if (raw.status === "verified" || raw.status === "forged") admitted.status = raw.status;
+                    this.state.computeContributions.set(admitted.inputHash, admitted);
+                }
+            }
+        }
+        // Playtest-Spenden: einfache Array-Wiederherstellung mit Sieb (recordPlaytestRun
+        // bricht die Sig-Wand — beim Restore vertrauen wir der lokalen Signatur, die
+        // sie initial passierte; ein revozierter Anbieter wird trotzdem ausgesiebt).
+        if (Array.isArray(state.playtestContributions)) {
+            this.state.playtestContributions = state.playtestContributions
+                .filter((e) => {
+                    if (!e || !e.commit) return false;
+                    if (e.providedBy && this.state.revokedKeys && this.state.revokedKeys.has(e.providedBy)) {
+                        return false;
+                    }
+                    return true;
+                })
+                .slice(-64);
         }
         if (externalState) this._loadStatePersistExternalImport(externalState);
         this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
@@ -62907,7 +63297,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.190.0";
+AnazhRealm.VERSION = "18.191.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
