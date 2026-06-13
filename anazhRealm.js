@@ -26682,13 +26682,41 @@ class AnazhRealm {
                 mat = new THREE.MeshLambertNodeMaterial({
                     side: species.wind ? THREE.DoubleSide : THREE.FrontSide,
                 });
-                const { vec4, vec3, float, attribute, max } = TSL;
+                const { vec4, vec3, float, attribute, max, mix } = TSL;
                 const vcol = attribute("color", "vec3");
                 let albedo = vcol;
                 if (TSL.mx_noise_float && TSL.positionWorld) {
                     const bn = TSL.mx_noise_float(TSL.positionWorld.mul(float(0.5)));
                     albedo = albedo.mul(float(1.0).add(bn.mul(float(0.16))));
                     albedo = max(albedo, vec3(0, 0, 0));
+                }
+                // Λ.4 (V18.174 — pro-Instanz-Tint für Streu-Vegetation): jede
+                // gespawnte Instanz lebender Streu-Arten (blume/farn/gestrüpp/
+                // schilf — wind=true && !emissive) bekommt einen seed-deterministischen
+                // HSL-Shift via setColorAt. Das Material liest `attribute("instanceColor")`
+                // analog Λ.2 — ein Feld voller Tulpen variiert in warm/kühl-Rot,
+                // ein Farn-Tuff hat verschiedene Grün-Nuancen → die GLEICHFÖRMIGE
+                // Wand fällt. Gate: nur weiche/lebende Arten — Fels/Spore/Pollen
+                // haben ihren eigenen Look. instanceColor 0.5 = neutrale Mitte.
+                const tintCfg = AnazhRealm.INSTANCE_TINT || { rangeH: 0.08, rangeS: 0.1, rangeV: 0.06 };
+                if (species.wind && !species.emissive && TSL.attribute) {
+                    const _ic = attribute("instanceColor", "vec3");
+                    const hueShift = _ic.x.sub(float(0.5)).mul(float(tintCfg.rangeH * 2));
+                    const satShift = _ic.y.sub(float(0.5)).mul(float(tintCfg.rangeS * 2));
+                    const valShift = _ic.z.sub(float(0.5)).mul(float(tintCfg.rangeV * 2));
+                    // HSL-light-touch: G± gegen R/B = kühl/warm-Grün-Shift
+                    const tintRGB = vec3(
+                        float(1.0).sub(hueShift.mul(float(0.3))),
+                        float(1.0).add(hueShift.mul(float(0.5))),
+                        float(1.0).sub(hueShift.mul(float(0.2)))
+                    );
+                    const _lum = albedo.x.mul(0.299).add(albedo.y.mul(0.587)).add(albedo.z.mul(0.114));
+                    const _gray = vec3(_lum, _lum, _lum);
+                    const _satF = float(1.0).add(satShift);
+                    albedo = mix(_gray, albedo, _satF).mul(tintRGB).mul(float(1.0).add(valShift));
+                    albedo = max(albedo, vec3(0, 0, 0));
+                    mat.userData = mat.userData || {};
+                    mat.userData.useInstanceTint = true;
                 }
                 mat.colorNode = vec4(albedo, float(1.0));
                 if (species.wind) this._applyScatterMotion(mat, species, TSL);
@@ -26930,6 +26958,20 @@ class AnazhRealm {
         // Re-Streams verborgen (Skala 0 — der Index ist stabil, das RNG
         // deterministisch), bis der Regrow-Tick sie freigibt.
         const harvested = this.state.scatterHarvested ? this.state.scatterHarvested.get(key) : null;
+        // Λ.4 (V18.174 — pro-Instanz-Tint für Streu-Vegetation): ein dedicated
+        // Hash-Stream pro (cx,cz,si,i) für die 3 HSL-Achsen — deterministisch,
+        // bricht NICHT den existierenden Positions-rng (Γ5 Stream-Gesetz).
+        const tintColor = this._scatterTmpTintColor || (this._scatterTmpTintColor = new THREE.Color());
+        const hashInstanceTint = (cxa, cza, si, idx, axis) => {
+            let v =
+                ((cxa | 0) * 2654435761) ^
+                ((cza | 0) * 40503) ^
+                ((si + 1) * 73856093) ^
+                ((idx + 1) * 19349663) ^
+                ((axis + 1) * 0x85ebca6b);
+            v = ((v ^ (v >>> 13)) * 1274126177) >>> 0;
+            return (v ^ (v >>> 16)) / 4294967296;
+        };
         for (let si = 0; si < species.length; si++) {
             const items = buckets[si];
             if (items.length === 0) continue;
@@ -26937,6 +26979,7 @@ class AnazhRealm {
             const inst = this._acquireScatterMesh(sp);
             if (!inst) continue;
             inst.count = items.length;
+            const wantTint = !!(inst.material && inst.material.userData && inst.material.userData.useInstanceTint);
             for (let i = 0; i < items.length; i++) {
                 const it = items[i];
                 pos.set(it.x, it.y, it.z);
@@ -26945,8 +26988,16 @@ class AnazhRealm {
                 else scl.set(it.scale, it.scale, it.scale);
                 m.compose(pos, q, scl);
                 inst.setMatrixAt(i, m);
+                if (wantTint) {
+                    const tH = hashInstanceTint(cx, cz, si, i, 0);
+                    const tS = hashInstanceTint(cx, cz, si, i, 1);
+                    const tV = hashInstanceTint(cx, cz, si, i, 2);
+                    tintColor.setRGB(tH, tS, tV);
+                    inst.setColorAt(i, tintColor);
+                }
             }
             inst.instanceMatrix.needsUpdate = true;
+            if (wantTint && inst.instanceColor) inst.instanceColor.needsUpdate = true;
             // Frustum-Cull-Cache nach Pool-Recycle neu rechnen (die
             // V11.0-d.fix.gras-Wurzel: stale boundingSphere cullt das Mesh raus).
             if (inst.geometry && inst.geometry.boundingSphere === null) inst.geometry.computeBoundingSphere();
@@ -59732,7 +59783,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.173.0";
+AnazhRealm.VERSION = "18.174.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
