@@ -19655,6 +19655,67 @@ class AnazhRealm {
         return this._macroAnkerCache;
     }
 
+    // Γ4½ (genese-plan Vertiefung §3) — SLOPE + ROCK-EXPOSURE als gespeicherte
+    // Welt-Felder. LAAS speichert nach der Heightfield-Synthese normal.xyz +
+    // slope + rockExposure als Texel-Felder; jede spätere Pass (TerrainMaterial,
+    // Scatter, Snow-Edge) konsumiert sie. Anazh-Übersetzung: zwei Helper, die
+    // direkt aus `_voxelSurfaceY` ableiten. Sie leben am GENESE-LESER (Spawn/
+    // Streu/Boden/Material), NICHT in worldFieldAt (Hot-Path-Schonung —
+    // V18.166-Architektur). PERFORMANCE: vier `_voxelSurfaceY`-Calls pro Slope
+    // — OK für Punkt-Probes (Spawn/Streu), für Mass-Aufrufe (Chunk-Color) ein
+    // 8×8-Slope-Grid pro Chunk-Pop nachrüsten (kommt mit Γ-M).
+    //
+    // h_dx, h_dz: Δ über 2 m → slope dimensionslos (m/m), Werte:
+    //   ~ 0    = flach
+    //   ~ 1    = 45°
+    //   ~ 2    = sehr steil (Klippe), maximal endlich (Voxel-Auflösung)
+    _slopeAt(x, z) {
+        const yE = this._voxelSurfaceY(x + 1, z);
+        const yW = this._voxelSurfaceY(x - 1, z);
+        const yN = this._voxelSurfaceY(x, z - 1);
+        const yS = this._voxelSurfaceY(x, z + 1);
+        if (
+            !Number.isFinite(yE) ||
+            !Number.isFinite(yW) ||
+            !Number.isFinite(yN) ||
+            !Number.isFinite(yS)
+        ) {
+            return 0;
+        }
+        const dxh = (yE - yW) / 2;
+        const dzh = (yS - yN) / 2;
+        return Math.hypot(dxh, dzh);
+    }
+
+    // Rock-Exposure: slope-getrieben + Massiv-Bias (im Massiv-Footprint mehr
+    // Fels-Wahrscheinlichkeit). LAAS-Form: `smoothstep(0.75, 1.45, slope) +
+    // massivMask · 0.18`. Returnt [0, 1+] (Clamping macht der Konsument).
+    _rockExposureAt(x, z) {
+        const slope = this._slopeAt(x, z);
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        let exposure = ss(0.75, 1.45, slope);
+        const anker = this._macroAnker();
+        if (anker) {
+            // Massiv-Maske aus dem Anker (smoothstep-Glocke ohne Ridge)
+            const ddx = x - anker.massivC.x;
+            const ddz = z - anker.massivC.z;
+            const cs = Math.cos(anker.massivRot);
+            const sn = Math.sin(anker.massivRot);
+            const rxA = ddx * cs - ddz * sn;
+            const rzA = ddx * sn + ddz * cs;
+            const ax = rxA / anker.massivAspect;
+            const aDist = Math.hypot(ax, rzA);
+            const mT = Math.max(0, Math.min(1, 1 - aDist / anker.massivR));
+            const massivMask = mT * mT * (3 - 2 * mT);
+            exposure += massivMask * 0.18;
+        }
+        return exposure;
+    }
+
     // Γ4.2 (genese-plan Vertiefung §2.2) — RIDGE-NOISE für scharfe Grate.
     // Ersetzt die naive smoothstep-Glocke durch sieben Oktaven `(1 − |noise|)²`
     // mit anisotroper Rotation (NE-SW-Vorzugs-Streichrichtung) — das ist der
@@ -61145,7 +61206,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.180.0";
+AnazhRealm.VERSION = "18.181.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
