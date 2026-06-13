@@ -23345,6 +23345,15 @@ class AnazhRealm {
             // ein Reproducer/Browser-Console liest `window.__toonColorNodeError`.
             if (typeof window !== "undefined") window.__toonColorNodeError = (_e && _e.message) || String(_e);
         }
+        // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss): den useInstanceTint-Marker
+        // an mat.userData propagieren, damit _archInstanceAdd weiß, dass das HISM
+        // einen instanceColor-Buffer braucht (lazy via setColorAt). Der HSL-Shift-
+        // Shader-Code im colorNode-Tree kommt mit Sub 3f (Λ.3 Wind + Λ.6 Trans-
+        // lucency + Λ.4 Streu-Varianz, alle als geteilte Welle).
+        if (opts.useInstanceTint) {
+            if (!mat.userData) mat.userData = {};
+            mat.userData.useInstanceTint = true;
+        }
         return mat;
     }
 
@@ -28739,6 +28748,15 @@ class AnazhRealm {
                 // Reload (sonst rasten geladene Bäume auf Identity zurück → der
                 // Klon-Look kehrt wieder). Nur wenn gesetzt (Bauwerke = 0).
                 ...(Number.isFinite(a.rotationY) && a.rotationY !== 0 ? { rotationY: a.rotationY } : {}),
+                // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss V18.173): die seed-
+                // deterministischen tintH/S/V reisen mit. Sie hängen am SEED, sind
+                // also re-derivable; aber wir transportieren sie explizit, damit
+                // ein über-die-Welt-Tor gewanderter Bauplan seine Tint-Identität
+                // behält UND ein Restore in einer Welt mit alternativer Seed-
+                // Berechnung dieselbe Färbung erhält (Welt-Identitäts-Schutz).
+                ...(Number.isFinite(a.tintH) ? { tintH: a.tintH } : {}),
+                ...(Number.isFinite(a.tintS) ? { tintS: a.tintS } : {}),
+                ...(Number.isFinite(a.tintV) ? { tintV: a.tintV } : {}),
                 // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
                 // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
                 ...(a.freeBorn === true ? { freeBorn: true } : {}),
@@ -31707,6 +31725,12 @@ class AnazhRealm {
                 id: a.id,
                 // W-H (V18.179) — die Pro-Instanz-Yaw reist durch den Reload mit.
                 rotationY: Number.isFinite(a.rotationY) ? a.rotationY : 0,
+                // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss): die expliziten
+                // Tint-Werte reisen mit (Welt-Identität). spawnArchitecture
+                // priorisiert opts.tintH/S/V vor seed-Berechnung.
+                tintH: a.tintH,
+                tintS: a.tintS,
+                tintV: a.tintV,
                 // M6 — der Restore ist PRÄZISE (die Architektur stand, wo sie stand;
                 // numerische Worldgen-ids fielen sonst durch den string-id-Opt-out).
                 precise: true,
@@ -39041,6 +39065,38 @@ class AnazhRealm {
         const spanY = bbox.max.y - bbox.min.y;
         const horiz = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
         if (spanY < horiz * T.verticalMin) return false;
+        // V18.181-merge-Λ Sub 3c — Λ.1 livingCenterY-Heilung (clever-gauss).
+        // Ein Körper ist mehr als „symmetrisch + vertikal" — er trägt
+        // LEBENDIGE Masse in seiner MITTE (Brust/Bauch). Ein Stein-Tempel
+        // mit symmetrischen Säulen erfüllt die alten Wände, ist aber kein
+        // Körper. Die Heilung: das lebendig-gewichtete Volumen muss (a) eine
+        // Minimal-Masse erreichen UND (b) sein Schwerpunkt in der Y-Mitte
+        // liegen. Parallel zur V18.179-asymmetrischer-Ast-Heilung (tesla
+        // W-H): die zwei Wände decken verschiedene Drift-Klassen — diese
+        // hier fängt Stein-Tempel, jene fängt asymmetrische Baum-Profile.
+        if (Number.isFinite(T.livingMassMin) && Number.isFinite(T.livingCenterMinY)) {
+            let liveMass = 0;
+            let liveMassY = 0;
+            for (const part of bp.parts) {
+                if (!part || !part.material) continue;
+                const mat = this.state && this.state.materials ? this.state.materials[part.material] : null;
+                const lebendig = mat && mat.tags ? +mat.tags.lebendig || 0 : 0;
+                if (lebendig <= 0) continue;
+                // Volumen-Surrogat über die Größe (size.x*y*z; fallback 1).
+                const sx = part.size && Number.isFinite(part.size.x) ? part.size.x : 1;
+                const sy = part.size && Number.isFinite(part.size.y) ? part.size.y : 1;
+                const sz = part.size && Number.isFinite(part.size.z) ? part.size.z : 1;
+                const vol = Math.max(0, sx * sy * sz);
+                const py = part.position && Number.isFinite(part.position.y) ? part.position.y : 0;
+                liveMass += vol * lebendig;
+                liveMassY += vol * lebendig * py;
+            }
+            if (liveMass < T.livingMassMin) return false;
+            // Normalisiere auf [0,1] relativ zur bbox-Y-Spanne.
+            const liveCenterY = liveMassY / liveMass;
+            const yNorm = spanY > 1e-6 ? (liveCenterY - bbox.min.y) / spanY : 0.5;
+            if (yNorm < T.livingCenterMinY || yNorm > T.livingCenterMaxY) return false;
+        }
         const sym = this._compoundSymmetry(bp);
         return sym.ratio >= T.symmetryMin && sym.limbPairs >= T.minLimbPairs;
     }
@@ -44389,6 +44445,16 @@ class AnazhRealm {
         const matOpts = { color: tintedColor };
         // W-E (§8.3) — die Antenne IST die Substanz (Spiegel zu _buildFromBlueprint).
         if (partMatDef && partMatDef.tags) matOpts.tags = partMatDef.tags;
+        // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss V18.173): laub/fleisch-Materialien
+        // (waerme>0.5 aus dem Substanz-Profil) bekommen den useInstanceTint-Marker.
+        // Der HISM-Pfad (_archInstanceAdd) liest ihn und setzt setColorAt pro Slot
+        // aus entry.tintH/S/V — eine Eiche-Krone wird in 50 leicht verschobene
+        // Grün-Töne aufgefächert, eine Stein-Säule bleibt monochrom. Der HSL-
+        // Shift-Shader-Code im Material kommt mit Sub 3f (Λ.3+Λ.6 Welle).
+        if (partMatDef && partMatDef.tags) {
+            const waerme = +partMatDef.tags.lebendig || 0;
+            if (waerme > 0.5) matOpts.useInstanceTint = true;
+        }
         if (Number.isFinite(part.opacity) && part.opacity < 1) {
             matOpts.transparent = true;
             matOpts.opacity = part.opacity;
@@ -44562,6 +44628,18 @@ class AnazhRealm {
             g.mesh.getMatrixAt(i, tmp);
             next.setMatrixAt(i, tmp);
         }
+        // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss): wenn der alte InstancedMesh
+        // einen instanceColor-Buffer hat (lazy von setColorAt alloziert), die
+        // Tint-Färbungen aller Slots in den neuen Mesh mitkopieren — sonst kippen
+        // alle Bäume beim ersten Capacity-Wachstum auf das default-Weiß zurück.
+        if (g.mesh.instanceColor) {
+            const tmpC = this._archTmpCopyColor || (this._archTmpCopyColor = new THREE.Color());
+            for (let i = 0; i < g.next; i++) {
+                g.mesh.getColorAt(i, tmpC);
+                next.setColorAt(i, tmpC);
+            }
+            if (next.instanceColor) next.instanceColor.needsUpdate = true;
+        }
         next.count = g.next;
         next.instanceMatrix.needsUpdate = true;
         if (this.state.scene) {
@@ -44606,6 +44684,18 @@ class AnazhRealm {
         );
         const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
         const slots = [];
+        // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss V18.173): die HSL-Werte
+        // werden als instanceColor RGB-getragen (0..1). Three.js' InstancedMesh
+        // alloziert mesh.instanceColor LAZY beim ersten setColorAt — wir setzen
+        // nur für Leaves mit useInstanceTint-Material (laub, fleisch). Fallback
+        // 0.5,0.5,0.5 = neutrale Mitte (kein Shift) falls ein Leaf ihn doch
+        // liest, ohne dass der Spawn tintH gesetzt hat (defensive Wand).
+        const tintColor = this._archTmpTintColor || (this._archTmpTintColor = new THREE.Color());
+        if (Number.isFinite(entry.tintH) && Number.isFinite(entry.tintS) && Number.isFinite(entry.tintV)) {
+            tintColor.setRGB(entry.tintH, entry.tintS, entry.tintV);
+        } else {
+            tintColor.setRGB(0.5, 0.5, 0.5);
+        }
         for (let i = 0; i < flat.leaves.length; i++) {
             const leaf = flat.leaves[i];
             const g = this._archInstanceGroupFor(entry.type, i, leaf);
@@ -44613,6 +44703,12 @@ class AnazhRealm {
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
             g.mesh.instanceMatrix.needsUpdate = true;
+            // V18.181-merge-Λ Sub 3d: setColorAt nur für Materialien, die
+            // useInstanceTint lesen — lazy Allocation des instanceColor-Buffers.
+            if (leaf.mat && leaf.mat.userData && leaf.mat.userData.useInstanceTint) {
+                g.mesh.setColorAt(slot, tintColor);
+                if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
+            }
             if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
             if (g.slotEntry) g.slotEntry[slot] = entry;
             // boundingSphere invalidieren (Raycast-Cull, s. _archGroupFree).
@@ -45322,6 +45418,29 @@ class AnazhRealm {
             rotationY: Number.isFinite(opts.rotationY) ? opts.rotationY : 0,
             mesh: null,
         };
+        // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss V18.173): seed-deterministische
+        // Pro-Instanz-Färbung. Aus drei verschiedenen Seed-Bit-Bändern: hueShift
+        // (>>>13), satShift (>>>21), valShift (>>>5). Ein Wald von 50 Eichen
+        // bekommt 50 leicht verschobene Grün-Töne (nicht ein flacher Klon-Grün).
+        // Materielles Gating: nur Materialien mit useInstanceTint (lebendige,
+        // wärme>0.5) lesen die Werte; alle anderen bekommen sie ignoriert. Reisen
+        // bit-treu im Snapshot+Restore; bei Restore führen explizite opts.tintH/
+        // S/V die seed-Berechnung (Welt-Identität bewahrt).
+        if (Number.isFinite(opts.tintH)) {
+            entry.tintH = Math.max(0, Math.min(1, +opts.tintH));
+        } else {
+            entry.tintH = ((seed >>> 13) & 0xff) / 256;
+        }
+        if (Number.isFinite(opts.tintS)) {
+            entry.tintS = Math.max(0, Math.min(1, +opts.tintS));
+        } else {
+            entry.tintS = ((seed >>> 21) & 0xff) / 256;
+        }
+        if (Number.isFinite(opts.tintV)) {
+            entry.tintV = Math.max(0, Math.min(1, +opts.tintV));
+        } else {
+            entry.tintV = ((seed >>> 5) & 0xff) / 256;
+        }
         // Ω5 (taille-spec §5, Perpetuum-Verbot) — die HERKUNFT entscheidet den
         // Ertrag: ein GRATIS geborenes Spieler-Werk (schöpfer-Modus baute ohne
         // Material) erntet zu 0 (GEMESSEN: die Modus-Wäsche schöpfer→pfad gab
@@ -61330,6 +61449,20 @@ AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS = Object.freeze({
         mirrorTol: 0.35, // Spiegel-Such-Toleranz, relativ zur Compound-Größe
         verticalMin: 0.45, // Y-Spanne ≥ 45 % der horizontalen — ein Körper
         // "steht"; ein flaches Dorf (Hütten in der xz-Ebene) fällt raus.
+        // V18.181-merge-Λ Sub 3c — Λ.1 (clever-gauss V18.173): lebendige
+        // Masse in der Mitte. livingMassMin = Σ(vol·lebendig) muss > 0.02
+        // sein (ein bisschen Fleisch/Laub/Blut); livingCenterMinY/MaxY
+        // klemmt den Y-Schwerpunkt der lebendigen Masse relativ zur
+        // POSITIONS-BBox auf [0.25, 0.80] — anatomisch-realistische Body
+        // (Kopf+Rumpf+Arme oben, Beine unten) hat liveCenterY ≈ 0.75
+        // GEMESSEN (Test V17.84). Pilz mit Krone (yNorm > 0.80) und
+        // Bodenflora (yNorm < 0.25) fallen weiterhin raus. Plan-Erstwurf
+        // war [0.30, 0.70], bei der Synthese auf den Test gegen-vermessen
+        // und gelockert — die Wand bleibt strukturell, nur ihr Bereich
+        // ist großzügiger (Plan §14.3-Drift mitigiert).
+        livingMassMin: 0.02,
+        livingCenterMinY: 0.25,
+        livingCenterMaxY: 0.8,
     }),
     food: Object.freeze({
         lebendigMin: 0.6, // klar lebendig (Fleisch, Laub, Frucht)

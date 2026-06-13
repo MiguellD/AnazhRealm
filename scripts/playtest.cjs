@@ -5713,13 +5713,17 @@ async function checkBandV1769RoleResonance(ctx) {
 
         // (2) DER HEAL (Schöpfer-Wahl „jetzt heilen") — temple + felsbogen WAREN soul (body-förmig), sind jetzt
         // architecture: ihre Geometrie ist body-förmig (bodyShape=1), aber als dichte, harte Stein-Struktur
-        // resoniert „architecture" STÄRKER als „soul". Der Mechanismus, nicht nur das Resultat.
+        // resoniert „architecture" STÄRKER als „soul". V18.181-merge-Λ Sub 3c (V9.56-i — Test wandert):
+        // die Λ.1-livingCenterY-Heilung (V18.173) klemmt _isBodyShaped DIREKT — ein stein-tempel hat keine
+        // lebendige Masse → !_isBodyShaped → kein Resonanz-Vergleich nötig. Der Test akzeptiert beide
+        // Heilungs-Pfade: Λ.1 direkt (tvBody === false) ODER V17.69-Resonanz-Vorrang (archScore > soulScore
+        // bei body-förmig). Beide ergeben dasselbe Resultat: templeHealed/felsbogenHealed sind architecture.
         out.templeHealed = r.computeBlueprintRole(blu.temple) === "architecture";
         out.felsbogenHealed = r.computeBlueprintRole(blu.felsbogen) === "architecture";
         const tvBody = r._isBodyShaped(blu.temple);
         const archScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.architecture);
         const soulScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.soul);
-        out.healMechanism = tvBody === true && archScore > soulScore; // body-förmig, aber architecture resoniert stärker
+        out.healMechanism = tvBody === false || archScore > soulScore;
 
         // (3) DER WÄCHTER — die 12 Form-Fallback-Built-ins, Baseline eingefroren (temple/felsbogen jetzt architecture)
         const wantArch = [
