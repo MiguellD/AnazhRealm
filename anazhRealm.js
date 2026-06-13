@@ -40985,6 +40985,133 @@ class AnazhRealm {
             },
         ];
 
+        // W-H (V18.178, §8.5 — R-016 „2 Arten × 1 Gestalt"): GESTALT-VARIANTEN.
+        // Der Worldgen wählt PRO BAUM (seed-deterministisch) eine Gestalt NACH dem
+        // Affinitäts-Sieg — die Affinität gewinnt weiter mit dem KANONISCHEN
+        // baum_eiche/baum_kiefer (Verteilung bit-identisch, die V17.16-Falle
+        // strukturell vermieden: die Varianten treten NIE in den candidates-
+        // Wettstreit). DIESELBEN Materialien (holz/laub) + Formen (cylinder/sphere/
+        // cone) → tag-neutral per Konstruktion; `instanced:true`, KEINE connections
+        // → HISM bleibt (eine HISM-Gruppe je Variante = +N Draw-Calls, vernachl.).
+        // (b) Kronen-Schichtung + Farb-Gradient lebten schon; NEU: (a) die Gestalten,
+        // (c) Stamm-Charakter (Knick im 2. Segment), (d) Größen-Span trägt der Spawn.
+        const eicheBreitParts = [
+            // breite, tief-ausladende Eiche — kurzer dicker Stamm, leichter Knick.
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 1.3, z: 0 },
+                size: { x: 1.0, y: 2.6, z: 1.0 },
+                segments: 7,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0.35, y: 3.0, z: 0.2 },
+                size: { x: 0.7, y: 1.6, z: 0.7 },
+                segments: 6,
+            },
+            // 1-2 Ast-Zylinder (Stamm-Charakter, c)
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -0.9, y: 3.4, z: 0.3 },
+                size: { x: 0.3, y: 1.6, z: 0.3 },
+                rotation: { z: 0.7 },
+                segments: 5,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4a7a2f,
+                position: { x: 0, y: 4.0, z: 0 },
+                size: { x: 3.8, y: 2.4, z: 3.8 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5f9438,
+                position: { x: -2.0, y: 3.8, z: 0.8 },
+                size: { x: 2.6, y: 2.0, z: 2.6 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x568a34,
+                position: { x: 2.0, y: 3.9, z: -0.9 },
+                size: { x: 2.7, y: 2.1, z: 2.7 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x6fa848,
+                position: { x: 0.3, y: 5.0, z: 0.4 },
+                size: { x: 2.4, y: 2.0, z: 2.4 },
+            },
+        ];
+        const eicheJungParts = [
+            // junge, schlanke Eiche — ein Stamm, kleine kompakte Krone.
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 1.2, z: 0 },
+                size: { x: 0.5, y: 2.6, z: 0.5 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5a8c38,
+                position: { x: 0, y: 3.0, z: 0 },
+                size: { x: 1.8, y: 1.8, z: 1.8 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x6fa848,
+                position: { x: 0.2, y: 3.7, z: 0.1 },
+                size: { x: 1.3, y: 1.3, z: 1.3 },
+            },
+        ];
+        const kieferSchlankParts = [
+            // hohe schlanke Kiefer — langer Stamm, schmale Kegel-Staffel.
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 1.8, z: 0 },
+                size: { x: 0.5, y: 4.0, z: 0.5 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0.1, y: 5.0, z: 0 },
+                size: { x: 0.35, y: 2.6, z: 0.35 },
+                segments: 6,
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x356b2e,
+                position: { x: 0, y: 4.8, z: 0 },
+                size: { x: 2.0, y: 3.0, z: 2.0 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x437f38,
+                position: { x: 0, y: 6.6, z: 0 },
+                size: { x: 1.5, y: 2.8, z: 1.5 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x559442,
+                position: { x: 0, y: 8.3, z: 0 },
+                size: { x: 1.0, y: 2.4, z: 1.0 },
+            },
+        ];
+
         // V7.75 — Welt-Affinitäts-Feld bringt drei weitere Built-in-
         // Baupläne mit, damit Regionen sich strukturell unterscheiden.
         // stein_block: dichte+härte hoch → Felsen-Felder
@@ -41834,6 +41961,29 @@ class AnazhRealm {
                 builtIn: true,
                 instanced: true,
                 parts: baumKieferParts,
+            },
+            // W-H (V18.178, §8.5) — die GESTALT-VARIANTEN (Worldgen-seed-gewählt
+            // nach dem Affinitäts-Sieg; tag-neutral, instanced, keine connections).
+            baum_eiche_breit: {
+                name: "baum_eiche_breit",
+                label: "Breite Eiche",
+                builtIn: true,
+                instanced: true,
+                parts: eicheBreitParts,
+            },
+            baum_eiche_jung: {
+                name: "baum_eiche_jung",
+                label: "Junge Eiche",
+                builtIn: true,
+                instanced: true,
+                parts: eicheJungParts,
+            },
+            baum_kiefer_schlank: {
+                name: "baum_kiefer_schlank",
+                label: "Schlanke Kiefer",
+                builtIn: true,
+                instanced: true,
+                parts: kieferSchlankParts,
             },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
@@ -46077,12 +46227,31 @@ class AnazhRealm {
         }
         if (probe >= chance) return 0;
 
+        // W-H (V18.178, §8.5(a)+(d)) — die GESTALT + die GRÖSSE pro Baum. Der
+        // Affinitäts-Sieg (bestName) bleibt KANONISCH (baum_eiche/baum_kiefer) —
+        // die Verteilung ist bit-identisch; HIER wählt ein seed-deterministischer
+        // Wurf die sichtbare Variante + eine Größen-Spanne (±~35 %). Nur Bäume
+        // variieren; Felsen/Geoden bleiben ihre eine Gestalt.
+        let spawnName = bestName;
+        let spawnScale = 1;
+        if (isTree) {
+            const variants =
+                bestName === "baum_eiche"
+                    ? ["baum_eiche", "baum_eiche", "baum_eiche_breit", "baum_eiche_jung"]
+                    : ["baum_kiefer", "baum_kiefer", "baum_kiefer_schlank"];
+            // eigene Seed-Bits (Suffix-Regel, Γ5) — re-rollt keinen anderen Stream.
+            spawnName = variants[(seedForSpawn >>> 7) % variants.length];
+            const sz = (rng.noise2D(sampleX * 0.53 + 11.3, sampleZ * 0.53 - 7.1) + 1) / 2; // [0,1]
+            spawnScale = 0.78 + sz * 0.5; // ~0.78..1.28 (±~25 %, „jung" wirkt zusätzlich kleiner)
+        }
+
         this._enqueueVegetationSpawn(
-            bestName,
+            spawnName,
             { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
             {
                 seed: seedForSpawn,
                 silent: true,
+                scale: spawnScale,
             }
         );
         return 1;
@@ -59746,7 +59915,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.177.0";
+AnazhRealm.VERSION = "18.178.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

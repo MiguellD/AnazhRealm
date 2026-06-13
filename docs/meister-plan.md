@@ -899,6 +899,14 @@ Querachse"). Verdichtung: alles liest die EXISTIERENDEN Wahrheiten (computeMotio
 
 ### §8.5 W-H: Der Wald-WOW (Gestaltungs-Bogen, kein System-Bau)
 
+**W-H ✓ teil GEBAUT (V18.178):** (a) 3 Gestalt-Varianten (baum_eiche_breit/jung ·
+baum_kiefer_schlank) — seed-gewählt NACH dem Affinitäts-Sieg (kanonischer
+bestName → Verteilung bit-identisch, die V17.16-Falle strukturell vermieden;
+GEMESSEN diag-arch-tags: tag-identisch zur Basis) · (c) Stamm-Charakter (Knick+
+Ast) · (d) Größen-Span ±~25 % (HISM-Instanz-Matrix). (b) Kronen-Schichtung+
+Gradient + (f) W-E-Kronen-Wärme lebten schon. +4 Invarianten. Offen: der
+Wald-WOW im Browser + ggf. mehr Gestalten/Cluster-Tuning. Der ursprüngliche Plan:
+
 Diagnose ehrlich: die Trank-Trennung kam über GEGEN-ACHSEN (Signatur) — die Bäume
 selbst blieben 2 Arten × 1 Gestalt. Der Pinsel-Wald der Profis (Valheim/Ghibli) ist
 GESTALT-Varianz + Schichtung: **(a)** 3–4 GESTALTEN je Art als Bauplan-VARIANTEN

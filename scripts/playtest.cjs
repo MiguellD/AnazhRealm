@@ -30904,8 +30904,11 @@ async function checkBandM4SuchKern(ctx) {
             out.heuhaufen =
                 /bauwerk/.test(hay) && /architecture/.test(hay) && /eisen/.test(hay) && /probe-block/.test(hay);
             // (3) DIESELBE Query trifft in ALLEN Flächen (die M4-Invariante):
-            // (a) Omnibox — „bauwerk" surfaced den Eisen-Block (Rollen-Label).
-            const omni = r._omniboxSearch("b: bauwerk");
+            // (a) Omnibox — die GLEICHE Mehrwort-Query „bauwerk eisen" wie
+            // Werkstatt+Ich (V9.56-i: „bauwerk" allein wurde mit den W-H-Baum-
+            // Varianten unspezifisch — sie sind bauwerk, aber nicht eisen; die
+            // UND-Query siebt sie raus und surfaced den Eisen-Block im 14er-Cap).
+            const omni = r._omniboxSearch("b: bauwerk eisen");
             out.omniboxHits = (omni || []).some((x) => /Probe-Block/.test(x.label));
             // (b) Werkstatt-Liste — display folgt dem EINEN Kern.
             const ws = r._ensureWorkshopState();
@@ -31055,6 +31058,64 @@ async function checkBandM6ErnteSpawn(ctx) {
     check(
         "M6 Spawn: die Spieler-Klemme sitzt an der WURZEL (großer Spawn weicht aus; precise/string-id bleiben bit-treu)",
         res.wurzelKlemmt && res.preciseExakt && res.idExakt && res.klemmeKonsum
+    );
+}
+
+// W-H (meister-plan §8.5, V18.178) — DER WALD-WOW (R-016 „2 Arten × 1 Gestalt"):
+// GESTALT-VARIANTEN je Art (Worldgen-seed-gewählt NACH dem Affinitäts-Sieg →
+// die Verteilung bleibt bit-identisch, die V17.16-Falle strukturell vermieden;
+// dieselben Materialien+Formen → tag-neutral GEMESSEN). Headless: die Tag-
+// Neutralität + die Spawn-Verdrahtung; der Wald-WOW ist Schöpfer-Browser.
+async function checkBandWHWald(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const bps = r.state.blueprints;
+        // (1) die Varianten existieren (instanced, keine connections → HISM).
+        const vars = ["baum_eiche_breit", "baum_eiche_jung", "baum_kiefer_schlank"];
+        out.variantsExist = vars.every((n) => bps[n] && bps[n].instanced === true && !bps[n].connections);
+        // (2) TAG-NEUTRALITÄT (die V17.16-Wand): jede Variante hat IDENTISCHE
+        // Compound-Tags zu ihrer Basis (gleiche Materialien+Formen → MAX gleich).
+        const tagsEq = (a, b) => {
+            const ta = r.computeCompoundTags(bps[a]) || {};
+            const tb = r.computeCompoundTags(bps[b]) || {};
+            const keys = window.AnazhRealm ? window.AnazhRealm.MATERIAL_TAG_KEYS : r.constructor.MATERIAL_TAG_KEYS;
+            return keys.every((k) => Math.abs((ta[k] || 0) - (tb[k] || 0)) < 1e-9);
+        };
+        out.eicheBreitNeutral = tagsEq("baum_eiche", "baum_eiche_breit");
+        out.eicheJungNeutral = tagsEq("baum_eiche", "baum_eiche_jung");
+        out.kieferNeutral = tagsEq("baum_kiefer", "baum_kiefer_schlank");
+        // (3) die Varianten sind NICHT im Affinitäts-Wettstreit (candidates) —
+        // der Spawn wählt sie NACH dem Sieg, mit dem kanonischen bestName.
+        const src = r._vegetationSampleSpawn.toString();
+        out.notInCandidates =
+            /candidates = \["baum_eiche", "baum_kiefer"/.test(src) && !/candidates.*baum_eiche_breit/.test(src);
+        out.variantPickAfterWin = /spawnName = variants\[/.test(src) && /bestName === "baum_eiche"/.test(src);
+        // (4) GRÖSSEN-SPAN: der Spawn reicht eine seed-deterministische scale (HISM-
+        // kompatibel über die Instanz-Matrix).
+        out.sizeSpan = /spawnScale = 0\.78/.test(src) && /scale: spawnScale/.test(src);
+        // (5) die Varianten klassifizieren als ARCHITECTURE (kein Soul-Drift —
+        // Archetypen-Bank-Geist): die Rolle ist nicht soul/consumable.
+        const role = r.computeBlueprintRole ? r.computeBlueprintRole(bps.baum_eiche_breit) : null;
+        out.staysArch = !role || (role !== "soul" && role !== "consumable" && role !== "vehicle");
+        return out;
+    });
+    check(
+        "W-H Wald: die GESTALT-VARIANTEN existieren (baum_eiche_breit/jung · baum_kiefer_schlank — instanced, keine connections → HISM bleibt)",
+        res.variantsExist
+    );
+    check(
+        "W-H Wald TAG-NEUTRALITÄT (die V17.16-Wand): jede Variante hat IDENTISCHE Compound-Tags zur Basis (gleiche Materialien+Formen → die Spawn-Verteilung ist unberührt)",
+        res.eicheBreitNeutral && res.eicheJungNeutral && res.kieferNeutral
+    );
+    check(
+        "W-H Wald: die Varianten treten NICHT in den Affinitäts-Wettstreit (candidates kanonisch) — der Worldgen wählt die Gestalt NACH dem Sieg (bestName bleibt baum_eiche/baum_kiefer)",
+        res.notInCandidates && res.variantPickAfterWin
+    );
+    check(
+        "W-H Wald: der GRÖSSEN-SPAN + die Variante reisen seed-deterministisch in den Spawn (scale über die HISM-Instanz-Matrix) + die Variante bleibt ARCHITECTURE",
+        res.sizeSpan && res.staysArch
     );
 }
 
@@ -48198,6 +48259,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWFFluss(ctx);
             await checkBandW3UiPuls(ctx);
             await checkBandWGGelenke(ctx);
+            await checkBandWHWald(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

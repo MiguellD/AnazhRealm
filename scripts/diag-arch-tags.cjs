@@ -57,7 +57,10 @@ function startSaveServer() {
             const r = window.anazhRealm;
             const names = [
                 "baum_eiche",
+                "baum_eiche_breit",
+                "baum_eiche_jung",
                 "baum_kiefer",
+                "baum_kiefer_schlank",
                 "stein_block",
                 "kristall_geode",
                 "glutbrunnen",
