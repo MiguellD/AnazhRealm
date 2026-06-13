@@ -41504,43 +41504,85 @@ class AnazhRealm {
             },
         ];
         // normal: 2 Stamm-Segmente + 3 Kronen-Kugeln (die V18.173-Form)
+        // V18.182-Painterly-Mischwald — BIRKE-NORMAL erweitert auf 7-Krone-
+        // Ellipsoide mit Vertikal-Gradient (Schatten-Grün-Kern → sonnen-helle
+        // Spitzen, wie eiche). Stamm-Charakter heller weicher (Birkenrinde).
         const baumBirkeParts = [
+            // Wurzel-Flare (Charakter wie eiche, Birken-weiß).
             {
                 shape: "cylinder",
                 material: "holz",
                 color: 0xede0c8,
-                position: { x: 0, y: 1.8, z: 0 },
-                size: { x: 0.55, y: 3.6, z: 0.55 },
+                position: { x: 0, y: 0.5, z: 0 },
+                size: { x: 0.78, y: 1.0, z: 0.78 },
                 segments: 6,
             },
             {
                 shape: "cylinder",
                 material: "holz",
                 color: 0xede0c8,
-                position: { x: 0, y: 4.6, z: 0 },
-                size: { x: 0.4, y: 2.6, z: 0.4 },
+                position: { x: 0, y: 2.0, z: 0 },
+                size: { x: 0.5, y: 3.0, z: 0.5 },
                 segments: 6,
             },
             {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xede0c8,
+                position: { x: 0.05, y: 4.8, z: 0 },
+                size: { x: 0.38, y: 2.4, z: 0.38 },
+                segments: 6,
+            },
+            // KRONE — 7 Ellipsoide, Dunkel-Kern → Hell-Spitze. Birke schlank,
+            // schmale Krone aber dichte Layer (Birken-Charakter: vertikal-elegant).
+            {
                 shape: "sphere",
                 material: "laub",
-                color: 0x8fb343,
-                position: { x: 0, y: 5.8, z: 0 },
-                size: { x: 2.2, y: 2.0, z: 2.2 },
+                color: 0x6b9a3a,
+                position: { x: 0, y: 5.5, z: 0 },
+                size: { x: 2.3, y: 1.9, z: 2.3 },
             },
             {
                 shape: "sphere",
                 material: "laub",
-                color: 0xa3c454,
-                position: { x: 0.3, y: 6.6, z: 0.2 },
+                color: 0x7caa42,
+                position: { x: -0.5, y: 6.0, z: 0.3 },
+                size: { x: 1.7, y: 1.6, z: 1.7 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x8fb84a,
+                position: { x: 0.6, y: 6.2, z: -0.2 },
                 size: { x: 1.6, y: 1.5, z: 1.6 },
             },
             {
                 shape: "sphere",
                 material: "laub",
+                color: 0xa3c454,
+                position: { x: 0.2, y: 6.9, z: 0.4 },
+                size: { x: 1.4, y: 1.4, z: 1.4 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
                 color: 0xb0d063,
-                position: { x: -0.3, y: 7.0, z: -0.1 },
-                size: { x: 1.4, y: 1.3, z: 1.4 },
+                position: { x: -0.3, y: 7.3, z: -0.2 },
+                size: { x: 1.2, y: 1.2, z: 1.2 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xc0dc75,
+                position: { x: 0.1, y: 7.7, z: 0.0 },
+                size: { x: 0.95, y: 1.0, z: 0.95 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xd2e684,
+                position: { x: 0.0, y: 8.1, z: 0.0 },
+                size: { x: 0.7, y: 0.7, z: 0.7 },
             },
         ];
         // alt: 3 Stamm-Segmente + krumm + 5 große asymmetrische Kronen-Kugeln
@@ -41648,26 +41690,57 @@ class AnazhRealm {
                 size: { x: 0.7, y: 1.6, z: 0.7 },
                 segments: 6,
             },
+            // V18.182-Painterly-Mischwald — ERLE-NORMAL erweitert auf 7-Krone-
+            // Ellipsoide. Dunkler-grün (Wasser-Anker, Ufer-Pflicht); breite
+            // Krone (Erle = saftig). Gradient Schatten-grün → satter-mittel.
             {
                 shape: "sphere",
                 material: "laub",
-                color: 0x3f6f30,
-                position: { x: 0, y: 4.4, z: 0 },
-                size: { x: 3.0, y: 2.4, z: 3.0 },
+                color: 0x2d5722,
+                position: { x: 0, y: 4.2, z: 0 },
+                size: { x: 3.2, y: 2.4, z: 3.2 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x3a6a2c,
+                position: { x: -1.6, y: 4.1, z: 0.7 },
+                size: { x: 2.1, y: 1.8, z: 2.1 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x366028,
+                position: { x: 1.6, y: 4.2, z: -0.6 },
+                size: { x: 2.2, y: 1.9, z: 2.2 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x457631,
+                position: { x: 0.4, y: 4.9, z: 1.5 },
+                size: { x: 2.0, y: 1.7, z: 2.0 },
             },
             {
                 shape: "sphere",
                 material: "laub",
                 color: 0x4a823a,
-                position: { x: -1.3, y: 4.2, z: 0.5 },
-                size: { x: 1.9, y: 1.7, z: 1.9 },
+                position: { x: -0.7, y: 5.2, z: -0.4 },
+                size: { x: 1.7, y: 1.6, z: 1.7 },
             },
             {
                 shape: "sphere",
                 material: "laub",
-                color: 0x376628,
-                position: { x: 1.3, y: 4.3, z: -0.5 },
-                size: { x: 2.0, y: 1.8, z: 2.0 },
+                color: 0x568a44,
+                position: { x: 0.3, y: 5.7, z: 0.2 },
+                size: { x: 1.4, y: 1.4, z: 1.4 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x659a4f,
+                position: { x: 0.0, y: 6.2, z: 0.0 },
+                size: { x: 1.0, y: 1.0, z: 1.0 },
             },
         ];
         // alt: weit ausladende Krone + 4 Kronen-Kugeln im Halbrund
@@ -41767,33 +41840,57 @@ class AnazhRealm {
                 size: { x: 0.75, y: 1.4, z: 0.75 },
                 segments: 6,
             },
+            // V18.182-Painterly-Mischwald — BUCHE-NORMAL erweitert auf 7-Krone-
+            // Ellipsoide. Substanzdichter (Wald-Mitte) — kompakter aber tiefer
+            // gradient (Hochwald-Charakter). Dunkler Stamm-Ton, satte Krone.
             {
                 shape: "sphere",
                 material: "laub",
-                color: 0x4c8035,
-                position: { x: 0, y: 3.8, z: 0 },
-                size: { x: 3.6, y: 3.0, z: 3.6 },
+                color: 0x395a25,
+                position: { x: 0, y: 3.6, z: 0 },
+                size: { x: 3.5, y: 2.6, z: 3.5 },
             },
             {
                 shape: "sphere",
                 material: "laub",
-                color: 0x5a9342,
-                position: { x: -1.6, y: 3.6, z: 0.4 },
-                size: { x: 2.4, y: 2.2, z: 2.4 },
+                color: 0x456a2c,
+                position: { x: -1.7, y: 3.5, z: 0.6 },
+                size: { x: 2.4, y: 2.1, z: 2.4 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4c8035,
+                position: { x: 1.6, y: 3.6, z: -0.6 },
+                size: { x: 2.5, y: 2.2, z: 2.5 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x568a44,
+                position: { x: 0.5, y: 4.3, z: 1.4 },
+                size: { x: 2.2, y: 1.9, z: 2.2 },
             },
             {
                 shape: "sphere",
                 material: "laub",
                 color: 0x5e9e48,
-                position: { x: 1.5, y: 3.7, z: -0.5 },
-                size: { x: 2.5, y: 2.3, z: 2.5 },
+                position: { x: -0.6, y: 4.5, z: -0.4 },
+                size: { x: 1.9, y: 1.8, z: 1.9 },
             },
             {
                 shape: "sphere",
                 material: "laub",
                 color: 0x68a850,
-                position: { x: 0.2, y: 4.8, z: 0.2 },
-                size: { x: 2.0, y: 1.8, z: 2.0 },
+                position: { x: 0.2, y: 5.1, z: 0.2 },
+                size: { x: 1.6, y: 1.5, z: 1.6 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x7ab85d,
+                position: { x: 0.0, y: 5.6, z: 0.0 },
+                size: { x: 1.1, y: 1.1, z: 1.1 },
             },
         ];
         // alt: massiv, sehr runde Krone — wahre Wald-Mitte
