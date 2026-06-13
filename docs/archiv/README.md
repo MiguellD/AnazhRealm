@@ -46,13 +46,15 @@ Der aktuelle Stand + die Route: die kanonische Landkarte in **`docs/README.md`**
 
 Die zwei Schwester-Branches `clever-gauss-nuh9lq` (Λ-Welle + Γ-Bogen) und
 `determined-tesla-oz2edw` (W-Welle) parallel aus V18.172 entsprungen, als ein
-Stamm zusammengeführt. Tesla = Knochen, clever-gauss = Sehnen. 18 Commits über
-7 Wellen + 2 Reviewer-Heilungen, 27 spezifische Λ-Klassifikations-Wände,
-9 permanente Lehren. Inkl. Welle-0-Schöpfer-Delta §14.9 (clever-gauss-Real-
-Stand +1787 Zeilen über Plan-Stand → Γ-Bogen integriert) + V18.185-Reviewer-
-Heilung (AERIAL-Doppel-Define als stiller Bug, Getter überdeckte Top-Level-
-Assignment lautlos) + V18.186-Plan-Vollendung (Λ.6 Translucency + Λ.4 Per-
-Achsen-Streu-Skalierung + 7 eigenständige Λ-Test-Bänder).
+Stamm zusammengeführt. Tesla = Knochen, clever-gauss = Sehnen. 20 Commits über
+8 Wellen + 2 Reviewer-Audit-Vertiefungen, 31 spezifische Λ-Klassifikations-
+Wände, 10 permanente Lehren, 5 portierte Λ-Diag-Skripte als Browser-Audit-
+Brücke. Inkl. Welle-0-Schöpfer-Delta §14.9 (Γ-Bogen) + V18.185-Reviewer-
+Heilung (AERIAL-Doppel-Define) + V18.186-Plan-Vollendung (Λ.6 + Λ.4 V18.175 +
+7 Bänder) + V18.187-Welle-11-Vertiefung (12 Streu-Geometrien + Λ.4 instance
+Color V18.174 + Λ.1 Role-Cache-Migration + 5 Diag-Skripte — die WIESE ist da,
+nicht mehr Klon-Feld in einer Farbe). Branch-Synthese-Completeness gemessen:
+0 fehlende Methoden / state-Slots / Diag-Skripte zwischen den Branches.
 
 | Datei | Was | Stand |
 |---|---|---|

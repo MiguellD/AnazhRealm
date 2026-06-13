@@ -1980,9 +1980,38 @@ er voxel-worker.js anfasst, und beide Hunks zusammen wandern.
     Werten (nicht Source-Strings) ist die strukturelle Antwort.
   **✓ 99d3d11 (13.06.2026)**
 
+- **R3 — V18.187-Welle-11-Vertiefung** (13.06.2026, nach zweitem Reviewer-
+  Audit): drei substantielle Plan-Verluste, die V18.186 verdeckt hatte
+  ("Λ.4 PER-ACHSEN-SKALIERUNG drin" galt für 1 von 3 V18.174-V18.176-
+  Stufen). VIER Heilungen:
+  - **(a) 12 echte Streu-Geometrien (clever-gauss V18.176):**
+    KLEIN_VEGETATION_SPECIES von 7 generic auf 15 Varianten erweitert
+    (blume_tulpe/_klee/_mohn · farn_normal/_breit/_schmal · gestruepp_
+    busch/_decker/_stecher · schilf_reihe/_tuff/_rohr + fels/spore/pollen).
+    `_scatterSpeciesGeometry` komplett mit clever-gauss-Version ersetzt
+    inkl. Backward-Kompat.
+  - **(b) Λ.4 instanceColor für Streu (clever-gauss V18.174):**
+    `_scatterMaterial` mit useInstanceTint + attribute("instanceColor",
+    "vec3") + HSL-Mathematik. `_buildVoxelChunkScatter` mit
+    hashInstanceTint-Helper + setColorAt. Wiesen-Klon-Feld strukturell tot.
+  - **(c) Λ.1 Role-Cache-Migration (clever-gauss V18.176):**
+    `_loadStateRestoreCraftingInventory` recomputeRoles mit genVersion < 2
+    Gate. Alte Welten kriegen ihre Eichen migriert.
+  - **(d) 5 Λ-Diag-Skripte portiert** (`diag-fischer-wand` · `diag-lambda-
+    volltiefe` · `diag-lambda4` · `diag-lambda4-tag` · `diag-lebendige-
+    welt`) — die Browser-Audit-Werkzeuge.
+  Reviewer-Befund 4 (*_alt-Bäume reduziert) GEMESSEN widerlegt (gleiche
+  Part-Counts). `checkBandLambda4Streu` von 2 auf 6 Wände erweitert
+  (V18.174 + V18.175 + V18.176-Stufen separat geprüft). 31 Λ-Wände total.
+  **Permanente Lehre 10:** ein zu SCHMALES Test-Band gibt falsche Sicherheit
+  (Plan-Wortlaut nennt N Stufen → Test-Band MUSS N Wand-Klassen tragen).
+  **BRANCH-SYNTHESE-COMPLETENESS:** alle Methoden + state-Slots + Diag-
+  Skripte sind in HEAD (`comm`-Vergleich: 0 fehlende). Die zwei Schwestern
+  sind WIRKLICH eins — nicht "mit drei TODO-Lücken verlagert", sondern
+  vollständig verschweisst. **✓ e87a2f8 (13.06.2026)**
+
 OFFEN: Schöpfer-Browser-Sign-off des Gesamtwerks (pixel-blind ist headless).
-Plus die Λ.4-Gestalt-Varianten (Tulpe/Klee/Mohn etc. aus V18.176) als
-mögliche eigene Sub-Welle, wenn der Browser-Audit sie ruft.
+Die 5 portierten Λ-Diag-Skripte sind die Browser-Audit-Werkzeuge dafür.
 
 ---
 

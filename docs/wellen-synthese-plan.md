@@ -1,9 +1,10 @@
 # Der Wellen-Synthese-Plan — VOLLENDET
 
 **Status: ABGESCHLOSSEN am 13.06.2026.** Die zwei Schwestern (`clever-gauss-nuh9lq`
-und `determined-tesla-oz2edw`) sind als ein Stamm zusammengeführt. **18 Commits
-über 7 Wellen, alle Mess-Wände grün** (inkl. 27 spezifische Λ-Klassifikations-
-Wände als Plan §7.1-Erfüllung).
+und `determined-tesla-oz2edw`) sind als ein Stamm zusammengeführt. **20 Commits
+über 8 Wellen, alle Mess-Wände grün** (inkl. 31 spezifische Λ-Klassifikations-
+Wände + 5 portierte Λ-Diag-Skripte als Browser-Audit-Brücke; zwei Reviewer-
+Audits haben den Stand vertieft).
 
 Die volle Plan-Datei mit allen Sub-Wellen, der Hunk-Karte, den Code-Synthesen, den
 Risiken (9 dokumentiert, alle Mitigationen geprüft) und der permanenten Lehre lebt
@@ -30,6 +31,7 @@ jetzt im Archiv:
 | 6+9+10 | Test-Härtung + Atlas + Archivierung | `020570d` | Bilanz-Sicht + docs/archiv/ |
 | **R1** | **V18.185-Reviewer-Heilung** | **`7b8c636`** | **AERIAL-Doppel-Define-Bug + 5-Wand-Regression-Schutz** |
 | **R2** | **V18.186-Plan-Vollendung** | **`99d3d11`** | **Λ.6 Backlit + Λ.4 Per-Achsen-Scale + 6 eigenständige Λ-Bänder** |
+| **R3** | **V18.187-Welle-11-Vertiefung** | **`e87a2f8`** | **12 echte Streu-Geometrien (V18.176) + Λ.4 instanceColor (V18.174) + Λ.1 Role-Cache-Migration (V18.176) + 5 Λ-Diag-Skripte portiert** |
 
 ### Reviewer-Audit (V18.185 + V18.186) — die drei stillen Lücken geheilt
 
@@ -51,9 +53,8 @@ Plan-Verluste, die mein "alles abgehakt" verdeckte:
 
 ## Was offen bleibt
 
-- **Schöpfer-Browser-Sign-off** — das ganze Werk im Browser anschauen: der Wald-Wow nach Welle 4, die AAA-Atmosphäre mit den korrekten Werten 0.75/0.14, der Boden atmet bei genVersion ≥ 2, das Massiv ~700 m vom Spawn.
+- **Schöpfer-Browser-Sign-off** — das ganze Werk im Browser anschauen: der Wald-Wow nach Welle 4, die AAA-Atmosphäre mit den korrekten Werten 0.75/0.14, der Boden atmet bei genVersion ≥ 2, das Massiv ~700 m vom Spawn, die Wiese mit 12 echten Vegetations-Varianten + pro-Halm-HSL-Tint. Die 5 portierten Λ-Diag-Skripte (`diag-fischer-wand` · `diag-lambda-volltiefe` · `diag-lambda4` · `diag-lambda4-tag` · `diag-lebendige-welt`) sind die Werkzeuge.
 - **Welle 7 (Worker-Mirror-Breitung)** — V9.89-Test um 32 Sample-Chunks erweitern (~1.6 s Playtest-Kost, vertretbar). Aktuell prüft der Test 1 Sample-Punkt; eine Breitung würde Drift an unbekannten Worldgen-Positionen fangen.
-- **Λ.4 Gestalt-Varianten** — Tulpe/Klee/Mohn etc. aus clever-gauss V18.176 (KLEIN_VEGETATION_SPECIES-Erweiterung). Die Per-Achsen-Skalierung (V18.186-Heilung) bringt schon das Wiesen-Feel; die Gestalt-Vielfalt wäre eine eigene Sub-Welle.
 
 ## Die 9 permanenten Lehren
 
@@ -66,6 +67,7 @@ Plan-Verluste, die mein "alles abgehakt" verdeckte:
 7. **(Reviewer-Lehre)** Ein `static get X()` ohne Setter ÜBERDECKT JEDES Top-Level-`Klasse.X = ...`-Assignment LAUTLOS in non-strict mode (Node-verifiziert). Source-Probe-Wand MUSS Kommentare strippen (sonst fängt sie sich selbst).
 8. **(Reviewer-Lehre)** Test-Seeds für Bit-Band-Patterns brauchen volle Bit-Breite — kleine Seeds (i × 7919 < 2²¹) treffen das obere Band nie → konstante σ=0. Hash-Spreizung (Knuth-Multiplikation 2654435761) ist die saubere Form.
 9. **(Reviewer-Lehre)** Ein Audit mit fremden Augen fängt stille Bugs, die der Bauende per Konstruktion nicht sieht. Mess-Wand auf LIVE-Werten (nicht Source-Strings) ist die strukturelle Antwort.
+10. **(Reviewer-Lehre 2 — V18.187)** Ein ZU SCHMALES Test-Band gibt FALSCHE Sicherheit. V18.186's `checkBandLambda4Streu` prüfte nur die V18.175-Skalierung, der Commit sagte aber „Λ.4 drin" — eine von drei V18.174-V18.176-Stufen, das Reflexions-Lauf-Wort log durch Reduktion. Plan-Wortlaut nennt N Stufen → Test-Band MUSS N Wand-Klassen tragen, nicht nur die zuletzt gebaute Stufe. Eine „abgehakt"-Aussage VOR dem Commit gegen ALLE Plan-Stufen abgleichen.
 
 ---
 
