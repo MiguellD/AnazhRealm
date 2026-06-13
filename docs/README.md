@@ -15,21 +15,20 @@ wieder zur Halde.
 | **`CLAUDE.md`** (Wurzel) | **JETZT** | Stand · die quer-schneidenden Gotchas · Konventionen · Doc-Map. Auto-geladen bei jeder Session. |
 | **`docs/state-of-realm.md`** | **WOHIN** | Die Vision — die Pfeiler aus den Testamenten, die Heilige Lektion, die Stand-vs-Vision-Matrix, das Welten-Ultiversum. |
 | **`docs/das-lebendige-feld.md`** | **DER WAHRE NORDEN** | Der operative Vision-Anker: die Welt als EIN Feld, das alle lesen · schreiben · WERTEN — wie es GEMESSEN im Code lebt + der Vektor vorwärts. **ZUERST** vor Arbeit an lebendiger Welt / Emotion / Nexus / DSL / Kreaturen. |
+| **`docs/aktiv.md`** | **DER EINE PLAN** | Der aktive Tisch — alle offenen Wellen + alle Schöpfer-Entscheide + die Reihenfolge, gesammelt aus allen Bögen. **ZUERST** vor „was als Nächstes". 5 offene Bögen (Φ Welten-Netz · M9 Aufstiegs-Leiter · Γ-Reste · LOD U2/U6 · Wasser-Render-Sign-off) + 4 Schöpfer-Entscheide. |
 | **`docs/roadmap.md`** | **DER WEG** | Der Plan vorwärts (3 Phasen) · die offene-Fäden-Karte (inkl. der GEMERKTEN FÄDEN) · die Vergangenheit stichwortmäßig · die Disziplin. |
 | **`docs/taille-spec.md`** | **DER VERTRAG** | Die gefrorene Taille, NORMATIV (Ω1) — Draht-Formen · must-ignore/must-preserve · Empfänger-Gesetz · Versions-Semantik · Ledger-Gesetz · Namensraum · **§7 Broker-Protokoll (der Leuchtturm, V18.171)**. **ZUERST** vor Arbeit an Serialisierung/Import/p2p-Schema/Snapshot-Schema/Broker. Die ausführbare Form: `spec/golden/v1/` (EINGEFROREN, nie regenerieren). |
 | `docs/taille-spec.en.md` | EN-Spiegel | Der englische VOLL-Spiegel der Taille (R-035 — das Andock-Dokument für Fremde; bei Divergenz gewinnt das Deutsche). Drift-bewacht im Golden-Band. |
-| **`docs/meister-plan.md`** | **DER AKTIVE PLAN** | Der zweite Schöpfer-Audit GEMESSEN kartiert: §8 = der aktive Marsch W-A…W-H (Lese-Vertrag + KREIS-Skelett) · §7 = die Profi-Lücken-Karte · §3 = die Aufstiegs-Leiter. **ZUERST** vor „was als Nächstes" / Werkstatt-UX / HUD / Licht-Harmonie. |
-| **`docs/rueckmeldung.md`** | **DAS GESETZ** | Der Rückmeldungs-Korpus — jede Schöpfer-Rückmeldung mit ID·Status·Wurzel·Welle. **VOR jeder Session-Planung lesen; kein „GEBAUT ✓" ohne Korpus-Update + Nachbau im Nutzer-Zustand (§8.7).** |
-| **`docs/archipel-plan.md`** | **DER PFAD Φ** | Das Welten-Netz (öffentliche Welten · Portale-als-Links · „Tausende unter einem Himmel") — die Bau-Form der M9-Sprossen 1–3; Fundamente nachgemessen §6; Anti-Scope-Wände §3 verbindlich. |
-| **`docs/genese-plan.md`** | **DER BOGEN Γ** | Worldgen-Qualität (der LAAS-Transfer „Neue Felder, alte Leser"): Feuchte-Feld · Kronen-Lesarten · Stream-Gesetz GEBAUT V18.166; offen Γ4 Makro-Anker · Farb-Lesart · Γ3/Γ6/Γ7 (Verifikations-Anhang §V mit Abweichungs-Gründen). |
-| **`docs/wellen-synthese-plan.md`** | **DIE SYNTHESE (VOLLENDET)** | Schluss-Bilanz der Branch-Synthese `clever-gauss-nuh9lq` × `determined-tesla-oz2edw` → ein Stamm (V18.180-FIX bis V18.186, 18 Commits über 7 Wellen + 2 Reviewer-Heilungen, 27 Λ-Klassifikations-Wände, 9 permanente Lehren). Die volle Plan-Datei (Hunk-Karte · Konflikt-Analyse · Code-Synthesen · Risiken) im Archiv: **`docs/archiv/wellen-synthese-plan.md`**. |
+| **`docs/rueckmeldung.md`** | **DAS GESETZ** | Der Rückmeldungs-Korpus — jede Schöpfer-Rückmeldung mit ID·Status·Wurzel·Welle. **VOR jeder Session-Planung lesen; kein „GEBAUT ✓" ohne Korpus-Update + Nachbau im Nutzer-Zustand.** |
+| **`docs/archipel-plan.md`** | **DER PFAD Φ** | Das Welten-Netz (öffentliche Welten · Portale-als-Links · „Tausende unter einem Himmel") — die Bau-Form der M9-Sprossen 1–3; Fundamente nachgemessen §6; Anti-Scope-Wände §3 verbindlich. **DER VOLL-PLAN** für `docs/aktiv.md` §1.A. |
+| **`docs/wellen-synthese-plan.md`** | **DIE SYNTHESE (VOLLENDET)** | Schluss-Bilanz der Branch-Synthese `clever-gauss-nuh9lq` × `determined-tesla-oz2edw` → ein Stamm (V18.180-FIX bis V18.187, 20 Commits über 8 Wellen + 2 Reviewer-Audit-Vertiefungen, 31 Λ-Klassifikations-Wände, 10 permanente Lehren). Die volle Plan-Datei (Hunk-Karte · Konflikt-Analyse · Code-Synthesen · Risiken) im Archiv: **`docs/archiv/wellen-synthese-plan.md`**. |
 | **`README.md`** (Wurzel) | **DIE TÜR** | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion. |
 
 (Der frühere „Auf dem Tisch"-Plan `docs/archiv/terrain-koharenz-plan.md` ist VOLLENDET + archiviert —
 die aktiven Pläne stehen in der Tabelle oben.)
 
 **Über dem Tisch — der Master-Blick:** `docs/archiv/gigant-plan.md` (DER GIGANT, 10.06.2026 — das
-umfassende gemessene Bild + die neun Säulen G1–G9/Ω [der §5-Pfad ist GESCHLOSSEN seit V18.147; NACHFOLGER: `docs/meister-plan.md` — der Schöpfer-Audit 12.06. + die Aufstiegs-Leiter] + die
+umfassende gemessene Bild + die neun Säulen G1–G9/Ω [der §5-Pfad ist GESCHLOSSEN seit V18.147; NACHFOLGER: `docs/archiv/meister-plan.md` — der Schöpfer-Audit 12.06. + die Aufstiegs-Leiter] + die
 Zwillinge + Stand-der-Technik-Karte + die Reihenfolge + **DIE GEMERKTEN FÄDEN** am §5-Ende).
 Die Karte ÜBER den Detail-Plänen; pro vollendeter Säule wird sie kürzer.
 

@@ -53,6 +53,9 @@ Plan-Verluste, die mein "alles abgehakt" verdeckte:
 
 ## Was offen bleibt
 
+Alle offenen Wellen + Schöpfer-Entscheide + die Reihenfolge leben jetzt in **`docs/aktiv.md`**
+(DER EINE PLAN). Hier nur die zwei Reste, die direkt aus der Synthese folgen:
+
 - **Schöpfer-Browser-Sign-off** — das ganze Werk im Browser anschauen: der Wald-Wow nach Welle 4, die AAA-Atmosphäre mit den korrekten Werten 0.75/0.14, der Boden atmet bei genVersion ≥ 2, das Massiv ~700 m vom Spawn, die Wiese mit 12 echten Vegetations-Varianten + pro-Halm-HSL-Tint. Die 5 portierten Λ-Diag-Skripte (`diag-fischer-wand` · `diag-lambda-volltiefe` · `diag-lambda4` · `diag-lambda4-tag` · `diag-lebendige-welt`) sind die Werkzeuge.
 - **Welle 7 (Worker-Mirror-Breitung)** — V9.89-Test um 32 Sample-Chunks erweitern (~1.6 s Playtest-Kost, vertretbar). Aktuell prüft der Test 1 Sample-Punkt; eine Breitung würde Drift an unbekannten Worldgen-Positionen fangen.
 

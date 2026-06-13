@@ -19,12 +19,14 @@ Der aktuelle Stand + die Route: die kanonische Landkarte in **`docs/README.md`**
 
 | Datei | Was | Stand |
 |---|---|---|
-| `wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, die 30-Wellen-Spirale, die Drei-Schichten-Architektur) | **REFERENZ** — der Fluid-Bogen ist GEBAUT (V18.84–.94, `terrain-t4-wasser-ca-plan.md`); ZUERST lesen bei jeder Wasser-Arbeit |
-| `lod-kaskade-plan.md` | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter) | **AKTIV** — U1/U3/U4/U5 gebaut, U2/U6 offen |
-| `kampf-plan.md` | Crafting/Kampf §11 — Schöpfungs-Fluss + Resonanz | **AKTIV** — Kern + S6-B gebaut; **Phase E = GEMERKTER FADEN #2** (gigant-plan §5-Ende), S11 offen |
-| `world-portal-w18-plan.md` | W18 — in fremden Welten leben (Ko-Präsenz) | **GEPLANT** — Stufe 0/1 ✅ (W12–17), Stufe 2–4 offen |
-| `taille-plan.md` | Ω — der Ewigkeits-Bogen: die gefrorene Taille (die Risse + der Weg Ω0–Ω6) | **VOLLENDET (V18.137–.141)** — die NORM lebt auf dem Tisch (`docs/taille-spec.md` + `spec/golden/v1/`); hier die Historie; **das echte V18→V19-Zeit-Portal = GEMERKTER FADEN #4** |
-| `robustheit-plan.md` | G8 — drei Ringe + lebendes Immunsystem | **R0–R5 VOLLENDET (V18.122–.124)**; **R6 Selbst-Erweiterung = GEMERKTER FADEN #1** (bereit — R2+R4 stehen) |
+| `meister-plan.md` | Der große Schöpfer-Browser-Audit (12.06.2026): §8-Marsch W-A…W-H · M1–M8 · §3 Aufstiegs-Leiter · §8.6 Matrix · die Profi-Lücken-Karte | **§8 + M1–M8 VOLLENDET** (V18.154–V18.179 + Synthese-Welle-2); **§3 M9-Aufstiegs-Leiter** + **§8.8 Φ-Bogen** leben in `docs/aktiv.md` §1.A+1.B |
+| `genese-plan.md` | Der Γ-Bogen: LAAS-Transfer „Neue Felder, alte Leser" — Feuchte-Feld · Kronen-Lesarten · Stream-Gesetz · Makro-Anker | **Γ-KERN + Γ4-BOGEN VOLLENDET** (V18.166 + V18.179–V18.181 via Synthese-Sub-3h+3i); Reste (Γ7 · Lesart 5 · Γ3 · Γ-M · Γ8 · Totholz) in `docs/aktiv.md` §1.C |
+| `wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, die 30-Wellen-Spirale, die Drei-Schichten-Architektur) | **REFERENZ** — der Fluid-Bogen ist GEBAUT (V18.84–.94, `terrain-t4-wasser-ca-plan.md`); ZUERST lesen bei jeder Wasser-Arbeit; **§6 Drei-Optionen-Entscheid offen** (siehe `docs/aktiv.md` §3) |
+| `lod-kaskade-plan.md` | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter) | **AKTIV** — U1/U3/U4/U5 gebaut, U2/U6 offen (`docs/aktiv.md` §1.D) |
+| `kampf-plan.md` | Crafting/Kampf §11 — Schöpfungs-Fluss + Resonanz | **VOLLENDET** — Kern + S6-B + Phase E V18.148 (Raubtier-Seele + Jagd + Furcht/Triumph/Schuld); S-Reste = abgenommene Vermerke |
+| `world-portal-w18-plan.md` | W18 — in fremden Welten leben (Ko-Präsenz) | **VOLLENDET** Stufe 0/1+Wohnen (V18.144–V18.146); Stufe 2–4 = M9-Sprossen (`docs/aktiv.md` §1.B) |
+| `taille-plan.md` | Ω — der Ewigkeits-Bogen: die gefrorene Taille (die Risse + der Weg Ω0–Ω6) | **VOLLENDET (V18.137–.141)** — die NORM lebt auf dem Tisch (`docs/taille-spec.md` + `spec/golden/v1/`); hier die Historie; **das echte V18→V19-Zeit-Portal = GEMERKTER FADEN** (siehe `docs/aktiv.md` §2) |
+| `robustheit-plan.md` | G8 — drei Ringe + lebendes Immunsystem | **R0–R6-Kern VOLLENDET (V18.122–.152)**; Rest des R6-Bogens = M9-Sprosse 3 (`docs/aktiv.md` §1.B) |
 
 ## Referenz (Nachschlagewerke)
 

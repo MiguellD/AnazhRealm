@@ -1,5 +1,17 @@
 # DER MEISTER-PLAN — der große Schöpfer-Browser-Audit (12.06.2026) + die Aufstiegs-Leiter
 
+> **Status: ARCHIVIERT (13.06.2026).** Der §8-Marsch (W-A · W-B · W-C · W-D · W-E ·
+> W-F · W-G · W-H) ist RUND (V18.165–V18.179 + Welle 2 Branch-Merge V18.180-merge-W).
+> M1–M8 sind RUND (V18.154–V18.161). Der ganze §8.8-Φ-Bogen + §3 Aufstiegs-Leiter (M9)
+> leben in `docs/aktiv.md` als die zwei großen offenen Bögen. Das hier ist die VOLLE
+> historische Plan-Datei mit allen Wellen-Begründungen, Befund-zu-Wurzel-Karten,
+> Schöpfer-Audit-Texten — nachschlagbar.
+>
+> **Pointer für die nächste Session:** `docs/aktiv.md` §1.A (Φ-Welten-Netz) + §1.B
+> (M9-Aufstiegs-Leiter) tragen die offenen Wellen mit Reihenfolge + Schöpfer-
+> Entscheiden. `docs/archipel-plan.md` ist der Voll-Plan für Φ. `docs/archiv/genese-
+> plan.md` ist der Voll-Plan für Γ-Reste.
+
 **Status: AKTIV — der Plan nach dem Plan.** Der gigant-§5-Pfad ist gegangen; dieser Plan trägt
 die ~30 Befunde des ersten großen Schöpfer-Browser-Audits NACH der Gesamt-Abnahme + die
 Aufstiegs-Leiter (R6-Vertiefung) als die Krone. Disziplin: jeder Befund ist ein SIGNAL für ein

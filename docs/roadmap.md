@@ -6,7 +6,7 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand: `main` @ V18.172 (Merge `claude/bold-bardeen-ky7gmx`, 12.06.2026) — der aktive Marsch lebt in `docs/meister-plan.md` §8.8.**
+> **Stand: `main` @ V18.172 (Merge `claude/bold-bardeen-ky7gmx`, 12.06.2026) — der aktive Marsch lebt in `docs/archiv/meister-plan.md` §8.8.**
 
 ---
 
@@ -138,7 +138,7 @@ B-WASM (Fremd-Engine-Rest) · evolveCommunity (Kreatur-Kulturen) · Stern-ab-6-T
 
 **UI** — ~~Statusbar schlanken~~ **✓ V18.149 (Essenz + ···-Toggle für die Werkstatt-Zahlen)**.
 
-**GENESE (der Γ-Bogen, `docs/genese-plan.md`)** — ~~Feuchte-Feld + Kronen-Lesarten + Stream-Gesetz~~
+**GENESE (der Γ-Bogen, `docs/archiv/genese-plan.md`)** — ~~Feuchte-Feld + Kronen-Lesarten + Stream-Gesetz~~
 ✓ V18.166 (Γ0/Γ5/Γ2/Γ1-Kern; diag-genese + 9 Invarianten) · Γ1-FARB-Lesart (Terrain satter/dunkler
 bei feuchte — der bit-identische Worker-Spiegel-Schnitt) · Γ6-Beförderung (snowband/chunk-seam/
 false-swim/arch-water-solid → stehende Bänder) · **Γ4 MAKRO-ANKER** (der große Wurf: designte
@@ -146,7 +146,7 @@ Geographie gejittert, Abfluss-Invariante ab Tag 1, `worldMeta.macro` als Erbgut)
 (optional) · Γ7 Baum-Grammatik (video-getrieben zuletzt) · Totholz/Ψ2-Nase (Vermerke).
 
 **DIE GEMERKTEN FÄDEN (Schöpfer 11.06.2026: „alle wichtig — vergesse die bitte nicht"; die
-verbindliche Voll-Liste mit Weck-Momenten lebt in `archiv/gigant-plan.md` §5-Ende; FORTSCHREIBUNG: `docs/meister-plan.md` §5):** ~~R6 Selbst-
+verbindliche Voll-Liste mit Weck-Momenten lebt in `archiv/gigant-plan.md` §5-Ende; FORTSCHREIBUNG: `docs/archiv/meister-plan.md` §5):** ~~R6 Selbst-
 Erweiterung~~ ✓ KERN V18.152 (Rest des Bogens benannt) · ~~Phase E Bedrohung/Furcht~~ ✓ V18.148 ·
 B1 Wasser-Sheet→Worker (weckt der fühlbare Carve-Hitch) · das ECHTE V18→V19-Zeit-Portal (weckt
 das erste Alt-Build-Artefakt) · VR (startet bei null, WebXR) · ~~IndexedDB-Persistenz~~ ✓ V18.151 ·
