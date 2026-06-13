@@ -130,15 +130,17 @@ Vibe-Pass verlässt den Browser nicht, §0-Souveränität), Inventar-Mengen (§5
 dauerhaften Welt-Besitz (`world-snapshot` ist Durchreiche).
 
 - **Client → Broker:** `join {room, peerId}` (authentifiziert den Socket; alles
-  davor außer `stats` wird verworfen) · Raum-Broadcasts `pos {x,y,z,yaw}` ·
+  davor außer `stats`/`world-presence` wird verworfen) · Raum-Broadcasts `pos {x,y,z,yaw}` ·
   `creature-pos {list ≤64}` · `dsl {program: Array 1..256}` · `soul` · `aura` ·
   `vibe` · `companion-say` · `subworld-net` · `portal-invite` ·
   `world-request`/`world-snapshot` (Welt-Zug, Durchreiche) · adressiert
   `rtc-offer`/`rtc-answer`/`rtc-ice {to}` (WebRTC-Rendezvous) · Lobby
-  `lobby-publish {label}` / `lobby-unpublish` / `lobby-list` · `stats`.
+  `lobby-publish {label}` / `lobby-unpublish` / `lobby-list` · `stats` ·
+  `world-presence {worldId}` (Φ4 — regionale Kopf-Zahlen einer Welt; nur dem Anfrager zurück).
 - **Broker → Client:** `welcome {peers[], lanAddresses[]}` · `peer-join {peerId}` ·
   `peer-leave {peerId}` · die gestempelten Relays (Original-Felder + `peerId`) ·
-  `lobby-rooms {rooms[{room,label,peers}]}` · `stats {rooms, peers}`.
+  `lobby-rooms {rooms[{room,label,peers}]}` · `stats {rooms, peers}` ·
+  `world-presence {worldId, regions[{region, peers}]}` (Φ4 — region="" für den Basis-Raum, "rRX_RZ" für eine Bubble).
 - **Versions-Regel:** §4 gilt wörtlich — neue Typen sind additiv (minor); ein
   Broker MUST unbekannte Typen still verwerfen; ein Client MUST unbekannte
   Antwort-Typen ignorieren. Felder bestehender Typen werden NIE umgedeutet.

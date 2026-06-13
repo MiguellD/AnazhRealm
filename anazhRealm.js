@@ -688,6 +688,20 @@ class AnazhRealm {
                 // W7 Phase 4 — Public-Lobby. published: mein Raum ist
                 // browsbar; rooms: die zuletzt geholte Lobby-Liste.
                 lobby: { published: false, label: "", rooms: [] },
+                // Φ4 (V18.189) — Anwesenheits-Cache. presence: Map<worldId,
+                // {fetchedAt, regions: [{region, peers}]}>, die zuletzt
+                // gepollten regionalen Köpfe einer Welt. Privatheit als
+                // Default: nichts wird ohne explizites requestWorldPresence
+                // angefordert; opt-in pro Welt-Besuch.
+                presence: new Map(),
+                // Φ5 (V18.189) — MITTRAGEN-Schicht. pinnedWorlds: Map<worldId,
+                // {snapshot, hash, signedAt, pinnedAt, label, authorPubKey}>.
+                // Eine besuchte Welt kann opt-in „getragen" werden — der lokale
+                // Peer hält ihre signierte Welt-Substanz, serviert sie bei
+                // host-abwesenden Joins. Replikation = sichtbare Unsterblichkeit.
+                // Persistiert über pinnedManifest in localStorage (global, nicht
+                // pro Welt — eine Welt zu tragen ist eine Spieler-Geste).
+                pinnedWorlds: new Map(),
                 // Kreatur-Sicht-Sync — remoteCreatures: <peerId>:<netId> →
                 // {mesh, …}, die Kreaturen der Mitspieler als Sicht-Schicht.
                 remoteCreatures: new Map(),
@@ -762,6 +776,15 @@ class AnazhRealm {
                 //         sig, signedAt }. Reist must-ignore-konform — alte
                 //         Builds ignorieren das Feld unfallfrei.
                 worldAddress: null,
+                // Φ3 (V18.189) — das REGIONS-ARCHIPEL. Default OFF — eine
+                // Welt = ein Raum (das heutige Verhalten, bit-identisch). Wenn
+                // regionsActive=true → der Mesh-Raum wird `worldId:regionKey`,
+                // die Welt wird räumlich in Bubbles geteilt (REGION_CHUNKS ×
+                // 43.2 m = 345.6 m Kante). Spieler-Wechsel über Region-Grenze
+                // → leave alte Bubble, join neue (Hysterese gegen Flacker).
+                // R6-Selbst-Erweiterung-Lehre: opt-in macht die Sprosse safe
+                // (alte Welten bleiben WORTGLEICH dort wo sie sind).
+                regionsActive: false,
             },
             // Welle 1 D — Welt-Journal. Geordnete Liste von Erinnerungen
             // (Genesis, erstes Wetter, erste Kreatur, hochfitness Programme,
@@ -5627,16 +5650,34 @@ class AnazhRealm {
     initP2PSync(roomId, opts = {}) {
         const p2p = this.state.p2p;
         if (p2p.ws) this.shutdownP2PSync();
+        // Φ5 (V18.189) — beim ersten P2P-Init die getragenen Welten laden
+        // (idempotent — _loadPinnedManifest setzt nur die Map einmal pro
+        // Session; ein Reload + Re-Boot bekommt sie wieder).
+        if (!this._pinnedLoaded) {
+            this._pinnedLoaded = true;
+            try {
+                this._loadPinnedManifest();
+            } catch {
+                /* defensive */
+            }
+        }
         const url = (opts.url || p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL).trim();
         // Ring 11 V2.1: Raum-Auflösung — explizites Argument > localStorage-
         // Override > aktive worldId. Leer-String im Override gilt als
         // „nicht gesetzt" → Fallback auf worldId.
+        // Φ3 (V18.189): bei aktivem Regions-Archipel → der Default-Raum ist
+        // `worldId:currentRegionKey` (eine Bubble pro Region). Ein explizites
+        // Argument oder ein Override überstimmen das immer (der Übergangs-
+        // Handler setzt den Override explizit, der Direkt-Join eines fremden
+        // Welt-Tors auch).
         const explicitOverride = (p2p.roomOverride || "").trim();
+        const wm = this.state.worldMeta;
+        const regionalDefault =
+            wm && wm.regionsActive === true && wm.worldId
+                ? this._regionRoomId(wm.worldId, wm.currentRegionKey || this._currentRegionKey() || "r0_0")
+                : null;
         const room =
-            (roomId && String(roomId).trim()) ||
-            explicitOverride ||
-            (this.state.worldMeta && this.state.worldMeta.worldId) ||
-            null;
+            (roomId && String(roomId).trim()) || explicitOverride || regionalDefault || (wm && wm.worldId) || null;
         if (!room) {
             p2p.lastError = "Keine Raum-ID — Welt nicht initialisiert?";
             this.log("P2P-Init ohne Welt-ID abgewiesen", "WARN");
@@ -7001,6 +7042,46 @@ class AnazhRealm {
         if (typeof this._renderLobbyUI === "function") this._renderLobbyUI();
     }
 
+    // Φ4 (V18.189) — die Anwesenheits-Antwort vom Broker. Aktualisiert den
+    // presence-Cache; das UI (Welt-Karte) liest ihn beim nächsten Render.
+    // Nichts wird automatisch broadcastet — der Aufrufer (requestWorldPresence)
+    // hat explizit gefragt (Privatheits-Default).
+    _p2pMsgWorldPresence(msg, p2p) {
+        const worldId = typeof msg.worldId === "string" ? msg.worldId : "";
+        if (!worldId) return;
+        const regions = Array.isArray(msg.regions)
+            ? msg.regions
+                  .filter((r) => r && typeof r.region === "string" && typeof r.peers === "number")
+                  .map((r) => ({ region: r.region, peers: Math.max(0, Math.floor(r.peers)) }))
+            : [];
+        p2p.presence.set(worldId, { fetchedAt: Date.now(), regions });
+        if (typeof this._uiDirty === "function") this._uiDirty("bibliothek");
+    }
+
+    // Φ4 — die ANFRAGE: regionale Köpfe einer bestimmten Welt vom Broker
+    // holen. Opt-in pro Welt — keine automatischen Polls. Liefert true wenn
+    // die Anfrage rausging, false wenn p2p nicht verbunden.
+    requestWorldPresence(worldId) {
+        const w = String(worldId || "").trim();
+        if (!w) return false;
+        const p2p = this.state.p2p;
+        if (!p2p || !p2p.enabled || !p2p.connected) return false;
+        this._p2pSignal({ type: "world-presence", worldId: w });
+        return true;
+    }
+
+    // Φ4 — die LESE-API für UI/Tests: was wissen wir über die Anwesenheit
+    // in dieser Welt? Liefert {regions: [{region, peers}], totalPeers,
+    // fetchedAt} oder null wenn noch nie gepollt.
+    worldPresence(worldId) {
+        const p2p = this.state.p2p;
+        if (!p2p || !p2p.presence) return null;
+        const entry = p2p.presence.get(String(worldId || ""));
+        if (!entry) return null;
+        const total = entry.regions.reduce((s, r) => s + r.peers, 0);
+        return { regions: entry.regions.slice(), totalPeers: total, fetchedAt: entry.fetchedAt };
+    }
+
     // G8 R1 (Robustheits-Bogen, M2-Dämpfung) — das EINE per-Peer-Raten-Tor
     // (das _cpRate-Muster verallgemeinert, V9.82-Verdichtung: eine Quelle, viele
     // Leser). Deckelt die Nachrichten je Sekunde JE PEER JE Kanal (`bucket`).
@@ -7250,9 +7331,19 @@ class AnazhRealm {
         // Nur Hosts antworten — Guests haben selbst eine Kopie, sollen
         // nicht mehrere snapshots schicken. Solo-Welten sind sowieso
         // nicht im selben Raum.
-        if (p2p.role !== "host") return;
         const requesterId = msg.peerId;
         if (typeof requesterId !== "string" || requesterId === p2p.peerId) return;
+        if (p2p.role !== "host") {
+            // Φ5 (V18.189) — DAS MITTRAGEN: ein NICHT-Host kann antworten,
+            // wenn er die angefragte Welt gepinnt hat. Das deckt den Fall
+            // „Host weg, Mitträger trägt". Eine kurze Verzögerung (1-2s)
+            // wäre ehrlicher (dem Host Vorrang lassen), aber dem Joiner
+            // wäre damit auch schlecht geholfen — der Snapshot ist
+            // hash-signiert, der Joiner kann VIELE Antworten korrelieren
+            // (er nimmt die erste valide, wirft den Rest weg).
+            this._p2pMaybeServeAsCarrier(requesterId, msg);
+            return;
+        }
         // Φ2 (V18.188) — Hausrecht-Sieb VOR dem Snapshot. Ein gebannter Peer
         // bekommt KEINE Welt. Wir kennen seine peerId direkt; sein vibePass
         // (falls schon gestempelt + verifiziert) hängt im p2p.peers-Entry
@@ -30573,6 +30664,335 @@ class AnazhRealm {
             }
         }
         return out;
+    }
+
+    // ====================================================================
+    // Φ3 (V18.189) — DAS REGIONS-ARCHIPEL: die Welt-Mathematik der Bubbles.
+    // Reine Funktionen + State-Tracking; der ECHTE Mesh-Switch (V2) baut auf
+    // diesen Helpern. Default OFF (worldMeta.regionsActive=false) → bit-
+    // identisches Verhalten zu V18.188 (eine Welt = ein Raum). Aktiviert →
+    // jede Region ist eine Bubble (`roomId = worldId:regionKey`).
+    // ====================================================================
+
+    // Φ3 — die EINE Mathe: (x,z) → "rRX_RZ". Die Welt-Koordinate (x,z) liegt
+    // in der Region {RX, RZ} mit RX = floor(x / REGION_SPAN_M). Negative
+    // Welten haben negative Indizes — symmetrisch um den Ursprung. Die Form
+    // "r<rx>_<rz>" ist kollisionsfrei mit der worldId-Form (uuid-fragmente).
+    _regionKeyForPos(x, z) {
+        const span = AnazhRealm.REGION_SPAN_M;
+        const rx = Math.floor(Number(x) / span);
+        const rz = Math.floor(Number(z) / span);
+        return `r${rx}_${rz}`;
+    }
+
+    // Φ3 — Umkehrung: aus "rRX_RZ" die {minX, maxX, minZ, maxZ}-Box. Streng
+    // gültig (Form-Check); ein Müll-Key → null (must-ignore am Leser).
+    _regionBoundsFromKey(key) {
+        const m = /^r(-?\d+)_(-?\d+)$/.exec(String(key || ""));
+        if (!m) return null;
+        const rx = Number(m[1]);
+        const rz = Number(m[2]);
+        if (!Number.isFinite(rx) || !Number.isFinite(rz)) return null;
+        const span = AnazhRealm.REGION_SPAN_M;
+        return {
+            rx,
+            rz,
+            minX: rx * span,
+            maxX: (rx + 1) * span,
+            minZ: rz * span,
+            maxZ: (rz + 1) * span,
+            centerX: (rx + 0.5) * span,
+            centerZ: (rz + 0.5) * span,
+        };
+    }
+
+    // Φ3 — der Raum-Name am Mesh-Broker. Format: `worldId:regionKey`. Eine
+    // Welt OHNE aktive Regionen behält den klassischen `worldId`-Raum
+    // (regionsActive=false → liefert NULL als Region-Suffix; der join-Pfad
+    // nutzt dann nur worldId). Eine aktive Welt mit Sonder-Suffix kann
+    // sich von einem Test-Mesh nicht trennen — die Bubble ist die
+    // souveräne Einheit.
+    _regionRoomId(worldId, regionKey) {
+        const w = String(worldId || "").trim();
+        if (!w) return null;
+        const k = String(regionKey || "").trim();
+        if (!k || !/^r-?\d+_-?\d+$/.test(k)) return w; // Fallback: kein Regions-Suffix
+        return `${w}:${k}`;
+    }
+
+    // Φ3 — die LIVE Region des Spielers. Liest playerMesh.position; gibt
+    // NULL, wenn kein Spieler-Mesh existiert (Boot-Phase).
+    _currentRegionKey() {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return null;
+        return this._regionKeyForPos(pm.x, pm.z);
+    }
+
+    // Φ3 — die ECHTE Test-Geste: ist die Region aktiv? Eine Welt mit
+    // regionsActive=true UND einer plausiblen aktuellen Region. Solo-Welten
+    // / nicht-bevölkerte Regionen behalten heutige Mesh-Semantik.
+    isRegionsActive() {
+        return !!(this.state.worldMeta && this.state.worldMeta.regionsActive === true);
+    }
+
+    // Φ3 — die SOUVERÄNE Geste: Regions-Archipel an/aus für die aktive Welt.
+    // Strukturell R2 (kein DSL-Op). Aktivieren setzt den Initial-Region-Key
+    // an die Spieler-Position; Deaktivieren räumt das Tracking. Der Mesh
+    // wird NICHT automatisch umgesteckt — ein Reload oder _regionMaybeJoin
+    // ruft den neuen Raum (R6-Sanftheit: explizite Wahl, keine Überraschung).
+    setRegionsActive(active) {
+        if (!this.state.worldMeta) return { ok: false, reason: "no_world" };
+        const wantOn = active === true;
+        this.state.worldMeta.regionsActive = wantOn;
+        if (wantOn) {
+            this.state.worldMeta.currentRegionKey = this._currentRegionKey() || "r0_0";
+        } else {
+            delete this.state.worldMeta.currentRegionKey;
+        }
+        this.saveState();
+        return { ok: true, regionsActive: wantOn, currentRegionKey: this.state.worldMeta.currentRegionKey || null };
+    }
+
+    // Φ3 V1 — der ECHTE Mesh-Switch beim Region-Übergang. Wird vom
+    // _gameLoopTick-Region-Tick gerufen, wenn die Hysterese sagt „der
+    // Spieler ist in einer neuen Region tief genug drin". Wir leeren den
+    // alten Mesh-Raum + joinen den neuen (`worldId:newKey`). Spieler-
+    // Inventar/Stats/Reittier bleiben LOKAL (die Welt ist dieselbe — wir
+    // wechseln nur die Anwesenheits-Bubble; KEIN world-snapshot, KEIN
+    // Restore). Aktive Mesh-Peers gehen verloren (sie sind in der alten
+    // Bubble, der Lade-Nebel V18.164 deckt die Naht — kein Sichtkegel-Riss
+    // bei REGION_CHUNKS=8 ≥ ringRadius). Idempotent: ohne aktive P2P-
+    // Verbindung ist es ein no-op (kein Wurf). Defensiv: ohne worldId
+    // → kein Wurf, kein Versuch (Boot-Phase, alte Welt-Form).
+    _p2pRegionHandoff(oldKey, newKey) {
+        const p2p = this.state.p2p;
+        const wm = this.state.worldMeta;
+        if (!p2p || !wm || !wm.worldId) return { ok: false, reason: "not_ready" };
+        const newRoomId = this._regionRoomId(wm.worldId, newKey);
+        if (!newRoomId) return { ok: false, reason: "no_room_id" };
+        // Wenn P2P nicht enabled — wir aktualisieren nur den Override (für
+        // den nächsten enable-Akt), kein WS-Tanz.
+        const wasConnected = p2p.enabled && (p2p.connected || p2p.ws);
+        p2p.roomOverride = newRoomId;
+        try {
+            localStorage.setItem("anazh.p2p.room", newRoomId);
+        } catch {
+            /* defensive — localStorage darf vollgelaufen sein */
+        }
+        // Logge IMMER (der Region-Wechsel ist eine Welt-Wahrheit, auch ohne Mesh).
+        this.log(
+            `Φ3 Region-Übergang: ${oldKey || "?"} → ${newKey} (Bubble ${newRoomId})${wasConnected ? "" : " · ohne Mesh"}`,
+            "INFO"
+        );
+        if (wasConnected && typeof this.initP2PSync === "function") {
+            // Sauberer Re-Join: shutdown rief initP2PSync intern, der
+            // signaling-server entfernt den alten peer aus dem alten Raum
+            // (peer-leave-Broadcast), beim Join im neuen Raum bekommen wir
+            // welcome mit den dortigen Peers.
+            try {
+                this.initP2PSync(newRoomId, { url: p2p.url });
+            } catch (err) {
+                this.log(`Φ3 Region-Handoff WS-Fehler: ${err.message}`, "WARN");
+                return { ok: false, reason: "ws_throw" };
+            }
+        }
+        return { ok: true, oldKey: oldKey || null, newKey, room: newRoomId, withMesh: !!wasConnected };
+    }
+
+    // Φ3 — Hysterese-bewachte Region-Übergangs-Detection. Wird vom
+    // _gameLoopTick gerufen (1 Hz reicht — die Spieler-Geschwindigkeit
+    // erlaubt das, ~10 m/s × 1 s = 10 m << 345.6 m Region). Liefert
+    // {crossed, oldKey, newKey} wenn ein Übergang gestartet ist — sonst
+    // null. Die HYSTERESE: ein Wechsel zählt erst, wenn der Spieler die
+    // NEUE Region um ≥ HYSTERESIS_M tief betreten hat (Bandbreite gegen
+    // Flacker bei Bauwerken auf der Grenze).
+    _regionTickDetectCrossing() {
+        if (!this.isRegionsActive()) return null;
+        const wm = this.state.worldMeta;
+        const currentKey = this._currentRegionKey();
+        if (!currentKey) return null;
+        const lastKey = wm.currentRegionKey || currentKey;
+        if (currentKey === lastKey) return null;
+        // Hysterese: der Spieler muss in der NEUEN Region eine Strecke ≥
+        // HYSTERESIS_M zur Grenze haben — sonst zählen wir den Übergang nicht.
+        const bounds = this._regionBoundsFromKey(currentKey);
+        if (!bounds) return null;
+        const pm = this.state.playerMesh.position;
+        const distToBorder = Math.min(
+            Math.abs(pm.x - bounds.minX),
+            Math.abs(pm.x - bounds.maxX),
+            Math.abs(pm.z - bounds.minZ),
+            Math.abs(pm.z - bounds.maxZ)
+        );
+        if (distToBorder < AnazhRealm.REGION_HYSTERESIS_M) return null;
+        // ECHTER Übergang — wir kommitten den neuen Key + geben ihn aus.
+        wm.currentRegionKey = currentKey;
+        this.saveState();
+        return { crossed: true, oldKey: lastKey, newKey: currentKey };
+    }
+
+    // ====================================================================
+    // Φ5 (V18.189) — DAS MITTRAGEN: das Torrent-Modell für Welten.
+    // Ein Spieler-Peer kann eine BESUCHTE signierte Welt opt-in „tragen"
+    // (lokaler Speicher des letzten Snapshots + Hash). Host abwesend? Ein
+    // Mitträger antwortet auf den world-request. Der Empfänger lädt durch
+    // den EINEN Taille-Eingang (_admitForeignArtifact für Baupläne; der
+    // Snapshot selbst läuft durch _importGuestWorld) — niemand muss dem
+    // Mitträger GLAUBEN, nur seiner Signaturkette. Replikation = sichtbare
+    // Unsterblichkeit: je beliebter, desto unsterblicher (als Ledger-Fakt).
+    // ====================================================================
+
+    // Φ5 — den letzten Snapshot der AKTIVEN Welt lokal pinnen. Strukturell
+    // R2 (kein DSL-Op). Berechnet den Hash + speichert; ein bestehender Pin
+    // wird aktualisiert. Persistiert über _savePinnedManifest in
+    // localStorage ("anazh.pinnedManifest" — global, nicht pro Welt).
+    // Größen-Wand: ein Snapshot über 256 KiB JSON fällt (Φ0 misst typisch
+    // 20-50 KiB → 256 KiB ist gross genug für jede plausible Welt + ein
+    // bounded Speicher-Verbrauch).
+    pinCurrentWorld(opts) {
+        const wm = this.state.worldMeta;
+        if (!wm || !wm.worldId) return { ok: false, reason: "no_world" };
+        const worldId = wm.worldId;
+        const snapshot = this.buildStateSnapshot();
+        const json = JSON.stringify(snapshot);
+        if (json.length > 256 * 1024) {
+            return { ok: false, reason: "snapshot_too_large", bytes: json.length };
+        }
+        const hash = this._fastHash(json);
+        const entry = {
+            worldId,
+            snapshot,
+            hash,
+            label: wm.slug || worldId.slice(0, 16),
+            authorPubKey: (this.state.vibePass && this.state.vibePass.publicKeyHex) || null,
+            signedAt: wm.worldAddress && wm.worldAddress.signedAt ? wm.worldAddress.signedAt : Date.now(),
+            pinnedAt: Date.now(),
+        };
+        this.state.p2p.pinnedWorlds.set(worldId, entry);
+        this._savePinnedManifest();
+        if (!opts || !opts.silent) {
+            this.log(`Φ5 Welt „${entry.label}" mitgetragen (Snapshot ${(json.length / 1024).toFixed(1)} KiB)`, "INFO");
+        }
+        return { ok: true, worldId, hash, bytes: json.length };
+    }
+
+    // Φ5 — eine getragene Welt loslassen. Idempotent. Persistiert.
+    unpinWorld(worldId) {
+        const w = String(worldId || "").trim();
+        if (!w) return { ok: false, reason: "no_world" };
+        const had = this.state.p2p.pinnedWorlds.has(w);
+        this.state.p2p.pinnedWorlds.delete(w);
+        this._savePinnedManifest();
+        return { ok: true, worldId: w, removed: had };
+    }
+
+    // Φ5 — die LESE-API: welche Welten trage ich? Für UI + Tests + Antikörper.
+    listPinnedWorlds() {
+        const out = [];
+        if (!this.state.p2p || !this.state.p2p.pinnedWorlds) return out;
+        for (const [worldId, e] of this.state.p2p.pinnedWorlds) {
+            out.push({
+                worldId,
+                hash: e.hash,
+                label: e.label,
+                authorPubKey: e.authorPubKey || null,
+                pinnedAt: e.pinnedAt,
+                bytes: JSON.stringify(e.snapshot).length,
+            });
+        }
+        return out;
+    }
+
+    // Φ5 — das EINE MANIFEST in localStorage: NUR die Schlüssel + Meta,
+    // nicht die Snapshots selbst (das wäre ein Hauptspeicher-Riss). Die
+    // Snapshots leben in eigenen Keys "anazh.pinnedSnapshot.<worldId>".
+    // Bei jedem Pin schreiben wir BEIDE; beim Laden bauen wir die Map.
+    _savePinnedManifest() {
+        try {
+            const list = [];
+            for (const [worldId, e] of this.state.p2p.pinnedWorlds) {
+                list.push({
+                    worldId,
+                    hash: e.hash,
+                    label: e.label,
+                    authorPubKey: e.authorPubKey || null,
+                    signedAt: e.signedAt,
+                    pinnedAt: e.pinnedAt,
+                });
+                localStorage.setItem(`anazh.pinnedSnapshot.${worldId}`, JSON.stringify(e.snapshot));
+            }
+            localStorage.setItem("anazh.pinnedManifest", JSON.stringify(list));
+        } catch (err) {
+            this.log(`Φ5 Pin-Speichern fehlgeschlagen: ${err.message}`, "WARN");
+        }
+    }
+
+    // Φ5 — beim Boot die getragenen Welten zurückladen.
+    _loadPinnedManifest() {
+        if (!this.state.p2p) return;
+        try {
+            const raw = localStorage.getItem("anazh.pinnedManifest");
+            if (!raw) return;
+            const list = JSON.parse(raw);
+            if (!Array.isArray(list)) return;
+            for (const m of list) {
+                if (!m || typeof m.worldId !== "string") continue;
+                const snapRaw = localStorage.getItem(`anazh.pinnedSnapshot.${m.worldId}`);
+                if (!snapRaw) continue;
+                let snapshot;
+                try {
+                    snapshot = JSON.parse(snapRaw);
+                } catch {
+                    continue;
+                }
+                this.state.p2p.pinnedWorlds.set(m.worldId, {
+                    worldId: m.worldId,
+                    snapshot,
+                    hash: m.hash || "",
+                    label: m.label || m.worldId.slice(0, 16),
+                    authorPubKey: m.authorPubKey || null,
+                    signedAt: m.signedAt || 0,
+                    pinnedAt: m.pinnedAt || Date.now(),
+                });
+            }
+            const n = this.state.p2p.pinnedWorlds.size;
+            if (n > 0) this.log(`Φ5: ${n} mitgetragene Welt(en) geladen`, "INFO");
+        } catch (err) {
+            this.log(`Φ5 Pin-Laden fehlgeschlagen: ${err.message}`, "WARN");
+        }
+    }
+
+    // Φ5 — die TRÄGER-Antwort: ein world-request kommt, der Host antwortet
+    // nicht (das ist die Standard-_p2pMsgWorldRequest-Wand: nur p2p.role===
+    // "host" antwortet). Ein MITTRÄGER mit dieser Welt im Pin antwortet,
+    // wenn er den Snapshot hat. Wird vom _p2pMsgWorldRequest gerufen
+    // NACHDEM die Host-Wand fiel. Gibt true, wenn wir geantwortet haben.
+    _p2pMaybeServeAsCarrier(requesterId, msg) {
+        if (!this.state.p2p || !this.state.p2p.pinnedWorlds) return false;
+        // Welche Welt fragt der Joiner? Der Broker-Raum ist worldId oder
+        // worldId:regionKey → wir extrahieren den worldId-Teil.
+        const room = String(this.state.p2p.room || "").split(":")[0];
+        const wanted = (msg && typeof msg.worldId === "string" && msg.worldId) || room;
+        if (!wanted) return false;
+        const pin = this.state.p2p.pinnedWorlds.get(wanted);
+        if (!pin) return false;
+        try {
+            this._p2pSignal({
+                type: "world-snapshot",
+                to: requesterId,
+                state: pin.snapshot,
+                carrier: true,
+                hash: pin.hash,
+            });
+            this.log(
+                `Φ5 als Mitträger geantwortet: Welt „${pin.label}" an ${requesterId.slice(0, 8)}… (Hash ${pin.hash.slice(0, 8)}…)`,
+                "INFO"
+            );
+            return true;
+        } catch (err) {
+            this.log(`Φ5 Carrier-Send fehlgeschlagen: ${err.message}`, "WARN");
+            return false;
+        }
     }
 
     // Φ1 — eine Welt-Adresse in ein PORTAL einlegen. Strukturell R2: KEIN
@@ -60696,6 +61116,19 @@ class AnazhRealm {
             // läuft; die Welt ist hier zum ersten Mal regel-getrieben.
             this._tickWorldRules(currentTime);
 
+            // ### Region-Übergangs-Detection (Φ3, V18.189) ###
+            // 1×/s reicht — der Spieler überquert eine 345.6 m-Region nicht
+            // im selben Frame. Default OFF (regionsActive=false → no-op).
+            // Ein detektierter Übergang ruft _p2pRegionHandoff(oldKey,newKey)
+            // (der ECHTE Mesh-Switch — V2 hängt sich hier ein).
+            if (!this._regionTickLast || currentTime - this._regionTickLast >= 1000) {
+                this._regionTickLast = currentTime;
+                const crossing = this._regionTickDetectCrossing();
+                if (crossing && typeof this._p2pRegionHandoff === "function") {
+                    this._p2pRegionHandoff(crossing.oldKey, crossing.newKey);
+                }
+            }
+
             // ### Player-Emotionen (Ring 3) ###
             this.updatePlayerEmotions(currentTime);
 
@@ -62182,7 +62615,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.188.0";
+AnazhRealm.VERSION = "18.189.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -63859,6 +64292,15 @@ AnazhRealm.WORLD_GUEST_RIGHTS_STAGES = Object.freeze(["frieden", "pfad", "mitsch
 // für Sig/Hash). Reihenfolge ist FROZEN; weitere Felder wandern in die unsignierte
 // Hülle (must-preserve), nicht in den signierten Kern.
 AnazhRealm.WORLD_ADDRESS_SIGNED_FIELDS = Object.freeze(["worldId", "roomId", "broker", "label"]);
+// Φ3 (V18.189) — die FROZEN-Geometrie des Regions-Archipels. REGION_CHUNKS=8
+// kommt aus der Φ0-Last-Sonde-Messung (Snapshot 4.1 KiB brotli fits in 200ms
+// @1MB/s → 8×8 ≈ 346 m Kante wirtschaftlich). REGION_CHUNKS ≥13 wäre die
+// Alternative für Welten mit Sichtkante > Region (Plan §6-Korrektur 2);
+// die HYSTERESE (10 m) verhindert Flacker beim Grenz-Übertritt.
+AnazhRealm.REGION_CHUNKS = 8;
+// Voxel-Chunk-Span ist FROZEN (43.2 m, _voxelChunkConfig); Region = 8×43.2 = 345.6 m.
+AnazhRealm.REGION_SPAN_M = 345.6;
+AnazhRealm.REGION_HYSTERESIS_M = 10;
 // W12 P3-Härtung — der Portal-Rückkanal (_portalReceiveEvent: Sub-Welt →
 // Heimat-Journal) deckelt die Ereignisse je Sekunde. Eine ungeprüfte vendorte
 // Welt (V8.70+) könnte sonst pro Frame ein Ereignis posten und das 200-
@@ -63936,6 +64378,7 @@ AnazhRealm.P2P_MESSAGE_HANDLERS = Object.freeze({
     "peer-join": "_p2pMsgPeerJoin",
     "peer-leave": "_p2pMsgPeerLeave",
     "lobby-rooms": "_p2pMsgLobbyRooms",
+    "world-presence": "_p2pMsgWorldPresence", // Φ4 — regionale Köpfe einer Welt
     "creature-pos": "_p2pMsgCreaturePos",
     "companion-say": "_p2pMsgCompanionSay",
     "subworld-net": "_p2pMsgSubworldNet",

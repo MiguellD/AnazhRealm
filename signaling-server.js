@@ -174,6 +174,30 @@ function handleClientMessage(ws, raw) {
         sendTo(ws, { type: "stats", rooms: rooms.size, peers });
         return;
     }
+    // Φ4 (V18.189) — Anwesenheits-Schicht: regional aufgelöste Köpfe einer
+    // SPEZIFISCHEN Welt. Antwortet nur dem Anfrager (kein Broadcast), liefert
+    // [{room, peers}]-Tupel für alle Räume mit Präfix `worldId:` UND den
+    // Basis-Raum (worldId allein, Solo-Welten ohne Φ3). Keine Identitäten,
+    // nur Zahlen — die Räume bleiben privat. Anti-Scope (Plan §3): KEIN
+    // Empfehlungs-Feed; das ist gezieltes Polling pro Welt.
+    if (msg.type === "world-presence") {
+        const worldId = String(msg.worldId || "").slice(0, 64);
+        if (!worldId) {
+            sendTo(ws, { type: "world-presence", worldId: "", regions: [] });
+            return;
+        }
+        const prefix = worldId + ":";
+        const regions = [];
+        for (const [roomId, set] of rooms) {
+            if (roomId !== worldId && !roomId.startsWith(prefix)) continue;
+            if (set.size <= 0) continue;
+            // Region-Suffix extrahieren ("" für den Basis-Raum, "rRX_RZ" sonst)
+            const region = roomId === worldId ? "" : roomId.slice(prefix.length);
+            regions.push({ region, peers: set.size });
+        }
+        sendTo(ws, { type: "world-presence", worldId, regions });
+        return;
+    }
     if (msg.type === "join") {
         const room = String(msg.room || "").slice(0, 64);
         const peerId = String(msg.peerId || "").slice(0, 64);

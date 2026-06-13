@@ -145,6 +145,18 @@ async function run() {
     wsA.send(JSON.stringify({ type: "stats" }));
     await sleep(150);
 
+    // Φ4 (V18.189) — Anwesenheits-Schicht: ein dritter WS joint die
+    // Bubble `test-room:r0_0` (eine Region-Bubble derselben Welt), dann
+    // fragt A world-presence: der Broker liefert {regions: [{region:"",
+    // peers:2}, {region:"r0_0", peers:1}]} (oder gleichwertige Reihenfolge).
+    const wsC = new WebSocket(URL);
+    wsC.addEventListener("message", (e) => (events.c = (events.c || []).concat(JSON.parse(e.data))));
+    await new Promise((r) => wsC.addEventListener("open", r));
+    wsC.send(JSON.stringify({ type: "join", room: "test-room:r0_0", peerId: "peerC" }));
+    await sleep(120);
+    wsA.send(JSON.stringify({ type: "world-presence", worldId: "test-room" }));
+    await sleep(180);
+
     console.log("\n=== A received ===");
     for (const e of events.a) console.log(JSON.stringify(e));
     console.log("\n=== B received ===");
@@ -320,6 +332,24 @@ async function run() {
     console.log("W17C A bekommt eigene portal-invite NICHT zurück:", aNotEchoedOwnPortalInvite);
     console.log("W17C Server verwirft portal-invite ohne worldId:", bRejectedBadPortalInvite);
 
+    // Φ4 — Anwesenheits-Schicht: A's world-presence-Antwort enthält BEIDE
+    // Räume der Welt „test-room" (Basis + Bubble r0_0) mit korrekten peers.
+    const presenceMsg = events.a.find((e) => e.type === "world-presence" && e.worldId === "test-room");
+    const regionsByName = {};
+    if (presenceMsg && Array.isArray(presenceMsg.regions)) {
+        for (const r of presenceMsg.regions) regionsByName[r.region] = r.peers;
+    }
+    const phi4PresenceBase = regionsByName[""] === 2; // peerA + peerB in test-room
+    const phi4PresenceBubble = regionsByName["r0_0"] === 1; // peerC in test-room:r0_0
+    const phi4OnlyAGotIt = !events.b.some((e) => e.type === "world-presence");
+    console.log("Φ4 world-presence: A bekommt {region:'',peers:2}:", phi4PresenceBase);
+    console.log("Φ4 world-presence: A bekommt {region:'r0_0',peers:1}:", phi4PresenceBubble);
+    console.log("Φ4 world-presence: NUR A bekommt die Antwort (kein Broadcast):", phi4OnlyAGotIt);
+
+    // C disconnects
+    wsC.close();
+    await sleep(120);
+
     // B disconnects
     wsB.close();
     await sleep(200);
@@ -371,7 +401,10 @@ async function run() {
         aNotEchoedOwnPortalInvite &&
         bRejectedBadPortalInvite &&
         aGotStats &&
-        bNotStats;
+        bNotStats &&
+        phi4PresenceBase &&
+        phi4PresenceBubble &&
+        phi4OnlyAGotIt;
     server.kill();
     process.exit(allOk ? 0 : 1);
 }

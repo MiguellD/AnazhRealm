@@ -136,15 +136,18 @@ inventory quantities (§5), or persistent world ownership (`world-snapshot` is a
 pass-through).
 
 - **Client → broker:** `join {room, peerId}` (authenticates the socket; everything
-  before it except `stats` is dropped) · room broadcasts `pos {x,y,z,yaw}` ·
+  before it except `stats`/`world-presence` is dropped) · room broadcasts `pos {x,y,z,yaw}` ·
   `creature-pos {list ≤64}` · `dsl {program: array 1..256}` · `soul` · `aura` · `vibe` ·
   `companion-say` · `subworld-net` · `portal-invite` · `world-request`/`world-snapshot`
   (world pull, pass-through) · addressed `rtc-offer`/`rtc-answer`/`rtc-ice {to}` (WebRTC
   rendezvous) · lobby `lobby-publish {label}` / `lobby-unpublish` / `lobby-list` ·
-  `stats`.
+  `stats` · `world-presence {worldId}` (Φ4 — regional head-counts of a world; answer only
+  to the requester).
 - **Broker → client:** `welcome {peers[], lanAddresses[]}` · `peer-join {peerId}` ·
   `peer-leave {peerId}` · the stamped relays (original fields + `peerId`) ·
-  `lobby-rooms {rooms[{room,label,peers}]}` · `stats {rooms, peers}`.
+  `lobby-rooms {rooms[{room,label,peers}]}` · `stats {rooms, peers}` ·
+  `world-presence {worldId, regions[{region, peers}]}` (Φ4 — region="" for the base room,
+  "rRX_RZ" for a bubble).
 - **Version rule:** §4 applies literally — new types are additive (minor); a broker MUST
   silently discard unknown types; a client MUST ignore unknown response types. Fields of
   existing types are NEVER reinterpreted.

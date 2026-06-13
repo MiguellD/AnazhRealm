@@ -204,7 +204,38 @@ function percentile(sortedArr, p) {
         console.log(`  signiert komplett: ${addrStats.signedBytes} B (mit ed25519-sig + hülle)`);
         writeReport(report);
 
-        // ────────────────────────── D: Empfehlung Φ3 ──────────────────────────
+        // ─────────────────────── D: Φ3-Substanz-Lebens-Check ───────────────────────
+        // Die FROZEN-Konstanten + Region-Helper aus V18.189 stehen als
+        // Selbst-Beweis: ein Region-Trip ist eine Mathe + ein Mesh-Switch.
+        const phi3 = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const AR = window.AnazhRealm || r.constructor;
+            return {
+                hasConstants:
+                    typeof AR.REGION_CHUNKS === "number" &&
+                    typeof AR.REGION_SPAN_M === "number" &&
+                    typeof AR.REGION_HYSTERESIS_M === "number",
+                hasHelpers:
+                    typeof r._regionKeyForPos === "function" &&
+                    typeof r._regionBoundsFromKey === "function" &&
+                    typeof r._regionRoomId === "function" &&
+                    typeof r._p2pRegionHandoff === "function",
+                defaultOff: r.state.worldMeta && r.state.worldMeta.regionsActive === false,
+                regionChunks: AR.REGION_CHUNKS,
+                regionSpanM: AR.REGION_SPAN_M,
+                hysteresisM: AR.REGION_HYSTERESIS_M,
+            };
+        });
+        report.measurements.phi3 = phi3;
+        console.log("\nD — Φ3 Regions-Archipel (Substanz-Lebens-Check):");
+        console.log(
+            `  Konstanten REGION_CHUNKS=${phi3.regionChunks} · REGION_SPAN_M=${phi3.regionSpanM} · HYSTERESIS_M=${phi3.hysteresisM}`
+        );
+        console.log(
+            `  Mathe-Helper live: ${phi3.hasHelpers ? "✓" : "✗"} · Default OFF (R6-Sanftheit): ${phi3.defaultOff ? "✓" : "✗"}`
+        );
+
+        // ────────────────────── E: Empfehlung Φ3-Wahl ──────────────────────
         // Erst-Wurf-Heuristiken (Plan §2 Φ3 / §6-Korrektur 1+2):
         //   REGION_CHUNKS: 8×8 = 346 m Kante; bei Weltenring max ≥13 (~540m
         //   Sichtkante). Wir nehmen die kleinere Zahl, wenn die Snapshot-Last
@@ -221,8 +252,13 @@ function percentile(sortedArr, p) {
             MAX_PEERS_PER_BUBBLE_reason: "Lichtkegel-Default (Plan §0 Gesetz 1)",
             snapHandoffEstMs: +snapBudgetMs.toFixed(0),
             handoffEstNote: "bei 1 MB/s WebRTC-Bandbreite, brotli-komprimiert",
+            phi3Active: phi3.hasConstants && phi3.hasHelpers,
+            phi3ActiveNote:
+                phi3.hasConstants && phi3.hasHelpers
+                    ? "Φ3-Substanz GEBAUT (V18.189) — opt-in via setRegionsActive(true)"
+                    : "Φ3-Substanz fehlt",
         };
-        console.log("\nD — Empfehlung für Φ3-Konstanten:");
+        console.log("\nE — Empfehlung für Φ3-Konstanten:");
         console.log(
             `  REGION_CHUNKS = ${report.measurements.recommendation.REGION_CHUNKS}  (${report.measurements.recommendation.REGION_CHUNKS_reason})`
         );
@@ -232,6 +268,7 @@ function percentile(sortedArr, p) {
         console.log(
             `  geschätzter Snapshot-Handoff: ${report.measurements.recommendation.snapHandoffEstMs} ms ${report.measurements.recommendation.handoffEstNote}`
         );
+        console.log(`  Φ3-Substanz: ${report.measurements.recommendation.phi3ActiveNote}`);
 
         report.version = await page.evaluate(() => {
             const r = window.anazhRealm;

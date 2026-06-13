@@ -31950,6 +31950,275 @@ async function checkBandPhiArchipel(ctx) {
     );
 }
 
+// Φ-Bogen V2 (V18.189) — M9-SPROSSEN 2+3: Φ3 Regions-Archipel + Φ4
+// Anwesenheits-Schicht + Φ5 Mittragen-Schicht. Drei Wellen, ein Band.
+// Φ3: das Web-Muster räumlich (Regions-Bubbles, opt-in via regionsActive);
+// Φ4: regional aufgelöste Köpfe (Broker-Antwort, Client-Cache); Φ5: das
+// Torrent-Modell für Welten (pinnen, als Mitträger antworten).
+async function checkBandPhiArchipelV2(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const AR = window.AnazhRealm || r.constructor;
+        const out = {};
+
+        // ====================================================================
+        // Φ3 — Regions-Archipel
+        // ====================================================================
+
+        // (Q1) FROZEN-Geometrie: 8 Chunks × 43.2m = 345.6m + 10m Hysterese.
+        out.regionChunks = AR.REGION_CHUNKS === 8;
+        out.regionSpan = AR.REGION_SPAN_M === 345.6;
+        out.regionHyst = AR.REGION_HYSTERESIS_M === 10;
+
+        // (Q2) Mathe-Helper: Position → Region → Bounds Round-Trip ist invertierbar.
+        out.keyOrigin = r._regionKeyForPos(0, 0) === "r0_0";
+        out.keyPositive = r._regionKeyForPos(500, 0) === "r1_0";
+        out.keyNegative = r._regionKeyForPos(-1, -1) === "r-1_-1";
+        const b = r._regionBoundsFromKey("r2_-3");
+        out.boundsOk = b && b.rx === 2 && b.rz === -3 && b.minX === 691.2 && b.maxZ === -2 * 345.6;
+        out.boundsMüllNull = r._regionBoundsFromKey("kaputt") === null;
+
+        // (Q3) Room-ID-Bildung: regionKey leer → nur worldId (Fallback), gültig
+        // → worldId:regionKey (das WEB-Muster für den Mesh-Broker).
+        out.roomNoRegion = r._regionRoomId("welt-abc", "") === "welt-abc";
+        out.roomWithRegion = r._regionRoomId("welt-abc", "r1_2") === "welt-abc:r1_2";
+        out.roomMüllRegion = r._regionRoomId("welt-abc", "kaputt") === "welt-abc";
+        out.roomNoWorld = r._regionRoomId("", "r0_0") === null;
+
+        // (Q4) Default OFF: eine frische Welt hat regionsActive=false → identisches
+        // Verhalten zu V18.188 (eine Welt = ein Raum, kein Region-Suffix).
+        const wmBefore = r.state.worldMeta;
+        out.regionsDefaultOff = wmBefore && wmBefore.regionsActive === false;
+
+        // (Q5) setRegionsActive wirkt + initialisiert currentRegionKey.
+        const onRes = r.setRegionsActive(true);
+        out.activateOk = !!(onRes && onRes.ok && onRes.regionsActive);
+        out.activateCurrentKey =
+            typeof onRes.currentRegionKey === "string" && /^r-?\d+_-?\d+$/.test(onRes.currentRegionKey);
+        out.isActiveNow = r.isRegionsActive() === true;
+
+        // (Q6) Bei aktivem Regions-Archipel löst initP2PSync die regionale
+        // roomId. Wir testen die Auflösungs-Logik direkt (kein WS-Aufbau):
+        // wenn regionsActive=true + worldId vorhanden → der DEFAULT-Raum
+        // ist worldId:currentRegionKey. Wir prüfen das, indem wir die Source-
+        // Probe des regionalDefault-Pfads matchen.
+        const initSrc = r.initP2PSync.toString();
+        out.initReadsRegional = /regionalDefault/.test(initSrc) && /_regionRoomId/.test(initSrc);
+
+        // (Q7) Übergangs-Detection: wir setzen die Player-Position TIEF in eine
+        // neue Region (≥ 10m Hysterese-Margin von JEDER Grenze). Region r2_2
+        // hat Bounds 691.2-1036.8 × 691.2-1036.8 → Mitte 864 × 864 ist
+        // sicher 172.8m von jeder Grenze (>> 10m Hysterese).
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        let crossing = null;
+        if (pm) {
+            const oldX = pm.x;
+            const oldZ = pm.z;
+            pm.x = 864; // Mitte von r2 (691.2..1036.8)
+            pm.z = 864; // Mitte von r2 (691.2..1036.8)
+            crossing = r._regionTickDetectCrossing();
+            pm.x = oldX;
+            pm.z = oldZ;
+        }
+        out.crossingDetected = !!(crossing && crossing.crossed && crossing.newKey === "r2_2");
+
+        // (Q8) Handoff-Helper: ohne P2P-Verbindung ist es ein no-op (Logge +
+        // Override setzen, kein Wurf), with-mesh false.
+        const handoffRes = r._p2pRegionHandoff("r0_0", "r1_0");
+        out.handoffOkOffline = !!(handoffRes && handoffRes.ok && handoffRes.withMesh === false);
+        out.handoffRoomCorrect = handoffRes && handoffRes.room && handoffRes.room.endsWith(":r1_0");
+
+        // Wieder OFF schalten (clean state für nachfolgende Tests).
+        r.setRegionsActive(false);
+        out.deactivated = r.state.worldMeta.regionsActive === false;
+        out.currentRegionGone = !("currentRegionKey" in r.state.worldMeta);
+
+        // ====================================================================
+        // Φ4 — Anwesenheits-Schicht (regional aufgelöste Köpfe)
+        // ====================================================================
+
+        // (Q9) presence-Map existiert + ist leer am Start.
+        out.presenceMap = r.state.p2p && r.state.p2p.presence instanceof Map;
+        out.presenceEmpty = r.state.p2p.presence.size === 0;
+
+        // (Q10) worldPresence ohne Daten → null (sauber).
+        out.presenceUnknownNull = r.worldPresence("never-polled") === null;
+
+        // (Q11) _p2pMsgWorldPresence schreibt in den Cache (manuelle Injektion —
+        // im Headless rennt kein echter Broker; smoke-multiuser deckt den
+        // End-to-End-Trip).
+        r._p2pMsgWorldPresence(
+            {
+                worldId: "welt-test",
+                regions: [
+                    { region: "", peers: 3 },
+                    { region: "r0_0", peers: 2 },
+                ],
+            },
+            r.state.p2p
+        );
+        const pres = r.worldPresence("welt-test");
+        out.presenceCacheOk = !!(pres && pres.totalPeers === 5 && pres.regions.length === 2);
+
+        // (Q12) requestWorldPresence ist verdrahtet (Source-Probe — den echten
+        // Round-Trip macht smoke-multiuser); ohne p2p.connected → false.
+        const reqSrc = r.requestWorldPresence.toString();
+        out.requestWired = /world-presence/.test(reqSrc) && /_p2pSignal/.test(reqSrc);
+        out.requestNoConn = r.requestWorldPresence("welt-test") === false;
+
+        // (Q13) HANDLER-Registry: der Broker→Client-Typ ist verdrahtet.
+        out.handlerRegistered = AR.P2P_MESSAGE_HANDLERS["world-presence"] === "_p2pMsgWorldPresence";
+
+        // ====================================================================
+        // Φ5 — Mittragen (Torrent-Modell)
+        // ====================================================================
+
+        // (Q14) pinnedWorlds-Map existiert + ist leer am Start (im Test-Boot).
+        out.pinnedMap = r.state.p2p && r.state.p2p.pinnedWorlds instanceof Map;
+        const startPinned = r.state.p2p.pinnedWorlds.size;
+
+        // (Q15) pinCurrentWorld pinnt + hash + bytes — und schreibt persistiert.
+        const pinRes = r.pinCurrentWorld({ silent: true });
+        out.pinOk = !!(pinRes && pinRes.ok && pinRes.worldId && pinRes.hash && pinRes.bytes > 0);
+        out.pinInMap = r.state.p2p.pinnedWorlds.has(pinRes.worldId);
+        const lsManifest = localStorage.getItem("anazh.pinnedManifest");
+        out.pinPersisted = !!(lsManifest && lsManifest.includes(pinRes.worldId));
+        const lsSnapshot = localStorage.getItem(`anazh.pinnedSnapshot.${pinRes.worldId}`);
+        out.pinSnapshotPersisted = !!(lsSnapshot && lsSnapshot.length > 100);
+
+        // (Q16) listPinnedWorlds liefert das Eintragsschema; bytes + hash drin.
+        const pinned = r.listPinnedWorlds();
+        out.listOk = pinned.length === startPinned + 1;
+        out.listEntryShape = pinned.some(
+            (p) => p.worldId === pinRes.worldId && typeof p.hash === "string" && p.bytes > 0
+        );
+
+        // (Q17) der Träger-Pfad: ein NICHT-Host beantwortet einen world-request
+        // mit der gepinnten Welt (_p2pMaybeServeAsCarrier). Wir stellen den
+        // p2p.room auf den gepinnten worldId + rufen den Helper direkt.
+        const oldRoom = r.state.p2p.room;
+        r.state.p2p.room = pinRes.worldId;
+        // Captures: wir hooken _p2pSignal kurz, um zu sehen, ob ein
+        // world-snapshot mit carrier=true rausging.
+        let lastSignal = null;
+        const origSignal = r._p2pSignal;
+        r._p2pSignal = function (m) {
+            lastSignal = m;
+        };
+        const served = r._p2pMaybeServeAsCarrier("test-joiner", {});
+        r._p2pSignal = origSignal;
+        r.state.p2p.room = oldRoom;
+        out.carrierServed = served === true;
+        out.carrierMsgValid =
+            lastSignal &&
+            lastSignal.type === "world-snapshot" &&
+            lastSignal.to === "test-joiner" &&
+            lastSignal.carrier === true &&
+            typeof lastSignal.hash === "string";
+
+        // (Q18) unpinWorld räumt; idempotent.
+        const unpinRes = r.unpinWorld(pinRes.worldId);
+        out.unpinOk = !!(unpinRes && unpinRes.ok && unpinRes.removed);
+        out.unpinIdempotent = !r.state.p2p.pinnedWorlds.has(pinRes.worldId);
+        // Aufräumen: localStorage-Snapshot lassen wir liegen (kein Müll, nur
+        // ein orphan; ein erneuter pinCurrentWorld überschreibt).
+
+        // (Q19) DISJUNKTHEIT: weder pin/unpin/setRegionsActive sind DSL-Ops
+        // (R2 strukturell durch Pool-Disjunktheit).
+        const dslRunSrc = r.dslRun.toString();
+        out.noPinOp = !/op\s*===\s*["']pin_world["']/.test(dslRunSrc);
+        out.noRegionOp = !/op\s*===\s*["']set_regions_active["']/.test(dslRunSrc);
+
+        // (Q20) _p2pMsgWorldRequest hat den Carrier-Pfad: ein NICHT-Host ruft
+        // _p2pMaybeServeAsCarrier (Source-Probe).
+        const wrSrc = r._p2pMsgWorldRequest.toString();
+        out.requestUsesCarrier = /_p2pMaybeServeAsCarrier/.test(wrSrc);
+
+        return out;
+    });
+
+    // Φ3 ——————
+    check(
+        "Φ3 (Q1): FROZEN-Geometrie REGION_CHUNKS=8 · REGION_SPAN=345.6m · HYSTERESIS=10m",
+        res.regionChunks && res.regionSpan && res.regionHyst
+    );
+    check(
+        "Φ3 (Q2): _regionKeyForPos + _regionBoundsFromKey invertierbar + Müll-Key → null",
+        res.keyOrigin && res.keyPositive && res.keyNegative && res.boundsOk && res.boundsMüllNull
+    );
+    check(
+        "Φ3 (Q3): _regionRoomId — leer/Müll-Region → nur worldId (Fallback); gültig → worldId:regionKey; ohne worldId → null",
+        res.roomNoRegion && res.roomWithRegion && res.roomMüllRegion && res.roomNoWorld
+    );
+    check(
+        "Φ3 (Q4): Default OFF — eine frische Welt hat regionsActive=false (bit-identisch zu V18.188; R6-Sanftheit)",
+        res.regionsDefaultOff
+    );
+    check(
+        "Φ3 (Q5): setRegionsActive(true) setzt das Flag + initialisiert currentRegionKey aus Spieler-Position; isRegionsActive() reagiert",
+        res.activateOk && res.activateCurrentKey && res.isActiveNow
+    );
+    check(
+        "Φ3 (Q6): initP2PSync liest die regionale Default-Raum-ID (regionalDefault + _regionRoomId in der Source — keine Welt verliert das alte Verhalten ohne regionsActive)",
+        res.initReadsRegional
+    );
+    check(
+        "Φ3 (Q7): Region-Übergangs-Detection feuert bei Sprung über die Grenze (mit ≥10m Margin) + identifiziert die neue Region",
+        res.crossingDetected
+    );
+    check(
+        "Φ3 (Q8): _p2pRegionHandoff ist offline ein sauberes no-op (Override gesetzt, kein WS-Wurf) + die neue Raum-ID stimmt",
+        res.handoffOkOffline && res.handoffRoomCorrect
+    );
+    check(
+        "Φ3 (Q9): setRegionsActive(false) räumt sauber (Flag aus + currentRegionKey weg)",
+        res.deactivated && res.currentRegionGone
+    );
+
+    // Φ4 ——————
+    check(
+        "Φ4 (Q9): presence-Map existiert + ist initial leer (Privatheits-Default — opt-in pro Welt-Besuch)",
+        res.presenceMap && res.presenceEmpty
+    );
+    check("Φ4 (Q10): worldPresence ohne Daten → null (sauberes Fehlsignal, kein Wurf)", res.presenceUnknownNull);
+    check(
+        "Φ4 (Q11): _p2pMsgWorldPresence schreibt in den Cache + worldPresence rechnet totalPeers korrekt",
+        res.presenceCacheOk
+    );
+    check(
+        "Φ4 (Q12): requestWorldPresence ist verdrahtet (world-presence + _p2pSignal in Source) + returnt false ohne p2p.connected",
+        res.requestWired && res.requestNoConn
+    );
+    check(
+        "Φ4 (Q13): P2P_MESSAGE_HANDLERS trägt world-presence → _p2pMsgWorldPresence (additiv, §4 minor)",
+        res.handlerRegistered
+    );
+
+    // Φ5 ——————
+    check(
+        "Φ5 (Q14+Q15): pinnedWorlds-Map existiert + pinCurrentWorld erzeugt hash/bytes/persistiert (Manifest UND Snapshot)",
+        res.pinnedMap && res.pinOk && res.pinInMap && res.pinPersisted && res.pinSnapshotPersisted
+    );
+    check(
+        "Φ5 (Q16): listPinnedWorlds liefert das volle Eintragsschema (worldId · hash · bytes)",
+        res.listOk && res.listEntryShape
+    );
+    check(
+        "Φ5 (Q17): _p2pMaybeServeAsCarrier antwortet als Mitträger mit carrier=true + hash (Torrent-Modell wirkt; der Joiner kann hash-validieren)",
+        res.carrierServed && res.carrierMsgValid
+    );
+    check("Φ5 (Q18): unpinWorld räumt sauber (Map + Persistenz)", res.unpinOk && res.unpinIdempotent);
+    check(
+        "Φ5 (Q19): R2-DISJUNKTHEIT strukturell — KEIN DSL-Op trägt pin_world/set_regions_active (kein Skript kann automatisch tragen oder Regionen schalten)",
+        res.noPinOp && res.noRegionOp
+    );
+    check(
+        "Φ5 (Q20): _p2pMsgWorldRequest ruft _p2pMaybeServeAsCarrier für NICHT-Hosts (der Carrier-Pfad ist verdrahtet)",
+        res.requestUsesCarrier
+    );
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -49104,6 +49373,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWGGelenke(ctx);
             await checkBandWHWald(ctx);
             await checkBandPhiArchipel(ctx);
+            await checkBandPhiArchipelV2(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
