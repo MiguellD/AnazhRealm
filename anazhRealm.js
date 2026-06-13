@@ -15066,68 +15066,179 @@ class AnazhRealm {
     // Bloom). `yOff` hebt schwebende Arten (Sporen). Alle Werte browser-
     // justierbar (die Dichte-/FPS-Wahrheit ist der Schöpfer-Browser, V13-Lehre).
     static get KLEIN_VEGETATION_SPECIES() {
+        // V18.176 (Λ.4 ECHTE Tiefe) — die LEBENDEN Streu-Arten in DREI
+        // Gestalt-Varianten je Art (Plan §IV.4):
+        //   blume: Tulpe (1 Stiel+Kelch) · Klee (3 Blätter low) · Mohn (flache Scheibe)
+        //   farn:  normal (Wedel-Tuff) · breit (niederliegend) · schmal (vertikal)
+        //   gestrüpp: Busch-Kugel · Bodendecker · Dürre-Stecher
+        //   schilf: Halme-Reihe · Tuff (kompakt) · hoch-Rohr
+        // Jede Variante teilt die Affinitäts-Daten der Art (field/floor/kronen)
+        // → konkurriert als 3 separate Arten unter demselben field, perCell ÷ 3
+        // → die Gesamt-Dichte bleibt, die Vielfalt verdreifacht. Tag-Neutralität
+        // bewahrt (V17.16-Wand): die Tags emergieren via ernte→kraut, nicht via
+        // species.name. Pool ÷ 3 (Speicher unverändert).
         return [
-            // lebendig → Wiesen-Blüten: bunte Farb-Tupfer, der „randvolle Wiese"-
-            // Kern. Dicht + nah, weich im Wind. Cap 512 fängt die dichte Wiese.
+            // === BLUME × 3 (Tulpe · Klee · Mohn) ===
             {
-                name: "blume",
-                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
+                name: "blume_tulpe",
+                ernte: "kraut",
                 field: "lebendig",
                 floor: 0.5,
-                kronen: "lichtung", // Γ2 — Blüten dort, wo der Wald NICHT ist
-                perCell: 3.2,
-                cap: 512,
-                pool: 28,
+                kronen: "lichtung",
+                perCell: 1.1,
+                cap: 200,
+                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
                 scale: [0.5, 1.0],
                 color: [0.86, 0.32, 0.46],
                 color2: [0.95, 0.82, 0.3],
-                geom: "blume",
+                geom: "blume_tulpe",
             },
-            // lebendig (niedrigerer Floor → breiter) → Farn-Tuffs: sattes grünes
-            // Unterholz, füllt zwischen den Blüten. Weich im Wind.
             {
-                name: "farn",
-                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
+                name: "blume_klee",
+                ernte: "kraut",
+                field: "lebendig",
+                floor: 0.5,
+                kronen: "lichtung",
+                perCell: 1.1,
+                cap: 200,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.45, 0.85],
+                color: [0.55, 0.78, 0.4],
+                color2: [0.92, 0.92, 0.94],
+                geom: "blume_klee",
+            },
+            {
+                name: "blume_mohn",
+                ernte: "kraut",
+                field: "lebendig",
+                floor: 0.5,
+                kronen: "lichtung",
+                perCell: 1.0,
+                cap: 180,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.55, 1.05],
+                color: [0.92, 0.18, 0.15],
+                color2: [0.18, 0.1, 0.08],
+                geom: "blume_mohn",
+            },
+            // === FARN × 3 (normal · breit · schmal) ===
+            {
+                name: "farn_normal",
+                ernte: "kraut",
                 field: "lebendig",
                 floor: 0.32,
-                // Γ1 — in Genese-2-Welten liest der Farn die FEUCHTE (Ufer-/
-                // Niederungs-Pflanze); Legacy-Welten behalten lebendig (das
-                // Gesicht bleibt). Γ2 — er sammelt sich UNTER den Kronen.
                 feldNass: "feuchte",
                 floorNass: 0.3,
                 kronen: "unter",
-                perCell: 2.4,
-                cap: 448,
-                pool: 28,
+                perCell: 0.8,
+                cap: 160,
+                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
                 scale: [0.6, 1.2],
                 color: [0.22, 0.46, 0.2],
                 color2: [0.34, 0.6, 0.26],
-                geom: "farn",
+                geom: "farn_normal",
             },
-            // glut → trockenes Glut-Gestrüpp: rötlich-braune steife Zweige in
-            // heißen/trockenen Regionen. Leicht im Wind.
             {
-                name: "gestruepp",
-                ernte: "kraut", // S6-B (V18.133) — der Pflueck-Ertrag (Foraging)
+                name: "farn_breit",
+                ernte: "kraut",
+                field: "lebendig",
+                floor: 0.32,
+                feldNass: "feuchte",
+                floorNass: 0.3,
+                kronen: "unter",
+                perCell: 0.8,
+                cap: 160,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.5, 1.0],
+                color: [0.28, 0.5, 0.22],
+                color2: [0.4, 0.66, 0.3],
+                geom: "farn_breit",
+            },
+            {
+                name: "farn_schmal",
+                ernte: "kraut",
+                field: "lebendig",
+                floor: 0.32,
+                feldNass: "feuchte",
+                floorNass: 0.3,
+                kronen: "unter",
+                perCell: 0.8,
+                cap: 160,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.7, 1.3],
+                color: [0.2, 0.42, 0.18],
+                color2: [0.32, 0.55, 0.24],
+                geom: "farn_schmal",
+            },
+            // === GESTRÜPP × 3 (Busch-Kugel · Bodendecker · Dürre-Stecher) ===
+            {
+                name: "gestruepp_busch",
+                ernte: "kraut",
                 field: "glut",
                 floor: 0.5,
-                kronen: "rand", // Γ2 — der Saum zwischen Wald und Lichtung
-                perCell: 1.8,
-                cap: 320,
-                pool: 28,
+                kronen: "rand",
+                perCell: 0.6,
+                cap: 110,
+                pool: 10,
                 wind: true,
                 emissive: false,
                 yOff: 0,
                 scale: [0.6, 1.3],
                 color: [0.55, 0.3, 0.16],
                 color2: [0.68, 0.42, 0.2],
-                geom: "gestruepp",
+                geom: "gestruepp_busch",
+            },
+            {
+                name: "gestruepp_decker",
+                ernte: "kraut",
+                field: "glut",
+                floor: 0.5,
+                kronen: "rand",
+                perCell: 0.6,
+                cap: 110,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.65, 1.4],
+                color: [0.48, 0.34, 0.2],
+                color2: [0.62, 0.46, 0.26],
+                geom: "gestruepp_decker",
+            },
+            {
+                name: "gestruepp_stecher",
+                ernte: "kraut",
+                field: "glut",
+                floor: 0.5,
+                kronen: "rand",
+                perCell: 0.6,
+                cap: 110,
+                pool: 10,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.55, 1.2],
+                color: [0.6, 0.36, 0.18],
+                color2: [0.75, 0.5, 0.24],
+                geom: "gestruepp_stecher",
             },
             // dichte → Fels-Brocken/Kiesel: graubraune Low-Poly-Steine, steinige
             // Regionen. Statisch (kein Wind), empfängt Schatten, weiter sichtbar.
@@ -15187,26 +15298,60 @@ class AnazhRealm {
                 color2: [1.0, 0.82, 0.5],
                 geom: "spore",
             },
-            // Γ1 (genese-plan) — SCHILF: die siebte Art, NUR in Genese-2-Welten
-            // (minGen-Gate): liest die FEUCHTE direkt (das schmale Ufer-Band,
-            // floor 0.62) — Flüsse und Niederungen bekommen ihren Saum. Reine
-            // Daten, derselbe Streu-Mechanismus (die V18.133-Schönheit).
+            // Γ1 (genese-plan) — SCHILF: NUR in Genese-2-Welten (minGen-Gate);
+            // liest die FEUCHTE direkt — Flüsse und Niederungen bekommen ihren
+            // Saum. V18.176 (Λ.4 Tiefe): 3 Gestalt-Varianten je Art.
+            // === SCHILF × 3 (Halme-Reihe · Tuff · hoch-Rohr) ===
             {
-                name: "schilf",
+                name: "schilf_reihe",
                 ernte: "kraut",
                 field: "feuchte",
                 floor: 0.62,
                 minGen: 2,
-                perCell: 2.6,
-                cap: 288,
-                pool: 24,
+                perCell: 0.9,
+                cap: 100,
+                pool: 8,
                 wind: true,
                 emissive: false,
                 yOff: 0,
                 scale: [0.9, 1.7],
                 color: [0.33, 0.48, 0.2],
                 color2: [0.66, 0.64, 0.3],
-                geom: "farn",
+                geom: "schilf_reihe",
+            },
+            {
+                name: "schilf_tuff",
+                ernte: "kraut",
+                field: "feuchte",
+                floor: 0.62,
+                minGen: 2,
+                perCell: 0.9,
+                cap: 100,
+                pool: 8,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.8, 1.5],
+                color: [0.3, 0.44, 0.18],
+                color2: [0.6, 0.6, 0.28],
+                geom: "schilf_tuff",
+            },
+            {
+                name: "schilf_rohr",
+                ernte: "kraut",
+                field: "feuchte",
+                floor: 0.62,
+                minGen: 2,
+                perCell: 0.9,
+                cap: 100,
+                pool: 8,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [1.2, 2.4],
+                color: [0.38, 0.52, 0.22],
+                color2: [0.72, 0.7, 0.34],
+                geom: "schilf_rohr",
             },
         ];
     }
@@ -27113,15 +27258,20 @@ class AnazhRealm {
                 tri(a0, b1, b0, colA, colB, colB);
             }
         };
-        if (species.geom === "blume") {
-            // Stiel (grün) + 5-Blütenblatt-Schale (Spitze color2/innen, color/außen).
-            const stemG = [0.2, 0.4, 0.16];
-            strip(0.0, 0.16, 0.022, 0.02, stemG, [0.28, 0.5, 0.22], 2);
-            strip(1.6, 0.15, 0.02, 0.02, stemG, [0.28, 0.5, 0.22], 2);
-            const top = [0, 0.205, 0];
-            const r = 0.085;
-            const yTip = 0.155;
-            const N = 5;
+        const stemG = [0.2, 0.4, 0.16];
+        // V18.176 (Λ.4 Gestalt-Varianten) — drei DEUTLICH unterschiedliche
+        // Gestalten je lebender Art: blume Tulpe/Klee/Mohn · farn normal/breit/
+        // schmal · gestrüpp Busch/Decker/Stecher · schilf Reihe/Tuff/Rohr.
+        // Backward-Kompatibilität: "blume"/"farn"/"gestruepp" (alt) fallen auf
+        // die normalen Varianten zurück (falls altes Save sie referenziert).
+        if (species.geom === "blume_tulpe" || species.geom === "blume") {
+            // TULPE: Stiel + glockenförmiger Kelch (6 Blütenblätter, hoch+schmal).
+            strip(0.0, 0.18, 0.018, 0.0, stemG, [0.28, 0.5, 0.22], 2);
+            strip(1.6, 0.18, 0.016, 0.0, stemG, [0.28, 0.5, 0.22], 2);
+            const top = [0, 0.24, 0];
+            const r = 0.06;
+            const yTip = 0.175;
+            const N = 6;
             for (let i = 0; i < N; i++) {
                 const a0 = (i / N) * Math.PI * 2;
                 const a1 = ((i + 1) / N) * Math.PI * 2;
@@ -27129,18 +27279,110 @@ class AnazhRealm {
                 const p1 = [Math.cos(a1) * r, yTip, Math.sin(a1) * r];
                 tri(top, p0, p1, c2, c, c);
             }
-        } else if (species.geom === "farn") {
-            // 4 breite, gebogene Wedel, fächerförmig — sattes Unterholz-Grün.
+        } else if (species.geom === "blume_klee") {
+            // KLEE: 3 flache Blätter sehr niedrig, fast bodendeckend.
+            const stemH = 0.06;
+            strip(0.0, stemH, 0.012, 0.0, stemG, [0.28, 0.5, 0.22], 2);
+            for (let i = 0; i < 3; i++) {
+                const a = (i / 3) * Math.PI * 2;
+                const cx = Math.cos(a) * 0.04;
+                const cz = Math.sin(a) * 0.04;
+                const r = 0.075;
+                const yBlatt = stemH + 0.008;
+                // Blatt als gerundetes Dreieck (3 Vertices um Zentrum)
+                const p0 = [cx + Math.cos(a) * r, yBlatt, cz + Math.sin(a) * r];
+                const p1 = [cx + Math.cos(a + 0.7) * r * 0.6, yBlatt + 0.004, cz + Math.sin(a + 0.7) * r * 0.6];
+                const p2 = [cx + Math.cos(a - 0.7) * r * 0.6, yBlatt + 0.004, cz + Math.sin(a - 0.7) * r * 0.6];
+                tri(p0, p1, p2, c, c2, c);
+                // Blatt-Unterseite (DoubleSide-Render macht es sichtbar von unten)
+                tri(p0, p2, p1, c, c, c2);
+            }
+            // kleines Mittel-Blüte (weiss)
+            const cBlute = [0.98, 0.98, 0.99];
+            const center = [0, stemH + 0.012, 0];
+            for (let i = 0; i < 5; i++) {
+                const a0 = (i / 5) * Math.PI * 2;
+                const a1 = ((i + 1) / 5) * Math.PI * 2;
+                const r = 0.025;
+                tri(
+                    center,
+                    [Math.cos(a0) * r, stemH + 0.014, Math.sin(a0) * r],
+                    [Math.cos(a1) * r, stemH + 0.014, Math.sin(a1) * r],
+                    cBlute,
+                    cBlute,
+                    cBlute
+                );
+            }
+        } else if (species.geom === "blume_mohn") {
+            // MOHN: hoher Stiel + flache breite Scheibe (4 Blütenblätter).
+            strip(0.0, 0.22, 0.014, 0.0, stemG, [0.28, 0.5, 0.22], 2);
+            strip(1.6, 0.22, 0.013, 0.0, stemG, [0.28, 0.5, 0.22], 2);
+            const yScheibe = 0.22;
+            const N = 4;
+            const r = 0.13;
+            // Schwarzes Zentrum
+            const dark = [0.18, 0.1, 0.08];
+            const center = [0, yScheibe, 0];
+            for (let i = 0; i < N; i++) {
+                const a0 = (i / N) * Math.PI * 2;
+                const a1 = ((i + 1) / N) * Math.PI * 2;
+                const am = (a0 + a1) / 2;
+                // Breites Blütenblatt — Trapez
+                const pOuter = [Math.cos(am) * r, yScheibe + 0.002, Math.sin(am) * r];
+                const pSide1 = [Math.cos(a0) * r * 0.35, yScheibe + 0.001, Math.sin(a0) * r * 0.35];
+                const pSide2 = [Math.cos(a1) * r * 0.35, yScheibe + 0.001, Math.sin(a1) * r * 0.35];
+                tri(center, pSide1, pOuter, dark, c, c);
+                tri(center, pOuter, pSide2, dark, c, c);
+            }
+        } else if (species.geom === "farn_normal" || species.geom === "farn") {
+            // FARN normal: 4 breite gebogene Wedel, fächerförmig.
             strip(0.0, 0.42, 0.07, 0.16, c, c2, 3);
             strip(1.57, 0.4, 0.065, 0.18, c, c2, 3);
             strip(3.14, 0.44, 0.07, 0.15, c, c2, 3);
             strip(4.71, 0.38, 0.06, 0.2, c, c2, 3);
-        } else if (species.geom === "gestruepp") {
-            // 5 steife, dünne Zweige, leicht auseinander — trockenes Gestrüpp.
+        } else if (species.geom === "farn_breit") {
+            // FARN breit: niederliegend gespreizt — 6 niedrige weite Wedel.
+            for (let i = 0; i < 6; i++) {
+                const rot = (i / 6) * Math.PI * 2;
+                strip(rot, 0.22, 0.11, 0.3, c, c2, 3); // tief gebogen → liegend
+            }
+        } else if (species.geom === "farn_schmal") {
+            // FARN schmal: vertikal aufrecht — 2 hohe steile Wedel.
+            strip(0.0, 0.7, 0.05, 0.04, c, c2, 4);
+            strip(1.57, 0.65, 0.045, 0.05, c, c2, 4);
+            strip(3.14, 0.68, 0.05, 0.04, c, c2, 4);
+        } else if (species.geom === "gestruepp_busch" || species.geom === "gestruepp") {
+            // BUSCH: 5 steife dünne Zweige, leicht auseinander.
             for (let i = 0; i < 5; i++) {
                 const rot = (i / 5) * Math.PI * 2 + 0.3;
                 strip(rot, 0.26 + (i % 2) * 0.06, 0.022, 0.05 + (i % 3) * 0.03, c, c2, 2);
             }
+        } else if (species.geom === "gestruepp_decker") {
+            // BODENDECKER: flach-breit, viele kleine Zweige nahe am Boden.
+            for (let i = 0; i < 8; i++) {
+                const rot = (i / 8) * Math.PI * 2;
+                strip(rot, 0.14, 0.035, 0.18, c, c2, 2); // sehr niedrig, stark gebogen
+            }
+        } else if (species.geom === "gestruepp_stecher") {
+            // DÜRRE-STECHER: 3 hohe kahle Stäbe, aufrecht.
+            strip(0.0, 0.5, 0.018, 0.02, c, c2, 2);
+            strip(2.1, 0.55, 0.018, 0.02, c, c2, 2);
+            strip(4.2, 0.45, 0.018, 0.02, c, c2, 2);
+        } else if (species.geom === "schilf_reihe") {
+            // SCHILF Halme-Reihe: 3 parallel aufrechte Halme.
+            strip(0.0, 0.52, 0.025, 0.02, c, c2, 3);
+            strip(0.0, 0.48, 0.024, 0.02, c, c2, 3);
+            strip(0.0, 0.55, 0.026, 0.02, c, c2, 3);
+        } else if (species.geom === "schilf_tuff") {
+            // SCHILF Tuff: kompakt-dicht, viele Halme in alle Richtungen.
+            for (let i = 0; i < 7; i++) {
+                const rot = (i / 7) * Math.PI * 2;
+                strip(rot, 0.35 + (i % 3) * 0.07, 0.022, 0.04, c, c2, 3);
+            }
+        } else if (species.geom === "schilf_rohr") {
+            // SCHILF hoch-Rohr: 1 hoher Halm (3m bei scale=1), nahe am Wasser.
+            strip(0.0, 1.1, 0.045, 0.04, c, c2, 5);
+            strip(1.57, 1.05, 0.042, 0.04, c, c2, 5);
         } else if (species.geom === "fels") {
             // Low-Poly-Brocken: gejitterter Oktaeder (6 Ecken, 8 Flächen).
             const top = [0, 0.34, 0];
@@ -27218,13 +27460,41 @@ class AnazhRealm {
                 mat = new THREE.MeshLambertNodeMaterial({
                     side: species.wind ? THREE.DoubleSide : THREE.FrontSide,
                 });
-                const { vec4, vec3, float, attribute, max } = TSL;
+                const { vec4, vec3, float, attribute, max, mix } = TSL;
                 const vcol = attribute("color", "vec3");
                 let albedo = vcol;
                 if (TSL.mx_noise_float && TSL.positionWorld) {
                     const bn = TSL.mx_noise_float(TSL.positionWorld.mul(float(0.5)));
                     albedo = albedo.mul(float(1.0).add(bn.mul(float(0.16))));
                     albedo = max(albedo, vec3(0, 0, 0));
+                }
+                // Λ.4 (V18.174 — pro-Instanz-Tint für Streu-Vegetation): jede
+                // gespawnte Instanz lebender Streu-Arten (blume/farn/gestrüpp/
+                // schilf — wind=true && !emissive) bekommt einen seed-deterministischen
+                // HSL-Shift via setColorAt. Das Material liest `attribute("instanceColor")`
+                // analog Λ.2 — ein Feld voller Tulpen variiert in warm/kühl-Rot,
+                // ein Farn-Tuff hat verschiedene Grün-Nuancen → die GLEICHFÖRMIGE
+                // Wand fällt. Gate: nur weiche/lebende Arten — Fels/Spore/Pollen
+                // haben ihren eigenen Look. instanceColor 0.5 = neutrale Mitte.
+                const tintCfg = AnazhRealm.INSTANCE_TINT || { rangeH: 0.08, rangeS: 0.1, rangeV: 0.06 };
+                if (species.wind && !species.emissive && TSL.attribute) {
+                    const _ic = attribute("instanceColor", "vec3");
+                    const hueShift = _ic.x.sub(float(0.5)).mul(float(tintCfg.rangeH * 2));
+                    const satShift = _ic.y.sub(float(0.5)).mul(float(tintCfg.rangeS * 2));
+                    const valShift = _ic.z.sub(float(0.5)).mul(float(tintCfg.rangeV * 2));
+                    // HSL-light-touch: G± gegen R/B = kühl/warm-Grün-Shift
+                    const tintRGB = vec3(
+                        float(1.0).sub(hueShift.mul(float(0.3))),
+                        float(1.0).add(hueShift.mul(float(0.5))),
+                        float(1.0).sub(hueShift.mul(float(0.2)))
+                    );
+                    const _lum = albedo.x.mul(0.299).add(albedo.y.mul(0.587)).add(albedo.z.mul(0.114));
+                    const _gray = vec3(_lum, _lum, _lum);
+                    const _satF = float(1.0).add(satShift);
+                    albedo = mix(_gray, albedo, _satF).mul(tintRGB).mul(float(1.0).add(valShift));
+                    albedo = max(albedo, vec3(0, 0, 0));
+                    mat.userData = mat.userData || {};
+                    mat.userData.useInstanceTint = true;
                 }
                 mat.colorNode = vec4(albedo, float(1.0));
                 if (species.wind) this._applyScatterMotion(mat, species, TSL);
@@ -27491,6 +27761,22 @@ class AnazhRealm {
         // Re-Streams verborgen (Skala 0 — der Index ist stabil, das RNG
         // deterministisch), bis der Regrow-Tick sie freigibt.
         const harvested = this.state.scatterHarvested ? this.state.scatterHarvested.get(key) : null;
+        // V18.187-Welle-11 Λ.4 (clever-gauss V18.174, Reviewer-Befund 2): pro-
+        // Instanz-Tint für Streu-Vegetation. Ein dedicated Hash-Stream pro
+        // (cxa, cza, si, idx, axis) für die 3 HSL-Achsen — deterministisch,
+        // bricht NICHT den existierenden Positions-rng (Γ5 Stream-Gesetz).
+        // Pro Halm ein anderes Grün → die Wiese ist kein Klon-Feld mehr.
+        const tintColor = this._scatterTmpTintColor || (this._scatterTmpTintColor = new THREE.Color());
+        const hashInstanceTint = (cxa, cza, si, idx, axis) => {
+            let v =
+                ((cxa | 0) * 2654435761) ^
+                ((cza | 0) * 40503) ^
+                ((si + 1) * 73856093) ^
+                ((idx + 1) * 19349663) ^
+                ((axis + 1) * 0x85ebca6b);
+            v = ((v ^ (v >>> 13)) * 1274126177) >>> 0;
+            return (v ^ (v >>> 16)) / 4294967296;
+        };
         for (let si = 0; si < species.length; si++) {
             const items = buckets[si];
             if (items.length === 0) continue;
@@ -27498,6 +27784,7 @@ class AnazhRealm {
             const inst = this._acquireScatterMesh(sp);
             if (!inst) continue;
             inst.count = items.length;
+            const wantTint = !!(inst.material && inst.material.userData && inst.material.userData.useInstanceTint);
             for (let i = 0; i < items.length; i++) {
                 const it = items[i];
                 pos.set(it.x, it.y, it.z);
@@ -27514,8 +27801,16 @@ class AnazhRealm {
                 }
                 m.compose(pos, q, scl);
                 inst.setMatrixAt(i, m);
+                if (wantTint) {
+                    const tH = hashInstanceTint(cx, cz, si, i, 0);
+                    const tS = hashInstanceTint(cx, cz, si, i, 1);
+                    const tV = hashInstanceTint(cx, cz, si, i, 2);
+                    tintColor.setRGB(tH, tS, tV);
+                    inst.setColorAt(i, tintColor);
+                }
             }
             inst.instanceMatrix.needsUpdate = true;
+            if (wantTint && inst.instanceColor) inst.instanceColor.needsUpdate = true;
             // Frustum-Cull-Cache nach Pool-Recycle neu rechnen (die
             // V11.0-d.fix.gras-Wurzel: stale boundingSphere cullt das Mesh raus).
             if (inst.geometry && inst.geometry.boundingSphere === null) inst.geometry.computeBoundingSphere();
@@ -32126,6 +32421,33 @@ class AnazhRealm {
                 if (restored) this.state.blueprints[restored.name] = restored;
             }
             this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
+            // V18.187-Welle-11 Λ.1 ROLE-CACHE-MIGRATION (clever-gauss V18.176,
+            // Reviewer-Befund 3): die V18.181-livingCenterY-Wand klassifiziert
+            // reiche+symmetrische Eichen jetzt als architecture (Krone oben,
+            // yNorm > 0.7). Alte Welten (genVersion < 2) erben aber
+            // `bp.role: 'soul'` aus dem Save, weil ihre Eiche unter der ALTEN
+            // Regel ein Körper war. Heilung: re-derived alle emergenten Rollen
+            // (roleManual=false → die emergente Klassifikation lebt). Schöpfer-
+            // Intent (roleManual=true: Portal-Ziel, Werkstatt-Designation) bleibt
+            // heilig.
+            const genV = this.state.worldMeta && Number(this.state.worldMeta.genVersion);
+            const needsRoleMigration = !Number.isFinite(genV) || genV < 2;
+            if (needsRoleMigration && typeof this.computeBlueprintRole === "function") {
+                let migrated = 0;
+                for (const name of Object.keys(this.state.blueprints || {})) {
+                    const bpEntry = this.state.blueprints[name];
+                    if (!bpEntry || bpEntry.builtIn) continue;
+                    if (bpEntry.roleManual) continue;
+                    const oldRole = bpEntry.role;
+                    const newRole = this.computeBlueprintRole(bpEntry);
+                    if (newRole && oldRole !== newRole) {
+                        bpEntry.role = newRole;
+                        migrated++;
+                    }
+                }
+                if (migrated > 0)
+                    this.log(`Λ.1 Role-Migration: ${migrated} Bauplan-Rollen re-derived (genVersion < 2)`);
+            }
         }
         if (Array.isArray(state.tools)) {
             let restoredTools = 0;

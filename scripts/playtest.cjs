@@ -30623,16 +30623,45 @@ async function checkBandLambda4Streu(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
+        const A = r.constructor;
         const out = {};
-        // Source-Probe: _buildVoxelChunkScatter setzt sx/sy/sz für wind-Arten.
+        // V18.187-Welle-11 (Reviewer-Befund): die Probe trägt jetzt ALLE drei
+        // Λ.4-Stufen (V18.174 instanceColor + V18.175 per-Achsen + V18.176
+        // 12 Geometrien), nicht nur die V18.175-Skalierung.
         const src = r._buildVoxelChunkScatter.toString();
+        // V18.175 — per-Achsen-Skalierung.
         out.perAchsenCode = /sp\.wind/.test(src) && /sx:.*sy:.*sz:/s.test(src);
-        // Consumer: scl.set(it.sx, it.sy, it.sz) für nicht-uniform Items.
         out.consumerCode = /scl\.set\(it\.sx,\s*it\.sy,\s*it\.sz\)/.test(src);
+        // V18.174 — instanceColor pro-Instanz (Hash-Stream, setColorAt).
+        out.instanceColorCode = /hashInstanceTint/.test(src) && /setColorAt\(i,\s*tintColor\)/.test(src);
+        const matSrc = r._scatterMaterial.toString();
+        out.materialUseInstanceTint = /useInstanceTint/.test(matSrc) && /attribute\("instanceColor"/.test(matSrc);
+        // V18.176 — 12 Gestalt-Varianten (3 je Art: blume/farn/gestruepp/schilf).
+        const species = A.KLEIN_VEGETATION_SPECIES;
+        const names = new Set(species.map((s) => s.name));
+        const blume3 = names.has("blume_tulpe") && names.has("blume_klee") && names.has("blume_mohn");
+        const farn3 = names.has("farn_normal") && names.has("farn_breit") && names.has("farn_schmal");
+        const gestruepp3 =
+            names.has("gestruepp_busch") && names.has("gestruepp_decker") && names.has("gestruepp_stecher");
+        const schilf3 = names.has("schilf_reihe") && names.has("schilf_tuff") && names.has("schilf_rohr");
+        out.zwoelfGeometrien = blume3 && farn3 && gestruepp3 && schilf3;
+        // Build-Methode kennt die 12 Geom-Cases.
+        const geomSrc = r._scatterSpeciesGeometry.toString();
+        out.geomBuilderHat12 =
+            /blume_tulpe/.test(geomSrc) &&
+            /blume_klee/.test(geomSrc) &&
+            /blume_mohn/.test(geomSrc) &&
+            /farn_breit/.test(geomSrc) &&
+            /gestruepp_decker/.test(geomSrc) &&
+            /schilf_rohr/.test(geomSrc);
         return out;
     });
-    check("Λ.4 Streu: _buildVoxelChunkScatter setzt entkoppelte sx/sy/sz für wind-Arten", res.perAchsenCode === true);
-    check("Λ.4 Streu: Consumer liest sx/sy/sz statt uniform scale (Per-Achsen-Skalierung wirkt)", res.consumerCode === true);
+    check("Λ.4 Streu (V18.175): _buildVoxelChunkScatter setzt entkoppelte sx/sy/sz für wind-Arten", res.perAchsenCode === true);
+    check("Λ.4 Streu (V18.175): Consumer liest sx/sy/sz statt uniform scale (Per-Achsen-Skalierung wirkt)", res.consumerCode === true);
+    check("Λ.4 Streu (V18.174): _buildVoxelChunkScatter setzt instanceColor via hashInstanceTint + setColorAt", res.instanceColorCode === true);
+    check("Λ.4 Streu (V18.174): _scatterMaterial trägt useInstanceTint + attribute(\"instanceColor\")", res.materialUseInstanceTint === true);
+    check("Λ.4 Streu (V18.176): 12 Gestalt-Varianten in KLEIN_VEGETATION_SPECIES (3 je blume/farn/gestruepp/schilf)", res.zwoelfGeometrien === true);
+    check("Λ.4 Streu (V18.176): _scatterSpeciesGeometry baut die 12 Geom-Varianten", res.geomBuilderHat12 === true);
 }
 
 async function checkBandLambda5MischwaldSynthese(ctx) {
@@ -30849,9 +30878,14 @@ async function checkBandGammaGenese(ctx) {
             // (5) Arten-Daten + der KONSUM BEIDER Gating-Stellen (die Doppel-
             // Gating-WAND: nah-Mesh UND Fernfeld lesen feldNass/minGen/kronen
             // identisch — sonst ploppt die Dichte am Band-Übergang).
+            // V18.187-Welle-11 V9.56-i Test-Wanderung: schilf/farn sind nach
+            // der Λ.4-V18.176-Heilung in 3 Gestalt-Varianten gespalten (schilf_
+            // reihe/_tuff/_rohr, farn_normal/_breit/_schmal — Tag-Neutralität
+            // bewahrt). Die Probe sucht jetzt prefix-basiert + akzeptiert
+            // generic oder erste Variante.
             const species = A.KLEIN_VEGETATION_SPECIES;
-            const schilf = species.find((s) => s.name === "schilf");
-            const farn = species.find((s) => s.name === "farn");
+            const schilf = species.find((s) => s.name === "schilf" || s.name.startsWith("schilf_"));
+            const farn = species.find((s) => s.name === "farn" || s.name.startsWith("farn_"));
             out.schilfData = !!(schilf && schilf.field === "feuchte" && schilf.minGen === 2);
             out.farnDual = !!(
                 farn &&
