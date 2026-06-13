@@ -22753,28 +22753,66 @@ class AnazhRealm {
     // W-E (§8.3) — die ANTENNE emergiert aus der SUBSTANZ: das Antwort-Profil
     // eines Materials aus seinen 10 Tags (dieselbe Gewichts-Sprache wie die
     // Rollen-Resonanz — kein zweites Register, nur eine weitere LESART der
-    // einen Substanz-Wahrheit). Fünf Achsen (Plan-Wortlaut):
+    // einen Substanz-Wahrheit). V18.181-merge-Λ Sub 3b — die SYNTHESE: tesla's
+    // 5 Substanz-Antennen + clever-gauss's 2 Λ-Achsen (wiegen für Λ.3-Wind,
+    // detail für Λ.6-Translucency) + tesla's 5 Render-Antennen = 12 Felder.
+    // Plan §9 (`docs/wellen-synthese-plan.md`). Die Signatur wurde clever-gauss-
+    // flexibel (materialOrTags) — der tesla-Aufrufer (opts.tags) bleibt
+    // bit-treu (Superset; ein tags-Objekt wird als tags-Objekt erkannt). Fünf
+    // tesla-Substanzen (Plan-Wortlaut):
     //   glanz   = härte+dichte   → Rim/Specular („Metall spiegelt, Holz nicht")
     //   tiefe   = dichte         → AO/Mikro-Kontrast-Gewicht
     //   glimmen = magieleitung + wärmeleitung·brennbar → Emissiv (Glut glüht)
     //   waerme  = lebendig       → der warme Subsurface-Ton des Rims
     //   glas    = transparent    → Fresnel (fließt in die Rim-Stärke ein)
-    // Darunter die FEATURE-Gewichte (Antenne → Render-Hebel, mit weichen
-    // Böden — keine Substanz schaltet ein Band-Feature ganz ab; Erst-Wurf,
-    // S-Kalibrierung als Vermerk):
-    _substanceResponseProfile(tags) {
-        const t = (k) => Math.max(0, Math.min(1, Number(tags && tags[k]) || 0));
-        const glanz = Math.min(1, t("härte") * 0.6 + t("dichte") * 0.4);
-        const tiefe = t("dichte");
-        const glimmen = Math.min(1, t("magieleitung") * 0.55 + t("wärmeleitung") * t("brennbar") * 0.6);
-        const waerme = t("lebendig");
-        const glas = t("transparent");
+    // Zwei clever-gauss-Λ-Achsen (für die Konsumenten Λ.3 + Λ.6):
+    //   wiegen = lebendig·(1−dichte)·zähigkeit → Wind-Antwort (Λ.3 windSway)
+    //   detail = max(lebendig·(1−dichte), magieleitung·transparent) → Mikro-
+    //            Cluster für Laub-/Glas-Translucency (Λ.6 subsurface back-lit)
+    // Darunter die FEATURE-Gewichte (Antennen → Render-Hebel, weiche Böden):
+    _substanceResponseProfile(materialOrTags) {
+        let tags = null;
+        if (materialOrTags && typeof materialOrTags === "object") {
+            // {tags: {...}} (Material-Objekt) ODER direkt {...} (Tag-Map).
+            if (materialOrTags.tags && typeof materialOrTags.tags === "object") {
+                tags = materialOrTags.tags;
+            } else {
+                tags = materialOrTags;
+            }
+        } else if (typeof materialOrTags === "string" && this.state && this.state.materials) {
+            const mat = this.state.materials[materialOrTags];
+            if (mat && mat.tags) tags = mat.tags;
+        }
+        if (!tags) tags = {};
+        const t = (k) => {
+            const v = +tags[k];
+            return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0;
+        };
+        const haerte = t("härte");
+        const dichte = t("dichte");
+        const zaehigkeit = t("zähigkeit");
+        const magieleitung = t("magieleitung");
+        const transparent = t("transparent");
+        const brennbar = t("brennbar");
+        const lebendig = t("lebendig");
+        const waermeleitung = t("wärmeleitung");
+        // 5 tesla-Substanzen:
+        const glanz = Math.min(1, haerte * 0.6 + dichte * 0.4);
+        const tiefe = dichte;
+        const glimmen = Math.min(1, magieleitung * 0.55 + waermeleitung * brennbar * 0.6);
+        const waerme = lebendig;
+        const glas = transparent;
+        // 2 clever-gauss-Achsen (Λ.3 + Λ.6):
+        const wiegen = lebendig * (1 - dichte) * zaehigkeit;
+        const detail = Math.max(lebendig * (1 - dichte), magieleitung * transparent);
         return {
             glanz,
             tiefe,
             glimmen,
             waerme,
             glas,
+            wiegen,
+            detail,
             micro: 0.5 + 0.5 * tiefe,
             rim: 0.4 + 0.6 * Math.max(glanz, glas * 0.9),
             // emissiv darf > 1 (Glut glüht ÜBER den Familien-Floor hinaus);
@@ -60701,6 +60739,25 @@ AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
 // materialTag[0..1]); ÷3 normalisiert die Material-Tags des Produkt-Vektors auf [0..1] (= dieselbe Skala wie
 // die Form-Achsen) → die FORM konkurriert mit dem MATERIAL in der Resonanz (heilt die Spektrum-Sättigung).
 AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
+// Λ.2 (V18.173 — V18.181-merge-Λ Sub 3a — clever-gauss): die HSL-Spannweite,
+// die jede gespawnte Architektur-Instanz bekommt (seed-deterministisch aus
+// entry.tintH/.tintS/.tintV; HISM-instanceColor). rangeH 0.08 = ±8 % Hue →
+// laub-Töne von kühlem zu warmem Grün ohne grellbunt; rangeS 0.10 = ±10 %
+// Sättigung; rangeV 0.06 = ±6 % Helligkeit. Browser-justierbar als Erst-Wurf.
+AnazhRealm.INSTANCE_TINT = Object.freeze({ rangeH: 0.08, rangeS: 0.1, rangeV: 0.06 });
+// V18.177 (V18.181-merge-Λ Sub 3g — clever-gauss „DIE WELT ERWACHT") —
+// AAA-Atmosphäre: stärkere Distanz-Verblassung (heightWeight 0.75 vs Default
+// 0.6) macht ferne Berge plastisch luftig wie in den Profis (BotW/Witcher 3
+// Reference). microStrength 0.14 verstärkt die Oberflächen-Mikrostruktur
+// dezent. Default-Quelle in `_ensureAtmoUniforms` (tesla SUBSTANCE_RESPONSE-
+// Antennen lesen daraus); ergänzt die tesla-Atmosphäre additiv.
+AnazhRealm.AERIAL = Object.freeze({
+    heightWeight: 0.75,
+    heightCap: 0.88,
+    microStrength: 0.14,
+    aoStrength: 0.38,
+    aoCap: 0.18,
+});
 // Ω2 (taille-spec §2 must-preserve) — die Größen-Wand für unbekannte Felder
 // (Dämpfung: ein Riesen-Feld ist ein Quota-DoS, keine Zukunft) + die known-
 // Sätze der Serialize/Restore-Zwillinge: ALLE explizit behandelten Schlüssel.
