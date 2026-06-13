@@ -523,6 +523,40 @@ async function auditStateAndMethods() {
                 "playerBody",
                 "playerAuraGlow",
                 "playerSouls",
+                // Lazy-init Maps/Sets/Caches (alle: if (!state.X) state.X = new Map(); ?? -Infinity)
+                "worldId", // `|| "realm"` Fallback in fingerprint
+                "nexusWirk", // `=== undefined`-Gate vor Init in §Nexus
+                "visitedRegions", // Set lazy-init im Explore-Tick
+                "lastExploreFelt", // Map lazy-init im Explore-Tick
+                "voxelChunkGrassLod", // Map lazy-init im LOD-Build
+                "scatterHarvested", // Map lazy-init beim ersten Scatter-Harvest
+                "_scatterImpostorGeoms", // Map lazy-init im Scatter-Impostor-Build
+                "dekoFernfeld", // Map lazy-init in der Fernfeld-Deko
+                "grantedCapabilities", // Set lazy-init bei Capability-Grant
+                // Library/Feed-State (alle: `state.X || fallback` / `if (X)`-Gates)
+                "feedSort",
+                "feedKind",
+                "feedTab",
+                "feedFocusId",
+                "feedPreview",
+                "feedFollows",
+                "_libraryAuthorFilter",
+                "hofFocusId",
+                "hofGestenExpanded",
+                "hofNexusExpanded",
+                "hofStage",
+                "ichStage",
+                "capabilityProposals",
+                "blueprintEditHistory",
+                // Lebendiges Feld (V17.27-Overlays — alle lazy-init mit `if (!state.X)`)
+                "lifeField",
+                "lifeFieldLastPrune",
+                "emotionField",
+                "emotionFieldLastPrune",
+                "wohlBaseline",
+                // Tick-Memoization (-Infinity Sentinel)
+                "_lastDayNightApply",
+                "_jumpPressedAt",
             ]);
 
             // Filter: nur Top-Level oder zwei-Ebenen-Pfade prüfen (Drei-Ebenen
