@@ -267,6 +267,138 @@ function terrainDensityAt(x, y, z) {
     return d;
 }
 
+// Γ4 (genese-plan §4) — DER MAKRO-ANKER Worker-Spiegel. Bit-identisch zur
+// Main `_makeMacroAnker` / `_macroAnker` / `_macroSurfaceContribution`. Die
+// MACRO_ANKER-Konstanten sind hardkodiert (V17.100-Lehre, eine Runtime-Tunable
+// im Mirror würde den bit-Vertrag brechen). Bei Anpassung im Main hier mit-
+// ziehen.
+const MACRO_ANKER_SPAWN_R = 700;
+const MACRO_ANKER_MASSIV_R_MIN = 480;
+const MACRO_ANKER_MASSIV_R_MAX = 720;
+const MACRO_ANKER_MASSIV_H_MIN = 70;
+const MACRO_ANKER_MASSIV_H_MAX = 110;
+const MACRO_ANKER_MASSIV_ASPECT = 1.6;
+const MACRO_ANKER_BECKEN_DIST_MIN = 900;
+const MACRO_ANKER_BECKEN_DIST_MAX = 1500;
+const MACRO_ANKER_BECKEN_R_MIN = 280;
+const MACRO_ANKER_BECKEN_R_MAX = 420;
+const MACRO_ANKER_BECKEN_D_MIN = 12;
+const MACRO_ANKER_BECKEN_D_MAX = 22;
+const MACRO_ANKER_TAL_N = 5;
+const MACRO_ANKER_TAL_JITTER = 100;
+const MACRO_ANKER_TAL_BREITE = 120;
+const MACRO_ANKER_TAL_TRENCH_TIEFE = 14;
+const MACRO_ANKER_TAL_TRENCH_BREITE = 28;
+const MACRO_ANKER_TAL_BLEND_EXP = 2.2;
+
+function makeMacroAnker(seed) {
+    const noise = new SimplexNoise(seed + "-macro-anker");
+    const r01 = (k) => (noise.noise2D(k * 17.3, k * 9.7) + 1) * 0.5;
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const massivAng = r01(1) * Math.PI * 2;
+    const massivDist = MACRO_ANKER_SPAWN_R * (0.4 + r01(2) * 0.5);
+    const massivC = { x: Math.cos(massivAng) * massivDist, z: Math.sin(massivAng) * massivDist };
+    const massivR = lerp(MACRO_ANKER_MASSIV_R_MIN, MACRO_ANKER_MASSIV_R_MAX, r01(3));
+    const massivH = lerp(MACRO_ANKER_MASSIV_H_MIN, MACRO_ANKER_MASSIV_H_MAX, r01(4));
+    const massivRot = 0.2 + r01(5) * 1.7;
+    const beckenAng = massivAng + Math.PI + (r01(6) - 0.5) * 0.5;
+    const beckenDist = lerp(MACRO_ANKER_BECKEN_DIST_MIN, MACRO_ANKER_BECKEN_DIST_MAX, r01(7));
+    const beckenC = { x: Math.cos(beckenAng) * beckenDist, z: Math.sin(beckenAng) * beckenDist };
+    const beckenR = lerp(MACRO_ANKER_BECKEN_R_MIN, MACRO_ANKER_BECKEN_R_MAX, r01(8));
+    const beckenD = lerp(MACRO_ANKER_BECKEN_D_MIN, MACRO_ANKER_BECKEN_D_MAX, r01(9));
+    const N = MACRO_ANKER_TAL_N;
+    const talVertices = [];
+    const talFloors = [];
+    const dx = beckenC.x - massivC.x;
+    const dz = beckenC.z - massivC.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const ux = dx / len;
+    const uz = dz / len;
+    const perpX = -uz;
+    const perpZ = ux;
+    const talStartX = massivC.x + ux * massivR;
+    const talStartZ = massivC.z + uz * massivR;
+    const tdx = beckenC.x - talStartX;
+    const tdz = beckenC.z - talStartZ;
+    const startFloor = massivH * 0.15;
+    const endFloor = -beckenD * 0.6;
+    for (let i = 0; i < N; i++) {
+        const t = N === 1 ? 0 : i / (N - 1);
+        const lerpX = talStartX + tdx * t;
+        const lerpZ = talStartZ + tdz * t;
+        const jitterScale = i === 0 || i === N - 1 ? 0 : 1;
+        const jitter = (r01(10 + i) - 0.5) * MACRO_ANKER_TAL_JITTER * jitterScale;
+        talVertices.push({ x: lerpX + perpX * jitter, z: lerpZ + perpZ * jitter });
+        const tSm = t * t * (3 - 2 * t);
+        talFloors.push(startFloor + (endFloor - startFloor) * tSm);
+    }
+    return {
+        massivC,
+        massivR,
+        massivH,
+        massivRot,
+        massivAspect: MACRO_ANKER_MASSIV_ASPECT,
+        beckenC,
+        beckenR,
+        beckenD,
+        talVertices,
+        talFloors,
+        talBreite: MACRO_ANKER_TAL_BREITE,
+        talTrenchTiefe: MACRO_ANKER_TAL_TRENCH_TIEFE,
+        talTrenchBreite: MACRO_ANKER_TAL_TRENCH_BREITE,
+        talBlendExp: MACRO_ANKER_TAL_BLEND_EXP,
+    };
+}
+
+let _macroAnkerCache = null;
+let _macroAnkerSeed = null;
+function macroAnker() {
+    if (state.genVersion < 3) return null;
+    if (_macroAnkerCache && _macroAnkerSeed === state.seed) return _macroAnkerCache;
+    if (!state.seed) return null;
+    _macroAnkerCache = makeMacroAnker(state.seed);
+    _macroAnkerSeed = state.seed;
+    return _macroAnkerCache;
+}
+
+function macroSurfaceContribution(x, z, anker) {
+    const ddx = x - anker.massivC.x;
+    const ddz = z - anker.massivC.z;
+    const cs = Math.cos(anker.massivRot);
+    const sn = Math.sin(anker.massivRot);
+    const rxA = ddx * cs - ddz * sn;
+    const rzA = ddx * sn + ddz * cs;
+    const ax = rxA / anker.massivAspect;
+    const aDist = Math.hypot(ax, rzA);
+    const mT = Math.max(0, Math.min(1, 1 - aDist / anker.massivR));
+    const massiv = mT * mT * (3 - 2 * mT) * anker.massivH;
+    const bdx = x - anker.beckenC.x;
+    const bdz = z - anker.beckenC.z;
+    const bDist = Math.hypot(bdx, bdz);
+    const bT = Math.max(0, Math.min(1, 1 - bDist / anker.beckenR));
+    const becken = -bT * bT * (3 - 2 * bT) * anker.beckenD;
+    let tDist = Infinity;
+    let tFloor = 0;
+    for (let i = 0; i + 1 < anker.talVertices.length; i++) {
+        const A = anker.talVertices[i];
+        const B = anker.talVertices[i + 1];
+        const ex = B.x - A.x;
+        const ez = B.z - A.z;
+        const len2 = ex * ex + ez * ez || 1;
+        let t = ((x - A.x) * ex + (z - A.z) * ez) / len2;
+        if (t < 0) t = 0;
+        else if (t > 1) t = 1;
+        const px = A.x + ex * t;
+        const pz = A.z + ez * t;
+        const d = Math.hypot(x - px, z - pz);
+        if (d < tDist) {
+            tDist = d;
+            tFloor = anker.talFloors[i] + (anker.talFloors[i + 1] - anker.talFloors[i]) * t;
+        }
+    }
+    return { massiv, becken, tDist, tFloor };
+}
+
 function terrainMacroSurfaceY(x, z, includeDetail) {
     if (!state.noise) return state.baseHeight || 0;
     const n = state.noise;
@@ -305,6 +437,26 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
     const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4 (mirror)
     let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
+    // Γ4 (genese-plan §4, Worker-Spiegel) — DIE MAKRO-GEOGRAPHIE: Massiv +
+    // Tal + Becken. MUSS bit-identisch zum Main `_terrainMacroSurfaceY` sein
+    // (Determinismus-/Naht-Wand). genVersion ≥ 3 Schleuse via macroAnker()
+    // → alte Welten unverändert.
+    const _macroAnker = macroAnker();
+    if (_macroAnker) {
+        const _m = macroSurfaceContribution(x, z, _macroAnker);
+        withoutTarn += _m.massiv + _m.becken;
+        if (_m.tDist < _macroAnker.talBreite) {
+            const _uT = _m.tDist / _macroAnker.talBreite;
+            const _uShape = Math.pow(_uT, _macroAnker.talBlendExp);
+            const _target = base + _m.tFloor;
+            withoutTarn = withoutTarn + (_target - withoutTarn) * (1 - _uShape);
+            if (_m.tDist < _macroAnker.talTrenchBreite) {
+                const _iT = 1 - _m.tDist / _macroAnker.talTrenchBreite;
+                const _iShape = _iT * _iT * (3 - 2 * _iT);
+                withoutTarn -= _iShape * _macroAnker.talTrenchTiefe;
+            }
+        }
+    }
     // === T6 (mirror) — DAS DRAMA auf kontinentaler Skala. MUSS bit-identisch zum Main-Thread
     // `_terrainMacroSurfaceY` sein (Determinismus-/Naht-Wand V9.42-b). ===
     // T6a (mirror) — GIGANTISCHE CANYONS (λ~960-m-Ravine × sparse λ~3300-m-Maske, bis ~150 m tief, Floor base-65).

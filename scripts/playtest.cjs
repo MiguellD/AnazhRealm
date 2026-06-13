@@ -20374,7 +20374,23 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                 const _sc = sampleMeshKey.split(",");
                 r._buildVoxelChunkWaterIsoSurface(Number(_sc[0]), Number(_sc[1]));
             }
-            const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
+            let sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
+            // V18.179 (Γ4) — defensiv: der Re-Build kann den Mesh leeren, wenn
+            // das designte Massiv-Terrain den Chunk übers Wasser hebt (nach
+            // Clear gibt es weder caDelta noch Atlas-Wasser). Such einen
+            // Ersatz-Chunk, der nach dem Clear noch Mesh hat.
+            if (!sampleMesh) {
+                for (const [k, m] of r.state.voxelChunkWaterIso.entries()) {
+                    if (m && m.geometry) {
+                        sampleMeshKey = k;
+                        sampleMesh = m;
+                        break;
+                    }
+                }
+            }
+            if (!sampleMesh) {
+                return { ...out, error: "no sample mesh after rebuild" };
+            }
             out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
             // V18.6 U-W4 — der Default-Render ist die Höhenfeld-FLÄCHE ("chunk-
             // water-surface"); der A/B-Schalter "iso" baut die alte Zell-Iso
@@ -30632,6 +30648,81 @@ async function checkBandGammaGenese(ctx) {
     check(
         `Γ1-Lesart-4 BODEN ATMET am Ufer: ΔLum=${res.bankDLum && res.bankDLum.toFixed ? res.bankDLum.toFixed(3) : res.bankDLum} (Welle dunkelt feuchte Vertices)`,
         Number.isFinite(res.bankDLum) && res.bankDLum > 0
+    );
+    // Γ4 (V18.179) — DIE MAKRO-GEOGRAPHIE: Massiv + Tal + Becken.
+    const resG4 = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+        out.struct =
+            typeof r._makeMacroAnker === "function" &&
+            typeof r._macroAnker === "function" &&
+            typeof r._macroSurfaceContribution === "function" &&
+            Object.isFrozen(A.MACRO_ANKER);
+        const orig = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
+        try {
+            if (!r.state.worldMeta) r.state.worldMeta = {};
+            r.state.worldMeta.genVersion = 3;
+            r._macroAnkerCache = null;
+            const anker = r._macroAnker();
+            out.ankerExists = anker !== null;
+            if (anker) {
+                // A/B Massiv-Zentrum (gen 3 vs gen 1) — der ehrliche Welle-Beweis
+                const mC = anker.massivC;
+                const bC = anker.beckenC;
+                const h3M = r._terrainMacroSurfaceY(mC.x, mC.z, false);
+                const h3B = r._terrainMacroSurfaceY(bC.x, bC.z, false);
+                r.state.worldMeta.genVersion = 1;
+                r._macroAnkerCache = null;
+                out.legacyAnkerNull = r._macroAnker() === null;
+                const h1M = r._terrainMacroSurfaceY(mC.x, mC.z, false);
+                const h1B = r._terrainMacroSurfaceY(bC.x, bC.z, false);
+                out.dHmassiv = h3M - h1M;
+                out.dHbecken = h3B - h1B;
+                // Quick-Abfluss-Probe: der niedrigste Becken-Rand zeigt Richtung Tal-Endpunkt
+                const tEnd = anker.talVertices[anker.talVertices.length - 1];
+                const dirToTal = Math.atan2(tEnd.z - bC.z, tEnd.x - bC.x);
+                let minH = Infinity;
+                let minAng = 0;
+                r.state.worldMeta.genVersion = 3;
+                r._macroAnkerCache = null;
+                for (let i = 0; i < 16; i++) {
+                    const a = (i / 16) * Math.PI * 2;
+                    const sx = bC.x + Math.cos(a) * anker.beckenR;
+                    const sz = bC.z + Math.sin(a) * anker.beckenR;
+                    const sh = r._terrainMacroSurfaceY(sx, sz, false);
+                    if (sh < minH) {
+                        minH = sh;
+                        minAng = a;
+                    }
+                }
+                let dAng = Math.abs(minAng - dirToTal);
+                while (dAng > Math.PI) dAng -= Math.PI * 2;
+                out.spillAngleDeg = (Math.abs(dAng) * 180) / Math.PI;
+            }
+        } finally {
+            if (r.state.worldMeta) {
+                if (orig === undefined) delete r.state.worldMeta.genVersion;
+                else r.state.worldMeta.genVersion = orig;
+            }
+            r._macroAnkerCache = null;
+        }
+        return out;
+    });
+    check(`Γ4 Struktur: _makeMacroAnker/_macroAnker/_macroSurfaceContribution + MACRO_ANKER frozen`, resG4.struct === true);
+    check(`Γ4 _macroAnker() liefert eine Anker-Struktur (gen 3)`, resG4.ankerExists === true);
+    check(`Γ4 Legacy-Tor: _macroAnker() null bei gen 1`, resG4.legacyAnkerNull === true);
+    check(
+        `Γ4 A/B: Welle HEBT Massiv-Zentrum (ΔH=${resG4.dHmassiv && resG4.dHmassiv.toFixed ? resG4.dHmassiv.toFixed(1) : resG4.dHmassiv} m)`,
+        Number.isFinite(resG4.dHmassiv) && resG4.dHmassiv > 30
+    );
+    check(
+        `Γ4 A/B: Welle SENKT Becken-Zentrum (ΔH=${resG4.dHbecken && resG4.dHbecken.toFixed ? resG4.dHbecken.toFixed(1) : resG4.dHbecken} m)`,
+        Number.isFinite(resG4.dHbecken) && resG4.dHbecken < -5
+    );
+    check(
+        `Γ4 Abfluss-Invariante: Becken-Spill zeigt zum Tal (Δ=${resG4.spillAngleDeg && resG4.spillAngleDeg.toFixed ? resG4.spillAngleDeg.toFixed(1) : resG4.spillAngleDeg}°)`,
+        Number.isFinite(resG4.spillAngleDeg) && resG4.spillAngleDeg < 60
     );
     check(
         "Γ2 KRONEN differenzieren: unter wächst im Wald-Klumpen, lichtung in der Lücke, rand meidet beide Pole, ohne kronen-Feld neutral 1",

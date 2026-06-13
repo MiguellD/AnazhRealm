@@ -11790,12 +11790,15 @@ class AnazhRealm {
         if (typeof m.seed !== "string" || m.seed.length === 0) {
             m.seed = "anazh-realm-seed";
         }
-        // Γ1 (genese-plan) — ein BRANDNEUER Spieler (fresh: kein worldId aus
+        // Γ1/Γ4 (genese-plan) — ein BRANDNEUER Spieler (fresh: kein worldId aus
         // einem Save) bekommt die heutige Genese-Version: er hat kein Gesicht
         // zu bewahren, und „identisch für alle" bleibt wahr (alle neuen Spieler
         // teilen Seed UND genVersion). Eine GELADENE Welt ohne Feld bleibt
         // Legacy (fehlend → 1, _genVersion) — das Drainage-Netz-Gesetz.
-        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 2;
+        // V18.179 — Γ4 macht das Spektrum dreistufig: 1=Legacy, 2=Feuchte+
+        // Lesart-4 (V18.166/.178), 3=plus die Makro-Geographie (Massiv+Tal+
+        // Becken). Frische Welten kriegen direkt 3 (kein Gesicht zu bewahren).
+        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 3;
         // V9.26 Phase 5c-Migrations-Flip + V9.33 Phase 5c.2.b Eingangs-Welt-
         // Flip + V9.35 Phase 5c.2.c.2 Toggle-Tod — der Voxel-Boden ist die
         // kanonische, irreversible Form. V9.35 zieht die ZWANGS-Migration nach:
@@ -12035,10 +12038,11 @@ class AnazhRealm {
         // hasht das intern. Der Seed bleibt für die gesamte Welt-Lebensdauer
         // konstant (in worldMeta persistiert).
         const seed = `w-${worldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
-        // Γ1 (genese-plan) — jede NEUE Welt wird mit der heutigen Genese-Version
-        // geboren; bestehende Welten (Feld fehlt → 1) behalten ihr Gesicht
-        // (legacy-erhaltend: das Drainage-Netz-Gesetz, Genese ist Welt-Identität).
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 2 };
+        // Γ1/Γ4 (genese-plan) — jede NEUE Welt wird mit der heutigen Genese-
+        // Version geboren; bestehende Welten (Feld fehlt → 1) behalten ihr
+        // Gesicht (legacy-erhaltend: das Drainage-Netz-Gesetz, Genese ist
+        // Welt-Identität). V18.179: gen 3 schaltet Γ4-Makro-Geographie.
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 3 };
     }
 
     // Snapshot einer „leeren" Welt mit gegebenem worldMeta. Optional bekommt
@@ -19625,6 +19629,158 @@ class AnazhRealm {
     // das Makro-Gefälle pro Zelle → das Drainage-Netz würde dem Rauschen
     // statt dem Tal-Relief folgen. Warp + Erosion formen das echte Tal-Relief
     // → die Drainage sieht sie, nur die Detail-Oktave bleibt ihr verborgen.
+    // Γ4 (genese-plan §4 + Vertiefung §2) — DER MAKRO-ANKER. Drei Helper:
+    //   _makeMacroAnker(seed) → die pure Geometrie-Struktur (deterministisch,
+    //     reines f(seed) → kein Source-of-truth-Konflikt zwischen Welten);
+    //   _macroAnker() → lazy-cached pro Welt (gen<3 → null, kein Effekt);
+    //   _macroSurfaceContribution(x, z) → die drei Höhen-Terme (Massiv +
+    //     Tal + Becken).
+    // worldMeta.macro als Erbgut (V8.59) — bewusst NICHT persistiert in dieser
+    // Welle: der Anker ist rein deterministisch aus dem Seed, eine Welt mit
+    // demselben Seed UND genVersion ≥ 3 erzeugt überall denselben Anker (auch
+    // beim Worker-Spiegel). Die "diff/share Geographie"-Vision (Vertiefung
+    // §2.6 Erbgut) kommt in einer Folge-Welle als zusätzlicher Snapshot-Felt.
+    _makeMacroAnker(seed) {
+        const noise = new SimplexNoise(seed + "-macro-anker");
+        // Pseudo-zufalls-Float-Stream aus dem deterministischen Noise. Wir
+        // brauchen nur ~15 [0,1]-Werte; der Seed-Suffix garantiert Γ5-Stream-
+        // Disziplin (kein Re-Roll anderer Welt-Streams).
+        const r01 = (k) => (noise.noise2D(k * 17.3, k * 9.7) + 1) * 0.5;
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const MA = AnazhRealm.MACRO_ANKER;
+        // Massiv-Position: irgendwo im Spawn-Bereich (~700 m vom Ursprung)
+        const massivAng = r01(1) * Math.PI * 2;
+        const massivDist = MA.spawnRadius * (0.4 + r01(2) * 0.5);
+        const massivC = {
+            x: Math.cos(massivAng) * massivDist,
+            z: Math.sin(massivAng) * massivDist,
+        };
+        const massivR = lerp(MA.massivRadiusMin, MA.massivRadiusMax, r01(3));
+        const massivH = lerp(MA.massivHoeheMin, MA.massivHoeheMax, r01(4));
+        // Streichrichtung: 12°-120° (Vorzug NE-SW wie LAAS §4.2-Maß)
+        const massivRot = 0.2 + r01(5) * 1.7;
+        // Becken: ungefähr gegenüber dem Massiv, deutlich versetzt
+        const beckenAng = massivAng + Math.PI + (r01(6) - 0.5) * 0.5;
+        const beckenDist = lerp(MA.beckenDistMin, MA.beckenDistMax, r01(7));
+        const beckenC = {
+            x: Math.cos(beckenAng) * beckenDist,
+            z: Math.sin(beckenAng) * beckenDist,
+        };
+        const beckenR = lerp(MA.beckenRadiusMin, MA.beckenRadiusMax, r01(8));
+        const beckenD = lerp(MA.beckenTiefeMin, MA.beckenTiefeMax, r01(9));
+        // Tal: N Vertices vom MASSIV-RAND (nicht Zentrum — sonst würde der
+        // Tal-Lerp den Massiv-Boost im Massiv-Zentrum wieder wegschreiben,
+        // GEMESSEN diag-makro) zum Becken-Zentrum, mit Per-Vertex-Floors
+        // monoton fallend (smoothstep über t) — die "Hauptfluss landet
+        // automatisch im Becken"-Garantie der Plan-Vertiefung §4.5/4.6.
+        const N = MA.talVertices;
+        const talVertices = [];
+        const talFloors = [];
+        const dx = beckenC.x - massivC.x;
+        const dz = beckenC.z - massivC.z;
+        const len = Math.hypot(dx, dz) || 1;
+        const ux = dx / len;
+        const uz = dz / len;
+        const perpX = -uz;
+        const perpZ = ux;
+        // Tal beginnt knapp ausserhalb des Massiv-Hauptkörpers (am Massiv-
+        // Sockel-Rand → das Tal "kommt vom Berg herunter")
+        const talStartX = massivC.x + ux * massivR;
+        const talStartZ = massivC.z + uz * massivR;
+        const tdx = beckenC.x - talStartX;
+        const tdz = beckenC.z - talStartZ;
+        const startFloor = massivH * 0.15; // sanft am Massiv-Sockel-Rand
+        const endFloor = -beckenD * 0.6; // im Becken-Boden enden
+        for (let i = 0; i < N; i++) {
+            const t = N === 1 ? 0 : i / (N - 1);
+            const lerpX = talStartX + tdx * t;
+            const lerpZ = talStartZ + tdz * t;
+            // Endpunkte unverschoben (Tal-Start am Massiv-Rand + Becken-Anker
+            // FEST), nur Mitten-Vertices ±50 m jittern (Plan §4.5)
+            const jitterScale = i === 0 || i === N - 1 ? 0 : 1;
+            const jitter = (r01(10 + i) - 0.5) * MA.talJitter * jitterScale;
+            talVertices.push({
+                x: lerpX + perpX * jitter,
+                z: lerpZ + perpZ * jitter,
+            });
+            const tSm = t * t * (3 - 2 * t); // smoothstep für monotonen Fall
+            talFloors.push(startFloor + (endFloor - startFloor) * tSm);
+        }
+        return {
+            massivC,
+            massivR,
+            massivH,
+            massivRot,
+            massivAspect: MA.massivAspect,
+            beckenC,
+            beckenR,
+            beckenD,
+            talVertices,
+            talFloors,
+            talBreite: MA.talBreite,
+            talTrenchTiefe: MA.talTrenchTiefe,
+            talTrenchBreite: MA.talTrenchBreite,
+            talBlendExp: MA.talBlendExp,
+        };
+    }
+
+    _macroAnker() {
+        if (this._macroAnkerCache) return this._macroAnkerCache;
+        if (this._genVersion() < 3) return null;
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        this._macroAnkerCache = this._makeMacroAnker(seed);
+        return this._macroAnkerCache;
+    }
+
+    // Drei-Terme der Macro-Geographie: Massiv-Boost (anisotrop), Tal-Senke
+    // (U-Profil + Innentrog) mit ZIEL-FLOOR (zum Lerpen), Becken-Mulde. Rein
+    // f(x, z, anker) → bit-identisch im Worker-Spiegel reproduzierbar.
+    _macroSurfaceContribution(x, z, anker) {
+        // (1) Massiv-Boost — anisotrope smoothstep-Glocke, dreht entlang
+        // Streichrichtung. Das ist die FORTSETZUNGS-Form (§4 des Plans);
+        // die volle Ridge-Noise-Form (Vertiefung §4.2) kommt als spätere
+        // Welle (Substitution der Glocke durch das ridge-Noise-Spektrum).
+        const ddx = x - anker.massivC.x;
+        const ddz = z - anker.massivC.z;
+        const cs = Math.cos(anker.massivRot);
+        const sn = Math.sin(anker.massivRot);
+        const rxA = ddx * cs - ddz * sn;
+        const rzA = ddx * sn + ddz * cs;
+        const ax = rxA / anker.massivAspect; // entlang Streichrichtung gestaucht
+        const aDist = Math.hypot(ax, rzA);
+        const mT = Math.max(0, Math.min(1, 1 - aDist / anker.massivR));
+        const massiv = mT * mT * (3 - 2 * mT) * anker.massivH;
+        // (2) Becken-Senke — smoothstep-Mulde
+        const bdx = x - anker.beckenC.x;
+        const bdz = z - anker.beckenC.z;
+        const bDist = Math.hypot(bdx, bdz);
+        const bT = Math.max(0, Math.min(1, 1 - bDist / anker.beckenR));
+        const becken = -bT * bT * (3 - 2 * bT) * anker.beckenD;
+        // (3) Tal — Distanz zur Polyline + Per-Vertex-Floor (monoton fallend
+        // vom Massiv-Fuß zum Becken). Bilineare Floor-Interpolation am
+        // segmenteigenen t-Parameter, exakt das §4.6-Muster.
+        let tDist = Infinity;
+        let tFloor = 0;
+        for (let i = 0; i + 1 < anker.talVertices.length; i++) {
+            const A = anker.talVertices[i];
+            const B = anker.talVertices[i + 1];
+            const ex = B.x - A.x;
+            const ez = B.z - A.z;
+            const len2 = ex * ex + ez * ez || 1;
+            let t = ((x - A.x) * ex + (z - A.z) * ez) / len2;
+            if (t < 0) t = 0;
+            else if (t > 1) t = 1;
+            const dx = x - (A.x + ex * t);
+            const dz = z - (A.z + ez * t);
+            const d = Math.hypot(dx, dz);
+            if (d < tDist) {
+                tDist = d;
+                tFloor = anker.talFloors[i] + (anker.talFloors[i + 1] - anker.talFloors[i]) * t;
+            }
+        }
+        return { massiv, becken, tDist, tFloor };
+    }
+
     _terrainMacroSurfaceY(x, z, includeDetail = true) {
         if (!this._voxelNoise) {
             const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
@@ -19721,6 +19877,36 @@ class AnazhRealm {
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
         let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        // Γ4 (genese-plan §4) — DIE MAKRO-GEOGRAPHIE: Massiv-Boost + Tal-Senke
+        // (U-Profil mit Lerp zum Per-Vertex-Floor + Innentrog) + Becken-Mulde.
+        // Drei deterministische Geometrien aus dem Seed, die das Terrain von
+        // Noise-Statistik in KOMPOSITION wandeln (eine Welt mit Orten, nicht
+        // nur mit Zahlen). genVersion ≥ 3 Schleuse über `_macroAnker()` —
+        // alte Welten (gen 1/2) sehen das Feld NICHT (Drainage-Netz-Gesetz).
+        // MUSS bit-identisch im Worker (`voxel-worker.js`, Naht-Wand).
+        const _macroAnker = this._macroAnker();
+        if (_macroAnker) {
+            const _m = this._macroSurfaceContribution(x, z, _macroAnker);
+            // Massiv-Boost + Becken-Senke: additiv, geformen die Bühne
+            withoutTarn += _m.massiv + _m.becken;
+            // Tal: Lerp die Surface zum Per-Vertex-Floor (innerhalb Tal-
+            // Breite). Profi-Form: pow-U-Profil + smoothstep-Innentrog —
+            // das Plan-Vertiefungs-§4.5-Pattern (Lerpen statt blindes
+            // Subtrahieren — das Tal MÜNDET im richtigen Niveau).
+            if (_m.tDist < _macroAnker.talBreite) {
+                const _uT = _m.tDist / _macroAnker.talBreite;
+                const _uShape = Math.pow(_uT, _macroAnker.talBlendExp);
+                const _target = base + _m.tFloor;
+                withoutTarn = withoutTarn + (_target - withoutTarn) * (1 - _uShape);
+                // Innentrog: konzentrierter Strom (Fluss findet sich VON SELBST
+                // im Trog wegen niedrigster Höhe + Flow-Akkumulation)
+                if (_m.tDist < _macroAnker.talTrenchBreite) {
+                    const _iT = 1 - _m.tDist / _macroAnker.talTrenchBreite;
+                    const _iShape = _iT * _iT * (3 - 2 * _iT);
+                    withoutTarn -= _iShape * _macroAnker.talTrenchTiefe;
+                }
+            }
+        }
         // === T6 (DIE GIGANTISCHE WELT) — das Drama auf KONTINENTALER Skala (V14-Dimensionen geehrt:
         // die Features sind λ1000–7000 m, das Drama auch — NICHT λ33 wie mein T5-Fehler). MUSS
         // bit-identisch im Worker-Mirror (Determinismus-/Naht-Wand). ===
@@ -33041,9 +33227,9 @@ class AnazhRealm {
                 seed: identity.newSeed,
                 fusionStrategy: strategy,
                 schemaVersion: "10.0-fusion-v1",
-                // Γ1 (genese-plan) — die Fusion gebiert NEUES Terrain (newSeed):
-                // kein Gesicht zu bewahren → die heutige Genese-Version.
-                genVersion: 2,
+                // Γ1/Γ4 (genese-plan) — die Fusion gebiert NEUES Terrain (newSeed):
+                // kein Gesicht zu bewahren → die heutige Genese-Version (V18.179: 3).
+                genVersion: 3,
             },
             dslAbilities: mergedAbilities,
             dslHistory: mergedHistory,
@@ -60567,7 +60753,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.178.0";
+AnazhRealm.VERSION = "18.179.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -61356,6 +61542,43 @@ AnazhRealm.SPATIAL_HOLLOW_SHAPES = Object.freeze(new Set(["sphere", "torus"]));
 // Γ1/Γ2 (genese-plan) — DAS FEUCHTE-FELD + die KRONEN-Lesarten. Die fünfte
 // Welt-Stimme (aus der Hydrosphäre abgeleitet, nicht Noise) + das ökologische
 // Differenzial auf dem EINEN Klump-Feld. Erst-Würfe browser-justierbar.
+// Γ4 (genese-plan §4 + Vertiefung §2) — DER MAKRO-ANKER: das designte
+// Geographie-Skelett, das das Terrain von Statistik in Komposition wandelt.
+// Jedes neue Welt-Subjekt (genVersion ≥ 3) bekommt ein deterministisch aus
+// dem Seed gebornes Trio aus Massiv-Position+Form, Becken-Position+Tiefe und
+// einer 5-Vertex-Tal-Polyline (mit per-Vertex-Floors, monoton fallend) — die
+// EINE bewusste Geographie, auf der die Noise-Schichten ihre Textur ausbreiten.
+// Die Massiv-Anker werden durch ein anisotropes smoothstep-Profil geformt
+// (NE-SW-Vorzugs-Streichrichtung, der Anzahl-Hinweis vom Plan §4.2), das Tal
+// trägt ein U-Profil + Innentrog, das Becken eine smoothstep-Mulde — die
+// fortgeschrittenen Vertiefungs-Schichten (Hills-Lows-Compression, Ridge-Noise
+// statt Glocke, Hardness-Feld, Drainage-by-Design, Karst-Türme) kommen in
+// Γ4-Folge-Wellen (Plan §2.1–2.7). Die Plan-WAND: die Becken-Spillpunkt-
+// Garantie (Tal mündet im Becken, kein closed basin) emergent aus der Tal-
+// Polyline-End-Vertex == Becken-Zentrum + monoton fallender talFloor.
+AnazhRealm.MACRO_ANKER = Object.freeze({
+    // Massiv: anisotrope smoothstep-Glocke (Vertiefung-Übergang zu Ridge-Noise)
+    spawnRadius: 700, // Massiv-Spawn um (0,0) — bewusst nah am Spieler-Spawn
+    massivRadiusMin: 480,
+    massivRadiusMax: 720,
+    massivHoeheMin: 70,
+    massivHoeheMax: 110,
+    massivAspect: 1.6, // anisotrop entlang Streichrichtung (LAAS §4.2-Maß)
+    // Becken: ungefähr gegenüber dem Massiv, deutlich versetzt
+    beckenDistMin: 900,
+    beckenDistMax: 1500,
+    beckenRadiusMin: 280,
+    beckenRadiusMax: 420,
+    beckenTiefeMin: 12,
+    beckenTiefeMax: 22,
+    // Tal: 5 Vertices vom Massiv-Fuß zum Becken-Zentrum
+    talVertices: 5,
+    talJitter: 100, // ±50 m senkrecht zur Massiv-Becken-Achse
+    talBreite: 120, // halbe Breite des U-Profils
+    talTrenchTiefe: 14, // zusätzliche Innentrog-Senke (Fluss-Bett)
+    talTrenchBreite: 28, // halbe Breite des Innentrogs
+    talBlendExp: 2.2, // U-Profil-Exponent (smoothstep-quasi); LAAS-Wert
+});
 AnazhRealm.FEUCHTE = Object.freeze({
     flussReichweite: 26, // m jenseits der Fluss-Halbbreite, smoothstep-Fade
     hoeheNah: 1.5, // ≤ so hoch überm Wasserspiegel = voll feucht (Niederung)
