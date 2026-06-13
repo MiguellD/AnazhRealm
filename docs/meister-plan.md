@@ -1076,6 +1076,19 @@ ist eine RATSCHE (T0: Fehlerzahl messen = Baseline · T1: die tragenden Nähte t
 [state-Shape, Blueprint, Connection, Entry] · Band: Fehlerzahl ≤ Baseline, monoton
 fallend — nie ein Block, immer ein Druck).
 
+**T0 GEMESSEN (V18.178, „miss zuerst, dann entscheiden"):** `tsc --checkJs`
+über den Stamm wirft **1103** Fehler roh → **490** mit den Vendor-Globals als
+`.d.ts` deklariert (THREE/Ammo/window) → davon **416 = TS2339 „Property X does
+not exist"** auf dem untypisierten `this.state`-Bag (kein echtes Signal — TS
+kennt die inkrementell gebaute state-Form nicht; der echte Rest: ~11 TS2304
+Cannot-find-name · 18 TS2488 Iterator · ~11 Typ-Mismatch · ~6 Arithmetik). BEFUND:
+die Ratsche hat erst SIGNAL, wenn T1 zuerst den `state`-Shape typisiert (sonst
+überwacht das Band 416 Rausch-Einträge); done minimal (490 einfrieren) wäre eine
+halbe Sache. → **SCHÖPFER-ENTSCHEID (R-037, Korpus):** in die state-Typisierung
+investieren (dann ist die Ratsche scharf) ODER ruhen lassen (der no-build-Hedge
+bleibt rein). Die `.d.ts`+tsconfig-Schicht ist reine CHECK-Schicht (keine
+Runtime, kein Transpile) — der no-build-Charakter bliebe so oder so unberührt.
+
 **(d) DIE KALTSTART-PROBE (Eigenfrequenz-Risiko → pausierbares Projekt) — Prozess-Wand
 §8.7 Punkt 5:** die Architektur ist bereits pausen-tolerant GEBAUT (gefrorene Taille ·
 goldene Dateien · handover · Bänder, die nach 90 Tagen gleich grün sind). Das wird
