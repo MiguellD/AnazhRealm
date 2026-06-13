@@ -30434,6 +30434,50 @@ async function checkBandV18165KonsoleHeil(ctx) {
 // kontrolliertem Input (V17.32) + den KONSUM beider Gating-Stellen (V17.31,
 // die Doppel-Gating-WAND nah/Fernfeld) + das Legacy-Tor (genVersion fehlt → 1
 // → Feld schweigt, schilf ruht — bestehende Welten behalten ihr Gesicht).
+// V18.181-merge-Λ Sub 3g — AAA-Atmosphäre Regression-Wand (Welle 6-Nachhol).
+// Ein scharfer Review fand: `static get AERIAL()` in der Klasse überdeckte das
+// Top-Level `AnazhRealm.AERIAL = ...` LAUTLOS (Getter ohne Setter, non-strict-
+// Assignment fällt durch). Mein Sub 3g-Bump war funktional tot — die Antennen
+// lasen 0.1/0.6 statt 0.14/0.75. Diese Wand fängt JEDE künftige Wiederholung
+// derselben Bug-Klasse (frozen Konstante + Getter-Schatten + non-strict-Fall-
+// durch).
+async function checkBandV18177AAA(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+        // LIVE-Werte (was die Antennen wirklich lesen), NICHT Source-Strings.
+        const aer = A.AERIAL || {};
+        out.heightWeight = aer.heightWeight;
+        out.microStrength = aer.microStrength;
+        out.aoStrength = aer.aoStrength;
+        out.aoCap = aer.aoCap;
+        out.heightCap = aer.heightCap;
+        out.frozen = Object.isFrozen(aer);
+        // Doppel-Definitions-Wand: prüfe Source — kein AKTIVER static get
+        // AERIAL() in der Klasse (würde das Top-Level-Assignment schweigend
+        // überdecken). Comments mit dem Wort sind erlaubt — sie dokumentieren
+        // die Heilung. Der Regex strippt Kommentar-Zeilen + sucht dann das
+        // Pattern als echte Method-Definition.
+        const srcNoComments = A.toString()
+            .replace(/\/\/[^\n]*/g, "")
+            .replace(/\/\*[\s\S]*?\*\//g, "");
+        out.noGetterShadow = !/static\s+get\s+AERIAL\s*\(/.test(srcNoComments);
+        return out;
+    });
+    check("V18.177 AAA: AERIAL ist frozen + ohne static-get-Schatten (Welle 6-Nachhol Sub 3g)",
+        res.frozen === true && res.noGetterShadow === true);
+    check(`V18.177 AAA: heightWeight === 0.75 (war 0.6 — GEMESSEN ${res.heightWeight})`,
+        Math.abs(res.heightWeight - 0.75) < 1e-9);
+    check(`V18.177 AAA: microStrength === 0.14 (war 0.1 — GEMESSEN ${res.microStrength})`,
+        Math.abs(res.microStrength - 0.14) < 1e-9);
+    check(`V18.177 AAA: aoStrength === 0.38 (war 0.35 — GEMESSEN ${res.aoStrength})`,
+        Math.abs(res.aoStrength - 0.38) < 1e-9);
+    check(`V18.177 AAA: aoCap === 0.18 (war 0.16 — GEMESSEN ${res.aoCap})`,
+        Math.abs(res.aoCap - 0.18) < 1e-9);
+}
+
 // Das End-to-End (schilf wächst am echten Ufer, 51 GEMESSEN) lebt im
 // stehenden Werkzeug scripts/diag-genese.cjs.
 async function checkBandGammaGenese(ctx) {
@@ -48433,6 +48477,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWBHofKarte(ctx);
             await checkBandWCIchWahrheit(ctx);
             await checkBandWDRittSpawn(ctx);
+            await checkBandV18177AAA(ctx);
             await checkBandGammaGenese(ctx);
             await checkBandWEFrequenzband(ctx);
             await checkBandWFFluss(ctx);

@@ -21496,15 +21496,16 @@ class AnazhRealm {
     // aoStrength/aoCap = die output-seitige Mikro-Tiefe für Flach-Farb-Strukturen
     // (das Terrain hat seine triplanar-Schicht im colorNode). Alle browser-
     // justierbar für den Schöpfer-Sign-off (pixel-blind headless).
-    static get AERIAL() {
-        return Object.freeze({
-            heightWeight: 0.6,
-            heightCap: 0.85,
-            microStrength: 0.1,
-            aoStrength: 0.35,
-            aoCap: 0.16,
-        });
-    }
+    //
+    // V18.181-merge-Λ Sub 3g (V18.177 AAA-Atmosphäre) HEILUNG (Welle 6-Nachhol):
+    // der frühere `static get AERIAL()` an dieser Stelle gab die ALTEN Werte
+    // (0.6 / 0.85 / 0.1 / 0.35 / 0.16) zurück und überdeckte das Top-Level-
+    // Assignment `AnazhRealm.AERIAL = ...` am Ende der Datei LAUTLOS (statischer
+    // Getter ohne Setter, non-strict-Assignment fällt durch). Mein Sub 3g-Bump
+    // (0.75/0.88/0.14/0.38/0.18) war damit FUNKTIONAL TOT — die AAA-Halos in
+    // createGalaxySkybox wirkten (eigener Shader-Pfad), aber die _applySubstance
+    // Response-Antennen lasen weiter 0.1/0.6 statt 0.14/0.75. Heilung: der
+    // Getter fällt; die EINE Quelle ist das Top-Level-Assignment.
 
     // W-E (meister-plan §8.3, V18.173) — DAS FREQUENZBAND: das SENDE-Feld war
     // schon EINS (atmoUniforms + lights + fog), die EMPFANGS-Seite war fünffach
