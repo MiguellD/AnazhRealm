@@ -12688,10 +12688,14 @@ class AnazhRealm {
         // hash3-Präzisions-Chaos). Fallback: der alte noise3-Pfad.
         let fbm;
         if (mxNoise) {
+            // V18.177 — vierte Oktave (AAA-Detail-Standard): die feine
+            // Mikrostruktur in Cumulus-Rändern, sichtbar als zerrissene
+            // Fetzen statt glatter Schwellen-Kante.
             const o1 = mxNoise(cp);
             const o2 = mxNoise(cp.mul(2.03)).mul(0.5);
             const o3 = mxNoise(cp.mul(4.01)).mul(0.25);
-            fbm = o1.add(o2).add(o3).div(1.75).mul(0.5).add(0.5);
+            const o4 = mxNoise(cp.mul(8.05)).mul(0.125);
+            fbm = o1.add(o2).add(o3).add(o4).div(1.875).mul(0.5).add(0.5);
         } else {
             const o1 = noise3(cp);
             const o2 = noise3(cp.mul(2.03)).mul(0.5);
@@ -12720,20 +12724,40 @@ class AnazhRealm {
         // (nahe der Schwelle = ausgedünnte Fetzen) → der „plastische" Eindruck.
         const lit = smoothstep(thr, float(1.0), fbm);
         const cloudShade = mix(float(0.7), float(1.05), lit);
-        // Sonnen-Glow: nahe der Sonnen-Richtung ein warmer heller Rand (golden hour).
+        // V18.177 (DIE WELT ERWACHT — AAA-Profi-Atmosphäre): die Sonnen-
+        // Halo-Schichten. AAA-Pattern: drei kaskadierte Glow-Layer + Sonnen-
+        // Disc-Highlight, damit die Sonne am Himmel als ECHTES Objekt
+        // erscheint (statt nur als Punkt). Goldener Halo am Tag, kühler
+        // Mondhalo nachts.
         const sunDot = clamp(dot(vDir, normalize(uSunDir)), float(0.0), float(1.0));
-        const sunGlow = pow(sunDot, float(5.0));
-        // Wolken-Grundfarbe folgt der Himmel-Helligkeit (Nacht graublau → Tag warm-
-        // weiß) + additive Sonnen-Wärme am Glow-Rand.
+        // Drei Schichten: bright Disc → enger Halo → weiter Halo → atmosphärischer Haze.
+        const sunGlowWide = pow(sunDot, float(4.0)); // Wolken-Wärme (golden hour)
+        const sunGlowMid = pow(sunDot, float(28.0)); // enger heller Halo
+        const sunGlowDisc = pow(sunDot, float(240.0)); // bright Sonnen-Disc (sichtbar als Kugel)
+        // Wolken-Grundfarbe folgt der Himmel-Helligkeit (Nacht graublau → Tag warm-weiß)
         const skyLum = uNebulaColor.x.add(uNebulaColor.y).add(uNebulaColor.z).div(3.0);
         const baseCloud = mix(
             vec3(0.4, 0.43, 0.52),
             vec3(1.0, 0.99, 0.96),
             clamp(skyLum.mul(2.2), float(0.0), float(1.0))
         );
-        const cloudColor = baseCloud.mul(cloudShade).add(vec3(1.0, 0.82, 0.55).mul(sunGlow.mul(0.55)));
+        // Wolken: Cumulus mit goldenem Glow-Rand (V17.2-Form) + sun-back-lit (V18.177)
+        const cloudColor = baseCloud
+            .mul(cloudShade)
+            .add(vec3(1.0, 0.82, 0.55).mul(sunGlowWide.mul(0.55)))
+            .add(vec3(1.0, 0.9, 0.7).mul(sunGlowMid.mul(0.4))); // sun-back-lit am Cumulus-Rand
 
-        const finalColor = mix(nebula, cloudColor, cloudAmt);
+        const finalCloud = mix(nebula, cloudColor, cloudAmt);
+        // Sonnen-DISC + Halo wirken AUCH am wolkenlosen Himmel: nebula bekommt
+        // einen weiten warmen Halo (die "warme Stunde" Atmosphäre) + einen
+        // bright Disc-Highlight (die sichtbare Sonne, auch ohne Sphere-Mesh).
+        const isDayMix = clamp(skyLum.mul(3.5), float(0.0), float(1.0));
+        const haloWarm = vec3(1.0, 0.85, 0.55);
+        const discBright = vec3(1.2, 1.1, 0.9);
+        const finalColor = finalCloud
+            .add(haloWarm.mul(sunGlowWide.mul(0.18).mul(isDayMix))) // weiter goldener Halo
+            .add(haloWarm.mul(sunGlowMid.mul(0.6).mul(isDayMix))) // enger heller Halo
+            .add(discBright.mul(sunGlowDisc.mul(0.95).mul(isDayMix))); // Sonnen-Disc
 
         const skyboxGeometry = new THREE.SphereGeometry(500, 32, 32);
         const skyboxMaterial = new THREE.MeshBasicNodeMaterial();
@@ -58458,23 +58482,28 @@ class AnazhRealm {
         // via _updateCelestialBodies(angle). Sonne tagsüber sichtbar, Mond
         // nachts (gegenüberliegende Hemisphäre). Vision: ein Himmel der lebt,
         // nicht eine Farb-Animation. Größe 12 m (gut sichtbar aus 380 m Distanz).
-        const sunGeo = new THREE.SphereGeometry(12, 16, 16);
+        // V18.177 (DIE WELT ERWACHT) — Sonne als plastischer Himmelskörper:
+        // 18 m groß (12 m → 18 m), brighter color (0xffe8b0 → 0xfffce6) +
+        // opacity 1.0 → sichtbar auch durch ferne Atmosphäre + im Wechselspiel
+        // mit dem Skybox-Halo (dort dreischichtiger Glow) entsteht der echte
+        // Profi-Sonnen-Eindruck. Mond bleibt etwas zurückhaltender (10 m).
+        const sunGeo = new THREE.SphereGeometry(18, 24, 24);
         const sunMat = new THREE.MeshBasicMaterial({
-            color: 0xffe8b0,
+            color: 0xfffce6,
             fog: false,
             transparent: true,
-            opacity: 0.95,
+            opacity: 1.0,
         });
         const sunMesh = new THREE.Mesh(sunGeo, sunMat);
         sunMesh.frustumCulled = false; // immer rendern (Himmelskörper)
         scene.add(sunMesh);
         this.state.sunMesh = sunMesh;
-        const moonGeo = new THREE.SphereGeometry(9, 16, 16);
+        const moonGeo = new THREE.SphereGeometry(10, 20, 20);
         const moonMat = new THREE.MeshBasicMaterial({
-            color: 0xd0d4e0,
+            color: 0xe5e8f0,
             fog: false,
             transparent: true,
-            opacity: 0.9,
+            opacity: 0.95,
         });
         const moonMesh = new THREE.Mesh(moonGeo, moonMat);
         moonMesh.frustumCulled = false;
@@ -60509,7 +60538,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.176.0";
+AnazhRealm.VERSION = "18.177.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -61184,6 +61213,17 @@ AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
 // rangeH 0.08 = ±8 % Hue → laub-Töne von kühlem zu warmem Grün, ohne grellbunt;
 // rangeS 0.10 = ±10 % Sättigung; rangeV 0.06 = ±6 % Helligkeit. Browser-justierbar.
 AnazhRealm.INSTANCE_TINT = Object.freeze({ rangeH: 0.08, rangeS: 0.1, rangeV: 0.06 });
+// V18.177 (DIE WELT ERWACHT) — AAA-Atmosphäre: stärkere Distanz-Verblassung
+// (heightWeight 0.75 vs Default 0.6) macht ferne Berge plastisch luftig wie
+// in den Profis (BotW/Witcher 3 Reference). microStrength 0.14 verstärkt die
+// Oberflächen-Mikrostruktur dezent.
+AnazhRealm.AERIAL = Object.freeze({
+    heightWeight: 0.75,
+    heightCap: 0.88,
+    microStrength: 0.14,
+    aoStrength: 0.38,
+    aoCap: 0.18,
+});
 // Ω2 (taille-spec §2 must-preserve) — die Größen-Wand für unbekannte Felder
 // (Dämpfung: ein Riesen-Feld ist ein Quota-DoS, keine Zukunft) + die known-
 // Sätze der Serialize/Restore-Zwillinge: ALLE explizit behandelten Schlüssel.

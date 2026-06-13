@@ -94,7 +94,9 @@ function startSaveServer() {
         });
         console.log(`Wiese: (${spot.x}, ${spot.z}) lebendig=${spot.lebendig.toFixed(2)}`);
 
-        // Teleport
+        // Teleport — yaw richtet sich nach der Sonne (V18.177 — die
+        // Profi-Sonne ist sichtbar nur im Sonnen-Quadranten); Yaw aus
+        // sunDir, pitch leicht über Horizont.
         await page.evaluate(
             (cx, cz) => {
                 const ar = window.anazhRealm;
@@ -107,8 +109,16 @@ function startSaveServer() {
                     ar.state.playerBody.activate(true);
                 }
                 if (ar.state.player) {
-                    ar.state.player.pitch = -0.6;
-                    ar.state.player.yaw = 0;
+                    // Sonne suchen: sunMesh.position ist auf Skybox-Sphere → Richtung relativ zum Spieler
+                    const sun = ar.state.sunMesh;
+                    let yaw = 0;
+                    if (sun) {
+                        const sx = sun.position.x;
+                        const sz = sun.position.z;
+                        yaw = Math.atan2(sx, sz);
+                    }
+                    ar.state.player.yaw = yaw;
+                    ar.state.player.pitch = -0.18; // leicht nach unten, Horizont mit Wiese
                 }
             },
             spot.x,
