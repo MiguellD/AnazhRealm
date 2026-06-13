@@ -19623,16 +19623,18 @@ async function checkBandHydrosphere(ctx) {
     // über dem Meer, nicht synergetisch. V9.43-c.2: Fluss-Mündungen
     // erreichen SICHTBAR ihr Wasser (Ribbon blendet auf `waterLevel`
     // bzw. den Ziel-See-Level), und der Spieler schwimmt in einem See
-    // wie im Meer (`_hydroWaterLevelAt` speist die Schwimm-Physik).
+    // wie im Meer. V18.180-FIX §6.4: die alte `_hydroWaterLevelAt`-Quelle
+    // ist gefallen (V9.69-Zwei-Skalen-Lücke); die Tests wandern auf
+    // `_waterLevelAt` (V9.56-i — der Test bleibt am echten Verhalten).
     const voxelV943c2 = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasWaterLevelAt = typeof r._hydroWaterLevelAt === "function";
+        out.hasWaterLevelAt = typeof r._waterLevelAt === "function";
         const hydro = r.state.hydrosphere;
         out.hydroReady = !!(hydro && hydro.ready);
         if (!out.hasWaterLevelAt || !out.hydroReady) return out;
-        // _hydroWaterLevelAt: über einer GERENDERTEN See-Zelle → der
+        // _waterLevelAt: über einer GERENDERTEN See-Zelle → der
         // See-Level. V9.45-c: absorbierte Seen (level ≤ waterLevel+2)
         // zählen nicht — die Meeres-Plane vertritt sie.
         out.lakeLevelOk = true;
@@ -19645,7 +19647,7 @@ async function checkBandHydrosphere(ctx) {
             const cj = (cellIdx / hydro.dim) | 0;
             const wx = hydro.originX + (ci + 0.5) * hydro.cell;
             const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
-            out.lakeLevelOk = Math.abs(r._hydroWaterLevelAt(wx, wz) - renderedLk.level) < 0.01;
+            out.lakeLevelOk = Math.abs(r._waterLevelAt(wx, wz) - renderedLk.level) < 0.01;
             // V9.45-c — der Auftrieb folgt der dilatierten See-Plane:
             // eine 1-Ring-Zelle (nicht selbst See-Zelle) liefert auch
             // einen See-Wasserspiegel, nicht den Meeresspiegel.
@@ -19659,13 +19661,13 @@ async function checkBandHydrosphere(ctx) {
                     if (cellsSet.has(ni + nj * hydro.dim)) continue;
                     const rx = hydro.originX + (ni + 0.5) * hydro.cell;
                     const rz = hydro.originZ + (nj + 0.5) * hydro.cell;
-                    out.ringFollowsPlane = r._hydroWaterLevelAt(rx, rz) > wlT + 1.5;
+                    out.ringFollowsPlane = r._waterLevelAt(rx, rz) > wlT + 1.5;
                     ringChecked = true;
                 }
             }
         }
         // Weit ausserhalb der Hydrosphären-Region → Meeresspiegel.
-        out.seaFallbackOk = r._hydroWaterLevelAt(999999, 999999) === r.state.waterLevel;
+        out.seaFallbackOk = r._waterLevelAt(999999, 999999) === r.state.waterLevel;
         // Fluss-Mündung erreicht das Wasser: ein Meer-Mündungs-Fluss-
         // Ribbon endet auf `waterLevel` (kein Rinnsal-Ende in der Luft).
         r._buildHydrosphereMeshes();
@@ -19684,22 +19686,22 @@ async function checkBandHydrosphere(ctx) {
             if (Math.abs(lastY - r.state.waterLevel) > 0.3) out.mouthReachesSea = false;
         }
         // Die Schwimm-Physik (in _loopPhysicsSync) speist den
-        // effektiven Wasserspiegel aus _hydroWaterLevelAt.
+        // effektiven Wasserspiegel aus _waterLevelAt.
         out.physicsUsesEffWater =
-            typeof r._loopPhysicsSync === "function" && /_hydroWaterLevelAt/.test(r._loopPhysicsSync.toString());
+            typeof r._loopPhysicsSync === "function" && /_waterLevelAt/.test(r._loopPhysicsSync.toString());
         return out;
     });
 
     if (voxelV943c2 && !voxelV943c2.error) {
         const h2 = voxelV943c2;
-        check("Voxel V9.43-c.2: _hydroWaterLevelAt existiert", h2.hasWaterLevelAt);
-        check("Voxel V9.43-c.2: _hydroWaterLevelAt liefert über einer See-Zelle den See-Füllstand", h2.lakeLevelOk);
+        check("Voxel V9.43-c.2: _waterLevelAt existiert (war _hydroWaterLevelAt — V18.180-FIX §6.4)", h2.hasWaterLevelAt);
+        check("Voxel V9.43-c.2: _waterLevelAt liefert über einer See-Zelle den See-Füllstand", h2.lakeLevelOk);
         check(
             "Voxel V9.45-c: der Auftrieb folgt der dilatierten See-Plane (1-Ring-Zelle = See-Spiegel)",
             h2.ringFollowsPlane
         );
         check(
-            "Voxel V9.43-c.2: _hydroWaterLevelAt fällt ausserhalb der Region auf den Meeresspiegel zurück",
+            "Voxel V9.43-c.2: _waterLevelAt fällt ausserhalb der Region auf den Meeresspiegel zurück",
             h2.seaFallbackOk
         );
         check(
@@ -27820,6 +27822,8 @@ async function checkBandV18132FerneSeen(ctx) {
             typeof r._hydroTileKeyFor === "function" &&
             typeof r._ensureHydroTilesAround === "function";
         // KONSUM (V17.31): ALLE Hydro-Leser laufen durch die Region-Aufloesung.
+        // V18.180-FIX §6.4: _hydroWaterLevelAt fiel (V9.69-Zwei-Skalen-Lücke);
+        // _waterLevelAt ist die EINE Auftrieb-Wahrheit (Bergsee-bewusst).
         const readers = [
             r._erosionDeltaAt,
             r._hydrosphereCarveAt,
@@ -27827,7 +27831,6 @@ async function checkBandV18132FerneSeen(ctx) {
             r._waterLevelAt,
             r._atlasWaterLevelAt,
             r._hydroRiverAt,
-            r._hydroWaterLevelAt,
             r._voxelChunkHasAnyWater,
         ];
         out.readersResolved = readers.every((f) => /_hydroFor|_erosionFor/.test(f.toString()));
@@ -28047,7 +28050,11 @@ async function checkBandV18134Social(ctx) {
                 out.revokeConsumed =
                     agg2.count === 1 &&
                     (await r._socialRatingReceive("peerX", await mk("welt:band134", 3, Date.now() + 1000))) === false;
-                if (r.state.revokedKeys && r.state.revokedKeys.delete) r.state.revokedKeys.delete(pubHex.toLowerCase());
+                // V18.180-FIX §6.1: revokedKeys ist eine Map — .delete() ist
+                // garantiert da, kein silent-skip mehr (vorher prüfte ein
+                // `if (...delete)`-Gate, das bei Object stillschweigend leer
+                // lief und den Datenmüll wandern liess).
+                r.state.revokedKeys.delete(pubHex.toLowerCase());
             } else {
                 out.revokeConsumed = true;
             }
@@ -29057,18 +29064,19 @@ async function checkBandR6Capability(ctx) {
             out.runs = ran.ok === true && r.state.weather === "rainy";
             const pub = "cd".repeat(32);
             r.state.grantedCapabilities["regen-tanz"].authorPubKey = pub;
-            if (r.state.revokedKeys && r.state.revokedKeys.add) {
-                r.state.revokedKeys.add(pub);
-                out.revokeStops = r.runCapability("regen-tanz").reason === "revoked";
-                r._portalReceiveCapability({ type: "capability", name: "zweite", dsl: ["weather", "sunny"] });
-                const p2 = r.state.capabilityProposals.get("zweite");
-                if (p2) p2.authorPubKey = pub;
-                out.revokeGates = r.grantCapability("zweite", { skipConfirm: true }).reason === "revoked";
-                r.state.revokedKeys.delete(pub);
-            } else {
-                out.revokeStops = true;
-                out.revokeGates = true;
-            }
+            // V18.180-FIX §6.1: revokedKeys ist eine Map (war Object — der
+            // alte if(.add)-Gate prüfte gegen die Set-API; weil Object weder
+            // .add noch .has noch .delete hat, fiel der Test still ins else
+            // und meldete revokeStops/revokeGates als "passed", ohne dass
+            // jemals ein revozierter Schlüssel die Wand traf. Jetzt: .set()
+            // gegen Map, behavioral GEMESSEN, kein Skip-Pfad mehr.
+            r.state.revokedKeys.set(pub, { at: Date.now() });
+            out.revokeStops = r.runCapability("regen-tanz").reason === "revoked";
+            r._portalReceiveCapability({ type: "capability", name: "zweite", dsl: ["weather", "sunny"] });
+            const p2 = r.state.capabilityProposals.get("zweite");
+            if (p2) p2.authorPubKey = pub;
+            out.revokeGates = r.grantCapability("zweite", { skipConfirm: true }).reason === "revoked";
+            r.state.revokedKeys.delete(pub);
             r.state.grantedCapabilities["regen-tanz"].authorPubKey = "";
             const snap = r.buildStateSnapshot();
             out.travels = !!(snap.grantedCapabilities && snap.grantedCapabilities["regen-tanz"]);
@@ -38360,7 +38368,12 @@ async function checkBandG8R4Immunity(ctx) {
         out.revokedInRing = K.SOVEREIGN_STATE.excludedStateKeys.includes("revokedKeys");
         out.revokedNotInSnapshot = JSON.stringify(r.buildStateSnapshot()).indexOf("revokedKeys") < 0;
         // Zustand sichern, den wir mutieren.
-        const savedRevoked = Object.assign({}, r.state.revokedKeys);
+        // V18.180-FIX §6.1: revokedKeys ist eine Map (war Object) — ein flacher
+        // Object.assign({}, …)-Klon hätte daraus ein leeres {} gemacht (Map-
+        // Einträge sind nicht enumerable als Properties) → der Restore an L38430
+        // hätte revokedKeys zum Object umgehängt, und der nächste Test bricht
+        // beim ersten .set()-Aufruf. Eine echte Map-Kopie ist die Wahrheit.
+        const savedRevoked = new Map(r.state.revokedKeys);
         const savedSigned = JSON.parse(JSON.stringify(r.state.signedWorlds || {}));
         const KA = "aa".repeat(32);
         const KB = "bb".repeat(32);

@@ -18606,16 +18606,21 @@ class AnazhRealm {
         this.state.floatingIslands = [];
         this.state.ufos = [];
         const numIslands = 3;
+        // V18.180-FIX §6.2: Γ5 STREAM-GESETZ — Math.random in einem worldgen-
+        // Pfad würfelt zwei Peers in unterschiedliche Welten (Multi-User-Drift).
+        // Pro Insel ein eigener Stream-Suffix; das speist Größe/Höhe/Position
+        // deterministisch aus seed + "-island-i".
+        const baseSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         for (let i = 0; i < numIslands; i++) {
-            const islandSize = 14 + Math.random() * 30; // 14..44 m Durchmesser
-            const islandHeight = 6 + Math.random() * 10; // 6..16 m Wölbung
-            const islandX = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
-            const islandZ = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
+            const rng = this._streamRng(baseSeed + `-island-${i}`);
+            const islandSize = 14 + rng() * 30; // 14..44 m Durchmesser
+            const islandHeight = 6 + rng() * 10; // 6..16 m Wölbung
+            const islandX = (rng() - 0.5) * WORLD_SIZE * 0.8;
+            const islandZ = (rng() - 0.5) * WORLD_SIZE * 0.8;
             const surfY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(islandX, islandZ) : 0;
             const baseSurf = Number.isFinite(surfY) ? surfY : this.state.terrainBaseHeight || 0;
-            const islandY = baseSurf + 50 + Math.random() * 90; // 50..140 m über dem Boden
-            const islandSeed =
-                ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + `-island-${i}`;
+            const islandY = baseSurf + 50 + rng() * 90; // 50..140 m über dem Boden
+            const islandSeed = baseSeed + `-island-${i}`;
             const island = this.spawnIslandAt(islandX, islandY, islandZ, islandHeight, {
                 size: islandSize,
                 seed: islandSeed,
@@ -18632,7 +18637,7 @@ class AnazhRealm {
             ufo.position.set(islandX, ufoY, islandZ);
             this.state.scene.add(ufo);
             this.state.ufos.push(ufo);
-            ufo.userData = { baseY: ufoY, speed: Math.random() * 0.5 + 0.5 };
+            ufo.userData = { baseY: ufoY, speed: rng() * 0.5 + 0.5 };
         }
     }
 
@@ -25411,13 +25416,15 @@ class AnazhRealm {
     }
 
     // Welle B + H1 — der Wasser-Kontext am Spieler aus den 3D-Cells (ersetzt die
-    // 2.5D-`_hydroWaterLevelAt`-Spalte für den Auftrieb). Liest die Wasser-Cells
+    // 2.5D-Spalten-Frage für den Auftrieb). Liest die Wasser-Cells
     // in der Spieler-Spalte: ist eine Wasserzelle in der Körper-Höhe (Füße
     // yFeet .. Kopf yFeet+1.8)? Wenn ja, scannt aufwärts bis zur ersten Nicht-
     // Wasser-Zelle → der ECHTE Spiegel DIESES Wasserkörpers (ein Bergsee bei +8
-    // gibt +8, nicht den Meeresspiegel −3, den `_hydroWaterLevelAt` zurückgibt).
-    // Returnt `{ submerged, surfaceY }` oder null (kein gestreamter Chunk →
-    // 2.5D-Fallback am Streaming-Rand). Wasser-Cells leben auf LOD0 (V9.93).
+    // gibt +8, nicht den Meeresspiegel). Returnt `{ submerged, surfaceY }` oder
+    // null (kein gestreamter Chunk → 2.5D-Fallback am Streaming-Rand). Wasser-
+    // Cells leben auf LOD0 (V9.93). V18.180-FIX §6.4: die alte `_hydroWaterLevel
+    // At`-Spaltenfunktion ist gefallen (V9.69-Zwei-Skalen-Lücke + O(n)-includes-
+    // Lookup) — der Fallback liest `_waterLevelAt`, die EINE Wahrheit.
     _playerWaterContext(x, yFeet, z) {
         if (!this.state.voxelChunks) return null;
         const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
@@ -25459,44 +25466,6 @@ class AnazhRealm {
         while (topJ + 1 < dimY && isWaterJ(topJ + 1)) topJ++;
         const surfaceY = oy + (topJ + 1) * step; // Oberkante der obersten Wasserzelle
         return { submerged: true, surfaceY };
-    }
-
-    _hydroWaterLevelAt(x, z) {
-        const base = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
-        const hydro = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-        if (!hydro || !hydro.ready || !Array.isArray(hydro.lakes)) return base;
-        const { dim, cell, originX, originZ } = hydro;
-        const i = Math.floor((x - originX) / cell);
-        const j = Math.floor((z - originZ) / cell);
-        if (i < 0 || j < 0 || i >= dim || j >= dim) return base;
-        const idx = i + j * dim;
-        // Early-Out: `lakeNear` ist 1 nur in der See-Zellen+1-Ring-Region der
-        // gerenderten Seen — exakt, was `_buildLakeMesh` mit Wasser deckt.
-        if (hydro.lakeNear && !hydro.lakeNear[idx]) return base;
-        const wl = base != null ? base : -Infinity;
-        for (const lake of hydro.lakes) {
-            if (lake.level <= wl + 2) continue; // absorbiert — die Meeres-Plane deckt ihn
-            const b = lake.bbox;
-            if (
-                !b ||
-                x < b.minX - 2 * cell ||
-                x > b.maxX + 2 * cell ||
-                z < b.minZ - 2 * cell ||
-                z > b.maxZ + 2 * cell
-            ) {
-                continue;
-            }
-            const cells = lake.cells;
-            if (!Array.isArray(cells)) continue;
-            // die See-Plane deckt die See-Zellen + 1-Ring → der Auftrieb
-            // folgt derselben dilatierten Region (Optik == Physik).
-            for (let dj = -1; dj <= 1; dj++) {
-                for (let di = -1; di <= 1; di++) {
-                    if (cells.includes(i + di + (j + dj) * dim)) return lake.level;
-                }
-            }
-        }
-        return base;
     }
 
     // V9.49-c — der EINE vereinte Wasser-Shader. Trägt alle Skalen über
@@ -29237,6 +29206,27 @@ class AnazhRealm {
         return (h >>> 0).toString(16).padStart(8, "0");
     }
 
+    // V18.180-FIX §6.2 — DAS STREAM-GESETZ (Γ5, V18.166, P2P-Pflicht):
+    // seed-deterministische RNG pro Zweck. Ein Stream-Name (string) → FNV-1a
+    // → LCG (Numerical Recipes). NIE `Math.random` in Welt-Substanz-Pfaden;
+    // Math.random ist nur für UI/Audio/Deko erlaubt. Pro Zweck ein eigener
+    // Suffix (z.B. seed + "-island-2"): ein Draw mehr in einem Stream re-rollt
+    // NIE einen anderen. Symmetrie zu `_fastHash` — beide nutzen denselben
+    // FNV-1a, der Stream wirft danach den ersten 32-bit-Hash in einen LCG.
+    _streamRng(streamName) {
+        const s = String(streamName);
+        let h = 0x811c9dc5;
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 0x01000193);
+        }
+        let state = h >>> 0 || 1;
+        return () => {
+            state = (state * 1664525 + 1013904223) >>> 0;
+            return state / 4294967296;
+        };
+    }
+
     // Versiegelt einen eigenen Bauplan mit dem Vibe-Pass. Setzt signature +
     // authorPubKey + signedHash + signedAt. Async (ed25519-Signatur).
     // G8 R2 (M3) — Signieren ist sign_manifest, eine SOUVERÄNE Aktion (die
@@ -29386,8 +29376,15 @@ class AnazhRealm {
         return /^[0-9a-f]{64}$/.test(s) ? s : null;
     }
 
+    // V18.180-FIX §6.1: revokedKeys als Map (war plain Object — zwei Stellen
+    // lasen es als Set via .has(), hätten in der Praxis TypeError geworfen;
+    // im Test stand ein `if (api.exists)`-Skip, der die R4-Wand still durchließ).
+    // Map gewinnt (Symmetrie zu state.socialRatings). Persistenz bleibt JSON-
+    // Object-flat — wer von der alten {…}-Form geladen wird, übersetzt sich
+    // hier wortgleich; wer von der neuen schreibt, schreibt dieselbe Form
+    // zurück. Damit überleben Speicherstände beider Generationen.
     _loadRevokedKeys() {
-        const out = {};
+        const out = new Map();
         try {
             const raw = typeof localStorage !== "undefined" ? localStorage.getItem("anazh.revokedKeys") : null;
             if (!raw) return out;
@@ -29395,7 +29392,7 @@ class AnazhRealm {
             if (!parsed || typeof parsed !== "object") return out;
             for (const k of Object.keys(parsed)) {
                 const norm = this._normalizePubKey(k);
-                if (norm) out[norm] = { at: typeof parsed[k] === "number" ? parsed[k] : Date.now() };
+                if (norm) out.set(norm, { at: typeof parsed[k] === "number" ? parsed[k] : Date.now() });
             }
         } catch {
             /* korrupter Eintrag → leere Map, kein Wurf */
@@ -29407,8 +29404,12 @@ class AnazhRealm {
         try {
             if (typeof localStorage !== "undefined") {
                 const flat = {};
-                const rk = this.state.revokedKeys || {};
-                for (const k of Object.keys(rk)) flat[k] = (rk[k] && rk[k].at) || Date.now();
+                const rk = this.state.revokedKeys;
+                if (rk && typeof rk.forEach === "function") {
+                    rk.forEach((v, k) => {
+                        flat[k] = (v && v.at) || Date.now();
+                    });
+                }
                 localStorage.setItem("anazh.revokedKeys", JSON.stringify(flat));
             }
         } catch (e) {
@@ -29418,7 +29419,7 @@ class AnazhRealm {
 
     _isKeyRevoked(pubkeyHex) {
         const norm = this._normalizePubKey(pubkeyHex);
-        return !!(norm && this.state.revokedKeys && this.state.revokedKeys[norm]);
+        return !!(norm && this.state.revokedKeys && this.state.revokedKeys.has(norm));
     }
 
     // M4b — eine Quelle als infektiös erkennen: ihr Schlüssel wird revoziert.
@@ -29430,8 +29431,8 @@ class AnazhRealm {
         opts = opts || {};
         const norm = this._normalizePubKey(pubkey);
         if (!norm) return { ok: false, reason: "invalid_key" };
-        if (!this.state.revokedKeys) this.state.revokedKeys = {};
-        this.state.revokedKeys[norm] = { at: Date.now() };
+        if (!this.state.revokedKeys) this.state.revokedKeys = new Map();
+        this.state.revokedKeys.set(norm, { at: Date.now() });
         this._saveRevokedKeys();
         const purged = this._purgeRevokedArtifacts();
         if (!opts.silent && typeof this.journalAppend === "function") {
@@ -29445,8 +29446,8 @@ class AnazhRealm {
 
     unrevokeKey(pubkey) {
         const norm = this._normalizePubKey(pubkey);
-        if (!norm || !this.state.revokedKeys || !this.state.revokedKeys[norm]) return { ok: false };
-        delete this.state.revokedKeys[norm];
+        if (!norm || !this.state.revokedKeys || !this.state.revokedKeys.has(norm)) return { ok: false };
+        this.state.revokedKeys.delete(norm);
         this._saveRevokedKeys();
         return { ok: true, key: norm };
     }
@@ -56625,51 +56626,6 @@ class AnazhRealm {
         return { armorBlueprints, weaponBlueprints, candidateBlueprints };
     }
 
-    _equipAppendArmorRow(container, equipped, armorBlueprints) {
-        const armorRow = document.createElement("div");
-        armorRow.className = "equip-row";
-        const armorLabel = document.createElement("span");
-        armorLabel.className = "equip-slot-label";
-        armorLabel.textContent = "Rüstung";
-        armorRow.appendChild(armorLabel);
-        const armorSel = document.createElement("select");
-        armorSel.title = "Aktive Rüstung";
-        const noneArmor = document.createElement("option");
-        noneArmor.value = "";
-        noneArmor.textContent = "— keine —";
-        armorSel.appendChild(noneArmor);
-        for (const name of armorBlueprints) {
-            const bp = this.state.blueprints[name];
-            const opt = document.createElement("option");
-            opt.value = name;
-            opt.textContent = (bp.label || name) + this._makeActCostSuffix(name);
-            opt.title = this._blueprintCostTooltip(name);
-            if (equipped.armor === name) opt.selected = true;
-            armorSel.appendChild(opt);
-        }
-        armorSel.addEventListener("change", () => {
-            // S4 — der Spieler-Pfad geht durch wearArmor: eine ungemachte Rüstung wird hier GESCHMIEDET/
-            // GEWEBT (zahlt im pfad/frieden), eine gemachte frei getragen.
-            const v = armorSel.value;
-            const result = this.wearArmor(v || null);
-            if (!result.ok) {
-                if (result.reason === "not_enough_material") {
-                    const missingStr = Object.entries(result.missing || {})
-                        .map(([m, n]) => `${n}× ${m}`)
-                        .join(", ");
-                    this.log(`Rüstung weben nötig — fehlt: ${missingStr || "Material"} (⚒ in der Werkstatt).`, "ERROR");
-                } else {
-                    this.log(`Rüstung anlegen fehlgeschlagen: ${result.reason}`, "ERROR");
-                }
-            } else if (!result.free && result.forgedPrecision != null) {
-                this.log(`Gewebt + getragen: „${this.state.blueprints[v]?.label || v}".`, "INFO");
-            }
-            this.renderPlayerEquipUI();
-        });
-        armorRow.appendChild(armorSel);
-        container.appendChild(armorRow);
-    }
-
     // V18.66 Ich-J3 (ich-plan §J #4) — das TRINKEN lebt sichtbar im REZEPTBUCH (die „Trank"-Gruppe,
     // „Brauen + Trinken", WERK-Spalte — der EINE Brau-+-Trink-Ort wie die Werkstatt, nach J1 prominent).
     // Hier NUR noch die DSL-TABELLEN-Konsumables (kein Bauplan → nicht im Rezeptbuch) — so ist das Trinken
@@ -56701,14 +56657,6 @@ class AnazhRealm {
             row.appendChild(drinkBtn);
             container.appendChild(row);
         }
-    }
-
-    _equipAppendEmptyHint(container) {
-        const hint = document.createElement("div");
-        hint.className = "equip-empty";
-        hint.textContent =
-            "Noch keine Ausrüstung. Baue einen Bauplan in der Werkstatt und markier ihn dort als Werkzeug, oder hier als Rüstung.";
-        container.appendChild(hint);
     }
 
     // Welle 6.D Etappe 1.6 — Soul-Select neu befüllen (Built-ins + Custom).
@@ -56802,17 +56750,6 @@ class AnazhRealm {
             if (Array.isArray(c)) this._elAppend(el, c);
             else el.appendChild(typeof c === "object" ? c : document.createTextNode(String(c)));
         }
-    }
-
-    // _kvRow — die label/value-Zeile, das häufigste Panel-Muster (div.rowCls > span.labelCls + span.valCls).
-    // Default-Klassen = stat-label/stat-value (der häufigste Fall); für andere Familien explizit überschreiben.
-    _kvRow(rowCls, label, value, labelCls = "stat-label", valCls = "stat-value") {
-        return this._el(
-            "div",
-            { class: rowCls },
-            this._el("span", { class: labelCls, text: label }),
-            this._el("span", { class: valCls, text: value })
-        );
     }
 
     async init() {
@@ -58102,7 +58039,13 @@ class AnazhRealm {
                             submerged = wctx.submerged;
                             waterY = submerged ? wctx.surfaceY : scaledY;
                         } else {
-                            const effWater = this._hydroWaterLevelAt(wcx, wcz);
+                            // V18.180-FIX §6.4: `_waterLevelAt` statt `_hydroWaterLevelAt` —
+                            // letzteres trug die V9.69-Zwei-Skalen-Lücke (Spalten-Atlas vs
+                            // Flood-Cells: gab Meeresspiegel −3 zurück, wo ein Bergsee bei
+                            // +8 stand → Auftrieb druckte NACH UNTEN). Plus O(n)-`BBox`+
+                            // `Array.includes`-Lookup. `_waterLevelAt` ist die EINE Wahrheit:
+                            // O(1) Ozean + O(9) See/Fluss, BERGsee-bewusst.
+                            const effWater = this._waterLevelAt(wcx, wcz);
                             waterY = typeof effWater === "number" ? effWater : this.state.waterLevel;
                             submerged = scaledY < waterY;
                         }
