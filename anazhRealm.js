@@ -40544,6 +40544,75 @@ class AnazhRealm {
             marker.userData.connectionType = c.type;
             group.add(marker);
         }
+        // W-G (V18.177, §8.4(b) — R-015 „Drehachsen unklar"): die ACHSEN-GEISTER.
+        // Jedes erkannte Gelenk (computeMotionRoles) zeigt seine Dreh-Achse als
+        // Linie durch den Anker — die Motion-Wahrheit GEZEICHNET (ablesen statt
+        // raten). Nur im Viewer (opts.connectionLines), depthTest:false wie die
+        // Verbindungs-Linien. try/catch: ohne Motion-Rollen bleibt die Optik heil.
+        try {
+            const roles =
+                Array.isArray(parts) && parts.length >= 2
+                    ? this.computeMotionRoles(parts, blueprint.connections)
+                    : null;
+            if (roles) {
+                const AXIS_VEC = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
+                const ROLE_COL = { rad: 0x5fa7ff, tuer: 0x66ff88, wirbel: 0xffaa44, scharnier: 0xffe066 };
+                for (let i = 0; i < roles.length; i++) {
+                    const rl = roles[i];
+                    if (!rl || !rl.joint || !rl.axis) continue;
+                    const anc = rl.anchor || (parts[i] && parts[i].position) || { x: 0, y: 0, z: 0 };
+                    const pSize = parts[i] && parts[i].size ? parts[i].size : { x: 1, y: 1, z: 1 };
+                    const half = Math.max(0.5, (Math.max(pSize.x, pSize.y, pSize.z) || 1) * 0.85);
+                    const v = AXIS_VEC[rl.axis] || AXIS_VEC.y;
+                    const aGeom = new THREE.BufferGeometry();
+                    aGeom.setAttribute(
+                        "position",
+                        new THREE.Float32BufferAttribute(
+                            [
+                                (anc.x || 0) - v[0] * half,
+                                (anc.y || 0) - v[1] * half,
+                                (anc.z || 0) - v[2] * half,
+                                (anc.x || 0) + v[0] * half,
+                                (anc.y || 0) + v[1] * half,
+                                (anc.z || 0) + v[2] * half,
+                            ],
+                            3
+                        )
+                    );
+                    const aCol = ROLE_COL[rl.role] || 0xb06ad9;
+                    const aLine = new THREE.Line(
+                        aGeom,
+                        new THREE.LineBasicMaterial({ color: aCol, transparent: true, opacity: 0.95, depthTest: false })
+                    );
+                    aLine.renderOrder = 1001;
+                    aLine.userData.isConnectionLine = true;
+                    aLine.userData.isJointAxis = true;
+                    aLine.userData.jointRole = rl.role;
+                    aLine.userData.jointAxis = rl.axis;
+                    aLine.userData.jointTeach = this._jointTeachLine(rl.role, rl.axis);
+                    group.add(aLine);
+                    // Pfeil-Spitze (kleiner Kegel) am +Ende der Achse → Richtung lesbar.
+                    const tip = new THREE.Mesh(
+                        new THREE.ConeGeometry(0.1, 0.26, 8),
+                        new THREE.MeshBasicMaterial({ color: aCol, transparent: true, opacity: 0.95, depthTest: false })
+                    );
+                    tip.position.set(
+                        (anc.x || 0) + v[0] * half,
+                        (anc.y || 0) + v[1] * half,
+                        (anc.z || 0) + v[2] * half
+                    );
+                    // Kegel zeigt per Default +Y; auf die Achse drehen.
+                    if (rl.axis === "x") tip.rotation.z = -Math.PI / 2;
+                    else if (rl.axis === "z") tip.rotation.x = Math.PI / 2;
+                    tip.renderOrder = 1001;
+                    tip.userData.isConnectionLine = true;
+                    tip.userData.isJointAxis = true;
+                    group.add(tip);
+                }
+            }
+        } catch (_e) {
+            if (typeof window !== "undefined") window.__jointAxisError = String((_e && _e.message) || _e);
+        }
     }
 
     // Welle 6.F1+F2 — Farb-Mapping aus Verbindungs-Stärke (0..3-Skala der
@@ -51858,6 +51927,12 @@ class AnazhRealm {
         if (resetBtn) {
             resetBtn.addEventListener("click", () => this.resetWorkshopCamera());
         }
+        // W-G (V18.177, §8.4(c)) — die Gelenk-Probe (idempotent verdrahtet).
+        const probeBtn = document.getElementById("workshop-probe-btn");
+        if (probeBtn && !probeBtn.dataset.wired) {
+            probeBtn.dataset.wired = "1";
+            probeBtn.addEventListener("click", () => this._workshopProbeJoints());
+        }
         // V8.02 Phase 3a — Shape-Palette HTML5-Drag-Sources + Canvas-Drop-Target
         this._workshopInstallShapeDragDrop();
         // V8.05 — Del-Button-Handler (idempotent)
@@ -51949,6 +52024,25 @@ class AnazhRealm {
             // bei realer Änderung). Sorgt dafür, dass Resize-Handle-Drag live
             // bis ins Pixel-Rendering durchgreift.
             this._workshopSyncCanvasSize();
+            // W-G (V18.177, §8.4(c) — R-015): die GELENK-PROBE wackelt die
+            // erkannten Motion-Rollen für ~2 s (bauen → SEHEN was sich bewegt).
+            // Phase rampt rein/raus (sin-Hüllkurve) → sanftes Anlaufen + Ruhe.
+            if (p.probe) {
+                const now = performance.now();
+                const dt = now - p.probe.start;
+                if (dt >= p.probe.dur || !p.currentMesh || !p.probe.roles) {
+                    // Auslaufen: in die Ruhe-Pose zurück (moving=false), dann lösen.
+                    if (p.currentMesh && p.probe.roles)
+                        this._animateCompoundMotion(p.currentMesh, p.probe.roles, now / 1000, 0, false);
+                    p.probe = null;
+                    p.dirty = true;
+                } else {
+                    const env = Math.sin(Math.min(1, dt / p.probe.dur) * Math.PI); // 0→1→0
+                    const phase = (dt / 1000) * 3.0;
+                    this._animateCompoundMotion(p.currentMesh, p.probe.roles, now / 1000, phase * env, true);
+                    p.dirty = true;
+                }
+            }
             if (p.dirty || p.drag || p.dragManipulator) {
                 this._workshopRender();
                 p.dirty = false;
@@ -51956,6 +52050,29 @@ class AnazhRealm {
             p.rafId = requestAnimationFrame(tick);
         };
         ws.preview.rafId = requestAnimationFrame(tick);
+    }
+
+    // W-G (V18.177, §8.4(c) — R-015 „bauen → SEHEN was sich bewegt"): startet
+    // die Gelenk-Probe — die computeMotionRoles-Wahrheit 2 s in der Vorschau
+    // animiert. Liest die EXISTIERENDE Motion-Wahrheit (kein neues System).
+    _workshopProbeJoints() {
+        const ws = this._ensureWorkshopState();
+        if (!ws.preview || !ws.preview.currentMesh) return false;
+        const bp = this.state.blueprints[ws.selectedBlueprint];
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 2) {
+            this.log("Gelenk-Probe: dieser Bauplan hat keine beweglichen Gelenke.", "INFO");
+            return false;
+        }
+        const roles = this.computeMotionRoles(bp.parts, bp.connections);
+        if (!roles || !roles.some((r) => r && (r.joint || r.role))) {
+            this.log("Gelenk-Probe: keine Gelenke erkannt (Teile verbinden → Gelenke emergieren).", "INFO");
+            return false;
+        }
+        ws.preview.probe = { start: performance.now(), dur: 2200, roles };
+        ws.preview.active = true;
+        ws.preview.dirty = true;
+        this._workshopStartRAF();
+        return true;
     }
 
     _workshopStopRAF() {
@@ -54247,6 +54364,50 @@ class AnazhRealm {
         return { type: best, strength: bestS, strengths };
     }
 
+    // W-G (V18.177, §8.4 — R-015 „Hälfte der Verbindungen überflüssig?"): die
+    // Struktur-Typen NACH Substanz-Stärke geordnet (das _suggestConnectionType-
+    // strengths-Skalarprodukt — keine zweite Wahrheit). Der Dialog zeigt die
+    // PRIMÄR-Gruppe (die stärksten `prim`, default 3) prominent + den Rest als
+    // „weitere…" (Progressive Disclosure: der Vorrang ist die Substanz, nicht
+    // die Deklarations-Reihenfolge). Die 8 gleichwertigen Kacheln bekommen einen
+    // GEMESSENEN Vorrang.
+    _connectionTypesByStrength(bp, partA, partB, prim = 3) {
+        const sug = this._suggestConnectionType(bp, partA, partB);
+        const ordered = Object.keys(sug.strengths).sort((u, v) => sug.strengths[v] - sug.strengths[u]);
+        return {
+            primary: ordered.slice(0, prim),
+            more: ordered.slice(prim),
+            strengths: sug.strengths,
+            suggested: sug.type,
+        };
+    }
+
+    // W-G (V18.177, §8.4 — R-015 „Drehachsen unklar"): der LEHR-SATZ eines
+    // Gelenks — die computeMotionRoles-Wahrheit ({role, axis}) in MENSCHEN-
+    // Sprache. EINE Quelle für den Dialog-Hinweis UND das Achsen-Label im
+    // Viewer (ablesen statt raten). Pure Funktion (headless-testbar).
+    _jointTeachLine(role, axis) {
+        const achse = axis === "x" ? "Querachse" : axis === "z" ? "Längsachse" : "Hochachse";
+        switch (role) {
+            case "rad":
+                return `Rad — rollt um die ${achse}`;
+            case "tuer":
+                return "Tür — schwenkt um die Hochachse am Anker";
+            case "wirbel":
+                return "Wirbel-Glied — schlängelt in der Kette";
+            case "scharnier":
+                return `Scharnier — schwingt am Anker um die ${achse}`;
+            case "bein":
+                return "Bein — schreitet im Takt";
+            case "arm":
+                return "Arm — schwingt gegen die Beine";
+            case "segel":
+                return "Segel — bläht sich im Wind";
+            default:
+                return null;
+        }
+    }
+
     // §7.1 (meister-plan, V18.164) — welche anderen Parts BERÜHRT dieses Part?
     // Liest die EINE Kontakt-Wahrheit (_partsContactArea > 0 — dieselbe, die
     // die Lastformel trägt). Bündiges Sitzen (gap ≤ TOUCH) zählt, ein bloßer
@@ -54389,10 +54550,16 @@ class AnazhRealm {
             return grid;
         };
         // Gruppe 1 — VERBINDEN (Struktur): Kacheln mit Substanz-Stärke-Balken.
+        // W-G (V18.177, §8.4(d) — R-015 „Hälfte überflüssig?"): die Kacheln sind
+        // NACH SUBSTANZ-STÄRKE geordnet (kein gleichwertiger 8er-Block mehr) —
+        // die `prim` stärksten prominent, der Rest hinter „weitere…" (Progressive
+        // Disclosure; der Vorrang ist GEMESSEN, nicht die Deklarations-Reihenfolge).
         const connectGrid = mkGroup("Verbinden — wie die Teile halten");
-        for (const typeName of Object.keys(types)) {
+        const ranked = bp
+            ? this._connectionTypesByStrength(bp, partA, partB)
+            : { primary: [], more: [], strengths: {} };
+        const mkTile = (typeName) => {
             const def = types[typeName];
-            if (def.attachment) continue;
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "conn-tile";
@@ -54425,7 +54592,52 @@ class AnazhRealm {
             btn.addEventListener("click", () => {
                 this._workshopApplyConnection(partA, partB, typeName);
             });
-            connectGrid.appendChild(btn);
+            return btn;
+        };
+        for (const typeName of ranked.primary) connectGrid.appendChild(mkTile(typeName));
+        if (ranked.more.length) {
+            const moreGrid = document.createElement("div");
+            // NUR `conn-more-grid` (kein `conn-grid`) — ein SUB-Grid der
+            // Verbinden-Gruppe, kein dritter Top-Level-Block; die `.conn-grid`-
+            // Zählung (2 Gruppen) bleibt unberührt (V9.56-i).
+            moreGrid.className = "conn-more-grid";
+            moreGrid.hidden = true;
+            const moreBtn = document.createElement("button");
+            moreBtn.type = "button";
+            moreBtn.className = "conn-more-toggle";
+            moreBtn.textContent = `weitere… (${ranked.more.length})`;
+            moreBtn.setAttribute("aria-expanded", "false");
+            moreBtn.addEventListener("click", () => {
+                moreGrid.hidden = !moreGrid.hidden;
+                moreBtn.setAttribute("aria-expanded", moreGrid.hidden ? "false" : "true");
+                moreBtn.textContent = moreGrid.hidden ? `weitere… (${ranked.more.length})` : "weniger…";
+            });
+            for (const typeName of ranked.more) moreGrid.appendChild(mkTile(typeName));
+            connectGrid.appendChild(moreBtn);
+            overlay.appendChild(moreGrid);
+        }
+        // W-G (V18.177, §8.4(e) — R-015 „Drehachsen unklar"): der LEHR-SATZ —
+        // welches GELENK diese Verbindung gebiert + wie es sich dreht (die
+        // computeMotionRoles-Wahrheit in Menschen-Sprache, EINE Quelle mit den
+        // Achsen-Geistern im Viewer). Nur wenn ein Gelenk emergiert.
+        if (bp && Array.isArray(bp.parts)) {
+            try {
+                const probe = {
+                    ...bp,
+                    connections: [...(bp.connections || []), { type: suggestion && suggestion.type, partA, partB }],
+                };
+                const roles = this.computeMotionRoles(probe.parts, probe.connections);
+                const movIdx = roles ? roles.findIndex((r, i) => r && r.joint && (i === partA || i === partB)) : -1;
+                const teach = movIdx >= 0 ? this._jointTeachLine(roles[movIdx].role, roles[movIdx].axis) : null;
+                if (teach) {
+                    const tline = document.createElement("div");
+                    tline.className = "conn-teach";
+                    tline.textContent = `⚙ ${teach}`;
+                    overlay.appendChild(tline);
+                }
+            } catch (_e) {
+                /* Lehr-Satz ist Beigabe — nie ein Dialog-Bruch */
+            }
         }
         // Gruppe 2 — ANKER (Punkte für die Außenwelt): Klick startet den Face-Snap.
         const anchorGrid = mkGroup("Anker — Punkt für die Außenwelt (Fläche wählen)");
@@ -59534,7 +59746,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.176.0";
+AnazhRealm.VERSION = "18.177.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

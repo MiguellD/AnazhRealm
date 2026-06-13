@@ -15312,7 +15312,10 @@ async function checkBandWelle6APolish(ctx) {
         let connMarkerCount = 0;
         let lineColor = null;
         built.traverse((node) => {
-            if (node.userData && node.userData.isConnectionLine) {
+            // W-G (V18.177, V9.56-i): die ACHSEN-GEISTER (isJointAxis — Linien +
+            // Kegel-Spitzen) sind eine NEUE Viewer-Schicht; der Verbindungs-Zähler
+            // klammert sie aus (der Test prüft die Verbindung, nicht die Achse).
+            if (node.userData && node.userData.isConnectionLine && !node.userData.isJointAxis) {
                 if (node.isLine) connLineCount++;
                 if (node.isMesh) connMarkerCount++;
                 if (node.material && node.material.color) lineColor = node.material.color.getHex();
@@ -29444,7 +29447,7 @@ async function checkBandM1VerbindungsWerkstatt(ctx) {
         res.suggestEmergent && res.suggestIsStrength
     );
     check(
-        "M1 Verbindungs-Werkstatt: der Dialog ist ZWEI Gruppen Glyph-Kacheln (8 Verbinden + 3 Anker) und der Vorschlag leuchtet",
+        "M1/W-G Verbindungs-Werkstatt: der Dialog ist ZWEI Gruppen Glyph-Kacheln (8 Verbinden [3 primary + 5 weitere…, W-G] + 3 Anker = 11 Kacheln) und der Vorschlag leuchtet",
         res.dialogTiles && res.dialogSuggests
     );
     check("M1 Face-Snap: die 3×3-Snap-Mathe rastet auf Flächen-Mitte · Kanten-Mitte · Ecke", res.snapMathe);
@@ -31052,6 +31055,71 @@ async function checkBandM6ErnteSpawn(ctx) {
     check(
         "M6 Spawn: die Spieler-Klemme sitzt an der WURZEL (großer Spawn weicht aus; precise/string-id bleiben bit-treu)",
         res.wurzelKlemmt && res.preciseExakt && res.idExakt && res.klemmeKonsum
+    );
+}
+
+// W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
+// SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
+// (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
+// (c) Gelenk-Probe. Headless: die LOGIK; der FEEL ist Schöpfer-Browser.
+async function checkBandWGGelenke(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (e) LEHR-SATZ: pure Funktion, alle Gelenk-Rollen → Menschen-Sprache.
+        out.teachRad = /Rad.*rollt.*Querachse/.test(r._jointTeachLine("rad", "x") || "");
+        out.teachTuer = /Tür.*schwenkt/.test(r._jointTeachLine("tuer", "y") || "");
+        out.teachScharnier = /Scharnier.*Längsachse/.test(r._jointTeachLine("scharnier", "z") || "");
+        out.teachNull = r._jointTeachLine("nonsense", "x") === null;
+        // (d) PROGRESSIVE DISCLOSURE: die Typen NACH Substanz-Stärke geordnet.
+        const wagen = r.state.blueprints.fahrzeug_wagen;
+        out.ranked = false;
+        out.rankedOrdered = false;
+        if (wagen) {
+            const ranked = r._connectionTypesByStrength(wagen, 0, 1, 3);
+            out.ranked = Array.isArray(ranked.primary) && ranked.primary.length === 3 && Array.isArray(ranked.more);
+            const sp = ranked.primary.map((t) => ranked.strengths[t]);
+            const sm = ranked.more.map((t) => ranked.strengths[t]);
+            out.rankedOrdered =
+                sp.every((v, i) => i === 0 || sp[i - 1] >= v) &&
+                (sm.length === 0 || Math.min(...sp) >= Math.max(...sm));
+        }
+        // (b) ACHSEN-GEISTER: der Viewer-Build erzeugt Achsen-Linien (isJointAxis).
+        window.__jointAxisError = null;
+        out.axisGhosts = false;
+        out.axisTeachAttached = false;
+        if (wagen) {
+            const grp = r._buildFromBlueprint(wagen, 0, undefined, { connectionLines: true });
+            let axes = 0;
+            grp.traverse((o) => {
+                if (o.userData && o.userData.isJointAxis && o.isLine) axes++;
+                if (o.userData && o.userData.isJointAxis && o.userData.jointTeach) out.axisTeachAttached = true;
+            });
+            out.axisGhosts = axes >= 1;
+        }
+        out.axisNoError = !window.__jointAxisError;
+        // (c) GELENK-PROBE: Methode + Button + RAF-Konsum (Wiring; Animation Browser).
+        out.probeMethod = typeof r._workshopProbeJoints === "function";
+        out.probeBtn = !!document.getElementById("workshop-probe-btn");
+        out.probeInRAF = /p\.probe/.test(r._workshopStartRAF.toString());
+        return out;
+    });
+    check(
+        "W-G(e) Lehr-Satz: jede Gelenk-Rolle spricht Menschen-Sprache (Rad→Querachse · Tür→schwenkt · Scharnier→Längsachse · Unsinn→null)",
+        res.teachRad && res.teachTuer && res.teachScharnier && res.teachNull
+    );
+    check(
+        "W-G(d) Progressive Disclosure: die Verbindungs-Typen sind NACH Substanz-Stärke geordnet (primary 3 stärkste absteigend ≥ more — der 8er-Block bekommt GEMESSENEN Vorrang)",
+        res.ranked && res.rankedOrdered
+    );
+    check(
+        "W-G(b) Achsen-Geister: der Viewer zeichnet die Gelenk-Dreh-Achsen (isJointAxis-Linien + Lehr-Satz attached; computeMotionRoles GEZEICHNET, kein Node-Fehler)",
+        res.axisGhosts && res.axisTeachAttached && res.axisNoError
+    );
+    check(
+        "W-G(c) Gelenk-Probe: Methode + Button + RAF-Konsum (bauen → SEHEN; die Animation ist Schöpfer-Browser-Feel)",
+        res.probeMethod && res.probeBtn && res.probeInRAF
     );
 }
 
@@ -42292,7 +42360,9 @@ async function checkBandCadWorkshop(ctx) {
             // Popover hat 8 Type-Buttons + 1 Cancel
             if (popover) {
                 const buttons = popover.querySelectorAll("button");
-                out.popoverHasButtons = buttons.length === 12; // 8 Prozess- + 3 C7-Punkt-Typen + cancel (V18.110)
+                // W-G (V18.177): +„weitere…"-Toggle (Progressive Disclosure) → 13
+                // (3 primary + 5 hidden + 3 Anker + 1 weitere-Toggle + 1 cancel).
+                out.popoverHasButtons = buttons.length === 13;
             }
 
             // Apply Connection
@@ -44521,7 +44591,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // V17.91 — die Mode-Bar trägt 4 Modi (Move/Rotate/Scale/Connect) + Snap + Zentrieren + Undo +
             // Redo + Klonen + Neu + Löschen. V18.62 Ich-H — + „Körper holen" (Seele→Bauplan-Brücke) = 12.
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
-            out.sevenButtonsInBar = allBtns === 11; // V18.110 C7: „Körper holen" fiel (auto-Saat)
+            out.sevenButtonsInBar = allBtns === 12; // W-G (V18.177): +„▶ Gelenk-Probe" (V18.110 waren 11)
 
             // Methode existiert
             out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
@@ -44578,7 +44648,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
         );
         check(
-            "V8.06/V17.91/V18.110: Mode-Bar hat 11 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + Klonen + Neu + Löschen — Körper holen fiel, C7-Auto-Saat)",
+            "V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + ▶ Gelenk-Probe + Klonen + Neu + Löschen)",
             v806Results.sevenButtonsInBar
         );
         check(
@@ -48127,6 +48197,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWEFrequenzband(ctx);
             await checkBandWFFluss(ctx);
             await checkBandW3UiPuls(ctx);
+            await checkBandWGGelenke(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

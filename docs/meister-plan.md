@@ -706,9 +706,13 @@ Zug). *SYNERGIE:* dieselbe geglättete Fläche trägt danach das Boot-SCHWIMMEN
 (M3-Vermerk) fast gratis. *BEWEIS:* diag-tour-A/B je Teilwelle + die
 Unterwasser-Grenze als Invariante (Augenhöhe vs Fläche ±ε).
 
-**W-G — Werkstatt-Gelenke begreifbar (§8.4 — Anker-Gizmo · Achsen-Geister ·
-Gelenk-Probe ▶ · Typen-Vorrang; konsumiert die computeMotionRoles/_attachPointFor-
-Wahrheiten + den W-C-Mach-Tor-Hint).**
+**W-G ✓ teil GEBAUT (V18.177) — Werkstatt-Gelenke begreifbar (§8.4).** Vier
+Heilungen aus den bestehenden Wahrheiten: (e) `_jointTeachLine` (Gelenk →
+Menschen-Sprache) · (b) Achsen-Geister (Dreh-Achse GEZEICHNET im Viewer) ·
+(d) `_connectionTypesByStrength` (Kacheln nach Substanz-Stärke, 3 + „weitere…") ·
+(c) Gelenk-Probe ▶ (`_workshopProbeJoints` — 2.2 s wackeln). +4 Invarianten.
+Bewusst OFFEN: (a) der Anker-GIZMO-DRAG (der violette Marker direkt ziehbar —
+ein eigener Gizmo-Refactor) + der Browser-FEEL. Der ursprüngliche Plan:
 
 **W-H — der Wald-WOW (§8.5 — Gestalt-Varianten · Kronen-Schichtung · Cluster;
 Wächter: Affinitäts-Baseline + Archetypen-Bank + Warmup-Dichte-Disziplin).**
