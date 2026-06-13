@@ -327,6 +327,166 @@ function startSaveServer() {
             allRatios.push({ dLumNahe, feuchteGap });
         }
 
+        // ---- Bookmark-Shot „Fluss-Ufer Vista" (Plan §A.7, Schein-Test) ----
+        // Der Schöpfer-Browser-Beweis: das Auge auf Augenhöhe am Ufer eines
+        // starken Flusses, Blick aufs Wasser → vorne der feuchte (dunkle) Boden,
+        // hinten der trockene (heller). Ein A/B-Paar (Welle ON vs OFF über die
+        // genVersion-Schleuse) macht die Welle-Wirkung im EINEN Bild lesbar.
+        console.log("\n=== BOOKMARK-SHOT: Fluss-Ufer Vista ===");
+        try {
+            // Stärkste Probe finden (höchste Feuchte-Gap)
+            const strongMid = await page.evaluate(() => {
+                const r = window.anazhRealm;
+                const hydro = r.state.hydrosphere;
+                if (!hydro || !hydro.rivers) return null;
+                const sorted = [...hydro.rivers].sort(
+                    (a, b) => (b.points ? b.points.length : 0) - (a.points ? a.points.length : 0)
+                );
+                const river = sorted[0];
+                if (!river.points || river.points.length < 4) return null;
+                const mid = river.points[Math.floor(river.points.length / 2)];
+                return { x: mid.x, z: mid.z };
+            });
+            if (!strongMid) {
+                console.log("  ✗ kein Fluss gefunden");
+            } else {
+                // Auf Ufer-Position: 12 m nordöstlich der Fluss-Mitte, dort
+                // mit guter Wahrscheinlichkeit Land. Yaw schaut zum Fluss
+                // (südwestlich), pitch leicht nach unten — der Boden im Frame.
+                const standX = strongMid.x + 12;
+                const standZ = strongMid.z + 12;
+                const yawDeg = (Math.atan2(strongMid.x - standX, strongMid.z - standZ) * 180) / Math.PI;
+                const shootShot = async (filename) => {
+                    await page.evaluate(
+                        (cx, cz, yd) => {
+                            const ar = window.anazhRealm;
+                            if (ar.state.playerBody) {
+                                const tr = ar.state.playerBody.getWorldTransform();
+                                const ground = ar._voxelSurfaceY ? ar._voxelSurfaceY(cx, cz) : 0;
+                                tr.getOrigin().setValue(cx, (Number.isFinite(ground) ? ground : 0) + 1.7, cz);
+                                ar.state.playerBody.setWorldTransform(tr);
+                                try {
+                                    if (ar.state.tmpVec1 && typeof ar.setVec === "function") {
+                                        ar.state.playerBody.setLinearVelocity(
+                                            ar.setVec(ar.state.tmpVec1, 0, 0, 0)
+                                        );
+                                    }
+                                } catch (_e) {}
+                                ar.state.playerBody.activate(true);
+                            }
+                            if (ar.state.player) {
+                                ar.state.player.yaw = (yd * Math.PI) / 180;
+                                ar.state.player.pitch = (-8 * Math.PI) / 180;
+                            }
+                        },
+                        standX,
+                        standZ,
+                        yawDeg
+                    );
+                    // Settle: 4×6 Frames für Streaming + Rebuild
+                    for (let s = 0; s < 4; s++) {
+                        await page.evaluate(() => {
+                            const ar = window.anazhRealm;
+                            for (let i = 0; i < 6; i++)
+                                if (typeof ar._gameLoopTick === "function") ar._gameLoopTick(performance.now());
+                        });
+                        await new Promise((r) => setTimeout(r, 60));
+                    }
+                    await page.screenshot({ path: filename, timeout: 60000 });
+                };
+
+                // Sicherstellen, dass artifacts/ existiert
+                const fs = require("fs");
+                if (!fs.existsSync("artifacts")) fs.mkdirSync("artifacts");
+
+                // Mittag fixieren — A/B sauber vergleichbar (Atmosphäre +
+                // Schatten gleich, nur die Boden-Farbe wandelt sich).
+                await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (typeof r.setTimeOfDay === "function") r.setTimeOfDay(0.5);
+                });
+                // Vor allen Shots: Welt SETTLEN, damit Streaming+Build den
+                // Vista-Bereich vollständig aufgebaut hat (kein leerer Chunk
+                // beim ON-Shot, der das vorige Bild ruinierte).
+                await shootShot(path.resolve("artifacts/uferpixel-vista-warmup.png"));
+                fs.unlinkSync(path.resolve("artifacts/uferpixel-vista-warmup.png"));
+                for (let s = 0; s < 8; s++) {
+                    await page.evaluate(() => {
+                        const ar = window.anazhRealm;
+                        for (let i = 0; i < 6; i++)
+                            if (typeof ar._gameLoopTick === "function") ar._gameLoopTick(performance.now());
+                    });
+                    await new Promise((r) => setTimeout(r, 80));
+                }
+
+                // Shot A: Welle ON (genVersion 2 — Standard) + Sync-Remesh des
+                // 60-m-Sichtkegels, damit die Vertex-Color frisch schreibt.
+                // Zeit wieder auf Mittag fixieren (settle-Frames haben gedriftet).
+                await page.evaluate(
+                    (cx, cz) => {
+                        const r = window.anazhRealm;
+                        if (typeof r.setTimeOfDay === "function") r.setTimeOfDay(0.5);
+                        if (!r.state.worldMeta) r.state.worldMeta = {};
+                        r.state.worldMeta.genVersion = 2;
+                        if (typeof r._remeshVoxelChunksAround === "function") {
+                            r._remeshVoxelChunksAround(cx, cz, 60, 1);
+                        }
+                        if (typeof r._drainDirtyVoxelChunks === "function") {
+                            r._drainDirtyVoxelChunks();
+                        }
+                    },
+                    standX,
+                    standZ
+                );
+                const shotOn = path.resolve("artifacts/uferpixel-vista-on.png");
+                await shootShot(shotOn);
+                console.log(`  ✓ Shot ON  → ${shotOn}`);
+
+                // Shot B: Welle OFF (genVersion 1 → feuchteAt=0 → Mix-Linie stumm)
+                // + Sync-Remesh derselben Chunks; die Vertex-Color schreibt jetzt
+                // ohne den dampEarth-Term — der ehrliche A/B-Vergleich.
+                await page.evaluate(
+                    (cx, cz) => {
+                        const r = window.anazhRealm;
+                        if (typeof r.setTimeOfDay === "function") r.setTimeOfDay(0.5);
+                        r.state.worldMeta.genVersion = 1;
+                        if (typeof r._remeshVoxelChunksAround === "function") {
+                            r._remeshVoxelChunksAround(cx, cz, 60, 1);
+                        }
+                        if (typeof r._drainDirtyVoxelChunks === "function") {
+                            r._drainDirtyVoxelChunks();
+                        }
+                    },
+                    standX,
+                    standZ
+                );
+                const shotOff = path.resolve("artifacts/uferpixel-vista-off.png");
+                await shootShot(shotOff);
+                console.log(`  ✓ Shot OFF → ${shotOff}`);
+
+                // Welle wieder anschalten + Remesh, damit der diag-Endstand
+                // korrekt + die Welt für die Bilanz frisch ist.
+                await page.evaluate(
+                    (cx, cz) => {
+                        const r = window.anazhRealm;
+                        r.state.worldMeta.genVersion = 2;
+                        if (typeof r._remeshVoxelChunksAround === "function") {
+                            r._remeshVoxelChunksAround(cx, cz, 60, 1);
+                        }
+                    },
+                    standX,
+                    standZ
+                );
+
+                console.log(
+                    `  Vista @ (${standX.toFixed(0)}, ${standZ.toFixed(0)}) yaw=${yawDeg.toFixed(0)}° pitch=-8°`
+                );
+                console.log("  → Schöpfer-Browser-A/B: vergleiche die zwei Shots → der Ufer-Boden atmet.");
+            }
+        } catch (err) {
+            console.log("  ✗ Bookmark-Shot fehlgeschlagen: " + err.message);
+        }
+
         // ---- Globale Bilanz -----------------------------------------------
         console.log("\n=== BILANZ ===");
         if (allRatios.length) {
