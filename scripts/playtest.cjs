@@ -30434,6 +30434,278 @@ async function checkBandV18165KonsoleHeil(ctx) {
 // kontrolliertem Input (V17.32) + den KONSUM beider Gating-Stellen (V17.31,
 // die Doppel-Gating-WAND nah/Fernfeld) + das Legacy-Tor (genVersion fehlt → 1
 // → Feld schweigt, schilf ruht — bestehende Welten behalten ihr Gesicht).
+// V18.181-merge-Λ — die SIEBEN Λ-Bänder als eigenständige Mess-Wände (Plan
+// §7.1, Welle 6-Nachhol nach Reviewer-Befund). Vorher waren die Λ-Wahrheiten
+// in tesla-W-Bändern verankert via Source-Probes — Regression wäre rot, aber
+// nicht als Λ-Klassifikation. Diese sechs Bänder + das schon gebaute
+// checkBandV18177AAA (= das siebte) schließen die Plan §7.1-Lücke strukturell.
+async function checkBandLambda1LivingCenter(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // Humanoid Body — anatomisch (Kopf/Rumpf oben, Beine unten, fleisch).
+        const humanoid = {
+            parts: [
+                { shape: "box", material: "fleisch", position: { x: 0, y: 1.2, z: 0 }, size: { x: 0.9, y: 1.6, z: 0.5 } },
+                {
+                    shape: "cylinder",
+                    material: "fleisch",
+                    position: { x: -0.95, y: 1.1, z: 0 },
+                    size: { x: 0.3, y: 1.3, z: 0.3 },
+                },
+                {
+                    shape: "cylinder",
+                    material: "fleisch",
+                    position: { x: 0.95, y: 1.1, z: 0 },
+                    size: { x: 0.3, y: 1.3, z: 0.3 },
+                },
+                {
+                    shape: "cylinder",
+                    material: "fleisch",
+                    position: { x: -0.4, y: 0, z: 0 },
+                    size: { x: 0.35, y: 1.2, z: 0.35 },
+                },
+                {
+                    shape: "cylinder",
+                    material: "fleisch",
+                    position: { x: 0.4, y: 0, z: 0 },
+                    size: { x: 0.35, y: 1.2, z: 0.35 },
+                },
+            ],
+        };
+        // Stein-Tempel — symmetrisch + vertikal, aber NICHT lebendig → !_isBodyShaped.
+        const steinTempel = {
+            parts: [
+                { shape: "box", material: "stein", position: { x: 0, y: 3, z: 0 }, size: { x: 4, y: 2, z: 4 } },
+                {
+                    shape: "cylinder",
+                    material: "stein",
+                    position: { x: -1.5, y: 1, z: -1.5 },
+                    size: { x: 0.6, y: 2, z: 0.6 },
+                },
+                {
+                    shape: "cylinder",
+                    material: "stein",
+                    position: { x: 1.5, y: 1, z: -1.5 },
+                    size: { x: 0.6, y: 2, z: 0.6 },
+                },
+                {
+                    shape: "cylinder",
+                    material: "stein",
+                    position: { x: -1.5, y: 1, z: 1.5 },
+                    size: { x: 0.6, y: 2, z: 0.6 },
+                },
+                {
+                    shape: "cylinder",
+                    material: "stein",
+                    position: { x: 1.5, y: 1, z: 1.5 },
+                    size: { x: 0.6, y: 2, z: 0.6 },
+                },
+            ],
+        };
+        out.humanoidBody = r._isBodyShaped(humanoid);
+        out.steinTempelNotBody = !r._isBodyShaped(steinTempel);
+        // SUBSTANCE_ROLE_THRESHOLDS.body trägt die drei Λ.1-Felder.
+        const T = r.constructor.SUBSTANCE_ROLE_THRESHOLDS.body;
+        out.thresholdsExist =
+            Number.isFinite(T.livingMassMin) && Number.isFinite(T.livingCenterMinY) && Number.isFinite(T.livingCenterMaxY);
+        return out;
+    });
+    check("Λ.1 LivingCenter: humanoide Body (fleisch, lebendig-Masse mittig) ist body-shaped", res.humanoidBody === true);
+    check("Λ.1 LivingCenter: Stein-Tempel (symmetrisch+vertikal aber lebendig=0) ist NICHT body-shaped", res.steinTempelNotBody === true);
+    check("Λ.1 LivingCenter: SUBSTANCE_ROLE_THRESHOLDS.body trägt livingMassMin + livingCenterMinY + livingCenterMaxY", res.thresholdsExist === true);
+}
+
+async function checkBandLambda2HismSynthese(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const A = r.constructor;
+        out.instanceTintFrozen = Object.isFrozen(A.INSTANCE_TINT);
+        out.instanceTintShape =
+            Number.isFinite(A.INSTANCE_TINT.rangeH) &&
+            Number.isFinite(A.INSTANCE_TINT.rangeS) &&
+            Number.isFinite(A.INSTANCE_TINT.rangeV);
+        // Spawn 50 baum_eiche mit verschiedenen Seeds; sammle tintH/S/V.
+        // Λ.2 ist die clever-gauss-Achse (tintH/S/V seed-deterministisch aus
+        // Bit-Bändern in spawnArchitecture). Yaw-σ ist W-H (tesla, kommt aus
+        // _vegetationSampleSpawn via opts.rotationY), separat geprüft via
+        // checkBandWHWald-Familie — hier NICHT mit-prüfen.
+        const tints = [];
+        const tintS = [];
+        const tintV = [];
+        const savedArch = r.state.architectures.slice();
+        try {
+            r.state.architectures = [];
+            for (let i = 0; i < 50; i++) {
+                // Echte 32-bit-Seeds — die spawnArchitecture-Bit-Bänder >>> 5,
+                // >>> 13, >>> 21 brauchen die volle Breite, sonst trifft >>> 21
+                // bei seed < 2²¹ immer 0 (alle tintS gleich → σ=0). Mulberry32-
+                // ähnlicher Hash für sehr verstreute Seeds aus kleinem i.
+                const seed = ((i + 1) * 2654435761) >>> 0;
+                const a = r.spawnArchitecture(
+                    "baum_eiche",
+                    { x: 200 + i * 5, y: 0, z: 200 },
+                    { seed, silent: true, precise: true }
+                );
+                if (a) {
+                    if (Number.isFinite(a.tintH)) tints.push(a.tintH);
+                    if (Number.isFinite(a.tintS)) tintS.push(a.tintS);
+                    if (Number.isFinite(a.tintV)) tintV.push(a.tintV);
+                }
+            }
+        } finally {
+            r.state.architectures = savedArch;
+        }
+        // σ-Berechnungen.
+        const avg = (arr) => arr.reduce((s, v) => s + v, 0) / Math.max(1, arr.length);
+        const std = (arr) => {
+            if (!arr.length) return 0;
+            const m = avg(arr);
+            return Math.sqrt(avg(arr.map((v) => (v - m) ** 2)));
+        };
+        out.tintHSpread = std(tints);
+        out.tintSSpread = std(tintS);
+        out.tintVSpread = std(tintV);
+        out.tintCount = tints.length;
+        // Snapshot+Restore-Test: tintH muss bit-treu durchreisen.
+        if (tints.length >= 1) {
+            const probe = r.state.architectures[0] || { tintH: 0.5, tintS: 0.5, tintV: 0.5 };
+            r.state.architectures = [
+                { type: "baum_eiche", id: "λ2_probe", position: { x: 1000, y: 0, z: 1000 }, seed: 12345, scale: 1, tintH: 0.42, tintS: 0.31, tintV: 0.67 },
+            ];
+            const snap = r.buildStateSnapshot();
+            const snapEntry = snap.architectures && snap.architectures.find((a) => a.id === "λ2_probe");
+            out.snapshotCarriesTint =
+                snapEntry &&
+                Math.abs(snapEntry.tintH - 0.42) < 1e-9 &&
+                Math.abs(snapEntry.tintS - 0.31) < 1e-9 &&
+                Math.abs(snapEntry.tintV - 0.67) < 1e-9;
+            r.state.architectures = savedArch;
+            void probe;
+        }
+        return out;
+    });
+    check("Λ.2 HISM: INSTANCE_TINT ist frozen + trägt rangeH/S/V", res.instanceTintFrozen && res.instanceTintShape);
+    check(`Λ.2 HISM: tintH-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintHSpread && res.tintHSpread.toFixed(3)})`,
+        Number.isFinite(res.tintHSpread) && res.tintHSpread > 0.05);
+    check(`Λ.2 HISM: tintS-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintSSpread && res.tintSSpread.toFixed(3)})`,
+        Number.isFinite(res.tintSSpread) && res.tintSSpread > 0.05);
+    check(`Λ.2 HISM: tintV-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintVSpread && res.tintVSpread.toFixed(3)})`,
+        Number.isFinite(res.tintVSpread) && res.tintVSpread > 0.05);
+    check("Λ.2 HISM: tintH/S/V reist bit-treu im Snapshot (V8.59-Klasse)", res.snapshotCarriesTint === true);
+}
+
+async function checkBandLambda3Wind(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // Profil-Werte: laub (hoch wiegen), stein (=0).
+        const laubProfile = r._substanceResponseProfile({ tags: { lebendig: 1, dichte: 0.3, zähigkeit: 0.7 } });
+        const steinProfile = r._substanceResponseProfile({ tags: { lebendig: 0, dichte: 1, härte: 1 } });
+        out.laubWiegt = laubProfile.wiegen;
+        out.steinWiegtNull = steinProfile.wiegen;
+        // Source-Probe: _buildToonNodeMaterial setzt positionNode für wiegen > 0.05.
+        const src = r._buildToonNodeMaterial.toString();
+        out.windSwayCode = /responseProfile.*wiegen.*>\s*0\.05/.test(src) && /positionNode\s*=/.test(src);
+        return out;
+    });
+    check(`Λ.3 Wind: holz-Profil.wiegen > 0.2 (GEMESSEN ${res.laubWiegt && res.laubWiegt.toFixed(3)})`,
+        Number.isFinite(res.laubWiegt) && res.laubWiegt > 0.2);
+    check("Λ.3 Wind: stein-Profil.wiegen === 0 (kein Sway auf Stein)", res.steinWiegtNull === 0);
+    check("Λ.3 Wind: _buildToonNodeMaterial setzt positionNode für wiegen > 0.05", res.windSwayCode === true);
+}
+
+async function checkBandLambda4Streu(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // Source-Probe: _buildVoxelChunkScatter setzt sx/sy/sz für wind-Arten.
+        const src = r._buildVoxelChunkScatter.toString();
+        out.perAchsenCode = /sp\.wind/.test(src) && /sx:.*sy:.*sz:/s.test(src);
+        // Consumer: scl.set(it.sx, it.sy, it.sz) für nicht-uniform Items.
+        out.consumerCode = /scl\.set\(it\.sx,\s*it\.sy,\s*it\.sz\)/.test(src);
+        return out;
+    });
+    check("Λ.4 Streu: _buildVoxelChunkScatter setzt entkoppelte sx/sy/sz für wind-Arten", res.perAchsenCode === true);
+    check("Λ.4 Streu: Consumer liest sx/sy/sz statt uniform scale (Per-Achsen-Skalierung wirkt)", res.consumerCode === true);
+}
+
+async function checkBandLambda5MischwaldSynthese(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // 4 neue Baumarten als Baupläne.
+        const bps = r.state.blueprints;
+        out.fourNewSpecies =
+            !!bps.baum_birke && !!bps.baum_erle && !!bps.baum_buche && !!bps.baum_tanne;
+        // Gestalt-Varianten je Art (jung/normal/alt) für die 4 neuen.
+        out.variantsExist =
+            !!bps.baum_birke_jung &&
+            !!bps.baum_birke_alt &&
+            !!bps.baum_erle_jung &&
+            !!bps.baum_erle_alt &&
+            !!bps.baum_buche_jung &&
+            !!bps.baum_buche_alt &&
+            !!bps.baum_tanne_jung &&
+            !!bps.baum_tanne_alt;
+        // candidates-Liste in _vegetationSampleSpawn trägt die 4 NEUEN, aber NICHT die Varianten.
+        const src = r._vegetationSampleSpawn.toString();
+        const candidatesMatch = src.match(/const\s+candidates\s*=\s*\[([\s\S]*?)\]/);
+        const block = candidatesMatch ? candidatesMatch[1] : "";
+        out.candidatesBirke = /["']baum_birke["']/.test(block);
+        out.candidatesErle = /["']baum_erle["']/.test(block);
+        out.candidatesBuche = /["']baum_buche["']/.test(block);
+        out.candidatesTanne = /["']baum_tanne["']/.test(block);
+        out.candidatesNoVariants =
+            !/baum_birke_(jung|alt)/.test(block) &&
+            !/baum_erle_(jung|alt)/.test(block);
+        // Tag-Neutralität: Birke-normal hat dieselben Compound-Tags wie Eiche-normal
+        // (beide nutzen holz+laub mit denselben Formen → MAX über laub gleich).
+        const eicheTags = r.computeCompoundTags(bps.baum_eiche);
+        const birkeTags = r.computeCompoundTags(bps.baum_birke);
+        out.tagNeutral =
+            Math.abs((eicheTags.lebendig || 0) - (birkeTags.lebendig || 0)) < 0.01 &&
+            Math.abs((eicheTags.brennbar || 0) - (birkeTags.brennbar || 0)) < 0.01;
+        return out;
+    });
+    check("Λ.5 Mischwald: 4 neue Baumarten existieren als Bauplan (birke/erle/buche/tanne)", res.fourNewSpecies === true);
+    check("Λ.5 Mischwald: Gestalt-Varianten jung/alt für ALLE 4 neuen Baumarten existieren", res.variantsExist === true);
+    check("Λ.5 Mischwald: candidates enthält die 4 neuen Baumarten",
+        res.candidatesBirke && res.candidatesErle && res.candidatesBuche && res.candidatesTanne);
+    check("Λ.5 Mischwald: candidates trägt KEINE Varianten (Vielfalt nach dem Sieg, V17.16-Falle vermieden)", res.candidatesNoVariants === true);
+    check("Λ.5 Mischwald: Tag-Neutralität birke ↔ eiche (lebendig/brennbar gleich)", res.tagNeutral === true);
+}
+
+async function checkBandLambda6Detail(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const laubProfile = r._substanceResponseProfile({ tags: { lebendig: 1, dichte: 0.3 } });
+        const glasProfile = r._substanceResponseProfile({ tags: { transparent: 1, magieleitung: 0.8 } });
+        const steinProfile = r._substanceResponseProfile({ tags: { lebendig: 0, dichte: 1, härte: 1 } });
+        out.laubDetail = laubProfile.detail;
+        out.glasDetail = glasProfile.detail;
+        out.steinDetailNull = steinProfile.detail;
+        // Source-Probe: _buildToonNodeMaterial trägt subsurface-backlit für detail > 0.4.
+        const src = r._buildToonNodeMaterial.toString();
+        out.detailCode = /responseProfile.*detail.*>\s*0\.4/.test(src) && /backlit|_backlit/.test(src);
+        return out;
+    });
+    check(`Λ.6 Detail: laub-Profil.detail > 0.4 (GEMESSEN ${res.laubDetail && res.laubDetail.toFixed(3)})`,
+        Number.isFinite(res.laubDetail) && res.laubDetail > 0.4);
+    check(`Λ.6 Detail: glas-Profil.detail > 0.4 (GEMESSEN ${res.glasDetail && res.glasDetail.toFixed(3)})`,
+        Number.isFinite(res.glasDetail) && res.glasDetail > 0.4);
+    check("Λ.6 Detail: stein-Profil.detail === 0 (kein Translucency auf Stein)", res.steinDetailNull === 0);
+    check("Λ.6 Detail: _buildToonNodeMaterial trägt subsurface-backlit für detail > 0.4", res.detailCode === true);
+}
+
 // V18.181-merge-Λ Sub 3g — AAA-Atmosphäre Regression-Wand (Welle 6-Nachhol).
 // Ein scharfer Review fand: `static get AERIAL()` in der Klasse überdeckte das
 // Top-Level `AnazhRealm.AERIAL = ...` LAUTLOS (Getter ohne Setter, non-strict-
@@ -48477,6 +48749,12 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWBHofKarte(ctx);
             await checkBandWCIchWahrheit(ctx);
             await checkBandWDRittSpawn(ctx);
+            await checkBandLambda1LivingCenter(ctx);
+            await checkBandLambda2HismSynthese(ctx);
+            await checkBandLambda3Wind(ctx);
+            await checkBandLambda4Streu(ctx);
+            await checkBandLambda5MischwaldSynthese(ctx);
+            await checkBandLambda6Detail(ctx);
             await checkBandV18177AAA(ctx);
             await checkBandGammaGenese(ctx);
             await checkBandWEFrequenzband(ctx);

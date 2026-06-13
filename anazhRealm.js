@@ -23737,6 +23737,48 @@ class AnazhRealm {
                 if (typeof window !== "undefined") window.__windSwayError = String((_e && _e.message) || _e);
             }
         }
+        // V18.181-merge-Λ Sub 3f Λ.6 (Welle 6-Nachhol — Reviewer-Befund):
+        // SUBSURFACE-BACKLIT (Gegenlicht-Glühen für lebende Strukturen). Wenn
+        // das Substanz-Profil detail > 0.4 trägt (laub: lebendig·(1-dichte)
+        // hoch · oder magieleitung·transparent für Glas), bekommt das Material
+        // einen warmen post-lighting-Glow im Gegenlicht. Die Sonne im Rücken,
+        // Normale auf das Auge → ein warmer Schein durch das Laub. Das EINE
+        // Subsurface, das alle lebenden Leaves erben. Render-only, output-
+        // seitig (kein colorNode-Eingriff → bricht material.color nicht;
+        // CLAUDE.md-Gotcha). try/catch fängt TSL-Bau-Fehler.
+        if (responseProfile && responseProfile.detail > 0.4) {
+            try {
+                const _Td = THREE.TSL;
+                const _wu = this.state.windUniforms;
+                if (
+                    _Td &&
+                    _Td.cameraPosition &&
+                    _Td.positionWorld &&
+                    _Td.normalWorld &&
+                    _Td.pow &&
+                    _wu &&
+                    _wu.uSunDir
+                ) {
+                    // ViewDir (Auge zur Oberfläche).
+                    const _vd = _Td.normalize(_Td.cameraPosition.sub(_Td.positionWorld));
+                    // Sun-Back-Direction: Sonne zeigt VOM Auge weg.
+                    const _sunBack = _wu.uSunDir.mul(_Td.float(-1.0));
+                    const _backDot = _vd.dot(_sunBack).clamp(0.0, 1.0);
+                    // Schmale spitze Kurve — nur am echten Gegenlicht.
+                    const _backlit = _Td.pow(_backDot, _Td.float(3.0));
+                    // Detail-Achse moduliert die Glow-Stärke (~0.4..1 = laub).
+                    const _detailStrength = Math.max(0, Math.min(1, responseProfile.detail));
+                    // Warmer Subsurface-Ton (sonnen-durchschienenes Grün-Gelb).
+                    const _glowColor = _Td.vec3(1.0, 0.85, 0.6);
+                    const _glow = _glowColor.mul(_backlit).mul(_Td.float(_detailStrength * 0.18));
+                    // Additiv auf das bestehende Output (post-lighting).
+                    const _currentOutput = mat.outputNode || _Td.output;
+                    mat.outputNode = _currentOutput.add(_Td.vec4(_glow, _Td.float(0.0)));
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__translucencyError = String((_e && _e.message) || _e);
+            }
+        }
         return mat;
     }
 
@@ -27409,7 +27451,32 @@ class AnazhRealm {
                         const sclK = sMin + rnd() * (sMax - sMin);
                         const rotK = rnd() * Math.PI * 2;
                         if (this._terrainMacroSurfaceY(gx, gz, false) < cellMacro - 1.2) continue;
-                        buckets[si].push({ x: gx, y: surfY + sp.yOff, z: gz, rot: rotK, scale: sclK });
+                        // V18.181-merge-Λ Sub 3f Λ.4 (Welle 6-Nachhol — Reviewer-Befund):
+                        // PER-ACHSEN-SKALIERUNG (clever-gauss V18.175 „Λ.4 vertieft").
+                        // Statt UNIFORM `scale` bekommen lebende Streu-Instanzen drei
+                        // entkoppelte Achs-Faktoren — manche Halme kurz+breit (gestaucht),
+                        // andere hoch+schmal (gestreckt) → das echte Wiesen-Feel statt
+                        // Klon-Halmen. NUR für `wind`-Arten (laub/halm/farn — lebende).
+                        // Andere (Steinchen) bleiben uniform.
+                        let item;
+                        if (sp.wind) {
+                            // Drei eigene Würfe: y-Streckung [0.8, 1.25], xz-Breite [0.85, 1.15].
+                            const yFactor = 0.8 + rnd() * 0.45;
+                            const xFactor = 0.85 + rnd() * 0.3;
+                            const zFactor = 0.85 + rnd() * 0.3;
+                            item = {
+                                x: gx,
+                                y: surfY + sp.yOff,
+                                z: gz,
+                                rot: rotK,
+                                sx: sclK * xFactor,
+                                sy: sclK * yFactor,
+                                sz: sclK * zFactor,
+                            };
+                        } else {
+                            item = { x: gx, y: surfY + sp.yOff, z: gz, rot: rotK, scale: sclK };
+                        }
+                        buckets[si].push(item);
                     }
                 }
             }
@@ -27435,8 +27502,16 @@ class AnazhRealm {
                 const it = items[i];
                 pos.set(it.x, it.y, it.z);
                 q.setFromAxisAngle(up, it.rot);
-                if (harvested && harvested.has(`${sp.name}:${i}`)) scl.set(0, 0, 0);
-                else scl.set(it.scale, it.scale, it.scale);
+                if (harvested && harvested.has(`${sp.name}:${i}`)) {
+                    scl.set(0, 0, 0);
+                } else if (Number.isFinite(it.sx) && Number.isFinite(it.sy) && Number.isFinite(it.sz)) {
+                    // V18.181-merge-Λ Sub 3f Λ.4 (Welle 6-Nachhol): wenn das Item
+                    // die entkoppelten Achs-Faktoren trägt (lebende wind-Arten),
+                    // applizieren sie pro Mesh; sonst uniform wie vorher.
+                    scl.set(it.sx, it.sy, it.sz);
+                } else {
+                    scl.set(it.scale, it.scale, it.scale);
+                }
                 m.compose(pos, q, scl);
                 inst.setMatrixAt(i, m);
             }
