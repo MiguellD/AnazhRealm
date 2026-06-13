@@ -28728,6 +28728,10 @@ class AnazhRealm {
                 position: { x: a.position.x, y: a.position.y, z: a.position.z },
                 seed: a.seed,
                 scale: Number.isFinite(a.scale) ? a.scale : 1,
+                // W-H (V18.179, V8.59-Klasse) — die Pro-Instanz-Yaw überlebt den
+                // Reload (sonst rasten geladene Bäume auf Identity zurück → der
+                // Klon-Look kehrt wieder). Nur wenn gesetzt (Bauwerke = 0).
+                ...(Number.isFinite(a.rotationY) && a.rotationY !== 0 ? { rotationY: a.rotationY } : {}),
                 // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
                 // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
                 ...(a.freeBorn === true ? { freeBorn: true } : {}),
@@ -31662,6 +31666,8 @@ class AnazhRealm {
                 seed: a.seed,
                 scale: a.scale,
                 id: a.id,
+                // W-H (V18.179) — die Pro-Instanz-Yaw reist durch den Reload mit.
+                rotationY: Number.isFinite(a.rotationY) ? a.rotationY : 0,
                 // M6 — der Restore ist PRÄZISE (die Architektur stand, wo sie stand;
                 // numerische Worldgen-ids fielen sonst durch den string-id-Opt-out).
                 precise: true,
@@ -40901,87 +40907,152 @@ class AnazhRealm {
         // (bauschige Krone) + Farb-Gradient (Sockel dunkel → Spitze hell). Pro-
         // Part-AABB (V9.65): nur der Stamm ist solid (dichte holz>0.3), das Laub
         // durchlässig → harvestArchitecture liefert weiterhin holz+laub.
+        // W-H (V18.179) — die PAINTERLY KRONE (der „da-Vinci-Pinsel"-Look): eine
+        // volle, geschichtete Laub-Krone mit echtem VERTIKAL-Gradient (tiefes
+        // Schatten-Grün im Kern → sonnen-helles Gelb-Grün an den Spitzen) +
+        // asymmetrischer, organischer Platzierung. Die Basis-Eiche ist jetzt eine
+        // breit-ausladende, reich geschichtete Krone (7 Ellipsoide) auf einem
+        // charaktervollen Stamm (Wurzel-Flare + leichter Knick + 1 Ast).
+        // Tag-neutral (holz/laub, cylinder/sphere); instanced → HISM (eine
+        // Leaf-Gruppe je Part, eine Handvoll Draw-Calls). DER Gradient ist die
+        // Profi-Wahrheit: Valheim/Ghibli malen das Volumen mit Licht-zu-Schatten.
         const baumEicheParts = [
+            // Wurzel-Flare: kurzer breiter Stamm-Fuß (Charakter, c).
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: 0, y: 1.5, z: 0 },
-                size: { x: 0.85, y: 3.2, z: 0.85 },
+                position: { x: 0, y: 0.45, z: 0 },
+                size: { x: 1.1, y: 0.9, z: 1.1 },
                 segments: 7,
             },
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: 0.15, y: 3.6, z: 0.1 },
-                size: { x: 0.6, y: 2.0, z: 0.6 },
+                position: { x: 0, y: 1.7, z: 0 },
+                size: { x: 0.8, y: 2.6, z: 0.8 },
+                segments: 7,
+            },
+            // leichter Knick + Ast (Stamm-Charakter).
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0.2, y: 3.6, z: 0.12 },
+                size: { x: 0.58, y: 1.8, z: 0.58 },
+                rotation: { z: -0.12 },
                 segments: 6,
             },
             {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -0.85, y: 3.5, z: 0.3 },
+                size: { x: 0.28, y: 1.7, z: 0.28 },
+                rotation: { z: 0.8 },
+                segments: 5,
+            },
+            // KRONE — 7 Ellipsoide, Dunkel-Kern → Hell-Spitze, breit + asymmetrisch.
+            {
                 shape: "sphere",
                 material: "laub",
-                color: 0x4a7a2f,
-                position: { x: 0, y: 4.7, z: 0 },
-                size: { x: 2.9, y: 2.6, z: 2.9 },
+                color: 0x2f5524,
+                position: { x: 0, y: 4.3, z: 0 },
+                size: { x: 3.4, y: 2.2, z: 3.4 },
             },
             {
                 shape: "sphere",
                 material: "laub",
-                color: 0x5f9438,
-                position: { x: -1.4, y: 4.4, z: 0.6 },
-                size: { x: 2.0, y: 1.9, z: 2.0 },
+                color: 0x3a6a2c,
+                position: { x: -1.9, y: 4.2, z: 0.7 },
+                size: { x: 2.5, y: 1.9, z: 2.5 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x46792f,
+                position: { x: 1.9, y: 4.4, z: -0.8 },
+                size: { x: 2.6, y: 2.0, z: 2.6 },
             },
             {
                 shape: "sphere",
                 material: "laub",
                 color: 0x568a34,
-                position: { x: 1.3, y: 4.6, z: -0.7 },
-                size: { x: 2.1, y: 2.0, z: 2.1 },
+                position: { x: 0.6, y: 5.1, z: 1.4 },
+                size: { x: 2.3, y: 1.9, z: 2.3 },
             },
             {
                 shape: "sphere",
                 material: "laub",
                 color: 0x6fa848,
-                position: { x: 0.2, y: 6.0, z: 0.3 },
-                size: { x: 1.9, y: 1.8, z: 1.9 },
+                position: { x: -0.7, y: 5.4, z: -0.5 },
+                size: { x: 2.1, y: 1.8, z: 2.1 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x86c258,
+                position: { x: 0.4, y: 6.1, z: 0.3 },
+                size: { x: 1.8, y: 1.7, z: 1.8 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xa0d468,
+                position: { x: 0.0, y: 6.7, z: 0.0 },
+                size: { x: 1.3, y: 1.3, z: 1.3 },
             },
         ];
-        // Kiefer: schlanker 2-segmentiger Stamm + 3 gestapelte Kegel abnehmender
-        // Größe (klassische Tannen-Silhouette) + Farb-Gradient zur Spitze.
+        // Kiefer: schlanker Stamm + 5 gestaffelte Kegel (volle Tannen-Silhouette)
+        // mit Dunkel-zu-Hell-Gradient + Wurzel-Flare. W-H (V18.179) — die
+        // dichtere Kegel-Staffel + der stärkere Gradient geben die geschichtete
+        // Nadel-Krone (Valheim-Fichte) statt 3 flacher Kegel.
         const baumKieferParts = [
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: 0, y: 1.6, z: 0 },
-                size: { x: 0.6, y: 3.4, z: 0.6 },
+                position: { x: 0, y: 0.4, z: 0 },
+                size: { x: 0.8, y: 0.8, z: 0.8 },
                 segments: 6,
             },
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: 0, y: 4.2, z: 0 },
-                size: { x: 0.4, y: 2.2, z: 0.4 },
+                position: { x: 0, y: 2.0, z: 0 },
+                size: { x: 0.55, y: 3.6, z: 0.55 },
                 segments: 6,
             },
             {
                 shape: "cone",
                 material: "laub",
-                color: 0x356b2e,
-                position: { x: 0, y: 4.4, z: 0 },
-                size: { x: 2.6, y: 2.6, z: 2.6 },
+                color: 0x274d24,
+                position: { x: 0, y: 3.4, z: 0 },
+                size: { x: 3.0, y: 2.4, z: 3.0 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x336129,
+                position: { x: 0, y: 4.7, z: 0 },
+                size: { x: 2.5, y: 2.3, z: 2.5 },
             },
             {
                 shape: "cone",
                 material: "laub",
                 color: 0x437f38,
-                position: { x: 0, y: 5.9, z: 0 },
-                size: { x: 2.0, y: 2.4, z: 2.0 },
+                position: { x: 0, y: 6.0, z: 0 },
+                size: { x: 2.0, y: 2.2, z: 2.0 },
             },
             {
                 shape: "cone",
                 material: "laub",
-                color: 0x559442,
+                color: 0x5fa047,
                 position: { x: 0, y: 7.3, z: 0 },
-                size: { x: 1.3, y: 2.0, z: 1.3 },
+                size: { x: 1.4, y: 2.0, z: 1.4 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x86c258,
+                position: { x: 0, y: 8.5, z: 0 },
+                size: { x: 0.85, y: 1.7, z: 0.85 },
             },
         ];
 
@@ -40996,119 +41067,172 @@ class AnazhRealm {
         // (b) Kronen-Schichtung + Farb-Gradient lebten schon; NEU: (a) die Gestalten,
         // (c) Stamm-Charakter (Knick im 2. Segment), (d) Größen-Span trägt der Spawn.
         const eicheBreitParts = [
-            // breite, tief-ausladende Eiche — kurzer dicker Stamm, leichter Knick.
+            // breite, tief-ausladende Eiche — Flare, Knick + EIN asymmetrischer Ast
+            // (kein Spiegel-Paar: paarige Glieder + lebendig läsen als „Körper mit
+            // Armen" → soul-Drift, GEMESSEN; ein Baum ist KEINE Seele) + sehr breite
+            // painterly Krone (Dunkel-Kern → Hell-Spitze, asymmetrisch).
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: 0, y: 1.3, z: 0 },
-                size: { x: 1.0, y: 2.6, z: 1.0 },
+                position: { x: 0, y: 0.45, z: 0 },
+                size: { x: 1.4, y: 0.9, z: 1.4 },
                 segments: 7,
             },
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: 0.35, y: 3.0, z: 0.2 },
-                size: { x: 0.7, y: 1.6, z: 0.7 },
-                segments: 6,
+                position: { x: 0, y: 1.6, z: 0 },
+                size: { x: 1.05, y: 2.2, z: 1.05 },
+                segments: 7,
             },
-            // 1-2 Ast-Zylinder (Stamm-Charakter, c)
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: -0.9, y: 3.4, z: 0.3 },
-                size: { x: 0.3, y: 1.6, z: 0.3 },
-                rotation: { z: 0.7 },
+                position: { x: 0.3, y: 3.1, z: 0.18 },
+                size: { x: 0.7, y: 1.4, z: 0.7 },
+                rotation: { z: -0.18 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -0.95, y: 3.2, z: 0.35 },
+                size: { x: 0.34, y: 1.9, z: 0.34 },
+                rotation: { z: 0.85 },
                 segments: 5,
             },
             {
                 shape: "sphere",
                 material: "laub",
-                color: 0x4a7a2f,
-                position: { x: 0, y: 4.0, z: 0 },
-                size: { x: 3.8, y: 2.4, z: 3.8 },
+                color: 0x2f5524,
+                position: { x: 0, y: 3.9, z: 0 },
+                size: { x: 4.2, y: 2.4, z: 4.2 },
             },
             {
                 shape: "sphere",
                 material: "laub",
-                color: 0x5f9438,
-                position: { x: -2.0, y: 3.8, z: 0.8 },
-                size: { x: 2.6, y: 2.0, z: 2.6 },
+                color: 0x3a6a2c,
+                position: { x: -2.4, y: 3.7, z: 0.9 },
+                size: { x: 2.9, y: 2.1, z: 2.9 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x46792f,
+                position: { x: 2.4, y: 3.8, z: -1.0 },
+                size: { x: 3.0, y: 2.2, z: 3.0 },
             },
             {
                 shape: "sphere",
                 material: "laub",
                 color: 0x568a34,
-                position: { x: 2.0, y: 3.9, z: -0.9 },
-                size: { x: 2.7, y: 2.1, z: 2.7 },
+                position: { x: 0.7, y: 4.5, z: 1.8 },
+                size: { x: 2.6, y: 2.0, z: 2.6 },
             },
             {
                 shape: "sphere",
                 material: "laub",
                 color: 0x6fa848,
-                position: { x: 0.3, y: 5.0, z: 0.4 },
-                size: { x: 2.4, y: 2.0, z: 2.4 },
+                position: { x: -0.9, y: 4.8, z: -0.6 },
+                size: { x: 2.3, y: 1.9, z: 2.3 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x8ec85e,
+                position: { x: 0.3, y: 5.4, z: 0.3 },
+                size: { x: 1.9, y: 1.7, z: 1.9 },
             },
         ];
         const eicheJungParts = [
-            // junge, schlanke Eiche — ein Stamm, kleine kompakte Krone.
+            // junge schlanke Eiche — Flare, kleine painterly Krone.
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: 0, y: 1.2, z: 0 },
-                size: { x: 0.5, y: 2.6, z: 0.5 },
+                position: { x: 0, y: 0.35, z: 0 },
+                size: { x: 0.7, y: 0.7, z: 0.7 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0.05, y: 1.7, z: 0 },
+                size: { x: 0.45, y: 2.4, z: 0.45 },
+                rotation: { z: 0.06 },
                 segments: 6,
             },
             {
                 shape: "sphere",
                 material: "laub",
-                color: 0x5a8c38,
+                color: 0x355f28,
                 position: { x: 0, y: 3.0, z: 0 },
-                size: { x: 1.8, y: 1.8, z: 1.8 },
+                size: { x: 2.0, y: 1.8, z: 2.0 },
             },
             {
                 shape: "sphere",
                 material: "laub",
-                color: 0x6fa848,
-                position: { x: 0.2, y: 3.7, z: 0.1 },
-                size: { x: 1.3, y: 1.3, z: 1.3 },
+                color: 0x568a34,
+                position: { x: -0.5, y: 3.4, z: 0.3 },
+                size: { x: 1.4, y: 1.4, z: 1.4 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x86c258,
+                position: { x: 0.4, y: 3.8, z: -0.2 },
+                size: { x: 1.2, y: 1.2, z: 1.2 },
             },
         ];
         const kieferSchlankParts = [
-            // hohe schlanke Kiefer — langer Stamm, schmale Kegel-Staffel.
+            // hohe schlanke Kiefer — langer Stamm, dichte schmale Kegel-Staffel.
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: 0, y: 1.8, z: 0 },
-                size: { x: 0.5, y: 4.0, z: 0.5 },
+                position: { x: 0, y: 0.4, z: 0 },
+                size: { x: 0.7, y: 0.8, z: 0.7 },
                 segments: 6,
             },
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: 0.1, y: 5.0, z: 0 },
-                size: { x: 0.35, y: 2.6, z: 0.35 },
+                position: { x: 0, y: 2.4, z: 0 },
+                size: { x: 0.48, y: 4.4, z: 0.48 },
                 segments: 6,
             },
             {
                 shape: "cone",
                 material: "laub",
-                color: 0x356b2e,
-                position: { x: 0, y: 4.8, z: 0 },
-                size: { x: 2.0, y: 3.0, z: 2.0 },
+                color: 0x274d24,
+                position: { x: 0, y: 4.0, z: 0 },
+                size: { x: 2.4, y: 2.6, z: 2.4 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x336129,
+                position: { x: 0, y: 5.5, z: 0 },
+                size: { x: 2.0, y: 2.5, z: 2.0 },
             },
             {
                 shape: "cone",
                 material: "laub",
                 color: 0x437f38,
-                position: { x: 0, y: 6.6, z: 0 },
-                size: { x: 1.5, y: 2.8, z: 1.5 },
+                position: { x: 0, y: 7.0, z: 0 },
+                size: { x: 1.6, y: 2.4, z: 1.6 },
             },
             {
                 shape: "cone",
                 material: "laub",
-                color: 0x559442,
-                position: { x: 0, y: 8.3, z: 0 },
-                size: { x: 1.0, y: 2.4, z: 1.0 },
+                color: 0x5fa047,
+                position: { x: 0, y: 8.4, z: 0 },
+                size: { x: 1.1, y: 2.2, z: 1.1 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x86c258,
+                position: { x: 0, y: 9.6, z: 0 },
+                size: { x: 0.7, y: 1.8, z: 0.7 },
             },
         ];
 
@@ -44161,6 +44285,39 @@ class AnazhRealm {
         const m = out || new THREE.Matrix4();
         const baseY = Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0;
         const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        // W-H (V18.179) — die PRO-INSTANZ-ROTATION (der Klon-Killer): ein
+        // instanzierter Wald, dessen Bäume ALLE nach Norden zeigen, liest sich als
+        // Klon-Feld („nur mit der Größe gespielt"). `entry.rotationY` (seed-gesetzt
+        // für Bäume/Felsen im Spawn, default 0 = Bauwerke unberührt) dreht die
+        // Instanz um die Hoch-Achse → schon eine Handvoll Gestalten wirkt wie ein
+        // natürlicher Stand (Valheim/Witcher: wenige Meshes + Pro-Instanz-Yaw).
+        // HISM-treu (reine Instanz-Matrix); der Quadrat-AABB der Kollision
+        // über-deckt den gedrehten ~zylindrischen Stamm (CLAUDE.md-Gotcha).
+        const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        if (ry !== 0) {
+            const c = Math.cos(ry);
+            const sn = Math.sin(ry);
+            // T × R_y × S (Spalten-Major, Three.js): R_y skaliert mit s.
+            m.set(
+                c * s,
+                0,
+                sn * s,
+                entry.position.x || 0,
+                0,
+                s,
+                0,
+                baseY,
+                -sn * s,
+                0,
+                c * s,
+                entry.position.z || 0,
+                0,
+                0,
+                0,
+                1
+            );
+            return m;
+        }
         // compose(T, R=identity, S) — direkt gesetzt (schneller als compose).
         m.makeScale(s, s, s);
         m.elements[12] = entry.position.x || 0;
@@ -44585,6 +44742,11 @@ class AnazhRealm {
         group.position.set(entry.position.x || 0, baseY, entry.position.z || 0);
         if (Number.isFinite(entry.scale) && entry.scale !== 1) {
             group.scale.setScalar(entry.scale);
+        }
+        // W-H (V18.179) — die Pro-Instanz-Rotation auch im Nicht-HISM-Pfad
+        // (nah gerendert / Edit), damit ein Baum bei Annäherung nicht „einrastet".
+        if (Number.isFinite(entry.rotationY) && entry.rotationY !== 0) {
+            group.rotation.y = entry.rotationY;
         }
         this.state.scene.add(group);
         entry.mesh = group;
@@ -45116,6 +45278,9 @@ class AnazhRealm {
             position: { x: position.x || 0, y: position.y || 0, z: position.z || 0 },
             seed,
             scale,
+            // W-H (V18.179) — die Pro-Instanz-Yaw (Klon-Killer; default 0 =
+            // Bauwerke unberührt, nur Vegetation/Felsen setzen sie).
+            rotationY: Number.isFinite(opts.rotationY) ? opts.rotationY : 0,
             mesh: null,
         };
         // Ω5 (taille-spec §5, Perpetuum-Verbot) — die HERKUNFT entscheidet den
@@ -46227,23 +46392,30 @@ class AnazhRealm {
         }
         if (probe >= chance) return 0;
 
-        // W-H (V18.178, §8.5(a)+(d)) — die GESTALT + die GRÖSSE pro Baum. Der
-        // Affinitäts-Sieg (bestName) bleibt KANONISCH (baum_eiche/baum_kiefer) —
-        // die Verteilung ist bit-identisch; HIER wählt ein seed-deterministischer
-        // Wurf die sichtbare Variante + eine Größen-Spanne (±~35 %). Nur Bäume
-        // variieren; Felsen/Geoden bleiben ihre eine Gestalt.
+        // W-H (V18.178/.179, §8.5(a)+(d)) — die GESTALT + GRÖSSE + ROTATION pro
+        // Baum. Der Affinitäts-Sieg (bestName) bleibt KANONISCH — die Verteilung
+        // ist bit-identisch; HIER wählen seed-deterministische Würfe die sichtbare
+        // Variante, eine Größen-Spanne (±~40 %, der volle Plan-Wert) UND eine
+        // freie Yaw-Rotation (der Klon-Killer). Auch Felsen/Geoden drehen sich
+        // (natürlicher Stand); ihre GESTALT bleibt aber ihre eine.
         let spawnName = bestName;
         let spawnScale = 1;
+        let spawnYaw = 0;
         if (isTree) {
+            // reichere Verteilung: die Varianten tragen den Wald (nur ⅓ Basis).
             const variants =
                 bestName === "baum_eiche"
-                    ? ["baum_eiche", "baum_eiche", "baum_eiche_breit", "baum_eiche_jung"]
-                    : ["baum_kiefer", "baum_kiefer", "baum_kiefer_schlank"];
+                    ? ["baum_eiche", "baum_eiche_breit", "baum_eiche_breit", "baum_eiche_jung"]
+                    : ["baum_kiefer", "baum_kiefer_schlank", "baum_kiefer_schlank"];
             // eigene Seed-Bits (Suffix-Regel, Γ5) — re-rollt keinen anderen Stream.
             spawnName = variants[(seedForSpawn >>> 7) % variants.length];
             const sz = (rng.noise2D(sampleX * 0.53 + 11.3, sampleZ * 0.53 - 7.1) + 1) / 2; // [0,1]
-            spawnScale = 0.78 + sz * 0.5; // ~0.78..1.28 (±~25 %, „jung" wirkt zusätzlich kleiner)
+            spawnScale = 0.7 + sz * 0.66; // ~0.7..1.36 (±~40 %, der volle Plan-Wert)
         }
+        // Yaw aus eigenen Seed-Bits — Bäume UND Felsen (alle ~radial-symmetrisch
+        // im Footprint → der Quadrat-AABB der Kollision über-deckt; Gotcha).
+        const yawRoll = (rng.noise2D(sampleX * 0.71 - 5.2, sampleZ * 0.71 + 3.9) + 1) / 2;
+        spawnYaw = yawRoll * Math.PI * 2;
 
         this._enqueueVegetationSpawn(
             spawnName,
@@ -46252,6 +46424,7 @@ class AnazhRealm {
                 seed: seedForSpawn,
                 silent: true,
                 scale: spawnScale,
+                rotationY: spawnYaw,
             }
         );
         return 1;
@@ -59915,7 +60088,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.178.0";
+AnazhRealm.VERSION = "18.179.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

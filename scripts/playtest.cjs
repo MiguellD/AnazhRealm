@@ -21326,8 +21326,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     check("V12.0-perf.c.1: _archEntryWorldMatrix existiert", res.hasEntryMatrix);
     check("V12.0-perf.c.1: _archLeafMaterial existiert", res.hasLeafMat);
     check(
-        "V12.0-perf.c.1: baum_kiefer instancbar (1 Leaf je Part, V17.11 Multi-Part)",
-        res.kieferInstanceable === true && res.kieferLeaves === 5,
+        "V12.0-perf.c.1: baum_kiefer instancbar (1 Leaf je Part, V17.11/W-H Multi-Part = 7)",
+        res.kieferInstanceable === true && res.kieferLeaves === 7, // W-H (V18.179): reichere Krone 5→7 Parts
         `instanceable=${res.kieferInstanceable}, leaves=${res.kieferLeaves}`
     );
     check(
@@ -21353,8 +21353,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             res.cutoverInstanced === true && res.cutoverNoMesh === true
         );
         check(
-            "V12.0-perf.c.2: ein Instance-Slot je Leaf (baum_kiefer = 5, V17.11 Multi-Part)",
-            res.cutoverSlots === 5,
+            "V12.0-perf.c.2: ein Instance-Slot je Leaf (baum_kiefer = 7, V17.11/W-H Multi-Part)",
+            res.cutoverSlots === 7, // W-H (V18.179): reichere Kiefer-Krone
             `slots=${res.cutoverSlots}`
         );
         check("V12.0-perf.c.2: instancierter Eintrag hat Collision (aus Leaf-AABBs)", res.cutoverHasCollision);
@@ -31092,13 +31092,25 @@ async function checkBandWHWald(ctx) {
         out.notInCandidates =
             /candidates = \["baum_eiche", "baum_kiefer"/.test(src) && !/candidates.*baum_eiche_breit/.test(src);
         out.variantPickAfterWin = /spawnName = variants\[/.test(src) && /bestName === "baum_eiche"/.test(src);
-        // (4) GRÖSSEN-SPAN: der Spawn reicht eine seed-deterministische scale (HISM-
-        // kompatibel über die Instanz-Matrix).
-        out.sizeSpan = /spawnScale = 0\.78/.test(src) && /scale: spawnScale/.test(src);
-        // (5) die Varianten klassifizieren als ARCHITECTURE (kein Soul-Drift —
-        // Archetypen-Bank-Geist): die Rolle ist nicht soul/consumable.
+        // (4) GRÖSSEN-SPAN ±~40 %: der Spawn reicht eine seed-deterministische scale.
+        out.sizeSpan = /spawnScale = 0\.7 \+ sz \* 0\.66/.test(src) && /scale: spawnScale/.test(src);
+        // (5) die Varianten klassifizieren als ARCHITECTURE (kein Soul-Drift).
         const role = r.computeBlueprintRole ? r.computeBlueprintRole(bps.baum_eiche_breit) : null;
         out.staysArch = !role || (role !== "soul" && role !== "consumable" && role !== "vehicle");
+        // (6) DER KLON-KILLER — die PRO-INSTANZ-ROTATION: _archEntryWorldMatrix
+        // wirkt entry.rotationY (sonst zeigt ein ganzer Wald nach Norden) UND der
+        // Spawn setzt sie seed-deterministisch. Behavioral: zwei Entries mit
+        // verschiedener rotationY liefern verschiedene Welt-Matrizen.
+        out.rotInMatrix = /entry\.rotationY/.test(r._archEntryWorldMatrix.toString());
+        out.rotInSpawn = /spawnYaw/.test(src) && /rotationY: spawnYaw/.test(src);
+        const m0 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 0 });
+        const m1 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 1.2 });
+        out.rotChangesMatrix = m0.elements[0] !== m1.elements[0] || m0.elements[2] !== m1.elements[2];
+        // (7) die Yaw reist im Snapshot + Restore (V8.59-Klasse — sonst rasten
+        // geladene Bäume auf Identity zurück, der Klon-Look kehrt wieder).
+        out.rotPersists =
+            /rotationY: a\.rotationY/.test(r.buildStateSnapshot.toString()) &&
+            /rotationY: Number\.isFinite\(a\.rotationY\)/.test(r._loadStateRestoreArchitectures.toString());
         return out;
     });
     check(
@@ -31114,8 +31126,16 @@ async function checkBandWHWald(ctx) {
         res.notInCandidates && res.variantPickAfterWin
     );
     check(
-        "W-H Wald: der GRÖSSEN-SPAN + die Variante reisen seed-deterministisch in den Spawn (scale über die HISM-Instanz-Matrix) + die Variante bleibt ARCHITECTURE",
+        "W-H Wald: der GRÖSSEN-SPAN ±~40 % + die Variante reisen seed-deterministisch in den Spawn (scale über die HISM-Instanz-Matrix) + die Variante bleibt ARCHITECTURE",
         res.sizeSpan && res.staysArch
+    );
+    check(
+        "W-H Wald DER KLON-KILLER: die Pro-Instanz-ROTATION wirkt (_archEntryWorldMatrix liest entry.rotationY · der Spawn setzt sie seed-deterministisch · verschiedene Yaw → verschiedene Welt-Matrix — ein Wald zeigt nicht mehr nach Norden)",
+        res.rotInMatrix && res.rotInSpawn && res.rotChangesMatrix
+    );
+    check(
+        "W-H Wald: die Pro-Instanz-Yaw reist im Snapshot + Restore (V8.59 — geladene Bäume behalten ihre Rotation, der Klon-Look kehrt nicht wieder)",
+        res.rotPersists
     );
 }
 
