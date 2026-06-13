@@ -31047,9 +31047,85 @@ async function checkBandM6ErnteSpawn(ctx) {
     );
 }
 
+// W-E (meister-plan §8.3, V18.173) — DAS FREQUENZBAND: eine Atmosphäre, viele
+// Antennen. Das Sende-Feld war schon EINS (atmoUniforms/lights/fog), die
+// Empfangs-Seite war fünffach familien-gegated (E1 GEMESSEN, diag-frequenzband:
+// der Nacht-Boden-Hebel traf das Terrain mit Faktor ~6 gegenüber den Bauten,
+// das Gras gar nicht). Jetzt: EIN Empfänger (_applySubstanceResponse), Profile
+// aus der SUBSTANZ (_substanceResponseProfile — die Antenne IST die Substanz),
+// FÜLL-LICHT statt max()-Clamp, Band-Regler, Gras angedockt.
+async function checkBandWEFrequenzband(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const mats = r.state.materials;
+        // (1) die ANTENNE emergiert aus der Substanz (Ordnung der Achsen).
+        const pEisen = r._substanceResponseProfile(mats.eisen.tags);
+        const pHolz = r._substanceResponseProfile(mats.holz.tags);
+        const pGlut = r._substanceResponseProfile(mats.glut.tags);
+        const pStein = r._substanceResponseProfile(mats.stein.tags);
+        const pQuarz = r._substanceResponseProfile(mats.quarz.tags);
+        out.glanzOrdnung = pEisen.glanz > pHolz.glanz + 0.2;
+        out.glimmenOrdnung = pGlut.glimmen > pStein.glimmen + 0.3 && pQuarz.glimmen > pStein.glimmen + 0.2;
+        out.waermeOrdnung = pHolz.waerme > pEisen.waerme + 0.3;
+        out.glasOrdnung = pQuarz.glas > 0.8 && pStein.glas < 0.1;
+        // (2) die Tags REISEN in beide Part-Builder (Spiegel-Disziplin) und
+        // WIRKEN behavioral (V17.31, kein Existenz-Test): das HISM-Leaf eines
+        // Glut-Parts glimmt stärker als ein Stein-Part (gewichteter Emissiv).
+        const mGlut = r._archLeafMaterial({ material: "glut", shape: "box", size: { x: 1, y: 1, z: 1 } });
+        const mStein = r._archLeafMaterial({ material: "stein", shape: "box", size: { x: 1, y: 1, z: 1 } });
+        out.tagsReisen = mGlut.emissiveIntensity > mStein.emissiveIntensity + 0.01;
+        out.tagsImBuilder =
+            /matOpts\.tags = partMatDef\.tags/.test(r._buildFromBlueprint.toString()) &&
+            /matOpts\.tags = partMatDef\.tags/.test(r._archLeafMaterial.toString());
+        // (3) FÜLL-LICHT statt Clamp: der fuell-Block addiert
+        // albedo·floor·(1−lit) (die oneMinus-Dämpfung steht), der alte
+        // max(_rgb, …)-Clamp ist gefallen (§8.1#11 strukturell tot).
+        const src = r._applySubstanceResponse.toString();
+        out.fuellLicht = /oneMinus\(\)\.clamp/.test(src) && !/_T\.max\(_rgb/.test(src);
+        // (4) das Band trifft ALLE Ebenen: das Werk-Profil bestellt fuell+mond,
+        // das Gras ist angedockt (Source + outputNode-KONSUM).
+        const SR = r.constructor.SUBSTANCE_RESPONSE;
+        out.werkAmBand = SR.defaults.werk.fuell > 0 && SR.defaults.werk.mond > 0;
+        out.grasDocked = /_applySubstanceResponse/.test(r._grassInstanceMat.toString());
+        const gm = r._grassInstanceMat();
+        out.grasOutput = !!gm && gm.outputNode != null;
+        // (5) E3 BAND-REGLER: das Terrain-Mikro liest den microStrength-Uniform
+        // (vorher 0.13-Hardcode im colorNode — ein Regler, eine Welt-Antwort).
+        out.terrainMicroAmBand = /microStrength/.test(r._buildToonNodeMaterial.toString());
+        // (6) R-013 Schöpfer-Wort: Standard 0.06/0.06 als EINE Quelle + der
+        // Restore migriert den alten auto-gebackenen 0.12-Default.
+        out.defaults = Math.abs(SR.nightFloor - 0.06) < 1e-9 && Math.abs(SR.moonRim - 0.06) < 1e-9;
+        out.restoreMigriert = /setTerrainNightFloor\(Math\.abs/.test(r._loadStateRestoreSoulAndAtmosphere.toString());
+        return out;
+    });
+    check(
+        "W-E Frequenzband: die Antenne EMERGIERT aus der Substanz (glanz: Eisen>Holz · glimmen: Glut/Quarz>Stein · waerme: Holz>Eisen · glas: Quarz)",
+        res.glanzOrdnung && res.glimmenOrdnung && res.waermeOrdnung && res.glasOrdnung
+    );
+    check(
+        "W-E Frequenzband: die Substanz-Tags REISEN in beide Part-Builder (Spiegel) + wirken behavioral (Glut-Leaf glimmt stärker als Stein)",
+        res.tagsReisen && res.tagsImBuilder
+    );
+    check("W-E Frequenzband: FÜLL-LICHT statt max()-Clamp (additiv, struktur-erhaltend)", res.fuellLicht);
+    check(
+        "W-E Frequenzband: das Band trifft ALLE Ebenen — Werk-Familie am fuell/mond-Band + Gras angedockt (outputNode-KONSUM)",
+        res.werkAmBand && res.grasDocked && res.grasOutput
+    );
+    check(
+        "W-E E3 Band-Regler: das Terrain-Mikro liest den microStrength-Uniform (ein Regler, eine Welt-Antwort)",
+        res.terrainMicroAmBand
+    );
+    check(
+        "W-E R-013: nightFloor/moonRim-Standard 0.06 (Schöpfer-Wort, EINE Quelle) + Restore migriert den gebackenen 0.12-Default",
+        res.defaults && res.restoreMigriert
+    );
+}
+
 // V18.160 — M7: LICHT-FEINSCHLIFF (meister-plan §2; Befunde 20+21). Der
-// Terrain-NACHT-BODEN (max(lit, albedo × floor) — Mittag per Konstruktion
-// unverändert; A/B GEMESSEN: Pixel-Mittel 25.9 → 37.9 am Abend) + die
+// Terrain-NACHT-BODEN (seit W-E das Füll-Licht — Mittag per Konstruktion
+// ≈ unverändert; A/B GEMESSEN: Pixel-Mittel 25.9 → 37.9 am Abend) + die
 // Mikro-Struktur als LEBENDIGER Regler (vorher Konstante im Tree — ein
 // Slider wäre der tote Knopf, V18.65-Klasse).
 async function checkBandM7LichtFeinschliff(ctx) {
@@ -47895,6 +47971,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWCIchWahrheit(ctx);
             await checkBandWDRittSpawn(ctx);
             await checkBandGammaGenese(ctx);
+            await checkBandWEFrequenzband(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

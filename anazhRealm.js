@@ -13155,6 +13155,23 @@ class AnazhRealm {
             /* TSL/Noise nicht verfuegbar -> flaches Lambert-Grün (Default-color) */
         }
 
+        // W-E Schritt 3 (§8.3) — das GRAS dockt ans FREQUENZBAND: es konsumiert
+        // dieselben Band-Uniforms über den EINEN Empfänger (kein Material-Merge
+        // — das Lambert/Wind-Material bleibt). E1 GEMESSEN: der Nacht-Boden-
+        // Hebel traf das Gras mit −2.0 (taub); jetzt antwortet es (Füll-Licht
+        // + Aerial-Haze). Albedo-Quelle = die mittlere Wiesen-Farbe als
+        // Konstante (fürs 0.06-Füll-Licht ist die Repräsentanz ausreichend;
+        // kein attribute()-Lookup — V10.0-g.1-Disziplin).
+        try {
+            this._ensureAtmoUniforms();
+            const _SRg = AnazhRealm.SUBSTANCE_RESPONSE;
+            this._applySubstanceResponse(mat, _SRg.defaults.gras, {
+                albedoNode: TSL.vec3 ? TSL.vec3(0.37, 0.55, 0.26) : null,
+            });
+        } catch {
+            /* Band optional — Gras bleibt pures Lambert */
+        }
+
         this.state._grassMat = mat;
         return mat;
     }
@@ -21116,11 +21133,11 @@ class AnazhRealm {
                 // per-Vertex-color-Attribut; micro/AO trägt ihr eigener
                 // triplanar-colorNode (darum hier 0).
                 feld: Object.freeze({ micro: 0, rim: 0, waerme: 0, fuell: 1, mond: 1, emissiv: 0 }),
-                // Flach-Farb-Werke (Bauten/Deko/Kreaturen/Avatare). Λ1 Schritt 1
-                // (bit-nah): fuell/mond noch 0 = das heutige Familien-Gate;
-                // Schritt 2 holt die Werk-Familie ans Band (E1: nachts war der
-                // Bau bei floor 0 dunkler als das Terrain — die Silhouetten-Wurzel).
-                werk: Object.freeze({ micro: 1, rim: 1, waerme: 1, fuell: 0, mond: 0, emissiv: 1 }),
+                // Flach-Farb-Werke (Bauten/Deko/Kreaturen/Avatare): seit W-E
+                // Schritt 2 AUCH am fuell/mond-Band (E1 GEMESSEN: nachts war der
+                // Bau bei floor 0 DUNKLER als das Terrain — die Silhouetten-
+                // Wurzel; der eine Hebel traf das Terrain mit Faktor ~6).
+                werk: Object.freeze({ micro: 1, rim: 1, waerme: 1, fuell: 1, mond: 0.7, emissiv: 1 }),
                 // Gras (Schritt 3, eigenes Lambert-Material — KEIN Merge): es
                 // konsumiert dieselben Band-Uniforms (E1: floor-Hebel traf das
                 // Gras mit −2.0, jetzt antwortet es).
@@ -21128,9 +21145,8 @@ class AnazhRealm {
                 // Weder vertexColors noch Farbe: nur der Aerial-Haze (wie zuvor).
                 frei: Object.freeze({}),
             }),
-            // Λ1 Schritt 1: noch die alten Defaults; Schritt 2 → 0.06 (R-013).
-            nightFloor: 0.12,
-            moonRim: 0.12,
+            nightFloor: 0.06,
+            moonRim: 0.06,
         });
     }
 
@@ -22603,14 +22619,14 @@ class AnazhRealm {
                     ? this.state.atmosphere.microStrength
                     : (AnazhRealm.AERIAL && AnazhRealm.AERIAL.microStrength) || 0.1
             ),
-            // M7 (Befund 20 „Terrain nachts SCHWARZ") — der NACHT-BODEN des
-            // vertexColor-Terrains: max(lit, albedo × floor) — wirkt NUR, wenn
-            // das Gesamtlicht unter den Boden fällt (Mittag per Konstruktion
-            // unverändert; die B8-Parität: Bauten haben LUT-Boden 0.25 + Rim).
+            // M7 (Befund 20 „Terrain nachts SCHWARZ") → W-E — der NACHT-BODEN,
+            // seit dem Frequenzband ein FÜLL-LICHT für ALLE opaken Ebenen
+            // (profil-gewichtet; s. _applySubstanceResponse). Default = das
+            // Schöpfer-Wort R-013 (0.06), EINE Quelle: SUBSTANCE_RESPONSE.
             terrainNightFloor: TSL.uniform(
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainNightFloor)
                     ? this.state.atmosphere.terrainNightFloor
-                    : 0.12
+                    : AnazhRealm.SUBSTANCE_RESPONSE.nightFloor
             ),
             // WELLE J4-DEBUG — Browser-Isolations-Regler (default 1 = unverändert):
             // `aoScale`=0 schaltet die Kavitäts-AO ab (der `fwidth`-Term, der jede
@@ -22824,15 +22840,19 @@ class AnazhRealm {
             // der Boden, auf dem du stehst (aboveEye≈0 + nah), bleicht NICHT. Beide
             // Größen sind kamera-relativ (`cameraPosition` aktualisiert pro Frame) →
             // die Verblassung folgt deiner Position, wie die echte Atmosphäre.
-            // M7 (V18.160, Befund 20) → W-E — der NACHT-BODEN als fuell-Antenne.
-            // Nachts fiel ambient(0.18) × Albedo(~0.4) ≈ 0.07 → schwarz; der alte
-            // max(lit, albedo·floor)-Clamp hob aber NUR das Terrain und FRASS
-            // dabei AO/Cel/Triplanar (§8.1#11 — „Nacht-Boden hochdrehen frisst
-            // jede Struktur"). Λ1 Schritt 1: noch die max-Form, nur entgated
-            // (Albedo kommt vom Aufrufer). Mittag bleibt per Konstruktion.
-            if (_p("fuell") > 0 && _au.terrainNightFloor && layerOpts.albedoNode && _T.max) {
+            // M7 (V18.160, Befund 20) → W-E — der NACHT-BODEN als fuell-Antenne,
+            // jetzt FÜLL-LICHT statt Clamp (§8.3 Punkt 3, die Profi-Form:
+            // Ambient-Fill/LUT-Lift, nie max): lit + albedo·floor·(1−lit).
+            // Der alte max(lit, albedo·floor)-Clamp hob NUR das Terrain und
+            // FRASS dabei AO/Cel/Triplanar (§8.1#11 GEMESSEN — „Nacht-Boden
+            // hochdrehen frisst jede Struktur": alles unter dem Boden wurde
+            // EINE flache Albedo-Fläche). Das additive Füll-Licht ERHÄLT die
+            // Struktur (dunkle Stellen heben sich, die Relief-Ordnung bleibt);
+            // der (1−lit)-Term dämpft es bei hellem Licht (Mittag ≈ unberührt).
+            if (_p("fuell") > 0 && _au.terrainNightFloor && layerOpts.albedoNode) {
                 const _albedo = layerOpts.albedoNode;
-                _rgb = _T.max(_rgb, _albedo.mul(_au.terrainNightFloor).mul(_p("fuell")));
+                const _fill = _albedo.mul(_au.terrainNightFloor).mul(_p("fuell"));
+                _rgb = _rgb.add(_fill.mul(_rgb.oneMinus().clamp(0.0, 1.0)));
             }
             // §7.5(a) (V18.164) → W-E — das MOND-RIM als mond-Antenne: kühler
             // Fresnel-Saum, nur wenn der Tag-Nacht-Sync den Uniform hebt (nachts
@@ -23044,7 +23064,15 @@ class AnazhRealm {
                 const _n1 = _T.mx_noise_float(_wp.mul(0.33));
                 const _n2 = _T.mx_noise_float(_wp.mul(1.6));
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
-                let _shade = _T.float(1.0).add(_det.mul(0.13));
+                // W-E E3 (BAND-REGLER) — das Terrain-Mikro liest DENSELBEN
+                // microStrength-Uniform wie die Werk-Familie (×1.3 = der alte
+                // 0.13-Hardcode beim Uniform-Default 0.1 — bit-nah am Default;
+                // ein Regler, eine Welt-Antwort statt Familien-Insel).
+                const _microT =
+                    this.state.atmoUniforms && this.state.atmoUniforms.microStrength
+                        ? this.state.atmoUniforms.microStrength.mul(1.3)
+                        : _T.float(0.13);
+                let _shade = _T.float(1.0).add(_det.mul(_microT));
                 // V15.2 - Kavitaets-AO (render-only, der dritte Render-Bogen-
                 // Schritt): Welt-Raum-Kruemmung aus den Fragment-Derivaten.
                 // fwidth(normalWorld).length() / fwidth(positionWorld).length()
@@ -28537,11 +28565,11 @@ class AnazhRealm {
                 terrainNightFloor:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainNightFloor)
                         ? this.state.atmosphere.terrainNightFloor
-                        : 0.12,
+                        : AnazhRealm.SUBSTANCE_RESPONSE.nightFloor,
                 moonRim:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
                         ? this.state.atmosphere.moonRim
-                        : 0.12,
+                        : AnazhRealm.SUBSTANCE_RESPONSE.moonRim,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -31364,10 +31392,17 @@ class AnazhRealm {
             // an die Uniforms (oder _ensureAtmoUniforms liest sie beim Bau).
             const ms = Number(state.atmosphere.microStrength);
             if (Number.isFinite(ms)) this.setMicroStrength(ms);
+            // W-E/R-013 — der Standard wanderte 0.12 → 0.06 (Schöpfer-Wort).
+            // Der ALTE Snapshot-Fallback backte 0.12 in JEDEN Save (auch ohne
+            // Nutzer-Geste) → ein exakter 0.12-Wert ist der alte DEFAULT, keine
+            // Wahl — er wandert mit aufs Band-Default (wer bewusst 0.12 will,
+            // stellt den Regler einmal neu; jede andere Zahl bleibt heilig).
+            const _bandNf = AnazhRealm.SUBSTANCE_RESPONSE.nightFloor;
+            const _bandMr = AnazhRealm.SUBSTANCE_RESPONSE.moonRim;
             const nf = Number(state.atmosphere.terrainNightFloor);
-            if (Number.isFinite(nf)) this.setTerrainNightFloor(nf);
+            if (Number.isFinite(nf)) this.setTerrainNightFloor(Math.abs(nf - 0.12) < 1e-9 ? _bandNf : nf);
             const mr = Number(state.atmosphere.moonRim);
-            if (Number.isFinite(mr)) this.setTerrainMoonRim(mr);
+            if (Number.isFinite(mr)) this.setTerrainMoonRim(Math.abs(mr - 0.12) < 1e-9 ? _bandMr : mr);
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -40026,9 +40061,10 @@ class AnazhRealm {
             // V7.74 material-basierten Baupläne (Bäume/Felsen/Felsbogen)
             // waren darum alle weiss statt stein-grau/holz-braun/laub-grün.
             let baseColor = typeof part.color === "number" ? part.color : null;
-            if (baseColor === null && typeof part.material === "string") {
-                const matDef = this.state.materials && this.state.materials[part.material];
-                if (matDef && typeof matDef.color === "number") baseColor = matDef.color;
+            const partMatDef =
+                typeof part.material === "string" && this.state.materials ? this.state.materials[part.material] : null;
+            if (baseColor === null && partMatDef && typeof partMatDef.color === "number") {
+                baseColor = partMatDef.color;
             }
             if (baseColor === null) baseColor = 0xffffff;
             const precision = this.computePartPrecision(part);
@@ -40041,6 +40077,9 @@ class AnazhRealm {
                 ((Math.round(g8 * brightness) & 0xff) << 8) |
                 (Math.round(b8 * brightness) & 0xff);
             const matOpts = { color: tintedColor };
+            // W-E (§8.3) — die Antenne IST die Substanz: das Material-Tag-Profil
+            // reist in den Material-Bau (Glut glimmt, Eisen spiegelt, Holz wärmt).
+            if (partMatDef && partMatDef.tags) matOpts.tags = partMatDef.tags;
             if (Number.isFinite(part.opacity) && part.opacity < 1) {
                 matOpts.transparent = true;
                 matOpts.opacity = part.opacity;
@@ -43696,9 +43735,10 @@ class AnazhRealm {
     // Material-Substanz, Präzisions-Helligkeit 0.6..1.0, Opacity.
     _archLeafMaterial(part) {
         let baseColor = typeof part.color === "number" ? part.color : null;
-        if (baseColor === null && typeof part.material === "string") {
-            const matDef = this.state.materials && this.state.materials[part.material];
-            if (matDef && typeof matDef.color === "number") baseColor = matDef.color;
+        const partMatDef =
+            typeof part.material === "string" && this.state.materials ? this.state.materials[part.material] : null;
+        if (baseColor === null && partMatDef && typeof partMatDef.color === "number") {
+            baseColor = partMatDef.color;
         }
         if (baseColor === null) baseColor = 0xffffff;
         const precision = this.computePartPrecision(part);
@@ -43711,6 +43751,8 @@ class AnazhRealm {
             ((Math.round(g8 * brightness) & 0xff) << 8) |
             (Math.round(b8 * brightness) & 0xff);
         const matOpts = { color: tintedColor };
+        // W-E (§8.3) — die Antenne IST die Substanz (Spiegel zu _buildFromBlueprint).
+        if (partMatDef && partMatDef.tags) matOpts.tags = partMatDef.tags;
         if (Number.isFinite(part.opacity) && part.opacity < 1) {
             matOpts.transparent = true;
             matOpts.opacity = part.opacity;
@@ -45393,8 +45435,9 @@ class AnazhRealm {
         return val;
     }
 
-    // M7 (Befund 20) — der Terrain-NACHT-BODEN-Regler: 0 = das alte Schwarz,
-    // 0.12 = Default-Parität zu den Bauten, höher = hellere Nächte.
+    // M7 (Befund 20) → W-E — der NACHT-BODEN-Regler ist seit dem Frequenzband
+    // ein BAND-Regler (Füll-Licht ALLER opaken Ebenen, profil-gewichtet):
+    // 0 = das alte Schwarz, 0.06 = das Schöpfer-Wort (R-013), höher = heller.
     setTerrainNightFloor(v) {
         const val = Math.max(0, Math.min(0.3, Number(v) || 0));
         if (!this.state.atmosphere) this.state.atmosphere = {};
@@ -55269,7 +55312,7 @@ class AnazhRealm {
                     const moonBase =
                         this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
                             ? this.state.atmosphere.moonRim
-                            : 0.12;
+                            : AnazhRealm.SUBSTANCE_RESPONSE.moonRim;
                     const sunUp = Math.max(0, Math.sin(angle));
                     au.terrainMoonRim.value = moonBase * Math.max(0, 1 - sunUp * 4) * (1 - Math.min(1, rainyMix) * 0.7);
                 }
@@ -56312,7 +56355,7 @@ class AnazhRealm {
             const n0 =
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.terrainNightFloor)
                     ? this.state.atmosphere.terrainNightFloor
-                    : 0.12;
+                    : AnazhRealm.SUBSTANCE_RESPONSE.nightFloor;
             nfS.value = String(Math.round(n0 * 100));
             if (nfVal) nfVal.textContent = n0.toFixed(2);
             nfS.addEventListener("input", () => {
@@ -56329,7 +56372,7 @@ class AnazhRealm {
             const r0 =
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
                     ? this.state.atmosphere.moonRim
-                    : 0.12;
+                    : AnazhRealm.SUBSTANCE_RESPONSE.moonRim;
             mrS.value = String(Math.round(r0 * 100));
             if (mrVal) mrVal.textContent = r0.toFixed(2);
             mrS.addEventListener("input", () => {
@@ -59241,7 +59284,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.172.0";
+AnazhRealm.VERSION = "18.173.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

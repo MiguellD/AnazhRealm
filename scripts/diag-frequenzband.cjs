@@ -138,7 +138,13 @@ function startSaveServer() {
             ["abend", 0.85],
             ["nacht", 0.0],
         ];
-        const FLOORS = [0, 0.06, 0.3];
+        // V18.173 — Floor-Override fürs schnelle Δ (die Divergenz braucht nur
+        // f0/f0.3; der Default misst zusätzlich die 0.06-Standard-Zeile):
+        //   FREQBAND_FLOORS="0,0.3" node scripts/diag-frequenzband.cjs
+        const FLOORS = (process.env.FREQBAND_FLOORS || "0,0.06,0.3")
+            .split(",")
+            .map(Number)
+            .filter(Number.isFinite);
         const karte = {};
         for (const [zName, t] of ZEITEN) {
             for (const f of FLOORS) {

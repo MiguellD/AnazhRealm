@@ -819,6 +819,45 @@ BEHAVIORAL-Wechsel — Matrix-A/B + S-Gate Pflicht, Defaults 0.06/0.06). Gras +
 Wasser docken als Schritt 3 an (eigene Materialien konsumieren dieselben
 Uniforms + Profil-Gewichte — kein Material-Merge).
 
+**E2+E3 ✓ GEBAUT (V18.173, exakt nach der Schnitt-Karte — zwei Λ1-Schnitte,
+beide GEMESSEN; S-Abnahme der Dämmerung offen, R-012/R-013 im Korpus auf
+gebaut):** **Schnitt 1 (bit-nah):** `_applyAerialOutput` →
+`_applySubstanceResponse(mat, profile, layerOpts)` — die Familien-Gates wurden
+PROFILE (`SUBSTANCE_RESPONSE.defaults` feld/werk/gras/frei), die Albedo-Quelle
+reicht der Aufrufer (`layerOpts.albedoNode`; der Empfänger bleibt attribut-frei).
+GEMESSEN: die Schnitt-1-Matrix reproduziert die E1-Signatur (nacht terrain
++41.3 · bau +5.7 · gras +0.5 — Faktor ~7, das Gras taub) = der entgatete
+Empfänger ist verhaltens-treu; erst DANN der bewusste Wechsel. **Schnitt 2:**
+das FÜLL-LICHT `lit + albedo·floor·(1−lit)` ersetzt den max()-Clamp
+(struktur-erhaltend — der §8.1#11-Fresser strukturell tot) · die Antenne
+EMERGIERT aus der Substanz (`_substanceResponseProfile`: glanz/tiefe/glimmen/
+waerme/glas aus den 10 Tags; die Tags reisen in BEIDE Part-Builder
+[`_buildFromBlueprint` + `_archLeafMaterial`, Spiegel]; GEMESSEN: Eisen-glanz
+0.81 vs Holz 0.28 · Glut-Emissiv 0.104 vs Stein 0.035) · die Werk-Familie kommt
+ans fuell/mond-Band (fuell 1 · mond 0.7) · das GRAS dockt an (Schritt 3, kein
+Merge) · E3: das Terrain-Mikro liest DENSELBEN microStrength-Uniform (×1.3 =
+der alte Hardcode am Default; ein Regler, eine Welt-Antwort) · R-013: Standard
+0.06/0.06 als EINE Quelle aller Leser + Restore-Migration des auto-gebackenen
+0.12. Bewusste Abweichung: die Struktur-LUT bleibt familien-binär (geteilte
+DataTexture, V9.84-Singleton; ihr Boden ist schon Band-Hebel via celContrast)
+— die per-Substanz-Tiefe lebt in micro/AO. +6 Invarianten
+(`checkBandWEFrequenzband`). **E4-Matrix NACHHER (derselbe Diag, Schnitt-2-Stand; `FREQBAND_FLOORS`-
+Override fürs schnelle Δ — das Werkzeug wuchs):** floor 0→0.3 hebt **nacht**
+terrain +76 · **kreatur +77.2** (war strukturell clamp-los) · **baum +30.6**
+(E1: +8.2) · **bau +12.9** (E1: +7.3) · **gras +4.5** (E1: −2.0, TAUB) —
+JEDE Familie antwortet jetzt positiv; der Silhouetten-Beweis: bei floor 0
+steht der Bau nachts ÜBER dem Terrain (20.1 vs 13 — die schwarze Silhouette
+ist tot), und der f0.3-Shot zeigt ERHALTENES Relief (Hänge schattiert statt
+flacher Albedo-Platte = das Füll-Licht hält, was der max()-Clamp fraß). Die
+Rest-Spreizung Terrain↔Bau ist ALBEDO-getrieben (dunkler Stein fängt
+physikalisch weniger Füll-Licht: fill ∝ albedo) — Substanz-Ehrlichkeit, kein
+Code-Pfad mehr. EHRLICH benannt: die additive Form hebt beim STRESS-Floor 0.3
+auch den Mittag (+55 terrain; der alte Clamp war tags unsichtbar, fraß dafür
+nachts die Struktur) — beim Schöpfer-Standard 0.06 ist der Tag-Hub linear ~⅕
+davon (≈ +11/255, moderat). Offen: der S-Blick (eine Dämmerung, die trägt —
+das v1.0-DoD-Gate) + die S-Kalibrierung der Erst-Wurf-Gewichte (weiche Böden
+0.4/0.5/0.35) als Vermerk; die Wasser-Antwort misst der W-F-Bogen.
+
 ### §8.4 W-G: Werkstatt-Gelenke/Anker — begreifbar wie ein Profi
 
 **Die Schöpfer-Fragen beantwortet (der heutige Stand, damit du weiterbaust):**
