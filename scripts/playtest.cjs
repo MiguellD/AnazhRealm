@@ -5711,19 +5711,23 @@ async function checkBandV1769RoleResonance(ctx) {
         const tv = r._blueprintProductVector(blu.temple);
         out.vectorHasSpatial = "bodyShape" in tv && "portalShape" in tv && "dichte" in tv;
 
-        // (2) DER HEAL (Schöpfer-Wahl „jetzt heilen") — temple + felsbogen WAREN soul (body-förmig), sind jetzt
-        // architecture: ihre Geometrie ist body-förmig (bodyShape=1), aber als dichte, harte Stein-Struktur
-        // resoniert „architecture" STÄRKER als „soul". V18.181-merge-Λ Sub 3c (V9.56-i — Test wandert):
-        // die Λ.1-livingCenterY-Heilung (V18.173) klemmt _isBodyShaped DIREKT — ein stein-tempel hat keine
-        // lebendige Masse → !_isBodyShaped → kein Resonanz-Vergleich nötig. Der Test akzeptiert beide
-        // Heilungs-Pfade: Λ.1 direkt (tvBody === false) ODER V17.69-Resonanz-Vorrang (archScore > soulScore
-        // bei body-förmig). Beide ergeben dasselbe Resultat: templeHealed/felsbogenHealed sind architecture.
+        // (2) DER HEAL (V17.69 Schöpfer + Λ.1/V18.173 — DIE REGEL HEILEN, der
+        // Schöpfer-Plan): temple + felsbogen WAREN soul (body-förmig); mit der
+        // Λ.1-Wand (livingCenterY: nur lebendiges Material in mittlerer Höhe
+        // qualifiziert als Körper) sind beide eine STEIN-STRUKTUR ohne
+        // livingMass → `_isBodyShaped` schlägt sofort fehl → architecture.
+        // Die V17.69-Resonanz-Heilung (archScore > soulScore) wird damit
+        // moot — der Mechanismus ist EINE Schicht tiefer: die Körper-Form
+        // selbst wird verweigert (livingCenterY-Wand), nicht nur die
+        // Resonanz-Reihenfolge. Test wandert (V9.56-i).
         out.templeHealed = r.computeBlueprintRole(blu.temple) === "architecture";
         out.felsbogenHealed = r.computeBlueprintRole(blu.felsbogen) === "architecture";
         const tvBody = r._isBodyShaped(blu.temple);
         const archScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.architecture);
         const soulScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.soul);
-        out.healMechanism = tvBody === false || archScore > soulScore;
+        // Λ.1: _isBodyShaped ist FALSE für temple (kein livingMass) — die
+        // tiefere Heilung. Der Test prüft jetzt diese Wahrheit.
+        out.healMechanism = tvBody === false;
 
         // (3) DER WÄCHTER — die 12 Form-Fallback-Built-ins, Baseline eingefroren (temple/felsbogen jetzt architecture)
         const wantArch = [
@@ -5813,7 +5817,7 @@ async function checkBandV1769RoleResonance(ctx) {
         res.vectorHasSpatial
     );
     check(
-        "V17.69 R3 DER HEAL: temple + felsbogen sind jetzt architecture (waren soul) — body-förmig, aber als dichte Stein-Struktur resoniert architecture STÄRKER als soul",
+        "V17.69+Λ.1 DER HEAL: temple + felsbogen sind architecture; mit Λ.1 (livingCenterY) ist _isBodyShaped FALSE für Stein-Strukturen — die livingMass-Wand schlägt VOR der Resonanz-Hierarchie zu",
         res.templeHealed && res.felsbogenHealed && res.healMechanism
     );
     check(
@@ -7095,8 +7099,16 @@ async function checkBandV1784AvatarFormFit(ctx) {
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const p = r.state.player;
         const out = {};
+        // V17.84+Λ.1 (V18.173 — DIE REGEL HEILEN, V9.56-i-Test-Wanderung): der
+        // ursprüngliche Test-Avatar hatte KEINEN Kopf — der Schwerpunkt fiel
+        // unnatürlich hoch (yNorm 0.749, oberhalb der livingCenterMaxY 0.7
+        // → Λ.1 verweigert die Körper-Form). Mit einem Kopf (wie der echte
+        // human-Avatar) sinkt yNorm auf ~0.44 (mittig verteilt) → Körper ✓.
+        // Die V17.84-Diskriminierung Körper vs. Klumpen bleibt UNVERÄNDERT.
         const bodyParts = [
             { shape: "box", material: "fleisch", position: { x: 0, y: 1.2, z: 0 }, size: { x: 0.9, y: 1.6, z: 0.5 } },
+            // Kopf-Sphäre — die Λ.1-Heilung verlangt realistische Verteilung
+            { shape: "sphere", material: "knochen", position: { x: 0, y: 2.2, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
             {
                 shape: "cylinder",
                 material: "fleisch",
@@ -15316,10 +15328,7 @@ async function checkBandWelle6APolish(ctx) {
         let connMarkerCount = 0;
         let lineColor = null;
         built.traverse((node) => {
-            // W-G (V18.177, V9.56-i): die ACHSEN-GEISTER (isJointAxis — Linien +
-            // Kegel-Spitzen) sind eine NEUE Viewer-Schicht; der Verbindungs-Zähler
-            // klammert sie aus (der Test prüft die Verbindung, nicht die Achse).
-            if (node.userData && node.userData.isConnectionLine && !node.userData.isJointAxis) {
+            if (node.userData && node.userData.isConnectionLine) {
                 if (node.isLine) connLineCount++;
                 if (node.isMesh) connMarkerCount++;
                 if (node.material && node.material.color) lineColor = node.material.color.getHex();
@@ -19630,18 +19639,16 @@ async function checkBandHydrosphere(ctx) {
     // über dem Meer, nicht synergetisch. V9.43-c.2: Fluss-Mündungen
     // erreichen SICHTBAR ihr Wasser (Ribbon blendet auf `waterLevel`
     // bzw. den Ziel-See-Level), und der Spieler schwimmt in einem See
-    // wie im Meer. V18.180-FIX §6.4: die alte `_hydroWaterLevelAt`-Quelle
-    // ist gefallen (V9.69-Zwei-Skalen-Lücke); die Tests wandern auf
-    // `_waterLevelAt` (V9.56-i — der Test bleibt am echten Verhalten).
+    // wie im Meer (`_hydroWaterLevelAt` speist die Schwimm-Physik).
     const voxelV943c2 = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasWaterLevelAt = typeof r._waterLevelAt === "function";
+        out.hasWaterLevelAt = typeof r._hydroWaterLevelAt === "function";
         const hydro = r.state.hydrosphere;
         out.hydroReady = !!(hydro && hydro.ready);
         if (!out.hasWaterLevelAt || !out.hydroReady) return out;
-        // _waterLevelAt: über einer GERENDERTEN See-Zelle → der
+        // _hydroWaterLevelAt: über einer GERENDERTEN See-Zelle → der
         // See-Level. V9.45-c: absorbierte Seen (level ≤ waterLevel+2)
         // zählen nicht — die Meeres-Plane vertritt sie.
         out.lakeLevelOk = true;
@@ -19654,7 +19661,7 @@ async function checkBandHydrosphere(ctx) {
             const cj = (cellIdx / hydro.dim) | 0;
             const wx = hydro.originX + (ci + 0.5) * hydro.cell;
             const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
-            out.lakeLevelOk = Math.abs(r._waterLevelAt(wx, wz) - renderedLk.level) < 0.01;
+            out.lakeLevelOk = Math.abs(r._hydroWaterLevelAt(wx, wz) - renderedLk.level) < 0.01;
             // V9.45-c — der Auftrieb folgt der dilatierten See-Plane:
             // eine 1-Ring-Zelle (nicht selbst See-Zelle) liefert auch
             // einen See-Wasserspiegel, nicht den Meeresspiegel.
@@ -19668,13 +19675,13 @@ async function checkBandHydrosphere(ctx) {
                     if (cellsSet.has(ni + nj * hydro.dim)) continue;
                     const rx = hydro.originX + (ni + 0.5) * hydro.cell;
                     const rz = hydro.originZ + (nj + 0.5) * hydro.cell;
-                    out.ringFollowsPlane = r._waterLevelAt(rx, rz) > wlT + 1.5;
+                    out.ringFollowsPlane = r._hydroWaterLevelAt(rx, rz) > wlT + 1.5;
                     ringChecked = true;
                 }
             }
         }
         // Weit ausserhalb der Hydrosphären-Region → Meeresspiegel.
-        out.seaFallbackOk = r._waterLevelAt(999999, 999999) === r.state.waterLevel;
+        out.seaFallbackOk = r._hydroWaterLevelAt(999999, 999999) === r.state.waterLevel;
         // Fluss-Mündung erreicht das Wasser: ein Meer-Mündungs-Fluss-
         // Ribbon endet auf `waterLevel` (kein Rinnsal-Ende in der Luft).
         r._buildHydrosphereMeshes();
@@ -19693,22 +19700,22 @@ async function checkBandHydrosphere(ctx) {
             if (Math.abs(lastY - r.state.waterLevel) > 0.3) out.mouthReachesSea = false;
         }
         // Die Schwimm-Physik (in _loopPhysicsSync) speist den
-        // effektiven Wasserspiegel aus _waterLevelAt.
+        // effektiven Wasserspiegel aus _hydroWaterLevelAt.
         out.physicsUsesEffWater =
-            typeof r._loopPhysicsSync === "function" && /_waterLevelAt/.test(r._loopPhysicsSync.toString());
+            typeof r._loopPhysicsSync === "function" && /_hydroWaterLevelAt/.test(r._loopPhysicsSync.toString());
         return out;
     });
 
     if (voxelV943c2 && !voxelV943c2.error) {
         const h2 = voxelV943c2;
-        check("Voxel V9.43-c.2: _waterLevelAt existiert (war _hydroWaterLevelAt — V18.180-FIX §6.4)", h2.hasWaterLevelAt);
-        check("Voxel V9.43-c.2: _waterLevelAt liefert über einer See-Zelle den See-Füllstand", h2.lakeLevelOk);
+        check("Voxel V9.43-c.2: _hydroWaterLevelAt existiert", h2.hasWaterLevelAt);
+        check("Voxel V9.43-c.2: _hydroWaterLevelAt liefert über einer See-Zelle den See-Füllstand", h2.lakeLevelOk);
         check(
             "Voxel V9.45-c: der Auftrieb folgt der dilatierten See-Plane (1-Ring-Zelle = See-Spiegel)",
             h2.ringFollowsPlane
         );
         check(
-            "Voxel V9.43-c.2: _waterLevelAt fällt ausserhalb der Region auf den Meeresspiegel zurück",
+            "Voxel V9.43-c.2: _hydroWaterLevelAt fällt ausserhalb der Region auf den Meeresspiegel zurück",
             h2.seaFallbackOk
         );
         check(
@@ -20367,7 +20374,23 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                 const _sc = sampleMeshKey.split(",");
                 r._buildVoxelChunkWaterIsoSurface(Number(_sc[0]), Number(_sc[1]));
             }
-            const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
+            let sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
+            // V18.179 (Γ4) — defensiv: der Re-Build kann den Mesh leeren, wenn
+            // das designte Massiv-Terrain den Chunk übers Wasser hebt (nach
+            // Clear gibt es weder caDelta noch Atlas-Wasser). Such einen
+            // Ersatz-Chunk, der nach dem Clear noch Mesh hat.
+            if (!sampleMesh) {
+                for (const [k, m] of r.state.voxelChunkWaterIso.entries()) {
+                    if (m && m.geometry) {
+                        sampleMeshKey = k;
+                        sampleMesh = m;
+                        break;
+                    }
+                }
+            }
+            if (!sampleMesh) {
+                return { ...out, error: "no sample mesh after rebuild" };
+            }
             out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
             // V18.6 U-W4 — der Default-Render ist die Höhenfeld-FLÄCHE ("chunk-
             // water-surface"); der A/B-Schalter "iso" baut die alte Zell-Iso
@@ -21332,8 +21355,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     check("V12.0-perf.c.1: _archEntryWorldMatrix existiert", res.hasEntryMatrix);
     check("V12.0-perf.c.1: _archLeafMaterial existiert", res.hasLeafMat);
     check(
-        "V12.0-perf.c.1: baum_kiefer instancbar (1 Leaf je Part, V17.11/W-H Multi-Part = 7)",
-        res.kieferInstanceable === true && res.kieferLeaves === 7, // W-H (V18.179): reichere Krone 5→7 Parts
+        "V12.0-perf.c.1: baum_kiefer instancbar (1 Leaf je Part, V17.11 Multi-Part)",
+        res.kieferInstanceable === true && res.kieferLeaves === 5,
         `instanceable=${res.kieferInstanceable}, leaves=${res.kieferLeaves}`
     );
     check(
@@ -21359,8 +21382,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             res.cutoverInstanced === true && res.cutoverNoMesh === true
         );
         check(
-            "V12.0-perf.c.2: ein Instance-Slot je Leaf (baum_kiefer = 7, V17.11/W-H Multi-Part)",
-            res.cutoverSlots === 7, // W-H (V18.179): reichere Kiefer-Krone
+            "V12.0-perf.c.2: ein Instance-Slot je Leaf (baum_kiefer = 5, V17.11 Multi-Part)",
+            res.cutoverSlots === 5,
             `slots=${res.cutoverSlots}`
         );
         check("V12.0-perf.c.2: instancierter Eintrag hat Collision (aus Leaf-AABBs)", res.cutoverHasCollision);
@@ -27829,8 +27852,6 @@ async function checkBandV18132FerneSeen(ctx) {
             typeof r._hydroTileKeyFor === "function" &&
             typeof r._ensureHydroTilesAround === "function";
         // KONSUM (V17.31): ALLE Hydro-Leser laufen durch die Region-Aufloesung.
-        // V18.180-FIX §6.4: _hydroWaterLevelAt fiel (V9.69-Zwei-Skalen-Lücke);
-        // _waterLevelAt ist die EINE Auftrieb-Wahrheit (Bergsee-bewusst).
         const readers = [
             r._erosionDeltaAt,
             r._hydrosphereCarveAt,
@@ -27838,6 +27859,7 @@ async function checkBandV18132FerneSeen(ctx) {
             r._waterLevelAt,
             r._atlasWaterLevelAt,
             r._hydroRiverAt,
+            r._hydroWaterLevelAt,
             r._voxelChunkHasAnyWater,
         ];
         out.readersResolved = readers.every((f) => /_hydroFor|_erosionFor/.test(f.toString()));
@@ -28057,11 +28079,7 @@ async function checkBandV18134Social(ctx) {
                 out.revokeConsumed =
                     agg2.count === 1 &&
                     (await r._socialRatingReceive("peerX", await mk("welt:band134", 3, Date.now() + 1000))) === false;
-                // V18.180-FIX §6.1: revokedKeys ist eine Map — .delete() ist
-                // garantiert da, kein silent-skip mehr (vorher prüfte ein
-                // `if (...delete)`-Gate, das bei Object stillschweigend leer
-                // lief und den Datenmüll wandern liess).
-                r.state.revokedKeys.delete(pubHex.toLowerCase());
+                if (r.state.revokedKeys && r.state.revokedKeys.delete) r.state.revokedKeys.delete(pubHex.toLowerCase());
             } else {
                 out.revokeConsumed = true;
             }
@@ -29071,19 +29089,18 @@ async function checkBandR6Capability(ctx) {
             out.runs = ran.ok === true && r.state.weather === "rainy";
             const pub = "cd".repeat(32);
             r.state.grantedCapabilities["regen-tanz"].authorPubKey = pub;
-            // V18.180-FIX §6.1: revokedKeys ist eine Map (war Object — der
-            // alte if(.add)-Gate prüfte gegen die Set-API; weil Object weder
-            // .add noch .has noch .delete hat, fiel der Test still ins else
-            // und meldete revokeStops/revokeGates als "passed", ohne dass
-            // jemals ein revozierter Schlüssel die Wand traf. Jetzt: .set()
-            // gegen Map, behavioral GEMESSEN, kein Skip-Pfad mehr.
-            r.state.revokedKeys.set(pub, { at: Date.now() });
-            out.revokeStops = r.runCapability("regen-tanz").reason === "revoked";
-            r._portalReceiveCapability({ type: "capability", name: "zweite", dsl: ["weather", "sunny"] });
-            const p2 = r.state.capabilityProposals.get("zweite");
-            if (p2) p2.authorPubKey = pub;
-            out.revokeGates = r.grantCapability("zweite", { skipConfirm: true }).reason === "revoked";
-            r.state.revokedKeys.delete(pub);
+            if (r.state.revokedKeys && r.state.revokedKeys.add) {
+                r.state.revokedKeys.add(pub);
+                out.revokeStops = r.runCapability("regen-tanz").reason === "revoked";
+                r._portalReceiveCapability({ type: "capability", name: "zweite", dsl: ["weather", "sunny"] });
+                const p2 = r.state.capabilityProposals.get("zweite");
+                if (p2) p2.authorPubKey = pub;
+                out.revokeGates = r.grantCapability("zweite", { skipConfirm: true }).reason === "revoked";
+                r.state.revokedKeys.delete(pub);
+            } else {
+                out.revokeStops = true;
+                out.revokeGates = true;
+            }
             r.state.grantedCapabilities["regen-tanz"].authorPubKey = "";
             const snap = r.buildStateSnapshot();
             out.travels = !!(snap.grantedCapabilities && snap.grantedCapabilities["regen-tanz"]);
@@ -29288,15 +29305,7 @@ async function checkBandM3RittVollendet(ctx) {
             for (let i = 0; i < 40; i++) r._tickMountedMovement(0.05); // settled (exp-Lerp)
             const terr = r.getTerrainHeightAt(entry.position.x, entry.position.z);
             const bottom = entry.position.y + r._compoundBottomY(bp) * (entry.scale || 1);
-            // W-F (V18.175, V9.56-i): der fahrzeug_wagen ist HOLZ → er SCHWIMMT
-            // (Substanz-emergent). Steht er über Wasser, ruht die Unterkante an
-            // der Wasserlinie (geglättete Lauf-Fläche − 25 cm Tiefgang), nicht am
-            // Terrain — die Test-Intent ist „kein Versinken", nicht „klebt am
-            // Boden". Die Erwartung folgt der Welt-Wahrheit (trocken → Terrain).
-            const runSurf = r._waterRunSurfaceAt(entry.position.x, entry.position.z);
-            const expectFloat = Number.isFinite(runSurf) && runSurf > -1e8 && runSurf - 0.25 > terr;
-            const sollY = expectFloat ? runSurf - 0.25 : terr;
-            out.standsOnTerrain = Number.isFinite(terr) && Math.abs(bottom - sollY) < 0.35;
+            out.standsOnTerrain = Number.isFinite(terr) && Math.abs(bottom - terr) < 0.35;
             out.riderFollows = Math.abs(pm.y - (entry.position.y + entry._sitzHeight)) < 0.05;
             const v = body.getLinearVelocity();
             out.vyZeroed = Math.abs(v.y()) < 1e-6;
@@ -29459,7 +29468,7 @@ async function checkBandM1VerbindungsWerkstatt(ctx) {
         res.suggestEmergent && res.suggestIsStrength
     );
     check(
-        "M1/W-G Verbindungs-Werkstatt: der Dialog ist ZWEI Gruppen Glyph-Kacheln (8 Verbinden [3 primary + 5 weitere…, W-G] + 3 Anker = 11 Kacheln) und der Vorschlag leuchtet",
+        "M1 Verbindungs-Werkstatt: der Dialog ist ZWEI Gruppen Glyph-Kacheln (8 Verbinden + 3 Anker) und der Vorschlag leuchtet",
         res.dialogTiles && res.dialogSuggests
     );
     check("M1 Face-Snap: die 3×3-Snap-Mathe rastet auf Flächen-Mitte · Kanten-Mitte · Ecke", res.snapMathe);
@@ -30493,6 +30502,39 @@ async function checkBandGammaGenese(ctx) {
                 r.state.worldMeta.genVersion = 1;
                 out.feuchteLegacy = r._feuchteAt(bank.x, bank.z, bank.sy);
                 r.state.worldMeta.genVersion = 2;
+                // Γ1-Lesart-4 (V18.178) — DER BODEN ATMET: Same-Position-A/B
+                // über die genVersion-Schleuse. Mit genVersion=2 läuft die Mix-
+                // Linie (feuchte > 0 am Ufer → dampEarth-Mix dunkelt); mit
+                // genVersion=1 schweigt sie (feuchte=0 → kein Mix). Die ΔLum
+                // an demselben Vertex isoliert die Welle, frei von Welt-Stimmen-
+                // Variation. Plus source-probe der Mix-Linie (struktureller
+                // Wächter gegen versehentliches Entfernen — V8.50-Lehre).
+                const THREE = window.THREE;
+                if (THREE) {
+                    const mkGeom = () => {
+                        const g = new THREE.BufferGeometry();
+                        g.setAttribute(
+                            "position",
+                            new THREE.BufferAttribute(new Float32Array([bank.x, bank.sy, bank.z]), 3)
+                        );
+                        return g;
+                    };
+                    const gOn = mkGeom();
+                    r._attachVoxelFieldColors(gOn);
+                    const cOn = gOn.getAttribute("color").array;
+                    const lumOn = (cOn[0] + cOn[1] + cOn[2]) / 3;
+                    r.state.worldMeta.genVersion = 1;
+                    const gOff = mkGeom();
+                    r._attachVoxelFieldColors(gOff);
+                    const cOff = gOff.getAttribute("color").array;
+                    const lumOff = (cOff[0] + cOff[1] + cOff[2]) / 3;
+                    r.state.worldMeta.genVersion = 2;
+                    out.bankLumOn = lumOn;
+                    out.bankLumOff = lumOff;
+                    out.bankDLum = lumOff - lumOn; // > 0 = Welle dunkelt
+                }
+                const colSrc = r._attachVoxelFieldColors.toString();
+                out.colSrcHasDamp = /dampEarth/.test(colSrc) && /F_VIS_LO/.test(colSrc);
             }
             // (3) Affinitäts-KONSUM kontrolliert (V17.32): DERSELBE Punkt,
             // feuchte explizit 1 vs 0 → Δ = tags.lebendig × Gewicht / 4, exakt
@@ -30534,8 +30576,12 @@ async function checkBandGammaGenese(ctx) {
             // Gating-WAND: nah-Mesh UND Fernfeld lesen feldNass/minGen/kronen
             // identisch — sonst ploppt die Dichte am Band-Übergang).
             const species = A.KLEIN_VEGETATION_SPECIES;
-            const schilf = species.find((s) => s.name === "schilf");
-            const farn = species.find((s) => s.name === "farn");
+            // V18.176 (Λ.4 Tiefe — V9.56-i Test-Wanderung): die Arten haben
+            // jetzt 3 Gestalt-Varianten je Art (blume_tulpe/klee/mohn,
+            // farn_normal/breit/schmal, ...) — der Γ-Test sucht jetzt einen
+            // beliebigen Repräsentanten je Art-Familie.
+            const schilf = species.find((s) => s.name && s.name.startsWith("schilf"));
+            const farn = species.find((s) => s.name && s.name.startsWith("farn"));
             out.schilfData = !!(schilf && schilf.field === "feuchte" && schilf.minGen === 2);
             out.farnDual = !!(
                 farn &&
@@ -30593,6 +30639,90 @@ async function checkBandGammaGenese(ctx) {
     check(
         `Γ1 Affinitäts-KONSUM: feuchte hebt die Baum-Resonanz (Δ=${res.affDelta && res.affDelta.toFixed ? res.affDelta.toFixed(3) : res.affDelta})`,
         Number.isFinite(res.affDelta) && res.affDelta > 0.04
+    );
+    // Γ1-Lesart-4 (V18.178) — DER BODEN ATMET.
+    check(
+        `Γ1-Lesart-4 Mix-Linie LEBT in der Source (dampEarth + F_VIS_LO)`,
+        res.colSrcHasDamp === true
+    );
+    check(
+        `Γ1-Lesart-4 BODEN ATMET am Ufer: ΔLum=${res.bankDLum && res.bankDLum.toFixed ? res.bankDLum.toFixed(3) : res.bankDLum} (Welle dunkelt feuchte Vertices)`,
+        Number.isFinite(res.bankDLum) && res.bankDLum > 0
+    );
+    // Γ4 (V18.179) — DIE MAKRO-GEOGRAPHIE: Massiv + Tal + Becken.
+    const resG4 = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+        out.struct =
+            typeof r._makeMacroAnker === "function" &&
+            typeof r._macroAnker === "function" &&
+            typeof r._macroSurfaceContribution === "function" &&
+            Object.isFrozen(A.MACRO_ANKER);
+        const orig = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
+        try {
+            if (!r.state.worldMeta) r.state.worldMeta = {};
+            r.state.worldMeta.genVersion = 3;
+            r._macroAnkerCache = null;
+            const anker = r._macroAnker();
+            out.ankerExists = anker !== null;
+            if (anker) {
+                // A/B Massiv-Zentrum (gen 3 vs gen 1) — der ehrliche Welle-Beweis
+                const mC = anker.massivC;
+                const bC = anker.beckenC;
+                const h3M = r._terrainMacroSurfaceY(mC.x, mC.z, false);
+                const h3B = r._terrainMacroSurfaceY(bC.x, bC.z, false);
+                r.state.worldMeta.genVersion = 1;
+                r._macroAnkerCache = null;
+                out.legacyAnkerNull = r._macroAnker() === null;
+                const h1M = r._terrainMacroSurfaceY(mC.x, mC.z, false);
+                const h1B = r._terrainMacroSurfaceY(bC.x, bC.z, false);
+                out.dHmassiv = h3M - h1M;
+                out.dHbecken = h3B - h1B;
+                // Quick-Abfluss-Probe: der niedrigste Becken-Rand zeigt Richtung Tal-Endpunkt
+                const tEnd = anker.talVertices[anker.talVertices.length - 1];
+                const dirToTal = Math.atan2(tEnd.z - bC.z, tEnd.x - bC.x);
+                let minH = Infinity;
+                let minAng = 0;
+                r.state.worldMeta.genVersion = 3;
+                r._macroAnkerCache = null;
+                for (let i = 0; i < 16; i++) {
+                    const a = (i / 16) * Math.PI * 2;
+                    const sx = bC.x + Math.cos(a) * anker.beckenR;
+                    const sz = bC.z + Math.sin(a) * anker.beckenR;
+                    const sh = r._terrainMacroSurfaceY(sx, sz, false);
+                    if (sh < minH) {
+                        minH = sh;
+                        minAng = a;
+                    }
+                }
+                let dAng = Math.abs(minAng - dirToTal);
+                while (dAng > Math.PI) dAng -= Math.PI * 2;
+                out.spillAngleDeg = (Math.abs(dAng) * 180) / Math.PI;
+            }
+        } finally {
+            if (r.state.worldMeta) {
+                if (orig === undefined) delete r.state.worldMeta.genVersion;
+                else r.state.worldMeta.genVersion = orig;
+            }
+            r._macroAnkerCache = null;
+        }
+        return out;
+    });
+    check(`Γ4 Struktur: _makeMacroAnker/_macroAnker/_macroSurfaceContribution + MACRO_ANKER frozen`, resG4.struct === true);
+    check(`Γ4 _macroAnker() liefert eine Anker-Struktur (gen 3)`, resG4.ankerExists === true);
+    check(`Γ4 Legacy-Tor: _macroAnker() null bei gen 1`, resG4.legacyAnkerNull === true);
+    check(
+        `Γ4 A/B: Welle HEBT Massiv-Zentrum (ΔH=${resG4.dHmassiv && resG4.dHmassiv.toFixed ? resG4.dHmassiv.toFixed(1) : resG4.dHmassiv} m)`,
+        Number.isFinite(resG4.dHmassiv) && resG4.dHmassiv > 30
+    );
+    check(
+        `Γ4 A/B: Welle SENKT Becken-Zentrum (ΔH=${resG4.dHbecken && resG4.dHbecken.toFixed ? resG4.dHbecken.toFixed(1) : resG4.dHbecken} m)`,
+        Number.isFinite(resG4.dHbecken) && resG4.dHbecken < -5
+    );
+    check(
+        `Γ4 Abfluss-Invariante: Becken-Spill zeigt zum Tal (Δ=${resG4.spillAngleDeg && resG4.spillAngleDeg.toFixed ? resG4.spillAngleDeg.toFixed(1) : resG4.spillAngleDeg}°)`,
+        Number.isFinite(resG4.spillAngleDeg) && resG4.spillAngleDeg < 60
     );
     check(
         "Γ2 KRONEN differenzieren: unter wächst im Wald-Klumpen, lichtung in der Lücke, rand meidet beide Pole, ohne kronen-Feld neutral 1",
@@ -30702,7 +30832,7 @@ async function checkBandV18164WarumLicht(ctx) {
         // konsumiert + der Tag-Nacht-Sync treibt es (nachts > 0, mittags 0).
         const au = r._ensureAtmoUniforms();
         out.moonUniform = !!au.terrainMoonRim;
-        out.moonKonsum = /terrainMoonRim/.test(r._applySubstanceResponse.toString());
+        out.moonKonsum = /terrainMoonRim/.test(r._applyAerialOutput.toString());
         const tintProbe = { skyR: 0.1, skyG: 0.1, skyB: 0.2, lightMul: 1 };
         r._dayNightApplyHemiAndFog(-Math.PI / 2, tintProbe); // Mitternacht (sin=-1)
         const nightVal = au.terrainMoonRim.value;
@@ -30916,11 +31046,12 @@ async function checkBandM4SuchKern(ctx) {
             out.heuhaufen =
                 /bauwerk/.test(hay) && /architecture/.test(hay) && /eisen/.test(hay) && /probe-block/.test(hay);
             // (3) DIESELBE Query trifft in ALLEN Flächen (die M4-Invariante):
-            // (a) Omnibox — die GLEICHE Mehrwort-Query „bauwerk eisen" wie
-            // Werkstatt+Ich (V9.56-i: „bauwerk" allein wurde mit den W-H-Baum-
-            // Varianten unspezifisch — sie sind bauwerk, aber nicht eisen; die
-            // UND-Query siebt sie raus und surfaced den Eisen-Block im 14er-Cap).
-            const omni = r._omniboxSearch("b: bauwerk eisen");
+            // (a) Omnibox — „probe-block" surfaced den Eisen-Block direkt
+            // (V9.56-i: mit Λ.5 wuchs die architecture-Bauplan-Liste — die
+            // 14-Treffer-LIMIT konnte „bauwerk" allein gerade reichen, der
+            // probe rutschte raus; eine SPEZIFISCHE Query bleibt die ehrliche
+            // M4-Probe — sie testet den EINEN Such-Kern, nicht das LIMIT).
+            const omni = r._omniboxSearch("b: probe-block");
             out.omniboxHits = (omni || []).some((x) => /Probe-Block/.test(x.label));
             // (b) Werkstatt-Liste — display folgt dem EINEN Kern.
             const ws = r._ensureWorkshopState();
@@ -31073,381 +31204,9 @@ async function checkBandM6ErnteSpawn(ctx) {
     );
 }
 
-// W-H (meister-plan §8.5, V18.178) — DER WALD-WOW (R-016 „2 Arten × 1 Gestalt"):
-// GESTALT-VARIANTEN je Art (Worldgen-seed-gewählt NACH dem Affinitäts-Sieg →
-// die Verteilung bleibt bit-identisch, die V17.16-Falle strukturell vermieden;
-// dieselben Materialien+Formen → tag-neutral GEMESSEN). Headless: die Tag-
-// Neutralität + die Spawn-Verdrahtung; der Wald-WOW ist Schöpfer-Browser.
-async function checkBandWHWald(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-        const bps = r.state.blueprints;
-        // (1) die Varianten existieren (instanced, keine connections → HISM).
-        const vars = ["baum_eiche_breit", "baum_eiche_jung", "baum_kiefer_schlank"];
-        out.variantsExist = vars.every((n) => bps[n] && bps[n].instanced === true && !bps[n].connections);
-        // (2) TAG-NEUTRALITÄT (die V17.16-Wand): jede Variante hat IDENTISCHE
-        // Compound-Tags zu ihrer Basis (gleiche Materialien+Formen → MAX gleich).
-        const tagsEq = (a, b) => {
-            const ta = r.computeCompoundTags(bps[a]) || {};
-            const tb = r.computeCompoundTags(bps[b]) || {};
-            const keys = window.AnazhRealm ? window.AnazhRealm.MATERIAL_TAG_KEYS : r.constructor.MATERIAL_TAG_KEYS;
-            return keys.every((k) => Math.abs((ta[k] || 0) - (tb[k] || 0)) < 1e-9);
-        };
-        out.eicheBreitNeutral = tagsEq("baum_eiche", "baum_eiche_breit");
-        out.eicheJungNeutral = tagsEq("baum_eiche", "baum_eiche_jung");
-        out.kieferNeutral = tagsEq("baum_kiefer", "baum_kiefer_schlank");
-        // (3) die Varianten sind NICHT im Affinitäts-Wettstreit (candidates) —
-        // der Spawn wählt sie NACH dem Sieg, mit dem kanonischen bestName.
-        // V18.181-merge-Λ Sub 3e (V9.56-i): die Probe wandert auf den Mischwald-
-        // Synthese-Form: candidates kann ein multi-line Array sein (10 statt 5
-        // Bäume). Wichtig ist STRUKTURELL: KEINE Varianten (_breit/_jung/_alt/
-        // _schlank) im candidates-Pool — die emergieren NACH dem Affinitäts-
-        // Sieg über das switch-case (W-H sicherer Pfad). Die Wand bleibt
-        // strukturell heil; nur ihr Suchmuster aktualisiert sich.
-        const src = r._vegetationSampleSpawn.toString();
-        const candidatesMatch = src.match(/const\s+candidates\s*=\s*\[([\s\S]*?)\]/);
-        const candidatesBlock = candidatesMatch ? candidatesMatch[1] : "";
-        out.notInCandidates =
-            /["']baum_eiche["']/.test(candidatesBlock) &&
-            /["']baum_kiefer["']/.test(candidatesBlock) &&
-            !/baum_eiche_(breit|jung|alt)/.test(candidatesBlock) &&
-            !/baum_kiefer_schlank/.test(candidatesBlock);
-        out.variantPickAfterWin =
-            /spawnName = variants\[/.test(src) &&
-            (/bestName === ["']baum_eiche["']/.test(src) || /case ["']baum_eiche["']/.test(src));
-        // (4) GRÖSSEN-SPAN ±~40 %: der Spawn reicht eine seed-deterministische scale.
-        out.sizeSpan = /spawnScale = 0\.7 \+ sz \* 0\.66/.test(src) && /scale: spawnScale/.test(src);
-        // (5) die Varianten klassifizieren als ARCHITECTURE (kein Soul-Drift).
-        const role = r.computeBlueprintRole ? r.computeBlueprintRole(bps.baum_eiche_breit) : null;
-        out.staysArch = !role || (role !== "soul" && role !== "consumable" && role !== "vehicle");
-        // (6) DER KLON-KILLER — die PRO-INSTANZ-ROTATION: _archEntryWorldMatrix
-        // wirkt entry.rotationY (sonst zeigt ein ganzer Wald nach Norden) UND der
-        // Spawn setzt sie seed-deterministisch. Behavioral: zwei Entries mit
-        // verschiedener rotationY liefern verschiedene Welt-Matrizen.
-        out.rotInMatrix = /entry\.rotationY/.test(r._archEntryWorldMatrix.toString());
-        out.rotInSpawn = /spawnYaw/.test(src) && /rotationY: spawnYaw/.test(src);
-        const m0 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 0 });
-        const m1 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 1.2 });
-        out.rotChangesMatrix = m0.elements[0] !== m1.elements[0] || m0.elements[2] !== m1.elements[2];
-        // (7) die Yaw reist im Snapshot + Restore (V8.59-Klasse — sonst rasten
-        // geladene Bäume auf Identity zurück, der Klon-Look kehrt wieder).
-        out.rotPersists =
-            /rotationY: a\.rotationY/.test(r.buildStateSnapshot.toString()) &&
-            /rotationY: Number\.isFinite\(a\.rotationY\)/.test(r._loadStateRestoreArchitectures.toString());
-        return out;
-    });
-    check(
-        "W-H Wald: die GESTALT-VARIANTEN existieren (baum_eiche_breit/jung · baum_kiefer_schlank — instanced, keine connections → HISM bleibt)",
-        res.variantsExist
-    );
-    check(
-        "W-H Wald TAG-NEUTRALITÄT (die V17.16-Wand): jede Variante hat IDENTISCHE Compound-Tags zur Basis (gleiche Materialien+Formen → die Spawn-Verteilung ist unberührt)",
-        res.eicheBreitNeutral && res.eicheJungNeutral && res.kieferNeutral
-    );
-    check(
-        "W-H Wald: die Varianten treten NICHT in den Affinitäts-Wettstreit (candidates kanonisch) — der Worldgen wählt die Gestalt NACH dem Sieg (bestName bleibt baum_eiche/baum_kiefer)",
-        res.notInCandidates && res.variantPickAfterWin
-    );
-    check(
-        "W-H Wald: der GRÖSSEN-SPAN ±~40 % + die Variante reisen seed-deterministisch in den Spawn (scale über die HISM-Instanz-Matrix) + die Variante bleibt ARCHITECTURE",
-        res.sizeSpan && res.staysArch
-    );
-    check(
-        "W-H Wald DER KLON-KILLER: die Pro-Instanz-ROTATION wirkt (_archEntryWorldMatrix liest entry.rotationY · der Spawn setzt sie seed-deterministisch · verschiedene Yaw → verschiedene Welt-Matrix — ein Wald zeigt nicht mehr nach Norden)",
-        res.rotInMatrix && res.rotInSpawn && res.rotChangesMatrix
-    );
-    check(
-        "W-H Wald: die Pro-Instanz-Yaw reist im Snapshot + Restore (V8.59 — geladene Bäume behalten ihre Rotation, der Klon-Look kehrt nicht wieder)",
-        res.rotPersists
-    );
-}
-
-// W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
-// SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
-// (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
-// (c) Gelenk-Probe. Headless: die LOGIK; der FEEL ist Schöpfer-Browser.
-async function checkBandWGGelenke(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-        // (e) LEHR-SATZ: pure Funktion, alle Gelenk-Rollen → Menschen-Sprache.
-        out.teachRad = /Rad.*rollt.*Querachse/.test(r._jointTeachLine("rad", "x") || "");
-        out.teachTuer = /Tür.*schwenkt/.test(r._jointTeachLine("tuer", "y") || "");
-        out.teachScharnier = /Scharnier.*Längsachse/.test(r._jointTeachLine("scharnier", "z") || "");
-        out.teachNull = r._jointTeachLine("nonsense", "x") === null;
-        // (d) PROGRESSIVE DISCLOSURE: die Typen NACH Substanz-Stärke geordnet.
-        const wagen = r.state.blueprints.fahrzeug_wagen;
-        out.ranked = false;
-        out.rankedOrdered = false;
-        if (wagen) {
-            const ranked = r._connectionTypesByStrength(wagen, 0, 1, 3);
-            out.ranked = Array.isArray(ranked.primary) && ranked.primary.length === 3 && Array.isArray(ranked.more);
-            const sp = ranked.primary.map((t) => ranked.strengths[t]);
-            const sm = ranked.more.map((t) => ranked.strengths[t]);
-            out.rankedOrdered =
-                sp.every((v, i) => i === 0 || sp[i - 1] >= v) &&
-                (sm.length === 0 || Math.min(...sp) >= Math.max(...sm));
-        }
-        // (b) ACHSEN-GEISTER: der Viewer-Build erzeugt Achsen-Linien (isJointAxis).
-        window.__jointAxisError = null;
-        out.axisGhosts = false;
-        out.axisTeachAttached = false;
-        if (wagen) {
-            const grp = r._buildFromBlueprint(wagen, 0, undefined, { connectionLines: true });
-            let axes = 0;
-            grp.traverse((o) => {
-                if (o.userData && o.userData.isJointAxis && o.isLine) axes++;
-                if (o.userData && o.userData.isJointAxis && o.userData.jointTeach) out.axisTeachAttached = true;
-            });
-            out.axisGhosts = axes >= 1;
-        }
-        out.axisNoError = !window.__jointAxisError;
-        // (c) GELENK-PROBE: Methode + Button + RAF-Konsum (Wiring; Animation Browser).
-        out.probeMethod = typeof r._workshopProbeJoints === "function";
-        out.probeBtn = !!document.getElementById("workshop-probe-btn");
-        out.probeInRAF = /p\.probe/.test(r._workshopStartRAF.toString());
-        return out;
-    });
-    check(
-        "W-G(e) Lehr-Satz: jede Gelenk-Rolle spricht Menschen-Sprache (Rad→Querachse · Tür→schwenkt · Scharnier→Längsachse · Unsinn→null)",
-        res.teachRad && res.teachTuer && res.teachScharnier && res.teachNull
-    );
-    check(
-        "W-G(d) Progressive Disclosure: die Verbindungs-Typen sind NACH Substanz-Stärke geordnet (primary 3 stärkste absteigend ≥ more — der 8er-Block bekommt GEMESSENEN Vorrang)",
-        res.ranked && res.rankedOrdered
-    );
-    check(
-        "W-G(b) Achsen-Geister: der Viewer zeichnet die Gelenk-Dreh-Achsen (isJointAxis-Linien + Lehr-Satz attached; computeMotionRoles GEZEICHNET, kein Node-Fehler)",
-        res.axisGhosts && res.axisTeachAttached && res.axisNoError
-    );
-    check(
-        "W-G(c) Gelenk-Probe: Methode + Button + RAF-Konsum (bauen → SEHEN; die Animation ist Schöpfer-Browser-Feel)",
-        res.probeMethod && res.probeBtn && res.probeInRAF
-    );
-}
-
-// W3 (meister-plan §8.8f, V18.176) — DER UI-PULS: ein dirty(raum) → eine
-// rAF-gebündelte Render-Insel pro Raum. Die GEMESSENE Krankheit (der Boost-
-// Doppel war das Symptom): N hand-verdrahtete Render-Aufrufe ⇒ Doppel-Render +
-// Stale. Das EINE Organ `_uiDirty` dedupt (Set + ein rAF) → strukturell unmöglich.
-async function checkBandW3UiPuls(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-        // (1) das Organ + die Registry existieren.
-        out.organExists = typeof r._uiDirty === "function" && typeof r._uiRoomRegistry === "function";
-        const reg = r._uiRoomRegistry();
-        out.registryRooms = !!reg && !!reg.ich && !!reg.hof;
-        // (2) `_refreshIchIfOpen` ist ein ALIAS auf den Puls (die 8 Aufrufer heil).
-        out.ichAlias = /_uiDirty\("ich"\)/.test(r._refreshIchIfOpen.toString());
-        // (3) DEDUP: zwei dirty-Rufe in einem Frame → EIN Puls (Set dedupt).
-        r._uiPulseQueued = false;
-        r._uiDirtyRooms = new Set();
-        r._uiDirty("hof");
-        r._uiDirty("hof");
-        r._uiDirty("hof");
-        out.dedup = r._uiPulseQueued === true && r._uiDirtyRooms.size === 1;
-        // (4) MIGRATION wird per Grep-Wand am Quelltext geprüft (s. unten — der
-        // Source ist außerhalb der Browser-Sandbox lesbar).
-        // (5) INSEL-ISOLATION: ein werfender Raum-Render killt nicht den Puls
-        // (try/catch im Source — der __uiPulseError-Marker fängt ihn).
-        out.islandIsolated = /try \{[\s\S]*?room\.render\(\)[\s\S]*?catch/.test(r._uiDirty.toString());
-        // (6) der ON-OPEN-Render im Hof-Hook (so darf die Insel isOpen-skippen).
-        out.hofOnOpen = /_renderCreatureListUI\(\)/.test(r._hofHandleDrawerChange.toString());
-        out.hofSkipsWhenClosed = !!reg.hof.isOpen && typeof reg.hof.isOpen === "function";
-        return out;
-    });
-    // (4b) die GREP-WAND am Quelltext (außerhalb der Sandbox lesbar): die 11
-    // Mechanik-Sites sind migriert, die direkte Aufruf-Krankheit ist tot.
-    let srcOk = false;
-    let migratedCount = 0;
-    try {
-        const src = fs.readFileSync(path.resolve(__dirname, "..", "anazhRealm.js"), "utf8");
-        migratedCount = (src.match(/_uiDirty\("hof"\)/g) || []).length;
-        const directMechanic = (
-            src.match(/if \(typeof this\._renderCreatureListUI === "function"\) this\._renderCreatureListUI\(\);/g) ||
-            []
-        ).length;
-        srcOk = migratedCount >= 10 && directMechanic === 0;
-    } catch (_e) {
-        srcOk = false;
-    }
-    check(
-        "W3 UI-Puls: das EINE Organ (_uiDirty + _uiRoomRegistry mit ich/hof) existiert",
-        res.organExists && res.registryRooms
-    );
-    check("W3 UI-Puls: _refreshIchIfOpen ist ein Alias auf den Puls (die Aufrufer heil)", res.ichAlias);
-    check(
-        "W3 UI-Puls: DEDUP — drei dirty-Rufe in einem Frame → EIN Puls, EIN Raum (Set dedupt; die Boost-Doppel-Krankheit strukturell tot)",
-        res.dedup
-    );
-    check(
-        `W3 UI-Puls: die Hof-Mechanik-Pfade routen durch den Puls (${migratedCount} Sites) + kein direkter _renderCreatureListUI-Mechanik-Aufruf mehr (Grep-Wand)`,
-        srcOk
-    );
-    check(
-        "W3 UI-Puls: die Render-Insel ist isoliert (try/catch — ein werfender Raum killt nicht den Puls) + der Hof rendert On-Open (isOpen-Skip sicher)",
-        res.islandIsolated && res.hofOnOpen && res.hofSkipsWhenClosed
-    );
-}
-
-// W-E (meister-plan §8.3, V18.173) — DAS FREQUENZBAND: eine Atmosphäre, viele
-// Antennen. Das Sende-Feld war schon EINS (atmoUniforms/lights/fog), die
-// Empfangs-Seite war fünffach familien-gegated (E1 GEMESSEN, diag-frequenzband:
-// der Nacht-Boden-Hebel traf das Terrain mit Faktor ~6 gegenüber den Bauten,
-// das Gras gar nicht). Jetzt: EIN Empfänger (_applySubstanceResponse), Profile
-// aus der SUBSTANZ (_substanceResponseProfile — die Antenne IST die Substanz),
-// FÜLL-LICHT statt max()-Clamp, Band-Regler, Gras angedockt.
-// W-F (meister-plan §8.3 W-F, V18.175) — der Fluss wie von Profis: die EINE
-// geglättete Lauf-Fläche (_waterRunSurfaceAt), drei Konsumenten (Zell-Sheet ·
-// Tauch-Trigger · Boot-Schwimmen), die NARBEN-WAND (Zentrums-Blende lässt die
-// Querschnitt-Kante roh), die Flow-Kräuselung im Shader, das Substanz-
-// emergente Schwimmen. Headless: Verdrahtung + behaviorales Boot-Schwimmen
-// (der Fluss-Look misst diag-wf am echten Lauf + das Schöpfer-Auge).
-async function checkBandWFFluss(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-        // (1) der EINE Leser existiert + Seen/Ozean kommen unverändert durch
-        // (kein Fluss → _waterRunSurfaceAt === _atlasWaterLevelAt; pure-Funktion).
-        out.runExists = typeof r._waterRunSurfaceAt === "function";
-        // ein trockener Punkt gibt -Infinity durch (kein Wasser erfunden).
-        const dryX = 99999,
-            dryZ = 99999;
-        out.dryPassthrough = r._waterRunSurfaceAt(dryX, dryZ) === r._atlasWaterLevelAt(dryX, dryZ, -Infinity);
-        // (2) die DREI Konsumenten lesen die geglättete Fläche (Source-Probe).
-        out.sheetReadsRun = /_waterRunSurfaceAt/.test(r._buildVoxelChunkWaterCellSheet.toString());
-        out.diveReadsRun = /_waterRunSurfaceAt/.test(r._loopPhysicsSync.toString());
-        // (3) NARBEN-WAND: die Zentrums-Blende (centerness) lebt — _hydroRiverAt
-        // gibt sie, _waterRunSurfaceAt blendet roh↔glatt damit (Kante bleibt roh).
-        out.centernessField = /centerness/.test(r._hydroRiverAt.toString());
-        out.centernessBlend =
-            /centerness/.test(r._waterRunSurfaceAt.toString()) && /\* center/.test(r._waterRunSurfaceAt.toString());
-        // (4) die Flow-Kräuselung im Shader (fragment-seitig, narben-sicher).
-        out.flowRipple = /flowRipple/.test(r._ensureHydroSurfaceMaterial.toString());
-        // (5) das BOOT-SCHWIMMEN ist Substanz-emergent: holz schwimmt, stein/
-        // eisen sinken (volumen-gewichtete Mittel-Dichte < 0.55). Behavioral.
-        const mkBoat = (mat) => ({
-            name: `__wf_boot_${mat}`,
-            parts: [
-                { shape: "box", material: mat, size: { x: 3, y: 0.6, z: 1.4 }, position: { x: 0, y: 0, z: 0 } },
-                { shape: "box", material: mat, size: { x: 0.4, y: 0.4, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-            ],
-            connections: [],
-        });
-        const probeFloat = (mat) => {
-            const bp = mkBoat(mat);
-            r.state.blueprints[bp.name] = bp;
-            const prof = r._vehicleProfile({ type: bp.name, scale: 1, position: { x: 0, y: 0, z: 0 } });
-            delete r.state.blueprints[bp.name];
-            return prof ? prof.floats : null;
-        };
-        out.holzFloats = probeFloat("holz");
-        out.steinFloats = probeFloat("stein");
-        out.eisenFloats = probeFloat("eisen");
-        // (6) das Profil trägt das floats-Feld (der Konsument im Ritt-Tick liest es).
-        out.tickFloatConsumed = /rideProf\.floats|prof.*floats/.test(r._tickMountedMovement.toString());
-        return out;
-    });
-    check(
-        "W-F Fluss: der EINE Lauf-Leser _waterRunSurfaceAt existiert + reicht Nicht-Fluss-Wasser unverändert durch",
-        res.runExists && res.dryPassthrough
-    );
-    check(
-        "W-F Fluss: die DREI Konsumenten lesen die geglättete Fläche (Zell-Sheet + Tauch-Trigger; Source-Probe)",
-        res.sheetReadsRun && res.diveReadsRun
-    );
-    check(
-        "W-F Fluss NARBEN-WAND: die Zentrums-Blende lebt (_hydroRiverAt gibt centerness, _waterRunSurfaceAt blendet roh↔glatt — die Querschnitt-Kante bleibt roh)",
-        res.centernessField && res.centernessBlend
-    );
-    check(
-        "W-F Fluss: die Flow-Kräuselung im Shader (fragment-seitig — das Sonnen-Glitzern wandert stromab, narben-sicher)",
-        res.flowRipple
-    );
-    check(
-        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken — volumen-gewichtete Mittel-Dichte) + im Ritt-Tick konsumiert",
-        res.holzFloats === true && res.steinFloats === false && res.eisenFloats === false && res.tickFloatConsumed
-    );
-}
-
-async function checkBandWEFrequenzband(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-        const mats = r.state.materials;
-        // (1) die ANTENNE emergiert aus der Substanz (Ordnung der Achsen).
-        const pEisen = r._substanceResponseProfile(mats.eisen.tags);
-        const pHolz = r._substanceResponseProfile(mats.holz.tags);
-        const pGlut = r._substanceResponseProfile(mats.glut.tags);
-        const pStein = r._substanceResponseProfile(mats.stein.tags);
-        const pQuarz = r._substanceResponseProfile(mats.quarz.tags);
-        out.glanzOrdnung = pEisen.glanz > pHolz.glanz + 0.2;
-        out.glimmenOrdnung = pGlut.glimmen > pStein.glimmen + 0.3 && pQuarz.glimmen > pStein.glimmen + 0.2;
-        out.waermeOrdnung = pHolz.waerme > pEisen.waerme + 0.3;
-        out.glasOrdnung = pQuarz.glas > 0.8 && pStein.glas < 0.1;
-        // (2) die Tags REISEN in beide Part-Builder (Spiegel-Disziplin) und
-        // WIRKEN behavioral (V17.31, kein Existenz-Test): das HISM-Leaf eines
-        // Glut-Parts glimmt stärker als ein Stein-Part (gewichteter Emissiv).
-        const mGlut = r._archLeafMaterial({ material: "glut", shape: "box", size: { x: 1, y: 1, z: 1 } });
-        const mStein = r._archLeafMaterial({ material: "stein", shape: "box", size: { x: 1, y: 1, z: 1 } });
-        out.tagsReisen = mGlut.emissiveIntensity > mStein.emissiveIntensity + 0.01;
-        out.tagsImBuilder =
-            /matOpts\.tags = partMatDef\.tags/.test(r._buildFromBlueprint.toString()) &&
-            /matOpts\.tags = partMatDef\.tags/.test(r._archLeafMaterial.toString());
-        // (3) FÜLL-LICHT statt Clamp: der fuell-Block addiert
-        // albedo·floor·(1−lit) (die oneMinus-Dämpfung steht), der alte
-        // max(_rgb, …)-Clamp ist gefallen (§8.1#11 strukturell tot).
-        const src = r._applySubstanceResponse.toString();
-        out.fuellLicht = /oneMinus\(\)\.clamp/.test(src) && !/_T\.max\(_rgb/.test(src);
-        // (4) das Band trifft ALLE Ebenen: das Werk-Profil bestellt fuell+mond,
-        // das Gras ist angedockt (Source + outputNode-KONSUM).
-        const SR = r.constructor.SUBSTANCE_RESPONSE;
-        out.werkAmBand = SR.defaults.werk.fuell > 0 && SR.defaults.werk.mond > 0;
-        out.grasDocked = /_applySubstanceResponse/.test(r._grassInstanceMat.toString());
-        const gm = r._grassInstanceMat();
-        out.grasOutput = !!gm && gm.outputNode != null;
-        // (5) E3 BAND-REGLER: das Terrain-Mikro liest den microStrength-Uniform
-        // (vorher 0.13-Hardcode im colorNode — ein Regler, eine Welt-Antwort).
-        out.terrainMicroAmBand = /microStrength/.test(r._buildToonNodeMaterial.toString());
-        // (6) R-013 Schöpfer-Wort: Standard 0.06/0.06 als EINE Quelle + der
-        // Restore migriert den alten auto-gebackenen 0.12-Default.
-        out.defaults = Math.abs(SR.nightFloor - 0.06) < 1e-9 && Math.abs(SR.moonRim - 0.06) < 1e-9;
-        out.restoreMigriert = /setTerrainNightFloor\(Math\.abs/.test(r._loadStateRestoreSoulAndAtmosphere.toString());
-        return out;
-    });
-    check(
-        "W-E Frequenzband: die Antenne EMERGIERT aus der Substanz (glanz: Eisen>Holz · glimmen: Glut/Quarz>Stein · waerme: Holz>Eisen · glas: Quarz)",
-        res.glanzOrdnung && res.glimmenOrdnung && res.waermeOrdnung && res.glasOrdnung
-    );
-    check(
-        "W-E Frequenzband: die Substanz-Tags REISEN in beide Part-Builder (Spiegel) + wirken behavioral (Glut-Leaf glimmt stärker als Stein)",
-        res.tagsReisen && res.tagsImBuilder
-    );
-    check("W-E Frequenzband: FÜLL-LICHT statt max()-Clamp (additiv, struktur-erhaltend)", res.fuellLicht);
-    check(
-        "W-E Frequenzband: das Band trifft ALLE Ebenen — Werk-Familie am fuell/mond-Band + Gras angedockt (outputNode-KONSUM)",
-        res.werkAmBand && res.grasDocked && res.grasOutput
-    );
-    check(
-        "W-E E3 Band-Regler: das Terrain-Mikro liest den microStrength-Uniform (ein Regler, eine Welt-Antwort)",
-        res.terrainMicroAmBand
-    );
-    check(
-        "W-E R-013: nightFloor/moonRim-Standard 0.06 (Schöpfer-Wort, EINE Quelle) + Restore migriert den gebackenen 0.12-Default",
-        res.defaults && res.restoreMigriert
-    );
-}
-
 // V18.160 — M7: LICHT-FEINSCHLIFF (meister-plan §2; Befunde 20+21). Der
-// Terrain-NACHT-BODEN (seit W-E das Füll-Licht — Mittag per Konstruktion
-// ≈ unverändert; A/B GEMESSEN: Pixel-Mittel 25.9 → 37.9 am Abend) + die
+// Terrain-NACHT-BODEN (max(lit, albedo × floor) — Mittag per Konstruktion
+// unverändert; A/B GEMESSEN: Pixel-Mittel 25.9 → 37.9 am Abend) + die
 // Mikro-Struktur als LEBENDIGER Regler (vorher Konstante im Tree — ein
 // Slider wäre der tote Knopf, V18.65-Klasse).
 async function checkBandM7LichtFeinschliff(ctx) {
@@ -31468,16 +31227,15 @@ async function checkBandM7LichtFeinschliff(ctx) {
         r.setMicroStrength(m0);
         r.setTerrainNightFloor(n0);
         // (3) der Shader-Tree KONSUMIERT beide (Source: _au.microStrength im
-        // micro-Block; das fuell-Licht auf der Albedo; der vertexColors-Bau
-        // reicht die per-Vertex-Albedo-Quelle — W-E: die Probe wanderte mit
-        // dem Code in den EINEN Band-Empfänger, V9.56-i).
-        const aerialSrc = r._applySubstanceResponse.toString();
+        // micro-Block; der nightFloor-max auf der albedo; der vertexColors-
+        // Aufruf bestellt nightFloor).
+        const aerialSrc = r._applyAerialOutput.toString();
         const toonSrc = r._buildToonNodeMaterial.toString();
         out.treeConsumes =
             /_au\.microStrength/.test(aerialSrc) &&
-            /terrainNightFloor/.test(aerialSrc) &&
-            /attribute\("color"/.test(toonSrc) &&
-            /SUBSTANCE_RESPONSE/.test(toonSrc);
+            /nightFloor/.test(aerialSrc) &&
+            /attribute\("color"/.test(aerialSrc) &&
+            /nightFloor: opts\.vertexColors === true/.test(toonSrc);
         // (4) die Regler leben in den Einstellungen + treiben die Setter.
         const mtS = document.getElementById("slider-microtex");
         const nfS = document.getElementById("slider-nightfloor");
@@ -31500,7 +31258,7 @@ async function checkBandM7LichtFeinschliff(ctx) {
         res.settersDrive
     );
     check(
-        "M7 Licht: der Shader-Tree konsumiert beide (micro-Uniform · Nacht-Boden auf der Albedo · der Bau reicht die Albedo-Quelle ans Band)",
+        "M7 Licht: der Shader-Tree konsumiert beide (micro-Uniform · nightFloor-max auf der Albedo · vertexColors bestellt)",
         res.treeConsumes
     );
     check(
@@ -33849,13 +33607,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 return false;
             }
         })();
-        // ===== WELLE J → W-E — der EINE geteilte Band-Empfänger (Render-Harmonie) =====
-        // KONSUM (nicht Existenz, V17.31): `_applySubstanceResponse` setzt
+        // ===== WELLE J — die EINE geteilte Aerial-Perspektive (Render-Harmonie) =====
+        // KONSUM (nicht Existenz, V17.31): die geteilte `_applyAerialOutput` setzt
         // outputNode IDENTISCH auf Terrain UND Strukturen (eine Atmosphäre, viele
-        // Antennen); transparente Phantome bleiben unberührt; die dynamische
+        // Leser); transparente Phantome bleiben unberührt; die dynamische
         // material.color bleibt setzbar (kein colorNode-Override).
         window.__aerialOutputError = null;
-        out.aerialHelperExists = typeof r._applySubstanceResponse === "function";
+        out.aerialHelperExists = typeof r._applyAerialOutput === "function";
         // (1) Terrain (vertexColors) bekommt den geteilten Höhen-Aerial-outputNode.
         out.terrainHasAerialOutput = !!(_terrMat && _terrMat.outputNode);
         // (2) Struktur (Flach-Farbe) bekommt DENSELBEN outputNode + Mikro-Tiefe.
@@ -33864,7 +33622,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.structHasAerialOutput = !!(_structMat && _structMat.outputNode);
         // (3) der Builder ruft die EINE Quelle (Source-Probe: kein Parallel-Pfad).
         const _btSrc = r._buildToonNodeMaterial ? r._buildToonNodeMaterial.toString() : "";
-        out.aerialFromOneSource = _btSrc.includes("_applySubstanceResponse") && !_btSrc.includes("__structAerialError");
+        out.aerialFromOneSource = _btSrc.includes("_applyAerialOutput") && !_btSrc.includes("__structAerialError");
         // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
         // outputNode liest `output` (post-lighting), überschreibt material.color
         // NICHT (CLAUDE.md-Gotcha).
@@ -33891,7 +33649,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // (Distanz + Höhe-über-Auge), NICHT an der absoluten Welt-Höhe → auf einen
         // Berg klettern bleicht den Boden um dich nicht mehr. Source-Probe (Render
         // pixel-blind), schützt gegen Rückfall auf `smoothstep(.., positionWorld.y)`.
-        const _aerSrc = typeof r._applySubstanceResponse === "function" ? r._applySubstanceResponse.toString() : "";
+        const _aerSrc = typeof r._applyAerialOutput === "function" ? r._applyAerialOutput.toString() : "";
         out.aerialEyeRelative = _aerSrc.includes("cameraPosition") && _aerSrc.includes("hazeNear");
         // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
         // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
@@ -34011,7 +33769,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         // ===== WELLE J — Render-Harmonie (die EINE geteilte Aerial-Perspektive) =====
         check(
-            "V17.J→W-E: _applySubstanceResponse existiert (der EINE geteilte Band-Empfänger)",
+            "V17.J: _applyAerialOutput existiert (die EINE geteilte Umgebungs-Funktion)",
             v828Results.aerialHelperExists
         );
         check(
@@ -34220,13 +33978,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
             // Gerstner-Welle als TSL-Fn-Closure (r184: tslFn→Fn) + dot(xz, d) im Vertex-Pfad.
             waterDiagonal = /gerstnerWave\s*=\s*Fn/.test(builderSrc) && /dot\(xz,\s*d\)/.test(builderSrc);
-            // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup. W-F (V18.175,
-            // V9.56-i): die Spec liest jetzt `nFlow` (die flow-gekräuselte Normale,
-            // abgeleitet aus n → das Glitzern wandert stromab) statt `n`.
-            waterSpecular =
-                /pow\(max\(dot\(nFlow,\s*halfV\)/.test(builderSrc) &&
-                /nFlow\s*=\s*normalize\(n\.add/.test(builderSrc) &&
-                /normalize\(uSunDir\)/.test(builderSrc);
+            // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup.
+            waterSpecular = /pow\(max\(dot\(n,\s*halfV\)/.test(builderSrc) && /normalize\(uSunDir\)/.test(builderSrc);
             // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via viewportLinearDepth + waterThick.
             waterDepthShoreline = /viewportLinearDepth/.test(builderSrc) && /waterThick/.test(builderSrc);
             // V13.9 (Schicht 3): dünnes Wand-Bluten pro Pixel cullen — der Builder
@@ -38764,12 +38517,7 @@ async function checkBandG8R4Immunity(ctx) {
         out.revokedInRing = K.SOVEREIGN_STATE.excludedStateKeys.includes("revokedKeys");
         out.revokedNotInSnapshot = JSON.stringify(r.buildStateSnapshot()).indexOf("revokedKeys") < 0;
         // Zustand sichern, den wir mutieren.
-        // V18.180-FIX §6.1: revokedKeys ist eine Map (war Object) — ein flacher
-        // Object.assign({}, …)-Klon hätte daraus ein leeres {} gemacht (Map-
-        // Einträge sind nicht enumerable als Properties) → der Restore an L38430
-        // hätte revokedKeys zum Object umgehängt, und der nächste Test bricht
-        // beim ersten .set()-Aufruf. Eine echte Map-Kopie ist die Wahrheit.
-        const savedRevoked = new Map(r.state.revokedKeys);
+        const savedRevoked = Object.assign({}, r.state.revokedKeys);
         const savedSigned = JSON.parse(JSON.stringify(r.state.signedWorlds || {}));
         const KA = "aa".repeat(32);
         const KB = "bb".repeat(32);
@@ -42471,9 +42219,7 @@ async function checkBandCadWorkshop(ctx) {
             // Popover hat 8 Type-Buttons + 1 Cancel
             if (popover) {
                 const buttons = popover.querySelectorAll("button");
-                // W-G (V18.177): +„weitere…"-Toggle (Progressive Disclosure) → 13
-                // (3 primary + 5 hidden + 3 Anker + 1 weitere-Toggle + 1 cancel).
-                out.popoverHasButtons = buttons.length === 13;
+                out.popoverHasButtons = buttons.length === 12; // 8 Prozess- + 3 C7-Punkt-Typen + cancel (V18.110)
             }
 
             // Apply Connection
@@ -44702,7 +44448,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // V17.91 — die Mode-Bar trägt 4 Modi (Move/Rotate/Scale/Connect) + Snap + Zentrieren + Undo +
             // Redo + Klonen + Neu + Löschen. V18.62 Ich-H — + „Körper holen" (Seele→Bauplan-Brücke) = 12.
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
-            out.sevenButtonsInBar = allBtns === 12; // W-G (V18.177): +„▶ Gelenk-Probe" (V18.110 waren 11)
+            out.sevenButtonsInBar = allBtns === 11; // V18.110 C7: „Körper holen" fiel (auto-Saat)
 
             // Methode existiert
             out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
@@ -44759,7 +44505,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
         );
         check(
-            "V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + ▶ Gelenk-Probe + Klonen + Neu + Löschen)",
+            "V8.06/V17.91/V18.110: Mode-Bar hat 11 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + Klonen + Neu + Löschen — Körper holen fiel, C7-Auto-Saat)",
             v806Results.sevenButtonsInBar
         );
         check(
@@ -48305,11 +48051,6 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWCIchWahrheit(ctx);
             await checkBandWDRittSpawn(ctx);
             await checkBandGammaGenese(ctx);
-            await checkBandWEFrequenzband(ctx);
-            await checkBandWFFluss(ctx);
-            await checkBandW3UiPuls(ctx);
-            await checkBandWGGelenke(ctx);
-            await checkBandWHWald(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
