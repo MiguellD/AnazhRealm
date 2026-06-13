@@ -681,7 +681,16 @@ die 2-Punkt-Boden-Probe (falls M-D2 sie wählt) ist der Keim der Φ3-Naht-Fahrt.
 **W-E — DAS FREQUENZBAND (§8.3 — dort in voller System-Tiefe: IST-Fragmentierung,
 Antennen-Tabelle, Λ1-Migrations-Disziplin, Matrix-Beweis).**
 
-**W-F — der Fluss wie von Profis (eigener Look-Bogen, NACH W-E).**
+**W-F ✓ GEBAUT (V18.175) — der Fluss wie von Profis.** Die EINE geglättete
+Lauf-Fläche `_waterRunSurfaceAt` (Along-Flow-Tiefpass ±18 m, GEMESSEN −56 %
+Längs-Rauheit), drei Konsumenten (Zell-Sheet · Tauch-Trigger · Boot); die
+NARBEN-WAND via ZENTRUMS-BLENDE geehrt (`_hydroRiverAt.centerness` — nur der
+Kern glättet, Ufer-Kante roh: kein Trog, Δ 0.074 GEMESSEN); Flow-Kräuselung
+fragment-seitig (`flowRipple` — Glitzer stromab, narben-sicher); Boot-
+Schwimmen Substanz-emergent (`_vehicleProfile.floats`, volumen-gewichtete
+Mittel-Dichte < 0.55 — holz schwimmt, stein/eisen sinken). `diag-wf.cjs`
+alle grün; offen: der Fluss-LOOK im Schöpfer-Browser (Animation). Der
+ursprüngliche Plan:
 *KREIS:* die Wasser-Wahrheit fließt heute Atlas-`L`/fmag → Zell-Sheet-Vertices
 (`_buildVoxelChunkWaterCellSheet` liest pro Ecke die Spiegel-Höhe) → Shader
 (aFlow/aDepth/aWave; die V18.11-Tangente glättet die STRÖMUNGS-Richtung schon).
@@ -1013,12 +1022,12 @@ UX-Seite (verlorener/kompromittierter Schlüssel) noch nicht.
 
 **Die VERBUNDENE Reihenfolge (ersetzt §8.2-Reihenfolge; Stand V18.174):**
 Ψ0+Ψ1+W7-Korpus ✓ → W-A…W-D ✓ → W-E/Λ das Frequenzband ✓ (V18.173, S-Blick
-offen) → W6 Stamm-Atlas ✓ (V18.174, vorgezogen — Schöpfer-Reibungs-Frage) →
-**W-F Wasser ist der NÄCHSTE Bogen** (+ Tauch-Trigger liest die geglättete
-Fläche, dann Boot-Schwimmen) → W3 UI-Puls (das Organ hinter W-C) → W-G
-Gelenke · W-H Wald → W5-Entscheid → **M9 die Krone** (S-Dialog; +
-Schlüssel-Verwahrungs-Sprosse). Die v1.0-DoD (f) ist das Ziel-Band über
-allem; parallel-fähig: Φ0/Φ1 · T-Welle (nach W6 jetzt FREI).
+offen) → W6 Stamm-Atlas ✓ (V18.174) → W-F Wasser ✓ (V18.175 — Tauch-Trigger +
+Boot-Schwimmen mit) → **W3 UI-Puls ist der NÄCHSTE Bogen** (das Organ hinter
+W-C: dirty(raum) → rAF-gebündelte Render-Inseln) → W-G Gelenke · W-H Wald →
+W5-Entscheid → **M9 die Krone** (S-Dialog; + Schlüssel-Verwahrungs-Sprosse).
+Die v1.0-DoD (f) ist das Ziel-Band über allem; parallel-fähig: Φ0/Φ1 ·
+T-Welle (nach W6 jetzt FREI).
 
 ### §8.9 DIE SWOT-INVERSIONEN (12.06.) — was davon in die Planung einfließt
 

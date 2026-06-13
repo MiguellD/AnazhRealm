@@ -29273,7 +29273,15 @@ async function checkBandM3RittVollendet(ctx) {
             for (let i = 0; i < 40; i++) r._tickMountedMovement(0.05); // settled (exp-Lerp)
             const terr = r.getTerrainHeightAt(entry.position.x, entry.position.z);
             const bottom = entry.position.y + r._compoundBottomY(bp) * (entry.scale || 1);
-            out.standsOnTerrain = Number.isFinite(terr) && Math.abs(bottom - terr) < 0.35;
+            // W-F (V18.175, V9.56-i): der fahrzeug_wagen ist HOLZ → er SCHWIMMT
+            // (Substanz-emergent). Steht er über Wasser, ruht die Unterkante an
+            // der Wasserlinie (geglättete Lauf-Fläche − 25 cm Tiefgang), nicht am
+            // Terrain — die Test-Intent ist „kein Versinken", nicht „klebt am
+            // Boden". Die Erwartung folgt der Welt-Wahrheit (trocken → Terrain).
+            const runSurf = r._waterRunSurfaceAt(entry.position.x, entry.position.z);
+            const expectFloat = Number.isFinite(runSurf) && runSurf > -1e8 && runSurf - 0.25 > terr;
+            const sollY = expectFloat ? runSurf - 0.25 : terr;
+            out.standsOnTerrain = Number.isFinite(terr) && Math.abs(bottom - sollY) < 0.35;
             out.riderFollows = Math.abs(pm.y - (entry.position.y + entry._sitzHeight)) < 0.05;
             const v = body.getLinearVelocity();
             out.vyZeroed = Math.abs(v.y()) < 1e-6;
@@ -31054,6 +31062,80 @@ async function checkBandM6ErnteSpawn(ctx) {
 // das Gras gar nicht). Jetzt: EIN Empfänger (_applySubstanceResponse), Profile
 // aus der SUBSTANZ (_substanceResponseProfile — die Antenne IST die Substanz),
 // FÜLL-LICHT statt max()-Clamp, Band-Regler, Gras angedockt.
+// W-F (meister-plan §8.3 W-F, V18.175) — der Fluss wie von Profis: die EINE
+// geglättete Lauf-Fläche (_waterRunSurfaceAt), drei Konsumenten (Zell-Sheet ·
+// Tauch-Trigger · Boot-Schwimmen), die NARBEN-WAND (Zentrums-Blende lässt die
+// Querschnitt-Kante roh), die Flow-Kräuselung im Shader, das Substanz-
+// emergente Schwimmen. Headless: Verdrahtung + behaviorales Boot-Schwimmen
+// (der Fluss-Look misst diag-wf am echten Lauf + das Schöpfer-Auge).
+async function checkBandWFFluss(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        // (1) der EINE Leser existiert + Seen/Ozean kommen unverändert durch
+        // (kein Fluss → _waterRunSurfaceAt === _atlasWaterLevelAt; pure-Funktion).
+        out.runExists = typeof r._waterRunSurfaceAt === "function";
+        // ein trockener Punkt gibt -Infinity durch (kein Wasser erfunden).
+        const dryX = 99999,
+            dryZ = 99999;
+        out.dryPassthrough = r._waterRunSurfaceAt(dryX, dryZ) === r._atlasWaterLevelAt(dryX, dryZ, -Infinity);
+        // (2) die DREI Konsumenten lesen die geglättete Fläche (Source-Probe).
+        out.sheetReadsRun = /_waterRunSurfaceAt/.test(r._buildVoxelChunkWaterCellSheet.toString());
+        out.diveReadsRun = /_waterRunSurfaceAt/.test(r._loopPhysicsSync.toString());
+        // (3) NARBEN-WAND: die Zentrums-Blende (centerness) lebt — _hydroRiverAt
+        // gibt sie, _waterRunSurfaceAt blendet roh↔glatt damit (Kante bleibt roh).
+        out.centernessField = /centerness/.test(r._hydroRiverAt.toString());
+        out.centernessBlend =
+            /centerness/.test(r._waterRunSurfaceAt.toString()) && /\* center/.test(r._waterRunSurfaceAt.toString());
+        // (4) die Flow-Kräuselung im Shader (fragment-seitig, narben-sicher).
+        out.flowRipple = /flowRipple/.test(r._ensureHydroSurfaceMaterial.toString());
+        // (5) das BOOT-SCHWIMMEN ist Substanz-emergent: holz schwimmt, stein/
+        // eisen sinken (volumen-gewichtete Mittel-Dichte < 0.55). Behavioral.
+        const mkBoat = (mat) => ({
+            name: `__wf_boot_${mat}`,
+            parts: [
+                { shape: "box", material: mat, size: { x: 3, y: 0.6, z: 1.4 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: mat, size: { x: 0.4, y: 0.4, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
+            ],
+            connections: [],
+        });
+        const probeFloat = (mat) => {
+            const bp = mkBoat(mat);
+            r.state.blueprints[bp.name] = bp;
+            const prof = r._vehicleProfile({ type: bp.name, scale: 1, position: { x: 0, y: 0, z: 0 } });
+            delete r.state.blueprints[bp.name];
+            return prof ? prof.floats : null;
+        };
+        out.holzFloats = probeFloat("holz");
+        out.steinFloats = probeFloat("stein");
+        out.eisenFloats = probeFloat("eisen");
+        // (6) das Profil trägt das floats-Feld (der Konsument im Ritt-Tick liest es).
+        out.tickFloatConsumed = /rideProf\.floats|prof.*floats/.test(r._tickMountedMovement.toString());
+        return out;
+    });
+    check(
+        "W-F Fluss: der EINE Lauf-Leser _waterRunSurfaceAt existiert + reicht Nicht-Fluss-Wasser unverändert durch",
+        res.runExists && res.dryPassthrough
+    );
+    check(
+        "W-F Fluss: die DREI Konsumenten lesen die geglättete Fläche (Zell-Sheet + Tauch-Trigger; Source-Probe)",
+        res.sheetReadsRun && res.diveReadsRun
+    );
+    check(
+        "W-F Fluss NARBEN-WAND: die Zentrums-Blende lebt (_hydroRiverAt gibt centerness, _waterRunSurfaceAt blendet roh↔glatt — die Querschnitt-Kante bleibt roh)",
+        res.centernessField && res.centernessBlend
+    );
+    check(
+        "W-F Fluss: die Flow-Kräuselung im Shader (fragment-seitig — das Sonnen-Glitzern wandert stromab, narben-sicher)",
+        res.flowRipple
+    );
+    check(
+        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken — volumen-gewichtete Mittel-Dichte) + im Ritt-Tick konsumiert",
+        res.holzFloats === true && res.steinFloats === false && res.eisenFloats === false && res.tickFloatConsumed
+    );
+}
+
 async function checkBandWEFrequenzband(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -33898,8 +33980,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
             // Gerstner-Welle als TSL-Fn-Closure (r184: tslFn→Fn) + dot(xz, d) im Vertex-Pfad.
             waterDiagonal = /gerstnerWave\s*=\s*Fn/.test(builderSrc) && /dot\(xz,\s*d\)/.test(builderSrc);
-            // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup.
-            waterSpecular = /pow\(max\(dot\(n,\s*halfV\)/.test(builderSrc) && /normalize\(uSunDir\)/.test(builderSrc);
+            // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup. W-F (V18.175,
+            // V9.56-i): die Spec liest jetzt `nFlow` (die flow-gekräuselte Normale,
+            // abgeleitet aus n → das Glitzern wandert stromab) statt `n`.
+            waterSpecular =
+                /pow\(max\(dot\(nFlow,\s*halfV\)/.test(builderSrc) &&
+                /nFlow\s*=\s*normalize\(n\.add/.test(builderSrc) &&
+                /normalize\(uSunDir\)/.test(builderSrc);
             // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via viewportLinearDepth + waterThick.
             waterDepthShoreline = /viewportLinearDepth/.test(builderSrc) && /waterThick/.test(builderSrc);
             // V13.9 (Schicht 3): dünnes Wand-Bluten pro Pixel cullen — der Builder
@@ -47972,6 +48059,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWDRittSpawn(ctx);
             await checkBandGammaGenese(ctx);
             await checkBandWEFrequenzband(ctx);
+            await checkBandWFFluss(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

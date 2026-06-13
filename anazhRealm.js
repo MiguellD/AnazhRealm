@@ -22226,9 +22226,13 @@ class AnazhRealm {
                 const faceY = oy + (sc.floodTopJ + 1) * step; // Zell-Dach (quantisiert)
                 // RUHE: sub-zellig der Body-Spiegel `L` (die Flood ist „gefüllt bis L");
                 // clamp auf ±1 Zelle um das Dach (Schutz gegen Atlas/Zell-Drift).
+                // W-F (V18.175) — der Fluss-LAUF liest die GEGLÄTTETE Fläche
+                // (_waterRunSurfaceAt: Along-Flow-Tiefpass, NIE der Querschnitt)
+                // statt des rohen terrain-gekoppelten L — das „Häuschenpapier"
+                // fällt an der Wurzel; Seen/Ozean kommen unverändert durch.
                 const wx = ox + (ci + 0.5) * step;
                 const wz = oz + (ck + 0.5) * step;
-                const L = this._atlasWaterLevelAt(wx, wz, -Infinity);
+                const L = this._waterRunSurfaceAt(wx, wz);
                 let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
                 // LIVE: der CA-Delta obendrauf (Live-Dach − Flood-Dach, geclampt).
                 if (level) {
@@ -24541,6 +24545,56 @@ class AnazhRealm {
         return level;
     }
 
+    // W-F (V18.175, meister-plan §8.1#12 + R-014 „Häuschenpapier") — die
+    // GEGLÄTTETE LAUF-FLÄCHE: die EINE Render-/Feel-Wahrheit der Wasser-
+    // Oberfläche, von DREI Lesern konsumiert (Zell-Sheet-Höhe · Tauch-Trigger
+    // · Boot-Schwimmen — eine Quelle, V9.82). Die GEMESSENE Wurzel des
+    // Häuschenpapiers: `_hydroRiverAt.surfaceY = macroSurf − 0.25·depth +
+    // bulge` ERBT jede Terrain-Beule (λ 22–55 m) direkt in den Lauf. Heilung
+    // = ein ALONG-FLOW-Tiefpass: 7 Samples ±18 m ENTLANG der (V18.11-
+    // geglätteten) Tangente, gauss-artig gewichtet. Die NARBEN-WAND gilt
+    // absolut (zweimal revertiert): NIE der Querschnitt — alle Samples teilen
+    // ~denselben Lateral-Abstand zur Mittellinie, der konvexe Breiten-Bulge
+    // bleibt per Konstruktion erhalten (der diag-wf-lauf misst es). Seen/
+    // Ozean sind flache Spiegel → unverändert durchgereicht. Seam-frei per
+    // Konstruktion: pure Funktion der WELT-Position (alle Chunks rechnen am
+    // geteilten Punkt dasselbe — V9.77). RENDER/FEEL-only: die Welt-WAHRHEIT
+    // (Atlas-L, Flood-Zellen, Carve, Worker) bleibt unangetastet.
+    // Erst-Wurf-Fenster (S-Vermerk): Schritt 6 m × ±3 Taps; Kurven werden
+    // als lokale Gerade gesampelt (bei 18 m Reichweite sanft genug).
+    _waterRunSurfaceAt(x, z) {
+        const L = this._atlasWaterLevelAt(x, z, -Infinity);
+        if (!(L > -Infinity)) return L;
+        const river = this._hydroRiverAt(x, z);
+        if (!river) return L;
+        // NARBEN-WAND: nur der KERN wird geglättet. Zur Kanal-Kante (centerness
+        // → 0) blendet das Ergebnis auf den ROHEN Spiegel zurück — der konvexe
+        // Querschnitt bleibt dort EXAKT (along-flow-Bleed in Kurven trifft nur
+        // den Kern, wo die Mittellinie ohnehin ruhig sein SOLL).
+        const center = Number.isFinite(river.centerness) ? river.centerness : 1;
+        if (center <= 0.001) return L;
+        const fx = river.flowX;
+        const fz = river.flowZ;
+        let acc = L * 4;
+        let wsum = 4;
+        for (let k = 1; k <= 3; k++) {
+            const w = 4 - k;
+            const d = 6 * k;
+            const la = this._atlasWaterLevelAt(x + fx * d, z + fz * d, -Infinity);
+            const lb = this._atlasWaterLevelAt(x - fx * d, z - fz * d, -Infinity);
+            if (la > -Infinity) {
+                acc += la * w;
+                wsum += w;
+            }
+            if (lb > -Infinity) {
+                acc += lb * w;
+                wsum += w;
+            }
+        }
+        const smoothed = acc / wsum;
+        return L + (smoothed - L) * center;
+    }
+
     // V9.59-a — semantische Wurzel der Welt-Awareness: "ist diese Position
     // trockenes Land?". Vergleicht die Voxel-Surface mit dem Wasser-Spiegel,
     // liefert true wenn der Boden mindestens `marge` Meter über dem Wasser
@@ -24817,6 +24871,12 @@ class AnazhRealm {
             flowZ: dirZ,
             depth,
             surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.25 + convexBulge,
+            // W-F (V18.175) — die ZENTRUMS-NÄHE [0..1]: 1 an der Mittellinie,
+            // 0 an der Kanal-Kante. `_waterRunSurfaceAt` blendet damit die
+            // Lauf-Glättung NUR auf den KERN (Plan-Wortlaut „NUR die Fluss-
+            // KERN-Spalten") — der konvexe Querschnitt am Ufer bleibt roh
+            // (NARBEN-WAND exakt erhalten, GEMESSEN diag-wf).
+            centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
         };
     }
 
@@ -26042,10 +26102,27 @@ class AnazhRealm {
         const colWithFoam = mix(baseCol, uFoam, foamD.mul(0.7));
         const lit = colWithFoam.mul(uLight);
 
+        // W-F (V18.175, Teilwelle 2 „Flow-Wellen") — die FLOW-ausgerichtete
+        // Mikro-Kräuselung der NORMALE (FRAGMENT-Stage, nicht Vertex): das
+        // Sonnen-Glitzern wandert STROMAB → das „fliessende Wasser"-Tell, das
+        // dem Fluss gefehlt hat (die Strähnen advektieren schon, V18.94, aber
+        // die Spiegelung stand). Bewusst fragment-seitig: KEIN Vertex-
+        // Displacement → die NARBEN-WAND bleibt unberührt (kein Quer-Schnitt,
+        // keine Naht, keine Normal-Neuberechnung; zweimal revertiert). Eine
+        // Wellenfront entlang `fdir` (zwei Oktaven gegen Periodik), Amplitude
+        // ∝ `fmag` (verschwindet im See → kein Sprung) × `detailFade` (fern
+        // ruhig, kein Moiré). Erst-Wurf-Frequenzen, S-Vermerk.
+        const flowPhase = dot(xz, fdir).mul(0.85).sub(uTime.mul(1.3));
+        const flowRipple = sin(flowPhase)
+            .add(sin(flowPhase.mul(2.3).add(1.7)).mul(0.4))
+            .mul(0.14)
+            .mul(fmag)
+            .mul(detailFade);
+        const nFlow = normalize(n.add(vec3(fdir.x.mul(flowRipple), float(0.0), fdir.y.mul(flowRipple))));
         // Sonnen-Glitzern (Blinn-Phong wie Wasserfall, Exponent 48 statt 40).
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
         const halfV = normalize(normalize(uSunDir).add(viewDir));
-        const spec = pow(max(dot(n, halfV), 0.0), 48.0);
+        const spec = pow(max(dot(nFlow, halfV), 0.0), 48.0);
         const withSpec = lit.add(vec3(1.0, 0.97, 0.85).mul(spec).mul(0.7).mul(uLight));
 
         // Fog — Custom-Shader erbt THREE.Fog nicht.
@@ -39045,10 +39122,34 @@ class AnazhRealm {
             }
         }
         const mass = bp ? Math.max(0.6, Math.min(2.5, this._compoundSizeFactor(bp))) : 1;
+        // W-F (V18.175, M3-Vermerk „Boot-Schwimmen") — SCHWIMMFÄHIGKEIT
+        // emergiert aus der SUBSTANZ: die volumen-gewichtete MITTEL-Dichte
+        // (NICHT der MAX-basierte Compound-Tag — ein Eisen-Nagel im Holz-Boot
+        // versenkte sonst alles) unter Wasser-Dichte ~0.55 → das Gefährt
+        // trägt. holz 0.4 schwimmt, stein 0.85/eisen 0.9 sinken (Archimedes
+        // in Tag-Sprache; Erst-Wurf-Schwelle, S-Vermerk).
+        let floats = false;
+        if (bp && Array.isArray(bp.parts)) {
+            let volSum = 0;
+            let dSum = 0;
+            for (const p of bp.parts) {
+                if (!p || !p.size) continue;
+                const v =
+                    Math.max(0.01, Number(p.size.x) || 0.1) *
+                    Math.max(0.01, Number(p.size.y) || 0.1) *
+                    Math.max(0.01, Number(p.size.z) || 0.1);
+                const md = this.state.materials && this.state.materials[p.material];
+                const d = md && md.tags && Number.isFinite(md.tags.dichte) ? md.tags.dichte : 0.6;
+                volSum += v;
+                dSum += v * d;
+            }
+            floats = volSum > 0 && dSum / volSum < 0.55;
+        }
         const prof = {
             radCount,
             beinCount,
             mass,
+            floats,
             topSpeedMul: 1 + Math.min(0.6, radCount * 0.12) + (radCount === 0 && beinCount >= 2 ? 0.15 : 0),
             kAcc: Math.max(2.5, Math.min(10, 7 / mass)),
             kBrake: radCount > 0 ? Math.max(1.5, Math.min(6, 3.5 / mass)) : Math.max(4, Math.min(10, 8 / mass)),
@@ -39214,6 +39315,19 @@ class AnazhRealm {
             const gHeck = this.getTerrainHeightAt(pm.x - dx, pm.z - dz);
             if (Number.isFinite(gBug)) groundY = Math.max(groundY, gBug);
             if (Number.isFinite(gHeck)) groundY = Math.max(groundY, gHeck);
+        }
+        // W-F (V18.175) — das BOOT-SCHWIMMEN (die §8.8e-Synergie „dieselbe
+        // Fläche, dieselbe Wahrheit"): ein schwimmfähiges Gefährt (Profil
+        // floats — Substanz-Dichte < Wasser) reitet die GEGLÄTTETE Lauf-
+        // Fläche, wo sie über dem Terrain liegt; der Rumpf taucht ~25 cm ein
+        // (Wasserlinie, Erst-Wurf). Ragt das Terrain ÜBER die Wasserlinie,
+        // führt es weiter (Auflaufen am Ufer per max() — kein Sonder-Pfad).
+        const rideProf = this._vehicleProfile(entry);
+        if (rideProf && rideProf.floats && Number.isFinite(groundY)) {
+            const runSurf = this._waterRunSurfaceAt(pm.x, pm.z);
+            if (runSurf > -Infinity && runSurf - 0.25 > groundY) {
+                groundY = runSurf - 0.25;
+            }
         }
         if (Number.isFinite(groundY)) {
             const targetY = groundY + (Number.isFinite(entry._groundClear) ? entry._groundClear : 0);
@@ -58345,8 +58459,21 @@ class AnazhRealm {
                         this.state.playerUnderwater = submerged;
                         // Augen sitzen auf Kamera-Höhe (scaledY + 1.6); nur unter
                         // Wasser, wenn der Körper submerged ist UND die Augen unter
-                        // dem (Cell-)Spiegel liegen (kein blauer Tint über Luft).
-                        this.state.playerEyesUnderwater = submerged && scaledY + 1.6 < waterY;
+                        // dem Spiegel liegen (kein blauer Tint über Luft).
+                        // W-F (V18.175, R-014 „Tauchhöhe versetzt" + §8.8e): die
+                        // AUGEN-Grenze liest die GEGLÄTTETE Lauf-Fläche — dieselbe,
+                        // die das Sheet RENDERT — statt des 1.8-m-quantisierten
+                        // Zell-Dachs (wctx.surfaceY): der Tint flippt, wo das Auge
+                        // die Fläche DURCHSTÖSST. Live-CA-Wasser jenseits ±1 Zelle
+                        // vom statischen Spiegel führt weiter (Carve-Nachfluss).
+                        let eyeWaterY = waterY;
+                        if (submerged) {
+                            const runSurf = this._waterRunSurfaceAt(wcx, wcz);
+                            if (runSurf > -Infinity && Math.abs(runSurf - waterY) <= 1.8) {
+                                eyeWaterY = runSurf;
+                            }
+                        }
+                        this.state.playerEyesUnderwater = submerged && scaledY + 1.6 < eyeWaterY;
                         if (submerged) {
                             // V8.36 — Auftrieb wirkt NUR über dem Terrain.
                             // Fällt der Spieler durch die Welt (weit unter
@@ -59347,7 +59474,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.174.0";
+AnazhRealm.VERSION = "18.175.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
