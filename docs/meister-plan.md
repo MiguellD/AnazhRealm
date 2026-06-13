@@ -960,14 +960,24 @@ Nachbau-Szenario. Damit ist „Rückmeldung nicht gelesen" strukturell unmöglic
 erzwungen, nicht versprochen. (Korpus v1 ist angelegt — alle Befunde vom 12.06. abend
 sind eingetragen.)
 
-**(c) W6 — der STAMM-ATLAS (ein Nachmittag, senkt MEINE Reibung dauerhaft):** GEMESSEN
-60'854 Zeilen mit 4 Abschnitts-Markern — die „du verlierst die Übersicht"-Beobachtung
-ist berechtigt. Antwort ist NICHT der Split (Heilige Lektion), sondern eine KARTE:
-die maschinenlesbare Sektions-Registry am Stammkopf (Name → Zeilen-Anker →
-Zuständigkeit), `diag-atlas.cjs` prüft Registry ↔ Realität (Drift = rot), CLAUDE.md
-verlinkt hinein. Dazu als MESS-Vermerk (erst messen, dann entscheiden):
-`computeCompoundTags` hat 0 Cache bei ~47 Aufrufstellen — Memo-Kandidat NUR mit
-gemessener Frame-Zahl.
+**(c) W6 — der STAMM-ATLAS ✓ GEBAUT (V18.174, vorgezogen auf Schöpfer-Wort
+„wo herrscht die größte Reibung?" — R-032):** 26 ehrliche ZONEN-Marker
+(`// ===== ATLAS §NN · NAME — Themen =====`, an GEMESSENEN Cluster-Grenzen
+der 1420 Methoden-Defs platziert, anker-basiert über die Kommentar-Blöcke)
++ die Registry am Stammkopf (ATLAS-REGISTRY…-ENDE — Ordnung+Zuständigkeit,
+NIE Zeilen-Nummern [sie rotten]) + `scripts/diag-atlas.cjs` (pures fs, <1 s:
+die LIVE-Karte mit Start/Zeilen/Methoden je Zone · `--find <regex>` verortet
+Methoden · `--check` = Drift-Wand Registry↔Marker im `npm run check`-Gate +
+`npm run atlas`). Die Registry sagt EHRLICH „Zonen = dominante Themen,
+Einsprengsel kommen vor — Karte, nicht Käfig" (der Stamm wuchs organisch;
+die Antwort auf R-032 ist NAVIGATION, kein Split — Heilige Lektion).
+Im selben Zug: CLAUDE.md-SCHLANKUNG (382→~280 KB: 56 historische V-Blöcke +
+Terrain-Bogen-Erzählung → Brücken-Zeile; JEDER Block vorher GEMESSEN in der
+handover-Chronik verifiziert — Saat-Disziplin) + DIAG-HÄRTUNG (s. Gotcha
+„Remote-Container-Prozess-Wahrheit": DIAG_PORT 4317 · inkrementelles
+JSON-Artefakt · Warm-Welt-Cache · Wetter-Pinning im Messgerät). Offen als
+MESS-Vermerk (erst messen, dann entscheiden): `computeCompoundTags` hat
+0 Cache bei ~47 Aufrufstellen — Memo-Kandidat NUR mit gemessener Frame-Zahl.
 
 **(d) Λ1-DISZIPLIN für W-E (die sichere Migration, übernommen):** Schritt 1 des
 Frequenzbands ENTGATET nur — alle Familien konsumieren alle Licht-Uniforms, aber mit
@@ -1001,13 +1011,14 @@ eine eigene Sprosse — die Ökonomie-Seite ist per Architektur beantwortet (der
 ist ein SCHLÜSSEL, kein Wert; Kopie dupliziert Identität, nicht Besitz), die
 UX-Seite (verlorener/kompromittierter Schlüssel) noch nicht.
 
-**Die VERBUNDENE Reihenfolge (ersetzt §8.2-Reihenfolge):** Ψ0+Ψ1+W7-Korpus (klein,
-sofort, parallel) → W-A…W-D (die sichtbaren gemessenen UI/Feel-Wurzeln — der Schöpfer
-SIEHT die Heilung zuerst) → **W-E/Λ das Frequenzband** (mit Λ1-Disziplin) → W-F Wasser
-(+ Tauch-Trigger, dann Boot-Schwimmen) → W3 UI-Puls (das Organ hinter W-C) → W-G
-Gelenke · W-H Wald → W6 Stamm-Atlas + W5-Entscheid (ein Nachmittag) → **M9 die Krone**
-(S-Dialog; + Schlüssel-Verwahrungs-Sprosse). Die v1.0-DoD (f) ist das Ziel-Band über
-allem.
+**Die VERBUNDENE Reihenfolge (ersetzt §8.2-Reihenfolge; Stand V18.174):**
+Ψ0+Ψ1+W7-Korpus ✓ → W-A…W-D ✓ → W-E/Λ das Frequenzband ✓ (V18.173, S-Blick
+offen) → W6 Stamm-Atlas ✓ (V18.174, vorgezogen — Schöpfer-Reibungs-Frage) →
+**W-F Wasser ist der NÄCHSTE Bogen** (+ Tauch-Trigger liest die geglättete
+Fläche, dann Boot-Schwimmen) → W3 UI-Puls (das Organ hinter W-C) → W-G
+Gelenke · W-H Wald → W5-Entscheid → **M9 die Krone** (S-Dialog; +
+Schlüssel-Verwahrungs-Sprosse). Die v1.0-DoD (f) ist das Ziel-Band über
+allem; parallel-fähig: Φ0/Φ1 · T-Welle (nach W6 jetzt FREI).
 
 ### §8.9 DIE SWOT-INVERSIONEN (12.06.) — was davon in die Planung einfließt
 

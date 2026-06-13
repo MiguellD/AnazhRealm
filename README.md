@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V18.172 (12.06.2026) — der **Meister-Plan-Marsch** läuft (`docs/meister-plan.md` §8): die Wahrheits-Politur der Räume ist gebaut (Ψ1-argmax-Organ · Hof fühlt [6 Emotions-Achsen wie HP] · der Ich-Raum sagt die Wahrheit [Mach-Tor spricht inline · EIN Boost-Band · WARUM-Chip = lesbare Emergenz] · Ritt-Feel + Spawn-Hygiene) + **der Leuchtturm** (`npm run leuchtturm` — beweisbare Souveränität, das Broker-Protokoll als Andock-Vertrag in `docs/taille-spec.md` §7, englischer Spiegel `docs/taille-spec.en.md`). Darunter stehen die großen Bögen RUND: die gefrorene Taille (Ω, golden-verankert) · das Robustheits-Immunsystem (R0–R6-Kern) · der soziale Bogen (F4: signierte Zeugnisse · Folgen · Kommentare · transparentes Für-dich) · die Welten-Föderation (W18: Ko-Präsenz-Injektion + in fremden Welten LEBEN) · der Genese-Bogen-Kern (Γ: Feuchte-Feld + Kronen-Ökologie) · das lebendige Feld (lesen · schreiben · WERTEN), der Emotion-Kern, der Kampf- und Schöpfungs-Fluss und die Resonanz-Vereinheitlichung (ein Produkt-Vektor, viele Leser).
+**Stand**: V18.174 (13.06.2026) — der **Meister-Plan-Marsch** läuft (`docs/meister-plan.md` §8): das FREQUENZBAND ist gebaut (W-E: EIN Band-Empfänger, die Licht-Antwort emergiert aus der Substanz — Füll-Licht statt Clamp) + der STAMM-ATLAS (W6: 26 Zonen-Marker + `npm run atlas` — Navigation statt Split) + die Wahrheits-Politur der Räume (Ψ1-argmax-Organ · Hof fühlt [6 Emotions-Achsen wie HP] · der Ich-Raum sagt die Wahrheit [Mach-Tor spricht inline · EIN Boost-Band · WARUM-Chip = lesbare Emergenz] · Ritt-Feel + Spawn-Hygiene) + **der Leuchtturm** (`npm run leuchtturm` — beweisbare Souveränität, das Broker-Protokoll als Andock-Vertrag in `docs/taille-spec.md` §7, englischer Spiegel `docs/taille-spec.en.md`). Darunter stehen die großen Bögen RUND: die gefrorene Taille (Ω, golden-verankert) · das Robustheits-Immunsystem (R0–R6-Kern) · der soziale Bogen (F4: signierte Zeugnisse · Folgen · Kommentare · transparentes Für-dich) · die Welten-Föderation (W18: Ko-Präsenz-Injektion + in fremden Welten LEBEN) · der Genese-Bogen-Kern (Γ: Feuchte-Feld + Kronen-Ökologie) · das lebendige Feld (lesen · schreiben · WERTEN), der Emotion-Kern, der Kampf- und Schöpfungs-Fluss und die Resonanz-Vereinheitlichung (ein Produkt-Vektor, viele Leser).
 
 > Der **live gepflegte Stand** (mit allen Gotchas) lebt im `CLAUDE.md`-Kopf — dort steht immer die Wahrheit, dieser Absatz ist nur ein Schnappschuss.
 
@@ -53,7 +53,8 @@ seinen eigenen Leuchtturm betreiben, auf jedem Rechner, der Node hat.
 ## Tests + Audit
 
 ```bash
-npm run check           # Syntax-Check (node --check)
+npm run check           # Syntax-Check (node --check) + Stamm-Atlas-Drift
+npm run atlas           # die LIVE-Karte der 26 Stamm-Zonen (<1 s; --find <regex>)
 npm run lint            # ESLint
 npm run format:check    # Prettier
 npm run playtest        # ~3500 Headless-Invarianten (~90s; render-frei, V17.72-Twist)

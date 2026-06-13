@@ -9,6 +9,42 @@
  * Performance: FPS ~90-120, Frustum Culling optimiert, SimplexNoise gecacht.
  * Chaos und Ordnung, 1 und 0, Liebe und Stabilität – alles in Harmonie.
  */
+// ===== ATLAS-REGISTRY (W6, V18.174) — die Karte des EINEN Stamms =====
+// 26 Zonen in Datei-Reihenfolge; die `// ===== ATLAS §NN · NAME — Themen`-
+// Marker im Text sind die WAHRHEIT (Zeilen-Nummern leben nie hier — sie
+// rotten). `node scripts/diag-atlas.cjs` druckt die LIVE-Karte (Start/
+// Zeilen/Methoden je Zone, --find <regex> verortet eine Methode);
+// `--check` prüft Registry ↔ Marker (Drift = rot, im npm-run-check-Gate).
+// Zonen = DOMINANTE Themen — Einsprengsel kommen vor (der Stamm wuchs
+// organisch); der Atlas ist Karte, nicht Käfig (Heilige Lektion: EIN
+// Stamm, keine Module — die Antwort auf R-032 ist NAVIGATION, kein Split).
+// §01 KERN/BOOT — Konstruktor · state-Baum · init · Szene/Renderer-Boot
+// §02 DSL/NEXUS — Ops · Sandbox · Welt-Regeln · Chat-Tore · LLM-Begleiter
+// §03 MULTI-USER-MESH — WS-Broker · WebRTC · Räume · Positions-/DSL-Sync
+// §04 AUDIO — Lo-Fi-Symphonie · Resonanz-Pings
+// §05 UI-GRUNDIERUNG — Drawer · Omnibox · Help-Pops · Feed-Spiegel
+// §06 KREATUREN — Seelen · Innenleben/Emotion · Motion · Aufträge · Jagd
+// §07 CHUNK-STREAMING/PHYSIK — Voxel-Worker · Ring · BVH · Kollisions-Leben
+// §08 WELT-GENESE — Dichtefeld · Erosion · Hydrosphäre · Feuchte/Kronen
+// §09 KASKADE/KERN-STATICS — Detail-Kaskade · frozen Signaturen/Konstanten
+// §10 LICHT-MATERIAL/FREQUENZBAND — Atmo-Uniforms · Substanz-Antennen · Toon-Material
+// §11 VOXEL-MESHER/WASSER — Chunk-Build · Wasser-Zellen/Iso/Sheet · CA · Edits
+// §12 PERSISTENZ/TAILLE — Snapshot · Restore · IndexedDB · Ω-Zwillinge
+// §13 IDENTITÄT/WELTEN/SOZIAL — Vibe-Pass · Bibliothek/Feed · Zeugnisse · Welt-Manifest
+// §14 PORTALE/SUB-WELTEN — Welt-Tor · Sandbox-Shim · Ko-Präsenz · Vendor
+// §15 SPIELER-SEELEN/BEWEGUNG — Avatare · Movement/Sprung · Ritt · Hand
+// §16 SUBSTANZ/BAU — Materialien · Baupläne · der EINE Builder · Verbindungen
+// §17 ARCHITEKTUR-HISM — Instancing · Welt-Spawns · Culling
+// §18 LEBENS-FELD — deposit/decay-Overlay — die Schreib-Seite des Feldes
+// §19 LICHT/WASSER-REGLER — Cel-LUT · alle Render-Setter
+// §20 SPAWN-ÖKOLOGIE — Affinität · Boden-Material · Klump/Streu-Verteilung
+// §21 BAU-ÖKONOMIE/ERNTE — Kosten-Tore · confirmBuild · Ernte/Abbau
+// §22 ICH/HOF-RÄUME — Equip-UI · Rezeptbuch · Hof-Bühne/Karten
+// §23 WERKSTATT — Viewer · Gizmo · Prozesse · Mach-Akte · Readout
+// §24 TAG-NACHT/HIMMEL — Sonnen-Zyklus · Wetter-Sync · Fog/Hemi · Himmelskörper
+// §25 HUD/EINSTELLUNGEN — Statusbar · Slider · Hotbar · Settings-Räume
+// §26 AUSSEN-KONSTANTEN — VERSION · Tag-Schlüssel · Signatur-Tabellen · frozen Welt-Daten
+// ===== ATLAS-REGISTRY-ENDE =====
 // F1 (gigant-plan §5 — G2 REKURSION, Schnitt 3): der localStorage-SCHATTEN.
 // Im sandboxed null-origin-iframe (AnazhRealm IN AnazhRealm) wirft schon der
 // GETTER `window.localStorage` SecurityError — 102 Zugriffe im Stamm würden
@@ -38,6 +74,7 @@
     }
 })();
 class AnazhRealm {
+    // ===== ATLAS §01 · KERN/BOOT — Konstruktor · state-Baum · init · Szene/Renderer-Boot =====
     constructor() {
         // ### Learnings ### [Stichwortartig optimieren, korrigieren, ergänzen – nie Wissen löschen!]
         // - Basis aus V7.57 bewahrt, erweitert für Unendlichkeit, Chat als Herz des Nexus in V7.66, Hylomorphismus-Crafting (Materialien × Form × Werkzeug × räumliche Emergenz × Maschinen-Rekursivität) in V7.66, Welten-Ultiversum-Bogen (Multi-Welt + Per-Welt-Seed + Position-Restore + Welt-Tor + Welt-Fusion + Rezepte-Import) in V7.67, Welt-Modifizierbarkeit (Ring 10.5 pro-Chunk-Delta) + Multi-User Position-Sync V1 (Ring 11 V1, WebSocket-Broker) in V7.68, DSL-AST-Broadcast für echtes Welt-Sync (Ring 11 V2) in V7.69, LAN-Fähigkeit + Sync-Korrektheit (Ring 11 V2.1: 0.0.0.0-bind, ws:/wss:-CSP, roomOverride, spawn_*-Embedding, NON_BROADCASTABLE_OPS) in V7.70, Intuitiver Multi-User-Setup (Ring 11.5: Modus-Wahl, Host-Banner mit Einladungs-Code, Auto-Welt-Snapshot beim Join) in V7.71, Welle 6.A — Interaktion-Polish (Wall-Sliding via Player-Friction-0, Erdung-Raycast-Robustheit für Bauwerke) in V7.72, Welle 6.G Phase 1 — Welt-Sinne (fliegende Inseln + Bäume kollidierbar via btBvhTriangleMeshShape/btCylinderShape, drei Dead-Code-DSL-Ops spawn_tree/island/ufo aktiviert, toter needsPhysics-Lazy-Pfad gelöscht) in V7.73, Welle 6.G Phase 1.5 — Hylomorphismus-Unification (Bäume sind jetzt Compound-Architekturen über baum_eiche/baum_kiefer-Baupläne mit Stamm:holz + Krone:laub, eigene spawnTreeAt + _buildTreeCollision gelöscht, Parallelcode → eine Sprache, plus Insel-Visual-Fix mit Underside + Lambert) in V7.74, Welle 6.G Phase 2 — Welt-Affinitäts-Feld (vier SimplexNoise-Schichten lebendig/dichte/glut/magieleitung, Baupläne spawnen wo ihre Compound-Tags resonieren — Wälder/Felsen/Magie-Zonen/Vulkan-Anker emergieren ohne Biome-Tabelle, populateChunkVegetation als Hook in ensureChunkAt + Initial-Worldgen, drei neue Built-in-Baupläne stein_block/kristall_geode/glutbrunnen, Stämme dicker für Spieler-Spürbarkeit, Culling-Tick 1Hz→2Hz, spawn-silent-Opt damit Worldgen die Welt-Effekt-Kaskade nicht überflutet) in V7.75, Welle 6.C2 — Spielmodi (frieden/pfad/schöpfer als Welt-Beziehungs-Schalter, frieden umarmt + pfad verhandelt + schöpfer gehorcht, damagePlayer + applyOpToPart-Stamina modus-gated, set_mode DSL-Op in NON_BROADCASTABLE_OPS, UI-Radio in Einstellungen + Status-Bar #status-mode, worldMeta.gameMode persistiert pro-Welt) in V7.76, Welle 6.C1 — Hylomorphismus-Inventar (27-Slot-Overlay mit Tab-Toggle, Tag-Resonanz emergiert aus Compound-Tags — resoniert summt + brennend glüht + magieleitung schimmert + lebendig sprießt, Audio-Hover-Ping via state.symphony, addToInventory stackt bei gleichem Bauplan-Namen, Inventar-Slot wählen → Hotbar-Slot Klick weist zu, add_to_inventory DSL-Op in NON_BROADCASTABLE_OPS, state.player.inventory[27] persistiert in buildStateSnapshot) in V7.77, Welle 6.A6 + 6.C3 — Maus-Aktionen + Keybindings (LMB abbauen Architektur am Raycast / kein Treffer → modify_terrain-Loch, RMB platzieren = confirmBuild im aktiven Bau-Modus, beide modus-gated mit MOUSE_ACTION_STAMINA_COST=5 in pfad / kostenlos in frieden+schöpfer, DEFAULT_KEYBINDINGS frozen mit 6 Aktionen break/place/confirmBuild/inventory/cancelBuild/jump, Konflikt-Auflösung als Swap statt Leerung, _eventToBindingCode unterstützt KeyboardEvent.code + Mouse0/1/2, Rebind-Capture-Workflow mit Escape-Abbruch, UI-Sektion in Einstellungen-Drawer mit „Ändern"-Button + Standard-Reset, alle 6 Listener konsultieren state.keybindings über _actionForBindingCode, Tab-Listener gated auf !keybindRebind damit Rebind nicht versehentlich Inventar toggelt, plus Vision-§1.2-Schließung _playArchitectureFarewellPing: abklingender Sinus-Ping beim Abbauen einer resoniert≥resonance_mild-Architektur — selber Audio-Graph wie Spawn-Singing, zeitlich gespiegelt; Stein-Block stumm als Vision-Disziplin, plus HUD dynamisch aus _formatBindingCode statt hartkodierte F/RMB/LMB-Strings, setKeybinding + resetKeybindings triggern automatisch HUD-Refresh) in V7.78, Welle 6.H Phase 1 — Kreaturen-Aufträge (drei Tasks wander/follow_player/wait als Beziehungs-Gesten zwischen Spieler und Kreatur, creature.userData.task-Datenmodell, assignCreatureTask als einziger Mutations-Pfad mit Aura-Trigger, _tickCreatureTaskDirection-Schicht in updateCreatures-Loop mit null-Fallback auf heutige Emotion-Logik bei wander, additives CanvasTexture-Aura-Sprite über der Kreatur in HSL-Hue je Task — grünlich für follow / bernstein für wait, drei DSL-Ops creature_task/creature_task_nearest/creature_task_all in NON_BROADCASTABLE_OPS, sechs Chat-Patterns folge mir/komm her/warte/erkunde/alle folgt mir/alle warten, Aura-Lifecycle via _refreshCreatureTaskAura mit Disposal in removeCreature, bewusst KEINE Save-Persistenz — Vision §1.1 Co-Schöpfer-Beziehung wird gesprochen nicht gespeichert, plus V2-Schließungen nach Schöpfer-Selbstaudit: _playCreatureTaskPing mit CREATURE_TASK_PING_FREQ je Task — follow_player=494Hz hell, wait=294Hz ruhig, wander=null stumm (Lösen der Bindung darf still sein), _journalCreatureTask schreibt relationship-Eintrag bei echtem Wechsel mit silent-Option für Spawn-Defaults, assignTaskToNearestCreature bei Leerschlag schreibt Chat-Output 'Keine Kreatur in der Nähe' + reach-Journal-Eintrag, _getCreatureTaskAuraTexture cached geteilte CanvasTexture analog 6.D Player-Aura statt pro Wechsel neu zu erzeugen, _renderTaskStatusUI füllt #status-tasks mit 'N folgen · M warten' bzw '—', describeProgram zeigt distance-Arg wenn gesetzt) in V7.79, Welle 6.H Phase 2A — Kreaturen-Hylomorphismus + Tab-UX (Kreaturen sind jetzt Multi-Mesh-Compounds aus bodyParts × Material — selbe Sprache wie Spieler-Seele 6.D und Architekturen 6.G P1.5; CREATURE_SOULS frozen mit drei Built-in-Identitäten sprite/wesen/geist; applyCreatureSoul-Mutations-Pfad baut Group + tauscht in state.creatures + state.rigidBodies, computeCreatureCompoundTags emergent aus parts via existing computeCompoundTags-Pipeline, Random-Name aus Pool als Identity-Anker, Kreaturen-Drawer UI komplett überarbeitet — Befehl-Buttons folge/komm her/warte/erkunde/alle folgt+warten als data-cmd plus Form-Dropdown vor Spawn-Buttons plus Kreatur-Liste mit Name+Form+Task+Aura-Hint, removeCreature dispoSed nun ganze Group sauber, color-lerp-Pfad in updateCreatures defensive für Groups) in V7.80, Welle 6.H Phase 2B.1 — Kreaturen sammeln + erinnern (Task `gather` mit args.material findet die nächste Architektur mit material in ihren Parts via _findNearestArchitectureWithMaterial, bewegt sich hin, entfernt sie bei haltDist=1.5m und legt sie ins Spieler-Inventar via existing addToInventory — eine Sprache; pro-Kreatur memory[]-Array mit Cap 30 + _creatureRemember-Helper trägt 'gathered'-Einträge mit material+blueprintName+timestamp; CREATURE_TASKS um 'gather' erweitert plus Aura-Hue cyan/200 + Ping-Freq G4/392Hz + describeProgram zeigt material; Chat-Pattern 'sammle <material>' für die 12 Built-in-Materialien plus generic-Pattern; creature_task-DSL-Op akzeptiert string-3rd-arg als material wenn taskName='gather'; gather-Task auto-zu-wander nach material erschöpft mit '_no_material'-memory-Eintrag; Kreatur-Liste zeigt 'sammelt <material>' als Task) in V7.82
@@ -1255,6 +1292,7 @@ class AnazhRealm {
         this._aiTendPlayer();
     }
 
+    // ===== ATLAS §02 · DSL/NEXUS — Ops · Sandbox · Welt-Regeln · Chat-Tore · LLM-Begleiter =====
     // Versucht, einen Journal-Eintrag via LLM in einen narrativen Satz zu
     // verwandeln. Bei aktivem LLM kommt eine lebendige Beobachtung; ohne
     // LLM (oder bei Fehler/Rate-Limit) fällt es auf den Pool zurück. Beide
@@ -5330,6 +5368,7 @@ class AnazhRealm {
         });
     }
 
+    // ===== ATLAS §03 · MULTI-USER-MESH — WS-Broker · WebRTC · Räume · Positions-/DSL-Sync =====
     // ### Ring 11 V1 — Multi-User Position-Sync ###
     // Sehr bewusst klein gehalten: eine Verbindung pro Browser, ein Raum
     // (per Default = aktive worldId), 30 Hz Position-Broadcast,
@@ -9731,6 +9770,7 @@ class AnazhRealm {
         return offsets;
     }
 
+    // ===== ATLAS §04 · AUDIO — Lo-Fi-Symphonie · Resonanz-Pings =====
     // W4 V3 Phase 2 — die Melodie. Eine improvisierte Phrase über dem Akkord
     // der aktuellen Stufe, auf einem 8-Schritt-Rhythmus-Raster (Achtel-Gefühl).
     // V8.90 — eine ECHTE Rhythmik: nicht jeder Schritt trägt eine Note (eine
@@ -10643,6 +10683,7 @@ class AnazhRealm {
         obs.observe(out, { childList: true });
     }
 
+    // ===== ATLAS §05 · UI-GRUNDIERUNG — Drawer · Omnibox · Help-Pops · Feed-Spiegel =====
     // Tab-System: ein Tab je Drawer. activeTab-Klasse auf dem Knopf,
     // hidden-Attribut entscheidet welcher Drawer sichtbar slidet.
     // Welle 6.X.4 V8.15 Punkt 15 — öffentliche toggleDrawer-Methode für
@@ -13198,6 +13239,7 @@ class AnazhRealm {
         }
     }
 
+    // ===== ATLAS §06 · KREATUREN — Seelen · Innenleben/Emotion · Motion · Aufträge · Jagd =====
     // ### Kreaturen ### V7.42
     removeCreature(creature) {
         if (!creature) return;
@@ -16574,6 +16616,7 @@ class AnazhRealm {
         }
     }
 
+    // ===== ATLAS §07 · CHUNK-STREAMING/PHYSIK — Voxel-Worker · Ring · BVH · Kollisions-Leben =====
     // Lazy-Singleton: spawnt den Voxel-Density-Worker (off-thread CPU, integriert
     // seit V9.90, voll engagiert V17.118 — der Mesh-Bau läuft off-main-thread, nur
     // der Spieler-Chunk sync). Der Determinismus-Test bewacht die bit-identische
@@ -18592,6 +18635,7 @@ class AnazhRealm {
         }
     }
 
+    // ===== ATLAS §08 · WELT-GENESE — Dichtefeld · Erosion · Hydrosphäre · Feuchte/Kronen =====
     // V9.47 — Hydraulische Tröpfchen-Erosion carvt dendritische Täler + füllt
     // Becken mit Sediment. MUSS hier laufen — VOR allem Surface-abhängigen
     // Worldgen (Inseln, Hydrosphäre, Genesis-Plattform, Chunk-Streaming) →
@@ -20910,6 +20954,7 @@ class AnazhRealm {
         return c[c.length - 1];
     }
 
+    // ===== ATLAS §09 · KASKADE/KERN-STATICS — Detail-Kaskade · frozen Signaturen/Konstanten =====
     // Die äußerste Kante der Kaskade in Metern (kamera-relativ): Sicht-Ring ×
     // Chunk-Span. Der Fog-/Aerial-Schleier koppelt hieran (§2-Synergie) → der
     // Dunst wandert mit dem Sicht-Ring, die ferne LOD-Naht bleibt verborgen.
@@ -22575,6 +22620,7 @@ class AnazhRealm {
         return mat;
     }
 
+    // ===== ATLAS §10 · LICHT-MATERIAL/FREQUENZBAND — Atmo-Uniforms · Substanz-Antennen · Toon-Material =====
     // V12.0-f — Toon-Material-Helper: alle Toon-Materials der Welt (Voxel-
     // Chunks, Architektur-Parts, Inseln, Avatar-Torso) sind native
     // `THREE.MeshToonNodeMaterial` (r184, lights=true). Die EINE Wahrheits-
@@ -23255,6 +23301,7 @@ class AnazhRealm {
         return mat;
     }
 
+    // ===== ATLAS §11 · VOXEL-MESHER/WASSER — Chunk-Build · Wasser-Zellen/Iso/Sheet · CA · Edits =====
     // V9.88 (Welle Perf-3.b — Distance-LOD): `lod` (0 oder 1) wählt die
     // Chunk-Auflösung — LOD 0 = volle Detail (24·24·124 Cells), LOD 1 =
     // 8× weniger Cells (12·12·62 für ferne Chunks). Doc §4 + Helper
@@ -28430,6 +28477,7 @@ class AnazhRealm {
         return restored;
     }
 
+    // ===== ATLAS §12 · PERSISTENZ/TAILLE — Snapshot · Restore · IndexedDB · Ω-Zwillinge =====
     buildStateSnapshot() {
         const knowledgeBase = this.state.knowledgeBase.slice(-200);
         return {
@@ -28840,6 +28888,7 @@ class AnazhRealm {
     // CSP-Lockerung. Verfügbar nur im Secure Context (https / localhost); die
     // Methoden degradieren anmutig, wenn er fehlt.
 
+    // ===== ATLAS §13 · IDENTITÄT/WELTEN/SOZIAL — Vibe-Pass · Bibliothek/Feed · Zeugnisse · Welt-Manifest =====
     _vibeBytesToHex(bytes) {
         let s = "";
         for (let i = 0; i < bytes.length; i++) s += bytes[i].toString(16).padStart(2, "0");
@@ -36289,6 +36338,7 @@ class AnazhRealm {
         return ops.length ? ops.slice(0, 64) : null;
     }
 
+    // ===== ATLAS §14 · PORTALE/SUB-WELTEN — Welt-Tor · Sandbox-Shim · Ko-Präsenz · Vendor =====
     // Säubert portalMeta. world muss ein same-origin relativer worlds/-Pfad
     // sein — kein "://", kein "..", kein führender Slash. Damit kann ein
     // Bauplan kein fremdes Origin ins iframe ziehen (die CSP bleibt
@@ -38105,6 +38155,7 @@ class AnazhRealm {
         return { ok: true, name: safe };
     }
 
+    // ===== ATLAS §15 · SPIELER-SEELEN/BEWEGUNG — Avatare · Movement/Sprung · Ritt · Hand =====
     // Hilfs-Helper: ein Glied (Arm/Bein) mit Pivot am Joint. Joint-Group
     // sitzt an (jx, jy, jz); das Mesh hängt von der Y-Achse nach unten,
     // sodass Rotation der Joint-Group am Schulter-/Hüft-Punkt ankert.
@@ -40336,6 +40387,7 @@ class AnazhRealm {
         return 0x66ff88;
     }
 
+    // ===== ATLAS §16 · SUBSTANZ/BAU — Materialien · Baupläne · der EINE Builder · Verbindungen =====
     // Default-Baupläne als Daten. Drei built-ins, die das ersetzen, was
     // vorher als JS-Funktionen lebte. Wer Variation will, klont diese und
     // ändert Parts.
@@ -43713,6 +43765,7 @@ class AnazhRealm {
     // GETESTET (Matrix-Bit-Gleichheit zum klassischen Group-matrixWorld),
     // ohne den Culling-Pfad umzuhängen — der Cutover folgt in perf.c.2.
 
+    // ===== ATLAS §17 · ARCHITEKTUR-HISM — Instancing · Welt-Spawns · Culling =====
     // Die Welt-Matrix eines Architektur-Eintrags (ohne die Leaf-Lokal-
     // Matrix): T(pos.x, pos.y-0.5, pos.z) × S(scale). Spiegelt exakt, was
     // `_rebuildArchitectureMesh` der klassischen Group gibt (group.position
@@ -45004,6 +45057,7 @@ class AnazhRealm {
         return dt === 0 ? e.a : e.a * Math.exp(-AnazhRealm.LIFE_FIELD.decayPerSec * dt);
     }
 
+    // ===== ATLAS §18 · LEBENS-FELD — deposit/decay-Overlay — die Schreib-Seite des Feldes =====
     // Leben deponieren: ein 3×3-Kernel um (x,z), jede Zelle decay-then-add,
     // geklemmt auf LIFE_FIELD.max (Sättigung → der Nexus zieht weiter). Die EINE
     // Schreib-API — wer Leben in die Welt trägt (Geburt heute; später Spieler-
@@ -45189,6 +45243,7 @@ class AnazhRealm {
         geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
     }
 
+    // ===== ATLAS §19 · LICHT/WASSER-REGLER — Cel-LUT · alle Render-Setter =====
     // V8.29 — Cel-Shading gradientMap für MeshToonMaterial.
     // Die gradientMap quantisiert das direkte Sonnen-Licht in Stufen.
     // celLevels 2 = harte Cel-Linie, 8 = ECHT smooth (kein sichtbares Band).
@@ -45574,6 +45629,7 @@ class AnazhRealm {
         return m;
     }
 
+    // ===== ATLAS §20 · SPAWN-ÖKOLOGIE — Affinität · Boden-Material · Klump/Streu-Verteilung =====
     // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
     // dem Welt-Feld an Position (x, z)? Dot-Product über die 4 Achsen des
     // Welt-Feldes. Resultat 0..1 (sum / 4 da MAX-aggregierte Tags ebenfalls
@@ -47285,6 +47341,7 @@ class AnazhRealm {
         this._updateBuildModeHud();
     }
 
+    // ===== ATLAS §21 · BAU-ÖKONOMIE/ERNTE — Kosten-Tore · confirmBuild · Ernte/Abbau =====
     // Bau ausführen: spawnArchitecture an aktueller Phantom-Position.
     // Modus bleibt aktiv für Mehrfach-Bau (ESC verlässt explizit).
     // === Welle 6.H Phase 2C — Material-Konsum beim Bauen (Spiegel zu harvest) ===
@@ -49036,6 +49093,7 @@ class AnazhRealm {
         }, 4000);
     }
 
+    // ===== ATLAS §22 · ICH/HOF-RÄUME — Equip-UI · Rezeptbuch · Hof-Bühne/Karten =====
     // W-C(a) (R-005) — der PREIS lesbar: die Stat-FOLGE einer Rüstung („+8.1
     // Abwehr · −4.2 Tempo") VOR dem Anlegen. computePlayerStats ist der pure
     // Rechner — equipped.armor wird transient getauscht, gerechnet, exakt
@@ -51304,6 +51362,7 @@ class AnazhRealm {
         return true;
     }
 
+    // ===== ATLAS §23 · WERKSTATT — Viewer · Gizmo · Prozesse · Mach-Akte · Readout =====
     // V9.44-e — der Werkstatt-DOM-Builder ist ein Orchestrator. Vor V9.44-e
     // war _renderWorkshopDOM eine ~644-Zeilen-Funktion mit 159 DOM-Operationen.
     // Jetzt: neun in-sich-geschlossene Sektionen als `_workshopRender<X>`-
@@ -54809,6 +54868,7 @@ class AnazhRealm {
 
     // ### 6.G3.a — Tag-Nacht-Zyklus ###
 
+    // ===== ATLAS §24 · TAG-NACHT/HIMMEL — Sonnen-Zyklus · Wetter-Sync · Fog/Hemi · Himmelskörper =====
     // V8.48 — ein-Segment Catmull-Rom-Hermite. Liefert den interpolierten
     // Skalar zwischen v1 (bei u=0) und v2 (bei u=1). Die Tangenten m1/m2
     // sind die nicht-uniformen Catmull-Rom-Tangenten aus den Nachbarn
@@ -56002,6 +56062,7 @@ class AnazhRealm {
         }
     }
 
+    // ===== ATLAS §25 · HUD/EINSTELLUNGEN — Statusbar · Slider · Hotbar · Settings-Räume =====
     // Welle 6.X.4 D2 (Audit 17.05.2026) — Drei Schieber: Master-Volume,
     // Kreatur-Pings-Volume, Render-Ring-Radius. Lädt persistierte Werte
     // aus localStorage. Master + Pings wirken live auf state.symphony +
@@ -59265,6 +59326,8 @@ class AnazhRealm {
         this.log("Wachstum aktualisiert", "DEBUG");
     }
 }
+
+// ===== ATLAS §26 · AUSSEN-KONSTANTEN — VERSION · Tag-Schlüssel · Signatur-Tabellen · frozen Welt-Daten =====
 // Welle 4 Phase 1 — Material-Tag-Achsen. Zehn Felder aus Konzept §2.2,
 // kondensiert. Alle Werte 0..1. MATERIAL_TAG_DEFAULTS startet jeden Tag
 // auf 0, damit `_defaultMaterials` nur die positiven Felder setzen muss.
@@ -59284,7 +59347,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.173.0";
+AnazhRealm.VERSION = "18.174.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
