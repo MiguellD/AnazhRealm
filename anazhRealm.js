@@ -26943,7 +26943,36 @@ class AnazhRealm {
                         const sclK = sMin + rnd() * (sMax - sMin);
                         const rotK = rnd() * Math.PI * 2;
                         if (this._terrainMacroSurfaceY(gx, gz, false) < cellMacro - 1.2) continue;
-                        buckets[si].push({ x: gx, y: surfY + sp.yOff, z: gz, rot: rotK, scale: sclK });
+                        // Λ.4 (V18.175 — Per-Achsen-Skalierung für Profi-Varianz):
+                        // statt UNIFORM `scale` bekommt jede Streu-Instanz drei
+                        // entkoppelte Achs-Faktoren — manche Halme sind kurz+breit
+                        // (gestaucht), andere hoch+schmal (gestreckt), das echte
+                        // Wiesen-Feel statt Klon-Halmen. NUR für lebende wind-Arten;
+                        // statische Felsen/Sporen behalten ihre uniformer scale
+                        // (rotations-bewusste Geometrie soll nicht verzerrt werden).
+                        // Die zusätzlichen rng()-Calls bleiben im SELBEN Stream
+                        // (Γ5-Wahrung: 3 Würfe mehr pro Item, deterministisch).
+                        let sxK = sclK;
+                        let syK = sclK;
+                        let szK = sclK;
+                        if (sp.wind && !sp.emissive) {
+                            const wide = 0.75 + rnd() * 0.5; // 0.75..1.25 Breite
+                            const tall = 0.75 + rnd() * 0.65; // 0.75..1.4 Höhe (mehr Spreizung)
+                            const lean = 0.75 + rnd() * 0.5; // 0.75..1.25 Tiefe
+                            sxK = sclK * wide;
+                            syK = sclK * tall;
+                            szK = sclK * lean;
+                        }
+                        buckets[si].push({
+                            x: gx,
+                            y: surfY + sp.yOff,
+                            z: gz,
+                            rot: rotK,
+                            scale: sclK,
+                            sx: sxK,
+                            sy: syK,
+                            sz: szK,
+                        });
                     }
                 }
             }
@@ -26984,8 +27013,16 @@ class AnazhRealm {
                 const it = items[i];
                 pos.set(it.x, it.y, it.z);
                 q.setFromAxisAngle(up, it.rot);
-                if (harvested && harvested.has(`${sp.name}:${i}`)) scl.set(0, 0, 0);
-                else scl.set(it.scale, it.scale, it.scale);
+                if (harvested && harvested.has(`${sp.name}:${i}`)) {
+                    scl.set(0, 0, 0);
+                } else if (Number.isFinite(it.sx) && Number.isFinite(it.sy) && Number.isFinite(it.sz)) {
+                    // Λ.4 (V18.175 — Per-Achsen-Skalierung): wenn das Item die
+                    // entkoppelten Achs-Faktoren trägt (lebende wind-Arten),
+                    // applizieren sie pro Mesh; sonst uniform wie vorher.
+                    scl.set(it.sx, it.sy, it.sz);
+                } else {
+                    scl.set(it.scale, it.scale, it.scale);
+                }
                 m.compose(pos, q, scl);
                 inst.setMatrixAt(i, m);
                 if (wantTint) {
@@ -59783,7 +59820,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.174.0";
+AnazhRealm.VERSION = "18.175.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

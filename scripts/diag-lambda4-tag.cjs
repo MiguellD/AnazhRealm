@@ -54,10 +54,20 @@ function startSaveServer() {
         // HUD aus + Tag (12 Uhr)
         await page.evaluate(() => {
             const st = document.createElement("style");
-            st.textContent = `#console,#logbook-overlay,#title-bar,#status-bar,#hotbar-host,#topnav,#emotion-label,#status-emotion,#chat-feed,.drawer,.hud-overlay{display:none!important}`;
+            st.textContent = `
+                #topbar, #console, #stats-hud, #hotbar, #fps, #dialogue-box, #build-mode-hud,
+                #portal-prompt, #portal-invite-banner, #emotion-vignette, #emotion-label,
+                #status-emotion, #status-bar, #chat-feed, #inventory-overlay,
+                .drawer, .hud-overlay, .topbar, [class*="drawer"] {
+                    display: none !important;
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                    pointer-events: none !important;
+                }
+            `;
             document.head.appendChild(st);
             const ar = window.anazhRealm;
-            if (typeof ar.setTimeOfDay === "function") ar.setTimeOfDay(12);
+            if (typeof ar.setTimeOfDay === "function") ar.setTimeOfDay(0.5);
             if (typeof ar.setWeather === "function") ar.setWeather("sunny");
         });
         for (let p = 0; p < 4; p++) {
