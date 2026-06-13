@@ -743,6 +743,25 @@ class AnazhRealm {
                 // Persistiert pro Welt (nicht global) — jede Welt darf ihren
                 // eigenen Beziehungs-Schalter haben.
                 gameMode: "frieden",
+                // Φ2 (V18.188) — Gast-Rechte einer verlinkten Welt. Drei Stufen,
+                // Default "frieden" (sehen/gehen/sprechen). "pfad" erlaubt
+                // bauen/ernten unter Modus-Regeln, "mitschöpfer" volle Rechte.
+                // Die Welt-Regel des Hosts; reist im world-snapshot zum Gast.
+                guestRights: "frieden",
+                // Φ2 (V18.188) — Hausrecht. Zwei Schichten:
+                //   peerIds       — Session-Bann (peerId fliegt + kommt nicht
+                //                   zurück, solange im banList; eine neue Sitzung
+                //                   bekommt eine neue peerId → tritt wieder ein).
+                //   vibePassKeys  — dauerhafter Bann (vibePass-pubKey, hex).
+                // JSON-flach (Arrays), damit Snapshot-Round-Trip verlustfrei.
+                banList: { peerIds: [], vibePassKeys: [] },
+                // Φ1 (V18.188) — die SIGNIERTE Welt-Adresse. Eingelegt in ein
+                // Portal über setPortalAddress → ein Hindurchgehen ruft die
+                // Bestätigungs-Karte. NULL bei solo/lokal (keine Adresse).
+                // Form: { worldId, roomId, broker, label, authorPubKey,
+                //         sig, signedAt }. Reist must-ignore-konform — alte
+                //         Builds ignorieren das Feld unfallfrei.
+                worldAddress: null,
             },
             // Welle 1 D — Welt-Journal. Geordnete Liste von Erinnerungen
             // (Genesis, erstes Wetter, erste Kreatur, hochfitness Programme,
@@ -7234,6 +7253,19 @@ class AnazhRealm {
         if (p2p.role !== "host") return;
         const requesterId = msg.peerId;
         if (typeof requesterId !== "string" || requesterId === p2p.peerId) return;
+        // Φ2 (V18.188) — Hausrecht-Sieb VOR dem Snapshot. Ein gebannter Peer
+        // bekommt KEINE Welt. Wir kennen seine peerId direkt; sein vibePass
+        // (falls schon gestempelt + verifiziert) hängt im p2p.peers-Entry
+        // (W13 P3: entry.vibePassId = "ed25519:<hex>", entry.vibeVerified).
+        const peerEntry = p2p.peers && p2p.peers.get ? p2p.peers.get(requesterId) : null;
+        const vibeKey =
+            peerEntry && peerEntry.vibePassId && peerEntry.vibeVerified
+                ? this._normalizePubKey(peerEntry.vibePassId)
+                : null;
+        if (this._isPeerBanned(requesterId, vibeKey)) {
+            this.log(`Welt-Snapshot verweigert — Peer ${requesterId.slice(0, 8)}… gebannt`, "WARN");
+            return;
+        }
         try {
             const snapshot = this.buildStateSnapshot();
             this._p2pSignal({ type: "world-snapshot", to: requesterId, state: snapshot });
@@ -30407,6 +30439,339 @@ class AnazhRealm {
         return JSON.stringify({ v: 1, id: String(m.id || ""), label: String(m.label || ""), dsl });
     }
 
+    // Φ1 (V18.188) — der signierbare Kern einer Welt-Adresse: nur die vier
+    // FROZEN-Felder (worldId · roomId · broker · label), deterministisch
+    // serialisiert. authorPubKey + sig + signedAt sind die SIGNATUR-Hülle
+    // (sie umschließen den Kern). Die Form spiegelt _canonicalManifest:
+    // eine v:1-Versions-Marke (additive Erweiterung wandert per minor §4
+    // in die Hülle, nicht in den Kern — sonst bräche ältere Signaturen).
+    _canonicalWorldAddress(a) {
+        if (!a || typeof a !== "object") return "";
+        return JSON.stringify({
+            v: 1,
+            worldId: String(a.worldId || ""),
+            roomId: String(a.roomId || ""),
+            broker: String(a.broker || ""),
+            label: String(a.label || ""),
+        });
+    }
+
+    // Φ1 — die signierbare Substanz aus der AKTIVEN Welt: nimmt worldMeta +
+    // die p2p-URL als broker (Fallback: der Default), bildet die kanonischen
+    // Felder. Liefert NULL, wenn die Welt keinen worldId trägt (Spielende
+    // ohne aktive Welt — soll nicht passieren).
+    _buildWorldAddressSubstance(opts) {
+        const wm = this.state.worldMeta || {};
+        if (!wm.worldId) return null;
+        const p2p = this.state.p2p || {};
+        const broker = (opts && opts.broker) || p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL || "";
+        const roomId = (opts && opts.roomId) || (p2p.roomOverride || "").trim() || String(wm.worldId);
+        const label = (opts && opts.label) || wm.slug || String(wm.worldId).slice(0, 16);
+        return {
+            worldId: String(wm.worldId),
+            roomId: String(roomId),
+            broker: String(broker),
+            label: String(label),
+        };
+    }
+
+    // Φ1 — die Welt-Adresse mit dem Vibe-Pass signieren. Spiegel von
+    // signBlueprint/signWorldManifest: SOUVERÄNE Geste über _sovereignGesture
+    // (sign_manifest — die EINE Signier-Aktion, kein neuer SOVEREIGN-Eintrag;
+    // die Liste bleibt winzig per Lehre). opts.skipConfirm für Tests.
+    // Liefert { ok, address } oder { ok:false, reason }.
+    async signWorldAddress(opts) {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
+        const subst = this._buildWorldAddressSubstance(opts || {});
+        if (!subst) return { ok: false, reason: "no_world" };
+        if (
+            !this._sovereignGesture(
+                "sign_manifest",
+                {
+                    what: `Welt-Adresse „${subst.label}" signieren`,
+                    value: `${subst.broker} → ${subst.roomId}`,
+                    whom: "jeden, der durchs Portal kommt",
+                },
+                opts
+            )
+        ) {
+            return { ok: false, reason: "cancelled" };
+        }
+        const canonical = this._canonicalWorldAddress(subst);
+        const sig = await this._vibeSign(canonical);
+        if (!sig) return { ok: false, reason: "sign_failed" };
+        const address = {
+            worldId: subst.worldId,
+            roomId: subst.roomId,
+            broker: subst.broker,
+            label: subst.label,
+            authorPubKey: vp.publicKeyHex,
+            sig,
+            signedAt: Date.now(),
+        };
+        // Die EIGENE Welt erinnert sich an ihre öffentliche Adresse — der
+        // Portal-Setter (setPortalAddress) ist der Konsument; eine Welt darf
+        // mehrere Portale tragen, die ihre Adresse weiterreichen.
+        this.state.worldMeta.worldAddress = address;
+        this.saveState();
+        return { ok: true, address };
+    }
+
+    // Φ1 — prüft den Signatur-Status einer Welt-Adresse. Liefert:
+    //   "unsigned" — kein sig/authorPubKey.
+    //   "invalid"  — Signatur deckt die Substanz NICHT (verifiziert NEGATIV).
+    //   "valid"    — Signatur deckt die Substanz + ist echt.
+    // Defensiv: kein Wurf bei Müll-Eingabe. Async (ed25519).
+    async verifyWorldAddress(addr) {
+        if (!addr || typeof addr !== "object") return "unsigned";
+        if (!addr.sig || !addr.authorPubKey) return "unsigned";
+        const canonical = this._canonicalWorldAddress(addr);
+        const ok = await this._vibeVerify(canonical, addr.sig, addr.authorPubKey);
+        return ok ? "valid" : "invalid";
+    }
+
+    // Φ1 — der EINE Eingang für eine FREMDE Welt-Adresse (an einem empfangenen
+    // Bauplan-Portal, an einer geteilten URL). Spiegel von _admitForeignArtifact:
+    // strukturelle Validierung + Signatur-Status (async-gestempelt). KEIN Auto-
+    // Join — der Aufrufer (enterPortal) zeigt die Bestätigungs-Karte. Liefert
+    // den admittierten Eintrag oder null (Müll/strukturell ungültig).
+    _admitForeignWorldAddress(rawAddr) {
+        if (!rawAddr || typeof rawAddr !== "object") return null;
+        // Strukturelle Form (alle vier Felder Strings, nicht-leer).
+        const worldId = typeof rawAddr.worldId === "string" ? rawAddr.worldId.trim() : "";
+        const roomId = typeof rawAddr.roomId === "string" ? rawAddr.roomId.trim() : "";
+        const broker = typeof rawAddr.broker === "string" ? rawAddr.broker.trim() : "";
+        const label = typeof rawAddr.label === "string" ? rawAddr.label.trim() : "";
+        if (!worldId || !roomId || !broker) return null;
+        // broker MUSS ein wss:// oder ws:// sein — gegen Pfade ausserhalb der
+        // Taille (das M3-Sieb: an der Form vor dem Inhalt).
+        if (!/^wss?:\/\//i.test(broker)) return null;
+        // worldId-Form (analog buildInvitationCode): 4..80 Zeichen, kein /
+        if (worldId.length < 4 || worldId.length > 80 || /[/\\\s]/.test(worldId)) return null;
+        if (roomId.length < 4 || roomId.length > 80 || /[/\\\s]/.test(roomId)) return null;
+        const out = {
+            worldId,
+            roomId,
+            broker,
+            label: label.slice(0, 64),
+        };
+        // Signatur-Hülle nur wenn strukturell plausibel (must-ignore: ein
+        // Hex-Wirrwarr bleibt einfach unsigniert, kein Wurf).
+        if (
+            typeof rawAddr.authorPubKey === "string" &&
+            /^[0-9a-f]{64}$/i.test(rawAddr.authorPubKey) &&
+            typeof rawAddr.sig === "string" &&
+            /^[0-9a-f]{2,256}$/i.test(rawAddr.sig)
+        ) {
+            out.authorPubKey = rawAddr.authorPubKey.toLowerCase();
+            out.sig = rawAddr.sig;
+            out.signedAt = typeof rawAddr.signedAt === "number" ? rawAddr.signedAt : 0;
+            // R4-Sieb: revozierte Herkunft fällt am Eingang.
+            if (this.state.revokedKeys && this.state.revokedKeys.has(out.authorPubKey)) {
+                return null;
+            }
+        }
+        return out;
+    }
+
+    // Φ1 — eine Welt-Adresse in ein PORTAL einlegen. Strukturell R2: KEIN
+    // DSL-Op trägt diese Form — kein Skript kann den Spieler umleiten (die
+    // Disjunktheit am Pool, nicht eine zusätzliche Wand). Setzt das Feld
+    // direkt im Bauplan (portalMeta.worldAddress); ein leeres Argument
+    // löscht es (= das alte Welt-Tor, kein Auto-Join). Validierung über
+    // _admitForeignWorldAddress — eine strukturell kaputte Adresse fällt.
+    setPortalAddress(blueprintName, address) {
+        const bp = this.state.blueprints && this.state.blueprints[blueprintName];
+        if (!bp) return { ok: false, reason: "unknown_blueprint" };
+        if (!bp.portalMeta) bp.portalMeta = {};
+        if (!address) {
+            delete bp.portalMeta.worldAddress;
+            this.saveState();
+            return { ok: true, cleared: true };
+        }
+        const admitted = this._admitForeignWorldAddress(address);
+        if (!admitted) return { ok: false, reason: "invalid_address" };
+        bp.portalMeta.worldAddress = admitted;
+        this.saveState();
+        return { ok: true, address: admitted };
+    }
+
+    // Φ1 — Bequemlichkeit: nimmt die SIGNIERTE Adresse der AKTIVEN Welt
+    // (state.worldMeta.worldAddress, gesetzt durch signWorldAddress) und
+    // legt sie in das gegebene Portal. So funktioniert das natürliche
+    // Schöpfungs-Pärchen: Host signiert SEINE Welt einmal → trägt die
+    // Adresse in beliebig viele Portale.
+    setPortalToActiveWorld(blueprintName) {
+        const addr = this.state.worldMeta && this.state.worldMeta.worldAddress;
+        if (!addr) return { ok: false, reason: "no_signed_address" };
+        return this.setPortalAddress(blueprintName, addr);
+    }
+
+    // Φ2 — Sichtbarkeits-Stufe der aktiven Welt setzen. Strukturell R2 (kein
+    // DSL-Op). Migration-tolerant: ein Legacy-"private" wird beim Lesen still
+    // zu "privat" — der Setter schreibt die kanonische Form.
+    setWorldVisibility(stufe) {
+        const canonical = this._normalizeWorldVisibility(stufe);
+        if (!canonical) return { ok: false, reason: "unknown_stage" };
+        if (!this.state.worldMeta) return { ok: false, reason: "no_world" };
+        this.state.worldMeta.visibility = canonical;
+        // Lobby-Bridge: nur "gelistet" → publiziert. Andere Stufen un-publishen
+        // einen evtl. noch publizierten Raum, damit die Wand nicht-leck ist.
+        if (canonical === "gelistet" && typeof this.publishToLobby === "function") {
+            const label = this.state.worldMeta.slug || String(this.state.worldMeta.worldId).slice(0, 16);
+            this.publishToLobby(label);
+        } else if (canonical !== "gelistet" && typeof this.unpublishLobby === "function") {
+            this.unpublishLobby();
+        }
+        this.saveState();
+        return { ok: true, visibility: canonical };
+    }
+
+    // Φ2 — Gast-Rechte der aktiven Welt setzen. Strukturell R2 (kein DSL-Op).
+    setWorldGuestRights(stufe) {
+        const canonical = this._normalizeGuestRights(stufe);
+        if (!canonical) return { ok: false, reason: "unknown_stage" };
+        if (!this.state.worldMeta) return { ok: false, reason: "no_world" };
+        this.state.worldMeta.guestRights = canonical;
+        this.saveState();
+        return { ok: true, guestRights: canonical };
+    }
+
+    // Φ2 — der Migrations-Helfer: liest jeden bisherigen Wert zur kanonischen
+    // 4-Stufen-Form. "private" (englisch, Legacy-Default) → "privat".
+    _normalizeWorldVisibility(stufe) {
+        const s = String(stufe || "")
+            .trim()
+            .toLowerCase();
+        if (s === "private") return "privat";
+        return AnazhRealm.WORLD_VISIBILITY_STAGES.includes(s) ? s : null;
+    }
+
+    _normalizeGuestRights(stufe) {
+        const s = String(stufe || "")
+            .trim()
+            .toLowerCase();
+        return AnazhRealm.WORLD_GUEST_RIGHTS_STAGES.includes(s) ? s : null;
+    }
+
+    // Φ2 — Hausrecht: Peer (Session) bannen. Strukturell R2 (kein DSL-Op).
+    // Trennscharf von vibePassKey-Bann: peerId-Bann läuft mit der Sitzung
+    // (neue Sitzung = neue peerId), vibePassKey-Bann ist dauerhaft (der
+    // Schlüssel ist die Identität). Beide Schichten zusammen = die volle
+    // Hausrecht-Reichweite. Idempotent — Doppel-Ruf ist no-op.
+    banPeer(peerId) {
+        const pid = String(peerId || "").trim();
+        if (!pid) return { ok: false, reason: "no_peer" };
+        if (!this.state.worldMeta) return { ok: false, reason: "no_world" };
+        if (!this.state.worldMeta.banList) this.state.worldMeta.banList = { peerIds: [], vibePassKeys: [] };
+        const list = this.state.worldMeta.banList.peerIds;
+        if (!list.includes(pid)) list.push(pid);
+        // Sofort kicken (wenn online): wir senden ihm einen leave-Hint und
+        // schließen unsererseits den RTC-Kanal. Der signaling-server bleibt
+        // ehrlich (er KENNT keine banList — die Wand lebt am Client-Sieb).
+        this.kickPeer(pid);
+        this.saveState();
+        return { ok: true, peerId: pid };
+    }
+
+    unbanPeer(peerId) {
+        const pid = String(peerId || "").trim();
+        if (!pid) return { ok: false, reason: "no_peer" };
+        const bl = this.state.worldMeta && this.state.worldMeta.banList;
+        if (!bl || !Array.isArray(bl.peerIds)) return { ok: true, peerId: pid, present: false };
+        const before = bl.peerIds.length;
+        bl.peerIds = bl.peerIds.filter((p) => p !== pid);
+        this.saveState();
+        return { ok: true, peerId: pid, present: bl.peerIds.length < before };
+    }
+
+    // Φ2 — vibePass-Schlüssel (Hex, 64 Zeichen) dauerhaft bannen. Hex-Form
+    // erzwungen (analog _normalizePubKey). Falls der Schlüssel JETZT als
+    // peerId angemeldet ist, kicken wir alle peerIds, deren vibe-Bindung
+    // verifiziert auf diesen Schlüssel zeigt (W13 P3: p2p.peers-Entry).
+    banVibePassKey(keyHex) {
+        const normalized = this._normalizePubKey(keyHex);
+        if (!normalized) return { ok: false, reason: "invalid_key" };
+        if (!this.state.worldMeta) return { ok: false, reason: "no_world" };
+        if (!this.state.worldMeta.banList) this.state.worldMeta.banList = { peerIds: [], vibePassKeys: [] };
+        const list = this.state.worldMeta.banList.vibePassKeys;
+        if (!list.includes(normalized)) list.push(normalized);
+        // Sofort kicken: alle verifizierten peerIds mit dieser vibePass-Bindung.
+        const peers = this.state.p2p && this.state.p2p.peers;
+        if (peers && typeof peers.forEach === "function") {
+            peers.forEach((entry, pid) => {
+                if (!entry || !entry.vibePassId || !entry.vibeVerified) return;
+                const k = this._normalizePubKey(entry.vibePassId);
+                if (k === normalized) this.kickPeer(pid);
+            });
+        }
+        this.saveState();
+        return { ok: true, key: normalized };
+    }
+
+    unbanVibePassKey(keyHex) {
+        const normalized = this._normalizePubKey(keyHex);
+        if (!normalized) return { ok: false, reason: "invalid_key" };
+        const bl = this.state.worldMeta && this.state.worldMeta.banList;
+        if (!bl || !Array.isArray(bl.vibePassKeys)) return { ok: true, key: normalized, present: false };
+        const before = bl.vibePassKeys.length;
+        bl.vibePassKeys = bl.vibePassKeys.filter((k) => k !== normalized);
+        this.saveState();
+        return { ok: true, key: normalized, present: bl.vibePassKeys.length < before };
+    }
+
+    // Φ2 — Peer aus der laufenden Sitzung werfen (kein Bann — ein Re-Connect
+    // ist möglich). Schließt den RTC-Kanal (state.p2p.rtcPeers — W7 P1-Form)
+    // UND nimmt ihn lokal aus dem Peer-Register; ein erneuter Join geht durch,
+    // wenn die peerId NICHT im banList steht (Ban + Kick sind die zwei
+    // Schichten, beide gehen durch dieses _isPeerBanned). Strukturell R2
+    // (kein DSL-Op trägt die Form — der Pool kennt sie nicht).
+    kickPeer(peerId) {
+        const pid = String(peerId || "").trim();
+        if (!pid) return { ok: false, reason: "no_peer" };
+        const p2p = this.state.p2p;
+        if (!p2p) return { ok: false, reason: "no_p2p" };
+        // RTC-Kanal schließen, falls offen (W7 P1 — rtcPeers trägt {channel, pc}).
+        const rtc = p2p.rtcPeers && p2p.rtcPeers.get ? p2p.rtcPeers.get(pid) : null;
+        if (rtc) {
+            try {
+                if (rtc.channel) rtc.channel.close();
+            } catch {
+                /* defensive */
+            }
+            try {
+                if (rtc.pc) rtc.pc.close();
+            } catch {
+                /* defensive */
+            }
+            p2p.rtcPeers.delete(pid);
+        }
+        // Lokale Mesh-Lebenszeit-Spuren entfernen (analog peer-leave-Empfang).
+        if (typeof this._p2pRemovePeer === "function") {
+            try {
+                this._p2pRemovePeer(pid);
+            } catch {
+                /* defensive */
+            }
+        }
+        return { ok: true, peerId: pid };
+    }
+
+    // Φ2 — das EINE Sieb: ist dieser Peer (peerId + ggf. vibePassKey) in
+    // unserem worldMeta.banList? Der Konsument: jeder Join-Pfad, bevor er
+    // einen Snapshot/State an einen Peer schickt; auch das P2P-Welcome.
+    _isPeerBanned(peerId, vibePassKey) {
+        const bl = this.state.worldMeta && this.state.worldMeta.banList;
+        if (!bl) return false;
+        if (peerId && Array.isArray(bl.peerIds) && bl.peerIds.includes(String(peerId))) return true;
+        if (vibePassKey) {
+            const k = this._normalizePubKey(vibePassKey);
+            if (k && Array.isArray(bl.vibePassKeys) && bl.vibePassKeys.includes(k)) return true;
+        }
+        return false;
+    }
+
     // Lädt die signierten Welten aus dem GLOBALEN localStorage-Schlüssel.
     // Defensiv: jeder Eintrag muss strukturell plausibel sein (Hex-Form),
     // sonst wird er verworfen — die echte Verifikation macht verifyWorldSignature.
@@ -32238,6 +32603,26 @@ class AnazhRealm {
             this.state.worldMeta = { ...this.state.worldMeta, ...state.worldMeta };
         } else {
             this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
+        }
+        // Φ2 (V18.188) — Migrations-Heilung: das Legacy-"private" (englisch,
+        // der pre-Φ2-Default) wird zur kanonischen 4-Stufen-Form "privat".
+        // Unbekannte Werte (Müll/Zukunft) fallen still auf "privat" (must-
+        // ignore: ein Zukunfts-Wert "kosmisch" wird nicht akzeptiert, der
+        // Default ist sicher).
+        const wm = this.state.worldMeta;
+        if (wm) {
+            const vis = this._normalizeWorldVisibility(wm.visibility);
+            wm.visibility = vis || "privat";
+            const gr = this._normalizeGuestRights(wm.guestRights);
+            wm.guestRights = gr || "frieden";
+            // banList strukturell heilen — ein Snapshot mit Müll bekommt
+            // saubere Arrays (keine Verlust-Heilung: kein Wert weg, nur Form).
+            if (!wm.banList || typeof wm.banList !== "object") {
+                wm.banList = { peerIds: [], vibePassKeys: [] };
+            } else {
+                if (!Array.isArray(wm.banList.peerIds)) wm.banList.peerIds = [];
+                if (!Array.isArray(wm.banList.vibePassKeys)) wm.banList.vibePassKeys = [];
+            }
         }
     }
 
@@ -37868,6 +38253,15 @@ class AnazhRealm {
         }
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         const portalMeta = bp && bp.portalMeta ? bp.portalMeta : null;
+        // Φ1 (V18.188) — trägt das Portal eine SIGNIERTE Welt-Adresse, ist es
+        // ein WEB-Portal: Hindurchgehen löst die Bestätigungs-Karte aus +
+        // (nach Bestätigung) den bestehenden joinWorldFromCode-Pfad. Eine
+        // ungültige Adresse fällt am Sieb — heutiger Sub-Welt-Pfad als
+        // Fallback (das Portal bleibt das alte Welt-Tor). Die Karte zeigt
+        // Status — kein Auto-Join bei "invalid" (Antikörper: lügendes Portal).
+        if (portalMeta && portalMeta.worldAddress) {
+            return this._enterPortalToAddress(entry, portalMeta.worldAddress);
+        }
         if (typeof document !== "undefined" && document.exitPointerLock) {
             try {
                 document.exitPointerLock();
@@ -37899,6 +38293,98 @@ class AnazhRealm {
         // holen — _resolvePortalWorldId liefert dann null).
         this._p2pBroadcastPortalInvite();
         return { ok: true };
+    }
+
+    // Φ1 (V18.188) — durchs Portal in eine ADRESSIERTE Welt: das WEB-Muster.
+    // (1) Adresse sieben (`_admitForeignWorldAddress`) — kaputte Form → fällt
+    //     zurück auf den Sub-Welt-Pfad (Portal bleibt das alte Welt-Tor).
+    // (2) Signatur verifizieren (async); je nach Status (valid · invalid ·
+    //     unsigned) bekommt die Bestätigungs-Karte einen anderen Ton.
+    // (3) Bestätigungs-Karte via _portalAddressConfirm (im Browser: confirm-
+    //     Dialog; im Headless/Test: skipConfirm-Pfad). Eine "invalid"-Adresse
+    //     bekommt KEINEN Auto-Join (Antikörper: lügendes Portal — der Aufrufer
+    //     muss eine bewusste Wahl treffen).
+    // (4) joinWorldFromCode mit dem Adress-Bundle als Einladungs-Code.
+    async _enterPortalToAddress(entry, rawAddress) {
+        const addr = this._admitForeignWorldAddress(rawAddress);
+        if (!addr) {
+            this.log("Portal-Adresse strukturell ungültig — fällt auf Sub-Welt-Pfad zurück", "WARN");
+            // Fallback: heutiger enterPortal-Pfad (ohne worldAddress-Pfad zu
+            // re-entrieren). Der Aufrufer hat dieses Portal schon als gültig
+            // erkannt, wir nehmen einfach den Sub-Welt-Pfad ohne Adresse.
+            const bp = this.state.blueprints && this.state.blueprints[entry.type];
+            const portalMeta = bp && bp.portalMeta ? { ...bp.portalMeta, worldAddress: null } : null;
+            this._buildPortalOverlay(portalMeta, { computeRole: "host" });
+            this.log(`Portal betreten: „${entry.type}"`, "INFO");
+            return { ok: true, fallback: true };
+        }
+        // Status der Signatur — beeinflusst die Karte, NICHT das Sieb (eine
+        // unsignierte Adresse darf gejoint werden, sie ist nur "anonym").
+        let status = "unsigned";
+        if (addr.sig && addr.authorPubKey) {
+            status = await this.verifyWorldAddress(addr);
+        }
+        // Karte zeigen — im Headless ein synchroner skipConfirm-Pfad.
+        const confirmed = this._portalAddressConfirm(addr, status, entry);
+        if (!confirmed) {
+            this.log(`Portal „${addr.label}" — Reise abgebrochen.`, "INFO");
+            return { ok: false, reason: "declined", status };
+        }
+        // Bei "invalid" KEIN Auto-Join (Antikörper-Wand) — nur über eine
+        // bewusste Override-Geste (die wir hier NICHT exponieren; der Spieler
+        // müsste das Portal anders nutzen). "unsigned" UND "valid" gehen.
+        if (status === "invalid") {
+            this.log(`Portal „${addr.label}" trägt eine UNGÜLTIGE Signatur — Reise verweigert.`, "WARN");
+            return { ok: false, reason: "invalid_signature", status };
+        }
+        // Der bestehende Join-Flow (W11.5): broker + roomId → world-snapshot.
+        const code = `anazh://${addr.broker.replace(/^wss?:\/\//i, "")}/${addr.roomId}`;
+        this.log(`Reise zur Welt „${addr.label}" (${status}) — Adresse ${code}`, "INFO");
+        const result = await this.joinWorldFromCode(code, { slugHint: addr.label });
+        if (result && result.ok) {
+            // Ein erfolgreicher Join lebt als Journal-Eintrag (analog dem
+            // Sub-Welt-Erstbesuch); die fremde Welt wird unsere lokale Welt
+            // (role:"guest"), darum: kein Portal-Overlay nötig.
+            this.journalAppendOnce(
+                `portalAddress:${addr.worldId}`,
+                "portal",
+                `Du tratst zum ersten Mal durch das Tor zur Welt „${addr.label}".`
+            );
+        }
+        return result;
+    }
+
+    // Φ1 — die Bestätigungs-Karte. Im Browser ein confirm()-Dialog (R2-konform:
+    // außerhalb jedes iframes, Klartext, frisch). Im Headless / opts.skipConfirm
+    // → still bestätigt (Tests). status ∈ {"valid", "invalid", "unsigned"}.
+    _portalAddressConfirm(addr, status, _entry) {
+        if (typeof window === "undefined" || typeof window.confirm !== "function") {
+            return true;
+        }
+        const author = addr.authorPubKey ? `${addr.authorPubKey.slice(0, 8)}…${addr.authorPubKey.slice(-4)}` : "anonym";
+        const statusLabel =
+            status === "valid"
+                ? "Signatur GÜLTIG (verifiziert)"
+                : status === "invalid"
+                  ? "Signatur UNGÜLTIG — Warnung, das Portal könnte lügen"
+                  : "unsigniert (anonyme Adresse)";
+        const lines = [
+            `Portal-Reise zur Welt „${addr.label}":`,
+            "",
+            `BROKER:  ${addr.broker}`,
+            `RAUM:    ${addr.roomId}`,
+            `AUTOR:   ${author}`,
+            `STATUS:  ${statusLabel}`,
+            "",
+            status === "invalid"
+                ? "Diese Adresse trägt eine kaputte Signatur — Reise wird verweigert."
+                : "Hindurchgehen?",
+        ];
+        if (status === "invalid") {
+            window.alert(lines.join("\n"));
+            return false;
+        }
+        return window.confirm(lines.join("\n")) === true;
     }
 
     // W12 Phase 1 — ein Portal verlassen. Räumt das Overlay; der Game-Loop
@@ -61696,7 +62182,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.187.0";
+AnazhRealm.VERSION = "18.188.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -63363,6 +63849,16 @@ AnazhRealm.SOVEREIGN_ACTIONS = Object.freeze([
     "change_identity",
     "grant_capability",
 ]);
+// Φ-Bogen (V18.188) — die Stufen-Sätze für die Wohnzimmer (Welten-Netz).
+// EINGEFROREN: jede Stufe ist ein Wort, jeder Wert exakt einer der vier/drei.
+// Migrations-Helfer (_normalizeWorldVisibility) heilt die Legacy-Form "private"
+// → "privat" still beim Lesen — der Schreib-Pfad benutzt die kanonische Form.
+AnazhRealm.WORLD_VISIBILITY_STAGES = Object.freeze(["privat", "einladung", "verlinkt", "gelistet"]);
+AnazhRealm.WORLD_GUEST_RIGHTS_STAGES = Object.freeze(["frieden", "pfad", "mitschöpfer"]);
+// Φ1 — die kanonischen Felder einer Welt-Adresse (deterministische Serialisierung
+// für Sig/Hash). Reihenfolge ist FROZEN; weitere Felder wandern in die unsignierte
+// Hülle (must-preserve), nicht in den signierten Kern.
+AnazhRealm.WORLD_ADDRESS_SIGNED_FIELDS = Object.freeze(["worldId", "roomId", "broker", "label"]);
 // W12 P3-Härtung — der Portal-Rückkanal (_portalReceiveEvent: Sub-Welt →
 // Heimat-Journal) deckelt die Ereignisse je Sekunde. Eine ungeprüfte vendorte
 // Welt (V8.70+) könnte sonst pro Frame ein Ereignis posten und das 200-

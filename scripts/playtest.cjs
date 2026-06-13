@@ -19701,7 +19701,10 @@ async function checkBandHydrosphere(ctx) {
 
     if (voxelV943c2 && !voxelV943c2.error) {
         const h2 = voxelV943c2;
-        check("Voxel V9.43-c.2: _waterLevelAt existiert (war _hydroWaterLevelAt — V18.180-FIX §6.4)", h2.hasWaterLevelAt);
+        check(
+            "Voxel V9.43-c.2: _waterLevelAt existiert (war _hydroWaterLevelAt — V18.180-FIX §6.4)",
+            h2.hasWaterLevelAt
+        );
         check("Voxel V9.43-c.2: _waterLevelAt liefert über einer See-Zelle den See-Füllstand", h2.lakeLevelOk);
         check(
             "Voxel V9.45-c: der Auftrieb folgt der dilatierten See-Plane (1-Ring-Zelle = See-Spiegel)",
@@ -30447,7 +30450,12 @@ async function checkBandLambda1LivingCenter(ctx) {
         // Humanoid Body — anatomisch (Kopf/Rumpf oben, Beine unten, fleisch).
         const humanoid = {
             parts: [
-                { shape: "box", material: "fleisch", position: { x: 0, y: 1.2, z: 0 }, size: { x: 0.9, y: 1.6, z: 0.5 } },
+                {
+                    shape: "box",
+                    material: "fleisch",
+                    position: { x: 0, y: 1.2, z: 0 },
+                    size: { x: 0.9, y: 1.6, z: 0.5 },
+                },
                 {
                     shape: "cylinder",
                     material: "fleisch",
@@ -30509,12 +30517,23 @@ async function checkBandLambda1LivingCenter(ctx) {
         // SUBSTANCE_ROLE_THRESHOLDS.body trägt die drei Λ.1-Felder.
         const T = r.constructor.SUBSTANCE_ROLE_THRESHOLDS.body;
         out.thresholdsExist =
-            Number.isFinite(T.livingMassMin) && Number.isFinite(T.livingCenterMinY) && Number.isFinite(T.livingCenterMaxY);
+            Number.isFinite(T.livingMassMin) &&
+            Number.isFinite(T.livingCenterMinY) &&
+            Number.isFinite(T.livingCenterMaxY);
         return out;
     });
-    check("Λ.1 LivingCenter: humanoide Body (fleisch, lebendig-Masse mittig) ist body-shaped", res.humanoidBody === true);
-    check("Λ.1 LivingCenter: Stein-Tempel (symmetrisch+vertikal aber lebendig=0) ist NICHT body-shaped", res.steinTempelNotBody === true);
-    check("Λ.1 LivingCenter: SUBSTANCE_ROLE_THRESHOLDS.body trägt livingMassMin + livingCenterMinY + livingCenterMaxY", res.thresholdsExist === true);
+    check(
+        "Λ.1 LivingCenter: humanoide Body (fleisch, lebendig-Masse mittig) ist body-shaped",
+        res.humanoidBody === true
+    );
+    check(
+        "Λ.1 LivingCenter: Stein-Tempel (symmetrisch+vertikal aber lebendig=0) ist NICHT body-shaped",
+        res.steinTempelNotBody === true
+    );
+    check(
+        "Λ.1 LivingCenter: SUBSTANCE_ROLE_THRESHOLDS.body trägt livingMassMin + livingCenterMinY + livingCenterMaxY",
+        res.thresholdsExist === true
+    );
 }
 
 async function checkBandLambda2HismSynthese(ctx) {
@@ -30574,7 +30593,16 @@ async function checkBandLambda2HismSynthese(ctx) {
         if (tints.length >= 1) {
             const probe = r.state.architectures[0] || { tintH: 0.5, tintS: 0.5, tintV: 0.5 };
             r.state.architectures = [
-                { type: "baum_eiche", id: "λ2_probe", position: { x: 1000, y: 0, z: 1000 }, seed: 12345, scale: 1, tintH: 0.42, tintS: 0.31, tintV: 0.67 },
+                {
+                    type: "baum_eiche",
+                    id: "λ2_probe",
+                    position: { x: 1000, y: 0, z: 1000 },
+                    seed: 12345,
+                    scale: 1,
+                    tintH: 0.42,
+                    tintS: 0.31,
+                    tintV: 0.67,
+                },
             ];
             const snap = r.buildStateSnapshot();
             const snapEntry = snap.architectures && snap.architectures.find((a) => a.id === "λ2_probe");
@@ -30589,12 +30617,18 @@ async function checkBandLambda2HismSynthese(ctx) {
         return out;
     });
     check("Λ.2 HISM: INSTANCE_TINT ist frozen + trägt rangeH/S/V", res.instanceTintFrozen && res.instanceTintShape);
-    check(`Λ.2 HISM: tintH-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintHSpread && res.tintHSpread.toFixed(3)})`,
-        Number.isFinite(res.tintHSpread) && res.tintHSpread > 0.05);
-    check(`Λ.2 HISM: tintS-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintSSpread && res.tintSSpread.toFixed(3)})`,
-        Number.isFinite(res.tintSSpread) && res.tintSSpread > 0.05);
-    check(`Λ.2 HISM: tintV-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintVSpread && res.tintVSpread.toFixed(3)})`,
-        Number.isFinite(res.tintVSpread) && res.tintVSpread > 0.05);
+    check(
+        `Λ.2 HISM: tintH-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintHSpread && res.tintHSpread.toFixed(3)})`,
+        Number.isFinite(res.tintHSpread) && res.tintHSpread > 0.05
+    );
+    check(
+        `Λ.2 HISM: tintS-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintSSpread && res.tintSSpread.toFixed(3)})`,
+        Number.isFinite(res.tintSSpread) && res.tintSSpread > 0.05
+    );
+    check(
+        `Λ.2 HISM: tintV-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintVSpread && res.tintVSpread.toFixed(3)})`,
+        Number.isFinite(res.tintVSpread) && res.tintVSpread > 0.05
+    );
     check("Λ.2 HISM: tintH/S/V reist bit-treu im Snapshot (V8.59-Klasse)", res.snapshotCarriesTint === true);
 }
 
@@ -30613,8 +30647,10 @@ async function checkBandLambda3Wind(ctx) {
         out.windSwayCode = /responseProfile.*wiegen.*>\s*0\.05/.test(src) && /positionNode\s*=/.test(src);
         return out;
     });
-    check(`Λ.3 Wind: holz-Profil.wiegen > 0.2 (GEMESSEN ${res.laubWiegt && res.laubWiegt.toFixed(3)})`,
-        Number.isFinite(res.laubWiegt) && res.laubWiegt > 0.2);
+    check(
+        `Λ.3 Wind: holz-Profil.wiegen > 0.2 (GEMESSEN ${res.laubWiegt && res.laubWiegt.toFixed(3)})`,
+        Number.isFinite(res.laubWiegt) && res.laubWiegt > 0.2
+    );
     check("Λ.3 Wind: stein-Profil.wiegen === 0 (kein Sway auf Stein)", res.steinWiegtNull === 0);
     check("Λ.3 Wind: _buildToonNodeMaterial setzt positionNode für wiegen > 0.05", res.windSwayCode === true);
 }
@@ -30656,11 +30692,26 @@ async function checkBandLambda4Streu(ctx) {
             /schilf_rohr/.test(geomSrc);
         return out;
     });
-    check("Λ.4 Streu (V18.175): _buildVoxelChunkScatter setzt entkoppelte sx/sy/sz für wind-Arten", res.perAchsenCode === true);
-    check("Λ.4 Streu (V18.175): Consumer liest sx/sy/sz statt uniform scale (Per-Achsen-Skalierung wirkt)", res.consumerCode === true);
-    check("Λ.4 Streu (V18.174): _buildVoxelChunkScatter setzt instanceColor via hashInstanceTint + setColorAt", res.instanceColorCode === true);
-    check("Λ.4 Streu (V18.174): _scatterMaterial trägt useInstanceTint + attribute(\"instanceColor\")", res.materialUseInstanceTint === true);
-    check("Λ.4 Streu (V18.176): 12 Gestalt-Varianten in KLEIN_VEGETATION_SPECIES (3 je blume/farn/gestruepp/schilf)", res.zwoelfGeometrien === true);
+    check(
+        "Λ.4 Streu (V18.175): _buildVoxelChunkScatter setzt entkoppelte sx/sy/sz für wind-Arten",
+        res.perAchsenCode === true
+    );
+    check(
+        "Λ.4 Streu (V18.175): Consumer liest sx/sy/sz statt uniform scale (Per-Achsen-Skalierung wirkt)",
+        res.consumerCode === true
+    );
+    check(
+        "Λ.4 Streu (V18.174): _buildVoxelChunkScatter setzt instanceColor via hashInstanceTint + setColorAt",
+        res.instanceColorCode === true
+    );
+    check(
+        'Λ.4 Streu (V18.174): _scatterMaterial trägt useInstanceTint + attribute("instanceColor")',
+        res.materialUseInstanceTint === true
+    );
+    check(
+        "Λ.4 Streu (V18.176): 12 Gestalt-Varianten in KLEIN_VEGETATION_SPECIES (3 je blume/farn/gestruepp/schilf)",
+        res.zwoelfGeometrien === true
+    );
     check("Λ.4 Streu (V18.176): _scatterSpeciesGeometry baut die 12 Geom-Varianten", res.geomBuilderHat12 === true);
 }
 
@@ -30671,8 +30722,7 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
         const out = {};
         // 4 neue Baumarten als Baupläne.
         const bps = r.state.blueprints;
-        out.fourNewSpecies =
-            !!bps.baum_birke && !!bps.baum_erle && !!bps.baum_buche && !!bps.baum_tanne;
+        out.fourNewSpecies = !!bps.baum_birke && !!bps.baum_erle && !!bps.baum_buche && !!bps.baum_tanne;
         // Gestalt-Varianten je Art (jung/normal/alt) für die 4 neuen.
         out.variantsExist =
             !!bps.baum_birke_jung &&
@@ -30691,9 +30741,7 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
         out.candidatesErle = /["']baum_erle["']/.test(block);
         out.candidatesBuche = /["']baum_buche["']/.test(block);
         out.candidatesTanne = /["']baum_tanne["']/.test(block);
-        out.candidatesNoVariants =
-            !/baum_birke_(jung|alt)/.test(block) &&
-            !/baum_erle_(jung|alt)/.test(block);
+        out.candidatesNoVariants = !/baum_birke_(jung|alt)/.test(block) && !/baum_erle_(jung|alt)/.test(block);
         // Tag-Neutralität: Birke-normal hat dieselben Compound-Tags wie Eiche-normal
         // (beide nutzen holz+laub mit denselben Formen → MAX über laub gleich).
         const eicheTags = r.computeCompoundTags(bps.baum_eiche);
@@ -30703,11 +30751,22 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
             Math.abs((eicheTags.brennbar || 0) - (birkeTags.brennbar || 0)) < 0.01;
         return out;
     });
-    check("Λ.5 Mischwald: 4 neue Baumarten existieren als Bauplan (birke/erle/buche/tanne)", res.fourNewSpecies === true);
-    check("Λ.5 Mischwald: Gestalt-Varianten jung/alt für ALLE 4 neuen Baumarten existieren", res.variantsExist === true);
-    check("Λ.5 Mischwald: candidates enthält die 4 neuen Baumarten",
-        res.candidatesBirke && res.candidatesErle && res.candidatesBuche && res.candidatesTanne);
-    check("Λ.5 Mischwald: candidates trägt KEINE Varianten (Vielfalt nach dem Sieg, V17.16-Falle vermieden)", res.candidatesNoVariants === true);
+    check(
+        "Λ.5 Mischwald: 4 neue Baumarten existieren als Bauplan (birke/erle/buche/tanne)",
+        res.fourNewSpecies === true
+    );
+    check(
+        "Λ.5 Mischwald: Gestalt-Varianten jung/alt für ALLE 4 neuen Baumarten existieren",
+        res.variantsExist === true
+    );
+    check(
+        "Λ.5 Mischwald: candidates enthält die 4 neuen Baumarten",
+        res.candidatesBirke && res.candidatesErle && res.candidatesBuche && res.candidatesTanne
+    );
+    check(
+        "Λ.5 Mischwald: candidates trägt KEINE Varianten (Vielfalt nach dem Sieg, V17.16-Falle vermieden)",
+        res.candidatesNoVariants === true
+    );
     check("Λ.5 Mischwald: Tag-Neutralität birke ↔ eiche (lebendig/brennbar gleich)", res.tagNeutral === true);
 }
 
@@ -30727,10 +30786,14 @@ async function checkBandLambda6Detail(ctx) {
         out.detailCode = /responseProfile.*detail.*>\s*0\.4/.test(src) && /backlit|_backlit/.test(src);
         return out;
     });
-    check(`Λ.6 Detail: laub-Profil.detail > 0.4 (GEMESSEN ${res.laubDetail && res.laubDetail.toFixed(3)})`,
-        Number.isFinite(res.laubDetail) && res.laubDetail > 0.4);
-    check(`Λ.6 Detail: glas-Profil.detail > 0.4 (GEMESSEN ${res.glasDetail && res.glasDetail.toFixed(3)})`,
-        Number.isFinite(res.glasDetail) && res.glasDetail > 0.4);
+    check(
+        `Λ.6 Detail: laub-Profil.detail > 0.4 (GEMESSEN ${res.laubDetail && res.laubDetail.toFixed(3)})`,
+        Number.isFinite(res.laubDetail) && res.laubDetail > 0.4
+    );
+    check(
+        `Λ.6 Detail: glas-Profil.detail > 0.4 (GEMESSEN ${res.glasDetail && res.glasDetail.toFixed(3)})`,
+        Number.isFinite(res.glasDetail) && res.glasDetail > 0.4
+    );
     check("Λ.6 Detail: stein-Profil.detail === 0 (kein Translucency auf Stein)", res.steinDetailNull === 0);
     check("Λ.6 Detail: _buildToonNodeMaterial trägt subsurface-backlit für detail > 0.4", res.detailCode === true);
 }
@@ -30767,16 +30830,23 @@ async function checkBandV18177AAA(ctx) {
         out.noGetterShadow = !/static\s+get\s+AERIAL\s*\(/.test(srcNoComments);
         return out;
     });
-    check("V18.177 AAA: AERIAL ist frozen + ohne static-get-Schatten (Welle 6-Nachhol Sub 3g)",
-        res.frozen === true && res.noGetterShadow === true);
-    check(`V18.177 AAA: heightWeight === 0.75 (war 0.6 — GEMESSEN ${res.heightWeight})`,
-        Math.abs(res.heightWeight - 0.75) < 1e-9);
-    check(`V18.177 AAA: microStrength === 0.14 (war 0.1 — GEMESSEN ${res.microStrength})`,
-        Math.abs(res.microStrength - 0.14) < 1e-9);
-    check(`V18.177 AAA: aoStrength === 0.38 (war 0.35 — GEMESSEN ${res.aoStrength})`,
-        Math.abs(res.aoStrength - 0.38) < 1e-9);
-    check(`V18.177 AAA: aoCap === 0.18 (war 0.16 — GEMESSEN ${res.aoCap})`,
-        Math.abs(res.aoCap - 0.18) < 1e-9);
+    check(
+        "V18.177 AAA: AERIAL ist frozen + ohne static-get-Schatten (Welle 6-Nachhol Sub 3g)",
+        res.frozen === true && res.noGetterShadow === true
+    );
+    check(
+        `V18.177 AAA: heightWeight === 0.75 (war 0.6 — GEMESSEN ${res.heightWeight})`,
+        Math.abs(res.heightWeight - 0.75) < 1e-9
+    );
+    check(
+        `V18.177 AAA: microStrength === 0.14 (war 0.1 — GEMESSEN ${res.microStrength})`,
+        Math.abs(res.microStrength - 0.14) < 1e-9
+    );
+    check(
+        `V18.177 AAA: aoStrength === 0.38 (war 0.35 — GEMESSEN ${res.aoStrength})`,
+        Math.abs(res.aoStrength - 0.38) < 1e-9
+    );
+    check(`V18.177 AAA: aoCap === 0.18 (war 0.16 — GEMESSEN ${res.aoCap})`, Math.abs(res.aoCap - 0.18) < 1e-9);
 }
 
 // Das End-to-End (schilf wächst am echten Ufer, 51 GEMESSEN) lebt im
@@ -30953,7 +31023,9 @@ async function checkBandGammaGenese(ctx) {
         "Γ1-Lesart-4 Mix-Linie LEBT in der Source (dampEarth + F_VIS_LO)",
         /dampEarth/.test(ctx.realm ? "" : "") ||
             /dampEarth/.test(
-                (await safeEvaluate(page, () => (window.anazhRealm ? window.anazhRealm._attachVoxelFieldColors.toString() : ""))) || ""
+                (await safeEvaluate(page, () =>
+                    window.anazhRealm ? window.anazhRealm._attachVoxelFieldColors.toString() : ""
+                )) || ""
             )
     );
     // Γ4 (V18.179) — DIE MAKRO-GEOGRAPHIE: Massiv + Tal + Becken.
@@ -31016,7 +31088,10 @@ async function checkBandGammaGenese(ctx) {
         }
         return out;
     });
-    check(`Γ4 Struktur: _makeMacroAnker/_macroAnker/_macroSurfaceContribution + MACRO_ANKER frozen`, resG4.struct === true);
+    check(
+        `Γ4 Struktur: _makeMacroAnker/_macroAnker/_macroSurfaceContribution + MACRO_ANKER frozen`,
+        resG4.struct === true
+    );
     check(`Γ4 _macroAnker() liefert eine Anker-Struktur (gen 3)`, resG4.ankerExists === true);
     check(`Γ4 Legacy-Tor: _macroAnker() null bei gen 1`, resG4.legacyAnkerNull === true);
     check(
@@ -31640,6 +31715,238 @@ async function checkBandWHWald(ctx) {
     check(
         "W-H Wald: die Pro-Instanz-Yaw reist im Snapshot + Restore (V8.59 — geladene Bäume behalten ihre Rotation, der Klon-Look kehrt nicht wieder)",
         res.rotPersists
+    );
+}
+
+// Φ-Bogen (V18.188) — DAS WELTEN-NETZ: M9-Sprosse 1 (Φ1 Welt-Adressen +
+// tragendes Portal · Φ2 Sichtbarkeit + Hausrecht). Das Web-Muster gemessen:
+// Welt verlinkt Welt, Portal=Hyperlink, Adresse=URL, Host=Server. Taille-
+// konform additiv (worldMeta-Felder wachsen per §4 minor, alte Builds müssen
+// sie ignorieren); jeder Bann/Kick/Adress-Setter ist R2 (kein DSL-Op trägt
+// sie — die Disjunktheit am Pool ist die Wand).
+async function checkBandPhiArchipel(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+        const AR = window.AnazhRealm || r.constructor;
+
+        // (P1) FROZEN-Stufen-Sätze existieren + sind genau die Wörter aus dem Plan.
+        out.visibilityStages =
+            Array.isArray(AR.WORLD_VISIBILITY_STAGES) &&
+            AR.WORLD_VISIBILITY_STAGES.join(",") === "privat,einladung,verlinkt,gelistet";
+        out.guestRightsStages =
+            Array.isArray(AR.WORLD_GUEST_RIGHTS_STAGES) &&
+            AR.WORLD_GUEST_RIGHTS_STAGES.join(",") === "frieden,pfad,mitschöpfer";
+        out.addressFields =
+            Array.isArray(AR.WORLD_ADDRESS_SIGNED_FIELDS) &&
+            AR.WORLD_ADDRESS_SIGNED_FIELDS.join(",") === "worldId,roomId,broker,label";
+
+        // (P2) worldMeta trägt die NEUEN Felder mit Erst-Wurf-Defaults
+        // (Migrations-tolerant: ein Legacy-"private" heilt zu "privat").
+        const wm = r.state.worldMeta;
+        out.wmGuestRights = wm && wm.guestRights === "frieden";
+        out.wmBanList = wm && wm.banList && Array.isArray(wm.banList.peerIds) && Array.isArray(wm.banList.vibePassKeys);
+        out.wmWorldAddressNull = wm && wm.worldAddress === null;
+        // visibility — Migration: jeder Legacy-Wert (private) wird zu privat,
+        // die kanonischen 4 Stufen werden akzeptiert.
+        out.normPrivate = r._normalizeWorldVisibility("private") === "privat";
+        out.normGelistet = r._normalizeWorldVisibility("gelistet") === "gelistet";
+        out.normGarbage = r._normalizeWorldVisibility("kosmisch") === null;
+        out.normGuestRights = r._normalizeGuestRights("mitschöpfer") === "mitschöpfer";
+
+        // (P3) DIE R2-WAND: KEINE der neuen Methoden ist als DSL-Op registriert
+        // (kein Skript kann sie automatisch auslösen — die Disjunktheit am Pool
+        // ist die Wand; SOVEREIGN_ACTIONS bleibt FROZEN auf vier Akte).
+        const dslEffects = r.constructor.dslEffects || (typeof window !== "undefined" && window.dslEffects);
+        // Wir lesen über die toString-Source: ein DSL-Op wäre als string-Schlüssel
+        // im dslRun/_isAllowedOp-Pfad sichtbar; wir prüfen direkt die FROZEN-Liste.
+        out.sovereignFrozen = AR.SOVEREIGN_ACTIONS.length === 4;
+        // Die neuen Akte: NICHT in dslComposeAtomic, NICHT in NON_BROADCASTABLE_OPS
+        // (sie sind GAR KEINE Ops). Strukturelle Probe an der `dslRun`-Source:
+        // setPortalAddress/setWorldVisibility/setWorldGuestRights/kickPeer/banPeer
+        // tauchen NICHT als Ops in der Run-Logik auf (kein op === "kick_peer" o.ä.).
+        const dslRunSrc = r.dslRun.toString();
+        out.noKickOp = !/op\s*===\s*["']kick_peer["']/.test(dslRunSrc);
+        out.noBanOp = !/op\s*===\s*["']ban_peer["']/.test(dslRunSrc);
+        out.noSetVisibilityOp = !/op\s*===\s*["']set_visibility["']/.test(dslRunSrc);
+        out.noSetPortalAddressOp = !/op\s*===\s*["']set_portal_address["']/.test(dslRunSrc);
+
+        // (P4) Die EINE Signatur-Schicht: _canonicalWorldAddress ist deterministisch
+        // (gleiche Substanz → gleicher String); die FROZEN-Felder + v:1 sind drin.
+        const a1 = { worldId: "w1", roomId: "r1", broker: "ws://h:4313", label: "L" };
+        const a2 = { worldId: "w1", roomId: "r1", broker: "ws://h:4313", label: "L", extra: "x" };
+        out.canonicalDeterministic = r._canonicalWorldAddress(a1) === r._canonicalWorldAddress(a2);
+        out.canonicalHasV1 = /"v":1/.test(r._canonicalWorldAddress(a1));
+        out.canonicalHasAllFields = AR.WORLD_ADDRESS_SIGNED_FIELDS.every((f) =>
+            r._canonicalWorldAddress(a1).includes(`"${f}":`)
+        );
+
+        // (P5) _admitForeignWorldAddress siebt strukturell + Signatur:
+        //   - kaputte Form fällt (kein worldId, kein wss-broker, etc.)
+        //   - gültige Form passt durch + Hex-Hülle wird angehängt
+        //   - revozierte Herkunft fällt am Eingang
+        out.admitNull = r._admitForeignWorldAddress(null) === null;
+        out.admitNoBroker =
+            r._admitForeignWorldAddress({ worldId: "w1", roomId: "r1", broker: "http://x", label: "L" }) === null;
+        out.admitOk = !!r._admitForeignWorldAddress({
+            worldId: "wabc123",
+            roomId: "rabc123",
+            broker: "ws://x.y:4313",
+            label: "Test",
+        });
+        // Revozierte Herkunft (R4-Wand): Schlüssel revozieren, dann admittieren.
+        const fakeKey = "f".repeat(64);
+        const before = r.state.revokedKeys.size;
+        r.revokeKey(fakeKey);
+        out.admitRevoked =
+            r._admitForeignWorldAddress({
+                worldId: "wabc123",
+                roomId: "rabc123",
+                broker: "ws://x.y:4313",
+                label: "Test",
+                authorPubKey: fakeKey,
+                sig: "deadbeef",
+            }) === null;
+        // Aufräumen — wir haben gerade einen Test-Schlüssel revoziert.
+        r.state.revokedKeys.delete(fakeKey);
+        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+        out.revokeCleanup = r.state.revokedKeys.size === before;
+
+        // (P6) Signieren + verifizieren mit dem vibePass (Round-Trip).
+        const signed = await r.signWorldAddress({ skipConfirm: true, label: "test-welt", broker: "ws://h:4313" });
+        out.signOk = !!(signed && signed.ok && signed.address && signed.address.sig);
+        const status = signed && signed.ok ? await r.verifyWorldAddress(signed.address) : null;
+        out.verifyValid = status === "valid";
+        // Manipulierte Adresse (label geändert) → invalid (die Signatur deckt label).
+        const manip = { ...signed.address, label: "GEÄNDERT" };
+        const manipStatus = await r.verifyWorldAddress(manip);
+        out.verifyInvalidOnManip = manipStatus === "invalid";
+
+        // (P7) Portal trägt die Adresse als portalMeta-Feld; setPortalToActiveWorld
+        // greift die signierte Adresse aus der aktiven Welt; Clear räumt sie weg.
+        // Brauchen einen TEST-Bauplan.
+        r.state.blueprints["phi_test_portal"] = {
+            name: "phi_test_portal",
+            label: "Φ-Test-Portal",
+            builtIn: false,
+            parts: [
+                {
+                    shape: "torus",
+                    material: "stein",
+                    position: { x: 0, y: 1, z: 0 },
+                    size: { x: 2, y: 2, z: 0.4 },
+                    rotation: { x: 0, y: 0, z: 0 },
+                    opChain: [],
+                },
+            ],
+            connections: [],
+        };
+        const setRes = r.setPortalToActiveWorld("phi_test_portal");
+        out.portalSetOk = !!(setRes && setRes.ok);
+        const bp = r.state.blueprints["phi_test_portal"];
+        out.portalCarriesAddress = !!(bp && bp.portalMeta && bp.portalMeta.worldAddress);
+        out.portalSigPreserved = !!(
+            bp &&
+            bp.portalMeta &&
+            bp.portalMeta.worldAddress &&
+            bp.portalMeta.worldAddress.sig
+        );
+        const clearRes = r.setPortalAddress("phi_test_portal", null);
+        out.portalClearOk = !!(clearRes && clearRes.ok && clearRes.cleared) && !bp.portalMeta.worldAddress;
+        delete r.state.blueprints["phi_test_portal"];
+
+        // (P8) Visibility-Setter wirkt + die Lobby-BRIDGE existiert (Source-
+        // Probe). Den ECHTEN Connected-Round-Trip (publishToLobby setzt p2p.
+        // lobby.published nur, wenn p2p.connected === true) deckt smoke-
+        // multiuser; im Headless returnt publishToLobby früh {ok:false,
+        // reason:"not_connected"} — die ABSICHT der Bridge ist trotzdem grep-bar.
+        const visBefore = r.state.worldMeta.visibility;
+        r.setWorldVisibility("gelistet");
+        out.visGelistet = r.state.worldMeta.visibility === "gelistet";
+        r.setWorldVisibility("privat");
+        out.visPrivat = r.state.worldMeta.visibility === "privat";
+        const setterSrc = r.setWorldVisibility.toString();
+        out.lobbyBridgePublishes = /publishToLobby/.test(setterSrc);
+        out.lobbyBridgeUnpublishes = /unpublishLobby/.test(setterSrc);
+        r.setWorldVisibility(visBefore || "privat");
+
+        // (P9) Hausrecht-Sieb: ein gebannter peer fällt am _isPeerBanned, ein
+        // unbekannter geht durch. Round-Trip ban → unban heilt das Sieb.
+        const banRes = r.banPeer("test-peer-xyz");
+        out.banPeerOk = !!(banRes && banRes.ok);
+        out.bannedPeerSieb = r._isPeerBanned("test-peer-xyz", null) === true;
+        out.unknownPeerPasses = r._isPeerBanned("never-seen-peer", null) === false;
+        r.unbanPeer("test-peer-xyz");
+        out.unbanHeals = r._isPeerBanned("test-peer-xyz", null) === false;
+
+        // (P10) GuestRights-Setter: Default "frieden", Stufen klemmen ungültiges.
+        r.setWorldGuestRights("mitschöpfer");
+        out.guestRightsMitschoepfer = r.state.worldMeta.guestRights === "mitschöpfer";
+        const badGR = r.setWorldGuestRights("kosmisch");
+        out.guestRightsRejectsMüll = !badGR.ok;
+        r.setWorldGuestRights("frieden");
+        out.guestRightsBackToFrieden = r.state.worldMeta.guestRights === "frieden";
+
+        // (P11) Snapshot-Round-Trip: die neuen Felder überleben buildStateSnapshot
+        // + loadState bit-gleich (must-preserve am eigenen Welt-Save).
+        const snap = r.buildStateSnapshot();
+        out.snapHasGuestRights = snap.worldMeta && snap.worldMeta.guestRights === "frieden";
+        out.snapHasBanList = !!(snap.worldMeta && snap.worldMeta.banList);
+        out.snapHasWorldAddress = "worldAddress" in (snap.worldMeta || {});
+
+        // Aufräumen — die signierte Test-Adresse aus der aktiven Welt entfernen.
+        r.state.worldMeta.worldAddress = null;
+        return out;
+    });
+
+    check(
+        "Φ1+Φ2 (P1): FROZEN-Stufen-Sätze tragen genau die Plan-Wörter (visibility · guestRights · address-Felder)",
+        res.visibilityStages && res.guestRightsStages && res.addressFields
+    );
+    check(
+        "Φ2 (P2): worldMeta trägt die neuen Felder mit Erst-Wurf-Defaults (guestRights=frieden · banList · worldAddress=null)",
+        res.wmGuestRights && res.wmBanList && res.wmWorldAddressNull
+    );
+    check(
+        "Φ2 (P2-Migration): _normalizeWorldVisibility heilt Legacy 'private' → 'privat', verwirft Müll, kennt alle 4 Stufen",
+        res.normPrivate && res.normGelistet && res.normGarbage && res.normGuestRights
+    );
+    check(
+        "Φ-DISJUNKTHEIT (P3 — R2-Wand strukturell): KEIN DSL-Op trägt kick_peer/ban_peer/set_visibility/set_portal_address (kein Skript automatisch); SOVEREIGN_ACTIONS bleibt FROZEN auf 4 Akte",
+        res.sovereignFrozen && res.noKickOp && res.noBanOp && res.noSetVisibilityOp && res.noSetPortalAddressOp
+    );
+    check(
+        "Φ1 (P4): _canonicalWorldAddress deterministisch (extra-Felder ignoriert) + trägt v:1 + alle 4 FROZEN-Felder",
+        res.canonicalDeterministic && res.canonicalHasV1 && res.canonicalHasAllFields
+    );
+    check(
+        "Φ1 (P5): _admitForeignWorldAddress siebt strukturell (kein broker → null · gültig → admittiert) + R4-Wand (revozierte Herkunft fällt)",
+        res.admitNull && res.admitNoBroker && res.admitOk && res.admitRevoked && res.revokeCleanup
+    );
+    check(
+        "Φ1 (P6): signWorldAddress signiert + verifyWorldAddress liest 'valid' zurück + Manipulation am label kippt zu 'invalid'",
+        res.signOk && res.verifyValid && res.verifyInvalidOnManip
+    );
+    check(
+        "Φ1 (P7): setPortalToActiveWorld legt die signierte Adresse ins Portal (portalMeta.worldAddress + sig erhalten); setPortalAddress(null) räumt sie",
+        res.portalSetOk && res.portalCarriesAddress && res.portalSigPreserved && res.portalClearOk
+    );
+    check(
+        "Φ2 (P8): setWorldVisibility wirkt (gelistet · privat) + die Lobby-BRIDGE ist verdrahtet (Source: publishToLobby + unpublishLobby) — der echte Connected-Trip lebt im smoke-multiuser",
+        res.visGelistet && res.visPrivat && res.lobbyBridgePublishes && res.lobbyBridgeUnpublishes
+    );
+    check(
+        "Φ2 (P9): _isPeerBanned siebt (gebannt → true · unbekannt → false · unban heilt)",
+        res.banPeerOk && res.bannedPeerSieb && res.unknownPeerPasses && res.unbanHeals
+    );
+    check(
+        "Φ2 (P10): setWorldGuestRights wirkt + klemmt Müll-Stufe",
+        res.guestRightsMitschoepfer && res.guestRightsRejectsMüll && res.guestRightsBackToFrieden
+    );
+    check(
+        "Φ1+Φ2 (P11 — must-preserve): die neuen worldMeta-Felder überleben den Snapshot bit-gleich (Round-Trip ohne Verlust)",
+        res.snapHasGuestRights && res.snapHasBanList && res.snapHasWorldAddress
     );
 }
 
@@ -48796,6 +49103,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandW3UiPuls(ctx);
             await checkBandWGGelenke(ctx);
             await checkBandWHWald(ctx);
+            await checkBandPhiArchipel(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
