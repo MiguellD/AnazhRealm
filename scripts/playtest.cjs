@@ -30724,6 +30724,47 @@ async function checkBandGammaGenese(ctx) {
         `Γ4 Abfluss-Invariante: Becken-Spill zeigt zum Tal (Δ=${resG4.spillAngleDeg && resG4.spillAngleDeg.toFixed ? resG4.spillAngleDeg.toFixed(1) : resG4.spillAngleDeg}°)`,
         Number.isFinite(resG4.spillAngleDeg) && resG4.spillAngleDeg < 60
     );
+    // Γ4½ (V18.181) — SLOPE + ROCK-EXPOSURE als gespeicherte Felder.
+    const resG4h = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.struct = typeof r._slopeAt === "function" && typeof r._rockExposureAt === "function";
+        const anker = r._macroAnker();
+        if (anker) {
+            const mC = anker.massivC;
+            const R = anker.massivR;
+            const ga = Math.PI * (3 - Math.sqrt(5));
+            let sRand = 0;
+            let sFern = 0;
+            let exRand = 0;
+            let exFern = 0;
+            for (let i = 0; i < 12; i++) {
+                const a = i * ga;
+                const xr = mC.x + Math.cos(a) * R * 0.85;
+                const zr = mC.z + Math.sin(a) * R * 0.85;
+                const xf = mC.x + Math.cos(a) * (R * 2.5 + 200);
+                const zf = mC.z + Math.sin(a) * (R * 2.5 + 200);
+                sRand += r._slopeAt(xr, zr);
+                sFern += r._slopeAt(xf, zf);
+                exRand += r._rockExposureAt(xr, zr);
+                exFern += r._rockExposureAt(xf, zf);
+            }
+            out.slopeRand = sRand / 12;
+            out.slopeFern = sFern / 12;
+            out.exposureRand = exRand / 12;
+            out.exposureFern = exFern / 12;
+        }
+        return out;
+    });
+    check(`Γ4½ Struktur: _slopeAt + _rockExposureAt leben`, resG4h.struct === true);
+    check(
+        `Γ4½ Slope am Massiv-Rand > Slope fern (${resG4h.slopeRand && resG4h.slopeRand.toFixed ? resG4h.slopeRand.toFixed(2) : resG4h.slopeRand} > ${resG4h.slopeFern && resG4h.slopeFern.toFixed ? resG4h.slopeFern.toFixed(2) : resG4h.slopeFern})`,
+        Number.isFinite(resG4h.slopeRand) && resG4h.slopeRand > resG4h.slopeFern
+    );
+    check(
+        `Γ4½ Rock-Exposure am Massiv > fern (Δ ≥ 0.1) ${resG4h.exposureRand && resG4h.exposureRand.toFixed ? resG4h.exposureRand.toFixed(2) : resG4h.exposureRand} vs ${resG4h.exposureFern && resG4h.exposureFern.toFixed ? resG4h.exposureFern.toFixed(2) : resG4h.exposureFern}`,
+        Number.isFinite(resG4h.exposureRand) && resG4h.exposureRand > resG4h.exposureFern + 0.1
+    );
     check(
         "Γ2 KRONEN differenzieren: unter wächst im Wald-Klumpen, lichtung in der Lücke, rand meidet beide Pole, ohne kronen-Feld neutral 1",
         res.kron &&

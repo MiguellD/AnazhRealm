@@ -266,6 +266,58 @@ function startSaveServer() {
             check(c.dHmassiv > 30, "A/B: Welle HEBT Massiv-Zentrum um > 30 m", `${c.dHmassiv.toFixed(1)} m`);
             check(c.dHbecken < -5, "A/B: Welle SENKT Becken-Zentrum um > 5 m", `${c.dHbecken.toFixed(1)} m`);
         }
+        // ---- E — Γ4½ SLOPE + ROCK-EXPOSURE als Felder --------------------
+        console.log("\nE — Γ4½ SLOPE-FELD (Vertiefung §3)");
+        const e = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const anker = r._macroAnker();
+            if (!anker) return { error: "kein Anker" };
+            // Probe-Punkte: Massiv-Rand (steil) vs Massiv-Zentrum-FERN (flach)
+            const mC = anker.massivC;
+            const R = anker.massivR;
+            // 8 Punkte am Massiv-Rand (mittlerer Hang), 8 Punkte 2×R+200 weg (flach)
+            const samp = (n, dist) => {
+                const ga = Math.PI * (3 - Math.sqrt(5));
+                const out = [];
+                for (let i = 0; i < n; i++) {
+                    const a = i * ga;
+                    const x = mC.x + Math.cos(a) * dist;
+                    const z = mC.z + Math.sin(a) * dist;
+                    const s = r._slopeAt(x, z);
+                    const ex = r._rockExposureAt(x, z);
+                    if (Number.isFinite(s)) out.push({ s, ex });
+                }
+                return out;
+            };
+            const rand = samp(12, R * 0.85);
+            const fern = samp(12, R * 2.5 + 200);
+            const mean = (arr, key) => (arr.length ? arr.reduce((a, b) => a + b[key], 0) / arr.length : 0);
+            return {
+                struct: typeof r._slopeAt === "function" && typeof r._rockExposureAt === "function",
+                slopeRand: mean(rand, "s"),
+                slopeFern: mean(fern, "s"),
+                exposureRand: mean(rand, "ex"),
+                exposureFern: mean(fern, "ex"),
+            };
+        });
+        if (e.error) {
+            check(false, e.error);
+        } else {
+            console.log(
+                `    Slope: Rand ${e.slopeRand.toFixed(3)} m/m vs Fern ${e.slopeFern.toFixed(3)} m/m (Rand soll deutlich steiler)`
+            );
+            console.log(
+                `    Exposure: Rand ${e.exposureRand.toFixed(3)} vs Fern ${e.exposureFern.toFixed(3)} (Rand soll höher — Massiv-Bias 0.18)`
+            );
+            check(e.struct, "_slopeAt + _rockExposureAt leben");
+            check(e.slopeRand > e.slopeFern, "Slope am Massiv-Rand > Slope fern", `${e.slopeRand.toFixed(3)} > ${e.slopeFern.toFixed(3)}`);
+            check(
+                e.exposureRand > e.exposureFern + 0.1,
+                "Rock-Exposure am Massiv > Exposure fern",
+                `${e.exposureRand.toFixed(3)} > ${e.exposureFern.toFixed(3)} (Δ ≥ 0.1)`
+            );
+        }
+
         // ---- D — BOOKMARK-SHOTS: Massiv-Vista + Tal/Becken-Vista ----------
         console.log("\nD — BOOKMARK-SHOTS (Schein-Beweis im Browser)");
         try {
