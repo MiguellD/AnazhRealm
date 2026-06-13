@@ -209,7 +209,7 @@ das erste Alt-Build-Artefakt) · VR (startet bei null, WebXR) · ~~IndexedDB-Per
   das ist die offene Vereinheitlichung) · DSL/Weltregeln (`dslRun`-Sandbox · `_tickWorldRules`).
 - **Schöpfung:** Crafting-Resonanz (`_blueprintProductVector` → Rolle/Domäne/Op/Stat) · Werkstatt
   (Mach-Akte über `_makeCostGate` + `fertigeBlueprint`) · Hylomorphismus (`FORM_TAG_ACTIVATION`).
-- **Render:** Toon/Cel (`_buildToonNodeMaterial`) · Aerial-Atmosphäre (`_applyAerialOutput`, eye-relativ) ·
+- **Render:** Toon/Cel (`_buildToonNodeMaterial`) · das FREQUENZBAND (`_applySubstanceResponse` — EIN Band-Empfänger, Antennen-Profile aus der Substanz; eye-relative Aerial) ·
   Schatten (Light-Space-Snap, EINE Map) · LOD-Kaskade (`DETAIL_CASCADE`, `_detailBand`) · Vegetation
   (Gras-HISM + Scatter).
 - **Welt/Sozial:** Portal/Sub-Welten (W12–17) · Vibe-Pass (ed25519) · Bibliothek/Feed (`feedRatings`

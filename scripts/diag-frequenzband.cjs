@@ -13,12 +13,30 @@ const fs = require("fs");
 const puppeteer = require("puppeteer");
 const SERVER_JS = path.resolve("save-server.js");
 const ART = path.resolve("artifacts");
+// V18.174 (Diag-Härtung, drei Wände gegen die Remote-Container-Reibung):
+// (1) EIGENER PORT (DIAG_PORT, Default 4317) — der Diag serialisiert nicht
+//     mehr hart mit dem Playtest auf 4312 (Client fällt graceful auf
+//     localStorage-only, _isLocalhostSaveServer).
+// (2) ERGEBNIS ALS ARTEFAKT: die Karte wird nach JEDER Zelle inkrementell
+//     nach artifacts/freqband-karte.json geschrieben — ein still gekillter
+//     Prozess (Task-Reaping/Block-Buffer) hinterlässt MESSDATEN, nie nichts.
+// (3) WARM-WELT-CACHE (artifacts/diag-warmwelt.json): der erste Lauf dumpt
+//     den localStorage NACH dem Settle und VOR dem Szene-Bau; Folge-Läufe
+//     injizieren ihn → dieselbe Welt/Seed (A/B-Läufe werden quer-vergleichbar,
+//     nicht nur intra-Lauf) + kein Genesis-Anteil im Warmup.
+//     FREQBAND_FRESH=1 erzwingt eine frische Welt.
+const DIAG_PORT = Number(process.env.DIAG_PORT) || 4317;
+const KARTE_JSON = path.join(ART, "freqband-karte.json");
+const WARMWELT_JSON = path.join(ART, "diag-warmwelt.json");
 // Pixel-Messung OHNE pngjs: die Shots liegen in artifacts/ (Web-Root des
 // save-servers) — der Browser lädt sie als <img> + misst via Canvas-2D
 // (das diag-nightfloor-ab-Muster).
 function startSaveServer() {
     return new Promise((resolve, reject) => {
-        const proc = spawn("node", [SERVER_JS], { stdio: ["ignore", "pipe", "pipe"] });
+        const proc = spawn("node", [SERVER_JS], {
+            stdio: ["ignore", "pipe", "pipe"],
+            env: { ...process.env, PORT: String(DIAG_PORT) },
+        });
         let ready = false;
         const to = setTimeout(() => !ready && reject(new Error("server timeout")), 5000);
         proc.stdout.on("data", (c) => {
@@ -49,7 +67,30 @@ function startSaveServer() {
     await page.setViewport({ width: 800, height: 450 });
     page.on("pageerror", (e) => console.error("PAGE-ERROR:", e.message.split("\n")[0]));
     try {
-        await page.goto("http://127.0.0.1:4312/index.html", { waitUntil: "domcontentloaded", timeout: 30000 });
+        // Warm-Welt injizieren (falls gecacht + nicht FRESH erzwungen).
+        let warmGeladen = false;
+        if (!process.env.FREQBAND_FRESH && fs.existsSync(WARMWELT_JSON)) {
+            try {
+                const dump = JSON.parse(fs.readFileSync(WARMWELT_JSON, "utf8"));
+                if (dump && dump.keys && typeof dump.keys === "object") {
+                    await page.evaluateOnNewDocument((kv) => {
+                        try {
+                            for (const k of Object.keys(kv)) localStorage.setItem(k, kv[k]);
+                        } catch {
+                            /* Quota → frisch booten */
+                        }
+                    }, dump.keys);
+                    warmGeladen = true;
+                    console.log(`WARM-WELT geladen (${Object.keys(dump.keys).length} Keys, ${dump.at || "?"})`);
+                }
+            } catch {
+                /* kaputter Cache → frisch */
+            }
+        }
+        await page.goto(`http://127.0.0.1:${DIAG_PORT}/index.html`, {
+            waitUntil: "domcontentloaded",
+            timeout: 30000,
+        });
         // Settled warm (Render gestubbt fürs Tempo, dann restauriert).
         await page.evaluate(async () => {
             let stubbed = false;
@@ -81,6 +122,26 @@ function startSaveServer() {
                 await new Promise((res) => setTimeout(res, 5));
             }
         });
+        // Warm-Welt dumpen — NACH dem Settle, VOR dem Szene-Bau (so trägt der
+        // Cache nie die Mess-Probes; Folge-Läufe spawnen ihre Szene frisch in
+        // DIESELBE Welt). Nur beim ersten (frischen) Lauf.
+        if (!warmGeladen) {
+            try {
+                const keys = await page.evaluate(() => {
+                    const o = {};
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        o[k] = localStorage.getItem(k);
+                    }
+                    return o;
+                });
+                const blob = JSON.stringify({ at: new Date().toISOString(), keys });
+                if (blob.length < 16 * 1024 * 1024) fs.writeFileSync(WARMWELT_JSON, blob);
+                console.log(`WARM-WELT gedumpt (${Object.keys(keys).length} Keys → diag-warmwelt.json)`);
+            } catch {
+                /* Dump ist Komfort, nie ein Lauf-Abbruch */
+            }
+        }
         // Die SZENE: Bau + Baum + Kreatur in definierte Punkte vor die Kamera.
         const scene = await page.evaluate(() => {
             const r = window.anazhRealm;
@@ -138,7 +199,10 @@ function startSaveServer() {
             ["abend", 0.85],
             ["nacht", 0.0],
         ];
-        const FLOORS = [0, 0.06, 0.3];
+        // V18.173 — Floor-Override fürs schnelle Δ (die Divergenz braucht nur
+        // f0/f0.3; der Default misst zusätzlich die 0.06-Standard-Zeile):
+        //   FREQBAND_FLOORS="0,0.3" node scripts/diag-frequenzband.cjs
+        const FLOORS = (process.env.FREQBAND_FLOORS || "0,0.06,0.3").split(",").map(Number).filter(Number.isFinite);
         const karte = {};
         for (const [zName, t] of ZEITEN) {
             for (const f of FLOORS) {
@@ -148,6 +212,13 @@ function startSaveServer() {
                         const r = window.anazhRealm;
                         if (window.__origRender) r.state.renderer.render = window.__origRender;
                         r.setTimeOfDay(tv);
+                        // V18.174 — das WETTER ist GEPINNT (sunny, Transition genullt):
+                        // der 120-s-Auto-Flip + die 45-s-Fade-Transition waren die
+                        // größte Rausch-Quelle der Karte (±10 dokumentiert; GEMESSEN
+                        // bis ~24 am Nacht-Terrain zwischen Läufen) — ein Messgerät
+                        // pinnt seine Störgrößen.
+                        r.state.weather = "sunny";
+                        r.state.weatherTransition = null;
                         const au = r._ensureAtmoUniforms();
                         if (au && au.terrainNightFloor) au.terrainNightFloor.value = fv;
                         // Das eingefrorene Auge JEDES Mal neu (der Loop-Follow zieht sonst weg).
@@ -246,6 +317,16 @@ function startSaveServer() {
                     pts
                 );
                 karte[`${zName}|f${f}`] = mittel;
+                // INKREMENTELLES Artefakt: nach jeder Zelle ist der bisherige
+                // Stand auf Platte — ein gekillter Lauf hinterlässt Messdaten.
+                try {
+                    fs.writeFileSync(
+                        KARTE_JSON,
+                        JSON.stringify({ at: new Date().toISOString(), floors: FLOORS, karte }, null, 1)
+                    );
+                } catch {
+                    /* Artefakt ist Komfort */
+                }
             }
         }
         // DIE DIVERGENZ-KARTE: pro Zeit der Floor-HUB (f0.3 − f0) je Ebene —
