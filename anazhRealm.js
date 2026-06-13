@@ -41120,6 +41120,514 @@ class AnazhRealm {
                 size: { x: 1.3, y: 1.3, z: 1.3 },
             },
         ];
+        // === BIRKE — hell, schmal, hoch (Licht-Baum, Lichtungs-Rand) ===
+        // jung: nur 1 Stamm-Segment + 2 kleine Kronen-Kugeln
+        const baumBirkeJungParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xede0c8,
+                position: { x: 0, y: 1.2, z: 0 },
+                size: { x: 0.32, y: 2.4, z: 0.32 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x9bbf4d,
+                position: { x: 0, y: 3.0, z: 0 },
+                size: { x: 1.3, y: 1.2, z: 1.3 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xb0d063,
+                position: { x: 0.2, y: 3.5, z: 0.1 },
+                size: { x: 0.9, y: 0.85, z: 0.9 },
+            },
+        ];
+        // normal: 2 Stamm-Segmente + 3 Kronen-Kugeln (die V18.173-Form)
+        const baumBirkeParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xede0c8,
+                position: { x: 0, y: 1.8, z: 0 },
+                size: { x: 0.55, y: 3.6, z: 0.55 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xede0c8,
+                position: { x: 0, y: 4.6, z: 0 },
+                size: { x: 0.4, y: 2.6, z: 0.4 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x8fb343,
+                position: { x: 0, y: 5.8, z: 0 },
+                size: { x: 2.2, y: 2.0, z: 2.2 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xa3c454,
+                position: { x: 0.3, y: 6.6, z: 0.2 },
+                size: { x: 1.6, y: 1.5, z: 1.6 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xb0d063,
+                position: { x: -0.3, y: 7.0, z: -0.1 },
+                size: { x: 1.4, y: 1.3, z: 1.4 },
+            },
+        ];
+        // alt: 3 Stamm-Segmente + krumm + 5 große asymmetrische Kronen-Kugeln
+        const baumBirkeAltParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xe8d8be,
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 0.7, y: 4.4, z: 0.7 },
+                segments: 7,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xe8d8be,
+                position: { x: 0.2, y: 5.6, z: 0.05 },
+                size: { x: 0.5, y: 3.0, z: 0.5 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0xe8d8be,
+                position: { x: 0.35, y: 7.4, z: 0.0 },
+                size: { x: 0.35, y: 1.8, z: 0.35 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x8bb240,
+                position: { x: 0, y: 6.6, z: 0 },
+                size: { x: 3.2, y: 2.7, z: 3.2 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x9bbf4d,
+                position: { x: -1.6, y: 6.4, z: 0.5 },
+                size: { x: 1.9, y: 1.7, z: 1.9 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xa3c454,
+                position: { x: 1.6, y: 6.5, z: -0.6 },
+                size: { x: 2.0, y: 1.8, z: 2.0 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xb0d063,
+                position: { x: 0.4, y: 8.3, z: 0.3 },
+                size: { x: 1.7, y: 1.5, z: 1.7 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0xb0d063,
+                position: { x: -0.6, y: 8.0, z: -0.3 },
+                size: { x: 1.4, y: 1.3, z: 1.4 },
+            },
+        ];
+        // === ERLE — Ufer-Pflicht (feuchte ≥ 0.5); kräftiger Stamm + breite Krone ===
+        // jung: klein + schmal, 1 Krone-Kugel
+        const baumErleJungParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x6a5538,
+                position: { x: 0, y: 1.0, z: 0 },
+                size: { x: 0.55, y: 2.0, z: 0.55 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4f8638,
+                position: { x: 0, y: 2.6, z: 0 },
+                size: { x: 1.7, y: 1.5, z: 1.7 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5f9a40,
+                position: { x: -0.4, y: 2.9, z: 0.2 },
+                size: { x: 0.9, y: 0.85, z: 0.9 },
+            },
+        ];
+        const baumErleParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x5a4632,
+                position: { x: 0, y: 1.5, z: 0 },
+                size: { x: 0.95, y: 3.0, z: 0.95 },
+                segments: 7,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x5a4632,
+                position: { x: 0.1, y: 3.4, z: 0.05 },
+                size: { x: 0.7, y: 1.6, z: 0.7 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x3f6f30,
+                position: { x: 0, y: 4.4, z: 0 },
+                size: { x: 3.0, y: 2.4, z: 3.0 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4a823a,
+                position: { x: -1.3, y: 4.2, z: 0.5 },
+                size: { x: 1.9, y: 1.7, z: 1.9 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x376628,
+                position: { x: 1.3, y: 4.3, z: -0.5 },
+                size: { x: 2.0, y: 1.8, z: 2.0 },
+            },
+        ];
+        // alt: weit ausladende Krone + 4 Kronen-Kugeln im Halbrund
+        const baumErleAltParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x4f3d2a,
+                position: { x: 0, y: 1.8, z: 0 },
+                size: { x: 1.2, y: 3.6, z: 1.2 },
+                segments: 8,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x4f3d2a,
+                position: { x: 0.15, y: 4.4, z: 0.05 },
+                size: { x: 0.85, y: 1.8, z: 0.85 },
+                segments: 7,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x366028,
+                position: { x: 0, y: 5.6, z: 0 },
+                size: { x: 4.0, y: 3.0, z: 4.0 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x437a30,
+                position: { x: -2.0, y: 5.2, z: 0.6 },
+                size: { x: 2.3, y: 2.0, z: 2.3 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4a823a,
+                position: { x: 2.0, y: 5.3, z: -0.6 },
+                size: { x: 2.4, y: 2.1, z: 2.4 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4f8638,
+                position: { x: 0.6, y: 6.4, z: 0.5 },
+                size: { x: 2.0, y: 1.8, z: 2.0 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x366028,
+                position: { x: -0.5, y: 6.3, z: -0.7 },
+                size: { x: 1.8, y: 1.6, z: 1.8 },
+            },
+        ];
+        // === BUCHE — runde Krone, gedrungen (kräftige Wald-Mitte) ===
+        // jung: knapp + schmal, 1 Kugel
+        const baumBucheJungParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x7a5d36,
+                position: { x: 0, y: 0.9, z: 0 },
+                size: { x: 0.55, y: 1.8, z: 0.55 },
+                segments: 7,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5e9447,
+                position: { x: 0, y: 2.2, z: 0 },
+                size: { x: 1.8, y: 1.5, z: 1.8 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x68a850,
+                position: { x: 0.2, y: 2.6, z: 0.1 },
+                size: { x: 1.1, y: 1.0, z: 1.1 },
+            },
+        ];
+        const baumBucheParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x6a5230,
+                position: { x: 0, y: 1.3, z: 0 },
+                size: { x: 1.0, y: 2.6, z: 1.0 },
+                segments: 7,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x6a5230,
+                position: { x: 0, y: 2.9, z: 0 },
+                size: { x: 0.75, y: 1.4, z: 0.75 },
+                segments: 6,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x4c8035,
+                position: { x: 0, y: 3.8, z: 0 },
+                size: { x: 3.6, y: 3.0, z: 3.6 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5a9342,
+                position: { x: -1.6, y: 3.6, z: 0.4 },
+                size: { x: 2.4, y: 2.2, z: 2.4 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5e9e48,
+                position: { x: 1.5, y: 3.7, z: -0.5 },
+                size: { x: 2.5, y: 2.3, z: 2.5 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x68a850,
+                position: { x: 0.2, y: 4.8, z: 0.2 },
+                size: { x: 2.0, y: 1.8, z: 2.0 },
+            },
+        ];
+        // alt: massiv, sehr runde Krone — wahre Wald-Mitte
+        const baumBucheAltParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x5a4222,
+                position: { x: 0, y: 1.8, z: 0 },
+                size: { x: 1.4, y: 3.6, z: 1.4 },
+                segments: 8,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x5a4222,
+                position: { x: 0, y: 4.4, z: 0 },
+                size: { x: 1.0, y: 1.8, z: 1.0 },
+                segments: 7,
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x447030,
+                position: { x: 0, y: 5.4, z: 0 },
+                size: { x: 4.8, y: 4.0, z: 4.8 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5a9342,
+                position: { x: -2.2, y: 5.0, z: 0.6 },
+                size: { x: 3.0, y: 2.6, z: 3.0 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5e9e48,
+                position: { x: 2.2, y: 5.1, z: -0.7 },
+                size: { x: 3.1, y: 2.7, z: 3.1 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x68a850,
+                position: { x: 0.4, y: 6.6, z: 0.4 },
+                size: { x: 2.6, y: 2.2, z: 2.6 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x68a850,
+                position: { x: -0.7, y: 6.5, z: -0.5 },
+                size: { x: 2.3, y: 2.0, z: 2.3 },
+            },
+        ];
+        // === TANNE — Kegel-Form, sehr dunkel, hoch (kalter Hochwald) ===
+        // jung: kurz + 2 Kegel, schmal
+        const baumTanneJungParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x4a3220,
+                position: { x: 0, y: 1.0, z: 0 },
+                size: { x: 0.32, y: 2.0, z: 0.32 },
+                segments: 5,
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x255c30,
+                position: { x: 0, y: 2.4, z: 0 },
+                size: { x: 1.6, y: 2.0, z: 1.6 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x2d6a3a,
+                position: { x: 0, y: 3.6, z: 0 },
+                size: { x: 1.0, y: 1.6, z: 1.0 },
+            },
+        ];
+        const baumTanneParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x3a2818,
+                position: { x: 0, y: 1.8, z: 0 },
+                size: { x: 0.55, y: 3.6, z: 0.55 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x3a2818,
+                position: { x: 0, y: 4.6, z: 0 },
+                size: { x: 0.4, y: 2.0, z: 0.4 },
+                segments: 6,
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x1d4a25,
+                position: { x: 0, y: 4.2, z: 0 },
+                size: { x: 2.8, y: 2.8, z: 2.8 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x265a30,
+                position: { x: 0, y: 5.7, z: 0 },
+                size: { x: 2.2, y: 2.6, z: 2.2 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x2d6a3a,
+                position: { x: 0, y: 7.2, z: 0 },
+                size: { x: 1.6, y: 2.4, z: 1.6 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x357841,
+                position: { x: 0, y: 8.7, z: 0 },
+                size: { x: 0.9, y: 1.8, z: 0.9 },
+            },
+        ];
+        // alt: hoch, dichte mehrfache Kegel — Höhe-Riesin
+        const baumTanneAltParts = [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x2c1a0e,
+                position: { x: 0, y: 2.6, z: 0 },
+                size: { x: 0.85, y: 5.2, z: 0.85 },
+                segments: 7,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 0x2c1a0e,
+                position: { x: 0, y: 6.6, z: 0 },
+                size: { x: 0.6, y: 2.6, z: 0.6 },
+                segments: 6,
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x16401e,
+                position: { x: 0, y: 5.4, z: 0 },
+                size: { x: 3.6, y: 3.4, z: 3.6 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x1d4a25,
+                position: { x: 0, y: 7.2, z: 0 },
+                size: { x: 3.0, y: 3.2, z: 3.0 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x265a30,
+                position: { x: 0, y: 9.0, z: 0 },
+                size: { x: 2.4, y: 3.0, z: 2.4 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x2d6a3a,
+                position: { x: 0, y: 10.7, z: 0 },
+                size: { x: 1.8, y: 2.8, z: 1.8 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x357841,
+                position: { x: 0, y: 12.3, z: 0 },
+                size: { x: 1.2, y: 2.4, z: 1.2 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x3e8748,
+                position: { x: 0, y: 13.8, z: 0 },
+                size: { x: 0.6, y: 1.6, z: 0.6 },
+            },
+        ];
+        // Kiefer: schlanker 2-segmentiger Stamm + 3 gestapelte Kegel abnehmender
+        // Größe (klassische Tannen-Silhouette) + Farb-Gradient zur Spitze.
         // Kiefer: schlanker Stamm + 5 gestaffelte Kegel (volle Tannen-Silhouette)
         // mit Dunkel-zu-Hell-Gradient + Wurzel-Flare. W-H (V18.179) — die
         // dichtere Kegel-Staffel + der stärkere Gradient geben die geschichtete
@@ -42228,6 +42736,77 @@ class AnazhRealm {
                 builtIn: true,
                 instanced: true,
                 parts: kieferSchlankParts,
+            },
+            // V18.181-merge-Λ Sub 3e (Plan §10 — Λ.5/V18.173 Mischwald-Saat,
+            // clever-gauss): vier Baumarten × DREI Gestalt-Varianten
+            // (jung/normal/alt) = 12 Baupläne. Alle nutzen `holz`/`laub`
+            // (Tag-Neutralitäts-Wand: identische Affinitäts-Tags wie
+            // eiche/kiefer); nur Form + Color unterscheiden. Erle bekommt
+            // einen feuchte-Affinitäts-Term im _vegetationSampleSpawn-Pfad
+            // (Ufer-Anker, analog schilf). Mischwald-Lottery wählt nach
+            // der ART eine VARIANTE: jung 30 % · normal 50 % · alt 20 %.
+            // Die Painterly-Krone (W-H V18.179) für die 4 neuen Baumarten
+            // kommt mit Welle 4 (V18.182-Painterly-Mischwald — PFLICHT,
+            // sonst inhomogener Wald).
+            baum_birke_jung: {
+                name: "baum_birke_jung",
+                label: "Birke (jung)",
+                builtIn: true,
+                instanced: true,
+                parts: baumBirkeJungParts,
+            },
+            baum_birke: { name: "baum_birke", label: "Birke", builtIn: true, instanced: true, parts: baumBirkeParts },
+            baum_birke_alt: {
+                name: "baum_birke_alt",
+                label: "Birke (alt)",
+                builtIn: true,
+                instanced: true,
+                parts: baumBirkeAltParts,
+            },
+            baum_erle_jung: {
+                name: "baum_erle_jung",
+                label: "Erle (jung)",
+                builtIn: true,
+                instanced: true,
+                parts: baumErleJungParts,
+            },
+            baum_erle: { name: "baum_erle", label: "Erle", builtIn: true, instanced: true, parts: baumErleParts },
+            baum_erle_alt: {
+                name: "baum_erle_alt",
+                label: "Erle (alt)",
+                builtIn: true,
+                instanced: true,
+                parts: baumErleAltParts,
+            },
+            baum_buche_jung: {
+                name: "baum_buche_jung",
+                label: "Buche (jung)",
+                builtIn: true,
+                instanced: true,
+                parts: baumBucheJungParts,
+            },
+            baum_buche: { name: "baum_buche", label: "Buche", builtIn: true, instanced: true, parts: baumBucheParts },
+            baum_buche_alt: {
+                name: "baum_buche_alt",
+                label: "Buche (alt)",
+                builtIn: true,
+                instanced: true,
+                parts: baumBucheAltParts,
+            },
+            baum_tanne_jung: {
+                name: "baum_tanne_jung",
+                label: "Tanne (jung)",
+                builtIn: true,
+                instanced: true,
+                parts: baumTanneJungParts,
+            },
+            baum_tanne: { name: "baum_tanne", label: "Tanne", builtIn: true, instanced: true, parts: baumTanneParts },
+            baum_tanne_alt: {
+                name: "baum_tanne_alt",
+                label: "Tanne (alt)",
+                builtIn: true,
+                instanced: true,
+                parts: baumTanneAltParts,
             },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
@@ -46495,7 +47074,24 @@ class AnazhRealm {
         const LANDMARK_RATE = 0.014;
         const BASE_RATE = 0.4;
         const AFFINITY_FLOOR = 0.18;
-        const candidates = ["baum_eiche", "baum_kiefer", "stein_block", "kristall_geode", "glutbrunnen"];
+        // V18.181-merge-Λ Sub 3e (Plan §10 Synthese — Λ.5/V18.173 Mischwald,
+        // clever-gauss + W-H tesla): 10 candidates (war 5). Vier neue Baumarten
+        // bringen den Ökoton-Wald. Tag-Neutralität: alle 6 Baumarten lesen
+        // dieselben Tags (holz+laub) → die Verteilung emergiert aus aff² ohne
+        // Affinitäts-Verschiebung. Die Variante-Gestalten (jung/normal/alt)
+        // sind seed-deterministisch NACH dem Affinitäts-Sieg gewählt (W-H-
+        // sicherer Pfad: keine V17.16-Affinitäts-Falle).
+        const candidates = [
+            "baum_eiche",
+            "baum_kiefer",
+            "baum_birke",
+            "baum_erle",
+            "baum_buche",
+            "baum_tanne",
+            "stein_block",
+            "kristall_geode",
+            "glutbrunnen",
+        ];
         // Γ5 (genese-plan — Determinismus-Schliff): der STILLE Math.random-
         // Fallback fällt. worldFieldAt() lazy-initialisiert state.worldField
         // (inkl. rngNoise, seed-gebunden) — bei fehlendem Feld würfelte vorher
@@ -46559,7 +47155,16 @@ class AnazhRealm {
         // Call), Lazy-Collision (Ammo-Bodies nur < 40 m, V9.92-Pattern), Distanz-
         // Mesh-Culling (< 150 m). Felsen/Geoden/Glutbrunnen bleiben spärliche
         // Landmarken (nur Bäume werden zum Wald). Werte browser-justierbar (FPS).
-        const isTree = bestName === "baum_eiche" || bestName === "baum_kiefer";
+        // V18.181-merge-Λ Sub 3e — alle 6 Baumarten als Wald-Bauer.
+        const TREE_NAMES = new Set([
+            "baum_eiche",
+            "baum_kiefer",
+            "baum_birke",
+            "baum_erle",
+            "baum_buche",
+            "baum_tanne",
+        ]);
+        const isTree = TREE_NAMES.has(bestName);
         let chance = BASE_RATE * bestAffinity * bestAffinity;
         if (isTree) {
             const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
@@ -46585,11 +47190,37 @@ class AnazhRealm {
         let spawnScale = 1;
         let spawnYaw = 0;
         if (isTree) {
-            // reichere Verteilung: die Varianten tragen den Wald (nur ⅓ Basis).
-            const variants =
-                bestName === "baum_eiche"
-                    ? ["baum_eiche", "baum_eiche_breit", "baum_eiche_breit", "baum_eiche_jung"]
-                    : ["baum_kiefer", "baum_kiefer_schlank", "baum_kiefer_schlank"];
+            // V18.181-merge-Λ Sub 3e (Plan §10 — Mischwald-TREE_VARIANTS):
+            // Eiche/Kiefer tragen tesla's W-H-Varianten (breit/jung/schlank,
+            // V18.178/.179); die 4 neuen Baumarten bekommen die clever-gauss-
+            // Demographie 30/50/20 (jung/normal/alt, baum_X_jung·1 +
+            // baum_X·2 + baum_X·2 + baum_X_alt·1, drei Gestalten dann je
+            // Art über die 5er-Liste mit 30/40/20-Prozentual). Welle 4
+            // (V18.182-Painterly-Mischwald, PFLICHT) gleicht die Krone-
+            // Tiefe an die V18.179-Painterly-Form an.
+            let variants;
+            switch (bestName) {
+                case "baum_eiche":
+                    variants = ["baum_eiche", "baum_eiche_breit", "baum_eiche_breit", "baum_eiche_jung"];
+                    break;
+                case "baum_kiefer":
+                    variants = ["baum_kiefer", "baum_kiefer_schlank", "baum_kiefer_schlank"];
+                    break;
+                case "baum_birke":
+                    variants = ["baum_birke_jung", "baum_birke", "baum_birke", "baum_birke", "baum_birke_alt"];
+                    break;
+                case "baum_erle":
+                    variants = ["baum_erle_jung", "baum_erle", "baum_erle", "baum_erle", "baum_erle_alt"];
+                    break;
+                case "baum_buche":
+                    variants = ["baum_buche_jung", "baum_buche", "baum_buche", "baum_buche", "baum_buche_alt"];
+                    break;
+                case "baum_tanne":
+                    variants = ["baum_tanne_jung", "baum_tanne", "baum_tanne", "baum_tanne", "baum_tanne_alt"];
+                    break;
+                default:
+                    variants = [bestName];
+            }
             // eigene Seed-Bits (Suffix-Regel, Γ5) — re-rollt keinen anderen Stream.
             spawnName = variants[(seedForSpawn >>> 7) % variants.length];
             const sz = (rng.noise2D(sampleX * 0.53 + 11.3, sampleZ * 0.53 - 7.1) + 1) / 2; // [0,1]

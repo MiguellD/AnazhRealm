@@ -31100,10 +31100,23 @@ async function checkBandWHWald(ctx) {
         out.kieferNeutral = tagsEq("baum_kiefer", "baum_kiefer_schlank");
         // (3) die Varianten sind NICHT im Affinitäts-Wettstreit (candidates) —
         // der Spawn wählt sie NACH dem Sieg, mit dem kanonischen bestName.
+        // V18.181-merge-Λ Sub 3e (V9.56-i): die Probe wandert auf den Mischwald-
+        // Synthese-Form: candidates kann ein multi-line Array sein (10 statt 5
+        // Bäume). Wichtig ist STRUKTURELL: KEINE Varianten (_breit/_jung/_alt/
+        // _schlank) im candidates-Pool — die emergieren NACH dem Affinitäts-
+        // Sieg über das switch-case (W-H sicherer Pfad). Die Wand bleibt
+        // strukturell heil; nur ihr Suchmuster aktualisiert sich.
         const src = r._vegetationSampleSpawn.toString();
+        const candidatesMatch = src.match(/const\s+candidates\s*=\s*\[([\s\S]*?)\]/);
+        const candidatesBlock = candidatesMatch ? candidatesMatch[1] : "";
         out.notInCandidates =
-            /candidates = \["baum_eiche", "baum_kiefer"/.test(src) && !/candidates.*baum_eiche_breit/.test(src);
-        out.variantPickAfterWin = /spawnName = variants\[/.test(src) && /bestName === "baum_eiche"/.test(src);
+            /["']baum_eiche["']/.test(candidatesBlock) &&
+            /["']baum_kiefer["']/.test(candidatesBlock) &&
+            !/baum_eiche_(breit|jung|alt)/.test(candidatesBlock) &&
+            !/baum_kiefer_schlank/.test(candidatesBlock);
+        out.variantPickAfterWin =
+            /spawnName = variants\[/.test(src) &&
+            (/bestName === ["']baum_eiche["']/.test(src) || /case ["']baum_eiche["']/.test(src));
         // (4) GRÖSSEN-SPAN ±~40 %: der Spawn reicht eine seed-deterministische scale.
         out.sizeSpan = /spawnScale = 0\.7 \+ sz \* 0\.66/.test(src) && /scale: spawnScale/.test(src);
         // (5) die Varianten klassifizieren als ARCHITECTURE (kein Soul-Drift).
