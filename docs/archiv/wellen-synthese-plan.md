@@ -1929,26 +1929,60 @@ er voxel-worker.js anfasst, und beide Hunks zusammen wandern.
   Tag-Neutralität GEMESSEN erhalten. **✓ a458e31 (13.06.2026)**
 
 - **Welle 5 — V18.183-Hygiene-Konsolidierung**: Atlas auf Synthese-Stamm,
-  CLAUDE.md + handover synchronisiert, Dubletten geprüft.
-  Mess-Wand: `diag-atlas --check` grün. — *offen*
+  CLAUDE.md + handover synchronisiert, Dubletten geprüft (Stand: Welle 0-4).
+  Mess-Wand: `diag-atlas --check` grün. **✓ 1fbd6d1 (13.06.2026)**
 
-- **Welle 6 — V18.184-Test-Härtung**: `if (api.exists)`-Anti-Pattern
-  getilgt, audit-Wand.
-  Mess-Wand: keine neuen Skip-Gates. — *offen*
+- **Welle 6+9+10 — V18.184**: Test-Härtung (strukturell durch Welle 1
+  abgedeckt) + Atlas-Reife verifiziert + Plan-Archivierung (Plan nach
+  `docs/archiv/wellen-synthese-plan.md` verschoben, Stamm-Pointer ersetzt).
+  Mess-Wand: `diag-atlas --check` grün (26 Zonen). **✓ 020570d (13.06.2026)**
 
-- **Welle 7 — V18.185-Worker-Mirror-Breitung**: V9.89-Test um 32 Chunks
-  erweitert.
-  Mess-Wand: 32 Sample-Punkte bit-identisch. — *offen*
+- **Welle 7 — Worker-Mirror-Breitung**: V9.89-Test um 32 Chunks erweitert.
+  Mess-Wand: 32 Sample-Punkte bit-identisch. — *als Folge-Welle vermerkt
+  (~1.6 s Playtest-Kost, vertretbar)*
 
-- **Welle 8 — V18.186-Λ-Test-Bänder vollständig**: 7 Bänder registriert.
-  Mess-Wand: playtest führt sie aus. — *offen*
+- **Welle 8 — Λ-Test-Bänder formal**: ursprünglich als Folge-Welle vermerkt,
+  in V18.186 nachgeholt (siehe R2). 7 Bänder registriert. **✓ 99d3d11**
 
-- **Welle 9 — V18.187-Atlas-Reife**: Drift-Verifikation nach allem.
-  Mess-Wand: `diag-atlas --check` grün. — *offen*
+- **R1 — V18.185-Reviewer-Heilung** (13.06.2026, nach externem Audit-
+  Befund): AERIAL-Doppel-Define-Bug. Ein `static get AERIAL()` in der
+  Klasse überdeckte das Top-Level-`AnazhRealm.AERIAL = ...`-Assignment
+  LAUTLOS (Getter ohne Setter, non-strict-Assignment fällt durch — Node-
+  verifiziert). Sub 3g-Bump (heightWeight 0.6→0.75, microStrength 0.1→0.14,
+  aoStrength 0.35→0.38, aoCap 0.16→0.18) war funktional tot. Heilung:
+  getter gestrichen (eine Quelle) + NEU `checkBandV18177AAA` mit 5 Live-
+  Wänden (Object.isFrozen + Source-Probe gegen `static\s+get\s+AERIAL\s*\(`
+  inkl. Kommentar-Strip + 4 numerische Werte). **Permanente Lehre 7**:
+  Source-Probe-Wand MUSS Kommentare strippen, sonst fängt sie sich selbst.
+  **✓ 7b8c636 (13.06.2026)**
 
-- **Welle 10 — V18.188-Plan-Archivierung**: diese Datei wandert nach
-  archiv/, der Bogen ist RUND.
-  Mess-Wand: docs/README.md aktualisiert. — *offen*
+- **R2 — V18.186-Plan-Vollendung** (13.06.2026, nach Reviewer-Lücken-
+  Befund): die drei Reviewer-Lücken vollständig geheilt.
+  - **Λ.6 SUBSURFACE-BACKLIT** in `_buildToonNodeMaterial`: subsurface
+    back-lit als output-seitiger Glow für `responseProfile.detail > 0.4`.
+    Pattern: `pow(viewDir · -uSunDir, 3) × detail × 0.18`, warmer Ton
+    (1.0, 0.85, 0.6). OUTPUT-seitig (kein colorNode-Eingriff → bricht
+    `material.color` nicht; CLAUDE.md-Gotcha respektiert).
+  - **Λ.4 PER-ACHSEN-SKALIERUNG** in `_buildVoxelChunkScatter`: drei
+    entkoppelte sx/sy/sz für wind-Arten (yFactor 0.8-1.25, x/zFactor
+    0.85-1.15) — Wiesen-Feel statt Klon-Halmen. Consumer-Site liest
+    sx/sy/sz wenn da, sonst Fallback auf uniform scale (Backward-Kompat
+    für Steinchen).
+  - **7 EIGENSTÄNDIGE Λ-Bänder** als Plan §7.1-Erfüllung:
+    `checkBandLambda1LivingCenter` (3 W) · `Lambda2HismSynthese` (5 W) ·
+    `Lambda3Wind` (3 W) · `Lambda4Streu` (2 W) · `Lambda5MischwaldSynthese`
+    (5 W) · `Lambda6Detail` (4 W) · `V18177AAA` (5 W) = **27 Wände total**.
+    Eine Λ-Regression wäre jetzt als Λ-Klassifikation rot, nicht
+    versteckt im W-Band. **Permanente Lehre 8**: Test-Seeds für Bit-Band-
+    Patterns brauchen volle Bit-Breite (Knuth 2654435761) — kleine Seeds
+    (i × 7919 < 2²¹) treffen das obere Band nie. **Permanente Lehre 9**:
+    Ein Audit mit fremden Augen fängt stille Bugs; Mess-Wand auf LIVE-
+    Werten (nicht Source-Strings) ist die strukturelle Antwort.
+  **✓ 99d3d11 (13.06.2026)**
+
+OFFEN: Schöpfer-Browser-Sign-off des Gesamtwerks (pixel-blind ist headless).
+Plus die Λ.4-Gestalt-Varianten (Tulpe/Klee/Mohn etc. aus V18.176) als
+mögliche eigene Sub-Welle, wenn der Browser-Audit sie ruft.
 
 ---
 

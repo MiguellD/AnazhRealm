@@ -22,6 +22,7 @@ wieder zur Halde.
 | **`docs/rueckmeldung.md`** | **DAS GESETZ** | Der Rückmeldungs-Korpus — jede Schöpfer-Rückmeldung mit ID·Status·Wurzel·Welle. **VOR jeder Session-Planung lesen; kein „GEBAUT ✓" ohne Korpus-Update + Nachbau im Nutzer-Zustand (§8.7).** |
 | **`docs/archipel-plan.md`** | **DER PFAD Φ** | Das Welten-Netz (öffentliche Welten · Portale-als-Links · „Tausende unter einem Himmel") — die Bau-Form der M9-Sprossen 1–3; Fundamente nachgemessen §6; Anti-Scope-Wände §3 verbindlich. |
 | **`docs/genese-plan.md`** | **DER BOGEN Γ** | Worldgen-Qualität (der LAAS-Transfer „Neue Felder, alte Leser"): Feuchte-Feld · Kronen-Lesarten · Stream-Gesetz GEBAUT V18.166; offen Γ4 Makro-Anker · Farb-Lesart · Γ3/Γ6/Γ7 (Verifikations-Anhang §V mit Abweichungs-Gründen). |
+| **`docs/wellen-synthese-plan.md`** | **DIE SYNTHESE (VOLLENDET)** | Schluss-Bilanz der Branch-Synthese `clever-gauss-nuh9lq` × `determined-tesla-oz2edw` → ein Stamm (V18.180-FIX bis V18.186, 18 Commits über 7 Wellen + 2 Reviewer-Heilungen, 27 Λ-Klassifikations-Wände, 9 permanente Lehren). Die volle Plan-Datei (Hunk-Karte · Konflikt-Analyse · Code-Synthesen · Risiken) im Archiv: **`docs/archiv/wellen-synthese-plan.md`**. |
 | **`README.md`** (Wurzel) | **DIE TÜR** | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion. |
 
 (Der frühere „Auf dem Tisch"-Plan `docs/archiv/terrain-koharenz-plan.md` ist VOLLENDET + archiviert —

@@ -42,6 +42,26 @@ Der aktuelle Stand + die Route: die kanonische Landkarte in **`docs/README.md`**
 | `handover.md` | Die **Wellen-Chronik** (jüngste oben) + die Erst-Orientierung + das **Gotcha-Vollarchiv** (~290 Stolperdrähte; `CLAUDE.md` trägt die kuratierte Teilmenge). |
 | `roadmap-chronik-bis-v18.83.md` | Der alte Detail-Backlog (Ringe 0–11, Wellen A–X) — als Snapshot bewahrt, von der schlanken `docs/roadmap.md` abgelöst. |
 
+## Bogen: Die Branch-Synthese — DIE ZWEI WURDEN EINS (V18.180-FIX bis V18.186, 13.06.2026) — VOLLENDET
+
+Die zwei Schwester-Branches `clever-gauss-nuh9lq` (Λ-Welle + Γ-Bogen) und
+`determined-tesla-oz2edw` (W-Welle) parallel aus V18.172 entsprungen, als ein
+Stamm zusammengeführt. Tesla = Knochen, clever-gauss = Sehnen. 18 Commits über
+7 Wellen + 2 Reviewer-Heilungen, 27 spezifische Λ-Klassifikations-Wände,
+9 permanente Lehren. Inkl. Welle-0-Schöpfer-Delta §14.9 (clever-gauss-Real-
+Stand +1787 Zeilen über Plan-Stand → Γ-Bogen integriert) + V18.185-Reviewer-
+Heilung (AERIAL-Doppel-Define als stiller Bug, Getter überdeckte Top-Level-
+Assignment lautlos) + V18.186-Plan-Vollendung (Λ.6 Translucency + Λ.4 Per-
+Achsen-Streu-Skalierung + 7 eigenständige Λ-Test-Bänder).
+
+| Datei | Was | Stand |
+|---|---|---|
+| `wellen-synthese-plan.md` | Volle Plan-Datei: Hunk-Karte · Konflikt-Analyse · Code-Synthesen · 9 Risiken · 9 permanente Lehren | **VOLLENDET** (V18.186) — die nächste Branch-Synthese-Session liest sie als Vorbild |
+
+Stamm-Pointer in `docs/wellen-synthese-plan.md` (Schluss-Bilanz mit allen
+Commit-SHAs); kanonische Welle-für-Welle-Chronik in `handover.md`-Eintrag
+„V18.180-FIX bis V18.186"; CLAUDE.md trägt die 9 permanenten Lehren.
+
 ## Bogen: Der UI-Putz — die 6 Kern-Räume + das freie HUD (V18.32–.83) — VOLLENDET
 
 8 flache Tabs → 6 Kern-Räume auf dem Werkstatt-Designsystem (geteiltes Spec-Sheet · dunkle
