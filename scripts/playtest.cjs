@@ -32219,6 +32219,234 @@ async function checkBandPhiArchipelV2(ctx) {
     );
 }
 
+// Φ7-Bogen (V18.190) — PORTAL-HALLEN: kuratierte Welt-Verzeichnisse als
+// signierte Artefakte. Eine Halle trägt N Welt-Adressen (Φ1) + Label +
+// Signatur + Provenance. Beim Materialisieren wird jeder Slot ein
+// eigenständiges Portal mit entry-level portalMeta (das _enterPortal-
+// Routing wandert auf entry → bauplan-portalMeta-Coalesce).
+async function checkBandPhi7PortalHalls(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const out = {};
+
+        // (H1) state.portalHalls ist eine Map (initial leer im Boot).
+        out.hallMap = r.state.portalHalls instanceof Map;
+
+        // (H2) createPortalHall mit drei gültigen Adressen.
+        const mkAddr = (id) => ({
+            worldId: `w-${id}`,
+            roomId: `r-${id}`,
+            broker: "ws://h.example:4313",
+            label: `Welt ${id}`,
+        });
+        const created = r.createPortalHall("test-halle", "Test-Halle", [
+            { address: mkAddr("alpha"), label: "Erste Welt" },
+            { address: mkAddr("beta"), label: "Zweite Welt" },
+            { address: mkAddr("gamma"), label: "Dritte Welt" },
+        ]);
+        out.createOk = !!(created && created.ok && created.entries === 3);
+        out.hallStored = r.state.portalHalls.has("test-halle");
+
+        // (H3) createPortalHall siebt kaputte Einträge (broker non-ws fällt).
+        const partial = r.createPortalHall("partial-halle", "Partial", [
+            { address: mkAddr("ok") },
+            { address: { ...mkAddr("kaputt"), broker: "http://bad" } }, // fällt
+            { address: null }, // fällt
+        ]);
+        const partialHall = r.state.portalHalls.get("partial-halle");
+        out.partialOk = !!(partial && partial.ok && partial.entries === 1);
+        out.partialStored = partialHall && partialHall.entries.length === 1;
+
+        // (H4) createPortalHall ohne valide Einträge → ok:false.
+        const emptyRes = r.createPortalHall("leere", "Leer", []);
+        out.emptyRejected = !emptyRes.ok && emptyRes.reason === "no_valid_entries";
+
+        // (H5) _canonicalPortalHall ist deterministisch (gleiche Substanz →
+        // gleicher String); v:1 + alle entries-Hash drin.
+        const hall1 = r.state.portalHalls.get("test-halle");
+        const canon1 = r._canonicalPortalHall(hall1);
+        // Mutiere ein Extra-Feld → der Canonical bleibt gleich (must-ignore).
+        const hall2 = { ...hall1, xZukunft: { foo: 1 } };
+        const canon2 = r._canonicalPortalHall(hall2);
+        out.canonDeterministic = canon1 === canon2;
+        out.canonHasV1 = /"v":1/.test(canon1);
+        out.canonHasEntries = /"entries":/.test(canon1);
+
+        // (H6) signPortalHall signiert + verifyPortalHall liest "valid";
+        // Manipulation am label kippt zu "modified" (signedHash mismatch).
+        const sigRes = await r.signPortalHall("test-halle", { skipConfirm: true });
+        out.signOk = !!(sigRes && sigRes.ok);
+        const hall = r.state.portalHalls.get("test-halle");
+        out.signFieldsSet = !!(hall.sig && hall.authorPubKey && hall.signedHash);
+        const status = await r.verifyPortalHall(hall);
+        out.verifyValid = status === "valid";
+        const manip = { ...hall, label: "GEÄNDERT" };
+        const manipStatus = await r.verifyPortalHall(manip);
+        out.verifyModified = manipStatus === "modified" || manipStatus === "forged";
+
+        // (H7) _admitForeignPortalHall siebt strukturell + nimmt valide Hallen
+        // an + kaputte Einträge fallen INNERHALB der Halle.
+        const admittedClean = r._admitForeignPortalHall({
+            name: "fremd-halle",
+            label: "Fremde",
+            entries: [{ address: mkAddr("foreign1"), label: "Fremde 1" }],
+        });
+        out.admitOk = !!(admittedClean && admittedClean.name === "fremd-halle" && admittedClean.entries.length === 1);
+        const admittedNoName = r._admitForeignPortalHall({ entries: [{ address: mkAddr("x") }] });
+        out.admitNoNameNull = admittedNoName === null;
+        const admittedNoEntries = r._admitForeignPortalHall({ name: "leer", entries: [] });
+        out.admitEmptyNull = admittedNoEntries === null;
+
+        // (H8) R4 — Tainted Herkunft (revoziert) fällt am Eingang.
+        const fakeKey = "9".repeat(64);
+        r.revokeKey(fakeKey);
+        const admittedTainted = r._admitForeignPortalHall({
+            name: "tainted-halle",
+            entries: [{ address: mkAddr("x") }],
+            provenance: [{ by: fakeKey, at: 1700000000000 }],
+        });
+        out.admitTaintedNull = admittedTainted === null;
+        r.state.revokedKeys.delete(fakeKey);
+        if (typeof r._saveRevokedKeys === "function") r._saveRevokedKeys();
+
+        // (H9) materializePortalHall braucht einen Portal-Bauplan + Position.
+        // Wir nehmen den ersten Built-In-Portal-Bauplan oder bauen einen ad hoc.
+        let portalBp = null;
+        for (const bn of Object.keys(r.state.blueprints || {})) {
+            const bp = r.state.blueprints[bn];
+            if (bp && (bp.role === "portal" || /^portal_/.test(bn))) {
+                portalBp = bn;
+                break;
+            }
+        }
+        // Falls keiner existiert, einen schnell-anlegen für den Test.
+        if (!portalBp) {
+            r.state.blueprints["portal_torus"] = {
+                name: "portal_torus",
+                label: "Test-Portal-Torus",
+                builtIn: false,
+                parts: [
+                    {
+                        shape: "torus",
+                        material: "stein",
+                        position: { x: 0, y: 1.5, z: 0 },
+                        size: { x: 2, y: 2, z: 0.4 },
+                        rotation: { x: 0, y: 0, z: 0 },
+                        opChain: [],
+                    },
+                ],
+                connections: [],
+                portalMeta: {},
+            };
+            portalBp = "portal_torus";
+        }
+        const archBefore = r.state.architectures.length;
+        const matRes = r.materializePortalHall("test-halle", { x: 600, y: 0, z: 600 }, { portalBlueprint: portalBp });
+        out.matOk = !!(matRes && matRes.ok && matRes.spawned.length === 3);
+        out.matSpawnedArch = r.state.architectures.length === archBefore + 3;
+
+        // (H10) Jeder gespawnte Slot trägt SEINE eigene entry.portalMeta mit
+        // worldAddress + hallName (die echte Φ7-Wahrheit: drei Slot-Portale,
+        // drei verschiedene Welten).
+        const spawned = r.state.architectures.slice(-3);
+        const allHavePortalMeta = spawned.every(
+            (e) => e.portalMeta && e.portalMeta.worldAddress && e.portalMeta.hallName === "test-halle"
+        );
+        const distinctWorlds = new Set(spawned.map((e) => e.portalMeta.worldAddress.worldId));
+        out.matEntryMeta = allHavePortalMeta && distinctWorlds.size === 3;
+
+        // (H11) listPortalHalls — UI-/Test-API.
+        const list = r.listPortalHalls();
+        out.listHasTest = list.some((h) => h.name === "test-halle" && h.entries === 3 && h.signed === true);
+
+        // (H12) Snapshot-Round-Trip: die Hallen reisen + die entry-level
+        // portalMeta reist auch (sonst wären alle Slot-Portale nach Reload
+        // gleich).
+        const snap = r.buildStateSnapshot();
+        out.snapHasHalls = Array.isArray(snap.portalHalls) && snap.portalHalls.length >= 2;
+        const snapTestHall = snap.portalHalls.find((h) => h.name === "test-halle");
+        out.snapHallShape = !!(
+            snapTestHall &&
+            snapTestHall.entries.length === 3 &&
+            snapTestHall.sig &&
+            snapTestHall.authorPubKey
+        );
+        const snapArchWithMeta = snap.architectures.filter((a) => a.portalMeta && a.portalMeta.worldAddress);
+        out.snapArchHasPortalMeta = snapArchWithMeta.length === 3;
+
+        // (H13) enterPortal-Coalesce: entry-level portalMeta gewinnt vor
+        // bauplan-level (Source-Probe — der echte Trip baut Overlay).
+        const epSrc = r.enterPortal.toString();
+        out.enterCoalesces = /entryPortalMeta\s*\|\|\s*bpPortalMeta/.test(epSrc);
+
+        // (H14) R2-DISJUNKTHEIT: keine der Φ7-Akte sind DSL-Ops.
+        const dslRunSrc = r.dslRun.toString();
+        out.noCreateHallOp = !/op\s*===\s*["']create_portal_hall["']/.test(dslRunSrc);
+        out.noMatHallOp = !/op\s*===\s*["']materialize_portal_hall["']/.test(dslRunSrc);
+
+        // Aufräumen: spawned-Portale + Halle aus dem Test.
+        for (const e of spawned) {
+            if (typeof r.removeArchitecture === "function" && e.id !== undefined) {
+                try {
+                    r.removeArchitecture(e.id);
+                } catch {
+                    /* defensive */
+                }
+            }
+        }
+        r.state.portalHalls.delete("test-halle");
+        r.state.portalHalls.delete("partial-halle");
+        r.state.portalHalls.delete("fremd-halle");
+        // Test-Bauplan, wenn von uns erzeugt, lassen wir liegen (kein Müll;
+        // andere Tests dürfen ihn finden — _enterPortalToAddress nutzt ihn nicht).
+
+        return out;
+    });
+
+    check(
+        "Φ7 (H1+H2): state.portalHalls-Map existiert + createPortalHall legt eine Halle mit drei Adressen an",
+        res.hallMap && res.createOk && res.hallStored
+    );
+    check(
+        "Φ7 (H3+H4): createPortalHall siebt kaputte Einträge (http-broker → fällt) + lehnt leere Hallen ab",
+        res.partialOk && res.partialStored && res.emptyRejected
+    );
+    check(
+        "Φ7 (H5): _canonicalPortalHall deterministisch (extra-Felder ignoriert) + trägt v:1 + entries-Hash",
+        res.canonDeterministic && res.canonHasV1 && res.canonHasEntries
+    );
+    check(
+        "Φ7 (H6): signPortalHall signiert (sig+authorPubKey+signedHash) + verifyPortalHall liest 'valid' + Manipulation am label kippt",
+        res.signOk && res.signFieldsSet && res.verifyValid && res.verifyModified
+    );
+    check(
+        "Φ7 (H7): _admitForeignPortalHall nimmt gültige Hallen an + verwirft Müll (kein Name → null · keine Einträge → null)",
+        res.admitOk && res.admitNoNameNull && res.admitEmptyNull
+    );
+    check(
+        "Φ7 (H8): R4-Wand — eine Halle mit revoziertem Provenance-Glied fällt am Eingang (das Immunsystem deckt Hallen wie Baupläne)",
+        res.admitTaintedNull
+    );
+    check(
+        "Φ7 (H9+H10): materializePortalHall spawnt 3 Slot-Portale + jedes trägt SEINE eigene entry.portalMeta mit unterschiedlicher worldAddress (drei Welten, drei Tore)",
+        res.matOk && res.matSpawnedArch && res.matEntryMeta
+    );
+    check("Φ7 (H11): listPortalHalls — UI-API liefert Hallen-Übersicht (name · entries · signed)", res.listHasTest);
+    check(
+        "Φ7 (H12 — must-preserve): Hallen reisen im Snapshot (Halle-Hülle + Signatur + Adressen) + entry-level portalMeta auch (sonst wären alle Slot-Portale nach Reload identisch — die Halle wäre tot)",
+        res.snapHasHalls && res.snapHallShape && res.snapArchHasPortalMeta
+    );
+    check(
+        "Φ7 (H13): enterPortal coalesce'd entry-level vor bauplan-level portalMeta (die Halle-Lehre — N gleiche Blueprints, N verschiedene Welten)",
+        res.enterCoalesces
+    );
+    check(
+        "Φ7 (H14 — R2-DISJUNKTHEIT): keine Halle-Akte sind DSL-Ops (kein Skript kann automatisch Hallen erstellen oder materialisieren)",
+        res.noCreateHallOp && res.noMatHallOp
+    );
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -49374,6 +49602,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWHWald(ctx);
             await checkBandPhiArchipel(ctx);
             await checkBandPhiArchipelV2(ctx);
+            await checkBandPhi7PortalHalls(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

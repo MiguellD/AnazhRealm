@@ -985,6 +985,15 @@ class AnazhRealm {
             // unabhängig — Daten sind die Wahrheit, Mesh nur Sicht.
             architectures: [],
             architectureNextId: 1,
+            // Φ7 (V18.190) — DIE PORTAL-HALLEN: kuratierte Welt-Verzeichnisse.
+            // Ein Eintrag ist eine signierte Sammlung von Welt-Adressen (Φ1),
+            // die im Raum als Kreis-Anordnung materialisiert werden können
+            // (begehbares Linkverzeichnis). Form: Map<hallName, {label,
+            // entries: [{address, label}], authorPubKey, sig, signedAt,
+            // signedHash, provenance}>. Persistiert über den Snapshot
+            // (worldMeta-frei, weltweit lebende Werke; Spieler-global wie
+            // Baupläne). Reist über _admitForeignPortalHall (R4-Wand).
+            portalHalls: new Map(),
             architectureCullingRadius: 150,
             // V7.75: 1Hz war zu langsam — bei Lauf-Geschwindigkeit ~7m/s
             // kam der Spieler in Bereiche bevor das Culling sie erweckte.
@@ -29636,6 +29645,25 @@ class AnazhRealm {
                 // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
                 // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
                 ...(a.freeBorn === true ? { freeBorn: true } : {}),
+                // Φ7 (V18.190) — entry-level portalMeta (Halle-Slots): eine
+                // materialisierte Halle hat N Tore mit JE eigener worldAddress
+                // am entry.portalMeta. Ohne diese Persistenz würden alle
+                // Slot-Portale nach dem Reload die Bauplan-Default-portalMeta
+                // ziehen (alle gleiche Welt → die Halle wäre tot).
+                ...(a.portalMeta && typeof a.portalMeta === "object" ? { portalMeta: a.portalMeta } : {}),
+            })),
+            // Φ7 (V18.190) — die KURATIONS-MANIFESTE der Welt: signierte
+            // Hallen (Welt-Verzeichnisse) reisen im Snapshot mit. JSON-flach
+            // (Map → Array), Restore baut die Map zurück.
+            portalHalls: Array.from(this.state.portalHalls || new Map()).map(([name, h]) => ({
+                name,
+                label: h.label,
+                entries: h.entries.map((e) => ({ address: { ...e.address }, label: e.label })),
+                authorPubKey: h.authorPubKey || null,
+                sig: h.sig || null,
+                signedAt: h.signedAt || 0,
+                signedHash: h.signedHash || null,
+                provenance: Array.isArray(h.provenance) ? h.provenance.slice() : [],
             })),
             // Ring 6.4 — eigene Baupläne (nicht built-in) persistieren. Die
             // Built-ins werden beim Init aus _defaultBlueprints() erzeugt;
@@ -30993,6 +31021,248 @@ class AnazhRealm {
             this.log(`Φ5 Carrier-Send fehlgeschlagen: ${err.message}`, "WARN");
             return false;
         }
+    }
+
+    // ====================================================================
+    // Φ7 (V18.190) — DIE PORTAL-HALLEN: kuratierte Welt-Verzeichnisse als
+    // signierte Artefakte. Ein Hallen-Manifest trägt N adressierte Portale
+    // (Φ1-Welt-Adressen) + Label + Signatur + Provenance. Beim Spawnen wird
+    // jeder Eintrag ein eigenständiges Portal im Welt-Raum (kreisförmig
+    // um eine Mitte) — ein begehbares Linkverzeichnis. KEIN zentraler Feed
+    // (Anti-Scope §3): Discovery ist die Halle SELBST + die Bibliothek.
+    // ====================================================================
+
+    // Φ7 — der signierbare Kern einer Portal-Halle: nur Identität + Label +
+    // die Adressen (Φ1-canonical pro Eintrag). Spiegel von _canonicalManifest;
+    // ein neuer Eintrag = additiv (das ganze Halle-Werk ist nach JEDER
+    // Änderung neu zu signieren — die Halle bürgt für den Stand-zur-Zeit-X).
+    _canonicalPortalHall(h) {
+        if (!h || typeof h !== "object") return "";
+        const entries = (Array.isArray(h.entries) ? h.entries : [])
+            .filter((e) => e && e.address)
+            .map((e) => ({
+                address: this._canonicalWorldAddress(e.address),
+                label: String(e.label || ""),
+            }));
+        return JSON.stringify({
+            v: 1,
+            name: String(h.name || ""),
+            label: String(h.label || ""),
+            entries,
+        });
+    }
+
+    // Φ7 — eine Halle anlegen oder ersetzen. Strukturell R2: KEIN DSL-Op.
+    // entries = Array von { address, label? }. Jede Adresse läuft durch
+    // _admitForeignWorldAddress (Sieb am Eingang — ein kaputter Eintrag
+    // fällt, der Rest wird übernommen). Liefert die Halle oder Fehler.
+    createPortalHall(name, label, entries) {
+        const cleanName = String(name || "")
+            .trim()
+            .slice(0, 64);
+        if (!cleanName) return { ok: false, reason: "no_name" };
+        const cleanLabel = String(label || cleanName)
+            .trim()
+            .slice(0, 80);
+        const sanitized = [];
+        if (Array.isArray(entries)) {
+            for (const e of entries) {
+                if (!e || !e.address) continue;
+                const admittedAddr = this._admitForeignWorldAddress(e.address);
+                if (!admittedAddr) continue; // Sieb am Eingang
+                sanitized.push({
+                    address: admittedAddr,
+                    label: String(e.label || admittedAddr.label || "").slice(0, 80),
+                });
+            }
+        }
+        if (!sanitized.length) return { ok: false, reason: "no_valid_entries" };
+        // Caps: max 64 Adressen je Halle (eine pragmatische Wand — eine Halle
+        // mit 100en Welten ist UI-feindlich + spam-anfällig; größere Sammlungen
+        // sind eigene Werke, geteilt über mehrere Hallen).
+        if (sanitized.length > 64) sanitized.length = 64;
+        const hall = {
+            name: cleanName,
+            label: cleanLabel,
+            entries: sanitized,
+            authorPubKey: null,
+            sig: null,
+            signedAt: 0,
+            signedHash: null,
+            provenance: [],
+        };
+        this.state.portalHalls.set(cleanName, hall);
+        this.saveState();
+        return { ok: true, name: cleanName, entries: sanitized.length };
+    }
+
+    // Φ7 — eine bestehende Halle signieren. Spiegelt signWorldAddress/
+    // signBlueprint: SOUVERÄNE Geste über sign_manifest. Die Signatur deckt
+    // den Halle-Kern (name+label+entries-canonical); jede spätere Änderung
+    // setzt die Signatur ungültig (signedHash mismatch → "modified" beim
+    // verify-Pfad). Async (ed25519).
+    async signPortalHall(name, opts) {
+        const hall = this.state.portalHalls.get(String(name || ""));
+        if (!hall) return { ok: false, reason: "unknown_hall" };
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready) return { ok: false, reason: "no_vibepass" };
+        if (
+            !this._sovereignGesture(
+                "sign_manifest",
+                {
+                    what: `Portal-Halle „${hall.label}" signieren (${hall.entries.length} Adressen)`,
+                    value: "deine Signatur bürgt für diese Kuration",
+                    whom: "jeden, der die Halle empfängt",
+                },
+                opts
+            )
+        ) {
+            return { ok: false, reason: "cancelled" };
+        }
+        const canonical = this._canonicalPortalHall(hall);
+        const sig = await this._vibeSign(canonical);
+        if (!sig) return { ok: false, reason: "sign_failed" };
+        hall.sig = sig;
+        hall.authorPubKey = vp.publicKeyHex;
+        hall.signedHash = this._fastHash(canonical);
+        hall.signedAt = Date.now();
+        // R4 — Herkunftskette: ich hänge mich an.
+        if (typeof this._appendProvenance === "function") {
+            this._appendProvenance(hall, vp.publicKeyHex);
+        }
+        this.saveState();
+        return { ok: true, name, authorPubKey: hall.authorPubKey };
+    }
+
+    // Φ7 — Signatur-Status einer Halle prüfen (analog verifyWorldAddress).
+    // "unsigned" / "modified" / "valid" / "forged" — async.
+    async verifyPortalHall(hall) {
+        if (!hall || typeof hall !== "object") return "unsigned";
+        if (!hall.sig || !hall.authorPubKey) return "unsigned";
+        const canonical = this._canonicalPortalHall(hall);
+        if (hall.signedHash && this._fastHash(canonical) !== hall.signedHash) {
+            return "modified";
+        }
+        const ok = await this._vibeVerify(canonical, hall.sig, hall.authorPubKey);
+        return ok ? "valid" : "forged";
+    }
+
+    // Φ7 — der EINE Eingang für fremde Hallen (geteilt via Bibliothek, p2p,
+    // Welt-Snapshot). Spiegelt _admitForeignArtifact/_admitForeignWorldAddress:
+    // strukturell + R4-Wand. Jede einzelne Adresse läuft durch den Φ1-Eingang;
+    // unbekannte Felder reisen (must-preserve). Liefert die admittierte Halle
+    // oder null (Müll).
+    _admitForeignPortalHall(rawHall) {
+        if (!rawHall || typeof rawHall !== "object") return null;
+        const name = typeof rawHall.name === "string" ? rawHall.name.trim().slice(0, 64) : "";
+        if (!name) return null;
+        // R4-Sieb: revozierte Herkunft fällt am Eingang.
+        if (typeof this._artifactProvenanceTainted === "function" && this._artifactProvenanceTainted(rawHall)) {
+            return null;
+        }
+        const rawEntries = Array.isArray(rawHall.entries) ? rawHall.entries : [];
+        const entries = [];
+        for (const e of rawEntries) {
+            if (!e || !e.address) continue;
+            const addr = this._admitForeignWorldAddress(e.address);
+            if (!addr) continue;
+            entries.push({ address: addr, label: String(e.label || addr.label || "").slice(0, 80) });
+            if (entries.length >= 64) break;
+        }
+        if (!entries.length) return null;
+        const out = {
+            name,
+            label: typeof rawHall.label === "string" ? rawHall.label.slice(0, 80) : name,
+            entries,
+            authorPubKey: null,
+            sig: null,
+            signedAt: 0,
+            signedHash: null,
+            provenance: [],
+        };
+        // Signatur-Hülle (must-ignore: kaputte Hex bleibt einfach unsigniert).
+        if (
+            typeof rawHall.authorPubKey === "string" &&
+            /^[0-9a-f]{64}$/i.test(rawHall.authorPubKey) &&
+            typeof rawHall.sig === "string" &&
+            /^[0-9a-f]{2,256}$/i.test(rawHall.sig)
+        ) {
+            out.authorPubKey = rawHall.authorPubKey.toLowerCase();
+            out.sig = rawHall.sig;
+            out.signedAt = typeof rawHall.signedAt === "number" ? rawHall.signedAt : 0;
+            if (typeof rawHall.signedHash === "string") out.signedHash = rawHall.signedHash;
+        }
+        // Provenance reist must-preserve (R4 sanitize); ein leerer Eingang
+        // wird zur leeren Kette.
+        if (typeof this._sanitizeProvenance === "function") {
+            out.provenance = this._sanitizeProvenance(rawHall.provenance);
+        }
+        return out;
+    }
+
+    // Φ7 — die Halle MATERIALISIEREN: aus dem Daten-Manifest werden N Portale
+    // als individuelle Architektur-Entries im Welt-Raum gespawnt (Kreis-Anordnung
+    // um position, Radius ∝ √N). Jedes spawned Portal trägt seine Φ1-Adresse
+    // in portalMeta.worldAddress → ein Hindurchgehen löst die Bestätigungs-
+    // Karte (V18.188 _enterPortalToAddress). Optionaler Bauplan-Typ über
+    // opts.portalBlueprint (Default: portal_torus aus der Bibliothek — eine
+    // erprobte Form). Liefert die Liste der gespawnten Entry-IDs.
+    materializePortalHall(name, position, opts = {}) {
+        const hall = this.state.portalHalls.get(String(name || ""));
+        if (!hall) return { ok: false, reason: "unknown_hall" };
+        if (!position || typeof position.x !== "number") {
+            return { ok: false, reason: "no_position" };
+        }
+        const portalType = String(opts.portalBlueprint || "portal_torus");
+        if (!this.state.blueprints || !this.state.blueprints[portalType]) {
+            return { ok: false, reason: "no_portal_blueprint", needed: portalType };
+        }
+        const n = hall.entries.length;
+        if (!n) return { ok: false, reason: "empty_hall" };
+        // Kreis-Anordnung: Radius wächst mit √N (sodass das Auge die Halle
+        // immer scannen kann — n=4 → ~3m, n=16 → ~6m, n=64 → ~12m).
+        const radius = Math.max(2.5, 1.5 * Math.sqrt(n));
+        const spawned = [];
+        for (let i = 0; i < n; i++) {
+            const angle = (i / n) * Math.PI * 2;
+            const ex = position.x + Math.cos(angle) * radius;
+            const ez = position.z + Math.sin(angle) * radius;
+            const ey = typeof position.y === "number" ? position.y : 0;
+            const entry = this.spawnArchitecture(portalType, { x: ex, y: ey, z: ez }, { precise: true });
+            if (!entry) continue;
+            // Tag den Entry mit der Welt-Adresse: ein eigener portalMeta-Slot,
+            // der vom enterPortal-Pfad gelesen wird (V18.188 setPortalAddress-
+            // Form: portalMeta.worldAddress am BLUEPRINT; hier am ENTRY direkt,
+            // damit verschiedene Slots verschiedene Adressen tragen — sonst
+            // würden alle Slot-Portale dieselbe Adresse haben).
+            entry.portalMeta = {
+                worldAddress: hall.entries[i].address,
+                label: hall.entries[i].label,
+                hallName: hall.name,
+            };
+            spawned.push(entry.id);
+        }
+        this.log(
+            `Φ7 Halle „${hall.label}" materialisiert: ${spawned.length} Tore im Kreis (Radius ${radius.toFixed(1)}m)`,
+            "INFO"
+        );
+        return { ok: true, name: hall.name, spawned, radius };
+    }
+
+    // Φ7 — die LISTE-API: welche Hallen kennen wir? Für UI + Tests.
+    listPortalHalls() {
+        const out = [];
+        for (const [name, h] of this.state.portalHalls) {
+            out.push({
+                name,
+                label: h.label,
+                entries: h.entries.length,
+                authorPubKey: h.authorPubKey || null,
+                signed: !!h.sig,
+                signedAt: h.signedAt || 0,
+            });
+        }
+        return out;
     }
 
     // Φ1 — eine Welt-Adresse in ein PORTAL einlegen. Strukturell R2: KEIN
@@ -32910,6 +33180,16 @@ class AnazhRealm {
         this._loadStateRestoreEmotionsAndDsl(state);
         this._loadStateRestoreWorldRules(state);
         this._loadStateRestoreMiscState(state);
+        // Φ7 (V18.190) — Portal-Hallen aus dem Snapshot zurückbauen. Jede
+        // Halle läuft durch _admitForeignPortalHall (Sieb am Eingang —
+        // Selbst-Imports sind auch „fremd": die R4-Wand könnte einen Eintrag
+        // nach Rückruf fallen lassen). Map-Form wird hergestellt.
+        if (Array.isArray(state.portalHalls)) {
+            for (const raw of state.portalHalls) {
+                const admitted = this._admitForeignPortalHall(raw);
+                if (admitted) this.state.portalHalls.set(admitted.name, admitted);
+            }
+        }
         if (externalState) this._loadStatePersistExternalImport(externalState);
         this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
         if (!externalState) this._loadStateRestoreVersionHistory();
@@ -33304,7 +33584,7 @@ class AnazhRealm {
         // `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
         for (const a of state.architectures) {
             if (!a || typeof a.type !== "string" || !a.position) continue;
-            this.spawnArchitecture(a.type, a.position, {
+            const entry = this.spawnArchitecture(a.type, a.position, {
                 seed: a.seed,
                 scale: a.scale,
                 id: a.id,
@@ -33322,6 +33602,12 @@ class AnazhRealm {
                 // Ω5 — die Gratis-Geburt reist durch den Reload mit.
                 freeBorn: a.freeBorn === true,
             });
+            // Φ7 (V18.190) — entry-level portalMeta nachhängen (Halle-Slots
+            // tragen je eigene worldAddress; ohne diesen Schritt würden alle
+            // Slot-Tore die Bauplan-default-Adresse zeigen).
+            if (entry && a.portalMeta && typeof a.portalMeta === "object") {
+                entry.portalMeta = a.portalMeta;
+            }
         }
         this.log(`Architekturen geladen: ${state.architectures.length}`);
     }
@@ -38672,13 +38958,19 @@ class AnazhRealm {
             return { ok: false, reason: "not_a_portal" };
         }
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
-        const portalMeta = bp && bp.portalMeta ? bp.portalMeta : null;
+        const bpPortalMeta = bp && bp.portalMeta ? bp.portalMeta : null;
         // Φ1 (V18.188) — trägt das Portal eine SIGNIERTE Welt-Adresse, ist es
         // ein WEB-Portal: Hindurchgehen löst die Bestätigungs-Karte aus +
         // (nach Bestätigung) den bestehenden joinWorldFromCode-Pfad. Eine
         // ungültige Adresse fällt am Sieb — heutiger Sub-Welt-Pfad als
         // Fallback (das Portal bleibt das alte Welt-Tor). Die Karte zeigt
         // Status — kein Auto-Join bei "invalid" (Antikörper: lügendes Portal).
+        // Φ7 (V18.190) — ENTRY-level portalMeta gewinnt vor BLUEPRINT-level:
+        // eine Halle materialisiert N gleiche Blueprint-Tore, jedes mit
+        // EIGENER worldAddress am entry.portalMeta. So tragen N Slots N
+        // verschiedene Welten (sonst wären alle Slot-Portale gleich).
+        const entryPortalMeta = entry.portalMeta || null;
+        const portalMeta = entryPortalMeta || bpPortalMeta;
         if (portalMeta && portalMeta.worldAddress) {
             return this._enterPortalToAddress(entry, portalMeta.worldAddress);
         }
@@ -62615,7 +62907,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.189.0";
+AnazhRealm.VERSION = "18.190.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
