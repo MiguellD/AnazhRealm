@@ -23372,12 +23372,43 @@ class AnazhRealm {
         }
         // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss): den useInstanceTint-Marker
         // an mat.userData propagieren, damit _archInstanceAdd weiß, dass das HISM
-        // einen instanceColor-Buffer braucht (lazy via setColorAt). Der HSL-Shift-
-        // Shader-Code im colorNode-Tree kommt mit Sub 3f (Λ.3 Wind + Λ.6 Trans-
-        // lucency + Λ.4 Streu-Varianz, alle als geteilte Welle).
+        // einen instanceColor-Buffer braucht (lazy via setColorAt).
         if (opts.useInstanceTint) {
             if (!mat.userData) mat.userData = {};
             mat.userData.useInstanceTint = true;
+        }
+        // V18.181-merge-Λ Sub 3f — Λ.3 (clever-gauss V18.173): WIND-SWAY auf
+        // Baeumen. Wenn das Substanz-Profil wiegen > 0.05 traegt (lebendig·
+        // (1-dichte)·zaehigkeit > 0.05 — laub-typisch), bekommt das Material
+        // einen positionNode-Sway. Geteilte windUniforms.uWindTime (Gras-Quelle
+        // V10.0-i.b, EINE Quelle fuer die ganze Welt). Die Krone wiegt mehr als
+        // der Boden (positionLocal.y · crownFactor). Render-only — die Kollision
+        // bleibt am Bauplan-Original (kein Ammo-Re-Build pro Frame).
+        if (responseProfile && responseProfile.wiegen > 0.05) {
+            try {
+                const _Tw = THREE.TSL;
+                if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") {
+                    this._grassInstanceMat();
+                }
+                const _wu = this.state.windUniforms;
+                if (_Tw && _Tw.positionLocal && _Tw.positionWorld && _Tw.sin && _Tw.cos && _wu && _wu.uWindTime) {
+                    const _sway = Math.max(0, Math.min(1, responseProfile.wiegen));
+                    const _phase = _wu.uWindTime
+                        .mul(_Tw.float(1.3))
+                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.18)))
+                        .add(_Tw.positionWorld.z.mul(_Tw.float(0.14)));
+                    // crownFactor: positionLocal.y normiert auf ±1m → höhere
+                    // Vertices wiegen mehr (lokale Approximation; eingebackene
+                    // Bauplan-Bounds wären eine eigene Welle).
+                    const _crownFactor = _Tw.positionLocal.y.mul(_Tw.float(0.5)).add(_Tw.float(0.5)).clamp(0.0, 1.0);
+                    const _swayMag = _Tw.float(_sway * 0.25).mul(_crownFactor);
+                    const _offsetX = _Tw.sin(_phase).mul(_swayMag);
+                    const _offsetZ = _Tw.cos(_phase.mul(_Tw.float(0.7))).mul(_swayMag.mul(_Tw.float(0.6)));
+                    mat.positionNode = _Tw.positionLocal.add(_Tw.vec3(_offsetX, _Tw.float(0.0), _offsetZ));
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__windSwayError = String((_e && _e.message) || _e);
+            }
         }
         return mat;
     }
