@@ -19674,12 +19674,7 @@ class AnazhRealm {
         const yW = this._voxelSurfaceY(x - 1, z);
         const yN = this._voxelSurfaceY(x, z - 1);
         const yS = this._voxelSurfaceY(x, z + 1);
-        if (
-            !Number.isFinite(yE) ||
-            !Number.isFinite(yW) ||
-            !Number.isFinite(yN) ||
-            !Number.isFinite(yS)
-        ) {
+        if (!Number.isFinite(yE) || !Number.isFinite(yW) || !Number.isFinite(yN) || !Number.isFinite(yS)) {
             return 0;
         }
         const dxh = (yE - yW) / 2;
