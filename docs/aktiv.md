@@ -11,6 +11,25 @@
 
 ## Stand (jüngste oben)
 
+**14.06.2026 — V18.214 ✅ FERTIG, Branch `claude/peaceful-goldberg-49tj81`:**
+**DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG** (Schöpfer-Auftrag „führe den plan durch, der weg ist klar, die beiden seelen, leben im renderer und der logik, sollen entstehen"). Schliesst die Plan-Tiefe, die V18.211+V18.212 nur ZAHLENMÄSSIG erfüllt hatten — Ω-G2 echte Tube-Geometrie + Ω-G3 Foliage-Cards mit normalBend + Ω-W per-Vertex flex/phase + Ω-R2 §3.7-Toleranzen, in EINER Welle.
+
+- **Ω-G2 ECHTE TUBE-GEOMETRIE:** `_buildTreeTubeGeometry(skeleton)` Ring-von-6-Vertices pro Polylinien-Punkt mit **lobed flare am Stamm-Fuß** (sin(j·lobes·2π/radialSegs)·amp·smoothstep). Statt N nackten cylinder-parts EINE organische Tube-Geom pro Variante.
+- **Ω-G3 ECHTE FOLIAGE-CARDS:** `_buildTreeFoliageCardGeometry(skeleton)` card{cross} pro Anchor (2⊥ Quads, 8 Vertices) mit **normalBend=0.6 zur Krone-Sphere** → schattiert wie geschlossene Krone. needleSpray = y-stretched, leafCluster = breit-quadratisch.
+- **Ω-W PER-VERTEX WIND:** `_buildToonNodeMaterial({useFlexAttr:true})` liest gebackene `aFlex` + `aPhase` Attribute. crownFactor = aFlex² (quadratisch, Plan §9), aperiodisches Flattern aus aPhase → echtes Atmen, kein Lockstep mehr.
+- **Ω-R2 §3.7 TOLERANZEN:** `AnazhRealm.SPECIES_TREE_PARAMS` (frozen, VERMUTUNG-markiert) — per-Spezies slopeMax (Birke 0.6 / Tanne 1.2) + heightRange. `_vegetationSampleSpawn` gated den Spawn vor der chance-Probe.
+- **Welt-Routing:** `_skeleton` an gewachsenen Bauplänen ab genVersion 7, Side-Channel `_lastTreeSkeleton`. `_archFlattenBlueprint` priorisiert Skeleton-Pfad. genVersion 6→7 für FRESH-Welten; alte Welten gen<7 fallen auf V18.213-cylinder-merge zurück (bit-identisch).
+- **Tag-Neutralität:** bp.parts UNVERÄNDERT → V17.16-Wand STRUKTURELL bewahrt. computeCompoundTags bit-identisch GEMESSEN.
+- **Snapshot:** _skeleton NICHT persistiert (re-baubar aus seed wie parts).
+
+28 V18.214-Wände grün (T1-T10) + ~3500 bestehende grün erwartet. Version 18.213.0→18.214.0. **Diag GEMESSEN:** archInstanceGroups 174→26 (6.7× weniger Pools welt-weit), Skeleton-Build 0.5ms (vs V18.213 cylinder-merge 10.5ms).
+
+**Vier permanente Lehren in CLAUDE.md + handover-Chronik:** Side-Channel-Pattern · Per-Vertex-Attribute STRIKT-Gating (V10.0-g.1-Erweiterung) · flare als Radius-Modulation statt Extra-Part · Skeleton-Render direkt aus Polylinien (V18.213-merge war Foundation, V18.214 die echte Form).
+
+**📋 NÄCHSTE:** S-Gate 0 Ω-K3 Palette-Bindung (Schöpfer-Browser-Auge) · Ω-R1 distinkte Tag-Vektoren (Plan §7, V17.16-Wand kontrolliert öffnen) · GPU-Welle Ω-B+Ω-S+Ω-H für Millionen-Bäume-Dichte + SEELEN-Band (gigant-fortsetzung-plan V18.215-V18.217).
+
+---
+
 **14.06.2026 — V18.213 ✅ FERTIG, Branch `claude/peaceful-goldberg-49tj81`:**
 **DER LEBENDIGE GIGANT, MESH-MERGE pro Variante** — die erste Welle des gigant-fortsetzung-plans, der erste FPS-Hebel nach Säule I.
 

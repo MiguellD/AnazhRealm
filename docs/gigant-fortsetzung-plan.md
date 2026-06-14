@@ -6,7 +6,12 @@
 > Anpassungen + Tests. Querschnitt-Disziplinen am Ende.
 >
 > **STATUS (14.06.2026):** V18.213 ✅ GEBAUT (Mesh-Merge, 38× Draw-Call-
-> Reduktion gemessen). Sechs verbleibende Wellen, ~7-11 Sessions.
+> Reduktion). **V18.214 ✅ GEBAUT (Säule I+II+IV VOLLENDUNG: echte Tube-
+> Geometrie + Foliage-Cards + per-Vertex Wind + Slope-Toleranzen). archInstance
+> Groups welt-weit 174→26 (6.7× weniger Pools), Build 0.5ms.** Verbleibend:
+> Ω-K3 Palette · Ω-R1 distinkte Tags · Ω-B GPU-Feld-Bake · Ω-S GPU-Compute-
+> Scatter · Ω-H volle Promotion (das SEELEN-Band) · Ω-P PBR (optional). ~5-9
+> Sessions.
 
 **Schöpfer-Auftrag 14.06.2026 nach Merge V18.211+V18.212:** „nächste session
 schlissen wir die noch offenen punkte aus dem aktuellen plan ab" + „voller
@@ -15,24 +20,27 @@ tests".
 
 ---
 
-## §0 — STAND nach V18.212 + Reihenfolge
+## §0 — STAND nach V18.214 + Reihenfolge
 
 ### Was steht
-- V18.211 (Säule I): Skeleton-Grammar — Bäume lesen als Bäume (75-81 Parts)
-- V18.212 (Restsubschritte): Ω-K2 + Ω-W + Ω-H (emergent) + Ω-C Canopy-Shell
+- V18.211 (Säule I-Foundation): Skeleton-Grammar — Bäume lesen als Bäume (75-81 Parts, ZAHLENMÄSSIG)
+- V18.212 (Restsubschritte): Ω-K2 + Ω-W (basic) + Ω-H (emergent Provenienz) + Ω-C Canopy-Shell
+- V18.213 (Mesh-Merge): 75-80→2 Leaves pro Variante, 38× weniger Draw-Calls
+- **V18.214 (Säule I+II+IV VOLLENDUNG):** Ω-G2 echte Tube-Geometrie · Ω-G3 Foliage-Cards mit normalBend · Ω-W per-Vertex flex/phase · Ω-R2 §3.7 Slope+Höhen-Toleranzen. archInstanceGroups 174→26 (6.7× weniger Pools welt-weit), Build 0.5ms.
 
 ### Was offen ist
-Plan-§11-Reihenfolge nach unserem Adapter:
+Plan-§11-Reihenfolge nach unserem Adapter (lebendiger-gigant-Plan be15a050):
 
 | § | Offene Welle | Hebel | Aufwand |
 |---|---|---|---|
 | Mesh | ✅ V18.213 MESH-MERGE (38× gemessen) | FPS ⬆⬆⬆ | GEBAUT |
-| LOD | **V18.214 LOD-STUFEN (3 LODs)** | FPS ⬆⬆ + Distanz ⬆⬆ | mittel |
-| §5 | **V18.215 Ω-B GPU-Feld-Bake** | Vorbedingung §8 | groß |
-| §8 | **V18.216 Ω-S GPU-Compute-Scatter** | Dichte ⬆⬆⬆⬆ | groß |
-| §2 | **V18.217 Ω-H Promotion (volle Form)** | SEELEN-Band | mittel |
-| Vertiefung | V18.218 Canopy chunk-streaming + per-Vertex Wind (optional) | Polish | klein |
-| §10 | V18.219 Ω-P PBR (optional, S-Gate 4) | Look-Wechsel | groß |
+| Säule I-IV | ✅ V18.214 echte Tubes+Cards+Wind+Toleranzen | Substanz ⬆⬆⬆ | GEBAUT |
+| §4 (S-Gate 0) | **Ω-K3 PALETTE-BINDUNG** (Schöpfer-Browser-Auge) | Kohärenz | klein |
+| §7 | **Ω-R1 distinkte Tag-Vektoren** (Plan §7, V17.16-Wand kontrolliert öffnen) | Resonanz ⬆ | klein |
+| §5 | **Ω-B GPU-Feld-Bake** | Vorbedingung §8 | groß |
+| §8 | **Ω-S GPU-Compute-Scatter** | Dichte ⬆⬆⬆⬆ | groß |
+| §2 | **Ω-H volle Promotion** | SEELEN-Band | mittel |
+| §10 | Ω-P PBR-Kohärenz (optional, S-Gate 4) | Look-Wechsel | groß |
 
 **Kritische Reihenfolge — Abhängigkeitskette:**
 ```

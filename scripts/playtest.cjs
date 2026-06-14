@@ -34756,9 +34756,9 @@ async function checkBandV18209Konsolidierung(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.213.0"
+        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.214.0"
         out.versionStr = A.VERSION;
-        out.versionMatches = A.VERSION === "18.213.0";
+        out.versionMatches = A.VERSION === "18.214.0";
 
         // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
         // beim Konsolidieren (alles bleibt lauffähig):
@@ -34801,7 +34801,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
-    check(`V18.209 (K1) VERSION = "18.213.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
+    check(`V18.209 (K1) VERSION = "18.214.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
     check("V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)", res.allFoundationsAlive === true);
     check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
     check("V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)", res.avatarFamilyKomplett === true);
@@ -34825,9 +34825,9 @@ async function checkBandV18210Verdrahtung(ctx) {
         // ============== A1: Γ7 WORLDGEN-HOOK ==============
         // (A1a) Helper _growTreeBlueprintForSpawn existiert + ruft Helper
         out.a1HelperExists = typeof r._growTreeBlueprintForSpawn === "function";
-        // (A1b) gen-Default für FRESH ist 6 (V18.213 MESH-MERGE statt V18.211's 5)
-        const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18213") : null;
-        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 6;
+        // (A1b) gen-Default für FRESH ist 7 (V18.214 SKELETON-MESH statt V18.213's 6)
+        const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18214") : null;
+        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 7;
         // (A1c) Determinismus: gleiches (species, seed) → gleicher cacheKey
         const k1 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
         const k2 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
@@ -35170,7 +35170,7 @@ async function checkBandV18210Verdrahtung(ctx) {
 
     // A1 — Worldgen-Hook
     check("V18.210-A1a _growTreeBlueprintForSpawn Helper existiert", res.a1HelperExists === true);
-    check("V18.213 FRESH-Welt genVersion = 6 (MESH-MERGE aktiv; war 5)", res.a1FreshGenIs4 === true);
+    check("V18.214 FRESH-Welt genVersion = 7 (SKELETON-MESH aktiv; war 6)", res.a1FreshGenIs4 === true);
     check("V18.210-A1c Determinismus: (species, seed) → derselbe cacheKey", res.a1Deterministic === true);
     check("V18.210-A1d Cache-Reuse: SELBE seed → SELBES Bauplan-Object", res.a1CacheReuse === true);
     check("V18.210-A1e 6 seeds → ≥5 unique cache keys", res.a1ManyVariants === true);
@@ -35336,7 +35336,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
 
         // (S6) VERSION-BUMP: AnazhRealm.VERSION + index.html cache-buster.
         // Walk-with-code (V9.56-i): die Probe trägt die aktuelle Versions-Zahl.
-        out.versionBumped = A.VERSION === "18.213.0";
+        out.versionBumped = A.VERSION === "18.214.0";
 
         return out;
     });
@@ -35356,7 +35356,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
     check("V18.211 (S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)", res.snapshotHasMetadata === true);
     check("V18.211 (S5b) Snapshot grownBlueprints OHNE parts-Array (re-wächst f(seed))", res.snapshotNoParts === true);
     check("V18.211 (S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)", res.snapshotGrownEntrySmall === true);
-    check(`V18.211 (S6) VERSION = "18.213.0" (walk-with-code, V18.213 Mesh-Merge)`, res.versionBumped === true);
+    check(`V18.211 (S6) VERSION = "18.214.0" (walk-with-code, V18.214 Skeleton-Mesh)`, res.versionBumped === true);
 }
 
 // V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE der ersten Pillar-Welle:
@@ -35548,13 +35548,19 @@ async function checkBandV18213MeshMerge(ctx) {
             /\.dispose\s*\(\s*\)|\.clear\s*\(\s*\)/.test(restoreSrc);
 
         // ─── (M2) genVersion-Default: neue Welten = gen 6 ──────────
-        // Eine NEUE Welt-Meta hat genVersion: 6 (gigant-fortsetzung-plan).
+        // Eine NEUE Welt-Meta hat genVersion: 7 (V18.214 SKELETON-MESH); gen 6
+        // war V18.213. Die M2-Probe prüft, dass die Welt-Genese MINDESTENS 6
+        // ist (V18.213-Mesh-Merge aktiv) — der konkrete Default-Bump wird in
+        // V18.214 (T1) explizit getestet.
         // Die LAUFENDE Welt kann eine ältere Welt aus localStorage sein
         // (Backward-Kompat-Test): bestehende Welten bleiben auf ihrem
         // genVersion-Stand, NUR neue Welten bekommen 6. So sind die alten
         // Welten bit-identisch (V18.211-Pfad).
         const newMetaSrc = r._generateFreshWorldMeta ? r._generateFreshWorldMeta.toString() : "";
-        out.newMetaUsesGen6 = /genVersion:\s*6/.test(newMetaSrc);
+        // V18.213-Probe: gen >= 6 (Mesh-Merge aktiv). V18.214 hebt auf 7 —
+        // wir akzeptieren beide (Aufwärts-Kompat). M2 prüft NICHT den exakten
+        // Wert (das macht V18.214-T-band), sondern nur den Mesh-Merge-Floor.
+        out.newMetaUsesGen6 = /genVersion:\s*[6-9]/.test(newMetaSrc);
 
         // ─── (M3+M4) Behavioral: gen=6 grown Baum trägt _isMerged + Merge funktioniert ─
         // Den ECHTEN warm-welt-Bauplan als Test-Subjekt: ein _isGrown-Bauplan,
@@ -35678,7 +35684,7 @@ async function checkBandV18213MeshMerge(ctx) {
     check("V18.213 (M1b) _mergeGeometries existiert", res.mergeGeomsExists === true);
     check("V18.213 (M1c) _archFlattenBlueprint hat merged-Pfad (_isMerged-Gate + archMergedGeomCache)", res.flattenHasMergedPath === true);
     check("V18.213 (M1d) _loadStateRestoreWorldMeta disposed archMergedGeomCache", res.restoreDisposesMerged === true);
-    check("V18.213 (M2) Neue Welt-Meta nutzt genVersion: 6", res.newMetaUsesGen6 === true);
+    check("V18.213 (M2) Neue Welt-Meta nutzt genVersion ≥ 6 (Mesh-Merge-Floor)", res.newMetaUsesGen6 === true);
     check("V18.213 (M3a) gen=6 grown Bauplan trägt _isMerged: true", res.bpHasIsMerged === true);
     check("V18.213 (M3b) bp.parts bleibt erhalten (≥50 Parts, V17.16-Wand)", res.bpStillHasParts === true);
     check("V18.213 (M4a) archFlattenBlueprint markiert merged: true (Diagnose-Marker)", res.flatHasMergedFlag === true);
@@ -35694,6 +35700,221 @@ async function checkBandV18213MeshMerge(ctx) {
     check("V18.213 (M9b) Snapshot persistiert _isMerged NICHT (aus genVersion ableitbar)", res.snapshotHasNoMergedFlag === true);
     check("V18.213 (M10a) archMergedGeomCache war nicht-leer nach Merge", res.cacheExists === true);
     check("V18.213 (M10b) archMergedGeomCache wird beim Reset geleert", res.cacheClearedAfterReset === true);
+}
+
+// V18.214 — DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG (lebendiger-Gigant-
+// Plan §6+§7+§9): Ω-G2 echte Tube-Geometrie + Ω-G3 Foliage-Cards + Ω-W per-
+// Vertex flex/phase + Ω-R2 §3.7 Slope/Höhen-Toleranzen. bp.parts BLEIBT
+// unverändert (V17.16-Wand strukturell) — der Skeleton-Pfad ist eine reine
+// Render-Vertiefung: statt 75 nackten cylinder/sphere-Parts (V18.211) oder
+// 2 merged-cylinder-Leaves (V18.213) sind es zwei organische Geometries
+// (bark-Tube mit lobed flare + foliage-cards mit normalBend).
+async function checkBandV18214SkeletonMesh(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // ─── (T1) Source-Probes: die vier neuen Helper + Routing ─────
+        out.tubeBuilderExists = typeof r._buildTreeTubeGeometry === "function";
+        out.cardBuilderExists = typeof r._buildTreeFoliageCardGeometry === "function";
+        out.skelLeavesExists = typeof r._buildTreeSkeletonLeaves === "function";
+        out.mergeAttrExists = typeof r._mergeAttributedGeometries === "function";
+        const flattenSrc2 = r._archFlattenBlueprint.toString();
+        out.flattenHasSkeletonPath =
+            /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
+        out.defaultFlareExists =
+            !!A.DEFAULT_TREE_FLARE && Number.isFinite(A.DEFAULT_TREE_FLARE.amp) && A.DEFAULT_TREE_FLARE.amp > 0;
+        out.speciesTreeParamsExists =
+            !!A.SPECIES_TREE_PARAMS && !!A.SPECIES_TREE_PARAMS.baum_tanne && !!A.SPECIES_TREE_PARAMS.baum_birke;
+        if (out.speciesTreeParamsExists) {
+            const tp = A.SPECIES_TREE_PARAMS;
+            // Plan §3.7: Birke meidet Steilhang (slopeMax ≈ 0.6), Fichte/Tanne klettert (1.2+).
+            out.tannenSlopeHigher = tp.baum_tanne.slopeMax > tp.baum_birke.slopeMax;
+            out.allSpeciesHaveFlare =
+                ["baum_tanne", "baum_kiefer", "baum_buche", "baum_birke", "baum_eiche", "baum_erle"].every(
+                    (k) => tp[k] && tp[k].flare && Number.isFinite(tp[k].flare.amp)
+                );
+        }
+
+        // ─── (T2) Wind: useFlexAttr-Pfad existiert in _buildToonNodeMaterial ─
+        const swaySrc = r._buildToonNodeMaterial.toString();
+        out.swayReadsFlexAttr =
+            /useFlexAttr\s*===\s*true/.test(swaySrc) && /attribute\(['"]aFlex['"]/.test(swaySrc);
+
+        // ─── (T3) Slope/Höhen-Gate in _vegetationSampleSpawn ────────
+        const spawnSrc = r._vegetationSampleSpawn.toString();
+        out.spawnReadsSlopeHeight =
+            /SPECIES_TREE_PARAMS/.test(spawnSrc) && /slopeMax/.test(spawnSrc) && /heightRange/.test(spawnSrc);
+
+        // ─── (T4) Behavioral: Skeleton wird beim Wachsen gesetzt ────
+        // Wir setzen genVersion temporär auf 7 + wachsen einen Bauplan, der
+        // GARANTIERT instancbar ist (nicht moveable/magnifying). V18.213-Lehre:
+        // manche Random-Seeds (V18.212 Ω-K2 Spread + magieleitung) erzeugen
+        // moveable-Tannen → der Test darf nicht an einem Random-Edge-Case
+        // hängen. Wir probieren mehrere (Seed, Spezies)-Kombis bis wir einen
+        // nicht-moveable-Baum haben. Das ist der robuste Pfad — die Wahrheit
+        // des Skeleton-Codes wird mit JEDEM nicht-moveable Bauplan getestet.
+        const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : null;
+        if (r.state.worldMeta) r.state.worldMeta.genVersion = 7;
+        let grownKey = null;
+        const tries = [
+            ["baum_kiefer", "skel-t1"],
+            ["baum_kiefer", "skel-t2"],
+            ["baum_kiefer", "skel-t3"],
+            ["baum_buche", "skel-t4"],
+            ["baum_eiche", "skel-t5"],
+            ["baum_tanne", "skel-t6"],
+            ["baum_birke", "skel-t7"],
+            ["baum_erle", "skel-t8"],
+        ];
+        for (const [sp, sd] of tries) {
+            try {
+                const candidate = r._growTreeBlueprintForSpawn(sp, sd);
+                if (!candidate || !r.state.blueprints[candidate]) continue;
+                const bp2 = r.state.blueprints[candidate];
+                const aff = r.computeBlueprintAffordances(bp2);
+                if (aff.moveable || aff.magnifying) continue;
+                grownKey = candidate;
+                break;
+            } catch (_e) {
+                out.growError = String(_e && _e.message);
+            }
+        }
+        if (grownKey && r.state.blueprints[grownKey]) {
+            const bp = r.state.blueprints[grownKey];
+            out.bpHasSkeleton = !!bp._skeleton && Array.isArray(bp._skeleton.branches);
+            out.bpStillHasParts = Array.isArray(bp.parts) && bp.parts.length >= 50;
+            if (out.bpHasSkeleton) {
+                out.skelBranchCount = bp._skeleton.branches.length;
+                out.skelAnchorCount = Array.isArray(bp._skeleton.anchors) ? bp._skeleton.anchors.length : 0;
+                out.skelHasTrunk = bp._skeleton.branches.some((b) => b.isTrunk === true);
+                out.skelHasFlare =
+                    Number.isFinite(bp._skeleton.flareAmp) && bp._skeleton.flareAmp > 0;
+            }
+
+            // ─── (T5) Behavioral: archFlattenBlueprint baut Tube+Cards ───
+            if (r.state.archFlattenCache) r.state.archFlattenCache.delete(grownKey);
+            if (r.state.archMergedGeomCache) r.state.archMergedGeomCache.delete(grownKey);
+            const flat = r._archFlattenBlueprint(grownKey);
+            out.flatIsSkeleton = flat && flat.skeleton === true;
+            out.flatHasMergedMarker = flat && flat.merged === true;
+            out.flatLeafCount = flat ? flat.leaves.length : -1;
+            // 2 leaves erwartet (bark + foliage), max 4 als Toleranz.
+            out.flatLeavesFew = flat && flat.leaves.length >= 1 && flat.leaves.length <= 4;
+            if (flat && flat.leaves.length > 0) {
+                // T6: bark-Geometrie trägt aFlex + aPhase + color + viele Vertices
+                const bark = flat.leaves[0];
+                out.barkVerts = bark.geom.attributes.position.count;
+                out.barkHasFlex = !!bark.geom.attributes.aFlex;
+                out.barkHasPhase = !!bark.geom.attributes.aPhase;
+                out.barkHasColor = !!bark.geom.attributes.color;
+                out.barkHasNormal = !!bark.geom.attributes.normal;
+                out.barkManyVerts = bark.geom.attributes.position.count >= 100;
+                out.barkMatUseFlex =
+                    bark.mat && bark.mat.userData && bark.mat.userData.useFlexAttr !== undefined
+                        ? bark.mat.userData.useFlexAttr === true
+                        : true; // useFlexAttr ist opts-only, nicht userData-propagiert; akzeptiere
+                // T7: localMatrix Identity
+                const elems = bark.localMatrix.elements;
+                out.barkIdentity =
+                    Math.abs(elems[0] - 1) < 1e-6 &&
+                    Math.abs(elems[5] - 1) < 1e-6 &&
+                    Math.abs(elems[10] - 1) < 1e-6;
+                // T8: foliage falls vorhanden
+                if (flat.leaves.length > 1) {
+                    const fol = flat.leaves[1];
+                    out.foliageHasFlex = !!fol.geom.attributes.aFlex;
+                    out.foliageVerts = fol.geom.attributes.position.count;
+                    out.foliageHasColor = !!fol.geom.attributes.color;
+                    // Anchors × 8 Vertices pro Card-Cross
+                    out.foliageVertsMatchAnchors =
+                        fol.geom.attributes.position.count === out.skelAnchorCount * 8;
+                }
+            }
+
+            // ─── (T9) Tag-Neutralität (V17.16-Wand): bp.parts unverändert ──
+            const tagsSkel = r.computeCompoundTags(bp);
+            const bpClone = { parts: bp.parts.slice() };
+            const tagsClone = r.computeCompoundTags(bpClone);
+            const tagKeys = ["lebendig", "dichte", "brennbar", "magieleitung"];
+            out.tagsNeutral = tagKeys.every(
+                (k) => Math.abs((tagsSkel[k] || 0) - (tagsClone[k] || 0)) < 1e-9
+            );
+
+            // ─── (T10) Snapshot: _skeleton NICHT persistiert ─────────
+            const snap = r.buildStateSnapshot();
+            const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
+            out.snapshotHasEntry = !!gb;
+            out.snapshotNoSkeletonField = gb ? gb._skeleton === undefined : false;
+        }
+
+        // genVersion-Restore (defensive)
+        if (r.state.worldMeta && origGen !== null) r.state.worldMeta.genVersion = origGen;
+
+        return out;
+    });
+
+    check("V18.214 (T1a) _buildTreeTubeGeometry existiert", res.tubeBuilderExists === true);
+    check("V18.214 (T1b) _buildTreeFoliageCardGeometry existiert", res.cardBuilderExists === true);
+    check("V18.214 (T1c) _buildTreeSkeletonLeaves existiert", res.skelLeavesExists === true);
+    check("V18.214 (T1d) _mergeAttributedGeometries existiert", res.mergeAttrExists === true);
+    check(
+        "V18.214 (T1e) _archFlattenBlueprint hat Skeleton-Pfad (_skeleton-Gate + _buildTreeSkeletonLeaves)",
+        res.flattenHasSkeletonPath === true
+    );
+    check("V18.214 (T1f) DEFAULT_TREE_FLARE definiert + amp>0", res.defaultFlareExists === true);
+    check("V18.214 (T1g) SPECIES_TREE_PARAMS definiert (alle 6 Arten)", res.speciesTreeParamsExists === true);
+    check(
+        "V18.214 (T1h) Plan §3.7: Tanne slopeMax > Birke slopeMax (Birke meidet Steilhang)",
+        res.tannenSlopeHigher === true
+    );
+    check("V18.214 (T1i) Alle 6 Arten haben flare-Werte", res.allSpeciesHaveFlare === true);
+    check(
+        "V18.214 (T2) _buildToonNodeMaterial liest aFlex Attribut bei useFlexAttr",
+        res.swayReadsFlexAttr === true
+    );
+    check(
+        "V18.214 (T3) _vegetationSampleSpawn liest SPECIES_TREE_PARAMS + slopeMax + heightRange",
+        res.spawnReadsSlopeHeight === true
+    );
+    check("V18.214 (T4a) gen=7 grown Bauplan trägt _skeleton-Feld", res.bpHasSkeleton === true);
+    check("V18.214 (T4b) bp.parts bleibt erhalten (V17.16-Wand)", res.bpStillHasParts === true);
+    check(
+        `V18.214 (T4c) Skeleton hat ≥2 Branches (Stamm + L1+) — gemessen ${res.skelBranchCount}`,
+        res.skelBranchCount >= 2
+    );
+    check(
+        `V18.214 (T4d) Skeleton hat ≥1 Foliage-Anchor — gemessen ${res.skelAnchorCount}`,
+        res.skelAnchorCount >= 1
+    );
+    check("V18.214 (T4e) Skeleton trägt einen isTrunk-Branch", res.skelHasTrunk === true);
+    check("V18.214 (T4f) Skeleton trägt flareAmp>0 (Wurzelanlauf)", res.skelHasFlare === true);
+    check("V18.214 (T5a) archFlattenBlueprint markiert skeleton: true", res.flatIsSkeleton === true);
+    check("V18.214 (T5b) archFlattenBlueprint markiert merged: true (Diagnose-Kompat)", res.flatHasMergedMarker === true);
+    check(
+        `V18.214 (T5c) ≤4 leaves (gemessen ${res.flatLeafCount}, erwartet 1-2 bark+foliage)`,
+        res.flatLeavesFew === true
+    );
+    check(`V18.214 (T6a) bark-Geom trägt aFlex (gemessen ${res.barkVerts} verts)`, res.barkHasFlex === true);
+    check("V18.214 (T6b) bark-Geom trägt aPhase", res.barkHasPhase === true);
+    check("V18.214 (T6c) bark-Geom trägt color", res.barkHasColor === true);
+    check("V18.214 (T6d) bark-Geom trägt normal", res.barkHasNormal === true);
+    check("V18.214 (T6e) bark-Geom hat ≥100 Vertices (Ring-of-6 pro Punkt)", res.barkManyVerts === true);
+    check("V18.214 (T7) bark-Leaf localMatrix ist Identity", res.barkIdentity === true);
+    check(`V18.214 (T8a) foliage-Geom trägt aFlex (verts=${res.foliageVerts})`, res.foliageHasFlex === true);
+    check("V18.214 (T8b) foliage-Geom trägt color", res.foliageHasColor === true);
+    check(
+        `V18.214 (T8c) foliage-Vertex-Count = anchors·8 (card{cross}: ${res.foliageVerts}/${res.skelAnchorCount}·8)`,
+        res.foliageVertsMatchAnchors === true
+    );
+    check(
+        "V18.214 (T9) Tag-Neutralität: computeCompoundTags(skeleton bp) == (clone) (V17.16-Wand)",
+        res.tagsNeutral === true
+    );
+    check("V18.214 (T10a) Snapshot trägt grown-Eintrag", res.snapshotHasEntry === true);
+    check("V18.214 (T10b) Snapshot persistiert _skeleton NICHT (re-baubar aus seed)", res.snapshotNoSkeletonField === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -52890,6 +53111,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18211SkeletonGrammar(ctx);
             await checkBandV18212GigantRestsubschritte(ctx);
             await checkBandV18213MeshMerge(ctx);
+            await checkBandV18214SkeletonMesh(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

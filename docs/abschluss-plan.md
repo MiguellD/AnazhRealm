@@ -18,11 +18,12 @@
 
 ---
 
-## §0 — STAND 14.06.2026 (nach V18.213 — DER LEBENDIGE GIGANT, MESH-MERGE)
+## §0 — STAND 14.06.2026 (nach V18.214 — DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG)
 
-**📋 DER VOLLSTÄNDIGE FORTSETZUNG-PLAN für V18.214-V18.219 lebt in `docs/gigant-fortsetzung-plan.md`** — 6 verbleibende Wellen, V18.213 ✅ GEBAUT (Mesh-Merge mit 38× Draw-Call-Reduktion GEMESSEN). **Pflichtlektüre vor der nächsten Session.**
+**📋 DER VOLLSTÄNDIGE FORTSETZUNG-PLAN für V18.215-V18.219 lebt in `docs/gigant-fortsetzung-plan.md`** — V18.213+V18.214 ✅ GEBAUT. **Pflichtlektüre vor der nächsten Session.**
 
-**21 Wellen V18.193-V18.213 gebaut.** Branch: `claude/peaceful-goldberg-49tj81`, jüngste Code-Commits:
+**22 Wellen V18.193-V18.214 gebaut.** Branch: `claude/peaceful-goldberg-49tj81`, jüngste Code-Commits:
+- V18.214 — DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG (echte Tube-Geom + Foliage-Cards + per-Vertex Wind + Slope-Toleranzen)
 - V18.213 — DER LEBENDIGE GIGANT, MESH-MERGE pro Variante (38× Draw-Call-Reduktion)
 - `f447caa` Merge V18.211+V18.212 in main (14.06.)
 - `5b5cef3` V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE Ω-K2 + Ω-W + Ω-H + Ω-C

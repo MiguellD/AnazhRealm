@@ -12002,8 +12002,13 @@ class AnazhRealm {
         // auf primären Ästen. Spezies-distinkte Form aus SPECIES_GRAMMAR
         // (§3.3). V18.213 (DER LEBENDIGE GIGANT §1 gigant-fortsetzung-plan) —
         // 6=plus den MESH-MERGE pro Variante (~37× weniger Draw-Calls pro
-        // grown Bauplan). Frische Welten kriegen direkt 6.
-        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 6;
+        // grown Bauplan). V18.214 (DER LEBENDIGE GIGANT, SÄULE I+II+IV
+        // VOLLENDUNG) — 7=plus echte Tube-Geometrie (Polylinien-Skeleton →
+        // verjüngte Tube mit flare am Fuß, Plan Ω-G2), Foliage-Cards
+        // (cards{cross} mit normalBend, Plan Ω-G3), per-Vertex flex/phase
+        // gebacken für aperiodischen Wind (Plan Ω-G4/Ω-W), per-Spezies
+        // Slope+Höhen-Toleranzen (Plan Ω-R2 §3.7). Frische Welten kriegen 7.
+        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 7;
         // V9.26 Phase 5c-Migrations-Flip + V9.33 Phase 5c.2.b Eingangs-Welt-
         // Flip + V9.35 Phase 5c.2.c.2 Toggle-Tod — der Voxel-Boden ist die
         // kanonische, irreversible Form. V9.35 zieht die ZWANGS-Migration nach:
@@ -12248,7 +12253,7 @@ class AnazhRealm {
         // Gesicht (legacy-erhaltend: das Drainage-Netz-Gesetz, Genese ist
         // Welt-Identität). V18.179: gen 3 schaltet Γ4-Makro-Geographie.
         // V18.210 (§1-A1): gen 4 schaltet Γ7-prozedurale Baum-Bauplane.
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 6 };
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 7 };
     }
 
     // Snapshot einer „leeren" Welt mit gegebenem worldMeta. Optional bekommt
@@ -24511,15 +24516,31 @@ class AnazhRealm {
                         .mul(_Tw.float(1.1))
                         .add(_Tw.positionWorld.x.mul(_Tw.float(0.18)))
                         .add(_Tw.positionWorld.z.mul(_Tw.float(0.14)));
-                    // V18.212 — Ω-W KRONE-QUADRATISCH (Plan §9): Spitzen flexen
-                    // viel mehr als die Basis. Der V18.211-crownFactor war
-                    // linear (positionLocal.y · 0.5 + 0.5); quadratisch macht
-                    // die Spitzen sichtbar dynamischer + die Basis ruhiger.
-                    const _crownLin = _Tw.positionLocal.y.mul(_Tw.float(0.5)).add(_Tw.float(0.5)).clamp(0.0, 1.0);
-                    const _crownFactor = _crownLin.mul(_crownLin); // quadratisch
+                    // V18.214 — wenn das Material per-Vertex aFlex+aPhase
+                    // trägt (Skeleton-Pfad, Plan Ω-G2/G3/W): nutze die
+                    // gebackenen Attribute statt der crownLin-Schätzung.
+                    // crownFactor = aFlex² (Spitzen flexen quadratisch
+                    // stärker, Plan §9), aperiodische Phase = aPhase
+                    // (Hash-Phasen-Versatz pro Vertex → echtes Flattern).
+                    let _crownFactor;
+                    let _flutterShift;
+                    if (opts.useFlexAttr === true && _Tw.attribute) {
+                        const _aFlex = _Tw.attribute("aFlex", "float").clamp(0.0, 1.0);
+                        const _aPhase = _Tw.attribute("aPhase", "float");
+                        _crownFactor = _aFlex.mul(_aFlex);
+                        _flutterShift = _aPhase;
+                    } else {
+                        // V18.212-Fallback (cylinder-merged, classic per-part):
+                        // crownLin aus positionLocal.y quadratisch.
+                        const _crownLin = _Tw.positionLocal.y.mul(_Tw.float(0.5)).add(_Tw.float(0.5)).clamp(0.0, 1.0);
+                        _crownFactor = _crownLin.mul(_crownLin);
+                        _flutterShift = _Tw.float(0.0);
+                    }
                     const _swayMag = _Tw.float(_sway * 0.32).mul(_crownFactor);
-                    const _offsetX = _Tw.sin(_phase).mul(_swayMag);
-                    const _offsetZ = _Tw.cos(_phase.mul(_Tw.float(0.7))).mul(_swayMag.mul(_Tw.float(0.6)));
+                    const _offsetX = _Tw.sin(_phase.add(_flutterShift)).mul(_swayMag);
+                    const _offsetZ = _Tw
+                        .cos(_phase.mul(_Tw.float(0.7)).add(_flutterShift))
+                        .mul(_swayMag.mul(_Tw.float(0.6)));
                     // V18.212 — Ω-W APERIODISCHES FLATTERN (Plan §9: „Äste
                     // wiegen, Laub flattert aperiodisch"). Hochfrequenter
                     // Term ADDIERT auf die wiegen-Sway. Aus positionWorld.y
@@ -24528,7 +24549,8 @@ class AnazhRealm {
                     const _flutterPhase = _wu.uWindTime
                         .mul(_Tw.float(6.5))
                         .add(_Tw.positionWorld.y.mul(_Tw.float(2.3)))
-                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.9)));
+                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.9)))
+                        .add(_flutterShift.mul(_Tw.float(1.3)));
                     const _flutter = _Tw.sin(_flutterPhase).mul(_swayMag).mul(_Tw.float(0.18));
                     const _flutterZ = _Tw
                         .cos(_flutterPhase.mul(_Tw.float(0.83)))
@@ -34623,9 +34645,16 @@ class AnazhRealm {
             // ableitbar (gen ≥ 6) und wird NICHT im Snapshot persistiert
             // (eine Form-Eigenschaft der Welt, kein Bauplan-Datum). So
             // bleibt das Snapshot-Schema kompakt + Welten mit gen < 6 bauen
-            // automatisch Per-Part (Backward-Kompat).
+            // automatisch Per-Part (Backward-Kompat). V18.214: dasselbe für
+            // _skeleton bei gen ≥ 7 — das Skeleton wurde beim Re-Wachsen via
+            // `_growTreeBlueprint` als Side-Effect in `_lastTreeSkeleton`
+            // gesetzt und wird hier in bp._skeleton übernommen.
             const genVRestore = typeof this._genVersion === "function" ? this._genVersion() : 1;
             const isMergedRestore = genVRestore >= 6;
+            const skelRestore =
+                genVRestore >= 7 && this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches)
+                    ? this._lastTreeSkeleton
+                    : null;
             this.state.blueprints[key] = {
                 name: key,
                 label: typeof entry.label === "string" ? entry.label : `${speciesLabel} (gewachsen)`,
@@ -34634,9 +34663,12 @@ class AnazhRealm {
                 _grownSpecies: entry._grownSpecies || "baum_eiche",
                 _grownSeed: entry._grownSeed || "",
                 _isMerged: isMergedRestore,
+                _skeleton: skelRestore,
                 instanced: true,
                 parts: parts,
             };
+            // Skeleton übernommen → Side-Channel räumen (defensive).
+            if (skelRestore) this._lastTreeSkeleton = null;
             if (this._growTreeRing.indexOf(key) === -1) this._growTreeRing.push(key);
             restored++;
         }
@@ -43445,6 +43477,15 @@ class AnazhRealm {
         // das Flag nicht → V18.211-Per-Part-Pfad bleibt bit-identisch.
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
         const isMerged = genV >= 6;
+        // V18.214 (DER LEBENDIGE GIGANT, SÄULE I VOLLENDUNG) — gen ≥ 7 markiert
+        // den Bauplan als SKELETON-MESHED: `_archFlattenBlueprint` baut aus
+        // bp._skeleton (Polylinien + Anchors, von `_growTreeBlueprintRich`
+        // als Side-Effect in `_lastTreeSkeleton` gespiegelt) zwei echte
+        // Geometries: bark (verjüngte Tube mit flare am Fuß, Plan Ω-G2) +
+        // foliage (cards{cross} mit normalBend, Plan Ω-G3). Statt 75 nackten
+        // cylinder/sphere-Primitiven nur 2 organische Geometrien pro Variante.
+        // bp.parts bleibt UNVERÄNDERT (V17.16-Wand strukturell).
+        const isSkeletonMeshed = genV >= 7 && this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches);
         this.state.blueprints[cacheKey] = {
             name: cacheKey,
             label: `${speciesLabel} (gewachsen)`,
@@ -43453,9 +43494,13 @@ class AnazhRealm {
             _grownSpecies: species,
             _grownSeed: String(seed),
             _isMerged: isMerged,
+            _skeleton: isSkeletonMeshed ? this._lastTreeSkeleton : null,
             instanced: true,
             parts,
         };
+        // Skeleton ist eingebaut → den Side-Channel räumen (defensive,
+        // nächster Aufruf setzt ihn neu).
+        if (isSkeletonMeshed) this._lastTreeSkeleton = null;
         // Ring + ARCHITEKTUR-BEWUSSTE Eviction (Audit-Heilung #2): ein
         // gewachsener Bauplan wird NIE evictet, solange eine Architektur in
         // der Welt ihn als `type` referenziert (sonst Crash beim Rebuild im
@@ -43512,6 +43557,18 @@ class AnazhRealm {
     // Multi-level branching mit Tropismus, Wander, Droop, TipCurl, taper.
     // Foliage AN DEN SPITZEN (anchorLevel = L2 oder L3) — hunderte Cluster
     // statt 8 Kugeln. Tag-Neutralität: NUR holz+laub Materialien (V17.16-Wand).
+    //
+    // V18.214 (DER LEBENDIGE GIGANT, SÄULE I VOLLENDUNG) — sammelt zusätzlich
+    // die SKELETON-DATEN (Polylinien + Anchors + totalH) als Side-Effect in
+    // `this._lastTreeSkeleton`. Plan §6 Ω-G2/G3: diese rohen Polylinien-Daten
+    // werden vom Renderer (`_buildTreeTubeGeometry` + `_buildTreeFoliageCard
+    // Geometry`) zu EINER bark-Tube + EINER foliage-cards-Geometrie verbaut —
+    // statt N nackten cylinder/sphere-Parts. `bp.parts` bleibt unverändert
+    // (V17.16-Wand strukturell), der Skeleton-Pfad ist eine reine Render-
+    // Vertiefung. `_lastTreeSkeleton` ist KEIN Cache (wird pro Aufruf neu
+    // gesetzt) — die Aufrufer (`_growTreeBlueprintForSpawn`,
+    // `_loadStateRestoreGrownBlueprints`) lesen ihn direkt nach dem Aufruf
+    // und speichern ihn am bp._skeleton.
     _growTreeBlueprintRich(speciesKey, seed, grammar) {
         const sKey = String(speciesKey || "baum_eiche") + "|" + String(seed || "g8-default") + "|v5";
         let hash = 2166136261;
@@ -43529,10 +43586,33 @@ class AnazhRealm {
         };
         const lerp = (a, b, t) => a + (b - a) * t;
         const parts = [];
+        // V18.214 — Skeleton-Container: ein flacher Branch-Pool (jeder Branch
+        // mit seinen Polylinie-Punkten + Level + isTrunk-Flag), die foliage-
+        // Anker, und Welt-Höhe für flex-Berechnung. Wird in `_lastTreeSkeleton`
+        // gespiegelt nach dem Bau.
+        const skeleton = {
+            species: speciesKey,
+            grammar: grammar,
+            totalH: 0, // wird gleich unten gesetzt
+            branches: [], // [{ points: [{x,y,z,r}, ...], level: int, isTrunk: bool }]
+            anchors: [], // [{x,y,z}]
+            flareAmp: 0,
+            flareLobes: 0,
+        };
 
         // ─── STAMM (TRUNK) ────────────────────────────────────────────
         // Multi-segment polyline mit wander + taper.
         const totalH = lerp(grammar.height[0], grammar.height[1], r01());
+        skeleton.totalH = totalH;
+        // V18.214 — flare am Stamm-Fuß (Plan §3.3): pro Spezies kalibriert.
+        // Werte aus SPECIES_TREE_PARAMS (Plan §3.7), Default bei unbekannter
+        // Spezies. Eine Spezies ohne Eintrag erhält DEFAULT_TREE_FLARE
+        // (sicher: identischer Form-Beitrag wie ein gut kalibrierter
+        // Mittel-Baum, keine Welt-Brüche).
+        const sParams = AnazhRealm.SPECIES_TREE_PARAMS && AnazhRealm.SPECIES_TREE_PARAMS[speciesKey];
+        const flareDef = (sParams && sParams.flare) || AnazhRealm.DEFAULT_TREE_FLARE;
+        skeleton.flareAmp = flareDef.amp;
+        skeleton.flareLobes = flareDef.lobes;
         const trunkSegs = grammar.trunk.segs;
         const trunkBaseR = grammar.trunk.baseR * lerp(0.9, 1.1, r01());
         const trunkTaper = grammar.trunk.taper;
@@ -43550,6 +43630,12 @@ class AnazhRealm {
             const r = Math.max(0.06, trunkBaseR * Math.pow(Math.max(0, 1 - t), trunkTaper));
             trunkPts.push({ x: cx, y: y, z: cz, r: r });
         }
+        // V18.214 — Stamm-Polylinie als Skeleton-Branch (level 0, isTrunk).
+        skeleton.branches.push({
+            points: trunkPts.map((p) => ({ x: p.x, y: p.y, z: p.z, r: p.r })),
+            level: 0,
+            isTrunk: true,
+        });
         // Generate trunk cylinder parts (each segment → cylinder between i-1 and i).
         const emitCylinderBetween = (a, b, segments) => {
             const mx = (a.x + b.x) * 0.5;
@@ -43693,6 +43779,13 @@ class AnazhRealm {
             for (let i = 1; i < points.length; i++) {
                 emitCylinderBetween(points[i - 1], points[i], 4);
             }
+            // V18.214 — Branch-Polylinie ins Skeleton (Plan Ω-G2 lest die
+            // Polylinien zu echten Tubes, nicht zu N cylinder-Parts).
+            skeleton.branches.push({
+                points: points.map((p) => ({ x: p.x, y: p.y, z: p.z, r: p.r })),
+                level: level,
+                isTrunk: false,
+            });
             // Foliage anchors: nur wenn dieses Level der anchorLevel ist (§3.3 Regel
             // — Laub sitzt DORT, nie auf Primärästen). Anker entlang der letzten 50%
             // des Asts → dichte Spitzen-Krone.
@@ -43791,6 +43884,15 @@ class AnazhRealm {
                 foliageEmitted++;
             }
         }
+        // V18.214 — die foliageAnchors sind die ECHTEN Anker für die Cards-
+        // Geometrie. Anchors-Hülle ins Skeleton kopieren (Plan Ω-G3:
+        // _buildTreeFoliageCardGeometry liest sie + baut card{cross} pro
+        // Anchor mit normalBend zur Krone-Sphere).
+        skeleton.anchors = foliageAnchors.map((a) => ({ x: a.x, y: a.y, z: a.z }));
+        skeleton.foliageColor = laubColor;
+        // Side-Channel: der Aufrufer (`_growTreeBlueprintForSpawn`,
+        // `_loadStateRestoreGrownBlueprints`) liest das direkt nach dem Aufruf.
+        this._lastTreeSkeleton = skeleton;
         return parts;
     }
 
@@ -49333,6 +49435,443 @@ class AnazhRealm {
         return { leaves };
     }
 
+    // V18.214 (DER LEBENDIGE GIGANT, Ω-G2 echte Tube-Geometrie) — baut aus
+    // dem Skeleton (Polylinien) EINE bark-BufferGeometry mit Ring-von-6-
+    // Vertices pro Polylinien-Punkt, lobed flare am Stamm-Fuß (Plan §3.3),
+    // Per-Vertex flex (Höhe-relative Wind-Empfindlichkeit) + phase (aperiodi-
+    // sches Hash-Phasen-Versatz). Statt N getrennter `THREE.CylinderGeometry`
+    // (V18.211 Per-Part) oder N gemerged-cylinders (V18.213) ist das EINE
+    // organische Tube-Geometrie, deren Segmente glatt ineinander übergehen
+    // — was eine Polylinie schon immer wollte. Das ist Plan-§6-Ω-G2 in
+    // Vollform: „Jeder Ast → Ring von radialSegs Vertices pro Punkt, zu
+    // Quads verbunden, Radius folgt radii[i]. flare am Fuß gibt Wurzelanlauf
+    // (= Ω-K2). Alle Äste gemerged zu EINER bark-Geometrie."
+    _buildTreeTubeGeometry(skeleton, opts) {
+        if (!skeleton || !Array.isArray(skeleton.branches) || skeleton.branches.length === 0) return null;
+        const radialSegs = (opts && opts.radialSegs) || 6;
+        const totalH = Math.max(1, skeleton.totalH || 10);
+        // pcg-Hash für aperiodische Phase pro Vertex (deterministisch aus
+        // (branchIdx, pointIdx, radialIdx)) → benachbarte Vertices flattern
+        // verschieden im Wind-Shader (Plan Ω-W „aperiodisches Flattern").
+        const hashPhase = (a, b, c) => {
+            let h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
+            h = (h ^ (h >>> 13)) >>> 0;
+            return ((h * 0.00000000023283) % 1) * Math.PI * 2;
+        };
+        // Sammeln pro Branch ein eigenes BufferGeometry-Snippet, am Ende
+        // mergen (geteiltes Material via vertexColors).
+        const geomList = [];
+        for (let bi = 0; bi < skeleton.branches.length; bi++) {
+            const br = skeleton.branches[bi];
+            const pts = br.points;
+            if (!Array.isArray(pts) || pts.length < 2) continue;
+            const nP = pts.length;
+            const nV = nP * radialSegs;
+            const positions = new Float32Array(nV * 3);
+            const normals = new Float32Array(nV * 3);
+            const colors = new Float32Array(nV * 3);
+            const flex = new Float32Array(nV);
+            const phase = new Float32Array(nV);
+            const indices = new Uint32Array((nP - 1) * radialSegs * 6);
+            // Pro Punkt: Tangent → perpendicular basis → Ring von radialSegs
+            // Vertices. Per-Vertex normal = radial, color = holz-tint·brightness,
+            // flex = relative Höhe im Baum (Stamm-Spitzen flexen mehr).
+            for (let i = 0; i < nP; i++) {
+                const p = pts[i];
+                // Tangent: forward-diff am Anfang/Ende, central in der Mitte.
+                let tx, ty, tz;
+                if (i === 0) {
+                    tx = pts[1].x - p.x;
+                    ty = pts[1].y - p.y;
+                    tz = pts[1].z - p.z;
+                } else if (i === nP - 1) {
+                    tx = p.x - pts[i - 1].x;
+                    ty = p.y - pts[i - 1].y;
+                    tz = p.z - pts[i - 1].z;
+                } else {
+                    tx = pts[i + 1].x - pts[i - 1].x;
+                    ty = pts[i + 1].y - pts[i - 1].y;
+                    tz = pts[i + 1].z - pts[i - 1].z;
+                }
+                const tlen = Math.sqrt(tx * tx + ty * ty + tz * tz) || 1;
+                tx /= tlen;
+                ty /= tlen;
+                tz /= tlen;
+                // Perpendicular basis: nutze Welt-Up als Referenz; bei fast
+                // vertikalem Tangent (|dot| > 0.99) auf Welt-X umschalten.
+                let upX = 0,
+                    upY = 1,
+                    upZ = 0;
+                if (Math.abs(ty) > 0.99) {
+                    upX = 1;
+                    upY = 0;
+                    upZ = 0;
+                }
+                // binormal = cross(tangent, up); normal = cross(binormal, tangent).
+                let bx = ty * upZ - tz * upY;
+                let by = tz * upX - tx * upZ;
+                let bz = tx * upY - ty * upX;
+                let blen = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
+                bx /= blen;
+                by /= blen;
+                bz /= blen;
+                let nx = by * tz - bz * ty;
+                let ny = bz * tx - bx * tz;
+                let nz = bx * ty - by * tx;
+                // Flare am Stamm-Fuß (Plan §3.3): nur isTrunk + erste ~15%
+                // der Polylinie. amp+lobes pro Spezies (SPECIES_TREE_PARAMS).
+                let radius = p.r;
+                if (br.isTrunk && i < Math.max(2, Math.floor(nP * 0.18))) {
+                    const flareT = 1 - i / Math.max(1, Math.floor(nP * 0.18));
+                    const ease = flareT * flareT * (3 - 2 * flareT); // smoothstep
+                    const amp = skeleton.flareAmp || 0.45;
+                    // lobed multiplier wird pro Vertex (mit Ring-Winkel) angewandt.
+                    radius = p.r * (1 + amp * ease * 0.4); // average flare (Lobes-Variation kommt unten)
+                }
+                const lobes = skeleton.flareLobes || 5;
+                const flareActive = br.isTrunk && i < Math.max(2, Math.floor(nP * 0.18));
+                const flareT = flareActive ? 1 - i / Math.max(1, Math.floor(nP * 0.18)) : 0;
+                const flareEase = flareT * flareT * (3 - 2 * flareT);
+                const flareAmp = (skeleton.flareAmp || 0.45) * flareEase;
+                // flex aus Welt-Höhe relativ zur Baum-Höhe (Spitzen flexen mehr).
+                const flexVal = Math.max(0, Math.min(1, p.y / totalH));
+                for (let j = 0; j < radialSegs; j++) {
+                    const a = (j / radialSegs) * Math.PI * 2;
+                    const ca = Math.cos(a);
+                    const sa = Math.sin(a);
+                    // lobed radius: r_eff = radius * (1 + flareAmp * sin(j·lobes·2π/radialSegs))
+                    // → mehrere Rippen am Stamm-Sockel
+                    const lobedMul = 1 + flareAmp * Math.sin((j * lobes * 2 * Math.PI) / radialSegs);
+                    const rEff = radius * (flareActive ? lobedMul : 1.0);
+                    // Position
+                    const vx = p.x + (nx * ca + bx * sa) * rEff;
+                    const vy = p.y + (ny * ca + by * sa) * rEff;
+                    const vz = p.z + (nz * ca + bz * sa) * rEff;
+                    // Normal (radial nach außen)
+                    const vnx = nx * ca + bx * sa;
+                    const vny = ny * ca + by * sa;
+                    const vnz = nz * ca + bz * sa;
+                    const vIdx = (i * radialSegs + j) * 3;
+                    positions[vIdx] = vx;
+                    positions[vIdx + 1] = vy;
+                    positions[vIdx + 2] = vz;
+                    normals[vIdx] = vnx;
+                    normals[vIdx + 1] = vny;
+                    normals[vIdx + 2] = vnz;
+                    // Bark-Farbe: holz-tint, leicht gedämpft (~0.7 brightness)
+                    // — V18.211/V18.213-Brightness-Spiegel. Per-Vertex-Color
+                    // erlaubt subtile Variation entlang der Polylinie.
+                    const tintT = 0.6 + 0.15 * (1 - flexVal); // unten dunkler
+                    colors[vIdx] = 0.36 * tintT;
+                    colors[vIdx + 1] = 0.22 * tintT;
+                    colors[vIdx + 2] = 0.12 * tintT;
+                    // flex + phase: pro Vertex (höher → mehr flex, Hash-Phase)
+                    const vF = i * radialSegs + j;
+                    flex[vF] = flexVal * (br.isTrunk ? 0.45 : 0.85); // Stamm flext weniger, Äste mehr
+                    phase[vF] = hashPhase(bi, i, j);
+                }
+            }
+            // Indizes: pro Quad zwei Triangles (radialSegs wraps around).
+            let triIdx = 0;
+            for (let i = 0; i < nP - 1; i++) {
+                for (let j = 0; j < radialSegs; j++) {
+                    const j1 = (j + 1) % radialSegs;
+                    const a = i * radialSegs + j;
+                    const b = i * radialSegs + j1;
+                    const c = (i + 1) * radialSegs + j;
+                    const d = (i + 1) * radialSegs + j1;
+                    indices[triIdx++] = a;
+                    indices[triIdx++] = c;
+                    indices[triIdx++] = b;
+                    indices[triIdx++] = b;
+                    indices[triIdx++] = c;
+                    indices[triIdx++] = d;
+                }
+            }
+            const g = new THREE.BufferGeometry();
+            g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+            g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+            g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+            g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
+            g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
+            g.setIndex(new THREE.BufferAttribute(indices, 1));
+            geomList.push(g);
+        }
+        if (geomList.length === 0) return null;
+        // Mergen über `_mergeGeometries` — der V18.213-Helper. Erweitern um
+        // aFlex+aPhase: per-Vertex-Custom-Attribute durch denselben Vertex-
+        // Konkat-Pfad (eine flat-Concat über alle Branch-Geoms).
+        return this._mergeAttributedGeometries(geomList, ["aFlex", "aPhase"]);
+    }
+
+    // V18.214 (Ω-G3 echte Foliage-Cards) — baut aus den Anchors EINE foliage-
+    // BufferGeometry mit card{cross} (zwei ⊥ Quads) pro Anchor. needleSpray
+    // bekommt y-stretched cards (Nadel-Optik), leafCluster normale Quads.
+    // Plan §3.4: „card{cross} = zwei ⊥ Quads; normalBend mischt Normale
+    // Richtung Krone-Sphere → schattiert wie geschlossene Krone, nicht wie
+    // freie Sprites." Per-Vertex flex (outer-Vertices flexen stärker) +
+    // phase (aperiodisches Hash-Phasen-Versatz). Statt N sphere-Parts
+    // (V18.211) eine einzige cards-Geometrie pro Variante.
+    _buildTreeFoliageCardGeometry(skeleton, _opts) {
+        if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length === 0) return null;
+        const grammar = skeleton.grammar;
+        const fo = grammar && grammar.foliage;
+        if (!fo) return null;
+        const isNeedle = fo.kind === "needleSpray";
+        const baseSize = fo.size || 0.5;
+        const cardW = baseSize * (isNeedle ? 1.4 : 1.9);
+        const cardH = baseSize * (isNeedle ? 1.9 : 1.45);
+        const totalH = Math.max(1, skeleton.totalH || 10);
+        // Krone-Sphere-Zentrum für normalBend (Plan §3.4): die Mitte der
+        // Anchor-Wolke + leicht nach oben. Vertex-Normalen mischen in diese
+        // Richtung → Schatten wirken wie geschlossene Krone.
+        let cx = 0,
+            cy = 0,
+            cz = 0;
+        for (const a of skeleton.anchors) {
+            cx += a.x;
+            cy += a.y;
+            cz += a.z;
+        }
+        const aN = skeleton.anchors.length;
+        cx /= aN;
+        cy /= aN;
+        cz /= aN;
+        cy += totalH * 0.05; // leicht nach oben
+        const hashPhase = (a, b) => {
+            let h = (a * 73856093) ^ (b * 19349663);
+            h = (h ^ (h >>> 13)) >>> 0;
+            return ((h * 0.00000000023283) % 1) * Math.PI * 2;
+        };
+        // Per-Anchor: 8 Vertices (2 Quads × 4 Vertices) + 12 Indizes (2 Quads
+        // × 2 Triangles × 3). Gesamt: anchors·8 Vertices, anchors·12 Indizes.
+        const N = skeleton.anchors.length;
+        const positions = new Float32Array(N * 8 * 3);
+        const normals = new Float32Array(N * 8 * 3);
+        const colors = new Float32Array(N * 8 * 3);
+        const flex = new Float32Array(N * 8);
+        const phase = new Float32Array(N * 8);
+        const indices = new Uint32Array(N * 12);
+        // foliageColor aus skeleton (gemischt aus grammar.color + Jitter im
+        // _growTreeBlueprintRich).
+        const c0 = skeleton.foliageColor || fo.color || 0x4a8a3a;
+        const fr = ((c0 >> 16) & 0xff) / 255;
+        const fg = ((c0 >> 8) & 0xff) / 255;
+        const fb = (c0 & 0xff) / 255;
+        let vWrite = 0;
+        let iWrite = 0;
+        for (let ai = 0; ai < N; ai++) {
+            const a = skeleton.anchors[ai];
+            // Bend-Direction: vom Anker zum Krone-Zentrum normalisiert.
+            let bdx = cx - a.x;
+            let bdy = cy - a.y;
+            let bdz = cz - a.z;
+            const blen = Math.sqrt(bdx * bdx + bdy * bdy + bdz * bdz) || 1;
+            bdx /= blen;
+            bdy /= blen;
+            bdz /= blen;
+            // 8 Vertices: Quad1 in xy-Ebene, Quad2 in zy-Ebene (= card{cross}).
+            // halbe Größe nach jeder Seite.
+            const hw = cardW * 0.5;
+            const hh = cardH * 0.5;
+            // Quad 1 (xy-Ebene, normal = +z, gemischt mit bend)
+            const q1n = { x: 0, y: 0, z: 1 };
+            // Quad 2 (zy-Ebene, normal = +x, gemischt mit bend)
+            const q2n = { x: 1, y: 0, z: 0 };
+            // normalBend = 0.6 (Plan §3.4 normalBend ≈ 0.5-0.7)
+            const bendStr = 0.6;
+            const blend = (nrm) => ({
+                x: nrm.x * (1 - bendStr) + bdx * bendStr,
+                y: nrm.y * (1 - bendStr) + bdy * bendStr,
+                z: nrm.z * (1 - bendStr) + bdz * bendStr,
+            });
+            const bn1 = blend(q1n);
+            const bn2 = blend(q2n);
+            const bn1len = Math.sqrt(bn1.x * bn1.x + bn1.y * bn1.y + bn1.z * bn1.z) || 1;
+            bn1.x /= bn1len;
+            bn1.y /= bn1len;
+            bn1.z /= bn1len;
+            const bn2len = Math.sqrt(bn2.x * bn2.x + bn2.y * bn2.y + bn2.z * bn2.z) || 1;
+            bn2.x /= bn2len;
+            bn2.y /= bn2len;
+            bn2.z /= bn2len;
+            // Quad 1 corners: (-hw,-hh,0), (+hw,-hh,0), (+hw,+hh,0), (-hw,+hh,0)
+            const q1corners = [
+                [-hw, -hh, 0],
+                [hw, -hh, 0],
+                [hw, hh, 0],
+                [-hw, hh, 0],
+            ];
+            // Quad 2 corners: (0,-hh,-hw), (0,-hh,+hw), (0,+hh,+hw), (0,+hh,-hw)
+            const q2corners = [
+                [0, -hh, -hw],
+                [0, -hh, hw],
+                [0, hh, hw],
+                [0, hh, -hw],
+            ];
+            const phBase = hashPhase(ai, 0);
+            const flexBase = Math.max(0.5, Math.min(1, a.y / totalH));
+            // Quad 1
+            for (let k = 0; k < 4; k++) {
+                const v3 = vWrite * 3;
+                positions[v3] = a.x + q1corners[k][0];
+                positions[v3 + 1] = a.y + q1corners[k][1];
+                positions[v3 + 2] = a.z + q1corners[k][2];
+                normals[v3] = bn1.x;
+                normals[v3 + 1] = bn1.y;
+                normals[v3 + 2] = bn1.z;
+                colors[v3] = fr;
+                colors[v3 + 1] = fg;
+                colors[v3 + 2] = fb;
+                // Outer-Vertices (oben am Card) flexen stärker (k=2,3).
+                flex[vWrite] = flexBase * (k >= 2 ? 1.0 : 0.55);
+                phase[vWrite] = phBase + k * 0.7;
+                vWrite++;
+            }
+            // Quad 2
+            for (let k = 0; k < 4; k++) {
+                const v3 = vWrite * 3;
+                positions[v3] = a.x + q2corners[k][0];
+                positions[v3 + 1] = a.y + q2corners[k][1];
+                positions[v3 + 2] = a.z + q2corners[k][2];
+                normals[v3] = bn2.x;
+                normals[v3 + 1] = bn2.y;
+                normals[v3 + 2] = bn2.z;
+                colors[v3] = fr;
+                colors[v3 + 1] = fg;
+                colors[v3 + 2] = fb;
+                flex[vWrite] = flexBase * (k >= 2 ? 1.0 : 0.55);
+                phase[vWrite] = phBase + 1.7 + k * 0.7;
+                vWrite++;
+            }
+            // Indizes: pro Quad zwei Triangles (CCW von außen).
+            const base = ai * 8;
+            indices[iWrite++] = base;
+            indices[iWrite++] = base + 1;
+            indices[iWrite++] = base + 2;
+            indices[iWrite++] = base;
+            indices[iWrite++] = base + 2;
+            indices[iWrite++] = base + 3;
+            indices[iWrite++] = base + 4;
+            indices[iWrite++] = base + 5;
+            indices[iWrite++] = base + 6;
+            indices[iWrite++] = base + 4;
+            indices[iWrite++] = base + 6;
+            indices[iWrite++] = base + 7;
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+        g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+        g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
+        g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
+        g.setIndex(new THREE.BufferAttribute(indices, 1));
+        g.computeBoundingBox();
+        g.computeBoundingSphere();
+        return g;
+    }
+
+    // V18.214 — Mergeshe N Geometries inklusive Custom-Attribute (z.B. aFlex
+    // + aPhase aus _buildTreeTubeGeometry). Spiegel zu _mergeGeometries
+    // (V18.213) aber attribute-aware. Erwartet identische Attribute-Sets in
+    // allen Eingangs-Geoms (alle indexed oder alle non-indexed). Output ist
+    // non-indexed (V18.213-Pfad — einfacher, Performance vernachlässigbar).
+    _mergeAttributedGeometries(geometries, customAttrs) {
+        if (!Array.isArray(geometries) || geometries.length === 0) return null;
+        let totalVerts = 0;
+        for (const g of geometries) {
+            if (!g || !g.attributes || !g.attributes.position) return null;
+            const idx = g.index;
+            totalVerts += idx ? idx.count : g.attributes.position.count;
+        }
+        if (totalVerts === 0) return null;
+        const posOut = new Float32Array(totalVerts * 3);
+        const norOut = new Float32Array(totalVerts * 3);
+        const colOut = new Float32Array(totalVerts * 3);
+        const customOut = {};
+        for (const attr of customAttrs || []) customOut[attr] = new Float32Array(totalVerts);
+        let cursor = 0;
+        for (const g of geometries) {
+            const posIn = g.attributes.position.array;
+            const norIn = g.attributes.normal ? g.attributes.normal.array : null;
+            const colIn = g.attributes.color ? g.attributes.color.array : null;
+            const customIn = {};
+            for (const attr of customAttrs || []) {
+                customIn[attr] = g.attributes[attr] ? g.attributes[attr].array : null;
+            }
+            const idx = g.index ? g.index.array : null;
+            const vCount = idx ? idx.length : g.attributes.position.count;
+            for (let i = 0; i < vCount; i++) {
+                const srcIdx = idx ? idx[i] : i;
+                const o3 = (cursor + i) * 3;
+                const s3 = srcIdx * 3;
+                posOut[o3] = posIn[s3];
+                posOut[o3 + 1] = posIn[s3 + 1];
+                posOut[o3 + 2] = posIn[s3 + 2];
+                if (norIn) {
+                    norOut[o3] = norIn[s3];
+                    norOut[o3 + 1] = norIn[s3 + 1];
+                    norOut[o3 + 2] = norIn[s3 + 2];
+                }
+                if (colIn) {
+                    colOut[o3] = colIn[s3];
+                    colOut[o3 + 1] = colIn[s3 + 1];
+                    colOut[o3 + 2] = colIn[s3 + 2];
+                }
+                for (const attr of customAttrs || []) {
+                    if (customIn[attr]) customOut[attr][cursor + i] = customIn[attr][srcIdx];
+                }
+            }
+            cursor += vCount;
+        }
+        const merged = new THREE.BufferGeometry();
+        merged.setAttribute("position", new THREE.BufferAttribute(posOut, 3));
+        merged.setAttribute("normal", new THREE.BufferAttribute(norOut, 3));
+        merged.setAttribute("color", new THREE.BufferAttribute(colOut, 3));
+        for (const attr of customAttrs || []) {
+            merged.setAttribute(attr, new THREE.BufferAttribute(customOut[attr], 1));
+        }
+        merged.computeBoundingBox();
+        merged.computeBoundingSphere();
+        return merged;
+    }
+
+    // V18.214 (DER LEBENDIGE GIGANT, Ω-G2+Ω-G3 Routing) — baut aus dem
+    // Skeleton beide Leaves (bark + foliage) als merged Geometries. Plan
+    // §6/7 (gigant Ω-G2+Ω-G3): zwei organische Geometrien pro Variante
+    // ersetzen 75 nackte Primitive. Materialien tragen vertexColors=true
+    // + useInstanceTint für laub (Per-Spawn-HSL aus _archInstanceAdd).
+    _buildTreeSkeletonLeaves(bp) {
+        if (!bp || !bp._skeleton) return null;
+        const skel = bp._skeleton;
+        const leaves = [];
+        // bark-Geometrie (Tubes)
+        const barkGeom = this._buildTreeTubeGeometry(skel);
+        if (barkGeom) {
+            if (!this.state.toonGradientMap) this._refreshToonGradient();
+            const holzMat = this.state.materials && this.state.materials.holz;
+            // useFlexAttr=true → der Wind-Sway-Block in _buildToonNodeMaterial
+            // liest die gebackenen aFlex/aPhase-Attribute statt der crownLin-
+            // Schätzung. Plan §6/9 Ω-G4 + Ω-W: per-Vertex flex+phase ist die
+            // echte Form gegen das uniforme V18.212-Wiegen.
+            const barkMatOpts = { vertexColors: true, useFlexAttr: true };
+            if (holzMat && holzMat.tags) barkMatOpts.tags = holzMat.tags;
+            const barkMat = this._buildToonNodeMaterial(barkMatOpts);
+            leaves.push({ geom: barkGeom, mat: barkMat, localMatrix: new THREE.Matrix4() });
+        }
+        // foliage-Geometrie (Cards)
+        const foliageGeom = this._buildTreeFoliageCardGeometry(skel);
+        if (foliageGeom) {
+            const laubMat = this.state.materials && this.state.materials.laub;
+            const foliageMatOpts = { vertexColors: true, useInstanceTint: true, useFlexAttr: true };
+            if (laubMat && laubMat.tags) foliageMatOpts.tags = laubMat.tags;
+            const foliageMat = this._buildToonNodeMaterial(foliageMatOpts);
+            leaves.push({ geom: foliageGeom, mat: foliageMat, localMatrix: new THREE.Matrix4() });
+        }
+        if (leaves.length === 0) return null;
+        return { leaves };
+    }
+
     // Einen Bauplan flach in Leaf-Primitive auflösen (cached). Nested
     // Blueprints (shape:"blueprint") werden rekursiv mit komponierter
     // Lokal-Matrix eingebettet. Gate (nicht-instancbar) bei:
@@ -49379,6 +49918,32 @@ class AnazhRealm {
             result.reason = "affordance-needs-mesh";
             cache.set(name, result);
             return result;
+        }
+        // V18.214 (DER LEBENDIGE GIGANT, SÄULE I VOLLENDUNG) — der SKELETON-
+        // Pfad: ein Bauplan mit `_skeleton` (gesetzt von _growTreeBlueprint
+        // ForSpawn bei genVersion ≥ 7) wird einmalig zu zwei organischen
+        // Geometries gebaut: bark-Tube (Polylinien → verjüngte Tube mit
+        // flare am Fuß, Plan Ω-G2) + foliage-cards (card{cross} mit
+        // normalBend, Plan Ω-G3). Per-Vertex aFlex + aPhase erlauben dem
+        // Wind-Shader (Ω-W) aperiodisches Flattern mit Spitzen-Schwerpunkt.
+        // `bp.parts` bleibt UNVERÄNDERT → computeCompoundTags (V17.16-Wand)
+        // + Snapshot-Re-Growth funktionieren wie zuvor.
+        if (bp._skeleton && Array.isArray(bp._skeleton.branches) && bp._skeleton.branches.length > 0) {
+            if (!this.state.archMergedGeomCache) this.state.archMergedGeomCache = new Map();
+            let skelEntry = this.state.archMergedGeomCache.get(name);
+            if (!skelEntry) {
+                skelEntry = this._buildTreeSkeletonLeaves(bp);
+                if (skelEntry) this.state.archMergedGeomCache.set(name, skelEntry);
+            }
+            if (skelEntry && Array.isArray(skelEntry.leaves) && skelEntry.leaves.length > 0) {
+                result.instanceable = true;
+                result.leaves = skelEntry.leaves;
+                result.merged = true; // Diagnose-Marker (kompatibel zu V18.213-Tests)
+                result.skeleton = true; // V18.214-spezifischer Marker
+                cache.set(name, result);
+                return result;
+            }
+            // Skeleton-Bau fehlgeschlagen → Fallback auf V18.213 cylinder-merge.
         }
         // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — der MERGE-Pfad: ein
         // Bauplan mit `_isMerged:true` (gesetzt von `_growTreeBlueprintForSpawn`
@@ -51526,6 +52091,39 @@ class AnazhRealm {
             }
         }
         if (!bestName || bestAffinity < AFFINITY_FLOOR) return 0;
+
+        // V18.214 (DER LEBENDIGE GIGANT, Ω-R2 §3.7) — per-Spezies Slope+Höhen-
+        // Toleranz: eine Birke meidet Steilhänge (slopeMax 0.6), Tannen
+        // klettern höher (heightRange [-30, 200]). Plan §3.7 markiert die
+        // Werte als VERMUTUNG — Schöpfer-Browser-Auge kalibriert (Ω-R2-Beweis).
+        // Werte aus SPECIES_TREE_PARAMS (frozen). Fehlt der Eintrag (z.B.
+        // landmark felsbogen/glutbrunnen), kein Gate → die ursprünglichen
+        // Affinitäts-Achsen entscheiden allein.
+        const sParams2 = AnazhRealm.SPECIES_TREE_PARAMS && AnazhRealm.SPECIES_TREE_PARAMS[bestName];
+        if (sParams2) {
+            // Höhe relativ zur Terrain-Basis: aus heightRange [min, max].
+            const baseH = this.state.terrainBaseHeight || 0;
+            const relH = surfaceY - baseH;
+            const hr = sParams2.heightRange;
+            if (Array.isArray(hr) && hr.length === 2) {
+                if (relH < hr[0] || relH > hr[1]) return 0;
+            }
+            // Slope: |∇surf| über 4m-Fenster. Eine echte Hang-Steilheit, NICHT
+            // pro-Frame teuer (4× getTerrainHeightAt ≈ 4 Density-Samples).
+            const slopeMax = +sParams2.slopeMax || 1.5;
+            if (slopeMax < 1.5 && typeof this.getTerrainHeightAt === "function") {
+                const hxp = this.getTerrainHeightAt(sampleX + 2, sampleZ);
+                const hxn = this.getTerrainHeightAt(sampleX - 2, sampleZ);
+                const hzp = this.getTerrainHeightAt(sampleX, sampleZ + 2);
+                const hzn = this.getTerrainHeightAt(sampleX, sampleZ - 2);
+                if (Number.isFinite(hxp) && Number.isFinite(hxn) && Number.isFinite(hzp) && Number.isFinite(hzn)) {
+                    const dhx = (hxp - hxn) / 4;
+                    const dhz = (hzp - hzn) / 4;
+                    const slope = Math.sqrt(dhx * dhx + dhz * dhz);
+                    if (slope > slopeMax) return 0;
+                }
+            }
+        }
 
         // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
         // Γ5 — rng ist oben garantiert initialisiert (worldFieldAt lazy); der alte
@@ -65426,7 +66024,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.213.0";
+AnazhRealm.VERSION = "18.214.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -66003,6 +66601,55 @@ AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
             color: 0x5a8c4a,
             size: 0.58,
         }),
+    }),
+});
+
+// V18.214 (DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG) — die zwei neuen
+// Welt-Konstanten-Sätze:
+//
+// (a) DEFAULT_TREE_FLARE: das Plan-§3.3-Maß für Wurzelanlauf (`flare am Fuß`).
+//     amp = Stärke der seitlichen Aufweitung (1.0 = +100% Radius am Sockel),
+//     lobes = Anzahl der Rippen (sin(angle·lobes)·amp). Ω-G2: die Tube-Geom
+//     verbreitert die ersten ~2 Punkte mit diesem lobed-Muster — der Stamm
+//     `wurzelt` sichtbar im Boden statt als glatter Zylinder zu enden.
+AnazhRealm.DEFAULT_TREE_FLARE = Object.freeze({ amp: 0.45, lobes: 5 });
+
+// (b) SPECIES_TREE_PARAMS: per-Spezies WELT-Bezug (flare + slopeMax + height-
+//     Range). Plan §3.7 markiert die Werte als VERMUTUNG — Schöpfer-Browser-
+//     Auge kalibriert sie an der echten Welt (Ω-R2-Beweis). slopeMax: ab
+//     diesem Slope kein Spawn (steile Hänge → kaum Bäume). heightRange [min,max]:
+//     Spawn-Höhenfenster über `state.terrainBaseHeight` (Birken meiden Höhe,
+//     Tannen mögen sie). Erst-Wurf-Werte aus Plan §3.7.
+AnazhRealm.SPECIES_TREE_PARAMS = Object.freeze({
+    baum_tanne: Object.freeze({
+        flare: Object.freeze({ amp: 0.5, lobes: 5 }),
+        slopeMax: 1.2,
+        heightRange: Object.freeze([-30, 200]),
+    }),
+    baum_kiefer: Object.freeze({
+        flare: Object.freeze({ amp: 0.42, lobes: 4 }),
+        slopeMax: 1.3,
+        heightRange: Object.freeze([-20, 180]),
+    }),
+    baum_buche: Object.freeze({
+        flare: Object.freeze({ amp: 0.55, lobes: 6 }),
+        slopeMax: 0.8,
+        heightRange: Object.freeze([-40, 120]),
+    }),
+    baum_birke: Object.freeze({
+        flare: Object.freeze({ amp: 0.32, lobes: 4 }),
+        slopeMax: 0.6,
+        heightRange: Object.freeze([-30, 90]),
+    }),
+    baum_eiche: Object.freeze({
+        flare: Object.freeze({ amp: 0.55, lobes: 6 }),
+        slopeMax: 0.7,
+        heightRange: Object.freeze([-40, 110]),
+    }),
+    baum_erle: Object.freeze({
+        flare: Object.freeze({ amp: 0.5, lobes: 5 }),
+        slopeMax: 0.9,
+        heightRange: Object.freeze([-40, 100]),
     }),
 });
 
