@@ -18,11 +18,12 @@
 
 ---
 
-## §0 — STAND 14.06.2026 (nach V18.214 — DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG)
+## §0 — STAND 14.06.2026 (nach V18.215 — DER LEBENDIGE GIGANT, DER ATEMBERAUBENDE WALD)
 
-**📋 DER VOLLSTÄNDIGE FORTSETZUNG-PLAN für V18.215-V18.219 lebt in `docs/gigant-fortsetzung-plan.md`** — V18.213+V18.214 ✅ GEBAUT. **Pflichtlektüre vor der nächsten Session.**
+**📋 DER PLAN IST FAKTISCH VOLLENDET (CPU-Pfad).** Alle Plan-§13-Beweis-Bänder erfüllt: Säule I (V18.214) + Säule II (V18.214+V18.215) + Säule III (V18.215 CPU-Pfad mit Totholz+SAMPLES 10+V17.1-Scatter) + SEELEN-Band (EMERGENT, V18.212-Lehre) + Säule IV (V18.212+V18.214). **Optionale offene Wellen** (kein Vision-Schritt): Ω-B+Ω-S GPU-Pipeline (Million-Bäume-Skalierung) · Ω-P PBR (Plan §10 explizit optional). **Pflichtlektüre vor der nächsten Session.**
 
-**22 Wellen V18.193-V18.214 gebaut.** Branch: `claude/peaceful-goldberg-49tj81`, jüngste Code-Commits:
+**23 Wellen V18.193-V18.215 gebaut.** Branch: `claude/peaceful-goldberg-49tj81`, jüngste Code-Commits:
+- V18.215 — DER LEBENDIGE GIGANT, DER ATEMBERAUBENDE WALD (Ω-K3 Palette + Ω-R1 distinkte Tags + Säule III CPU + baum_totholz)
 - V18.214 — DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG (echte Tube-Geom + Foliage-Cards + per-Vertex Wind + Slope-Toleranzen)
 - V18.213 — DER LEBENDIGE GIGANT, MESH-MERGE pro Variante (38× Draw-Call-Reduktion)
 - `f447caa` Merge V18.211+V18.212 in main (14.06.)

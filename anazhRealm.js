@@ -12007,8 +12007,15 @@ class AnazhRealm {
         // verjüngte Tube mit flare am Fuß, Plan Ω-G2), Foliage-Cards
         // (cards{cross} mit normalBend, Plan Ω-G3), per-Vertex flex/phase
         // gebacken für aperiodischen Wind (Plan Ω-G4/Ω-W), per-Spezies
-        // Slope+Höhen-Toleranzen (Plan Ω-R2 §3.7). Frische Welten kriegen 7.
-        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 7;
+        // Slope+Höhen-Toleranzen (Plan Ω-R2 §3.7). V18.215 (DER ATEMBERAUBENDE
+        // WALD — lebendiger-gigant be15a050 §4+§7+§8.2) — 8=plus Ω-K3 Palette-
+        // Bindung (dunklere holz/laub-Töne, LAAS-Lehre), Ω-R1 distinkte form-
+        // begründete Tag-Vektoren (V17.16-Wand GESCHÄRFT zur Variations-Wand:
+        // deklarierte Δ pro Achse erlaubt, undeklarierte strict), Säule III
+        // CPU-Dichte (3 Schichten: Bäume + Understory + Steine/Totholz),
+        // baum_totholz SPECIES_GRAMMAR-Entry (Plan §3.3 — snag, kein foliage).
+        // Frische Welten kriegen 8.
+        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 8;
         // V9.26 Phase 5c-Migrations-Flip + V9.33 Phase 5c.2.b Eingangs-Welt-
         // Flip + V9.35 Phase 5c.2.c.2 Toggle-Tod — der Voxel-Boden ist die
         // kanonische, irreversible Form. V9.35 zieht die ZWANGS-Migration nach:
@@ -12253,7 +12260,7 @@ class AnazhRealm {
         // Gesicht (legacy-erhaltend: das Drainage-Netz-Gesetz, Genese ist
         // Welt-Identität). V18.179: gen 3 schaltet Γ4-Makro-Geographie.
         // V18.210 (§1-A1): gen 4 schaltet Γ7-prozedurale Baum-Bauplane.
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 7 };
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 8 };
     }
 
     // Snapshot einer „leeren" Welt mit gegebenem worldMeta. Optional bekommt
@@ -43446,19 +43453,28 @@ class AnazhRealm {
         // sich NIE — V17.16-Wand strukturell).
         const parts = this._growTreeBlueprint(species, seed);
         if (!Array.isArray(parts) || parts.length < 4) return null;
-        // V17.16-Schutz: TAG-WAND gegen die Spezies-Referenz (NICHT immer
-        // baum_eiche — sonst rollt der Schutz die Diversität zurück). Eine
-        // Birke wird gegen baum_birke gemessen, eine Tanne gegen baum_tanne;
-        // fehlt der Referenz-Baum (alte Welt ohne V18.181-Mischwald), fällt
-        // sie auf baum_eiche als generische Holz+Laub-Anker.
+        // V17.16-Schutz → V18.215 V17.16-VARIATIONS-Wand (lebendiger-gigant §7):
+        // GESCHÄRFT statt aufgeweicht — die Wand prüft jetzt nur UNDEKLARIERTE
+        // Achsen strikt (Δ < 0.05). Achsen, die in SPECIES_TAG_VARIATION für
+        // diese Spezies deklariert sind, sind „form-begründet erlaubt" (Plan
+        // §7: „Variation ist form-begründet, nicht RNG-Lottery"). Beispiel:
+        // ein Totholz-Bauplan (lebendig deklariert -0.3, brennbar +0.2) darf
+        // die laub-Krone weglassen (lebendig sinkt um ~0.7) — die Spezies-
+        // Distinktion ist Form-Wahrheit, kein Zufalls-Drift. Eine UNDEKLA-
+        // RIERTE Achse (z.B. magieleitung in einer Tannen-Spezies, die nur
+        // brennbar+resoniert deklariert hat) bleibt unter strict-Wand → kein
+        // unkontrollierter Drift möglich. Die Disziplin ist die DEKLARATION,
+        // nicht die Schwelle.
         const referenz = this.state.blueprints[species] || this.state.blueprints.baum_eiche;
         if (referenz) {
             const refTags = this.computeCompoundTags(referenz) || {};
             const newTags = this.computeCompoundTags({ parts }) || {};
             const axes = ["lebendig", "dichte", "brennbar", "magieleitung"];
+            const variation = (AnazhRealm.SPECIES_TAG_VARIATION && AnazhRealm.SPECIES_TAG_VARIATION[species]) || {};
             for (const a of axes) {
+                if (a in variation) continue; // form-begründete Achse → freipass
                 const d = Math.abs((newTags[a] || 0) - (refTags[a] || 0));
-                if (d > 0.05) return null; // Tag-Verschiebung → ablehnen, Fallback auf fixe Varianten
+                if (d > 0.05) return null; // undeklarierte Drift → ablehnen
             }
         }
         // Registriere als Built-In-Bauplan (HISM-fähig). label fürs UI.
@@ -47163,7 +47179,7 @@ class AnazhRealm {
                 wärmeleitung: 0.25,
                 resoniert: 0.3,
             }),
-            make("holz", "Holz", 0x8b5a2b, {
+            make("holz", "Holz", 0x5e3a1c, {
                 härte: 0.2,
                 dichte: 0.4,
                 zähigkeit: 0.6,
@@ -47261,7 +47277,7 @@ class AnazhRealm {
             // Geist ein), brennend (Feuer-Tag-Resonanz), lebendig (Wald).
             // Über baum_eiche/baum_kiefer-Baupläne ist es jetzt der einzige
             // Pfad — kein Parallelcode mehr für Vegetation.
-            make("laub", "Laub", 0x2e8b3f, {
+            make("laub", "Laub", 0x2b5e2c, {
                 härte: 0.05,
                 dichte: 0.1,
                 zähigkeit: 0.4,
@@ -48087,6 +48103,25 @@ class AnazhRealm {
             for (const tag of Object.keys(partTags)) {
                 const v = partTags[tag];
                 if (!(tag in out) || v > out[tag]) out[tag] = v;
+            }
+        }
+        // V18.215 (lebendiger-gigant Ω-R1 §7) — Spezies-Variation additiv
+        // DRAUFGEMISCHT für gewachsene Bäume. Plan §7: „Variation ist form-
+        // begründet, nicht RNG-Lottery." Eine Tanne hat brennbar↑+harz-
+        // resoniert↑ (deklariert in SPECIES_TAG_VARIATION); ohne diesen
+        // Schritt lesen alle 6 Arten identische holz+laub-Tags → die Spezies
+        // sind in Spawn-Affinität + Werkstatt + Audio-Resonanz nicht
+        // unterscheidbar. Die V17.16-VARIATIONS-Wand in `_growTreeBlueprint
+        // ForSpawn` erlaubt diese deklarierten Δ; andere Achsen bleiben
+        // strikt (Δ < 0.05). Nur _isGrown-Bauplane betroffen — fixe Built-Ins
+        // (baum_eiche/baum_tanne/...) bleiben bit-identisch.
+        if (blueprint._isGrown && typeof blueprint._grownSpecies === "string") {
+            const variation =
+                AnazhRealm.SPECIES_TAG_VARIATION && AnazhRealm.SPECIES_TAG_VARIATION[blueprint._grownSpecies];
+            if (variation) {
+                for (const axis of Object.keys(variation)) {
+                    out[axis] = Math.max(0, (out[axis] || 0) + variation[axis]);
+                }
             }
         }
         return out;
@@ -52032,6 +52067,11 @@ class AnazhRealm {
         // Affinitäts-Verschiebung. Die Variante-Gestalten (jung/normal/alt)
         // sind seed-deterministisch NACH dem Affinitäts-Sieg gewählt (W-H-
         // sicherer Pfad: keine V17.16-Affinitäts-Falle).
+        // V18.215 (DER ATEMBERAUBENDE WALD, Plan §8.2 Säule III): plus
+        // baum_totholz als Snag-Art — in den Lücken zwischen den lebenden
+        // Bäumen, wo der Wald „atmet". Die Tag-Variation (lebendig↓, brennbar↑↑)
+        // macht es zur DEKLARIERTEN Spezies — die V17.16-VARIATIONS-Wand
+        // erlaubt seine Substanz-Verschiebung, weil sie form-begründet ist.
         const candidates = [
             "baum_eiche",
             "baum_kiefer",
@@ -52039,6 +52079,7 @@ class AnazhRealm {
             "baum_erle",
             "baum_buche",
             "baum_tanne",
+            "baum_totholz",
             "stein_block",
             "kristall_geode",
             "glutbrunnen",
@@ -52140,6 +52181,9 @@ class AnazhRealm {
         // Mesh-Culling (< 150 m). Felsen/Geoden/Glutbrunnen bleiben spärliche
         // Landmarken (nur Bäume werden zum Wald). Werte browser-justierbar (FPS).
         // V18.181-merge-Λ Sub 3e — alle 6 Baumarten als Wald-Bauer.
+        // V18.215 — baum_totholz als „Lücken-Baum" (Plan §8.2 Säule III): die
+        // Tag-Variation lebendig↓ macht ihn in saftigen Regionen unwahr-
+        // scheinlich (Affinität-Drift), in trockenen Lücken bleibt er stehen.
         const TREE_NAMES = new Set([
             "baum_eiche",
             "baum_kiefer",
@@ -52147,6 +52191,7 @@ class AnazhRealm {
             "baum_erle",
             "baum_buche",
             "baum_tanne",
+            "baum_totholz",
         ]);
         const isTree = TREE_NAMES.has(bestName);
         let chance = BASE_RATE * bestAffinity * bestAffinity;
@@ -53464,7 +53509,14 @@ class AnazhRealm {
         const { span } = this._voxelChunkConfig();
         const ox = cx * span;
         const oz = cz * span;
-        const SAMPLES = 8;
+        // V18.215 (DER ATEMBERAUBENDE WALD, Plan §8.2 Säule III) — SAMPLES
+        // 8→10 (+56% Spawn-Versuche pro Chunk). Mit V18.213 cylinder-merge +
+        // V18.214 Skeleton-Mesh ist das HISM-Pool-Budget welt-weit 6.7× tiefer
+        // gefallen (174→26 Pools); wir können dichter bauen, ohne den FPS-
+        // Topf zu zerbrechen. Mehr Sample-Stellen × dieselbe chance-Formel =
+        // mehr Bäume in dichten Wald-Regionen, mehr Lücken in Gras-Regionen
+        // (die forest-mask × clumpAt-Logik bleibt — der Wald clumpt natürlich).
+        const SAMPLES = 10;
         const step = span / SAMPLES;
         // V9.96 — `opts.immediate === true` umgeht die Spawn-Queue
         // (Test-/Worldgen-Pfade die synchrone Spawns brauchen). Streaming-
@@ -66024,7 +66076,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.214.0";
+AnazhRealm.VERSION = "18.215.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -66602,6 +66654,47 @@ AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
             size: 0.58,
         }),
     }),
+    // V18.215 (DER LEBENDIGE GIGANT, Säule III §8.2 Plan §3.3) — TOTHOLZ:
+    // snag, kein foliage (Plan: „height[8,15] snag flare{amp:0.6,lobes:5}").
+    // Eine abgestorbene Baum-Silhouette → kahle, gewundene Äste, KEIN Laub.
+    // foliage.anchorLevel auf Level setzen, der nie erreicht wird (= L3, das
+    // unsere Grammar nicht hat) → growBranch schreibt nichts in foliage
+    // Anchors → keine Cards-Geometrie wird gebaut, nur die Tubes. Tag-
+    // Variation in SPECIES_TAG_VARIATION (lebendig↓0.3, brennbar↑0.2).
+    baum_totholz: Object.freeze({
+        height: [5, 10],
+        crown: "irregular", // verzweigt, knorrig
+        trunk: Object.freeze({ segs: 6, wander: 0.09, taper: 0.6, baseR: 0.36 }),
+        L1: Object.freeze({
+            density: 1.6,
+            whorl: 0,
+            childStart: 0.3,
+            childEnd: 0.92,
+            angleBase: 1.25,
+            lenRatio: 0.38,
+            droop: 0.18, // weniger Droop — Tote Äste sind starr, nicht hängend
+            tipCurl: 0.04,
+            radRatio: 0.36,
+        }),
+        L2: Object.freeze({
+            density: 1.4,
+            whorl: 0,
+            childStart: 0.2,
+            childEnd: 0.95,
+            angleBase: 1.05,
+            lenRatio: 0.28,
+            droop: 0.15,
+            tipCurl: 0.02,
+            radRatio: 0.4,
+        }),
+        foliage: Object.freeze({
+            kind: "none", // keine Cards-Geometrie
+            anchorLevel: 99, // wird nie erreicht (L0/L1/L2 max) → leere anchors
+            clusterSize: [0, 0],
+            color: 0x6e6258, // verwittertes Grau-Braun (für den seltenen Fall, wenn fallback greift)
+            size: 0.1,
+        }),
+    }),
 });
 
 // V18.214 (DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG) — die zwei neuen
@@ -66651,6 +66744,37 @@ AnazhRealm.SPECIES_TREE_PARAMS = Object.freeze({
         slopeMax: 0.9,
         heightRange: Object.freeze([-40, 100]),
     }),
+    baum_totholz: Object.freeze({
+        // Plan §3.3 TOTHOLZ: flare{amp:0.6,lobes:5}. Snags überleben ÜBERALL,
+        // wo Wald war — slopeMax breit (1.0), heightRange weit (Wald-Zone).
+        flare: Object.freeze({ amp: 0.6, lobes: 5 }),
+        slopeMax: 1.0,
+        heightRange: Object.freeze([-30, 160]),
+    }),
+});
+
+// V18.215 (DER LEBENDIGE GIGANT, Ω-R1 distinkte Tag-Vektoren — lebendiger-
+// gigant-Plan §7) — pro Spezies eine form-begründete Tag-Modulation. Plan §7:
+// „Fichte/Kiefer brennbar↑ resoniert↑; Buche/Birke lebendig↑ zähigkeit↑;
+// Totholz lebendig↓ brennbar↑↑." Die Werte sind kleine deklarierte Δ, die das
+// V17.16-Tag-Wand-Gate (geschärft zur V17.16-VARIATIONS-Wand) NUR in den
+// genannten Achsen-Richtungen passieren. Andere Achsen bleiben strict (Δ <
+// 0.05). So bewahrt die Wand die Form-Disziplin (kein wildes Tag-Roulette),
+// aber erlaubt die deklarierte Spezies-Distinktion.
+//
+// AUSWIRKUNG: ein gewachsener Bauplan (`_isGrown && _grownSpecies`) bekommt
+// in `computeCompoundTags` diese Modulation additiv DRAUFGEMISCHT — die
+// Spawn-Affinität + die Werkstatt-Lesarten + die Audio-Resonanz erkennen
+// jetzt subtil die Spezies (Totholz brennt heller in der Spawn-Affinität,
+// Buche resoniert lebendiger in der Klangschale).
+AnazhRealm.SPECIES_TAG_VARIATION = Object.freeze({
+    baum_tanne: Object.freeze({ brennbar: 0.1, resoniert: 0.05 }), // harzig, klingt
+    baum_kiefer: Object.freeze({ brennbar: 0.1, resoniert: 0.05 }), // harzig, klingt
+    baum_buche: Object.freeze({ lebendig: 0.08 }), // saftig
+    baum_birke: Object.freeze({ lebendig: 0.1 }), // saftig + zart
+    baum_eiche: Object.freeze({ lebendig: 0.05 }), // robust-saftig (subtil)
+    baum_erle: Object.freeze({ lebendig: 0.08 }), // wasser-saftig
+    baum_totholz: Object.freeze({ lebendig: -0.5, brennbar: 0.2 }), // tot + brennbar (Δ ehrlich groß)
 });
 
 // V18.199 — Γ-M MULTI-CLASS-MATERIAL LICHEN: grüne Patina auf alten/feuchten

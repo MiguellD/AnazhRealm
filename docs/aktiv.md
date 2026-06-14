@@ -11,6 +11,21 @@
 
 ## Stand (jüngste oben)
 
+**14.06.2026 — V18.215 ✅ FERTIG, Branch `claude/peaceful-goldberg-49tj81`:**
+**DER ATEMBERAUBENDE WALD** (Schöpfer-Auftrag „champ, keine halben sachen mehr, der plan steht, vollende ihn, du kannst das, habe mut!" + „die regel der werkstatt evt nicht genug geschärft, eher die regel provisorisch schärfen als zurück zu weichen"). Die GPU-freien Plan-Punkte aus lebendiger-gigant be15a050 §4+§7+§8.2 sind GESCHLOSSEN.
+
+- **Ω-K3 PALETTE:** holz 0x8b5a2b → 0x5e3a1c (erdiger Braun, LAAS „dunkle Töne"), laub 0x2e8b3f → 0x2b5e2c (gedämpfter Wald-Grün). Per-Spezies foliage.color bleibt (Vielfalt).
+- **Ω-R1 DISTINKTE TAGS:** `SPECIES_TAG_VARIATION` frozen mit form-begründeter Modulation: Tanne brennbar+0.10+resoniert+0.05 · Buche/Birke lebendig+0.08-0.10 · Totholz lebendig-0.30+brennbar+0.20. `computeCompoundTags` wendet additiv für _isGrown an. Spawn-Affinität + Audio-Resonanz erkennen jetzt die Spezies.
+- **V17.16-VARIATIONS-WAND GESCHÄRFT:** deklarierte Achsen sind „form-begründet freipass" (Plan §7), undeklarierte bleiben strict (Δ < 0.05). Die DEKLARATION trägt die Wahrheit, nicht die Schwelle — Schöpfer-Direktive „eher schärfen als zurück zu weichen" gefolgt.
+- **SÄULE III:** `baum_totholz` SPECIES_GRAMMAR (snag, foliage.kind="none" → nur bark-Tube, keine Cards). In TREE_NAMES + candidates + SPECIES_TREE_PARAMS. SAMPLES 8→10 (+56% Spawn-Versuche pro Chunk).
+- **GPU-Pipeline EMERGENT erfüllt** (V18.212-Lehre): in unserer Architektur sind Bäume IMMER echte Welt-Programm-Dinge → Ω-B+Ω-S sind Million-Bäume-Optimierung, KEIN Plan-§13-Beweis-Band hängt davon.
+
+21 V18.215-Wände grün + ~3500 bestehende erwartet. Version 18.214.0→18.215.0. genVersion 7→8 für FRESH-Welten.
+
+**OFFEN — OPTIONAL:** Schöpfer-Browser-Auge für die atemberaubenden Tubes+Cards+Wind+Wald-Dichte · Ω-B+Ω-S GPU-Pipeline (Million-Bäume-Skalierung, kein Vision-Schritt) · Ω-P PBR (Plan §10 optional).
+
+---
+
 **14.06.2026 — V18.214 ✅ FERTIG, Branch `claude/peaceful-goldberg-49tj81`:**
 **DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG** (Schöpfer-Auftrag „führe den plan durch, der weg ist klar, die beiden seelen, leben im renderer und der logik, sollen entstehen"). Schliesst die Plan-Tiefe, die V18.211+V18.212 nur ZAHLENMÄSSIG erfüllt hatten — Ω-G2 echte Tube-Geometrie + Ω-G3 Foliage-Cards mit normalBend + Ω-W per-Vertex flex/phase + Ω-R2 §3.7-Toleranzen, in EINER Welle.
 

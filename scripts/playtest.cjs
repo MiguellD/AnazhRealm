@@ -34756,9 +34756,9 @@ async function checkBandV18209Konsolidierung(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.214.0"
+        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.215.0"
         out.versionStr = A.VERSION;
-        out.versionMatches = A.VERSION === "18.214.0";
+        out.versionMatches = A.VERSION === "18.215.0";
 
         // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
         // beim Konsolidieren (alles bleibt lauffähig):
@@ -34801,7 +34801,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
-    check(`V18.209 (K1) VERSION = "18.214.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
+    check(`V18.209 (K1) VERSION = "18.215.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
     check("V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)", res.allFoundationsAlive === true);
     check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
     check("V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)", res.avatarFamilyKomplett === true);
@@ -34827,7 +34827,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a1HelperExists = typeof r._growTreeBlueprintForSpawn === "function";
         // (A1b) gen-Default für FRESH ist 7 (V18.214 SKELETON-MESH statt V18.213's 6)
         const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18214") : null;
-        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 7;
+        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 8;
         // (A1c) Determinismus: gleiches (species, seed) → gleicher cacheKey
         const k1 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
         const k2 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
@@ -34850,8 +34850,15 @@ async function checkBandV18210Verdrahtung(ctx) {
             const ref = r.computeCompoundTags(refBp);
             const got = r.computeCompoundTags(grownBp);
             let neutral = true;
+            // V18.215 — V17.16-VARIATIONS-Wand toleranter: deklarierte Spezies-
+            // Variation in SPECIES_TAG_VARIATION (Eiche lebendig+0.05) ist
+            // erlaubt; undeklarierte Drift > 0.05 weiterhin abgelehnt. Die
+            // Toleranz pro Achse: 0.05 + |deklarierte Variation|.
+            const V = (r.constructor.SPECIES_TAG_VARIATION || {}).baum_eiche || {};
             for (const a of ["lebendig", "dichte", "brennbar", "magieleitung"]) {
-                if (Math.abs((ref[a] || 0) - (got[a] || 0)) > 0.05) neutral = false;
+                const declared = Math.abs(V[a] || 0);
+                const allowed = 0.05 + declared + 1e-9; // float-tolerance
+                if (Math.abs((ref[a] || 0) - (got[a] || 0)) > allowed) neutral = false;
             }
             out.a1TagNeutral = neutral;
         }
@@ -35170,7 +35177,7 @@ async function checkBandV18210Verdrahtung(ctx) {
 
     // A1 — Worldgen-Hook
     check("V18.210-A1a _growTreeBlueprintForSpawn Helper existiert", res.a1HelperExists === true);
-    check("V18.214 FRESH-Welt genVersion = 7 (SKELETON-MESH aktiv; war 6)", res.a1FreshGenIs4 === true);
+    check("V18.215 FRESH-Welt genVersion = 8 (ATEMBERAUBENDER WALD aktiv; war 7)", res.a1FreshGenIs4 === true);
     check("V18.210-A1c Determinismus: (species, seed) → derselbe cacheKey", res.a1Deterministic === true);
     check("V18.210-A1d Cache-Reuse: SELBE seed → SELBES Bauplan-Object", res.a1CacheReuse === true);
     check("V18.210-A1e 6 seeds → ≥5 unique cache keys", res.a1ManyVariants === true);
@@ -35267,7 +35274,9 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         out.grammarExists = !!A.SPECIES_GRAMMAR;
         if (out.grammarExists) {
             const species = Object.keys(A.SPECIES_GRAMMAR);
-            out.sixSpecies = species.length === 6;
+            // V18.215 — baum_totholz dazugekommen → 7 Spezies. Wir akzeptieren
+            // 6 oder 7 (V18.211 baute 6, V18.215 + Totholz = 7).
+            out.sixSpecies = species.length === 6 || species.length === 7;
             out.allSpeciesPresent = ["baum_eiche", "baum_tanne", "baum_buche", "baum_birke", "baum_kiefer", "baum_erle"].every(
                 (s) => A.SPECIES_GRAMMAR[s] != null
             );
@@ -35336,7 +35345,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
 
         // (S6) VERSION-BUMP: AnazhRealm.VERSION + index.html cache-buster.
         // Walk-with-code (V9.56-i): die Probe trägt die aktuelle Versions-Zahl.
-        out.versionBumped = A.VERSION === "18.214.0";
+        out.versionBumped = A.VERSION === "18.215.0";
 
         return out;
     });
@@ -35356,7 +35365,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
     check("V18.211 (S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)", res.snapshotHasMetadata === true);
     check("V18.211 (S5b) Snapshot grownBlueprints OHNE parts-Array (re-wächst f(seed))", res.snapshotNoParts === true);
     check("V18.211 (S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)", res.snapshotGrownEntrySmall === true);
-    check(`V18.211 (S6) VERSION = "18.214.0" (walk-with-code, V18.214 Skeleton-Mesh)`, res.versionBumped === true);
+    check(`V18.211 (S6) VERSION = "18.215.0" (walk-with-code, V18.215 Atemberaubender Wald)`, res.versionBumped === true);
 }
 
 // V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE der ersten Pillar-Welle:
@@ -35625,9 +35634,15 @@ async function checkBandV18213MeshMerge(ctx) {
 
             // ─── (M7) Tag-Neutralität (V17.16-Wand): bp.parts unverändert ─
             // computeCompoundTags läuft über bp.parts → dieselben Werte mit/ohne
-            // _isMerged-Flag. Wir spiegeln den Bauplan + vergleichen.
+            // _isMerged-Flag. V18.215: der bpClone braucht _isGrown +
+            // _grownSpecies für FAIRE Variation-Anwendung (sonst vergleicht
+            // er „Variation an" vs „Variation aus" = falsche Wand).
             const tagsMerged = r.computeCompoundTags(testBp);
-            const bpClone = { parts: testBp.parts.slice() };
+            const bpClone = {
+                parts: testBp.parts.slice(),
+                _isGrown: testBp._isGrown,
+                _grownSpecies: testBp._grownSpecies,
+            };
             const tagsNonMerged = r.computeCompoundTags(bpClone);
             const tagKeys = ["lebendig", "dichte", "brennbar", "magieleitung"];
             out.tagsNeutral = tagKeys.every(
@@ -35835,8 +35850,14 @@ async function checkBandV18214SkeletonMesh(ctx) {
             }
 
             // ─── (T9) Tag-Neutralität (V17.16-Wand): bp.parts unverändert ──
+            // V18.215: der bpClone braucht _isGrown + _grownSpecies für faire
+            // SPECIES_TAG_VARIATION-Anwendung (sonst Variation-an vs aus).
             const tagsSkel = r.computeCompoundTags(bp);
-            const bpClone = { parts: bp.parts.slice() };
+            const bpClone = {
+                parts: bp.parts.slice(),
+                _isGrown: bp._isGrown,
+                _grownSpecies: bp._grownSpecies,
+            };
             const tagsClone = r.computeCompoundTags(bpClone);
             const tagKeys = ["lebendig", "dichte", "brennbar", "magieleitung"];
             out.tagsNeutral = tagKeys.every(
@@ -35915,6 +35936,170 @@ async function checkBandV18214SkeletonMesh(ctx) {
     );
     check("V18.214 (T10a) Snapshot trägt grown-Eintrag", res.snapshotHasEntry === true);
     check("V18.214 (T10b) Snapshot persistiert _skeleton NICHT (re-baubar aus seed)", res.snapshotNoSkeletonField === true);
+}
+
+// V18.215 — DER ATEMBERAUBENDE WALD (lebendiger-gigant be15a050 §4 Ω-K3 +
+// §7 Ω-R1 + §8.2 Säule III): Palette dunkler+erdiger, per-Spezies distinkte
+// Tag-Vektoren (V17.16-Wand GESCHÄRFT zur Variations-Wand), Säule III CPU-
+// Pfad mit baum_totholz als Lücken-Baum + SAMPLES 8→10 für dichteren Wald.
+async function checkBandV18215AtemberaubenderWald(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // ─── (W1) SPECIES_TAG_VARIATION frozen, alle 7 Spezies ─────
+        out.variationExists = !!A.SPECIES_TAG_VARIATION;
+        if (out.variationExists) {
+            const v = A.SPECIES_TAG_VARIATION;
+            out.variationAllSpecies =
+                !!v.baum_tanne && !!v.baum_kiefer && !!v.baum_buche && !!v.baum_birke &&
+                !!v.baum_eiche && !!v.baum_erle && !!v.baum_totholz;
+            // Plan §7: Tanne/Kiefer brennbar↑ resoniert↑; Totholz lebendig↓
+            // brennbar↑↑ — die DEKLARIERTEN Achsen pro Spezies.
+            out.tannenDeklariert =
+                Number.isFinite(v.baum_tanne.brennbar) && v.baum_tanne.brennbar > 0 &&
+                Number.isFinite(v.baum_tanne.resoniert) && v.baum_tanne.resoniert > 0;
+            out.totholzDeklariert =
+                Number.isFinite(v.baum_totholz.lebendig) && v.baum_totholz.lebendig < 0 &&
+                Number.isFinite(v.baum_totholz.brennbar) && v.baum_totholz.brennbar > 0;
+        }
+
+        // ─── (W2) baum_totholz in SPECIES_GRAMMAR + SPECIES_TREE_PARAMS ─
+        out.grammarHasTotholz = !!(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_totholz);
+        if (out.grammarHasTotholz) {
+            const g = A.SPECIES_GRAMMAR.baum_totholz;
+            // Plan §3.3: kein foliage. foliage.kind="none" + anchorLevel=99.
+            out.totholzNoFoliage = g.foliage.kind === "none" && g.foliage.anchorLevel >= 99;
+        }
+        out.treeParamsHasTotholz =
+            !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz);
+
+        // ─── (W3) V17.16-VARIATIONS-Wand in _growTreeBlueprintForSpawn ─
+        const growSrc = r._growTreeBlueprintForSpawn.toString();
+        out.wandGeschaerft =
+            /SPECIES_TAG_VARIATION/.test(growSrc) &&
+            /\(a in variation\)\s*continue/.test(growSrc);
+
+        // ─── (W4) computeCompoundTags wendet Variation für _isGrown ──
+        const tagsSrc = r.computeCompoundTags.toString();
+        out.tagsAppliesVariation =
+            /SPECIES_TAG_VARIATION/.test(tagsSrc) && /_isGrown/.test(tagsSrc);
+
+        // ─── (W5) Behavioral: Spezies-Distinktion in computeCompoundTags ─
+        // Bauplan-Stichprobe: rohen parts vs _isGrown+species → Tag-Delta.
+        if (r.state.worldMeta) r.state.worldMeta.genVersion = 8;
+        const origLast = r._lastTreeSkeleton;
+        try {
+            // Tanne-Parts (ohne _isGrown-Flag)
+            const grammar = A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_tanne;
+            if (grammar && r._growTreeBlueprintRich) {
+                const parts = r._growTreeBlueprintRich("baum_tanne", "v215-tanne-1", grammar);
+                if (Array.isArray(parts) && parts.length >= 30) {
+                    const tagsRaw = r.computeCompoundTags({ parts });
+                    const tagsGrown = r.computeCompoundTags({
+                        parts,
+                        _isGrown: true,
+                        _grownSpecies: "baum_tanne",
+                    });
+                    const dBrennbar = (tagsGrown.brennbar || 0) - (tagsRaw.brennbar || 0);
+                    out.tannenVariationApplied = Math.abs(dBrennbar - 0.1) < 1e-9;
+                }
+            }
+            // Totholz-Parts → lebendig↓
+            if (A.SPECIES_GRAMMAR.baum_totholz && r._growTreeBlueprintRich) {
+                const parts = r._growTreeBlueprintRich(
+                    "baum_totholz",
+                    "v215-totholz-1",
+                    A.SPECIES_GRAMMAR.baum_totholz
+                );
+                if (Array.isArray(parts)) {
+                    out.totholzPartsCount = parts.length;
+                    out.totholzPartsEnough = parts.length >= 4;
+                    // Alle parts material holz oder laub (V17.16-Wand strukturell)
+                    out.totholzAllHolzOrLaub = parts.every((p) => p.material === "holz" || p.material === "laub");
+                    // Variation auf totholz: lebendig sinkt
+                    const tagsTRaw = r.computeCompoundTags({ parts });
+                    const tagsTGrown = r.computeCompoundTags({
+                        parts,
+                        _isGrown: true,
+                        _grownSpecies: "baum_totholz",
+                    });
+                    const dLebendig = (tagsTGrown.lebendig || 0) - (tagsTRaw.lebendig || 0);
+                    // Variation -0.3, aber Math.max(0,...) clamp → könnte <0.3 sein wenn tagsTRaw.lebendig klein
+                    out.totholzVariationLebendigDrop =
+                        dLebendig < 0 || Math.abs(tagsTGrown.lebendig - Math.max(0, (tagsTRaw.lebendig || 0) - 0.3)) < 1e-9;
+                }
+            }
+        } catch (_e) {
+            out.behaviorError = String(_e && _e.message);
+        } finally {
+            r._lastTreeSkeleton = origLast;
+        }
+
+        // ─── (W6) totholz-Bauplan kann gespawnt werden (V17.16-Wand passiert) ─
+        try {
+            const totKey = r._growTreeBlueprintForSpawn("baum_totholz", "v215-totholz-spawn-1");
+            out.totholzSpawnable = !!totKey;
+            if (totKey && r.state.blueprints[totKey]) {
+                const tbp = r.state.blueprints[totKey];
+                out.totholzBpHasSkeleton = !!tbp._skeleton;
+                out.totholzBpIsGrown = tbp._isGrown === true;
+                out.totholzBpGrownSpecies = tbp._grownSpecies === "baum_totholz";
+                // computeCompoundTags(tbp) → lebendig↓
+                const ttags = r.computeCompoundTags(tbp);
+                out.totholzCompoundLebendigLow =
+                    Number.isFinite(ttags.lebendig) && ttags.lebendig < 1.0; // var=-0.3 unter Eiche-1.4 → ~0.7-1.1
+            }
+        } catch (_e) {
+            out.totholzSpawnError = String(_e && _e.message);
+        }
+
+        // ─── (W7) SAMPLES = 10 in _populateVoxelChunkVegetation ─────
+        const popSrc = r._populateVoxelChunkVegetation.toString();
+        out.samples10 = /SAMPLES\s*=\s*10/.test(popSrc);
+
+        // ─── (W8) Material-Colors Ω-K3 (laub/holz dunkler) ──────────
+        const mat = r.state.materials;
+        if (mat && mat.holz && mat.laub) {
+            out.holzColor = mat.holz.color;
+            out.laubColor = mat.laub.color;
+            // dunkler als V18.214: holz < 0x80, laub < 0x80 in jedem Kanal
+            const holzR = (mat.holz.color >> 16) & 0xff;
+            const holzG = (mat.holz.color >> 8) & 0xff;
+            out.holzIsErdig = holzR < 0x80 && holzG < 0x60; // erdiges Braun
+            const laubG = (mat.laub.color >> 8) & 0xff;
+            out.laubIsDunkel = laubG < 0x80; // gedämpftes Grün (war 0x8b → jetzt < 0x80)
+        }
+
+        // ─── (W9) baum_totholz in TREE_NAMES + candidates ────────────
+        const spawnSrc = r._vegetationSampleSpawn.toString();
+        out.candidatesIncludeTotholz = /["']baum_totholz["']/.test(spawnSrc);
+
+        return out;
+    });
+
+    check("V18.215 (W1a) SPECIES_TAG_VARIATION existiert", res.variationExists === true);
+    check("V18.215 (W1b) Alle 7 Spezies (inkl baum_totholz) deklariert", res.variationAllSpecies === true);
+    check("V18.215 (W1c) Tanne: brennbar↑ + resoniert↑ deklariert", res.tannenDeklariert === true);
+    check("V18.215 (W1d) Totholz: lebendig↓ + brennbar↑↑ deklariert", res.totholzDeklariert === true);
+    check("V18.215 (W2a) baum_totholz in SPECIES_GRAMMAR", res.grammarHasTotholz === true);
+    check("V18.215 (W2b) Totholz foliage.kind=none + anchorLevel≥99 (snag, kein Laub)", res.totholzNoFoliage === true);
+    check("V18.215 (W2c) baum_totholz in SPECIES_TREE_PARAMS (Slope+Höhe)", res.treeParamsHasTotholz === true);
+    check("V18.215 (W3) V17.16-VARIATIONS-Wand GESCHÄRFT (Source: deklarierte Achsen freipass)", res.wandGeschaerft === true);
+    check("V18.215 (W4) computeCompoundTags wendet SPECIES_TAG_VARIATION für _isGrown an (Source)", res.tagsAppliesVariation === true);
+    check("V18.215 (W5a) Tanne _isGrown: brennbar +0.1 angewandt (computeCompoundTags-Δ)", res.tannenVariationApplied === true);
+    check(`V18.215 (W5b) Totholz produziert ≥4 parts (gemessen ${res.totholzPartsCount})`, res.totholzPartsEnough === true);
+    check("V18.215 (W5c) Totholz parts alle holz oder laub (V17.16-Wand strukturell)", res.totholzAllHolzOrLaub === true);
+    check("V18.215 (W5d) Totholz _isGrown: lebendig-Drop angewandt", res.totholzVariationLebendigDrop === true);
+    check("V18.215 (W6a) baum_totholz kann gespawnt werden (V17.16-VARIATIONS-Wand passiert)", res.totholzSpawnable === true);
+    check("V18.215 (W6b) Totholz-Bauplan trägt _skeleton + _isGrown + _grownSpecies", res.totholzBpHasSkeleton === true && res.totholzBpIsGrown === true && res.totholzBpGrownSpecies === true);
+    check("V18.215 (W6c) Totholz computeCompoundTags lebendig < 1.0 (Variation wirkt)", res.totholzCompoundLebendigLow === true);
+    check("V18.215 (W7) _populateVoxelChunkVegetation SAMPLES = 10 (Plan §8.2 dichter)", res.samples10 === true);
+    check(`V18.215 (W8a) Holz dunkler+erdig (R<0x80, G<0x60) — gemessen R=${res.holzColor ? ((res.holzColor >> 16) & 0xff).toString(16) : "?"}, G=${res.holzColor ? ((res.holzColor >> 8) & 0xff).toString(16) : "?"}`, res.holzIsErdig === true);
+    check(`V18.215 (W8b) Laub dunkler (G<0x80) — gemessen G=${res.laubColor ? ((res.laubColor >> 8) & 0xff).toString(16) : "?"}`, res.laubIsDunkel === true);
+    check("V18.215 (W9) baum_totholz in _vegetationSampleSpawn-candidates (Plan §8.2)", res.candidatesIncludeTotholz === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -53112,6 +53297,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18212GigantRestsubschritte(ctx);
             await checkBandV18213MeshMerge(ctx);
             await checkBandV18214SkeletonMesh(ctx);
+            await checkBandV18215AtemberaubenderWald(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
