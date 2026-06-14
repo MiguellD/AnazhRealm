@@ -34046,6 +34046,19 @@ class AnazhRealm {
     // `chunkDeltas`-Sanitizer ist entfernt (Welt-Mod-Schicht im Voxel-Feld);
     // alte Saves mit `worldMeta.chunkDeltas` werden still ignoriert.
     _loadStateRestoreWorldMeta(state) {
+        // V18.210 (Selbst-Audit) — der WELT-WECHSEL ist eine WELT-IDENTITÄTS-
+        // GRENZE: lazy-cached Worldgen-Noise/Caches MÜSSEN zurückgesetzt werden,
+        // sonst trägt die NEUE Welt ALTE Welt-Stempel (P2P-Drift-Klasse — die
+        // V18.193-Erbgut-Lehre auf Worldgen-Helper angewandt). _growTreeNoise
+        // ist an worldSeed gebunden (SimplexNoise(seed + "-veg-grammatik")) →
+        // Reset hier, lazy-rebuild beim nächsten Aufruf mit neuer Seed.
+        // _growTreeRing trägt Bauplan-Keys der alten Welt (würden geprunt aber
+        // unnötig wandern) — auch reset. State.blueprints['grown_*'] entsorgt
+        // sich beim _loadStateRestoreGrownBlueprints (nur das geladene Set
+        // überlebt). Sicher gegen Same-World-Reload (Seed identisch → Noise
+        // bit-identisch nach Re-Init).
+        this._growTreeNoise = null;
+        this._growTreeRing = [];
         if (state.worldMeta && typeof state.worldMeta === "object") {
             this.state.worldMeta = { ...this.state.worldMeta, ...state.worldMeta };
         } else {

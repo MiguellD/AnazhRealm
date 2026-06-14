@@ -34939,6 +34939,12 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a1SpeciesDistinct = sigs.size >= 4; // wenigstens 4 unterschiedlich (Eiche/Kiefer/Tanne/Birke sind klar trennbar)
         // (Heilung #3b) TAG-WAND: Birke gegen baum_birke (nicht baum_eiche)
         out.a1TagWandSpecies = /this\.state\.blueprints\[species\]/.test(r._growTreeBlueprintForSpawn.toString());
+        // (Heilung #6 Selbst-Audit) WELT-WECHSEL: _growTreeNoise wird im
+        // _loadStateRestoreWorldMeta resetted, sonst trägt die neue Welt den
+        // alten Welt-Stempel (P2P-Drift-Klasse, V18.193-Erbgut-Lehre).
+        out.a1WorldSwitchResetsNoise =
+            /this\._growTreeNoise\s*=\s*null/.test(r._loadStateRestoreWorldMeta.toString()) &&
+            /this\._growTreeRing\s*=\s*\[\]/.test(r._loadStateRestoreWorldMeta.toString());
 
         // ============== A2: R5 LIVE-UNIFORM + SLIDER ==============
         // (A2a) Default wanderte 1.0 → 1.3
@@ -35172,6 +35178,10 @@ async function checkBandV18210Verdrahtung(ctx) {
     check(
         "V18.210-A1-Heil3b SPEZIES-Tag-Wand: Birke gegen baum_birke (nicht baum_eiche)",
         res.a1TagWandSpecies === true
+    );
+    check(
+        "V18.210-A1-Heil6 WELT-WECHSEL: _growTreeNoise + _growTreeRing reset in _loadStateRestoreWorldMeta (P2P-Drift-Klasse, V18.193-Erbgut-Lehre)",
+        res.a1WorldSwitchResetsNoise === true
     );
 
     // A4 — Mana-Konsument
