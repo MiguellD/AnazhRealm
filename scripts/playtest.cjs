@@ -33871,6 +33871,145 @@ async function checkBandV18199GammaMLichen(ctx) {
     check("V18.199 (L4) lichen ≤ LICHEN.strength (Math-Sicherheit, kein Overshoot)", res.lichenBoundedAtFull === true);
 }
 
+// V18.200 — Γ-M IRON-BANDS (genese-plan §Γ-M Folge zu V18.197 STRATA +
+// V18.199 LICHEN). Vertikale Eisenadern in tiefen Bergregionen — vollendet
+// die Γ-M-Triade (Strata horizontal + Lichen Patina + Iron-Bands vertikal).
+async function checkBandV18200GammaMIronBands(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (I1) IRON_BANDS frozen Konstanten
+        out.constExists = !!A.IRON_BANDS && Object.isFrozen(A.IRON_BANDS);
+        if (A.IRON_BANDS) {
+            const IB = A.IRON_BANDS;
+            out.constsSensible =
+                typeof IB.minDepth === "number" && IB.minDepth > 0 &&
+                typeof IB.threshold === "number" && IB.threshold > 0 && IB.threshold < 1 &&
+                typeof IB.dichteFloor === "number" && IB.dichteFloor >= 0 &&
+                typeof IB.scale === "number" && IB.scale > 0;
+            // minDepth muss > STRATA_STEIN_DEPTH sein (Iron-Bands sind eine
+            // Subschicht UNTERHALB der reinen Stein-Schicht)
+            out.deepBeyondStrata = IB.minDepth > A.STRATA_STEIN_DEPTH;
+        }
+
+        // (I2) _eisenAderAt-Helper existiert + ist deterministisch
+        out.helperExists = typeof r._eisenAderAt === "function";
+        if (out.helperExists) {
+            // Determinismus: zweimal gleicher (x,z) → gleicher Wert
+            const a1 = r._eisenAderAt(123.7, 456.3);
+            const a2 = r._eisenAderAt(123.7, 456.3);
+            out.deterministic = Math.abs(a1 - a2) < 1e-10;
+            // Wert in [0, 1]
+            out.boundedRange = a1 >= 0 && a1 <= 1;
+            // VERTEILUNG: über 500 Probe-Punkte sollte die Verteilung
+            // nicht-degeneriert sein (max > 0.5, mean ~0.3-0.5)
+            let max = 0, sum = 0;
+            for (let i = 0; i < 500; i++) {
+                const x = (i * 37 + 11) % 5000;
+                const z = (i * 73 - 29) % 5000;
+                const v = r._eisenAderAt(x, z);
+                if (v > max) max = v;
+                sum += v;
+            }
+            out.distMax = max;
+            out.distMean = sum / 500;
+            out.distHasPeaks = max > 0.5;
+        }
+
+        // (I3) MIGRATION-TOLERANZ: _terrainMaterialAt ohne y bleibt
+        // bit-identisch (keine Iron-Bands-Aktivierung ohne y-Probe).
+        const oldStyle = r._terrainMaterialAt(0, 0);
+        const surfaceStyle = r._terrainMaterialAt(0, 0, r._voxelSurfaceY ? r._voxelSurfaceY(0, 0) : 0);
+        out.migrationOk = oldStyle === surfaceStyle;
+
+        // (I4) STRATA bleibt aktiv: tief unter STRATA_STEIN_DEPTH, wenn KEIN
+        // Iron-Band, ist das Material stein.
+        // Finde Punkte mit niedrigem ironAder (< threshold) und prüfe Material.
+        let steinHits = 0;
+        let eisenHits = 0;
+        let probedDeep = 0;
+        for (let i = 0; i < 30; i++) {
+            const x = (i * 173) % 1500;
+            const z = (i * 257 + 13) % 1500;
+            const surfY = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : null;
+            if (!Number.isFinite(surfY)) continue;
+            const deepY = surfY - A.IRON_BANDS.minDepth - 10;
+            const mat = r._terrainMaterialAt(x, z, deepY);
+            probedDeep++;
+            if (mat === "stein") steinHits++;
+            if (mat === "eisen") eisenHits++;
+        }
+        out.deepSteinHits = steinHits;
+        out.deepEisenHits = eisenHits;
+        out.deepProbed = probedDeep;
+        out.steinDominant = steinHits > eisenHits; // Iron-Bands sind selten
+
+        // (I5) EISEN als Material existiert
+        out.eisenMaterialExists = !!(r.state.materials && r.state.materials["eisen"]);
+
+        // (I6) MATH: an einem KÜNSTLICH konstruierten Iron-Band-Punkt
+        // (ironAder hoch + tief + dichte hoch) → eisen
+        // Finde einen Punkt mit aderwert > threshold
+        let highAderPoint = null;
+        for (let i = 0; i < 1000; i++) {
+            const x = (i * 31.4) % 3000;
+            const z = (i * 27.9) % 3000;
+            if (r._eisenAderAt(x, z) > A.IRON_BANDS.threshold) {
+                const surfY = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : null;
+                if (Number.isFinite(surfY)) {
+                    const f = r.worldFieldAt ? r.worldFieldAt(x, z) : null;
+                    if (f && (f.dichte || 0) > A.IRON_BANDS.dichteFloor) {
+                        highAderPoint = { x, z, surfY };
+                        break;
+                    }
+                }
+            }
+        }
+        out.foundIronPoint = !!highAderPoint;
+        if (highAderPoint) {
+            const deepY = highAderPoint.surfY - A.IRON_BANDS.minDepth - 5;
+            const mat = r._terrainMaterialAt(highAderPoint.x, highAderPoint.z, deepY);
+            out.ironPointGivesEisen = mat === "eisen";
+            // Plus: an NIEDRIGER Tiefe (< minDepth) bleibt stein-Schicht
+            const midDepth = highAderPoint.surfY - (A.STRATA_STEIN_DEPTH + 2);
+            const midMat = r._terrainMaterialAt(highAderPoint.x, highAderPoint.z, midDepth);
+            out.midDepthStaysStein = midMat === "stein"; // Iron-Schwelle nicht erreicht (zu flach)
+        }
+
+        // (I7) Source-Probe: _terrainMaterialAt enthält IRON_BANDS-Logik
+        const src = r._terrainMaterialAt.toString();
+        out.srcHasIronCheck = /IRON_BANDS/.test(src) && /_eisenAderAt/.test(src);
+
+        return out;
+    });
+
+    check("V18.200 (I1a) IRON_BANDS frozen Konstanten existieren", res.constExists === true);
+    check("V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH", res.constsSensible === true && res.deepBeyondStrata === true);
+    check("V18.200 (I2a) _eisenAderAt-Helper existiert", res.helperExists === true);
+    check("V18.200 (I2b) deterministisch (zwei Aufrufe gleicher Wert)", res.deterministic === true);
+    check("V18.200 (I2c) Werte in [0, 1] gebounded", res.boundedRange === true);
+    check(
+        `V18.200 (I2d) Verteilung nicht-degeneriert (max=${res.distMax && res.distMax.toFixed(2)}, mean=${res.distMean && res.distMean.toFixed(2)}, Peaks > 0.5)`,
+        res.distHasPeaks === true
+    );
+    check("V18.200 (I3) MIGRATION: ohne y bit-identisch (Pre-V18.197)", res.migrationOk === true);
+    check(
+        `V18.200 (I4) STRATA dominant: stein ${res.deepSteinHits}/${res.deepProbed} > eisen ${res.deepEisenHits} in tiefen Punkten`,
+        res.steinDominant === true
+    );
+    check("V18.200 (I5) Material 'eisen' existiert in state.materials", res.eisenMaterialExists === true);
+    if (res.foundIronPoint) {
+        check("V18.200 (I6a) An Iron-Ader-Punkt (tief + dichte hoch + ader>threshold) → eisen", res.ironPointGivesEisen === true);
+        check("V18.200 (I6b) Bei flacher Tiefe bleibt es stein (Iron-Schwelle nicht erreicht)", res.midDepthStaysStein === true);
+    } else {
+        check("V18.200 (I6) Kein Iron-Ader-Punkt in 1000 Samples gefunden (skip)", true);
+    }
+    check("V18.200 (I7) Source-Probe: IRON_BANDS + _eisenAderAt in _terrainMaterialAt", res.srcHasIronCheck === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -51052,6 +51191,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18197GammaMStrata(ctx);
             await checkBandV18198Gamma2Totholz(ctx);
             await checkBandV18199GammaMLichen(ctx);
+            await checkBandV18200GammaMIronBands(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

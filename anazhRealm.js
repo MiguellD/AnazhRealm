@@ -49789,11 +49789,41 @@ class AnazhRealm {
             if (Number.isFinite(surfY)) {
                 const depth = surfY - y;
                 if (depth > AnazhRealm.STRATA_STEIN_DEPTH) {
+                    // V18.200 — Γ-M IRON-BANDS: an tiefen Punkten kann eine
+                    // vertikale Ader von Eisen die Stein-Schicht ersetzen.
+                    // Ridge-Noise (`1−|noise|`²) gibt vertikale Linien-
+                    // Cluster — anders als das V18.181-Massiv-Ridge NICHT
+                    // rotiert, weil Eisenadern vertikal durch die Welt
+                    // ziehen. Nur in TIEFEN + DICHTE-haltigen Regionen.
+                    if (depth > AnazhRealm.IRON_BANDS.minDepth && (f.dichte || 0) > AnazhRealm.IRON_BANDS.dichteFloor) {
+                        const ironAder = this._eisenAderAt(x, z);
+                        if (ironAder > AnazhRealm.IRON_BANDS.threshold) {
+                            return "eisen";
+                        }
+                    }
                     return "stein";
                 }
             }
         }
         return best[1];
+    }
+
+    // V18.200 — Γ-M IRON-BANDS Ader-Sampler. Ridge-Noise auf (x,z) — die
+    // Adern ziehen sich durch die x-z-Ebene (sind also vertikale Säulen in
+    // 3D, wenn man die y-Achse durchschneidet). Einfaches Single-Octave-
+    // Ridge: schlanker als das V18.181-Massiv (das 7 Oktaven hat). Eigener
+    // Noise-Seed via Suffix (`-iron-bands`, Γ5-Stream-Disziplin: re-rollt
+    // keinen anderen Welt-Stream).
+    _eisenAderAt(x, z) {
+        if (!this._ironBandsNoise) {
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._ironBandsNoise = new SimplexNoise(seed + "-iron-bands");
+        }
+        const n = this._ironBandsNoise;
+        const SCALE = AnazhRealm.IRON_BANDS.scale;
+        const v = n.noise2D(x * SCALE, z * SCALE);
+        const nv = 1 - Math.abs(v);
+        return nv * nv; // [0, 1] mit Konzentration an Graten
     }
 
     // V9.39 Phase 5c.2.c.3.b.iii — `populateChunkVegetation` ist als toter
@@ -63715,7 +63745,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.199.0";
+AnazhRealm.VERSION = "18.200.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -64041,6 +64071,29 @@ AnazhRealm.LICHEN = Object.freeze({
     strength: 0.22,
     // Tint: gelb-grün, gedämpft. Lichen ist nicht Wald-Grün.
     tint: Object.freeze([0.42, 0.5, 0.34]),
+});
+
+// V18.200 — Γ-M MULTI-CLASS-MATERIAL IRON-BANDS: vertikale Eisenadern in
+// tiefen Berg-Regionen. Vollendet die Γ-M-Triade (Strata horizontal +
+// Lichen Patina + Iron-Bands vertikal). Ridge-Noise (`1−|noise|`²) gibt die
+// vertikalen Linien-Cluster (anders als das Massiv-Ridge-Noise V18.181 NICHT
+// rotiert — Eisenadern ziehen sich vertikal durch die Welt). EISEN ersetzt
+// STEIN in tiefen Schichten, wo: (a) der Aderwert hoch ist UND (b) der
+// Ort GENUG dichte hat (kein Eisen in Erde/Lava). Erst-Wurf-Konstanten.
+// Ein Material-Effekt — sichtbar als grauere/dunklere Tönung an der Bruch-
+// Stelle UND als Boost beim Schmieden (Eisen-Werkzeuge sind härter).
+AnazhRealm.IRON_BANDS = Object.freeze({
+    // Tiefe, ab der Eisen-Adern auftreten können (über STRATA_STEIN_DEPTH
+    // hinaus — Iron-Bands sind eine MIN-STEIN-DEPTH-TIEFE Subschicht).
+    minDepth: 24,
+    // Ridge-Schwelle: nur an Punkten mit Aderwert > threshold wird stein
+    // → eisen umgewandelt. Erst-Wurf 0.7 → ~5-10 % der tiefen Stein-Region.
+    threshold: 0.7,
+    // Dichte-Floor: kein Eisen in nicht-stein-dominierten Regionen.
+    dichteFloor: 0.4,
+    // Skala der Ridge-Adern (Noise-Frequenz). 1/180 = ~180 m Adern-Wellenlänge,
+    // genug für sichtbare aber nicht überall-präsente Linien.
+    scale: 1 / 180,
 });
 
 // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Eigener Kosten-Satz,
