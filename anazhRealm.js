@@ -49070,11 +49070,28 @@ class AnazhRealm {
             };
         }
         const f = this.state.worldField;
-        // Skala 0.005 entspricht Welle ~200m; Regionen sind groß genug, dass
-        // ein Wald als Wald erkennbar ist. Offsets pro Achse machen sie
-        // unkorreliert (sonst würden lebendig+dichte zusammen schwingen).
-        const s = 0.005;
         const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
+        // V18.203 — Γ3 FREQUENZ-FÄCHER: bei genVersion >= 3 hat jede Welt-Stimme
+        // ihre EIGENE Wellenlänge (lebendig 200, dichte 340, glut 520, magie
+        // 160 m). Bei gen < 3 das alte Verhalten (s=0.005 = λ200 für alle) —
+        // alte Welten bit-identisch (V18.181/V18.193-Disziplin). Die OFFSETS
+        // pro Achse bleiben unverändert (dekorrelation gewahrt).
+        if (this._genVersion() >= 3) {
+            const FC = AnazhRealm.FIELD_CHARACTER;
+            const sL = 1 / FC.lambdaLebendig;
+            const sD = 1 / FC.lambdaDichte;
+            const sG = 1 / FC.lambdaGlut;
+            const sM = 1 / FC.lambdaMagieleitung;
+            return {
+                lebendig: n01(f.lebendigNoise.noise2D(x * sL, z * sL)),
+                dichte: n01(f.dichteNoise.noise2D(x * sD + 100, z * sD - 200)),
+                glut: n01(f.glutNoise.noise2D(x * sG + 500, z * sG + 700)),
+                magieleitung: n01(f.magieNoise.noise2D(x * sM - 333, z * sM + 999)),
+            };
+        }
+        // Legacy-Pfad: alle vier Stimmen auf s=0.005 (λ~200 m). Bit-identisch
+        // zu Pre-V18.203 für alte Welten.
+        const s = 0.005;
         return {
             lebendig: n01(f.lebendigNoise.noise2D(x * s, z * s)),
             dichte: n01(f.dichteNoise.noise2D(x * s + 100, z * s - 200)),
@@ -63839,7 +63856,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.202.0";
+AnazhRealm.VERSION = "18.203.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -64165,6 +64182,24 @@ AnazhRealm.LICHEN = Object.freeze({
     strength: 0.22,
     // Tint: gelb-grün, gedämpft. Lichen ist nicht Wald-Grün.
     tint: Object.freeze([0.42, 0.5, 0.34]),
+});
+
+// V18.203 — Γ3 FELD-CHARAKTER Foundation (genese-plan §Γ3): Frequenz-Fächer
+// für die vier Welt-Stimmen. Aktuell laufen alle vier auf s=0.005 (λ~200 m,
+// gleich große Simplex-Blobs, nur dekorreliert). Diese Welle gibt jeder
+// Stimme ihre EIGENE Skala — lebendig λ200, dichte λ340, glut λ520, magie
+// λ160 — sodass der Welt-Charakter aus dem ÜBERLAGERUNGS-Muster der vier
+// Wellen emergiert (Ecotone an argmax-Grenzen + AFFINITY_FLOOR-Linie).
+// genVersion-Gate: NUR bei gen >= 3 aktiv, alte Welten behalten ihr Gesicht
+// bit-identisch (V18.181/V18.193-Disziplin: Welt-Substanz-Drift verhindern).
+// Domain-Warp als Folge-Welle (klassischer Schöpfungs-Pfad: Frequenz-Fächer
+// erst messen, dann Warp erweitern wenn der Charakter es trägt).
+AnazhRealm.FIELD_CHARACTER = Object.freeze({
+    // Wellenlängen (m). Erst-Wurf aus genese-plan §Γ3.
+    lambdaLebendig: 200,
+    lambdaDichte: 340,
+    lambdaGlut: 520,
+    lambdaMagieleitung: 160,
 });
 
 // V18.202 — Γ1-LESART-5 Ψ2-NASE: das GERUCH-Feld der Welt. Die fünfte Welt-

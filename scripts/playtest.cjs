@@ -34213,6 +34213,142 @@ async function checkBandV18202GeruchFeld(ctx) {
     check("V18.202 (N7) 0/negative strength wird ignoriert (kein negativer Geruch)", res.zeroNegStrengthIgnored === true);
 }
 
+// V18.203 — Γ3 FELD-CHARAKTER FOUNDATION (genese-plan §Γ3 + aktiv.md §4.A):
+// Frequenz-Fächer pro Welt-Stimme bei genVersion >= 3 (Domain-Warp als Folge).
+// Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/V18.193-Disziplin).
+async function checkBandV18203Gamma3FeldCharakter(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (F1) FIELD_CHARACTER frozen Konstanten
+        out.constExists = !!A.FIELD_CHARACTER && Object.isFrozen(A.FIELD_CHARACTER);
+        if (A.FIELD_CHARACTER) {
+            const FC = A.FIELD_CHARACTER;
+            // Wellenlängen-Spreizung: lebendig 200, dichte 340, glut 520, magie 160
+            out.allDifferent =
+                FC.lambdaLebendig !== FC.lambdaDichte &&
+                FC.lambdaLebendig !== FC.lambdaGlut &&
+                FC.lambdaLebendig !== FC.lambdaMagieleitung &&
+                FC.lambdaDichte !== FC.lambdaGlut;
+            out.allPositive =
+                FC.lambdaLebendig > 0 && FC.lambdaDichte > 0 &&
+                FC.lambdaGlut > 0 && FC.lambdaMagieleitung > 0;
+        }
+
+        // Save state für Tests
+        const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
+        const origField = r.state.worldField;
+        try {
+            // (F2) LEGACY gen=1: bit-identisch zu Pre-V18.203. Lass uns die
+            // ALTE Form selbst nachrechnen (s=0.005 für alle vier) und mit
+            // worldFieldAt vergleichen.
+            r.state.worldMeta = { ...(r.state.worldMeta || {}), genVersion: 1 };
+            r.state.worldField = null; // re-init
+            const f1 = r.worldFieldAt(100, 200);
+            const ws = 0.005;
+            const f1Manual = r.state.worldField;
+            const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
+            const legacyExpected = {
+                lebendig: n01(f1Manual.lebendigNoise.noise2D(100 * ws, 200 * ws)),
+                dichte: n01(f1Manual.dichteNoise.noise2D(100 * ws + 100, 200 * ws - 200)),
+                glut: n01(f1Manual.glutNoise.noise2D(100 * ws + 500, 200 * ws + 700)),
+                magieleitung: n01(f1Manual.magieNoise.noise2D(100 * ws - 333, 200 * ws + 999)),
+            };
+            out.legacyBitIdentical =
+                Math.abs(f1.lebendig - legacyExpected.lebendig) < 1e-9 &&
+                Math.abs(f1.dichte - legacyExpected.dichte) < 1e-9 &&
+                Math.abs(f1.glut - legacyExpected.glut) < 1e-9 &&
+                Math.abs(f1.magieleitung - legacyExpected.magieleitung) < 1e-9;
+
+            // (F3) GEN=3: Frequenz-Fächer aktiv — anderer Wert als Legacy am
+            // selben Punkt.
+            r.state.worldMeta.genVersion = 3;
+            r.state.worldField = null;
+            const f3 = r.worldFieldAt(100, 200);
+            // f3 sollte ANDERE Werte als f1 haben (mindestens eine Stimme)
+            out.gen3DiffersFromLegacy =
+                Math.abs(f1.lebendig - f3.lebendig) > 1e-6 ||
+                Math.abs(f1.dichte - f3.dichte) > 1e-6 ||
+                Math.abs(f1.glut - f3.glut) > 1e-6 ||
+                Math.abs(f1.magieleitung - f3.magieleitung) > 1e-6;
+
+            // (F4) GEN=3: Bit-identische Berechnung — wir rechnen die NEUE
+            // Form nach und vergleichen
+            const FC = A.FIELD_CHARACTER;
+            const sL = 1 / FC.lambdaLebendig;
+            const sD = 1 / FC.lambdaDichte;
+            const sG = 1 / FC.lambdaGlut;
+            const sM = 1 / FC.lambdaMagieleitung;
+            const f3Manual = r.state.worldField;
+            const gen3Expected = {
+                lebendig: n01(f3Manual.lebendigNoise.noise2D(100 * sL, 200 * sL)),
+                dichte: n01(f3Manual.dichteNoise.noise2D(100 * sD + 100, 200 * sD - 200)),
+                glut: n01(f3Manual.glutNoise.noise2D(100 * sG + 500, 200 * sG + 700)),
+                magieleitung: n01(f3Manual.magieNoise.noise2D(100 * sM - 333, 200 * sM + 999)),
+            };
+            out.gen3BitIdentical =
+                Math.abs(f3.lebendig - gen3Expected.lebendig) < 1e-9 &&
+                Math.abs(f3.dichte - gen3Expected.dichte) < 1e-9 &&
+                Math.abs(f3.glut - gen3Expected.glut) < 1e-9 &&
+                Math.abs(f3.magieleitung - gen3Expected.magieleitung) < 1e-9;
+
+            // (F5) GEN=2 zwischen Tor: gen 2 ist Γ1-Feuchte, NICHT Γ3.
+            // Verhalten = LEGACY (s=0.005 für alle, kein Frequenz-Fächer).
+            r.state.worldMeta.genVersion = 2;
+            r.state.worldField = null;
+            const f2 = r.worldFieldAt(100, 200);
+            out.gen2StaysLegacy =
+                Math.abs(f1.lebendig - f2.lebendig) < 1e-9 &&
+                Math.abs(f1.dichte - f2.dichte) < 1e-9;
+
+            // (F6) Wellenlängen-Effekt: dichte (λ340) sollte LANGSAMER variieren
+            // als magieleitung (λ160) bei gen 3. Wir testen über eine kurze
+            // Distanz (40 m) → magie sollte mehr "Bewegung" zeigen.
+            r.state.worldMeta.genVersion = 3;
+            r.state.worldField = null;
+            let totalDeltaMagie = 0;
+            let totalDeltaDichte = 0;
+            const fA = r.worldFieldAt(0, 0);
+            for (let d = 5; d <= 200; d += 5) {
+                const fB = r.worldFieldAt(d, 0);
+                totalDeltaMagie += Math.abs(fB.magieleitung - fA.magieleitung);
+                totalDeltaDichte += Math.abs(fB.dichte - fA.dichte);
+            }
+            out.magieMoreVariable = totalDeltaMagie > totalDeltaDichte;
+            out.totalDeltaMagie = Number(totalDeltaMagie.toFixed(3));
+            out.totalDeltaDichte = Number(totalDeltaDichte.toFixed(3));
+
+            // (F7) Source-Probe: FIELD_CHARACTER + gen>=3-Gate
+            const src = r.worldFieldAt.toString();
+            out.srcHasGate = /FIELD_CHARACTER/.test(src) && /_genVersion/.test(src);
+        } finally {
+            if (origGen === undefined) {
+                if (r.state.worldMeta) delete r.state.worldMeta.genVersion;
+            } else if (r.state.worldMeta) {
+                r.state.worldMeta.genVersion = origGen;
+            }
+            r.state.worldField = origField;
+        }
+        return out;
+    });
+
+    check("V18.203 (F1a) FIELD_CHARACTER frozen + existiert", res.constExists === true);
+    check("V18.203 (F1b) Vier verschiedene Wellenlängen (Spreizung)", res.allDifferent === true);
+    check("V18.203 (F1c) Alle Wellenlängen positiv", res.allPositive === true);
+    check("V18.203 (F2) LEGACY gen=1: bit-identisch zu manueller s=0.005-Berechnung (Pre-V18.203)", res.legacyBitIdentical === true);
+    check("V18.203 (F3) GEN=3: Werte verschieden zu Legacy (Frequenz-Fächer aktiv)", res.gen3DiffersFromLegacy === true);
+    check("V18.203 (F4) GEN=3: bit-identisch zur erwarteten Fächer-Berechnung", res.gen3BitIdentical === true);
+    check("V18.203 (F5) GEN=2 (Γ1-Feuchte-Tor) bleibt Legacy (kein Γ3-Charakter)", res.gen2StaysLegacy === true);
+    check(
+        `V18.203 (F6) magieleitung (λ160) variabler als dichte (λ340) über 200 m (Δmagie ${res.totalDeltaMagie} > Δdichte ${res.totalDeltaDichte})`,
+        res.magieMoreVariable === true
+    );
+    check("V18.203 (F7) Source-Probe: FIELD_CHARACTER + _genVersion-Gate im worldFieldAt", res.srcHasGate === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -51397,6 +51533,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18200GammaMIronBands(ctx);
             await checkBandV18201ManaKonsum(ctx);
             await checkBandV18202GeruchFeld(ctx);
+            await checkBandV18203Gamma3FeldCharakter(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

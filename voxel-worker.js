@@ -777,11 +777,31 @@ function ensureWorldField() {
     return worldField;
 }
 
+// V18.203 — Γ3 FREQUENZ-FÄCHER Worker-Mirror (V17.100-Lehre: Konstanten hier
+// hardkodiert, bit-Vertrag mit Main AnazhRealm.FIELD_CHARACTER; bei
+// Änderung beide mit-ziehen). Aktiv nur bei genVersion >= 3 — Legacy bleibt
+// bit-identisch.
+const FC_LAMBDA_LEBENDIG = 200;
+const FC_LAMBDA_DICHTE = 340;
+const FC_LAMBDA_GLUT = 520;
+const FC_LAMBDA_MAGIE = 160;
 function worldFieldAt(x, z) {
     const f = ensureWorldField();
     if (!f) return { lebendig: 0, dichte: 0, glut: 0, magieleitung: 0 };
-    const s = 0.005;
     const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
+    if (state.genVersion >= 3) {
+        const sL = 1 / FC_LAMBDA_LEBENDIG;
+        const sD = 1 / FC_LAMBDA_DICHTE;
+        const sG = 1 / FC_LAMBDA_GLUT;
+        const sM = 1 / FC_LAMBDA_MAGIE;
+        return {
+            lebendig: n01(f.lebendigNoise.noise2D(x * sL, z * sL)),
+            dichte: n01(f.dichteNoise.noise2D(x * sD + 100, z * sD - 200)),
+            glut: n01(f.glutNoise.noise2D(x * sG + 500, z * sG + 700)),
+            magieleitung: n01(f.magieNoise.noise2D(x * sM - 333, z * sM + 999)),
+        };
+    }
+    const s = 0.005;
     return {
         lebendig: n01(f.lebendigNoise.noise2D(x * s, z * s)),
         dichte: n01(f.dichteNoise.noise2D(x * s + 100, z * s - 200)),
