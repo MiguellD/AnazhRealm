@@ -49697,7 +49697,7 @@ class AnazhRealm {
     // Spieler SIEHT, ist das Material, das er beim Graben BEKOMMT. Vision
     // §1.3 fraktal: eine Sprache regelt Form, Verteilung, Klang — und nun
     // den Boden selbst.
-    _terrainMaterialAt(x, z) {
+    _terrainMaterialAt(x, z, y) {
         const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(x, z) : null;
         if (!f) return "stein";
         // Γ1 (genese-plan, Lesart Boden): die FEUCHTE hebt die erde-Achse —
@@ -49713,6 +49713,26 @@ class AnazhRealm {
         let best = axes[0];
         for (let i = 1; i < axes.length; i++) {
             if (axes[i][0] > best[0]) best = axes[i];
+        }
+        // V18.197 — Γ-M MULTI-CLASS-MATERIAL Foundation: STRATA. Wenn ein
+        // y-Wert mitgereicht wird, schichtet das Material nach Tiefe: der
+        // Boden ist nahe der Oberfläche durchhumusiert (erde/lebendig kann
+        // gewinnen), aber tief unter der Erde liegt nur noch Felsen (stein-
+        // Achse dominiert). Das ist die real-world Sedimentation in einem
+        // Voxel-Spiel — wer in eine Höhle gräbt, findet Stein, kein Humus.
+        // Schwelle: STRATA_STEIN_DEPTH unter `_voxelSurfaceY` → Material wird
+        // strukturell "stein", auch wenn die Achse erde gewinnt. erde/glut/
+        // quarz bleiben am OBERSTEN Band sichtbar (intuitiv: ein Glutbrunnen
+        // an der Oberfläche, eine Quarz-Ader an der Oberfläche). Migration-
+        // tolerant: ohne y bleibt das ALTE Verhalten bit-identisch.
+        if (typeof y === "number" && Number.isFinite(y)) {
+            const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
+            if (Number.isFinite(surfY)) {
+                const depth = surfY - y;
+                if (depth > AnazhRealm.STRATA_STEIN_DEPTH) {
+                    return "stein";
+                }
+            }
         }
         return best[1];
     }
@@ -52613,7 +52633,9 @@ class AnazhRealm {
         // der Spieler SIEHT, ist das Material, das er BEKOMMT. Der Yield ist
         // lokal (NICHT im DSL-Op) — nur die eigene Grabe-Geste füllt das
         // eigene Inventar, ein mesh-broadcastetes voxel_carve nicht.
-        const digMat = this._terrainMaterialAt(target.x, target.z);
+        // V18.197 — Γ-M STRATA: das Material schichtet nach Tiefe (target.y).
+        // Wer einen tieferen Tunnel gräbt, bekommt Stein, kein Humus.
+        const digMat = this._terrainMaterialAt(target.x, target.z, target.y);
         const digUnits = Math.max(1, Math.min(10, Math.round(carveRadius * 1.4)));
         if (this.addMaterialToInventory(digMat, digUnits)) {
             this.log(`Gegraben: ${digUnits}× ${digMat}`, "INFO");
@@ -63600,7 +63622,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.196.0";
+AnazhRealm.VERSION = "18.197.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -63895,6 +63917,13 @@ AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
 // weil Mana mächtiger ist; magieleitung im Spieler-Compound boostet die
 // Rate emergent (effektiv = base × (1 + magieleitung)). Erst-Wurf-Tuning.
 AnazhRealm.MANA_REGEN_PER_SEC = 3;
+
+// V18.197 — Γ-M Multi-Class-Material STRATA: ab dieser Tiefe unter der
+// Oberfläche dominiert stein-Schicht (auch wenn die erde/glut/quarz-Achse
+// gewinnen würde). Sedimentation: nahe Oberfläche organisch + variabel,
+// tief drinnen Felsen. Erst-Wurf 12m. Verändert NUR Aufrufer mit y-Argument
+// (Migration-tolerant: alte Aufrufe ohne y unverändert).
+AnazhRealm.STRATA_STEIN_DEPTH = 12;
 
 // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Eigener Kosten-Satz,
 // niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger

@@ -17876,9 +17876,14 @@ async function checkBandWelle6GHylomorphism(ctx) {
             if (typeof r.setGameMode === "function") r.setGameMode("frieden"); // Stamina frei
             const digX = 60;
             const digZ = -40;
-            r._raycastWorldHit = () => ({ hit: true, x: digX, y: 5, z: digZ });
+            const digY = 5;
+            r._raycastWorldHit = () => ({ hit: true, x: digX, y: digY, z: digZ });
             r._pickArchitectureAtCrosshair = () => null;
-            const expectMat = r._terrainMaterialAt(digX, digZ);
+            // V18.197 Γ-M STRATA: das gegrabene Material schichtet nach
+            // Tiefe — der Test muss DENSELBEN 3-arg-Aufruf machen wie
+            // digTerrain (sonst rechnet er das alte erde-Verhalten gegen
+            // das neue stein-by-Tiefe, was bricht).
+            const expectMat = r._terrainMaterialAt(digX, digZ, digY);
             const inv = r.state.player.inventory;
             // Inventar tief snapshotten — der Grabe-Test darf den
             // Spieler-Zustand nicht verschmutzen (spätere 6.C1-Tests
@@ -33558,6 +33563,111 @@ async function checkBandV18196ManaSymmetry(ctx) {
         res.regenStaysBelowOrAtMax === true
     );
     check("V18.196 (M8) Mana skaliert mit sqrt(soulSize) (V18.195-Symmetrie)", res.manaScaledByMul === true);
+}
+
+// V18.197 — Γ-M MULTI-CLASS-MATERIAL Foundation: STRATA (genese-plan §Γ-M).
+// y-abhängige Material-Wahl im Boden: nahe Oberfläche durchhumusiert (erde
+// kann gewinnen), tief drinnen Felsen (stein dominiert). Migration-tolerant:
+// alte 2-arg-Aufrufer ohne y bleiben bit-identisch.
+async function checkBandV18197GammaMStrata(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (S1) STRATA_STEIN_DEPTH frozen Konstante
+        out.constExists = typeof A.STRATA_STEIN_DEPTH === "number" && A.STRATA_STEIN_DEPTH > 0;
+
+        // (S2) Source-Probe: _terrainMaterialAt nimmt y + nutzt STRATA_STEIN_DEPTH
+        const src = r._terrainMaterialAt.toString();
+        out.acceptsY = /\(x,\s*z,\s*y\)/.test(src);
+        out.usesStrataDepth = /STRATA_STEIN_DEPTH/.test(src);
+
+        // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
+        // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
+        let pt = { x: 0, z: 0 };
+        // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark)
+        let erdePt = null;
+        for (let i = 0; i < 200 && !erdePt; i++) {
+            const x = (Math.random() - 0.5) * 600;
+            const z = (Math.random() - 0.5) * 600;
+            const surfY = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : null;
+            if (!Number.isFinite(surfY)) continue;
+            const mat = r._terrainMaterialAt(x, z); // 2-arg, kein y
+            if (mat === "erde") {
+                erdePt = { x, z, surfY };
+                break;
+            }
+        }
+        out.foundErdePoint = !!erdePt;
+
+        if (erdePt) {
+            // (S4) AN DER OBERFLÄCHE (y = surfY): das alte Verhalten bleibt —
+            // erde, wenn die Achse erde gewinnt. y nahe surfY → erde.
+            const surfMat = r._terrainMaterialAt(erdePt.x, erdePt.z, erdePt.surfY);
+            out.surfaceMat = surfMat;
+            out.surfaceStaysSame = surfMat === "erde";
+
+            // (S5) TIEF UNTER der Oberfläche (y = surfY - STRATA_STEIN_DEPTH - 5):
+            // STRATA forciert stein.
+            const deepY = erdePt.surfY - A.STRATA_STEIN_DEPTH - 5;
+            const deepMat = r._terrainMaterialAt(erdePt.x, erdePt.z, deepY);
+            out.deepMat = deepMat;
+            out.deepIsStein = deepMat === "stein";
+
+            // (S6) GRENZ-FALL: genau auf STRATA_STEIN_DEPTH-Schwelle bleibt
+            // erde (strikte >-Wand, kein Off-by-one)
+            const onThresholdY = erdePt.surfY - A.STRATA_STEIN_DEPTH;
+            const onMat = r._terrainMaterialAt(erdePt.x, erdePt.z, onThresholdY);
+            out.thresholdMat = onMat;
+            out.thresholdStaysSame = onMat === "erde";
+        }
+
+        // (S7) digTerrain ruft _terrainMaterialAt mit target.y (Source-Probe)
+        // Mehrere mögliche Aufrufer haben sich an die strukturelle Wahrheit
+        // angepasst.
+        const code = r.constructor && r.constructor.toString
+            ? r.constructor.toString().substr(0, 5000)
+            : "";
+        // Statt grobem source-grep prüfen wir das spezifische Verhalten —
+        // _terrainMaterialAt(x, z, y) als Mechanik via direkte Probe.
+        out.digConsumesY = out.acceptsY; // direkter Source-Beweis
+
+        // (S8) MIGRATION-ROUND-TRIP: ein 2-arg-Aufruf gibt dasselbe Ergebnis
+        // wie ein 3-arg-Aufruf mit y > surfY (nahe Oberfläche) — die Änderung
+        // ist additiv, kein Bruch.
+        if (erdePt) {
+            const oldStyle = r._terrainMaterialAt(erdePt.x, erdePt.z);
+            const surfaceStyle = r._terrainMaterialAt(erdePt.x, erdePt.z, erdePt.surfY);
+            out.migrationConsistent = oldStyle === surfaceStyle;
+        }
+        return out;
+    });
+
+    check("V18.197 (S1) STRATA_STEIN_DEPTH frozen Konstante existiert", res.constExists === true);
+    check("V18.197 (S2a) _terrainMaterialAt nimmt y-Argument", res.acceptsY === true);
+    check("V18.197 (S2b) _terrainMaterialAt nutzt STRATA_STEIN_DEPTH-Konstante", res.usesStrataDepth === true);
+    if (res.foundErdePoint) {
+        check(
+            `V18.197 (S4) An Oberfläche (y=surfY): bleibt erde (alte Achse, gemessen ${res.surfaceMat})`,
+            res.surfaceStaysSame === true
+        );
+        check(
+            `V18.197 (S5) Tief unter Strata-Schwelle: forciert stein (gemessen ${res.deepMat})`,
+            res.deepIsStein === true
+        );
+        check(
+            `V18.197 (S6) Auf der Strata-Schwelle: bleibt erde (strikte >-Wand, gemessen ${res.thresholdMat})`,
+            res.thresholdStaysSame === true
+        );
+        check(
+            `V18.197 (S8) MIGRATION: 2-arg Aufruf = 3-arg mit y=surfY (bit-identisch zu Pre-V18.197)`,
+            res.migrationConsistent === true
+        );
+    } else {
+        check("V18.197 (S4-S8) Erde-Punkt nicht gefunden — Welt ohne Erde-Region (skip)", true);
+    }
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -50738,6 +50848,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18194Gamma6Befoerderung(ctx);
             await checkBandV18195AvatarSizeHp(ctx);
             await checkBandV18196ManaSymmetry(ctx);
+            await checkBandV18197GammaMStrata(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

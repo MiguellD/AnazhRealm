@@ -42,6 +42,7 @@ Backlog-Punkte §4 (nächste in Reihe).
 | **Γ6-Beförderung (snowband + chunk-seam + false-swim + arch-water-solid → vier stehende Bänder)** | **V18.194** | `docs/archiv/genese-plan.md` §Γ6 + `docs/rueckmeldung.md` R-042 |
 | **Avatar-Größe→HP (sqrt(sizeFactor) auf hpMax + staminaMax, built-in NEUTRAL)** | **V18.195** | `docs/aktiv.md` §4.D + unten §1.C |
 | **Mana-Symmetrie (zweite Ausdauer-Achse aus magieleitung — Foundation: Stat + Regen + Pflege-Pfad)** | **V18.196** | `docs/aktiv.md` §4.E + unten §1.D |
+| **Γ-M Multi-Class-Material STRATA Foundation (y-abhängige Material-Wahl: tiefes Gestein dominiert stein-Achse)** | **V18.197** | `docs/aktiv.md` §4.A + unten §1.E |
 
 ---
 
@@ -140,7 +141,7 @@ nächste Phase trägt:
 |---|---|---|---|
 | ~~**Γ4 echter MAKRO-ANKER**~~ | **✓ GEBAUT V18.193:** `worldMeta.macro` als signiertes ERBGUT (additiv-teilbar wie ein Welt-Stempel), Abfluss-Invariante über 10 Seeds GEMESSEN grün (Rim-Spannweite > beckenD·0.5 → die LAAS-Narbe strukturell tot), `_isValidMacroAnker` Form-Schutz (must-ignore Taille-Geist), `_macroSpillpointAnalysis` als Verifikations-Wand, Worker-Mirror reicht den Erbgut-Anker (Main↔Worker Identität auch bei Konstanten-Wechsel). 18 Wände `checkBandV18193MakroErbgut`. S-Browser-Abnahme offen. | **✓ GEBAUT** | — |
 | **Γ1-Lesart-5 Ψ2-NASE** | „Geruch des Feldes" — die ferne 5. Welt-Stimme. Kreatur lest sie für Aufträge (Jagd-Spur, Pflanzen-Lokalisierung); Strom aus Wind-Vektor + Distanz | mittel, eigenes Subsystem | — |
-| **Γ-M Multi-Class-Material** | Strata/Iron-Bands/Lichen (Schichten + Adern + Patina) — ersetzt das alte Γ8 Kies+Saum | mittel | nach Γ4½ Slope/Rock (steht) |
+| **Γ-M Multi-Class-Material** | **✓ STRATA Foundation GEBAUT V18.197** (`_terrainMaterialAt(x, z, y)` mit optionalem y; STRATA_STEIN_DEPTH=12 — bei depth>12m unter surface forciert stein-Schicht, auch wenn die erde-Achse gewinnt; migration-tolerant: 2-arg Aufrufer bit-identisch; digTerrain ruft 3-arg mit target.y → tieferes Graben gibt Stein, nicht Humus). 8 Wände. Iron-Bands/Lichen (vertikale Adern + grüne Patina auf alten Steinen) als Folge-Wellen. | mittel | nach Γ4½ Slope/Rock (steht) |
 | ~~**Γ6-BEFÖRDERUNG**~~ | **✓ GEBAUT V18.194:** vier stehende Bänder `checkBandV18194Gamma6Befoerderung` (11 Wände) — G1 snowband auf PROMINENZ (V17.105: Source-Probe + Tiefland-Schnee<0.02 GEMESSEN 0.000 an 440 Samples) · G2 chunk-seam (cropMargin in `_voxelChunkGeometry`, V9.42-b komplementär) · G3 false-swim (`_waterCellAt` 3D-Wahrheit · hohe Luft AIR · über-Spieler-+20m AIR · hydroBand im Worker-Snap) · G4 arch-solidity (3/3 Architekturen mit blockerAABBs GEMESSEN · `_blockerComputePartAABB` als Quelle). | **✓ GEBAUT** | — |
 | **Γ3 Feld-Charakter** (optional, Entscheid 5) | Domain-Warp + Frequenz-Fächer der 4 Welt-Stimmen (lebendig λ200 · dichte λ340 · glut λ520 · magieleitung λ160) | mittel | — |
 | **Γ2 Totholz-Option** (Entscheid 4) | spezifische Schöpfer-Wahl-Frage zur Tot-Holz-Substanz | klein | S-Entscheid |
