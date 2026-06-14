@@ -1344,6 +1344,15 @@ function attachFieldColors(positions) {
     const dampEarth = [0.22, 0.18, 0.12];
     const F_VIS_LO = 0.3;
     const F_VIS_HI = 0.85;
+    // V18.199 — Γ-M LICHEN Worker-Mirror (V17.100-Lehre: Konstanten hier
+    // hardkodiert, bit-Vertrag mit Main AnazhRealm.LICHEN; bei Änderung
+    // beide mit-ziehen).
+    const LICHEN_FEUCHTE_LO = 0.5;
+    const LICHEN_FEUCHTE_HI = 0.9;
+    const LICHEN_DICHTE_LO = 0.5;
+    const LICHEN_DICHTE_HI = 0.85;
+    const LICHEN_STRENGTH = 0.22;
+    const lichenTint = [0.42, 0.5, 0.34];
     const lava = [0.46, 0.2, 0.11];
     const violet = [0.55, 0.36, 0.86];
     const snow = [0.92, 0.93, 1.0];
@@ -1372,6 +1381,14 @@ function attachFieldColors(positions) {
         // als surfY-Argument an feuchteAt übergeben.
         const feuchte = feuchteAt(x, z, y);
         mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+        // V18.199 — Γ-M LICHEN Worker-Mirror: identisch zur Main-Form.
+        const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5;
+        const lichenMix =
+            ss(LICHEN_FEUCHTE_LO, LICHEN_FEUCHTE_HI, feuchte) *
+            ss(LICHEN_DICHTE_LO, LICHEN_DICHTE_HI, f.dichte || 0) *
+            lichenCluster *
+            LICHEN_STRENGTH;
+        mix(lichenTint, lichenMix);
         mix(lava, ss(0.38, 0.92, f.glut));
         mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
         // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y. Bit-

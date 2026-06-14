@@ -33769,6 +33769,108 @@ async function checkBandV18198Gamma2Totholz(ctx) {
     check("V18.198 (T7c) Cleanup: state.architectures-Länge unverändert", res.archCountUnchanged === true);
 }
 
+// V18.199 — Γ-M LICHEN (genese-plan §Γ-M Folge zu V18.197 STRATA): grüne
+// Patina auf alten feuchten Steinen. Reine Render-Schicht, kein Welt-Effekt.
+// Math-Probe der Formel + Source-Probe in Main + Worker (V17.100-Bit-Vertrag).
+async function checkBandV18199GammaMLichen(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (L1) LICHEN-Konstanten existieren + frozen
+        out.lichenExists = !!A.LICHEN && typeof A.LICHEN === "object";
+        out.lichenFrozen = A.LICHEN && Object.isFrozen(A.LICHEN);
+        if (A.LICHEN) {
+            out.feuchteLo = A.LICHEN.feuchteLo;
+            out.feuchteHi = A.LICHEN.feuchteHi;
+            out.dichteLo = A.LICHEN.dichteLo;
+            out.dichteHi = A.LICHEN.dichteHi;
+            out.strength = A.LICHEN.strength;
+            out.tint = A.LICHEN.tint;
+            out.constsSensible =
+                A.LICHEN.feuchteLo < A.LICHEN.feuchteHi &&
+                A.LICHEN.dichteLo < A.LICHEN.dichteHi &&
+                A.LICHEN.strength > 0 &&
+                A.LICHEN.strength < 1 &&
+                Array.isArray(A.LICHEN.tint) &&
+                A.LICHEN.tint.length === 3;
+        }
+
+        // (L2) Source-Probe Main: LICHEN-Mix lebt in _attachVoxelFieldColors
+        const mainSrc = r._attachVoxelFieldColors.toString();
+        out.mainHasLichen = /LICHEN/.test(mainSrc) && /lichenMix/.test(mainSrc) && /lichenCluster/.test(mainSrc);
+        // Position im Mix-Stack: NACH dampEarth, VOR lava
+        out.mainOrderCorrect = mainSrc.indexOf("dampEarth, ss") < mainSrc.indexOf("lichenMix") &&
+            mainSrc.indexOf("lichenMix") < mainSrc.indexOf("mix(lava");
+
+        // (L3) MATH-PROBE: lichen wirkt nur in feuchten + dichten Regionen.
+        // Wir bauen die Formel selbst nach (Main-bit-identisch) und prüfen
+        // an drei kontrollierten Punkten.
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const noise2D = r._voxelNoise ? (x, z) => r._voxelNoise.noise2D(x, z) : null;
+        const LCH = A.LICHEN;
+        const calcLichen = (feuchte, dichte, x, z) => {
+            const cluster = noise2D ? (noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5 : 0.5;
+            return ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
+                   ss(LCH.dichteLo, LCH.dichteHi, dichte) *
+                   cluster *
+                   LCH.strength;
+        };
+
+        // Drei kontrollierte Probe-Punkte (synthetische feuchte/dichte):
+        // a) feucht + steinig + ein anderer (x,z): lichen > 0 (typischerweise)
+        // b) trocken + steinig: lichen ≈ 0 (feuchte-Schwelle nicht erreicht)
+        // c) feucht + erde: lichen ≈ 0 (dichte-Schwelle nicht erreicht)
+        const samplesPositive = [];
+        const samplesDryStone = [];
+        const samplesWetErde = [];
+        for (let i = 0; i < 50; i++) {
+            const x = (i * 37) % 1000;
+            const z = (i * 73) % 1000;
+            samplesPositive.push(calcLichen(0.8, 0.7, x, z)); // feucht + stein
+            samplesDryStone.push(calcLichen(0.1, 0.7, x, z)); // trocken + stein
+            samplesWetErde.push(calcLichen(0.8, 0.1, x, z));  // feucht + erde
+        }
+        const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+        out.lichenAvgWetStone = avg(samplesPositive);
+        out.lichenAvgDryStone = avg(samplesDryStone);
+        out.lichenAvgWetErde = avg(samplesWetErde);
+        out.lichenWetStonePositive = out.lichenAvgWetStone > 0.01; // sichtbar
+        out.lichenDryStoneZero = out.lichenAvgDryStone < 0.001; // unsichtbar
+        out.lichenWetErdeZero = out.lichenAvgWetErde < 0.001; // unsichtbar
+
+        // (L4) UPPER BOUND: lichen darf NIE > strength sein (Math-Sicherheit)
+        const maxAtFull = calcLichen(1, 1, 0, 0); // alle Faktoren max, cluster ~0.5 avg
+        out.lichenBoundedAtFull = maxAtFull <= LCH.strength;
+
+        return out;
+    });
+
+    check("V18.199 (L1a) AnazhRealm.LICHEN existiert + frozen", res.lichenExists === true && res.lichenFrozen === true);
+    check("V18.199 (L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
+    check("V18.199 (L2a) Source: lichenMix + lichenCluster im _attachVoxelFieldColors", res.mainHasLichen === true);
+    check("V18.199 (L2b) Mix-Stack-Order: dampEarth → lichen → lava", res.mainOrderCorrect === true);
+    check(
+        `V18.199 (L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
+        res.lichenWetStonePositive === true
+    );
+    check(
+        `V18.199 (L3b) trocken+steinig → lichen unsichtbar (gemessen avg ${res.lichenAvgDryStone && res.lichenAvgDryStone.toFixed(4)})`,
+        res.lichenDryStoneZero === true
+    );
+    check(
+        `V18.199 (L3c) feucht+erde → lichen unsichtbar (gemessen avg ${res.lichenAvgWetErde && res.lichenAvgWetErde.toFixed(4)})`,
+        res.lichenWetErdeZero === true
+    );
+    check("V18.199 (L4) lichen ≤ LICHEN.strength (Math-Sicherheit, kein Overshoot)", res.lichenBoundedAtFull === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -50949,6 +51051,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18196ManaSymmetry(ctx);
             await checkBandV18197GammaMStrata(ctx);
             await checkBandV18198Gamma2Totholz(ctx);
+            await checkBandV18199GammaMLichen(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

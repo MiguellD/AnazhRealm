@@ -21516,6 +21516,22 @@ class AnazhRealm {
             // die Surface (das Vertex SITZT auf der Oberfläche).
             const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
             mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+            // V18.199 — Γ-M LICHEN: grüne Patina auf alten feuchten Steinen.
+            // Drei Multiplikatoren — feuchte (genug Wasser zum Wachsen) ×
+            // dichte (es ist ein Stein, kein Erde/Lava) × cluster (Lichen
+            // sitzt in Flecken, nicht uniform). Position im Mix-Stack: NACH
+            // dampEarth, VOR lava/snow/sed/strand — Lichen weicht für Lava,
+            // Schnee, Sediment, Strand zurück (sie überschreiben strukturell
+            // den Stein-Untergrund). LICHEN-Konstanten in AnazhRealm.LICHEN
+            // (Worker spiegelt hardkodiert, V17.100-Lehre).
+            const LCH = AnazhRealm.LICHEN;
+            const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
+            const lichenMix =
+                ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
+                ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *
+                lichenCluster *
+                LCH.strength;
+            mix(LCH.tint, lichenMix);
             mix(lava, ss(0.38, 0.92, f.glut));
             mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
             // V17.105 — Schnee auf PROMINENZ (y − kontinentale Basis cont0), nicht
@@ -63699,7 +63715,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.198.0";
+AnazhRealm.VERSION = "18.199.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -64007,6 +64023,25 @@ AnazhRealm.STRATA_STEIN_DEPTH = 12;
 // ohne die Baum-Dichte zu sehr zu verdünnen. Erst-Wurf, V18.192-Lehre:
 // browser-justierbar wenn der Schöpfer "zu viel/zu wenig" sieht.
 AnazhRealm.TOTHOLZ_RATE = 0.1;
+
+// V18.199 — Γ-M MULTI-CLASS-MATERIAL LICHEN: grüne Patina auf alten/feuchten
+// Steinen. Reine Render-Schicht im `_attachVoxelFieldColors`-Mix-Stack (kein
+// Welt-Effekt, kein Tag-Push — die FORM emergiert aus der Substanz: dichte +
+// feuchte + cluster-Verteilung). Konstanten hier als Tunables; der Worker
+// hardkodiert sie spiegelbildlich (V17.100-Lehre, bit-Vertrag).
+AnazhRealm.LICHEN = Object.freeze({
+    // Feuchte muss ≥ feuchteLo sein für Lichen-Wachstum (trockene Steine bleiben blank).
+    feuchteLo: 0.5,
+    feuchteHi: 0.9,
+    // Dichte (Stein-Achse) muss ≥ dichteLo sein (kein Lichen auf Erde/Glut/Quarz).
+    dichteLo: 0.5,
+    dichteHi: 0.85,
+    // Maximaler Mix-Anteil (sehr subtil — Lichen ist eine Tönung, kein
+    // Decken-Anstrich).
+    strength: 0.22,
+    // Tint: gelb-grün, gedämpft. Lichen ist nicht Wald-Grün.
+    tint: Object.freeze([0.42, 0.5, 0.34]),
+});
 
 // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Eigener Kosten-Satz,
 // niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger
