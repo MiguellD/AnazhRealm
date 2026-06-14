@@ -33670,6 +33670,105 @@ async function checkBandV18197GammaMStrata(ctx) {
     }
 }
 
+// V18.198 — Γ2 TOTHOLZ (genese-plan §Γ2): ein gefallener Stamm im Wald.
+// Built-in Bauplan `stamm_gefallen` + Sub-Spawn nach Baum (~10 % Chance,
+// seed-deterministisch, KEIN Affinitäts-Wettstreit — V17.16-Disziplin).
+async function checkBandV18198Gamma2Totholz(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (T1) TOTHOLZ_RATE Konstante existiert
+        out.rateConstExists = typeof A.TOTHOLZ_RATE === "number" && A.TOTHOLZ_RATE > 0 && A.TOTHOLZ_RATE < 1;
+
+        // (T2) Bauplan `stamm_gefallen` ist registriert
+        const bp = r.state.blueprints && r.state.blueprints["stamm_gefallen"];
+        out.bpExists = !!bp;
+        out.bpBuiltIn = bp && bp.builtIn === true;
+        out.bpInstanced = bp && bp.instanced === true;
+        out.bpLabel = bp && bp.label === "Gefallener Stamm";
+
+        // (T3) Parts: alle holz (tag-neutral mit den Bäumen)
+        if (bp && Array.isArray(bp.parts)) {
+            out.partsCount = bp.parts.length;
+            out.allHolz = bp.parts.every((p) => p.material === "holz");
+            out.allCylinder = bp.parts.every((p) => p.shape === "cylinder");
+            // Mindestens ein Part hat z-Rotation (horizontal liegend)
+            out.hasRotation = bp.parts.some((p) => p.rotation && typeof p.rotation.z === "number" && Math.abs(p.rotation.z) > 0.5);
+        }
+
+        // (T4) AFFINITÄTS-WAND (V17.16-Disziplin neu interpretiert): da stamm_
+        // gefallen NICHT im candidates-Wettstreit ist (Sub-Spawn nach Baum),
+        // muss er nicht tag-identisch zu baum_eiche sein. Aber: er darf in
+        // KEINER Achse HÖHER resonieren als baum_eiche — sonst könnte er,
+        // falls je in candidates aufgenommen, einen anderen Affinitäts-
+        // Sieger verdrängen. Strikte Lese-Wand: stamm_gefallen ≤ baum_eiche
+        // in jeder Achse (er fehlt das Laub → magieleitung typischerweise
+        // niedriger; das ist OK + designt).
+        const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
+        if (bp && r.state.blueprints["baum_eiche"]) {
+            const treeTags = r.computeCompoundTags(r.state.blueprints["baum_eiche"]);
+            const totTags = r.computeCompoundTags(bp);
+            const diffs = {};
+            let neverHigher = true;
+            for (const axis of targetAxes) {
+                const dt = (totTags[axis] || 0) - (treeTags[axis] || 0);
+                diffs[axis] = Number(dt.toFixed(3));
+                if (dt > 0.05) neverHigher = false;
+            }
+            out.tagDiffs = diffs;
+            out.tagNeverHigherThanTree = neverHigher;
+        }
+
+        // (T5) Sub-Spawn-Pfad in _vegetationSampleSpawn: Source-Probe für
+        // den isTree-Branch mit TOTHOLZ_RATE.
+        const src = r._vegetationSampleSpawn.toString();
+        out.hasSubSpawn = /TOTHOLZ_RATE/.test(src) && /stamm_gefallen/.test(src);
+
+        // (T6) RNG-DETERMINISMUS: der Sub-Spawn nutzt ein DETERMINISTISCHES
+        // noise2D (kein Math.random-Aufruf) — Γ5-Wand strukturell gewahrt.
+        // Strip Kommentare bevor wir auf Math.random-CODE prüfen (CLAUDE.md-
+        // Lehre: der Code darf das Wort tragen, der Code darf es nicht).
+        const stripped = src.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+        out.usesDeterministicRng = /rng\.noise2D/.test(src) && !(/Math\.random\s*\(/.test(stripped));
+
+        // (T7) DIREKT-SPAWN-TEST: spawnArchitecture("stamm_gefallen", ...) klappt
+        // und das Entry trägt blockerAABBs (V13.10-Solidität).
+        const before = r.state.architectures.length;
+        try {
+            const e = r.spawnArchitecture("stamm_gefallen", { x: 1234, y: 50, z: 1234 }, { silent: true });
+            out.directSpawnOk = !!e;
+            out.directSpawnHasBlockers = e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0;
+            if (e) r.removeArchitecture(e);
+        } catch (err) {
+            out.directSpawnError = err && err.message ? err.message : String(err);
+        }
+        out.archCountUnchanged = r.state.architectures.length === before;
+
+        return out;
+    });
+
+    check("V18.198 (T1) TOTHOLZ_RATE Konstante existiert (0 < x < 1)", res.rateConstExists === true);
+    check("V18.198 (T2a) Bauplan stamm_gefallen registriert", res.bpExists === true);
+    check("V18.198 (T2b) Bauplan ist builtIn + instanced", res.bpBuiltIn === true && res.bpInstanced === true);
+    check(`V18.198 (T2c) Label 'Gefallener Stamm' (gemessen ${JSON.stringify(res.bpLabel)})`, res.bpLabel === true);
+    check(`V18.198 (T3a) Parts existieren (${res.partsCount})`, res.partsCount >= 1);
+    check("V18.198 (T3b) Alle Parts material=holz (tag-neutral mit Baumstämmen)", res.allHolz === true);
+    check("V18.198 (T3c) Alle Parts shape=cylinder", res.allCylinder === true);
+    check("V18.198 (T3d) Mindestens ein Part hat z-Rotation (horizontal liegend)", res.hasRotation === true);
+    check(
+        `V18.198 (T4) AFFINITÄTS-WAND: stamm_gefallen ≤ baum_eiche in jeder Achse (V17.16-Disziplin, diffs ${JSON.stringify(res.tagDiffs)})`,
+        res.tagNeverHigherThanTree === true
+    );
+    check("V18.198 (T5) Sub-Spawn-Pfad in _vegetationSampleSpawn verdrahtet", res.hasSubSpawn === true);
+    check("V18.198 (T6) RNG deterministisch (noise2D, kein Math.random — Γ5-Wand)", res.usesDeterministicRng === true);
+    check("V18.198 (T7a) Direkt-Spawn stamm_gefallen funktioniert", res.directSpawnOk === true);
+    check("V18.198 (T7b) Spawn trägt blockerAABBs (V13.10 Solidität)", res.directSpawnHasBlockers === true);
+    check("V18.198 (T7c) Cleanup: state.architectures-Länge unverändert", res.archCountUnchanged === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -50849,6 +50948,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18195AvatarSizeHp(ctx);
             await checkBandV18196ManaSymmetry(ctx);
             await checkBandV18197GammaMStrata(ctx);
+            await checkBandV18198Gamma2Totholz(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

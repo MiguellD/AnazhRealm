@@ -43,6 +43,7 @@ Backlog-Punkte §4 (nächste in Reihe).
 | **Avatar-Größe→HP (sqrt(sizeFactor) auf hpMax + staminaMax, built-in NEUTRAL)** | **V18.195** | `docs/aktiv.md` §4.D + unten §1.C |
 | **Mana-Symmetrie (zweite Ausdauer-Achse aus magieleitung — Foundation: Stat + Regen + Pflege-Pfad)** | **V18.196** | `docs/aktiv.md` §4.E + unten §1.D |
 | **Γ-M Multi-Class-Material STRATA Foundation (y-abhängige Material-Wahl: tiefes Gestein dominiert stein-Achse)** | **V18.197** | `docs/aktiv.md` §4.A + unten §1.E |
+| **Γ2 Totholz (`stamm_gefallen` Bauplan + Sub-Spawn nach Baum, ~10 % Chance, tag-neutral)** | **V18.198** | `docs/aktiv.md` §4.A + unten §1.F |
 
 ---
 
@@ -144,7 +145,7 @@ nächste Phase trägt:
 | **Γ-M Multi-Class-Material** | **✓ STRATA Foundation GEBAUT V18.197** (`_terrainMaterialAt(x, z, y)` mit optionalem y; STRATA_STEIN_DEPTH=12 — bei depth>12m unter surface forciert stein-Schicht, auch wenn die erde-Achse gewinnt; migration-tolerant: 2-arg Aufrufer bit-identisch; digTerrain ruft 3-arg mit target.y → tieferes Graben gibt Stein, nicht Humus). 8 Wände. Iron-Bands/Lichen (vertikale Adern + grüne Patina auf alten Steinen) als Folge-Wellen. | mittel | nach Γ4½ Slope/Rock (steht) |
 | ~~**Γ6-BEFÖRDERUNG**~~ | **✓ GEBAUT V18.194:** vier stehende Bänder `checkBandV18194Gamma6Befoerderung` (11 Wände) — G1 snowband auf PROMINENZ (V17.105: Source-Probe + Tiefland-Schnee<0.02 GEMESSEN 0.000 an 440 Samples) · G2 chunk-seam (cropMargin in `_voxelChunkGeometry`, V9.42-b komplementär) · G3 false-swim (`_waterCellAt` 3D-Wahrheit · hohe Luft AIR · über-Spieler-+20m AIR · hydroBand im Worker-Snap) · G4 arch-solidity (3/3 Architekturen mit blockerAABBs GEMESSEN · `_blockerComputePartAABB` als Quelle). | **✓ GEBAUT** | — |
 | **Γ3 Feld-Charakter** (optional, Entscheid 5) | Domain-Warp + Frequenz-Fächer der 4 Welt-Stimmen (lebendig λ200 · dichte λ340 · glut λ520 · magieleitung λ160) | mittel | — |
-| **Γ2 Totholz-Option** (Entscheid 4) | spezifische Schöpfer-Wahl-Frage zur Tot-Holz-Substanz | klein | S-Entscheid |
+| ~~**Γ2 Totholz**~~ | **✓ GEBAUT V18.198:** `stamm_gefallen`-Bauplan (2 horizontale Holz-Zylinder, ~2.4 m + Wurzel-Stumpf) + Sub-Spawn nach Baum (~10 % seed-deterministische Chance, 3-5 m Offset, Γ5-Stream-Suffix `^0x7c2b1a93`). KEIN Affinitäts-Wettstreit (würde Bäume verdrängen — V17.16-Disziplin); strikte Wand `stamm_gefallen ≤ baum_eiche` in jeder Achse GEMESSEN. 14 Wände. `TOTHOLZ_RATE = 0.1` frozen + browser-justierbar. | **✓ GEBAUT** | — |
 | **Γ7 Baum-Varianten-Grammatik** | `_growTreeBlueprint(speciesParams, rng)` emittiert `parts[]` (Whorl-Äste, Laub nur an Ebene-2-Enden, 6 Varianten pro Spezies) | mittel, video-getrieben zuletzt | — |
 | **Γ8 Kies+Saum** | schrumpft — Γ4½-Foundation-Felder konsumieren das, eventuell ersatzlos | klein | nach Γ-M |
 

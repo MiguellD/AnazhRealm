@@ -44578,6 +44578,38 @@ class AnazhRealm {
             },
         ];
 
+        // V18.198 — Γ2 TOTHOLZ (genese-plan §Γ2-Vermerk): ein gefallener
+        // Stamm im Wald. Ein horizontaler Holz-Zylinder (~2.4m lang), nahe
+        // dem Boden, OHNE Krone (es ist tot/gefallen). Material holz → tag-
+        // neutral zu den Bäumen (computeCompoundTags = MAX über Parts mit
+        // demselben material + derselben Shape → keine Verschiebung der
+        // Affinitäts-Achsen, V17.16-Disziplin gewahrt). Spawnt NICHT im
+        // Affinitäts-Wettstreit (würde sonst Bäume verdrängen), sondern als
+        // SUB-SPAWN nach Baum-Spawn (s. _vegetationSampleSpawn): ~10 %
+        // Chance, ~4 m Offset, seed-deterministisch.
+        const stammGefallenParts = [
+            // Hauptstamm — liegender Zylinder. Die Eigenachse des Zylinders
+            // ist y → eine z-Rotation um PI/2 legt ihn horizontal hin.
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 0.42, z: 0 },
+                size: { x: 0.42, y: 2.4, z: 0.42 },
+                rotation: { z: Math.PI / 2 },
+                segments: 7,
+            },
+            // Wurzel-Ende: leicht dickerer Kegel-Stumpf am einen Ende, gibt
+            // Charakter (ein Baumstamm war nicht uniform — der Wurzel-Sockel
+            // ist breiter als die Krone war).
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -1.2, y: 0.46, z: 0 },
+                size: { x: 0.56, y: 0.5, z: 0.56 },
+                rotation: { z: Math.PI / 2 },
+                segments: 7,
+            },
+        ];
         // V7.75 — Welt-Affinitäts-Feld bringt drei weitere Built-in-
         // Baupläne mit, damit Regionen sich strukturell unterscheiden.
         // stein_block: dichte+härte hoch → Felsen-Felder
@@ -45521,6 +45553,17 @@ class AnazhRealm {
                 builtIn: true,
                 instanced: true,
                 parts: baumTanneAltParts,
+            },
+            // V18.198 — Γ2 TOTHOLZ: gefallener Stamm im Wald. Spawnt als
+            // Sub-Spawn nach Baum (_vegetationSampleSpawn), nicht im Affinitäts-
+            // Wettstreit (würde sonst Bäume verdrängen — V17.16-Disziplin).
+            // Tag-neutral (holz+cylinder, dieselben Achsen wie die Baumstämme).
+            stamm_gefallen: {
+                name: "stamm_gefallen",
+                label: "Gefallener Stamm",
+                builtIn: true,
+                instanced: true,
+                parts: stammGefallenParts,
             },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
@@ -49975,6 +50018,40 @@ class AnazhRealm {
                 rotationY: spawnYaw,
             }
         );
+        // V18.198 — Γ2 TOTHOLZ Sub-Spawn: nach einem Baum, mit ~10 % Chance
+        // spawnt ein gefallener Stamm in 3–5 m Abstand. KEIN Affinitäts-Wett-
+        // streit (würde Bäume verdrängen, V17.16-Falle); statt dessen ein
+        // SUB-SPAWN auf dem schon gewonnenen Baum-Slot. Tag-neutral (stamm_
+        // gefallen ist holz+cylinder, dieselben Achsen wie der Baumstamm).
+        // Seed-deterministisch via eigener Suffix-Stream (Γ5-Disziplin: re-
+        // rollt keinen anderen Stream).
+        if (isTree) {
+            const totProbe = (rng.noise2D(sampleX * 0.41 - 3.7, sampleZ * 0.41 + 8.2) + 1) / 2;
+            if (totProbe < AnazhRealm.TOTHOLZ_RATE) {
+                // Offset-Position: 3-5 m vom Baum entfernt, zufällige Richtung.
+                const offsetAng = (rng.noise2D(sampleX * 0.61 + 17.3, sampleZ * 0.61 - 4.7) + 1) * Math.PI;
+                const offsetDist = 3 + ((rng.noise2D(sampleX * 0.83 - 9.1, sampleZ * 0.83 + 2.5) + 1) / 2) * 2;
+                const totX = sampleX + Math.cos(offsetAng) * offsetDist;
+                const totZ = sampleZ + Math.sin(offsetAng) * offsetDist;
+                // Sicherheits-Wand: nicht im Wasser landen.
+                if (this._isAboveWaterAt(totX, totZ, 0.4)) {
+                    const totSurfY = typeof this._voxelSurfaceY === "function"
+                        ? this._voxelSurfaceY(totX, totZ)
+                        : surfaceY;
+                    const totYawRoll = (rng.noise2D(totX * 0.71 - 5.2, totZ * 0.71 + 3.9) + 1) / 2;
+                    this._enqueueVegetationSpawn(
+                        "stamm_gefallen",
+                        { x: totX, y: (Number.isFinite(totSurfY) ? totSurfY : surfaceY) + 0.5, z: totZ },
+                        {
+                            seed: seedForSpawn ^ 0x7c2b1a93, // eigener Suffix-Stream (Γ5)
+                            silent: true,
+                            scale: 0.85 + ((rng.noise2D(totX * 0.31, totZ * 0.31) + 1) / 2) * 0.3, // [0.85..1.15]
+                            rotationY: totYawRoll * Math.PI * 2,
+                        }
+                    );
+                }
+            }
+        }
         return 1;
     }
 
@@ -63622,7 +63699,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.197.0";
+AnazhRealm.VERSION = "18.198.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -63924,6 +64001,12 @@ AnazhRealm.MANA_REGEN_PER_SEC = 3;
 // tief drinnen Felsen. Erst-Wurf 12m. Verändert NUR Aufrufer mit y-Argument
 // (Migration-tolerant: alte Aufrufe ohne y unverändert).
 AnazhRealm.STRATA_STEIN_DEPTH = 12;
+
+// V18.198 — Γ2 TOTHOLZ: Wahrscheinlichkeit für einen Sub-Spawn `stamm_
+// gefallen` nach einem Baum-Spawn. ~10 % gibt einen sichtbar bewohnten Wald,
+// ohne die Baum-Dichte zu sehr zu verdünnen. Erst-Wurf, V18.192-Lehre:
+// browser-justierbar wenn der Schöpfer "zu viel/zu wenig" sieht.
+AnazhRealm.TOTHOLZ_RATE = 0.1;
 
 // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Eigener Kosten-Satz,
 // niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger
