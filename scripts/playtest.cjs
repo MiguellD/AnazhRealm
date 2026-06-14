@@ -34383,6 +34383,123 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
     check("V18.204 (F11) gen<3: kein Warp angewendet (Legacy clean, kein Drift)", res.legacyNoWarp === true);
 }
 
+// V18.205 — Γ7 BAUM-VARIANTEN-GRAMMATIK (genese-plan §Γ7 + aktiv.md §4.A):
+// `_growTreeBlueprint(speciesKey, seed)` emittiert parts[] in der bestehenden
+// Sprache. Tag-neutral via material-Konsistenz (holz+laub).
+async function checkBandV18205Gamma7Grammatik(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+
+        // (G1) Helper existiert
+        out.helperExists = typeof r._growTreeBlueprint === "function";
+
+        if (out.helperExists) {
+            // (G2) Determinismus: gleiche seed → gleiche parts
+            const p1 = r._growTreeBlueprint("eiche", "seed-a");
+            const p2 = r._growTreeBlueprint("eiche", "seed-a");
+            out.deterministic = JSON.stringify(p1) === JSON.stringify(p2);
+
+            // (G3) 6 verschiedene Seeds → 6 unterschiedliche Varianten
+            const seeds = ["s1", "s2", "s3", "s4", "s5", "s6"];
+            const variants = seeds.map((s) => r._growTreeBlueprint("eiche", s));
+            const uniqueSigs = new Set(variants.map((v) => JSON.stringify(v)));
+            out.sixDistinct = uniqueSigs.size === 6;
+
+            // (G4) STRUKTUR: Stamm-Parts sind holz, Laub-Parts sind laub.
+            // Mind. 3 Stamm-Segmente, mind. 1 Laub-Ellipsoid.
+            const sample = variants[0];
+            out.partsCount = sample.length;
+            out.allHolzOrLaub = sample.every((p) => p.material === "holz" || p.material === "laub");
+            out.hasHolzParts = sample.filter((p) => p.material === "holz").length >= 3;
+            out.hasLaubParts = sample.filter((p) => p.material === "laub").length >= 1;
+
+            // (G5) SPECIES.ts-REGEL: Laub sitzt NIE direkt am Hauptstamm (y=0..3),
+            // sondern an Ebene-2-Enden (typischerweise höher y oder lateral
+            // offset). Probe: alle laub-Parts haben |xz| > 0.4 ODER y > 2
+            // (= an einem Ast-Ende, nicht am Stamm-Sockel).
+            const laubAwayFromTrunk = sample
+                .filter((p) => p.material === "laub")
+                .every((p) => {
+                    const dist = Math.hypot(p.position.x, p.position.z);
+                    return dist > 0.4 || p.position.y > 2;
+                });
+            out.laubAtBranchEnds = laubAwayFromTrunk;
+
+            // (G6) TAG-NEUTRALITÄT: ein generierter Baum hat dieselben
+            // Affinitäts-MAX wie ein bestehender baum_eiche (holz+laub Materials,
+            // gleiche shapes cylinder+sphere). V17.16-Disziplin.
+            const fakeBp = { parts: sample };
+            const treeBp = r.state.blueprints["baum_eiche"];
+            if (treeBp) {
+                const fakeTags = r.computeCompoundTags(fakeBp);
+                const treeTags = r.computeCompoundTags(treeBp);
+                const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
+                const diffs = {};
+                let neutral = true;
+                for (const axis of targetAxes) {
+                    const dt = (fakeTags[axis] || 0) - (treeTags[axis] || 0);
+                    diffs[axis] = Number(dt.toFixed(3));
+                    if (Math.abs(dt) > 0.05) neutral = false;
+                }
+                out.tagDiffs = diffs;
+                out.tagNeutral = neutral;
+            }
+
+            // (G7) WOHLGEFORMTHEIT: jeder Part hat shape, material, position{xyz},
+            // size{xyz}
+            out.wellFormed = sample.every(
+                (p) =>
+                    p.shape &&
+                    p.material &&
+                    p.position &&
+                    typeof p.position.x === "number" &&
+                    typeof p.position.y === "number" &&
+                    typeof p.position.z === "number" &&
+                    p.size &&
+                    typeof p.size.x === "number" &&
+                    typeof p.size.y === "number" &&
+                    typeof p.size.z === "number"
+            );
+
+            // (G8) HÖHEN-VARIANZ über 6 Varianten — sample 0..5 + maxHöhe
+            const heights = variants.map((v) => {
+                let maxY = 0;
+                for (const p of v) if (p.position.y + p.size.y * 0.5 > maxY) maxY = p.position.y + p.size.y * 0.5;
+                return maxY;
+            });
+            const hMin = Math.min(...heights);
+            const hMax = Math.max(...heights);
+            out.heightSpread = Number((hMax - hMin).toFixed(2));
+            out.heightsVary = (hMax - hMin) > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
+
+            // (G9) Source-Probe: SimplexNoise + eigener Stream
+            const src = r._growTreeBlueprint.toString();
+            out.usesGrammarStream = /-veg-grammatik/.test(src);
+            out.usesNoise = /SimplexNoise|noise2D/.test(src);
+        }
+        return out;
+    });
+
+    check("V18.205 (G1) _growTreeBlueprint Helper existiert", res.helperExists === true);
+    check("V18.205 (G2) Determinismus: gleiche seed → identische parts", res.deterministic === true);
+    check(`V18.205 (G3) 6 unterschiedliche seeds → 6 unique Varianten`, res.sixDistinct === true);
+    check(`V18.205 (G4a) parts > 0 (gemessen ${res.partsCount})`, res.partsCount > 0);
+    check("V18.205 (G4b) Alle Parts holz oder laub Material", res.allHolzOrLaub === true);
+    check("V18.205 (G4c) Mind. 3 Stamm-Holz-Parts", res.hasHolzParts === true);
+    check("V18.205 (G4d) Mind. 1 Laub-Krone-Part", res.hasLaubParts === true);
+    check("V18.205 (G5) SPECIES.ts-Regel: Laub an Ast-Enden (nie am Hauptstamm direkt)", res.laubAtBranchEnds === true);
+    check(
+        `V18.205 (G6) TAG-NEUTRALITÄT zu baum_eiche (V17.16-Disziplin, diffs ${JSON.stringify(res.tagDiffs)})`,
+        res.tagNeutral === true
+    );
+    check("V18.205 (G7) Parts wohlgeformt (shape+material+position+size vollständig)", res.wellFormed === true);
+    check(`V18.205 (G8) Höhen-Spreizung über 6 Varianten > 0.5 m (${res.heightSpread})`, res.heightsVary === true);
+    check("V18.205 (G9a) Eigener Noise-Stream '-veg-grammatik' (Γ5-Disziplin)", res.usesGrammarStream === true);
+    check("V18.205 (G9b) SimplexNoise statt Math.random", res.usesNoise === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -51568,6 +51685,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18201ManaKonsum(ctx);
             await checkBandV18202GeruchFeld(ctx);
             await checkBandV18203Gamma3FeldCharakter(ctx);
+            await checkBandV18205Gamma7Grammatik(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

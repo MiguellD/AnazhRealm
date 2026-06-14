@@ -42784,6 +42784,124 @@ class AnazhRealm {
         return true;
     }
 
+    // V18.205 — Γ7 BAUM-VARIANTEN-GRAMMATIK (genese-plan §Γ7): emittiert ein
+    // `parts[]`-Array für einen Baum-Bauplan in der bestehenden Sprache. Die
+    // SPECIES.ts-Regel: Laub sitzt NIE auf Primärästen, immer an Ebene-2-Enden.
+    // Tag-neutral via materialKonsistenz (Stamm = holz, Krone = laub) → die
+    // V17.16-Falle strukturell ausgeschlossen, weil alle 4 Affinitäts-Achsen
+    // dieselben MAX-Werte erhalten wie die bestehenden baum_eiche/baum_kiefer-
+    // Baupläne (computeCompoundTags = MAX über Parts mit denselben Materials).
+    // Deterministisch via SimplexNoise (eigener Stream `-veg-grammatik`, Γ5-
+    // Disziplin: re-rollt keinen anderen Welt-Stream).
+    //
+    // `speciesKey` ist informativ (zukünftig: ein-Spezies-spezifische Tweaks);
+    // `seed` ist der Variation-Diktator (ein String oder Number — wird über
+    // FNV-1a in einen Float für SimplexNoise gewandelt). `returns` ein parts-
+    // Array, das direkt als `bp.parts` für einen Bauplan dient.
+    _growTreeBlueprint(speciesKey, seed) {
+        const sKey = String(seed || speciesKey || "g7-default");
+        let hash = 2166136261;
+        for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
+        // Lazy-Init Noise-Stream
+        if (!this._growTreeNoise) {
+            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
+        }
+        const n = this._growTreeNoise;
+        // Deterministische [0, 1) RNG aus Hash + Noise (statt LCG, weil
+        // SimplexNoise auch von Position abhängig wäre — wir wollen aber pro
+        // seed-Wert eine eigene Sequenz. Trick: nutze hash als x-Koordinate,
+        // step-counter als y-Koordinate).
+        let step = 0;
+        const r01 = () => {
+            step++;
+            const v = n.noise2D((hash >>> 0) * 0.0137 + step * 17.31, step * 7.79 - (hash >>> 8) * 0.0083);
+            return (v + 1) * 0.5;
+        };
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const parts = [];
+        // STAMM — 3 Segmente, wander + taper (Genese-Plan).
+        const stammHoehe = lerp(3.5, 5.5, r01());
+        const stammRadius = lerp(0.5, 0.85, r01());
+        const taperRate = lerp(0.65, 0.85, r01()); // jedes Segment x dieses
+        const wanderJitter = lerp(0.04, 0.18, r01()); // wie sehr der Stamm wandert
+        let trunkX = 0, trunkZ = 0;
+        let trunkY = 0;
+        let trunkR = stammRadius;
+        const segH = stammHoehe / 3;
+        for (let i = 0; i < 3; i++) {
+            const segCenterY = trunkY + segH * 0.5;
+            parts.push({
+                shape: "cylinder",
+                material: "holz",
+                position: { x: trunkX, y: segCenterY, z: trunkZ },
+                size: { x: trunkR * 2, y: segH, z: trunkR * 2 },
+                segments: 6,
+            });
+            // wander für nächstes Segment
+            trunkX += (r01() - 0.5) * wanderJitter * segH;
+            trunkZ += (r01() - 0.5) * wanderJitter * segH;
+            trunkY += segH;
+            trunkR *= taperRate; // taper
+        }
+        // WHORL-ÄSTE — 3 Äste am Stamm-Ober-Drittel.
+        const astCount = 3 + (Math.floor(r01() * 2)); // 3 oder 4
+        const astLen = lerp(1.4, 2.4, r01());
+        const astRadius = lerp(0.18, 0.32, r01());
+        const astBaseY = trunkY * 0.6; // mittlere Höhe des Stammes
+        // Ende-Positionen für Ebene-2-Krone speichern
+        const astEnds = [];
+        for (let a = 0; a < astCount; a++) {
+            const phi = (a / astCount) * Math.PI * 2 + r01() * 0.4; // Whorl-Anordnung + jitter
+            const tilt = lerp(0.6, 1.1, r01()); // Neigungs-Winkel der Achse
+            const tipX = Math.cos(phi) * astLen * Math.sin(tilt);
+            const tipZ = Math.sin(phi) * astLen * Math.sin(tilt);
+            const tipY = astBaseY + astLen * Math.cos(tilt) * 0.6;
+            const midX = tipX * 0.5;
+            const midZ = tipZ * 0.5;
+            const midY = (astBaseY + tipY) * 0.5;
+            parts.push({
+                shape: "cylinder",
+                material: "holz",
+                position: { x: trunkX + midX, y: midY, z: trunkZ + midZ },
+                size: { x: astRadius * 2, y: astLen, z: astRadius * 2 },
+                // rotation entspringt aus der Phi+Tilt; die FormUtils rotieren
+                // den Stamm-cylinder so, dass seine y-Achse entlang des
+                // Ast-Vektors liegt. Wir setzen rotation.z so dass eine
+                // einfache cylinder-Drehung den Ast in die Richtung kippt
+                // (Engine: shape="cylinder" + rotation.z+rotation.y).
+                rotation: {
+                    z: tilt,
+                    y: phi,
+                },
+                segments: 5,
+            });
+            astEnds.push({ x: trunkX + tipX, y: tipY, z: trunkZ + tipZ });
+        }
+        // KRONE — Laub-ELLIPSOIDE NUR an Ebene-2-Enden (Species.ts-Regel).
+        // Jeder Ast bekommt 1-2 Laub-Ellipsoide an seinem Ende; Größe variiert
+        // pro Ende deterministisch.
+        const laubColor = 0x4a8a3a + Math.floor(r01() * 0x202020); // grün-tönung
+        const laubRadiusBase = lerp(0.85, 1.4, r01());
+        for (const end of astEnds) {
+            const subCount = 1 + Math.floor(r01() * 2); // 1 oder 2 Ellipsoide
+            for (let s = 0; s < subCount; s++) {
+                const ox = (r01() - 0.5) * 0.6;
+                const oz = (r01() - 0.5) * 0.6;
+                const oy = r01() * 0.4;
+                const lR = laubRadiusBase * lerp(0.7, 1.1, r01());
+                parts.push({
+                    shape: "sphere",
+                    material: "laub",
+                    color: laubColor,
+                    position: { x: end.x + ox, y: end.y + oy, z: end.z + oz },
+                    size: { x: lR * 2, y: lR * 1.6, z: lR * 2 },
+                });
+            }
+        }
+        return parts;
+    }
+
     // V18.202 — Γ1-LESART-5 Ψ2-NASE Wind-Vektor an (x, z). Deterministisch
     // aus Welt-Seed (über `_voxelNoise`) + langsamer Position-Variation. Der
     // Wind dreht sanft über km-Distanzen (windScale = 1/1000), nicht von
@@ -63867,7 +63985,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.204.0";
+AnazhRealm.VERSION = "18.205.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
