@@ -300,9 +300,11 @@ VORWÄRTS"; hier der Vektor, gruppiert nach Dimension:
 **Die Seele (wenn das Fundament trägt):**
 
 - **Phase E — Bedrohung/Furcht** (`docs/archiv/kampf-plan.md`). Der Emotion-Kern hat den
-  W5-Affekt (Furcht/Triumph), aber NOCH KEINEN Konsumenten für aggressive Kreaturen — sie
-  fliehen, schlagen nie zurück (explizit als Phase E markiert). Das ist der LETZTE fehlende
-  Konsument des Affekts und die game-design-schwerste Phase.
+  W5-Affekt (Furcht/Triumph). Die JAGD steht (V18.107 CREATURE_HUNT — wild jagt den Spieler;
+  V18.210-A3 — wild wittert + jagt andere Kreaturen via `_scentAt`-Gradient + `damageCreature`).
+  Was Phase E noch fordert: die FURCHT-DIFFERENZIERUNG (Spieler-Affekt beim Bedrohtsein) und
+  der TRIUMPH-Affekt beim Fall eines Jägers (W5-Triumph-Fenster). Die Mechanik IST da, das
+  Erleben muss noch geknüpft werden — die game-design-schwerste Phase, bleibt gemerkter Faden #2.
 - **Emotion → Regel-EMERGENZ.** Die einzelnen Kopplungen (`sorrow→rainy` etc.) sind noch
   hand-codiert. Die Weltregeln-DSL (§4.5) macht sie ausdrückbar — der Vektor: sie als
   emergente, evolvierbare Regeln neu fassen, nicht als feste Trigger.
