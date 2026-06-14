@@ -24475,7 +24475,7 @@ class AnazhRealm {
                     // → die per-Fragment Multi-Klassen-Geologie; dasselbe als Füll-
                     // Licht-Albedo + als sichtbarer colorNode.
                     albedoNode = _Ta.attribute("color", "vec3");
-                    if (typeof this._terrainGeologyAlbedo === "function" && _Ta.positionWorld) {
+                    if (!opts.useFlexAttr && typeof this._terrainGeologyAlbedo === "function" && _Ta.positionWorld) {
                         const _geo = this._terrainGeologyAlbedo(_Ta, albedoNode, _Ta.positionWorld);
                         if (_geo) {
                             albedoNode = _geo;
@@ -24962,7 +24962,11 @@ class AnazhRealm {
                 // V18.226 (Ω-OPSIS Säule I) — die per-Fragment Multi-Klassen-Geologie
                 // (Fels/Geröll aus Slope, Moos auf flach+feucht) als geteilter
                 // Auslesewert, der sich auf Triplanar/Wiese/Tint schichtet.
-                _albedo = this._terrainGeologyAlbedo(_T, _albedo, _wp);
+                // V18.227-FIX: NUR auf Land-Oberflächen (Terrain/Inseln), NICHT auf
+                // wind-wiegende Vegetation (Rinde/Laub tragen `useFlexAttr`) — ein
+                // vertikaler Stamm hat horizontale Normalen → steep≈1 → würde sonst
+                // fälschlich zu Fels (die V18.226-Lücke, geheilt).
+                if (!opts.useFlexAttr) _albedo = this._terrainGeologyAlbedo(_T, _albedo, _wp);
                 mat.colorNode = _T.vec4(_albedo, 1.0);
             }
         } catch (_e) {
@@ -44033,6 +44037,14 @@ class AnazhRealm {
     // MAX-Aggregation identisch, V17.16-Wand strukturell).
     _buildVariantLODs(species, variantIndex) {
         if (!this.state.blueprints) return null;
+        // V18.227 (Ω-OPSIS Säule II) — STATISCHE Deko-Baupläne (Kiesel/Felsen,
+        // nicht in SPECIES_GRAMMAR) tragen keine gewachsenen Varianten: der EINE
+        // Bauplan dient allen drei LOD-Slots (klein → kein Distanz-LOD nötig). So
+        // fliessen sie durch denselben Scatter-Pfad wie die Bäume.
+        if (!AnazhRealm.SPECIES_GRAMMAR || !AnazhRealm.SPECIES_GRAMMAR[species]) {
+            if (this.state.blueprints[species]) return { 0: species, 1: species, 2: species };
+            return null;
+        }
         const N = AnazhRealm.VARIANTS_PER_SPECIES;
         const pool = this._ensureVariantSeedPool();
         if (!pool || !pool[species] || pool[species].length !== N) return null;
@@ -44508,6 +44520,12 @@ class AnazhRealm {
             return "busch_hazel"; // Strauch-Stratum (Standard-Understory)
         }
         if (kind === "litter") return "baum_totholz"; // Streu-Stratum (gefallenes Holz)
+        if (kind === "rock") {
+            // V18.227 (Ω-OPSIS Säule II Ω-O5) — Fels-Stratum: meist Kiesel, an
+            // exponierten Graten gelegentlich ein grösserer Felsbrocken (hash-
+            // gewählt). stein_block bleibt der platzierbare Block (nicht gestreut).
+            return hash % 100 < 12 ? "felsbrocken" : "kiesel";
+        }
         return this._scatterSpeciesForCell(lebendig, moisture, hash); // Canopy
     }
 
@@ -44672,7 +44690,18 @@ class AnazhRealm {
                     moisture = this._feuchteAt ? this._feuchteAt(tf.x, tf.z, surfY) : 0;
                 }
                 if (slope > slopeMax) continue;
-                const prob = Math.min(0.95, floor + lebendig * SC.densityScale);
+                let prob;
+                if (layer.kind === "rock") {
+                    // V18.227 (Ω-OPSIS Säule II Ω-O5) — rockExposure: Fels bricht an
+                    // STEILEN, TROCKENEN, KAHLEN Hängen durch (das Spiegelbild der
+                    // Säule-I-Geologie). slope hebt, (1−moisture) hebt leicht,
+                    // lebendig senkt stark (kein Kiesel in der saftigen Wiese).
+                    const exposure = slope * 1.1 + (1 - moisture) * 0.25 - lebendig * 0.5 - 0.15;
+                    const dScale = Number.isFinite(layer.densityScale) ? layer.densityScale : SC.densityScale;
+                    prob = Math.min(0.85, floor + Math.max(0, exposure) * dScale);
+                } else {
+                    prob = Math.min(0.95, floor + lebendig * SC.densityScale);
+                }
                 if (this._pcgFloat(cellX ^ layerSalt, cellZ, 9) >= prob) continue;
                 const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
                 const variantIndex = h % N;
@@ -45916,6 +45945,39 @@ class AnazhRealm {
                 };
                 const tubularSegments = Math.max(20, Math.floor(turns * 16));
                 return new THREE.TubeGeometry(curve, tubularSegments, tubeRadius, 6, false);
+            }
+            case "noiserock": {
+                // V18.227 (Ω-OPSIS Säule VI Ω-O15) — der LAWFUL FELS: ein
+                // Ikosaeder, dessen Vertices entlang der Radial-Richtung per
+                // SimplexNoise verschoben werden → Facetten, Brüche, Kanten
+                // (keine glatte Box). härte (aus dem Material) → Angularität:
+                // hart = höher-frequente schärfere Brüche, weich = sanfter gerundet.
+                // Determinismus: eine FIXE Noise-Seed → alle Peers/Welten teilen
+                // dieselbe Fels-Form (render-only, kein Welt-Substanz-Stream).
+                // Die Ikosaeder-Geometrie ist NON-indexed (PolyhedronGeometry) →
+                // die Verschiebung als f(POSITION) hält geteilte Kanten verschweißt
+                // (zwei Vertices an derselben Stelle bekommen dieselbe Auslenkung);
+                // computeVertexNormals gibt danach flache Facetten-Normalen.
+                const det = Number.isFinite(part.noiseDetail) ? Math.max(0, Math.min(3, part.noiseDetail | 0)) : 1;
+                const g = new THREE.IcosahedronGeometry(0.5, det);
+                const matDef = part.material && this.state.materials ? this.state.materials[part.material] : null;
+                const haerte = matDef && matDef.tags && Number.isFinite(+matDef.tags.härte) ? +matDef.tags.härte : 0.5;
+                const strength = Number.isFinite(part.noiseStrength) ? part.noiseStrength : 0.16 + 0.18 * (1 - haerte);
+                const freq = 1.5 + haerte * 2.2;
+                if (!this._archRockNoise) this._archRockNoise = new SimplexNoise("anazh-arch-rock");
+                const noise = this._archRockNoise;
+                const ap = g.attributes.position;
+                for (let i = 0; i < ap.count; i++) {
+                    const vx = ap.getX(i);
+                    const vy = ap.getY(i);
+                    const vz = ap.getZ(i);
+                    const n = noise.noise3D(vx * freq + 11.2, vy * freq - 7.4, vz * freq + 3.1);
+                    const d = 1 + n * strength;
+                    ap.setXYZ(i, vx * d * sx, vy * d * sy, vz * d * sz);
+                }
+                ap.needsUpdate = true;
+                g.computeVertexNormals();
+                return g;
             }
             case "box":
             default:
@@ -47580,12 +47642,60 @@ class AnazhRealm {
         // stein_block: dichte+härte hoch → Felsen-Felder
         // kristall_geode: magieleitung+resoniert hoch → Magie-Zonen
         // glutbrunnen: brennbar+wärmeleitung hoch → Vulkan-Anker
+        // V18.227 (Ω-OPSIS Säule VI Ω-O15) — der Felsblock wächst vom Box-Samen
+        // zum LAWFUL FELS: ein noise-verschobener Ikosaeder (Facetten/Kanten/Brüche
+        // aus der härte). Material + Größe + Footprint UNVERÄNDERT (stein, 2.4) →
+        // die Affinitäts-Baseline + Platzier-Semantik bleiben (noiserock = box-
+        // Aktivierung, tag-neutral).
         const steinBlockParts = [
             {
-                shape: "box",
+                shape: "noiserock",
                 material: "stein",
                 position: { x: 0, y: 1.2, z: 0 },
                 size: { x: 2.4, y: 2.4, z: 2.4 },
+            },
+        ];
+        // V18.227 (Ω-OPSIS Säule II Ω-O5 + Säule VI Ω-O15) — die KIESEL-Streu:
+        // kleine lawful Felsen, die die Scatter-Schicht „rock" wo Fels durchbricht
+        // (steile, trockene Hänge) verteilt. Ein Cluster aus 2-3 noiserock-Steinen
+        // (stein) — instanced für HISM, NICHT promotable (reine Deko-Schicht).
+        const kieselParts = [
+            {
+                shape: "noiserock",
+                material: "stein",
+                position: { x: 0, y: 0.22, z: 0 },
+                size: { x: 0.55, y: 0.4, z: 0.5 },
+            },
+            {
+                shape: "noiserock",
+                material: "stein",
+                position: { x: 0.34, y: 0.13, z: 0.18 },
+                size: { x: 0.32, y: 0.26, z: 0.3 },
+                rotation: { x: 0.3, y: 0.7, z: 0.1 },
+            },
+            {
+                shape: "noiserock",
+                material: "stein",
+                position: { x: -0.28, y: 0.11, z: -0.22 },
+                size: { x: 0.26, y: 0.22, z: 0.28 },
+                rotation: { x: -0.2, y: 1.1, z: 0.2 },
+            },
+        ];
+        // ein mittlerer Felsbrocken (zwischen Kiesel + stein_block) — der Übergang
+        // an exponierten Graten; ein dominanter noiserock + ein Begleiter.
+        const felsbrockenParts = [
+            {
+                shape: "noiserock",
+                material: "stein",
+                position: { x: 0, y: 0.6, z: 0 },
+                size: { x: 1.35, y: 1.15, z: 1.25 },
+            },
+            {
+                shape: "noiserock",
+                material: "stein",
+                position: { x: 0.7, y: 0.3, z: 0.35 },
+                size: { x: 0.6, y: 0.5, z: 0.55 },
+                rotation: { x: 0.2, y: 0.5, z: 0.15 },
             },
         ];
         // V9.64 (Welle A.1) — Damm-Bauplan: ein Stein-Wall, der das Wasser
@@ -48530,7 +48640,20 @@ class AnazhRealm {
                 instanced: true,
                 parts: stammGefallenParts,
             },
-            stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
+            stein_block: {
+                name: "stein_block",
+                label: "Felsblock",
+                builtIn: true,
+                parts: steinBlockParts,
+            },
+            kiesel: { name: "kiesel", label: "Kiesel", builtIn: true, instanced: true, parts: kieselParts },
+            felsbrocken: {
+                name: "felsbrocken",
+                label: "Felsbrocken",
+                builtIn: true,
+                instanced: true,
+                parts: felsbrockenParts,
+            },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
             damm: { name: "damm", label: "Damm", builtIn: true, parts: dammParts },
             start_plattform: {
@@ -67806,7 +67929,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.226.0";
+AnazhRealm.VERSION = "18.227.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -68213,6 +68336,22 @@ AnazhRealm.SCATTER = Object.freeze({
             scaleVar: 0.4,
             slopeMax: 1.25,
             kind: "litter",
+            promotable: false,
+        }),
+        // V18.227 (Ω-OPSIS Säule II Ω-O5) — FELS: Kiesel + Felsbrocken, wo der Fels
+        // durchbricht (rockExposure aus slope+trocken+kahl, das Spiegelbild der
+        // Säule-I-Geologie). Eigener densityScale + hoher slopeMax (Fels mag steil),
+        // grosse Skalen-Varianz (Kiesel bis Brocken). Deko, nicht promotable.
+        Object.freeze({
+            name: "rock",
+            cellM: 2.6,
+            cap: 1100,
+            floor: 0.02,
+            scaleBase: 0.6,
+            scaleVar: 1.0,
+            slopeMax: 1.6,
+            densityScale: 1.3,
+            kind: "rock",
             promotable: false,
         }),
     ]),
@@ -70840,6 +70979,21 @@ AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
 // finaler Bereich pro Part: 0..3.
 AnazhRealm.FORM_TAG_ACTIVATION = Object.freeze({
     box: Object.freeze({
+        härte: 1,
+        dichte: 3,
+        zähigkeit: 1,
+        wärmeleitung: 1,
+        stromleitung: 1,
+        magieleitung: 0,
+        transparent: 1,
+        brennbar: 1,
+        resoniert: 0,
+        lebendig: 0,
+    }),
+    // V18.227 (Ω-OPSIS Säule VI) — der prozedurale Fels ist eine dichte Masse wie
+    // ein Block: dieselbe Aktivierung wie `box` → stein_block (box → noiserock)
+    // bleibt TAG-NEUTRAL (die V17.16-Affinitäts-Wand hält, die Baseline unberührt).
+    noiserock: Object.freeze({
         härte: 1,
         dichte: 3,
         zähigkeit: 1,

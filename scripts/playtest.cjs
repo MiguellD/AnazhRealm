@@ -37279,7 +37279,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
     check("V18.224 (C9) _scatterRegion idempotent (cached)", res.regionIdempotent === true);
 
     // (M) V18.225 MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
-    check(`V18.224 (M1) Drei Scatter-Strata konfiguriert (gemessen ${res.scatterLayerCount})`, res.scatterLayerCount === 3);
+    check(`V18.224 (M1) ≥3 Scatter-Strata konfiguriert (V18.227: +Fels = 4, gemessen ${res.scatterLayerCount})`, res.scatterLayerCount >= 3);
     check("V18.224 (M2) Understory-Cap dominiert (der Dichte-Träger, Plan §13)", res.underCapDominates === true);
     check("V18.224 (M3) Alle 3 Strata haben Caps (Bäume + Understory + Streu)", res.hasThreeStrata === true);
     check(`V18.224 (M4) Region erzeugt alle 3 Schichten (byLayer: ${res.byLayer ? JSON.stringify(res.byLayer) : "?"})`, res.byLayer && Number.isFinite(res.byLayer.tree) && Number.isFinite(res.byLayer.under) && Number.isFinite(res.byLayer.litter));
@@ -37424,6 +37424,103 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
     check("Ω-OPSIS S1 (F3) PBR-Terrain: kein Geologie-Fehler", res.pbrTerrainNoGeoError === true);
 
     check(`Ω-OPSIS S1 (V1) VERSION floor ≥ 18.226.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
+}
+
+// V18.227 (DER WAHRE ANBLICK — die FELS-WELLE) — Säule VI Ω-O15 (prozeduraler
+// Fels: Box-Samen → noise-verschobener Ikosaeder) + Säule II Ω-O5 (Kiesel-Streu
+// wo Fels durchbricht) + die V18.226-Geologie-Korrektur (nur Land, nicht
+// wind-wiegende Vegetation). Tests messen CONSUM: der Fels emergiert, die Streu
+// liest rockExposure, die Geologie ist gegated.
+async function checkBandWahrerAnblickFels(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (A) Ω-O15 prozedurale Fels-Geometrie
+        const geom = r._makePartGeometry({ shape: "noiserock", material: "stein", size: { x: 2, y: 2, z: 2 } });
+        out.rockGeomBuilt = !!(geom && geom.attributes && geom.attributes.position);
+        out.rockGeomDetailed = !!(geom && geom.attributes.position && geom.attributes.position.count >= 12);
+        // verschoben ≠ glatte Kugel: die Vertex-Radien streuen (Noise-Displacement)
+        if (geom && geom.attributes.position) {
+            const p = geom.attributes.position;
+            let rmin = Infinity,
+                rmax = 0;
+            for (let i = 0; i < p.count; i++) {
+                const rr = Math.hypot(p.getX(i), p.getY(i), p.getZ(i));
+                if (rr < rmin) rmin = rr;
+                if (rr > rmax) rmax = rr;
+            }
+            out.rockDisplaced = rmax - rmin > 0.05; // die Brüche/Facetten
+        }
+        if (geom && typeof geom.dispose === "function") geom.dispose();
+
+        // (B) Tag-Neutralität: noiserock-Aktivierung == box (stein_block bleibt neutral)
+        const fta = A.FORM_TAG_ACTIVATION;
+        out.noiserockActivation = !!(fta && fta.noiserock && fta.box);
+        if (out.noiserockActivation) {
+            out.noiserockEqualsBox = Object.keys(fta.box).every((k) => fta.noiserock[k] === fta.box[k]);
+        }
+
+        // (C) stein_block gewachsen + Kiesel/Felsbrocken-Baupläne
+        const bp = r.state.blueprints;
+        out.steinIsRock = !!(bp && bp.stein_block && bp.stein_block.parts[0].shape === "noiserock");
+        out.kieselExists = !!(bp && bp.kiesel && bp.kiesel.instanced && bp.kiesel.parts.length >= 1);
+        out.kieselIsRock = !!(bp && bp.kiesel && bp.kiesel.parts.every((p) => p.shape === "noiserock"));
+        out.felsbrockenExists = !!(bp && bp.felsbrocken && bp.felsbrocken.instanced);
+        // computeCompoundTags von stein_block trägt dichte (noiserock = box → dicht)
+        try {
+            const tags = r.computeCompoundTags(bp.stein_block);
+            out.steinTagsFinite = !!(tags && Number.isFinite(tags.dichte) && tags.dichte > 0);
+        } catch (_e) {
+            out.steinTagsFinite = false;
+        }
+
+        // (D) CONSUM: die Streu liest die statischen Fels-Baupläne
+        const lods = r._buildVariantLODs("kiesel", 0);
+        out.staticLods = !!(lods && lods[0] === "kiesel" && lods[1] === "kiesel" && lods[2] === "kiesel");
+        const sp = r._scatterSpeciesForLayer("rock", 0.1, 0.1, 50);
+        out.rockSpecies = sp === "kiesel" || sp === "felsbrocken" || sp === "stein_block";
+        const layers = A.SCATTER && A.SCATTER.layers;
+        out.rockLayer = !!(layers && layers.some((l) => l.name === "rock" && l.kind === "rock" && l.promotable === false));
+
+        // (E) Die V18.226-Geologie-Korrektur (CONSUM: gegated auf !useFlexAttr)
+        const toonSrc = r._buildToonNodeMaterial.toString();
+        out.geologyGated = /!opts\.useFlexAttr.*_terrainGeologyAlbedo/s.test(toonSrc);
+        const pbrSrc = r._buildPbrNodeMaterial.toString();
+        out.pbrGeologyGated = /!opts\.useFlexAttr/.test(pbrSrc);
+
+        // (F) Version
+        out.versionStr = A.VERSION;
+        const pv = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
+        out.versionFloor = pv[0] > 18 || (pv[0] === 18 && pv[1] >= 227);
+        return out;
+    });
+
+    check("Ω-OPSIS S6 (A1) noiserock baut eine Geometrie", res.rockGeomBuilt === true);
+    check("Ω-OPSIS S6 (A2) noiserock ist detailliert (≥12 Vertices)", res.rockGeomDetailed === true);
+    check("Ω-OPSIS S6 (A3) noiserock ist noise-verschoben (Facetten, kein glatter Radius)", res.rockDisplaced === true);
+
+    check("Ω-OPSIS S6 (B1) noiserock-Aktivierung existiert (FORM_TAG_ACTIVATION)", res.noiserockActivation === true);
+    check("Ω-OPSIS S6 (B2) noiserock == box → tag-neutral (Affinitäts-Baseline hält)", res.noiserockEqualsBox === true);
+
+    check("Ω-OPSIS S6 (C1) stein_block gewachsen (Box-Samen → noiserock)", res.steinIsRock === true);
+    check("Ω-OPSIS S6 (C2) kiesel-Bauplan existiert (instanced, noiserock)", res.kieselExists === true);
+    check("Ω-OPSIS S6 (C3) kiesel-Teile sind alle noiserock", res.kieselIsRock === true);
+    check("Ω-OPSIS S6 (C4) felsbrocken-Bauplan existiert (instanced)", res.felsbrockenExists === true);
+    check("Ω-OPSIS S6 (C5) stein_block trägt dichte (Tags finit, noiserock=box)", res.steinTagsFinite === true);
+
+    check("Ω-OPSIS S5 (D1) CONSUM: _buildVariantLODs gibt statische Fels-Keys", res.staticLods === true);
+    check("Ω-OPSIS S5 (D2) CONSUM: _scatterSpeciesForLayer(rock) gibt Fels-Spezies", res.rockSpecies === true);
+    check("Ω-OPSIS S5 (D3) CONSUM: SCATTER.layers trägt die Fels-Schicht (Deko)", res.rockLayer === true);
+
+    check("Ω-OPSIS S1-FIX (E1) Geologie gegated auf !useFlexAttr (Toon, kein Fels auf Rinde)", res.geologyGated === true);
+    check("Ω-OPSIS S1-FIX (E2) Geologie gegated auf !useFlexAttr (PBR)", res.pbrGeologyGated === true);
+
+    check(`Ω-OPSIS S6 (V1) VERSION floor ≥ 18.227.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -54629,6 +54726,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18223PbrKohaerenz(ctx);
             await checkBandV18224ScatterPromotion(ctx);
             await checkBandWahrerAnblickSaeule1(ctx);
+            await checkBandWahrerAnblickFels(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
