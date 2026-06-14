@@ -54,8 +54,31 @@
 | §2 Ω-H VOLLE Promotion (Spawn-Auto + Snapshot-Persist) | V18.221 | ✅ V18.221 — die Welt vergisst nicht | mittel — das HERZ |
 | §9 Canopy chunk-streaming | V18.222 | ✅ V18.222 — 3×3-Ring um Spieler, Dispose-Pfad | klein |
 | §10 Ω-P PBR-Kohärenz | V18.223 | ✅ V18.223 — _buildPbrNodeMaterial + Material-Mode-Dispatch + Tag→Substanz-Tabelle | groß |
+| §5+§8 Ω-S ECHTER Scatter (Dichte-Band) | V18.224 | ✅ V18.224 — pcg2d-InstancedMesh-Streu, 1400/Region, 23506 live | groß |
+| §2 Ω-H ECHTE Promotion (SEELEN-Band) | V18.224 | ✅ V18.224 — Touch→Real, kein Sprung, Provenienz, Lookup lebendig | mittel |
 
-**STATUS: 10 VON 10 PLAN-WELLEN GEBAUT (100 %).** Der LEBENDIGE GIGANT ist VOLLSTÄNDIG.
+**STATUS: ALLE PLAN-BÄNDER ECHT ERFÜLLT — KEIN EMERGENT MEHR.**
+
+Der Selbst-Audit (14.06., nach der Schöpfer-Frage „10/10, voll zufrieden?")
+fand die zwei verbliebenen emergent-Ausreden: das Dichte-Band (Zehner statt
+Hunderte) + das SEELEN-Band (Touch→Real auf „emergent" geschoben), plus den
+Passagier `_scatterLookupCell` (definiert, nie gelesen). V18.224 baute das
+HERZ echt: GPU-portierbarer pcg2d-Scatter (1400 Instanzen/Region, 23506 live
+GEMESSEN) + echte Touch→Real-Promotion (gleiche Geometrie → kein visueller
+Sprung) + der Passagier ist jetzt lebendig (die Promotion liest ihn).
+
+§13-RICHTER-BÄNDER (der Plan ist der Richter, nicht meine Bequemlichkeit):
+- Baum-Wahrheit (Säule I+II) ✅ · Resonanz (distinkte Tags) ✅ · Wind/Palette ✅
+- Kohärenz (PBR, Säule V) ✅ V18.223
+- **Dichte-Band ✅ V18.224** (echte InstancedMesh-Streu-Dichte)
+- **SEELEN-Band ✅ V18.224** (echtes Touch→Real, gemessen)
+
+GEMESSEN-GRENZE (ehrlich): der swiftshader-Headless-Render ist für einen kalten
+Full-Scatter-Screenshot in diesem Container zu langsam (Timeout). Die MECHANIK
+ist hart bewiesen (Instanz-Zahlen, Promotion-Einträge); der LOOK + die
+Auflösungs-Iteration (Scatter-Dichte/Distanzen feinjustieren, GPU-Compute-Kernel
+als Million-Skala-Speedup) gehören in den echten WebGPU-Browser des Schöpfers
+(`state.atmosphere.gpuScatter` default an, A/B-abschaltbar).
 
 Schöpfer-Wort 14.06.2026: „pbr bedeutet ohne mein gefühl, es bassiert auf
 regeln, einfach herleitbar, physik, das ist der richtige weg". Damit ist S-Gate 4
