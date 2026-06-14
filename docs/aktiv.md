@@ -11,6 +11,20 @@
 
 ## Stand (jüngste oben)
 
+**14.06.2026 — V18.212 ✅ FERTIG, Branch `claude/kind-rubin-udn6cn`:**
+**DER LEBENDIGE GIGANT, RESTSUBSCHRITTE Ω-K2 + Ω-W + Ω-H + Ω-C** — V18.211 hatte Säule I (Skeleton-Grammar); V18.212 schließt die nicht-GPU Restsubschritte:
+
+- **Ω-K2 BAUM-FÜSSE** (§4): flacher Saum am Stamm-Sockel — Baum wurzelt optisch im Boden
+- **Ω-W VERTIEFTES WIND** (§9): quadratischer crownFactor + aperiodisches Flattern (Plan §9 „Laub flattert aperiodisch") + stärkere Sway-Magnitude
+- **Ω-H PROMOTION-PROVENIENZ** (§2 SEELEN-Band): in unserer Architektur sind Bäume IMMER echt → §2 EMERGENT erfüllt; `harvestArchitecture` stempelt Welt-Genese-Provenienz `{bornFrom, species, seed}` in Journal + Return
+- **Ω-C CANOPY-SHELL** (§9): 96×96 PlaneGeometry über 2km², Y aus Terrain + Coverage-Lift aus `worldFieldAt.lebendig × Clump`, Plan-§9-Formel `lift = (coverage > 0.18) ? coverage·7 + 11 : 0`, Distanz-Dither `smoothstep(180, 320, viewerDist) × 0.85`, lazy via `_ensureCanopyShell`, dispose im Welt-Wechsel
+
+23 neue V18.212-Wände grün + ~3500 bestehende grün. Version 18.211→18.212.
+
+**OFFENE GIGANT-FÄDEN** (Plan §11): §5 Ω-B GPU-Feld-Bake (eigener Bogen) · §8 Ω-S GPU-Compute-Scatter (hängt §5) · §10 Ω-P PBR (optional). Säulen I-IV foundational komplett.
+
+---
+
 **14.06.2026 — V18.211 ✅ FERTIG, Branch `claude/kind-rubin-udn6cn`:**
 **DER LEBENDIGE GIGANT, SÄULE I (Skeleton-Grammar)** — Bäume lesen jetzt als Bäume, nicht als „Zylinder + 8 Kugeln". Der vorige `abschluss-plan.md` ist superseded vom Schöpfer-Anhang `69189e03-lebendigergigant.md` (DER LEBENDIGE GIGANT — Ω∞). Diese Welle baut **die visuelle Wurzel von Säule I**: `AnazhRealm.SPECIES_GRAMMAR` (frozen, 6 Arten × Plan-§3.3-Werte) + `_growTreeBlueprintRich(speciesKey, seed, grammar)` (Multi-Level-Wachstums-Grammatik mit perpBasis + Tropismus + Wander + Droop + TipCurl + Foliage AT TIPS). 75-81 Parts pro Baum (vs V18.210's 12). genVersion 4→5 routet bei gen≥5 zur Rich-Methode. **§2.5 (Variant-Pool + Wind + Snapshot)** sind GEERBT/GEHEILT:
 - **Variant-Pool**: der V18.210-Region-Cache (256m × Welt-Seed × Spezies) ist faktisch §2.5 in Region-Form.

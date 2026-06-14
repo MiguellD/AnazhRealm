@@ -13017,6 +13017,24 @@ class AnazhRealm {
         this._buildStarField();
         // V8.28 6.G4.b D — Welt-Wasser (Wave-Plane in Senken)
         this._buildWaterPlane();
+        // V18.212 — Ω-C Canopy-Shell (DER LEBENDIGE GIGANT §9): die ferne
+        // Wald-Oberfläche, die individuelle Bäume in der Distanz cullt
+        // und durch eine geschlossene grüne Fläche ersetzt. Lazy via
+        // _ensureCanopyShell — die Methode prüft state.canopyShell und
+        // baut bei Bedarf. Wir rufen sie hier deferred (rAF), damit die
+        // Welt-Init nicht zusätzliche ~100ms belastet (Per-Vertex-Sample
+        // worldFieldAt × ~9k Vertices).
+        if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(() => {
+                try {
+                    this._ensureCanopyShell();
+                } catch (e) {
+                    if (typeof this.log === "function") {
+                        this.log(`Ω-C Canopy-Shell Build-Fehler: ${e.message}`, "WARN");
+                    }
+                }
+            });
+        }
     }
 
     // V8.28 6.G4.b Phase A — Sterne als diskrete THREE.Points statt
@@ -13264,6 +13282,138 @@ class AnazhRealm {
         // (`_buildVoxelChunkWaterIsoSurface`). EIN Wasser-Mesh, eine Skala,
         // eine Geometrie-Quelle.
         this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Iso-Cells, V9.75)`);
+    }
+
+    // V18.212 — Ω-C CANOPY-SHELL (Plan §9): „Einzelne Bäume cullen in der
+    // Distanz → ohne Schale bleibt der ferne Hang kahl, egal wie dicht
+    // der Nahbereich ist." Die Lösung: ein grobes Mesh, dessen Vertices
+    // das Heightfield reiten + einen Coverage-Lift aus `worldFieldAt.
+    // lebendig` bekommen. Geshaded als rollende grüne Wald-Oberfläche.
+    // Distanz-Dither: fadet IN bei Distanz (>150m vom Auge), unsichtbar
+    // wenn nah (wo Einzel-Bäume die Wahrheit tragen). EIN Mesh statisch
+    // im Worldgen-Bereich (±1024m), Welt-Stimme `lebendig` bestimmt die
+    // Wald-Verteilung — keine GPU-Scatter-Vorbedingung nötig.
+    //
+    // Anti-Scope: KEIN Eintritt in Pillar III (GPU-Scatter); Canopy ist
+    // nur die VISUELLE Brücke zwischen Einzelbaum-Cull und Horizont.
+    // Tag-Neutral: kein Welt-Effekt, kein Tag-Push (reine Render-Schicht).
+    _ensureCanopyShell() {
+        if (this.state.canopyShell) return this.state.canopyShell;
+        if (!this.state.scene || typeof THREE === "undefined") return null;
+        return this._buildCanopyShell();
+    }
+
+    _buildCanopyShell() {
+        if (typeof THREE === "undefined" || !this.state.scene) return null;
+        const C = AnazhRealm.CANOPY_SHELL;
+        // Grobes Plane-Grid: SIZE × SIZE Vertices über REGION_M × REGION_M.
+        const SIZE = C.gridSize; // 96 Vertices pro Seite
+        const REGION = C.regionM; // ±REGION/2 m um Ursprung
+        const N = SIZE - 1; // Segmente
+        const geom = new THREE.PlaneGeometry(REGION, REGION, N, N);
+        // Plane liegt in xy-Ebene → wir wollen sie auf xz-Ebene legen.
+        geom.rotateX(-Math.PI / 2);
+        // Per-Vertex Y aus Terrain-Höhe + Coverage-Lift berechnen.
+        const positions = geom.attributes.position;
+        const colors = new Float32Array(positions.count * 3);
+        let liveCount = 0;
+        for (let i = 0; i < positions.count; i++) {
+            const x = positions.getX(i);
+            const z = positions.getZ(i);
+            // Terrain-Höhe (cached via _voxelSurfaceY).
+            const terrainY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : 0;
+            // Welt-Stimme `lebendig` als Coverage-Proxy. Hoher Wert = dichter
+            // Wald. Die Spawn-Wahrscheinlichkeit in `_vegetationSampleSpawn`
+            // ist ∝ lebendig → eine konsistente Lese-Schicht zum Scatter.
+            let coverage = 0;
+            if (typeof this.worldFieldAt === "function") {
+                const f = this.worldFieldAt(x, z);
+                coverage = f ? Math.max(0, Math.min(1, f.lebendig)) : 0;
+                // Clump-Faktor (Wald-Maske λ~170m) MULT mit lebendig — die
+                // V18.102-Wald-Maske ehrt: dichter Wald in Clumps statt
+                // ausgespreizt.
+                if (typeof this._clumpAt === "function") {
+                    const clump = Math.max(0, Math.min(1, 0.5 + 0.5 * this._clumpAt(x, z, 0.006)));
+                    coverage = coverage * (0.4 + 0.6 * clump);
+                }
+            }
+            // Lift-Formel aus Plan §9: nur sichtbar wenn coverage > ~0.18.
+            const lift = (coverage > 0.18 ? coverage * 7 + 11 : 0) * C.liftScale;
+            // Crown-Bump für Variation (deterministischer Welt-Noise; KEIN
+            // Math.random → Stream-Gesetz Γ5).
+            let bump = 0;
+            if (this._growTreeNoise) {
+                bump = this._growTreeNoise.noise2D(x * 0.05, z * 0.05) * 0.8;
+            }
+            const finalY = terrainY + lift + bump;
+            positions.setY(i, finalY);
+            // Per-Vertex Color: gedämpftes Grün, das mit coverage moduliert
+            // (heller im dichten Wald, dunkler an Rändern). Eine Variation
+            // hilft den Toon-Shader, das Mesh nicht uniform zu malen.
+            const greenBase = 0.32 + coverage * 0.18; // 0.32..0.50
+            colors[i * 3 + 0] = 0.16 + coverage * 0.08; // R
+            colors[i * 3 + 1] = greenBase; // G
+            colors[i * 3 + 2] = 0.13 + coverage * 0.08; // B
+            // Alpha-flag: coverage > Threshold → Canopy hier sichtbar.
+            if (coverage > 0.22) liveCount++;
+        }
+        positions.needsUpdate = true;
+        geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+        geom.computeVertexNormals();
+        // Toon-Material mit Vertex-Colors + Distanz-Dither.
+        const mat = this._buildToonNodeMaterial({
+            color: 0xffffff, // wird durch vertexColors überstimmt
+            vertexColors: true,
+            transparent: true,
+            opacity: 1.0,
+            side: THREE.DoubleSide,
+        });
+        // V18.212 — DISTANZ-DITHER (Plan §9): die Canopy fadet IN bei
+        // großer Distanz vom Auge. Nah ist sie UNSICHTBAR (Einzelbäume
+        // tragen die Wahrheit), fern wird sie ZUR Wald-Oberfläche.
+        try {
+            const _T = THREE.TSL;
+            if (_T && _T.cameraPosition && _T.positionWorld && _T.smoothstep) {
+                const _dist = _T.positionWorld.sub(_T.cameraPosition).length();
+                // Dither IN ab `distNear` m, voll ab `distFar` m.
+                const _ditherIn = _T.smoothstep(_T.float(C.distNear), _T.float(C.distFar), _dist);
+                // Maximaler Alpha (sanft, nicht 1.0 — die Canopy darf am
+                // Horizont durchscheinen, nicht hart-schwarz).
+                mat.opacityNode = _ditherIn.mul(_T.float(C.maxOpacity));
+            }
+        } catch (_e) {
+            if (typeof window !== "undefined") window.__canopyDitherError = String((_e && _e.message) || _e);
+        }
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.frustumCulled = true;
+        mesh.castShadow = false;
+        mesh.receiveShadow = true;
+        // Render NACH dem Wasser, damit der Tiefenpuffer korrekt sortiert.
+        mesh.renderOrder = 2;
+        mesh.userData.kind = "canopyShell";
+        mesh.userData.liveCoverageVertices = liveCount;
+        this.state.scene.add(mesh);
+        this.state.canopyShell = mesh;
+        this.state.canopyShellMaterial = mat;
+        if (typeof this.log === "function") {
+            this.log(
+                `Ω-C Canopy-Shell ${SIZE}×${SIZE} (${REGION}m²) gebaut — ${liveCount}/${positions.count} Vertices mit Wald-Coverage`,
+                "INFO"
+            );
+        }
+        return mesh;
+    }
+
+    // V18.212 — Canopy-Shell beim Welt-Wechsel räumen (frische Welt = neue
+    // Verteilung → neue Coverage-Karte). Material + Geometry disposen.
+    _disposeCanopyShell() {
+        if (!this.state.canopyShell) return;
+        const m = this.state.canopyShell;
+        if (this.state.scene) this.state.scene.remove(m);
+        if (m.geometry) m.geometry.dispose();
+        if (m.material) m.material.dispose();
+        this.state.canopyShell = null;
+        this.state.canopyShellMaterial = null;
     }
 
     // V8.29 — Geteiltes Gras-Material für InstancedMesh. Wie machen es die
@@ -24343,18 +24493,39 @@ class AnazhRealm {
                 const _wu = this.state.windUniforms;
                 if (_Tw && _Tw.positionLocal && _Tw.positionWorld && _Tw.sin && _Tw.cos && _wu && _wu.uWindTime) {
                     const _sway = Math.max(0, Math.min(1, responseProfile.wiegen));
+                    // V18.212 (Plan §9 Ω-W): per-Instance-Phase aus
+                    // positionWorld.x/z (verschiedene Welt-Positionen = ver-
+                    // schiedene Phasen → Bäume wiegen nicht im Lockstep).
                     const _phase = _wu.uWindTime
-                        .mul(_Tw.float(1.3))
+                        .mul(_Tw.float(1.1))
                         .add(_Tw.positionWorld.x.mul(_Tw.float(0.18)))
                         .add(_Tw.positionWorld.z.mul(_Tw.float(0.14)));
-                    // crownFactor: positionLocal.y normiert auf ±1m → höhere
-                    // Vertices wiegen mehr (lokale Approximation; eingebackene
-                    // Bauplan-Bounds wären eine eigene Welle).
-                    const _crownFactor = _Tw.positionLocal.y.mul(_Tw.float(0.5)).add(_Tw.float(0.5)).clamp(0.0, 1.0);
-                    const _swayMag = _Tw.float(_sway * 0.25).mul(_crownFactor);
+                    // V18.212 — Ω-W KRONE-QUADRATISCH (Plan §9): Spitzen flexen
+                    // viel mehr als die Basis. Der V18.211-crownFactor war
+                    // linear (positionLocal.y · 0.5 + 0.5); quadratisch macht
+                    // die Spitzen sichtbar dynamischer + die Basis ruhiger.
+                    const _crownLin = _Tw.positionLocal.y.mul(_Tw.float(0.5)).add(_Tw.float(0.5)).clamp(0.0, 1.0);
+                    const _crownFactor = _crownLin.mul(_crownLin); // quadratisch
+                    const _swayMag = _Tw.float(_sway * 0.32).mul(_crownFactor);
                     const _offsetX = _Tw.sin(_phase).mul(_swayMag);
                     const _offsetZ = _Tw.cos(_phase.mul(_Tw.float(0.7))).mul(_swayMag.mul(_Tw.float(0.6)));
-                    mat.positionNode = _Tw.positionLocal.add(_Tw.vec3(_offsetX, _Tw.float(0.0), _offsetZ));
+                    // V18.212 — Ω-W APERIODISCHES FLATTERN (Plan §9: „Äste
+                    // wiegen, Laub flattert aperiodisch"). Hochfrequenter
+                    // Term ADDIERT auf die wiegen-Sway. Aus positionWorld.y
+                    // moduliert → benachbarte Vertices haben verschiedene
+                    // Phasen, das macht das aperiodische Gefühl.
+                    const _flutterPhase = _wu.uWindTime
+                        .mul(_Tw.float(6.5))
+                        .add(_Tw.positionWorld.y.mul(_Tw.float(2.3)))
+                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.9)));
+                    const _flutter = _Tw.sin(_flutterPhase).mul(_swayMag).mul(_Tw.float(0.18));
+                    const _flutterZ = _Tw
+                        .cos(_flutterPhase.mul(_Tw.float(0.83)))
+                        .mul(_swayMag)
+                        .mul(_Tw.float(0.14));
+                    mat.positionNode = _Tw.positionLocal.add(
+                        _Tw.vec3(_offsetX.add(_flutter), _Tw.float(0.0), _offsetZ.add(_flutterZ))
+                    );
                 }
             } catch (_e) {
                 if (typeof window !== "undefined") window.__windSwayError = String((_e && _e.message) || _e);
@@ -33970,6 +34141,22 @@ class AnazhRealm {
         if (externalState) this._loadStatePersistExternalImport(externalState);
         this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
         if (!externalState) this._loadStateRestoreVersionHistory();
+        // V18.212 — Ω-C Canopy-Shell nach jedem Load deferred rebuild.
+        // Die Canopy ist welt-spezifisch (lebendig-Feld); nach einem
+        // Welt-Wechsel/-Restore muss sie für die neue Welt entstehen.
+        // rAF deferred, damit der Restore-Frame nicht zusätzlich belastet
+        // wird (Per-Vertex worldFieldAt × ~9k Vertices ≈ ~50-100ms).
+        if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(() => {
+                try {
+                    this._ensureCanopyShell();
+                } catch (e) {
+                    if (typeof this.log === "function") {
+                        this.log(`Ω-C Canopy nach Restore: ${e.message}`, "WARN");
+                    }
+                }
+            });
+        }
         return true;
     }
 
@@ -34094,6 +34281,10 @@ class AnazhRealm {
         // aber ein Welt-Wechsel kann CREATURE_SOULS-Custom-Definitionen austauschen.
         // Sauberster Pfad: am Welt-Identitäts-Wechsel leeren (defensive).
         if (this._scentSizeBySoul) this._scentSizeBySoul.clear();
+        // V18.212 — Ω-C Canopy-Shell ist welt-spezifisch (lebendig-Feld ist
+        // an worldSeed gebunden). Beim Welt-Wechsel: alte Canopy disposen,
+        // neue baut sich beim nächsten _ensureCanopyShell oder rAF-Hook.
+        if (typeof this._disposeCanopyShell === "function") this._disposeCanopyShell();
         if (state.worldMeta && typeof state.worldMeta === "object") {
             this.state.worldMeta = { ...this.state.worldMeta, ...state.worldMeta };
         } else {
@@ -43343,6 +43534,27 @@ class AnazhRealm {
         for (let i = 1; i < trunkPts.length; i++) {
             emitCylinderBetween(trunkPts[i - 1], trunkPts[i], 6);
         }
+
+        // ─── Ω-K2 BAUM-FUSS / WURZELANLAUF (Plan §4.K2) ────────────────
+        // „Wo ein Baum den Boden trifft: ein kleiner Saum aus Moos/Streu/
+        // Wurzelanlauf, der den organischen Stamm an den geglätteten Boden
+        // bindet." — Plan §4. Eine flache, leicht moos-grüne Disk am Stamm-
+        // Sockel (sphere mit y-Quetschung) bindet visuell den Baum an den
+        // Voxel-Boden. Tag-Neutralität: laub-Material (= grün), die V17.16-
+        // Wand bleibt (gleiche SHAPE+MATERIAL-Combo wie der Foliage-Anker;
+        // computeCompoundTags MAX bleibt invariant).
+        const flareR = trunkBaseR * 2.2 * lerp(0.85, 1.15, r01());
+        const flareH = trunkBaseR * 0.5;
+        // Mossy-Tönung — ein gedämpftes Grün das mit dem Foliage-Color
+        // gleitet (Krone gibt den Wald-Ton, der Sockel folgt sanft).
+        const flareTint = (grammar.foliage.color & 0x7f7f7f) | 0x1a1a1a; // gedämpfte Version der Krone-Farbe
+        parts.push({
+            shape: "sphere",
+            material: "laub",
+            color: flareTint,
+            position: { x: 0, y: flareH * 0.4, z: 0 },
+            size: { x: flareR * 2, y: flareH * 1.6, z: flareR * 2 },
+        });
 
         // ─── TIP-COLLECTION (Childen-Punkte pro Eltern-Ebene) ─────────
         const collectTips = (parentPts, levelGrammar) => {
@@ -53240,17 +53452,52 @@ class AnazhRealm {
             if (mag !== undefined) harvestOpts.magnitude = mag;
             this._feelAction("harvest", harvestOpts);
         }
+        // V18.212 — Ω-H PROMOTION (Plan §2/§13 SEELEN-Band): in unserer
+        // Architektur sind Bäume IMMER echte Welt-Programm-Dinge (kein
+        // GPU-Scatter-Dekorations-Schicht — der V18.211-Region-Cache spawnt
+        // sie direkt via spawnArchitecture als echte Bauplane). Das Plan-§2
+        // „dekorativ → echt"-Promotion-Pattern ist damit EMERGENT erfüllt:
+        // jeder Baum ist von Anfang an fällbar, taggt, hat Materialien.
+        // Was die Promotion ARTIKULIERT: die HERKUNFT (Plan §2: „Provenienz:
+        // geboren aus Welt-Genese bei seed_cell"). Wir ergänzen den Journal-
+        // Eintrag um die Welt-Genese-Daten, wenn ein _isGrown-Bauplan
+        // (V18.210-A1-grown_*) geerntet wird → der Spieler liest „Birke,
+        // gewachsen aus Welt-Seed (Region 5,-2)". Die Materialien tragen
+        // die Provenienz NICHT (Material ist tag-getrieben, kein Artefakt-
+        // Object); das Tagebuch ist der Ort, an dem die Welt-Herkunft
+        // ihre Spur hinterlässt.
+        let grownProvenance = null;
+        if (bp && bp._isGrown && bp._grownSpecies) {
+            grownProvenance = {
+                bornFrom: "world-genesis",
+                species: bp._grownSpecies,
+                seed: bp._grownSeed || null,
+            };
+        }
         if (typeof this.journalAppend === "function" && totalParts > 0) {
             const matSummary = Object.entries(materials)
                 .map(([m, n]) => `${n}× ${m}`)
                 .join(", ");
-            this.journalAppend("growth", `${harvester} erntete „${blueprintName}" → ${matSummary}.`, {
+            const journalDetails = {
                 blueprint: blueprintName,
                 materials,
                 harvester,
-            });
+            };
+            // V18.212 — Ω-H: die Welt-Genese-Spur wandert in den Journal-
+            // Eintrag. „aus Welt-Genese bei (Region X, Y)" lesbar.
+            let journalText = `${harvester} erntete „${blueprintName}" → ${matSummary}.`;
+            if (grownProvenance) {
+                journalDetails.provenance = grownProvenance;
+                const speciesLabel = String(grownProvenance.species || "")
+                    .replace(/^baum_/, "")
+                    .replace(/^./, (c) => c.toUpperCase());
+                journalText = `${harvester} erntete „${speciesLabel}" (aus Welt-Genese gewachsen) → ${matSummary}.`;
+            }
+            this.journalAppend("growth", journalText, journalDetails);
         }
-        return { materials, blueprint: blueprintName, parts: totalParts };
+        const result = { materials, blueprint: blueprintName, parts: totalParts };
+        if (grownProvenance) result.provenance = grownProvenance;
+        return result;
     }
 
     removeArchitecture(entry) {
@@ -64940,7 +65187,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.211.0";
+AnazhRealm.VERSION = "18.212.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -65257,6 +65504,34 @@ AnazhRealm.STRATA_STEIN_DEPTH = 12;
 // ohne die Baum-Dichte zu sehr zu verdünnen. Erst-Wurf, V18.192-Lehre:
 // browser-justierbar wenn der Schöpfer "zu viel/zu wenig" sieht.
 AnazhRealm.TOTHOLZ_RATE = 0.1;
+
+// V18.212 — Ω-C CANOPY-SHELL (DER LEBENDIGE GIGANT §9): die ferne Wald-
+// Oberfläche, die individuelle Bäume in der Distanz cullt und durch eine
+// geschlossene grüne Fläche ersetzt. Plan-§9-Formel:
+//   lift = smoothstep(0.18, 0.5, coverage) · (coverage · 7 + 11)
+//   canopyTop = terrain + lift + crown-bumps
+// Coverage in unserer Architektur: `worldFieldAt.lebendig` × Clump-Faktor
+// (V18.102-Wald-Maske λ~170m). Konsistent mit dem Scatter — derselbe Term
+// treibt Tree-Spawn-Probability + Canopy-Lift. Frozen Konstanten browser-
+// justierbar wenn der Schöpfer Look-Feinheiten anpasst.
+AnazhRealm.CANOPY_SHELL = Object.freeze({
+    // Gitter-Auflösung: 96×96 = 9216 Vertices. ~21m Vertex-Abstand bei 2km
+    // Region — fein genug für sichtbare Strukturen, grob genug für FPS.
+    gridSize: 96,
+    // Welt-Abdeckung in m. ±1024m ist der Worldgen-Bereich (wo `lebendig`
+    // definiert ist); 2048m = 2km × 2km.
+    regionM: 2048,
+    // Distanz-Dither: Canopy fadet von distNear (m) bis distFar (m) ein.
+    // Vor distNear: unsichtbar (Einzelbäume tragen die Wahrheit). Ab distFar:
+    // voll sichtbar als ferne Wald-Oberfläche.
+    distNear: 180,
+    distFar: 320,
+    // Maximale Deckkraft am Horizont — < 1.0 damit Atmosphäre durchscheint.
+    maxOpacity: 0.85,
+    // Lift-Skala: 1.0 = Plan-Formel direkt. Browser-justierbar wenn die
+    // Bäume „zu hoch" über dem Terrain liegen.
+    liftScale: 0.85,
+});
 
 // V18.211 (DER LEBENDIGE GIGANT §3.3/§6) — SPECIES_GRAMMAR: die zentrale
 // Wachstums-Grammatik pro Baumart. Aus LAAS' Species.ts GEMESSEN und auf
