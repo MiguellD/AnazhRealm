@@ -22472,6 +22472,32 @@ class AnazhRealm {
         return 1.0;
     }
 
+    // V18.226 (DER WAHRE ANBLICK — Ω-OPSIS Säule I) — die per-Fragment MULTI-
+    // KLASSEN-GEOLOGIE. KEINE gewählte Ästhetik, KEIN gemaltes Asset: die Klassen
+    // EMERGIEREN aus der Welt-Wahrheit. Die STEILE-Schwellen sind Physik — ein
+    // steiler Hang trägt keine lockere Erde (sie rutscht ab; das Reibungs-/Stütz-
+    // polygon-Gesetz aus Ω-PHYSIS auf den Boden angewandt) → Fels bricht durch.
+    // `_steep = 1 − normalWorld.y`: 0 flach (ny≈1), 0.29 ≈ 45°, 0.5 = 60°, 1
+    // senkrecht. Browser-justierbar (Schöpfer-Sign-off), das Erst-Wurf-Profil ist
+    // konservativ (Wiesen bleiben sauber, nur echte Hänge versteinern).
+    static get TERRAIN_GEOLOGY() {
+        return Object.freeze({
+            rockLo: 0.42, // ab dieser Steile (≈55°) beginnt der Fels
+            rockHi: 0.7, // ab hier (≈73°) voll Fels (die Klippe/der Grat)
+            screeLo: 0.2, // Geröll-Zone ab ≈33° (der Übergang, kein hartes Band)
+            screeHi: 0.48,
+            rockTint: [0.4, 0.4, 0.44], // kühler nackter Stein
+            rockLumMix: 0.5, // wie stark die REGIONALE Luminanz den Stein tönt
+            //                  (schneebedeckter Gipfel-Fels heller, Glut-Hang wärmer)
+            rockBand: 0.14, // Sediment-Schichtungs-Bänderung (Noise in Welt-Y)
+            screeMix: 0.5, // Geröll = die Mitte zwischen Boden und Fels
+            mossTint: [0.2, 0.42, 0.17], // sattes Niederungs-Moos
+            mossDampLo: 0.16, // unter dieser Basis-Luminanz = „feucht/Niederung"
+            mossDampHi: 0.34, //   (die Feuchte lebt schon im dampEarth-Basis-Mix)
+            mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
+        });
+    }
+
     // Welle J — die EINE geteilte Aerial-Perspektive (heute `_applySubstanceResponse`), die
     // ALLE opaken Ebenen identisch post-lighting aufrufen. heightWeight/heightCap =
     // der Höhen-Melt zur Himmelsfarbe (scene.fog trägt die Distanz); microStrength/
@@ -24050,6 +24076,22 @@ class AnazhRealm {
                     ? this.state.atmosphere.colorVar
                     : 1.0
             ),
+            // V18.226 (Ω-OPSIS Säule I) — die Multi-Klassen-Geologie-Regler
+            // (render-only, browser-justierbar; 0 = aus → reiner Biom-Albedo,
+            // isoliert die Säule fürs Sehen). `geoRock` = Fels/Geröll-Übernahme an
+            // der Steile, `geoMoss` = Moos auf flach+feucht.
+            //   anazhRealm.state.atmoUniforms.geoRock.value = 0
+            //   anazhRealm.state.atmoUniforms.geoMoss.value = 0
+            geoRock: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.geoRock)
+                    ? this.state.atmosphere.geoRock
+                    : 1.0
+            ),
+            geoMoss: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.geoMoss)
+                    ? this.state.atmosphere.geoMoss
+                    : 1.0
+            ),
             // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph, live-tunbar): wie stark die
             // Boundary-Vertices eines feinen Chunks an die GROBE Nachbar-Oberfläche gezogen werden
             // (1 = voll = die Naht schliesst, 0 = aus = die rohe T-junction). Der Schöpfer dreht im
@@ -24427,7 +24469,19 @@ class AnazhRealm {
             try {
                 const _Ta = THREE.TSL;
                 if (opts.vertexColors === true && _Ta && _Ta.attribute) {
+                    // V18.226 (Ω-OPSIS Säule I) — PBR-Terrain trägt JETZT denselben
+                    // lawful Geologie-Albedo wie Toon (vorher war der reiche colorNode
+                    // toon-only → PBR-Terrain albedo-nackt). Die per-Vertex-Feldfarbe
+                    // → die per-Fragment Multi-Klassen-Geologie; dasselbe als Füll-
+                    // Licht-Albedo + als sichtbarer colorNode.
                     albedoNode = _Ta.attribute("color", "vec3");
+                    if (typeof this._terrainGeologyAlbedo === "function" && _Ta.positionWorld) {
+                        const _geo = this._terrainGeologyAlbedo(_Ta, albedoNode, _Ta.positionWorld);
+                        if (_geo) {
+                            albedoNode = _geo;
+                            if (_Ta.vec4) mat.colorNode = _Ta.vec4(_geo, 1.0);
+                        }
+                    }
                 } else if (isFlatStructure && _Ta && _Ta.vec3) {
                     const _c = new THREE.Color(opts.color);
                     albedoNode = _Ta.vec3(_c.r, _c.g, _c.b);
@@ -24477,6 +24531,65 @@ class AnazhRealm {
         mat.userData.pbrRoughness = params.roughness;
         mat.userData.pbrMetalness = params.metalness;
         return mat;
+    }
+
+    // V18.226 (DER WAHRE ANBLICK — Ω-OPSIS Säule I) — die per-Fragment MULTI-
+    // KLASSEN-GEOLOGIE als EIN geteilter Auslesewert (Toon UND PBR rufen identisch
+    // → S-Gate 0 „Terrain MITeinander", kein divergenter Pfad). Die Albedo erzählt
+    // die Wahrheit, wo sie LIEGT: STEILE (rohe Geometrie-Normale) → Fels/Geröll
+    // bricht durch (Physik); FLACH + FEUCHT (die Feuchte lebt schon im Basis-
+    // Albedo, dampEarth-Mix aus `_attachVoxelFieldColors`) → Moos. smoothstep-
+    // Konkurrenz (kein hartes Band), per-Fragment (kein interpoliertes Vertex-
+    // Trapez). Render-only (kein Geometrie-/Determinismus-/Worker-Eingriff);
+    // try/catch → der unveränderte Albedo zurück (nie ein kaputtes Material).
+    _terrainGeologyAlbedo(_T, albedo, wp) {
+        try {
+            if (!_T || !_T.smoothstep || !_T.normalWorld || !_T.vec3 || !_T.mix || !_T.float) return albedo;
+            const G = AnazhRealm.TERRAIN_GEOLOGY;
+            const au = this.state.atmoUniforms;
+            // STEILE ∈ [0,1] aus der ROHEN Geometrie-Normale (NICHT der geflatteten
+            // Shading-Normale) = die echte Hangneigung.
+            const _steep = _T.float(1.0).sub(_T.normalWorld.y).clamp(0.0, 1.0);
+            const _rockW = _T.smoothstep(_T.float(G.rockLo), _T.float(G.rockHi), _steep);
+            const _screeW = _T
+                .smoothstep(_T.float(G.screeLo), _T.float(G.screeHi), _steep)
+                .mul(_T.float(1.0).sub(_rockW));
+            const _gRock = au && au.geoRock ? au.geoRock : _T.float(1.0);
+            // FELS-FARBE regional konsistent: die Basis-Luminanz tönt den kühlen
+            // Stein (so bleibt Gipfel-Fels heller, Glut-Hang wärmer), gebändert vom
+            // Schichtungs-Noise (Sediment-Strata in Welt-Y).
+            const _lum = albedo.x.mul(0.3).add(albedo.y.mul(0.59)).add(albedo.z.mul(0.11));
+            const _stone = _T.vec3(G.rockTint[0], G.rockTint[1], G.rockTint[2]);
+            const _bandN = _T.mx_noise_float
+                ? _T.mx_noise_float(_T.vec3(wp.x.mul(0.05), wp.y.mul(0.6), wp.z.mul(0.05)))
+                : _T.float(0.0);
+            let _rockCol = _T.mix(_stone, _T.vec3(_lum, _lum, _lum), _T.float(G.rockLumMix));
+            _rockCol = _rockCol.mul(_T.float(1.0).add(_bandN.mul(_T.float(G.rockBand))));
+            const _screeCol = _T.mix(albedo, _rockCol, _T.float(G.screeMix));
+            // Konkurrenz: erst Geröll, dann Fels (Fels dominiert die Mischung).
+            let _out = _T.mix(albedo, _screeCol, _screeW.mul(_gRock));
+            _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
+            // MOOS (Ω-O2): flach + feucht (dunkle Basis-Luminanz) + grün-stichig.
+            const _flat = _T.float(1.0).sub(_steep);
+            const _g2 = _out.y;
+            const _rb2 = _out.x.add(_out.z).mul(0.5);
+            const _lum2 = _out.x.mul(0.3).add(_out.y.mul(0.59)).add(_out.z.mul(0.11));
+            const _green = _T.smoothstep(_T.float(0.0), _T.float(0.1), _g2.sub(_rb2));
+            const _damp = _T.float(1.0).sub(_T.smoothstep(_T.float(G.mossDampLo), _T.float(G.mossDampHi), _lum2));
+            const _mossW = _green.mul(_damp).mul(_flat).mul(_T.float(1.0).sub(_rockW));
+            const _gMoss = au && au.geoMoss ? au.geoMoss : _T.float(1.0);
+            const _moss = _T.vec3(G.mossTint[0], G.mossTint[1], G.mossTint[2]);
+            const _patch = _T.mx_noise_float ? _T.mx_noise_float(wp.mul(0.16)).mul(0.5).add(0.5) : _T.float(0.7);
+            _out = _T.mix(
+                _out,
+                _moss.mul(_T.float(0.8).add(_patch.mul(0.4))),
+                _mossW.mul(_gMoss).mul(_T.float(G.mossMax))
+            );
+            return _out;
+        } catch (_e) {
+            if (typeof window !== "undefined") window.__terrainGeologyError = (_e && _e.message) || String(_e);
+            return albedo;
+        }
     }
 
     _buildToonNodeMaterial(opts = {}) {
@@ -24846,6 +24959,10 @@ class AnazhRealm {
                 // post-lighting. Der colorNode trägt nur noch die ALBEDO (Vertex-
                 // Farbe + triplanar-Textur + Wiese + Tint); die Atmosphäre ist eine
                 // Output-Stufe (siehe `_applySubstanceResponse`, am Ende des Builders).
+                // V18.226 (Ω-OPSIS Säule I) — die per-Fragment Multi-Klassen-Geologie
+                // (Fels/Geröll aus Slope, Moos auf flach+feucht) als geteilter
+                // Auslesewert, der sich auf Triplanar/Wiese/Tint schichtet.
+                _albedo = this._terrainGeologyAlbedo(_T, _albedo, _wp);
                 mat.colorNode = _T.vec4(_albedo, 1.0);
             }
         } catch (_e) {
@@ -67689,7 +67806,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.225.0";
+AnazhRealm.VERSION = "18.226.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
