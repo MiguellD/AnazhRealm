@@ -1063,6 +1063,15 @@ class AnazhRealm {
             //   Lazy initialisiert beim Cutover (perf.c.2).
             archFlattenCache: null,
             archInstanceGroups: null,
+            // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — pro Bauplan-Variante
+            // EINE merged Geometry je (shape, material)-Gruppe (typisch: bark
+            // + foliage). Reduziert die Per-Variante-Draw-Calls von 75-80
+            // (V18.211 rich grammar) auf ~2. Map<bpName, {leaves:[{geom,mat,
+            // localMatrix=Identity}, ...]}>. Vom `_archFlattenBlueprint`-Pfad
+            // gelesen, wenn `bp._isMerged` (genVersion ≥ 6). Beim Welt-Wechsel
+            // disposed via `_loadStateRestoreWorldMeta` (welt-bound, weil die
+            // Geometries an die WELT-gewachsenen Bauplane gebunden sind).
+            archMergedGeomCache: null,
             // Ring 6.4 — Bauplan-Datenschicht. Map<name, blueprint>.
             // Built-ins werden im Konstruktor-Ende über _defaultBlueprints
             // gefüllt; eigene Baupläne (Editor 6.6) kommen dazu und werden
@@ -11991,8 +12000,10 @@ class AnazhRealm {
         // §6 Ω-G1+G4) — 5=die RICH SKELETON-GRAMMAR: multi-level branches
         // (trunk + L1/L2/L3) + foliage at TIPS (anchorLevel) statt 8 Kugeln
         // auf primären Ästen. Spezies-distinkte Form aus SPECIES_GRAMMAR
-        // (§3.3). Frische Welten kriegen direkt 5.
-        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 5;
+        // (§3.3). V18.213 (DER LEBENDIGE GIGANT §1 gigant-fortsetzung-plan) —
+        // 6=plus den MESH-MERGE pro Variante (~37× weniger Draw-Calls pro
+        // grown Bauplan). Frische Welten kriegen direkt 6.
+        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 6;
         // V9.26 Phase 5c-Migrations-Flip + V9.33 Phase 5c.2.b Eingangs-Welt-
         // Flip + V9.35 Phase 5c.2.c.2 Toggle-Tod — der Voxel-Boden ist die
         // kanonische, irreversible Form. V9.35 zieht die ZWANGS-Migration nach:
@@ -12237,7 +12248,7 @@ class AnazhRealm {
         // Gesicht (legacy-erhaltend: das Drainage-Netz-Gesetz, Genese ist
         // Welt-Identität). V18.179: gen 3 schaltet Γ4-Makro-Geographie.
         // V18.210 (§1-A1): gen 4 schaltet Γ7-prozedurale Baum-Bauplane.
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 5 };
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 6 };
     }
 
     // Snapshot einer „leeren" Welt mit gegebenem worldMeta. Optional bekommt
@@ -34285,6 +34296,23 @@ class AnazhRealm {
         // an worldSeed gebunden). Beim Welt-Wechsel: alte Canopy disposen,
         // neue baut sich beim nächsten _ensureCanopyShell oder rAF-Hook.
         if (typeof this._disposeCanopyShell === "function") this._disposeCanopyShell();
+        // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — die merged Geometries
+        // sind welt-spezifisch (an die WELT-gewachsenen Variant-Baupläne
+        // gebunden, deren Keys `grown_<species>_<hash>` welt-spezifisch sind).
+        // Beim Welt-Wechsel: alte merged geoms disposen (Materials sind im
+        // archFlattenCache geteilt → NICHT hier disposen, das macht der
+        // archInstanceGroups-Disposer). Lazy-rebuild beim nächsten
+        // `_archFlattenBlueprint`-Aufruf der neuen Welt.
+        if (this.state.archMergedGeomCache) {
+            for (const entry of this.state.archMergedGeomCache.values()) {
+                if (entry && Array.isArray(entry.leaves)) {
+                    for (const leaf of entry.leaves) {
+                        if (leaf && leaf.geom && typeof leaf.geom.dispose === "function") leaf.geom.dispose();
+                    }
+                }
+            }
+            this.state.archMergedGeomCache.clear();
+        }
         if (state.worldMeta && typeof state.worldMeta === "object") {
             this.state.worldMeta = { ...this.state.worldMeta, ...state.worldMeta };
         } else {
@@ -34591,6 +34619,13 @@ class AnazhRealm {
             const speciesLabel = String(entry._grownSpecies || "Baum")
                 .replace(/^baum_/, "")
                 .replace(/^./, (c) => c.toUpperCase());
+            // V18.213 — das `_isMerged`-Flag ist aus dem WELT-genVersion
+            // ableitbar (gen ≥ 6) und wird NICHT im Snapshot persistiert
+            // (eine Form-Eigenschaft der Welt, kein Bauplan-Datum). So
+            // bleibt das Snapshot-Schema kompakt + Welten mit gen < 6 bauen
+            // automatisch Per-Part (Backward-Kompat).
+            const genVRestore = typeof this._genVersion === "function" ? this._genVersion() : 1;
+            const isMergedRestore = genVRestore >= 6;
             this.state.blueprints[key] = {
                 name: key,
                 label: typeof entry.label === "string" ? entry.label : `${speciesLabel} (gewachsen)`,
@@ -34598,6 +34633,7 @@ class AnazhRealm {
                 _isGrown: true,
                 _grownSpecies: entry._grownSpecies || "baum_eiche",
                 _grownSeed: entry._grownSeed || "",
+                _isMerged: isMergedRestore,
                 instanced: true,
                 parts: parts,
             };
@@ -43401,6 +43437,14 @@ class AnazhRealm {
         const speciesLabel = String(species || "Baum")
             .replace(/^baum_/, "")
             .replace(/^./, (c) => c.toUpperCase());
+        // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — gen ≥ 6 markiert den
+        // gewachsenen Bauplan als merge-fähig. Das Flag steuert NUR den Render-
+        // Pfad in `_archFlattenBlueprint` (zwei merged Leaves statt N Per-Part);
+        // bp.parts bleibt UNVERÄNDERT → computeCompoundTags + Snapshot-Re-Growth
+        // funktionieren wie zuvor. Backward-Kompat: Welten mit gen < 6 setzen
+        // das Flag nicht → V18.211-Per-Part-Pfad bleibt bit-identisch.
+        const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
+        const isMerged = genV >= 6;
         this.state.blueprints[cacheKey] = {
             name: cacheKey,
             label: `${speciesLabel} (gewachsen)`,
@@ -43408,6 +43452,7 @@ class AnazhRealm {
             _isGrown: true,
             _grownSpecies: species,
             _grownSeed: String(seed),
+            _isMerged: isMerged,
             instanced: true,
             parts,
         };
@@ -49119,6 +49164,175 @@ class AnazhRealm {
         return this._buildToonNodeMaterial(matOpts);
     }
 
+    // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — der minimale geom-Merger.
+    // Three.js' BufferGeometryUtils.mergeGeometries ist NICHT im vendored
+    // Bundle; statt einer ganzen Addon-Vendor-Welle ein kontrollierter
+    // ~40-Z.-Merger (Standard-IEEE-Algorithmus). Erwartet: alle Eingangs-
+    // Geometries tragen IDENTISCHE Attribute (position, normal, color);
+    // jede ist optional indexed. Output: nicht-indizierte BufferGeometry
+    // (einfacher Pfad — die V18.211-Tannen-Cylinders+Spheres haben sub-
+    // optimale Index-Reuse-Raten, ein Index-Merge spart hier wenig).
+    _mergeGeometries(geometries) {
+        if (!Array.isArray(geometries) || geometries.length === 0) return null;
+        // 1. Totale Vertex-Anzahl (nicht-indizierte Output-Form).
+        let totalVerts = 0;
+        for (const g of geometries) {
+            if (!g || !g.attributes || !g.attributes.position) return null;
+            // Indexed → wir expandieren beim Lesen via index.
+            const idx = g.index;
+            totalVerts += idx ? idx.count : g.attributes.position.count;
+        }
+        if (totalVerts === 0) return null;
+        const posOut = new Float32Array(totalVerts * 3);
+        const norOut = new Float32Array(totalVerts * 3);
+        const colOut = new Float32Array(totalVerts * 3);
+        // 2. Pro Eingangs-Geometry: Vertices in den Output schreiben.
+        let cursor = 0;
+        for (const g of geometries) {
+            const posIn = g.attributes.position.array;
+            const norIn = g.attributes.normal ? g.attributes.normal.array : null;
+            const colIn = g.attributes.color ? g.attributes.color.array : null;
+            const idx = g.index ? g.index.array : null;
+            const vCount = idx ? idx.length : g.attributes.position.count;
+            for (let i = 0; i < vCount; i++) {
+                const srcIdx = idx ? idx[i] : i;
+                const o3 = (cursor + i) * 3;
+                const s3 = srcIdx * 3;
+                posOut[o3] = posIn[s3];
+                posOut[o3 + 1] = posIn[s3 + 1];
+                posOut[o3 + 2] = posIn[s3 + 2];
+                if (norIn) {
+                    norOut[o3] = norIn[s3];
+                    norOut[o3 + 1] = norIn[s3 + 1];
+                    norOut[o3 + 2] = norIn[s3 + 2];
+                }
+                if (colIn) {
+                    colOut[o3] = colIn[s3];
+                    colOut[o3 + 1] = colIn[s3 + 1];
+                    colOut[o3 + 2] = colIn[s3 + 2];
+                }
+            }
+            cursor += vCount;
+        }
+        const merged = new THREE.BufferGeometry();
+        merged.setAttribute("position", new THREE.BufferAttribute(posOut, 3));
+        merged.setAttribute("normal", new THREE.BufferAttribute(norOut, 3));
+        merged.setAttribute("color", new THREE.BufferAttribute(colOut, 3));
+        merged.computeBoundingBox();
+        merged.computeBoundingSphere();
+        return merged;
+    }
+
+    // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE, gigant-fortsetzung-plan §1).
+    // Mergt einen Bauplan pro Material-Schlüssel zu EINER geom + EINEM mat.
+    // Ein V18.211 rich grammar Baum hat ~75-80 Parts mit nur ZWEI Materials
+    // (`holz` für Stamm/Äste, `laub` für Foliage + Wurzelanlauf) → 75→2
+    // Draw-Calls pro Variante. Per-Part-Farbe (z.B. der Wurzelanlauf-Tint)
+    // wandert in Per-Vertex-Color (vertexColors:true Material liest sie).
+    // Per-Part-Transform (position+rotation+size) wird via applyMatrix4 auf
+    // die Vertices gebacken; die zurückgegebenen Leaves tragen Identity-
+    // localMatrix → `_archInstanceAdd` schreibt die Entry-World-Matrix direkt.
+    //
+    // TAG-NEUTRALITÄT (V17.16-Wand) STRUKTURELL: bp.parts bleibt UNVERÄNDERT;
+    // `computeCompoundTags` läuft weiter über bp.parts → identische Spawn-
+    // Affinität. Der Merge ist eine reine RENDER-Optimierung.
+    _mergeBlueprintByMaterial(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
+        // Gruppiere parts nach Material-Schlüssel. Ein Part ohne `material`
+        // (alte Welten) fällt auf "_default". Wir mergen NICHT nested
+        // Blueprints (shape:"blueprint") — V18.213-Scope ist die V18.211
+        // rich grammar (alles Top-Level holz+laub); nested fraktale werden
+        // weiter als unmergebar markiert (→ Per-Part-Pfad bleibt).
+        const groups = new Map();
+        for (const part of bp.parts) {
+            if (!part || part.shape === "blueprint") return null; // nested → unmergebar
+            if (part.animate === "water_wave") return null; // V18.211-Bäume tragen das nie, aber defensive Wand
+            const key = typeof part.material === "string" ? part.material : "_default";
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(part);
+        }
+        if (groups.size === 0) return null;
+        // Per-Material: Geometries + Per-Vertex-Color sammeln → mergen.
+        const leaves = [];
+        const tmpQuat = new THREE.Quaternion();
+        const tmpVec = new THREE.Vector3();
+        const tmpEuler = new THREE.Euler();
+        const tmpMatrix = new THREE.Matrix4();
+        for (const parts of groups.values()) {
+            const geomsInGroup = [];
+            for (const part of parts) {
+                const geom = this._makePartGeometry(part);
+                if (!geom || !geom.attributes || !geom.attributes.position) continue;
+                // Per-Part-Transform auf die Vertices applyen (Position +
+                // Rotation; size ist schon in _makePartGeometry gebaked).
+                const pos = part.position || { x: 0, y: 0, z: 0 };
+                tmpVec.set(pos.x || 0, pos.y || 0, pos.z || 0);
+                if (part.rotation) {
+                    tmpEuler.set(part.rotation.x || 0, part.rotation.y || 0, part.rotation.z || 0);
+                    tmpQuat.setFromEuler(tmpEuler);
+                } else {
+                    tmpQuat.identity();
+                }
+                tmpMatrix.compose(tmpVec, tmpQuat, new THREE.Vector3(1, 1, 1));
+                geom.applyMatrix4(tmpMatrix);
+                // Sicherstellen, dass normal-Attribut existiert (für Toon-Lit).
+                if (!geom.attributes.normal) geom.computeVertexNormals();
+                // Per-Vertex-Color attachen (uniform pro Part, aus der berechneten
+                // tintedColor — Spiegel zu _archLeafMaterial Brightness-Formel).
+                let baseColor = typeof part.color === "number" ? part.color : null;
+                const partMatDef =
+                    typeof part.material === "string" && this.state.materials
+                        ? this.state.materials[part.material]
+                        : null;
+                if (baseColor === null && partMatDef && typeof partMatDef.color === "number") {
+                    baseColor = partMatDef.color;
+                }
+                if (baseColor === null) baseColor = 0xffffff;
+                const precision = this.computePartPrecision(part);
+                const brightness = 0.6 + 0.4 * Math.max(0, Math.min(1, precision));
+                const r = (((baseColor >> 16) & 0xff) * brightness) / 255;
+                const g = (((baseColor >> 8) & 0xff) * brightness) / 255;
+                const b = ((baseColor & 0xff) * brightness) / 255;
+                const vCount = geom.attributes.position.count;
+                const colArr = new Float32Array(vCount * 3);
+                for (let i = 0; i < vCount; i++) {
+                    colArr[i * 3] = r;
+                    colArr[i * 3 + 1] = g;
+                    colArr[i * 3 + 2] = b;
+                }
+                geom.setAttribute("color", new THREE.BufferAttribute(colArr, 3));
+                geomsInGroup.push(geom);
+            }
+            if (geomsInGroup.length === 0) continue;
+            const merged = this._mergeGeometries(geomsInGroup);
+            // Per-Part-Geometries waren nur Zwischenträger → disposen.
+            for (const g of geomsInGroup) {
+                if (g && typeof g.dispose === "function") g.dispose();
+            }
+            if (!merged) continue;
+            // Material: vertexColors-Variante mit dem Material-Tag-Profil.
+            // Material-Tags aus dem ersten Part (alle in einer Gruppe teilen
+            // matKey → tags identisch). useInstanceTint für lebendig>0.5
+            // (Spiegel zu _archLeafMaterial: laub bekommt Per-Instance-HSL).
+            const refPart = parts[0];
+            const refMatDef =
+                typeof refPart.material === "string" && this.state.materials
+                    ? this.state.materials[refPart.material]
+                    : null;
+            const matOpts = { vertexColors: true };
+            if (refMatDef && refMatDef.tags) {
+                matOpts.tags = refMatDef.tags;
+                const waerme = +refMatDef.tags.lebendig || 0;
+                if (waerme > 0.5) matOpts.useInstanceTint = true;
+            }
+            if (!this.state.toonGradientMap) this._refreshToonGradient();
+            const mat = this._buildToonNodeMaterial(matOpts);
+            leaves.push({ geom: merged, mat, localMatrix: new THREE.Matrix4() });
+        }
+        if (leaves.length === 0) return null;
+        return { leaves };
+    }
+
     // Einen Bauplan flach in Leaf-Primitive auflösen (cached). Nested
     // Blueprints (shape:"blueprint") werden rekursiv mit komponierter
     // Lokal-Matrix eingebettet. Gate (nicht-instancbar) bei:
@@ -49165,6 +49379,31 @@ class AnazhRealm {
             result.reason = "affordance-needs-mesh";
             cache.set(name, result);
             return result;
+        }
+        // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — der MERGE-Pfad: ein
+        // Bauplan mit `_isMerged:true` (gesetzt von `_growTreeBlueprintForSpawn`
+        // bei genVersion ≥ 6) wird einmalig per-Material gemerged. Statt N
+        // Per-Part-Leaves (V18.211: 75-80) liefert der Pfad ~2 Leaves
+        // (typisch holz+laub) → ~37× weniger InstancedMeshes/Draw-Calls pro
+        // Variante. Pin-Cap-Schutz (V18.211): `bp.parts` bleibt unverändert
+        // → computeCompoundTags (Tag-Neutralität, V17.16-Wand) und der
+        // Snapshot-Re-Wachstums-Pfad funktionieren weiter.
+        if (bp._isMerged === true) {
+            if (!this.state.archMergedGeomCache) this.state.archMergedGeomCache = new Map();
+            let mergedEntry = this.state.archMergedGeomCache.get(name);
+            if (!mergedEntry) {
+                mergedEntry = this._mergeBlueprintByMaterial(bp);
+                if (mergedEntry) this.state.archMergedGeomCache.set(name, mergedEntry);
+            }
+            if (mergedEntry && Array.isArray(mergedEntry.leaves) && mergedEntry.leaves.length > 0) {
+                result.instanceable = true;
+                result.leaves = mergedEntry.leaves;
+                result.merged = true; // Diagnose-Marker
+                cache.set(name, result);
+                return result;
+            }
+            // Merge fehlgeschlagen (z.B. nested blueprint im Bauplan) →
+            // fällt auf den Per-Part-Pfad zurück (defensive Wand).
         }
         const MAX_DEPTH = 4;
         const leaves = [];
@@ -65187,7 +65426,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.212.0";
+AnazhRealm.VERSION = "18.213.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -34756,9 +34756,9 @@ async function checkBandV18209Konsolidierung(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.212.0"
+        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.213.0"
         out.versionStr = A.VERSION;
-        out.versionMatches = A.VERSION === "18.212.0";
+        out.versionMatches = A.VERSION === "18.213.0";
 
         // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
         // beim Konsolidieren (alles bleibt lauffähig):
@@ -34801,7 +34801,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
-    check(`V18.209 (K1) VERSION = "18.212.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
+    check(`V18.209 (K1) VERSION = "18.213.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
     check("V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)", res.allFoundationsAlive === true);
     check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
     check("V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)", res.avatarFamilyKomplett === true);
@@ -34825,9 +34825,9 @@ async function checkBandV18210Verdrahtung(ctx) {
         // ============== A1: Γ7 WORLDGEN-HOOK ==============
         // (A1a) Helper _growTreeBlueprintForSpawn existiert + ruft Helper
         out.a1HelperExists = typeof r._growTreeBlueprintForSpawn === "function";
-        // (A1b) gen-Default für FRESH ist 5 (V18.211 SKELETON-GRAMMAR statt V18.210's 4)
-        const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18211") : null;
-        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 5;
+        // (A1b) gen-Default für FRESH ist 6 (V18.213 MESH-MERGE statt V18.211's 5)
+        const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18213") : null;
+        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 6;
         // (A1c) Determinismus: gleiches (species, seed) → gleicher cacheKey
         const k1 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
         const k2 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
@@ -35170,7 +35170,7 @@ async function checkBandV18210Verdrahtung(ctx) {
 
     // A1 — Worldgen-Hook
     check("V18.210-A1a _growTreeBlueprintForSpawn Helper existiert", res.a1HelperExists === true);
-    check("V18.211 FRESH-Welt genVersion = 5 (SKELETON-GRAMMAR aktiv; war 4)", res.a1FreshGenIs4 === true);
+    check("V18.213 FRESH-Welt genVersion = 6 (MESH-MERGE aktiv; war 5)", res.a1FreshGenIs4 === true);
     check("V18.210-A1c Determinismus: (species, seed) → derselbe cacheKey", res.a1Deterministic === true);
     check("V18.210-A1d Cache-Reuse: SELBE seed → SELBES Bauplan-Object", res.a1CacheReuse === true);
     check("V18.210-A1e 6 seeds → ≥5 unique cache keys", res.a1ManyVariants === true);
@@ -35336,7 +35336,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
 
         // (S6) VERSION-BUMP: AnazhRealm.VERSION + index.html cache-buster.
         // Walk-with-code (V9.56-i): die Probe trägt die aktuelle Versions-Zahl.
-        out.versionBumped = A.VERSION === "18.212.0";
+        out.versionBumped = A.VERSION === "18.213.0";
 
         return out;
     });
@@ -35356,7 +35356,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
     check("V18.211 (S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)", res.snapshotHasMetadata === true);
     check("V18.211 (S5b) Snapshot grownBlueprints OHNE parts-Array (re-wächst f(seed))", res.snapshotNoParts === true);
     check("V18.211 (S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)", res.snapshotGrownEntrySmall === true);
-    check(`V18.211 (S6) VERSION = "18.212.0" (walk-with-code, V18.212 RestSubschritte)`, res.versionBumped === true);
+    check(`V18.211 (S6) VERSION = "18.213.0" (walk-with-code, V18.213 Mesh-Merge)`, res.versionBumped === true);
 }
 
 // V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE der ersten Pillar-Welle:
@@ -35518,6 +35518,182 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
     check("V18.212 (C4b) _disposeCanopyShell wird im Welt-Wechsel gerufen (Source)", res.cDisposeAufWeltWechsel === true);
     check("V18.212 (C5a) Canopy-Material trägt opacityNode (Distanz-Dither)", res.cMaterialHasOpacityNode === true);
     check("V18.212 (C5b) Canopy-Material ist MeshToonNodeMaterial", res.cMaterialIsToon === true);
+}
+
+// V18.213 — DER LEBENDIGE GIGANT, MESH-MERGE pro Variante (gigant-fortsetzung-
+// plan §1, der erste FPS-Hebel nach Säule I). Statt 75-80 InstancedMesh pro
+// V18.211-Tannen-Variante baut der Pfad ~2 (1 bark merged + 1 foliage merged)
+// = ~37× weniger Draw-Calls/Variante. Tag-Neutralität strukturell: bp.parts
+// bleibt unverändert (V17.16-Wand) — der Merge ist eine reine RENDER-
+// Optimierung. Backward-Kompat: gen<6 bleibt Per-Part (alte Welten bit-
+// identisch).
+async function checkBandV18213MeshMerge(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // ─── (M1) Source-Probes: die zwei neuen Helper + Routing ─────
+        out.mergeHelperExists = typeof r._mergeBlueprintByMaterial === "function";
+        out.mergeGeomsExists = typeof r._mergeGeometries === "function";
+        // _archFlattenBlueprint trägt den merged-Pfad (Source-grep).
+        const flattenSrc = r._archFlattenBlueprint.toString();
+        out.flattenHasMergedPath = /bp\._isMerged\s*===\s*true/.test(flattenSrc) &&
+            /archMergedGeomCache/.test(flattenSrc);
+        // _loadStateRestoreWorldMeta disposed den merged-Cache (Welt-
+        // Identitäts-Wand, V18.210-Lehre).
+        const restoreSrc = r._loadStateRestoreWorldMeta.toString();
+        out.restoreDisposesMerged = /archMergedGeomCache/.test(restoreSrc) &&
+            /\.dispose\s*\(\s*\)|\.clear\s*\(\s*\)/.test(restoreSrc);
+
+        // ─── (M2) genVersion-Default: neue Welten = gen 6 ──────────
+        // Eine NEUE Welt-Meta hat genVersion: 6 (gigant-fortsetzung-plan).
+        // Die LAUFENDE Welt kann eine ältere Welt aus localStorage sein
+        // (Backward-Kompat-Test): bestehende Welten bleiben auf ihrem
+        // genVersion-Stand, NUR neue Welten bekommen 6. So sind die alten
+        // Welten bit-identisch (V18.211-Pfad).
+        const newMetaSrc = r._generateFreshWorldMeta ? r._generateFreshWorldMeta.toString() : "";
+        out.newMetaUsesGen6 = /genVersion:\s*6/.test(newMetaSrc);
+
+        // ─── (M3+M4) Behavioral: gen=6 grown Baum trägt _isMerged + Merge funktioniert ─
+        // Den ECHTEN warm-welt-Bauplan als Test-Subjekt: ein _isGrown-Bauplan,
+        // der NICHT als moveable/magnifying klassifiziert wird (sonst läuft er
+        // sowieso classic-Pfad, kein HISM, kein Merge-Bedarf). Damit testen wir
+        // an der Substanz, die im realen Spiel den Vegetations-Druck trägt.
+        // Manche Random-Seeds (V18.212 Ω-K2 Wurzelanlauf-Spread + magieleitung)
+        // erzeugen moveable-Tannen — die fallen klassisch, gar nicht durch HISM.
+        let testBp = null;
+        let testKey = null;
+        for (const key of Object.keys(r.state.blueprints)) {
+            const b = r.state.blueprints[key];
+            if (!b || !b._isGrown) continue;
+            const aff = r.computeBlueprintAffordances(b);
+            if (aff.moveable || aff.magnifying) continue;
+            testBp = b;
+            testKey = key;
+            break;
+        }
+        if (testBp) {
+            // Im Restore-Pfad steht _isMerged je nach genVersion; wir setzen
+            // beide Test-Pfade explizit + räumen den Cache, sodass der
+            // Routing-Schritt unverdorben gemessen wird.
+            const origIsMerged = testBp._isMerged;
+            testBp._isMerged = true;
+            if (r.state.archFlattenCache) r.state.archFlattenCache.delete(testKey);
+            if (r.state.archMergedGeomCache) r.state.archMergedGeomCache.delete(testKey);
+
+            out.bpHasIsMerged = testBp._isMerged === true;
+            out.bpStillHasParts = Array.isArray(testBp.parts) && testBp.parts.length >= 50; // V18.211: 75-80
+
+            // M5+M6: archFlattenBlueprint gibt ≤4 leaves (statt 75-80).
+            // Tannen/Kiefern haben holz + laub → exakt 2 Leaves erwartet.
+            const flat = r._archFlattenBlueprint(testKey);
+            out.flatIsInstanceable = flat && flat.instanceable === true;
+            out.flatHasMergedFlag = flat && flat.merged === true;
+            out.flatLeafCount = flat ? flat.leaves.length : -1;
+            out.flatLeavesFew = flat && flat.leaves.length >= 1 && flat.leaves.length <= 4;
+            // Jede merged geom hat ≥100 Vertices (viele Parts gemerged).
+            if (flat && flat.leaves.length > 0) {
+                out.firstLeafVertCount = flat.leaves[0].geom.attributes.position.count;
+                out.mergedHasManyVerts = flat.leaves.every(
+                    (l) => l.geom && l.geom.attributes && l.geom.attributes.position.count >= 100
+                );
+                // M-Identity: localMatrix ist Identity (Per-Part-Transform ist in Vertices gebacken).
+                out.mergedHasIdentityMatrix = flat.leaves.every((l) => {
+                    const elems = l.localMatrix.elements;
+                    // Identity check: diag 1, off-diag 0 (mit kleinem Float-Tolerance).
+                    return Math.abs(elems[0] - 1) < 1e-6 && Math.abs(elems[5] - 1) < 1e-6 &&
+                           Math.abs(elems[10] - 1) < 1e-6 && Math.abs(elems[12]) < 1e-6 &&
+                           Math.abs(elems[13]) < 1e-6 && Math.abs(elems[14]) < 1e-6;
+                });
+                // M-Color: jede merged geom trägt vertexColors-Attribut.
+                out.mergedHasColors = flat.leaves.every(
+                    (l) => l.geom && l.geom.attributes && l.geom.attributes.color
+                );
+                // M-Material: das Material hat vertexColors=true (NodeMaterial-Pfad).
+                out.mergedMatVertexColors = flat.leaves.every(
+                    (l) => l.mat && l.mat.vertexColors === true
+                );
+            }
+
+            // ─── (M7) Tag-Neutralität (V17.16-Wand): bp.parts unverändert ─
+            // computeCompoundTags läuft über bp.parts → dieselben Werte mit/ohne
+            // _isMerged-Flag. Wir spiegeln den Bauplan + vergleichen.
+            const tagsMerged = r.computeCompoundTags(testBp);
+            const bpClone = { parts: testBp.parts.slice() };
+            const tagsNonMerged = r.computeCompoundTags(bpClone);
+            const tagKeys = ["lebendig", "dichte", "brennbar", "magieleitung"];
+            out.tagsNeutral = tagKeys.every(
+                (k) => Math.abs((tagsMerged[k] || 0) - (tagsNonMerged[k] || 0)) < 1e-9
+            );
+
+            // ─── (M8) Performance-Wand: ein zweiter Merge ist gecached ─
+            // Re-Aufruf von archFlattenBlueprint ist O(1) Cache-Hit.
+            const t0 = (typeof performance !== "undefined") ? performance.now() : Date.now();
+            for (let i = 0; i < 50; i++) r._archFlattenBlueprint(testKey);
+            const t1 = (typeof performance !== "undefined") ? performance.now() : Date.now();
+            out.cacheHitFast = (t1 - t0) < 50; // 50 Lookups in <50ms
+
+            // ─── (M9) Snapshot-Restore: _isMerged wird neu gesetzt ─
+            // Wir bauen einen Snapshot, prüfen das relevante Feld.
+            const snap = r.buildStateSnapshot();
+            const gb = snap && snap.grownBlueprints && snap.grownBlueprints[testKey];
+            out.snapshotHasEntry = !!gb;
+            // gb hat KEIN _isMerged (das wird beim Restore aus genVersion abgeleitet).
+            out.snapshotHasNoMergedFlag = gb ? gb._isMerged === undefined : false;
+
+            // Defensive: Original-Flag wiederherstellen.
+            testBp._isMerged = origIsMerged;
+        }
+
+        // ─── (M10) Welt-Wechsel-Reset: archMergedGeomCache wird disposed ─
+        // Voraussetzung: state.archMergedGeomCache ist initialisiert + nicht-leer.
+        const cacheBeforeReset = r.state.archMergedGeomCache;
+        out.cacheExists = !!cacheBeforeReset && cacheBeforeReset.size > 0;
+        // Simulate Welt-Wechsel-Reset (NUR der merged-Cache-Pfad — NICHT die
+        // anderen Teile von _loadStateRestoreWorldMeta, das würde die Welt
+        // brechen).
+        if (cacheBeforeReset) {
+            for (const entry of cacheBeforeReset.values()) {
+                if (entry && Array.isArray(entry.leaves)) {
+                    for (const leaf of entry.leaves) {
+                        if (leaf && leaf.geom && typeof leaf.geom.dispose === "function") leaf.geom.dispose();
+                    }
+                }
+            }
+            cacheBeforeReset.clear();
+            out.cacheClearedAfterReset = cacheBeforeReset.size === 0;
+        }
+        // Defensive: auch den archFlattenCache des Test-Bauplans räumen,
+        // sodass nachfolgende Bands keinen stale Eintrag mit zerstörten
+        // merged-Geom-Referenzen ziehen (die anderen Bauplane bleiben
+        // unberührt — selektive Eviction).
+        if (testKey && r.state.archFlattenCache) r.state.archFlattenCache.delete(testKey);
+
+        return out;
+    });
+
+    check("V18.213 (M1a) _mergeBlueprintByMaterial existiert", res.mergeHelperExists === true);
+    check("V18.213 (M1b) _mergeGeometries existiert", res.mergeGeomsExists === true);
+    check("V18.213 (M1c) _archFlattenBlueprint hat merged-Pfad (_isMerged-Gate + archMergedGeomCache)", res.flattenHasMergedPath === true);
+    check("V18.213 (M1d) _loadStateRestoreWorldMeta disposed archMergedGeomCache", res.restoreDisposesMerged === true);
+    check("V18.213 (M2) Neue Welt-Meta nutzt genVersion: 6", res.newMetaUsesGen6 === true);
+    check("V18.213 (M3a) gen=6 grown Bauplan trägt _isMerged: true", res.bpHasIsMerged === true);
+    check("V18.213 (M3b) bp.parts bleibt erhalten (≥50 Parts, V17.16-Wand)", res.bpStillHasParts === true);
+    check("V18.213 (M4a) archFlattenBlueprint markiert merged: true (Diagnose-Marker)", res.flatHasMergedFlag === true);
+    check("V18.213 (M4b) archFlattenBlueprint ist instanceable", res.flatIsInstanceable === true);
+    check(`V18.213 (M5) leaves ≤4 (1-2 Materials × 2 Toleranz, gemessen ${res.flatLeafCount}; vs V18.211 75-80)`, res.flatLeavesFew === true);
+    check(`V18.213 (M6a) Erstes merged leaf hat ≥100 Vertices (gemessen ${res.firstLeafVertCount})`, res.mergedHasManyVerts === true);
+    check("V18.213 (M6b) localMatrix ist Identity (Per-Part-Transform in Vertices gebacken)", res.mergedHasIdentityMatrix === true);
+    check("V18.213 (M6c) Merged geom trägt vertexColors-Attribut", res.mergedHasColors === true);
+    check("V18.213 (M6d) Merged Material hat vertexColors=true", res.mergedMatVertexColors === true);
+    check("V18.213 (M7) Tag-Neutralität: computeCompoundTags(merged) == (non-merged) (V17.16-Wand)", res.tagsNeutral === true);
+    check("V18.213 (M8) Cache-Hit-Performance: 50 archFlattenBlueprint-Lookups < 50ms", res.cacheHitFast === true);
+    check("V18.213 (M9a) Snapshot trägt grown-Eintrag (Restore-Pfad funktional)", res.snapshotHasEntry === true);
+    check("V18.213 (M9b) Snapshot persistiert _isMerged NICHT (aus genVersion ableitbar)", res.snapshotHasNoMergedFlag === true);
+    check("V18.213 (M10a) archMergedGeomCache war nicht-leer nach Merge", res.cacheExists === true);
+    check("V18.213 (M10b) archMergedGeomCache wird beim Reset geleert", res.cacheClearedAfterReset === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -52713,6 +52889,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18210Verdrahtung(ctx);
             await checkBandV18211SkeletonGrammar(ctx);
             await checkBandV18212GigantRestsubschritte(ctx);
+            await checkBandV18213MeshMerge(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

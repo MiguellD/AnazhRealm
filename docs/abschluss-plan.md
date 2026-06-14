@@ -18,15 +18,18 @@
 
 ---
 
-## §0 — STAND 14.06.2026 (nach V18.211 + V18.212 — DER LEBENDIGE GIGANT)
+## §0 — STAND 14.06.2026 (nach V18.213 — DER LEBENDIGE GIGANT, MESH-MERGE)
 
-**📋 DER VOLLSTÄNDIGE FORTSETZUNG-PLAN für V18.213-V18.219 lebt in `docs/gigant-fortsetzung-plan.md`** — 7 Wellen mit voller Tiefe: Mechanik · Sub-Schritte · Code-Anker · Worker-Mirror · Snapshot · Welt-Wechsel-Reset · Tests · Risiken · Akzeptanz · Abhängigkeiten. Plus Querschnitt-Disziplinen + Test-Effizienz-Pattern + Risiko-Matrix. **Pflichtlektüre vor der nächsten Session.**
+**📋 DER VOLLSTÄNDIGE FORTSETZUNG-PLAN für V18.214-V18.219 lebt in `docs/gigant-fortsetzung-plan.md`** — 6 verbleibende Wellen, V18.213 ✅ GEBAUT (Mesh-Merge mit 38× Draw-Call-Reduktion GEMESSEN). **Pflichtlektüre vor der nächsten Session.**
 
-**20 Wellen V18.193-V18.212 gebaut.** Branch: `claude/kind-rubin-udn6cn`, jüngste Code-Commits:
+**21 Wellen V18.193-V18.213 gebaut.** Branch: `claude/peaceful-goldberg-49tj81`, jüngste Code-Commits:
+- V18.213 — DER LEBENDIGE GIGANT, MESH-MERGE pro Variante (38× Draw-Call-Reduktion)
 - `f447caa` Merge V18.211+V18.212 in main (14.06.)
 - `5b5cef3` V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE Ω-K2 + Ω-W + Ω-H + Ω-C
 - `1f485f3` V18.211 — DER LEBENDIGE GIGANT, SÄULE I (Skeleton-Grammar)
 - `d5d33a1` V18.210 (Schöpfer-Watch + drei Audit-Cycles)
+
+**§3 IST ✅ — V18.213 MESH-MERGE GEBAUT.** Der erste FPS-Hebel nach Säule I. **MECHANIK:** EIN minimaler `_mergeGeometries` (~40 Z., kein Vendor-Addon) + `_mergeBlueprintByMaterial(bp)` gruppiert nach material, applied Per-Part-Transform via applyMatrix4, Per-Vertex-Color aus tintedColor, mergt zu EINER BufferGeometry pro Material-Gruppe. `_archFlattenBlueprint`-Routing: `_isMerged === true` → 2 leaves statt 75-80. **GEMESSEN (`scripts/diag-draw-calls.cjs`):** real Kiefer 76 → 2 leaves, Reduktions-Faktor 38×, Build 10.5ms. Tag-Neutralität bit-identisch (V17.16-Wand STRUKTURELL). genVersion 5→6 für FRESH-Welten (alte Welten gen<6 = V18.211-Per-Part-Pfad bit-identisch, Backward-Kompat). 20 V18.213-Wände grün.
 
 **§2 + §3 (PRIO 2 + 3 dieses Plans) sind ÜBERSPRUNGEN — neuer Plan trat in Kraft:**
 Schöpfer-Auftrag 14.06.2026 nach V18.210 mit Anhang `69189e03-lebendigergigant.md`:

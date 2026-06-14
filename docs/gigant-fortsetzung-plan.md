@@ -1,9 +1,12 @@
-# DER LEBENDIGE GIGANT — FORTSETZUNG (V18.213+)
+# DER LEBENDIGE GIGANT — FORTSETZUNG (V18.214+)
 
 > Sauberes Preplanning für die nächste Session. Jede Welle: Mechanik · Sub-
 > Schritte · Code-Anker · Worker-Mirror · Snapshot · Welt-Wechsel-Reset ·
 > Tests · Risiken · Akzeptanz · Abhängigkeiten. Effiziente Gruppierung von
 > Anpassungen + Tests. Querschnitt-Disziplinen am Ende.
+>
+> **STATUS (14.06.2026):** V18.213 ✅ GEBAUT (Mesh-Merge, 38× Draw-Call-
+> Reduktion gemessen). Sechs verbleibende Wellen, ~7-11 Sessions.
 
 **Schöpfer-Auftrag 14.06.2026 nach Merge V18.211+V18.212:** „nächste session
 schlissen wir die noch offenen punkte aus dem aktuellen plan ab" + „voller
@@ -23,7 +26,7 @@ Plan-§11-Reihenfolge nach unserem Adapter:
 
 | § | Offene Welle | Hebel | Aufwand |
 |---|---|---|---|
-| Mesh | **V18.213 MESH-MERGE pro Variante** | FPS ⬆⬆⬆ | mittel |
+| Mesh | ✅ V18.213 MESH-MERGE (38× gemessen) | FPS ⬆⬆⬆ | GEBAUT |
 | LOD | **V18.214 LOD-STUFEN (3 LODs)** | FPS ⬆⬆ + Distanz ⬆⬆ | mittel |
 | §5 | **V18.215 Ω-B GPU-Feld-Bake** | Vorbedingung §8 | groß |
 | §8 | **V18.216 Ω-S GPU-Compute-Scatter** | Dichte ⬆⬆⬆⬆ | groß |
@@ -63,7 +66,18 @@ ist der GPU-Scatter eine tote LAAS-Kulisse.
 
 ---
 
-## §1 — Welle V18.213: MESH-MERGE pro Variante
+## §1 — Welle V18.213: MESH-MERGE pro Variante — ✅ GEBAUT (14.06.2026)
+
+**Ergebnis GEMESSEN:** `scripts/diag-draw-calls.cjs` an einer warmgelaufenen
+Welt: real Kiefer-Variante 76 leaves (Per-Part, V18.211) → 2 leaves
+(merged, V18.213), **Reduktions-Faktor 38×**, Merge-Bauzeit 10.5ms (<100ms-
+Wand). Tag-Neutralität bit-identisch GEMESSEN (computeCompoundTags
+unverändert, V17.16-Wand strukturell). +20 V18.213-Wände grün in
+`checkBandV18213MeshMerge` (M1-M10). Drei permanente Lehren im CLAUDE.md-
+Stand-Block + handover-Chronik. Volle Versionsdetails in
+`docs/archiv/handover.md` V18.213-Eintrag.
+
+### Original-Ziel (zur Referenz)
 
 **Ziel:** FPS-Hebel + Vorbedingung für GPU-Scatter. Die 75-80 Parts pro
 Baum-Variante (V18.211) erzeugen je eine InstancedMesh (Pattern

@@ -11,9 +11,26 @@
 
 ## Stand (jüngste oben)
 
-**14.06.2026 — V18.211+V18.212 ✅ GEMERGT in main (commit `f447caa`)** — DER LEBENDIGE GIGANT, Säule I + Restsubschritte vollendet.
+**14.06.2026 — V18.213 ✅ FERTIG, Branch `claude/peaceful-goldberg-49tj81`:**
+**DER LEBENDIGE GIGANT, MESH-MERGE pro Variante** — die erste Welle des gigant-fortsetzung-plans, der erste FPS-Hebel nach Säule I.
 
-**📋 NÄCHSTE SESSION:** der vollständige Plan für die GPU-Pipeline + FPS-Hebel + SEELEN-Band liegt in **`docs/gigant-fortsetzung-plan.md`** — 7 Wellen V18.213-V18.219, je 6-15 Wände, Sub-Schritte M1/L1/B1/S1/H1/P1/Q1 mit Code-Ankern + Worker-Mirror-Pflichten + Snapshot-Strategien + Risiken + Akzeptanz-Kriterien. **EFFIZIENZ:** pro Welle EINE checkBand-Funktion mit 4 Sektionen (Source/Behavioral/Edge/Performance), shared Diag-Tools, klare Querschnitt-Disziplinen. **REIHENFOLGE:** Mesh-Merge (V18.213) → LOD (V18.214) → Ω-B GPU-Feld-Bake (V18.215) → Ω-S GPU-Compute-Scatter (V18.216) → ⟡ Ω-H Promotion / SEELEN-Band (V18.217) → Canopy-Vertiefung (V18.218 optional) → PBR (V18.219 optional). Gesamt 8-13 Sessions.
+- **MERGE:** 75-80 Per-Part-Leaves → 2 merged Leaves (bark+foliage) pro Variante
+- **GEMESSEN (`scripts/diag-draw-calls.cjs`):** Reduktions-Faktor **38× weniger Draw-Calls/Variante** an real warmgelaufener Kiefer (76 → 2). Merge-Bauzeit 10.5ms (<100ms-Wand).
+- **TAG-NEUTRALITÄT:** bp.parts unverändert → `computeCompoundTags` bit-identisch (V17.16-Wand STRUKTURELL). Eine Render-Optimierung, kein Substanz-Eingriff.
+- **`_mergeGeometries` Helper** (~40 Z., position+normal+color konkatenieren — kein Vendor-Addon nötig)
+- **`_mergeBlueprintByMaterial(bp)`** gruppiert nach material, applied Per-Part-Transform via applyMatrix4, Per-Vertex-Color aus tintedColor
+- **`_archFlattenBlueprint` Routing**: `bp._isMerged === true` → `archMergedGeomCache`-Lookup/-Bau, returnt `{merged:true, leaves:[2]}`
+- **genVersion 5→6** für FRESH-Welten; alte Welten gen<6 = V18.211-Per-Part-Pfad bit-identisch
+- **Welt-Wechsel:** `_loadStateRestoreWorldMeta` disposed merged Geometries (Welt-Identitäts-Wand)
+- **Snapshot:** `_isMerged` NICHT persistiert (aus `_genVersion()` ableitbar)
+
+20 neue V18.213-Wände grün + ~3500 bestehende grün. Version 18.212→18.213.
+
+**📋 NÄCHSTE SESSION:** der Plan-Rest liegt in **`docs/gigant-fortsetzung-plan.md`** — 6 verbleibende Wellen V18.214-V18.219. **REIHENFOLGE:** ✅ Mesh-Merge (V18.213) → LOD (V18.214) → Ω-B GPU-Feld-Bake (V18.215) → Ω-S GPU-Compute-Scatter (V18.216) → ⟡ Ω-H Promotion / SEELEN-Band (V18.217) → Canopy-Vertiefung (V18.218 optional) → PBR (V18.219 optional). Verbleibend ~7-11 Sessions.
+
+---
+
+**14.06.2026 — V18.211+V18.212 ✅ GEMERGT in main (commit `f447caa`)** — DER LEBENDIGE GIGANT, Säule I + Restsubschritte vollendet.
 
 ---
 
