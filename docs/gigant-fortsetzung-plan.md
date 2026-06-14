@@ -1,4 +1,4 @@
-# DER LEBENDIGE GIGANT — VOLLENDUNG (Stand nach V18.215)
+# DER LEBENDIGE GIGANT — VOLLENDUNG (Stand nach V18.218)
 
 > Sauberes Preplanning für die nächste Session. Die offenen Punkte aus dem
 > lebendiger-gigant-Plan be15a050, in voller Tiefe — Mechanik · Sub-Schritte ·
@@ -10,6 +10,15 @@
 > nächste session, aktualisiere den plan, was noch offen, damit in der
 > nächsten session effektiv fertig, die volle tiefe, die subschritte, nichts
 > mehr kürzen, die wahre tiefe."
+>
+> **STAND 14.06.2026 nach V18.216-V18.218 (drei Wellen in dieser Session):**
+> §1 KARST + Büsche/Understory ✅ · §2 Varianten-Pool ✅ · §3 LOD-Stufen
+> FOUNDATION ✅ (Activation §3.6.1 OPT-IN für V18.218.1 nach Browser-Audit).
+> NÄCHSTE WELLE: §4 V18.219 GPU-Feld-Bake — Voraussetzung der §5 GPU-Compute-
+> Scatter + §6 VOLLE Promotion (das HERZ). Diese Wellen brauchen Three.js'
+> WebGPU-Backend → echte GPU-Hardware für die Pixel-Wahrheit (headless
+> swiftshader fällt zurück auf WebGL2, V10.0-h.b-Lehre). Headless beweist
+> die Foundation; der Schöpfer-Browser beweist den Look.
 
 ---
 
@@ -33,33 +42,78 @@
 
 | Plan-§ | Welle | Tiefe | Aufwand |
 |---|---|---|---|
-| §3.3 KARST-Spezies | V18.216 §1 | ❌ | klein |
-| §3.5+§8.2 Büsche/Understory-Bauplane (Hazel/Farn/Blume) | V18.216 §2 | ❌ | mittel |
-| §2.5 + §6 Varianten-Pool (N + variantSeed[]) | V18.217 | ❌ | mittel — Voraussetzung Ω-H |
-| §3.6 + §6 LOD-Stufen (3 LODs) | V18.218 | ❌ | mittel |
-| §5 Ω-B GPU-Feld-Bake | V18.219 | ❌ | groß — Voraussetzung §8 |
-| §8 Ω-S GPU-Compute-Scatter (3 Schichten) | V18.220 | ❌ | groß — Caps 600k+700k+1.5M |
-| §2 Ω-H VOLLE Promotion-Mechanik | V18.221 | ❌ | mittel — das HERZ |
+| §3.3 KARST-Spezies | V18.216 §1 | ✅ V18.216 | klein |
+| §3.5+§8.2 Büsche/Understory-Bauplane (Hazel/Farn/Blume) | V18.216 §2 | ✅ V18.216 | mittel |
+| §2.5 + §6 Varianten-Pool (N + variantSeed[]) | V18.217 | ✅ V18.217 | mittel — Voraussetzung Ω-H |
+| §3.6 + §6 LOD-Stufen (3 LODs) | V18.218 Foundation | ✅ V18.218 (Activation pending) | mittel |
+| LOD-Activation: per-frame switch + re-allocation + cross-fade | V18.218.1 | ❌ — Schöpfer-Browser-Audit | klein |
+| §5 Ω-B GPU-Feld-Bake | V18.219 | ❌ — braucht WebGPU | groß — Voraussetzung §8 |
+| §8 Ω-S GPU-Compute-Scatter (3 Schichten) | V18.220 | ❌ — braucht WebGPU | groß — Caps 600k+700k+1.5M |
+| §2 Ω-H VOLLE Promotion-Mechanik | V18.221 | ❌ — hängt an §8 | mittel — das HERZ |
 | §9 Canopy chunk-streaming Vertiefung | V18.222 | ❌ | klein |
-| §10 Ω-P PBR-Kohärenz | V18.223 | ❌ | groß — S-Gate 4 |
+| §10 Ω-P PBR-Kohärenz | V18.223 | ❌ — S-Gate 4 | groß — S-Gate 4 |
 
-**Sessions-Schätzung gesamt: 8-13 Sessions.**
+**Sessions-Schätzung Rest: 6-10 Sessions** (3 von 8-13 bereits geleistet).
 
-### Kritische Abhängigkeitskette
+### Stand 14.06.2026 — gebaut in dieser Session
+
+**V18.216 — KARST + Büsche/Understory (§1 GEBAUT):**
+- baum_karst: Plan §3.3 gnarled Klippen-Baum, slopeMax 1.6, drei Ast-Ebenen,
+  L3-Anchor-Krone, dichte+0.10 lebendig-0.05 Variation
+- busch_hazel/farn_busch/blume_gross: drei Bush-Bauplane als eigene
+  SPECIES_GRAMMAR (kein „kleiner Baum"-Hack). Farn ohne L2 (fronds direkt
+  aus der Basis), Blume mit rotem foliage (Variation in Spezies-Optik)
+- Bush-Sub-Spawn-Strategie (b): wenn Baum-probe fail → Substanz-Wahl
+  feuchte/lebendig → Busch am selben Slot
+- 44 Wände in checkBandV18216KarstUndUnderstory
+
+**V18.217 — Varianten-Pool (§2 GEBAUT):**
+- VARIANTS_PER_SPECIES = 16 (Plan-Bereich 8-32)
+- _generateVariantSeedPool(worldSeed): pure deterministisch
+- _ensureVariantSeedPool(): lazy + Migration alter Welten
+- _generateFreshWorldMeta: pinnt Pool sofort (Welt-Genese-Konstante)
+- _growTreeBlueprintForSpawn neue Cache-Key-Form `grown_<species>_v<idx>`
+- bp._variantIndex + bp._grownSeed = variantSeed (Voraussetzung Ω-H)
+- 22 Wände in checkBandV18217VariantenPool, Snapshot-Größe 6.5 KB
+
+**V18.218 — LOD-Stufen Foundation (§3 FOUNDATION GEBAUT):**
+- AnazhRealm.LOD_DISTANCES frozen (80m/160m/10m Hysterese)
+- _growTreeBlueprintRich(species, seed, grammar, opts) erweitert um opts.lod
+- _buildVariantLODs(species, variantIndex) baut alle 3 LODs am exakten Key
+- _chooseLODForDistance(distance, currentLOD) mit Hysterese
+- LOD0 81 parts, LOD1 16, LOD2 7 (gemessen) — strict monoton
+- 3 LOD-Bauplane teilen variantIndex + variantSeed → Form-Identität (Ω-H)
+- compoundTags-Tag-Neutralität LOD0/1/2 (V17.16-Wand strukturell)
+- Totholz LOD2: Snag bleibt Snag (keine synthetisierte Krone)
+- 29 Wände in checkBandV18218LODStufen
+- **Activation pending V18.218.1:** _tickArchitectureLOD + Re-Allokation +
+  Cross-Fade brauchen Schöpfer-Browser-Audit (visueller LOD-Pop)
+
+**Lehre der Session (zwei):**
+1. **Test-Mutation aufräumen (V18.218-Bug):** der V18.217 Migration-Test
+   mutierte worldMeta ohne Restore → Folge-Bands (V18.218) lasen vergifteten
+   Pool, brachen die Welt-Identität. Heilung: savedMeta/finally-Restore.
+   GELERNT: jeder Migration/Mutation-Test räumt selbst auf.
+2. **Walk-with-code Floor (V18.217-Schärfung):** statt scharfer Versions-
+   Zahlen (`A.VERSION === "X.Y.Z"`) prüfen historische Wände einen FLOOR
+   (`A.VERSION ≥ X.Y.Z`). Ein Bump bricht keine alten Wände mehr.
+
+### Kritische Abhängigkeitskette (Stand nach V18.218)
 
 ```
-V18.216 (KARST + Büsche) ─── orthogonal, beliebig
-V18.218 (LOD)             ─── orthogonal, beliebig
+✅ V18.216 KARST + Büsche       — GEBAUT (CPU-only, orthogonal)
+✅ V18.217 Varianten-Pool       — GEBAUT (Voraussetzung Ω-H steht)
+✅ V18.218 LOD-Foundation       — GEBAUT (Bauplane + Chooser; Activation pending)
                                           ▼
-V18.217 Varianten-Pool ──────────────►───┤
+                                  V18.218.1 LOD-Activation (Schöpfer-Browser-Audit)
                                           │
-V18.219 Ω-B Feld-Bake ──────────────►───┤
+V18.219 Ω-B Feld-Bake ──────────────►───┤  (braucht WebGPU)
                                           │
-                                          ▼
-                                  V18.220 Ω-S Scatter
+                                          ▼  [S-Gate 1]
+                                  V18.220 Ω-S Scatter (braucht WebGPU)
                                           │
-                                          ▼
-                                  V18.221 Ω-H Promotion
+                                          ▼  [S-Gate 2]
+                                  V18.221 Ω-H Promotion (das HERZ)
                                           │
 V18.222 Canopy-Streaming ──── orthogonal  │
 V18.223 Ω-P PBR ──── S-Gate 4 Schöpfer-Entscheid (nach V18.221)
