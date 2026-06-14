@@ -34648,6 +34648,90 @@ async function checkBandV18207R5StructureTexture(ctx) {
     check("V18.207 (R3) Default microBoost = 1.0 (no-op, bit-identisch zu Pre-V18.207)", res.defaultIsNoOp === true);
 }
 
+// V18.208 — KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
+// Spieler-Symmetrie): größere Kreaturen sind robuster aber langsamer.
+async function checkBandV18208CreatureSizeSymmetry(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (C1) Source: Größen-Multiplier in computeCreatureStats
+        const src = r.computeCreatureStats.toString();
+        out.hasSizeMul = /creatureSize/.test(src) && /Math\.sqrt/.test(src);
+        out.appliesToHp = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul/.test(src);
+        out.appliesToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
+
+        // (C2) Vergleich: kleine Kreatur (sizeFactor < 1) vs große (>1)
+        if (!A.CREATURE_SOULS) {
+            out.creatureSoulsExists = false;
+            return out;
+        }
+        out.creatureSoulsExists = true;
+
+        // Liste aller built-in Kreatur-Seelen
+        const souls = Object.keys(A.CREATURE_SOULS);
+        out.soulCount = souls.length;
+
+        const stats = {};
+        for (const sn of souls) {
+            const soul = A.CREATURE_SOULS[sn];
+            if (!soul || !Array.isArray(soul.bodyParts)) continue;
+            const sizeFactor = r._compoundSizeFactor({ parts: soul.bodyParts });
+            const fakeCreature = { userData: { soul: sn, boosts: [] } };
+            const cs = r.computeCreatureStats(fakeCreature);
+            stats[sn] = {
+                sizeFactor,
+                hpMax: cs.stats.hpMax,
+                speed: cs.stats.speed,
+            };
+        }
+        out.statsRecord = stats;
+
+        // (C3) Größerer sizeFactor → tendenziell mehr HP, weniger speed
+        // Sortiere nach sizeFactor + prüfe Monotonie
+        const sorted = Object.entries(stats).sort((a, b) => a[1].sizeFactor - b[1].sizeFactor);
+        let hpMonotone = true;
+        let speedMonotone = true;
+        for (let i = 1; i < sorted.length; i++) {
+            // Wenn sizeFactor STRENG größer ist (kein Tie):
+            const sfPrev = sorted[i - 1][1].sizeFactor;
+            const sfCur = sorted[i][1].sizeFactor;
+            if (sfCur - sfPrev > 0.05) {
+                // HP sollte steigen (oder gleich bleiben), speed sollte fallen
+                if (sorted[i][1].hpMax < sorted[i - 1][1].hpMax - 0.5) hpMonotone = false;
+                if (sorted[i][1].speed > sorted[i - 1][1].speed + 0.5) speedMonotone = false;
+            }
+        }
+        out.hpMonotone = hpMonotone;
+        out.speedMonotone = speedMonotone;
+
+        // (C4) Floor-Disziplin: speed >= 2 für alle Kreaturen
+        out.allSpeedAtFloor = Object.values(stats).every((s) => s.speed >= 2);
+
+        // (C5) Es gibt Variation (nicht alle Kreaturen identisch)
+        const hpValues = Object.values(stats).map((s) => s.hpMax);
+        const speedValues = Object.values(stats).map((s) => s.speed);
+        const hpRange = Math.max(...hpValues) - Math.min(...hpValues);
+        const speedRange = Math.max(...speedValues) - Math.min(...speedValues);
+        out.hpVariesAmongCreatures = hpRange > 1;
+        out.speedVariesAmongCreatures = speedRange > 0.5;
+
+        return out;
+    });
+
+    check("V18.208 (C1a) Source: creatureSize + Math.sqrt in computeCreatureStats", res.hasSizeMul === true);
+    check("V18.208 (C1b) hpMax × sizeHpMul angewendet", res.appliesToHp === true);
+    check("V18.208 (C1c) speed × sizeSpeedMul (mit Floor 2) angewendet", res.appliesToSpeed === true);
+    check(`V18.208 (C2) AnazhRealm.CREATURE_SOULS existiert (${res.soulCount} Seelen)`, res.creatureSoulsExists === true);
+    check(`V18.208 (C3a) HP-Monotonie über Kreatur-Spektrum (größer = mehr HP)`, res.hpMonotone === true);
+    check(`V18.208 (C3b) Speed-Monotonie (größer = langsamer)`, res.speedMonotone === true);
+    check("V18.208 (C4) Floor speed ≥ 2 für alle Kreatur-Seelen", res.allSpeedAtFloor === true);
+    check(`V18.208 (C5a) HP variiert über Kreaturen (kein einheitlicher Wert)`, res.hpVariesAmongCreatures === true);
+    check(`V18.208 (C5b) Speed variiert über Kreaturen`, res.speedVariesAmongCreatures === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -51836,6 +51920,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18205Gamma7Grammatik(ctx);
             await checkBandV18206SpeedTrade(ctx);
             await checkBandV18207R5StructureTexture(ctx);
+            await checkBandV18208CreatureSizeSymmetry(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

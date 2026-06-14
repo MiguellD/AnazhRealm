@@ -53,6 +53,7 @@ Backlog-Punkte §4 (nächste in Reihe).
 | **Γ7 Baum-Varianten-Grammatik (`_growTreeBlueprint(speciesKey, seed)` emittiert parts[]: Stamm-Kette mit wander+taper, Whorl-Äste, Laub nur an Ast-Enden, tag-neutral)** | **V18.205** | `docs/aktiv.md` §4.A + unten §1.M |
 | **Avatar-Größe-Speed-Trade (1/sqrt(sizeFactor) auf speed/attackSpeed/jumpPower — ehrlicher Balance-Schluss zu V18.195)** | **V18.206** | `docs/aktiv.md` §4.D + unten §1.N |
 | **R5 Struktur-Textur (microBoost-Konstante für werk-Profile in `_applySubstanceResponse`)** | **V18.207** | `docs/aktiv.md` §4.C + unten §1.O |
+| **Kreatur-Größen-Stat-Symmetrie (Größen-Trade auch für Kreaturen — wie Spieler V18.195+V18.206; HP-/Speed-Monotonie GEMESSEN)** | **V18.208** | `docs/aktiv.md` §4.E + unten §1.P |
 
 ---
 

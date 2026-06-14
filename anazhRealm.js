@@ -14397,6 +14397,27 @@ class AnazhRealm {
         // Trade-off „leicht = flink, schwer = träge" bleibt: leichte Geräte liegen klar über dem Floor.
         if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
         if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
+        // V18.208 — KREATUR-GRÖSSEN-STAT-SYMMETRIE: analog zu V18.195+V18.206
+        // (Spieler). Größere Kreaturen sind robuster (mehr HP/Stamina/Mana)
+        // aber langsamer (weniger speed/attackSpeed/jumpPower) — emergent aus
+        // der Substanz, kein Hand-Tuning. Die `_compoundSizeFactor` ist
+        // bounded [0.7, 1.7] (V18.154 Σ-Substanz-Volumen), sqrt davon → mul
+        // ∈ [0.84, 1.30]. Ein kleines Insekt-Wesen ist flink + zerbrechlich,
+        // ein massiver Drache robust + träge — die Hylomorphismus-Form auf
+        // Kreaturen angewandt (die Vision der lebenden Welt).
+        const creatureSoulName = creature.userData && creature.userData.soul;
+        const creatureSoul = creatureSoulName && AnazhRealm.CREATURE_SOULS && AnazhRealm.CREATURE_SOULS[creatureSoulName];
+        if (creatureSoul && Array.isArray(creatureSoul.bodyParts)) {
+            const creatureSize = this._compoundSizeFactor({ parts: creatureSoul.bodyParts });
+            const sizeHpMul = Math.sqrt(creatureSize);
+            const sizeSpeedMul = 1 / sizeHpMul;
+            if (Number.isFinite(stats.hpMax)) stats.hpMax = stats.hpMax * sizeHpMul;
+            if (Number.isFinite(stats.staminaMax)) stats.staminaMax = stats.staminaMax * sizeHpMul;
+            if (Number.isFinite(stats.manaMax)) stats.manaMax = stats.manaMax * sizeHpMul;
+            if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed * sizeSpeedMul);
+            if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed * sizeSpeedMul);
+            if (Number.isFinite(stats.jumpPower)) stats.jumpPower = stats.jumpPower * sizeSpeedMul;
+        }
         return { tags: finalTags, stats };
     }
 
@@ -64000,7 +64021,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.207.0";
+AnazhRealm.VERSION = "18.208.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
