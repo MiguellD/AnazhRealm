@@ -347,8 +347,8 @@ Aus `gigant-plan §5-G4`:
 ## §15 — DIE REIHENFOLGE (durchziehen, keine Pausen)
 
 ```
-V18.210  PRIO 1: Verdrahtungs-Welle (4 Sub-Akte: A1-A4)
-V18.211  PRIO 2: Browser-Sign-off-Galerie (25 Schliffe, B1-B25)
+V18.210  PRIO 1: Verdrahtungs-Welle (4 Sub-Akte: A1-A4) ✅ FERTIG
+V18.211  PRIO 2: Browser-Sign-off-Galerie (26 Schliffe, B1-B26 inkl. A1-Region-Naht) ← NÄCHSTE
 V18.212  PRIO 3: R2 Normale-backen
 V18.213  PRIO 3: R3 Kanten-Schärfe
 V18.214  PRIO 3: U2 Wasser-LOD
