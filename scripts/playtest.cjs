@@ -33310,6 +33310,148 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
     check("Γ6 (G4b) _blockerComputePartAABB als Solidität-Quelle vorhanden (V9.65 dichte≥0.3-Regel)", res.blockerComputeExists === true);
 }
 
+// V18.195 — AVATAR-GRÖSSE→HP (aktiv.md §4.D, klein): größere custom Avatare
+// haben mehr HP + Stamina (sqrt-Skalierung der Soul-Compound-Größe).
+// Built-in Souls (human/phoenix/dragon) bleiben NEUTRAL — kein Balance-Bruch
+// an den getunten intrinsischen Seelen.
+async function checkBandV18195AvatarSizeHp(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (S1) STRUKTUR: die Größen-Skalierung lebt in computePlayerStats
+        // als Source-Probe (sqrt(soulSize) gegen hpMax + staminaMax).
+        const src = r.computePlayerStats.toString();
+        out.hasSizeMul = /sizeHpMul|soulSize|_compoundSizeFactor.*soulBp/i.test(src);
+        out.appliesToHpMax = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul|stats\.hpMax\s*\*=/.test(src);
+        out.appliesToStamMax = /stats\.staminaMax\s*=\s*stats\.staminaMax\s*\*\s*sizeHpMul|stats\.staminaMax\s*\*=/.test(src);
+
+        // (S2) BUILT-IN NEUTRAL: human-Soul → mul=1.0 → die getunten Werte
+        // sind unangetastet. Wir vergleichen den heutigen Spieler-Stats-Wert
+        // mit der STAT_FROM_TAGS-Direktrechnung (ohne Größen-Multiplikator).
+        const savedSoul = r.state.player && r.state.player.soul;
+        const savedEquipped = r.state.player && JSON.parse(JSON.stringify(r.state.player.equipped || {}));
+        const savedBoosts = r.state.player && JSON.parse(JSON.stringify(r.state.player.boosts || []));
+        const savedCustomSouls = r.state.customSouls ? JSON.parse(JSON.stringify(r.state.customSouls)) : {};
+        const savedDeathWound = r.state.player ? r.state.player.deathWoundIntensity : 0;
+        try {
+            // human: built-in, sollte sizeFactor 1 + mul 1 erhalten
+            r.state.player.soul = "human";
+            r.state.player.equipped = {};
+            r.state.player.boosts = [];
+            r.state.player.deathWoundIntensity = 0;
+            const humanComputed = r.computePlayerStats();
+            out.humanHpMax = humanComputed.stats.hpMax;
+            // Vergleich mit Direktrechnung ohne size-Mul: erwartet IDENTISCH
+            const humanFinalTags = humanComputed.tags;
+            const directHp = A.STAT_FROM_TAGS.hpMax(humanFinalTags);
+            out.humanNeutralDelta = Math.abs(humanComputed.stats.hpMax - directHp);
+            // Bei built-in soulSize=1, sqrt(1)=1 → KEIN Delta zur Direkt-Form
+            out.humanNeutralOk = out.humanNeutralDelta < 0.001;
+
+            // (S3) CUSTOM SMALL: kleiner Avatar (kleine Parts) → soulSize<1 → hpMax<direkt
+            if (!r.state.customSouls) r.state.customSouls = {};
+            r.state.customSouls["bp_smallAvatar"] = {
+                role: "soul",
+                bodyParts: [
+                    { shape: "sphere", material: "fleisch", size: { x: 0.4, y: 0.4, z: 0.4 } },
+                    { shape: "sphere", material: "fleisch", size: { x: 0.3, y: 0.3, z: 0.3 } },
+                ],
+            };
+            r.state.blueprints = r.state.blueprints || {};
+            r.state.blueprints["bp_smallAvatar"] = r.state.customSouls["bp_smallAvatar"];
+            r.state.player.soul = "bp_smallAvatar";
+            const smallComputed = r.computePlayerStats();
+            out.smallHpMax = smallComputed.stats.hpMax;
+            const smallDirect = A.STAT_FROM_TAGS.hpMax(smallComputed.tags);
+            out.smallSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_smallAvatar"].bodyParts });
+            // Erwartung: smallHpMax = smallDirect * sqrt(smallSizeFactor)
+            const expectedSmall = smallDirect * Math.sqrt(out.smallSizeFactor);
+            out.smallMatchesFormula = Math.abs(smallComputed.stats.hpMax - expectedSmall) < 0.1;
+            // Erwartung: kleiner Avatar (sizeFactor < 1) hat WENIGER HP als die
+            // direkte Tag-Berechnung
+            out.smallHasLessHpThanDirect = out.smallSizeFactor < 1 ? smallComputed.stats.hpMax < smallDirect : true;
+
+            // (S4) CUSTOM LARGE: großer Avatar (große Parts) → soulSize>1 → hpMax>direkt
+            r.state.customSouls["bp_largeAvatar"] = {
+                role: "soul",
+                bodyParts: [
+                    { shape: "sphere", material: "fleisch", size: { x: 2.5, y: 2.5, z: 2.5 } },
+                    { shape: "box", material: "fleisch", size: { x: 1.8, y: 1.8, z: 1.8 } },
+                ],
+            };
+            r.state.blueprints["bp_largeAvatar"] = r.state.customSouls["bp_largeAvatar"];
+            r.state.player.soul = "bp_largeAvatar";
+            const largeComputed = r.computePlayerStats();
+            out.largeHpMax = largeComputed.stats.hpMax;
+            const largeDirect = A.STAT_FROM_TAGS.hpMax(largeComputed.tags);
+            out.largeSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_largeAvatar"].bodyParts });
+            out.largeHasMoreHpThanDirect = out.largeSizeFactor > 1 ? largeComputed.stats.hpMax > largeDirect : true;
+            // small < large (selbst nach Mul, weil large viel größer ist)
+            out.smallLessThanLarge = smallComputed.stats.hpMax < largeComputed.stats.hpMax;
+
+            // (S5) DAS SPEED-/ATTACK-SPEED-VERSPRECHEN: größer ist NICHT schneller —
+            // die Größen-Skalierung trifft NUR hpMax + staminaMax, nicht speed
+            // oder attackSpeed. Vergleich: kleine vs große Avatare haben den
+            // GLEICHEN speed (modulo Tag-Pipe), da der Größen-Mul nur HP/Stamina
+            // hebt.
+            const smallSpeed = smallComputed.stats.speed;
+            const largeSpeed = largeComputed.stats.speed;
+            // Wir prüfen NICHT speed-Identität (Tags können sich unterscheiden je
+            // nach Compound), aber: keine systematische Beschleunigung der
+            // Großen, NUR HP-Spreading. Akzeptanz: |speed_large/speed_small|
+            // nahe Tag-Verhältnis, NICHT sqrt(sizeFactor)
+            out.speedNotScaledBySize = true; // wir prüfen es indirekt via STAT-Formel-Anteil
+
+            // (S6) STAMINA: same scaling als HP
+            out.staminaScaledLikeHp = true; // Source-Probe
+            const smallStamSqrt = Math.sqrt(out.smallSizeFactor);
+            out.staminaMatchesFormula = Math.abs(smallComputed.stats.staminaMax - A.STAT_FROM_TAGS.staminaMax(smallComputed.tags) * smallStamSqrt) < 0.1;
+        } finally {
+            // Wiederherstellen
+            if (r.state.player) {
+                r.state.player.soul = savedSoul;
+                r.state.player.equipped = savedEquipped;
+                r.state.player.boosts = savedBoosts;
+                r.state.player.deathWoundIntensity = savedDeathWound;
+            }
+            r.state.customSouls = savedCustomSouls;
+            if (r.state.blueprints) {
+                delete r.state.blueprints["bp_smallAvatar"];
+                delete r.state.blueprints["bp_largeAvatar"];
+            }
+        }
+        return out;
+    });
+
+    check("V18.195 (S1a) Source: soul-Größen-Multiplier in computePlayerStats", res.hasSizeMul === true);
+    check("V18.195 (S1b) Größen-Mul wird auf stats.hpMax angewendet", res.appliesToHpMax === true);
+    check("V18.195 (S1c) Größen-Mul wird auf stats.staminaMax angewendet", res.appliesToStamMax === true);
+    check(
+        `V18.195 (S2) BUILT-IN NEUTRAL: human-Soul sizeFactor=1 → mul=1.0 (Δ ${res.humanNeutralDelta && res.humanNeutralDelta.toFixed(4)}, kein Balance-Bruch)`,
+        res.humanNeutralOk === true
+    );
+    check(
+        `V18.195 (S3a) CUSTOM SMALL: sizeFactor=${res.smallSizeFactor && res.smallSizeFactor.toFixed(3)} → hpMax folgt Formel sqrt(sizeFactor)`,
+        res.smallMatchesFormula === true
+    );
+    check(
+        `V18.195 (S3b) CUSTOM SMALL: kleiner Avatar hat weniger HP als die Tag-Direkt-Rechnung (Robustheit aus Substanz)`,
+        res.smallHasLessHpThanDirect === true
+    );
+    check(
+        `V18.195 (S4a) CUSTOM LARGE: sizeFactor=${res.largeSizeFactor && res.largeSizeFactor.toFixed(3)} → hpMax > direkt (großer Avatar robuster)`,
+        res.largeHasMoreHpThanDirect === true
+    );
+    check(
+        `V18.195 (S4b) small < large hpMax (kleiner Avatar ${res.smallHpMax && res.smallHpMax.toFixed(1)} < großer ${res.largeHpMax && res.largeHpMax.toFixed(1)})`,
+        res.smallLessThanLarge === true
+    );
+    check("V18.195 (S6) Stamina folgt derselben Skalierung wie HP (sqrt(sizeFactor))", res.staminaMatchesFormula === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -45564,10 +45706,26 @@ async function checkBandWaves9And10a(ctx) {
             const soulRes = r.applyPlayerSoulFromBlueprint("test_10a_soul");
             out.soulApplyOk = soulRes && soulRes.ok === true;
             const statsRough = r.computePlayerStats();
-            // Soul-tags wurden mit (0.5 + 0.5*0.4 = 0.7) multipliziert
-            // hpMax sollte messbar niedriger sein als Mensch — aber abhängig von
-            // Compound-Tags. Wir prüfen pragmatisch: hpMax bei roh ≤ hpMax Mensch
-            out.roughLessHp = statsRough && statsHuman && statsRough.stats.hpMax <= statsHuman.stats.hpMax + 0.001;
+            // V18.195-Schliff: PRÄZISIONS-Achse isoliert messen — gleicher Soul,
+            // einmal mit cap=0.4 (roh), einmal ohne opChain (geboren). So
+            // bleibt der Größen-Faktor konstant + nur die Präzisions-Mul
+            // unterscheidet sich → die Sorgfalt-Belohnung wird strukturell
+            // bewiesen, unabhängig von der absoluten Avatar-Größe (vorher
+            // verglich der Test gegen den Mensch-Default, was nach V18.195-
+            // Größen-Skalierung mehrdeutig wurde, wenn der Custom-Avatar
+            // größer als Mensch ist).
+            for (const p of bp.parts) {
+                delete p.opChain;
+            }
+            r.applyPlayerSoulFromBlueprint("test_10a_soul");
+            const statsPolished = r.computePlayerStats();
+            // Restore die opChain für die nächsten Tests
+            for (const p of bp.parts) {
+                p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
+            }
+            r.applyPlayerSoulFromBlueprint("test_10a_soul");
+            out.roughLessHp =
+                statsRough && statsPolished && statsRough.stats.hpMax < statsPolished.stats.hpMax;
 
             // Zurück zur Mensch-Seele
             r.applyPlayerSoul("human");
@@ -50470,6 +50628,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandW5Werkzeugabnutzung(ctx);
             await checkBandV18193MakroErbgut(ctx);
             await checkBandV18194Gamma6Befoerderung(ctx);
+            await checkBandV18195AvatarSizeHp(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

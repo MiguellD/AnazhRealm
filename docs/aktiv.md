@@ -40,6 +40,7 @@ Backlog-Punkte §4 (nächste in Reihe).
 | **W5 Werkzeug-Abnutzung (R-031: Ω5 lebt am Werkzeug — Mühe-Senke + Reparieren-Akt, Migration-tolerant)** | **V18.192** | unten §1.A + `docs/rueckmeldung.md` R-031 |
 | **Γ4 echter MAKRO-ANKER (R-042: ERBGUT + Abfluss-Invariante + Worker-Mirror — LAAS-Narbe strukturell tot)** | **V18.193** | `docs/archiv/genese-plan.md` §Γ4 + `docs/rueckmeldung.md` R-042 |
 | **Γ6-Beförderung (snowband + chunk-seam + false-swim + arch-water-solid → vier stehende Bänder)** | **V18.194** | `docs/archiv/genese-plan.md` §Γ6 + `docs/rueckmeldung.md` R-042 |
+| **Avatar-Größe→HP (sqrt(sizeFactor) auf hpMax + staminaMax, built-in NEUTRAL)** | **V18.195** | `docs/aktiv.md` §4.D + unten §1.C |
 
 ---
 
@@ -182,7 +183,7 @@ V18.132 ferne Welten). Was noch offen — alles Profi-Feinschliff:
 | **S7-C chat/DSL-Vereinheitlichung** | Crafting via Chat-Befehl (S7-Schluss) | klein-mittel |
 | **S8 Teilen-Konsistenz** | Bauplan-Teilen-Ende-zu-Ende-Audit | mittel |
 | **A2 Crafting-Fluss-Audit** | Schöpfer-Browser-Audit des FERTIGEN-Flusses | nur Sign-off |
-| **Avatar-Größe→HP** | größere Avatare haben mehr HP (heute uniform) | klein |
+| ~~**Avatar-Größe→HP**~~ | **✓ GEBAUT V18.195:** sqrt(soulSizeFactor) auf stats.hpMax + stats.staminaMax (kleiner Avatar sizeFactor 0.7 → ~84%, großer Avatar 1.7 → ~130%). Built-in Souls (human/phoenix/dragon) bleiben NEUTRAL (sizeFactor=1, mul=1.0) — kein Balance-Bruch. NUR HP/Stamina; speed/attackSpeed bleiben Material-Tag-getrieben (größer = robuster + langsamer, nicht größer = stärker in allem). 9 Wände `checkBandV18195AvatarSizeHp`. | **✓ GEBAUT** |
 | **LLM-Manifest** | LLM-Begleiter-Welt-Manifest (S7-C-Erweiterung) | mittel |
 
 ### 4.E — LEBENDIGES FELD/NEXUS (drei Vertiefungen, mittel)

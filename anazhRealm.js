@@ -42691,6 +42691,25 @@ class AnazhRealm {
         // Trade-off „leicht = flink, schwer = träge" bleibt: leichte Geräte liegen klar über dem Floor.
         if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
         if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
+        // V18.195 — die SOUL-GRÖSSE hebt HP + Stamina (Avatar-Robustheit
+        // emergent aus der Substanz, statt uniform wie vor V18.195). Eine
+        // sqrt-Skalierung ist genre-üblich (Genshin/MMOs: größer = robuster
+        // aber nicht linear, sonst kippt die Balance). Built-in Souls
+        // (human/phoenix/dragon) bekommen einen NEUTRALEN Default
+        // (sizeFactor=1, mul=1.0), die getunten Werte bleiben unangetastet —
+        // kein Balance-Bruch an den intrinsischen Seelen. Custom-Avatare
+        // (geschmiedete Bauplane mit role:"soul") bekommen den Größen-Hebel:
+        // ein winziger Avatar (sizeFactor 0.7) → ~84 % HP/Stamina, ein
+        // massiver Avatar (sizeFactor 1.7) → ~130 %. Achtung: NUR HP +
+        // Stamina; speed/attackSpeed/damage bleiben durch die Material-Tag-
+        // Pipe getrieben (sonst wäre ein Großer auch flinker, das wäre nicht
+        // intuitiv — größer = robuster + langsamer, nicht größer = stärker
+        // in allem).
+        const soulBpForSize = { parts: (soul && soul.bodyParts) || [] };
+        const soulSize = isBuiltinSoul ? 1 : this._compoundSizeFactor(soulBpForSize);
+        const sizeHpMul = Math.sqrt(soulSize);
+        if (Number.isFinite(stats.hpMax)) stats.hpMax = stats.hpMax * sizeHpMul;
+        if (Number.isFinite(stats.staminaMax)) stats.staminaMax = stats.staminaMax * sizeHpMul;
         return { tags: finalTags, stats };
     }
 
@@ -63560,7 +63579,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.194.0";
+AnazhRealm.VERSION = "18.195.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
