@@ -6,7 +6,7 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand: `main` @ V18.172 (Merge `claude/bold-bardeen-ky7gmx`, 12.06.2026) — der aktive Marsch lebt in `docs/archiv/meister-plan.md` §8.8.**
+> **Stand: `main` @ V18.172 (Merge `claude/bold-bardeen-ky7gmx`, 12.06.2026); aktiv `claude/relaxed-hawking-dzkj9g` @ V18.210 — der EINE PLAN lebt in `docs/abschluss-plan.md` (V18.211-V18.250+), der aktive Tisch in `docs/aktiv.md`. Der frühere Marsch `meister-plan.md §8.8` ist ARCHIVIERT.**
 
 ---
 

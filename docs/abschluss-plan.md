@@ -18,21 +18,28 @@
 
 ---
 
-## §0 — DIAGNOSE 14.06.2026 (read-as-stranger nach voller Audit)
+## §0 — STAND 14.06.2026 (nach V18.210-VERDRAHTUNGS-WELLE + Audit-Zyklus)
 
-**17 Wellen V18.193-V18.209 gebaut.**
+**18 Wellen V18.193-V18.210 gebaut.** Stamm: `claude/relaxed-hawking-dzkj9g`, jüngster Commit `d5d33a1`.
 
-**VOLL VERDRAHTET im Spiel (12):** V18.193 ERBGUT · V18.194 Γ6-Bänder · V18.195 Spieler HP/Stamina · V18.196 Mana-Stat+Regen · V18.197 STRATA · V18.198 stamm_gefallen Sub-Spawn · V18.199 LICHEN Mix-Stack · V18.200 IRON-BANDS · V18.203/.204 Γ3 worldFieldAt · V18.206 Spieler-Speed · V18.208 Kreatur-Größe.
+**§1 IST ✅ — V18.210 VERDRAHTUNGS-WELLE KOMPLETT.** Die vier Passagier-Foundations sind verdrahtet, ~35 neue Wände grün, smoke:multiuser grün. Plus DREI Audit-Cycles:
+- **Sub-Agent read-as-stranger** fand FÜNF Mängel (drei kritisch — Persistenz-Riss, LRU-Race, Spezies-Kollaps; zwei kosmetisch — Return-Symmetrie, Test-Hygiene). Alle geheilt (commit `fa70879`).
+- **Selbst-Audit nach „bist du synergetisch?"** fand SECHSTEN Mangel: `_growTreeNoise`-Welt-Wechsel-Reset (P2P-Drift-Klasse). Geheilt (commit `8cdddb8`).
+- **Schöpfer-Audit (vier Watch-Items)** fand DREI weitere: A3-Perf-Memoization, A2-Mini-Passagier (tote Branch), Test-Harness-Disziplin. Heilungen drei davon (commit `d5d33a1`); das vierte (A1-Region-Naht) ist explizit auf §2 B-26 verschoben.
 
-**PASSAGIER (gebaut, KEIN Spiel-Konsument):** V18.201 `_drainMana`/`_canPayMana` · V18.202 `_scentAt`/`_worldWindDirAt` · V18.205 `_growTreeBlueprint` · V18.207 R5 microBoost=1.0.
+**VOLL VERDRAHTET im Spiel (16):** V18.193 ERBGUT · V18.194 Γ6-Bänder · V18.195 Spieler HP/Stamina · V18.196 Mana-Stat+Regen · V18.197 STRATA · V18.198 stamm_gefallen Sub-Spawn · V18.199 LICHEN Mix-Stack · V18.200 IRON-BANDS · V18.203/.204 Γ3 worldFieldAt · V18.206 Spieler-Speed · V18.208 Kreatur-Größe · **V18.210-A1 Γ7 Worldgen-Hook (Region-Cache + SPECIES_PROFILE + Snapshot-Persistenz)** · **V18.210-A2 R5 Live-Slider** · **V18.210-A3 Scent-KI** · **V18.210-A4 Mana-Konsument γ**.
 
-**Ehrlich-falsch in V18.209-Konsolidierung:** Mein erster abschluss-plan war NICHT vollständig — ich verließ mich auf `aktiv.md §4` + `roadmap.md §4` + mein Wissen, statt alle 53 Plan-Files systematisch zu prüfen. Im zweiten Schöpfer-Audit fand ich 30+ weitere OFFENe Punkte in `gigant-plan.md`, `terrain-koharenz-plan.md`, `wasser-finale-form-plan.md`, `tiefe-fundament-plan.md`, `ich-plan.md`, `hof-plan.md`, `bibliothek-plan.md`, `einstellungen-plan.md`, `menu-feld-plan.md`, `meister-plan.md`, `kampf-plan.md`, `emotion-kern-plan.md`, `robustheit-plan.md`, `lod-kaskade-plan.md`, `genese-plan.md`, `terrain-t4-wasser-ca-plan.md`. **Dieser §0 ist die einzige Stelle, an der diese Mess-Schuld eingestanden wird; alle gefundenen Punkte sind jetzt in §1-§14 eingearbeitet.**
+**0 PASSAGIER MEHR.** Die Welle hat ihr Ziel erreicht: jeder Helper hat einen echten Konsumenten.
+
+**Permanente Lehren V18.210 (in CLAUDE.md):**
+1. Wenn ein Generator in einen INSTANCING-Konsumenten hängt, MUSS die Cache-Granularität GEGEN den Konsumenten gemessen werden — Hash-pro-Spawn bricht das Pattern; REGION-Caching ist die synergetische Form.
+2. Headless-grün ≠ fertig. Ein feindlicher read-as-stranger Selbst-Review NACH der ersten grünen Wand fing fünf echte Mängel — drei davon hätten das Werk im Browser zerbrochen.
 
 ---
 
-## §1 — PRIO 1: VERDRAHTUNGS-WELLE V18.210 ✅ GEBAUT (14.06.2026, 0f4956b+folgend)
+## §1 — ~~PRIO 1: VERDRAHTUNGS-WELLE V18.210~~ ✅ ABGESCHLOSSEN (14.06.2026, commits `fa70879` + `8cdddb8` + `d5d33a1`)
 
-**Eine Welle, vier Sub-Akte. Synergie: alle vier folgen R2-strukturell + Anti-Scope §3. Alle Wände grün (~3500 Invarianten).**
+**Eine Welle, vier Sub-Akte + drei Audit-Cycles. Alle Wände grün (~3500 Invarianten), smoke:multiuser grün. § FÄLLT bei nächster Konsolidierung — der Block bleibt zur Lehre stehen, bis V18.211 ihn überrundet.**
 
 ### A1 — V18.205 `_growTreeBlueprint` → Worldgen-Hook ✅ (+5 Audit-Heilungen)
 - **Gebaut:** `_growTreeBlueprintForSpawn(species, regionSeed)` Cache-by-REGION (256m-Grid + Welt-Seed + Species), Memory-Cap 256 (war 64) mit LRU-Touch + ARCHITEKTUR-bewusster Eviction
@@ -112,13 +119,17 @@
 - **B24.** W-G Anker-GIZMO-DRAG (meister-plan: bewusst OFFEN, eigener Gizmo-Refactor)
 - **B25.** W-G Browser-FEEL der Probe/Achsen
 
+### B-26: V18.210-Watch — A1-Region-Naht (Schöpfer-Audit 14.06.)
+- **B26.** Γ7 Region-Naht: zwei Bäume 1m auseinander, aber über die 256m-floor-Grenze, kriegen verschiedene `grown_*`-Bauplane → potenzielle Stil-Naht an Regionskanten. Bei 256m wahrscheinlich unsichtbar (Wald-Maske λ~170m glättet), aber pixel-blind für headless. Spieler entlang einer Regions-Grenze laufen lassen + im Auge prüfen, ob die Stil-Stufe sichtbar ist; falls ja, REGION_SIZE auf 512 verdoppeln ODER eine Blend-Zone von ~16m am Region-Übergang einführen.
+
 **Sub-Schritte V18.211 (was ich baue):**
 1. `diag-sichtbar.cjs` erweitern: Klein-Veg-Probe fixen; Player auf Wald/Klippe/Höhle teleportieren; 60s Warmup
 2. `scripts/diag-fischer-wand.cjs` erweitern um Lichen-Klippe + Iron-Schnitt + Γ3-Vista + R5-A/B
 3. `scripts/diag-ui-galerie.cjs` neu: 5-Shot-Folge der 5 UI-Räume (Schöpfer-justierbarer Welt-Spot)
-4. Alle Shots in `artifacts/abschluss-galerie/` ablegen + ein Markdown-Report mit pro-Shot-Mess-Zahl
+4. `scripts/diag-region-naht.cjs` neu: Spieler an einer 256m-Regions-Grenze + Screenshot beider Seiten + Vergleich der Bauplan-Signatur (B-26)
+5. Alle Shots in `artifacts/abschluss-galerie/` ablegen + ein Markdown-Report mit pro-Shot-Mess-Zahl
 
-- **Abschluss-Kriterium:** Schöpfer signed 25/25 off ODER justiert Konstanten (Lichen/IRON_BANDS/microBoost/terrainFlatten)
+- **Abschluss-Kriterium:** Schöpfer signed 26/26 off ODER justiert Konstanten (Lichen/IRON_BANDS/microBoost/terrainFlatten/REGION_SIZE)
 
 ---
 
@@ -307,29 +318,29 @@ Aus `gigant-plan §5-G4`:
 
 ---
 
-## §14 — DOC-KONSOLIDIERUNG (Folge dieses Plans)
+## §14 — DOC-KONSOLIDIERUNG (Stand 14.06.2026)
 
-**Was passiert mit Plan-Files NACH Abschluss:**
+**ABGESCHLOSSEN:**
+- `docs/aktiv.md` → schlank (Live-Stand + Verweis auf diesen Plan) ✅
+- `docs/roadmap.md` → Karte, kein Detail-Backlog ✅
+- `docs/wellen-synthese-plan.md` → der Stub-File ist GEFALLEN (V18.210); der volle Plan lebt in `docs/archiv/wellen-synthese-plan.md` ✅
+- `docs/README.md` → Verweise konsistent (V18.210) ✅
+- `CLAUDE.md` „Aktueller Stand" → Stand V18.210 ✅
 
-**JETZT (mit diesem Commit) verschoben/geschlankt:**
-- `docs/aktiv.md` → schlank (Live-Stand + Verweis); ✓ JETZT
-- `docs/roadmap.md` §4 → Karten-Verweis; ✓ JETZT
-- `docs/wellen-synthese-plan.md` → ins Archiv-Folder (war nur Verweis-Stub) → JETZT in diesem Commit
+**Die EINEN Stand-Quellen (jede genau EINE Aufgabe):**
+- `docs/abschluss-plan.md` (DIE EINE Plan-Quelle — alle offenen Wellen + Reihenfolge + Abschluss-Kriterium)
+- `docs/aktiv.md` (DER TISCH — jüngste/nächste Welle, Verweis auf diesen Plan)
+- `docs/das-lebendige-feld.md` (Vision — der wahre Norden)
+- `docs/state-of-realm.md` (Vision — Pfeiler + Heilige Lektion + Stand-vs-Vision-Matrix)
+- `docs/taille-spec.md/.en.md` (NORMATIV, frozen — Serialisierung/Broker)
+- `docs/rueckmeldung.md` (Korpus — alle Schöpfer-Rückmeldungen mit Status)
+- `docs/roadmap.md` (Karte — 3 Phasen + offene-Fäden + Vergangenheit)
+- `docs/README.md` (Doc-Map — diese eine Tabelle)
+- `CLAUDE.md` (auto-geladen JETZT-Stand + Gotchas + Konventionen)
+- `docs/archiv/handover.md` (volle Chronik + Gotcha-Vollarchiv ~290 Stolperdrähte)
+- `docs/archiv/*-plan.md` (vollendete Bogen-Pläne, schlafend bis Bogen erwacht)
 
-**Bleiben aktiv:**
-- `docs/abschluss-plan.md` (DIE EINE Quelle)
-- `docs/aktiv.md` (Live-Stand)
-- `docs/das-lebendige-feld.md` (Vision)
-- `docs/state-of-realm.md` (Vision)
-- `docs/taille-spec.md/.en.md` (NORMATIV, frozen)
-- `docs/rueckmeldung.md` (Korpus)
-- `docs/roadmap.md` §1-§3 (Karte), §5-§10 (Narben/Teilsysteme/Samen/Disziplin/Versions)
-- `docs/README.md` (Doc-Map)
-- `CLAUDE.md` (auto-geladen)
-- `docs/archiv/handover.md` (volle Chronik)
-- `docs/archiv/*-plan.md` (Bogen-Pläne als Vergangenheit, nicht aktiv)
-
-**Maxime:** EIN Plan (dieser), EIN Tisch (`aktiv.md`), eine Karte (`roadmap.md` ohne §4-Details), eine Chronik (`handover.md`), Vision-Anker (Norden + Realm + Taille), Korpus (`rueckmeldung.md`).
+**Maxime:** EIN Plan (`abschluss-plan.md`), EIN Tisch (`aktiv.md`), eine Karte (`roadmap.md`), eine Chronik (`handover.md`), Vision-Anker (Norden + Realm + Taille), Korpus (`rueckmeldung.md`), Doc-Map (`docs/README.md`).
 
 ---
 
@@ -392,7 +403,9 @@ V18.250+ PRIO 13: Gemerkte Fäden (Schöpfer-Weck)
 
 1. **Eine Welle = ein Commit + Update HIER**: Block strikethrough + Datum + Commit-Hash. Wenn alle Blöcke einer Prio strikethrough → Prio-Sektion in Schluss-Block, dann FÄLLT.
 2. **Verdrahtungs-Wand vor Sign-off:** V18.211 startet erst nach V18.210 grün.
-3. **Read-as-stranger PRO WELLE:** vor Commit lese ich den Welle-Plan-Block. Ist KONSUM verdrahtet (V17.31)? Wenn nein → Welle ist NICHT fertig.
+3. **Read-as-stranger PRO WELLE:** vor Commit lese ich den Welle-Plan-Block. Ist KONSUM verdrahtet (V17.31)? Wenn nein → Welle ist NICHT fertig. **PLUS:** nach „headless-grün" einen feindlichen Sub-Agent-Audit fahren (V18.210-Lehre: er fing fünf Bugs, drei davon kritisch).
 4. **Kein neuer Foundation-Code:** jede neue Funktion braucht konkreten Konsumenten im selben Commit. Foundation-only ist VERBOTEN in diesem Plan.
 5. **Doc-Hygiene:** kein neuer Plan-File. Updates nur HIER + handover.md + CLAUDE.md.
 6. **Schöpfer-Sign-off-Gate:** keine Welle stapelt sich, bevor die vorherige im Auge bestätigt ist (§2 Sign-off-Welle bricht das nicht — sie IST die Sammel-Bestätigung).
+7. **Test-Harness-Trennung (V18.210-Watch #4, Schöpfer-Mahnung 14.06.):** wenn eine Welle nötig macht, dass der Bauer das Test-Harness anfasst (Stat-Restore, Mock-Setup), ist das EIN EIGENER Commit mit eigener Begründung — kein zusammengeworfener Mix. Wer Feature UND Validator im selben Commit justiert, hat eine Quelle der Wahrheit gebrochen. Wenn der Mix unvermeidbar ist, das im Commit-Body ehrlich benennen + ein menschliches Auge auf den `playtest.cjs`-Diff vor Merge.
+8. **Welt-Identitäts-Wand (V18.210-Lehre):** jeder lazy-cached Worldgen-Helper (`_growTreeNoise`-Klasse) wird in `_loadStateRestoreWorldMeta` resetted. Wer einen neuen lazy-cache mit Welt-Seed anlegt, fügt die Reset-Zeile dort ein — sonst P2P-Drift bei Welt-Wechsel.
