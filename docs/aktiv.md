@@ -11,6 +11,12 @@
 
 ## Stand (jüngste oben)
 
+**14.06.2026 — V18.211+V18.212 ✅ GEMERGT in main (commit `f447caa`)** — DER LEBENDIGE GIGANT, Säule I + Restsubschritte vollendet.
+
+**📋 NÄCHSTE SESSION:** der vollständige Plan für die GPU-Pipeline + FPS-Hebel + SEELEN-Band liegt in **`docs/gigant-fortsetzung-plan.md`** — 7 Wellen V18.213-V18.219, je 6-15 Wände, Sub-Schritte M1/L1/B1/S1/H1/P1/Q1 mit Code-Ankern + Worker-Mirror-Pflichten + Snapshot-Strategien + Risiken + Akzeptanz-Kriterien. **EFFIZIENZ:** pro Welle EINE checkBand-Funktion mit 4 Sektionen (Source/Behavioral/Edge/Performance), shared Diag-Tools, klare Querschnitt-Disziplinen. **REIHENFOLGE:** Mesh-Merge (V18.213) → LOD (V18.214) → Ω-B GPU-Feld-Bake (V18.215) → Ω-S GPU-Compute-Scatter (V18.216) → ⟡ Ω-H Promotion / SEELEN-Band (V18.217) → Canopy-Vertiefung (V18.218 optional) → PBR (V18.219 optional). Gesamt 8-13 Sessions.
+
+---
+
 **14.06.2026 — V18.212 ✅ FERTIG, Branch `claude/kind-rubin-udn6cn`:**
 **DER LEBENDIGE GIGANT, RESTSUBSCHRITTE Ω-K2 + Ω-W + Ω-H + Ω-C** — V18.211 hatte Säule I (Skeleton-Grammar); V18.212 schließt die nicht-GPU Restsubschritte:
 
