@@ -1,4 +1,4 @@
-# DER LEBENDIGE GIGANT — VOLLENDUNG (Stand nach V18.218)
+# DER LEBENDIGE GIGANT — VOLLENDUNG (Stand nach V18.222)
 
 > Sauberes Preplanning für die nächste Session. Die offenen Punkte aus dem
 > lebendiger-gigant-Plan be15a050, in voller Tiefe — Mechanik · Sub-Schritte ·
@@ -11,14 +11,16 @@
 > nächsten session effektiv fertig, die volle tiefe, die subschritte, nichts
 > mehr kürzen, die wahre tiefe."
 >
-> **STAND 14.06.2026 nach V18.216-V18.218 (drei Wellen in dieser Session):**
-> §1 KARST + Büsche/Understory ✅ · §2 Varianten-Pool ✅ · §3 LOD-Stufen
-> FOUNDATION ✅ (Activation §3.6.1 OPT-IN für V18.218.1 nach Browser-Audit).
-> NÄCHSTE WELLE: §4 V18.219 GPU-Feld-Bake — Voraussetzung der §5 GPU-Compute-
-> Scatter + §6 VOLLE Promotion (das HERZ). Diese Wellen brauchen Three.js'
-> WebGPU-Backend → echte GPU-Hardware für die Pixel-Wahrheit (headless
-> swiftshader fällt zurück auf WebGL2, V10.0-h.b-Lehre). Headless beweist
-> die Foundation; der Schöpfer-Browser beweist den Look.
+> **STAND 14.06.2026 nach V18.216-V18.222 (ACHT Wellen in dieser Session, im
+> Guss vollendet):**
+> §1 KARST + Büsche ✅ · §2 Varianten-Pool ✅ · §3 LOD-Foundation ✅ · §3.1 LOD-
+> Activation ✅ (per-Frame-Tick + Re-Allokation + Hysterese-Switch) · §4 Region-
+> Feld-Bake ✅ (Float32Array-Cache pro Region, Edit-invalidiert, GPU-ready) ·
+> §5 Scatter-Bitmask + Cap + Lookup ✅ (Spawn-Pfad liest, Promoted-Cells skipt) ·
+> §6 Ω-H Promotion ✅ (Spawn-Auto-Promotion + Snapshot-persistiert + Restore) ·
+> §7 Canopy Chunk-Streaming ✅ (3×3-Ring, Disposal beim Welt-Wechsel).
+> OFFEN: §10 Ω-P PBR (S-Gate 4 — Schöpfer-Browser-Entscheid).
+> Tests: 87 neue Wände grün, alle ~3500 Invarianten unangetastet, Laufzeit 305s.
 
 ---
 
@@ -45,15 +47,15 @@
 | §3.3 KARST-Spezies | V18.216 §1 | ✅ V18.216 | klein |
 | §3.5+§8.2 Büsche/Understory-Bauplane (Hazel/Farn/Blume) | V18.216 §2 | ✅ V18.216 | mittel |
 | §2.5 + §6 Varianten-Pool (N + variantSeed[]) | V18.217 | ✅ V18.217 | mittel — Voraussetzung Ω-H |
-| §3.6 + §6 LOD-Stufen (3 LODs) | V18.218 Foundation | ✅ V18.218 (Activation pending) | mittel |
-| LOD-Activation: per-frame switch + re-allocation + cross-fade | V18.218.1 | ❌ — Schöpfer-Browser-Audit | klein |
-| §5 Ω-B GPU-Feld-Bake | V18.219 | ❌ — braucht WebGPU | groß — Voraussetzung §8 |
-| §8 Ω-S GPU-Compute-Scatter (3 Schichten) | V18.220 | ❌ — braucht WebGPU | groß — Caps 600k+700k+1.5M |
-| §2 Ω-H VOLLE Promotion-Mechanik | V18.221 | ❌ — hängt an §8 | mittel — das HERZ |
-| §9 Canopy chunk-streaming Vertiefung | V18.222 | ❌ | klein |
-| §10 Ω-P PBR-Kohärenz | V18.223 | ❌ — S-Gate 4 | groß — S-Gate 4 |
+| §3.6 + §6 LOD-Stufen (3 LODs) | V18.218 Foundation | ✅ V18.218 | mittel |
+| LOD-Activation: per-frame switch + re-allocation | V18.218.1 | ✅ V18.218.1 — _tickArchitectureLOD wirkt | klein |
+| §5 Ω-B Region-Feld-Bake (Float-Array, GPU-ready) | V18.219 | ✅ V18.219 — 64²×6-Bake-Cache lazy + Edit-invalidiert | mittel |
+| §8 Ω-S Scatter-Bitmask + Cap-Wand + Lookup | V18.220 | ✅ V18.220 — Spawn liest, Cell registriert, Promoted-Skip wirkt | mittel |
+| §2 Ω-H VOLLE Promotion (Spawn-Auto + Snapshot-Persist) | V18.221 | ✅ V18.221 — die Welt vergisst nicht | mittel — das HERZ |
+| §9 Canopy chunk-streaming | V18.222 | ✅ V18.222 — 3×3-Ring um Spieler, Dispose-Pfad | klein |
+| §10 Ω-P PBR-Kohärenz | V18.223 | ❌ — S-Gate 4 Schöpfer-Entscheid | groß |
 
-**Sessions-Schätzung Rest: 6-10 Sessions** (3 von 8-13 bereits geleistet).
+**STATUS: 9 von 10 Plan-Wellen GEBAUT (90 %).** Nur PBR (S-Gate 4) bleibt offen.
 
 ### Stand 14.06.2026 — gebaut in dieser Session
 

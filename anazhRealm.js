@@ -383,6 +383,17 @@ class AnazhRealm {
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
                 shadowRange: 300, // Frustum-Halbbreite m (kleiner = schärfer)
                 shadowBias: 1.0, // normalBias (Acne ↔ Peter-Panning)
+                // V18.218.1 (DER LEBENDIGE GIGANT §3 ACTIVATION) — der LOD-
+                // Schalter. Default true; ein Browser-Toggle kann es ausschalten
+                // (Schöpfer prüft den LOD-Pop). Wenn false, läuft der
+                // _tickArchitectureLOD im No-Op-Pfad → alle Bäume bleiben LOD0.
+                treeLOD: true,
+                // V18.222.1 (DER LEBENDIGE GIGANT §7 ACTIVATION) — der Canopy-
+                // Streaming-Schalter. Default false (V18.212-Monolith bleibt
+                // Default); aktiviert über `state.atmosphere.canopyStreaming = true`
+                // → der _tickCanopyStreaming baut 3×3-Region-Chunks um den Spieler.
+                // V18.222.1 Folge-Welle nach Schöpfer-Browser-Audit aktiviert es.
+                canopyStreaming: false,
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
@@ -13435,6 +13446,178 @@ class AnazhRealm {
             );
         }
         return mesh;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // V18.222 (DER LEBENDIGE GIGANT §7, Plan §9) — CANOPY CHUNK-STREAMING
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Statt einer einzelnen 2 km² Plane (V18.212) baut die Welt jetzt PER
+    // 512m-Region einen Mini-Canopy-Mesh, der dem Spieler folgt. 3×3-Ring
+    // (1.5 km² aktive Coverage); ferne Chunks disponiert. Plan §9: „pro
+    // 256 m-Region eigener Mini-Canopy". Wir nehmen 512 m → 1.5 km² mit 3×3,
+    // statt einer 7×7-Spreizung der 256m-Regionen (gleiches Memory-Profil,
+    // weniger Build-Tick-Spikes pro Chunk-Übergang). Flag `atmosphere.canopyStreaming`
+    // (Default false — V18.222.1 nach Schöpfer-Browser-Audit).
+
+    _canopyChunkConfig() {
+        return {
+            regionM: 512, // Welt-Meter pro Canopy-Chunk-Kante
+            gridSize: 48, // 48 Vertices pro Seite → ~11 m/Vertex
+            ringRadius: 1, // 3×3-Ring (1 = ±1 in beide Achsen)
+            disposeRadius: 3, // ferne Chunks ab Distanz > 3 disposen
+        };
+    }
+
+    _canopyChunkKey(regX, regZ) {
+        return `${regX | 0},${regZ | 0}`;
+    }
+
+    _ensureCanopyChunkMap() {
+        if (!this.state.canopyChunks || !(this.state.canopyChunks instanceof Map)) {
+            this.state.canopyChunks = new Map();
+        }
+        return this.state.canopyChunks;
+    }
+
+    // V18.222 — eine einzelne Canopy-Region bauen. Gleiche Formel wie der
+    // V18.212-Monolith (lebendig × clump → coverage → lift), aber begrenzt
+    // auf die Region-AABB. Idempotent: zweiter Aufruf liefert das gecachte
+    // Mesh; bei dirty=true rebuildet (Welt-Wechsel/Feld-Edit).
+    _canopyEnsureChunk(regX, regZ) {
+        if (typeof THREE === "undefined" || !this.state.scene) return null;
+        const map = this._ensureCanopyChunkMap();
+        const key = this._canopyChunkKey(regX, regZ);
+        const existing = map.get(key);
+        if (existing && !existing.userData._dirty) return existing;
+        // Eventuelle alte Disposition (rebuild-Pfad)
+        if (existing) this._canopyDisposeChunkByKey(key);
+        const C = this._canopyChunkConfig();
+        const SIZE = C.gridSize;
+        const REGION = C.regionM;
+        const N = SIZE - 1;
+        const geom = new THREE.PlaneGeometry(REGION, REGION, N, N);
+        geom.rotateX(-Math.PI / 2);
+        const positions = geom.attributes.position;
+        const colors = new Float32Array(positions.count * 3);
+        const cx = (regX + 0.5) * REGION;
+        const cz = (regZ + 0.5) * REGION;
+        let liveCount = 0;
+        for (let i = 0; i < positions.count; i++) {
+            // Plane-Vertex-Koords sind region-relativ; in Welt-Koords schieben.
+            const localX = positions.getX(i);
+            const localZ = positions.getZ(i);
+            const wx = cx + localX;
+            const wz = cz + localZ;
+            const terrainY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(wx, wz) : 0;
+            let coverage = 0;
+            if (typeof this.worldFieldAt === "function") {
+                const f = this.worldFieldAt(wx, wz);
+                coverage = f ? Math.max(0, Math.min(1, f.lebendig)) : 0;
+                if (typeof this._clumpAt === "function") {
+                    const clump = Math.max(0, Math.min(1, 0.5 + 0.5 * this._clumpAt(wx, wz, 0.006)));
+                    coverage = coverage * (0.4 + 0.6 * clump);
+                }
+            }
+            const lift = coverage > 0.18 ? coverage * 7 + 11 : 0;
+            let bump = 0;
+            if (this._growTreeNoise) {
+                bump = this._growTreeNoise.noise2D(wx * 0.05, wz * 0.05) * 0.8;
+            }
+            positions.setY(i, terrainY + lift + bump);
+            // Vertex-Position auf Welt-Koord setzen (so kann der Mesh am
+            // Welt-Ursprung sitzen, ohne dass eine pro-Chunk-Position-Set
+            // den Frustum-Cull bricht).
+            positions.setX(i, wx);
+            positions.setZ(i, wz);
+            colors[i * 3 + 0] = 0.16 + coverage * 0.08;
+            colors[i * 3 + 1] = 0.32 + coverage * 0.18;
+            colors[i * 3 + 2] = 0.13 + coverage * 0.08;
+            if (coverage > 0.22) liveCount++;
+        }
+        positions.needsUpdate = true;
+        geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+        geom.computeVertexNormals();
+        // Material: das bestehende _buildToonNodeMaterial, kein Distance-Dither
+        // pro Chunk (der Streaming-Ring übernimmt die Distanz-Klemme implizit).
+        const mat = this._buildToonNodeMaterial({
+            color: 0xffffff,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.frustumCulled = true;
+        mesh.castShadow = false;
+        mesh.receiveShadow = true;
+        mesh.renderOrder = 2;
+        mesh.userData.kind = "canopyChunk";
+        mesh.userData.regX = regX;
+        mesh.userData.regZ = regZ;
+        mesh.userData.liveCoverageVertices = liveCount;
+        mesh.userData._dirty = false;
+        this.state.scene.add(mesh);
+        map.set(key, mesh);
+        return mesh;
+    }
+
+    _canopyDisposeChunkByKey(key) {
+        const map = this.state.canopyChunks;
+        if (!map) return false;
+        const mesh = map.get(key);
+        if (!mesh) return false;
+        if (this.state.scene) this.state.scene.remove(mesh);
+        if (mesh.geometry) mesh.geometry.dispose();
+        if (mesh.material && typeof mesh.material.dispose === "function") mesh.material.dispose();
+        map.delete(key);
+        return true;
+    }
+
+    _canopyDisposeAllChunks() {
+        if (!this.state.canopyChunks) return;
+        for (const key of Array.from(this.state.canopyChunks.keys())) {
+            this._canopyDisposeChunkByKey(key);
+        }
+    }
+
+    // V18.222 — der Streaming-Tick. Walkt das 3×3-Fenster um den Spieler,
+    // baut fehlende, disponiert ferne. Bounded: höchstens 1 Build pro Frame
+    // (Plan-konform „max 1 Region/Frame" wie der Voxel-Tick).
+    _tickCanopyStreaming() {
+        const atmo = this.state.atmosphere;
+        if (!atmo || atmo.canopyStreaming !== true) return 0;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return 0;
+        const C = this._canopyChunkConfig();
+        const playerRegX = Math.floor(pm.x / C.regionM);
+        const playerRegZ = Math.floor(pm.z / C.regionM);
+        const map = this._ensureCanopyChunkMap();
+        let built = 0;
+        // 3×3 (oder N×N) Ring um den Spieler: fehlende bauen.
+        for (let dx = -C.ringRadius; dx <= C.ringRadius && built < 1; dx++) {
+            for (let dz = -C.ringRadius; dz <= C.ringRadius && built < 1; dz++) {
+                const key = this._canopyChunkKey(playerRegX + dx, playerRegZ + dz);
+                if (!map.has(key)) {
+                    this._canopyEnsureChunk(playerRegX + dx, playerRegZ + dz);
+                    built++;
+                }
+            }
+        }
+        // Ferne Chunks disposen (außerhalb disposeRadius)
+        let disposed = 0;
+        const disposeR = C.disposeRadius;
+        for (const key of Array.from(map.keys())) {
+            const mesh = map.get(key);
+            if (!mesh || !mesh.userData) continue;
+            const dx = mesh.userData.regX - playerRegX;
+            const dz = mesh.userData.regZ - playerRegZ;
+            if (Math.abs(dx) > disposeR || Math.abs(dz) > disposeR) {
+                this._canopyDisposeChunkByKey(key);
+                disposed++;
+            }
+        }
+        return built + disposed;
     }
 
     // V18.212 — Canopy-Shell beim Welt-Wechsel räumen (frische Welt = neue
@@ -29464,6 +29647,11 @@ class AnazhRealm {
         // Seed oben löschte sie VOR dem Rebuild (mit alten Zellen neu gebaut) —
         // dieser zweite Wurf macht den Lazy-Neubau wahrheits-frisch.
         this._invalidateWaterCapsAround(x, z, radius);
+        // V18.219 (DER LEBENDIGE GIGANT §4) — gebackene Region-Felder im Footprint
+        // dirty markieren (V18.220 GPU-Compute-Scatter liest sie). Region-Raster
+        // ist 256 m → ein 12-m-Edit berührt 1-2 Regionen. Lazy-Rebake im nächsten
+        // Tick (V18.219.2 wenn enabled); bis dahin servieren wir die stale Daten.
+        this._invalidateBakedRegionsAround(x, z, radius);
         // A6a (gigant-plan §5 PHASE A) — Fill-unter-sich darf den Spieler nicht
         // BEGRABEN (GEMESSEN diag-edit-reset: 12 Fills unter den Füßen → Spieler
         // 11 m UNTER der neuen Oberfläche, im Fels eingeschlossen — die V17.28-
@@ -30055,7 +30243,20 @@ class AnazhRealm {
             terrainSteepness: this.state.terrainSteepness,
             terrainBaseHeight: this.state.terrainBaseHeight,
             weather: this.state.weather,
-            worldMeta: { ...this.state.worldMeta },
+            // V18.221 — die SCATTER-PROMOTED-Set persistiert via worldMeta. Die
+            // Welt vergisst nicht (Plan §2): ein Cell, das berührt/gespawnt wurde,
+            // bleibt promoted über den Reload. Als Array serialisiert (JSON hat
+            // keine Sets); Restore re-bildet das Set. Cap 16k Einträge (~512 KB
+            // Worst-Case) bewacht die Snapshot-Größe — ältere Einträge fallen.
+            worldMeta: (() => {
+                const wm = { ...this.state.worldMeta };
+                if (this.state.scatterPromoted instanceof Set) {
+                    const arr = Array.from(this.state.scatterPromoted);
+                    if (arr.length > 16000) arr.splice(0, arr.length - 16000);
+                    wm.scatterPromoted = arr;
+                }
+                return wm;
+            })(),
             dslAbilities: this.state.dsl.abilities.slice(-200),
             dslHistory: this.state.dsl.history.slice(-this.state.dsl.historyCap),
             // V17.38 Phase E — die stehenden Welt-Regeln persistieren: die Gesetze
@@ -34335,6 +34536,9 @@ class AnazhRealm {
         // an worldSeed gebunden). Beim Welt-Wechsel: alte Canopy disposen,
         // neue baut sich beim nächsten _ensureCanopyShell oder rAF-Hook.
         if (typeof this._disposeCanopyShell === "function") this._disposeCanopyShell();
+        // V18.222 — Canopy-Chunks disposen (welt-spezifisch); _tickCanopyStreaming
+        // baut den 3×3-Ring der neuen Welt lazy nach.
+        if (typeof this._canopyDisposeAllChunks === "function") this._canopyDisposeAllChunks();
         // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — die merged Geometries
         // sind welt-spezifisch (an die WELT-gewachsenen Variant-Baupläne
         // gebunden, deren Keys `grown_<species>_<hash>` welt-spezifisch sind).
@@ -34357,6 +34561,29 @@ class AnazhRealm {
         } else {
             this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
         }
+        // V18.221 — die SCATTER-PROMOTED-Set aus dem worldMeta-Array wiederherstellen.
+        // worldMeta.scatterPromoted wandert via Array, hier re-bilden wir das Set.
+        // Backward-kompat: alte Welten ohne Feld → leeres Set.
+        if (this.state.worldMeta && Array.isArray(this.state.worldMeta.scatterPromoted)) {
+            this.state.scatterPromoted = new Set(this.state.worldMeta.scatterPromoted);
+            // worldMeta.scatterPromoted entfernen (es lebt jetzt in state.scatterPromoted
+            // als Set; die nächste buildStateSnapshot serialisiert neu).
+            delete this.state.worldMeta.scatterPromoted;
+        } else {
+            this.state.scatterPromoted = new Set();
+        }
+        // V18.220 — Scatter-Counters + Lookup-Buffer beim Welt-Wechsel resetten.
+        // (Counters re-bauen sich beim Stream; Lookup wird beim Scatter neu
+        // gefüllt. KEIN Persistenz — Counter ist eine SESSION-Tatsache, kein
+        // Welt-Erbgut.)
+        this.state.scatterCounters = { tree: 0, under: 0, stone: 0 };
+        this.state.scatterLookup = new Map();
+        // V18.219 — den Region-Bake-Cache beim Welt-Wechsel leeren (Region-
+        // gebackene Felder sind welt-bound; eine neue Welt sampelt neu).
+        if (this.state.bakedRegionFields) this.state.bakedRegionFields.clear();
+        this._bakedRegionRing = [];
+        // V18.218.1 — den LOD-Cursor zurücksetzen (rolling pointer; welt-bound).
+        this._archLODCursor = 0;
         // Φ2 (V18.188) — Migrations-Heilung: das Legacy-"private" (englisch,
         // der pre-Φ2-Default) wird zur kanonischen 4-Stufen-Form "privat".
         // Unbekannte Werte (Müll/Zukunft) fallen still auf "privat" (must-
@@ -43519,9 +43746,8 @@ class AnazhRealm {
         // hatte er denselben Bauplan in der Hand → kein Doppel-Bau, der
         // identische variantSeed liefert bit-identische Geometrie (Plan §6).
         for (const lod of [0, 1, 2]) {
-            const cacheKey = lod === 0
-                ? `grown_${species}_v${variantIndex}`
-                : `grown_${species}_v${variantIndex}_lod${lod}`;
+            const cacheKey =
+                lod === 0 ? `grown_${species}_v${variantIndex}` : `grown_${species}_v${variantIndex}_lod${lod}`;
             keys[lod] = cacheKey;
             if (this.state.blueprints[cacheKey]) continue;
             const parts = this._growTreeBlueprintRich(species, variantSeed, grammar, { lod });
@@ -43558,6 +43784,375 @@ class AnazhRealm {
     // Wechsel passiert nur, wenn die Distanz die Schwelle UM die Hysterese
     // überquert. Ohne `currentLOD` (z.B. neuer Spawn) trifft er die unbiased
     // Wahl. Browser-justierbar via override des AnazhRealm.LOD_DISTANCES-Konstants.
+    // V18.218.1 (DER LEBENDIGE GIGANT §3 ACTIVATION) — der PER-FRAME LOD-TICK.
+    // Wandert die tree-Architekturen, prüft Distanz zum Spieler, schaltet die
+    // LOD-Stufe um (free old slot, switch entry.type, re-add to new HISM-group).
+    // Plan §3.6: maxSwitchesPerFrame=5 begrenzt den Spike (50 Bäume gleichzeitig
+    // wandern in den Ring → 5/frame × 10 Frames = 50 ms Verteilung). blockerAABBs
+    // bleiben unangetastet (Welt-Substanz aus LOD0 gestempelt). Activation-Flag:
+    // `state.atmosphere.treeLOD` (Default true; Browser-tunbar an/aus).
+    _tickArchitectureLOD(maxSwitchesPerFrame = 5) {
+        const atmo = this.state.atmosphere;
+        if (atmo && atmo.treeLOD === false) return 0;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return 0;
+        const archs = this.state.architectures;
+        if (!Array.isArray(archs) || archs.length === 0) return 0;
+        // Rolling cursor: jeder Tick walkt nur einen Slice des Arrays. Bei
+        // grossen Welten (10k+ Architekturen) bleibt der Tick bounded. Den
+        // Cursor speichern wir an state — er reist nicht im Snapshot.
+        if (!Number.isFinite(this._archLODCursor)) this._archLODCursor = 0;
+        let switches = 0;
+        const sliceLen = Math.min(archs.length, 256); // wieviele Einträge pro Frame ANSCHAUEN
+        for (let i = 0; i < sliceLen && switches < maxSwitchesPerFrame; i++) {
+            const idx = (this._archLODCursor + i) % archs.length;
+            const entry = archs[idx];
+            if (!entry || !entry.instanced) continue;
+            if (!entry._lodSpecies || !Number.isFinite(entry._lodVariantIndex)) continue;
+            const dx = entry.position.x - pm.x;
+            const dz = entry.position.z - pm.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            const newLOD = this._chooseLODForDistance(dist, entry._lodLevel);
+            if (newLOD === entry._lodLevel) continue;
+            // LOD-Switch — re-allocate
+            const success = this._switchArchitectureLOD(entry, newLOD);
+            if (success) switches++;
+        }
+        this._archLODCursor = (this._archLODCursor + sliceLen) % archs.length;
+        return switches;
+    }
+
+    // V18.218.1 — eine instanced Architektur auf eine andere LOD-Stufe wechseln.
+    // Pfad: `_archInstanceRemove` (alte Slots frei) → entry.type ändern auf den
+    // LOD-Key der neuen Stufe → `_archInstanceAdd` (neue Slots allozieren).
+    // blockerAABBs bleiben (Welt-Substanz gestempelt; LOD ist reine Render-Schicht).
+    // collision bleibt (HISM-Einträge haben sowieso keine Ammo-Body).
+    _switchArchitectureLOD(entry, newLOD) {
+        if (!entry || !entry._lodSpecies || !Number.isFinite(entry._lodVariantIndex)) return false;
+        const species = entry._lodSpecies;
+        const varIdx = entry._lodVariantIndex;
+        // Sicherstellen, dass alle 3 LOD-Bauplane existieren (lazy-build)
+        const keys = this._buildVariantLODs(species, varIdx);
+        if (!keys || !keys[newLOD]) return false;
+        const newType = keys[newLOD];
+        if (newType === entry.type) {
+            entry._lodLevel = newLOD;
+            return false;
+        }
+        const newBp = this.state.blueprints && this.state.blueprints[newType];
+        if (!newBp) return false;
+        // Prüfen: ist der neue Bauplan instanced + flatten-bar?
+        const newFlat = this._archFlattenBlueprint(newType);
+        if (!newFlat || !newFlat.instanceable || !Array.isArray(newFlat.leaves) || newFlat.leaves.length === 0) {
+            return false;
+        }
+        // Alte Slots frei (boundingSphere, instanceMatrix.needsUpdate werden gesetzt)
+        this._archInstanceRemove(entry);
+        // entry.type updaten — die Architektur ist jetzt eine andere LOD-Variante
+        entry.type = newType;
+        entry._lodLevel = newLOD;
+        // Neue Slots allozieren via Standard-Pfad
+        this._archInstanceAdd(entry, newFlat);
+        return true;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // V18.219 (DER LEBENDIGE GIGANT §4, Plan §5) — GPU-FELD-BAKE
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Region = 256 m × 256 m (16 Voxel-Chunks à 16 m). Auflösung 64×64 Texel
+    // → 4 m pro Texel (Plan-Erstwurf war 128² @ 2 m; wir starten 64² um die
+    // Bake-Cost zu beschränken — eine Iteration kann die Auflösung verdoppeln,
+    // V18.220-Scatter ist Skalen-tolerant). Pro Texel:
+    //   - height   (float)         — voxelSurfaceY
+    //   - slope    (float)         — |∇surface|
+    //   - moisture (float)         — _feuchteAt
+    //   - lebendig (float)         — worldFieldAt.lebendig
+    //   - glut     (float)         — worldFieldAt.glut
+    //   - magie    (float)         — worldFieldAt.magieleitung
+    // Speicher: 64×64 × 6 floats × 4 bytes = ~98 KB/Region. 32 LRU-Cache
+    // → ~3 MB. Auf demand gebaut + bei Edit invalidiert. CPU-First (V18.220
+    // Compute liest die Float32Array auch ohne GPU-Activation; die GPU-
+    // Storage-Texture-Variante ist die Folge-Welle für echte Million-Scatter).
+
+    _bakeRegionConfig() {
+        return {
+            sizeM: 256, // Welt-Meter pro Region-Kante
+            res: 64, // Texel pro Kante (Auflösung)
+            texelM: 256 / 64, // = 4 m pro Texel
+            channels: 6, // height/slope/moisture/lebendig/glut/magie
+            cacheCap: 32, // LRU
+        };
+    }
+
+    _bakedRegionKey(regX, regZ) {
+        return `${regX | 0},${regZ | 0}`;
+    }
+
+    _ensureBakedRegionMap() {
+        if (!this.state.bakedRegionFields) this.state.bakedRegionFields = new Map();
+        if (!this._bakedRegionRing) this._bakedRegionRing = [];
+        return this.state.bakedRegionFields;
+    }
+
+    // V18.219 — der Bake-Akt selbst. Eine Region voll-sampeln (~4 ms im
+    // headless für 64²×6 Stichproben), liefert das gefüllte Entry. Lazy:
+    // ein zweiter Aufruf liest aus dem Cache. Die LRU-Disziplin verhindert,
+    // dass die Welt 10000 Regionen sammelt.
+    _bakeRegionFields(regX, regZ) {
+        const map = this._ensureBakedRegionMap();
+        const key = this._bakedRegionKey(regX, regZ);
+        const existing = map.get(key);
+        if (existing && !existing.dirty) {
+            // LRU touch
+            if (this._bakedRegionRing) {
+                const idx = this._bakedRegionRing.indexOf(key);
+                if (idx >= 0) {
+                    this._bakedRegionRing.splice(idx, 1);
+                    this._bakedRegionRing.push(key);
+                }
+            }
+            return existing;
+        }
+        const cfg = this._bakeRegionConfig();
+        const N = cfg.res;
+        const t = cfg.texelM;
+        const originX = regX * cfg.sizeM;
+        const originZ = regZ * cfg.sizeM;
+        // Reuse den bestehenden Float-Buffer wenn dirty (kein Re-Alloc)
+        const entry = existing || {
+            regX: regX | 0,
+            regZ: regZ | 0,
+            originX,
+            originZ,
+            res: N,
+            texelM: t,
+            channels: cfg.channels,
+            data: new Float32Array(N * N * cfg.channels),
+            dirty: true,
+            bakedAt: 0,
+            sampleCount: 0,
+        };
+        // CPU-Sampling: pro Texel die echten Wahrheits-Quellen aufrufen
+        // (das gleiche, was die CPU-Spawn-Pipeline liest → bit-Wahrheits-
+        // Konsistenz im V18.220-Fallback-Pfad).
+        const data = entry.data;
+        for (let j = 0; j < N; j++) {
+            const z = originZ + (j + 0.5) * t;
+            for (let i = 0; i < N; i++) {
+                const x = originX + (i + 0.5) * t;
+                const idx = (j * N + i) * cfg.channels;
+                const sy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : 0;
+                data[idx + 0] = Number.isFinite(sy) ? sy : 0;
+                // Slope: |∇h| über 4-Sample-Cross
+                if (typeof this.getTerrainHeightAt === "function") {
+                    const hxp = this.getTerrainHeightAt(x + 2, z);
+                    const hxn = this.getTerrainHeightAt(x - 2, z);
+                    const hzp = this.getTerrainHeightAt(x, z + 2);
+                    const hzn = this.getTerrainHeightAt(x, z - 2);
+                    if (Number.isFinite(hxp) && Number.isFinite(hxn) && Number.isFinite(hzp) && Number.isFinite(hzn)) {
+                        const dhx = (hxp - hxn) / 4;
+                        const dhz = (hzp - hzn) / 4;
+                        data[idx + 1] = Math.sqrt(dhx * dhx + dhz * dhz);
+                    } else {
+                        data[idx + 1] = 0;
+                    }
+                } else {
+                    data[idx + 1] = 0;
+                }
+                // Moisture: _feuchteAt (mit surf-Argument)
+                data[idx + 2] = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0;
+                // Field-Stimmen (lebendig/glut/magie)
+                const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(x, z) : null;
+                data[idx + 3] = f ? +f.lebendig || 0 : 0;
+                data[idx + 4] = f ? +f.glut || 0 : 0;
+                data[idx + 5] = f ? +f.magieleitung || 0 : 0;
+            }
+        }
+        entry.dirty = false;
+        entry.bakedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        entry.sampleCount = N * N;
+        map.set(key, entry);
+        // LRU-Ring + Eviction
+        if (!this._bakedRegionRing) this._bakedRegionRing = [];
+        const ringIdx = this._bakedRegionRing.indexOf(key);
+        if (ringIdx >= 0) this._bakedRegionRing.splice(ringIdx, 1);
+        this._bakedRegionRing.push(key);
+        while (this._bakedRegionRing.length > cfg.cacheCap) {
+            const drop = this._bakedRegionRing.shift();
+            if (drop && map.has(drop)) map.delete(drop);
+        }
+        return entry;
+    }
+
+    // V18.219 — eine Welt-(x,z)-Position aus dem Region-Bake samplen. Liefert
+    // die Schnitt-Werte (bilineare Mittelung der 4 nächsten Texel; cheap +
+    // glatt). Erkennt automatisch, ob die Region schon gebackt ist; auf
+    // Cache-Miss baut sie sie (lazy). Die Konsumenten (V18.220 Scatter,
+    // künftige LOD-Visualisierung) lesen hierdurch.
+    _sampleBakedField(x, z) {
+        const cfg = this._bakeRegionConfig();
+        const regX = Math.floor(x / cfg.sizeM);
+        const regZ = Math.floor(z / cfg.sizeM);
+        const entry = this._bakeRegionFields(regX, regZ);
+        if (!entry || !entry.data) return null;
+        const localX = (x - entry.originX) / entry.texelM - 0.5;
+        const localZ = (z - entry.originZ) / entry.texelM - 0.5;
+        const i0 = Math.max(0, Math.min(entry.res - 1, Math.floor(localX)));
+        const j0 = Math.max(0, Math.min(entry.res - 1, Math.floor(localZ)));
+        const i1 = Math.min(entry.res - 1, i0 + 1);
+        const j1 = Math.min(entry.res - 1, j0 + 1);
+        const fx = Math.max(0, Math.min(1, localX - i0));
+        const fz = Math.max(0, Math.min(1, localZ - j0));
+        const idx00 = (j0 * entry.res + i0) * entry.channels;
+        const idx10 = (j0 * entry.res + i1) * entry.channels;
+        const idx01 = (j1 * entry.res + i0) * entry.channels;
+        const idx11 = (j1 * entry.res + i1) * entry.channels;
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const out = { height: 0, slope: 0, moisture: 0, lebendig: 0, glut: 0, magie: 0 };
+        const keys = ["height", "slope", "moisture", "lebendig", "glut", "magie"];
+        for (let c = 0; c < entry.channels; c++) {
+            const v00 = entry.data[idx00 + c];
+            const v10 = entry.data[idx10 + c];
+            const v01 = entry.data[idx01 + c];
+            const v11 = entry.data[idx11 + c];
+            const v0 = lerp(v00, v10, fx);
+            const v1 = lerp(v01, v11, fx);
+            out[keys[c]] = lerp(v0, v1, fz);
+        }
+        return out;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // V18.220 (DER LEBENDIGE GIGANT §5, Plan §8) — SCATTER + BITMASK
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Die Scatter-Infrastruktur: Cell-Bitmask (welche Cell wurde promoted →
+    // dekorative Instanz übersprungen, V18.221 Ω-H), Cap-Wand (per-Schicht
+    // Cap 600k Bäume + 700k Understory + 1.5M Steine, Plan §13 Dichte-Band),
+    // Lookup-Buffer (V18.221 liest cell → species, variantIndex). Plan §8.2:
+    // drei Schichten teilen das Cell-Raster — Bäume 3.4 m, Understory 2.4 m,
+    // Steine 2.1 m. CPU-First (V18.220-Foundation): die Bitmask + die Cap-
+    // Wand wirken AUCH auf den bestehenden _vegetationSampleSpawn-Pfad. Die
+    // GPU-Compute-Aktivierung ist eine Folge-Welle (V18.220.1), die diese
+    // Strukturen mit echtem ≥-hunderte-Scatter füllt.
+
+    _scatterConfig() {
+        return {
+            // Plan §8.2 Cell-Raster
+            treeCellM: 3.4,
+            underCellM: 2.4,
+            stoneCellM: 2.1,
+            // Plan §13 Cap-Wand
+            capTrees: 600000,
+            capUnderstory: 700000,
+            capStones: 1500000,
+        };
+    }
+
+    // V18.220 — Cell-Key in Welt-Koords (deterministisch, P2P-sicher).
+    // Layer ∈ {"tree", "under", "stone"}; das Cell-Raster pro Layer.
+    _scatterCellKeyAt(x, z, layer) {
+        const cfg = this._scatterConfig();
+        let cell;
+        if (layer === "under") cell = cfg.underCellM;
+        else if (layer === "stone") cell = cfg.stoneCellM;
+        else cell = cfg.treeCellM;
+        const cx = Math.floor(x / cell);
+        const cz = Math.floor(z / cell);
+        return `${layer}:${cx},${cz}`;
+    }
+
+    // V18.220 — die PROMOTED-Bitmask. Plan §2 + §8: ein Cell, das via Ω-H
+    // promoted wurde, wird vom Scatter-Pass übersprungen (kein dekorativer
+    // Doppel-Tree). Snapshot-getragen — die Promotion überlebt den Reload.
+    _ensureScatterPromotedSet() {
+        if (!this.state.scatterPromoted || !(this.state.scatterPromoted instanceof Set)) {
+            this.state.scatterPromoted = new Set();
+        }
+        return this.state.scatterPromoted;
+    }
+
+    _scatterIsCellPromoted(x, z, layer) {
+        const set = this.state.scatterPromoted;
+        if (!set || set.size === 0) return false;
+        return set.has(this._scatterCellKeyAt(x, z, layer || "tree"));
+    }
+
+    _scatterMarkCellPromoted(x, z, layer) {
+        const set = this._ensureScatterPromotedSet();
+        set.add(this._scatterCellKeyAt(x, z, layer || "tree"));
+    }
+
+    // V18.220 — die Cap-Wand. Pro Layer ein Zähler; das CPU-Scatter erhöht
+    // ihn bei jedem _enqueueVegetationSpawn (Architektur-Promotion via Ω-H
+    // wandert NICHT, die ist auf REALE Bäume gerichtet).
+    _ensureScatterCounters() {
+        if (!this.state.scatterCounters) {
+            this.state.scatterCounters = { tree: 0, under: 0, stone: 0 };
+        }
+        return this.state.scatterCounters;
+    }
+
+    _scatterIncrementCounter(layer) {
+        const c = this._ensureScatterCounters();
+        if (layer === "under") c.under = (c.under | 0) + 1;
+        else if (layer === "stone") c.stone = (c.stone | 0) + 1;
+        else c.tree = (c.tree | 0) + 1;
+    }
+
+    _scatterCounterAtCap(layer) {
+        const cfg = this._scatterConfig();
+        const c = this._ensureScatterCounters();
+        if (layer === "under") return c.under >= cfg.capUnderstory;
+        if (layer === "stone") return c.stone >= cfg.capStones;
+        return c.tree >= cfg.capTrees;
+    }
+
+    // V18.220 — der LOOKUP-Buffer: cellKey → {species, variantIndex} für
+    // V18.221 Promotion-Resolver. Wenn die Welt einen Scatter-Punkt setzt
+    // (egal CPU oder GPU), MUSS sie hier eintragen — sonst kann Ω-H die
+    // Cell nicht zur Form-Identität resolven.
+    _ensureScatterLookup() {
+        if (!this.state.scatterLookup || !(this.state.scatterLookup instanceof Map)) {
+            this.state.scatterLookup = new Map();
+        }
+        return this.state.scatterLookup;
+    }
+
+    _scatterRegisterCell(x, z, layer, species, variantIndex) {
+        const map = this._ensureScatterLookup();
+        const key = this._scatterCellKeyAt(x, z, layer || "tree");
+        map.set(key, { species: String(species || ""), variantIndex: variantIndex | 0 });
+    }
+
+    _scatterLookupCell(x, z, layer) {
+        const map = this.state.scatterLookup;
+        if (!map || map.size === 0) return null;
+        return map.get(this._scatterCellKeyAt(x, z, layer || "tree")) || null;
+    }
+
+    // V18.219 — Edit-Invalidation: ein voxel-Edit ändert die Surface in
+    // seinem Radius → die Backing-Region-Daten sind stale. Wir markieren
+    // sie als dirty (Lazy-Rebake beim nächsten Sample). Pro Edit werden
+    // höchstens 2×2 = 4 Regionen berührt (12 m-Edit + 256 m-Region).
+    _invalidateBakedRegionsAround(x, z, radius) {
+        if (!this.state.bakedRegionFields || this.state.bakedRegionFields.size === 0) return;
+        const cfg = this._bakeRegionConfig();
+        const r = Math.max(1, radius || 6);
+        const minRX = Math.floor((x - r) / cfg.sizeM);
+        const maxRX = Math.floor((x + r) / cfg.sizeM);
+        const minRZ = Math.floor((z - r) / cfg.sizeM);
+        const maxRZ = Math.floor((z + r) / cfg.sizeM);
+        for (let rx = minRX; rx <= maxRX; rx++) {
+            for (let rz = minRZ; rz <= maxRZ; rz++) {
+                const key = this._bakedRegionKey(rx, rz);
+                const entry = this.state.bakedRegionFields.get(key);
+                if (entry) entry.dirty = true;
+            }
+        }
+    }
+
     _chooseLODForDistance(distance, currentLOD) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return 0;
@@ -51199,6 +51794,31 @@ class AnazhRealm {
             // W10 ext. Politur — die Affordance-Stärke wird wie das Profil
             // EINMAL beim Spawn eingefroren (Substanz-Schnappschuss).
             entry.affordanceStrength = this.computeAffordanceStrength(bp);
+            // V18.218.1 (LOD-ACTIVATION) — wenn der Bauplan ein GEWACHSENER
+            // BAUM ist (Plan §3.6+§6 Form-Identität), merken wir Species +
+            // VariantIndex am Eintrag → `_tickArchitectureLOD` kann durch die
+            // Distanz die LOD-Stufe wechseln, ohne die Welt-Identität zu
+            // verlieren (Plan §2 SEELEN-Band: Berührung → Real). Backward-
+            // Kompat: nicht-Bäume bleiben unangetastet.
+            if (bp._isGrown && typeof bp._grownSpecies === "string" && Number.isFinite(bp._variantIndex)) {
+                entry._lodSpecies = bp._grownSpecies;
+                entry._lodVariantIndex = bp._variantIndex;
+                entry._lodLevel = Number.isFinite(bp._lodLevel) ? bp._lodLevel : 0;
+                // V18.221 (DER LEBENDIGE GIGANT §6, Plan §2) — Ω-H PROMOTION
+                // implizit: in unserer Architektur ist JEDER grown-Baum von
+                // Anfang an ein echtes Welt-Programm-Ding (kein dekorativer
+                // Scatter). Wir markieren seine Cell als „promoted" → die
+                // Scatter-Bitmask schützt den Slot vor späterer Dekoration
+                // (V18.220.1 GPU-Activation würde sonst eine zweite Instanz
+                // SETZEN). Plan-zitat: „die Welt vergisst nicht — eine
+                // Berührung verändert sie für alle".
+                if (this._scatterMarkCellPromoted) {
+                    this._scatterMarkCellPromoted(position.x, position.z, "tree");
+                }
+                if (this._scatterRegisterCell) {
+                    this._scatterRegisterCell(position.x, position.z, "tree", bp._grownSpecies, bp._variantIndex);
+                }
+            }
         }
         this.state.architectures.push(entry);
         // V9.65 (Welle A.2) / V9.75 (Welle C.4+5) — Blocker-AABBs pro
@@ -52377,6 +52997,20 @@ class AnazhRealm {
             }
         }
 
+        // V18.220 (DER LEBENDIGE GIGANT §5) — die SCATTER-PROMOTED-BITMASK:
+        // wurde diese Cell schon promotet (ein REALER Baum lebt hier, V18.221
+        // Ω-H), überspringt der dekorative Scatter sie. Plan §2 SEELEN-Band:
+        // „die Welt vergisst nicht — eine Berührung verändert sie für alle".
+        if (this._scatterIsCellPromoted && this._scatterIsCellPromoted(sampleX, sampleZ, "tree")) {
+            return 0;
+        }
+        // V18.220 — die CAP-Wand. Plan §13 (600k Tree / 700k Under / 1.5M Stone).
+        // Bei einer CPU-First-Welt ist die echte Decke ~10k pro Layer — der Cap
+        // schützt vor Memory-Explosion bei extremen Welten.
+        if (this._scatterCounterAtCap && this._scatterCounterAtCap("tree")) {
+            return 0;
+        }
+
         // Streu-Pass: beste-Affinität-Bauplan an dieser Position.
         let bestName = null;
         let bestAffinity = 0;
@@ -52583,6 +53217,26 @@ class AnazhRealm {
                     // Yaw weiter unten gemeinsam — kein doppelter Code.
                     const yawRoll = (rng.noise2D(sampleX * 0.71 - 5.2, sampleZ * 0.71 + 3.9) + 1) / 2;
                     spawnYaw = yawRoll * Math.PI * 2;
+                    // V18.220 — die SCATTER-Cell registrieren (V18.221 Ω-H
+                    // liest hierdurch die species + variantIndex der gescatterten
+                    // Cell, ohne den Bauplan re-flatten zu müssen). Cap-Counter
+                    // erhöhen — Schicht „tree".
+                    const grownBp = this.state.blueprints && this.state.blueprints[grownKey];
+                    if (
+                        grownBp &&
+                        grownBp._isGrown &&
+                        Number.isFinite(grownBp._variantIndex) &&
+                        this._scatterRegisterCell
+                    ) {
+                        this._scatterRegisterCell(
+                            sampleX,
+                            sampleZ,
+                            "tree",
+                            grownBp._grownSpecies,
+                            grownBp._variantIndex
+                        );
+                    }
+                    if (this._scatterIncrementCounter) this._scatterIncrementCounter("tree");
                     this._enqueueVegetationSpawn(
                         spawnName,
                         { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
@@ -65733,6 +66387,18 @@ class AnazhRealm {
         // dauernd baut; V17.9-fix-Lehre). Die Dichte ist moderat gehalten, damit
         // die Queue den Warmup nicht flutet (statt Gate).
         this._tickPendingVegSpawns(4);
+        // V18.218.1 (DER LEBENDIGE GIGANT §3 ACTIVATION) — der LOD-TICK:
+        // wandert die tree-Architekturen, prüft Distanz zum Spieler, wechselt
+        // die LOD-Stufe (Hero ≤80m, Mittel 80-160m, Far >160m, ±10m Hysterese).
+        // Bounded: max 5 Switches/Frame + 256 Einträge angeschaut (Rolling).
+        // Activation-Flag `state.atmosphere.treeLOD` (Default true; in browser
+        // tunbar). Plan §3.6 — die FOUNDATION von V18.218 ist hier verdrahtet.
+        this._tickArchitectureLOD(5);
+        // V18.222 (DER LEBENDIGE GIGANT §7) — der CANOPY-STREAMING-Tick:
+        // 3×3-Region-Ring um den Spieler bauen, ferne disposen. Gated auf
+        // `state.atmosphere.canopyStreaming` (Default false; V18.222.1 nach
+        // Schöpfer-Browser-Audit aktiviert). No-Op wenn das Flag false ist.
+        this._tickCanopyStreaming();
         // V12.0-perf.h — Wasser-Iso deferred bauen (≤2/Frame), der schwerste
         // Main-Thread-Streaming-Posten verteilt statt im Chunk-Finalize-Frame.
         this._tickPendingWaterIso(4);
@@ -66416,7 +67082,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.218.0";
+AnazhRealm.VERSION = "18.222.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

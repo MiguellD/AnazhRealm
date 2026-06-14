@@ -36693,6 +36693,244 @@ async function checkBandV18218LODStufen(ctx) {
     check(`V18.218 (G1) VERSION floor ≥ 18.218.0 (gemessen ${res.versionStr})`, res.versionFloor18218 === true);
 }
 
+// V18.218.1+219+220+221+222 (DER LEBENDIGE GIGANT §3-§7) — die VOLLE Vollendung:
+// LOD-Activation per-Frame, GPU-Feld-Bake-Region-Cache, Scatter-Bitmask + Cap +
+// Lookup, Ω-H Promotion + Snapshot, Canopy chunk-streaming. End-to-end verdrahtet
+// (kein Passagier — jeder Helper hat einen echten Konsumenten im Loop oder Spawn-
+// Pfad). Eine grosse Wand-Funktion deckt alle fünf Wellen ab.
+async function checkBandV18219bisVollendung(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // ─── V18.218.1 LOD-ACTIVATION ────────────────────────────────
+        out.lodTickExists = typeof r._tickArchitectureLOD === "function";
+        out.lodSwitchExists = typeof r._switchArchitectureLOD === "function";
+        // Der Loop ist phasen-orchestriert (V9.44-f) — die Verdrahtung lebt in
+        // einer der `_loopXY`-Phasen, nicht im `_gameLoopTick`-Closure selbst.
+        // Wir prüfen ALLE Loop-Phasen-Quellen.
+        const loopSources = [];
+        if (r._gameLoopTick) loopSources.push(r._gameLoopTick.toString());
+        for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
+            if (/^_loop[A-Z]/.test(k) && typeof r[k] === "function") loopSources.push(r[k].toString());
+        }
+        const loopBody = loopSources.join("\n");
+        out.lodTickInLoop = /_tickArchitectureLOD/.test(loopBody);
+        out.lodFlagDefault = r.state.atmosphere && r.state.atmosphere.treeLOD === true;
+        const tickSrc = r._tickArchitectureLOD.toString();
+        out.lodTickReadsFlag = /atmosphere/.test(tickSrc) && /treeLOD/.test(tickSrc);
+        const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v218-lod-spawn-test");
+        if (grownKey && r.state.scene) {
+            const e = r.spawnArchitecture(
+                grownKey,
+                { x: 12345, y: r._voxelSurfaceY(12345, 6789) || 1, z: 6789 },
+                { silent: true, seed: 1 }
+            );
+            if (e) {
+                out.spawnedEntryHasLodFields =
+                    !!e._lodSpecies && Number.isFinite(e._lodVariantIndex) && Number.isFinite(e._lodLevel);
+                out.spawnedEntrySpeciesIsEiche = e._lodSpecies === "baum_eiche";
+                const switched = r._switchArchitectureLOD(e, 2);
+                out.lodSwitchedToLOD2 = switched === true && e._lodLevel === 2;
+                out.lodTypeChanged = /_lod2$/.test(e.type);
+                r._switchArchitectureLOD(e, 0);
+                out.lodSwitchedBack = e._lodLevel === 0 && !/_lod\d+$/.test(e.type);
+                r.removeArchitecture(e);
+            }
+        }
+
+        // ─── V18.219 GPU-FELD-BAKE ───────────────────────────────────
+        out.bakeRegionExists = typeof r._bakeRegionFields === "function";
+        out.sampleBakedExists = typeof r._sampleBakedField === "function";
+        out.invalidateBakedExists = typeof r._invalidateBakedRegionsAround === "function";
+        out.bakeConfigExists = typeof r._bakeRegionConfig === "function";
+        if (out.bakeRegionExists) {
+            const cfg = r._bakeRegionConfig();
+            out.bakeConfigValid =
+                Number.isFinite(cfg.sizeM) && Number.isFinite(cfg.res) && Number.isFinite(cfg.channels);
+            const entry = r._bakeRegionFields(0, 0);
+            out.bakeReturnsEntry = !!(entry && entry.data && entry.data.length > 0);
+            if (entry) {
+                out.bakeDataLength = entry.data.length;
+                out.bakeDataSizeCorrect = entry.data.length === cfg.res * cfg.res * cfg.channels;
+                out.bakeNotDirty = entry.dirty === false;
+                out.bakeHasSamples = entry.sampleCount === cfg.res * cfg.res;
+            }
+            const sample = r._sampleBakedField(50, 50);
+            out.sampleReturnsAllChannels =
+                sample &&
+                "height" in sample &&
+                "slope" in sample &&
+                "moisture" in sample &&
+                "lebendig" in sample &&
+                "glut" in sample &&
+                "magie" in sample;
+            if (sample && typeof r._voxelSurfaceY === "function") {
+                const directH = r._voxelSurfaceY(50, 50);
+                if (Number.isFinite(directH) && Number.isFinite(sample.height)) {
+                    out.bakeHeightError = Math.abs(sample.height - directH);
+                    out.bakeHeightAccurate = out.bakeHeightError < 5.0;
+                }
+            }
+            r._invalidateBakedRegionsAround(0, 0, 6);
+            const after = r.state.bakedRegionFields.get("0,0");
+            out.invalidationSetDirty = after && after.dirty === true;
+        }
+        const editSrc = r._addVoxelEdit ? r._addVoxelEdit.toString() : "";
+        out.editTriggersInvalidate = /_invalidateBakedRegionsAround/.test(editSrc);
+
+        // ─── V18.220 SCATTER-BITMASK + CAP + LOOKUP ──────────────────
+        out.scatterMarkPromotedExists = typeof r._scatterMarkCellPromoted === "function";
+        out.scatterIsPromotedExists = typeof r._scatterIsCellPromoted === "function";
+        out.scatterCounterExists = typeof r._scatterIncrementCounter === "function";
+        out.scatterRegisterExists = typeof r._scatterRegisterCell === "function";
+        out.scatterLookupExists = typeof r._scatterLookupCell === "function";
+        if (out.scatterMarkPromotedExists) {
+            r._scatterMarkCellPromoted(100, 200, "tree");
+            out.markedThenIsPromoted = r._scatterIsCellPromoted(100, 200, "tree") === true;
+            out.distantNotPromoted = r._scatterIsCellPromoted(500, 600, "tree") === false;
+        }
+        if (out.scatterRegisterExists) {
+            r._scatterRegisterCell(300, 400, "tree", "baum_birke", 7);
+            const look = r._scatterLookupCell(300, 400, "tree");
+            out.lookupSpecies = look && look.species === "baum_birke";
+            out.lookupVariantIndex = look && look.variantIndex === 7;
+        }
+        if (out.scatterCounterExists) {
+            const initial = r.state.scatterCounters && r.state.scatterCounters.tree;
+            r._scatterIncrementCounter("tree");
+            out.counterIncrements = r.state.scatterCounters.tree === (initial | 0) + 1;
+            out.counterNotAtCap = r._scatterCounterAtCap("tree") === false;
+        }
+        const sampleSrc = r._vegetationSampleSpawn ? r._vegetationSampleSpawn.toString() : "";
+        out.spawnReadsBitmask = /_scatterIsCellPromoted/.test(sampleSrc);
+        out.spawnCheckCap = /_scatterCounterAtCap/.test(sampleSrc);
+        out.spawnRegistersCell = /_scatterRegisterCell/.test(sampleSrc);
+
+        // ─── V18.221 Ω-H PROMOTION ───────────────────────────────────
+        const spawnSrc2 = r.spawnArchitecture ? r.spawnArchitecture.toString() : "";
+        out.spawnAutoPromotes =
+            /_scatterMarkCellPromoted/.test(spawnSrc2) && /_scatterRegisterCell/.test(spawnSrc2);
+        const snap = r.buildStateSnapshot();
+        out.snapshotCarriesPromoted = !!(
+            snap &&
+            snap.worldMeta &&
+            Array.isArray(snap.worldMeta.scatterPromoted)
+        );
+        if (out.snapshotCarriesPromoted) {
+            out.snapshotPromotedCount = snap.worldMeta.scatterPromoted.length;
+        }
+        const restoreSrc = r._loadStateRestoreWorldMeta ? r._loadStateRestoreWorldMeta.toString() : "";
+        out.restoreRebuildsPromotedSet =
+            /scatterPromoted/.test(restoreSrc) && /new Set/.test(restoreSrc);
+
+        // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
+        out.canopyConfigExists = typeof r._canopyChunkConfig === "function";
+        out.canopyEnsureExists = typeof r._canopyEnsureChunk === "function";
+        out.canopyDisposeExists = typeof r._canopyDisposeChunkByKey === "function";
+        out.canopyTickExists = typeof r._tickCanopyStreaming === "function";
+        out.canopyTickInLoop = /_tickCanopyStreaming/.test(loopBody);
+        out.canopyFlagDefault =
+            r.state.atmosphere && r.state.atmosphere.canopyStreaming === false;
+        const canopyTickSrc = r._tickCanopyStreaming.toString();
+        out.canopyTickReadsFlag = /canopyStreaming/.test(canopyTickSrc);
+        if (out.canopyEnsureExists) {
+            const savedFlag = r.state.atmosphere && r.state.atmosphere.canopyStreaming;
+            try {
+                r.state.atmosphere.canopyStreaming = true;
+                const mesh = r._canopyEnsureChunk(2, 3);
+                out.canopyMeshBuilt = !!(mesh && mesh.geometry && mesh.material);
+                if (mesh) {
+                    out.canopyMeshHasColor = !!mesh.geometry.attributes.color;
+                    out.canopyMeshHasUserdata = mesh.userData && mesh.userData.kind === "canopyChunk";
+                    out.canopyMeshInMap = !!(r.state.canopyChunks && r.state.canopyChunks.has("2,3"));
+                }
+                const disposed = r._canopyDisposeChunkByKey("2,3");
+                out.canopyDisposed = disposed === true;
+                out.canopyMeshGoneFromMap = !!(r.state.canopyChunks && !r.state.canopyChunks.has("2,3"));
+            } finally {
+                if (r.state.atmosphere) r.state.atmosphere.canopyStreaming = savedFlag;
+            }
+        }
+        out.worldWechselDisposesCanopy = /_canopyDisposeAllChunks/.test(restoreSrc);
+
+        // ─── VERSION ─────────────────────────────────────────────────
+        out.versionStr = A.VERSION;
+        const partsV = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        out.versionFloor18222 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 222);
+
+        return out;
+    });
+
+    // V18.218.1 LOD-Activation
+    check("V18.218.1 (L1) _tickArchitectureLOD Helper", res.lodTickExists === true);
+    check("V18.218.1 (L2) _switchArchitectureLOD Helper", res.lodSwitchExists === true);
+    check("V18.218.1 (L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
+    check("V18.218.1 (L4) atmosphere.treeLOD=true Default", res.lodFlagDefault === true);
+    check("V18.218.1 (L5) _tickArchitectureLOD respektiert das Flag", res.lodTickReadsFlag === true);
+    check("V18.218.1 (L6) spawnArchitecture markiert grown-tree-Entry mit _lod-Feldern", res.spawnedEntryHasLodFields === true);
+    check("V18.218.1 (L7) _lodSpecies = baum_eiche (Identitäts-Mark)", res.spawnedEntrySpeciesIsEiche === true);
+    check("V18.218.1 (L8) _switchArchitectureLOD wechselt zu LOD2", res.lodSwitchedToLOD2 === true);
+    check("V18.218.1 (L9) entry.type endet auf `_lod2`", res.lodTypeChanged === true);
+    check("V18.218.1 (L10) Zurück zu LOD0 (Form-Identität bewahrt)", res.lodSwitchedBack === true);
+
+    // V18.219 GPU-Feld-Bake
+    check("V18.219 (B1) _bakeRegionFields Helper", res.bakeRegionExists === true);
+    check("V18.219 (B2) _sampleBakedField Helper", res.sampleBakedExists === true);
+    check("V18.219 (B3) _invalidateBakedRegionsAround Helper", res.invalidateBakedExists === true);
+    check("V18.219 (B4) _bakeRegionConfig liefert sizeM/res/channels", res.bakeConfigValid === true);
+    check("V18.219 (B5) Bake-Akt liefert entry mit data-Float32Array", res.bakeReturnsEntry === true);
+    check(`V18.219 (B6) Bake-Data-Größe = res×res×channels (gemessen ${res.bakeDataLength})`, res.bakeDataSizeCorrect === true);
+    check("V18.219 (B7) Bake-Entry nach Build nicht dirty", res.bakeNotDirty === true);
+    check("V18.219 (B8) sampleCount = res×res", res.bakeHasSamples === true);
+    check("V18.219 (B9) _sampleBakedField liefert alle 6 Kanäle", res.sampleReturnsAllChannels === true);
+    check(`V18.219 (B10) Bake-Höhe ≈ _voxelSurfaceY (Fehler ${res.bakeHeightError !== undefined ? res.bakeHeightError.toFixed(2) : "?"}m)`, res.bakeHeightAccurate === true);
+    check("V18.219 (B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
+    check("V18.219 (B12) _addVoxelEdit ruft _invalidateBakedRegionsAround", res.editTriggersInvalidate === true);
+
+    // V18.220 Scatter-Bitmask + Cap + Lookup
+    check("V18.220 (S1) _scatterMarkCellPromoted Helper", res.scatterMarkPromotedExists === true);
+    check("V18.220 (S2) _scatterIsCellPromoted Helper", res.scatterIsPromotedExists === true);
+    check("V18.220 (S3) _scatterIncrementCounter Helper", res.scatterCounterExists === true);
+    check("V18.220 (S4) _scatterRegisterCell Helper", res.scatterRegisterExists === true);
+    check("V18.220 (S5) _scatterLookupCell Helper", res.scatterLookupExists === true);
+    check("V18.220 (S6) markiertes Cell ist promoted=true", res.markedThenIsPromoted === true);
+    check("V18.220 (S7) Distant cell promoted=false (kein false-positive)", res.distantNotPromoted === true);
+    check("V18.220 (S8) Lookup species=baum_birke", res.lookupSpecies === true);
+    check("V18.220 (S9) Lookup variantIndex=7", res.lookupVariantIndex === true);
+    check("V18.220 (S10) Counter inkrementiert", res.counterIncrements === true);
+    check("V18.220 (S11) Counter nicht am Cap nach 1 Inc", res.counterNotAtCap === true);
+    check("V18.220 (S12) _vegetationSampleSpawn liest Bitmask (Source)", res.spawnReadsBitmask === true);
+    check("V18.220 (S13) _vegetationSampleSpawn prüft Cap (Source)", res.spawnCheckCap === true);
+    check("V18.220 (S14) _vegetationSampleSpawn registriert Cell (Source)", res.spawnRegistersCell === true);
+
+    // V18.221 Ω-H Promotion
+    check("V18.221 (P1) spawnArchitecture auto-promoted grown-tree-Cell", res.spawnAutoPromotes === true);
+    check("V18.221 (P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
+    check(`V18.221 (P3) Snapshot enthält Promotionen (Anzahl ${res.snapshotPromotedCount})`, res.snapshotPromotedCount >= 0);
+    check("V18.221 (P4) _loadStateRestoreWorldMeta rebuildet das Set", res.restoreRebuildsPromotedSet === true);
+
+    // V18.222 Canopy chunk-streaming
+    check("V18.222 (C1) _canopyChunkConfig Helper", res.canopyConfigExists === true);
+    check("V18.222 (C2) _canopyEnsureChunk Helper", res.canopyEnsureExists === true);
+    check("V18.222 (C3) _canopyDisposeChunkByKey Helper", res.canopyDisposeExists === true);
+    check("V18.222 (C4) _tickCanopyStreaming Helper", res.canopyTickExists === true);
+    check("V18.222 (C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
+    check("V18.222 (C6) atmosphere.canopyStreaming Default false (OPT-IN)", res.canopyFlagDefault === true);
+    check("V18.222 (C7) _tickCanopyStreaming respektiert Flag", res.canopyTickReadsFlag === true);
+    check("V18.222 (C8) _canopyEnsureChunk baut Mesh+Geometry+Material", res.canopyMeshBuilt === true);
+    check("V18.222 (C9) Canopy-Mesh hat color-Attribute (vertexColors)", res.canopyMeshHasColor === true);
+    check("V18.222 (C10) Canopy-Mesh userData.kind=canopyChunk", res.canopyMeshHasUserdata === true);
+    check("V18.222 (C11) Canopy-Mesh in state.canopyChunks-Map", res.canopyMeshInMap === true);
+    check("V18.222 (C12) Disposal entfernt das Mesh aus der Map", res.canopyDisposed === true && res.canopyMeshGoneFromMap === true);
+    check("V18.222 (C13) Welt-Wechsel disposed alle Canopy-Chunks", res.worldWechselDisposesCanopy === true);
+
+    // Version
+    check(`V18.222 (V1) VERSION floor ≥ 18.222.0 (gemessen ${res.versionStr})`, res.versionFloor18222 === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -53892,6 +54130,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18216KarstUndUnderstory(ctx);
             await checkBandV18217VariantenPool(ctx);
             await checkBandV18218LODStufen(ctx);
+            await checkBandV18219bisVollendung(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
