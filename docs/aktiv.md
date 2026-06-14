@@ -11,6 +11,22 @@
 
 ## Stand (jüngste oben)
 
+**14.06.2026 — PLAN-REFLEXION + V18.216-V18.223 VORGEPLANT:** Schöpfer-Reflexions-Befund: V18.215 war als „faktisch vollendet" beschrieben — ehrliche Selbst-Reflexion zeigte: GPU im Plan (§5+§8), PBR im Plan (§10), Büsche definiert (§3.5+§8.2), KARST im Plan (§3.3) — ALLE übergangen mit Shortcut-Argumenten. **DER WAHRE STAND:** ~5 von 13 Plan-Punkten erfüllt; 8 echte Welle offen. **DER VOLLSTÄNDIGE FORTSETZUNG-PLAN in voller Tiefe** lebt jetzt in **`docs/gigant-fortsetzung-plan.md`** (komplett neu geschrieben):
+
+**V18.216-V18.223, 10-14 Sessions:**
+- §1 V18.216 — **KARST + BÜSCHE/UNDERSTORY-BAUPLANE** (Plan §3.3 + §3.5 + §8.2): KARST-Spezies (gnarl, Klippen), Hazel (1.9-2.9m), Farn-Cluster, Stand-Blume. Bush-Pass in `_vegetationSampleSpawn`.
+- §2 V18.217 — **VARIANTEN-POOL** (Plan §2.5): N=16 Varianten × 7 Spezies, gefrorenes `worldMeta.variantSeed[]`, P2P-deterministisch. **Voraussetzung Ω-H.**
+- §3 V18.218 — **LOD-STUFEN** (Plan §3.6, §6 Ω-G4): 3 LODs pro Variante (Hero/Tubes-cap/Single-Card), Hysterese, ferner Wald billig.
+- §4 V18.219 — **Ω-B GPU-FELD-BAKE** (Plan §5): StorageTextures pro Region (heightTex r32float + normalSlopeTex rgba16f + fieldsTex rgba16f). Edit-aktuell. **Voraussetzung §8.**
+- §5 V18.220 — **Ω-S GPU-COMPUTE-SCATTER** (Plan §8): drei TSL-Compute-Kernels (Bäume + Understory + Steine), Caps 600k+700k+1.5M, deterministische Projektion. **Plan §13 Dichte-Band.**
+- §6 V18.221 — **Ω-H VOLLE PROMOTION** (Plan §2): **das HERZ.** Raycast → instanceId → variantSeed → echter Bauplan mit Provenienz, OHNE visuellen Sprung. Per-Chunk-Bitmask für Suppression. **Plan §13 SEELEN-Band — „das wichtigste".**
+- §7 V18.222 — Canopy chunk-streaming (Plan §9 Vertiefung, klein).
+- §8 V18.223 — **Ω-P PBR-KOHÄRENZ** (Plan §10): S-Gate 4 Schöpfer-Entscheid (Toon/PBR/Hybrid). Plan §13 Kohärenz-Band.
+
+**Pro Welle:** Mechanik · Sub-Schritte · Code-Anker · Worker-Mirror · Snapshot · Welt-Wechsel-Reset · Tests · Risiken · Akzeptanz · Abhängigkeiten — ALLES gemessen + vorgeplant. Pflichtlektüre vor jeder nächsten Welle.
+
+---
+
 **14.06.2026 — V18.215 ✅ FERTIG, Branch `claude/peaceful-goldberg-49tj81`:**
 **DER ATEMBERAUBENDE WALD** (Schöpfer-Auftrag „champ, keine halben sachen mehr, der plan steht, vollende ihn, du kannst das, habe mut!" + „die regel der werkstatt evt nicht genug geschärft, eher die regel provisorisch schärfen als zurück zu weichen"). Die GPU-freien Plan-Punkte aus lebendiger-gigant be15a050 §4+§7+§8.2 sind GESCHLOSSEN.
 

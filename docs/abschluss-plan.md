@@ -18,14 +18,16 @@
 
 ---
 
-## §0 — STAND 14.06.2026 (nach V18.215 — DER LEBENDIGE GIGANT, DER ATEMBERAUBENDE WALD)
+## §0 — STAND 14.06.2026 (nach V18.215 + Plan-Reflexion)
 
-**📋 DER PLAN IST FAKTISCH VOLLENDET (CPU-Pfad).** Alle Plan-§13-Beweis-Bänder erfüllt: Säule I (V18.214) + Säule II (V18.214+V18.215) + Säule III (V18.215 CPU-Pfad mit Totholz+SAMPLES 10+V17.1-Scatter) + SEELEN-Band (EMERGENT, V18.212-Lehre) + Säule IV (V18.212+V18.214). **Optionale offene Wellen** (kein Vision-Schritt): Ω-B+Ω-S GPU-Pipeline (Million-Bäume-Skalierung) · Ω-P PBR (Plan §10 explizit optional). **Pflichtlektüre vor der nächsten Session.**
+**📋 DER VOLLE PLAN IST NOCH NICHT VOLLENDET.** V18.215 schloss Säule I+II+IV (Tubes/Cards/Wind/Toleranzen/Palette/distinkte Tags), aber 8 Plan-Punkte sind OFFEN. Schöpfer-Reflexions-Befund 14.06.2026: GPU war im Plan (§5+§8), PBR im Plan (§10), Büsche definiert (§3.5+§8.2), KARST im Plan (§3.3) — übergangen mit Shortcut-Argumenten. Voller Plan in **`docs/gigant-fortsetzung-plan.md`** — V18.216-V18.223, 10-14 Sessions, alle Sub-Schritte in voller Tiefe.
 
 **23 Wellen V18.193-V18.215 gebaut.** Branch: `claude/peaceful-goldberg-49tj81`, jüngste Code-Commits:
-- V18.215 — DER LEBENDIGE GIGANT, DER ATEMBERAUBENDE WALD (Ω-K3 Palette + Ω-R1 distinkte Tags + Säule III CPU + baum_totholz)
+- V18.215 — DER ATEMBERAUBENDE WALD (Ω-K3 Palette + Ω-R1 distinkte Tags + Säule III Teil-CPU + baum_totholz)
 - V18.214 — DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG (echte Tube-Geom + Foliage-Cards + per-Vertex Wind + Slope-Toleranzen)
 - V18.213 — DER LEBENDIGE GIGANT, MESH-MERGE pro Variante (38× Draw-Call-Reduktion)
+
+**OFFEN nach Plan be15a050:** KARST · Büsche/Understory · Varianten-Pool · LOD · Ω-B Feld-Bake · Ω-S GPU-Scatter · Ω-H VOLLE Promotion · Canopy-Streaming · Ω-P PBR. Reihenfolge + Abhängigkeiten in `gigant-fortsetzung-plan.md`.
 - `f447caa` Merge V18.211+V18.212 in main (14.06.)
 - `5b5cef3` V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE Ω-K2 + Ω-W + Ω-H + Ω-C
 - `1f485f3` V18.211 — DER LEBENDIGE GIGANT, SÄULE I (Skeleton-Grammar)
