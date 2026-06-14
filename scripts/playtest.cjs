@@ -34756,9 +34756,9 @@ async function checkBandV18209Konsolidierung(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.215.0"
+        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.216.0"
         out.versionStr = A.VERSION;
-        out.versionMatches = A.VERSION === "18.215.0";
+        out.versionMatches = A.VERSION === "18.216.0";
 
         // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
         // beim Konsolidieren (alles bleibt lauffähig):
@@ -34801,7 +34801,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
-    check(`V18.209 (K1) VERSION = "18.215.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
+    check(`V18.209 (K1) VERSION = "18.216.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
     check("V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)", res.allFoundationsAlive === true);
     check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
     check("V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)", res.avatarFamilyKomplett === true);
@@ -34825,9 +34825,9 @@ async function checkBandV18210Verdrahtung(ctx) {
         // ============== A1: Γ7 WORLDGEN-HOOK ==============
         // (A1a) Helper _growTreeBlueprintForSpawn existiert + ruft Helper
         out.a1HelperExists = typeof r._growTreeBlueprintForSpawn === "function";
-        // (A1b) gen-Default für FRESH ist 7 (V18.214 SKELETON-MESH statt V18.213's 6)
+        // (A1b) gen-Default für FRESH ist 9 (V18.216 KARST + Büsche)
         const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18214") : null;
-        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 8;
+        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 9;
         // (A1c) Determinismus: gleiches (species, seed) → gleicher cacheKey
         const k1 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
         const k2 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
@@ -35177,7 +35177,7 @@ async function checkBandV18210Verdrahtung(ctx) {
 
     // A1 — Worldgen-Hook
     check("V18.210-A1a _growTreeBlueprintForSpawn Helper existiert", res.a1HelperExists === true);
-    check("V18.215 FRESH-Welt genVersion = 8 (ATEMBERAUBENDER WALD aktiv; war 7)", res.a1FreshGenIs4 === true);
+    check("V18.216 FRESH-Welt genVersion = 9 (KARST + Büsche aktiv; war 8)", res.a1FreshGenIs4 === true);
     check("V18.210-A1c Determinismus: (species, seed) → derselbe cacheKey", res.a1Deterministic === true);
     check("V18.210-A1d Cache-Reuse: SELBE seed → SELBES Bauplan-Object", res.a1CacheReuse === true);
     check("V18.210-A1e 6 seeds → ≥5 unique cache keys", res.a1ManyVariants === true);
@@ -35270,20 +35270,24 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (S1) SPECIES_GRAMMAR existiert + trägt 6 Arten (frozen Config).
+        // (S1) SPECIES_GRAMMAR existiert + trägt die KERN-Arten (6 Bäume + Totholz).
+        // V18.216 (Plan §1) — KARST + 3 Büsche (busch_hazel/farn_busch/blume_gross)
+        // erweitern das Set auf 11. Wir akzeptieren ≥6 (Backward-Kompat bei
+        // sehr alten Welten) statt einer scharfen Zahl.
         out.grammarExists = !!A.SPECIES_GRAMMAR;
         if (out.grammarExists) {
             const species = Object.keys(A.SPECIES_GRAMMAR);
-            // V18.215 — baum_totholz dazugekommen → 7 Spezies. Wir akzeptieren
-            // 6 oder 7 (V18.211 baute 6, V18.215 + Totholz = 7).
-            out.sixSpecies = species.length === 6 || species.length === 7;
+            out.sixSpecies = species.length >= 6;
             out.allSpeciesPresent = ["baum_eiche", "baum_tanne", "baum_buche", "baum_birke", "baum_kiefer", "baum_erle"].every(
                 (s) => A.SPECIES_GRAMMAR[s] != null
             );
             // Pro Spezies: trunk + L1 + foliage müssen existieren (Plan-§3.3-Form).
+            // V18.216 — anchorLevel ≥ 1 (Büsche tragen ihre Krone schon an L1;
+            // Bäume an L2+; Karst an L3). Die Strenge „≥ 2" war eine Baum-
+            // Annahme, kein universelles Gesetz (Plan §3.5 erlaubt L1-Anchor).
             out.grammarShapeWohlgeformt = species.every((s) => {
                 const g = A.SPECIES_GRAMMAR[s];
-                return g && g.trunk && g.L1 && g.foliage && g.foliage.anchorLevel >= 2;
+                return g && g.trunk && g.L1 && g.foliage && g.foliage.anchorLevel >= 1;
             });
         }
 
@@ -35345,7 +35349,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
 
         // (S6) VERSION-BUMP: AnazhRealm.VERSION + index.html cache-buster.
         // Walk-with-code (V9.56-i): die Probe trägt die aktuelle Versions-Zahl.
-        out.versionBumped = A.VERSION === "18.215.0";
+        out.versionBumped = A.VERSION === "18.216.0";
 
         return out;
     });
@@ -35365,7 +35369,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
     check("V18.211 (S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)", res.snapshotHasMetadata === true);
     check("V18.211 (S5b) Snapshot grownBlueprints OHNE parts-Array (re-wächst f(seed))", res.snapshotNoParts === true);
     check("V18.211 (S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)", res.snapshotGrownEntrySmall === true);
-    check(`V18.211 (S6) VERSION = "18.215.0" (walk-with-code, V18.215 Atemberaubender Wald)`, res.versionBumped === true);
+    check(`V18.211 (S6) VERSION = "18.216.0" (walk-with-code, V18.216 KARST+Büsche)`, res.versionBumped === true);
 }
 
 // V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE der ersten Pillar-Welle:
@@ -36100,6 +36104,220 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
     check(`V18.215 (W8a) Holz dunkler+erdig (R<0x80, G<0x60) — gemessen R=${res.holzColor ? ((res.holzColor >> 16) & 0xff).toString(16) : "?"}, G=${res.holzColor ? ((res.holzColor >> 8) & 0xff).toString(16) : "?"}`, res.holzIsErdig === true);
     check(`V18.215 (W8b) Laub dunkler (G<0x80) — gemessen G=${res.laubColor ? ((res.laubColor >> 8) & 0xff).toString(16) : "?"}`, res.laubIsDunkel === true);
     check("V18.215 (W9) baum_totholz in _vegetationSampleSpawn-candidates (Plan §8.2)", res.candidatesIncludeTotholz === true);
+}
+
+// V18.216 (DER LEBENDIGE GIGANT §1, gigant-fortsetzung-plan) — KARST + Büsche /
+// Understory. Plan §3.3 (KARST als 7. Baumart, slopeMax 1.6) + §3.5 (drei
+// BUSCH-Bauplane busch_hazel/farn_busch/blume_gross) + §8.2 Schicht 2 (Bush-
+// Sub-Spawn-Strategie b: wenn Baum-probe fail → Busch am selben Slot, „in den
+// Lücken, wo der Wald nicht steht"). Die Wände prüfen Substanz (Grammar +
+// Params + Variation) + Pipeline-Integration (candidates + Sub-Spawn-Pfad).
+async function checkBandV18216KarstUndUnderstory(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // ─── (A) KARST in SPECIES_GRAMMAR + Params + Variation ───────
+        out.grammarHasKarst = !!(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_karst);
+        if (out.grammarHasKarst) {
+            const g = A.SPECIES_GRAMMAR.baum_karst;
+            out.karstAnchor3 = g.foliage.anchorLevel === 3; // L3 foliage (Plan §3.3)
+            out.karstHasL3 = !!g.L3;
+            out.karstCrownIrregular = g.crown === "irregular";
+            out.karstHeightRange = Array.isArray(g.height) && g.height[1] <= 6.5;
+        }
+        out.karstInTreeParams = !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_karst);
+        if (out.karstInTreeParams) {
+            const p = A.SPECIES_TREE_PARAMS.baum_karst;
+            out.karstSlope16 = Math.abs(p.slopeMax - 1.6) < 1e-9; // klettert Klippen
+            out.karstFlareAmp = !!p.flare && Math.abs(p.flare.amp - 0.9) < 1e-9;
+        }
+        out.karstInTagVariation = !!(A.SPECIES_TAG_VARIATION && A.SPECIES_TAG_VARIATION.baum_karst);
+        if (out.karstInTagVariation) {
+            const v = A.SPECIES_TAG_VARIATION.baum_karst;
+            out.karstDichteVar = Math.abs(v.dichte - 0.1) < 1e-9; // dichte+0.10 (M3)
+            out.karstLebendigVar = Math.abs(v.lebendig - -0.05) < 1e-9; // lebendig-0.05
+        }
+
+        // ─── (B) Drei Büsche in SPECIES_GRAMMAR ─────────────────────
+        out.grammarHasHazel = !!(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.busch_hazel);
+        out.grammarHasFarn = !!(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.farn_busch);
+        out.grammarHasBlume = !!(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.blume_gross);
+        if (out.grammarHasHazel) {
+            const g = A.SPECIES_GRAMMAR.busch_hazel;
+            out.hazelHeight = Array.isArray(g.height) && g.height[0] >= 1.9 && g.height[1] <= 2.9; // Plan §3.5
+            out.hazelCrownDome = g.crown === "dome";
+        }
+        if (out.grammarHasFarn) {
+            const g = A.SPECIES_GRAMMAR.farn_busch;
+            out.farnNoL2 = !g.L2; // KEIN L2 (fronds direkt aus der Basis)
+            out.farnAnchorL1 = g.foliage.anchorLevel === 1;
+        }
+        if (out.grammarHasBlume) {
+            const g = A.SPECIES_GRAMMAR.blume_gross;
+            out.blumeRedColor = g.foliage.color === 0xc04a4a; // rot (Plan §3.5 Variation)
+            out.blumeSmall = g.height[1] <= 0.9;
+        }
+
+        // Bush-Tree-Params + Tag-Variation
+        out.allBushInParams =
+            !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.busch_hazel) &&
+            !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.farn_busch) &&
+            !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.blume_gross);
+        if (out.allBushInParams) {
+            const ph = A.SPECIES_TREE_PARAMS.busch_hazel;
+            const pf = A.SPECIES_TREE_PARAMS.farn_busch;
+            const pb = A.SPECIES_TREE_PARAMS.blume_gross;
+            // Hazel klettert mehr (0.9), Blume meidet Steile (0.4)
+            out.bushSlopeOrdered = ph.slopeMax > pf.slopeMax && pf.slopeMax > pb.slopeMax;
+        }
+        out.allBushInVariation =
+            !!(A.SPECIES_TAG_VARIATION && A.SPECIES_TAG_VARIATION.busch_hazel) &&
+            !!(A.SPECIES_TAG_VARIATION && A.SPECIES_TAG_VARIATION.farn_busch) &&
+            !!(A.SPECIES_TAG_VARIATION && A.SPECIES_TAG_VARIATION.blume_gross);
+        if (out.allBushInVariation) {
+            const vh = A.SPECIES_TAG_VARIATION.busch_hazel;
+            const vf = A.SPECIES_TAG_VARIATION.farn_busch;
+            const vb = A.SPECIES_TAG_VARIATION.blume_gross;
+            // Alle drei deklarieren lebendig↑ (saftig)
+            out.allBushLebendigUp = vh.lebendig > 0 && vf.lebendig > 0 && vb.lebendig > 0;
+            // Farn + Blume mit magieleitung↑
+            out.farnBlumeMagical = vf.magieleitung > 0 && vb.magieleitung > 0;
+        }
+
+        // ─── (C) Wachstum produziert valide Bauplane für die 4 Neuen ─
+        if (r.state.worldMeta) r.state.worldMeta.genVersion = 9;
+        const origLast = r._lastTreeSkeleton;
+        try {
+            // KARST: ≥30 parts (drei Ast-Ebenen + foliage)
+            const kg = A.SPECIES_GRAMMAR.baum_karst;
+            if (kg && r._growTreeBlueprintRich) {
+                const parts = r._growTreeBlueprintRich("baum_karst", "v216-karst-1", kg);
+                out.karstPartsCount = Array.isArray(parts) ? parts.length : 0;
+                out.karstPartsValid = out.karstPartsCount >= 30;
+                // V17.16-VARIATIONS-Wand passt: dichte+0.10 deklariert → spawnable
+                out.karstAllHolzOrLaub =
+                    Array.isArray(parts) && parts.every((p) => p.material === "holz" || p.material === "laub");
+            }
+            // Bushes: ≥10 parts (multi-level branching + Foliage)
+            const hg = A.SPECIES_GRAMMAR.busch_hazel;
+            if (hg && r._growTreeBlueprintRich) {
+                const parts = r._growTreeBlueprintRich("busch_hazel", "v216-hazel-1", hg);
+                out.hazelPartsCount = Array.isArray(parts) ? parts.length : 0;
+                out.hazelPartsValid = out.hazelPartsCount >= 10;
+            }
+            const fg = A.SPECIES_GRAMMAR.farn_busch;
+            if (fg && r._growTreeBlueprintRich) {
+                const parts = r._growTreeBlueprintRich("farn_busch", "v216-farn-1", fg);
+                out.farnPartsCount = Array.isArray(parts) ? parts.length : 0;
+                out.farnPartsValid = out.farnPartsCount >= 6;
+                // farn hat ≥3 foliage anchors (cards)
+                const skel = r._lastTreeSkeleton;
+                out.farnAnchors = skel && Array.isArray(skel.anchors) ? skel.anchors.length : 0;
+                out.farnHasAnchors = out.farnAnchors >= 3;
+            }
+            const bg = A.SPECIES_GRAMMAR.blume_gross;
+            if (bg && r._growTreeBlueprintRich) {
+                const parts = r._growTreeBlueprintRich("blume_gross", "v216-blume-1", bg);
+                out.blumePartsCount = Array.isArray(parts) ? parts.length : 0;
+                out.blumePartsValid = out.blumePartsCount >= 4;
+            }
+        } catch (_e) {
+            out.growError = String(_e && _e.message);
+        } finally {
+            r._lastTreeSkeleton = origLast;
+        }
+
+        // ─── (D) Wachstum als spawnable Bauplan (V17.16-Wand passiert) ─
+        try {
+            const karstKey = r._growTreeBlueprintForSpawn("baum_karst", "v216-karst-spawn-1");
+            out.karstSpawnable = !!karstKey;
+            if (karstKey && r.state.blueprints[karstKey]) {
+                const bp = r.state.blueprints[karstKey];
+                out.karstBpIsGrown = bp._isGrown === true && bp._grownSpecies === "baum_karst";
+            }
+            const hazelKey = r._growTreeBlueprintForSpawn("busch_hazel", "v216-hazel-spawn-1");
+            out.hazelSpawnable = !!hazelKey;
+            const farnKey = r._growTreeBlueprintForSpawn("farn_busch", "v216-farn-spawn-1");
+            out.farnSpawnable = !!farnKey;
+            const blumeKey = r._growTreeBlueprintForSpawn("blume_gross", "v216-blume-spawn-1");
+            out.blumeSpawnable = !!blumeKey;
+        } catch (_e) {
+            out.spawnError = String(_e && _e.message);
+        }
+
+        // ─── (E) Source: candidates + TREE_NAMES + Bush-Sub-Spawn ─────
+        const spawnSrc = r._vegetationSampleSpawn.toString();
+        out.candidatesHasKarst = /["']baum_karst["']/.test(spawnSrc);
+        out.treeNamesHasKarst = /TREE_NAMES[\s\S]{0,400}["']baum_karst["']/.test(spawnSrc);
+        // Bush-Sub-Spawn Block: das BUSH_RATE-Konstrukt + "farn_busch"/"busch_hazel"/"blume_gross"
+        out.bushSubSpawn =
+            /BUSH_RATE/.test(spawnSrc) &&
+            /["']farn_busch["']/.test(spawnSrc) &&
+            /["']busch_hazel["']/.test(spawnSrc) &&
+            /["']blume_gross["']/.test(spawnSrc);
+
+        // ─── (F) Version + walk-with-code ────────────────────────────
+        out.versionString = A.VERSION;
+        out.versionIs18216 = A.VERSION === "18.216.0";
+        out.genVersionFresh9 = !!(r.state.worldMeta && r.state.worldMeta.genVersion >= 9);
+
+        return out;
+    });
+
+    // (A) KARST
+    check("V18.216 (A1) baum_karst in SPECIES_GRAMMAR", res.grammarHasKarst === true);
+    check("V18.216 (A2) Karst foliage.anchorLevel=3 (L3-Krone, Plan §3.3)", res.karstAnchor3 === true);
+    check("V18.216 (A3) Karst hat L3-Ast-Ebene", res.karstHasL3 === true);
+    check("V18.216 (A4) Karst crown=irregular (gnarled)", res.karstCrownIrregular === true);
+    check("V18.216 (A5) Karst in SPECIES_TREE_PARAMS", res.karstInTreeParams === true);
+    check("V18.216 (A6) Karst slopeMax=1.6 (klettert Klippen)", res.karstSlope16 === true);
+    check("V18.216 (A7) Karst flare amp=0.9 (Sockel knorrig)", res.karstFlareAmp === true);
+    check("V18.216 (A8) Karst in SPECIES_TAG_VARIATION", res.karstInTagVariation === true);
+    check("V18.216 (A9) Karst dichte+0.10 (hart)", res.karstDichteVar === true);
+    check("V18.216 (A10) Karst lebendig-0.05 (weniger saftig)", res.karstLebendigVar === true);
+
+    // (B) Drei Büsche
+    check("V18.216 (B1) busch_hazel in SPECIES_GRAMMAR", res.grammarHasHazel === true);
+    check("V18.216 (B2) farn_busch in SPECIES_GRAMMAR", res.grammarHasFarn === true);
+    check("V18.216 (B3) blume_gross in SPECIES_GRAMMAR", res.grammarHasBlume === true);
+    check("V18.216 (B4) Hazel height [1.9, 2.9] (Plan §3.5)", res.hazelHeight === true);
+    check("V18.216 (B5) Hazel crown=dome", res.hazelCrownDome === true);
+    check("V18.216 (B6) Farn KEIN L2 (fronds direkt aus der Basis)", res.farnNoL2 === true);
+    check("V18.216 (B7) Farn foliage.anchorLevel=1", res.farnAnchorL1 === true);
+    check("V18.216 (B8) Blume foliage.color=0xc04a4a (rot, Plan §3.5)", res.blumeRedColor === true);
+    check("V18.216 (B9) Blume height ≤0.9m (Stand-Blume)", res.blumeSmall === true);
+    check("V18.216 (B10) Alle 3 Büsche in SPECIES_TREE_PARAMS", res.allBushInParams === true);
+    check("V18.216 (B11) Bush-slopeMax-Reihenfolge Hazel>Farn>Blume", res.bushSlopeOrdered === true);
+    check("V18.216 (B12) Alle 3 Büsche in SPECIES_TAG_VARIATION", res.allBushInVariation === true);
+    check("V18.216 (B13) Alle 3 Büsche lebendig↑ deklariert", res.allBushLebendigUp === true);
+    check("V18.216 (B14) Farn + Blume magieleitung↑ deklariert", res.farnBlumeMagical === true);
+
+    // (C) Wachstum
+    check(`V18.216 (C1) Karst-rich-Grow ≥30 parts (gemessen ${res.karstPartsCount})`, res.karstPartsValid === true);
+    check("V18.216 (C2) Karst alle parts holz/laub (V17.16-Wand strukturell)", res.karstAllHolzOrLaub === true);
+    check(`V18.216 (C3) Hazel-Grow ≥10 parts (gemessen ${res.hazelPartsCount})`, res.hazelPartsValid === true);
+    check(`V18.216 (C4) Farn-Grow ≥6 parts (gemessen ${res.farnPartsCount})`, res.farnPartsValid === true);
+    check(`V18.216 (C5) Farn ≥3 foliage-anchors (gemessen ${res.farnAnchors})`, res.farnHasAnchors === true);
+    check(`V18.216 (C6) Blume-Grow ≥4 parts (gemessen ${res.blumePartsCount})`, res.blumePartsValid === true);
+
+    // (D) V17.16-VARIATIONS-Wand passiert
+    check("V18.216 (D1) Karst spawnable (V17.16-VARIATIONS-Wand passiert: dichte+0.10 deklariert)", res.karstSpawnable === true);
+    check("V18.216 (D2) Karst-Bauplan ist _isGrown + _grownSpecies=baum_karst", res.karstBpIsGrown === true);
+    check("V18.216 (D3) Hazel spawnable", res.hazelSpawnable === true);
+    check("V18.216 (D4) Farn spawnable", res.farnSpawnable === true);
+    check("V18.216 (D5) Blume spawnable", res.blumeSpawnable === true);
+
+    // (E) Source-Integration
+    check("V18.216 (E1) baum_karst in _vegetationSampleSpawn-candidates", res.candidatesHasKarst === true);
+    check("V18.216 (E2) baum_karst in TREE_NAMES (Wald-Mask-Boost)", res.treeNamesHasKarst === true);
+    check("V18.216 (E3) Bush-Sub-Spawn-Pfad in _vegetationSampleSpawn (BUSH_RATE + 3 Bush-Namen)", res.bushSubSpawn === true);
+
+    // (F) Version
+    check(`V18.216 (F1) VERSION=18.216.0 (gemessen ${res.versionString})`, res.versionIs18216 === true);
+    check("V18.216 (F2) Fresh-Welt genVersion ≥ 9 (V18.216 Routing)", res.genVersionFresh9 === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -53298,6 +53516,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18213MeshMerge(ctx);
             await checkBandV18214SkeletonMesh(ctx);
             await checkBandV18215AtemberaubenderWald(ctx);
+            await checkBandV18216KarstUndUnderstory(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

@@ -12014,8 +12014,13 @@ class AnazhRealm {
         // deklarierte Δ pro Achse erlaubt, undeklarierte strict), Säule III
         // CPU-Dichte (3 Schichten: Bäume + Understory + Steine/Totholz),
         // baum_totholz SPECIES_GRAMMAR-Entry (Plan §3.3 — snag, kein foliage).
-        // Frische Welten kriegen 8.
-        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 8;
+        // V18.216 (DER LEBENDIGE GIGANT §1 — gigant-fortsetzung-plan) — 9=plus
+        // baum_karst (Plan §3.3 — gnarled Klippen-Baum, slopeMax 1.6) + drei
+        // BUSCH-Bauplane (busch_hazel/farn_busch/blume_gross) als eigene
+        // SPECIES_GRAMMAR-Entries + Bush-Sub-Spawn-Strategie (b): bei
+        // Baum-probe-fail Versuch eines Buschs am selben Sample-Slot. Frische
+        // Welten kriegen 9.
+        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 9;
         // V9.26 Phase 5c-Migrations-Flip + V9.33 Phase 5c.2.b Eingangs-Welt-
         // Flip + V9.35 Phase 5c.2.c.2 Toggle-Tod — der Voxel-Boden ist die
         // kanonische, irreversible Form. V9.35 zieht die ZWANGS-Migration nach:
@@ -12260,7 +12265,7 @@ class AnazhRealm {
         // Gesicht (legacy-erhaltend: das Drainage-Netz-Gesetz, Genese ist
         // Welt-Identität). V18.179: gen 3 schaltet Γ4-Makro-Geographie.
         // V18.210 (§1-A1): gen 4 schaltet Γ7-prozedurale Baum-Bauplane.
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 8 };
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 9 };
     }
 
     // Snapshot einer „leeren" Welt mit gegebenem worldMeta. Optional bekommt
@@ -52072,6 +52077,15 @@ class AnazhRealm {
         // Bäumen, wo der Wald „atmet". Die Tag-Variation (lebendig↓, brennbar↑↑)
         // macht es zur DEKLARIERTEN Spezies — die V17.16-VARIATIONS-Wand
         // erlaubt seine Substanz-Verschiebung, weil sie form-begründet ist.
+        // V18.216 (DER LEBENDIGE GIGANT §1 KARST + Büsche) — Plan §3.3 KARST
+        // als 7. Baumart (klettert Klippen, slopeMax 1.6 — niedrigste Stelle
+        // im Affinitäts-Wettstreit, hohes slopeMax-Tor). Die DREI Büsche
+        // (Plan §3.5 + §8.2 Schicht 2) sind hier NICHT in candidates — sie
+        // wandern als SUB-SPAWN (Strategie b: wenn Baum-probe fail, versuche
+        // Busch am selben Sample-Slot — „in den Lücken, wo der Wald nicht
+        // steht"). Das vermeidet das Affinitäts-Roulette + bewahrt die
+        // V17.16-VARIATIONS-Wand der Bäume (lebendig/brennbar-Drift der
+        // Büsche würde sonst die Baum-Verteilung verschieben, V17.16-Falle).
         const candidates = [
             "baum_eiche",
             "baum_kiefer",
@@ -52080,6 +52094,7 @@ class AnazhRealm {
             "baum_buche",
             "baum_tanne",
             "baum_totholz",
+            "baum_karst",
             "stein_block",
             "kristall_geode",
             "glutbrunnen",
@@ -52192,6 +52207,7 @@ class AnazhRealm {
             "baum_buche",
             "baum_tanne",
             "baum_totholz",
+            "baum_karst", // V18.216 — Klippen-Baum, derselbe Wald-Masken-Boost
         ]);
         const isTree = TREE_NAMES.has(bestName);
         let chance = BASE_RATE * bestAffinity * bestAffinity;
@@ -52207,7 +52223,90 @@ class AnazhRealm {
             const forest = Math.max(0.25, Math.min(2.6, 1 + 1.6 * this._clumpAt(sampleX, sampleZ, 0.006)));
             chance = Math.min(0.5, chance * forest);
         }
-        if (probe >= chance) return 0;
+        if (probe >= chance) {
+            // V18.216 (DER LEBENDIGE GIGANT §1, Plan §3.5 + §8.2 UNDERSTORY) —
+            // Bush-Sub-Spawn-Strategie (b): wenn der BAUM-Slot kippt (probe
+            // fail), versuche einen BUSCH an derselben Sample-Position. „In
+            // den Lücken, wo der Wald nicht steht" (Plan §8.2 Schicht 2). Drei
+            // Substanz-Wege: feuchte Lücken → Farn (magie-affin); lebendige
+            // Lücken → Blume (rot, magisch); sonst Hazel (Standard-Strauch).
+            // BUSH_RATE skaliert mit der lebendig-Achse (Wälder haben dichtere
+            // Lücken-Schicht; trockene Steppe wenige Büsche). Bushes laufen
+            // durch DENSELBEN gen ≥ 4 Wachstums-Pfad — die V17.16-Wand bleibt
+            // (Tag-Variation deklariert).
+            if (isTree) {
+                const BUSH_RATE = 0.18; // Erst-Wurf-Wert; browser-justierbar
+                const bushProbe = (rng.noise2D(sampleX * 0.47 - 2.1, sampleZ * 0.47 + 6.3) + 1) / 2;
+                const f2 = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
+                const lebendig2 = f2 ? f2.lebendig : 0;
+                const bushChance = BUSH_RATE * (0.4 + lebendig2 * 0.9);
+                if (bushProbe < bushChance) {
+                    // Spezies-Wahl: Feuchte > 0.55 → Farn; sonst lebendig >
+                    // 0.5 → Blume; sonst Hazel. Deterministisch über noise2D.
+                    let bushName;
+                    if (feuchte > 0.55) bushName = "farn_busch";
+                    else if (lebendig2 > 0.5) bushName = "blume_gross";
+                    else bushName = "busch_hazel";
+                    // Slope/Höhen-Gate für die GEWÄHLTE Busch-Spezies (eigene
+                    // SPECIES_TREE_PARAMS-Toleranz, Hazel klettert weiter als
+                    // die Blume).
+                    const bushParams = AnazhRealm.SPECIES_TREE_PARAMS && AnazhRealm.SPECIES_TREE_PARAMS[bushName];
+                    if (bushParams) {
+                        const baseH2 = this.state.terrainBaseHeight || 0;
+                        const relH2 = surfaceY - baseH2;
+                        const bhr = bushParams.heightRange;
+                        if (Array.isArray(bhr) && bhr.length === 2) {
+                            if (relH2 < bhr[0] || relH2 > bhr[1]) return 0;
+                        }
+                        const bushSlopeMax = +bushParams.slopeMax || 1.5;
+                        if (bushSlopeMax < 1.5 && typeof this.getTerrainHeightAt === "function") {
+                            const hxp = this.getTerrainHeightAt(sampleX + 2, sampleZ);
+                            const hxn = this.getTerrainHeightAt(sampleX - 2, sampleZ);
+                            const hzp = this.getTerrainHeightAt(sampleX, sampleZ + 2);
+                            const hzn = this.getTerrainHeightAt(sampleX, sampleZ - 2);
+                            if (
+                                Number.isFinite(hxp) &&
+                                Number.isFinite(hxn) &&
+                                Number.isFinite(hzp) &&
+                                Number.isFinite(hzn)
+                            ) {
+                                const dhx = (hxp - hxn) / 4;
+                                const dhz = (hzp - hzn) / 4;
+                                const slope = Math.sqrt(dhx * dhx + dhz * dhz);
+                                if (slope > bushSlopeMax) return 0;
+                            }
+                        }
+                    }
+                    // gen ≥ 4: durch den Wachstums-Pfad (rich Grammar baut den
+                    // Busch genauso wie einen Baum — multi-level branches +
+                    // foliage at anchors). Region-cache pro Busch-Spezies.
+                    const gV2 = this._genVersion ? this._genVersion() : 1;
+                    let bushSpawnName = bushName;
+                    let bushScale = 0.9 + ((rng.noise2D(sampleX * 0.59 + 1.7, sampleZ * 0.59 - 0.3) + 1) / 2) * 0.3;
+                    const bushYaw = ((rng.noise2D(sampleX * 0.73 + 3.7, sampleZ * 0.73 - 1.9) + 1) / 2) * Math.PI * 2;
+                    if (gV2 >= 4) {
+                        const regX = Math.floor(sampleX / 256);
+                        const regZ = Math.floor(sampleZ / 256);
+                        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+                        const regionSeed = `${worldSeed}|${bushName}|${regX},${regZ}`;
+                        const grownKey = this._growTreeBlueprintForSpawn(bushName, regionSeed);
+                        if (grownKey) bushSpawnName = grownKey;
+                    }
+                    this._enqueueVegetationSpawn(
+                        bushSpawnName,
+                        { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
+                        {
+                            seed: seedForSpawn ^ 0x4d2a9b71, // eigener Suffix-Stream (Γ5)
+                            silent: true,
+                            scale: bushScale,
+                            rotationY: bushYaw,
+                        }
+                    );
+                    return 1;
+                }
+            }
+            return 0;
+        }
 
         // W-H (V18.178/.179, §8.5(a)+(d)) — die GESTALT + GRÖSSE + ROTATION pro
         // Baum. Der Affinitäts-Sieg (bestName) bleibt KANONISCH — die Verteilung
@@ -66076,7 +66175,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.215.0";
+AnazhRealm.VERSION = "18.216.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -66695,6 +66794,154 @@ AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
             size: 0.1,
         }),
     }),
+    // V18.216 (DER LEBENDIGE GIGANT §1, Plan §3.3) — KARST: gnarled, knorrig,
+    // klettert Klippen. höchster slopeMax (1.6) → spawnt wo andere Bäume nicht
+    // mehr können. Drei Ast-Ebenen (L1/L2/L3) → dichter, holziger Krone-Aufbau.
+    // foliage am L3-Anker (kleinere clusters, gedämpftes Grün) → die Krone
+    // erzählt „karg + alt". Tag-Variation: dichte↑0.10 (harzig+hart) + lebendig↓0.05
+    // (weniger saftig als Buche/Birke).
+    baum_karst: Object.freeze({
+        height: [3.5, 6.5],
+        crown: "irregular",
+        trunk: Object.freeze({ segs: 6, wander: 0.16, taper: 0.55, baseR: 0.32 }),
+        L1: Object.freeze({
+            density: 2.6,
+            whorl: 0,
+            childStart: 0.18,
+            childEnd: 0.95,
+            angleBase: 1.4,
+            lenRatio: 0.35,
+            droop: 0.35,
+            tipCurl: 0.08,
+            radRatio: 0.38,
+        }),
+        L2: Object.freeze({
+            density: 3.8,
+            whorl: 0,
+            childStart: 0.2,
+            childEnd: 1.0,
+            angleBase: 1.1,
+            lenRatio: 0.28,
+            droop: 0.4,
+            tipCurl: 0.04,
+            radRatio: 0.42,
+        }),
+        L3: Object.freeze({
+            density: 5.0,
+            whorl: 0,
+            childStart: 0.3,
+            childEnd: 1.0,
+            angleBase: 0.95,
+            lenRatio: 0.22,
+            droop: 0.45,
+            tipCurl: 0.02,
+            radRatio: 0.5,
+        }),
+        foliage: Object.freeze({
+            kind: "leafCluster",
+            anchorLevel: 3,
+            spacing: 0.055,
+            clusterSize: [2, 4],
+            color: 0x4a6230,
+            size: 0.45,
+        }),
+    }),
+    // V18.216 (DER LEBENDIGE GIGANT §1, Plan §3.5+§8.2 UNDERSTORY) — drei
+    // BUSCH-Bauplane. Jeder ist eine eigene SPECIES_GRAMMAR-Spezies (kein
+    // „kleiner Baum"-Hack), damit der bestehende Skeleton+Tube+Cards-Pfad sie
+    // trägt (V18.214-Form-Strenge, die Welt liest das Form-Profil aus der
+    // Substanz). foliage.anchorLevel = 1 oder 2 (kein L3), kleinere Heights,
+    // dünnere Trunks. Tag-Variation: lebendig↑ (saftig) + leichte magieleitung
+    // bei Farn/Blume (Plan §8.2: „Understory unter Clump-Kronen, in Lücken").
+    busch_hazel: Object.freeze({
+        // Hazel — Haselnuss-Strauch, dome-Krone, mittel-dicht
+        height: [1.9, 2.9],
+        crown: "dome",
+        trunk: Object.freeze({ segs: 3, wander: 0.05, taper: 0.5, baseR: 0.12 }),
+        L1: Object.freeze({
+            density: 4.0,
+            whorl: 0,
+            childStart: 0.15,
+            childEnd: 0.95,
+            angleBase: 1.4,
+            lenRatio: 0.4,
+            droop: 0.25,
+            tipCurl: 0.1,
+            radRatio: 0.45,
+        }),
+        L2: Object.freeze({
+            density: 5.0,
+            whorl: 0,
+            childStart: 0.25,
+            childEnd: 1.0,
+            angleBase: 1.0,
+            lenRatio: 0.3,
+            droop: 0.3,
+            tipCurl: 0.08,
+            radRatio: 0.5,
+        }),
+        foliage: Object.freeze({
+            kind: "leafCluster",
+            anchorLevel: 2,
+            spacing: 0.08,
+            clusterSize: [2, 4],
+            color: 0x4a7d3a,
+            size: 0.32,
+        }),
+    }),
+    farn_busch: Object.freeze({
+        // Farn-Cluster: NUR L1 (fronds direkt aus der Basis) — KEIN L2-Eintrag,
+        // der grow-Pfad überspringt L2 automatisch (`if (grammar.L2 && ...)`).
+        height: [1.0, 1.8],
+        crown: "ellipsoid",
+        trunk: Object.freeze({ segs: 2, wander: 0.02, taper: 0.2, baseR: 0.06 }),
+        L1: Object.freeze({
+            density: 6.0,
+            whorl: 0,
+            childStart: 0.0,
+            childEnd: 0.98,
+            angleBase: 1.5,
+            lenRatio: 0.85,
+            droop: 0.5,
+            tipCurl: 0.06,
+            radRatio: 0.3,
+        }),
+        // KEIN L2 — fronds gehen direkt von der Basis aus (Plan §3.5).
+        foliage: Object.freeze({
+            kind: "leafCluster",
+            anchorLevel: 1,
+            spacing: 0.12,
+            clusterSize: [3, 5],
+            color: 0x5a8a3a,
+            size: 0.4,
+        }),
+    }),
+    blume_gross: Object.freeze({
+        // Stand-Blume (50-90cm) — winzige Bühne mit roter Krone (Variation in
+        // Spezies-Optik). NUR L1, foliage als 1-2 cluster pro anchor.
+        height: [0.5, 0.9],
+        crown: "ellipsoid",
+        trunk: Object.freeze({ segs: 2, wander: 0.03, taper: 0.3, baseR: 0.025 }),
+        L1: Object.freeze({
+            density: 3.0,
+            whorl: 0,
+            childStart: 0.7,
+            childEnd: 1.0,
+            angleBase: 0.6,
+            lenRatio: 0.3,
+            droop: 0.0,
+            tipCurl: 0.05,
+            radRatio: 0.5,
+        }),
+        foliage: Object.freeze({
+            kind: "leafCluster",
+            anchorLevel: 1,
+            spacing: 0.06,
+            clusterSize: [1, 2],
+            color: 0xc04a4a, // rot — Variation in Spezies (Plan §3.5)
+            size: 0.18,
+        }),
+    }),
 });
 
 // V18.214 (DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG) — die zwei neuen
@@ -66751,6 +66998,33 @@ AnazhRealm.SPECIES_TREE_PARAMS = Object.freeze({
         slopeMax: 1.0,
         heightRange: Object.freeze([-30, 160]),
     }),
+    // V18.216 (Plan §3.7) — KARST klettert Klippen (slopeMax 1.6, das höchste
+    // aller Spezies); heightRange [-30, 80] bewusst eng (Klippen-Zone, kein
+    // hoch-alpiner Karst). Plan §3.3-Form: flare amp 0.9 (stark, gnarled
+    // Sockel) × lobes 6.
+    baum_karst: Object.freeze({
+        flare: Object.freeze({ amp: 0.9, lobes: 6 }),
+        slopeMax: 1.6,
+        heightRange: Object.freeze([-30, 80]),
+    }),
+    // V18.216 (Plan §3.5) — Büsche: dezenter flare (kleinere Sockel-Aufweitung),
+    // mittlere bis kleine slopeMax (Hazel klettert leichter, Blume meidet Steile),
+    // weite heightRange (Understory wächst überall, wo der Baum-Schatten fällt).
+    busch_hazel: Object.freeze({
+        flare: Object.freeze({ amp: 0.2, lobes: 3 }),
+        slopeMax: 0.9,
+        heightRange: Object.freeze([-30, 90]),
+    }),
+    farn_busch: Object.freeze({
+        flare: Object.freeze({ amp: 0.0, lobes: 0 }),
+        slopeMax: 0.5,
+        heightRange: Object.freeze([-40, 60]),
+    }),
+    blume_gross: Object.freeze({
+        flare: Object.freeze({ amp: 0.0, lobes: 0 }),
+        slopeMax: 0.4,
+        heightRange: Object.freeze([-30, 50]),
+    }),
 });
 
 // V18.215 (DER LEBENDIGE GIGANT, Ω-R1 distinkte Tag-Vektoren — lebendiger-
@@ -66775,6 +67049,11 @@ AnazhRealm.SPECIES_TAG_VARIATION = Object.freeze({
     baum_eiche: Object.freeze({ lebendig: 0.05 }), // robust-saftig (subtil)
     baum_erle: Object.freeze({ lebendig: 0.08 }), // wasser-saftig
     baum_totholz: Object.freeze({ lebendig: -0.5, brennbar: 0.2 }), // tot + brennbar (Δ ehrlich groß)
+    // V18.216 (Plan §1 M3 + §3.5) — die neuen Substanz-Vektoren:
+    baum_karst: Object.freeze({ dichte: 0.1, lebendig: -0.05 }), // hart, weniger saftig (Klippen-Geste)
+    busch_hazel: Object.freeze({ lebendig: 0.08, brennbar: 0.05 }), // saftig + brennbar
+    farn_busch: Object.freeze({ lebendig: 0.12, magieleitung: 0.05 }), // sehr saftig, leicht magisch
+    blume_gross: Object.freeze({ lebendig: 0.15, magieleitung: 0.1 }), // hoch lebendig + magisch
 });
 
 // V18.199 — Γ-M MULTI-CLASS-MATERIAL LICHEN: grüne Patina auf alten/feuchten
