@@ -20,7 +20,10 @@
 
 ## §0 — STAND 14.06.2026 (nach V18.211 + V18.212 — DER LEBENDIGE GIGANT)
 
+**📋 DER VOLLSTÄNDIGE FORTSETZUNG-PLAN für V18.213-V18.219 lebt in `docs/gigant-fortsetzung-plan.md`** — 7 Wellen mit voller Tiefe: Mechanik · Sub-Schritte · Code-Anker · Worker-Mirror · Snapshot · Welt-Wechsel-Reset · Tests · Risiken · Akzeptanz · Abhängigkeiten. Plus Querschnitt-Disziplinen + Test-Effizienz-Pattern + Risiko-Matrix. **Pflichtlektüre vor der nächsten Session.**
+
 **20 Wellen V18.193-V18.212 gebaut.** Branch: `claude/kind-rubin-udn6cn`, jüngste Code-Commits:
+- `f447caa` Merge V18.211+V18.212 in main (14.06.)
 - `5b5cef3` V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE Ω-K2 + Ω-W + Ω-H + Ω-C
 - `1f485f3` V18.211 — DER LEBENDIGE GIGANT, SÄULE I (Skeleton-Grammar)
 - `d5d33a1` V18.210 (Schöpfer-Watch + drei Audit-Cycles)
