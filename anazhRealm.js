@@ -15958,6 +15958,13 @@ class AnazhRealm {
         const sources = this._creatureScentSourcesScratch || (this._creatureScentSourcesScratch = []);
         sources.length = 0;
         const creatures = this.state.creatures || [];
+        // V18.210 (Schöpfer-Audit Watch-Item #1) — sizeFactor PRO SEELE memoizen,
+        // nicht pro Tick × 12 Quellen neu rechnen. Der Wert hängt allein an den
+        // Body-Parts der Soul-Definition (frozen), wechselt also NIE für eine
+        // Soul. Cache `state._scentSizeBySoul: Map<soulName, sizeFactor>` füllt
+        // sich lazy — bei N Souls × 1 Compute statt N×∞ — exakt analog der
+        // `_creatureTemperament`-Cache-Disziplin (V18.107).
+        const sizeBySoul = this._scentSizeBySoul || (this._scentSizeBySoul = new Map());
         for (let i = 0; i < creatures.length; i++) {
             const other = creatures[i];
             if (!other || other === creature) continue;
@@ -15966,13 +15973,19 @@ class AnazhRealm {
             const dx = other.position.x - cx;
             const dz = other.position.z - cz;
             if (dx * dx + dz * dz > scentRange * scentRange) continue;
-            // sizeFactor als strength (eine grosse Beute zieht stärker an).
-            const sizeFactor =
-                typeof this._compoundSizeFactor === "function" && other.userData && other.userData.soul
-                    ? this._compoundSizeFactor({
-                          parts: (AnazhRealm.CREATURE_SOULS[other.userData.soul] || {}).bodyParts || [],
-                      })
-                    : 1.0;
+            // sizeFactor als strength (eine grosse Beute zieht stärker an) —
+            // PRO SOUL gecacht.
+            const soulName = other.userData && other.userData.soul;
+            let sizeFactor;
+            if (soulName && sizeBySoul.has(soulName)) {
+                sizeFactor = sizeBySoul.get(soulName);
+            } else if (soulName && typeof this._compoundSizeFactor === "function") {
+                const soul = AnazhRealm.CREATURE_SOULS[soulName];
+                sizeFactor = this._compoundSizeFactor({ parts: (soul && soul.bodyParts) || [] });
+                sizeBySoul.set(soulName, sizeFactor);
+            } else {
+                sizeFactor = 1.0;
+            }
             sources.push({ x: other.position.x, z: other.position.z, strength: sizeFactor });
             // Cap, damit ein dichter Schwarm den Scent-Pfad nicht O(N²) macht.
             if (sources.length >= 12) break;
@@ -23838,15 +23851,18 @@ class AnazhRealm {
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
                 // M7 — microStrength ist ein UNIFORM (der Settings-Regler lebt);
                 // W-E: profil-gewichtet (ein Regler, eine Welt-Antwort).
-                // V18.207 → V18.210 (§1-A2): R5-Boost ist jetzt ein LIVE-UNIFORM
+                // V18.207 → V18.210 (§1-A2): R5-Boost ist ein LIVE-UNIFORM
                 // (browser-justierbar im Settings-Slider „Struktur-Tiefe", nicht
                 // mehr ein statischer Frozen-Wert) — der Settings-Slider TREIBT
-                // das Render in Echtzeit. Fallback auf die Frozen-Konstante (1.3)
-                // beim ersten Pass, bevor der atmosphere-State liegt.
-                const _r5Boost =
-                    _au.r5StructureBoost ||
-                    _T.float((AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.3);
-                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(_r5Boost.mul(_p("micro")));
+                // das Render in Echtzeit. `_au.r5StructureBoost` ist in
+                // `_ensureAtmoUniforms` GARANTIERT vorhanden (initialer Wert
+                // aus atmosphere ODER R5_STRUCTURE_TEXTURE.microBoost) → kein
+                // Fallback-Branch nötig (V18.210-Schöpfer-Audit: der
+                // `|| _T.float(...)`-Fallback war GEMESSEN toter Code, ein
+                // Mini-Passagier, der nie feuerte — entfernt).
+                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(
+                    _au.r5StructureBoost.mul(_p("micro"))
+                );
                 let _shade = _T.float(1.0).add(_det.mul(_micro));
                 // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
                 // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
@@ -34059,6 +34075,11 @@ class AnazhRealm {
         // bit-identisch nach Re-Init).
         this._growTreeNoise = null;
         this._growTreeRing = [];
+        // V18.210 (Schöpfer-Audit Watch-Item #1) — der Scent-sizeFactor-Cache
+        // ist soul-keyed: er ist welt-unabhängig (Souls sind frozen Konstanten),
+        // aber ein Welt-Wechsel kann CREATURE_SOULS-Custom-Definitionen austauschen.
+        // Sauberster Pfad: am Welt-Identitäts-Wechsel leeren (defensive).
+        if (this._scentSizeBySoul) this._scentSizeBySoul.clear();
         if (state.worldMeta && typeof state.worldMeta === "object") {
             this.state.worldMeta = { ...this.state.worldMeta, ...state.worldMeta };
         } else {

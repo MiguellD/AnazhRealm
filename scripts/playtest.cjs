@@ -34855,6 +34855,42 @@ async function checkBandV18210Verdrahtung(ctx) {
         // Eviction — der bounded Memory-Schutz hält weiter).
         for (let s = 0; s < 300; s++) r._growTreeBlueprintForSpawn("baum_eiche", 90000 + s);
         out.a1RingCap = !r._growTreeRing || r._growTreeRing.length <= 256;
+        // (A3-Perf Watch-Item #1) — die Scent-sizeFactor-Cache muss PRO SOUL
+        // sein (1 Compute je Soul, nicht je Tick × Quelle). Source-Probe +
+        // Cache-Verhalten.
+        out.a3SizeCacheSrc = /_scentSizeBySoul/.test(r._creatureScentHuntDir.toString());
+        out.a3SizeCacheReuse = false;
+        if (out.a3SizeCacheSrc) {
+            // Eine Probe: cache leeren, einmal helper rufen (mit synth predator+prey),
+            // Cache-Size 1; nochmal rufen mit der gleichen Soul, Cache-Size bleibt 1.
+            if (r._scentSizeBySoul) r._scentSizeBySoul.clear();
+            const sm0 = r.getGameMode ? r.getGameMode() : "frieden";
+            try {
+                if (r.setGameMode) r.setGameMode("pfad");
+                const Pred = {
+                    position: new (window.THREE || A.THREE || {}).Vector3(0, 0, 0),
+                    userData: { soul: "wesen", _temperament: "wild", _temperamentSoul: "wesen", kind: "creature", boosts: [] },
+                };
+                const Prey = {
+                    position: new (window.THREE || A.THREE || {}).Vector3(10, 0, 0),
+                    userData: { soul: "sprite", _temperament: "scheu", _temperamentSoul: "sprite", kind: "creature", boosts: [] },
+                };
+                const savedC = r.state.creatures;
+                r.state.creatures = [Pred, Prey];
+                r._creatureScentHuntDir(Pred, 0.0);
+                const after1 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
+                r._creatureScentHuntDir(Pred, 0.0);
+                const after2 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
+                out.a3SizeCacheReuse = after1 === 1 && after2 === 1;
+                r.state.creatures = savedC;
+            } finally {
+                if (r.setGameMode) r.setGameMode(sm0);
+            }
+        }
+        // (Welt-Wechsel-Reset des Scent-Cache, V18.210-Audit-Folge)
+        out.a3SizeCacheResetsOnWorldSwitch = /_scentSizeBySoul[\s\S]{0,80}\.clear\(\)/.test(
+            r._loadStateRestoreWorldMeta.toString()
+        );
         // (A1h) SOURCE-PROBE: _vegetationSampleSpawn ruft den Helper an gen≥4
         const src = r._vegetationSampleSpawn.toString();
         out.a1SourceWired =
@@ -35182,6 +35218,19 @@ async function checkBandV18210Verdrahtung(ctx) {
     check(
         "V18.210-A1-Heil6 WELT-WECHSEL: _growTreeNoise + _growTreeRing reset in _loadStateRestoreWorldMeta (P2P-Drift-Klasse, V18.193-Erbgut-Lehre)",
         res.a1WorldSwitchResetsNoise === true
+    );
+    // A3-Perf Watch-Item (Schöpfer-Audit 14.06.) — Memoization für sizeFactor pro Soul
+    check(
+        "V18.210-A3-Watch1 _creatureScentHuntDir nutzt _scentSizeBySoul-Cache (kein per-Tick-Recompute, V18.107-Pattern auf scent)",
+        res.a3SizeCacheSrc === true
+    );
+    check(
+        "V18.210-A3-Watch1b sizeFactor-Cache: zweimaliger Aufruf → Cache-Size bleibt 1 (nur 1 Compute pro Soul)",
+        res.a3SizeCacheReuse === true
+    );
+    check(
+        "V18.210-A3-Watch1c Welt-Wechsel räumt _scentSizeBySoul (defensive — Custom-Souls können wechseln)",
+        res.a3SizeCacheResetsOnWorldSwitch === true
     );
 
     // A4 — Mana-Konsument
