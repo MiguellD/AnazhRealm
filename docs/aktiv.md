@@ -116,21 +116,121 @@ Die drei DURCHGEZOGENEN (Antwort eingetragen, Folge-Aktion umgesetzt):
 
 ---
 
-## §4 — Was im Backlog liegt (siehe `docs/roadmap.md` §4)
+## §4 — DER VOLLSTÄNDIGE BACKLOG (für die nächste Session)
 
-Alles andere — **die KOMPLETTE offene Liste lebt in `docs/roadmap.md` §4** (die VOLLSTÄNDIGE
-Karte, nichts vergessen):
+> **Schöpfer-Befund 14.06.: „fehlt noch einiges dachte ich — kannst du die offenen
+> dinge zusammentragen?"** — Hier IST die ehrliche vollständige Liste, scannbar
+> nach Bogen, mit Größe + Abhängigkeit. Voll-Plan-Refs in `docs/roadmap.md` §4.
 
-- **M9-Sprossen 4-7** — S-Dialog, je Vision-getrieben (eigene Welle je Sprosse)
-- **Γ-Reste** (alle 6: Γ7 Baum-Grammatik · Γ1-Lesart-5 Geruch · Γ3 Feld-Charakter · Γ-M Strata · Γ8 Kies+Saum · Γ2 Totholz) — klein, video-getrieben oder optional
-- **Wasser-Feinschliff** (Wasserfall-Plane-Überlapp · Unterwasser-Decken-Pass B5 · Kapillar/Stempel an Gebäuden · foam-Strähnen-Politur · Schelf-Konsolidierung) — kleine Reste, alle dokumentiert
-- **LOD-Reste** (U2 Wasser-LOD · U6 echtes Clipmap) — eigene Bögen
-- **B1 Wasser-Sheet→Worker** — weckt der fühlbare Carve-Hitch
-- **echtes V18→V19-Zeit-Portal** — weckt das erste Alt-Build-Artefakt
-- **VR/WebXR** — wenn der Schöpfer es ruft (startet bei null)
-- **R-039 Devlog/Welle-Schau** — post-öffentlich
-- **R-037 T-Welle** (state-JSDoc-Typisierung) — wenn dritter Bauer mit-tippt
-- **Browser-Sign-offs** alter Welle-Stapel (J4 · E1–E3 · R1/R2/R3/R5)
+### 4.A — Γ-BOGEN 2 (die zweite Welle des Genese-Bogens, mehrere offene Wellen)
+
+Der Γ-Kern (V18.166) + V18.181-Erweiterungen (Λ.6 Boden atmet · Γ4-Schicht Massiv/Tal/Becken)
+sind GEBAUT. Was die nächste Phase trägt:
+
+| ID | Was | Größe | Voraussetzung |
+|---|---|---|---|
+| **Γ4 echter MAKRO-ANKER** | `makeMacroAnker(seed)` als designte Geographie (Massiv/Tal/Becken-Anker GEJITTERT), `worldMeta.macro` als signiertes ERBGUT (teilbar, additiv), **Abfluss-Invariante ab Tag 1** (Becken-Spillpunkt < min-Randhöhe → kein Endorheic-Bug, die LAAS-Narbe). V18.181 hat die SCHICHT (anisotrope smoothstep-Glocke), der DESIGNTE Anker mit Erbgut+Constraint fehlt | **groß, der nächste Wurf** | — |
+| **Γ1-Lesart-5 Ψ2-NASE** | „Geruch des Feldes" — die ferne 5. Welt-Stimme. Kreatur lest sie für Aufträge (Jagd-Spur, Pflanzen-Lokalisierung); Strom aus Wind-Vektor + Distanz | mittel, eigenes Subsystem | — |
+| **Γ-M Multi-Class-Material** | Strata/Iron-Bands/Lichen (Schichten + Adern + Patina) — ersetzt das alte Γ8 Kies+Saum | mittel | nach Γ4½ Slope/Rock (steht) |
+| **Γ6-BEFÖRDERUNG** | snowband/chunk-seam/false-swim/arch-water-solid → vier STEHENDE Bänder (heute nur diags); jede visuelle Narbe wird beim Heilen Band | klein, mechanisch | — |
+| **Γ3 Feld-Charakter** (optional, Entscheid 5) | Domain-Warp + Frequenz-Fächer der 4 Welt-Stimmen (lebendig λ200 · dichte λ340 · glut λ520 · magieleitung λ160) | mittel | — |
+| **Γ2 Totholz-Option** (Entscheid 4) | spezifische Schöpfer-Wahl-Frage zur Tot-Holz-Substanz | klein | S-Entscheid |
+| **Γ7 Baum-Varianten-Grammatik** | `_growTreeBlueprint(speciesParams, rng)` emittiert `parts[]` (Whorl-Äste, Laub nur an Ebene-2-Enden, 6 Varianten pro Spezies) | mittel, video-getrieben zuletzt | — |
+| **Γ8 Kies+Saum** | schrumpft — Γ4½-Foundation-Felder konsumieren das, eventuell ersatzlos | klein | nach Γ-M |
+
+### 4.B — WASSER-FEINSCHLIFF (Kern fertig, kleine Reste)
+
+Der Wasser-Bogen ist im Kern RUND (V18.84-.94 + V18.111-.114 Steil-Split + V18.129 Stau +
+V18.132 ferne Welten). Was noch offen — alles Profi-Feinschliff:
+
+| ID | Was | Größe |
+|---|---|---|
+| **Fluid-Dynamik Phase 1 ⭐** | echte Live-Sim-Tiefe (das Wasser-CA ist die Foundation, der vollere Tick) | groß, eigener Bogen |
+| **gefaltetes Auslauf-Mesh** | die Mesh-Geometrie am Wasserfall-Auslauf (alt-V18.31-Faltung, geheilt aber Detail offen) | klein |
+| **Fluss-Naht (4-Chunk-Ecken)** | an den Diagonal-Ecken der Chunk-Grenzen | klein |
+| **`aFlow`-Foam-Strähnen** | Polish der Flow-Schaum-Linien | klein |
+| **Unterwasser-Decken-Pass (V18.3 B5)** | spezieller Render unter dem Wasser-Spiegel | klein |
+| **Kapillar/Stempel an Gebäuden** | wie Wasser sich an Bauwerk-Seiten verhält | klein |
+| **Kron-ÜBERLAUF als Wasserfall** | der V18.129-Stau-Spiegel-Kür: wenn ein Pool über den Damm strömt, ein echter Wasserfall daraus | klein, Kür |
+| **Hexagonale Strukturen** (Schöpfer-Befund) | wahrscheinlich Zell-Iso-Artefakt — Zell-Sheet sollte sie weghaben; falls noch sichtbar, gezielt fixen | klein, falls noch |
+
+### 4.C — LOD/RENDER (mehrere kleine + 1 großer)
+
+| ID | Was | Größe |
+|---|---|---|
+| **U2 Wasser-LOD** | heute fest LOD0; ferner Wasser-FPS-Hebel | mittel |
+| **U6 echtes Clipmap** | mehr-skaliges Chunk-Grid, größter Draw-Call-Hebel | **groß, eigener Bogen** |
+| **R2 Normale in Geometrie backen** | EINE Normale für alle Konsumenten (heute: 3 verschiedene Pfade) | mittel |
+| **R3 Kanten-Schärfe** | Geometrie-Cel-Look an scharfen Kanten | mittel |
+| **R5 Struktur-Textur** | Material-Mikro-Tiefe in opaken Strukturen | klein |
+| **Kreatur-FPS-Frame-Budget** | falls Boden-Cache nicht reicht (Hot-Tick-Wand) | klein, gemessen wenn fühlbar |
+| **Browser-Sign-offs** | J4 (Atmo) · E1-E3 (Worker-Mesh, V17.118 gebaut) · R1 (Schatten-Snap) · U4 (Deko-Distanz Look, V18.131) · U5 (CSM Look/FPS, V18.130) | je nur dein Auge |
+
+### 4.D — CRAFTING/KAMPF/UI (Reste, alle klein)
+
+| ID | Was | Größe |
+|---|---|---|
+| **S9 Gerät in der Hand** | gebaut V17.74; Sign-off offen | nur Sign-off |
+| **S11 Werkstatt-Animation** (die Kirsche) | deklarative Werkstatt-Animation (Avatare/Fahrzeuge in der Werkstatt-Vorschau bewegen sich) | mittel, schön |
+| **S7-C chat/DSL-Vereinheitlichung** | Crafting via Chat-Befehl (S7-Schluss) | klein-mittel |
+| **S8 Teilen-Konsistenz** | Bauplan-Teilen-Ende-zu-Ende-Audit | mittel |
+| **A2 Crafting-Fluss-Audit** | Schöpfer-Browser-Audit des FERTIGEN-Flusses | nur Sign-off |
+| **Avatar-Größe→HP** | größere Avatare haben mehr HP (heute uniform) | klein |
+| **LLM-Manifest** | LLM-Begleiter-Welt-Manifest (S7-C-Erweiterung) | mittel |
+
+### 4.E — LEBENDIGES FELD/NEXUS (drei Vertiefungen, mittel)
+
+| ID | Was | Größe |
+|---|---|---|
+| **Mana-Symmetrie** | `magieleitung` → zweite Ausdauer-Achse (heute nur Stamina, das `tags.magieleitung` schläft als Boost-Quelle) | mittel |
+| **Emotion→Regel-Emergenz** | hand-codierte Emotion→Welt-Kopplungen werden via DSL emergent (das `Welt-Regeln`-Organ trägt sie schon) | mittel |
+| **Nexus-Lern-Vereinheitlichung** (Geste→Gesetz) | EIN Lern-Substrat — bewährte Geste kristallisiert zur Regel | mittel-groß |
+
+### 4.F — SOZIAL/MULTI-USER (Reste nach F4-Vollendung)
+
+| ID | Was | Größe |
+|---|---|---|
+| **B-WASM** | Fremd-Engine-Rest (Sandbox-Welt-Tor) | klein-mittel |
+| **evolveCommunity** (Kreatur-Kulturen) | Kreaturen entwickeln eigene Sprache/Riten lokal | groß, Vision |
+| **Stern-ab-6-Topologie (F2)** | wenn Voll-Mesh nicht mehr trägt (Plan-Form in gigant-plan §5-F2 gemessen) | groß, eigener Bogen |
+
+### 4.G — M9-AUFSTIEGS-LEITER (Sprossen 4-7, S-DIALOG-Pflicht)
+
+- **Sprosse 4-7** — je Vision-getrieben; brauchen je einen Schöpfer-Dialog (welche Achse,
+  welche Form). Sprossen 1+2+3 stehen via Φ-Bogen (V18.188-V18.191).
+
+### 4.H — DIE GEMERKTEN FÄDEN (Schöpfer 11.06.: „alle wichtig, nie vergessen")
+
+| ID | Status | Weck-Moment |
+|---|---|---|
+| **B1 Wasser-Sheet→Worker** | OFFEN | wenn ein fühlbarer Carve-Hitch auftritt |
+| **echtes V18→V19-Zeit-Portal** | OFFEN | wenn das erste Alt-Build-Artefakt geladen werden soll |
+| **VR/WebXR** | OFFEN, startet bei null | wenn der Schöpfer es ruft |
+| **R-037 T-Welle** (state-JSDoc) | OFFEN | wenn ein dritter Bauer mit-tippt |
+| **R-039 Devlog/Welle-Schau** | OFFEN | post-öffentlich (nach Bewerbung) |
+
+### 4.I — BROWSER-SIGN-OFFS (das Schöpfer-Auge, kein Bau-Aufwand)
+
+- **R-001 bis R-036 + R-041** (siehe `docs/rueckmeldung.md`) — alle als „gebaut, S-Abnahme offen"
+- **Synthese-Werke V18.180-FIX bis V18.187:** Wald-WOW, AAA-Atmosphäre, Boden atmet, 12 Streu-Vegetations-Varianten, Tints, Wind-Sway, Subsurface-Backlit
+- **Φ-Bogen V18.188-V18.191:** Portal-Karte, Visibility, Regions, Anwesenheit, Mittragen, Halle, Compute-Spende (7 Wellen)
+- **W5 V18.192:** Werkzeug-Abnutzung + Repair-Akt
+
+**Werkzeuge** in §1.B Tabelle (diag-fischer-wand · diag-lambda · diag-makro · diag-ufer-pixel · diag-wald · diag-wbc-nachbau · diag-archipel-last).
+
+---
+
+### Empfohlene Reihenfolge für die nächste Session (mein Vorschlag, du wählst)
+
+1. **Γ4 echter MAKRO-ANKER** — der nächste große Wurf des Γ-Bogens (designte Geographie mit Erbgut+Abfluss-Invariante); baut auf der V18.181-Schicht
+2. **ODER** Γ6-BEFÖRDERUNG (klein, vier stehende Bänder — mechanisch, „abräumen")
+3. **ODER** Γ-M Multi-Class-Material (Strata) — bauend auf Γ4½ Slope/Rock
+4. **ODER** Wasser-Feinschliff Sammel-Welle (Unterwasser-Pass B5 + Kapillar + foam-Strähnen + hexagonale Strukturen prüfen)
+5. **ODER** R2 Normale-backen + R3 Kanten-Schärfe als Render-Polish-Welle
+6. **ODER** S11 Werkstatt-Animation (die Kirsche) — schön, eigener Bogen
+7. **ODER** Mana-Symmetrie (zweite Ausdauer-Achse für magieleitung)
+
+Die GROSSEN, eigenen Bögen — **U6 Clipmap, Stern-ab-6-Topologie, evolveCommunity, M9-Sprossen 4-7** — brauchen Schöpfer-Dialog am Tisch (welche Achse, welche Form).
 
 ---
 

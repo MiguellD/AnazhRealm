@@ -167,12 +167,19 @@ B-WASM (Fremd-Engine-Rest) · evolveCommunity (Kreatur-Kulturen) · Stern-ab-6-T
 
 **UI** — ~~Statusbar schlanken~~ **✓ V18.149 (Essenz + ···-Toggle für die Werkstatt-Zahlen)**.
 
-**GENESE (der Γ-Bogen, `docs/archiv/genese-plan.md`)** — ~~Feuchte-Feld + Kronen-Lesarten + Stream-Gesetz~~
-✓ V18.166 (Γ0/Γ5/Γ2/Γ1-Kern; diag-genese + 9 Invarianten) · Γ1-FARB-Lesart (Terrain satter/dunkler
-bei feuchte — der bit-identische Worker-Spiegel-Schnitt) · Γ6-Beförderung (snowband/chunk-seam/
-false-swim/arch-water-solid → stehende Bänder) · **Γ4 MAKRO-ANKER** (der große Wurf: designte
-Geographie gejittert, Abfluss-Invariante ab Tag 1, `worldMeta.macro` als Erbgut) · Γ3 Feld-Charakter
-(optional) · Γ7 Baum-Grammatik (video-getrieben zuletzt) · Totholz/Ψ2-Nase (Vermerke).
+**GENESE (der Γ-Bogen, `docs/archiv/genese-plan.md`)** — ~~Γ0/Γ5/Γ2/Γ1-Kern~~ ✓ V18.166 (diag-genese
++ 9 Invarianten) · ~~Γ1-Lesart-4 FARBE (DER BODEN ATMET)~~ **✓ V18.181 (bit-identischer Worker-
+Spiegel)** · ~~Γ4-Schicht (Massiv-Tal-Becken, anisotrope Glocke + Ridge-Noise + Slope/Rock-
+Foundation)~~ **✓ V18.181-Sub-3i**. **Γ-BOGEN 2 — offen (in Reihenfolge):**
+**Γ4 echter MAKRO-ANKER** (der große Wurf NOCH: designte Geographie via `makeMacroAnker(seed)`,
+`worldMeta.macro` als signiertes Erbgut, Abfluss-Invariante ab Tag 1 — die geerbte LAAS-Narbe;
+V18.181 hat die SCHICHT, der designte Anker mit Erbgut+Constraint fehlt) · **Γ6-Beförderung**
+(snowband/chunk-seam/false-swim/arch-water-solid → vier stehende Bänder) · **Γ1-Lesart-5 Ψ2-NASE**
+(Geruch des Feldes — die ferne fünfte Welt-Stimme, Kreatur-Aufträge) · **Γ-M Multi-Class-Material**
+(Strata/Iron-Bands/Lichen — ersetzt das alte Γ8) · **Γ3 Feld-Charakter** (Domain-Warp + Frequenz-
+Fächer der vier Stimmen, optional — Entscheid 5) · **Γ2 Totholz-Option** (Entscheid 4) · **Γ7
+Baum-Varianten-Grammatik** (`_growTreeBlueprint`, zuletzt video-getrieben) · **Γ8 Kies+Saum**
+(schrumpft — Γ4½-Foundation-Felder konsumieren das).
 
 **DIE GEMERKTEN FÄDEN (Schöpfer 11.06.2026: „alle wichtig — vergesse die bitte nicht"; die
 verbindliche Voll-Liste mit Weck-Momenten lebt in `archiv/gigant-plan.md` §5-Ende; FORTSCHREIBUNG: `docs/archiv/meister-plan.md` §5):** ~~R6 Selbst-
