@@ -23656,7 +23656,10 @@ class AnazhRealm {
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
                 // M7 — microStrength ist ein UNIFORM (der Settings-Regler lebt);
                 // W-E: profil-gewichtet (ein Regler, eine Welt-Antwort).
-                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(_p("micro"));
+                // V18.207 — R5: zusätzlicher Boost-Faktor für Strukturen.
+                // microBoost = 1.0 ist no-op (bit-identisch zu Pre-V18.207).
+                const _r5Boost = (AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.0;
+                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(_p("micro") * _r5Boost);
                 let _shade = _T.float(1.0).add(_det.mul(_micro));
                 // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
                 // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
@@ -63997,7 +64000,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.206.0";
+AnazhRealm.VERSION = "18.207.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -64350,6 +64353,20 @@ AnazhRealm.FIELD_CHARACTER = Object.freeze({
     // Erst-Wurf-Amplitude 40 m (aus genese-plan §Γ3).
     warpAmp: 40,
     warpScale: 1 / 600,
+});
+
+// V18.207 — R5 STRUKTUR-TEXTUR (aktiv.md §4.C): Material-Mikro-Tiefe in
+// opaken Strukturen — ein subtiler Boost-Faktor, der das micro-Gewicht für
+// WERK-Profile (Bauwerke, Deko, Kreaturen, Avatare) noch tiefer macht.
+// Default 1.0 = no-op (bit-identisch zu Pre-V18.207). Browser-justierbar
+// im Schöpfer-Test-Pfad — wenn Strukturen "platt" wirken, höher; wenn zu
+// "rau", niedriger. Frozen-Konstante; ein Slider/Uniform kann später
+// hinzugefügt werden (V18.192-Lehre: Erst-Wurf als statische Konstante).
+AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
+    // Multiplier auf das micro-Gewicht im werk-Profil. 1.0 = neutraler
+    // Default; >1 verstärkt Mikro-Tiefe in Bauten; <1 dämpft sie. Range
+    // [0.5, 2.0] empfohlen für sinnvolle Effekte.
+    microBoost: 1.0,
 });
 
 // V18.202 — Γ1-LESART-5 Ψ2-NASE: das GERUCH-Feld der Welt. Die fünfte Welt-

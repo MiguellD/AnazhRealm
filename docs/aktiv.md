@@ -52,6 +52,7 @@ Backlog-Punkte §4 (nächste in Reihe).
 | **Γ3 Domain-Warp (warpAmp=40m, warpScale=1/600 — Sample-Position verschoben vor Reads; Welt-Stimmen mäandern)** | **V18.204** | `docs/aktiv.md` §4.A + unten §1.L |
 | **Γ7 Baum-Varianten-Grammatik (`_growTreeBlueprint(speciesKey, seed)` emittiert parts[]: Stamm-Kette mit wander+taper, Whorl-Äste, Laub nur an Ast-Enden, tag-neutral)** | **V18.205** | `docs/aktiv.md` §4.A + unten §1.M |
 | **Avatar-Größe-Speed-Trade (1/sqrt(sizeFactor) auf speed/attackSpeed/jumpPower — ehrlicher Balance-Schluss zu V18.195)** | **V18.206** | `docs/aktiv.md` §4.D + unten §1.N |
+| **R5 Struktur-Textur (microBoost-Konstante für werk-Profile in `_applySubstanceResponse`)** | **V18.207** | `docs/aktiv.md` §4.C + unten §1.O |
 
 ---
 
@@ -181,7 +182,7 @@ V18.132 ferne Welten). Was noch offen — alles Profi-Feinschliff:
 | **U6 echtes Clipmap** | mehr-skaliges Chunk-Grid, größter Draw-Call-Hebel | **groß, eigener Bogen** |
 | **R2 Normale in Geometrie backen** | EINE Normale für alle Konsumenten (heute: 3 verschiedene Pfade) | mittel |
 | **R3 Kanten-Schärfe** | Geometrie-Cel-Look an scharfen Kanten | mittel |
-| **R5 Struktur-Textur** | Material-Mikro-Tiefe in opaken Strukturen | klein |
+| ~~**R5 Struktur-Textur**~~ | **✓ FOUNDATION GEBAUT V18.207:** `AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost` frozen-Konstante (Default 1.0 = no-op bit-identisch). Im `_applySubstanceResponse`-micro-Block multipliziert sich der Boost in das micro-Gewicht für werk-Profile (Bauwerke + Deko + Kreaturen + Avatare). Browser-justierbar wenn der Schöpfer "platt"/"rau" empfindet (Range [0.5, 2.0] empfohlen). 5 Wände. Folge: Slider/Uniform für Live-Tunning (V18.192-Lehre: Erst-Wurf statisch). | klein |
 | **Kreatur-FPS-Frame-Budget** | falls Boden-Cache nicht reicht (Hot-Tick-Wand) | klein, gemessen wenn fühlbar |
 | **Browser-Sign-offs** | J4 (Atmo) · E1-E3 (Worker-Mesh, V17.118 gebaut) · R1 (Schatten-Snap) · U4 (Deko-Distanz Look, V18.131) · U5 (CSM Look/FPS, V18.130) | je nur dein Auge |
 

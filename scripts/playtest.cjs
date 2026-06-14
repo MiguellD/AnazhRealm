@@ -34609,6 +34609,45 @@ async function checkBandV18206SpeedTrade(ctx) {
     );
 }
 
+// V18.207 — R5 STRUKTUR-TEXTUR (aktiv.md §4.C): Material-Mikro-Tiefe-Boost
+// für werk-Profile. Default 1.0 = no-op, browser-justierbar wenn Strukturen
+// platt wirken. Source-Probe + Konstante.
+async function checkBandV18207R5StructureTexture(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (R1) R5_STRUCTURE_TEXTURE frozen + Konstante
+        out.constExists = !!A.R5_STRUCTURE_TEXTURE && Object.isFrozen(A.R5_STRUCTURE_TEXTURE);
+        if (A.R5_STRUCTURE_TEXTURE) {
+            out.microBoostValue = A.R5_STRUCTURE_TEXTURE.microBoost;
+            out.microBoostSensible =
+                typeof A.R5_STRUCTURE_TEXTURE.microBoost === "number" &&
+                A.R5_STRUCTURE_TEXTURE.microBoost > 0 &&
+                A.R5_STRUCTURE_TEXTURE.microBoost < 5;
+        }
+
+        // (R2) Source-Probe: _applySubstanceResponse nutzt R5_STRUCTURE_TEXTURE
+        const src = r._applySubstanceResponse.toString();
+        out.srcHasR5 = /R5_STRUCTURE_TEXTURE/.test(src);
+        out.srcMultipliesMicro = /microBoost/.test(src) || /_r5Boost/.test(src);
+
+        // (R3) Default 1.0 ist no-op (bit-identisch zu Pre-V18.207, der
+        // Multiplier ändert nichts)
+        out.defaultIsNoOp = A.R5_STRUCTURE_TEXTURE.microBoost === 1.0;
+
+        return out;
+    });
+
+    check("V18.207 (R1a) AnazhRealm.R5_STRUCTURE_TEXTURE frozen + existiert", res.constExists === true);
+    check(`V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`, res.microBoostSensible === true);
+    check("V18.207 (R2a) Source: R5_STRUCTURE_TEXTURE wird in _applySubstanceResponse gelesen", res.srcHasR5 === true);
+    check("V18.207 (R2b) Source: micro × Boost-Faktor (microBoost oder _r5Boost im Code)", res.srcMultipliesMicro === true);
+    check("V18.207 (R3) Default microBoost = 1.0 (no-op, bit-identisch zu Pre-V18.207)", res.defaultIsNoOp === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -51796,6 +51835,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18203Gamma3FeldCharakter(ctx);
             await checkBandV18205Gamma7Grammatik(ctx);
             await checkBandV18206SpeedTrade(ctx);
+            await checkBandV18207R5StructureTexture(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
