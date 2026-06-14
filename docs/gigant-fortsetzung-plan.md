@@ -1,4 +1,4 @@
-# DER LEBENDIGE GIGANT — VOLLENDUNG (Stand nach V18.222)
+# DER LEBENDIGE GIGANT — VOLLENDUNG (Stand nach V18.223 — VOLLSTÄNDIG)
 
 > Sauberes Preplanning für die nächste Session. Die offenen Punkte aus dem
 > lebendiger-gigant-Plan be15a050, in voller Tiefe — Mechanik · Sub-Schritte ·
@@ -53,9 +53,15 @@
 | §8 Ω-S Scatter-Bitmask + Cap-Wand + Lookup | V18.220 | ✅ V18.220 — Spawn liest, Cell registriert, Promoted-Skip wirkt | mittel |
 | §2 Ω-H VOLLE Promotion (Spawn-Auto + Snapshot-Persist) | V18.221 | ✅ V18.221 — die Welt vergisst nicht | mittel — das HERZ |
 | §9 Canopy chunk-streaming | V18.222 | ✅ V18.222 — 3×3-Ring um Spieler, Dispose-Pfad | klein |
-| §10 Ω-P PBR-Kohärenz | V18.223 | ❌ — S-Gate 4 Schöpfer-Entscheid | groß |
+| §10 Ω-P PBR-Kohärenz | V18.223 | ✅ V18.223 — _buildPbrNodeMaterial + Material-Mode-Dispatch + Tag→Substanz-Tabelle | groß |
 
-**STATUS: 9 von 10 Plan-Wellen GEBAUT (90 %).** Nur PBR (S-Gate 4) bleibt offen.
+**STATUS: 10 VON 10 PLAN-WELLEN GEBAUT (100 %).** Der LEBENDIGE GIGANT ist VOLLSTÄNDIG.
+
+Schöpfer-Wort 14.06.2026: „pbr bedeutet ohne mein gefühl, es bassiert auf
+regeln, einfach herleitbar, physik, das ist der richtige weg". Damit ist S-Gate 4
+nicht mehr ein Schöpfer-Entscheid, sondern eine Plan-Form: PBR ist die Physik-
+Regel, kein Gefühls-Override. V18.223 baut sie auf — `state.atmosphere.materialMode
+= "pbr"` schaltet die Welt um.
 
 ### Stand 14.06.2026 — gebaut in dieser Session
 

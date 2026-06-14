@@ -69,6 +69,11 @@ const MeshLambertNodeMaterial = requireWebGPU("MeshLambertNodeMaterial");
 // Cel-gradientMap + DirectionalLight/Ambient/Hemisphere-Lighting + Shadow-
 // Map automatisch. Der tote MeshToonMaterial-Fallback-Import ist gestrichen.
 const MeshToonNodeMaterial = requireWebGPU("MeshToonNodeMaterial");
+// V18.223 (DER LEBENDIGE GIGANT §10 Ω-P) — PBR-NodeMaterial. r184 trägt es
+// nativ; der Welt-weite Switch (`state.atmosphere.materialMode = "pbr"`) baut
+// damit Materials mit roughness + metalness aus den Material-Tags hergeleitet.
+// Schöpfer-Wort 14.06.: „pbr ist die regel, physik, der richtige weg".
+const MeshStandardNodeMaterial = requireWebGPU("MeshStandardNodeMaterial");
 // V12.0-vendor.1 — r184 hat den `WebGPU`-Capability-Wrapper entfernt
 // (war r160's `WebGPU.isAvailable()`). Direkt-Lookup via `navigator.gpu`
 // in der Renderer-Auswahl-Logik (anazhRealm.js init()).
@@ -82,6 +87,7 @@ THREE_GLOBAL.MeshBasicNodeMaterial = MeshBasicNodeMaterial;
 THREE_GLOBAL.PointsNodeMaterial = PointsNodeMaterial;
 THREE_GLOBAL.MeshLambertNodeMaterial = MeshLambertNodeMaterial;
 THREE_GLOBAL.MeshToonNodeMaterial = MeshToonNodeMaterial;
+THREE_GLOBAL.MeshStandardNodeMaterial = MeshStandardNodeMaterial;
 // V18.98 — Post-Processing-Heilung (Schöpfer-Browser-Konsole: „Post-Processing
 // nicht verfuegbar (PostProcessing/pass fehlt)"): `PostProcessing` lebt im
 // three/webgpu-Bundle und wurde hier NIE in THREE_GLOBAL kopiert → der ganze

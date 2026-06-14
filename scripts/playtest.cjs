@@ -36931,6 +36931,119 @@ async function checkBandV18219bisVollendung(ctx) {
     check(`V18.222 (V1) VERSION floor ≥ 18.222.0 (gemessen ${res.versionStr})`, res.versionFloor18222 === true);
 }
 
+// V18.223 (DER LEBENDIGE GIGANT §10 Ω-P) — PBR-PFAD. Plan §10: PBR = Physik,
+// keine Gefühls-Patches. roughness + metalness HERGELEITET aus Material-Tags.
+// Schöpfer-Wort 14.06.: „pbr bedeutet ohne mein gefühl, regeln, physik".
+// Tests: Builder existiert, Dispatch wirkt, Roughness/Metalness aus Tags.
+async function checkBandV18223PbrKohaerenz(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+        out.pbrBuilderExists = typeof r._buildPbrNodeMaterial === "function";
+        out.modeFlagDefault = r.state.atmosphere && r.state.atmosphere.materialMode === "toon";
+        // Dispatch-Source-Probe
+        const toonSrc = r._buildToonNodeMaterial.toString();
+        out.toonDispatchesOnMode = /materialMode\s*===\s*["']pbr["']/.test(toonSrc) && /_buildPbrNodeMaterial/.test(toonSrc);
+
+        // Build a PBR material directly
+        if (out.pbrBuilderExists) {
+            // Default-Material (kein opts.tags) → roughness 0.7, metalness 0
+            const mDefault = r._buildPbrNodeMaterial({ color: 0x808080 });
+            out.defaultMatBuilt = !!mDefault;
+            if (mDefault) {
+                out.defaultIsMeshStandard =
+                    mDefault.isMeshStandardMaterial === true || /MeshStandardNode/.test(mDefault.type || "");
+                out.defaultUserDataPbr = mDefault.userData && mDefault.userData.isPbrMaterial === true;
+                out.defaultRoughness = mDefault.userData && mDefault.userData.pbrRoughness;
+                out.defaultMetalness = mDefault.userData && mDefault.userData.pbrMetalness;
+                out.defaultIsDielectric = Math.abs(mDefault.userData.pbrMetalness) < 1e-9;
+                out.defaultRoughnessMid = mDefault.userData.pbrRoughness > 0.5 && mDefault.userData.pbrRoughness < 0.9;
+                if (typeof mDefault.dispose === "function") mDefault.dispose();
+            }
+
+            // EISEN-Material (dichte 0.9, magieleitung 0.85) → metallisch + glatt
+            const mEisen = r._buildPbrNodeMaterial({ color: 0x707080, tags: { dichte: 0.9, magieleitung: 0.85 } });
+            if (mEisen) {
+                out.eisenMetalnessHigh = mEisen.userData.pbrMetalness >= 0.7;
+                out.eisenRoughnessLow = mEisen.userData.pbrRoughness <= 0.4;
+                if (typeof mEisen.dispose === "function") mEisen.dispose();
+            }
+
+            // LAUB-Material (lebendig 0.95) → rauh, kein Metall
+            const mLaub = r._buildPbrNodeMaterial({ color: 0x4a8a3a, tags: { lebendig: 0.95 } });
+            if (mLaub) {
+                out.laubRoughnessHigh = mLaub.userData.pbrRoughness >= 0.85;
+                out.laubMetalnessZero = Math.abs(mLaub.userData.pbrMetalness) < 1e-9;
+                if (typeof mLaub.dispose === "function") mLaub.dispose();
+            }
+
+            // STEIN-Material (dichte 0.85, kein Metall) → rauh, kein Metall
+            const mStein = r._buildPbrNodeMaterial({ color: 0x6e6e6e, tags: { dichte: 0.85 } });
+            if (mStein) {
+                out.steinDielectric = Math.abs(mStein.userData.pbrMetalness) < 1e-9;
+                out.steinRoughnessHigh = mStein.userData.pbrRoughness >= 0.8;
+                if (typeof mStein.dispose === "function") mStein.dispose();
+            }
+
+            // GLUT-Material (brennbar 0.95) → emissiv-glühend
+            const mGlut = r._buildPbrNodeMaterial({ color: 0xff5020, tags: { brennbar: 0.95 } });
+            if (mGlut) {
+                out.glutEmissive = mGlut.emissiveIntensity > 0;
+                out.glutRoughnessLow = mGlut.userData.pbrRoughness <= 0.5;
+                if (typeof mGlut.dispose === "function") mGlut.dispose();
+            }
+        }
+
+        // Dispatch-Behavior: Mode auf "pbr" setzen + Toon-Builder rufen → PBR-Material
+        const savedMode = r.state.atmosphere && r.state.atmosphere.materialMode;
+        try {
+            r.state.atmosphere.materialMode = "pbr";
+            const m = r._buildToonNodeMaterial({ color: 0x808080 });
+            out.dispatchYieldsPbr = m && m.userData && m.userData.isPbrMaterial === true;
+            if (m && typeof m.dispose === "function") m.dispose();
+        } finally {
+            if (r.state.atmosphere) r.state.atmosphere.materialMode = savedMode;
+        }
+
+        // Default-Mode "toon" → Toon-Material (kein PBR-Marker)
+        const mToon = r._buildToonNodeMaterial({ color: 0x808080 });
+        out.defaultIsToon = mToon && !(mToon.userData && mToon.userData.isPbrMaterial);
+        if (mToon && typeof mToon.dispose === "function") mToon.dispose();
+
+        // Version
+        out.versionStr = A.VERSION;
+        const partsV = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        out.versionFloor18223 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 223);
+        return out;
+    });
+
+    check("V18.223 (Q1) _buildPbrNodeMaterial Helper existiert", res.pbrBuilderExists === true);
+    check("V18.223 (Q2) atmosphere.materialMode Default `toon` (Backward-Kompat)", res.modeFlagDefault === true);
+    check("V18.223 (Q3) _buildToonNodeMaterial dispatched bei mode=`pbr` (Source)", res.toonDispatchesOnMode === true);
+
+    check("V18.223 (P1) Default-PBR-Material wird gebaut", res.defaultMatBuilt === true);
+    check("V18.223 (P2) Default-PBR-Material ist MeshStandardNodeMaterial", res.defaultIsMeshStandard === true);
+    check("V18.223 (P3) userData.isPbrMaterial=true (Diagnose-Marker)", res.defaultUserDataPbr === true);
+    check(`V18.223 (P4) Default ist dielektrisch (metalness=0, gemessen ${res.defaultMetalness})`, res.defaultIsDielectric === true);
+    check(`V18.223 (P5) Default roughness im Mittel (0.5..0.9, gemessen ${res.defaultRoughness})`, res.defaultRoughnessMid === true);
+
+    check("V18.223 (S1) EISEN (dichte+magie) → metalness ≥ 0.7 (PHYSIK)", res.eisenMetalnessHigh === true);
+    check("V18.223 (S2) EISEN → roughness ≤ 0.4 (glatt, glänzend)", res.eisenRoughnessLow === true);
+    check("V18.223 (S3) LAUB (lebendig) → roughness ≥ 0.85 (rauh)", res.laubRoughnessHigh === true);
+    check("V18.223 (S4) LAUB → metalness=0 (kein Metall)", res.laubMetalnessZero === true);
+    check("V18.223 (S5) STEIN (dichte ohne Metall) → dielektrisch", res.steinDielectric === true);
+    check("V18.223 (S6) STEIN → roughness ≥ 0.8 (matt)", res.steinRoughnessHigh === true);
+    check("V18.223 (S7) GLUT (brennbar) → emissiveIntensity > 0", res.glutEmissive === true);
+    check("V18.223 (S8) GLUT → roughness ≤ 0.5 (glatt-warm)", res.glutRoughnessLow === true);
+
+    check("V18.223 (D1) Dispatch: mode=pbr → _buildToonNodeMaterial liefert PBR", res.dispatchYieldsPbr === true);
+    check("V18.223 (D2) Default-Mode: _buildToonNodeMaterial liefert Toon (kein PBR-Marker)", res.defaultIsToon === true);
+
+    check(`V18.223 (V1) VERSION floor ≥ 18.223.0 (gemessen ${res.versionStr})`, res.versionFloor18223 === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -54131,6 +54244,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18217VariantenPool(ctx);
             await checkBandV18218LODStufen(ctx);
             await checkBandV18219bisVollendung(ctx);
+            await checkBandV18223PbrKohaerenz(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

@@ -394,6 +394,16 @@ class AnazhRealm {
                 // → der _tickCanopyStreaming baut 3×3-Region-Chunks um den Spieler.
                 // V18.222.1 Folge-Welle nach Schöpfer-Browser-Audit aktiviert es.
                 canopyStreaming: false,
+                // V18.223 (DER LEBENDIGE GIGANT §10 Ω-P) — der MATERIAL-MODUS.
+                // "toon" = Cel-LUT-Lookup + Substance-Response (V18.99-V18.181-
+                // Pipeline); "pbr" = MeshStandardNodeMaterial mit roughness/
+                // metalness physik-hergeleitet aus Material-Tags. Default "toon"
+                // (Backward-Kompat — der visuelle Identitäts-Schritt zu PBR ist
+                // ein Welt-Switch, nicht ein stiller Drift). Schöpfer-Wort 14.06.:
+                // „pbr bedeutet ohne mein gefühl, regeln, physik — der richtige
+                // weg". Live-Switch via `state.atmosphere.materialMode = "pbr"`
+                // + Welt-Reload (jede Material-Allokation liest das Flag).
+                materialMode: "toon",
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
@@ -24319,7 +24329,163 @@ class AnazhRealm {
     // sind native Material-Properties, `gradientMap` aus `state.toonGradientMap`
     // wird geteilt (der `_refreshToonGradient`-Pfad via DataTexture.needsUpdate
     // propagiert automatisch zu allen Materials).
+    // V18.223 (DER LEBENDIGE GIGANT §10 Ω-P, Plan §10) — der PHYSIK-WEG.
+    // PBR (Physically-Based Rendering) ist kein Gefühls-Override, sondern die
+    // Regel-Form: roughness + metalness aus den MATERIAL-TAGS hergeleitet, BRDF
+    // = echte Physik. Eisen ist metallisch + glatt, Laub ist rauh, Glut glüht
+    // aus sich selbst — emergent aus der Substanz, kein Albedo-Patcher.
+    // _buildToonNodeMaterial dispatched HIER über das Material-Mode-Flag.
+    //
+    // Schöpfer-Wort 14.06.2026: „pbr bedeutet ohne mein gefühl, es bassiert
+    // auf regeln, einfach herleitbar, physik, das ist der richtige weg"
+    //
+    // SUBSTANZ → roughness/metalness Tabelle (Plan §10 Q3 — Γ-M ehrt):
+    //   dichte ≥ 0.85 + magieleitung ≥ 0.7  → Eisen-Familie: m=0.85, r=0.3
+    //   dichte ≥ 0.85                       → Stein-Familie: m=0,    r=0.85
+    //   lebendig ≥ 0.7                      → Laub-Familie:  m=0,    r=0.95
+    //   brennbar ≥ 0.7                      → Glut-Familie:  m=0,    r=0.4 (emissiv)
+    //   sonst                               → Default:       m=0,    r=0.7
+    _buildPbrNodeMaterial(opts = {}) {
+        if (typeof THREE === "undefined") return null;
+        if (typeof THREE.MeshStandardNodeMaterial !== "function") return null;
+        // SUBSTANZ-HERLEITUNG für roughness + metalness — Physik-Form.
+        // Default ist ein Mittel-Material (raue Oberfläche, kein Metall).
+        let roughness = 0.7;
+        let metalness = 0.0;
+        let emissiveColor = null;
+        let emissiveIntensity = 0;
+        if (opts.tags) {
+            const t = opts.tags;
+            const dichte = Math.max(0, Math.min(3, +t.dichte || 0));
+            const magie = Math.max(0, Math.min(3, +t.magieleitung || 0));
+            const lebendig = Math.max(0, Math.min(3, +t.lebendig || 0));
+            const brennbar = Math.max(0, Math.min(3, +t.brennbar || 0));
+            // EISEN: dichte hoch + magieleitung hoch → metallisch + glatt
+            if (dichte >= 0.85 && magie >= 0.7) {
+                metalness = Math.min(1, 0.75 + magie * 0.15);
+                roughness = Math.max(0.15, 0.35 - magie * 0.05);
+            } else if (lebendig >= 0.7) {
+                // LAUB/HOLZ: lebendig → rauh, kein Metall
+                roughness = Math.min(0.98, 0.7 + lebendig * 0.2);
+                metalness = 0;
+            } else if (dichte >= 0.85) {
+                // STEIN: dichte ohne Metall-Marker → rauh, dielectric
+                roughness = 0.85;
+                metalness = 0;
+            } else if (brennbar >= 0.7) {
+                // GLUT: brennbar → emissiv glühend, glatt-warm
+                roughness = 0.4;
+                metalness = 0;
+                emissiveIntensity = Math.min(1.2, brennbar * 0.5);
+            } else {
+                // Mittel-Material (Erde/Tuch/Default)
+                roughness = 0.7 + lebendig * 0.1;
+                metalness = 0;
+            }
+        }
+        const params = {};
+        if (opts.color !== undefined) params.color = opts.color;
+        if (opts.side !== undefined) params.side = opts.side;
+        if (opts.transparent !== undefined) params.transparent = opts.transparent;
+        if (opts.opacity !== undefined) params.opacity = opts.opacity;
+        if (opts.vertexColors) params.vertexColors = true;
+        params.roughness = opts.roughness !== undefined ? +opts.roughness : roughness;
+        params.metalness = opts.metalness !== undefined ? +opts.metalness : metalness;
+        const mat = new THREE.MeshStandardNodeMaterial(params);
+        // Emissiv für Glut/Quarz: die warme Substanz glimmt aus sich selbst.
+        // Im Toon-Pfad ist der Floor 0.07 (STRUCTURE_EMISSIVE). Im PBR-Pfad ist
+        // er PHYSIK: ein heisser Körper emittiert (Stefan-Boltzmann); hier als
+        // einfaches emissive-Property mit der Albedo als Farbquelle.
+        if (emissiveIntensity > 0 && mat.emissive && opts.color !== undefined) {
+            emissiveColor = opts.color;
+            mat.emissive.setHex(emissiveColor);
+            mat.emissiveIntensity = emissiveIntensity;
+        }
+        // Welt-Antenne: die Aerial-Perspektive (Plan §10 Q4 — PBR-Welt MIT
+        // PBR-Vegetation; sonst zerfällt der Stoff). Identischer Empfänger wie
+        // im Toon-Pfad: der Substance-Response wendet den profil-gewichteten
+        // Aerial-/Mikro-/Rim-Term POST-lighting an. _ensureAtmoUniforms ist
+        // idempotent + lazy (V15.4-Doku).
+        this._ensureAtmoUniforms();
+        const _SR = AnazhRealm.SUBSTANCE_RESPONSE;
+        const isFlatStructure = !opts.vertexColors && opts.color !== undefined;
+        const responseProfile = opts.tags
+            ? this._substanceResponseProfile(opts.tags)
+            : opts.vertexColors === true
+              ? _SR.defaults.feld
+              : isFlatStructure
+                ? _SR.defaults.werk
+                : _SR.defaults.frei;
+        if (!opts.transparent && typeof this._applySubstanceResponse === "function") {
+            let albedoNode = null;
+            try {
+                const _Ta = THREE.TSL;
+                if (opts.vertexColors === true && _Ta && _Ta.attribute) {
+                    albedoNode = _Ta.attribute("color", "vec3");
+                } else if (isFlatStructure && _Ta && _Ta.vec3) {
+                    const _c = new THREE.Color(opts.color);
+                    albedoNode = _Ta.vec3(_c.r, _c.g, _c.b);
+                }
+            } catch (_e) {
+                /* ohne Albedo-Quelle fällt nur das Füll-Licht */
+            }
+            this._applySubstanceResponse(mat, responseProfile, { albedoNode });
+        }
+        // V18.113 — geflattete SHADING-Normale für vertexColors (Terrain).
+        // PBR-Pfad ehrt dieselbe Disziplin: die 2.5D-Lichtung schmiegt die
+        // Surface-Nets-Facetten visuell auf eine glattere Antwort.
+        if (opts.vertexColors) {
+            try {
+                const _Tn = THREE.TSL;
+                const _aun = this.state.atmoUniforms;
+                if (_Tn && _Tn.normalWorld && _Tn.normalize && _Tn.mix && _Tn.vec3) {
+                    const _up = _Tn.vec3(0.0, 1.0, 0.0);
+                    const _flat =
+                        _aun && _aun.terrainFlatten
+                            ? _aun.terrainFlatten
+                            : _Tn.float(AnazhRealm.TERRAIN_NORMAL_FLATTEN);
+                    mat.normalNode = _Tn.normalize(_Tn.mix(_Tn.normalWorld, _up, _flat));
+                }
+            } catch (_e) {
+                /* TSL fehlt → volle 3D-Lichtung */
+            }
+            // Geomorph (T2 Cross-LOD-Boundary-Naht) — wie im Toon-Pfad.
+            if (opts.geomorph) {
+                try {
+                    const _Tm = THREE.TSL;
+                    const _aum = this.state.atmoUniforms;
+                    if (_Tm && _Tm.attribute && _Tm.positionLocal && _aum && _aum.geomorph) {
+                        const _tgt = _Tm.attribute("aMorphTarget", "vec3");
+                        const _w = _Tm.attribute("aMorphWeight", "float");
+                        const _f = _aum.geomorph.mul(_w);
+                        mat.positionNode = _Tm.positionLocal.add(_tgt.sub(_Tm.positionLocal).mul(_f));
+                    }
+                } catch (_e) {
+                    if (typeof window !== "undefined") window.__terrainMorphErrorPbr = String((_e && _e.message) || _e);
+                }
+            }
+        }
+        // Marker für das Test-Band (kein semantisches Verhalten)
+        mat.userData = mat.userData || {};
+        mat.userData.isPbrMaterial = true;
+        mat.userData.pbrRoughness = params.roughness;
+        mat.userData.pbrMetalness = params.metalness;
+        return mat;
+    }
+
     _buildToonNodeMaterial(opts = {}) {
+        // V18.223 (DER LEBENDIGE GIGANT §10 Ω-P) — der MATERIAL-MODE-DISPATCH.
+        // Default „toon" (Backward-Kompat); wenn `state.atmosphere.materialMode
+        // === "pbr"`, delegiert dieser Aufruf an _buildPbrNodeMaterial. So bleibt
+        // jede bestehende Aufrufstelle (Hunderte) unangetastet — der Welt-weite
+        // Look-Switch ist EIN Flag. Schöpfer-Wort 14.06.: „pbr ist die regel,
+        // physik, der richtige weg".
+        const atmo = this.state.atmosphere;
+        if (atmo && atmo.materialMode === "pbr" && typeof this._buildPbrNodeMaterial === "function") {
+            const pbr = this._buildPbrNodeMaterial(opts);
+            if (pbr) return pbr;
+            // PBR-Fallback fehlgeschlagen (z.B. r184 nicht verfügbar) → Toon-Pfad
+        }
         // V12.0-f — natives MeshToonNodeMaterial (r184, lights=true). Der
         // V10.0-g.diag-Workaround (MeshBasicNodeMaterial + manuelles colorNode-
         // Lighting + handgebauter _renderShadowMapPass) ist gestrichen: r164+
@@ -67082,7 +67248,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.222.0";
+AnazhRealm.VERSION = "18.223.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
