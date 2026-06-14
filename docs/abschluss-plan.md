@@ -30,33 +30,46 @@
 
 ---
 
-## §1 — PRIO 1: VERDRAHTUNGS-WELLE V18.210 (vier Passagier-Foundations konkret machen)
+## §1 — PRIO 1: VERDRAHTUNGS-WELLE V18.210 ✅ GEBAUT (14.06.2026, 0f4956b+folgend)
 
-**Eine Welle, vier Sub-Akte. Synergie: alle vier folgen R2-strukturell + Anti-Scope §3.**
+**Eine Welle, vier Sub-Akte. Synergie: alle vier folgen R2-strukturell + Anti-Scope §3. Alle Wände grün (~3500 Invarianten).**
 
-### A1 — V18.205 `_growTreeBlueprint` → Worldgen-Hook
-- **Wo:** `_vegetationSampleSpawn` Z49936-49977 (wo fixe Varianten gewählt werden)
-- **Wie:** gen≥4-Gate (opt-in, alte Welten bit-identisch); `_growTreeBlueprint(speciesKey, seedForSpawn)` ersetzt fest gebaute Variante; erzeugter Bauplan in `state.blueprints["grown_<species>_<hash>"]` als Cache-by-Hash (Memory-Cap)
-- **V17.16-Schutz:** Tags vor Cache-Reuse; neue Affinitäts-Wand prüft alle 4 Achsen ≤ baum_eiche
-- **Tests:** Source-Probe gen=4 ruft Helper; Cache-Probe gleicher Hash = gleiches Object; Tag-Wand
-- **Abschluss:** gen=4-Welt zeigt ≥6 prozedurale Baum-Hashes; gen<4 bit-identisch
+### A1 — V18.205 `_growTreeBlueprint` → Worldgen-Hook ✅ (+5 Audit-Heilungen)
+- **Gebaut:** `_growTreeBlueprintForSpawn(species, regionSeed)` Cache-by-REGION (256m-Grid + Welt-Seed + Species), Memory-Cap 256 (war 64) mit LRU-Touch + ARCHITEKTUR-bewusster Eviction
+- **V17.16-Schutz:** Tag-Wand prüft alle 4 Achsen ≤ Spezies-Referenz-Δ 0.05 vor Cache-Reuse (NICHT immer baum_eiche — pro Art sein eigener Anker), returnt null bei Verschiebung → Fallback auf fixe Varianten (kein Spawn-Verlust)
+- **gen-Default:** fresh-Welten Default 3→4 (V18.179 → V18.210); `_generateFreshWorldMeta` + `loadState`-Migration-Fallback beide auf 4
+- **Region-Caching-LEHRE:** EIN Bauplan PRO Hash war Architektur-Bug — jeder Spawn anderer Hash → N×InstancedMesh mit 1 Instance je. Heilung: REGION-basierter Hash (`worldSeed|species|regX,regZ`), alle Bäume eines 256m-Hains teilen Bauplan → Instancing wirkt + lokaler Wald-Stil emergiert
+- **Read-as-stranger Audit-Heilungen (drei kritische + zwei kosmetische):**
+  - **#1 Persistenz-Riss:** `grown_*`-Bauplane reisen jetzt im Snapshot (`grownBlueprints` Feld) + `_loadStateRestoreGrownBlueprints` läuft VOR `_loadStateRestoreArchitectures` → Reload-Riss strukturell tot (sonst wäre jeder Hain beim Reload verschwunden weil `spawnArchitecture` den unbekannten `type` ablehnt)
+  - **#2 LRU-Eviction-Race:** `_isGrownBlueprintReferenced(key)` siebt vor Eviction über `state.architectures` — ein aktiver Bauplan wird NIE evictet (sonst Crash beim Streaming-Rebuild)
+  - **#3 Spezies-Diversität:** `_growTreeBlueprint` liest jetzt das SPECIES_PROFILE (6 Arten × {trunkMul, trunkR, crownColor, crownScale, astExtra, taperBase}) → Tanne dunkel-konisch, Birke hell-zart, Eiche breit-warm, etc. (vor der Heilung trugen alle 6 Arten identische Eichen-Geometrie — V18.181-Mischwald wurde stumm zurückgerollt)
+  - **#4 Return-Symmetrie:** `applyOpToPart` + `applyWorkshopProcessToPart` returnen jetzt BEIDE `staminaRemaining` + `manaRemaining` (vor der Heilung log `staminaRemaining` bei phaseChange-Ops, weil tatsächlich Mana abgezogen wurde)
+  - **#5 Test-Hygiene:** Mana/Stamina/manaMax/staminaMax/tools-Liste werden im A4-Band exakt restauriert (Stat-Drift in Folge-Bands strukturell tot)
+- **Test:** 13 Invarianten grün (Helper · Determinismus · Cache-Reuse · 6 Varianten · Tag-Neutralität · Memory-Cap-256 · Source-Probe · fresh-gen=4 · Snapshot-Persistenz · Restore-Helper-Verdrahtung · Eviction-Aktiv-Sieb · 4-fache Spezies-Geometrie-Diversität · Spezies-Tag-Wand)
 
-### A2 — V18.207 R5 microBoost → Live-Slider + Default 1.3
-- **Wo:** `AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost` + `_applySubstanceResponse`
-- **Wie:** Default 1.0→1.3 (sichtbar); `state.atmoUniforms.r5StructureBoost` als Live-Uniform; Einstellungen-Slider (Render-Feinschliff)
-- **Abschluss:** Schöpfer-Sign-off — Strukturen weniger „platt"
+### A2 — V18.207 R5 microBoost → Live-Slider + Default 1.3 ✅
+- **Gebaut:** `setStructureBoost(v)` Setter + `state.atmoUniforms.r5StructureBoost` Live-TSL-Uniform (Range [0.5, 2.5], persistiert in `atmosphere.r5StructureBoost`)
+- **Default 1.0 → 1.3** (sichtbar tiefer als Terrain); R5_STRUCTURE_TEXTURE-Konstante als Fallback
+- **DOM-Slider:** `slider-structureboost` in Settings → Render-Feinschliff, neben `slider-microtex`
+- **Source:** `_applySubstanceResponse` liest `_au.r5StructureBoost` (statt Konstante) → der Slider TREIBT das Render live (V18.65-Nullnummer-Klasse strukturell ausgeschlossen)
+- **Test:** 9 Invarianten grün (Default 1.3 · Uniform · Setter · Live-Update · Persist · Cap-Clamp · Floor-Clamp · Source-Probe · DOM)
 
-### A3 — V18.202 `_scentAt` → Kreatur-KI-Reader
-- **Wo:** `_creatureNextAction`-Tick (grep zuerst)
-- **Wie:** Raubtier-Soul (`temperament:"raubtier"`, V18.107) liest `_scentAt(pos, sources)` mit Beute-Kreaturen; Bewegung Richtung höchstem Geruch-Gradient
-- **Geruchs-Quellen:** Kreaturen mit `temperament:"flüchtig"`/`"scheu"` emittieren (strength = sizeFactor V18.208)
-- **Tests:** Raubtier mit Beute in 50m → bewegt sich; ohne → ambient
-- **Abschluss:** Headless-Behavioral-Probe beweist Jagd-Tendenz
+### A3 — V18.202 `_scentAt` → Kreatur-KI-Reader ✅
+- **Gebaut:** `_creatureScentHuntDir(creature, wariness)` für `wild`-Temperament; sammelt scheu/sanft/wehrhaft-Kreaturen als Beute-Quellen (strength = `_compoundSizeFactor`, V18.208); 4-Richtungs-Gradient (N/S/O/W, scentProbeM=4m); folgt höchstem Geruch-Gain
+- **Constants:** `CREATURE_HUNT.scentRangeM=50` (1.4× weiter als Spieler-Witterung 12m — Wittern > Sehen, der Wind trägt); `scentProbeM=4` (Schritt-Weite ~2s Bewegung)
+- **Strike:** `_tickCreatureScentStrike` ruft `damageCreature(nearest, dmg, {source:"jagd"})` analog Spieler-Pfad; Cooldown-shared (`nextHuntStrikeAt`)
+- **Mode-Gate:** pfad-only; wariness-Schutz (Furcht schlägt Jagd, dieselbe Disziplin)
+- **Wander-Verdrahtung:** ersetzt der alte „NEUTRAL"-Branch in `updateCreatures` → entweder Scent-Pfad ODER Zufalls-Drift (kein doppelter Akt)
+- **Anti-Runaway:** Sources-Cap 12 (kein O(N²) in dichten Schwärmen); Gradient-Schwelle 0.02 (Rauschen-Floor)
+- **Test:** 8 Invarianten grün (2× Helper · Konstanten · Source-Probe Helper · Source-Probe Wander · Behavioral mit Beute · ohne Beute → null · Strike trifft)
 
-### A4 — V18.201 `_drainMana` → Konsument γ (Werkstatt-`resonanz`-Op)
-- **Plan:** `applyOpToPart` mit `op:"resonanz"` kostet `MANA_COST_RESONANZ=15` statt Stamina (Magie statt Mühe)
-- **Tests:** pfad-Modus zieht 15 Mana; bei mana<15 verweigert; schöpfer-Modus frei
-- **Abschluss:** Mana-Wert (folgt mit B-Block) sinkt sichtbar beim Akt
+### A4 — V18.201 `_drainMana` → Konsument γ (phaseChange-Ops = Magie) ✅
+- **Gebaut:** `applyOpToPart` + `applyWorkshopProcessToPart`: ein `tool.opClass === "phaseChange"` (= soulwork, imbue, ritueller-stab) zieht MANA statt Stamina (Mode-Gate `pfad`, Floor 5 analog Stamina-Floor 2)
+- **Konstante:** `TOOL_OP_MANA_COST = 15` (Magie ist mächtiger, kostet mehr; Präzisions-Skalierung identisch zu Stamina)
+- **Reine Op-Class-Trennung** (keine Hardcode-Whitelist): subtractive/plastic/additive = Mühe (Stamina), phaseChange = Magie (Mana) — eine Erweiterung ums fünfte Werkzeug erbt das Verhalten automatisch
+- **Schöpfer-Modus** frei via existierendes `_drainMana`-Gate (kein doppelter Check)
+- **Werkstatt-Pfad** spiegelt EXAKT (proc.opClass statt tool.opClass) — die zwei Wege halten sich
+- **Test:** 10 Invarianten grün (Konstante · 2× Source-Probe · Mana-Drain · Stamina-untouched · Insufficient-Reject · Atomar · hände-Stamina-Pfad · hände-Mana-untouched · Schöpfer-kostenfrei)
 
 ---
 

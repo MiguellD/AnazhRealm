@@ -16970,9 +16970,14 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
         // Initiale Welt: Worldgen-Bäume sind jetzt in state.architectures,
         // NICHT in state.vegetation. state.vegetation enthält nur noch
-        // Gras + Blumen. state.architectures enthält baum_eiche/baum_kiefer.
+        // Gras + Blumen. state.architectures enthält baum_eiche/baum_kiefer
+        // ODER (seit V18.210/genVersion≥4) prozedurale grown_*-Bauplane.
         const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
-        const archTrees = archs.filter((a) => a.type === "baum_eiche" || a.type === "baum_kiefer");
+        const archTrees = archs.filter(
+            (a) =>
+                typeof a.type === "string" &&
+                (a.type.startsWith("baum_") || a.type.startsWith("stamm_") || a.type.startsWith("grown_"))
+        );
         out.worldgenTreesInArchitectures = archTrees.length;
         // Mindestens ein Baum mit Mesh (= in Player-Nähe gerendert)
         // muss eine Compound-Kollision haben.
@@ -34634,9 +34639,11 @@ async function checkBandV18207R5StructureTexture(ctx) {
         out.srcHasR5 = /R5_STRUCTURE_TEXTURE/.test(src);
         out.srcMultipliesMicro = /microBoost/.test(src) || /_r5Boost/.test(src);
 
-        // (R3) Default 1.0 ist no-op (bit-identisch zu Pre-V18.207, der
-        // Multiplier ändert nichts)
-        out.defaultIsNoOp = A.R5_STRUCTURE_TEXTURE.microBoost === 1.0;
+        // (R3) V18.210 (§1-A2): der Default wanderte 1.0 → 1.3 (sichtbar);
+        // der Slider ist live → der Spieler dreht selbst. Pre-V18.207 lebte
+        // ohne den Boost-Faktor, V18.207-Foundation war 1.0 (no-op), V18.210
+        // verdrahtete + bracht den DEFAULT auf den sichtbaren Wert.
+        out.defaultIs13 = A.R5_STRUCTURE_TEXTURE.microBoost === 1.3;
 
         return out;
     });
@@ -34645,7 +34652,7 @@ async function checkBandV18207R5StructureTexture(ctx) {
     check(`V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`, res.microBoostSensible === true);
     check("V18.207 (R2a) Source: R5_STRUCTURE_TEXTURE wird in _applySubstanceResponse gelesen", res.srcHasR5 === true);
     check("V18.207 (R2b) Source: micro × Boost-Faktor (microBoost oder _r5Boost im Code)", res.srcMultipliesMicro === true);
-    check("V18.207 (R3) Default microBoost = 1.0 (no-op, bit-identisch zu Pre-V18.207)", res.defaultIsNoOp === true);
+    check("V18.207 (R3) V18.210-Default microBoost = 1.3 (sichtbar — Slider live)", res.defaultIs13 === true);
 }
 
 // V18.208 — KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
@@ -34744,9 +34751,9 @@ async function checkBandV18209Konsolidierung(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.209.0"
+        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.210.0"
         out.versionStr = A.VERSION;
-        out.versionMatches = A.VERSION === "18.209.0";
+        out.versionMatches = A.VERSION === "18.210.0";
 
         // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
         // beim Konsolidieren (alles bleibt lauffähig):
@@ -34789,11 +34796,395 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
-    check(`V18.209 (K1) VERSION = "18.209.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
+    check(`V18.209 (K1) VERSION = "18.210.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
     check("V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)", res.allFoundationsAlive === true);
     check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
     check("V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)", res.avatarFamilyKomplett === true);
     check("V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)", res.manaMaxFn && res.manaRegenConst);
+}
+
+// V18.210 — VERDRAHTUNGS-WELLE (abschluss-plan §1): die vier Passagier-
+// Foundations bekommen Konsumenten. Jeder Sub-Akt prüft KONSUM (V17.31-
+// Disziplin „Existenz ist Deko"), nicht Existenz.
+// A1: _growTreeBlueprintForSpawn (Worldgen-Hook gen≥4)
+// A2: setStructureBoost + Live-Uniform r5StructureBoost (Slider)
+// A3: _creatureScentHuntDir + _tickCreatureScentStrike (wild-KI liest scent)
+// A4: applyOpToPart + applyWorkshopProcessToPart: phaseChange → Mana
+async function checkBandV18210Verdrahtung(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // ============== A1: Γ7 WORLDGEN-HOOK ==============
+        // (A1a) Helper _growTreeBlueprintForSpawn existiert + ruft Helper
+        out.a1HelperExists = typeof r._growTreeBlueprintForSpawn === "function";
+        // (A1b) gen-Default für FRESH ist 4 (V18.210 statt V18.179's 3)
+        const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18210") : null;
+        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 4;
+        // (A1c) Determinismus: gleiches (species, seed) → gleicher cacheKey
+        const k1 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
+        const k2 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
+        out.a1Deterministic = k1 && k1 === k2;
+        // (A1d) Cache-Reuse: SELBER cacheKey → SELBES Bauplan-Objekt
+        out.a1CacheReuse =
+            k1 && r.state.blueprints[k1] && r.state.blueprints[k1] === r.state.blueprints[k2];
+        // (A1e) Verschiedene seeds → mind. 5 unique cache keys über 6 Versuche
+        const keys = new Set();
+        for (let s = 0; s < 6; s++) {
+            const k = r._growTreeBlueprintForSpawn("baum_eiche", 50000 + s);
+            if (k) keys.add(k);
+        }
+        out.a1ManyVariants = keys.size >= 5;
+        // (A1f) V17.16-Schutz: cache-Bauplan hat tag-Achsen ≈ baum_eiche
+        const refBp = r.state.blueprints.baum_eiche;
+        const grownBp = k1 && r.state.blueprints[k1];
+        out.a1TagNeutral = false;
+        if (refBp && grownBp) {
+            const ref = r.computeCompoundTags(refBp);
+            const got = r.computeCompoundTags(grownBp);
+            let neutral = true;
+            for (const a of ["lebendig", "dichte", "brennbar", "magieleitung"]) {
+                if (Math.abs((ref[a] || 0) - (got[a] || 0)) > 0.05) neutral = false;
+            }
+            out.a1TagNeutral = neutral;
+        }
+        // (A1g) Memory-Cap: nach 300 verschiedenen seeds bleibt der Ring
+        // ≤ 256 (V18.210 Audit-Heilung #2: CAP 64→256, Architektur-bewusste
+        // Eviction — der bounded Memory-Schutz hält weiter).
+        for (let s = 0; s < 300; s++) r._growTreeBlueprintForSpawn("baum_eiche", 90000 + s);
+        out.a1RingCap = !r._growTreeRing || r._growTreeRing.length <= 256;
+        // (A1h) SOURCE-PROBE: _vegetationSampleSpawn ruft den Helper an gen≥4
+        const src = r._vegetationSampleSpawn.toString();
+        out.a1SourceWired =
+            /_growTreeBlueprintForSpawn/.test(src) && /genVersion\s*>=\s*4/.test(src);
+
+        // ============== A1 Audit-Heilungen ==============
+        // (Heilung #1) Snapshot persistiert grownBlueprints
+        const snap = r.buildStateSnapshot ? r.buildStateSnapshot() : null;
+        out.a1SnapshotHasGrown =
+            !!(snap && snap.grownBlueprints && typeof snap.grownBlueprints === "object");
+        // (Heilung #1b) Restore-Helper existiert UND ist vor _loadStateRestoreArchitectures verdrahtet
+        out.a1RestoreHelperExists =
+            typeof r._loadStateRestoreGrownBlueprints === "function" &&
+            /_loadStateRestoreGrownBlueprints/.test(r.loadState.toString());
+        // (Heilung #2) Eviction respektiert aktive Architekturen
+        out.a1EvictionRespectsActive = false;
+        if (typeof r._isGrownBlueprintReferenced === "function") {
+            // Setze einen test-grown-Bauplan + Architektur, force CAP-Überlauf,
+            // prüfe dass der referenzierte Bauplan überlebt.
+            const testKey = "grown_baum_eiche_testkey";
+            r.state.blueprints[testKey] = {
+                name: testKey,
+                label: "Test",
+                builtIn: true,
+                _isGrown: true,
+                _grownSpecies: "baum_eiche",
+                instanced: true,
+                parts: [{ shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+            };
+            r.state.architectures = r.state.architectures || [];
+            const sentinelArch = {
+                id: "test-arch-v18210",
+                type: testKey,
+                position: { x: 0, y: 0, z: 0 },
+            };
+            r.state.architectures.push(sentinelArch);
+            // Saved Ring-State + Init
+            const savedRing = r._growTreeRing ? [...r._growTreeRing] : null;
+            r._growTreeRing = [testKey];
+            // Erzeuge 260+ Dummy-Bauplane, um CAP=256 zu überschreiten
+            for (let i = 0; i < 260; i++) {
+                const dummyKey = `grown_dummy_${i}`;
+                r.state.blueprints[dummyKey] = {
+                    name: dummyKey,
+                    builtIn: true,
+                    _isGrown: true,
+                    parts: [],
+                };
+                r._growTreeRing.push(dummyKey);
+            }
+            // Trigger Eviction durch einen weiteren Spawn-Versuch
+            r._growTreeBlueprintForSpawn("baum_eiche", "trigger-eviction");
+            // Der referenzierte testKey muss überleben
+            out.a1EvictionRespectsActive = !!r.state.blueprints[testKey];
+            // Cleanup
+            r.state.architectures = r.state.architectures.filter((a) => a.id !== sentinelArch.id);
+            delete r.state.blueprints[testKey];
+            for (let i = 0; i < 260; i++) delete r.state.blueprints[`grown_dummy_${i}`];
+            r._growTreeRing = savedRing;
+        }
+        // (Heilung #3) SPEZIES-DIVERSITÄT: 6 Arten erzeugen unterschiedliche Geometrie
+        const species = ["baum_eiche", "baum_kiefer", "baum_birke", "baum_erle", "baum_buche", "baum_tanne"];
+        const sigs = new Set();
+        for (const sp of species) {
+            const p = r._growTreeBlueprint(sp, "audit-test-seed");
+            if (Array.isArray(p)) {
+                // Signatur = aggregierter Höhe/Krone-Farbe-Hash (kein vollständiger JSON-Vergleich,
+                // weil Position-Jitter durch verschiedenen seedString variiert).
+                let maxY = 0, totalY = 0, leafColor = 0, leafCount = 0;
+                for (const part of p) {
+                    if (part.position.y + part.size.y * 0.5 > maxY) maxY = part.position.y + part.size.y * 0.5;
+                    totalY += part.size.y;
+                    if (part.material === "laub" && typeof part.color === "number") {
+                        leafColor += part.color;
+                        leafCount++;
+                    }
+                }
+                const sig = `${maxY.toFixed(1)}|${(leafColor / Math.max(1, leafCount)).toFixed(0)}|${p.length}`;
+                sigs.add(sig);
+            }
+        }
+        out.a1SpeciesDistinct = sigs.size >= 4; // wenigstens 4 unterschiedlich (Eiche/Kiefer/Tanne/Birke sind klar trennbar)
+        // (Heilung #3b) TAG-WAND: Birke gegen baum_birke (nicht baum_eiche)
+        out.a1TagWandSpecies = /this\.state\.blueprints\[species\]/.test(r._growTreeBlueprintForSpawn.toString());
+
+        // ============== A2: R5 LIVE-UNIFORM + SLIDER ==============
+        // (A2a) Default wanderte 1.0 → 1.3
+        out.a2DefaultIs13 = A.R5_STRUCTURE_TEXTURE.microBoost === 1.3;
+        // (A2b) Live-Uniform existiert in atmoUniforms
+        const au = r._ensureAtmoUniforms ? r._ensureAtmoUniforms() : null;
+        out.a2UniformExists = !!(au && au.r5StructureBoost);
+        // (A2c) Setter existiert + setzt Uniform + persistiert
+        out.a2SetterExists = typeof r.setStructureBoost === "function";
+        if (out.a2SetterExists) {
+            const before = au.r5StructureBoost.value;
+            r.setStructureBoost(2.0);
+            out.a2SetterUpdatesUniform = au.r5StructureBoost.value === 2.0;
+            out.a2SetterPersists = r.state.atmosphere.r5StructureBoost === 2.0;
+            // Range clamp: 3.0 → 2.5 (cap), 0.1 → 0.5 (floor)
+            r.setStructureBoost(5.0);
+            out.a2SetterCapsHi = au.r5StructureBoost.value === 2.5;
+            r.setStructureBoost(0.1);
+            out.a2SetterCapsLo = au.r5StructureBoost.value === 0.5;
+            r.setStructureBoost(before); // restore
+        }
+        // (A2d) SOURCE-PROBE: _applySubstanceResponse liest das Uniform statt Konstante
+        const srcSubst = r._applySubstanceResponse.toString();
+        out.a2SubstReadsUniform =
+            /r5StructureBoost/.test(srcSubst) && /_au\.r5StructureBoost/.test(srcSubst);
+        // (A2e) DOM-Slider existiert
+        out.a2DomSliderExists = !!document.getElementById("slider-structureboost");
+
+        // ============== A3: _scentAt KREATUR-KI ==============
+        // (A3a) Helper existieren
+        out.a3HuntDirExists = typeof r._creatureScentHuntDir === "function";
+        out.a3StrikeExists = typeof r._tickCreatureScentStrike === "function";
+        // (A3b) Konstanten gesetzt
+        out.a3ScentRangeM = A.CREATURE_HUNT.scentRangeM;
+        out.a3ScentProbeM = A.CREATURE_HUNT.scentProbeM;
+        out.a3ConstsOk =
+            typeof out.a3ScentRangeM === "number" && out.a3ScentRangeM >= 30 &&
+            typeof out.a3ScentProbeM === "number" && out.a3ScentProbeM > 0;
+        // (A3c) SOURCE-PROBE: der Helper ruft _scentAt
+        out.a3HelperUsesScent = /_scentAt/.test(r._creatureScentHuntDir.toString());
+        // (A3d) SOURCE-PROBE: der wander-Pfad in updateCreatures ruft den Helper
+        const srcUpd = r.updateCreatures.toString();
+        out.a3WanderWired = /_creatureScentHuntDir/.test(srcUpd);
+        // (A3e) BEHAVIORAL: ein wild-Wesen mit Beute in 50m kriegt einen Dir
+        // zurück (nicht null). Wir setzen ein Test-Setup synthetisch.
+        const savedMode = r.getGameMode ? r.getGameMode() : "frieden";
+        try {
+            if (r.setGameMode) r.setGameMode("pfad");
+            // Fake-wildes Wesen (cached temperament=wild)
+            const predator = {
+                position: new (window.THREE || A.THREE || {}).Vector3(0, 0, 0),
+                userData: {
+                    soul: "wesen",
+                    _temperament: "wild",
+                    _temperamentSoul: "wesen",
+                    kind: "creature",
+                    boosts: [],
+                },
+            };
+            // Fake-Beute (sanft, in 20m östlich)
+            const prey = {
+                position: new (window.THREE || A.THREE || {}).Vector3(20, 0, 0),
+                userData: {
+                    soul: "sprite",
+                    _temperament: "scheu",
+                    _temperamentSoul: "sprite",
+                    kind: "creature",
+                    boosts: [],
+                },
+            };
+            const savedCreatures = r.state.creatures;
+            r.state.creatures = [predator, prey];
+            const dirWithPrey = r._creatureScentHuntDir(predator, 0.0);
+            out.a3PredatorHasDir = !!(dirWithPrey && (dirWithPrey.x !== 0 || dirWithPrey.z !== 0));
+            // Ohne Beute → null
+            r.state.creatures = [predator];
+            const dirNoPrey = r._creatureScentHuntDir(predator, 0.0);
+            out.a3NoPreyNoDir = dirNoPrey === null;
+            // Strike-Range-Test: Beute in 1m → strike returns true
+            prey.position.set(1.5, 0, 0);
+            r.state.creatures = [predator, prey];
+            predator.userData.nextHuntStrikeAt = -Infinity;
+            const struck = r._tickCreatureScentStrike(predator);
+            out.a3StrikeHits = struck === true;
+            r.state.creatures = savedCreatures;
+        } catch (e) {
+            out.a3Error = String(e && e.message || e);
+        } finally {
+            if (r.setGameMode) r.setGameMode(savedMode);
+        }
+
+        // ============== A4: MANA-KONSUMENT γ ==============
+        // (A4a) Konstante existiert
+        out.a4ManaCostConst = typeof A.TOOL_OP_MANA_COST === "number" && A.TOOL_OP_MANA_COST > 0;
+        // (A4b) SOURCE-PROBE: applyOpToPart liest tool.opClass + zweigt zu _drainMana
+        const srcOp = r.applyOpToPart.toString();
+        out.a4OpToPartReadsMana =
+            /phaseChange/.test(srcOp) && /_drainMana/.test(srcOp) && /not_enough_mana/.test(srcOp);
+        // (A4c) SOURCE-PROBE: Werkstatt-Pfad liest proc.opClass
+        const srcWs = r.applyWorkshopProcessToPart.toString();
+        out.a4WorkshopReadsMana =
+            /phaseChange/.test(srcWs) && /_drainMana/.test(srcWs);
+        // (A4d) BEHAVIORAL: phaseChange-Op (ritueller-stab) zieht Mana statt Stamina
+        const sm = r.getGameMode ? r.getGameMode() : "frieden";
+        // V18.210 (Audit-Heilung #5) — saubere Test-Hygiene: state vorher
+        // SCHNAPPEN (Stat-Felder + tools-Liste), nachher EXAKT restaurieren.
+        const savedManaA4 = r.state.player.mana;
+        const savedManaMaxA4 = r.state.player.manaMax;
+        const savedStamA4 = r.state.player.stamina;
+        const savedStamMaxA4 = r.state.player.staminaMax;
+        const savedToolsA4 = Array.isArray(r.state.player.tools) ? [...r.state.player.tools] : [];
+        try {
+            if (r.setGameMode) r.setGameMode("pfad");
+            r.state.player.manaMax = 100;
+            r.state.player.mana = 50;
+            r.state.player.staminaMax = 100;
+            r.state.player.stamina = 50;
+            // Ein eigener Bauplan zum Editieren (kein builtIn)
+            const bpName = "test_v18210_bp";
+            if (!r.state.player.tools.includes("ritueller-stab")) {
+                r.state.player.tools.push("ritueller-stab");
+            }
+            r.state.blueprints[bpName] = {
+                name: bpName,
+                label: "Test",
+                builtIn: false,
+                parts: [
+                    {
+                        material: "quarz", // phaseChange-kompatibel
+                        shape: "sphere",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                    },
+                ],
+            };
+            const manaBefore = r.state.player.mana;
+            const stamBefore = r.state.player.stamina;
+            const result = r.applyOpToPart(bpName, 0, "ritueller-stab");
+            out.a4ResultOk = result && result.ok === true;
+            out.a4ManaWasDrained = r.state.player.mana < manaBefore;
+            out.a4StaminaUntouched = r.state.player.stamina === stamBefore;
+            // Mana zu klein → ablehnen, Mana unverändert (atomar)
+            r.state.player.mana = 1;
+            const result2 = r.applyOpToPart(bpName, 0, "ritueller-stab");
+            out.a4InsufficientRejected =
+                result2 && result2.ok === false && result2.reason === "not_enough_mana";
+            out.a4InsufficientAtomic = r.state.player.mana === 1;
+            // Stamina-Op (hände) zieht Stamina, NICHT Mana
+            r.state.player.mana = 100;
+            r.state.player.stamina = 50;
+            const manaBeforeStam = r.state.player.mana;
+            const stamBeforeStam = r.state.player.stamina;
+            r.applyOpToPart(bpName, 0, "hände");
+            out.a4HandsZiehtStamina = r.state.player.stamina < stamBeforeStam;
+            out.a4HandsManaUntouched = r.state.player.mana === manaBeforeStam;
+            // Schöpfer-Modus: keine Kosten
+            if (r.setGameMode) r.setGameMode("schöpfer");
+            r.state.player.mana = 50;
+            r.state.player.stamina = 50;
+            const result3 = r.applyOpToPart(bpName, 0, "ritueller-stab");
+            out.a4SchoepferOk = result3 && result3.ok === true;
+            out.a4SchoepferKostenfrei =
+                r.state.player.mana === 50 && r.state.player.stamina === 50;
+            // Cleanup
+            delete r.state.blueprints[bpName];
+        } catch (e) {
+            out.a4Error = String(e && (e.message || e));
+        } finally {
+            if (r.setGameMode) r.setGameMode(sm);
+            // V18.210 (Audit-Heilung #5) — exakt restaurieren, damit
+            // nachfolgende Bands den Spieler frisch sehen (sonst leaken
+            // ritueller-stab im Werkzeug-Inventar + Stat-Drift).
+            r.state.player.mana = savedManaA4;
+            r.state.player.manaMax = savedManaMaxA4;
+            r.state.player.stamina = savedStamA4;
+            r.state.player.staminaMax = savedStamMaxA4;
+            r.state.player.tools = savedToolsA4;
+        }
+
+        return out;
+    });
+
+    // A1 — Worldgen-Hook
+    check("V18.210-A1a _growTreeBlueprintForSpawn Helper existiert", res.a1HelperExists === true);
+    check("V18.210-A1b FRESH-Welt genVersion = 4 (war 3)", res.a1FreshGenIs4 === true);
+    check("V18.210-A1c Determinismus: (species, seed) → derselbe cacheKey", res.a1Deterministic === true);
+    check("V18.210-A1d Cache-Reuse: SELBE seed → SELBES Bauplan-Object", res.a1CacheReuse === true);
+    check("V18.210-A1e 6 seeds → ≥5 unique cache keys", res.a1ManyVariants === true);
+    check("V18.210-A1f V17.16-Schutz: tag-Achsen ≈ baum_eiche (4×Δ<0.05)", res.a1TagNeutral === true);
+    check("V18.210-A1g Memory-Cap: Ring ≤ 256 nach 300 seeds (V18.210-Audit #2 CAP-Erweiterung)", res.a1RingCap === true);
+    check("V18.210-A1h SOURCE: _vegetationSampleSpawn ruft Helper an genVersion≥4", res.a1SourceWired === true);
+
+    // A2 — R5 Live-Slider
+    check("V18.210-A2a R5_STRUCTURE_TEXTURE.microBoost Default = 1.3 (war 1.0)", res.a2DefaultIs13 === true);
+    check("V18.210-A2b Live-Uniform r5StructureBoost in atmoUniforms", res.a2UniformExists === true);
+    check("V18.210-A2c setStructureBoost-Setter existiert", res.a2SetterExists === true);
+    check("V18.210-A2c2 Setter aktualisiert Uniform live", res.a2SetterUpdatesUniform === true);
+    check("V18.210-A2c3 Setter persistiert (atmosphere.r5StructureBoost)", res.a2SetterPersists === true);
+    check("V18.210-A2c4 Setter cap-clamp (5.0 → 2.5)", res.a2SetterCapsHi === true);
+    check("V18.210-A2c5 Setter floor-clamp (0.1 → 0.5)", res.a2SetterCapsLo === true);
+    check("V18.210-A2d SOURCE: _applySubstanceResponse liest LIVE-Uniform statt Konstante", res.a2SubstReadsUniform === true);
+    check("V18.210-A2e DOM-Slider slider-structureboost existiert", res.a2DomSliderExists === true);
+
+    // A3 — Scent KI
+    check("V18.210-A3a _creatureScentHuntDir Helper existiert", res.a3HuntDirExists === true);
+    check("V18.210-A3a2 _tickCreatureScentStrike Helper existiert", res.a3StrikeExists === true);
+    check(`V18.210-A3b CREATURE_HUNT.scentRangeM/scentProbeM Konstanten (range=${res.a3ScentRangeM}, probe=${res.a3ScentProbeM})`, res.a3ConstsOk === true);
+    check("V18.210-A3c SOURCE: Helper ruft _scentAt", res.a3HelperUsesScent === true);
+    check("V18.210-A3d SOURCE: updateCreatures verdrahtet den Helper im wander-Pfad", res.a3WanderWired === true);
+    check("V18.210-A3e BEHAVIORAL: wild + Beute → direction != null", res.a3PredatorHasDir === true);
+    check("V18.210-A3e2 BEHAVIORAL: wild ohne Beute → null", res.a3NoPreyNoDir === true);
+    check("V18.210-A3e3 BEHAVIORAL: Beute in 1.5m → strike trifft", res.a3StrikeHits === true);
+
+    // A1 — Audit-Heilungen (Persistenz + Eviction + Spezies-Diversität)
+    check(
+        "V18.210-A1-Heil1 Snapshot persistiert grownBlueprints (Audit #1, Reload-Riss strukturell tot)",
+        res.a1SnapshotHasGrown === true
+    );
+    check(
+        "V18.210-A1-Heil1b Restore-Helper _loadStateRestoreGrownBlueprints existiert + verdrahtet",
+        res.a1RestoreHelperExists === true
+    );
+    check(
+        "V18.210-A1-Heil2 Eviction-Wand: aktiver grown-Bauplan wird NIE evictet (Audit #2)",
+        res.a1EvictionRespectsActive === true
+    );
+    check(
+        "V18.210-A1-Heil3 SPEZIES-Diversität: 6 Arten erzeugen UNTERSCHIEDLICHE Geometrie (Audit #3, V18.181-Mischwald ehrt)",
+        res.a1SpeciesDistinct === true
+    );
+    check(
+        "V18.210-A1-Heil3b SPEZIES-Tag-Wand: Birke gegen baum_birke (nicht baum_eiche)",
+        res.a1TagWandSpecies === true
+    );
+
+    // A4 — Mana-Konsument
+    check("V18.210-A4a TOOL_OP_MANA_COST Konstante existiert", res.a4ManaCostConst === true);
+    check("V18.210-A4b SOURCE: applyOpToPart phaseChange → _drainMana + not_enough_mana", res.a4OpToPartReadsMana === true);
+    check("V18.210-A4c SOURCE: applyWorkshopProcessToPart phaseChange → _drainMana", res.a4WorkshopReadsMana === true);
+    check("V18.210-A4d BEHAVIORAL: ritueller-stab (phaseChange) zieht Mana", res.a4ManaWasDrained === true);
+    check("V18.210-A4d2 BEHAVIORAL: ritueller-stab lässt Stamina unberührt", res.a4StaminaUntouched === true);
+    check("V18.210-A4d3 BEHAVIORAL: mana<cost → not_enough_mana (atomar, mana unverändert)", res.a4InsufficientRejected === true);
+    check("V18.210-A4d3b BEHAVIORAL: atomarer Reject — Mana unverändert", res.a4InsufficientAtomic === true);
+    check("V18.210-A4e BEHAVIORAL: hände (subtractive) zieht weiterhin Stamina", res.a4HandsZiehtStamina === true);
+    check("V18.210-A4e2 BEHAVIORAL: hände lässt Mana unberührt", res.a4HandsManaUntouched === true);
+    check("V18.210-A4f BEHAVIORAL: schöpfer-Modus kostenfrei", res.a4SchoepferKostenfrei === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -51986,6 +52377,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18207R5StructureTexture(ctx);
             await checkBandV18208CreatureSizeSymmetry(ctx);
             await checkBandV18209Konsolidierung(ctx);
+            await checkBandV18210Verdrahtung(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

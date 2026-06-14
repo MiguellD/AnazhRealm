@@ -11985,8 +11985,10 @@ class AnazhRealm {
         // Legacy (fehlend → 1, _genVersion) — das Drainage-Netz-Gesetz.
         // V18.179 — Γ4 macht das Spektrum dreistufig: 1=Legacy, 2=Feuchte+
         // Lesart-4 (V18.166/.178), 3=plus die Makro-Geographie (Massiv+Tal+
-        // Becken). Frische Welten kriegen direkt 3 (kein Gesicht zu bewahren).
-        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 3;
+        // Becken). V18.210 (§1-A1) — Γ7: 4=plus die prozeduralen Baum-Bauplane
+        // (`_growTreeBlueprintForSpawn` baut sie aus dem Welt-Seed; tag-neutral
+        // gegen baum_eiche per V17.16-Wand). Frische Welten kriegen direkt 4.
+        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 4;
         // V9.26 Phase 5c-Migrations-Flip + V9.33 Phase 5c.2.b Eingangs-Welt-
         // Flip + V9.35 Phase 5c.2.c.2 Toggle-Tod — der Voxel-Boden ist die
         // kanonische, irreversible Form. V9.35 zieht die ZWANGS-Migration nach:
@@ -12230,7 +12232,8 @@ class AnazhRealm {
         // Version geboren; bestehende Welten (Feld fehlt → 1) behalten ihr
         // Gesicht (legacy-erhaltend: das Drainage-Netz-Gesetz, Genese ist
         // Welt-Identität). V18.179: gen 3 schaltet Γ4-Makro-Geographie.
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 3 };
+        // V18.210 (§1-A1): gen 4 schaltet Γ7-prozedurale Baum-Bauplane.
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 4 };
     }
 
     // Snapshot einer „leeren" Welt mit gegebenem worldMeta. Optional bekommt
@@ -15926,6 +15929,127 @@ class AnazhRealm {
         return dist < AnazhRealm.CREATURE_HUNT.radius;
     }
 
+    // V18.210 (§1-A3) — DER ZWEITE JAGD-SINN: das WILDE Wesen WITTERT andere
+    // BEUTE (scheue/sanfte Wesen) über das Geruch-Feld (`_scentAt`, V18.202),
+    // nicht nur den Spieler. Der Wind trägt den Geruch (Quelle = Beute-Position,
+    // strength = sizeFactor, V18.208) → das Raubtier folgt dem Gradienten.
+    //
+    // Vier Probe-Richtungen (N/S/O/W) in CREATURE_HUNT.scentProbeM Schritten →
+    // höchste Geruch-Intensität zeigt die Richtung. Falls kein Geruch-Gradient
+    // (alle vier Proben ≈ 0), returnt der Helper null → Caller fällt auf
+    // neutrales Wandern zurück.
+    //
+    // Mode-Gate identisch zu _creatureHuntDrive: nur pfad. Wariness-Schutz
+    // identisch: ein verängstigtes Raubtier (wariness ≥ fleeThreshold) jagt
+    // NICHT (Furcht schlägt Jagd, dieselbe Disziplin wie der Spieler-Pfad).
+    _creatureScentHuntDir(creature, wariness) {
+        if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return null;
+        if (this._creatureTemperament(creature) !== "wild") return null;
+        if (wariness >= AnazhRealm.CREATURE_NATURE.fleeThreshold) return null;
+        const HUNT = AnazhRealm.CREATURE_HUNT;
+        const scentRange = HUNT.scentRangeM || 50;
+        const probeStep = HUNT.scentProbeM || 4;
+        const cx = creature.position.x;
+        const cz = creature.position.z;
+        // Beute-Sammeln (scheu + sanft + wehrhaft sind Beute; wild jagt nicht
+        // wild — Inter-Predator-Jagd ist eine eigene, spätere Welle).
+        // Strength = sizeFactor des Wesens (V18.208) — eine grosse Beute riecht
+        // stärker; ein winziger sprite kaum.
+        const sources = this._creatureScentSourcesScratch || (this._creatureScentSourcesScratch = []);
+        sources.length = 0;
+        const creatures = this.state.creatures || [];
+        for (let i = 0; i < creatures.length; i++) {
+            const other = creatures[i];
+            if (!other || other === creature) continue;
+            const otherTemp = this._creatureTemperament(other);
+            if (otherTemp === "wild") continue; // wild jagt nicht wild
+            const dx = other.position.x - cx;
+            const dz = other.position.z - cz;
+            if (dx * dx + dz * dz > scentRange * scentRange) continue;
+            // sizeFactor als strength (eine grosse Beute zieht stärker an).
+            const sizeFactor =
+                typeof this._compoundSizeFactor === "function" && other.userData && other.userData.soul
+                    ? this._compoundSizeFactor({
+                          parts: (AnazhRealm.CREATURE_SOULS[other.userData.soul] || {}).bodyParts || [],
+                      })
+                    : 1.0;
+            sources.push({ x: other.position.x, z: other.position.z, strength: sizeFactor });
+            // Cap, damit ein dichter Schwarm den Scent-Pfad nicht O(N²) macht.
+            if (sources.length >= 12) break;
+        }
+        if (sources.length === 0) return null;
+        // Vier Probe-Richtungen, höchste Intensität gewinnt. Wir sampeln auch
+        // die EIGENE Position als Referenz — eine Richtung ist nur lohnend, wenn
+        // sie MEHR riecht als hier.
+        const t = (performance.now() || 0) / 1000;
+        const here = this._scentAt(cx, cz, sources, { time: t });
+        const probes = [
+            { dx: 1, dz: 0 },
+            { dx: -1, dz: 0 },
+            { dx: 0, dz: 1 },
+            { dx: 0, dz: -1 },
+        ];
+        let bestDx = 0,
+            bestDz = 0,
+            bestGain = 0;
+        for (const p of probes) {
+            const px = cx + p.dx * probeStep;
+            const pz = cz + p.dz * probeStep;
+            const sHere = this._scentAt(px, pz, sources, { time: t });
+            const gain = sHere - here;
+            if (gain > bestGain) {
+                bestGain = gain;
+                bestDx = p.dx;
+                bestDz = p.dz;
+            }
+        }
+        // Schwellen-Filter: ein winziger Gradient (< 0.02) ist Rauschen → kein
+        // Tunnel-Drift. Der Wert ist klein, damit ein klarer downwind-Gradient
+        // (Beute in 20-30m mit voller Wind-Unterstützung gibt typisch 0.1-0.5)
+        // immer durchgeht.
+        if (bestGain < 0.02) return null;
+        // Direction-Vector zurück.
+        const out = this._creatureScentDirScratch || (this._creatureScentDirScratch = new THREE.Vector3());
+        out.set(bestDx, 0, bestDz);
+        return out;
+    }
+
+    // V18.210 (§1-A3) — der BISS auf eine BEUTE-KREATUR (analog _tickCreatureHuntStrike,
+    // aber Ziel ist eine ANDERE Kreatur statt des Spielers). Modus-Gate
+    // identisch (pfad-only); Cooldown identisch.
+    _tickCreatureScentStrike(creature) {
+        const HUNT = AnazhRealm.CREATURE_HUNT;
+        const now = performance.now() / 1000;
+        const ud = creature.userData || {};
+        if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
+        // Beute in Strike-Range finden (Bestes Ziel = nächstes nicht-wildes Wesen).
+        let nearest = null;
+        let nearestDist = HUNT.strikeRange;
+        const creatures = this.state.creatures || [];
+        for (let i = 0; i < creatures.length; i++) {
+            const other = creatures[i];
+            if (!other || other === creature) continue;
+            if (this._creatureTemperament(other) === "wild") continue;
+            const dx = other.position.x - creature.position.x;
+            const dz = other.position.z - creature.position.z;
+            const dist = Math.hypot(dx, dz);
+            if (dist < nearestDist) {
+                nearestDist = dist;
+                nearest = other;
+            }
+        }
+        if (!nearest) return false;
+        ud.nextHuntStrikeAt = now + HUNT.strikeCooldownSec;
+        ud.lastHuntAt = now;
+        const stats = this.computeCreatureStats(creature).stats || {};
+        const dmg = Math.max(2, (stats.damage || 4) * HUNT.damageMul);
+        if (typeof this.damageCreature === "function") {
+            this.damageCreature(nearest, dmg, { source: "jagd" });
+        }
+        this._feelCreatureAction(creature, "attack", 1);
+        return true;
+    }
+
     // PHASE E — der BISS: in Reichweite + Cooldown vorbei → Schaden durch
     // DASSELBE damagePlayer-Tor wie die Gegenwehr (Quelle "jagd": die
     // Rüstung dämpft flach, die FURCHT differenziert sich dort bei
@@ -16754,8 +16878,23 @@ class AnazhRealm {
                             }
                         }
                     } else {
-                        // NEUTRAL — weder gelockt noch verschreckt → gemächliches Wandern.
-                        direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
+                        // V18.210 (§1-A3) — DER ZWEITE JAGD-SINN: ist das Wesen
+                        // ein RAUBTIER (Temperament „wild") UND wittert es Beute
+                        // in 50 m, folgt es dem Geruch-Gradienten (`_scentAt`
+                        // mit allen scheu/sanften Kreaturen als Quellen). Sonst
+                        // (kein Gradient ODER kein Raubtier ODER keine Beute):
+                        // neutrales Wandern wie bisher. Strike auf Beute in
+                        // Reichweite läuft separat (analog Spieler-Jagd).
+                        const scentDir = this._creatureScentHuntDir(creature, wariness);
+                        if (scentDir) {
+                            direction.copy(
+                                scentDir.normalize().multiplyScalar(speed * AnazhRealm.CREATURE_HUNT.speedBoost)
+                            );
+                            this._tickCreatureScentStrike(creature);
+                        } else {
+                            // NEUTRAL — weder gelockt noch verschreckt noch witternd → gemächliches Wandern.
+                            direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
+                        }
                     }
                 }
                 // V17.115 U3 — die KI-Richtung cachen; ferne Kreaturen verwenden sie
@@ -23528,6 +23667,18 @@ class AnazhRealm {
             // Die B8-Rim-Parität: Bauten tragen ihr warmes Rim immer, das Terrain
             // sein kühles nur, wenn der Mond führt. Erst-Wurf 0.12, S-Vermerk.
             terrainMoonRim: TSL.uniform(0.0),
+            // V18.210 (§1-A2) — R5-STRUKTUR-BOOST als LIVE-Uniform: der Multiplier
+            // auf das micro-Gewicht für Strukturen (werk-Profil), browser-justierbar
+            // im Settings-Slider „Struktur-Tiefe". Init aus `atmosphere.r5StructureBoost`
+            // (persistiert) ODER R5_STRUCTURE_TEXTURE.microBoost (Default 1.3). Die
+            // ein-Zeilen-Konstanten-Lesung in `_applySubstanceResponse` wird zum
+            // live-Uniform-Read — die V18.65-Nullnummer-Klasse strukturell
+            // vermieden (Settings-Slider TREIBT das Render).
+            r5StructureBoost: TSL.uniform(
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.r5StructureBoost)
+                    ? this.state.atmosphere.r5StructureBoost
+                    : (AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.3
+            ),
         };
         // V17.114 U1 — die §2-Synergie: der Aerial-Schleier koppelt an die
         // Kaskaden-Kante (der Dunst wandert mit dem Sicht-Ring).
@@ -23687,10 +23838,15 @@ class AnazhRealm {
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
                 // M7 — microStrength ist ein UNIFORM (der Settings-Regler lebt);
                 // W-E: profil-gewichtet (ein Regler, eine Welt-Antwort).
-                // V18.207 — R5: zusätzlicher Boost-Faktor für Strukturen.
-                // microBoost = 1.0 ist no-op (bit-identisch zu Pre-V18.207).
-                const _r5Boost = (AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.0;
-                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(_p("micro") * _r5Boost);
+                // V18.207 → V18.210 (§1-A2): R5-Boost ist jetzt ein LIVE-UNIFORM
+                // (browser-justierbar im Settings-Slider „Struktur-Tiefe", nicht
+                // mehr ein statischer Frozen-Wert) — der Settings-Slider TREIBT
+                // das Render in Echtzeit. Fallback auf die Frozen-Konstante (1.3)
+                // beim ersten Pass, bevor der atmosphere-State liegt.
+                const _r5Boost =
+                    _au.r5StructureBoost ||
+                    _T.float((AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.3);
+                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(_r5Boost.mul(_p("micro")));
                 let _shade = _T.float(1.0).add(_det.mul(_micro));
                 // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
                 // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
@@ -29774,6 +29930,13 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.moonRim)
                         ? this.state.atmosphere.moonRim
                         : AnazhRealm.SUBSTANCE_RESPONSE.moonRim,
+                // V18.210 (§1-A2) — der R5-STRUKTUR-BOOST überlebt den Reload
+                // (sonst springt der Slider zurück auf 1.3 → V8.59-Klasse,
+                // dieselbe Heilung wie microStrength/terrainNightFloor V18.164).
+                r5StructureBoost:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.r5StructureBoost)
+                        ? this.state.atmosphere.r5StructureBoost
+                        : (AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.3,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -29782,6 +29945,32 @@ class AnazhRealm {
             // Charaktere des Schöpfers). Built-ins sind in playerSoulDefs
             // verdrahtet und werden NICHT persistiert.
             customSouls: this.state.customSouls || {},
+            // V18.210 (Audit-Heilung #1) — die GEWACHSENEN Baupläne (Γ7,
+            // `_grown_*`) reisen MIT, weil state.architectures sie als `type`
+            // referenziert. Würden sie beim Reload fehlen (sie sind LAUFZEIT-
+            // generiert, nicht im `_defaultBlueprints()`), schlüge `spawnArch
+            // itecture` beim Restore-Pfad fehl → der Hain wäre verloren. Nur
+            // die `_isGrown:true`-Bauplane wandern (echte Built-ins bleiben im
+            // Code); die anderen Felder (label/parts) werden 1:1 gespiegelt.
+            // Die Form ist additiv: ein alter Snapshot ohne Feld restored leer,
+            // die Streaming-Welle re-generiert die Bauplane ohnehin (Region-
+            // Cache deterministisch aus Welt-Seed). Aber MIT dem Feld bleibt
+            // der Hain BIS zum nächsten Streaming-Pass im Spiel.
+            grownBlueprints: (() => {
+                const out = {};
+                const bps = this.state.blueprints || {};
+                for (const k in bps) {
+                    if (bps[k] && bps[k]._isGrown && Array.isArray(bps[k].parts)) {
+                        out[k] = {
+                            label: bps[k].label,
+                            _grownSpecies: bps[k]._grownSpecies,
+                            _grownSeed: bps[k]._grownSeed,
+                            parts: bps[k].parts,
+                        };
+                    }
+                }
+                return out;
+            })(),
             // Welle 6.D Etappe 3a — Konsumable-Rezepte persistieren.
             consumables: this.state.consumables || {},
             // Welle 6.D Etappe 3b / V17.57 W2-B — Equipped-Slots persistieren ({held, armor}).
@@ -33700,6 +33889,11 @@ class AnazhRealm {
         this._loadStateRestoreSoulAndAtmosphere(state);
         this._loadStateRestoreConsumablesAndEquipped(state);
         this._loadStateRestoreCraftingInventory(state);
+        // V18.210 (Audit-Heilung #1) — die GEWACHSENEN Bauplane (Γ7) MÜSSEN
+        // VOR `_loadStateRestoreArchitectures` in state.blueprints landen,
+        // sonst läuft spawnArchitecture in einen unbekannten Type-Builder
+        // (Audit-Befund: jeder grown_*-Baum wäre verloren).
+        this._loadStateRestoreGrownBlueprints(state);
         this._loadStateRestoreArchitectures(state);
         this._loadStateRestoreHotbarAndInventory(state);
         this._loadStateRestoreEmotionsAndDsl(state);
@@ -33970,6 +34164,10 @@ class AnazhRealm {
             // an die Uniforms (oder _ensureAtmoUniforms liest sie beim Bau).
             const ms = Number(state.atmosphere.microStrength);
             if (Number.isFinite(ms)) this.setMicroStrength(ms);
+            // V18.210 (§1-A2) — R5-Struktur-Boost (Settings-Slider „Struktur-Tiefe")
+            // persistiert über den Reload (sonst rauscht der Slider beim Welt-Wechsel).
+            const sb5 = Number(state.atmosphere.r5StructureBoost);
+            if (Number.isFinite(sb5)) this.setStructureBoost(sb5);
             // W-E/R-013 — der Standard wanderte 0.12 → 0.06 (Schöpfer-Wort).
             // Der ALTE Snapshot-Fallback backte 0.12 in JEDEN Save (auch ohne
             // Nutzer-Geste) → ein exakter 0.12-Wert ist der alte DEFAULT, keine
@@ -34118,6 +34316,44 @@ class AnazhRealm {
     // Ring 6 — Bau-Werke wiederherstellen. Bestehende Strukturen werden tief
     // disposed, dann jede aus {type, position, seed} neu gebaut. Idempotent:
     // mehrfaches loadState führt nicht zu Mesh-Verdopplung.
+    // V18.210 (Audit-Heilung #1) — restored gewachsene Baupläne (Γ7) aus
+    // dem Snapshot in state.blueprints + _growTreeRing, BEVOR die Architekturen
+    // restored werden. Stille Robustheit: fehlt das Feld (alter Snapshot),
+    // kein Problem — die Welt re-generiert die Bauplane deterministisch beim
+    // nächsten Streaming-Pass (Region-Cache deterministisch aus Welt-Seed).
+    _loadStateRestoreGrownBlueprints(state) {
+        if (!state || !state.grownBlueprints || typeof state.grownBlueprints !== "object") return;
+        if (!this.state.blueprints) return;
+        if (!this._growTreeRing) this._growTreeRing = [];
+        let restored = 0;
+        for (const key of Object.keys(state.grownBlueprints)) {
+            const entry = state.grownBlueprints[key];
+            if (!entry || !Array.isArray(entry.parts) || entry.parts.length < 4) continue;
+            // Robustheit gegen Built-in-Schatten: kein Wiederherstellen, wenn
+            // der Key bereits als echter Built-in verdrahtet ist (sehr selten,
+            // aber strukturell sauber — der Built-in gewinnt).
+            if (this.state.blueprints[key] && !this.state.blueprints[key]._isGrown) continue;
+            const speciesLabel = String(entry._grownSpecies || "Baum")
+                .replace(/^baum_/, "")
+                .replace(/^./, (c) => c.toUpperCase());
+            this.state.blueprints[key] = {
+                name: key,
+                label: typeof entry.label === "string" ? entry.label : `${speciesLabel} (gewachsen)`,
+                builtIn: true,
+                _isGrown: true,
+                _grownSpecies: entry._grownSpecies || "baum_eiche",
+                _grownSeed: entry._grownSeed || "",
+                instanced: true,
+                parts: entry.parts,
+            };
+            if (this._growTreeRing.indexOf(key) === -1) this._growTreeRing.push(key);
+            restored++;
+        }
+        if (restored > 0 && typeof this.log === "function") {
+            this.log(`Γ7: ${restored} gewachsene Bauplane aus dem Save wiederhergestellt`, "DBG");
+        }
+    }
+
     _loadStateRestoreArchitectures(state) {
         if (!Array.isArray(state.architectures) || !this.state.scene) return;
         for (const old of this.state.architectures) {
@@ -42848,8 +43084,128 @@ class AnazhRealm {
     // `seed` ist der Variation-Diktator (ein String oder Number — wird über
     // FNV-1a in einen Float für SimplexNoise gewandelt). `returns` ein parts-
     // Array, das direkt als `bp.parts` für einen Bauplan dient.
+    // V18.210 (§1-A1) — Worldgen-Hook für Γ7: aus dem Helper einen REGISTRIERTEN
+    // Bauplan machen (cache-by-hash), den der Spawn-Pfad als spawnName nutzen
+    // kann. Cache-Schlüssel = "grown_<species>_<hash>", deterministisch aus
+    // (species, seed). Bauplan-Felder spiegeln `baum_eiche` (builtIn:true,
+    // instanced:true → HISM-Effizienz, label „Eiche (gewachsen)"). Memory-Cap
+    // (DEFAULT 64): die ALTESTEN Einträge werden geprunt, wenn neue kommen —
+    // verhindert ein endloses Anwachsen des Registry über Streaming-Sessions.
+    // V17.16-Schutz: VOR Cache-Reuse Tag-Wand gegen baum_eiche (siehe Test G6);
+    // schlägt sie an, ist der Bauplan abgelehnt + es wird auf baum_eiche
+    // zurückgefallen (kein Spawn-Verlust, kein Affinitäts-Riss).
+    _growTreeBlueprintForSpawn(species, seed) {
+        if (!this.state.blueprints) return null;
+        // Hash für den Cache-Key — fnv-1a vereinheitlicht mit dem Helper
+        // (so dass die `_growTreeBlueprint(species, seed)`-Determinismus-Achse
+        // identisch in den Key wandert).
+        const sKey = String(seed || species || "g7-default");
+        let hash = 2166136261 >>> 0;
+        for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
+        const cacheKey = `grown_${species}_${hash.toString(36)}`;
+        // Cache-Hit?
+        const cached = this.state.blueprints[cacheKey];
+        if (cached) {
+            // V18.65-Lehre: Touch-Order halten (LRU-Hint, wenn _growTreeRing existiert).
+            if (this._growTreeRing) {
+                const idx = this._growTreeRing.indexOf(cacheKey);
+                if (idx >= 0) {
+                    this._growTreeRing.splice(idx, 1);
+                    this._growTreeRing.push(cacheKey);
+                }
+            }
+            return cacheKey;
+        }
+        // Generiere parts. Die Spezies moduliert FORM/FARBE (V18.181-merge-Λ
+        // Sub 3e Mischwald-Disziplin: jede Art hat einen eigenen Look — nicht
+        // alle identische Eichen). Tag-NEUTRALITÄT bleibt (holz+laub Materialien
+        // identisch über alle Arten → die Spawn-Affinitäts-Achsen verschieben
+        // sich NIE — V17.16-Wand strukturell).
+        const parts = this._growTreeBlueprint(species, seed);
+        if (!Array.isArray(parts) || parts.length < 4) return null;
+        // V17.16-Schutz: TAG-WAND gegen die Spezies-Referenz (NICHT immer
+        // baum_eiche — sonst rollt der Schutz die Diversität zurück). Eine
+        // Birke wird gegen baum_birke gemessen, eine Tanne gegen baum_tanne;
+        // fehlt der Referenz-Baum (alte Welt ohne V18.181-Mischwald), fällt
+        // sie auf baum_eiche als generische Holz+Laub-Anker.
+        const referenz = this.state.blueprints[species] || this.state.blueprints.baum_eiche;
+        if (referenz) {
+            const refTags = this.computeCompoundTags(referenz) || {};
+            const newTags = this.computeCompoundTags({ parts }) || {};
+            const axes = ["lebendig", "dichte", "brennbar", "magieleitung"];
+            for (const a of axes) {
+                const d = Math.abs((newTags[a] || 0) - (refTags[a] || 0));
+                if (d > 0.05) return null; // Tag-Verschiebung → ablehnen, Fallback auf fixe Varianten
+            }
+        }
+        // Registriere als Built-In-Bauplan (HISM-fähig). label fürs UI.
+        // V18.210 (Audit-Heilung): `_isGrown:true` als Snapshot-Anker — wir
+        // unterscheiden im snapshot-Filter zwischen ECHTEN Built-ins (fallen
+        // raus, weil im Code) und GEWACHSENEN (müssen reisen, weil zur Laufzeit
+        // entstanden + von state.architectures referenziert).
+        const speciesLabel = String(species || "Baum")
+            .replace(/^baum_/, "")
+            .replace(/^./, (c) => c.toUpperCase());
+        this.state.blueprints[cacheKey] = {
+            name: cacheKey,
+            label: `${speciesLabel} (gewachsen)`,
+            builtIn: true,
+            _isGrown: true,
+            _grownSpecies: species,
+            _grownSeed: String(seed),
+            instanced: true,
+            parts,
+        };
+        // Ring + ARCHITEKTUR-BEWUSSTE Eviction (Audit-Heilung #2): ein
+        // gewachsener Bauplan wird NIE evictet, solange eine Architektur in
+        // der Welt ihn als `type` referenziert (sonst Crash beim Rebuild im
+        // Streaming). Cap 256 ist die Header-Marge; bei ~256 Regionen × 6
+        // Arten kann die Welt theoretisch mehr brauchen, dann wandert er
+        // durch — aber nur, wenn keine Architektur ihn hält.
+        if (!this._growTreeRing) this._growTreeRing = [];
+        this._growTreeRing.push(cacheKey);
+        const CAP = 256;
+        let safety = 0;
+        while (this._growTreeRing.length > CAP && safety < 1024) {
+            safety++;
+            const drop = this._growTreeRing.shift();
+            if (!drop) break;
+            // Architektur-Sieb: ist der Bauplan noch in der Welt aktiv?
+            const inUse = this._isGrownBlueprintReferenced(drop);
+            if (inUse) {
+                // hinten anhängen (LRU-skip), nicht evicten — der Hain steht noch
+                this._growTreeRing.push(drop);
+                continue;
+            }
+            if (this.state.blueprints[drop]) delete this.state.blueprints[drop];
+        }
+        return cacheKey;
+    }
+
+    // V18.210 (Audit-Heilung #2): prüft, ob ein gewachsener Bauplan noch von
+    // einer aktiven Architektur in der Welt referenziert wird (Eviction-Wand).
+    // O(N) über state.architectures — wird nur bei Cap-Überschreitung gerufen
+    // (selten); kein Hot-Path. State.architectures ist die kanonische Quelle.
+    _isGrownBlueprintReferenced(grownKey) {
+        const archs = this.state && this.state.architectures;
+        if (!Array.isArray(archs)) return false;
+        for (let i = 0; i < archs.length; i++) {
+            if (archs[i] && archs[i].type === grownKey) return true;
+        }
+        return false;
+    }
+
     _growTreeBlueprint(speciesKey, seed) {
-        const sKey = String(seed || speciesKey || "g7-default");
+        // V18.210 (Audit-Heilung #3) — die SPEZIES wandert in den Hash UND in
+        // die Form-Modulation: ein Birkenwald sieht anders aus als ein Tannen-
+        // wald (V18.181-merge-Λ Sub 3e Mischwald-Disziplin ehrt). Vor der
+        // Heilung trugen alle 6 Arten identische Eichen-Geometrie + den
+        // Spezies-Namen im Cache-Key (kein sichtbarer Unterschied). Heilung:
+        // species wandert SOWOHL in den seedString (Determinismus pro Art) ALS
+        // AUCH in die SHAPE-Modulation (Tanne = konisch + dunkel, Birke =
+        // schmal + hell, Eiche = breit + warm-grün, etc.). Tag-Neutralität
+        // bleibt: alle nutzen holz+laub Materialien — die V17.16-Wand hält.
+        const sKey = String(speciesKey || "baum_eiche") + "|" + String(seed || "g7-default");
         let hash = 2166136261;
         for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
         // Lazy-Init Noise-Stream
@@ -42870,10 +43226,65 @@ class AnazhRealm {
         };
         const lerp = (a, b, t) => a + (b - a) * t;
         const parts = [];
-        // STAMM — 3 Segmente, wander + taper (Genese-Plan).
-        const stammHoehe = lerp(3.5, 5.5, r01());
-        const stammRadius = lerp(0.5, 0.85, r01());
-        const taperRate = lerp(0.65, 0.85, r01()); // jedes Segment x dieses
+        // V18.210 (Audit-Heilung #3) — SPEZIES-PROFIL: pro Art ein Form-
+        // Modulations-Block (Stamm-Aspect, Krone-Farbe, Astzahl/-Form). Die
+        // base-Ranges der parts-Generierung bleiben, der Multiplier macht den
+        // Look erkennbar. Default = Eiche (warmes Grün, breite Krone).
+        const SPECIES_PROFILE = {
+            baum_eiche: {
+                trunkMul: 1.0,
+                trunkR: 1.0,
+                crownColor: 0x4a8a3a,
+                crownScale: 1.0,
+                astExtra: 1,
+                taperBase: 0.65,
+            },
+            baum_kiefer: {
+                trunkMul: 1.15,
+                trunkR: 0.85,
+                crownColor: 0x3a6b3a,
+                crownScale: 0.75,
+                astExtra: 0,
+                taperBase: 0.78,
+            },
+            baum_birke: {
+                trunkMul: 1.1,
+                trunkR: 0.65,
+                crownColor: 0x7ab86a,
+                crownScale: 0.8,
+                astExtra: 0,
+                taperBase: 0.72,
+            },
+            baum_erle: {
+                trunkMul: 0.95,
+                trunkR: 0.95,
+                crownColor: 0x5a8c4a,
+                crownScale: 0.95,
+                astExtra: 1,
+                taperBase: 0.68,
+            },
+            baum_buche: {
+                trunkMul: 1.05,
+                trunkR: 1.05,
+                crownColor: 0x6a9a4a,
+                crownScale: 1.05,
+                astExtra: 1,
+                taperBase: 0.65,
+            },
+            baum_tanne: {
+                trunkMul: 1.25,
+                trunkR: 0.7,
+                crownColor: 0x2c5a2c,
+                crownScale: 0.7,
+                astExtra: -1,
+                taperBase: 0.82,
+            },
+        };
+        const prof = SPECIES_PROFILE[speciesKey] || SPECIES_PROFILE.baum_eiche;
+        // STAMM — 3 Segmente, wander + taper, spezies-moduliert.
+        const stammHoehe = lerp(3.5, 5.5, r01()) * prof.trunkMul;
+        const stammRadius = lerp(0.5, 0.85, r01()) * prof.trunkR;
+        const taperRate = lerp(prof.taperBase, prof.taperBase + 0.15, r01()); // pro Spezies eigenes Taper-Profil
         const wanderJitter = lerp(0.04, 0.18, r01()); // wie sehr der Stamm wandert
         let trunkX = 0,
             trunkZ = 0;
@@ -42895,9 +43306,11 @@ class AnazhRealm {
             trunkY += segH;
             trunkR *= taperRate; // taper
         }
-        // WHORL-ÄSTE — 3 Äste am Stamm-Ober-Drittel.
-        const astCount = 3 + Math.floor(r01() * 2); // 3 oder 4
-        const astLen = lerp(1.4, 2.4, r01());
+        // WHORL-ÄSTE — Astzahl + Länge spezies-moduliert (Tanne hat weniger,
+        // dichte sich-überlappende Äste; Eiche/Buche haben mehr, weiter
+        // ausladende Äste).
+        const astCount = Math.max(2, 3 + prof.astExtra + Math.floor(r01() * 2));
+        const astLen = lerp(1.4, 2.4, r01()) * prof.crownScale;
         const astRadius = lerp(0.18, 0.32, r01());
         const astBaseY = trunkY * 0.6; // mittlere Höhe des Stammes
         // Ende-Positionen für Ebene-2-Krone speichern
@@ -42931,9 +43344,12 @@ class AnazhRealm {
         }
         // KRONE — Laub-ELLIPSOIDE NUR an Ebene-2-Enden (Species.ts-Regel).
         // Jeder Ast bekommt 1-2 Laub-Ellipsoide an seinem Ende; Größe variiert
-        // pro Ende deterministisch.
-        const laubColor = 0x4a8a3a + Math.floor(r01() * 0x202020); // grün-tönung
-        const laubRadiusBase = lerp(0.85, 1.4, r01());
+        // pro Ende deterministisch. SPEZIES moduliert Farb-Basis + Krone-Grösse
+        // (V18.210 Audit-Heilung #3 — Tanne dunkel-konisch, Birke hell-zart).
+        const baseColor = prof.crownColor;
+        const colorJitter = Math.floor(r01() * 0x141414); // sanfte Variation, ~5% pro Kanal
+        const laubColor = baseColor + colorJitter;
+        const laubRadiusBase = lerp(0.85, 1.4, r01()) * prof.crownScale;
         for (const end of astEnds) {
             const subCount = 1 + Math.floor(r01() * 2); // 1 oder 2 Ellipsoide
             for (let s = 0; s < subCount; s++) {
@@ -46613,18 +47029,33 @@ class AnazhRealm {
         // Zugang) ist Schöpfen reibungsfrei — Vision §1.5: Mensch=Null=
         // Schöpfer darf ohne Geduld-Kosten erschaffen.
         const mode = this.getGameMode ? this.getGameMode() : "frieden";
+        // V18.210 (§1-A4) — die Kosten-WÄHLER: phaseChange = MAGIE → Mana,
+        // alle anderen Op-Klassen = MÜHE → Stamina. EINE Quelle (`tool.opClass`),
+        // keine Hardcode-Whitelist (Tool-Erweiterungen erben das Verhalten).
+        const _isMagicOp = tool.opClass === "phaseChange";
         if (mode === "pfad") {
             // V8.39 — Aufwand skaliert mit der Werkzeug-Präzision: ein stumpfes
             // Werkzeug (niedriger cap) kostet mehr Kraft, ein feines weniger.
             // cap 0.4 → ×1.1 (~11), cap 0.97 → ×0.53 (~5). Besseres Werkzeug
             // = effizienter. Floor 2, damit eine Op nie gratis wird.
-            const baseCost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
-            const cost = Math.max(2, Math.round(baseCost * (1.5 - (tool.precisionCap || 0.5))));
-            const stamina = (this.state.player && this.state.player.stamina) || 0;
-            if (stamina < cost) {
-                return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+            // V18.210 — Magie zahlt aus Mana (Floor 5, der Stamina-Floor-Spiegel),
+            // Mühe aus Stamina; die Skalierung mit der Präzision ist identisch.
+            const baseCost = _isMagicOp ? AnazhRealm.TOOL_OP_MANA_COST || 15 : AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            const floor = _isMagicOp ? 5 : 2;
+            const cost = Math.max(floor, Math.round(baseCost * (1.5 - (tool.precisionCap || 0.5))));
+            if (_isMagicOp) {
+                const mana = (this.state.player && this.state.player.mana) || 0;
+                if (!this._canPayMana(cost)) {
+                    return { ok: false, reason: "not_enough_mana", manaNeeded: cost, manaHave: mana };
+                }
+                this._drainMana(cost);
+            } else {
+                const stamina = (this.state.player && this.state.player.stamina) || 0;
+                if (stamina < cost) {
+                    return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+                }
+                this.state.player.stamina = Math.max(0, stamina - cost);
             }
-            this.state.player.stamina = Math.max(0, stamina - cost);
         }
         // V17.87 — der Edit-Verlauf: VOR der opChain-Mutation den Vor-Zustand schnappen (nach allen
         // Validierungen, damit ein abgelehnter Op-Versuch keinen leeren Undo-Schritt erzeugt).
@@ -46648,7 +47079,17 @@ class AnazhRealm {
         // eine Domain trägt (Phase 9b), kann der Bauplan dadurch seine Rolle
         // wechseln (z. B. construction → forging → tool).
         this._refreshBlueprintRoleEmergent(blueprintName);
-        return { ok: true, precision: this.computePartPrecision(part), staminaRemaining: this.state.player.stamina };
+        // V18.210 (Audit-Heilung #4) — return-Shape Symmetrie: phaseChange-Ops
+        // ziehen MANA (nicht Stamina); der UI/HUD-Konsument liest jetzt
+        // `manaRemaining` parallel zu `staminaRemaining` — die Ressourcen-
+        // Wahrheit lügt nicht. _isMagicOp ist im pfad-Zweig deklariert; im
+        // frieden/schöpfer-Modus sind beide Felder unverändert (kein Drain).
+        return {
+            ok: true,
+            precision: this.computePartPrecision(part),
+            staminaRemaining: this.state.player.stamina,
+            manaRemaining: this.state.player.mana,
+        };
     }
 
     // V17.88 (Schöpfer-Vision „die Werkstatt IST der Prozess") — der Prozess einer Domäne: die opClass +
@@ -46691,15 +47132,30 @@ class AnazhRealm {
         const compat = AnazhRealm.MATERIAL_OP_COMPATIBILITY[matName];
         if (compat && !compat.includes(proc.opClass)) return { ok: false, reason: "material_op_incompatible" };
         // Stamina (nur pfad) — der Aufwand skaliert wie bei applyOpToPart mit der Präzision.
+        // V18.210 (§1-A4) — die Werkstatt erbt die Magie/Mühe-Trennung von der
+        // OP-CLASS ihres Prozesses: eine Esse im phaseChange-Modus (Soulwork-
+        // Domain → imbue) zieht Mana, eine Esse im plastic-Modus (forging →
+        // forge_shape) zieht Stamina. EINE Quelle (proc.opClass), die genau
+        // dasselbe Gate wie applyOpToPart benutzt — die zwei Wege halten sich.
         const cap = this._workshopStationPrecision(station);
+        const _isMagicOp = proc.opClass === "phaseChange";
         if (mode === "pfad") {
-            const baseCost = AnazhRealm.TOOL_OP_STAMINA_COST || 10;
-            const cost = Math.max(2, Math.round(baseCost * (1.5 - cap)));
-            const stamina = (this.state.player && this.state.player.stamina) || 0;
-            if (stamina < cost) {
-                return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+            const baseCost = _isMagicOp ? AnazhRealm.TOOL_OP_MANA_COST || 15 : AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            const floor = _isMagicOp ? 5 : 2;
+            const cost = Math.max(floor, Math.round(baseCost * (1.5 - cap)));
+            if (_isMagicOp) {
+                const mana = (this.state.player && this.state.player.mana) || 0;
+                if (!this._canPayMana(cost)) {
+                    return { ok: false, reason: "not_enough_mana", manaNeeded: cost, manaHave: mana };
+                }
+                this._drainMana(cost);
+            } else {
+                const stamina = (this.state.player && this.state.player.stamina) || 0;
+                if (stamina < cost) {
+                    return { ok: false, reason: "not_enough_stamina", staminaNeeded: cost, staminaHave: stamina };
+                }
+                this.state.player.stamina = Math.max(0, stamina - cost);
             }
-            this.state.player.stamina = Math.max(0, stamina - cost);
         }
         this._recordBlueprintEdit(blueprintName);
         if (!Array.isArray(part.opChain)) part.opChain = this._defaultPartOpChain();
@@ -46716,7 +47172,17 @@ class AnazhRealm {
             at: performance.now() / 1000,
         });
         this._refreshBlueprintRoleEmergent(blueprintName);
-        return { ok: true, precision: this.computePartPrecision(part), cap, domain };
+        // V18.210 (Audit-Heilung #4) — return-Shape Symmetrie zur applyOpToPart:
+        // beide Ressourcen-Wahrheiten reisen mit; der UI-Konsument sieht echt,
+        // welche der zwei knappen Achsen verbraucht wurde.
+        return {
+            ok: true,
+            precision: this.computePartPrecision(part),
+            cap,
+            domain,
+            staminaRemaining: this.state.player ? this.state.player.stamina : 0,
+            manaRemaining: this.state.player ? this.state.player.mana : 0,
+        };
     }
 
     // V17.88 — ist eine Werkstatt-Station dieses Bauplan-NAMENS in der Welt platziert + nah am Spieler?
@@ -49864,6 +50330,23 @@ class AnazhRealm {
         return val;
     }
 
+    // V18.210 (§1-A2) — R5-STRUKTUR-BOOST: der Settings-Slider für die Mikro-
+    // Tiefe der OPAKEN STRUKTUREN (werk-Profil — Bauwerke/Deko/Avatare/Kreaturen);
+    // multipliziert das micro-Gewicht in `_applySubstanceResponse`. Live-Uniform
+    // + persistiert in atmosphere.r5StructureBoost. 1.0 = neutral (Strukturen
+    // wie Terrain), 1.3 = Default (sichtbar tiefer als Terrain), bis 2.5 für
+    // sehr ausgeprägt. NICHT das Terrain — dort hängt die Tiefe an seinem
+    // EIGENEN colorNode-Triplanar (V17.103), unberührt vom Slider.
+    setStructureBoost(v) {
+        const val = Math.max(0.5, Math.min(2.5, Number(v) || 1.3));
+        if (!this.state.atmosphere) this.state.atmosphere = {};
+        this.state.atmosphere.r5StructureBoost = val;
+        const au = this._ensureAtmoUniforms();
+        if (au && au.r5StructureBoost) au.r5StructureBoost.value = val;
+        if (typeof this.saveState === "function") this.saveState();
+        return val;
+    }
+
     // M7 (Befund 20) → W-E — der NACHT-BODEN-Regler ist seit dem Frequenzband
     // ein BAND-Regler (Füll-Licht ALLER opaken Ebenen, profil-gewichtet):
     // 0 = das alte Schwarz, 0.06 = das Schöpfer-Wort (R-013), höher = heller.
@@ -50300,6 +50783,72 @@ class AnazhRealm {
         let spawnScale = 1;
         let spawnYaw = 0;
         if (isTree) {
+            // V18.210 (§1-A1) — Γ7 WORLDGEN-HOOK: gen ≥ 4 baut prozedurale
+            // Baum-Bauplane via _growTreeBlueprintForSpawn (Cache-by-Region).
+            // REGION-basierter seed (256 m grid, plus Welt-Seed) sodass alle
+            // Bäume EINER ~256m-Region denselben gewachsenen Bauplan TEILEN —
+            // ein „Hain hat einen lokalen Stil" + das Instancing wirkt (sonst
+            // 1 InstancedMesh pro Spawn = Performance-Regression). Variation
+            // PRO Baum kommt aus scale/yaw (unten). Alte Welten (gen<4) bleiben
+            // bit-identisch (der gesamte switch-Pfad bleibt). Bei einem Tag-
+            // Verschiebungs-Fall (V17.16-Wand schlägt an, der Helper returnt
+            // null) fallen wir auf die fixen Varianten zurück → kein Spawn-Verlust.
+            const genVersion = this._genVersion ? this._genVersion() : 1;
+            if (genVersion >= 4) {
+                const regX = Math.floor(sampleX / 256);
+                const regZ = Math.floor(sampleZ / 256);
+                const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+                const regionSeed = `${worldSeed}|${bestName}|${regX},${regZ}`;
+                const grownKey = this._growTreeBlueprintForSpawn(bestName, regionSeed);
+                if (grownKey) {
+                    spawnName = grownKey;
+                    const sz = (rng.noise2D(sampleX * 0.53 + 11.3, sampleZ * 0.53 - 7.1) + 1) / 2;
+                    spawnScale = 0.7 + sz * 0.66;
+                    // Yaw weiter unten gemeinsam — kein doppelter Code.
+                    const yawRoll = (rng.noise2D(sampleX * 0.71 - 5.2, sampleZ * 0.71 + 3.9) + 1) / 2;
+                    spawnYaw = yawRoll * Math.PI * 2;
+                    this._enqueueVegetationSpawn(
+                        spawnName,
+                        { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
+                        {
+                            seed: seedForSpawn,
+                            silent: true,
+                            scale: spawnScale,
+                            rotationY: spawnYaw,
+                        }
+                    );
+                    // V18.198-Sub-Spawn Totholz wandert MIT (selber Pfad wie
+                    // unten — siehe der Tot-Holz-Block am Funktions-Ende).
+                    const totProbe = (rng.noise2D(sampleX * 0.41 - 3.7, sampleZ * 0.41 + 8.2) + 1) / 2;
+                    if (totProbe < AnazhRealm.TOTHOLZ_RATE) {
+                        const offsetAng = (rng.noise2D(sampleX * 0.61 + 17.3, sampleZ * 0.61 - 4.7) + 1) * Math.PI;
+                        const offsetDist = 3 + ((rng.noise2D(sampleX * 0.83 - 9.1, sampleZ * 0.83 + 2.5) + 1) / 2) * 2;
+                        const totX = sampleX + Math.cos(offsetAng) * offsetDist;
+                        const totZ = sampleZ + Math.sin(offsetAng) * offsetDist;
+                        if (this._isAboveWaterAt(totX, totZ, 0.4)) {
+                            const totSurfY =
+                                typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(totX, totZ) : surfaceY;
+                            const totYawRoll = (rng.noise2D(totX * 0.71 - 5.2, totZ * 0.71 + 3.9) + 1) / 2;
+                            this._enqueueVegetationSpawn(
+                                "stamm_gefallen",
+                                {
+                                    x: totX,
+                                    y: (Number.isFinite(totSurfY) ? totSurfY : surfaceY) + 0.5,
+                                    z: totZ,
+                                },
+                                {
+                                    seed: seedForSpawn ^ 0x7c2b1a93,
+                                    silent: true,
+                                    scale: 0.85 + ((rng.noise2D(totX * 0.31, totZ * 0.31) + 1) / 2) * 0.3,
+                                    rotationY: totYawRoll * Math.PI * 2,
+                                }
+                            );
+                        }
+                    }
+                    return 1;
+                }
+                // Helper-fallback (null) → fixe Varianten (V17.16-Wand-Trigger).
+            }
             // V18.181-merge-Λ Sub 3e (Plan §10 — Mischwald-TREE_VARIANTS):
             // Eiche/Kiefer tragen tesla's W-H-Varianten (breit/jung/schlank,
             // V18.178/.179); die 4 neuen Baumarten bekommen die clever-gauss-
@@ -61126,6 +61675,24 @@ class AnazhRealm {
                 if (mtVal) mtVal.textContent = v.toFixed(2);
             });
         }
+        // V18.210 (§1-A2) — der R5-STRUKTUR-BOOST-Slider „Struktur-Tiefe"
+        // (Default 1.3, Range 0.5..2.5 via input 50..250, multipliziert das
+        // micro-Gewicht für Strukturen — das LEBT, kein V18.65-Knopf-ohne-Loop).
+        const stbS = document.getElementById("slider-structureboost");
+        const stbVal = document.getElementById("slider-structureboost-val");
+        if (stbS) {
+            const s0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.r5StructureBoost)
+                    ? this.state.atmosphere.r5StructureBoost
+                    : (AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.3;
+            stbS.value = String(Math.round(s0 * 100));
+            if (stbVal) stbVal.textContent = s0.toFixed(2);
+            stbS.addEventListener("input", () => {
+                const v = parseInt(stbS.value, 10) / 100;
+                this.setStructureBoost(v);
+                if (stbVal) stbVal.textContent = v.toFixed(2);
+            });
+        }
         const nfS = document.getElementById("slider-nightfloor");
         const nfVal = document.getElementById("slider-nightfloor-val");
         if (nfS) {
@@ -64031,7 +64598,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.209.0";
+AnazhRealm.VERSION = "18.210.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -64326,6 +64893,15 @@ AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
 // weil Mana mächtiger ist; magieleitung im Spieler-Compound boostet die
 // Rate emergent (effektiv = base × (1 + magieleitung)). Erst-Wurf-Tuning.
 AnazhRealm.MANA_REGEN_PER_SEC = 3;
+// V18.210 (abschluss-plan §1-A4) — MANA-KONSUMENT γ: phaseChange-Ops sind
+// MAGIE (imbue/soulwork = Substanz-Zustand wandeln). Sie kosten Mana statt
+// Stamina — die ehrliche Magie/Mühe-Trennung der vier Op-Klassen:
+//   subtractive (Hände/Drehbank) · plastic (Hammer) · additive (Mörser/Webstuhl)
+//   → Mühe (Stamina); phaseChange (ritueller-stab/imbue, Esse-Werkstatt
+//   im phaseChange-Modus) → Magie (Mana). Floor 5 (analog Stamina-Floor 2),
+//   Präzisions-Skalierung wie TOOL_OP_STAMINA_COST (besseres Werkzeug =
+//   effizienter). schöpfer-Modus frei via _drainMana-Mode-Gate.
+AnazhRealm.TOOL_OP_MANA_COST = 15;
 
 // V18.197 — Γ-M Multi-Class-Material STRATA: ab dieser Tiefe unter der
 // Oberfläche dominiert stein-Schicht (auch wenn die erde/glut/quarz-Achse
@@ -64389,15 +64965,17 @@ AnazhRealm.FIELD_CHARACTER = Object.freeze({
 // V18.207 — R5 STRUKTUR-TEXTUR (aktiv.md §4.C): Material-Mikro-Tiefe in
 // opaken Strukturen — ein subtiler Boost-Faktor, der das micro-Gewicht für
 // WERK-Profile (Bauwerke, Deko, Kreaturen, Avatare) noch tiefer macht.
-// Default 1.0 = no-op (bit-identisch zu Pre-V18.207). Browser-justierbar
-// im Schöpfer-Test-Pfad — wenn Strukturen "platt" wirken, höher; wenn zu
-// "rau", niedriger. Frozen-Konstante; ein Slider/Uniform kann später
-// hinzugefügt werden (V18.192-Lehre: Erst-Wurf als statische Konstante).
+// V18.210 (§1-A2) — der Slider lebt: `state.atmoUniforms.r5StructureBoost`
+// ist die LIVE-Quelle (Settings → setStructureBoost), `R5_STRUCTURE_TEXTURE.
+// microBoost` der Default + Fallback. Default 1.0 → 1.3 (sichtbar): die
+// Strukturen tragen jetzt 30% mehr Mikro-Tiefe als das Terrain — der Schöpfer-
+// Befund „Strukturen wirken platt" ehrlich beantwortet. Browser-justierbar
+// in Einstellungen → Render-Feinschliff → „Struktur-Tiefe".
 AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
     // Multiplier auf das micro-Gewicht im werk-Profil. 1.0 = neutraler
     // Default; >1 verstärkt Mikro-Tiefe in Bauten; <1 dämpft sie. Range
-    // [0.5, 2.0] empfohlen für sinnvolle Effekte.
-    microBoost: 1.0,
+    // [0.5, 2.0] sinnvoll; der Slider erlaubt [0.5, 2.5].
+    microBoost: 1.3,
 });
 
 // V18.202 — Γ1-LESART-5 Ψ2-NASE: das GERUCH-Feld der Welt. Die fünfte Welt-
@@ -66313,13 +66891,24 @@ AnazhRealm.TEMPERAMENT_PROFILES = Object.freeze({
 // max(1, amount − defense) — exakt die Kreatur-Formel, EINE Sprache).
 // Erst-Wurf-Werte (Abnahme-Regel: bauen, vermerken, weiterfahren).
 AnazhRealm.CREATURE_HUNT = Object.freeze({
-    radius: 12, // m — Witterungs-Reichweite (darüber wandert das Raubtier)
+    radius: 12, // m — Spieler-Witterungs-Reichweite (darüber wandert das Raubtier)
     speedBoost: 1.45, // Jagd ist schneller als Schlendern, langsamer als Flucht (1.6)
     strikeRange: 2.4, // m — Biss-Reichweite
     strikeCooldownSec: 1.6, // s — zwischen zwei Bissen
     damageMul: 0.8, // × dem damage-Stat des Wesens (die EINE Stat-Pipeline)
     fearHpFrac: 0.5, // unter dieser HP-Fraktion wird Schaden zur FURCHT (threatened)
     triumphWindowSec: 20, // s — ein Jäger, so frisch er biss, gebiert beim Fall TRIUMPH
+    // V18.210 (§1-A3) — der ZWEITE Sinn: ein wildes Wesen WITTERT andere Beute
+    // (scheue/sanfte) über das Geruch-Feld (`_scentAt`, V18.202) — der Wind
+    // trägt den Geruch, das Raubtier folgt dem Gradienten. Die Reichweite
+    // (50 m) ist deutlich grösser als die Spieler-Witterung (12 m) — Wittern
+    // ist weiter als Sehen, der Wind trägt → der gemerkte Plan §1-A3
+    // („Raubtier mit Beute in 50m → bewegt sich").
+    scentRangeM: 50,
+    // Probe-Schritt (m) der 4-Richtungs-Gradient-Suche. Kleiner = präziser
+    // (engerer Kreis um die Beute), grösser = stabiler (weniger Tunnel-Drift).
+    // 4 m ist die typische Schritt-Weite eines wandernden Wesens (~2 s Bewegung).
+    scentProbeM: 4,
 });
 // Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
 // TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur

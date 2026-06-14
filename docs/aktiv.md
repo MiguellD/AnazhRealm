@@ -11,18 +11,34 @@
 
 ## Stand (jüngste oben)
 
-**14.06.2026 — V18.209 KONSOLIDIERUNG, Branch `claude/loving-meitner-o2cz4i`:**
+**14.06.2026 — V18.210 VERDRAHTUNGS-WELLE GEBAUT, Branch `claude/relaxed-hawking-dzkj9g`:**
 
-17 Wellen seit Auftragsbeginn V18.193-V18.209 (Γ-Bogen 2 KOMPLETT · Avatar-
-Größen-Familie KOMPLETT · Mana-Foundations · zwei Welt-Stimmen-Foundations ·
-R5-Foundation · Konsolidierungs-Welle). **Read-as-stranger-Diagnose:** 12/17
-voll verdrahtet, 4/17 PASSAGIER (V18.201 _drainMana, V18.202 _scentAt,
-V18.205 _growTreeBlueprint, V18.207 R5 microBoost=1.0). Plus 53 Plan-Files →
-Doc-Inflation. **Heilung läuft via `docs/abschluss-plan.md`.**
+Die vier Sub-Akte aus `docs/abschluss-plan.md §1` sind verdrahtet, alle Wände
+grün (~3500 Invarianten), `npm run smoke:multiuser` grün:
+- **A1** Γ7 Worldgen-Hook: `_growTreeBlueprintForSpawn` mit REGION-Caching
+  (256m-Grid × Welt-Seed × Species → 1 Bauplan/Hain, Instancing wirkt), gen
+  Default 3→4, V17.16-Tag-Wand
+- **A2** R5 Live-Slider: `setStructureBoost` + Live-TSL-Uniform + DOM-Slider
+  „Struktur-Tiefe", Default 1.0→1.3 (sichtbar), `_applySubstanceResponse` liest
+  Uniform statt Konstante
+- **A3** _scentAt KI: wild-Temperament wittert scheu/sanft/wehrhaft-Beute in
+  50m, 4-Richtungs-Gradient, strike via `damageCreature("jagd")`, replaced
+  NEUTRAL-wander-Branch
+- **A4** Mana-Konsument γ: `phaseChange`-Op-Klasse (imbue/ritueller-stab/
+  soulwork-Werkstatt) zieht 15 Mana statt 10 Stamina, Floor 5, Anti-Scope §3
+  (keine DSL-Op-Schleuse), Werkstatt + Hand-Pfad spiegeln EXAKT
 
-**Nächste Welle: V18.210 — VERDRAHTUNGS-WELLE** (siehe abschluss-plan §1):
-vier Sub-Akte (Γ7 Worldgen-Hook · R5 Live-Slider · _scentAt KI-Reader ·
-Mana-Konsument). Nach V18.210: V18.211 Browser-Sign-off-Galerie.
+**Permanente Lehre (V18.210-A1):** ein Hash-Per-Spawn-Cache (jeder Spawn anderer
+Hash → N×InstancedMesh mit je 1 Instance) BRICHT das Instancing-Pattern.
+Region-basierter Cache (~256m-Grid) ist die synergetische Form: lokaler Wald-
+Stil emergiert + Instancing wirkt. Generell: wer einen Generator in den
+Worldgen-Hook hängt, MUSS Cache-Granularität GEGEN den Konsumenten messen
+(Instancing erwartet wenige Bauplane, viele Instances; nicht umgekehrt).
+
+**Nächste Welle: V18.211 — Browser-Sign-off-Galerie** (siehe abschluss-plan
+§2, 25 Schliffe B1-B25 inkl. der vier verdrahteten Foundations: Γ7 Wald-Stil
+emergent · R5 Strukturen sichtbar tiefer · Scent-Hunt fühlbar · Mana-Drain
+sichtbar). Vorher: Commit + Doku-Sync.
 
 ---
 
