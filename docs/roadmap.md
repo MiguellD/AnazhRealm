@@ -82,112 +82,23 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 
 ---
 
-## §4 · Die offenen Fäden — die VOLLSTÄNDIGE Karte (nichts vergessen)
+## §4 · Die offenen Fäden — siehe **`docs/abschluss-plan.md`**
 
-> **Stand 13.06.2026 (V18.192):** Schöpfer-Auftrag „alles offene + Unvollständigkeiten ganz
-> in den Backlog" — `docs/aktiv.md` trägt nur noch die JETZT-zählende Tat (S-Browser-Abnahmen
-> + W5-Schluss). Alles andere lebt HIER mit Weck-Moment. Die durchgezogenen 13.06.-Entscheide:
-> R-031 Werkzeug-Abnutzung ✓ GEBAUT V18.192 (kein Perpetuum mobile — Mühe-Senke + Reparieren) ·
-> R-039 Devlog → post-öffentlich · Wasser-Pfad → Feinschliff (unten dokumentiert, kein dringender
-> Druck — Grundstruktur fertig). Nur R-037 T-Welle wartet noch (state-JSDoc, bei drittem Bauer).
+> **Stand 14.06.2026 (V18.209):** Schöpfer-Auftrag „bringe einen plan zusammen,
+> der alle offenen punkte aufnimmt … wieder einheit erzeugt". Der vollständige
+> Backlog mit Sub-Schritten, Reihenfolge V18.210-V18.230+, und Abschluss-
+> Kriterium lebt in **`docs/abschluss-plan.md`** als DIE EINE Quelle. Dieser §4
+> ist auf seine Karten-Rolle reduziert (was wo lebt), damit es keine zweite
+> offene-Punkte-Liste gibt.
 
-**M9-Sprossen 4-7 (S-Dialog)** — Vision-getrieben, je eigener Bogen. Sprossen 1+2+3 GEBAUT
-via Φ-Bogen (V18.188-V18.191). 4-7 brauchen Schöpfer-Dialog: welche Achse, welche Form.
-Plan: `docs/archiv/meister-plan.md` §3 + §8.6.
+**Wo finde ich was offen ist:**
 
-**Γ-Reste** (klein, optional, gut zu picken — `docs/archiv/genese-plan.md`):
-- Γ7 Baum-Varianten-Grammatik (`_growTreeBlueprint` emittiert Bauplan-Varianten) — video-getrieben zuletzt
-- Γ1 Lesart 5 (Ψ2-Nase — Geruch des Feldes) — die ferne fünfte Welt-Stimme
-- Γ3 Feld-Charakter (Domain-Warp + Frequenz-Fächer) — optional
-- Γ-M Multi-Class-Material (Strata/Iron-Bands/Lichen) — ersetzt das alte Γ8
-- Γ8 Kies+Saum — schrumpft (Γ4½-Foundation-Felder konsumieren das)
-- Γ2 Totholz-Option — eigener Entscheid
+- **`docs/abschluss-plan.md` §1-§9** — vollständig: Verdrahtungs-Schulden, Browser-Sign-offs, Render-Schluss, Crafting-Reste, Lebendiges Feld, U6 Clipmap, Sozial-3, M9-Sprossen, gemerkte Fäden
+- **`docs/aktiv.md`** — aktuelle Welle + Live-Stand
+- **CLAUDE.md "Aktueller Stand"** — auto-geladene Wahrheit
+- **`docs/rueckmeldung.md`** — Schöpfer-Audit-Korpus (S-Abnahmen)
 
-**R-037 T-Welle (Typ-Sicherheit, EHRLICH offen)** — `tsc --checkJs` als Ratschen-Band; T0
-GEMESSEN 490 Fehler, davon 416 TS2339 auf dem dynamisch wachsenden `state`-Bag. Heilung wäre
-ein `@typedef StateShape`-JSDoc-Interface (~200 Felder dokumentieren) — funktioniert perfekt
-in JS heute, nur TS meckert mangels Type-Sheet. Lohnt sich erst bei drittem Bauer. Weck-Moment:
-ein dritter Hand mit-tippt.
-
-**R-039 Devlog/Welle-Schau (post-öffentlich)** — monatliche „Mensch+KI bauen ein Ultiversum"-
-Content. Audience-Arbeit darf das Bauen nicht fressen. Weck-Moment: nach Öffentlich-Machen +
-Bewerbung. Schöpfer-Domäne.
-
-**Wasser** — Fluid-Dynamik (Phase 1, ⭐) · gefaltetes Auslauf-Mesh · Fluss-Naht (4-Chunk-Ecken) ·
-`aFlow`-Foam-Strähnen · ~~Wasserfall-Plane (bleibt/raus?)~~ **ENTSCHIEDEN+GEBAUT (V18.111–.114):
-die Plane FIEL (S-Entscheid), der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe +
-Vorhang, aSlope-Wildwasser; Tour-gehärtet: Split nur nass↔nass, Strähnen-Schaum) — das
-Abwärts-Material bleibt als Saat** · ~~aufgestaute Hoch-Becken (über `L`)~~
-**GEBAUT (V18.129 — der STAU-SPIEGEL):** ein Spieler-Damm staut über rim
-(bounded Spill-Scan + Stau-Tropf; Pfeiler stauen strukturell nicht; GEMESSEN
-`diag-stau.cjs` — Pool +2.68 m EBEN, settled; Kron-ÜBERLAUF als Wasserfall =
-offene Kür) · Unterwasser-Decken-Pass (V18.3 B5) · Kapillar/Stempel an Gebäuden.
-
-**Terrain/Naht (PHASE A VOLLENDET bis auf S-Wellen, §11 + gigant-plan §5)** — ~~N1 Cross-LOD watertight~~
-**GEBAUT (V18.103):** Morph-Cap + Stitch-Band (`_rebuildLodStitchBand` — der Arme-Leute-Transvoxel;
-GEMESSEN 0 sichtbare >1-m-Spalten ungedeckt; Transvoxel bleibt bewusst ungeweckt) · ~~N2 Sub-Region-Edit~~
-**GEMESSEN AUFGELÖST (V18.103):** der Rebuild ist geometrisch unsichtbar (Vertex-Delta 0/3180 lokal;
-Splice = reine Perf ≤10 ms, bewusst deferred [V13.9-Backlog]) · ~~N3~~ GEBAUT (V18.86) ·
-~~SPAWN-RESTBEFUND~~ **GEHEILT (V18.95):** die Wurzel war Hypothese b —
-der leere createNewWorld-Snapshot trug `playerPosition (0,50,0)` → der Reload-Restore setzte
-`terrainEverGenerated=true` → der Erst-Spawn lief im Browser nie; Fix: `playerPosition:null` =
-„vor Erst-Spawn", Restore lässt das Flag false (Browser-Pfad-Sonde `diag-genesis-spawn.cjs`
-rot→grün) · ~~Haupt-Fog an die Ring-Kante koppeln~~ **GEBAUT (V18.103 A5):** fog.far ≤
-(ringRadius+0.5)·span · **A6 Körper-Kollision GEBAUT (V18.103):** Begraben-Rettung + Sprung-Klemme +
-Ego-Auge-Clip. ~~H3 ferne Seen/Flüsse~~ **GEBAUT (V18.132: seed-deterministische
-KACHELN statt „Region mitwandern" — f(seed, Koordinate) bricht den Determinismus NICHT; Worker
-gespiegelt, Heimat bit-identisch, GEMESSEN Worker==Main 0/32144).**
-
-**LOD/Render** — U2 Wasser-LOD (heute fest LOD0) · ~~U4 Deko-Distanz/Dichte/Impostor~~ **GEBAUT (V18.131: Band-getrieben + das EINE Fernfeld-Impostor-Mesh pro Art; Look-Sign-off offen)** · ~~U5 Schatten-CSM~~ **GEBAUT (V18.130: r184-CSMShadowNode an den DETAIL_CASCADE-Band-Kanten, Snap pro Kaskade eingebaut; Look/FPS-Sign-off offen)** ·
-U6 Clipmap (Draw-Call-Hebel) · R1 Schatten-Snap (gebaut, Sign-off offen) · R2 Normale in Geometrie
-backen · R3 Kanten-Schärfe · R5 Struktur-Textur · E3 Worker-Mesh (gebaut V17.118, Sign-off offen) ·
-Kreatur-FPS-Frame-Budget (falls Boden-Cache nicht reicht) · Browser-Sign-offs (J4 · E1–E3).
-
-**Crafting/Kampf** — ~~S6-B erntbare Flora~~ **GEBAUT (V18.133: Scatter pflückbar, kraut/essenz, Trank zieht gepflückte Zutaten)** · S9 Gerät in der Hand (gebaut, Sign-off offen) · S11
-Werkstatt-Animation (die Kirsche) · S7-C chat/DSL-Vereinheitlichung · S8 Teilen-Konsistenz · A2
-Crafting-Fluss-Audit · Avatar-Größe→HP · ~~Zwei-Hand-Modell~~ **GEBAUT (V18.109: Off-Hand-Slot +
-Key G + linker Arm)** · ~~Rüstung am Avatar sichtbar~~ **GEBAUT (V18.104 + V18.110: sitzt am
-TORSO via C7-Trage-Punkt)** · LLM-Manifest.
-
-**Lebendiges Feld/Nexus** — ~~Phase E Bedrohung/Furcht~~ **✓ V18.148 (Raubtier-Seele · Jagd ·
-Furcht/Triumph/Schuld — der Emotion-Kern ist RUND; Vermerk: ambiente Glut-Region-Geburt = eigene
-Mess-Welle)** · Mana-Symmetrie
-(`magieleitung` → zweite Ausdauer-Achse) · Emotion→Regel-Emergenz (hand-codierte Kopplungen via DSL
-emergent) · Nexus-Lern-Vereinheitlichung (Geste→Gesetz: EIN Lern-Substrat, bewährte Geste kristallisiert
-zur Regel).
-
-**Sozial/Multi-User** — ~~Bewertungs-Aggregation~~ ✓ V18.134 · ~~Lesezeichen~~ ✓ V18.135 ·
-~~Folgen~~ ✓ V18.142 · ~~Kommentare~~ ✓ V18.143 (signierte Worte übers Mesh; Chat/Moderation =
-spätere Kür) · ~~„Für dich"~~ ✓ V18.147 (die LESBARE Summe der eigenen Signale — F4 ist RUND;
-Kür-Vermerk nur die Portal-Ring-Welt-Vorschau) · ~~W18 in fremden Welten LEBEN~~ ✓ V18.144–.146
-(Ko-Präsenz-Injektion + Tier-Wahrheit · Input-Brücke · Wohnen/Boot-Rückkehr/„wohnt in"/
-Persistenz-Slot; `npm run smoke:copresence`; benannt-fern nur der Übersetzer-Avatar-Hook) ·
-B-WASM (Fremd-Engine-Rest) · evolveCommunity (Kreatur-Kulturen) · Stern-ab-6-Topologie
-(gigant-plan §5-F2, Design gemessen).
-
-**UI** — ~~Statusbar schlanken~~ **✓ V18.149 (Essenz + ···-Toggle für die Werkstatt-Zahlen)**.
-
-**GENESE (der Γ-Bogen, `docs/archiv/genese-plan.md`)** — ~~Γ0/Γ5/Γ2/Γ1-Kern~~ ✓ V18.166 (diag-genese
-+ 9 Invarianten) · ~~Γ1-Lesart-4 FARBE (DER BODEN ATMET)~~ **✓ V18.181 (bit-identischer Worker-
-Spiegel)** · ~~Γ4-Schicht (Massiv-Tal-Becken, anisotrope Glocke + Ridge-Noise + Slope/Rock-
-Foundation)~~ **✓ V18.181-Sub-3i**. **Γ-BOGEN 2 — offen (in Reihenfolge):**
-**Γ4 echter MAKRO-ANKER** (der große Wurf NOCH: designte Geographie via `makeMacroAnker(seed)`,
-`worldMeta.macro` als signiertes Erbgut, Abfluss-Invariante ab Tag 1 — die geerbte LAAS-Narbe;
-V18.181 hat die SCHICHT, der designte Anker mit Erbgut+Constraint fehlt) · **Γ6-Beförderung**
-(snowband/chunk-seam/false-swim/arch-water-solid → vier stehende Bänder) · **Γ1-Lesart-5 Ψ2-NASE**
-(Geruch des Feldes — die ferne fünfte Welt-Stimme, Kreatur-Aufträge) · **Γ-M Multi-Class-Material**
-(Strata/Iron-Bands/Lichen — ersetzt das alte Γ8) · **Γ3 Feld-Charakter** (Domain-Warp + Frequenz-
-Fächer der vier Stimmen, optional — Entscheid 5) · **Γ2 Totholz-Option** (Entscheid 4) · **Γ7
-Baum-Varianten-Grammatik** (`_growTreeBlueprint`, zuletzt video-getrieben) · **Γ8 Kies+Saum**
-(schrumpft — Γ4½-Foundation-Felder konsumieren das).
-
-**DIE GEMERKTEN FÄDEN (Schöpfer 11.06.2026: „alle wichtig — vergesse die bitte nicht"; die
-verbindliche Voll-Liste mit Weck-Momenten lebt in `archiv/gigant-plan.md` §5-Ende; FORTSCHREIBUNG: `docs/archiv/meister-plan.md` §5):** ~~R6 Selbst-
-Erweiterung~~ ✓ KERN V18.152 (Rest des Bogens benannt) · ~~Phase E Bedrohung/Furcht~~ ✓ V18.148 ·
-B1 Wasser-Sheet→Worker (weckt der fühlbare Carve-Hitch) · das ECHTE V18→V19-Zeit-Portal (weckt
-das erste Alt-Build-Artefakt) · VR (startet bei null, WebXR) · ~~IndexedDB-Persistenz~~ ✓ V18.151 ·
-~~Fahrzeug-Fahr-Tiefe~~ ✓ V18.150 (Profil emergent · Sattel-Kurven · Ausrichtung · EINS-Regel) ·
-~~Statusbar schlanken~~ ✓ V18.149.
+**Die 8 GEMERKTEN FÄDEN** (Schöpfer-Weck-Moment) sind in `abschluss-plan.md §9` namentlich + mit Auslöser geführt: B1 Wasser-Sheet→Worker · V18→V19-Zeit-Portal · VR/WebXR · R-037 T-Welle · R-039 Devlog · IndexedDB-extras · Fahrzeug-Fahr-Tiefe · Statusbar-Tiefe.
 
 ---
 

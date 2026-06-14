@@ -56,6 +56,10 @@ const state = {
     // Schleuse. Fehlt im Snap (Legacy-Welt) → 1 → feuchteAt = 0 (kein Erde-
     // Boden-Drift); Genese-2 (neue Welt) → 2 → der Boden atmet.
     genVersion: 1,
+    // Γ4-Vollendung V18.193 — der vom Main persistierte Erbgut-Anker.
+    // Worker liest IHN statt selbst zu bauen → konsistent über
+    // Konstanten-Wechsel + Welt-Bündel-Import.
+    macroAnker: null,
 };
 
 self.onmessage = function (e) {
@@ -141,6 +145,14 @@ function applyStateSnapshot(snap) {
     if (typeof snap.carveBankSlope === "number") state.carveBankSlope = snap.carveBankSlope;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
+    // Γ4-Vollendung V18.193 — Erbgut-Anker vom Main übernehmen + Cache
+    // invalidieren (sonst klebt der alte re-computed Anker im Worker, wenn
+    // der Main ihn aus dem Bündel-Import frisch eingespielt hat).
+    if (snap.macroAnker !== undefined) {
+        state.macroAnker = snap.macroAnker;
+        _macroAnkerCache = null;
+        _macroAnkerSeed = null;
+    }
 }
 
 function applyStateDelta(delta) {
@@ -358,6 +370,17 @@ let _macroAnkerCache = null;
 let _macroAnkerSeed = null;
 function macroAnker() {
     if (state.genVersion < 3) return null;
+    // Γ4-Vollendung V18.193 — Erbgut-Pfad: der vom Main persistierte Anker
+    // ist die Source of Truth. Worker baut nur dann selbst, wenn KEIN Anker
+    // geliefert wurde (Edge-Case in alten Tests, die direkt state.seed
+    // setzen ohne snapshot durchzuschicken).
+    if (state.macroAnker) {
+        if (!_macroAnkerCache || _macroAnkerSeed !== state.seed) {
+            _macroAnkerCache = state.macroAnker;
+            _macroAnkerSeed = state.seed;
+        }
+        return _macroAnkerCache;
+    }
     if (_macroAnkerCache && _macroAnkerSeed === state.seed) return _macroAnkerCache;
     if (!state.seed) return null;
     _macroAnkerCache = makeMacroAnker(state.seed);
@@ -750,15 +773,45 @@ function ensureWorldField() {
         glutNoise: new SimplexNoise(state.seed + "-veg-glut"),
         magieNoise: new SimplexNoise(state.seed + "-veg-magie"),
         rngNoise: new SimplexNoise(state.seed + "-veg-rng"),
+        // V18.204 — Γ3 Domain-Warp Worker-Mirror.
+        warpNoise: new SimplexNoise(state.seed + "-veg-warp"),
     };
     return worldField;
 }
 
+// V18.203 — Γ3 FREQUENZ-FÄCHER Worker-Mirror (V17.100-Lehre: Konstanten hier
+// hardkodiert, bit-Vertrag mit Main AnazhRealm.FIELD_CHARACTER; bei
+// Änderung beide mit-ziehen). Aktiv nur bei genVersion >= 3 — Legacy bleibt
+// bit-identisch.
+const FC_LAMBDA_LEBENDIG = 200;
+const FC_LAMBDA_DICHTE = 340;
+const FC_LAMBDA_GLUT = 520;
+const FC_LAMBDA_MAGIE = 160;
+// V18.204 — Γ3 Domain-Warp Worker-Mirror Konstanten.
+const FC_WARP_AMP = 40;
+const FC_WARP_SCALE = 1 / 600;
 function worldFieldAt(x, z) {
     const f = ensureWorldField();
     if (!f) return { lebendig: 0, dichte: 0, glut: 0, magieleitung: 0 };
-    const s = 0.005;
     const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
+    if (state.genVersion >= 3) {
+        const sL = 1 / FC_LAMBDA_LEBENDIG;
+        const sD = 1 / FC_LAMBDA_DICHTE;
+        const sG = 1 / FC_LAMBDA_GLUT;
+        const sM = 1 / FC_LAMBDA_MAGIE;
+        // V18.204 — Γ3 DOMAIN-WARP Worker-Mirror, bit-identisch zum Main.
+        const wpX = f.warpNoise.noise2D(x * FC_WARP_SCALE, z * FC_WARP_SCALE) * FC_WARP_AMP;
+        const wpZ = f.warpNoise.noise2D(x * FC_WARP_SCALE + 51.7, z * FC_WARP_SCALE - 23.1) * FC_WARP_AMP;
+        const wx = x + wpX;
+        const wz = z + wpZ;
+        return {
+            lebendig: n01(f.lebendigNoise.noise2D(wx * sL, wz * sL)),
+            dichte: n01(f.dichteNoise.noise2D(wx * sD + 100, wz * sD - 200)),
+            glut: n01(f.glutNoise.noise2D(wx * sG + 500, wz * sG + 700)),
+            magieleitung: n01(f.magieNoise.noise2D(wx * sM - 333, wz * sM + 999)),
+        };
+    }
+    const s = 0.005;
     return {
         lebendig: n01(f.lebendigNoise.noise2D(x * s, z * s)),
         dichte: n01(f.dichteNoise.noise2D(x * s + 100, z * s - 200)),
@@ -1321,6 +1374,15 @@ function attachFieldColors(positions) {
     const dampEarth = [0.22, 0.18, 0.12];
     const F_VIS_LO = 0.3;
     const F_VIS_HI = 0.85;
+    // V18.199 — Γ-M LICHEN Worker-Mirror (V17.100-Lehre: Konstanten hier
+    // hardkodiert, bit-Vertrag mit Main AnazhRealm.LICHEN; bei Änderung
+    // beide mit-ziehen).
+    const LICHEN_FEUCHTE_LO = 0.5;
+    const LICHEN_FEUCHTE_HI = 0.9;
+    const LICHEN_DICHTE_LO = 0.5;
+    const LICHEN_DICHTE_HI = 0.85;
+    const LICHEN_STRENGTH = 0.22;
+    const lichenTint = [0.42, 0.5, 0.34];
     const lava = [0.46, 0.2, 0.11];
     const violet = [0.55, 0.36, 0.86];
     const snow = [0.92, 0.93, 1.0];
@@ -1349,6 +1411,14 @@ function attachFieldColors(positions) {
         // als surfY-Argument an feuchteAt übergeben.
         const feuchte = feuchteAt(x, z, y);
         mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+        // V18.199 — Γ-M LICHEN Worker-Mirror: identisch zur Main-Form.
+        const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5;
+        const lichenMix =
+            ss(LICHEN_FEUCHTE_LO, LICHEN_FEUCHTE_HI, feuchte) *
+            ss(LICHEN_DICHTE_LO, LICHEN_DICHTE_HI, f.dichte || 0) *
+            lichenCluster *
+            LICHEN_STRENGTH;
+        mix(lichenTint, lichenMix);
         mix(lava, ss(0.38, 0.92, f.glut));
         mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
         // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y. Bit-

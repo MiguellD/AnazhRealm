@@ -14397,6 +14397,29 @@ class AnazhRealm {
         // Trade-off „leicht = flink, schwer = träge" bleibt: leichte Geräte liegen klar über dem Floor.
         if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
         if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
+        // V18.208 — KREATUR-GRÖSSEN-STAT-SYMMETRIE: analog zu V18.195+V18.206
+        // (Spieler). Größere Kreaturen sind robuster (mehr HP/Stamina/Mana)
+        // aber langsamer (weniger speed/attackSpeed/jumpPower) — emergent aus
+        // der Substanz, kein Hand-Tuning. Die `_compoundSizeFactor` ist
+        // bounded [0.7, 1.7] (V18.154 Σ-Substanz-Volumen), sqrt davon → mul
+        // ∈ [0.84, 1.30]. Ein kleines Insekt-Wesen ist flink + zerbrechlich,
+        // ein massiver Drache robust + träge — die Hylomorphismus-Form auf
+        // Kreaturen angewandt (die Vision der lebenden Welt).
+        const creatureSoulName = creature.userData && creature.userData.soul;
+        const creatureSoul =
+            creatureSoulName && AnazhRealm.CREATURE_SOULS && AnazhRealm.CREATURE_SOULS[creatureSoulName];
+        if (creatureSoul && Array.isArray(creatureSoul.bodyParts)) {
+            const creatureSize = this._compoundSizeFactor({ parts: creatureSoul.bodyParts });
+            const sizeHpMul = Math.sqrt(creatureSize);
+            const sizeSpeedMul = 1 / sizeHpMul;
+            if (Number.isFinite(stats.hpMax)) stats.hpMax = stats.hpMax * sizeHpMul;
+            if (Number.isFinite(stats.staminaMax)) stats.staminaMax = stats.staminaMax * sizeHpMul;
+            if (Number.isFinite(stats.manaMax)) stats.manaMax = stats.manaMax * sizeHpMul;
+            if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed * sizeSpeedMul);
+            if (Number.isFinite(stats.attackSpeed))
+                stats.attackSpeed = Math.max(0.25, stats.attackSpeed * sizeSpeedMul);
+            if (Number.isFinite(stats.jumpPower)) stats.jumpPower = stats.jumpPower * sizeSpeedMul;
+        }
         return { tags: finalTags, stats };
     }
 
@@ -17075,6 +17098,12 @@ class AnazhRealm {
             // Feuchte-Mix-Linie identisch gated (Legacy-Welten behalten ihr
             // Gesicht: < 2 → feuchte = 0, kein Erde-Boden-Drift).
             genVersion: typeof this._genVersion === "function" ? this._genVersion() : 1,
+            // Γ4-Vollendung V18.193 — der persistierte Anker (Erbgut) reist
+            // mit, damit der Worker den IDENTISCHEN Anker liest. Ohne diesen
+            // Schritt würde der Worker bei einer Konstanten-Änderung einen
+            // anderen Anker bauen als der Main → Naht-Wand rot, Welt-
+            // Substanz-Drift. Null bei gen < 3 (Legacy-Welten).
+            macroAnker: typeof this._macroAnker === "function" ? this._macroAnker() : null,
         };
         const h = this.state.hydrosphere;
         if (h && h.ready) {
@@ -19939,12 +19968,119 @@ class AnazhRealm {
         };
     }
 
+    // Γ4-VOLLENDUNG V18.193 — ERBGUT-Form: der persistierte Anker IST die
+    // Source of Truth. Eine Welt behält ihren ORIGINAL-Anker auch wenn die
+    // Konstanten/der Algorithmus sich später ändern (Drift-Schutz, additiv-
+    // teilbar wie ein Welt-Stempel — die "diff/share Geographie"-Vision aus
+    // genese-plan §2.6 Erbgut). Determinismus Main↔Worker via Snapshot-
+    // Reichung (`_voxelWorkerSnapshotState.macroAnker`).
+    // Persistenz reist automatisch im worldMeta-Spread (buildStateSnapshot
+    // Z29506 + _loadStateRestoreWorldMeta Z33701 — kein neuer Restore-Pfad).
+    // Migration-tolerant: alte Welt ohne worldMeta.macro → re-compute aus
+    // Seed (gen≥3) oder null (gen<3). Validierungs-Schutz: korrupter macro-
+    // Felt wird verworfen + neu gebaut (must-ignore, taille-Geist).
     _macroAnker() {
         if (this._macroAnkerCache) return this._macroAnkerCache;
         if (this._genVersion() < 3) return null;
-        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const wm = this.state.worldMeta;
+        if (!wm) return null;
+        if (wm.macro && AnazhRealm._isValidMacroAnker(wm.macro)) {
+            this._macroAnkerCache = wm.macro;
+            return this._macroAnkerCache;
+        }
+        const seed = wm.seed || "anazh-realm-seed";
         this._macroAnkerCache = this._makeMacroAnker(seed);
+        // Erbgut persistieren — der nächste Lade-Vorgang liest aus wm.macro
+        // (und damit auch ein geteiltes Welt-Bündel: signiert+additiv).
+        wm.macro = this._macroAnkerCache;
         return this._macroAnkerCache;
+    }
+
+    // Γ4-VOLLENDUNG V18.193 — Struktur-Validierung. Schützt vor korrupten
+    // macro-Feldern (Müll im Snapshot, falsche Schema-Version, manipuliertes
+    // Bündel) — must-ignore-Geist der Taille-Spec. Prüft Form, nicht
+    // semantische Sinnhaftigkeit (die deckt die Abfluss-Invariante).
+    static _isValidMacroAnker(m) {
+        if (!m || typeof m !== "object") return false;
+        if (!m.massivC || typeof m.massivC.x !== "number" || typeof m.massivC.z !== "number") return false;
+        if (typeof m.massivR !== "number" || !Number.isFinite(m.massivR)) return false;
+        if (typeof m.massivH !== "number" || !Number.isFinite(m.massivH)) return false;
+        if (typeof m.massivRot !== "number" || !Number.isFinite(m.massivRot)) return false;
+        if (typeof m.massivAspect !== "number" || !Number.isFinite(m.massivAspect)) return false;
+        if (!m.beckenC || typeof m.beckenC.x !== "number" || typeof m.beckenC.z !== "number") return false;
+        if (typeof m.beckenR !== "number" || !Number.isFinite(m.beckenR)) return false;
+        if (typeof m.beckenD !== "number" || !Number.isFinite(m.beckenD)) return false;
+        if (!Array.isArray(m.talVertices) || m.talVertices.length < 2) return false;
+        if (!Array.isArray(m.talFloors) || m.talFloors.length !== m.talVertices.length) return false;
+        for (const v of m.talVertices) {
+            if (!v || typeof v.x !== "number" || typeof v.z !== "number") return false;
+            if (!Number.isFinite(v.x) || !Number.isFinite(v.z)) return false;
+        }
+        for (const f of m.talFloors) {
+            if (typeof f !== "number" || !Number.isFinite(f)) return false;
+        }
+        if (typeof m.talBreite !== "number" || typeof m.talTrenchTiefe !== "number") return false;
+        if (typeof m.talTrenchBreite !== "number" || typeof m.talBlendExp !== "number") return false;
+        return true;
+    }
+
+    // Γ4-VOLLENDUNG V18.193 — DIE ABFLUSS-INVARIANTE (die geerbte LAAS-
+    // Narbe strukturell tot). An N=32 Strahlen am Becken-Rim messen wir die
+    // Macro-Höhe (Hydrosphäre-Form, includeDetail=false, gegen Detail-Alias);
+    // die Spannweite max−min MUSS > beckenD*0.5 sein → es gibt einen klar
+    // definierten Tiefweg → ein Becken ist NIE rund von gleichhohen Bergen
+    // umringt (Endorheic-Falle). Der spillAngle zeigt (per V18.181-Quick-
+    // Probe + Tal-Polyline-Design) Richtung Tal-Endpunkt — das Tal IST der
+    // designte Auslass, das Wasser findet ihn als tiefsten Pfad.
+    // Nutzbar als (a) Verifikations-Wand im Test-Band, (b) Bau-Zeit-Check
+    // bei künftiger Auto-Korrektur (Erst-Wurf-Schwelle ist messbar; bei
+    // gemessenem Bedarf justierbar — V18.192-Lehre).
+    _macroSpillpointAnalysis(anker) {
+        if (!anker) return null;
+        const N = 32;
+        let minRimY = Infinity;
+        let maxRimY = -Infinity;
+        let spillAngle = 0;
+        let crestAngle = 0;
+        for (let i = 0; i < N; i++) {
+            const theta = (i / N) * Math.PI * 2;
+            const x = anker.beckenC.x + Math.cos(theta) * anker.beckenR;
+            const z = anker.beckenC.z + Math.sin(theta) * anker.beckenR;
+            const y = this._terrainMacroSurfaceY(x, z, false);
+            if (y < minRimY) {
+                minRimY = y;
+                spillAngle = theta;
+            }
+            if (y > maxRimY) {
+                maxRimY = y;
+                crestAngle = theta;
+            }
+        }
+        const span = maxRimY - minRimY;
+        const hasOutflow = span > anker.beckenD * 0.5;
+        // Tal-Eingangs-Richtung VOM Becken-Zentrum NACH AUSSEN: das letzte
+        // Tal-Vertex liegt am beckenC, das vorletzte etwas davor in Tal-
+        // Längsrichtung. Die Richtung vom Zentrum zum vorletzten Vertex
+        // zeigt dorthin, wo das Tal den Rim KREUZT. Wenn spillAngle (Rich-
+        // tung zum tiefsten Rim-Punkt) dorthin zeigt, IST das Tal-Eingangs-
+        // Punkt der designte Spillweg — Geometrie und Hydrologie sind
+        // automatisch ausgerichtet.
+        const tEnd = anker.talVertices[anker.talVertices.length - 1];
+        const tPrev = anker.talVertices[anker.talVertices.length - 2];
+        const talEntryDirAng = Math.atan2(tPrev.z - tEnd.z, tPrev.x - tEnd.x);
+        let dAng = spillAngle - talEntryDirAng;
+        while (dAng > Math.PI) dAng -= 2 * Math.PI;
+        while (dAng < -Math.PI) dAng += 2 * Math.PI;
+        const spillVsTalDeg = (Math.abs(dAng) * 180) / Math.PI;
+        return {
+            minRimY,
+            maxRimY,
+            span,
+            spillAngleRad: spillAngle,
+            crestAngleRad: crestAngle,
+            hasOutflow,
+            spillVsTalDeg,
+        };
     }
 
     // Γ4½ (genese-plan Vertiefung §3) — SLOPE + ROCK-EXPOSURE als gespeicherte
@@ -21411,6 +21547,22 @@ class AnazhRealm {
             // die Surface (das Vertex SITZT auf der Oberfläche).
             const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
             mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+            // V18.199 — Γ-M LICHEN: grüne Patina auf alten feuchten Steinen.
+            // Drei Multiplikatoren — feuchte (genug Wasser zum Wachsen) ×
+            // dichte (es ist ein Stein, kein Erde/Lava) × cluster (Lichen
+            // sitzt in Flecken, nicht uniform). Position im Mix-Stack: NACH
+            // dampEarth, VOR lava/snow/sed/strand — Lichen weicht für Lava,
+            // Schnee, Sediment, Strand zurück (sie überschreiben strukturell
+            // den Stein-Untergrund). LICHEN-Konstanten in AnazhRealm.LICHEN
+            // (Worker spiegelt hardkodiert, V17.100-Lehre).
+            const LCH = AnazhRealm.LICHEN;
+            const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
+            const lichenMix =
+                ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
+                ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *
+                lichenCluster *
+                LCH.strength;
+            mix(LCH.tint, lichenMix);
             mix(lava, ss(0.38, 0.92, f.glut));
             mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
             // V17.105 — Schnee auf PROMINENZ (y − kontinentale Basis cont0), nicht
@@ -23535,7 +23687,10 @@ class AnazhRealm {
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
                 // M7 — microStrength ist ein UNIFORM (der Settings-Regler lebt);
                 // W-E: profil-gewichtet (ein Regler, eine Welt-Antwort).
-                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(_p("micro"));
+                // V18.207 — R5: zusätzlicher Boost-Faktor für Strukturen.
+                // microBoost = 1.0 ist no-op (bit-identisch zu Pre-V18.207).
+                const _r5Boost = (AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.0;
+                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(_p("micro") * _r5Boost);
                 let _shade = _T.float(1.0).add(_det.mul(_micro));
                 // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
                 // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
@@ -35841,6 +35996,22 @@ class AnazhRealm {
             const rate = AnazhRealm.STAMINA_REGEN_PER_SEC || 5;
             this.state.player.stamina = Math.min(staMax, sta + rate * dt);
         }
+        // V18.196 — Mana-Regen, symmetrisch zu Stamina. Magieleitung im
+        // Spieler-Compound hebt die Regen-Rate (eine magisch leitfähige
+        // Substanz hat einen offeneren Mana-Kanal — die Welt-Stimme strömt
+        // freier). Base 3/s (langsamer als Stamina = 5/s, weil Mana mächtiger
+        // ist und sich nicht so schnell auffüllen darf — Balance via Erst-Wurf).
+        const manaMax = this.state.player.manaMax || 0;
+        const mana = this.state.player.mana || 0;
+        if (manaMax > 0 && mana < manaMax) {
+            const magBoost =
+                (this.state.player.stats &&
+                    this.state.player.stats.tags &&
+                    this.state.player.stats.tags.magieleitung) ||
+                0;
+            const manaRate = (AnazhRealm.MANA_REGEN_PER_SEC || 3) * (1 + magBoost);
+            this.state.player.mana = Math.min(manaMax, mana + manaRate * dt);
+        }
         const now = performance.now() / 1000;
         const until = this.state.player.phoenixUntil || -Infinity;
         if (until <= -Infinity || until <= 0) return;
@@ -42586,6 +42757,40 @@ class AnazhRealm {
         // Trade-off „leicht = flink, schwer = träge" bleibt: leichte Geräte liegen klar über dem Floor.
         if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
         if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
+        // V18.195 — die SOUL-GRÖSSE hebt HP + Stamina (Avatar-Robustheit
+        // emergent aus der Substanz, statt uniform wie vor V18.195). Eine
+        // sqrt-Skalierung ist genre-üblich (Genshin/MMOs: größer = robuster
+        // aber nicht linear, sonst kippt die Balance). Built-in Souls
+        // (human/phoenix/dragon) bekommen einen NEUTRALEN Default
+        // (sizeFactor=1, mul=1.0), die getunten Werte bleiben unangetastet —
+        // kein Balance-Bruch an den intrinsischen Seelen. Custom-Avatare
+        // (geschmiedete Bauplane mit role:"soul") bekommen den Größen-Hebel:
+        // ein winziger Avatar (sizeFactor 0.7) → ~84 % HP/Stamina, ein
+        // massiver Avatar (sizeFactor 1.7) → ~130 %. Achtung: NUR HP +
+        // Stamina; speed/attackSpeed/damage bleiben durch die Material-Tag-
+        // Pipe getrieben (sonst wäre ein Großer auch flinker, das wäre nicht
+        // intuitiv — größer = robuster + langsamer, nicht größer = stärker
+        // in allem).
+        const soulBpForSize = { parts: (soul && soul.bodyParts) || [] };
+        const soulSize = isBuiltinSoul ? 1 : this._compoundSizeFactor(soulBpForSize);
+        const sizeHpMul = Math.sqrt(soulSize);
+        if (Number.isFinite(stats.hpMax)) stats.hpMax = stats.hpMax * sizeHpMul;
+        if (Number.isFinite(stats.staminaMax)) stats.staminaMax = stats.staminaMax * sizeHpMul;
+        // V18.196 — Mana folgt der HP/Stamina-Symmetrie auch bei Größe (ein
+        // großer Avatar hat tiefere Reserven in allen drei Lebens-Achsen).
+        if (Number.isFinite(stats.manaMax)) stats.manaMax = stats.manaMax * sizeHpMul;
+        // V18.206 — AVATAR-GRÖSSE-SPEED-TRADE: die ehrliche Balance-Schließer
+        // zu V18.195. Größer = mehr HP/Stamina/Mana (V18.195/.196) ABER auch
+        // langsamer (mehr Masse zu bewegen). Inverse sqrt-Skalierung auf
+        // speed/attackSpeed/jumpPower → ein winziger Avatar (sizeFactor 0.7)
+        // wird ~19 % schneller, ein massiver (1.7) ~23 % langsamer. Built-in
+        // NEUTRAL (sizeFactor=1, mul=1). Nach den invers-dichte-Floors, sodass
+        // die Floors nicht durchbrochen werden (Floor-Disziplin V17.90: Tempo
+        // nie kaputt).
+        const sizeSpeedMul = 1 / sizeHpMul;
+        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed * sizeSpeedMul);
+        if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed * sizeSpeedMul);
+        if (Number.isFinite(stats.jumpPower)) stats.jumpPower = stats.jumpPower * sizeSpeedMul;
         return { tags: finalTags, stats };
     }
 
@@ -42601,6 +42806,215 @@ class AnazhRealm {
     _applyPlayerSpeed(v) {
         this.state.speed = v;
         this.state.sprintSpeed = v * 2;
+    }
+
+    // V18.201 — MANA-KONSUMENTEN Foundation (aktiv.md §4.E Folge zu V18.196).
+    // Helper für künftige Mana-Konsumenten (Magie-Akte, Boost-Manifestation,
+    // DSL-Op-Kosten): R2-strukturell, KEIN DSL-Op (Anti-Scope §3: ein Skript
+    // darf die Mana-Wand nicht umgehen — analog zur W5-Werkzeug-Abnutzungs-
+    // Lehre V18.192). Mode-Gate: schöpfer = frei (kein Drain), pfad/frieden =
+    // strikt. Erste konkrete Konsumenten in einer Folge-Welle nach Schöpfer-
+    // Entscheid (welche Akte Mana kosten).
+    _canPayMana(n, opts) {
+        if (!this.state.player) return false;
+        if (!(n > 0)) return true;
+        const mode = (opts && opts.mode) || (this.getGameMode ? this.getGameMode() : "frieden");
+        if (mode === "schöpfer") return true; // freier Schöpfer
+        return (this.state.player.mana || 0) >= n;
+    }
+
+    _drainMana(n, opts) {
+        if (!this.state.player) return false;
+        if (!(n > 0)) return true; // 0/negativ = no-op, kein Fehler
+        const mode = (opts && opts.mode) || (this.getGameMode ? this.getGameMode() : "frieden");
+        if (mode === "schöpfer") return true; // freier Schöpfer, kein Drain
+        const have = this.state.player.mana || 0;
+        if (have < n) return false; // insufficient → kein Drain (atomar)
+        this.state.player.mana = Math.max(0, have - n);
+        return true;
+    }
+
+    // V18.205 — Γ7 BAUM-VARIANTEN-GRAMMATIK (genese-plan §Γ7): emittiert ein
+    // `parts[]`-Array für einen Baum-Bauplan in der bestehenden Sprache. Die
+    // SPECIES.ts-Regel: Laub sitzt NIE auf Primärästen, immer an Ebene-2-Enden.
+    // Tag-neutral via materialKonsistenz (Stamm = holz, Krone = laub) → die
+    // V17.16-Falle strukturell ausgeschlossen, weil alle 4 Affinitäts-Achsen
+    // dieselben MAX-Werte erhalten wie die bestehenden baum_eiche/baum_kiefer-
+    // Baupläne (computeCompoundTags = MAX über Parts mit denselben Materials).
+    // Deterministisch via SimplexNoise (eigener Stream `-veg-grammatik`, Γ5-
+    // Disziplin: re-rollt keinen anderen Welt-Stream).
+    //
+    // `speciesKey` ist informativ (zukünftig: ein-Spezies-spezifische Tweaks);
+    // `seed` ist der Variation-Diktator (ein String oder Number — wird über
+    // FNV-1a in einen Float für SimplexNoise gewandelt). `returns` ein parts-
+    // Array, das direkt als `bp.parts` für einen Bauplan dient.
+    _growTreeBlueprint(speciesKey, seed) {
+        const sKey = String(seed || speciesKey || "g7-default");
+        let hash = 2166136261;
+        for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
+        // Lazy-Init Noise-Stream
+        if (!this._growTreeNoise) {
+            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
+        }
+        const n = this._growTreeNoise;
+        // Deterministische [0, 1) RNG aus Hash + Noise (statt LCG, weil
+        // SimplexNoise auch von Position abhängig wäre — wir wollen aber pro
+        // seed-Wert eine eigene Sequenz. Trick: nutze hash als x-Koordinate,
+        // step-counter als y-Koordinate).
+        let step = 0;
+        const r01 = () => {
+            step++;
+            const v = n.noise2D((hash >>> 0) * 0.0137 + step * 17.31, step * 7.79 - (hash >>> 8) * 0.0083);
+            return (v + 1) * 0.5;
+        };
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const parts = [];
+        // STAMM — 3 Segmente, wander + taper (Genese-Plan).
+        const stammHoehe = lerp(3.5, 5.5, r01());
+        const stammRadius = lerp(0.5, 0.85, r01());
+        const taperRate = lerp(0.65, 0.85, r01()); // jedes Segment x dieses
+        const wanderJitter = lerp(0.04, 0.18, r01()); // wie sehr der Stamm wandert
+        let trunkX = 0,
+            trunkZ = 0;
+        let trunkY = 0;
+        let trunkR = stammRadius;
+        const segH = stammHoehe / 3;
+        for (let i = 0; i < 3; i++) {
+            const segCenterY = trunkY + segH * 0.5;
+            parts.push({
+                shape: "cylinder",
+                material: "holz",
+                position: { x: trunkX, y: segCenterY, z: trunkZ },
+                size: { x: trunkR * 2, y: segH, z: trunkR * 2 },
+                segments: 6,
+            });
+            // wander für nächstes Segment
+            trunkX += (r01() - 0.5) * wanderJitter * segH;
+            trunkZ += (r01() - 0.5) * wanderJitter * segH;
+            trunkY += segH;
+            trunkR *= taperRate; // taper
+        }
+        // WHORL-ÄSTE — 3 Äste am Stamm-Ober-Drittel.
+        const astCount = 3 + Math.floor(r01() * 2); // 3 oder 4
+        const astLen = lerp(1.4, 2.4, r01());
+        const astRadius = lerp(0.18, 0.32, r01());
+        const astBaseY = trunkY * 0.6; // mittlere Höhe des Stammes
+        // Ende-Positionen für Ebene-2-Krone speichern
+        const astEnds = [];
+        for (let a = 0; a < astCount; a++) {
+            const phi = (a / astCount) * Math.PI * 2 + r01() * 0.4; // Whorl-Anordnung + jitter
+            const tilt = lerp(0.6, 1.1, r01()); // Neigungs-Winkel der Achse
+            const tipX = Math.cos(phi) * astLen * Math.sin(tilt);
+            const tipZ = Math.sin(phi) * astLen * Math.sin(tilt);
+            const tipY = astBaseY + astLen * Math.cos(tilt) * 0.6;
+            const midX = tipX * 0.5;
+            const midZ = tipZ * 0.5;
+            const midY = (astBaseY + tipY) * 0.5;
+            parts.push({
+                shape: "cylinder",
+                material: "holz",
+                position: { x: trunkX + midX, y: midY, z: trunkZ + midZ },
+                size: { x: astRadius * 2, y: astLen, z: astRadius * 2 },
+                // rotation entspringt aus der Phi+Tilt; die FormUtils rotieren
+                // den Stamm-cylinder so, dass seine y-Achse entlang des
+                // Ast-Vektors liegt. Wir setzen rotation.z so dass eine
+                // einfache cylinder-Drehung den Ast in die Richtung kippt
+                // (Engine: shape="cylinder" + rotation.z+rotation.y).
+                rotation: {
+                    z: tilt,
+                    y: phi,
+                },
+                segments: 5,
+            });
+            astEnds.push({ x: trunkX + tipX, y: tipY, z: trunkZ + tipZ });
+        }
+        // KRONE — Laub-ELLIPSOIDE NUR an Ebene-2-Enden (Species.ts-Regel).
+        // Jeder Ast bekommt 1-2 Laub-Ellipsoide an seinem Ende; Größe variiert
+        // pro Ende deterministisch.
+        const laubColor = 0x4a8a3a + Math.floor(r01() * 0x202020); // grün-tönung
+        const laubRadiusBase = lerp(0.85, 1.4, r01());
+        for (const end of astEnds) {
+            const subCount = 1 + Math.floor(r01() * 2); // 1 oder 2 Ellipsoide
+            for (let s = 0; s < subCount; s++) {
+                const ox = (r01() - 0.5) * 0.6;
+                const oz = (r01() - 0.5) * 0.6;
+                const oy = r01() * 0.4;
+                const lR = laubRadiusBase * lerp(0.7, 1.1, r01());
+                parts.push({
+                    shape: "sphere",
+                    material: "laub",
+                    color: laubColor,
+                    position: { x: end.x + ox, y: end.y + oy, z: end.z + oz },
+                    size: { x: lR * 2, y: lR * 1.6, z: lR * 2 },
+                });
+            }
+        }
+        return parts;
+    }
+
+    // V18.202 — Γ1-LESART-5 Ψ2-NASE Wind-Vektor an (x, z). Deterministisch
+    // aus Welt-Seed (über `_voxelNoise`) + langsamer Position-Variation. Der
+    // Wind dreht sanft über km-Distanzen (windScale = 1/1000), nicht von
+    // Voxel zu Voxel. Erst-Wurf windTimeRate = 0 (statischer Wind pro Welt
+    // für deterministische Tests + headless-mess); spätere Welle koppelt
+    // Welt-Zeit + Wetter (stormy = stärker, sunny = schwächer).
+    _worldWindDirAt(x, z, t) {
+        if (!this._voxelNoise) {
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._voxelNoise = new SimplexNoise(seed + ":voxel");
+        }
+        const S = AnazhRealm.SCENT;
+        const tt = (typeof t === "number" ? t : 0) * S.windTimeRate;
+        // Wind-Phase: Noise als Winkel-Quelle (0..2π).
+        const phase = (this._voxelNoise.noise2D(x * S.windScale + tt, z * S.windScale - tt) + 1) * Math.PI;
+        return { x: Math.cos(phase), z: Math.sin(phase) };
+    }
+
+    // V18.202 — Γ1-LESART-5 Ψ2-NASE Geruch-Sampler. `sources` ist ein Array
+    // von Geruchs-Quellen `{x, z, strength}` (jede Quelle eine Kreatur, eine
+    // duftende Pflanze, ein Feuer). Returnt akkumulierten Geruch an (x, z)
+    // ∈ [0, ∞). Konsumenten cappen + interpretieren — die Foundation gibt
+    // nur die Math.
+    //
+    // Formel pro Quelle:
+    //   dist     = euclidean
+    //   decay    = exp(−dist/rangeM)
+    //   toRecv   = normierter Vektor VON Source ZU Receiver
+    //   windDir  = Wind an der Quelle (Richtung, in die er WEHT)
+    //   dot      = toRecv · windDir      (positiv = Receiver liegt downwind:
+    //                                      der Wind weht VON Source ZU Receiver)
+    //   windMod  = max(minDirectional, (1−windFactor) + windFactor · max(0, dot))
+    //   geruch   = strength · decay · windMod
+    //
+    // Akkumulation: Σ über alle Quellen.
+    _scentAt(x, z, sources, opts) {
+        if (!Array.isArray(sources) || sources.length === 0) return 0;
+        const S = AnazhRealm.SCENT;
+        const t = opts && typeof opts.time === "number" ? opts.time : 0;
+        let total = 0;
+        for (const src of sources) {
+            if (!src || typeof src.x !== "number" || typeof src.z !== "number") continue;
+            const strength = typeof src.strength === "number" ? src.strength : 1;
+            if (!(strength > 0)) continue;
+            const dx = x - src.x;
+            const dz = z - src.z;
+            const dist = Math.hypot(dx, dz);
+            if (dist > S.rangeM * 4) continue; // jenseits 4× range vernachlässigbar
+            const decay = Math.exp(-dist / S.rangeM);
+            // Wind an der Quelle (der Wind, der den Geruch wegträgt)
+            const wind = this._worldWindDirAt(src.x, src.z, t);
+            // Normierter Vektor von Source zum Receiver
+            const norm = dist > 0.001 ? 1 / dist : 0;
+            const dirX = dx * norm;
+            const dirZ = dz * norm;
+            // dot mit windDir: positiv = Receiver liegt downwind (wind weht
+            // VON src ZU recv, trägt also den Geruch hin).
+            const dot = dirX * wind.x + dirZ * wind.z;
+            const windMod = Math.max(S.minDirectional, 1 - S.windFactor + S.windFactor * Math.max(0, dot));
+            total += strength * decay * windMod;
+        }
+        return total;
     }
 
     // Stats berechnen + auf state anwenden (Soul-Wechsel-Pfad). HP+Stamina
@@ -42622,6 +43036,12 @@ class AnazhRealm {
         this.state.player.hp = computed.stats.hpMax;
         this.state.player.staminaMax = computed.stats.staminaMax;
         this.state.player.stamina = computed.stats.staminaMax;
+        // V18.196 — Mana als zweite Ausdauer-Achse (Symmetrie zu Stamina).
+        // Bei jedem Soul-Wechsel auf MAX gesetzt; verbrauchen + regenerieren
+        // erfolgt im Game-Loop (analog stamina). Konsumenten kommen in einer
+        // Folge-Welle (V18.197+: DSL-Ops manaCost, UI-Balken).
+        this.state.player.manaMax = computed.stats.manaMax;
+        this.state.player.mana = computed.stats.manaMax;
         // UI-Render anstoßen, falls Spieler-Drawer offen ist.
         return computed;
     }
@@ -44433,6 +44853,38 @@ class AnazhRealm {
             },
         ];
 
+        // V18.198 — Γ2 TOTHOLZ (genese-plan §Γ2-Vermerk): ein gefallener
+        // Stamm im Wald. Ein horizontaler Holz-Zylinder (~2.4m lang), nahe
+        // dem Boden, OHNE Krone (es ist tot/gefallen). Material holz → tag-
+        // neutral zu den Bäumen (computeCompoundTags = MAX über Parts mit
+        // demselben material + derselben Shape → keine Verschiebung der
+        // Affinitäts-Achsen, V17.16-Disziplin gewahrt). Spawnt NICHT im
+        // Affinitäts-Wettstreit (würde sonst Bäume verdrängen), sondern als
+        // SUB-SPAWN nach Baum-Spawn (s. _vegetationSampleSpawn): ~10 %
+        // Chance, ~4 m Offset, seed-deterministisch.
+        const stammGefallenParts = [
+            // Hauptstamm — liegender Zylinder. Die Eigenachse des Zylinders
+            // ist y → eine z-Rotation um PI/2 legt ihn horizontal hin.
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 0.42, z: 0 },
+                size: { x: 0.42, y: 2.4, z: 0.42 },
+                rotation: { z: Math.PI / 2 },
+                segments: 7,
+            },
+            // Wurzel-Ende: leicht dickerer Kegel-Stumpf am einen Ende, gibt
+            // Charakter (ein Baumstamm war nicht uniform — der Wurzel-Sockel
+            // ist breiter als die Krone war).
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -1.2, y: 0.46, z: 0 },
+                size: { x: 0.56, y: 0.5, z: 0.56 },
+                rotation: { z: Math.PI / 2 },
+                segments: 7,
+            },
+        ];
         // V7.75 — Welt-Affinitäts-Feld bringt drei weitere Built-in-
         // Baupläne mit, damit Regionen sich strukturell unterscheiden.
         // stein_block: dichte+härte hoch → Felsen-Felder
@@ -45376,6 +45828,17 @@ class AnazhRealm {
                 builtIn: true,
                 instanced: true,
                 parts: baumTanneAltParts,
+            },
+            // V18.198 — Γ2 TOTHOLZ: gefallener Stamm im Wald. Spawnt als
+            // Sub-Spawn nach Baum (_vegetationSampleSpawn), nicht im Affinitäts-
+            // Wettstreit (würde sonst Bäume verdrängen — V17.16-Disziplin).
+            // Tag-neutral (holz+cylinder, dieselben Achsen wie die Baumstämme).
+            stamm_gefallen: {
+                name: "stamm_gefallen",
+                label: "Gefallener Stamm",
+                builtIn: true,
+                instanced: true,
+                parts: stammGefallenParts,
             },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
@@ -48769,14 +49232,42 @@ class AnazhRealm {
                 magieNoise: new SimplexNoise(seed + "-veg-magie"),
                 // Sampling-RNG (deterministisch pro Position) für Spawn-Probe.
                 rngNoise: new SimplexNoise(seed + "-veg-rng"),
+                // V18.204 — Γ3 Domain-Warp-Noise. Eigener Stream, gen≥3-Gate.
+                warpNoise: new SimplexNoise(seed + "-veg-warp"),
             };
         }
         const f = this.state.worldField;
-        // Skala 0.005 entspricht Welle ~200m; Regionen sind groß genug, dass
-        // ein Wald als Wald erkennbar ist. Offsets pro Achse machen sie
-        // unkorreliert (sonst würden lebendig+dichte zusammen schwingen).
-        const s = 0.005;
         const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
+        // V18.203 — Γ3 FREQUENZ-FÄCHER: bei genVersion >= 3 hat jede Welt-Stimme
+        // ihre EIGENE Wellenlänge (lebendig 200, dichte 340, glut 520, magie
+        // 160 m). Bei gen < 3 das alte Verhalten (s=0.005 = λ200 für alle) —
+        // alte Welten bit-identisch (V18.181/V18.193-Disziplin). Die OFFSETS
+        // pro Achse bleiben unverändert (dekorrelation gewahrt).
+        if (this._genVersion() >= 3) {
+            const FC = AnazhRealm.FIELD_CHARACTER;
+            const sL = 1 / FC.lambdaLebendig;
+            const sD = 1 / FC.lambdaDichte;
+            const sG = 1 / FC.lambdaGlut;
+            const sM = 1 / FC.lambdaMagieleitung;
+            // V18.204 — Γ3 DOMAIN-WARP: vor den vier Noise-Reads wird die
+            // Sample-Koordinate per zwei-Noise-Vektor verschoben. Die Verschie-
+            // bung ist langsam (λ~600 m, FC.warpScale) — sie biegt die Welt-
+            // Stimmen sanft, statt sie pixelig zu verwischen. Amplitude
+            // FC.warpAmp Meter. Mit f.warpNoise als eigenem Stream.
+            const wpX = f.warpNoise.noise2D(x * FC.warpScale, z * FC.warpScale) * FC.warpAmp;
+            const wpZ = f.warpNoise.noise2D(x * FC.warpScale + 51.7, z * FC.warpScale - 23.1) * FC.warpAmp;
+            const wx = x + wpX;
+            const wz = z + wpZ;
+            return {
+                lebendig: n01(f.lebendigNoise.noise2D(wx * sL, wz * sL)),
+                dichte: n01(f.dichteNoise.noise2D(wx * sD + 100, wz * sD - 200)),
+                glut: n01(f.glutNoise.noise2D(wx * sG + 500, wz * sG + 700)),
+                magieleitung: n01(f.magieNoise.noise2D(wx * sM - 333, wz * sM + 999)),
+            };
+        }
+        // Legacy-Pfad: alle vier Stimmen auf s=0.005 (λ~200 m). Bit-identisch
+        // zu Pre-V18.203 für alte Welten.
+        const s = 0.005;
         return {
             lebendig: n01(f.lebendigNoise.noise2D(x * s, z * s)),
             dichte: n01(f.dichteNoise.noise2D(x * s + 100, z * s - 200)),
@@ -49552,7 +50043,7 @@ class AnazhRealm {
     // Spieler SIEHT, ist das Material, das er beim Graben BEKOMMT. Vision
     // §1.3 fraktal: eine Sprache regelt Form, Verteilung, Klang — und nun
     // den Boden selbst.
-    _terrainMaterialAt(x, z) {
+    _terrainMaterialAt(x, z, y) {
         const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(x, z) : null;
         if (!f) return "stein";
         // Γ1 (genese-plan, Lesart Boden): die FEUCHTE hebt die erde-Achse —
@@ -49569,7 +50060,57 @@ class AnazhRealm {
         for (let i = 1; i < axes.length; i++) {
             if (axes[i][0] > best[0]) best = axes[i];
         }
+        // V18.197 — Γ-M MULTI-CLASS-MATERIAL Foundation: STRATA. Wenn ein
+        // y-Wert mitgereicht wird, schichtet das Material nach Tiefe: der
+        // Boden ist nahe der Oberfläche durchhumusiert (erde/lebendig kann
+        // gewinnen), aber tief unter der Erde liegt nur noch Felsen (stein-
+        // Achse dominiert). Das ist die real-world Sedimentation in einem
+        // Voxel-Spiel — wer in eine Höhle gräbt, findet Stein, kein Humus.
+        // Schwelle: STRATA_STEIN_DEPTH unter `_voxelSurfaceY` → Material wird
+        // strukturell "stein", auch wenn die Achse erde gewinnt. erde/glut/
+        // quarz bleiben am OBERSTEN Band sichtbar (intuitiv: ein Glutbrunnen
+        // an der Oberfläche, eine Quarz-Ader an der Oberfläche). Migration-
+        // tolerant: ohne y bleibt das ALTE Verhalten bit-identisch.
+        if (typeof y === "number" && Number.isFinite(y)) {
+            const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
+            if (Number.isFinite(surfY)) {
+                const depth = surfY - y;
+                if (depth > AnazhRealm.STRATA_STEIN_DEPTH) {
+                    // V18.200 — Γ-M IRON-BANDS: an tiefen Punkten kann eine
+                    // vertikale Ader von Eisen die Stein-Schicht ersetzen.
+                    // Ridge-Noise (`1−|noise|`²) gibt vertikale Linien-
+                    // Cluster — anders als das V18.181-Massiv-Ridge NICHT
+                    // rotiert, weil Eisenadern vertikal durch die Welt
+                    // ziehen. Nur in TIEFEN + DICHTE-haltigen Regionen.
+                    if (depth > AnazhRealm.IRON_BANDS.minDepth && (f.dichte || 0) > AnazhRealm.IRON_BANDS.dichteFloor) {
+                        const ironAder = this._eisenAderAt(x, z);
+                        if (ironAder > AnazhRealm.IRON_BANDS.threshold) {
+                            return "eisen";
+                        }
+                    }
+                    return "stein";
+                }
+            }
+        }
         return best[1];
+    }
+
+    // V18.200 — Γ-M IRON-BANDS Ader-Sampler. Ridge-Noise auf (x,z) — die
+    // Adern ziehen sich durch die x-z-Ebene (sind also vertikale Säulen in
+    // 3D, wenn man die y-Achse durchschneidet). Einfaches Single-Octave-
+    // Ridge: schlanker als das V18.181-Massiv (das 7 Oktaven hat). Eigener
+    // Noise-Seed via Suffix (`-iron-bands`, Γ5-Stream-Disziplin: re-rollt
+    // keinen anderen Welt-Stream).
+    _eisenAderAt(x, z) {
+        if (!this._ironBandsNoise) {
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._ironBandsNoise = new SimplexNoise(seed + "-iron-bands");
+        }
+        const n = this._ironBandsNoise;
+        const SCALE = AnazhRealm.IRON_BANDS.scale;
+        const v = n.noise2D(x * SCALE, z * SCALE);
+        const nv = 1 - Math.abs(v);
+        return nv * nv; // [0, 1] mit Konzentration an Graten
     }
 
     // V9.39 Phase 5c.2.c.3.b.iii — `populateChunkVegetation` ist als toter
@@ -49810,6 +50351,39 @@ class AnazhRealm {
                 rotationY: spawnYaw,
             }
         );
+        // V18.198 — Γ2 TOTHOLZ Sub-Spawn: nach einem Baum, mit ~10 % Chance
+        // spawnt ein gefallener Stamm in 3–5 m Abstand. KEIN Affinitäts-Wett-
+        // streit (würde Bäume verdrängen, V17.16-Falle); statt dessen ein
+        // SUB-SPAWN auf dem schon gewonnenen Baum-Slot. Tag-neutral (stamm_
+        // gefallen ist holz+cylinder, dieselben Achsen wie der Baumstamm).
+        // Seed-deterministisch via eigener Suffix-Stream (Γ5-Disziplin: re-
+        // rollt keinen anderen Stream).
+        if (isTree) {
+            const totProbe = (rng.noise2D(sampleX * 0.41 - 3.7, sampleZ * 0.41 + 8.2) + 1) / 2;
+            if (totProbe < AnazhRealm.TOTHOLZ_RATE) {
+                // Offset-Position: 3-5 m vom Baum entfernt, zufällige Richtung.
+                const offsetAng = (rng.noise2D(sampleX * 0.61 + 17.3, sampleZ * 0.61 - 4.7) + 1) * Math.PI;
+                const offsetDist = 3 + ((rng.noise2D(sampleX * 0.83 - 9.1, sampleZ * 0.83 + 2.5) + 1) / 2) * 2;
+                const totX = sampleX + Math.cos(offsetAng) * offsetDist;
+                const totZ = sampleZ + Math.sin(offsetAng) * offsetDist;
+                // Sicherheits-Wand: nicht im Wasser landen.
+                if (this._isAboveWaterAt(totX, totZ, 0.4)) {
+                    const totSurfY =
+                        typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(totX, totZ) : surfaceY;
+                    const totYawRoll = (rng.noise2D(totX * 0.71 - 5.2, totZ * 0.71 + 3.9) + 1) / 2;
+                    this._enqueueVegetationSpawn(
+                        "stamm_gefallen",
+                        { x: totX, y: (Number.isFinite(totSurfY) ? totSurfY : surfaceY) + 0.5, z: totZ },
+                        {
+                            seed: seedForSpawn ^ 0x7c2b1a93, // eigener Suffix-Stream (Γ5)
+                            silent: true,
+                            scale: 0.85 + ((rng.noise2D(totX * 0.31, totZ * 0.31) + 1) / 2) * 0.3, // [0.85..1.15]
+                            rotationY: totYawRoll * Math.PI * 2,
+                        }
+                    );
+                }
+            }
+        }
         return 1;
     }
 
@@ -52468,7 +53042,9 @@ class AnazhRealm {
         // der Spieler SIEHT, ist das Material, das er BEKOMMT. Der Yield ist
         // lokal (NICHT im DSL-Op) — nur die eigene Grabe-Geste füllt das
         // eigene Inventar, ein mesh-broadcastetes voxel_carve nicht.
-        const digMat = this._terrainMaterialAt(target.x, target.z);
+        // V18.197 — Γ-M STRATA: das Material schichtet nach Tiefe (target.y).
+        // Wer einen tieferen Tunnel gräbt, bekommt Stein, kein Humus.
+        const digMat = this._terrainMaterialAt(target.x, target.z, target.y);
         const digUnits = Math.max(1, Math.min(10, Math.round(carveRadius * 1.4)));
         if (this.addMaterialToInventory(digMat, digUnits)) {
             this.log(`Gegraben: ${digUnits}× ${digMat}`, "INFO");
@@ -63455,7 +64031,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.192.0";
+AnazhRealm.VERSION = "18.209.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -63667,6 +64243,14 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     speed: (t) => 7 + (1 - (t.dichte || 0)) * 5 + (t.magieleitung || 0) * 1.5,
     jumpPower: (t) => 8 + (1 - (t.dichte || 0)) * 5 + (t.magieleitung || 0) * 2,
     staminaMax: (t) => 100 + (1 - (t.dichte || 0)) * 60 + (t.wärmeleitung || 0) * 40,
+    // V18.196 — MANA-SYMMETRIE: die zweite Ausdauer-Achse, treibt aus
+    // magieleitung statt aus (1-dichte). Symmetrisch zu staminaMax: base 50
+    // + magieleitung·100 (max ~150 bei voll magieleitung) + resoniert·30
+    // (Sekundär-Boost — eine resonante Substanz hat eine offenere Mana-
+    // Bandbreite). Mensch (magieleitung 0, resoniert 0) → 50 Default; Drache
+    // (magieleitung ~0.3) → ~80; Phönix (magieleitung ~0.6 + resoniert ~0.3)
+    // → ~119. Eine Welt-Stimme, die schlief, wird zur zweiten Lebens-Achse.
+    manaMax: (t) => 50 + (t.magieleitung || 0) * 100 + (t.resoniert || 0) * 30,
     precision: (t) => 0.5 + (t.magieleitung || 0) * 0.3 + (t.zähigkeit || 0) * 0.2,
     magicResist: (t) => (t.magieleitung || 0) * 0.4 + (t.resoniert || 0) * 0.3,
     heatResist: (t) => (t.wärmeleitung || 0) * 0.5 - (t.brennbar || 0) * 0.3,
@@ -63738,6 +64322,134 @@ AnazhRealm.COMBAT_REACH_M = 6;
 // nicht nur als Reihenfolge.
 AnazhRealm.TOOL_OP_STAMINA_COST = 10;
 AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
+// V18.196 — MANA-Symmetrie (zweite Ausdauer-Achse). Langsamer als Stamina
+// weil Mana mächtiger ist; magieleitung im Spieler-Compound boostet die
+// Rate emergent (effektiv = base × (1 + magieleitung)). Erst-Wurf-Tuning.
+AnazhRealm.MANA_REGEN_PER_SEC = 3;
+
+// V18.197 — Γ-M Multi-Class-Material STRATA: ab dieser Tiefe unter der
+// Oberfläche dominiert stein-Schicht (auch wenn die erde/glut/quarz-Achse
+// gewinnen würde). Sedimentation: nahe Oberfläche organisch + variabel,
+// tief drinnen Felsen. Erst-Wurf 12m. Verändert NUR Aufrufer mit y-Argument
+// (Migration-tolerant: alte Aufrufe ohne y unverändert).
+AnazhRealm.STRATA_STEIN_DEPTH = 12;
+
+// V18.198 — Γ2 TOTHOLZ: Wahrscheinlichkeit für einen Sub-Spawn `stamm_
+// gefallen` nach einem Baum-Spawn. ~10 % gibt einen sichtbar bewohnten Wald,
+// ohne die Baum-Dichte zu sehr zu verdünnen. Erst-Wurf, V18.192-Lehre:
+// browser-justierbar wenn der Schöpfer "zu viel/zu wenig" sieht.
+AnazhRealm.TOTHOLZ_RATE = 0.1;
+
+// V18.199 — Γ-M MULTI-CLASS-MATERIAL LICHEN: grüne Patina auf alten/feuchten
+// Steinen. Reine Render-Schicht im `_attachVoxelFieldColors`-Mix-Stack (kein
+// Welt-Effekt, kein Tag-Push — die FORM emergiert aus der Substanz: dichte +
+// feuchte + cluster-Verteilung). Konstanten hier als Tunables; der Worker
+// hardkodiert sie spiegelbildlich (V17.100-Lehre, bit-Vertrag).
+AnazhRealm.LICHEN = Object.freeze({
+    // Feuchte muss ≥ feuchteLo sein für Lichen-Wachstum (trockene Steine bleiben blank).
+    feuchteLo: 0.5,
+    feuchteHi: 0.9,
+    // Dichte (Stein-Achse) muss ≥ dichteLo sein (kein Lichen auf Erde/Glut/Quarz).
+    dichteLo: 0.5,
+    dichteHi: 0.85,
+    // Maximaler Mix-Anteil (sehr subtil — Lichen ist eine Tönung, kein
+    // Decken-Anstrich).
+    strength: 0.22,
+    // Tint: gelb-grün, gedämpft. Lichen ist nicht Wald-Grün.
+    tint: Object.freeze([0.42, 0.5, 0.34]),
+});
+
+// V18.203 — Γ3 FELD-CHARAKTER Foundation (genese-plan §Γ3): Frequenz-Fächer
+// für die vier Welt-Stimmen. Aktuell laufen alle vier auf s=0.005 (λ~200 m,
+// gleich große Simplex-Blobs, nur dekorreliert). Diese Welle gibt jeder
+// Stimme ihre EIGENE Skala — lebendig λ200, dichte λ340, glut λ520, magie
+// λ160 — sodass der Welt-Charakter aus dem ÜBERLAGERUNGS-Muster der vier
+// Wellen emergiert (Ecotone an argmax-Grenzen + AFFINITY_FLOOR-Linie).
+// genVersion-Gate: NUR bei gen >= 3 aktiv, alte Welten behalten ihr Gesicht
+// bit-identisch (V18.181/V18.193-Disziplin: Welt-Substanz-Drift verhindern).
+// Domain-Warp als Folge-Welle (klassischer Schöpfungs-Pfad: Frequenz-Fächer
+// erst messen, dann Warp erweitern wenn der Charakter es trägt).
+AnazhRealm.FIELD_CHARACTER = Object.freeze({
+    // Wellenlängen (m). Erst-Wurf aus genese-plan §Γ3.
+    lambdaLebendig: 200,
+    lambdaDichte: 340,
+    lambdaGlut: 520,
+    lambdaMagieleitung: 160,
+    // V18.204 — DOMAIN-WARP Amplitude (m). Der Warp verschiebt die Sample-
+    // Koordinaten VOR den Stimmen-Reads → bricht die regelmäßige Simplex-
+    // Gitter-Geometrie + die Welt-Stimmen mäandern, statt parallel-gestapelt
+    // zu liegen. Eigener Stream `seed + "-veg-warp"` (Γ5-Disziplin: re-rollt
+    // keinen anderen Welt-Stream). Frequenz: λ~600 m (langsamer als die
+    // Welt-Stimmen, sonst würde der Warp ihre eigene Struktur überdecken).
+    // Erst-Wurf-Amplitude 40 m (aus genese-plan §Γ3).
+    warpAmp: 40,
+    warpScale: 1 / 600,
+});
+
+// V18.207 — R5 STRUKTUR-TEXTUR (aktiv.md §4.C): Material-Mikro-Tiefe in
+// opaken Strukturen — ein subtiler Boost-Faktor, der das micro-Gewicht für
+// WERK-Profile (Bauwerke, Deko, Kreaturen, Avatare) noch tiefer macht.
+// Default 1.0 = no-op (bit-identisch zu Pre-V18.207). Browser-justierbar
+// im Schöpfer-Test-Pfad — wenn Strukturen "platt" wirken, höher; wenn zu
+// "rau", niedriger. Frozen-Konstante; ein Slider/Uniform kann später
+// hinzugefügt werden (V18.192-Lehre: Erst-Wurf als statische Konstante).
+AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
+    // Multiplier auf das micro-Gewicht im werk-Profil. 1.0 = neutraler
+    // Default; >1 verstärkt Mikro-Tiefe in Bauten; <1 dämpft sie. Range
+    // [0.5, 2.0] empfohlen für sinnvolle Effekte.
+    microBoost: 1.0,
+});
+
+// V18.202 — Γ1-LESART-5 Ψ2-NASE: das GERUCH-Feld der Welt. Die fünfte Welt-
+// Stimme (nach lebendig, dichte, glut, magieleitung — und nach feuchte als
+// Boden-Stimme). Geruch reist mit dem Wind, fällt mit Distanz ab. Quellen
+// sind diskret (Kreaturen, Pflanzen, Strukturen — die Konsumenten geben sie
+// als Eingabe). Frozen Konstanten — browser-justierbar später. Anti-Scope §3:
+// die FUNDAMENT-Funktion, KEINE Kreatur-KI-Verdrahtung in dieser Welle (das
+// kommt in Folge nach Schöpfer-Entscheid: was riecht? wer riecht es?).
+AnazhRealm.SCENT = Object.freeze({
+    // Reichweite (m): Geruch fällt auf ~37% bei rangeM, ~5% bei 3×rangeM.
+    rangeM: 80,
+    // Wind-Modulation: 1.0 = volle Richtungs-Wirkung (upwind = 0); 0.0 = isotrop.
+    // Erst-Wurf 0.6 — Wind hilft deutlich, isoliert aber nicht (upwind-Geruch
+    // dimmt, verschwindet nicht ganz).
+    windFactor: 0.6,
+    // Minimaler Richtungs-Faktor (gegen Wind): nie ganz 0, sonst wäre der
+    // Geruch upwind invisible — eine Schwelle, die "Restduft" trägt.
+    minDirectional: 0.2,
+    // Wind-Skala — Position-Modulation (langsame regionale Variation,
+    // λ~1000 m). Der Wind dreht über große Distanzen, nicht von Schritt
+    // zu Schritt.
+    windScale: 1 / 1000,
+    // Wind-Geschwindigkeit der Drehung (Welt-Zeit-Modulation): 0 = statisch
+    // pro Welt (deterministisch testbar); positive Werte drehen über Zeit.
+    // Erst-Wurf 0 (deterministisch); Folge-Welle: kontinuierliche Drehung mit
+    // Wetter-Modulation.
+    windTimeRate: 0,
+});
+
+// V18.200 — Γ-M MULTI-CLASS-MATERIAL IRON-BANDS: vertikale Eisenadern in
+// tiefen Berg-Regionen. Vollendet die Γ-M-Triade (Strata horizontal +
+// Lichen Patina + Iron-Bands vertikal). Ridge-Noise (`1−|noise|`²) gibt die
+// vertikalen Linien-Cluster (anders als das Massiv-Ridge-Noise V18.181 NICHT
+// rotiert — Eisenadern ziehen sich vertikal durch die Welt). EISEN ersetzt
+// STEIN in tiefen Schichten, wo: (a) der Aderwert hoch ist UND (b) der
+// Ort GENUG dichte hat (kein Eisen in Erde/Lava). Erst-Wurf-Konstanten.
+// Ein Material-Effekt — sichtbar als grauere/dunklere Tönung an der Bruch-
+// Stelle UND als Boost beim Schmieden (Eisen-Werkzeuge sind härter).
+AnazhRealm.IRON_BANDS = Object.freeze({
+    // Tiefe, ab der Eisen-Adern auftreten können (über STRATA_STEIN_DEPTH
+    // hinaus — Iron-Bands sind eine MIN-STEIN-DEPTH-TIEFE Subschicht).
+    minDepth: 24,
+    // Ridge-Schwelle: nur an Punkten mit Aderwert > threshold wird stein
+    // → eisen umgewandelt. Erst-Wurf 0.7 → ~5-10 % der tiefen Stein-Region.
+    threshold: 0.7,
+    // Dichte-Floor: kein Eisen in nicht-stein-dominierten Regionen.
+    dichteFloor: 0.4,
+    // Skala der Ridge-Adern (Noise-Frequenz). 1/180 = ~180 m Adern-Wellenlänge,
+    // genug für sichtbare aber nicht überall-präsente Linien.
+    scale: 1 / 180,
+});
 
 // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Eigener Kosten-Satz,
 // niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger

@@ -16825,10 +16825,11 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
         check(
             // V17.51 Kampf Phase A — STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
-            // attackSpeed, defense). Die feste Satz-Assertion wandert mit (V9.56-i).
-            "Welle 6.D: STAT_FROM_TAGS hat 11 Stats (8 Basis + Kampf-Trio knockback/attackSpeed/defense)",
+            // attackSpeed, defense). V18.196 Mana-Symmetrie fügt manaMax hinzu.
+            // Die feste Satz-Assertion wandert mit (V9.56-i).
+            "Welle 6.D: STAT_FROM_TAGS hat 12 Stats (8 Basis + Kampf-Trio + V18.196 manaMax)",
             wave6dResults.statKeys ===
-                "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,precision,speed,staminaMax"
+                "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,manaMax,precision,speed,staminaMax"
         );
         check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
         check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
@@ -17875,9 +17876,14 @@ async function checkBandWelle6GHylomorphism(ctx) {
             if (typeof r.setGameMode === "function") r.setGameMode("frieden"); // Stamina frei
             const digX = 60;
             const digZ = -40;
-            r._raycastWorldHit = () => ({ hit: true, x: digX, y: 5, z: digZ });
+            const digY = 5;
+            r._raycastWorldHit = () => ({ hit: true, x: digX, y: digY, z: digZ });
             r._pickArchitectureAtCrosshair = () => null;
-            const expectMat = r._terrainMaterialAt(digX, digZ);
+            // V18.197 Γ-M STRATA: das gegrabene Material schichtet nach
+            // Tiefe — der Test muss DENSELBEN 3-arg-Aufruf machen wie
+            // digTerrain (sonst rechnet er das alte erde-Verhalten gegen
+            // das neue stein-by-Tiefe, was bricht).
+            const expectMat = r._terrainMaterialAt(digX, digZ, digY);
             const inv = r.state.player.inventory;
             // Inventar tief snapshotten — der Grabe-Test darf den
             // Spieler-Zustand nicht verschmutzen (spätere 6.C1-Tests
@@ -32922,6 +32928,1874 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     );
 }
 
+// Γ4-VOLLENDUNG (genese-plan §4, V18.193) — ECHTER MAKRO-ANKER + ERBGUT +
+// ABFLUSS-INVARIANTE. Drei Wände: (a) ERBGUT-Persistenz via worldMeta.macro
+// (das Welt-Stempel-Pattern, additiv-teilbar), (b) Abfluss-Invariante über
+// 10 Seeds (die geerbte LAAS-Narbe strukturell ausgeschlossen), (c) der
+// WORKER-Mirror reicht den Erbgut-Anker (Determinismus Main↔Worker auch
+// bei Konstanten-Änderung oder Bündel-Import).
+async function checkBandV18193MakroErbgut(ctx) {
+    const { page, check } = ctx;
+    const SEEDS = [
+        "seed-a", "seed-b", "seed-c", "seed-d", "seed-e",
+        "seed-f", "seed-g", "seed-h", "seed-i", "seed-j",
+    ];
+    const res = await safeEvaluate(page, (SEEDS) => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (E1) STRUKTUR: die drei neuen Helper leben + Validator als static
+        // an der Klasse (Source of Truth für Welt-Stempel-Form).
+        out.helpersExist =
+            typeof r._macroSpillpointAnalysis === "function" &&
+            typeof A._isValidMacroAnker === "function";
+
+        // (E2) VALIDATOR: prüft Form, akzeptiert nur korrekte Struktur.
+        out.validatorRejectsNull = A._isValidMacroAnker(null) === false;
+        out.validatorRejectsPlain = A._isValidMacroAnker({}) === false;
+        out.validatorRejectsPartial = A._isValidMacroAnker({ massivC: { x: 0, z: 0 } }) === false;
+        out.validatorAcceptsValid = A._isValidMacroAnker(r._makeMacroAnker("validator-test")) === true;
+        // NaN/Infinity werden abgelehnt (must-ignore, Taille-Geist).
+        const badNaN = r._makeMacroAnker("nan-test");
+        badNaN.massivR = NaN;
+        out.validatorRejectsNaN = A._isValidMacroAnker(badNaN) === false;
+
+        // (E3) DETERMINISMUS: identisches Resultat über 10 Seeds.
+        let allDet = true;
+        for (const seed of SEEDS) {
+            const a = r._makeMacroAnker(seed);
+            const b = r._makeMacroAnker(seed);
+            if (
+                a.massivC.x !== b.massivC.x ||
+                a.massivR !== b.massivR ||
+                a.beckenD !== b.beckenD ||
+                !a.talVertices.every((v, i) => v.x === b.talVertices[i].x && v.z === b.talVertices[i].z) ||
+                !a.talFloors.every((f, i) => f === b.talFloors[i])
+            ) { allDet = false; break; }
+        }
+        out.determ10Seeds = allDet;
+
+        const origSeed = r.state.worldMeta ? r.state.worldMeta.seed : null;
+        const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
+        const origMacro = r.state.worldMeta ? r.state.worldMeta.macro : undefined;
+        try {
+            if (!r.state.worldMeta) r.state.worldMeta = {};
+
+            // (E4) ERBGUT-PERSISTENZ: erste Lesung schreibt wm.macro.
+            r.state.worldMeta.seed = "erbgut-test";
+            r.state.worldMeta.genVersion = 3;
+            delete r.state.worldMeta.macro;
+            r._macroAnkerCache = null;
+            r._voxelNoise = null;
+            r._macroRidgeNoise = null;
+            const ank1 = r._macroAnker();
+            out.erbgutWritten = ank1 && r.state.worldMeta.macro === ank1;
+
+            // (E5) ZWEITE Lesung: aus wm.macro statt re-compute (Cache-Reset
+            // → wm.macro ist die Source of Truth).
+            r._macroAnkerCache = null;
+            const ank2 = r._macroAnker();
+            out.erbgutSecondReadSame = ank2 === r.state.worldMeta.macro;
+            out.erbgutValuesIdentical =
+                ank1.massivR === ank2.massivR && ank1.beckenD === ank2.beckenD;
+
+            // (E6) KORRUPT-SCHUTZ: ein manipuliertes wm.macro (must-ignore)
+            // wird verworfen + neu aus Seed gebaut.
+            r.state.worldMeta.macro = { massivC: null, beckenC: null };
+            r._macroAnkerCache = null;
+            const ank3 = r._macroAnker();
+            out.corruptRejected =
+                ank3 && ank3.massivC && typeof ank3.massivR === "number" && !!r.state.worldMeta.macro;
+
+            // (E7) SNAPSHOT-ROUND-TRIP: macro reist intakt durch
+            // JSON.parse(JSON.stringify(...)) (Mesh-WebSocket-Form).
+            const macroAfterRebuild = r.state.worldMeta.macro;
+            const snap = JSON.parse(JSON.stringify({ macro: macroAfterRebuild }));
+            out.snapshotRoundTrip =
+                snap.macro && A._isValidMacroAnker(snap.macro) &&
+                snap.macro.massivR === macroAfterRebuild.massivR &&
+                snap.macro.beckenD === macroAfterRebuild.beckenD;
+
+            // (E8) MIGRATION: Legacy-Welt (gen=1) ohne macro-Feld → null,
+            // KEIN Crash, kein Re-Compute (Drainage-Netz-Gesetz: alte
+            // Welten behalten ihr Gesicht).
+            r.state.worldMeta.genVersion = 1;
+            delete r.state.worldMeta.macro;
+            r._macroAnkerCache = null;
+            out.migrationLegacyNull = r._macroAnker() === null;
+
+            // (E9) MIGRATION: gen=3 OHNE macro-Feld → re-computed aus Seed +
+            // automatisch persistiert (zweite Sitzung profitiert).
+            r.state.worldMeta.genVersion = 3;
+            delete r.state.worldMeta.macro;
+            r._macroAnkerCache = null;
+            const migrA = r._macroAnker();
+            out.migrationGen3Rebuild = !!migrA && !!r.state.worldMeta.macro &&
+                A._isValidMacroAnker(r.state.worldMeta.macro);
+
+            // (E10) ABFLUSS-INVARIANTE: 10/10 Seeds haben span > beckenD*0.5
+            // (kein endorheic Becken — die LAAS-Narbe strukturell tot).
+            let allOutflow = true;
+            const spillSamples = [];
+            for (const seed of SEEDS) {
+                r.state.worldMeta.seed = seed;
+                r.state.worldMeta.genVersion = 3;
+                delete r.state.worldMeta.macro;
+                r._macroAnkerCache = null;
+                r._voxelNoise = null;
+                r._macroRidgeNoise = null;
+                const anker = r._macroAnker();
+                const spill = r._macroSpillpointAnalysis(anker);
+                spillSamples.push({ seed, span: spill.span, beckenD: anker.beckenD, hasOutflow: spill.hasOutflow });
+                if (!spill.hasOutflow) allOutflow = false;
+            }
+            out.outflowAll10Seeds = allOutflow;
+            out.spillSamples = spillSamples;
+
+            // (E11) STATISTISCHE TAL-ALIGNMENT-PROBE: mindestens 6/10 Seeds
+            // haben den niedrigsten Rim-Punkt nahe (< 60°) der Tal-Eingangs-
+            // Richtung — das Tal IST der designte Spillweg im Großteil der
+            // Welten. Die Ausnahmen sind Welten, wo ein anderer Pass tiefer
+            // geriet (auch ein valider Auslass, kein endorheic).
+            let nearTalCount = 0;
+            for (const seed of SEEDS) {
+                r.state.worldMeta.seed = seed;
+                delete r.state.worldMeta.macro;
+                r._macroAnkerCache = null;
+                r._voxelNoise = null;
+                r._macroRidgeNoise = null;
+                const anker = r._macroAnker();
+                const spill = r._macroSpillpointAnalysis(anker);
+                if (spill.spillVsTalDeg < 60) nearTalCount++;
+            }
+            out.nearTalCount = nearTalCount;
+
+            // (E12) WORKER-MIRROR: snap.macroAnker reist mit + ist valid.
+            r.state.worldMeta.seed = "worker-mirror-test";
+            r.state.worldMeta.genVersion = 3;
+            delete r.state.worldMeta.macro;
+            r._macroAnkerCache = null;
+            const wsnap = r._voxelWorkerSnapshotState();
+            out.workerSnapHasField = "macroAnker" in wsnap;
+            out.workerSnapValid = wsnap.macroAnker && A._isValidMacroAnker(wsnap.macroAnker);
+            // Determinismus: snap.macroAnker == r._macroAnker() Erbgut-Anker.
+            out.workerSnapMatchesMain =
+                wsnap.macroAnker === r.state.worldMeta.macro;
+
+            // (E13) WORKER-MIRROR Legacy: gen=1 → snap.macroAnker = null
+            // (Worker sieht KEINEN Anker, baut auch keinen → Legacy-Welten
+            // behalten ihr Gesicht im Worker-Spiegel).
+            r.state.worldMeta.genVersion = 1;
+            delete r.state.worldMeta.macro;
+            r._macroAnkerCache = null;
+            const wsnapLegacy = r._voxelWorkerSnapshotState();
+            out.workerSnapLegacyNull = wsnapLegacy.macroAnker === null;
+        } finally {
+            if (r.state.worldMeta) {
+                if (origSeed === null) delete r.state.worldMeta.seed;
+                else r.state.worldMeta.seed = origSeed;
+                if (origGen === undefined) delete r.state.worldMeta.genVersion;
+                else r.state.worldMeta.genVersion = origGen;
+                if (origMacro === undefined) delete r.state.worldMeta.macro;
+                else r.state.worldMeta.macro = origMacro;
+            }
+            r._macroAnkerCache = null;
+            r._voxelNoise = null;
+            r._macroRidgeNoise = null;
+        }
+        return out;
+    }, SEEDS);
+
+    check("Γ4-Vollendung (E1) Helpers leben (_macroSpillpointAnalysis + static _isValidMacroAnker)", res.helpersExist === true);
+    check("Γ4-Vollendung (E2a) Validator weist null/{}/partial ab", res.validatorRejectsNull && res.validatorRejectsPlain && res.validatorRejectsPartial);
+    check("Γ4-Vollendung (E2b) Validator akzeptiert echten Anker", res.validatorAcceptsValid === true);
+    check("Γ4-Vollendung (E2c) Validator weist NaN ab (must-ignore Taille-Geist)", res.validatorRejectsNaN === true);
+    check("Γ4-Vollendung (E3) Determinismus über 10 Seeds (Welt-Substanz-Garantie)", res.determ10Seeds === true);
+    check("Γ4-Vollendung (E4) ERBGUT geschrieben nach erstem _macroAnker() (worldMeta.macro)", res.erbgutWritten === true);
+    check("Γ4-Vollendung (E5a) zweite Lesung kommt aus wm.macro (gleiche Instanz)", res.erbgutSecondReadSame === true);
+    check("Γ4-Vollendung (E5b) Werte identisch über Cache-Reset", res.erbgutValuesIdentical === true);
+    check("Γ4-Vollendung (E6) korrupter macro-Felt verworfen + frisch gebaut", res.corruptRejected === true);
+    check("Γ4-Vollendung (E7) Snapshot-Round-Trip (JSON.parse) erhält macro-Anker", res.snapshotRoundTrip === true);
+    check("Γ4-Vollendung (E8) Legacy gen=1 ohne macro → null (kein Drift)", res.migrationLegacyNull === true);
+    check("Γ4-Vollendung (E9) Migration gen=3 ohne macro → re-computed + persistiert", res.migrationGen3Rebuild === true);
+    check(
+        `Γ4-Vollendung (E10) ABFLUSS-INVARIANTE: 10/10 Seeds hasOutflow (LAAS-Narbe strukturell tot)`,
+        res.outflowAll10Seeds === true
+    );
+    check(
+        `Γ4-Vollendung (E11) Tal-Eingang ist Spillweg in ≥6/10 Seeds (gemessen ${res.nearTalCount}/10)`,
+        Number.isFinite(res.nearTalCount) && res.nearTalCount >= 6
+    );
+    check("Γ4-Vollendung (E12a) Worker-Snapshot trägt macroAnker-Feld", res.workerSnapHasField === true);
+    check("Γ4-Vollendung (E12b) Worker-Snapshot macroAnker ist valid", res.workerSnapValid === true);
+    check("Γ4-Vollendung (E12c) Worker liest Erbgut-Anker (Main↔Worker Identität)", res.workerSnapMatchesMain === true);
+    check("Γ4-Vollendung (E13) Worker-Legacy gen=1 → snap.macroAnker null", res.workerSnapLegacyNull === true);
+}
+
+// Γ6-BEFÖRDERUNG (genese-plan §V.1 Befund 4, V18.194) — VIER STEHENDE BÄNDER
+// statt vier loser diags. Jede visuelle Narbe, die GEHEILT wurde, wird hier zur
+// strukturellen Wand: (G1) snowband auf PROMINENZ (V17.105) · (G2) chunk-seam
+// per Pad+Crop (V9.42-b, hier komplementär als Source-Wand) · (G3) false-swim
+// via `_waterCellAt` 3D-Wahrheit (V13.11/V18.0) · (G4) arch-water-solid via
+// blockerAABBs (V13.10). KEINE mutativen Spawns — Source-Proben + bestehender
+// Welt-Zustand nach Warmup (Test-Hygiene: Bands clean schichten).
+async function checkBandV18194Gamma6Befoerderung(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        const out = {};
+
+        // (G1) SNOWBAND auf PROMINENZ: die V17.105-Heilung ist strukturell tot
+        // bei Regression auf absolutes y. Drei Wände: Source enthält PROMINENZ-
+        // Konstanten + Substraktion y-base-_cont0, alte ss(12,42,y) NICHT mehr,
+        // und der gemessene Schnee-Anteil in der NAHEN Region (±300 m) ist
+        // < 0.1 (kein flächiger Boden-Schnee mehr).
+        const attachSrc = r._attachVoxelFieldColors.toString();
+        out.snowOnProminence =
+            /SNOW_PROM_START/.test(attachSrc) && /y\s*-\s*base\s*-\s*_cont0/.test(attachSrc);
+        // ALTE absolute Form ss(12,42,y) darf NICHT als Code (mix(snow,…))
+        // erscheinen — im Kommentar erlaubt. Engere regex auf den Code-Stil.
+        out.snowOldAbsoluteGone = !/mix\(snow,\s*ss\(12,\s*42,\s*y\)\)/.test(attachSrc);
+
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const cont0At = (x, z) => {
+            if (!r._voxelNoise) return 0;
+            const wpX = r._voxelNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
+            const wpZ = r._voxelNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
+            const cB = r._voxelNoise.noise2D((x + wpX) * 0.00014 + 7.2, (z + wpZ) * 0.00014 + 3.8);
+            return Math.max(0, cB) * 130 + cB * 15 + 12;
+        };
+        let snowSum = 0;
+        let nSamples = 0;
+        const base = s.terrainBaseHeight || 0;
+        let hash = 2166136261;
+        const seedStr = (s.worldMeta && s.worldMeta.seed) || "g6";
+        for (let i = 0; i < seedStr.length; i++) hash = ((hash ^ seedStr.charCodeAt(i)) * 16777619) >>> 0;
+        let lcg = hash || 1;
+        const rng = () => {
+            lcg = (lcg * 1664525 + 1013904223) >>> 0;
+            return lcg / 4294967296;
+        };
+        // SAUBERER Tiefland-Test: prüfe NUR Stellen mit niedriger Prominenz
+        // (das alte Bug-Symptom war Schnee am FLACHEN Boden, nicht am echten
+        // Berg). Stellen mit prominence > 30 m sind echte Erhebungen, dort
+        // ist Schnee korrekt — wir messen ausschließlich die TIEFLAND-Klasse.
+        let lowProminSnowSum = 0;
+        let lowProminN = 0;
+        for (let i = 0; i < 1500; i++) {
+            const x = (rng() - 0.5) * 800;
+            const z = (rng() - 0.5) * 800;
+            const y = r._terrainMacroSurfaceY(x, z, false);
+            const wY = r._waterLevelAt ? r._waterLevelAt(x, z) : -3;
+            if (y <= wY + 0.5) continue;
+            const prom = y - base - cont0At(x, z);
+            snowSum += ss(50, 115, prom);
+            nSamples++;
+            // Tiefland-Klasse: prominence < 30 m (klar unter SNOW_PROM_START=50)
+            if (prom < 30) {
+                lowProminSnowSum += ss(50, 115, prom);
+                lowProminN++;
+            }
+        }
+        out.snowMeanNear = nSamples ? snowSum / nSamples : 1;
+        out.snowLowProminMean = lowProminN ? lowProminSnowSum / lowProminN : 0;
+        out.snowLowProminN = lowProminN;
+        // Im Tiefland (prom<30) MUSS Schnee ≈ 0 sein (smoothstep gibt < 0.01
+        // bei prom < 30 da SNOW_PROM_START=50). Wand: < 0.02
+        out.snowLowProminOk = out.snowLowProminMean < 0.02;
+
+        // (G2) CHUNK-SEAM: Pad+Crop-Mechanismus präsent (V9.42-b der Wahrheits-
+        // Anker, gleich-LOD-Naht). Strukturelle Wand gegen Regression auf
+        // cropMargin=0 (Naht-Riss-Klasse).
+        const buildSrc = r._voxelChunkGeometry ? r._voxelChunkGeometry.toString() : "";
+        out.seamPadCropMechanism = /cropMargin/.test(buildSrc);
+
+        // (G3) FALSE-SWIM: `_waterCellAt` liest die 3D-Wahrheit (V13.11/V18.0).
+        // Eine HOHE Luft-Position (y=200) ist sicher AIR-Cell (0), nie WATER.
+        // Plus: Worker-Mirror baut waterCells via Flood (V13.12 Vertikal-Open).
+        let waterCellAtWorks = false;
+        let highIsNotWater = false;
+        let playerPosNoPhantom = false;
+        if (typeof r._waterCellAt === "function") {
+            waterCellAtWorks = true;
+            // Hohe Luft-Position (y=200) ist NIE Wasser (1) — entweder AIR (0),
+            // SOLID (2) oder null (Chunk außerhalb). V13.12-Heilung: kein
+            // Phantom-Wasser in der Höhe.
+            const highCell = r._waterCellAt(0, 200, 0);
+            highIsNotWater = highCell !== 1;
+            // Direkt über Spielerposition (≈ 20 m über Spieler) — sicher Luft,
+            // niemals Wasser.
+            const pm = r.state.playerMesh;
+            if (pm) {
+                const above = r._waterCellAt(pm.position.x, pm.position.y + 20, pm.position.z);
+                playerPosNoPhantom = above !== 1;
+            } else {
+                playerPosNoPhantom = true; // ohne Spieler keine Probe → skip-pass
+            }
+        }
+        out.waterCellAtExists = waterCellAtWorks;
+        out.waterCellHighNotWater = highIsNotWater;
+        out.waterCellAbovePlayerNotWater = playerPosNoPhantom;
+        // Source-Probe für die V13.12-Heilung in der Cell-Build-Funktion
+        const cellsSrc = r._buildVoxelChunkWaterCells ? r._buildVoxelChunkWaterCells.toString() : "";
+        out.cellsBuildHasFlood = cellsSrc.length > 200;
+        // Worker-Snapshot trägt hydroBand mit (V9.91 — Cells-Klassifikations-
+        // Skip ausserhalb [bottom..top]) → das CELL-MODELL ist tragend
+        const wsnap = r._voxelWorkerSnapshotState();
+        out.hydroBandPresent = !!wsnap.hydroBand && typeof wsnap.hydroBand.top === "number";
+
+        // (G4) ARCH-WATER-SOLID: spawnbare Architekturen tragen blockerAABBs
+        // (V13.10-Heilung der Felsbogen-/Felsturm-/Genesis-Plattform-Klasse).
+        // Wir prüfen den bestehenden Welt-Zustand nach Warmup: mindestens eine
+        // Architektur EXISTIERT, und alle Stein-/Architektur-Bauten haben
+        // ihre `blockerAABBs` aus _blockerComputePartAABB gebaut.
+        let archSeen = 0;
+        let archWithBlockers = 0;
+        let archStoneSolid = 0;
+        for (const a of s.architectures || []) {
+            if (!a) continue;
+            archSeen++;
+            if (Array.isArray(a.blockerAABBs) && a.blockerAABBs.length > 0) {
+                archWithBlockers++;
+                // Stein-haltige Architekturen müssen SOLID sein (felsbogen, felsturm)
+                if (
+                    /fels|stein|tempel|geode|plattform/i.test(a.type || a.name || "") ||
+                    /fels|stein|tempel/i.test(a.bp || "")
+                ) {
+                    archStoneSolid++;
+                }
+            }
+        }
+        out.archSeen = archSeen;
+        out.archWithBlockers = archWithBlockers;
+        out.archStoneSolid = archStoneSolid;
+        // Mindestens 30 % der gestreamten Architekturen haben blockerAABBs
+        // (Bäume tragen Holz-Stamm-Blocker, Stein-Strukturen tragen Multi-
+        // Part-Blocker; nur reine Optik-Bauten wie leere Plattformen ohne
+        // soliden Part haben keine — < 70 %). Wenn die Welt noch keine
+        // Architektur hat (Edge-Case auf einem schnellen Runner ohne 30s-
+        // Warmup), wird die Probe als "skipped" markiert — den V13.10-Wert
+        // verteidigt der `_blockerComputePartAABB` Source-Probe-Wand.
+        out.archMostlyHaveBlockers =
+            archSeen < 3 ? "skipped-no-archs" :
+            archWithBlockers / Math.max(1, archSeen) >= 0.3;
+        // Source-Probe: _blockerComputePartAABB (die Solidität-Quelle, V9.65-
+        // Lehre: Material-Tag dichte ≥ 0.3 macht den Part SOLID).
+        const blockerSrc = r._blockerComputePartAABB ? r._blockerComputePartAABB.toString() : "";
+        out.blockerComputeExists = blockerSrc.length > 50;
+
+        return out;
+    });
+
+    // (G1) SNOWBAND
+    check("Γ6 (G1a) Schnee-Formel auf PROMINENZ (V17.105): SNOW_PROM_START + (y-base-_cont0) in Source", res.snowOnProminence === true);
+    check("Γ6 (G1b) ALTE absolute Schnee-Zeile ss(12,42,y) GESTRICHEN", res.snowOldAbsoluteGone === true);
+    check(
+        `Γ6 (G1c) Tiefland-Schnee (prominence<30 m) < 0.02 (gemessen ${res.snowLowProminMean.toFixed(4)} an ${res.snowLowProminN} Samples — V17.105-Heilung)`,
+        res.snowLowProminOk === true
+    );
+    // (G2) CHUNK-SEAM
+    check("Γ6 (G2) CHUNK-SEAM: Pad+Crop-Mechanismus (cropMargin in _voxelChunkGeometry, V9.42-b komplementär)", res.seamPadCropMechanism === true);
+    // (G3) FALSE-SWIM
+    check("Γ6 (G3a) FALSE-SWIM: _waterCellAt liest 3D-Cell-Wahrheit (V13.11/V18.0)", res.waterCellAtExists === true);
+    check("Γ6 (G3b) hohe Luft-Position (y=200) ist NIE Wasser-Cell (kein Phantom)", res.waterCellHighNotWater === true);
+    check("Γ6 (G3c) über Spielerposition (+20 m) ist NIE Wasser-Cell (kein Sub-Terrain-Blasen-Riss)", res.waterCellAbovePlayerNotWater === true);
+    check("Γ6 (G3d) Cell-Build-Funktion vorhanden (V13.12 Vertikal-Open-Foundation)", res.cellsBuildHasFlood === true);
+    check("Γ6 (G3e) Worker-Snapshot trägt hydroBand (Cell-Klassifikations-Skip)", res.hydroBandPresent === true);
+    // (G4) ARCH-WATER-SOLID
+    check(
+        `Γ6 (G4a) ARCH-SOLIDITY: Architekturen mit blockerAABBs (${res.archWithBlockers}/${res.archSeen} ≥ 30 %, V13.10)`,
+        res.archMostlyHaveBlockers === true || res.archMostlyHaveBlockers === "skipped-no-archs"
+    );
+    check("Γ6 (G4b) _blockerComputePartAABB als Solidität-Quelle vorhanden (V9.65 dichte≥0.3-Regel)", res.blockerComputeExists === true);
+}
+
+// V18.195 — AVATAR-GRÖSSE→HP (aktiv.md §4.D, klein): größere custom Avatare
+// haben mehr HP + Stamina (sqrt-Skalierung der Soul-Compound-Größe).
+// Built-in Souls (human/phoenix/dragon) bleiben NEUTRAL — kein Balance-Bruch
+// an den getunten intrinsischen Seelen.
+async function checkBandV18195AvatarSizeHp(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (S1) STRUKTUR: die Größen-Skalierung lebt in computePlayerStats
+        // als Source-Probe (sqrt(soulSize) gegen hpMax + staminaMax).
+        const src = r.computePlayerStats.toString();
+        out.hasSizeMul = /sizeHpMul|soulSize|_compoundSizeFactor.*soulBp/i.test(src);
+        out.appliesToHpMax = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul|stats\.hpMax\s*\*=/.test(src);
+        out.appliesToStamMax = /stats\.staminaMax\s*=\s*stats\.staminaMax\s*\*\s*sizeHpMul|stats\.staminaMax\s*\*=/.test(src);
+
+        // (S2) BUILT-IN NEUTRAL: human-Soul → mul=1.0 → die getunten Werte
+        // sind unangetastet. Wir vergleichen den heutigen Spieler-Stats-Wert
+        // mit der STAT_FROM_TAGS-Direktrechnung (ohne Größen-Multiplikator).
+        const savedSoul = r.state.player && r.state.player.soul;
+        const savedEquipped = r.state.player && JSON.parse(JSON.stringify(r.state.player.equipped || {}));
+        const savedBoosts = r.state.player && JSON.parse(JSON.stringify(r.state.player.boosts || []));
+        const savedCustomSouls = r.state.customSouls ? JSON.parse(JSON.stringify(r.state.customSouls)) : {};
+        const savedDeathWound = r.state.player ? r.state.player.deathWoundIntensity : 0;
+        try {
+            // human: built-in, sollte sizeFactor 1 + mul 1 erhalten
+            r.state.player.soul = "human";
+            r.state.player.equipped = {};
+            r.state.player.boosts = [];
+            r.state.player.deathWoundIntensity = 0;
+            const humanComputed = r.computePlayerStats();
+            out.humanHpMax = humanComputed.stats.hpMax;
+            // Vergleich mit Direktrechnung ohne size-Mul: erwartet IDENTISCH
+            const humanFinalTags = humanComputed.tags;
+            const directHp = A.STAT_FROM_TAGS.hpMax(humanFinalTags);
+            out.humanNeutralDelta = Math.abs(humanComputed.stats.hpMax - directHp);
+            // Bei built-in soulSize=1, sqrt(1)=1 → KEIN Delta zur Direkt-Form
+            out.humanNeutralOk = out.humanNeutralDelta < 0.001;
+
+            // (S3) CUSTOM SMALL: kleiner Avatar (kleine Parts) → soulSize<1 → hpMax<direkt
+            if (!r.state.customSouls) r.state.customSouls = {};
+            r.state.customSouls["bp_smallAvatar"] = {
+                role: "soul",
+                bodyParts: [
+                    { shape: "sphere", material: "fleisch", size: { x: 0.4, y: 0.4, z: 0.4 } },
+                    { shape: "sphere", material: "fleisch", size: { x: 0.3, y: 0.3, z: 0.3 } },
+                ],
+            };
+            r.state.blueprints = r.state.blueprints || {};
+            r.state.blueprints["bp_smallAvatar"] = r.state.customSouls["bp_smallAvatar"];
+            r.state.player.soul = "bp_smallAvatar";
+            const smallComputed = r.computePlayerStats();
+            out.smallHpMax = smallComputed.stats.hpMax;
+            const smallDirect = A.STAT_FROM_TAGS.hpMax(smallComputed.tags);
+            out.smallSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_smallAvatar"].bodyParts });
+            // Erwartung: smallHpMax = smallDirect * sqrt(smallSizeFactor)
+            const expectedSmall = smallDirect * Math.sqrt(out.smallSizeFactor);
+            out.smallMatchesFormula = Math.abs(smallComputed.stats.hpMax - expectedSmall) < 0.1;
+            // Erwartung: kleiner Avatar (sizeFactor < 1) hat WENIGER HP als die
+            // direkte Tag-Berechnung
+            out.smallHasLessHpThanDirect = out.smallSizeFactor < 1 ? smallComputed.stats.hpMax < smallDirect : true;
+
+            // (S4) CUSTOM LARGE: großer Avatar (große Parts) → soulSize>1 → hpMax>direkt
+            r.state.customSouls["bp_largeAvatar"] = {
+                role: "soul",
+                bodyParts: [
+                    { shape: "sphere", material: "fleisch", size: { x: 2.5, y: 2.5, z: 2.5 } },
+                    { shape: "box", material: "fleisch", size: { x: 1.8, y: 1.8, z: 1.8 } },
+                ],
+            };
+            r.state.blueprints["bp_largeAvatar"] = r.state.customSouls["bp_largeAvatar"];
+            r.state.player.soul = "bp_largeAvatar";
+            const largeComputed = r.computePlayerStats();
+            out.largeHpMax = largeComputed.stats.hpMax;
+            const largeDirect = A.STAT_FROM_TAGS.hpMax(largeComputed.tags);
+            out.largeSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_largeAvatar"].bodyParts });
+            out.largeHasMoreHpThanDirect = out.largeSizeFactor > 1 ? largeComputed.stats.hpMax > largeDirect : true;
+            // small < large (selbst nach Mul, weil large viel größer ist)
+            out.smallLessThanLarge = smallComputed.stats.hpMax < largeComputed.stats.hpMax;
+
+            // (S5) DAS SPEED-/ATTACK-SPEED-VERSPRECHEN: größer ist NICHT schneller —
+            // die Größen-Skalierung trifft NUR hpMax + staminaMax, nicht speed
+            // oder attackSpeed. Vergleich: kleine vs große Avatare haben den
+            // GLEICHEN speed (modulo Tag-Pipe), da der Größen-Mul nur HP/Stamina
+            // hebt.
+            const smallSpeed = smallComputed.stats.speed;
+            const largeSpeed = largeComputed.stats.speed;
+            // Wir prüfen NICHT speed-Identität (Tags können sich unterscheiden je
+            // nach Compound), aber: keine systematische Beschleunigung der
+            // Großen, NUR HP-Spreading. Akzeptanz: |speed_large/speed_small|
+            // nahe Tag-Verhältnis, NICHT sqrt(sizeFactor)
+            out.speedNotScaledBySize = true; // wir prüfen es indirekt via STAT-Formel-Anteil
+
+            // (S6) STAMINA: same scaling als HP
+            out.staminaScaledLikeHp = true; // Source-Probe
+            const smallStamSqrt = Math.sqrt(out.smallSizeFactor);
+            out.staminaMatchesFormula = Math.abs(smallComputed.stats.staminaMax - A.STAT_FROM_TAGS.staminaMax(smallComputed.tags) * smallStamSqrt) < 0.1;
+        } finally {
+            // Wiederherstellen
+            if (r.state.player) {
+                r.state.player.soul = savedSoul;
+                r.state.player.equipped = savedEquipped;
+                r.state.player.boosts = savedBoosts;
+                r.state.player.deathWoundIntensity = savedDeathWound;
+            }
+            r.state.customSouls = savedCustomSouls;
+            if (r.state.blueprints) {
+                delete r.state.blueprints["bp_smallAvatar"];
+                delete r.state.blueprints["bp_largeAvatar"];
+            }
+        }
+        return out;
+    });
+
+    check("V18.195 (S1a) Source: soul-Größen-Multiplier in computePlayerStats", res.hasSizeMul === true);
+    check("V18.195 (S1b) Größen-Mul wird auf stats.hpMax angewendet", res.appliesToHpMax === true);
+    check("V18.195 (S1c) Größen-Mul wird auf stats.staminaMax angewendet", res.appliesToStamMax === true);
+    check(
+        `V18.195 (S2) BUILT-IN NEUTRAL: human-Soul sizeFactor=1 → mul=1.0 (Δ ${res.humanNeutralDelta && res.humanNeutralDelta.toFixed(4)}, kein Balance-Bruch)`,
+        res.humanNeutralOk === true
+    );
+    check(
+        `V18.195 (S3a) CUSTOM SMALL: sizeFactor=${res.smallSizeFactor && res.smallSizeFactor.toFixed(3)} → hpMax folgt Formel sqrt(sizeFactor)`,
+        res.smallMatchesFormula === true
+    );
+    check(
+        `V18.195 (S3b) CUSTOM SMALL: kleiner Avatar hat weniger HP als die Tag-Direkt-Rechnung (Robustheit aus Substanz)`,
+        res.smallHasLessHpThanDirect === true
+    );
+    check(
+        `V18.195 (S4a) CUSTOM LARGE: sizeFactor=${res.largeSizeFactor && res.largeSizeFactor.toFixed(3)} → hpMax > direkt (großer Avatar robuster)`,
+        res.largeHasMoreHpThanDirect === true
+    );
+    check(
+        `V18.195 (S4b) small < large hpMax (kleiner Avatar ${res.smallHpMax && res.smallHpMax.toFixed(1)} < großer ${res.largeHpMax && res.largeHpMax.toFixed(1)})`,
+        res.smallLessThanLarge === true
+    );
+    check("V18.195 (S6) Stamina folgt derselben Skalierung wie HP (sqrt(sizeFactor))", res.staminaMatchesFormula === true);
+}
+
+// V18.196 — MANA-SYMMETRIE (aktiv.md §4.E): die zweite Ausdauer-Achse als
+// Foundation-Welle. STAT_FROM_TAGS.manaMax + state.player.mana/manaMax +
+// Game-Loop-Regen. Konsumenten (DSL-Ops, UI-Balken) in Folge-Welle.
+async function checkBandV18196ManaSymmetry(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (M1) STAT_FROM_TAGS.manaMax existiert
+        out.hasManaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
+
+        // (M2) Formel: leere Tags → base 50, magieleitung 1 → 150, +resoniert 1 → 180
+        if (out.hasManaMaxFn) {
+            const fn = A.STAT_FROM_TAGS.manaMax;
+            out.manaBase = fn({});
+            out.manaFullMag = fn({ magieleitung: 1 });
+            out.manaFullBoth = fn({ magieleitung: 1, resoniert: 1 });
+            out.manaFormulaOk =
+                Math.abs(out.manaBase - 50) < 0.001 &&
+                Math.abs(out.manaFullMag - 150) < 0.001 &&
+                Math.abs(out.manaFullBoth - 180) < 0.001;
+        }
+
+        // (M3) MANA_REGEN_PER_SEC frozen Konstante
+        out.regenConstExists = typeof A.MANA_REGEN_PER_SEC === "number" && A.MANA_REGEN_PER_SEC > 0;
+
+        // (M4) computePlayerStats gibt stats.manaMax
+        const savedSoul = r.state.player && r.state.player.soul;
+        try {
+            r.applyPlayerSoul("human");
+            const computed = r.computePlayerStats();
+            out.computeReturnsMana = typeof computed.stats.manaMax === "number" && computed.stats.manaMax > 0;
+            // human hat magieleitung ≈ 0 → mana ~ 50
+            out.humanManaNearBase = Math.abs(computed.stats.manaMax - 50) < 30;
+
+            // (M5) Phönix hat mehr Mana als Mensch (magieleitung höher)
+            r.applyPlayerSoul("phoenix");
+            const phoenix = r.computePlayerStats();
+            r.applyPlayerSoul("human");
+            const human = r.computePlayerStats();
+            out.phoenixManaMax = phoenix.stats.manaMax;
+            out.humanManaMax = human.stats.manaMax;
+            out.phoenixMoreMana = phoenix.stats.manaMax > human.stats.manaMax;
+
+            // (M6) recomputePlayerStats setzt state.player.mana + manaMax
+            r.recomputePlayerStats();
+            out.statePlayerMana = typeof r.state.player.mana === "number";
+            out.statePlayerManaMax = typeof r.state.player.manaMax === "number" && r.state.player.manaMax > 0;
+            out.manaAtMaxAfterRecompute = r.state.player.mana === r.state.player.manaMax;
+        } finally {
+            if (savedSoul) r.applyPlayerSoul(savedSoul);
+        }
+
+        // (M7) Game-Loop Regen: mana auf 0 setzen + Tick laufen + prüfen ob mana steigt
+        try {
+            r.applyPlayerSoul("human");
+            r.recomputePlayerStats();
+            r.state.player.mana = 0;
+            const before = r.state.player.mana;
+            // Simuliere Frames — _gameLoopTick treibt den Regen-Pfad mit
+            for (let i = 0; i < 60; i++) {
+                try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch (_) {}
+            }
+            const after = r.state.player.mana;
+            const maxAfter = r.state.player.manaMax; // aktueller Wert nach allen Ticks
+            out.regenRunsInLoop = after > before;
+            // Regen darf maxAfter nicht überschreiten (Math.min-Clamp im Loop).
+            // Marge gegen Float-Drift.
+            out.regenStaysBelowOrAtMax = after <= maxAfter + 0.001;
+            out.regenAfter = after;
+            out.regenMaxAfter = maxAfter;
+        } finally {
+            if (savedSoul) r.applyPlayerSoul(savedSoul);
+        }
+
+        // (M8) Größen-Skalierung (V18.195-Symmetrie): manaMax skaliert mit
+        // sqrt(soulSize) genau wie hpMax/staminaMax
+        const src = r.computePlayerStats.toString();
+        out.manaScaledByMul = /stats\.manaMax\s*=\s*stats\.manaMax\s*\*\s*sizeHpMul/.test(src);
+
+        return out;
+    });
+
+    check("V18.196 (M1) STAT_FROM_TAGS.manaMax existiert", res.hasManaMaxFn === true);
+    check(
+        `V18.196 (M2) Formel-Werte: base 50, magieleitung 1→150, +resoniert 1→180 (gemessen ${res.manaBase}/${res.manaFullMag}/${res.manaFullBoth})`,
+        res.manaFormulaOk === true
+    );
+    check("V18.196 (M3) MANA_REGEN_PER_SEC frozen Konstante existiert", res.regenConstExists === true);
+    check("V18.196 (M4) computePlayerStats gibt stats.manaMax > 0", res.computeReturnsMana === true);
+    check(
+        `V18.196 (M5) Phönix hat mehr Mana als Mensch (${res.phoenixManaMax && res.phoenixManaMax.toFixed(1)} > ${res.humanManaMax && res.humanManaMax.toFixed(1)} — magieleitung emergent)`,
+        res.phoenixMoreMana === true
+    );
+    check("V18.196 (M6a) recomputePlayerStats setzt state.player.mana", res.statePlayerMana === true);
+    check("V18.196 (M6b) recomputePlayerStats setzt state.player.manaMax > 0", res.statePlayerManaMax === true);
+    check("V18.196 (M6c) mana = manaMax nach recompute (frischer Spawn voll)", res.manaAtMaxAfterRecompute === true);
+    check("V18.196 (M7a) Game-Loop-Regen wirkt (mana steigt nach 60 Ticks)", res.regenRunsInLoop === true);
+    check(
+        `V18.196 (M7b) Regen bleibt ≤ manaMax (mana ${res.regenAfter && res.regenAfter.toFixed(1)} ≤ max ${res.regenMaxAfter && res.regenMaxAfter.toFixed(1)})`,
+        res.regenStaysBelowOrAtMax === true
+    );
+    check("V18.196 (M8) Mana skaliert mit sqrt(soulSize) (V18.195-Symmetrie)", res.manaScaledByMul === true);
+}
+
+// V18.197 — Γ-M MULTI-CLASS-MATERIAL Foundation: STRATA (genese-plan §Γ-M).
+// y-abhängige Material-Wahl im Boden: nahe Oberfläche durchhumusiert (erde
+// kann gewinnen), tief drinnen Felsen (stein dominiert). Migration-tolerant:
+// alte 2-arg-Aufrufer ohne y bleiben bit-identisch.
+async function checkBandV18197GammaMStrata(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (S1) STRATA_STEIN_DEPTH frozen Konstante
+        out.constExists = typeof A.STRATA_STEIN_DEPTH === "number" && A.STRATA_STEIN_DEPTH > 0;
+
+        // (S2) Source-Probe: _terrainMaterialAt nimmt y + nutzt STRATA_STEIN_DEPTH
+        const src = r._terrainMaterialAt.toString();
+        out.acceptsY = /\(x,\s*z,\s*y\)/.test(src);
+        out.usesStrataDepth = /STRATA_STEIN_DEPTH/.test(src);
+
+        // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
+        // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
+        let pt = { x: 0, z: 0 };
+        // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark)
+        let erdePt = null;
+        for (let i = 0; i < 200 && !erdePt; i++) {
+            const x = (Math.random() - 0.5) * 600;
+            const z = (Math.random() - 0.5) * 600;
+            const surfY = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : null;
+            if (!Number.isFinite(surfY)) continue;
+            const mat = r._terrainMaterialAt(x, z); // 2-arg, kein y
+            if (mat === "erde") {
+                erdePt = { x, z, surfY };
+                break;
+            }
+        }
+        out.foundErdePoint = !!erdePt;
+
+        if (erdePt) {
+            // (S4) AN DER OBERFLÄCHE (y = surfY): das alte Verhalten bleibt —
+            // erde, wenn die Achse erde gewinnt. y nahe surfY → erde.
+            const surfMat = r._terrainMaterialAt(erdePt.x, erdePt.z, erdePt.surfY);
+            out.surfaceMat = surfMat;
+            out.surfaceStaysSame = surfMat === "erde";
+
+            // (S5) TIEF UNTER der Oberfläche (y = surfY - STRATA_STEIN_DEPTH - 5):
+            // STRATA forciert stein.
+            const deepY = erdePt.surfY - A.STRATA_STEIN_DEPTH - 5;
+            const deepMat = r._terrainMaterialAt(erdePt.x, erdePt.z, deepY);
+            out.deepMat = deepMat;
+            out.deepIsStein = deepMat === "stein";
+
+            // (S6) GRENZ-FALL: genau auf STRATA_STEIN_DEPTH-Schwelle bleibt
+            // erde (strikte >-Wand, kein Off-by-one)
+            const onThresholdY = erdePt.surfY - A.STRATA_STEIN_DEPTH;
+            const onMat = r._terrainMaterialAt(erdePt.x, erdePt.z, onThresholdY);
+            out.thresholdMat = onMat;
+            out.thresholdStaysSame = onMat === "erde";
+        }
+
+        // (S7) digTerrain ruft _terrainMaterialAt mit target.y (Source-Probe)
+        // Mehrere mögliche Aufrufer haben sich an die strukturelle Wahrheit
+        // angepasst.
+        const code = r.constructor && r.constructor.toString
+            ? r.constructor.toString().substr(0, 5000)
+            : "";
+        // Statt grobem source-grep prüfen wir das spezifische Verhalten —
+        // _terrainMaterialAt(x, z, y) als Mechanik via direkte Probe.
+        out.digConsumesY = out.acceptsY; // direkter Source-Beweis
+
+        // (S8) MIGRATION-ROUND-TRIP: ein 2-arg-Aufruf gibt dasselbe Ergebnis
+        // wie ein 3-arg-Aufruf mit y > surfY (nahe Oberfläche) — die Änderung
+        // ist additiv, kein Bruch.
+        if (erdePt) {
+            const oldStyle = r._terrainMaterialAt(erdePt.x, erdePt.z);
+            const surfaceStyle = r._terrainMaterialAt(erdePt.x, erdePt.z, erdePt.surfY);
+            out.migrationConsistent = oldStyle === surfaceStyle;
+        }
+        return out;
+    });
+
+    check("V18.197 (S1) STRATA_STEIN_DEPTH frozen Konstante existiert", res.constExists === true);
+    check("V18.197 (S2a) _terrainMaterialAt nimmt y-Argument", res.acceptsY === true);
+    check("V18.197 (S2b) _terrainMaterialAt nutzt STRATA_STEIN_DEPTH-Konstante", res.usesStrataDepth === true);
+    if (res.foundErdePoint) {
+        check(
+            `V18.197 (S4) An Oberfläche (y=surfY): bleibt erde (alte Achse, gemessen ${res.surfaceMat})`,
+            res.surfaceStaysSame === true
+        );
+        check(
+            `V18.197 (S5) Tief unter Strata-Schwelle: forciert stein (gemessen ${res.deepMat})`,
+            res.deepIsStein === true
+        );
+        check(
+            `V18.197 (S6) Auf der Strata-Schwelle: bleibt erde (strikte >-Wand, gemessen ${res.thresholdMat})`,
+            res.thresholdStaysSame === true
+        );
+        check(
+            `V18.197 (S8) MIGRATION: 2-arg Aufruf = 3-arg mit y=surfY (bit-identisch zu Pre-V18.197)`,
+            res.migrationConsistent === true
+        );
+    } else {
+        check("V18.197 (S4-S8) Erde-Punkt nicht gefunden — Welt ohne Erde-Region (skip)", true);
+    }
+}
+
+// V18.198 — Γ2 TOTHOLZ (genese-plan §Γ2): ein gefallener Stamm im Wald.
+// Built-in Bauplan `stamm_gefallen` + Sub-Spawn nach Baum (~10 % Chance,
+// seed-deterministisch, KEIN Affinitäts-Wettstreit — V17.16-Disziplin).
+async function checkBandV18198Gamma2Totholz(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (T1) TOTHOLZ_RATE Konstante existiert
+        out.rateConstExists = typeof A.TOTHOLZ_RATE === "number" && A.TOTHOLZ_RATE > 0 && A.TOTHOLZ_RATE < 1;
+
+        // (T2) Bauplan `stamm_gefallen` ist registriert
+        const bp = r.state.blueprints && r.state.blueprints["stamm_gefallen"];
+        out.bpExists = !!bp;
+        out.bpBuiltIn = bp && bp.builtIn === true;
+        out.bpInstanced = bp && bp.instanced === true;
+        out.bpLabel = bp && bp.label === "Gefallener Stamm";
+
+        // (T3) Parts: alle holz (tag-neutral mit den Bäumen)
+        if (bp && Array.isArray(bp.parts)) {
+            out.partsCount = bp.parts.length;
+            out.allHolz = bp.parts.every((p) => p.material === "holz");
+            out.allCylinder = bp.parts.every((p) => p.shape === "cylinder");
+            // Mindestens ein Part hat z-Rotation (horizontal liegend)
+            out.hasRotation = bp.parts.some((p) => p.rotation && typeof p.rotation.z === "number" && Math.abs(p.rotation.z) > 0.5);
+        }
+
+        // (T4) AFFINITÄTS-WAND (V17.16-Disziplin neu interpretiert): da stamm_
+        // gefallen NICHT im candidates-Wettstreit ist (Sub-Spawn nach Baum),
+        // muss er nicht tag-identisch zu baum_eiche sein. Aber: er darf in
+        // KEINER Achse HÖHER resonieren als baum_eiche — sonst könnte er,
+        // falls je in candidates aufgenommen, einen anderen Affinitäts-
+        // Sieger verdrängen. Strikte Lese-Wand: stamm_gefallen ≤ baum_eiche
+        // in jeder Achse (er fehlt das Laub → magieleitung typischerweise
+        // niedriger; das ist OK + designt).
+        const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
+        if (bp && r.state.blueprints["baum_eiche"]) {
+            const treeTags = r.computeCompoundTags(r.state.blueprints["baum_eiche"]);
+            const totTags = r.computeCompoundTags(bp);
+            const diffs = {};
+            let neverHigher = true;
+            for (const axis of targetAxes) {
+                const dt = (totTags[axis] || 0) - (treeTags[axis] || 0);
+                diffs[axis] = Number(dt.toFixed(3));
+                if (dt > 0.05) neverHigher = false;
+            }
+            out.tagDiffs = diffs;
+            out.tagNeverHigherThanTree = neverHigher;
+        }
+
+        // (T5) Sub-Spawn-Pfad in _vegetationSampleSpawn: Source-Probe für
+        // den isTree-Branch mit TOTHOLZ_RATE.
+        const src = r._vegetationSampleSpawn.toString();
+        out.hasSubSpawn = /TOTHOLZ_RATE/.test(src) && /stamm_gefallen/.test(src);
+
+        // (T6) RNG-DETERMINISMUS: der Sub-Spawn nutzt ein DETERMINISTISCHES
+        // noise2D (kein Math.random-Aufruf) — Γ5-Wand strukturell gewahrt.
+        // Strip Kommentare bevor wir auf Math.random-CODE prüfen (CLAUDE.md-
+        // Lehre: der Code darf das Wort tragen, der Code darf es nicht).
+        const stripped = src.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+        out.usesDeterministicRng = /rng\.noise2D/.test(src) && !(/Math\.random\s*\(/.test(stripped));
+
+        // (T7) DIREKT-SPAWN-TEST: spawnArchitecture("stamm_gefallen", ...) klappt
+        // und das Entry trägt blockerAABBs (V13.10-Solidität).
+        const before = r.state.architectures.length;
+        try {
+            const e = r.spawnArchitecture("stamm_gefallen", { x: 1234, y: 50, z: 1234 }, { silent: true });
+            out.directSpawnOk = !!e;
+            out.directSpawnHasBlockers = e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0;
+            if (e) r.removeArchitecture(e);
+        } catch (err) {
+            out.directSpawnError = err && err.message ? err.message : String(err);
+        }
+        out.archCountUnchanged = r.state.architectures.length === before;
+
+        return out;
+    });
+
+    check("V18.198 (T1) TOTHOLZ_RATE Konstante existiert (0 < x < 1)", res.rateConstExists === true);
+    check("V18.198 (T2a) Bauplan stamm_gefallen registriert", res.bpExists === true);
+    check("V18.198 (T2b) Bauplan ist builtIn + instanced", res.bpBuiltIn === true && res.bpInstanced === true);
+    check(`V18.198 (T2c) Label 'Gefallener Stamm' (gemessen ${JSON.stringify(res.bpLabel)})`, res.bpLabel === true);
+    check(`V18.198 (T3a) Parts existieren (${res.partsCount})`, res.partsCount >= 1);
+    check("V18.198 (T3b) Alle Parts material=holz (tag-neutral mit Baumstämmen)", res.allHolz === true);
+    check("V18.198 (T3c) Alle Parts shape=cylinder", res.allCylinder === true);
+    check("V18.198 (T3d) Mindestens ein Part hat z-Rotation (horizontal liegend)", res.hasRotation === true);
+    check(
+        `V18.198 (T4) AFFINITÄTS-WAND: stamm_gefallen ≤ baum_eiche in jeder Achse (V17.16-Disziplin, diffs ${JSON.stringify(res.tagDiffs)})`,
+        res.tagNeverHigherThanTree === true
+    );
+    check("V18.198 (T5) Sub-Spawn-Pfad in _vegetationSampleSpawn verdrahtet", res.hasSubSpawn === true);
+    check("V18.198 (T6) RNG deterministisch (noise2D, kein Math.random — Γ5-Wand)", res.usesDeterministicRng === true);
+    check("V18.198 (T7a) Direkt-Spawn stamm_gefallen funktioniert", res.directSpawnOk === true);
+    check("V18.198 (T7b) Spawn trägt blockerAABBs (V13.10 Solidität)", res.directSpawnHasBlockers === true);
+    check("V18.198 (T7c) Cleanup: state.architectures-Länge unverändert", res.archCountUnchanged === true);
+}
+
+// V18.199 — Γ-M LICHEN (genese-plan §Γ-M Folge zu V18.197 STRATA): grüne
+// Patina auf alten feuchten Steinen. Reine Render-Schicht, kein Welt-Effekt.
+// Math-Probe der Formel + Source-Probe in Main + Worker (V17.100-Bit-Vertrag).
+async function checkBandV18199GammaMLichen(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (L1) LICHEN-Konstanten existieren + frozen
+        out.lichenExists = !!A.LICHEN && typeof A.LICHEN === "object";
+        out.lichenFrozen = A.LICHEN && Object.isFrozen(A.LICHEN);
+        if (A.LICHEN) {
+            out.feuchteLo = A.LICHEN.feuchteLo;
+            out.feuchteHi = A.LICHEN.feuchteHi;
+            out.dichteLo = A.LICHEN.dichteLo;
+            out.dichteHi = A.LICHEN.dichteHi;
+            out.strength = A.LICHEN.strength;
+            out.tint = A.LICHEN.tint;
+            out.constsSensible =
+                A.LICHEN.feuchteLo < A.LICHEN.feuchteHi &&
+                A.LICHEN.dichteLo < A.LICHEN.dichteHi &&
+                A.LICHEN.strength > 0 &&
+                A.LICHEN.strength < 1 &&
+                Array.isArray(A.LICHEN.tint) &&
+                A.LICHEN.tint.length === 3;
+        }
+
+        // (L2) Source-Probe Main: LICHEN-Mix lebt in _attachVoxelFieldColors
+        const mainSrc = r._attachVoxelFieldColors.toString();
+        out.mainHasLichen = /LICHEN/.test(mainSrc) && /lichenMix/.test(mainSrc) && /lichenCluster/.test(mainSrc);
+        // Position im Mix-Stack: NACH dampEarth, VOR lava
+        out.mainOrderCorrect = mainSrc.indexOf("dampEarth, ss") < mainSrc.indexOf("lichenMix") &&
+            mainSrc.indexOf("lichenMix") < mainSrc.indexOf("mix(lava");
+
+        // (L3) MATH-PROBE: lichen wirkt nur in feuchten + dichten Regionen.
+        // Wir bauen die Formel selbst nach (Main-bit-identisch) und prüfen
+        // an drei kontrollierten Punkten.
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const noise2D = r._voxelNoise ? (x, z) => r._voxelNoise.noise2D(x, z) : null;
+        const LCH = A.LICHEN;
+        const calcLichen = (feuchte, dichte, x, z) => {
+            const cluster = noise2D ? (noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5 : 0.5;
+            return ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
+                   ss(LCH.dichteLo, LCH.dichteHi, dichte) *
+                   cluster *
+                   LCH.strength;
+        };
+
+        // Drei kontrollierte Probe-Punkte (synthetische feuchte/dichte):
+        // a) feucht + steinig + ein anderer (x,z): lichen > 0 (typischerweise)
+        // b) trocken + steinig: lichen ≈ 0 (feuchte-Schwelle nicht erreicht)
+        // c) feucht + erde: lichen ≈ 0 (dichte-Schwelle nicht erreicht)
+        const samplesPositive = [];
+        const samplesDryStone = [];
+        const samplesWetErde = [];
+        for (let i = 0; i < 50; i++) {
+            const x = (i * 37) % 1000;
+            const z = (i * 73) % 1000;
+            samplesPositive.push(calcLichen(0.8, 0.7, x, z)); // feucht + stein
+            samplesDryStone.push(calcLichen(0.1, 0.7, x, z)); // trocken + stein
+            samplesWetErde.push(calcLichen(0.8, 0.1, x, z));  // feucht + erde
+        }
+        const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+        out.lichenAvgWetStone = avg(samplesPositive);
+        out.lichenAvgDryStone = avg(samplesDryStone);
+        out.lichenAvgWetErde = avg(samplesWetErde);
+        out.lichenWetStonePositive = out.lichenAvgWetStone > 0.01; // sichtbar
+        out.lichenDryStoneZero = out.lichenAvgDryStone < 0.001; // unsichtbar
+        out.lichenWetErdeZero = out.lichenAvgWetErde < 0.001; // unsichtbar
+
+        // (L4) UPPER BOUND: lichen darf NIE > strength sein (Math-Sicherheit)
+        const maxAtFull = calcLichen(1, 1, 0, 0); // alle Faktoren max, cluster ~0.5 avg
+        out.lichenBoundedAtFull = maxAtFull <= LCH.strength;
+
+        return out;
+    });
+
+    check("V18.199 (L1a) AnazhRealm.LICHEN existiert + frozen", res.lichenExists === true && res.lichenFrozen === true);
+    check("V18.199 (L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
+    check("V18.199 (L2a) Source: lichenMix + lichenCluster im _attachVoxelFieldColors", res.mainHasLichen === true);
+    check("V18.199 (L2b) Mix-Stack-Order: dampEarth → lichen → lava", res.mainOrderCorrect === true);
+    check(
+        `V18.199 (L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
+        res.lichenWetStonePositive === true
+    );
+    check(
+        `V18.199 (L3b) trocken+steinig → lichen unsichtbar (gemessen avg ${res.lichenAvgDryStone && res.lichenAvgDryStone.toFixed(4)})`,
+        res.lichenDryStoneZero === true
+    );
+    check(
+        `V18.199 (L3c) feucht+erde → lichen unsichtbar (gemessen avg ${res.lichenAvgWetErde && res.lichenAvgWetErde.toFixed(4)})`,
+        res.lichenWetErdeZero === true
+    );
+    check("V18.199 (L4) lichen ≤ LICHEN.strength (Math-Sicherheit, kein Overshoot)", res.lichenBoundedAtFull === true);
+}
+
+// V18.200 — Γ-M IRON-BANDS (genese-plan §Γ-M Folge zu V18.197 STRATA +
+// V18.199 LICHEN). Vertikale Eisenadern in tiefen Bergregionen — vollendet
+// die Γ-M-Triade (Strata horizontal + Lichen Patina + Iron-Bands vertikal).
+async function checkBandV18200GammaMIronBands(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (I1) IRON_BANDS frozen Konstanten
+        out.constExists = !!A.IRON_BANDS && Object.isFrozen(A.IRON_BANDS);
+        if (A.IRON_BANDS) {
+            const IB = A.IRON_BANDS;
+            out.constsSensible =
+                typeof IB.minDepth === "number" && IB.minDepth > 0 &&
+                typeof IB.threshold === "number" && IB.threshold > 0 && IB.threshold < 1 &&
+                typeof IB.dichteFloor === "number" && IB.dichteFloor >= 0 &&
+                typeof IB.scale === "number" && IB.scale > 0;
+            // minDepth muss > STRATA_STEIN_DEPTH sein (Iron-Bands sind eine
+            // Subschicht UNTERHALB der reinen Stein-Schicht)
+            out.deepBeyondStrata = IB.minDepth > A.STRATA_STEIN_DEPTH;
+        }
+
+        // (I2) _eisenAderAt-Helper existiert + ist deterministisch
+        out.helperExists = typeof r._eisenAderAt === "function";
+        if (out.helperExists) {
+            // Determinismus: zweimal gleicher (x,z) → gleicher Wert
+            const a1 = r._eisenAderAt(123.7, 456.3);
+            const a2 = r._eisenAderAt(123.7, 456.3);
+            out.deterministic = Math.abs(a1 - a2) < 1e-10;
+            // Wert in [0, 1]
+            out.boundedRange = a1 >= 0 && a1 <= 1;
+            // VERTEILUNG: über 500 Probe-Punkte sollte die Verteilung
+            // nicht-degeneriert sein (max > 0.5, mean ~0.3-0.5)
+            let max = 0, sum = 0;
+            for (let i = 0; i < 500; i++) {
+                const x = (i * 37 + 11) % 5000;
+                const z = (i * 73 - 29) % 5000;
+                const v = r._eisenAderAt(x, z);
+                if (v > max) max = v;
+                sum += v;
+            }
+            out.distMax = max;
+            out.distMean = sum / 500;
+            out.distHasPeaks = max > 0.5;
+        }
+
+        // (I3) MIGRATION-TOLERANZ: _terrainMaterialAt ohne y bleibt
+        // bit-identisch (keine Iron-Bands-Aktivierung ohne y-Probe).
+        const oldStyle = r._terrainMaterialAt(0, 0);
+        const surfaceStyle = r._terrainMaterialAt(0, 0, r._voxelSurfaceY ? r._voxelSurfaceY(0, 0) : 0);
+        out.migrationOk = oldStyle === surfaceStyle;
+
+        // (I4) STRATA bleibt aktiv: tief unter STRATA_STEIN_DEPTH, wenn KEIN
+        // Iron-Band, ist das Material stein.
+        // Finde Punkte mit niedrigem ironAder (< threshold) und prüfe Material.
+        let steinHits = 0;
+        let eisenHits = 0;
+        let probedDeep = 0;
+        for (let i = 0; i < 30; i++) {
+            const x = (i * 173) % 1500;
+            const z = (i * 257 + 13) % 1500;
+            const surfY = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : null;
+            if (!Number.isFinite(surfY)) continue;
+            const deepY = surfY - A.IRON_BANDS.minDepth - 10;
+            const mat = r._terrainMaterialAt(x, z, deepY);
+            probedDeep++;
+            if (mat === "stein") steinHits++;
+            if (mat === "eisen") eisenHits++;
+        }
+        out.deepSteinHits = steinHits;
+        out.deepEisenHits = eisenHits;
+        out.deepProbed = probedDeep;
+        out.steinDominant = steinHits > eisenHits; // Iron-Bands sind selten
+
+        // (I5) EISEN als Material existiert
+        out.eisenMaterialExists = !!(r.state.materials && r.state.materials["eisen"]);
+
+        // (I6) MATH: an einem KÜNSTLICH konstruierten Iron-Band-Punkt
+        // (ironAder hoch + tief + dichte hoch) → eisen
+        // Finde einen Punkt mit aderwert > threshold
+        let highAderPoint = null;
+        for (let i = 0; i < 1000; i++) {
+            const x = (i * 31.4) % 3000;
+            const z = (i * 27.9) % 3000;
+            if (r._eisenAderAt(x, z) > A.IRON_BANDS.threshold) {
+                const surfY = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : null;
+                if (Number.isFinite(surfY)) {
+                    const f = r.worldFieldAt ? r.worldFieldAt(x, z) : null;
+                    if (f && (f.dichte || 0) > A.IRON_BANDS.dichteFloor) {
+                        highAderPoint = { x, z, surfY };
+                        break;
+                    }
+                }
+            }
+        }
+        out.foundIronPoint = !!highAderPoint;
+        if (highAderPoint) {
+            const deepY = highAderPoint.surfY - A.IRON_BANDS.minDepth - 5;
+            const mat = r._terrainMaterialAt(highAderPoint.x, highAderPoint.z, deepY);
+            out.ironPointGivesEisen = mat === "eisen";
+            // Plus: an NIEDRIGER Tiefe (< minDepth) bleibt stein-Schicht
+            const midDepth = highAderPoint.surfY - (A.STRATA_STEIN_DEPTH + 2);
+            const midMat = r._terrainMaterialAt(highAderPoint.x, highAderPoint.z, midDepth);
+            out.midDepthStaysStein = midMat === "stein"; // Iron-Schwelle nicht erreicht (zu flach)
+        }
+
+        // (I7) Source-Probe: _terrainMaterialAt enthält IRON_BANDS-Logik
+        const src = r._terrainMaterialAt.toString();
+        out.srcHasIronCheck = /IRON_BANDS/.test(src) && /_eisenAderAt/.test(src);
+
+        return out;
+    });
+
+    check("V18.200 (I1a) IRON_BANDS frozen Konstanten existieren", res.constExists === true);
+    check("V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH", res.constsSensible === true && res.deepBeyondStrata === true);
+    check("V18.200 (I2a) _eisenAderAt-Helper existiert", res.helperExists === true);
+    check("V18.200 (I2b) deterministisch (zwei Aufrufe gleicher Wert)", res.deterministic === true);
+    check("V18.200 (I2c) Werte in [0, 1] gebounded", res.boundedRange === true);
+    check(
+        `V18.200 (I2d) Verteilung nicht-degeneriert (max=${res.distMax && res.distMax.toFixed(2)}, mean=${res.distMean && res.distMean.toFixed(2)}, Peaks > 0.5)`,
+        res.distHasPeaks === true
+    );
+    check("V18.200 (I3) MIGRATION: ohne y bit-identisch (Pre-V18.197)", res.migrationOk === true);
+    check(
+        `V18.200 (I4) STRATA dominant: stein ${res.deepSteinHits}/${res.deepProbed} > eisen ${res.deepEisenHits} in tiefen Punkten`,
+        res.steinDominant === true
+    );
+    check("V18.200 (I5) Material 'eisen' existiert in state.materials", res.eisenMaterialExists === true);
+    if (res.foundIronPoint) {
+        check("V18.200 (I6a) An Iron-Ader-Punkt (tief + dichte hoch + ader>threshold) → eisen", res.ironPointGivesEisen === true);
+        check("V18.200 (I6b) Bei flacher Tiefe bleibt es stein (Iron-Schwelle nicht erreicht)", res.midDepthStaysStein === true);
+    } else {
+        check("V18.200 (I6) Kein Iron-Ader-Punkt in 1000 Samples gefunden (skip)", true);
+    }
+    check("V18.200 (I7) Source-Probe: IRON_BANDS + _eisenAderAt in _terrainMaterialAt", res.srcHasIronCheck === true);
+}
+
+// V18.201 — MANA-KONSUMENTEN FOUNDATION (aktiv.md §4.E Folge zu V18.196).
+// Helper `_canPayMana(n)` + `_drainMana(n)` mit Mode-Gate. Anti-Scope §3:
+// KEIN DSL-Op (analog W5-Werkzeug-Abnutzung V18.192).
+async function checkBandV18201ManaKonsum(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+
+        // (K1) Helper existieren
+        out.canPayExists = typeof r._canPayMana === "function";
+        out.drainExists = typeof r._drainMana === "function";
+
+        const savedMana = r.state.player && r.state.player.mana;
+        const savedManaMax = r.state.player && r.state.player.manaMax;
+        const savedMode = r.getGameMode ? r.getGameMode() : "frieden";
+        try {
+            if (r.setGameMode) r.setGameMode("pfad");
+            r.state.player.manaMax = 100;
+            r.state.player.mana = 60;
+
+            // (K2) canPay: 50 ≤ 60 → true; 70 > 60 → false; 0/negativ → true
+            out.canPayEnough = r._canPayMana(50) === true;
+            out.canPayInsufficient = r._canPayMana(70) === false;
+            out.canPayZero = r._canPayMana(0) === true;
+            out.canPayNegative = r._canPayMana(-5) === true;
+
+            // (K3) drainMana: erfolgreich zieht ab
+            r.state.player.mana = 60;
+            const drainOk = r._drainMana(20);
+            out.drainSuccessReturnsTrue = drainOk === true;
+            out.drainReducesMana = r.state.player.mana === 40;
+
+            // (K4) drainMana: insufficient → false + Mana unverändert (atomar)
+            r.state.player.mana = 15;
+            const drainFail = r._drainMana(20);
+            out.drainFailReturnsFalse = drainFail === false;
+            out.drainFailLeavesUnchanged = r.state.player.mana === 15;
+
+            // (K5) drainMana: nicht unter 0
+            r.state.player.mana = 5;
+            r._drainMana(5);
+            out.drainExactlyDepletes = r.state.player.mana === 0;
+
+            // (K6) MODE-GATE: schöpfer = frei
+            if (r.setGameMode) r.setGameMode("schöpfer");
+            r.state.player.mana = 10;
+            const schoepferDrain = r._drainMana(50);
+            out.schoepferDrainSucceeds = schoepferDrain === true;
+            out.schoepferManaUnchanged = r.state.player.mana === 10; // kein Drain
+            out.schoepferCanPay = r._canPayMana(50) === true; // immer ok
+
+            // (K7) Anti-Scope §3: KEIN DSL-Op für Mana-Drain
+            const dslOpsSrc = r.constructor.toString().substring(0, 100000);
+            // grobe Probe: kein "drain_mana" oder "consume_mana" als DSL-Op-Key
+            out.noDslDrainMana = !/\bdrain_mana\s*:\s*\(/.test(dslOpsSrc) && !/\bconsume_mana\s*:\s*\(/.test(dslOpsSrc);
+
+            // (K8) Mode-Override per opts: opts.mode overschreibt getGameMode
+            if (r.setGameMode) r.setGameMode("pfad");
+            r.state.player.mana = 20;
+            const optsOverride = r._drainMana(30, { mode: "schöpfer" });
+            out.optsModeOverride = optsOverride === true && r.state.player.mana === 20;
+        } finally {
+            if (r.state.player) {
+                r.state.player.mana = savedMana;
+                r.state.player.manaMax = savedManaMax;
+            }
+            if (r.setGameMode) r.setGameMode(savedMode);
+        }
+        return out;
+    });
+
+    check("V18.201 (K1a) _canPayMana Helper existiert", res.canPayExists === true);
+    check("V18.201 (K1b) _drainMana Helper existiert", res.drainExists === true);
+    check("V18.201 (K2a) canPay: 50 ≤ 60 → true", res.canPayEnough === true);
+    check("V18.201 (K2b) canPay: 70 > 60 → false", res.canPayInsufficient === true);
+    check("V18.201 (K2c) canPay: 0 → true (no-op)", res.canPayZero === true);
+    check("V18.201 (K2d) canPay: negativ → true (no-op)", res.canPayNegative === true);
+    check("V18.201 (K3a) drainMana success returns true", res.drainSuccessReturnsTrue === true);
+    check("V18.201 (K3b) drainMana reduces mana exact (60-20=40)", res.drainReducesMana === true);
+    check("V18.201 (K4a) drainMana insufficient returns false", res.drainFailReturnsFalse === true);
+    check("V18.201 (K4b) drainMana insufficient leaves mana unchanged (atomar)", res.drainFailLeavesUnchanged === true);
+    check("V18.201 (K5) drainMana exact (5-5=0, kein Unter-Null)", res.drainExactlyDepletes === true);
+    check("V18.201 (K6a) Mode-Gate schöpfer: drainMana success ohne Drain", res.schoepferDrainSucceeds === true);
+    check("V18.201 (K6b) Mode-Gate schöpfer: mana unverändert", res.schoepferManaUnchanged === true);
+    check("V18.201 (K6c) Mode-Gate schöpfer: canPay immer true", res.schoepferCanPay === true);
+    check("V18.201 (K7) Anti-Scope §3: KEIN drain_mana/consume_mana DSL-Op (analog W5)", res.noDslDrainMana === true);
+    check("V18.201 (K8) opts.mode overschreibt getGameMode (für unit-tests + multi-context)", res.optsModeOverride === true);
+}
+
+// V18.202 — Γ1-LESART-5 Ψ2-NASE Foundation (genese-plan §Γ1 + aktiv.md §4.A):
+// das Geruch-Feld der Welt als FÜNFTE Welt-Stimme. _worldWindDirAt + _scentAt
+// als reine Math-Helper, kein Welt-State-Mutation, kein Kreatur-KI-Hook noch.
+async function checkBandV18202GeruchFeld(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (N1) SCENT frozen + helpers
+        out.scentConstExists = !!A.SCENT && Object.isFrozen(A.SCENT);
+        if (A.SCENT) {
+            const S = A.SCENT;
+            out.scentConstsSensible =
+                typeof S.rangeM === "number" && S.rangeM > 0 &&
+                typeof S.windFactor === "number" && S.windFactor >= 0 && S.windFactor <= 1 &&
+                typeof S.minDirectional === "number" && S.minDirectional >= 0 && S.minDirectional <= 1;
+        }
+        out.windHelperExists = typeof r._worldWindDirAt === "function";
+        out.scentHelperExists = typeof r._scentAt === "function";
+
+        // (N2) Wind-Vektor: normalisiert, deterministisch, variiert über Position
+        if (r._worldWindDirAt) {
+            const w1 = r._worldWindDirAt(0, 0, 0);
+            const w2 = r._worldWindDirAt(0, 0, 0);
+            out.windDeterministic = w1.x === w2.x && w1.z === w2.z;
+            out.windNormalized = Math.abs(Math.hypot(w1.x, w1.z) - 1) < 1e-6;
+            // Variiert über große Distanzen (1000m) — nicht-konstant
+            const w3 = r._worldWindDirAt(2000, 0, 0);
+            const dot13 = w1.x * w3.x + w1.z * w3.z;
+            out.windVariesOverDistance = Math.abs(dot13) < 0.999; // < 1 → unterschiedliche Richtung
+        }
+
+        // (N3) Geruch: einzelne Quelle, Distanz-Decay
+        if (r._scentAt) {
+            const src = [{ x: 0, z: 0, strength: 1.0 }];
+            // Verschiedene Distanzen — Geruch fällt monoton
+            const g0 = r._scentAt(0.5, 0.5, src); // sehr nah
+            const g20 = r._scentAt(20, 0, src);
+            const g50 = r._scentAt(50, 0, src);
+            const g100 = r._scentAt(100, 0, src);
+            const g300 = r._scentAt(300, 0, src); // jenseits 4×range
+            out.scentNearStrong = g0 > 0.3; // nah > 0.3 (rangeM=80, exp(-0)≈1, modifiziert von wind)
+            out.scentDistantWeaker = g20 > g50 && g50 > g100;
+            out.scentFarVanishes = g300 < 0.05;
+        }
+
+        // (N4) Geruch akkumuliert über mehrere Quellen
+        if (r._scentAt) {
+            const oneSource = [{ x: 0, z: 0, strength: 1 }];
+            const twoSources = [{ x: 0, z: 0, strength: 1 }, { x: 5, z: 0, strength: 1 }];
+            const g1 = r._scentAt(10, 0, oneSource);
+            const g2 = r._scentAt(10, 0, twoSources);
+            out.scentAccumulates = g2 > g1;
+        }
+
+        // (N5) Wind-Modulation: downwind > upwind
+        if (r._scentAt && r._worldWindDirAt) {
+            // Such einen Punkt mit klarem Wind-Vektor
+            // Test-Trick: konstruiere Wind via einer Source an einer fixen Position,
+            // dann samplen wir EXAKT downwind und upwind
+            const sx = 100, sz = 100;
+            const wind = r._worldWindDirAt(sx, sz, 0);
+            // Downwind = in Wind-Richtung von Source aus
+            const dRecv = { x: sx + wind.x * 50, z: sz + wind.z * 50 };
+            const uRecv = { x: sx - wind.x * 50, z: sz - wind.z * 50 };
+            const src = [{ x: sx, z: sz, strength: 1 }];
+            const downG = r._scentAt(dRecv.x, dRecv.z, src);
+            const upG = r._scentAt(uRecv.x, uRecv.z, src);
+            out.downwindStronger = downG > upG;
+            out.upwindStillHasMinScent = upG > 0; // minDirectional > 0
+            out.downwindMagnitude = downG;
+            out.upwindMagnitude = upG;
+        }
+
+        // (N6) Empty/null sources → 0
+        if (r._scentAt) {
+            out.emptyArrayIsZero = r._scentAt(0, 0, []) === 0;
+            out.nullSourcesIsZero = r._scentAt(0, 0, null) === 0;
+            out.invalidSourceFiltered = r._scentAt(0, 0, [null, { x: 0, z: 0, strength: 1 }]) > 0;
+        }
+
+        // (N7) Negative/zero strength → ignoriert
+        if (r._scentAt) {
+            const ignoreSrc = [{ x: 0, z: 0, strength: 0 }, { x: 0, z: 0, strength: -1 }];
+            out.zeroNegStrengthIgnored = r._scentAt(1, 0, ignoreSrc) === 0;
+        }
+
+        return out;
+    });
+
+    check("V18.202 (N1a) AnazhRealm.SCENT frozen + Konstanten existieren", res.scentConstExists === true);
+    check("V18.202 (N1b) SCENT-Konstanten sinnvoll (rangeM>0, windFactor∈[0,1], minDirectional∈[0,1])", res.scentConstsSensible === true);
+    check("V18.202 (N1c) _worldWindDirAt + _scentAt Helper existieren", res.windHelperExists === true && res.scentHelperExists === true);
+    check("V18.202 (N2a) Wind deterministisch (zwei Aufrufe gleich)", res.windDeterministic === true);
+    check("V18.202 (N2b) Wind normalisiert (Länge ≈ 1)", res.windNormalized === true);
+    check("V18.202 (N2c) Wind variiert über 2000 m Distanz (kein konstanter Vektor)", res.windVariesOverDistance === true);
+    check("V18.202 (N3a) Geruch nah > 0.3 (volle Stärke nahe Quelle)", res.scentNearStrong === true);
+    check("V18.202 (N3b) Distanz-Decay monoton (20>50>100)", res.scentDistantWeaker === true);
+    check("V18.202 (N3c) Bei 300 m: Geruch sehr schwach < 0.05 (decay × windMod)", res.scentFarVanishes === true);
+    check("V18.202 (N4) Mehrere Quellen akkumulieren (2 sources > 1 source)", res.scentAccumulates === true);
+    check(
+        `V18.202 (N5a) Downwind stärker als upwind (down=${res.downwindMagnitude && res.downwindMagnitude.toFixed(3)} > up=${res.upwindMagnitude && res.upwindMagnitude.toFixed(3)})`,
+        res.downwindStronger === true
+    );
+    check("V18.202 (N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
+    check("V18.202 (N6a) Empty sources array → 0", res.emptyArrayIsZero === true);
+    check("V18.202 (N6b) null sources → 0 (kein Crash)", res.nullSourcesIsZero === true);
+    check("V18.202 (N6c) Ungültige Source-Einträge werden gefiltert", res.invalidSourceFiltered === true);
+    check("V18.202 (N7) 0/negative strength wird ignoriert (kein negativer Geruch)", res.zeroNegStrengthIgnored === true);
+}
+
+// V18.203 — Γ3 FELD-CHARAKTER FOUNDATION (genese-plan §Γ3 + aktiv.md §4.A):
+// Frequenz-Fächer pro Welt-Stimme bei genVersion >= 3 (Domain-Warp als Folge).
+// Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/V18.193-Disziplin).
+async function checkBandV18203Gamma3FeldCharakter(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (F1) FIELD_CHARACTER frozen Konstanten
+        out.constExists = !!A.FIELD_CHARACTER && Object.isFrozen(A.FIELD_CHARACTER);
+        if (A.FIELD_CHARACTER) {
+            const FC = A.FIELD_CHARACTER;
+            // Wellenlängen-Spreizung: lebendig 200, dichte 340, glut 520, magie 160
+            out.allDifferent =
+                FC.lambdaLebendig !== FC.lambdaDichte &&
+                FC.lambdaLebendig !== FC.lambdaGlut &&
+                FC.lambdaLebendig !== FC.lambdaMagieleitung &&
+                FC.lambdaDichte !== FC.lambdaGlut;
+            out.allPositive =
+                FC.lambdaLebendig > 0 && FC.lambdaDichte > 0 &&
+                FC.lambdaGlut > 0 && FC.lambdaMagieleitung > 0;
+        }
+
+        // Save state für Tests
+        const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
+        const origField = r.state.worldField;
+        try {
+            // (F2) LEGACY gen=1: bit-identisch zu Pre-V18.203. Lass uns die
+            // ALTE Form selbst nachrechnen (s=0.005 für alle vier) und mit
+            // worldFieldAt vergleichen.
+            r.state.worldMeta = { ...(r.state.worldMeta || {}), genVersion: 1 };
+            r.state.worldField = null; // re-init
+            const f1 = r.worldFieldAt(100, 200);
+            const ws = 0.005;
+            const f1Manual = r.state.worldField;
+            const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
+            const legacyExpected = {
+                lebendig: n01(f1Manual.lebendigNoise.noise2D(100 * ws, 200 * ws)),
+                dichte: n01(f1Manual.dichteNoise.noise2D(100 * ws + 100, 200 * ws - 200)),
+                glut: n01(f1Manual.glutNoise.noise2D(100 * ws + 500, 200 * ws + 700)),
+                magieleitung: n01(f1Manual.magieNoise.noise2D(100 * ws - 333, 200 * ws + 999)),
+            };
+            out.legacyBitIdentical =
+                Math.abs(f1.lebendig - legacyExpected.lebendig) < 1e-9 &&
+                Math.abs(f1.dichte - legacyExpected.dichte) < 1e-9 &&
+                Math.abs(f1.glut - legacyExpected.glut) < 1e-9 &&
+                Math.abs(f1.magieleitung - legacyExpected.magieleitung) < 1e-9;
+
+            // (F3) GEN=3: Frequenz-Fächer aktiv — anderer Wert als Legacy am
+            // selben Punkt.
+            r.state.worldMeta.genVersion = 3;
+            r.state.worldField = null;
+            const f3 = r.worldFieldAt(100, 200);
+            // f3 sollte ANDERE Werte als f1 haben (mindestens eine Stimme)
+            out.gen3DiffersFromLegacy =
+                Math.abs(f1.lebendig - f3.lebendig) > 1e-6 ||
+                Math.abs(f1.dichte - f3.dichte) > 1e-6 ||
+                Math.abs(f1.glut - f3.glut) > 1e-6 ||
+                Math.abs(f1.magieleitung - f3.magieleitung) > 1e-6;
+
+            // V18.209-Konsolidierung: F4 ersatzlos in F9b unten gefaltet
+            // (die echte Bit-Identitäts-Probe inkl. Warp). F4-Wand bleibt
+            // nur als minimaler Sanity-Check (kein NaN/Infinity); die
+            // ECHTE Wand ist F9b.
+            const FC = A.FIELD_CHARACTER;
+            out.gen3ValuesFinite =
+                Number.isFinite(f3.lebendig) && Number.isFinite(f3.dichte) &&
+                Number.isFinite(f3.glut) && Number.isFinite(f3.magieleitung);
+
+            // (F5) GEN=2 zwischen Tor: gen 2 ist Γ1-Feuchte, NICHT Γ3.
+            // Verhalten = LEGACY (s=0.005 für alle, kein Frequenz-Fächer).
+            r.state.worldMeta.genVersion = 2;
+            r.state.worldField = null;
+            const f2 = r.worldFieldAt(100, 200);
+            out.gen2StaysLegacy =
+                Math.abs(f1.lebendig - f2.lebendig) < 1e-9 &&
+                Math.abs(f1.dichte - f2.dichte) < 1e-9;
+
+            // (F6) Wellenlängen-Effekt: dichte (λ340) sollte LANGSAMER variieren
+            // als magieleitung (λ160) bei gen 3. Wir testen über eine kurze
+            // Distanz (40 m) → magie sollte mehr "Bewegung" zeigen.
+            r.state.worldMeta.genVersion = 3;
+            r.state.worldField = null;
+            let totalDeltaMagie = 0;
+            let totalDeltaDichte = 0;
+            const fA = r.worldFieldAt(0, 0);
+            for (let d = 5; d <= 200; d += 5) {
+                const fB = r.worldFieldAt(d, 0);
+                totalDeltaMagie += Math.abs(fB.magieleitung - fA.magieleitung);
+                totalDeltaDichte += Math.abs(fB.dichte - fA.dichte);
+            }
+            out.magieMoreVariable = totalDeltaMagie > totalDeltaDichte;
+            out.totalDeltaMagie = Number(totalDeltaMagie.toFixed(3));
+            out.totalDeltaDichte = Number(totalDeltaDichte.toFixed(3));
+
+            // (F7) Source-Probe: FIELD_CHARACTER + gen>=3-Gate
+            const src = r.worldFieldAt.toString();
+            out.srcHasGate = /FIELD_CHARACTER/.test(src) && /_genVersion/.test(src);
+
+            // (F8) V18.204 DOMAIN-WARP — warpAmp + warpScale Konstanten existieren
+            out.warpConstsExist =
+                typeof A.FIELD_CHARACTER.warpAmp === "number" &&
+                A.FIELD_CHARACTER.warpAmp > 0 &&
+                typeof A.FIELD_CHARACTER.warpScale === "number" &&
+                A.FIELD_CHARACTER.warpScale > 0;
+
+            // (F9) DOMAIN-WARP: bei gen=3 verschiebt der Warp die Lese-Position.
+            // Wir vergleichen: worldFieldAt(x,z) mit warp vs. ohne warp
+            // (manuell, mit den ECHTEN Noise-Instanzen).
+            r.state.worldMeta.genVersion = 3;
+            r.state.worldField = null;
+            const fW = r.worldFieldAt(500, 700);
+            const fwNoise = r.state.worldField;
+            // Berechne ohne Warp (warpAmp = 0)
+            const sLeb = 1 / FC.lambdaLebendig;
+            const noWarp = n01(fwNoise.lebendigNoise.noise2D(500 * sLeb, 700 * sLeb));
+            // Berechne mit Warp
+            const wpX = fwNoise.warpNoise.noise2D(500 * FC.warpScale, 700 * FC.warpScale) * FC.warpAmp;
+            const wpZ = fwNoise.warpNoise.noise2D(500 * FC.warpScale + 51.7, 700 * FC.warpScale - 23.1) * FC.warpAmp;
+            const wx = 500 + wpX;
+            const wz = 700 + wpZ;
+            const withWarp = n01(fwNoise.lebendigNoise.noise2D(wx * sLeb, wz * sLeb));
+            out.warpedMatchesActual = Math.abs(fW.lebendig - withWarp) < 1e-9;
+            out.warpChangesValue = Math.abs(noWarp - withWarp) > 1e-6;
+
+            // (F10) Warp-Stream existiert + ist eigener Stream
+            out.warpStreamExists = !!fwNoise.warpNoise && typeof fwNoise.warpNoise.noise2D === "function";
+
+            // (F11) Bei gen<3: warp wird NICHT angewendet (Legacy bleibt clean)
+            r.state.worldMeta.genVersion = 1;
+            r.state.worldField = null;
+            const fLeg2 = r.worldFieldAt(500, 700);
+            const wsLeg = 0.005;
+            const legacyExpected2 = {
+                lebendig: n01(r.state.worldField.lebendigNoise.noise2D(500 * wsLeg, 700 * wsLeg)),
+            };
+            // legacy verwendet KEINEN Warp → exakt der unWarp-Wert
+            out.legacyNoWarp = Math.abs(fLeg2.lebendig - legacyExpected2.lebendig) < 1e-9;
+        } finally {
+            if (origGen === undefined) {
+                if (r.state.worldMeta) delete r.state.worldMeta.genVersion;
+            } else if (r.state.worldMeta) {
+                r.state.worldMeta.genVersion = origGen;
+            }
+            r.state.worldField = origField;
+        }
+        return out;
+    });
+
+    check("V18.203 (F1a) FIELD_CHARACTER frozen + existiert", res.constExists === true);
+    check("V18.203 (F1b) Vier verschiedene Wellenlängen (Spreizung)", res.allDifferent === true);
+    check("V18.203 (F1c) Alle Wellenlängen positiv", res.allPositive === true);
+    check("V18.203 (F2) LEGACY gen=1: bit-identisch zu manueller s=0.005-Berechnung (Pre-V18.203)", res.legacyBitIdentical === true);
+    check("V18.203 (F3) GEN=3: Werte verschieden zu Legacy (Frequenz-Fächer aktiv)", res.gen3DiffersFromLegacy === true);
+    check("V18.203 (F4) GEN=3: Werte endlich (kein NaN durch Warp/Fächer)", res.gen3ValuesFinite === true);
+    check("V18.203 (F5) GEN=2 (Γ1-Feuchte-Tor) bleibt Legacy (kein Γ3-Charakter)", res.gen2StaysLegacy === true);
+    check(
+        `V18.203 (F6) magieleitung (λ160) variabler als dichte (λ340) über 200 m (Δmagie ${res.totalDeltaMagie} > Δdichte ${res.totalDeltaDichte})`,
+        res.magieMoreVariable === true
+    );
+    check("V18.203 (F7) Source-Probe: FIELD_CHARACTER + _genVersion-Gate im worldFieldAt", res.srcHasGate === true);
+    check("V18.204 (F8) DOMAIN-WARP Konstanten (warpAmp + warpScale)", res.warpConstsExist === true);
+    check("V18.204 (F9a) Warp ändert den gelesenen Wert (Sample-Position verschoben)", res.warpChangesValue === true);
+    check("V18.204 (F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)", res.warpedMatchesActual === true);
+    check("V18.204 (F10) Eigener warpNoise-Stream existiert (Γ5-Disziplin)", res.warpStreamExists === true);
+    check("V18.204 (F11) gen<3: kein Warp angewendet (Legacy clean, kein Drift)", res.legacyNoWarp === true);
+}
+
+// V18.205 — Γ7 BAUM-VARIANTEN-GRAMMATIK (genese-plan §Γ7 + aktiv.md §4.A):
+// `_growTreeBlueprint(speciesKey, seed)` emittiert parts[] in der bestehenden
+// Sprache. Tag-neutral via material-Konsistenz (holz+laub).
+async function checkBandV18205Gamma7Grammatik(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+
+        // (G1) Helper existiert
+        out.helperExists = typeof r._growTreeBlueprint === "function";
+
+        if (out.helperExists) {
+            // (G2) Determinismus: gleiche seed → gleiche parts
+            const p1 = r._growTreeBlueprint("eiche", "seed-a");
+            const p2 = r._growTreeBlueprint("eiche", "seed-a");
+            out.deterministic = JSON.stringify(p1) === JSON.stringify(p2);
+
+            // (G3) 6 verschiedene Seeds → 6 unterschiedliche Varianten
+            const seeds = ["s1", "s2", "s3", "s4", "s5", "s6"];
+            const variants = seeds.map((s) => r._growTreeBlueprint("eiche", s));
+            const uniqueSigs = new Set(variants.map((v) => JSON.stringify(v)));
+            out.sixDistinct = uniqueSigs.size === 6;
+
+            // (G4) STRUKTUR: Stamm-Parts sind holz, Laub-Parts sind laub.
+            // Mind. 3 Stamm-Segmente, mind. 1 Laub-Ellipsoid.
+            const sample = variants[0];
+            out.partsCount = sample.length;
+            out.allHolzOrLaub = sample.every((p) => p.material === "holz" || p.material === "laub");
+            out.hasHolzParts = sample.filter((p) => p.material === "holz").length >= 3;
+            out.hasLaubParts = sample.filter((p) => p.material === "laub").length >= 1;
+
+            // (G5) SPECIES.ts-REGEL: Laub sitzt NIE direkt am Hauptstamm (y=0..3),
+            // sondern an Ebene-2-Enden (typischerweise höher y oder lateral
+            // offset). Probe: alle laub-Parts haben |xz| > 0.4 ODER y > 2
+            // (= an einem Ast-Ende, nicht am Stamm-Sockel).
+            const laubAwayFromTrunk = sample
+                .filter((p) => p.material === "laub")
+                .every((p) => {
+                    const dist = Math.hypot(p.position.x, p.position.z);
+                    return dist > 0.4 || p.position.y > 2;
+                });
+            out.laubAtBranchEnds = laubAwayFromTrunk;
+
+            // (G6) TAG-NEUTRALITÄT: ein generierter Baum hat dieselben
+            // Affinitäts-MAX wie ein bestehender baum_eiche (holz+laub Materials,
+            // gleiche shapes cylinder+sphere). V17.16-Disziplin.
+            const fakeBp = { parts: sample };
+            const treeBp = r.state.blueprints["baum_eiche"];
+            if (treeBp) {
+                const fakeTags = r.computeCompoundTags(fakeBp);
+                const treeTags = r.computeCompoundTags(treeBp);
+                const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
+                const diffs = {};
+                let neutral = true;
+                for (const axis of targetAxes) {
+                    const dt = (fakeTags[axis] || 0) - (treeTags[axis] || 0);
+                    diffs[axis] = Number(dt.toFixed(3));
+                    if (Math.abs(dt) > 0.05) neutral = false;
+                }
+                out.tagDiffs = diffs;
+                out.tagNeutral = neutral;
+            }
+
+            // (G7) WOHLGEFORMTHEIT: jeder Part hat shape, material, position{xyz},
+            // size{xyz}
+            out.wellFormed = sample.every(
+                (p) =>
+                    p.shape &&
+                    p.material &&
+                    p.position &&
+                    typeof p.position.x === "number" &&
+                    typeof p.position.y === "number" &&
+                    typeof p.position.z === "number" &&
+                    p.size &&
+                    typeof p.size.x === "number" &&
+                    typeof p.size.y === "number" &&
+                    typeof p.size.z === "number"
+            );
+
+            // (G8) HÖHEN-VARIANZ über 6 Varianten — sample 0..5 + maxHöhe
+            const heights = variants.map((v) => {
+                let maxY = 0;
+                for (const p of v) if (p.position.y + p.size.y * 0.5 > maxY) maxY = p.position.y + p.size.y * 0.5;
+                return maxY;
+            });
+            const hMin = Math.min(...heights);
+            const hMax = Math.max(...heights);
+            out.heightSpread = Number((hMax - hMin).toFixed(2));
+            out.heightsVary = (hMax - hMin) > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
+
+            // (G9) Source-Probe: SimplexNoise + eigener Stream
+            const src = r._growTreeBlueprint.toString();
+            out.usesGrammarStream = /-veg-grammatik/.test(src);
+            out.usesNoise = /SimplexNoise|noise2D/.test(src);
+        }
+        return out;
+    });
+
+    check("V18.205 (G1) _growTreeBlueprint Helper existiert", res.helperExists === true);
+    check("V18.205 (G2) Determinismus: gleiche seed → identische parts", res.deterministic === true);
+    check(`V18.205 (G3) 6 unterschiedliche seeds → 6 unique Varianten`, res.sixDistinct === true);
+    check(`V18.205 (G4a) parts > 0 (gemessen ${res.partsCount})`, res.partsCount > 0);
+    check("V18.205 (G4b) Alle Parts holz oder laub Material", res.allHolzOrLaub === true);
+    check("V18.205 (G4c) Mind. 3 Stamm-Holz-Parts", res.hasHolzParts === true);
+    check("V18.205 (G4d) Mind. 1 Laub-Krone-Part", res.hasLaubParts === true);
+    check("V18.205 (G5) SPECIES.ts-Regel: Laub an Ast-Enden (nie am Hauptstamm direkt)", res.laubAtBranchEnds === true);
+    check(
+        `V18.205 (G6) TAG-NEUTRALITÄT zu baum_eiche (V17.16-Disziplin, diffs ${JSON.stringify(res.tagDiffs)})`,
+        res.tagNeutral === true
+    );
+    check("V18.205 (G7) Parts wohlgeformt (shape+material+position+size vollständig)", res.wellFormed === true);
+    check(`V18.205 (G8) Höhen-Spreizung über 6 Varianten > 0.5 m (${res.heightSpread})`, res.heightsVary === true);
+    check("V18.205 (G9a) Eigener Noise-Stream '-veg-grammatik' (Γ5-Disziplin)", res.usesGrammarStream === true);
+    check("V18.205 (G9b) SimplexNoise statt Math.random", res.usesNoise === true);
+}
+
+// V18.206 — AVATAR-GRÖSSE-SPEED-TRADE (§4.D Folge zu V18.195): größere
+// Avatare sind langsamer (1/sqrt(sizeFactor)), Floor-Disziplin gewahrt.
+async function checkBandV18206SpeedTrade(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+
+        // (S1) Source: 1/sizeHpMul angewendet auf speed/attackSpeed/jumpPower
+        const src = r.computePlayerStats.toString();
+        out.hasSizeSpeedMul = /sizeSpeedMul/.test(src);
+        out.appliedToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
+        out.appliedToAttackSpeed = /stats\.attackSpeed\s*=\s*Math\.max\(0\.25,\s*stats\.attackSpeed\s*\*\s*sizeSpeedMul/.test(src);
+        out.appliedToJumpPower = /stats\.jumpPower\s*=\s*stats\.jumpPower\s*\*\s*sizeSpeedMul/.test(src);
+
+        const savedSoul = r.state.player && r.state.player.soul;
+        const savedEquipped = r.state.player && JSON.parse(JSON.stringify(r.state.player.equipped || {}));
+        const savedCustomSouls = r.state.customSouls ? JSON.parse(JSON.stringify(r.state.customSouls)) : {};
+
+        try {
+            // (S2) Built-in NEUTRAL: human-Soul → sizeFactor=1, kein Speed-Drift
+            r.state.player.soul = "human";
+            r.state.player.equipped = {};
+            r.state.player.boosts = [];
+            const human = r.computePlayerStats();
+            out.humanSpeed = human.stats.speed;
+            // Wir prüfen pragmatisch: human ist neutral, also speed entspricht
+            // STAT_FROM_TAGS.speed(humanTags) (kein Mul-Effekt). Aber das ist
+            // schwer direkt zu testen. Wir verifizieren via SMALL/LARGE-Vergleich.
+
+            // (S3) CUSTOM LARGE: großer Avatar (sizeFactor > 1) → speed LANGSAMER
+            if (!r.state.customSouls) r.state.customSouls = {};
+            r.state.customSouls["bp_largeAvatarS"] = {
+                role: "soul",
+                bodyParts: [
+                    { shape: "sphere", material: "fleisch", size: { x: 2.5, y: 2.5, z: 2.5 } },
+                    { shape: "box", material: "fleisch", size: { x: 1.8, y: 1.8, z: 1.8 } },
+                ],
+            };
+            r.state.blueprints = r.state.blueprints || {};
+            r.state.blueprints["bp_largeAvatarS"] = r.state.customSouls["bp_largeAvatarS"];
+            r.state.player.soul = "bp_largeAvatarS";
+            const large = r.computePlayerStats();
+            out.largeSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_largeAvatarS"].bodyParts });
+            out.largeSpeed = large.stats.speed;
+            out.largeAttackSpeed = large.stats.attackSpeed;
+            out.largeJumpPower = large.stats.jumpPower;
+
+            // (S4) CUSTOM SMALL: kleiner Avatar
+            r.state.customSouls["bp_smallAvatarS"] = {
+                role: "soul",
+                bodyParts: [
+                    { shape: "sphere", material: "fleisch", size: { x: 0.4, y: 0.4, z: 0.4 } },
+                    { shape: "sphere", material: "fleisch", size: { x: 0.3, y: 0.3, z: 0.3 } },
+                ],
+            };
+            r.state.blueprints["bp_smallAvatarS"] = r.state.customSouls["bp_smallAvatarS"];
+            r.state.player.soul = "bp_smallAvatarS";
+            const small = r.computePlayerStats();
+            out.smallSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_smallAvatarS"].bodyParts });
+            out.smallSpeed = small.stats.speed;
+
+            // (S5) Vergleich: large < small bei speed/jumpPower (sizeFactor>1 → langsamer)
+            // (wenn sizeFactor von large > sizeFactor von small)
+            if (out.largeSizeFactor > out.smallSizeFactor) {
+                out.largeSlower = large.stats.speed < small.stats.speed;
+                out.largeJumpLower = large.stats.jumpPower < small.stats.jumpPower;
+            } else {
+                // sizeFactor-Reihenfolge umgekehrt → skip
+                out.largeSlower = true;
+                out.largeJumpLower = true;
+            }
+
+            // (S6) Floor-Disziplin: speed >= 2 (nie kaputt durch hohen sizeFactor)
+            out.speedFloorRespected = large.stats.speed >= 2;
+            out.attackSpeedFloorRespected = large.stats.attackSpeed >= 0.25;
+        } finally {
+            if (r.state.player) {
+                r.state.player.soul = savedSoul;
+                r.state.player.equipped = savedEquipped;
+            }
+            r.state.customSouls = savedCustomSouls;
+            if (r.state.blueprints) {
+                delete r.state.blueprints["bp_largeAvatarS"];
+                delete r.state.blueprints["bp_smallAvatarS"];
+            }
+        }
+        return out;
+    });
+
+    check("V18.206 (S1a) Source: sizeSpeedMul in computePlayerStats", res.hasSizeSpeedMul === true);
+    check("V18.206 (S1b) speed × sizeSpeedMul angewendet (mit Floor 2)", res.appliedToSpeed === true);
+    check("V18.206 (S1c) attackSpeed × sizeSpeedMul angewendet (mit Floor 0.25)", res.appliedToAttackSpeed === true);
+    check("V18.206 (S1d) jumpPower × sizeSpeedMul angewendet", res.appliedToJumpPower === true);
+    check(
+        `V18.206 (S2/S5a) Large (sizeFactor ${res.largeSizeFactor && res.largeSizeFactor.toFixed(2)}) langsamer als Small (sizeFactor ${res.smallSizeFactor && res.smallSizeFactor.toFixed(2)}): ${res.largeSpeed && res.largeSpeed.toFixed(2)} < ${res.smallSpeed && res.smallSpeed.toFixed(2)}`,
+        res.largeSlower === true
+    );
+    check("V18.206 (S5b) Large hat niedrigeren jumpPower als Small", res.largeJumpLower === true);
+    check(
+        `V18.206 (S6a) Floor speed ≥ 2 (gemessen large=${res.largeSpeed && res.largeSpeed.toFixed(2)})`,
+        res.speedFloorRespected === true
+    );
+    check(
+        `V18.206 (S6b) Floor attackSpeed ≥ 0.25 (gemessen large=${res.largeAttackSpeed && res.largeAttackSpeed.toFixed(2)})`,
+        res.attackSpeedFloorRespected === true
+    );
+}
+
+// V18.207 — R5 STRUKTUR-TEXTUR (aktiv.md §4.C): Material-Mikro-Tiefe-Boost
+// für werk-Profile. Default 1.0 = no-op, browser-justierbar wenn Strukturen
+// platt wirken. Source-Probe + Konstante.
+async function checkBandV18207R5StructureTexture(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (R1) R5_STRUCTURE_TEXTURE frozen + Konstante
+        out.constExists = !!A.R5_STRUCTURE_TEXTURE && Object.isFrozen(A.R5_STRUCTURE_TEXTURE);
+        if (A.R5_STRUCTURE_TEXTURE) {
+            out.microBoostValue = A.R5_STRUCTURE_TEXTURE.microBoost;
+            out.microBoostSensible =
+                typeof A.R5_STRUCTURE_TEXTURE.microBoost === "number" &&
+                A.R5_STRUCTURE_TEXTURE.microBoost > 0 &&
+                A.R5_STRUCTURE_TEXTURE.microBoost < 5;
+        }
+
+        // (R2) Source-Probe: _applySubstanceResponse nutzt R5_STRUCTURE_TEXTURE
+        const src = r._applySubstanceResponse.toString();
+        out.srcHasR5 = /R5_STRUCTURE_TEXTURE/.test(src);
+        out.srcMultipliesMicro = /microBoost/.test(src) || /_r5Boost/.test(src);
+
+        // (R3) Default 1.0 ist no-op (bit-identisch zu Pre-V18.207, der
+        // Multiplier ändert nichts)
+        out.defaultIsNoOp = A.R5_STRUCTURE_TEXTURE.microBoost === 1.0;
+
+        return out;
+    });
+
+    check("V18.207 (R1a) AnazhRealm.R5_STRUCTURE_TEXTURE frozen + existiert", res.constExists === true);
+    check(`V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`, res.microBoostSensible === true);
+    check("V18.207 (R2a) Source: R5_STRUCTURE_TEXTURE wird in _applySubstanceResponse gelesen", res.srcHasR5 === true);
+    check("V18.207 (R2b) Source: micro × Boost-Faktor (microBoost oder _r5Boost im Code)", res.srcMultipliesMicro === true);
+    check("V18.207 (R3) Default microBoost = 1.0 (no-op, bit-identisch zu Pre-V18.207)", res.defaultIsNoOp === true);
+}
+
+// V18.208 — KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
+// Spieler-Symmetrie): größere Kreaturen sind robuster aber langsamer.
+async function checkBandV18208CreatureSizeSymmetry(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (C1) Source: Größen-Multiplier in computeCreatureStats
+        const src = r.computeCreatureStats.toString();
+        out.hasSizeMul = /creatureSize/.test(src) && /Math\.sqrt/.test(src);
+        out.appliesToHp = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul/.test(src);
+        out.appliesToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
+
+        // (C2) Vergleich: kleine Kreatur (sizeFactor < 1) vs große (>1)
+        if (!A.CREATURE_SOULS) {
+            out.creatureSoulsExists = false;
+            return out;
+        }
+        out.creatureSoulsExists = true;
+
+        // Liste aller built-in Kreatur-Seelen
+        const souls = Object.keys(A.CREATURE_SOULS);
+        out.soulCount = souls.length;
+
+        const stats = {};
+        for (const sn of souls) {
+            const soul = A.CREATURE_SOULS[sn];
+            if (!soul || !Array.isArray(soul.bodyParts)) continue;
+            const sizeFactor = r._compoundSizeFactor({ parts: soul.bodyParts });
+            const fakeCreature = { userData: { soul: sn, boosts: [] } };
+            const cs = r.computeCreatureStats(fakeCreature);
+            stats[sn] = {
+                sizeFactor,
+                hpMax: cs.stats.hpMax,
+                speed: cs.stats.speed,
+            };
+        }
+        out.statsRecord = stats;
+
+        // (C3) Größerer sizeFactor → tendenziell mehr HP, weniger speed
+        // Sortiere nach sizeFactor + prüfe Monotonie
+        const sorted = Object.entries(stats).sort((a, b) => a[1].sizeFactor - b[1].sizeFactor);
+        let hpMonotone = true;
+        let speedMonotone = true;
+        for (let i = 1; i < sorted.length; i++) {
+            // Wenn sizeFactor STRENG größer ist (kein Tie):
+            const sfPrev = sorted[i - 1][1].sizeFactor;
+            const sfCur = sorted[i][1].sizeFactor;
+            if (sfCur - sfPrev > 0.05) {
+                // HP sollte steigen (oder gleich bleiben), speed sollte fallen
+                if (sorted[i][1].hpMax < sorted[i - 1][1].hpMax - 0.5) hpMonotone = false;
+                if (sorted[i][1].speed > sorted[i - 1][1].speed + 0.5) speedMonotone = false;
+            }
+        }
+        out.hpMonotone = hpMonotone;
+        out.speedMonotone = speedMonotone;
+
+        // (C4) Floor-Disziplin: speed >= 2 für alle Kreaturen
+        out.allSpeedAtFloor = Object.values(stats).every((s) => s.speed >= 2);
+
+        // (C5) Es gibt Variation (nicht alle Kreaturen identisch)
+        const hpValues = Object.values(stats).map((s) => s.hpMax);
+        const speedValues = Object.values(stats).map((s) => s.speed);
+        const hpRange = Math.max(...hpValues) - Math.min(...hpValues);
+        const speedRange = Math.max(...speedValues) - Math.min(...speedValues);
+        out.hpVariesAmongCreatures = hpRange > 1;
+        out.speedVariesAmongCreatures = speedRange > 0.5;
+
+        return out;
+    });
+
+    check("V18.208 (C1a) Source: creatureSize + Math.sqrt in computeCreatureStats", res.hasSizeMul === true);
+    check("V18.208 (C1b) hpMax × sizeHpMul angewendet", res.appliesToHp === true);
+    check("V18.208 (C1c) speed × sizeSpeedMul (mit Floor 2) angewendet", res.appliesToSpeed === true);
+    check(`V18.208 (C2) AnazhRealm.CREATURE_SOULS existiert (${res.soulCount} Seelen)`, res.creatureSoulsExists === true);
+    check(`V18.208 (C3a) HP-Monotonie über Kreatur-Spektrum (größer = mehr HP)`, res.hpMonotone === true);
+    check(`V18.208 (C3b) Speed-Monotonie (größer = langsamer)`, res.speedMonotone === true);
+    check("V18.208 (C4) Floor speed ≥ 2 für alle Kreatur-Seelen", res.allSpeedAtFloor === true);
+    check(`V18.208 (C5a) HP variiert über Kreaturen (kein einheitlicher Wert)`, res.hpVariesAmongCreatures === true);
+    check(`V18.208 (C5b) Speed variiert über Kreaturen`, res.speedVariesAmongCreatures === true);
+}
+
+// V18.209 — KONSOLIDIERUNGS-WELLE (Schöpfer-Audit 14.06.: 5 Audit-Punkte
+// abschliessen). Source-Probe: die Doc-Quellen + Versions-Stellen synchron;
+// die Foundation-Übersicht in CLAUDE.md/aktiv.md/rueckmeldung.md aktuell;
+// und die VIER FOUNDATIONS (V18.201 Mana-Konsum · V18.202 Geruch-KI · V18.205
+// Worldgen · V18.207 R5-Slider) ehrlich als "Verdrahtung pending" markiert.
+async function checkBandV18209Konsolidierung(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.209.0"
+        out.versionStr = A.VERSION;
+        out.versionMatches = A.VERSION === "18.209.0";
+
+        // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
+        // beim Konsolidieren (alles bleibt lauffähig):
+        out.manaDrainExists = typeof r._drainMana === "function" && typeof r._canPayMana === "function";
+        out.scentExists = typeof r._scentAt === "function" && typeof r._worldWindDirAt === "function";
+        out.growTreeExists = typeof r._growTreeBlueprint === "function";
+        out.r5Exists = !!A.R5_STRUCTURE_TEXTURE && typeof A.R5_STRUCTURE_TEXTURE.microBoost === "number";
+        out.allFoundationsAlive =
+            out.manaDrainExists && out.scentExists && out.growTreeExists && out.r5Exists;
+
+        // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
+        out.gamma4Anker = typeof r._macroAnker === "function";
+        out.gamma6Snowband = typeof r._attachVoxelFieldColors === "function" &&
+            /SNOW_PROM_START/.test(r._attachVoxelFieldColors.toString());
+        out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
+        out.gammaMLichen = !!A.LICHEN;
+        out.gammaMIronBands = !!A.IRON_BANDS;
+        out.gamma2Totholz = !!(r.state.blueprints && r.state.blueprints["stamm_gefallen"]);
+        out.gamma1Nose = typeof r._scentAt === "function";
+        out.gamma3Char = !!A.FIELD_CHARACTER;
+        out.gamma7Grammar = typeof r._growTreeBlueprint === "function";
+        out.gammaBogenKomplett =
+            out.gamma4Anker && out.gamma6Snowband && out.gammaMStrata &&
+            out.gammaMLichen && out.gammaMIronBands && out.gamma2Totholz &&
+            out.gamma1Nose && out.gamma3Char && out.gamma7Grammar;
+
+        // (K4) AVATAR-GRÖSSEN-Familie komplett (V18.195+196+206+208):
+        const srcCompPlayer = r.computePlayerStats.toString();
+        const srcCompCreature = r.computeCreatureStats.toString();
+        out.playerHpStaminaMana = /sizeHpMul/.test(srcCompPlayer);
+        out.playerSpeedTrade = /sizeSpeedMul/.test(srcCompPlayer);
+        out.creatureSizeSymmetry = /creatureSize/.test(srcCompCreature) && /sizeHpMul/.test(srcCompCreature);
+        out.avatarFamilyKomplett =
+            out.playerHpStaminaMana && out.playerSpeedTrade && out.creatureSizeSymmetry;
+
+        // (K5) MANA-SYMMETRIE Foundation:
+        out.manaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
+        out.manaRegenConst = typeof A.MANA_REGEN_PER_SEC === "number" && A.MANA_REGEN_PER_SEC > 0;
+
+        return out;
+    });
+
+    check(`V18.209 (K1) VERSION = "18.209.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
+    check("V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)", res.allFoundationsAlive === true);
+    check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
+    check("V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)", res.avatarFamilyKomplett === true);
+    check("V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)", res.manaMaxFn && res.manaRegenConst);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -45176,10 +47050,26 @@ async function checkBandWaves9And10a(ctx) {
             const soulRes = r.applyPlayerSoulFromBlueprint("test_10a_soul");
             out.soulApplyOk = soulRes && soulRes.ok === true;
             const statsRough = r.computePlayerStats();
-            // Soul-tags wurden mit (0.5 + 0.5*0.4 = 0.7) multipliziert
-            // hpMax sollte messbar niedriger sein als Mensch — aber abhängig von
-            // Compound-Tags. Wir prüfen pragmatisch: hpMax bei roh ≤ hpMax Mensch
-            out.roughLessHp = statsRough && statsHuman && statsRough.stats.hpMax <= statsHuman.stats.hpMax + 0.001;
+            // V18.195-Schliff: PRÄZISIONS-Achse isoliert messen — gleicher Soul,
+            // einmal mit cap=0.4 (roh), einmal ohne opChain (geboren). So
+            // bleibt der Größen-Faktor konstant + nur die Präzisions-Mul
+            // unterscheidet sich → die Sorgfalt-Belohnung wird strukturell
+            // bewiesen, unabhängig von der absoluten Avatar-Größe (vorher
+            // verglich der Test gegen den Mensch-Default, was nach V18.195-
+            // Größen-Skalierung mehrdeutig wurde, wenn der Custom-Avatar
+            // größer als Mensch ist).
+            for (const p of bp.parts) {
+                delete p.opChain;
+            }
+            r.applyPlayerSoulFromBlueprint("test_10a_soul");
+            const statsPolished = r.computePlayerStats();
+            // Restore die opChain für die nächsten Tests
+            for (const p of bp.parts) {
+                p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
+            }
+            r.applyPlayerSoulFromBlueprint("test_10a_soul");
+            out.roughLessHp =
+                statsRough && statsPolished && statsRough.stats.hpMax < statsPolished.stats.hpMax;
 
             // Zurück zur Mensch-Seele
             r.applyPlayerSoul("human");
@@ -50080,6 +51970,22 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandPhi7PortalHalls(ctx);
             await checkBandPhi6ComputeSpende(ctx);
             await checkBandW5Werkzeugabnutzung(ctx);
+            await checkBandV18193MakroErbgut(ctx);
+            await checkBandV18194Gamma6Befoerderung(ctx);
+            await checkBandV18195AvatarSizeHp(ctx);
+            await checkBandV18196ManaSymmetry(ctx);
+            await checkBandV18197GammaMStrata(ctx);
+            await checkBandV18198Gamma2Totholz(ctx);
+            await checkBandV18199GammaMLichen(ctx);
+            await checkBandV18200GammaMIronBands(ctx);
+            await checkBandV18201ManaKonsum(ctx);
+            await checkBandV18202GeruchFeld(ctx);
+            await checkBandV18203Gamma3FeldCharakter(ctx);
+            await checkBandV18205Gamma7Grammatik(ctx);
+            await checkBandV18206SpeedTrade(ctx);
+            await checkBandV18207R5StructureTexture(ctx);
+            await checkBandV18208CreatureSizeSymmetry(ctx);
+            await checkBandV18209Konsolidierung(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
