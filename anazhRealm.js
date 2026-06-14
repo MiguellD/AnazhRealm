@@ -43479,6 +43479,115 @@ class AnazhRealm {
         return pool;
     }
 
+    // V18.218 (DER LEBENDIGE GIGANT §3, Plan §3.6+§6) — der LOD-Bauplan-Builder
+    // pro Variante. Baut für eine (species, variantIndex)-Identität alle drei
+    // LOD-Stufen als REGISTRIERTE Built-In-Bauplane in state.blueprints unter
+    // den Keys `grown_<species>_v<idx>_lod{0|1|2}`. LOD0 entspricht dem
+    // klassischen `grown_<species>_v<idx>` (V18.217) — wir baulen es NICHT
+    // doppelt, sondern routen den LOD0-Key auf den bereits-existierenden V18.217-
+    // Bauplan (Backward-Kompat: keine Doppel-Registrierung). LOD1+LOD2 werden
+    // ON-DEMAND gebaut, wenn der erste Konsument sie braucht (V18.218.1 oder
+    // V18.220 GPU-Scatter). Beim Welt-Wechsel räumt `_loadStateRestoreWorldMeta`
+    // die LOD-Bauplane automatisch mit (sie sind welt-bound durch den Pool).
+    //
+    // Plan-Wand: das Wachstum nutzt EXAKT denselben variantSeed wie LOD0 (Plan
+    // §6 „LOD-Stufen teilen die VARIANT-IDENTITÄT"); die Form-Identität ist
+    // gleiche Spezies+Variante, nur die Polylinie-Dichte sinkt mit der Stufe.
+    // Tag-Wand (V17.16): die VARIATIONS-Wand prüft nur den LOD0-Bauplan (oben
+    // im `_growTreeBlueprintForSpawn`-Pfad); LOD1/LOD2 erben die Tag-Entscheidung
+    // implizit (gleiche (shape, material)-Combos cylinder+holz, sphere+laub →
+    // MAX-Aggregation identisch, V17.16-Wand strukturell).
+    _buildVariantLODs(species, variantIndex) {
+        if (!this.state.blueprints) return null;
+        const N = AnazhRealm.VARIANTS_PER_SPECIES;
+        const pool = this._ensureVariantSeedPool();
+        if (!pool || !pool[species] || pool[species].length !== N) return null;
+        if (!Number.isFinite(variantIndex) || variantIndex < 0 || variantIndex >= N) return null;
+        const variantSeed = pool[species][variantIndex];
+        const grammar = AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
+        if (!grammar) return null;
+        const speciesLabel = String(species || "Baum")
+            .replace(/^baum_/, "")
+            .replace(/^./, (c) => c.toUpperCase());
+        const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
+        const isMerged = genV >= 6;
+        const keys = {};
+        // Für ALLE 3 Stufen direkt am exakten Key bauen (Plan §3.6 fordert
+        // EXAKT (species, variantIndex)-Identität über alle LODs). Der LOD0-
+        // Key teilt sich mit V18.217's `_growTreeBlueprintForSpawn`: trifft
+        // dort ein Aufruf mit einem regionSeed, der auf variantIndex hasht,
+        // hatte er denselben Bauplan in der Hand → kein Doppel-Bau, der
+        // identische variantSeed liefert bit-identische Geometrie (Plan §6).
+        for (const lod of [0, 1, 2]) {
+            const cacheKey = lod === 0
+                ? `grown_${species}_v${variantIndex}`
+                : `grown_${species}_v${variantIndex}_lod${lod}`;
+            keys[lod] = cacheKey;
+            if (this.state.blueprints[cacheKey]) continue;
+            const parts = this._growTreeBlueprintRich(species, variantSeed, grammar, { lod });
+            if (!Array.isArray(parts) || parts.length < 1) continue;
+            const isSkeletonMeshed =
+                genV >= 7 && this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches);
+            this.state.blueprints[cacheKey] = {
+                name: cacheKey,
+                label: lod === 0 ? `${speciesLabel} (gewachsen)` : `${speciesLabel} (gewachsen, LOD${lod})`,
+                builtIn: true,
+                _isGrown: true,
+                _grownSpecies: species,
+                _grownSeed: variantSeed,
+                _variantIndex: variantIndex,
+                _lodLevel: lod,
+                _isMerged: isMerged,
+                _skeleton: isSkeletonMeshed ? this._lastTreeSkeleton : null,
+                instanced: true,
+                parts,
+            };
+            if (isSkeletonMeshed) this._lastTreeSkeleton = null;
+            // LOD0 + LRU-Ring (eviction-bewusst wie V18.217-Pfad)
+            if (lod === 0) {
+                if (!this._growTreeRing) this._growTreeRing = [];
+                if (this._growTreeRing.indexOf(cacheKey) === -1) this._growTreeRing.push(cacheKey);
+            }
+        }
+        return keys;
+    }
+
+    // V18.218 (DER LEBENDIGE GIGANT §3, Plan §3.6) — der DISTANZ-CHOOSER.
+    // Liest die LOD-Schwellen + Hysterese aus `AnazhRealm.LOD_DISTANCES`. Wenn
+    // ein `currentLOD` gegeben ist, wendet der Chooser die Hysterese an: ein
+    // Wechsel passiert nur, wenn die Distanz die Schwelle UM die Hysterese
+    // überquert. Ohne `currentLOD` (z.B. neuer Spawn) trifft er die unbiased
+    // Wahl. Browser-justierbar via override des AnazhRealm.LOD_DISTANCES-Konstants.
+    _chooseLODForDistance(distance, currentLOD) {
+        const cfg = AnazhRealm.LOD_DISTANCES;
+        if (!cfg) return 0;
+        const t01 = cfg.thresh01;
+        const t12 = cfg.thresh12;
+        const h = cfg.hysteresis || 0;
+        // Ohne Hysterese-Zustand: einfache Stufenfunktion (Spawn/erstes Setup).
+        if (!Number.isFinite(currentLOD)) {
+            if (distance > t12) return 2;
+            if (distance > t01) return 1;
+            return 0;
+        }
+        const cur = Math.max(0, Math.min(2, currentLOD | 0));
+        // Hysterese: wir wechseln NUR, wenn die Distanz die nächste Schwelle
+        // PLUS hysteresis überschreitet, oder die vorige MINUS hysteresis
+        // unterschreitet.
+        if (cur === 0) {
+            if (distance > t01 + h) return 1;
+            return 0;
+        }
+        if (cur === 1) {
+            if (distance > t12 + h) return 2;
+            if (distance < t01 - h) return 0;
+            return 1;
+        }
+        // cur === 2
+        if (distance < t12 - h) return 1;
+        return 2;
+    }
+
     // FNV-1a in einen Float für SimplexNoise gewandelt). `returns` ein parts-
     // Array, das direkt als `bp.parts` für einen Bauplan dient.
     // V18.210 (§1-A1) — Worldgen-Hook für Γ7: aus dem Helper einen REGISTRIERTEN
@@ -43679,7 +43788,18 @@ class AnazhRealm {
     // gesetzt) — die Aufrufer (`_growTreeBlueprintForSpawn`,
     // `_loadStateRestoreGrownBlueprints`) lesen ihn direkt nach dem Aufruf
     // und speichern ihn am bp._skeleton.
-    _growTreeBlueprintRich(speciesKey, seed, grammar) {
+    _growTreeBlueprintRich(speciesKey, seed, grammar, opts) {
+        // V18.218 (DER LEBENDIGE GIGANT §3, Plan §3.6+§6) — LOD-STUFEN. Die
+        // Grammatik bleibt EINE Quelle (die volle Spec); der `opts.lod`-Schalter
+        // beschneidet die Tiefe ohne die Form zu verfälschen. Plan-Schwellen:
+        //   lod 0 = Hero (alle L1/L2/L3 + volle Foliage, ~75-81 Parts)
+        //   lod 1 = Mittel (nur L1, Foliage als ~4 Cards, ~12 Parts)
+        //   lod 2 = Far (nur Trunk + 1 Krone-Card, ~6 Parts)
+        // Der `seed` bleibt identisch über LOD-Stufen — die Form-Identität ist
+        // GLEICHE Spezies+Variante, nur die DICHTE der Polylinien sinkt mit
+        // Distanz. Die Krone-Mitte (Skeleton-Anchors) wandert nicht; der
+        // Schöpfer sieht keinen LOD-Pop in horizontaler Position.
+        const lodLevel = opts && Number.isFinite(opts.lod) ? Math.max(0, Math.min(2, opts.lod | 0)) : 0;
         const sKey = String(speciesKey || "baum_eiche") + "|" + String(seed || "g8-default") + "|v5";
         let hash = 2166136261;
         for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
@@ -43708,6 +43828,9 @@ class AnazhRealm {
             anchors: [], // [{x,y,z}]
             flareAmp: 0,
             flareLobes: 0,
+            // V18.218 — die LOD-Stufe reist in den Skeleton; die Tube-/Cards-
+            // Geometrie-Builder können sie lesen (z.B. radialSegs reduzieren).
+            lodLevel: lodLevel,
         };
 
         // ─── STAMM (TRUNK) ────────────────────────────────────────────
@@ -43915,29 +44038,57 @@ class AnazhRealm {
         // einen InstancedMesh — 6 Arten × ~9 Regionen × N Parts = Gesamt-
         // Draw-Calls. Bei ~40 Wood + ~35 Foliage = ~75 Parts ist die Welt
         // im 9-Regionen-Ring bei ~4000 InstancedMesh-Draws (bezahlbar).
-        const MAX_BRANCH_PARTS = 40;
+        // V18.218 — die LOD-Stufe beschneidet die Branch-Hierarchie:
+        //   lod 0 = volle Tiefe (L1+L2+L3)
+        //   lod 1 = nur L1 (keine L2/L3-Verzweigung)
+        //   lod 2 = keine Äste (nur Stamm — die Krone trägt 1 Foliage-Karte)
+        // Plan §3.6 sagt: „LOD2-Cards single, LOD1-Cards 4". Der Foliage-Block
+        // unten cappt zusätzlich `MAX_FOLIAGE_PARTS` per LOD.
+        const MAX_BRANCH_PARTS = lodLevel === 0 ? 40 : lodLevel === 1 ? 14 : 0;
         const foliageAnchors = [];
-        const l1Tips = collectTips(trunkPts, grammar.L1);
-        for (let li = 0; li < l1Tips.length && parts.length < MAX_BRANCH_PARTS; li++) {
-            const tip1 = l1Tips[li];
-            const l1Pts = growBranch(tip1.pos, tip1.phi, tip1.pos.r, grammar.L1, 1, foliageAnchors);
-            if (grammar.L2 && parts.length < MAX_BRANCH_PARTS) {
-                const l2Tips = collectTips(l1Pts, grammar.L2);
-                for (let lj = 0; lj < l2Tips.length && parts.length < MAX_BRANCH_PARTS; lj++) {
-                    const tip2 = l2Tips[lj];
-                    // L2-phi relative zur L1-Richtung — bricht das Whorl-Muster
-                    // und vermeidet Symmetrie-Klone.
-                    const childPhi = tip2.phi + tip1.phi * 0.3;
-                    const l2Pts = growBranch(tip2.pos, childPhi, tip2.pos.r, grammar.L2, 2, foliageAnchors);
-                    if (grammar.L3 && parts.length < MAX_BRANCH_PARTS) {
-                        const l3Tips = collectTips(l2Pts, grammar.L3);
-                        for (let lk = 0; lk < l3Tips.length && parts.length < MAX_BRANCH_PARTS; lk++) {
-                            const tip3 = l3Tips[lk];
-                            growBranch(tip3.pos, tip3.phi + childPhi * 0.2, tip3.pos.r, grammar.L3, 3, foliageAnchors);
+        if (lodLevel < 2) {
+            // Mind. L1 erlaubt (LOD 0 und 1)
+            const l1Tips = collectTips(trunkPts, grammar.L1);
+            for (let li = 0; li < l1Tips.length && parts.length < MAX_BRANCH_PARTS; li++) {
+                const tip1 = l1Tips[li];
+                const l1Pts = growBranch(tip1.pos, tip1.phi, tip1.pos.r, grammar.L1, 1, foliageAnchors);
+                if (lodLevel === 0 && grammar.L2 && parts.length < MAX_BRANCH_PARTS) {
+                    const l2Tips = collectTips(l1Pts, grammar.L2);
+                    for (let lj = 0; lj < l2Tips.length && parts.length < MAX_BRANCH_PARTS; lj++) {
+                        const tip2 = l2Tips[lj];
+                        // L2-phi relative zur L1-Richtung — bricht das Whorl-Muster
+                        // und vermeidet Symmetrie-Klone.
+                        const childPhi = tip2.phi + tip1.phi * 0.3;
+                        const l2Pts = growBranch(tip2.pos, childPhi, tip2.pos.r, grammar.L2, 2, foliageAnchors);
+                        if (grammar.L3 && parts.length < MAX_BRANCH_PARTS) {
+                            const l3Tips = collectTips(l2Pts, grammar.L3);
+                            for (let lk = 0; lk < l3Tips.length && parts.length < MAX_BRANCH_PARTS; lk++) {
+                                const tip3 = l3Tips[lk];
+                                growBranch(
+                                    tip3.pos,
+                                    tip3.phi + childPhi * 0.2,
+                                    tip3.pos.r,
+                                    grammar.L3,
+                                    3,
+                                    foliageAnchors
+                                );
+                            }
                         }
                     }
                 }
             }
+        }
+        // LOD 2: keine Äste, aber die Foliage soll trotzdem an EINEM zentralen
+        // Anchor in der Krone-Mitte sitzen. Wir synthetisieren EINEN Anchor an
+        // 0.85·totalH (Plan §3.4 „LOD2-card single, im Krone-Zentrum"). EIN
+        // foliage.kind === "none" (Totholz/Snags) bekommt KEINEN Anchor — der
+        // Snag hat keine Krone, auch nicht im Fern-LOD (Plan §3.3 Totholz).
+        if (lodLevel === 2 && grammar.foliage && grammar.foliage.kind !== "none") {
+            foliageAnchors.push({
+                x: trunkPts[trunkPts.length - 1].x,
+                y: totalH * 0.85,
+                z: trunkPts[trunkPts.length - 1].z,
+            });
         }
 
         // ─── FOLIAGE AT ANCHORS (§3.4) ──────────────────────────────
@@ -43951,7 +44102,8 @@ class AnazhRealm {
         // Sektor-Bias), aber die Part-Zahl bleibt bezahlbar. ~35 Foliage-
         // Cluster (vs vorher 8 Kugeln) ist ein dramatischer Sprung in
         // Krone-Dichte, im Instancing-Budget bezahlbar.
-        const MAX_FOLIAGE_PARTS = 35;
+        // V18.218 — Foliage-Cap per LOD (Plan §3.6 „LOD1-Cards 4, LOD2-Card 1").
+        const MAX_FOLIAGE_PARTS = lodLevel === 0 ? 35 : lodLevel === 1 ? 4 : 1;
         const targetClusterCount = Math.min(MAX_FOLIAGE_PARTS, foliageAnchors.length * Math.max(1, fo.clusterSize[0]));
         const anchorStep = Math.max(
             1,
@@ -66264,7 +66416,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.217.0";
+AnazhRealm.VERSION = "18.218.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -66590,6 +66742,18 @@ AnazhRealm.TOTHOLZ_RATE = 0.1;
 // justierbar; eine Änderung erfordert KEINEN Welt-Reset (die Pool-Aufstellung
 // ist lazy, alte Welten ohne variantSeed migrieren still).
 AnazhRealm.VARIANTS_PER_SPECIES = 16;
+
+// V18.218 (DER LEBENDIGE GIGANT §3, Plan §3.6+§6) — LOD-DISTANZEN. Die
+// Schwellen lesen alle Konsumenten (`_chooseLODForDistance`, `_tickArchitectureLOD`
+// V18.218.1 wenn enabled). Hysterese verhindert Flackern an der Grenze: ein
+// Baum auf 80 m wechselt zu LOD1, kehrt aber erst bei 70 m zurück zu LOD0.
+// Werte sind browser-justierbar (`AnazhRealm.LOD_DISTANCES`-Override via
+// state.atmosphere möglich); Plan-Erstwurf: 80 m (Hero→Mittel), 160 m (Mittel→Fern).
+AnazhRealm.LOD_DISTANCES = Object.freeze({
+    thresh01: 80, // dist > 80 m → LOD1
+    thresh12: 160, // dist > 160 m → LOD2
+    hysteresis: 10, // ± 10 m Pufferzone (Plan §3.6 „kein Flackern")
+});
 
 // V18.212 — Ω-C CANOPY-SHELL (DER LEBENDIGE GIGANT §9): die ferne Wald-
 // Oberfläche, die individuelle Bäume in der Distanz cullt und durch eine

@@ -36433,16 +36433,26 @@ async function checkBandV18217VariantenPool(ctx) {
         }
 
         // ─── (F) Migration: Pool ohne Eintrag wird lazy ergänzt ───────
-        // Snapshot mit pre-V18.216-Spezies + manuelle Migration prüfen
-        const oldStyleMeta = { seed: "old-world-seed-1", genVersion: 5 };
-        r.state.worldMeta = { ...r.state.worldMeta, ...oldStyleMeta };
-        delete r.state.worldMeta.variantSeed;
-        const migrated = r._ensureVariantSeedPool();
-        out.migrationFillsPool = !!(
-            migrated && Object.keys(A.SPECIES_GRAMMAR || {}).every((s) =>
-                Array.isArray(migrated[s]) && migrated[s].length === A.VARIANTS_PER_SPECIES
-            )
-        );
+        // SAUBER getestet: wir bauen einen TEMPORÄREN Meta-Kontext, prüfen die
+        // Migration, und STELLEN den Welt-Stand restlos wieder her. Sonst
+        // vergiftet der mutierte Pool die nachfolgenden Bands (V18.218 LOD-
+        // Bauplane bauten gegen den alten pool[]-Pfad und brachen die Seed-
+        // Identität → das ist GENAU das Welt-Identitäts-Gesetz, V18.210).
+        const savedMeta = r.state.worldMeta ? { ...r.state.worldMeta } : null;
+        try {
+            const oldStyleMeta = { seed: "old-world-seed-1", genVersion: 5 };
+            r.state.worldMeta = { ...r.state.worldMeta, ...oldStyleMeta };
+            delete r.state.worldMeta.variantSeed;
+            const migrated = r._ensureVariantSeedPool();
+            out.migrationFillsPool = !!(
+                migrated && Object.keys(A.SPECIES_GRAMMAR || {}).every((s) =>
+                    Array.isArray(migrated[s]) && migrated[s].length === A.VARIANTS_PER_SPECIES
+                )
+            );
+        } finally {
+            // Welt-Identität wiederherstellen — kein State-Leck in Folge-Bands.
+            if (savedMeta) r.state.worldMeta = savedMeta;
+        }
 
         // ─── (G) Größe (Snapshot-Tragbarkeit) ────────────────────────
         if (r.state.worldMeta && r.state.worldMeta.variantSeed) {
@@ -36499,7 +36509,189 @@ async function checkBandV18217VariantenPool(ctx) {
     check(`V18.217 (H1) VERSION floor ≥ 18.217.0 (gemessen ${res.versionStr})`, res.versionFloor18217 === true);
 }
 
-// W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
+// V18.218 (DER LEBENDIGE GIGANT §3, gigant-fortsetzung-plan) — LOD-STUFEN
+// FOUNDATION. Plan §3.6+§6: 3 LODs pro Variante (Hero/Mittel/Far), Distanz-
+// Chooser mit Hysterese. Diese Welle baut die FOUNDATION (Geometrie-Beschneidung
+// + Variant-LOD-Builder + Chooser); die ACTIVATION im Spawn-Pfad (LOD-Switch
+// per Frame, Re-Allokation) bleibt für V18.218.1 OPT-IN (Schöpfer-Browser-Auge
+// muss den Look-Switch prüfen). Verdrahtung pending — bewusst markiert.
+async function checkBandV18218LODStufen(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // ─── (A) Source-Probes ────────────────────────────────────────
+        out.lodDistancesExists =
+            A.LOD_DISTANCES &&
+            Number.isFinite(A.LOD_DISTANCES.thresh01) &&
+            Number.isFinite(A.LOD_DISTANCES.thresh12) &&
+            Number.isFinite(A.LOD_DISTANCES.hysteresis);
+        out.buildVariantLODsExists = typeof r._buildVariantLODs === "function";
+        out.chooseLODExists = typeof r._chooseLODForDistance === "function";
+        // _growTreeBlueprintRich nimmt opts.lod (Source-Probe)
+        const richSrc = r._growTreeBlueprintRich.toString();
+        out.richHasLodOpt = /opts\s*&&\s*Number\.isFinite\(opts\.lod\)/.test(richSrc) || /opts.*lod/.test(richSrc);
+        out.richHasLodLevel = /lodLevel/.test(richSrc);
+
+        // ─── (B) Distanz-Chooser ──────────────────────────────────────
+        if (out.chooseLODExists) {
+            out.choose50 = r._chooseLODForDistance(50) === 0;
+            out.choose100 = r._chooseLODForDistance(100) === 1;
+            out.choose200 = r._chooseLODForDistance(200) === 2;
+            out.choose0 = r._chooseLODForDistance(0) === 0;
+            const t01 = A.LOD_DISTANCES.thresh01;
+            const h = A.LOD_DISTANCES.hysteresis;
+            // Hysterese: cur=0 + dist=85m → bleibt 0 (innerhalb +h Buffer)
+            out.hyst0to1Below = r._chooseLODForDistance(t01 + h * 0.5, 0) === 0; // 85 → 0
+            out.hyst0to1Above = r._chooseLODForDistance(t01 + h * 2, 0) === 1; // 100 → 1
+            // Hysterese: cur=1 + dist=60m → kehrt zurück zu 0 (unter -h-Buffer)
+            out.hyst1to0Below = r._chooseLODForDistance(t01 - h * 2, 1) === 0; // 60 → 0
+            out.hyst1to0Above = r._chooseLODForDistance(t01 - h * 0.5, 1) === 1; // 75 → 1
+        }
+
+        // ─── (C) LOD-Bauplane werden gebaut (3 Stufen) ────────────────
+        if (out.buildVariantLODsExists) {
+            const keys = r._buildVariantLODs("baum_eiche", 0);
+            out.lodKeysReturned = !!(keys && keys[0] && keys[1] && keys[2]);
+            if (keys) {
+                out.key0Form = /^grown_baum_eiche_v\d+$/.test(keys[0]);
+                out.key1Form = /^grown_baum_eiche_v\d+_lod1$/.test(keys[1]);
+                out.key2Form = /^grown_baum_eiche_v\d+_lod2$/.test(keys[2]);
+                out.bp0Exists = !!r.state.blueprints[keys[0]];
+                out.bp1Exists = !!r.state.blueprints[keys[1]];
+                out.bp2Exists = !!r.state.blueprints[keys[2]];
+                if (out.bp1Exists && out.bp2Exists) {
+                    out.bp1HasLodLevel = r.state.blueprints[keys[1]]._lodLevel === 1;
+                    out.bp2HasLodLevel = r.state.blueprints[keys[2]]._lodLevel === 2;
+                    out.lodsShareVariantIndex =
+                        r.state.blueprints[keys[1]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex &&
+                        r.state.blueprints[keys[2]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex;
+                    out.lodsShareSeed =
+                        r.state.blueprints[keys[1]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed &&
+                        r.state.blueprints[keys[2]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed;
+                }
+            }
+        }
+
+        // ─── (D) Geometrie: LOD-Reduktion in Parts-Anzahl ────────────
+        const grammar = A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_eiche;
+        if (grammar && r._growTreeBlueprintRich) {
+            const origLast = r._lastTreeSkeleton;
+            try {
+                const partsLOD0 = r._growTreeBlueprintRich("baum_eiche", "v218-lod-test", grammar, { lod: 0 });
+                const partsLOD1 = r._growTreeBlueprintRich("baum_eiche", "v218-lod-test", grammar, { lod: 1 });
+                const partsLOD2 = r._growTreeBlueprintRich("baum_eiche", "v218-lod-test", grammar, { lod: 2 });
+                out.lod0Parts = Array.isArray(partsLOD0) ? partsLOD0.length : 0;
+                out.lod1Parts = Array.isArray(partsLOD1) ? partsLOD1.length : 0;
+                out.lod2Parts = Array.isArray(partsLOD2) ? partsLOD2.length : 0;
+                out.lod0FullParts = out.lod0Parts >= 50;
+                out.lod1Reduced = out.lod1Parts > 0 && out.lod1Parts <= 20;
+                out.lod2Tiny = out.lod2Parts > 0 && out.lod2Parts <= 10;
+                out.lodPartsMonotone =
+                    out.lod0Parts > out.lod1Parts && out.lod1Parts > out.lod2Parts;
+                const partsDefault = r._growTreeBlueprintRich("baum_eiche", "v218-default-test", grammar);
+                out.lodDefaultIsLod0 = Array.isArray(partsDefault) && partsDefault.length >= 50;
+                out.lod2UnderCap = out.lod2Parts <= Math.ceil(out.lod0Parts * 0.15);
+            } finally {
+                r._lastTreeSkeleton = origLast;
+            }
+        }
+
+        // ─── (E) LOD2 für Totholz (kein Foliage) ─────────────────────
+        // Plan §3.3: Totholz ist ein Snag (kein Laub). LOD2 darf den Ω-K2-
+        // Wurzelanlauf-Flare (Saum am Stamm-Fuß) tragen, aber KEINE Krone-
+        // Foliage. Test: keine laub-Sphere höher als der Flare-Saum (y > 1m).
+        const totGrammar = A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_totholz;
+        if (totGrammar && r._growTreeBlueprintRich) {
+            const origLast = r._lastTreeSkeleton;
+            try {
+                const partsTot = r._growTreeBlueprintRich("baum_totholz", "v218-tot-test", totGrammar, { lod: 2 });
+                out.totLOD2Parts = Array.isArray(partsTot) ? partsTot.length : 0;
+                // Keine Krone-Laub-Sphere oberhalb des Sockels (Saum sitzt ~y=0.5m)
+                const kroneLaubCount = Array.isArray(partsTot)
+                    ? partsTot.filter((p) => p.material === "laub" && (p.position && p.position.y > 1.0)).length
+                    : 0;
+                out.totLOD2NoKroneLaub = kroneLaubCount === 0;
+            } finally {
+                r._lastTreeSkeleton = origLast;
+            }
+        }
+
+        // ─── (F) V17.16-Tag-Wand: LOD0/1/2 share compoundTags ────────
+        if (r._buildVariantLODs) {
+            const keys = r._buildVariantLODs("baum_eiche", 1);
+            if (keys && keys[0] && keys[1] && keys[2]) {
+                const bp0 = r.state.blueprints[keys[0]];
+                const bp1 = r.state.blueprints[keys[1]];
+                const bp2 = r.state.blueprints[keys[2]];
+                if (bp0 && bp1 && bp2) {
+                    const t0 = r.computeCompoundTags(bp0);
+                    const t1 = r.computeCompoundTags(bp1);
+                    const t2 = r.computeCompoundTags(bp2);
+                    const axes = ["lebendig", "dichte", "brennbar", "magieleitung"];
+                    out.tagNeutralLOD01 = axes.every((a) => Math.abs((t0[a] || 0) - (t1[a] || 0)) < 1e-6);
+                    out.tagNeutralLOD02 = axes.every((a) => Math.abs((t0[a] || 0) - (t2[a] || 0)) < 1e-6);
+                }
+            }
+        }
+
+        // ─── (G) Version + walk-with-code ────────────────────────────
+        out.versionStr = A.VERSION;
+        const partsV = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        out.versionFloor18218 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 218);
+
+        return out;
+    });
+
+    // (A) Source
+    check("V18.218 (A1) AnazhRealm.LOD_DISTANCES (thresh01/thresh12/hysteresis)", res.lodDistancesExists === true);
+    check("V18.218 (A2) _buildVariantLODs Helper existiert", res.buildVariantLODsExists === true);
+    check("V18.218 (A3) _chooseLODForDistance Helper existiert", res.chooseLODExists === true);
+    check("V18.218 (A4) _growTreeBlueprintRich akzeptiert opts.lod (Source)", res.richHasLodOpt === true);
+    check("V18.218 (A5) _growTreeBlueprintRich nutzt lodLevel intern (Source)", res.richHasLodLevel === true);
+
+    // (B) Distanz-Chooser
+    check(`V18.218 (B1) chooseLOD(50)=0 (Hero-Nähe)`, res.choose50 === true);
+    check(`V18.218 (B2) chooseLOD(100)=1 (Mittel)`, res.choose100 === true);
+    check(`V18.218 (B3) chooseLOD(200)=2 (Far)`, res.choose200 === true);
+    check(`V18.218 (B4) chooseLOD(0)=0 (Spieler-Position)`, res.choose0 === true);
+    check("V18.218 (B5) Hysterese cur=0 + dist=85m → bleibt 0 (kein Flackern)", res.hyst0to1Below === true);
+    check("V18.218 (B6) Hysterese cur=0 + dist=100m → wechselt 1", res.hyst0to1Above === true);
+    check("V18.218 (B7) Hysterese cur=1 + dist=60m → kehrt zu 0", res.hyst1to0Below === true);
+    check("V18.218 (B8) Hysterese cur=1 + dist=75m → bleibt 1", res.hyst1to0Above === true);
+
+    // (C) Variant-LOD-Bauplane
+    check("V18.218 (C1) _buildVariantLODs liefert 3 Bauplan-Keys", res.lodKeysReturned === true);
+    check("V18.218 (C2) Key-Form LOD0 `grown_<species>_v<idx>`", res.key0Form === true);
+    check("V18.218 (C3) Key-Form LOD1 `grown_<species>_v<idx>_lod1`", res.key1Form === true);
+    check("V18.218 (C4) Key-Form LOD2 `grown_<species>_v<idx>_lod2`", res.key2Form === true);
+    check("V18.218 (C5) LOD1-Bauplan in state.blueprints", res.bp1Exists === true);
+    check("V18.218 (C6) LOD2-Bauplan in state.blueprints", res.bp2Exists === true);
+    check("V18.218 (C7) bp._lodLevel gesetzt", res.bp1HasLodLevel === true && res.bp2HasLodLevel === true);
+    check("V18.218 (C8) 3 LOD-Bauplane teilen denselben _variantIndex (Form-Identität)", res.lodsShareVariantIndex === true);
+    check("V18.218 (C9) 3 LOD-Bauplane teilen denselben _grownSeed (Re-Wachstum bit-genau)", res.lodsShareSeed === true);
+
+    // (D) Geometrie-Reduktion
+    check(`V18.218 (D1) LOD0 ≥50 Parts (Hero, gemessen ${res.lod0Parts})`, res.lod0FullParts === true);
+    check(`V18.218 (D2) LOD1 reduziert auf ≤20 Parts (gemessen ${res.lod1Parts})`, res.lod1Reduced === true);
+    check(`V18.218 (D3) LOD2 ≤10 Parts (Far, gemessen ${res.lod2Parts})`, res.lod2Tiny === true);
+    check(`V18.218 (D4) Parts-Anzahl strict monoton: LOD0 > LOD1 > LOD2`, res.lodPartsMonotone === true);
+    check(`V18.218 (D5) Default-LOD ohne opts ist LOD0 (Backward-Kompat)`, res.lodDefaultIsLod0 === true);
+    check(`V18.218 (D6) LOD2 Parts ≤ 15 % von LOD0 (Plan §3.6 „≤ 10 % Triangle-Count Toleranz")`, res.lod2UnderCap === true);
+
+    // (E) Totholz im LOD2
+    check(`V18.218 (E1) baum_totholz LOD2 hat ≥1 Part (Trunk-only, gemessen ${res.totLOD2Parts})`, res.totLOD2Parts >= 1);
+    check("V18.218 (E2) Totholz LOD2 keine Krone-Laub oberhalb des Saums (Snag bleibt Snag, Plan §3.3)", res.totLOD2NoKroneLaub === true);
+
+    // (F) V17.16-Tag-Wand
+    check("V18.218 (F1) LOD0 + LOD1 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD01 === true);
+    check("V18.218 (F2) LOD0 + LOD2 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD02 === true);
+
+    // (G) Version
+    check(`V18.218 (G1) VERSION floor ≥ 18.218.0 (gemessen ${res.versionStr})`, res.versionFloor18218 === true);
+}
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
@@ -53699,6 +53891,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18215AtemberaubenderWald(ctx);
             await checkBandV18216KarstUndUnderstory(ctx);
             await checkBandV18217VariantenPool(ctx);
+            await checkBandV18218LODStufen(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
