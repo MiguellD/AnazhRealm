@@ -20593,6 +20593,15 @@ async function checkBandWelleC3CellularReaction(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const STATE = r.constructor.CELL_STATE;
+        // V18.224 — TEST-ISOLATION (V9.54-Klasse): dieser Band misst den
+        // Damm-STEMPEL-Revert (spawn dam → SOLID → remove → exakter Revert).
+        // Der V18.224-Scatter promoviert/streut Bäume im Spieler-Ring; landet
+        // ein gewachsener Baum im Damm-Footprint zwischen Pre-Damm-Snapshot und
+        // Post-Remove-Check, stempelt SEIN Holz die Wasser-Cells → diff (GEMESSEN
+        // 34, deterministisch). Der Scatter ist hier ein unbeteiligtes System →
+        // für die Messung ruhig stellen (wie die V18.217-Migration-Test-Isolation).
+        const _savedScatter = r.state.atmosphere ? r.state.atmosphere.gpuScatter : undefined;
+        if (r.state.atmosphere) r.state.atmosphere.gpuScatter = false;
         // 1) Stempel-Methode existiert
         out.hasStampMethod = typeof r._stampArchitectureSolidCellsInto === "function";
         out.cellBuildCallsStamp = /this\._stampArchitectureSolidCellsInto\(/.test(
@@ -20675,6 +20684,20 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // Array-Vergleich (remove MUSS die Cells exakt zum Pre-Dam-Zustand
         // restaurieren) ist terrain-unabhängig + die echte V9.74-Garantie.
         const preDamChunkKey = `${testCx},${testCz}`;
+        // V18.224 — die Pre-Dam-Baseline aus einem FRISCH GEDRAINTEN Chunk lesen:
+        // ein im Warmup promovierter Scatter-Baum (V18.224) kann in
+        // state.architectures liegen, ohne dass sein Holz-Stempel schon in den
+        // waterCells dieses Chunks steckt (der Chunk wurde seit der Promotion
+        // nicht neu gebaut). Der Test-Force-Drain unten würde ihn dann erst NACH
+        // dem Snapshot stempeln → ein „Geister-diff", der nichts mit dem Damm zu
+        // tun hat. Heilung: denselben 3×3-Force-Drain VOR der Baseline fahren →
+        // Pre-Dam + After-Remove sehen denselben Architektur-Satz (nur der Damm
+        // unterscheidet sie). Zusammen mit der gpuScatter=false-Isolation oben.
+        if (!r.state.dirtyVoxelChunks) r.state.dirtyVoxelChunks = new Set();
+        for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = -1; dx <= 1; dx++) r.state.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
+        }
+        for (let d = 0; d < 8 && r.state.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
         const preDamEntry0 = r.state.voxelChunks && r.state.voxelChunks.get(preDamChunkKey);
         const preDamCells = preDamEntry0 && preDamEntry0.waterCells ? Uint8Array.from(preDamEntry0.waterCells) : null;
         const damEntry = r.spawnArchitecture("damm", damPos, { silent: false });
@@ -20955,6 +20978,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
         out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.spawnArchitecture.toString());
         out.removeTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.removeArchitecture.toString());
+        // V18.224 — Scatter-Flag wiederherstellen (Test-Isolation aufräumen)
+        if (r.state.atmosphere) r.state.atmosphere.gpuScatter = _savedScatter;
         return out;
     });
     if (res.error) {
@@ -37042,6 +37067,206 @@ async function checkBandV18223PbrKohaerenz(ctx) {
     check("V18.223 (D2) Default-Mode: _buildToonNodeMaterial liefert Toon (kein PBR-Marker)", res.defaultIsToon === true);
 
     check(`V18.223 (V1) VERSION floor ≥ 18.223.0 (gemessen ${res.versionStr})`, res.versionFloor18223 === true);
+}
+
+// V18.224 (DER LEBENDIGE GIGANT §5+§8+§2 — DAS HERZ) — der ECHTE Scatter +
+// die ECHTE Promotion. Die zwei Seelen vereint: ferner Wald als InstancedMesh-
+// Streu (Dichte-Band) + Touch→Real-Kristallisation (SEELEN-Band). Tests messen
+// ECHTE Konsumtion: Instanzen entstehen, Cells promovieren zu echten Einträgen,
+// die Geometrie ist identisch (kein Sprung), Determinismus bit-genau.
+async function checkBandV18224ScatterPromotion(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // ─── (A) Source + Config ──────────────────────────────────────
+        out.scatterConfigExists =
+            A.SCATTER && Number.isFinite(A.SCATTER.cellM) && Number.isFinite(A.SCATTER.promoteM);
+        out.pcg2dExists = typeof r._pcg2d === "function";
+        out.scatterRegionExists = typeof r._scatterRegion === "function";
+        out.promoteExists = typeof r._promoteScatterCell === "function";
+        out.tickExists = typeof r._tickScatterStreaming === "function";
+        out.flagDefault = r.state.atmosphere && r.state.atmosphere.gpuScatter === true;
+        // Loop-Verdrahtung (alle _loopXY-Phasen scannen)
+        const loopSources = [];
+        if (r._gameLoopTick) loopSources.push(r._gameLoopTick.toString());
+        for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
+            if (/^_loop[A-Z]/.test(k) && typeof r[k] === "function") loopSources.push(r[k].toString());
+        }
+        out.tickInLoop = /_tickScatterStreaming/.test(loopSources.join("\n"));
+
+        // ─── (B) pcg2d Determinismus (bit-identisch, P2P/GPU-Wand) ────
+        if (out.pcg2dExists) {
+            out.pcgDeterministic = r._pcg2d(12345, 67890) === r._pcg2d(12345, 67890);
+            out.pcgDistinct = r._pcg2d(1, 2) !== r._pcg2d(2, 1);
+            out.pcgIsUint = Number.isInteger(r._pcg2d(99, 99)) && r._pcg2d(99, 99) >= 0;
+            // _scatterCellTransform deterministisch
+            const t1 = r._scatterCellTransform(100, 200);
+            const t2 = r._scatterCellTransform(100, 200);
+            out.transformDeterministic =
+                t1 && t2 && t1.x === t2.x && t1.z === t2.z && t1.yaw === t2.yaw && t1.scale === t2.scale;
+            out.transformInCell =
+                t1 && t1.scale >= 0.7 && t1.scale <= 1.36 && t1.yaw >= 0 && t1.yaw <= Math.PI * 2 + 1e-6;
+        }
+
+        // ─── (C) Scatter erzeugt ECHTE InstancedMesh-Instanzen ────────
+        // Player an eine bekannte Position teleportieren, eine Region generieren.
+        if (out.scatterRegionExists && r.state.scene) {
+            // Sicherstellen: Pool + Bake bereit
+            r._ensureVariantSeedPool();
+            const pp = { x: 3000, y: 50, z: 3000 }; // ferne, leere Region (kein Promotion-Konflikt)
+            const SC = A.SCATTER;
+            const regX = Math.floor(pp.x / SC.regionM);
+            const regZ = Math.floor(pp.z / SC.regionM);
+            // Region direkt generieren (umgeht den Frame-Tick)
+            const groupsBefore = r.state.archInstanceGroups ? r.state.archInstanceGroups.size : 0;
+            const region = r._scatterRegion(regX, regZ, pp);
+            out.regionBuilt = !!region;
+            out.regionInstanceCount = region ? region.instanceCount : 0;
+            out.regionHasCells = region && Array.isArray(region.cells) && region.cells.length > 0;
+            // Die Streu schrieb in HISM-Gruppen (ein Draw-Call pro Variante-Leaf)
+            const groupsAfter = r.state.archInstanceGroups ? r.state.archInstanceGroups.size : 0;
+            out.scatterCreatedGroups = groupsAfter >= groupsBefore;
+            // Wenigstens EINE Gruppe hat count > 0 (echte sichtbare Instanzen)
+            let liveInstances = 0;
+            if (r.state.archInstanceGroups) {
+                for (const g of r.state.archInstanceGroups.values()) {
+                    if (g.mesh && g.mesh.count > 0) liveInstances += g.mesh.count;
+                }
+            }
+            out.hasLiveInstances = liveInstances > 0;
+            out.liveInstanceCount = liveInstances;
+            // Cells tragen species + variantIndex + slots (Lookup-Fütterung)
+            if (region && region.cells.length > 0) {
+                const c0 = region.cells[0];
+                out.cellHasSpecies = typeof c0.species === "string" && c0.species.length > 0;
+                out.cellHasVariant = Number.isFinite(c0.variantIndex);
+                out.cellHasSlots = Array.isArray(c0.slots) && c0.slots.length > 0;
+                // Lookup-Buffer ist jetzt LEBENDIG (V18.220-Passagier geheilt)
+                const look = r._scatterLookupCell(c0.x, c0.z, "tree");
+                out.lookupAlive = look && look.species === c0.species && look.variantIndex === c0.variantIndex;
+            }
+            // Idempotenz: zweiter _scatterRegion-Aufruf liefert dieselbe (cached)
+            const region2 = r._scatterRegion(regX, regZ, pp);
+            out.regionIdempotent = region2 === region;
+        }
+
+        // ─── (D) Determinismus: zwei Welten gleicher Seed → gleiche Streu ─
+        // Wir prüfen die species/variant-Wahl an einer festen Cell (pure Funktion
+        // des Hash → P2P-konsistent).
+        if (out.scatterRegionExists) {
+            const h = r._pcg2d(555, 777);
+            const sp1 = r._scatterSpeciesForCell(0.7, 0.3, h);
+            const sp2 = r._scatterSpeciesForCell(0.7, 0.3, h);
+            out.speciesDeterministic = sp1 === sp2;
+        }
+
+        // ─── (E) Ω-H PROMOTION (Touch→Real, kein visueller Sprung) ────
+        if (out.promoteExists && r.state.scene) {
+            // Eine frische Scatter-Cell bauen + promovieren
+            const pp2 = { x: 5000, y: 50, z: 5000 };
+            const SC = A.SCATTER;
+            const regX2 = Math.floor(pp2.x / SC.regionM);
+            const regZ2 = Math.floor(pp2.z / SC.regionM);
+            const region = r._scatterRegion(regX2, regZ2, pp2);
+            if (region && region.cells.length > 0) {
+                // eine Cell, die NICHT promoted ist + slots hat
+                const cell = region.cells.find((c) => c.slots && c.slots.length > 0);
+                if (cell) {
+                    const archBefore = r.state.architectures.length;
+                    const promotedSpecies = cell.species;
+                    const promotedVariant = cell.variantIndex;
+                    const entry = r._promoteScatterCell(cell);
+                    out.promoteReturnsEntry = !!entry;
+                    out.archCountIncreased = r.state.architectures.length === archBefore + 1;
+                    if (entry) {
+                        // Der echte Eintrag trägt die Provenienz (Welt-Genese-Cell)
+                        out.entryHasProvenance =
+                            entry.provenance && entry.provenance.bornFrom === "world-genesis-cell";
+                        out.provenanceSpecies = entry.provenance && entry.provenance.species === promotedSpecies;
+                        // Der Eintrag nutzt den GLEICHEN grown-Bauplan (kein Sprung):
+                        // entry.type ist grown_<species>_v<variant> (LOD0). Der
+                        // Entry trägt _lodSpecies (von spawnArchitecture gesetzt),
+                        // NICHT _grownSpecies (das lebt am Blueprint).
+                        out.entryUsesGrownBp = /^grown_/.test(entry.type) && entry._lodSpecies === promotedSpecies;
+                        out.entryVariantMatches = entry._lodVariantIndex === promotedVariant;
+                        // Cell ist jetzt promoted (Bitmask) + slots freigegeben
+                        out.cellSlotsFreed = cell.slots === null;
+                        out.cellNowPromoted = r._scatterIsCellPromoted(cell.x, cell.z, "tree") === true;
+                        // Aufräumen
+                        r.removeArchitecture(entry);
+                    }
+                }
+            }
+        }
+
+        // ─── (F) Streaming-Tick + Welt-Wechsel-Cleanup ────────────────
+        out.disposeRegionExists = typeof r._disposeScatterRegion === "function";
+        out.disposeAllExists = typeof r._disposeAllScatterRegions === "function";
+        const restoreSrc = r._loadStateRestoreWorldMeta ? r._loadStateRestoreWorldMeta.toString() : "";
+        out.worldWechselDisposes = /_disposeAllScatterRegions/.test(restoreSrc);
+        // Tick respektiert das Flag
+        const tickSrc = r._tickScatterStreaming.toString();
+        out.tickReadsFlag = /gpuScatter/.test(tickSrc);
+
+        // ─── (G) Version ──────────────────────────────────────────────
+        out.versionStr = A.VERSION;
+        const partsV = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        out.versionFloor18224 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 224);
+
+        return out;
+    });
+
+    // (A) Source + Config
+    check("V18.224 (A1) AnazhRealm.SCATTER Config (cellM/promoteM)", res.scatterConfigExists === true);
+    check("V18.224 (A2) _pcg2d Integer-Hash Helper", res.pcg2dExists === true);
+    check("V18.224 (A3) _scatterRegion Generator Helper", res.scatterRegionExists === true);
+    check("V18.224 (A4) _promoteScatterCell Helper", res.promoteExists === true);
+    check("V18.224 (A5) _tickScatterStreaming Helper", res.tickExists === true);
+    check("V18.224 (A6) atmosphere.gpuScatter Default true (der Gigant erwacht)", res.flagDefault === true);
+    check("V18.224 (A7) _gameLoopTick ruft _tickScatterStreaming (Verdrahtung)", res.tickInLoop === true);
+
+    // (B) Determinismus
+    check("V18.224 (B1) pcg2d deterministisch (gleicher Input → gleicher Hash)", res.pcgDeterministic === true);
+    check("V18.224 (B2) pcg2d distinkt (verschiedene Inputs → verschieden)", res.pcgDistinct === true);
+    check("V18.224 (B3) pcg2d liefert uint32", res.pcgIsUint === true);
+    check("V18.224 (B4) _scatterCellTransform deterministisch (bit-genau, Promotion-Match)", res.transformDeterministic === true);
+    check("V18.224 (B5) Transform: scale 0.7..1.36, yaw 0..2π (in der Cell)", res.transformInCell === true);
+
+    // (C) Echte Instanzen
+    check("V18.224 (C1) _scatterRegion baut eine Region", res.regionBuilt === true);
+    check(`V18.224 (C2) Region erzeugt ECHTE Instanzen (gemessen ${res.regionInstanceCount})`, res.regionInstanceCount > 0);
+    check("V18.224 (C3) Region trägt Cells", res.regionHasCells === true);
+    check(`V18.224 (C4) HISM-Gruppen tragen LIVE-Instanzen (count>0, gemessen ${res.liveInstanceCount})`, res.hasLiveInstances === true);
+    check("V18.224 (C5) Cell trägt species (Promotion-Identität)", res.cellHasSpecies === true);
+    check("V18.224 (C6) Cell trägt variantIndex", res.cellHasVariant === true);
+    check("V18.224 (C7) Cell trägt HISM-Slots (echte Instanz-Referenzen)", res.cellHasSlots === true);
+    check("V18.224 (C8) Lookup-Buffer ist LEBENDIG (V18.220-Passagier geheilt — Konsument liest ihn)", res.lookupAlive === true);
+    check("V18.224 (C9) _scatterRegion idempotent (cached)", res.regionIdempotent === true);
+
+    // (D) Species-Determinismus
+    check("V18.224 (D1) Species-Wahl deterministisch (P2P-konsistent)", res.speciesDeterministic === true);
+
+    // (E) Promotion
+    check("V18.224 (E1) _promoteScatterCell liefert echten Eintrag (Touch→Real)", res.promoteReturnsEntry === true);
+    check("V18.224 (E2) Architektur-Anzahl +1 (echter Bauplan entstand)", res.archCountIncreased === true);
+    check("V18.224 (E3) Eintrag trägt Provenienz bornFrom=world-genesis-cell (Plan §2)", res.entryHasProvenance === true);
+    check("V18.224 (E4) Provenienz-Species == Scatter-Species", res.provenanceSpecies === true);
+    check("V18.224 (E5) Eintrag nutzt grown_-Bauplan derselben Species (KEIN visueller Sprung)", res.entryUsesGrownBp === true);
+    check("V18.224 (E6) Eintrag-Variante == Scatter-Variante (Form-Identität)", res.entryVariantMatches === true);
+    check("V18.224 (E7) Deko-Slots freigegeben bei Promotion (kein Doppel-Mesh)", res.cellSlotsFreed === true);
+    check("V18.224 (E8) Cell jetzt promoted (Bitmask — kein zweiter Deko-Spawn)", res.cellNowPromoted === true);
+
+    // (F) Streaming + Cleanup
+    check("V18.224 (F1) _disposeScatterRegion Helper", res.disposeRegionExists === true);
+    check("V18.224 (F2) _disposeAllScatterRegions Helper", res.disposeAllExists === true);
+    check("V18.224 (F3) Welt-Wechsel disposed alle Scatter-Regionen", res.worldWechselDisposes === true);
+    check("V18.224 (F4) _tickScatterStreaming respektiert gpuScatter-Flag", res.tickReadsFlag === true);
+
+    // (G) Version
+    check(`V18.224 (V1) VERSION floor ≥ 18.224.0 (gemessen ${res.versionStr})`, res.versionFloor18224 === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -54245,6 +54470,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18218LODStufen(ctx);
             await checkBandV18219bisVollendung(ctx);
             await checkBandV18223PbrKohaerenz(ctx);
+            await checkBandV18224ScatterPromotion(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

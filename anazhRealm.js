@@ -394,6 +394,12 @@ class AnazhRealm {
                 // → der _tickCanopyStreaming baut 3×3-Region-Chunks um den Spieler.
                 // V18.222.1 Folge-Welle nach Schöpfer-Browser-Audit aktiviert es.
                 canopyStreaming: false,
+                // V18.224 (DER LEBENDIGE GIGANT §5+§8+§2 — DAS HERZ) — der
+                // ECHTE Scatter + Promotion. Default TRUE: der Gigant erwacht.
+                // `_tickScatterStreaming` streut den fernen Wald (InstancedMesh,
+                // deterministisch pcg2d) + kristallisiert nahe Bäume zu echten
+                // Bauplanen (Touch→Real). In browser abschaltbar für A/B.
+                gpuScatter: true,
                 // V18.223 (DER LEBENDIGE GIGANT §10 Ω-P) — der MATERIAL-MODUS.
                 // "toon" = Cel-LUT-Lookup + Substance-Response (V18.99-V18.181-
                 // Pipeline); "pbr" = MeshStandardNodeMaterial mit roughness/
@@ -34705,6 +34711,10 @@ class AnazhRealm {
         // V18.222 — Canopy-Chunks disposen (welt-spezifisch); _tickCanopyStreaming
         // baut den 3×3-Ring der neuen Welt lazy nach.
         if (typeof this._canopyDisposeAllChunks === "function") this._canopyDisposeAllChunks();
+        // V18.224 — Scatter-Regionen disposen (welt-spezifisch, an worldSeed +
+        // gebackene Felder gebunden). _tickScatterStreaming re-streut die neue
+        // Welt lazy. Die promoteten Cells (echte Bäume) reisen via Snapshot.
+        if (typeof this._disposeAllScatterRegions === "function") this._disposeAllScatterRegions();
         // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — die merged Geometries
         // sind welt-spezifisch (an die WELT-gewachsenen Variant-Baupläne
         // gebunden, deren Keys `grown_<species>_<hash>` welt-spezifisch sind).
@@ -35065,6 +35075,16 @@ class AnazhRealm {
                 genVRestore >= 7 && this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches)
                     ? this._lastTreeSkeleton
                     : null;
+            // V18.224 (V8.59-Bug-Klasse geheilt) — _variantIndex + _lodLevel
+            // wandern beim Restore MIT (V18.217/.218 setzen sie im Build-Pfad;
+            // der Restore vergaß sie → ein restauriertes grown-Blueprint hatte
+            // kein _variantIndex → spawnArchitecture setzte die _lod*-Entry-
+            // Felder nicht → LOD-Switch + Promotion brachen). Aus dem KEY
+            // geparst (`grown_<species>_v<idx>` / `..._lod<n>`) — deterministisch,
+            // keine neue Persistenz nötig (der Key TRÄGT die Identität).
+            const vMatch = /_v(\d+)(?:_lod(\d+))?$/.exec(key);
+            const variantIndexRestore = vMatch ? parseInt(vMatch[1], 10) : null;
+            const lodLevelRestore = vMatch && vMatch[2] != null ? parseInt(vMatch[2], 10) : 0;
             this.state.blueprints[key] = {
                 name: key,
                 label: typeof entry.label === "string" ? entry.label : `${speciesLabel} (gewachsen)`,
@@ -35077,6 +35097,10 @@ class AnazhRealm {
                 instanced: true,
                 parts: parts,
             };
+            if (Number.isFinite(variantIndexRestore)) {
+                this.state.blueprints[key]._variantIndex = variantIndexRestore;
+                this.state.blueprints[key]._lodLevel = lodLevelRestore;
+            }
             // Skeleton übernommen → Side-Channel räumen (defensive).
             if (skelRestore) this._lastTreeSkeleton = null;
             if (this._growTreeRing.indexOf(key) === -1) this._growTreeRing.push(key);
@@ -44042,10 +44066,15 @@ class AnazhRealm {
     // Storage-Texture-Variante ist die Folge-Welle für echte Million-Scatter).
 
     _bakeRegionConfig() {
+        // V18.224 — res 64→32 (8 m/Texel): der Scatter (V18.224) gated gegen die
+        // gebackenen Felder; 8-m-Präzision genügt fürs Gating (slope/lebendig
+        // sind groß-λ-glatt). 32²×6 = 6144 Samples/Region statt 24576 = 4× billiger
+        // → der Warmup-Pump erstickt nicht am Bake. Eine Iteration kann res wieder
+        // heben, wenn der Schöpfer-Browser feinere Felder fordert.
         return {
             sizeM: 256, // Welt-Meter pro Region-Kante
-            res: 64, // Texel pro Kante (Auflösung)
-            texelM: 256 / 64, // = 4 m pro Texel
+            res: 32, // Texel pro Kante (Auflösung)
+            texelM: 256 / 32, // = 8 m pro Texel
             channels: 6, // height/slope/moisture/lebendig/glut/magie
             cacheCap: 32, // LRU
         };
@@ -44296,6 +44325,336 @@ class AnazhRealm {
         const map = this.state.scatterLookup;
         if (!map || map.size === 0) return null;
         return map.get(this._scatterCellKeyAt(x, z, layer || "tree")) || null;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // V18.224 (DER LEBENDIGE GIGANT §5+§8+§2 — DAS HERZ) — ECHTER SCATTER + PROMOTION
+    // ═══════════════════════════════════════════════════════════════════
+
+    // pcg2d — der GPU-portierbare Integer-Hash (bit-identisch CPU↔GPU, V9.95-a-
+    // Lehre: `+ - * /` + bit-ops sind IEEE-deterministisch). Aus dem PCG-Paper
+    // (Jarzynski & Olano 2020). Liefert ein uint32-Paar; wir nutzen [0]. So ist
+    // die Scatter-Verteilung P2P-identisch (zwei Peers würfeln dieselbe Welt) UND
+    // GPU-liftbar (ein künftiger WGSL-Kernel rechnet bit-gleich).
+    _pcg2d(a, b) {
+        let x = (a >>> 0) * 1664525 + 1013904223;
+        let y = (b >>> 0) * 1664525 + 1013904223;
+        x = (x >>> 0) + (((y >>> 0) * 1664525) >>> 0);
+        y = (y >>> 0) + (((x >>> 0) * 1664525) >>> 0);
+        x = (x >>> 0) ^ (x >>> 16);
+        y = (y >>> 0) ^ (y >>> 16);
+        x = (x >>> 0) + (((y >>> 0) * 1664525) >>> 0);
+        y = (y >>> 0) + (((x >>> 0) * 1664525) >>> 0);
+        x = (x >>> 0) ^ (x >>> 16);
+        return x >>> 0;
+    }
+
+    // Ein deterministischer Float [0,1) aus zwei Integer-Achsen + Salt.
+    _pcgFloat(cx, cz, salt) {
+        return this._pcg2d((cx * 73856093) ^ ((salt | 0) * 19349663), cz * 83492791) / 4294967296;
+    }
+
+    _ensureScatterRegionMap() {
+        if (!this.state.scatterRegions || !(this.state.scatterRegions instanceof Map)) {
+            this.state.scatterRegions = new Map();
+        }
+        return this.state.scatterRegions;
+    }
+
+    // V18.224 — die Baum-Spezies-Wahl pro Scatter-Cell. Deterministisch aus
+    // Feld-Stimmen (lebendig/moisture) + Hash-Variation. Die ferne Streu muss
+    // nicht die volle spawnAffinity laufen (zu teuer × Tausende Cells); die
+    // Feld-Bänder geben eine stimmige Verteilung (feuchte → Erle/Birke, hohe
+    // lebendig → Buche/Eiche, sonst Tanne/Kiefer), der Hash streut die Varianz.
+    _scatterSpeciesForCell(lebendig, moisture, hash) {
+        const pick = (hash >>> 7) & 0xff;
+        if (moisture > 0.6) {
+            return pick < 128 ? "baum_erle" : "baum_birke";
+        }
+        if (lebendig > 0.62) {
+            return pick < 110 ? "baum_buche" : pick < 200 ? "baum_eiche" : "baum_birke";
+        }
+        if (lebendig > 0.4) {
+            return pick < 120 ? "baum_eiche" : pick < 200 ? "baum_kiefer" : "baum_tanne";
+        }
+        // karger Boden → Nadelwald + Karst an Steilstellen
+        return pick < 150 ? "baum_tanne" : pick < 220 ? "baum_kiefer" : "baum_karst";
+    }
+
+    // V18.224 — die deterministische Transform einer Scatter-Cell. EINE Quelle
+    // für Streu UND Promotion → der promovierte echte Baum landet BIT-GENAU auf
+    // der Deko-Position (Plan §13 SEELEN-Band „kein visueller Sprung").
+    _scatterCellTransform(cellX, cellZ) {
+        const cellM = AnazhRealm.SCATTER.cellM;
+        const jx = this._pcgFloat(cellX, cellZ, 1);
+        const jz = this._pcgFloat(cellX, cellZ, 2);
+        const x = (cellX + 0.15 + jx * 0.7) * cellM;
+        const z = (cellZ + 0.15 + jz * 0.7) * cellM;
+        const yawRoll = this._pcgFloat(cellX, cellZ, 3);
+        const szRoll = this._pcgFloat(cellX, cellZ, 4);
+        return { x, z, yaw: yawRoll * Math.PI * 2, scale: 0.7 + szRoll * 0.66 };
+    }
+
+    // V18.224 — eine Deko-Instanz in die GETEILTEN HISM-Gruppen schreiben (NICHT
+    // als Architektur-Eintrag). Nutzt denselben `_archInstanceGroupFor` +
+    // `_archGroupAlloc`-Pfad wie echte Bäume → real + Scatter desselben Baums in
+    // EINEM InstancedMesh = ein Draw-Call, identische Geometrie (kein Sprung bei
+    // Promotion). Liefert die belegten {key, slot}-Paare für späteres Freigeben.
+    _scatterInstanceAdd(blueprintName, x, y, z, yaw, scale, tint) {
+        const flat = this._archFlattenBlueprint(blueprintName);
+        if (!flat || !flat.instanceable || !Array.isArray(flat.leaves) || flat.leaves.length === 0) return null;
+        const ew = this._archTmpScatterEntryM || (this._archTmpScatterEntryM = new THREE.Matrix4());
+        const q = this._archTmpScatterQ || (this._archTmpScatterQ = new THREE.Quaternion());
+        const e = this._archTmpScatterE || (this._archTmpScatterE = new THREE.Euler());
+        const v = this._archTmpScatterV || (this._archTmpScatterV = new THREE.Vector3());
+        const s = this._archTmpScatterS || (this._archTmpScatterS = new THREE.Vector3());
+        e.set(0, yaw || 0, 0);
+        q.setFromEuler(e);
+        v.set(x, y, z);
+        s.set(scale || 1, scale || 1, scale || 1);
+        ew.compose(v, q, s);
+        const m = this._archTmpScatterLeafM || (this._archTmpScatterLeafM = new THREE.Matrix4());
+        const tintColor = this._archTmpScatterTint || (this._archTmpScatterTint = new THREE.Color());
+        if (tint) tintColor.setRGB(tint.h, tint.s, tint.v);
+        else tintColor.setRGB(0.5, 0.5, 0.5);
+        const slots = [];
+        for (let i = 0; i < flat.leaves.length; i++) {
+            const leaf = flat.leaves[i];
+            const g = this._archInstanceGroupFor(blueprintName, i, leaf);
+            const slot = this._archGroupAlloc(g);
+            m.multiplyMatrices(ew, leaf.localMatrix);
+            g.mesh.setMatrixAt(slot, m);
+            g.mesh.instanceMatrix.needsUpdate = true;
+            if (leaf.mat && leaf.mat.userData && leaf.mat.userData.useInstanceTint) {
+                g.mesh.setColorAt(slot, tintColor);
+                if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
+            }
+            if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
+            // slotEntry = null markiert den Slot als DEKO (kein Architektur-
+            // Eintrag) → der Crosshair-Raycast (liest slotEntry) ignoriert ihn,
+            // bis er promoted wird.
+            if (g.slotEntry) g.slotEntry[slot] = null;
+            g.mesh.boundingSphere = null;
+            slots.push({ key: g.key, slot });
+        }
+        return slots;
+    }
+
+    _scatterFreeSlots(slots) {
+        if (!Array.isArray(slots)) return;
+        for (const { key, slot } of slots) {
+            const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
+            if (g) this._archGroupFree(g, slot);
+        }
+    }
+
+    // V18.224 — der SCATTER-GENERATOR für eine Region. Walkt das Cell-Raster,
+    // gated gegen die gebackenen Felder (V18.219), schreibt Deko-Instanzen in
+    // die HISM-Gruppen. Deterministisch (pcg2d) → P2P-identisch + GPU-liftbar.
+    // Bounded durch perRegionCap. Cells im promoteRadius werden NICHT gestreut
+    // (der reale Ring trägt sie); promotete Cells (Bitmask) übersprungen.
+    _scatterRegion(regX, regZ, playerPos) {
+        if (typeof THREE === "undefined" || !this.state.scene) return null;
+        const SC = AnazhRealm.SCATTER;
+        const map = this._ensureScatterRegionMap();
+        const key = `${regX},${regZ}`;
+        if (map.has(key)) return map.get(key);
+        const cellM = SC.cellM;
+        const cellsPerRegion = Math.round(SC.regionM / cellM);
+        const baseCellX = Math.round((regX * SC.regionM) / cellM);
+        const baseCellZ = Math.round((regZ * SC.regionM) / cellM);
+        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        let seedHash = 2166136261 >>> 0;
+        for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
+        const px = playerPos ? playerPos.x : 0;
+        const pz = playerPos ? playerPos.z : 0;
+        const region = { regX, regZ, cells: [], instanceCount: 0 };
+        let emitted = 0;
+        for (let cz = 0; cz < cellsPerRegion && emitted < SC.perRegionCap; cz++) {
+            for (let cx = 0; cx < cellsPerRegion && emitted < SC.perRegionCap; cx++) {
+                const cellX = baseCellX + cx;
+                const cellZ = baseCellZ + cz;
+                // Hash mit Welt-Seed verwoben (P2P + Welt-Identität)
+                const h = this._pcg2d((cellX ^ seedHash) >>> 0, (cellZ * 2654435761) >>> 0);
+                const tf = this._scatterCellTransform(cellX, cellZ);
+                const dx = tf.x - px;
+                const dz = tf.z - pz;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+                // innerhalb des realen Rings: keine Deko (Promotion/Real trägt)
+                if (dist < SC.innerM) continue;
+                if (dist > SC.outerM) continue;
+                // promotete Cell (ein echter Baum lebt hier) → skip
+                if (this._scatterIsCellPromoted(tf.x, tf.z, "tree")) continue;
+                // Wasser-Awareness (dieselbe Quelle wie der reale Spawn)
+                if (typeof this._isAboveWaterAt === "function" && !this._isAboveWaterAt(tf.x, tf.z, 0.4)) continue;
+                // gebackene Felder lesen (V18.219); Fallback auf direkte Quellen
+                const field = this._sampleBakedField ? this._sampleBakedField(tf.x, tf.z) : null;
+                let lebendig, slope, moisture, surfY;
+                if (field) {
+                    lebendig = field.lebendig;
+                    slope = field.slope;
+                    moisture = field.moisture;
+                    surfY = field.height;
+                } else {
+                    const f = this.worldFieldAt ? this.worldFieldAt(tf.x, tf.z) : null;
+                    lebendig = f ? f.lebendig : 0;
+                    slope = 0;
+                    surfY = this._voxelSurfaceY ? this._voxelSurfaceY(tf.x, tf.z) : 0;
+                    moisture = this._feuchteAt ? this._feuchteAt(tf.x, tf.z, surfY) : 0;
+                }
+                if (slope > SC.slopeMax) continue;
+                // Wahrscheinlichkeit ∝ lebendig (mit Wald-Masken-Floor)
+                const prob = Math.min(0.92, SC.densityFloor + lebendig * SC.densityScale);
+                if (this._pcgFloat(cellX, cellZ, 9) >= prob) continue;
+                // Spezies + Variante
+                const species = this._scatterSpeciesForCell(lebendig, moisture, h);
+                const N = AnazhRealm.VARIANTS_PER_SPECIES;
+                const variantIndex = h % N;
+                // LOD nach Distanz: nah(<thresh01)=LOD0, mittel=LOD1, fern=LOD2
+                const lod = this._chooseLODForDistance(dist);
+                const keys = this._buildVariantLODs(species, variantIndex);
+                if (!keys) continue;
+                const bpName = keys[lod] || keys[0];
+                // Tint deterministisch (wie der reale Baum: seed-Bit-Bänder)
+                const tint = {
+                    h: this._pcgFloat(cellX, cellZ, 5),
+                    s: this._pcgFloat(cellX, cellZ, 6),
+                    v: this._pcgFloat(cellX, cellZ, 7),
+                };
+                const slots = this._scatterInstanceAdd(
+                    bpName,
+                    tf.x,
+                    Number.isFinite(surfY) ? surfY : 0,
+                    tf.z,
+                    tf.yaw,
+                    tf.scale,
+                    tint
+                );
+                if (!slots) continue;
+                region.cells.push({ cellX, cellZ, species, variantIndex, lod, bpName, slots, x: tf.x, z: tf.z });
+                // Lookup-Buffer FÜLLEN (jetzt LEBENDIG — Promotion liest ihn)
+                this._scatterRegisterCell(tf.x, tf.z, "tree", species, variantIndex);
+                emitted++;
+            }
+        }
+        region.instanceCount = emitted;
+        map.set(key, region);
+        return region;
+    }
+
+    _disposeScatterRegion(key) {
+        const map = this.state.scatterRegions;
+        if (!map) return false;
+        const region = map.get(key);
+        if (!region) return false;
+        for (const cell of region.cells) {
+            this._scatterFreeSlots(cell.slots);
+            // den Lookup-Eintrag NICHT löschen, wenn promoted (die Seele lebt);
+            // sonst räumen (Region kann re-gen werden).
+            if (this.state.scatterLookup && !this._scatterIsCellPromoted(cell.x, cell.z, "tree")) {
+                this.state.scatterLookup.delete(this._scatterCellKeyAt(cell.x, cell.z, "tree"));
+            }
+        }
+        map.delete(key);
+        return true;
+    }
+
+    _disposeAllScatterRegions() {
+        if (!this.state.scatterRegions) return;
+        for (const key of Array.from(this.state.scatterRegions.keys())) this._disposeScatterRegion(key);
+    }
+
+    // V18.224 — Ω-H die ECHTE PROMOTION (Plan §2/§13 SEELEN-Band). Eine Deko-
+    // Scatter-Cell KRISTALLISIERT zu einem echten Bauplan: der Deko-Slot wird
+    // freigegeben, ein echter `spawnArchitecture`-Eintrag entsteht an der BIT-
+    // GENAU gleichen Transform (deterministisch aus `_scatterCellTransform`) +
+    // mit der gleichen Spezies+Variante (aus dem Lookup) → harvestbar, getaggt,
+    // Provenienz. Da real + Scatter dieselbe Geometrie (grown_<species>_v<idx>)
+    // teilen, ist KEIN visueller Sprung sichtbar. Die Cell wird promoted-markiert
+    // → kein zweiter Deko-Spawn. Liefert den echten Eintrag (oder null).
+    _promoteScatterCell(cellEntry) {
+        if (!cellEntry || !this.state.scene) return null;
+        if (this._scatterIsCellPromoted(cellEntry.x, cellEntry.z, "tree")) return null;
+        // LOD0-Bauplan (die Hero-Form) für den echten Baum
+        const keys = this._buildVariantLODs(cellEntry.species, cellEntry.variantIndex);
+        if (!keys || !keys[0]) return null;
+        const tf = this._scatterCellTransform(cellEntry.cellX, cellEntry.cellZ);
+        const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(tf.x, tf.z) : cellEntry.y || 0;
+        // Deko-Slots freigeben BEVOR der echte Baum spawnt (kein Doppel-Mesh)
+        this._scatterFreeSlots(cellEntry.slots);
+        cellEntry.slots = null;
+        // Promoted-Bitmask setzen (vor dem Spawn — spawnArchitecture markiert
+        // ebenfalls, doppelt ist idempotent)
+        this._scatterMarkCellPromoted(tf.x, tf.z, "tree");
+        const entry = this.spawnArchitecture(
+            keys[0],
+            { x: tf.x, y: (Number.isFinite(surfY) ? surfY : 0) + 0.5, z: tf.z },
+            { silent: true, precise: true, scale: tf.scale, rotationY: tf.yaw }
+        );
+        if (entry) {
+            // Provenienz (Plan §2): geboren aus Welt-Genese-Cell, durch Berührung
+            // kristallisiert. harvestArchitecture (V18.212) liest _grownSpecies.
+            entry.provenance = {
+                bornFrom: "world-genesis-cell",
+                species: cellEntry.species,
+                variantIndex: cellEntry.variantIndex,
+                cell: { cellX: cellEntry.cellX, cellZ: cellEntry.cellZ },
+            };
+            cellEntry.promotedId = entry.id;
+        }
+        return entry;
+    }
+
+    // V18.224 — der SCATTER-STREAMING-Tick: 3×3-Region-Ring um den Spieler
+    // generieren, ferne disposen, nahe Cells promovieren (Touch→Real). Gated
+    // auf `state.atmosphere.gpuScatter` (Default true — der Gigant erwacht; in
+    // browser abschaltbar). Bounded: maxRegionsPerFrame.
+    _tickScatterStreaming(playerPos) {
+        const atmo = this.state.atmosphere;
+        if (atmo && atmo.gpuScatter === false) return 0;
+        if (!playerPos) return 0;
+        const SC = AnazhRealm.SCATTER;
+        const map = this._ensureScatterRegionMap();
+        const pRegX = Math.floor(playerPos.x / SC.regionM);
+        const pRegZ = Math.floor(playerPos.z / SC.regionM);
+        let work = 0;
+        // (1) fehlende Ring-Regionen generieren (bounded)
+        for (let dz = -SC.ringRegions; dz <= SC.ringRegions && work < SC.maxRegionsPerFrame; dz++) {
+            for (let dx = -SC.ringRegions; dx <= SC.ringRegions && work < SC.maxRegionsPerFrame; dx++) {
+                const rk = `${pRegX + dx},${pRegZ + dz}`;
+                if (!map.has(rk)) {
+                    this._scatterRegion(pRegX + dx, pRegZ + dz, playerPos);
+                    work++;
+                }
+            }
+        }
+        // (2) ferne Regionen disposen (außerhalb ringRegions+1)
+        const disposeR = SC.ringRegions + 1;
+        for (const rk of Array.from(map.keys())) {
+            const region = map.get(rk);
+            if (!region) continue;
+            if (Math.abs(region.regX - pRegX) > disposeR || Math.abs(region.regZ - pRegZ) > disposeR) {
+                this._disposeScatterRegion(rk);
+            }
+        }
+        // (3) Touch→Real: Scatter-Cells im promoteRadius zu echten Bäumen
+        // kristallisieren (max 3/Frame — kein Spawn-Spike). Nur die Ring-Region
+        // des Spielers walken (die nahen Cells leben dort).
+        let promotions = 0;
+        const pr2 = SC.promoteM * SC.promoteM;
+        const homeRegion = map.get(`${pRegX},${pRegZ}`);
+        if (homeRegion && Array.isArray(homeRegion.cells)) {
+            for (let i = 0; i < homeRegion.cells.length && promotions < 3; i++) {
+                const cell = homeRegion.cells[i];
+                if (!cell.slots) continue; // schon promoted/freigegeben
+                const dx = cell.x - playerPos.x;
+                const dz = cell.z - playerPos.z;
+                if (dx * dx + dz * dz <= pr2) {
+                    if (this._promoteScatterCell(cell)) promotions++;
+                }
+            }
+        }
+        return work + promotions;
     }
 
     // V18.219 — Edit-Invalidation: ein voxel-Edit ändert die Surface in
@@ -66560,6 +66919,14 @@ class AnazhRealm {
         // Activation-Flag `state.atmosphere.treeLOD` (Default true; in browser
         // tunbar). Plan §3.6 — die FOUNDATION von V18.218 ist hier verdrahtet.
         this._tickArchitectureLOD(5);
+        // V18.224 (DER LEBENDIGE GIGANT §5+§8+§2 — DAS HERZ) — der SCATTER-Tick:
+        // ferner Wald als InstancedMesh-Streu (Dichte-Band) + Touch→Real-
+        // Promotion naher Bäume (SEELEN-Band). Bounded (1 Region + 3 Promotionen
+        // pro Frame). Gated auf state.atmosphere.gpuScatter (Default true) UND
+        // terrain-nachrangig (V17.1-Lehre): nur wenn das Streaming diesen Frame
+        // NICHTS baute → das Gelände hat strikte Priorität, der Scatter füllt in
+        // der Ruhe (heilt den Warmup-Pump-Druck: erst der Boden, dann der Wald).
+        if (!chunksBuilt) this._tickScatterStreaming(playerPos);
         // V18.222 (DER LEBENDIGE GIGANT §7) — der CANOPY-STREAMING-Tick:
         // 3×3-Region-Ring um den Spieler bauen, ferne disposen. Gated auf
         // `state.atmosphere.canopyStreaming` (Default false; V18.222.1 nach
@@ -67248,7 +67615,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.223.0";
+AnazhRealm.VERSION = "18.224.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -67585,6 +67952,32 @@ AnazhRealm.LOD_DISTANCES = Object.freeze({
     thresh01: 80, // dist > 80 m → LOD1
     thresh12: 160, // dist > 160 m → LOD2
     hysteresis: 10, // ± 10 m Pufferzone (Plan §3.6 „kein Flackern")
+});
+
+// V18.224 (DER LEBENDIGE GIGANT §5+§8+§2 Ω-S+Ω-H — DAS HERZ) — der ECHTE
+// COMPUTE-SCATTER + die ECHTE PROMOTION. Die zwei Seelen vereint:
+//   - die FERNE Projektion (Renderer-Seele): dichter Wald als InstancedMesh-
+//     Streu, gegated gegen die gebackenen Felder (V18.219), deterministisch
+//     aus pcg2d-Integer-Hash (GPU-portierbar, bit-identisch CPU↔GPU). KEINE
+//     Architektur-Einträge → Millionen-Skala bezahlbar.
+//   - die NAHE Seele (Logik-Seele): ein Baum im Berühr-Radius KRISTALLISIERT
+//     zu einem echten Bauplan (harvestbar, getaggt) — via promoteRadius, mit
+//     IDENTISCHER Geometrie (derselbe `grown_<species>_v<idx>`-HISM-Pool) →
+//     KEIN visueller Sprung (Plan §13 SEELEN-Band).
+// Der Scatter fliesst in DIESELBEN archInstanceGroups wie die echten Bäume
+// (V9.82 — kein Parallel-Pfad). Werte browser-justierbar.
+AnazhRealm.SCATTER = Object.freeze({
+    cellM: 3.4, // Plan §3.5 — Baum-Zell-Raster
+    regionM: 256, // eine Scatter-Region = 16 Voxel-Chunks (= Bake-Region V18.219)
+    promoteM: 64, // < diesem Radius → der Scatter-Baum wird ein ECHTER Bauplan (Touch→Real)
+    innerM: 64, // innerhalb: keine Deko-Streu (der promovierte/reale Ring trägt)
+    outerM: 384, // äusserer Rand der Deko-Streu (jenseits trägt die Canopy-Shell)
+    ringRegions: 1, // ±1 Region = 3×3 (768m²) aktiver Scatter-Ring
+    perRegionCap: 1400, // FPS-Wand: max Deko-Instanzen pro Region
+    densityFloor: 0.1, // lebendig-Boden für jeden Baum-Scatter
+    densityScale: 1.5, // Multiplikator auf die lebendig-getriebene Wahrscheinlichkeit
+    slopeMax: 1.45, // Steilhänge tragen weniger Scatter (Fels-Zone)
+    maxRegionsPerFrame: 1, // bounded: max 1 Region/Frame generieren (Plan §5)
 });
 
 // V18.212 — Ω-C CANOPY-SHELL (DER LEBENDIGE GIGANT §9): die ferne Wald-
