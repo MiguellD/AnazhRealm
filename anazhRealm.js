@@ -35946,6 +35946,18 @@ class AnazhRealm {
             const rate = AnazhRealm.STAMINA_REGEN_PER_SEC || 5;
             this.state.player.stamina = Math.min(staMax, sta + rate * dt);
         }
+        // V18.196 — Mana-Regen, symmetrisch zu Stamina. Magieleitung im
+        // Spieler-Compound hebt die Regen-Rate (eine magisch leitfähige
+        // Substanz hat einen offeneren Mana-Kanal — die Welt-Stimme strömt
+        // freier). Base 3/s (langsamer als Stamina = 5/s, weil Mana mächtiger
+        // ist und sich nicht so schnell auffüllen darf — Balance via Erst-Wurf).
+        const manaMax = this.state.player.manaMax || 0;
+        const mana = this.state.player.mana || 0;
+        if (manaMax > 0 && mana < manaMax) {
+            const magBoost = (this.state.player.stats && this.state.player.stats.tags && this.state.player.stats.tags.magieleitung) || 0;
+            const manaRate = (AnazhRealm.MANA_REGEN_PER_SEC || 3) * (1 + magBoost);
+            this.state.player.mana = Math.min(manaMax, mana + manaRate * dt);
+        }
         const now = performance.now() / 1000;
         const until = this.state.player.phoenixUntil || -Infinity;
         if (until <= -Infinity || until <= 0) return;
@@ -42710,6 +42722,9 @@ class AnazhRealm {
         const sizeHpMul = Math.sqrt(soulSize);
         if (Number.isFinite(stats.hpMax)) stats.hpMax = stats.hpMax * sizeHpMul;
         if (Number.isFinite(stats.staminaMax)) stats.staminaMax = stats.staminaMax * sizeHpMul;
+        // V18.196 — Mana folgt der HP/Stamina-Symmetrie auch bei Größe (ein
+        // großer Avatar hat tiefere Reserven in allen drei Lebens-Achsen).
+        if (Number.isFinite(stats.manaMax)) stats.manaMax = stats.manaMax * sizeHpMul;
         return { tags: finalTags, stats };
     }
 
@@ -42746,6 +42761,12 @@ class AnazhRealm {
         this.state.player.hp = computed.stats.hpMax;
         this.state.player.staminaMax = computed.stats.staminaMax;
         this.state.player.stamina = computed.stats.staminaMax;
+        // V18.196 — Mana als zweite Ausdauer-Achse (Symmetrie zu Stamina).
+        // Bei jedem Soul-Wechsel auf MAX gesetzt; verbrauchen + regenerieren
+        // erfolgt im Game-Loop (analog stamina). Konsumenten kommen in einer
+        // Folge-Welle (V18.197+: DSL-Ops manaCost, UI-Balken).
+        this.state.player.manaMax = computed.stats.manaMax;
+        this.state.player.mana = computed.stats.manaMax;
         // UI-Render anstoßen, falls Spieler-Drawer offen ist.
         return computed;
     }
@@ -63579,7 +63600,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.195.0";
+AnazhRealm.VERSION = "18.196.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -63791,6 +63812,14 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     speed: (t) => 7 + (1 - (t.dichte || 0)) * 5 + (t.magieleitung || 0) * 1.5,
     jumpPower: (t) => 8 + (1 - (t.dichte || 0)) * 5 + (t.magieleitung || 0) * 2,
     staminaMax: (t) => 100 + (1 - (t.dichte || 0)) * 60 + (t.wärmeleitung || 0) * 40,
+    // V18.196 — MANA-SYMMETRIE: die zweite Ausdauer-Achse, treibt aus
+    // magieleitung statt aus (1-dichte). Symmetrisch zu staminaMax: base 50
+    // + magieleitung·100 (max ~150 bei voll magieleitung) + resoniert·30
+    // (Sekundär-Boost — eine resonante Substanz hat eine offenere Mana-
+    // Bandbreite). Mensch (magieleitung 0, resoniert 0) → 50 Default; Drache
+    // (magieleitung ~0.3) → ~80; Phönix (magieleitung ~0.6 + resoniert ~0.3)
+    // → ~119. Eine Welt-Stimme, die schlief, wird zur zweiten Lebens-Achse.
+    manaMax: (t) => 50 + (t.magieleitung || 0) * 100 + (t.resoniert || 0) * 30,
     precision: (t) => 0.5 + (t.magieleitung || 0) * 0.3 + (t.zähigkeit || 0) * 0.2,
     magicResist: (t) => (t.magieleitung || 0) * 0.4 + (t.resoniert || 0) * 0.3,
     heatResist: (t) => (t.wärmeleitung || 0) * 0.5 - (t.brennbar || 0) * 0.3,
@@ -63862,6 +63891,10 @@ AnazhRealm.COMBAT_REACH_M = 6;
 // nicht nur als Reihenfolge.
 AnazhRealm.TOOL_OP_STAMINA_COST = 10;
 AnazhRealm.STAMINA_REGEN_PER_SEC = 5;
+// V18.196 — MANA-Symmetrie (zweite Ausdauer-Achse). Langsamer als Stamina
+// weil Mana mächtiger ist; magieleitung im Spieler-Compound boostet die
+// Rate emergent (effektiv = base × (1 + magieleitung)). Erst-Wurf-Tuning.
+AnazhRealm.MANA_REGEN_PER_SEC = 3;
 
 // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Eigener Kosten-Satz,
 // niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger

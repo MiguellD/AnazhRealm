@@ -41,6 +41,7 @@ Backlog-Punkte §4 (nächste in Reihe).
 | **Γ4 echter MAKRO-ANKER (R-042: ERBGUT + Abfluss-Invariante + Worker-Mirror — LAAS-Narbe strukturell tot)** | **V18.193** | `docs/archiv/genese-plan.md` §Γ4 + `docs/rueckmeldung.md` R-042 |
 | **Γ6-Beförderung (snowband + chunk-seam + false-swim + arch-water-solid → vier stehende Bänder)** | **V18.194** | `docs/archiv/genese-plan.md` §Γ6 + `docs/rueckmeldung.md` R-042 |
 | **Avatar-Größe→HP (sqrt(sizeFactor) auf hpMax + staminaMax, built-in NEUTRAL)** | **V18.195** | `docs/aktiv.md` §4.D + unten §1.C |
+| **Mana-Symmetrie (zweite Ausdauer-Achse aus magieleitung — Foundation: Stat + Regen + Pflege-Pfad)** | **V18.196** | `docs/aktiv.md` §4.E + unten §1.D |
 
 ---
 
@@ -190,7 +191,7 @@ V18.132 ferne Welten). Was noch offen — alles Profi-Feinschliff:
 
 | ID | Was | Größe |
 |---|---|---|
-| **Mana-Symmetrie** | `magieleitung` → zweite Ausdauer-Achse (heute nur Stamina, das `tags.magieleitung` schläft als Boost-Quelle) | mittel |
+| ~~**Mana-Symmetrie**~~ | **✓ FOUNDATION GEBAUT V18.196:** `STAT_FROM_TAGS.manaMax = 50 + magieleitung*100 + resoniert*30` (Mensch 50, Phönix 223, Drache höher); `state.player.mana/manaMax` Pflege-Pfad in `recomputePlayerStats`; Game-Loop-Regen mit `MANA_REGEN_PER_SEC=3` + magieleitung-Boost (effektiv = base × (1+magieleitung)); V18.195-Größen-Symmetrie (sqrt(soulSize)). 11 Wände. **OFFEN als Folge-Welle:** Mana-Konsumenten (DSL-Ops mit manaCost · UI-Balken im HUD · Persistenz-Form über Reload mit decay). | **✓ FOUNDATION** |
 | **Emotion→Regel-Emergenz** | hand-codierte Emotion→Welt-Kopplungen werden via DSL emergent (das `Welt-Regeln`-Organ trägt sie schon) | mittel |
 | **Nexus-Lern-Vereinheitlichung** (Geste→Gesetz) | EIN Lern-Substrat — bewährte Geste kristallisiert zur Regel | mittel-groß |
 

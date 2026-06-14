@@ -16825,10 +16825,11 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
         check(
             // V17.51 Kampf Phase A — STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
-            // attackSpeed, defense). Die feste Satz-Assertion wandert mit (V9.56-i).
-            "Welle 6.D: STAT_FROM_TAGS hat 11 Stats (8 Basis + Kampf-Trio knockback/attackSpeed/defense)",
+            // attackSpeed, defense). V18.196 Mana-Symmetrie fügt manaMax hinzu.
+            // Die feste Satz-Assertion wandert mit (V9.56-i).
+            "Welle 6.D: STAT_FROM_TAGS hat 12 Stats (8 Basis + Kampf-Trio + V18.196 manaMax)",
             wave6dResults.statKeys ===
-                "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,precision,speed,staminaMax"
+                "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,manaMax,precision,speed,staminaMax"
         );
         check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
         check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
@@ -33450,6 +33451,113 @@ async function checkBandV18195AvatarSizeHp(ctx) {
         res.smallLessThanLarge === true
     );
     check("V18.195 (S6) Stamina folgt derselben Skalierung wie HP (sqrt(sizeFactor))", res.staminaMatchesFormula === true);
+}
+
+// V18.196 — MANA-SYMMETRIE (aktiv.md §4.E): die zweite Ausdauer-Achse als
+// Foundation-Welle. STAT_FROM_TAGS.manaMax + state.player.mana/manaMax +
+// Game-Loop-Regen. Konsumenten (DSL-Ops, UI-Balken) in Folge-Welle.
+async function checkBandV18196ManaSymmetry(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (M1) STAT_FROM_TAGS.manaMax existiert
+        out.hasManaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
+
+        // (M2) Formel: leere Tags → base 50, magieleitung 1 → 150, +resoniert 1 → 180
+        if (out.hasManaMaxFn) {
+            const fn = A.STAT_FROM_TAGS.manaMax;
+            out.manaBase = fn({});
+            out.manaFullMag = fn({ magieleitung: 1 });
+            out.manaFullBoth = fn({ magieleitung: 1, resoniert: 1 });
+            out.manaFormulaOk =
+                Math.abs(out.manaBase - 50) < 0.001 &&
+                Math.abs(out.manaFullMag - 150) < 0.001 &&
+                Math.abs(out.manaFullBoth - 180) < 0.001;
+        }
+
+        // (M3) MANA_REGEN_PER_SEC frozen Konstante
+        out.regenConstExists = typeof A.MANA_REGEN_PER_SEC === "number" && A.MANA_REGEN_PER_SEC > 0;
+
+        // (M4) computePlayerStats gibt stats.manaMax
+        const savedSoul = r.state.player && r.state.player.soul;
+        try {
+            r.applyPlayerSoul("human");
+            const computed = r.computePlayerStats();
+            out.computeReturnsMana = typeof computed.stats.manaMax === "number" && computed.stats.manaMax > 0;
+            // human hat magieleitung ≈ 0 → mana ~ 50
+            out.humanManaNearBase = Math.abs(computed.stats.manaMax - 50) < 30;
+
+            // (M5) Phönix hat mehr Mana als Mensch (magieleitung höher)
+            r.applyPlayerSoul("phoenix");
+            const phoenix = r.computePlayerStats();
+            r.applyPlayerSoul("human");
+            const human = r.computePlayerStats();
+            out.phoenixManaMax = phoenix.stats.manaMax;
+            out.humanManaMax = human.stats.manaMax;
+            out.phoenixMoreMana = phoenix.stats.manaMax > human.stats.manaMax;
+
+            // (M6) recomputePlayerStats setzt state.player.mana + manaMax
+            r.recomputePlayerStats();
+            out.statePlayerMana = typeof r.state.player.mana === "number";
+            out.statePlayerManaMax = typeof r.state.player.manaMax === "number" && r.state.player.manaMax > 0;
+            out.manaAtMaxAfterRecompute = r.state.player.mana === r.state.player.manaMax;
+        } finally {
+            if (savedSoul) r.applyPlayerSoul(savedSoul);
+        }
+
+        // (M7) Game-Loop Regen: mana auf 0 setzen + Tick laufen + prüfen ob mana steigt
+        try {
+            r.applyPlayerSoul("human");
+            r.recomputePlayerStats();
+            r.state.player.mana = 0;
+            const before = r.state.player.mana;
+            // Simuliere Frames — _gameLoopTick treibt den Regen-Pfad mit
+            for (let i = 0; i < 60; i++) {
+                try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch (_) {}
+            }
+            const after = r.state.player.mana;
+            const maxAfter = r.state.player.manaMax; // aktueller Wert nach allen Ticks
+            out.regenRunsInLoop = after > before;
+            // Regen darf maxAfter nicht überschreiten (Math.min-Clamp im Loop).
+            // Marge gegen Float-Drift.
+            out.regenStaysBelowOrAtMax = after <= maxAfter + 0.001;
+            out.regenAfter = after;
+            out.regenMaxAfter = maxAfter;
+        } finally {
+            if (savedSoul) r.applyPlayerSoul(savedSoul);
+        }
+
+        // (M8) Größen-Skalierung (V18.195-Symmetrie): manaMax skaliert mit
+        // sqrt(soulSize) genau wie hpMax/staminaMax
+        const src = r.computePlayerStats.toString();
+        out.manaScaledByMul = /stats\.manaMax\s*=\s*stats\.manaMax\s*\*\s*sizeHpMul/.test(src);
+
+        return out;
+    });
+
+    check("V18.196 (M1) STAT_FROM_TAGS.manaMax existiert", res.hasManaMaxFn === true);
+    check(
+        `V18.196 (M2) Formel-Werte: base 50, magieleitung 1→150, +resoniert 1→180 (gemessen ${res.manaBase}/${res.manaFullMag}/${res.manaFullBoth})`,
+        res.manaFormulaOk === true
+    );
+    check("V18.196 (M3) MANA_REGEN_PER_SEC frozen Konstante existiert", res.regenConstExists === true);
+    check("V18.196 (M4) computePlayerStats gibt stats.manaMax > 0", res.computeReturnsMana === true);
+    check(
+        `V18.196 (M5) Phönix hat mehr Mana als Mensch (${res.phoenixManaMax && res.phoenixManaMax.toFixed(1)} > ${res.humanManaMax && res.humanManaMax.toFixed(1)} — magieleitung emergent)`,
+        res.phoenixMoreMana === true
+    );
+    check("V18.196 (M6a) recomputePlayerStats setzt state.player.mana", res.statePlayerMana === true);
+    check("V18.196 (M6b) recomputePlayerStats setzt state.player.manaMax > 0", res.statePlayerManaMax === true);
+    check("V18.196 (M6c) mana = manaMax nach recompute (frischer Spawn voll)", res.manaAtMaxAfterRecompute === true);
+    check("V18.196 (M7a) Game-Loop-Regen wirkt (mana steigt nach 60 Ticks)", res.regenRunsInLoop === true);
+    check(
+        `V18.196 (M7b) Regen bleibt ≤ manaMax (mana ${res.regenAfter && res.regenAfter.toFixed(1)} ≤ max ${res.regenMaxAfter && res.regenMaxAfter.toFixed(1)})`,
+        res.regenStaysBelowOrAtMax === true
+    );
+    check("V18.196 (M8) Mana skaliert mit sqrt(soulSize) (V18.195-Symmetrie)", res.manaScaledByMul === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -50629,6 +50737,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18193MakroErbgut(ctx);
             await checkBandV18194Gamma6Befoerderung(ctx);
             await checkBandV18195AvatarSizeHp(ctx);
+            await checkBandV18196ManaSymmetry(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
