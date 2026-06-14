@@ -42758,6 +42758,32 @@ class AnazhRealm {
         this.state.sprintSpeed = v * 2;
     }
 
+    // V18.201 — MANA-KONSUMENTEN Foundation (aktiv.md §4.E Folge zu V18.196).
+    // Helper für künftige Mana-Konsumenten (Magie-Akte, Boost-Manifestation,
+    // DSL-Op-Kosten): R2-strukturell, KEIN DSL-Op (Anti-Scope §3: ein Skript
+    // darf die Mana-Wand nicht umgehen — analog zur W5-Werkzeug-Abnutzungs-
+    // Lehre V18.192). Mode-Gate: schöpfer = frei (kein Drain), pfad/frieden =
+    // strikt. Erste konkrete Konsumenten in einer Folge-Welle nach Schöpfer-
+    // Entscheid (welche Akte Mana kosten).
+    _canPayMana(n, opts) {
+        if (!this.state.player) return false;
+        if (!(n > 0)) return true;
+        const mode = (opts && opts.mode) || (this.getGameMode ? this.getGameMode() : "frieden");
+        if (mode === "schöpfer") return true; // freier Schöpfer
+        return (this.state.player.mana || 0) >= n;
+    }
+
+    _drainMana(n, opts) {
+        if (!this.state.player) return false;
+        if (!(n > 0)) return true; // 0/negativ = no-op, kein Fehler
+        const mode = (opts && opts.mode) || (this.getGameMode ? this.getGameMode() : "frieden");
+        if (mode === "schöpfer") return true; // freier Schöpfer, kein Drain
+        const have = this.state.player.mana || 0;
+        if (have < n) return false; // insufficient → kein Drain (atomar)
+        this.state.player.mana = Math.max(0, have - n);
+        return true;
+    }
+
     // Stats berechnen + auf state anwenden (Soul-Wechsel-Pfad). HP+Stamina
     // werden bei Wechsel auf max gesetzt (Phönix-Wandlung in Etappe 3 nutzt
     // diesen Pfad bewusst — Wandlung heilt). DSL-Ops player_speed +
@@ -63745,7 +63771,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.200.0";
+AnazhRealm.VERSION = "18.201.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

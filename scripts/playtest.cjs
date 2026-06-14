@@ -34010,6 +34010,96 @@ async function checkBandV18200GammaMIronBands(ctx) {
     check("V18.200 (I7) Source-Probe: IRON_BANDS + _eisenAderAt in _terrainMaterialAt", res.srcHasIronCheck === true);
 }
 
+// V18.201 — MANA-KONSUMENTEN FOUNDATION (aktiv.md §4.E Folge zu V18.196).
+// Helper `_canPayMana(n)` + `_drainMana(n)` mit Mode-Gate. Anti-Scope §3:
+// KEIN DSL-Op (analog W5-Werkzeug-Abnutzung V18.192).
+async function checkBandV18201ManaKonsum(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+
+        // (K1) Helper existieren
+        out.canPayExists = typeof r._canPayMana === "function";
+        out.drainExists = typeof r._drainMana === "function";
+
+        const savedMana = r.state.player && r.state.player.mana;
+        const savedManaMax = r.state.player && r.state.player.manaMax;
+        const savedMode = r.getGameMode ? r.getGameMode() : "frieden";
+        try {
+            if (r.setGameMode) r.setGameMode("pfad");
+            r.state.player.manaMax = 100;
+            r.state.player.mana = 60;
+
+            // (K2) canPay: 50 ≤ 60 → true; 70 > 60 → false; 0/negativ → true
+            out.canPayEnough = r._canPayMana(50) === true;
+            out.canPayInsufficient = r._canPayMana(70) === false;
+            out.canPayZero = r._canPayMana(0) === true;
+            out.canPayNegative = r._canPayMana(-5) === true;
+
+            // (K3) drainMana: erfolgreich zieht ab
+            r.state.player.mana = 60;
+            const drainOk = r._drainMana(20);
+            out.drainSuccessReturnsTrue = drainOk === true;
+            out.drainReducesMana = r.state.player.mana === 40;
+
+            // (K4) drainMana: insufficient → false + Mana unverändert (atomar)
+            r.state.player.mana = 15;
+            const drainFail = r._drainMana(20);
+            out.drainFailReturnsFalse = drainFail === false;
+            out.drainFailLeavesUnchanged = r.state.player.mana === 15;
+
+            // (K5) drainMana: nicht unter 0
+            r.state.player.mana = 5;
+            r._drainMana(5);
+            out.drainExactlyDepletes = r.state.player.mana === 0;
+
+            // (K6) MODE-GATE: schöpfer = frei
+            if (r.setGameMode) r.setGameMode("schöpfer");
+            r.state.player.mana = 10;
+            const schoepferDrain = r._drainMana(50);
+            out.schoepferDrainSucceeds = schoepferDrain === true;
+            out.schoepferManaUnchanged = r.state.player.mana === 10; // kein Drain
+            out.schoepferCanPay = r._canPayMana(50) === true; // immer ok
+
+            // (K7) Anti-Scope §3: KEIN DSL-Op für Mana-Drain
+            const dslOpsSrc = r.constructor.toString().substring(0, 100000);
+            // grobe Probe: kein "drain_mana" oder "consume_mana" als DSL-Op-Key
+            out.noDslDrainMana = !/\bdrain_mana\s*:\s*\(/.test(dslOpsSrc) && !/\bconsume_mana\s*:\s*\(/.test(dslOpsSrc);
+
+            // (K8) Mode-Override per opts: opts.mode overschreibt getGameMode
+            if (r.setGameMode) r.setGameMode("pfad");
+            r.state.player.mana = 20;
+            const optsOverride = r._drainMana(30, { mode: "schöpfer" });
+            out.optsModeOverride = optsOverride === true && r.state.player.mana === 20;
+        } finally {
+            if (r.state.player) {
+                r.state.player.mana = savedMana;
+                r.state.player.manaMax = savedManaMax;
+            }
+            if (r.setGameMode) r.setGameMode(savedMode);
+        }
+        return out;
+    });
+
+    check("V18.201 (K1a) _canPayMana Helper existiert", res.canPayExists === true);
+    check("V18.201 (K1b) _drainMana Helper existiert", res.drainExists === true);
+    check("V18.201 (K2a) canPay: 50 ≤ 60 → true", res.canPayEnough === true);
+    check("V18.201 (K2b) canPay: 70 > 60 → false", res.canPayInsufficient === true);
+    check("V18.201 (K2c) canPay: 0 → true (no-op)", res.canPayZero === true);
+    check("V18.201 (K2d) canPay: negativ → true (no-op)", res.canPayNegative === true);
+    check("V18.201 (K3a) drainMana success returns true", res.drainSuccessReturnsTrue === true);
+    check("V18.201 (K3b) drainMana reduces mana exact (60-20=40)", res.drainReducesMana === true);
+    check("V18.201 (K4a) drainMana insufficient returns false", res.drainFailReturnsFalse === true);
+    check("V18.201 (K4b) drainMana insufficient leaves mana unchanged (atomar)", res.drainFailLeavesUnchanged === true);
+    check("V18.201 (K5) drainMana exact (5-5=0, kein Unter-Null)", res.drainExactlyDepletes === true);
+    check("V18.201 (K6a) Mode-Gate schöpfer: drainMana success ohne Drain", res.schoepferDrainSucceeds === true);
+    check("V18.201 (K6b) Mode-Gate schöpfer: mana unverändert", res.schoepferManaUnchanged === true);
+    check("V18.201 (K6c) Mode-Gate schöpfer: canPay immer true", res.schoepferCanPay === true);
+    check("V18.201 (K7) Anti-Scope §3: KEIN drain_mana/consume_mana DSL-Op (analog W5)", res.noDslDrainMana === true);
+    check("V18.201 (K8) opts.mode overschreibt getGameMode (für unit-tests + multi-context)", res.optsModeOverride === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -51192,6 +51282,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18198Gamma2Totholz(ctx);
             await checkBandV18199GammaMLichen(ctx);
             await checkBandV18200GammaMIronBands(ctx);
+            await checkBandV18201ManaKonsum(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

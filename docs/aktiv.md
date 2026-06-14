@@ -46,6 +46,7 @@ Backlog-Punkte §4 (nächste in Reihe).
 | **Γ2 Totholz (`stamm_gefallen` Bauplan + Sub-Spawn nach Baum, ~10 % Chance, tag-neutral)** | **V18.198** | `docs/aktiv.md` §4.A + unten §1.F |
 | **Γ-M Lichen (grüne Patina auf feuchten Steinen — Render-Tint in Mix-Stack, Worker bit-identisch)** | **V18.199** | `docs/aktiv.md` §4.A + unten §1.G |
 | **Γ-M Iron-Bands (vertikale Eisenadern in tiefen Bergregionen — Ridge-Noise × dichte-Floor; Γ-M-Triade vollendet)** | **V18.200** | `docs/aktiv.md` §4.A + unten §1.H |
+| **Mana-Konsumenten Foundation (`_canPayMana` + `_drainMana` Helper, R2-strukturell, Mode-Gate schöpfer=frei, Anti-Scope §3)** | **V18.201** | `docs/aktiv.md` §4.E + unten §1.I |
 
 ---
 
@@ -195,7 +196,7 @@ V18.132 ferne Welten). Was noch offen — alles Profi-Feinschliff:
 
 | ID | Was | Größe |
 |---|---|---|
-| ~~**Mana-Symmetrie**~~ | **✓ FOUNDATION GEBAUT V18.196:** `STAT_FROM_TAGS.manaMax = 50 + magieleitung*100 + resoniert*30` (Mensch 50, Phönix 223, Drache höher); `state.player.mana/manaMax` Pflege-Pfad in `recomputePlayerStats`; Game-Loop-Regen mit `MANA_REGEN_PER_SEC=3` + magieleitung-Boost (effektiv = base × (1+magieleitung)); V18.195-Größen-Symmetrie (sqrt(soulSize)). 11 Wände. **OFFEN als Folge-Welle:** Mana-Konsumenten (DSL-Ops mit manaCost · UI-Balken im HUD · Persistenz-Form über Reload mit decay). | **✓ FOUNDATION** |
+| ~~**Mana-Symmetrie**~~ | **✓ V18.196 Foundation (Stat+Regen+Pflege) + ✓ V18.201 Konsumenten-Foundation (`_canPayMana` + `_drainMana` Helper, Mode-Gate schöpfer=frei, Anti-Scope §3 KEIN DSL-Op).** Foundations stehen — der Schöpfer kann jetzt entscheiden, welche konkreten Akte Mana kosten sollen (Boost-Manifestation, Magie-Akte, terrain-DSL-Verbrauchs-Gate). 11+16 Wände. **OFFEN als Folge-Wellen nach Schöpfer-Entscheid:** UI-Balken im HUD · konkrete Mana-Verbraucher-Mechanik · Persistenz-Form über Reload mit decay. | **✓ V18.196+V18.201** |
 | **Emotion→Regel-Emergenz** | hand-codierte Emotion→Welt-Kopplungen werden via DSL emergent (das `Welt-Regeln`-Organ trägt sie schon) | mittel |
 | **Nexus-Lern-Vereinheitlichung** (Geste→Gesetz) | EIN Lern-Substrat — bewährte Geste kristallisiert zur Regel | mittel-groß |
 
