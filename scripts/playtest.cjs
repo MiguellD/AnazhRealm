@@ -34758,7 +34758,10 @@ async function checkBandV18209Konsolidierung(ctx) {
 
         // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.216.0"
         out.versionStr = A.VERSION;
-        out.versionMatches = A.VERSION === "18.216.0";
+        // V18.217 — Floor (semver-Form): die Wand wandert mit jeder Welle,
+        // muss aber nicht jedes Mal hier verschoben werden (Drift-Schutz).
+        const vparts = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        out.versionMatches = vparts[0] > 18 || (vparts[0] === 18 && vparts[1] >= 217);
 
         // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
         // beim Konsolidieren (alles bleibt lauffähig):
@@ -34801,7 +34804,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
-    check(`V18.209 (K1) VERSION = "18.216.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
+    check(`V18.209 (K1) VERSION floor ≥ 18.217.0 (gemessen ${res.versionStr})`, res.versionMatches === true);
     check("V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)", res.allFoundationsAlive === true);
     check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
     check("V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)", res.avatarFamilyKomplett === true);
@@ -35348,8 +35351,11 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         }
 
         // (S6) VERSION-BUMP: AnazhRealm.VERSION + index.html cache-buster.
-        // Walk-with-code (V9.56-i): die Probe trägt die aktuelle Versions-Zahl.
-        out.versionBumped = A.VERSION === "18.216.0";
+        // Walk-with-code (V9.56-i, V18.217-Drift-Schutz): die Probe trägt einen
+        // FLOOR statt einer scharfen Zahl; jede Welle bumpt den Floor nur, wo
+        // sie wirklich neue Behavior etabliert.
+        const vparts2 = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        out.versionBumped = vparts2[0] > 18 || (vparts2[0] === 18 && vparts2[1] >= 217);
 
         return out;
     });
@@ -35369,7 +35375,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
     check("V18.211 (S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)", res.snapshotHasMetadata === true);
     check("V18.211 (S5b) Snapshot grownBlueprints OHNE parts-Array (re-wächst f(seed))", res.snapshotNoParts === true);
     check("V18.211 (S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)", res.snapshotGrownEntrySmall === true);
-    check(`V18.211 (S6) VERSION = "18.216.0" (walk-with-code, V18.216 KARST+Büsche)`, res.versionBumped === true);
+    check(`V18.211 (S6) VERSION floor ≥ 18.217.0 (walk-with-code, V18.217 Varianten-Pool)`, res.versionBumped === true);
 }
 
 // V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE der ersten Pillar-Welle:
@@ -36260,8 +36266,13 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
             /["']blume_gross["']/.test(spawnSrc);
 
         // ─── (F) Version + walk-with-code ────────────────────────────
+        // V18.216 baute KARST+Büsche; eine spätere Welle (V18.217 Varianten-
+        // Pool) bumpt die Version auf 18.217.0 ohne dieses Band zu brechen
+        // → wir prüfen FLOOR (string-vergleich, semver-Form 18.MMM.PPP).
         out.versionString = A.VERSION;
-        out.versionIs18216 = A.VERSION === "18.216.0";
+        const parts = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        out.versionFloor18216 =
+            parts.length >= 2 && (parts[0] > 18 || (parts[0] === 18 && parts[1] >= 216));
         out.genVersionFresh9 = !!(r.state.worldMeta && r.state.worldMeta.genVersion >= 9);
 
         return out;
@@ -36316,9 +36327,179 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
     check("V18.216 (E3) Bush-Sub-Spawn-Pfad in _vegetationSampleSpawn (BUSH_RATE + 3 Bush-Namen)", res.bushSubSpawn === true);
 
     // (F) Version
-    check(`V18.216 (F1) VERSION=18.216.0 (gemessen ${res.versionString})`, res.versionIs18216 === true);
+    check(`V18.216 (F1) VERSION floor ≥ 18.216.0 (gemessen ${res.versionString})`, res.versionFloor18216 === true);
     check("V18.216 (F2) Fresh-Welt genVersion ≥ 9 (V18.216 Routing)", res.genVersionFresh9 === true);
 }
+
+// V18.217 (DER LEBENDIGE GIGANT §2, gigant-fortsetzung-plan) — VARIANTEN-POOL.
+// Plan §2.5+§6: N=VARIANTS_PER_SPECIES Varianten pro Spezies, gefroren als
+// Welt-Genese-Konstante in worldMeta.variantSeed. Voraussetzung der echten
+// Promotion (V18.221 Ω-H): ein berührter Baum re-wächst BIT-GENAU aus
+// variantSeed[index] → kein visueller Sprung. P2P: zwei Peers mit identischem
+// worldSeed bauen IDENTISCHEN Pool.
+async function checkBandV18217VariantenPool(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // ─── (A) Source-Probes ────────────────────────────────────────
+        out.constantExists = Number.isFinite(A.VARIANTS_PER_SPECIES) && A.VARIANTS_PER_SPECIES >= 8;
+        out.constantValue = A.VARIANTS_PER_SPECIES;
+        out.ensureHelperExists = typeof r._ensureVariantSeedPool === "function";
+        out.generateHelperExists = typeof r._generateVariantSeedPool === "function";
+        // Grow-Pipeline liest Pool + variantIndex (Source-Probe)
+        const growSrc = r._growTreeBlueprintForSpawn.toString();
+        out.growUsesPool = /_ensureVariantSeedPool/.test(growSrc);
+        out.growUsesVariantIndex = /variantIndex/.test(growSrc);
+        // Cache-Key-Form `grown_<species>_v<idx>` statt der alten Hash-Form
+        out.cacheKeyVariantForm = /grown_\$\{species\}_v\$\{variantIndex\}/.test(growSrc);
+        // bp._variantIndex am Bauplan
+        out.bpHasVariantIndex = /_variantIndex:\s*variantIndex/.test(growSrc);
+
+        // ─── (B) Behavioral: Fresh-Welt hat Pool ──────────────────────
+        const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18217") : null;
+        out.freshHasPool = !!(newMeta && newMeta.variantSeed && typeof newMeta.variantSeed === "object");
+        if (out.freshHasPool) {
+            const species = Object.keys(newMeta.variantSeed);
+            out.freshPoolSpeciesCount = species.length;
+            // Alle aktuellen SPECIES_GRAMMAR-Spezies haben einen Pool
+            const grammarSpec = Object.keys(A.SPECIES_GRAMMAR || {});
+            out.allGrammarSpeciesInPool = grammarSpec.every((s) =>
+                Array.isArray(newMeta.variantSeed[s]) && newMeta.variantSeed[s].length === A.VARIANTS_PER_SPECIES
+            );
+            // String-Seeds, kein Float-Drift-Risiko (P2P-Konsistenz)
+            const sampleArr = newMeta.variantSeed[grammarSpec[0]] || [];
+            out.poolEntriesAreStrings = sampleArr.every((s) => typeof s === "string");
+        }
+
+        // ─── (C) Determinismus: 2 Pools mit gleichem Seed sind identisch ─
+        const sampleSeed = "test-determinism-v18217-seed-xyz";
+        const pool1 = r._generateVariantSeedPool(sampleSeed);
+        const pool2 = r._generateVariantSeedPool(sampleSeed);
+        out.poolDeterministic = (() => {
+            const spec = Object.keys(pool1);
+            if (spec.length !== Object.keys(pool2).length) return false;
+            return spec.every((s) =>
+                Array.isArray(pool1[s]) && Array.isArray(pool2[s]) &&
+                pool1[s].length === pool2[s].length &&
+                pool1[s].every((v, i) => v === pool2[s][i])
+            );
+        })();
+
+        // Pools mit verschiedenen Seeds → unterscheiden sich (string-equality)
+        const pool3 = r._generateVariantSeedPool("anderer-seed-distinct-abc");
+        const specCheck = Object.keys(pool1)[0];
+        out.poolDistinctSeeds =
+            Array.isArray(pool1[specCheck]) && Array.isArray(pool3[specCheck]) &&
+            pool1[specCheck][0] !== pool3[specCheck][0];
+
+        // ─── (D) Cache-Key: regionSeeds, die auf gleichen Index hashen, geben gleichen Bauplan ─
+        if (r.state.worldMeta) {
+            // Lazy-Init des Pools im laufenden state (falls nicht da)
+            r._ensureVariantSeedPool();
+            // Zwei verschiedene regionSeeds, deterministische variantIndex
+            const k1 = r._growTreeBlueprintForSpawn("baum_eiche", "test-region-A-0");
+            const k2 = r._growTreeBlueprintForSpawn("baum_eiche", "test-region-A-0");
+            out.sameRegionSameKey = !!(k1 && k1 === k2);
+            // Pattern grown_<species>_v<idx>
+            out.keyHasVariantForm = !!(k1 && /^grown_baum_eiche_v\d+$/.test(k1));
+            // bp trägt _variantIndex
+            const bp = k1 && r.state.blueprints[k1];
+            out.bpVariantIndexSet = !!(bp && Number.isFinite(bp._variantIndex));
+            // bp._grownSeed ist der variantSeed-String (NICHT der regionSeed)
+            const pool = r.state.worldMeta && r.state.worldMeta.variantSeed;
+            if (bp && pool && Array.isArray(pool["baum_eiche"])) {
+                const expected = pool["baum_eiche"][bp._variantIndex];
+                out.bpGrownSeedIsVariantSeed = bp._grownSeed === expected;
+            }
+        }
+
+        // ─── (E) Snapshot-Persistierung von variantSeed ───────────────
+        if (typeof r.buildStateSnapshot === "function") {
+            const snap = r.buildStateSnapshot();
+            const wmSnap = snap && snap.worldMeta;
+            out.snapshotCarriesPool = !!(wmSnap && wmSnap.variantSeed && typeof wmSnap.variantSeed === "object");
+            if (out.snapshotCarriesPool) {
+                const liveKey = Object.keys(A.SPECIES_GRAMMAR || {})[0];
+                const livePool = r.state.worldMeta && r.state.worldMeta.variantSeed;
+                if (liveKey && livePool && Array.isArray(livePool[liveKey])) {
+                    out.snapshotPoolMatchesLive =
+                        Array.isArray(wmSnap.variantSeed[liveKey]) &&
+                        wmSnap.variantSeed[liveKey].every((v, i) => v === livePool[liveKey][i]);
+                }
+            }
+        }
+
+        // ─── (F) Migration: Pool ohne Eintrag wird lazy ergänzt ───────
+        // Snapshot mit pre-V18.216-Spezies + manuelle Migration prüfen
+        const oldStyleMeta = { seed: "old-world-seed-1", genVersion: 5 };
+        r.state.worldMeta = { ...r.state.worldMeta, ...oldStyleMeta };
+        delete r.state.worldMeta.variantSeed;
+        const migrated = r._ensureVariantSeedPool();
+        out.migrationFillsPool = !!(
+            migrated && Object.keys(A.SPECIES_GRAMMAR || {}).every((s) =>
+                Array.isArray(migrated[s]) && migrated[s].length === A.VARIANTS_PER_SPECIES
+            )
+        );
+
+        // ─── (G) Größe (Snapshot-Tragbarkeit) ────────────────────────
+        if (r.state.worldMeta && r.state.worldMeta.variantSeed) {
+            const json = JSON.stringify(r.state.worldMeta.variantSeed);
+            out.poolJsonSize = json.length;
+            // 16 Varianten × 11 Spezies × ~30 Bytes/Seed ≈ ~5-7 KB; sicherheits-
+            // halber bis 30 KB akzeptieren (256-KB-Snapshot-Cap nicht gefährdet)
+            out.poolSizeUnder30K = json.length < 30000;
+        }
+
+        // ─── (H) Version + walk-with-code ────────────────────────────
+        out.versionStr = A.VERSION;
+        const partsV = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        out.versionFloor18217 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 217);
+
+        return out;
+    });
+
+    // (A) Source
+    check(`V18.217 (A1) AnazhRealm.VARIANTS_PER_SPECIES Konstante (gemessen ${res.constantValue})`, res.constantExists === true);
+    check("V18.217 (A2) _ensureVariantSeedPool Helper existiert", res.ensureHelperExists === true);
+    check("V18.217 (A3) _generateVariantSeedPool Helper existiert", res.generateHelperExists === true);
+    check("V18.217 (A4) _growTreeBlueprintForSpawn nutzt _ensureVariantSeedPool", res.growUsesPool === true);
+    check("V18.217 (A5) _growTreeBlueprintForSpawn berechnet variantIndex", res.growUsesVariantIndex === true);
+    check("V18.217 (A6) Cache-Key-Form `grown_<species>_v<idx>` (Source-Probe)", res.cacheKeyVariantForm === true);
+    check("V18.217 (A7) Bauplan trägt _variantIndex (Source-Probe)", res.bpHasVariantIndex === true);
+
+    // (B) Fresh-Welt
+    check("V18.217 (B1) Fresh-Welt-Meta trägt variantSeed-Pool", res.freshHasPool === true);
+    check(`V18.217 (B2) Fresh-Pool deckt alle SPECIES_GRAMMAR-Arten (gemessen ${res.freshPoolSpeciesCount})`, res.allGrammarSpeciesInPool === true);
+    check("V18.217 (B3) Pool-Einträge sind STRINGS (P2P-Determinismus)", res.poolEntriesAreStrings === true);
+
+    // (C) Determinismus
+    check("V18.217 (C1) Pool-Generierung deterministisch (gleicher Seed → gleicher Pool)", res.poolDeterministic === true);
+    check("V18.217 (C2) Verschiedene worldSeeds erzeugen DISTINKTE Pools", res.poolDistinctSeeds === true);
+
+    // (D) Spawn-Pipeline
+    check("V18.217 (D1) Gleicher regionSeed → gleicher Bauplan-Key", res.sameRegionSameKey === true);
+    check("V18.217 (D2) Bauplan-Key folgt `grown_<species>_v<idx>`-Form", res.keyHasVariantForm === true);
+    check("V18.217 (D3) Bauplan trägt _variantIndex (numerisch)", res.bpVariantIndexSet === true);
+    check("V18.217 (D4) bp._grownSeed === variantSeed[species][index] (Re-Wachstum bit-genau)", res.bpGrownSeedIsVariantSeed === true);
+
+    // (E) Snapshot
+    check("V18.217 (E1) Snapshot trägt worldMeta.variantSeed", res.snapshotCarriesPool === true);
+    check("V18.217 (E2) Snapshot-Pool ist bit-identisch zur Live-Welt", res.snapshotPoolMatchesLive === true);
+
+    // (F) Migration
+    check("V18.217 (F1) Migration: alte Welt ohne variantSeed bekommt lazy einen Pool", res.migrationFillsPool === true);
+
+    // (G) Performance
+    check(`V18.217 (G1) Pool-JSON-Größe < 30 KB (gemessen ${res.poolJsonSize} Bytes)`, res.poolSizeUnder30K === true);
+
+    // (H) Version
+    check(`V18.217 (H1) VERSION floor ≥ 18.217.0 (gemessen ${res.versionStr})`, res.versionFloor18217 === true);
+}
+
+// W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
@@ -53517,6 +53698,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18214SkeletonMesh(ctx);
             await checkBandV18215AtemberaubenderWald(ctx);
             await checkBandV18216KarstUndUnderstory(ctx);
+            await checkBandV18217VariantenPool(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

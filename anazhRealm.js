@@ -12265,7 +12265,12 @@ class AnazhRealm {
         // Gesicht (legacy-erhaltend: das Drainage-Netz-Gesetz, Genese ist
         // Welt-Identität). V18.179: gen 3 schaltet Γ4-Makro-Geographie.
         // V18.210 (§1-A1): gen 4 schaltet Γ7-prozedurale Baum-Bauplane.
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 9 };
+        // V18.217 (DER LEBENDIGE GIGANT §2 Plan §2.5) — der VARIANTEN-POOL ist
+        // WELT-GENESE-KONSTANTE. Beim FRESH wird er sofort gepinnt (Plan-zitat:
+        // „variantSeed[] ist gefrorene Konstante (Teil der Welt-Genese)").
+        // Alte Welten ohne Pool migrieren lazy via `_ensureVariantSeedPool`.
+        const variantSeed = this._generateVariantSeedPool(seed);
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 9, variantSeed };
     }
 
     // Snapshot einer „leeren" Welt mit gegebenem worldMeta. Optional bekommt
@@ -43417,27 +43422,98 @@ class AnazhRealm {
     //
     // `speciesKey` ist informativ (zukünftig: ein-Spezies-spezifische Tweaks);
     // `seed` ist der Variation-Diktator (ein String oder Number — wird über
+    // V18.217 (DER LEBENDIGE GIGANT §2, Plan §2.5+§6) — der VARIANTEN-POOL.
+    // Liefert eine Map<species, string[]> mit N=VARIANTS_PER_SPECIES Variant-
+    // Seeds pro Spezies. Die Seeds sind PURE STRINGS (frozen Welt-Konstante,
+    // wandern im Snapshot mit). Lazy-Erstellung: existiert kein Pool in
+    // worldMeta.variantSeed, baut die Funktion ihn deterministisch aus dem
+    // Welt-Seed (Migration alter Welten ohne genVersion ≥ 10). Spätere
+    // Aufrufe lesen aus dem Cache. P2P: zwei Peers mit identischem worldSeed
+    // bauen IDENTISCHEN Pool (string-equality, kein Float-Drift).
+    _ensureVariantSeedPool() {
+        if (!this.state.worldMeta) return null;
+        const existing = this.state.worldMeta.variantSeed;
+        if (existing && typeof existing === "object") {
+            // Backward-Kompat: ein Pool aus früherer V18.217-Welt → ggf. nur
+            // ein Teil der heutigen SPECIES_GRAMMAR (alte Welten ohne Karst+
+            // Büsche). Wir ergänzen fehlende Spezies lazy auf demselben Seed-
+            // Schema. Das Welt-Identitäts-Gesetz bleibt: die existierenden
+            // Spezies-Pools sind UNANGETASTET (bit-identische Re-Growth).
+            const speciesNow = Object.keys(AnazhRealm.SPECIES_GRAMMAR || {});
+            const N = AnazhRealm.VARIANTS_PER_SPECIES;
+            const worldSeed = this.state.worldMeta.seed || "anazh-realm-seed";
+            let added = 0;
+            for (const sp of speciesNow) {
+                if (!Array.isArray(existing[sp]) || existing[sp].length !== N) {
+                    const variants = new Array(N);
+                    for (let i = 0; i < N; i++) variants[i] = `${worldSeed}-${sp}-var${i}`;
+                    existing[sp] = variants;
+                    added++;
+                }
+            }
+            if (added > 0 && typeof this.log === "function") {
+                this.log(`V18.217: ${added} Spezies in den Varianten-Pool ergänzt (lazy)`, "DBG");
+            }
+            return existing;
+        }
+        const pool = this._generateVariantSeedPool(this.state.worldMeta.seed || "anazh-realm-seed");
+        this.state.worldMeta.variantSeed = pool;
+        return pool;
+    }
+
+    // V18.217 — die PURE Pool-Generierung aus einem Welt-Seed. Deterministisch
+    // ohne Side-Effects (testbar isoliert; benötigt KEINEN state-Kontext, nur
+    // AnazhRealm.SPECIES_GRAMMAR + VARIANTS_PER_SPECIES). Der `species`-Name
+    // ist Teil des variant-Seed-Suffixes → eine NEUE Spezies (V18.216 Karst+
+    // Büsche) ergibt eigene, ortho-Pool-Bahnen, ohne die bestehenden zu
+    // verschieben.
+    _generateVariantSeedPool(worldSeed) {
+        const pool = {};
+        const N = AnazhRealm.VARIANTS_PER_SPECIES;
+        const species = Object.keys(AnazhRealm.SPECIES_GRAMMAR || {});
+        for (const sp of species) {
+            const variants = new Array(N);
+            for (let i = 0; i < N; i++) variants[i] = `${worldSeed}-${sp}-var${i}`;
+            pool[sp] = variants;
+        }
+        return pool;
+    }
+
     // FNV-1a in einen Float für SimplexNoise gewandelt). `returns` ein parts-
     // Array, das direkt als `bp.parts` für einen Bauplan dient.
     // V18.210 (§1-A1) — Worldgen-Hook für Γ7: aus dem Helper einen REGISTRIERTEN
     // Bauplan machen (cache-by-hash), den der Spawn-Pfad als spawnName nutzen
-    // kann. Cache-Schlüssel = "grown_<species>_<hash>", deterministisch aus
-    // (species, seed). Bauplan-Felder spiegeln `baum_eiche` (builtIn:true,
-    // instanced:true → HISM-Effizienz, label „Eiche (gewachsen)"). Memory-Cap
-    // (DEFAULT 64): die ALTESTEN Einträge werden geprunt, wenn neue kommen —
-    // verhindert ein endloses Anwachsen des Registry über Streaming-Sessions.
+    // kann. Cache-Schlüssel = "grown_<species>_v<variantIndex>" (V18.217 —
+    // Varianten-Pool statt unbegrenzter Hash-Keys). Bauplan-Felder spiegeln
+    // `baum_eiche` (builtIn:true, instanced:true → HISM-Effizienz). Memory-Cap
+    // (DEFAULT 256): die ALTESTEN Einträge werden geprunt, wenn neue kommen —
     // V17.16-Schutz: VOR Cache-Reuse Tag-Wand gegen baum_eiche (siehe Test G6);
     // schlägt sie an, ist der Bauplan abgelehnt + es wird auf baum_eiche
     // zurückgefallen (kein Spawn-Verlust, kein Affinitäts-Riss).
     _growTreeBlueprintForSpawn(species, seed) {
         if (!this.state.blueprints) return null;
-        // Hash für den Cache-Key — fnv-1a vereinheitlicht mit dem Helper
-        // (so dass die `_growTreeBlueprint(species, seed)`-Determinismus-Achse
-        // identisch in den Key wandert).
+        // V18.217 (DER LEBENDIGE GIGANT §2, Plan §2.5) — der VARIANTEN-POOL.
+        // Statt einer Cache-Key pro (species, regionSeed-Hash) zu öffnen
+        // (die V18.210-Form, prinzipiell unbegrenzt viele Bauplane), rastert
+        // der regionSeed in EINE von N=VARIANTS_PER_SPECIES Varianten ein.
+        // N×Spezies Varianten welt-weit → die Welt ist beschränkt + das HISM-
+        // Instancing teilt sich über Regionen hinweg (Plan §6 Ω-G4: „der
+        // Pool ist die VORAUSSETZUNG der Promotion §2 → ein berührter Baum
+        // re-wächst BIT-GENAU aus variantSeed[index]"). Plan-zitat §2.5:
+        // „variantSeed[] ist gefrorene Konstante (Teil der Welt-Genese)".
+        // Migration alter Welten via `_ensureVariantSeedPool` (lazy, seed-
+        // deterministisch — bit-identisch über Reloads, P2P-sicher).
+        const N = AnazhRealm.VARIANTS_PER_SPECIES;
+        const pool = this._ensureVariantSeedPool();
+        if (!pool || !pool[species] || pool[species].length !== N) return null;
+        // Hash für die VARIANTEN-WAHL — fnv-1a über (species, regionSeed):
+        // gleicher regionSeed → gleicher variantIndex (Region trägt EINEN
+        // lokalen Stil); verschiedene regionSeeds streuen über N Varianten.
         const sKey = String(seed || species || "g7-default");
         let hash = 2166136261 >>> 0;
         for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
-        const cacheKey = `grown_${species}_${hash.toString(36)}`;
+        const variantIndex = hash % N;
+        const cacheKey = `grown_${species}_v${variantIndex}`;
         // Cache-Hit?
         const cached = this.state.blueprints[cacheKey];
         if (cached) {
@@ -43456,7 +43532,12 @@ class AnazhRealm {
         // alle identische Eichen). Tag-NEUTRALITÄT bleibt (holz+laub Materialien
         // identisch über alle Arten → die Spawn-Affinitäts-Achsen verschieben
         // sich NIE — V17.16-Wand strukturell).
-        const parts = this._growTreeBlueprint(species, seed);
+        // V18.217 — Die Geometrie kommt aus dem GEFROREN variantSeed (Plan §2.5):
+        // das f(variantSeed) ist BIT-IDENTISCH zwischen Erstwachstum hier und
+        // Wieder-Wachstum nach Snapshot-Restore — die Voraussetzung der echten
+        // Promotion (V18.221: Touch → Real ohne visuellen Sprung).
+        const variantSeed = pool[species][variantIndex];
+        const parts = this._growTreeBlueprint(species, variantSeed);
         if (!Array.isArray(parts) || parts.length < 4) return null;
         // V17.16-Schutz → V18.215 V17.16-VARIATIONS-Wand (lebendiger-gigant §7):
         // GESCHÄRFT statt aufgeweicht — die Wand prüft jetzt nur UNDEKLARIERTE
@@ -43513,7 +43594,15 @@ class AnazhRealm {
             builtIn: true,
             _isGrown: true,
             _grownSpecies: species,
-            _grownSeed: String(seed),
+            // V18.217 — der GEFRORENE variantSeed reist als _grownSeed mit;
+            // beim Restore re-wächst die Geometrie BIT-GENAU aus ihm. Plan §2.5:
+            // „f(variantSeed) ist das Erbgut — kein Datensatz, eine Funktion".
+            _grownSeed: variantSeed,
+            // V18.217 — der VARIANTEN-INDEX als Querverweis: Plan §2 H2 (Ω-H
+            // Promotion) liest ihn direkt, um den scatter-instanceId auf den
+            // realen Bauplan zu mappen. NUR ein numerischer Index, kein Drift-
+            // Risiko (deterministisch aus regionSeed + Welt-genVersion).
+            _variantIndex: variantIndex,
             _isMerged: isMerged,
             _skeleton: isSkeletonMeshed ? this._lastTreeSkeleton : null,
             instanced: true,
@@ -66175,7 +66264,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.216.0";
+AnazhRealm.VERSION = "18.217.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -66492,6 +66581,15 @@ AnazhRealm.STRATA_STEIN_DEPTH = 12;
 // ohne die Baum-Dichte zu sehr zu verdünnen. Erst-Wurf, V18.192-Lehre:
 // browser-justierbar wenn der Schöpfer "zu viel/zu wenig" sieht.
 AnazhRealm.TOTHOLZ_RATE = 0.1;
+
+// V18.217 (DER LEBENDIGE GIGANT §2, Plan §2.5 + §6) — die ANZAHL der
+// Varianten PRO SPEZIES im gefrorenen Welt-Pool. „N ≈ 8-32" (Plan §2.5).
+// Höher → mehr Vielfalt, mehr Speicher (jeder grown_<species>_v<idx>-Bauplan
+// ist ~5 KB Skeleton-Polylinien + die nicht-persistierten parts). 16 trifft
+// das Profi-Mittel (Genshin nutzt ~8-12 Baum-Varianten pro Spezies). Browser-
+// justierbar; eine Änderung erfordert KEINEN Welt-Reset (die Pool-Aufstellung
+// ist lazy, alte Welten ohne variantSeed migrieren still).
+AnazhRealm.VARIANTS_PER_SPECIES = 16;
 
 // V18.212 — Ω-C CANOPY-SHELL (DER LEBENDIGE GIGANT §9): die ferne Wald-
 // Oberfläche, die individuelle Bäume in der Distanz cullt und durch eine
