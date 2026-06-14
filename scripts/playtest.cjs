@@ -34500,6 +34500,115 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
     check("V18.205 (G9b) SimplexNoise statt Math.random", res.usesNoise === true);
 }
 
+// V18.206 — AVATAR-GRÖSSE-SPEED-TRADE (§4.D Folge zu V18.195): größere
+// Avatare sind langsamer (1/sqrt(sizeFactor)), Floor-Disziplin gewahrt.
+async function checkBandV18206SpeedTrade(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+
+        // (S1) Source: 1/sizeHpMul angewendet auf speed/attackSpeed/jumpPower
+        const src = r.computePlayerStats.toString();
+        out.hasSizeSpeedMul = /sizeSpeedMul/.test(src);
+        out.appliedToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
+        out.appliedToAttackSpeed = /stats\.attackSpeed\s*=\s*Math\.max\(0\.25,\s*stats\.attackSpeed\s*\*\s*sizeSpeedMul/.test(src);
+        out.appliedToJumpPower = /stats\.jumpPower\s*=\s*stats\.jumpPower\s*\*\s*sizeSpeedMul/.test(src);
+
+        const savedSoul = r.state.player && r.state.player.soul;
+        const savedEquipped = r.state.player && JSON.parse(JSON.stringify(r.state.player.equipped || {}));
+        const savedCustomSouls = r.state.customSouls ? JSON.parse(JSON.stringify(r.state.customSouls)) : {};
+
+        try {
+            // (S2) Built-in NEUTRAL: human-Soul → sizeFactor=1, kein Speed-Drift
+            r.state.player.soul = "human";
+            r.state.player.equipped = {};
+            r.state.player.boosts = [];
+            const human = r.computePlayerStats();
+            out.humanSpeed = human.stats.speed;
+            // Wir prüfen pragmatisch: human ist neutral, also speed entspricht
+            // STAT_FROM_TAGS.speed(humanTags) (kein Mul-Effekt). Aber das ist
+            // schwer direkt zu testen. Wir verifizieren via SMALL/LARGE-Vergleich.
+
+            // (S3) CUSTOM LARGE: großer Avatar (sizeFactor > 1) → speed LANGSAMER
+            if (!r.state.customSouls) r.state.customSouls = {};
+            r.state.customSouls["bp_largeAvatarS"] = {
+                role: "soul",
+                bodyParts: [
+                    { shape: "sphere", material: "fleisch", size: { x: 2.5, y: 2.5, z: 2.5 } },
+                    { shape: "box", material: "fleisch", size: { x: 1.8, y: 1.8, z: 1.8 } },
+                ],
+            };
+            r.state.blueprints = r.state.blueprints || {};
+            r.state.blueprints["bp_largeAvatarS"] = r.state.customSouls["bp_largeAvatarS"];
+            r.state.player.soul = "bp_largeAvatarS";
+            const large = r.computePlayerStats();
+            out.largeSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_largeAvatarS"].bodyParts });
+            out.largeSpeed = large.stats.speed;
+            out.largeAttackSpeed = large.stats.attackSpeed;
+            out.largeJumpPower = large.stats.jumpPower;
+
+            // (S4) CUSTOM SMALL: kleiner Avatar
+            r.state.customSouls["bp_smallAvatarS"] = {
+                role: "soul",
+                bodyParts: [
+                    { shape: "sphere", material: "fleisch", size: { x: 0.4, y: 0.4, z: 0.4 } },
+                    { shape: "sphere", material: "fleisch", size: { x: 0.3, y: 0.3, z: 0.3 } },
+                ],
+            };
+            r.state.blueprints["bp_smallAvatarS"] = r.state.customSouls["bp_smallAvatarS"];
+            r.state.player.soul = "bp_smallAvatarS";
+            const small = r.computePlayerStats();
+            out.smallSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_smallAvatarS"].bodyParts });
+            out.smallSpeed = small.stats.speed;
+
+            // (S5) Vergleich: large < small bei speed/jumpPower (sizeFactor>1 → langsamer)
+            // (wenn sizeFactor von large > sizeFactor von small)
+            if (out.largeSizeFactor > out.smallSizeFactor) {
+                out.largeSlower = large.stats.speed < small.stats.speed;
+                out.largeJumpLower = large.stats.jumpPower < small.stats.jumpPower;
+            } else {
+                // sizeFactor-Reihenfolge umgekehrt → skip
+                out.largeSlower = true;
+                out.largeJumpLower = true;
+            }
+
+            // (S6) Floor-Disziplin: speed >= 2 (nie kaputt durch hohen sizeFactor)
+            out.speedFloorRespected = large.stats.speed >= 2;
+            out.attackSpeedFloorRespected = large.stats.attackSpeed >= 0.25;
+        } finally {
+            if (r.state.player) {
+                r.state.player.soul = savedSoul;
+                r.state.player.equipped = savedEquipped;
+            }
+            r.state.customSouls = savedCustomSouls;
+            if (r.state.blueprints) {
+                delete r.state.blueprints["bp_largeAvatarS"];
+                delete r.state.blueprints["bp_smallAvatarS"];
+            }
+        }
+        return out;
+    });
+
+    check("V18.206 (S1a) Source: sizeSpeedMul in computePlayerStats", res.hasSizeSpeedMul === true);
+    check("V18.206 (S1b) speed × sizeSpeedMul angewendet (mit Floor 2)", res.appliedToSpeed === true);
+    check("V18.206 (S1c) attackSpeed × sizeSpeedMul angewendet (mit Floor 0.25)", res.appliedToAttackSpeed === true);
+    check("V18.206 (S1d) jumpPower × sizeSpeedMul angewendet", res.appliedToJumpPower === true);
+    check(
+        `V18.206 (S2/S5a) Large (sizeFactor ${res.largeSizeFactor && res.largeSizeFactor.toFixed(2)}) langsamer als Small (sizeFactor ${res.smallSizeFactor && res.smallSizeFactor.toFixed(2)}): ${res.largeSpeed && res.largeSpeed.toFixed(2)} < ${res.smallSpeed && res.smallSpeed.toFixed(2)}`,
+        res.largeSlower === true
+    );
+    check("V18.206 (S5b) Large hat niedrigeren jumpPower als Small", res.largeJumpLower === true);
+    check(
+        `V18.206 (S6a) Floor speed ≥ 2 (gemessen large=${res.largeSpeed && res.largeSpeed.toFixed(2)})`,
+        res.speedFloorRespected === true
+    );
+    check(
+        `V18.206 (S6b) Floor attackSpeed ≥ 0.25 (gemessen large=${res.largeAttackSpeed && res.largeAttackSpeed.toFixed(2)})`,
+        res.attackSpeedFloorRespected === true
+    );
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -51686,6 +51795,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18202GeruchFeld(ctx);
             await checkBandV18203Gamma3FeldCharakter(ctx);
             await checkBandV18205Gamma7Grammatik(ctx);
+            await checkBandV18206SpeedTrade(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

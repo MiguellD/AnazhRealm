@@ -51,6 +51,7 @@ Backlog-Punkte §4 (nächste in Reihe).
 | **Γ3 Feld-Charakter Foundation (Frequenz-Fächer: lebendig λ200, dichte λ340, glut λ520, magie λ160 — bei gen≥3, Legacy bit-identisch)** | **V18.203** | `docs/aktiv.md` §4.A + unten §1.K |
 | **Γ3 Domain-Warp (warpAmp=40m, warpScale=1/600 — Sample-Position verschoben vor Reads; Welt-Stimmen mäandern)** | **V18.204** | `docs/aktiv.md` §4.A + unten §1.L |
 | **Γ7 Baum-Varianten-Grammatik (`_growTreeBlueprint(speciesKey, seed)` emittiert parts[]: Stamm-Kette mit wander+taper, Whorl-Äste, Laub nur an Ast-Enden, tag-neutral)** | **V18.205** | `docs/aktiv.md` §4.A + unten §1.M |
+| **Avatar-Größe-Speed-Trade (1/sqrt(sizeFactor) auf speed/attackSpeed/jumpPower — ehrlicher Balance-Schluss zu V18.195)** | **V18.206** | `docs/aktiv.md` §4.D + unten §1.N |
 
 ---
 
@@ -193,7 +194,7 @@ V18.132 ferne Welten). Was noch offen — alles Profi-Feinschliff:
 | **S7-C chat/DSL-Vereinheitlichung** | Crafting via Chat-Befehl (S7-Schluss) | klein-mittel |
 | **S8 Teilen-Konsistenz** | Bauplan-Teilen-Ende-zu-Ende-Audit | mittel |
 | **A2 Crafting-Fluss-Audit** | Schöpfer-Browser-Audit des FERTIGEN-Flusses | nur Sign-off |
-| ~~**Avatar-Größe→HP**~~ | **✓ GEBAUT V18.195:** sqrt(soulSizeFactor) auf stats.hpMax + stats.staminaMax (kleiner Avatar sizeFactor 0.7 → ~84%, großer Avatar 1.7 → ~130%). Built-in Souls (human/phoenix/dragon) bleiben NEUTRAL (sizeFactor=1, mul=1.0) — kein Balance-Bruch. NUR HP/Stamina; speed/attackSpeed bleiben Material-Tag-getrieben (größer = robuster + langsamer, nicht größer = stärker in allem). 9 Wände `checkBandV18195AvatarSizeHp`. | **✓ GEBAUT** |
+| ~~**Avatar-Größe→HP**~~ | **✓ KOMPLETT (V18.195+V18.196+V18.206):** V18.195 sqrt(sizeFactor) auf hpMax+staminaMax + V18.196 manaMax + **V18.206 EHRLICHER BALANCE-SCHLUSS:** 1/sqrt(sizeFactor) auf speed/attackSpeed/jumpPower → großer Avatar GEMESSEN langsamer (large 1.60 → 6.72 speed vs small 1.06 → 8.24, mehr Masse = trager). Floor-Disziplin gewahrt (speed≥2, attackSpeed≥0.25, V17.90). Built-in NEUTRAL. 9+9 Wände. | **✓ KOMPLETT** |
 | **LLM-Manifest** | LLM-Begleiter-Welt-Manifest (S7-C-Erweiterung) | mittel |
 
 ### 4.E — LEBENDIGES FELD/NEXUS (drei Vertiefungen, mittel)

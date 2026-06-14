@@ -42741,6 +42741,18 @@ class AnazhRealm {
         // V18.196 — Mana folgt der HP/Stamina-Symmetrie auch bei Größe (ein
         // großer Avatar hat tiefere Reserven in allen drei Lebens-Achsen).
         if (Number.isFinite(stats.manaMax)) stats.manaMax = stats.manaMax * sizeHpMul;
+        // V18.206 — AVATAR-GRÖSSE-SPEED-TRADE: die ehrliche Balance-Schließer
+        // zu V18.195. Größer = mehr HP/Stamina/Mana (V18.195/.196) ABER auch
+        // langsamer (mehr Masse zu bewegen). Inverse sqrt-Skalierung auf
+        // speed/attackSpeed/jumpPower → ein winziger Avatar (sizeFactor 0.7)
+        // wird ~19 % schneller, ein massiver (1.7) ~23 % langsamer. Built-in
+        // NEUTRAL (sizeFactor=1, mul=1). Nach den invers-dichte-Floors, sodass
+        // die Floors nicht durchbrochen werden (Floor-Disziplin V17.90: Tempo
+        // nie kaputt).
+        const sizeSpeedMul = 1 / sizeHpMul;
+        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed * sizeSpeedMul);
+        if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed * sizeSpeedMul);
+        if (Number.isFinite(stats.jumpPower)) stats.jumpPower = stats.jumpPower * sizeSpeedMul;
         return { tags: finalTags, stats };
     }
 
@@ -63985,7 +63997,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.205.0";
+AnazhRealm.VERSION = "18.206.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
