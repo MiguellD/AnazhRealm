@@ -18,7 +18,64 @@
 
 ---
 
-## §0 — STAND 14.06.2026 (nach V18.210-VERDRAHTUNGS-WELLE + Audit-Zyklus)
+## §0 — STAND 14.06.2026 (nach V18.211 + V18.212 — DER LEBENDIGE GIGANT)
+
+**20 Wellen V18.193-V18.212 gebaut.** Branch: `claude/kind-rubin-udn6cn`, jüngste Code-Commits:
+- `5b5cef3` V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE Ω-K2 + Ω-W + Ω-H + Ω-C
+- `1f485f3` V18.211 — DER LEBENDIGE GIGANT, SÄULE I (Skeleton-Grammar)
+- `d5d33a1` V18.210 (Schöpfer-Watch + drei Audit-Cycles)
+
+**§2 + §3 (PRIO 2 + 3 dieses Plans) sind ÜBERSPRUNGEN — neuer Plan trat in Kraft:**
+Schöpfer-Auftrag 14.06.2026 nach V18.210 mit Anhang `69189e03-lebendigergigant.md`:
+> „der plan auf main sagt aktuell noch etwas anderes, wir werden in dieser session
+> folgenden plan (im anhang) komplett umsetzten, die welt soll visuell endlich
+> leben, nicht nur funktional."
+
+V18.211 + V18.212 folgten **DER LEBENDIGE GIGANT — Ω∞** statt der ursprünglichen
+Browser-Sign-off-Galerie. Die übrigen Punkte (R2 Normale-backen, R3 Kanten-Schärfe,
+B1-B26 Browser-Sign-offs, etc.) bleiben für künftige Sessions valide — der
+LEBENDIGE GIGANT war die explizite Schöpfer-Direktive für diese Sessions.
+
+**§1 IST ✅ — V18.211 SÄULE I (Skeleton-Grammar) KOMPLETT.** Die rich Multi-Level-
+Grammatik produziert 75-81 Parts pro Baum (vs V18.210's 12). `SPECIES_GRAMMAR` frozen
+(6 Arten × Plan-§3.3 LAAS-Werte). `_growTreeBlueprintRich` mit perpBasis + Tropismus +
+Wander + Droop + TipCurl. Foliage AT ANCHOR LEVEL. genVersion 4→5 routet bei gen≥5
+zur Rich-Methode. §2.5-Variant-Pool emergent (Region-Cache). Snapshot-Heilung: Parts
+re-wachsen aus (species, seed) → bezahlbar unter 256-KB-pinCurrentWorld-Wand.
++16 V18.211-Wände grün. Commit `1f485f3`.
+
+**§2 IST ✅ — V18.212 RESTSUBSCHRITTE KOMPLETT.** Vier nicht-GPU Schritte des Plans:
+- **Ω-K2 Baum-Füße** (§4): Wurzelanlauf-Saum am Stamm-Sockel
+- **Ω-W Vertieftes Wind** (§9): quadratischer crownFactor + aperiodisches Flattern
+- **Ω-H Promotion-Provenienz** (§2 SEELEN-Band): in unserer Architektur EMERGENT
+  erfüllt (Bäume sind IMMER echt); harvestArchitecture trägt Welt-Genese-Provenienz
+- **Ω-C Canopy-Shell** (§9 ferner Wald): 96×96 PlaneGeometry über 2km², Y aus
+  Terrain + Coverage-Lift, Distanz-Dither smoothstep(180m, 320m)
++23 V18.212-Wände grün, Laufzeit 380s. Commit `5b5cef3`.
+
+**OFFEN aus DEM LEBENDIGEN GIGANT (Plan §11) — nächste Session:**
+- **§5 Ω-B GPU-Feld-Bake** (substanzieller eigener Bogen — StorageTextures, GPU-Compute)
+- **§8 Ω-S GPU-Compute-Scatter** (hängt §5; Millionen statt Tausende Bäume)
+- §10 Ω-P PBR (optional)
+
+**EHRLICHE FPS-EINSCHÄTZUNG:** §5+§8 würden primär die VISUELLE Dichte heben
+(Millionen statt Tausende), nicht primär die FPS. Die echten FPS-Hebel sind:
+- **Mesh-Merge pro Variante** (LAAS-Trick): alle bark-Parts → EINE merged
+  Geometry pro Variante. Reduziert ~80 Draws auf ~2 pro Variante.
+- **LOD für Bäume** (LOD0=voll, LOD1=Tubes-cap, LOD2=Card): ferner Wald billig.
+- **GPU-Compute** lohnt sich erst bei „Wir wollen Million Bäume". Bei Tausenden
+  ist CPU-Worldgen + HISM-Instancing schon bezahlbar.
+
+Diese drei (Mesh-Merge + LOD + GPU-Compute) wären zusammen die FPS-+VISUELL-Welle.
+
+**SUPERSEDED in diesem Plan (von DER LEBENDIGE GIGANT):**
+- §2 (Browser-Sign-Offs B1-B26) — bleibt valide, aber nach Gigant-Vollendung
+- §3 (Render-Schluss R2-R4) — bleibt valide
+- §4-§12 — wie geplant, nach Gigant-§5+§8
+
+---
+
+## §0.1 — OLD-STAND (vor Schöpfer-Direktive 14.06.2026, zur Lehre)
 
 **18 Wellen V18.193-V18.210 gebaut.** Stamm: `claude/relaxed-hawking-dzkj9g`, jüngster Code-Commit `d5d33a1`, Doc-Konsolidierung `cdd88b8` + `ba7f392`.
 

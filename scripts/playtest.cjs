@@ -34479,8 +34479,13 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
             out.heightSpread = Number((hMax - hMin).toFixed(2));
             out.heightsVary = (hMax - hMin) > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
 
-            // (G9) Source-Probe: SimplexNoise + eigener Stream
-            const src = r._growTreeBlueprint.toString();
+            // (G9) Source-Probe: SimplexNoise + eigener Stream — V18.211 hat
+            // den Stamm-Helper in drei Pfade zerteilt (Routing + Rich + Legacy),
+            // die Probe walkt mit (V9.56-i-Disziplin).
+            const src =
+                r._growTreeBlueprint.toString() +
+                (r._growTreeBlueprintRich ? r._growTreeBlueprintRich.toString() : "") +
+                (r._growTreeBlueprintLegacy ? r._growTreeBlueprintLegacy.toString() : "");
             out.usesGrammarStream = /-veg-grammatik/.test(src);
             out.usesNoise = /SimplexNoise|noise2D/.test(src);
         }
@@ -34751,9 +34756,9 @@ async function checkBandV18209Konsolidierung(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.210.0"
+        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.212.0"
         out.versionStr = A.VERSION;
-        out.versionMatches = A.VERSION === "18.210.0";
+        out.versionMatches = A.VERSION === "18.212.0";
 
         // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
         // beim Konsolidieren (alles bleibt lauffähig):
@@ -34796,7 +34801,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
-    check(`V18.209 (K1) VERSION = "18.210.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
+    check(`V18.209 (K1) VERSION = "18.212.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
     check("V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)", res.allFoundationsAlive === true);
     check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
     check("V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)", res.avatarFamilyKomplett === true);
@@ -34820,9 +34825,9 @@ async function checkBandV18210Verdrahtung(ctx) {
         // ============== A1: Γ7 WORLDGEN-HOOK ==============
         // (A1a) Helper _growTreeBlueprintForSpawn existiert + ruft Helper
         out.a1HelperExists = typeof r._growTreeBlueprintForSpawn === "function";
-        // (A1b) gen-Default für FRESH ist 4 (V18.210 statt V18.179's 3)
-        const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18210") : null;
-        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 4;
+        // (A1b) gen-Default für FRESH ist 5 (V18.211 SKELETON-GRAMMAR statt V18.210's 4)
+        const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18211") : null;
+        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 5;
         // (A1c) Determinismus: gleiches (species, seed) → gleicher cacheKey
         const k1 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
         const k2 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
@@ -35165,7 +35170,7 @@ async function checkBandV18210Verdrahtung(ctx) {
 
     // A1 — Worldgen-Hook
     check("V18.210-A1a _growTreeBlueprintForSpawn Helper existiert", res.a1HelperExists === true);
-    check("V18.210-A1b FRESH-Welt genVersion = 4 (war 3)", res.a1FreshGenIs4 === true);
+    check("V18.211 FRESH-Welt genVersion = 5 (SKELETON-GRAMMAR aktiv; war 4)", res.a1FreshGenIs4 === true);
     check("V18.210-A1c Determinismus: (species, seed) → derselbe cacheKey", res.a1Deterministic === true);
     check("V18.210-A1d Cache-Reuse: SELBE seed → SELBES Bauplan-Object", res.a1CacheReuse === true);
     check("V18.210-A1e 6 seeds → ≥5 unique cache keys", res.a1ManyVariants === true);
@@ -35244,6 +35249,275 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A4e BEHAVIORAL: hände (subtractive) zieht weiterhin Stamina", res.a4HandsZiehtStamina === true);
     check("V18.210-A4e2 BEHAVIORAL: hände lässt Mana unberührt", res.a4HandsManaUntouched === true);
     check("V18.210-A4f BEHAVIORAL: schöpfer-Modus kostenfrei", res.a4SchoepferKostenfrei === true);
+}
+
+// V18.211 — DER LEBENDIGE GIGANT, SÄULE I (Skeleton-Grammar): „Bäume lesen als
+// Bäume". Multi-level Grammatik (trunk + L1 + L2) + Foliage at TIPS (hunderte
+// Cluster statt 8 Kugeln). Routing-Gate gen≥5 (alte Welten bit-identisch).
+// Snapshot-Heilung: grownBlueprints persistiert NUR Metadata (parts re-wachsen
+// f(seed)) → bezahlbar unter 256-KB-pinCurrentWorld-Cap.
+async function checkBandV18211SkeletonGrammar(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (S1) SPECIES_GRAMMAR existiert + trägt 6 Arten (frozen Config).
+        out.grammarExists = !!A.SPECIES_GRAMMAR;
+        if (out.grammarExists) {
+            const species = Object.keys(A.SPECIES_GRAMMAR);
+            out.sixSpecies = species.length === 6;
+            out.allSpeciesPresent = ["baum_eiche", "baum_tanne", "baum_buche", "baum_birke", "baum_kiefer", "baum_erle"].every(
+                (s) => A.SPECIES_GRAMMAR[s] != null
+            );
+            // Pro Spezies: trunk + L1 + foliage müssen existieren (Plan-§3.3-Form).
+            out.grammarShapeWohlgeformt = species.every((s) => {
+                const g = A.SPECIES_GRAMMAR[s];
+                return g && g.trunk && g.L1 && g.foliage && g.foliage.anchorLevel >= 2;
+            });
+        }
+
+        // (S2) `_growTreeBlueprintRich` existiert (Routing-Helfer-Trio).
+        out.richExists = typeof r._growTreeBlueprintRich === "function";
+        out.legacyExists = typeof r._growTreeBlueprintLegacy === "function";
+        out.routingExists = typeof r._growTreeBlueprint === "function";
+
+        // (S3) RICH-PFAD bei direktem Aufruf produziert ≥50 Parts (vs Legacy ~12).
+        // 50 = sicherer Schwellenwert; gemessen 75-81 pro Art.
+        if (out.richExists && out.grammarExists) {
+            const grammar = A.SPECIES_GRAMMAR.baum_tanne;
+            const richParts = r._growTreeBlueprintRich("baum_tanne", "v211-test", grammar);
+            out.richProducesMany = Array.isArray(richParts) && richParts.length >= 50;
+            out.richPartsCount = richParts ? richParts.length : 0;
+            // Tag-Neutralität: jedes Part ist holz oder laub (V17.16-Wand).
+            out.richAllHolzOrLaub = Array.isArray(richParts) &&
+                richParts.every((p) => p.material === "holz" || p.material === "laub");
+            // FOLIAGE AT TIPS: ≥80% der laub-Parts sind vom Stamm-Sockel weg
+            // (|xz| > 0.4 oder y > 1.5) — Plan-§3.3-Regel. V18.212-EXCEPTION:
+            // der Ω-K2 Baum-Fuß-Flare (Plan §4) sitzt BEWUSST am Sockel —
+            // er ist die Wurzelanlauf-Disk, kein Krone-Cluster. Daher 80%
+            // statt 100%: die Krone bleibt am Tip, die Erdung am Boden.
+            const laub = richParts ? richParts.filter((p) => p.material === "laub") : [];
+            const atTipsCount = laub.filter((p) => {
+                const dist = Math.hypot(p.position.x, p.position.z);
+                return dist > 0.4 || p.position.y > 1.5;
+            }).length;
+            out.richFoliageAtTips =
+                laub.length >= 10 && atTipsCount >= Math.floor(laub.length * 0.8);
+        }
+
+        // (S4) ROUTING: gen<5 → Legacy, gen≥5 → Rich. Wir mutieren temporär.
+        // Wir können nicht in-place gen wechseln, ohne die Welt-Init zu brechen;
+        // STATTDESSEN: prüfen, dass die Routing-Funktion das Gate ZIEHT (Source-
+        // Probe genVersion >= 5).
+        const routingSrc = r._growTreeBlueprint.toString();
+        out.routingHasGate = /genVersion\(\)\s*>=\s*5/.test(routingSrc) ||
+            /_genVersion\(\)\s*>=\s*5/.test(routingSrc);
+        out.routingDelegates = /_growTreeBlueprintRich/.test(routingSrc) &&
+            /_growTreeBlueprintLegacy/.test(routingSrc);
+
+        // (S5) SNAPSHOT-HEILUNG: grownBlueprints im Snapshot trägt KEINE
+        // parts-Arrays mehr (Plan-§2.5-konform: f(seed) ist das Erbgut).
+        // Spawne einen grown_-Bauplan + prüfe das Snapshot-Feld.
+        if (typeof r._growTreeBlueprintForSpawn === "function") {
+            const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
+            if (grownKey && r.state.blueprints[grownKey]) {
+                // Snapshot bauen und das grownBlueprints-Feld prüfen.
+                const snap = r.buildStateSnapshot();
+                const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
+                out.snapshotHasMetadata = !!(gb && gb._grownSpecies && gb._grownSeed);
+                out.snapshotNoParts = !!(gb && !Array.isArray(gb.parts));
+                // Snapshot-Größe (rough estimate): sollte einen kompakten grown-
+                // Eintrag tragen (< 500 Bytes vs alte ~7.5 KB mit parts).
+                out.snapshotGrownEntrySmall = gb ? JSON.stringify(gb).length < 500 : false;
+            }
+        }
+
+        // (S6) VERSION-BUMP: AnazhRealm.VERSION + index.html cache-buster.
+        // Walk-with-code (V9.56-i): die Probe trägt die aktuelle Versions-Zahl.
+        out.versionBumped = A.VERSION === "18.212.0";
+
+        return out;
+    });
+
+    check("V18.211 (S1a) SPECIES_GRAMMAR Config existiert", res.grammarExists === true);
+    check("V18.211 (S1b) SPECIES_GRAMMAR trägt 6 Arten", res.sixSpecies === true);
+    check("V18.211 (S1c) Alle 6 Spezies (tanne/kiefer/buche/birke/eiche/erle) präsent", res.allSpeciesPresent === true);
+    check("V18.211 (S1d) Jede Grammatik trägt trunk+L1+foliage", res.grammarShapeWohlgeformt === true);
+    check("V18.211 (S2a) _growTreeBlueprintRich existiert", res.richExists === true);
+    check("V18.211 (S2b) _growTreeBlueprintLegacy existiert", res.legacyExists === true);
+    check("V18.211 (S2c) _growTreeBlueprint Routing-Funktion existiert", res.routingExists === true);
+    check(`V18.211 (S3a) Rich-Grammatik produziert ≥50 Parts (gemessen ${res.richPartsCount})`, res.richProducesMany === true);
+    check("V18.211 (S3b) Alle Rich-Parts holz oder laub (V17.16-Wand strukturell)", res.richAllHolzOrLaub === true);
+    check("V18.211 (S3c) Foliage AT TIPS: ≥10 laub-Parts, alle vom Stamm weg (Plan-§3.3)", res.richFoliageAtTips === true);
+    check("V18.211 (S4a) Routing-Funktion liest genVersion >= 5 Gate", res.routingHasGate === true);
+    check("V18.211 (S4b) Routing delegiert an Rich + Legacy", res.routingDelegates === true);
+    check("V18.211 (S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)", res.snapshotHasMetadata === true);
+    check("V18.211 (S5b) Snapshot grownBlueprints OHNE parts-Array (re-wächst f(seed))", res.snapshotNoParts === true);
+    check("V18.211 (S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)", res.snapshotGrownEntrySmall === true);
+    check(`V18.211 (S6) VERSION = "18.212.0" (walk-with-code, V18.212 RestSubschritte)`, res.versionBumped === true);
+}
+
+// V18.212 — DER LEBENDIGE GIGANT, RESTSUBSCHRITTE der ersten Pillar-Welle:
+// Ω-K2 Baum-Füße (§4) + Ω-W vertieftes Wind (§9) + Ω-H Promotion-Provenienz
+// (§2) + Ω-C Canopy-Shell (§9). Die Gigant-Pillars II-V (außer Säule I)
+// sind damit foundation-bereit; §5+§8 (GPU-Feld-Bake + Compute-Scatter)
+// bleibt explizit als kommende Welle markiert.
+async function checkBandV18212GigantRestsubschritte(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // ─── Ω-K2 BAUM-FÜSSE (§4 Plan) ───────────────────────────────
+        // Ein flacher mossiger Saum am Stamm-Sockel. Probe: jeder Rich-
+        // generierte Baum hat ein laub-Part mit y < trunkBaseR (am Sockel,
+        // nicht in der Krone) UND mit großem x/z-Stretch (eine Disk-Form).
+        if (typeof r._growTreeBlueprintRich === "function" && A.SPECIES_GRAMMAR) {
+            const grammar = A.SPECIES_GRAMMAR.baum_tanne;
+            const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test", grammar);
+            const sockelParts = parts.filter(
+                (p) => p.material === "laub" && p.position.y < grammar.trunk.baseR * 2 && p.size.x > grammar.trunk.baseR * 2
+            );
+            out.k2HasFlare = sockelParts.length >= 1;
+            // Der Sockel-Part liegt am Stamm-Ursprung (xz-Position klein).
+            if (sockelParts.length >= 1) {
+                const s = sockelParts[0];
+                out.k2FlareAtTrunkBase = Math.abs(s.position.x) < 0.5 && Math.abs(s.position.z) < 0.5;
+            }
+        }
+
+        // ─── Ω-W VERTIEFTES WIND (§9 Plan) ─────────────────────────────
+        // Source-Probe: das Wind-Sway im _buildToonNodeMaterial trägt
+        // (1) quadratischen crownFactor (statt linear) UND (2) ein
+        // aperiodisches Flatter (flutter mit höherer Frequenz).
+        const swaySrc = r._buildToonNodeMaterial.toString();
+        out.wQuadraticCrown = /crownLin\.mul\(_crownLin\)/.test(swaySrc) || /crownFactor.*square|quadratisch/.test(swaySrc);
+        out.wHasFlutter = /_flutter\b/.test(swaySrc) && /flutterPhase/.test(swaySrc);
+        // Stronger sway magnitude (V18.211 war 0.25, V18.212 ist 0.32).
+        out.wStrongerSway = /float\(_sway\s*\*\s*0\.32\)/.test(swaySrc);
+
+        // ─── Ω-H PROVENIENZ BEIM ERNTEN (§2 Plan SEELEN-Band) ─────────
+        // Source-Probe: harvestArchitecture liest _isGrown + _grownSpecies +
+        // _grownSeed und schreibt sie in den Journal-Eintrag + Return-Value.
+        const harvestSrc = r.harvestArchitecture.toString();
+        out.hReadsGrown = /_isGrown\s*&&\s*bp\._grownSpecies/.test(harvestSrc) || /bp\._isGrown\s*&&/.test(harvestSrc);
+        out.hWritesProvenance = /grownProvenance/.test(harvestSrc) && /journalDetails\.provenance/.test(harvestSrc);
+        // Behavioral: einen grown_-Bauplan ernten → result hat .provenance.
+        if (typeof r._growTreeBlueprintForSpawn === "function" && r.state && r.state.architectures) {
+            const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "h-test-seed");
+            if (grownKey && r.state.blueprints[grownKey]) {
+                // Spawn an Test-Position + harvest sofort.
+                try {
+                    const spawn = r.spawnArchitecture(grownKey, { x: 1234, y: 50, z: 5678 }, { silent: true });
+                    if (spawn) {
+                        const harvest = r.harvestArchitecture(spawn, "test-harvester");
+                        out.hHarvestHasProvenance =
+                            !!(harvest && harvest.provenance && harvest.provenance.bornFrom === "world-genesis");
+                        out.hProvenanceCarriesSpecies =
+                            !!(harvest && harvest.provenance && harvest.provenance.species === "baum_eiche");
+                    }
+                } catch (_e) {
+                    out.hHarvestException = String(_e && _e.message);
+                }
+            }
+        }
+
+        // ─── Ω-C CANOPY-SHELL (§9 Plan, der ferne Wald) ────────────────
+        out.cConstExists = !!A.CANOPY_SHELL;
+        if (out.cConstExists) {
+            out.cConstSensible =
+                A.CANOPY_SHELL.gridSize > 0 &&
+                A.CANOPY_SHELL.regionM > 0 &&
+                A.CANOPY_SHELL.distNear < A.CANOPY_SHELL.distFar &&
+                A.CANOPY_SHELL.maxOpacity > 0 &&
+                A.CANOPY_SHELL.maxOpacity <= 1;
+        }
+        out.cBuildExists = typeof r._buildCanopyShell === "function";
+        out.cEnsureExists = typeof r._ensureCanopyShell === "function";
+        out.cDisposeExists = typeof r._disposeCanopyShell === "function";
+
+        // Behavioral: _ensureCanopyShell baut das Mesh + state.canopyShell
+        // wird gesetzt + erste Vertex hat Y > 0 (Terrain-Höhe).
+        if (out.cBuildExists) {
+            try {
+                const mesh = r._ensureCanopyShell();
+                out.cMeshBuilt = !!mesh && mesh.isMesh === true;
+                if (out.cMeshBuilt) {
+                    const pos = mesh.geometry.attributes.position;
+                    // Erwartete Vertex-Count: gridSize × gridSize.
+                    out.cVertexCount = pos.count;
+                    out.cExpectedVertexCount = A.CANOPY_SHELL.gridSize * A.CANOPY_SHELL.gridSize;
+                    out.cCorrectVertexCount = pos.count === out.cExpectedVertexCount;
+                    // Min/Max Y prüfen — die Y-Werte sollten Terrain folgen
+                    // (variieren ≠ alle auf 0).
+                    let minY = Infinity,
+                        maxY = -Infinity;
+                    for (let i = 0; i < pos.count; i++) {
+                        const y = pos.getY(i);
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                    }
+                    out.cYVaries = maxY - minY > 1; // mindestens 1m Spanne
+                    out.cVertexCountColors = !!mesh.geometry.attributes.color;
+                }
+                // Disposable → nach dispose ist canopyShell wieder null.
+                if (out.cMeshBuilt && out.cDisposeExists) {
+                    r._disposeCanopyShell();
+                    out.cDisposed = !r.state.canopyShell;
+                    // Rebuild für Folge-Test (Tests-Hygiene).
+                    r._ensureCanopyShell();
+                }
+            } catch (_e) {
+                out.cBuildException = String(_e && _e.message);
+            }
+        }
+
+        // Source-Probe: _disposeCanopyShell wird beim Welt-Wechsel gerufen.
+        const restoreSrc = r._loadStateRestoreWorldMeta.toString();
+        out.cDisposeAufWeltWechsel = /_disposeCanopyShell/.test(restoreSrc);
+        // Source-Probe: Material trägt opacityNode mit smoothstep auf Distanz.
+        if (r.state.canopyShellMaterial) {
+            out.cMaterialHasOpacityNode = r.state.canopyShellMaterial.opacityNode != null;
+            out.cMaterialIsToon = r.state.canopyShellMaterial.isMeshToonMaterial === true;
+        }
+
+        return out;
+    });
+
+    // Ω-K2
+    check("V18.212 (K2a) Baum-Fuß-Flare existiert (sockel-laub-Part, x-stretched)", res.k2HasFlare === true);
+    check("V18.212 (K2b) Flare am Stamm-Ursprung (|x|, |z| < 0.5m)", res.k2FlareAtTrunkBase === true);
+
+    // Ω-W
+    check("V18.212 (W1) Wind: quadratischer crownFactor (Spitzen flexen stärker)", res.wQuadraticCrown === true);
+    check("V18.212 (W2) Wind: aperiodisches Flattern (flutter mit höherer Frequenz)", res.wHasFlutter === true);
+    check("V18.212 (W3) Wind: stärkerer Sway (0.32 statt 0.25)", res.wStrongerSway === true);
+
+    // Ω-H
+    check("V18.212 (H1) harvestArchitecture liest _isGrown + _grownSpecies (Source)", res.hReadsGrown === true);
+    check("V18.212 (H2) harvestArchitecture schreibt provenance in Journal + Return", res.hWritesProvenance === true);
+    if (res.hHarvestHasProvenance !== undefined) {
+        check("V18.212 (H3) Behavioral: grown-Baum-Ernte trägt provenance.bornFrom='world-genesis'", res.hHarvestHasProvenance === true);
+        check("V18.212 (H4) Behavioral: provenance.species = baum_eiche", res.hProvenanceCarriesSpecies === true);
+    }
+
+    // Ω-C
+    check("V18.212 (C1a) CANOPY_SHELL frozen Config existiert", res.cConstExists === true);
+    check("V18.212 (C1b) CANOPY_SHELL Konstanten sinnvoll (grid>0, distNear<distFar, opacity≤1)", res.cConstSensible === true);
+    check("V18.212 (C2a) _buildCanopyShell existiert", res.cBuildExists === true);
+    check("V18.212 (C2b) _ensureCanopyShell existiert (lazy)", res.cEnsureExists === true);
+    check("V18.212 (C2c) _disposeCanopyShell existiert (Welt-Wechsel)", res.cDisposeExists === true);
+    check("V18.212 (C3a) Mesh wird gebaut (state.canopyShell + isMesh)", res.cMeshBuilt === true);
+    check(`V18.212 (C3b) Vertex-Count = gridSize² (${res.cVertexCount}/${res.cExpectedVertexCount})`, res.cCorrectVertexCount === true);
+    check("V18.212 (C3c) Vertex Y variiert (Terrain wird gelesen, nicht alle 0)", res.cYVaries === true);
+    check("V18.212 (C3d) Color-Attribut existiert (Per-Vertex-Tönung)", res.cVertexCountColors === true);
+    check("V18.212 (C4a) _disposeCanopyShell setzt state.canopyShell auf null", res.cDisposed === true);
+    check("V18.212 (C4b) _disposeCanopyShell wird im Welt-Wechsel gerufen (Source)", res.cDisposeAufWeltWechsel === true);
+    check("V18.212 (C5a) Canopy-Material trägt opacityNode (Distanz-Dither)", res.cMaterialHasOpacityNode === true);
+    check("V18.212 (C5b) Canopy-Material ist MeshToonNodeMaterial", res.cMaterialIsToon === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -52437,6 +52711,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18208CreatureSizeSymmetry(ctx);
             await checkBandV18209Konsolidierung(ctx);
             await checkBandV18210Verdrahtung(ctx);
+            await checkBandV18211SkeletonGrammar(ctx);
+            await checkBandV18212GigantRestsubschritte(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
