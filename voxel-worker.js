@@ -773,6 +773,8 @@ function ensureWorldField() {
         glutNoise: new SimplexNoise(state.seed + "-veg-glut"),
         magieNoise: new SimplexNoise(state.seed + "-veg-magie"),
         rngNoise: new SimplexNoise(state.seed + "-veg-rng"),
+        // V18.204 — Γ3 Domain-Warp Worker-Mirror.
+        warpNoise: new SimplexNoise(state.seed + "-veg-warp"),
     };
     return worldField;
 }
@@ -785,6 +787,9 @@ const FC_LAMBDA_LEBENDIG = 200;
 const FC_LAMBDA_DICHTE = 340;
 const FC_LAMBDA_GLUT = 520;
 const FC_LAMBDA_MAGIE = 160;
+// V18.204 — Γ3 Domain-Warp Worker-Mirror Konstanten.
+const FC_WARP_AMP = 40;
+const FC_WARP_SCALE = 1 / 600;
 function worldFieldAt(x, z) {
     const f = ensureWorldField();
     if (!f) return { lebendig: 0, dichte: 0, glut: 0, magieleitung: 0 };
@@ -794,11 +799,16 @@ function worldFieldAt(x, z) {
         const sD = 1 / FC_LAMBDA_DICHTE;
         const sG = 1 / FC_LAMBDA_GLUT;
         const sM = 1 / FC_LAMBDA_MAGIE;
+        // V18.204 — Γ3 DOMAIN-WARP Worker-Mirror, bit-identisch zum Main.
+        const wpX = f.warpNoise.noise2D(x * FC_WARP_SCALE, z * FC_WARP_SCALE) * FC_WARP_AMP;
+        const wpZ = f.warpNoise.noise2D(x * FC_WARP_SCALE + 51.7, z * FC_WARP_SCALE - 23.1) * FC_WARP_AMP;
+        const wx = x + wpX;
+        const wz = z + wpZ;
         return {
-            lebendig: n01(f.lebendigNoise.noise2D(x * sL, z * sL)),
-            dichte: n01(f.dichteNoise.noise2D(x * sD + 100, z * sD - 200)),
-            glut: n01(f.glutNoise.noise2D(x * sG + 500, z * sG + 700)),
-            magieleitung: n01(f.magieNoise.noise2D(x * sM - 333, z * sM + 999)),
+            lebendig: n01(f.lebendigNoise.noise2D(wx * sL, wz * sL)),
+            dichte: n01(f.dichteNoise.noise2D(wx * sD + 100, wz * sD - 200)),
+            glut: n01(f.glutNoise.noise2D(wx * sG + 500, wz * sG + 700)),
+            magieleitung: n01(f.magieNoise.noise2D(wx * sM - 333, wz * sM + 999)),
         };
     }
     const s = 0.005;

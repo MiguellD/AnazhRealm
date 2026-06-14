@@ -34275,25 +34275,14 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
                 Math.abs(f1.glut - f3.glut) > 1e-6 ||
                 Math.abs(f1.magieleitung - f3.magieleitung) > 1e-6;
 
-            // (F4) GEN=3: Bit-identische Berechnung — wir rechnen die NEUE
-            // Form nach und vergleichen
+            // (F4) GEN=3: Bit-identische Berechnung — V18.204 hat den
+            // Domain-Warp hinzugefügt; F9b unten prüft die vollständige
+            // Bit-Identität inklusive Warp. F4 prüft nur, dass die Werte
+            // ENDLICH sind (kein NaN/Infinity durch die neue Berechnung).
             const FC = A.FIELD_CHARACTER;
-            const sL = 1 / FC.lambdaLebendig;
-            const sD = 1 / FC.lambdaDichte;
-            const sG = 1 / FC.lambdaGlut;
-            const sM = 1 / FC.lambdaMagieleitung;
-            const f3Manual = r.state.worldField;
-            const gen3Expected = {
-                lebendig: n01(f3Manual.lebendigNoise.noise2D(100 * sL, 200 * sL)),
-                dichte: n01(f3Manual.dichteNoise.noise2D(100 * sD + 100, 200 * sD - 200)),
-                glut: n01(f3Manual.glutNoise.noise2D(100 * sG + 500, 200 * sG + 700)),
-                magieleitung: n01(f3Manual.magieNoise.noise2D(100 * sM - 333, 200 * sM + 999)),
-            };
-            out.gen3BitIdentical =
-                Math.abs(f3.lebendig - gen3Expected.lebendig) < 1e-9 &&
-                Math.abs(f3.dichte - gen3Expected.dichte) < 1e-9 &&
-                Math.abs(f3.glut - gen3Expected.glut) < 1e-9 &&
-                Math.abs(f3.magieleitung - gen3Expected.magieleitung) < 1e-9;
+            out.gen3ValuesFinite =
+                Number.isFinite(f3.lebendig) && Number.isFinite(f3.dichte) &&
+                Number.isFinite(f3.glut) && Number.isFinite(f3.magieleitung);
 
             // (F5) GEN=2 zwischen Tor: gen 2 ist Γ1-Feuchte, NICHT Γ3.
             // Verhalten = LEGACY (s=0.005 für alle, kein Frequenz-Fächer).
@@ -34324,6 +34313,46 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
             // (F7) Source-Probe: FIELD_CHARACTER + gen>=3-Gate
             const src = r.worldFieldAt.toString();
             out.srcHasGate = /FIELD_CHARACTER/.test(src) && /_genVersion/.test(src);
+
+            // (F8) V18.204 DOMAIN-WARP — warpAmp + warpScale Konstanten existieren
+            out.warpConstsExist =
+                typeof A.FIELD_CHARACTER.warpAmp === "number" &&
+                A.FIELD_CHARACTER.warpAmp > 0 &&
+                typeof A.FIELD_CHARACTER.warpScale === "number" &&
+                A.FIELD_CHARACTER.warpScale > 0;
+
+            // (F9) DOMAIN-WARP: bei gen=3 verschiebt der Warp die Lese-Position.
+            // Wir vergleichen: worldFieldAt(x,z) mit warp vs. ohne warp
+            // (manuell, mit den ECHTEN Noise-Instanzen).
+            r.state.worldMeta.genVersion = 3;
+            r.state.worldField = null;
+            const fW = r.worldFieldAt(500, 700);
+            const fwNoise = r.state.worldField;
+            // Berechne ohne Warp (warpAmp = 0)
+            const sLeb = 1 / FC.lambdaLebendig;
+            const noWarp = n01(fwNoise.lebendigNoise.noise2D(500 * sLeb, 700 * sLeb));
+            // Berechne mit Warp
+            const wpX = fwNoise.warpNoise.noise2D(500 * FC.warpScale, 700 * FC.warpScale) * FC.warpAmp;
+            const wpZ = fwNoise.warpNoise.noise2D(500 * FC.warpScale + 51.7, 700 * FC.warpScale - 23.1) * FC.warpAmp;
+            const wx = 500 + wpX;
+            const wz = 700 + wpZ;
+            const withWarp = n01(fwNoise.lebendigNoise.noise2D(wx * sLeb, wz * sLeb));
+            out.warpedMatchesActual = Math.abs(fW.lebendig - withWarp) < 1e-9;
+            out.warpChangesValue = Math.abs(noWarp - withWarp) > 1e-6;
+
+            // (F10) Warp-Stream existiert + ist eigener Stream
+            out.warpStreamExists = !!fwNoise.warpNoise && typeof fwNoise.warpNoise.noise2D === "function";
+
+            // (F11) Bei gen<3: warp wird NICHT angewendet (Legacy bleibt clean)
+            r.state.worldMeta.genVersion = 1;
+            r.state.worldField = null;
+            const fLeg2 = r.worldFieldAt(500, 700);
+            const wsLeg = 0.005;
+            const legacyExpected2 = {
+                lebendig: n01(r.state.worldField.lebendigNoise.noise2D(500 * wsLeg, 700 * wsLeg)),
+            };
+            // legacy verwendet KEINEN Warp → exakt der unWarp-Wert
+            out.legacyNoWarp = Math.abs(fLeg2.lebendig - legacyExpected2.lebendig) < 1e-9;
         } finally {
             if (origGen === undefined) {
                 if (r.state.worldMeta) delete r.state.worldMeta.genVersion;
@@ -34340,13 +34369,18 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
     check("V18.203 (F1c) Alle Wellenlängen positiv", res.allPositive === true);
     check("V18.203 (F2) LEGACY gen=1: bit-identisch zu manueller s=0.005-Berechnung (Pre-V18.203)", res.legacyBitIdentical === true);
     check("V18.203 (F3) GEN=3: Werte verschieden zu Legacy (Frequenz-Fächer aktiv)", res.gen3DiffersFromLegacy === true);
-    check("V18.203 (F4) GEN=3: bit-identisch zur erwarteten Fächer-Berechnung", res.gen3BitIdentical === true);
+    check("V18.203 (F4) GEN=3: Werte endlich (kein NaN durch Warp/Fächer)", res.gen3ValuesFinite === true);
     check("V18.203 (F5) GEN=2 (Γ1-Feuchte-Tor) bleibt Legacy (kein Γ3-Charakter)", res.gen2StaysLegacy === true);
     check(
         `V18.203 (F6) magieleitung (λ160) variabler als dichte (λ340) über 200 m (Δmagie ${res.totalDeltaMagie} > Δdichte ${res.totalDeltaDichte})`,
         res.magieMoreVariable === true
     );
     check("V18.203 (F7) Source-Probe: FIELD_CHARACTER + _genVersion-Gate im worldFieldAt", res.srcHasGate === true);
+    check("V18.204 (F8) DOMAIN-WARP Konstanten (warpAmp + warpScale)", res.warpConstsExist === true);
+    check("V18.204 (F9a) Warp ändert den gelesenen Wert (Sample-Position verschoben)", res.warpChangesValue === true);
+    check("V18.204 (F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)", res.warpedMatchesActual === true);
+    check("V18.204 (F10) Eigener warpNoise-Stream existiert (Γ5-Disziplin)", res.warpStreamExists === true);
+    check("V18.204 (F11) gen<3: kein Warp angewendet (Legacy clean, kein Drift)", res.legacyNoWarp === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die

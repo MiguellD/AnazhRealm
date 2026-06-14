@@ -49067,6 +49067,8 @@ class AnazhRealm {
                 magieNoise: new SimplexNoise(seed + "-veg-magie"),
                 // Sampling-RNG (deterministisch pro Position) für Spawn-Probe.
                 rngNoise: new SimplexNoise(seed + "-veg-rng"),
+                // V18.204 — Γ3 Domain-Warp-Noise. Eigener Stream, gen≥3-Gate.
+                warpNoise: new SimplexNoise(seed + "-veg-warp"),
             };
         }
         const f = this.state.worldField;
@@ -49082,11 +49084,20 @@ class AnazhRealm {
             const sD = 1 / FC.lambdaDichte;
             const sG = 1 / FC.lambdaGlut;
             const sM = 1 / FC.lambdaMagieleitung;
+            // V18.204 — Γ3 DOMAIN-WARP: vor den vier Noise-Reads wird die
+            // Sample-Koordinate per zwei-Noise-Vektor verschoben. Die Verschie-
+            // bung ist langsam (λ~600 m, FC.warpScale) — sie biegt die Welt-
+            // Stimmen sanft, statt sie pixelig zu verwischen. Amplitude
+            // FC.warpAmp Meter. Mit f.warpNoise als eigenem Stream.
+            const wpX = f.warpNoise.noise2D(x * FC.warpScale, z * FC.warpScale) * FC.warpAmp;
+            const wpZ = f.warpNoise.noise2D(x * FC.warpScale + 51.7, z * FC.warpScale - 23.1) * FC.warpAmp;
+            const wx = x + wpX;
+            const wz = z + wpZ;
             return {
-                lebendig: n01(f.lebendigNoise.noise2D(x * sL, z * sL)),
-                dichte: n01(f.dichteNoise.noise2D(x * sD + 100, z * sD - 200)),
-                glut: n01(f.glutNoise.noise2D(x * sG + 500, z * sG + 700)),
-                magieleitung: n01(f.magieNoise.noise2D(x * sM - 333, z * sM + 999)),
+                lebendig: n01(f.lebendigNoise.noise2D(wx * sL, wz * sL)),
+                dichte: n01(f.dichteNoise.noise2D(wx * sD + 100, wz * sD - 200)),
+                glut: n01(f.glutNoise.noise2D(wx * sG + 500, wz * sG + 700)),
+                magieleitung: n01(f.magieNoise.noise2D(wx * sM - 333, wz * sM + 999)),
             };
         }
         // Legacy-Pfad: alle vier Stimmen auf s=0.005 (λ~200 m). Bit-identisch
@@ -63856,7 +63867,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.203.0";
+AnazhRealm.VERSION = "18.204.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -64200,6 +64211,15 @@ AnazhRealm.FIELD_CHARACTER = Object.freeze({
     lambdaDichte: 340,
     lambdaGlut: 520,
     lambdaMagieleitung: 160,
+    // V18.204 — DOMAIN-WARP Amplitude (m). Der Warp verschiebt die Sample-
+    // Koordinaten VOR den Stimmen-Reads → bricht die regelmäßige Simplex-
+    // Gitter-Geometrie + die Welt-Stimmen mäandern, statt parallel-gestapelt
+    // zu liegen. Eigener Stream `seed + "-veg-warp"` (Γ5-Disziplin: re-rollt
+    // keinen anderen Welt-Stream). Frequenz: λ~600 m (langsamer als die
+    // Welt-Stimmen, sonst würde der Warp ihre eigene Struktur überdecken).
+    // Erst-Wurf-Amplitude 40 m (aus genese-plan §Γ3).
+    warpAmp: 40,
+    warpScale: 1 / 600,
 });
 
 // V18.202 — Γ1-LESART-5 Ψ2-NASE: das GERUCH-Feld der Welt. Die fünfte Welt-
