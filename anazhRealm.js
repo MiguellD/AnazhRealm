@@ -42784,6 +42784,74 @@ class AnazhRealm {
         return true;
     }
 
+    // V18.202 — Γ1-LESART-5 Ψ2-NASE Wind-Vektor an (x, z). Deterministisch
+    // aus Welt-Seed (über `_voxelNoise`) + langsamer Position-Variation. Der
+    // Wind dreht sanft über km-Distanzen (windScale = 1/1000), nicht von
+    // Voxel zu Voxel. Erst-Wurf windTimeRate = 0 (statischer Wind pro Welt
+    // für deterministische Tests + headless-mess); spätere Welle koppelt
+    // Welt-Zeit + Wetter (stormy = stärker, sunny = schwächer).
+    _worldWindDirAt(x, z, t) {
+        if (!this._voxelNoise) {
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._voxelNoise = new SimplexNoise(seed + ":voxel");
+        }
+        const S = AnazhRealm.SCENT;
+        const tt = (typeof t === "number" ? t : 0) * S.windTimeRate;
+        // Wind-Phase: Noise als Winkel-Quelle (0..2π).
+        const phase =
+            (this._voxelNoise.noise2D(x * S.windScale + tt, z * S.windScale - tt) + 1) * Math.PI;
+        return { x: Math.cos(phase), z: Math.sin(phase) };
+    }
+
+    // V18.202 — Γ1-LESART-5 Ψ2-NASE Geruch-Sampler. `sources` ist ein Array
+    // von Geruchs-Quellen `{x, z, strength}` (jede Quelle eine Kreatur, eine
+    // duftende Pflanze, ein Feuer). Returnt akkumulierten Geruch an (x, z)
+    // ∈ [0, ∞). Konsumenten cappen + interpretieren — die Foundation gibt
+    // nur die Math.
+    //
+    // Formel pro Quelle:
+    //   dist     = euclidean
+    //   decay    = exp(−dist/rangeM)
+    //   toRecv   = normierter Vektor VON Source ZU Receiver
+    //   windDir  = Wind an der Quelle (Richtung, in die er WEHT)
+    //   dot      = toRecv · windDir      (positiv = Receiver liegt downwind:
+    //                                      der Wind weht VON Source ZU Receiver)
+    //   windMod  = max(minDirectional, (1−windFactor) + windFactor · max(0, dot))
+    //   geruch   = strength · decay · windMod
+    //
+    // Akkumulation: Σ über alle Quellen.
+    _scentAt(x, z, sources, opts) {
+        if (!Array.isArray(sources) || sources.length === 0) return 0;
+        const S = AnazhRealm.SCENT;
+        const t = (opts && typeof opts.time === "number") ? opts.time : 0;
+        let total = 0;
+        for (const src of sources) {
+            if (!src || typeof src.x !== "number" || typeof src.z !== "number") continue;
+            const strength = typeof src.strength === "number" ? src.strength : 1;
+            if (!(strength > 0)) continue;
+            const dx = x - src.x;
+            const dz = z - src.z;
+            const dist = Math.hypot(dx, dz);
+            if (dist > S.rangeM * 4) continue; // jenseits 4× range vernachlässigbar
+            const decay = Math.exp(-dist / S.rangeM);
+            // Wind an der Quelle (der Wind, der den Geruch wegträgt)
+            const wind = this._worldWindDirAt(src.x, src.z, t);
+            // Normierter Vektor von Source zum Receiver
+            const norm = dist > 0.001 ? 1 / dist : 0;
+            const dirX = dx * norm;
+            const dirZ = dz * norm;
+            // dot mit windDir: positiv = Receiver liegt downwind (wind weht
+            // VON src ZU recv, trägt also den Geruch hin).
+            const dot = dirX * wind.x + dirZ * wind.z;
+            const windMod = Math.max(
+                S.minDirectional,
+                (1 - S.windFactor) + S.windFactor * Math.max(0, dot)
+            );
+            total += strength * decay * windMod;
+        }
+        return total;
+    }
+
     // Stats berechnen + auf state anwenden (Soul-Wechsel-Pfad). HP+Stamina
     // werden bei Wechsel auf max gesetzt (Phönix-Wandlung in Etappe 3 nutzt
     // diesen Pfad bewusst — Wandlung heilt). DSL-Ops player_speed +
@@ -63771,7 +63839,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.201.0";
+AnazhRealm.VERSION = "18.202.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -64097,6 +64165,34 @@ AnazhRealm.LICHEN = Object.freeze({
     strength: 0.22,
     // Tint: gelb-grün, gedämpft. Lichen ist nicht Wald-Grün.
     tint: Object.freeze([0.42, 0.5, 0.34]),
+});
+
+// V18.202 — Γ1-LESART-5 Ψ2-NASE: das GERUCH-Feld der Welt. Die fünfte Welt-
+// Stimme (nach lebendig, dichte, glut, magieleitung — und nach feuchte als
+// Boden-Stimme). Geruch reist mit dem Wind, fällt mit Distanz ab. Quellen
+// sind diskret (Kreaturen, Pflanzen, Strukturen — die Konsumenten geben sie
+// als Eingabe). Frozen Konstanten — browser-justierbar später. Anti-Scope §3:
+// die FUNDAMENT-Funktion, KEINE Kreatur-KI-Verdrahtung in dieser Welle (das
+// kommt in Folge nach Schöpfer-Entscheid: was riecht? wer riecht es?).
+AnazhRealm.SCENT = Object.freeze({
+    // Reichweite (m): Geruch fällt auf ~37% bei rangeM, ~5% bei 3×rangeM.
+    rangeM: 80,
+    // Wind-Modulation: 1.0 = volle Richtungs-Wirkung (upwind = 0); 0.0 = isotrop.
+    // Erst-Wurf 0.6 — Wind hilft deutlich, isoliert aber nicht (upwind-Geruch
+    // dimmt, verschwindet nicht ganz).
+    windFactor: 0.6,
+    // Minimaler Richtungs-Faktor (gegen Wind): nie ganz 0, sonst wäre der
+    // Geruch upwind invisible — eine Schwelle, die "Restduft" trägt.
+    minDirectional: 0.2,
+    // Wind-Skala — Position-Modulation (langsame regionale Variation,
+    // λ~1000 m). Der Wind dreht über große Distanzen, nicht von Schritt
+    // zu Schritt.
+    windScale: 1 / 1000,
+    // Wind-Geschwindigkeit der Drehung (Welt-Zeit-Modulation): 0 = statisch
+    // pro Welt (deterministisch testbar); positive Werte drehen über Zeit.
+    // Erst-Wurf 0 (deterministisch); Folge-Welle: kontinuierliche Drehung mit
+    // Wetter-Modulation.
+    windTimeRate: 0,
 });
 
 // V18.200 — Γ-M MULTI-CLASS-MATERIAL IRON-BANDS: vertikale Eisenadern in

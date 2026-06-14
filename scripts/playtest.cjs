@@ -34100,6 +34100,119 @@ async function checkBandV18201ManaKonsum(ctx) {
     check("V18.201 (K8) opts.mode overschreibt getGameMode (für unit-tests + multi-context)", res.optsModeOverride === true);
 }
 
+// V18.202 — Γ1-LESART-5 Ψ2-NASE Foundation (genese-plan §Γ1 + aktiv.md §4.A):
+// das Geruch-Feld der Welt als FÜNFTE Welt-Stimme. _worldWindDirAt + _scentAt
+// als reine Math-Helper, kein Welt-State-Mutation, kein Kreatur-KI-Hook noch.
+async function checkBandV18202GeruchFeld(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (N1) SCENT frozen + helpers
+        out.scentConstExists = !!A.SCENT && Object.isFrozen(A.SCENT);
+        if (A.SCENT) {
+            const S = A.SCENT;
+            out.scentConstsSensible =
+                typeof S.rangeM === "number" && S.rangeM > 0 &&
+                typeof S.windFactor === "number" && S.windFactor >= 0 && S.windFactor <= 1 &&
+                typeof S.minDirectional === "number" && S.minDirectional >= 0 && S.minDirectional <= 1;
+        }
+        out.windHelperExists = typeof r._worldWindDirAt === "function";
+        out.scentHelperExists = typeof r._scentAt === "function";
+
+        // (N2) Wind-Vektor: normalisiert, deterministisch, variiert über Position
+        if (r._worldWindDirAt) {
+            const w1 = r._worldWindDirAt(0, 0, 0);
+            const w2 = r._worldWindDirAt(0, 0, 0);
+            out.windDeterministic = w1.x === w2.x && w1.z === w2.z;
+            out.windNormalized = Math.abs(Math.hypot(w1.x, w1.z) - 1) < 1e-6;
+            // Variiert über große Distanzen (1000m) — nicht-konstant
+            const w3 = r._worldWindDirAt(2000, 0, 0);
+            const dot13 = w1.x * w3.x + w1.z * w3.z;
+            out.windVariesOverDistance = Math.abs(dot13) < 0.999; // < 1 → unterschiedliche Richtung
+        }
+
+        // (N3) Geruch: einzelne Quelle, Distanz-Decay
+        if (r._scentAt) {
+            const src = [{ x: 0, z: 0, strength: 1.0 }];
+            // Verschiedene Distanzen — Geruch fällt monoton
+            const g0 = r._scentAt(0.5, 0.5, src); // sehr nah
+            const g20 = r._scentAt(20, 0, src);
+            const g50 = r._scentAt(50, 0, src);
+            const g100 = r._scentAt(100, 0, src);
+            const g300 = r._scentAt(300, 0, src); // jenseits 4×range
+            out.scentNearStrong = g0 > 0.3; // nah > 0.3 (rangeM=80, exp(-0)≈1, modifiziert von wind)
+            out.scentDistantWeaker = g20 > g50 && g50 > g100;
+            out.scentFarVanishes = g300 < 0.05;
+        }
+
+        // (N4) Geruch akkumuliert über mehrere Quellen
+        if (r._scentAt) {
+            const oneSource = [{ x: 0, z: 0, strength: 1 }];
+            const twoSources = [{ x: 0, z: 0, strength: 1 }, { x: 5, z: 0, strength: 1 }];
+            const g1 = r._scentAt(10, 0, oneSource);
+            const g2 = r._scentAt(10, 0, twoSources);
+            out.scentAccumulates = g2 > g1;
+        }
+
+        // (N5) Wind-Modulation: downwind > upwind
+        if (r._scentAt && r._worldWindDirAt) {
+            // Such einen Punkt mit klarem Wind-Vektor
+            // Test-Trick: konstruiere Wind via einer Source an einer fixen Position,
+            // dann samplen wir EXAKT downwind und upwind
+            const sx = 100, sz = 100;
+            const wind = r._worldWindDirAt(sx, sz, 0);
+            // Downwind = in Wind-Richtung von Source aus
+            const dRecv = { x: sx + wind.x * 50, z: sz + wind.z * 50 };
+            const uRecv = { x: sx - wind.x * 50, z: sz - wind.z * 50 };
+            const src = [{ x: sx, z: sz, strength: 1 }];
+            const downG = r._scentAt(dRecv.x, dRecv.z, src);
+            const upG = r._scentAt(uRecv.x, uRecv.z, src);
+            out.downwindStronger = downG > upG;
+            out.upwindStillHasMinScent = upG > 0; // minDirectional > 0
+            out.downwindMagnitude = downG;
+            out.upwindMagnitude = upG;
+        }
+
+        // (N6) Empty/null sources → 0
+        if (r._scentAt) {
+            out.emptyArrayIsZero = r._scentAt(0, 0, []) === 0;
+            out.nullSourcesIsZero = r._scentAt(0, 0, null) === 0;
+            out.invalidSourceFiltered = r._scentAt(0, 0, [null, { x: 0, z: 0, strength: 1 }]) > 0;
+        }
+
+        // (N7) Negative/zero strength → ignoriert
+        if (r._scentAt) {
+            const ignoreSrc = [{ x: 0, z: 0, strength: 0 }, { x: 0, z: 0, strength: -1 }];
+            out.zeroNegStrengthIgnored = r._scentAt(1, 0, ignoreSrc) === 0;
+        }
+
+        return out;
+    });
+
+    check("V18.202 (N1a) AnazhRealm.SCENT frozen + Konstanten existieren", res.scentConstExists === true);
+    check("V18.202 (N1b) SCENT-Konstanten sinnvoll (rangeM>0, windFactor∈[0,1], minDirectional∈[0,1])", res.scentConstsSensible === true);
+    check("V18.202 (N1c) _worldWindDirAt + _scentAt Helper existieren", res.windHelperExists === true && res.scentHelperExists === true);
+    check("V18.202 (N2a) Wind deterministisch (zwei Aufrufe gleich)", res.windDeterministic === true);
+    check("V18.202 (N2b) Wind normalisiert (Länge ≈ 1)", res.windNormalized === true);
+    check("V18.202 (N2c) Wind variiert über 2000 m Distanz (kein konstanter Vektor)", res.windVariesOverDistance === true);
+    check("V18.202 (N3a) Geruch nah > 0.3 (volle Stärke nahe Quelle)", res.scentNearStrong === true);
+    check("V18.202 (N3b) Distanz-Decay monoton (20>50>100)", res.scentDistantWeaker === true);
+    check("V18.202 (N3c) Bei 300 m: Geruch sehr schwach < 0.05 (decay × windMod)", res.scentFarVanishes === true);
+    check("V18.202 (N4) Mehrere Quellen akkumulieren (2 sources > 1 source)", res.scentAccumulates === true);
+    check(
+        `V18.202 (N5a) Downwind stärker als upwind (down=${res.downwindMagnitude && res.downwindMagnitude.toFixed(3)} > up=${res.upwindMagnitude && res.upwindMagnitude.toFixed(3)})`,
+        res.downwindStronger === true
+    );
+    check("V18.202 (N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
+    check("V18.202 (N6a) Empty sources array → 0", res.emptyArrayIsZero === true);
+    check("V18.202 (N6b) null sources → 0 (kein Crash)", res.nullSourcesIsZero === true);
+    check("V18.202 (N6c) Ungültige Source-Einträge werden gefiltert", res.invalidSourceFiltered === true);
+    check("V18.202 (N7) 0/negative strength wird ignoriert (kein negativer Geruch)", res.zeroNegStrengthIgnored === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -51283,6 +51396,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18199GammaMLichen(ctx);
             await checkBandV18200GammaMIronBands(ctx);
             await checkBandV18201ManaKonsum(ctx);
+            await checkBandV18202GeruchFeld(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
