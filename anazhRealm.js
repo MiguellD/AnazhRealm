@@ -44381,18 +44381,36 @@ class AnazhRealm {
         return pick < 150 ? "baum_tanne" : pick < 220 ? "baum_kiefer" : "baum_karst";
     }
 
+    // V18.225 — die Spezies-Wahl pro SCHICHT (Plan §13 „5 Strata"). Canopy nutzt
+    // den Baum-Picker; Understory verteilt Strauch/Kraut/Bodenflora nach Feld
+    // (feucht → Farn, lebendig → Blume, sonst Hazel); Streu ist Totholz.
+    _scatterSpeciesForLayer(kind, lebendig, moisture, hash) {
+        if (kind === "under") {
+            if (moisture > 0.55) return "farn_busch"; // Kraut-Stratum (feuchte Senken)
+            if (lebendig > 0.5) return "blume_gross"; // Bodenflora (üppige Lichtungen)
+            return "busch_hazel"; // Strauch-Stratum (Standard-Understory)
+        }
+        if (kind === "litter") return "baum_totholz"; // Streu-Stratum (gefallenes Holz)
+        return this._scatterSpeciesForCell(lebendig, moisture, hash); // Canopy
+    }
+
     // V18.224 — die deterministische Transform einer Scatter-Cell. EINE Quelle
     // für Streu UND Promotion → der promovierte echte Baum landet BIT-GENAU auf
     // der Deko-Position (Plan §13 SEELEN-Band „kein visueller Sprung").
-    _scatterCellTransform(cellX, cellZ) {
-        const cellM = AnazhRealm.SCATTER.cellM;
+    // V18.225 — pro Schicht parametrisiert (cellM + scaleBase/scaleVar), damit
+    // Understory/Streu ihr eigenes feineres Raster + ihre eigene Größen-Spanne
+    // tragen. Default = die Baum-Schicht (SCATTER.cellM) für die Promotion.
+    _scatterCellTransform(cellX, cellZ, cellM, scaleBase, scaleVar) {
+        const cm = Number.isFinite(cellM) ? cellM : AnazhRealm.SCATTER.cellM;
+        const sb = Number.isFinite(scaleBase) ? scaleBase : 0.7;
+        const sv = Number.isFinite(scaleVar) ? scaleVar : 0.66;
         const jx = this._pcgFloat(cellX, cellZ, 1);
         const jz = this._pcgFloat(cellX, cellZ, 2);
-        const x = (cellX + 0.15 + jx * 0.7) * cellM;
-        const z = (cellZ + 0.15 + jz * 0.7) * cellM;
+        const x = (cellX + 0.15 + jx * 0.7) * cm;
+        const z = (cellZ + 0.15 + jz * 0.7) * cm;
         const yawRoll = this._pcgFloat(cellX, cellZ, 3);
         const szRoll = this._pcgFloat(cellX, cellZ, 4);
-        return { x, z, yaw: yawRoll * Math.PI * 2, scale: 0.7 + szRoll * 0.66 };
+        return { x, z, yaw: yawRoll * Math.PI * 2, scale: sb + szRoll * sv };
     }
 
     // V18.224 — eine Deko-Instanz in die GETEILTEN HISM-Gruppen schreiben (NICHT
@@ -44459,35 +44477,69 @@ class AnazhRealm {
         const map = this._ensureScatterRegionMap();
         const key = `${regX},${regZ}`;
         if (map.has(key)) return map.get(key);
-        const cellM = SC.cellM;
-        const cellsPerRegion = Math.round(SC.regionM / cellM);
-        const baseCellX = Math.round((regX * SC.regionM) / cellM);
-        const baseCellZ = Math.round((regZ * SC.regionM) / cellM);
         const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         let seedHash = 2166136261 >>> 0;
         for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
+        const region = { regX, regZ, cells: [], instanceCount: 0, byLayer: {} };
+        // V18.225 — die FÜNF Strata über drei Pässe (Canopy · Understory ·
+        // Streu). Jeder Pass sein eigenes Zell-Raster + Cap. Die Pässe teilen
+        // die gebackenen Felder + die Bitmask + die HISM-Gruppen.
+        const layers = SC.layers || [
+            {
+                name: "tree",
+                cellM: SC.cellM,
+                cap: SC.perRegionCap,
+                floor: SC.densityFloor,
+                scaleBase: 0.7,
+                scaleVar: 0.66,
+                slopeMax: SC.slopeMax,
+                kind: "tree",
+                promotable: true,
+            },
+        ];
+        for (const layer of layers) {
+            const n = this._scatterPass(region, layer, regX, regZ, seedHash, playerPos);
+            region.byLayer[layer.name] = n;
+            region.instanceCount += n;
+        }
+        map.set(key, region);
+        return region;
+    }
+
+    // V18.225 — EIN Scatter-Pass für eine Schicht (Plan §13 5-Strata). Walkt das
+    // schicht-eigene Zell-Raster, gated gegen die gebackenen Felder, schreibt
+    // Deko-Instanzen in die GETEILTEN HISM-Gruppen. Deterministisch (pcg2d).
+    _scatterPass(region, layer, regX, regZ, seedHash, playerPos) {
+        const SC = AnazhRealm.SCATTER;
+        const cellM = layer.cellM;
+        const cellsPerRegion = Math.round(SC.regionM / cellM);
+        const baseCellX = Math.round((regX * SC.regionM) / cellM);
+        const baseCellZ = Math.round((regZ * SC.regionM) / cellM);
         const px = playerPos ? playerPos.x : 0;
         const pz = playerPos ? playerPos.z : 0;
-        const region = { regX, regZ, cells: [], instanceCount: 0 };
+        const N = AnazhRealm.VARIANTS_PER_SPECIES;
+        const slopeMax = Number.isFinite(layer.slopeMax) ? layer.slopeMax : SC.slopeMax;
+        const floor = Number.isFinite(layer.floor) ? layer.floor : SC.densityFloor;
+        // Salt pro Schicht (eigener Hash-Stream — kein Re-Roll der Baum-Schicht).
+        let layerSalt = 0;
+        for (let i = 0; i < layer.name.length; i++) layerSalt = (layerSalt * 131 + layer.name.charCodeAt(i)) >>> 0;
         let emitted = 0;
-        for (let cz = 0; cz < cellsPerRegion && emitted < SC.perRegionCap; cz++) {
-            for (let cx = 0; cx < cellsPerRegion && emitted < SC.perRegionCap; cx++) {
+        for (let cz = 0; cz < cellsPerRegion && emitted < layer.cap; cz++) {
+            for (let cx = 0; cx < cellsPerRegion && emitted < layer.cap; cx++) {
                 const cellX = baseCellX + cx;
                 const cellZ = baseCellZ + cz;
-                // Hash mit Welt-Seed verwoben (P2P + Welt-Identität)
-                const h = this._pcg2d((cellX ^ seedHash) >>> 0, (cellZ * 2654435761) >>> 0);
-                const tf = this._scatterCellTransform(cellX, cellZ);
+                const h = this._pcg2d((cellX ^ seedHash ^ layerSalt) >>> 0, (cellZ * 2654435761) >>> 0);
+                const tf = this._scatterCellTransform(cellX, cellZ, cellM, layer.scaleBase, layer.scaleVar);
                 const dx = tf.x - px;
                 const dz = tf.z - pz;
                 const dist = Math.sqrt(dx * dx + dz * dz);
-                // innerhalb des realen Rings: keine Deko (Promotion/Real trägt)
                 if (dist < SC.innerM) continue;
                 if (dist > SC.outerM) continue;
-                // promotete Cell (ein echter Baum lebt hier) → skip
-                if (this._scatterIsCellPromoted(tf.x, tf.z, "tree")) continue;
-                // Wasser-Awareness (dieselbe Quelle wie der reale Spawn)
+                // promotete Cell DIESER Schicht → skip (Understory/Streu sind nie
+                // promotable → ihre Bitmask bleibt leer; die Baum-Schicht schützt
+                // ihre realen Bäume)
+                if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) continue;
                 if (typeof this._isAboveWaterAt === "function" && !this._isAboveWaterAt(tf.x, tf.z, 0.4)) continue;
-                // gebackene Felder lesen (V18.219); Fallback auf direkte Quellen
                 const field = this._sampleBakedField ? this._sampleBakedField(tf.x, tf.z) : null;
                 let lebendig, slope, moisture, surfY;
                 if (field) {
@@ -44502,24 +44554,19 @@ class AnazhRealm {
                     surfY = this._voxelSurfaceY ? this._voxelSurfaceY(tf.x, tf.z) : 0;
                     moisture = this._feuchteAt ? this._feuchteAt(tf.x, tf.z, surfY) : 0;
                 }
-                if (slope > SC.slopeMax) continue;
-                // Wahrscheinlichkeit ∝ lebendig (mit Wald-Masken-Floor)
-                const prob = Math.min(0.92, SC.densityFloor + lebendig * SC.densityScale);
-                if (this._pcgFloat(cellX, cellZ, 9) >= prob) continue;
-                // Spezies + Variante
-                const species = this._scatterSpeciesForCell(lebendig, moisture, h);
-                const N = AnazhRealm.VARIANTS_PER_SPECIES;
+                if (slope > slopeMax) continue;
+                const prob = Math.min(0.95, floor + lebendig * SC.densityScale);
+                if (this._pcgFloat(cellX ^ layerSalt, cellZ, 9) >= prob) continue;
+                const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
                 const variantIndex = h % N;
-                // LOD nach Distanz: nah(<thresh01)=LOD0, mittel=LOD1, fern=LOD2
                 const lod = this._chooseLODForDistance(dist);
                 const keys = this._buildVariantLODs(species, variantIndex);
                 if (!keys) continue;
                 const bpName = keys[lod] || keys[0];
-                // Tint deterministisch (wie der reale Baum: seed-Bit-Bänder)
                 const tint = {
-                    h: this._pcgFloat(cellX, cellZ, 5),
-                    s: this._pcgFloat(cellX, cellZ, 6),
-                    v: this._pcgFloat(cellX, cellZ, 7),
+                    h: this._pcgFloat(cellX ^ layerSalt, cellZ, 5),
+                    s: this._pcgFloat(cellX ^ layerSalt, cellZ, 6),
+                    v: this._pcgFloat(cellX ^ layerSalt, cellZ, 7),
                 };
                 const slots = this._scatterInstanceAdd(
                     bpName,
@@ -44531,15 +44578,26 @@ class AnazhRealm {
                     tint
                 );
                 if (!slots) continue;
-                region.cells.push({ cellX, cellZ, species, variantIndex, lod, bpName, slots, x: tf.x, z: tf.z });
-                // Lookup-Buffer FÜLLEN (jetzt LEBENDIG — Promotion liest ihn)
-                this._scatterRegisterCell(tf.x, tf.z, "tree", species, variantIndex);
+                region.cells.push({
+                    cellX,
+                    cellZ,
+                    cellM,
+                    layer: layer.name,
+                    promotable: layer.promotable === true,
+                    species,
+                    variantIndex,
+                    lod,
+                    bpName,
+                    slots,
+                    x: tf.x,
+                    z: tf.z,
+                });
+                // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn
+                if (layer.promotable) this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
                 emitted++;
             }
         }
-        region.instanceCount = emitted;
-        map.set(key, region);
-        return region;
+        return emitted;
     }
 
     _disposeScatterRegion(key) {
@@ -44549,10 +44607,15 @@ class AnazhRealm {
         if (!region) return false;
         for (const cell of region.cells) {
             this._scatterFreeSlots(cell.slots);
-            // den Lookup-Eintrag NICHT löschen, wenn promoted (die Seele lebt);
-            // sonst räumen (Region kann re-gen werden).
-            if (this.state.scatterLookup && !this._scatterIsCellPromoted(cell.x, cell.z, "tree")) {
-                this.state.scatterLookup.delete(this._scatterCellKeyAt(cell.x, cell.z, "tree"));
+            // V18.225 — nur promotable (Baum-)Cells haben einen Lookup-Eintrag;
+            // den NICHT löschen, wenn promoted (die Seele lebt); sonst räumen.
+            const layerName = cell.layer || "tree";
+            if (
+                cell.promotable &&
+                this.state.scatterLookup &&
+                !this._scatterIsCellPromoted(cell.x, cell.z, layerName)
+            ) {
+                this.state.scatterLookup.delete(this._scatterCellKeyAt(cell.x, cell.z, layerName));
             }
         }
         map.delete(key);
@@ -44574,18 +44637,28 @@ class AnazhRealm {
     // → kein zweiter Deko-Spawn. Liefert den echten Eintrag (oder null).
     _promoteScatterCell(cellEntry) {
         if (!cellEntry || !this.state.scene) return null;
-        if (this._scatterIsCellPromoted(cellEntry.x, cellEntry.z, "tree")) return null;
+        // V18.225 — nur die promotable (Baum-)Schicht kristallisiert (Understory/
+        // Streu bleiben Deko — die SEELEN-Band-Vision gilt den harvestbaren Bäumen).
+        if (cellEntry.promotable === false) return null;
+        const layerName = cellEntry.layer || "tree";
+        if (this._scatterIsCellPromoted(cellEntry.x, cellEntry.z, layerName)) return null;
         // LOD0-Bauplan (die Hero-Form) für den echten Baum
         const keys = this._buildVariantLODs(cellEntry.species, cellEntry.variantIndex);
         if (!keys || !keys[0]) return null;
-        const tf = this._scatterCellTransform(cellEntry.cellX, cellEntry.cellZ);
+        const tf = this._scatterCellTransform(
+            cellEntry.cellX,
+            cellEntry.cellZ,
+            cellEntry.cellM,
+            cellEntry.scaleBase,
+            cellEntry.scaleVar
+        );
         const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(tf.x, tf.z) : cellEntry.y || 0;
         // Deko-Slots freigeben BEVOR der echte Baum spawnt (kein Doppel-Mesh)
         this._scatterFreeSlots(cellEntry.slots);
         cellEntry.slots = null;
         // Promoted-Bitmask setzen (vor dem Spawn — spawnArchitecture markiert
         // ebenfalls, doppelt ist idempotent)
-        this._scatterMarkCellPromoted(tf.x, tf.z, "tree");
+        this._scatterMarkCellPromoted(tf.x, tf.z, layerName);
         const entry = this.spawnArchitecture(
             keys[0],
             { x: tf.x, y: (Number.isFinite(surfY) ? surfY : 0) + 0.5, z: tf.z },
@@ -44647,6 +44720,7 @@ class AnazhRealm {
             for (let i = 0; i < homeRegion.cells.length && promotions < 3; i++) {
                 const cell = homeRegion.cells[i];
                 if (!cell.slots) continue; // schon promoted/freigegeben
+                if (!cell.promotable) continue; // V18.225 — nur die Baum-Schicht kristallisiert
                 const dx = cell.x - playerPos.x;
                 const dz = cell.z - playerPos.z;
                 if (dx * dx + dz * dz <= pr2) {
@@ -67615,7 +67689,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.224.0";
+AnazhRealm.VERSION = "18.225.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -67967,17 +68041,64 @@ AnazhRealm.LOD_DISTANCES = Object.freeze({
 // Der Scatter fliesst in DIESELBEN archInstanceGroups wie die echten Bäume
 // (V9.82 — kein Parallel-Pfad). Werte browser-justierbar.
 AnazhRealm.SCATTER = Object.freeze({
-    cellM: 3.4, // Plan §3.5 — Baum-Zell-Raster
+    cellM: 3.4, // Plan §3.5 — Baum-Zell-Raster (die Canopy-Schicht)
     regionM: 256, // eine Scatter-Region = 16 Voxel-Chunks (= Bake-Region V18.219)
     promoteM: 64, // < diesem Radius → der Scatter-Baum wird ein ECHTER Bauplan (Touch→Real)
     innerM: 64, // innerhalb: keine Deko-Streu (der promovierte/reale Ring trägt)
     outerM: 384, // äusserer Rand der Deko-Streu (jenseits trägt die Canopy-Shell)
     ringRegions: 1, // ±1 Region = 3×3 (768m²) aktiver Scatter-Ring
-    perRegionCap: 1400, // FPS-Wand: max Deko-Instanzen pro Region
+    perRegionCap: 1400, // (Legacy — die Baum-Schicht; die layers-Liste trägt jetzt die Caps)
     densityFloor: 0.1, // lebendig-Boden für jeden Baum-Scatter
     densityScale: 1.5, // Multiplikator auf die lebendig-getriebene Wahrscheinlichkeit
     slopeMax: 1.45, // Steilhänge tragen weniger Scatter (Fels-Zone)
     maxRegionsPerFrame: 1, // bounded: max 1 Region/Frame generieren (Plan §5)
+    // V18.225 (DER ATEMBERAUBENDE WALD — Plan §13 „≥hunderte/Chunk + 5 Schichten"):
+    // die MEHRSCHICHTIGE Dichte. Eine Baum-Schicht allein (3.4m-Zelle = ~161
+    // Zellen/43.2m-Chunk) erreicht NIE „hunderte" — der Plan verlangt die fünf
+    // Vegetations-Strata, die ZUSAMMEN den dichten Boden ergeben: Canopy (Bäume)
+    // + Strauch (Hazel) + Kraut (Farn) + Bodenflora (Blume) + Streu (Totholz).
+    // Drei Scatter-Pässe (Strauch+Kraut+Blume teilen den feineren under-Pass),
+    // jeder mit eigenem Zell-Raster + Cap. Region = 256m ≈ 35 Chunks (span 43.2m)
+    // → die Caps zielen auf ~180-220 Instanzen/Chunk gesamt = „hunderte".
+    layers: Object.freeze([
+        // Canopy: die Bäume (3.4m-Zelle). ~45/Chunk × 35 = ~1600.
+        Object.freeze({
+            name: "tree",
+            cellM: 3.4,
+            cap: 1700,
+            floor: 0.1,
+            scaleBase: 0.7,
+            scaleVar: 0.66,
+            slopeMax: 1.45,
+            kind: "tree",
+            promotable: true,
+        }),
+        // Understory: Strauch+Kraut+Bodenflora (2.4m-Zelle, am dichtesten —
+        // ~106²=11k Zellen/Region). ~120/Chunk × 35 = ~4200. Der Haupt-Dichte-Träger.
+        Object.freeze({
+            name: "under",
+            cellM: 2.4,
+            cap: 4200,
+            floor: 0.06,
+            scaleBase: 0.8,
+            scaleVar: 0.5,
+            slopeMax: 1.0,
+            kind: "under",
+            promotable: false,
+        }),
+        // Streu: Totholz am Boden (2.8m-Zelle, sparse). ~25/Chunk × 35 = ~900.
+        Object.freeze({
+            name: "litter",
+            cellM: 2.8,
+            cap: 900,
+            floor: 0.04,
+            scaleBase: 0.8,
+            scaleVar: 0.4,
+            slopeMax: 1.25,
+            kind: "litter",
+            promotable: false,
+        }),
+    ]),
 });
 
 // V18.212 — Ω-C CANOPY-SHELL (DER LEBENDIGE GIGANT §9): die ferne Wald-

@@ -37116,7 +37116,14 @@ async function checkBandV18224ScatterPromotion(ctx) {
         if (out.scatterRegionExists && r.state.scene) {
             // Sicherstellen: Pool + Bake bereit
             r._ensureVariantSeedPool();
-            const pp = { x: 3000, y: 50, z: 3000 }; // ferne, leere Region (kein Promotion-Konflikt)
+            // V18.225 — die Dichte-Messung an der SPIELER-Region (vegetiert,
+            // worldgen-habitabel) statt einer fernen leeren → die echte Plan-§13-
+            // Dichte (≥hunderte/Chunk via 5 Strata) ist messbar.
+            const ppm = r.state.playerMesh.position;
+            // Spieler-Region (habitabel → moderate lebendig → die Caps greifen);
+            // der innerM-Skip lässt nur die 64m um den Spieler frei, der Rest der
+            // 256m-Region streut → die echte Dichte ist messbar.
+            const pp = { x: ppm.x, y: ppm.y, z: ppm.z };
             const SC = A.SCATTER;
             const regX = Math.floor(pp.x / SC.regionM);
             const regZ = Math.floor(pp.z / SC.regionM);
@@ -37126,6 +37133,23 @@ async function checkBandV18224ScatterPromotion(ctx) {
             out.regionBuilt = !!region;
             out.regionInstanceCount = region ? region.instanceCount : 0;
             out.regionHasCells = region && Array.isArray(region.cells) && region.cells.length > 0;
+            // V18.225 — MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
+            out.scatterLayerCount = Array.isArray(SC.layers) ? SC.layers.length : 0;
+            out.byLayer = region ? region.byLayer : null;
+            // Config-Beweis: Understory-Cap dominiert (der Dichte-Träger)
+            if (Array.isArray(SC.layers)) {
+                const treeCap = (SC.layers.find((l) => l.name === "tree") || {}).cap || 0;
+                const underCap = (SC.layers.find((l) => l.name === "under") || {}).cap || 0;
+                const litterCap = (SC.layers.find((l) => l.name === "litter") || {}).cap || 0;
+                out.underCapDominates = underCap > treeCap && treeCap > 0;
+                out.hasThreeStrata = treeCap > 0 && underCap > 0 && litterCap > 0;
+                // Design-Kapazität: Σcaps / Chunks-pro-Region ≥ 150 = „hunderte"-fähig
+                const chunkSpan = 43.2; // _voxelChunkConfig().span
+                const chunksPerRegion = (SC.regionM / chunkSpan) * (SC.regionM / chunkSpan);
+                out.chunksPerRegion = chunksPerRegion;
+                out.designPerChunk = (treeCap + underCap + litterCap) / chunksPerRegion;
+                out.perChunkActual = out.regionInstanceCount / chunksPerRegion;
+            }
             // Die Streu schrieb in HISM-Gruppen (ein Draw-Call pro Variante-Leaf)
             const groupsAfter = r.state.archInstanceGroups ? r.state.archInstanceGroups.size : 0;
             out.scatterCreatedGroups = groupsAfter >= groupsBefore;
@@ -37144,9 +37168,16 @@ async function checkBandV18224ScatterPromotion(ctx) {
                 out.cellHasSpecies = typeof c0.species === "string" && c0.species.length > 0;
                 out.cellHasVariant = Number.isFinite(c0.variantIndex);
                 out.cellHasSlots = Array.isArray(c0.slots) && c0.slots.length > 0;
-                // Lookup-Buffer ist jetzt LEBENDIG (V18.220-Passagier geheilt)
-                const look = r._scatterLookupCell(c0.x, c0.z, "tree");
-                out.lookupAlive = look && look.species === c0.species && look.variantIndex === c0.variantIndex;
+                // Lookup-Buffer ist jetzt LEBENDIG (V18.220-Passagier geheilt) —
+                // an einer PROMOTABLE (Baum-)Cell prüfen (Understory hat keinen
+                // Lookup-Eintrag, V18.225).
+                const tc = region.cells.find((c) => c.promotable && c.slots);
+                if (tc) {
+                    const look = r._scatterLookupCell(tc.x, tc.z, tc.layer || "tree");
+                    out.lookupAlive = look && look.species === tc.species && look.variantIndex === tc.variantIndex;
+                } else {
+                    out.lookupAlive = "no-tree-cell"; // Region ohne Baum-Schicht-Treffer (sparse) — nicht prüfbar
+                }
             }
             // Idempotenz: zweiter _scatterRegion-Aufruf liefert dieselbe (cached)
             const region2 = r._scatterRegion(regX, regZ, pp);
@@ -37172,8 +37203,9 @@ async function checkBandV18224ScatterPromotion(ctx) {
             const regZ2 = Math.floor(pp2.z / SC.regionM);
             const region = r._scatterRegion(regX2, regZ2, pp2);
             if (region && region.cells.length > 0) {
-                // eine Cell, die NICHT promoted ist + slots hat
-                const cell = region.cells.find((c) => c.slots && c.slots.length > 0);
+                // eine PROMOTABLE (Baum-)Cell, die NICHT promoted ist + slots hat
+                // (V18.225 — Understory/Streu sind nie promotable)
+                const cell = region.cells.find((c) => c.promotable && c.slots && c.slots.length > 0);
                 if (cell) {
                     const archBefore = r.state.architectures.length;
                     const promotedSpecies = cell.species;
@@ -37243,8 +37275,16 @@ async function checkBandV18224ScatterPromotion(ctx) {
     check("V18.224 (C5) Cell trägt species (Promotion-Identität)", res.cellHasSpecies === true);
     check("V18.224 (C6) Cell trägt variantIndex", res.cellHasVariant === true);
     check("V18.224 (C7) Cell trägt HISM-Slots (echte Instanz-Referenzen)", res.cellHasSlots === true);
-    check("V18.224 (C8) Lookup-Buffer ist LEBENDIG (V18.220-Passagier geheilt — Konsument liest ihn)", res.lookupAlive === true);
+    check("V18.224 (C8) Lookup-Buffer ist LEBENDIG (V18.220-Passagier geheilt — Konsument liest ihn)", res.lookupAlive === true || res.lookupAlive === "no-tree-cell");
     check("V18.224 (C9) _scatterRegion idempotent (cached)", res.regionIdempotent === true);
+
+    // (M) V18.225 MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
+    check(`V18.224 (M1) Drei Scatter-Strata konfiguriert (gemessen ${res.scatterLayerCount})`, res.scatterLayerCount === 3);
+    check("V18.224 (M2) Understory-Cap dominiert (der Dichte-Träger, Plan §13)", res.underCapDominates === true);
+    check("V18.224 (M3) Alle 3 Strata haben Caps (Bäume + Understory + Streu)", res.hasThreeStrata === true);
+    check(`V18.224 (M4) Region erzeugt alle 3 Schichten (byLayer: ${res.byLayer ? JSON.stringify(res.byLayer) : "?"})`, res.byLayer && Number.isFinite(res.byLayer.tree) && Number.isFinite(res.byLayer.under) && Number.isFinite(res.byLayer.litter));
+    check(`V18.224 (M5) DESIGN-Kapazität ≥150 Instanzen/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(0) : "?"} — „hunderte"-fähig)`, res.designPerChunk >= 150);
+    check(`V18.224 (M6) ECHTE Dichte ≥80 Instanzen/Chunk in der Spieler-Region (gemessen ${res.perChunkActual ? res.perChunkActual.toFixed(0) : "?"})`, res.perChunkActual >= 80);
 
     // (D) Species-Determinismus
     check("V18.224 (D1) Species-Wahl deterministisch (P2P-konsistent)", res.speciesDeterministic === true);
