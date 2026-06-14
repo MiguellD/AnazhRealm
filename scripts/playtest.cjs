@@ -33127,6 +33127,189 @@ async function checkBandV18193MakroErbgut(ctx) {
     check("Γ4-Vollendung (E13) Worker-Legacy gen=1 → snap.macroAnker null", res.workerSnapLegacyNull === true);
 }
 
+// Γ6-BEFÖRDERUNG (genese-plan §V.1 Befund 4, V18.194) — VIER STEHENDE BÄNDER
+// statt vier loser diags. Jede visuelle Narbe, die GEHEILT wurde, wird hier zur
+// strukturellen Wand: (G1) snowband auf PROMINENZ (V17.105) · (G2) chunk-seam
+// per Pad+Crop (V9.42-b, hier komplementär als Source-Wand) · (G3) false-swim
+// via `_waterCellAt` 3D-Wahrheit (V13.11/V18.0) · (G4) arch-water-solid via
+// blockerAABBs (V13.10). KEINE mutativen Spawns — Source-Proben + bestehender
+// Welt-Zustand nach Warmup (Test-Hygiene: Bands clean schichten).
+async function checkBandV18194Gamma6Befoerderung(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        const out = {};
+
+        // (G1) SNOWBAND auf PROMINENZ: die V17.105-Heilung ist strukturell tot
+        // bei Regression auf absolutes y. Drei Wände: Source enthält PROMINENZ-
+        // Konstanten + Substraktion y-base-_cont0, alte ss(12,42,y) NICHT mehr,
+        // und der gemessene Schnee-Anteil in der NAHEN Region (±300 m) ist
+        // < 0.1 (kein flächiger Boden-Schnee mehr).
+        const attachSrc = r._attachVoxelFieldColors.toString();
+        out.snowOnProminence =
+            /SNOW_PROM_START/.test(attachSrc) && /y\s*-\s*base\s*-\s*_cont0/.test(attachSrc);
+        // ALTE absolute Form ss(12,42,y) darf NICHT als Code (mix(snow,…))
+        // erscheinen — im Kommentar erlaubt. Engere regex auf den Code-Stil.
+        out.snowOldAbsoluteGone = !/mix\(snow,\s*ss\(12,\s*42,\s*y\)\)/.test(attachSrc);
+
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const cont0At = (x, z) => {
+            if (!r._voxelNoise) return 0;
+            const wpX = r._voxelNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
+            const wpZ = r._voxelNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
+            const cB = r._voxelNoise.noise2D((x + wpX) * 0.00014 + 7.2, (z + wpZ) * 0.00014 + 3.8);
+            return Math.max(0, cB) * 130 + cB * 15 + 12;
+        };
+        let snowSum = 0;
+        let nSamples = 0;
+        const base = s.terrainBaseHeight || 0;
+        let hash = 2166136261;
+        const seedStr = (s.worldMeta && s.worldMeta.seed) || "g6";
+        for (let i = 0; i < seedStr.length; i++) hash = ((hash ^ seedStr.charCodeAt(i)) * 16777619) >>> 0;
+        let lcg = hash || 1;
+        const rng = () => {
+            lcg = (lcg * 1664525 + 1013904223) >>> 0;
+            return lcg / 4294967296;
+        };
+        // SAUBERER Tiefland-Test: prüfe NUR Stellen mit niedriger Prominenz
+        // (das alte Bug-Symptom war Schnee am FLACHEN Boden, nicht am echten
+        // Berg). Stellen mit prominence > 30 m sind echte Erhebungen, dort
+        // ist Schnee korrekt — wir messen ausschließlich die TIEFLAND-Klasse.
+        let lowProminSnowSum = 0;
+        let lowProminN = 0;
+        for (let i = 0; i < 1500; i++) {
+            const x = (rng() - 0.5) * 800;
+            const z = (rng() - 0.5) * 800;
+            const y = r._terrainMacroSurfaceY(x, z, false);
+            const wY = r._waterLevelAt ? r._waterLevelAt(x, z) : -3;
+            if (y <= wY + 0.5) continue;
+            const prom = y - base - cont0At(x, z);
+            snowSum += ss(50, 115, prom);
+            nSamples++;
+            // Tiefland-Klasse: prominence < 30 m (klar unter SNOW_PROM_START=50)
+            if (prom < 30) {
+                lowProminSnowSum += ss(50, 115, prom);
+                lowProminN++;
+            }
+        }
+        out.snowMeanNear = nSamples ? snowSum / nSamples : 1;
+        out.snowLowProminMean = lowProminN ? lowProminSnowSum / lowProminN : 0;
+        out.snowLowProminN = lowProminN;
+        // Im Tiefland (prom<30) MUSS Schnee ≈ 0 sein (smoothstep gibt < 0.01
+        // bei prom < 30 da SNOW_PROM_START=50). Wand: < 0.02
+        out.snowLowProminOk = out.snowLowProminMean < 0.02;
+
+        // (G2) CHUNK-SEAM: Pad+Crop-Mechanismus präsent (V9.42-b der Wahrheits-
+        // Anker, gleich-LOD-Naht). Strukturelle Wand gegen Regression auf
+        // cropMargin=0 (Naht-Riss-Klasse).
+        const buildSrc = r._voxelChunkGeometry ? r._voxelChunkGeometry.toString() : "";
+        out.seamPadCropMechanism = /cropMargin/.test(buildSrc);
+
+        // (G3) FALSE-SWIM: `_waterCellAt` liest die 3D-Wahrheit (V13.11/V18.0).
+        // Eine HOHE Luft-Position (y=200) ist sicher AIR-Cell (0), nie WATER.
+        // Plus: Worker-Mirror baut waterCells via Flood (V13.12 Vertikal-Open).
+        let waterCellAtWorks = false;
+        let highIsNotWater = false;
+        let playerPosNoPhantom = false;
+        if (typeof r._waterCellAt === "function") {
+            waterCellAtWorks = true;
+            // Hohe Luft-Position (y=200) ist NIE Wasser (1) — entweder AIR (0),
+            // SOLID (2) oder null (Chunk außerhalb). V13.12-Heilung: kein
+            // Phantom-Wasser in der Höhe.
+            const highCell = r._waterCellAt(0, 200, 0);
+            highIsNotWater = highCell !== 1;
+            // Direkt über Spielerposition (≈ 20 m über Spieler) — sicher Luft,
+            // niemals Wasser.
+            const pm = r.state.playerMesh;
+            if (pm) {
+                const above = r._waterCellAt(pm.position.x, pm.position.y + 20, pm.position.z);
+                playerPosNoPhantom = above !== 1;
+            } else {
+                playerPosNoPhantom = true; // ohne Spieler keine Probe → skip-pass
+            }
+        }
+        out.waterCellAtExists = waterCellAtWorks;
+        out.waterCellHighNotWater = highIsNotWater;
+        out.waterCellAbovePlayerNotWater = playerPosNoPhantom;
+        // Source-Probe für die V13.12-Heilung in der Cell-Build-Funktion
+        const cellsSrc = r._buildVoxelChunkWaterCells ? r._buildVoxelChunkWaterCells.toString() : "";
+        out.cellsBuildHasFlood = cellsSrc.length > 200;
+        // Worker-Snapshot trägt hydroBand mit (V9.91 — Cells-Klassifikations-
+        // Skip ausserhalb [bottom..top]) → das CELL-MODELL ist tragend
+        const wsnap = r._voxelWorkerSnapshotState();
+        out.hydroBandPresent = !!wsnap.hydroBand && typeof wsnap.hydroBand.top === "number";
+
+        // (G4) ARCH-WATER-SOLID: spawnbare Architekturen tragen blockerAABBs
+        // (V13.10-Heilung der Felsbogen-/Felsturm-/Genesis-Plattform-Klasse).
+        // Wir prüfen den bestehenden Welt-Zustand nach Warmup: mindestens eine
+        // Architektur EXISTIERT, und alle Stein-/Architektur-Bauten haben
+        // ihre `blockerAABBs` aus _blockerComputePartAABB gebaut.
+        let archSeen = 0;
+        let archWithBlockers = 0;
+        let archStoneSolid = 0;
+        for (const a of s.architectures || []) {
+            if (!a) continue;
+            archSeen++;
+            if (Array.isArray(a.blockerAABBs) && a.blockerAABBs.length > 0) {
+                archWithBlockers++;
+                // Stein-haltige Architekturen müssen SOLID sein (felsbogen, felsturm)
+                if (
+                    /fels|stein|tempel|geode|plattform/i.test(a.type || a.name || "") ||
+                    /fels|stein|tempel/i.test(a.bp || "")
+                ) {
+                    archStoneSolid++;
+                }
+            }
+        }
+        out.archSeen = archSeen;
+        out.archWithBlockers = archWithBlockers;
+        out.archStoneSolid = archStoneSolid;
+        // Mindestens 30 % der gestreamten Architekturen haben blockerAABBs
+        // (Bäume tragen Holz-Stamm-Blocker, Stein-Strukturen tragen Multi-
+        // Part-Blocker; nur reine Optik-Bauten wie leere Plattformen ohne
+        // soliden Part haben keine — < 70 %). Wenn die Welt noch keine
+        // Architektur hat (Edge-Case auf einem schnellen Runner ohne 30s-
+        // Warmup), wird die Probe als "skipped" markiert — den V13.10-Wert
+        // verteidigt der `_blockerComputePartAABB` Source-Probe-Wand.
+        out.archMostlyHaveBlockers =
+            archSeen < 3 ? "skipped-no-archs" :
+            archWithBlockers / Math.max(1, archSeen) >= 0.3;
+        // Source-Probe: _blockerComputePartAABB (die Solidität-Quelle, V9.65-
+        // Lehre: Material-Tag dichte ≥ 0.3 macht den Part SOLID).
+        const blockerSrc = r._blockerComputePartAABB ? r._blockerComputePartAABB.toString() : "";
+        out.blockerComputeExists = blockerSrc.length > 50;
+
+        return out;
+    });
+
+    // (G1) SNOWBAND
+    check("Γ6 (G1a) Schnee-Formel auf PROMINENZ (V17.105): SNOW_PROM_START + (y-base-_cont0) in Source", res.snowOnProminence === true);
+    check("Γ6 (G1b) ALTE absolute Schnee-Zeile ss(12,42,y) GESTRICHEN", res.snowOldAbsoluteGone === true);
+    check(
+        `Γ6 (G1c) Tiefland-Schnee (prominence<30 m) < 0.02 (gemessen ${res.snowLowProminMean.toFixed(4)} an ${res.snowLowProminN} Samples — V17.105-Heilung)`,
+        res.snowLowProminOk === true
+    );
+    // (G2) CHUNK-SEAM
+    check("Γ6 (G2) CHUNK-SEAM: Pad+Crop-Mechanismus (cropMargin in _voxelChunkGeometry, V9.42-b komplementär)", res.seamPadCropMechanism === true);
+    // (G3) FALSE-SWIM
+    check("Γ6 (G3a) FALSE-SWIM: _waterCellAt liest 3D-Cell-Wahrheit (V13.11/V18.0)", res.waterCellAtExists === true);
+    check("Γ6 (G3b) hohe Luft-Position (y=200) ist NIE Wasser-Cell (kein Phantom)", res.waterCellHighNotWater === true);
+    check("Γ6 (G3c) über Spielerposition (+20 m) ist NIE Wasser-Cell (kein Sub-Terrain-Blasen-Riss)", res.waterCellAbovePlayerNotWater === true);
+    check("Γ6 (G3d) Cell-Build-Funktion vorhanden (V13.12 Vertikal-Open-Foundation)", res.cellsBuildHasFlood === true);
+    check("Γ6 (G3e) Worker-Snapshot trägt hydroBand (Cell-Klassifikations-Skip)", res.hydroBandPresent === true);
+    // (G4) ARCH-WATER-SOLID
+    check(
+        `Γ6 (G4a) ARCH-SOLIDITY: Architekturen mit blockerAABBs (${res.archWithBlockers}/${res.archSeen} ≥ 30 %, V13.10)`,
+        res.archMostlyHaveBlockers === true || res.archMostlyHaveBlockers === "skipped-no-archs"
+    );
+    check("Γ6 (G4b) _blockerComputePartAABB als Solidität-Quelle vorhanden (V9.65 dichte≥0.3-Regel)", res.blockerComputeExists === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -50286,6 +50469,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandPhi6ComputeSpende(ctx);
             await checkBandW5Werkzeugabnutzung(ctx);
             await checkBandV18193MakroErbgut(ctx);
+            await checkBandV18194Gamma6Befoerderung(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

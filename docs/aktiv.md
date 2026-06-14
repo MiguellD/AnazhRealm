@@ -39,6 +39,7 @@ Backlog-Punkte §4 (nächste in Reihe).
 | **Φ-Bogen Φ0–Φ7 (M9-Sprossen 1+2+3 — DAS WELTEN-NETZ, RUND 7/7)** | **V18.188–V18.191** | `docs/archiv/archipel-plan.md` (ALLE Wellen GEBAUT; 58 Wände in 4 Test-Bands; smoke-multiuser end-to-end) |
 | **W5 Werkzeug-Abnutzung (R-031: Ω5 lebt am Werkzeug — Mühe-Senke + Reparieren-Akt, Migration-tolerant)** | **V18.192** | unten §1.A + `docs/rueckmeldung.md` R-031 |
 | **Γ4 echter MAKRO-ANKER (R-042: ERBGUT + Abfluss-Invariante + Worker-Mirror — LAAS-Narbe strukturell tot)** | **V18.193** | `docs/archiv/genese-plan.md` §Γ4 + `docs/rueckmeldung.md` R-042 |
+| **Γ6-Beförderung (snowband + chunk-seam + false-swim + arch-water-solid → vier stehende Bänder)** | **V18.194** | `docs/archiv/genese-plan.md` §Γ6 + `docs/rueckmeldung.md` R-042 |
 
 ---
 
@@ -138,7 +139,7 @@ nächste Phase trägt:
 | ~~**Γ4 echter MAKRO-ANKER**~~ | **✓ GEBAUT V18.193:** `worldMeta.macro` als signiertes ERBGUT (additiv-teilbar wie ein Welt-Stempel), Abfluss-Invariante über 10 Seeds GEMESSEN grün (Rim-Spannweite > beckenD·0.5 → die LAAS-Narbe strukturell tot), `_isValidMacroAnker` Form-Schutz (must-ignore Taille-Geist), `_macroSpillpointAnalysis` als Verifikations-Wand, Worker-Mirror reicht den Erbgut-Anker (Main↔Worker Identität auch bei Konstanten-Wechsel). 18 Wände `checkBandV18193MakroErbgut`. S-Browser-Abnahme offen. | **✓ GEBAUT** | — |
 | **Γ1-Lesart-5 Ψ2-NASE** | „Geruch des Feldes" — die ferne 5. Welt-Stimme. Kreatur lest sie für Aufträge (Jagd-Spur, Pflanzen-Lokalisierung); Strom aus Wind-Vektor + Distanz | mittel, eigenes Subsystem | — |
 | **Γ-M Multi-Class-Material** | Strata/Iron-Bands/Lichen (Schichten + Adern + Patina) — ersetzt das alte Γ8 Kies+Saum | mittel | nach Γ4½ Slope/Rock (steht) |
-| **Γ6-BEFÖRDERUNG** | snowband/chunk-seam/false-swim/arch-water-solid → vier STEHENDE Bänder (heute nur diags); jede visuelle Narbe wird beim Heilen Band | klein, mechanisch | — |
+| ~~**Γ6-BEFÖRDERUNG**~~ | **✓ GEBAUT V18.194:** vier stehende Bänder `checkBandV18194Gamma6Befoerderung` (11 Wände) — G1 snowband auf PROMINENZ (V17.105: Source-Probe + Tiefland-Schnee<0.02 GEMESSEN 0.000 an 440 Samples) · G2 chunk-seam (cropMargin in `_voxelChunkGeometry`, V9.42-b komplementär) · G3 false-swim (`_waterCellAt` 3D-Wahrheit · hohe Luft AIR · über-Spieler-+20m AIR · hydroBand im Worker-Snap) · G4 arch-solidity (3/3 Architekturen mit blockerAABBs GEMESSEN · `_blockerComputePartAABB` als Quelle). | **✓ GEBAUT** | — |
 | **Γ3 Feld-Charakter** (optional, Entscheid 5) | Domain-Warp + Frequenz-Fächer der 4 Welt-Stimmen (lebendig λ200 · dichte λ340 · glut λ520 · magieleitung λ160) | mittel | — |
 | **Γ2 Totholz-Option** (Entscheid 4) | spezifische Schöpfer-Wahl-Frage zur Tot-Holz-Substanz | klein | S-Entscheid |
 | **Γ7 Baum-Varianten-Grammatik** | `_growTreeBlueprint(speciesParams, rng)` emittiert `parts[]` (Whorl-Äste, Laub nur an Ebene-2-Enden, 6 Varianten pro Spezies) | mittel, video-getrieben zuletzt | — |

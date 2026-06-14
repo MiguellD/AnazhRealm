@@ -59,7 +59,7 @@ Die LAAS-Lektion über LAAS selbst: **das Brief-Muster** — verbotene Outcomes 
 | **Γ5** Determinismus-Schliff | Math.random-Fallback fällt · Zensus-Band · Stream-Gesetz | **✓ GEBAUT (V18.166)** |
 | **Γ2** Klump-Lesarten | `kronen: unter/lichtung/rand` auf dem EINEN Klump-Feld (λ~167 m, dasselbe c wie der Baum-Leser) · Doppel-Gating-WAND · B5+-Mittelwert-Neutralität | **✓ GEBAUT (V18.166)** — Totholz-Option offen (Entscheid 4) |
 | **Γ1** Feuchte-Feld | `_hydroDistAt` + `_feuchteAt` · fünfte Welt-Stimme · Lesarten 1–3 (Affinität · KLEIN-Arten [farn dual, schilf neu] · Boden) · genVersion | **✓ KERN GEBAUT (V18.166)** — Lesart 4 (Farbe) + Lesart 5 (Ψ2-Nase) offen, §V.4 |
-| **Γ6** diag→Band | jede visuelle Narbe wird beim Heilen Band | **TEILWEISE** — diag-genese steht als Werkzeug + `checkBandGammaGenese` (9 Invarianten); die vier Alt-Kandidaten (snowband/chunk-seam/false-swim/arch-water-solid) = eigene Beförderungs-Welle |
+| **Γ6** diag→Band | jede visuelle Narbe wird beim Heilen Band | **✓ GEBAUT V18.194** — vier Alt-Kandidaten als stehende Bänder (`checkBandV18194Gamma6Befoerderung`, 11 Wände): snowband auf PROMINENZ + chunk-seam Pad+Crop + false-swim 3D-Cells + arch-solidity blockerAABBs |
 | **Γ3** Feld-Charakter | Domain-Warp + Frequenz-Fächer der vier Stimmen | OFFEN (optional — das kontinuierliche Feld interdigitiert schon; Entscheid 5) |
 | **Γ4** Makro-Anker | designte Geographie (Massiv·Tal·Becken) gejittert · Abfluss-Invariante (die geerbte LAAS-Narbe) · `worldMeta.macro` als Erbgut | **✓ GEBAUT V18.193** — Erbgut + Abfluss-Invariante + Worker-Mirror, 18 Wände, S-Abnahme offen |
 | **Γ7** Baum-Varianten | `_growTreeBlueprint`-Grammatik emittiert Bauplan-Varianten in der bestehenden Parts-Sprache | OFFEN — zuletzt, video-getrieben |
