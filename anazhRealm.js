@@ -14406,7 +14406,8 @@ class AnazhRealm {
         // ein massiver Drache robust + träge — die Hylomorphismus-Form auf
         // Kreaturen angewandt (die Vision der lebenden Welt).
         const creatureSoulName = creature.userData && creature.userData.soul;
-        const creatureSoul = creatureSoulName && AnazhRealm.CREATURE_SOULS && AnazhRealm.CREATURE_SOULS[creatureSoulName];
+        const creatureSoul =
+            creatureSoulName && AnazhRealm.CREATURE_SOULS && AnazhRealm.CREATURE_SOULS[creatureSoulName];
         if (creatureSoul && Array.isArray(creatureSoul.bodyParts)) {
             const creatureSize = this._compoundSizeFactor({ parts: creatureSoul.bodyParts });
             const sizeHpMul = Math.sqrt(creatureSize);
@@ -14415,7 +14416,8 @@ class AnazhRealm {
             if (Number.isFinite(stats.staminaMax)) stats.staminaMax = stats.staminaMax * sizeHpMul;
             if (Number.isFinite(stats.manaMax)) stats.manaMax = stats.manaMax * sizeHpMul;
             if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed * sizeSpeedMul);
-            if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed * sizeSpeedMul);
+            if (Number.isFinite(stats.attackSpeed))
+                stats.attackSpeed = Math.max(0.25, stats.attackSpeed * sizeSpeedMul);
             if (Number.isFinite(stats.jumpPower)) stats.jumpPower = stats.jumpPower * sizeSpeedMul;
         }
         return { tags: finalTags, stats };
@@ -20070,7 +20072,15 @@ class AnazhRealm {
         while (dAng > Math.PI) dAng -= 2 * Math.PI;
         while (dAng < -Math.PI) dAng += 2 * Math.PI;
         const spillVsTalDeg = (Math.abs(dAng) * 180) / Math.PI;
-        return { minRimY, maxRimY, span, spillAngleRad: spillAngle, crestAngleRad: crestAngle, hasOutflow, spillVsTalDeg };
+        return {
+            minRimY,
+            maxRimY,
+            span,
+            spillAngleRad: spillAngle,
+            crestAngleRad: crestAngle,
+            hasOutflow,
+            spillVsTalDeg,
+        };
     }
 
     // Γ4½ (genese-plan Vertiefung §3) — SLOPE + ROCK-EXPOSURE als gespeicherte
@@ -35994,7 +36004,11 @@ class AnazhRealm {
         const manaMax = this.state.player.manaMax || 0;
         const mana = this.state.player.mana || 0;
         if (manaMax > 0 && mana < manaMax) {
-            const magBoost = (this.state.player.stats && this.state.player.stats.tags && this.state.player.stats.tags.magieleitung) || 0;
+            const magBoost =
+                (this.state.player.stats &&
+                    this.state.player.stats.tags &&
+                    this.state.player.stats.tags.magieleitung) ||
+                0;
             const manaRate = (AnazhRealm.MANA_REGEN_PER_SEC || 3) * (1 + magBoost);
             this.state.player.mana = Math.min(manaMax, mana + manaRate * dt);
         }
@@ -42861,7 +42875,8 @@ class AnazhRealm {
         const stammRadius = lerp(0.5, 0.85, r01());
         const taperRate = lerp(0.65, 0.85, r01()); // jedes Segment x dieses
         const wanderJitter = lerp(0.04, 0.18, r01()); // wie sehr der Stamm wandert
-        let trunkX = 0, trunkZ = 0;
+        let trunkX = 0,
+            trunkZ = 0;
         let trunkY = 0;
         let trunkR = stammRadius;
         const segH = stammHoehe / 3;
@@ -42881,7 +42896,7 @@ class AnazhRealm {
             trunkR *= taperRate; // taper
         }
         // WHORL-ÄSTE — 3 Äste am Stamm-Ober-Drittel.
-        const astCount = 3 + (Math.floor(r01() * 2)); // 3 oder 4
+        const astCount = 3 + Math.floor(r01() * 2); // 3 oder 4
         const astLen = lerp(1.4, 2.4, r01());
         const astRadius = lerp(0.18, 0.32, r01());
         const astBaseY = trunkY * 0.6; // mittlere Höhe des Stammes
@@ -42952,8 +42967,7 @@ class AnazhRealm {
         const S = AnazhRealm.SCENT;
         const tt = (typeof t === "number" ? t : 0) * S.windTimeRate;
         // Wind-Phase: Noise als Winkel-Quelle (0..2π).
-        const phase =
-            (this._voxelNoise.noise2D(x * S.windScale + tt, z * S.windScale - tt) + 1) * Math.PI;
+        const phase = (this._voxelNoise.noise2D(x * S.windScale + tt, z * S.windScale - tt) + 1) * Math.PI;
         return { x: Math.cos(phase), z: Math.sin(phase) };
     }
 
@@ -42977,7 +42991,7 @@ class AnazhRealm {
     _scentAt(x, z, sources, opts) {
         if (!Array.isArray(sources) || sources.length === 0) return 0;
         const S = AnazhRealm.SCENT;
-        const t = (opts && typeof opts.time === "number") ? opts.time : 0;
+        const t = opts && typeof opts.time === "number" ? opts.time : 0;
         let total = 0;
         for (const src of sources) {
             if (!src || typeof src.x !== "number" || typeof src.z !== "number") continue;
@@ -42997,10 +43011,7 @@ class AnazhRealm {
             // dot mit windDir: positiv = Receiver liegt downwind (wind weht
             // VON src ZU recv, trägt also den Geruch hin).
             const dot = dirX * wind.x + dirZ * wind.z;
-            const windMod = Math.max(
-                S.minDirectional,
-                (1 - S.windFactor) + S.windFactor * Math.max(0, dot)
-            );
+            const windMod = Math.max(S.minDirectional, 1 - S.windFactor + S.windFactor * Math.max(0, dot));
             total += strength * decay * windMod;
         }
         return total;
@@ -50357,9 +50368,8 @@ class AnazhRealm {
                 const totZ = sampleZ + Math.sin(offsetAng) * offsetDist;
                 // Sicherheits-Wand: nicht im Wasser landen.
                 if (this._isAboveWaterAt(totX, totZ, 0.4)) {
-                    const totSurfY = typeof this._voxelSurfaceY === "function"
-                        ? this._voxelSurfaceY(totX, totZ)
-                        : surfaceY;
+                    const totSurfY =
+                        typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(totX, totZ) : surfaceY;
                     const totYawRoll = (rng.noise2D(totX * 0.71 - 5.2, totZ * 0.71 + 3.9) + 1) / 2;
                     this._enqueueVegetationSpawn(
                         "stamm_gefallen",
@@ -64021,7 +64031,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.208.0";
+AnazhRealm.VERSION = "18.209.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

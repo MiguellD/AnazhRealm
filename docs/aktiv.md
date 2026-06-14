@@ -7,17 +7,20 @@
 > Chronik. Vision: `docs/state-of-realm.md` + `docs/das-lebendige-feld.md`.
 > Vollendete Pläne im Archiv.
 
-**Stand 14.06.2026 (V18.193 — `claude/loving-meitner-o2cz4i`):** Schöpfer-Auftrag „weiter
-gehts champ, noch vieles im backlog, lass uns die dinge abschliessen, volle tiefe, keinen
-halben sachen" → den nächsten großen Wurf des Γ-Bogens durchgezogen. **Γ4 echter MAKRO-
-ANKER VOLLENDET (V18.193, R-042):** `worldMeta.macro` als signiertes ERBGUT (additiv-teilbar
-wie ein Welt-Stempel) + Abfluss-Invariante über 10 Seeds GEMESSEN grün (Rim-Spannweite >
-beckenD·0.5, die geerbte LAAS-Narbe strukturell tot) + `_isValidMacroAnker` Form-Schutz +
-Worker-Mirror reicht den Erbgut-Anker (Main↔Worker Identität auch bei Konstanten-Wechsel).
-**Φ-Bogen RUND 7/7** (V18.188–V18.191). **W5 Werkzeug-Abnutzung GEBAUT** (V18.192, R-031:
-kein Perpetuum mobile — Ω5 lebt am Werkzeug). Der Tisch trägt jetzt nur noch: die **S-Browser-
-Abnahmen** des Schöpfers + ggf. **R-037 T-Welle** (ruht bis dritter Bauer) + die weiteren
-Backlog-Punkte §4 (nächste in Reihe).
+**Stand 14.06.2026 (V18.209 — `claude/loving-meitner-o2cz4i`, 17 Wellen in Folge):** Schöpfer-
+Auftrags-Serie „weiter gehts champ · fahre fort, plan erfüllt · baum varianten, etc, renderer,
+etc. ebenfalls erledigen · die offenen, halb begonnenen dinge abschliessen". **§4.A Γ-Bogen 2
+KOMPLETT** (Γ4·Γ6·Γ-M-Triade·Γ2·Γ1-5·Γ3·Γ7 — 8 Wellen V18.193-V18.205). **§4.D Avatar-
+Größe KOMPLETT** (V18.195 HP/Stamina sqrt + V18.196 Mana sqrt + V18.206 Speed-Trade 1/sqrt
++ V18.208 Kreatur-Symmetrie über alle 4 Kreatur-Seelen). **§4.E Mana-Symmetrie + Konsumenten
+Foundations** (V18.196 + V18.201). **§4.C R5 Struktur-Textur Foundation** (V18.207). **V18.209
+KONSOLIDIERUNG**: CLAUDE.md/rueckmeldung.md/package.json synchronisiert, vier Foundations
+ehrlich markiert. **VIER FOUNDATION-VERDRAHTUNGEN PENDING** (Schöpfer-Entscheid): V18.201 Mana-
+Konsument · V18.202 Geruch-KI · V18.205 Worldgen-Integration · V18.207 R5-Live-Slider. **Φ-
+Bogen RUND 7/7** (V18.188–V18.191). **W5 Werkzeug-Abnutzung GEBAUT** (V18.192, R-031). Der
+Tisch trägt jetzt nur noch: die **S-Browser-Abnahmen** des Schöpfers (pixel-blind headless:
+Lichen-Patina, Iron-Bands, Γ3-Welt-Charakter, R5-Empfindung) + ggf. **R-037 T-Welle** (ruht
+bis dritter Bauer) + die vier Foundation-Verdrahtungen + die weiteren Backlog-Punkte §4.
 
 ---
 
@@ -54,6 +57,19 @@ Backlog-Punkte §4 (nächste in Reihe).
 | **Avatar-Größe-Speed-Trade (1/sqrt(sizeFactor) auf speed/attackSpeed/jumpPower — ehrlicher Balance-Schluss zu V18.195)** | **V18.206** | `docs/aktiv.md` §4.D + unten §1.N |
 | **R5 Struktur-Textur (microBoost-Konstante für werk-Profile in `_applySubstanceResponse`)** | **V18.207** | `docs/aktiv.md` §4.C + unten §1.O |
 | **Kreatur-Größen-Stat-Symmetrie (Größen-Trade auch für Kreaturen — wie Spieler V18.195+V18.206; HP-/Speed-Monotonie GEMESSEN)** | **V18.208** | `docs/aktiv.md` §4.E + unten §1.P |
+| **V18.209 KONSOLIDIERUNG (CLAUDE.md/rueckmeldung.md/package.json synchronisiert, F4-Probe konsolidiert, Prettier-Format clean, Foundation-Status ehrlich markiert)** | **V18.209** | dieses Doc + `CLAUDE.md` "Aktueller Stand" |
+
+### Foundation-Verdrahtungs-Status (V18.209 ehrliche Bilanz)
+
+**VOLL VERDRAHTET (Helper UND Konsument):** V18.193 worldMeta.macro (worldField-Cache + Worker-Snap) · V18.194 Γ6-Bänder (4 stehende Wände prüfen aktive Welt-Substanz) · V18.195/.196/.206/.208 Größen-Symmetrie (Spieler+Kreatur Stats live) · V18.197 STRATA (digTerrain ruft 3-arg) · V18.198 stamm_gefallen (Sub-Spawn nach Baum aktiv) · V18.199 LICHEN (im Mix-Stack JEDES Voxel-Vertex) · V18.200 IRON-BANDS (in `_terrainMaterialAt` aktiv) · V18.203/.204 Γ3 Fächer+Warp (genVersion-Gate, neue Welten LIVE).
+
+**FOUNDATION-ONLY (Helper steht, Konsument pending — ehrlich markiert):**
+- **V18.201 Mana-Konsumenten** (`_canPayMana`/`_drainMana`): KEIN Spiel-Akt zieht heute Mana — der Schöpfer entscheidet, welche magischen Akte das tun sollen (Boost-Manifestation? Soul-Wechsel? Terrain-DSL? Magische Werkstatt-Akte?).
+- **V18.202 Γ1-NASE** (`_scentAt`/`_worldWindDirAt`): KEINE Kreatur-KI liest heute Geruch — der Schöpfer entscheidet, welche Kreaturen riechen (Raubtier-Spuren? Pflanzen-Lokalisierung? Aas-Anziehung?).
+- **V18.205 Γ7 `_growTreeBlueprint`**: KEIN Worldgen-Pfad ruft den Generator — heute werden 12 vorgefertigte Baum-Varianten genutzt; der Schöpfer entscheidet, ob die programmatische Grammatik einzieht (video-getrieben).
+- **V18.207 R5 microBoost**: Default 1.0 = no-op — der Schöpfer entscheidet im Browser, ob Strukturen "platt" oder "rau" wirken und justiert.
+
+**PERMANENTE LEHRE:** Foundation-Welle ist HALBER Wert bis ein Konsument sie nutzt. Ehrliche Markierung ist die Pflicht; das Verstecken hinter „GEBAUT ✓"-Häkchen ist die Sünde (V17.31-Passagier-Trugschluss).
 
 ---
 

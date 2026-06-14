@@ -34275,10 +34275,10 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
                 Math.abs(f1.glut - f3.glut) > 1e-6 ||
                 Math.abs(f1.magieleitung - f3.magieleitung) > 1e-6;
 
-            // (F4) GEN=3: Bit-identische Berechnung — V18.204 hat den
-            // Domain-Warp hinzugefügt; F9b unten prüft die vollständige
-            // Bit-Identität inklusive Warp. F4 prüft nur, dass die Werte
-            // ENDLICH sind (kein NaN/Infinity durch die neue Berechnung).
+            // V18.209-Konsolidierung: F4 ersatzlos in F9b unten gefaltet
+            // (die echte Bit-Identitäts-Probe inkl. Warp). F4-Wand bleibt
+            // nur als minimaler Sanity-Check (kein NaN/Infinity); die
+            // ECHTE Wand ist F9b.
             const FC = A.FIELD_CHARACTER;
             out.gen3ValuesFinite =
                 Number.isFinite(f3.lebendig) && Number.isFinite(f3.dichte) &&
@@ -34730,6 +34730,70 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
     check("V18.208 (C4) Floor speed ≥ 2 für alle Kreatur-Seelen", res.allSpeedAtFloor === true);
     check(`V18.208 (C5a) HP variiert über Kreaturen (kein einheitlicher Wert)`, res.hpVariesAmongCreatures === true);
     check(`V18.208 (C5b) Speed variiert über Kreaturen`, res.speedVariesAmongCreatures === true);
+}
+
+// V18.209 — KONSOLIDIERUNGS-WELLE (Schöpfer-Audit 14.06.: 5 Audit-Punkte
+// abschliessen). Source-Probe: die Doc-Quellen + Versions-Stellen synchron;
+// die Foundation-Übersicht in CLAUDE.md/aktiv.md/rueckmeldung.md aktuell;
+// und die VIER FOUNDATIONS (V18.201 Mana-Konsum · V18.202 Geruch-KI · V18.205
+// Worldgen · V18.207 R5-Slider) ehrlich als "Verdrahtung pending" markiert.
+async function checkBandV18209Konsolidierung(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.209.0"
+        out.versionStr = A.VERSION;
+        out.versionMatches = A.VERSION === "18.209.0";
+
+        // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
+        // beim Konsolidieren (alles bleibt lauffähig):
+        out.manaDrainExists = typeof r._drainMana === "function" && typeof r._canPayMana === "function";
+        out.scentExists = typeof r._scentAt === "function" && typeof r._worldWindDirAt === "function";
+        out.growTreeExists = typeof r._growTreeBlueprint === "function";
+        out.r5Exists = !!A.R5_STRUCTURE_TEXTURE && typeof A.R5_STRUCTURE_TEXTURE.microBoost === "number";
+        out.allFoundationsAlive =
+            out.manaDrainExists && out.scentExists && out.growTreeExists && out.r5Exists;
+
+        // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
+        out.gamma4Anker = typeof r._macroAnker === "function";
+        out.gamma6Snowband = typeof r._attachVoxelFieldColors === "function" &&
+            /SNOW_PROM_START/.test(r._attachVoxelFieldColors.toString());
+        out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
+        out.gammaMLichen = !!A.LICHEN;
+        out.gammaMIronBands = !!A.IRON_BANDS;
+        out.gamma2Totholz = !!(r.state.blueprints && r.state.blueprints["stamm_gefallen"]);
+        out.gamma1Nose = typeof r._scentAt === "function";
+        out.gamma3Char = !!A.FIELD_CHARACTER;
+        out.gamma7Grammar = typeof r._growTreeBlueprint === "function";
+        out.gammaBogenKomplett =
+            out.gamma4Anker && out.gamma6Snowband && out.gammaMStrata &&
+            out.gammaMLichen && out.gammaMIronBands && out.gamma2Totholz &&
+            out.gamma1Nose && out.gamma3Char && out.gamma7Grammar;
+
+        // (K4) AVATAR-GRÖSSEN-Familie komplett (V18.195+196+206+208):
+        const srcCompPlayer = r.computePlayerStats.toString();
+        const srcCompCreature = r.computeCreatureStats.toString();
+        out.playerHpStaminaMana = /sizeHpMul/.test(srcCompPlayer);
+        out.playerSpeedTrade = /sizeSpeedMul/.test(srcCompPlayer);
+        out.creatureSizeSymmetry = /creatureSize/.test(srcCompCreature) && /sizeHpMul/.test(srcCompCreature);
+        out.avatarFamilyKomplett =
+            out.playerHpStaminaMana && out.playerSpeedTrade && out.creatureSizeSymmetry;
+
+        // (K5) MANA-SYMMETRIE Foundation:
+        out.manaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
+        out.manaRegenConst = typeof A.MANA_REGEN_PER_SEC === "number" && A.MANA_REGEN_PER_SEC > 0;
+
+        return out;
+    });
+
+    check(`V18.209 (K1) VERSION = "18.209.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
+    check("V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)", res.allFoundationsAlive === true);
+    check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
+    check("V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)", res.avatarFamilyKomplett === true);
+    check("V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)", res.manaMaxFn && res.manaRegenConst);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -51921,6 +51985,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18206SpeedTrade(ctx);
             await checkBandV18207R5StructureTexture(ctx);
             await checkBandV18208CreatureSizeSymmetry(ctx);
+            await checkBandV18209Konsolidierung(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
