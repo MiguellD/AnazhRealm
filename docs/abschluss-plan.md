@@ -20,7 +20,7 @@
 
 ## §0 — STAND 14.06.2026 (nach V18.210-VERDRAHTUNGS-WELLE + Audit-Zyklus)
 
-**18 Wellen V18.193-V18.210 gebaut.** Stamm: `claude/relaxed-hawking-dzkj9g`, jüngster Commit `d5d33a1`.
+**18 Wellen V18.193-V18.210 gebaut.** Stamm: `claude/relaxed-hawking-dzkj9g`, jüngster Code-Commit `d5d33a1`, Doc-Konsolidierung `cdd88b8` + `ba7f392`.
 
 **§1 IST ✅ — V18.210 VERDRAHTUNGS-WELLE KOMPLETT.** Die vier Passagier-Foundations sind verdrahtet, ~35 neue Wände grün, smoke:multiuser grün. Plus DREI Audit-Cycles:
 - **Sub-Agent read-as-stranger** fand FÜNF Mängel (drei kritisch — Persistenz-Riss, LRU-Race, Spezies-Kollaps; zwei kosmetisch — Return-Symmetrie, Test-Hygiene). Alle geheilt (commit `fa70879`).

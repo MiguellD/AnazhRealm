@@ -71,7 +71,7 @@ halben sachen mehr").
 | `docs/state-of-realm.md` | Vision |
 | `docs/das-lebendige-feld.md` | Wahrer Norden (Vision) |
 | `docs/taille-spec.md` + `.en.md` | NORMATIV, frozen |
-| `docs/roadmap.md` | Backlog-Karte (wird in V18.210 in den Plan zurückgeführt) |
+| `docs/roadmap.md` | Karte vorwärts (3 Phasen + gemerkte Fäden); operative Details leben in `abschluss-plan.md` |
 | `docs/archiv/<bogen>-plan.md` | Vergangene Bogen-Pläne (Vergangenheit, nicht aktiv) |
 
 ---
@@ -79,9 +79,11 @@ halben sachen mehr").
 ## Disziplin (für jeden Welle-Schritt)
 
 1. **Nur dieser Tisch + abschluss-plan.md** trägt den Stand. Keine zweite Liste.
-2. **Eine Welle = ein Commit = Update HIER + im abschluss-plan §11.** Block strikethrough + Datum.
-3. **Verdrahtungs-Wand:** keine neue Foundation ohne konkreten Konsumenten im selben Commit.
-4. **Read-as-stranger vor jedem „fertig":** ist KONSUM verdrahtet (V17.31)?
+2. **Eine Welle = ein Commit = Update HIER + im abschluss-plan §15-Reihenfolge.** Block strikethrough + Datum + Commit-Hash.
+3. **Verdrahtungs-Wand:** keine neue Foundation ohne konkreten Konsumenten im selben Commit (§16#4).
+4. **Read-as-stranger vor jedem „fertig":** ist KONSUM verdrahtet (V17.31)? Plus: feindlicher Sub-Agent-Audit NACH headless-grün (§16#3, V18.210-Lehre).
+5. **Test-Harness-Trennung:** wenn eine Welle das Test-Harness berührt, eigener Commit (§16#7).
+6. **Welt-Identitäts-Wand:** jeder lazy-cached Worldgen-Helper wird in `_loadStateRestoreWorldMeta` resetted (§16#8).
 
 ---
 
@@ -90,7 +92,9 @@ halben sachen mehr").
 | ID | Frage | Antwort/Default | Wann |
 |---|---|---|---|
 | R-037 | T-Welle Typ-Sicherheit? | Ruhen lassen (no-build bleibt rein) | wenn dritter Bauer mit-tippt |
-| V18.210-A4 | Mana-Konsumenten-Mechanik? | Vorschlag γ (Werkstatt-`resonanz`-Akt zieht 15 Mana) | bei V18.210-Start |
+| R-039 | Devlog/Welle-Schau gegen Versanden? | Schöpfer-Wort offen | nach öffentlicher Phase |
+
+(V18.210-A4 Mana-Konsumenten-Mechanik ist beantwortet — die `phaseChange`-Op-Klasse zieht Mana, gebaut + verifiziert.)
 
 ---
 
