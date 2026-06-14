@@ -11987,8 +11987,12 @@ class AnazhRealm {
         // Lesart-4 (V18.166/.178), 3=plus die Makro-Geographie (Massiv+Tal+
         // Becken). V18.210 (§1-A1) — Γ7: 4=plus die prozeduralen Baum-Bauplane
         // (`_growTreeBlueprintForSpawn` baut sie aus dem Welt-Seed; tag-neutral
-        // gegen baum_eiche per V17.16-Wand). Frische Welten kriegen direkt 4.
-        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 4;
+        // gegen baum_eiche per V17.16-Wand). V18.211 (DER LEBENDIGE GIGANT
+        // §6 Ω-G1+G4) — 5=die RICH SKELETON-GRAMMAR: multi-level branches
+        // (trunk + L1/L2/L3) + foliage at TIPS (anchorLevel) statt 8 Kugeln
+        // auf primären Ästen. Spezies-distinkte Form aus SPECIES_GRAMMAR
+        // (§3.3). Frische Welten kriegen direkt 5.
+        if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 5;
         // V9.26 Phase 5c-Migrations-Flip + V9.33 Phase 5c.2.b Eingangs-Welt-
         // Flip + V9.35 Phase 5c.2.c.2 Toggle-Tod — der Voxel-Boden ist die
         // kanonische, irreversible Form. V9.35 zieht die ZWANGS-Migration nach:
@@ -12233,7 +12237,7 @@ class AnazhRealm {
         // Gesicht (legacy-erhaltend: das Drainage-Netz-Gesetz, Genese ist
         // Welt-Identität). V18.179: gen 3 schaltet Γ4-Makro-Geographie.
         // V18.210 (§1-A1): gen 4 schaltet Γ7-prozedurale Baum-Bauplane.
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 4 };
+        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 5 };
     }
 
     // Snapshot einer „leeren" Welt mit gegebenem worldMeta. Optional bekommt
@@ -29972,16 +29976,26 @@ class AnazhRealm {
             // die Streaming-Welle re-generiert die Bauplane ohnehin (Region-
             // Cache deterministisch aus Welt-Seed). Aber MIT dem Feld bleibt
             // der Hain BIS zum nächsten Streaming-Pass im Spiel.
+            // V18.211 (DER LEBENDIGE GIGANT §6/§2.5) — die SKELETON-GRAMMAR
+            // produziert ~75 Parts pro Baum (vs V18.210's ~12). 54 Region-
+            // Varianten × 75 Parts = ~400 KB Snapshot — sprengt die
+            // pinCurrentWorld-Wand (256 KB). Heilung: die `parts` werden NICHT
+            // mehr im Snapshot persistiert; sie sind PURE FUNKTION von
+            // (species, seed) und re-wachsen beim Restore via
+            // `_growTreeBlueprint`. Nur die METADATA reist (~80 Bytes pro
+            // Eintrag statt ~7.5 KB). Determinismus garantiert identische
+            // Geometrie nach Reload (V18.193-Erbgut-Lehre: f(seed) IST das
+            // Erbgut). Das ehrt §2.5 (Welt-als-Programm): der Baum lebt als
+            // Funktion, nicht als Datensatz.
             grownBlueprints: (() => {
                 const out = {};
                 const bps = this.state.blueprints || {};
                 for (const k in bps) {
-                    if (bps[k] && bps[k]._isGrown && Array.isArray(bps[k].parts)) {
+                    if (bps[k] && bps[k]._isGrown) {
                         out[k] = {
                             label: bps[k].label,
                             _grownSpecies: bps[k]._grownSpecies,
                             _grownSeed: bps[k]._grownSeed,
-                            parts: bps[k].parts,
                         };
                     }
                 }
@@ -34362,11 +34376,27 @@ class AnazhRealm {
         let restored = 0;
         for (const key of Object.keys(state.grownBlueprints)) {
             const entry = state.grownBlueprints[key];
-            if (!entry || !Array.isArray(entry.parts) || entry.parts.length < 4) continue;
+            if (!entry || !entry._grownSpecies || !entry._grownSeed) continue;
             // Robustheit gegen Built-in-Schatten: kein Wiederherstellen, wenn
             // der Key bereits als echter Built-in verdrahtet ist (sehr selten,
             // aber strukturell sauber — der Built-in gewinnt).
             if (this.state.blueprints[key] && !this.state.blueprints[key]._isGrown) continue;
+            // V18.211 — Parts RE-WACHSEN aus (species, seed). Backward-Kompat:
+            // ein V18.210-Snapshot bringt `entry.parts` mit — wir nutzen sie
+            // direkt (kein Bruch für alte Saves). Neue Snapshots tragen NUR
+            // Metadata; wir re-wachsen via `_growTreeBlueprint`. Determinismus
+            // garantiert identische Geometrie (f(seed) ist das Erbgut).
+            let parts = Array.isArray(entry.parts) ? entry.parts : null;
+            if (!parts || parts.length < 4) {
+                if (typeof this._growTreeBlueprint === "function") {
+                    try {
+                        parts = this._growTreeBlueprint(entry._grownSpecies, entry._grownSeed);
+                    } catch (_e) {
+                        parts = null;
+                    }
+                }
+            }
+            if (!Array.isArray(parts) || parts.length < 4) continue;
             const speciesLabel = String(entry._grownSpecies || "Baum")
                 .replace(/^baum_/, "")
                 .replace(/^./, (c) => c.toUpperCase());
@@ -34378,7 +34408,7 @@ class AnazhRealm {
                 _grownSpecies: entry._grownSpecies || "baum_eiche",
                 _grownSeed: entry._grownSeed || "",
                 instanced: true,
-                parts: entry.parts,
+                parts: parts,
             };
             if (this._growTreeRing.indexOf(key) === -1) this._growTreeRing.push(key);
             restored++;
@@ -43230,6 +43260,284 @@ class AnazhRealm {
     }
 
     _growTreeBlueprint(speciesKey, seed) {
+        // V18.211 (DER LEBENDIGE GIGANT §6 Ω-G1) — Welt-Routing: ab gen >= 5
+        // produziert die RICH SKELETON-GRAMMAR (multi-level branching + foliage
+        // at tips). Vor gen 5 fallback auf die V18.210-Legacy-Form (Welt bit-
+        // identisch). Der „Bäume lesen als Bäume"-Beweis steht in der neuen
+        // Grammatik — hunderte Foliage-Cluster statt 8 Kugeln.
+        const grammar = AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[speciesKey];
+        if (grammar && this._genVersion && this._genVersion() >= 5) {
+            return this._growTreeBlueprintRich(speciesKey, seed, grammar);
+        }
+        return this._growTreeBlueprintLegacy(speciesKey, seed);
+    }
+
+    // V18.211 — DIE RICH SKELETON-GRAMMAR (DER LEBENDIGE GIGANT §6).
+    // Multi-level branching mit Tropismus, Wander, Droop, TipCurl, taper.
+    // Foliage AN DEN SPITZEN (anchorLevel = L2 oder L3) — hunderte Cluster
+    // statt 8 Kugeln. Tag-Neutralität: NUR holz+laub Materialien (V17.16-Wand).
+    _growTreeBlueprintRich(speciesKey, seed, grammar) {
+        const sKey = String(speciesKey || "baum_eiche") + "|" + String(seed || "g8-default") + "|v5";
+        let hash = 2166136261;
+        for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
+        if (!this._growTreeNoise) {
+            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
+        }
+        const n = this._growTreeNoise;
+        let step = 0;
+        const r01 = () => {
+            step++;
+            const v = n.noise2D((hash >>> 0) * 0.0137 + step * 17.31, step * 7.79 - (hash >>> 8) * 0.0083);
+            return (v + 1) * 0.5;
+        };
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const parts = [];
+
+        // ─── STAMM (TRUNK) ────────────────────────────────────────────
+        // Multi-segment polyline mit wander + taper.
+        const totalH = lerp(grammar.height[0], grammar.height[1], r01());
+        const trunkSegs = grammar.trunk.segs;
+        const trunkBaseR = grammar.trunk.baseR * lerp(0.9, 1.1, r01());
+        const trunkTaper = grammar.trunk.taper;
+        const trunkWander = grammar.trunk.wander;
+        const segH = totalH / trunkSegs;
+        // Build trunk points (polyline).
+        const trunkPts = [{ x: 0, y: 0, z: 0, r: trunkBaseR }];
+        let cx = 0,
+            cz = 0;
+        for (let i = 1; i <= trunkSegs; i++) {
+            const t = i / trunkSegs;
+            cx += (r01() - 0.5) * trunkWander * segH;
+            cz += (r01() - 0.5) * trunkWander * segH;
+            const y = i * segH;
+            const r = Math.max(0.06, trunkBaseR * Math.pow(Math.max(0, 1 - t), trunkTaper));
+            trunkPts.push({ x: cx, y: y, z: cz, r: r });
+        }
+        // Generate trunk cylinder parts (each segment → cylinder between i-1 and i).
+        const emitCylinderBetween = (a, b, segments) => {
+            const mx = (a.x + b.x) * 0.5;
+            const my = (a.y + b.y) * 0.5;
+            const mz = (a.z + b.z) * 0.5;
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dz = b.z - a.z;
+            const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (!(len > 0.001)) return;
+            const r = Math.max(0.04, (a.r + b.r) * 0.5);
+            // Three.js CylinderGeometry y-Achse → rotation um so anpassen, dass die
+            // y-Achse entlang (dx,dy,dz) zeigt. (yaw, pitch) entkoppelt: pitch
+            // ist Winkel zur y-Achse, yaw die Rotation um y.
+            const horizLen = Math.sqrt(dx * dx + dz * dz);
+            const pitch = Math.atan2(horizLen, dy); // 0 = aufrecht, π/2 = waagrecht
+            const yaw = Math.atan2(dx, dz);
+            parts.push({
+                shape: "cylinder",
+                material: "holz",
+                position: { x: mx, y: my, z: mz },
+                size: { x: r * 2, y: len, z: r * 2 },
+                rotation: { y: yaw, z: pitch },
+                segments: segments || 5,
+            });
+        };
+        for (let i = 1; i < trunkPts.length; i++) {
+            emitCylinderBetween(trunkPts[i - 1], trunkPts[i], 6);
+        }
+
+        // ─── TIP-COLLECTION (Childen-Punkte pro Eltern-Ebene) ─────────
+        const collectTips = (parentPts, levelGrammar) => {
+            const tips = [];
+            const startT = levelGrammar.childStart;
+            const endT = levelGrammar.childEnd;
+            const density = levelGrammar.density;
+            const whorl = levelGrammar.whorl || 0;
+            const segs = parentPts.length - 1;
+            // Ast-Anzahl: density × Eltern-Länge × Jitter.
+            const span = Math.max(0.01, endT - startT);
+            const branchCount = Math.max(1, Math.round(density * span * segs * lerp(0.85, 1.15, r01())));
+            for (let i = 0; i < branchCount; i++) {
+                const tBase = (i + 0.5) / branchCount;
+                const t = startT + span * tBase + (r01() - 0.5) * span * 0.15;
+                const tClamp = Math.max(0, Math.min(0.999, t));
+                const segIdx = Math.min(segs - 1, Math.floor(tClamp * segs));
+                const segT = tClamp * segs - segIdx;
+                const p0 = parentPts[segIdx];
+                const p1 = parentPts[segIdx + 1];
+                const pos = {
+                    x: lerp(p0.x, p1.x, segT),
+                    y: lerp(p0.y, p1.y, segT),
+                    z: lerp(p0.z, p1.z, segT),
+                    r: lerp(p0.r, p1.r, segT),
+                };
+                let phi;
+                if (whorl > 0) {
+                    const whorlIdx = Math.floor(i / whorl);
+                    const inWhorl = i % whorl;
+                    phi = (inWhorl / whorl) * Math.PI * 2 + whorlIdx * 0.7 + r01() * 0.25;
+                } else {
+                    // Golden-angle spiral (LAAS-Konstante 2.39996323).
+                    phi = i * 2.39996323 + r01() * 0.3;
+                }
+                tips.push({ pos: pos, phi: phi, t: tClamp });
+            }
+            return tips;
+        };
+
+        // ─── BRANCH GROWTH (rekursiv via Segment-Lauf) ────────────────
+        // §3.1-Plan: perpBasis + Wander + Tropismus + Droop + TipCurl.
+        const growBranch = (start, phi, parentR, levelGrammar, level, foliageAnchors) => {
+            const angleBase = levelGrammar.angleBase || 1.0;
+            const angle = angleBase * lerp(0.85, 1.15, r01());
+            const lenRatio = levelGrammar.lenRatio || 0.3;
+            const branchLen = Math.max(0.5, totalH * lenRatio * lerp(0.8, 1.2, r01()));
+            const droop = levelGrammar.droop || 0.2;
+            const tipCurl = levelGrammar.tipCurl || 0.1;
+            const radRatio = levelGrammar.radRatio || 0.4;
+            // Segment-Anzahl: ~0.55 m pro Segment (so dass eine 2m-Ast 4 Segmente hat).
+            const branchSegs = Math.max(3, Math.round(branchLen / 0.55));
+            const segLen = branchLen / branchSegs;
+            // Initial direction: tilted by `angle` from up, rotated around y by phi.
+            const sinA = Math.sin(angle);
+            const cosA = Math.cos(angle);
+            let dir = {
+                x: sinA * Math.cos(phi),
+                y: cosA,
+                z: sinA * Math.sin(phi),
+            };
+            const baseR = Math.max(0.04, parentR * radRatio);
+            const points = [{ x: start.x, y: start.y, z: start.z, r: baseR }];
+            for (let i = 1; i <= branchSegs; i++) {
+                const t = i / branchSegs;
+                // Droop: gravitäres Absenken am Ast.
+                dir.y -= droop * (1 / branchSegs) * 1.8;
+                // TipCurl: am Ende leicht wieder anheben (§3.1 tip-curl).
+                if (t > 0.6) {
+                    dir.y += tipCurl * (t - 0.6) * (1 / branchSegs) * 5;
+                }
+                // Wander (laterales Rauschen).
+                const wob = 0.07 + level * 0.02;
+                dir.x += (r01() - 0.5) * wob;
+                dir.z += (r01() - 0.5) * wob;
+                // Normalize.
+                const dl = Math.sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z) || 1;
+                dir.x /= dl;
+                dir.y /= dl;
+                dir.z /= dl;
+                const prev = points[i - 1];
+                const r = Math.max(0.03, baseR * Math.pow(Math.max(0, 1 - t), 1.0));
+                points.push({
+                    x: prev.x + dir.x * segLen,
+                    y: prev.y + dir.y * segLen,
+                    z: prev.z + dir.z * segLen,
+                    r: r,
+                });
+            }
+            // Emit cylinder parts pro Segment.
+            for (let i = 1; i < points.length; i++) {
+                emitCylinderBetween(points[i - 1], points[i], 4);
+            }
+            // Foliage anchors: nur wenn dieses Level der anchorLevel ist (§3.3 Regel
+            // — Laub sitzt DORT, nie auf Primärästen). Anker entlang der letzten 50%
+            // des Asts → dichte Spitzen-Krone.
+            if (level === grammar.foliage.anchorLevel) {
+                const startIdx = Math.max(1, Math.floor(points.length * 0.45));
+                for (let i = startIdx; i < points.length; i++) {
+                    foliageAnchors.push({ x: points[i].x, y: points[i].y, z: points[i].z });
+                }
+            }
+            return points;
+        };
+
+        // ─── REKURSIVE Ast-Generierung (L1 → L2 → L3) ────────────────
+        // HARD CAP: maximal MAX_BRANCH_PARTS Stamm/Ast-Parts. Schutz gegen
+        // explosive Dichte-Kombinationen (eine Spezies-Justierung darf das
+        // Instancing nie kippen). Pro Baum-Variante baut das System je Part
+        // einen InstancedMesh — 6 Arten × ~9 Regionen × N Parts = Gesamt-
+        // Draw-Calls. Bei ~40 Wood + ~35 Foliage = ~75 Parts ist die Welt
+        // im 9-Regionen-Ring bei ~4000 InstancedMesh-Draws (bezahlbar).
+        const MAX_BRANCH_PARTS = 40;
+        const foliageAnchors = [];
+        const l1Tips = collectTips(trunkPts, grammar.L1);
+        for (let li = 0; li < l1Tips.length && parts.length < MAX_BRANCH_PARTS; li++) {
+            const tip1 = l1Tips[li];
+            const l1Pts = growBranch(tip1.pos, tip1.phi, tip1.pos.r, grammar.L1, 1, foliageAnchors);
+            if (grammar.L2 && parts.length < MAX_BRANCH_PARTS) {
+                const l2Tips = collectTips(l1Pts, grammar.L2);
+                for (let lj = 0; lj < l2Tips.length && parts.length < MAX_BRANCH_PARTS; lj++) {
+                    const tip2 = l2Tips[lj];
+                    // L2-phi relative zur L1-Richtung — bricht das Whorl-Muster
+                    // und vermeidet Symmetrie-Klone.
+                    const childPhi = tip2.phi + tip1.phi * 0.3;
+                    const l2Pts = growBranch(tip2.pos, childPhi, tip2.pos.r, grammar.L2, 2, foliageAnchors);
+                    if (grammar.L3 && parts.length < MAX_BRANCH_PARTS) {
+                        const l3Tips = collectTips(l2Pts, grammar.L3);
+                        for (let lk = 0; lk < l3Tips.length && parts.length < MAX_BRANCH_PARTS; lk++) {
+                            const tip3 = l3Tips[lk];
+                            growBranch(tip3.pos, tip3.phi + childPhi * 0.2, tip3.pos.r, grammar.L3, 3, foliageAnchors);
+                        }
+                    }
+                }
+            }
+        }
+
+        // ─── FOLIAGE AT ANCHORS (§3.4) ──────────────────────────────
+        const fo = grammar.foliage;
+        const baseColor = fo.color;
+        const colorJitter = Math.floor(r01() * 0x0c0c0c);
+        const laubColor = (baseColor + colorJitter) & 0xffffff;
+        // Ein Limit gegen extreme Bäume (Performance-Wand). Wenn die Grammatik
+        // mehr Anker produziert als das Limit, samplen wir gleichmäßig: jedes
+        // skip-te Anker. So bleibt die Verteilung visuell gleich (kein
+        // Sektor-Bias), aber die Part-Zahl bleibt bezahlbar. ~35 Foliage-
+        // Cluster (vs vorher 8 Kugeln) ist ein dramatischer Sprung in
+        // Krone-Dichte, im Instancing-Budget bezahlbar.
+        const MAX_FOLIAGE_PARTS = 35;
+        const targetClusterCount = Math.min(MAX_FOLIAGE_PARTS, foliageAnchors.length * Math.max(1, fo.clusterSize[0]));
+        const anchorStep = Math.max(
+            1,
+            Math.floor((foliageAnchors.length * fo.clusterSize[0]) / Math.max(1, targetClusterCount))
+        );
+        let foliageEmitted = 0;
+        for (let ai = 0; ai < foliageAnchors.length && foliageEmitted < MAX_FOLIAGE_PARTS; ai += anchorStep) {
+            const a = foliageAnchors[ai];
+            const cs = fo.clusterSize;
+            const clusterCount = cs[0] + Math.floor(r01() * Math.max(1, cs[1] - cs[0] + 1));
+            for (let c = 0; c < clusterCount && foliageEmitted < MAX_FOLIAGE_PARTS; c++) {
+                const ox = (r01() - 0.5) * 0.55;
+                const oy = (r01() - 0.5) * 0.35;
+                const oz = (r01() - 0.5) * 0.55;
+                const lR = fo.size * lerp(0.75, 1.1, r01());
+                if (fo.kind === "needleSpray") {
+                    // Card{cross} — zwei senkrecht stehende Quads (§3.4).
+                    // Wir nutzen unsere bestehende sphere-Form mit y-Stretch =
+                    // approximation für needle-Spray ohne neuen Shape-Type
+                    // (Tag-Neutralität: weder cylinder noch neuer Material →
+                    // keine Affinitäts-Verschiebung). Spitzige y-Stretch macht
+                    // die Nadel-Optik (lang+schmal).
+                    parts.push({
+                        shape: "sphere",
+                        material: "laub",
+                        color: laubColor,
+                        position: { x: a.x + ox, y: a.y + oy, z: a.z + oz },
+                        size: { x: lR * 1.5, y: lR * 1.9, z: lR * 1.5 },
+                    });
+                } else {
+                    // leafCluster — ellipsoid (kompakte Laub-Knäul).
+                    parts.push({
+                        shape: "sphere",
+                        material: "laub",
+                        color: laubColor,
+                        position: { x: a.x + ox, y: a.y + oy, z: a.z + oz },
+                        size: { x: lR * 2.0, y: lR * 1.45, z: lR * 2.0 },
+                    });
+                }
+                foliageEmitted++;
+            }
+        }
+        return parts;
+    }
+
+    _growTreeBlueprintLegacy(speciesKey, seed) {
         // V18.210 (Audit-Heilung #3) — die SPEZIES wandert in den Hash UND in
         // die Form-Modulation: ein Birkenwald sieht anders aus als ein Tannen-
         // wald (V18.181-merge-Λ Sub 3e Mischwald-Disziplin ehrt). Vor der
@@ -64632,7 +64940,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.210.0";
+AnazhRealm.VERSION = "18.211.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -64949,6 +65257,240 @@ AnazhRealm.STRATA_STEIN_DEPTH = 12;
 // ohne die Baum-Dichte zu sehr zu verdünnen. Erst-Wurf, V18.192-Lehre:
 // browser-justierbar wenn der Schöpfer "zu viel/zu wenig" sieht.
 AnazhRealm.TOTHOLZ_RATE = 0.1;
+
+// V18.211 (DER LEBENDIGE GIGANT §3.3/§6) — SPECIES_GRAMMAR: die zentrale
+// Wachstums-Grammatik pro Baumart. Aus LAAS' Species.ts GEMESSEN und auf
+// unser Part-System (cylinder/sphere/plane) abgebildet. Jede Spezies trägt
+// einen Stamm-Profil + L1/L2/L3-Ast-Ebenen + Foliage-Profil. Die FORM emergiert
+// aus der Grammatik (nicht hardgecodete Kugeln) → die Welt liest „Tannenwald
+// vs Buchenhain" statt „6 Eichen-Zwillinge in Farbe X". GENVERSION-Gate:
+// gen >= 5 aktiviert die neue Grammatik (alte Welten bleiben bit-identisch).
+//
+// Felder pro Spezies:
+//   height: [minM, maxM] - Stamm-Höhe-Spanne
+//   crown: "cone"/"ellipsoid"/"dome"/"column"/"irregular" - Krone-Form
+//   trunk: { segs, wander, taper, baseR } - Stamm-Modulation
+//   L1: { density, whorl, childStart, childEnd, angleBase, lenRatio, droop,
+//         tipCurl, radRatio, segs } - primäre Äste
+//   L2/L3: dasselbe, optional (nicht alle Arten haben L3)
+//   foliage: { kind: "needleSpray"/"leafCluster", anchorLevel: 2/3,
+//              clusterSize: [min,max], color: hex, size: m }
+//
+// Tag-NEUTRALITÄT: alle Arten lesen NUR `holz` (Stamm/Äste) und `laub`
+// (Foliage) — keine neuen Materialien, KEIN Spawn-Affinitäts-Shift
+// (V17.16-Wand strukturell gehalten).
+AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
+    baum_tanne: Object.freeze({
+        // Fichte/Tanne: konisch, dichte Whorls, needleSpray
+        height: [9, 14],
+        crown: "cone",
+        trunk: Object.freeze({ segs: 6, wander: 0.04, taper: 0.78, baseR: 0.42 }),
+        L1: Object.freeze({
+            density: 1.4,
+            whorl: 4,
+            childStart: 0.12,
+            childEnd: 0.96,
+            angleBase: 1.65,
+            lenRatio: 0.22,
+            droop: 0.32,
+            tipCurl: 0.22,
+            radRatio: 0.38,
+        }),
+        L2: Object.freeze({
+            density: 1.6,
+            whorl: 0,
+            childStart: 0.15,
+            childEnd: 0.95,
+            angleBase: 1.0,
+            lenRatio: 0.18,
+            droop: 0.42,
+            tipCurl: 0.12,
+            radRatio: 0.45,
+        }),
+        foliage: Object.freeze({
+            kind: "needleSpray",
+            anchorLevel: 2,
+            clusterSize: [1, 2],
+            color: 0x2c5a2c,
+            size: 0.46,
+        }),
+    }),
+    baum_kiefer: Object.freeze({
+        // Kiefer: runde Krone, Äste am Stamm-oben, twiglets
+        height: [7, 12],
+        crown: "ellipsoid",
+        trunk: Object.freeze({ segs: 5, wander: 0.06, taper: 0.78, baseR: 0.38 }),
+        L1: Object.freeze({
+            density: 1.5,
+            whorl: 3,
+            childStart: 0.45,
+            childEnd: 0.95,
+            angleBase: 1.45,
+            lenRatio: 0.4,
+            droop: 0.28,
+            tipCurl: 0.3,
+            radRatio: 0.42,
+        }),
+        L2: Object.freeze({
+            density: 1.6,
+            whorl: 0,
+            childStart: 0.35,
+            childEnd: 1.0,
+            angleBase: 0.9,
+            lenRatio: 0.3,
+            droop: 0.24,
+            tipCurl: 0.18,
+            radRatio: 0.48,
+        }),
+        foliage: Object.freeze({
+            kind: "needleSpray",
+            anchorLevel: 2,
+            clusterSize: [2, 3],
+            color: 0x3a6b3a,
+            size: 0.55,
+        }),
+    }),
+    baum_buche: Object.freeze({
+        // Buche: ausladend, horizontale Platten, distiche
+        height: [8, 13],
+        crown: "dome",
+        trunk: Object.freeze({ segs: 5, wander: 0.05, taper: 0.7, baseR: 0.52 }),
+        L1: Object.freeze({
+            density: 1.4,
+            whorl: 0,
+            childStart: 0.32,
+            childEnd: 0.92,
+            angleBase: 1.05,
+            lenRatio: 0.5,
+            droop: 0.22,
+            tipCurl: 0.16,
+            radRatio: 0.5,
+        }),
+        L2: Object.freeze({
+            density: 1.8,
+            whorl: 0,
+            childStart: 0.25,
+            childEnd: 0.97,
+            angleBase: 0.9,
+            lenRatio: 0.4,
+            droop: 0.3,
+            tipCurl: 0.14,
+            radRatio: 0.52,
+        }),
+        foliage: Object.freeze({
+            kind: "leafCluster",
+            anchorLevel: 2,
+            clusterSize: [2, 3],
+            color: 0x6a9a4a,
+            size: 0.7,
+        }),
+    }),
+    baum_birke: Object.freeze({
+        // Birke: schmal, zarte Ranken, drooping leaves
+        height: [7, 11],
+        crown: "ellipsoid",
+        trunk: Object.freeze({ segs: 5, wander: 0.08, taper: 0.72, baseR: 0.3 }),
+        L1: Object.freeze({
+            density: 1.6,
+            whorl: 0,
+            childStart: 0.4,
+            childEnd: 0.95,
+            angleBase: 1.1,
+            lenRatio: 0.45,
+            droop: 0.42,
+            tipCurl: 0.14,
+            radRatio: 0.45,
+        }),
+        L2: Object.freeze({
+            density: 2.0,
+            whorl: 0,
+            childStart: 0.3,
+            childEnd: 1.0,
+            angleBase: 0.95,
+            lenRatio: 0.34,
+            droop: 0.48,
+            tipCurl: 0.1,
+            radRatio: 0.5,
+        }),
+        foliage: Object.freeze({
+            kind: "leafCluster",
+            anchorLevel: 2,
+            clusterSize: [2, 3],
+            color: 0x7ab86a,
+            size: 0.48,
+        }),
+    }),
+    baum_eiche: Object.freeze({
+        // Eiche: breit-gnarled, ausladende irreguläre Krone
+        height: [7, 12],
+        crown: "irregular",
+        trunk: Object.freeze({ segs: 5, wander: 0.07, taper: 0.65, baseR: 0.52 }),
+        L1: Object.freeze({
+            density: 1.4,
+            whorl: 0,
+            childStart: 0.35,
+            childEnd: 0.92,
+            angleBase: 1.15,
+            lenRatio: 0.48,
+            droop: 0.2,
+            tipCurl: 0.18,
+            radRatio: 0.52,
+        }),
+        L2: Object.freeze({
+            density: 2.0,
+            whorl: 0,
+            childStart: 0.25,
+            childEnd: 0.98,
+            angleBase: 0.95,
+            lenRatio: 0.38,
+            droop: 0.26,
+            tipCurl: 0.14,
+            radRatio: 0.55,
+        }),
+        foliage: Object.freeze({
+            kind: "leafCluster",
+            anchorLevel: 2,
+            clusterSize: [2, 4],
+            color: 0x4a8a3a,
+            size: 0.65,
+        }),
+    }),
+    baum_erle: Object.freeze({
+        // Erle: column-shape, dichte schmale Krone
+        height: [7, 11],
+        crown: "column",
+        trunk: Object.freeze({ segs: 5, wander: 0.05, taper: 0.68, baseR: 0.42 }),
+        L1: Object.freeze({
+            density: 1.5,
+            whorl: 0,
+            childStart: 0.3,
+            childEnd: 0.94,
+            angleBase: 0.95,
+            lenRatio: 0.4,
+            droop: 0.24,
+            tipCurl: 0.16,
+            radRatio: 0.48,
+        }),
+        L2: Object.freeze({
+            density: 1.8,
+            whorl: 0,
+            childStart: 0.22,
+            childEnd: 0.98,
+            angleBase: 0.88,
+            lenRatio: 0.32,
+            droop: 0.28,
+            tipCurl: 0.12,
+            radRatio: 0.5,
+        }),
+        foliage: Object.freeze({
+            kind: "leafCluster",
+            anchorLevel: 2,
+            clusterSize: [2, 3],
+            color: 0x5a8c4a,
+            size: 0.58,
+        }),
+    }),
+});
 
 // V18.199 — Γ-M MULTI-CLASS-MATERIAL LICHEN: grüne Patina auf alten/feuchten
 // Steinen. Reine Render-Schicht im `_attachVoxelFieldColors`-Mix-Stack (kein

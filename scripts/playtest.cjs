@@ -34479,8 +34479,13 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
             out.heightSpread = Number((hMax - hMin).toFixed(2));
             out.heightsVary = (hMax - hMin) > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
 
-            // (G9) Source-Probe: SimplexNoise + eigener Stream
-            const src = r._growTreeBlueprint.toString();
+            // (G9) Source-Probe: SimplexNoise + eigener Stream — V18.211 hat
+            // den Stamm-Helper in drei Pfade zerteilt (Routing + Rich + Legacy),
+            // die Probe walkt mit (V9.56-i-Disziplin).
+            const src =
+                r._growTreeBlueprint.toString() +
+                (r._growTreeBlueprintRich ? r._growTreeBlueprintRich.toString() : "") +
+                (r._growTreeBlueprintLegacy ? r._growTreeBlueprintLegacy.toString() : "");
             out.usesGrammarStream = /-veg-grammatik/.test(src);
             out.usesNoise = /SimplexNoise|noise2D/.test(src);
         }
@@ -34751,9 +34756,9 @@ async function checkBandV18209Konsolidierung(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.210.0"
+        // (K1) VERSION-SYNC: AnazhRealm.VERSION = "18.211.0"
         out.versionStr = A.VERSION;
-        out.versionMatches = A.VERSION === "18.210.0";
+        out.versionMatches = A.VERSION === "18.211.0";
 
         // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
         // beim Konsolidieren (alles bleibt lauffähig):
@@ -34796,7 +34801,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         return out;
     });
 
-    check(`V18.209 (K1) VERSION = "18.210.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
+    check(`V18.209 (K1) VERSION = "18.211.0" (gemessen ${res.versionStr})`, res.versionMatches === true);
     check("V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)", res.allFoundationsAlive === true);
     check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
     check("V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)", res.avatarFamilyKomplett === true);
@@ -34820,9 +34825,9 @@ async function checkBandV18210Verdrahtung(ctx) {
         // ============== A1: Γ7 WORLDGEN-HOOK ==============
         // (A1a) Helper _growTreeBlueprintForSpawn existiert + ruft Helper
         out.a1HelperExists = typeof r._growTreeBlueprintForSpawn === "function";
-        // (A1b) gen-Default für FRESH ist 4 (V18.210 statt V18.179's 3)
-        const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18210") : null;
-        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 4;
+        // (A1b) gen-Default für FRESH ist 5 (V18.211 SKELETON-GRAMMAR statt V18.210's 4)
+        const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18211") : null;
+        out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 5;
         // (A1c) Determinismus: gleiches (species, seed) → gleicher cacheKey
         const k1 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
         const k2 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
@@ -35165,7 +35170,7 @@ async function checkBandV18210Verdrahtung(ctx) {
 
     // A1 — Worldgen-Hook
     check("V18.210-A1a _growTreeBlueprintForSpawn Helper existiert", res.a1HelperExists === true);
-    check("V18.210-A1b FRESH-Welt genVersion = 4 (war 3)", res.a1FreshGenIs4 === true);
+    check("V18.211 FRESH-Welt genVersion = 5 (SKELETON-GRAMMAR aktiv; war 4)", res.a1FreshGenIs4 === true);
     check("V18.210-A1c Determinismus: (species, seed) → derselbe cacheKey", res.a1Deterministic === true);
     check("V18.210-A1d Cache-Reuse: SELBE seed → SELBES Bauplan-Object", res.a1CacheReuse === true);
     check("V18.210-A1e 6 seeds → ≥5 unique cache keys", res.a1ManyVariants === true);
@@ -35244,6 +35249,110 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A4e BEHAVIORAL: hände (subtractive) zieht weiterhin Stamina", res.a4HandsZiehtStamina === true);
     check("V18.210-A4e2 BEHAVIORAL: hände lässt Mana unberührt", res.a4HandsManaUntouched === true);
     check("V18.210-A4f BEHAVIORAL: schöpfer-Modus kostenfrei", res.a4SchoepferKostenfrei === true);
+}
+
+// V18.211 — DER LEBENDIGE GIGANT, SÄULE I (Skeleton-Grammar): „Bäume lesen als
+// Bäume". Multi-level Grammatik (trunk + L1 + L2) + Foliage at TIPS (hunderte
+// Cluster statt 8 Kugeln). Routing-Gate gen≥5 (alte Welten bit-identisch).
+// Snapshot-Heilung: grownBlueprints persistiert NUR Metadata (parts re-wachsen
+// f(seed)) → bezahlbar unter 256-KB-pinCurrentWorld-Cap.
+async function checkBandV18211SkeletonGrammar(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (S1) SPECIES_GRAMMAR existiert + trägt 6 Arten (frozen Config).
+        out.grammarExists = !!A.SPECIES_GRAMMAR;
+        if (out.grammarExists) {
+            const species = Object.keys(A.SPECIES_GRAMMAR);
+            out.sixSpecies = species.length === 6;
+            out.allSpeciesPresent = ["baum_eiche", "baum_tanne", "baum_buche", "baum_birke", "baum_kiefer", "baum_erle"].every(
+                (s) => A.SPECIES_GRAMMAR[s] != null
+            );
+            // Pro Spezies: trunk + L1 + foliage müssen existieren (Plan-§3.3-Form).
+            out.grammarShapeWohlgeformt = species.every((s) => {
+                const g = A.SPECIES_GRAMMAR[s];
+                return g && g.trunk && g.L1 && g.foliage && g.foliage.anchorLevel >= 2;
+            });
+        }
+
+        // (S2) `_growTreeBlueprintRich` existiert (Routing-Helfer-Trio).
+        out.richExists = typeof r._growTreeBlueprintRich === "function";
+        out.legacyExists = typeof r._growTreeBlueprintLegacy === "function";
+        out.routingExists = typeof r._growTreeBlueprint === "function";
+
+        // (S3) RICH-PFAD bei direktem Aufruf produziert ≥50 Parts (vs Legacy ~12).
+        // 50 = sicherer Schwellenwert; gemessen 75-81 pro Art.
+        if (out.richExists && out.grammarExists) {
+            const grammar = A.SPECIES_GRAMMAR.baum_tanne;
+            const richParts = r._growTreeBlueprintRich("baum_tanne", "v211-test", grammar);
+            out.richProducesMany = Array.isArray(richParts) && richParts.length >= 50;
+            out.richPartsCount = richParts ? richParts.length : 0;
+            // Tag-Neutralität: jedes Part ist holz oder laub (V17.16-Wand).
+            out.richAllHolzOrLaub = Array.isArray(richParts) &&
+                richParts.every((p) => p.material === "holz" || p.material === "laub");
+            // FOLIAGE AT TIPS: jedes laub-Part ist von der Stamm-Axis weg
+            // (|xz| > 0.4 oder y > 1.5) — Plan-§3.3-Regel.
+            const laub = richParts ? richParts.filter((p) => p.material === "laub") : [];
+            out.richFoliageAtTips =
+                laub.length >= 10 &&
+                laub.every((p) => {
+                    const dist = Math.hypot(p.position.x, p.position.z);
+                    return dist > 0.4 || p.position.y > 1.5;
+                });
+        }
+
+        // (S4) ROUTING: gen<5 → Legacy, gen≥5 → Rich. Wir mutieren temporär.
+        // Wir können nicht in-place gen wechseln, ohne die Welt-Init zu brechen;
+        // STATTDESSEN: prüfen, dass die Routing-Funktion das Gate ZIEHT (Source-
+        // Probe genVersion >= 5).
+        const routingSrc = r._growTreeBlueprint.toString();
+        out.routingHasGate = /genVersion\(\)\s*>=\s*5/.test(routingSrc) ||
+            /_genVersion\(\)\s*>=\s*5/.test(routingSrc);
+        out.routingDelegates = /_growTreeBlueprintRich/.test(routingSrc) &&
+            /_growTreeBlueprintLegacy/.test(routingSrc);
+
+        // (S5) SNAPSHOT-HEILUNG: grownBlueprints im Snapshot trägt KEINE
+        // parts-Arrays mehr (Plan-§2.5-konform: f(seed) ist das Erbgut).
+        // Spawne einen grown_-Bauplan + prüfe das Snapshot-Feld.
+        if (typeof r._growTreeBlueprintForSpawn === "function") {
+            const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
+            if (grownKey && r.state.blueprints[grownKey]) {
+                // Snapshot bauen und das grownBlueprints-Feld prüfen.
+                const snap = r.buildStateSnapshot();
+                const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
+                out.snapshotHasMetadata = !!(gb && gb._grownSpecies && gb._grownSeed);
+                out.snapshotNoParts = !!(gb && !Array.isArray(gb.parts));
+                // Snapshot-Größe (rough estimate): sollte einen kompakten grown-
+                // Eintrag tragen (< 500 Bytes vs alte ~7.5 KB mit parts).
+                out.snapshotGrownEntrySmall = gb ? JSON.stringify(gb).length < 500 : false;
+            }
+        }
+
+        // (S6) VERSION-BUMP: AnazhRealm.VERSION + index.html cache-buster.
+        out.versionBumped = A.VERSION === "18.211.0";
+
+        return out;
+    });
+
+    check("V18.211 (S1a) SPECIES_GRAMMAR Config existiert", res.grammarExists === true);
+    check("V18.211 (S1b) SPECIES_GRAMMAR trägt 6 Arten", res.sixSpecies === true);
+    check("V18.211 (S1c) Alle 6 Spezies (tanne/kiefer/buche/birke/eiche/erle) präsent", res.allSpeciesPresent === true);
+    check("V18.211 (S1d) Jede Grammatik trägt trunk+L1+foliage", res.grammarShapeWohlgeformt === true);
+    check("V18.211 (S2a) _growTreeBlueprintRich existiert", res.richExists === true);
+    check("V18.211 (S2b) _growTreeBlueprintLegacy existiert", res.legacyExists === true);
+    check("V18.211 (S2c) _growTreeBlueprint Routing-Funktion existiert", res.routingExists === true);
+    check(`V18.211 (S3a) Rich-Grammatik produziert ≥50 Parts (gemessen ${res.richPartsCount})`, res.richProducesMany === true);
+    check("V18.211 (S3b) Alle Rich-Parts holz oder laub (V17.16-Wand strukturell)", res.richAllHolzOrLaub === true);
+    check("V18.211 (S3c) Foliage AT TIPS: ≥10 laub-Parts, alle vom Stamm weg (Plan-§3.3)", res.richFoliageAtTips === true);
+    check("V18.211 (S4a) Routing-Funktion liest genVersion >= 5 Gate", res.routingHasGate === true);
+    check("V18.211 (S4b) Routing delegiert an Rich + Legacy", res.routingDelegates === true);
+    check("V18.211 (S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)", res.snapshotHasMetadata === true);
+    check("V18.211 (S5b) Snapshot grownBlueprints OHNE parts-Array (re-wächst f(seed))", res.snapshotNoParts === true);
+    check("V18.211 (S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)", res.snapshotGrownEntrySmall === true);
+    check(`V18.211 (S6) VERSION = "18.211.0"`, res.versionBumped === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -52437,6 +52546,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18208CreatureSizeSymmetry(ctx);
             await checkBandV18209Konsolidierung(ctx);
             await checkBandV18210Verdrahtung(ctx);
+            await checkBandV18211SkeletonGrammar(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

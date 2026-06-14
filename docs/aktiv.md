@@ -11,6 +11,18 @@
 
 ## Stand (jüngste oben)
 
+**14.06.2026 — V18.211 ✅ FERTIG, Branch `claude/kind-rubin-udn6cn`:**
+**DER LEBENDIGE GIGANT, SÄULE I (Skeleton-Grammar)** — Bäume lesen jetzt als Bäume, nicht als „Zylinder + 8 Kugeln". Der vorige `abschluss-plan.md` ist superseded vom Schöpfer-Anhang `69189e03-lebendigergigant.md` (DER LEBENDIGE GIGANT — Ω∞). Diese Welle baut **die visuelle Wurzel von Säule I**: `AnazhRealm.SPECIES_GRAMMAR` (frozen, 6 Arten × Plan-§3.3-Werte) + `_growTreeBlueprintRich(speciesKey, seed, grammar)` (Multi-Level-Wachstums-Grammatik mit perpBasis + Tropismus + Wander + Droop + TipCurl + Foliage AT TIPS). 75-81 Parts pro Baum (vs V18.210's 12). genVersion 4→5 routet bei gen≥5 zur Rich-Methode. **§2.5 (Variant-Pool + Wind + Snapshot)** sind GEERBT/GEHEILT:
+- **Variant-Pool**: der V18.210-Region-Cache (256m × Welt-Seed × Spezies) ist faktisch §2.5 in Region-Form.
+- **Wind**: V18.181-`positionWorld`-basiertes Sway gibt Per-Instance-Phasen gratis.
+- **Snapshot-Heilung**: 75 Parts × 54 Region-Varianten = 400 KB → sprengt 256-KB-`pinCurrentWorld`-Wand → NUR Metadata persistieren, Parts re-wachsen via f(seed). Φ5-Tests grün.
+
+Alle ~3500 Invarianten grün + 16 neue V18.211-S1-S6-Wände. Tests-wander-mit-Code (V9.56-i): G9-Probe liest jetzt `Rich+Legacy`-Source, K1-Version 18.210→18.211, A1b genVersion 4→5.
+
+**OFFENE GIGANT-FÄDEN nach V18.211** (Plan-§11): §5 Ω-B GPU-Feld-Bake · §8 Ω-S GPU-Compute-Scatter · **§2 Ω-H Promotion (das SEELEN-Band)** · §9 Ω-C Canopy-Shell + Ω-W vertieftes Wind · §10 Ω-P PBR (optional). Volle 17-25 Sitzungen für den Bogen.
+
+---
+
 **14.06.2026 — V18.210 ✅ FERTIG (3 Commits + 3 Audit-Cycles), Branch `claude/relaxed-hawking-dzkj9g`:**
 
 Die vier Sub-Akte aus `docs/abschluss-plan.md §1` sind verdrahtet — plus
