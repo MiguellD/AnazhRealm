@@ -84,6 +84,35 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 
 ## §4 · Die offenen Fäden — die VOLLSTÄNDIGE Karte (nichts vergessen)
 
+> **Stand 13.06.2026 (V18.192):** Schöpfer-Auftrag „alles offene + Unvollständigkeiten ganz
+> in den Backlog" — `docs/aktiv.md` trägt nur noch die JETZT-zählende Tat (S-Browser-Abnahmen
+> + W5-Schluss). Alles andere lebt HIER mit Weck-Moment. Die durchgezogenen 13.06.-Entscheide:
+> R-031 Werkzeug-Abnutzung ✓ GEBAUT V18.192 (kein Perpetuum mobile — Mühe-Senke + Reparieren) ·
+> R-039 Devlog → post-öffentlich · Wasser-Pfad → Feinschliff (unten dokumentiert, kein dringender
+> Druck — Grundstruktur fertig). Nur R-037 T-Welle wartet noch (state-JSDoc, bei drittem Bauer).
+
+**M9-Sprossen 4-7 (S-Dialog)** — Vision-getrieben, je eigener Bogen. Sprossen 1+2+3 GEBAUT
+via Φ-Bogen (V18.188-V18.191). 4-7 brauchen Schöpfer-Dialog: welche Achse, welche Form.
+Plan: `docs/archiv/meister-plan.md` §3 + §8.6.
+
+**Γ-Reste** (klein, optional, gut zu picken — `docs/archiv/genese-plan.md`):
+- Γ7 Baum-Varianten-Grammatik (`_growTreeBlueprint` emittiert Bauplan-Varianten) — video-getrieben zuletzt
+- Γ1 Lesart 5 (Ψ2-Nase — Geruch des Feldes) — die ferne fünfte Welt-Stimme
+- Γ3 Feld-Charakter (Domain-Warp + Frequenz-Fächer) — optional
+- Γ-M Multi-Class-Material (Strata/Iron-Bands/Lichen) — ersetzt das alte Γ8
+- Γ8 Kies+Saum — schrumpft (Γ4½-Foundation-Felder konsumieren das)
+- Γ2 Totholz-Option — eigener Entscheid
+
+**R-037 T-Welle (Typ-Sicherheit, EHRLICH offen)** — `tsc --checkJs` als Ratschen-Band; T0
+GEMESSEN 490 Fehler, davon 416 TS2339 auf dem dynamisch wachsenden `state`-Bag. Heilung wäre
+ein `@typedef StateShape`-JSDoc-Interface (~200 Felder dokumentieren) — funktioniert perfekt
+in JS heute, nur TS meckert mangels Type-Sheet. Lohnt sich erst bei drittem Bauer. Weck-Moment:
+ein dritter Hand mit-tippt.
+
+**R-039 Devlog/Welle-Schau (post-öffentlich)** — monatliche „Mensch+KI bauen ein Ultiversum"-
+Content. Audience-Arbeit darf das Bauen nicht fressen. Weck-Moment: nach Öffentlich-Machen +
+Bewerbung. Schöpfer-Domäne.
+
 **Wasser** — Fluid-Dynamik (Phase 1, ⭐) · gefaltetes Auslauf-Mesh · Fluss-Naht (4-Chunk-Ecken) ·
 `aFlow`-Foam-Strähnen · ~~Wasserfall-Plane (bleibt/raus?)~~ **ENTSCHIEDEN+GEBAUT (V18.111–.114):
 die Plane FIEL (S-Entscheid), der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe +

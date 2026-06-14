@@ -29293,6 +29293,11 @@ class AnazhRealm {
         // geschmiedet (forgedPrecision gesetzt) über den Reload → der Werk-Akt wird nicht beim Laden
         // entwertet, der Gebrauch bleibt frei (sonst müsste man nach jedem Reload neu schmieden/zahlen).
         if (Number.isFinite(bp.forgedPrecision)) out.forgedPrecision = bp.forgedPrecision;
+        // W5 (V18.192, R-031) — der wear-Stand reist mit (sonst startete jedes geladene Gerät
+        // wieder bei wear=1 → ∞-Katalysator-Lücke beim Reload, die Ω5-Wand bräche). Nur wenn
+        // er gesetzt ist + < 1 (Migration: ein altes Save ohne wear-Feld bleibt klein; ein
+        // frisches Save schreibt nur die Abnutzung, die echt geschah).
+        if (Number.isFinite(bp.wear) && bp.wear < 1) out.wear = Math.max(0, Math.min(1, bp.wear));
         // V17.52 Kampf Phase B — die Waffen-Rolle reist mit (sonst verlöre eine
         // geschmiedete Waffe beim Reload ihre Rolle + die Equip-Bindung). Volle
         // Persistenz — bewusst sauberer als die heutige armor/consumable-Rolle,
@@ -29404,6 +29409,9 @@ class AnazhRealm {
         };
         // S3-B — geschmiedet bleibt geschmiedet (Gegenstück zu _serializeBlueprint).
         if (Number.isFinite(data.forgedPrecision)) restored.forgedPrecision = data.forgedPrecision;
+        // W5 (V18.192, R-031) — die Abnutzung reist mit; ein fehlendes Feld liest 1 (voll;
+        // Migration: ein altes Save bekommt seine Werkzeuge frisch zurück, ehrlich).
+        if (Number.isFinite(data.wear) && data.wear >= 0 && data.wear <= 1) restored.wear = data.wear;
         // Welle 5 C — role + toolMeta beim Load wiederherstellen.
         if (
             data.role === "tool" &&
@@ -36486,8 +36494,129 @@ class AnazhRealm {
             return { ok: false, reason: "not_enough_material", missing: gate.missing || {}, cost: gate.cost || {} };
         }
         bp.forgedPrecision = this._compoundAvgPrecisionFromParts(bp.parts);
+        // W5 (V18.192, R-031) — ein frisch geforgetes Werkzeug startet mit voller
+        // wear (1.0). Spätere Hiebe zehren sie; bei Erschöpfung verlangt der
+        // Mensch den Repair-Akt. Damit ist der Erste-Wurf ∞-Katalysator (Gesamt-
+        // Abnahme 11.06.) abgelöst, die Balance wieder ehrlich (Ω5 lebt).
+        bp.wear = AnazhRealm.REPAIR_TARGET_WEAR;
         if (typeof this._feelAction === "function") this._feelAction("create", { blueprint: name });
         return { ok: true, free: !!gate.free, forgedPrecision: bp.forgedPrecision };
+    }
+
+    // W5 (V18.192) — der EINE Lese-Punkt für wear (Migration-tolerant): ein
+    // Bauplan ohne wear-Feld liest 1 (voll — alte Welten verlieren NICHTS,
+    // jede Erst-Welt fängt voll an). Der Schreib-Pfad nutzt `_clampWear`.
+    _blueprintWear(bp) {
+        if (!bp || typeof bp !== "object") return 1;
+        const w = Number(bp.wear);
+        if (!Number.isFinite(w)) return 1;
+        return Math.max(0, Math.min(1, w));
+    }
+
+    // W5 — clamp + write. Wenn wear ≤ 0, gilt das Gerät als verbraucht (der
+    // Hieb wird verweigert, der Spieler bekommt den Repair-Aufruf).
+    _setBlueprintWear(bp, value) {
+        if (!bp) return 0;
+        bp.wear = Math.max(0, Math.min(1, Number(value) || 0));
+        return bp.wear;
+    }
+
+    // W5 — wie viel wear ein einzelner Hieb am Gerät verbraucht. Ein hartes
+    // Material (eisen·härte 0.9·tag-Aktivierung → ~1.8) widersteht der
+    // Abnutzung ~3× länger als ein weiches (holz, härte ~0.3). Die Decke
+    // (WEAR_HARDNESS_CEIL=3) klemmt den Vorteil eines unter-realistisch harten
+    // Materials (eine glas-Klinge wäre sonst unzerstörbar — das ist nicht der
+    // Punkt; jedes Werkzeug zahlt eine ehrliche Mühe). Floor (0.4) schützt
+    // weiche Werkzeuge davor, in einem Hieb zu zerbrechen.
+    _wearPerStrike(bp) {
+        const tags = bp && typeof this.computeCompoundTags === "function" ? this.computeCompoundTags(bp) : null;
+        const haerte = tags && typeof tags["härte"] === "number" ? tags["härte"] : 0.5;
+        const floor = AnazhRealm.WEAR_HARDNESS_FLOOR;
+        const ceil = AnazhRealm.WEAR_HARDNESS_CEIL;
+        const norm = Math.max(floor, Math.min(ceil, haerte));
+        // Härte normiert zu Verschleiß-Skalierung: floor → 1.0×, ceil → 1/3.
+        const scale = floor / norm;
+        return AnazhRealm.WEAR_PER_STRIKE_BASE * scale;
+    }
+
+    // W5 — der wear-FAKTOR auf Equip-Stats (HELD_STAT_WEIGHT-Pfad): ein voll-
+    // neues Werkzeug wirkt mit 1.0; ein verbrauchtes mit WEAR_STAT_FLOOR
+    // (0.3 — nicht 0, damit ein Hieb mit kaputtem Werkzeug noch ein Zeichen
+    // setzt; aber spürbar schwächer, damit das Reparieren Mehrwert hat).
+    // Linear gemappt zwischen Schwelle und voll: wear=0 → 0.3, wear=0.5 → 0.65,
+    // wear=1.0 → 1.0. Liest computePlayerStats für held-Geräte.
+    _wearStatFactor(bp) {
+        const w = this._blueprintWear(bp);
+        const floor = AnazhRealm.WEAR_STAT_FLOOR;
+        return floor + (1 - floor) * w;
+    }
+
+    // W5 — der REPAIR-Akt: der Schmiede-Spiegel für das gehaltene Gerät.
+    // R2-strukturell: KEIN DSL-Op, kein automatischer Pfad — nur die UI-/API-
+    // Geste. Kostet MATERIAL: das Voll-Bau-Kosten × REPAIR_COST_FRACTION
+    // × Schaden-Anteil (1-wear). Eine fast-volle Klinge kostet fast nichts;
+    // eine kaputte zahlt den halben Forge. Im schöpfer-Modus frei (analog
+    // forge — der Schöpfer darf die Materie umgehen, der Akt zählt trotzdem
+    // als Ledger-Fakt ohne Inventar-Abzug). Liefert {ok, before, after, cost}
+    // oder Fehler-Reason.
+    repairHeldDevice() {
+        const heldName = this.state.player && this.state.player.equipped ? this.state.player.equipped.held : null;
+        if (!heldName) return { ok: false, reason: "no_held_device" };
+        const bp = this.state.blueprints && this.state.blueprints[heldName];
+        if (!bp) return { ok: false, reason: "blueprint_unknown" };
+        const before = this._blueprintWear(bp);
+        if (before >= AnazhRealm.REPAIR_TARGET_WEAR - 0.001) {
+            return { ok: false, reason: "already_full", wear: before };
+        }
+        // Schaden-Anteil (1 - wear) bestimmt den Material-Bedarf — eine
+        // 50%-Abnutzung zahlt 25 % vom Voll-Bau (= 0.5 × REPAIR_FRACTION),
+        // eine kaputte 47.5 % (= 0.95 × REPAIR_FRACTION).
+        const damageFraction = AnazhRealm.REPAIR_TARGET_WEAR - before;
+        const repairScale = AnazhRealm.REPAIR_COST_FRACTION * damageFraction;
+        // Voll-Kosten holen — `computeBuildCost` liefert die Material-Tabelle.
+        const fullCost = typeof this.computeBuildCost === "function" ? this.computeBuildCost(bp) || {} : {};
+        const repairCost = {};
+        for (const [mat, units] of Object.entries(fullCost)) {
+            if (typeof units !== "number" || units <= 0) continue;
+            const need = Math.max(1, Math.round(units * repairScale));
+            repairCost[mat] = need;
+        }
+        // Modus: schöpfer = frei (kein Material-Zug), pfad/frieden = ehrlich zahlen.
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        const free = mode === "schöpfer";
+        if (!free) {
+            // Bestand prüfen (alle Materialien gleichzeitig — atomar).
+            const inv = (this.state.player && this.state.player.inventory) || {};
+            const missing = {};
+            for (const [mat, need] of Object.entries(repairCost)) {
+                const have = inv[mat] || 0;
+                if (have < need) missing[mat] = need - have;
+            }
+            if (Object.keys(missing).length > 0) {
+                return { ok: false, reason: "not_enough_material", missing, cost: repairCost };
+            }
+            // Zahlen.
+            for (const [mat, need] of Object.entries(repairCost)) {
+                inv[mat] = (inv[mat] || 0) - need;
+                if (inv[mat] <= 0) delete inv[mat];
+            }
+        }
+        const after = this._setBlueprintWear(bp, AnazhRealm.REPAIR_TARGET_WEAR);
+        if (typeof this.recomputePlayerStats === "function") this.recomputePlayerStats();
+        if (typeof this._refreshIchIfOpen === "function") this._refreshIchIfOpen();
+        if (typeof this._feelAction === "function") this._feelAction("repair", { blueprint: heldName });
+        this.log(
+            `Werkzeug repariert: „${bp.label || heldName}" → ${Math.round(after * 100)} % wear${
+                free
+                    ? " (schöpfer-frei)"
+                    : ` · ${Object.entries(repairCost)
+                          .map(([m, n]) => `${n}× ${m}`)
+                          .join(", ")}`
+            }.`,
+            "INFO"
+        );
+        if (typeof this.saveState === "function") this.saveState();
+        return { ok: true, before, after, cost: repairCost, free };
     }
 
     // S3 (kampf-plan §11.7, §10-F3) — das Gerät SCHMIEDEN: der WERK-Kern (Material + Präzision-Snapshot +
@@ -52161,6 +52290,25 @@ class AnazhRealm {
     // zählt (Bauwerk steht ODER fiel), false bei Erschöpfung.
     _strikeArchitecture(entry) {
         if (!entry) return false;
+        // W5 (V18.192, R-031) — DIE WERKZEUG-WAND: ein verbrauchtes Gerät kann
+        // nicht mehr schlagen. Die Wand sitzt VOR der Stamina-Wand — eine
+        // kaputte Klinge kostet keine Ausdauer (sie schwingt nicht). Modus-
+        // unabhängig: auch in frieden/schöpfer ist ein totes Werkzeug tot
+        // (Ω5-Schutz: ein Schöpfer kann es kostenlos REPARIEREN, aber nicht
+        // mit einem kaputten Stück arbeiten). Hände/leerer Slot → kein Werkzeug
+        // → keine wear, durchlassen.
+        const heldName = this.state.player && this.state.player.equipped ? this.state.player.equipped.held : null;
+        const heldBp = heldName && this.state.blueprints ? this.state.blueprints[heldName] : null;
+        if (heldBp) {
+            const wear = this._blueprintWear(heldBp);
+            if (wear < AnazhRealm.WEAR_KAPUTT_SCHWELLE) {
+                this.log(
+                    `Abbauen: „${heldBp.label || heldName}" ist verbraucht (${Math.round(wear * 100)} %) — repariere es (eine Material-Geste am Werkzeug) oder lege ein neues an.`,
+                    "INFO"
+                );
+                return false;
+            }
+        }
         const fit = this._harvestFitness(entry);
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         if (mode === "pfad") {
@@ -52170,6 +52318,16 @@ class AnazhRealm {
                 return false;
             }
             this.state.player.stamina = Math.max(0, have - fit.stamina);
+        }
+        // W5 — wear zehrt ZUSÄTZLICH zur Stamina (in pfad). Modus-unabhängig:
+        // auch in frieden/schöpfer altert das Werkzeug — das ist die ehrliche
+        // Mühe-Senke (sonst wäre Werkzeug im frieden Perpetuum). Die Wand
+        // oben (verbraucht) verhindert negative wear.
+        if (heldBp) {
+            const before = this._blueprintWear(heldBp);
+            this._setBlueprintWear(heldBp, before - this._wearPerStrike(heldBp));
+            // Equip-Stats (HELD_STAT_WEIGHT) lesen wear-Faktor — neu berechnen.
+            if (typeof this.recomputePlayerStats === "function") this.recomputePlayerStats();
         }
         entry.harvestProgress = (entry.harvestProgress || 0) + fit.progress;
         if (entry.harvestProgress < 1) return true; // der Hieb zählt — das Bauwerk steht noch
@@ -63297,7 +63455,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.191.0";
+AnazhRealm.VERSION = "18.192.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -64021,6 +64179,11 @@ AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
     "signedAt",
     "signatureStatus",
     "provenance",
+    // W5 (V18.192, R-031) — wear ist BEKANNTES Feld; _serializeBlueprint
+    // entscheidet selbst (wear < 1 → reist, wear === 1 → OMITTED). Ohne
+    // diesen Eintrag würde _carryUnknown (Ω2 must-preserve) wear=1 als
+    // unbekanntes Feld blind durchreichen → die Größen-Disziplin bräche.
+    "wear",
 ]);
 AnazhRealm.MATERIAL_KNOWN_KEYS = Object.freeze(["name", "label", "builtIn", "color", "tags"]);
 AnazhRealm.TOOL_KNOWN_KEYS = Object.freeze([
@@ -64983,6 +65146,22 @@ AnazhRealm.REGION_CHUNKS = 8;
 // Voxel-Chunk-Span ist FROZEN (43.2 m, _voxelChunkConfig); Region = 8×43.2 = 345.6 m.
 AnazhRealm.REGION_SPAN_M = 345.6;
 AnazhRealm.REGION_HYSTERESIS_M = 10;
+// W5 (V18.192, R-031) — DIE WERKZEUG-ABNUTZUNG: der Erst-Wurf ∞-Katalysator
+// (Gesamt-Abnahme 11.06.) bricht die Balance — der Schöpfer-Entscheid 13.06.:
+// „ja, kein perpetuum mobile, sonst ist balance nicht möglich". Ein gehaltenes
+// Gerät trägt einen wear-Stand (0..1), der bei jedem Hieb sinkt; bei
+// wear < WEAR_KAPUTT_SCHWELLE ist das Gerät VERBRAUCHT (kein Hieb mehr).
+// Der Repair-Akt zahlt MATERIAL (analog forge, REPAIR_COST_FRACTION × Voll-
+// Bau-Kosten × Schaden-Anteil) → wear=1. Damit ist der Zyklus Bauen →
+// Abbauen → Reparieren netto NICHT-positiv (Ω5 lebt). Migration: ein Bauplan
+// ohne wear-Feld liest 1 (voll) — alte Welten verlieren NICHTS, neue zahlen.
+AnazhRealm.WEAR_PER_STRIKE_BASE = 0.018; // ein voll-neues Werkzeug hält ~55 Hiebe Basis
+AnazhRealm.WEAR_HARDNESS_FLOOR = 0.4; // härte<0.4 → trägt den Voll-Basis-Verschleiß
+AnazhRealm.WEAR_HARDNESS_CEIL = 3.0; // härte≥3 (eisen+) → ~1/3 Verschleiß (hartes Werkzeug widersteht)
+AnazhRealm.WEAR_KAPUTT_SCHWELLE = 0.05; // unter 5 % wear → Hieb scheitert, Reparatur-Aufruf
+AnazhRealm.WEAR_STAT_FLOOR = 0.3; // wear-Faktor auf attack/break-Stats: min 30 % auch bei 0 % wear
+AnazhRealm.REPAIR_COST_FRACTION = 0.5; // eine Reparatur kostet 50 % der Voll-Bau-Kosten × Schaden
+AnazhRealm.REPAIR_TARGET_WEAR = 1.0; // eine erfolgreiche Reparatur stellt voll her
 // W12 P3-Härtung — der Portal-Rückkanal (_portalReceiveEvent: Sub-Welt →
 // Heimat-Journal) deckelt die Ereignisse je Sekunde. Eine ungeprüfte vendorte
 // Welt (V8.70+) könnte sonst pro Frame ein Ereignis posten und das 200-
