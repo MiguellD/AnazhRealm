@@ -32922,6 +32922,211 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     );
 }
 
+// Γ4-VOLLENDUNG (genese-plan §4, V18.193) — ECHTER MAKRO-ANKER + ERBGUT +
+// ABFLUSS-INVARIANTE. Drei Wände: (a) ERBGUT-Persistenz via worldMeta.macro
+// (das Welt-Stempel-Pattern, additiv-teilbar), (b) Abfluss-Invariante über
+// 10 Seeds (die geerbte LAAS-Narbe strukturell ausgeschlossen), (c) der
+// WORKER-Mirror reicht den Erbgut-Anker (Determinismus Main↔Worker auch
+// bei Konstanten-Änderung oder Bündel-Import).
+async function checkBandV18193MakroErbgut(ctx) {
+    const { page, check } = ctx;
+    const SEEDS = [
+        "seed-a", "seed-b", "seed-c", "seed-d", "seed-e",
+        "seed-f", "seed-g", "seed-h", "seed-i", "seed-j",
+    ];
+    const res = await safeEvaluate(page, (SEEDS) => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (E1) STRUKTUR: die drei neuen Helper leben + Validator als static
+        // an der Klasse (Source of Truth für Welt-Stempel-Form).
+        out.helpersExist =
+            typeof r._macroSpillpointAnalysis === "function" &&
+            typeof A._isValidMacroAnker === "function";
+
+        // (E2) VALIDATOR: prüft Form, akzeptiert nur korrekte Struktur.
+        out.validatorRejectsNull = A._isValidMacroAnker(null) === false;
+        out.validatorRejectsPlain = A._isValidMacroAnker({}) === false;
+        out.validatorRejectsPartial = A._isValidMacroAnker({ massivC: { x: 0, z: 0 } }) === false;
+        out.validatorAcceptsValid = A._isValidMacroAnker(r._makeMacroAnker("validator-test")) === true;
+        // NaN/Infinity werden abgelehnt (must-ignore, Taille-Geist).
+        const badNaN = r._makeMacroAnker("nan-test");
+        badNaN.massivR = NaN;
+        out.validatorRejectsNaN = A._isValidMacroAnker(badNaN) === false;
+
+        // (E3) DETERMINISMUS: identisches Resultat über 10 Seeds.
+        let allDet = true;
+        for (const seed of SEEDS) {
+            const a = r._makeMacroAnker(seed);
+            const b = r._makeMacroAnker(seed);
+            if (
+                a.massivC.x !== b.massivC.x ||
+                a.massivR !== b.massivR ||
+                a.beckenD !== b.beckenD ||
+                !a.talVertices.every((v, i) => v.x === b.talVertices[i].x && v.z === b.talVertices[i].z) ||
+                !a.talFloors.every((f, i) => f === b.talFloors[i])
+            ) { allDet = false; break; }
+        }
+        out.determ10Seeds = allDet;
+
+        const origSeed = r.state.worldMeta ? r.state.worldMeta.seed : null;
+        const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
+        const origMacro = r.state.worldMeta ? r.state.worldMeta.macro : undefined;
+        try {
+            if (!r.state.worldMeta) r.state.worldMeta = {};
+
+            // (E4) ERBGUT-PERSISTENZ: erste Lesung schreibt wm.macro.
+            r.state.worldMeta.seed = "erbgut-test";
+            r.state.worldMeta.genVersion = 3;
+            delete r.state.worldMeta.macro;
+            r._macroAnkerCache = null;
+            r._voxelNoise = null;
+            r._macroRidgeNoise = null;
+            const ank1 = r._macroAnker();
+            out.erbgutWritten = ank1 && r.state.worldMeta.macro === ank1;
+
+            // (E5) ZWEITE Lesung: aus wm.macro statt re-compute (Cache-Reset
+            // → wm.macro ist die Source of Truth).
+            r._macroAnkerCache = null;
+            const ank2 = r._macroAnker();
+            out.erbgutSecondReadSame = ank2 === r.state.worldMeta.macro;
+            out.erbgutValuesIdentical =
+                ank1.massivR === ank2.massivR && ank1.beckenD === ank2.beckenD;
+
+            // (E6) KORRUPT-SCHUTZ: ein manipuliertes wm.macro (must-ignore)
+            // wird verworfen + neu aus Seed gebaut.
+            r.state.worldMeta.macro = { massivC: null, beckenC: null };
+            r._macroAnkerCache = null;
+            const ank3 = r._macroAnker();
+            out.corruptRejected =
+                ank3 && ank3.massivC && typeof ank3.massivR === "number" && !!r.state.worldMeta.macro;
+
+            // (E7) SNAPSHOT-ROUND-TRIP: macro reist intakt durch
+            // JSON.parse(JSON.stringify(...)) (Mesh-WebSocket-Form).
+            const macroAfterRebuild = r.state.worldMeta.macro;
+            const snap = JSON.parse(JSON.stringify({ macro: macroAfterRebuild }));
+            out.snapshotRoundTrip =
+                snap.macro && A._isValidMacroAnker(snap.macro) &&
+                snap.macro.massivR === macroAfterRebuild.massivR &&
+                snap.macro.beckenD === macroAfterRebuild.beckenD;
+
+            // (E8) MIGRATION: Legacy-Welt (gen=1) ohne macro-Feld → null,
+            // KEIN Crash, kein Re-Compute (Drainage-Netz-Gesetz: alte
+            // Welten behalten ihr Gesicht).
+            r.state.worldMeta.genVersion = 1;
+            delete r.state.worldMeta.macro;
+            r._macroAnkerCache = null;
+            out.migrationLegacyNull = r._macroAnker() === null;
+
+            // (E9) MIGRATION: gen=3 OHNE macro-Feld → re-computed aus Seed +
+            // automatisch persistiert (zweite Sitzung profitiert).
+            r.state.worldMeta.genVersion = 3;
+            delete r.state.worldMeta.macro;
+            r._macroAnkerCache = null;
+            const migrA = r._macroAnker();
+            out.migrationGen3Rebuild = !!migrA && !!r.state.worldMeta.macro &&
+                A._isValidMacroAnker(r.state.worldMeta.macro);
+
+            // (E10) ABFLUSS-INVARIANTE: 10/10 Seeds haben span > beckenD*0.5
+            // (kein endorheic Becken — die LAAS-Narbe strukturell tot).
+            let allOutflow = true;
+            const spillSamples = [];
+            for (const seed of SEEDS) {
+                r.state.worldMeta.seed = seed;
+                r.state.worldMeta.genVersion = 3;
+                delete r.state.worldMeta.macro;
+                r._macroAnkerCache = null;
+                r._voxelNoise = null;
+                r._macroRidgeNoise = null;
+                const anker = r._macroAnker();
+                const spill = r._macroSpillpointAnalysis(anker);
+                spillSamples.push({ seed, span: spill.span, beckenD: anker.beckenD, hasOutflow: spill.hasOutflow });
+                if (!spill.hasOutflow) allOutflow = false;
+            }
+            out.outflowAll10Seeds = allOutflow;
+            out.spillSamples = spillSamples;
+
+            // (E11) STATISTISCHE TAL-ALIGNMENT-PROBE: mindestens 6/10 Seeds
+            // haben den niedrigsten Rim-Punkt nahe (< 60°) der Tal-Eingangs-
+            // Richtung — das Tal IST der designte Spillweg im Großteil der
+            // Welten. Die Ausnahmen sind Welten, wo ein anderer Pass tiefer
+            // geriet (auch ein valider Auslass, kein endorheic).
+            let nearTalCount = 0;
+            for (const seed of SEEDS) {
+                r.state.worldMeta.seed = seed;
+                delete r.state.worldMeta.macro;
+                r._macroAnkerCache = null;
+                r._voxelNoise = null;
+                r._macroRidgeNoise = null;
+                const anker = r._macroAnker();
+                const spill = r._macroSpillpointAnalysis(anker);
+                if (spill.spillVsTalDeg < 60) nearTalCount++;
+            }
+            out.nearTalCount = nearTalCount;
+
+            // (E12) WORKER-MIRROR: snap.macroAnker reist mit + ist valid.
+            r.state.worldMeta.seed = "worker-mirror-test";
+            r.state.worldMeta.genVersion = 3;
+            delete r.state.worldMeta.macro;
+            r._macroAnkerCache = null;
+            const wsnap = r._voxelWorkerSnapshotState();
+            out.workerSnapHasField = "macroAnker" in wsnap;
+            out.workerSnapValid = wsnap.macroAnker && A._isValidMacroAnker(wsnap.macroAnker);
+            // Determinismus: snap.macroAnker == r._macroAnker() Erbgut-Anker.
+            out.workerSnapMatchesMain =
+                wsnap.macroAnker === r.state.worldMeta.macro;
+
+            // (E13) WORKER-MIRROR Legacy: gen=1 → snap.macroAnker = null
+            // (Worker sieht KEINEN Anker, baut auch keinen → Legacy-Welten
+            // behalten ihr Gesicht im Worker-Spiegel).
+            r.state.worldMeta.genVersion = 1;
+            delete r.state.worldMeta.macro;
+            r._macroAnkerCache = null;
+            const wsnapLegacy = r._voxelWorkerSnapshotState();
+            out.workerSnapLegacyNull = wsnapLegacy.macroAnker === null;
+        } finally {
+            if (r.state.worldMeta) {
+                if (origSeed === null) delete r.state.worldMeta.seed;
+                else r.state.worldMeta.seed = origSeed;
+                if (origGen === undefined) delete r.state.worldMeta.genVersion;
+                else r.state.worldMeta.genVersion = origGen;
+                if (origMacro === undefined) delete r.state.worldMeta.macro;
+                else r.state.worldMeta.macro = origMacro;
+            }
+            r._macroAnkerCache = null;
+            r._voxelNoise = null;
+            r._macroRidgeNoise = null;
+        }
+        return out;
+    }, SEEDS);
+
+    check("Γ4-Vollendung (E1) Helpers leben (_macroSpillpointAnalysis + static _isValidMacroAnker)", res.helpersExist === true);
+    check("Γ4-Vollendung (E2a) Validator weist null/{}/partial ab", res.validatorRejectsNull && res.validatorRejectsPlain && res.validatorRejectsPartial);
+    check("Γ4-Vollendung (E2b) Validator akzeptiert echten Anker", res.validatorAcceptsValid === true);
+    check("Γ4-Vollendung (E2c) Validator weist NaN ab (must-ignore Taille-Geist)", res.validatorRejectsNaN === true);
+    check("Γ4-Vollendung (E3) Determinismus über 10 Seeds (Welt-Substanz-Garantie)", res.determ10Seeds === true);
+    check("Γ4-Vollendung (E4) ERBGUT geschrieben nach erstem _macroAnker() (worldMeta.macro)", res.erbgutWritten === true);
+    check("Γ4-Vollendung (E5a) zweite Lesung kommt aus wm.macro (gleiche Instanz)", res.erbgutSecondReadSame === true);
+    check("Γ4-Vollendung (E5b) Werte identisch über Cache-Reset", res.erbgutValuesIdentical === true);
+    check("Γ4-Vollendung (E6) korrupter macro-Felt verworfen + frisch gebaut", res.corruptRejected === true);
+    check("Γ4-Vollendung (E7) Snapshot-Round-Trip (JSON.parse) erhält macro-Anker", res.snapshotRoundTrip === true);
+    check("Γ4-Vollendung (E8) Legacy gen=1 ohne macro → null (kein Drift)", res.migrationLegacyNull === true);
+    check("Γ4-Vollendung (E9) Migration gen=3 ohne macro → re-computed + persistiert", res.migrationGen3Rebuild === true);
+    check(
+        `Γ4-Vollendung (E10) ABFLUSS-INVARIANTE: 10/10 Seeds hasOutflow (LAAS-Narbe strukturell tot)`,
+        res.outflowAll10Seeds === true
+    );
+    check(
+        `Γ4-Vollendung (E11) Tal-Eingang ist Spillweg in ≥6/10 Seeds (gemessen ${res.nearTalCount}/10)`,
+        Number.isFinite(res.nearTalCount) && res.nearTalCount >= 6
+    );
+    check("Γ4-Vollendung (E12a) Worker-Snapshot trägt macroAnker-Feld", res.workerSnapHasField === true);
+    check("Γ4-Vollendung (E12b) Worker-Snapshot macroAnker ist valid", res.workerSnapValid === true);
+    check("Γ4-Vollendung (E12c) Worker liest Erbgut-Anker (Main↔Worker Identität)", res.workerSnapMatchesMain === true);
+    check("Γ4-Vollendung (E13) Worker-Legacy gen=1 → snap.macroAnker null", res.workerSnapLegacyNull === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -50080,6 +50285,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandPhi7PortalHalls(ctx);
             await checkBandPhi6ComputeSpende(ctx);
             await checkBandW5Werkzeugabnutzung(ctx);
+            await checkBandV18193MakroErbgut(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

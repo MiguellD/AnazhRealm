@@ -1,18 +1,33 @@
 # DER GENESE-BOGEN (Γ) — Was die Fotografie dem Organismus schenkt
 
-> **Status: ARCHIVIERT (13.06.2026).** Der Γ-Kern ist RUND: Γ1 (Feuchte-Feld) + Γ2
-> (Kronen-Lesarten) + Γ5 (Determinismus-Schliff) gebaut V18.166. Plus über die
-> Branch-Synthese (V18.180-FIX bis V18.187): Γ1-Lesart-4 „Boden atmet" (V18.178 →
-> Sub 3h) + Worker-Mirror bit-identisch + Γ4 „Welt wird Komposition" (V18.179 →
-> Sub 3i: Massiv + Tal + Becken, anisotrope smoothstep-Glocke, NE-SW-
-> Streichrichtung) + Γ4.2 Ridge-Noise + Γ4.4 Drainage-by-Design (V18.180) + Γ4½
-> Slope/Rock-Exposure-Foundation (V18.181).
+> **Status: ARCHIVIERT (13.06.2026 + 14.06.2026 Γ4-VOLLENDUNG).** Der Γ-Kern ist
+> RUND: Γ1 (Feuchte-Feld) + Γ2 (Kronen-Lesarten) + Γ5 (Determinismus-Schliff)
+> gebaut V18.166. Plus über die Branch-Synthese (V18.180-FIX bis V18.187): Γ1-
+> Lesart-4 „Boden atmet" (V18.178 → Sub 3h) + Worker-Mirror bit-identisch + Γ4
+> „Welt wird Komposition" (V18.179 → Sub 3i: Massiv + Tal + Becken, anisotrope
+> smoothstep-Glocke, NE-SW-Streichrichtung) + Γ4.2 Ridge-Noise + Γ4.4 Drainage-
+> by-Design (V18.180) + Γ4½ Slope/Rock-Exposure-Foundation (V18.181).
 >
-> **Reste sind klein/optional und leben in `docs/aktiv.md` §1.C:** Γ7 Baum-
+> **Γ4-VOLLENDUNG GEBAUT V18.193 (R-042, S-Browser-Abnahme offen):** der
+> designte Anker MIT ERBGUT + Abfluss-Constraint, der die V18.181-SCHICHT zum
+> Welt-Stempel hebt. `worldMeta.macro` als additiv-teilbares ERBGUT (eine Welt
+> behält ihren ORIGINAL-Anker auch wenn Konstanten/Algorithmus sich später
+> ändern; persistiert automatisch im worldMeta-Spread). Abfluss-Invariante
+> GEMESSEN über 10 Seeds grün (`diag-makro-anker.cjs`: Rim-Spannweite 51-246 m
+> vs Schwelle 8-9 m — die geerbte LAAS-Narbe „Becken ohne Abfluss-Sattel
+> flutet" strukturell ausgeschlossen). `_isValidMacroAnker` Form-Schutz (must-
+> ignore Taille-Geist). `_macroSpillpointAnalysis` als Verifikations-Wand.
+> Worker-Mirror reicht den Erbgut-Anker (`snap.macroAnker` im
+> `_voxelWorkerSnapshotState`, Worker liest IHN statt selbst zu bauen → Main↔
+> Worker Identität auch bei Konstanten-Wechsel). 18 Wände
+> `checkBandV18193MakroErbgut`.
+>
+> **Reste sind klein/optional und leben in `docs/aktiv.md` §4.A:** Γ7 Baum-
 > Varianten (video-getrieben zuletzt) · Γ1 Lesart 5 (Ψ2-Nase, Geruch des Feldes) ·
 > Γ3 Feld-Charakter (Domain-Warp, optional) · Γ-M Multi-Class-Material (Strata/
 > Iron-Bands/Lichen — ersetzt das alte Γ8) · Γ8 Kies+Saum (schrumpft) · Γ2 Totholz-
-> Option (Entscheid 4). Diese Reste sind reine Pickel — keine Bogen-Phasen.
+> Option (Entscheid 4) · Γ6-Beförderung (vier Alt-diags → stehende Bänder). Diese
+> Reste sind reine Pickel — keine Bogen-Phasen.
 >
 > Das hier ist die VOLLE historische Plan-Datei mit dem LAAS-Transfer-Prinzip
 > („NEUE FELDER, ALTE LESER"), allen Lesart-Karten, den Verifikations-Anhang §V
@@ -46,7 +61,7 @@ Die LAAS-Lektion über LAAS selbst: **das Brief-Muster** — verbotene Outcomes 
 | **Γ1** Feuchte-Feld | `_hydroDistAt` + `_feuchteAt` · fünfte Welt-Stimme · Lesarten 1–3 (Affinität · KLEIN-Arten [farn dual, schilf neu] · Boden) · genVersion | **✓ KERN GEBAUT (V18.166)** — Lesart 4 (Farbe) + Lesart 5 (Ψ2-Nase) offen, §V.4 |
 | **Γ6** diag→Band | jede visuelle Narbe wird beim Heilen Band | **TEILWEISE** — diag-genese steht als Werkzeug + `checkBandGammaGenese` (9 Invarianten); die vier Alt-Kandidaten (snowband/chunk-seam/false-swim/arch-water-solid) = eigene Beförderungs-Welle |
 | **Γ3** Feld-Charakter | Domain-Warp + Frequenz-Fächer der vier Stimmen | OFFEN (optional — das kontinuierliche Feld interdigitiert schon; Entscheid 5) |
-| **Γ4** Makro-Anker | designte Geographie (Massiv·Tal·Becken) gejittert · Abfluss-Invariante (die geerbte LAAS-Narbe) · `worldMeta.macro` als Erbgut | OFFEN — der große Wurf, eigener Bogen-Abschnitt |
+| **Γ4** Makro-Anker | designte Geographie (Massiv·Tal·Becken) gejittert · Abfluss-Invariante (die geerbte LAAS-Narbe) · `worldMeta.macro` als Erbgut | **✓ GEBAUT V18.193** — Erbgut + Abfluss-Invariante + Worker-Mirror, 18 Wände, S-Abnahme offen |
 | **Γ7** Baum-Varianten | `_growTreeBlueprint`-Grammatik emittiert Bauplan-Varianten in der bestehenden Parts-Sprache | OFFEN — zuletzt, video-getrieben |
 
 ### Γ1 — Das Feuchte-Feld (das Herzstück, Kern gebaut)

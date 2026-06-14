@@ -17075,6 +17075,12 @@ class AnazhRealm {
             // Feuchte-Mix-Linie identisch gated (Legacy-Welten behalten ihr
             // Gesicht: < 2 → feuchte = 0, kein Erde-Boden-Drift).
             genVersion: typeof this._genVersion === "function" ? this._genVersion() : 1,
+            // Γ4-Vollendung V18.193 — der persistierte Anker (Erbgut) reist
+            // mit, damit der Worker den IDENTISCHEN Anker liest. Ohne diesen
+            // Schritt würde der Worker bei einer Konstanten-Änderung einen
+            // anderen Anker bauen als der Main → Naht-Wand rot, Welt-
+            // Substanz-Drift. Null bei gen < 3 (Legacy-Welten).
+            macroAnker: typeof this._macroAnker === "function" ? this._macroAnker() : null,
         };
         const h = this.state.hydrosphere;
         if (h && h.ready) {
@@ -19939,12 +19945,111 @@ class AnazhRealm {
         };
     }
 
+    // Γ4-VOLLENDUNG V18.193 — ERBGUT-Form: der persistierte Anker IST die
+    // Source of Truth. Eine Welt behält ihren ORIGINAL-Anker auch wenn die
+    // Konstanten/der Algorithmus sich später ändern (Drift-Schutz, additiv-
+    // teilbar wie ein Welt-Stempel — die "diff/share Geographie"-Vision aus
+    // genese-plan §2.6 Erbgut). Determinismus Main↔Worker via Snapshot-
+    // Reichung (`_voxelWorkerSnapshotState.macroAnker`).
+    // Persistenz reist automatisch im worldMeta-Spread (buildStateSnapshot
+    // Z29506 + _loadStateRestoreWorldMeta Z33701 — kein neuer Restore-Pfad).
+    // Migration-tolerant: alte Welt ohne worldMeta.macro → re-compute aus
+    // Seed (gen≥3) oder null (gen<3). Validierungs-Schutz: korrupter macro-
+    // Felt wird verworfen + neu gebaut (must-ignore, taille-Geist).
     _macroAnker() {
         if (this._macroAnkerCache) return this._macroAnkerCache;
         if (this._genVersion() < 3) return null;
-        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const wm = this.state.worldMeta;
+        if (!wm) return null;
+        if (wm.macro && AnazhRealm._isValidMacroAnker(wm.macro)) {
+            this._macroAnkerCache = wm.macro;
+            return this._macroAnkerCache;
+        }
+        const seed = wm.seed || "anazh-realm-seed";
         this._macroAnkerCache = this._makeMacroAnker(seed);
+        // Erbgut persistieren — der nächste Lade-Vorgang liest aus wm.macro
+        // (und damit auch ein geteiltes Welt-Bündel: signiert+additiv).
+        wm.macro = this._macroAnkerCache;
         return this._macroAnkerCache;
+    }
+
+    // Γ4-VOLLENDUNG V18.193 — Struktur-Validierung. Schützt vor korrupten
+    // macro-Feldern (Müll im Snapshot, falsche Schema-Version, manipuliertes
+    // Bündel) — must-ignore-Geist der Taille-Spec. Prüft Form, nicht
+    // semantische Sinnhaftigkeit (die deckt die Abfluss-Invariante).
+    static _isValidMacroAnker(m) {
+        if (!m || typeof m !== "object") return false;
+        if (!m.massivC || typeof m.massivC.x !== "number" || typeof m.massivC.z !== "number") return false;
+        if (typeof m.massivR !== "number" || !Number.isFinite(m.massivR)) return false;
+        if (typeof m.massivH !== "number" || !Number.isFinite(m.massivH)) return false;
+        if (typeof m.massivRot !== "number" || !Number.isFinite(m.massivRot)) return false;
+        if (typeof m.massivAspect !== "number" || !Number.isFinite(m.massivAspect)) return false;
+        if (!m.beckenC || typeof m.beckenC.x !== "number" || typeof m.beckenC.z !== "number") return false;
+        if (typeof m.beckenR !== "number" || !Number.isFinite(m.beckenR)) return false;
+        if (typeof m.beckenD !== "number" || !Number.isFinite(m.beckenD)) return false;
+        if (!Array.isArray(m.talVertices) || m.talVertices.length < 2) return false;
+        if (!Array.isArray(m.talFloors) || m.talFloors.length !== m.talVertices.length) return false;
+        for (const v of m.talVertices) {
+            if (!v || typeof v.x !== "number" || typeof v.z !== "number") return false;
+            if (!Number.isFinite(v.x) || !Number.isFinite(v.z)) return false;
+        }
+        for (const f of m.talFloors) {
+            if (typeof f !== "number" || !Number.isFinite(f)) return false;
+        }
+        if (typeof m.talBreite !== "number" || typeof m.talTrenchTiefe !== "number") return false;
+        if (typeof m.talTrenchBreite !== "number" || typeof m.talBlendExp !== "number") return false;
+        return true;
+    }
+
+    // Γ4-VOLLENDUNG V18.193 — DIE ABFLUSS-INVARIANTE (die geerbte LAAS-
+    // Narbe strukturell tot). An N=32 Strahlen am Becken-Rim messen wir die
+    // Macro-Höhe (Hydrosphäre-Form, includeDetail=false, gegen Detail-Alias);
+    // die Spannweite max−min MUSS > beckenD*0.5 sein → es gibt einen klar
+    // definierten Tiefweg → ein Becken ist NIE rund von gleichhohen Bergen
+    // umringt (Endorheic-Falle). Der spillAngle zeigt (per V18.181-Quick-
+    // Probe + Tal-Polyline-Design) Richtung Tal-Endpunkt — das Tal IST der
+    // designte Auslass, das Wasser findet ihn als tiefsten Pfad.
+    // Nutzbar als (a) Verifikations-Wand im Test-Band, (b) Bau-Zeit-Check
+    // bei künftiger Auto-Korrektur (Erst-Wurf-Schwelle ist messbar; bei
+    // gemessenem Bedarf justierbar — V18.192-Lehre).
+    _macroSpillpointAnalysis(anker) {
+        if (!anker) return null;
+        const N = 32;
+        let minRimY = Infinity;
+        let maxRimY = -Infinity;
+        let spillAngle = 0;
+        let crestAngle = 0;
+        for (let i = 0; i < N; i++) {
+            const theta = (i / N) * Math.PI * 2;
+            const x = anker.beckenC.x + Math.cos(theta) * anker.beckenR;
+            const z = anker.beckenC.z + Math.sin(theta) * anker.beckenR;
+            const y = this._terrainMacroSurfaceY(x, z, false);
+            if (y < minRimY) {
+                minRimY = y;
+                spillAngle = theta;
+            }
+            if (y > maxRimY) {
+                maxRimY = y;
+                crestAngle = theta;
+            }
+        }
+        const span = maxRimY - minRimY;
+        const hasOutflow = span > anker.beckenD * 0.5;
+        // Tal-Eingangs-Richtung VOM Becken-Zentrum NACH AUSSEN: das letzte
+        // Tal-Vertex liegt am beckenC, das vorletzte etwas davor in Tal-
+        // Längsrichtung. Die Richtung vom Zentrum zum vorletzten Vertex
+        // zeigt dorthin, wo das Tal den Rim KREUZT. Wenn spillAngle (Rich-
+        // tung zum tiefsten Rim-Punkt) dorthin zeigt, IST das Tal-Eingangs-
+        // Punkt der designte Spillweg — Geometrie und Hydrologie sind
+        // automatisch ausgerichtet.
+        const tEnd = anker.talVertices[anker.talVertices.length - 1];
+        const tPrev = anker.talVertices[anker.talVertices.length - 2];
+        const talEntryDirAng = Math.atan2(tPrev.z - tEnd.z, tPrev.x - tEnd.x);
+        let dAng = spillAngle - talEntryDirAng;
+        while (dAng > Math.PI) dAng -= 2 * Math.PI;
+        while (dAng < -Math.PI) dAng += 2 * Math.PI;
+        const spillVsTalDeg = (Math.abs(dAng) * 180) / Math.PI;
+        return { minRimY, maxRimY, span, spillAngleRad: spillAngle, crestAngleRad: crestAngle, hasOutflow, spillVsTalDeg };
     }
 
     // Γ4½ (genese-plan Vertiefung §3) — SLOPE + ROCK-EXPOSURE als gespeicherte
@@ -63455,7 +63560,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.192.0";
+AnazhRealm.VERSION = "18.193.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

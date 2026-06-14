@@ -7,13 +7,17 @@
 > Chronik. Vision: `docs/state-of-realm.md` + `docs/das-lebendige-feld.md`.
 > Vollendete Pläne im Archiv.
 
-**Stand 13.06.2026 (V18.192 — `claude/stoic-archimedes-36l2it`):** der Schöpfer-Auftrag „alles
-offene + alle Unvollständigkeiten in den Backlog" ist umgesetzt — der aktive Tisch ist
-nun GEZIELT: nur was VOR Öffentlich-Machen substanziell zählt steht hier, alles andere ist
-in `docs/roadmap.md` §4 als Backlog gesichert (nichts vergessen, nichts verloren). **Φ-Bogen
-RUND 7/7** (V18.188–V18.191). **W5 Werkzeug-Abnutzung GEBAUT** (V18.192, R-031: ja, kein
-Perpetuum mobile — Ω5 lebt am Werkzeug). Der Tisch trägt jetzt nur noch: die **S-Browser-
-Abnahmen** des Schöpfers + ggf. **R-037 T-Welle** (ruht bis dritter Bauer).
+**Stand 14.06.2026 (V18.193 — `claude/loving-meitner-o2cz4i`):** Schöpfer-Auftrag „weiter
+gehts champ, noch vieles im backlog, lass uns die dinge abschliessen, volle tiefe, keinen
+halben sachen" → den nächsten großen Wurf des Γ-Bogens durchgezogen. **Γ4 echter MAKRO-
+ANKER VOLLENDET (V18.193, R-042):** `worldMeta.macro` als signiertes ERBGUT (additiv-teilbar
+wie ein Welt-Stempel) + Abfluss-Invariante über 10 Seeds GEMESSEN grün (Rim-Spannweite >
+beckenD·0.5, die geerbte LAAS-Narbe strukturell tot) + `_isValidMacroAnker` Form-Schutz +
+Worker-Mirror reicht den Erbgut-Anker (Main↔Worker Identität auch bei Konstanten-Wechsel).
+**Φ-Bogen RUND 7/7** (V18.188–V18.191). **W5 Werkzeug-Abnutzung GEBAUT** (V18.192, R-031:
+kein Perpetuum mobile — Ω5 lebt am Werkzeug). Der Tisch trägt jetzt nur noch: die **S-Browser-
+Abnahmen** des Schöpfers + ggf. **R-037 T-Welle** (ruht bis dritter Bauer) + die weiteren
+Backlog-Punkte §4 (nächste in Reihe).
 
 ---
 
@@ -34,6 +38,7 @@ Abnahmen** des Schöpfers + ggf. **R-037 T-Welle** (ruht bis dritter Bauer).
 | Branch-Synthese (clever-gauss × tesla → ein Stamm) | V18.180-FIX bis V18.187 (20 Commits, 10 permanente Lehren) | `docs/wellen-synthese-plan.md` + Archiv-Voll-Datei |
 | **Φ-Bogen Φ0–Φ7 (M9-Sprossen 1+2+3 — DAS WELTEN-NETZ, RUND 7/7)** | **V18.188–V18.191** | `docs/archiv/archipel-plan.md` (ALLE Wellen GEBAUT; 58 Wände in 4 Test-Bands; smoke-multiuser end-to-end) |
 | **W5 Werkzeug-Abnutzung (R-031: Ω5 lebt am Werkzeug — Mühe-Senke + Reparieren-Akt, Migration-tolerant)** | **V18.192** | unten §1.A + `docs/rueckmeldung.md` R-031 |
+| **Γ4 echter MAKRO-ANKER (R-042: ERBGUT + Abfluss-Invariante + Worker-Mirror — LAAS-Narbe strukturell tot)** | **V18.193** | `docs/archiv/genese-plan.md` §Γ4 + `docs/rueckmeldung.md` R-042 |
 
 ---
 
@@ -125,11 +130,12 @@ Die drei DURCHGEZOGENEN (Antwort eingetragen, Folge-Aktion umgesetzt):
 ### 4.A — Γ-BOGEN 2 (die zweite Welle des Genese-Bogens, mehrere offene Wellen)
 
 Der Γ-Kern (V18.166) + V18.181-Erweiterungen (Λ.6 Boden atmet · Γ4-Schicht Massiv/Tal/Becken)
-sind GEBAUT. Was die nächste Phase trägt:
++ **V18.193 Γ4-VOLLENDUNG (ERBGUT + Abfluss-Invariante + Worker-Mirror)** sind GEBAUT. Was die
+nächste Phase trägt:
 
 | ID | Was | Größe | Voraussetzung |
 |---|---|---|---|
-| **Γ4 echter MAKRO-ANKER** | `makeMacroAnker(seed)` als designte Geographie (Massiv/Tal/Becken-Anker GEJITTERT), `worldMeta.macro` als signiertes ERBGUT (teilbar, additiv), **Abfluss-Invariante ab Tag 1** (Becken-Spillpunkt < min-Randhöhe → kein Endorheic-Bug, die LAAS-Narbe). V18.181 hat die SCHICHT (anisotrope smoothstep-Glocke), der DESIGNTE Anker mit Erbgut+Constraint fehlt | **groß, der nächste Wurf** | — |
+| ~~**Γ4 echter MAKRO-ANKER**~~ | **✓ GEBAUT V18.193:** `worldMeta.macro` als signiertes ERBGUT (additiv-teilbar wie ein Welt-Stempel), Abfluss-Invariante über 10 Seeds GEMESSEN grün (Rim-Spannweite > beckenD·0.5 → die LAAS-Narbe strukturell tot), `_isValidMacroAnker` Form-Schutz (must-ignore Taille-Geist), `_macroSpillpointAnalysis` als Verifikations-Wand, Worker-Mirror reicht den Erbgut-Anker (Main↔Worker Identität auch bei Konstanten-Wechsel). 18 Wände `checkBandV18193MakroErbgut`. S-Browser-Abnahme offen. | **✓ GEBAUT** | — |
 | **Γ1-Lesart-5 Ψ2-NASE** | „Geruch des Feldes" — die ferne 5. Welt-Stimme. Kreatur lest sie für Aufträge (Jagd-Spur, Pflanzen-Lokalisierung); Strom aus Wind-Vektor + Distanz | mittel, eigenes Subsystem | — |
 | **Γ-M Multi-Class-Material** | Strata/Iron-Bands/Lichen (Schichten + Adern + Patina) — ersetzt das alte Γ8 Kies+Saum | mittel | nach Γ4½ Slope/Rock (steht) |
 | **Γ6-BEFÖRDERUNG** | snowband/chunk-seam/false-swim/arch-water-solid → vier STEHENDE Bänder (heute nur diags); jede visuelle Narbe wird beim Heilen Band | klein, mechanisch | — |

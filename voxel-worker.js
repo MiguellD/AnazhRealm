@@ -56,6 +56,10 @@ const state = {
     // Schleuse. Fehlt im Snap (Legacy-Welt) → 1 → feuchteAt = 0 (kein Erde-
     // Boden-Drift); Genese-2 (neue Welt) → 2 → der Boden atmet.
     genVersion: 1,
+    // Γ4-Vollendung V18.193 — der vom Main persistierte Erbgut-Anker.
+    // Worker liest IHN statt selbst zu bauen → konsistent über
+    // Konstanten-Wechsel + Welt-Bündel-Import.
+    macroAnker: null,
 };
 
 self.onmessage = function (e) {
@@ -141,6 +145,14 @@ function applyStateSnapshot(snap) {
     if (typeof snap.carveBankSlope === "number") state.carveBankSlope = snap.carveBankSlope;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
+    // Γ4-Vollendung V18.193 — Erbgut-Anker vom Main übernehmen + Cache
+    // invalidieren (sonst klebt der alte re-computed Anker im Worker, wenn
+    // der Main ihn aus dem Bündel-Import frisch eingespielt hat).
+    if (snap.macroAnker !== undefined) {
+        state.macroAnker = snap.macroAnker;
+        _macroAnkerCache = null;
+        _macroAnkerSeed = null;
+    }
 }
 
 function applyStateDelta(delta) {
@@ -358,6 +370,17 @@ let _macroAnkerCache = null;
 let _macroAnkerSeed = null;
 function macroAnker() {
     if (state.genVersion < 3) return null;
+    // Γ4-Vollendung V18.193 — Erbgut-Pfad: der vom Main persistierte Anker
+    // ist die Source of Truth. Worker baut nur dann selbst, wenn KEIN Anker
+    // geliefert wurde (Edge-Case in alten Tests, die direkt state.seed
+    // setzen ohne snapshot durchzuschicken).
+    if (state.macroAnker) {
+        if (!_macroAnkerCache || _macroAnkerSeed !== state.seed) {
+            _macroAnkerCache = state.macroAnker;
+            _macroAnkerSeed = state.seed;
+        }
+        return _macroAnkerCache;
+    }
     if (_macroAnkerCache && _macroAnkerSeed === state.seed) return _macroAnkerCache;
     if (!state.seed) return null;
     _macroAnkerCache = makeMacroAnker(state.seed);
