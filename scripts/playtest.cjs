@@ -17248,15 +17248,16 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 // DirectionalLight/Ambient/Hemisphere + Schatten. isMeshToonMaterial
                 // === true ist NATIV gesetzt (Toon-Familie); isMeshToonNodeMaterial
                 // === true ist der Node-Pfad-Marker (war V10.0-g: MeshBasicNodeMaterial).
-                out.isToonMarker = isle.material.isMeshToonMaterial === true;
-                out.isNodeMaterial = isle.material.isMeshToonNodeMaterial === true;
+                // V18.234 — mode-agnostisch: das aktive Lichtmodell ist Toon ODER PBR.
+                out.isToonMarker = !!(isle.material.isMeshToonMaterial || isle.material.isMeshStandardMaterial);
+                out.isNodeMaterial = /Node/.test(isle.material.type || "");
                 out.hasColorAttr = !!isle.geometry.getAttribute("color");
             }
             return out;
         });
         check("V9.42-c: _attachIslandColors existiert", r42c.hasAttachColors);
         check(
-            `V9.42-c: Insel nutzt natives MeshToonNodeMaterial (V12.0-f) — ${r42c.material}`,
+            `V9.42-c/234: Insel nutzt das aktive lit NodeMaterial (Toon ODER PBR) — ${r42c.material}`,
             r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
         check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
@@ -30678,8 +30679,9 @@ async function checkBandLambda3Wind(ctx) {
         const steinProfile = r._substanceResponseProfile({ tags: { lebendig: 0, dichte: 1, härte: 1 } });
         out.laubWiegt = laubProfile.wiegen;
         out.steinWiegtNull = steinProfile.wiegen;
-        // Source-Probe: _buildToonNodeMaterial setzt positionNode für wiegen > 0.05.
-        const src = r._buildToonNodeMaterial.toString();
+        // Source-Probe: V18.234 — der Wind-Sway lebt im GETEILTEN _applyVegetationResponse
+        // (Toon + PBR rufen ihn).
+        const src = r._applyVegetationResponse.toString();
         out.windSwayCode = /responseProfile.*wiegen.*>\s*0\.05/.test(src) && /positionNode\s*=/.test(src);
         return out;
     });
@@ -30688,7 +30690,10 @@ async function checkBandLambda3Wind(ctx) {
         Number.isFinite(res.laubWiegt) && res.laubWiegt > 0.2
     );
     check("Λ.3 Wind: stein-Profil.wiegen === 0 (kein Sway auf Stein)", res.steinWiegtNull === 0);
-    check("Λ.3 Wind: _buildToonNodeMaterial setzt positionNode für wiegen > 0.05", res.windSwayCode === true);
+    check(
+        "Λ.3 Wind: _applyVegetationResponse setzt positionNode für wiegen > 0.05 (geteilt Toon+PBR)",
+        res.windSwayCode === true
+    );
 }
 
 async function checkBandLambda4Streu(ctx) {
@@ -30817,8 +30822,9 @@ async function checkBandLambda6Detail(ctx) {
         out.laubDetail = laubProfile.detail;
         out.glasDetail = glasProfile.detail;
         out.steinDetailNull = steinProfile.detail;
-        // Source-Probe: _buildToonNodeMaterial trägt subsurface-backlit für detail > 0.4.
-        const src = r._buildToonNodeMaterial.toString();
+        // Source-Probe: V18.234 — der Subsurface-Backlit lebt im GETEILTEN
+        // _applyVegetationResponse (Toon + PBR).
+        const src = r._applyVegetationResponse.toString();
         out.detailCode = /responseProfile.*detail.*>\s*0\.4/.test(src) && /backlit|_backlit/.test(src);
         return out;
     });
@@ -30831,7 +30837,10 @@ async function checkBandLambda6Detail(ctx) {
         Number.isFinite(res.glasDetail) && res.glasDetail > 0.4
     );
     check("Λ.6 Detail: stein-Profil.detail === 0 (kein Translucency auf Stein)", res.steinDetailNull === 0);
-    check("Λ.6 Detail: _buildToonNodeMaterial trägt subsurface-backlit für detail > 0.4", res.detailCode === true);
+    check(
+        "Λ.6 Detail: _applyVegetationResponse trägt subsurface-backlit für detail > 0.4 (geteilt Toon+PBR)",
+        res.detailCode === true
+    );
 }
 
 // V18.181-merge-Λ Sub 3g — AAA-Atmosphäre Regression-Wand (Welle 6-Nachhol).
@@ -32966,189 +32975,203 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
 // bei Konstanten-Änderung oder Bündel-Import).
 async function checkBandV18193MakroErbgut(ctx) {
     const { page, check } = ctx;
-    const SEEDS = [
-        "seed-a", "seed-b", "seed-c", "seed-d", "seed-e",
-        "seed-f", "seed-g", "seed-h", "seed-i", "seed-j",
-    ];
-    const res = await safeEvaluate(page, (SEEDS) => {
-        const r = window.anazhRealm;
-        const A = r.constructor;
-        const out = {};
+    const SEEDS = ["seed-a", "seed-b", "seed-c", "seed-d", "seed-e", "seed-f", "seed-g", "seed-h", "seed-i", "seed-j"];
+    const res = await safeEvaluate(
+        page,
+        (SEEDS) => {
+            const r = window.anazhRealm;
+            const A = r.constructor;
+            const out = {};
 
-        // (E1) STRUKTUR: die drei neuen Helper leben + Validator als static
-        // an der Klasse (Source of Truth für Welt-Stempel-Form).
-        out.helpersExist =
-            typeof r._macroSpillpointAnalysis === "function" &&
-            typeof A._isValidMacroAnker === "function";
+            // (E1) STRUKTUR: die drei neuen Helper leben + Validator als static
+            // an der Klasse (Source of Truth für Welt-Stempel-Form).
+            out.helpersExist =
+                typeof r._macroSpillpointAnalysis === "function" && typeof A._isValidMacroAnker === "function";
 
-        // (E2) VALIDATOR: prüft Form, akzeptiert nur korrekte Struktur.
-        out.validatorRejectsNull = A._isValidMacroAnker(null) === false;
-        out.validatorRejectsPlain = A._isValidMacroAnker({}) === false;
-        out.validatorRejectsPartial = A._isValidMacroAnker({ massivC: { x: 0, z: 0 } }) === false;
-        out.validatorAcceptsValid = A._isValidMacroAnker(r._makeMacroAnker("validator-test")) === true;
-        // NaN/Infinity werden abgelehnt (must-ignore, Taille-Geist).
-        const badNaN = r._makeMacroAnker("nan-test");
-        badNaN.massivR = NaN;
-        out.validatorRejectsNaN = A._isValidMacroAnker(badNaN) === false;
+            // (E2) VALIDATOR: prüft Form, akzeptiert nur korrekte Struktur.
+            out.validatorRejectsNull = A._isValidMacroAnker(null) === false;
+            out.validatorRejectsPlain = A._isValidMacroAnker({}) === false;
+            out.validatorRejectsPartial = A._isValidMacroAnker({ massivC: { x: 0, z: 0 } }) === false;
+            out.validatorAcceptsValid = A._isValidMacroAnker(r._makeMacroAnker("validator-test")) === true;
+            // NaN/Infinity werden abgelehnt (must-ignore, Taille-Geist).
+            const badNaN = r._makeMacroAnker("nan-test");
+            badNaN.massivR = NaN;
+            out.validatorRejectsNaN = A._isValidMacroAnker(badNaN) === false;
 
-        // (E3) DETERMINISMUS: identisches Resultat über 10 Seeds.
-        let allDet = true;
-        for (const seed of SEEDS) {
-            const a = r._makeMacroAnker(seed);
-            const b = r._makeMacroAnker(seed);
-            if (
-                a.massivC.x !== b.massivC.x ||
-                a.massivR !== b.massivR ||
-                a.beckenD !== b.beckenD ||
-                !a.talVertices.every((v, i) => v.x === b.talVertices[i].x && v.z === b.talVertices[i].z) ||
-                !a.talFloors.every((f, i) => f === b.talFloors[i])
-            ) { allDet = false; break; }
-        }
-        out.determ10Seeds = allDet;
-
-        const origSeed = r.state.worldMeta ? r.state.worldMeta.seed : null;
-        const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
-        const origMacro = r.state.worldMeta ? r.state.worldMeta.macro : undefined;
-        try {
-            if (!r.state.worldMeta) r.state.worldMeta = {};
-
-            // (E4) ERBGUT-PERSISTENZ: erste Lesung schreibt wm.macro.
-            r.state.worldMeta.seed = "erbgut-test";
-            r.state.worldMeta.genVersion = 3;
-            delete r.state.worldMeta.macro;
-            r._macroAnkerCache = null;
-            r._voxelNoise = null;
-            r._macroRidgeNoise = null;
-            const ank1 = r._macroAnker();
-            out.erbgutWritten = ank1 && r.state.worldMeta.macro === ank1;
-
-            // (E5) ZWEITE Lesung: aus wm.macro statt re-compute (Cache-Reset
-            // → wm.macro ist die Source of Truth).
-            r._macroAnkerCache = null;
-            const ank2 = r._macroAnker();
-            out.erbgutSecondReadSame = ank2 === r.state.worldMeta.macro;
-            out.erbgutValuesIdentical =
-                ank1.massivR === ank2.massivR && ank1.beckenD === ank2.beckenD;
-
-            // (E6) KORRUPT-SCHUTZ: ein manipuliertes wm.macro (must-ignore)
-            // wird verworfen + neu aus Seed gebaut.
-            r.state.worldMeta.macro = { massivC: null, beckenC: null };
-            r._macroAnkerCache = null;
-            const ank3 = r._macroAnker();
-            out.corruptRejected =
-                ank3 && ank3.massivC && typeof ank3.massivR === "number" && !!r.state.worldMeta.macro;
-
-            // (E7) SNAPSHOT-ROUND-TRIP: macro reist intakt durch
-            // JSON.parse(JSON.stringify(...)) (Mesh-WebSocket-Form).
-            const macroAfterRebuild = r.state.worldMeta.macro;
-            const snap = JSON.parse(JSON.stringify({ macro: macroAfterRebuild }));
-            out.snapshotRoundTrip =
-                snap.macro && A._isValidMacroAnker(snap.macro) &&
-                snap.macro.massivR === macroAfterRebuild.massivR &&
-                snap.macro.beckenD === macroAfterRebuild.beckenD;
-
-            // (E8) MIGRATION: Legacy-Welt (gen=1) ohne macro-Feld → null,
-            // KEIN Crash, kein Re-Compute (Drainage-Netz-Gesetz: alte
-            // Welten behalten ihr Gesicht).
-            r.state.worldMeta.genVersion = 1;
-            delete r.state.worldMeta.macro;
-            r._macroAnkerCache = null;
-            out.migrationLegacyNull = r._macroAnker() === null;
-
-            // (E9) MIGRATION: gen=3 OHNE macro-Feld → re-computed aus Seed +
-            // automatisch persistiert (zweite Sitzung profitiert).
-            r.state.worldMeta.genVersion = 3;
-            delete r.state.worldMeta.macro;
-            r._macroAnkerCache = null;
-            const migrA = r._macroAnker();
-            out.migrationGen3Rebuild = !!migrA && !!r.state.worldMeta.macro &&
-                A._isValidMacroAnker(r.state.worldMeta.macro);
-
-            // (E10) ABFLUSS-INVARIANTE: 10/10 Seeds haben span > beckenD*0.5
-            // (kein endorheic Becken — die LAAS-Narbe strukturell tot).
-            let allOutflow = true;
-            const spillSamples = [];
+            // (E3) DETERMINISMUS: identisches Resultat über 10 Seeds.
+            let allDet = true;
             for (const seed of SEEDS) {
-                r.state.worldMeta.seed = seed;
+                const a = r._makeMacroAnker(seed);
+                const b = r._makeMacroAnker(seed);
+                if (
+                    a.massivC.x !== b.massivC.x ||
+                    a.massivR !== b.massivR ||
+                    a.beckenD !== b.beckenD ||
+                    !a.talVertices.every((v, i) => v.x === b.talVertices[i].x && v.z === b.talVertices[i].z) ||
+                    !a.talFloors.every((f, i) => f === b.talFloors[i])
+                ) {
+                    allDet = false;
+                    break;
+                }
+            }
+            out.determ10Seeds = allDet;
+
+            const origSeed = r.state.worldMeta ? r.state.worldMeta.seed : null;
+            const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
+            const origMacro = r.state.worldMeta ? r.state.worldMeta.macro : undefined;
+            try {
+                if (!r.state.worldMeta) r.state.worldMeta = {};
+
+                // (E4) ERBGUT-PERSISTENZ: erste Lesung schreibt wm.macro.
+                r.state.worldMeta.seed = "erbgut-test";
                 r.state.worldMeta.genVersion = 3;
                 delete r.state.worldMeta.macro;
                 r._macroAnkerCache = null;
                 r._voxelNoise = null;
                 r._macroRidgeNoise = null;
-                const anker = r._macroAnker();
-                const spill = r._macroSpillpointAnalysis(anker);
-                spillSamples.push({ seed, span: spill.span, beckenD: anker.beckenD, hasOutflow: spill.hasOutflow });
-                if (!spill.hasOutflow) allOutflow = false;
-            }
-            out.outflowAll10Seeds = allOutflow;
-            out.spillSamples = spillSamples;
+                const ank1 = r._macroAnker();
+                out.erbgutWritten = ank1 && r.state.worldMeta.macro === ank1;
 
-            // (E11) STATISTISCHE TAL-ALIGNMENT-PROBE: mindestens 6/10 Seeds
-            // haben den niedrigsten Rim-Punkt nahe (< 60°) der Tal-Eingangs-
-            // Richtung — das Tal IST der designte Spillweg im Großteil der
-            // Welten. Die Ausnahmen sind Welten, wo ein anderer Pass tiefer
-            // geriet (auch ein valider Auslass, kein endorheic).
-            let nearTalCount = 0;
-            for (const seed of SEEDS) {
-                r.state.worldMeta.seed = seed;
+                // (E5) ZWEITE Lesung: aus wm.macro statt re-compute (Cache-Reset
+                // → wm.macro ist die Source of Truth).
+                r._macroAnkerCache = null;
+                const ank2 = r._macroAnker();
+                out.erbgutSecondReadSame = ank2 === r.state.worldMeta.macro;
+                out.erbgutValuesIdentical = ank1.massivR === ank2.massivR && ank1.beckenD === ank2.beckenD;
+
+                // (E6) KORRUPT-SCHUTZ: ein manipuliertes wm.macro (must-ignore)
+                // wird verworfen + neu aus Seed gebaut.
+                r.state.worldMeta.macro = { massivC: null, beckenC: null };
+                r._macroAnkerCache = null;
+                const ank3 = r._macroAnker();
+                out.corruptRejected =
+                    ank3 && ank3.massivC && typeof ank3.massivR === "number" && !!r.state.worldMeta.macro;
+
+                // (E7) SNAPSHOT-ROUND-TRIP: macro reist intakt durch
+                // JSON.parse(JSON.stringify(...)) (Mesh-WebSocket-Form).
+                const macroAfterRebuild = r.state.worldMeta.macro;
+                const snap = JSON.parse(JSON.stringify({ macro: macroAfterRebuild }));
+                out.snapshotRoundTrip =
+                    snap.macro &&
+                    A._isValidMacroAnker(snap.macro) &&
+                    snap.macro.massivR === macroAfterRebuild.massivR &&
+                    snap.macro.beckenD === macroAfterRebuild.beckenD;
+
+                // (E8) MIGRATION: Legacy-Welt (gen=1) ohne macro-Feld → null,
+                // KEIN Crash, kein Re-Compute (Drainage-Netz-Gesetz: alte
+                // Welten behalten ihr Gesicht).
+                r.state.worldMeta.genVersion = 1;
                 delete r.state.worldMeta.macro;
+                r._macroAnkerCache = null;
+                out.migrationLegacyNull = r._macroAnker() === null;
+
+                // (E9) MIGRATION: gen=3 OHNE macro-Feld → re-computed aus Seed +
+                // automatisch persistiert (zweite Sitzung profitiert).
+                r.state.worldMeta.genVersion = 3;
+                delete r.state.worldMeta.macro;
+                r._macroAnkerCache = null;
+                const migrA = r._macroAnker();
+                out.migrationGen3Rebuild =
+                    !!migrA && !!r.state.worldMeta.macro && A._isValidMacroAnker(r.state.worldMeta.macro);
+
+                // (E10) ABFLUSS-INVARIANTE: 10/10 Seeds haben span > beckenD*0.5
+                // (kein endorheic Becken — die LAAS-Narbe strukturell tot).
+                let allOutflow = true;
+                const spillSamples = [];
+                for (const seed of SEEDS) {
+                    r.state.worldMeta.seed = seed;
+                    r.state.worldMeta.genVersion = 3;
+                    delete r.state.worldMeta.macro;
+                    r._macroAnkerCache = null;
+                    r._voxelNoise = null;
+                    r._macroRidgeNoise = null;
+                    const anker = r._macroAnker();
+                    const spill = r._macroSpillpointAnalysis(anker);
+                    spillSamples.push({ seed, span: spill.span, beckenD: anker.beckenD, hasOutflow: spill.hasOutflow });
+                    if (!spill.hasOutflow) allOutflow = false;
+                }
+                out.outflowAll10Seeds = allOutflow;
+                out.spillSamples = spillSamples;
+
+                // (E11) STATISTISCHE TAL-ALIGNMENT-PROBE: mindestens 6/10 Seeds
+                // haben den niedrigsten Rim-Punkt nahe (< 60°) der Tal-Eingangs-
+                // Richtung — das Tal IST der designte Spillweg im Großteil der
+                // Welten. Die Ausnahmen sind Welten, wo ein anderer Pass tiefer
+                // geriet (auch ein valider Auslass, kein endorheic).
+                let nearTalCount = 0;
+                for (const seed of SEEDS) {
+                    r.state.worldMeta.seed = seed;
+                    delete r.state.worldMeta.macro;
+                    r._macroAnkerCache = null;
+                    r._voxelNoise = null;
+                    r._macroRidgeNoise = null;
+                    const anker = r._macroAnker();
+                    const spill = r._macroSpillpointAnalysis(anker);
+                    if (spill.spillVsTalDeg < 60) nearTalCount++;
+                }
+                out.nearTalCount = nearTalCount;
+
+                // (E12) WORKER-MIRROR: snap.macroAnker reist mit + ist valid.
+                r.state.worldMeta.seed = "worker-mirror-test";
+                r.state.worldMeta.genVersion = 3;
+                delete r.state.worldMeta.macro;
+                r._macroAnkerCache = null;
+                const wsnap = r._voxelWorkerSnapshotState();
+                out.workerSnapHasField = "macroAnker" in wsnap;
+                out.workerSnapValid = wsnap.macroAnker && A._isValidMacroAnker(wsnap.macroAnker);
+                // Determinismus: snap.macroAnker == r._macroAnker() Erbgut-Anker.
+                out.workerSnapMatchesMain = wsnap.macroAnker === r.state.worldMeta.macro;
+
+                // (E13) WORKER-MIRROR Legacy: gen=1 → snap.macroAnker = null
+                // (Worker sieht KEINEN Anker, baut auch keinen → Legacy-Welten
+                // behalten ihr Gesicht im Worker-Spiegel).
+                r.state.worldMeta.genVersion = 1;
+                delete r.state.worldMeta.macro;
+                r._macroAnkerCache = null;
+                const wsnapLegacy = r._voxelWorkerSnapshotState();
+                out.workerSnapLegacyNull = wsnapLegacy.macroAnker === null;
+            } finally {
+                if (r.state.worldMeta) {
+                    if (origSeed === null) delete r.state.worldMeta.seed;
+                    else r.state.worldMeta.seed = origSeed;
+                    if (origGen === undefined) delete r.state.worldMeta.genVersion;
+                    else r.state.worldMeta.genVersion = origGen;
+                    if (origMacro === undefined) delete r.state.worldMeta.macro;
+                    else r.state.worldMeta.macro = origMacro;
+                }
                 r._macroAnkerCache = null;
                 r._voxelNoise = null;
                 r._macroRidgeNoise = null;
-                const anker = r._macroAnker();
-                const spill = r._macroSpillpointAnalysis(anker);
-                if (spill.spillVsTalDeg < 60) nearTalCount++;
             }
-            out.nearTalCount = nearTalCount;
+            return out;
+        },
+        SEEDS
+    );
 
-            // (E12) WORKER-MIRROR: snap.macroAnker reist mit + ist valid.
-            r.state.worldMeta.seed = "worker-mirror-test";
-            r.state.worldMeta.genVersion = 3;
-            delete r.state.worldMeta.macro;
-            r._macroAnkerCache = null;
-            const wsnap = r._voxelWorkerSnapshotState();
-            out.workerSnapHasField = "macroAnker" in wsnap;
-            out.workerSnapValid = wsnap.macroAnker && A._isValidMacroAnker(wsnap.macroAnker);
-            // Determinismus: snap.macroAnker == r._macroAnker() Erbgut-Anker.
-            out.workerSnapMatchesMain =
-                wsnap.macroAnker === r.state.worldMeta.macro;
-
-            // (E13) WORKER-MIRROR Legacy: gen=1 → snap.macroAnker = null
-            // (Worker sieht KEINEN Anker, baut auch keinen → Legacy-Welten
-            // behalten ihr Gesicht im Worker-Spiegel).
-            r.state.worldMeta.genVersion = 1;
-            delete r.state.worldMeta.macro;
-            r._macroAnkerCache = null;
-            const wsnapLegacy = r._voxelWorkerSnapshotState();
-            out.workerSnapLegacyNull = wsnapLegacy.macroAnker === null;
-        } finally {
-            if (r.state.worldMeta) {
-                if (origSeed === null) delete r.state.worldMeta.seed;
-                else r.state.worldMeta.seed = origSeed;
-                if (origGen === undefined) delete r.state.worldMeta.genVersion;
-                else r.state.worldMeta.genVersion = origGen;
-                if (origMacro === undefined) delete r.state.worldMeta.macro;
-                else r.state.worldMeta.macro = origMacro;
-            }
-            r._macroAnkerCache = null;
-            r._voxelNoise = null;
-            r._macroRidgeNoise = null;
-        }
-        return out;
-    }, SEEDS);
-
-    check("Γ4-Vollendung (E1) Helpers leben (_macroSpillpointAnalysis + static _isValidMacroAnker)", res.helpersExist === true);
-    check("Γ4-Vollendung (E2a) Validator weist null/{}/partial ab", res.validatorRejectsNull && res.validatorRejectsPlain && res.validatorRejectsPartial);
+    check(
+        "Γ4-Vollendung (E1) Helpers leben (_macroSpillpointAnalysis + static _isValidMacroAnker)",
+        res.helpersExist === true
+    );
+    check(
+        "Γ4-Vollendung (E2a) Validator weist null/{}/partial ab",
+        res.validatorRejectsNull && res.validatorRejectsPlain && res.validatorRejectsPartial
+    );
     check("Γ4-Vollendung (E2b) Validator akzeptiert echten Anker", res.validatorAcceptsValid === true);
     check("Γ4-Vollendung (E2c) Validator weist NaN ab (must-ignore Taille-Geist)", res.validatorRejectsNaN === true);
     check("Γ4-Vollendung (E3) Determinismus über 10 Seeds (Welt-Substanz-Garantie)", res.determ10Seeds === true);
-    check("Γ4-Vollendung (E4) ERBGUT geschrieben nach erstem _macroAnker() (worldMeta.macro)", res.erbgutWritten === true);
+    check(
+        "Γ4-Vollendung (E4) ERBGUT geschrieben nach erstem _macroAnker() (worldMeta.macro)",
+        res.erbgutWritten === true
+    );
     check("Γ4-Vollendung (E5a) zweite Lesung kommt aus wm.macro (gleiche Instanz)", res.erbgutSecondReadSame === true);
     check("Γ4-Vollendung (E5b) Werte identisch über Cache-Reset", res.erbgutValuesIdentical === true);
     check("Γ4-Vollendung (E6) korrupter macro-Felt verworfen + frisch gebaut", res.corruptRejected === true);
     check("Γ4-Vollendung (E7) Snapshot-Round-Trip (JSON.parse) erhält macro-Anker", res.snapshotRoundTrip === true);
     check("Γ4-Vollendung (E8) Legacy gen=1 ohne macro → null (kein Drift)", res.migrationLegacyNull === true);
-    check("Γ4-Vollendung (E9) Migration gen=3 ohne macro → re-computed + persistiert", res.migrationGen3Rebuild === true);
+    check(
+        "Γ4-Vollendung (E9) Migration gen=3 ohne macro → re-computed + persistiert",
+        res.migrationGen3Rebuild === true
+    );
     check(
         `Γ4-Vollendung (E10) ABFLUSS-INVARIANTE: 10/10 Seeds hasOutflow (LAAS-Narbe strukturell tot)`,
         res.outflowAll10Seeds === true
@@ -33183,8 +33206,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         // und der gemessene Schnee-Anteil in der NAHEN Region (±300 m) ist
         // < 0.1 (kein flächiger Boden-Schnee mehr).
         const attachSrc = r._attachVoxelFieldColors.toString();
-        out.snowOnProminence =
-            /SNOW_PROM_START/.test(attachSrc) && /y\s*-\s*base\s*-\s*_cont0/.test(attachSrc);
+        out.snowOnProminence = /SNOW_PROM_START/.test(attachSrc) && /y\s*-\s*base\s*-\s*_cont0/.test(attachSrc);
         // ALTE absolute Form ss(12,42,y) darf NICHT als Code (mix(snow,…))
         // erscheinen — im Kommentar erlaubt. Engere regex auf den Code-Stil.
         out.snowOldAbsoluteGone = !/mix\(snow,\s*ss\(12,\s*42,\s*y\)\)/.test(attachSrc);
@@ -33313,8 +33335,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         // Warmup), wird die Probe als "skipped" markiert — den V13.10-Wert
         // verteidigt der `_blockerComputePartAABB` Source-Probe-Wand.
         out.archMostlyHaveBlockers =
-            archSeen < 3 ? "skipped-no-archs" :
-            archWithBlockers / Math.max(1, archSeen) >= 0.3;
+            archSeen < 3 ? "skipped-no-archs" : archWithBlockers / Math.max(1, archSeen) >= 0.3;
         // Source-Probe: _blockerComputePartAABB (die Solidität-Quelle, V9.65-
         // Lehre: Material-Tag dichte ≥ 0.3 macht den Part SOLID).
         const blockerSrc = r._blockerComputePartAABB ? r._blockerComputePartAABB.toString() : "";
@@ -33324,18 +33345,27 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
     });
 
     // (G1) SNOWBAND
-    check("Γ6 (G1a) Schnee-Formel auf PROMINENZ (V17.105): SNOW_PROM_START + (y-base-_cont0) in Source", res.snowOnProminence === true);
+    check(
+        "Γ6 (G1a) Schnee-Formel auf PROMINENZ (V17.105): SNOW_PROM_START + (y-base-_cont0) in Source",
+        res.snowOnProminence === true
+    );
     check("Γ6 (G1b) ALTE absolute Schnee-Zeile ss(12,42,y) GESTRICHEN", res.snowOldAbsoluteGone === true);
     check(
         `Γ6 (G1c) Tiefland-Schnee (prominence<30 m) < 0.02 (gemessen ${res.snowLowProminMean.toFixed(4)} an ${res.snowLowProminN} Samples — V17.105-Heilung)`,
         res.snowLowProminOk === true
     );
     // (G2) CHUNK-SEAM
-    check("Γ6 (G2) CHUNK-SEAM: Pad+Crop-Mechanismus (cropMargin in _voxelChunkGeometry, V9.42-b komplementär)", res.seamPadCropMechanism === true);
+    check(
+        "Γ6 (G2) CHUNK-SEAM: Pad+Crop-Mechanismus (cropMargin in _voxelChunkGeometry, V9.42-b komplementär)",
+        res.seamPadCropMechanism === true
+    );
     // (G3) FALSE-SWIM
     check("Γ6 (G3a) FALSE-SWIM: _waterCellAt liest 3D-Cell-Wahrheit (V13.11/V18.0)", res.waterCellAtExists === true);
     check("Γ6 (G3b) hohe Luft-Position (y=200) ist NIE Wasser-Cell (kein Phantom)", res.waterCellHighNotWater === true);
-    check("Γ6 (G3c) über Spielerposition (+20 m) ist NIE Wasser-Cell (kein Sub-Terrain-Blasen-Riss)", res.waterCellAbovePlayerNotWater === true);
+    check(
+        "Γ6 (G3c) über Spielerposition (+20 m) ist NIE Wasser-Cell (kein Sub-Terrain-Blasen-Riss)",
+        res.waterCellAbovePlayerNotWater === true
+    );
     check("Γ6 (G3d) Cell-Build-Funktion vorhanden (V13.12 Vertikal-Open-Foundation)", res.cellsBuildHasFlood === true);
     check("Γ6 (G3e) Worker-Snapshot trägt hydroBand (Cell-Klassifikations-Skip)", res.hydroBandPresent === true);
     // (G4) ARCH-WATER-SOLID
@@ -33343,7 +33373,10 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         `Γ6 (G4a) ARCH-SOLIDITY: Architekturen mit blockerAABBs (${res.archWithBlockers}/${res.archSeen} ≥ 30 %, V13.10)`,
         res.archMostlyHaveBlockers === true || res.archMostlyHaveBlockers === "skipped-no-archs"
     );
-    check("Γ6 (G4b) _blockerComputePartAABB als Solidität-Quelle vorhanden (V9.65 dichte≥0.3-Regel)", res.blockerComputeExists === true);
+    check(
+        "Γ6 (G4b) _blockerComputePartAABB als Solidität-Quelle vorhanden (V9.65 dichte≥0.3-Regel)",
+        res.blockerComputeExists === true
+    );
 }
 
 // V18.195 — AVATAR-GRÖSSE→HP (aktiv.md §4.D, klein): größere custom Avatare
@@ -33362,7 +33395,8 @@ async function checkBandV18195AvatarSizeHp(ctx) {
         const src = r.computePlayerStats.toString();
         out.hasSizeMul = /sizeHpMul|soulSize|_compoundSizeFactor.*soulBp/i.test(src);
         out.appliesToHpMax = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul|stats\.hpMax\s*\*=/.test(src);
-        out.appliesToStamMax = /stats\.staminaMax\s*=\s*stats\.staminaMax\s*\*\s*sizeHpMul|stats\.staminaMax\s*\*=/.test(src);
+        out.appliesToStamMax =
+            /stats\.staminaMax\s*=\s*stats\.staminaMax\s*\*\s*sizeHpMul|stats\.staminaMax\s*\*=/.test(src);
 
         // (S2) BUILT-IN NEUTRAL: human-Soul → mul=1.0 → die getunten Werte
         // sind unangetastet. Wir vergleichen den heutigen Spieler-Stats-Wert
@@ -33444,7 +33478,10 @@ async function checkBandV18195AvatarSizeHp(ctx) {
             // (S6) STAMINA: same scaling als HP
             out.staminaScaledLikeHp = true; // Source-Probe
             const smallStamSqrt = Math.sqrt(out.smallSizeFactor);
-            out.staminaMatchesFormula = Math.abs(smallComputed.stats.staminaMax - A.STAT_FROM_TAGS.staminaMax(smallComputed.tags) * smallStamSqrt) < 0.1;
+            out.staminaMatchesFormula =
+                Math.abs(
+                    smallComputed.stats.staminaMax - A.STAT_FROM_TAGS.staminaMax(smallComputed.tags) * smallStamSqrt
+                ) < 0.1;
         } finally {
             // Wiederherstellen
             if (r.state.player) {
@@ -33485,7 +33522,10 @@ async function checkBandV18195AvatarSizeHp(ctx) {
         `V18.195 (S4b) small < large hpMax (kleiner Avatar ${res.smallHpMax && res.smallHpMax.toFixed(1)} < großer ${res.largeHpMax && res.largeHpMax.toFixed(1)})`,
         res.smallLessThanLarge === true
     );
-    check("V18.195 (S6) Stamina folgt derselben Skalierung wie HP (sqrt(sizeFactor))", res.staminaMatchesFormula === true);
+    check(
+        "V18.195 (S6) Stamina folgt derselben Skalierung wie HP (sqrt(sizeFactor))",
+        res.staminaMatchesFormula === true
+    );
 }
 
 // V18.196 — MANA-SYMMETRIE (aktiv.md §4.E): die zweite Ausdauer-Achse als
@@ -33551,7 +33591,9 @@ async function checkBandV18196ManaSymmetry(ctx) {
             const before = r.state.player.mana;
             // Simuliere Frames — _gameLoopTick treibt den Regen-Pfad mit
             for (let i = 0; i < 60; i++) {
-                try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch (_) {}
+                try {
+                    r._gameLoopTick && r._gameLoopTick(performance.now());
+                } catch (_) {}
             }
             const after = r.state.player.mana;
             const maxAfter = r.state.player.manaMax; // aktueller Wert nach allen Ticks
@@ -33657,9 +33699,7 @@ async function checkBandV18197GammaMStrata(ctx) {
         // (S7) digTerrain ruft _terrainMaterialAt mit target.y (Source-Probe)
         // Mehrere mögliche Aufrufer haben sich an die strukturelle Wahrheit
         // angepasst.
-        const code = r.constructor && r.constructor.toString
-            ? r.constructor.toString().substr(0, 5000)
-            : "";
+        const code = r.constructor && r.constructor.toString ? r.constructor.toString().substr(0, 5000) : "";
         // Statt grobem source-grep prüfen wir das spezifische Verhalten —
         // _terrainMaterialAt(x, z, y) als Mechanik via direkte Probe.
         out.digConsumesY = out.acceptsY; // direkter Source-Beweis
@@ -33726,7 +33766,9 @@ async function checkBandV18198Gamma2Totholz(ctx) {
             out.allHolz = bp.parts.every((p) => p.material === "holz");
             out.allCylinder = bp.parts.every((p) => p.shape === "cylinder");
             // Mindestens ein Part hat z-Rotation (horizontal liegend)
-            out.hasRotation = bp.parts.some((p) => p.rotation && typeof p.rotation.z === "number" && Math.abs(p.rotation.z) > 0.5);
+            out.hasRotation = bp.parts.some(
+                (p) => p.rotation && typeof p.rotation.z === "number" && Math.abs(p.rotation.z) > 0.5
+            );
         }
 
         // (T4) AFFINITÄTS-WAND (V17.16-Disziplin neu interpretiert): da stamm_
@@ -33762,7 +33804,7 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         // Strip Kommentare bevor wir auf Math.random-CODE prüfen (CLAUDE.md-
         // Lehre: der Code darf das Wort tragen, der Code darf es nicht).
         const stripped = src.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
-        out.usesDeterministicRng = /rng\.noise2D/.test(src) && !(/Math\.random\s*\(/.test(stripped));
+        out.usesDeterministicRng = /rng\.noise2D/.test(src) && !/Math\.random\s*\(/.test(stripped);
 
         // (T7) DIREKT-SPAWN-TEST: spawnArchitecture("stamm_gefallen", ...) klappt
         // und das Entry trägt blockerAABBs (V13.10-Solidität).
@@ -33832,7 +33874,8 @@ async function checkBandV18199GammaMLichen(ctx) {
         const mainSrc = r._attachVoxelFieldColors.toString();
         out.mainHasLichen = /LICHEN/.test(mainSrc) && /lichenMix/.test(mainSrc) && /lichenCluster/.test(mainSrc);
         // Position im Mix-Stack: NACH dampEarth, VOR lava
-        out.mainOrderCorrect = mainSrc.indexOf("dampEarth, ss") < mainSrc.indexOf("lichenMix") &&
+        out.mainOrderCorrect =
+            mainSrc.indexOf("dampEarth, ss") < mainSrc.indexOf("lichenMix") &&
             mainSrc.indexOf("lichenMix") < mainSrc.indexOf("mix(lava");
 
         // (L3) MATH-PROBE: lichen wirkt nur in feuchten + dichten Regionen.
@@ -33847,10 +33890,12 @@ async function checkBandV18199GammaMLichen(ctx) {
         const LCH = A.LICHEN;
         const calcLichen = (feuchte, dichte, x, z) => {
             const cluster = noise2D ? (noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5 : 0.5;
-            return ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
-                   ss(LCH.dichteLo, LCH.dichteHi, dichte) *
-                   cluster *
-                   LCH.strength;
+            return (
+                ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
+                ss(LCH.dichteLo, LCH.dichteHi, dichte) *
+                cluster *
+                LCH.strength
+            );
         };
 
         // Drei kontrollierte Probe-Punkte (synthetische feuchte/dichte):
@@ -33865,7 +33910,7 @@ async function checkBandV18199GammaMLichen(ctx) {
             const z = (i * 73) % 1000;
             samplesPositive.push(calcLichen(0.8, 0.7, x, z)); // feucht + stein
             samplesDryStone.push(calcLichen(0.1, 0.7, x, z)); // trocken + stein
-            samplesWetErde.push(calcLichen(0.8, 0.1, x, z));  // feucht + erde
+            samplesWetErde.push(calcLichen(0.8, 0.1, x, z)); // feucht + erde
         }
         const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
         out.lichenAvgWetStone = avg(samplesPositive);
@@ -33916,10 +33961,15 @@ async function checkBandV18200GammaMIronBands(ctx) {
         if (A.IRON_BANDS) {
             const IB = A.IRON_BANDS;
             out.constsSensible =
-                typeof IB.minDepth === "number" && IB.minDepth > 0 &&
-                typeof IB.threshold === "number" && IB.threshold > 0 && IB.threshold < 1 &&
-                typeof IB.dichteFloor === "number" && IB.dichteFloor >= 0 &&
-                typeof IB.scale === "number" && IB.scale > 0;
+                typeof IB.minDepth === "number" &&
+                IB.minDepth > 0 &&
+                typeof IB.threshold === "number" &&
+                IB.threshold > 0 &&
+                IB.threshold < 1 &&
+                typeof IB.dichteFloor === "number" &&
+                IB.dichteFloor >= 0 &&
+                typeof IB.scale === "number" &&
+                IB.scale > 0;
             // minDepth muss > STRATA_STEIN_DEPTH sein (Iron-Bands sind eine
             // Subschicht UNTERHALB der reinen Stein-Schicht)
             out.deepBeyondStrata = IB.minDepth > A.STRATA_STEIN_DEPTH;
@@ -33936,7 +33986,8 @@ async function checkBandV18200GammaMIronBands(ctx) {
             out.boundedRange = a1 >= 0 && a1 <= 1;
             // VERTEILUNG: über 500 Probe-Punkte sollte die Verteilung
             // nicht-degeneriert sein (max > 0.5, mean ~0.3-0.5)
-            let max = 0, sum = 0;
+            let max = 0,
+                sum = 0;
             for (let i = 0; i < 500; i++) {
                 const x = (i * 37 + 11) % 5000;
                 const z = (i * 73 - 29) % 5000;
@@ -34017,7 +34068,10 @@ async function checkBandV18200GammaMIronBands(ctx) {
     });
 
     check("V18.200 (I1a) IRON_BANDS frozen Konstanten existieren", res.constExists === true);
-    check("V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH", res.constsSensible === true && res.deepBeyondStrata === true);
+    check(
+        "V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH",
+        res.constsSensible === true && res.deepBeyondStrata === true
+    );
     check("V18.200 (I2a) _eisenAderAt-Helper existiert", res.helperExists === true);
     check("V18.200 (I2b) deterministisch (zwei Aufrufe gleicher Wert)", res.deterministic === true);
     check("V18.200 (I2c) Werte in [0, 1] gebounded", res.boundedRange === true);
@@ -34032,8 +34086,14 @@ async function checkBandV18200GammaMIronBands(ctx) {
     );
     check("V18.200 (I5) Material 'eisen' existiert in state.materials", res.eisenMaterialExists === true);
     if (res.foundIronPoint) {
-        check("V18.200 (I6a) An Iron-Ader-Punkt (tief + dichte hoch + ader>threshold) → eisen", res.ironPointGivesEisen === true);
-        check("V18.200 (I6b) Bei flacher Tiefe bleibt es stein (Iron-Schwelle nicht erreicht)", res.midDepthStaysStein === true);
+        check(
+            "V18.200 (I6a) An Iron-Ader-Punkt (tief + dichte hoch + ader>threshold) → eisen",
+            res.ironPointGivesEisen === true
+        );
+        check(
+            "V18.200 (I6b) Bei flacher Tiefe bleibt es stein (Iron-Schwelle nicht erreicht)",
+            res.midDepthStaysStein === true
+        );
     } else {
         check("V18.200 (I6) Kein Iron-Ader-Punkt in 1000 Samples gefunden (skip)", true);
     }
@@ -34127,7 +34187,10 @@ async function checkBandV18201ManaKonsum(ctx) {
     check("V18.201 (K6b) Mode-Gate schöpfer: mana unverändert", res.schoepferManaUnchanged === true);
     check("V18.201 (K6c) Mode-Gate schöpfer: canPay immer true", res.schoepferCanPay === true);
     check("V18.201 (K7) Anti-Scope §3: KEIN drain_mana/consume_mana DSL-Op (analog W5)", res.noDslDrainMana === true);
-    check("V18.201 (K8) opts.mode overschreibt getGameMode (für unit-tests + multi-context)", res.optsModeOverride === true);
+    check(
+        "V18.201 (K8) opts.mode overschreibt getGameMode (für unit-tests + multi-context)",
+        res.optsModeOverride === true
+    );
 }
 
 // V18.202 — Γ1-LESART-5 Ψ2-NASE Foundation (genese-plan §Γ1 + aktiv.md §4.A):
@@ -34145,9 +34208,14 @@ async function checkBandV18202GeruchFeld(ctx) {
         if (A.SCENT) {
             const S = A.SCENT;
             out.scentConstsSensible =
-                typeof S.rangeM === "number" && S.rangeM > 0 &&
-                typeof S.windFactor === "number" && S.windFactor >= 0 && S.windFactor <= 1 &&
-                typeof S.minDirectional === "number" && S.minDirectional >= 0 && S.minDirectional <= 1;
+                typeof S.rangeM === "number" &&
+                S.rangeM > 0 &&
+                typeof S.windFactor === "number" &&
+                S.windFactor >= 0 &&
+                S.windFactor <= 1 &&
+                typeof S.minDirectional === "number" &&
+                S.minDirectional >= 0 &&
+                S.minDirectional <= 1;
         }
         out.windHelperExists = typeof r._worldWindDirAt === "function";
         out.scentHelperExists = typeof r._scentAt === "function";
@@ -34181,7 +34249,10 @@ async function checkBandV18202GeruchFeld(ctx) {
         // (N4) Geruch akkumuliert über mehrere Quellen
         if (r._scentAt) {
             const oneSource = [{ x: 0, z: 0, strength: 1 }];
-            const twoSources = [{ x: 0, z: 0, strength: 1 }, { x: 5, z: 0, strength: 1 }];
+            const twoSources = [
+                { x: 0, z: 0, strength: 1 },
+                { x: 5, z: 0, strength: 1 },
+            ];
             const g1 = r._scentAt(10, 0, oneSource);
             const g2 = r._scentAt(10, 0, twoSources);
             out.scentAccumulates = g2 > g1;
@@ -34192,7 +34263,8 @@ async function checkBandV18202GeruchFeld(ctx) {
             // Such einen Punkt mit klarem Wind-Vektor
             // Test-Trick: konstruiere Wind via einer Source an einer fixen Position,
             // dann samplen wir EXAKT downwind und upwind
-            const sx = 100, sz = 100;
+            const sx = 100,
+                sz = 100;
             const wind = r._worldWindDirAt(sx, sz, 0);
             // Downwind = in Wind-Richtung von Source aus
             const dRecv = { x: sx + wind.x * 50, z: sz + wind.z * 50 };
@@ -34215,7 +34287,10 @@ async function checkBandV18202GeruchFeld(ctx) {
 
         // (N7) Negative/zero strength → ignoriert
         if (r._scentAt) {
-            const ignoreSrc = [{ x: 0, z: 0, strength: 0 }, { x: 0, z: 0, strength: -1 }];
+            const ignoreSrc = [
+                { x: 0, z: 0, strength: 0 },
+                { x: 0, z: 0, strength: -1 },
+            ];
             out.zeroNegStrengthIgnored = r._scentAt(1, 0, ignoreSrc) === 0;
         }
 
@@ -34223,11 +34298,20 @@ async function checkBandV18202GeruchFeld(ctx) {
     });
 
     check("V18.202 (N1a) AnazhRealm.SCENT frozen + Konstanten existieren", res.scentConstExists === true);
-    check("V18.202 (N1b) SCENT-Konstanten sinnvoll (rangeM>0, windFactor∈[0,1], minDirectional∈[0,1])", res.scentConstsSensible === true);
-    check("V18.202 (N1c) _worldWindDirAt + _scentAt Helper existieren", res.windHelperExists === true && res.scentHelperExists === true);
+    check(
+        "V18.202 (N1b) SCENT-Konstanten sinnvoll (rangeM>0, windFactor∈[0,1], minDirectional∈[0,1])",
+        res.scentConstsSensible === true
+    );
+    check(
+        "V18.202 (N1c) _worldWindDirAt + _scentAt Helper existieren",
+        res.windHelperExists === true && res.scentHelperExists === true
+    );
     check("V18.202 (N2a) Wind deterministisch (zwei Aufrufe gleich)", res.windDeterministic === true);
     check("V18.202 (N2b) Wind normalisiert (Länge ≈ 1)", res.windNormalized === true);
-    check("V18.202 (N2c) Wind variiert über 2000 m Distanz (kein konstanter Vektor)", res.windVariesOverDistance === true);
+    check(
+        "V18.202 (N2c) Wind variiert über 2000 m Distanz (kein konstanter Vektor)",
+        res.windVariesOverDistance === true
+    );
     check("V18.202 (N3a) Geruch nah > 0.3 (volle Stärke nahe Quelle)", res.scentNearStrong === true);
     check("V18.202 (N3b) Distanz-Decay monoton (20>50>100)", res.scentDistantWeaker === true);
     check("V18.202 (N3c) Bei 300 m: Geruch sehr schwach < 0.05 (decay × windMod)", res.scentFarVanishes === true);
@@ -34240,7 +34324,10 @@ async function checkBandV18202GeruchFeld(ctx) {
     check("V18.202 (N6a) Empty sources array → 0", res.emptyArrayIsZero === true);
     check("V18.202 (N6b) null sources → 0 (kein Crash)", res.nullSourcesIsZero === true);
     check("V18.202 (N6c) Ungültige Source-Einträge werden gefiltert", res.invalidSourceFiltered === true);
-    check("V18.202 (N7) 0/negative strength wird ignoriert (kein negativer Geruch)", res.zeroNegStrengthIgnored === true);
+    check(
+        "V18.202 (N7) 0/negative strength wird ignoriert (kein negativer Geruch)",
+        res.zeroNegStrengthIgnored === true
+    );
 }
 
 // V18.203 — Γ3 FELD-CHARAKTER FOUNDATION (genese-plan §Γ3 + aktiv.md §4.A):
@@ -34264,8 +34351,7 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
                 FC.lambdaLebendig !== FC.lambdaMagieleitung &&
                 FC.lambdaDichte !== FC.lambdaGlut;
             out.allPositive =
-                FC.lambdaLebendig > 0 && FC.lambdaDichte > 0 &&
-                FC.lambdaGlut > 0 && FC.lambdaMagieleitung > 0;
+                FC.lambdaLebendig > 0 && FC.lambdaDichte > 0 && FC.lambdaGlut > 0 && FC.lambdaMagieleitung > 0;
         }
 
         // Save state für Tests
@@ -34311,17 +34397,17 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
             // ECHTE Wand ist F9b.
             const FC = A.FIELD_CHARACTER;
             out.gen3ValuesFinite =
-                Number.isFinite(f3.lebendig) && Number.isFinite(f3.dichte) &&
-                Number.isFinite(f3.glut) && Number.isFinite(f3.magieleitung);
+                Number.isFinite(f3.lebendig) &&
+                Number.isFinite(f3.dichte) &&
+                Number.isFinite(f3.glut) &&
+                Number.isFinite(f3.magieleitung);
 
             // (F5) GEN=2 zwischen Tor: gen 2 ist Γ1-Feuchte, NICHT Γ3.
             // Verhalten = LEGACY (s=0.005 für alle, kein Frequenz-Fächer).
             r.state.worldMeta.genVersion = 2;
             r.state.worldField = null;
             const f2 = r.worldFieldAt(100, 200);
-            out.gen2StaysLegacy =
-                Math.abs(f1.lebendig - f2.lebendig) < 1e-9 &&
-                Math.abs(f1.dichte - f2.dichte) < 1e-9;
+            out.gen2StaysLegacy = Math.abs(f1.lebendig - f2.lebendig) < 1e-9 && Math.abs(f1.dichte - f2.dichte) < 1e-9;
 
             // (F6) Wellenlängen-Effekt: dichte (λ340) sollte LANGSAMER variieren
             // als magieleitung (λ160) bei gen 3. Wir testen über eine kurze
@@ -34397,8 +34483,14 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
     check("V18.203 (F1a) FIELD_CHARACTER frozen + existiert", res.constExists === true);
     check("V18.203 (F1b) Vier verschiedene Wellenlängen (Spreizung)", res.allDifferent === true);
     check("V18.203 (F1c) Alle Wellenlängen positiv", res.allPositive === true);
-    check("V18.203 (F2) LEGACY gen=1: bit-identisch zu manueller s=0.005-Berechnung (Pre-V18.203)", res.legacyBitIdentical === true);
-    check("V18.203 (F3) GEN=3: Werte verschieden zu Legacy (Frequenz-Fächer aktiv)", res.gen3DiffersFromLegacy === true);
+    check(
+        "V18.203 (F2) LEGACY gen=1: bit-identisch zu manueller s=0.005-Berechnung (Pre-V18.203)",
+        res.legacyBitIdentical === true
+    );
+    check(
+        "V18.203 (F3) GEN=3: Werte verschieden zu Legacy (Frequenz-Fächer aktiv)",
+        res.gen3DiffersFromLegacy === true
+    );
     check("V18.203 (F4) GEN=3: Werte endlich (kein NaN durch Warp/Fächer)", res.gen3ValuesFinite === true);
     check("V18.203 (F5) GEN=2 (Γ1-Feuchte-Tor) bleibt Legacy (kein Γ3-Charakter)", res.gen2StaysLegacy === true);
     check(
@@ -34408,7 +34500,10 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
     check("V18.203 (F7) Source-Probe: FIELD_CHARACTER + _genVersion-Gate im worldFieldAt", res.srcHasGate === true);
     check("V18.204 (F8) DOMAIN-WARP Konstanten (warpAmp + warpScale)", res.warpConstsExist === true);
     check("V18.204 (F9a) Warp ändert den gelesenen Wert (Sample-Position verschoben)", res.warpChangesValue === true);
-    check("V18.204 (F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)", res.warpedMatchesActual === true);
+    check(
+        "V18.204 (F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)",
+        res.warpedMatchesActual === true
+    );
     check("V18.204 (F10) Eigener warpNoise-Stream existiert (Γ5-Disziplin)", res.warpStreamExists === true);
     check("V18.204 (F11) gen<3: kein Warp angewendet (Legacy clean, kein Drift)", res.legacyNoWarp === true);
 }
@@ -34502,7 +34597,7 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
             const hMin = Math.min(...heights);
             const hMax = Math.max(...heights);
             out.heightSpread = Number((hMax - hMin).toFixed(2));
-            out.heightsVary = (hMax - hMin) > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
+            out.heightsVary = hMax - hMin > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
 
             // (G9) Source-Probe: SimplexNoise + eigener Stream — V18.211 hat
             // den Stamm-Helper in drei Pfade zerteilt (Routing + Rich + Legacy),
@@ -34547,7 +34642,8 @@ async function checkBandV18206SpeedTrade(ctx) {
         const src = r.computePlayerStats.toString();
         out.hasSizeSpeedMul = /sizeSpeedMul/.test(src);
         out.appliedToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
-        out.appliedToAttackSpeed = /stats\.attackSpeed\s*=\s*Math\.max\(0\.25,\s*stats\.attackSpeed\s*\*\s*sizeSpeedMul/.test(src);
+        out.appliedToAttackSpeed =
+            /stats\.attackSpeed\s*=\s*Math\.max\(0\.25,\s*stats\.attackSpeed\s*\*\s*sizeSpeedMul/.test(src);
         out.appliedToJumpPower = /stats\.jumpPower\s*=\s*stats\.jumpPower\s*\*\s*sizeSpeedMul/.test(src);
 
         const savedSoul = r.state.player && r.state.player.soul;
@@ -34679,9 +34775,15 @@ async function checkBandV18207R5StructureTexture(ctx) {
     });
 
     check("V18.207 (R1a) AnazhRealm.R5_STRUCTURE_TEXTURE frozen + existiert", res.constExists === true);
-    check(`V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`, res.microBoostSensible === true);
+    check(
+        `V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
+        res.microBoostSensible === true
+    );
     check("V18.207 (R2a) Source: R5_STRUCTURE_TEXTURE wird in _applySubstanceResponse gelesen", res.srcHasR5 === true);
-    check("V18.207 (R2b) Source: micro × Boost-Faktor (microBoost oder _r5Boost im Code)", res.srcMultipliesMicro === true);
+    check(
+        "V18.207 (R2b) Source: micro × Boost-Faktor (microBoost oder _r5Boost im Code)",
+        res.srcMultipliesMicro === true
+    );
     check("V18.207 (R3) V18.210-Default microBoost = 1.3 (sichtbar — Slider live)", res.defaultIs13 === true);
 }
 
@@ -34761,7 +34863,10 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
     check("V18.208 (C1a) Source: creatureSize + Math.sqrt in computeCreatureStats", res.hasSizeMul === true);
     check("V18.208 (C1b) hpMax × sizeHpMul angewendet", res.appliesToHp === true);
     check("V18.208 (C1c) speed × sizeSpeedMul (mit Floor 2) angewendet", res.appliesToSpeed === true);
-    check(`V18.208 (C2) AnazhRealm.CREATURE_SOULS existiert (${res.soulCount} Seelen)`, res.creatureSoulsExists === true);
+    check(
+        `V18.208 (C2) AnazhRealm.CREATURE_SOULS existiert (${res.soulCount} Seelen)`,
+        res.creatureSoulsExists === true
+    );
     check(`V18.208 (C3a) HP-Monotonie über Kreatur-Spektrum (größer = mehr HP)`, res.hpMonotone === true);
     check(`V18.208 (C3b) Speed-Monotonie (größer = langsamer)`, res.speedMonotone === true);
     check("V18.208 (C4) Floor speed ≥ 2 für alle Kreatur-Seelen", res.allSpeedAtFloor === true);
@@ -34785,7 +34890,9 @@ async function checkBandV18209Konsolidierung(ctx) {
         out.versionStr = A.VERSION;
         // V18.217 — Floor (semver-Form): die Wand wandert mit jeder Welle,
         // muss aber nicht jedes Mal hier verschoben werden (Drift-Schutz).
-        const vparts = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        const vparts = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
         out.versionMatches = vparts[0] > 18 || (vparts[0] === 18 && vparts[1] >= 217);
 
         // (K2) Vier Foundation-Konstanten/-Helper existieren — kein Schaden
@@ -34794,12 +34901,12 @@ async function checkBandV18209Konsolidierung(ctx) {
         out.scentExists = typeof r._scentAt === "function" && typeof r._worldWindDirAt === "function";
         out.growTreeExists = typeof r._growTreeBlueprint === "function";
         out.r5Exists = !!A.R5_STRUCTURE_TEXTURE && typeof A.R5_STRUCTURE_TEXTURE.microBoost === "number";
-        out.allFoundationsAlive =
-            out.manaDrainExists && out.scentExists && out.growTreeExists && out.r5Exists;
+        out.allFoundationsAlive = out.manaDrainExists && out.scentExists && out.growTreeExists && out.r5Exists;
 
         // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
         out.gamma4Anker = typeof r._macroAnker === "function";
-        out.gamma6Snowband = typeof r._attachVoxelFieldColors === "function" &&
+        out.gamma6Snowband =
+            typeof r._attachVoxelFieldColors === "function" &&
             /SNOW_PROM_START/.test(r._attachVoxelFieldColors.toString());
         out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
         out.gammaMLichen = !!A.LICHEN;
@@ -34809,9 +34916,15 @@ async function checkBandV18209Konsolidierung(ctx) {
         out.gamma3Char = !!A.FIELD_CHARACTER;
         out.gamma7Grammar = typeof r._growTreeBlueprint === "function";
         out.gammaBogenKomplett =
-            out.gamma4Anker && out.gamma6Snowband && out.gammaMStrata &&
-            out.gammaMLichen && out.gammaMIronBands && out.gamma2Totholz &&
-            out.gamma1Nose && out.gamma3Char && out.gamma7Grammar;
+            out.gamma4Anker &&
+            out.gamma6Snowband &&
+            out.gammaMStrata &&
+            out.gammaMLichen &&
+            out.gammaMIronBands &&
+            out.gamma2Totholz &&
+            out.gamma1Nose &&
+            out.gamma3Char &&
+            out.gamma7Grammar;
 
         // (K4) AVATAR-GRÖSSEN-Familie komplett (V18.195+196+206+208):
         const srcCompPlayer = r.computePlayerStats.toString();
@@ -34819,8 +34932,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         out.playerHpStaminaMana = /sizeHpMul/.test(srcCompPlayer);
         out.playerSpeedTrade = /sizeSpeedMul/.test(srcCompPlayer);
         out.creatureSizeSymmetry = /creatureSize/.test(srcCompCreature) && /sizeHpMul/.test(srcCompCreature);
-        out.avatarFamilyKomplett =
-            out.playerHpStaminaMana && out.playerSpeedTrade && out.creatureSizeSymmetry;
+        out.avatarFamilyKomplett = out.playerHpStaminaMana && out.playerSpeedTrade && out.creatureSizeSymmetry;
 
         // (K5) MANA-SYMMETRIE Foundation:
         out.manaMaxFn = typeof A.STAT_FROM_TAGS.manaMax === "function";
@@ -34830,10 +34942,19 @@ async function checkBandV18209Konsolidierung(ctx) {
     });
 
     check(`V18.209 (K1) VERSION floor ≥ 18.217.0 (gemessen ${res.versionStr})`, res.versionMatches === true);
-    check("V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)", res.allFoundationsAlive === true);
+    check(
+        "V18.209 (K2) Alle vier Foundations am Leben (Mana-Drain · Geruch · Baum-Grammatik · R5)",
+        res.allFoundationsAlive === true
+    );
     check("V18.209 (K3) §4.A Γ-BOGEN 2 KOMPLETT (alle 8 Γ-Wellen-Anker existieren)", res.gammaBogenKomplett === true);
-    check("V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)", res.avatarFamilyKomplett === true);
-    check("V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)", res.manaMaxFn && res.manaRegenConst);
+    check(
+        "V18.209 (K4) §4.D Avatar-Größen-Familie KOMPLETT (Spieler HP/Stamina/Mana/Speed-Trade + Kreatur-Symmetrie)",
+        res.avatarFamilyKomplett === true
+    );
+    check(
+        "V18.209 (K5) §4.E Mana-Symmetrie Foundation (manaMax + MANA_REGEN_PER_SEC)",
+        res.manaMaxFn && res.manaRegenConst
+    );
 }
 
 // V18.210 — VERDRAHTUNGS-WELLE (abschluss-plan §1): die vier Passagier-
@@ -34861,8 +34982,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         const k2 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
         out.a1Deterministic = k1 && k1 === k2;
         // (A1d) Cache-Reuse: SELBER cacheKey → SELBES Bauplan-Objekt
-        out.a1CacheReuse =
-            k1 && r.state.blueprints[k1] && r.state.blueprints[k1] === r.state.blueprints[k2];
+        out.a1CacheReuse = k1 && r.state.blueprints[k1] && r.state.blueprints[k1] === r.state.blueprints[k2];
         // (A1e) Verschiedene seeds → mind. 5 unique cache keys über 6 Versuche
         const keys = new Set();
         for (let s = 0; s < 6; s++) {
@@ -34909,11 +35029,23 @@ async function checkBandV18210Verdrahtung(ctx) {
                 if (r.setGameMode) r.setGameMode("pfad");
                 const Pred = {
                     position: new (window.THREE || A.THREE || {}).Vector3(0, 0, 0),
-                    userData: { soul: "wesen", _temperament: "wild", _temperamentSoul: "wesen", kind: "creature", boosts: [] },
+                    userData: {
+                        soul: "wesen",
+                        _temperament: "wild",
+                        _temperamentSoul: "wesen",
+                        kind: "creature",
+                        boosts: [],
+                    },
                 };
                 const Prey = {
                     position: new (window.THREE || A.THREE || {}).Vector3(10, 0, 0),
-                    userData: { soul: "sprite", _temperament: "scheu", _temperamentSoul: "sprite", kind: "creature", boosts: [] },
+                    userData: {
+                        soul: "sprite",
+                        _temperament: "scheu",
+                        _temperamentSoul: "sprite",
+                        kind: "creature",
+                        boosts: [],
+                    },
                 };
                 const savedC = r.state.creatures;
                 r.state.creatures = [Pred, Prey];
@@ -34933,14 +35065,12 @@ async function checkBandV18210Verdrahtung(ctx) {
         );
         // (A1h) SOURCE-PROBE: _vegetationSampleSpawn ruft den Helper an gen≥4
         const src = r._vegetationSampleSpawn.toString();
-        out.a1SourceWired =
-            /_growTreeBlueprintForSpawn/.test(src) && /genVersion\s*>=\s*4/.test(src);
+        out.a1SourceWired = /_growTreeBlueprintForSpawn/.test(src) && /genVersion\s*>=\s*4/.test(src);
 
         // ============== A1 Audit-Heilungen ==============
         // (Heilung #1) Snapshot persistiert grownBlueprints
         const snap = r.buildStateSnapshot ? r.buildStateSnapshot() : null;
-        out.a1SnapshotHasGrown =
-            !!(snap && snap.grownBlueprints && typeof snap.grownBlueprints === "object");
+        out.a1SnapshotHasGrown = !!(snap && snap.grownBlueprints && typeof snap.grownBlueprints === "object");
         // (Heilung #1b) Restore-Helper existiert UND ist vor _loadStateRestoreArchitectures verdrahtet
         out.a1RestoreHelperExists =
             typeof r._loadStateRestoreGrownBlueprints === "function" &&
@@ -34958,7 +35088,9 @@ async function checkBandV18210Verdrahtung(ctx) {
                 _isGrown: true,
                 _grownSpecies: "baum_eiche",
                 instanced: true,
-                parts: [{ shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+                parts: [
+                    { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                ],
             };
             r.state.architectures = r.state.architectures || [];
             const sentinelArch = {
@@ -34999,7 +35131,10 @@ async function checkBandV18210Verdrahtung(ctx) {
             if (Array.isArray(p)) {
                 // Signatur = aggregierter Höhe/Krone-Farbe-Hash (kein vollständiger JSON-Vergleich,
                 // weil Position-Jitter durch verschiedenen seedString variiert).
-                let maxY = 0, totalY = 0, leafColor = 0, leafCount = 0;
+                let maxY = 0,
+                    totalY = 0,
+                    leafColor = 0,
+                    leafCount = 0;
                 for (const part of p) {
                     if (part.position.y + part.size.y * 0.5 > maxY) maxY = part.position.y + part.size.y * 0.5;
                     totalY += part.size.y;
@@ -35044,8 +35179,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         }
         // (A2d) SOURCE-PROBE: _applySubstanceResponse liest das Uniform statt Konstante
         const srcSubst = r._applySubstanceResponse.toString();
-        out.a2SubstReadsUniform =
-            /r5StructureBoost/.test(srcSubst) && /_au\.r5StructureBoost/.test(srcSubst);
+        out.a2SubstReadsUniform = /r5StructureBoost/.test(srcSubst) && /_au\.r5StructureBoost/.test(srcSubst);
         // (A2e) DOM-Slider existiert
         out.a2DomSliderExists = !!document.getElementById("slider-structureboost");
 
@@ -35057,8 +35191,10 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a3ScentRangeM = A.CREATURE_HUNT.scentRangeM;
         out.a3ScentProbeM = A.CREATURE_HUNT.scentProbeM;
         out.a3ConstsOk =
-            typeof out.a3ScentRangeM === "number" && out.a3ScentRangeM >= 30 &&
-            typeof out.a3ScentProbeM === "number" && out.a3ScentProbeM > 0;
+            typeof out.a3ScentRangeM === "number" &&
+            out.a3ScentRangeM >= 30 &&
+            typeof out.a3ScentProbeM === "number" &&
+            out.a3ScentProbeM > 0;
         // (A3c) SOURCE-PROBE: der Helper ruft _scentAt
         out.a3HelperUsesScent = /_scentAt/.test(r._creatureScentHuntDir.toString());
         // (A3d) SOURCE-PROBE: der wander-Pfad in updateCreatures ruft den Helper
@@ -35107,7 +35243,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             out.a3StrikeHits = struck === true;
             r.state.creatures = savedCreatures;
         } catch (e) {
-            out.a3Error = String(e && e.message || e);
+            out.a3Error = String((e && e.message) || e);
         } finally {
             if (r.setGameMode) r.setGameMode(savedMode);
         }
@@ -35121,8 +35257,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             /phaseChange/.test(srcOp) && /_drainMana/.test(srcOp) && /not_enough_mana/.test(srcOp);
         // (A4c) SOURCE-PROBE: Werkstatt-Pfad liest proc.opClass
         const srcWs = r.applyWorkshopProcessToPart.toString();
-        out.a4WorkshopReadsMana =
-            /phaseChange/.test(srcWs) && /_drainMana/.test(srcWs);
+        out.a4WorkshopReadsMana = /phaseChange/.test(srcWs) && /_drainMana/.test(srcWs);
         // (A4d) BEHAVIORAL: phaseChange-Op (ritueller-stab) zieht Mana statt Stamina
         const sm = r.getGameMode ? r.getGameMode() : "frieden";
         // V18.210 (Audit-Heilung #5) — saubere Test-Hygiene: state vorher
@@ -35165,8 +35300,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             // Mana zu klein → ablehnen, Mana unverändert (atomar)
             r.state.player.mana = 1;
             const result2 = r.applyOpToPart(bpName, 0, "ritueller-stab");
-            out.a4InsufficientRejected =
-                result2 && result2.ok === false && result2.reason === "not_enough_mana";
+            out.a4InsufficientRejected = result2 && result2.ok === false && result2.reason === "not_enough_mana";
             out.a4InsufficientAtomic = r.state.player.mana === 1;
             // Stamina-Op (hände) zieht Stamina, NICHT Mana
             r.state.player.mana = 100;
@@ -35182,8 +35316,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             r.state.player.stamina = 50;
             const result3 = r.applyOpToPart(bpName, 0, "ritueller-stab");
             out.a4SchoepferOk = result3 && result3.ok === true;
-            out.a4SchoepferKostenfrei =
-                r.state.player.mana === 50 && r.state.player.stamina === 50;
+            out.a4SchoepferKostenfrei = r.state.player.mana === 50 && r.state.player.stamina === 50;
             // Cleanup
             delete r.state.blueprints[bpName];
         } catch (e) {
@@ -35210,7 +35343,10 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A1d Cache-Reuse: SELBE seed → SELBES Bauplan-Object", res.a1CacheReuse === true);
     check("V18.210-A1e 6 seeds → ≥5 unique cache keys", res.a1ManyVariants === true);
     check("V18.210-A1f V17.16-Schutz: tag-Achsen ≈ baum_eiche (4×Δ<0.05)", res.a1TagNeutral === true);
-    check("V18.210-A1g Memory-Cap: Ring ≤ 256 nach 300 seeds (V18.210-Audit #2 CAP-Erweiterung)", res.a1RingCap === true);
+    check(
+        "V18.210-A1g Memory-Cap: Ring ≤ 256 nach 300 seeds (V18.210-Audit #2 CAP-Erweiterung)",
+        res.a1RingCap === true
+    );
     check("V18.210-A1h SOURCE: _vegetationSampleSpawn ruft Helper an genVersion≥4", res.a1SourceWired === true);
 
     // A2 — R5 Live-Slider
@@ -35221,13 +35357,19 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A2c3 Setter persistiert (atmosphere.r5StructureBoost)", res.a2SetterPersists === true);
     check("V18.210-A2c4 Setter cap-clamp (5.0 → 2.5)", res.a2SetterCapsHi === true);
     check("V18.210-A2c5 Setter floor-clamp (0.1 → 0.5)", res.a2SetterCapsLo === true);
-    check("V18.210-A2d SOURCE: _applySubstanceResponse liest LIVE-Uniform statt Konstante", res.a2SubstReadsUniform === true);
+    check(
+        "V18.210-A2d SOURCE: _applySubstanceResponse liest LIVE-Uniform statt Konstante",
+        res.a2SubstReadsUniform === true
+    );
     check("V18.210-A2e DOM-Slider slider-structureboost existiert", res.a2DomSliderExists === true);
 
     // A3 — Scent KI
     check("V18.210-A3a _creatureScentHuntDir Helper existiert", res.a3HuntDirExists === true);
     check("V18.210-A3a2 _tickCreatureScentStrike Helper existiert", res.a3StrikeExists === true);
-    check(`V18.210-A3b CREATURE_HUNT.scentRangeM/scentProbeM Konstanten (range=${res.a3ScentRangeM}, probe=${res.a3ScentProbeM})`, res.a3ConstsOk === true);
+    check(
+        `V18.210-A3b CREATURE_HUNT.scentRangeM/scentProbeM Konstanten (range=${res.a3ScentRangeM}, probe=${res.a3ScentProbeM})`,
+        res.a3ConstsOk === true
+    );
     check("V18.210-A3c SOURCE: Helper ruft _scentAt", res.a3HelperUsesScent === true);
     check("V18.210-A3d SOURCE: updateCreatures verdrahtet den Helper im wander-Pfad", res.a3WanderWired === true);
     check("V18.210-A3e BEHAVIORAL: wild + Beute → direction != null", res.a3PredatorHasDir === true);
@@ -35275,11 +35417,17 @@ async function checkBandV18210Verdrahtung(ctx) {
 
     // A4 — Mana-Konsument
     check("V18.210-A4a TOOL_OP_MANA_COST Konstante existiert", res.a4ManaCostConst === true);
-    check("V18.210-A4b SOURCE: applyOpToPart phaseChange → _drainMana + not_enough_mana", res.a4OpToPartReadsMana === true);
+    check(
+        "V18.210-A4b SOURCE: applyOpToPart phaseChange → _drainMana + not_enough_mana",
+        res.a4OpToPartReadsMana === true
+    );
     check("V18.210-A4c SOURCE: applyWorkshopProcessToPart phaseChange → _drainMana", res.a4WorkshopReadsMana === true);
     check("V18.210-A4d BEHAVIORAL: ritueller-stab (phaseChange) zieht Mana", res.a4ManaWasDrained === true);
     check("V18.210-A4d2 BEHAVIORAL: ritueller-stab lässt Stamina unberührt", res.a4StaminaUntouched === true);
-    check("V18.210-A4d3 BEHAVIORAL: mana<cost → not_enough_mana (atomar, mana unverändert)", res.a4InsufficientRejected === true);
+    check(
+        "V18.210-A4d3 BEHAVIORAL: mana<cost → not_enough_mana (atomar, mana unverändert)",
+        res.a4InsufficientRejected === true
+    );
     check("V18.210-A4d3b BEHAVIORAL: atomarer Reject — Mana unverändert", res.a4InsufficientAtomic === true);
     check("V18.210-A4e BEHAVIORAL: hände (subtractive) zieht weiterhin Stamina", res.a4HandsZiehtStamina === true);
     check("V18.210-A4e2 BEHAVIORAL: hände lässt Mana unberührt", res.a4HandsManaUntouched === true);
@@ -35306,9 +35454,14 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         if (out.grammarExists) {
             const species = Object.keys(A.SPECIES_GRAMMAR);
             out.sixSpecies = species.length >= 6;
-            out.allSpeciesPresent = ["baum_eiche", "baum_tanne", "baum_buche", "baum_birke", "baum_kiefer", "baum_erle"].every(
-                (s) => A.SPECIES_GRAMMAR[s] != null
-            );
+            out.allSpeciesPresent = [
+                "baum_eiche",
+                "baum_tanne",
+                "baum_buche",
+                "baum_birke",
+                "baum_kiefer",
+                "baum_erle",
+            ].every((s) => A.SPECIES_GRAMMAR[s] != null);
             // Pro Spezies: trunk + L1 + foliage müssen existieren (Plan-§3.3-Form).
             // V18.216 — anchorLevel ≥ 1 (Büsche tragen ihre Krone schon an L1;
             // Bäume an L2+; Karst an L3). Die Strenge „≥ 2" war eine Baum-
@@ -35332,8 +35485,8 @@ async function checkBandV18211SkeletonGrammar(ctx) {
             out.richProducesMany = Array.isArray(richParts) && richParts.length >= 50;
             out.richPartsCount = richParts ? richParts.length : 0;
             // Tag-Neutralität: jedes Part ist holz oder laub (V17.16-Wand).
-            out.richAllHolzOrLaub = Array.isArray(richParts) &&
-                richParts.every((p) => p.material === "holz" || p.material === "laub");
+            out.richAllHolzOrLaub =
+                Array.isArray(richParts) && richParts.every((p) => p.material === "holz" || p.material === "laub");
             // FOLIAGE AT TIPS: ≥80% der laub-Parts sind vom Stamm-Sockel weg
             // (|xz| > 0.4 oder y > 1.5) — Plan-§3.3-Regel. V18.212-EXCEPTION:
             // der Ω-K2 Baum-Fuß-Flare (Plan §4) sitzt BEWUSST am Sockel —
@@ -35344,8 +35497,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
                 const dist = Math.hypot(p.position.x, p.position.z);
                 return dist > 0.4 || p.position.y > 1.5;
             }).length;
-            out.richFoliageAtTips =
-                laub.length >= 10 && atTipsCount >= Math.floor(laub.length * 0.8);
+            out.richFoliageAtTips = laub.length >= 10 && atTipsCount >= Math.floor(laub.length * 0.8);
         }
 
         // (S4) ROUTING: gen<5 → Legacy, gen≥5 → Rich. Wir mutieren temporär.
@@ -35353,10 +35505,8 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         // STATTDESSEN: prüfen, dass die Routing-Funktion das Gate ZIEHT (Source-
         // Probe genVersion >= 5).
         const routingSrc = r._growTreeBlueprint.toString();
-        out.routingHasGate = /genVersion\(\)\s*>=\s*5/.test(routingSrc) ||
-            /_genVersion\(\)\s*>=\s*5/.test(routingSrc);
-        out.routingDelegates = /_growTreeBlueprintRich/.test(routingSrc) &&
-            /_growTreeBlueprintLegacy/.test(routingSrc);
+        out.routingHasGate = /genVersion\(\)\s*>=\s*5/.test(routingSrc) || /_genVersion\(\)\s*>=\s*5/.test(routingSrc);
+        out.routingDelegates = /_growTreeBlueprintRich/.test(routingSrc) && /_growTreeBlueprintLegacy/.test(routingSrc);
 
         // (S5) SNAPSHOT-HEILUNG: grownBlueprints im Snapshot trägt KEINE
         // parts-Arrays mehr (Plan-§2.5-konform: f(seed) ist das Erbgut).
@@ -35379,7 +35529,9 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         // Walk-with-code (V9.56-i, V18.217-Drift-Schutz): die Probe trägt einen
         // FLOOR statt einer scharfen Zahl; jede Welle bumpt den Floor nur, wo
         // sie wirklich neue Behavior etabliert.
-        const vparts2 = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        const vparts2 = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
         out.versionBumped = vparts2[0] > 18 || (vparts2[0] === 18 && vparts2[1] >= 217);
 
         return out;
@@ -35392,14 +35544,26 @@ async function checkBandV18211SkeletonGrammar(ctx) {
     check("V18.211 (S2a) _growTreeBlueprintRich existiert", res.richExists === true);
     check("V18.211 (S2b) _growTreeBlueprintLegacy existiert", res.legacyExists === true);
     check("V18.211 (S2c) _growTreeBlueprint Routing-Funktion existiert", res.routingExists === true);
-    check(`V18.211 (S3a) Rich-Grammatik produziert ≥50 Parts (gemessen ${res.richPartsCount})`, res.richProducesMany === true);
+    check(
+        `V18.211 (S3a) Rich-Grammatik produziert ≥50 Parts (gemessen ${res.richPartsCount})`,
+        res.richProducesMany === true
+    );
     check("V18.211 (S3b) Alle Rich-Parts holz oder laub (V17.16-Wand strukturell)", res.richAllHolzOrLaub === true);
-    check("V18.211 (S3c) Foliage AT TIPS: ≥10 laub-Parts, alle vom Stamm weg (Plan-§3.3)", res.richFoliageAtTips === true);
+    check(
+        "V18.211 (S3c) Foliage AT TIPS: ≥10 laub-Parts, alle vom Stamm weg (Plan-§3.3)",
+        res.richFoliageAtTips === true
+    );
     check("V18.211 (S4a) Routing-Funktion liest genVersion >= 5 Gate", res.routingHasGate === true);
     check("V18.211 (S4b) Routing delegiert an Rich + Legacy", res.routingDelegates === true);
-    check("V18.211 (S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)", res.snapshotHasMetadata === true);
+    check(
+        "V18.211 (S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)",
+        res.snapshotHasMetadata === true
+    );
     check("V18.211 (S5b) Snapshot grownBlueprints OHNE parts-Array (re-wächst f(seed))", res.snapshotNoParts === true);
-    check("V18.211 (S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)", res.snapshotGrownEntrySmall === true);
+    check(
+        "V18.211 (S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)",
+        res.snapshotGrownEntrySmall === true
+    );
     check(`V18.211 (S6) VERSION floor ≥ 18.217.0 (walk-with-code, V18.217 Varianten-Pool)`, res.versionBumped === true);
 }
 
@@ -35423,7 +35587,10 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
             const grammar = A.SPECIES_GRAMMAR.baum_tanne;
             const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test", grammar);
             const sockelParts = parts.filter(
-                (p) => p.material === "laub" && p.position.y < grammar.trunk.baseR * 2 && p.size.x > grammar.trunk.baseR * 2
+                (p) =>
+                    p.material === "laub" &&
+                    p.position.y < grammar.trunk.baseR * 2 &&
+                    p.size.x > grammar.trunk.baseR * 2
             );
             out.k2HasFlare = sockelParts.length >= 1;
             // Der Sockel-Part liegt am Stamm-Ursprung (xz-Position klein).
@@ -35437,8 +35604,9 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         // Source-Probe: das Wind-Sway im _buildToonNodeMaterial trägt
         // (1) quadratischen crownFactor (statt linear) UND (2) ein
         // aperiodisches Flatter (flutter mit höherer Frequenz).
-        const swaySrc = r._buildToonNodeMaterial.toString();
-        out.wQuadraticCrown = /crownLin\.mul\(_crownLin\)/.test(swaySrc) || /crownFactor.*square|quadratisch/.test(swaySrc);
+        const swaySrc = r._applyVegetationResponse.toString(); // V18.234 — Wind geteilt
+        out.wQuadraticCrown =
+            /crownLin\.mul\(_crownLin\)/.test(swaySrc) || /crownFactor.*square|quadratisch/.test(swaySrc);
         out.wHasFlutter = /_flutter\b/.test(swaySrc) && /flutterPhase/.test(swaySrc);
         // Stronger sway magnitude (V18.211 war 0.25, V18.212 ist 0.32).
         out.wStrongerSway = /float\(_sway\s*\*\s*0\.32\)/.test(swaySrc);
@@ -35458,10 +35626,16 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
                     const spawn = r.spawnArchitecture(grownKey, { x: 1234, y: 50, z: 5678 }, { silent: true });
                     if (spawn) {
                         const harvest = r.harvestArchitecture(spawn, "test-harvester");
-                        out.hHarvestHasProvenance =
-                            !!(harvest && harvest.provenance && harvest.provenance.bornFrom === "world-genesis");
-                        out.hProvenanceCarriesSpecies =
-                            !!(harvest && harvest.provenance && harvest.provenance.species === "baum_eiche");
+                        out.hHarvestHasProvenance = !!(
+                            harvest &&
+                            harvest.provenance &&
+                            harvest.provenance.bornFrom === "world-genesis"
+                        );
+                        out.hProvenanceCarriesSpecies = !!(
+                            harvest &&
+                            harvest.provenance &&
+                            harvest.provenance.species === "baum_eiche"
+                        );
                     }
                 } catch (_e) {
                     out.hHarvestException = String(_e && _e.message);
@@ -35525,7 +35699,9 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         // Source-Probe: Material trägt opacityNode mit smoothstep auf Distanz.
         if (r.state.canopyShellMaterial) {
             out.cMaterialHasOpacityNode = r.state.canopyShellMaterial.opacityNode != null;
-            out.cMaterialIsToon = r.state.canopyShellMaterial.isMeshToonMaterial === true;
+            out.cMaterialIsToon = !!(
+                r.state.canopyShellMaterial.isMeshToonMaterial || r.state.canopyShellMaterial.isMeshStandardMaterial
+            ); // V18.234 — Toon ODER PBR (Default pbr)
         }
 
         return out;
@@ -35544,24 +35720,39 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
     check("V18.212 (H1) harvestArchitecture liest _isGrown + _grownSpecies (Source)", res.hReadsGrown === true);
     check("V18.212 (H2) harvestArchitecture schreibt provenance in Journal + Return", res.hWritesProvenance === true);
     if (res.hHarvestHasProvenance !== undefined) {
-        check("V18.212 (H3) Behavioral: grown-Baum-Ernte trägt provenance.bornFrom='world-genesis'", res.hHarvestHasProvenance === true);
+        check(
+            "V18.212 (H3) Behavioral: grown-Baum-Ernte trägt provenance.bornFrom='world-genesis'",
+            res.hHarvestHasProvenance === true
+        );
         check("V18.212 (H4) Behavioral: provenance.species = baum_eiche", res.hProvenanceCarriesSpecies === true);
     }
 
     // Ω-C
     check("V18.212 (C1a) CANOPY_SHELL frozen Config existiert", res.cConstExists === true);
-    check("V18.212 (C1b) CANOPY_SHELL Konstanten sinnvoll (grid>0, distNear<distFar, opacity≤1)", res.cConstSensible === true);
+    check(
+        "V18.212 (C1b) CANOPY_SHELL Konstanten sinnvoll (grid>0, distNear<distFar, opacity≤1)",
+        res.cConstSensible === true
+    );
     check("V18.212 (C2a) _buildCanopyShell existiert", res.cBuildExists === true);
     check("V18.212 (C2b) _ensureCanopyShell existiert (lazy)", res.cEnsureExists === true);
     check("V18.212 (C2c) _disposeCanopyShell existiert (Welt-Wechsel)", res.cDisposeExists === true);
     check("V18.212 (C3a) Mesh wird gebaut (state.canopyShell + isMesh)", res.cMeshBuilt === true);
-    check(`V18.212 (C3b) Vertex-Count = gridSize² (${res.cVertexCount}/${res.cExpectedVertexCount})`, res.cCorrectVertexCount === true);
+    check(
+        `V18.212 (C3b) Vertex-Count = gridSize² (${res.cVertexCount}/${res.cExpectedVertexCount})`,
+        res.cCorrectVertexCount === true
+    );
     check("V18.212 (C3c) Vertex Y variiert (Terrain wird gelesen, nicht alle 0)", res.cYVaries === true);
     check("V18.212 (C3d) Color-Attribut existiert (Per-Vertex-Tönung)", res.cVertexCountColors === true);
     check("V18.212 (C4a) _disposeCanopyShell setzt state.canopyShell auf null", res.cDisposed === true);
-    check("V18.212 (C4b) _disposeCanopyShell wird im Welt-Wechsel gerufen (Source)", res.cDisposeAufWeltWechsel === true);
+    check(
+        "V18.212 (C4b) _disposeCanopyShell wird im Welt-Wechsel gerufen (Source)",
+        res.cDisposeAufWeltWechsel === true
+    );
     check("V18.212 (C5a) Canopy-Material trägt opacityNode (Distanz-Dither)", res.cMaterialHasOpacityNode === true);
-    check("V18.212 (C5b) Canopy-Material ist MeshToonNodeMaterial", res.cMaterialIsToon === true);
+    check(
+        "V18.212/234 (C5b) Canopy-Material ist das aktive lit NodeMaterial (Toon ODER PBR)",
+        res.cMaterialIsToon === true
+    );
 }
 
 // V18.213 — DER LEBENDIGE GIGANT, MESH-MERGE pro Variante (gigant-fortsetzung-
@@ -35583,13 +35774,13 @@ async function checkBandV18213MeshMerge(ctx) {
         out.mergeGeomsExists = typeof r._mergeGeometries === "function";
         // _archFlattenBlueprint trägt den merged-Pfad (Source-grep).
         const flattenSrc = r._archFlattenBlueprint.toString();
-        out.flattenHasMergedPath = /bp\._isMerged\s*===\s*true/.test(flattenSrc) &&
-            /archMergedGeomCache/.test(flattenSrc);
+        out.flattenHasMergedPath =
+            /bp\._isMerged\s*===\s*true/.test(flattenSrc) && /archMergedGeomCache/.test(flattenSrc);
         // _loadStateRestoreWorldMeta disposed den merged-Cache (Welt-
         // Identitäts-Wand, V18.210-Lehre).
         const restoreSrc = r._loadStateRestoreWorldMeta.toString();
-        out.restoreDisposesMerged = /archMergedGeomCache/.test(restoreSrc) &&
-            /\.dispose\s*\(\s*\)|\.clear\s*\(\s*\)/.test(restoreSrc);
+        out.restoreDisposesMerged =
+            /archMergedGeomCache/.test(restoreSrc) && /\.dispose\s*\(\s*\)|\.clear\s*\(\s*\)/.test(restoreSrc);
 
         // ─── (M2) genVersion-Default: neue Welten = gen 6 ──────────
         // Eine NEUE Welt-Meta hat genVersion: 7 (V18.214 SKELETON-MESH); gen 6
@@ -35653,18 +35844,19 @@ async function checkBandV18213MeshMerge(ctx) {
                 out.mergedHasIdentityMatrix = flat.leaves.every((l) => {
                     const elems = l.localMatrix.elements;
                     // Identity check: diag 1, off-diag 0 (mit kleinem Float-Tolerance).
-                    return Math.abs(elems[0] - 1) < 1e-6 && Math.abs(elems[5] - 1) < 1e-6 &&
-                           Math.abs(elems[10] - 1) < 1e-6 && Math.abs(elems[12]) < 1e-6 &&
-                           Math.abs(elems[13]) < 1e-6 && Math.abs(elems[14]) < 1e-6;
+                    return (
+                        Math.abs(elems[0] - 1) < 1e-6 &&
+                        Math.abs(elems[5] - 1) < 1e-6 &&
+                        Math.abs(elems[10] - 1) < 1e-6 &&
+                        Math.abs(elems[12]) < 1e-6 &&
+                        Math.abs(elems[13]) < 1e-6 &&
+                        Math.abs(elems[14]) < 1e-6
+                    );
                 });
                 // M-Color: jede merged geom trägt vertexColors-Attribut.
-                out.mergedHasColors = flat.leaves.every(
-                    (l) => l.geom && l.geom.attributes && l.geom.attributes.color
-                );
+                out.mergedHasColors = flat.leaves.every((l) => l.geom && l.geom.attributes && l.geom.attributes.color);
                 // M-Material: das Material hat vertexColors=true (NodeMaterial-Pfad).
-                out.mergedMatVertexColors = flat.leaves.every(
-                    (l) => l.mat && l.mat.vertexColors === true
-                );
+                out.mergedMatVertexColors = flat.leaves.every((l) => l.mat && l.mat.vertexColors === true);
             }
 
             // ─── (M7) Tag-Neutralität (V17.16-Wand): bp.parts unverändert ─
@@ -35680,16 +35872,14 @@ async function checkBandV18213MeshMerge(ctx) {
             };
             const tagsNonMerged = r.computeCompoundTags(bpClone);
             const tagKeys = ["lebendig", "dichte", "brennbar", "magieleitung"];
-            out.tagsNeutral = tagKeys.every(
-                (k) => Math.abs((tagsMerged[k] || 0) - (tagsNonMerged[k] || 0)) < 1e-9
-            );
+            out.tagsNeutral = tagKeys.every((k) => Math.abs((tagsMerged[k] || 0) - (tagsNonMerged[k] || 0)) < 1e-9);
 
             // ─── (M8) Performance-Wand: ein zweiter Merge ist gecached ─
             // Re-Aufruf von archFlattenBlueprint ist O(1) Cache-Hit.
-            const t0 = (typeof performance !== "undefined") ? performance.now() : Date.now();
+            const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
             for (let i = 0; i < 50; i++) r._archFlattenBlueprint(testKey);
-            const t1 = (typeof performance !== "undefined") ? performance.now() : Date.now();
-            out.cacheHitFast = (t1 - t0) < 50; // 50 Lookups in <50ms
+            const t1 = typeof performance !== "undefined" ? performance.now() : Date.now();
+            out.cacheHitFast = t1 - t0 < 50; // 50 Lookups in <50ms
 
             // ─── (M9) Snapshot-Restore: _isMerged wird neu gesetzt ─
             // Wir bauen einen Snapshot, prüfen das relevante Feld.
@@ -35732,22 +35922,40 @@ async function checkBandV18213MeshMerge(ctx) {
 
     check("V18.213 (M1a) _mergeBlueprintByMaterial existiert", res.mergeHelperExists === true);
     check("V18.213 (M1b) _mergeGeometries existiert", res.mergeGeomsExists === true);
-    check("V18.213 (M1c) _archFlattenBlueprint hat merged-Pfad (_isMerged-Gate + archMergedGeomCache)", res.flattenHasMergedPath === true);
+    check(
+        "V18.213 (M1c) _archFlattenBlueprint hat merged-Pfad (_isMerged-Gate + archMergedGeomCache)",
+        res.flattenHasMergedPath === true
+    );
     check("V18.213 (M1d) _loadStateRestoreWorldMeta disposed archMergedGeomCache", res.restoreDisposesMerged === true);
     check("V18.213 (M2) Neue Welt-Meta nutzt genVersion ≥ 6 (Mesh-Merge-Floor)", res.newMetaUsesGen6 === true);
     check("V18.213 (M3a) gen=6 grown Bauplan trägt _isMerged: true", res.bpHasIsMerged === true);
     check("V18.213 (M3b) bp.parts bleibt erhalten (≥50 Parts, V17.16-Wand)", res.bpStillHasParts === true);
     check("V18.213 (M4a) archFlattenBlueprint markiert merged: true (Diagnose-Marker)", res.flatHasMergedFlag === true);
     check("V18.213 (M4b) archFlattenBlueprint ist instanceable", res.flatIsInstanceable === true);
-    check(`V18.213 (M5) leaves ≤4 (1-2 Materials × 2 Toleranz, gemessen ${res.flatLeafCount}; vs V18.211 75-80)`, res.flatLeavesFew === true);
-    check(`V18.213 (M6a) Erstes merged leaf hat ≥100 Vertices (gemessen ${res.firstLeafVertCount})`, res.mergedHasManyVerts === true);
-    check("V18.213 (M6b) localMatrix ist Identity (Per-Part-Transform in Vertices gebacken)", res.mergedHasIdentityMatrix === true);
+    check(
+        `V18.213 (M5) leaves ≤4 (1-2 Materials × 2 Toleranz, gemessen ${res.flatLeafCount}; vs V18.211 75-80)`,
+        res.flatLeavesFew === true
+    );
+    check(
+        `V18.213 (M6a) Erstes merged leaf hat ≥100 Vertices (gemessen ${res.firstLeafVertCount})`,
+        res.mergedHasManyVerts === true
+    );
+    check(
+        "V18.213 (M6b) localMatrix ist Identity (Per-Part-Transform in Vertices gebacken)",
+        res.mergedHasIdentityMatrix === true
+    );
     check("V18.213 (M6c) Merged geom trägt vertexColors-Attribut", res.mergedHasColors === true);
     check("V18.213 (M6d) Merged Material hat vertexColors=true", res.mergedMatVertexColors === true);
-    check("V18.213 (M7) Tag-Neutralität: computeCompoundTags(merged) == (non-merged) (V17.16-Wand)", res.tagsNeutral === true);
+    check(
+        "V18.213 (M7) Tag-Neutralität: computeCompoundTags(merged) == (non-merged) (V17.16-Wand)",
+        res.tagsNeutral === true
+    );
     check("V18.213 (M8) Cache-Hit-Performance: 50 archFlattenBlueprint-Lookups < 50ms", res.cacheHitFast === true);
     check("V18.213 (M9a) Snapshot trägt grown-Eintrag (Restore-Pfad funktional)", res.snapshotHasEntry === true);
-    check("V18.213 (M9b) Snapshot persistiert _isMerged NICHT (aus genVersion ableitbar)", res.snapshotHasNoMergedFlag === true);
+    check(
+        "V18.213 (M9b) Snapshot persistiert _isMerged NICHT (aus genVersion ableitbar)",
+        res.snapshotHasNoMergedFlag === true
+    );
     check("V18.213 (M10a) archMergedGeomCache war nicht-leer nach Merge", res.cacheExists === true);
     check("V18.213 (M10b) archMergedGeomCache wird beim Reset geleert", res.cacheClearedAfterReset === true);
 }
@@ -35772,8 +35980,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
         out.skelLeavesExists = typeof r._buildTreeSkeletonLeaves === "function";
         out.mergeAttrExists = typeof r._mergeAttributedGeometries === "function";
         const flattenSrc2 = r._archFlattenBlueprint.toString();
-        out.flattenHasSkeletonPath =
-            /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
+        out.flattenHasSkeletonPath = /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
         out.defaultFlareExists =
             !!A.DEFAULT_TREE_FLARE && Number.isFinite(A.DEFAULT_TREE_FLARE.amp) && A.DEFAULT_TREE_FLARE.amp > 0;
         out.speciesTreeParamsExists =
@@ -35782,16 +35989,19 @@ async function checkBandV18214SkeletonMesh(ctx) {
             const tp = A.SPECIES_TREE_PARAMS;
             // Plan §3.7: Birke meidet Steilhang (slopeMax ≈ 0.6), Fichte/Tanne klettert (1.2+).
             out.tannenSlopeHigher = tp.baum_tanne.slopeMax > tp.baum_birke.slopeMax;
-            out.allSpeciesHaveFlare =
-                ["baum_tanne", "baum_kiefer", "baum_buche", "baum_birke", "baum_eiche", "baum_erle"].every(
-                    (k) => tp[k] && tp[k].flare && Number.isFinite(tp[k].flare.amp)
-                );
+            out.allSpeciesHaveFlare = [
+                "baum_tanne",
+                "baum_kiefer",
+                "baum_buche",
+                "baum_birke",
+                "baum_eiche",
+                "baum_erle",
+            ].every((k) => tp[k] && tp[k].flare && Number.isFinite(tp[k].flare.amp));
         }
 
         // ─── (T2) Wind: useFlexAttr-Pfad existiert in _buildToonNodeMaterial ─
-        const swaySrc = r._buildToonNodeMaterial.toString();
-        out.swayReadsFlexAttr =
-            /useFlexAttr\s*===\s*true/.test(swaySrc) && /attribute\(['"]aFlex['"]/.test(swaySrc);
+        const swaySrc = r._applyVegetationResponse.toString(); // V18.234 — Wind geteilt
+        out.swayReadsFlexAttr = /useFlexAttr\s*===\s*true/.test(swaySrc) && /attribute\(['"]aFlex['"]/.test(swaySrc);
 
         // ─── (T3) Slope/Höhen-Gate in _vegetationSampleSpawn ────────
         const spawnSrc = r._vegetationSampleSpawn.toString();
@@ -35840,8 +36050,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 out.skelBranchCount = bp._skeleton.branches.length;
                 out.skelAnchorCount = Array.isArray(bp._skeleton.anchors) ? bp._skeleton.anchors.length : 0;
                 out.skelHasTrunk = bp._skeleton.branches.some((b) => b.isTrunk === true);
-                out.skelHasFlare =
-                    Number.isFinite(bp._skeleton.flareAmp) && bp._skeleton.flareAmp > 0;
+                out.skelHasFlare = Number.isFinite(bp._skeleton.flareAmp) && bp._skeleton.flareAmp > 0;
             }
 
             // ─── (T5) Behavioral: archFlattenBlueprint baut Tube+Cards ───
@@ -35869,9 +36078,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 // T7: localMatrix Identity
                 const elems = bark.localMatrix.elements;
                 out.barkIdentity =
-                    Math.abs(elems[0] - 1) < 1e-6 &&
-                    Math.abs(elems[5] - 1) < 1e-6 &&
-                    Math.abs(elems[10] - 1) < 1e-6;
+                    Math.abs(elems[0] - 1) < 1e-6 && Math.abs(elems[5] - 1) < 1e-6 && Math.abs(elems[10] - 1) < 1e-6;
                 // T8: foliage falls vorhanden
                 if (flat.leaves.length > 1) {
                     const fol = flat.leaves[1];
@@ -35879,8 +36086,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
                     out.foliageVerts = fol.geom.attributes.position.count;
                     out.foliageHasColor = !!fol.geom.attributes.color;
                     // Anchors × 8 Vertices pro Card-Cross
-                    out.foliageVertsMatchAnchors =
-                        fol.geom.attributes.position.count === out.skelAnchorCount * 8;
+                    out.foliageVertsMatchAnchors = fol.geom.attributes.position.count === out.skelAnchorCount * 8;
                 }
             }
 
@@ -35895,9 +36101,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
             };
             const tagsClone = r.computeCompoundTags(bpClone);
             const tagKeys = ["lebendig", "dichte", "brennbar", "magieleitung"];
-            out.tagsNeutral = tagKeys.every(
-                (k) => Math.abs((tagsSkel[k] || 0) - (tagsClone[k] || 0)) < 1e-9
-            );
+            out.tagsNeutral = tagKeys.every((k) => Math.abs((tagsSkel[k] || 0) - (tagsClone[k] || 0)) < 1e-9);
 
             // ─── (T10) Snapshot: _skeleton NICHT persistiert ─────────
             const snap = r.buildStateSnapshot();
@@ -35927,10 +36131,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
         res.tannenSlopeHigher === true
     );
     check("V18.214 (T1i) Alle 6 Arten haben flare-Werte", res.allSpeciesHaveFlare === true);
-    check(
-        "V18.214 (T2) _buildToonNodeMaterial liest aFlex Attribut bei useFlexAttr",
-        res.swayReadsFlexAttr === true
-    );
+    check("V18.214 (T2) _buildToonNodeMaterial liest aFlex Attribut bei useFlexAttr", res.swayReadsFlexAttr === true);
     check(
         "V18.214 (T3) _vegetationSampleSpawn liest SPECIES_TREE_PARAMS + slopeMax + heightRange",
         res.spawnReadsSlopeHeight === true
@@ -35941,14 +36142,14 @@ async function checkBandV18214SkeletonMesh(ctx) {
         `V18.214 (T4c) Skeleton hat ≥2 Branches (Stamm + L1+) — gemessen ${res.skelBranchCount}`,
         res.skelBranchCount >= 2
     );
-    check(
-        `V18.214 (T4d) Skeleton hat ≥1 Foliage-Anchor — gemessen ${res.skelAnchorCount}`,
-        res.skelAnchorCount >= 1
-    );
+    check(`V18.214 (T4d) Skeleton hat ≥1 Foliage-Anchor — gemessen ${res.skelAnchorCount}`, res.skelAnchorCount >= 1);
     check("V18.214 (T4e) Skeleton trägt einen isTrunk-Branch", res.skelHasTrunk === true);
     check("V18.214 (T4f) Skeleton trägt flareAmp>0 (Wurzelanlauf)", res.skelHasFlare === true);
     check("V18.214 (T5a) archFlattenBlueprint markiert skeleton: true", res.flatIsSkeleton === true);
-    check("V18.214 (T5b) archFlattenBlueprint markiert merged: true (Diagnose-Kompat)", res.flatHasMergedMarker === true);
+    check(
+        "V18.214 (T5b) archFlattenBlueprint markiert merged: true (Diagnose-Kompat)",
+        res.flatHasMergedMarker === true
+    );
     check(
         `V18.214 (T5c) ≤4 leaves (gemessen ${res.flatLeafCount}, erwartet 1-2 bark+foliage)`,
         res.flatLeavesFew === true
@@ -35970,7 +36171,10 @@ async function checkBandV18214SkeletonMesh(ctx) {
         res.tagsNeutral === true
     );
     check("V18.214 (T10a) Snapshot trägt grown-Eintrag", res.snapshotHasEntry === true);
-    check("V18.214 (T10b) Snapshot persistiert _skeleton NICHT (re-baubar aus seed)", res.snapshotNoSkeletonField === true);
+    check(
+        "V18.214 (T10b) Snapshot persistiert _skeleton NICHT (re-baubar aus seed)",
+        res.snapshotNoSkeletonField === true
+    );
 }
 
 // V18.215 — DER ATEMBERAUBENDE WALD (lebendiger-gigant be15a050 §4 Ω-K3 +
@@ -35989,16 +36193,25 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         if (out.variationExists) {
             const v = A.SPECIES_TAG_VARIATION;
             out.variationAllSpecies =
-                !!v.baum_tanne && !!v.baum_kiefer && !!v.baum_buche && !!v.baum_birke &&
-                !!v.baum_eiche && !!v.baum_erle && !!v.baum_totholz;
+                !!v.baum_tanne &&
+                !!v.baum_kiefer &&
+                !!v.baum_buche &&
+                !!v.baum_birke &&
+                !!v.baum_eiche &&
+                !!v.baum_erle &&
+                !!v.baum_totholz;
             // Plan §7: Tanne/Kiefer brennbar↑ resoniert↑; Totholz lebendig↓
             // brennbar↑↑ — die DEKLARIERTEN Achsen pro Spezies.
             out.tannenDeklariert =
-                Number.isFinite(v.baum_tanne.brennbar) && v.baum_tanne.brennbar > 0 &&
-                Number.isFinite(v.baum_tanne.resoniert) && v.baum_tanne.resoniert > 0;
+                Number.isFinite(v.baum_tanne.brennbar) &&
+                v.baum_tanne.brennbar > 0 &&
+                Number.isFinite(v.baum_tanne.resoniert) &&
+                v.baum_tanne.resoniert > 0;
             out.totholzDeklariert =
-                Number.isFinite(v.baum_totholz.lebendig) && v.baum_totholz.lebendig < 0 &&
-                Number.isFinite(v.baum_totholz.brennbar) && v.baum_totholz.brennbar > 0;
+                Number.isFinite(v.baum_totholz.lebendig) &&
+                v.baum_totholz.lebendig < 0 &&
+                Number.isFinite(v.baum_totholz.brennbar) &&
+                v.baum_totholz.brennbar > 0;
         }
 
         // ─── (W2) baum_totholz in SPECIES_GRAMMAR + SPECIES_TREE_PARAMS ─
@@ -36008,19 +36221,15 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
             // Plan §3.3: kein foliage. foliage.kind="none" + anchorLevel=99.
             out.totholzNoFoliage = g.foliage.kind === "none" && g.foliage.anchorLevel >= 99;
         }
-        out.treeParamsHasTotholz =
-            !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz);
+        out.treeParamsHasTotholz = !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz);
 
         // ─── (W3) V17.16-VARIATIONS-Wand in _growTreeBlueprintForSpawn ─
         const growSrc = r._growTreeBlueprintForSpawn.toString();
-        out.wandGeschaerft =
-            /SPECIES_TAG_VARIATION/.test(growSrc) &&
-            /\(a in variation\)\s*continue/.test(growSrc);
+        out.wandGeschaerft = /SPECIES_TAG_VARIATION/.test(growSrc) && /\(a in variation\)\s*continue/.test(growSrc);
 
         // ─── (W4) computeCompoundTags wendet Variation für _isGrown ──
         const tagsSrc = r.computeCompoundTags.toString();
-        out.tagsAppliesVariation =
-            /SPECIES_TAG_VARIATION/.test(tagsSrc) && /_isGrown/.test(tagsSrc);
+        out.tagsAppliesVariation = /SPECIES_TAG_VARIATION/.test(tagsSrc) && /_isGrown/.test(tagsSrc);
 
         // ─── (W5) Behavioral: Spezies-Distinktion in computeCompoundTags ─
         // Bauplan-Stichprobe: rohen parts vs _isGrown+species → Tag-Delta.
@@ -36064,7 +36273,8 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
                     const dLebendig = (tagsTGrown.lebendig || 0) - (tagsTRaw.lebendig || 0);
                     // Variation -0.3, aber Math.max(0,...) clamp → könnte <0.3 sein wenn tagsTRaw.lebendig klein
                     out.totholzVariationLebendigDrop =
-                        dLebendig < 0 || Math.abs(tagsTGrown.lebendig - Math.max(0, (tagsTRaw.lebendig || 0) - 0.3)) < 1e-9;
+                        dLebendig < 0 ||
+                        Math.abs(tagsTGrown.lebendig - Math.max(0, (tagsTRaw.lebendig || 0) - 0.3)) < 1e-9;
                 }
             }
         } catch (_e) {
@@ -36084,8 +36294,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
                 out.totholzBpGrownSpecies = tbp._grownSpecies === "baum_totholz";
                 // computeCompoundTags(tbp) → lebendig↓
                 const ttags = r.computeCompoundTags(tbp);
-                out.totholzCompoundLebendigLow =
-                    Number.isFinite(ttags.lebendig) && ttags.lebendig < 1.0; // var=-0.3 unter Eiche-1.4 → ~0.7-1.1
+                out.totholzCompoundLebendigLow = Number.isFinite(ttags.lebendig) && ttags.lebendig < 1.0; // var=-0.3 unter Eiche-1.4 → ~0.7-1.1
             }
         } catch (_e) {
             out.totholzSpawnError = String(_e && _e.message);
@@ -36122,19 +36331,52 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
     check("V18.215 (W2a) baum_totholz in SPECIES_GRAMMAR", res.grammarHasTotholz === true);
     check("V18.215 (W2b) Totholz foliage.kind=none + anchorLevel≥99 (snag, kein Laub)", res.totholzNoFoliage === true);
     check("V18.215 (W2c) baum_totholz in SPECIES_TREE_PARAMS (Slope+Höhe)", res.treeParamsHasTotholz === true);
-    check("V18.215 (W3) V17.16-VARIATIONS-Wand GESCHÄRFT (Source: deklarierte Achsen freipass)", res.wandGeschaerft === true);
-    check("V18.215 (W4) computeCompoundTags wendet SPECIES_TAG_VARIATION für _isGrown an (Source)", res.tagsAppliesVariation === true);
-    check("V18.215 (W5a) Tanne _isGrown: brennbar +0.1 angewandt (computeCompoundTags-Δ)", res.tannenVariationApplied === true);
-    check(`V18.215 (W5b) Totholz produziert ≥4 parts (gemessen ${res.totholzPartsCount})`, res.totholzPartsEnough === true);
-    check("V18.215 (W5c) Totholz parts alle holz oder laub (V17.16-Wand strukturell)", res.totholzAllHolzOrLaub === true);
+    check(
+        "V18.215 (W3) V17.16-VARIATIONS-Wand GESCHÄRFT (Source: deklarierte Achsen freipass)",
+        res.wandGeschaerft === true
+    );
+    check(
+        "V18.215 (W4) computeCompoundTags wendet SPECIES_TAG_VARIATION für _isGrown an (Source)",
+        res.tagsAppliesVariation === true
+    );
+    check(
+        "V18.215 (W5a) Tanne _isGrown: brennbar +0.1 angewandt (computeCompoundTags-Δ)",
+        res.tannenVariationApplied === true
+    );
+    check(
+        `V18.215 (W5b) Totholz produziert ≥4 parts (gemessen ${res.totholzPartsCount})`,
+        res.totholzPartsEnough === true
+    );
+    check(
+        "V18.215 (W5c) Totholz parts alle holz oder laub (V17.16-Wand strukturell)",
+        res.totholzAllHolzOrLaub === true
+    );
     check("V18.215 (W5d) Totholz _isGrown: lebendig-Drop angewandt", res.totholzVariationLebendigDrop === true);
-    check("V18.215 (W6a) baum_totholz kann gespawnt werden (V17.16-VARIATIONS-Wand passiert)", res.totholzSpawnable === true);
-    check("V18.215 (W6b) Totholz-Bauplan trägt _skeleton + _isGrown + _grownSpecies", res.totholzBpHasSkeleton === true && res.totholzBpIsGrown === true && res.totholzBpGrownSpecies === true);
-    check("V18.215 (W6c) Totholz computeCompoundTags lebendig < 1.0 (Variation wirkt)", res.totholzCompoundLebendigLow === true);
+    check(
+        "V18.215 (W6a) baum_totholz kann gespawnt werden (V17.16-VARIATIONS-Wand passiert)",
+        res.totholzSpawnable === true
+    );
+    check(
+        "V18.215 (W6b) Totholz-Bauplan trägt _skeleton + _isGrown + _grownSpecies",
+        res.totholzBpHasSkeleton === true && res.totholzBpIsGrown === true && res.totholzBpGrownSpecies === true
+    );
+    check(
+        "V18.215 (W6c) Totholz computeCompoundTags lebendig < 1.0 (Variation wirkt)",
+        res.totholzCompoundLebendigLow === true
+    );
     check("V18.215 (W7) _populateVoxelChunkVegetation SAMPLES = 10 (Plan §8.2 dichter)", res.samples10 === true);
-    check(`V18.215 (W8a) Holz dunkler+erdig (R<0x80, G<0x60) — gemessen R=${res.holzColor ? ((res.holzColor >> 16) & 0xff).toString(16) : "?"}, G=${res.holzColor ? ((res.holzColor >> 8) & 0xff).toString(16) : "?"}`, res.holzIsErdig === true);
-    check(`V18.215 (W8b) Laub dunkler (G<0x80) — gemessen G=${res.laubColor ? ((res.laubColor >> 8) & 0xff).toString(16) : "?"}`, res.laubIsDunkel === true);
-    check("V18.215 (W9) baum_totholz in _vegetationSampleSpawn-candidates (Plan §8.2)", res.candidatesIncludeTotholz === true);
+    check(
+        `V18.215 (W8a) Holz dunkler+erdig (R<0x80, G<0x60) — gemessen R=${res.holzColor ? ((res.holzColor >> 16) & 0xff).toString(16) : "?"}, G=${res.holzColor ? ((res.holzColor >> 8) & 0xff).toString(16) : "?"}`,
+        res.holzIsErdig === true
+    );
+    check(
+        `V18.215 (W8b) Laub dunkler (G<0x80) — gemessen G=${res.laubColor ? ((res.laubColor >> 8) & 0xff).toString(16) : "?"}`,
+        res.laubIsDunkel === true
+    );
+    check(
+        "V18.215 (W9) baum_totholz in _vegetationSampleSpawn-candidates (Plan §8.2)",
+        res.candidatesIncludeTotholz === true
+    );
 }
 
 // V18.216 (DER LEBENDIGE GIGANT §1, gigant-fortsetzung-plan) — KARST + Büsche /
@@ -36295,9 +36537,10 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
         // Pool) bumpt die Version auf 18.217.0 ohne dieses Band zu brechen
         // → wir prüfen FLOOR (string-vergleich, semver-Form 18.MMM.PPP).
         out.versionString = A.VERSION;
-        const parts = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
-        out.versionFloor18216 =
-            parts.length >= 2 && (parts[0] > 18 || (parts[0] === 18 && parts[1] >= 216));
+        const parts = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
+        out.versionFloor18216 = parts.length >= 2 && (parts[0] > 18 || (parts[0] === 18 && parts[1] >= 216));
         out.genVersionFresh9 = !!(r.state.worldMeta && r.state.worldMeta.genVersion >= 9);
 
         return out;
@@ -36340,7 +36583,10 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
     check(`V18.216 (C6) Blume-Grow ≥4 parts (gemessen ${res.blumePartsCount})`, res.blumePartsValid === true);
 
     // (D) V17.16-VARIATIONS-Wand passiert
-    check("V18.216 (D1) Karst spawnable (V17.16-VARIATIONS-Wand passiert: dichte+0.10 deklariert)", res.karstSpawnable === true);
+    check(
+        "V18.216 (D1) Karst spawnable (V17.16-VARIATIONS-Wand passiert: dichte+0.10 deklariert)",
+        res.karstSpawnable === true
+    );
     check("V18.216 (D2) Karst-Bauplan ist _isGrown + _grownSpecies=baum_karst", res.karstBpIsGrown === true);
     check("V18.216 (D3) Hazel spawnable", res.hazelSpawnable === true);
     check("V18.216 (D4) Farn spawnable", res.farnSpawnable === true);
@@ -36349,7 +36595,10 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
     // (E) Source-Integration
     check("V18.216 (E1) baum_karst in _vegetationSampleSpawn-candidates", res.candidatesHasKarst === true);
     check("V18.216 (E2) baum_karst in TREE_NAMES (Wald-Mask-Boost)", res.treeNamesHasKarst === true);
-    check("V18.216 (E3) Bush-Sub-Spawn-Pfad in _vegetationSampleSpawn (BUSH_RATE + 3 Bush-Namen)", res.bushSubSpawn === true);
+    check(
+        "V18.216 (E3) Bush-Sub-Spawn-Pfad in _vegetationSampleSpawn (BUSH_RATE + 3 Bush-Namen)",
+        res.bushSubSpawn === true
+    );
 
     // (F) Version
     check(`V18.216 (F1) VERSION floor ≥ 18.216.0 (gemessen ${res.versionString})`, res.versionFloor18216 === true);
@@ -36391,8 +36640,8 @@ async function checkBandV18217VariantenPool(ctx) {
             out.freshPoolSpeciesCount = species.length;
             // Alle aktuellen SPECIES_GRAMMAR-Spezies haben einen Pool
             const grammarSpec = Object.keys(A.SPECIES_GRAMMAR || {});
-            out.allGrammarSpeciesInPool = grammarSpec.every((s) =>
-                Array.isArray(newMeta.variantSeed[s]) && newMeta.variantSeed[s].length === A.VARIANTS_PER_SPECIES
+            out.allGrammarSpeciesInPool = grammarSpec.every(
+                (s) => Array.isArray(newMeta.variantSeed[s]) && newMeta.variantSeed[s].length === A.VARIANTS_PER_SPECIES
             );
             // String-Seeds, kein Float-Drift-Risiko (P2P-Konsistenz)
             const sampleArr = newMeta.variantSeed[grammarSpec[0]] || [];
@@ -36406,10 +36655,12 @@ async function checkBandV18217VariantenPool(ctx) {
         out.poolDeterministic = (() => {
             const spec = Object.keys(pool1);
             if (spec.length !== Object.keys(pool2).length) return false;
-            return spec.every((s) =>
-                Array.isArray(pool1[s]) && Array.isArray(pool2[s]) &&
-                pool1[s].length === pool2[s].length &&
-                pool1[s].every((v, i) => v === pool2[s][i])
+            return spec.every(
+                (s) =>
+                    Array.isArray(pool1[s]) &&
+                    Array.isArray(pool2[s]) &&
+                    pool1[s].length === pool2[s].length &&
+                    pool1[s].every((v, i) => v === pool2[s][i])
             );
         })();
 
@@ -36417,7 +36668,8 @@ async function checkBandV18217VariantenPool(ctx) {
         const pool3 = r._generateVariantSeedPool("anderer-seed-distinct-abc");
         const specCheck = Object.keys(pool1)[0];
         out.poolDistinctSeeds =
-            Array.isArray(pool1[specCheck]) && Array.isArray(pool3[specCheck]) &&
+            Array.isArray(pool1[specCheck]) &&
+            Array.isArray(pool3[specCheck]) &&
             pool1[specCheck][0] !== pool3[specCheck][0];
 
         // ─── (D) Cache-Key: regionSeeds, die auf gleichen Index hashen, geben gleichen Bauplan ─
@@ -36470,8 +36722,9 @@ async function checkBandV18217VariantenPool(ctx) {
             delete r.state.worldMeta.variantSeed;
             const migrated = r._ensureVariantSeedPool();
             out.migrationFillsPool = !!(
-                migrated && Object.keys(A.SPECIES_GRAMMAR || {}).every((s) =>
-                    Array.isArray(migrated[s]) && migrated[s].length === A.VARIANTS_PER_SPECIES
+                migrated &&
+                Object.keys(A.SPECIES_GRAMMAR || {}).every(
+                    (s) => Array.isArray(migrated[s]) && migrated[s].length === A.VARIANTS_PER_SPECIES
                 )
             );
         } finally {
@@ -36490,14 +36743,19 @@ async function checkBandV18217VariantenPool(ctx) {
 
         // ─── (H) Version + walk-with-code ────────────────────────────
         out.versionStr = A.VERSION;
-        const partsV = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        const partsV = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
         out.versionFloor18217 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 217);
 
         return out;
     });
 
     // (A) Source
-    check(`V18.217 (A1) AnazhRealm.VARIANTS_PER_SPECIES Konstante (gemessen ${res.constantValue})`, res.constantExists === true);
+    check(
+        `V18.217 (A1) AnazhRealm.VARIANTS_PER_SPECIES Konstante (gemessen ${res.constantValue})`,
+        res.constantExists === true
+    );
     check("V18.217 (A2) _ensureVariantSeedPool Helper existiert", res.ensureHelperExists === true);
     check("V18.217 (A3) _generateVariantSeedPool Helper existiert", res.generateHelperExists === true);
     check("V18.217 (A4) _growTreeBlueprintForSpawn nutzt _ensureVariantSeedPool", res.growUsesPool === true);
@@ -36507,25 +36765,37 @@ async function checkBandV18217VariantenPool(ctx) {
 
     // (B) Fresh-Welt
     check("V18.217 (B1) Fresh-Welt-Meta trägt variantSeed-Pool", res.freshHasPool === true);
-    check(`V18.217 (B2) Fresh-Pool deckt alle SPECIES_GRAMMAR-Arten (gemessen ${res.freshPoolSpeciesCount})`, res.allGrammarSpeciesInPool === true);
+    check(
+        `V18.217 (B2) Fresh-Pool deckt alle SPECIES_GRAMMAR-Arten (gemessen ${res.freshPoolSpeciesCount})`,
+        res.allGrammarSpeciesInPool === true
+    );
     check("V18.217 (B3) Pool-Einträge sind STRINGS (P2P-Determinismus)", res.poolEntriesAreStrings === true);
 
     // (C) Determinismus
-    check("V18.217 (C1) Pool-Generierung deterministisch (gleicher Seed → gleicher Pool)", res.poolDeterministic === true);
+    check(
+        "V18.217 (C1) Pool-Generierung deterministisch (gleicher Seed → gleicher Pool)",
+        res.poolDeterministic === true
+    );
     check("V18.217 (C2) Verschiedene worldSeeds erzeugen DISTINKTE Pools", res.poolDistinctSeeds === true);
 
     // (D) Spawn-Pipeline
     check("V18.217 (D1) Gleicher regionSeed → gleicher Bauplan-Key", res.sameRegionSameKey === true);
     check("V18.217 (D2) Bauplan-Key folgt `grown_<species>_v<idx>`-Form", res.keyHasVariantForm === true);
     check("V18.217 (D3) Bauplan trägt _variantIndex (numerisch)", res.bpVariantIndexSet === true);
-    check("V18.217 (D4) bp._grownSeed === variantSeed[species][index] (Re-Wachstum bit-genau)", res.bpGrownSeedIsVariantSeed === true);
+    check(
+        "V18.217 (D4) bp._grownSeed === variantSeed[species][index] (Re-Wachstum bit-genau)",
+        res.bpGrownSeedIsVariantSeed === true
+    );
 
     // (E) Snapshot
     check("V18.217 (E1) Snapshot trägt worldMeta.variantSeed", res.snapshotCarriesPool === true);
     check("V18.217 (E2) Snapshot-Pool ist bit-identisch zur Live-Welt", res.snapshotPoolMatchesLive === true);
 
     // (F) Migration
-    check("V18.217 (F1) Migration: alte Welt ohne variantSeed bekommt lazy einen Pool", res.migrationFillsPool === true);
+    check(
+        "V18.217 (F1) Migration: alte Welt ohne variantSeed bekommt lazy einen Pool",
+        res.migrationFillsPool === true
+    );
 
     // (G) Performance
     check(`V18.217 (G1) Pool-JSON-Größe < 30 KB (gemessen ${res.poolJsonSize} Bytes)`, res.poolSizeUnder30K === true);
@@ -36614,8 +36884,7 @@ async function checkBandV18218LODStufen(ctx) {
                 out.lod0FullParts = out.lod0Parts >= 50;
                 out.lod1Reduced = out.lod1Parts > 0 && out.lod1Parts <= 20;
                 out.lod2Tiny = out.lod2Parts > 0 && out.lod2Parts <= 10;
-                out.lodPartsMonotone =
-                    out.lod0Parts > out.lod1Parts && out.lod1Parts > out.lod2Parts;
+                out.lodPartsMonotone = out.lod0Parts > out.lod1Parts && out.lod1Parts > out.lod2Parts;
                 const partsDefault = r._growTreeBlueprintRich("baum_eiche", "v218-default-test", grammar);
                 out.lodDefaultIsLod0 = Array.isArray(partsDefault) && partsDefault.length >= 50;
                 out.lod2UnderCap = out.lod2Parts <= Math.ceil(out.lod0Parts * 0.15);
@@ -36636,7 +36905,7 @@ async function checkBandV18218LODStufen(ctx) {
                 out.totLOD2Parts = Array.isArray(partsTot) ? partsTot.length : 0;
                 // Keine Krone-Laub-Sphere oberhalb des Sockels (Saum sitzt ~y=0.5m)
                 const kroneLaubCount = Array.isArray(partsTot)
-                    ? partsTot.filter((p) => p.material === "laub" && (p.position && p.position.y > 1.0)).length
+                    ? partsTot.filter((p) => p.material === "laub" && p.position && p.position.y > 1.0).length
                     : 0;
                 out.totLOD2NoKroneLaub = kroneLaubCount === 0;
             } finally {
@@ -36664,7 +36933,9 @@ async function checkBandV18218LODStufen(ctx) {
 
         // ─── (G) Version + walk-with-code ────────────────────────────
         out.versionStr = A.VERSION;
-        const partsV = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        const partsV = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
         out.versionFloor18218 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 218);
 
         return out;
@@ -36695,8 +36966,14 @@ async function checkBandV18218LODStufen(ctx) {
     check("V18.218 (C5) LOD1-Bauplan in state.blueprints", res.bp1Exists === true);
     check("V18.218 (C6) LOD2-Bauplan in state.blueprints", res.bp2Exists === true);
     check("V18.218 (C7) bp._lodLevel gesetzt", res.bp1HasLodLevel === true && res.bp2HasLodLevel === true);
-    check("V18.218 (C8) 3 LOD-Bauplane teilen denselben _variantIndex (Form-Identität)", res.lodsShareVariantIndex === true);
-    check("V18.218 (C9) 3 LOD-Bauplane teilen denselben _grownSeed (Re-Wachstum bit-genau)", res.lodsShareSeed === true);
+    check(
+        "V18.218 (C8) 3 LOD-Bauplane teilen denselben _variantIndex (Form-Identität)",
+        res.lodsShareVariantIndex === true
+    );
+    check(
+        "V18.218 (C9) 3 LOD-Bauplane teilen denselben _grownSeed (Re-Wachstum bit-genau)",
+        res.lodsShareSeed === true
+    );
 
     // (D) Geometrie-Reduktion
     check(`V18.218 (D1) LOD0 ≥50 Parts (Hero, gemessen ${res.lod0Parts})`, res.lod0FullParts === true);
@@ -36704,11 +36981,20 @@ async function checkBandV18218LODStufen(ctx) {
     check(`V18.218 (D3) LOD2 ≤10 Parts (Far, gemessen ${res.lod2Parts})`, res.lod2Tiny === true);
     check(`V18.218 (D4) Parts-Anzahl strict monoton: LOD0 > LOD1 > LOD2`, res.lodPartsMonotone === true);
     check(`V18.218 (D5) Default-LOD ohne opts ist LOD0 (Backward-Kompat)`, res.lodDefaultIsLod0 === true);
-    check(`V18.218 (D6) LOD2 Parts ≤ 15 % von LOD0 (Plan §3.6 „≤ 10 % Triangle-Count Toleranz")`, res.lod2UnderCap === true);
+    check(
+        `V18.218 (D6) LOD2 Parts ≤ 15 % von LOD0 (Plan §3.6 „≤ 10 % Triangle-Count Toleranz")`,
+        res.lod2UnderCap === true
+    );
 
     // (E) Totholz im LOD2
-    check(`V18.218 (E1) baum_totholz LOD2 hat ≥1 Part (Trunk-only, gemessen ${res.totLOD2Parts})`, res.totLOD2Parts >= 1);
-    check("V18.218 (E2) Totholz LOD2 keine Krone-Laub oberhalb des Saums (Snag bleibt Snag, Plan §3.3)", res.totLOD2NoKroneLaub === true);
+    check(
+        `V18.218 (E1) baum_totholz LOD2 hat ≥1 Part (Trunk-only, gemessen ${res.totLOD2Parts})`,
+        res.totLOD2Parts >= 1
+    );
+    check(
+        "V18.218 (E2) Totholz LOD2 keine Krone-Laub oberhalb des Saums (Snag bleibt Snag, Plan §3.3)",
+        res.totLOD2NoKroneLaub === true
+    );
 
     // (F) V17.16-Tag-Wand
     check("V18.218 (F1) LOD0 + LOD1 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD01 === true);
@@ -36836,20 +37122,14 @@ async function checkBandV18219bisVollendung(ctx) {
 
         // ─── V18.221 Ω-H PROMOTION ───────────────────────────────────
         const spawnSrc2 = r.spawnArchitecture ? r.spawnArchitecture.toString() : "";
-        out.spawnAutoPromotes =
-            /_scatterMarkCellPromoted/.test(spawnSrc2) && /_scatterRegisterCell/.test(spawnSrc2);
+        out.spawnAutoPromotes = /_scatterMarkCellPromoted/.test(spawnSrc2) && /_scatterRegisterCell/.test(spawnSrc2);
         const snap = r.buildStateSnapshot();
-        out.snapshotCarriesPromoted = !!(
-            snap &&
-            snap.worldMeta &&
-            Array.isArray(snap.worldMeta.scatterPromoted)
-        );
+        out.snapshotCarriesPromoted = !!(snap && snap.worldMeta && Array.isArray(snap.worldMeta.scatterPromoted));
         if (out.snapshotCarriesPromoted) {
             out.snapshotPromotedCount = snap.worldMeta.scatterPromoted.length;
         }
         const restoreSrc = r._loadStateRestoreWorldMeta ? r._loadStateRestoreWorldMeta.toString() : "";
-        out.restoreRebuildsPromotedSet =
-            /scatterPromoted/.test(restoreSrc) && /new Set/.test(restoreSrc);
+        out.restoreRebuildsPromotedSet = /scatterPromoted/.test(restoreSrc) && /new Set/.test(restoreSrc);
 
         // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
         out.canopyConfigExists = typeof r._canopyChunkConfig === "function";
@@ -36857,8 +37137,7 @@ async function checkBandV18219bisVollendung(ctx) {
         out.canopyDisposeExists = typeof r._canopyDisposeChunkByKey === "function";
         out.canopyTickExists = typeof r._tickCanopyStreaming === "function";
         out.canopyTickInLoop = /_tickCanopyStreaming/.test(loopBody);
-        out.canopyFlagDefault =
-            r.state.atmosphere && r.state.atmosphere.canopyStreaming === false;
+        out.canopyFlagDefault = r.state.atmosphere && r.state.atmosphere.canopyStreaming === false;
         const canopyTickSrc = r._tickCanopyStreaming.toString();
         out.canopyTickReadsFlag = /canopyStreaming/.test(canopyTickSrc);
         if (out.canopyEnsureExists) {
@@ -36883,7 +37162,9 @@ async function checkBandV18219bisVollendung(ctx) {
 
         // ─── VERSION ─────────────────────────────────────────────────
         out.versionStr = A.VERSION;
-        const partsV = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        const partsV = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
         out.versionFloor18222 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 222);
 
         return out;
@@ -36895,7 +37176,10 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.218.1 (L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
     check("V18.218.1 (L4) atmosphere.treeLOD=true Default", res.lodFlagDefault === true);
     check("V18.218.1 (L5) _tickArchitectureLOD respektiert das Flag", res.lodTickReadsFlag === true);
-    check("V18.218.1 (L6) spawnArchitecture markiert grown-tree-Entry mit _lod-Feldern", res.spawnedEntryHasLodFields === true);
+    check(
+        "V18.218.1 (L6) spawnArchitecture markiert grown-tree-Entry mit _lod-Feldern",
+        res.spawnedEntryHasLodFields === true
+    );
     check("V18.218.1 (L7) _lodSpecies = baum_eiche (Identitäts-Mark)", res.spawnedEntrySpeciesIsEiche === true);
     check("V18.218.1 (L8) _switchArchitectureLOD wechselt zu LOD2", res.lodSwitchedToLOD2 === true);
     check("V18.218.1 (L9) entry.type endet auf `_lod2`", res.lodTypeChanged === true);
@@ -36907,11 +37191,17 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.219 (B3) _invalidateBakedRegionsAround Helper", res.invalidateBakedExists === true);
     check("V18.219 (B4) _bakeRegionConfig liefert sizeM/res/channels", res.bakeConfigValid === true);
     check("V18.219 (B5) Bake-Akt liefert entry mit data-Float32Array", res.bakeReturnsEntry === true);
-    check(`V18.219 (B6) Bake-Data-Größe = res×res×channels (gemessen ${res.bakeDataLength})`, res.bakeDataSizeCorrect === true);
+    check(
+        `V18.219 (B6) Bake-Data-Größe = res×res×channels (gemessen ${res.bakeDataLength})`,
+        res.bakeDataSizeCorrect === true
+    );
     check("V18.219 (B7) Bake-Entry nach Build nicht dirty", res.bakeNotDirty === true);
     check("V18.219 (B8) sampleCount = res×res", res.bakeHasSamples === true);
     check("V18.219 (B9) _sampleBakedField liefert alle 6 Kanäle", res.sampleReturnsAllChannels === true);
-    check(`V18.219 (B10) Bake-Höhe ≈ _voxelSurfaceY (Fehler ${res.bakeHeightError !== undefined ? res.bakeHeightError.toFixed(2) : "?"}m)`, res.bakeHeightAccurate === true);
+    check(
+        `V18.219 (B10) Bake-Höhe ≈ _voxelSurfaceY (Fehler ${res.bakeHeightError !== undefined ? res.bakeHeightError.toFixed(2) : "?"}m)`,
+        res.bakeHeightAccurate === true
+    );
     check("V18.219 (B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
     check("V18.219 (B12) _addVoxelEdit ruft _invalidateBakedRegionsAround", res.editTriggersInvalidate === true);
 
@@ -36934,7 +37224,10 @@ async function checkBandV18219bisVollendung(ctx) {
     // V18.221 Ω-H Promotion
     check("V18.221 (P1) spawnArchitecture auto-promoted grown-tree-Cell", res.spawnAutoPromotes === true);
     check("V18.221 (P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
-    check(`V18.221 (P3) Snapshot enthält Promotionen (Anzahl ${res.snapshotPromotedCount})`, res.snapshotPromotedCount >= 0);
+    check(
+        `V18.221 (P3) Snapshot enthält Promotionen (Anzahl ${res.snapshotPromotedCount})`,
+        res.snapshotPromotedCount >= 0
+    );
     check("V18.221 (P4) _loadStateRestoreWorldMeta rebuildet das Set", res.restoreRebuildsPromotedSet === true);
 
     // V18.222 Canopy chunk-streaming
@@ -36949,7 +37242,10 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.222 (C9) Canopy-Mesh hat color-Attribute (vertexColors)", res.canopyMeshHasColor === true);
     check("V18.222 (C10) Canopy-Mesh userData.kind=canopyChunk", res.canopyMeshHasUserdata === true);
     check("V18.222 (C11) Canopy-Mesh in state.canopyChunks-Map", res.canopyMeshInMap === true);
-    check("V18.222 (C12) Disposal entfernt das Mesh aus der Map", res.canopyDisposed === true && res.canopyMeshGoneFromMap === true);
+    check(
+        "V18.222 (C12) Disposal entfernt das Mesh aus der Map",
+        res.canopyDisposed === true && res.canopyMeshGoneFromMap === true
+    );
     check("V18.222 (C13) Welt-Wechsel disposed alle Canopy-Chunks", res.worldWechselDisposesCanopy === true);
 
     // Version
@@ -36967,10 +37263,11 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         const A = r.constructor;
         const out = {};
         out.pbrBuilderExists = typeof r._buildPbrNodeMaterial === "function";
-        out.modeFlagDefault = r.state.atmosphere && r.state.atmosphere.materialMode === "toon";
+        out.modeFlagDefault = r.state.atmosphere && r.state.atmosphere.materialMode === "pbr"; // V18.234 — PBR ist Default
         // Dispatch-Source-Probe
         const toonSrc = r._buildToonNodeMaterial.toString();
-        out.toonDispatchesOnMode = /materialMode\s*===\s*["']pbr["']/.test(toonSrc) && /_buildPbrNodeMaterial/.test(toonSrc);
+        out.toonDispatchesOnMode =
+            /materialMode\s*===\s*["']pbr["']/.test(toonSrc) && /_buildPbrNodeMaterial/.test(toonSrc);
 
         // Build a PBR material directly
         if (out.pbrBuilderExists) {
@@ -37012,8 +37309,9 @@ async function checkBandV18223PbrKohaerenz(ctx) {
                 if (typeof mStein.dispose === "function") mStein.dispose();
             }
 
-            // GLUT-Material (brennbar 0.95) → emissiv-glühend
-            const mGlut = r._buildPbrNodeMaterial({ color: 0xff5020, tags: { brennbar: 0.95 } });
+            // GLUT-Material (brennbar 0.95) → emissiv-glühend. V18.234 — das PBR-Emissiv
+            // folgt der glimmen-Achse (waermeleitung·brennbar, wie Toon) → realistische Glut.
+            const mGlut = r._buildPbrNodeMaterial({ color: 0xff5020, tags: { brennbar: 0.95, waermeleitung: 0.9 } });
             if (mGlut) {
                 out.glutEmissive = mGlut.emissiveIntensity > 0;
                 out.glutRoughnessLow = mGlut.userData.pbrRoughness <= 0.5;
@@ -37032,27 +37330,38 @@ async function checkBandV18223PbrKohaerenz(ctx) {
             if (r.state.atmosphere) r.state.atmosphere.materialMode = savedMode;
         }
 
-        // Default-Mode "toon" → Toon-Material (kein PBR-Marker)
-        const mToon = r._buildToonNodeMaterial({ color: 0x808080 });
-        out.defaultIsToon = mToon && !(mToon.userData && mToon.userData.isPbrMaterial);
-        if (mToon && typeof mToon.dispose === "function") mToon.dispose();
+        // V18.234 — Default-Mode ist jetzt "pbr" → der Dispatch liefert ein PBR-Material.
+        const mDef = r._buildToonNodeMaterial({ color: 0x808080 });
+        out.defaultIsPbr = !!(mDef && mDef.userData && mDef.userData.isPbrMaterial === true);
+        if (mDef && typeof mDef.dispose === "function") mDef.dispose();
 
         // Version
         out.versionStr = A.VERSION;
-        const partsV = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        const partsV = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
         out.versionFloor18223 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 223);
         return out;
     });
 
     check("V18.223 (Q1) _buildPbrNodeMaterial Helper existiert", res.pbrBuilderExists === true);
-    check("V18.223 (Q2) atmosphere.materialMode Default `toon` (Backward-Kompat)", res.modeFlagDefault === true);
+    check(
+        "V18.223/234 (Q2) atmosphere.materialMode Default `pbr` (physik-Licht, keine halben Sachen)",
+        res.modeFlagDefault === true
+    );
     check("V18.223 (Q3) _buildToonNodeMaterial dispatched bei mode=`pbr` (Source)", res.toonDispatchesOnMode === true);
 
     check("V18.223 (P1) Default-PBR-Material wird gebaut", res.defaultMatBuilt === true);
     check("V18.223 (P2) Default-PBR-Material ist MeshStandardNodeMaterial", res.defaultIsMeshStandard === true);
     check("V18.223 (P3) userData.isPbrMaterial=true (Diagnose-Marker)", res.defaultUserDataPbr === true);
-    check(`V18.223 (P4) Default ist dielektrisch (metalness=0, gemessen ${res.defaultMetalness})`, res.defaultIsDielectric === true);
-    check(`V18.223 (P5) Default roughness im Mittel (0.5..0.9, gemessen ${res.defaultRoughness})`, res.defaultRoughnessMid === true);
+    check(
+        `V18.223 (P4) Default ist dielektrisch (metalness=0, gemessen ${res.defaultMetalness})`,
+        res.defaultIsDielectric === true
+    );
+    check(
+        `V18.223 (P5) Default roughness im Mittel (0.5..0.9, gemessen ${res.defaultRoughness})`,
+        res.defaultRoughnessMid === true
+    );
 
     check("V18.223 (S1) EISEN (dichte+magie) → metalness ≥ 0.7 (PHYSIK)", res.eisenMetalnessHigh === true);
     check("V18.223 (S2) EISEN → roughness ≤ 0.4 (glatt, glänzend)", res.eisenRoughnessLow === true);
@@ -37064,7 +37373,10 @@ async function checkBandV18223PbrKohaerenz(ctx) {
     check("V18.223 (S8) GLUT → roughness ≤ 0.5 (glatt-warm)", res.glutRoughnessLow === true);
 
     check("V18.223 (D1) Dispatch: mode=pbr → _buildToonNodeMaterial liefert PBR", res.dispatchYieldsPbr === true);
-    check("V18.223 (D2) Default-Mode: _buildToonNodeMaterial liefert Toon (kein PBR-Marker)", res.defaultIsToon === true);
+    check(
+        "V18.223/234 (D2) Default-Mode: _buildToonNodeMaterial-Dispatch liefert PBR (Default pbr)",
+        res.defaultIsPbr === true
+    );
 
     check(`V18.223 (V1) VERSION floor ≥ 18.223.0 (gemessen ${res.versionStr})`, res.versionFloor18223 === true);
 }
@@ -37082,8 +37394,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
         const out = {};
 
         // ─── (A) Source + Config ──────────────────────────────────────
-        out.scatterConfigExists =
-            A.SCATTER && Number.isFinite(A.SCATTER.cellM) && Number.isFinite(A.SCATTER.promoteM);
+        out.scatterConfigExists = A.SCATTER && Number.isFinite(A.SCATTER.cellM) && Number.isFinite(A.SCATTER.promoteM);
         out.pcg2dExists = typeof r._pcg2d === "function";
         out.scatterRegionExists = typeof r._scatterRegion === "function";
         out.promoteExists = typeof r._promoteScatterCell === "function";
@@ -37220,8 +37531,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
                     out.archCountIncreased = r.state.architectures.length === archBefore + 1;
                     if (entry) {
                         // Der echte Eintrag trägt die Provenienz (Welt-Genese-Cell)
-                        out.entryHasProvenance =
-                            entry.provenance && entry.provenance.bornFrom === "world-genesis-cell";
+                        out.entryHasProvenance = entry.provenance && entry.provenance.bornFrom === "world-genesis-cell";
                         out.provenanceSpecies = entry.provenance && entry.provenance.species === promotedSpecies;
                         // Der Eintrag nutzt den GLEICHEN grown-Bauplan (kein Sprung):
                         // entry.type ist grown_<species>_v<variant> (LOD0). Der
@@ -37250,7 +37560,9 @@ async function checkBandV18224ScatterPromotion(ctx) {
 
         // ─── (G) Version ──────────────────────────────────────────────
         out.versionStr = A.VERSION;
-        const partsV = String(A.VERSION || "0.0.0").split(".").map((s) => parseInt(s, 10) || 0);
+        const partsV = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
         out.versionFloor18224 = partsV[0] > 18 || (partsV[0] === 18 && partsV[1] >= 224);
 
         return out;
@@ -37269,27 +37581,57 @@ async function checkBandV18224ScatterPromotion(ctx) {
     check("V18.224 (B1) pcg2d deterministisch (gleicher Input → gleicher Hash)", res.pcgDeterministic === true);
     check("V18.224 (B2) pcg2d distinkt (verschiedene Inputs → verschieden)", res.pcgDistinct === true);
     check("V18.224 (B3) pcg2d liefert uint32", res.pcgIsUint === true);
-    check("V18.224 (B4) _scatterCellTransform deterministisch (bit-genau, Promotion-Match)", res.transformDeterministic === true);
+    check(
+        "V18.224 (B4) _scatterCellTransform deterministisch (bit-genau, Promotion-Match)",
+        res.transformDeterministic === true
+    );
     check("V18.224 (B5) Transform: scale 0.7..1.36, yaw 0..2π (in der Cell)", res.transformInCell === true);
 
     // (C) Echte Instanzen
     check("V18.224 (C1) _scatterRegion baut eine Region", res.regionBuilt === true);
-    check(`V18.224 (C2) Region erzeugt ECHTE Instanzen (gemessen ${res.regionInstanceCount})`, res.regionInstanceCount > 0);
+    check(
+        `V18.224 (C2) Region erzeugt ECHTE Instanzen (gemessen ${res.regionInstanceCount})`,
+        res.regionInstanceCount > 0
+    );
     check("V18.224 (C3) Region trägt Cells", res.regionHasCells === true);
-    check(`V18.224 (C4) HISM-Gruppen tragen LIVE-Instanzen (count>0, gemessen ${res.liveInstanceCount})`, res.hasLiveInstances === true);
+    check(
+        `V18.224 (C4) HISM-Gruppen tragen LIVE-Instanzen (count>0, gemessen ${res.liveInstanceCount})`,
+        res.hasLiveInstances === true
+    );
     check("V18.224 (C5) Cell trägt species (Promotion-Identität)", res.cellHasSpecies === true);
     check("V18.224 (C6) Cell trägt variantIndex", res.cellHasVariant === true);
     check("V18.224 (C7) Cell trägt HISM-Slots (echte Instanz-Referenzen)", res.cellHasSlots === true);
-    check("V18.224 (C8) Lookup-Buffer ist LEBENDIG (V18.220-Passagier geheilt — Konsument liest ihn)", res.lookupAlive === true || res.lookupAlive === "no-tree-cell");
+    check(
+        "V18.224 (C8) Lookup-Buffer ist LEBENDIG (V18.220-Passagier geheilt — Konsument liest ihn)",
+        res.lookupAlive === true || res.lookupAlive === "no-tree-cell"
+    );
     check("V18.224 (C9) _scatterRegion idempotent (cached)", res.regionIdempotent === true);
 
     // (M) V18.225 MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
-    check(`V18.224 (M1) ≥3 Scatter-Strata konfiguriert (V18.227: +Fels = 4, gemessen ${res.scatterLayerCount})`, res.scatterLayerCount >= 3);
-    check("V18.224/233 (M2) Bäume sind die prominente Substanz (treeCap ≥ underCap, Rebalance)", res.treeProminentRebalance === true);
+    check(
+        `V18.224 (M1) ≥3 Scatter-Strata konfiguriert (V18.227: +Fels = 4, gemessen ${res.scatterLayerCount})`,
+        res.scatterLayerCount >= 3
+    );
+    check(
+        "V18.224/233 (M2) Bäume sind die prominente Substanz (treeCap ≥ underCap, Rebalance)",
+        res.treeProminentRebalance === true
+    );
     check("V18.224 (M3) Alle 3 Strata haben Caps (Bäume + Understory + Streu)", res.hasThreeStrata === true);
-    check(`V18.224 (M4) Region erzeugt alle 3 Schichten (byLayer: ${res.byLayer ? JSON.stringify(res.byLayer) : "?"})`, res.byLayer && Number.isFinite(res.byLayer.tree) && Number.isFinite(res.byLayer.under) && Number.isFinite(res.byLayer.litter));
-    check(`V18.224/233 (M5) Design-Kapazität FPS-bewusst populiert ≥35/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(0) : "?"})`, res.designPerChunk >= 35);
-    check(`V18.224/233 (M6) ECHTE Dichte ≥12 Instanzen/Chunk in der Spieler-Region (gemessen ${res.perChunkActual ? res.perChunkActual.toFixed(0) : "?"})`, res.perChunkActual >= 12);
+    check(
+        `V18.224 (M4) Region erzeugt alle 3 Schichten (byLayer: ${res.byLayer ? JSON.stringify(res.byLayer) : "?"})`,
+        res.byLayer &&
+            Number.isFinite(res.byLayer.tree) &&
+            Number.isFinite(res.byLayer.under) &&
+            Number.isFinite(res.byLayer.litter)
+    );
+    check(
+        `V18.224/233 (M5) Design-Kapazität FPS-bewusst populiert ≥35/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(0) : "?"})`,
+        res.designPerChunk >= 35
+    );
+    check(
+        `V18.224/233 (M6) ECHTE Dichte ≥12 Instanzen/Chunk in der Spieler-Region (gemessen ${res.perChunkActual ? res.perChunkActual.toFixed(0) : "?"})`,
+        res.perChunkActual >= 12
+    );
 
     // (D) Species-Determinismus
     check("V18.224 (D1) Species-Wahl deterministisch (P2P-konsistent)", res.speciesDeterministic === true);
@@ -37297,9 +37639,15 @@ async function checkBandV18224ScatterPromotion(ctx) {
     // (E) Promotion
     check("V18.224 (E1) _promoteScatterCell liefert echten Eintrag (Touch→Real)", res.promoteReturnsEntry === true);
     check("V18.224 (E2) Architektur-Anzahl +1 (echter Bauplan entstand)", res.archCountIncreased === true);
-    check("V18.224 (E3) Eintrag trägt Provenienz bornFrom=world-genesis-cell (Plan §2)", res.entryHasProvenance === true);
+    check(
+        "V18.224 (E3) Eintrag trägt Provenienz bornFrom=world-genesis-cell (Plan §2)",
+        res.entryHasProvenance === true
+    );
     check("V18.224 (E4) Provenienz-Species == Scatter-Species", res.provenanceSpecies === true);
-    check("V18.224 (E5) Eintrag nutzt grown_-Bauplan derselben Species (KEIN visueller Sprung)", res.entryUsesGrownBp === true);
+    check(
+        "V18.224 (E5) Eintrag nutzt grown_-Bauplan derselben Species (KEIN visueller Sprung)",
+        res.entryUsesGrownBp === true
+    );
     check("V18.224 (E6) Eintrag-Variante == Scatter-Variante (Form-Identität)", res.entryVariantMatches === true);
     check("V18.224 (E7) Deko-Slots freigegeben bei Promotion (kein Doppel-Mesh)", res.cellSlotsFreed === true);
     check("V18.224 (E8) Cell jetzt promoted (Bitmask — kein zweiter Deko-Spawn)", res.cellNowPromoted === true);
@@ -37488,7 +37836,9 @@ async function checkBandWahrerAnblickFels(ctx) {
         const sp = r._scatterSpeciesForLayer("rock", 0.1, 0.1, 50);
         out.rockSpecies = sp === "kiesel" || sp === "felsbrocken" || sp === "stein_block";
         const layers = A.SCATTER && A.SCATTER.layers;
-        out.rockLayer = !!(layers && layers.some((l) => l.name === "rock" && l.kind === "rock" && l.promotable === false));
+        out.rockLayer = !!(
+            layers && layers.some((l) => l.name === "rock" && l.kind === "rock" && l.promotable === false)
+        );
 
         // (E) Die V18.226-Geologie-Korrektur (CONSUM: gegated auf !useFlexAttr)
         const toonSrc = r._buildToonNodeMaterial.toString();
@@ -37522,7 +37872,10 @@ async function checkBandWahrerAnblickFels(ctx) {
     check("Ω-OPSIS S5 (D2) CONSUM: _scatterSpeciesForLayer(rock) gibt Fels-Spezies", res.rockSpecies === true);
     check("Ω-OPSIS S5 (D3) CONSUM: SCATTER.layers trägt die Fels-Schicht (Deko)", res.rockLayer === true);
 
-    check("Ω-OPSIS S1-FIX (E1) Geologie gegated auf !useFlexAttr (Toon, kein Fels auf Rinde)", res.geologyGated === true);
+    check(
+        "Ω-OPSIS S1-FIX (E1) Geologie gegated auf !useFlexAttr (Toon, kein Fels auf Rinde)",
+        res.geologyGated === true
+    );
     check("Ω-OPSIS S1-FIX (E2) Geologie gegated auf !useFlexAttr (PBR)", res.pbrGeologyGated === true);
 
     check(`Ω-OPSIS S6 (V1) VERSION floor ≥ 18.227.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
@@ -37573,9 +37926,18 @@ async function checkBandWahrerAnblickGras(ctx) {
         return out;
     });
 
-    check("Ω-OPSIS S2-Gras (A1) CONSUM: Gras-Material liest instanceColor (Boden-Tint)", res.matReadsInstanceColor === true);
-    check("Ω-OPSIS S2-Gras (A2) CONSUM: _buildVoxelChunkGrass setzt setColorAt/instanceColor", res.buildSetsColor === true);
-    check("Ω-OPSIS S2-Gras (A3) CONSUM: der Tint kommt aus lebendig+feuchte (lushG/tintR)", res.buildComputesTint === true);
+    check(
+        "Ω-OPSIS S2-Gras (A1) CONSUM: Gras-Material liest instanceColor (Boden-Tint)",
+        res.matReadsInstanceColor === true
+    );
+    check(
+        "Ω-OPSIS S2-Gras (A2) CONSUM: _buildVoxelChunkGrass setzt setColorAt/instanceColor",
+        res.buildSetsColor === true
+    );
+    check(
+        "Ω-OPSIS S2-Gras (A3) CONSUM: der Tint kommt aus lebendig+feuchte (lushG/tintR)",
+        res.buildComputesTint === true
+    );
     check("Ω-OPSIS S2-Gras (B1) Gras-Material baut (instanceColor-colorNode kompiliert)", res.matBuilt === true);
     check(
         `Ω-OPSIS S2-Gras (B2) alle gebauten Gras-Meshes tragen instanceColor (${res.grassWithColor}/${res.grassMeshes})`,
@@ -37711,7 +38073,10 @@ async function checkBandWahrerAnblickPfade(ctx) {
     check("Ω-OPSIS S2-Pfad (A3) Pfad-Feld ∈ [0,1] (gebunden)", res.pathBounded === true);
     check("Ω-OPSIS S2-Pfad (B1) CONSUM: der Boden-Bau packt die Pfad-Erde (packedDirt)", res.attachReadsPath === true);
     check("Ω-OPSIS S2-Pfad (B2) CONSUM: der Gras-Bau unterdrückt Gras auf dem Pfad", res.grassReadsPath === true);
-    check(`Ω-OPSIS S2-Pfad (B3) Pfad-Feld im Welt-Raster gemessen (${res.pathHits}/${res.pathSamples} Treffer)`, res.pathHits >= 0 && res.pathSamples > 0);
+    check(
+        `Ω-OPSIS S2-Pfad (B3) Pfad-Feld im Welt-Raster gemessen (${res.pathHits}/${res.pathSamples} Treffer)`,
+        res.pathHits >= 0 && res.pathSamples > 0
+    );
     check(`Ω-OPSIS S2-Pfad (V1) VERSION floor ≥ 18.230.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
@@ -37758,10 +38123,16 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         return out;
     });
 
-    check("Ω-OPSIS S4 (IV1) Büsche sind Skeleton-Grammatik (busch_hazel trunk+L1, kein Kugel-Haufen)", res.buschGrammar === true);
+    check(
+        "Ω-OPSIS S4 (IV1) Büsche sind Skeleton-Grammatik (busch_hazel trunk+L1, kein Kugel-Haufen)",
+        res.buschGrammar === true
+    );
     check("Ω-OPSIS S4 (IV2) Understory-Arten existieren (Farn + Blume)", res.understoryArts === true);
     check("Ω-OPSIS S4 (IV3) die Understory-Scatter-Schicht existiert (5-Strata)", res.understoryLayer === true);
-    check(`Ω-OPSIS S4 (IV4) ein gewachsener Busch ist reich (≥8 Teile, gemessen ${res.buschParts})`, res.buschIsRich === true);
+    check(
+        `Ω-OPSIS S4 (IV4) ein gewachsener Busch ist reich (≥8 Teile, gemessen ${res.buschParts})`,
+        res.buschIsRich === true
+    );
     check("Ω-OPSIS S5 (V1) Atmosphäre koppelt ans Wetter (hazeTop+density × rainyMix)", res.hazeWeather === true);
     check("Ω-OPSIS S5 (V2) CONSUM: hazeNear rückt bei Feuchte näher (stärkerer Dunst)", res.hazeNearWeather === true);
     check("Ω-OPSIS S5 (V3) hazeNear-Uniform existiert", res.hazeNearUniform === true);
@@ -38001,7 +38372,15 @@ async function checkBandWEFrequenzband(ctx) {
         // Glut-Parts glimmt stärker als ein Stein-Part (gewichteter Emissiv).
         const mGlut = r._archLeafMaterial({ material: "glut", shape: "box", size: { x: 1, y: 1, z: 1 } });
         const mStein = r._archLeafMaterial({ material: "stein", shape: "box", size: { x: 1, y: 1, z: 1 } });
-        out.tagsReisen = mGlut.emissiveIntensity > mStein.emissiveIntensity + 0.01;
+        // V18.234 — mode-robust: der echte Glow = Emissiv-FARBE × Intensität.
+        // (MeshStandard hat emissiveIntensity-Default 1 bei SCHWARZEM Emissiv = kein
+        // Glühen → der reine emissiveIntensity-Proxy war toon-spezifisch.)
+        const _glow = (m) => {
+            if (!m || !m.emissive) return 0;
+            const i = Number.isFinite(m.emissiveIntensity) ? m.emissiveIntensity : 1;
+            return (m.emissive.r + m.emissive.g + m.emissive.b) * i;
+        };
+        out.tagsReisen = _glow(mGlut) > _glow(mStein) + 0.01;
         out.tagsImBuilder =
             /matOpts\.tags = partMatDef\.tags/.test(r._buildFromBlueprint.toString()) &&
             /matOpts\.tags = partMatDef\.tags/.test(r._archLeafMaterial.toString());
@@ -40209,7 +40588,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
             if (arch && arch.mesh) {
                 arch.mesh.traverse((node) => {
-                    if (node.isMesh && node.material && node.material.isMeshToonMaterial) {
+                    // V18.234 — mode-agnostisch: das aktive Lichtmodell ist Toon ODER
+                    // PBR (Default pbr). Beide reagieren auf Licht/Tag-Nacht.
+                    if (
+                        node.isMesh &&
+                        node.material &&
+                        (node.material.isMeshToonMaterial || node.material.isMeshStandardMaterial)
+                    ) {
                         hasToonMaterial = true;
                     }
                 });
@@ -40273,7 +40658,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.27: HemisphereLight.intensity folgt Sonnenhöhe", v827Results.hemiIntensityFollowsDayCycle);
         check("V8.27: HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
         check("V8.27: HemisphereLight.groundColor.r hoch in glut-Region", v827Results.groundColorFollowsGlut);
-        check("V8.28: Architektur-Material ist MeshToonMaterial (Cel-Shading)", v827Results.architectureUsesLambert);
+        check(
+            "V8.28/234: Architektur-Material reagiert auf Licht (MeshToon ODER MeshStandard/PBR)",
+            v827Results.architectureUsesLambert
+        );
         // V9.39 Phase 5c.2.c.3.b.iii — die Heightfield-Terrain-Shader-
         // spezifischen Checks (lightIntensity-Uniform, Tag-Nacht-Sync
         // im Custom-Shader) sind gestrichen. Der Vision-Anker („Welt
@@ -50040,8 +50428,7 @@ async function checkBandWaves9And10a(ctx) {
                 p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
             }
             r.applyPlayerSoulFromBlueprint("test_10a_soul");
-            out.roughLessHp =
-                statsRough && statsPolished && statsRough.stats.hpMax < statsPolished.stats.hpMax;
+            out.roughLessHp = statsRough && statsPolished && statsRough.stats.hpMax < statsPolished.stats.hpMax;
 
             // Zurück zur Mensch-Seele
             r.applyPlayerSoul("human");
@@ -53134,10 +53521,11 @@ async function checkBandRing5Soul(ctx) {
         out.defaultIsHuman = r.state.player.soul === "human";
         // V8.29.1 — Mensch-Avatar ist jetzt MeshToonMaterial mit
         // gedämpftem Rot (0xc0392b) statt grelles MeshBasic 0xff0000.
+        // V18.234 — mode-agnostisch: gedämpftes Rot + aktives lit NodeMaterial (Toon ODER PBR).
         out.defaultColorRed =
             currentMaterial() &&
             currentMaterial().color.getHex() === 0xc0392b &&
-            currentMaterial().isMeshToonMaterial === true;
+            !!(currentMaterial().isMeshToonMaterial || currentMaterial().isMeshStandardMaterial);
         // V2: statt Geometrie-Typ prüfen wir die Group-Struktur
         // (Mensch hat torso/head/2 Arme/2 Beine = 6 Parts).
         const humanParts = currentParts();
@@ -53304,7 +53692,10 @@ async function checkBandRing5Soul(ctx) {
             `count=${ring5Results.dropdownOptionCount} values=${ring5Results.dropdownOptionValues}`
         );
         check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
-        check("Ring 5: Mensch-Avatar ist MeshToonMaterial, gedämpftes Rot (V8.29.1)", ring5Results.defaultColorRed);
+        check(
+            "Ring 5/234: Mensch-Avatar ist lit NodeMaterial (Toon ODER PBR), gedämpftes Rot",
+            ring5Results.defaultColorRed
+        );
         check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);
         check("Ring 5: applyPlayerSoul('phoenix') liefert true", ring5Results.applyReturnsTrue);
         check("Ring 5: Phönix setzt state.player.soul = 'phoenix'", ring5Results.phoenixSoulSet);

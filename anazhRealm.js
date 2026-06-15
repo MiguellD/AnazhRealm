@@ -409,7 +409,11 @@ class AnazhRealm {
                 // „pbr bedeutet ohne mein gefühl, regeln, physik — der richtige
                 // weg". Live-Switch via `state.atmosphere.materialMode = "pbr"`
                 // + Welt-Reload (jede Material-Allokation liest das Flag).
-                materialMode: "toon",
+                // V18.234 — PBR ist jetzt VOLLSTÄNDIG (Wind + Laub-Tint + Backlit via
+                // `_applyVegetationResponse`, geteilt mit Toon) → DEFAULT. Der Schöpfer
+                // erwartete physik-bestimmtes Licht („keine halben Sachen"). Toggle
+                // zurück via `state.atmosphere.materialMode = "toon"` + Reload.
+                materialMode: "pbr",
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
@@ -24460,10 +24464,10 @@ class AnazhRealm {
                 roughness = 0.85;
                 metalness = 0;
             } else if (brennbar >= 0.7) {
-                // GLUT: brennbar → emissiv glühend, glatt-warm
+                // GLUT: glatt-warm (das Emissiv kommt unten aus responseProfile.emissiv,
+                // dichte-UNABHÄNGIG — eine dichte Glut glüht trotzdem).
                 roughness = 0.4;
                 metalness = 0;
-                emissiveIntensity = Math.min(1.2, brennbar * 0.5);
             } else {
                 // Mittel-Material (Erde/Tuch/Default)
                 roughness = 0.7 + lebendig * 0.1;
@@ -24479,15 +24483,11 @@ class AnazhRealm {
         params.roughness = opts.roughness !== undefined ? +opts.roughness : roughness;
         params.metalness = opts.metalness !== undefined ? +opts.metalness : metalness;
         const mat = new THREE.MeshStandardNodeMaterial(params);
-        // Emissiv für Glut/Quarz: die warme Substanz glimmt aus sich selbst.
-        // Im Toon-Pfad ist der Floor 0.07 (STRUCTURE_EMISSIVE). Im PBR-Pfad ist
-        // er PHYSIK: ein heisser Körper emittiert (Stefan-Boltzmann); hier als
-        // einfaches emissive-Property mit der Albedo als Farbquelle.
-        if (emissiveIntensity > 0 && mat.emissive && opts.color !== undefined) {
-            emissiveColor = opts.color;
-            mat.emissive.setHex(emissiveColor);
-            mat.emissiveIntensity = emissiveIntensity;
-        }
+        // V18.234 — das EMISSIV folgt NACH responseProfile (s. unten): es liest
+        // `responseProfile.emissiv` (DIESELBE Glow-Achse wie Toon → PBR glüht EXAKT
+        // was Toon glüht: Glut/Quarz, dichte-UNABHÄNGIG). Vorher gated PBR auf
+        // `brennbar≥0.7` in einer else-if-Kette → eine dichte Glut fiel in den Stein-
+        // Zweig = kein Glühen (die PBR-Lücke, die der Schöpfer als „kaum geändert" sah).
         // Welt-Antenne: die Aerial-Perspektive (Plan §10 Q4 — PBR-Welt MIT
         // PBR-Vegetation; sonst zerfällt der Stoff). Identischer Empfänger wie
         // im Toon-Pfad: der Substance-Response wendet den profil-gewichteten
@@ -24503,6 +24503,20 @@ class AnazhRealm {
               : isFlatStructure
                 ? _SR.defaults.werk
                 : _SR.defaults.frei;
+        // V18.234 — EMISSIV aus der Glow-Achse `responseProfile.emissiv` (wie Toon,
+        // dichte-unabhängig). PBR-Skala 0.4 (physischer als Toons 0.07-Floor) → eine
+        // Glut glüht physisch, eine dichte Stein-Glut auch. setHex(opts.color): die
+        // warme Substanz glimmt in ihrer eigenen Farbe (Stefan-Boltzmann).
+        // NUR der glimmen-Anteil (emissiv = 0.5-Floor + glimmen; der Floor ist für
+        // Toons 0.07-Scale, mit PBR-Scale würde JEDER Stein glühen → abziehen). Stein
+        // glimmen≈0 → kein Eigenlicht; Glut/Quarz glimmen>0 → glüht.
+        const _glimmen = Math.max(0, (Number(responseProfile.emissiv) || 0) - 0.5);
+        if (_glimmen > 0.01 && mat.emissive && opts.color !== undefined) {
+            emissiveColor = opts.color;
+            mat.emissive.setHex(emissiveColor);
+            emissiveIntensity = Math.min(1.2, _glimmen * 0.6);
+            mat.emissiveIntensity = emissiveIntensity;
+        }
         if (!opts.transparent && typeof this._applySubstanceResponse === "function") {
             let albedoNode = null;
             try {
@@ -24564,6 +24578,12 @@ class AnazhRealm {
                 }
             }
         }
+        // V18.234 (PBR-VOLLENDUNG) — die GETEILTE Vegetations-Antwort (Wind-Sway +
+        // Instance-Tint + Subsurface-Backlit), DENSELBE wie Toon → in PBR wiegen die
+        // Bäume, tönt das Laub, glüht das Gegenlicht (keine halben Sachen). Foliage-
+        // Tint: PBR setzt für Laub (useFlexAttr) KEINEN colorNode → die Standard-
+        // Pipeline multipliziert vertexColors × instanceColor automatisch.
+        this._applyVegetationResponse(mat, opts, responseProfile);
         // Marker für das Test-Band (kein semantisches Verhalten)
         mat.userData = mat.userData || {};
         mat.userData.isPbrMaterial = true;
@@ -24629,6 +24649,100 @@ class AnazhRealm {
             if (typeof window !== "undefined") window.__terrainGeologyError = (_e && _e.message) || String(_e);
             return albedo;
         }
+    }
+
+    // V18.234 (PBR-VOLLENDUNG, Schöpfer „keine halben Sachen, der Pfad ist klar")
+    // — die GETEILTE VEGETATIONS-ANTWORT: Wind-Sway (wiegen) + Instance-Tint-Marker
+    // + Subsurface-Backlit (detail). Toon UND PBR rufen DENSELBEN Helfer (eine
+    // Quelle, kein Parallelpfad — die eingeschärfte Lehre) → in BEIDEN Lichtmodellen
+    // wiegen die Bäume, tönt das Laub per-Instanz, glüht das Gegenlicht. Render-only;
+    // jeder Block try/catch (nie ein kaputtes Material).
+    _applyVegetationResponse(mat, opts, responseProfile) {
+        if (opts.useInstanceTint) {
+            if (!mat.userData) mat.userData = {};
+            mat.userData.useInstanceTint = true;
+        }
+        // WIND-SWAY (wiegen > 0.05, laub-typisch): positionNode-Sway, geteilte
+        // windUniforms.uWindTime (Gras-Quelle, EINE Welt-Quelle). Krone wiegt mehr
+        // (aFlex²/crownLin); aperiodisches Flattern obendrauf (Plan §9 Ω-W).
+        if (responseProfile && responseProfile.wiegen > 0.05) {
+            try {
+                const _Tw = THREE.TSL;
+                if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") {
+                    this._grassInstanceMat();
+                }
+                const _wu = this.state.windUniforms;
+                if (_Tw && _Tw.positionLocal && _Tw.positionWorld && _Tw.sin && _Tw.cos && _wu && _wu.uWindTime) {
+                    const _sway = Math.max(0, Math.min(1, responseProfile.wiegen));
+                    const _phase = _wu.uWindTime
+                        .mul(_Tw.float(1.1))
+                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.18)))
+                        .add(_Tw.positionWorld.z.mul(_Tw.float(0.14)));
+                    let _crownFactor;
+                    let _flutterShift;
+                    if (opts.useFlexAttr === true && _Tw.attribute) {
+                        const _aFlex = _Tw.attribute("aFlex", "float").clamp(0.0, 1.0);
+                        const _aPhase = _Tw.attribute("aPhase", "float");
+                        _crownFactor = _aFlex.mul(_aFlex);
+                        _flutterShift = _aPhase;
+                    } else {
+                        const _crownLin = _Tw.positionLocal.y.mul(_Tw.float(0.5)).add(_Tw.float(0.5)).clamp(0.0, 1.0);
+                        _crownFactor = _crownLin.mul(_crownLin);
+                        _flutterShift = _Tw.float(0.0);
+                    }
+                    const _swayMag = _Tw.float(_sway * 0.32).mul(_crownFactor);
+                    const _offsetX = _Tw.sin(_phase.add(_flutterShift)).mul(_swayMag);
+                    const _offsetZ = _Tw
+                        .cos(_phase.mul(_Tw.float(0.7)).add(_flutterShift))
+                        .mul(_swayMag.mul(_Tw.float(0.6)));
+                    const _flutterPhase = _wu.uWindTime
+                        .mul(_Tw.float(6.5))
+                        .add(_Tw.positionWorld.y.mul(_Tw.float(2.3)))
+                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.9)))
+                        .add(_flutterShift.mul(_Tw.float(1.3)));
+                    const _flutter = _Tw.sin(_flutterPhase).mul(_swayMag).mul(_Tw.float(0.18));
+                    const _flutterZ = _Tw
+                        .cos(_flutterPhase.mul(_Tw.float(0.83)))
+                        .mul(_swayMag)
+                        .mul(_Tw.float(0.14));
+                    mat.positionNode = _Tw.positionLocal.add(
+                        _Tw.vec3(_offsetX.add(_flutter), _Tw.float(0.0), _offsetZ.add(_flutterZ))
+                    );
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__windSwayError = String((_e && _e.message) || _e);
+            }
+        }
+        // SUBSURFACE-BACKLIT (detail > 0.4, laub): warmer Gegenlicht-Glow,
+        // post-lighting auf outputNode (kein colorNode-Eingriff, CLAUDE.md-Gotcha).
+        if (responseProfile && responseProfile.detail > 0.4) {
+            try {
+                const _Td = THREE.TSL;
+                const _wu = this.state.windUniforms;
+                if (
+                    _Td &&
+                    _Td.cameraPosition &&
+                    _Td.positionWorld &&
+                    _Td.normalWorld &&
+                    _Td.pow &&
+                    _wu &&
+                    _wu.uSunDir
+                ) {
+                    const _vd = _Td.normalize(_Td.cameraPosition.sub(_Td.positionWorld));
+                    const _sunBack = _wu.uSunDir.mul(_Td.float(-1.0));
+                    const _backDot = _vd.dot(_sunBack).clamp(0.0, 1.0);
+                    const _backlit = _Td.pow(_backDot, _Td.float(3.0));
+                    const _detailStrength = Math.max(0, Math.min(1, responseProfile.detail));
+                    const _glowColor = _Td.vec3(1.0, 0.85, 0.6);
+                    const _glow = _glowColor.mul(_backlit).mul(_Td.float(_detailStrength * 0.18));
+                    const _currentOutput = mat.outputNode || _Td.output;
+                    mat.outputNode = _currentOutput.add(_Td.vec4(_glow, _Td.float(0.0)));
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__translucencyError = String((_e && _e.message) || _e);
+            }
+        }
+        return mat;
     }
 
     _buildToonNodeMaterial(opts = {}) {
@@ -25018,127 +25132,10 @@ class AnazhRealm {
             // ein Reproducer/Browser-Console liest `window.__toonColorNodeError`.
             if (typeof window !== "undefined") window.__toonColorNodeError = (_e && _e.message) || String(_e);
         }
-        // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss): den useInstanceTint-Marker
-        // an mat.userData propagieren, damit _archInstanceAdd weiß, dass das HISM
-        // einen instanceColor-Buffer braucht (lazy via setColorAt).
-        if (opts.useInstanceTint) {
-            if (!mat.userData) mat.userData = {};
-            mat.userData.useInstanceTint = true;
-        }
-        // V18.181-merge-Λ Sub 3f — Λ.3 (clever-gauss V18.173): WIND-SWAY auf
-        // Baeumen. Wenn das Substanz-Profil wiegen > 0.05 traegt (lebendig·
-        // (1-dichte)·zaehigkeit > 0.05 — laub-typisch), bekommt das Material
-        // einen positionNode-Sway. Geteilte windUniforms.uWindTime (Gras-Quelle
-        // V10.0-i.b, EINE Quelle fuer die ganze Welt). Die Krone wiegt mehr als
-        // der Boden (positionLocal.y · crownFactor). Render-only — die Kollision
-        // bleibt am Bauplan-Original (kein Ammo-Re-Build pro Frame).
-        if (responseProfile && responseProfile.wiegen > 0.05) {
-            try {
-                const _Tw = THREE.TSL;
-                if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") {
-                    this._grassInstanceMat();
-                }
-                const _wu = this.state.windUniforms;
-                if (_Tw && _Tw.positionLocal && _Tw.positionWorld && _Tw.sin && _Tw.cos && _wu && _wu.uWindTime) {
-                    const _sway = Math.max(0, Math.min(1, responseProfile.wiegen));
-                    // V18.212 (Plan §9 Ω-W): per-Instance-Phase aus
-                    // positionWorld.x/z (verschiedene Welt-Positionen = ver-
-                    // schiedene Phasen → Bäume wiegen nicht im Lockstep).
-                    const _phase = _wu.uWindTime
-                        .mul(_Tw.float(1.1))
-                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.18)))
-                        .add(_Tw.positionWorld.z.mul(_Tw.float(0.14)));
-                    // V18.214 — wenn das Material per-Vertex aFlex+aPhase
-                    // trägt (Skeleton-Pfad, Plan Ω-G2/G3/W): nutze die
-                    // gebackenen Attribute statt der crownLin-Schätzung.
-                    // crownFactor = aFlex² (Spitzen flexen quadratisch
-                    // stärker, Plan §9), aperiodische Phase = aPhase
-                    // (Hash-Phasen-Versatz pro Vertex → echtes Flattern).
-                    let _crownFactor;
-                    let _flutterShift;
-                    if (opts.useFlexAttr === true && _Tw.attribute) {
-                        const _aFlex = _Tw.attribute("aFlex", "float").clamp(0.0, 1.0);
-                        const _aPhase = _Tw.attribute("aPhase", "float");
-                        _crownFactor = _aFlex.mul(_aFlex);
-                        _flutterShift = _aPhase;
-                    } else {
-                        // V18.212-Fallback (cylinder-merged, classic per-part):
-                        // crownLin aus positionLocal.y quadratisch.
-                        const _crownLin = _Tw.positionLocal.y.mul(_Tw.float(0.5)).add(_Tw.float(0.5)).clamp(0.0, 1.0);
-                        _crownFactor = _crownLin.mul(_crownLin);
-                        _flutterShift = _Tw.float(0.0);
-                    }
-                    const _swayMag = _Tw.float(_sway * 0.32).mul(_crownFactor);
-                    const _offsetX = _Tw.sin(_phase.add(_flutterShift)).mul(_swayMag);
-                    const _offsetZ = _Tw
-                        .cos(_phase.mul(_Tw.float(0.7)).add(_flutterShift))
-                        .mul(_swayMag.mul(_Tw.float(0.6)));
-                    // V18.212 — Ω-W APERIODISCHES FLATTERN (Plan §9: „Äste
-                    // wiegen, Laub flattert aperiodisch"). Hochfrequenter
-                    // Term ADDIERT auf die wiegen-Sway. Aus positionWorld.y
-                    // moduliert → benachbarte Vertices haben verschiedene
-                    // Phasen, das macht das aperiodische Gefühl.
-                    const _flutterPhase = _wu.uWindTime
-                        .mul(_Tw.float(6.5))
-                        .add(_Tw.positionWorld.y.mul(_Tw.float(2.3)))
-                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.9)))
-                        .add(_flutterShift.mul(_Tw.float(1.3)));
-                    const _flutter = _Tw.sin(_flutterPhase).mul(_swayMag).mul(_Tw.float(0.18));
-                    const _flutterZ = _Tw
-                        .cos(_flutterPhase.mul(_Tw.float(0.83)))
-                        .mul(_swayMag)
-                        .mul(_Tw.float(0.14));
-                    mat.positionNode = _Tw.positionLocal.add(
-                        _Tw.vec3(_offsetX.add(_flutter), _Tw.float(0.0), _offsetZ.add(_flutterZ))
-                    );
-                }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__windSwayError = String((_e && _e.message) || _e);
-            }
-        }
-        // V18.181-merge-Λ Sub 3f Λ.6 (Welle 6-Nachhol — Reviewer-Befund):
-        // SUBSURFACE-BACKLIT (Gegenlicht-Glühen für lebende Strukturen). Wenn
-        // das Substanz-Profil detail > 0.4 trägt (laub: lebendig·(1-dichte)
-        // hoch · oder magieleitung·transparent für Glas), bekommt das Material
-        // einen warmen post-lighting-Glow im Gegenlicht. Die Sonne im Rücken,
-        // Normale auf das Auge → ein warmer Schein durch das Laub. Das EINE
-        // Subsurface, das alle lebenden Leaves erben. Render-only, output-
-        // seitig (kein colorNode-Eingriff → bricht material.color nicht;
-        // CLAUDE.md-Gotcha). try/catch fängt TSL-Bau-Fehler.
-        if (responseProfile && responseProfile.detail > 0.4) {
-            try {
-                const _Td = THREE.TSL;
-                const _wu = this.state.windUniforms;
-                if (
-                    _Td &&
-                    _Td.cameraPosition &&
-                    _Td.positionWorld &&
-                    _Td.normalWorld &&
-                    _Td.pow &&
-                    _wu &&
-                    _wu.uSunDir
-                ) {
-                    // ViewDir (Auge zur Oberfläche).
-                    const _vd = _Td.normalize(_Td.cameraPosition.sub(_Td.positionWorld));
-                    // Sun-Back-Direction: Sonne zeigt VOM Auge weg.
-                    const _sunBack = _wu.uSunDir.mul(_Td.float(-1.0));
-                    const _backDot = _vd.dot(_sunBack).clamp(0.0, 1.0);
-                    // Schmale spitze Kurve — nur am echten Gegenlicht.
-                    const _backlit = _Td.pow(_backDot, _Td.float(3.0));
-                    // Detail-Achse moduliert die Glow-Stärke (~0.4..1 = laub).
-                    const _detailStrength = Math.max(0, Math.min(1, responseProfile.detail));
-                    // Warmer Subsurface-Ton (sonnen-durchschienenes Grün-Gelb).
-                    const _glowColor = _Td.vec3(1.0, 0.85, 0.6);
-                    const _glow = _glowColor.mul(_backlit).mul(_Td.float(_detailStrength * 0.18));
-                    // Additiv auf das bestehende Output (post-lighting).
-                    const _currentOutput = mat.outputNode || _Td.output;
-                    mat.outputNode = _currentOutput.add(_Td.vec4(_glow, _Td.float(0.0)));
-                }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__translucencyError = String((_e && _e.message) || _e);
-            }
-        }
-        return mat;
+        // V18.234 — die drei Vegetations-Blöcke (Instance-Tint · Wind-Sway ·
+        // Subsurface-Backlit) sind in den GETEILTEN `_applyVegetationResponse`
+        // gewandert (Toon UND PBR rufen ihn → eine Quelle, kein Parallelpfad).
+        return this._applyVegetationResponse(mat, opts, responseProfile);
     }
 
     // ===== ATLAS §11 · VOXEL-MESHER/WASSER — Chunk-Build · Wasser-Zellen/Iso/Sheet · CA · Edits =====
@@ -68019,7 +68016,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.233.0";
+AnazhRealm.VERSION = "18.234.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
