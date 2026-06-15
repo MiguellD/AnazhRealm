@@ -24245,7 +24245,12 @@ class AnazhRealm {
             wiegen,
             detail,
             micro: 0.5 + 0.5 * tiefe,
-            rim: 0.4 + 0.6 * Math.max(glanz, glas * 0.9),
+            // V18.235 (§5 Ω-O9) — der Rim (blau-weisser/warmer Fresnel-Saum) wäscht
+            // eine KRONE aus kantigen Karten WEISS (hoher Fresnel überall an den
+            // Karten-Rändern → das gemessene Laub-Burnout im Welt-Render). Mattes
+            // lebendiges Laub trägt KEINEN harten Rim → mit lebendig dämpfen; Stein/
+            // Metall/Glas (lebendig≈0) behalten ihren Glanz-Saum.
+            rim: (0.4 + 0.6 * Math.max(glanz, glas * 0.9)) * (1 - lebendig * 0.7),
             // emissiv darf > 1 (Glut glüht ÜBER den Familien-Floor hinaus);
             // der Leser deckelt bei 1.6.
             emissiv: 0.5 + glimmen,
@@ -51496,13 +51501,17 @@ class AnazhRealm {
         const indices = new Uint32Array(M * 12);
         // foliageColor aus skeleton (gemischt aus grammar.color + Jitter im
         // _growTreeBlueprintRich).
-        // V18.235 (§5 Ω-O9) — tieferes, satteres Wald-Grün: das helle Medium-Grün
-        // wusch unter der hellen Mittag-Beleuchtung (ACES) teal/weiss. R+B gedämpft,
-        // G gehalten → ein sattes Forst-Grün, das die Beleuchtungs-Wäsche überlebt.
+        // V18.235 (§5 Ω-O9) — SATTES, TIEFES Wald-Grün: das helle Medium-Grün
+        // ÜBER-BELICHTETE unter der hellen Mittag-Beleuchtung (sonnen-seitige Karten
+        // klippten zu WEISS, GEMESSEN rgb 224,224,224 → ACES desaturiert). Ein
+        // tieferes, satteres Grün (alle Kanäle gedämpft, R+B stärker als G → die
+        // Sättigung bleibt) klippt nicht → die Krone liest GRÜN, nicht weiss. Die
+        // Faktoren sind browser-justierbar via `state.atmosphere.foliageDeepen`.
+        const _fd2 = (this.state.atmosphere && this.state.atmosphere.foliageDeepen) || { r: 0.58, g: 0.76, b: 0.42 };
         const c0 = skeleton.foliageColor || fo.color || 0x4a8a3a;
-        const fr = (((c0 >> 16) & 0xff) / 255) * 0.72;
-        const fg = (((c0 >> 8) & 0xff) / 255) * 0.95;
-        const fb = ((c0 & 0xff) / 255) * 0.55;
+        const fr = (((c0 >> 16) & 0xff) / 255) * _fd2.r;
+        const fg = (((c0 >> 8) & 0xff) / 255) * _fd2.g;
+        const fb = ((c0 & 0xff) / 255) * _fd2.b;
         const jitterR = cardW * (fd.jitterFrac || 1.0);
         const sizeVar = fd.sizeVar || 0;
         const innerFill = fd.innerFill || 0;
