@@ -24655,18 +24655,75 @@ class AnazhRealm {
                         // rendert teal). Mit dem expliziten colorNode liegt das Laub-Grün
                         // garantiert in der Lichtung → die Krone liest GRÜN.
                         let _alpha = _Ta.float(1.0);
-                        if (opts.foliageLeaf && _Ta.vec2 && _Ta.smoothstep && _Ta.attribute) {
-                            // Ω-O14 (wahreranblick §8.5) — eine weiche runde BLATT-Alpha-Maske
-                            // aus der Karten-UV: 1 in der Mitte, 0 an den Ecken (leicht oval,
-                            // Blatt höher als breit). alphaTest clippt die harten Rechteck-Ecken
-                            // → die Krone liest als Laub, nicht als Karten-Stapel (der „cardy"-Befund).
+                        if (opts.foliageLeaf && _Ta.attribute) {
+                            // Ω-O14 (LAAS-METHODE, V18.247) — die Karte SAMPELT den prozedural
+                            // gebackenen Laub-Büschel-ATLAS (echte Blatt-Silhouetten + Adern,
+                            // §8.5): die ALPHA trägt die Büschel-Silhouette (Lücken + Spitzen →
+                            // liest als Laub, nicht als runder Klecks), die RGB die Blatt-Detail-
+                            // Luminanz, die die Vertex-Dapple-Farbe TÖNT (albedo = Grün × Detail).
+                            // Fallback: die alte weiche runde Maske, falls texture/Atlas fehlt.
+                            let _wired = false;
                             try {
-                                const _uv = _Ta.attribute("uv", "vec2");
-                                const _d = _uv.sub(_Ta.vec2(0.5, 0.5)).mul(_Ta.vec2(1.22, 1.0)).length();
-                                _alpha = _Ta.float(1.0).sub(_Ta.smoothstep(0.3, 0.5, _d));
-                                mat.alphaTest = 0.42;
+                                const _atlas = this._ensureFoliageClusterAtlas();
+                                if (_atlas && _Ta.texture && _Ta.attribute) {
+                                    const _samp = _Ta.texture(_atlas, _Ta.attribute("uv", "vec2"));
+                                    _alpha = _samp.a;
+                                    albedoNode = albedoNode.mul(_samp.rgb);
+                                    mat.alphaTest = 0.5;
+                                    _wired = true;
+                                }
                             } catch (_e) {
-                                _alpha = _Ta.float(1.0);
+                                if (typeof window !== "undefined")
+                                    window.__foliageAtlasError = String((_e && _e.message) || _e);
+                            }
+                            if (!_wired && _Ta.vec2 && _Ta.smoothstep) {
+                                try {
+                                    const _uv = _Ta.attribute("uv", "vec2");
+                                    const _d = _uv.sub(_Ta.vec2(0.5, 0.5)).mul(_Ta.vec2(1.22, 1.0)).length();
+                                    _alpha = _Ta.float(1.0).sub(_Ta.smoothstep(0.3, 0.5, _d));
+                                    mat.alphaTest = 0.42;
+                                } catch (_e) {
+                                    _alpha = _Ta.float(1.0);
+                                }
+                            }
+                        }
+                        // Ω-O7 (wahreranblick §6 — DIE RINDE-MASERUNG) — prozedural aus dem
+                        // holz-Tag, KEINE Bitmap: eine LÄNGS-Faser (hohe Frequenz quer x/z,
+                        // niedrige längs der Stamm-Achse y → vertikale Maser-Streifen) + RISSE
+                        // aus härte (ridged-Noise, härter = feinere + tiefere Rinnen). Der
+                        // Auslesewert moduliert die per-Vertex-Rinden-Albedo → die Rinde
+                        // erzählt ihr Holz (das Anti-Attrappe-Gesetz auf der Material-Ebene).
+                        // positionLocal hält die Maserung instanz-stabil (jeder Stamm dieselbe
+                        // Faser, nicht welt-kontinuierlich gesmeared). Marker bei TSL-Fehler.
+                        if (opts.bark && _Ta.mx_noise_float && _Ta.positionLocal && _Ta.pow) {
+                            try {
+                                const _pl = _Ta.positionLocal;
+                                const _ht =
+                                    opts.tags && Number.isFinite(+opts.tags.härte)
+                                        ? Math.max(0, Math.min(1, +opts.tags.härte))
+                                        : 0.4;
+                                const _hiF = 9.0 + _ht * 8.0; // quer-Frequenz (härter = feiner)
+                                const _loF = 1.35; // längs-Frequenz (langgezogene Faser)
+                                const _grain = _Ta.mx_noise_float(
+                                    _Ta.vec3(_pl.x.mul(_hiF), _pl.y.mul(_loF), _pl.z.mul(_hiF))
+                                );
+                                const _crackN = _Ta.mx_noise_float(
+                                    _Ta.vec3(_pl.x.mul(_hiF * 0.5), _pl.y.mul(_loF * 2.4), _pl.z.mul(_hiF * 0.5))
+                                );
+                                // ridged: (1 − noise²) peakt an der Faser-Mitte → pow vertieft die
+                                // Risse zu scharfen Schatten-Rinnen (kein abs nötig).
+                                const _ridge = _crackN.mul(_crackN);
+                                const _crack = _Ta.pow(_Ta.float(1.0).sub(_ridge), _Ta.float(2.6));
+                                const _grainAmp = 0.13;
+                                const _crackAmp = 0.09 + _ht * 0.13;
+                                const _mod = _Ta
+                                    .float(1.0)
+                                    .add(_grain.mul(_Ta.float(_grainAmp)))
+                                    .sub(_crack.mul(_Ta.float(_crackAmp)));
+                                albedoNode = albedoNode.mul(_mod.clamp(0.5, 1.3));
+                            } catch (_e) {
+                                if (typeof window !== "undefined")
+                                    window.__barkGrainError = String((_e && _e.message) || _e);
                             }
                         }
                         mat.colorNode = _Ta.vec4(albedoNode, _alpha);
@@ -45015,7 +45072,10 @@ class AnazhRealm {
         skeleton.flareAmp = flareDef.amp;
         skeleton.flareLobes = flareDef.lobes;
         const trunkSegs = grammar.trunk.segs;
-        const trunkBaseR = grammar.trunk.baseR * lerp(0.9, 1.1, r01());
+        // V18.247 (LAAS-Tiefe) — substanziellerer Stamm: ein dickerer Stamm + Haupt-
+        // Limbs lesen als sichtbares Ast-GERÜST (wie LAAS), statt unter dem Laub zu
+        // verschwinden. Der radRatio trägt die Dicke in die Äste weiter.
+        const trunkBaseR = grammar.trunk.baseR * 1.32 * lerp(0.92, 1.1, r01());
         const trunkTaper = grammar.trunk.taper;
         const trunkWander = grammar.trunk.wander;
         const segH = totalH / trunkSegs;
@@ -45127,13 +45187,39 @@ class AnazhRealm {
             return tips;
         };
 
+        // V18.247 (LAAS-METHODE, Skeleton.ts „crown envelope") — DIE KRONEN-HÜLLE:
+        // die Ast-Länge wird mit der Kronen-FORM moduliert (dome/ellipsoid/cone/column),
+        // sodass die Ast-Spitzen auf einer VOLLEN, gerundeten Hülle liegen statt formlos
+        // zu streuen. DAS ist die LAAS-Tiefe (eine volle gerundete Krone mit Gestalt),
+        // nicht der flache Klecks. hFrac = Höhe in der Krone (0 Basis .. 1 Spitze).
+        const crownEnvelope = (hFrac) => {
+            const u = Math.max(0, Math.min(1, hFrac));
+            switch (grammar.crown) {
+                case "cone": // Tanne/Fichte: lang unten, spitz nach oben
+                    return 1.0 - 0.72 * u;
+                case "column": // Erle: schmal, fast konstant
+                    return 0.74 + 0.16 * Math.sin(Math.PI * u);
+                case "ellipsoid": // Kiefer/Birke: voll in der Mitte
+                    return 0.5 + 0.56 * Math.sqrt(Math.max(0, 1 - ((u - 0.5) / 0.5) ** 2));
+                case "dome":
+                case "irregular": // Eiche/Buche: gerundete Kuppel (voll, sanft zur Spitze)
+                default:
+                    return 0.52 + 0.56 * Math.sqrt(Math.max(0, 1 - u * u));
+            }
+        };
         // ─── BRANCH GROWTH (rekursiv via Segment-Lauf) ────────────────
         // §3.1-Plan: perpBasis + Wander + Tropismus + Droop + TipCurl.
         const growBranch = (start, phi, parentR, levelGrammar, level, foliageAnchors) => {
             const angleBase = levelGrammar.angleBase || 1.0;
-            const angle = angleBase * lerp(0.85, 1.15, r01());
+            // V18.247 (LAAS-Tiefe) — die Limbs streben mehr AUFWÄRTS (×0.82): eine VOLLE,
+            // gerundete, aufstrebende Krone (wie LAAS' Eiche) statt einer flach-breiten
+            // Scheibe. Die Konifere (cone, große angleBase) bleibt whorl-horizontal genug.
+            const angle = angleBase * 0.82 * lerp(0.85, 1.15, r01());
             const lenRatio = levelGrammar.lenRatio || 0.3;
-            const branchLen = Math.max(0.5, totalH * lenRatio * lerp(0.8, 1.2, r01()));
+            // KRONEN-HÜLLE auf die Ast-Länge (LAAS): die Höhe der Ast-Basis bestimmt die
+            // Reichweite → die Krone bekommt ihre volle, gerundete Gestalt.
+            const hFrac = (start.y / Math.max(1, totalH) - 0.28) / 0.72;
+            const branchLen = Math.max(0.4, totalH * lenRatio * lerp(0.8, 1.2, r01()) * crownEnvelope(hFrac));
             const droop = levelGrammar.droop || 0.2;
             const tipCurl = levelGrammar.tipCurl || 0.1;
             const radRatio = levelGrammar.radRatio || 0.4;
@@ -46228,6 +46314,207 @@ class AnazhRealm {
         return this._buildClassicalTemple(order, { columnsFront, columnsSide, columnDiameter });
     }
 
+    // Ω-B4 (wahrerbauplan §6 — DIE REGEL IST GENERATIV, für Architektur verallgemeinert) —
+    // ein Dorf zeigt VARIIERTE, nicht geklonte Hütten (das Baum-/Tempel-Varianten-Muster,
+    // aufs Dorf angewandt): ein deterministischer Seed (Welt-Seed + Hütten-Index) → eine
+    // Hütten-VARIANTE (Größe · Geschoss-Zahl · Dach-Typ Walm/Giebel · Fenster-Zahl ·
+    // Schornstein · Farb-Tönung). NUR box+pyramid (KEINE neue Form, KEIN Material) → die
+    // Spawn-Affinität bleibt bit-identisch (V17.17-Disziplin: mehr Parts DESSELBEN Form-
+    // Satzes ist tag-neutral). PHYSIK-GARANT (§6): eine Hütte ist ein breiter, niedriger
+    // Kasten (Schwerpunkt tief, breite Basis → Ω-Φ2 stabil), das Dach ruht auf dem Körper
+    // (Lastpfad geschlossen, Ω-Φ5). `place` trägt die Welt-Platzierung (hx/hz/bodyRot +
+    // inward/side-Richtungen, im Dorf-Loop berechnet). Deterministisch über Peers.
+    _villageHutVariant(seed, index, place) {
+        let h = 2166136261;
+        const s = "hut:" + (seed == null ? "anazh" : String(seed)) + ":" + (index | 0);
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        h = h >>> 0;
+        const { hx, hz, bodyRot, ix, iz, sx, sz } = place;
+        const parts = [];
+        const sv = 0.8 + ((h & 7) / 7) * 0.5; // 0.8..1.3 Größe
+        const tall = ((h >> 3) & 1) === 1; // zweites Geschoss
+        const gable = ((h >> 4) & 1) === 1; // Giebel- (Sattel-) statt Walm- (Pyramiden-) Dach
+        const winN = 1 + ((h >> 5) & 1); // 1 oder 2 Fenster
+        const chimney = ((h >> 6) & 1) === 1;
+        // V18.247 — substanziellere Hütten (Schöpfer „häuser klein"): größere Grundfläche +
+        // höhere Geschosse, damit eine Hütte ein bewohnbares Haus liest, kein Würfel.
+        const bw = 2.9 * sv;
+        const bd = 3.3 * sv;
+        const storyH = 1.85 * sv;
+        const bh = tall ? storyH * 1.78 : storyH;
+        const bodyY = 0.36 + bh / 2;
+        const roofBaseY = bodyY + bh / 2;
+        const bodyTints = [0x6e3a14, 0x7a4a22, 0x63411f, 0x82573a, 0x5d3a1a];
+        const bodyColor = bodyTints[h % bodyTints.length];
+        // (1) Stein-Fundament (etwas breiter, niedrig)
+        parts.push({
+            shape: "box",
+            color: 0x6a6258,
+            position: { x: hx, y: 0.18, z: hz },
+            rotation: { x: 0, y: bodyRot, z: 0 },
+            size: { x: bw + 0.5, y: 0.36, z: bd + 0.5 },
+        });
+        // (2) Körper (Lehm/Holz, per-Hütte getönt)
+        parts.push({
+            shape: "box",
+            color: bodyColor,
+            position: { x: hx, y: bodyY, z: hz },
+            rotation: { x: 0, y: bodyRot, z: 0 },
+            size: { x: bw, y: bh, z: bd },
+        });
+        // Geschoss-Gurtsims bei zweistöckig (dünnes Band auf Story-Höhe)
+        if (tall) {
+            parts.push({
+                shape: "box",
+                color: 0x4a2810,
+                position: { x: hx, y: 0.36 + storyH, z: hz },
+                rotation: { x: 0, y: bodyRot, z: 0 },
+                size: { x: bw + 0.12, y: 0.12, z: bd + 0.12 },
+            });
+        }
+        // (3) DER ECHTE EINGANG (V18.247, Schöpfer „keine eingänge") — kein gemaltes
+        // Rechteck, sondern ein TIEFER Eingang wie am Tempel: eine zurückgesetzte dunkle
+        // Tür (liest als Öffnung ins Dunkel) + ein VORSTEHENDER Rahmen (zwei Pfosten +
+        // Sturz, werfen Schatten auf die recessed Tür → Tiefe) + eine Schwelle (Tritt) +
+        // ein VORDACH (Überstand, beschattet den Eingang). `fp` baut Welt-Positionen aus
+        // (inward, side, y); alle Teile überlappen den Körper (Lastpfad geschlossen, Ω-Φ5).
+        const faceOut = bd / 2; // die Körper-Front-Fläche (inward)
+        const fp = (inOff, sideOff, y) => ({
+            x: hx + ix * inOff + sx * sideOff,
+            y,
+            z: hz + iz * inOff + sz * sideOff,
+        });
+        const doorW = 0.95;
+        const doorH = Math.min(bh, storyH) * 0.72;
+        const doorTopY = 0.36 + doorH;
+        // die Tür-Platte (bündig an der Front, hinter der Rahmen-Ebene → recessed)
+        parts.push({
+            shape: "box",
+            color: 0x2a1a0c,
+            position: fp(faceOut - 0.04, 0, 0.36 + doorH / 2),
+            rotation: { x: 0, y: bodyRot, z: 0 },
+            size: { x: doorW, y: doorH, z: 0.12 },
+        });
+        // Rahmen: zwei Pfosten + Sturz, VORSTEHEND (helleres Holz) → Schatten auf die Tür
+        const frameC = 0x8a6038;
+        const postProud = faceOut + 0.07;
+        for (const sgn of [-1, 1]) {
+            parts.push({
+                shape: "box",
+                color: frameC,
+                position: fp(postProud, sgn * (doorW / 2 + 0.1), 0.36 + (doorH + 0.22) / 2),
+                rotation: { x: 0, y: bodyRot, z: 0 },
+                size: { x: 0.17, y: doorH + 0.22, z: 0.2 },
+            });
+        }
+        parts.push({
+            shape: "box",
+            color: frameC,
+            position: fp(postProud, 0, doorTopY + 0.1),
+            rotation: { x: 0, y: bodyRot, z: 0 },
+            size: { x: doorW + 0.5, y: 0.2, z: 0.2 },
+        });
+        // Schwelle / Tritt (Stein, ragt heraus)
+        parts.push({
+            shape: "box",
+            color: 0x6a6258,
+            position: fp(faceOut + 0.26, 0, 0.36 + 0.09),
+            rotation: { x: 0, y: bodyRot, z: 0 },
+            size: { x: doorW + 0.55, y: 0.18, z: 0.55 },
+        });
+        // VORDACH — ein kleiner Überstand über dem Eingang (Dach-Farbe, beschattet)
+        parts.push({
+            shape: "box",
+            color: 0x8b2a1e,
+            position: fp(faceOut + 0.32, 0, doorTopY + 0.34),
+            rotation: { x: 0, y: bodyRot, z: 0 },
+            size: { x: doorW + 0.7, y: 0.14, z: 0.7 },
+        });
+        // (4) Fenster (1-2, GERAHMT: ein vorstehender Holz-Rahmen + warm leuchtende Scheibe
+        // dahinter → Tiefe statt aufgemaltem Fleck). Seitlich versetzt, ein Geschoss hoch.
+        const winY = 0.36 + Math.min(bh, storyH) * 0.55;
+        for (let w = 0; w < winN; w++) {
+            const off = winN === 1 ? 0 : w === 0 ? -0.78 : 0.78;
+            // Rahmen (vorstehend, Holz)
+            parts.push({
+                shape: "box",
+                color: 0x6e4a2a,
+                position: fp(faceOut + 0.05, off, winY),
+                rotation: { x: 0, y: bodyRot, z: 0 },
+                size: { x: 0.58, y: 0.58, z: 0.16 },
+            });
+            // Scheibe (warm leuchtend, bündig dahinter → recessed)
+            parts.push({
+                shape: "box",
+                color: 0xe2b667,
+                position: fp(faceOut - 0.02, off, winY),
+                rotation: { x: 0, y: bodyRot, z: 0 },
+                size: { x: 0.44, y: 0.44, z: 0.14 },
+            });
+        }
+        // (5) Dach-Überstand (eaves) — dünner breiter Kranz am Dachfuß
+        parts.push({
+            shape: "box",
+            color: 0x4a2810,
+            position: { x: hx, y: roofBaseY + 0.04, z: hz },
+            rotation: { x: 0, y: bodyRot, z: 0 },
+            size: { x: bw + 0.7, y: 0.18, z: bd + 0.7 },
+        });
+        // (6) DACH — Walm (Pyramide) ODER Giebel (zwei geneigte Box-Flächen + First).
+        const roofH = 1.2 * sv;
+        if (!gable) {
+            parts.push({
+                shape: "pyramid",
+                color: 0x8b2a1e,
+                position: { x: hx, y: roofBaseY + roofH * 0.58, z: hz },
+                rotation: { x: 0, y: bodyRot + Math.PI / 4, z: 0 },
+                size: { x: bw + 1.2, y: roofH, z: bd + 1.2 },
+            });
+        } else {
+            // Satteldach: First läuft längs der Hütten-z-Achse (in Welt-Raum via bodyRot).
+            // Zwei box-Flächen, je um −sgn·pitch um z geneigt (V18.243-Konvention: Traufe
+            // tief, Innenkante zum First hoch), als Ganzes um bodyRot um y gedreht.
+            const span = bw + 0.9;
+            const rise = roofH * 1.05;
+            const eaveX = span / 2;
+            const slope = Math.hypot(eaveX, rise);
+            const pitch = Math.atan2(rise, eaveX);
+            const ridgeZ = bd + 1.0;
+            const cR = Math.cos(bodyRot),
+                sR = Math.sin(bodyRot);
+            for (const sgn of [-1, 1]) {
+                const lx = (sgn * eaveX) / 2; // lokaler x-Offset → Welt via bodyRot
+                parts.push({
+                    shape: "box",
+                    color: 0x8b2a1e,
+                    position: { x: hx + lx * cR, y: roofBaseY + rise / 2, z: hz - lx * sR },
+                    rotation: { x: 0, y: bodyRot, z: -sgn * pitch },
+                    size: { x: slope, y: 0.16, z: ridgeZ },
+                });
+            }
+            parts.push({
+                shape: "box",
+                color: 0x55180f,
+                position: { x: hx, y: roofBaseY + rise + 0.05, z: hz },
+                rotation: { x: 0, y: bodyRot, z: 0 },
+                size: { x: 0.3, y: 0.16, z: ridgeZ },
+            });
+        }
+        // (7) Schornstein (optional, seitlich auf dem Dach)
+        if (chimney) {
+            parts.push({
+                shape: "box",
+                color: 0x55504a,
+                position: { x: hx + sx * (bw * 0.3), y: roofBaseY + roofH * 0.7, z: hz + sz * (bw * 0.3) },
+                size: { x: 0.32, y: roofH * 0.9, z: 0.32 },
+            });
+        }
+        return parts;
+    }
+
     // ═══ Ω-PHYSIS · SÄULE III · Ω-B2 — DIE PARAMETRISCHE KLINGE (reference-first) ═══
     // (wahrerbauplan §6/§3.5): ein Schwert NICHT als „Box mit pointedFraction", sondern
     // als OAKESHOTT-Typ — Knauf · Griff · Parier · distal-verjüngte Klinge mit Hohlkehle
@@ -46714,89 +47001,26 @@ class AnazhRealm {
         // beim Initialisieren läuft, kostet das nichts.
         const villageParts = [];
         const hutCount = 6;
+        // Ω-B4 — der Dorf-Seed (Welt-Seed) würfelt jede Hütte eigen + deterministisch.
+        const villageSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-village";
         for (let i = 0; i < hutCount; i++) {
             const angle = (i / hutCount) * Math.PI * 2;
             const radius = 7.5;
             const hx = Math.cos(angle) * radius;
             const hz = Math.sin(angle) * radius;
             const bodyRot = -angle + Math.PI;
-            // V17.15 — die Hütten bekommen Binnen-Struktur (Schöpfer-Audit
-            // „Dorf kaum Strukturen in sich"). Reine DATEN (mehr Parts), kein
-            // neuer Code-Pfad; village ist NICHT instanziert (Group-Pfad, selten
-            // platziert) → Part-Zahl unkritisch. Pro Hütte: Stein-Fundament +
-            // Körper + Tür + Fenster + Dach mit Überstand (eaves) + Schornstein.
-            // Tür/Fenster sitzen auf der zum Dorf-Zentrum gewandten Fassade
-            // (inward), via bodyRot mit der Wand ausgerichtet. Leichte per-Hütte-
-            // Größen-/Höhen-Variation (i-deterministisch) → organisches Dorf.
+            // V17.15 — die Hütten tragen Binnen-Struktur (Schöpfer-Audit „Dorf kaum
+            // Strukturen in sich"). Ω-B4 (V18.247): jede Hütte ist eine deterministische
+            // VARIANTE statt eines Klons — `_villageHutVariant(seed, index, place)` würfelt
+            // Größe · Geschoss · Dach-Typ · Fenster · Schornstein · Tönung aus dem Welt-Seed,
+            // box+pyramid-only (affinität-neutral, V17.17). Tür/Fenster auf der zum Zentrum
+            // gewandten Fassade (inward), via bodyRot mit der Wand ausgerichtet.
             const ix = -Math.cos(angle); // Richtung zum Zentrum (Fassade)
             const iz = -Math.sin(angle);
             const sx = -Math.sin(angle); // seitlich (für Fenster/Schornstein)
             const sz = Math.cos(angle);
-            const sv = 0.85 + ((i * 5) % 3) * 0.13; // 0.85 / 0.98 / 1.11
-            const bw = 2.0 * sv;
-            const bh = 1.5 * sv;
-            const bd = 2.4 * sv;
-            const bodyY = 0.36 + bh / 2;
-            const roofBaseY = bodyY + bh / 2;
-            // Stein-Fundament (etwas breiter, niedrig)
-            villageParts.push({
-                shape: "box",
-                color: 0x6a6258,
-                position: { x: hx, y: 0.18, z: hz },
-                rotation: { x: 0, y: bodyRot, z: 0 },
-                size: { x: bw + 0.5, y: 0.36, z: bd + 0.5 },
-            });
-            // Körper (Lehm/Holz)
-            villageParts.push({
-                shape: "box",
-                color: 0x6e3a14,
-                position: { x: hx, y: bodyY, z: hz },
-                rotation: { x: 0, y: bodyRot, z: 0 },
-                size: { x: bw, y: bh, z: bd },
-            });
-            // Tür (dunkle Nische auf der Zentrums-Fassade)
-            villageParts.push({
-                shape: "box",
-                color: 0x32200f,
-                position: { x: hx + ix * (bd / 2 + 0.05), y: bodyY - bh * 0.18, z: hz + iz * (bd / 2 + 0.05) },
-                rotation: { x: 0, y: bodyRot, z: 0 },
-                size: { x: 0.62, y: bh * 0.62, z: 0.22 },
-            });
-            // Fenster (warm leuchtend, seitlich versetzt)
-            villageParts.push({
-                shape: "box",
-                color: 0xe2b667,
-                position: {
-                    x: hx + ix * (bd / 2 + 0.04) + sx * 0.62,
-                    y: bodyY + bh * 0.12,
-                    z: hz + iz * (bd / 2 + 0.04) + sz * 0.62,
-                },
-                rotation: { x: 0, y: bodyRot, z: 0 },
-                size: { x: 0.42, y: 0.42, z: 0.18 },
-            });
-            // Dach-Überstand (eaves) — dünner breiter Kranz am Dachfuß
-            villageParts.push({
-                shape: "box",
-                color: 0x4a2810,
-                position: { x: hx, y: roofBaseY + 0.04, z: hz },
-                rotation: { x: 0, y: bodyRot, z: 0 },
-                size: { x: bw + 0.7, y: 0.18, z: bd + 0.7 },
-            });
-            // Dach
-            villageParts.push({
-                shape: "pyramid",
-                color: 0x8b2a1e,
-                position: { x: hx, y: roofBaseY + 0.7, z: hz },
-                rotation: { x: 0, y: bodyRot + Math.PI / 4, z: 0 },
-                size: { x: (bw + 1.2) * 1.0, y: 1.2 * sv, z: (bd + 1.2) * 1.0 },
-            });
-            // Schornstein (seitlich auf dem Dach)
-            villageParts.push({
-                shape: "box",
-                color: 0x55504a,
-                position: { x: hx + sx * (bw * 0.3), y: roofBaseY + 1.0, z: hz + sz * (bw * 0.3) },
-                size: { x: 0.32, y: 1.0, z: 0.32 },
-            });
+            const hutParts = this._villageHutVariant(villageSeed, i, { hx, hz, bodyRot, ix, iz, sx, sz });
+            for (let hp = 0; hp < hutParts.length; hp++) villageParts.push(hutParts[hp]);
         }
         // Dorf-Brunnen im Zentrum (statt der flachen Platte): Stein-Ring +
         // dunkles Wasser innen + zwei Pfosten + Dach-Andeutung.
@@ -51996,6 +52220,100 @@ class AnazhRealm {
     }
 
     // V18.214 (Ω-G3 echte Foliage-Cards) — baut aus den Anchors EINE foliage-
+    // V18.247 (wahreranblick §8.5 — DIE LAAS-METHODE GELERNT + ANGEWANDT, Schöpfer
+    // „siehst du nicht wie es bei laas erstellt wird, lerne daraus"): LAAS' Krone ist
+    // KEINE flache Farb-Karte — sie ist eine KARTE, die ein aus ECHTER Blatt-Geometrie
+    // GEBACKENES Laub-Büschel zeigt (FoliageCards.ts: 14-20 parametrische Blätter im
+    // Fächer → ein Alpha-Atlas). Das ist der Unterschied zwischen „grüner Klecks" und
+    // „Laub": die Karte trägt die SILHOUETTE echter Blätter (Lücken, Spitzen, Adern),
+    // nicht eine runde Maske. Hier bake ich denselben Atlas PROZEDURAL (kein Bitmap-Download,
+    // §3.7-konform — ein Auslesewert der Blatt-Grammatik): ein 2×2-Varianten-Atlas, jede
+    // Kachel ein Fächer aus ~16 parametrischen Blatt-Silhouetten (getapert + gewölbt + Ader).
+    // RGB = helle Blatt-Detail-Luminanz (die Vertex-Dapple-Farbe trägt das Grün), ALPHA =
+    // die Büschel-Silhouette (der Schlüssel: die Karte liest als Blätter mit Lücken). Einmal
+    // gebacken, von ALLEN Bäumen geteilt (eine Textur, Karten bleiben 2 Tris — LAAS-billig).
+    _ensureFoliageClusterAtlas() {
+        if (this._foliageAtlasTex) return this._foliageAtlasTex;
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        const TILE = 256;
+        const GRID = 2;
+        const SZ = TILE * GRID;
+        const canvas = document.createElement("canvas");
+        canvas.width = SZ;
+        canvas.height = SZ;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+        ctx.clearRect(0, 0, SZ, SZ);
+        let seed = 0x9e3779b9 >>> 0;
+        const rnd = () => {
+            seed = (Math.imul(seed ^ (seed >>> 15), 0x2c1b3c6d) + 0x6e) >>> 0;
+            return (seed >>> 8) / 16777216;
+        };
+        // ein parametrisches Blatt (getapert, gewölbt, mit Mittelrippe), Basis am (bx,by),
+        // um `ang` von der Senkrechten gedreht. Helle Luminanz (Detail), das Grün kommt
+        // aus der Vertex-Dapple-Farbe → albedo = Vertex-Grün × Atlas-Luminanz.
+        const drawLeaf = (bx, by, ang, len, wid, lum) => {
+            ctx.save();
+            ctx.translate(bx, by);
+            ctx.rotate(ang);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(wid, -len * 0.34, wid * 0.52, -len * 0.72);
+            ctx.quadraticCurveTo(wid * 0.2, -len * 0.93, 0, -len);
+            ctx.quadraticCurveTo(-wid * 0.2, -len * 0.93, -wid * 0.52, -len * 0.72);
+            ctx.quadraticCurveTo(-wid, -len * 0.34, 0, 0);
+            ctx.closePath();
+            const g = ctx.createLinearGradient(0, 0, 0, -len);
+            const b = Math.round(190 * lum);
+            const t = Math.round(238 * lum);
+            g.addColorStop(0, `rgb(${Math.round(b * 0.84)},${b},${Math.round(b * 0.62)})`);
+            g.addColorStop(1, `rgb(${Math.round(t * 0.88)},${t},${Math.round(t * 0.68)})`);
+            ctx.fillStyle = g;
+            ctx.fill();
+            ctx.strokeStyle = "rgba(64,92,48,0.45)"; // Mittelrippe (dunkler → Detail)
+            ctx.lineWidth = Math.max(1, len * 0.025);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -len * 0.95);
+            ctx.stroke();
+            ctx.restore();
+        };
+        for (let ty = 0; ty < GRID; ty++) {
+            for (let tx = 0; tx < GRID; tx++) {
+                const ox = tx * TILE;
+                const oy = ty * TILE;
+                const cx = ox + TILE * 0.5;
+                const cyB = oy + TILE * 0.88; // Fächer wächst vom unteren Rand
+                const N = 15 + Math.floor(rnd() * 6); // 15-20 Blätter (LAAS 14-20)
+                for (let i = 0; i < N; i++) {
+                    const tt = N > 1 ? i / (N - 1) : 0.5;
+                    const ang = (tt - 0.5) * 2 * 1.16 + (rnd() - 0.5) * 0.34; // Fächer ±1.16 rad
+                    const len = TILE * (0.4 + rnd() * 0.34);
+                    const wid = len * (0.28 + rnd() * 0.13);
+                    const lum = 0.78 + rnd() * 0.32;
+                    const bx = cx + (rnd() - 0.5) * TILE * 0.2;
+                    const by = cyB + (rnd() - 0.5) * TILE * 0.12;
+                    drawLeaf(bx, by, ang, len, wid, lum);
+                }
+            }
+        }
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.generateMipmaps = true;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        try {
+            tex.anisotropy = 4;
+        } catch (_e) {
+            /* anisotropy optional */
+        }
+        tex.needsUpdate = true;
+        this._foliageAtlasTex = tex;
+        return tex;
+    }
+
     // BufferGeometry mit card{cross} (zwei ⊥ Quads) pro Anchor. needleSpray
     // bekommt y-stretched cards (Nadel-Optik), leafCluster normale Quads.
     // Plan §3.4: „card{cross} = zwei ⊥ Quads; normalBend mischt Normale
@@ -52113,12 +52431,27 @@ class AnazhRealm {
                 bdx /= blen;
                 bdy /= blen;
                 bdz /= blen;
+                // Ω-O14/O16 (wahreranblick §8.5 — gegen die LAAS-Referenz) — GEDAPPELTE
+                // KRONEN-TIEFE: jede Karte trägt eine eigene Helligkeit/Tönung aus ihrer
+                // Höhe in der Krone (sonnen-lichte Spitze hell + warm, schattiges Inneres
+                // dunkel + kühl) + per-Karte-Jitter → die Krone liest als geschichtetes
+                // Laub mit Tiefe, nicht als flache grüne Masse (der Schöpfer-Befund).
+                const hf = ay / totalH < 0 ? 0 : ay / totalH > 1 ? 1 : ay / totalH;
+                const dap = 0.58 + hf * 0.52 + (h01(ai, kk, 9) - 0.5) * 0.34; // ~0.41..1.27
+                const cr = Math.min(1, fr * dap * (0.9 + hf * 0.2)); // Spitze wärmer
+                const cg = Math.min(1, fg * dap);
+                const cb = Math.min(1, fb * dap * (1.06 - hf * 0.14)); // Inneres kühler
                 // Größen-Varianz + Kreuz-Drehung um y (organisch, kein Gitter).
                 const szJ = 1 + (h01(ai, kk, 4) - 0.5) * 2 * sizeVar;
                 const hw = cardW * 0.5 * szJ;
                 const hh = cardH * 0.5 * szJ;
                 const tw = hw * 0.42; // Blatt-Form Ω-O14: oben verjüngt
                 const curl = hh * 0.32; // Spitze krümmt zur Krone
+                // Ω-O14 (LAAS-Methode) — jede Karte wählt eine der 4 Atlas-Varianten
+                // (2×2-Kacheln) → kein Wiederholungs-Muster über die Krone.
+                const tile = Math.floor(h01(ai, kk, 6) * 4) & 3;
+                const tuX = (tile % 2) * 0.5;
+                const tuY = (tile >> 1) * 0.5;
                 const rot = h01(ai, kk, 5) * Math.PI;
                 const cR = Math.cos(rot),
                     sR = Math.sin(rot);
@@ -52161,13 +52494,13 @@ class AnazhRealm {
                     normals[v3] = bn1x;
                     normals[v3 + 1] = bn1y;
                     normals[v3 + 2] = bn1z;
-                    colors[v3] = fr;
-                    colors[v3 + 1] = fg;
-                    colors[v3 + 2] = fb;
+                    colors[v3] = cr;
+                    colors[v3 + 1] = cg;
+                    colors[v3 + 2] = cb;
                     flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
                     phase[vWrite] = phBase + c * 0.7;
-                    uvs[vWrite * 2] = UVC[c * 2];
-                    uvs[vWrite * 2 + 1] = UVC[c * 2 + 1];
+                    uvs[vWrite * 2] = tuX + UVC[c * 2] * 0.5;
+                    uvs[vWrite * 2 + 1] = tuY + UVC[c * 2 + 1] * 0.5;
                     vWrite++;
                 }
                 // Quad 2 (Tangente t2=(sR,0,cR), ⟂ zu t1)
@@ -52181,13 +52514,13 @@ class AnazhRealm {
                     normals[v3] = bn2x;
                     normals[v3 + 1] = bn2y;
                     normals[v3 + 2] = bn2z;
-                    colors[v3] = fr;
-                    colors[v3 + 1] = fg;
-                    colors[v3 + 2] = fb;
+                    colors[v3] = cr;
+                    colors[v3 + 1] = cg;
+                    colors[v3 + 2] = cb;
                     flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
                     phase[vWrite] = phBase + 1.7 + c * 0.7;
-                    uvs[vWrite * 2] = UVC[c * 2];
-                    uvs[vWrite * 2 + 1] = UVC[c * 2 + 1];
+                    uvs[vWrite * 2] = tuX + UVC[c * 2] * 0.5;
+                    uvs[vWrite * 2 + 1] = tuY + UVC[c * 2 + 1] * 0.5;
                     vWrite++;
                 }
                 indices[iWrite++] = base;
@@ -52300,7 +52633,10 @@ class AnazhRealm {
             // liest die gebackenen aFlex/aPhase-Attribute statt der crownLin-
             // Schätzung. Plan §6/9 Ω-G4 + Ω-W: per-Vertex flex+phase ist die
             // echte Form gegen das uniforme V18.212-Wiegen.
-            const barkMatOpts = { vertexColors: true, useFlexAttr: true };
+            // Ω-O7 (wahreranblick §6) — `bark:true` weckt die prozedurale RINDE-
+            // MASERUNG in _buildPbrNodeMaterial (Längs-Faser + härte-Risse aus dem
+            // holz-Tag): die Rinde erzählt ihr Holz, statt flacher Farbe.
+            const barkMatOpts = { vertexColors: true, useFlexAttr: true, bark: true };
             if (holzMat && holzMat.tags) barkMatOpts.tags = holzMat.tags;
             const barkMat = this._buildToonNodeMaterial(barkMatOpts);
             leaves.push({ geom: barkGeom, mat: barkMat, localMatrix: new THREE.Matrix4() });
@@ -68856,7 +69192,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.245.0";
+AnazhRealm.VERSION = "18.247.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -69330,10 +69666,17 @@ AnazhRealm.FOLIAGE_DENSITY = Object.freeze({
     // hat eine DICHTE, geschlossene Krone; meine war locker/löchrig. Mehr Karten + engerer
     // Cluster + mehr Volumen-Füllung → die geschlossene Dome/Kegel-Masse. LOD0 only (LOD1/2
     // bleiben dünn → die FPS-Last trägt der LOD-Pfad, kein Cap-Schnitt).
-    cardsPerAnchor: [16, 4, 1], // pro LOD0/1/2 — der Kronen-Füll-Faktor
-    jitterFrac: 1.05, // Cluster-Jitter-Radius als Bruchteil der Karten-Breite (enger → weniger Lücken)
-    sizeVar: 0.45, // ±45% Karten-Größen-Varianz im Cluster (organisch, kein Gitter)
-    innerFill: 0.55, // Anteil der Karten, die zur Kronen-Mitte gezogen werden (Volumen-Füllung)
+    // V18.247 (wahreranblick §8.5 — gegen die LAAS-Referenz-Fotos, Schöpfer „unglaublich
+    // deren Tiefe, das kannst du auch"): die echte Krone ist KEINE solide Masse — sie ist
+    // Laub-BÜSCHEL an den Ast-SPITZEN mit einem SICHTBAREN Ast-Gerüst dazwischen (Himmel
+    // scheint durch). Der frühere Voll-Füll-Block (innerFill 0.55) begrub das Gerüst. Jetzt:
+    // die Karten bleiben an den Ankern (Ast-Tips) → die Krone ist eine offene Büschel-Schale,
+    // das Stamm/Ast-Gerüst tritt hervor (die LAAS-Tiefe). Etwas engere Cluster = distinkte
+    // Büschel statt Brei. Die DICHTE bleibt hoch (16 Karten/Anchor) → die Büschel sind voll.
+    cardsPerAnchor: [16, 4, 1], // pro LOD0/1/2 — der Büschel-Füll-Faktor (volle Büschel)
+    jitterFrac: 0.82, // engerer Cluster → distinkte Laub-Büschel mit Lücken (Himmel scheint durch)
+    sizeVar: 0.5, // ±50% Karten-Größen-Varianz (organischer, weniger Gitter)
+    innerFill: 0.18, // NUR wenig zur Mitte → offene Schale, das Ast-Gerüst bleibt sichtbar (LAAS)
 });
 
 // V18.211 (DER LEBENDIGE GIGANT §3.3/§6) — SPECIES_GRAMMAR: die zentrale

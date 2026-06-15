@@ -164,8 +164,10 @@ async function renderWerk(page, bpName, view) {
                 await new Promise((r) => setTimeout(r, 100));
         });
         for (const [bp, file, view] of [
-            ["tree:baum_eiche:0", "werk-baum-eiche.png", "front"],
+            ["tree:baum_eiche:0", "werk-baum-eiche.png", "front"], // Ω-O7: die Rinde-Maserung am Stamm
             ["tree:baum_tanne:0", "werk-baum-tanne.png", "front"],
+            ["village", "werk-dorf.png", "front"], // Ω-B4: die variierten Hütten
+            ["temple", "werk-tempel.png", "front"],
         ]) {
             await renderWerk(page, bp, view);
             const info = await page.evaluate(() => window.__treeInfo || "");

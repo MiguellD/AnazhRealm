@@ -51029,8 +51029,14 @@ async function checkBandWave10b(ctx) {
 
             out.emptyBpEmpty = Object.keys(r.computeBlueprintAffordances(null)).length === 0;
             out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
-            out.villageNoAffordances =
-                Object.keys(r.computeBlueprintAffordances(r.state.blueprints.village)).length === 0;
+            // V18.247 — die „kein-Affordance"-Kontrolle ist jetzt stein_block (ein Fels).
+            // Das DORF ist seit den größeren, substanzielleren Hütten (Schöpfer „häuser klein")
+            // KEIN affordance-freier Compound mehr: seine großen flachen Fundamente/Vordächer
+            // bieten emergent `balancing` (man kann darauf stehen) — die Compound-TAGS bleiben
+            // bit-identisch (form-getriebene Affordance, nicht tag-getrieben). stein_block ist
+            // der saubere affordance-freie Kontroll-Compound (gemessen leer).
+            out.steinNoAffordances =
+                Object.keys(r.computeBlueprintAffordances(r.state.blueprints.stein_block)).length === 0;
 
             // moveable
             if (r.state.blueprints["test_10b_car"]) r.deleteBlueprint("test_10b_car");
@@ -51299,7 +51305,7 @@ async function checkBandWave10b(ctx) {
             // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
             out.hasAffordanceStrength = typeof r.computeAffordanceStrength === "function";
             out.strengthEmptyForNone =
-                Object.keys(r.computeAffordanceStrength(r.state.blueprints.village)).length === 0;
+                Object.keys(r.computeAffordanceStrength(r.state.blueprints.stein_block)).length === 0;
             // Ein Quarz-Sphären-Strahler (resoniert 2.7) ist STÄRKER
             // als der Quarz-Octahedron-Strahler (resoniert 1.8) —
             // dieselbe Substanz, andere Form, messbar bessere Antenne.
@@ -51679,8 +51685,8 @@ async function checkBandWave10b(ctx) {
             wave10bResults.emptyBpEmpty && wave10bResults.bpNoParts
         );
         check(
-            "Welle 10b.1: Default-Built-in (village) erkennt keine Affordances — ehrlich",
-            wave10bResults.villageNoAffordances
+            "Welle 10b.1: affordance-freier Built-in (stein_block) erkennt keine Affordances — ehrlich",
+            wave10bResults.steinNoAffordances
         );
         check(
             "Welle 10b.1: Fahrzeug-Compound (2 Cylinder-Stützen + quarz-Antrieb) → moveable=true",
