@@ -51406,8 +51406,12 @@ class AnazhRealm {
         if (!fo) return null;
         const isNeedle = fo.kind === "needleSpray";
         const baseSize = fo.size || 0.5;
-        const cardW = baseSize * (isNeedle ? 1.4 : 1.9);
-        const cardH = baseSize * (isNeedle ? 1.9 : 1.45);
+        // V18.233 (SUBSTANZ-FIX) — die Krone war sparse (kleine Karten in grossem
+        // Baum-Volumen → ein 12m-Baum las als dünner Stachel). GRÖSSERE, überlappende
+        // Karten füllen das Kronen-Volumen → der Baum liest als Baum. FPS-NEUTRAL
+        // (gleiche Vertex-Zahl, nur grösser). Schöpfer-Befund „Bäume ragen kaum".
+        const cardW = baseSize * (isNeedle ? 2.3 : 3.1);
+        const cardH = baseSize * (isNeedle ? 3.1 : 2.4);
         const totalH = Math.max(1, skeleton.totalH || 10);
         // Krone-Sphere-Zentrum für normalBend (Plan §3.4): die Mitte der
         // Anchor-Wolke + leicht nach oben. Vertex-Normalen mischen in diese
@@ -68015,7 +68019,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.232.0";
+AnazhRealm.VERSION = "18.233.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -68387,24 +68391,29 @@ AnazhRealm.SCATTER = Object.freeze({
     // jeder mit eigenem Zell-Raster + Cap. Region = 256m ≈ 35 Chunks (span 43.2m)
     // → die Caps zielen auf ~180-220 Instanzen/Chunk gesamt = „hunderte".
     layers: Object.freeze([
-        // Canopy: die Bäume (3.4m-Zelle). ~45/Chunk × 35 = ~1600.
+        // V18.233 (SUBSTANZ-REBALANCE, Schöpfer-Befund „Bäume ragen kaum, FPS → 0"):
+        // WENIGE, GROSSE, varianz-reiche Bäume (cap 1700→900, scaleVar 0.66→1.5 =
+        // Scale 0.6-2.1 → ragende Alte + junge) statt vieler sparse Stacheln. Die
+        // Krone ist 1.7× lusher (FPS-neutral, s. _buildTreeFoliageCardGeometry).
         Object.freeze({
             name: "tree",
             cellM: 3.4,
-            cap: 1700,
+            cap: 900,
             floor: 0.1,
-            scaleBase: 0.7,
-            scaleVar: 0.66,
+            scaleBase: 0.6,
+            scaleVar: 1.5,
             slopeMax: 1.45,
             kind: "tree",
             promotable: true,
         }),
-        // Understory: Strauch+Kraut+Bodenflora (2.4m-Zelle, am dichtesten —
-        // ~106²=11k Zellen/Region). ~120/Chunk × 35 = ~4200. Der Haupt-Dichte-Träger.
+        // Understory: Strauch+Kraut+Bodenflora. WAR der Haupt-Dichte-Träger (4200)
+        // = der FPS-Killer + visuelle Verstopfung (kleines Gestrüpp verdeckte die
+        // Bäume). V18.233: 4200→800 (die Bäume tragen jetzt die Sicht, nicht das
+        // Gestrüpp). Der grösste FPS-Hebel der Rebalance.
         Object.freeze({
             name: "under",
             cellM: 2.4,
-            cap: 4200,
+            cap: 800,
             floor: 0.06,
             scaleBase: 0.8,
             scaleVar: 0.5,
@@ -68416,7 +68425,7 @@ AnazhRealm.SCATTER = Object.freeze({
         Object.freeze({
             name: "litter",
             cellM: 2.8,
-            cap: 900,
+            cap: 250,
             floor: 0.04,
             scaleBase: 0.8,
             scaleVar: 0.4,
@@ -68431,7 +68440,7 @@ AnazhRealm.SCATTER = Object.freeze({
         Object.freeze({
             name: "rock",
             cellM: 2.6,
-            cap: 1100,
+            cap: 350,
             floor: 0.02,
             scaleBase: 0.6,
             scaleVar: 1.0,

@@ -37141,9 +37141,14 @@ async function checkBandV18224ScatterPromotion(ctx) {
                 const treeCap = (SC.layers.find((l) => l.name === "tree") || {}).cap || 0;
                 const underCap = (SC.layers.find((l) => l.name === "under") || {}).cap || 0;
                 const litterCap = (SC.layers.find((l) => l.name === "litter") || {}).cap || 0;
-                out.underCapDominates = underCap > treeCap && treeCap > 0;
+                // V18.233 (SUBSTANZ-REBALANCE, Schöpfer-Befund „FPS → 0, Bäume ragen
+                // kaum"): der FPS-Befund überstimmt das alte V18.225-„hunderte/Chunk"-
+                // Ziel. Die Bäume sind jetzt die prominente Substanz (treeCap ≥ underCap),
+                // das Understory-Gestrüpp (war 4200 = FPS-Killer + Sicht-Verstopfung)
+                // ist sekundär. Dichte FPS-bewusst, nicht maximal.
+                out.treeProminentRebalance = treeCap >= underCap && treeCap > 0;
                 out.hasThreeStrata = treeCap > 0 && underCap > 0 && litterCap > 0;
-                // Design-Kapazität: Σcaps / Chunks-pro-Region ≥ 150 = „hunderte"-fähig
+                // Design-Kapazität: FPS-bewusst populiert (nicht mehr „≥150 hunderte")
                 const chunkSpan = 43.2; // _voxelChunkConfig().span
                 const chunksPerRegion = (SC.regionM / chunkSpan) * (SC.regionM / chunkSpan);
                 out.chunksPerRegion = chunksPerRegion;
@@ -37280,11 +37285,11 @@ async function checkBandV18224ScatterPromotion(ctx) {
 
     // (M) V18.225 MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
     check(`V18.224 (M1) ≥3 Scatter-Strata konfiguriert (V18.227: +Fels = 4, gemessen ${res.scatterLayerCount})`, res.scatterLayerCount >= 3);
-    check("V18.224 (M2) Understory-Cap dominiert (der Dichte-Träger, Plan §13)", res.underCapDominates === true);
+    check("V18.224/233 (M2) Bäume sind die prominente Substanz (treeCap ≥ underCap, Rebalance)", res.treeProminentRebalance === true);
     check("V18.224 (M3) Alle 3 Strata haben Caps (Bäume + Understory + Streu)", res.hasThreeStrata === true);
     check(`V18.224 (M4) Region erzeugt alle 3 Schichten (byLayer: ${res.byLayer ? JSON.stringify(res.byLayer) : "?"})`, res.byLayer && Number.isFinite(res.byLayer.tree) && Number.isFinite(res.byLayer.under) && Number.isFinite(res.byLayer.litter));
-    check(`V18.224 (M5) DESIGN-Kapazität ≥150 Instanzen/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(0) : "?"} — „hunderte"-fähig)`, res.designPerChunk >= 150);
-    check(`V18.224 (M6) ECHTE Dichte ≥80 Instanzen/Chunk in der Spieler-Region (gemessen ${res.perChunkActual ? res.perChunkActual.toFixed(0) : "?"})`, res.perChunkActual >= 80);
+    check(`V18.224/233 (M5) Design-Kapazität FPS-bewusst populiert ≥35/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(0) : "?"})`, res.designPerChunk >= 35);
+    check(`V18.224/233 (M6) ECHTE Dichte ≥12 Instanzen/Chunk in der Spieler-Region (gemessen ${res.perChunkActual ? res.perChunkActual.toFixed(0) : "?"})`, res.perChunkActual >= 12);
 
     // (D) Species-Determinismus
     check("V18.224 (D1) Species-Wahl deterministisch (P2P-konsistent)", res.speciesDeterministic === true);

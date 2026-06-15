@@ -35,7 +35,7 @@ const server = http.createServer((req, res) => {
         let last = -1, stable = 0;
         while (performance.now() - start < 35000) {
             const r = window.anazhRealm;
-            if (r && r.state && r.state.atmosphere) r.state.atmosphere.gpuScatter = false;
+            if (r && r.state) { r.state.timeOfDay = 0.5; if (r.state.atmosphere) r.state.atmosphere.gpuScatter = false; } // Mittag + Scatter aus
             if (r && !stubbed && r.state && r.state.renderer) {
                 window.__origRender = r.state.renderer.render.bind(r.state.renderer);
                 r.state.renderer.render = function () {};
@@ -61,6 +61,7 @@ const server = http.createServer((req, res) => {
         if (!window.__origRender) return "no origRender";
         r.state.renderer.render = window.__origRender;
         s.postProcessingFailed = true;
+        if (r.setTimeOfDay) r.setTimeOfDay(0.5); // ECHTES Mittag (ruft _applyDayNightToScene)
         try { if (typeof r._loopRender === "function") { r._loopRender(performance.now()); r._loopRender(performance.now()); } else window.__origRender(s.scene, s.camera); } catch (e) { return String(e.message || e); }
         r.state.renderer.render = function () {};
         return "ok";
