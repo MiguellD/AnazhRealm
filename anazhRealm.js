@@ -28011,7 +28011,7 @@ class AnazhRealm {
     _acquireGrassMesh() {
         if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
         const pool = this.state._grassMeshPool;
-        const GRASS_MAX_BLADES = 1024; // V16.1 — Cap 256->1024 (r184-geheilt, kein Crash; FPS-Frage). 256 warf bei dichter Wiese ~93% der Halme weg.
+        const GRASS_MAX_BLADES = 1400; // V18.232 (Ω-O4 Dichte) — Cap 1024→1400 (pool-sicher: beide Konstanten match, V10.0-j.c). r184-geheilt.
         if (pool.length > 0) {
             const mesh = pool.pop();
             mesh.visible = true;
@@ -28229,7 +28229,7 @@ class AnazhRealm {
                 // Fluss-Bank) wächst kein Gras: der gepackte Boden trägt den Trampel-
                 // pfad, die Halme weichen → die bare Erd-Linie wird sichtbar.
                 const pathSuppress = this._pathFieldAt ? 1 - this._pathFieldAt(baseX, baseZ, surfY) * 0.92 : 1;
-                const count = Math.floor((lebendig * 14 + rnd() * 2) * farFactor * clump * pathSuppress);
+                const count = Math.floor((lebendig * 16 + rnd() * 2) * farFactor * clump * pathSuppress);
                 // V18.228 (Ω-OPSIS Säule II Ω-O4) — der BODEN-TINT pro Sample (das
                 // Gras liest den Boden): lush-grün wo lebendig+feuchte hoch, dry-
                 // oliv/strohig wo trocken. Multiplikatoren um ~1 auf die Halm-Albedo.
@@ -28300,7 +28300,7 @@ class AnazhRealm {
         // für alle Pool-Meshes → Bound-Buffer konstant → kein Cache-
         // Mismatch zwischen Chunks. inst.count = realCount für die
         // DrawIndexed-Iteration (echte Render-Count).
-        const GRASS_MAX_BLADES = 1024; // V16.1 — Cap 256->1024 (r184-geheilt, kein Crash; FPS-Frage). 256 warf bei dichter Wiese ~93% der Halme weg.
+        const GRASS_MAX_BLADES = 1400; // V18.232 (Ω-O4 Dichte) — Cap 1024→1400 (pool-sicher: beide Konstanten match, V10.0-j.c). r184-geheilt.
         const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
         // V12.0-d — Pool-Pfad re-aktiviert auf r184. Drei strukturelle
         // Heilungen des Vendor-Upgrades machen das echte Recycling möglich:
@@ -68015,7 +68015,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.231.0";
+AnazhRealm.VERSION = "18.232.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
